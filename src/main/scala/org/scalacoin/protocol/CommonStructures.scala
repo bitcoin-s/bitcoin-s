@@ -12,3 +12,5 @@ package org.scalacoin.protocol
  * @param value
  */
 case class VarInt( value : String)
+
+
