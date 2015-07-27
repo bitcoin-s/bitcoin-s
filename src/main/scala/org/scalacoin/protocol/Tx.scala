@@ -18,10 +18,10 @@ trait Tx {
 case class NetworkTx(serialization : String ) extends Tx {
   require(!serialization.contains(" "), "Your network transaction contains whitespace")
   override def version = java.lang.Long.parseLong(serialization.slice(0,8),16)
-  override def txInCount : VarInt = VarInt("")
+  override def txInCount : VarInt = NetworkVarInt("FF")
   override def txIn : Seq[TxIn] = Seq()
-  override def txOutCount : VarInt = VarInt("")
-  override def txOut : TxOut = TxOut(1,VarInt(""), Seq())
+  override def txOutCount : VarInt = NetworkVarInt("FF")
+  override def txOut : TxOut = TxOut(1,NetworkVarInt("FF"), Seq())
   override def lockTime : Long = 0
 
 }
