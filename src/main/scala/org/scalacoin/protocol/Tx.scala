@@ -27,7 +27,17 @@ case class NetworkTx(serialization : String ) extends Tx {
 }
 
 
-case class TxIn(prevousOutput : OutPoint, scriptLength : VarInt, scriptSignature : Seq[Char], sequence : Long)
+trait TxIn {
+
+  def prevousOutput : OutPoint
+  def scriptLength : VarInt
+  def scriptSignature : Seq[Char]
+  def sequence : Long
+}
+/*case class NetworkTxIn(serialization : String) extends TxIn {
+
+
+}*/
 
 case class OutPoint(hash : Seq[Char], index : Long)
 
