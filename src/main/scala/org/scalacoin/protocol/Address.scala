@@ -5,13 +5,14 @@ import org.bitcoinj.core.{VersionedChecksummedBytes, Base58, Utils}
 case class AddressInfo(bitcoinAddress: BitcoinAddress, n_tx: Long, total_received: Long, total_sent: Long,
   final_balance: Long)
 
-sealed abstract class Address(val address : String)
-sealed case class BitcoinAddress(bitcoinAddress: String) extends Address(bitcoinAddress) {
-  require(BitcoinAddress.validate(bitcoinAddress), "Bitcoin address was invalid " + bitcoinAddress)
+sealed abstract class Address( val value : String)
+
+sealed case class BitcoinAddress(override val value: String) extends Address(value ) {
+  require(BitcoinAddress.validate(value), "Bitcoin address was invalid " + value)
 }
 
-sealed case class AssetAddress(assetAddress : String) extends Address(assetAddress) {
-  require(AssetAddress.validate(assetAddress), "The provided asset was was invalid: " + assetAddress)
+sealed case class AssetAddress(override val value : String) extends Address(value) {
+  require(AssetAddress.validate(value), "The provided asset was was invalid: " + value)
 }
 
 object BitcoinAddress {
@@ -28,7 +29,7 @@ object BitcoinAddress {
    * @return
    */
   def convertToAssetAddress(address : BitcoinAddress) : AssetAddress = {
-    val underlying : String  = address.bitcoinAddress
+    val underlying : String  = address.value
     val base58decodeChecked : Array[Byte] = Base58.decodeChecked(underlying)
     require (
       base58decodeChecked.size == 21
@@ -50,7 +51,7 @@ object BitcoinAddress {
    * @param address
    * @return
    */
-  def p2shAddress(address : BitcoinAddress) : Boolean = p2shAddress(address.bitcoinAddress)
+  def p2shAddress(address : BitcoinAddress) : Boolean = p2shAddress(address.value)
 
   /**
    * Checks if an address is a valid p2pkh address
@@ -67,7 +68,7 @@ object BitcoinAddress {
    * @param address
    * @return
    */
-  def p2pkh(address : BitcoinAddress) : Boolean = p2pkh(address.bitcoinAddress)
+  def p2pkh(address : BitcoinAddress) : Boolean = p2pkh(address.value)
 }
 
 object AssetAddress {
@@ -85,7 +86,7 @@ object AssetAddress {
    * @return
    */
   def convertToBitcoinAddress(assetAddress : AssetAddress) = {
-    val underlying : String = assetAddress.assetAddress
+    val underlying : String = assetAddress.value
     val base58decodeChecked : Array[Byte] = Base58.decodeChecked(underlying)
 
     require(base58decodeChecked.size == 22)
