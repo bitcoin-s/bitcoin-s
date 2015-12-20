@@ -6,7 +6,7 @@ class BitcoinAddressTest extends FlatSpec with MustMatchers {
 
   "3J98t1WpEZ73CNmQviecrnyiWrnqRhWNLy" must "be a valid bitcoin address" in {
     val address = "3J98t1WpEZ73CNmQviecrnyiWrnqRhWNLy"
-    BitcoinAddress(address).bitcoinAddress must be(address)
+    BitcoinAddress(address).value must be(address)
 
   }
 
@@ -43,12 +43,12 @@ class BitcoinAddressTest extends FlatSpec with MustMatchers {
 
   "3J98t1WpEZ73CNmQviecrnyiWr (26 characters) " must "be a valid bitcoin address" in {
     val address = "3J98t1WpEZ73CNmQviecrnyiWr"
-    BitcoinAddress(address).bitcoinAddress must be(address)
+    BitcoinAddress(address).value must be(address)
   }
 
   "3J98t1WpEZ73CNmQviecrnyiWrnqRhWNLyy (35 characters)" must "be a valid bitcoin address" in {
     val address = "3J98t1WpEZ73CNmQviecrnyiWrnqRhWNLyy"
-    BitcoinAddress(address).bitcoinAddress must be(address)
+    BitcoinAddress(address).value must be(address)
   }
 
 
@@ -56,7 +56,7 @@ class BitcoinAddressTest extends FlatSpec with MustMatchers {
 
   "akJsoCcyh34FGPotxfEoSXGwFPCNAkyCgTA" must "be a valid asset address" in {
     val assetAddress = AssetAddress("akJsoCcyh34FGPotxfEoSXGwFPCNAkyCgTA")
-    assetAddress.assetAddress must be ("akJsoCcyh34FGPotxfEoSXGwFPCNAkyCgTA")
+    assetAddress.value must be ("akJsoCcyh34FGPotxfEoSXGwFPCNAkyCgTA")
   }
 
   "An asset address with the first character replaced" must "not be a valid asset address" in {
