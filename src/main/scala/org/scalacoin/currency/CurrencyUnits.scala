@@ -4,9 +4,30 @@ import scala.math.BigDecimal.RoundingMode
 
 abstract class CurrencyUnit(val value:Double) {
   def toStringWithoutCurrencyLabel : String = CurrencyUnits.currencyFormatter(value)
-  def ==(c : CurrencyUnit) = {
-    require (c != null, "Currency units cannot be null")
+  def ==(c : CurrencyUnit) : Boolean = {
+    /*require (c != null, "Currency units cannot be null")*/
     CurrencyUnits.toSatoshis(this).value == CurrencyUnits.toSatoshis(c).value
+  }
+
+  def >=(c : CurrencyUnit) : Boolean = {
+    CurrencyUnits.toSatoshis(this).value >= CurrencyUnits.toSatoshis(c).value
+  }
+
+  def >(c : CurrencyUnit) : Boolean = {
+    CurrencyUnits.toSatoshis(this).value > CurrencyUnits.toSatoshis(c).value
+  }
+
+  def <(c : CurrencyUnit) : Boolean = {
+    CurrencyUnits.toSatoshis(this).value < CurrencyUnits.toSatoshis(c).value
+  }
+
+  def <=(c : CurrencyUnit) : Boolean = {
+    /*require (c != null, "Currency units cannot be null")*/
+    CurrencyUnits.toSatoshis(this).value <= CurrencyUnits.toSatoshis(c).value
+  }
+
+  def !=(c : CurrencyUnit) : Boolean = {
+    !(this == c)
   }
 }
 
@@ -29,16 +50,19 @@ case class MilliBitcoins(override val value : Double) extends CurrencyUnit(value
 }
 
 object CurrencyUnits {
-  val oneSatoshi = Satoshis(1)
-  val oneMilliBit = Satoshis(100000)
-  val tenMilliBits = Satoshis(1000000)
-  val oneHundredMilliBits = Satoshis(10000000)
+  def oneSatoshi = Satoshis(1)
+  def oneMilliBit = Satoshis(100000)
+  def tenMilliBits = Satoshis(1000000)
+  def oneHundredMilliBits = Satoshis(10000000)
+
+  def oneBTC = Bitcoins(1)
 
   /*considering the scalar for a 1 BTC to be 1*/
   val satoshiScalar = 0.00000001
   val bitsScalar = 0.000001
   val bitcoinScalar = 1
   val milliBitcoinScalar = 0.001
+
   def satoshisToBits(satoshis: Satoshis): Bits = {
     Bits((satoshis.value * satoshiScalar) / bitsScalar)
   }
