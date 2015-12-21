@@ -2,29 +2,29 @@ package org.scalacoin.currency
 
 import scala.math.BigDecimal.RoundingMode
 
-abstract class BitcoinCurrencyUnit(val value:Double) {
+abstract class CurrencyUnit(val value:Double) {
   def toStringWithoutCurrencyLabel : String = CurrencyUnits.currencyFormatter(value)
-  def ==(c : BitcoinCurrencyUnit) = {
+  def ==(c : CurrencyUnit) = {
     require (c != null, "Currency units cannot be null")
     CurrencyUnits.toSatoshis(this).value == CurrencyUnits.toSatoshis(c).value
   }
 }
 
-case class Satoshis(override val value: Double) extends BitcoinCurrencyUnit(value) {
+case class Satoshis(override val value: Double) extends CurrencyUnit(value) {
   require(value.isValidInt, "The satoshis constructor cannot be a double with decimal places, satoshis are the smallest currency unit in bitcoin")
   override def toString = toStringWithoutCurrencyLabel + " Satoshis"
   override def toStringWithoutCurrencyLabel = value.toLong.toString
 }
 
-case class Bits(override val value: Double) extends BitcoinCurrencyUnit(value) {
+case class Bits(override val value: Double) extends CurrencyUnit(value) {
   override def toString = toStringWithoutCurrencyLabel + " Bits"
 }
 
-case class Bitcoins(override val value: Double) extends BitcoinCurrencyUnit(value) {
+case class Bitcoins(override val value: Double) extends CurrencyUnit(value) {
   override def toString =  toStringWithoutCurrencyLabel + " BTC"
 }
 
-case class MilliBitcoins(override val value : Double) extends BitcoinCurrencyUnit(value) {
+case class MilliBitcoins(override val value : Double) extends CurrencyUnit(value) {
   override def toString = toStringWithoutCurrencyLabel + " mBTC"
 }
 
@@ -73,7 +73,7 @@ object CurrencyUnits {
     if (value == 0) "0" else "%.5f".format(BigDecimal(value).setScale(5, RoundingMode.CEILING)).replaceAll("[.0]*$","")
   }
 
-  def toSatoshis(unit : BitcoinCurrencyUnit) = {
+  def toSatoshis(unit : CurrencyUnit) = {
     unit match {
       case x : Bitcoins => bitcoinsToSatoshis(x)
       case x : Bits => bitsToSatoshis(x)
