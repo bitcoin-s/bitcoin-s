@@ -34,8 +34,6 @@ object CurrencyUnits {
   val tenMilliBits = Satoshis(1000000)
   val oneHundredMilliBits = Satoshis(10000000)
 
-
-
   /*considering the scalar for a 1 BTC to be 1*/
   val satoshiScalar = 0.00000001
   val bitsScalar = 0.000001
