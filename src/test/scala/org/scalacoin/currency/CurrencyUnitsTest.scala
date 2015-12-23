@@ -134,4 +134,16 @@ class CurrencyUnitsTest extends FlatSpec with MustMatchers {
     (CurrencyUnits.oneSatoshi != CurrencyUnits.oneBTC) must be (true)
   }
 
+  it must "add one satoshis to another satoshi" in {
+    (CurrencyUnits.oneSatoshi + CurrencyUnits.oneSatoshi).value must be (2)
+  }
+
+  it must "subtract one satoshi from one satoshi" in {
+    (CurrencyUnits.oneSatoshi - CurrencyUnits.oneSatoshi).value must be (0)
+  }
+
+  it must "multiply one satoshi by one satoshis" in {
+    (CurrencyUnits.oneSatoshi * CurrencyUnits.oneSatoshi).value must be (1)
+  }
+
 }

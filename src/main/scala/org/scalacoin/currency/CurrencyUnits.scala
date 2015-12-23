@@ -29,6 +29,18 @@ abstract class CurrencyUnit(val value:Double) {
   def !=(c : CurrencyUnit) : Boolean = {
     !(this == c)
   }
+
+  def +(c : CurrencyUnit) : CurrencyUnit = {
+    Satoshis(CurrencyUnits.toSatoshis(this).value + CurrencyUnits.toSatoshis(c).value)
+  }
+
+  def -(c : CurrencyUnit) : CurrencyUnit = {
+    Satoshis(CurrencyUnits.toSatoshis(this).value - CurrencyUnits.toSatoshis(c).value)
+  }
+
+  def *(c : CurrencyUnit) : CurrencyUnit = {
+    Satoshis(CurrencyUnits.toSatoshis(this).value * CurrencyUnits.toSatoshis(c).value)
+  }
 }
 
 case class Satoshis(override val value: Double) extends CurrencyUnit(value) {
