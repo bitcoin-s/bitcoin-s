@@ -1,6 +1,7 @@
 package org.scalacoin.protocol
 
 import org.bitcoinj.core.{VersionedChecksummedBytes, Base58, Utils}
+import org.scalacoin.config.{RegTest, TestNet3, MainNet}
 
 case class AddressInfo(bitcoinAddress: BitcoinAddress, n_tx: Long, total_received: Long, total_sent: Long,
   final_balance: Long)
@@ -43,7 +44,14 @@ object BitcoinAddress {
    * @return
    */
   def p2shAddress(address : String) : Boolean = {
-    address.charAt(0) == '3' || address.charAt(0) == '2'
+    try {
+      val base58decodeChecked : Array[Byte] = Base58.decodeChecked(address)
+      val firstByte = base58decodeChecked(0)
+      ((firstByte == MainNet.p2shNetworkByte || firstByte == TestNet3.p2shNetworkByte) && base58decodeChecked.size == 21)
+    } catch {
+      case _ : Throwable => false
+    }
+
   }
 
   /**
@@ -59,8 +67,16 @@ object BitcoinAddress {
    * @return
    */
   def p2pkh(address : String) : Boolean = {
-    val firstChar = address.charAt(0)
-    firstChar == '1' || firstChar == 'm' || firstChar == 'n'
+    try {
+      val base58decodeChecked : Array[Byte] = Base58.decodeChecked(address)
+      val firstByte = base58decodeChecked(0)
+
+      ((firstByte == MainNet.p2pkhNetworkByte || firstByte == TestNet3.p2pkhNetworkByte ||
+        firstByte == RegTest.p2pkhNetworkByte) && base58decodeChecked.size == 21)
+    } catch {
+      case _ : Throwable =>  false
+    }
+
   }
 
   /**
