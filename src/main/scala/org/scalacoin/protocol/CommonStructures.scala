@@ -20,7 +20,6 @@ trait VarInt {
 case class NetworkVarInt( serialization : String) extends VarInt with ScalacoinUtil {
   override def length : BigInt = {
     val slice = hexToBigInt(serialization.slice(0,2))
-    println(slice)
     if (slice == 0xFD) hexToBigInt(serialization.slice(2,6))
     else if (slice == 0xFE) hexToBigInt(serialization.slice(2,10))
     else if (slice == 0xFF) hexToBigInt(serialization.slice(2,18))
