@@ -47,7 +47,8 @@ object BitcoinAddress {
     try {
       val base58decodeChecked : Array[Byte] = Base58.decodeChecked(address)
       val firstByte = base58decodeChecked(0)
-      ((firstByte == MainNet.p2shNetworkByte || firstByte == TestNet3.p2shNetworkByte) && base58decodeChecked.size == 21)
+      ((firstByte == MainNet.p2shNetworkByte || firstByte == TestNet3.p2shNetworkByte || RegTest.p2shNetworkByte == firstByte)
+        && base58decodeChecked.size == 21)
     } catch {
       case _ : Throwable => false
     }
