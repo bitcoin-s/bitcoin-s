@@ -13,4 +13,5 @@ trait ScriptPubKey extends ScriptSignature {
 
 }
 
-case class ScriptPubKeyImpl(reqSigs : Int, addressType : String, addresses : Seq[BitcoinAddress])
+case class ScriptPubKeyImpl(asm : String, hex : String, reqSigs : Int,
+  addressType : String, addresses : Seq[BitcoinAddress]) extends ScriptPubKey
