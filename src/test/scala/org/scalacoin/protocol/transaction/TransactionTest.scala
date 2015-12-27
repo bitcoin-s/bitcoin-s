@@ -1,12 +1,11 @@
-package org.scalacoin.protocol
+package org.scalacoin.protocol.transaction
 
-import org.scalatest.FlatSpec
-import org.scalatest.MustMatchers
+import org.scalatest.{FlatSpec, MustMatchers}
 
 /**
  * Created by chris on 7/14/15.
  */
-class TxTest extends FlatSpec with MustMatchers {
+class TransactionTest extends FlatSpec with MustMatchers {
 
   "Tx" must "be instanstiated from a serialized tx on the network" in {
     val tx = NetworkTx("01000000")
