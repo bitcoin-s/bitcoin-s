@@ -1,6 +1,6 @@
 package org.scalacoin.protocol.transaction
 
-import org.scalacoin.currency.Satoshis
+import org.scalacoin.currency.{CurrencyUnit, Satoshis}
 import org.scalacoin.protocol.VarInt
 
 /**
@@ -8,11 +8,11 @@ import org.scalacoin.protocol.VarInt
  */
 trait TransactionOutput {
 
-  def value : Satoshis
+  def value : CurrencyUnit
   def pkScriptLength : VarInt
-  def pkScript : Seq[Char]
+  def pkScript : Seq[String]
 
 }
 
 
-case class TransactionOutputImpl(value : Satoshis, pkScriptLength : VarInt, pkScript : Seq[Char]) extends TransactionOutput
+case class TransactionOutputImpl(value : Satoshis, pkScriptLength : VarInt, pkScript : Seq[String]) extends TransactionOutput
