@@ -13,4 +13,4 @@ trait TransactionInput {
 }
 
 case class TransactionInputImpl(previousOutput : TransactionOutPoint,
-  scriptSignature : Seq[String], sequence : Long) extends TransactionInput
+  scriptSignature : ScriptSignature, sequence : Long) extends TransactionInput
