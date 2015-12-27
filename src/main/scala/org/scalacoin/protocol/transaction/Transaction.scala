@@ -12,7 +12,7 @@ trait Transaction {
   def txInCount : VarInt
   def txIn : Seq[TxIn]
   def txOutCount : VarInt
-  def txOut : TxOut
+  def txOut : Seq[TxOut]
   def lockTime : Long
 }
 
@@ -22,22 +22,16 @@ case class NetworkTx(serialization : String ) extends Transaction {
   override def txInCount : VarInt = NetworkVarInt("FF")
   override def txIn : Seq[TxIn] = Seq()
   override def txOutCount : VarInt = NetworkVarInt("FF")
-  override def txOut : TxOut = TxOut(1,NetworkVarInt("FF"), Seq())
+  override def txOut : TxOut = (1,NetworkVarInt("FF"), Seq())
   override def lockTime : Long = 0
 
 }
 
 
-trait TxIn {
-
-  def prevousOutput : OutPoint
-  def scriptLength : VarInt
-  def scriptSignature : Seq[Char]
-  def sequence : Long
-}
 
 
-case class OutPoint(hash : Seq[Char], index : Long)
 
-case class TxOut(value : Long, pkScriptLength : VarInt, pkScript : Seq[Char])
+
+
+
 
