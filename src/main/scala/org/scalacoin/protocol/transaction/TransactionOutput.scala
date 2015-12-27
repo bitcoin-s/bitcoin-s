@@ -13,3 +13,6 @@ trait TransactionOutput {
   def pkScript : Seq[Char]
 
 }
+
+
+case class TransactionOutputImpl(value : Satoshis, pkScriptLength : VarInt, pkScript : Seq[Char]) extends TransactionOutput
