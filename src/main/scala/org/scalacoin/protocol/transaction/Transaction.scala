@@ -9,24 +9,16 @@ import org.scalacoin.protocol.{NetworkVarInt, VarInt}
 
 
 trait Transaction {
+  def txId : String
   def version : Long
-  def txInCount : VarInt
-  def txIn : Seq[TransactionInput]
-  def txOutCount : VarInt
-  def txOut : Seq[TransactionOutput]
+  def inputs  : Seq[TransactionInput]
+  def outputs : Seq[TransactionOutput]
   def lockTime : Long
 }
 
-case class NetworkTx(serialization : String ) extends Transaction {
-  require(!serialization.contains(" "), "Your network transaction contains whitespace")
-  override def version = java.lang.Long.parseLong(serialization.slice(0,8),16)
-  override def txInCount : VarInt = NetworkVarInt("FF")
-  override def txIn : Seq[TransactionInput] = Seq()
-  override def txOutCount : VarInt = NetworkVarInt("FF")
-  override def txOut : Seq[TransactionOutput] = Seq(TransactionOutputImpl(Satoshis(1),NetworkVarInt("FF"), Seq()))
-  override def lockTime : Long = 0
+case class TransactionImpl(txId : String, version : Long, inputs : Seq[TransactionInput],
+  outputs : Seq[TransactionOutput], lockTime : Long) extends Transaction
 
-}
 
 
 
