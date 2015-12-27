@@ -1,6 +1,6 @@
 package org.scalacoin.protocol.transaction
 
-import org.scalacoin.protocol.VarInt
+import org.scalacoin.protocol.{NetworkVarInt, VarInt}
 
 /**
  * Created by chris on 7/14/15.
