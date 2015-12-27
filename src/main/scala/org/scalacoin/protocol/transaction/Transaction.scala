@@ -1,12 +1,13 @@
-package org.scalacoin.protocol
+package org.scalacoin.protocol.transaction
 
+import org.scalacoin.protocol.VarInt
 
 /**
  * Created by chris on 7/14/15.
  */
 
 
-trait Tx {
+trait Transaction {
   def version : Long
   def txInCount : VarInt
   def txIn : Seq[TxIn]
@@ -15,7 +16,7 @@ trait Tx {
   def lockTime : Long
 }
 
-case class NetworkTx(serialization : String ) extends Tx {
+case class NetworkTx(serialization : String ) extends Transaction {
   require(!serialization.contains(" "), "Your network transaction contains whitespace")
   override def version = java.lang.Long.parseLong(serialization.slice(0,8),16)
   override def txInCount : VarInt = NetworkVarInt("FF")
@@ -34,10 +35,7 @@ trait TxIn {
   def scriptSignature : Seq[Char]
   def sequence : Long
 }
-/*case class NetworkTxIn(serialization : String) extends TxIn {
 
-
-}*/
 
 case class OutPoint(hash : Seq[Char], index : Long)
 
