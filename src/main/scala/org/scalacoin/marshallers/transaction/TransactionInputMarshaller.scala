@@ -1,7 +1,6 @@
 package org.scalacoin.marshallers.transaction
 
 import org.scalacoin.marshallers.script.ScriptSignatureMarshaller
-import org.scalacoin.marshallers.transaction
 import org.scalacoin.marshallers.transaction.TransactionOutPointMarshaller.TransactionOutPointFormatter
 import org.scalacoin.protocol.script.ScriptSignature
 import org.scalacoin.protocol.transaction.{TransactionInputImpl, TransactionOutPoint, TransactionInput}
