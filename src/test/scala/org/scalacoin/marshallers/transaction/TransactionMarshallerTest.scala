@@ -74,6 +74,8 @@ class TransactionMarshallerTest extends FlatSpec with MustMatchers {
     tx.txId must be ("cddda897b0e9322937ee1f4fd5d6147d60f04a0f4d3b461e4f87066ac3918f2a")
     tx.version must be (1)
     tx.lockTime must be (0)
+    tx.inputs.size must be (2)
+    tx.outputs.size must be (2)
 
   }
 
