@@ -31,7 +31,7 @@ object WalletMarshaller extends DefaultJsonProtocol {
     }
 
     override def write(wallet : WalletInfo) : JsValue = {
-      val m : Map[String,JsValue] = Map(
+      val m : Map[String,JsValue] = Map (
         walletVersionKey -> JsNumber(wallet.walletVersion),
         balanceKey -> JsNumber(wallet.balance),
         unconfirmedBalanceKey -> JsNumber(wallet.unconfirmedBalance),

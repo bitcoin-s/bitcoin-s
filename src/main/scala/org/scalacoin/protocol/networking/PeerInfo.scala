@@ -15,7 +15,6 @@ trait PeerInfo {
   def connTime : Long
   def timeOffSet : Int
   def pingTime : Double
-  def pingWait : Double
   def version : Long
   def subVer : String
   def inbound : Boolean
@@ -29,5 +28,5 @@ trait PeerInfo {
 
 case class PeerInfoImpl(id : Int, addr : String, addrLocal : String, services : String, lastSend : Long,
   lastRecv : Long, bytesSent : Long, bytesRecv : Long, connTime : Long, timeOffSet : Int, pingTime : Double,
-  pingWait : Double, version : Long, subVer : String, inbound : Boolean, startingHeight : Int, banScore : Int,
+   version : Long, subVer : String, inbound : Boolean, startingHeight : Int, banScore : Int,
   syncedHeaders : Int, syncedBlocks : Int, inFlight : Seq[Int], whiteListed : Boolean) extends PeerInfo
