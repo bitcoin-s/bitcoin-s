@@ -5,15 +5,17 @@ package org.scalacoin.protocol.networking
  */
 trait NetworkInfo {
   def version : Int
-  def subversion : String
-  def protocolversion: Int
-  def localservices : String
-  def timeoffset : Int
+  def subVersion : String
+  def protocolVersion: Int
+  def localServices : String
+  def timeOffSet : Int
   def connections : Int
-  def networks : Array
-  def relayfee : Double
-  def localaddresses : Array
+  def networks : Seq[String]
+  def relayFee : Double
+  def localAddresses : Seq[String]
 }
 
-case class NetworkInfoImpl(version : Int, subversion : String, protocolversion : Int, localservices : String,
-  timeoffset : Int, connections : Int, networks : Array, relayfee : Double, localaddresses: Array) extends NetworkInfo
+//TODO: Change localaddresses from array[string] to array of connections. see https://bitcoin.org/en/developer-reference#getnetworkinfo
+
+case class NetworkInfoImpl(version : Int, subVersion : String, protocolVersion : Int, localServices : String,
+  timeOffSet : Int, connections : Int, networks : Seq[String], relayFee : Double, localAddresses: Seq[String]) extends NetworkInfo

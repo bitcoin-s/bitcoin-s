@@ -13,8 +13,6 @@ class RpcTest extends FlatSpec with MustMatchers {
     val GetBlockCount = TestNetString + "getblockcount".!!
     GetBlockCount.toFloat.toInt must be >= (584301)
   }
-  "get peer info" in {
-    val GetPeerInfo = TestNetString + "getpeerinfo".!!
-  }
+
 
 }

@@ -6,28 +6,28 @@ package org.scalacoin.protocol.networking
 trait PeerInfo {
   def id : Int
   def addr : String
-  def addrlocal : String
+  def addrLocal : String
   def services : String
-  def lastsend : Long
-  def lastrecv : Long
-  def bytessent : Long
-  def bytesrecv : Long
-  def conntime : Long
-  def timeoffset : Int
-  def pingtime : Double
-  def pingwait : Double
+  def lastSend : Long
+  def lastRecv : Long
+  def bytesSent : Long
+  def bytesRecv : Long
+  def connTime : Long
+  def timeOffSet : Int
+  def pingTime : Double
+  def pingWait : Double
   def version : Long
-  def subver : String
+  def subVer : String
   def inbound : Boolean
-  def startingheight : Int
-  def banscore : Int
-  def synced_headers : Int
-  def synced_blocks : Int
-  def inflight : Array
-  def whitelisted : Boolean
+  def startingHeight : Int
+  def banScore : Int
+  def syncedHeaders : Int
+  def syncedBlocks : Int
+  def inFlight : Seq[Int]
+  def whiteListed : Boolean
 }
 
-case class PeerInfoImpl(id : Int, addr : String, addrlocal : String, services : String, lastsend : Long,
-  lastrecv : Long, bytessent : Long, bytesrecv : Long, conntime : Long, timeoffset : Int, pingtime : Double,
-  pingwait : Double, version : Long, subver : String, inbound : Boolean, startingheight : Int, banscore : Int,
-  synced_headers : Int, synced_blocks : Int, inflight : Array, whitelisted : Boolean) extends PeerInfo
+case class PeerInfoImpl(id : Int, addr : String, addrLocal : String, services : String, lastSend : Long,
+  lastRecv : Long, bytesSent : Long, bytesRecv : Long, connTime : Long, timeOffSet : Int, pingTime : Double,
+  pingWait : Double, version : Long, subVer : String, inbound : Boolean, startingHeight : Int, banScore : Int,
+  syncedHeaders : Int, syncedBlocks : Int, inFlight : Seq[Int], whiteListed : Boolean) extends PeerInfo
