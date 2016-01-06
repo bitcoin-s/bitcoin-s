@@ -4,12 +4,12 @@ package org.scalacoin.script
  * Created by chris on 1/6/16.
  */
 
-trait ScriptOperation
-
-sealed trait Constant extends ScriptOperation {
+trait ScriptOperation {
   def opCode : Int
   def hex : String = Integer.toHexString(opCode)
 }
+
+sealed trait Constant extends ScriptOperation
 
 /**
  * An empty array of bytes is pushed onto the stack. (This is not a no-op: an item is added to the stack.)
