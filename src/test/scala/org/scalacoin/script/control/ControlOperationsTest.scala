@@ -30,4 +30,5 @@ class ControlOperationsTest extends FlatSpec with MustMatchers {
   it must "define an OP_RETURN" in {
     OP_RETURN.opCode must be (106)
   }
+
 }
