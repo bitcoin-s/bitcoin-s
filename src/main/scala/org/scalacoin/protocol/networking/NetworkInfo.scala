@@ -10,12 +10,12 @@ trait NetworkInfo {
   def localServices : String
   def timeOffSet : Int
   def connections : Int
-  def networks : Seq[String]
+  def networks : Seq[NetworkConnections]
   def relayFee : Double
-  def localAddresses : Seq[String]
+  def localAddresses : Seq[Int]
 }
 
 //TODO: Change localaddresses from array[string] to array of connections. see https://bitcoin.org/en/developer-reference#getnetworkinfo
 
 case class NetworkInfoImpl(version : Int, subVersion : String, protocolVersion : Int, localServices : String,
-  timeOffSet : Int, connections : Int, networks : Seq[String], relayFee : Double, localAddresses: Seq[String]) extends NetworkInfo
+  timeOffSet : Int, connections : Int, networks : Seq[NetworkConnections], relayFee : Double, localAddresses: Seq[Int]) extends NetworkInfo

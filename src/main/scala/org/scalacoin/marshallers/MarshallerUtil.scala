@@ -1,8 +1,10 @@
 package org.scalacoin.marshallers
 
+import org.scalacoin.marshallers.networking.NetworkConnectionsMarshaller.NetworkConnectionsFormatter
 import org.scalacoin.marshallers.transaction.TransactionInputMarshaller.TransactionInputFormatter
 import org.scalacoin.marshallers.transaction.TransactionOutputMarshaller.TransactionOutputFormatter
 import org.scalacoin.protocol.BitcoinAddress
+import org.scalacoin.protocol.networking.NetworkConnections
 import org.scalacoin.protocol.transaction.{TransactionOutput, TransactionInput}
 import spray.json.{JsonWriter, JsArray, DefaultJsonProtocol, JsValue}
 import scala.collection.breakOut
@@ -44,7 +46,17 @@ trait MarshallerUtil {
         ja.elements.toList.map(
           e => TransactionOutputFormatter.read(e))
       }
-      case _ => throw new RuntimeException("This Json type is not valid for parsing a list of transaction inputs")
+      case _ => throw new RuntimeException("This Json type is not valid for parsing a list of transaction outputs")
+    }
+  }
+
+  def convertToNetworkConnectionList(value : JsValue) : Seq[NetworkConnections] = {
+    value match {
+      case ja: JsArray => {
+        ja.elements.toList.map(
+          e => NetworkConnectionsFormatter.read(e))
+      }
+      case _ => throw new RuntimeException("This Json type is not valid for parsing a list of network connections")
     }
   }
 }

@@ -3,7 +3,6 @@ package org.scalacoin.marshallers.transaction
 import org.scalacoin.marshallers.MarshallerUtil
 import org.scalacoin.protocol.transaction.{TransactionImpl, TransactionOutput, TransactionInput, Transaction}
 import spray.json._
-import DefaultJsonProtocol._
 
 /**
  * Created by chris on 12/28/15.
@@ -41,7 +40,6 @@ object TransactionMarshaller extends DefaultJsonProtocol with MarshallerUtil {
         voutKey -> outputs,
         lockTimeKey -> JsNumber(tx.lockTime)
       )
-
       JsObject(m)
     }
 
