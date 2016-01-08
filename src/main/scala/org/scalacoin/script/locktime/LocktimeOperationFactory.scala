@@ -10,3 +10,5 @@ trait LocktimeOperationFactory extends ScriptOperationFactory[LocktimeOperation]
   override def operations = Seq(OP_CHECKLOCKTIMEVERIFY)
 
 }
+
+object LocktimeOperationFactory extends LocktimeOperationFactory

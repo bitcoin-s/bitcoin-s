@@ -12,3 +12,5 @@ trait StackOperationFactory extends ScriptOperationFactory[StackOperation]  {
     OP_3DUP,OP_2OVER,OP_2ROT,OP_2SWAP)
 
 }
+
+object StackOperationFactory extends StackOperationFactory

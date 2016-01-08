@@ -8,3 +8,5 @@ import org.scalacoin.script.ScriptOperationFactory
 trait BitwiseOperationsFactory extends ScriptOperationFactory[BitwiseOperation] {
   override def operations = Seq(OP_EQUAL, OP_EQUALVERIFY)
 }
+
+object BitwiseOperationsFactory extends BitwiseOperationsFactory

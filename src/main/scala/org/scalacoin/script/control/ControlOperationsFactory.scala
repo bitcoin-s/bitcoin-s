@@ -8,3 +8,5 @@ import org.scalacoin.script.ScriptOperationFactory
 trait ControlOperationsFactory extends ScriptOperationFactory[ControlOperations] {
   override def operations = Seq(OP_ELSE, OP_ENDIF, OP_IF, OP_NOP, OP_NOTIF, OP_RETURN, OP_VERIFY)
 }
+
+object ControlOperationsFactory extends ControlOperationsFactory
