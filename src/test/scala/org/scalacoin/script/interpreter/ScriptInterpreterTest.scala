@@ -1,7 +1,7 @@
 package org.scalacoin.script.interpreter
 
 import org.scalacoin.script.bitwise.OP_EQUALVERIFY
-import org.scalacoin.script.{ConstantImpl, ScriptOperation}
+import org.scalacoin.script.{ ScriptOperation}
 import org.scalacoin.script.crypto.{OP_CHECKSIG, OP_HASH160}
 import org.scalacoin.script.stack.OP_DUP
 import org.scalatest.{MustMatchers, FlatSpec}

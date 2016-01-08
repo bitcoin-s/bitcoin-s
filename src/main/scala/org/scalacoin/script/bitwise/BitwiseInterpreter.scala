@@ -1,6 +1,6 @@
 package org.scalacoin.script.bitwise
 
-import org.scalacoin.script.ScriptOperation
+import org.scalacoin.script.{ScriptConstantImpl, ScriptToken, ScriptOperation}
 import org.scalacoin.script.control.{OP_VERIFY, ControlOperationsInterpreter}
 
 /**
@@ -14,11 +14,11 @@ trait BitwiseInterpreter extends ControlOperationsInterpreter  {
    * @param script
    * @return
    */
-  def equal(stack : List[String], script : List[ScriptOperation]) : (List[String], List[ScriptOperation]) = {
+  def equal(stack : List[ScriptToken], script : List[ScriptToken]) : (List[ScriptToken], List[ScriptToken]) = {
     require(stack.size > 1, "Stack size must be 2 or more to compare the top two values")
     require(script.headOption.isDefined && script.head == OP_EQUAL, "Script operation must be OP_EQUAL")
     val newStack = stack match {
-      case h :: h1 :: t => if (h == h1) "1" :: t else "0" :: t
+      case h :: h1 :: t => if (h == h1) ScriptConstantImpl("1") :: t else ScriptConstantImpl("0") :: t
     }
     (newStack,script.tail)
 
@@ -30,7 +30,7 @@ trait BitwiseInterpreter extends ControlOperationsInterpreter  {
    * @param script
    * @return
    */
-  def equalVerify(stack : List[String], script : List[ScriptOperation]) : Boolean = {
+  def equalVerify(stack : List[ScriptToken], script : List[ScriptToken]) : Boolean = {
     require(stack.size > 1, "Stack size must be 2 or more to compare the top two values")
     require(script.headOption.isDefined && script.head == OP_EQUALVERIFY, "Script operation must be OP_EQUALVERIFY")
     //first replace OP_EQUALVERIFY with OP_EQUAL and OP_VERIFY

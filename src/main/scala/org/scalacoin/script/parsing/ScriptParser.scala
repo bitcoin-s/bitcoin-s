@@ -1,6 +1,6 @@
 package org.scalacoin.script.parsing
 
-import org.scalacoin.script.ScriptOperation
+import org.scalacoin.script._
 
 import scala.annotation.tailrec
 
@@ -16,25 +16,24 @@ trait ScriptParser extends  {
    * @tparam T
    * @return
    */
-  def parseInputScript(str : String) : List[String] = {
-    str.split(" ").toList
-  }
+  def parseInputScript(str : String) : List[ScriptToken] = ???
 
   /**
    * Parses an output script of a transaction
    * @param str
    * @return
    */
-/*  def parseOutputScript(str : String) : List[ScriptOperation] = {
-
+  def parseOutputScript(str : String) : List[ScriptToken] = {
     @tailrec
-    def loop(operations : List[String], accum : List[ScriptOperation]) : List[ScriptOperation] = {
+    def loop(operations : List[String], accum : List[ScriptToken]) : List[ScriptToken] = {
       operations match {
-        case h :: t if ()
+        case h :: t if (ScriptOperationFactory.fromString(h).isDefined) =>
+          loop(t,ScriptOperationFactory.fromString(h).get :: accum)
+        case h :: t => loop(t, ScriptConstantImpl(h) :: accum)
+        case h :: t if (h == "0") => loop(t, OP_0 :: accum)
+        case Nil => accum
       }
-
     }
-
-    loop(str.split(" ").toList, List())
-  }*/
+    loop(str.split(" ").toList.reverse, List())
+  }
 }

@@ -1,6 +1,6 @@
 package org.scalacoin.script.stack
 
-import org.scalacoin.script.ScriptOperation
+import org.scalacoin.script.{ScriptToken, ScriptOperation}
 
 /**
  * Created by chris on 1/6/16.
@@ -13,7 +13,7 @@ trait StackInterpreter {
    * @param script
    * @return
    */
-  def opDup(stack : List[String], script : List[ScriptOperation]) : (List[String], List[ScriptOperation]) = {
+  def opDup(stack : List[ScriptToken], script : List[ScriptToken]) : (List[ScriptToken], List[ScriptToken]) = {
     require(script.headOption.isDefined && script.head == OP_DUP, "Top of the script stack must be OP_DUP")
     require(stack.headOption.isDefined, "Cannot duplicate the top element on an empty stack")
     stack match {
