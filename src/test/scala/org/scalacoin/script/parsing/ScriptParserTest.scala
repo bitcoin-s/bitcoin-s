@@ -14,8 +14,8 @@ class ScriptParserTest extends FlatSpec with MustMatchers with ScriptParser {
     parsedInput must be (TestUtil.p2pkhInputScript)
   }
 
-/*  it must "parse an output script" in {
+  it must "parse an output script" in {
     val parsedOutput = parseOutputScript(TestUtil.p2pkhOutputScriptNotParsed)
     parsedOutput must be (TestUtil.p2pkhOutputScript)
-  }*/
+  }
 }
