@@ -16,6 +16,6 @@ sealed trait LocktimeOperation extends ScriptOperation
  * or vice versa; or 4. the input's nSequence field is equal to 0xffffffff.
  * The precise semantics are described in BIP 0065
  */
-case object OP_CHECKLOCKTIMEVERIFY extends ScriptOperation {
+case object OP_CHECKLOCKTIMEVERIFY extends LocktimeOperation {
   override def opCode = 177
 }
