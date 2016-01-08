@@ -1,19 +1,20 @@
 package org.scalacoin.script.bitwise
 
+import org.scalacoin.script.ScriptConstantImpl
 import org.scalatest.{MustMatchers, FlatSpec}
 
 /**
  * Created by chris on 1/6/16.
  */
 class BitwiseInterpreterTest extends FlatSpec with MustMatchers with BitwiseInterpreter {
-  private val pubKeyHash = "5238C71458E464D9FF90299ABCA4A1D7B9CB76AB".toLowerCase
+  private val pubKeyHash = ScriptConstantImpl("5238C71458E464D9FF90299ABCA4A1D7B9CB76AB".toLowerCase)
 
   "BitwiseInterpreter" must "evaluate OP_EQUAL" in {
     val stack = List(pubKeyHash, pubKeyHash)
     val script = List(OP_EQUAL)
 
     val (newStack,newScript) = equal(stack,script)
-    newStack.head.toInt must be (1)
+    newStack.head must be (ScriptConstantImpl("1"))
   }
 
   it must "throw an exception for OP_EQUAL when we don't have enough items on the stack" in {
@@ -36,7 +37,7 @@ class BitwiseInterpreterTest extends FlatSpec with MustMatchers with BitwiseInte
   }
 
   it must "evaluate OP_EQUALVERIFY to false given two different pub keys" in {
-    val uniquePubKey = pubKeyHash +"0"
+    val uniquePubKey = ScriptConstantImpl(pubKeyHash +"0")
     val stack = List(pubKeyHash,uniquePubKey)
     val script = List(OP_EQUALVERIFY)
     val result = equalVerify(stack,script)

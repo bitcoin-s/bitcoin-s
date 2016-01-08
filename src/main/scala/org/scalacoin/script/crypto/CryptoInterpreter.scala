@@ -1,6 +1,6 @@
 package org.scalacoin.script.crypto
 
-import org.scalacoin.script.ScriptOperation
+import org.scalacoin.script.{ScriptConstantImpl, ScriptConstant, ScriptToken, ScriptOperation}
 import org.scalacoin.util.ScalacoinUtil
 
 
@@ -9,11 +9,14 @@ import org.scalacoin.util.ScalacoinUtil
  */
 trait CryptoInterpreter extends ScalacoinUtil {
 
-  def hash160(stack : List[String], script : List[ScriptOperation]) : (List[String], List[ScriptOperation]) = {
+  def hash160(stack : List[ScriptToken], script : List[ScriptToken]) : (List[ScriptToken], List[ScriptToken]) = {
     require(stack.headOption.isDefined, "The top of the stack must be defined")
     require(script.headOption.isDefined && script.head == OP_HASH160, "Script operation must be OP_HASH160")
     val stackTop = stack.head
-    val hash = sha256Hash160(stackTop)
+    val hash = stackTop match {
+      case ScriptConstantImpl(x) => sha256Hash160(x)
+      case _ => throw new RuntimeException("Stack top should be of type ScriptConstant to call hash160 on it")
+    }
     (hash :: stack, script.tail)
   }
 
@@ -44,10 +47,10 @@ trait CryptoInterpreter extends ScalacoinUtil {
    * @param hex
    * @return
    */
-  private def sha256Hash160(hex : String) = {
+  private def sha256Hash160(hex : String) : ScriptConstant = {
     val bytes = decodeHex(hex)
     val hash = org.bitcoinj.core.Utils.sha256hash160(bytes)
-    encodeHex(hash)
+    ScriptConstantImpl(encodeHex(hash))
 
   }
 }

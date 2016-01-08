@@ -1,6 +1,6 @@
 package org.scalacoin.script.interpreter
 
-import org.scalacoin.script.{ConstantImpl, ScriptOperation}
+import org.scalacoin.script.{ScriptToken, ScriptConstantImpl}
 import org.scalacoin.script.bitwise.{OP_EQUAL, BitwiseInterpreter, OP_EQUALVERIFY}
 import org.scalacoin.script.control.ControlOperationsInterpreter
 import org.scalacoin.script.crypto.{OP_CHECKSIG, OP_HASH160, CryptoInterpreter}
@@ -24,20 +24,20 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
    * @return
    */
 
-  def run(inputScript : List[String], outputScript : List[ScriptOperation]) : Boolean = {
+  def run(inputScript : List[ScriptToken], outputScript : List[ScriptToken]) : Boolean = {
 
     @tailrec
-    def loop(scripts : (List[String], List[ScriptOperation])) : Boolean = {
+    def loop(scripts : (List[ScriptToken], List[ScriptToken])) : Boolean = {
       val (inputScript,outputScript) = (scripts._1, scripts._2)
       outputScript match {
         case OP_DUP :: t => loop(opDup(inputScript,outputScript))
         case OP_HASH160 :: t => loop(hash160(inputScript,outputScript))
         case OP_EQUAL :: t => loop(equal(inputScript, outputScript))
         //TODO: Implement these
-        case ConstantImpl(x) :: t if x == "1" => throw new RuntimeException("Not implemented yet")
-        case ConstantImpl(x) :: t if x == "0" => throw new RuntimeException("Not implemented yet")
+        case ScriptConstantImpl(x) :: t if x == "1" => throw new RuntimeException("Not implemented yet")
+        case ScriptConstantImpl(x) :: t if x == "0" => throw new RuntimeException("Not implemented yet")
         //TODO: is this right? I need to just push a constant on the input stack???
-        case ConstantImpl(x)  :: t => loop(x :: inputScript, outputScript.tail)
+        case ScriptConstantImpl(x)  :: t => loop((ScriptConstantImpl(x) :: inputScript, t))
         //these cases result in our boolean result
         case OP_EQUALVERIFY :: t => equalVerify(inputScript,outputScript)
         /*case OP_CHECKSIG :: t => checkSig(inputScript,outputScript)*/
