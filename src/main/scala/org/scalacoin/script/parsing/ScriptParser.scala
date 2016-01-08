@@ -7,7 +7,7 @@ trait ScriptParser {
 
 
   /**
-   * Parses a script inside of a transaction 
+   * Parses a script inside of a transaction
    * @param str
    * @tparam T
    * @return
