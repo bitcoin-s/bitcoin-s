@@ -17,4 +17,5 @@ class ControlOperationsFactoryTest extends FlatSpec with MustMatchers with Contr
     fromString("OP_VERIFY") must be (Some(OP_VERIFY))
     fromString("RANDOM") must be (None)
   }
+
 }
