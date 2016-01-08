@@ -11,6 +11,17 @@ trait ScriptOperation {
 
 sealed trait Constant extends ScriptOperation
 
+
+/**
+ * Represent a pubkey or hash of a pub key on our stack
+ *
+ * @param str
+ */
+case class ConstantImpl(str : String) extends ScriptOperation  {
+  //TODO: Get around this op code some how, constants don't have op codes
+  override def opCode = -1
+
+}
 /**
  * An empty array of bytes is pushed onto the stack. (This is not a no-op: an item is added to the stack.)
  */
