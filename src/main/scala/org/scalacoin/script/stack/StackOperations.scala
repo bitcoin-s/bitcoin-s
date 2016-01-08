@@ -1,11 +1,13 @@
 package org.scalacoin.script.stack
 
-import org.scalacoin.script.ScriptOperation
+import org.scalacoin.script.{ScriptOperationFactory, ScriptOperation}
 
 /**
  * Created by chris on 1/6/16.
  */
 sealed trait StackOperation extends ScriptOperation
+
+
 
 /**
  * Puts the input onto the top of the alt stack. Removes it from the main stack.
@@ -139,4 +141,5 @@ case object OP_2ROT extends StackOperation {
 case object OP_2SWAP extends StackOperation {
   override def opCode = 114
 }
+
 
