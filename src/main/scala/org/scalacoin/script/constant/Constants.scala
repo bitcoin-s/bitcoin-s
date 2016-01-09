@@ -17,13 +17,13 @@ trait ScriptOperation extends ScriptToken {
 
 sealed trait ScriptConstant extends ScriptToken
 
-
 /**
  * Represent a pubkey or hash of a pub key on our stack
  *
  * @param str
  */
 case class ScriptConstantImpl(str : String) extends ScriptConstant
+
 /**
  * An empty array of bytes is pushed onto the stack. (This is not a no-op: an item is added to the stack.)
  */

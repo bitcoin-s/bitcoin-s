@@ -31,10 +31,14 @@ trait ScriptParser {
 
   /**
    * Parses a byte array into a the asm operations for a script
+   * will throw an exception if it fails to parse a op code
    * @param bytes
    * @return
    */
   def parse(bytes : List[Byte]) : List[ScriptToken] = {
-    ???
+    val operations : List[ScriptToken] = for {
+      byte <- bytes
+    } yield ScriptOperationFactory.fromOpCode(byte).get
+    operations
   }
 }
