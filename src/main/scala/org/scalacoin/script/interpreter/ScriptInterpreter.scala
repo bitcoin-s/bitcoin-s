@@ -25,7 +25,9 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
    */
 
   def run(inputScript : List[ScriptToken], outputScript : List[ScriptToken]) : Boolean = {
-
+    val fullInputScript = inputScript
+    val fullOutputScript = outputScript
+    val fullScript = inputScript ++ fullOutputScript
     @tailrec
     def loop(scripts : (List[ScriptToken], List[ScriptToken])) : Boolean = {
       val (inputScript,outputScript) = (scripts._1, scripts._2)
@@ -40,7 +42,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
         case ScriptConstantImpl(x)  :: t => loop((ScriptConstantImpl(x) :: inputScript, t))
         //these cases result in our boolean result
         case OP_EQUALVERIFY :: t => equalVerify(inputScript,outputScript)
-        /*case OP_CHECKSIG :: t => checkSig(inputScript,outputScript)*/
+        case OP_CHECKSIG :: t => checkSig(inputScript,outputScript,fullScript)
       }
     }
 

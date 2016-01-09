@@ -29,15 +29,13 @@ trait CryptoInterpreter extends ScalacoinUtil {
    * @param script
    * @return
    */
-/*
-  def checkSig(inputScript : List[String], script : List[ScriptOperation]) : Boolean = {
+  def checkSig(inputScript : List[ScriptToken], script : List[ScriptToken], fullScript : List[ScriptToken]) : Boolean = {
     require(inputScript.size > 1, "We must have at least 2 inputs for our OP_CHECKSIG operation")
     require(script.headOption.isDefined && script.head == OP_CHECKSIG, "The top script stack element must be OP_CHECKSIG")
     val pubKey = inputScript.head
     val signature = inputScript(1)
     ???
   }
-*/
 
   /*def codeSeparator()*/
 

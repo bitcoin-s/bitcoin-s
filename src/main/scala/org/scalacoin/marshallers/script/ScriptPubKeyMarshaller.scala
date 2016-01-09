@@ -3,13 +3,14 @@ package org.scalacoin.marshallers.script
 import org.scalacoin.marshallers.MarshallerUtil
 import org.scalacoin.protocol.BitcoinAddress
 import org.scalacoin.protocol.script.{ScriptPubKeyImpl, ScriptPubKey}
+import org.scalacoin.script.parsing.ScriptParser
 import spray.json._
 import DefaultJsonProtocol._
 
 /**
  * Created by chris on 12/27/15.
  */
-object ScriptPubKeyMarshaller extends DefaultJsonProtocol with MarshallerUtil {
+object ScriptPubKeyMarshaller extends DefaultJsonProtocol with MarshallerUtil with ScriptParser {
   val reqSigsKey = "reqSigs"
   val typeKey = "type"
   val addressesKey = "addresses"
@@ -18,13 +19,13 @@ object ScriptPubKeyMarshaller extends DefaultJsonProtocol with MarshallerUtil {
 
     override def read(value : JsValue) : ScriptPubKey = {
       val obj = value.asJsObject
-      val asm = obj.fields(ScriptSignatureMarshaller.asmKey)
+      val asm = parse(obj.fields(ScriptSignatureMarshaller.asmKey).convertTo[String])
       val hex = obj.fields(ScriptSignatureMarshaller.hexKey)
       val reqSigs = obj.fields(reqSigsKey)
       val addressType = obj.fields(typeKey)
       val addresses = convertToAddressList(obj.fields(addressesKey))
 
-      ScriptPubKeyImpl(asm.convertTo[String], hex.convertTo[String], reqSigs.convertTo[Int],
+      ScriptPubKeyImpl(asm, hex.convertTo[String], reqSigs.convertTo[Int],
         addressType.convertTo[String], addresses)
     }
 
@@ -32,7 +33,7 @@ object ScriptPubKeyMarshaller extends DefaultJsonProtocol with MarshallerUtil {
       import org.scalacoin.marshallers.BitcoinAddressProtocol._
       val addressList = convertToJsArray(scriptPubKey.addresses)
       val m : Map[String,JsValue] = Map(
-        ScriptSignatureMarshaller.asmKey -> JsString(scriptPubKey.asm),
+        ScriptSignatureMarshaller.asmKey -> JsString(scriptPubKey.asm.toString),
         ScriptSignatureMarshaller.hexKey -> JsString(scriptPubKey.hex),
         reqSigsKey -> JsNumber(scriptPubKey.reqSigs),
         typeKey -> JsString(scriptPubKey.addressType),
