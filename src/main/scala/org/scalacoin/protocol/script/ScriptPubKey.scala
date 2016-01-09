@@ -1,6 +1,7 @@
 package org.scalacoin.protocol.script
 
 import org.scalacoin.protocol.BitcoinAddress
+import org.scalacoin.script.ScriptToken
 
 /**
  * Created by chris on 12/26/15.
@@ -13,5 +14,5 @@ trait ScriptPubKey extends ScriptSignature {
 
 }
 
-case class ScriptPubKeyImpl(asm : String, hex : String, reqSigs : Int,
+case class ScriptPubKeyImpl(asm : List[ScriptToken], hex : String, reqSigs : Int,
   addressType : String, addresses : Seq[BitcoinAddress]) extends ScriptPubKey
