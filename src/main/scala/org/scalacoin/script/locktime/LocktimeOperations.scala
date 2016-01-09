@@ -1,6 +1,6 @@
 package org.scalacoin.script.locktime
 
-import org.scalacoin.script.ScriptOperation
+import org.scalacoin.script.constant.ScriptOperation
 
 /**
  * Created by chris on 1/6/16.

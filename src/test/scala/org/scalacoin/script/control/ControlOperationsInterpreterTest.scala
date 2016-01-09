@@ -1,6 +1,6 @@
 package org.scalacoin.script.control
 
-import org.scalacoin.script.ScriptConstantImpl
+import org.scalacoin.script.constant.ScriptConstantImpl
 import org.scalatest.{MustMatchers, FlatSpec}
 
 /**

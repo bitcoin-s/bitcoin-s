@@ -1,6 +1,6 @@
 package org.scalacoin.script.stack
 
-import org.scalacoin.script.{ScriptToken, ScriptOperation}
+import org.scalacoin.script.constant.ScriptToken
 
 /**
  * Created by chris on 1/6/16.

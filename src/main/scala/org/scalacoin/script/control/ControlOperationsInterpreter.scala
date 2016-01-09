@@ -1,6 +1,6 @@
 package org.scalacoin.script.control
 
-import org.scalacoin.script.{ScriptConstantImpl, ScriptToken, ScriptOperation}
+import org.scalacoin.script.constant.{ScriptConstantImpl, ScriptToken}
 
 /**
  * Created by chris on 1/6/16.

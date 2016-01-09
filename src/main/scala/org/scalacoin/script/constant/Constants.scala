@@ -1,4 +1,4 @@
-package org.scalacoin.script
+package org.scalacoin.script.constant
 
 /**
  * Created by chris on 1/6/16.
@@ -9,7 +9,10 @@ trait ScriptToken
 
 trait ScriptOperation extends ScriptToken {
   def opCode : Int
-  def hex : String = Integer.toHexString(opCode)
+  def hex : String = {
+    val hex = Integer.toHexString(opCode)
+    if (hex == "0") "00" else hex
+  }
 }
 
 sealed trait ScriptConstant extends ScriptToken

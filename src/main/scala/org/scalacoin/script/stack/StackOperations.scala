@@ -1,6 +1,7 @@
 package org.scalacoin.script.stack
 
-import org.scalacoin.script.{ScriptOperationFactory, ScriptOperation}
+import org.scalacoin.script.ScriptOperationFactory
+import org.scalacoin.script.constant.ScriptOperation
 
 /**
  * Created by chris on 1/6/16.

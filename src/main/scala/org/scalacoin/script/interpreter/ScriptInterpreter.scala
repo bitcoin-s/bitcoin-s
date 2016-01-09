@@ -1,13 +1,12 @@
 package org.scalacoin.script.interpreter
 
-import org.scalacoin.script.{ScriptToken, ScriptConstantImpl}
 import org.scalacoin.script.bitwise.{OP_EQUAL, BitwiseInterpreter, OP_EQUALVERIFY}
+import org.scalacoin.script.constant.{ScriptConstantImpl, ScriptToken}
 import org.scalacoin.script.control.ControlOperationsInterpreter
 import org.scalacoin.script.crypto.{OP_CHECKSIG, OP_HASH160, CryptoInterpreter}
 import org.scalacoin.script.stack.{StackInterpreter, OP_DUP}
 
 import scala.annotation.tailrec
-import scala.collection.immutable.Stack
 
 /**
  * Created by chris on 1/6/16.

@@ -1,7 +1,7 @@
 package org.scalacoin.protocol.script
 
 import org.scalacoin.protocol.BitcoinAddress
-import org.scalacoin.script.ScriptToken
+import org.scalacoin.script.constant.ScriptToken
 
 /**
  * Created by chris on 12/26/15.
