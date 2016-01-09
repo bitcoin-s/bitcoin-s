@@ -1,6 +1,6 @@
 package org.scalacoin.script.arithmetic
 
-import org.scalacoin.script.ScriptOperation
+import org.scalacoin.script.constant.ScriptOperation
 
 /**
  * Created by chris on 1/6/16.

@@ -1,4 +1,4 @@
-package org.scalacoin.script
+package org.scalacoin.script.constant
 
 import org.scalatest.{FlatSpec, MustMatchers}
 
@@ -97,6 +97,8 @@ class ConstantsTest extends FlatSpec with MustMatchers {
     OP_16.opCode must be (96)
     OP_16.hex must be ("60")
   }
+
+
 
 
 }

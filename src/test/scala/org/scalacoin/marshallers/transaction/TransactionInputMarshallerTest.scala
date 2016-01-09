@@ -1,7 +1,7 @@
 package org.scalacoin.marshallers.transaction
 
 import org.scalacoin.protocol.transaction.TransactionInput
-import org.scalacoin.script.{ScriptConstantImpl, OP_0}
+import org.scalacoin.script.constant.{OP_0, ScriptConstantImpl}
 import org.scalatest.{MustMatchers, FlatSpec}
 import spray.json._
 import DefaultJsonProtocol._

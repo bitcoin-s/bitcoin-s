@@ -1,6 +1,6 @@
 package org.scalacoin.script.bitwise
 
-import org.scalacoin.script.{ScriptConstantImpl, ScriptToken, ScriptOperation}
+import org.scalacoin.script.constant.{ScriptConstantImpl, ScriptToken}
 import org.scalacoin.script.control.{OP_VERIFY, ControlOperationsInterpreter}
 
 /**

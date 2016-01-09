@@ -1,8 +1,8 @@
 package org.scalacoin.util
 
 import org.scalacoin.protocol.{AssetAddress, BitcoinAddress}
-import org.scalacoin.script.{OP_0, ScriptConstantImpl}
 import org.scalacoin.script.bitwise.{OP_EQUAL, OP_EQUALVERIFY}
+import org.scalacoin.script.constant.{OP_0, ScriptConstantImpl}
 import org.scalacoin.script.crypto.{OP_CHECKSIG, OP_HASH160}
 import org.scalacoin.script.stack.OP_DUP
 

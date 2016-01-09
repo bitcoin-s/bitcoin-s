@@ -13,6 +13,10 @@ trait ScalacoinUtil {
 
   def encodeHex(bytes : Array[Byte]) : String = Utils.HEX.encode(bytes)
 
+  def encodeHex(byte : Byte ) : String = {
+    Utils.HEX.encode(Array(byte))
+  }
+
   def decodeBase58(base58 : String) : Array[Byte] = Base58.decode(base58)
 }
 

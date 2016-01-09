@@ -1,6 +1,6 @@
 package org.scalacoin.script.crypto
 
-import org.scalacoin.script.{ScriptConstantImpl, ScriptConstant, ScriptToken, ScriptOperation}
+import org.scalacoin.script.constant.{ScriptConstantImpl, ScriptConstant, ScriptToken}
 import org.scalacoin.util.ScalacoinUtil
 
 

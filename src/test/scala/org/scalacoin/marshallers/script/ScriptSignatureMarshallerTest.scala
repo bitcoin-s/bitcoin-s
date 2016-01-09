@@ -1,6 +1,6 @@
 package org.scalacoin.marshallers.script
 
-import org.scalacoin.script.{ScriptConstantImpl, OP_0}
+import org.scalacoin.script.constant.{OP_0, ScriptConstantImpl}
 import org.scalatest.FlatSpec
 import org.scalatest.MustMatchers
 import org.scalacoin.protocol.script.ScriptSignature

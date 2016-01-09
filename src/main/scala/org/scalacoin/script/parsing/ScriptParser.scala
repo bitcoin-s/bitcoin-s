@@ -1,6 +1,7 @@
 package org.scalacoin.script.parsing
 
 import org.scalacoin.script._
+import org.scalacoin.script.constant.{OP_0, ScriptConstantImpl, ScriptToken}
 
 import scala.annotation.tailrec
 
@@ -25,5 +26,15 @@ trait ScriptParser {
       }
     }
     loop(str.split(" ").toList.reverse, List())
+  }
+
+
+  /**
+   * Parses a byte array into a the asm operations for a script
+   * @param bytes
+   * @return
+   */
+  def parse(bytes : List[Byte]) : List[ScriptToken] = {
+    ???
   }
 }

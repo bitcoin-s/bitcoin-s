@@ -2,8 +2,8 @@ package org.scalacoin.marshallers.transaction
 
 import org.scalacoin.protocol.BitcoinAddress
 import org.scalacoin.protocol.transaction.TransactionOutput
-import org.scalacoin.script.ScriptConstantImpl
 import org.scalacoin.script.bitwise.OP_EQUALVERIFY
+import org.scalacoin.script.constant.ScriptConstantImpl
 import org.scalacoin.script.crypto.{OP_CHECKSIG, OP_HASH160}
 import org.scalacoin.script.stack.OP_DUP
 import org.scalatest.{FlatSpec, MustMatchers}
