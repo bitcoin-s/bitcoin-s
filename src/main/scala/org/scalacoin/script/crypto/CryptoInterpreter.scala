@@ -47,7 +47,7 @@ trait CryptoInterpreter extends ScalacoinUtil {
    */
   private def sha256Hash160(hex : String) : ScriptConstant = {
     val bytes = decodeHex(hex)
-    val hash = org.bitcoinj.core.Utils.sha256hash160(bytes)
+    val hash = org.bitcoinj.core.Utils.sha256hash160(bytes.toArray)
     ScriptConstantImpl(encodeHex(hash))
 
   }
