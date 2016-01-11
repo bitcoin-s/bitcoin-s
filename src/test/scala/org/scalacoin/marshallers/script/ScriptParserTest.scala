@@ -1,8 +1,5 @@
-package org.scalacoin.script.parsing
+package org.scalacoin.marshallers.script
 
-import org.scalacoin.script.constant.{ScriptNumberImpl, OP_14}
-import org.scalacoin.script.crypto.OP_HASH160
-import org.scalacoin.script.stack.OP_DUP
 import org.scalacoin.util.{ScalacoinUtil, TestUtil}
 import org.scalatest.{FlatSpec, MustMatchers}
 
