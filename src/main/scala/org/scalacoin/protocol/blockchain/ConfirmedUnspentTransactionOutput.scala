@@ -1,4 +1,4 @@
-package org.scalacoin.protocol.networking
+package org.scalacoin.protocol.blockchain
 
 /**
  * Created by Tom on 1/11/2016.

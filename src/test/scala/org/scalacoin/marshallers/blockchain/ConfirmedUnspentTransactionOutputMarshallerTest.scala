@@ -1,9 +1,8 @@
-package org.scalacoin.marshallers.networking
+package org.scalacoin.marshallers.blockchain
 
-import org.scalacoin.marshallers.networking.ConfirmedUnspentTransactionOutputMarshaller._
-import org.scalacoin.protocol.networking.ConfirmedUnspentTransactionOutput
-import org.scalatest.{MustMatchers, FlatSpec}
-import org.scalacoin.marshallers.networking.{ConfirmedUnspentTransactionOutputMarshaller}
+import org.scalacoin.marshallers.blockchain.ConfirmedUnspentTransactionOutputMarshaller._
+import org.scalacoin.protocol.blockchain.ConfirmedUnspentTransactionOutput
+import org.scalatest.{FlatSpec, MustMatchers}
 import spray.json._
 
 /**

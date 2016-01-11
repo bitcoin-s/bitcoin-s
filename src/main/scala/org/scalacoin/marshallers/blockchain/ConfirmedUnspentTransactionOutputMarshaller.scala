@@ -1,6 +1,6 @@
-package org.scalacoin.marshallers.networking
+package org.scalacoin.marshallers.blockchain
 
-import org.scalacoin.protocol.networking.{ConfirmedUnspentTransactionOutput, ConfirmedUnspentTransactionOutputImpl}
+import org.scalacoin.protocol.blockchain.{ConfirmedUnspentTransactionOutput, ConfirmedUnspentTransactionOutputImpl}
 import spray.json._
 
 /**
