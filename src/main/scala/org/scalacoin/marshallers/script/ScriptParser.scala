@@ -1,4 +1,4 @@
-package org.scalacoin.script.parsing
+package org.scalacoin.marshallers.script
 
 import org.scalacoin.script._
 import org.scalacoin.script.constant._
@@ -55,7 +55,7 @@ trait ScriptParser extends ScalacoinUtil {
     loop(bytes, List()).reverse
   }
 
-  def pushConstant(op : ScriptNumber, bytes : List[Byte]) : (ScriptConstant, List[Byte]) = {
+  private def pushConstant(op : ScriptNumber, bytes : List[Byte]) : (ScriptConstant, List[Byte]) = {
     val finalIndex = op.opCode
     val constant : ScriptConstantImpl = ScriptConstantImpl(encodeHex(bytes.slice(0,finalIndex)))
     (constant, bytes.slice(finalIndex,bytes.size))

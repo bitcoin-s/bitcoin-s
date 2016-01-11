@@ -1,9 +1,7 @@
 package org.scalacoin.marshallers.script
 
 import org.scalacoin.marshallers.MarshallerUtil
-import org.scalacoin.protocol.BitcoinAddress
 import org.scalacoin.protocol.script.{ScriptPubKeyImpl, ScriptPubKey}
-import org.scalacoin.script.parsing.ScriptParser
 import spray.json._
 import DefaultJsonProtocol._
 

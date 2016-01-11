@@ -1,7 +1,6 @@
 package org.scalacoin.marshallers.script
 
 import org.scalacoin.protocol.script.{ScriptSignature, ScriptSignatureImpl}
-import org.scalacoin.script.parsing.ScriptParser
 import spray.json._
 
 /**
