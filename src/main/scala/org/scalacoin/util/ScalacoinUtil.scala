@@ -9,7 +9,7 @@ trait ScalacoinUtil {
 
   def hexToBigInt(hex : String) : BigInt = BigInt(hex, 16)
 
-  def decodeHex( hex : String) : List[Byte] = Utils.HEX.decode(hex).toList
+  def decodeHex(hex : String) : List[Byte] = Utils.HEX.decode(hex).toList
 
   def encodeHex(bytes : Array[Byte]) : String = Utils.HEX.encode(bytes)
 

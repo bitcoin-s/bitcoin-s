@@ -10,8 +10,9 @@ import scala.annotation.tailrec
  * Created by chris on 1/7/16.
  */
 trait ScriptParser extends ScalacoinUtil {
+
   /**
-   * Parses an output script of a transaction
+   * Parses an asm output script of a transaction
    * @param str
    * @return
    */
@@ -50,7 +51,6 @@ trait ScriptParser extends ScalacoinUtil {
           } else loop(t, op :: accum)
         case Nil => accum
       }
-
     }
     loop(bytes, List()).reverse
   }
