@@ -1,7 +1,5 @@
 package org.scalacoin.marshallers.transaction
 
-import java.nio.ByteBuffer
-
 import org.scalacoin.marshallers.RawBitcoinSerializer
 import org.scalacoin.protocol.transaction.{TransactionOutPointImpl, TransactionOutPoint}
 import org.scalacoin.util.ScalacoinUtil
@@ -23,7 +21,6 @@ object RawTransactionOutPointMarshaller extends RawBitcoinSerializer[Transaction
 
   def write(outPoint : TransactionOutPoint) : String = {
     val indexBytes : List[Byte] = List(0x00,0x00,0x00,outPoint.vout.toByte)
-    //first 32 bytes are txId, last 4 bytes are the index
     outPoint.txId + ScalacoinUtil.encodeHex(indexBytes)
   }
 
