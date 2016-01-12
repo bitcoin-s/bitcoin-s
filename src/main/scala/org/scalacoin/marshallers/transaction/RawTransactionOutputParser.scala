@@ -3,14 +3,14 @@ package org.scalacoin.marshallers.transaction
 import org.scalacoin.currency.Satoshis
 import org.scalacoin.marshallers.RawBitcoinSerializer
 import org.scalacoin.marshallers.script.ScriptParser
-import org.scalacoin.protocol.transaction.TransactionOutput
+import org.scalacoin.protocol.transaction.{TransactionOutputImpl, TransactionOutput}
 import org.scalacoin.util.ScalacoinUtil
 
 /**
  * Created by chris on 1/11/16.
  * https://bitcoin.org/en/developer-reference#txout
  */
-object RawTransactionOutputMarshaller extends RawBitcoinSerializer[Seq[TransactionOutput]] with ScriptParser {
+object RawTransactionOutputParser extends RawBitcoinSerializer[Seq[TransactionOutput]] with ScriptParser {
 
 
   override def read(str : String) : Seq[TransactionOutput] = {
@@ -19,7 +19,10 @@ object RawTransactionOutputMarshaller extends RawBitcoinSerializer[Seq[Transacti
     val numOutputs = bytes(0).toInt
     val satoshisHex = ScalacoinUtil.encodeHex(bytes.slice(1,9))
     val satoshis = Satoshis(Integer.parseInt(satoshisHex,16))
-    ???
+    val scriptBytes = bytes.slice(10,bytes.size)
+    val script = parse(scriptBytes)
+    /*TransactionOutputImpl(satoshis, 0, script)*/
+???
   }
 
   override def write(outputs : Seq[TransactionOutput]) : String = ???
