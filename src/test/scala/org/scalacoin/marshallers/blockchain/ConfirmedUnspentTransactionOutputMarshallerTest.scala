@@ -33,5 +33,6 @@ class ConfirmedUnspentTransactionOutputMarshallerTest extends FlatSpec with Must
     utxos.bytesSerialized must be (433488802)
     utxos.hashSerialized must be ("f6f810ea6f20ab8f82141bbb418ebdb82074afc51bf3a9be03ff6ce75175e91c")
     utxos.totalAmount must be (18390134.73359557)
+
   }
 }

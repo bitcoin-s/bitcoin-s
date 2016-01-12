@@ -1,9 +1,13 @@
 package org.scalacoin.marshallers
 
+import org.scalacoin.marshallers.blockchain.softforks.EnforcementProgressMarshaller.EnforcementProgressFormatter
+import org.scalacoin.marshallers.blockchain.softforks.RejectionProgressMarshaller.RejectionProgressFormatter
+import org.scalacoin.marshallers.blockchain.softforks.SoftForkMarshaller.SoftForkFormatter
 import org.scalacoin.marshallers.networking.NetworkConnectionsMarshaller.NetworkConnectionsFormatter
 import org.scalacoin.marshallers.transaction.TransactionInputMarshaller.TransactionInputFormatter
 import org.scalacoin.marshallers.transaction.TransactionOutputMarshaller.TransactionOutputFormatter
 import org.scalacoin.protocol.BitcoinAddress
+import org.scalacoin.protocol.blockchain.softforks.{SoftForks, RejectionProgress, EnforcementProgress}
 import org.scalacoin.protocol.networking.NetworkConnections
 import org.scalacoin.protocol.transaction.{TransactionOutput, TransactionInput}
 import spray.json.{JsonWriter, JsArray, DefaultJsonProtocol, JsValue}
@@ -57,6 +61,15 @@ trait MarshallerUtil {
           e => NetworkConnectionsFormatter.read(e))
       }
       case _ => throw new RuntimeException("This Json type is not valid for parsing a list of network connections")
+    }
+  }
+  def convertToSoftForksList(value : JsValue) : Seq[SoftForks] = {
+    value match {
+      case ja: JsArray => {
+        ja.elements.toList.map(
+          e => SoftForkFormatter.read(e))
+      }
+      case _ => throw new RuntimeException("This Json type is not valid for parsing softforks info")
     }
   }
 }
