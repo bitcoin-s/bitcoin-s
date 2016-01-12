@@ -8,6 +8,7 @@ import org.scalacoin.script.constant.ScriptToken
  */
 trait ScriptPubKey extends ScriptSignature {
 
+
   def reqSigs : Int
   def addressType : String
   def addresses : Seq[BitcoinAddress]

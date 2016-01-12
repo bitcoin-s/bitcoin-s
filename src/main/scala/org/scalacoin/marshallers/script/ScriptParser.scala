@@ -17,6 +17,8 @@ trait ScriptParser extends ScalacoinUtil {
    * @return
    */
   def parse(str : String) : List[ScriptToken] = {
+    require(ScriptOperationFactory.fromString(str.split(" ").head).isDefined,
+      "String for parsing was not given in asm format. Needs to have a asm operation, for example OP_DUP")
     @tailrec
     def loop(operations : List[String], accum : List[ScriptToken]) : List[ScriptToken] = {
       operations match {
