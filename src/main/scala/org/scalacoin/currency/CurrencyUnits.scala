@@ -102,7 +102,7 @@ object CurrencyUnits {
   def milliBitcoinsToSatoshis(milliBits : MilliBitcoins) = {
     Satoshis((milliBits.value * (milliBitcoinScalar / satoshiScalar)).toLong)
   }
-  def currencyFormatter(value : Double) = {
+  def currencyFormatter(value : Double) : String = {
 
     if (value == 0) "0" else "%.5f".format(BigDecimal(value).setScale(5, RoundingMode.CEILING)).replaceAll("[.0]*$","")
   }
