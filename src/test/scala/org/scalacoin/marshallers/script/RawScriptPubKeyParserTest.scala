@@ -16,12 +16,14 @@ class RawScriptPubKeyParserTest extends FlatSpec with MustMatchers with RawScrip
   //scriptPubKey taken from https://bitcoin.org/en/developer-reference#raw-transaction-format
   val rawScriptPubKey = "1976a914cbc20a7664f2f69e5355aa427045bc15e7c6c77288ac"
   "RawScriptPubKeyParser" must "parse a hex string into a scriptPubKey" in {
-
     val scriptPubKey : ScriptPubKey = read(rawScriptPubKey)
-    println(encodeBase58(decodeHex("cbc20a7664f2f69e5355aa427045bc15e7c6c772")))
     scriptPubKey.asm must be (Seq(OP_DUP,OP_HASH160,ScriptConstantImpl("cbc20a7664f2f69e5355aa427045bc15e7c6c772"),OP_EQUALVERIFY,OP_CHECKSIG))
 
+  }
 
+  it must "read then write the scriptPubKey and get the original scriptPubKey" in {
+    val scriptPubKey : ScriptPubKey = read(rawScriptPubKey)
+    write(scriptPubKey) must be (rawScriptPubKey)
   }
 
 }

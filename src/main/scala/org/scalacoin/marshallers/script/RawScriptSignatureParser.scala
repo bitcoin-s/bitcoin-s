@@ -10,9 +10,9 @@ import org.scalacoin.util.ScalacoinUtil
  */
 trait RawScriptSignatureParser extends RawBitcoinSerializer[ScriptSignature] with ScriptParser {
 
-  def read(hex : String) : ScriptSignature = {
-    val scriptSig : List[ScriptToken] = parse(ScalacoinUtil.decodeHex(hex))
-    ScriptSignatureImpl(scriptSig,hex)
+  def read(bytes : List[Byte]) : ScriptSignature = {
+    val scriptSig : List[ScriptToken] = parse(bytes)
+    ScriptSignatureImpl(scriptSig,ScalacoinUtil.encodeHex(bytes))
   }
 
   def write(scriptSig : ScriptSignature) : String = scriptSig.hex

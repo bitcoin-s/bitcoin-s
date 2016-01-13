@@ -11,17 +11,18 @@ import org.scalacoin.util.ScalacoinUtil
 trait RawScriptPubKeyParser extends RawBitcoinSerializer[ScriptPubKey] with ScriptParser {
 
 
-  override def read(hex : String) : ScriptPubKey = {
-    require(hex.size > 0, "Cannot parse a scriptPubKey from an empty string")
-    val bytes = ScalacoinUtil.decodeHex(hex)
+  override def read(bytes : List[Byte]) : ScriptPubKey = {
+    require(bytes.size > 0, "Cannot parse a scriptPubKey from an empty byte list")
     //first byte indicates how many bytes the script is
     val scriptSize = bytes.head
-
     val script : List[ScriptToken] = parse(bytes.tail)
-
     //not sure how to get addresses from a scriptPubKey
-    ScriptPubKeyImpl(script,hex,Seq())
+    ScriptPubKeyImpl(script,ScalacoinUtil.encodeHex(bytes),Seq())
   }
 
-  override def write(scriptPubKey : ScriptPubKey) : String = ???
+  override def write(scriptPubKey : ScriptPubKey) : String = {
+    scriptPubKey.hex
+  }
 }
+
+object RawScriptPubKeyParser extends RawScriptPubKeyParser
