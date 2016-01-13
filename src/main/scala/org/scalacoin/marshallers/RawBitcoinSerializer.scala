@@ -1,5 +1,7 @@
 package org.scalacoin.marshallers
 
+import org.scalacoin.util.ScalacoinUtil
+
 /**
  * Created by chris on 1/11/16.
  */
@@ -11,7 +13,9 @@ trait RawBitcoinSerializer[T] {
    * @param hex
    * @return
    */
-  def read(hex : String) : T
+  def read(hex : String) : T = read(ScalacoinUtil.decodeHex(hex))
+
+  def read(bytes : List[Byte]) : T
 
   /**
    * Takes a type T and writes it into the appropriate type T

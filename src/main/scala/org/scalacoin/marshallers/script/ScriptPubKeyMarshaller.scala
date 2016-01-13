@@ -19,9 +19,7 @@ object ScriptPubKeyMarshaller extends DefaultJsonProtocol with MarshallerUtil wi
       val obj = value.asJsObject
       val asm = parse(obj.fields(ScriptSignatureMarshaller.asmKey).convertTo[String])
       val hex = obj.fields(ScriptSignatureMarshaller.hexKey)
-      val addressType = obj.fields(typeKey).convertTo[String]
       val addresses = convertToAddressList(obj.fields(addressesKey))
-
       ScriptPubKeyImpl(asm, hex.convertTo[String], addresses)
     }
 
