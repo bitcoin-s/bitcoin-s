@@ -1,6 +1,6 @@
 package org.scalacoin.marshallers.script
 
-import org.scalacoin.protocol.BitcoinAddress
+import org.scalacoin.protocol.{P2PKH, BitcoinAddress}
 import org.scalacoin.script.bitwise.OP_EQUALVERIFY
 import org.scalacoin.script.constant.ScriptConstantImpl
 import org.scalacoin.script.crypto.{OP_CHECKSIG, OP_HASH160}
@@ -31,8 +31,8 @@ class ScriptPubKeyMarshallerTest extends FlatSpec with MustMatchers {
     val scriptPubKey = ScriptPubKeyMarshaller.ScriptPubKeyFormatter.read(json)
     scriptPubKey.asm must be (List(OP_DUP, OP_HASH160, ScriptConstantImpl("7ecaa33ef3cd6169517e43188ad3c034db091f5e"), OP_EQUALVERIFY, OP_CHECKSIG))
     scriptPubKey.hex must be ("76a9147ecaa33ef3cd6169517e43188ad3c034db091f5e88ac")
-    scriptPubKey.reqSigs must be (1)
-    scriptPubKey.addressType must be ("pubkeyhash")
+    scriptPubKey.reqSigs must be (Some(1))
+    scriptPubKey.addressType must be (P2PKH)
     scriptPubKey.addresses must be (Seq(BitcoinAddress("1CZQtge31s59Evu716oP3teYWjcGhX8oKn")))
   }
 }

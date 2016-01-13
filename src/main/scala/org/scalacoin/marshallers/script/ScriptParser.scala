@@ -17,8 +17,8 @@ trait ScriptParser extends ScalacoinUtil {
    * @return
    */
   def parse(str : String) : List[ScriptToken] = {
-    require(ScriptOperationFactory.fromString(str.split(" ").head).isDefined,
-      "String for parsing was not given in asm format. Needs to have a asm operation, for example OP_DUP")
+/*    require(ScriptOperationFactory.fromString(str.split(" ").head).isDefined,
+      "String for parsing was not given in asm format. Needs to have a asm operation, for example OP_DUP")*/
     @tailrec
     def loop(operations : List[String], accum : List[ScriptToken]) : List[ScriptToken] = {
       operations match {
@@ -47,9 +47,9 @@ trait ScriptParser extends ScalacoinUtil {
         case h :: t =>
           val op  = ScriptOperationFactory.fromOpCode(h).get
             //means that we need to push x amount of bytes on to the stack
-           if (ScriptNumberFactory.operations.contains(op)) {
-             val (constant,tail) = pushConstant(ScriptNumberImpl(op.opCode),t)
-             loop(tail, constant :: accum)
+          if (ScriptNumberFactory.operations.contains(op)) {
+           val (constant,tail) = pushConstant(ScriptNumberImpl(op.opCode),t)
+           loop(tail, constant :: accum)
           } else loop(t, op :: accum)
         case Nil => accum
       }

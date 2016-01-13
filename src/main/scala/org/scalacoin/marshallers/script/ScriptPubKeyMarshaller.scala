@@ -19,12 +19,10 @@ object ScriptPubKeyMarshaller extends DefaultJsonProtocol with MarshallerUtil wi
       val obj = value.asJsObject
       val asm = parse(obj.fields(ScriptSignatureMarshaller.asmKey).convertTo[String])
       val hex = obj.fields(ScriptSignatureMarshaller.hexKey)
-      val reqSigs = obj.fields(reqSigsKey)
-      val addressType = obj.fields(typeKey)
+      val addressType = obj.fields(typeKey).convertTo[String]
       val addresses = convertToAddressList(obj.fields(addressesKey))
 
-      ScriptPubKeyImpl(asm, hex.convertTo[String], reqSigs.convertTo[Int],
-        addressType.convertTo[String], addresses)
+      ScriptPubKeyImpl(asm, hex.convertTo[String], addresses)
     }
 
     override def write(scriptPubKey : ScriptPubKey) : JsValue = {
@@ -33,8 +31,8 @@ object ScriptPubKeyMarshaller extends DefaultJsonProtocol with MarshallerUtil wi
       val m : Map[String,JsValue] = Map(
         ScriptSignatureMarshaller.asmKey -> JsString(scriptPubKey.asm.toString),
         ScriptSignatureMarshaller.hexKey -> JsString(scriptPubKey.hex),
-        reqSigsKey -> JsNumber(scriptPubKey.reqSigs),
-        typeKey -> JsString(scriptPubKey.addressType),
+        reqSigsKey -> JsNumber(scriptPubKey.reqSigs.get),
+        typeKey -> JsString(scriptPubKey.addressType.toString),
         addressesKey -> addressList
       )
 
