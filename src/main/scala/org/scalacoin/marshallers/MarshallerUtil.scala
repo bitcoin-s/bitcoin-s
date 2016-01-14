@@ -4,11 +4,12 @@ import org.scalacoin.marshallers.blockchain.softforks.EnforcementProgressMarshal
 import org.scalacoin.marshallers.blockchain.softforks.RejectionProgressMarshaller.RejectionProgressFormatter
 import org.scalacoin.marshallers.blockchain.softforks.SoftForkMarshaller.SoftForkFormatter
 import org.scalacoin.marshallers.networking.NetworkConnectionsMarshaller.NetworkConnectionsFormatter
+import org.scalacoin.marshallers.networking.PeerInfoMarshaller.PeerInfoFormatter
 import org.scalacoin.marshallers.transaction.TransactionInputMarshaller.TransactionInputFormatter
 import org.scalacoin.marshallers.transaction.TransactionOutputMarshaller.TransactionOutputFormatter
 import org.scalacoin.protocol.BitcoinAddress
 import org.scalacoin.protocol.blockchain.softforks.{SoftForks, RejectionProgress, EnforcementProgress}
-import org.scalacoin.protocol.networking.NetworkConnections
+import org.scalacoin.protocol.networking.{PeerInfo, NetworkConnections}
 import org.scalacoin.protocol.transaction.{TransactionOutput, TransactionInput}
 import spray.json.{JsonWriter, JsArray, DefaultJsonProtocol, JsValue}
 import scala.collection.breakOut
@@ -31,6 +32,16 @@ trait MarshallerUtil {
   def convertToJsArray[T](seq : Seq[T])(implicit formatter : JsonWriter[T]) : JsArray  = {
     JsArray(seq.map(p =>
       formatter.write(p))(breakOut): Vector[JsValue])
+  }
+
+  def convertToPeerInfoSeq(value : JsValue) : Seq[PeerInfo] = {
+    value match {
+      case ja: JsArray => {
+        ja.elements.toList.map(
+          e => PeerInfoFormatter.read(e))
+      }
+      case _ => throw new RuntimeException("This Json type is not valid for parsing a list of peer info")
+    }
   }
 
 

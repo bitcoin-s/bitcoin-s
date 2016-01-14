@@ -1,16 +1,21 @@
 package org.scalacoin.protocol.rpc
 
+import org.scalacoin.marshallers.MarshallerUtil
 import org.scalacoin.marshallers.blockchain.{ConfirmedUnspentTransactionOutputMarshaller, BlockchainInfoMarshaller, MemPoolInfoMarshaller}
 import org.scalacoin.marshallers.mining.MiningInfoMarshaller
+import org.scalacoin.marshallers.networking.{NetworkMarshaller}
+import org.scalacoin.marshallers.wallet.WalletMarshaller
 import org.scalacoin.protocol.blockchain.{ConfirmedUnspentTransactionOutput, BlockchainInfo, MemPoolInfo}
 import org.scalacoin.protocol.mining.GetMiningInfo
+import org.scalacoin.protocol.networking.{PeerInfo, NetworkInfo}
+import org.scalacoin.protocol.wallet.WalletInfo
 import spray.json._
 import scala.sys.process._
 
 /**
  * Created by Tom on 1/14/2016.
  */
-class ScalaRPCClient (client : String, network : String) {
+class ScalaRPCClient (client : String, network : String) extends MarshallerUtil {
   def sendCommand(command : String) : String = {
     val cmd = client + " " + network + " " + command
     val result = cmd.!!
@@ -67,5 +72,34 @@ class ScalaRPCClient (client : String, network : String) {
     MiningInfoMarshaller.MiningInfoFormatter.read(result.parseJson)
   }
 
+  /**
+   * The getnetworkinfo RPC returns information about the node’s connection to the network.
+   * https://bitcoin.org/en/developer-reference#getnetworkinfo
+   * @return
+   */
+  def getNetworkInfo : NetworkInfo = {
+    val result : String = sendCommand("getnetworkinfo")
+    NetworkMarshaller.NetworkInfoFormatter.read(result.parseJson)
+  }
 
+  /**
+   * The getpeerinfo RPC returns data about each connected network node.
+   * https://bitcoin.org/en/developer-reference#getpeerinfo
+   * @return
+   */
+  def getPeerInfo : Seq[PeerInfo] = {
+    val result : String = sendCommand("getpeerinfo")
+    val json = result.parseJson
+    convertToPeerInfoSeq(json)
+  }
+
+  /**
+   * The getwalletinfo RPC provides information about the wallet.
+   * https://bitcoin.org/en/developer-reference#getwalletinfo
+   * @return
+   */
+  def getWalletInfo : WalletInfo = {
+    val result : String = sendCommand("getwalletinfo")
+    WalletMarshaller.WalletFormatter.read(result.parseJson)
+  }
 }
