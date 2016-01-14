@@ -14,7 +14,7 @@ trait RawTransactionOutPointParser extends RawBitcoinSerializer[TransactionOutPo
 
   override def read(bytes : List[Byte]) : TransactionOutPoint = {
     val txId : List[Byte] = bytes.slice(0,32).reverse
-    val index : BigInt = BigInt(bytes.slice(32, bytes.size).toArray)
+    val index : BigInt = BigInt(bytes.slice(32, bytes.size).toArray.reverse)
     TransactionOutPointImpl(ScalacoinUtil.encodeHex(txId), index.toInt)
   }
 
