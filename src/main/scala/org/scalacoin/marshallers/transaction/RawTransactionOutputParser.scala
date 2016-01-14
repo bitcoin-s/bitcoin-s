@@ -5,6 +5,7 @@ import org.scalacoin.marshallers.RawBitcoinSerializer
 import org.scalacoin.marshallers.script.{RawScriptPubKeyParser, ScriptParser}
 import org.scalacoin.protocol.transaction.{TransactionOutputImpl, TransactionOutput}
 import org.scalacoin.util.ScalacoinUtil
+import org.slf4j.LoggerFactory
 
 import scala.annotation.tailrec
 
@@ -14,7 +15,7 @@ import scala.annotation.tailrec
  */
 trait RawTransactionOutputParser extends RawBitcoinSerializer[Seq[TransactionOutput]] with ScriptParser {
 
-
+  private lazy val logger = LoggerFactory.getLogger(this.getClass().toString())
   override def read(bytes : List[Byte]) : Seq[TransactionOutput] = {
     val numOutputs = bytes.head.toInt
     @tailrec
@@ -27,9 +28,13 @@ trait RawTransactionOutputParser extends RawBitcoinSerializer[Seq[TransactionOut
         val scriptPubKeySize = bytes(firstScriptPubKeyByte).toInt + 1
         val scriptPubKeyBytes = bytes.slice(firstScriptPubKeyByte, firstScriptPubKeyByte + scriptPubKeySize)
         val script = RawScriptPubKeyParser.read(scriptPubKeyBytes)
-        val newAccum = TransactionOutputImpl(satoshis, 0, script) :: accum
+        val parsedOutput = TransactionOutputImpl(satoshis, 0, script)
+        val newAccum =  parsedOutput:: accum
         val bytesToBeParsed = bytes.slice(firstScriptPubKeyByte + scriptPubKeySize, bytes.size)
-        loop(bytesToBeParsed, newAccum, outputsLeftToParse-1)
+        val outputsLeft = outputsLeftToParse-1
+        logger.debug("Parsed output: " + parsedOutput)
+        logger.debug("Outputs left to parse: " + outputsLeft)
+        loop(bytesToBeParsed, newAccum, outputsLeft)
       } else accum
     }
     loop(bytes.tail,List(),numOutputs).reverse
