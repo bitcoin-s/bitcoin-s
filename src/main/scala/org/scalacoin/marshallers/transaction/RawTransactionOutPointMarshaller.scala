@@ -9,21 +9,22 @@ import org.scalacoin.util.ScalacoinUtil
  * https://bitcoin.org/en/developer-reference#outpoint
  *
  */
-trait RawTransactionOutPointMarshaller extends RawBitcoinSerializer[TransactionOutPoint] {
+trait RawTransactionOutPointParser extends RawBitcoinSerializer[TransactionOutPoint] {
 
 
   override def read(bytes : List[Byte]) : TransactionOutPoint = {
-    val txId : List[Byte] = bytes.slice(0,16)
-    val index : BigInt = BigInt(bytes.slice(16, bytes.size).toArray)
+    val txId : List[Byte] = bytes.slice(0,32).reverse
+    val index : BigInt = BigInt(bytes.slice(32, bytes.size).toArray)
     TransactionOutPointImpl(ScalacoinUtil.encodeHex(txId), index.toInt)
   }
 
   def write(outPoint : TransactionOutPoint) : String = {
     val indexBytes : List[Byte] = List(0x00,0x00,0x00,outPoint.vout.toByte)
-    outPoint.txId + ScalacoinUtil.encodeHex(indexBytes)
+    val littleEndianTxId = ScalacoinUtil.encodeHex(ScalacoinUtil.decodeHex(outPoint.txId).reverse)
+    littleEndianTxId + ScalacoinUtil.encodeHex(indexBytes)
   }
 
 }
 
 
-object RawTransactionOutPointMarshaller extends RawTransactionOutPointMarshaller
+object RawTransactionOutPointParser extends RawTransactionOutPointParser
