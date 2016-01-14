@@ -12,7 +12,7 @@ import org.scalatest.{MustMatchers, FlatSpec}
  * Created by chris on 1/11/16.
  * https://bitcoin.org/en/developer-reference#txout
  */
-class RawTransactionOutputMarshallerTest extends FlatSpec with MustMatchers with RawTransactionOutputParser {
+class RawTransactionOutputParserTest extends FlatSpec with MustMatchers with RawTransactionOutputParser {
 
   //txid cad1082e674a7bd3bc9ab1bc7804ba8a57523607c876b8eb2cbe645f2b1803d6
   val rawTxOutput = "02204e00000000000017a914eda8ae08b5c9f973f49543e90a7c292367b3337c87" +
