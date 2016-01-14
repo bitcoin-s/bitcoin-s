@@ -1,6 +1,7 @@
 package org.scalacoin.marshallers.transaction
 
 import org.scalacoin.protocol.transaction.TransactionOutPointImpl
+import org.scalacoin.util.ScalacoinUtil
 import org.scalatest.{FlatSpec, MustMatchers}
 
 /**
@@ -15,6 +16,13 @@ class RawTransactionOutPointParserTest extends FlatSpec with MustMatchers  {
     outPoint.vout must be (0)
   }
 
+
+  it must "parse a large vout for an outpoint" in {
+    val outPointLargeVout = "df80e3e6eba7dcd4650281d3c13f140dafbb823a7227a78eb6ee9f6cedd04001340000006b"
+    val outPoint = RawTransactionOutPointParser.read(outPointLargeVout)
+    outPoint.vout must be (52)
+    outPoint.txId must be ("0140d0ed6c9feeb68ea727723a82bbaf0d143fc1d3810265d4dca7ebe6e380df")
+  }
   it must "write a TransactionOutPoint to a serialized format" in {
     val outPoint = RawTransactionOutPointParser.read(rawOutPoint)
     val actualSerialization = RawTransactionOutPointParser.write(outPoint)
