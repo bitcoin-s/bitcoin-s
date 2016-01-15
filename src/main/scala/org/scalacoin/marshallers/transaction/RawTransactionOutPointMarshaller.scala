@@ -19,9 +19,10 @@ trait RawTransactionOutPointParser extends RawBitcoinSerializer[TransactionOutPo
   }
 
   def write(outPoint : TransactionOutPoint) : String = {
-    val indexBytes : List[Byte] = List(0x00,0x00,0x00,outPoint.vout.toByte)
+    val indexHexWithoutPadding : String = addPrecedingZero(outPoint.vout.toHexString)
+    val indexHex = addPadding(4,indexHexWithoutPadding)
     val littleEndianTxId = ScalacoinUtil.encodeHex(ScalacoinUtil.decodeHex(outPoint.txId).reverse)
-    littleEndianTxId + ScalacoinUtil.encodeHex(indexBytes)
+    littleEndianTxId + indexHex
   }
 
 }

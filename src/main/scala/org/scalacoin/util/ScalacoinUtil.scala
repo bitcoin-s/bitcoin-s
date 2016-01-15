@@ -23,7 +23,7 @@ trait ScalacoinUtil {
     encodeHex(BigInt(satoshis.value.toLong).toByteArray)
   }
 
-  def encodeHex(byte : Byte ) : String = Utils.HEX.encode(Array(byte))
+  def encodeHex(byte : Byte) : String = Utils.HEX.encode(Array(byte))
 
   def decodeBase58(base58 : String) : List[Byte] = Base58.decode(base58).toList
 

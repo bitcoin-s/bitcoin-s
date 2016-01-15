@@ -24,4 +24,42 @@ trait RawBitcoinSerializer[T] {
    */
   def write(t : T) : String
 
+
+  /**
+   * Adds the amount padding bytes needed to fix the size of the hex string
+   * for instance, vouts are required to be 4 bytes. If the number is just 1
+   * it will only take 1 byte. We need to pad the byte with an extra 3 bytes so the result is
+   * 01000000 instead of just 01
+   * @param bytesNeeded
+   * @param hex
+   * @return
+   */
+  def addPadding(bytesNeeded : Int, hex : String) : String = {
+    val hexCharsNeeded = bytesNeeded * 2
+    val paddingNeeded = hexCharsNeeded - hex.size
+    val padding = for { i <- 0 until paddingNeeded} yield "0"
+    val paddedHex = hex + padding.mkString
+    paddedHex
+  }
+
+  /**
+   * Adds a preceding zero to a hex string.
+   * Example: if '1' was passed in, it would return the hex string '01'
+   * @param hex
+   * @return
+   */
+  def addPrecedingZero(hex : String) = {
+    if (hex.size == 1) "0" + hex else hex
+  }
+
+
+  /**
+   * Flips the hex chars in a hex strings
+   * Example: abcd would become badc
+   * https://stackoverflow.com/questions/34799611/easiest-way-to-flip-the-endianness-of-a-byte-in-scala/34802270#34802270
+   * @param hex
+   * @return
+   */
+  def flipHalfByte(hex : String) = hex.grouped(2).map(_.reverse).mkString
+
 }

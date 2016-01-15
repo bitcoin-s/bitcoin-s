@@ -50,7 +50,27 @@ trait RawTransactionInputParser extends RawBitcoinSerializer[Seq[TransactionInpu
     loop(bytes.tail, List(), numInputs).reverse
   }
 
-  override def write(inputs : Seq[TransactionInput]) = ???
+  override def write(inputs : Seq[TransactionInput]) = {
+    val serializedInputs : Seq[String] = for {
+      input <- inputs
+    } yield {
+        val outPoint = RawTransactionOutPointParser.write(input.previousOutput)
+        val scriptSig = RawScriptSignatureParser.write(input.scriptSignature)
+        val sequenceWithoutPadding = input.sequence.toHexString
+        val paddingNeeded = 8 - sequenceWithoutPadding.size
+        val padding = for { i <- 0 until paddingNeeded} yield "0"
+        val sequence = sequenceWithoutPadding + padding.mkString
+        outPoint + scriptSig + sequence
+      }
+
+    val inputsSizeWithoutPadding = inputs.size.toHexString
+    val inputsSize = if (inputsSizeWithoutPadding.size == 1) "0" + inputsSizeWithoutPadding else inputsSizeWithoutPadding
+    logger.debug("Input size: " + inputsSize)
+    inputsSize + serializedInputs.mkString
+  }
 }
 
 object RawTransactionInputParser extends RawTransactionInputParser
+
+
+
