@@ -35,18 +35,12 @@ trait RawTransactionParser extends RawBitcoinSerializer[Transaction] {
   def write(tx : Transaction) : String = {
     //add leading zero if the version byte doesn't require two hex numbers
     val txVersionHex = tx.version.toHexString
-    val versionWithoutPadding = if (txVersionHex.size == 1) "0" + txVersionHex else txVersionHex
-    val paddingNeeded = 8 - versionWithoutPadding.size
-    val padding = for { i <- 0 until paddingNeeded } yield "0"
-    val version = versionWithoutPadding + padding.mkString
+    val versionWithoutPadding = addPrecedingZero(txVersionHex)
+    val version = addPadding(8,versionWithoutPadding)
     val inputs : String = RawTransactionInputParser.write(tx.inputs)
     val outputs : String = RawTransactionOutputParser.write(tx.outputs)
-    
-    val lockTimeWithoutPadding : String = flipHalfByte(tx.lockTime.toHexString.reverse)
-    val lockTimePaddingNeeded = 8 - lockTimeWithoutPadding.size
-    val lockTimePadding = for { i <- 0 until lockTimePaddingNeeded } yield "0"
-    val lockTime = lockTimeWithoutPadding + lockTimePadding.mkString
-
+    val lockTimeWithoutPadding : String = ScalacoinUtil.flipHalfByte(tx.lockTime.toHexString.reverse)
+    val lockTime = addPadding(8,lockTimeWithoutPadding)
     version + inputs + outputs + lockTime
   }
 }
