@@ -34,9 +34,8 @@ trait RawBitcoinSerializer[T] {
    * @param hex
    * @return
    */
-  def addPadding(bytesNeeded : Int, hex : String) : String = {
-    val hexCharsNeeded = bytesNeeded * 2
-    val paddingNeeded = hexCharsNeeded - hex.size
+  def addPadding(charactersNeeded : Int, hex : String) : String = {
+    val paddingNeeded = charactersNeeded - hex.size
     val padding = for { i <- 0 until paddingNeeded} yield "0"
     val paddedHex = hex + padding.mkString
     paddedHex
@@ -53,13 +52,6 @@ trait RawBitcoinSerializer[T] {
   }
 
 
-  /**
-   * Flips the hex chars in a hex strings
-   * Example: abcd would become badc
-   * https://stackoverflow.com/questions/34799611/easiest-way-to-flip-the-endianness-of-a-byte-in-scala/34802270#34802270
-   * @param hex
-   * @return
-   */
-  def flipHalfByte(hex : String) = hex.grouped(2).map(_.reverse).mkString
+
 
 }

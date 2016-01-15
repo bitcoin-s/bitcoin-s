@@ -47,12 +47,10 @@ trait RawTransactionOutputParser extends RawBitcoinSerializer[Seq[TransactionOut
     } yield {
       val satoshis = CurrencyUnits.toSatoshis(output.value)
       //TODO: Clean this up, this is very confusing. If you remove this .reverse method calls you can see the unit test failing
-      val satoshisHexWithoutPadding : String =
-        ScalacoinUtil.encodeHex(ScalacoinUtil.decodeHex(ScalacoinUtil.encodeHex(satoshis)).reverse).reverse
-      val paddingNeeded = 16 - satoshisHexWithoutPadding.size
-      val padding : Seq[String] = for ( i <- 0 until paddingNeeded) yield "0"
-      val satoshisHex = padding.mkString + satoshisHexWithoutPadding
-      satoshisHex.reverse + output.scriptPubKey.hex
+      val satoshisHexWithoutPadding : String = ScalacoinUtil.encodeHex(satoshis)
+        //ScalacoinUtil.encodeHex(ScalacoinUtil.decodeHex(ScalacoinUtil.encodeHex(satoshis)).reverse)
+      val satoshisHex = addPadding(16,satoshisHexWithoutPadding)
+      satoshisHex + output.scriptPubKey.hex
     }
     numOutputs + serializedOutputs.mkString
   }
