@@ -59,7 +59,7 @@ trait CryptoInterpreter extends ScalacoinUtil {
 
     val fullScriptWithoutScripgSig : Seq[ScriptToken] = inputWithoutScriptSig ++ scriptPubKey.asm
 
-    /*val hashType = HashTypeFactory.factory(ScalacoinUtil.decodeHex(signature.hex).last)*/
+    //val hashType = HashTypeFactory.factory(ScalacoinUtil.decodeHex(signature.hex).last)
     //check signature against the tx
 
     ???
