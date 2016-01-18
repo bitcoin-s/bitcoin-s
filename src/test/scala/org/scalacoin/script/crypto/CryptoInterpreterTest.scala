@@ -1,6 +1,8 @@
 package org.scalacoin.script.crypto
 
+import org.scalacoin.protocol.script.ScriptPubKey
 import org.scalacoin.script.constant.ScriptConstantImpl
+import org.scalacoin.util.TestUtil
 import org.scalatest.{MustMatchers, FlatSpec}
 
 /**
@@ -13,7 +15,7 @@ class CryptoInterpreterTest extends FlatSpec with MustMatchers with CryptoInterp
     val script = List(OP_HASH160)
     val (newStack,newScript) = hash160(stack,script)
     newStack.head must be (ScriptConstantImpl("5238C71458E464D9FF90299ABCA4A1D7B9CB76AB".toLowerCase))
-    newScript.size must be(0)
+    newScript.size must be (0)
   }
 
   it must "fail to evaluate OP_HASH160 when the stack is empty" in {
@@ -29,5 +31,16 @@ class CryptoInterpreterTest extends FlatSpec with MustMatchers with CryptoInterp
       val script = List()
       val (newStack,newScript) = hash160(stack,script)
     }
+  }
+
+
+  it must "evaluate a OP_CHECKSIG to true for a valid tx on the network" in {
+    val tx = TestUtil.simpleTransaction
+    val parentTx = TestUtil.parentSimpleTransaction
+    val vout : Int = tx.inputs.head.previousOutput.vout
+    require(vout == 0)
+    val scriptPubKey = tx.outputs(vout).scriptPubKey
+    val result = checkSig(tx,scriptPubKey)
+    result must be (true)
   }
 }

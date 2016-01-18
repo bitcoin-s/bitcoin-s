@@ -1,6 +1,8 @@
 package org.scalacoin.script.crypto
 
-import org.scalacoin.script.constant.{ScriptConstantImpl, ScriptConstant, ScriptToken}
+import org.scalacoin.protocol.script.ScriptPubKey
+import org.scalacoin.protocol.transaction.Transaction
+import org.scalacoin.script.constant.{ScriptOperation, ScriptConstantImpl, ScriptConstant, ScriptToken}
 import org.scalacoin.util.{CryptoUtil, ScalacoinUtil}
 
 
@@ -37,7 +39,36 @@ trait CryptoInterpreter extends ScalacoinUtil {
     ???
   }
 
-  /*def codeSeparator()*/
+
+
+  /**
+   * The entire transaction's outputs, inputs, and script (from the most
+   * recently-executed OP_CODESEPARATOR to the end) are hashed.
+   * The signature used by OP_CHECKSIG must be a valid signature for this hash and public key.
+   * If it is, 1 is returned, 0 otherwise.
+   * @param inputScript
+   * @param script
+   * @return
+   */
+  def checkSig(tx : Transaction, scriptPubKey : ScriptPubKey) : Boolean = {
+    val signature : ScriptToken = tx.inputs.head.scriptSignature.asm.head
+    val pubKey : ScriptToken = tx.inputs.head.scriptSignature.asm(1)
+
+    //delete ECDSA signature
+    val inputWithoutScriptSig : Seq[ScriptToken] = tx.inputs.head.scriptSignature.asm.tail
+
+    val fullScriptWithoutScripgSig : Seq[ScriptToken] = inputWithoutScriptSig ++ scriptPubKey.asm
+
+    /*val hashType = HashTypeFactory.factory(ScalacoinUtil.decodeHex(signature.hex).last)*/
+    //check signature against the tx
+
+    ???
+  }
+
+
+
+
+
 
 
 }

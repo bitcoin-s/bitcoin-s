@@ -11,6 +11,8 @@ import org.scalacoin.util.ScalacoinUtil
 
 /**
  * Created by chris on 1/8/16.
+ * Responsible for matching script op codes with their given
+ * hexadecimal representation or byte representation
  */
 trait ScriptOperationFactory[T <: ScriptOperation] extends ScalacoinUtil {
 
@@ -28,7 +30,12 @@ trait ScriptOperationFactory[T <: ScriptOperation] extends ScalacoinUtil {
    */
   def fromString(str : String) : Option[T] = operations.find(_.toString == str)
 
-  def fromOpCode(byte : Byte) : Option[T] = {
+  /**
+   * Finds a script operation from a given byte
+   * @param byte
+   * @return
+   */
+  def fromByte(byte : Byte) : Option[T] = {
     val hex = encodeHex(byte)
     operations.find(op => op.hex == hex)
   }
