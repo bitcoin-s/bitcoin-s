@@ -45,7 +45,7 @@ trait ScriptParser extends ScalacoinUtil {
     def loop(bytes : List[Byte], accum : List[ScriptToken]) : List[ScriptToken] = {
       bytes match {
         case h :: t =>
-          val op  = ScriptOperationFactory.fromOpCode(h).get
+          val op  = ScriptOperationFactory.fromByte(h).get
           //means that we need to push x amount of bytes on to the stack
           if (ScriptNumberFactory.operations.contains(op)) {
             val (constant,tail) = pushConstant(ScriptNumberImpl(op.opCode),t)

@@ -5,11 +5,13 @@ package org.scalacoin.script.constant
  */
 
 
-trait ScriptToken
+trait ScriptToken {
+  def hex : String
+}
 
 trait ScriptOperation extends ScriptToken {
   def opCode : Int
-  def hex : String = {
+  override def hex : String = {
     val hex = Integer.toHexString(opCode)
     if (hex == "0") "00" else hex
   }
@@ -19,10 +21,9 @@ sealed trait ScriptConstant extends ScriptToken
 
 /**
  * Represent a pubkey or hash of a pub key on our stack
- *
- * @param str
+ * @param hex
  */
-case class ScriptConstantImpl(str : String) extends ScriptConstant
+case class ScriptConstantImpl(hex : String) extends ScriptConstant
 
 /**
  * An empty array of bytes is pushed onto the stack. (This is not a no-op: an item is added to the stack.)
