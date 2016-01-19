@@ -19,7 +19,6 @@ class HashTypeFactoryTest extends FlatSpec with MustMatchers  {
     HashTypeFactory.fromByte(0x01) must be (Some(SIGHASH_ALL))
     HashTypeFactory.fromByte(0x02) must be (Some(SIGHASH_NONE))
     HashTypeFactory.fromByte(0x03) must be (Some(SIGHASH_SINGLE))
-    println(SIGHASH_ANYONECANPAY.byte)
     HashTypeFactory.fromByte(0x80.toByte) must be (Some(SIGHASH_ANYONECANPAY))
   }
 
