@@ -9,6 +9,7 @@ import org.scalacoin.script.interpreter.testprotocol.{CoreTestCaseProtocol, Core
 import org.scalacoin.script.stack.OP_DUP
 import org.scalacoin.util.TestUtil
 import org.scalatest.{MustMatchers, FlatSpec}
+import org.slf4j.LoggerFactory
 
 import spray.json._
 /**
@@ -17,6 +18,7 @@ import spray.json._
 class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterpreter {
 
 
+  private val logger = LoggerFactory.getLogger(this.getClass().toString)
 
   "ScriptInterpreter" must "evaluate a valid script to true" in {
     //this is in asm format, not hex
@@ -35,12 +37,17 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterp
     val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n" finally source.close()
     val json = lines.parseJson
     val testCasesOpt : Seq[Option[CoreTestCase]] = json.convertTo[Seq[Option[CoreTestCase]]]
-    val testCases = testCasesOpt.flatten
+    val testCases = Seq(testCasesOpt.flatten.head)
 
 
     for {
       testCase <- testCases
     } yield {
+      logger.info("Running test case: ")
+      logger.info("ScriptSig: " + testCase.scriptSig)
+      logger.info("ScriptPubKey: " + testCase.scriptPubKey)
+      logger.info("Flags: " + testCase.flags)
+      logger.info("Comments: " + testCase.comments)
       withClue(testCase.comments) {
         ScriptInterpreter.run(testCase.scriptSig, testCase.scriptPubKey) must equal (true)
       }

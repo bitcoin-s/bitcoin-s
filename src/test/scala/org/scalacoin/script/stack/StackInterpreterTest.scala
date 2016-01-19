@@ -34,4 +34,19 @@ class StackInterpreterTest extends FlatSpec with MustMatchers with StackInterpre
       val (newStack,newScript) = opDup(stack,script)
     }
   }
+
+  it must "evaluate the OP_DEPTH operator correctly" in {
+    val stack = List(ScriptConstantImpl("Hello"),ScriptConstantImpl("World"))
+    val script = List(OP_DEPTH)
+    val (newStack,newScript) = opDepth(stack,script)
+
+    newStack.head.hex must be (stack.size.toHexString)
+  }
+
+  it must "evaluate OP_DEPTH operator correctly when there are zero items on the stack" in {
+    val stack = List()
+    val script = List(OP_DEPTH)
+    val (newStack,_) = opDepth(stack,script)
+    newStack.head.hex must be (stack.size.toHexString)
+  }
 }

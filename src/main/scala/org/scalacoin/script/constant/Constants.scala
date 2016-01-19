@@ -19,6 +19,16 @@ trait ScriptOperation extends ScriptToken {
 
 sealed trait ScriptConstant extends ScriptToken
 
+sealed trait ScriptBoolean extends ScriptConstant
+
+case object ScriptTrue extends ScriptBoolean {
+  override def hex = "1"
+}
+
+case object ScriptFalse extends ScriptBoolean {
+  override def hex = "0"
+}
+
 /**
  * Represent a pubkey or hash of a pub key on our stack
  * @param hex
