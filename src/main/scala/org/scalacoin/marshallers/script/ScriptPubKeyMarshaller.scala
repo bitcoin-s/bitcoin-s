@@ -8,7 +8,7 @@ import DefaultJsonProtocol._
 /**
  * Created by chris on 12/27/15.
  */
-object ScriptPubKeyMarshaller extends DefaultJsonProtocol with MarshallerUtil with ScriptParser {
+object ScriptPubKeyMarshaller extends DefaultJsonProtocol with MarshallerUtil {
   val reqSigsKey = "reqSigs"
   val typeKey = "type"
   val addressesKey = "addresses"
@@ -17,7 +17,7 @@ object ScriptPubKeyMarshaller extends DefaultJsonProtocol with MarshallerUtil wi
 
     override def read(value : JsValue) : ScriptPubKey = {
       val obj = value.asJsObject
-      val asm = parse(obj.fields(ScriptSignatureMarshaller.asmKey).convertTo[String])
+      val asm = ScriptParser.parse(obj.fields(ScriptSignatureMarshaller.asmKey).convertTo[String])
       val hex = obj.fields(ScriptSignatureMarshaller.hexKey)
       val addresses = convertToAddressList(obj.fields(addressesKey))
       ScriptPubKeyImpl(asm, hex.convertTo[String], addresses)
