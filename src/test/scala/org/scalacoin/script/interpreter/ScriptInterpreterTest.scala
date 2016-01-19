@@ -1,5 +1,7 @@
 package org.scalacoin.script.interpreter
 
+import java.io.File
+
 import org.scalacoin.script.bitwise.OP_EQUALVERIFY
 import org.scalacoin.script.constant.ScriptToken
 import org.scalacoin.script.crypto.{OP_CHECKSIG, OP_HASH160}
@@ -23,5 +25,10 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterp
     result must be (true)
   }
 
+
+  it must "evaluate all valid scripts from the bitcoin core script_valid.json" in {
+    val fileName = new File("script_valid.json")
+
+  }
 
 }

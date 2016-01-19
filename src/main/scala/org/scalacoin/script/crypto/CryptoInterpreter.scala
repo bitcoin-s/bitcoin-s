@@ -51,6 +51,7 @@ trait CryptoInterpreter extends ScalacoinUtil {
    * @return
    */
   def checkSig(tx : Transaction, scriptPubKey : ScriptPubKey) : Boolean = {
+    val inputIndex = 0
     val signature : ScriptToken = tx.inputs.head.scriptSignature.asm.head
     val pubKey : ScriptToken = tx.inputs.head.scriptSignature.asm(1)
 
@@ -59,10 +60,31 @@ trait CryptoInterpreter extends ScalacoinUtil {
 
     val fullScriptWithoutScripgSig : Seq[ScriptToken] = inputWithoutScriptSig ++ scriptPubKey.asm
 
-    //val hashType = HashTypeFactory.factory(ScalacoinUtil.decodeHex(signature.hex).last)
-    //check signature against the tx
+    val hashTypeOpt : Option[HashType] = HashTypeFactory.fromByte(ScalacoinUtil.decodeHex(signature.hex).last)
+    require(hashTypeOpt.isDefined, "We must have a hash type be the last byte on the given signature")
+    val hashType = hashTypeOpt.get
 
+    //hash for signature
+    val hash : String = hashForSignature(inputWithoutScriptSig,tx,inputIndex,hashType)
     ???
+  }
+
+
+  private def hashForSignature(inputScript : Seq[ScriptToken], spendingTx : Transaction,
+                            inputIndex : Int, hashType : HashType) : String = {
+    require(inputIndex < spendingTx.inputs.size, "Given input index is out of range of the inputs in the spending tx")
+    //Note: The transaction that uses SIGHASH_SINGLE type of signature should not have more inputs than outputs.
+    //However if it does (because of the pre-existing implementation), it shall not be rejected,
+    //but instead for every "illegal" input (meaning: an input that has an index bigger than the maximum output index)
+    //the node should still verify it, though assuming the hash of
+    val one = "0000000000000000000000000000000000000000000000000000000000000001"
+    if(hashType == SIGHASH_SINGLE && inputIndex >= spendingTx.outputs.size) {
+      one
+    } else {
+
+    }
+
+
   }
 
 
