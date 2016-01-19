@@ -50,8 +50,4 @@ trait RawBitcoinSerializer[T] {
   def addPrecedingZero(hex : String) = {
     if (hex.size == 1) "0" + hex else hex
   }
-
-
-
-
 }

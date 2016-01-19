@@ -1,6 +1,6 @@
 package org.scalacoin.script.bitwise
 
-import org.scalacoin.script.constant.{ScriptConstantImpl, ScriptToken}
+import org.scalacoin.script.constant.{ScriptFalse, ScriptTrue, ScriptConstantImpl, ScriptToken}
 import org.scalacoin.script.control.{OP_VERIFY, ControlOperationsInterpreter}
 
 /**
@@ -9,7 +9,7 @@ import org.scalacoin.script.control.{OP_VERIFY, ControlOperationsInterpreter}
 trait BitwiseInterpreter extends ControlOperationsInterpreter  {
 
   /**
-   * 	Returns 1 if the inputs are exactly equal, 0 otherwise.
+   * Returns 1 if the inputs are exactly equal, 0 otherwise.
    * @param stack
    * @param script
    * @return
@@ -18,7 +18,7 @@ trait BitwiseInterpreter extends ControlOperationsInterpreter  {
     require(stack.size > 1, "Stack size must be 2 or more to compare the top two values")
     require(script.headOption.isDefined && script.head == OP_EQUAL, "Script operation must be OP_EQUAL")
     val newStack = stack match {
-      case h :: h1 :: t => if (h == h1) ScriptConstantImpl("1") :: t else ScriptConstantImpl("0") :: t
+      case h :: h1 :: t => if (h == h1) ScriptTrue :: t else ScriptFalse  :: t
     }
     (newStack,script.tail)
 
