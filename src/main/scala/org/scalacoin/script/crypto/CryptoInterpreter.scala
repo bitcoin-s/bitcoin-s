@@ -80,9 +80,9 @@ trait CryptoInterpreter extends ScalacoinUtil {
     val one = "0000000000000000000000000000000000000000000000000000000000000001"
     if(hashType == SIGHASH_SINGLE && inputIndex >= spendingTx.outputs.size) {
       one
-    } else {
-
     }
+
+    ???
 
 
   }

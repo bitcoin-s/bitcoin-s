@@ -28,7 +28,23 @@ trait ScriptOperationFactory[T <: ScriptOperation] extends ScalacoinUtil {
    * @param str
    * @return
    */
-  def fromString(str : String) : Option[T] = operations.find(_.toString == str)
+  def fromString(str : String) : Option[T] = {
+    val result : Option[T] = operations.find(_.toString == str)
+    if (result.isEmpty) {
+      //try and remove the 'OP_' prefix on the operations and see if it matches anything.
+      operations.find(op => removeOP_Prefix(op.toString) == removeOP_Prefix(str))
+    } else result
+  }
+
+  /**
+   * Removes the 'OP_' prefix from a given operation.
+   * Example: OP_EQUALVERIFY would be transformed into EQUALVERIFY
+   * @param str
+   * @return
+   */
+  private def removeOP_Prefix(str : String) : String = {
+    str.replace("OP_","")
+  }
 
   /**
    * Finds a script operation from a given byte
