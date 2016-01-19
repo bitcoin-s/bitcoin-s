@@ -63,3 +63,5 @@ trait ScriptParser extends ScalacoinUtil {
     (constant, bytes.slice(finalIndex,bytes.size))
   }
 }
+
+object ScriptParser extends ScriptParser
