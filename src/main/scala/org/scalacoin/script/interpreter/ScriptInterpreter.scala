@@ -1,5 +1,6 @@
 package org.scalacoin.script.interpreter
 
+import org.scalacoin.protocol.script.{ScriptSignature, ScriptPubKey}
 import org.scalacoin.script.bitwise.{OP_EQUAL, BitwiseInterpreter, OP_EQUALVERIFY}
 import org.scalacoin.script.constant.{ScriptConstantImpl, ScriptToken}
 import org.scalacoin.script.control.ControlOperationsInterpreter
@@ -48,5 +49,14 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
     loop((inputScript,outputScript))
   }
 
+  def run(inputScript : Seq[ScriptToken], outputScript : Seq[ScriptToken]) : Boolean = {
+    run(inputScript.toList, outputScript.toList)
+  }
+
+  def run(scriptSignature : ScriptSignature, scriptPubKey : ScriptPubKey) : Boolean = {
+    run(scriptSignature.asm, scriptPubKey.asm)
+  }
 
 }
+
+object ScriptInterpreter extends ScriptInterpreter

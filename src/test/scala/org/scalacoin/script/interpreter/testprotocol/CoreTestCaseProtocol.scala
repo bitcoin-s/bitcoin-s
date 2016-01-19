@@ -3,7 +3,7 @@ package org.scalacoin.script.interpreter.testprotocol
 import org.scalacoin.marshallers.script.ScriptParser
 import org.scalacoin.marshallers.script.ScriptPubKeyMarshaller.ScriptPubKeyFormatter
 import org.scalacoin.marshallers.script.ScriptSignatureMarshaller.ScriptSignatureFormatter
-import org.scalacoin.protocol.script.{ScriptSignatureFactory, ScriptSignature}
+import org.scalacoin.protocol.script.{ScriptPubKeyFactory, ScriptSignatureFactory, ScriptSignature}
 import org.scalacoin.script.constant.ScriptToken
 import org.slf4j.LoggerFactory
 import spray.json._
@@ -29,7 +29,8 @@ object CoreTestCaseProtocol extends DefaultJsonProtocol {
       } else {
         val scriptSignatureAsm : Seq[ScriptToken] = ScriptParser.parse(elements.head.convertTo[String])
         val scriptSignature : ScriptSignature = ScriptSignatureFactory.factory(scriptSignatureAsm)
-        val scriptPubKey = ScriptPubKeyFormatter.read(elements(1))
+        val scriptPubKeyAsm : Seq[ScriptToken] = ScriptParser.parse(elements(1).convertTo[String])
+        val scriptPubKey = ScriptPubKeyFactory.factory(scriptPubKeyAsm)
         val flags = elements(2).convertTo[String]
         val comments = elements(3).convertTo[String]
         Some(CoreTestCaseImpl(scriptSignature,scriptPubKey,flags,comments))

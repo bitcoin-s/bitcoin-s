@@ -38,6 +38,14 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterp
     val testCases = testCasesOpt.flatten
 
 
+    for {
+      testCase <- testCases
+    } yield {
+      withClue(testCase.comments) {
+        ScriptInterpreter.run(testCase.scriptSig, testCase.scriptPubKey) must equal (true)
+      }
+    }
+
   }
 
 
