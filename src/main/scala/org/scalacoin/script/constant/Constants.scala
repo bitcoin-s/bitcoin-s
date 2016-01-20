@@ -1,5 +1,7 @@
 package org.scalacoin.script.constant
 
+import org.scalacoin.util.ScalacoinUtil
+
 /**
  * Created by chris on 1/6/16.
  */
@@ -11,10 +13,7 @@ trait ScriptToken {
 
 trait ScriptOperation extends ScriptToken {
   def opCode : Int
-  override def hex : String = {
-    val hex = Integer.toHexString(opCode)
-    if (hex == "0") "00" else hex
-  }
+  override def hex : String = ScalacoinUtil.encodeHex(opCode.toByte)
 }
 
 sealed trait ScriptConstant extends ScriptToken

@@ -9,12 +9,7 @@ import org.scalatest.{FlatSpec, MustMatchers}
 class ScriptParserTest extends FlatSpec with MustMatchers with ScriptParser with ScalacoinUtil {
 
 
-  "ScriptParser" must "parse an input script" in {
-    val parsedInput = parse(TestUtil.p2pkhInputScriptNotParsedAsm)
-    parsedInput must be (TestUtil.p2pkhInputScriptAsm)
-  }
-
-  it must "parse a pay-to-pubkey-hash output script" in {
+  "ScriptParser" must "parse a pay-to-pubkey-hash output script" in {
     val parsedOutput = parse(TestUtil.p2pkhOutputScriptNotParsedAsm)
     parsedOutput must be (TestUtil.p2pkhOutputScriptAsm)
   }
@@ -22,11 +17,6 @@ class ScriptParserTest extends FlatSpec with MustMatchers with ScriptParser with
   it must "parse a pay-to-script-hash output script" in {
     val parsedOutput = parse(TestUtil.p2shOutputScriptNotParsedAsm)
     parsedOutput must be (TestUtil.p2shOutputScriptAsm)
-  }
-
-  it must "parse a pay-to-script-hash input script" in {
-    val parsedInput = parse(TestUtil.p2shInputScriptNotParsedAsm)
-    parsedInput must be (TestUtil.p2shInputScriptAsm)
   }
 
   it must "parse a p2pkh output script from a byte array to script tokens" in {

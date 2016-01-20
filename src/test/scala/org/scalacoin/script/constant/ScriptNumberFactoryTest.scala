@@ -13,6 +13,20 @@ class ScriptNumberFactoryTest extends FlatSpec with MustMatchers with ScriptNumb
     operations.exists(_ == ScriptNumberImpl(75)) must be (true)
   }
 
+  it must "find the number two" in {
+    val result = ScriptNumberFactory.factory(2)
+    result.isDefined must be (true)
+    result.get.opCode must be (2)
+    result.get must be (ScriptNumberImpl(2))
+  }
+
+  it must "find the number two from its byte representation" in {
+    val result = ScriptNumberFactory.factory(0x02)
+    result.isDefined must be (true)
+    result.get.opCode must be (2)
+    result.get must be (ScriptNumberImpl(2))
+  }
+
   it must "not allow creation of the script number -1" in {
     intercept[IllegalArgumentException] {
       operations.exists(_ == ScriptNumberImpl(-1)) must be (false)

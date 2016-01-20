@@ -34,14 +34,14 @@ trait BitwiseInterpreter extends ControlOperationsInterpreter  {
    * @param script
    * @return
    */
-  def equalVerify(stack : List[ScriptToken], script : List[ScriptToken]) : Boolean = {
+  def equalVerify(stack : List[ScriptToken], script : List[ScriptToken]) : (List[ScriptToken], List[ScriptToken],Boolean) = {
     require(stack.size > 1, "Stack size must be 2 or more to compare the top two values")
     require(script.headOption.isDefined && script.head == OP_EQUALVERIFY, "Script operation must be OP_EQUALVERIFY")
     //first replace OP_EQUALVERIFY with OP_EQUAL and OP_VERIFY
     val simpleScript = OP_EQUAL :: OP_VERIFY :: script.tail
     val (newStack,newScript) = equal(stack,simpleScript)
-    val result : Boolean = verify(newStack,newScript)
-    result
+    val (finalStack,finalScript,result) = verify(newStack,newScript)
+    (finalStack,finalScript,result)
   }
 
 

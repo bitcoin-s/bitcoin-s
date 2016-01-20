@@ -12,14 +12,14 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers with C
     val stack = List(ScriptTrue)
     val script = List(OP_VERIFY)
     val result = verify(stack,script)
-    result must be (true)
+    result._3 must be (true)
   }
 
   it must "have OP_VERIFY evaluate to false with '0' on the stack" in {
     val stack = List(ScriptFalse)
     val script = List(OP_VERIFY)
     val result = verify(stack,script)
-    result must be (false)
+    result._3 must be (false)
   }
 
   it must "fail for OP_VERIFY when there is nothing on the stack" in {

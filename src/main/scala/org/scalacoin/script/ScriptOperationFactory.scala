@@ -37,6 +37,13 @@ trait ScriptOperationFactory[T <: ScriptOperation] extends ScalacoinUtil {
   }
 
   /**
+   * Finds a script operation from its hexadecimal representation
+   * @param hex
+   * @return
+   */
+  def fromHex(hex : String) : Option[T] = operations.find(_.hex == hex)
+
+  /**
    * Removes the 'OP_' prefix from a given operation.
    * Example: OP_EQUALVERIFY would be transformed into EQUALVERIFY
    * @param str
@@ -53,7 +60,7 @@ trait ScriptOperationFactory[T <: ScriptOperation] extends ScalacoinUtil {
    */
   def fromByte(byte : Byte) : Option[T] = {
     val hex = encodeHex(byte)
-    operations.find(op => op.hex == hex)
+    fromHex(hex)
   }
 }
 

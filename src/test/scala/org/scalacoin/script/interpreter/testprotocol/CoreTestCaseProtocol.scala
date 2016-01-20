@@ -5,6 +5,7 @@ import org.scalacoin.marshallers.script.ScriptPubKeyMarshaller.ScriptPubKeyForma
 import org.scalacoin.marshallers.script.ScriptSignatureMarshaller.ScriptSignatureFormatter
 import org.scalacoin.protocol.script.{ScriptPubKeyFactory, ScriptSignatureFactory, ScriptSignature}
 import org.scalacoin.script.constant.ScriptToken
+import org.scalacoin.util.ScalacoinUtil
 import org.slf4j.LoggerFactory
 import spray.json._
 
@@ -27,16 +28,16 @@ object CoreTestCaseProtocol extends DefaultJsonProtocol {
         //["Equivalency of different numeric encodings"]
         None
       } else if (elements.size == 3) {
-        val scriptSignatureAsm : Seq[ScriptToken] = parseScriptSignatureAsm(elements)
+        val scriptSignatureAsm : Seq[ScriptToken] = parseScriptSignatureAsm(elements.head)
         val scriptSignature : ScriptSignature = ScriptSignatureFactory.factory(scriptSignatureAsm)
-        val scriptPubKeyAsm : Seq[ScriptToken] = ScriptParser.parse(elements(1).convertTo[String])
+        val scriptPubKeyAsm = parseScriptPubKeyAsm(elements(1))
         val scriptPubKey = ScriptPubKeyFactory.factory(scriptPubKeyAsm)
         val flags = elements(2).convertTo[String]
         Some(CoreTestCaseImpl(scriptSignature,scriptPubKey,flags,"No comments from bitcoin core ",elements.toString))
       } else if (elements.size == 4) {
-        val scriptSignatureAsm : Seq[ScriptToken] = parseScriptSignatureAsm(elements)
+        val scriptSignatureAsm : Seq[ScriptToken] = parseScriptSignatureAsm(elements.head)
         val scriptSignature : ScriptSignature = ScriptSignatureFactory.factory(scriptSignatureAsm)
-        val scriptPubKeyAsm : Seq[ScriptToken] = ScriptParser.parse(elements(1).convertTo[String])
+        val scriptPubKeyAsm : Seq[ScriptToken] = parseScriptPubKeyAsm(elements(1))
         val scriptPubKey = ScriptPubKeyFactory.factory(scriptPubKeyAsm)
         val flags = elements(2).convertTo[String]
         val comments = elements(3).convertTo[String]
@@ -50,15 +51,35 @@ object CoreTestCaseProtocol extends DefaultJsonProtocol {
      * Parses the script signature asm, it can come in multiple formats
      * such as byte strings i.e. 0x02 0x01 0x00
      * and numbers   1  2
+     * look at scirpt_valid.json file for example formats
      * @param elements
      * @return
      */
-    private def parseScriptSignatureAsm(elements : Vector[JsValue]) : Seq[ScriptToken] = {
+    private def parseScriptSignatureAsm(element : JsValue) : Seq[ScriptToken] = {
       try {
-        ScriptParser.parse(parseBytes(elements.head.convertTo[String]))
+        ScriptParser.parse(parseBytes(element.convertTo[String]))
       } catch {
-        case _ => ScriptParser.parse(elements.head.convertTo[String])
+        case err =>  throw err//ScriptParser.parse(ScalacoinUtil.decodeHex(element.convertTo[String]))
       }
+    }
+
+
+    /**
+     * Parses a script pubkey asm from the bitcoin core test cases,
+     * example formats:
+     * "2 EQUALVERIFY 1 EQUAL"
+     * "'Az' EQUAL"
+     * look at scirpt_valid.json file for more example formats
+     * @param element
+     * @return
+     */
+    private def parseScriptPubKeyAsm(element : JsValue) : Seq[ScriptToken] = {
+      try {
+        ScriptParser.parse(ScalacoinUtil.decodeHex(element.convertTo[String].toLowerCase))
+      } catch {
+        case _ => ScriptParser.parse(element.convertTo[String])
+      }
+
     }
 
     private def parseBytes(s: String): List[Byte] = {
