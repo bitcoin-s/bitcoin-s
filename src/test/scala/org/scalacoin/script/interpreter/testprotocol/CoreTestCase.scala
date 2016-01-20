@@ -13,7 +13,8 @@ trait CoreTestCase {
   def scriptPubKey : ScriptPubKey
   def flags : String
   def comments : String
+  def raw : String
 }
 
 case class CoreTestCaseImpl(scriptSig : ScriptSignature,
-  scriptPubKey: ScriptPubKey, flags : String, comments : String) extends CoreTestCase
+  scriptPubKey: ScriptPubKey, flags : String, comments : String, raw : String) extends CoreTestCase
