@@ -7,7 +7,9 @@ import org.scalacoin.script.ScriptOperationFactory
  */
 trait ScriptNumberFactory extends ScriptOperationFactory[ScriptNumber] {
 
-  override def operations = for { i <- 1 to 75 } yield ScriptNumberImpl(i)
+  override def operations : Seq[ScriptNumber] =  OP_0 :: (for { i <- 1 to 75 } yield ScriptNumberImpl(i)).toList
+
+  def factory(num : Int) : Option[ScriptNumber] = operations.find(_.opCode == num)
 
 }
 

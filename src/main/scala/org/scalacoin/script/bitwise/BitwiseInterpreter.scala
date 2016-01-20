@@ -2,12 +2,14 @@ package org.scalacoin.script.bitwise
 
 import org.scalacoin.script.constant.{ScriptFalse, ScriptTrue, ScriptConstantImpl, ScriptToken}
 import org.scalacoin.script.control.{OP_VERIFY, ControlOperationsInterpreter}
+import org.slf4j.LoggerFactory
 
 /**
  * Created by chris on 1/6/16.
  */
 trait BitwiseInterpreter extends ControlOperationsInterpreter  {
 
+  private def logger = LoggerFactory.getLogger(this.getClass())
   /**
    * Returns 1 if the inputs are exactly equal, 0 otherwise.
    * @param stack
@@ -17,11 +19,13 @@ trait BitwiseInterpreter extends ControlOperationsInterpreter  {
   def equal(stack : List[ScriptToken], script : List[ScriptToken]) : (List[ScriptToken], List[ScriptToken]) = {
     require(stack.size > 1, "Stack size must be 2 or more to compare the top two values")
     require(script.headOption.isDefined && script.head == OP_EQUAL, "Script operation must be OP_EQUAL")
+
+    logger.debug("Original stack: " + stack)
     val newStack = stack match {
       case h :: h1 :: t => if (h == h1) ScriptTrue :: t else ScriptFalse  :: t
     }
+    logger.debug("New Stack: " + newStack)
     (newStack,script.tail)
-
   }
 
   /**

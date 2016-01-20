@@ -1,6 +1,6 @@
 package org.scalacoin.script.bitwise
 
-import org.scalacoin.script.constant.ScriptConstantImpl
+import org.scalacoin.script.constant.{ScriptTrue, ScriptConstantImpl}
 import org.scalatest.{MustMatchers, FlatSpec}
 
 /**
@@ -14,7 +14,7 @@ class BitwiseInterpreterTest extends FlatSpec with MustMatchers with BitwiseInte
     val script = List(OP_EQUAL)
 
     val (newStack,newScript) = equal(stack,script)
-    newStack.head must be (ScriptConstantImpl("1"))
+    newStack.head must be (ScriptTrue)
   }
 
   it must "throw an exception for OP_EQUAL when we don't have enough items on the stack" in {

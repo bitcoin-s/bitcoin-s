@@ -38,7 +38,7 @@ case class ScriptConstantImpl(hex : String) extends ScriptConstant
 /**
  * An empty array of bytes is pushed onto the stack. (This is not a no-op: an item is added to the stack.)
  */
-case object OP_0 extends ScriptOperation {
+case object OP_0 extends ScriptOperation with ScriptNumber {
   override def opCode = 0
 }
 /**
