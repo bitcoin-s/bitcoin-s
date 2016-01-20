@@ -22,19 +22,26 @@ object CoreTestCaseProtocol extends DefaultJsonProtocol {
         case _ => throw new RuntimeException("Core test case must be in the format of js array")
       }
       val elements = jsArray.elements
-      if (elements.size != 4) {
+      if (elements.size < 3) {
         //means that the line is probably a separator between different types of test cases i.e.
         //["Equivalency of different numeric encodings"]
         None
-      } else {
+      } else if (elements.size == 3) {
+        val scriptSignatureAsm : Seq[ScriptToken] = ScriptParser.parse(elements.head.convertTo[String])
+        val scriptSignature : ScriptSignature = ScriptSignatureFactory.factory(scriptSignatureAsm)
+        val scriptPubKeyAsm : Seq[ScriptToken] = ScriptParser.parse(elements(1).convertTo[String])
+        val scriptPubKey = ScriptPubKeyFactory.factory(scriptPubKeyAsm)
+        val flags = elements(2).convertTo[String]
+        Some(CoreTestCaseImpl(scriptSignature,scriptPubKey,flags,"No comments from bitcoin core ",elements.toString))
+      } else if (elements.size == 4) {
         val scriptSignatureAsm : Seq[ScriptToken] = ScriptParser.parse(elements.head.convertTo[String])
         val scriptSignature : ScriptSignature = ScriptSignatureFactory.factory(scriptSignatureAsm)
         val scriptPubKeyAsm : Seq[ScriptToken] = ScriptParser.parse(elements(1).convertTo[String])
         val scriptPubKey = ScriptPubKeyFactory.factory(scriptPubKeyAsm)
         val flags = elements(2).convertTo[String]
         val comments = elements(3).convertTo[String]
-        Some(CoreTestCaseImpl(scriptSignature,scriptPubKey,flags,comments))
-      }
+        Some(CoreTestCaseImpl(scriptSignature,scriptPubKey,flags,comments, elements.toString))
+      } else None
 
     }
 

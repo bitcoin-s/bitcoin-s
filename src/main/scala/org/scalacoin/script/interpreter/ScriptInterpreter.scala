@@ -31,34 +31,38 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
 
     @tailrec
     def loop(scripts : (List[ScriptToken], List[ScriptToken])) : Boolean = {
-      val (stack,outputScript) = (scripts._1, scripts._2)
-      outputScript match {
+      val (stack,script) = (scripts._1, scripts._2)
+      script match {
         //stack operations
-        case OP_DUP :: t => loop(opDup(stack,outputScript))
-        case OP_DEPTH :: t => loop(opDepth(stack,outputScript))
+        case OP_DUP :: t => loop(opDup(stack,script))
+        case OP_DEPTH :: t => loop(opDepth(stack,script))
 
         //bitwise operations
         case OP_EQUAL :: t => {
-          val (newInputScript,newOutputScript) = equal(stack, outputScript)
-          logger.debug("New input script: " + newInputScript)
-          logger.debug("new output script: " + newOutputScript)
-          if (newInputScript.head == ScriptTrue && newOutputScript.size == 0) true
-          else if (newInputScript.head == ScriptFalse && newOutputScript.size == 0) false
-          else loop(newInputScript,newOutputScript)
+          val (newStack,newScript) = equal(stack, script)
+          logger.debug("New stack: " + newStack)
+          logger.debug("New script: " + newScript)
+          if (newStack.head == ScriptTrue && newScript.size == 0) true
+          else if (newStack.head == ScriptFalse && newScript.size == 0) false
+          else loop(newStack,newScript)
         }
-        case OP_EQUALVERIFY :: t => equalVerify(stack,outputScript)
+        case OP_EQUALVERIFY :: t => equalVerify(stack,script)
 
         //script constants
         //TODO: Implement these
         case ScriptConstantImpl(x) :: t if x == "1" => throw new RuntimeException("Not implemented yet")
         case ScriptConstantImpl(x) :: t if x == "0" => throw new RuntimeException("Not implemented yet")
-        case OP_0 :: t => loop(OP_0 :: stack, t)
+        case (scriptNumber : ScriptNumber)::t => loop(scriptNumber :: stack, t)
+
         //TODO: is this right? I need to just push a constant on the input stack???
         case ScriptConstantImpl(x) :: t => loop((ScriptConstantImpl(x) :: stack, t))
 
         //crypto operations
-        case OP_HASH160 :: t => loop(hash160(stack,outputScript))
-        case OP_CHECKSIG :: t => checkSig(stack,outputScript,fullScript)
+        case OP_HASH160 :: t => loop(hash160(stack,script))
+        case OP_CHECKSIG :: t => checkSig(stack,script,fullScript)
+        //no more script operations to run, if stack top is true or '1' then it is a valid script
+        case Nil => stack.head == OP_1 || stack.head == ScriptTrue
+        case h :: t => throw new RuntimeException(h + " was unmatched")
       }
     }
 

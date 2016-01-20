@@ -86,112 +86,112 @@ case object OP_TRUE extends ScriptOperation {
 /**
  * The number 1 is pushed onto the stack.
  */
-case object OP_1 extends ScriptOperation {
+case object OP_1 extends ScriptOperation with ScriptNumber {
   override def opCode = OP_TRUE.opCode
 }
 
 /**
  * The number 2 is pushed onto the stack.
  */
-case object OP_2 extends ScriptOperation {
+case object OP_2 extends ScriptOperation with ScriptNumber {
   override def opCode = 82
 }
 
 /**
  * The number 3 is pushed onto the stack.
  */
-case object OP_3 extends ScriptOperation {
+case object OP_3 extends ScriptOperation with ScriptNumber {
   override def opCode = 83
 }
 
 /**
  * The number 4 is pushed onto the stack.
  */
-case object OP_4 extends ScriptOperation {
+case object OP_4 extends ScriptOperation with ScriptNumber {
   override def opCode = 84
 }
 
 /**
  * The number 5 is pushed onto the stack.
  */
-case object OP_5 extends ScriptOperation {
+case object OP_5 extends ScriptOperation with ScriptNumber {
   override def opCode = 85
 }
 
 /**
  * The number 6 is pushed onto the stack.
  */
-case object OP_6 extends ScriptOperation {
+case object OP_6 extends ScriptOperation with ScriptNumber {
   override def opCode = 86
 }
 
 /**
  * The number 7 is pushed onto the stack.
  */
-case object OP_7 extends ScriptOperation {
+case object OP_7 extends ScriptOperation with ScriptNumber {
   override def opCode = 87
 }
 
 /**
  * The number 8 is pushed onto the stack.
  */
-case object OP_8 extends ScriptOperation {
+case object OP_8 extends ScriptOperation with ScriptNumber {
   override def opCode = 88
 }
 
 /**
  * The number 9 is pushed onto the stack.
  */
-case object OP_9 extends ScriptOperation {
+case object OP_9 extends ScriptOperation with ScriptNumber {
   override def opCode = 89
 }
 
 /**
  * The number 10 is pushed onto the stack.
  */
-case object OP_10 extends ScriptOperation {
+case object OP_10 extends ScriptOperation with ScriptNumber {
   override def opCode = 90
 }
 
 /**
  * The number 11 is pushed onto the stack.
  */
-case object OP_11 extends ScriptOperation {
+case object OP_11 extends ScriptOperation with ScriptNumber {
   override def opCode = 91
 }
 
 /**
  * The number 12 is pushed onto the stack.
  */
-case object OP_12 extends ScriptOperation {
+case object OP_12 extends ScriptOperation with ScriptNumber {
   override def opCode = 92
 }
 
 /**
  * The number 13 is pushed onto the stack.
  */
-case object OP_13 extends ScriptOperation {
+case object OP_13 extends ScriptOperation with ScriptNumber {
   override def opCode = 93
 }
 
 /**
  * The number 14 is pushed onto the stack.
  */
-case object OP_14 extends ScriptOperation {
+case object OP_14 extends ScriptOperation with ScriptNumber {
   override def opCode = 94
 }
 
 /**
  * The number 15 is pushed onto the stack.
  */
-case object OP_15 extends ScriptOperation {
+case object OP_15 extends ScriptOperation with ScriptNumber {
   override def opCode = 95
 }
 
 /**
  * The number 16 is pushed onto the stack.
  */
-case object OP_16 extends ScriptOperation {
+case object OP_16 extends ScriptOperation with ScriptNumber {
   override def opCode = 96
 }
 

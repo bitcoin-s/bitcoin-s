@@ -37,15 +37,16 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterp
     val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n" finally source.close()
     val json = lines.parseJson
     val testCasesOpt : Seq[Option[CoreTestCase]] = json.convertTo[Seq[Option[CoreTestCase]]]
-    val testCases = Seq(testCasesOpt.flatten.head)
+    val testCases : Seq[CoreTestCase] = testCasesOpt.flatten
 
 
     for {
       testCase <- testCases
     } yield {
       logger.info("Running test case: ")
-      logger.info("ScriptSig: " + testCase.scriptSig)
-      logger.info("ScriptPubKey: " + testCase.scriptPubKey)
+      logger.info("Raw test case: " + testCase.raw)
+      logger.info("Parsed ScriptSig: " + testCase.scriptSig)
+      logger.info("Parsed ScriptPubKey: " + testCase.scriptPubKey)
       logger.info("Flags: " + testCase.flags)
       logger.info("Comments: " + testCase.comments)
       withClue(testCase.comments) {
