@@ -1,6 +1,6 @@
 package org.scalacoin.script.stack
 
-import org.scalacoin.script.constant.{ScriptConstantImpl, ScriptConstant, ScriptToken}
+import org.scalacoin.script.constant._
 
 /**
  * Created by chris on 1/6/16.
@@ -34,8 +34,11 @@ trait StackInterpreter {
     require(script.headOption.isDefined && script.head == OP_DEPTH, "Top of script stack must be OP_DEPTH")
     require(script.size >= 1, "OP_DEPTH requires at least two elements on the script stack")
     val operation = script.head
-    val numberToPush : ScriptConstant = ScriptConstantImpl(stack.size.toHexString)
-    (numberToPush :: stack, script.tail)
+    val stackSize = stack.size
+
+    val numberToPush : Option[ScriptNumber] = ScriptNumberFactory.factory(stackSize)
+    require(numberToPush.isDefined, "Stack size was to large to find in the script number factory, stack size was: " + stackSize)
+    (numberToPush.get :: stack, script.tail)
   }
 
 }

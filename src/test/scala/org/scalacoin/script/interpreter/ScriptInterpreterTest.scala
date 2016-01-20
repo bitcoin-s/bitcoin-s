@@ -18,7 +18,7 @@ import spray.json._
 class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterpreter {
 
 
-  private val logger = LoggerFactory.getLogger(this.getClass().toString)
+  private val logger = LoggerFactory.getLogger(this.getClass())
 
   "ScriptInterpreter" must "evaluate a valid script to true" in {
     //this is in asm format, not hex

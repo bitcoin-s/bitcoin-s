@@ -22,6 +22,8 @@ trait ScriptParser extends ScalacoinUtil {
     @tailrec
     def loop(operations : List[String], accum : List[ScriptToken]) : List[ScriptToken] = {
       operations match {
+        //skip the empty string
+        case h :: t if (h == "") => loop(t,accum)
         case h :: t if (h == "0") => loop(t, OP_0 :: accum)
         case h :: t if (ScriptOperationFactory.fromString(h).isDefined) =>
           loop(t,ScriptOperationFactory.fromString(h).get :: accum)
@@ -46,8 +48,10 @@ trait ScriptParser extends ScalacoinUtil {
       bytes match {
         case h :: t =>
           val op  = ScriptOperationFactory.fromByte(h).get
+          //means that we need to push OP_0 onto the stack
+          if (op == OP_0) loop(t,OP_0 :: accum)
           //means that we need to push x amount of bytes on to the stack
-          if (ScriptNumberFactory.operations.contains(op)) {
+          else if (ScriptNumberFactory.operations.contains(op)) {
             val (constant,tail) = pushConstant(ScriptNumberImpl(op.opCode),t)
             loop(tail, constant :: accum)
           } else loop(t, op :: accum)
