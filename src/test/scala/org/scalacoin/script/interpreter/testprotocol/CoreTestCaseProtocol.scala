@@ -21,20 +21,20 @@ object CoreTestCaseProtocol extends DefaultJsonProtocol {
         case array : JsArray => array
         case _ => throw new RuntimeException("Core test case must be in the format of js array")
       }
-      val elements = jsArray.elements
+      val elements : Vector[JsValue]  = jsArray.elements
       if (elements.size < 3) {
         //means that the line is probably a separator between different types of test cases i.e.
         //["Equivalency of different numeric encodings"]
         None
       } else if (elements.size == 3) {
-        val scriptSignatureAsm : Seq[ScriptToken] = ScriptParser.parse(elements.head.convertTo[String])
+        val scriptSignatureAsm : Seq[ScriptToken] = parseScriptSignatureAsm(elements)
         val scriptSignature : ScriptSignature = ScriptSignatureFactory.factory(scriptSignatureAsm)
         val scriptPubKeyAsm : Seq[ScriptToken] = ScriptParser.parse(elements(1).convertTo[String])
         val scriptPubKey = ScriptPubKeyFactory.factory(scriptPubKeyAsm)
         val flags = elements(2).convertTo[String]
         Some(CoreTestCaseImpl(scriptSignature,scriptPubKey,flags,"No comments from bitcoin core ",elements.toString))
       } else if (elements.size == 4) {
-        val scriptSignatureAsm : Seq[ScriptToken] = ScriptParser.parse(elements.head.convertTo[String])
+        val scriptSignatureAsm : Seq[ScriptToken] = parseScriptSignatureAsm(elements)
         val scriptSignature : ScriptSignature = ScriptSignatureFactory.factory(scriptSignatureAsm)
         val scriptPubKeyAsm : Seq[ScriptToken] = ScriptParser.parse(elements(1).convertTo[String])
         val scriptPubKey = ScriptPubKeyFactory.factory(scriptPubKeyAsm)
@@ -43,6 +43,29 @@ object CoreTestCaseProtocol extends DefaultJsonProtocol {
         Some(CoreTestCaseImpl(scriptSignature,scriptPubKey,flags,comments, elements.toString))
       } else None
 
+    }
+
+
+    /**
+     * Parses the script signature asm, it can come in multiple formats
+     * such as byte strings i.e. 0x02 0x01 0x00
+     * and numbers   1  2
+     * @param elements
+     * @return
+     */
+    private def parseScriptSignatureAsm(elements : Vector[JsValue]) : Seq[ScriptToken] = {
+      try {
+        ScriptParser.parse(parseBytes(elements.head.convertTo[String]))
+      } catch {
+        case _ => ScriptParser.parse(elements.head.convertTo[String])
+      }
+    }
+
+    private def parseBytes(s: String): List[Byte] = {
+      (raw"\b0x([0-9a-f]{2})\b".r
+        .findAllMatchIn(s)
+        .map(g => Integer.parseInt(g.group(1), 16).toByte)
+        .toList)
     }
 
     override def write(coreTestCase : Option[CoreTestCase]) : JsValue = ???
