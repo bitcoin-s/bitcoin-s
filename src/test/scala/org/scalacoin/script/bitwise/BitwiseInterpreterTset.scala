@@ -33,7 +33,7 @@ class BitwiseInterpreterTest extends FlatSpec with MustMatchers with BitwiseInte
     val stack = List(pubKeyHash, pubKeyHash)
     val script = List(OP_EQUALVERIFY)
     val result = equalVerify(stack,script)
-    result must be (true)
+    result._3 must be (true)
   }
 
   it must "evaluate OP_EQUALVERIFY to false given two different pub keys" in {
@@ -41,7 +41,7 @@ class BitwiseInterpreterTest extends FlatSpec with MustMatchers with BitwiseInte
     val stack = List(pubKeyHash,uniquePubKey)
     val script = List(OP_EQUALVERIFY)
     val result = equalVerify(stack,script)
-    result must be (false)
+    result._3 must be (false)
   }
 
   it must "throw an exception for OP_EQUALVERIFY when we don't have enough args in stack" in {

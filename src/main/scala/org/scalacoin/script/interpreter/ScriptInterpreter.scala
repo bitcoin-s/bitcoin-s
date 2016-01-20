@@ -46,13 +46,13 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
           else if (newStack.head == ScriptFalse && newScript.size == 0) false
           else loop(newStack,newScript)
         }
-        case OP_EQUALVERIFY :: t => equalVerify(stack,script)
+        case OP_EQUALVERIFY :: t => equalVerify(stack,script)._3
 
         //script constants
         //TODO: Implement these
         case ScriptConstantImpl(x) :: t if x == "1" => throw new RuntimeException("Not implemented yet")
         case ScriptConstantImpl(x) :: t if x == "0" => throw new RuntimeException("Not implemented yet")
-        case (scriptNumber : ScriptNumber)::t => loop(scriptNumber :: stack, t)
+        case (scriptNumber : ScriptNumber) :: t => loop(scriptNumber :: stack, t)
 
         //TODO: is this right? I need to just push a constant on the input stack???
         case ScriptConstantImpl(x) :: t => loop((ScriptConstantImpl(x) :: stack, t))

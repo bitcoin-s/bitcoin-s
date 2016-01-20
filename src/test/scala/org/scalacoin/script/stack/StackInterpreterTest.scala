@@ -1,6 +1,7 @@
 package org.scalacoin.script.stack
 
 import org.scalacoin.script.constant.ScriptConstantImpl
+import org.scalacoin.util.ScalacoinUtil
 import org.scalatest.{FlatSpec, MustMatchers}
 
 /**
@@ -40,7 +41,7 @@ class StackInterpreterTest extends FlatSpec with MustMatchers with StackInterpre
     val script = List(OP_DEPTH)
     val (newStack,newScript) = opDepth(stack,script)
 
-    newStack.head.hex must be (stack.size.toHexString)
+    newStack.head.hex must be (ScalacoinUtil.encodeHex(stack.size.toByte))
   }
 
   it must "evaluate OP_DEPTH operator correctly when there are zero items on the stack" in {
