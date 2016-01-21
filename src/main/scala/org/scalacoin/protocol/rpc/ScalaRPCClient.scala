@@ -155,9 +155,6 @@ class ScalaRPCClient (client : String, network : String) extends MarshallerUtil 
    */
   def getBestBlockHash : String = sendCommand("getbestblockhash")
 
-  //def signMessage(address : String, message : String) : String = {
-  //  sendCommand("signmessage " + address + " " + message)
-  //}
 
 
 
