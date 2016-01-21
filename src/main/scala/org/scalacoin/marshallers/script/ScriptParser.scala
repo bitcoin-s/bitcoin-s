@@ -20,10 +20,11 @@ trait ScriptParser extends ScalacoinUtil {
    * @return
    */
   def parse(str : String) : List[ScriptToken] = {
-    require(ScriptOperationFactory.fromString(str.split(" ").head).isDefined,
-      "String for parsing was not given in stringified asm format.\nNeeds to have a asm operation, " +
-        "for example \"OP_DUP OP_HASH160 e2e7c1ab3f807151e832dd1accb3d4f5d7d19b4b OP_EQUALVERIFY OP_CHECKSIG\"\n" +
-        "given string was: " + str)
+/*    require(ScriptOperationFactory.fromString(str.split(" ").head).isDefined,
+      "String for parsing was not given in stringified asm format.\n" +
+        "Needs to have a asm operation, for example " +
+        "\"OP_DUP OP_HASH160 e2e7c1ab3f807151e832dd1accb3d4f5d7d19b4b OP_EQUALVERIFY OP_CHECKSIG\"\n" +
+        "given string was: " + str)*/
     @tailrec
     def loop(operations : List[String], accum : List[ScriptToken]) : List[ScriptToken] = {
       operations match {
@@ -36,7 +37,21 @@ trait ScriptParser extends ScalacoinUtil {
         case Nil => accum
       }
     }
-    loop(str.split(" ").toList.reverse, List())
+
+
+    //if the given string is hex, it is pretty straightforward to parse it
+    if (ScalacoinUtil.isHex(str)) {
+      //convert the hex string to a byte array and parse it
+      val bytes = ScalacoinUtil.decodeHex(str)
+      parse(bytes)
+    } else {
+      //this handles weird cases for parsing with various formats in bitcoin core.
+      //take a look at https://github.com/bitcoin/bitcoin/blob/605c17844ea32b6d237db6d83871164dc7d59dab/src/core_read.cpp#L53-L88
+      //for the offical parsing algorithm, for examples of weird formats look inside of
+      //https://github.com/bitcoin/bitcoin/blob/master/src/test/data/script_valid.json
+      loop(str.split(" ").toList.reverse, List())
+    }
+
   }
 
 
@@ -52,7 +67,7 @@ trait ScriptParser extends ScalacoinUtil {
     def loop(bytes : List[Byte], accum : List[ScriptToken]) : List[ScriptToken] = {
       bytes match {
         case h :: t =>
-          logger.debug("Op for matching: " + h)
+          logger.debug("Op for matching: " + h.toByte)
           val op  = ScriptOperationFactory.fromByte(h).get
           //means that we need to push OP_0 onto the stack
           if (op == OP_0) loop(t,OP_0 :: accum)

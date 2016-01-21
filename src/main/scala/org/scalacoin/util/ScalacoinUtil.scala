@@ -27,6 +27,21 @@ trait ScalacoinUtil {
 
   def encodeHex(byte : Byte) : String = Utils.HEX.encode(Array(byte))
 
+  /**
+   * Tests if a given string is a hexadecimal string
+   * @param str
+   * @return
+   */
+  def isHex(str : String) = {
+    try {
+      decodeHex(str)
+      true
+    } catch {
+      case _ : Throwable => false
+    }
+
+  }
+
   def decodeBase58(base58 : String) : List[Byte] = Base58.decode(base58).toList
 
   def encodeBase58(bytes : List[Byte]) : String = Base58.encode(bytes.toArray)

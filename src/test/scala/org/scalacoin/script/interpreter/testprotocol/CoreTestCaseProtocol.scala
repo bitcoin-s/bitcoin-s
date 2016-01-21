@@ -4,7 +4,7 @@ import org.scalacoin.marshallers.script.ScriptParser
 import org.scalacoin.marshallers.script.ScriptPubKeyMarshaller.ScriptPubKeyFormatter
 import org.scalacoin.marshallers.script.ScriptSignatureMarshaller.ScriptSignatureFormatter
 import org.scalacoin.protocol.script.{ScriptPubKeyFactory, ScriptSignatureFactory, ScriptSignature}
-import org.scalacoin.script.constant.ScriptToken
+import org.scalacoin.script.constant.{ScriptOperation, ScriptToken}
 import org.scalacoin.util.ScalacoinUtil
 import org.slf4j.LoggerFactory
 import spray.json._
@@ -59,7 +59,7 @@ object CoreTestCaseProtocol extends DefaultJsonProtocol {
       try {
         ScriptParser.parse(parseBytes(element.convertTo[String]))
       } catch {
-        case err =>  throw err//ScriptParser.parse(ScalacoinUtil.decodeHex(element.convertTo[String]))
+        case err : Throwable => ScriptParser.parse(ScalacoinUtil.decodeHex(element.convertTo[String]))
       }
     }
 
@@ -77,17 +77,24 @@ object CoreTestCaseProtocol extends DefaultJsonProtocol {
       try {
         ScriptParser.parse(ScalacoinUtil.decodeHex(element.convertTo[String].toLowerCase))
       } catch {
-        case _ => ScriptParser.parse(element.convertTo[String])
+        case _ : Throwable => ScriptParser.parse(element.convertTo[String])
       }
 
     }
 
     private def parseBytes(s: String): List[Byte] = {
-      (raw"\b0x([0-9a-f]{2})\b".r
+      val hexStrings : List[String] = (raw"\b0x([0-9a-f]+)\b".r
         .findAllMatchIn(s)
-        .map(g => Integer.parseInt(g.group(1), 16).toByte)
+        .map(g => Integer.parseInt(g.group(1), 16).toHexString)
         .toList)
+      val paddedHexStrings = hexStrings.map(hex => if (hex.size == 1) "0"+hex else hex )
+      val parsedBytes = paddedHexStrings.flatMap(ScalacoinUtil.decodeHex(_))
+      logger.debug("Parsed  bytes: " + parsedBytes)
+      parsedBytes
+
     }
+
+
 
     override def write(coreTestCase : Option[CoreTestCase]) : JsValue = ???
   }
