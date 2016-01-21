@@ -27,7 +27,10 @@ trait ScriptParser extends ScalacoinUtil {
         "given string was: " + str)*/
     @tailrec
     def loop(operations : List[String], accum : List[ScriptToken]) : List[ScriptToken] = {
+      logger.debug("Attempting to parse: " + operations.headOption)
       operations match {
+        //if we see a byte constant in the form of "0x09"
+        case h  :: t if (h.size > 1 && h.substring(0,2) == "0x") => loop(t,parseBytesFromString(h) ++ accum)
         //skip the empty string
         case h :: t if (h == "") => loop(t,accum)
         case h :: t if (h == "0") => loop(t, OP_0 :: accum)
@@ -49,7 +52,7 @@ trait ScriptParser extends ScalacoinUtil {
       //take a look at https://github.com/bitcoin/bitcoin/blob/605c17844ea32b6d237db6d83871164dc7d59dab/src/core_read.cpp#L53-L88
       //for the offical parsing algorithm, for examples of weird formats look inside of
       //https://github.com/bitcoin/bitcoin/blob/master/src/test/data/script_valid.json
-      loop(str.split(" ").toList.reverse, List())
+      loop(str.split(" ").toList, List()).reverse
     }
 
   }
@@ -62,7 +65,7 @@ trait ScriptParser extends ScalacoinUtil {
    * @return
    */
   def parse(bytes : List[Byte]) : List[ScriptToken] = {
-
+    logger.info("Parsing a byte array into a list of script tokens")
     @tailrec
     def loop(bytes : List[Byte], accum : List[ScriptToken]) : List[ScriptToken] = {
       bytes match {
@@ -86,6 +89,26 @@ trait ScriptParser extends ScalacoinUtil {
     val finalIndex = op.opCode
     val constant : ScriptConstantImpl = ScriptConstantImpl(encodeHex(bytes.slice(0,finalIndex)))
     (constant, bytes.slice(finalIndex,bytes.size))
+  }
+
+  /**
+   * Parses the bytes in string format, an example input would look like this
+   * "0x09 0x00000000 0x00000000 0x10"
+   * see https://github.com/bitcoin/bitcoin/blob/master/src/test/data/script_valid.json#L21-L25
+   * for examples of this
+   * @param s
+   * @return
+   */
+  private def parseBytesFromString(s: String) : List[ScriptConstant] = {
+    val hexStrings : List[String] = (raw"\b0x([0-9a-f]+)\b".r
+      .findAllMatchIn(s)
+      .map(g => Integer.parseInt(g.group(1), 16).toHexString)
+      .toList)
+    val paddedHexStrings = hexStrings.map(hex => if (hex.size == 1) "0"+hex else hex )
+    logger.debug("Padded hex strings: " + paddedHexStrings)
+    //TODO: Figure out a better way to do this without calling .get on the result of fromByte
+    val constants = paddedHexStrings.map(ScriptConstantImpl(_))
+    constants
   }
 }
 
