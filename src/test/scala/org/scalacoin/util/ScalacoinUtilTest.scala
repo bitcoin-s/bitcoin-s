@@ -11,9 +11,10 @@ class ScalacoinUtilTest extends FlatSpec with MustMatchers with ScalacoinUtil {
 
 
     isHex("") must be (true)
+    isHex("    ") must be (true)
     isHex("abcdef") must be (true)
     isHex("0123456789abcdef") must be (true)
-    
+
     isHex("z") must be (false)
     isHex("0123456789abcdefg") must be (false)
   }

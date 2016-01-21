@@ -11,7 +11,7 @@ trait ScalacoinUtil {
 
   def hexToBigInt(hex : String) : BigInt = BigInt(hex, 16)
 
-  def decodeHex(hex : String) : List[Byte] = Utils.HEX.decode(hex).toList
+  def decodeHex(hex : String) : List[Byte] = Utils.HEX.decode(hex.trim).toList
 
   def decodeHex(char : Char) : Byte = Utils.HEX.decode(char.toString).toList.head
 
@@ -34,7 +34,7 @@ trait ScalacoinUtil {
    */
   def isHex(str : String) = {
     try {
-      decodeHex(str)
+      decodeHex(str.trim)
       true
     } catch {
       case _ : Throwable => false

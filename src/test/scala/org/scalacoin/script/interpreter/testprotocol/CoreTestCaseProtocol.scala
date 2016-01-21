@@ -56,11 +56,7 @@ object CoreTestCaseProtocol extends DefaultJsonProtocol {
      * @return
      */
     private def parseScriptSignatureAsm(element : JsValue) : Seq[ScriptToken] = {
-      try {
-        ScriptParser.parse(parseBytes(element.convertTo[String]))
-      } catch {
-        case err : Throwable => ScriptParser.parse(ScalacoinUtil.decodeHex(element.convertTo[String]))
-      }
+      ScriptParser.parse(element.convertTo[String])
     }
 
 
@@ -82,17 +78,7 @@ object CoreTestCaseProtocol extends DefaultJsonProtocol {
 
     }
 
-    private def parseBytes(s: String): List[Byte] = {
-      val hexStrings : List[String] = (raw"\b0x([0-9a-f]+)\b".r
-        .findAllMatchIn(s)
-        .map(g => Integer.parseInt(g.group(1), 16).toHexString)
-        .toList)
-      val paddedHexStrings = hexStrings.map(hex => if (hex.size == 1) "0"+hex else hex )
-      val parsedBytes = paddedHexStrings.flatMap(ScalacoinUtil.decodeHex(_))
-      logger.debug("Parsed  bytes: " + parsedBytes)
-      parsedBytes
 
-    }
 
 
 
