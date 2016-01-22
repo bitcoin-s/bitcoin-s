@@ -27,9 +27,9 @@ class ScriptNumberFactoryTest extends FlatSpec with MustMatchers with ScriptNumb
     result.get must be (ScriptNumberImpl(2))
   }
 
-  it must "not allow creation of the script number -1" in {
+  it must "not allow creation of the script number -2" in {
     intercept[IllegalArgumentException] {
-      operations.exists(_ == ScriptNumberImpl(-1)) must be (false)
+      operations.exists(_ == ScriptNumberImpl(-2)) must be (false)
     }
   }
 
