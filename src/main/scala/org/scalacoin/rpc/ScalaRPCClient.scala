@@ -1,4 +1,4 @@
-package org.scalacoin.protocol.rpc
+package org.scalacoin.rpc
 
 import org.scalacoin.marshallers.MarshallerUtil
 import org.scalacoin.marshallers.blockchain.{ConfirmedUnspentTransactionOutputMarshaller, BlockchainInfoMarshaller, MemPoolInfoMarshaller}
