@@ -1,6 +1,6 @@
 package org.scalacoin.script.control
 
-import org.scalacoin.script.constant.{ScriptFalse, ScriptTrue, ScriptConstantImpl}
+import org.scalacoin.script.constant._
 import org.scalatest.{MustMatchers, FlatSpec}
 
 /**
@@ -36,5 +36,25 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers with C
       val script = List()
       val result = verify(stack,script)
     }
+  }
+
+  it must "find the indexes of our OP_ENDIF in a list of script tokens" in {
+    val l = List(OP_ENDIF)
+    findOP_ENDIF(l) must be (Some(0))
+    findOP_ENDIF(List(OP_IF,OP_ELSE,OP_ENDIF,OP_ENDIF)) must be (Some(2))
+    findOP_ENDIF(List(OP_0,OP_1,OP_2)) must be (None)
+
+  }
+
+  it must "find the indexes of OP_ELSE in a list of script tokens" in {
+    findOP_ELSE(List(OP_ELSE)) must be (Some(0))
+    findOP_ELSE(List(OP_IF,OP_ELSE,OP_ENDIF,OP_ELSE)) must be (Some(1))
+    findOP_ELSE(List(OP_0,OP_1,OP_2)) must be (None)
+  }
+
+  it must "find the indexes of OP_ELSE and OP_ENDIF in a list of script tokens" in {
+    findIndexesOP_ELSE_OP_ENDIF(List(OP_ELSE,OP_ENDIF)) must be (Some(0),Some(1))
+    findIndexesOP_ELSE_OP_ENDIF(List(OP_IF, OP_ELSE,OP_ENDIF, OP_IF,OP_ELSE,OP_ENDIF)) must be (Some(1),Some(2))
+    findIndexesOP_ELSE_OP_ENDIF(List(OP_IF,OP_IF)) must be (None,None)
   }
 }

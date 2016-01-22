@@ -3,7 +3,7 @@ package org.scalacoin.script.interpreter
 import org.scalacoin.protocol.script.{ScriptSignature, ScriptPubKey}
 import org.scalacoin.script.bitwise.{OP_EQUAL, BitwiseInterpreter, OP_EQUALVERIFY}
 import org.scalacoin.script.constant._
-import org.scalacoin.script.control.ControlOperationsInterpreter
+import org.scalacoin.script.control.{OP_NOTIF, OP_IF, ControlOperationsInterpreter}
 import org.scalacoin.script.crypto.{OP_CHECKSIG, OP_HASH160, CryptoInterpreter}
 import org.scalacoin.script.stack.{OP_DEPTH, StackInterpreter, OP_DUP}
 import org.slf4j.LoggerFactory
@@ -57,7 +57,9 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
 
         //TODO: is this right? I need to just push a constant on the input stack???
         case ScriptConstantImpl(x) :: t => loop((ScriptConstantImpl(x) :: stack, t))
-
+          //control operations
+        case OP_IF :: t => loop(opIf(stack,script))
+        case OP_NOTIF :: t => loop(opNotIf(stack,script))
         //crypto operations
         case OP_HASH160 :: t => loop(hash160(stack,script))
         case OP_CHECKSIG :: t => checkSig(stack,script,fullScript)
