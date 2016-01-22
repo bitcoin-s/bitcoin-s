@@ -20,11 +20,8 @@ trait ScriptParser extends ScalacoinUtil {
    * @return
    */
   def parse(str : String) : List[ScriptToken] = {
-/*    require(ScriptOperationFactory.fromString(str.split(" ").head).isDefined,
-      "String for parsing was not given in stringified asm format.\n" +
-        "Needs to have a asm operation, for example " +
-        "\"OP_DUP OP_HASH160 e2e7c1ab3f807151e832dd1accb3d4f5d7d19b4b OP_EQUALVERIFY OP_CHECKSIG\"\n" +
-        "given string was: " + str)*/
+    logger.info("Parsing string: " + str + " into a list of script tokens")
+
     @tailrec
     def loop(operations : List[String], accum : List[ScriptToken]) : List[ScriptToken] = {
       logger.debug("Attempting to parse: " + operations.headOption)
@@ -65,20 +62,24 @@ trait ScriptParser extends ScalacoinUtil {
    * @return
    */
   def parse(bytes : List[Byte]) : List[ScriptToken] = {
-    logger.info("Parsing a byte array into a list of script tokens")
+    logger.info("Parsing byte list: " + bytes + " into a list of script tokens")
     @tailrec
     def loop(bytes : List[Byte], accum : List[ScriptToken]) : List[ScriptToken] = {
+      logger.debug("Byte to be parsed: " + bytes.headOption)
       bytes match {
         case h :: t =>
-          logger.debug("Op for matching: " + h.toByte)
+          logger.debug("Op for matching: " + h)
           val op  = ScriptOperationFactory.fromByte(h).get
-          //means that we need to push OP_0 onto the stack
-          if (op == OP_0) loop(t,OP_0 :: accum)
-          //means that we need to push x amount of bytes on to the stack
-          else if (ScriptNumberFactory.operations.contains(op)) {
-            val (constant,tail) = pushConstant(ScriptNumberImpl(op.opCode),t)
-            loop(tail, constant :: accum)
-          } else loop(t, op :: accum)
+          logger.debug("Matched op: " + op)
+          op match {
+            case scriptNumber : ScriptNumberImpl =>
+              //means that we need to push x amount of bytes on to the stack
+              val (constant,tail) = pushConstant(scriptNumber,t)
+              loop(tail, constant :: accum)
+            case _ =>
+              //means that we need to push the operation onto the stack
+              loop(t, op :: accum)
+          }
         case Nil => accum
       }
     }
@@ -102,7 +103,7 @@ trait ScriptParser extends ScalacoinUtil {
   private def parseBytesFromString(s: String) : List[ScriptConstant] = {
     val hexStrings : List[String] = (raw"\b0x([0-9a-f]+)\b".r
       .findAllMatchIn(s)
-      .map(g => Integer.parseInt(g.group(1), 16).toHexString)
+      .map(g => BigInt(g.group(1), 16).toString(16))
       .toList)
     val paddedHexStrings = hexStrings.map(hex => if (hex.size == 1) "0"+hex else hex )
     logger.debug("Padded hex strings: " + paddedHexStrings)

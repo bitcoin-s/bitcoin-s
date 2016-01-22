@@ -2,11 +2,12 @@ package org.scalacoin.script
 
 import org.scalacoin.script.arithmetic.OP_1ADD
 import org.scalacoin.script.bitwise.OP_EQUAL
-import org.scalacoin.script.constant.{ScriptNumberImpl, OP_1, OP_TRUE, OP_0}
+import org.scalacoin.script.constant._
 import org.scalacoin.script.control.OP_IF
 import org.scalacoin.script.crypto.OP_RIPEMD160
 import org.scalacoin.script.locktime.OP_CHECKLOCKTIMEVERIFY
 import org.scalacoin.script.stack.OP_TOALTSTACK
+import org.scalacoin.util.ScalacoinUtil
 import org.scalatest.{FlatSpec, MustMatchers}
 
 /**
@@ -28,6 +29,11 @@ class ScriptOperationFactoryTest extends FlatSpec with MustMatchers {
     ScriptOperationFactory.fromByte(166.toByte) must be (Some(OP_RIPEMD160))
     ScriptOperationFactory.fromByte(177.toByte) must be (Some(OP_CHECKLOCKTIMEVERIFY))
 
+  }
+
+  it must "find OP_4 from it's byte representation" in {
+    val byteRepresentation = ScalacoinUtil.decodeHex("54").head
+    ScriptOperationFactory.fromByte(byteRepresentation) must be (Some(OP_4))
   }
 
   it must "find a script number from its byte representation" in {

@@ -150,6 +150,57 @@ case object OP_WITHIN  extends ArithmeticOperation {
 }
 
 
+//currently disabled operations
+
+/**
+ * The input is multiplied by 2. disabled.
+ */
+case object OP_2MUL extends ArithmeticOperation {
+  override def opCode = 141
+}
+
+/**
+ * The input is divided by 2. disabled.
+ */
+case object OP_2DIV extends ArithmeticOperation {
+  override def opCode = 142
+}
+
+/**
+ * a is multiplied by b. disabled.
+ */
+case object OP_MUL extends ArithmeticOperation {
+  override def opCode = 149
+}
+
+/**
+ * 	a is divided by b. disabled.
+ */
+case object OP_DIV extends ArithmeticOperation {
+  override def opCode = 150
+}
+
+/**
+ * Returns the remainder after dividing a by b. disabled.
+ */
+case object OP_MOD extends ArithmeticOperation {
+  override def opCode = 151
+}
+
+/**
+ * Shifts a left b bits, preserving sign. disabled.
+ */
+case object  OP_LSHIFT extends ArithmeticOperation {
+  override def opCode = 152
+}
+
+/**
+ * Shifts a right b bits, preserving sign. disabled.
+ */
+case object  OP_RSHIFT extends ArithmeticOperation {
+  override def opCode = 153
+}
+
 
 
 
