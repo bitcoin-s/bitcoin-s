@@ -32,6 +32,8 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
     @tailrec
     def loop(scripts : (List[ScriptToken], List[ScriptToken])) : Boolean = {
       val (stack,script) = (scripts._1, scripts._2)
+      logger.debug("Stack: " +stack)
+      logger.debug("Script: " + script)
       script match {
         //stack operations
         case OP_DUP :: t => loop(opDup(stack,script))
@@ -40,8 +42,6 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
         //bitwise operations
         case OP_EQUAL :: t => {
           val (newStack,newScript) = equal(stack, script)
-          logger.debug("New stack: " + newStack)
-          logger.debug("New script: " + newScript)
           if (newStack.head == ScriptTrue && newScript.size == 0) true
           else if (newStack.head == ScriptFalse && newScript.size == 0) false
           else loop(newStack,newScript)
@@ -52,6 +52,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
         //TODO: Implement these
         case ScriptConstantImpl(x) :: t if x == "1" => throw new RuntimeException("Not implemented yet")
         case ScriptConstantImpl(x) :: t if x == "0" => throw new RuntimeException("Not implemented yet")
+        case (scriptNumberOp : ScriptNumberOperation) :: t => loop(scriptNumberOp.scriptNumber :: stack, t)
         case (scriptNumber : ScriptNumber) :: t => loop(scriptNumber :: stack, t)
 
         //TODO: is this right? I need to just push a constant on the input stack???
@@ -60,8 +61,8 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
         //crypto operations
         case OP_HASH160 :: t => loop(hash160(stack,script))
         case OP_CHECKSIG :: t => checkSig(stack,script,fullScript)
-        //no more script operations to run, if stack top is true or '1' then it is a valid script
-        case Nil => stack.head == OP_1 || stack.head == ScriptTrue
+        //no more script operations to run, True is represented by any representation of non-zero
+        case Nil => stack.head != ScriptFalse
         case h :: t => throw new RuntimeException(h + " was unmatched")
       }
     }

@@ -16,6 +16,7 @@ trait ScriptParser extends ScalacoinUtil {
   /**
    * Parses an asm output script of a transaction
    * example: "OP_DUP OP_HASH160 e2e7c1ab3f807151e832dd1accb3d4f5d7d19b4b OP_EQUALVERIFY OP_CHECKSIG"
+   * example: ["0", "IF 0x50 ENDIF 1", "P2SH,STRICTENC", "0x50 is reserved (ok if not executed)"] (from script_valid.json)
    * @param str
    * @return
    */
@@ -26,13 +27,21 @@ trait ScriptParser extends ScalacoinUtil {
     def loop(operations : List[String], accum : List[ScriptToken]) : List[ScriptToken] = {
       logger.debug("Attempting to parse: " + operations.headOption)
       operations match {
-        //if we see a byte constant in the form of "0x09"
+          //if we see a byte constant of just 0x09
+          //parse the two characters as a hex op
+        case h :: t if (h.size == 4 && h.substring(0,2) == "0x") =>
+          val hexString = h.substring(2,h.size)
+          loop(t,ScriptOperationFactory.fromHex(hexString).get :: accum)
+        //if we see a byte constant in the form of "0x09adb"
         case h  :: t if (h.size > 1 && h.substring(0,2) == "0x") => loop(t,parseBytesFromString(h) ++ accum)
         //skip the empty string
         case h :: t if (h == "") => loop(t,accum)
         case h :: t if (h == "0") => loop(t, OP_0 :: accum)
         case h :: t if (ScriptOperationFactory.fromString(h).isDefined) =>
-          loop(t,ScriptOperationFactory.fromString(h).get :: accum)
+          val op = ScriptOperationFactory.fromString(h).get
+          val parsingHelper : ParsingHelper[String] = parseOperationString(op,accum,t)
+          loop(parsingHelper.tail,parsingHelper.accum)
+
         case h :: t => loop(t, ScriptConstantImpl(h) :: accum)
         case Nil => accum
       }
@@ -68,29 +77,28 @@ trait ScriptParser extends ScalacoinUtil {
       logger.debug("Byte to be parsed: " + bytes.headOption)
       bytes match {
         case h :: t =>
-          logger.debug("Op for matching: " + h)
           val op  = ScriptOperationFactory.fromByte(h).get
-          logger.debug("Matched op: " + op)
-          op match {
-            case scriptNumber : ScriptNumberImpl =>
-              //means that we need to push x amount of bytes on to the stack
-              val (constant,tail) = pushConstant(scriptNumber,t)
-              loop(tail, constant :: accum)
-            case _ =>
-              //means that we need to push the operation onto the stack
-              loop(t, op :: accum)
-          }
+          val parsingHelper : ParsingHelper[Byte] = parseOperationByte(op,accum,t)
+          loop(parsingHelper.tail,parsingHelper.accum)
         case Nil => accum
       }
     }
     loop(bytes, List()).reverse
   }
 
-  private def pushConstant(op : ScriptNumber, bytes : List[Byte]) : (ScriptConstant, List[Byte]) = {
+  /**
+   * Slices the amount of bytes specified in the op parameter and then creates a script constant
+   * from those bytes. Returns the script constant and the byte array without the script constant
+   * @param op
+   * @param bytes
+   * @return
+   */
+  private def sliceConstant[T](op : ScriptNumber, data : List[T]) : (List[T], List[T]) = {
     val finalIndex = op.opCode
-    val constant : ScriptConstantImpl = ScriptConstantImpl(encodeHex(bytes.slice(0,finalIndex)))
-    (constant, bytes.slice(finalIndex,bytes.size))
+    val dataConstant = data.slice(0,finalIndex)
+    (dataConstant,data.slice(finalIndex,data.size))
   }
+
 
   /**
    * Parses the bytes in string format, an example input would look like this
@@ -106,10 +114,62 @@ trait ScriptParser extends ScalacoinUtil {
       .map(g => BigInt(g.group(1), 16).toString(16))
       .toList)
     val paddedHexStrings = hexStrings.map(hex => if (hex.size == 1) "0"+hex else hex )
-    logger.debug("Padded hex strings: " + paddedHexStrings)
+    //logger.debug("Padded hex strings: " + paddedHexStrings)
     //TODO: Figure out a better way to do this without calling .get on the result of fromByte
     val constants = paddedHexStrings.map(ScriptConstantImpl(_))
     constants
+  }
+
+
+  case class ParsingHelper[T](tail : List[T], accum : List[ScriptToken])
+  /**
+   * Parses an operation if the tail is a List[Byte]
+   * If the operation is a script number, it pushes the number of bytes onto the stack
+   * specified by the script number
+   * i.e. If the operation was ScriptNumber(5), it would slice 5 bytes off of the tail and
+   * places them into a ScriptConstant and add them to the accumulator.
+   * @param op
+   * @param accum
+   * @param tail
+   * @return
+   */
+  private def parseOperationByte(op : ScriptOperation, accum : List[ScriptToken], tail : List[Byte]) : ParsingHelper[Byte] = {
+    op match {
+      case scriptNumber : ScriptNumberImpl =>
+        //means that we need to push x amount of bytes on to the stack
+        val (constant,newTail) = sliceConstant(scriptNumber,tail)
+        val scriptConstant = new ScriptConstantImpl(constant)
+        ParsingHelper(newTail,scriptConstant :: accum)
+
+      case _ =>
+        //means that we need to push the operation onto the stack
+        ParsingHelper(tail,op :: accum)
+    }
+  }
+
+  /**
+   * Parses an operation if the tail is a List[String]
+   * If the operation is a script number, it pushes the number of bytes onto the stack
+   * specified by the script number
+   * i.e. If the operation was ScriptNumber(5), it would slice 5 bytes off of the tail and
+   * places them into a ScriptConstant and add them to the accumulator.
+   * @param op
+   * @param accum
+   * @param tail
+   * @return
+   */
+  private def parseOperationString(op : ScriptOperation, accum : List[ScriptToken], tail : List[String]) : ParsingHelper[String] = {
+    op match {
+      case scriptNumber : ScriptNumberImpl =>
+        //means that we need to push x amount of bytes on to the stack
+        val (constant,newTail) = sliceConstant[String](scriptNumber,tail)
+        val scriptConstant = ScriptConstantImpl(constant.mkString)
+        ParsingHelper(newTail,scriptConstant :: accum)
+
+      case _ =>
+        //means that we need to push the operation onto the stack
+        ParsingHelper(tail,op :: accum)
+    }
   }
 }
 

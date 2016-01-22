@@ -34,6 +34,14 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterp
     import CoreTestCaseProtocol._
 
     val source = scala.io.Source.fromFile("src/test/scala/org/scalacoin/script/interpreter/script_valid.json")
+
+      //use this to represent a single test case from script_valid.json
+        val lines =
+      """
+        |
+        |[["0", "IF 0x50 ENDIF 1", "P2SH,STRICTENC", "0x50 is reserved (ok if not executed)"]]
+      """.stripMargin
+
     val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n" finally source.close()
     val json = lines.parseJson
     val testCasesOpt : Seq[Option[CoreTestCase]] = json.convertTo[Seq[Option[CoreTestCase]]]
@@ -43,13 +51,12 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterp
     for {
       testCase <- testCases
     } yield {
-      logger.info("Running test case: ")
       logger.info("Raw test case: " + testCase.raw)
       logger.info("Parsed ScriptSig: " + testCase.scriptSig)
       logger.info("Parsed ScriptPubKey: " + testCase.scriptPubKey)
       logger.info("Flags: " + testCase.flags)
       logger.info("Comments: " + testCase.comments)
-      withClue(testCase.comments) {
+      withClue(testCase.raw) {
         ScriptInterpreter.run(testCase.scriptSig, testCase.scriptPubKey) must equal (true)
       }
     }
