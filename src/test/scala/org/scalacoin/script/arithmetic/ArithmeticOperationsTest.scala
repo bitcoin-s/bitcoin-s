@@ -28,6 +28,7 @@ class ArithmeticOperationsTest extends FlatSpec with MustMatchers {
   }
   it must "define OP_0NOTEQUAL" in {
     OP_0NOTEQUAL.opCode must be (146)
+    OP_0NOTEQUAL.hex must be ("92")
   }
 
   it must "define OP_ADD" in {

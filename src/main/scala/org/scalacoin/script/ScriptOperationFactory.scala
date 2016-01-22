@@ -8,6 +8,7 @@ import org.scalacoin.script.crypto.CryptoOperationFactory
 import org.scalacoin.script.locktime.LocktimeOperationFactory
 import org.scalacoin.script.stack.StackOperationFactory
 import org.scalacoin.util.ScalacoinUtil
+import org.slf4j.LoggerFactory
 
 /**
  * Created by chris on 1/8/16.
@@ -16,6 +17,7 @@ import org.scalacoin.util.ScalacoinUtil
  */
 trait ScriptOperationFactory[T <: ScriptOperation] extends ScalacoinUtil {
 
+  private def logger = LoggerFactory.getLogger(this.getClass())
   /**
    * All of the script operations for a particular T
    * @tparam T
@@ -59,8 +61,12 @@ trait ScriptOperationFactory[T <: ScriptOperation] extends ScalacoinUtil {
    * @return
    */
   def fromByte(byte : Byte) : Option[T] = {
-    val hex = encodeHex(byte)
-    fromHex(hex)
+    //logger.debug("Byte: " + byte)
+    operations.find(op => {
+      //logger.debug("Decoded hex: " + ScalacoinUtil.decodeHex(op.hex));
+      ScalacoinUtil.decodeHex(op.hex).head == byte
+    })
+
   }
 }
 
