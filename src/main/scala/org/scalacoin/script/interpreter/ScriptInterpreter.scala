@@ -32,7 +32,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
     @tailrec
     def loop(scripts : (List[ScriptToken], List[ScriptToken])) : Boolean = {
       val (stack,script) = (scripts._1, scripts._2)
-      logger.debug("Stack: " +stack)
+      logger.debug("Stack: " + stack)
       logger.debug("Script: " + script)
       script match {
         //stack operations

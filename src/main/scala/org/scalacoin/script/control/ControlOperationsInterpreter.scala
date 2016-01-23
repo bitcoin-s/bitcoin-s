@@ -38,12 +38,12 @@ trait ControlOperationsInterpreter {
         //means that we have an else statement which needs to be executed
         if (indexes._1.isDefined) {
           //removes the OP_ELSE as well
-          val newScript = script.slice(0,indexes._1.get+1)
+          val newScript = script.tail.slice(indexes._1.get+1,script.size)
           (stack.tail,newScript)
         } else {
           //means that we do not have an OP_ELSE statement
           //removes the OP_ENDIF as well
-          val newScript = script.slice(0,indexes._2.get+1)
+          val newScript = script.tail.slice(indexes._2.get+1,script.size)
           (stack.tail,newScript)
         }
       case _ => (stack.tail,script.tail)

@@ -48,4 +48,9 @@ class ScriptOperationFactoryTest extends FlatSpec with MustMatchers {
     result.get must be (ScriptNumberImpl(2))
   }
 
+  it must "find undefined op codes"in {
+    val result = ScriptOperationFactory.fromHex("ba")
+    result.isDefined must be (true)
+  }
+
 }
