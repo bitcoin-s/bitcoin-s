@@ -84,4 +84,6 @@ case object OP_NOP10 extends ReservedOperation {
   override def opCode = 185
 }
 
+case class UndefinedOP_NOP(opCode : Int) extends ReservedOperation
+
 

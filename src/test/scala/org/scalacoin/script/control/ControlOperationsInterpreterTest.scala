@@ -1,6 +1,7 @@
 package org.scalacoin.script.control
 
 import org.scalacoin.script.constant._
+import org.scalacoin.script.reserved.OP_RESERVED
 import org.scalatest.{MustMatchers, FlatSpec}
 
 /**
@@ -43,6 +44,7 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers with C
     findOP_ENDIF(l) must be (Some(0))
     findOP_ENDIF(List(OP_IF,OP_ELSE,OP_ENDIF,OP_ENDIF)) must be (Some(2))
     findOP_ENDIF(List(OP_0,OP_1,OP_2)) must be (None)
+    findOP_ENDIF(List(OP_IF, OP_RESERVED, OP_ENDIF, OP_1)) must be (Some(2))
 
   }
 
@@ -56,5 +58,14 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers with C
     findIndexesOP_ELSE_OP_ENDIF(List(OP_ELSE,OP_ENDIF)) must be (Some(0),Some(1))
     findIndexesOP_ELSE_OP_ENDIF(List(OP_IF, OP_ELSE,OP_ENDIF, OP_IF,OP_ELSE,OP_ENDIF)) must be (Some(1),Some(2))
     findIndexesOP_ELSE_OP_ENDIF(List(OP_IF,OP_IF)) must be (None,None)
+  }
+
+
+  it must "evaluate an OP_IF correctly" in {
+    val stack = List(OP_0)
+    val script = List(OP_IF, OP_RESERVED, OP_ENDIF, OP_1)
+    val (newStack,newScript) = opIf(stack,script)
+    newStack.isEmpty must be (true)
+    newScript must be (List(OP_1))
   }
 }
