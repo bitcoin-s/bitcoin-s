@@ -1,5 +1,7 @@
 package org.scalacoin.marshallers.script
 
+import org.scalacoin.script.bitwise.OP_EQUAL
+import org.scalacoin.script.constant.ScriptConstantImpl
 import org.scalacoin.util.{ScalacoinUtil, TestUtil}
 import org.scalatest.{FlatSpec, MustMatchers}
 
@@ -38,5 +40,12 @@ class ScriptParserTest extends FlatSpec with MustMatchers with ScriptParser with
     val bytes = decodeHex(TestUtil.p2shOutputScript)
     parse(bytes) must be (TestUtil.p2shOutputScriptAsm)
   }
+
+  it must "parse a script constant from 'Az' EQUAL" in {
+    val str = "'Az' EQUAL"
+    parse(str) must equal (List(ScriptConstantImpl("417a"), OP_EQUAL))
+  }
+
+
 
 }
