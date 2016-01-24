@@ -45,7 +45,7 @@ trait ScriptOperationFactory[T <: ScriptOperation] extends ScalacoinUtil {
    * @param hex
    * @return
    */
-  def fromHex(hex : String) : Option[T] = operations.find(_.hex == hex)
+  def fromHex(hex : String) : Option[T] = operations.find(_.hex == hex.toLowerCase)
 
   /**
    * Removes the 'OP_' prefix from a given operation.

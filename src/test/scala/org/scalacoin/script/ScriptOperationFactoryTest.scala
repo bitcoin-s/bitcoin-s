@@ -6,6 +6,7 @@ import org.scalacoin.script.constant._
 import org.scalacoin.script.control.OP_IF
 import org.scalacoin.script.crypto.OP_RIPEMD160
 import org.scalacoin.script.locktime.OP_CHECKLOCKTIMEVERIFY
+import org.scalacoin.script.splice.OP_SUBSTR
 import org.scalacoin.script.stack.OP_TOALTSTACK
 import org.scalacoin.util.ScalacoinUtil
 import org.scalatest.{FlatSpec, MustMatchers}
@@ -51,6 +52,12 @@ class ScriptOperationFactoryTest extends FlatSpec with MustMatchers {
   it must "find undefined op codes"in {
     val result = ScriptOperationFactory.fromHex("ba")
     result.isDefined must be (true)
+  }
+
+  it must "find a splice operation from it's hex representation" in {
+    val spliceOperation = ScriptOperationFactory.fromHex("7F")
+    spliceOperation.isDefined must be (true)
+    spliceOperation.get must be (OP_SUBSTR)
   }
 
 }

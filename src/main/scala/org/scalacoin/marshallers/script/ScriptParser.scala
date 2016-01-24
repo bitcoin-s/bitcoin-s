@@ -27,11 +27,19 @@ trait ScriptParser extends ScalacoinUtil {
     def loop(operations : List[String], accum : List[ScriptToken]) : List[ScriptToken] = {
       logger.debug("Attempting to parse: " + operations.headOption)
       operations match {
-          //if we see a byte constant of just 0x09
-          //parse the two characters as a hex op
+        //for parsing strings like 'Az', need to remove single quotes
+        //example: https://github.com/bitcoin/bitcoin/blob/master/src/test/data/script_valid.json#L24
+        case h :: t if (h.size > 0 && h.head == ''' && h.last == ''') =>
+          val strippedQuotes = h.replace("'","")
+          val hex = ScalacoinUtil.encodeHex(strippedQuotes.getBytes)
+          loop(t, ScriptConstantImpl(hex) :: accum)
+        //if we see a byte constant of just 0x09
+        //parse the two characters as a hex op
         case h :: t if (h.size == 4 && h.substring(0,2) == "0x") =>
           val hexString = h.substring(2,h.size)
+          logger.debug("Hex string: " + hexString)
           loop(t,ScriptOperationFactory.fromHex(hexString).get :: accum)
+
         //if we see a byte constant in the form of "0x09adb"
         case h  :: t if (h.size > 1 && h.substring(0,2) == "0x") => loop(t,parseBytesFromString(h) ++ accum)
         //skip the empty string
@@ -48,7 +56,7 @@ trait ScriptParser extends ScalacoinUtil {
     }
 
 
-    //if the given string is hex, it is pretty straightforward to parse it
+    //if the given string is hex, it is pretty straight forward to parse it
     if (ScalacoinUtil.isHex(str)) {
       //convert the hex string to a byte array and parse it
       val bytes = ScalacoinUtil.decodeHex(str)

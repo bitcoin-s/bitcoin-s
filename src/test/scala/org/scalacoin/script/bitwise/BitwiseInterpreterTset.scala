@@ -23,6 +23,7 @@ class BitwiseInterpreterTest extends FlatSpec with MustMatchers with BitwiseInte
     }
   }
 
+
   it must "throw an exception for OP_EQUAL when we don't have enough items on the script stack" in {
     intercept[IllegalArgumentException] {
       equal(List(pubKeyHash), List())
