@@ -14,7 +14,7 @@ import scala.annotation.tailrec
  * Created by chris on 1/6/16.
  */
 trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with ControlOperationsInterpreter
-  with BitwiseInterpreter {
+  with BitwiseInterpreter with ConstantInterpreter {
 
   private def logger = LoggerFactory.getLogger(this.getClass().toString)
   /**
@@ -54,7 +54,8 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
         case ScriptConstantImpl(x) :: t if x == "0" => throw new RuntimeException("Not implemented yet")
         case (scriptNumberOp : ScriptNumberOperation) :: t => loop(scriptNumberOp.scriptNumber :: stack, t)
         case (scriptNumber : ScriptNumber) :: t => loop(scriptNumber :: stack, t)
-
+        case OP_PUSHDATA1 :: t => loop(opPushData1(stack,script))
+        case OP_PUSHDATA2 :: t => loop(opPushData2(stack,script))
         //TODO: is this right? I need to just push a constant on the input stack???
         case ScriptConstantImpl(x) :: t => loop((ScriptConstantImpl(x) :: stack, t))
           //control operations
