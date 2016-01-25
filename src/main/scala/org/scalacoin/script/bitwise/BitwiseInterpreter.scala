@@ -17,7 +17,7 @@ trait BitwiseInterpreter extends ControlOperationsInterpreter  {
    * @return
    */
   def equal(stack : List[ScriptToken], script : List[ScriptToken]) : (List[ScriptToken], List[ScriptToken]) = {
-    require(stack.size > 1, "Stack size must be 2 or more to compare the top two values")
+    require(stack.size > 1, "Stack size must be 2 or more to compare the top two values for OP_EQUAL")
     require(script.headOption.isDefined && script.head == OP_EQUAL, "Script operation must be OP_EQUAL")
 
     logger.debug("Original stack: " + stack)

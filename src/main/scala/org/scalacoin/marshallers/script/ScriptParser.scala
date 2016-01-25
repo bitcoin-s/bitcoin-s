@@ -34,7 +34,7 @@ trait ScriptParser extends ScalacoinUtil {
           val hex = ScalacoinUtil.encodeHex(strippedQuotes.getBytes)
           loop(t, ScriptConstantImpl(hex) :: accum)
         //if we see a byte constant of just 0x09
-        //parse the two characters as a hex op
+        //parse the characters as a hex op
         case h :: t if (h.size == 4 && h.substring(0,2) == "0x") =>
           val hexString = h.substring(2,h.size)
           logger.debug("Hex string: " + hexString)
@@ -117,15 +117,12 @@ trait ScriptParser extends ScalacoinUtil {
    * @return
    */
   private def parseBytesFromString(s: String) : List[ScriptConstant] = {
-    val hexStrings : List[String] = (raw"\b0x([0-9a-f]+)\b".r
+    logger.debug("Parsing bytes from string " + s)
+    val scriptConstants : List[ScriptConstant] = (raw"\b0x([0-9a-f]+)\b".r
       .findAllMatchIn(s)
-      .map(g => BigInt(g.group(1), 16).toString(16))
+      .map(g => ScriptConstantImpl(g.group(1)))
       .toList)
-    val paddedHexStrings = hexStrings.map(hex => if (hex.size == 1) "0"+hex else hex )
-    //logger.debug("Padded hex strings: " + paddedHexStrings)
-    //TODO: Figure out a better way to do this without calling .get on the result of fromByte
-    val constants = paddedHexStrings.map(ScriptConstantImpl(_))
-    constants
+    scriptConstants
   }
 
 

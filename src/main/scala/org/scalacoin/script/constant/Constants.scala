@@ -9,6 +9,7 @@ import org.scalacoin.util.ScalacoinUtil
 
 trait ScriptToken {
   def hex : String
+  def bytes = ScalacoinUtil.decodeHex(hex)
 }
 
 trait ScriptOperation extends ScriptToken {
