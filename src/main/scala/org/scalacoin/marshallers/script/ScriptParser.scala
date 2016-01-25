@@ -49,7 +49,10 @@ trait ScriptParser extends ScalacoinUtil {
           val op = ScriptOperationFactory.fromString(h).get
           val parsingHelper : ParsingHelper[String] = parseOperationString(op,accum,t)
           loop(parsingHelper.tail,parsingHelper.accum)
-
+        case h :: t if (tryParsingInt(h)) =>
+          //convert the string to int, then convert to hex
+          val int = h.toInt
+          loop(t, ScriptConstantImpl(int.toHexString) :: accum)
         case h :: t => loop(t, ScriptConstantImpl(h) :: accum)
         case Nil => accum
       }
@@ -176,6 +179,14 @@ trait ScriptParser extends ScalacoinUtil {
         ParsingHelper(tail,op :: accum)
     }
   }
+
+
+  /**
+   * Checks if a string can be cast to an int
+   * @param str
+   * @return
+   */
+  private def tryParsingInt(str : String) = try { str.toInt; true} catch { case _ : Throwable => false}
 }
 
 object ScriptParser extends ScriptParser

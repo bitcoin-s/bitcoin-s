@@ -60,4 +60,10 @@ class ScriptOperationFactoryTest extends FlatSpec with MustMatchers {
     spliceOperation.get must be (OP_SUBSTR)
   }
 
+  it must "find OP_1NEGATE from its hex representation" in {
+    val negateOperation = ScriptOperationFactory.fromHex("4f")
+    negateOperation.isDefined must be (true)
+    negateOperation.get must be (OP_1NEGATE)
+  }
+
 }
