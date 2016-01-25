@@ -20,4 +20,12 @@ class ScalacoinUtilTest extends FlatSpec with MustMatchers with ScalacoinUtil {
   }
 
 
+  it must "convert a hex string from little endian to big endian" in  {
+    littleEndianToBigEndian("01") must be ("01")
+    littleEndianToBigEndian("0100") must be ("0001")
+    littleEndianToBigEndian("abcd") must be ("cdab")
+
+  }
+
+
 }

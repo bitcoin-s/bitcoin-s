@@ -47,6 +47,12 @@ trait ScalacoinUtil {
   def encodeBase58(bytes : List[Byte]) : String = Base58.encode(bytes.toArray)
 
   /**
+   * Converts a little endian encoded hex string to a big endian encoded hex string
+   * @param hex
+   * @return
+   */
+  def littleEndianToBigEndian(hex : String) = encodeHex(decodeHex(hex).reverse)
+  /**
    * Flips the hex chars in a hex strings
    * Example: abcd would become badc
    * https://stackoverflow.com/questions/34799611/easiest-way-to-flip-the-endianness-of-a-byte-in-scala/34802270#34802270

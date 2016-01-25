@@ -56,6 +56,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
         case (scriptNumber : ScriptNumber) :: t => loop(scriptNumber :: stack, t)
         case OP_PUSHDATA1 :: t => loop(opPushData1(stack,script))
         case OP_PUSHDATA2 :: t => loop(opPushData2(stack,script))
+        case OP_PUSHDATA4 :: t => loop(opPushData4(stack,script))
         //TODO: is this right? I need to just push a constant on the input stack???
         case ScriptConstantImpl(x) :: t => loop((ScriptConstantImpl(x) :: stack, t))
           //control operations

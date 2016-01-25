@@ -46,6 +46,11 @@ class ScriptParserTest extends FlatSpec with MustMatchers with ScriptParser with
     parse(str) must equal (List(ScriptConstantImpl("417a"), OP_EQUAL))
   }
 
+  it must "parse a script constant that has a leading zero" in {
+    val str = "0x0100"
+    parse(str) must equal (List(ScriptConstantImpl("0100")))
+  }
+
 
 
 }
