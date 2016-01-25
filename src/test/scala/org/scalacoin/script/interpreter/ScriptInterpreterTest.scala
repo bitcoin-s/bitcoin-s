@@ -2,8 +2,8 @@ package org.scalacoin.script.interpreter
 
 import java.io.File
 
-import org.scalacoin.script.bitwise.OP_EQUALVERIFY
-import org.scalacoin.script.constant.ScriptToken
+import org.scalacoin.script.bitwise.{OP_EQUAL, OP_EQUALVERIFY}
+import org.scalacoin.script.constant.{OP_0, OP_PUSHDATA1, ScriptToken}
 import org.scalacoin.script.crypto.{OP_CHECKSIG, OP_HASH160}
 import org.scalacoin.script.interpreter.testprotocol.{CoreTestCaseProtocol, CoreTestCase}
 import org.scalacoin.script.stack.OP_DUP
@@ -30,6 +30,12 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterp
   }
 
 
+  it must "evaluate a script with OP_PUSHDATA operations" in {
+    val stack = List()
+    val script = List(OP_PUSHDATA1, OP_0, OP_0, OP_EQUAL)
+
+
+  }
   it must "evaluate all valid scripts from the bitcoin core script_valid.json" in {
     import CoreTestCaseProtocol._
 

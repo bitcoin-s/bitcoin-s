@@ -20,9 +20,14 @@ trait ConstantInterpreter {
   def opPushData1(stack : List[ScriptToken], script : List[ScriptToken]) : (List[ScriptToken],List[ScriptToken]) = {
     require(script.headOption.isDefined && script.head == OP_PUSHDATA1, "Top of script stack must be OP_PUSHDATA1")
     val numberOfBytes : Int = Integer.parseInt(script(1).hex,16)
-    val slicedScript = script.slice(2,script.size)
-    val (newStack,newScript) = opPushData(stack,slicedScript,numberOfBytes)
-    (newStack,newScript)
+    if (numberOfBytes == 0) {
+      //if the number of bytes pushed onto the stack is zero, we push an empty byte vector onto the stack
+      (OP_0 :: stack, script.slice(2,script.size))
+    } else {
+      val slicedScript = script.slice(2,script.size)
+      val (newStack,newScript) = opPushData(stack,slicedScript,numberOfBytes)
+      (newStack,newScript)
+    }
   }
 
   /**
@@ -36,9 +41,14 @@ trait ConstantInterpreter {
     //convert the hex string from little endian to big endian
     val reversedHex = ScalacoinUtil.littleEndianToBigEndian(script(1).hex)
     val numberOfBytes : Int = Integer.parseInt(reversedHex,16)
-    val slicedScript = script.slice(2,script.size)
-    val (newStack,newScript) = opPushData(stack,slicedScript,numberOfBytes)
-    (newStack,newScript)
+    if (numberOfBytes == 0) {
+      //if the number of bytes pushed onto the stack is zero, we push an empty byte vector onto the stack
+      (OP_0 :: stack, script.slice(2,script.size))
+    } else {
+      val slicedScript = script.slice(2,script.size)
+      val (newStack,newScript) = opPushData(stack,slicedScript,numberOfBytes)
+      (newStack,newScript)
+    }
   }
 
   /**
@@ -52,9 +62,16 @@ trait ConstantInterpreter {
     //convert the hex string from little endian to big endian
     val reversedHex = ScalacoinUtil.littleEndianToBigEndian(script(1).hex)
     val numberOfBytes : Int = Integer.parseInt(reversedHex,16)
-    val slicedScript = script.slice(2,script.size)
-    val (newStack,newScript) = opPushData(stack,slicedScript,numberOfBytes)
-    (newStack,newScript)
+    if (numberOfBytes == 0) {
+      //if the number of bytes pushed onto the stack is zero, we push an empty byte vector onto the stack
+      (OP_0 :: stack, script.slice(2,script.size))
+    } else {
+      val slicedScript = script.slice(2,script.size)
+      val (newStack,newScript) = opPushData(stack,slicedScript,numberOfBytes)
+      (newStack,newScript)
+    }
+
+
   }
 
 
