@@ -1,6 +1,7 @@
 package org.scalacoin.script.interpreter
 
 import org.scalacoin.protocol.script.{ScriptSignature, ScriptPubKey}
+import org.scalacoin.script.arithmetic.{ArithmeticInterpreter, OP_ADD}
 import org.scalacoin.script.bitwise.{OP_EQUAL, BitwiseInterpreter, OP_EQUALVERIFY}
 import org.scalacoin.script.constant._
 import org.scalacoin.script.control.{OP_NOTIF, OP_IF, ControlOperationsInterpreter}
@@ -14,7 +15,7 @@ import scala.annotation.tailrec
  * Created by chris on 1/6/16.
  */
 trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with ControlOperationsInterpreter
-  with BitwiseInterpreter with ConstantInterpreter {
+  with BitwiseInterpreter with ConstantInterpreter with ArithmeticInterpreter {
 
   private def logger = LoggerFactory.getLogger(this.getClass().toString)
   /**
@@ -39,6 +40,8 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
         case OP_DUP :: t => loop(opDup(stack,script))
         case OP_DEPTH :: t => loop(opDepth(stack,script))
 
+        //arithmetic operaetions
+        case OP_ADD :: t => loop(opAdd(stack,script))
         //bitwise operations
         case OP_EQUAL :: t => {
           val (newStack,newScript) = equal(stack, script)
@@ -59,7 +62,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
         case OP_PUSHDATA4 :: t => loop(opPushData4(stack,script))
         //TODO: is this right? I need to just push a constant on the input stack???
         case ScriptConstantImpl(x) :: t => loop((ScriptConstantImpl(x) :: stack, t))
-          //control operations
+        //control operations
         case OP_IF :: t => loop(opIf(stack,script))
         case OP_NOTIF :: t => loop(opNotIf(stack,script))
         //crypto operations
