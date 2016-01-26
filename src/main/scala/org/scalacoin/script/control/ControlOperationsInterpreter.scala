@@ -34,9 +34,9 @@ trait ControlOperationsInterpreter {
     val (opElseIndex,opEndIfIndex) = findIndexesOpElseOpEndIf(script)
     stack.head match {
       case OP_0 =>
-        //need to remove the statements from the script since
-        //they should not be executed
-
+        //means that we need to execute the OP_ELSE statement if one exists
+        //need to remove the OP_IF expression from the script
+        //since it should not be executed
         require(opEndIfIndex.isDefined,"Every OP_IF must have a matching OP_ENDIF statement")
         //means that we have an else statement which needs to be executed
         if (opElseIndex.isDefined) {
@@ -50,6 +50,8 @@ trait ControlOperationsInterpreter {
           (stack.tail,newScript)
         }
       case _ =>
+        //means that we need to execute the OP_IF expression
+        //and delete its corresponding OP_ELSE if one exists
         if (opElseIndex.isDefined) {
           logger.debug("OP_ELSE index: " + opElseIndex.get)
           logger.debug("OP_ENDIF index: " + opEndIfIndex.get)
@@ -58,16 +60,15 @@ trait ControlOperationsInterpreter {
           val scriptPart1 = script.slice(1,opElseIndex.get)
 
           val scriptWithoutOpElse = script.zipWithIndex.filter(_._2 != opElseIndex.get).map(_._1)
-          //val scriptPart2 = script.slice(opEndIfIndex.get,script.size)
-          //val newScript = scriptPart1 ++ scriptPart2
-
 
           val newOpElseIndex = findOpElse(scriptWithoutOpElse)
 
-          val scriptPart2 = if (newOpElseIndex.isDefined) {
+          //means that we have another OP_ELSE before our OP_ENDIF.
+          val scriptPart2 = if (newOpElseIndex.isDefined && newOpElseIndex.get < opEndIfIndex.get) {
             //the +1 is because we removed the OP_ELSE
             script.slice(newOpElseIndex.get+1,script.size)
           } else script.slice(opEndIfIndex.get,script.size)
+
           val newScript = scriptPart1 ++ scriptPart2
           (stack.tail,newScript)
         } else (stack.tail,script.tail)

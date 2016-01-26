@@ -5,7 +5,7 @@ import org.scalacoin.script.arithmetic.{ArithmeticInterpreter, OP_ADD}
 import org.scalacoin.script.bitwise.{OP_EQUAL, BitwiseInterpreter, OP_EQUALVERIFY}
 import org.scalacoin.script.constant._
 import org.scalacoin.script.control._
-import org.scalacoin.script.crypto.{OP_CHECKSIG, OP_HASH160, CryptoInterpreter}
+import org.scalacoin.script.crypto.{OP_SHA1, OP_CHECKSIG, OP_HASH160, CryptoInterpreter}
 import org.scalacoin.script.reserved.NOP
 import org.scalacoin.script.stack.{OP_DEPTH, StackInterpreter, OP_DUP}
 import org.slf4j.LoggerFactory
@@ -57,10 +57,11 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
         case ScriptConstantImpl(x) :: t if x == "1" => throw new RuntimeException("Not implemented yet")
         case ScriptConstantImpl(x) :: t if x == "0" => throw new RuntimeException("Not implemented yet")
         case (scriptNumberOp : ScriptNumberOperation) :: t => loop(scriptNumberOp.scriptNumber :: stack, t)
-        case (scriptNumber : ScriptNumber) :: t => loop(scriptNumber :: stack, t)
+        case (scriptNumber : ScriptNumber) :: t => loop(pushScriptNumberBytesToStack(stack,script))
         case OP_PUSHDATA1 :: t => loop(opPushData1(stack,script))
         case OP_PUSHDATA2 :: t => loop(opPushData2(stack,script))
         case OP_PUSHDATA4 :: t => loop(opPushData4(stack,script))
+
         //TODO: is this right? I need to just push a constant on the input stack???
         case ScriptConstantImpl(x) :: t => loop((ScriptConstantImpl(x) :: stack, t))
 
@@ -73,6 +74,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
         //crypto operations
         case OP_HASH160 :: t => loop(hash160(stack,script))
         case OP_CHECKSIG :: t => checkSig(stack,script,fullScript)
+        case OP_SHA1 :: t => loop(opSha1(stack,script))
 
         //reserved operations
         case (nop : NOP) :: t => loop((stack,t))
