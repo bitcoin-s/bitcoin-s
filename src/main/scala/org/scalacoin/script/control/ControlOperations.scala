@@ -7,12 +7,7 @@ import org.scalacoin.script.constant.ScriptOperation
  */
 sealed trait ControlOperations extends ScriptOperation
 
-/**
- * Does nothing
- */
-case object OP_NOP extends ControlOperations {
-  override def opCode = 97
-}
+
 
 /**
  * If the top stack value is not 0, the statements are executed. The top stack value is removed.

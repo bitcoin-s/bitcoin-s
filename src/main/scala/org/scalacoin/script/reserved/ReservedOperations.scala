@@ -55,35 +55,45 @@ case object OP_RESERVED2 extends  ReservedOperation {
   override def opCode = 138
 }
 
-case object OP_NOP1 extends ReservedOperation {
+/**
+ * Represents an operation that means
+ * nothing inside the Script language
+ */
+sealed trait NOP extends ReservedOperation
+
+case object OP_NOP extends NOP {
+  override def opCode = 97
+}
+
+case object OP_NOP1 extends NOP {
   override def opCode = 176
 }
 
-case object OP_NOP3 extends ReservedOperation {
+case object OP_NOP3 extends NOP {
   override def opCode = 178
 }
-case object OP_NOP4 extends ReservedOperation {
+case object OP_NOP4 extends NOP {
   override def opCode = 179
 }
-case object OP_NOP5 extends ReservedOperation {
+case object OP_NOP5 extends NOP {
   override def opCode = 180
 }
-case object OP_NOP6 extends ReservedOperation {
+case object OP_NOP6 extends NOP {
   override def opCode = 181
 }
-case object OP_NOP7 extends ReservedOperation {
+case object OP_NOP7 extends NOP {
   override def opCode = 182
 }
-case object OP_NOP8 extends ReservedOperation {
+case object OP_NOP8 extends NOP {
   override def opCode = 183
 }
-case object OP_NOP9 extends ReservedOperation {
+case object OP_NOP9 extends NOP {
   override def opCode = 184
 }
-case object OP_NOP10 extends ReservedOperation {
+case object OP_NOP10 extends NOP {
   override def opCode = 185
 }
 
-case class UndefinedOP_NOP(opCode : Int) extends ReservedOperation
+case class UndefinedOP_NOP(opCode : Int) extends NOP
 
 

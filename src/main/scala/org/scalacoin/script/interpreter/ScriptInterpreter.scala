@@ -4,8 +4,9 @@ import org.scalacoin.protocol.script.{ScriptSignature, ScriptPubKey}
 import org.scalacoin.script.arithmetic.{ArithmeticInterpreter, OP_ADD}
 import org.scalacoin.script.bitwise.{OP_EQUAL, BitwiseInterpreter, OP_EQUALVERIFY}
 import org.scalacoin.script.constant._
-import org.scalacoin.script.control.{OP_NOTIF, OP_IF, ControlOperationsInterpreter}
+import org.scalacoin.script.control._
 import org.scalacoin.script.crypto.{OP_CHECKSIG, OP_HASH160, CryptoInterpreter}
+import org.scalacoin.script.reserved.NOP
 import org.scalacoin.script.stack.{OP_DEPTH, StackInterpreter, OP_DUP}
 import org.slf4j.LoggerFactory
 
@@ -42,6 +43,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
 
         //arithmetic operaetions
         case OP_ADD :: t => loop(opAdd(stack,script))
+
         //bitwise operations
         case OP_EQUAL :: t => {
           val (newStack,newScript) = equal(stack, script)
@@ -50,7 +52,6 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
           else loop(newStack,newScript)
         }
         case OP_EQUALVERIFY :: t => equalVerify(stack,script)._3
-
         //script constants
         //TODO: Implement these
         case ScriptConstantImpl(x) :: t if x == "1" => throw new RuntimeException("Not implemented yet")
@@ -62,12 +63,20 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
         case OP_PUSHDATA4 :: t => loop(opPushData4(stack,script))
         //TODO: is this right? I need to just push a constant on the input stack???
         case ScriptConstantImpl(x) :: t => loop((ScriptConstantImpl(x) :: stack, t))
+
         //control operations
         case OP_IF :: t => loop(opIf(stack,script))
         case OP_NOTIF :: t => loop(opNotIf(stack,script))
+        case OP_ELSE :: t => loop(opElse(stack,script))
+        case OP_ENDIF :: t => loop(opEndIf(stack,script))
+
         //crypto operations
         case OP_HASH160 :: t => loop(hash160(stack,script))
         case OP_CHECKSIG :: t => checkSig(stack,script,fullScript)
+
+        //reserved operations
+        case (nop : NOP) :: t => loop((stack,t))
+
         //no more script operations to run, True is represented by any representation of non-zero
         case Nil => stack.head != ScriptFalse
         case h :: t => throw new RuntimeException(h + " was unmatched")
