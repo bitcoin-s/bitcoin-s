@@ -43,4 +43,12 @@ class CryptoInterpreterTest extends FlatSpec with MustMatchers with CryptoInterp
     val result = checkSig(tx,scriptPubKey)
     result must be (true)
   }
+
+  it must "evaluate a OP_SHA1 correctly" in {
+    val stack = List(ScriptConstantImpl("The quick brown fox jumps over the lazy dog"))
+    val script = List(OP_SHA1)
+    val (newStack,newScript) = opSha1(stack,script)
+    newStack.head must be (ScriptConstantImpl("2fd4e1c67a2d28fced849ee1bb76e7391b93eb12"))
+    newScript.isEmpty must be (true)
+  }
 }

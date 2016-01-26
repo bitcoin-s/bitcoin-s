@@ -69,6 +69,21 @@ trait CryptoInterpreter extends ScalacoinUtil {
     ???
   }
 
+  /**
+   * The input is hashed using SHA-1.
+   * @param stack
+   * @param script
+   * @return
+   */
+  def opSha1(stack : List[ScriptToken], script : List[ScriptToken]) : (List[ScriptToken], List[ScriptToken]) = {
+    require(script.headOption.isDefined && script.head == OP_SHA1, "Script top must be OP_SHA1")
+    require(stack.headOption.isDefined, "We must have an element on the stack for OP_SHA1")
+
+    val constant = stack.head
+    val hash = ScriptConstantImpl(CryptoUtil.sha1(constant.hex))
+    (hash :: stack.tail, script.tail)
+
+  }
 
   private def hashForSignature(inputScript : Seq[ScriptToken], spendingTx : Transaction,
                             inputIndex : Int, hashType : HashType) : String = {
@@ -83,7 +98,6 @@ trait CryptoInterpreter extends ScalacoinUtil {
     }
 
     ???
-
 
   }
 

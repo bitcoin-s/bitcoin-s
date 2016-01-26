@@ -70,10 +70,40 @@ trait ConstantInterpreter {
       val (newStack,newScript) = opPushData(stack,slicedScript,numberOfBytes)
       (newStack,newScript)
     }
-
-
   }
 
+
+  /**
+   * Pushes the number of bytes onto the stack that is specified by script number on the script stack
+   * @param stack
+   * @param script
+   * @return
+   */
+  def pushScriptNumberBytesToStack(stack : List[ScriptToken], script : List[ScriptToken]) : (List[ScriptToken], List[ScriptToken]) = {
+    require(script.headOption.isDefined && script.head.isInstanceOf[ScriptNumber], "Top of script must be a script number")
+    require(script.size > 1, "Script size must be atleast to to push constants onto the stack")
+    val bytesNeeded = script.head match {
+      case scriptNumber : ScriptNumber => scriptNumber.opCode
+    }
+    /**
+     * Parses the script tokens that need to be pushed onto our stack
+     * @param scriptToken
+     * @param accum
+     * @return
+     */
+    @tailrec
+    def takeUntilBytesNeeded(scriptTokens : List[ScriptToken], accum : List[ScriptToken]) : (List[ScriptToken],List[ScriptToken]) = {
+      if (accum.map(_.bytes.size).sum == bytesNeeded) (scriptTokens,accum)
+      else if (accum.map(_.bytes.size).sum > bytesNeeded) throw new RuntimeException("We cannot have more bytes than what our script number specified")
+      else takeUntilBytesNeeded(scriptTokens.tail, scriptTokens.head :: accum)
+    }
+
+    val (newScript,tokensToBePushed) = takeUntilBytesNeeded(script.tail,List())
+
+
+    (tokensToBePushed ++ stack, newScript)
+
+  }
 
   /**
    * Responsible for pushing the amount of bytes specified by the param numberOfBytes onto the stack

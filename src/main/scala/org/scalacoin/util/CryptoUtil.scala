@@ -1,5 +1,7 @@
 package org.scalacoin.util
 
+import java.security.MessageDigest
+
 import org.bitcoinj.core.Sha256Hash
 import org.scalacoin.script.constant.{ScriptConstantImpl, ScriptConstant}
 
@@ -40,6 +42,23 @@ trait CryptoUtil extends ScalacoinUtil {
     val hash : List[Byte] = Sha256Hash.hashTwice(bytes.toArray).toList
     encodeHex(hash.reverse)
   }
+
+  /**
+   * Performs SHA1(bytes)
+   * @param bytes
+   * @return
+   */
+  def sha1(bytes : List[Byte]) : String = {
+    val hashBytes = MessageDigest.getInstance("SHA-1").digest(bytes.toArray)
+    encodeHex(hashBytes)
+  }
+
+  /**
+   * Performs SHA1(str)
+   * @param hex
+   * @return
+   */
+  def sha1(str : String) : String = sha1(str.map(_.toByte).toList)
 }
 
 object CryptoUtil extends CryptoUtil
