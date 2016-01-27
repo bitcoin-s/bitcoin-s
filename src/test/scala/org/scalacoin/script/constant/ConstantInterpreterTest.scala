@@ -32,4 +32,13 @@ class ConstantInterpreterTest extends FlatSpec with MustMatchers with ConstantIn
     newStack must be (List(ScriptNumberImpl(9)))
     newScript must be (List(OP_9, OP_EQUAL))
   }
+
+
+  it must "push a constant 2 bytes onto the stack" in {
+    val stack = List()
+    val script = List(ScriptNumberImpl(2), ScriptNumberImpl(1), OP_0)
+    val (newStack,newScript) = pushScriptNumberBytesToStack(stack,script)
+    newScript.isEmpty must be (true)
+    newStack must be (List(OP_0,ScriptNumberImpl(1)))
+  }
 }

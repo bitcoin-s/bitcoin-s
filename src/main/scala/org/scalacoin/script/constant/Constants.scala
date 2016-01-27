@@ -10,6 +10,7 @@ import org.scalacoin.util.ScalacoinUtil
 trait ScriptToken {
   def hex : String
   def bytes = ScalacoinUtil.decodeHex(hex)
+  def bytesSize = bytes.size
 }
 
 trait ScriptOperation extends ScriptToken {
@@ -83,6 +84,8 @@ case object OP_0 extends ScriptNumberOperation {
 
   //empty byte vector
   override def bytes = List()
+
+  override def bytesSize = 1
 }
 /**
  * An empty array of bytes is pushed onto the stack. (This is not a no-op: an item is added to the stack.)
