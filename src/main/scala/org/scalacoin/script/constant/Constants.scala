@@ -80,6 +80,9 @@ sealed trait ScriptNumberOperation extends ScriptNumber {
 case object OP_0 extends ScriptNumberOperation {
   override def opCode = 0
   override def scriptNumber = this
+
+  //empty byte vector
+  override def bytes = List()
 }
 /**
  * An empty array of bytes is pushed onto the stack. (This is not a no-op: an item is added to the stack.)

@@ -48,17 +48,16 @@ trait CryptoUtil extends ScalacoinUtil {
    * @param bytes
    * @return
    */
-  def sha1(bytes : List[Byte]) : String = {
-    val hashBytes = MessageDigest.getInstance("SHA-1").digest(bytes.toArray)
-    encodeHex(hashBytes)
-  }
+  def sha1(bytes : List[Byte]) : List[Byte] = MessageDigest.getInstance("SHA-1").digest(bytes.toArray).toList
+
+
 
   /**
    * Performs SHA1(str)
    * @param hex
    * @return
    */
-  def sha1(str : String) : String = sha1(str.map(_.toByte).toList)
+  def sha1(str : String) : List[Byte] = sha1(str.map(_.toByte).toList)
 }
 
 object CryptoUtil extends CryptoUtil

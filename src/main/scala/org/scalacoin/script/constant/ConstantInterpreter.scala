@@ -99,8 +99,6 @@ trait ConstantInterpreter {
     }
 
     val (newScript,tokensToBePushed) = takeUntilBytesNeeded(script.tail,List())
-
-
     (tokensToBePushed ++ stack, newScript)
 
   }

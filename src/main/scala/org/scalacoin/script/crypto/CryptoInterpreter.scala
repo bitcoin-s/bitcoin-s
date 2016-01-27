@@ -80,7 +80,7 @@ trait CryptoInterpreter extends ScalacoinUtil {
     require(stack.headOption.isDefined, "We must have an element on the stack for OP_SHA1")
 
     val constant = stack.head
-    val hash = ScriptConstantImpl(CryptoUtil.sha1(constant.hex))
+    val hash = ScriptConstantImpl(ScalacoinUtil.encodeHex(CryptoUtil.sha1(constant.bytes)))
     (hash :: stack.tail, script.tail)
 
   }
