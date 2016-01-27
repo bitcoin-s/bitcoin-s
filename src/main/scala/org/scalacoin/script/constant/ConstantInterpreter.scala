@@ -93,8 +93,9 @@ trait ConstantInterpreter {
      */
     @tailrec
     def takeUntilBytesNeeded(scriptTokens : List[ScriptToken], accum : List[ScriptToken]) : (List[ScriptToken],List[ScriptToken]) = {
-      if (accum.map(_.bytes.size).sum == bytesNeeded) (scriptTokens,accum)
-      else if (accum.map(_.bytes.size).sum > bytesNeeded) throw new RuntimeException("We cannot have more bytes than what our script number specified")
+      val bytesSum = accum.map(_.bytesSize).sum
+      if (bytesSum == bytesNeeded) (scriptTokens,accum)
+      else if (bytesSum > bytesNeeded) throw new RuntimeException("We cannot have more bytes than what our script number specified")
       else takeUntilBytesNeeded(scriptTokens.tail, scriptTokens.head :: accum)
     }
 
