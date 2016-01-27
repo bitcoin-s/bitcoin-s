@@ -70,6 +70,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
         case OP_NOTIF :: t => loop(opNotIf(stack,script))
         case OP_ELSE :: t => loop(opElse(stack,script))
         case OP_ENDIF :: t => loop(opEndIf(stack,script))
+        case OP_RETURN :: t => opReturn(stack,script)
 
         //crypto operations
         case OP_HASH160 :: t => loop(hash160(stack,script))
