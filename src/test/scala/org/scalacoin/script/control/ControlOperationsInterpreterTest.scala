@@ -88,7 +88,7 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers with C
 
   it must "evaluate a weird case using multiple OP_ELSEs" in {
     val stack = List(ScriptNumberImpl(1))
-    val script =  List(OP_IF, OP_ELSE, OP_0, OP_ELSE, OP_1, OP_ENDIF)
+    val script = List(OP_IF, OP_ELSE, OP_0, OP_ELSE, OP_1, OP_ENDIF)
 
     val (newStack,newScript) = opIf(stack,script)
 

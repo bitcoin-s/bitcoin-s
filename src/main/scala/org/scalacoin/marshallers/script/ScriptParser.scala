@@ -31,8 +31,8 @@ trait ScriptParser extends ScalacoinUtil {
         //example: https://github.com/bitcoin/bitcoin/blob/master/src/test/data/script_valid.json#L24
         case h :: t if (h.size > 0 && h.head == ''' && h.last == ''') =>
           val strippedQuotes = h.replace("'","")
-          val hex = ScalacoinUtil.encodeHex(strippedQuotes.getBytes)
-          loop(t, ScriptConstantImpl(hex) :: accum)
+          if (strippedQuotes.size == 0) loop(t, OP_0 :: accum)
+          else loop(t, ScriptConstantImpl(ScalacoinUtil.encodeHex(strippedQuotes.getBytes)) :: accum)
         //if we see a byte constant of just 0x09
         //parse the characters as a hex op
         case h :: t if (h.size == 4 && h.substring(0,2) == "0x") =>
