@@ -1,5 +1,8 @@
 package org.scalacoin.script.control
 
+import org.scalacoin.script.arithmetic.OP_ADD
+import org.scalacoin.script.bitwise.OP_EQUAL
+import org.scalacoin.script.constant.{OP_2, OP_1, OP_0}
 import org.scalatest.{MustMatchers, FlatSpec}
 
 /**
@@ -30,5 +33,7 @@ class ControlOperationsTest extends FlatSpec with MustMatchers {
   it must "define an OP_RETURN" in {
     OP_RETURN.opCode must be (106)
   }
+
+
 
 }
