@@ -115,45 +115,47 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers with C
     parseBinaryTree(script0).toSeq must be (script0)
 
     val script1 = List(OP_IF,OP_0,OP_ELSE,OP_1,OP_ENDIF)
-
-    parseBinaryTree(script1).toSeq must be (script1)
+    val bTree1 = parseBinaryTree(script1)
+    bTree1.toSeq must be (script1)
 
     val script2 = List(OP_IF,OP_ELSE, OP_ELSE,OP_ENDIF)
     parseBinaryTree(script2).toSeq must be (script2)
 
     val script3 = List(OP_IF, OP_1, OP_ELSE, OP_0, OP_ENDIF)
-    parseBinaryTree(script3).toSeq must be (script3)
+    val bTree3 = parseBinaryTree(script3)
+    bTree3.toSeq must be (script3)
 
     val script = List(OP_IF, OP_IF, OP_0, OP_ELSE, OP_1, OP_ENDIF, OP_ELSE, OP_IF, OP_2, OP_ELSE, OP_3, OP_ENDIF, OP_ENDIF)
     parseBinaryTree(script).toSeq must be (script)
   }
 
-/*  it must "parse a script into a binary tree and have the OP_IF expression on the left branch and the OP_ELSE expression on the right branch"in {
+  it must "parse a script into a binary tree and have the OP_IF expression on the left branch and the OP_ELSE expression on the right branch"in {
     val script = List(OP_IF,OP_0,OP_ELSE,OP_1,OP_ENDIF)
     val bTree = parseBinaryTree(script)
 
     bTree.value.get must be (OP_IF)
 
     bTree.left.isDefined must be (true)
-    bTree.left.get must be (OP_0)
+    bTree.left.get.value must be (Some(OP_0))
 
     bTree.right.isDefined must be (true)
-    bTree.right.get must be (OP_ELSE)
+    bTree.right.get.value must be (Some(OP_ELSE))
 
     bTree.right.get.left.isDefined must be (true)
-    bTree.right.get.left.get must be (OP_1)
+    bTree.right.get.left.get.value must be (Some(OP_1))
 
-    bTree.right.get.right.get must be (OP_ENDIF)
-  }*/
+    bTree.right.get.right.isDefined must be (true)
+    bTree.right.get.right.get.value must be (Some(OP_ENDIF))
+  }
 
-  it must "evaluate an OP_IF block correctly if the stack top is true" in {
+/*  it must "evaluate an OP_IF block correctly if the stack top is true" in {
     val stack = List(OP_1)
     val script = List(OP_IF, OP_1, OP_ELSE, OP_0, OP_ENDIF)
     val (newStack,newScript) = opIf(stack,script)
 
     newStack must be (List())
     newScript must be (List(OP_1, OP_ENDIF))
-  }
+  }*/
 
   /*it must "evaluate a weird case using multiple OP_ELSEs" in {
     val stack = List(ScriptNumberImpl(1))

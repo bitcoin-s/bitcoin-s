@@ -166,8 +166,12 @@ trait ControlOperationsInterpreter {
         val lastOpElseIndex = findLastOpElse(t)
 
         if (lastOpEndIfIndex.isDefined && !t.contains(OP_IF)) {
-          val opIfExpression = t.slice(0, lastOpEndIfIndex.get)
-          val restOfScript = t.slice(lastOpEndIfIndex.get, script.size)
+
+          val opElseIndex : Option[Int] = findFirstOpElse(t)
+          val opIfExpression = if (opElseIndex.isDefined) t.slice(0,opElseIndex.get) else t.slice(0, lastOpEndIfIndex.get)
+          val restOfScript = if (opElseIndex.isDefined) t.slice(opElseIndex.get, script.size) else t.slice(lastOpEndIfIndex.get, script.size)
+          logger.debug("OP_IF Expression: " + opIfExpression)
+          logger.debug("rest of script: " + restOfScript)
           Node(OP_IF, loop(opIfExpression), loop(restOfScript))
         } else if (lastOpElseIndex.isDefined) {
           val opIfExpression = t.slice(0,lastOpElseIndex.get)
