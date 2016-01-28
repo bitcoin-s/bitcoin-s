@@ -1,5 +1,7 @@
 package org.scalacoin.util
 
+import scala.annotation.tailrec
+
 /**
  * Created by chris on 1/27/16.
  */
@@ -20,6 +22,36 @@ trait BinaryTree[+T] {
     case n: Node[T] => Some(n.r)
     case l: Leaf[T] => None
     case Empty      => None
+  }
+
+
+
+  /**
+   * Creates a sequence with only the leaf values
+   * evaluates as depth first from left to right
+   * @return
+   */
+  def toSeqLeafValues : Seq[T] = {
+
+    //TODO: Optimize this into a tailrec function
+    def loop(tree : BinaryTree[T],accum : List[T]) : Seq[T] = tree match {
+      case Leaf(x) => x :: accum
+      case Empty => accum
+      case Node(_,l,r) => loop(l,List()) ++ loop(r,List())
+    }
+    loop(this,List())
+  }
+
+
+
+  def toSeq : Seq[T] = {
+    //TODO: Optimize this into a tailrec function
+    def loop(tree : BinaryTree[T],accum : List[T]) : List[T] = tree match {
+      case Leaf(x) => x :: accum
+      case Empty => accum
+      case Node(v,l,r) => v :: loop(l,List()) ++ loop(r,List())
+    }
+    loop(this,List())
   }
 }
 
