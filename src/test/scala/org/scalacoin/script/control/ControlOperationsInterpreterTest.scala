@@ -96,6 +96,9 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers with C
 
     val script3 = List(OP_IF, OP_1,OP_ELSE, OP_2, OP_ELSE, OP_3, OP_ENDIF)
     val bTree3 = parseBinaryTree(script3)
+    println(bTree3)
+    //Node(OP_IF,Node(OP_1,Empty,Empty),Node(OP_ELSE,Node(OP_2,Node(OP_ELSE,Node(OP_3,Empty,Empty),Empty),Empty),Leaf(OP_ENDIF)))
+
     removeFirstOpElse(bTree3).toSeq must be (List(OP_IF, OP_1, OP_ELSE, OP_3, OP_ENDIF))
   }
 
@@ -123,6 +126,20 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers with C
     newScript must be (List(OP_ELSE,OP_1,OP_ENDIF))
   }
 
+  it must "check that every OP_IF has a matching OP_ENDIF" in {
+    val script0 = List()
+    checkMatchingOpIfOpEndIf(script0) must be (true)
+
+    val script1 = List(OP_IF, OP_ENDIF)
+    checkMatchingOpIfOpEndIf(script1) must be (true)
+
+    val script2 = List(OP_IF)
+    checkMatchingOpIfOpEndIf(script2) must be (false)
+
+    val script3 = List(OP_IF,OP_IF,OP_IF,OP_ELSE,OP_ELSE,OP_ELSE,OP_ENDIF,OP_ENDIF,OP_ENDIF)
+    checkMatchingOpIfOpEndIf(script3) must be (true)
+  }
+
   it must "parse a script as a binary tree then convert it back to the original list" in {
 
     val script0 = List(OP_IF,OP_ENDIF)
@@ -140,7 +157,10 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers with C
     bTree3.toSeq must be (script3)
 
     val script4 = List(OP_IF, OP_IF, OP_0, OP_ELSE, OP_1, OP_ENDIF, OP_ELSE, OP_IF, OP_2, OP_ELSE, OP_3, OP_ENDIF, OP_ENDIF)
-    parseBinaryTree(script4).toSeq must be (script4)
+    val bTree4 = parseBinaryTree(script4)
+    println(bTree4)
+
+    bTree4.toSeq must be (script4)
 
     val script5 = List(OP_IF, OP_1,OP_ELSE, OP_2, OP_ELSE, OP_3, OP_ENDIF)
     parseBinaryTree(script5).toSeq must be (script5)
@@ -168,7 +188,6 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers with C
   it must "parse nested OP_ELSE statements into the same branch" in {
     val script = List(OP_IF, OP_1,OP_ELSE, OP_2, OP_ELSE, OP_3, OP_ENDIF)
     val bTree = parseBinaryTree(script)
-    println(bTree)
     bTree.value.get must be (OP_IF)
 
     bTree.left.isDefined must be (true)
@@ -197,13 +216,33 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers with C
 
   }
 
+  it must "parse a binary tree from a script with nested OP_IFs and OP_ELSES on both branches" in {
+    val script = List(OP_IF, OP_IF, OP_0, OP_ELSE, OP_1, OP_ENDIF, OP_ELSE, OP_IF, OP_2, OP_ELSE, OP_3, OP_ENDIF, OP_ENDIF)
+    val bTree = parseBinaryTree(script)
+
+    bTree.value must be (Some(OP_IF))
+
+    bTree.left.get.value must be (Some(OP_IF))
+    bTree.left.get.right.get.value must be (Some(OP_ELSE))
+    bTree.left.get.right.get.left.get.value must be (Some(OP_1))
+    bTree.left.get.right.get.right.get.value must be (Some(OP_ENDIF))
+
+    bTree.right.get.value must be (Some(OP_ELSE))
+    bTree.right.get.left.get.value must be (Some(OP_IF))
+    bTree.right.get.left.get.left.get.value must be (Some(OP_2))
+    bTree.right.get.left.get.right.get.value must be (Some(OP_ELSE))
+    bTree.right.get.left.get.right.get.left.get.value must be (Some(OP_3))
+    bTree.right.get.left.get.right.get.right.get.value must be (Some(OP_ENDIF))
+
+  }
+
   it must "evaluate an OP_IF block correctly if the stack top is true" in {
     val stack = List(OP_1)
     val script = List(OP_IF, OP_1, OP_ELSE, OP_0, OP_ENDIF)
     val (newStack,newScript) = opIf(stack,script)
 
     newStack must be (List())
-    newScript must be (List(OP_1))
+    newScript must be (List(OP_1,OP_ENDIF))
   }
 
   it must "evaluate a weird case using multiple OP_ELSEs" in {
@@ -213,9 +252,10 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers with C
     val (newStack,newScript) = opIf(stack,script)
 
     newScript must be (List(OP_ELSE,OP_1,OP_ENDIF))
+
   }
 
-  /*it must "evaluate this OP_IF OP_ELSE block correctly" in {
+  it must "evaluate this OP_IF OP_ELSE block correctly" in {
     //https://gist.github.com/Christewart/381dc1dbbb07e62501c3
     val stack = List(OP_0)
     val script = List(OP_IF, OP_1, OP_IF, OP_RETURN, OP_ELSE, OP_RETURN, OP_ELSE, OP_RETURN, OP_ENDIF,
@@ -229,12 +269,13 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers with C
 
   it must "evalute nested OP_IFS correctly" in {
     val stack = List(OP_1,OP_1)
-    val script = List(OP_IF, OP_IF, OP_1, OP_ELSE, OP_0, OP_ENDIF, OP_ELSE, OP_IF, OP_0, OP_ELSE, OP_1, OP_ENDIF, OP_ENDIF)
+    val script = List(OP_IF, OP_IF, OP_0, OP_ELSE, OP_1, OP_ENDIF, OP_ELSE, OP_IF, OP_2, OP_ELSE, OP_3, OP_ENDIF, OP_ENDIF)
     val (newStack,newScript) = opIf(stack,script)
 
     newStack.head must be (OP_1)
-    newScript must be (List(OP_IF,OP_1,OP_ELSE,OP_0,OP_ENDIF,OP_ENDIF))
-  }*/
+    newScript must be (List(OP_IF,OP_0,OP_ELSE,OP_1,OP_ENDIF,OP_ENDIF))
+
+  }
 }
 
 
