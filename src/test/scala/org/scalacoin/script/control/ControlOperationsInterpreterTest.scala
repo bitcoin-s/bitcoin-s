@@ -96,9 +96,6 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers with C
 
     val script3 = List(OP_IF, OP_1,OP_ELSE, OP_2, OP_ELSE, OP_3, OP_ENDIF)
     val bTree3 = parseBinaryTree(script3)
-    println(bTree3)
-    //Node(OP_IF,Node(OP_1,Empty,Empty),Node(OP_ELSE,Node(OP_2,Node(OP_ELSE,Node(OP_3,Empty,Empty),Empty),Empty),Leaf(OP_ENDIF)))
-
     removeFirstOpElse(bTree3).toSeq must be (List(OP_IF, OP_1, OP_ELSE, OP_3, OP_ENDIF))
   }
 
@@ -158,7 +155,6 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers with C
 
     val script4 = List(OP_IF, OP_IF, OP_0, OP_ELSE, OP_1, OP_ENDIF, OP_ELSE, OP_IF, OP_2, OP_ELSE, OP_3, OP_ENDIF, OP_ENDIF)
     val bTree4 = parseBinaryTree(script4)
-    println(bTree4)
 
     bTree4.toSeq must be (script4)
 
