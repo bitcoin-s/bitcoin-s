@@ -32,7 +32,6 @@ trait BinaryTree[+T] {
    * @return
    */
   def toSeqLeafValues : Seq[T] = {
-
     //TODO: Optimize this into a tailrec function
     def loop(tree : BinaryTree[T],accum : List[T]) : Seq[T] = tree match {
       case Leaf(x) => x :: accum
