@@ -197,7 +197,7 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers with C
 
   }
 
-  /*it must "evaluate an OP_IF block correctly if the stack top is true" in {
+  it must "evaluate an OP_IF block correctly if the stack top is true" in {
     val stack = List(OP_1)
     val script = List(OP_IF, OP_1, OP_ELSE, OP_0, OP_ENDIF)
     val (newStack,newScript) = opIf(stack,script)
@@ -213,7 +213,7 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers with C
     val (newStack,newScript) = opIf(stack,script)
 
     newScript must be (List(OP_ELSE,OP_1,OP_ENDIF))
-  }*/
+  }
 
   /*it must "evaluate this OP_IF OP_ELSE block correctly" in {
     //https://gist.github.com/Christewart/381dc1dbbb07e62501c3
