@@ -52,6 +52,8 @@ trait BinaryTree[+T] {
     }
     loop(this,List())
   }
+
+  def toList : List[T] = toSeq.toList
 }
 
 case class Node[T](v: T, l: BinaryTree[T], r: BinaryTree[T]) extends BinaryTree[T]
