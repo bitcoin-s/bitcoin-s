@@ -125,7 +125,8 @@ trait ControlOperationsInterpreter {
   private def loop(script : List[ScriptToken]) : BinaryTree[ScriptToken] = script match {
     case OP_IF :: t  => parseOpIf(script)
     case OP_ELSE :: t => parseOpElse(script)
-    case OP_ENDIF :: t => Leaf(OP_ENDIF)
+    case OP_ENDIF :: Nil => Leaf(OP_ENDIF)
+    case OP_ENDIF :: t => Node(OP_ENDIF,loop(t),Empty)
     case (x : ScriptConstant) :: t => Node(x,loop(t),Empty)
     case (x : ScriptNumber) :: t => Node(x,loop(t),Empty)
     case scriptToken :: t => Node(scriptToken,loop(t),Empty)
@@ -169,7 +170,9 @@ trait ControlOperationsInterpreter {
       //every OP_IF must be matched with a OP_ENDIF
       require(nestedLastOpEndIfIndex.isDefined,"Every OP_IF must have a matching OP_ENDIF")
       //slice off the nested OP_IF expression
-      val firstNestedOpIfExpression = t.slice(nestedOpIfIndex,nestedLastOpEndIfIndex.get+1)
+      //indexing starts at 0 here because we need to include script tokens that prefix the nested OP_IF
+      //i.e. OP_IF OP_0 OP_IF OP_ENDIF OP_ENDIF
+      val firstNestedOpIfExpression = t.slice(0,nestedLastOpEndIfIndex.get+1)
       val restOfScript = t.slice(nestedLastOpEndIfIndex.get+1,t.size)
       //parse the nested OP_IF expression as the left subtree
       //the rest of the parent OP_IF as the right subtree
@@ -193,15 +196,33 @@ trait ControlOperationsInterpreter {
     val _ :: t = script
     val nestedOpElseIndex = findFirstOpElse(t)
     val lastOpEndIfIndex = findLastOpEndIf(t)
-    if (t.contains(OP_IF)) {
+
+    if (t.count(_ == OP_ENDIF) > 1) {
+      //check to see if there is are multiple OP_ENDIFs
+      //find the index of the nested OP_IF
+      val firstOpIfIndex = findFirstOpIf(t)
+      //find the nested OP_IFs corresponding OP_ENDIF
+      val nestedOpEndIfIndex = findFirstOpEndIf(t)
+      //slice off the nested OP_IF expression
+      //need this to start at 0 index in case there are constants ahead of the OP_IF
+      //i.e. OP_0 OP_1 OP_IF ... OP_ENDIF
+      val nestedOpIfExpression = t.slice(0,nestedOpEndIfIndex.get+1)
+
+      val restOfScript = t.slice(nestedOpEndIfIndex.get+1,t.size)
+      logger.debug("Rest of script for t.count(_ == OP_ENDIF): " + restOfScript)
+      Node(OP_ELSE,loop(nestedOpIfExpression),loop(restOfScript))
+    } else if (t.count(_ == OP_IF) == 1) {
       //check to see if there is a nested OP_IF inside of the OP_ELSE
       //find the index of the nested OP_IF
       val firstOpIfIndex = findFirstOpIf(t)
       //find the nested OP_IFs corresponding OP_ENDIF
       val nestedOpEndIfIndex = findLastOpEndIf(t.slice(firstOpIfIndex.get,lastOpEndIfIndex.get))
       //slice off the nested OP_IF expression
-      val nestedOpIfExpression = t.slice(firstOpIfIndex.get,nestedOpEndIfIndex.get+1)
-      Node(OP_ELSE,loop(nestedOpIfExpression),loop(t.slice(nestedOpEndIfIndex.get+1,t.size)))
+      val nestedOpIfExpression = t.slice(0,nestedOpEndIfIndex.get+1)
+
+      val restOfScript = t.slice(nestedOpEndIfIndex.get+1,t.size)
+      logger.debug("Rest of script for t.contains(OP_IF): " + restOfScript)
+      Node(OP_ELSE,loop(nestedOpIfExpression),loop(restOfScript))
     } else if (nestedOpElseIndex.isDefined && lastOpEndIfIndex.isDefined && nestedOpElseIndex.get < lastOpEndIfIndex.get) {
       //if we have a nested OP_ELSE before our last OP_ENDIF index
       val opElseExpression = t.slice(0,nestedOpElseIndex.get)

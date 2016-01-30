@@ -232,6 +232,19 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers with C
 
   }
 
+  it must "parse a binary tree from a script where constants are nested inside of OP_IF OP_ELSE branches" in {
+    //"0" "IF 1 IF RETURN ELSE RETURN ELSE RETURN ENDIF ELSE 1 IF 1 ELSE RETURN ELSE 1 ENDIF ELSE RETURN ENDIF ADD 2 EQUAL"
+    val script = List(OP_IF, OP_1,OP_IF,OP_RETURN,OP_ELSE,OP_RETURN,OP_ELSE,OP_RETURN, OP_ENDIF,
+      OP_ELSE, OP_1, OP_IF, OP_1, OP_ELSE, OP_RETURN, OP_ELSE, OP_1, OP_ENDIF, OP_ELSE, OP_RETURN, OP_ENDIF,
+      OP_ADD, OP_2, OP_EQUAL)
+    val bTree = parseBinaryTree(script)
+    bTree.toSeq must be (script)
+
+    bTree.right.get.right.get.right.get.left.get.value must be (Some(OP_ADD))
+    bTree.right.get.right.get.right.get.left.get.left.get.value must be (Some(OP_2))
+    bTree.right.get.right.get.right.get.left.get.left.get.left.get.value must be (Some(OP_EQUAL))
+  }
+
   it must "evaluate an OP_IF block correctly if the stack top is true" in {
     val stack = List(OP_1)
     val script = List(OP_IF, OP_1, OP_ELSE, OP_0, OP_ENDIF)
