@@ -112,7 +112,7 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers with C
     val script = List(OP_IF, OP_RESERVED, OP_ENDIF, OP_1)
     val (newStack,newScript) = opIf(stack,script)
     newStack.isEmpty must be (true)
-    newScript must be (List(OP_1))
+    newScript must be (List(OP_ENDIF,OP_1))
   }
 
 
@@ -263,18 +263,7 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers with C
     newScript must be (List(OP_ELSE,OP_1,OP_ENDIF))
 
   }
-
-  it must "evaluate this OP_IF OP_ELSE block correctly" in {
-    //https://gist.github.com/Christewart/381dc1dbbb07e62501c3
-    val stack = List(OP_0)
-    val script = List(OP_IF, OP_1, OP_IF, OP_RETURN, OP_ELSE, OP_RETURN, OP_ELSE, OP_RETURN, OP_ENDIF,
-      OP_ELSE, OP_1, OP_IF, OP_1, OP_ELSE, OP_RETURN, OP_ELSE, OP_1, OP_ENDIF, OP_ELSE, OP_RETURN, OP_ENDIF, OP_ADD, OP_2, OP_EQUAL)
-    val (newStack,newScript) = opIf(stack,script)
-
-    newStack.isEmpty must be (true)
-    newScript must be (List(OP_ADD, OP_2, OP_EQUAL))
-  }
-
+  
 
   it must "evalute nested OP_IFS correctly" in {
     val stack = List(OP_1,OP_1)
@@ -283,6 +272,22 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers with C
 
     newStack.head must be (OP_1)
     newScript must be (List(OP_IF,OP_0,OP_ELSE,OP_1,OP_ENDIF,OP_ENDIF))
+  }
+
+  it must "evaluate a nested OP_IFs OP_ELSES correctly when the stack top is 0" in {
+    //https://gist.github.com/Christewart/381dc1dbbb07e62501c3
+    val stack = List(OP_0)
+    //"0", "IF 1 IF RETURN ELSE RETURN ELSE RETURN ENDIF ELSE 1 IF 1 ELSE
+    // RETURN ELSE 1 ENDIF ELSE RETURN ENDIF ADD 2 EQUAL"
+    val script = List(OP_IF,OP_1, OP_IF,OP_RETURN, OP_ELSE, OP_RETURN, OP_ELSE, OP_RETURN,OP_ENDIF, OP_ELSE, OP_1,OP_IF,OP_1,OP_ELSE,
+      OP_RETURN,OP_ELSE,OP_1,OP_ENDIF, OP_ELSE,OP_RETURN,OP_ENDIF,OP_ADD,OP_2,OP_EQUAL)
+
+    val (newStack,newScript) = opIf(stack,script)
+
+    newStack.isEmpty must be (true)
+    newScript must be (List(OP_ELSE, OP_1,OP_IF,OP_1,OP_ELSE,
+      OP_RETURN,OP_ELSE,OP_1,OP_ENDIF, OP_ELSE,OP_RETURN,OP_ENDIF,OP_ADD,OP_2,OP_EQUAL))
+
 
   }
 }
