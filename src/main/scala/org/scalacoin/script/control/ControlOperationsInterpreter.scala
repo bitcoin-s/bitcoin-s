@@ -37,7 +37,6 @@ trait ControlOperationsInterpreter {
   def opIf(stack : List[ScriptToken], script : List[ScriptToken]) : (List[ScriptToken], List[ScriptToken]) = {
     require(script.headOption.isDefined && script.head == OP_IF, "Script top was not OP_IF")
     val binaryTree = parseBinaryTree(script)
-    logger.debug("Binary tree: " + binaryTree)
     if (stack.head != OP_0) {
       //remove OP_ELSE from binary tree
       val newTreeWithoutOpElse = removeFirstOpElse(binaryTree)
@@ -45,11 +44,12 @@ trait ControlOperationsInterpreter {
       (stack.tail,newScript.tail)
     } else {
       //remove the OP_IF
-      val scriptWithoutOpIf = removeFirstOpIf(script)
-      if (scriptWithoutOpIf.headOption == Some(OP_ENDIF)) {
+      val scriptWithoutOpIf : BinaryTree[ScriptToken] = removeFirstOpIf(binaryTree)
+      (stack.tail,scriptWithoutOpIf.toList)
+/*      if (scriptWithoutOpIf.headOption == Some(OP_ENDIF)) {
         val scriptWithoutOpEndIf = opEndIf(stack,scriptWithoutOpIf)
         (scriptWithoutOpEndIf._1.tail, scriptWithoutOpEndIf._2)
-      } else (stack.tail,scriptWithoutOpIf)
+      } else (stack.tail,scriptWithoutOpIf)*/
     }
 
   }
@@ -140,7 +140,6 @@ trait ControlOperationsInterpreter {
    * @return
    */
   private def parseOpIf(script : List[ScriptToken]) : BinaryTree[ScriptToken] = {
-    logger.debug("script : " + script)
     val _ :: t = script
     val lastOpEndIfIndex = findLastOpEndIf(t)
     val lastOpElseIndex = findLastOpElse(t)
@@ -192,7 +191,6 @@ trait ControlOperationsInterpreter {
    * @return
    */
   private def parseOpElse(script : List[ScriptToken]) : BinaryTree[ScriptToken] = {
-    logger.debug("Script parse OP_ELSE: " + script)
     val _ :: t = script
     val nestedOpElseIndex = findFirstOpElse(t)
     val lastOpEndIfIndex = findLastOpEndIf(t)
@@ -209,7 +207,6 @@ trait ControlOperationsInterpreter {
       val nestedOpIfExpression = t.slice(0,nestedOpEndIfIndex.get+1)
 
       val restOfScript = t.slice(nestedOpEndIfIndex.get+1,t.size)
-      logger.debug("Rest of script for t.count(_ == OP_ENDIF): " + restOfScript)
       Node(OP_ELSE,loop(nestedOpIfExpression),loop(restOfScript))
     } else if (t.count(_ == OP_IF) == 1) {
       //check to see if there is a nested OP_IF inside of the OP_ELSE
@@ -221,7 +218,6 @@ trait ControlOperationsInterpreter {
       val nestedOpIfExpression = t.slice(0,nestedOpEndIfIndex.get+1)
 
       val restOfScript = t.slice(nestedOpEndIfIndex.get+1,t.size)
-      logger.debug("Rest of script for t.contains(OP_IF): " + restOfScript)
       Node(OP_ELSE,loop(nestedOpIfExpression),loop(restOfScript))
     } else if (nestedOpElseIndex.isDefined && lastOpEndIfIndex.isDefined && nestedOpElseIndex.get < lastOpEndIfIndex.get) {
       //if we have a nested OP_ELSE before our last OP_ENDIF index
@@ -341,7 +337,6 @@ trait ControlOperationsInterpreter {
    * @return
    */
   def removeFirstOpElse[T](tree : BinaryTree[T]) : BinaryTree[T] = {
-    logger.debug("Binary tree: " + tree)
     if (tree.right.isDefined && tree.right.get.value == Some(OP_ELSE)) {
       Node(tree.value.get,tree.left.getOrElse(Empty),tree.right.get.right.getOrElse(Empty))
     } else tree
@@ -368,6 +363,11 @@ trait ControlOperationsInterpreter {
       script.slice(0,firstOpIfIndex) ++ script.slice(matchingOpEndIfIndex,script.size)
     }  else script.slice(0,firstOpIfIndex) ++ script.slice(matchingOpEndIfIndex,script.size)
 
+  }
+
+  def removeFirstOpIf(tree : BinaryTree[ScriptToken]) : BinaryTree[ScriptToken] = {
+    require(tree.value.isDefined && tree.value.get == OP_IF, "Top of the tree must be OP_IF to remove the OP_IF")
+    tree.right.getOrElse(Empty)
   }
 
   /**
