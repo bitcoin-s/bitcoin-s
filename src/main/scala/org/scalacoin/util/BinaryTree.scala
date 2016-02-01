@@ -42,6 +42,27 @@ trait BinaryTree[+T] {
   }
 
 
+  /**
+   * A function to find the first occurrence of a predicate inside a binary tree
+   * the default tree is the current instance of the binary tree that the function is being called on
+   * the default predicate is equality i.e. if 1 == 1
+   * @param t
+   * @param tree
+   * @param f
+   * @tparam T
+   * @return
+   */
+  def findFirstDFS[T](t : T)(tree : BinaryTree[T] = this)(f : T => Boolean = (x : T) => x == t) : Option[BinaryTree[T]] = {
+    if (tree.value.isDefined && f(tree.value.get)) Some(tree)
+    else {
+      val leftTreeResult : Option[BinaryTree[T]] = if (tree.left.isDefined) findFirstDFS(t)(tree.left.get)(f) else None
+      if (leftTreeResult.isDefined) leftTreeResult
+      else if (tree.right.isDefined) findFirstDFS(t)(tree.right.get)(f)
+      else None
+    }
+  }
+
+
 
   def toSeq : Seq[T] = {
     //TODO: Optimize this into a tailrec function

@@ -46,10 +46,6 @@ trait ControlOperationsInterpreter {
       //remove the OP_IF
       val scriptWithoutOpIf : BinaryTree[ScriptToken] = removeFirstOpIf(binaryTree)
       (stack.tail,scriptWithoutOpIf.toList)
-/*      if (scriptWithoutOpIf.headOption == Some(OP_ENDIF)) {
-        val scriptWithoutOpEndIf = opEndIf(stack,scriptWithoutOpIf)
-        (scriptWithoutOpEndIf._1.tail, scriptWithoutOpEndIf._2)
-      } else (stack.tail,scriptWithoutOpIf)*/
     }
 
   }
@@ -337,6 +333,8 @@ trait ControlOperationsInterpreter {
    * @return
    */
   def removeFirstOpElse[T](tree : BinaryTree[T]) : BinaryTree[T] = {
+    //need to traverse the tree to see if there is an OP_ENDIF on the left hand side
+
     if (tree.right.isDefined && tree.right.get.value == Some(OP_ELSE)) {
       Node(tree.value.get,tree.left.getOrElse(Empty),tree.right.get.right.getOrElse(Empty))
     } else tree
