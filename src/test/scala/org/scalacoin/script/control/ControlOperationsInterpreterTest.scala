@@ -72,7 +72,7 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers with C
     findFirstIndexesOpElseOpEndIf(List(OP_IF,OP_IF)) must be (None,None)
   }
 
-  it must "remvoe the first OP_IF expression in a script" in {
+  it must "remove the first OP_IF expression in a script" in {
     removeFirstOpIf(List(OP_IF,OP_ELSE,OP_ENDIF)) must be (List(OP_ELSE,OP_ENDIF))
     removeFirstOpIf(List(OP_ELSE,OP_ENDIF)) must be (List(OP_ELSE,OP_ENDIF))
     removeFirstOpIf(List(OP_IF, OP_1,OP_ELSE, OP_2, OP_ELSE, OP_3, OP_ENDIF)) must be (List(OP_ELSE, OP_2, OP_ELSE, OP_3, OP_ENDIF))
@@ -277,7 +277,8 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers with C
 
   it must "remove the first OP_ELSE if the stack top is true for an OP_IF" in  {
     val stack = List(ScriptNumberImpl(1))
-    val script = List(OP_IF, OP_1, OP_ELSE, OP_RETURN, OP_ELSE, OP_1, OP_ENDIF, OP_ELSE, OP_RETURN, OP_ENDIF, OP_ADD, OP_2, OP_EQUAL)
+    val script = List(OP_IF, OP_1, OP_ELSE, OP_RETURN, OP_ELSE, OP_1, OP_ENDIF, OP_ELSE, OP_RETURN, OP_ENDIF,
+      OP_ADD, OP_2, OP_EQUAL)
 
     val (newStack,newScript) = opIf(stack,script)
 
@@ -297,11 +298,15 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers with C
 
 
   it must "evaluate nested OP_IFS correctly" in {
-    val stack = List(OP_1,OP_1)
-    val script = List(OP_IF, OP_IF, OP_0, OP_ELSE, OP_1, OP_ENDIF, OP_ELSE, OP_IF, OP_2, OP_ELSE, OP_3, OP_ENDIF, OP_ENDIF)
+    val stack = List(OP_1)
+    val script = List(OP_IF,
+      OP_IF, OP_0, OP_ELSE, OP_1, OP_ENDIF,
+      OP_ELSE,
+      OP_IF, OP_2, OP_ELSE, OP_3, OP_ENDIF,
+      OP_ENDIF)
     val (newStack,newScript) = opIf(stack,script)
 
-    newStack.head must be (OP_1)
+    newStack.isEmpty must be (true)
     newScript must be (List(OP_IF,OP_0,OP_ELSE,OP_1,OP_ENDIF,OP_ENDIF))
   }
 
@@ -310,8 +315,11 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers with C
     val stack = List(OP_0)
     //"0", "IF 1 IF RETURN ELSE RETURN ELSE RETURN ENDIF ELSE 1 IF 1 ELSE
     // RETURN ELSE 1 ENDIF ELSE RETURN ENDIF ADD 2 EQUAL"
-    val script = List(OP_IF,OP_1, OP_IF,OP_RETURN, OP_ELSE, OP_RETURN, OP_ELSE, OP_RETURN,OP_ENDIF, OP_ELSE, OP_1,OP_IF,OP_1,OP_ELSE,
-      OP_RETURN,OP_ELSE,OP_1,OP_ENDIF, OP_ELSE,OP_RETURN,OP_ENDIF,OP_ADD,OP_2,OP_EQUAL)
+    val script = List(OP_IF,OP_1,
+      OP_IF,OP_RETURN, OP_ELSE, OP_RETURN, OP_ELSE, OP_RETURN,OP_ENDIF,
+      OP_ELSE, OP_1,
+      OP_IF,OP_1,OP_ELSE, OP_RETURN,OP_ELSE,OP_1,OP_ENDIF,
+      OP_ELSE,OP_RETURN,OP_ENDIF,OP_ADD,OP_2,OP_EQUAL)
 
     val (newStack,newScript) = opIf(stack,script)
 
