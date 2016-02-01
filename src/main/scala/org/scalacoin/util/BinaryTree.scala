@@ -44,21 +44,64 @@ trait BinaryTree[+T] {
 
   /**
    * A function to find the first occurrence of a predicate inside a binary tree
-   * the default tree is the current instance of the binary tree that the function is being called on
-   * the default predicate is equality i.e. if 1 == 1
+   * @param t
+   * @param tree the default tree is the current instance of the binary tree that the function is being called on
+   * @param f the default predicate is equality i.e. if 1 == 1
+   * @tparam T
+   * @return
+   */
+  def findFirstDFS[T](t : T)(f : T => Boolean = (x : T) => x == t)(implicit tree : BinaryTree[T] = this) : Option[BinaryTree[T]] = {
+    //TODO: Optimize this to be tail recursive
+    if (tree.value.isDefined && f(tree.value.get)) Some(tree)
+    else {
+      val leftTreeResult : Option[BinaryTree[T]] = if (tree.left.isDefined) findFirstDFS(t)(f)(tree.left.get) else None
+      if (leftTreeResult.isDefined) leftTreeResult
+      else if (tree.right.isDefined) findFirstDFS(t)(f)(tree.right.get)
+      else None
+    }
+  }
+
+
+  /**
+   * Checks if the binary tree contains a certain element
    * @param t
    * @param tree
    * @param f
    * @tparam T
    * @return
    */
-  def findFirstDFS[T](t : T)(tree : BinaryTree[T] = this)(f : T => Boolean = (x : T) => x == t) : Option[BinaryTree[T]] = {
-    if (tree.value.isDefined && f(tree.value.get)) Some(tree)
-    else {
-      val leftTreeResult : Option[BinaryTree[T]] = if (tree.left.isDefined) findFirstDFS(t)(tree.left.get)(f) else None
-      if (leftTreeResult.isDefined) leftTreeResult
-      else if (tree.right.isDefined) findFirstDFS(t)(tree.right.get)(f)
-      else None
+  def contains[T](t : T)(f : T => Boolean = (x : T) => x == t)(implicit tree : BinaryTree[T] = this) = findFirstDFS(t)(f)(tree).isDefined
+
+
+
+  def remove[T](subTree : BinaryTree[T])(parentTree : BinaryTree[T] = this) : BinaryTree[T] = {
+    //TODO: Optimize into a tail recursive function
+    parentTree match {
+      case Empty => Empty
+      case l : Leaf[T] => if (l == subTree) Empty else l
+      case n : Node[T] => if (n == subTree) Empty
+        else Node[T](n.value.get,remove(subTree)(n.left.getOrElse(Empty)),
+        remove(subTree)(n.right.getOrElse(Empty)))
+    }
+  }
+
+  /**
+   * Replaces all instances of the original tree with the replacement tree
+   * @param originalTree - the tree that needs to be replaced
+   * @param replacement - the tree that is being put into the original tree
+   * @param parentTree - the tree that is being searched for instances to replace
+   * @tparam T
+   * @return
+   */
+  def replace[T](originalTree : BinaryTree[T], replacement : BinaryTree[T])(implicit parentTree : BinaryTree[T] = this) : BinaryTree[T] = {
+
+    parentTree match {
+      case Empty => Empty
+      case l : Leaf[T] => if (l == originalTree) replacement else l
+      case n : Node[T] => if (n == originalTree) replacement else
+        Node(n.v,
+          replace(originalTree,replacement)(n.l),
+          replace(originalTree,replacement)(n.r))
     }
   }
 

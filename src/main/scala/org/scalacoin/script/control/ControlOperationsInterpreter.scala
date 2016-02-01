@@ -37,7 +37,9 @@ trait ControlOperationsInterpreter {
   def opIf(stack : List[ScriptToken], script : List[ScriptToken]) : (List[ScriptToken], List[ScriptToken]) = {
     require(script.headOption.isDefined && script.head == OP_IF, "Script top was not OP_IF")
     val binaryTree = parseBinaryTree(script)
+    logger.debug("Parsed binary tree: " + binaryTree)
     if (stack.head != OP_0) {
+      //if the left branch contains and OP_IF & OP_ENDIF there must be a nested OP_IF
       //remove OP_ELSE from binary tree
       val newTreeWithoutOpElse = removeFirstOpElse(binaryTree)
       val newScript = newTreeWithoutOpElse.toList
@@ -327,17 +329,29 @@ trait ControlOperationsInterpreter {
 
 
   /**
-   * Removes the first op else in a binary tree
+   * Removes the first OP_ELSE {expression} in a binary tree
    * @param tree
    * @tparam T
    * @return
    */
-  def removeFirstOpElse[T](tree : BinaryTree[T]) : BinaryTree[T] = {
+  def removeFirstOpElse(tree : BinaryTree[ScriptToken]) : BinaryTree[ScriptToken] = {
     //need to traverse the tree to see if there is an OP_ENDIF on the left hand side
-
-    if (tree.right.isDefined && tree.right.get.value == Some(OP_ELSE)) {
+    val leftBranchContainsOpElse = if (tree.left.isDefined) tree.left.get.contains[ScriptToken](OP_ELSE)() else false
+    val leftBranchContainsOpIf = if (tree.left.isDefined) tree.left.get.contains[ScriptToken](OP_IF)() else false
+    logger.debug("Tree contains OP_ENDIF: " + leftBranchContainsOpElse)
+    if (leftBranchContainsOpElse && !leftBranchContainsOpIf) {
+      //if the left branch contains an OP_ELSE but no OP_IF
+      //then we need to delete the OP_ELSE in the left branch
+      val subTree: Option[BinaryTree[ScriptToken]] = tree.left.get.findFirstDFS[ScriptToken](OP_ELSE)()
+      logger.debug("Sub tree: " + subTree)
+      //need to remove the subtree for the OP_ELSE
+      //need to insert the right branch of the subtree into the original place of the OP_ELSE
+      if (subTree.isDefined) tree.replace(subTree.get, subTree.get.right.getOrElse(Empty))
+      else tree
+    } else if (tree.right.isDefined && tree.right.get.value == Some(OP_ELSE)) {
       Node(tree.value.get,tree.left.getOrElse(Empty),tree.right.get.right.getOrElse(Empty))
     } else tree
+
   }
 
   /**
