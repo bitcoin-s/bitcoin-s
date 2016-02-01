@@ -24,4 +24,27 @@ class BinaryTreeTest extends FlatSpec with MustMatchers {
     bTree.toSeq.size must be (script.size)
     bTree.toSeq must be (script)
   }
+
+
+  it must "find the first occurrence of a element in the tree" in {
+    val tree = Node[Int](0,Node(1,Leaf(2),Leaf(3)), Node(1,Leaf(4), Leaf(5)))
+    val first = tree.findFirstDFS(1)(tree)()
+
+    first must be (Some(Node(1,Leaf(2),Leaf(3))))
+  }
+
+  it must "return an empty tree when an element is not found inside of a tree" in {
+    val tree = Node[Int](0,Node(1,Leaf(2),Leaf(3)), Node(1,Leaf(4), Leaf(5)))
+    val first = tree.findFirstDFS(10)(tree)()
+
+    first must be (None)
+  }
+
+  it must "return the first occurrence as just a leaf node if it resides in a leaf" in  {
+    val tree = Node[Int](0,Node(1,Leaf(2),Leaf(3)), Node(1,Leaf(4), Leaf(5)))
+    val first = tree.findFirstDFS(5)()()
+
+    first must be (Some(Leaf(5)))
+
+  }
 }
