@@ -131,7 +131,6 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers with C
     parseBinaryTree(script5).toSeq must be (script5)
   }
 
-/*
   it must "parse a script into a binary tree and have the OP_IF expression on the left branch and the OP_ELSE expression on the right branch"in {
     val script = List(OP_IF,OP_0,OP_ELSE,OP_1,OP_ENDIF)
     val bTree = parseBinaryTree(script)
@@ -149,9 +148,8 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers with C
     bTree.right.get.left.get.value must be (Some(OP_1))
 
     bTree.right.get.right.isDefined must be (true)
-    bTree.right.get.right.get.value must be (Some(OP_ENDIF))
+    bTree.right.get.left.get.left.get.value must be (Some(OP_ENDIF))
   }
-*/
 
   /*it must "parse nested OP_ELSE statements into the same branch" in {
     val script = List(OP_IF, OP_1,OP_ELSE, OP_2, OP_ELSE, OP_3, OP_ENDIF)
