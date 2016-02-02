@@ -125,9 +125,6 @@ trait ControlOperationsInterpreter {
     logger.debug("Script : " + script)
     logger.debug("Tree: " + tree)
     script match {
-
-      //List(OP_IF,OP_0,OP_ELSE,OP_1,OP_ENDIF)
-      //List(OP_IF,OP_ENDIF)
       case OP_IF :: t =>
         val (newTail, parsedTree) = parseOpIf(script, Empty)
         val newTree = insertSubTree(tree,parsedTree)
@@ -145,17 +142,21 @@ trait ControlOperationsInterpreter {
       case (x: ScriptNumber) :: Nil => insertSubTree(tree, Leaf(x))
       case (x: ScriptConstant) :: t => loop(t, insertSubTree(tree, Leaf(x)))
       case (x: ScriptNumber) :: t => loop(t, insertSubTree(tree, Leaf(x)))
-      case h :: t => throw new RuntimeException("Did not match h: " + h)
+      case h :: t => loop(t,insertSubTree(tree,Leaf(h)))
       case Nil => tree
     }
   }
 
 
-
-
+  /**
+   * Inserts a sub tree into the parse tree of Script.
+   * @param tree the parse tree of the control flow of the Script program
+   * @param subTree the parse tree that needs to be inserted into the control flow of the program
+   * @return the full parse tree combined
+   */
   private def insertSubTree(tree : BinaryTree[ScriptToken],subTree : BinaryTree[ScriptToken]) : BinaryTree[ScriptToken] = {
+    //TODO: Optimize this to a tailrec function
     logger.debug("Inserting subTree: " + subTree + " into tree: " + tree)
-
       tree match {
         case Empty => subTree
         case leaf : Leaf[ScriptToken] => Node(leaf.v, subTree, Empty)
@@ -382,7 +383,8 @@ trait ControlOperationsInterpreter {
 
   def removeFirstOpIf(tree : BinaryTree[ScriptToken]) : BinaryTree[ScriptToken] = {
     require(tree.value.isDefined && tree.value.get == OP_IF, "Top of the tree must be OP_IF to remove the OP_IF")
-    tree.right.getOrElse(Empty)
+    if (tree.right.isDefined && tree.right.get.value == Some(OP_ELSE)) tree.right.getOrElse(Empty)
+    else tree.findFirstDFS[ScriptToken](OP_ENDIF)().getOrElse(Empty)
   }
 
   /**
