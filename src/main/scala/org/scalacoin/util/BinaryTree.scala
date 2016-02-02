@@ -73,6 +73,40 @@ trait BinaryTree[+T] {
   def contains[T](t : T)(f : T => Boolean = (x : T) => x == t)(implicit tree : BinaryTree[T] = this) = findFirstDFS(t)(f)(tree).isDefined
 
 
+  def count[T](t : T)(implicit tree : BinaryTree[T] = this) = toSeq.count(_ == t)
+
+
+  /**
+   * Inserts a element into one of the two branches in a binary tree
+   * if it cannot insert it because the branches are not empty
+   * it throws a runtime exception
+   * @param subTree
+   * @param tree
+   * @tparam T
+   * @return
+   */
+  def insert[T](t : T)(implicit tree : BinaryTree[T] = this) : BinaryTree[T] = {
+    insert(Leaf(t))(tree)
+  }
+
+  /**
+   * Inserts a tree into one of the two branches in a binary tree
+   * if it cannot insert it because the branches are not empty
+   * it throws a runtime exception
+   * @param subTree
+   * @param tree
+   * @tparam T
+   * @return
+   */
+  def insert[T](subTree : BinaryTree[T])(implicit parentTree : BinaryTree[T]) : BinaryTree[T] = parentTree match {
+    case n : Node[T] =>
+      if (n.l == Empty) Node[T](n.v,subTree,n.r)
+      else if (n.r == Empty) Node[T](n.v,n.l,subTree)
+      else throw new RuntimeException("There was no empty branch to insert the new t: " + subTree + "inside of tree: " + parentTree)
+    case l : Leaf[T]  => Node(l.v, subTree,Empty)
+    case Empty => subTree
+
+  }
 
   def remove[T](subTree : BinaryTree[T])(parentTree : BinaryTree[T] = this) : BinaryTree[T] = {
     //TODO: Optimize into a tail recursive function

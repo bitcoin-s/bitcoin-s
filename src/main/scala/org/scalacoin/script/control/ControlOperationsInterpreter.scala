@@ -1,7 +1,7 @@
 package org.scalacoin.script.control
 
 import org.scalacoin.script.constant._
-import org.scalacoin.util.{Leaf, Node, Empty, BinaryTree}
+import org.scalacoin.util._
 import org.slf4j.LoggerFactory
 
 import scala.annotation.tailrec
@@ -111,7 +111,7 @@ trait ControlOperationsInterpreter {
    * @return
    */
   def parseBinaryTree(script : List[ScriptToken]) : BinaryTree[ScriptToken] = {
-    val bTree = loop(script)
+    val bTree = loop(script,Empty)
     bTree
   }
 
@@ -120,61 +120,108 @@ trait ControlOperationsInterpreter {
    * @param script
    * @return
    */
-  private def loop(script : List[ScriptToken]) : BinaryTree[ScriptToken] = script match {
-    case OP_IF :: t  => parseOpIf(script)
-    case OP_ELSE :: t => parseOpElse(script)
-    case OP_ENDIF :: Nil => Leaf(OP_ENDIF)
-    case OP_ENDIF :: t => Node(OP_ENDIF,loop(t),Empty)
-    case (x : ScriptConstant) :: t => Node(x,loop(t),Empty)
-    case (x : ScriptNumber) :: t => Node(x,loop(t),Empty)
-    case scriptToken :: t => Node(scriptToken,loop(t),Empty)
-    case Nil => Empty
+  @tailrec
+  private def loop(script : List[ScriptToken], tree : BinaryTree[ScriptToken]) : BinaryTree[ScriptToken] = {
+    logger.debug("Script : " + script)
+    logger.debug("Tree: " + tree)
+    script match {
+
+      //List(OP_IF,OP_0,OP_ELSE,OP_1,OP_ENDIF)
+      //List(OP_IF,OP_ENDIF)
+      case OP_IF :: t =>
+        val (newTail, parsedTree) = parseOpIf(script, Empty)
+        val newTree = insertSubTree(tree,parsedTree)
+        loop(newTail, newTree)
+      case OP_ELSE :: t =>
+        val (newTail, parsedTree) = parseOpElse(script, Empty)
+        println("parsed tree: " + parsedTree)
+        val newTree = insertSubTree(tree,parsedTree)
+        loop(newTail, newTree)
+      case OP_ENDIF :: t =>
+        val (newTail, parsedTree) = parseOpEndIf(script, Empty)
+        val newTree = insertSubTree(tree,parsedTree)
+        loop(newTail, newTree)
+      case (x: ScriptConstant) :: Nil => insertSubTree(tree, Leaf(x))
+      case (x: ScriptNumber) :: Nil => insertSubTree(tree, Leaf(x))
+      case (x: ScriptConstant) :: t => loop(t, insertSubTree(tree, Leaf(x)))
+      case (x: ScriptNumber) :: t => loop(t, insertSubTree(tree, Leaf(x)))
+      case h :: t => throw new RuntimeException("Did not match h: " + h)
+      case Nil => tree
+    }
   }
 
 
+
+
+  private def insertSubTree(tree : BinaryTree[ScriptToken],subTree : BinaryTree[ScriptToken]) : BinaryTree[ScriptToken] = {
+    logger.debug("Inserting subTree: " + subTree + " into tree: " + tree)
+
+      tree match {
+        case Empty => subTree
+        case leaf : Leaf[ScriptToken] => Node(leaf.v, subTree, Empty)
+        case node : Node[ScriptToken] =>
+          if (subTree.value.isDefined && subTree.value.get == OP_ELSE) {
+            //need to insert the OP_ELSE within the proper OP_IF
+            //get count of OP_IFs and OP_ENDIFS inside of the tree
+            val opIfCount = node.l.count[ScriptToken](OP_IF)
+            val opEndIfCount = node.l.count[ScriptToken](OP_ENDIF)
+            //means that the subtree is not balanced, need to insert the OP_ELSE inside
+            //the left subtree
+            if (opIfCount != opEndIfCount) Node(node.v,insertSubTree(tree.left.get,subTree),node.r)
+            else Node(node.v,node.l,insertSubTree(tree.right.getOrElse(Empty),subTree))
+          } else if (node.r.value.isDefined && node.r.value.get == OP_ELSE) {
+            //since there is an OP_ELSE defined to right
+            //we need to insert all script tokens on that node
+            Node(node.v,node.l,insertSubTree(node.r,subTree))
+          }
+          else Node(node.v, insertSubTree(node.l, subTree), node.r)
+      }
+
+  }
   /**
    * Parses an OP_IF expression in Script
    * @param t
    * @return
    */
-  private def parseOpIf(script : List[ScriptToken]) : BinaryTree[ScriptToken] = {
-    val _ :: t = script
-    val lastOpEndIfIndex = findLastOpEndIf(t)
-    val lastOpElseIndex = findLastOpElse(t)
-    if (!t.contains(OP_IF) && lastOpEndIfIndex.isDefined) {
-      //means that we do not have any nested OP_IF expressions
-      val opElseIndex : Option[Int] = findFirstOpElse(t)
-      //slice off the entire OP_IF expression
-      val opIfExpression = if (opElseIndex.isDefined) t.slice(0,opElseIndex.get) else t.slice(0, lastOpEndIfIndex.get)
-      //slice off everything that isn't the OP_IF expression
-      val restOfScript = if (opElseIndex.isDefined) t.slice(opElseIndex.get, t.size) else t.slice(lastOpEndIfIndex.get, t.size)
-      //build the OP_IF expression as the left subtree, the rest of the script as the right subtree
-      Node(OP_IF, loop(opIfExpression), loop(restOfScript))
-    } else if (t.contains(OP_IF) && lastOpEndIfIndex.isDefined) {
-      //means that we have a nested OP_IF expresion
-      //we need to parse the inner OP_IF expression
-      val nestedOpIfIndex = findFirstOpIf(t).get
-      //if we have multiple nested OP_IFs we need this to get the correct OP_ENDIF
-      val nextNestedOpIfIndex = findFirstOpIf(t.slice(nestedOpIfIndex+1,t.size))
+  private def parseOpIf(script : List[ScriptToken],tree : BinaryTree[ScriptToken]) : (List[ScriptToken],BinaryTree[ScriptToken]) = script match {
+    case OP_IF :: t => tree match {
+      case n : Node[ScriptToken] => (t,Node(n.v,Node(OP_IF,Empty,Empty),n.r))
+      case l : Leaf[ScriptToken] => (t,Node(l.v,Node(OP_IF,Empty,Empty),Empty))
+      case Empty => (t, Node(OP_IF,Empty,Empty))
+    }
+    case h :: t => throw new RuntimeException("Cannot parse " + h + " as an OP_IF")
+    case Nil => (script,tree)
+  }
 
-      //find the nested OP_ENDIF matching our nested OP_IF
-      val nestedLastOpEndIfIndex = nextNestedOpIfIndex.isDefined match {
-        //means that we need to search t until the next nested OP_IF index
-        case true => findLastOpEndIf(t.slice(0,nextNestedOpIfIndex.get))
-        //means that we can search all of t until the last OP_ENDIF
-        case false => findLastOpEndIf(t.slice(0,lastOpEndIfIndex.get))
+  /**
+   * Parses and OP_ELSE expression
+   * @param script
+   * @return
+   */
+  private def parseOpElse(script : List[ScriptToken],tree : BinaryTree[ScriptToken]) : (List[ScriptToken],BinaryTree[ScriptToken]) = script match {
+    case OP_ELSE :: t => tree match {
+      case n : Node[ScriptToken] => n.r match {
+        //means that the right branch is already populated
+        //this is a problem because we always insert OP_ELSES on the right branch
+        case Empty => (t,Node(n.v,n.l,Node(OP_ELSE,Empty,Empty)))
+        case l : Leaf[ScriptToken] => (t, Node(n.v,n.l,Node(l.v, Empty, Node(OP_ELSE,Empty,Empty))))
+        case n1 : Node[ScriptToken] => parseOpElse(script,n1)
       }
-      //every OP_IF must be matched with a OP_ENDIF
-      require(nestedLastOpEndIfIndex.isDefined,"Every OP_IF must have a matching OP_ENDIF")
-      //slice off the nested OP_IF expression
-      //indexing starts at 0 here because we need to include script tokens that prefix the nested OP_IF
-      //i.e. OP_IF OP_0 OP_IF OP_ENDIF OP_ENDIF
-      val firstNestedOpIfExpression = t.slice(0,nestedLastOpEndIfIndex.get+1)
-      val restOfScript = t.slice(nestedLastOpEndIfIndex.get+1,t.size)
-      //parse the nested OP_IF expression as the left subtree
-      //the rest of the parent OP_IF as the right subtree
-      Node(OP_IF,loop(firstNestedOpIfExpression),loop(restOfScript))
-    } else Node(OP_IF,loop(t),Empty)
+      case l : Leaf[ScriptToken] => (t,Node(l.v,Empty,Node(OP_ELSE,Empty,Empty)))
+      case Empty => (t,Node(OP_ELSE,Empty,Empty))
+    }
+    case h :: t => throw new RuntimeException("Cannot parse " + h + " as an OP_ELSE")
+    case Nil => (script,tree)
+  }
+
+  private def parseOpEndIf(script : List[ScriptToken],tree : BinaryTree[ScriptToken]) : (List[ScriptToken],BinaryTree[ScriptToken]) = script match {
+    case OP_ENDIF :: t => tree match {
+      case Empty => (t,Leaf(OP_ENDIF))
+      case l : Leaf[ScriptToken] => (t,Node(l.v, Leaf(OP_ENDIF), Empty))
+      case n : Node[ScriptToken] => (t, insertSubTree(tree,Leaf(OP_ENDIF)))
+    }
+    case h :: t => throw new RuntimeException("Cannot parse " + h + " as an OP_ENDIF")
+    case Nil => (script,tree)
   }
 
 
@@ -183,51 +230,7 @@ trait ControlOperationsInterpreter {
   }
 
 
-  /**
-   * Parses and OP_ELSE expression
-   * @param script
-   * @return
-   */
-  private def parseOpElse(script : List[ScriptToken]) : BinaryTree[ScriptToken] = {
-    val _ :: t = script
-    val nestedOpElseIndex = findFirstOpElse(t)
-    val lastOpEndIfIndex = findLastOpEndIf(t)
 
-    if (t.count(_ == OP_ENDIF) > 1) {
-      //check to see if there is are multiple OP_ENDIFs
-      //find the index of the nested OP_IF
-      val firstOpIfIndex = findFirstOpIf(t)
-      //find the nested OP_IFs corresponding OP_ENDIF
-      val nestedOpEndIfIndex = findFirstOpEndIf(t)
-      //slice off the nested OP_IF expression
-      //need this to start at 0 index in case there are constants ahead of the OP_IF
-      //i.e. OP_0 OP_1 OP_IF ... OP_ENDIF
-      val nestedOpIfExpression = t.slice(0,nestedOpEndIfIndex.get+1)
-
-      val restOfScript = t.slice(nestedOpEndIfIndex.get+1,t.size)
-      Node(OP_ELSE,loop(nestedOpIfExpression),loop(restOfScript))
-    } else if (t.count(_ == OP_IF) == 1) {
-      //check to see if there is a nested OP_IF inside of the OP_ELSE
-      //find the index of the nested OP_IF
-      val firstOpIfIndex = findFirstOpIf(t)
-      //find the nested OP_IFs corresponding OP_ENDIF
-      val nestedOpEndIfIndex = findLastOpEndIf(t.slice(firstOpIfIndex.get,lastOpEndIfIndex.get))
-      //slice off the nested OP_IF expression
-      val nestedOpIfExpression = t.slice(0,nestedOpEndIfIndex.get+1)
-
-      val restOfScript = t.slice(nestedOpEndIfIndex.get+1,t.size)
-      Node(OP_ELSE,loop(nestedOpIfExpression),loop(restOfScript))
-    } else if (nestedOpElseIndex.isDefined && lastOpEndIfIndex.isDefined && nestedOpElseIndex.get < lastOpEndIfIndex.get) {
-      //if we have a nested OP_ELSE before our last OP_ENDIF index
-      val opElseExpression = t.slice(0,nestedOpElseIndex.get)
-      val restOfScript = t.slice(nestedOpElseIndex.get,t.size)
-      Node(OP_ELSE, loop(opElseExpression), loop(restOfScript))
-    } else if (lastOpEndIfIndex.isDefined) {
-      val opElseExpression = t.slice(0,lastOpEndIfIndex.get)
-      val restOfScript = t.slice(lastOpEndIfIndex.get,t.size)
-      Node(OP_ELSE,loop(opElseExpression),loop(restOfScript))
-    } else Node(OP_ELSE,loop(t),Empty)
-  }
 
   def findFirstOpIf(script : List[ScriptToken]) : Option[Int] = findFirstScriptToken(script,OP_IF)
 
