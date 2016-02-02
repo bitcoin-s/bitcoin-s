@@ -38,6 +38,8 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterp
   }
 
 
+
+
   it must "evaluate all valid scripts from the bitcoin core script_valid.json" in {
     import CoreTestCaseProtocol._
 
