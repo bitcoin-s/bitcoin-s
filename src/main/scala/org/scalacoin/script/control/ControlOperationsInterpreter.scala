@@ -59,7 +59,24 @@ trait ControlOperationsInterpreter {
    */
   def opElse(stack : List[ScriptToken], script : List[ScriptToken]) : (List[ScriptToken], List[ScriptToken]) = {
     require(script.headOption.isDefined && script.head == OP_ELSE, "First script opt must be OP_ELSE")
-    (stack,script.tail)
+    val tree = parseBinaryTree(script)
+    println("Parsed tree: " + tree)
+    val treeWithNextOpElseRemoved = tree match {
+      case Empty => Empty
+      case leaf : Leaf[ScriptToken] => leaf
+      case node : Node[ScriptToken] =>
+        if (node.r.value == Some(OP_ELSE)) {
+          val replacementTree = node.r.left.getOrElse(Empty).findFirstDFS[ScriptToken](OP_ENDIF)().getOrElse(Empty)
+          val replacementNode = replacementTree match {
+            case Empty => Empty
+            case leaf : Leaf[ScriptToken] => Node(leaf.v, Empty, node.r.right.getOrElse(Empty))
+            case node1 : Node[ScriptToken] => Node(node1.v,node1.l,node.r.right.getOrElse(Empty))
+          }
+          Node(node.v,node.l,replacementNode)
+        }
+        else node
+    }
+    (stack,treeWithNextOpElseRemoved.toList.tail)
   }
 
 
@@ -122,8 +139,8 @@ trait ControlOperationsInterpreter {
    */
   @tailrec
   private def loop(script : List[ScriptToken], tree : BinaryTree[ScriptToken]) : BinaryTree[ScriptToken] = {
-    logger.debug("Script : " + script)
-    logger.debug("Tree: " + tree)
+/*    logger.debug("Script : " + script)
+    logger.debug("Tree: " + tree)*/
     script match {
       case OP_IF :: t =>
         val (newTail, parsedTree) = parseOpIf(script, Empty)
@@ -131,7 +148,6 @@ trait ControlOperationsInterpreter {
         loop(newTail, newTree)
       case OP_ELSE :: t =>
         val (newTail, parsedTree) = parseOpElse(script, Empty)
-        println("parsed tree: " + parsedTree)
         val newTree = insertSubTree(tree,parsedTree)
         loop(newTail, newTree)
       case OP_ENDIF :: t =>
@@ -156,7 +172,7 @@ trait ControlOperationsInterpreter {
    */
   private def insertSubTree(tree : BinaryTree[ScriptToken],subTree : BinaryTree[ScriptToken]) : BinaryTree[ScriptToken] = {
     //TODO: Optimize this to a tailrec function
-    logger.debug("Inserting subTree: " + subTree + " into tree: " + tree)
+    //logger.debug("Inserting subTree: " + subTree + " into tree: " + tree)
       tree match {
         case Empty => subTree
         case leaf : Leaf[ScriptToken] => Node(leaf.v, subTree, Empty)
@@ -339,22 +355,28 @@ trait ControlOperationsInterpreter {
    * @return
    */
   def removeFirstOpElse(tree : BinaryTree[ScriptToken]) : BinaryTree[ScriptToken] = {
-    //need to traverse the tree to see if there is an OP_ENDIF on the left hand side
-    val leftBranchContainsOpElse = if (tree.left.isDefined) tree.left.get.contains[ScriptToken](OP_ELSE)() else false
-    val leftBranchContainsOpIf = if (tree.left.isDefined) tree.left.get.contains[ScriptToken](OP_IF)() else false
-    logger.debug("Tree contains OP_ENDIF: " + leftBranchContainsOpElse)
-    if (leftBranchContainsOpElse && !leftBranchContainsOpIf) {
-      //if the left branch contains an OP_ELSE but no OP_IF
-      //then we need to delete the OP_ELSE in the left branch
-      val subTree: Option[BinaryTree[ScriptToken]] = tree.left.get.findFirstDFS[ScriptToken](OP_ELSE)()
-      logger.debug("Sub tree: " + subTree)
-      //need to remove the subtree for the OP_ELSE
-      //need to insert the right branch of the subtree into the original place of the OP_ELSE
-      if (subTree.isDefined) tree.replace(subTree.get, subTree.get.right.getOrElse(Empty))
-      else tree
-    } else if (tree.right.isDefined && tree.right.get.value == Some(OP_ELSE)) {
-      Node(tree.value.get,tree.left.getOrElse(Empty),tree.right.get.right.getOrElse(Empty))
-    } else tree
+
+    tree match {
+      case Empty => Empty
+      case leaf : Leaf[ScriptToken] => leaf
+      case node : Node[ScriptToken] =>
+        //need to traverse the tree to see if there is an OP_ENDIF on the left hand side
+        val leftBranchContainsOpElse = node.l.contains[ScriptToken](OP_ELSE)()
+        val leftBranchContainsOpIf = node.l.contains[ScriptToken](OP_IF)()
+        if (leftBranchContainsOpElse && !leftBranchContainsOpIf) {
+          //if the left branch contains an OP_ELSE but no OP_IF
+          //then we need to delete the OP_ELSE in the left branch
+          val subTree: Option[BinaryTree[ScriptToken]] = node.l.findFirstDFS[ScriptToken](OP_ELSE)()
+          logger.debug("Sub tree: " + subTree)
+          //need to remove the subtree for the OP_ELSE
+          //need to insert the right branch of the subtree into the original place of the OP_ELSE
+          if (subTree.isDefined) tree.replace(subTree.get, subTree.get.right.getOrElse(Empty))
+          else tree
+        } else if (node.r.value == Some(OP_ELSE)) {
+          logger.debug("============================**********************************")
+          Node(node.v,node.l,node.r.right.getOrElse(Empty))
+        } else tree
+    }
 
   }
 

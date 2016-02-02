@@ -4,7 +4,7 @@ import org.scalacoin.script.arithmetic.OP_ADD
 import org.scalacoin.script.bitwise.OP_EQUAL
 import org.scalacoin.script.constant._
 import org.scalacoin.script.reserved.{OP_VER, OP_RESERVED}
-import org.scalacoin.util.Leaf
+import org.scalacoin.util.{Empty, Node, Leaf}
 import org.scalatest.{MustMatchers, FlatSpec}
 
 /**
@@ -85,10 +85,10 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers with C
     removeFirstOpElse(List(OP_IF, OP_1,OP_ELSE, OP_2, OP_ELSE, OP_3, OP_ENDIF)) must be (List(OP_IF, OP_1, OP_ELSE, OP_3, OP_ENDIF))
   }
 
-/*  it must "remove the first OP_ELSE in a binary tree" in {
+  it must "remove the first OP_ELSE in a binary tree" in {
     val script1 = List(OP_IF,OP_ELSE,OP_ENDIF)
     val bTree1 = parseBinaryTree(script1)
-    removeFirstOpElse(bTree1).toSeq must be (List(OP_IF,OP_ENDIF))
+    removeFirstOpElse(bTree1).toSeq must be (List(OP_IF))
 
     val script2 = List(OP_IF,OP_ENDIF)
     val bTree2 = parseBinaryTree(script2)
@@ -97,7 +97,7 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers with C
     val script3 = List(OP_IF, OP_1,OP_ELSE, OP_2, OP_ELSE, OP_3, OP_ENDIF)
     val bTree3 = parseBinaryTree(script3)
     removeFirstOpElse(bTree3).toSeq must be (List(OP_IF, OP_1, OP_ELSE, OP_3, OP_ENDIF))
-  }*/
+  }
 
   it must "find a matching OP_ENDIF for an OP_IF" in {
     //https://gist.github.com/Christewart/381dc1dbbb07e62501c3
@@ -229,6 +229,8 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers with C
 
   }
 
+
+
   it must "evaluate an OP_IF correctly" in {
     val stack = List(OP_0)
     val script = List(OP_IF, OP_RESERVED, OP_ENDIF, OP_1)
@@ -236,7 +238,6 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers with C
     newStack.isEmpty must be (true)
     newScript must be (List(OP_ENDIF,OP_1))
   }
-
 
   it must "evaluate an OP_IF OP_ELSE OP_ENDIF block" in {
     val stack = List(OP_0)
@@ -259,8 +260,6 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers with C
     checkMatchingOpIfOpEndIf(script3) must be (true)
   }
 
-
-
   it must "evaluate an OP_IF block correctly if the stack top is true" in {
     val stack = List(OP_1)
     val script = List(OP_IF, OP_1, OP_ELSE, OP_0, OP_ENDIF)
@@ -268,17 +267,6 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers with C
 
     newStack must be (List())
     newScript must be (List(OP_1))
-  }
-
-  it must "remove the first OP_ELSE if the stack top is true for an OP_IF" in  {
-    val stack = List(ScriptNumberImpl(1))
-    val script = List(OP_IF, OP_1, OP_ELSE, OP_RETURN, OP_ELSE, OP_1, OP_ENDIF, OP_ELSE, OP_RETURN, OP_ENDIF,
-      OP_ADD, OP_2, OP_EQUAL)
-
-    val (newStack,newScript) = opIf(stack,script)
-
-    newStack.isEmpty must be (true)
-    newScript must be (List(OP_1,OP_ELSE, OP_1, OP_ENDIF, OP_ELSE, OP_RETURN, OP_ENDIF, OP_ADD, OP_2, OP_EQUAL))
   }
 
   it must "evaluate a weird case using multiple OP_ELSEs" in {
@@ -320,11 +308,66 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers with C
 
     newStack.isEmpty must be (true)
     newScript must be (List(OP_ELSE, OP_1,OP_IF,OP_1,OP_ELSE,
-      OP_RETURN,OP_ELSE,OP_1,OP_ENDIF, OP_ELSE,OP_RETURN,OP_ENDIF,OP_ADD,OP_2,OP_EQUAL))
+      OP_RETURN,OP_ELSE,OP_1,OP_ENDIF,OP_ELSE, OP_RETURN,OP_ENDIF,OP_ADD,OP_2,OP_EQUAL))
+
+
+    val stack1 = newStack
+    val script1 = newScript
+
+    val (newStack1,newScript1) = opElse(stack1,script1)
+    newStack1.isEmpty must be (true)
+    newScript1 must be (List(OP_1,OP_IF,OP_1,OP_ELSE,
+      OP_RETURN,OP_ELSE,OP_1,OP_ENDIF,OP_ENDIF,OP_ADD,OP_2,OP_EQUAL))
 
   }
 
 
+
+  it must "remove the first OP_ELSE if the stack top is true for an OP_IF" in  {
+    val stack = List(ScriptNumberImpl(1))
+    val script = List(OP_IF, OP_1, OP_ELSE, OP_RETURN, OP_ELSE, OP_1, OP_ENDIF, OP_ELSE, OP_RETURN, OP_ENDIF,
+      OP_ADD, OP_2, OP_EQUAL)
+
+    val (newStack,newScript) = opIf(stack,script)
+
+    newStack.isEmpty must be (true)
+    newScript must be (List(OP_1,OP_ELSE, OP_1, OP_ENDIF, OP_ELSE, OP_RETURN, OP_ENDIF, OP_ADD, OP_2, OP_EQUAL))
+  }
+
+  it must "evaluate an OP_ENDIF correctly" in {
+    val stack = List(ScriptNumberImpl(1), ScriptNumberImpl(1))
+    val script = List(OP_ENDIF, OP_ELSE, OP_RETURN, OP_ENDIF, OP_ADD, OP_2, OP_EQUAL)
+
+    val (newStack,newScript) = opEndIf(stack,script)
+
+    newStack must be (stack)
+    newScript must be (script.tail)
+  }
+
+
+  it must "parse a partial script correctly" in {
+    val script = List(OP_IF, OP_1, OP_ELSE, OP_RETURN, OP_ELSE, OP_1, OP_ENDIF, OP_ELSE, OP_RETURN, OP_ENDIF,
+      OP_ADD, OP_2, OP_EQUAL)
+
+    val bTree = parseBinaryTree(script)
+    bTree.value must be (Some(OP_IF))
+
+    bTree.left.get.value must be (Some(OP_1))
+
+
+    bTree.right.get.value must be (Some(OP_ELSE))
+
+    bTree.right.get.left.get.value must be (Some(OP_RETURN))
+
+    bTree.right.get.right.get.value must be (Some(OP_ELSE))
+
+    bTree.right.get.right.get.left.get.value must be (Some(OP_1))
+
+    bTree.right.get.right.get.left.get.left.get.value must be (Some(OP_ENDIF))
+
+    bTree.right.get.right.get.left.get.left.get.left.get.value must be (Some(OP_ELSE))
+
+  }
 
 }
 
