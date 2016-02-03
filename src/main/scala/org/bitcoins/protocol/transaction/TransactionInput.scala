@@ -1,7 +1,7 @@
-package org.scalacoin.protocol.transaction
+package org.bitcoins.protocol.transaction
 
-import org.scalacoin.protocol.VarInt
-import org.scalacoin.protocol.script.ScriptSignature
+import org.bitcoins.protocol.VarInt
+import org.bitcoins.protocol.script.ScriptSignature
 
 /**
  * Created by chris on 12/26/15.

@@ -1,4 +1,4 @@
-package org.scalacoin.protocol.transaction
+package org.bitcoins.protocol.transaction
 
 /**
  * Created by chris on 12/26/15.

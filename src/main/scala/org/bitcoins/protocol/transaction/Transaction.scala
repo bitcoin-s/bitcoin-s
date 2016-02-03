@@ -1,7 +1,7 @@
-package org.scalacoin.protocol.transaction
+package org.bitcoins.protocol.transaction
 
-import org.scalacoin.currency.Satoshis
-import org.scalacoin.protocol.{NetworkVarInt, VarInt}
+import org.bitcoins.currency.Satoshis
+import org.bitcoins.protocol.{NetworkVarInt, VarInt}
 
 /**
  * Created by chris on 7/14/15.

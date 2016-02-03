@@ -1,6 +1,6 @@
-package org.scalacoin.protocol
+package org.bitcoins.protocol
 
-import org.scalacoin.util.TestUtil
+import org.bitcoins.util.TestUtil
 import org.scalatest.{FlatSpec, MustMatchers}
 
 /**

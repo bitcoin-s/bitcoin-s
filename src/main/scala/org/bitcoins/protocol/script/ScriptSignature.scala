@@ -1,4 +1,4 @@
-package org.scalacoin.protocol.script
+package org.bitcoins.protocol.script
 
 /**
  * Created by chris on 12/26/15.

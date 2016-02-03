@@ -1,6 +1,6 @@
-package org.scalacoin.util
+package org.bitcoins.util
 
-import org.scalacoin.protocol.{AssetAddress, BitcoinAddress}
+import org.bitcoins.protocol.{AssetAddress, BitcoinAddress}
 
 /**
  * Created by chris on 12/2/15.

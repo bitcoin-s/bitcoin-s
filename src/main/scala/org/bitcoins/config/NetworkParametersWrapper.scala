@@ -1,4 +1,4 @@
-package org.scalacoin.config
+package org.bitcoins.config
 
 import org.bitcoinj.core.NetworkParameters
 import org.bitcoinj.params.{MainNetParams, RegTestParams, TestNet3Params}

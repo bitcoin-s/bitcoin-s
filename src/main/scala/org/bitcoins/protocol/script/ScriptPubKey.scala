@@ -1,6 +1,6 @@
-package org.scalacoin.protocol.script
+package org.bitcoins.protocol.script
 
-import org.scalacoin.protocol.BitcoinAddress
+import org.bitcoins.protocol.BitcoinAddress
 
 /**
  * Created by chris on 12/26/15.

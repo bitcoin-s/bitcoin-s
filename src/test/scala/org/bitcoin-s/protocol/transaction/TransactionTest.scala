@@ -1,4 +1,4 @@
-package org.scalacoin.protocol.transaction
+package org.bitcoins.protocol.transaction
 
 import org.scalatest.{FlatSpec, MustMatchers}
 

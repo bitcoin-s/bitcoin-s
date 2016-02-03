@@ -1,7 +1,7 @@
-package org.scalacoin.protocol
+package org.bitcoins.protocol
 
 import org.bitcoinj.core.{VersionedChecksummedBytes, Base58, Utils}
-import org.scalacoin.config.{RegTest, TestNet3, MainNet}
+import org.bitcoins.config.{RegTest, TestNet3, MainNet}
 
 case class AddressInfo(bitcoinAddress: BitcoinAddress, n_tx: Long, total_received: Long, total_sent: Long,
   final_balance: Long)
@@ -26,7 +26,8 @@ object BitcoinAddress {
 
   /**
    * Converts a bitcoin address to an asset address
-   * @param address
+    *
+    * @param address
    * @return
    */
   def convertToAssetAddress(address : BitcoinAddress) : AssetAddress = {
@@ -40,7 +41,8 @@ object BitcoinAddress {
 
   /**
    * Checks if a address is a valid p2sh address
-   * @param address
+    *
+    * @param address
    * @return
    */
   def p2shAddress(address : String) : Boolean = {
@@ -57,14 +59,16 @@ object BitcoinAddress {
 
   /**
    * Checks if a address is a valid p2sh address
-   * @param address
+    *
+    * @param address
    * @return
    */
   def p2shAddress(address : BitcoinAddress) : Boolean = p2shAddress(address.value)
 
   /**
    * Checks if an address is a valid p2pkh address
-   * @param address
+    *
+    * @param address
    * @return
    */
   def p2pkh(address : String) : Boolean = {
@@ -82,7 +86,8 @@ object BitcoinAddress {
 
   /**
    * Checks if an address is a valid p2pkh address
-   * @param address
+    *
+    * @param address
    * @return
    */
   def p2pkh(address : BitcoinAddress) : Boolean = p2pkh(address.value)
@@ -99,7 +104,8 @@ object AssetAddress {
 
   /**
    * Converts an asset address into a bitcoin address
-   * @param assetAddress
+    *
+    * @param assetAddress
    * @return
    */
   def convertToBitcoinAddress(assetAddress : AssetAddress) = {

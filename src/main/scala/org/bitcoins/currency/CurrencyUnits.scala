@@ -1,4 +1,4 @@
-package org.scalacoin.currency
+package org.bitcoins.currency
 
 import scala.math.BigDecimal.RoundingMode
 

@@ -1,8 +1,8 @@
-package org.scalacoin.protocol.transaction
+package org.bitcoins.protocol.transaction
 
-import org.scalacoin.currency.{CurrencyUnit, Satoshis}
-import org.scalacoin.protocol.VarInt
-import org.scalacoin.protocol.script.ScriptPubKey
+import org.bitcoins.currency.{CurrencyUnit, Satoshis}
+import org.bitcoins.protocol.VarInt
+import org.bitcoins.protocol.script.ScriptPubKey
 
 /**
  * Created by chris on 12/26/15.

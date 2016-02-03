@@ -1,6 +1,6 @@
-package org.scalacoin.protocol
+package org.bitcoins.protocol
 
-import org.scalacoin.util.ScalacoinUtil
+import org.bitcoins.util.ScalacoinUtil
 
 /**
  * Created by chris on 7/14/15.
@@ -15,7 +15,8 @@ trait VarInt {
  * Integer can be encoded depending on the represented value to save space.
  * Variable length integers always precede an array/vector of a type of data that may vary in length.
  * Longer numbers are encoded in little endian.
- * @param serialization
+  *
+  * @param serialization
  */
 case class NetworkVarInt( serialization : String) extends VarInt with ScalacoinUtil {
   override def length : BigInt = {
