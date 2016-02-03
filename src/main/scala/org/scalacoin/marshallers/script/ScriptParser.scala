@@ -45,6 +45,7 @@ trait ScriptParser extends ScalacoinUtil {
         //skip the empty string
         case h :: t if (h == "") => loop(t,accum)
         case h :: t if (h == "0") => loop(t, OP_0 :: accum)
+
         case h :: t if (ScriptOperationFactory.fromString(h).isDefined) =>
           val op = ScriptOperationFactory.fromString(h).get
           val parsingHelper : ParsingHelper[String] = parseOperationString(op,accum,t)

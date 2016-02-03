@@ -9,11 +9,11 @@ import org.scalacoin.script.constant._
  * https://en.bitcoin.it/wiki/Script#Stack
  */
 trait StackInterpreter {
+
   /**
    * Duplicates the element on top of the stack
    * expects the first element in script to be the OP_DUP operation
-   * @param stack
-   * @param script
+   * @param program
    * @return
    */
   def opDup(program : ScriptProgram) : ScriptProgram = {
@@ -27,8 +27,7 @@ trait StackInterpreter {
 
   /**
    * Puts the number of stack items onto the stack.
-   * @param stack
-   * @param script
+   * @param program
    * @return
    */
   def opDepth(program : ScriptProgram) : ScriptProgram = {
@@ -40,6 +39,40 @@ trait StackInterpreter {
     val numberToPush : Option[ScriptNumber] = ScriptNumberFactory.factory(stackSize)
     require(numberToPush.isDefined, "Stack size was to large to find in the script number factory, stack size was: " + stackSize)
     ScriptProgramImpl(numberToPush.get :: program.stack, program.script.tail,program.transaction,program.altStack)
+  }
+
+  /**
+   * Puts the input onto the top of the alt stack. Removes it from the main stack.
+   * @param program
+   * @return
+   */
+  def opToAltStack(program : ScriptProgram) : ScriptProgram = {
+    require(program.script.headOption.isDefined && program.script.head == OP_TOALTSTACK, "Top of script stack must be OP_TOALTSTACK")
+    require(program.stack.size > 0,"Stack must have at least one item on it for OP_TOALTSTACK")
+    ScriptProgramImpl(program.stack.tail,program.script.tail,program.transaction,List(program.stack.head))
+  }
+
+  /**
+   * Puts the input onto the top of the main stack. Removes it from the alt stack.
+   * @param program
+   * @return
+   */
+  def opFromAltStack(program : ScriptProgram) : ScriptProgram = {
+    require(program.script.headOption.isDefined && program.script.head == OP_FROMALTSTACK, "Top of script stack must be OP_FROMALTSTACK")
+    require(program.altStack.size > 0,"Alt Stack must have at least one item on it for OP_FROMALTSTACK")
+    ScriptProgramImpl(program.altStack.head :: program.stack,
+      program.script.tail, program.transaction,program.altStack.tail)
+  }
+
+  /**
+   * Removes the top stack item.
+   * @param program
+   * @return
+   */
+  def opDrop(program : ScriptProgram) : ScriptProgram = {
+    require(program.script.headOption.isDefined && program.script.head == OP_DROP, "Top of script stack must be OP_DROP")
+    require(program.stack.size > 0,"Stack must have at least one item on it for OP_DROP")
+    ScriptProgramImpl(program.stack.tail,program.script.tail,program.transaction,program.altStack)
   }
 
 }

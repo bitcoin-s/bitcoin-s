@@ -9,7 +9,7 @@ import org.scalacoin.script.constant._
 import org.scalacoin.script.control._
 import org.scalacoin.script.crypto.{OP_SHA1, OP_CHECKSIG, OP_HASH160, CryptoInterpreter}
 import org.scalacoin.script.reserved.NOP
-import org.scalacoin.script.stack.{OP_DEPTH, StackInterpreter, OP_DUP}
+import org.scalacoin.script.stack._
 import org.slf4j.LoggerFactory
 
 import scala.annotation.tailrec
@@ -43,7 +43,9 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
         //stack operations
         case OP_DUP :: t => loop(opDup(program))
         case OP_DEPTH :: t => loop(opDepth(program))
-
+        case OP_TOALTSTACK :: t => loop(opToAltStack(program))
+        case OP_FROMALTSTACK :: t => loop(opFromAltStack(program))
+        case OP_DROP :: t => loop(opDrop(program))
         //arithmetic operations
         case OP_ADD :: t => loop(opAdd(program))
 

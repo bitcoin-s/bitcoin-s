@@ -1,7 +1,7 @@
 package org.scalacoin.script.bitwise
 
 import org.scalacoin.script.{ScriptProgramImpl, ScriptProgram}
-import org.scalacoin.script.constant.{ScriptFalse, ScriptTrue, ScriptConstantImpl, ScriptToken}
+import org.scalacoin.script.constant._
 import org.scalacoin.script.control.{OP_VERIFY, ControlOperationsInterpreter}
 import org.slf4j.LoggerFactory
 
@@ -22,17 +22,26 @@ trait BitwiseInterpreter extends ControlOperationsInterpreter  {
     require(program.script.headOption.isDefined && program.script.head == OP_EQUAL, "Script operation must be OP_EQUAL")
 
     logger.debug("Original stack: " + program.stack)
-    val newStack = program.stack match {
-      case h :: h1 :: t => if (h == h1) ScriptTrue :: t else ScriptFalse  :: t
+    val h = program.stack.head
+    val h1 = program.stack.tail.head
+
+    val result = (h,h1) match {
+      case (ScriptConstantImpl(x),ScriptConstantImpl(y)) => x == y
+      case (ScriptNumberImpl(x), ScriptNumberImpl(y)) => x == y
+      case (ScriptNumberImpl(x), ScriptConstantImpl(y)) => ScriptNumberImpl(x).hex == y
+      case (ScriptConstantImpl(x), ScriptNumberImpl(y)) => x == ScriptNumberImpl(y).hex
+      case _ => h == h1
     }
-    logger.debug("New Stack: " + newStack)
-    ScriptProgramImpl(newStack,program.script.tail,program.transaction, program.altStack)
+
+    val scriptBoolean = if (result) ScriptTrue else ScriptFalse
+
+    ScriptProgramImpl(scriptBoolean :: program.stack.tail.tail,program.script.tail,program.transaction, program.altStack)
   }
+
 
   /**
    * Same as OP_EQUAL, but runs OP_VERIFY afterward.
-   * @param stack
-   * @param script
+   * @param program
    * @return
    */
   def equalVerify(program : ScriptProgram) : ScriptProgram = {
