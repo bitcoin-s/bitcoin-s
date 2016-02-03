@@ -14,28 +14,28 @@ class BitwiseInterpreterTest extends FlatSpec with MustMatchers with BitwiseInte
   "BitwiseInterpreter" must "evaluate OP_EQUAL" in {
     val stack = List(pubKeyHash, pubKeyHash)
     val script = List(OP_EQUAL)
-    val program = ScriptProgramImpl(stack,script,TestUtil.transaction)
+    val program = ScriptProgramImpl(stack,script,TestUtil.transaction,List())
     val newProgram = equal(program)
     newProgram.stack.head must be (ScriptTrue)
   }
 
   it must "throw an exception for OP_EQUAL when we don't have enough items on the stack" in {
     intercept[IllegalArgumentException] {
-      equal(ScriptProgramImpl(List(), List(OP_EQUAL),TestUtil.transaction))
+      equal(ScriptProgramImpl(List(), List(OP_EQUAL),TestUtil.transaction,List()))
     }
   }
 
 
   it must "throw an exception for OP_EQUAL when we don't have enough items on the script stack" in {
     intercept[IllegalArgumentException] {
-      equal(ScriptProgramImpl(List(pubKeyHash), List(),TestUtil.transaction))
+      equal(ScriptProgramImpl(List(pubKeyHash), List(),TestUtil.transaction,List()))
     }
   }
 
   it must "evaulate OP_EQUALVERIFY to true given two of the same pub keys" in {
     val stack = List(pubKeyHash, pubKeyHash)
     val script = List(OP_EQUALVERIFY)
-    val program = ScriptProgramImpl(stack,script,TestUtil.transaction)
+    val program = ScriptProgramImpl(stack,script,TestUtil.transaction,List())
     val result = equalVerify(program)
     result.valid must be (true)
   }
@@ -44,20 +44,20 @@ class BitwiseInterpreterTest extends FlatSpec with MustMatchers with BitwiseInte
     val uniquePubKey = ScriptConstantImpl(pubKeyHash +"0")
     val stack = List(pubKeyHash,uniquePubKey)
     val script = List(OP_EQUALVERIFY)
-    val program = ScriptProgramImpl(stack,script,TestUtil.transaction)
+    val program = ScriptProgramImpl(stack,script,TestUtil.transaction,List())
     val result = equalVerify(program)
     result.valid must be (false)
   }
 
   it must "throw an exception for OP_EQUALVERIFY when we don't have enough args in stack" in {
     intercept[IllegalArgumentException] {
-      equalVerify(ScriptProgramImpl(List(),List(OP_EQUALVERIFY),TestUtil.transaction))
+      equalVerify(ScriptProgramImpl(List(),List(OP_EQUALVERIFY),TestUtil.transaction,List()))
     }
   }
 
   it must "throw an exception for OP_EQUALVERIFY when we don't have enough args in script stack" in {
     intercept[IllegalArgumentException] {
-      equalVerify(ScriptProgramImpl(List(pubKeyHash),List(),TestUtil.transaction))
+      equalVerify(ScriptProgramImpl(List(pubKeyHash),List(),TestUtil.transaction,List()))
     }
   }
 

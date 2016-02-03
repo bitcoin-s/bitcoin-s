@@ -44,7 +44,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
         case OP_DUP :: t => loop(opDup(program))
         case OP_DEPTH :: t => loop(opDepth(program))
 
-        //arithmetic operaetions
+        //arithmetic operations
         case OP_ADD :: t => loop(opAdd(program))
 
         //bitwise operations
@@ -60,14 +60,15 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
         case ScriptConstantImpl(x) :: t if x == "1" => throw new RuntimeException("Not implemented yet")
         case ScriptConstantImpl(x) :: t if x == "0" => throw new RuntimeException("Not implemented yet")
         case (scriptNumberOp : ScriptNumberOperation) :: t =>
-          loop(ScriptProgramImpl(scriptNumberOp.scriptNumber :: program.stack, t,program.transaction))
+          loop(ScriptProgramImpl(scriptNumberOp.scriptNumber :: program.stack, t,program.transaction,program.altStack))
         case (scriptNumber : ScriptNumber) :: t => loop(pushScriptNumberBytesToStack(program))
         case OP_PUSHDATA1 :: t => loop(opPushData1(program))
         case OP_PUSHDATA2 :: t => loop(opPushData2(program))
         case OP_PUSHDATA4 :: t => loop(opPushData4(program))
 
         //TODO: is this right? I need to just push a constant on the input stack???
-        case ScriptConstantImpl(x) :: t => loop(ScriptProgramImpl(ScriptConstantImpl(x) :: program.stack, t, program.transaction))
+        case ScriptConstantImpl(x) :: t => loop(ScriptProgramImpl(ScriptConstantImpl(x) :: program.stack, t,
+          program.transaction,program.altStack))
 
         //control operations
         case OP_IF :: t => loop(opIf(program))
@@ -86,7 +87,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
         case OP_SHA1 :: t => loop(opSha1(program))
 
         //reserved operations
-        case (nop : NOP) :: t => loop(ScriptProgramImpl(program.stack,t,program.transaction))
+        case (nop : NOP) :: t => loop(ScriptProgramImpl(program.stack,t,program.transaction,program.altStack))
 
         //no more script operations to run, True is represented by any representation of non-zero
         case Nil => program.stack.head != ScriptFalse
@@ -94,7 +95,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
       }
     }
 
-    loop(ScriptProgramImpl(List(),fullScript,transaction))
+    loop(ScriptProgramImpl(List(),fullScript,transaction, List()))
   }
 
   def run(inputScript : Seq[ScriptToken], outputScript : Seq[ScriptToken], transaction : Transaction) : Boolean = {

@@ -13,7 +13,7 @@ class StackInterpreterTest extends FlatSpec with MustMatchers with StackInterpre
   "StackInterpreter" must "duplicate elements on top of the stack" in {
 
     val script = List(OP_DUP)
-    val program = ScriptProgramImpl(stack,script,TestUtil.transaction)
+    val program = ScriptProgramImpl(stack,script,TestUtil.transaction,List())
     val newProgram = opDup(program)
 
     newProgram.stack.head must be (ScriptConstantImpl("Hello"))
@@ -25,7 +25,7 @@ class StackInterpreterTest extends FlatSpec with MustMatchers with StackInterpre
 
     intercept[IllegalArgumentException] {
       val script = List()
-      val program = ScriptProgramImpl(stack,script,TestUtil.transaction)
+      val program = ScriptProgramImpl(stack,script,TestUtil.transaction,List())
       opDup(program)
     }
   }
@@ -35,7 +35,7 @@ class StackInterpreterTest extends FlatSpec with MustMatchers with StackInterpre
     intercept[IllegalArgumentException] {
       val stack = List()
       val script = List(OP_DUP)
-      val program = ScriptProgramImpl(stack,script,TestUtil.transaction)
+      val program = ScriptProgramImpl(stack,script,TestUtil.transaction,List())
       opDup(program)
     }
   }
@@ -43,7 +43,7 @@ class StackInterpreterTest extends FlatSpec with MustMatchers with StackInterpre
   it must "evaluate the OP_DEPTH operator correctly" in {
     val stack = List(ScriptConstantImpl("Hello"),ScriptConstantImpl("World"))
     val script = List(OP_DEPTH)
-    val program = ScriptProgramImpl(stack,script,TestUtil.transaction)
+    val program = ScriptProgramImpl(stack,script,TestUtil.transaction,List())
     val newProgram = opDepth(program)
 
     newProgram.stack.head.hex must be (ScalacoinUtil.encodeHex(stack.size.toByte))
@@ -52,7 +52,7 @@ class StackInterpreterTest extends FlatSpec with MustMatchers with StackInterpre
   it must "evaluate OP_DEPTH operator correctly when there are zero items on the stack" in {
     val stack = List()
     val script = List(OP_DEPTH)
-    val program = ScriptProgramImpl(stack,script,TestUtil.transaction)
+    val program = ScriptProgramImpl(stack,script,TestUtil.transaction,List())
     val newProgram = opDepth(program)
     newProgram.stack.head.hex must be (stack.size.toHexString+"0")
   }

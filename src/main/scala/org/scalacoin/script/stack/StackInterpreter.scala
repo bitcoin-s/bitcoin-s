@@ -20,7 +20,7 @@ trait StackInterpreter {
     require(program.script.headOption.isDefined && program.script.head == OP_DUP, "Top of the script stack must be OP_DUP")
     require(program.stack.headOption.isDefined, "Cannot duplicate the top element on an empty stack")
     program.stack match {
-      case h :: t => ScriptProgramImpl(h :: program.stack, program.script.tail,program.transaction)
+      case h :: t => ScriptProgramImpl(h :: program.stack, program.script.tail,program.transaction,program.altStack)
       case Nil => throw new RuntimeException("Received an empty stack! Cannot duplicate an element on an empty stack")
     }
   }
@@ -39,7 +39,7 @@ trait StackInterpreter {
 
     val numberToPush : Option[ScriptNumber] = ScriptNumberFactory.factory(stackSize)
     require(numberToPush.isDefined, "Stack size was to large to find in the script number factory, stack size was: " + stackSize)
-    ScriptProgramImpl(numberToPush.get :: program.stack, program.script.tail,program.transaction)
+    ScriptProgramImpl(numberToPush.get :: program.stack, program.script.tail,program.transaction,program.altStack)
   }
 
 }

@@ -22,7 +22,8 @@ trait ArithmeticInterpreter {
     val a : Int = intFromScriptToken(program.stack(1))
 
     val result = numberToScriptToken(a + b)
-    ScriptProgramImpl(result :: program.stack.slice(2,program.stack.size), program.script.tail, program.transaction)
+    ScriptProgramImpl(result :: program.stack.slice(2,program.stack.size),
+      program.script.tail, program.transaction, program.altStack)
   }
 
 

@@ -24,11 +24,12 @@ trait ConstantInterpreter {
     val numberOfBytes : Int = Integer.parseInt(program.script(1).hex,16)
     if (numberOfBytes == 0) {
       //if the number of bytes pushed onto the stack is zero, we push an empty byte vector onto the stack
-      ScriptProgramImpl(OP_0 :: program.stack, program.script.slice(2,program.script.size),program.transaction)
+      ScriptProgramImpl(OP_0 :: program.stack, program.script.slice(2,program.script.size),
+        program.transaction, program.altStack)
     } else {
       val slicedScript = program.script.slice(2,program.script.size)
       val (newStack,newScript) = opPushData(program.stack,slicedScript,numberOfBytes)
-      ScriptProgramImpl(newStack,newScript,program.transaction)
+      ScriptProgramImpl(newStack,newScript,program.transaction,program.altStack)
     }
   }
 
@@ -44,11 +45,12 @@ trait ConstantInterpreter {
     val numberOfBytes : Int = Integer.parseInt(reversedHex,16)
     if (numberOfBytes == 0) {
       //if the number of bytes pushed onto the stack is zero, we push an empty byte vector onto the stack
-      ScriptProgramImpl(OP_0 :: program.stack, program.script.slice(2,program.script.size),program.transaction)
+      ScriptProgramImpl(OP_0 :: program.stack, program.script.slice(2,program.script.size),
+        program.transaction, program.altStack)
     } else {
       val slicedScript = program.script.slice(2,program.script.size)
       val (newStack,newScript) = opPushData(program.stack,slicedScript,numberOfBytes)
-      ScriptProgramImpl(newStack,newScript,program.transaction)
+      ScriptProgramImpl(newStack,newScript,program.transaction, program.altStack)
     }
   }
 
@@ -64,11 +66,12 @@ trait ConstantInterpreter {
     val numberOfBytes : Int = Integer.parseInt(reversedHex,16)
     if (numberOfBytes == 0) {
       //if the number of bytes pushed onto the stack is zero, we push an empty byte vector onto the stack
-      ScriptProgramImpl(OP_0 :: program.stack, program.script.slice(2,program.script.size), program.transaction)
+      ScriptProgramImpl(OP_0 :: program.stack, program.script.slice(2,program.script.size),
+        program.transaction,program.altStack)
     } else {
       val slicedScript = program.script.slice(2,program.script.size)
       val (newStack,newScript) = opPushData(program.stack,slicedScript,numberOfBytes)
-      ScriptProgramImpl(newStack,newScript,program.transaction)
+      ScriptProgramImpl(newStack,newScript,program.transaction,program.altStack)
     }
   }
 
@@ -101,8 +104,9 @@ trait ConstantInterpreter {
     val (newScript,newScriptConstant) = takeUntilBytesNeeded(program.script.tail,ScriptConstantImpl(""))
     //see if the new script constant can be converted into a script number
     val scriptNumber : Option[ScriptNumber] = ScriptNumberFactory.fromHex(newScriptConstant.hex)
-    if (scriptNumber.isDefined) ScriptProgramImpl(scriptNumber.get :: program.stack, newScript,program.transaction)
-    else ScriptProgramImpl(newScriptConstant :: program.stack, newScript, program.transaction)
+    if (scriptNumber.isDefined) ScriptProgramImpl(
+      scriptNumber.get :: program.stack, newScript,program.transaction, program.altStack)
+    else ScriptProgramImpl(newScriptConstant :: program.stack, newScript, program.transaction, program.altStack)
   }
 
   /**

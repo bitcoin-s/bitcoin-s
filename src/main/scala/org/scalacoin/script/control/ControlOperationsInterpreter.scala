@@ -29,11 +29,12 @@ trait ControlOperationsInterpreter {
       //remove OP_ELSE from binary tree
       val newTreeWithoutOpElse = removeFirstOpElse(binaryTree)
       val newScript = newTreeWithoutOpElse.toList
-      ScriptProgramImpl(program.stack.tail,newScript.tail,program.transaction)
+      ScriptProgramImpl(program.stack.tail,newScript.tail,program.transaction, program.altStack)
     } else {
       //remove the OP_IF
       val scriptWithoutOpIf : BinaryTree[ScriptToken] = removeFirstOpIf(binaryTree)
-      ScriptProgramImpl(program.stack.tail,scriptWithoutOpIf.toList,program.transaction)
+      ScriptProgramImpl(program.stack.tail,scriptWithoutOpIf.toList,
+        program.transaction, program.altStack)
     }
 
   }
@@ -51,13 +52,15 @@ trait ControlOperationsInterpreter {
     if (program.stack.head != OP_0) {
       //remove the OP_NOTIF
       val scriptWithoutOpIf : BinaryTree[ScriptToken] = removeFirstOpIf(binaryTree)
-      ScriptProgramImpl(program.stack.tail,scriptWithoutOpIf.toList,program.transaction)
+      ScriptProgramImpl(program.stack.tail,scriptWithoutOpIf.toList,
+        program.transaction, program.altStack)
     } else {
       //if the left branch contains and OP_NOTIF & OP_ENDIF there must be a nested OP_IF or OP_NOTIF
       //remove OP_ELSE from binary tree
       val newTreeWithoutOpElse = removeFirstOpElse(binaryTree)
       val newScript = newTreeWithoutOpElse.toList
-      ScriptProgramImpl(program.stack.tail,newScript.tail,program.transaction)
+      ScriptProgramImpl(program.stack.tail,newScript.tail,
+        program.transaction, program.altStack)
     }
   }
   /**
@@ -84,7 +87,8 @@ trait ControlOperationsInterpreter {
         }
         else node
     }
-    ScriptProgramImpl(program.stack,treeWithNextOpElseRemoved.toList.tail,program.transaction)
+    ScriptProgramImpl(program.stack,treeWithNextOpElseRemoved.toList.tail,
+      program.transaction, program.altStack)
   }
 
 
@@ -95,7 +99,7 @@ trait ControlOperationsInterpreter {
    */
   def opEndIf(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.isDefined && program.script.head == OP_ENDIF, "Script top must be OP_ENDIF")
-    ScriptProgramImpl(program.stack,program.script.tail,program.transaction)
+    ScriptProgramImpl(program.stack,program.script.tail,program.transaction,program.altStack)
   }
 
 
@@ -122,8 +126,9 @@ trait ControlOperationsInterpreter {
     require(program.script.headOption.isDefined && program.script.head == OP_VERIFY, "Script top must be OP_VERIFY")
     require(program.stack.size > 0, "Stack must have at least one element on it to run OP_VERIFY")
     if (program.stack.head != OP_0 && program.stack.head != ScriptFalse ) {
-      ScriptProgramImpl(program.stack,program.script.tail,program.transaction)
-    } else ScriptProgramImpl(program.stack,program.script.tail,program.transaction,valid = false)
+      ScriptProgramImpl(program.stack,program.script.tail,program.transaction,program.altStack)
+    } else ScriptProgramImpl(program.stack,program.script.tail,
+      program.transaction,program.altStack,valid = false)
   }
 
 
