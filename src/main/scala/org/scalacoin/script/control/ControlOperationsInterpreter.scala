@@ -33,7 +33,6 @@ trait ControlOperationsInterpreter {
    * @return
    */
 
-
   def opIf(stack : List[ScriptToken], script : List[ScriptToken]) : (List[ScriptToken], List[ScriptToken]) = {
     require(script.headOption.isDefined && script.head == OP_IF, "Script top was not OP_IF")
     val binaryTree = parseBinaryTree(script)
@@ -51,6 +50,30 @@ trait ControlOperationsInterpreter {
     }
 
   }
+
+
+  /**
+   * If the top stack value is 0, the statements are executed. The top stack value is removed.
+   * @param stack
+   * @param script
+   * @return
+   */
+  def opNotIf(stack : List[ScriptToken], script : List[ScriptToken]) : (List[ScriptToken], List[ScriptToken]) = {
+    require(script.headOption.isDefined && script.head == OP_NOTIF, "Script top was not OP_NOTIF")
+    val binaryTree = parseBinaryTree(script)
+    logger.debug("Parsed binary tree: " + binaryTree)
+    if (stack.head != OP_0) {
+      //remove the OP_NOTIF
+      val scriptWithoutOpIf : BinaryTree[ScriptToken] = removeFirstOpIf(binaryTree)
+      (stack.tail,scriptWithoutOpIf.toList)
+    } else {
+      //if the left branch contains and OP_NOTIF & OP_ENDIF there must be a nested OP_IF or OP_NOTIF
+      //remove OP_ELSE from binary tree
+      val newTreeWithoutOpElse = removeFirstOpElse(binaryTree)
+      val newScript = newTreeWithoutOpElse.toList
+      (stack.tail,newScript.tail)
+    }
+  }
   /**
    * Evaluates the OP_ELSE operator
    * @param stack
@@ -60,7 +83,6 @@ trait ControlOperationsInterpreter {
   def opElse(stack : List[ScriptToken], script : List[ScriptToken]) : (List[ScriptToken], List[ScriptToken]) = {
     require(script.headOption.isDefined && script.head == OP_ELSE, "First script opt must be OP_ELSE")
     val tree = parseBinaryTree(script)
-    println("Parsed tree: " + tree)
     val treeWithNextOpElseRemoved = tree match {
       case Empty => Empty
       case leaf : Leaf[ScriptToken] => leaf
@@ -77,21 +99,6 @@ trait ControlOperationsInterpreter {
         else node
     }
     (stack,treeWithNextOpElseRemoved.toList.tail)
-  }
-
-
-  /**
-   * If the top stack value is 0, the statements are executed. The top stack value is removed.
-   * @param stack
-   * @param script
-   * @return
-   */
-  def opNotIf(stack : List[ScriptToken], script : List[ScriptToken]) : (List[ScriptToken], List[ScriptToken]) = {
-    require(script.headOption.isDefined && script.head == OP_NOTIF, "Script top was not OP_NOTIF")
-    //since OP_NOTIF does the exact opposite of OP_NOTIF, we can just replace the stack/script tops with
-    //the opposites and get the same functionality
-    if (stack.head == OP_0) opIf(OP_1 :: stack.tail,OP_IF :: script.tail)
-    else opIf(OP_0 :: stack.tail, OP_IF :: script.tail)
   }
 
 
@@ -146,6 +153,10 @@ trait ControlOperationsInterpreter {
         val (newTail, parsedTree) = parseOpIf(script, Empty)
         val newTree = insertSubTree(tree,parsedTree)
         loop(newTail, newTree)
+      case OP_NOTIF :: t =>
+        val (newTail, parsedTree) = parseOpNotIf(script, Empty)
+        val newTree = insertSubTree(tree,parsedTree)
+        loop(newTail, newTree)
       case OP_ELSE :: t =>
         val (newTail, parsedTree) = parseOpElse(script, Empty)
         val newTree = insertSubTree(tree,parsedTree)
@@ -181,10 +192,11 @@ trait ControlOperationsInterpreter {
             //need to insert the OP_ELSE within the proper OP_IF
             //get count of OP_IFs and OP_ENDIFS inside of the tree
             val opIfCount = node.l.count[ScriptToken](OP_IF)
+            val opNotIfCount = node.l.count[ScriptToken](OP_NOTIF)
             val opEndIfCount = node.l.count[ScriptToken](OP_ENDIF)
             //means that the subtree is not balanced, need to insert the OP_ELSE inside
             //the left subtree
-            if (opIfCount != opEndIfCount) Node(node.v,insertSubTree(tree.left.get,subTree),node.r)
+            if (opIfCount + opNotIfCount != opEndIfCount) Node(node.v,insertSubTree(tree.left.get,subTree),node.r)
             else Node(node.v,node.l,insertSubTree(tree.right.getOrElse(Empty),subTree))
           } else if (node.r.value.isDefined && node.r.value.get == OP_ELSE) {
             //since there is an OP_ELSE defined to right
@@ -207,6 +219,21 @@ trait ControlOperationsInterpreter {
       case Empty => (t, Node(OP_IF,Empty,Empty))
     }
     case h :: t => throw new RuntimeException("Cannot parse " + h + " as an OP_IF")
+    case Nil => (script,tree)
+  }
+
+  /**
+   * Parses an OP_NOTIF expression in Script
+   * @param t
+   * @return
+   */
+  private def parseOpNotIf(script : List[ScriptToken],tree : BinaryTree[ScriptToken]) : (List[ScriptToken],BinaryTree[ScriptToken]) = script match {
+    case OP_NOTIF :: t => tree match {
+      case n : Node[ScriptToken] => (t,Node(n.v,Node(OP_NOTIF,Empty,Empty),n.r))
+      case l : Leaf[ScriptToken] => (t,Node(l.v,Node(OP_NOTIF,Empty,Empty),Empty))
+      case Empty => (t, Node(OP_NOTIF,Empty,Empty))
+    }
+    case h :: t => throw new RuntimeException("Cannot parse " + h + " as an OP_NOTIF")
     case Nil => (script,tree)
   }
 
@@ -355,7 +382,6 @@ trait ControlOperationsInterpreter {
    * @return
    */
   def removeFirstOpElse(tree : BinaryTree[ScriptToken]) : BinaryTree[ScriptToken] = {
-
     tree match {
       case Empty => Empty
       case leaf : Leaf[ScriptToken] => leaf
@@ -403,8 +429,13 @@ trait ControlOperationsInterpreter {
 
   }
 
+  /**
+   * Removes the first occurrence of OP_IF or OP_NOTIF in the binary tree
+   * @param tree
+   * @return
+   */
   def removeFirstOpIf(tree : BinaryTree[ScriptToken]) : BinaryTree[ScriptToken] = {
-    require(tree.value.isDefined && tree.value.get == OP_IF, "Top of the tree must be OP_IF to remove the OP_IF")
+    require(tree.value.isDefined && (tree.value.get == OP_IF || tree.value.get == OP_NOTIF) , "Top of the tree must be OP_IF or OP_NOTIF to remove the OP_IF or OP_NOTIF")
     if (tree.right.isDefined && tree.right.get.value == Some(OP_ELSE)) tree.right.getOrElse(Empty)
     else tree.findFirstDFS[ScriptToken](OP_ENDIF)().getOrElse(Empty)
   }

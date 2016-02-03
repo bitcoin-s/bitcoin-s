@@ -229,6 +229,52 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers with C
 
   }
 
+  it must "parse a binary tree that has OP_NOTIFs" in  {
+    val script = List(OP_NOTIF, OP_1,OP_ELSE, OP_2, OP_ELSE, OP_3, OP_ENDIF)
+    val bTree = parseBinaryTree(script)
+    bTree.value.get must be (OP_NOTIF)
+
+    bTree.left.isDefined must be (true)
+    bTree.left.get.value must be (Some(OP_1))
+
+    bTree.right.isDefined must be (true)
+    bTree.right.get.value must be (Some(OP_ELSE))
+
+    bTree.right.get.left.isDefined must be (true)
+    bTree.right.get.left.get.value must be (Some(OP_2))
+
+    bTree.right.get.right.isDefined must be (true)
+    bTree.right.get.right.get.value must be (Some(OP_ELSE))
+
+    bTree.right.get.right.get.left.isDefined must be (true)
+    bTree.right.get.right.get.left.get.value must be (Some(OP_3))
+
+    bTree.right.get.right.get.right.isDefined must be (true)
+    bTree.right.get.right.get.left.get.left.get.value must be (Some(OP_ENDIF))
+
+    bTree.toSeq must be (script)
+  }
+
+  it must "parse a binary tree with nested OP_NOTIFs" in {
+
+    val script = List(OP_NOTIF, OP_NOTIF, OP_0, OP_ELSE, OP_1, OP_ENDIF, OP_ELSE, OP_NOTIF, OP_2, OP_ELSE, OP_3, OP_ENDIF, OP_ENDIF)
+    val bTree = parseBinaryTree(script)
+
+    bTree.value must be (Some(OP_NOTIF))
+    bTree.left.get.value must be (Some(OP_NOTIF))
+    bTree.left.get.right.get.value must be (Some(OP_ELSE))
+    bTree.left.get.right.get.left.get.value must be (Some(OP_1))
+    bTree.left.get.right.get.left.get.left.get.value must be (Some(OP_ENDIF))
+
+    bTree.right.get.value must be (Some(OP_ELSE))
+    bTree.right.get.left.get.value must be (Some(OP_NOTIF))
+    bTree.right.get.left.get.left.get.value must be (Some(OP_2))
+    bTree.right.get.left.get.right.get.value must be (Some(OP_ELSE))
+    bTree.right.get.left.get.right.get.left.get.value must be (Some(OP_3))
+    bTree.right.get.left.get.right.get.left.get.left.get.value must be (Some(OP_ENDIF))
+
+  }
+
 
 
   it must "evaluate an OP_IF correctly" in {
@@ -351,21 +397,49 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers with C
 
     val bTree = parseBinaryTree(script)
     bTree.value must be (Some(OP_IF))
-
     bTree.left.get.value must be (Some(OP_1))
-
-
     bTree.right.get.value must be (Some(OP_ELSE))
-
     bTree.right.get.left.get.value must be (Some(OP_RETURN))
-
     bTree.right.get.right.get.value must be (Some(OP_ELSE))
-
     bTree.right.get.right.get.left.get.value must be (Some(OP_1))
-
     bTree.right.get.right.get.left.get.left.get.value must be (Some(OP_ENDIF))
-
     bTree.right.get.right.get.left.get.left.get.left.get.value must be (Some(OP_ELSE))
+  }
+
+  it must "mechanically evaluate this entire script correctly" in {
+    val stack = List(ScriptNumberImpl(1))
+    val script = List(OP_NOTIF, OP_0,
+      OP_NOTIF, OP_RETURN, OP_ELSE, OP_RETURN, OP_ELSE, OP_RETURN, OP_ENDIF,
+      OP_ELSE, OP_0, OP_NOTIF, OP_1, OP_ELSE, OP_RETURN, OP_ELSE, OP_1, OP_ENDIF, OP_ELSE, OP_RETURN, OP_ENDIF,
+      OP_ADD, OP_2, OP_EQUAL)
+
+    val (stack1,script1) = opNotIf(stack,script)
+
+    stack1.isEmpty must be (true)
+    script1 must be (List(OP_ELSE, OP_0, OP_NOTIF, OP_1, OP_ELSE, OP_RETURN, OP_ELSE, OP_1, OP_ENDIF, OP_ELSE, OP_RETURN, OP_ENDIF,
+      OP_ADD, OP_2, OP_EQUAL))
+
+    val (stack2,script2) = opElse(stack1,script1)
+    stack2.isEmpty must be (true)
+    script2 must be (List(OP_0, OP_NOTIF, OP_1, OP_ELSE, OP_RETURN, OP_ELSE, OP_1, OP_ENDIF, OP_ENDIF,
+      OP_ADD, OP_2, OP_EQUAL))
+
+    val (stack3,script3) = opNotIf(List(OP_0),script2.tail)
+    stack3.isEmpty must be (true)
+    script3 must be (List(OP_1,OP_ELSE, OP_1, OP_ENDIF, OP_ENDIF,
+      OP_ADD, OP_2, OP_EQUAL))
+
+    val (stack4,script4) = opElse(List(OP_1),script3.tail)
+    stack4 must be (List(OP_1))
+    script4 must be (List(OP_1,OP_ENDIF,OP_ENDIF,OP_ADD, OP_2, OP_EQUAL))
+
+    val (stack5,script5) = opEndIf(script4.head :: stack4, script4.tail)
+    stack5 must be (List(OP_1,OP_1))
+    script5 must be (List(OP_ENDIF,OP_ADD, OP_2, OP_EQUAL))
+
+    val (stack6,script6) = opEndIf(stack5, script5)
+    stack6 must be (List(OP_1,OP_1))
+    script6 must be (List(OP_ADD, OP_2, OP_EQUAL))
 
   }
 
