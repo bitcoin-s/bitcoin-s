@@ -1,6 +1,8 @@
 package org.scalacoin.script.bitwise
 
+import org.scalacoin.script.ScriptProgramImpl
 import org.scalacoin.script.constant.{ScriptTrue, ScriptConstantImpl}
+import org.scalacoin.util.TestUtil
 import org.scalatest.{MustMatchers, FlatSpec}
 
 /**
@@ -12,48 +14,50 @@ class BitwiseInterpreterTest extends FlatSpec with MustMatchers with BitwiseInte
   "BitwiseInterpreter" must "evaluate OP_EQUAL" in {
     val stack = List(pubKeyHash, pubKeyHash)
     val script = List(OP_EQUAL)
-
-    val (newStack,newScript) = equal(stack,script)
-    newStack.head must be (ScriptTrue)
+    val program = ScriptProgramImpl(stack,script,TestUtil.transaction)
+    val newProgram = equal(program)
+    newProgram.stack.head must be (ScriptTrue)
   }
 
   it must "throw an exception for OP_EQUAL when we don't have enough items on the stack" in {
     intercept[IllegalArgumentException] {
-      equal(List(), List(OP_EQUAL))
+      equal(ScriptProgramImpl(List(), List(OP_EQUAL),TestUtil.transaction))
     }
   }
 
 
   it must "throw an exception for OP_EQUAL when we don't have enough items on the script stack" in {
     intercept[IllegalArgumentException] {
-      equal(List(pubKeyHash), List())
+      equal(ScriptProgramImpl(List(pubKeyHash), List(),TestUtil.transaction))
     }
   }
 
   it must "evaulate OP_EQUALVERIFY to true given two of the same pub keys" in {
     val stack = List(pubKeyHash, pubKeyHash)
     val script = List(OP_EQUALVERIFY)
-    val result = equalVerify(stack,script)
-    result._3 must be (true)
+    val program = ScriptProgramImpl(stack,script,TestUtil.transaction)
+    val result = equalVerify(program)
+    result.valid must be (true)
   }
 
   it must "evaluate OP_EQUALVERIFY to false given two different pub keys" in {
     val uniquePubKey = ScriptConstantImpl(pubKeyHash +"0")
     val stack = List(pubKeyHash,uniquePubKey)
     val script = List(OP_EQUALVERIFY)
-    val result = equalVerify(stack,script)
-    result._3 must be (false)
+    val program = ScriptProgramImpl(stack,script,TestUtil.transaction)
+    val result = equalVerify(program)
+    result.valid must be (false)
   }
 
   it must "throw an exception for OP_EQUALVERIFY when we don't have enough args in stack" in {
     intercept[IllegalArgumentException] {
-      equalVerify(List(),List(OP_EQUALVERIFY))
+      equalVerify(ScriptProgramImpl(List(),List(OP_EQUALVERIFY),TestUtil.transaction))
     }
   }
 
   it must "throw an exception for OP_EQUALVERIFY when we don't have enough args in script stack" in {
     intercept[IllegalArgumentException] {
-      equalVerify(List(pubKeyHash),List())
+      equalVerify(ScriptProgramImpl(List(pubKeyHash),List(),TestUtil.transaction))
     }
   }
 

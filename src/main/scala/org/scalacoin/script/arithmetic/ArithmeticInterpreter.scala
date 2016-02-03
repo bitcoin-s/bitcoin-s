@@ -1,5 +1,6 @@
 package org.scalacoin.script.arithmetic
 
+import org.scalacoin.script.{ScriptProgramImpl, ScriptProgram}
 import org.scalacoin.script.constant.{ScriptNumber, ScriptNumberImpl, ScriptConstantImpl, ScriptToken}
 
 /**
@@ -13,15 +14,15 @@ trait ArithmeticInterpreter {
    * @param script
    * @return
    */
-  def opAdd(stack : List[ScriptToken], script : List[ScriptToken]) : (List[ScriptToken],List[ScriptToken]) = {
-    require(script.headOption.isDefined && script.head == OP_ADD, "Script top must be OP_ADD")
-    require(stack.size > 1, "Stack size must be 2 or more perform an OP_ADD")
+  def opAdd(program : ScriptProgram) : ScriptProgram = {
+    require(program.script.headOption.isDefined && program.script.head == OP_ADD, "Script top must be OP_ADD")
+    require(program.stack.size > 1, "Stack size must be 2 or more perform an OP_ADD")
 
-    val b : Int  = intFromScriptToken(stack.head)
-    val a : Int = intFromScriptToken(stack(1))
+    val b : Int  = intFromScriptToken(program.stack.head)
+    val a : Int = intFromScriptToken(program.stack(1))
 
     val result = numberToScriptToken(a + b)
-    (result :: stack.slice(2,stack.size), script.tail)
+    ScriptProgramImpl(result :: program.stack.slice(2,program.stack.size), program.script.tail, program.transaction)
   }
 
 

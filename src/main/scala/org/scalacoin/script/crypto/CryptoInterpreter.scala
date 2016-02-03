@@ -2,6 +2,7 @@ package org.scalacoin.script.crypto
 
 import org.scalacoin.protocol.script.ScriptPubKey
 import org.scalacoin.protocol.transaction.Transaction
+import org.scalacoin.script.{ScriptProgramImpl, ScriptProgram}
 import org.scalacoin.script.constant.{ScriptOperation, ScriptConstantImpl, ScriptConstant, ScriptToken}
 import org.scalacoin.util.{CryptoUtil, ScalacoinUtil}
 
@@ -11,15 +12,15 @@ import org.scalacoin.util.{CryptoUtil, ScalacoinUtil}
  */
 trait CryptoInterpreter extends ScalacoinUtil {
 
-  def hash160(stack : List[ScriptToken], script : List[ScriptToken]) : (List[ScriptToken], List[ScriptToken]) = {
-    require(stack.headOption.isDefined, "The top of the stack must be defined")
-    require(script.headOption.isDefined && script.head == OP_HASH160, "Script operation must be OP_HASH160")
-    val stackTop = stack.head
+  def hash160(program : ScriptProgram) : ScriptProgram = {
+    require(program.stack.headOption.isDefined, "The top of the stack must be defined")
+    require(program.script.headOption.isDefined && program.script.head == OP_HASH160, "Script operation must be OP_HASH160")
+    val stackTop = program.stack.head
     val hash = stackTop match {
       case ScriptConstantImpl(x) => CryptoUtil.sha256Hash160(x)
       case _ => throw new RuntimeException("Stack top should be of type ScriptConstant to call hash160 on it")
     }
-    (hash :: stack, script.tail)
+    ScriptProgramImpl(hash :: program.stack, program.script.tail,program.transaction)
   }
 
   /**
@@ -75,13 +76,13 @@ trait CryptoInterpreter extends ScalacoinUtil {
    * @param script
    * @return
    */
-  def opSha1(stack : List[ScriptToken], script : List[ScriptToken]) : (List[ScriptToken], List[ScriptToken]) = {
-    require(script.headOption.isDefined && script.head == OP_SHA1, "Script top must be OP_SHA1")
-    require(stack.headOption.isDefined, "We must have an element on the stack for OP_SHA1")
+  def opSha1(program : ScriptProgram) : ScriptProgram = {
+    require(program.script.headOption.isDefined && program.script.head == OP_SHA1, "Script top must be OP_SHA1")
+    require(program.stack.headOption.isDefined, "We must have an element on the stack for OP_SHA1")
 
-    val constant = stack.head
+    val constant = program.stack.head
     val hash = ScriptConstantImpl(ScalacoinUtil.encodeHex(CryptoUtil.sha1(constant.bytes)))
-    (hash :: stack.tail, script.tail)
+    ScriptProgramImpl(hash :: program.stack.tail, program.script.tail,program.transaction)
 
   }
 

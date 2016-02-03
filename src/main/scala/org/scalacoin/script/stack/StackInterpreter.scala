@@ -1,5 +1,6 @@
 package org.scalacoin.script.stack
 
+import org.scalacoin.script.{ScriptProgramImpl, ScriptProgram}
 import org.scalacoin.script.constant._
 
 /**
@@ -15,11 +16,11 @@ trait StackInterpreter {
    * @param script
    * @return
    */
-  def opDup(stack : List[ScriptToken], script : List[ScriptToken]) : (List[ScriptToken], List[ScriptToken]) = {
-    require(script.headOption.isDefined && script.head == OP_DUP, "Top of the script stack must be OP_DUP")
-    require(stack.headOption.isDefined, "Cannot duplicate the top element on an empty stack")
-    stack match {
-      case h :: t => (h :: stack, script.tail)
+  def opDup(program : ScriptProgram) : ScriptProgram = {
+    require(program.script.headOption.isDefined && program.script.head == OP_DUP, "Top of the script stack must be OP_DUP")
+    require(program.stack.headOption.isDefined, "Cannot duplicate the top element on an empty stack")
+    program.stack match {
+      case h :: t => ScriptProgramImpl(h :: program.stack, program.script.tail,program.transaction)
       case Nil => throw new RuntimeException("Received an empty stack! Cannot duplicate an element on an empty stack")
     }
   }
@@ -30,15 +31,15 @@ trait StackInterpreter {
    * @param script
    * @return
    */
-  def opDepth(stack : List[ScriptToken], script : List[ScriptToken]) : (List[ScriptToken], List[ScriptToken]) = {
-    require(script.headOption.isDefined && script.head == OP_DEPTH, "Top of script stack must be OP_DEPTH")
-    require(script.size >= 1, "OP_DEPTH requires at least two elements on the script stack")
-    val operation = script.head
-    val stackSize = stack.size
+  def opDepth(program : ScriptProgram) : ScriptProgram = {
+    require(program.script.headOption.isDefined && program.script.head == OP_DEPTH, "Top of script stack must be OP_DEPTH")
+    require(program.script.size >= 1, "OP_DEPTH requires at least two elements on the script stack")
+    val operation = program.script.head
+    val stackSize = program.stack.size
 
     val numberToPush : Option[ScriptNumber] = ScriptNumberFactory.factory(stackSize)
     require(numberToPush.isDefined, "Stack size was to large to find in the script number factory, stack size was: " + stackSize)
-    (numberToPush.get :: stack, script.tail)
+    ScriptProgramImpl(numberToPush.get :: program.stack, program.script.tail,program.transaction)
   }
 
 }
