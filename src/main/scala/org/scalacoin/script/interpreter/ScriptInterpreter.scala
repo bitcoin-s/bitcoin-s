@@ -46,6 +46,8 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
         case OP_TOALTSTACK :: t => loop(opToAltStack(program))
         case OP_FROMALTSTACK :: t => loop(opFromAltStack(program))
         case OP_DROP :: t => loop(opDrop(program))
+        case OP_IFDUP :: t => loop(opIfDup(program))
+        case OP_NIP :: t => loop(opNip(program))
         //arithmetic operations
         case OP_ADD :: t => loop(opAdd(program))
 

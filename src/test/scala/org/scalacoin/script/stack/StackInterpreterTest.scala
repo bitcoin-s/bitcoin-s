@@ -1,7 +1,7 @@
 package org.scalacoin.script.stack
 
 import org.scalacoin.script.ScriptProgramImpl
-import org.scalacoin.script.constant.{OP_0, ScriptConstantImpl}
+import org.scalacoin.script.constant.{OP_1, OP_0, ScriptConstantImpl}
 import org.scalacoin.util.{TestUtil, ScalacoinUtil}
 import org.scalatest.{FlatSpec, MustMatchers}
 
@@ -77,5 +77,35 @@ class StackInterpreterTest extends FlatSpec with MustMatchers with StackInterpre
 
     newProgram.stack.isEmpty must be (true)
     newProgram.script.isEmpty must be (true)
+  }
+
+  it must "evaluate an OP_IFDUP correctly" in {
+    val stack = List(OP_0)
+    val script = List(OP_IFDUP)
+    val program = ScriptProgramImpl(stack,script,TestUtil.transaction, List())
+    val newProgram = opIfDup(program)
+
+    newProgram.stack must be (stack)
+    newProgram.script.isEmpty must be (true)
+
+    val stack1 = List(OP_1)
+    val program1 = ScriptProgramImpl(stack1,script,TestUtil.transaction,List())
+    val newProgram1 = opIfDup(program1)
+    newProgram1.stack must be (List(OP_1,OP_1))
+    newProgram1.script.isEmpty must be (true)
+
+  }
+
+  it must "evaluate an OP_NIP correctly" in {
+    val stack = List(OP_0,OP_1)
+    val script = List(OP_NIP)
+
+    val program = ScriptProgramImpl(stack,script,TestUtil.transaction,List())
+
+    val newProgram = opNip(program)
+
+    newProgram.stack must be (List(OP_0))
+    newProgram.script.isEmpty must be (true)
+
   }
 }
