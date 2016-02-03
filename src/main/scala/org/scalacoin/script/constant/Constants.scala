@@ -94,13 +94,6 @@ case object OP_FALSE extends ScriptNumberOperation {
   override def opCode = OP_0.opCode
   override def scriptNumber = OP_0.scriptNumber
 }
-/**
- * The number -1 is pushed onto the stack.
- */
-case object OP_1NEGATE extends ScriptNumberOperation {
-  override def opCode = 79
-  override def scriptNumber = ScriptNumberFactory.factory(-1).get
-}
 
 /**
  * The number 1 is pushed onto the stack.
@@ -109,6 +102,15 @@ case object OP_TRUE extends ScriptNumberOperation {
   override def opCode = 81
   override def scriptNumber = ScriptNumberFactory.factory(1).get
 }
+
+/**
+ * The number -1 is pushed onto the stack.
+ */
+case object OP_1NEGATE extends ScriptNumberOperation {
+  override def opCode = 79
+  override def scriptNumber = ScriptNumberFactory.factory(-1).get
+}
+
 
 /**
  * The number 1 is pushed onto the stack.

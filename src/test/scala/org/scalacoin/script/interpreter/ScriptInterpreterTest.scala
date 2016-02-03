@@ -4,6 +4,7 @@ import java.io.File
 
 import org.scalacoin.script.bitwise.{OP_EQUAL, OP_EQUALVERIFY}
 import org.scalacoin.script.constant._
+import org.scalacoin.script.control.OP_VERIFY
 import org.scalacoin.script.crypto.{OP_CHECKSIG, OP_HASH160}
 import org.scalacoin.script.interpreter.testprotocol.{CoreTestCaseProtocol, CoreTestCase}
 import org.scalacoin.script.stack.OP_DUP
@@ -33,8 +34,15 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterp
   it must "evaluate a script that asks to push 20 bytes onto the stack correctly" in {
     val stack = List(ScriptConstantImpl("68ca4fec736264c13b859bac43d5173df6871682"))
     val script = List(ScriptNumberImpl(20), ScriptConstantImpl("68ca4fec736264c13b859bac43d5173df6871682"), OP_EQUAL)
-
     run(stack,script) must be (true)
+  }
+
+  it must "evaluate a 5 byte representation of 0x0000000001 as 0x01 when pushed onto the stack" in {
+    //this is for the following test case inside of script_valid.json
+    //["1 0x05 0x01 0x00 0x00 0x00 0x00", "VERIFY", "P2SH,STRICTENC", "values >4 bytes can be cast to boolean"]
+    val stack = List(OP_1)
+    val script = List(ScriptNumberImpl(5), ScriptNumberImpl(1), OP_0, OP_0, OP_0, OP_0,OP_VERIFY)
+    run(stack,script) must equal (true)
   }
 
 
@@ -46,13 +54,13 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterp
     val source = scala.io.Source.fromFile("src/test/scala/org/scalacoin/script/interpreter/script_valid.json")
 
       //use this to represent a single test case from script_valid.json
-      val lines =
+/*      val lines =
       """
         |
-        |[["1", "NOTIF 0 NOTIF RETURN ELSE RETURN ELSE RETURN ENDIF ELSE 0 NOTIF 1 ELSE RETURN ELSE 1 ENDIF ELSE RETURN ENDIF ADD 2 EQUAL", "P2SH,STRICTENC"]]
-      """.stripMargin
+        |[["1 0x05 0x01 0x00 0x00 0x00 0x00", "VERIFY", "P2SH,STRICTENC", "values >4 bytes can be cast to boolean"]]
+      """.stripMargin*/
 
-    //val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n" finally source.close()
+    val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n" finally source.close()
     val json = lines.parseJson
     val testCasesOpt : Seq[Option[CoreTestCase]] = json.convertTo[Seq[Option[CoreTestCase]]]
     val testCases : Seq[CoreTestCase] = testCasesOpt.flatten

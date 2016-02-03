@@ -92,16 +92,18 @@ trait ConstantInterpreter {
      * @return
      */
     @tailrec
-    def takeUntilBytesNeeded(scriptTokens : List[ScriptToken], accum : List[ScriptToken]) : (List[ScriptToken],List[ScriptToken]) = {
-      val bytesSum = accum.map(_.bytesSize).sum
-      if (bytesSum == bytesNeeded) (scriptTokens,accum)
+    def takeUntilBytesNeeded(scriptTokens : List[ScriptToken], scriptConstantAccum : ScriptConstant) : (List[ScriptToken],ScriptConstant) = {
+      val bytesSum = scriptConstantAccum.bytesSize
+      if (bytesSum == bytesNeeded) (scriptTokens,scriptConstantAccum)
       else if (bytesSum > bytesNeeded) throw new RuntimeException("We cannot have more bytes than what our script number specified")
-      else takeUntilBytesNeeded(scriptTokens.tail, scriptTokens.head :: accum)
+      else takeUntilBytesNeeded(scriptTokens.tail, ScriptConstantImpl(scriptConstantAccum.hex + scriptTokens.head.hex))
     }
 
-    val (newScript,tokensToBePushed) = takeUntilBytesNeeded(script.tail,List())
-    (tokensToBePushed ++ stack, newScript)
-
+    val (newScript,newScriptConstant) = takeUntilBytesNeeded(script.tail,ScriptConstantImpl(""))
+    //see if the new script constant can be converted into a script number
+    val scriptNumber : Option[ScriptNumber] = ScriptNumberFactory.fromHex(newScriptConstant.hex)
+    if (scriptNumber.isDefined) (scriptNumber.get :: stack, newScript)
+    else (newScriptConstant :: stack, newScript)
   }
 
   /**
