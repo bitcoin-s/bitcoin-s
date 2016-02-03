@@ -1,5 +1,6 @@
 package org.scalacoin.script.control
 
+import org.scalacoin.script.{ScriptProgramImpl, ScriptProgram}
 import org.scalacoin.script.constant._
 import org.scalacoin.util._
 import org.slf4j.LoggerFactory
@@ -13,40 +14,26 @@ trait ControlOperationsInterpreter {
 
 
   private def logger = LoggerFactory.getLogger(this.getClass())
-  /**
-   * Marks transaction as invalid if top stack value is not true.
-   * @param stack
-   * @param script
-   * @return
-   */
-  def verify(stack : List[ScriptToken], script : List[ScriptToken]) : (List[ScriptToken],List[ScriptToken],Boolean) = {
-    require(stack.size > 0, "Stack must not be empty to verify it")
-    require(script.headOption.isDefined && script.head == OP_VERIFY, "Top of script stack must be OP_VERIFY")
-    if (stack.head == ScriptTrue) (stack.tail,script.tail,true) else (stack.tail,script.tail,false)
-  }
-
 
   /**
    * If the top stack value is not 0, the statements are executed. The top stack value is removed.
-   * @param stack
-   * @param script
+   * @param program
    * @return
    */
-
-  def opIf(stack : List[ScriptToken], script : List[ScriptToken]) : (List[ScriptToken], List[ScriptToken]) = {
-    require(script.headOption.isDefined && script.head == OP_IF, "Script top was not OP_IF")
-    val binaryTree = parseBinaryTree(script)
+  def opIf(program : ScriptProgram) : ScriptProgram = {
+    require(program.script.headOption.isDefined && program.script.head == OP_IF, "Script top was not OP_IF")
+    val binaryTree = parseBinaryTree(program.script)
     logger.debug("Parsed binary tree: " + binaryTree)
-    if (stack.head != OP_0) {
+    if (program.stack.head != OP_0) {
       //if the left branch contains and OP_IF & OP_ENDIF there must be a nested OP_IF
       //remove OP_ELSE from binary tree
       val newTreeWithoutOpElse = removeFirstOpElse(binaryTree)
       val newScript = newTreeWithoutOpElse.toList
-      (stack.tail,newScript.tail)
+      ScriptProgramImpl(program.stack.tail,newScript.tail,program.transaction)
     } else {
       //remove the OP_IF
       val scriptWithoutOpIf : BinaryTree[ScriptToken] = removeFirstOpIf(binaryTree)
-      (stack.tail,scriptWithoutOpIf.toList)
+      ScriptProgramImpl(program.stack.tail,scriptWithoutOpIf.toList,program.transaction)
     }
 
   }
@@ -54,24 +41,23 @@ trait ControlOperationsInterpreter {
 
   /**
    * If the top stack value is 0, the statements are executed. The top stack value is removed.
-   * @param stack
-   * @param script
+   * @param program
    * @return
    */
-  def opNotIf(stack : List[ScriptToken], script : List[ScriptToken]) : (List[ScriptToken], List[ScriptToken]) = {
-    require(script.headOption.isDefined && script.head == OP_NOTIF, "Script top was not OP_NOTIF")
-    val binaryTree = parseBinaryTree(script)
+  def opNotIf(program : ScriptProgram) : ScriptProgram = {
+    require(program.script.headOption.isDefined && program.script.head == OP_NOTIF, "Script top was not OP_NOTIF")
+    val binaryTree = parseBinaryTree(program.script)
     logger.debug("Parsed binary tree: " + binaryTree)
-    if (stack.head != OP_0) {
+    if (program.stack.head != OP_0) {
       //remove the OP_NOTIF
       val scriptWithoutOpIf : BinaryTree[ScriptToken] = removeFirstOpIf(binaryTree)
-      (stack.tail,scriptWithoutOpIf.toList)
+      ScriptProgramImpl(program.stack.tail,scriptWithoutOpIf.toList,program.transaction)
     } else {
       //if the left branch contains and OP_NOTIF & OP_ENDIF there must be a nested OP_IF or OP_NOTIF
       //remove OP_ELSE from binary tree
       val newTreeWithoutOpElse = removeFirstOpElse(binaryTree)
       val newScript = newTreeWithoutOpElse.toList
-      (stack.tail,newScript.tail)
+      ScriptProgramImpl(program.stack.tail,newScript.tail,program.transaction)
     }
   }
   /**
@@ -80,9 +66,9 @@ trait ControlOperationsInterpreter {
    * @param script
    * @return
    */
-  def opElse(stack : List[ScriptToken], script : List[ScriptToken]) : (List[ScriptToken], List[ScriptToken]) = {
-    require(script.headOption.isDefined && script.head == OP_ELSE, "First script opt must be OP_ELSE")
-    val tree = parseBinaryTree(script)
+  def opElse(program : ScriptProgram) : ScriptProgram = {
+    require(program.script.headOption.isDefined && program.script.head == OP_ELSE, "First script opt must be OP_ELSE")
+    val tree = parseBinaryTree(program.script)
     val treeWithNextOpElseRemoved = tree match {
       case Empty => Empty
       case leaf : Leaf[ScriptToken] => leaf
@@ -98,19 +84,18 @@ trait ControlOperationsInterpreter {
         }
         else node
     }
-    (stack,treeWithNextOpElseRemoved.toList.tail)
+    ScriptProgramImpl(program.stack,treeWithNextOpElseRemoved.toList.tail,program.transaction)
   }
 
 
   /**
-   * Evaluates the OP_ENDIF operator
-   * @param stack
-   * @param script
+   * Evaluates an OP_ENDIF operator
+   * @param program
    * @return
    */
-  def opEndIf(stack : List[ScriptToken], script : List[ScriptToken]) : (List[ScriptToken], List[ScriptToken]) = {
-    require(script.headOption.isDefined && script.head == OP_ENDIF, "Script top must be OP_ENDIF")
-    (stack,script.tail)
+  def opEndIf(program : ScriptProgram) : ScriptProgram = {
+    require(program.script.headOption.isDefined && program.script.head == OP_ENDIF, "Script top must be OP_ENDIF")
+    ScriptProgramImpl(program.stack,program.script.tail,program.transaction)
   }
 
 
@@ -119,27 +104,26 @@ trait ControlOperationsInterpreter {
    * with a scriptPubKey consisting of OP_RETURN followed by exactly one pushdata op. Such outputs are provably unspendable,
    * reducing their cost to the network. Currently it is usually considered non-standard (though valid) for a transaction to
    * have more than one OP_RETURN output or an OP_RETURN output with more than one pushdata op.
-   * @param stack
-   * @param script
+   * @param program
    * @return
    */
-  def opReturn(stack : List[ScriptToken], script : List[ScriptToken]) : Boolean = {
-    require(script.headOption.isDefined && script.head == OP_RETURN)
+  def opReturn(program : ScriptProgram) : Boolean = {
+    require(program.script.headOption.isDefined && program.script.head == OP_RETURN)
     false
   }
 
+
   /**
    * Marks transaction as invalid if top stack value is not true.
-   * @param stack
-   * @param script
+   * @param program
    * @return
    */
-  def opVerify(stack : List[ScriptToken], script : List[ScriptToken]) : (List[ScriptToken],List[ScriptToken],Boolean) = {
-    require(script.headOption.isDefined && script.head == OP_VERIFY, "Script top must be OP_VERIFY")
-    require(stack.size > 0, "Stack must have at least one element on it to run OP_VERIFY")
-    if (stack.head != OP_0) {
-      (stack,script.tail,true)
-    } else (stack,script.tail,false)
+  def opVerify(program : ScriptProgram) : ScriptProgram = {
+    require(program.script.headOption.isDefined && program.script.head == OP_VERIFY, "Script top must be OP_VERIFY")
+    require(program.stack.size > 0, "Stack must have at least one element on it to run OP_VERIFY")
+    if (program.stack.head != OP_0 && program.stack.head != ScriptFalse ) {
+      ScriptProgramImpl(program.stack,program.script.tail,program.transaction)
+    } else ScriptProgramImpl(program.stack,program.script.tail,program.transaction,valid = false)
   }
 
 
