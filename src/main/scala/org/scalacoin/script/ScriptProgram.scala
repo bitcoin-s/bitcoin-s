@@ -15,6 +15,6 @@ trait ScriptProgram {
 }
 
 case class ScriptProgramImpl(stack : List[ScriptToken],script : List[ScriptToken], transaction : Transaction,
-                              altStack : List[ScriptToken] = List(), override val valid : Boolean = true) extends ScriptProgram
+                              altStack : List[ScriptToken], override val valid : Boolean = true) extends ScriptProgram
 
 

@@ -14,7 +14,7 @@ class CryptoInterpreterTest extends FlatSpec with MustMatchers with CryptoInterp
   "CryptoInterpreter" must "evaluate OP_HASH160 correctly when it is on top of the script stack" in {
 
     val script = List(OP_HASH160)
-    val program = ScriptProgramImpl(stack,script,TestUtil.transaction)
+    val program = ScriptProgramImpl(stack,script,TestUtil.transaction,List())
     val newProgram = hash160(program)
 
     newProgram.stack.head must be (ScriptConstantImpl("5238C71458E464D9FF90299ABCA4A1D7B9CB76AB".toLowerCase))
@@ -25,7 +25,7 @@ class CryptoInterpreterTest extends FlatSpec with MustMatchers with CryptoInterp
     intercept[IllegalArgumentException] {
       val stack = List()
       val script = List(OP_HASH160)
-      val program = ScriptProgramImpl(stack,script,TestUtil.transaction)
+      val program = ScriptProgramImpl(stack,script,TestUtil.transaction,List())
       hash160(program)
     }
   }
@@ -33,7 +33,7 @@ class CryptoInterpreterTest extends FlatSpec with MustMatchers with CryptoInterp
   it must "fail to evaluate OP_HASH160 when the script stack is empty" in {
     intercept[IllegalArgumentException] {
       val script = List()
-      val program = ScriptProgramImpl(stack,script,TestUtil.transaction)
+      val program = ScriptProgramImpl(stack,script,TestUtil.transaction,List())
       hash160(program)
     }
   }
@@ -52,7 +52,7 @@ class CryptoInterpreterTest extends FlatSpec with MustMatchers with CryptoInterp
   it must "evaluate a OP_SHA1 correctly" in {
     val stack = List(ScriptConstantImpl("ab"))
     val script = List(OP_SHA1)
-    val program = ScriptProgramImpl(stack,script,TestUtil.transaction)
+    val program = ScriptProgramImpl(stack,script,TestUtil.transaction,List())
     val newProgram = opSha1(program)
     newProgram.stack.head must be (ScriptConstantImpl("fe83f217d464f6fdfa5b2b1f87fe3a1a47371196"))
     newProgram.script.isEmpty must be (true)

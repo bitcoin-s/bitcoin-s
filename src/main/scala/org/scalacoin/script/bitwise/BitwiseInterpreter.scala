@@ -26,7 +26,7 @@ trait BitwiseInterpreter extends ControlOperationsInterpreter  {
       case h :: h1 :: t => if (h == h1) ScriptTrue :: t else ScriptFalse  :: t
     }
     logger.debug("New Stack: " + newStack)
-    ScriptProgramImpl(newStack,program.script.tail,program.transaction)
+    ScriptProgramImpl(newStack,program.script.tail,program.transaction, program.altStack)
   }
 
   /**
@@ -40,7 +40,8 @@ trait BitwiseInterpreter extends ControlOperationsInterpreter  {
     require(program.script.headOption.isDefined && program.script.head == OP_EQUALVERIFY, "Script operation must be OP_EQUALVERIFY")
     //first replace OP_EQUALVERIFY with OP_EQUAL and OP_VERIFY
     val simpleScript = OP_EQUAL :: OP_VERIFY :: program.script.tail
-    val newProgram: ScriptProgram = equal(ScriptProgramImpl(program.stack,simpleScript,program.transaction))
+    val newProgram: ScriptProgram = equal(ScriptProgramImpl(program.stack,
+      simpleScript,program.transaction, program.altStack))
     opVerify(newProgram)
   }
 

@@ -20,7 +20,7 @@ trait CryptoInterpreter extends ScalacoinUtil {
       case ScriptConstantImpl(x) => CryptoUtil.sha256Hash160(x)
       case _ => throw new RuntimeException("Stack top should be of type ScriptConstant to call hash160 on it")
     }
-    ScriptProgramImpl(hash :: program.stack, program.script.tail,program.transaction)
+    ScriptProgramImpl(hash :: program.stack, program.script.tail,program.transaction, program.altStack)
   }
 
   /**
@@ -82,7 +82,7 @@ trait CryptoInterpreter extends ScalacoinUtil {
 
     val constant = program.stack.head
     val hash = ScriptConstantImpl(ScalacoinUtil.encodeHex(CryptoUtil.sha1(constant.bytes)))
-    ScriptProgramImpl(hash :: program.stack.tail, program.script.tail,program.transaction)
+    ScriptProgramImpl(hash :: program.stack.tail, program.script.tail,program.transaction, program.altStack)
 
   }
 
