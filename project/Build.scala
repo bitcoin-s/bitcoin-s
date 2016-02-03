@@ -1,11 +1,11 @@
 import sbt._
 import Keys._ 
-object ScalaCoinBuild extends Build {
+object BitcoinSBuild extends Build {
 
-  val appName = "scalacoin"
+  val appName = "bitcoin-s"
   val appV = "0.0.1" 
   val scalaV = "2.11.4"
-  val organization = "org.scalacoin"
+  val organization = "org.bitcoinS"
   val slf4jV = "1.7.5"
   val appDependencies = Seq(
     "org.scalatest" % "scalatest_2.11" % "2.2.0",
@@ -17,7 +17,7 @@ object ScalaCoinBuild extends Build {
   val main = Project(appName, file(".")).enablePlugins().settings(
     version := appV,
     scalaVersion := scalaV,
-    resolvers += Resolver.sonatypeRepo("releases"),  
+    resolvers += Resolver.sonatypeRepo("releases"),
     libraryDependencies ++= appDependencies
   )
 } 
