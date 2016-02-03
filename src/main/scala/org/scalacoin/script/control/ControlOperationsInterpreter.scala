@@ -128,6 +128,20 @@ trait ControlOperationsInterpreter {
     false
   }
 
+  /**
+   * Marks transaction as invalid if top stack value is not true.
+   * @param stack
+   * @param script
+   * @return
+   */
+  def opVerify(stack : List[ScriptToken], script : List[ScriptToken]) : (List[ScriptToken],List[ScriptToken],Boolean) = {
+    require(script.headOption.isDefined && script.head == OP_VERIFY, "Script top must be OP_VERIFY")
+    require(stack.size > 0, "Stack must have at least one element on it to run OP_VERIFY")
+    if (stack.head != OP_0) {
+      (stack,script.tail,true)
+    } else (stack,script.tail,false)
+  }
+
 
   /**
    * Parses a list of script tokens into its corresponding binary tree
