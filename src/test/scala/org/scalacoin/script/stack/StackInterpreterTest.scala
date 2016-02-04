@@ -140,4 +140,15 @@ class StackInterpreterTest extends FlatSpec with MustMatchers with StackInterpre
     newProgram.script.isEmpty must be (true)
 
   }
+
+  it must "evaluate an OP_ROT correctly" in {
+    val stack = List(ScriptConstantImpl("14"), ScriptConstantImpl("15"), ScriptConstantImpl("16"))
+    val script = List(OP_ROT)
+    val program = ScriptProgramImpl(stack,script,TestUtil.transaction,List())
+    val newProgram = opRot(program)
+
+    newProgram.stack must be (List(ScriptConstantImpl("16"),ScriptConstantImpl("14"),ScriptConstantImpl("15")))
+    newProgram.script.isEmpty must be (true)
+
+  }
 }

@@ -149,7 +149,22 @@ trait StackInterpreter {
     //removes the old instance of the stack top, appends the new index to the head
     val newStack = newStackTop :: program.stack.tail.diff(List(newStackTop))
     ScriptProgramImpl(newStack,program.script.tail,program.transaction,program.altStack)
+  }
 
+  /**
+   * The top three items on the stack are rotated to the left.
+   * @param program
+   * @return
+   */
+  def opRot(program : ScriptProgram) : ScriptProgram = {
+    require(program.script.headOption.isDefined && program.script.head == OP_ROT, "Top of script stack must be OP_ROT")
+    require(program.stack.size > 2,"Stack must have at least 3 items on it for OP_ROT")
+
+    val newStack = program.stack match {
+      case h :: h1 :: h2 :: t => h2 :: h :: h1 :: t
+      case _ => throw new RuntimeException("Stack must have at least 3 items on it for OP_ROT")
+    }
+    ScriptProgramImpl(newStack,program.script.tail,program.transaction,program.altStack)
   }
 
 }
