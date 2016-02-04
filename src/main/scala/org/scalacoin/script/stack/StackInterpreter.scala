@@ -2,6 +2,7 @@ package org.scalacoin.script.stack
 
 import org.scalacoin.script.{ScriptProgramImpl, ScriptProgram}
 import org.scalacoin.script.constant._
+import org.scalacoin.util.ScalacoinUtil
 
 /**
  * Created by chris on 1/6/16.
@@ -99,8 +100,41 @@ trait StackInterpreter {
     require(program.script.headOption.isDefined && program.script.head == OP_NIP, "Top of script stack must be OP_NIP")
     require(program.stack.size > 1,"Stack must have at least two items on it for OP_NIP")
     program.stack match {
-      case h :: h1 :: t => ScriptProgramImpl(h :: t, program.script.tail, program.transaction, program.altStack)
+      case h :: _ :: t => ScriptProgramImpl(h :: t, program.script.tail, program.transaction, program.altStack)
+      case h :: t => throw new RuntimeException("Stack must have at least two items on it for OP_NIP")
+      case Nil => throw new RuntimeException("Stack must have at least two items on it for OP_NIP")
     }
+  }
+
+
+  /**
+   * Copies the second-to-top stack item to the top.
+   * @param program
+   * @return
+   */
+  def opOver(program : ScriptProgram) : ScriptProgram = {
+    require(program.script.headOption.isDefined && program.script.head == OP_OVER, "Top of script stack must be OP_OVER")
+    require(program.stack.size > 1,"Stack must have at least two items on it for OP_OVER")
+    program.stack match {
+      case _ :: h1 :: _ => ScriptProgramImpl(h1 :: program.stack, program.script.tail, program.transaction, program.altStack)
+      case h :: t => throw new RuntimeException("Stack must have at least two items on it for OP_OVER")
+      case Nil => throw new RuntimeException("Stack must have at least two items on it for OP_OVER")
+    }
+  }
+
+  /**
+   * The item n back in the stack is copied to the top.
+   * @param program
+   * @return
+   */
+  def opPick(program : ScriptProgram) : ScriptProgram = {
+    require(program.script.headOption.isDefined && program.script.head == OP_PICK, "Top of script stack must be OP_PICK")
+    require(program.stack.size > 1,"Stack must have at least two items on it for OP_PICK")
+
+    val n = ScalacoinUtil.hexToInt(program.stack.head.hex)
+    val newStackTop = program.stack.tail(n)
+    ScriptProgramImpl(newStackTop :: program.stack.tail, program.script.tail, program.transaction, program.altStack)
+
   }
 
 }

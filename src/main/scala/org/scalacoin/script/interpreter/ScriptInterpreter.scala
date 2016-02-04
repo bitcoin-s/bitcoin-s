@@ -48,6 +48,8 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
         case OP_DROP :: t => loop(opDrop(program))
         case OP_IFDUP :: t => loop(opIfDup(program))
         case OP_NIP :: t => loop(opNip(program))
+        case OP_OVER :: t => loop(opOver(program))
+        case OP_PICK :: t => loop(opPick(program))
         //arithmetic operations
         case OP_ADD :: t => loop(opAdd(program))
 
