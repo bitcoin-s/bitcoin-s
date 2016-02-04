@@ -162,4 +162,17 @@ class StackInterpreterTest extends FlatSpec with MustMatchers with StackInterpre
       ScriptConstantImpl("15"),ScriptConstantImpl("16"), ScriptConstantImpl("17")))
     newProgram.script.isEmpty must be (true)
   }
+
+  it must "evalauate an OP_2DROP correctly" in {
+    val stack = List(ScriptConstantImpl("14"), ScriptConstantImpl("15"), ScriptConstantImpl("16"),
+      ScriptConstantImpl("17"), ScriptConstantImpl("18"), ScriptConstantImpl("19"))
+    val script = List(OP_2DROP)
+    val program = ScriptProgramImpl(stack,script,TestUtil.transaction, List())
+    val newProgram = op2Drop(program)
+
+    newProgram.stack must be (List(ScriptConstantImpl("16"),
+      ScriptConstantImpl("17"), ScriptConstantImpl("18"), ScriptConstantImpl("19")))
+
+
+  }
 }
