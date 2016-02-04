@@ -185,4 +185,66 @@ class StackInterpreterTest extends FlatSpec with MustMatchers with StackInterpre
       ScriptConstantImpl("17"), ScriptConstantImpl("18"), ScriptConstantImpl("19")))
     newProgram.script.isEmpty must be (true)
   }
+
+  it must "evaluate an OP_TUCK correctly" in  {
+    val stack = List(ScriptConstantImpl("14"), ScriptConstantImpl("15"), ScriptConstantImpl("16"),
+      ScriptConstantImpl("17"), ScriptConstantImpl("18"), ScriptConstantImpl("19"))
+    val script = List(OP_TUCK)
+    val program = ScriptProgramImpl(stack,script,TestUtil.transaction, List())
+    val newProgram = opTuck(program)
+    newProgram.stack must be (List(ScriptConstantImpl("15"),ScriptConstantImpl("14"),ScriptConstantImpl("15"), ScriptConstantImpl("16"),
+      ScriptConstantImpl("17"), ScriptConstantImpl("18"), ScriptConstantImpl("19")))
+    newProgram.script.isEmpty must be (true)
+  }
+
+  it must "evaluate an OP_2DUP correctly" in  {
+    val stack = List(ScriptConstantImpl("14"), ScriptConstantImpl("15"), ScriptConstantImpl("16"),
+      ScriptConstantImpl("17"), ScriptConstantImpl("18"), ScriptConstantImpl("19"))
+    val script = List(OP_2DUP)
+    val program = ScriptProgramImpl(stack,script,TestUtil.transaction, List())
+    val newProgram = op2Dup(program)
+    newProgram.stack must be (List(ScriptConstantImpl("14"),ScriptConstantImpl("15"),
+      ScriptConstantImpl("14"),ScriptConstantImpl("15"), ScriptConstantImpl("16"),
+      ScriptConstantImpl("17"), ScriptConstantImpl("18"), ScriptConstantImpl("19")))
+    newProgram.script.isEmpty must be (true)
+  }
+
+  it must "evaluate an OP_3DUP correctly" in {
+    val stack = List(ScriptConstantImpl("14"), ScriptConstantImpl("15"), ScriptConstantImpl("16"),
+      ScriptConstantImpl("17"), ScriptConstantImpl("18"), ScriptConstantImpl("19"))
+    val script = List(OP_3DUP)
+    val program = ScriptProgramImpl(stack,script,TestUtil.transaction, List())
+    val newProgram = op3Dup(program)
+
+    newProgram.stack must be (List(ScriptConstantImpl("14"),ScriptConstantImpl("15"),ScriptConstantImpl("16"),
+      ScriptConstantImpl("14"),ScriptConstantImpl("15"), ScriptConstantImpl("16"),
+      ScriptConstantImpl("17"), ScriptConstantImpl("18"), ScriptConstantImpl("19")))
+    newProgram.script.isEmpty must be (true)
+  }
+
+  it must "evaluate an OP_2OVER correctly" in {
+    val stack = List(ScriptConstantImpl("14"), ScriptConstantImpl("15"), ScriptConstantImpl("16"),
+      ScriptConstantImpl("17"), ScriptConstantImpl("18"), ScriptConstantImpl("19"))
+    val script = List(OP_2OVER)
+    val program = ScriptProgramImpl(stack,script,TestUtil.transaction, List())
+    val newProgram = op2Over(program)
+
+    newProgram.stack must be (List(ScriptConstantImpl("16"),
+      ScriptConstantImpl("17"), ScriptConstantImpl("14"),ScriptConstantImpl("15"), ScriptConstantImpl("16"),
+      ScriptConstantImpl("17"), ScriptConstantImpl("18"), ScriptConstantImpl("19")))
+    newProgram.script.isEmpty must be (true)
+  }
+
+
+  it must "evaluate an OP_2SWAP correctly" in {
+    val stack = List(ScriptConstantImpl("14"), ScriptConstantImpl("15"), ScriptConstantImpl("16"),
+      ScriptConstantImpl("17"), ScriptConstantImpl("18"), ScriptConstantImpl("19"))
+    val script = List(OP_2SWAP)
+    val program = ScriptProgramImpl(stack,script,TestUtil.transaction, List())
+    val newProgram = op2Swap(program)
+
+    newProgram.stack must be (List(ScriptConstantImpl("16"), ScriptConstantImpl("17"),ScriptConstantImpl("14"),
+      ScriptConstantImpl("15"), ScriptConstantImpl("18"), ScriptConstantImpl("19")))
+    newProgram.script.isEmpty must be (true)
+  }
 }

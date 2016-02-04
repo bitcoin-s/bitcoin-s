@@ -209,4 +209,87 @@ trait StackInterpreter {
     ScriptProgramImpl(newStack, program.script.tail, program.transaction, program.altStack)
   }
 
+
+  /**
+   * The item at the top of the stack is copied and inserted before the second-to-top item.
+   * x1 x2 -> x2 x1 x2
+   * @param program
+   * @return
+   */
+  def opTuck(program : ScriptProgram) : ScriptProgram = {
+    require(program.script.headOption.isDefined && program.script.head == OP_TUCK, "Top of script stack must be OP_TUCK")
+    require(program.stack.size > 1,"Stack must have at least 2 items on it for OP_TUCK")
+
+    val newStack = program.stack match {
+      case h :: h1 :: t => h1 :: h :: h1 :: t
+      case _ => throw new RuntimeException("Stack must have at least 2 items on it for OP_TUCK")
+    }
+    ScriptProgramImpl(newStack, program.script.tail, program.transaction, program.altStack)
+  }
+
+
+  /**
+   * Duplicates the top two stack items.
+   * @param program
+   * @return
+   */
+  def op2Dup(program : ScriptProgram) : ScriptProgram = {
+    require(program.script.headOption.isDefined && program.script.head == OP_2DUP, "Top of script stack must be OP_2DUP")
+    require(program.stack.size > 1,"Stack must have at least 2 items on it for OP_2DUP")
+
+    val newStack = program.stack match {
+      case h :: h1 :: t => h :: h1 :: h :: h1 :: t
+      case _ => throw new RuntimeException("Stack must have at least 2 items on it for OP_2DUP")
+    }
+    ScriptProgramImpl(newStack, program.script.tail, program.transaction, program.altStack)
+  }
+
+  /**
+   * Duplicates the top three stack items.
+   * @param program
+   * @return
+   */
+  def op3Dup(program : ScriptProgram) : ScriptProgram = {
+    require(program.script.headOption.isDefined && program.script.head == OP_3DUP, "Top of script stack must be OP_3DUP")
+    require(program.stack.size > 2,"Stack must have at least 3 items on it for OP_3DUP")
+    val newStack = program.stack match {
+      case h :: h1 :: h2 :: t => h :: h1 :: h2 :: h :: h1 :: h2 :: t
+      case _ => throw new RuntimeException("Stack must have at least 3 items on it for OP_3DUP")
+    }
+    ScriptProgramImpl(newStack,program.script.tail, program.transaction, program.altStack)
+  }
+
+
+  /**
+   * Copies the pair of items two spaces back in the stack to the front.
+   * x1 x2 x3 x4 -> x1 x2 x3 x4 x1 x2
+   * @param program
+   * @return
+   */
+  def op2Over(program : ScriptProgram) : ScriptProgram = {
+    require(program.script.headOption.isDefined && program.script.head == OP_2OVER, "Top of script stack must be OP_2OVER")
+    require(program.stack.size > 3,"Stack must have at least 4 items on it for OP_2OVER")
+    val newStack = program.stack match {
+      case h :: h1 :: h2 :: h3 :: t => h2 :: h3 :: h :: h1 :: h2 :: h3 :: t
+      case _ => throw new RuntimeException("Stack must have at least 4 items on it for OP_2OVER")
+    }
+    ScriptProgramImpl(newStack,program.script.tail, program.transaction, program.altStack)
+  }
+
+  /**
+   * Swaps the top two pairs of items.
+   * @param program
+   * @return
+   */
+  def op2Swap(program : ScriptProgram) : ScriptProgram = {
+    require(program.script.headOption.isDefined && program.script.head == OP_2SWAP, "Top of script stack must be OP_2SWAP")
+    require(program.stack.size > 3,"Stack must have at least 4 items on it for OP_2SWAP")
+
+    val newStack = program.stack match {
+      case h :: h1 :: h2 :: h3 :: t  => h2 :: h3 :: h :: h1 :: t
+      case _ => throw new RuntimeException("Stack must have at least 4 items on it for OP_2SWAP")
+    }
+    ScriptProgramImpl(newStack,program.script.tail, program.transaction, program.altStack)
+  }
+
 }
