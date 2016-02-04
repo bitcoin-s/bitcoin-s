@@ -129,11 +129,26 @@ trait StackInterpreter {
    */
   def opPick(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.isDefined && program.script.head == OP_PICK, "Top of script stack must be OP_PICK")
-    require(program.stack.size > 1,"Stack must have at least two items on it for OP_PICK")
+    require(program.stack.size > 0,"Stack must have at least two items on it for OP_PICK")
 
     val n = ScalacoinUtil.hexToInt(program.stack.head.hex)
     val newStackTop = program.stack.tail(n)
     ScriptProgramImpl(newStackTop :: program.stack.tail, program.script.tail, program.transaction, program.altStack)
+  }
+
+  /**
+   * The item n back in the stack is moved to the top
+   * @param program
+   * @return
+   */
+  def opRoll(program : ScriptProgram) : ScriptProgram = {
+    require(program.script.headOption.isDefined && program.script.head == OP_ROLL, "Top of script stack must be OP_ROLL")
+    require(program.stack.size > 0,"Stack must have at least one items on it for OP_ROLL")
+    val n = ScalacoinUtil.hexToInt(program.stack.head.hex)
+    val newStackTop = program.stack.tail(n)
+    //removes the old instance of the stack top, appends the new index to the head
+    val newStack = newStackTop :: program.stack.tail.diff(List(newStackTop))
+    ScriptProgramImpl(newStack,program.script.tail,program.transaction,program.altStack)
 
   }
 
