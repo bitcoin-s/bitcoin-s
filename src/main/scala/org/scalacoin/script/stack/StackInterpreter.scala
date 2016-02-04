@@ -185,4 +185,28 @@ trait StackInterpreter {
     ScriptProgramImpl(newStack,program.script.tail,program.transaction,program.altStack)
   }
 
+  /**
+   * Removes the top two stack items.
+   * @param program
+   * @return
+   */
+  def op2Drop(program : ScriptProgram) : ScriptProgram = {
+    require(program.script.headOption.isDefined && program.script.head == OP_2DROP, "Top of script stack must be OP_2DROP")
+    require(program.stack.size > 1,"Stack must have at least 2 items on it for OP_2DROP")
+    ScriptProgramImpl(program.stack.tail.tail, program.script.tail, program.transaction, program.altStack)
+  }
+
+
+  /**
+   * The top two items on the stack are swapped.
+   * @param program
+   * @return
+   */
+  def opSwap(program : ScriptProgram) : ScriptProgram = {
+    require(program.script.headOption.isDefined && program.script.head == OP_SWAP, "Top of script stack must be OP_SWAP")
+    require(program.stack.size > 1,"Stack must have at least 2 items on it for OP_SWAP")
+    val newStack = program.stack.tail.head :: program.stack.head :: program.stack.tail.tail
+    ScriptProgramImpl(newStack, program.script, program.transaction, program.altStack)
+  }
+
 }

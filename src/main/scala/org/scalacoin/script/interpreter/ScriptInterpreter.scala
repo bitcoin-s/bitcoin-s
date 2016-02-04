@@ -53,6 +53,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
         case OP_ROLL :: t => loop(opRoll(program))
         case OP_ROT :: t => loop(opRot(program))
         case OP_2ROT :: t => loop(op2Rot(program))
+        case OP_2DROP :: t => loop(op2Drop(program))
         //arithmetic operations
         case OP_ADD :: t => loop(opAdd(program))
 
