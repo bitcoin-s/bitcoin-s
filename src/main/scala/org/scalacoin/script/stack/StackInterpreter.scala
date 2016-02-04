@@ -153,6 +153,7 @@ trait StackInterpreter {
 
   /**
    * The top three items on the stack are rotated to the left.
+   * x1 x2 x3 -> x2 x3 x1
    * @param program
    * @return
    */
@@ -163,6 +164,23 @@ trait StackInterpreter {
     val newStack = program.stack match {
       case h :: h1 :: h2 :: t => h2 :: h :: h1 :: t
       case _ => throw new RuntimeException("Stack must have at least 3 items on it for OP_ROT")
+    }
+    ScriptProgramImpl(newStack,program.script.tail,program.transaction,program.altStack)
+  }
+
+  /**
+   * The fifth and sixth items back are moved to the top of the stack.
+   * x1 x2 x3 x4 x5 x6 -> x3 x4 x5 x6 x1 x2
+   * @param program
+   * @return
+   */
+  def op2Rot(program : ScriptProgram) : ScriptProgram = {
+    require(program.script.headOption.isDefined && program.script.head == OP_2ROT, "Top of script stack must be OP_2ROT")
+    require(program.stack.size > 5,"Stack must have at least 5 items on it for OP_2ROT")
+
+    val newStack = program.stack match {
+      case h :: h1 :: h2 :: h3 :: h4 :: h5 :: t => h4 :: h5 :: h :: h1 :: h2 :: h3 ::  t
+      case _ => throw new RuntimeException("Stack must have at least 5 items on it for OP_2ROT")
     }
     ScriptProgramImpl(newStack,program.script.tail,program.transaction,program.altStack)
   }
