@@ -206,7 +206,7 @@ trait StackInterpreter {
     require(program.script.headOption.isDefined && program.script.head == OP_SWAP, "Top of script stack must be OP_SWAP")
     require(program.stack.size > 1,"Stack must have at least 2 items on it for OP_SWAP")
     val newStack = program.stack.tail.head :: program.stack.head :: program.stack.tail.tail
-    ScriptProgramImpl(newStack, program.script, program.transaction, program.altStack)
+    ScriptProgramImpl(newStack, program.script.tail, program.transaction, program.altStack)
   }
 
 }
