@@ -11,6 +11,7 @@ trait ScriptToken {
   def hex : String
   def bytes = ScalacoinUtil.decodeHex(hex)
   def bytesSize = bytes.size
+  def toInt = Integer.parseInt(hex,16)
 }
 
 trait ScriptOperation extends ScriptToken {
