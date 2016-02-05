@@ -3,6 +3,7 @@ package org.scalacoin.util
 import org.bitcoinj.core.{Base58, Utils}
 import org.scalacoin.currency.{CurrencyUnits, CurrencyUnit}
 
+import scala.collection.mutable.ArrayBuffer
 import scala.math.BigInt
 /**
  * Created by chris on 7/26/15.
@@ -39,7 +40,22 @@ trait ScalacoinUtil {
     } catch {
       case _ : Throwable => false
     }
+  }
 
+  /**
+   * Converts an int to a list of bytes
+   * @param x
+   * @return
+   */
+  def intToByteList(x : Int) : List[Byte] = {
+    //https://stackoverflow.com/questions/17870193/scala-serialize-int-to-arraybufferbyte-bit-twiddle-goes-wrong
+    val intBytes:Int = 4 // int is 4 bytes
+    val sizeByte:Short = 8
+    val buf = new ArrayBuffer[Byte](intBytes)
+    for(i <- 0 until intBytes) {
+      buf += ((x >>> (intBytes - i - 1 << 3)) & 0xFF).toByte
+    }
+    buf.toList
   }
 
   def hexToInt(hex : String) = Integer.parseInt(hex,16)

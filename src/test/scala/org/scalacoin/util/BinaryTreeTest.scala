@@ -17,14 +17,28 @@ class BinaryTreeTest extends FlatSpec with MustMatchers {
   }
 
   it must "convert a binary tree to to a list with node values" in {
-
     //val script = List(OP_IF, OP_IF, OP_1, OP_ELSE, OP_0, OP_ENDIF, OP_ELSE, OP_IF, OP_0, OP_ELSE, OP_1, OP_ENDIF, OP_ENDIF)
     val bTree : BinaryTree[ScriptToken] =
       Node[ScriptToken](OP_IF,Node(OP_IF,Leaf(OP_1),Node(OP_ELSE,Leaf(OP_0),Leaf(OP_ENDIF))),
         Node(OP_ELSE,Node(OP_IF,Leaf(OP_0), Node(OP_ELSE,Leaf(OP_1),Leaf(OP_ENDIF))),Leaf(OP_ENDIF)))
     val script = List(OP_IF, OP_IF, OP_1, OP_ELSE, OP_0, OP_ENDIF, OP_ELSE, OP_IF, OP_0, OP_ELSE, OP_1, OP_ENDIF, OP_ENDIF)
+
     bTree.toSeq.size must be (script.size)
     bTree.toSeq must be (script)
+  }
+
+  it must "convert a simple binary tree to a sequence" in {
+    val bTree = Node(1,Leaf(2), Leaf(3))
+    val seq = bTree.toSeq
+    seq must be (Seq(1,2,3))
+
+    val bTree1 = Node(1,Node(2,Empty,Empty), Node(3,Empty,Empty))
+    val seq1 = bTree1.toSeq
+    seq1 must be (List(1,2,3))
+
+    val bTree2 = Node(OP_IF,Node(OP_1,Empty,Empty), Node(OP_ELSE,Node(OP_2,Empty,Empty),Leaf(OP_ENDIF)))
+    val seq2 = bTree2.toSeq
+    seq2 must be (Seq(OP_IF,OP_1,OP_ELSE, OP_2,OP_ENDIF))
   }
 
 

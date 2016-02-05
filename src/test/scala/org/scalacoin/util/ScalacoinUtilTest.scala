@@ -27,5 +27,13 @@ class ScalacoinUtilTest extends FlatSpec with MustMatchers with ScalacoinUtil {
 
   }
 
+  it must "convert a int to a list of bytes" in {
+    val int = 0x4f0f0f0f
+    intToByteList(int) must be (List(79, 15, 15, 15))
+
+    val int2 : Int = 0x8f0f0f0f
+    intToByteList(int2) must be (List(-113, 15, 15, 15))
+  }
+
 
 }
