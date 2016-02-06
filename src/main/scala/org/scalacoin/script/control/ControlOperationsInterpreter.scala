@@ -24,7 +24,7 @@ trait ControlOperationsInterpreter {
     require(program.script.headOption.isDefined && program.script.head == OP_IF, "Script top was not OP_IF")
     val binaryTree = parseBinaryTree(program.script)
     logger.debug("Parsed binary tree: " + binaryTree)
-    if (program.stack.head != OP_0) {
+    if (program.stackTopIsTrue) {
       //if the left branch contains and OP_IF & OP_ENDIF there must be a nested OP_IF
       //remove OP_ELSE from binary tree
       val newTreeWithoutOpElse = removeFirstOpElse(binaryTree)
@@ -49,7 +49,7 @@ trait ControlOperationsInterpreter {
     require(program.script.headOption.isDefined && program.script.head == OP_NOTIF, "Script top was not OP_NOTIF")
     val binaryTree = parseBinaryTree(program.script)
     logger.debug("Parsed binary tree: " + binaryTree)
-    if (program.stack.head != OP_0) {
+    if (program.stackTopIsTrue) {
       //remove the OP_NOTIF
       val scriptWithoutOpIf : BinaryTree[ScriptToken] = removeFirstOpIf(binaryTree)
       ScriptProgramImpl(program.stack.tail,scriptWithoutOpIf.toList,
