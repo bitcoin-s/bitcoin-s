@@ -90,6 +90,7 @@ trait ScriptParser extends ScalacoinUtil {
       bytes match {
         case h :: t =>
           val op  = ScriptOperationFactory.fromByte(h).get
+          logger.debug("FOUND OP: " + op)
           val parsingHelper : ParsingHelper[Byte] = parseOperationByte(op,accum,t)
           loop(parsingHelper.tail,parsingHelper.accum)
         case Nil => accum
@@ -99,14 +100,15 @@ trait ScriptParser extends ScalacoinUtil {
   }
 
   /**
-   * Slices the amount of bytes specified in the op parameter and then creates a script constant
+   * Slices the amount of bytes specified in the bytesToPushOntoStack parameter and then creates a script constant
    * from those bytes. Returns the script constant and the byte array without the script constant
-   * @param op
-   * @param bytes
+   * @param bytesToPushOntoStack
+   * @param data
+   * @tparam T
    * @return
    */
-  private def sliceConstant[T](op : ScriptNumber, data : List[T]) : (List[T], List[T]) = {
-    val finalIndex = op.opCode
+  private def sliceConstant[T](bytesToPushOntoStack: BytesToPushOntoStack, data : List[T]) : (List[T], List[T]) = {
+    val finalIndex = bytesToPushOntoStack.opCode
     val dataConstant = data.slice(0,finalIndex)
     (dataConstant,data.slice(finalIndex,data.size))
   }
@@ -133,9 +135,9 @@ trait ScriptParser extends ScalacoinUtil {
   case class ParsingHelper[T](tail : List[T], accum : List[ScriptToken])
   /**
    * Parses an operation if the tail is a List[Byte]
-   * If the operation is a script number, it pushes the number of bytes onto the stack
-   * specified by the script number
-   * i.e. If the operation was ScriptNumber(5), it would slice 5 bytes off of the tail and
+   * If the operation is a bytesToPushOntoStack, it pushes the number of bytes onto the stack
+   * specified by the bytesToPushOntoStack
+   * i.e. If the operation was BytesToPushOntoStackImpl(5), it would slice 5 bytes off of the tail and
    * places them into a ScriptConstant and add them to the accumulator.
    * @param op
    * @param accum
@@ -144,9 +146,10 @@ trait ScriptParser extends ScalacoinUtil {
    */
   private def parseOperationByte(op : ScriptOperation, accum : List[ScriptToken], tail : List[Byte]) : ParsingHelper[Byte] = {
     op match {
-      case scriptNumber : ScriptNumberImpl =>
+      case bytesToPushOntoStack : BytesToPushOntoStack =>
+        logger.debug("Parsing operation byte: " +bytesToPushOntoStack )
         //means that we need to push x amount of bytes on to the stack
-        val (constant,newTail) = sliceConstant(scriptNumber,tail)
+        val (constant,newTail) = sliceConstant(bytesToPushOntoStack,tail)
         val scriptConstant = new ScriptConstantImpl(constant)
         ParsingHelper(newTail,scriptConstant :: accum)
 
@@ -158,9 +161,9 @@ trait ScriptParser extends ScalacoinUtil {
 
   /**
    * Parses an operation if the tail is a List[String]
-   * If the operation is a script number, it pushes the number of bytes onto the stack
-   * specified by the script number
-   * i.e. If the operation was ScriptNumber(5), it would slice 5 bytes off of the tail and
+   * If the operation is a bytesToPushOntoStack, it pushes the number of bytes onto the stack
+   * specified by the bytesToPushOntoStack
+   * i.e. If the operation was BytesToPushOntoStackImpl(5), it would slice 5 bytes off of the tail and
    * places them into a ScriptConstant and add them to the accumulator.
    * @param op
    * @param accum
@@ -169,9 +172,9 @@ trait ScriptParser extends ScalacoinUtil {
    */
   private def parseOperationString(op : ScriptOperation, accum : List[ScriptToken], tail : List[String]) : ParsingHelper[String] = {
     op match {
-      case scriptNumber : ScriptNumberImpl =>
+      case bytesToPushOntoStack : BytesToPushOntoStack =>
         //means that we need to push x amount of bytes on to the stack
-        val (constant,newTail) = sliceConstant[String](scriptNumber,tail)
+        val (constant,newTail) = sliceConstant[String](bytesToPushOntoStack,tail)
         val scriptConstant = ScriptConstantImpl(constant.mkString)
         ParsingHelper(newTail,scriptConstant :: accum)
 

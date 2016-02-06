@@ -26,7 +26,7 @@ class ArithmeticInterpreterTest extends FlatSpec with MustMatchers with Arithmet
     val program = ScriptProgramImpl(stack,script,TestUtil.transaction,List())
     val newProgram = opAdd(program)
     //0xC8 is 200 in hex
-    newProgram.stack.head must be (ScriptConstantImpl("c8"))
+    newProgram.stack.head must be (ScriptNumberImpl(200))
     newProgram.script.isEmpty must be (true)
   }
 
@@ -36,7 +36,7 @@ class ArithmeticInterpreterTest extends FlatSpec with MustMatchers with Arithmet
     val program = ScriptProgramImpl(stack,script,TestUtil.transaction,List())
     val newProgram  = opAdd(program)
     //0x65 is 101 in hex
-    newProgram.stack.head must be (ScriptConstantImpl("65"))
+    newProgram.stack.head must be (ScriptNumberImpl(101))
     newProgram.script.isEmpty must be (true)
   }
 
@@ -46,7 +46,7 @@ class ArithmeticInterpreterTest extends FlatSpec with MustMatchers with Arithmet
     val program = ScriptProgramImpl(stack,script,TestUtil.transaction,List())
     val newProgram = opAdd(program)
 
-    newProgram.stack.head must be (ScriptConstantImpl("3e7"))
+    newProgram.stack.head must be (ScriptNumberImpl(999))
     newProgram.script.isEmpty must be (true)
   }
 }

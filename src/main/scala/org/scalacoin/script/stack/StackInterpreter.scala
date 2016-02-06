@@ -51,9 +51,8 @@ trait StackInterpreter {
     val operation = program.script.head
     val stackSize = program.stack.size
 
-    val numberToPush : Option[ScriptNumber] = ScriptNumberFactory.factory(stackSize)
-    require(numberToPush.isDefined, "Stack size was to large to find in the script number factory, stack size was: " + stackSize)
-    ScriptProgramImpl(numberToPush.get :: program.stack, program.script.tail,program.transaction,program.altStack)
+    val numberToPush : ScriptNumber= if (stackSize == 0) OP_0 else ScriptNumberImpl(stackSize)
+    ScriptProgramImpl(numberToPush :: program.stack, program.script.tail,program.transaction,program.altStack)
   }
 
   /**

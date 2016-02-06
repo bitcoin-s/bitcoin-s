@@ -71,11 +71,11 @@ trait ScriptOperationFactory[T <: ScriptOperation] extends ScalacoinUtil {
 
 object ScriptOperationFactory extends ScriptOperationFactory[ScriptOperation] {
 
-  lazy val operations = StackOperationFactory.operations ++ LocktimeOperationFactory.operations ++
+  lazy val operations = Seq(OP_0,OP_1,OP_1NEGATE, OP_2,OP_3,OP_4,OP_5,OP_6,OP_7,OP_8,
+    OP_9,OP_10,OP_11,OP_12,OP_13,OP_14,OP_15,OP_16,OP_FALSE,OP_PUSHDATA1, OP_PUSHDATA2,OP_PUSHDATA4,OP_TRUE) ++ StackOperationFactory.operations ++ LocktimeOperationFactory.operations ++
     CryptoOperationFactory.operations ++ ControlOperationsFactory.operations ++ BitwiseOperationsFactory.operations ++
-    ArithmeticOperationsFactory.operations ++  ScriptNumberFactory.operations ++ SpliceOperationsFactory.operations ++
-    ReservedOperationFactory.operations ++
-    Seq(OP_0,OP_1,OP_1NEGATE, OP_2,OP_3,OP_4,OP_5,OP_6,OP_7,OP_8,
-    OP_9,OP_10,OP_11,OP_12,OP_13,OP_14,OP_15,OP_16,OP_FALSE,OP_PUSHDATA1, OP_PUSHDATA2,OP_PUSHDATA4,OP_TRUE)
+    ArithmeticOperationsFactory.operations ++  BytesToPushOntoStackFactory.operations ++ SpliceOperationsFactory.operations ++
+    ReservedOperationFactory.operations
+
 
 }

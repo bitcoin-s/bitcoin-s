@@ -2,7 +2,7 @@ package org.scalacoin.marshallers.script
 
 import org.scalacoin.script.arithmetic.OP_ADD
 import org.scalacoin.script.bitwise.OP_EQUAL
-import org.scalacoin.script.constant.{ScriptNumberImpl, OP_1, OP_1NEGATE, ScriptConstantImpl}
+import org.scalacoin.script.constant._
 import org.scalacoin.script.stack.OP_PICK
 import org.scalacoin.util.{ScalacoinUtil, TestUtil}
 import org.scalatest.{FlatSpec, MustMatchers}
@@ -13,7 +13,11 @@ import org.scalatest.{FlatSpec, MustMatchers}
 class ScriptParserTest extends FlatSpec with MustMatchers with ScriptParser with ScalacoinUtil {
 
 
-  "ScriptParser" must "parse a pay-to-pubkey-hash output script" in {
+
+  "ScriptParser" must "parse 0x00 to a OP_0" in {
+    parse(List(0.toByte)) must be (List(OP_0))
+  }
+  it must "parse a pay-to-pubkey-hash output script" in {
     val parsedOutput = parse(TestUtil.p2pkhOutputScriptNotParsedAsm)
     parsedOutput must be (TestUtil.p2pkhOutputScriptAsm)
   }

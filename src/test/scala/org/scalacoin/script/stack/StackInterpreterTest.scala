@@ -2,7 +2,7 @@ package org.scalacoin.script.stack
 
 import org.scalacoin.script.ScriptProgramImpl
 import org.scalacoin.script.bitwise.OP_EQUAL
-import org.scalacoin.script.constant.{OP_1, OP_0, ScriptConstantImpl}
+import org.scalacoin.script.constant.{ScriptNumberImpl, OP_1, OP_0, ScriptConstantImpl}
 import org.scalacoin.util.{TestUtil, ScalacoinUtil}
 import org.scalatest.{FlatSpec, MustMatchers}
 
@@ -55,7 +55,7 @@ class StackInterpreterTest extends FlatSpec with MustMatchers with StackInterpre
     val script = List(OP_DEPTH)
     val program = ScriptProgramImpl(stack,script,TestUtil.transaction,List())
     val newProgram = opDepth(program)
-    newProgram.stack.head.hex must be (stack.size.toHexString+"0")
+    newProgram.stack.head must be (OP_0)
   }
 
   it must "evaluate an OP_TOALTSTACK operator correctly" in {

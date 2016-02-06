@@ -82,15 +82,15 @@ trait ConstantInterpreter {
    * @return
    */
   def pushScriptNumberBytesToStack(program : ScriptProgram) : ScriptProgram = {
-    require(program.script.headOption.isDefined && program.script.head.isInstanceOf[ScriptNumber], "Top of script must be a script number")
+    require(program.script.headOption.isDefined && program.script.head.isInstanceOf[BytesToPushOntoStack], "Top of script must be a script number")
     require(program.script.size > 1, "Script size must be atleast to to push constants onto the stack")
     val bytesNeeded = program.script.head match {
-      case scriptNumber : ScriptNumber => scriptNumber.opCode
+      case scriptNumber : BytesToPushOntoStack => scriptNumber.opCode
     }
     /**
      * Parses the script tokens that need to be pushed onto our stack
-     * @param scriptToken
-     * @param accum
+     * @param scriptTokens
+     * @param scriptConstantAccum
      * @return
      */
     @tailrec
@@ -103,7 +103,9 @@ trait ConstantInterpreter {
 
     val (newScript,newScriptConstant) = takeUntilBytesNeeded(program.script.tail,ScriptConstantImpl(""))
     //see if the new script constant can be converted into a script number
-    val scriptNumber : Option[ScriptNumber] = ScriptNumberFactory.fromHex(newScriptConstant.hex)
+    val bytesToPushOntoStack : Option[BytesToPushOntoStack] = BytesToPushOntoStackFactory.fromHex(newScriptConstant.hex)
+    val scriptNumber = if(bytesToPushOntoStack.isDefined) Some(ScriptNumberImpl(bytesToPushOntoStack.get.opCode)) else None
+
     if (scriptNumber.isDefined) ScriptProgramImpl(
       scriptNumber.get :: program.stack, newScript,program.transaction, program.altStack)
     else ScriptProgramImpl(newScriptConstant :: program.stack, newScript, program.transaction, program.altStack)
@@ -118,7 +120,11 @@ trait ConstantInterpreter {
    */
   private def opPushData(stack : List[ScriptToken], script : List[ScriptToken],numberOfBytes : Int) : (List[ScriptToken],List[ScriptToken]) = {
     val tokensToBePushed : List[ScriptToken] = script.slice(0,numberOfBytes)
-    val newStack = tokensToBePushed.reverse ++ stack
+    val newStackWithByteToPush = tokensToBePushed.reverse ++ stack
+    val newStack = newStackWithByteToPush.map {
+      case b : BytesToPushOntoStackImpl => ScriptNumberImpl(b.opCode)
+      case x => x
+    }
     val newScript = script.slice(numberOfBytes,script.size)
     (newStack,newScript)
   }
