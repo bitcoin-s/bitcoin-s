@@ -72,4 +72,18 @@ class BitwiseInterpreterTest extends FlatSpec with MustMatchers with BitwiseInte
     }
   }
 
+
+  it must "evaluate a ScriptNumber & ScriptConstant to true if they are the same" in {
+    val stack = List(ScriptNumberImpl(2), ScriptConstantImpl("2"))
+    val script = List(OP_EQUAL)
+    val program = ScriptProgramImpl(stack,script,TestUtil.transaction,List())
+    opEqual(program).stack.head must be (ScriptTrue)
+
+    val stack1 = List( ScriptConstantImpl("2"),ScriptNumberImpl(2))
+    val script1 = List(OP_EQUAL)
+    val program1 = ScriptProgramImpl(stack1,script1,TestUtil.transaction,List())
+    opEqual(program1).stack.head must be (ScriptTrue)
+
+  }
+
 }
