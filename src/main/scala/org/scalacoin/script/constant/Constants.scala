@@ -11,7 +11,7 @@ trait ScriptToken {
   def hex : String
   def bytes = ScalacoinUtil.decodeHex(hex)
   def bytesSize = bytes.size
-  def toInt = Integer.parseInt(hex,16)
+  def toLong = ScalacoinUtil.hexToLong(hex)
 }
 
 trait ScriptOperation extends ScriptToken {
@@ -23,7 +23,11 @@ sealed trait ScriptConstant extends ScriptToken
 
 sealed trait ScriptNumber extends ScriptConstant {
   def num : Long
-  override def hex = if (num.toHexString.size == 1) "0" + num.toHexString else num.toHexString
+  override def hex = {
+    if (num.toHexString.size == 1) "0" + num.toHexString
+    else if (num < 0) num.abs.toHexString
+    else num.toHexString
+  }
   def + (that : ScriptNumber) : ScriptNumber = ScriptNumberImpl(num + that.num)
   def - (that : ScriptNumber) : ScriptNumber = ScriptNumberImpl(num - that.num)
   def * (that : ScriptNumber) : ScriptNumber = ScriptNumberImpl(num * that.num)

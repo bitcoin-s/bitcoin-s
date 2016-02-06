@@ -1,7 +1,7 @@
 package org.scalacoin.script.splice
 
 import org.scalacoin.script.{ScriptOperationFactory, ScriptProgramImpl, ScriptProgram}
-import org.scalacoin.script.constant.{ScriptNumberImpl, OP_0, ScriptConstantImpl}
+import org.scalacoin.script.constant._
 import org.scalacoin.util.ScalacoinUtil
 import Math._
 /**
@@ -17,21 +17,26 @@ trait SpliceInterpreter {
   def opSize(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.isDefined && program.script.head == OP_SIZE, "Script top must be OP_SIZE")
     require(program.stack.size > 0, "Must have at least 1 element on the stack for OP_SIZE")
-/*    val stringSize = program.stack.head.bytes.size
-    val scriptNumber = if (stringSize == 0) OP_0 else ScriptNumberImpl(stringSize)
-    ScriptProgramImpl(scriptNumber :: program.stack, program.script.tail, program.transaction,program.altStack)*/
     if (program.stack.head == OP_0) {
       ScriptProgramImpl(OP_0 :: program.stack, program.script.tail, program.transaction, program.altStack)
     } else {
-      val stringSize = ScalacoinUtil.hexToLong(program.stack.head.hex)
-      val intSize = bytes(stringSize)
-      val scriptNumber = ScriptNumberImpl(intSize)
+      val scriptNumber = program.stack.head match {
+        case s : ScriptNumber =>
+          val intSize = bytes(program.stack.head.toLong)
+          ScriptNumberImpl(intSize)
+        case x : ScriptToken => ScriptNumberImpl(x.hex.size / 2)
+      }
       ScriptProgramImpl(scriptNumber :: program.stack, program.script.tail, program.transaction,program.altStack)
     }
 
   }
 
-  def bytes(x: Long): Int = {
+  /**
+   * Finds how many bytes are in a number
+   * @param x
+   * @return
+   */
+  private def bytes(x: Long): Int = {
     val posx = x.abs
     if (posx == 0L) 0
     else (64 - java.lang.Long.numberOfLeadingZeros(posx)) / 8 + 1
