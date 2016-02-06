@@ -50,18 +50,24 @@ trait ScriptParser extends ScalacoinUtil {
           val op = ScriptOperationFactory.fromString(h).get
           val parsingHelper : ParsingHelper[String] = parseOperationString(op,accum,t)
           loop(parsingHelper.tail,parsingHelper.accum)
-        case h :: t if (tryParsingInt(h)) =>
+        case h :: t if (tryParsingLong(h)) =>
           //convert the string to int, then convert to hex
-          val int = h.toInt
-          loop(t, ScriptConstantImpl(int.toHexString) :: accum)
+          loop(t, ScriptNumberImpl(h.toLong) :: accum)
         case h :: t => loop(t, ScriptConstantImpl(h) :: accum)
         case Nil => accum
       }
     }
 
 
-    //if the given string is hex, it is pretty straight forward to parse it
-    if (ScalacoinUtil.isHex(str)) {
+
+
+    if (tryParsingLong(str)) {
+      //for the case when there is just a single decimal constant
+      //i.e. "8388607"
+      List(ScriptNumberImpl(str.toLong))
+    }
+    else if (ScalacoinUtil.isHex(str)) {
+      //if the given string is hex, it is pretty straight forward to parse it
       //convert the hex string to a byte array and parse it
       val bytes = ScalacoinUtil.decodeHex(str)
       parse(bytes)
@@ -90,7 +96,6 @@ trait ScriptParser extends ScalacoinUtil {
       bytes match {
         case h :: t =>
           val op  = ScriptOperationFactory.fromByte(h).get
-          logger.debug("FOUND OP: " + op)
           val parsingHelper : ParsingHelper[Byte] = parseOperationByte(op,accum,t)
           loop(parsingHelper.tail,parsingHelper.accum)
         case Nil => accum
@@ -190,7 +195,7 @@ trait ScriptParser extends ScalacoinUtil {
    * @param str
    * @return
    */
-  private def tryParsingInt(str : String) = try { str.toInt; true} catch { case _ : Throwable => false}
+  private def tryParsingLong(str : String) = try { str.toLong; true} catch { case _ : Throwable => false}
 }
 
 object ScriptParser extends ScriptParser

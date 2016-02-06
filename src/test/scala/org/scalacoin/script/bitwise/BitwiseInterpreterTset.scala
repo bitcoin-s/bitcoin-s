@@ -1,7 +1,7 @@
 package org.scalacoin.script.bitwise
 
 import org.scalacoin.script.ScriptProgramImpl
-import org.scalacoin.script.constant.{ScriptNumberImpl, ScriptTrue, ScriptConstantImpl}
+import org.scalacoin.script.constant.{OP_0, ScriptNumberImpl, ScriptTrue, ScriptConstantImpl}
 import org.scalacoin.util.TestUtil
 import org.scalatest.{MustMatchers, FlatSpec}
 
@@ -83,7 +83,13 @@ class BitwiseInterpreterTest extends FlatSpec with MustMatchers with BitwiseInte
     val script1 = List(OP_EQUAL)
     val program1 = ScriptProgramImpl(stack1,script1,TestUtil.transaction,List())
     opEqual(program1).stack.head must be (ScriptTrue)
+  }
 
+  it must "evaluate an OP_0 and ScriptNumberImpl(0) to equal" in {
+    val stack = List(OP_0, ScriptNumberImpl(0))
+    val script = List(OP_EQUAL)
+    val program = ScriptProgramImpl(stack,script,TestUtil.transaction,List())
+    opEqual(program).stack.head must be (ScriptTrue)
   }
 
 }

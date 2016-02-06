@@ -23,7 +23,7 @@ trait SpliceInterpreter {
     if (program.stack.head == OP_0) {
       ScriptProgramImpl(OP_0 :: program.stack, program.script.tail, program.transaction, program.altStack)
     } else {
-      val stringSize = ScalacoinUtil.hexToInt(program.stack.head.hex)
+      val stringSize = ScalacoinUtil.hexToLong(program.stack.head.hex)
       val intSize = bytes(stringSize)
       val scriptNumber = ScriptNumberImpl(intSize)
       ScriptProgramImpl(scriptNumber :: program.stack, program.script.tail, program.transaction,program.altStack)
@@ -31,8 +31,9 @@ trait SpliceInterpreter {
 
   }
 
-  def bytes(x: Double): Int = {
-    val y = if (x >= 0) x + 1 else -x
-    ceil((log(y)/log(2) + 1)/8).toInt
+  def bytes(x: Long): Int = {
+    val posx = x.abs
+    if (posx == 0L) 0
+    else (64 - java.lang.Long.numberOfLeadingZeros(posx)) / 8 + 1
   }
 }

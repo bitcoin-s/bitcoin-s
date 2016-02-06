@@ -58,7 +58,7 @@ trait ScalacoinUtil {
     buf.toList
   }
 
-  def hexToInt(hex : String) = Integer.parseInt(hex,16)
+  def hexToLong(hex : String) : Long = java.lang.Long.parseLong(hex,16)
 
   def decodeBase58(base58 : String) : List[Byte] = Base58.decode(base58).toList
 

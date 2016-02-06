@@ -80,6 +80,8 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
           if (scriptNumberOp == OP_0) loop(ScriptProgramImpl(OP_0 :: program.stack, t,program.transaction,program.altStack))
           else loop(ScriptProgramImpl(scriptNumberOp.scriptNumber :: program.stack, t,program.transaction,program.altStack))
         case (bytesToPushOntoStack : BytesToPushOntoStack) :: t => loop(pushScriptNumberBytesToStack(program))
+        case (scriptNumber : ScriptNumber) :: t =>
+          loop(ScriptProgramImpl(scriptNumber :: program.stack, t, program.transaction, program.altStack))
         case OP_PUSHDATA1 :: t => loop(opPushData1(program))
         case OP_PUSHDATA2 :: t => loop(opPushData2(program))
         case OP_PUSHDATA4 :: t => loop(opPushData4(program))
