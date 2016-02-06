@@ -1,7 +1,7 @@
 package org.scalacoin.script.arithmetic
 
 import org.scalacoin.script.{ScriptProgramImpl, ScriptProgram}
-import org.scalacoin.script.constant.{ScriptNumber, ScriptNumberImpl, ScriptConstantImpl, ScriptToken}
+import org.scalacoin.script.constant._
 
 /**
  * Created by chris on 1/25/16.
@@ -86,6 +86,11 @@ trait ArithmeticInterpreter {
       program.script.tail, program.transaction, program.altStack)
   }
 
+  /**
+   * Takes the absolute value of the stack top
+   * @param program
+   * @return
+   */
   def opAbs(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.isDefined && program.script.head == OP_ABS, "Script top must be OP_ABS")
     require(program.stack.size > 0, "Stack size must be 1 or more perform an OP_ABS")
@@ -97,6 +102,89 @@ trait ArithmeticInterpreter {
       program.script.tail, program.transaction, program.altStack)
   }
 
+  /**
+   * Negates the stack top
+   * @param program
+   * @return
+   */
+  def opNegate(program : ScriptProgram) : ScriptProgram = {
+    require(program.script.headOption.isDefined && program.script.head == OP_NEGATE, "Script top must be OP_NEGATE")
+    require(program.stack.size > 0, "Stack size must be 1 or more perform an OP_NEGATE")
+    val newStackTop = program.stack.head match {
+      case s : ScriptNumber => ScriptNumberImpl(-s.num)
+      case x => throw new RuntimeException("Stack must be script number to perform OP_ABS, stack top was: " + x)
+    }
+    ScriptProgramImpl(newStackTop :: program.stack.tail,
+      program.script.tail, program.transaction, program.altStack)
+  }
+
+  /**
+   * If the input is 0 or 1, it is flipped. Otherwise the output will be 0.
+   * @param program
+   * @return
+   */
+  def opNot(program : ScriptProgram) : ScriptProgram = {
+    require(program.script.headOption.isDefined && program.script.head == OP_NOT, "Script top must be OP_NOT")
+    require(program.stack.size > 0, "Stack size must be 1 or more perform an OP_NOT")
+    val newStackTop = program.stack.head match {
+      case OP_0 => OP_1
+      case OP_1 => OP_0
+      case ScriptNumberImpl(0) => OP_1
+      case ScriptNumberImpl(1) => OP_0
+      case _ => OP_0
+    }
+    ScriptProgramImpl(newStackTop :: program.stack.tail,
+      program.script.tail, program.transaction, program.altStack)
+  }
+
+  /**
+   * Returns 0 if the input is 0. 1 otherwise.
+   * @param program
+   * @return
+   */
+  def op0NotEqual(program : ScriptProgram) : ScriptProgram = {
+    require(program.script.headOption.isDefined && program.script.head == OP_0NOTEQUAL, "Script top must be OP_0NOTEQUAL")
+    require(program.stack.size > 0, "Stack size must be 1 or more perform an OP_0NOTEQUAL")
+    val newStackTop = program.stack.head match {
+      case OP_0 => OP_0
+      case ScriptNumberImpl(0) => OP_0
+      case _ => OP_1
+    }
+    ScriptProgramImpl(newStackTop :: program.stack.tail,
+      program.script.tail, program.transaction, program.altStack)
+  }
+
+
+  /**
+   * 	If both a and b are not 0, the output is 1. Otherwise 0.
+   * @param program
+   * @return
+   */
+  def opBoolAnd(program : ScriptProgram) : ScriptProgram = {
+    require(program.script.headOption.isDefined && program.script.head == OP_BOOLAND, "Script top must be OP_BOOLAND")
+    require(program.stack.size > 1, "Stack size must be 2 or more perform an OP_BOOLAND")
+    val b = program.stack.head
+    val a = program.stack.tail.head
+    val newStackTop = if ( b == a && (a == ScriptNumberImpl(0) || a == OP_0)) OP_1 else OP_0
+    ScriptProgramImpl(newStackTop :: program.stack.tail,
+      program.script.tail, program.transaction, program.altStack)
+
+  }
+
+  /**
+   * If a or b is not 0, the output is 1. Otherwise 0.
+   * @param program
+   * @return
+   */
+  def opBoolOr(program : ScriptProgram) : ScriptProgram = {
+    require(program.script.headOption.isDefined && program.script.head == OP_BOOLOR, "Script top must be OP_BOOLOR")
+    require(program.stack.size > 1, "Stack size must be 2 or more perform an OP_BOOLOR")
+    val b = program.stack.head
+    val a = program.stack.tail.head
+    val newStackTop = if (a == b && (a == ScriptNumberImpl(0) || a == OP_0)) OP_0 else OP_1
+    ScriptProgramImpl(newStackTop :: program.stack.tail,
+      program.script.tail, program.transaction, program.altStack)
+  }
   /**
    * Wraps a scala number into a script token for the script language
    * @param num
