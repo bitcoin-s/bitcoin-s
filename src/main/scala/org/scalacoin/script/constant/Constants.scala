@@ -31,6 +31,11 @@ sealed trait ScriptNumber extends ScriptConstant {
   def + (that : ScriptNumber) : ScriptNumber = ScriptNumberImpl(num + that.num)
   def - (that : ScriptNumber) : ScriptNumber = ScriptNumberImpl(num - that.num)
   def * (that : ScriptNumber) : ScriptNumber = ScriptNumberImpl(num * that.num)
+
+  def < (that : ScriptNumber) : Boolean = num < that.num
+  def <= (that : ScriptNumber) : Boolean = num <= that.num
+  def > (that : ScriptNumber) : Boolean = num > that.num
+  def >= (that : ScriptNumber) : Boolean = num >= that.num
 }
 
 case class ScriptNumberImpl(num : Long) extends ScriptNumber

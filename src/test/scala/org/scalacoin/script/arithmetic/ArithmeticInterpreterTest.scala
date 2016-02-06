@@ -238,5 +238,85 @@ class ArithmeticInterpreterTest extends FlatSpec with MustMatchers with Arithmet
     newProgram.script.isEmpty must be (true)
   }
 
+  it must "evaluate an OP_NUMEQUAL correctly" in {
+    val stack = List(OP_0, ScriptNumberImpl(0))
+    val script = List(OP_NUMEQUAL)
+    val program = ScriptProgramImpl(stack,script,TestUtil.transaction,List())
+    val newProgram = opNumEqual(program)
 
+    newProgram.stack.head must be (OP_1)
+    newProgram.script.isEmpty must be (true)
+  }
+
+  it must "evaluate an OP_NUMNOTEQUAL for two numbers that are the same" in {
+    val stack = List(OP_0, ScriptNumberImpl(0))
+    val script = List(OP_NUMNOTEQUAL)
+    val program = ScriptProgramImpl(stack,script,TestUtil.transaction,List())
+    val newProgram = opNumNotEqual(program)
+
+    newProgram.stack.head must be (OP_0)
+    newProgram.script.isEmpty must be (true)
+  }
+
+  it must "evaluate an OP_NUMNOTEQUAL for two numbers that are not the same" in {
+    val stack = List(OP_0, ScriptNumberImpl(1))
+    val script = List(OP_NUMNOTEQUAL)
+    val program = ScriptProgramImpl(stack,script,TestUtil.transaction,List())
+    val newProgram = opNumNotEqual(program)
+
+    newProgram.stack.head must be (OP_1)
+    newProgram.script.isEmpty must be (true)
+  }
+
+  it must "evaluate an OP_LESSTHAN correctly" in  {
+    val stack = List(OP_0, ScriptNumberImpl(1))
+    val script = List(OP_LESSTHAN)
+    val program = ScriptProgramImpl(stack,script,TestUtil.transaction,List())
+    val newProgram = opLessThan(program)
+
+    newProgram.stack.head must be (OP_0)
+    newProgram.script.isEmpty must be (true)
+
+    val stack1 = List(OP_0, ScriptNumberImpl(0))
+    val script1 = List(OP_LESSTHAN)
+    val program1 = ScriptProgramImpl(stack1,script1,TestUtil.transaction,List())
+    val newProgram1 = opLessThan(program1)
+
+    newProgram1.stack.head must be (OP_0)
+    newProgram1.script.isEmpty must be (true)
+
+    val stack2 = List(OP_1, ScriptNumberImpl(0))
+    val script2 = List(OP_LESSTHAN)
+    val program2 = ScriptProgramImpl(stack2,script2,TestUtil.transaction,List())
+    val newProgram2 = opLessThan(program2)
+
+    newProgram2.stack.head must be (OP_1)
+    newProgram2.script.isEmpty must be (true)
+  }
+
+  it must "evaluate an OP_GREATERTHAN correctly" in  {
+    val stack = List(OP_0, ScriptNumberImpl(1))
+    val script = List(OP_GREATERTHAN)
+    val program = ScriptProgramImpl(stack,script,TestUtil.transaction,List())
+    val newProgram = opGreaterThan(program)
+
+    newProgram.stack.head must be (OP_1)
+    newProgram.script.isEmpty must be (true)
+
+    val stack1 = List(OP_0, ScriptNumberImpl(0))
+    val script1 = List(OP_GREATERTHAN)
+    val program1 = ScriptProgramImpl(stack1,script1,TestUtil.transaction,List())
+    val newProgram1 = opGreaterThan(program1)
+
+    newProgram1.stack.head must be (OP_0)
+    newProgram1.script.isEmpty must be (true)
+
+    val stack2 = List(OP_1, ScriptNumberImpl(0))
+    val script2 = List(OP_GREATERTHAN)
+    val program2 = ScriptProgramImpl(stack2,script2,TestUtil.transaction,List())
+    val newProgram2 = opGreaterThan(program2)
+
+    newProgram2.stack.head must be (OP_0)
+    newProgram2.script.isEmpty must be (true)
+  }
 }

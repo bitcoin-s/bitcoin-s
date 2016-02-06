@@ -73,7 +73,13 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
         case OP_0NOTEQUAL :: t => loop(op0NotEqual(program))
         case OP_BOOLAND :: t => loop(opBoolAnd(program))
         case OP_BOOLOR :: t => loop(opBoolOr(program))
-          
+        case OP_NUMEQUAL :: t => loop(opNumEqual(program))
+        case OP_NUMEQUALVERIFY :: t => loop(opNumEqualVerify(program))
+        case OP_NUMNOTEQUAL :: t => loop(opNumNotEqual(program))
+        case OP_LESSTHAN :: t => loop(opLessThan(program))
+        case OP_GREATERTHAN :: t => loop(opGreaterThan(program))
+        case OP_LESSTHANOREQUAL :: t => loop(opLessThanOrEqual(program))
+        case OP_GREATERTHANOREQUAL :: t => loop(opGreaterThanOrEqual(program))
         //bitwise operations
         case OP_EQUAL :: t => {
           val newProgram = opEqual(program)
