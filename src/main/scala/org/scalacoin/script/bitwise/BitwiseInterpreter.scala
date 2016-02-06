@@ -35,6 +35,8 @@ trait BitwiseInterpreter extends ControlOperationsInterpreter  {
       case (ScriptNumberImpl(x), ScriptConstantImpl(y)) => x == ScalacoinUtil.hexToLong(y)
       case (OP_0, x) => OP_0.hex == x.hex
       case (x, OP_0) => x.hex == OP_0.hex
+      case (OP_1,x) => OP_1.scriptNumber == x
+      case (x,OP_1) => x == OP_1.scriptNumber
       case _ => h == h1
     }
 
