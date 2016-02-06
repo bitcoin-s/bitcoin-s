@@ -8,18 +8,18 @@ import org.scalacoin.script.constant.{ScriptNumber, ScriptNumberImpl, ScriptCons
  */
 trait ArithmeticInterpreter {
 
+
   /**
-   * 	a is added to b.
-   * @param stack
-   * @param script
+   * a is added to b
+   * @param program
    * @return
    */
   def opAdd(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.isDefined && program.script.head == OP_ADD, "Script top must be OP_ADD")
     require(program.stack.size > 1, "Stack size must be 2 or more perform an OP_ADD")
 
-    val b : Int  = intFromScriptToken(program.stack.head)
-    val a : Int = intFromScriptToken(program.stack(1))
+    val b  = numFromScriptToken(program.stack.head)
+    val a = numFromScriptToken(program.stack(1))
 
     val result = numberToScriptToken(a + b)
     ScriptProgramImpl(result :: program.stack.slice(2,program.stack.size),
@@ -32,9 +32,8 @@ trait ArithmeticInterpreter {
    * @param num
    * @return
    */
-  private def numberToScriptToken(num : Int) : ScriptToken = {
-    if (num < 76) ScriptNumberImpl(num)
-    else ScriptConstantImpl(num.toHexString)
+  private def numberToScriptToken(num : Long) : ScriptToken = {
+    ScriptNumberImpl(num)
   }
 
 
@@ -43,8 +42,8 @@ trait ArithmeticInterpreter {
    * @param token
    * @return
    */
-  private def intFromScriptToken(token : ScriptToken) : Int = token match {
-    case x : ScriptNumber => x.opCode
+  private def numFromScriptToken(token : ScriptToken) : Long = token match {
+    case x : ScriptNumber => x.num
     case x : ScriptConstantImpl => Integer.parseInt(x.hex,16)
   }
 

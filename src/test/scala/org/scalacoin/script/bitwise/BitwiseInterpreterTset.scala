@@ -1,7 +1,7 @@
 package org.scalacoin.script.bitwise
 
 import org.scalacoin.script.ScriptProgramImpl
-import org.scalacoin.script.constant.{ScriptTrue, ScriptConstantImpl}
+import org.scalacoin.script.constant.{ScriptNumberImpl, ScriptTrue, ScriptConstantImpl}
 import org.scalacoin.util.TestUtil
 import org.scalatest.{MustMatchers, FlatSpec}
 
@@ -15,20 +15,31 @@ class BitwiseInterpreterTest extends FlatSpec with MustMatchers with BitwiseInte
     val stack = List(pubKeyHash, pubKeyHash)
     val script = List(OP_EQUAL)
     val program = ScriptProgramImpl(stack,script,TestUtil.transaction,List())
-    val newProgram = equal(program)
+    val newProgram = opEqual(program)
     newProgram.stack.head must be (ScriptTrue)
+  }
+
+  it must "evaluate evaluate a ScriptNumber and ScriptConstant to true if they convert to the same number" in  {
+    val stack = List(ScriptConstantImpl("3e7"), ScriptNumberImpl(999))
+    val script = List(OP_EQUAL)
+    val program = ScriptProgramImpl(stack,script,TestUtil.transaction, List())
+    val newProgram = opEqual(program)
+
+    newProgram.stack.head must be (ScriptTrue)
+    newProgram.script.isEmpty must be (true)
+
   }
 
   it must "throw an exception for OP_EQUAL when we don't have enough items on the stack" in {
     intercept[IllegalArgumentException] {
-      equal(ScriptProgramImpl(List(), List(OP_EQUAL),TestUtil.transaction,List()))
+      opEqual(ScriptProgramImpl(List(), List(OP_EQUAL),TestUtil.transaction,List()))
     }
   }
 
 
   it must "throw an exception for OP_EQUAL when we don't have enough items on the script stack" in {
     intercept[IllegalArgumentException] {
-      equal(ScriptProgramImpl(List(pubKeyHash), List(),TestUtil.transaction,List()))
+      opEqual(ScriptProgramImpl(List(pubKeyHash), List(),TestUtil.transaction,List()))
     }
   }
 

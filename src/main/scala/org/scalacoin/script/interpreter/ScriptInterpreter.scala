@@ -66,7 +66,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
 
         //bitwise operations
         case OP_EQUAL :: t => {
-          val newProgram = equal(program)
+          val newProgram = opEqual(program)
           if (newProgram.stack.head == ScriptTrue && newProgram.script.size == 0) true
           else if (newProgram.stack.head == ScriptFalse && newProgram.script.size == 0) false
           else loop(newProgram)
@@ -77,8 +77,9 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
         case ScriptConstantImpl(x) :: t if x == "1" => throw new RuntimeException("Not implemented yet")
         case ScriptConstantImpl(x) :: t if x == "0" => throw new RuntimeException("Not implemented yet")
         case (scriptNumberOp : ScriptNumberOperation) :: t =>
-          loop(ScriptProgramImpl(scriptNumberOp.scriptNumber :: program.stack, t,program.transaction,program.altStack))
-        case (scriptNumber : ScriptNumber) :: t => loop(pushScriptNumberBytesToStack(program))
+          if (scriptNumberOp == OP_0) loop(ScriptProgramImpl(OP_0 :: program.stack, t,program.transaction,program.altStack))
+          else loop(ScriptProgramImpl(scriptNumberOp.scriptNumber :: program.stack, t,program.transaction,program.altStack))
+        case (bytesToPushOntoStack : BytesToPushOntoStack) :: t => loop(pushScriptNumberBytesToStack(program))
         case OP_PUSHDATA1 :: t => loop(opPushData1(program))
         case OP_PUSHDATA2 :: t => loop(opPushData2(program))
         case OP_PUSHDATA4 :: t => loop(opPushData4(program))

@@ -33,7 +33,7 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterp
 
   it must "evaluate a script that asks to push 20 bytes onto the stack correctly" in {
     val stack = List(ScriptConstantImpl("68ca4fec736264c13b859bac43d5173df6871682"))
-    val script = List(ScriptNumberImpl(20), ScriptConstantImpl("68ca4fec736264c13b859bac43d5173df6871682"), OP_EQUAL)
+    val script = List(BytesToPushOntoStackImpl(20), ScriptConstantImpl("68ca4fec736264c13b859bac43d5173df6871682"), OP_EQUAL)
     run(stack,script,TestUtil.transaction) must be (true)
   }
 
@@ -41,7 +41,7 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterp
     //this is for the following test case inside of script_valid.json
     //["1 0x05 0x01 0x00 0x00 0x00 0x00", "VERIFY", "P2SH,STRICTENC", "values >4 bytes can be cast to boolean"]
     val stack = List(OP_1)
-    val script = List(ScriptNumberImpl(5), ScriptNumberImpl(1), OP_0, OP_0, OP_0, OP_0,OP_VERIFY)
+    val script = List(BytesToPushOntoStackImpl(5), ScriptNumberImpl(1), OP_0, OP_0, OP_0, OP_0,OP_VERIFY)
     run(stack,script,TestUtil.transaction) must equal (true)
   }
 
@@ -54,13 +54,13 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterp
     val source = scala.io.Source.fromFile("src/test/scala/org/scalacoin/script/interpreter/script_valid.json")
 
       //use this to represent a single test case from script_valid.json
-    val lines =
+/*    val lines =
     """
       |
       |[["128", "SIZE 2 EQUAL", "P2SH,STRICTENC"]]
-    """.stripMargin
+    """.stripMargin*/
 
-    //val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n" finally source.close()
+    val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n" finally source.close()
     val json = lines.parseJson
     val testCasesOpt : Seq[Option[CoreTestCase]] = json.convertTo[Seq[Option[CoreTestCase]]]
     val testCases : Seq[CoreTestCase] = testCasesOpt.flatten

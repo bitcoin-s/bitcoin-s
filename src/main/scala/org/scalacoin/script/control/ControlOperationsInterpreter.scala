@@ -169,9 +169,9 @@ trait ControlOperationsInterpreter {
         val newTree = insertSubTree(tree,parsedTree)
         loop(newTail, newTree)
       case (x: ScriptConstant) :: Nil => insertSubTree(tree, Leaf(x))
-      case (x: ScriptNumber) :: Nil => insertSubTree(tree, Leaf(x))
+      case (x: BytesToPushOntoStack) :: Nil => insertSubTree(tree, Leaf(x))
       case (x: ScriptConstant) :: t => loop(t, insertSubTree(tree, Leaf(x)))
-      case (x: ScriptNumber) :: t => loop(t, insertSubTree(tree, Leaf(x)))
+      case (x: BytesToPushOntoStack) :: t => loop(t, insertSubTree(tree, Leaf(x)))
       case h :: t => loop(t,insertSubTree(tree,Leaf(h)))
       case Nil => tree
     }

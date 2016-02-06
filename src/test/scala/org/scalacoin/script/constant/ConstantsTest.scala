@@ -10,7 +10,7 @@ class ConstantsTest extends FlatSpec with MustMatchers {
   "Constants" must "define an OP_FALSE" in {
     OP_FALSE.opCode must be (0)
     OP_FALSE.hex must be ("00")
-    OP_FALSE.scriptNumber must be (OP_0)
+    OP_FALSE.scriptNumber must be (OP_0.scriptNumber)
   }
 
   it must "define an OP_PUSHDATA1" in {
