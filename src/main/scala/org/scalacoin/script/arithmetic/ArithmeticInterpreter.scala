@@ -1,12 +1,13 @@
 package org.scalacoin.script.arithmetic
 
+import org.scalacoin.script.control.{ControlOperationsInterpreter, OP_VERIFY}
 import org.scalacoin.script.{ScriptProgramImpl, ScriptProgram}
 import org.scalacoin.script.constant._
 
 /**
  * Created by chris on 1/25/16.
  */
-trait ArithmeticInterpreter {
+trait ArithmeticInterpreter extends ControlOperationsInterpreter {
 
 
   /**
@@ -185,6 +186,165 @@ trait ArithmeticInterpreter {
     ScriptProgramImpl(newStackTop :: program.stack.tail,
       program.script.tail, program.transaction, program.altStack)
   }
+
+  /**
+   * Returns 1 if the numbers are equal, 0 otherwise.
+   * @param program
+   * @return
+   */
+  def opNumEqual(program : ScriptProgram) : ScriptProgram = {
+    require(program.script.headOption.isDefined && program.script.head == OP_NUMEQUAL, "Script top must be OP_NUMEQUAL")
+    require(program.stack.size > 1, "Stack size must be 2 or more perform an OP_NUMEQUAL")
+    val b = program.stack.head
+    val a = program.stack.tail.head
+    val isSame = (a,b) match {
+      case (x : ScriptNumberOperation, y : ScriptNumber) => x.scriptNumber == y
+      case (x : ScriptNumber, y : ScriptNumberOperation) => x == y.scriptNumber
+      case (x,y) => x == y
+    }
+
+    val newStackTop = if (isSame) OP_1 else OP_0
+    ScriptProgramImpl(newStackTop :: program.stack.tail,
+      program.script.tail, program.transaction, program.altStack)
+  }
+
+
+  /**
+   * Same as OP_NUMEQUAL, but runs OP_VERIFY afterward.
+   * @param program
+   * @return
+   */
+  def opNumEqualVerify(program : ScriptProgram) : ScriptProgram = {
+    require(program.script.headOption.isDefined && program.script.head == OP_NUMEQUALVERIFY,
+      "Script top must be OP_NUMEQUALVERIFY")
+    require(program.stack.size > 1, "Stack size must be 2 or more perform an OP_NUMEQUALVERIFY")
+    val numEqualProgram = ScriptProgramImpl(program.stack, OP_NUMEQUAL :: program.script.tail, program.transaction, program.altStack)
+    val numEqualResult = opNumEqual(numEqualProgram)
+    val verifyProgram = ScriptProgramImpl(program.stack, OP_VERIFY :: numEqualResult.script,
+      numEqualResult.transaction, numEqualResult.altStack)
+    val verifyResult = opVerify(verifyProgram)
+    verifyResult
+  }
+
+
+  /**
+   * 	Returns 1 if the numbers are not equal, 0 otherwise.
+   * @param program
+   * @return
+   */
+  def opNumNotEqual(program : ScriptProgram) : ScriptProgram = {
+    require(program.script.headOption.isDefined && program.script.head == OP_NUMNOTEQUAL,
+      "Script top must be OP_NUMNOTEQUAL")
+    require(program.stack.size > 1, "Stack size must be 2 or more perform an OP_NUMNOTEQUAL")
+
+    val b = program.stack.head
+    val a = program.stack.tail.head
+
+    val isSame = (a,b) match {
+      case (x : ScriptNumberOperation, y : ScriptNumber) => x.scriptNumber == y
+      case (x : ScriptNumber, y : ScriptNumberOperation) => x == y.scriptNumber
+      case (x,y) => x == y
+    }
+
+    val newStackTop = if (isSame) OP_0 else OP_1
+    ScriptProgramImpl(newStackTop :: program.stack.tail,
+      program.script.tail, program.transaction, program.altStack)
+  }
+
+
+  /**
+   * 	Returns 1 if a is less than b, 0 otherwise.
+   * @param program
+   * @return
+   */
+  def opLessThan(program : ScriptProgram) : ScriptProgram = {
+    require(program.script.headOption.isDefined && program.script.head == OP_LESSTHAN,
+      "Script top must be OP_LESSTHAN")
+    require(program.stack.size > 1, "Stack size must be 2 or more perform an OP_LESSTHAN")
+    val b = program.stack.head
+    val a = program.stack.tail.head
+
+    val isLessThan = (a,b) match {
+      case (x : ScriptNumberOperation, y : ScriptNumber) => x.scriptNumber < y
+      case (x : ScriptNumber, y : ScriptNumberOperation) => x < y.scriptNumber
+      case (x,y) => x.toLong < y.toLong
+    }
+
+    val newStackTop = if (isLessThan) OP_1 else OP_0
+    ScriptProgramImpl(newStackTop :: program.stack.tail,
+      program.script.tail, program.transaction, program.altStack)
+  }
+
+
+  /**
+   * 	Returns 1 if a is greater than b, 0 otherwise.
+   * @param program
+   * @return
+   */
+  def opGreaterThan(program : ScriptProgram) : ScriptProgram = {
+    require(program.script.headOption.isDefined && program.script.head == OP_GREATERTHAN,
+      "Script top must be OP_GREATERTHAN")
+    require(program.stack.size > 1, "Stack size must be 2 or more perform an OP_GREATERTHAN")
+    val b = program.stack.head
+    val a = program.stack.tail.head
+
+    val isGreaterThan = (a,b) match {
+      case (x : ScriptNumberOperation, y : ScriptNumber) => x.scriptNumber > y
+      case (x : ScriptNumber, y : ScriptNumberOperation) => x > y.scriptNumber
+      case (x,y) => x.toLong > y.toLong
+    }
+
+    val newStackTop = if (isGreaterThan) OP_1 else OP_0
+    ScriptProgramImpl(newStackTop :: program.stack.tail,
+      program.script.tail, program.transaction, program.altStack)
+  }
+
+  /**
+   * Returns 1 if a is less than or equal to b, 0 otherwise.
+   * @param program
+   * @return
+   */
+  def opLessThanOrEqual(program : ScriptProgram) : ScriptProgram = {
+    require(program.script.headOption.isDefined && program.script.head == OP_LESSTHANOREQUAL,
+      "Script top must be OP_LESSTHANOREQUAL")
+    require(program.stack.size > 1, "Stack size must be 2 or more perform an OP_LESSTHANOREQUAL")
+    val b = program.stack.head
+    val a = program.stack.tail.head
+
+    val isLessThanOrEqual = (a,b) match {
+      case (x : ScriptNumberOperation, y : ScriptNumber) => x.scriptNumber <= y
+      case (x : ScriptNumber, y : ScriptNumberOperation) => x <= y.scriptNumber
+      case (x,y) => x.toLong <= y.toLong
+    }
+
+    val newStackTop = if (isLessThanOrEqual) OP_1 else OP_0
+    ScriptProgramImpl(newStackTop :: program.stack.tail,
+      program.script.tail, program.transaction, program.altStack)
+  }
+
+  /**
+   *	Returns 1 if a is greater than or equal to b, 0 otherwise.
+   * @param program
+   * @return
+   */
+  def opGreaterThanOrEqual(program : ScriptProgram) : ScriptProgram = {
+    require(program.script.headOption.isDefined && program.script.head == OP_GREATERTHANOREQUAL,
+      "Script top must be OP_GREATERTHANOREQUAL")
+    require(program.stack.size > 1, "Stack size must be 2 or more perform an OP_GREATERTHANOREQUAL")
+    val b = program.stack.head
+    val a = program.stack.tail.head
+
+    val isGreaterThanOrEqual = (a,b) match {
+      case (x : ScriptNumberOperation, y : ScriptNumber) => x.scriptNumber >= y
+      case (x : ScriptNumber, y : ScriptNumberOperation) => x >= y.scriptNumber
+      case (x,y) => x.toLong >= y.toLong
+    }
+
+    val newStackTop = if (isGreaterThanOrEqual) OP_1 else OP_0
+    ScriptProgramImpl(newStackTop :: program.stack.tail,
+      program.script.tail, program.transaction, program.altStack)
+  }
+
   /**
    * Wraps a scala number into a script token for the script language
    * @param num
