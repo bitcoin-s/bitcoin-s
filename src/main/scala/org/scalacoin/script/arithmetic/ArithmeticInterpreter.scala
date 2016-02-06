@@ -26,6 +26,76 @@ trait ArithmeticInterpreter {
       program.script.tail, program.transaction, program.altStack)
   }
 
+  /**
+   * Increments the stack top by 1
+   * @param program
+   * @return
+   */
+  def op1Add(program : ScriptProgram) : ScriptProgram = {
+    require(program.script.headOption.isDefined && program.script.head == OP_1ADD, "Script top must be OP_1ADD")
+    require(program.stack.size > 0, "Stack size must be 1 or more perform an OP_1ADD")
+
+    val newStackTop = program.stack.head match {
+      case s : ScriptNumber => s + ScriptNumberImpl(1)
+      case x => throw new RuntimeException("Stack must be script number to perform OP_1ADD, stack top was: " + x)
+    }
+
+    ScriptProgramImpl(newStackTop :: program.stack.tail,
+      program.script.tail, program.transaction, program.altStack)
+  }
+
+  /**
+   * Decrements the stack top by 1
+   * @param program
+   * @return
+   */
+  def op1Sub(program : ScriptProgram) : ScriptProgram = {
+    require(program.script.headOption.isDefined && program.script.head == OP_1SUB, "Script top must be OP_1SUB")
+    require(program.stack.size > 0, "Stack size must be 1 or more perform an OP_1SUB")
+
+    val newStackTop = program.stack.head match {
+      case s : ScriptNumber => s - ScriptNumberImpl(1)
+      case x => throw new RuntimeException("Stack must be script number to perform OP_1ADD, stack top was: " + x)
+    }
+
+    ScriptProgramImpl(newStackTop :: program.stack.tail,
+      program.script.tail, program.transaction, program.altStack)
+  }
+
+
+  /**
+   * b is subtracted from a.
+   * @param program
+   * @return
+   */
+  def opSub(program : ScriptProgram) : ScriptProgram = {
+    require(program.script.headOption.isDefined && program.script.head == OP_SUB, "Script top must be OP_SUB")
+    require(program.stack.size > 1, "Stack size must be 2 or more perform an OP_SUB")
+
+    val b = program.stack.head match {
+      case s : ScriptNumber => s - ScriptNumberImpl(1)
+      case x => throw new RuntimeException("Stack must be script number to perform OP_SUB, stack top was: " + x)
+    }
+    val a = program.stack.tail.head match {
+      case s : ScriptNumber => s - ScriptNumberImpl(1)
+      case x => throw new RuntimeException("Stack must be script number to perform OP_SUB, stack top was: " + x)
+    }
+
+    val newScriptNumber = a - b
+    ScriptProgramImpl(newScriptNumber :: program.stack.tail,
+      program.script.tail, program.transaction, program.altStack)
+  }
+
+  def opAbs(program : ScriptProgram) : ScriptProgram = {
+    require(program.script.headOption.isDefined && program.script.head == OP_ABS, "Script top must be OP_ABS")
+    require(program.stack.size > 0, "Stack size must be 1 or more perform an OP_ABS")
+    val newStackTop = program.stack.head match {
+      case s : ScriptNumber => ScriptNumberImpl(s.num.abs)
+      case x => throw new RuntimeException("Stack must be script number to perform OP_ABS, stack top was: " + x)
+    }
+    ScriptProgramImpl(newStackTop :: program.stack.tail,
+      program.script.tail, program.transaction, program.altStack)
+  }
 
   /**
    * Wraps a scala number into a script token for the script language

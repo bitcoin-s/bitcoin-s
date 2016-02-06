@@ -30,14 +30,6 @@ class SpliceInterpreterTest extends FlatSpec with MustMatchers with SpliceInterp
     newProgram.script.isEmpty must be (true)
   }
 
-  it must "evaluate an OP_SIZE correctly with something of size 2 bytes" in {
-    val stack = List(ScriptConstantImpl("80"))
-    val script = List(OP_SIZE)
-    val program = ScriptProgramImpl(stack,script,TestUtil.transaction,List())
-    val newProgram = opSize(program)
-    newProgram.stack must be (List(ScriptNumberImpl(2),ScriptConstantImpl("80")))
-    newProgram.script.isEmpty must be (true)
-  }
 
   it must "evaluate an OP_SIZE correctly with a negative number" in {
     val stack = List(ScriptNumberImpl(-1))

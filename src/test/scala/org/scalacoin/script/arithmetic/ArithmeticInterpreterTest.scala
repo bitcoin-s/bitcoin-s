@@ -49,4 +49,54 @@ class ArithmeticInterpreterTest extends FlatSpec with MustMatchers with Arithmet
     newProgram.stack.head must be (ScriptNumberImpl(999))
     newProgram.script.isEmpty must be (true)
   }
+
+  it must "perform an OP_1ADD correctly" in {
+    val stack = List(ScriptNumberImpl(0))
+    val script = List(OP_1ADD)
+    val program = ScriptProgramImpl(stack,script,TestUtil.transaction,List())
+    val newProgram = op1Add(program)
+
+    newProgram.stack.head must be (ScriptNumberImpl(1))
+    newProgram.script.isEmpty must be (true)
+  }
+
+  it must "perform an OP_1SUB corectly" in {
+    val stack = List(ScriptNumberImpl(0))
+    val script = List(OP_1SUB)
+    val program = ScriptProgramImpl(stack,script,TestUtil.transaction,List())
+    val newProgram = op1Sub(program)
+
+    newProgram.stack.head must be (ScriptNumberImpl(-1))
+    newProgram.script.isEmpty must be (true)
+  }
+
+  it must "perform an OP_SUB corectly" in {
+    val stack = List(ScriptNumberImpl(1),ScriptNumberImpl(0))
+    val script = List(OP_SUB)
+    val program = ScriptProgramImpl(stack,script,TestUtil.transaction,List())
+    val newProgram = opSub(program)
+
+    newProgram.stack.head must be (ScriptNumberImpl(-1))
+    newProgram.script.isEmpty must be (true)
+  }
+
+  it must "perform an OP_ABS on a negative number corectly" in {
+    val stack = List(ScriptNumberImpl(-1))
+    val script = List(OP_ABS)
+    val program = ScriptProgramImpl(stack,script,TestUtil.transaction,List())
+    val newProgram = opAbs(program)
+
+    newProgram.stack.head must be (ScriptNumberImpl(1))
+    newProgram.script.isEmpty must be (true)
+  }
+
+  it must "perform OP_ABS on zero correctly" in {
+    val stack = List(ScriptNumberImpl(0))
+    val script = List(OP_ABS)
+    val program = ScriptProgramImpl(stack,script,TestUtil.transaction,List())
+    val newProgram = opAbs(program)
+
+    newProgram.stack.head must be (ScriptNumberImpl(0))
+    newProgram.script.isEmpty must be (true)
+  }
 }
