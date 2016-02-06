@@ -4,7 +4,7 @@ import org.scalacoin.protocol.script.{ScriptSignature, ScriptPubKey}
 import org.scalacoin.protocol.transaction.Transaction
 import org.scalacoin.script.splice.{SpliceInterpreter, OP_SIZE}
 import org.scalacoin.script.{ScriptProgramImpl, ScriptProgram}
-import org.scalacoin.script.arithmetic.{ArithmeticInterpreter, OP_ADD}
+import org.scalacoin.script.arithmetic._
 import org.scalacoin.script.bitwise.{OP_EQUAL, BitwiseInterpreter, OP_EQUALVERIFY}
 import org.scalacoin.script.constant._
 import org.scalacoin.script.control._
@@ -61,8 +61,13 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
         case OP_3DUP :: t => loop(op3Dup(program))
         case OP_2OVER :: t => loop(op2Over(program))
         case OP_2SWAP :: t => loop(op2Swap(program))
+
         //arithmetic operations
         case OP_ADD :: t => loop(opAdd(program))
+        case OP_1ADD :: t => loop(op1Add(program))
+        case OP_1SUB :: t => loop(op1Sub(program))
+        case OP_SUB :: t => loop(opSub(program))
+        case OP_ABS :: t => loop(opAbs(program))
 
         //bitwise operations
         case OP_EQUAL :: t => {
