@@ -167,7 +167,7 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
     val b = program.stack.head
     val a = program.stack.tail.head
     val newStackTop = if ( b == a && (a == ScriptNumberImpl(0) || a == OP_0)) OP_1 else OP_0
-    ScriptProgramImpl(newStackTop :: program.stack.tail,
+    ScriptProgramImpl(newStackTop :: program.stack.tail.tail,
       program.script.tail, program.transaction, program.altStack)
 
   }
@@ -183,7 +183,7 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
     val b = program.stack.head
     val a = program.stack.tail.head
     val newStackTop = if (a == b && (a == ScriptNumberImpl(0) || a == OP_0)) OP_0 else OP_1
-    ScriptProgramImpl(newStackTop :: program.stack.tail,
+    ScriptProgramImpl(newStackTop :: program.stack.tail.tail,
       program.script.tail, program.transaction, program.altStack)
   }
 
@@ -204,7 +204,7 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
     }
 
     val newStackTop = if (isSame) OP_1 else OP_0
-    ScriptProgramImpl(newStackTop :: program.stack.tail,
+    ScriptProgramImpl(newStackTop :: program.stack.tail.tail,
       program.script.tail, program.transaction, program.altStack)
   }
 
@@ -247,7 +247,7 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
     }
 
     val newStackTop = if (isSame) OP_0 else OP_1
-    ScriptProgramImpl(newStackTop :: program.stack.tail,
+    ScriptProgramImpl(newStackTop :: program.stack.tail.tail,
       program.script.tail, program.transaction, program.altStack)
   }
 
@@ -271,7 +271,7 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
     }
 
     val newStackTop = if (isLessThan) OP_1 else OP_0
-    ScriptProgramImpl(newStackTop :: program.stack.tail,
+    ScriptProgramImpl(newStackTop :: program.stack.tail.tail,
       program.script.tail, program.transaction, program.altStack)
   }
 
@@ -295,7 +295,7 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
     }
 
     val newStackTop = if (isGreaterThan) OP_1 else OP_0
-    ScriptProgramImpl(newStackTop :: program.stack.tail,
+    ScriptProgramImpl(newStackTop :: program.stack.tail.tail,
       program.script.tail, program.transaction, program.altStack)
   }
 
@@ -318,7 +318,7 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
     }
 
     val newStackTop = if (isLessThanOrEqual) OP_1 else OP_0
-    ScriptProgramImpl(newStackTop :: program.stack.tail,
+    ScriptProgramImpl(newStackTop :: program.stack.tail.tail,
       program.script.tail, program.transaction, program.altStack)
   }
 
@@ -341,9 +341,59 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
     }
 
     val newStackTop = if (isGreaterThanOrEqual) OP_1 else OP_0
-    ScriptProgramImpl(newStackTop :: program.stack.tail,
+    ScriptProgramImpl(newStackTop :: program.stack.tail.tail,
       program.script.tail, program.transaction, program.altStack)
   }
+
+
+  /**
+   * Returns the smaller of a and b.
+   * @param program
+   * @return
+   */
+  def opMin(program : ScriptProgram) : ScriptProgram = {
+    require(program.script.headOption.isDefined && program.script.head == OP_MIN,
+      "Script top must be OP_MIN")
+    require(program.stack.size > 1, "Stack size must be 2 or more perform an OP_MIN")
+    val b = program.stack.head
+    val a = program.stack.tail.head
+
+    val isLessThanOrEqual = (a,b) match {
+      case (x : ScriptNumberOperation, y : ScriptNumber) => x.scriptNumber <= y
+      case (x : ScriptNumber, y : ScriptNumberOperation) => x <= y.scriptNumber
+      case (x,y) => x.toLong <= y.toLong
+    }
+
+    val newStackTop = if (isLessThanOrEqual) a else b
+    ScriptProgramImpl(newStackTop :: program.stack.tail.tail,
+      program.script.tail, program.transaction, program.altStack)
+  }
+
+
+  /**
+   * Returns the larger of a and b.
+   * @param program
+   * @return
+   */
+  def opMax(program : ScriptProgram) : ScriptProgram = {
+    require(program.script.headOption.isDefined && program.script.head == OP_MAX,
+      "Script top must be OP_MIN")
+    require(program.stack.size > 1, "Stack size must be 2 or more perform an OP_MIN")
+    val b = program.stack.head
+    val a = program.stack.tail.head
+
+    val isGreaterThanOrEqual = (a,b) match {
+      case (x : ScriptNumberOperation, y : ScriptNumber) => x.scriptNumber >= y
+      case (x : ScriptNumber, y : ScriptNumberOperation) => x >= y.scriptNumber
+      case (x,y) => x.toLong >= y.toLong
+    }
+
+    val newStackTop = if (isGreaterThanOrEqual) a else b
+    ScriptProgramImpl(newStackTop :: program.stack.tail.tail,
+      program.script.tail, program.transaction, program.altStack)
+  }
+
+
 
   /**
    * Wraps a scala number into a script token for the script language
