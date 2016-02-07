@@ -12,15 +12,60 @@ import org.scalacoin.util.{CryptoUtil, ScalacoinUtil}
  */
 trait CryptoInterpreter extends ScalacoinUtil {
 
-  def hash160(program : ScriptProgram) : ScriptProgram = {
-    require(program.stack.headOption.isDefined, "The top of the stack must be defined")
+  /**
+   * The input is hashed twice: first with SHA-256 and then with RIPEMD-160.
+   * @param program
+   * @return
+   */
+  def opHash160(program : ScriptProgram) : ScriptProgram = {
+    require(program.stack.headOption.isDefined, "The top of the stack must be defined for OP_HASH160")
     require(program.script.headOption.isDefined && program.script.head == OP_HASH160, "Script operation must be OP_HASH160")
     val stackTop = program.stack.head
-    val hash = stackTop match {
-      case ScriptConstantImpl(x) => CryptoUtil.sha256Hash160(x)
-      case _ => throw new RuntimeException("Stack top should be of type ScriptConstant to call hash160 on it")
-    }
+    val hash = ScriptConstantImpl(ScalacoinUtil.encodeHex(CryptoUtil.sha256Hash160(stackTop.bytes)))
     ScriptProgramImpl(hash :: program.stack, program.script.tail,program.transaction, program.altStack)
+  }
+
+
+  /**
+   * The input is hashed using RIPEMD-160.
+   * @param program
+   * @return
+   */
+  def opRipeMd160(program : ScriptProgram) : ScriptProgram = {
+    require(program.stack.headOption.isDefined, "The top of the stack must be defined for OP_RIPEMD160")
+    require(program.script.headOption.isDefined && program.script.head == OP_RIPEMD160, "Script operation must be OP_RIPEMD160")
+    val stackTop = program.stack.head
+    val hash = CryptoUtil.ripeMd160(stackTop.bytes)
+    val newStackTop = ScriptConstantImpl(ScalacoinUtil.encodeHex(hash))
+    ScriptProgramImpl(newStackTop :: program.stack.tail, program.script.tail,program.transaction, program.altStack)
+  }
+
+  /**
+   * The input is hashed using SHA-256.
+   * @param program
+   * @return
+   */
+  def opSha256(program : ScriptProgram) : ScriptProgram = {
+    require(program.stack.headOption.isDefined, "The top of the stack must be defined for OP_SHA256")
+    require(program.script.headOption.isDefined && program.script.head == OP_SHA256, "Script operation must be OP_SHA256")
+    val stackTop = program.stack.head
+    val hash = CryptoUtil.sha256(stackTop.bytes)
+    val newStackTop = ScriptConstantImpl(ScalacoinUtil.encodeHex(hash))
+    ScriptProgramImpl(newStackTop :: program.stack.tail, program.script.tail,program.transaction, program.altStack)
+  }
+
+  /**
+   * The input is hashed two times with SHA-256.
+   * @param program
+   * @return
+   */
+  def opHash256(program : ScriptProgram) : ScriptProgram = {
+    require(program.stack.headOption.isDefined, "The top of the stack must be defined for OP_HASH256")
+    require(program.script.headOption.isDefined && program.script.head == OP_HASH256, "Script operation must be OP_HASH256")
+    val stackTop = program.stack.head
+    val hash = CryptoUtil.doubleSHA256(stackTop.bytes)
+    val newStackTop = ScriptConstantImpl(ScalacoinUtil.encodeHex(hash))
+    ScriptProgramImpl(newStackTop :: program.stack.tail, program.script.tail,program.transaction, program.altStack)
   }
 
   /**
@@ -70,10 +115,10 @@ trait CryptoInterpreter extends ScalacoinUtil {
     ???
   }
 
+
   /**
    * The input is hashed using SHA-1.
-   * @param stack
-   * @param script
+   * @param program
    * @return
    */
   def opSha1(program : ScriptProgram) : ScriptProgram = {
