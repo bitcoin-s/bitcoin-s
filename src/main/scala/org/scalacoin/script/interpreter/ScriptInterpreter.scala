@@ -80,6 +80,8 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
         case OP_GREATERTHAN :: t => loop(opGreaterThan(program))
         case OP_LESSTHANOREQUAL :: t => loop(opLessThanOrEqual(program))
         case OP_GREATERTHANOREQUAL :: t => loop(opGreaterThanOrEqual(program))
+        case OP_MIN :: t => loop(opMin(program))
+        case OP_MAX :: t => loop(opMax(program))
         //bitwise operations
         case OP_EQUAL :: t => {
           val newProgram = opEqual(program)

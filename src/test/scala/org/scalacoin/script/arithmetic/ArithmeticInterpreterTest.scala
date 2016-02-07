@@ -319,4 +319,23 @@ class ArithmeticInterpreterTest extends FlatSpec with MustMatchers with Arithmet
     newProgram2.stack.head must be (OP_0)
     newProgram2.script.isEmpty must be (true)
   }
+
+
+  it must "evaluate an OP_MIN correctly" in {
+    val stack = List(OP_0, ScriptNumberImpl(1))
+    val script = List(OP_MIN)
+    val program = ScriptProgramImpl(stack,script,TestUtil.transaction,List())
+    val newProgram = opMin(program)
+
+    newProgram.stack must be (List(OP_0))
+  }
+
+  it must "evaluate an OP_MAX correctly" in {
+    val stack = List(OP_0, ScriptNumberImpl(1))
+    val script = List(OP_MAX)
+    val program = ScriptProgramImpl(stack,script,TestUtil.transaction,List())
+    val newProgram = opMax(program)
+
+    newProgram.stack must be (List(ScriptNumberImpl(1)))
+  }
 }
