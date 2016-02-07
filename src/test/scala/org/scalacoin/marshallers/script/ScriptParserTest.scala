@@ -3,6 +3,7 @@ package org.scalacoin.marshallers.script
 import org.scalacoin.script.arithmetic.OP_ADD
 import org.scalacoin.script.bitwise.OP_EQUAL
 import org.scalacoin.script.constant._
+import org.scalacoin.script.reserved.OP_NOP
 import org.scalacoin.script.stack.OP_PICK
 import org.scalacoin.util.{ScalacoinUtil, TestUtil}
 import org.scalatest.{FlatSpec, MustMatchers}
@@ -62,17 +63,16 @@ class ScriptParserTest extends FlatSpec with MustMatchers with ScriptParser with
     parse(str) must equal (List(ScriptConstantImpl("0100")))
   }
 
-  it must "parse a script signature with a decimal constant in it" in {
-    val str = "0x4f 1000 ADD"
-    //0x3e8 == 1000
-    parse(str) must equal (List(OP_1NEGATE, ScriptConstantImpl("3e8"), OP_ADD))
-  }
 
   it must "parse an OP_PICK" in {
     val str = "PICK"
     parse(str) must equal (List(OP_PICK))
   }
 
+  it must "parse an OP_NOP" in {
+    val str = "NOP"
+    parse(str) must equal (List(OP_NOP))
+  }
 
 
 

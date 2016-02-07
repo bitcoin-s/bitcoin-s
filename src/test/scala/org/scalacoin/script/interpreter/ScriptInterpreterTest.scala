@@ -2,11 +2,13 @@ package org.scalacoin.script.interpreter
 
 import java.io.File
 
+import com.sun.org.apache.bcel.internal.generic.NOP
 import org.scalacoin.script.bitwise.{OP_EQUAL, OP_EQUALVERIFY}
 import org.scalacoin.script.constant._
 import org.scalacoin.script.control.OP_VERIFY
 import org.scalacoin.script.crypto.{OP_CHECKSIG, OP_HASH160}
 import org.scalacoin.script.interpreter.testprotocol.{CoreTestCaseProtocol, CoreTestCase}
+import org.scalacoin.script.reserved.OP_NOP
 import org.scalacoin.script.stack.OP_DUP
 import org.scalacoin.util.TestUtil
 import org.scalatest.{MustMatchers, FlatSpec}
@@ -43,6 +45,13 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterp
     val stack = List(OP_1)
     val script = List(BytesToPushOntoStackImpl(5), ScriptNumberImpl(1), OP_0, OP_0, OP_0, OP_0,OP_VERIFY)
     run(stack,script,TestUtil.transaction) must equal (true)
+  }
+
+  it must "evaluate a NOP correctly" in {
+    val stack = List()
+    val script = List(OP_NOP)
+    run(stack,script,TestUtil.transaction) must equal (true)
+
   }
 
 

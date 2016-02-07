@@ -133,7 +133,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
         //splice operations
         case OP_SIZE :: t => loop(opSize(program))
         //no more script operations to run, True is represented by any representation of non-zero
-        case Nil => program.stack.head != ScriptFalse
+        case Nil => program.stack.headOption != Some(ScriptFalse)
         case h :: t => throw new RuntimeException(h + " was unmatched")
       }
     }
