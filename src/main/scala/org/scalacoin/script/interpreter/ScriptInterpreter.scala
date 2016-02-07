@@ -8,7 +8,7 @@ import org.scalacoin.script.arithmetic._
 import org.scalacoin.script.bitwise.{OP_EQUAL, BitwiseInterpreter, OP_EQUALVERIFY}
 import org.scalacoin.script.constant._
 import org.scalacoin.script.control._
-import org.scalacoin.script.crypto.{OP_SHA1, OP_CHECKSIG, OP_HASH160, CryptoInterpreter}
+import org.scalacoin.script.crypto._
 import org.scalacoin.script.reserved.NOP
 import org.scalacoin.script.stack._
 import org.slf4j.LoggerFactory
@@ -121,10 +121,12 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
           else false
 
         //crypto operations
-        case OP_HASH160 :: t => loop(hash160(program))
+        case OP_HASH160 :: t => loop(opHash160(program))
         case OP_CHECKSIG :: t => checkSig(program.stack,program.script,fullScript)
         case OP_SHA1 :: t => loop(opSha1(program))
-
+        case OP_RIPEMD160 :: t => loop(opRipeMd160(program))
+        case OP_SHA256 :: t => loop(opSha256(program))
+        case OP_HASH256 :: t => loop(opHash256(program))
         //reserved operations
         case (nop : NOP) :: t => loop(ScriptProgramImpl(program.stack,t,program.transaction,program.altStack))
 

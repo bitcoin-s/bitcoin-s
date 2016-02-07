@@ -13,8 +13,28 @@ class CryptoUtilTest extends FlatSpec with MustMatchers {
     ScalacoinUtil.encodeHex(hash) must be ("da39a3ee5e6b4b0d3255bfef95601890afd80709")
   }
 
-  it must "perform the correct SHA-1 hash on a mneomnic seed" in {
-    val str = "The quick brown fox jumps over the lazy dog"
-    ScalacoinUtil.encodeHex(CryptoUtil.sha1(str)) must be ("2fd4e1c67a2d28fced849ee1bb76e7391b93eb12")
+
+  it must "perform the correct RIPEMD160 on a string" in {
+    val str = ""
+    val expectedDigest = "9c1185a5c5e9fc54612808977ee8f548b2258d31"
+    ScalacoinUtil.encodeHex(CryptoUtil.ripeMd160(str)) must be (expectedDigest)
+  }
+
+  it must "perform a RIPEMD160 on a SHA256 hash to generate a bitcoin address" in {
+    //https://bitcoin.stackexchange.com/questions/37040/ripemd160sha256publickey-where-am-i-going-wrong
+    val str = "ea571f53cb3a9865d3dc74735e0c16643d319c6ad81e199b9c8408cecbcec7bb"
+    val expected = "5238c71458e464d9ff90299abca4a1d7b9cb76ab"
+    ScalacoinUtil.encodeHex(CryptoUtil.ripeMd160(str)) must be (expected)
+  }
+
+  it must "perform a single SHA256 hash" in {
+    val hex = ""
+    val strBytes = ScalacoinUtil.decodeHex(hex)
+    val expected = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    ScalacoinUtil.encodeHex(CryptoUtil.sha256(strBytes)) must be (expected)
+    ScalacoinUtil.encodeHex(CryptoUtil.sha256(hex)) must be (expected)
+
+
+
   }
 }
