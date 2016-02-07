@@ -394,6 +394,34 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
   }
 
 
+  /**
+   * Returns 1 if x is within the specified range (left-inclusive), 0 otherwise.
+   * @param program
+   * @return
+   */
+  def opWithin(program : ScriptProgram) : ScriptProgram = {
+    require(program.script.headOption.isDefined && program.script.head == OP_WITHIN,
+      "Script top must be OP_WITHIN")
+    require(program.stack.size > 2, "Stack size must be 3 or more perform an OP_WITHIN")
+
+    val c = program.stack.head
+    val b = program.stack.tail.head
+    val a = program.stack.tail.tail.head
+
+    val isWithinRange = (a,b,c) match {
+      case (x : ScriptNumberOperation, y : ScriptNumber, z : ScriptNumber) => z >= x && z < y
+      case (x : ScriptNumber, y : ScriptNumberOperation, z : ScriptNumber) => z >= x && z < y.scriptNumber
+      case (x : ScriptNumber, y : ScriptNumber, z : ScriptNumberOperation) => z.scriptNumber >= x && z.scriptNumber < y
+      case (x : ScriptNumber, y : ScriptNumber, z : ScriptNumber) => z >= x && z < y
+      case (x,y,z) => z.toLong >= x.toLong && z.toLong < y.toLong
+    }
+
+    val newStackTop = if (isWithinRange) OP_1 else OP_0
+    ScriptProgramImpl(newStackTop :: program.stack.tail.tail.tail,
+      program.script.tail, program.transaction, program.altStack)
+  }
+
+
 
   /**
    * Wraps a scala number into a script token for the script language

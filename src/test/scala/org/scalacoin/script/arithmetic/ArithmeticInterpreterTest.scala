@@ -338,4 +338,23 @@ class ArithmeticInterpreterTest extends FlatSpec with MustMatchers with Arithmet
 
     newProgram.stack must be (List(ScriptNumberImpl(1)))
   }
+
+  it must "evaluate an OP_WITHIN correctly" in {
+    val stack = List(OP_0,ScriptNumberImpl(2), ScriptNumberImpl(1))
+    val script = List(OP_WITHIN)
+    val program = ScriptProgramImpl(stack,script,TestUtil.transaction,List())
+    val newProgram = opWithin(program)
+    newProgram.stack must be (List(OP_0))
+    newProgram.script.isEmpty must be (true)
+
+
+    val stack1 = List(OP_0, ScriptNumberImpl(1),ScriptNumberImpl(0))
+    val script1 = List(OP_WITHIN)
+    val program1 = ScriptProgramImpl(stack1,script1,TestUtil.transaction,List())
+    val newProgram1 = opWithin(program1)
+    newProgram1.stack must be (List(OP_1))
+    newProgram1.script.isEmpty must be (true)
+  }
+
+
 }
