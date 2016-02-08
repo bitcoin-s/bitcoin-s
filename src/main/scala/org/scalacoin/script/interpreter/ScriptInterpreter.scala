@@ -2,6 +2,7 @@ package org.scalacoin.script.interpreter
 
 import org.scalacoin.protocol.script.{ScriptSignature, ScriptPubKey}
 import org.scalacoin.protocol.transaction.Transaction
+import org.scalacoin.script.locktime.{OP_CHECKLOCKTIMEVERIFY, LockTimeInterpreter}
 import org.scalacoin.script.splice.{SpliceInterpreter, OP_SIZE}
 import org.scalacoin.script.{ScriptProgramImpl, ScriptProgram}
 import org.scalacoin.script.arithmetic._
@@ -19,7 +20,8 @@ import scala.annotation.tailrec
  * Created by chris on 1/6/16.
  */
 trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with ControlOperationsInterpreter
-  with BitwiseInterpreter with ConstantInterpreter with ArithmeticInterpreter with SpliceInterpreter {
+  with BitwiseInterpreter with ConstantInterpreter with ArithmeticInterpreter with SpliceInterpreter
+  with LockTimeInterpreter {
 
   private def logger = LoggerFactory.getLogger(this.getClass().toString)
 
@@ -132,6 +134,10 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
 
         //splice operations
         case OP_SIZE :: t => loop(opSize(program))
+
+        //locktime operations
+        case OP_CHECKLOCKTIMEVERIFY :: t => loop(opCheckLockTimeVerify(program))
+
         //no more script operations to run, True is represented by any representation of non-zero
         case Nil => program.stack.headOption != Some(ScriptFalse)
         case h :: t => throw new RuntimeException(h + " was unmatched")
