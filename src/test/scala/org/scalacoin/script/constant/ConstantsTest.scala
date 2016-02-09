@@ -116,6 +116,13 @@ class ConstantsTest extends FlatSpec with MustMatchers {
     OP_16.scriptNumber must be (ScriptNumberImpl(16))
   }
 
+  it must "produce the correct hex for a negative number" in {
+    val hex = ""
+    val expectedHex = "81"
+    hex must be (expectedHex)
+  }
+
+
 
 
 

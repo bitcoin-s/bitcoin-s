@@ -23,11 +23,7 @@ sealed trait ScriptConstant extends ScriptToken
 
 sealed trait ScriptNumber extends ScriptConstant {
   def num : Long
-  override def hex = {
-    if (num.toHexString.size == 1) "0" + num.toHexString
-    else if (num < 0) num.abs.toHexString
-    else num.toHexString
-  }
+  override def hex = ScalacoinUtil.longToHex(num)
   def + (that : ScriptNumber) : ScriptNumber = ScriptNumberImpl(num + that.num)
   def - (that : ScriptNumber) : ScriptNumber = ScriptNumberImpl(num - that.num)
   def * (that : ScriptNumber) : ScriptNumber = ScriptNumberImpl(num * that.num)
