@@ -8,7 +8,7 @@ import scala.math.BigInt
 /**
  * Created by chris on 7/26/15.
  */
-trait ScalacoinUtil {
+trait ScalacoinUtil extends NumberUtil {
 
   def hexToBigInt(hex : String) : BigInt = BigInt(hex, 16)
 
@@ -58,7 +58,7 @@ trait ScalacoinUtil {
     buf.toList
   }
 
-  def hexToLong(hex : String) : Long = java.lang.Long.parseLong(hex,16)
+  def hexToLong(hex : String) : Long = toLong(hex)
 
   def decodeBase58(base58 : String) : List[Byte] = Base58.decode(base58).toList
 

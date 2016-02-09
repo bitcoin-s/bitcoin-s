@@ -1,5 +1,6 @@
 package org.scalacoin.util
 
+import org.scalacoin.script.constant.ScriptNumberImpl
 import org.scalatest.{FlatSpec, MustMatchers}
 
 /**
@@ -13,6 +14,8 @@ class NumberUtilTest extends FlatSpec with MustMatchers with NumberUtil {
     val long = toLong(hex)
     long must be (1)
 
+
+    //127
     val hex1 = "7f"
     val long1 = toLong(hex1)
     long1 must be (127)
@@ -32,6 +35,15 @@ class NumberUtilTest extends FlatSpec with MustMatchers with NumberUtil {
     val long4 = toLong(hex4)
     long4 must be (32768)
 
+    //20
+    val hex5 = "14"
+    val long5 = toLong(hex5)
+    long5 must be (20)
+
+    //0
+    val hex6 = "00"
+    val long6 = toLong(hex6)
+    long6 must be (0)
   }
 
   it must "convert a negative hex number to its corresponding long number" in  {
@@ -103,6 +115,23 @@ class NumberUtilTest extends FlatSpec with MustMatchers with NumberUtil {
     ScalacoinUtil.encodeHex(changeSignBitToPositive(ScalacoinUtil.decodeHex(hex1))) must be (expectedHex1)
   }
 
+  it must "change a sign bit from positive to negative" in {
+
+    val hex = "01"
+    val expectedHex = "81"
+    ScalacoinUtil.encodeHex(changeSignBitToNegative(hex)) must be (expectedHex)
+
+    //32767
+    val hex1 = "7fff"
+    val expectedHex1 = "ffff"
+    ScalacoinUtil.encodeHex(changeSignBitToNegative(hex1)) must be (expectedHex1)
+
+    //128
+    val hex2 = "8000"
+    val expectedHex2 = "8000"
+    ScalacoinUtil.encodeHex(changeSignBitToNegative(hex2)) must be (expectedHex2)
+  }
+
   it must "detect if the last two bytes are all zeros" in {
     val hex = "00"
     firstByteAllZeros(hex) must be (true)
@@ -112,5 +141,48 @@ class NumberUtilTest extends FlatSpec with MustMatchers with NumberUtil {
 
     val hex2 = "80"
     firstByteAllZeros(hex2) must be (false)
+  }
+
+
+
+  it must "serialize negative numbers to the correct hex value" in {
+    val hex = longToHex(-1)
+    val expectedHex = "81"
+    hex must be (expectedHex)
+
+    val hex1 = longToHex(-127)
+    val expectedHex1 = "ff"
+    hex1 must be (expectedHex1)
+
+    val hex2 = longToHex(-128)
+    val expectedHex2 = "8080"
+    hex2 must be (expectedHex2)
+
+    val hex3 = longToHex(-32767)
+    val expectedHex3 = "ffff"
+    hex3 must be (expectedHex3)
+
+    val hex4 = longToHex(-32768)
+    val expectedHex4 = "008080"
+    hex4 must be (expectedHex4)
+  }
+
+
+  it must "serialize a positive number to the correct hex value" in {
+    val hex = longToHex(0L)
+    val expectedHex = "00"
+    hex must be (expectedHex)
+
+    val hex1 = longToHex(1)
+    val expectedHex1 = "01"
+    hex1 must be (expectedHex1)
+
+    val hex2 = longToHex(32767)
+    val expectedHex2 = "7fff"
+    hex2 must be (expectedHex2)
+
+    val hex3 = longToHex(32768)
+    val expectedHex3 = "008000"
+    hex3 must be (expectedHex3)
   }
 }

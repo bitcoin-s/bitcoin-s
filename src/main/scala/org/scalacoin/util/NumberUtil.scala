@@ -16,8 +16,7 @@ trait NumberUtil {
     logger.debug("bytes: " + bytes)
     val reversedBytes = bytes.reverse
     if (isPositive(bytes)) {
-      logger.debug("bytes are positive")
-      if (firstByteAllZeros(reversedBytes)) {
+      if (firstByteAllZeros(reversedBytes) && reversedBytes.size > 1) {
         parseLong(reversedBytes.slice(1,reversedBytes.size))
       } else parseLong(reversedBytes)
     }
@@ -29,6 +28,19 @@ trait NumberUtil {
     }
   }
 
+
+  def longToHex(long : Long) : String = {
+    if (long > -1) {
+      val bytes = toByteList(long)
+      ScalacoinUtil.encodeHex(bytes)
+    } else {
+      val bytes = toByteList(long.abs)
+      //add sign bit
+      val negativeNumberBytes : List[Byte] = changeSignBitToNegative(bytes)
+      val hex = ScalacoinUtil.encodeHex(negativeNumberBytes.reverse)
+      hex
+    }
+  }
 
   /**
    * Determines if a given hex string is a positive number
@@ -61,6 +73,15 @@ trait NumberUtil {
     newByte :: bytes.tail
   }
 
+  def changeSignBitToPositive(hex : String) : List[Byte] = changeSignBitToPositive(ScalacoinUtil.decodeHex(hex))
+
+  def changeSignBitToNegative(bytes : List[Byte]) : List[Byte] = {
+    val newByte = (bytes.head | 0x80).toByte
+    (newByte :: bytes.tail)
+  }
+
+  def changeSignBitToNegative(hex : String) : List[Byte] = changeSignBitToNegative(ScalacoinUtil.decodeHex(hex))
+
 
   def firstByteAllZeros(hex : String) : Boolean = firstByteAllZeros(ScalacoinUtil.decodeHex(hex))
 
@@ -68,6 +89,9 @@ trait NumberUtil {
     val lastByte = bytes.head
     (lastByte & 0xFF) == 0
   }
+
+
+  def toByteList(long : Long) = BigInt(long).toByteArray.toList
 
   private def parseLong(hex : String) : Long = java.lang.Long.parseLong(hex,16)
 
