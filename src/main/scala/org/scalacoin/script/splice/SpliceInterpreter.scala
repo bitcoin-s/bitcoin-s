@@ -21,9 +21,11 @@ trait SpliceInterpreter {
       ScriptProgramImpl(OP_0 :: program.stack, program.script.tail, program.transaction, program.altStack)
     } else {
       val scriptNumber = program.stack.head match {
-        case s : ScriptNumber =>
+/*        case s : ScriptNumber =>
           val intSize = bytes(program.stack.head.toLong)
-          ScriptNumberImpl(intSize)
+          ScriptNumberImpl(intSize)*/
+        case OP_0 => ScriptNumberImpl(0)
+        case ScriptNumberImpl(0) => ScriptNumberImpl(0)
         case x : ScriptToken => ScriptNumberImpl(x.hex.size / 2)
       }
       ScriptProgramImpl(scriptNumber :: program.stack, program.script.tail, program.transaction,program.altStack)
