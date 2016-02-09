@@ -11,7 +11,7 @@ import org.scalatest.{MustMatchers, FlatSpec}
  */
 class SpliceInterpreterTest extends FlatSpec with MustMatchers with SpliceInterpreter {
 
-  "SpliceInterpreter" must "evaluate an OP_SIZE correctly" in {
+  "SpliceInterpreter" must "evaluate an OP_SIZE on OP_0 correctly" in {
     val stack = List(OP_0)
     val script = List(OP_SIZE)
     val program = ScriptProgramImpl(stack,script,TestUtil.transaction,List())
@@ -21,12 +21,31 @@ class SpliceInterpreterTest extends FlatSpec with MustMatchers with SpliceInterp
 
   }
 
+  it must "deterine the size of script number 0 correctly" in {
+    val stack = List(ScriptNumberImpl(0))
+    val script = List(OP_SIZE)
+    val program = ScriptProgramImpl(stack,script,TestUtil.transaction,List())
+    val newProgram = opSize(program)
+    newProgram.stack must be (List(ScriptNumberImpl(0),ScriptNumberImpl(0)))
+    newProgram.script.isEmpty must be (true)
+  }
+
   it must "evaluate an OP_SIZE correctly with 0x7f" in {
     val stack = List(ScriptConstantImpl("7f"))
     val script = List(OP_SIZE)
     val program = ScriptProgramImpl(stack,script,TestUtil.transaction,List())
     val newProgram = opSize(program)
     newProgram.stack must be (List(ScriptNumberImpl(1),ScriptConstantImpl("7f")))
+    newProgram.script.isEmpty must be (true)
+  }
+
+  it must "evaluate an OP_SIZE correctly with 0x8000" in {
+    //0x8000 == 128 in bitcoin
+    val stack = List(ScriptNumberImpl(128))
+    val script = List(OP_SIZE)
+    val program = ScriptProgramImpl(stack,script,TestUtil.transaction,List())
+    val newProgram = opSize(program)
+    newProgram.stack must be (List(ScriptNumberImpl(2), ScriptNumberImpl(128)))
     newProgram.script.isEmpty must be (true)
   }
 

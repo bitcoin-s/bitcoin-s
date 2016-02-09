@@ -1,5 +1,6 @@
 package org.scalacoin.script.constant
 
+import org.scalacoin.util.ScalacoinUtil
 import org.scalatest.{FlatSpec, MustMatchers}
 
 /**
@@ -117,9 +118,21 @@ class ConstantsTest extends FlatSpec with MustMatchers {
   }
 
   it must "produce the correct hex for a negative number" in {
-    val hex = ""
+    val number = ScriptNumberImpl(-1)
     val expectedHex = "81"
-    hex must be (expectedHex)
+    number.hex must be (expectedHex)
+
+    val number1 = ScriptNumberImpl(-127)
+    val expectedHex1 = "ff"
+    number1.hex must be (expectedHex1)
+
+    val number2 = ScriptNumberImpl(-128)
+    val expectedHex2 = "8080"
+    number2.hex must be (expectedHex2)
+
+    val number3 = ScriptNumberImpl(-32768)
+    val expectedHex3 = "008080"
+    number3.hex must be (expectedHex3)
   }
 
 

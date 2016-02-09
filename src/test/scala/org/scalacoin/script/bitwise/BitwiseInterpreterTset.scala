@@ -20,17 +20,6 @@ class BitwiseInterpreterTest extends FlatSpec with MustMatchers with BitwiseInte
     newProgram.stack.head must be (ScriptTrue)
   }
 
-  it must "evaluate evaluate a ScriptNumber and ScriptConstant to true if they convert to the same number" in  {
-    val stack = List(ScriptConstantImpl("3e7"), ScriptNumberImpl(999))
-    val script = List(OP_EQUAL)
-    val program = ScriptProgramImpl(stack,script,TestUtil.transaction, List())
-    val newProgram = opEqual(program)
-
-    newProgram.stack.head must be (ScriptTrue)
-    newProgram.script.isEmpty must be (true)
-
-  }
-
   it must "throw an exception for OP_EQUAL when we don't have enough items on the stack" in {
     intercept[IllegalArgumentException] {
       opEqual(ScriptProgramImpl(List(), List(OP_EQUAL),TestUtil.transaction,List()))
@@ -75,12 +64,12 @@ class BitwiseInterpreterTest extends FlatSpec with MustMatchers with BitwiseInte
 
 
   it must "evaluate a ScriptNumber & ScriptConstant to true if they are the same" in {
-    val stack = List(ScriptNumberImpl(2), ScriptConstantImpl("2"))
+    val stack = List(ScriptNumberImpl(2), ScriptConstantImpl("02"))
     val script = List(OP_EQUAL)
     val program = ScriptProgramImpl(stack,script,TestUtil.transaction,List())
     opEqual(program).stack.head must be (ScriptTrue)
 
-    val stack1 = List( ScriptConstantImpl("2"),ScriptNumberImpl(2))
+    val stack1 = List( ScriptConstantImpl("02"),ScriptNumberImpl(2))
     val script1 = List(OP_EQUAL)
     val program1 = ScriptProgramImpl(stack1,script1,TestUtil.transaction,List())
     opEqual(program1).stack.head must be (ScriptTrue)
