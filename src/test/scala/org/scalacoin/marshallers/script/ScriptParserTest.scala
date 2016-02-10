@@ -18,7 +18,6 @@ class ScriptParserTest extends FlatSpec with MustMatchers with ScriptParser with
   "ScriptParser" must "parse 0x00 to a OP_0" in {
     parse(List(0.toByte)) must be (List(OP_0))
   }
-
   it must "parse a number larger than an integer into a ScriptNumberImpl" in {
     parse("2147483648") must be (List(ScriptNumberImpl(2147483648L)))
   }
@@ -58,9 +57,9 @@ class ScriptParserTest extends FlatSpec with MustMatchers with ScriptParser with
     parse(str) must equal (List(ScriptConstantImpl("417a"), OP_EQUAL))
   }
 
-  it must "parse a script constant that has a leading zero" in {
+  it must "parse a script number that has a leading zero" in {
     val str = "0x0100"
-    parse(str) must equal (List(ScriptConstantImpl("0100")))
+    parse(str) must equal (List(ScriptNumberImpl(1)))
   }
 
 
@@ -74,6 +73,24 @@ class ScriptParserTest extends FlatSpec with MustMatchers with ScriptParser with
     parse(str) must equal (List(OP_NOP))
   }
 
+  it must "parse a script that has a decimal and a hexadecimal number in it " in  {
+    val str = "32767 0x02 0xff7f EQUAL"
+    parse(str) must equal (List(ScriptNumberImpl(32767), BytesToPushOntoStackImpl(2), ScriptNumberImpl(32767), OP_EQUAL))
+  }
+
+  it must "parse an OP_1" in {
+    val str = "0x51"
+    parse(str) must equal (List(OP_1))
+  }
+
+  it must "parse an extremely long hex constant" in {
+    val str = "0x4b 0x417a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a " +
+    "'Azzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz' EQUAL"
+
+    parse(str) must equal (List(BytesToPushOntoStackImpl(75),
+      ScriptConstantImpl("417a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a"),
+      ScriptConstantImpl("417a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a"), OP_EQUAL))
+  }
 
 
 
