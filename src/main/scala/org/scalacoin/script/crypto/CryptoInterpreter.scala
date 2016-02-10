@@ -133,7 +133,9 @@ trait CryptoInterpreter extends ScalacoinUtil {
   def opCodeSeparator(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.isDefined && program.script.head == OP_CODESEPARATOR, "Script top must be OP_CODESEPARATOR")
 
-    ScriptProgramFactory.factory(program,program.script.tail, ScriptProgramFactory.Script, 1)
+    //get the index of this OP_CODESEPARATOR
+    val codeSeparatorIndex = program.fullScript.size - program.script.size
+    ScriptProgramFactory.factory(program,program.script.tail, ScriptProgramFactory.Script, codeSeparatorIndex)
   }
 
   private def hashForSignature(inputScript : Seq[ScriptToken], spendingTx : Transaction,
