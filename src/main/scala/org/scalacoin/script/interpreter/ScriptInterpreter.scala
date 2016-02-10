@@ -127,6 +127,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
         case OP_RIPEMD160 :: t => loop(opRipeMd160(program))
         case OP_SHA256 :: t => loop(opSha256(program))
         case OP_HASH256 :: t => loop(opHash256(program))
+        case OP_CODESEPARATOR :: t => loop(opCodeSeparator(program))
         //reserved operations
         case (nop : NOP) :: t => loop(ScriptProgramFactory.factory(program,program.stack,t))
 

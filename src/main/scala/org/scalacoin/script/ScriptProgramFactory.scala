@@ -13,6 +13,8 @@ trait ScriptProgramFactory {
   sealed trait UpdateIndicator
   case object Stack extends UpdateIndicator
   case object Script extends UpdateIndicator
+  case object FullScript extends UpdateIndicator
+  case object AltStack extends UpdateIndicator
 
   def factory(oldProgram : ScriptProgram, valid : Boolean) : ScriptProgram = {
     ScriptProgramImpl(oldProgram.stack,oldProgram.script,oldProgram.transaction,
@@ -26,10 +28,14 @@ trait ScriptProgramFactory {
 
   def factory(oldProgram : ScriptProgram, tokens : Seq[ScriptToken], indicator : UpdateIndicator) : ScriptProgram = {
     indicator match {
-      case Stack => ScriptProgramImpl(tokens.toList,oldProgram.script,
-        oldProgram.transaction, oldProgram.altStack, oldProgram.fullScript, oldProgram.valid, oldProgram.lastCodeSeparator)
-      case Script => ScriptProgramImpl(oldProgram.stack,tokens.toList,oldProgram.transaction,
-        oldProgram.altStack, oldProgram.fullScript,oldProgram.valid, oldProgram.lastCodeSeparator)
+      case Stack => ScriptProgramImpl(tokens.toList, oldProgram.script, oldProgram.transaction,
+        oldProgram.altStack, oldProgram.fullScript, oldProgram.valid, oldProgram.lastCodeSeparator)
+      case Script => ScriptProgramImpl(oldProgram.stack, tokens.toList, oldProgram.transaction,
+        oldProgram.altStack, oldProgram.fullScript, oldProgram.valid, oldProgram.lastCodeSeparator)
+      case AltStack => ScriptProgramImpl(oldProgram.stack, oldProgram.script, oldProgram.transaction,
+        tokens.toList, oldProgram.fullScript, oldProgram.valid, oldProgram.lastCodeSeparator)
+      case FullScript => ScriptProgramImpl(oldProgram.stack, oldProgram.script, oldProgram.transaction,
+        oldProgram.altStack, tokens.toList, oldProgram.valid, oldProgram.lastCodeSeparator)
     }
   }
 
@@ -51,18 +57,35 @@ trait ScriptProgramFactory {
         oldProgram.altStack, oldProgram.fullScript, oldProgram.valid, lastCodeSeparator)
       case Script => ScriptProgramImpl(oldProgram.stack, tokens.toList, oldProgram.transaction,
         oldProgram.altStack, oldProgram.fullScript, oldProgram.valid, lastCodeSeparator)
+      case AltStack => ScriptProgramImpl(oldProgram.stack, oldProgram.script, oldProgram.transaction,
+        tokens.toList, oldProgram.fullScript, oldProgram.valid, lastCodeSeparator)
+      case FullScript => ScriptProgramImpl(oldProgram.stack, oldProgram.script, oldProgram.transaction,
+        oldProgram.altStack, tokens.toList, oldProgram.valid, lastCodeSeparator)
     }
   }
 
-  def factory(oldProgram : ScriptProgram, stack : Seq[ScriptToken], script : Seq[ScriptToken], altStack : Seq[ScriptToken]) = {
-    ScriptProgramImpl(stack.toList,script.toList,oldProgram.transaction,
-      altStack.toList,oldProgram.fullScript,oldProgram.valid,oldProgram.lastCodeSeparator)
-  }
 
   def factory(oldProgram : ScriptProgram, stack : Seq[ScriptToken], script : Seq[ScriptToken], valid : Boolean) = {
     ScriptProgramImpl(stack.toList, script.toList, oldProgram.transaction,
       oldProgram.altStack,oldProgram.fullScript,valid, oldProgram.lastCodeSeparator)
   }
+
+
+  def factory(oldProgram : ScriptProgram, stack : Seq[ScriptToken], script : Seq[ScriptToken], that : Seq[ScriptToken],
+               updateIndicator: UpdateIndicator) = {
+    updateIndicator match {
+      case FullScript =>
+        ScriptProgramImpl(stack.toList,script.toList,oldProgram.transaction,
+          oldProgram.altStack,that.toList,oldProgram.valid,oldProgram.lastCodeSeparator)
+      case AltStack =>
+        ScriptProgramImpl(stack.toList,script.toList,oldProgram.transaction,
+          that.toList,oldProgram.fullScript,oldProgram.valid,oldProgram.lastCodeSeparator)
+      case _ => ScriptProgramImpl(stack.toList,script.toList,oldProgram.transaction,
+        oldProgram.altStack,oldProgram.fullScript,oldProgram.valid,oldProgram.lastCodeSeparator)
+    }
+
+  }
+
 }
 
 object ScriptProgramFactory extends ScriptProgramFactory

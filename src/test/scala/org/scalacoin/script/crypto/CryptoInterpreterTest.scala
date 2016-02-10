@@ -2,7 +2,7 @@ package org.scalacoin.script.crypto
 
 import org.scalacoin.protocol.script.ScriptPubKey
 import org.scalacoin.script.{ScriptProgramFactory, ScriptProgramImpl}
-import org.scalacoin.script.constant.ScriptConstantImpl
+import org.scalacoin.script.constant._
 import org.scalacoin.util.TestUtil
 import org.scalatest.{MustMatchers, FlatSpec}
 
@@ -83,6 +83,22 @@ class CryptoInterpreterTest extends FlatSpec with MustMatchers with CryptoInterp
     val scriptPubKey = tx.outputs(vout).scriptPubKey
     val result = checkSig(tx,scriptPubKey)
     result must be (true)
+  }
+
+  it must "update the program with the index of the latest OP_CODESEPARATOR" in {
+    val stack = List(ScriptNumberImpl(1))
+    val script = List(OP_CODESEPARATOR)
+    val fullScript = stack ++ script
+    val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script,fullScript, ScriptProgramFactory.FullScript)
+    opCodeSeparator(program).lastCodeSeparator must be (1)
+
+
+    val stack1 = List(ScriptNumberImpl(1), ScriptNumberImpl(2), ScriptNumberImpl(3))
+    val script1 = List(OP_CODESEPARATOR,OP_0,OP_1,OP_2,OP_3 )
+    val fullScript1 = stack1 ++ script1
+    val program1 = ScriptProgramFactory.factory(TestUtil.testProgram, stack1,script1,fullScript1, ScriptProgramFactory.FullScript)
+    opCodeSeparator(program1).lastCodeSeparator must be (3)
+
   }
 
 

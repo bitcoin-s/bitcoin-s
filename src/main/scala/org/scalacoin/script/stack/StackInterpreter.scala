@@ -63,7 +63,8 @@ trait StackInterpreter {
   def opToAltStack(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.isDefined && program.script.head == OP_TOALTSTACK, "Top of script stack must be OP_TOALTSTACK")
     require(program.stack.size > 0,"Stack must have at least one item on it for OP_TOALTSTACK")
-    ScriptProgramFactory.factory(program, program.stack.tail, program.script.tail, List(program.stack.head))
+    ScriptProgramFactory.factory(program, program.stack.tail,
+      program.script.tail, List(program.stack.head), ScriptProgramFactory.AltStack)
   }
 
   /**
@@ -75,7 +76,7 @@ trait StackInterpreter {
     require(program.script.headOption.isDefined && program.script.head == OP_FROMALTSTACK, "Top of script stack must be OP_FROMALTSTACK")
     require(program.altStack.size > 0,"Alt Stack must have at least one item on it for OP_FROMALTSTACK")
     ScriptProgramFactory.factory(program, program.altStack.head :: program.stack,
-      program.script.tail, program.altStack.tail)
+      program.script.tail, program.altStack.tail, ScriptProgramFactory.AltStack)
   }
 
   /**
