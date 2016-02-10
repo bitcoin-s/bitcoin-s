@@ -30,27 +30,34 @@ trait ScriptParser extends ScalacoinUtil {
         //for parsing strings like 'Az', need to remove single quotes
         //example: https://github.com/bitcoin/bitcoin/blob/master/src/test/data/script_valid.json#L24
         case h :: t if (h.size > 0 && h.head == ''' && h.last == ''') =>
+          logger.debug("Found a string constant")
           val strippedQuotes = h.replace("'","")
           if (strippedQuotes.size == 0) loop(t, OP_0 :: accum)
           else loop(t, ScriptConstantImpl(ScalacoinUtil.encodeHex(strippedQuotes.getBytes)) :: accum)
         //if we see a byte constant of just 0x09
         //parse the characters as a hex op
         case h :: t if (h.size == 4 && h.substring(0,2) == "0x") =>
+          logger.debug("Found a script operation")
           val hexString = h.substring(2,h.size)
           logger.debug("Hex string: " + hexString)
           loop(t,ScriptOperationFactory.fromHex(hexString).get :: accum)
 
         //if we see a byte constant in the form of "0x09adb"
-        case h  :: t if (h.size > 1 && h.substring(0,2) == "0x") => loop(t,parseBytesFromString(h) ++ accum)
+        case h  :: t if (h.size > 1 && h.substring(0,2) == "0x") =>
+          logger.debug("Found a hexadecimal number")
+          loop(t,parseBytesFromString(h) ++ accum)
         //skip the empty string
         case h :: t if (h == "") => loop(t,accum)
         case h :: t if (h == "0") => loop(t, OP_0 :: accum)
 
+
         case h :: t if (ScriptOperationFactory.fromString(h).isDefined) =>
+          logger.debug("Founding a script operation in string form i.e. NOP or ADD")
           val op = ScriptOperationFactory.fromString(h).get
           val parsingHelper : ParsingHelper[String] = parseOperationString(op,accum,t)
           loop(parsingHelper.tail,parsingHelper.accum)
         case h :: t if (tryParsingLong(h)) =>
+          logger.debug("Found a decimal number")
           //convert the string to int, then convert to hex
           loop(t, ScriptNumberImpl(h.toLong) :: accum)
         case h :: t => loop(t, ScriptConstantImpl(h) :: accum)
@@ -61,10 +68,10 @@ trait ScriptParser extends ScalacoinUtil {
 
 
 
-    if (tryParsingLong(str)) {
+    if (tryParsingLong(str) && str.size > 1 && str.substring(0,2) != "0x") {
       //for the case when there is just a single decimal constant
       //i.e. "8388607"
-      List(ScriptNumberImpl(str.toLong))
+      List(ScriptNumberImpl(parseLong(str)))
     }
     else if (ScalacoinUtil.isHex(str)) {
       //if the given string is hex, it is pretty straight forward to parse it
@@ -131,13 +138,21 @@ trait ScriptParser extends ScalacoinUtil {
     logger.debug("Parsing bytes from string " + s)
     val scriptConstants : List[ScriptConstant] = (raw"\b0x([0-9a-f]+)\b".r
       .findAllMatchIn(s)
-      .map(g => ScriptConstantImpl(g.group(1)))
-      .toList)
+      .map(g =>
+      //if it is not smaller than 16 hex characters it cannot
+      //fit inside of a scala long
+      //therefore store it as a script constant
+      if (g.group(1).size <= 16)  {
+        ScriptNumberImpl(ScalacoinUtil.hexToLong(g.group(1)))
+      } else {
+        ScriptConstantImpl(g.group(1))
+    }).toList)
     scriptConstants
   }
 
 
-  case class ParsingHelper[T](tail : List[T], accum : List[ScriptToken])
+  sealed case class ParsingHelper[T](tail : List[T], accum : List[ScriptToken])
+
   /**
    * Parses an operation if the tail is a List[Byte]
    * If the operation is a bytesToPushOntoStack, it pushes the number of bytes onto the stack
@@ -195,7 +210,19 @@ trait ScriptParser extends ScalacoinUtil {
    * @param str
    * @return
    */
-  private def tryParsingLong(str : String) = try { str.toLong; true} catch { case _ : Throwable => false}
+  private def tryParsingLong(str : String) = try {
+      parseLong(str)
+      true
+    } catch {
+    case _ : Throwable => false
+  }
+
+  private def parseLong(str : String) = {
+    if (str.substring(0,2) == "0x") {
+      val strRemoveHex = str.substring(2,str.size)
+      ScalacoinUtil.hexToLong(strRemoveHex)
+    } else str.toLong
+  }
 }
 
 object ScriptParser extends ScriptParser
