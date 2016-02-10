@@ -34,6 +34,17 @@ trait ScriptParser extends ScalacoinUtil {
           val strippedQuotes = h.replace("'","")
           if (strippedQuotes.size == 0) loop(t, OP_0 :: accum)
           else loop(t, ScriptConstantImpl(ScalacoinUtil.encodeHex(strippedQuotes.getBytes)) :: accum)
+
+        //for the case that we last saw a ByteToPushOntoStack operation
+        //this means that the next byte needs to be parsed as a constant
+        //not a script operation
+        case h :: t if (h.size == 4 && h.substring(0,2) == "0x"
+          && accum.headOption.isDefined && accum.head.isInstanceOf[BytesToPushOntoStackImpl]) =>
+          logger.debug("Found a script operation")
+          val hexString = h.substring(2,h.size).toLowerCase
+          logger.debug("Hex string: " + hexString)
+          loop(t,ScriptNumberImpl(ScalacoinUtil.hexToLong(hexString)) :: accum)
+
         //if we see a byte constant of just 0x09
         //parse the characters as a hex op
         case h :: t if (h.size == 4 && h.substring(0,2) == "0x") =>
@@ -142,7 +153,7 @@ trait ScriptParser extends ScalacoinUtil {
       //if it is not smaller than 16 hex characters it cannot
       //fit inside of a scala long
       //therefore store it as a script constant
-      if (g.group(1).size <= 16)  {
+      if (g.group(1).size <= 16) {
         ScriptNumberImpl(ScalacoinUtil.hexToLong(g.group(1)))
       } else {
         ScriptConstantImpl(g.group(1))

@@ -35,5 +35,9 @@ class ScalacoinUtilTest extends FlatSpec with MustMatchers with ScalacoinUtil {
     intToByteList(int2) must be (List(-113, 15, 15, 15))
   }
 
+  it must "serialize negative zero in hex" in {
+    val negativeZero = "80"
+    hexToLong(negativeZero) must be (0)
+  }
 
 }

@@ -15,12 +15,14 @@ trait NumberUtil {
   def toLong(bytes : List[Byte]) : Long = {
     logger.debug("bytes: " + bytes)
     val reversedBytes = bytes.reverse
-    if (isPositive(bytes)) {
+    if (bytes.size == 1 && bytes.head == -128) {
+      //the case for negative zero
+      0
+    } else if (isPositive(bytes)) {
       if (firstByteAllZeros(reversedBytes) && reversedBytes.size > 1) {
         parseLong(reversedBytes.slice(1,reversedBytes.size))
       } else parseLong(reversedBytes)
-    }
-    else {
+    } else {
       //remove the sign bit
       val removedSignBit : List[Byte] = changeSignBitToPositive(reversedBytes)
       if (firstByteAllZeros(removedSignBit)) -parseLong(removedSignBit.slice(1,removedSignBit.size))

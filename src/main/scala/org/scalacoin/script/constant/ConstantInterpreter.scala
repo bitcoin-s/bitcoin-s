@@ -86,6 +86,7 @@ trait ConstantInterpreter {
     require(program.script.size > 1, "Script size must be atleast to to push constants onto the stack")
     val bytesNeeded = program.script.head match {
       case scriptNumber : BytesToPushOntoStack => scriptNumber.opCode
+      case _ => throw new RuntimeException("Stack top must be BytesToPushOntoStack to push a numbero bytes onto the stack")
     }
     /**
      * Parses the script tokens that need to be pushed onto our stack
@@ -94,21 +95,32 @@ trait ConstantInterpreter {
      * @return
      */
     @tailrec
-    def takeUntilBytesNeeded(scriptTokens : List[ScriptToken], scriptConstantAccum : ScriptConstant) : (List[ScriptToken],ScriptConstant) = {
-      val bytesSum = scriptConstantAccum.bytesSize
-      if (bytesSum == bytesNeeded) (scriptTokens,scriptConstantAccum)
+    def takeUntilBytesNeeded(scriptTokens : List[ScriptToken], accum : List[ScriptToken]) : (List[ScriptToken],List[ScriptToken]) = {
+      val bytesSum = accum.map(_.bytesSize).sum
+      if (bytesSum == bytesNeeded) (scriptTokens,accum)
+      else if (scriptTokens.size == 0) (Nil,accum)
       else if (bytesSum > bytesNeeded) throw new RuntimeException("We cannot have more bytes than what our script number specified")
-      else takeUntilBytesNeeded(scriptTokens.tail, ScriptConstantImpl(scriptConstantAccum.hex + scriptTokens.head.hex))
+      else {
+        //for the case when a ScriptNumberImpl(x) was parsed as a ByteToPushOntoStackImpl(x)
+        val scriptToken = scriptTokens.head match {
+          case BytesToPushOntoStackImpl(x) => ScriptNumberImpl(x)
+          case x => x
+        }
+        takeUntilBytesNeeded(scriptTokens.tail, scriptToken :: accum)
+      }
     }
 
-    val (newScript,newScriptConstant) = takeUntilBytesNeeded(program.script.tail,ScriptConstantImpl(""))
+    val (newScript,bytesToPushOntoStack) = takeUntilBytesNeeded(program.script.tail,List())
     //see if the new script constant can be converted into a script number
+/*
     val bytesToPushOntoStack : Option[BytesToPushOntoStack] = BytesToPushOntoStackFactory.fromHex(newScriptConstant.hex)
     val scriptNumber = if(bytesToPushOntoStack.isDefined) Some(ScriptNumberImpl(bytesToPushOntoStack.get.opCode)) else None
-
+*/
+/*
     if (scriptNumber.isDefined) ScriptProgramImpl(
       scriptNumber.get :: program.stack, newScript,program.transaction, program.altStack)
-    else ScriptProgramImpl(newScriptConstant :: program.stack, newScript, program.transaction, program.altStack)
+    else */
+    ScriptProgramImpl(bytesToPushOntoStack ++ program.stack, newScript, program.transaction, program.altStack)
   }
 
   /**

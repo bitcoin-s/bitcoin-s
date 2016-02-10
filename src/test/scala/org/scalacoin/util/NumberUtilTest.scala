@@ -185,4 +185,6 @@ class NumberUtilTest extends FlatSpec with MustMatchers with NumberUtil {
     val expectedHex3 = "008000"
     hex3 must be (expectedHex3)
   }
+
+
 }
