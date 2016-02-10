@@ -90,6 +90,11 @@ class BitwiseInterpreterTest extends FlatSpec with MustMatchers with BitwiseInte
     opEqual(program).stack.head must be (ScriptTrue)
   }
 
+  it must "evaluate a script number and its corresponding script constant hex representation to equal" in {
+
+
+  }
+
 
 
 }

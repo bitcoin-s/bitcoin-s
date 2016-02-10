@@ -127,6 +127,8 @@ trait ControlOperationsInterpreter {
     require(program.stack.size > 0, "Stack must have at least one element on it to run OP_VERIFY")
     if (program.stack.head != OP_0 && program.stack.head != ScriptFalse ) {
       ScriptProgramImpl(program.stack,program.script.tail,program.transaction,program.altStack)
+    } else if (program.stack.exists(t => t != OP_0 && t != ScriptFalse)) {
+      ScriptProgramImpl(program.stack,program.script.tail,program.transaction,program.altStack)
     } else ScriptProgramImpl(program.stack,program.script.tail,
       program.transaction,program.altStack,valid = false)
   }
