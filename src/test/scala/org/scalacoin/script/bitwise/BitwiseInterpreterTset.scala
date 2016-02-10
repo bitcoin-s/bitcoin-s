@@ -1,6 +1,6 @@
 package org.scalacoin.script.bitwise
 
-import org.scalacoin.script.ScriptProgramImpl
+import org.scalacoin.script.{ScriptProgramFactory, ScriptProgramImpl}
 import org.scalacoin.script.arithmetic.OP_NUMEQUAL
 import org.scalacoin.script.constant._
 import org.scalacoin.util.TestUtil
@@ -15,29 +15,29 @@ class BitwiseInterpreterTest extends FlatSpec with MustMatchers with BitwiseInte
   "BitwiseInterpreter" must "evaluate OP_EQUAL" in {
     val stack = List(pubKeyHash, pubKeyHash)
     val script = List(OP_EQUAL)
-    val program = ScriptProgramImpl(stack,script,TestUtil.transaction,List())
+    val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
     val newProgram = opEqual(program)
     newProgram.stack.head must be (ScriptTrue)
   }
 
   it must "throw an exception for OP_EQUAL when we don't have enough items on the stack" in {
     intercept[IllegalArgumentException] {
-      opEqual(ScriptProgramImpl(List(), List(OP_EQUAL),TestUtil.transaction,List()))
+      opEqual(ScriptProgramFactory.factory(TestUtil.testProgram, List(),List()))
     }
   }
 
 
   it must "throw an exception for OP_EQUAL when we don't have enough items on the script stack" in {
     intercept[IllegalArgumentException] {
-      opEqual(ScriptProgramImpl(List(pubKeyHash), List(),TestUtil.transaction,List()))
+      opEqual(ScriptProgramFactory.factory(TestUtil.testProgram, List(),List()))
     }
   }
 
   it must "evaulate OP_EQUALVERIFY to true given two of the same pub keys" in {
     val stack = List(pubKeyHash, pubKeyHash)
     val script = List(OP_EQUALVERIFY)
-    val program = ScriptProgramImpl(stack,script,TestUtil.transaction,List())
-    val result = equalVerify(program)
+    val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
+    val result = opEqualVerify(program)
     result.valid must be (true)
   }
 
@@ -45,40 +45,28 @@ class BitwiseInterpreterTest extends FlatSpec with MustMatchers with BitwiseInte
     val uniquePubKey = ScriptConstantImpl(pubKeyHash +"0")
     val stack = List(pubKeyHash,uniquePubKey)
     val script = List(OP_EQUALVERIFY)
-    val program = ScriptProgramImpl(stack,script,TestUtil.transaction,List())
-    val result = equalVerify(program)
+    val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
+    val result = opEqualVerify(program)
     result.valid must be (false)
-  }
-
-  it must "throw an exception for OP_EQUALVERIFY when we don't have enough args in stack" in {
-    intercept[IllegalArgumentException] {
-      equalVerify(ScriptProgramImpl(List(),List(OP_EQUALVERIFY),TestUtil.transaction,List()))
-    }
-  }
-
-  it must "throw an exception for OP_EQUALVERIFY when we don't have enough args in script stack" in {
-    intercept[IllegalArgumentException] {
-      equalVerify(ScriptProgramImpl(List(pubKeyHash),List(),TestUtil.transaction,List()))
-    }
   }
 
 
   it must "evaluate a ScriptNumber & ScriptConstant to true if they are the same" in {
     val stack = List(ScriptNumberImpl(2), ScriptConstantImpl("02"))
     val script = List(OP_EQUAL)
-    val program = ScriptProgramImpl(stack,script,TestUtil.transaction,List())
+    val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
     opEqual(program).stack.head must be (ScriptTrue)
 
     val stack1 = List( ScriptConstantImpl("02"),ScriptNumberImpl(2))
     val script1 = List(OP_EQUAL)
-    val program1 = ScriptProgramImpl(stack1,script1,TestUtil.transaction,List())
+    val program1 = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
     opEqual(program1).stack.head must be (ScriptTrue)
   }
 
   it must "evaluate an OP_0 and ScriptNumberImpl(0) to equal" in {
     val stack = List(OP_0, ScriptNumberImpl(0))
     val script = List(OP_EQUAL)
-    val program = ScriptProgramImpl(stack,script,TestUtil.transaction,List())
+    val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
     opEqual(program).stack.head must be (ScriptTrue)
   }
 
@@ -86,14 +74,10 @@ class BitwiseInterpreterTest extends FlatSpec with MustMatchers with BitwiseInte
   it must "evaluate an OP_1 and ScriptNumberImpl(1) to equal" in {
     val stack = List(OP_1, ScriptNumberImpl(1))
     val script = List(OP_EQUAL)
-    val program = ScriptProgramImpl(stack,script,TestUtil.transaction,List())
+    val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
     opEqual(program).stack.head must be (ScriptTrue)
   }
 
-  it must "evaluate a script number and its corresponding script constant hex representation to equal" in {
-
-
-  }
 
 
 

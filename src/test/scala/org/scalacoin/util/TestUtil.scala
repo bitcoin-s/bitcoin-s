@@ -3,6 +3,7 @@ package org.scalacoin.util
 import org.scalacoin.marshallers.script.RawScriptPubKeyParser
 import org.scalacoin.marshallers.transaction.RawTransactionParser
 import org.scalacoin.protocol.{AssetAddress, BitcoinAddress}
+import org.scalacoin.script.ScriptProgramImpl
 import org.scalacoin.script.bitwise.{OP_EQUAL, OP_EQUALVERIFY}
 import org.scalacoin.script.constant.{ScriptToken, OP_0, ScriptConstantImpl}
 import org.scalacoin.script.crypto.{OP_CHECKSIG, OP_HASH160}
@@ -69,4 +70,6 @@ object TestUtil {
   //scriptPubKey taken from https://bitcoin.org/en/developer-reference#raw-transaction-format
   val rawScriptPubKey = "1976a914cbc20a7664f2f69e5355aa427045bc15e7c6c77288ac"
   val scriptPubKey = RawScriptPubKeyParser.read(rawScriptPubKey)
+
+  val testProgram = ScriptProgramImpl(List(),List(),transaction,List(),List(),false,0)
 }

@@ -12,14 +12,14 @@ class ScriptProgramTest extends FlatSpec with MustMatchers  {
   "ScriptProgram" must "determine if the stack top is true" in {
     val stack = List(ScriptNumberImpl(1))
     val script = List()
-    val program = ScriptProgramImpl(stack,script,TestUtil.transaction, List())
+    val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
     program.stackTopIsTrue must be (true)
   }
 
   it must "determine if the stack stop is false" in {
     val stack = List(ScriptNumberImpl(0))
     val script = List()
-    val program = ScriptProgramImpl(stack,script,TestUtil.transaction, List())
+    val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
     program.stackTopIsTrue must be (false)
 
 

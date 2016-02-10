@@ -1,6 +1,6 @@
 package org.scalacoin.script.bitwise
 
-import org.scalacoin.script.{ScriptProgramImpl, ScriptProgram}
+import org.scalacoin.script.{ScriptProgramFactory, ScriptProgramImpl, ScriptProgram}
 import org.scalacoin.script.constant._
 import org.scalacoin.script.control.{OP_VERIFY, ControlOperationsInterpreter}
 import org.scalacoin.util.ScalacoinUtil
@@ -42,7 +42,7 @@ trait BitwiseInterpreter extends ControlOperationsInterpreter  {
 
     val scriptBoolean : ScriptBoolean = if (result) ScriptTrue else ScriptFalse
 
-    ScriptProgramImpl(scriptBoolean :: program.stack.tail.tail, program.script.tail,program.transaction, program.altStack)
+    ScriptProgramFactory.factory(program,scriptBoolean :: program.stack.tail.tail, program.script.tail)
   }
 
 
@@ -51,13 +51,12 @@ trait BitwiseInterpreter extends ControlOperationsInterpreter  {
    * @param program
    * @return
    */
-  def equalVerify(program : ScriptProgram) : ScriptProgram = {
+  def opEqualVerify(program : ScriptProgram) : ScriptProgram = {
     require(program.stack.size > 1, "Stack size must be 2 or more to compare the top two values")
     require(program.script.headOption.isDefined && program.script.head == OP_EQUALVERIFY, "Script operation must be OP_EQUALVERIFY")
     //first replace OP_EQUALVERIFY with OP_EQUAL and OP_VERIFY
     val simpleScript = OP_EQUAL :: OP_VERIFY :: program.script.tail
-    val newProgram: ScriptProgram = opEqual(ScriptProgramImpl(program.stack,
-      simpleScript,program.transaction, program.altStack))
+    val newProgram: ScriptProgram = opEqual(ScriptProgramFactory.factory(program, program.stack, simpleScript))
     opVerify(newProgram)
   }
 

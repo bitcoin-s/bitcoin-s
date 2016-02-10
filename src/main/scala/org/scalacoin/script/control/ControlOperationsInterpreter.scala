@@ -1,6 +1,6 @@
 package org.scalacoin.script.control
 
-import org.scalacoin.script.{ScriptProgramImpl, ScriptProgram}
+import org.scalacoin.script.{ScriptProgramFactory, ScriptProgramImpl, ScriptProgram}
 import org.scalacoin.script.constant._
 import org.scalacoin.util._
 import org.slf4j.LoggerFactory
@@ -29,12 +29,11 @@ trait ControlOperationsInterpreter {
       //remove OP_ELSE from binary tree
       val newTreeWithoutOpElse = removeFirstOpElse(binaryTree)
       val newScript = newTreeWithoutOpElse.toList
-      ScriptProgramImpl(program.stack.tail,newScript.tail,program.transaction, program.altStack)
+      ScriptProgramFactory.factory(program, program.stack.tail,newScript.tail)
     } else {
       //remove the OP_IF
       val scriptWithoutOpIf : BinaryTree[ScriptToken] = removeFirstOpIf(binaryTree)
-      ScriptProgramImpl(program.stack.tail,scriptWithoutOpIf.toList,
-        program.transaction, program.altStack)
+      ScriptProgramFactory.factory(program, program.stack.tail,scriptWithoutOpIf.toList)
     }
 
   }
@@ -52,21 +51,19 @@ trait ControlOperationsInterpreter {
     if (program.stackTopIsTrue) {
       //remove the OP_NOTIF
       val scriptWithoutOpIf : BinaryTree[ScriptToken] = removeFirstOpIf(binaryTree)
-      ScriptProgramImpl(program.stack.tail,scriptWithoutOpIf.toList,
-        program.transaction, program.altStack)
+      ScriptProgramFactory.factory(program, program.stack.tail,scriptWithoutOpIf.toList)
     } else {
       //if the left branch contains and OP_NOTIF & OP_ENDIF there must be a nested OP_IF or OP_NOTIF
       //remove OP_ELSE from binary tree
       val newTreeWithoutOpElse = removeFirstOpElse(binaryTree)
       val newScript = newTreeWithoutOpElse.toList
-      ScriptProgramImpl(program.stack.tail,newScript.tail,
-        program.transaction, program.altStack)
+      ScriptProgramFactory.factory(program, program.stack.tail,newScript.tail)
     }
   }
+
   /**
    * Evaluates the OP_ELSE operator
-   * @param stack
-   * @param script
+   * @param program
    * @return
    */
   def opElse(program : ScriptProgram) : ScriptProgram = {
@@ -87,8 +84,7 @@ trait ControlOperationsInterpreter {
         }
         else node
     }
-    ScriptProgramImpl(program.stack,treeWithNextOpElseRemoved.toList.tail,
-      program.transaction, program.altStack)
+    ScriptProgramFactory.factory(program, program.stack,treeWithNextOpElseRemoved.toList.tail)
   }
 
 
@@ -99,7 +95,7 @@ trait ControlOperationsInterpreter {
    */
   def opEndIf(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.isDefined && program.script.head == OP_ENDIF, "Script top must be OP_ENDIF")
-    ScriptProgramImpl(program.stack,program.script.tail,program.transaction,program.altStack)
+    ScriptProgramFactory.factory(program, program.stack,program.script.tail)
   }
 
 
@@ -126,11 +122,10 @@ trait ControlOperationsInterpreter {
     require(program.script.headOption.isDefined && program.script.head == OP_VERIFY, "Script top must be OP_VERIFY")
     require(program.stack.size > 0, "Stack must have at least one element on it to run OP_VERIFY")
     if (program.stack.head != OP_0 && program.stack.head != ScriptFalse ) {
-      ScriptProgramImpl(program.stack,program.script.tail,program.transaction,program.altStack)
+      ScriptProgramFactory.factory(program, program.stack,program.script.tail,true)
     } else if (program.stack.exists(t => t != OP_0 && t != ScriptFalse)) {
-      ScriptProgramImpl(program.stack,program.script.tail,program.transaction,program.altStack)
-    } else ScriptProgramImpl(program.stack,program.script.tail,
-      program.transaction,program.altStack,valid = false)
+      ScriptProgramFactory.factory(program, program.stack,program.script.tail,true)
+    } else ScriptProgramFactory.factory(program, program.stack,program.script.tail, false)
   }
 
 

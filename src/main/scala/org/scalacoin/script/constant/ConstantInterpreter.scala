@@ -1,6 +1,6 @@
 package org.scalacoin.script.constant
 
-import org.scalacoin.script.{ScriptProgramImpl, ScriptProgram}
+import org.scalacoin.script.{ScriptProgramFactory, ScriptProgramImpl, ScriptProgram}
 import org.scalacoin.util.ScalacoinUtil
 import org.slf4j.LoggerFactory
 
@@ -24,12 +24,11 @@ trait ConstantInterpreter {
     val numberOfBytes : Int = Integer.parseInt(program.script(1).hex,16)
     if (numberOfBytes == 0) {
       //if the number of bytes pushed onto the stack is zero, we push an empty byte vector onto the stack
-      ScriptProgramImpl(OP_0 :: program.stack, program.script.slice(2,program.script.size),
-        program.transaction, program.altStack)
+      ScriptProgramFactory.factory(program, OP_0 :: program.stack, program.script.slice(2,program.script.size))
     } else {
       val slicedScript = program.script.slice(2,program.script.size)
       val (newStack,newScript) = opPushData(program.stack,slicedScript,numberOfBytes)
-      ScriptProgramImpl(newStack,newScript,program.transaction,program.altStack)
+      ScriptProgramFactory.factory(program, newStack,newScript)
     }
   }
 
@@ -45,12 +44,11 @@ trait ConstantInterpreter {
     val numberOfBytes : Int = Integer.parseInt(reversedHex,16)
     if (numberOfBytes == 0) {
       //if the number of bytes pushed onto the stack is zero, we push an empty byte vector onto the stack
-      ScriptProgramImpl(OP_0 :: program.stack, program.script.slice(2,program.script.size),
-        program.transaction, program.altStack)
+      ScriptProgramFactory.factory(program, OP_0 :: program.stack, program.script.slice(2,program.script.size))
     } else {
       val slicedScript = program.script.slice(2,program.script.size)
       val (newStack,newScript) = opPushData(program.stack,slicedScript,numberOfBytes)
-      ScriptProgramImpl(newStack,newScript,program.transaction, program.altStack)
+      ScriptProgramFactory.factory(program, newStack, newScript)
     }
   }
 
@@ -66,12 +64,11 @@ trait ConstantInterpreter {
     val numberOfBytes : Int = Integer.parseInt(reversedHex,16)
     if (numberOfBytes == 0) {
       //if the number of bytes pushed onto the stack is zero, we push an empty byte vector onto the stack
-      ScriptProgramImpl(OP_0 :: program.stack, program.script.slice(2,program.script.size),
-        program.transaction,program.altStack)
+      ScriptProgramFactory.factory(program, OP_0 :: program.stack, program.script.slice(2,program.script.size))
     } else {
       val slicedScript = program.script.slice(2,program.script.size)
       val (newStack,newScript) = opPushData(program.stack,slicedScript,numberOfBytes)
-      ScriptProgramImpl(newStack,newScript,program.transaction,program.altStack)
+      ScriptProgramFactory.factory(program, newStack,newScript)
     }
   }
 
@@ -91,7 +88,7 @@ trait ConstantInterpreter {
     /**
      * Parses the script tokens that need to be pushed onto our stack
      * @param scriptTokens
-     * @param scriptConstantAccum
+     * @param accum
      * @return
      */
     @tailrec
@@ -111,16 +108,7 @@ trait ConstantInterpreter {
     }
 
     val (newScript,bytesToPushOntoStack) = takeUntilBytesNeeded(program.script.tail,List())
-    //see if the new script constant can be converted into a script number
-/*
-    val bytesToPushOntoStack : Option[BytesToPushOntoStack] = BytesToPushOntoStackFactory.fromHex(newScriptConstant.hex)
-    val scriptNumber = if(bytesToPushOntoStack.isDefined) Some(ScriptNumberImpl(bytesToPushOntoStack.get.opCode)) else None
-*/
-/*
-    if (scriptNumber.isDefined) ScriptProgramImpl(
-      scriptNumber.get :: program.stack, newScript,program.transaction, program.altStack)
-    else */
-    ScriptProgramImpl(bytesToPushOntoStack ++ program.stack, newScript, program.transaction, program.altStack)
+    ScriptProgramFactory.factory(program, bytesToPushOntoStack ++ program.stack, newScript)
   }
 
   /**

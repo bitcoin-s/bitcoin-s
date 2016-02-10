@@ -1,6 +1,6 @@
 package org.scalacoin.script.stack
 
-import org.scalacoin.script.{ScriptProgramImpl, ScriptProgram}
+import org.scalacoin.script.{ScriptProgramFactory, ScriptProgramImpl, ScriptProgram}
 import org.scalacoin.script.constant._
 import org.scalacoin.util.ScalacoinUtil
 
@@ -21,7 +21,7 @@ trait StackInterpreter {
     require(program.script.headOption.isDefined && program.script.head == OP_DUP, "Top of the script stack must be OP_DUP")
     require(program.stack.headOption.isDefined, "Cannot duplicate the top element on an empty stack")
     program.stack match {
-      case h :: t => ScriptProgramImpl(h :: program.stack, program.script.tail,program.transaction,program.altStack)
+      case h :: t => ScriptProgramFactory.factory(program, h :: program.stack, program.script.tail)
       case Nil => throw new RuntimeException("Received an empty stack! Cannot duplicate an element on an empty stack")
     }
   }
@@ -35,9 +35,9 @@ trait StackInterpreter {
     require(program.script.headOption.isDefined && program.script.head == OP_IFDUP, "Top of the script stack must be OP_DUP")
     require(program.stack.headOption.isDefined, "Cannot duplicate the top element on an empty stack")
     if (program.stack.head == OP_0) {
-      ScriptProgramImpl(program.stack,program.script.tail, program.transaction,program.altStack)
-    } else ScriptProgramImpl(program.stack.head :: program.stack,
-      program.script.tail, program.transaction,program.altStack)
+      ScriptProgramFactory.factory(program,program.stack,program.script.tail)
+    } else ScriptProgramFactory.factory(program, program.stack.head :: program.stack,
+      program.script.tail)
   }
 
   /**
@@ -52,7 +52,7 @@ trait StackInterpreter {
     val stackSize = program.stack.size
 
     val numberToPush : ScriptNumber= if (stackSize == 0) OP_0 else ScriptNumberImpl(stackSize)
-    ScriptProgramImpl(numberToPush :: program.stack, program.script.tail,program.transaction,program.altStack)
+    ScriptProgramFactory.factory(program, numberToPush :: program.stack, program.script.tail)
   }
 
   /**
@@ -63,7 +63,7 @@ trait StackInterpreter {
   def opToAltStack(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.isDefined && program.script.head == OP_TOALTSTACK, "Top of script stack must be OP_TOALTSTACK")
     require(program.stack.size > 0,"Stack must have at least one item on it for OP_TOALTSTACK")
-    ScriptProgramImpl(program.stack.tail,program.script.tail,program.transaction,List(program.stack.head))
+    ScriptProgramFactory.factory(program, program.stack.tail, program.script.tail, List(program.stack.head))
   }
 
   /**
@@ -74,8 +74,8 @@ trait StackInterpreter {
   def opFromAltStack(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.isDefined && program.script.head == OP_FROMALTSTACK, "Top of script stack must be OP_FROMALTSTACK")
     require(program.altStack.size > 0,"Alt Stack must have at least one item on it for OP_FROMALTSTACK")
-    ScriptProgramImpl(program.altStack.head :: program.stack,
-      program.script.tail, program.transaction,program.altStack.tail)
+    ScriptProgramFactory.factory(program, program.altStack.head :: program.stack,
+      program.script.tail, program.altStack.tail)
   }
 
   /**
@@ -86,7 +86,7 @@ trait StackInterpreter {
   def opDrop(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.isDefined && program.script.head == OP_DROP, "Top of script stack must be OP_DROP")
     require(program.stack.size > 0,"Stack must have at least one item on it for OP_DROP")
-    ScriptProgramImpl(program.stack.tail,program.script.tail,program.transaction,program.altStack)
+    ScriptProgramFactory.factory(program, program.stack.tail,program.script.tail)
   }
 
 
@@ -99,7 +99,7 @@ trait StackInterpreter {
     require(program.script.headOption.isDefined && program.script.head == OP_NIP, "Top of script stack must be OP_NIP")
     require(program.stack.size > 1,"Stack must have at least two items on it for OP_NIP")
     program.stack match {
-      case h :: _ :: t => ScriptProgramImpl(h :: t, program.script.tail, program.transaction, program.altStack)
+      case h :: _ :: t => ScriptProgramFactory.factory(program, h :: t, program.script.tail)
       case h :: t => throw new RuntimeException("Stack must have at least two items on it for OP_NIP")
       case Nil => throw new RuntimeException("Stack must have at least two items on it for OP_NIP")
     }
@@ -115,7 +115,7 @@ trait StackInterpreter {
     require(program.script.headOption.isDefined && program.script.head == OP_OVER, "Top of script stack must be OP_OVER")
     require(program.stack.size > 1,"Stack must have at least two items on it for OP_OVER")
     program.stack match {
-      case _ :: h1 :: _ => ScriptProgramImpl(h1 :: program.stack, program.script.tail, program.transaction, program.altStack)
+      case _ :: h1 :: _ => ScriptProgramFactory.factory(program, h1 :: program.stack, program.script.tail)
       case h :: t => throw new RuntimeException("Stack must have at least two items on it for OP_OVER")
       case Nil => throw new RuntimeException("Stack must have at least two items on it for OP_OVER")
     }
@@ -132,7 +132,7 @@ trait StackInterpreter {
 
     val n = ScalacoinUtil.hexToLong(program.stack.head.hex).toInt
     val newStackTop = program.stack.tail(n)
-    ScriptProgramImpl(newStackTop :: program.stack.tail, program.script.tail, program.transaction, program.altStack)
+    ScriptProgramFactory.factory(program,newStackTop :: program.stack.tail, program.script.tail)
   }
 
   /**
@@ -147,7 +147,7 @@ trait StackInterpreter {
     val newStackTop = program.stack.tail(n)
     //removes the old instance of the stack top, appends the new index to the head
     val newStack = newStackTop :: program.stack.tail.diff(List(newStackTop))
-    ScriptProgramImpl(newStack,program.script.tail,program.transaction,program.altStack)
+    ScriptProgramFactory.factory(program,newStack,program.script.tail)
   }
 
   /**
@@ -164,7 +164,7 @@ trait StackInterpreter {
       case h :: h1 :: h2 :: t => h2 :: h :: h1 :: t
       case _ => throw new RuntimeException("Stack must have at least 3 items on it for OP_ROT")
     }
-    ScriptProgramImpl(newStack,program.script.tail,program.transaction,program.altStack)
+    ScriptProgramFactory.factory(program, newStack,program.script.tail)
   }
 
   /**
@@ -181,7 +181,7 @@ trait StackInterpreter {
       case h :: h1 :: h2 :: h3 :: h4 :: h5 :: t => h4 :: h5 :: h :: h1 :: h2 :: h3 ::  t
       case _ => throw new RuntimeException("Stack must have at least 5 items on it for OP_2ROT")
     }
-    ScriptProgramImpl(newStack,program.script.tail,program.transaction,program.altStack)
+    ScriptProgramFactory.factory(program, newStack,program.script.tail)
   }
 
   /**
@@ -192,7 +192,7 @@ trait StackInterpreter {
   def op2Drop(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.isDefined && program.script.head == OP_2DROP, "Top of script stack must be OP_2DROP")
     require(program.stack.size > 1,"Stack must have at least 2 items on it for OP_2DROP")
-    ScriptProgramImpl(program.stack.tail.tail, program.script.tail, program.transaction, program.altStack)
+    ScriptProgramFactory.factory(program, program.stack.tail.tail, program.script.tail)
   }
 
 
@@ -205,7 +205,7 @@ trait StackInterpreter {
     require(program.script.headOption.isDefined && program.script.head == OP_SWAP, "Top of script stack must be OP_SWAP")
     require(program.stack.size > 1,"Stack must have at least 2 items on it for OP_SWAP")
     val newStack = program.stack.tail.head :: program.stack.head :: program.stack.tail.tail
-    ScriptProgramImpl(newStack, program.script.tail, program.transaction, program.altStack)
+    ScriptProgramFactory.factory(program, newStack, program.script.tail)
   }
 
 
@@ -223,7 +223,7 @@ trait StackInterpreter {
       case h :: h1 :: t => h1 :: h :: h1 :: t
       case _ => throw new RuntimeException("Stack must have at least 2 items on it for OP_TUCK")
     }
-    ScriptProgramImpl(newStack, program.script.tail, program.transaction, program.altStack)
+    ScriptProgramFactory.factory(program, newStack, program.script.tail)
   }
 
 
@@ -240,7 +240,7 @@ trait StackInterpreter {
       case h :: h1 :: t => h :: h1 :: h :: h1 :: t
       case _ => throw new RuntimeException("Stack must have at least 2 items on it for OP_2DUP")
     }
-    ScriptProgramImpl(newStack, program.script.tail, program.transaction, program.altStack)
+    ScriptProgramFactory.factory(program, newStack, program.script.tail)
   }
 
   /**
@@ -255,7 +255,7 @@ trait StackInterpreter {
       case h :: h1 :: h2 :: t => h :: h1 :: h2 :: h :: h1 :: h2 :: t
       case _ => throw new RuntimeException("Stack must have at least 3 items on it for OP_3DUP")
     }
-    ScriptProgramImpl(newStack,program.script.tail, program.transaction, program.altStack)
+    ScriptProgramFactory.factory(program,newStack,program.script.tail)
   }
 
 
@@ -272,7 +272,7 @@ trait StackInterpreter {
       case h :: h1 :: h2 :: h3 :: t => h2 :: h3 :: h :: h1 :: h2 :: h3 :: t
       case _ => throw new RuntimeException("Stack must have at least 4 items on it for OP_2OVER")
     }
-    ScriptProgramImpl(newStack,program.script.tail, program.transaction, program.altStack)
+    ScriptProgramFactory.factory(program, newStack,program.script.tail)
   }
 
   /**
@@ -288,7 +288,7 @@ trait StackInterpreter {
       case h :: h1 :: h2 :: h3 :: t  => h2 :: h3 :: h :: h1 :: t
       case _ => throw new RuntimeException("Stack must have at least 4 items on it for OP_2SWAP")
     }
-    ScriptProgramImpl(newStack,program.script.tail, program.transaction, program.altStack)
+    ScriptProgramFactory.factory(program,newStack,program.script.tail)
   }
 
 }
