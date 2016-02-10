@@ -19,7 +19,7 @@ class ScriptParserTest extends FlatSpec with MustMatchers with ScriptParser with
   "ScriptParser" must "parse 0x00 to a OP_0" in {
     parse(List(0.toByte)) must be (List(OP_0))
   }
-/*  it must "parse a number larger than an integer into a ScriptNumberImpl" in {
+  it must "parse a number larger than an integer into a ScriptNumberImpl" in {
     parse("2147483648") must be (List(ScriptNumberImpl(2147483648L)))
   }
 
@@ -101,7 +101,7 @@ class ScriptParserTest extends FlatSpec with MustMatchers with ScriptParser with
   it must "parse a combination of decimal and hexadecimal constants correctly" in {
     val str = "127 0x01 0x7F EQUAL"
     parse(str) must be (List(ScriptNumberImpl(127), BytesToPushOntoStackImpl(1), ScriptNumberImpl(127), OP_EQUAL))
-  }*/
+  }
 
   it must "parse an OP_IF OP_ENDIF block" in {
     val str = "1 0x01 0x80 IF 0 ENDIF"

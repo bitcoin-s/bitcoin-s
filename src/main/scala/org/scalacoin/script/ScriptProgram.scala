@@ -9,9 +9,11 @@ import org.scalacoin.script.constant.{OP_0, ScriptNumberImpl, ScriptFalse, Scrip
 trait ScriptProgram {
   def stack : List[ScriptToken]
   def script : List[ScriptToken]
+  def fullScript : List[ScriptToken]
   def transaction : Transaction
   def altStack : List[ScriptToken]
   def valid : Boolean
+  def lastCodeSeparator : Int
 
   /**
    * Returns if the stack top is true
@@ -32,6 +34,7 @@ trait ScriptProgram {
 }
 
 case class ScriptProgramImpl(stack : List[ScriptToken],script : List[ScriptToken], transaction : Transaction,
-                              altStack : List[ScriptToken], override val valid : Boolean = true) extends ScriptProgram
+  altStack : List[ScriptToken], fullScript : List[ScriptToken],
+  override val valid : Boolean = true, override val lastCodeSeparator : Int = 0) extends ScriptProgram
 
 

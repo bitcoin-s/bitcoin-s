@@ -4,7 +4,7 @@ import org.scalacoin.protocol.script.{ScriptSignature, ScriptPubKey}
 import org.scalacoin.protocol.transaction.Transaction
 import org.scalacoin.script.locktime.{OP_CHECKLOCKTIMEVERIFY, LockTimeInterpreter}
 import org.scalacoin.script.splice.{SpliceInterpreter, OP_SIZE}
-import org.scalacoin.script.{ScriptProgramImpl, ScriptProgram}
+import org.scalacoin.script.{ScriptProgramFactory, ScriptProgramImpl, ScriptProgram}
 import org.scalacoin.script.arithmetic._
 import org.scalacoin.script.bitwise.{OP_EQUAL, BitwiseInterpreter, OP_EQUALVERIFY}
 import org.scalacoin.script.constant._
@@ -92,24 +92,22 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
           else if (newProgram.stack.head == ScriptFalse && newProgram.script.size == 0) false
           else loop(newProgram)
         }
-        case OP_EQUALVERIFY :: t => equalVerify(program).valid
+        case OP_EQUALVERIFY :: t => opEqualVerify(program).valid
         //script constants
         //TODO: Implement these
         case ScriptConstantImpl(x) :: t if x == "1" => throw new RuntimeException("Not implemented yet")
         case ScriptConstantImpl(x) :: t if x == "0" => throw new RuntimeException("Not implemented yet")
         case (scriptNumberOp : ScriptNumberOperation) :: t =>
-          if (scriptNumberOp == OP_0) loop(ScriptProgramImpl(OP_0 :: program.stack, t,program.transaction,program.altStack))
-          else loop(ScriptProgramImpl(scriptNumberOp.scriptNumber :: program.stack, t,program.transaction,program.altStack))
+          if (scriptNumberOp == OP_0) loop(ScriptProgramFactory.factory(program,OP_0 :: program.stack, t))
+          else loop(ScriptProgramFactory.factory(program, scriptNumberOp.scriptNumber :: program.stack, t))
         case (bytesToPushOntoStack : BytesToPushOntoStack) :: t => loop(pushScriptNumberBytesToStack(program))
         case (scriptNumber : ScriptNumber) :: t =>
-          loop(ScriptProgramImpl(scriptNumber :: program.stack, t, program.transaction, program.altStack))
+          loop(ScriptProgramFactory.factory(program, scriptNumber :: program.stack, t))
         case OP_PUSHDATA1 :: t => loop(opPushData1(program))
         case OP_PUSHDATA2 :: t => loop(opPushData2(program))
         case OP_PUSHDATA4 :: t => loop(opPushData4(program))
 
-        //TODO: is this right? I need to just push a constant on the input stack???
-        case ScriptConstantImpl(x) :: t => loop(ScriptProgramImpl(ScriptConstantImpl(x) :: program.stack, t,
-          program.transaction,program.altStack))
+        case ScriptConstantImpl(x) :: t => loop(ScriptProgramFactory.factory(program, ScriptConstantImpl(x) :: program.stack, t))
 
         //control operations
         case OP_IF :: t => loop(opIf(program))
@@ -130,7 +128,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
         case OP_SHA256 :: t => loop(opSha256(program))
         case OP_HASH256 :: t => loop(opHash256(program))
         //reserved operations
-        case (nop : NOP) :: t => loop(ScriptProgramImpl(program.stack,t,program.transaction,program.altStack))
+        case (nop : NOP) :: t => loop(ScriptProgramFactory.factory(program,program.stack,t))
 
         //splice operations
         case OP_SIZE :: t => loop(opSize(program))
@@ -144,7 +142,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
       }
     }
 
-    loop(ScriptProgramImpl(List(),fullScript,transaction, List()))
+    loop(ScriptProgramImpl(List(),fullScript,transaction, List(),fullScript))
   }
 
   def run(inputScript : Seq[ScriptToken], outputScript : Seq[ScriptToken], transaction : Transaction) : Boolean = {

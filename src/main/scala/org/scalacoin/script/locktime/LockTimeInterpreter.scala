@@ -1,7 +1,7 @@
 package org.scalacoin.script.locktime
 
 import org.scalacoin.script.constant.{ScriptNumberImpl, ScriptNumber}
-import org.scalacoin.script.{ScriptProgramImpl, ScriptProgram}
+import org.scalacoin.script.{ScriptProgramFactory, ScriptProgramImpl, ScriptProgram}
 
 /**
  * Created by chris on 2/8/16.
@@ -25,7 +25,7 @@ trait LockTimeInterpreter {
     require(program.script.headOption.isDefined && program.script.head == OP_CHECKLOCKTIMEVERIFY,
       "Script top must be OP_CHECKLOCKTIMEVERIFY")
     if (program.stack.size == 0) {
-      ScriptProgramImpl(program.stack, program.script.tail, program.transaction, program.altStack,false)
+      ScriptProgramFactory.factory(program, program.stack, program.script.tail, false)
     } else {
       val isValid = program.stack.head match {
         case s : ScriptNumber if (s < ScriptNumberImpl(0)) => false
@@ -34,7 +34,7 @@ trait LockTimeInterpreter {
         case s if (program.transaction.inputs.map(_.sequence == 0xffffffff).exists(_ == true)) => false
         case _ => true
       }
-      ScriptProgramImpl(program.stack, program.script.tail, program.transaction, program.altStack,isValid)
+      ScriptProgramFactory.factory(program,program.stack, program.script.tail, isValid)
     }
   }
 

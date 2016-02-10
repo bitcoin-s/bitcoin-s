@@ -2,7 +2,7 @@ package org.scalacoin.script.crypto
 
 import org.scalacoin.protocol.script.ScriptPubKey
 import org.scalacoin.protocol.transaction.Transaction
-import org.scalacoin.script.{ScriptProgramImpl, ScriptProgram}
+import org.scalacoin.script.{ScriptProgramFactory, ScriptProgramImpl, ScriptProgram}
 import org.scalacoin.script.constant.{ScriptOperation, ScriptConstantImpl, ScriptConstant, ScriptToken}
 import org.scalacoin.util.{CryptoUtil, ScalacoinUtil}
 
@@ -22,7 +22,7 @@ trait CryptoInterpreter extends ScalacoinUtil {
     require(program.script.headOption.isDefined && program.script.head == OP_HASH160, "Script operation must be OP_HASH160")
     val stackTop = program.stack.head
     val hash = ScriptConstantImpl(ScalacoinUtil.encodeHex(CryptoUtil.sha256Hash160(stackTop.bytes)))
-    ScriptProgramImpl(hash :: program.stack, program.script.tail,program.transaction, program.altStack)
+    ScriptProgramFactory.factory(program, hash :: program.stack, program.script.tail)
   }
 
 
@@ -37,7 +37,7 @@ trait CryptoInterpreter extends ScalacoinUtil {
     val stackTop = program.stack.head
     val hash = CryptoUtil.ripeMd160(stackTop.bytes)
     val newStackTop = ScriptConstantImpl(ScalacoinUtil.encodeHex(hash))
-    ScriptProgramImpl(newStackTop :: program.stack.tail, program.script.tail,program.transaction, program.altStack)
+    ScriptProgramFactory.factory(program,newStackTop :: program.stack.tail, program.script.tail)
   }
 
   /**
@@ -51,7 +51,7 @@ trait CryptoInterpreter extends ScalacoinUtil {
     val stackTop = program.stack.head
     val hash = CryptoUtil.sha256(stackTop.bytes)
     val newStackTop = ScriptConstantImpl(ScalacoinUtil.encodeHex(hash))
-    ScriptProgramImpl(newStackTop :: program.stack.tail, program.script.tail,program.transaction, program.altStack)
+    ScriptProgramFactory.factory(program, newStackTop :: program.stack.tail, program.script.tail)
   }
 
   /**
@@ -65,7 +65,7 @@ trait CryptoInterpreter extends ScalacoinUtil {
     val stackTop = program.stack.head
     val hash = CryptoUtil.doubleSHA256(stackTop.bytes)
     val newStackTop = ScriptConstantImpl(ScalacoinUtil.encodeHex(hash))
-    ScriptProgramImpl(newStackTop :: program.stack.tail, program.script.tail,program.transaction, program.altStack)
+    ScriptProgramFactory.factory(program, newStackTop :: program.stack.tail, program.script.tail)
   }
 
   /**
@@ -127,8 +127,13 @@ trait CryptoInterpreter extends ScalacoinUtil {
 
     val constant = program.stack.head
     val hash = ScriptConstantImpl(ScalacoinUtil.encodeHex(CryptoUtil.sha1(constant.bytes)))
-    ScriptProgramImpl(hash :: program.stack.tail, program.script.tail,program.transaction, program.altStack)
+    ScriptProgramFactory.factory(program, hash :: program.stack.tail, program.script.tail)
+  }
 
+  def opCodeSeparator(program : ScriptProgram) : ScriptProgram = {
+    require(program.script.headOption.isDefined && program.script.head == OP_CODESEPARATOR, "Script top must be OP_CODESEPARATOR")
+
+    ScriptProgramFactory.factory(program,program.script.tail, ScriptProgramFactory.Script, 1)
   }
 
   private def hashForSignature(inputScript : Seq[ScriptToken], spendingTx : Transaction,

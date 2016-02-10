@@ -1,7 +1,7 @@
 package org.scalacoin.script.arithmetic
 
 import org.scalacoin.script.control.{ControlOperationsInterpreter, OP_VERIFY}
-import org.scalacoin.script.{ScriptProgramImpl, ScriptProgram}
+import org.scalacoin.script.{ScriptProgramFactory, ScriptProgramImpl, ScriptProgram}
 import org.scalacoin.script.constant._
 
 /**
@@ -23,8 +23,8 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
     val a = numFromScriptToken(program.stack(1))
 
     val result = numberToScriptToken(a + b)
-    ScriptProgramImpl(result :: program.stack.slice(2,program.stack.size),
-      program.script.tail, program.transaction, program.altStack)
+    ScriptProgramFactory.factory(program, result :: program.stack.slice(2,program.stack.size),
+      program.script.tail)
   }
 
   /**
@@ -41,8 +41,7 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
       case x => throw new RuntimeException("Stack must be script number to perform OP_1ADD, stack top was: " + x)
     }
 
-    ScriptProgramImpl(newStackTop :: program.stack.tail,
-      program.script.tail, program.transaction, program.altStack)
+    ScriptProgramFactory.factory(program, newStackTop :: program.stack.tail, program.script.tail)
   }
 
   /**
@@ -59,8 +58,7 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
       case x => throw new RuntimeException("Stack must be script number to perform OP_1ADD, stack top was: " + x)
     }
 
-    ScriptProgramImpl(newStackTop :: program.stack.tail,
-      program.script.tail, program.transaction, program.altStack)
+    ScriptProgramFactory.factory(program, newStackTop :: program.stack.tail, program.script.tail)
   }
 
 
@@ -83,8 +81,7 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
     }
 
     val newScriptNumber = a - b
-    ScriptProgramImpl(newScriptNumber :: program.stack.tail,
-      program.script.tail, program.transaction, program.altStack)
+    ScriptProgramFactory.factory(program, newScriptNumber :: program.stack.tail, program.script.tail)
   }
 
   /**
@@ -99,8 +96,7 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
       case s : ScriptNumber => ScriptNumberImpl(s.num.abs)
       case x => throw new RuntimeException("Stack must be script number to perform OP_ABS, stack top was: " + x)
     }
-    ScriptProgramImpl(newStackTop :: program.stack.tail,
-      program.script.tail, program.transaction, program.altStack)
+    ScriptProgramFactory.factory(program, newStackTop :: program.stack.tail, program.script.tail)
   }
 
   /**
@@ -115,8 +111,7 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
       case s : ScriptNumber => ScriptNumberImpl(-s.num)
       case x => throw new RuntimeException("Stack must be script number to perform OP_ABS, stack top was: " + x)
     }
-    ScriptProgramImpl(newStackTop :: program.stack.tail,
-      program.script.tail, program.transaction, program.altStack)
+    ScriptProgramFactory.factory(program, newStackTop :: program.stack.tail, program.script.tail)
   }
 
   /**
@@ -134,8 +129,7 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
       case ScriptNumberImpl(1) => OP_0
       case _ => OP_0
     }
-    ScriptProgramImpl(newStackTop :: program.stack.tail,
-      program.script.tail, program.transaction, program.altStack)
+    ScriptProgramFactory.factory(program, newStackTop :: program.stack.tail, program.script.tail)
   }
 
   /**
@@ -151,8 +145,7 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
       case ScriptNumberImpl(0) => OP_0
       case _ => OP_1
     }
-    ScriptProgramImpl(newStackTop :: program.stack.tail,
-      program.script.tail, program.transaction, program.altStack)
+    ScriptProgramFactory.factory(program, newStackTop :: program.stack.tail, program.script.tail)
   }
 
 
@@ -167,8 +160,7 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
     val b = program.stack.head
     val a = program.stack.tail.head
     val newStackTop = if ( b == a && (a == ScriptNumberImpl(0) || a == OP_0)) OP_1 else OP_0
-    ScriptProgramImpl(newStackTop :: program.stack.tail.tail,
-      program.script.tail, program.transaction, program.altStack)
+    ScriptProgramFactory.factory(program, newStackTop :: program.stack.tail.tail, program.script.tail)
 
   }
 
@@ -183,8 +175,7 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
     val b = program.stack.head
     val a = program.stack.tail.head
     val newStackTop = if (a == b && (a == ScriptNumberImpl(0) || a == OP_0)) OP_0 else OP_1
-    ScriptProgramImpl(newStackTop :: program.stack.tail.tail,
-      program.script.tail, program.transaction, program.altStack)
+    ScriptProgramFactory.factory(program, newStackTop :: program.stack.tail.tail, program.script.tail)
   }
 
   /**
@@ -204,8 +195,7 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
     }
 
     val newStackTop = if (isSame) OP_1 else OP_0
-    ScriptProgramImpl(newStackTop :: program.stack.tail.tail,
-      program.script.tail, program.transaction, program.altStack)
+    ScriptProgramFactory.factory(program, newStackTop :: program.stack.tail.tail, program.script.tail)
   }
 
 
@@ -218,10 +208,9 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
     require(program.script.headOption.isDefined && program.script.head == OP_NUMEQUALVERIFY,
       "Script top must be OP_NUMEQUALVERIFY")
     require(program.stack.size > 1, "Stack size must be 2 or more perform an OP_NUMEQUALVERIFY")
-    val numEqualProgram = ScriptProgramImpl(program.stack, OP_NUMEQUAL :: program.script.tail, program.transaction, program.altStack)
+    val numEqualProgram = ScriptProgramFactory.factory(program, program.stack, OP_NUMEQUAL :: program.script.tail)
     val numEqualResult = opNumEqual(numEqualProgram)
-    val verifyProgram = ScriptProgramImpl(program.stack, OP_VERIFY :: numEqualResult.script,
-      numEqualResult.transaction, numEqualResult.altStack)
+    val verifyProgram = ScriptProgramFactory.factory(numEqualResult, program.stack, OP_VERIFY :: numEqualResult.script)
     val verifyResult = opVerify(verifyProgram)
     verifyResult
   }
@@ -247,8 +236,7 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
     }
 
     val newStackTop = if (isSame) OP_0 else OP_1
-    ScriptProgramImpl(newStackTop :: program.stack.tail.tail,
-      program.script.tail, program.transaction, program.altStack)
+    ScriptProgramFactory.factory(program, newStackTop :: program.stack.tail.tail, program.script.tail)
   }
 
 
@@ -271,8 +259,7 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
     }
 
     val newStackTop = if (isLessThan) OP_1 else OP_0
-    ScriptProgramImpl(newStackTop :: program.stack.tail.tail,
-      program.script.tail, program.transaction, program.altStack)
+    ScriptProgramFactory.factory(program, newStackTop :: program.stack.tail.tail, program.script.tail)
   }
 
 
@@ -295,8 +282,7 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
     }
 
     val newStackTop = if (isGreaterThan) OP_1 else OP_0
-    ScriptProgramImpl(newStackTop :: program.stack.tail.tail,
-      program.script.tail, program.transaction, program.altStack)
+    ScriptProgramFactory.factory(program, newStackTop :: program.stack.tail.tail, program.script.tail)
   }
 
   /**
@@ -318,8 +304,7 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
     }
 
     val newStackTop = if (isLessThanOrEqual) OP_1 else OP_0
-    ScriptProgramImpl(newStackTop :: program.stack.tail.tail,
-      program.script.tail, program.transaction, program.altStack)
+    ScriptProgramFactory.factory(program, newStackTop :: program.stack.tail.tail, program.script.tail)
   }
 
   /**
@@ -341,8 +326,7 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
     }
 
     val newStackTop = if (isGreaterThanOrEqual) OP_1 else OP_0
-    ScriptProgramImpl(newStackTop :: program.stack.tail.tail,
-      program.script.tail, program.transaction, program.altStack)
+    ScriptProgramFactory.factory(program, newStackTop :: program.stack.tail.tail, program.script.tail)
   }
 
 
@@ -365,8 +349,7 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
     }
 
     val newStackTop = if (isLessThanOrEqual) a else b
-    ScriptProgramImpl(newStackTop :: program.stack.tail.tail,
-      program.script.tail, program.transaction, program.altStack)
+    ScriptProgramFactory.factory(program, newStackTop :: program.stack.tail.tail, program.script.tail)
   }
 
 
@@ -389,8 +372,7 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
     }
 
     val newStackTop = if (isGreaterThanOrEqual) a else b
-    ScriptProgramImpl(newStackTop :: program.stack.tail.tail,
-      program.script.tail, program.transaction, program.altStack)
+    ScriptProgramFactory.factory(program, newStackTop :: program.stack.tail.tail, program.script.tail)
   }
 
 
@@ -417,8 +399,7 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
     }
 
     val newStackTop = if (isWithinRange) OP_1 else OP_0
-    ScriptProgramImpl(newStackTop :: program.stack.tail.tail.tail,
-      program.script.tail, program.transaction, program.altStack)
+    ScriptProgramFactory.factory(program, newStackTop :: program.stack.tail.tail.tail, program.script.tail)
   }
 
 
