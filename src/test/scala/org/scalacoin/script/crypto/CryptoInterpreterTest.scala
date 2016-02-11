@@ -102,4 +102,15 @@ class CryptoInterpreterTest extends FlatSpec with MustMatchers with CryptoInterp
   }
 
 
+  it must "evaluate an OP_CHECKMULTISIG with zero signatures and zero pubkeys" in {
+    val stack = List(OP_0,OP_0,OP_0)
+    val script = List(OP_CHECKMULTISIG)
+    val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
+    val newProgram = opCheckMultiSig(program)
+    newProgram.valid must be (true)
+    newProgram.stack.isEmpty must be (true)
+    newProgram.script.isEmpty must be (true)
+  }
+
+
 }
