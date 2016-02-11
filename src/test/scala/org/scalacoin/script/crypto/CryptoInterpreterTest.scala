@@ -108,9 +108,49 @@ class CryptoInterpreterTest extends FlatSpec with MustMatchers with CryptoInterp
     val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
     val newProgram = opCheckMultiSig(program)
     newProgram.valid must be (true)
+    newProgram.stack must be (List(ScriptTrue))
+    newProgram.script.isEmpty must be (true)
+  }
+
+  it must "evaluate an OP_CHECKMULTISIG and leave the remaining operations on the stack" in {
+    val stack = List(OP_0,OP_0,OP_0, OP_16,OP_16,OP_16)
+    val script = List(OP_CHECKMULTISIG,OP_16,OP_16,OP_16,OP_16)
+    val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
+    val newProgram = opCheckMultiSig(program)
+    newProgram.stack must be (List(ScriptTrue, OP_16,OP_16,OP_16))
+    newProgram.script must be (List(OP_16,OP_16,OP_16,OP_16))
+  }
+
+  it must "evaluate an OP_CHECKMULTISIGVERIFY with zero signatures and zero pubkeys" in {
+    val stack = List(OP_0,OP_0,OP_0)
+    val script = List(OP_CHECKMULTISIGVERIFY)
+    val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
+    val newProgram = opCheckMultiSigVerify(program)
+    newProgram.valid must be (true)
+    newProgram.script.isEmpty must be (true)
     newProgram.stack.isEmpty must be (true)
     newProgram.script.isEmpty must be (true)
   }
 
+  it must "evaluate an OP_CHECKMULTISIGVERIFY and leave the remaining operations on the stack" in {
+    val stack = List(OP_0,OP_0,OP_0, OP_16,OP_16,OP_16)
+    val script = List(OP_CHECKMULTISIGVERIFY,OP_16,OP_16,OP_16,OP_16)
+    val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
+    val newProgram = opCheckMultiSigVerify(program)
+    newProgram.stack must be (List(OP_16,OP_16,OP_16))
+    newProgram.script must be (List(OP_16,OP_16,OP_16,OP_16))
+  }
+
+  it must "evaluate an OP_CHECKMULTISIG for" in {
+    //0 0 0 1 CHECKMULTISIG VERIFY DEPTH 0 EQUAL
+    val stack = List(OP_1,OP_0,OP_0,OP_0)
+    val script = List(OP_CHECKMULTISIG)
+    val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
+    val newProgram = opCheckMultiSig(program)
+    newProgram.stack must be (List(ScriptTrue))
+    newProgram.script.isEmpty must be (true)
+    newProgram.valid must be (true)
+
+  }
 
 }

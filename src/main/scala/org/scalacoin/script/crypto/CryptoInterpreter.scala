@@ -2,16 +2,19 @@ package org.scalacoin.script.crypto
 
 import org.scalacoin.protocol.script.ScriptPubKey
 import org.scalacoin.protocol.transaction.Transaction
+import org.scalacoin.script.control.{ControlOperationsInterpreter, OP_VERIFY}
 import org.scalacoin.script.{ScriptProgramFactory, ScriptProgramImpl, ScriptProgram}
 import org.scalacoin.script.constant._
 import org.scalacoin.util.{CryptoUtil, ScalacoinUtil}
+import org.slf4j.LoggerFactory
 
 
 /**
  * Created by chris on 1/6/16.
  */
-trait CryptoInterpreter extends ScalacoinUtil {
+trait CryptoInterpreter extends ControlOperationsInterpreter with ScalacoinUtil {
 
+  private def logger = LoggerFactory.getLogger(this.getClass())
   /**
    * The input is hashed twice: first with SHA-256 and then with RIPEMD-160.
    * @param program
@@ -159,21 +162,51 @@ trait CryptoInterpreter extends ScalacoinUtil {
    * @return
    */
   def opCheckMultiSig(program : ScriptProgram) : ScriptProgram = {
-
-    val signatures = program.transaction.inputs.head.scriptSignature
-
+    require(program.script.headOption.isDefined && program.script.head == OP_CHECKMULTISIG, "Script top must be OP_CHECKMULTISIG")
+    require(program.stack.size > 2, "Stack must contain at least 3 items for OP_CHECKMULTISIG")
     //head should be n for m/n
-    val n : Int  = program.stack.head match {
+    val nPossibleSignatures : Int  = program.stack.head match {
       case s : ScriptNumber => s.num.toInt
+      case _ => throw new RuntimeException("n must be a script number for OP_CHECKMULTISIG")
     }
 
-    val m : Int = program.stack(n.toInt+1) match {
-      case s : ScriptNumber => s.num.toInt
+    logger.debug("nPossibleSignatures: " + nPossibleSignatures)
+
+    val pubKeys : Seq[ScriptToken] = program.stack.tail.slice(0,nPossibleSignatures)
+    val stackWithoutPubKeys = program.stack.tail.slice(nPossibleSignatures,program.stack.tail.size)
+
+    val mRequiredSignatures : Int = stackWithoutPubKeys.head match {
+      case s: ScriptNumber => s.num.toInt
+      case _ => throw new RuntimeException("m must be a script number for OP_CHECKMULTISIG")
     }
 
-    if (m == 0) ScriptProgramFactory.factory(program, program.stack.slice(m + n + 3,
-      program.stack.size), program.script.tail,true)
+    logger.debug("mRequiredSignatures: " + mRequiredSignatures )
+    val signatures : Seq[ScriptToken] = program.stack.slice(nPossibleSignatures+2,mRequiredSignatures+2)
+
+    //+1 is for bug in OP_CHECKMULTSIG that requires an extra OP to be pushed onto the stack
+    val stackWithoutPubKeysAndSignatures = stackWithoutPubKeys.tail.slice(mRequiredSignatures+1, stackWithoutPubKeys.tail.size)
+
+    val restOfStack = stackWithoutPubKeysAndSignatures
+    //if there are zero signatures required for the m/n signature
+    //the transaction is valid by default
+    if (mRequiredSignatures == 0) ScriptProgramFactory.factory(program, ScriptTrue :: restOfStack, program.script.tail,true)
     else program
+  }
+
+
+  /**
+   * Runs OP_CHECKMULTISIG with an OP_VERIFY afterwards
+   * @param program
+   * @return
+   */
+  def opCheckMultiSigVerify(program : ScriptProgram) : ScriptProgram = {
+    require(program.script.headOption.isDefined && program.script.head == OP_CHECKMULTISIGVERIFY, "Script top must be OP_CHECKMULTISIGVERIFY")
+    require(program.stack.size > 2, "Stack must contain at least 3 items for OP_CHECKMULTISIGVERIFY")
+    val newScript = OP_CHECKMULTISIG :: OP_VERIFY :: program.script.tail
+    val newProgram = ScriptProgramFactory.factory(program,newScript, ScriptProgramFactory.Script)
+    val programFromOpCheckMultiSig = opCheckMultiSig(newProgram)
+    val programFromOpVerify = opVerify(programFromOpCheckMultiSig)
+    programFromOpVerify
   }
 
   private def hashForSignature(inputScript : Seq[ScriptToken], spendingTx : Transaction,

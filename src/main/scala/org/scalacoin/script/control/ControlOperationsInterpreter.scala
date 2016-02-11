@@ -119,12 +119,14 @@ trait ControlOperationsInterpreter {
    * @return
    */
   def opVerify(program : ScriptProgram) : ScriptProgram = {
+    //TODO: There is a bug here, if the value is cast to an int and is != 0 then we need to pop the cast values
+    //off of the stack..
     require(program.script.headOption.isDefined && program.script.head == OP_VERIFY, "Script top must be OP_VERIFY")
     require(program.stack.size > 0, "Stack must have at least one element on it to run OP_VERIFY")
     if (program.stack.head != OP_0 && program.stack.head != ScriptFalse ) {
-      ScriptProgramFactory.factory(program, program.stack,program.script.tail,true)
+      ScriptProgramFactory.factory(program, program.stack.tail,program.script.tail,true)
     } else if (program.stack.exists(t => t != OP_0 && t != ScriptFalse)) {
-      ScriptProgramFactory.factory(program, program.stack,program.script.tail,true)
+      ScriptProgramFactory.factory(program, program.stack.tail,program.script.tail,true)
     } else ScriptProgramFactory.factory(program, program.stack,program.script.tail, false)
   }
 
