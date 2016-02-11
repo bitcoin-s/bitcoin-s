@@ -3,7 +3,7 @@ package org.scalacoin.script.crypto
 import org.scalacoin.protocol.script.ScriptPubKey
 import org.scalacoin.protocol.transaction.Transaction
 import org.scalacoin.script.{ScriptProgramFactory, ScriptProgramImpl, ScriptProgram}
-import org.scalacoin.script.constant.{ScriptOperation, ScriptConstantImpl, ScriptConstant, ScriptToken}
+import org.scalacoin.script.constant._
 import org.scalacoin.util.{CryptoUtil, ScalacoinUtil}
 
 
@@ -130,12 +130,50 @@ trait CryptoInterpreter extends ScalacoinUtil {
     ScriptProgramFactory.factory(program, hash :: program.stack.tail, program.script.tail)
   }
 
+  /**
+   * All of the signature checking words will only match signatures to the data
+   * after the most recently-executed OP_CODESEPARATOR.
+   * @param program
+   * @return
+   */
   def opCodeSeparator(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.isDefined && program.script.head == OP_CODESEPARATOR, "Script top must be OP_CODESEPARATOR")
 
     //get the index of this OP_CODESEPARATOR
     val codeSeparatorIndex = program.fullScript.size - program.script.size
     ScriptProgramFactory.factory(program,program.script.tail, ScriptProgramFactory.Script, codeSeparatorIndex)
+  }
+
+
+  /**
+   * Compares the first signature against each public key until it finds an ECDSA match.
+   * Starting with the subsequent public key, it compares the second signature against each remaining
+   * public key until it finds an ECDSA match. The process is repeated until all signatures have been
+   * checked or not enough public keys remain to produce a successful result.
+   * All signatures need to match a public key.
+   * Because public keys are not checked again if they fail any signature comparison,
+   * signatures must be placed in the scriptSig using the same order as their corresponding public keys
+   * were placed in the scriptPubKey or redeemScript. If all signatures are valid, 1 is returned, 0 otherwise.
+   * Due to a bug, one extra unused value is removed from the stack.
+   * @param program
+   * @return
+   */
+  def opCheckMultiSig(program : ScriptProgram) : ScriptProgram = {
+
+    val signatures = program.transaction.inputs.head.scriptSignature
+
+    //head should be n for m/n
+    val n : Int  = program.stack.head match {
+      case s : ScriptNumber => s.num.toInt
+    }
+
+    val m : Int = program.stack(n.toInt+1) match {
+      case s : ScriptNumber => s.num.toInt
+    }
+
+    if (m == 0) ScriptProgramFactory.factory(program, program.stack.slice(m + n + 3,
+      program.stack.size), program.script.tail,true)
+    else program
   }
 
   private def hashForSignature(inputScript : Seq[ScriptToken], spendingTx : Transaction,
