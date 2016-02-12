@@ -71,50 +71,23 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with ScalacoinUtil 
     ScriptProgramFactory.factory(program, newStackTop :: program.stack.tail, program.script.tail)
   }
 
-  /**
-   * The entire transaction's outputs, inputs, and script (from the most
-   * recently-executed OP_CODESEPARATOR to the end) are hashed.
-   * The signature used by OP_CHECKSIG must be a valid signature for this hash and public key.
-   * If it is, 1 is returned, 0 otherwise.
-   * @param inputScript
-   * @param script
-   * @return
-   */
-  def checkSig(inputScript : List[ScriptToken], script : List[ScriptToken], fullScript : List[ScriptToken]) : Boolean = {
-    require(inputScript.size > 1, "We must have at least 2 inputs for our OP_CHECKSIG operation")
-    require(script.headOption.isDefined && script.head == OP_CHECKSIG, "The top script stack element must be OP_CHECKSIG")
-    val pubKey = inputScript.head
-    val signature = inputScript(1)
-    ???
-  }
-
-
 
   /**
    * The entire transaction's outputs, inputs, and script (from the most
    * recently-executed OP_CODESEPARATOR to the end) are hashed.
    * The signature used by OP_CHECKSIG must be a valid signature for this hash and public key.
    * If it is, 1 is returned, 0 otherwise.
-   * @param inputScript
-   * @param script
+   * https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L818
+   * @param program
    * @return
    */
-  def checkSig(tx : Transaction, scriptPubKey : ScriptPubKey) : Boolean = {
-    val inputIndex = 0
-    val signature : ScriptToken = tx.inputs.head.scriptSignature.asm.head
-    val pubKey : ScriptToken = tx.inputs.head.scriptSignature.asm(1)
+  def opCheckSig(program : ScriptProgram) : ScriptProgram = {
+    require(program.script.headOption.isDefined && program.script.head == OP_CHECKSIG, "Script top must be OP_CHECKSIG")
+    require(program.stack.size > 1, "Stack must have at least 2 items on it for OP_CHECKSIG")
+    val pubKey = program.stack.head
+    val signature = program.stack.tail.head
+    val hashType = HashTypeFactory.fromByte(ScalacoinUtil.decodeHex(signature.hex.last))
 
-    //delete ECDSA signature
-    val inputWithoutScriptSig : Seq[ScriptToken] = tx.inputs.head.scriptSignature.asm.tail
-
-    val fullScriptWithoutScripgSig : Seq[ScriptToken] = inputWithoutScriptSig ++ scriptPubKey.asm
-
-    val hashTypeOpt : Option[HashType] = HashTypeFactory.fromByte(ScalacoinUtil.decodeHex(signature.hex).last)
-    require(hashTypeOpt.isDefined, "We must have a hash type be the last byte on the given signature")
-    val hashType = hashTypeOpt.get
-
-    //hash for signature
-    val hash : String = hashForSignature(inputWithoutScriptSig,tx,inputIndex,hashType)
     ???
   }
 
