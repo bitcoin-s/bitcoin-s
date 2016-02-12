@@ -26,19 +26,12 @@ trait ConstantInterpreter {
     if (bytesToPush == BytesToPushOntoStackImpl(0)) {
       ScriptProgramFactory.factory(program, OP_0 :: program.stack, program.script.tail.tail)
     } else {
-      val newStack = program.script(2) :: program.stack
-      ScriptProgramFactory.factory(program, newStack, program.script.slice(3,program.script.size))
+      //leave the constant on the script to be pushed onto the stack by the next iteration of script interpreter
+      //TODO: probably push the script token on the stack here, but it needs to be converted to the
+      //appropriate type i.e. OP_1 is converted to ScriptNumberImpl(1)
+      ScriptProgramFactory.factory(program, program.stack, program.script.slice(2,program.script.size))
     }
 
-/*    val numberOfBytes : Int = Integer.parseInt(program.script(1).hex,16)
-    if (numberOfBytes == 0) {
-      //if the number of bytes pushed onto the stack is zero, we push an empty byte vector onto the stack
-      ScriptProgramFactory.factory(program, OP_0 :: program.stack, program.script.slice(2,program.script.size))
-    } else {
-      val slicedScript = program.script.slice(2,program.script.size)
-      val (newStack,newScript) = opPushData(program.stack,slicedScript,numberOfBytes)
-      ScriptProgramFactory.factory(program, newStack,newScript)
-    }*/
   }
 
   /**
@@ -53,19 +46,11 @@ trait ConstantInterpreter {
     if (bytesToPush == BytesToPushOntoStackImpl(0)) {
       ScriptProgramFactory.factory(program, OP_0 :: program.stack, program.script.tail.tail)
     } else {
-      val newStack = program.script(2) :: program.stack
-      ScriptProgramFactory.factory(program, newStack, program.script.slice(3,program.script.size))
+      //leave the constant on the script to be pushed onto the stack by the next iteration of script interpreter
+      //TODO: probably push the script token on the stack here, but it needs to be converted to the
+      //appropriate type i.e. OP_1 is converted to ScriptNumberImpl(1)
+      ScriptProgramFactory.factory(program, program.stack, program.script.slice(2,program.script.size))
     }
-/*    val reversedHex = ScalacoinUtil.littleEndianToBigEndian(program.script(1).hex)
-    val numberOfBytes : Int = Integer.parseInt(reversedHex,16)
-    if (numberOfBytes == 0) {
-      //if the number of bytes pushed onto the stack is zero, we push an empty byte vector onto the stack
-      ScriptProgramFactory.factory(program, OP_0 :: program.stack, program.script.slice(2,program.script.size))
-    } else {
-      val slicedScript = program.script.slice(2,program.script.size)
-      val (newStack,newScript) = opPushData(program.stack,slicedScript,numberOfBytes)
-      ScriptProgramFactory.factory(program, newStack, newScript)
-    }*/
   }
 
   /**
@@ -81,19 +66,11 @@ trait ConstantInterpreter {
     if (bytesToPush == BytesToPushOntoStackImpl(0)) {
       ScriptProgramFactory.factory(program, OP_0 :: program.stack, program.script.tail.tail)
     } else {
-      val newStack = program.script(2) :: program.stack
-      ScriptProgramFactory.factory(program, newStack, program.script.slice(3,program.script.size))
+      //leave the constant on the script to be pushed onto the stack by the next iteration of script interpreter
+      //TODO: probably push the script token on the stack here, but it needs to be converted to the
+      //appropriate type i.e. OP_1 is converted to ScriptNumberImpl(1)
+      ScriptProgramFactory.factory(program, program.stack, program.script.slice(2,program.script.size))
     }
-/*    val reversedHex = ScalacoinUtil.littleEndianToBigEndian(program.script(1).hex)
-    val numberOfBytes : Int = Integer.parseInt(reversedHex,16)
-    if (numberOfBytes == 0) {
-      //if the number of bytes pushed onto the stack is zero, we push an empty byte vector onto the stack
-      ScriptProgramFactory.factory(program, OP_0 :: program.stack, program.script.slice(2,program.script.size))
-    } else {
-      val slicedScript = program.script.slice(2,program.script.size)
-      val (newStack,newScript) = opPushData(program.stack,slicedScript,numberOfBytes)
-      ScriptProgramFactory.factory(program, newStack,newScript)
-    }*/
   }
 
 
