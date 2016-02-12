@@ -21,7 +21,16 @@ trait ConstantInterpreter {
    */
   def opPushData1(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.isDefined && program.script.head == OP_PUSHDATA1, "Top of script stack must be OP_PUSHDATA1")
-    val numberOfBytes : Int = Integer.parseInt(program.script(1).hex,16)
+
+    val bytesToPush = program.script(1)
+    if (bytesToPush == BytesToPushOntoStackImpl(0)) {
+      ScriptProgramFactory.factory(program, OP_0 :: program.stack, program.script.tail.tail)
+    } else {
+      val newStack = program.script(2) :: program.stack
+      ScriptProgramFactory.factory(program, newStack, program.script.slice(3,program.script.size))
+    }
+
+/*    val numberOfBytes : Int = Integer.parseInt(program.script(1).hex,16)
     if (numberOfBytes == 0) {
       //if the number of bytes pushed onto the stack is zero, we push an empty byte vector onto the stack
       ScriptProgramFactory.factory(program, OP_0 :: program.stack, program.script.slice(2,program.script.size))
@@ -29,7 +38,7 @@ trait ConstantInterpreter {
       val slicedScript = program.script.slice(2,program.script.size)
       val (newStack,newScript) = opPushData(program.stack,slicedScript,numberOfBytes)
       ScriptProgramFactory.factory(program, newStack,newScript)
-    }
+    }*/
   }
 
   /**
@@ -40,7 +49,14 @@ trait ConstantInterpreter {
   def opPushData2(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.isDefined && program.script.head == OP_PUSHDATA2, "Top of script stack must be OP_PUSHDATA2")
     //convert the hex string from little endian to big endian
-    val reversedHex = ScalacoinUtil.littleEndianToBigEndian(program.script(1).hex)
+    val bytesToPush = program.script(1)
+    if (bytesToPush == BytesToPushOntoStackImpl(0)) {
+      ScriptProgramFactory.factory(program, OP_0 :: program.stack, program.script.tail.tail)
+    } else {
+      val newStack = program.script(2) :: program.stack
+      ScriptProgramFactory.factory(program, newStack, program.script.slice(3,program.script.size))
+    }
+/*    val reversedHex = ScalacoinUtil.littleEndianToBigEndian(program.script(1).hex)
     val numberOfBytes : Int = Integer.parseInt(reversedHex,16)
     if (numberOfBytes == 0) {
       //if the number of bytes pushed onto the stack is zero, we push an empty byte vector onto the stack
@@ -49,7 +65,7 @@ trait ConstantInterpreter {
       val slicedScript = program.script.slice(2,program.script.size)
       val (newStack,newScript) = opPushData(program.stack,slicedScript,numberOfBytes)
       ScriptProgramFactory.factory(program, newStack, newScript)
-    }
+    }*/
   }
 
   /**
@@ -60,7 +76,15 @@ trait ConstantInterpreter {
   def opPushData4(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.isDefined && program.script.head == OP_PUSHDATA4, "Top of script stack must be OP_PUSHDATA4")
     //convert the hex string from little endian to big endian
-    val reversedHex = ScalacoinUtil.littleEndianToBigEndian(program.script(1).hex)
+
+    val bytesToPush = program.script(1)
+    if (bytesToPush == BytesToPushOntoStackImpl(0)) {
+      ScriptProgramFactory.factory(program, OP_0 :: program.stack, program.script.tail.tail)
+    } else {
+      val newStack = program.script(2) :: program.stack
+      ScriptProgramFactory.factory(program, newStack, program.script.slice(3,program.script.size))
+    }
+/*    val reversedHex = ScalacoinUtil.littleEndianToBigEndian(program.script(1).hex)
     val numberOfBytes : Int = Integer.parseInt(reversedHex,16)
     if (numberOfBytes == 0) {
       //if the number of bytes pushed onto the stack is zero, we push an empty byte vector onto the stack
@@ -69,7 +93,7 @@ trait ConstantInterpreter {
       val slicedScript = program.script.slice(2,program.script.size)
       val (newStack,newScript) = opPushData(program.stack,slicedScript,numberOfBytes)
       ScriptProgramFactory.factory(program, newStack,newScript)
-    }
+    }*/
   }
 
 

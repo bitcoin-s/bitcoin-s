@@ -8,7 +8,7 @@ import org.scalacoin.script.ScriptOperationFactory
 trait BytesToPushOntoStackFactory extends ScriptOperationFactory[BytesToPushOntoStack] {
 
   override def operations : Seq[BytesToPushOntoStack] =
-      (for { i <- -1 to 75 } yield BytesToPushOntoStackImpl(i)).toList
+      (for { i <- 0 to 75 } yield BytesToPushOntoStackImpl(i)).toList
 
   def factory(num : Int) : Option[BytesToPushOntoStack] = operations.find(_.opCode == num)
 

@@ -33,9 +33,4 @@ class BytesToPushOntoStackFactoryTest extends FlatSpec with MustMatchers with By
     }
   }
 
-  it must "not allow creation of the script number 76" in {
-    intercept[IllegalArgumentException] {
-      operations.exists(_ == BytesToPushOntoStackImpl(76)) must be (false)
-    }
-  }
 }
