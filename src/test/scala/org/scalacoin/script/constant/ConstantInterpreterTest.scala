@@ -16,8 +16,7 @@ class ConstantInterpreterTest extends FlatSpec with MustMatchers with ConstantIn
     val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
     val newProgram = opPushData1(program)
 
-    newProgram.stack must be (List(ScriptNumberImpl(7)))
-    newProgram.script must be (List(OP_7,OP_EQUAL))
+    newProgram.script must be (List(ScriptNumberImpl(7), OP_7,OP_EQUAL))
   }
 
   it must "interpret OP_PUSHDATA2 correctly" in {
@@ -25,8 +24,8 @@ class ConstantInterpreterTest extends FlatSpec with MustMatchers with ConstantIn
     val script = List(OP_PUSHDATA2, ScriptConstantImpl("0100"), ScriptNumberImpl(8), OP_8, OP_EQUAL)
     val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
     val newProgram = opPushData2(program)
-    newProgram.stack must be (List(ScriptNumberImpl(8)))
-    newProgram.script must be (List(OP_8,OP_EQUAL))
+    newProgram.stack must be (List())
+    newProgram.script must be (List(ScriptNumberImpl(8), OP_8,OP_EQUAL))
   }
 
   it must "interpret OP_PUSHDATA4 correctly" in {
