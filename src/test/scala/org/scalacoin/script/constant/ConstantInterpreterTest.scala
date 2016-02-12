@@ -57,4 +57,25 @@ class ConstantInterpreterTest extends FlatSpec with MustMatchers with ConstantIn
     newProgram.script must be (List(OP_EQUAL))
     newProgram.stack must be (List(ScriptConstantImpl("417a"),ScriptNumberImpl(31297)))
   }
+
+  it must "push 0 bytes onto the stack which is OP_0" in {
+    val stack = List()
+    val script = List(OP_PUSHDATA1,BytesToPushOntoStackImpl(0))
+    val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
+    val newProgram  = opPushData1(program)
+    newProgram.stack must be (List(OP_0))
+
+    val stack1 = List()
+    val script1 = List(OP_PUSHDATA2,BytesToPushOntoStackImpl(0))
+    val program1 = ScriptProgramFactory.factory(TestUtil.testProgram, stack1,script1)
+    val newProgram1  = opPushData2(program1)
+    newProgram1.stack must be (List(OP_0))
+
+    val stack2 = List()
+    val script2 = List(OP_PUSHDATA4,BytesToPushOntoStackImpl(0))
+    val program2 = ScriptProgramFactory.factory(TestUtil.testProgram, stack2,script2)
+    val newProgram2 = opPushData4(program2)
+    newProgram2.stack must be (List(OP_0))
+  }
+
 }

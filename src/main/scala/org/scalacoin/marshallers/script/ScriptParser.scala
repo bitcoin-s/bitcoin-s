@@ -26,6 +26,7 @@ trait ScriptParser extends ScalacoinUtil {
     @tailrec
     def loop(operations : List[String], accum : List[ScriptToken]) : List[ScriptToken] = {
       logger.debug("Attempting to parse: " + operations.headOption)
+      logger.debug("Accum: " + accum)
       operations match {
         //for parsing strings like 'Az', need to remove single quotes
         //example: https://github.com/bitcoin/bitcoin/blob/master/src/test/data/script_valid.json#L24
@@ -40,10 +41,21 @@ trait ScriptParser extends ScalacoinUtil {
         //not a script operation
         case h :: t if (h.size == 4 && h.substring(0,2) == "0x"
           && accum.headOption.isDefined && accum.head.isInstanceOf[BytesToPushOntoStackImpl]) =>
-          logger.debug("Found a script operation")
+          logger.debug("Found a script operation preceded by a BytesToPushOntoStackImpl")
           val hexString = h.substring(2,h.size).toLowerCase
           logger.debug("Hex string: " + hexString)
           loop(t,ScriptNumberImpl(ScalacoinUtil.hexToLong(hexString)) :: accum)
+
+        //OP_PUSHDATA operations are always followed by the amount of bytes to be pushed
+        //onto the stack
+        case h :: t if (h.size > 1 && h.substring(0,2) == "0x" &&
+          accum.headOption.isDefined && List(OP_PUSHDATA1, OP_PUSHDATA2,OP_PUSHDATA4).contains(accum.head)) =>
+          logger.debug("Found a hexadecimal number preceded by an OP_PUSHDATA operation")
+          //this is weird because the number is unsigned unlike other numbers
+          //in bitcoin, but it is still encoded in little endian hence the .reverse call
+          val byteToPushOntoStack = BytesToPushOntoStackImpl(
+            java.lang.Long.parseLong(ScalacoinUtil.littleEndianToBigEndian(h.slice(2,h.size).toLowerCase),16).toInt)
+          loop(t, byteToPushOntoStack :: accum)
 
         //if we see a byte constant of just 0x09
         //parse the characters as a hex op
@@ -145,12 +157,13 @@ trait ScriptParser extends ScalacoinUtil {
    * @param s
    * @return
    */
-  private def parseBytesFromString(s: String) : List[ScriptConstant] = {
+  def parseBytesFromString(s: String) : List[ScriptConstant] = {
     logger.debug("Parsing bytes from string " + s)
     val scriptConstants : List[ScriptConstant] = (raw"\b0x([0-9a-f]+)\b".r
-      .findAllMatchIn(s)
+      .findAllMatchIn(s.toLowerCase)
       .map(g =>
-      //if it is not smaller than 16 hex characters it cannot
+      // 1 hex = 4 bits therefore 16 hex characters * 4 bits = 64
+      // if it is not smaller than 16 hex characters it cannot
       //fit inside of a scala long
       //therefore store it as a script constant
       if (g.group(1).size <= 16) {
