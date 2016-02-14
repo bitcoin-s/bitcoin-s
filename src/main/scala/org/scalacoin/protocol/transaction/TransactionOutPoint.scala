@@ -1,6 +1,6 @@
 package org.scalacoin.protocol.transaction
 
-import org.scalacoin.marshallers.transaction.TransactionElement
+import org.scalacoin.marshallers.transaction.{RawTransactionOutPointParser, TransactionElement}
 
 /**
  * Created by chris on 12/26/15.
@@ -11,6 +11,8 @@ trait TransactionOutPoint extends TransactionElement {
 
   //https://bitcoin.org/en/developer-reference#outpoint
   def size = 36
+
+  override def hex = RawTransactionOutPointParser.write(this)
 }
 
 case class TransactionOutPointImpl(txId : String, vout : Int) extends TransactionOutPoint

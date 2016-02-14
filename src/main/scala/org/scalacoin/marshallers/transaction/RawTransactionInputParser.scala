@@ -28,8 +28,11 @@ trait RawTransactionInputParser extends RawBitcoinSerializer[Seq[TransactionInpu
         val outPointBytes = bytes.take(outPointBytesSize)
         val outPoint : TransactionOutPoint  = RawTransactionOutPointParser.read(outPointBytes)
         val scriptSigSize = Integer.parseInt(ScalacoinUtil.encodeHex(bytes(outPointBytesSize)),16)
+        logger.debug("Script sig size:" + scriptSigSize)
         val scriptSigBytes = bytes.slice(outPointBytesSize, outPointBytesSize + scriptSigSize + 1)
         val scriptSig : ScriptSignature = RawScriptSignatureParser.read(scriptSigBytes)
+
+        logger.debug("Script sig hex: " + scriptSig.hex)
 
         val sequenceBytesSize = 4
         val lastInputByte = outPointBytesSize + scriptSigSize + sequenceBytesSize + 1

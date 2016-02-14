@@ -122,7 +122,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
 
         //crypto operations
         case OP_HASH160 :: t => loop(opHash160(program))
-        case OP_CHECKSIG :: t => checkSig(program.stack,program.script,fullScript)
+        //case OP_CHECKSIG :: t => opCheckSig(program.stack,program.script,fullScript)
         case OP_SHA1 :: t => loop(opSha1(program))
         case OP_RIPEMD160 :: t => loop(opRipeMd160(program))
         case OP_SHA256 :: t => loop(opSha256(program))

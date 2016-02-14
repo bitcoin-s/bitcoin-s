@@ -1,7 +1,7 @@
 package org.scalacoin.protocol.transaction
 
 import org.scalacoin.currency.{CurrencyUnit, Satoshis}
-import org.scalacoin.marshallers.transaction.TransactionElement
+import org.scalacoin.marshallers.transaction.{RawTransactionOutputParser, TransactionElement}
 import org.scalacoin.protocol.VarInt
 import org.scalacoin.protocol.script.ScriptPubKey
 
@@ -17,6 +17,7 @@ trait TransactionOutput extends TransactionElement {
   //https://bitcoin.org/en/developer-reference#txout
   override def size = scriptPubKey.size + 8
 
+  override def hex = RawTransactionOutputParser.write(Seq(this))
 }
 
 

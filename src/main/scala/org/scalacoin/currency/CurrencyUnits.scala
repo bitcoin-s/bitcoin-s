@@ -44,7 +44,7 @@ abstract class CurrencyUnit(val value:Double) {
 }
 
 case class Satoshis(override val value: Double) extends CurrencyUnit(value) {
-  require(value.isValidInt, "The satoshis constructor cannot be a double with decimal places, satoshis are the smallest currency unit in bitcoin")
+  require(value.isWhole, "The satoshis constructor cannot be a double with decimal places, satoshis are the smallest currency unit in bitcoin")
   override def toString = toStringWithoutCurrencyLabel + " Satoshis"
   override def toStringWithoutCurrencyLabel = value.toLong.toString
 }

@@ -1,9 +1,7 @@
 package org.scalacoin.protocol.transaction
 
-import org.scalacoin.currency.Satoshis
-import org.scalacoin.marshallers.transaction.TransactionElement
-import org.scalacoin.protocol.{NetworkVarInt, VarInt}
-import org.scalacoin.util.ScalacoinUtil
+import org.scalacoin.marshallers.transaction.{RawTransactionParser, TransactionElement}
+import org.scalacoin.util.{ScalacoinUtil, CryptoUtil}
 
 /**
  * Created by chris on 7/14/15.
@@ -11,7 +9,7 @@ import org.scalacoin.util.ScalacoinUtil
 
 
 trait Transaction extends TransactionElement {
-  def txId : String
+  def txId : String = ScalacoinUtil.encodeHex(CryptoUtil.doubleSHA256(hex).reverse)
   def version : Long
   def inputs  : Seq[TransactionInput]
   def outputs : Seq[TransactionOutput]
@@ -23,9 +21,11 @@ trait Transaction extends TransactionElement {
 
   //https://bitcoin.org/en/developer-reference#raw-transaction-format
   override def size = 4 + inputsSize + outputsSize  + 4
+
+  override def hex = RawTransactionParser.write(this)
 }
 
-case class TransactionImpl(txId : String, version : Long, inputs : Seq[TransactionInput],
+case class TransactionImpl(version : Long, inputs : Seq[TransactionInput],
   outputs : Seq[TransactionOutput], lockTime : Long) extends Transaction
 
 
