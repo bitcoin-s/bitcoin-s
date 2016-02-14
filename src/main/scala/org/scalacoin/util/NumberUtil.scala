@@ -101,11 +101,11 @@ trait NumberUtil {
   def parseVarInt(bytes : Seq[Byte]) : VarInt = {
     require(bytes.size > 0, "Cannot parse a VarInt if the byte array is size 0")
     //8 bit number
-    if (bytes.head < 253) VarIntImpl(parseLong(bytes.head),1)
+    if (parseLong(bytes.head) < 253) VarIntImpl(parseLong(bytes.head),1)
     //16 bit number
-    else if (bytes.head == 254) VarIntImpl(parseLong(bytes.slice(1,3)),2)
+    else if (parseLong(bytes.head) == 253) VarIntImpl(parseLong(bytes.slice(1,3)),2)
     //32 bit number
-    else if (bytes.head == 255) VarIntImpl(parseLong(bytes.slice(1,5)),4)
+    else if (parseLong(bytes.head) == 254) VarIntImpl(parseLong(bytes.slice(1,5)),4)
     //64 bit number
     else VarIntImpl(parseLong(bytes.slice(1,9)),8)
   }
