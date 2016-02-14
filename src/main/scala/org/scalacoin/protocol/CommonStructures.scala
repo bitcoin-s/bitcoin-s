@@ -18,12 +18,20 @@ trait VarInt {
    * The length of the VarInt in  bytes
    * @return
    */
-  def length : Long
+  def size : Long
+
+  def hex = size match {
+    case 1 => num.toHexString
+    case 3 => "fd" + ScalacoinUtil.littleEndianToBigEndian(ScalacoinUtil.longToHex(num))
+    case 5 => "fe" + ScalacoinUtil.littleEndianToBigEndian(ScalacoinUtil.longToHex(num))
+    case _ => "ff" + ScalacoinUtil.littleEndianToBigEndian(ScalacoinUtil.longToHex(num))
+  }
+
 
 
 }
 
-case class VarIntImpl(num : Long, length : Long) extends VarInt
+case class VarIntImpl(num : Long, size : Long) extends VarInt
 
 
 

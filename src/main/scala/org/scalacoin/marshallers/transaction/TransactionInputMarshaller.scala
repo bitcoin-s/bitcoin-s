@@ -4,6 +4,7 @@ import org.scalacoin.marshallers.script.ScriptSignatureMarshaller
 import org.scalacoin.marshallers.transaction.TransactionOutPointMarshaller.TransactionOutPointFormatter
 import org.scalacoin.protocol.script.ScriptSignature
 import org.scalacoin.protocol.transaction.{TransactionInputImpl, TransactionOutPoint, TransactionInput}
+import org.scalacoin.util.ScalacoinUtil
 import spray.json._
 
 /**
@@ -22,8 +23,10 @@ object TransactionInputMarshaller extends DefaultJsonProtocol {
       val outPoint : TransactionOutPoint =
         TransactionOutPointMarshaller.TransactionOutPointFormatter.read(obj)
       val sequence = obj.fields(sequenceKey)
-
-      TransactionInputImpl(outPoint, scriptSig, sequence.convertTo[Long])
+      val scriptSigBytes : Seq[Byte] = ScalacoinUtil.decodeHex(scriptSig.hex)
+      val varIntSize = ScalacoinUtil.parseVarIntSize(scriptSigBytes.head)
+      val varInt = ScalacoinUtil.parseVarInt(scriptSigBytes.slice(0,varIntSize.toInt))
+      TransactionInputImpl(outPoint, varInt, scriptSig, sequence.convertTo[Long])
     }
 
     override def write(input : TransactionInput) : JsValue = {
