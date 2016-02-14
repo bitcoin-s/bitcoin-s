@@ -1,5 +1,6 @@
 package org.scalacoin.util
 
+import org.scalacoin.protocol.VarIntImpl
 import org.scalacoin.script.constant.ScriptNumberImpl
 import org.scalatest.{FlatSpec, MustMatchers}
 
@@ -184,6 +185,15 @@ class NumberUtilTest extends FlatSpec with MustMatchers with NumberUtil {
     val hex3 = longToHex(32768)
     val expectedHex3 = "008000"
     hex3 must be (expectedHex3)
+  }
+
+
+  it must "parse a variable length integer (VarInt)" in {
+    val str = "fdfd"
+    parseVarInt(str) must be (VarIntImpl(253,2))
+
+    val str1 = "00"
+    parseVarInt(str1) must be (VarIntImpl(0,1))
   }
 
 

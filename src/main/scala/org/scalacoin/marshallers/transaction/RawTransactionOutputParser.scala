@@ -22,7 +22,8 @@ trait RawTransactionOutputParser extends RawBitcoinSerializer[Seq[TransactionOut
     def loop(bytes : List[Byte], accum : List[TransactionOutput], outputsLeftToParse : Int) : List[TransactionOutput] = {
       if (outputsLeftToParse > 0) {
         val satoshisHex = ScalacoinUtil.encodeHex(bytes.take(8).reverse)
-        val satoshis = Satoshis(Integer.parseInt(satoshisHex, 16))
+        logger.debug("Satoshi hex: " + satoshisHex)
+        val satoshis = Satoshis(java.lang.Long.parseLong(satoshisHex, 16))
         //it doesn't include itself towards the size, thats why it is incremented by one
         val firstScriptPubKeyByte = 8
         val scriptPubKeySize = bytes(firstScriptPubKeyByte).toInt + 1

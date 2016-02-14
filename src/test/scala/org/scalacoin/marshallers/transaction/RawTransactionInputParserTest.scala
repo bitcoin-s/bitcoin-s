@@ -19,7 +19,7 @@ class RawTransactionInputParserTest extends FlatSpec with MustMatchers with RawT
   val rawTxInputs = "02df80e3e6eba7dcd4650281d3c13f140dafbb823a7227a78eb6ee9f6cedd040011b0000006a473044022040f91c48f4011bf2e2edb6621bfa8fb802241de939cb86f1872c99c580ef0fe402204fc27388bc525e1b655b5f5b35f9d601d28602432dd5672f29e0a47f5b8bbb26012102c114f376c98d12a0540c3a81ab99bb1c5234245c05e8239d09f48229f9ebf011ffffffff" +
     "df80e3e6eba7dcd4650281d3c13f140dafbb823a7227a78eb6ee9f6cedd04001340000006b483045022100cf317c320d078c5b884c44e7488825dab5bcdf3f88c66314ac925770cd8773a7022033fde60d33cc2842ea73fce5d9cf4f8da6fadf414a75b7085efdcd300407f438012102605c23537b27b80157c770cd23e066cd11db3800d3066a38b9b592fc08ae9c70ffffffff"
   "RawTransactionInputParser" must "parse a raw serialized transaction input" in {
-    println(TestUtil.rawTransaction)
+/*
     val txInputs : Seq[TransactionInput] = read(rawTxInput)
     txInputs.head.previousOutput.vout must be (0)
     txInputs.head.previousOutput.txId must be ("e17d316006850c1764301befcf82c8c84cd1794f3f0d0382b296df2edab0d685")
@@ -28,10 +28,11 @@ class RawTransactionInputParserTest extends FlatSpec with MustMatchers with RawT
     txInputs.head.scriptSignature.asm must be (Seq(OP_0,
       ScriptConstantImpl("304402207df6dd8dad22d49c3c83d8031733c32a53719278eb7985d3b35b375d776f84f102207054f9209a1e87d55feafc90aa04c33008e5bae9191da22aeaa16efde96f41f001"),
       ScriptConstantImpl("512102b022902a0fdd71e831c37e4136c2754a59887be0618fb75336d7ab67e2982ff551ae")
-    ))
+    ))*/
   }
 
 
+/*
   it must "parse a multiple raw serialized inputs" in {
     val txInputs : Seq[TransactionInput] = RawTransactionInputParser.read(rawTxInputs)
     txInputs.size must be (2)
@@ -62,6 +63,37 @@ class RawTransactionInputParserTest extends FlatSpec with MustMatchers with RawT
     val txInputs = RawTransactionInputParser.read(rawTxInputs)
     val serializedTx = RawTransactionInputParser.write(txInputs)
     serializedTx must be (rawTxInputs)
+  }
+*/
+
+  it must "must parse a tx from mainnet with multiple serialized inputs" in {
+    //from this tx
+    //https://btc.blockr.io/api/v1/tx/raw/cddda897b0e9322937ee1f4fd5d6147d60f04a0f4d3b461e4f87066ac3918f2a
+    val rawTxInputs = "020df1e23002ddf909aec026b1cf0c3b6b7943c042f22e25dbd0441855e6b39ee900000000fdfd00004" +
+      "730440220028c02f14654a0cc12c7e3229adb09d5d35bebb6ba1057e39adb1b2706607b0d0220564fab12c6da3d5acef332" +
+      "406027a7ff1cbba980175ffd880e1ba1bf40598f6b014830450221009362f8d67b60773745e983d07ba10efbe566127e244" +
+      "b724385b2ca2e47292dda022033def393954c320653843555ddbe7679b35cc1cacfe1dad923977de8cd6cc6d7014c695221" +
+      "025e9adcc3d65c11346c8a6069d6ebf5b51b348d1d6dc4b95e67480c34dc0bc75c21030585b3c80f4964bf0820086feda57" +
+      "c8e49fa1eab925db7c04c985467973df96521037753a5e3e9c4717d3f81706b38a6fb82b5fb89d29e580d7b98a37fea8cde" +
+      "fcad53aeffffffffd11533b0f283fca193e361a91ca7ddfc66592e20fd6eaf5dc0f1ef5fed05818000000000fdfe0000483" +
+      "045022100b4062edd75b5b3117f28ba937ed737b10378f762d7d374afabf667180dedcc62022005d44c793a9d787197e12d" +
+      "5049da5e77a09046014219b31e9c6b89948f648f1701483045022100b3b0c0273fc2c531083701f723e03ea3d9111e4bbca" +
+      "33bdf5b175cec82dcab0802206650462db37f9b4fe78da250a3b339ab11e11d84ace8f1b7394a1f6db0960ba4014c695221" +
+      "025e9adcc3d65c11346c8a6069d6ebf5b51b348d1d6dc4b95e67480c34dc0bc75c21030585b3c80f4964bf0820086feda57" +
+      "c8e49fa1eab925db7c04c985467973df96521037753a5e3e9c4717d3f81706b38a6fb82b5fb89d29e580d7b98a37fea8cde" +
+      "fcad53aeffffffff"
+    val txInputs = RawTransactionInputParser.read(rawTxInputs)
+    txInputs.size must be (2)
+
+    val firstInput = txInputs.head
+    val secondInput = txInputs.tail.head
+
+    firstInput.previousOutput.txId must be ("e99eb3e6551844d0db252ef242c043796b3b0ccfb126c0ae09f9dd0230e2f10d")
+    firstInput.previousOutput.vout must be (0)
+    firstInput.scriptSignature.hex must be ("004730440220028c02f14654a0cc12c7e3229adb09d5d35bebb6ba1057e39adb1b2706607b0d0220564fab12c6da3d5acef332406027a7ff1cbba980175ffd880e1ba1bf40598f6b014830450221009362f8d67b60773745e983d07ba10efbe566127e244b724385b2ca2e47292dda022033def393954c320653843555ddbe7679b35cc1cacfe1dad923977de8cd6cc6d7014c695221025e9adcc3d65c11346c8a6069d6ebf5b51b348d1d6dc4b95e67480c34dc0bc75c21030585b3c80f4964bf0820086feda57c8e49fa1eab925db7c04c985467973df96521037753a5e3e9c4717d3f81706b38a6fb82b5fb89d29e580d7b98a37fea8cdefcad53ae")
+    firstInput.sequence must be (0xffffffff)
+
+    txInputs(1).previousOutput.txId must be ("808105ed5feff1c05daf6efd202e5966fcdda71ca961e393a1fc83f2b03315d1")
   }
 
 

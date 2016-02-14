@@ -1,6 +1,6 @@
 package org.scalacoin.marshallers.transaction
 
-import org.scalacoin.currency.{CurrencyUnits, Bitcoins}
+import org.scalacoin.currency.{Satoshis, CurrencyUnits, Bitcoins}
 import org.scalacoin.protocol.P2SH
 import org.scalacoin.protocol.transaction.TransactionOutput
 import org.scalacoin.script.bitwise.OP_EQUAL
@@ -34,6 +34,17 @@ class RawTransactionOutputParserTest extends FlatSpec with MustMatchers with Raw
     val txOutput = read(rawTxOutput)
 
     write(txOutput) must be (rawTxOutput)
+
+  }
+
+
+  it must "serialize an older raw transaction output" in {
+    //from this question
+    //https://bitcoin.stackexchange.com/questions/2859/how-are-transaction-hashes-calculated
+    val txOutput = "0100f2052a01000000434104678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5fac"
+    val output = RawTransactionOutputParser.read(txOutput)
+    output.head.n must be (0)
+    output.head.value must be (Satoshis(5000000000L))
 
   }
 }

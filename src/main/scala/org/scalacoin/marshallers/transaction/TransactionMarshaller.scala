@@ -20,12 +20,11 @@ object TransactionMarshaller extends DefaultJsonProtocol with MarshallerUtil {
 
     override def read(value : JsValue) : Transaction = {
       val obj = value.asJsObject
-      val txId = obj.fields(txIdKey).convertTo[String]
       val version = obj.fields(versionKey).convertTo[Int]
       val lockTime = obj.fields(lockTimeKey).convertTo[Long]
       val inputs : Seq[TransactionInput] = convertToTransactionInputList(obj.fields(vinKey))
       val outputs : Seq[TransactionOutput] = convertToTransactionOutputList(obj.fields(voutKey))
-      TransactionImpl(txId,version,inputs,outputs,lockTime)
+      TransactionImpl(version,inputs,outputs,lockTime)
 
     }
 

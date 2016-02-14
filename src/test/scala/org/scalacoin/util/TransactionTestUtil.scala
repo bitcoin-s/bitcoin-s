@@ -22,7 +22,7 @@ trait TransactionTestUtil {
     //empty script pubkey
     val scriptPubKey = ScriptPubKeyImpl(Seq(),"",Seq())
     val output = TransactionOutputImpl(CurrencyUnits.oneSatoshi,0,scriptPubKey)
-    TransactionImpl("",TransactionConstants.version,Seq(input),Seq(output),TransactionConstants.lockTime)
+    TransactionImpl(TransactionConstants.version,Seq(input),Seq(output),TransactionConstants.lockTime)
   }
 
 
@@ -39,6 +39,6 @@ trait TransactionTestUtil {
     val input = TransactionInputImpl(outpoint,scriptSignature,0xFFFFFFFF)
     val output = TransactionOutputImpl(CurrencyUnits.oneSatoshi,0,scriptPubKey)
 
-    TransactionImpl("",TransactionConstants.version,Seq(input),Seq(output),TransactionConstants.lockTime)
+    TransactionImpl(TransactionConstants.version,Seq(input),Seq(output),TransactionConstants.lockTime)
   }
 }

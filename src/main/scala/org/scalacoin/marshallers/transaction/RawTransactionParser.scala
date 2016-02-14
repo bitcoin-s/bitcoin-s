@@ -15,21 +15,30 @@ trait RawTransactionParser extends RawBitcoinSerializer[Transaction] {
   private lazy val logger = LoggerFactory.getLogger(this.getClass().toString())
 
   def read(bytes : List[Byte]) = {
+
     val versionBytes = bytes.take(4)
     val version = Integer.parseInt(ScalacoinUtil.encodeHex(versionBytes.reverse),16)
     val txInputBytes = bytes.slice(4,bytes.size)
     val inputs = RawTransactionInputParser.read(txInputBytes)
     val inputsSize = inputs.map(_.size).sum
+    logger.debug("Bytes size: " + bytes.size)
+    logger.debug("Num of inputs: " + inputs.size)
+    logger.debug("Input size: " + inputsSize)
+    logger.debug("First input: " + inputs(0))
+    logger.debug("Second input: " + inputs(1))
     val outputsStartIndex = inputsSize + 5
     val outputsBytes = bytes.slice(outputsStartIndex, bytes.size)
+    logger.debug("Output start index " + outputsStartIndex)
+    logger.debug("Output bytes: " + ScalacoinUtil.encodeHex(outputsBytes))
     val outputs = RawTransactionOutputParser.read(outputsBytes)
+    logger.debug("Outputs: " + outputs)
     val outputsSize = outputs.map(_.size).sum
-    val txId = ScalacoinUtil.encodeHex(CryptoUtil.doubleSHA256(bytes).reverse)
+    logger.debug("Outputs size: " + outputsSize)
     val lockTimeStartIndex = outputsStartIndex + outputsSize + 1
     val lockTimeBytes = bytes.slice(lockTimeStartIndex, bytes.size)
     val lockTime = Integer.parseInt(ScalacoinUtil.encodeHex(lockTimeBytes.reverse),16)
 
-    TransactionImpl(txId,version,inputs,outputs,lockTime)
+    TransactionImpl(version,inputs,outputs,lockTime)
   }
 
   def write(tx : Transaction) : String = {

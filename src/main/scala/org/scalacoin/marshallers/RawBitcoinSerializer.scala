@@ -30,7 +30,7 @@ trait RawBitcoinSerializer[T] {
    * for instance, vouts are required to be 4 bytes. If the number is just 1
    * it will only take 1 byte. We need to pad the byte with an extra 3 bytes so the result is
    * 01000000 instead of just 01
-   * @param bytesNeeded
+   * @param charactersNeeded
    * @param hex
    * @return
    */

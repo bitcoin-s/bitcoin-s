@@ -1,6 +1,6 @@
 package org.scalacoin.protocol.transaction
 
-import org.scalacoin.marshallers.transaction.TransactionElement
+import org.scalacoin.marshallers.transaction.{RawTransactionInputParser, TransactionElement}
 import org.scalacoin.protocol.VarInt
 import org.scalacoin.protocol.script.ScriptSignature
 
@@ -14,6 +14,8 @@ trait TransactionInput extends TransactionElement {
 
   //https://bitcoin.org/en/developer-reference#txin
   def size = previousOutput.size + scriptSignature.size + 4
+
+  def hex = RawTransactionInputParser.write(Seq(this))
 }
 
 case class TransactionInputImpl(previousOutput : TransactionOutPoint,

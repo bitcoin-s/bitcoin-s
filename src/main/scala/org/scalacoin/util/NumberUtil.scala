@@ -1,5 +1,6 @@
 package org.scalacoin.util
 
+import org.scalacoin.protocol.{VarIntImpl, VarInt}
 import org.slf4j.LoggerFactory
 
 /**
@@ -95,7 +96,25 @@ trait NumberUtil {
 
   def toByteList(long : Long) = BigInt(long).toByteArray.toList
 
+  def parseVarInt(hex : String) : VarInt = parseVarInt(ScalacoinUtil.decodeHex(hex))
+
+  def parseVarInt(bytes : Seq[Byte]) : VarInt = {
+    require(bytes.size > 0, "Cannot parse a VarInt if the byte array is size 0")
+    //8 bit number
+    if (bytes.head < 253) VarIntImpl(parseLong(bytes.head),1)
+    //16 bit number
+    else if (bytes.head == 254) VarIntImpl(parseLong(bytes.slice(1,3)),2)
+    //32 bit number
+    else if (bytes.head == 255) VarIntImpl(parseLong(bytes.slice(1,5)),4)
+    //64 bit number
+    else VarIntImpl(parseLong(bytes.slice(1,9)),8)
+  }
+
   private def parseLong(hex : String) : Long = java.lang.Long.parseLong(hex,16)
 
   private def parseLong(bytes : List[Byte]) : Long = parseLong(ScalacoinUtil.encodeHex(bytes))
+
+  private def parseLong(byte : Byte) : Long = parseLong(List(byte))
+
+  private def parseLong(bytes : Seq[Byte]) : Long = parseLong(bytes.toList)
 }
