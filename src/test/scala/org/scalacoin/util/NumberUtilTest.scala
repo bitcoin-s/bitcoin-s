@@ -194,6 +194,9 @@ class NumberUtilTest extends FlatSpec with MustMatchers with NumberUtil {
 
     val str1 = "00"
     parseVarInt(str1) must be (VarIntImpl(0,1))
+
+    var str2 = "ffffffffff"
+    parseVarInt(str2) must be (VarIntImpl(4294967295L,8))
   }
 
 
