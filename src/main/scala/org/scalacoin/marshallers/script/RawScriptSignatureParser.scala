@@ -12,10 +12,8 @@ trait RawScriptSignatureParser extends RawBitcoinSerializer[ScriptSignature]  {
 
   def read(bytes : List[Byte]) : ScriptSignature = {
     require(bytes.size > 0, this.getClass().toString + " cannot parse an empty byte list")
-    //first byte indicates how large the ENTIRE script signature is
     //see https://bitcoin.org/en/developer-reference#txout for example
-    val scriptSigSize = bytes.head.toInt
-    val scriptSig : List[ScriptToken] = ScriptParser.parse(bytes.tail)
+    val scriptSig : List[ScriptToken] = ScriptParser.parse(bytes)
     ScriptSignatureImpl(scriptSig,ScalacoinUtil.encodeHex(bytes))
   }
 

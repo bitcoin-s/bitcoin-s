@@ -103,11 +103,27 @@ trait NumberUtil {
     //8 bit number
     if (parseLong(bytes.head) < 253) VarIntImpl(parseLong(bytes.head),1)
     //16 bit number
-    else if (parseLong(bytes.head) == 253) VarIntImpl(parseLong(bytes.slice(1,3)),2)
+    else if (parseLong(bytes.head) == 253) VarIntImpl(parseLong(bytes.slice(1,3).reverse),3)
     //32 bit number
-    else if (parseLong(bytes.head) == 254) VarIntImpl(parseLong(bytes.slice(1,5)),4)
+    else if (parseLong(bytes.head) == 254) VarIntImpl(parseLong(bytes.slice(1,5).reverse),5)
     //64 bit number
-    else VarIntImpl(parseLong(bytes.slice(1,9)),8)
+    else VarIntImpl(parseLong(bytes.slice(1,9).reverse),9)
+  }
+
+  /**
+   * Returns the size of a VarInt in the number of bytes
+   * @param byte
+   * @return
+   */
+  def parseVarIntSize(byte : Byte) : Long = {
+    //8 bit number
+    if (parseLong(byte) < 253) 1
+    //16 bit number
+    else if (parseLong(byte) == 253) 3
+    //32 bit number
+    else if (parseLong(byte) == 254) 5
+    //64 bit number
+    else 9
   }
 
   private def parseLong(hex : String) : Long = java.lang.Long.parseLong(hex,16)

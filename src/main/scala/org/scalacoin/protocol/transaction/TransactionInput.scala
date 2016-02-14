@@ -12,11 +12,12 @@ trait TransactionInput extends TransactionElement {
   def scriptSignature : ScriptSignature
   def sequence : Long
 
+  def scriptSigVarInt : VarInt
   //https://bitcoin.org/en/developer-reference#txin
-  def size = previousOutput.size + scriptSignature.size + 4
+  def size = previousOutput.size + scriptSignature.size + scriptSigVarInt.size.toInt + 4
 
   def hex = RawTransactionInputParser.write(Seq(this))
 }
 
-case class TransactionInputImpl(previousOutput : TransactionOutPoint,
+case class TransactionInputImpl(previousOutput : TransactionOutPoint, scriptSigVarInt : VarInt,
   scriptSignature : ScriptSignature, sequence : Long) extends TransactionInput

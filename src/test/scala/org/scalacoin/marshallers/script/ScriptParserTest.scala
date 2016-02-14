@@ -25,7 +25,7 @@ class ScriptParserTest extends FlatSpec with MustMatchers with ScriptParser with
   }
 
   it must "parse a pay-to-pubkey-hash output script" in {
-    val parsedOutput = parse(TestUtil.p2pkhOutputScriptNotParsedAsm)
+    val parsedOutput = ScriptParser.parse(TestUtil.p2pkhOutputScriptNotParsedAsm)
     parsedOutput must be (TestUtil.p2pkhOutputScriptAsm)
   }
 

@@ -8,9 +8,4 @@ import org.scalatest.{MustMatchers, FlatSpec}
  */
 class ScriptPubKeyTest extends FlatSpec with MustMatchers {
 
-  "ScriptPubKey" must "calculate the correct size for a scriptPubKey" in {
-    val expectedSize = ScalacoinUtil.decodeHex(TestUtil.rawScriptPubKey).size
-    TestUtil.scriptPubKey.size must be (expectedSize)
-  }
-
 }

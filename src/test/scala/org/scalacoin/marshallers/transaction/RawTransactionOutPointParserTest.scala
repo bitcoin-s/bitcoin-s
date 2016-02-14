@@ -45,5 +45,12 @@ class RawTransactionOutPointParserTest extends FlatSpec with MustMatchers  {
     serializedOutPoint must be (rawOutPoint)
   }
 
+  it must "determine the correct size of a transaction outpoint" in {
+    //cad1082e674a7bd3bc9ab1bc7804ba8a57523607c876b8eb2cbe645f2b1803d6
+    val rawOutPoint = "85d6b0da2edf96b282030d3f4f79d14cc8c882cfef1b3064170c850660317de100000000"
+    val outPoint = RawTransactionOutPointParser.read(rawOutPoint)
+    outPoint.size must be (36)
+  }
+
 
 }
