@@ -18,6 +18,7 @@ trait TransactionTestUtil {
    * @param tx
    */
   def buildSpendingTransaction(scriptSignature : ScriptSignature, tx : Transaction) : Transaction = {
+
     val outpoint = TransactionOutPointImpl(tx.txId,0)
     val input = TransactionInputImpl(outpoint,VarIntImpl(0,0),scriptSignature,0xFFFFFFFF)
     //empty script pubkey

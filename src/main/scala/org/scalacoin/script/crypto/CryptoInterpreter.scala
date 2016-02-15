@@ -86,8 +86,8 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with ScalacoinUtil 
     require(program.stack.size > 1, "Stack must have at least 2 items on it for OP_CHECKSIG")
     val pubKey = program.stack.head
     val signature = program.stack.tail.head
-    val hashType = HashTypeFactory.fromByte(ScalacoinUtil.decodeHex(signature.hex.last))
-
+    val restOfStack = program.stack.tail.tail
+    val hashType = HashTypeFactory.fromByte(ScalacoinUtil.decodeHex(signature.hex).last)
     ???
   }
 

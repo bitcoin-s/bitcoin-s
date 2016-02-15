@@ -10,7 +10,7 @@ import org.scalacoin.script.crypto.{OP_CHECKSIG, OP_HASH160}
 import org.scalacoin.script.interpreter.testprotocol.{CoreTestCaseProtocol, CoreTestCase}
 import org.scalacoin.script.reserved.OP_NOP
 import org.scalacoin.script.stack.OP_DUP
-import org.scalacoin.util.TestUtil
+import org.scalacoin.util.{TransactionTestUtil, TestUtil}
 import org.scalatest.{MustMatchers, FlatSpec}
 import org.slf4j.LoggerFactory
 
@@ -18,7 +18,7 @@ import spray.json._
 /**
  * Created by chris on 1/6/16.
  */
-class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterpreter {
+class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterpreter with TransactionTestUtil {
 
 
   private val logger = LoggerFactory.getLogger(this.getClass())
@@ -63,13 +63,15 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterp
     val source = scala.io.Source.fromFile("src/test/scala/org/scalacoin/script/interpreter/script_valid.json")
 
     //use this to represent a single test case from script_valid.json
+/*
     val lines =
     """
       |
       |[["0", "0x21 0x02865c40293a680cb9c020e7b1e106d8c1916d3cef99aa431a56d253e69256dac0 CHECKSIG NOT", "STRICTENC"]]
     """.stripMargin
+*/
 
-    //val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n" finally source.close()
+    val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n" finally source.close()
     val json = lines.parseJson
     val testCasesOpt : Seq[Option[CoreTestCase]] = json.convertTo[Seq[Option[CoreTestCase]]]
     val testCases : Seq[CoreTestCase] = testCasesOpt.flatten
@@ -77,6 +79,7 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterp
 
     for {
       testCase <- testCases
+      tx = buildSpendingTransaction(testCase.scriptSig, buildCreditingTransaction(testCase.scriptPubKey))
     } yield {
       logger.info("Raw test case: " + testCase.raw)
       logger.info("Parsed ScriptSig: " + testCase.scriptSig)
@@ -84,7 +87,7 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterp
       logger.info("Flags: " + testCase.flags)
       logger.info("Comments: " + testCase.comments)
       withClue(testCase.raw) {
-        ScriptInterpreter.run(testCase.scriptSig, testCase.scriptPubKey,TestUtil.transaction) must equal (true)
+        ScriptInterpreter.run(testCase.scriptSig, testCase.scriptPubKey, tx) must equal (true)
       }
     }
 
