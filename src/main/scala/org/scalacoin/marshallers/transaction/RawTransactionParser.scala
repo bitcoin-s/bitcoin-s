@@ -21,19 +21,13 @@ trait RawTransactionParser extends RawBitcoinSerializer[Transaction] {
     val txInputBytes = bytes.slice(4,bytes.size)
     val inputs = RawTransactionInputParser.read(txInputBytes)
     val inputsSize = inputs.map(_.size).sum
-    logger.debug("Bytes size: " + bytes.size)
-    logger.debug("Num of inputs: " + inputs.size)
-    logger.debug("Input size: " + inputsSize)
-    logger.debug("First input: " + inputs(0))
-    logger.debug("Second input: " + inputs(1))
+
     val outputsStartIndex = inputsSize + 5
     val outputsBytes = bytes.slice(outputsStartIndex, bytes.size)
-    logger.debug("Output start index " + outputsStartIndex)
-    logger.debug("Output bytes: " + ScalacoinUtil.encodeHex(outputsBytes))
+
     val outputs = RawTransactionOutputParser.read(outputsBytes)
-    logger.debug("Outputs: " + outputs)
     val outputsSize = outputs.map(_.size).sum
-    logger.debug("Outputs size: " + outputsSize)
+
     val lockTimeBytes = bytes.slice(bytes.size - 4, bytes.size)
     val lockTime = Integer.parseInt(ScalacoinUtil.encodeHex(lockTimeBytes.reverse),16)
 
