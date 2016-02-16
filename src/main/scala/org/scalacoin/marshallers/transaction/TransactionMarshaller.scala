@@ -7,9 +7,6 @@ import DefaultJsonProtocol._
 
 /**
  * Created by chris on 12/28/15.
- * Note that Transaction's read from JSON format cannot be reserialized to the correct
- * bitcoin hex format. This is because the scriptSig's are missing their VarInt that indicates how long
- * the script signatures are.
  */
 object TransactionMarshaller extends DefaultJsonProtocol with MarshallerUtil {
   val txIdKey = "txid"

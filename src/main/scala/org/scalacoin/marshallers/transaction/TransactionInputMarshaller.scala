@@ -9,10 +9,11 @@ import spray.json._
 
 /**
  * Created by chris on 12/27/15.
- * Note that TransactionInput's read from JSON format cannot be reserialized to the correct
- * bitcoin hex format. This is because the scriptSig's are missing their VarInt that indicates how long
- * the script signatures are. 
+
  */
+//TODO:  Note that TransactionInput's read from JSON format cannot be reserialized to the correct bitcoin hex format. This is because the scriptSig's are missing their VarInt that indicates how long
+//the script signatures are.
+
 object TransactionInputMarshaller extends DefaultJsonProtocol {
 
   val sequenceKey = "sequence"
@@ -40,9 +41,6 @@ object TransactionInputMarshaller extends DefaultJsonProtocol {
         sequenceKey -> JsNumber(input.sequence)
       )
       JsObject(m)
-
     }
-
   }
-
 }
