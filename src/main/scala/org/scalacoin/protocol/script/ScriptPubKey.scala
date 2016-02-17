@@ -2,7 +2,7 @@ package org.scalacoin.protocol.script
 
 import org.scalacoin.protocol._
 import org.scalacoin.script.bitwise.{OP_EQUAL, OP_EQUALVERIFY}
-import org.scalacoin.script.constant.{ScriptConstantImpl, ScriptToken}
+import org.scalacoin.script.constant.{BytesToPushOntoStackImpl, ScriptConstantImpl, ScriptToken}
 import org.scalacoin.script.crypto.{OP_CHECKSIG, OP_HASH160}
 import org.scalacoin.script.stack.OP_DUP
 
@@ -22,8 +22,8 @@ trait ScriptPubKey extends ScriptSignature {
   }
   def addressType : AddressType = {
     asm match {
-      case List(OP_DUP, OP_HASH160, ScriptConstantImpl(pubKeyHash), OP_EQUALVERIFY, OP_CHECKSIG) => P2PKH
-      case List(OP_HASH160, ScriptConstantImpl(scriptHash), OP_EQUAL) => P2SH
+      case List(OP_DUP, OP_HASH160, BytesToPushOntoStackImpl(x), ScriptConstantImpl(pubKeyHash), OP_EQUALVERIFY, OP_CHECKSIG) => P2PKH
+      case List(OP_HASH160, BytesToPushOntoStackImpl(x), ScriptConstantImpl(scriptHash), OP_EQUAL) => P2SH
       case _ => NonStandard
     }
   }

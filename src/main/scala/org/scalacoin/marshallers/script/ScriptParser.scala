@@ -83,7 +83,11 @@ trait ScriptParser extends ScalacoinUtil {
           logger.debug("Found a decimal number")
           //convert the string to int, then convert to hex
           loop(t, ScriptNumberImpl(h.toLong) :: accum)
-        case h :: t => loop(t, ScriptConstantImpl(h) :: accum)
+        //means that it must be a BytesToPushOntoStack followed by a script constant
+        case h :: t =>
+          //find the size of the string in bytes
+          val bytesToPushOntoStack = BytesToPushOntoStackImpl(h.size / 2)
+          loop(t, ScriptConstantImpl(h) :: bytesToPushOntoStack :: accum)
         case Nil => accum
       }
     }
@@ -133,6 +137,8 @@ trait ScriptParser extends ScalacoinUtil {
     }
     loop(bytes, List()).reverse
   }
+
+  def parse(bytes : Seq[Byte]) : List[ScriptToken] = parse(bytes.toList)
 
   /**
    * Slices the amount of bytes specified in the bytesToPushOntoStack parameter and then creates a script constant
@@ -195,7 +201,7 @@ trait ScriptParser extends ScalacoinUtil {
         //means that we need to push x amount of bytes on to the stack
         val (constant,newTail) = sliceConstant(bytesToPushOntoStack,tail)
         val scriptConstant = new ScriptConstantImpl(constant)
-        ParsingHelper(newTail,scriptConstant :: accum)
+        ParsingHelper(newTail,scriptConstant :: bytesToPushOntoStack ::  accum)
 
       case _ =>
         //means that we need to push the operation onto the stack
@@ -220,7 +226,7 @@ trait ScriptParser extends ScalacoinUtil {
         //means that we need to push x amount of bytes on to the stack
         val (constant,newTail) = sliceConstant[String](bytesToPushOntoStack,tail)
         val scriptConstant = ScriptConstantImpl(constant.mkString)
-        ParsingHelper(newTail,scriptConstant :: accum)
+        ParsingHelper(newTail,scriptConstant :: bytesToPushOntoStack ::  accum)
 
       case _ =>
         //means that we need to push the operation onto the stack

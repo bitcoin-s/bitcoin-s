@@ -14,7 +14,7 @@ trait TransactionInput extends TransactionElement {
 
   def scriptSigVarInt : VarInt
   //https://bitcoin.org/en/developer-reference#txin
-  def size = previousOutput.size + scriptSignature.size + scriptSigVarInt.size.toInt + 4
+  override def size = previousOutput.size + scriptSignature.size + scriptSigVarInt.size.toInt + 4
 
   def hex = RawTransactionInputParser.write(Seq(this))
 }

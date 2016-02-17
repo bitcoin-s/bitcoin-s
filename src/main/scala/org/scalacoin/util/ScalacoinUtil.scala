@@ -18,7 +18,9 @@ trait ScalacoinUtil extends NumberUtil {
 
   def encodeHex(bytes : Array[Byte]) : String = Utils.HEX.encode(bytes)
 
-  def encodeHex(bytes : List[Byte]) : String = encodeHex(bytes.toArray)
+  def encodeHex(bytes : List[Byte]) : String = encodeHex(bytes.toSeq)
+
+  def encodeHex(bytes : Seq[Byte]) : String = encodeHex(bytes.toArray)
 
   def encodeHex(unit : CurrencyUnit) : String = {
     val satoshis = CurrencyUnits.toSatoshis(unit)

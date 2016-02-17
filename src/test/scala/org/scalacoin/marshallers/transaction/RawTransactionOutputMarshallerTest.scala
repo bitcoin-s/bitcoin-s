@@ -4,7 +4,7 @@ import org.scalacoin.currency.{Satoshis, CurrencyUnits, Bitcoins}
 import org.scalacoin.protocol.P2SH
 import org.scalacoin.protocol.transaction.TransactionOutput
 import org.scalacoin.script.bitwise.OP_EQUAL
-import org.scalacoin.script.constant.ScriptConstantImpl
+import org.scalacoin.script.constant.{BytesToPushOntoStackImpl, ScriptConstantImpl}
 import org.scalacoin.script.crypto.OP_HASH160
 import org.scalatest.{MustMatchers, FlatSpec}
 
@@ -24,8 +24,8 @@ class RawTransactionOutputParserTest extends FlatSpec with MustMatchers with Raw
     val secondOutput = txOutput(1)
     firstOutput.value must be (CurrencyUnits.toSatoshis(Bitcoins(0.0002)))
     secondOutput.value must be (CurrencyUnits.toSatoshis(Bitcoins(0.02981145)))
-    firstOutput.scriptPubKey.asm must be (Seq(OP_HASH160, ScriptConstantImpl("eda8ae08b5c9f973f49543e90a7c292367b3337c"), OP_EQUAL))
-    secondOutput.scriptPubKey.asm must be (Seq(OP_HASH160, ScriptConstantImpl("be2319b9060429692ebeffaa3be38497dc5380c8"), OP_EQUAL))
+    firstOutput.scriptPubKey.asm must be (Seq(OP_HASH160, BytesToPushOntoStackImpl(20),ScriptConstantImpl("eda8ae08b5c9f973f49543e90a7c292367b3337c"), OP_EQUAL))
+    secondOutput.scriptPubKey.asm must be (Seq(OP_HASH160,BytesToPushOntoStackImpl(20), ScriptConstantImpl("be2319b9060429692ebeffaa3be38497dc5380c8"), OP_EQUAL))
     firstOutput.scriptPubKey.addressType must be (P2SH)
     secondOutput.scriptPubKey.addressType must be (P2SH)
   }
