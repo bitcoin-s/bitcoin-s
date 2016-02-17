@@ -17,6 +17,8 @@ trait RawBitcoinSerializer[T] {
 
   def read(bytes : List[Byte]) : T
 
+  def read(bytes : Seq[Byte]) : T = read(bytes.toList)
+
   /**
    * Takes a type T and writes it into the appropriate type T
    * @param t

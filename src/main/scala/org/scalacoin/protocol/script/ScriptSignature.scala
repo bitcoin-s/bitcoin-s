@@ -15,10 +15,11 @@ trait ScriptSignature extends TransactionElement {
   def asm : Seq[ScriptToken]
   def hex : String
 
-  def signature : String  = ???
+  def signature : Seq[ScriptToken]  = Seq(asm(1))
   def hashType : HashType = {
-    require(HashTypeFactory.fromByte(bytes.last).isDefined, "Hash type could not be read for this scriptSig: " + asm(1))
-    HashTypeFactory.fromByte(asm(1).bytes.last).get
+    require(HashTypeFactory.fromByte(signature.head.bytes.last).isDefined,
+      "Hash type could not be read for this scriptSig: " + signature.head.hex)
+    HashTypeFactory.fromByte(signature.head.bytes.last).get
   }
 
 }
