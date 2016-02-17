@@ -1,6 +1,6 @@
 package org.scalacoin.protocol.script
 
-import org.scalacoin.marshallers.script.ScriptParser
+import org.scalacoin.marshallers.script.{RawScriptSignatureParser, ScriptParser}
 import org.scalacoin.script.constant.ScriptToken
 import org.scalacoin.util.ScalacoinUtil
 
@@ -33,8 +33,8 @@ object ScriptSignatureFactory {
    * @return
    */
   def factory(bytes : Seq[Byte]) : ScriptSignature = {
-    val asm = ScriptParser.parse(bytes)
-    ScriptSignatureImpl(asm,ScalacoinUtil.encodeHex(bytes))
+    val scriptSig : ScriptSignature = RawScriptSignatureParser.read(bytes.toList)
+    scriptSig
   }
 
 }
