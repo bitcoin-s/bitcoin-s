@@ -10,7 +10,7 @@ trait TransactionOutPoint extends TransactionElement {
   def vout : Int
 
   //https://bitcoin.org/en/developer-reference#outpoint
-  def size = 36
+  override def size = 36
 
   override def hex = RawTransactionOutPointParser.write(this)
 }

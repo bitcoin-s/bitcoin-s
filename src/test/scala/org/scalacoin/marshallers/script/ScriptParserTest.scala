@@ -146,4 +146,14 @@ class ScriptParserTest extends FlatSpec with MustMatchers with ScriptParser with
   }
 
 
+  it must "parse a hex string to a list of script tokens, and then back again" in {
+    //from this question
+    //https://bitcoin.stackexchange.com/questions/37125/how-are-sighash-flags-encoded-into-a-signature
+    val hex = "304402206e3729f021476102a06ea453cea0a26cb9c096cca641efc4229c1111ed3a96fd022037dce1456a93f53d3e868c789b1b750a48a4c1110cd5b7049779b5f4f3c8b6200103ff1104b46b2141df1948dd0df2223720a3a471ec57404cace47063843a699a0f"
+
+    val scriptTokens : Seq[ScriptToken] = parse(ScalacoinUtil.decodeHex(hex))
+    scriptTokens.map(_.hex).mkString must be (hex)
+  }
+
+
 }

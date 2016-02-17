@@ -13,7 +13,7 @@ trait TransactionElement {
    * The size of the TransactionElement in bytes.
    * @return
    */
-  def size : Int
+  def size : Int = bytes.size
 
   /**
    * The hexadecimal representation of the transaction element
