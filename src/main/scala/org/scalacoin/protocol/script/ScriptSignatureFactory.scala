@@ -32,9 +32,8 @@ object ScriptSignatureFactory {
    * @param bytes
    * @return
    */
-  def factory(bytes : Seq[Byte]) : ScriptSignature = {
-    val scriptSig : ScriptSignature = RawScriptSignatureParser.read(bytes.toList)
-    scriptSig
-  }
+  def factory(bytes : Seq[Byte]) : ScriptSignature = RawScriptSignatureParser.read(bytes)
+
+
 
 }

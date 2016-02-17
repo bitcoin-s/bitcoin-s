@@ -45,7 +45,7 @@ class ScriptParserTest extends FlatSpec with MustMatchers with ScriptParser with
   }
 
   it must "parse a p2sh input script from a byte array into script tokens" in {
-    val bytes = decodeHex(TestUtil.p2shInputScript)
+    val bytes = decodeHex(TestUtil.rawP2shInputScript)
     parse(bytes) must be (TestUtil.p2shInputScriptAsm)
   }
 
