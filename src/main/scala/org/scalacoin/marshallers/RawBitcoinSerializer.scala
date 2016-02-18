@@ -15,10 +15,22 @@ trait RawBitcoinSerializer[T] {
    */
   def read(hex : String) : T = read(ScalacoinUtil.decodeHex(hex))
 
+  /**
+   * Reads in bytes and transforms it into the approriate scala type T
+   * @param bytes
+   * @return
+   */
   def read(bytes : List[Byte]) : T
 
   /**
-   * Takes a type T and writes it into the appropriate type T
+   * Reads in bytes and transforms it into the approriate scala type T
+   * @param bytes
+   * @return
+   */
+  def read(bytes : Seq[Byte]) : T = read(bytes.toList)
+
+  /**
+   * Takes a type T and writes it into the appropriate hexadecimal serialization for type T
    * @param t
    * @return
    */
