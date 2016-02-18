@@ -3,7 +3,7 @@ package org.scalacoin.script.interpreter.testprotocol
 import org.scalacoin.marshallers.script.ScriptParser
 import org.scalacoin.marshallers.script.ScriptPubKeyMarshaller.ScriptPubKeyFormatter
 import org.scalacoin.marshallers.script.ScriptSignatureMarshaller.ScriptSignatureFormatter
-import org.scalacoin.protocol.script.{ScriptPubKeyFactory, ScriptSignatureFactory, ScriptSignature}
+import org.scalacoin.protocol.script.{ScriptSignatureImpl, ScriptPubKeyFactory, ScriptSignatureFactory, ScriptSignature}
 import org.scalacoin.script.constant.{ScriptOperation, ScriptToken}
 import org.scalacoin.util.ScalacoinUtil
 import org.slf4j.LoggerFactory
@@ -29,14 +29,14 @@ object CoreTestCaseProtocol extends DefaultJsonProtocol {
         None
       } else if (elements.size == 3) {
         val scriptSignatureAsm : Seq[ScriptToken] = parseScriptSignatureAsm(elements.head)
-        val scriptSignature : ScriptSignature = ScriptSignatureFactory.factory(scriptSignatureAsm)
+        val scriptSignature : ScriptSignature = ScriptSignatureImpl(scriptSignatureAsm, scriptSignatureAsm.map(_.hex).mkString)
         val scriptPubKeyAsm = parseScriptPubKeyAsm(elements(1))
         val scriptPubKey = ScriptPubKeyFactory.factory(scriptPubKeyAsm)
         val flags = elements(2).convertTo[String]
         Some(CoreTestCaseImpl(scriptSignature,scriptPubKey,flags,"No comments from bitcoin core ",elements.toString))
       } else if (elements.size == 4) {
         val scriptSignatureAsm : Seq[ScriptToken] = parseScriptSignatureAsm(elements.head)
-        val scriptSignature : ScriptSignature = ScriptSignatureFactory.factory(scriptSignatureAsm)
+        val scriptSignature : ScriptSignature = ScriptSignatureImpl(scriptSignatureAsm, scriptSignatureAsm.map(_.hex).mkString)
         val scriptPubKeyAsm : Seq[ScriptToken] = parseScriptPubKeyAsm(elements(1))
         val scriptPubKey = ScriptPubKeyFactory.factory(scriptPubKeyAsm)
         val flags = elements(2).convertTo[String]

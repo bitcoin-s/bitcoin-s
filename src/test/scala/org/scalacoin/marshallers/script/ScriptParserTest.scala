@@ -45,7 +45,7 @@ class ScriptParserTest extends FlatSpec with MustMatchers with ScriptParser with
   }
 
   it must "parse a p2sh input script from a byte array into script tokens" in {
-    val bytes = decodeHex(TestUtil.p2shInputScript)
+    val bytes = decodeHex(TestUtil.rawP2shInputScript)
     parse(bytes) must be (TestUtil.p2shInputScriptAsm)
   }
 
@@ -117,6 +117,13 @@ class ScriptParserTest extends FlatSpec with MustMatchers with ScriptParser with
     parse(str) must be (expectedScript)
   }
 
+  it must "parse a OP_PUSHDATA1 correct from a scriptSig" in {
+    //https://tbtc.blockr.io/api/v1/tx/raw/5d254a872c9197c683ea9111fb5c0e2e0f49280a89961c45b9fea76834d335fe
+    val str = "4cf1" +
+      "55210269992fb441ae56968e5b77d46a3e53b69f136444ae65a94041fc937bdb28d93321021df31471281d4478df85bfce08a10aab82601dca949a79950f8ddf7002bd915a2102174c82021492c2c6dfcbfa4187d10d38bed06afb7fdcd72c880179fddd641ea121033f96e43d72c33327b6a4631ccaa6ea07f0b106c88b9dc71c9000bb6044d5e88a210313d8748790f2a86fb524579b46ce3c68fedd58d2a738716249a9f7d5458a15c221030b632eeb079eb83648886122a04c7bf6d98ab5dfb94cf353ee3e9382a4c2fab02102fb54a7fcaa73c307cfd70f3fa66a2e4247a71858ca731396343ad30c7c4009ce57ae"
+    parse(str) must be (Seq(OP_PUSHDATA1, BytesToPushOntoStackImpl(241), ScriptConstantImpl("55210269992fb441ae56968e5b77d46a3e53b69f136444ae65a94041fc937bdb28d93321021df31471281d4478df85bfce08a10aab82601dca949a79950f8ddf7002bd915a2102174c82021492c2c6dfcbfa4187d10d38bed06afb7fdcd72c880179fddd641ea121033f96e43d72c33327b6a4631ccaa6ea07f0b106c88b9dc71c9000bb6044d5e88a210313d8748790f2a86fb524579b46ce3c68fedd58d2a738716249a9f7d5458a15c221030b632eeb079eb83648886122a04c7bf6d98ab5dfb94cf353ee3e9382a4c2fab02102fb54a7fcaa73c307cfd70f3fa66a2e4247a71858ca731396343ad30c7c4009ce57ae") ))
+  }
+
 
   it must "parse bytes from a string" in {
     val str = "0xFF00"
@@ -143,6 +150,16 @@ class ScriptParserTest extends FlatSpec with MustMatchers with ScriptParser with
         "1111111"), OP_EQUAL)
 
     parse(str) must be (expectedScript)
+  }
+
+
+  it must "parse a hex string to a list of script tokens, and then back again" in {
+    //from this question
+    //https://bitcoin.stackexchange.com/questions/37125/how-are-sighash-flags-encoded-into-a-signature
+    val hex = "304402206e3729f021476102a06ea453cea0a26cb9c096cca641efc4229c1111ed3a96fd022037dce1456a93f53d3e868c789b1b750a48a4c1110cd5b7049779b5f4f3c8b6200103ff1104b46b2141df1948dd0df2223720a3a471ec57404cace47063843a699a0f"
+
+    val scriptTokens : Seq[ScriptToken] = parse(ScalacoinUtil.decodeHex(hex))
+    scriptTokens.map(_.hex).mkString must be (hex)
   }
 
 

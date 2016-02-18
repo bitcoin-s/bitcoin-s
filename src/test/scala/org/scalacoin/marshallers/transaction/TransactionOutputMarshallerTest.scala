@@ -3,7 +3,7 @@ package org.scalacoin.marshallers.transaction
 import org.scalacoin.protocol.{P2PKH, BitcoinAddress}
 import org.scalacoin.protocol.transaction.TransactionOutput
 import org.scalacoin.script.bitwise.OP_EQUALVERIFY
-import org.scalacoin.script.constant.ScriptConstantImpl
+import org.scalacoin.script.constant.{BytesToPushOntoStackImpl, ScriptConstantImpl}
 import org.scalacoin.script.crypto.{OP_CHECKSIG, OP_HASH160}
 import org.scalacoin.script.stack.OP_DUP
 import org.scalatest.{FlatSpec, MustMatchers}
@@ -35,6 +35,7 @@ class TransactionOutputMarshallerTest extends FlatSpec with MustMatchers {
     output.value.value must be (0.0002)
     output.n must be (1)
     output.scriptPubKey.asm must be (List(OP_DUP, OP_HASH160,
+      BytesToPushOntoStackImpl(20),
       ScriptConstantImpl("321908115d8a138942f98b0b53f86c9a1848501a"),
       OP_EQUALVERIFY, OP_CHECKSIG))
     output.scriptPubKey.hex must be ("76a914321908115d8a138942f98b0b53f86c9a1848501a88ac")

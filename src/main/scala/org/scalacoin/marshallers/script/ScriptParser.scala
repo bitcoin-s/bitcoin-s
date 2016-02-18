@@ -83,7 +83,11 @@ trait ScriptParser extends ScalacoinUtil {
           logger.debug("Found a decimal number")
           //convert the string to int, then convert to hex
           loop(t, ScriptNumberImpl(h.toLong) :: accum)
-        case h :: t => loop(t, ScriptConstantImpl(h) :: accum)
+        //means that it must be a BytesToPushOntoStack followed by a script constant
+        case h :: t =>
+          //find the size of the string in bytes
+          val bytesToPushOntoStack = BytesToPushOntoStackImpl(h.size / 2)
+          loop(t, ScriptConstantImpl(h) :: bytesToPushOntoStack :: accum)
         case Nil => accum
       }
     }
@@ -133,6 +137,8 @@ trait ScriptParser extends ScalacoinUtil {
     }
     loop(bytes, List()).reverse
   }
+
+  def parse(bytes : Seq[Byte]) : List[ScriptToken] = parse(bytes.toList)
 
   /**
    * Slices the amount of bytes specified in the bytesToPushOntoStack parameter and then creates a script constant
@@ -195,11 +201,48 @@ trait ScriptParser extends ScalacoinUtil {
         //means that we need to push x amount of bytes on to the stack
         val (constant,newTail) = sliceConstant(bytesToPushOntoStack,tail)
         val scriptConstant = new ScriptConstantImpl(constant)
-        ParsingHelper(newTail,scriptConstant :: accum)
-
+        ParsingHelper(newTail,scriptConstant :: bytesToPushOntoStack ::  accum)
+      case OP_PUSHDATA1 => parseOpPushData(op,accum,tail)
+      case OP_PUSHDATA2 => parseOpPushData(op,accum,tail)
+      case OP_PUSHDATA4 => parseOpPushData(op,accum,tail)
       case _ =>
         //means that we need to push the operation onto the stack
         ParsingHelper(tail,op :: accum)
+    }
+  }
+
+
+  /**
+   * Parses OP_PUSHDATA operations correctly. Slices the appropriate amount of bytes off of the tail and pushes
+   * them onto the accumulator.
+   * @param op
+   * @param accum
+   * @param tail
+   * @return
+   */
+  private def parseOpPushData(op : ScriptOperation, accum : List[ScriptToken], tail : List[Byte]) : ParsingHelper[Byte] = {
+    op match {
+      case OP_PUSHDATA1 =>
+        //next byte is size of the script constant
+        val bytesToPushOntoStack = BytesToPushOntoStackImpl(Integer.parseInt(ScalacoinUtil.encodeHex(tail.head), 16))
+        val scriptConstant = new ScriptConstantImpl(tail.slice(1,bytesToPushOntoStack.num+1))
+        ParsingHelper[Byte](tail.slice(bytesToPushOntoStack.num+1,tail.size),
+          scriptConstant :: bytesToPushOntoStack :: op :: accum)
+      case OP_PUSHDATA2 =>
+        //next 2 bytes is the size of the script constant
+        val scriptConstantHex = ScalacoinUtil.encodeHex(tail.slice(0,2))
+        val bytesToPushOntoStack = BytesToPushOntoStackImpl(Integer.parseInt(scriptConstantHex, 16))
+        val scriptConstant = new ScriptConstantImpl(tail.slice(2,bytesToPushOntoStack.num + 2))
+        ParsingHelper[Byte](tail.slice(bytesToPushOntoStack.num + 2,tail.size),
+          scriptConstant :: bytesToPushOntoStack :: op ::  accum)
+      case OP_PUSHDATA4 =>
+        //nextt 4 bytes is the size of the script constant
+        val scriptConstantHex = ScalacoinUtil.encodeHex(tail.slice(0,4))
+        val bytesToPushOntoStack = BytesToPushOntoStackImpl(Integer.parseInt(scriptConstantHex, 16))
+        val scriptConstant = new ScriptConstantImpl(tail.slice(4,bytesToPushOntoStack.num + 4))
+        ParsingHelper[Byte](tail.slice(bytesToPushOntoStack.num + 4,tail.size),
+          scriptConstant :: bytesToPushOntoStack :: op :: accum)
+      case _ => throw new RuntimeException("parseOpPushData can only parse OP_PUSHDATA operations")
     }
   }
 
@@ -220,7 +263,7 @@ trait ScriptParser extends ScalacoinUtil {
         //means that we need to push x amount of bytes on to the stack
         val (constant,newTail) = sliceConstant[String](bytesToPushOntoStack,tail)
         val scriptConstant = ScriptConstantImpl(constant.mkString)
-        ParsingHelper(newTail,scriptConstant :: accum)
+        ParsingHelper(newTail,scriptConstant :: bytesToPushOntoStack ::  accum)
 
       case _ =>
         //means that we need to push the operation onto the stack
