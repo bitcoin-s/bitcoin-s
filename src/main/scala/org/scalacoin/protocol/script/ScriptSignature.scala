@@ -21,12 +21,9 @@ trait ScriptSignature extends TransactionElement {
       //to begin with OP_0
       //scripSig for p2sh input script
       //OP_0 <scriptSig> <scriptSig> ... <scriptSig> <redeemScript>
-
-      //this list still contains the ByteToPushOntoStack operations
-      //need to filter those out
       val scriptSigs = asm.slice(1,asm.size-1)
       //filter out all of the PUSHDATA / BytesToPushOntoStack operations
-      scriptSigs.filterNot( op => op.isInstanceOf[BytesToPushOntoStack]
+      scriptSigs.filterNot(op => op.isInstanceOf[BytesToPushOntoStack]
         || op == OP_PUSHDATA1
         || op == OP_PUSHDATA2
         || op == OP_PUSHDATA4)
