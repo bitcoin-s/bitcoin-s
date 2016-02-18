@@ -26,10 +26,18 @@ class ScriptSignatureTest extends FlatSpec with MustMatchers {
     scriptSig.signatures.head.hex must be ("304402207df6dd8dad22d49c3c83d8031733c32a53719278eb7985d3b35b375d776f84f102207054f9209a1e87d55feafc90aa04c33008e5bae9191da22aeaa16efde96f41f001")
   }
 
+  it must "find the digital signatures for a p2sh script signature for a 2/3 p2sh address" in {
+    val scriptSig = TestUtil.p2shInputScript2Of3
+    scriptSig.signatures must be (Seq(
+      ScriptConstantImpl("304402207d764cb90c9fd84b74d33a47cf3a0ffead9ded98333776becd6acd32c4426dac02203905a0d064e7f53d07793e86136571b6e4f700c1cfb888174e84d78638335b8101"),
+      ScriptConstantImpl("3045022100906aaca39f022acd8b7a38fd2f92aca9e9f35cfeaee69a6f13e1d083ae18222602204c9ed96fc6c4de56fd85c679fc59c16ee1ccc80c42563b86174e1a506fc007c801")
+    ))
+
+  }
+
   it must "find all the digital signatures for a p2sh script signature with a large amount of sigs" in {
     val scriptSig = TestUtil.p2shInputScriptLargeSignature
 
-    println(scriptSig.asm)
     scriptSig.signatures must be (Seq(
       ScriptConstantImpl("3045022100a077d4fe9a81411ecb796c254d8b4e0bc73ff86a42288bc3b3ecfa1ef26c00dd02202389bf96cf38c14c3a6ccb8c688339f3fd880b724322862547a8ee3b547a9df901"),
       ScriptConstantImpl("304402207c0692464998e7f3869f8501cdd25bbcd9d32b6fd34ae8aeae643b422a8dfd42022057eb16f8ca1f34e88babc9f8beb4c2521eb5c4dea41f8902a70d045f1c132a4401"),
