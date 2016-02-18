@@ -22,8 +22,6 @@ trait ScalacoinUtil extends NumberUtil {
 
   def encodeHex(bytes : Seq[Byte]) : String = encodeHex(bytes.toArray)
 
-  def encodeHex(bytes : Seq[Byte]) : String = encodeHex(bytes.toArray)
-
   def encodeHex(unit : CurrencyUnit) : String = {
     val satoshis = CurrencyUnits.toSatoshis(unit)
     //TODO: this is ugly, clean this up. Shouldn't have to use .toLong

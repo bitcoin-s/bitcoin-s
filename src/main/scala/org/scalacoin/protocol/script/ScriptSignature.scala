@@ -12,9 +12,23 @@ import org.slf4j.LoggerFactory
 trait ScriptSignature extends TransactionElement {
 
   private def logger = LoggerFactory.getLogger(this.getClass())
+
+  /**
+   * Representation of a scriptSignature in a parsed assembly format
+   * this data structure can be run through the script interpreter to
+   * see if a script evaluates to true
+   * @return
+   */
   def asm : Seq[ScriptToken]
+
   def hex : String
 
+  /**
+   * The digital signatures contained inside of the script signature
+   * p2pkh script signatures only have one sig
+   * p2sh script signatures can have n sigs
+   * @return
+   */
   def signatures : Seq[ScriptToken]  = {
     if (asm.headOption.isDefined && asm.head == OP_0) {
       //must be p2sh because of bug that forces p2sh scripts
@@ -29,11 +43,24 @@ trait ScriptSignature extends TransactionElement {
         || op == OP_PUSHDATA4)
     } else Seq(asm(1))
   }
-  def hashType : HashType = {
-    require(HashTypeFactory.fromByte(signatures.head.bytes.last).isDefined,
-      "Hash type could not be read for this scriptSig: " + signatures.head.hex)
-    HashTypeFactory.fromByte(signatures.head.bytes.last).get
+
+  /**
+   * Derives the hash type for a given scriptSig
+   * @param scriptSig
+   * @return
+   */
+  def hashType(scriptSig : Seq[Byte]) : HashType = {
+    require(HashTypeFactory.fromByte(scriptSig.last).isDefined,
+      "Hash type could not be read for this scriptSig: " + ScalacoinUtil.encodeHex(scriptSig))
+    HashTypeFactory.fromByte(scriptSig.last).get
   }
+
+  /**
+   * Derives the hash type for a give scriptSig
+   * @param scriptSigHex
+   * @return
+   */
+  def hashType(scriptSigHex : String) : HashType = hashType(ScalacoinUtil.decodeHex(scriptSigHex))
 
 }
 

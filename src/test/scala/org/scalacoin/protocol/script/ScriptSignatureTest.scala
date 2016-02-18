@@ -16,8 +16,7 @@ class ScriptSignatureTest extends FlatSpec with MustMatchers {
   }
 
    it must "derive the signature hash type from the signature" in {
-
-    TestUtil.scriptSig.hashType must be (SIGHASH_ALL)
+    TestUtil.scriptSig.hashType(TestUtil.scriptSig.signatures.head.bytes) must be (SIGHASH_ALL)
   }
 
 
@@ -32,7 +31,6 @@ class ScriptSignatureTest extends FlatSpec with MustMatchers {
       ScriptConstantImpl("304402207d764cb90c9fd84b74d33a47cf3a0ffead9ded98333776becd6acd32c4426dac02203905a0d064e7f53d07793e86136571b6e4f700c1cfb888174e84d78638335b8101"),
       ScriptConstantImpl("3045022100906aaca39f022acd8b7a38fd2f92aca9e9f35cfeaee69a6f13e1d083ae18222602204c9ed96fc6c4de56fd85c679fc59c16ee1ccc80c42563b86174e1a506fc007c801")
     ))
-
   }
 
   it must "find all the digital signatures for a p2sh script signature with a large amount of sigs" in {
@@ -47,12 +45,12 @@ class ScriptSignatureTest extends FlatSpec with MustMatchers {
     ))
   }
   it must "find the hash type for a p2sh script signature" in {
-    TestUtil.p2shInputScript.hashType must be (SIGHASH_ALL)
+    TestUtil.p2shInputScript.hashType(TestUtil.p2shInputScript2Of3.signatures.head.hex) must be (SIGHASH_ALL)
   }
 
   it must "find the digital signature and hash type for a SIGHASH_SINGLE" in {
     TestUtil.p2shInputScriptSigHashSingle.signatures.head.hex must be ("3045022100dfcfafcea73d83e1c54d444a19fb30d17317f922c19e2ff92dcda65ad09cba24022001e7a805c5672c49b222c5f2f1e67bb01f87215fb69df184e7c16f66c1f87c2903")
-    TestUtil.p2shInputScriptSigHashSingle.hashType must be (SIGHASH_SINGLE)
+    TestUtil.p2shInputScriptSigHashSingle.hashType(TestUtil.p2shInputScriptSigHashSingle.signatures.head.hex) must be (SIGHASH_SINGLE)
   }
 
 
