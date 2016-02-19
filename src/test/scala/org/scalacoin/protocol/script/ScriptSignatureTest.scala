@@ -1,5 +1,6 @@
 package org.scalacoin.protocol.script
 
+
 import org.scalacoin.script.constant.ScriptConstantImpl
 import org.scalacoin.script.crypto.{SIGHASH_SINGLE, SIGHASH_ALL}
 import org.scalacoin.util.{TestUtil, ScalacoinUtil}
@@ -52,8 +53,5 @@ class ScriptSignatureTest extends FlatSpec with MustMatchers {
     TestUtil.p2shInputScriptSigHashSingle.signatures.head.hex must be ("3045022100dfcfafcea73d83e1c54d444a19fb30d17317f922c19e2ff92dcda65ad09cba24022001e7a805c5672c49b222c5f2f1e67bb01f87215fb69df184e7c16f66c1f87c2903")
     TestUtil.p2shInputScriptSigHashSingle.hashType(TestUtil.p2shInputScriptSigHashSingle.signatures.head.hex) must be (SIGHASH_SINGLE)
   }
-
-
-
 
 }

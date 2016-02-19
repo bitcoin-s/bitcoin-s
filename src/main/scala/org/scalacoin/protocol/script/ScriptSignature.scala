@@ -1,6 +1,7 @@
 package org.scalacoin.protocol.script
 
 import org.scalacoin.marshallers.transaction.TransactionElement
+
 import org.scalacoin.script.constant._
 import org.scalacoin.script.crypto.{OP_CHECKMULTISIG, HashType, HashTypeFactory}
 import org.scalacoin.util.ScalacoinUtil
@@ -22,7 +23,6 @@ trait ScriptSignature extends TransactionElement {
   def asm : Seq[ScriptToken]
 
   def hex : String
-
   /**
    * The digital signatures contained inside of the script signature
    * p2pkh script signatures only have one sig
