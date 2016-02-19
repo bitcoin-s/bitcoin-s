@@ -1,5 +1,6 @@
 package org.scalacoin.util
 
+import org.scalacoin.protocol.script.ScriptSignature
 import org.scalacoin.protocol.{VarIntImpl, VarInt}
 import org.slf4j.LoggerFactory
 
@@ -96,8 +97,20 @@ trait NumberUtil {
 
   def toByteList(long : Long) = BigInt(long).toByteArray.toList
 
+  /**
+   * Parses a VarInt from a string of hex characters
+   * https://en.bitcoin.it/wiki/Protocol_documentation#Variable_length_integer
+   * @param hex
+   * @return
+   */
   def parseVarInt(hex : String) : VarInt = parseVarInt(ScalacoinUtil.decodeHex(hex))
 
+  /**
+   * Parses a VarInt from a sequence of bytes
+   * https://en.bitcoin.it/wiki/Protocol_documentation#Variable_length_integer
+   * @param bytes
+   * @return
+   */
   def parseVarInt(bytes : Seq[Byte]) : VarInt = {
     require(bytes.size > 0, "Cannot parse a VarInt if the byte array is size 0")
     //8 bit number
@@ -112,6 +125,7 @@ trait NumberUtil {
 
   /**
    * Returns the size of a VarInt in the number of bytes
+   * https://en.bitcoin.it/wiki/Protocol_documentation#Variable_length_integer
    * @param byte
    * @return
    */
@@ -125,6 +139,23 @@ trait NumberUtil {
     //64 bit number
     else 9
   }
+
+
+  /**
+   * Parses a VarInt from a sequence of bytes
+   * https://en.bitcoin.it/wiki/Protocol_documentation#Variable_length_integer
+   * @param bytes
+   * @return
+   */
+  def parseVarInt(scriptSig : ScriptSignature) : VarInt = {
+    //largest 8 uint
+    val size = scriptSig.size
+    if (size < 255) VarIntImpl(size,1)
+    else if (size < 65536) VarIntImpl(size,3)
+    else if (size < 4294967296L) VarIntImpl(size,5)
+    else VarIntImpl(size,9)
+  }
+
 
   private def parseLong(hex : String) : Long = java.lang.Long.parseLong(hex,16)
 

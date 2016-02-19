@@ -2,7 +2,7 @@ package org.scalacoin.crypto
 
 import org.scalacoin.marshallers.RawBitcoinSerializerHelper
 import org.scalacoin.marshallers.transaction.RawTransactionOutputParser
-import org.scalacoin.protocol.script.{ScriptPubKeyFactory, ScriptPubKey}
+import org.scalacoin.protocol.script.{ScriptSignatureFactory, ScriptSignatureImpl, ScriptPubKeyFactory, ScriptPubKey}
 import org.scalacoin.protocol.transaction.{Transaction, TransactionOutput, TransactionInput}
 import org.scalacoin.script.constant.ScriptToken
 import org.scalacoin.script.crypto._
@@ -55,30 +55,12 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper {
 
   }
 
-  def serialize(spendingTransaction : Transaction, nIn : Int, nType : Int, nVersion : Int, nHashTypeIn : HashType) : String = {
-    val serializedVersion =spendingTransaction.version.toHexString
-    val serializedNIn = nHashTypeIn match {
-      case SIGHASH_ANYONECANPAY => "01"
-      case _ => addPrecedingZero(spendingTransaction.inputs.size.toHexString)
-    }
-    val serializedInputs = for {
+  def serialize(inputIndex : Int, nType : Int, script : ScriptPubKey, hashType : HashType) : String = {
+    //remove signatures from all inputs because we cannot sign existing signatures
+    val txWithInputSigsRemoved = for {
       input <- spendingTransaction.inputs
-    } yield serializeInput(input,nType,nVersion)
-
-    val serializedNOut = nHashTypeIn match {
-      case SIGHASH_NONE => "00"
-      case SIGHASH_SINGLE => addPrecedingZero(nIn.toHexString + 1)
-      case _ => addPrecedingZero(spendingTransaction.outputs.size.toHexString)
-    }
-
-    val serializedOutputs = for {
-      (output,index) <- spendingTransaction.outputs.zipWithIndex
-    } yield serializeOutput(output, nType,nVersion,SIGHASH_NONE,-1,-1)
-
-    val serializedLockTime = addPrecedingZero(spendingTransaction.lockTime.toHexString)
-
-    serializedVersion + serializedNIn + serializedInputs.mkString + serializedNOut +
-      serializedOutputs.mkString + serializedLockTime
+    } yield input.factory(ScriptSignatureFactory.empty)
+    ???
   }
 
   /**
@@ -86,7 +68,7 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper {
    * format
    * @return
    */
-  protected def removeOpCodeSeparators(script : Seq[ScriptToken]) : String = {
+  def removeOpCodeSeparators(script : Seq[ScriptToken]) : String = {
     val scriptWithoutOpCodeSeparators : String = script.filterNot(_ == OP_CODESEPARATOR).map(_.hex).mkString
     val scriptWithoutOpCodeSeparatorSize = addPrecedingZero((scriptWithoutOpCodeSeparators.size / 2).toHexString)
     val expectedScript : ScriptPubKey = ScriptPubKeyFactory.factory(
@@ -96,4 +78,4 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper {
 }
 
 
-class TransactionSignatureSerializerr(override val spendingTransaction : Transaction) extends TransactionSignatureSerializer
+class BaseTransactionSignatureSerializer(override val spendingTransaction : Transaction) extends TransactionSignatureSerializer

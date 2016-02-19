@@ -33,7 +33,7 @@ trait RawTransactionInputParser extends RawBitcoinSerializer[Seq[TransactionInpu
         logger.debug("VarInt hex: " + ScalacoinUtil.encodeHex(bytes.slice(outPointBytesSize,outPointBytesSize + scriptVarIntSize)))
         val scriptSigVarInt : VarInt = ScalacoinUtil.parseVarInt(bytes.slice(outPointBytesSize,outPointBytesSize + scriptVarIntSize))
 
-        val scriptSigBytes = bytes.slice(outPointBytesSize+ scriptVarIntSize,
+        val scriptSigBytes = bytes.slice(outPointBytesSize + scriptVarIntSize,
           outPointBytesSize +  scriptVarIntSize + scriptSigVarInt.num.toInt)
 
         val scriptSig : ScriptSignature = RawScriptSignatureParser.read(scriptSigBytes)
