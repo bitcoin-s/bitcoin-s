@@ -9,11 +9,16 @@ import org.scalacoin.script.crypto._
 
 /**
  * Created by chris on 2/16/16.
- * A trait used to serialize various components of a bitcoin transaction for
- * hashing to compare against a digital signature
+ * Wrapper that serializes like Transaction, but with the modifications
+ * required for the signature hash done in-place
  * https://github.com/bitcoin/bitcoin/blob/93c85d458ac3e2c496c1a053e1f5925f55e29100/src/script/interpreter.cpp#L1016-L1105
+ * bitcoinj version of this
+ * https://github.com/bitcoinj/bitcoinj/blob/master/core/src/main/java/org/bitcoinj/core/Transaction.java#L924-L1008
  */
 trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper {
+
+  def spendingTransaction : Transaction
+
 
   /**
    * Serialized the passed in script code, skipping OP_CODESEPARATORs
@@ -38,15 +43,13 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper {
                       hashType : HashType, inputIndex : Int, outputIndex : Int ) : String = {
     //check if it is a SIGHASH_SINGLE
     //check if the output index is not the same as the input index
-    //
     if (hashType == SIGHASH_SINGLE && inputIndex != outputIndex) {
       // Do not lock-in the txout payee at other indices as txin
       //::Serialize(s, CTxOut(), nType, nVersion)
       //need to write an empty output i think
+      ""
     } else {
-      //::Serialize(s, txTo.vout[nOutput], nType, nVersion);
       RawTransactionOutputParser.write(output)
-
     }
 
 
@@ -69,8 +72,8 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper {
     }
 
     val serializedOutputs = for {
-      output <- spendingTransaction.outputs
-    } yield serializeOutput(output, nType,nVersion)
+      (output,index) <- spendingTransaction.outputs.zipWithIndex
+    } yield serializeOutput(output, nType,nVersion,SIGHASH_NONE,-1,-1)
 
     val serializedLockTime = addPrecedingZero(spendingTransaction.lockTime.toHexString)
 
@@ -93,4 +96,4 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper {
 }
 
 
-object TransactionSignatureSerializer extends TransactionSignatureSerializer
+class TransactionSignatureSerializerr(override val spendingTransaction : Transaction) extends TransactionSignatureSerializer
