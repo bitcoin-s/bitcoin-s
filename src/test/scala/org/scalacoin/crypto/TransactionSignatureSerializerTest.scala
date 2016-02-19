@@ -9,10 +9,10 @@ import org.scalatest.{FlatSpec, MustMatchers}
 /**
  * Created by chris on 2/19/16.
  */
-class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers with TransactionSignatureSerializer {
+class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers {
 
 
-  "TransactionSignatureSerializer" must "serialize a given script signature without OP_CODESEPARATORS" in {
+/*  "TransactionSignatureSerializer" must "serialize a given script signature without OP_CODESEPARATORS" in {
     val scriptPubKey = TestUtil.scriptPubKey.asm
     val expectedScript = removeOpCodeSeparators(scriptPubKey)
     serializeScriptCode(scriptPubKey) must be (expectedScript)
@@ -26,7 +26,7 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers with
   it must "serialize a given script with mixed in OP_CODESEPARATORs" in {
     val script = List(OP_CODESEPARATOR, OP_1, OP_CODESEPARATOR, OP_0, OP_CODESEPARATOR, OP_2)
     serializeScriptCode(script) must be ("03510052")
-  }
+  }*/
 
 
 }
