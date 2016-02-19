@@ -61,22 +61,30 @@ trait RawTransactionInputParser extends RawBitcoinSerializer[Seq[TransactionInpu
   override def write(inputs : Seq[TransactionInput]) = {
     val serializedInputs : Seq[String] = for {
       input <- inputs
-    } yield {
-        val outPoint = RawTransactionOutPointParser.write(input.previousOutput)
-        val varInt = input.scriptSigVarInt.hex
-        val scriptSig = RawScriptSignatureParser.write(input.scriptSignature)
-        val sequenceWithoutPadding = input.sequence.toHexString
-        val paddingNeeded = 8 - sequenceWithoutPadding.size
-        val padding = for { i <- 0 until paddingNeeded} yield "0"
-
-        val sequence = sequenceWithoutPadding + padding.mkString
-        outPoint + varInt + scriptSig + sequence
-      }
+    } yield write(input)
 
     val inputsSizeWithoutPadding = inputs.size.toHexString
     val inputsSize = if (inputsSizeWithoutPadding.size == 1) "0" + inputsSizeWithoutPadding else inputsSizeWithoutPadding
     logger.debug("Input size: " + inputsSize)
     inputsSize + serializedInputs.mkString
+  }
+
+
+  /**
+   * Writes a single transaction input
+   * @param input
+   * @return
+   */
+  def write(input : TransactionInput) : String = {
+    val outPoint = RawTransactionOutPointParser.write(input.previousOutput)
+    val varInt = input.scriptSigVarInt.hex
+    val scriptSig = RawScriptSignatureParser.write(input.scriptSignature)
+    val sequenceWithoutPadding = input.sequence.toHexString
+    val paddingNeeded = 8 - sequenceWithoutPadding.size
+    val padding = for { i <- 0 until paddingNeeded} yield "0"
+
+    val sequence = sequenceWithoutPadding + padding.mkString
+    outPoint + varInt + scriptSig + sequence
   }
 }
 

@@ -32,9 +32,12 @@ class RawTransactionOutputParserTest extends FlatSpec with MustMatchers with Raw
 
   it must "seralialize a transaction output" in {
     val txOutput = read(rawTxOutput)
-
     write(txOutput) must be (rawTxOutput)
+  }
 
+  it must "serialize a single transaction output not in a sequence" in {
+    val txOutputs = read(rawTxOutput)
+    write(txOutputs.head) must be ("204e00000000000017a914eda8ae08b5c9f973f49543e90a7c292367b3337c87")
   }
 
 
