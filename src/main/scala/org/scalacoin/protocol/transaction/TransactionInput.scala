@@ -7,7 +7,8 @@ import org.scalacoin.protocol.script.ScriptSignature
 /**
  * Created by chris on 12/26/15.
  */
-trait TransactionInput extends TransactionElement {
+trait TransactionInput extends TransactionElement with TransactionInputFactory {
+
   def previousOutput : TransactionOutPoint
   def scriptSignature : ScriptSignature
   def sequence : Long

@@ -34,6 +34,9 @@ object ScriptSignatureFactory {
    */
   def factory(bytes : Seq[Byte]) : ScriptSignature = RawScriptSignatureParser.read(bytes)
 
-
-
+  /**
+   * Returns an empty script signature
+   * @return
+   */
+  def empty = ScriptSignatureImpl(Seq(),"")
 }

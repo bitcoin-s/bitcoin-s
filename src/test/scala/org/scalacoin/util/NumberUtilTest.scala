@@ -200,4 +200,14 @@ class NumberUtilTest extends FlatSpec with MustMatchers with NumberUtil {
   }
 
 
+  it must "parse a variable length integer the same from a tx input and a script sig" in {
+    parseVarInt(TestUtil.txInput.head.scriptSignature) must be (TestUtil.txInput.head.scriptSigVarInt)
+  }
+
+  it must "parse multiple variable length integers correctly for a multi input tx" in {
+    parseVarInt(TestUtil.txInputs.head.scriptSignature) must be (TestUtil.txInputs.head.scriptSigVarInt)
+    parseVarInt(TestUtil.txInputs(1).scriptSignature) must be (TestUtil.txInputs(1).scriptSigVarInt)
+  }
+
+
 }

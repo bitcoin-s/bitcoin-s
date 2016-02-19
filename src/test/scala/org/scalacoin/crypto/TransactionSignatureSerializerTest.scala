@@ -12,21 +12,24 @@ import org.scalatest.{FlatSpec, MustMatchers}
 class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers {
 
 
-/*  "TransactionSignatureSerializer" must "serialize a given script signature without OP_CODESEPARATORS" in {
+  "TransactionSignatureSerializer" must "serialize a given script signature without OP_CODESEPARATORS" in {
+    val txSerializer = new BaseTransactionSignatureSerializer(TestUtil.transaction)
     val scriptPubKey = TestUtil.scriptPubKey.asm
-    val expectedScript = removeOpCodeSeparators(scriptPubKey)
-    serializeScriptCode(scriptPubKey) must be (expectedScript)
+    val expectedScript = txSerializer.removeOpCodeSeparators(scriptPubKey)
+    txSerializer.serializeScriptCode(scriptPubKey) must be (expectedScript)
   }
 
   it must "serialize a given script with only OP_CODESEPARATORs" in {
+    val txSerializer = new BaseTransactionSignatureSerializer(TestUtil.transaction)
     val script = List(OP_CODESEPARATOR)
-    serializeScriptCode(script) must be ("00")
+    txSerializer.serializeScriptCode(script) must be ("00")
   }
 
   it must "serialize a given script with mixed in OP_CODESEPARATORs" in {
+    val txSerializer = new BaseTransactionSignatureSerializer(TestUtil.transaction)
     val script = List(OP_CODESEPARATOR, OP_1, OP_CODESEPARATOR, OP_0, OP_CODESEPARATOR, OP_2)
-    serializeScriptCode(script) must be ("03510052")
-  }*/
+    txSerializer.serializeScriptCode(script) must be ("03510052")
+  }
 
 
 }
