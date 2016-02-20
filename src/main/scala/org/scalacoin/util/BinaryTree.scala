@@ -143,14 +143,14 @@ trait BinaryTree[+T] {
 
 
   def toSeq : Seq[T] = {
-    //TODO: Optimize this into a tailrec function
-    //@tailrec
-    def loop(tree : BinaryTree[T],accum : List[T]) : List[T] = tree match {
-      case Leaf(x) => accum ++ List(x)
-      case Empty => accum
-      case Node(v,l,r) =>  loop(r,loop(l,accum ++ List(v)))
+    @tailrec
+    def loop(tree : BinaryTree[T], accum : List[T], remainder : List[BinaryTree[T]]) : List[T] = tree match {
+      case Leaf(x) => if (remainder.isEmpty) accum ++ List(x) else loop(remainder.head,accum ++ List(x),remainder.tail)
+      case Empty => if (remainder.isEmpty) accum else loop(remainder.head, accum, remainder.tail)
+      case Node(v,l,r) =>
+        loop(l,accum ++ List(v), r :: remainder)
     }
-    loop(this,List())
+    loop(this,List(),List())
   }
 
   def toList : List[T] = toSeq.toList
