@@ -51,14 +51,17 @@ trait BinaryTree[+T] {
    * @return
    */
   def findFirstDFS[T](t : T)(f : T => Boolean = (x : T) => x == t)(implicit tree : BinaryTree[T] = this) : Option[BinaryTree[T]] = {
-    //TODO: Optimize this to be tail recursive
-    if (tree.value.isDefined && f(tree.value.get)) Some(tree)
-    else {
-      val leftTreeResult : Option[BinaryTree[T]] = if (tree.left.isDefined) findFirstDFS(t)(f)(tree.left.get) else None
-      if (leftTreeResult.isDefined) leftTreeResult
-      else if (tree.right.isDefined) findFirstDFS(t)(f)(tree.right.get)
-      else None
+    @tailrec
+    def loop(subTree : BinaryTree[T], remainder : List[BinaryTree[T]]) : Option[BinaryTree[T]] = {
+      subTree match {
+        case Empty => if (remainder.isEmpty) None else loop(remainder.head, remainder.tail)
+        case Leaf(x) => if (f(x)) Some(Leaf(x)) else if (remainder.isEmpty) None else loop(remainder.head, remainder.tail)
+        case Node(v, l, r) =>
+          if (f(v)) Some(Node(v,l,r))
+          else loop(l, r :: remainder)
+      }
     }
+    loop(tree,List())
   }
 
 
@@ -94,7 +97,7 @@ trait BinaryTree[+T] {
    * if it cannot insert it because the branches are not empty
    * it throws a runtime exception
    * @param subTree
-   * @param tree
+   * @param parentTree
    * @tparam T
    * @return
    */
@@ -107,6 +110,7 @@ trait BinaryTree[+T] {
     case Empty => subTree
 
   }
+
 
   def remove[T](subTree : BinaryTree[T])(parentTree : BinaryTree[T] = this) : BinaryTree[T] = {
     //TODO: Optimize into a tail recursive function
@@ -128,7 +132,6 @@ trait BinaryTree[+T] {
    * @return
    */
   def replace[T](originalTree : BinaryTree[T], replacement : BinaryTree[T])(implicit parentTree : BinaryTree[T] = this) : BinaryTree[T] = {
-
     parentTree match {
       case Empty => Empty
       case l : Leaf[T] => if (l == originalTree) replacement else l
