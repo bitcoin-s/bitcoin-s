@@ -24,6 +24,8 @@ trait RawTransactionInputParser extends RawBitcoinSerializer[Seq[TransactionInpu
     @tailrec
     def loop(bytes : List[Byte], accum : List[TransactionInput], inputsLeftToParse : Int) : Seq[TransactionInput] = {
       if (inputsLeftToParse > 0) {
+        //TODO: This needs to be refactored into a loop function that returns a single TransactionInput
+        //then call it multiple times and create a Seq[TransactionInput
         logger.debug("Bytes to parse for input: " + ScalacoinUtil.encodeHex(bytes))
         val outPointBytesSize = 36
         val outPointBytes = bytes.take(outPointBytesSize)
