@@ -32,13 +32,13 @@ trait BinaryTree[+T] {
    * @return
    */
   def toSeqLeafValues : Seq[T] = {
-    //TODO: Optimize this into a tailrec function
-    def loop(tree : BinaryTree[T],accum : List[T]) : Seq[T] = tree match {
-      case Leaf(x) => x :: accum
-      case Empty => accum
-      case Node(_,l,r) => loop(l,List()) ++ loop(r,List())
+    @tailrec
+    def loop(tree : BinaryTree[T],accum : List[T], remainder : List[BinaryTree[T]]) : Seq[T] = tree match {
+      case Leaf(x) => if (remainder.isEmpty) x :: accum else loop(remainder.head, x :: accum, remainder.tail)
+      case Empty => if (remainder.isEmpty) accum else loop(remainder.head, accum, remainder.tail)
+      case Node(_,l,r) => loop(l,accum,r :: remainder)
     }
-    loop(this,List())
+    loop(this,List(),List()).reverse
   }
 
 
@@ -80,7 +80,6 @@ trait BinaryTree[+T] {
    * Inserts a element into one of the two branches in a binary tree
    * if it cannot insert it because the branches are not empty
    * it throws a runtime exception
-   * @param subTree
    * @param tree
    * @tparam T
    * @return
@@ -94,7 +93,7 @@ trait BinaryTree[+T] {
    * if it cannot insert it because the branches are not empty
    * it throws a runtime exception
    * @param subTree
-   * @param tree
+   * @param parentTree
    * @tparam T
    * @return
    */
@@ -105,41 +104,46 @@ trait BinaryTree[+T] {
       else throw new RuntimeException("There was no empty branch to insert the new t: " + subTree + "inside of tree: " + parentTree)
     case l : Leaf[T]  => Node(l.v, subTree,Empty)
     case Empty => subTree
-
   }
 
+
+  /**
+   * Removes the subTree from the parentTree
+   * @param subTree - the tree to be removed
+   * @param parentTree - the tree of which the @subTree is being removed from
+   * @tparam T
+   * @return
+   */
   def remove[T](subTree : BinaryTree[T])(parentTree : BinaryTree[T] = this) : BinaryTree[T] = {
     //TODO: Optimize into a tail recursive function
     parentTree match {
       case Empty => Empty
       case l : Leaf[T] => if (l == subTree) Empty else l
-      case n : Node[T] => if (n == subTree) Empty
-        else Node[T](n.value.get,remove(subTree)(n.left.getOrElse(Empty)),
-        remove(subTree)(n.right.getOrElse(Empty)))
+      case n : Node[T] =>
+        if (n == subTree) Empty
+        else Node[T](n.v,remove(subTree)(n.l), remove(subTree)(n.r))
     }
   }
 
   /**
    * Replaces all instances of the original tree with the replacement tree
    * @param originalTree - the tree that needs to be replaced
-   * @param replacement - the tree that is being put into the original tree
+   * @param replacementTree - the tree that is being put into the original tree
    * @param parentTree - the tree that is being searched for instances to replace
    * @tparam T
    * @return
    */
-  def replace[T](originalTree : BinaryTree[T], replacement : BinaryTree[T])(implicit parentTree : BinaryTree[T] = this) : BinaryTree[T] = {
-
+  def replace[T](originalTree : BinaryTree[T], replacementTree : BinaryTree[T])(implicit parentTree : BinaryTree[T] = this) : BinaryTree[T] = {
+    //TODO: Optimize this into a tail recursive function
     parentTree match {
-      case Empty => Empty
-      case l : Leaf[T] => if (l == originalTree) replacement else l
-      case n : Node[T] => if (n == originalTree) replacement else
+      case Empty => if (originalTree == Empty) replacementTree else Empty
+      case l : Leaf[T] => if (l == originalTree) replacementTree else l
+      case n : Node[T] => if (n == originalTree) replacementTree else
         Node(n.v,
-          replace(originalTree,replacement)(n.l),
-          replace(originalTree,replacement)(n.r))
+          replace(originalTree,replacementTree)(n.l),
+          replace(originalTree,replacementTree)(n.r))
     }
   }
-
-
 
 
   def toSeq : Seq[T] = {
