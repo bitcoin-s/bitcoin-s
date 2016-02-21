@@ -80,7 +80,14 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper {
     // already. Perhaps it felt safer to him in some way, or is another leftover from how the code was written.
     val inputWithConnectedScript = inputToSign.factory(script)
 
-    //check the hash type of
+    //check the hash type
+
+    hashType match {
+      case SIGHASH_NONE =>
+        //means that no outputs are signed at all
+        val txWithNoOutputs = ???
+    }
+    ???
 
   }
 

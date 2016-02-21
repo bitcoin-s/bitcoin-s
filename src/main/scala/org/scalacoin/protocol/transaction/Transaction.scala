@@ -8,7 +8,7 @@ import org.scalacoin.util.{ScalacoinUtil, CryptoUtil}
  */
 
 
-trait Transaction extends TransactionElement {
+trait Transaction extends TransactionElement with TransactionFactory {
   def txId : String = ScalacoinUtil.encodeHex(CryptoUtil.doubleSHA256(hex).reverse)
   def version : Long
   def inputs  : Seq[TransactionInput]

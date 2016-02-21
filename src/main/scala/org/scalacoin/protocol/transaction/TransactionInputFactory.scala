@@ -10,8 +10,7 @@ import org.scalacoin.util.ScalacoinUtil
 trait TransactionInputFactory { this : TransactionInput =>
 
   def factory(scriptSig : ScriptSignature) : TransactionInput = {
-    //need to calculate the new ScriptVarInt
-    TransactionInputImpl(previousOutput,VarIntImpl(-1,-1),scriptSig,sequence)
+    TransactionInputImpl(previousOutput,ScalacoinUtil.parseVarInt(scriptSignature),scriptSig,sequence)
   }
 
 }
