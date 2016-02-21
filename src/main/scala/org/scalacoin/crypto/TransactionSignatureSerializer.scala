@@ -3,7 +3,7 @@ package org.scalacoin.crypto
 import org.scalacoin.marshallers.RawBitcoinSerializerHelper
 import org.scalacoin.marshallers.transaction.RawTransactionOutputParser
 import org.scalacoin.protocol.script.{ScriptSignatureFactory, ScriptSignatureImpl, ScriptPubKeyFactory, ScriptPubKey}
-import org.scalacoin.protocol.transaction.{Transaction, TransactionOutput, TransactionInput}
+import org.scalacoin.protocol.transaction.{UpdateTransactionOutputs, Transaction, TransactionOutput, TransactionInput}
 import org.scalacoin.script.constant.ScriptToken
 import org.scalacoin.script.crypto._
 
@@ -26,7 +26,7 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper {
    * @param script
    * @return
    */
-  def serializeScriptCode(script : Seq[ScriptToken]) : List[Byte] = removeOpCodeSeparators(script)
+  def serializeScriptCode(script : Seq[ScriptToken]) : Seq[Byte] = removeOpCodeSeparators(script)
 
 
   def serializeInput(input : TransactionInput, nType : Int, nVersion : Int) : String = ???
@@ -71,7 +71,7 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper {
     // OP_CODESEPARATOR instruction having no purpose as it was only meant to be used internally, not actually
     // ever put into scripts. Deleting OP_CODESEPARATOR is a step that should never be required but if we don't
     // do it, we could split off the main chain.
-    val scriptWithOpCodeSeparatorsRemoved : List[Byte] = serializeScriptCode(script.asm)
+    val scriptWithOpCodeSeparatorsRemoved : Seq[Byte] = serializeScriptCode(script.asm)
 
     val inputToSign = spendingTransaction.inputs(inputIndex)
 
@@ -85,7 +85,7 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper {
     hashType match {
       case SIGHASH_NONE =>
         //means that no outputs are signed at all
-        val txWithNoOutputs = ???
+        val txWithNoOutputs = spendingTransaction.factory(UpdateTransactionOutputs(Seq()))
     }
     ???
 
@@ -96,7 +96,7 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper {
    * format
    * @return
    */
-  def removeOpCodeSeparators(script : Seq[ScriptToken]) : List[Byte] = {
+  def removeOpCodeSeparators(script : Seq[ScriptToken]) : Seq[Byte] = {
     val scriptWithoutOpCodeSeparators : String = script.filterNot(_ == OP_CODESEPARATOR).map(_.hex).mkString
     val scriptWithoutOpCodeSeparatorSize = addPrecedingZero((scriptWithoutOpCodeSeparators.size / 2).toHexString)
     val expectedScript : ScriptPubKey = ScriptPubKeyFactory.factory(
