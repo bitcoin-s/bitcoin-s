@@ -23,7 +23,7 @@ trait ScriptPubKeyFactory {
     factory(UpdateScriptPubKeyAsm(asm))
   }
 
-  def empty = ScriptPubKeyImpl(Seq(),"",Seq())
+  def empty : ScriptPubKey= ScriptPubKeyImpl(Seq(),"",Seq())
 
 }
 

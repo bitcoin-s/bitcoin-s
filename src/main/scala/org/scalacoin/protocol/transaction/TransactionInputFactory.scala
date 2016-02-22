@@ -1,7 +1,7 @@
 package org.scalacoin.protocol.transaction
 
 import org.scalacoin.protocol.VarIntImpl
-import org.scalacoin.protocol.script.{ScriptSignature, ScriptPubKey}
+import org.scalacoin.protocol.script.{ScriptSignatureFactory, ScriptSignature, ScriptPubKey}
 import org.scalacoin.util.ScalacoinUtil
 
 /**
@@ -24,6 +24,11 @@ trait TransactionInputFactory { this : TransactionInput =>
 
   def factory(outPoint: TransactionOutPoint) : TransactionInput = {
     TransactionInputImpl(outPoint,scriptSigVarInt,scriptSignature,sequence)
+  }
+
+  def empty : TransactionInput = {
+    TransactionInputImpl(TransactionOutPoint.empty,ScalacoinUtil.parseVarInt(ScriptSignatureFactory.empty),
+      ScriptSignatureFactory.empty,TransactionConstants.sequence)
   }
 
 }
