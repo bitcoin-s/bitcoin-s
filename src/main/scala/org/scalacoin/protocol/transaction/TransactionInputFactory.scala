@@ -13,4 +13,8 @@ trait TransactionInputFactory { this : TransactionInput =>
     TransactionInputImpl(previousOutput,ScalacoinUtil.parseVarInt(scriptSignature),scriptSig,sequence)
   }
 
+  def factory(sequenceNumber : Long) : TransactionInput = {
+    TransactionInputImpl(previousOutput, scriptSigVarInt,scriptSignature,sequenceNumber)
+  }
+
 }

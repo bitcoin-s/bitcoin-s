@@ -8,7 +8,7 @@ import org.scalacoin.protocol.script.ScriptPubKey
 /**
  * Created by chris on 12/26/15.
  */
-trait TransactionOutput extends TransactionElement {
+trait TransactionOutput extends TransactionElement with TransactionOutputFactory {
 
   def value : CurrencyUnit
   def n : Int

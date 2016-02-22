@@ -23,4 +23,6 @@ object ScriptPubKeyFactory {
     factory(asm)
   }
 
+  def empty = ScriptPubKeyImpl(Seq(),"",Seq())
+
 }
