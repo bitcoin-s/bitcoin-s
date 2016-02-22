@@ -7,13 +7,36 @@ package org.scalacoin.protocol.transaction
 trait TransactionFactory { this : Transaction =>
 
 
+  /**
+   * Updates a transaction outputs
+   * @param updatedOutputs
+   * @return
+   */
   def factory(updatedOutputs : UpdateTransactionOutputs) : Transaction = {
     TransactionImpl(version,inputs,updatedOutputs.outputs,lockTime)
   }
 
-  def factory(updatedInputs : UpdateTransactionInputs) = {
+  /**
+   * Updates a transaction's inputs
+   * @param updatedInputs
+   * @return
+   */
+  def factory(updatedInputs : UpdateTransactionInputs) : Transaction = {
     TransactionImpl(version,updatedInputs.inputs,outputs,lockTime)
   }
+
+
+  /**
+   * Removes the inputs of the transactions
+   * @return
+   */
+  def emptyInputs : Transaction = TransactionImpl(version,Seq(),outputs,lockTime)
+
+  /**
+   * Removes the outputs of the transactions
+   * @return
+   */
+  def emptyOutputs : Transaction = TransactionImpl(version,inputs,Seq(),lockTime)
 
 
 }

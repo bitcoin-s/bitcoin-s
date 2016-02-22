@@ -3,9 +3,10 @@ package org.scalacoin.crypto
 import org.scalacoin.marshallers.RawBitcoinSerializerHelper
 import org.scalacoin.marshallers.transaction.RawTransactionOutputParser
 import org.scalacoin.protocol.script.{ScriptSignatureFactory, ScriptSignatureImpl, ScriptPubKeyFactory, ScriptPubKey}
-import org.scalacoin.protocol.transaction.{UpdateTransactionOutputs, Transaction, TransactionOutput, TransactionInput}
+import org.scalacoin.protocol.transaction._
 import org.scalacoin.script.constant.ScriptToken
 import org.scalacoin.script.crypto._
+import org.scalacoin.util.{ScalacoinUtil, CryptoUtil}
 
 /**
  * Created by chris on 2/16/16.
@@ -19,6 +20,12 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper {
 
   def spendingTransaction : Transaction
 
+  /**
+   * Bitcoin Core's bug is that SignatureHash was supposed to return a hash and on this codepath it
+   * actually returns the constant "1" to indicate an error
+   * @return
+   */
+  private def errorHash : Seq[Byte] = ScalacoinUtil.decodeHex("0100000000000000000000000000000000000000000000000000000000000000")
 
   /**
    * Serialized the passed in script code, skipping OP_CODESEPARATORs
@@ -55,7 +62,7 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper {
 
   }
 
-  def serialize(inputIndex : Int, nType : Int, script : ScriptPubKey, hashType : HashType) : String = {
+  def serialize(inputIndex : Int, nType : Int, script : ScriptPubKey, hashType : HashType) : Seq[Byte] = {
     // Clear input scripts in preparation for signing. If we're signing a fresh
     // transaction that step isn't very helpful, but it doesn't add much cost relative to the actual
     // EC math so we'll do it anyway.
@@ -85,7 +92,38 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper {
     hashType match {
       case SIGHASH_NONE =>
         //means that no outputs are signed at all
-        val txWithNoOutputs = spendingTransaction.factory(UpdateTransactionOutputs(Seq()))
+        val txWithNoOutputs = spendingTransaction.emptyOutputs
+        //set the sequence number of all inputs to 0 EXCEPT the input at inputIndex
+        val updatedInputs :  Seq[TransactionInput] = for {
+          (input,index) <- spendingTransaction.inputs.zipWithIndex
+        } yield {
+            if (index == inputIndex) input
+            else input.factory(0)
+          }
+        val updatedTransactionWithInputsNoOutputs = txWithNoOutputs.factory(UpdateTransactionInputs(updatedInputs))
+
+        CryptoUtil.doubleSHA256(updatedTransactionWithInputsNoOutputs.bytes)
+      case SIGHASH_SINGLE =>
+        if (inputIndex >= spendingTransaction.outputs.size) {
+          // comment copied from bitcoinj
+          // The input index is beyond the number of outputs, it's a buggy signature made by a broken
+          // Bitcoin implementation. Bitcoin Core also contains a bug in handling this case:
+          // any transaction output that is signed in this case will result in both the signed output
+          // and any future outputs to this public key being steal-able by anyone who has
+          // the resulting signature and the public key (both of which are part of the signed tx input).
+
+          // Bitcoin Core's bug is that SignatureHash was supposed to return a hash and on this codepath it
+          // actually returns the constant "1" to indicate an error, which is never checked for. Oops.
+          errorHash
+        } else {
+          // In SIGHASH_SINGLE the outputs after the matching input index are deleted, and the outputs before
+          // that position are "nulled out". Unintuitively, the value in a "null" transaction is set to -1.
+
+          //create blank outputs with sequence numbers set to zero EXCEPT
+          //the output at the inputIndex
+          //val outputs = spendingTransaction.outputs.map(_)
+
+        }
     }
     ???
 
