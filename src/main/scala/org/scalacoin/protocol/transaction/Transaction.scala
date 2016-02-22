@@ -25,6 +25,12 @@ trait Transaction extends TransactionElement with TransactionFactory {
   override def hex = RawTransactionParser.write(this)
 }
 
+object Transaction extends Transaction {
+  override def version = TransactionConstants.version
+  override def inputs = Seq()
+  override def outputs = Seq()
+  override def lockTime = TransactionConstants.lockTime
+}
 case class TransactionImpl(version : Long, inputs : Seq[TransactionInput],
   outputs : Seq[TransactionOutput], lockTime : Long) extends Transaction
 
