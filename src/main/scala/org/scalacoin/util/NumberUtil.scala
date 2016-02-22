@@ -11,8 +11,21 @@ trait NumberUtil {
 
   private def logger = LoggerFactory.getLogger(this.getClass())
 
+
+  /**
+   * Takes a hex number and converts it into a signed number
+   * used in the bitcoin numbering system
+   * @param hex
+   * @return
+   */
   def toLong(hex : String) : Long = toLong(ScalacoinUtil.decodeHex(hex))
 
+  /**
+   * Takes a list of bytes and converts it in to signed number inside of bitcoins
+   * numbering system
+   * @param bytes
+   * @return
+   */
   def toLong(bytes : List[Byte]) : Long = {
     logger.debug("bytes: " + bytes)
     val reversedBytes = bytes.reverse
@@ -32,6 +45,11 @@ trait NumberUtil {
   }
 
 
+  /**
+   * Converts a long number to a signed number hex representation
+   * @param long
+   * @return
+   */
   def longToHex(long : Long) : String = {
     if (long > -1) {
       val bytes = toByteList(long)
