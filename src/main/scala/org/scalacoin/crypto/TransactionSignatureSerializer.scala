@@ -1,5 +1,6 @@
 package org.scalacoin.crypto
 
+import org.scalacoin.currency.CurrencyUnits
 import org.scalacoin.marshallers.RawBitcoinSerializerHelper
 import org.scalacoin.marshallers.transaction.RawTransactionOutputParser
 import org.scalacoin.protocol.script.{ScriptSignatureFactory, ScriptSignatureImpl, ScriptPubKeyFactory, ScriptPubKey}
@@ -33,7 +34,7 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper {
    * @param script
    * @return
    */
-  def serializeScriptCode(script : Seq[ScriptToken]) : Seq[Byte] = removeOpCodeSeparators(script)
+  def serializeScriptCode(script : Seq[ScriptToken]) : ScriptPubKey = removeOpCodeSeparators(script)
 
 
   def serializeInput(input : TransactionInput, nType : Int, nVersion : Int) : String = ???
@@ -62,13 +63,14 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper {
 
   }
 
-  def serialize(inputIndex : Int, nType : Int, script : ScriptPubKey, hashType : HashType) : Seq[Byte] = {
+  def serialize(inputIndex : Int, script : ScriptPubKey, hashType : HashType) : Seq[Byte] = {
     // Clear input scripts in preparation for signing. If we're signing a fresh
     // transaction that step isn't very helpful, but it doesn't add much cost relative to the actual
     // EC math so we'll do it anyway.
-    val txWithInputSigsRemoved = for {
+    val inputSigsRemoved = for {
       input <- spendingTransaction.inputs
     } yield input.factory(ScriptSignatureFactory.empty)
+
 
 
     // This step has no purpose beyond being synchronized with Bitcoin Core's bugs. OP_CODESEPARATOR
@@ -78,32 +80,39 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper {
     // OP_CODESEPARATOR instruction having no purpose as it was only meant to be used internally, not actually
     // ever put into scripts. Deleting OP_CODESEPARATOR is a step that should never be required but if we don't
     // do it, we could split off the main chain.
-    val scriptWithOpCodeSeparatorsRemoved : Seq[Byte] = serializeScriptCode(script.asm)
+    val scriptWithOpCodeSeparatorsRemoved : ScriptPubKey = serializeScriptCode(script.asm)
 
-    val inputToSign = spendingTransaction.inputs(inputIndex)
+    val inputToSign = inputSigsRemoved(inputIndex)
 
     // Set the input to the script of its output. Bitcoin Core does this but the step has no obvious purpose as
     // the signature covers the hash of the prevout transaction which obviously includes the output script
     // already. Perhaps it felt safer to him in some way, or is another leftover from how the code was written.
-    val inputWithConnectedScript = inputToSign.factory(script)
+    val inputWithConnectedScript = inputToSign.factory(scriptWithOpCodeSeparatorsRemoved)
+    val updatedInputs = for {
+      (input,index) <- inputSigsRemoved.zipWithIndex
+    } yield {
+        if (index == inputIndex) inputWithConnectedScript
+        else input
+      }
+    //update the input at index i with inputWithConnectScript
 
+    val txWithInputSigsRemoved = spendingTransaction.factory(UpdateTransactionInputs(updatedInputs))
     //check the hash type
 
     hashType match {
       case SIGHASH_NONE =>
+        //following this implementation from bitcoinj
+        //https://github.com/bitcoinj/bitcoinj/blob/09a2ca64d2134b0dcbb27b1a6eb17dda6087f448/core/src/main/java/org/bitcoinj/core/Transaction.java#L957
         //means that no outputs are signed at all
-        val txWithNoOutputs = spendingTransaction.emptyOutputs
+        val txWithNoOutputs = txWithInputSigsRemoved.emptyOutputs
         //set the sequence number of all inputs to 0 EXCEPT the input at inputIndex
-        val updatedInputs :  Seq[TransactionInput] = for {
-          (input,index) <- spendingTransaction.inputs.zipWithIndex
-        } yield {
-            if (index == inputIndex) input
-            else input.factory(0)
-          }
-        val updatedTransactionWithInputsNoOutputs = txWithNoOutputs.factory(UpdateTransactionInputs(updatedInputs))
-
-        CryptoUtil.doubleSHA256(updatedTransactionWithInputsNoOutputs.bytes)
+        val updatedInputs :  Seq[TransactionInput] = setSequenceNumbersZero(spendingTransaction.inputs,inputIndex)
+        val sigHashNoneTx = txWithNoOutputs.factory(UpdateTransactionInputs(updatedInputs))
+        //append hash type byte onto the end of the tx bytes
+        CryptoUtil.doubleSHA256(sigHashNoneTx.bytes ++ List(hashType.byte))
       case SIGHASH_SINGLE =>
+        //following this implementation from bitcoinj
+        //https://github.com/bitcoinj/bitcoinj/blob/09a2ca64d2134b0dcbb27b1a6eb17dda6087f448/core/src/main/java/org/bitcoinj/core/Transaction.java#L964
         if (inputIndex >= spendingTransaction.outputs.size) {
           // comment copied from bitcoinj
           // The input index is beyond the number of outputs, it's a buggy signature made by a broken
@@ -118,14 +127,20 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper {
         } else {
           // In SIGHASH_SINGLE the outputs after the matching input index are deleted, and the outputs before
           // that position are "nulled out". Unintuitively, the value in a "null" transaction is set to -1.
+          val updatedOutputs = txWithInputSigsRemoved.outputs.map(o => o.empty.factory(CurrencyUnits.negativeSatoshi))
+          val spendingTxOutputsEmptied = txWithInputSigsRemoved.factory(UpdateTransactionOutputs(updatedOutputs))
+          //create blank inputs with sequence numbers set to zero EXCEPT
+          //the input at the inputIndex
+          val updatedInputs = setSequenceNumbersZero(spendingTxOutputsEmptied.inputs,inputIndex)
 
-          //create blank outputs with sequence numbers set to zero EXCEPT
-          //the output at the inputIndex
-          //val outputs = spendingTransaction.outputs.map(_)
-
+          val sigHashSingleTx = spendingTxOutputsEmptied.factory(UpdateTransactionInputs(updatedInputs))
+          //append hash type byte onto the end of the tx bytes
+          CryptoUtil.doubleSHA256(sigHashSingleTx.bytes ++ List(hashType.byte))
         }
+      case SIGHASH_ALL =>
+        //just need to add the hash type and hash the tx
+        CryptoUtil.doubleSHA256(txWithInputSigsRemoved.bytes ++ List(hashType.byte))
     }
-    ???
 
   }
 
@@ -134,12 +149,27 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper {
    * format
    * @return
    */
-  def removeOpCodeSeparators(script : Seq[ScriptToken]) : Seq[Byte] = {
+  def removeOpCodeSeparators(script : Seq[ScriptToken]) : ScriptPubKey = {
     val scriptWithoutOpCodeSeparators : String = script.filterNot(_ == OP_CODESEPARATOR).map(_.hex).mkString
     val scriptWithoutOpCodeSeparatorSize = addPrecedingZero((scriptWithoutOpCodeSeparators.size / 2).toHexString)
     val expectedScript : ScriptPubKey = ScriptPubKeyFactory.factory(
       scriptWithoutOpCodeSeparatorSize + scriptWithoutOpCodeSeparators)
-    expectedScript.bytes
+    expectedScript
+  }
+
+  /**
+   * Sets the input's sequence number to zero EXCEPT for the input at inputIndex
+   * @param inputs
+   * @param inputIndex
+   * @return
+   */
+  private def setSequenceNumbersZero(inputs : Seq[TransactionInput], inputIndex : Int) : Seq[TransactionInput] =  {
+    for {
+      (input,index) <- inputs.zipWithIndex
+    } yield {
+      if (index == inputIndex) input
+      else input.factory(0)
+    }
   }
 }
 
