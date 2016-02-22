@@ -1,9 +1,9 @@
 package org.scalacoin.protocol.transaction
 
-import org.scalacoin.currency.{CurrencyUnit, Satoshis}
+import org.scalacoin.currency.{CurrencyUnits, CurrencyUnit, Satoshis}
 import org.scalacoin.marshallers.transaction.{RawTransactionOutputParser, TransactionElement}
 import org.scalacoin.protocol.VarInt
-import org.scalacoin.protocol.script.ScriptPubKey
+import org.scalacoin.protocol.script.{ScriptPubKeyFactory, ScriptPubKey}
 
 /**
  * Created by chris on 12/26/15.
@@ -18,6 +18,13 @@ trait TransactionOutput extends TransactionElement with TransactionOutputFactory
   override def size = scriptPubKey.size + 8
 
   override def hex = RawTransactionOutputParser.write(Seq(this))
+}
+
+object TransactionOutput extends TransactionOutput {
+  def value = CurrencyUnits.negativeSatoshi
+  def n = 0
+  override def scriptPubKey = ScriptPubKeyFactory.empty
+
 }
 
 

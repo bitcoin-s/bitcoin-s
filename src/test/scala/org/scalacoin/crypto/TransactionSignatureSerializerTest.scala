@@ -2,12 +2,12 @@ package org.scalacoin.crypto
 
 import java.util
 
-import org.bitcoinj.core.DumpedPrivateKey
+import org.bitcoinj.core.{ DumpedPrivateKey}
 import org.bitcoinj.core.Transaction.SigHash
 import org.bitcoinj.params.TestNet3Params
 import org.bitcoinj.script.{ScriptChunk, ScriptBuilder}
 import org.scalacoin.protocol.script.{UpdateScriptPubKeyAsm, UpdateScriptPubKeyBytes, ScriptPubKey, ScriptPubKeyFactory}
-import org.scalacoin.protocol.transaction.{UpdateTransactionOutputs, Transaction}
+import org.scalacoin.protocol.transaction.{UpdateTransactionInputs, TransactionOutput, UpdateTransactionOutputs, Transaction}
 import org.scalacoin.script.ScriptOperationFactory
 import org.scalacoin.script.bitwise.OP_EQUALVERIFY
 import org.scalacoin.script.constant._
@@ -59,9 +59,15 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers {
     val output = creditingTx.outputs(1)
     val address = new org.bitcoinj.core.Address(params, "n3CFiCmBXVt5d3HXKQ15EFZyhPz4yj5F3H");
     val addressHash = new ScriptConstantImpl(address.getHash160.toList)
-    val outputScript : Seq[ScriptToken] = Seq(OP_DUP, OP_HASH160, addressHash, OP_EQUALVERIFY, OP_CHECKSIG)
+    val outputScript : ScriptPubKey = ScriptPubKeyFactory.factory(
+      UpdateScriptPubKeyAsm(Seq(OP_DUP, OP_HASH160, addressHash, OP_EQUALVERIFY, OP_CHECKSIG))
+    )
 
-    val spendingTx = Transaction.empty.factory(UpdateTransactionOutputs())
+    val txOut = TransactionOutput.factory(output.value,outputScript)
+    //val txIn = TransactionInput.factory(txOut)
+    val spendingTx = Transaction.empty.factory(
+      UpdateTransactionOutputs(Seq())
+    ).factory(UpdateTransactionInputs(Seq()))
 
 
 

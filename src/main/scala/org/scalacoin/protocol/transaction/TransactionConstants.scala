@@ -7,4 +7,5 @@ object TransactionConstants {
 
   val version = 1
   val lockTime = 0
+  val sequence = 4294967295L
 }
