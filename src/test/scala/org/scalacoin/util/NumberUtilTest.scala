@@ -1,6 +1,6 @@
 package org.scalacoin.util
 
-import org.scalacoin.protocol.VarIntImpl
+import org.scalacoin.protocol.CompactSizeUIntImpl
 import org.scalacoin.script.constant.ScriptNumberImpl
 import org.scalatest.{FlatSpec, MustMatchers}
 
@@ -190,13 +190,13 @@ class NumberUtilTest extends FlatSpec with MustMatchers with NumberUtil {
 
   it must "parse a variable length integer (VarInt)" in {
     val str = "fdfd00"
-    parseVarInt(str) must be (VarIntImpl(253,3))
+    parseCompactSizeUInt(str) must be (CompactSizeUIntImpl(253,3))
 
     val str1 = "00"
-    parseVarInt(str1) must be (VarIntImpl(0,1))
+    parseCompactSizeUInt(str1) must be (CompactSizeUIntImpl(0,1))
 
     val str2 = "ffffffffff"
-    parseVarInt(str2) must be (VarIntImpl(4294967295L,9))
+    parseCompactSizeUInt(str2) must be (CompactSizeUIntImpl(4294967295L,9))
   }
 
 

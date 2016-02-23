@@ -11,12 +11,12 @@ class CommonStructuresTest extends FlatSpec with MustMatchers  {
 
 
   "VarInts" must "serialize a VarInt correctly" in {
-    val varInt = VarIntImpl(253,3)
+    val varInt = CompactSizeUIntImpl(253,3)
     varInt.hex must be ("fdfd00")
   }
 
   it must "serialize a VarInt with size 1 correctly" in {
-    val varInt = VarIntImpl(139,1)
+    val varInt = CompactSizeUIntImpl(139,1)
     varInt.hex must be ("8b")
   }
 }
