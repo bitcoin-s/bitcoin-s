@@ -1,7 +1,7 @@
 package org.scalacoin.util
 
 import org.scalacoin.protocol.script.ScriptSignature
-import org.scalacoin.protocol.{VarIntImpl, VarInt}
+import org.scalacoin.protocol.{CompactSizeUInt, CompactSizeUIntImpl}
 import org.slf4j.LoggerFactory
 
 /**
@@ -12,8 +12,21 @@ trait NumberUtil {
 
   private def logger = LoggerFactory.getLogger(this.getClass())
 
+
+  /**
+   * Takes a hex number and converts it into a signed number
+   * used in the bitcoin numbering system
+   * @param hex
+   * @return
+   */
   def toLong(hex : String) : Long = toLong(ScalacoinUtil.decodeHex(hex))
 
+  /**
+   * Takes a list of bytes and converts it in to signed number inside of bitcoins
+   * numbering system
+   * @param bytes
+   * @return
+   */
   def toLong(bytes : List[Byte]) : Long = {
     logger.debug("bytes: " + bytes)
     val reversedBytes = bytes.reverse
@@ -33,6 +46,11 @@ trait NumberUtil {
   }
 
 
+  /**
+   * Converts a long number to a signed number hex representation
+   * @param long
+   * @return
+   */
   def longToHex(long : Long) : String = {
     if (long > -1) {
       val bytes = toByteList(long)
@@ -97,30 +115,31 @@ trait NumberUtil {
 
   def toByteList(long : Long) = BigInt(long).toByteArray.toList
 
+
   /**
    * Parses a VarInt from a string of hex characters
-   * https://en.bitcoin.it/wiki/Protocol_documentation#Variable_length_integer
+   * https://bitcoin.org/en/developer-reference#compactsize-unsigned-integers
    * @param hex
    * @return
    */
-  def parseVarInt(hex : String) : VarInt = parseVarInt(ScalacoinUtil.decodeHex(hex))
+  def parseCompactSizeUInt(hex : String) : CompactSizeUInt = parseCompactSizeUInt(ScalacoinUtil.decodeHex(hex))
 
   /**
-   * Parses a VarInt from a sequence of bytes
-   * https://en.bitcoin.it/wiki/Protocol_documentation#Variable_length_integer
+   * Parses a CompactSizeUInt from a sequence of bytes
+   * https://bitcoin.org/en/developer-reference#compactsize-unsigned-integers
    * @param bytes
    * @return
    */
-  def parseVarInt(bytes : Seq[Byte]) : VarInt = {
+  def parseCompactSizeUInt(bytes : Seq[Byte]) : CompactSizeUInt = {
     require(bytes.size > 0, "Cannot parse a VarInt if the byte array is size 0")
     //8 bit number
-    if (parseLong(bytes.head) < 253) VarIntImpl(parseLong(bytes.head),1)
+    if (parseLong(bytes.head) < 253) CompactSizeUIntImpl(parseLong(bytes.head),1)
     //16 bit number
-    else if (parseLong(bytes.head) == 253) VarIntImpl(parseLong(bytes.slice(1,3).reverse),3)
+    else if (parseLong(bytes.head) == 253) CompactSizeUIntImpl(parseLong(bytes.slice(1,3).reverse),3)
     //32 bit number
-    else if (parseLong(bytes.head) == 254) VarIntImpl(parseLong(bytes.slice(1,5).reverse),5)
+    else if (parseLong(bytes.head) == 254) CompactSizeUIntImpl(parseLong(bytes.slice(1,5).reverse),5)
     //64 bit number
-    else VarIntImpl(parseLong(bytes.slice(1,9).reverse),9)
+    else CompactSizeUIntImpl(parseLong(bytes.slice(1,9).reverse),9)
   }
 
   /**
@@ -129,7 +148,7 @@ trait NumberUtil {
    * @param byte
    * @return
    */
-  def parseVarIntSize(byte : Byte) : Long = {
+  def parseCompactSizeUIntSize(byte : Byte) : Long = {
     //8 bit number
     if (parseLong(byte) < 253) 1
     //16 bit number
@@ -142,20 +161,21 @@ trait NumberUtil {
 
 
   /**
-   * Parses a VarInt from a sequence of bytes
-   * https://en.bitcoin.it/wiki/Protocol_documentation#Variable_length_integer
-   * @param bytes
+   * Parses the compact size uint from a script signature
+   * https://bitcoin.org/en/developer-reference#compactsize-unsigned-integers
+   * @param script
    * @return
    */
-  def parseVarInt(scriptSig : ScriptSignature) : VarInt = {
-    //largest 8 uint
-    val size = scriptSig.size
-    if (size < 255) VarIntImpl(size,1)
-    else if (size < 65536) VarIntImpl(size,3)
-    else if (size < 4294967296L) VarIntImpl(size,5)
-    else VarIntImpl(size,9)
+  def parseCompactSizeUInt(script : ScriptSignature) : CompactSizeUInt = {
+    if (script.bytes.size <=252 ) {
+      CompactSizeUIntImpl(script.bytes.size,1)
+    } else if (script.bytes.size <= 0xffff) {
+      CompactSizeUIntImpl(script.bytes.size,3)
+    } else if (script.bytes.size <= 0xffffffff) {
+      CompactSizeUIntImpl(script.bytes.size,5)
+    }
+    else CompactSizeUIntImpl(script.bytes.size,9)
   }
-
 
   private def parseLong(hex : String) : Long = java.lang.Long.parseLong(hex,16)
 

@@ -51,14 +51,17 @@ trait BinaryTree[+T] {
    * @return
    */
   def findFirstDFS[T](t : T)(f : T => Boolean = (x : T) => x == t)(implicit tree : BinaryTree[T] = this) : Option[BinaryTree[T]] = {
-    //TODO: Optimize this to be tail recursive
-    if (tree.value.isDefined && f(tree.value.get)) Some(tree)
-    else {
-      val leftTreeResult : Option[BinaryTree[T]] = if (tree.left.isDefined) findFirstDFS(t)(f)(tree.left.get) else None
-      if (leftTreeResult.isDefined) leftTreeResult
-      else if (tree.right.isDefined) findFirstDFS(t)(f)(tree.right.get)
-      else None
+    @tailrec
+    def loop(subTree : BinaryTree[T], remainder : List[BinaryTree[T]]) : Option[BinaryTree[T]] = {
+      subTree match {
+        case Empty => if (remainder.isEmpty) None else loop(remainder.head, remainder.tail)
+        case Leaf(x) => if (f(x)) Some(Leaf(x)) else if (remainder.isEmpty) None else loop(remainder.head, remainder.tail)
+        case Node(v, l, r) =>
+          if (f(v)) Some(Node(v,l,r))
+          else loop(l, r :: remainder)
+      }
     }
+    loop(tree,List())
   }
 
 
@@ -107,6 +110,7 @@ trait BinaryTree[+T] {
   }
 
 
+
   /**
    * Removes the subTree from the parentTree
    * @param subTree - the tree to be removed
@@ -147,14 +151,14 @@ trait BinaryTree[+T] {
 
 
   def toSeq : Seq[T] = {
-    //TODO: Optimize this into a tailrec function
-    //@tailrec
-    def loop(tree : BinaryTree[T],accum : List[T]) : List[T] = tree match {
-      case Leaf(x) => accum ++ List(x)
-      case Empty => accum
-      case Node(v,l,r) =>  loop(r,loop(l,accum ++ List(v)))
+    @tailrec
+    def loop(tree : BinaryTree[T], accum : List[T], remainder : List[BinaryTree[T]]) : List[T] = tree match {
+      case Leaf(x) => if (remainder.isEmpty) accum ++ List(x) else loop(remainder.head,accum ++ List(x),remainder.tail)
+      case Empty => if (remainder.isEmpty) accum else loop(remainder.head, accum, remainder.tail)
+      case Node(v,l,r) =>
+        loop(l,accum ++ List(v), r :: remainder)
     }
-    loop(this,List())
+    loop(this,List(),List())
   }
 
   def toList : List[T] = toSeq.toList
