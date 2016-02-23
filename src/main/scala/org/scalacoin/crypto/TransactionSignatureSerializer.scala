@@ -139,7 +139,7 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper {
         }
       case SIGHASH_ALL =>
         //just need to add the hash type and hash the tx
-        CryptoUtil.doubleSHA256(txWithInputSigsRemoved.bytes ++ List(hashType.byte))
+        txWithInputSigsRemoved.bytes ++ List(hashType.byte)
     }
 
   }
