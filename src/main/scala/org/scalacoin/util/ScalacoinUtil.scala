@@ -72,6 +72,8 @@ trait ScalacoinUtil extends NumberUtil {
    * @return
    */
   def littleEndianToBigEndian(hex : String) = encodeHex(decodeHex(hex).reverse)
+
+  def flipEndianess(hex : String) = littleEndianToBigEndian(hex)
   /**
    * Flips the hex chars in a hex strings
    * Example: abcd would become badc

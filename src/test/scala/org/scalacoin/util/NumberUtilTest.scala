@@ -1,7 +1,8 @@
 package org.scalacoin.util
 
-import org.scalacoin.protocol.VarIntImpl
 import org.scalacoin.protocol.script.ScriptSignatureFactory
+
+import org.scalacoin.protocol.CompactSizeUIntImpl
 import org.scalacoin.script.constant.ScriptNumberImpl
 import org.scalatest.{FlatSpec, MustMatchers}
 
@@ -191,27 +192,27 @@ class NumberUtilTest extends FlatSpec with MustMatchers with NumberUtil {
 
   it must "parse a variable length integer (VarInt)" in {
     val str = "fdfd00"
-    parseVarInt(str) must be (VarIntImpl(253,3))
+    parseCompactSizeUInt(str) must be (CompactSizeUIntImpl(253,3))
 
     val str1 = "00"
-    parseVarInt(str1) must be (VarIntImpl(0,1))
+    parseCompactSizeUInt(str1) must be (CompactSizeUIntImpl(0,1))
 
     val str2 = "ffffffffff"
-    parseVarInt(str2) must be (VarIntImpl(4294967295L,9))
+    parseCompactSizeUInt(str2) must be (CompactSizeUIntImpl(4294967295L,9))
   }
 
 
   it must "parse a variable length integer the same from a tx input and a script sig" in {
-    parseVarInt(TestUtil.txInput.head.scriptSignature) must be (TestUtil.txInput.head.scriptSigVarInt)
+    parseCompactSizeUInt(TestUtil.txInput.head.scriptSignature) must be (TestUtil.txInput.head.scriptSigCompactSizeUInt)
   }
 
   it must "parse multiple variable length integers correctly for a multi input tx" in {
-    parseVarInt(TestUtil.txInputs.head.scriptSignature) must be (TestUtil.txInputs.head.scriptSigVarInt)
-    parseVarInt(TestUtil.txInputs(1).scriptSignature) must be (TestUtil.txInputs(1).scriptSigVarInt)
+    parseCompactSizeUInt(TestUtil.txInputs.head.scriptSignature) must be (TestUtil.txInputs.head.scriptSigCompactSizeUInt)
+    parseCompactSizeUInt(TestUtil.txInputs(1).scriptSignature) must be (TestUtil.txInputs(1).scriptSigCompactSizeUInt)
   }
 
   it must "parse the variable length integer of the empty script" in {
-    parseVarInt(ScriptSignatureFactory.empty) must be (VarIntImpl(0,1))
+    parseCompactSizeUInt(ScriptSignatureFactory.empty) must be (CompactSizeUIntImpl(0,1))
   }
 
 

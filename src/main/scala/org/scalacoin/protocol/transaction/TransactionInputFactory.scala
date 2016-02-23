@@ -1,6 +1,5 @@
 package org.scalacoin.protocol.transaction
 
-import org.scalacoin.protocol.VarIntImpl
 import org.scalacoin.protocol.script.{ScriptSignatureFactory, ScriptSignature, ScriptPubKey}
 import org.scalacoin.util.ScalacoinUtil
 
@@ -10,11 +9,11 @@ import org.scalacoin.util.ScalacoinUtil
 trait TransactionInputFactory { this : TransactionInput =>
 
   def factory(scriptSig : ScriptSignature) : TransactionInput = {
-    TransactionInputImpl(previousOutput,ScalacoinUtil.parseVarInt(scriptSignature),scriptSig,sequence)
+    TransactionInputImpl(previousOutput,scriptSig,sequence)
   }
 
   def factory(sequenceNumber : Long) : TransactionInput = {
-    TransactionInputImpl(previousOutput, scriptSigVarInt,scriptSignature,sequenceNumber)
+    TransactionInputImpl(previousOutput, scriptSignature,sequenceNumber)
   }
 
   def factory(output : TransactionOutput, outputsTransaction : Transaction) : TransactionInput = {
@@ -23,11 +22,11 @@ trait TransactionInputFactory { this : TransactionInput =>
   }
 
   def factory(outPoint: TransactionOutPoint) : TransactionInput = {
-    TransactionInputImpl(outPoint,scriptSigVarInt,scriptSignature,sequence)
+    TransactionInputImpl(outPoint,scriptSignature,sequence)
   }
 
   def empty : TransactionInput = {
-    TransactionInputImpl(TransactionOutPoint.empty,ScalacoinUtil.parseVarInt(ScriptSignatureFactory.empty),
+    TransactionInputImpl(TransactionOutPoint.empty,
       ScriptSignatureFactory.empty,TransactionConstants.sequence)
   }
 

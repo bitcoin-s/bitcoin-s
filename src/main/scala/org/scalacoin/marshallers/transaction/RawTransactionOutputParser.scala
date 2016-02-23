@@ -21,6 +21,8 @@ trait RawTransactionOutputParser extends RawBitcoinSerializer[Seq[TransactionOut
     @tailrec
     def loop(bytes : List[Byte], accum : List[TransactionOutput], outputsLeftToParse : Int) : List[TransactionOutput] = {
       if (outputsLeftToParse > 0) {
+        //TODO: this needs to be refactored to, need to create a function that returns a single TransactionOutput
+        //then call that function multiple times to get a Seq[TransactionOutput]
         val satoshisHex = ScalacoinUtil.encodeHex(bytes.take(8).reverse)
         logger.debug("Satoshi hex: " + satoshisHex)
         val satoshis = Satoshis(java.lang.Long.parseLong(satoshisHex, 16))

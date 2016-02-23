@@ -2,8 +2,10 @@ package org.scalacoin.protocol.transaction
 
 import org.scalacoin.currency.{CurrencyUnits, CurrencyUnit, Satoshis}
 import org.scalacoin.marshallers.transaction.{RawTransactionOutputParser, TransactionElement}
-import org.scalacoin.protocol.VarInt
+
 import org.scalacoin.protocol.script.{ScriptPubKeyFactory, ScriptPubKey}
+
+
 
 /**
  * Created by chris on 12/26/15.

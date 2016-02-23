@@ -28,9 +28,9 @@ object TransactionInputMarshaller extends DefaultJsonProtocol {
         TransactionOutPointMarshaller.TransactionOutPointFormatter.read(obj)
       val sequence = obj.fields(sequenceKey)
       val scriptSigBytes : Seq[Byte] = ScalacoinUtil.decodeHex(scriptSig.hex)
-      val varIntSize = ScalacoinUtil.parseVarIntSize(scriptSigBytes.head)
-      val varInt = ScalacoinUtil.parseVarInt(scriptSigBytes.slice(0,varIntSize.toInt))
-      TransactionInputImpl(outPoint, varInt, scriptSig, sequence.convertTo[Long])
+      val varIntSize = ScalacoinUtil.parseCompactSizeUIntSize(scriptSigBytes.head)
+      val varInt = ScalacoinUtil.parseCompactSizeUInt(scriptSigBytes.slice(0,varIntSize.toInt))
+      TransactionInputImpl(outPoint, scriptSig, sequence.convertTo[Long])
     }
 
     override def write(input : TransactionInput) : JsValue = {
