@@ -7,7 +7,7 @@ import org.scalacoin.util.ScalacoinUtil
  */
 
 
-trait VarInt {
+trait CompactSizeUInt {
 
   /**
    * The number parsed from VarInt
@@ -31,7 +31,7 @@ trait VarInt {
 
 }
 
-case class VarIntImpl(num : Long, size : Long) extends VarInt
+case class CompactSizeUIntImpl(num : Long, size : Long) extends CompactSizeUInt
 
 
 

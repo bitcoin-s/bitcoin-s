@@ -1,6 +1,6 @@
 package org.scalacoin.util
 
-import org.scalacoin.protocol.{VarIntImpl, VarInt}
+import org.scalacoin.protocol.{CompactSizeUInt, CompactSizeUIntImpl}
 import org.slf4j.LoggerFactory
 
 /**
@@ -114,18 +114,18 @@ trait NumberUtil {
 
   def toByteList(long : Long) = BigInt(long).toByteArray.toList
 
-  def parseVarInt(hex : String) : VarInt = parseVarInt(ScalacoinUtil.decodeHex(hex))
+  def parseCompactSizeUInt(hex : String) : CompactSizeUInt = parseCompactSizeUInt(ScalacoinUtil.decodeHex(hex))
 
-  def parseVarInt(bytes : Seq[Byte]) : VarInt = {
+  def parseCompactSizeUInt(bytes : Seq[Byte]) : CompactSizeUInt = {
     require(bytes.size > 0, "Cannot parse a VarInt if the byte array is size 0")
     //8 bit number
-    if (parseLong(bytes.head) < 253) VarIntImpl(parseLong(bytes.head),1)
+    if (parseLong(bytes.head) < 253) CompactSizeUIntImpl(parseLong(bytes.head),1)
     //16 bit number
-    else if (parseLong(bytes.head) == 253) VarIntImpl(parseLong(bytes.slice(1,3).reverse),3)
+    else if (parseLong(bytes.head) == 253) CompactSizeUIntImpl(parseLong(bytes.slice(1,3).reverse),3)
     //32 bit number
-    else if (parseLong(bytes.head) == 254) VarIntImpl(parseLong(bytes.slice(1,5).reverse),5)
+    else if (parseLong(bytes.head) == 254) CompactSizeUIntImpl(parseLong(bytes.slice(1,5).reverse),5)
     //64 bit number
-    else VarIntImpl(parseLong(bytes.slice(1,9).reverse),9)
+    else CompactSizeUIntImpl(parseLong(bytes.slice(1,9).reverse),9)
   }
 
   /**
@@ -133,7 +133,7 @@ trait NumberUtil {
    * @param byte
    * @return
    */
-  def parseVarIntSize(byte : Byte) : Long = {
+  def parseCompactSizeUIntSize(byte : Byte) : Long = {
     //8 bit number
     if (parseLong(byte) < 253) 1
     //16 bit number
