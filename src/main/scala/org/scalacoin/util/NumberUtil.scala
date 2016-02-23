@@ -1,5 +1,6 @@
 package org.scalacoin.util
 
+import org.scalacoin.protocol.script.ScriptSignature
 import org.scalacoin.protocol.{CompactSizeUInt, CompactSizeUIntImpl}
 import org.slf4j.LoggerFactory
 
@@ -142,6 +143,24 @@ trait NumberUtil {
     else if (parseLong(byte) == 254) 5
     //64 bit number
     else 9
+  }
+
+
+  /**
+   * Parses the compact size uint from a script signature
+   * https://bitcoin.org/en/developer-reference#compactsize-unsigned-integers
+   * @param script
+   * @return
+   */
+  def parseCompactSizeUInt(script : ScriptSignature) : CompactSizeUInt = {
+    if (script.bytes.size <=252 ) {
+      CompactSizeUIntImpl(script.bytes.size,1)
+    } else if (script.bytes.size <= 0xffff) {
+      CompactSizeUIntImpl(script.bytes.size,3)
+    } else if (script.bytes.size <= 0xffffffff) {
+      CompactSizeUIntImpl(script.bytes.size,5)
+    }
+    else CompactSizeUIntImpl(script.bytes.size,9)
   }
 
   private def parseLong(hex : String) : Long = java.lang.Long.parseLong(hex,16)
