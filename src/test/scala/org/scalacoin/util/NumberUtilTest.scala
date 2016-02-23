@@ -1,6 +1,7 @@
 package org.scalacoin.util
 
 import org.scalacoin.protocol.VarIntImpl
+import org.scalacoin.protocol.script.ScriptSignatureFactory
 import org.scalacoin.script.constant.ScriptNumberImpl
 import org.scalatest.{FlatSpec, MustMatchers}
 
@@ -207,6 +208,10 @@ class NumberUtilTest extends FlatSpec with MustMatchers with NumberUtil {
   it must "parse multiple variable length integers correctly for a multi input tx" in {
     parseVarInt(TestUtil.txInputs.head.scriptSignature) must be (TestUtil.txInputs.head.scriptSigVarInt)
     parseVarInt(TestUtil.txInputs(1).scriptSignature) must be (TestUtil.txInputs(1).scriptSigVarInt)
+  }
+
+  it must "parse the variable length integer of the empty script" in {
+    parseVarInt(ScriptSignatureFactory.empty) must be (VarIntImpl(0,1))
   }
 
 
