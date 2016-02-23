@@ -55,34 +55,12 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers {
     val multiSigScript : org.bitcoinj.script.Script = ScriptBuilder.createMultiSigOutputScript(2, util.Arrays.asList(key1, key2, key3));
     val scriptPubKey = bitcoinjScriptToScriptPubKey(multiSigScript)
 
-    val creditingTx = Transaction.factory("01000000013df681ff83b43b6585fa32dd0e12b0b502e6481e04ee52ff0fdaf55a16a4ef61000000006b483045022100a84acca7906c13c5895a1314c165d33621cdcf8696145080895cbf301119b7cf0220730ff511106aa0e0a8570ff00ee57d7a6f24e30f592a10cae1deffac9e13b990012102b8d567bcd6328fd48a429f9cf4b315b859a58fd28c5088ef3cb1d98125fc4e8dffffffff02364f1c00000000001976a91439a02793b418de8ec748dd75382656453dc99bcb88ac40420f000000000017a9145780b80be32e117f675d6e0ada13ba799bf248e98700000000")
+    val spendingTx = Transaction.factory(bitcoinjMultiSigTransaction.bitcoinSerialize())
 
-    val output = creditingTx.outputs(1)
-    val address = new org.bitcoinj.core.Address(params, "n3CFiCmBXVt5d3HXKQ15EFZyhPz4yj5F3H");
-    val addressHash = new ScriptConstantImpl(address.getHash160.toList)
-    val outputScript : ScriptPubKey = ScriptPubKeyFactory.factory(
-      UpdateScriptPubKeyAsm(Seq(OP_DUP, OP_HASH160, addressHash, OP_EQUALVERIFY, OP_CHECKSIG))
-    )
-
-    ScalacoinUtil.encodeHex(outputScript.bytes)
-    val spendingTxOut : TransactionOutput = TransactionOutput.factory(output.value,outputScript)
-    val spendingTxIn : TransactionInput = TransactionInput.factory(spendingTxOut,creditingTx)
-
-    val spendingTxWithOutput = Transaction.empty.factory(
-      UpdateTransactionOutputs(Seq(spendingTxOut))
-    )
-    println(spendingTxWithOutput.bytes)
-    val spendingTx = spendingTxWithOutput.factory(UpdateTransactionInputs(Seq(spendingTxIn)))
-    println(spendingTxIn.bytes)
-    println(spendingTx.bytes)
-
-
-    val txSignatureSerializer = new BaseTransactionSignatureSerializer(spendingTx)
-
-    val bitcoinjSigHash = createBitcoinjMultiSigScriptHashForSig
-
+    /*val txSignatureSerializer = new BaseTransactionSignatureSerializer(spendingTx)
     val sigBytes = txSignatureSerializer.serialize(0,scriptPubKey,SIGHASH_ALL)
-     ScalacoinUtil.encodeHex(sigBytes) must be (bitcoinjSigHash)
+
+    spendingTx.hex must be (ScalacoinUtil.encodeHex(bitcoinjMultiSigTransaction.bitcoinSerialize()))*/
   }
 
 
@@ -93,24 +71,31 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers {
    * @return
    */
   private def createBitcoinjMultiSigScriptHashForSig : String = {
+    val params = TestNet3Params.get()
+    val key1 = new DumpedPrivateKey(params, "cVLwRLTvz3BxDAWkvS3yzT9pUcTCup7kQnfT2smRjvmmm1wAP6QT").getKey()
+    val key2 = new DumpedPrivateKey(params, "cTine92s8GLpVqvebi8rYce3FrUYq78ZGQffBYCS1HmDPJdSTxUo").getKey()
+    val key3 = new DumpedPrivateKey(params, "cVHwXSPRZmL9adctwBwmn4oTZdZMbaCsR5XF6VznqMgcvt1FDDxg").getKey()
+    val spendTx = bitcoinjMultiSigTransaction
+    val multisigScript = ScriptBuilder.createMultiSigOutputScript(2, util.Arrays.asList(key1, key2, key3))
+    val sighash = spendTx.hashForSignature(0, multisigScript, SigHash.ALL, false)
+    ScalacoinUtil.encodeHex(sighash.getBytes)
+
+
+  }
+
+
+  private def bitcoinjMultiSigTransaction : org.bitcoinj.core.Transaction = {
     //https://github.com/bitcoinj/bitcoinj/blob/master/core/src/test/java/org/bitcoinj/script/ScriptTest.java#L127
     val txHex = "01000000013df681ff83b43b6585fa32dd0e12b0b502e6481e04ee52ff0fdaf55a16a4ef61000000006b483045022100a84acca7906c13c5895a1314c165d33621cdcf8696145080895cbf301119b7cf0220730ff511106aa0e0a8570ff00ee57d7a6f24e30f592a10cae1deffac9e13b990012102b8d567bcd6328fd48a429f9cf4b315b859a58fd28c5088ef3cb1d98125fc4e8dffffffff02364f1c00000000001976a91439a02793b418de8ec748dd75382656453dc99bcb88ac40420f000000000017a9145780b80be32e117f675d6e0ada13ba799bf248e98700000000"
-    val params = TestNet3Params.get();
-    val key1 = new DumpedPrivateKey(params, "cVLwRLTvz3BxDAWkvS3yzT9pUcTCup7kQnfT2smRjvmmm1wAP6QT").getKey();
-    val key2 = new DumpedPrivateKey(params, "cTine92s8GLpVqvebi8rYce3FrUYq78ZGQffBYCS1HmDPJdSTxUo").getKey();
-    val key3 = new DumpedPrivateKey(params, "cVHwXSPRZmL9adctwBwmn4oTZdZMbaCsR5XF6VznqMgcvt1FDDxg").getKey();
-
-
+    val params = TestNet3Params.get()
     val creditingTx = new org.bitcoinj.core.Transaction(params,ScalacoinUtil.decodeHex(txHex).toArray)
-    val output = creditingTx.getOutput(1);
-    val spendTx = new org.bitcoinj.core.Transaction(params);
-    val address = new org.bitcoinj.core.Address(params, "n3CFiCmBXVt5d3HXKQ15EFZyhPz4yj5F3H");
-    val outputScript = org.bitcoinj.script.ScriptBuilder.createOutputScript(address);
+    val output = creditingTx.getOutput(1)
+    val spendTx = new org.bitcoinj.core.Transaction(params)
+    val address = new org.bitcoinj.core.Address(params, "n3CFiCmBXVt5d3HXKQ15EFZyhPz4yj5F3H")
+    val outputScript = org.bitcoinj.script.ScriptBuilder.createOutputScript(address)
     spendTx.addOutput(output.getValue(), outputScript)
-    spendTx.addInput(output);
-    val multisigScript = ScriptBuilder.createMultiSigOutputScript(2, util.Arrays.asList(key1, key2, key3));
-    val sighash = spendTx.hashForSignature(0, multisigScript, SigHash.ALL, false);
-    ScalacoinUtil.encodeHex(sighash.getBytes)
+    spendTx.addInput(output)
+    spendTx
 
   }
 

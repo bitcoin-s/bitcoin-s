@@ -55,6 +55,9 @@ trait TransactionFactory { this : Transaction =>
    */
   def factory(hex : String) : Transaction = RawTransactionParser.read(hex)
 
+
+  def factory(bytes : Array[Byte]) : Transaction = factory(bytes.toSeq)
+
 }
 
 sealed trait TransactionFactoryHelper
