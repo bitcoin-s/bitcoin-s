@@ -20,7 +20,7 @@ trait TransactionTestUtil {
   def buildSpendingTransaction(scriptSignature : ScriptSignature, tx : Transaction) : Transaction = {
 
     val outpoint = TransactionOutPointImpl(tx.txId,0)
-    val input = TransactionInputImpl(outpoint,CompactSizeUIntImpl(0,0),scriptSignature,0xFFFFFFFF)
+    val input = TransactionInputImpl(outpoint,scriptSignature,0xFFFFFFFF)
     //empty script pubkey
     val scriptPubKey = ScriptPubKeyImpl(Seq(),"",Seq())
     val output = TransactionOutputImpl(CurrencyUnits.oneSatoshi,0,scriptPubKey)
@@ -38,7 +38,7 @@ trait TransactionTestUtil {
     val outpoint = TransactionOutPointImpl("",0)
 
     val scriptSignature = ScriptSignatureImpl(Seq(OP_0,OP_0),"0000")
-    val input = TransactionInputImpl(outpoint,CompactSizeUIntImpl(0,0),scriptSignature,0xFFFFFFFF)
+    val input = TransactionInputImpl(outpoint,scriptSignature,0xFFFFFFFF)
     val output = TransactionOutputImpl(CurrencyUnits.oneSatoshi,0,scriptPubKey)
 
     TransactionImpl(TransactionConstants.version,Seq(input),Seq(output),TransactionConstants.lockTime)

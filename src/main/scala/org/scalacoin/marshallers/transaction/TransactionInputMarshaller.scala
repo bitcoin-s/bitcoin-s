@@ -30,7 +30,7 @@ object TransactionInputMarshaller extends DefaultJsonProtocol {
       val scriptSigBytes : Seq[Byte] = ScalacoinUtil.decodeHex(scriptSig.hex)
       val varIntSize = ScalacoinUtil.parseCompactSizeUIntSize(scriptSigBytes.head)
       val varInt = ScalacoinUtil.parseCompactSizeUInt(scriptSigBytes.slice(0,varIntSize.toInt))
-      TransactionInputImpl(outPoint, varInt, scriptSig, sequence.convertTo[Long])
+      TransactionInputImpl(outPoint, /*varInt, */scriptSig, sequence.convertTo[Long])
     }
 
     override def write(input : TransactionInput) : JsValue = {

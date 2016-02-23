@@ -47,7 +47,7 @@ trait RawTransactionInputParser extends RawBitcoinSerializer[Seq[TransactionInpu
         logger.debug("Sequence bytes: " + ScalacoinUtil.encodeHex(sequenceBytes))
         val sequenceNumberHex : String = ScalacoinUtil.encodeHex(sequenceBytes)
         val sequenceNumber : Long = java.lang.Long.parseLong(sequenceNumberHex,16)
-        val txInput = TransactionInputImpl(outPoint,scriptSigCompactSizeUInt, scriptSig,sequenceNumber)
+        val txInput = TransactionInputImpl(outPoint,/*scriptSigCompactSizeUInt,*/ scriptSig,sequenceNumber)
 
         val newAccum =  txInput :: accum
         val bytesToBeParsed = bytes.slice(lastInputByte, bytes.size)
