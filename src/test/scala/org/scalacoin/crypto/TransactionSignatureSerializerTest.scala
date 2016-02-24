@@ -50,9 +50,8 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers {
   }
 
   it must "hash a tranasction with SIGHASH_ALL correctly" in {
-    require(scriptPubKey.hex == ScalacoinUtil.encodeHex(multiSigScript.getProgram), "Script pub key hex not the same as multiSigScript hex")
-    val spendingTx = Transaction.factory(bitcoinjMultiSigTransaction.bitcoinSerialize())
 
+    val spendingTx = Transaction.factory(bitcoinjMultiSigTransaction.bitcoinSerialize())
     spendingTx.hex must be (ScalacoinUtil.encodeHex(bitcoinjMultiSigTransaction.bitcoinSerialize()))
 
     val txSignatureSerializer = new BaseTransactionSignatureSerializer(spendingTx)
@@ -62,10 +61,7 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers {
     )
     ScalacoinUtil.encodeHex(bitcoinsTxSigHash) must be (bitcoinjTxSigHash)
   }
-  it must "hash a multisignature SIGHASH_SINGLE correctly with one output and one input" in {
-    val multiSigScript : org.bitcoinj.script.Script = ScriptBuilder.createMultiSigOutputScript(2, util.Arrays.asList(key1, key2, key3));
-    val scriptPubKey = BitcoinjConversions.toScriptPubKey(multiSigScript)
-    require(scriptPubKey.hex == ScalacoinUtil.encodeHex(multiSigScript.getProgram), "Script pub key hex not the same as multiSigScript hex")
+  it must "serialize a transaction for a SIGHASH_SINGLE transaction correctly" in {
     val spendingTx = Transaction.factory(bitcoinjMultiSigTransaction.bitcoinSerialize())
 
     spendingTx.hex must be (ScalacoinUtil.encodeHex(bitcoinjMultiSigTransaction.bitcoinSerialize()))
@@ -75,10 +71,20 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers {
 
     val bitcoinjSigSerialization = ScalacoinUtil.encodeHex(BitcoinJSignatureSerialization.serializeForSignature(
       bitcoinjMultiSigTransaction,0,multiSigScript.getProgram,SIGHASH_SINGLE.byte))
-
     ScalacoinUtil.encodeHex(serialiazedTxForSig) must be (bitcoinjSigSerialization)
+  }
 
+  it must "hash a transaction for a SIGHASH_SINGLE signature correctly" in {
+    val spendingTx = Transaction.factory(bitcoinjMultiSigTransaction.bitcoinSerialize())
 
+    spendingTx.hex must be (ScalacoinUtil.encodeHex(bitcoinjMultiSigTransaction.bitcoinSerialize()))
+
+    val txSignatureSerializer = new BaseTransactionSignatureSerializer(spendingTx)
+    val serialiazedTxForSig : Seq[Byte] = txSignatureSerializer.hashForSignature(0,scriptPubKey,SIGHASH_SINGLE)
+
+    val bitcoinjSigSerialization = ScalacoinUtil.encodeHex(BitcoinJSignatureSerialization.hashForSignature(
+      bitcoinjMultiSigTransaction,0,multiSigScript.getProgram,SIGHASH_SINGLE.byte))
+    ScalacoinUtil.encodeHex(serialiazedTxForSig) must be (bitcoinjSigSerialization)
   }
 
 
