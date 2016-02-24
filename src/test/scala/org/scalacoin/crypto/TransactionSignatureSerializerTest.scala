@@ -62,7 +62,6 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers {
     )
     ScalacoinUtil.encodeHex(bitcoinsTxSigHash) must be (bitcoinjTxSigHash)
   }
-/*
   it must "hash a multisignature SIGHASH_SINGLE correctly with one output and one input" in {
     val multiSigScript : org.bitcoinj.script.Script = ScriptBuilder.createMultiSigOutputScript(2, util.Arrays.asList(key1, key2, key3));
     val scriptPubKey = BitcoinjConversions.toScriptPubKey(multiSigScript)
@@ -80,7 +79,7 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers {
     ScalacoinUtil.encodeHex(serialiazedTxForSig) must be (bitcoinjSigSerialization)
 
 
-  }*/
+  }
 
 
   /**
