@@ -5,7 +5,7 @@ import java.util
 import org.bitcoinj.core.{ DumpedPrivateKey}
 import org.bitcoinj.core.Transaction.SigHash
 import org.bitcoinj.params.TestNet3Params
-import org.bitcoinj.script.{ScriptChunk, ScriptBuilder}
+import org.bitcoinj.script.{ScriptOpCodes, ScriptChunk, ScriptBuilder}
 import org.scalacoin.protocol.script.{UpdateScriptPubKeyAsm, UpdateScriptPubKeyBytes, ScriptPubKey, ScriptPubKeyFactory}
 import org.scalacoin.protocol.transaction._
 import org.scalacoin.script.ScriptOperationFactory
@@ -13,7 +13,7 @@ import org.scalacoin.script.bitwise.OP_EQUALVERIFY
 import org.scalacoin.script.constant._
 import org.scalacoin.script.crypto.{OP_CHECKSIG, OP_HASH160, SIGHASH_ALL, OP_CODESEPARATOR}
 import org.scalacoin.script.stack.OP_DUP
-import org.scalacoin.util.{ScalacoinUtil, TestUtil}
+import org.scalacoin.util.{BitcoinjConversions, ScalacoinUtil, TestUtil}
 import org.scalatest.{FlatSpec, MustMatchers}
 import scala.collection.JavaConversions._
 
@@ -26,22 +26,9 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers {
 
   "TransactionSignatureSerializer" must "serialize a given script signature without OP_CODESEPARATORS" in {
     val txSerializer = new BaseTransactionSignatureSerializer(TestUtil.transaction)
-    val scriptPubKey = TestUtil.scriptPubKey.asm
+    val scriptPubKey = TestUtil.scriptPubKey
     val expectedScript = txSerializer.removeOpCodeSeparators(scriptPubKey)
     txSerializer.serializeScriptCode(scriptPubKey) must be (expectedScript)
-  }
-
-  it must "serialize a given script with only OP_CODESEPARATORs" in {
-    val txSerializer = new BaseTransactionSignatureSerializer(TestUtil.transaction)
-    val scriptPubKey = ScriptPubKeyFactory.factory(UpdateScriptPubKeyAsm(List(OP_CODESEPARATOR)))
-    txSerializer.serializeScriptCode(scriptPubKey.asm).hex must be ("00")
-  }
-
-  it must "serialize a given script with mixed in OP_CODESEPARATORs" in {
-    val txSerializer = new BaseTransactionSignatureSerializer(TestUtil.transaction)
-    val script = List(OP_CODESEPARATOR, OP_1, OP_CODESEPARATOR, OP_0, OP_CODESEPARATOR, OP_2)
-    val scriptPubKey = ScriptPubKeyFactory.factory(UpdateScriptPubKeyAsm(script))
-    txSerializer.serializeScriptCode(scriptPubKey.asm).hex must be ("03510052")
   }
 
 
@@ -53,14 +40,15 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers {
     val key2 = new DumpedPrivateKey(params, "cTine92s8GLpVqvebi8rYce3FrUYq78ZGQffBYCS1HmDPJdSTxUo").getKey();
     val key3 = new DumpedPrivateKey(params, "cVHwXSPRZmL9adctwBwmn4oTZdZMbaCsR5XF6VznqMgcvt1FDDxg").getKey();
     val multiSigScript : org.bitcoinj.script.Script = ScriptBuilder.createMultiSigOutputScript(2, util.Arrays.asList(key1, key2, key3));
-    val scriptPubKey = bitcoinjScriptToScriptPubKey(multiSigScript)
-
+    val scriptPubKey = BitcoinjConversions.toScriptPubKey(multiSigScript)
+    require(scriptPubKey.hex == ScalacoinUtil.encodeHex(multiSigScript.getProgram), "Script pub key hex not the same as multiSigScript hex")
     val spendingTx = Transaction.factory(bitcoinjMultiSigTransaction.bitcoinSerialize())
 
-    /*val txSignatureSerializer = new BaseTransactionSignatureSerializer(spendingTx)
-    val sigBytes = txSignatureSerializer.serialize(0,scriptPubKey,SIGHASH_ALL)
+    spendingTx.hex must be (ScalacoinUtil.encodeHex(bitcoinjMultiSigTransaction.bitcoinSerialize()))
 
-    spendingTx.hex must be (ScalacoinUtil.encodeHex(bitcoinjMultiSigTransaction.bitcoinSerialize()))*/
+    val txSignatureSerializer = new BaseTransactionSignatureSerializer(spendingTx)
+    val sigBytes : Seq[Byte] = txSignatureSerializer.serialize(0,scriptPubKey,SIGHASH_ALL)
+    ScalacoinUtil.encodeHex(sigBytes) must be (createBitcoinjMultiSigScriptHashForSig)
   }
 
 
@@ -79,8 +67,6 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers {
     val multisigScript = ScriptBuilder.createMultiSigOutputScript(2, util.Arrays.asList(key1, key2, key3))
     val sighash = spendTx.hashForSignature(0, multisigScript, SigHash.ALL, false)
     ScalacoinUtil.encodeHex(sighash.getBytes)
-
-
   }
 
 
@@ -99,16 +85,8 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers {
 
   }
 
-  private def bitcoinjScriptToScriptPubKey(bitcoinjScript : org.bitcoinj.script.Script) : ScriptPubKey = {
 
-    val parsedScriptTokens : List[ScriptToken] = bitcoinjScript.getChunks.toList.map { chunk =>
-      println("Chunk: " + chunk)
-      if (chunk.isOpCode) ScriptOperationFactory.fromByte(chunk.opcode.toByte).get
-      else new ScriptConstantImpl(chunk.data.toList)
-    }
-    val scriptPubKey = ScriptPubKeyFactory.factory(UpdateScriptPubKeyAsm(parsedScriptTokens))
-    println(scriptPubKey)
-    scriptPubKey
-  }
+
+
 
 }
