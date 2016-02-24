@@ -34,7 +34,7 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper {
    * @param script
    * @return
    */
-  def serializeScriptCode(script : Seq[ScriptToken]) : ScriptPubKey = removeOpCodeSeparators(script)
+  def serializeScriptCode(script : ScriptPubKey) : ScriptPubKey = removeOpCodeSeparators(script)
 
 
   def serializeInput(input : TransactionInput, nType : Int, nVersion : Int) : String = ???
@@ -71,7 +71,8 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper {
       input <- spendingTransaction.inputs
     } yield input.factory(ScriptSignatureFactory.empty)
 
-
+    inputSigsRemoved.map(input =>
+      require(input.scriptSignature.bytes.size == 0,"Input byte size was " + input.scriptSignature.bytes))
 
     // This step has no purpose beyond being synchronized with Bitcoin Core's bugs. OP_CODESEPARATOR
     // is a legacy holdover from a previous, broken design of executing scripts that shipped in Bitcoin 0.1.
@@ -80,7 +81,7 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper {
     // OP_CODESEPARATOR instruction having no purpose as it was only meant to be used internally, not actually
     // ever put into scripts. Deleting OP_CODESEPARATOR is a step that should never be required but if we don't
     // do it, we could split off the main chain.
-    val scriptWithOpCodeSeparatorsRemoved : ScriptPubKey = serializeScriptCode(script.asm)
+    val scriptWithOpCodeSeparatorsRemoved : ScriptPubKey = removeOpCodeSeparators(script)
 
     val inputToSign = inputSigsRemoved(inputIndex)
 
@@ -88,17 +89,19 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper {
     // the signature covers the hash of the prevout transaction which obviously includes the output script
     // already. Perhaps it felt safer to him in some way, or is another leftover from how the code was written.
     val inputWithConnectedScript = inputToSign.factory(scriptWithOpCodeSeparatorsRemoved)
+
+    //update the input at index i with inputWithConnectScript
     val updatedInputs = for {
       (input,index) <- inputSigsRemoved.zipWithIndex
     } yield {
         if (index == inputIndex) inputWithConnectedScript
         else input
       }
-    //update the input at index i with inputWithConnectScript
+
 
     val txWithInputSigsRemoved = spendingTransaction.factory(UpdateTransactionInputs(updatedInputs))
-    //check the hash type
 
+    //check the hash type
     hashType match {
       case SIGHASH_NONE =>
         //following this implementation from bitcoinj
@@ -139,7 +142,9 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper {
         }
       case SIGHASH_ALL =>
         //just need to add the hash type and hash the tx
-        txWithInputSigsRemoved.bytes ++ List(hashType.byte)
+        //txWithInputSigsRemoved.bytes
+        val sigHashBytes : List[Byte] = List(0x00.toByte, 0x00.toByte, 0x00.toByte, hashType.byte).reverse
+        CryptoUtil.doubleSHA256(txWithInputSigsRemoved.bytes ++ sigHashBytes)
     }
 
   }
@@ -149,12 +154,9 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper {
    * format
    * @return
    */
-  def removeOpCodeSeparators(script : Seq[ScriptToken]) : ScriptPubKey = {
-    val scriptWithoutOpCodeSeparators : String = script.filterNot(_ == OP_CODESEPARATOR).map(_.hex).mkString
-    val scriptWithoutOpCodeSeparatorSize = addPrecedingZero((scriptWithoutOpCodeSeparators.size / 2).toHexString)
-    val expectedScript : ScriptPubKey = ScriptPubKeyFactory.factory(
-      scriptWithoutOpCodeSeparatorSize + scriptWithoutOpCodeSeparators)
-    expectedScript
+  def removeOpCodeSeparators(script : ScriptPubKey) : ScriptPubKey = {
+    val scriptWithoutOpCodeSeparators : Seq[ScriptToken] = script.asm.filterNot(_ == OP_CODESEPARATOR)
+    ScriptPubKeyFactory.factory(scriptWithoutOpCodeSeparators.flatMap(_.bytes))
   }
 
   /**
