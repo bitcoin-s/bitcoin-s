@@ -112,7 +112,7 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper {
         //means that no outputs are signed at all
         val txWithNoOutputs = txWithInputSigsRemoved.emptyOutputs
         //set the sequence number of all inputs to 0 EXCEPT the input at inputIndex
-        val updatedInputs :  Seq[TransactionInput] = setSequenceNumbersZero(spendingTransaction.inputs,inputIndex)
+        val updatedInputs :  Seq[TransactionInput] = setSequenceNumbersZero(txWithInputSigsRemoved.inputs,inputIndex)
         val sigHashNoneTx = txWithNoOutputs.factory(UpdateTransactionInputs(updatedInputs))
         //append hash type byte onto the end of the tx bytes
         sigHashNoneTx.bytes ++ sigHashBytes
