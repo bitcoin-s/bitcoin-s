@@ -111,6 +111,7 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers {
     val bitcoinjSigSerialization = ScalacoinUtil.encodeHex(BitcoinJSignatureSerialization.hashForSignature(
       bitcoinjMultiSigTransaction,0,multiSigScript.getProgram,SIGHASH_NONE.byte))
     ScalacoinUtil.encodeHex(serialiazedTxForSig) must be (bitcoinjSigSerialization)
+
   }
 
 
