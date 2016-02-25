@@ -37,32 +37,16 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper {
   def serializeScriptCode(script : ScriptPubKey) : ScriptPubKey = removeOpCodeSeparators(script)
 
 
-  def serializeInput(input : TransactionInput, nType : Int, nVersion : Int) : String = ???
-
   /**
-   * Serializes an output of a transaction
-   * https://github.com/bitcoin/bitcoin/blob/93c85d458ac3e2c496c1a053e1f5925f55e29100/src/script/interpreter.cpp#L1079
-   * @param output
-   * @param nType
-   * @param nVersion
+   * Serializes a transaction to be signed by an ECKey
+   * follows the bitcoinj implementation which can be found here
+   * hashing is done in the hashForSignature function
+   * hashing is NOT done in this function
+   * @param inputIndex
+   * @param script
+   * @param hashType
    * @return
    */
-  def serializeOutput(output : TransactionOutput, nType : Int, nVersion : Int,
-                      hashType : HashType, inputIndex : Int, outputIndex : Int ) : String = {
-    //check if it is a SIGHASH_SINGLE
-    //check if the output index is not the same as the input index
-    if (hashType == SIGHASH_SINGLE && inputIndex != outputIndex) {
-      // Do not lock-in the txout payee at other indices as txin
-      //::Serialize(s, CTxOut(), nType, nVersion)
-      //need to write an empty output i think
-      ""
-    } else {
-      RawTransactionOutputParser.write(output)
-    }
-
-
-  }
-
   def serializeForSignature(inputIndex : Int, script : ScriptPubKey, hashType : HashType) : Seq[Byte] = {
     // Clear input scripts in preparation for signing. If we're signing a fresh
     // transaction that step isn't very helpful, but it doesn't add much cost relative to the actual
@@ -157,6 +141,15 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper {
   }
 
 
+  /**
+   * Serializes then hashes a transaction for signing
+   * this is an implementation of it's bitcoinj equivalent found here
+   * https://github.com/bitcoinj/bitcoinj/blob/master/core/src/main/java/org/bitcoinj/core/Transaction.java#L924
+   * @param inputIndex
+   * @param script
+   * @param hashType
+   * @return
+   */
   def hashForSignature(inputIndex : Int, script : ScriptPubKey, hashType : HashType) : Seq[Byte] = {
     val serializedTxForSignature = serializeForSignature(inputIndex,script,hashType)
     CryptoUtil.doubleSHA256(serializedTxForSignature)
