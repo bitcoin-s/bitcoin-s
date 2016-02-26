@@ -7,7 +7,7 @@ import org.scalacoin.protocol.script.{ScriptSignatureFactory, ScriptSignatureImp
 import org.scalacoin.protocol.transaction._
 import org.scalacoin.script.constant.ScriptToken
 import org.scalacoin.script.crypto._
-import org.scalacoin.util.{ScalacoinUtil, CryptoUtil}
+import org.scalacoin.util.{BitcoinSUtil, ScalacoinUtil, CryptoUtil}
 
 /**
  * Created by chris on 2/16/16.
@@ -18,15 +18,12 @@ import org.scalacoin.util.{ScalacoinUtil, CryptoUtil}
  * https://github.com/bitcoinj/bitcoinj/blob/master/core/src/main/java/org/bitcoinj/core/Transaction.java#L924-L1008
  */
 trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper {
-
-  def spendingTransaction : Transaction
-
   /**
    * Bitcoin Core's bug is that SignatureHash was supposed to return a hash and on this codepath it
    * actually returns the constant "1" to indicate an error
    * @return
    */
-  private def errorHash : Seq[Byte] = ScalacoinUtil.decodeHex("0100000000000000000000000000000000000000000000000000000000000000")
+  private def errorHash : Seq[Byte] = BitcoinSUtil.decodeHex("0100000000000000000000000000000000000000000000000000000000000000")
 
   /**
    * Serialized the passed in script code, skipping OP_CODESEPARATORs
@@ -47,7 +44,7 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper {
    * @param hashType
    * @return
    */
-  def serializeForSignature(inputIndex : Int, script : ScriptPubKey, hashType : HashType) : Seq[Byte] = {
+  def serializeForSignature(spendingTransaction : Transaction, inputIndex : Int, script : ScriptPubKey, hashType : HashType) : Seq[Byte] = {
     // Clear input scripts in preparation for signing. If we're signing a fresh
     // transaction that step isn't very helpful, but it doesn't add much cost relative to the actual
     // EC math so we'll do it anyway.
@@ -154,11 +151,10 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper {
    * @param hashType
    * @return
    */
-  def hashForSignature(inputIndex : Int, script : ScriptPubKey, hashType : HashType) : Seq[Byte] = {
-    val serializedTxForSignature = serializeForSignature(inputIndex,script,hashType)
+  def hashForSignature(spendingTransction : Transaction, inputIndex : Int, script : ScriptPubKey, hashType : HashType) : Seq[Byte] = {
+    val serializedTxForSignature = serializeForSignature(spendingTransction,inputIndex,script,hashType)
     CryptoUtil.doubleSHA256(serializedTxForSignature)
   }
-
 
   /**
    * Signs the input at the given inputIndex with the given ECKey
@@ -167,12 +163,16 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper {
    * @param key
    * @param hashType
    */
-  def signInput(inputIndex : Int, script : ScriptPubKey, key : BaseECKey, hashType : HashType) : Transaction = {
-    val hash = hashForSignature(inputIndex,script,hashType)
+  def signInput(spendingTx : Transaction, inputIndex : Int, script : ScriptPubKey, key : ECPrivateKey, hashType : HashType) : Transaction = {
+    val hash = hashForSignature(spendingTx, inputIndex,script,hashType)
     val signature = key.sign(hash)
     //create the input's scriptSig
-
-    ???
+    val scriptSig = ScriptSignatureFactory.factory(signature,key.publicKey)
+    val updatedInput : TransactionInput = spendingTx.inputs(inputIndex).factory(scriptSig)
+    //replace the updatedInput in the sequence of inputs in transaction
+    val updatedInputs = updateInputIndex(spendingTx.inputs,updatedInput,inputIndex)
+    val updatedTx : Transaction = spendingTx.factory(UpdateTransactionInputs(updatedInputs))
+    updatedTx
   }
   /**
    * Removes OP_CODESEPARATOR operations then returns the script in hex
@@ -198,7 +198,15 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper {
       else input.factory(0)
     }
   }
+
+  private def updateInputIndex(inputs : Seq[TransactionInput], updatedInput : TransactionInput, inputIndex : Int) : Seq[TransactionInput] = {
+    for {
+      (input,index) <- inputs.zipWithIndex
+    } yield {
+      if (inputIndex == index) updatedInput
+      else input
+    }
+  }
 }
 
-
-class BaseTransactionSignatureSerializer(override val spendingTransaction : Transaction) extends TransactionSignatureSerializer
+object TransactionSignatureSerializer extends TransactionSignatureSerializer
