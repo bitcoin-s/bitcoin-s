@@ -159,6 +159,21 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper {
     CryptoUtil.doubleSHA256(serializedTxForSignature)
   }
 
+
+  /**
+   * Signs the input at the given inputIndex with the given ECKey
+   * @param inputIndex
+   * @param script
+   * @param key
+   * @param hashType
+   */
+  def signInput(inputIndex : Int, script : ScriptPubKey, key : BaseECKey, hashType : HashType) : Transaction = {
+    val hash = hashForSignature(inputIndex,script,hashType)
+    val signature = key.sign(hash)
+    //create the input's scriptSig
+
+    ???
+  }
   /**
    * Removes OP_CODESEPARATOR operations then returns the script in hex
    * format

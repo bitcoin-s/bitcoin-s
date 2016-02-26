@@ -35,6 +35,21 @@ object ScriptSignatureFactory {
   def factory(bytes : Seq[Byte]) : ScriptSignature = RawScriptSignatureParser.read(bytes)
 
   /**
+   * Builds a script signature from a scriptPubKye and a digital signature
+   * @param scriptPubKey
+   * @param signature
+   */
+  def factory(scriptPubKey: ScriptPubKey, signature : String) : ScriptSignature = factory(scriptPubKey,ScalacoinUtil.decodeHex(signature))
+
+  /**
+   * Builds a script signature from a scriptPubKye and a digital signature
+   * @param scriptPubKey
+   * @param signature
+   */
+  def factory(scriptPubKey : ScriptPubKey, signature : Seq[Byte]) : ScriptSignature = {
+    ???
+  }
+  /**
    * Returns an empty script signature
    * @return
    */
