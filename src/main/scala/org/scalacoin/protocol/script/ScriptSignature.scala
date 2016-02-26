@@ -1,5 +1,6 @@
 package org.scalacoin.protocol.script
 
+import org.scalacoin.crypto.{ECFactory, ECDigitalSignature}
 import org.scalacoin.marshallers.transaction.TransactionElement
 
 import org.scalacoin.script.constant._
@@ -29,7 +30,7 @@ trait ScriptSignature extends TransactionElement {
    * p2sh script signatures can have n sigs
    * @return
    */
-  def signatures : Seq[ScriptToken]  = {
+  def signatures : Seq[ECDigitalSignature]  = {
     if (asm.headOption.isDefined && asm.head == OP_0) {
       //must be p2sh because of bug that forces p2sh scripts
       //to begin with OP_0
@@ -37,11 +38,12 @@ trait ScriptSignature extends TransactionElement {
       //OP_0 <scriptSig> <scriptSig> ... <scriptSig> <redeemScript>
       val scriptSigs = asm.slice(1,asm.size-1)
       //filter out all of the PUSHDATA / BytesToPushOntoStack operations
-      scriptSigs.filterNot(op => op.isInstanceOf[BytesToPushOntoStack]
+      val scriptSigsWithoutPushOps = scriptSigs.filterNot(op => op.isInstanceOf[BytesToPushOntoStack]
         || op == OP_PUSHDATA1
         || op == OP_PUSHDATA2
         || op == OP_PUSHDATA4)
-    } else Seq(asm(1))
+      scriptSigsWithoutPushOps.map(sig => ECFactory.digitalSignature(sig.bytes))
+    } else Seq(ECFactory.digitalSignature(asm(1).bytes))
   }
 
   /**

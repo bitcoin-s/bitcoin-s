@@ -2,7 +2,7 @@ package org.scalacoin.protocol.script
 
 import org.scalacoin.crypto.{ECPublicKey, ECDigitalSignature}
 import org.scalacoin.marshallers.script.{RawScriptSignatureParser, ScriptParser}
-import org.scalacoin.script.constant.{BytesToPushOntoStackFactory, ScriptConstantImpl, ScriptToken}
+import org.scalacoin.script.constant._
 import org.scalacoin.util.ScalacoinUtil
 
 /**
@@ -50,6 +50,26 @@ object ScriptSignatureFactory {
       pubKeyBytesToPushOntoStack.get, ScriptConstantImpl(pubKey.hex))
     val hex = asm.map(_.hex).mkString
     ScriptSignatureImpl(asm,hex)
+  }
+
+  /**
+   * Builds a script signature from a sequence of digital signatures and a redeem script
+   * this is for a pay to script hash script sig
+   * @param signatures
+   * @param redeemScript
+   * @return
+   */
+  def factory(signatures : Seq[ECDigitalSignature], redeemScript : ScriptToken) : ScriptSignature = {
+    val scriptWithBytesToPushOntoStack : Seq[Seq[ScriptToken]] = for {
+      sig <- signatures
+    } yield Seq(BytesToPushOntoStackFactory.factory(sig.bytes.size).get, ScriptConstantImpl(sig.hex))
+    //OP_0 must be the first op in a p2sh script signature thanks to a bug in bitcoin
+    //when p2sh was created
+    val redeemScriptBytesToPushOntoStack = BytesToPushOntoStackFactory.factory(redeemScript.bytes.size).get
+    val tokens : Seq[ScriptToken] = OP_0 :: (scriptWithBytesToPushOntoStack.flatten ++
+      Seq(redeemScriptBytesToPushOntoStack,redeemScript)).toList
+    val hex = tokens.map(_.hex).mkString
+    ScriptSignatureImpl(tokens, hex)
   }
   /**
    * Returns an empty script signature
