@@ -25,3 +25,4 @@ case object SIGHASH_SINGLE extends HashType {
 case object SIGHASH_ANYONECANPAY extends HashType {
   override def hex = "80"
 }
+

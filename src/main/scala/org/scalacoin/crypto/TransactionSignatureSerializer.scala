@@ -136,6 +136,10 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper {
         }
       case SIGHASH_ALL =>
         txWithInputSigsRemoved.bytes ++ sigHashBytes
+
+      case SIGHASH_ANYONECANPAY =>
+        val txWithInputsRemoved = txWithInputSigsRemoved.emptyInputs.factory(UpdateTransactionInputs(Seq(inputWithConnectedScript)))
+        txWithInputsRemoved.bytes ++ sigHashBytes
     }
 
   }
