@@ -10,6 +10,7 @@ import org.scalacoin.config.TestNet3;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import static org.bitcoinj.core.Utils.uint32ToByteStreamLE;
@@ -24,7 +25,8 @@ public class BitcoinJSignatureSerialization {
      * This is required for signatures which use a sigHashType which cannot be represented using SigHash and anyoneCanPay
      * See transaction c99c49da4c38af669dea436d3e73780dfdb6c1ecf9958baa52960e8baee30e73, which has sigHashType 0
      */
-    public static synchronized byte[] serializeForSignature(Transaction tx, int inputIndex, byte[] connectedScript, byte sigHashType) {
+    public static synchronized byte[] serializeForSignature(Transaction tx, int inputIndex, byte[] connectedScript,
+                                                            byte sigHashType) {
         NetworkParameters params = TestNet3Params.get();
         // The SIGHASH flags are used in the design of contracts, please see this page for a further understanding of
         // the purposes of the code in this method:
@@ -79,16 +81,17 @@ public class BitcoinJSignatureSerialization {
                     // Put the transaction back to how we found it.
                     //
                     // TODO: Only allow this to happen if we are checking a signature, not signing a transactions
-/*                    for (int i = 0; i < tx.getInputs().size(); i++) {
+                    for (int i = 0; i < tx.getInputs().size(); i++) {
                         //tx.getInputs().get(i).setScriptSig(inputScripts[i]);
-                        tx.getInputs().get(i).setScriptSig(ScriptBuilder.createMultiSigInputScriptBytes(inputScripts[i]));
+                        tx.getInputs().get(i).setScriptSig(ScriptBuilder.createMultiSigInputScriptBytes(
+                                Arrays.asList(inputScripts[i])));
                         tx.getInputs().get(i).setSequenceNumber(inputSequenceNumbers[i]);
                     }
-                    this.outputs = outputs;*/
-                    throw new RuntimeException("Need to implement this inside of BitcoinJSignature Serialization");
+                    //this.outputs = outputs;
+                    //throw new RuntimeException("Need to implement this inside of BitcoinJSignature Serialization");
                     // Satoshis bug is that SignatureHash was supposed to return a hash and on this codepath it
                     // actually returns the constant "1" to indicate an error, which is never checked for. Oops.
-                    //return Sha256Hash.wrap("0100000000000000000000000000000000000000000000000000000000000000");
+                    return Utils.HEX.decode("0100000000000000000000000000000000000000000000000000000000000000");
                 }
                 // In SIGHASH_SINGLE the outputs after the matching input index are deleted, and the outputs before
                 // that position are "nulled out". Unintuitively, the value in a "null" transaction is set to -1.
@@ -104,14 +107,12 @@ public class BitcoinJSignatureSerialization {
             }
 
             List<TransactionInput> inputs = tx.getInputs();
-/*
-            if ((sigHashType & SIGHASH_ANYONECANPAY_VALUE) == SIGHASH_ANYONECANPAY_VALUE) {
+            if ((sigHashType & (byte)0x80) == 0x80) {
                 // SIGHASH_ANYONECANPAY means the signature in the input is not broken by changes/additions/removals
                 // of other inputs. For example, this is useful for building assurance contracts.
-                this.inputs = new ArrayList<TransactionInput>();
+                tx.clearInputs();
                 tx.getInputs().add(input);
             }
-*/
 
             ByteArrayOutputStream bos = new UnsafeByteArrayOutputStream(256);
             tx.bitcoinSerialize(bos);
@@ -120,7 +121,6 @@ public class BitcoinJSignatureSerialization {
             // Note that this is NOT reversed to ensure it will be signed correctly. If it were to be printed out
             // however then we would expect that it is IS reversed.
             byte[] txSignatureBytes = bos.toByteArray();
-            Sha256Hash hash = Sha256Hash.twiceOf(bos.toByteArray());
             bos.close();
 
             // Put the transaction back to how we found it.
