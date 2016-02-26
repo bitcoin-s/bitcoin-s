@@ -1,7 +1,8 @@
 package org.scalacoin.protocol.script
 
+import org.scalacoin.crypto.{ECPublicKey, ECDigitalSignature}
 import org.scalacoin.marshallers.script.{RawScriptSignatureParser, ScriptParser}
-import org.scalacoin.script.constant.ScriptToken
+import org.scalacoin.script.constant.{BytesToPushOntoStackFactory, ScriptConstantImpl, ScriptToken}
 import org.scalacoin.util.ScalacoinUtil
 
 /**
@@ -34,20 +35,21 @@ object ScriptSignatureFactory {
    */
   def factory(bytes : Seq[Byte]) : ScriptSignature = RawScriptSignatureParser.read(bytes)
 
-  /**
-   * Builds a script signature from a scriptPubKye and a digital signature
-   * @param scriptPubKey
-   * @param signature
-   */
-  def factory(scriptPubKey: ScriptPubKey, signature : String) : ScriptSignature = factory(scriptPubKey,ScalacoinUtil.decodeHex(signature))
 
   /**
-   * Builds a script signature from a scriptPubKye and a digital signature
-   * @param scriptPubKey
+   * Builds a script signature from a digital signature and a public key
+   * this is a pay to public key hash script sig
    * @param signature
+   * @param pubKey
+   * @return
    */
-  def factory(scriptPubKey : ScriptPubKey, signature : Seq[Byte]) : ScriptSignature = {
-    ???
+  def factory(signature : ECDigitalSignature, pubKey : ECPublicKey) : ScriptSignature = {
+    val signatureBytesToPushOntoStack = BytesToPushOntoStackFactory.factory(signature.bytes.size)
+    val pubKeyBytesToPushOntoStack = BytesToPushOntoStackFactory.factory(pubKey.bytes.size)
+    val asm : Seq[ScriptToken] = Seq(signatureBytesToPushOntoStack.get, ScriptConstantImpl(signature.hex),
+      pubKeyBytesToPushOntoStack.get, ScriptConstantImpl(pubKey.hex))
+    val hex = asm.map(_.hex).mkString
+    ScriptSignatureImpl(asm,hex)
   }
   /**
    * Returns an empty script signature

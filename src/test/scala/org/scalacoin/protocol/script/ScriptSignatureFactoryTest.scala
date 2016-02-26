@@ -1,6 +1,7 @@
 package org.scalacoin.protocol.script
 
-import org.scalacoin.util.ScalacoinUtil
+import org.scalacoin.crypto._
+import org.scalacoin.util.{TestUtil, BitcoinSUtil, ScalacoinUtil}
 import org.scalatest.{FlatSpec, MustMatchers}
 
 /**
@@ -30,6 +31,14 @@ class ScriptSignatureFactoryTest extends FlatSpec with MustMatchers {
 
     scriptSigFromHex must be (scriptSigFromBytes)
 
+  }
 
+  it must "build a script signature from a digital signature and a public key" in {
+    val digitalSignatureBytes = TestUtil.p2pkhInputScriptAsm(1).bytes
+    val digitalSignature : ECDigitalSignature = ECFactory.digitalSignature(digitalSignatureBytes)
+    val publicKeyBytes = TestUtil.p2pkhInputScriptAsm(3).bytes
+    val publicKey : ECPublicKey = ECFactory.publicKey(publicKeyBytes)
+    val actualScriptSig : ScriptSignature = ScriptSignatureFactory.factory(digitalSignature,publicKey)
+    actualScriptSig.asm must be (TestUtil.p2pkhInputScriptAsm)
   }
 }

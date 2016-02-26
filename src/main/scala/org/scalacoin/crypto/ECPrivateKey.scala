@@ -7,4 +7,4 @@ trait ECPrivateKey extends BaseECKey {
   def publicKey : ECPublicKey = ???
 }
 
-case class ECPrivateKeyImpl(hex : String, bytes : Seq[Byte]) extends ECPrivateKey
+case class ECPrivateKeyImpl(bytes : Seq[Byte]) extends ECPrivateKey

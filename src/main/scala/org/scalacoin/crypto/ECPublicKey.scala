@@ -5,4 +5,4 @@ package org.scalacoin.crypto
  */
 trait ECPublicKey extends BaseECKey
 
-case class ECPublicKeyImpl(hex : String, bytes : Seq[Byte]) extends ECPublicKey
+case class ECPublicKeyImpl(bytes : Seq[Byte]) extends ECPublicKey

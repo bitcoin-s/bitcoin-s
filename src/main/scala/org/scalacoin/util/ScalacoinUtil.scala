@@ -85,4 +85,5 @@ trait ScalacoinUtil extends NumberUtil {
   def flipHalfByte(hex : String) = hex.grouped(2).map(_.reverse).mkString
 }
 
+@deprecated("This is going to be removed since the project name is changing")
 object ScalacoinUtil extends ScalacoinUtil
