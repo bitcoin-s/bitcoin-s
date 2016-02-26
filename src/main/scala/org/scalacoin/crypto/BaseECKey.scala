@@ -9,6 +9,6 @@ trait BaseECKey {
 
   def hex : String = BitcoinSUtil.encodeHex(bytes)
   def bytes : Seq[Byte]
-  def sign(bytes : Seq[Byte]) : Seq[Byte] = ???
-  def sign(hex : String) : Seq[Byte] = sign(BitcoinSUtil.decodeHex(hex))
+  def sign(bytes : Seq[Byte]) : ECDigitalSignature = ???
+  def sign(hex : String) : ECDigitalSignature = sign(BitcoinSUtil.decodeHex(hex))
 }
