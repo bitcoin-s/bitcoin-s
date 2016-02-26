@@ -2,14 +2,14 @@ package org.scalacoin.protocol.script
 
 import org.scalacoin.marshallers.script.ScriptParser
 import org.scalacoin.script.constant.ScriptToken
-import org.scalacoin.util.ScalacoinUtil
+import org.scalacoin.util.{BitcoinSUtil, Factory, ScalacoinUtil}
 
 /**
  * Created by chris on 1/19/16.
  */
-trait ScriptPubKeyFactory {
+trait ScriptPubKeyFactory extends Factory[ScriptPubKey] {
 
-  def factory(hex : String) : ScriptPubKey = factory(ScalacoinUtil.decodeHex(hex))
+  def factory(hex : String) : ScriptPubKey = fromHex(hex)
 
   def factory(indicator: UpdateScriptPubKeyAsm) : ScriptPubKey = {
     val hex = indicator.asm.map(_.hex).mkString
@@ -26,15 +26,16 @@ trait ScriptPubKeyFactory {
    * @param bytes
    * @return
    */
-  def factory(bytes : Seq[Byte]) : ScriptPubKey =  {
+  def factory(bytes : Seq[Byte]) : ScriptPubKey =  fromBytes(bytes)
+
+  def factory(bytes : Array[Byte]) : ScriptPubKey = fromBytes(bytes.toSeq)
+
+  def empty : ScriptPubKey = ScriptPubKeyImpl(Seq(),"",Seq())
+
+  def fromBytes(bytes : Seq[Byte]) : ScriptPubKey = {
     val asm = ScriptParser.parse(bytes)
-    ScriptPubKeyImpl(asm,ScalacoinUtil.encodeHex(bytes),Seq())
+    ScriptPubKeyImpl(asm,BitcoinSUtil.encodeHex(bytes),Seq())
   }
-
-  def factory(bytes : Array[Byte]) : ScriptPubKey= factory(bytes.toSeq)
-
-  def empty : ScriptPubKey= ScriptPubKeyImpl(Seq(),"",Seq())
-
 }
 
 sealed trait ScriptPubKeyUpdateIndicator

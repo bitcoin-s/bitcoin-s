@@ -3,13 +3,13 @@ package org.scalacoin.protocol.script
 import org.scalacoin.crypto.{ECPublicKey, ECDigitalSignature}
 import org.scalacoin.marshallers.script.{RawScriptSignatureParser, ScriptParser}
 import org.scalacoin.script.constant._
-import org.scalacoin.util.ScalacoinUtil
+import org.scalacoin.util.{Factory, BitcoinSUtil, ScalacoinUtil}
 
 /**
  * Created by chris on 1/19/16.
  * Responsible for the instantiation of ScriptSignature objects
  */
-object ScriptSignatureFactory {
+trait ScriptSignatureFactory extends Factory[ScriptSignature] {
 
 
   /**
@@ -17,23 +17,14 @@ object ScriptSignatureFactory {
    * @param hex
    * @return
    */
-  def factory(hex : String) : ScriptSignature = {
-    factory(ScalacoinUtil.decodeHex(hex))
-  }
+  def factory(hex : String) : ScriptSignature = fromHex(hex)
 
   /**
    * Creates a ScriptSignature object from a given list of bytes
    * @param bytes
    * @return
    */
-  def factory(bytes : List[Byte]) : ScriptSignature = factory(bytes.toSeq)
-
-  /**
-   * Creates a ScriptSignature object from a given list of bytes
-   * @param bytes
-   * @return
-   */
-  def factory(bytes : Seq[Byte]) : ScriptSignature = RawScriptSignatureParser.read(bytes)
+  def factory(bytes : Seq[Byte]) : ScriptSignature = fromBytes(bytes)
 
 
   /**
@@ -76,4 +67,8 @@ object ScriptSignatureFactory {
    * @return
    */
   def empty = ScriptSignatureImpl(Seq(),"")
+
+  def fromBytes(bytes : Seq[Byte]) : ScriptSignature = RawScriptSignatureParser.read(bytes)
 }
+
+object ScriptSignatureFactory extends ScriptSignatureFactory

@@ -1,11 +1,12 @@
 package org.scalacoin.protocol.transaction
 
 import org.scalacoin.marshallers.transaction.{RawTransactionParser, RawTransactionInputParser}
+import org.scalacoin.util.Factory
 
 /**
  * Created by chris on 2/21/16.
  */
-trait TransactionFactory { this : Transaction =>
+trait TransactionFactory extends Factory[Transaction] { this : Transaction =>
 
 
   /**
@@ -46,17 +47,19 @@ trait TransactionFactory { this : Transaction =>
    * @param bytes
    * @return
    */
-  def factory(bytes : Seq[Byte]) : Transaction = RawTransactionParser.read(bytes)
+  def factory(bytes : Seq[Byte]) : Transaction = fromBytes(bytes)
 
   /**
    * Creates a transction object from its hexadecimal representation
    * @param hex
    * @return
    */
-  def factory(hex : String) : Transaction = RawTransactionParser.read(hex)
+  def factory(hex : String) : Transaction = fromHex(hex)
 
 
-  def factory(bytes : Array[Byte]) : Transaction = factory(bytes.toSeq)
+  def factory(bytes : Array[Byte]) : Transaction = fromBytes(bytes.toSeq)
+
+  def fromBytes(bytes : Seq[Byte]) : Transaction = RawTransactionParser.read(bytes)
 
 }
 

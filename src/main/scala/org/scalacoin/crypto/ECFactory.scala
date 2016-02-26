@@ -1,11 +1,11 @@
 package org.scalacoin.crypto
 
-import org.scalacoin.util.{BitcoinSUtil, ScalacoinUtil}
+import org.scalacoin.util.{Factory, BitcoinSUtil, ScalacoinUtil}
 
 /**
  * Created by chris on 2/16/16.
  */
-trait ECFactory {
+trait ECFactory extends Factory[BaseECKey] {
 
   def privateKey(hex : String) : ECPrivateKey = privateKey(BitcoinSUtil.decodeHex(hex))
 
@@ -23,6 +23,11 @@ trait ECFactory {
   def digitalSignature(hex : String) : ECDigitalSignature = ECDigitalSignatureImpl(BitcoinSUtil.decodeHex(hex))
 
   def digitalSignature(bytes : Seq[Byte]) : ECDigitalSignature = ECDigitalSignatureImpl(bytes)
+
+  override def fromHex(hex : String) : BaseECKey = privateKey(hex)
+
+  override def fromBytes(bytes : Seq[Byte]) : BaseECKey = privateKey(bytes)
+
 }
 
 object ECFactory extends ECFactory
