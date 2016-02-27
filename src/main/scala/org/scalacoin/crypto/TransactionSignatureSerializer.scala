@@ -88,18 +88,9 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper {
     //check the hash type
     hashType match {
       case SIGHASH_NONE =>
-        //following this implementation from bitcoinj
-        //https://github.com/bitcoinj/bitcoinj/blob/09a2ca64d2134b0dcbb27b1a6eb17dda6087f448/core/src/main/java/org/bitcoinj/core/Transaction.java#L957
-        //means that no outputs are signed at all
-        val txWithNoOutputs = txWithInputSigsRemoved.emptyOutputs
-        //set the sequence number of all inputs to 0 EXCEPT the input at inputIndex
-        val updatedInputs :  Seq[TransactionInput] = setSequenceNumbersZero(txWithInputSigsRemoved.inputs,inputIndex)
-        val sigHashNoneTx = txWithNoOutputs.factory(UpdateTransactionInputs(updatedInputs))
-        //append hash type byte onto the end of the tx bytes
+        val sigHashNoneTx : Transaction = sigHashNone(txWithInputSigsRemoved,inputIndex)
         sigHashNoneTx.bytes ++ sigHashBytes
       case SIGHASH_SINGLE =>
-        //following this implementation from bitcoinj
-        //https://github.com/bitcoinj/bitcoinj/blob/09a2ca64d2134b0dcbb27b1a6eb17dda6087f448/core/src/main/java/org/bitcoinj/core/Transaction.java#L964
         if (inputIndex >= spendingTransaction.outputs.size) {
           // comment copied from bitcoinj
           // The input index is beyond the number of outputs, it's a buggy signature made by a broken
@@ -112,35 +103,19 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper {
           // actually returns the constant "1" to indicate an error, which is never checked for. Oops.
           errorHash
         } else {
-          // In SIGHASH_SINGLE the outputs after the matching input index are deleted, and the outputs before
-          // that position are "nulled out". Unintuitively, the value in a "null" transaction is set to -1.
-          val updatedOutputsOpt : Seq[Option[TransactionOutput]] = for {
-            (output,index) <- txWithInputSigsRemoved.outputs.zipWithIndex
-          } yield {
-              if (index < inputIndex) Some(output.empty.factory(CurrencyUnits.negativeSatoshi))
-              else None
-            }
-          val updatedOutputs : Seq[TransactionOutput] = updatedOutputsOpt.flatten
-
-          val spendingTxOutputsEmptied = txWithInputSigsRemoved.factory(UpdateTransactionOutputs(updatedOutputs))
-          //create blank inputs with sequence numbers set to zero EXCEPT
-          //the input at the inputIndex
-          val updatedInputs = setSequenceNumbersZero(spendingTxOutputsEmptied.inputs,inputIndex)
-
-          val sigHashSingleTx = spendingTxOutputsEmptied.factory(UpdateTransactionInputs(updatedInputs))
-          //append hash type byte onto the end of the tx bytes
+          val sigHashSingleTx = sigHashSingle(txWithInputSigsRemoved,inputIndex)
           sigHashSingleTx.bytes ++ sigHashBytes
         }
       case SIGHASH_ALL =>
-        txWithInputSigsRemoved.bytes ++ sigHashBytes
+        val sigHashAllTx : Transaction = sigHashAll(txWithInputSigsRemoved,inputIndex)
+        sigHashAllTx.bytes ++ sigHashBytes
 
       case SIGHASH_ANYONECANPAY =>
-        val txWithInputsRemoved = txWithInputSigsRemoved.emptyInputs.factory(UpdateTransactionInputs(Seq(inputWithConnectedScript)))
+        val txWithInputsRemoved = sigHashAnyoneCanPay(txWithInputSigsRemoved,inputWithConnectedScript)
         txWithInputsRemoved.bytes ++ sigHashBytes
     }
 
   }
-
 
   /**
    * Serializes then hashes a transaction for signing
@@ -206,6 +181,74 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper {
       if (inputIndex == index) updatedInput
       else input
     }
+  }
+
+  /**
+   * Executes the SIGHASH_NONE procedure on a spending transaction for the input specified by inputIndex
+   * @param spendingTransaction
+   * @param inputIndex
+   * @return
+   */
+  private def sigHashNone(spendingTransaction : Transaction, inputIndex : Int) : Transaction = {
+    //following this implementation from bitcoinj
+    //https://github.com/bitcoinj/bitcoinj/blob/09a2ca64d2134b0dcbb27b1a6eb17dda6087f448/core/src/main/java/org/bitcoinj/core/Transaction.java#L957
+    //means that no outputs are signed at all
+    val txWithNoOutputs = spendingTransaction.emptyOutputs
+    //set the sequence number of all inputs to 0 EXCEPT the input at inputIndex
+    val updatedInputs :  Seq[TransactionInput] = setSequenceNumbersZero(spendingTransaction.inputs,inputIndex)
+    val sigHashNoneTx = txWithNoOutputs.factory(UpdateTransactionInputs(updatedInputs))
+    //append hash type byte onto the end of the tx bytes
+    sigHashNoneTx
+  }
+
+  /**
+   * Executes the SIGHASH_SINGLE procedure on a spending transaction for the input specified by inputIndex
+   * @param spendingTransaction
+   * @param inputIndex
+   * @return
+   */
+  private def sigHashSingle(spendingTransaction : Transaction, inputIndex : Int) : Transaction = {
+    //following this implementation from bitcoinj
+    //https://github.com/bitcoinj/bitcoinj/blob/09a2ca64d2134b0dcbb27b1a6eb17dda6087f448/core/src/main/java/org/bitcoinj/core/Transaction.java#L964
+    // In SIGHASH_SINGLE the outputs after the matching input index are deleted, and the outputs before
+    // that position are "nulled out". Unintuitively, the value in a "null" transaction is set to -1.
+    val updatedOutputsOpt : Seq[Option[TransactionOutput]] = for {
+      (output,index) <- spendingTransaction.outputs.zipWithIndex
+    } yield {
+        if (index < inputIndex) Some(output.empty.factory(CurrencyUnits.negativeSatoshi))
+        else None
+      }
+    val updatedOutputs : Seq[TransactionOutput] = updatedOutputsOpt.flatten
+
+    val spendingTxOutputsEmptied = spendingTransaction.factory(UpdateTransactionOutputs(updatedOutputs))
+    //create blank inputs with sequence numbers set to zero EXCEPT
+    //the input at the inputIndex
+    val updatedInputs = setSequenceNumbersZero(spendingTxOutputsEmptied.inputs,inputIndex)
+
+    val sigHashSingleTx = spendingTxOutputsEmptied.factory(UpdateTransactionInputs(updatedInputs))
+    //append hash type byte onto the end of the tx bytes
+    sigHashSingleTx
+  }
+
+  /**
+   * Executes the SIGHASH_ALL procedure on a spending transaction at inputIndex
+   * @param spendingTransaction
+   * @param inputIndex
+   * @return
+   */
+  private def sigHashAll(spendingTransaction : Transaction, inputIndex : Int) : Transaction = {
+    spendingTransaction
+  }
+
+  /**
+   * Executes the SIGHASH_ANYONECANPAY procedure on a spending transaction at inputIndex
+   * @param spendingTransaction
+   * @param input
+   * @return
+   */
+  private def sigHashAnyoneCanPay(spendingTransaction : Transaction, input : TransactionInput) : Transaction = {
+    val txWithInputsRemoved = spendingTransaction.emptyInputs.factory(UpdateTransactionInputs(Seq(input)))
+    txWithInputsRemoved
   }
 }
 
