@@ -90,6 +90,7 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper {
       case SIGHASH_NONE =>
         val sigHashNoneTx : Transaction = sigHashNone(txWithInputSigsRemoved,inputIndex)
         sigHashNoneTx.bytes ++ sigHashBytes
+
       case SIGHASH_SINGLE =>
         if (inputIndex >= spendingTransaction.outputs.size) {
           // comment copied from bitcoinj
@@ -106,6 +107,7 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper {
           val sigHashSingleTx = sigHashSingle(txWithInputSigsRemoved,inputIndex)
           sigHashSingleTx.bytes ++ sigHashBytes
         }
+
       case SIGHASH_ALL =>
         val sigHashAllTx : Transaction = sigHashAll(txWithInputSigsRemoved,inputIndex)
         sigHashAllTx.bytes ++ sigHashBytes
@@ -113,7 +115,23 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper {
       case SIGHASH_ANYONECANPAY =>
         val txWithInputsRemoved = sigHashAnyoneCanPay(txWithInputSigsRemoved,inputWithConnectedScript)
         txWithInputsRemoved.bytes ++ sigHashBytes
+
+      case SIGHASH_ALL_ANYONECANPAY =>
+        val sigHashAllTx = sigHashAll(txWithInputSigsRemoved,inputIndex)
+        val sigHashAllAnyoneCanPayTx = sigHashAnyoneCanPay(sigHashAllTx,inputWithConnectedScript)
+        sigHashAllAnyoneCanPayTx.bytes ++ sigHashBytes
+
+      case SIGHASH_NONE_ANYONECANPAY =>
+        val sigHashNoneTx = sigHashNone(txWithInputSigsRemoved,inputIndex)
+        val sigHashNoneAnyoneCanPay = sigHashAnyoneCanPay(sigHashNoneTx,inputWithConnectedScript)
+        sigHashNoneAnyoneCanPay.bytes ++ sigHashBytes
+
+      case SIGHASH_SINGLE_ANYONECANPAY =>
+        val sigHashSingleTx = sigHashSingle(txWithInputSigsRemoved,inputIndex)
+        val sigHashSingleAnyoneCanPay = sigHashAnyoneCanPay(sigHashSingleTx,inputWithConnectedScript)
+        sigHashSingleAnyoneCanPay.bytes  ++ sigHashBytes
     }
+
 
   }
 
