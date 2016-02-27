@@ -47,7 +47,7 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers {
     BitcoinSUtil.encodeHex(sigBytes) must be (bitcoinjSerialization)
   }
 
-  it must "hash a tranasction with SIGHASH_ALL correctly" in {
+  it must "hash a transction with SIGHASH_ALL correctly" in {
 
     val spendingTx = Transaction.factory(bitcoinjMultiSigTransaction.bitcoinSerialize())
     spendingTx.hex must be (BitcoinSUtil.encodeHex(bitcoinjMultiSigTransaction.bitcoinSerialize()))
