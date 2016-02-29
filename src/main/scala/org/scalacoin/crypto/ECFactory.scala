@@ -13,6 +13,15 @@ trait ECFactory extends Factory[BaseECKey] {
 
   def privateKey(bytes : List[Byte]) : ECPrivateKey = privateKey(bytes.toSeq)
 
+  /**
+   * Generates a fresh ECPrivateKey
+   * @return
+   */
+  def privateKey : ECPrivateKey = {
+    val bitcoinjKey = new org.bitcoinj.core.ECKey
+    privateKey(bitcoinjKey.getPrivKeyBytes)
+  }
+
   def publicKey(hex : String) : ECPublicKey = publicKey(BitcoinSUtil.decodeHex(hex))
 
   def publicKey(bytes : Seq[Byte]) : ECPublicKey = ECPublicKeyImpl(bytes)
@@ -20,6 +29,13 @@ trait ECFactory extends Factory[BaseECKey] {
   def publicKey(bytes : List[Byte]) : ECPublicKey = publicKey(bytes.toSeq)
 
 
+  /**
+   * Generates a fresh public key
+   * @return
+   */
+  def publicKey = {
+    privateKey.publicKey
+  }
   def digitalSignature(hex : String) : ECDigitalSignature = ECDigitalSignatureImpl(BitcoinSUtil.decodeHex(hex))
 
   def digitalSignature(bytes : Seq[Byte]) : ECDigitalSignature = ECDigitalSignatureImpl(bytes)
