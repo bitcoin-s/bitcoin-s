@@ -3,7 +3,7 @@ package org.scalacoin.script.bitwise
 import org.scalacoin.script.{ScriptProgramFactory, ScriptProgramImpl, ScriptProgram}
 import org.scalacoin.script.constant._
 import org.scalacoin.script.control.{OP_VERIFY, ControlOperationsInterpreter}
-import org.scalacoin.util.ScalacoinUtil
+import org.scalacoin.util.BitcoinSUtil
 import org.slf4j.LoggerFactory
 
 /**
@@ -31,8 +31,8 @@ trait BitwiseInterpreter extends ControlOperationsInterpreter  {
       case (BytesToPushOntoStackImpl(x), BytesToPushOntoStackImpl(y)) => x == y
       case (BytesToPushOntoStackImpl(x), ScriptConstantImpl(y)) => BytesToPushOntoStackImpl(x).hex == y
       case (ScriptConstantImpl(x), BytesToPushOntoStackImpl(y)) => x == BytesToPushOntoStackImpl(y).hex
-      case (ScriptConstantImpl(x), ScriptNumberImpl(y)) => ScalacoinUtil.hexToLong(x) == y
-      case (ScriptNumberImpl(x), ScriptConstantImpl(y)) => x == ScalacoinUtil.hexToLong(y)
+      case (ScriptConstantImpl(x), ScriptNumberImpl(y)) => BitcoinSUtil.hexToLong(x) == y
+      case (ScriptNumberImpl(x), ScriptConstantImpl(y)) => x == BitcoinSUtil.hexToLong(y)
       case (OP_0, x) => OP_0.hex == x.hex
       case (x, OP_0) => x.hex == OP_0.hex
       case (OP_1,x) => OP_1.scriptNumber == x
