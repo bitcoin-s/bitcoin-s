@@ -5,7 +5,7 @@ import org.scalacoin.marshallers.script.RawScriptSignatureParser
 import org.scalacoin.protocol.{CompactSizeUInt}
 import org.scalacoin.protocol.script.ScriptSignature
 import org.scalacoin.protocol.transaction.{TransactionInputImpl, TransactionOutPoint, TransactionInput}
-import org.scalacoin.util.ScalacoinUtil
+import org.scalacoin.util.{BitcoinSUtil, ScalacoinUtil}
 import org.slf4j.LoggerFactory
 
 import scala.annotation.tailrec
@@ -26,14 +26,14 @@ trait RawTransactionInputParser extends RawBitcoinSerializer[Seq[TransactionInpu
       if (inputsLeftToParse > 0) {
         //TODO: This needs to be refactored into a loop function that returns a single TransactionInput
         //then call it multiple times and create a Seq[TransactionInput
-        logger.debug("Bytes to parse for input: " + ScalacoinUtil.encodeHex(bytes))
+        logger.debug("Bytes to parse for input: " + BitcoinSUtil.encodeHex(bytes))
         val outPointBytesSize = 36
         val outPointBytes = bytes.take(outPointBytesSize)
         val outPoint : TransactionOutPoint  = RawTransactionOutPointParser.read(outPointBytes)
 
-        val scriptCompactSizeUIntSize : Int = ScalacoinUtil.parseCompactSizeUIntSize(bytes(outPointBytesSize)).toInt
-        logger.debug("VarInt hex: " + ScalacoinUtil.encodeHex(bytes.slice(outPointBytesSize,outPointBytesSize + scriptCompactSizeUIntSize)))
-        val scriptSigCompactSizeUInt : CompactSizeUInt = ScalacoinUtil.parseCompactSizeUInt(bytes.slice(outPointBytesSize,outPointBytesSize + scriptCompactSizeUIntSize))
+        val scriptCompactSizeUIntSize : Int = BitcoinSUtil.parseCompactSizeUIntSize(bytes(outPointBytesSize)).toInt
+        logger.debug("VarInt hex: " + BitcoinSUtil.encodeHex(bytes.slice(outPointBytesSize,outPointBytesSize + scriptCompactSizeUIntSize)))
+        val scriptSigCompactSizeUInt : CompactSizeUInt = BitcoinSUtil.parseCompactSizeUInt(bytes.slice(outPointBytesSize,outPointBytesSize + scriptCompactSizeUIntSize))
 
 
         val scriptSigBytes = bytes.slice(outPointBytesSize+ scriptCompactSizeUIntSize,
@@ -45,10 +45,10 @@ trait RawTransactionInputParser extends RawBitcoinSerializer[Seq[TransactionInpu
         val endOfScriptSigBytes = outPointBytesSize + scriptSigCompactSizeUInt.num.toInt + scriptCompactSizeUIntSize
         val lastInputByte = endOfScriptSigBytes + sequenceBytesSize
         val sequenceBytes = bytes.slice(endOfScriptSigBytes,lastInputByte)
-        logger.debug("Sequence bytes: " + ScalacoinUtil.encodeHex(sequenceBytes))
-        val sequenceNumberHex : String = ScalacoinUtil.encodeHex(sequenceBytes)
+        logger.debug("Sequence bytes: " + BitcoinSUtil.encodeHex(sequenceBytes))
+        val sequenceNumberHex : String = BitcoinSUtil.encodeHex(sequenceBytes)
         val sequenceNumber : Long = java.lang.Long.parseLong(sequenceNumberHex,16)
-        val txInput = TransactionInputImpl(outPoint,/*scriptSigCompactSizeUInt,*/ scriptSig,sequenceNumber)
+        val txInput = TransactionInputImpl(outPoint,scriptSig,sequenceNumber)
 
         val newAccum =  txInput :: accum
         val bytesToBeParsed = bytes.slice(lastInputByte, bytes.size)

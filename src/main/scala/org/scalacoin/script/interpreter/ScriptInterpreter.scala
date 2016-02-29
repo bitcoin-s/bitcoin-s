@@ -85,6 +85,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
         case OP_MIN :: t => loop(opMin(program))
         case OP_MAX :: t => loop(opMax(program))
         case OP_WITHIN :: t => loop(opWithin(program))
+
         //bitwise operations
         case OP_EQUAL :: t => {
           val newProgram = opEqual(program)
