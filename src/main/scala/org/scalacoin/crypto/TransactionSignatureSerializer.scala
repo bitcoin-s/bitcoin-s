@@ -3,7 +3,7 @@ package org.scalacoin.crypto
 import org.scalacoin.currency.CurrencyUnits
 import org.scalacoin.marshallers.RawBitcoinSerializerHelper
 import org.scalacoin.marshallers.transaction.RawTransactionOutputParser
-import org.scalacoin.protocol.script.{ScriptSignatureFactory, ScriptSignatureImpl, ScriptPubKeyFactory, ScriptPubKey}
+import org.scalacoin.protocol.script._
 import org.scalacoin.protocol.transaction._
 import org.scalacoin.script.constant.ScriptToken
 import org.scalacoin.script.crypto._
@@ -168,7 +168,7 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper {
     updatedTx
   }
   /**
-   * Removes OP_CODESEPARATOR operations then returns the script in hex
+   * Removes OP_CODESEPARATOR operations then returns the script
    * format
    * @return
    */

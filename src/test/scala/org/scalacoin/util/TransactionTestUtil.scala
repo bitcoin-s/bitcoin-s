@@ -43,4 +43,20 @@ trait TransactionTestUtil {
 
     TransactionImpl(TransactionConstants.version,Seq(input),Seq(output),TransactionConstants.lockTime)
   }
+
+
+  /**
+   * Returns a transaction and its crediting output
+   * @return
+   */
+  def transactionWithSpendingInputAndCreditingOutput : (Transaction, TransactionInput, TransactionOutput) = {
+    val spendingTx = TestUtil.simpleTransaction
+    val creditingTx = TestUtil.parentSimpleTransaction
+    val creditingOutput = TestUtil.parentSimpleTransaction.outputs(creditingTx.inputs.head.previousOutput.vout)
+    //make sure the outpoint index and the outpoint txid are correct
+    require(spendingTx.inputs.head.previousOutput.txId == creditingTx.txId)
+    (spendingTx,spendingTx.inputs.head, creditingOutput)
+  }
 }
+
+object TransactionTestUtil extends TransactionTestUtil

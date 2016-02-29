@@ -1,5 +1,6 @@
 package org.scalacoin.protocol.script
 
+import org.scalacoin.marshallers.transaction.TransactionElement
 import org.scalacoin.protocol._
 import org.scalacoin.script.bitwise.{OP_EQUAL, OP_EQUALVERIFY}
 import org.scalacoin.script.constant.{BytesToPushOntoStackImpl, ScriptConstantImpl, ScriptToken}
@@ -9,7 +10,15 @@ import org.scalacoin.script.stack.OP_DUP
 /**
  * Created by chris on 12/26/15.
  */
-trait ScriptPubKey extends ScriptSignature {
+sealed trait ScriptPubKey extends TransactionElement {
+
+  /**
+   * Representation of a scriptSignature in a parsed assembly format
+   * this data structure can be run through the script interpreter to
+   * see if a script evaluates to true
+   * @return
+   */
+  def asm : Seq[ScriptToken]
 
 
   def reqSigs : Option[Int] = {
@@ -32,5 +41,6 @@ trait ScriptPubKey extends ScriptSignature {
   def addresses : Seq[BitcoinAddress]
 
 }
+
 
 case class ScriptPubKeyImpl(asm : Seq[ScriptToken], hex : String, addresses : Seq[BitcoinAddress]) extends ScriptPubKey

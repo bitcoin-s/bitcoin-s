@@ -11,7 +11,7 @@ import org.slf4j.LoggerFactory
 /**
  * Created by chris on 12/26/15.
  */
-trait ScriptSignature extends TransactionElement {
+sealed trait ScriptSignature extends TransactionElement {
 
   private def logger = LoggerFactory.getLogger(this.getClass())
 
@@ -47,23 +47,15 @@ trait ScriptSignature extends TransactionElement {
   }
 
   /**
-   * Derives the hash type for a given scriptSig
-   * @param scriptSig
+   * Derives the hash type for a given digitalSignature
+   * @param digitalSignature
    * @return
    */
-  def hashType(scriptSig : Seq[Byte]) : HashType = {
-    require(HashTypeFactory.fromByte(scriptSig.last).isDefined,
-      "Hash type could not be read for this scriptSig: " + BitcoinSUtil.encodeHex(scriptSig))
-    HashTypeFactory.fromByte(scriptSig.last).get
+  def hashType(digitalSignature: ECDigitalSignature) = {
+    require(HashTypeFactory.fromByte(digitalSignature.bytes.last).isDefined,
+      "Hash type could not be read for this scriptSig: " + digitalSignature.hex)
+    HashTypeFactory.fromByte(digitalSignature.bytes.last).get
   }
-
-  /**
-   * Derives the hash type for a give scriptSig
-   * @param scriptSigHex
-   * @return
-   */
-  def hashType(scriptSigHex : String) : HashType = hashType(BitcoinSUtil.decodeHex(scriptSigHex))
-
 }
 
 case class ScriptSignatureImpl(asm : Seq[ScriptToken], hex : String) extends ScriptSignature

@@ -233,14 +233,16 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers {
   private def createBitcoinjMultiSigScriptHashForSig(hashType : HashType) : String = {
     val spendTx = bitcoinjMultiSigTransaction
 
-    val sighash : String = hashType match {
-      case SIGHASH_ALL => BitcoinSUtil.encodeHex(spendTx.hashForSignature(0, multiSigScript, SigHash.ALL, false).getBytes)
-      case SIGHASH_SINGLE => BitcoinSUtil.encodeHex(spendTx.hashForSignature(0,multiSigScript,SigHash.SINGLE, false).getBytes)
-      case SIGHASH_NONE => BitcoinSUtil.encodeHex(spendTx.hashForSignature(0,multiSigScript,SigHash.NONE, false).getBytes)
-      case SIGHASH_ANYONECANPAY => BitcoinSUtil.encodeHex(spendTx.hashForSignature(0,multiSigScript.getProgram,0x80.toByte).getBytes)
-
+    val sighash : Seq[Byte] = hashType match {
+      case SIGHASH_ALL => spendTx.hashForSignature(0, multiSigScript, SigHash.ALL, false).getBytes
+      case SIGHASH_SINGLE => spendTx.hashForSignature(0,multiSigScript,SigHash.SINGLE, false).getBytes
+      case SIGHASH_NONE => spendTx.hashForSignature(0,multiSigScript,SigHash.NONE, false).getBytes
+      case SIGHASH_ANYONECANPAY => spendTx.hashForSignature(0,multiSigScript.getProgram,0x80.toByte).getBytes
+      case SIGHASH_ALL_ANYONECANPAY => spendTx.hashForSignature(0,multiSigScript.getProgram,SIGHASH_ALL_ANYONECANPAY.byte).getBytes
+      case SIGHASH_SINGLE_ANYONECANPAY => spendTx.hashForSignature(0,multiSigScript.getProgram,SIGHASH_SINGLE_ANYONECANPAY.byte).getBytes
+      case SIGHASH_NONE_ANYONECANPAY => spendTx.hashForSignature(0,multiSigScript.getProgram,SIGHASH_NONE_ANYONECANPAY.byte).getBytes
     }
-    sighash
+    BitcoinSUtil.encodeHex(sighash)
   }
 
 
