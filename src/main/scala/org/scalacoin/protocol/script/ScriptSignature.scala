@@ -5,7 +5,7 @@ import org.scalacoin.marshallers.transaction.TransactionElement
 
 import org.scalacoin.script.constant._
 import org.scalacoin.script.crypto.{OP_CHECKMULTISIG, HashType, HashTypeFactory}
-import org.scalacoin.util.ScalacoinUtil
+import org.scalacoin.util.{BitcoinSUtil}
 import org.slf4j.LoggerFactory
 
 /**
@@ -53,7 +53,7 @@ trait ScriptSignature extends TransactionElement {
    */
   def hashType(scriptSig : Seq[Byte]) : HashType = {
     require(HashTypeFactory.fromByte(scriptSig.last).isDefined,
-      "Hash type could not be read for this scriptSig: " + ScalacoinUtil.encodeHex(scriptSig))
+      "Hash type could not be read for this scriptSig: " + BitcoinSUtil.encodeHex(scriptSig))
     HashTypeFactory.fromByte(scriptSig.last).get
   }
 
@@ -62,7 +62,7 @@ trait ScriptSignature extends TransactionElement {
    * @param scriptSigHex
    * @return
    */
-  def hashType(scriptSigHex : String) : HashType = hashType(ScalacoinUtil.decodeHex(scriptSigHex))
+  def hashType(scriptSigHex : String) : HashType = hashType(BitcoinSUtil.decodeHex(scriptSigHex))
 
 }
 

@@ -4,7 +4,7 @@ import org.scalacoin.marshallers.transaction.{RawTransactionInputParser, Transac
 import org.scalacoin.protocol.{CompactSizeUInt}
 import org.scalacoin.protocol.script.ScriptSignature
 
-import org.scalacoin.util.ScalacoinUtil
+import org.scalacoin.util.{BitcoinSUtil, ScalacoinUtil}
 
 /**
  * Created by chris on 12/26/15.
@@ -16,7 +16,7 @@ trait TransactionInput extends TransactionElement with TransactionInputFactory {
   def sequence : Long
 
 
-  def scriptSigCompactSizeUInt : CompactSizeUInt = ScalacoinUtil.parseCompactSizeUInt(scriptSignature)
+  def scriptSigCompactSizeUInt : CompactSizeUInt = BitcoinSUtil.parseCompactSizeUInt(scriptSignature)
   //https://bitcoin.org/en/developer-reference#txin
   override def size = previousOutput.size + scriptSignature.size +
     scriptSigCompactSizeUInt.size.toInt + 4

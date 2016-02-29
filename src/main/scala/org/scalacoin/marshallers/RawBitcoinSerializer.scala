@@ -1,6 +1,6 @@
 package org.scalacoin.marshallers
 
-import org.scalacoin.util.ScalacoinUtil
+import org.scalacoin.util.{BitcoinSUtil}
 
 /**
  * Created by chris on 1/11/16.
@@ -13,7 +13,7 @@ trait RawBitcoinSerializer[T] extends RawBitcoinSerializerHelper {
    * @param hex
    * @return
    */
-  def read(hex : String) : T = read(ScalacoinUtil.decodeHex(hex))
+  def read(hex : String) : T = read(BitcoinSUtil.decodeHex(hex))
 
   /**
    * Reads in bytes and transforms it into the approriate scala type T
