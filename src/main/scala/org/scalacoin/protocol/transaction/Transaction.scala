@@ -8,7 +8,7 @@ import org.scalacoin.util.{BitcoinSUtil, CryptoUtil}
  */
 
 
-trait Transaction extends TransactionElement with TransactionFactory {
+sealed trait Transaction extends TransactionElement with TransactionFactory {
   def txId : String = BitcoinSUtil.encodeHex(CryptoUtil.doubleSHA256(hex).reverse)
   def version : Long
   def inputs  : Seq[TransactionInput]

@@ -9,7 +9,7 @@ import org.scalacoin.util.{BitcoinSUtil, ScalacoinUtil}
 /**
  * Created by chris on 12/26/15.
  */
-trait TransactionInput extends TransactionElement with TransactionInputFactory {
+sealed trait TransactionInput extends TransactionElement with TransactionInputFactory {
 
   def previousOutput : TransactionOutPoint
   def scriptSignature : ScriptSignature

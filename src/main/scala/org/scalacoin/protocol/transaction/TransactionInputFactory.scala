@@ -13,6 +13,11 @@ trait TransactionInputFactory extends Factory[TransactionInput] { this : Transac
     TransactionInputImpl(previousOutput,scriptSig,sequence)
   }
 
+  def factory(scriptPubKey: ScriptPubKey) : TransactionInput = {
+    val scriptSig = ScriptSignatureFactory.fromHex(scriptPubKey.hex)
+    factory(scriptSig)
+  }
+
   def factory(sequenceNumber : Long) : TransactionInput = {
     TransactionInputImpl(previousOutput, scriptSignature,sequenceNumber)
   }

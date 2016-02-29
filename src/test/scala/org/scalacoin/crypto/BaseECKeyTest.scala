@@ -18,7 +18,8 @@ class BaseECKeyTest extends FlatSpec with MustMatchers  {
 
     val bitcoinjKey = org.bitcoinj.core.ECKey.fromPrivate(BitcoinSUtil.decodeHex(privateKeyHex).toArray)
     val bitcoinjSignature: ECDSASignature = bitcoinjKey.sign(Sha256Hash.ZERO_HASH)
-    signature.hex must be(BitcoinSUtil.encodeHex(bitcoinjSignature.encodeToDER()))
+    signature.hex must be (BitcoinSUtil.encodeHex(bitcoinjSignature.encodeToDER()))
+
   }
 
 
