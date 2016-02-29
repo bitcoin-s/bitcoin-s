@@ -192,6 +192,13 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper {
     }
   }
 
+  /**
+   * Updates an input at the given inputIndex and returns the updated sequence of inputs
+   * @param inputs
+   * @param updatedInput
+   * @param inputIndex
+   * @return
+   */
   private def updateInputIndex(inputs : Seq[TransactionInput], updatedInput : TransactionInput, inputIndex : Int) : Seq[TransactionInput] = {
     for {
       (input,index) <- inputs.zipWithIndex
