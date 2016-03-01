@@ -7,11 +7,19 @@ import org.scalacoin.util.{Factory, BitcoinSUtil}
  */
 trait ECFactory extends Factory[BaseECKey] {
 
+  /**
+   * Creates a private key from a hex string
+   * @param hex
+   * @return
+   */
   def privateKey(hex : String) : ECPrivateKey = privateKey(BitcoinSUtil.decodeHex(hex))
 
+  /**
+   * Creates a private key from a sequence of bytes
+   * @param bytes
+   * @return
+   */
   def privateKey(bytes : Seq[Byte]) : ECPrivateKey = ECPrivateKeyImpl(bytes)
-
-  def privateKey(bytes : List[Byte]) : ECPrivateKey = privateKey(bytes.toSeq)
 
   /**
    * Generates a fresh ECPrivateKey
@@ -22,12 +30,19 @@ trait ECFactory extends Factory[BaseECKey] {
     privateKey(bitcoinjKey.getPrivKeyBytes)
   }
 
+  /**
+   * Creates a public key from a hex string
+   * @param hex
+   * @return
+   */
   def publicKey(hex : String) : ECPublicKey = publicKey(BitcoinSUtil.decodeHex(hex))
 
+  /**
+   * Creates a public key from a sequence of bytes
+   * @param bytes
+   * @return
+   */
   def publicKey(bytes : Seq[Byte]) : ECPublicKey = ECPublicKeyImpl(bytes)
-
-  def publicKey(bytes : List[Byte]) : ECPublicKey = publicKey(bytes.toSeq)
-
 
   /**
    * Generates a fresh public key
@@ -36,8 +51,19 @@ trait ECFactory extends Factory[BaseECKey] {
   def publicKey = {
     privateKey.publicKey
   }
-  def digitalSignature(hex : String) : ECDigitalSignature = ECDigitalSignatureImpl(BitcoinSUtil.decodeHex(hex))
 
+  /**
+   * Creates a digital signature from the given hex string
+   * @param hex
+   * @return
+   */
+  def digitalSignature(hex : String) : ECDigitalSignature = digitalSignature(BitcoinSUtil.decodeHex(hex))
+
+  /**
+   * Creates a digital signature from the given sequence of bytes
+   * @param bytes
+   * @return
+   */
   def digitalSignature(bytes : Seq[Byte]) : ECDigitalSignature = ECDigitalSignatureImpl(bytes)
 
   /**

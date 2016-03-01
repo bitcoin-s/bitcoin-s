@@ -55,6 +55,7 @@ trait TransactionTestUtil {
     val creditingOutput = TestUtil.parentSimpleTransaction.outputs(creditingTx.inputs.head.previousOutput.vout)
     //make sure the outpoint index and the outpoint txid are correct
     require(spendingTx.inputs.head.previousOutput.txId == creditingTx.txId)
+    require(spendingTx.inputs.head.previousOutput.vout == 0)
     (spendingTx,spendingTx.inputs.head, creditingOutput)
   }
 }
