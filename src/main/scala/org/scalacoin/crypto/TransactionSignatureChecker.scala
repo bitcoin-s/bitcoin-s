@@ -3,6 +3,8 @@ package org.scalacoin.crypto
 import org.scalacoin.protocol.script.ScriptPubKey
 import org.scalacoin.protocol.transaction.{Transaction, TransactionInput}
 import org.scalacoin.script.crypto.HashType
+import org.scalacoin.util.BitcoinSUtil
+import org.slf4j.LoggerFactory
 
 /**
  * Created by chris on 2/16/16.
@@ -10,6 +12,7 @@ import org.scalacoin.script.crypto.HashType
 trait TransactionSignatureChecker {
 
 
+  private def logger = LoggerFactory.getLogger(this.getClass())
   /**
    * Checks the signature of a scriptSig in the spending transaction against the
    * given scriptPubKey
@@ -24,6 +27,8 @@ trait TransactionSignatureChecker {
   def checkSignature(spendingTransaction : Transaction, inputIndex : Int, scriptPubKey : ScriptPubKey,
                       signature : ECDigitalSignature, pubKey: ECPublicKey, hashType : HashType) : Boolean = {
     val hashForSignature = TransactionSignatureSerializer.hashForSignature(spendingTransaction,inputIndex,scriptPubKey,hashType)
+    logger.info("Hash for signature: " + BitcoinSUtil.encodeHex(hashForSignature))
+
     val isValid = pubKey.verify(hashForSignature,signature)
     isValid
   }
