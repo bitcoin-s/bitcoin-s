@@ -7,7 +7,9 @@ import org.scalacoin.protocol.script._
 import org.scalacoin.protocol.transaction._
 import org.scalacoin.script.constant.ScriptToken
 import org.scalacoin.script.crypto._
-import org.scalacoin.util.{BitcoinSUtil, ScalacoinUtil, CryptoUtil}
+import org.scalacoin.script.stack.OP_DUP
+import org.scalacoin.util.{BitcoinScriptUtil, BitcoinSUtil, ScalacoinUtil, CryptoUtil}
+import org.slf4j.LoggerFactory
 
 /**
  * Created by chris on 2/16/16.
@@ -18,6 +20,8 @@ import org.scalacoin.util.{BitcoinSUtil, ScalacoinUtil, CryptoUtil}
  * https://github.com/bitcoinj/bitcoinj/blob/master/core/src/main/java/org/bitcoinj/core/Transaction.java#L924-L1008
  */
 trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper {
+
+  private def logger = LoggerFactory.getLogger(this.getClass())
   /**
    * Bitcoin Core's bug is that SignatureHash was supposed to return a hash and on this codepath it
    * actually returns the constant "1" to indicate an error
@@ -62,8 +66,10 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper {
     // OP_CODESEPARATOR instruction having no purpose as it was only meant to be used internally, not actually
     // ever put into scripts. Deleting OP_CODESEPARATOR is a step that should never be required but if we don't
     // do it, we could split off the main chain.
+    logger.info("Before Bitcoin-S Script to be connected: " + script.hex)
     val scriptWithOpCodeSeparatorsRemoved : ScriptPubKey = removeOpCodeSeparators(script)
 
+    logger.info("After Bitcoin-S Script to be connected: " + scriptWithOpCodeSeparatorsRemoved.hex)
     val inputToSign = inputSigsRemoved(inputIndex)
 
     // Set the input to the script of its output. Bitcoin Core does this but the step has no obvious purpose as
@@ -173,8 +179,12 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper {
    * @return
    */
   def removeOpCodeSeparators(script : ScriptPubKey) : ScriptPubKey = {
-    val scriptWithoutOpCodeSeparators : Seq[ScriptToken] = script.asm.filterNot(_ == OP_CODESEPARATOR)
-    ScriptPubKeyFactory.factory(scriptWithoutOpCodeSeparators.flatMap(_.bytes))
+   logger.info("Tokens: " + script.asm)
+    if (script.asm.contains(OP_CODESEPARATOR)) {
+      val scriptWithoutOpCodeSeparators : Seq[ScriptToken] = script.asm.filterNot(_ == OP_CODESEPARATOR)
+      val scriptBytes = BitcoinScriptUtil.asmToBytes(scriptWithoutOpCodeSeparators)
+      ScriptPubKeyFactory.fromBytes(scriptBytes)
+    } else script
   }
 
   /**
