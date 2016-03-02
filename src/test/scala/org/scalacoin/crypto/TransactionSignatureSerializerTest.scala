@@ -34,6 +34,15 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers {
     TransactionSignatureSerializer.serializeScriptCode(scriptPubKey) must be (expectedScript)
   }
 
+  it must "not remove any bytes from a script that does not contain OP_CODESEPARATORS" in {
+    //from b30d3148927f620f5b1228ba941c211fdabdae75d0ba0b688a58accbf018f3cc
+    val scriptHex = "1976a91431a420903c05a0a7de2de40c9f02ebedbacdc17288ac"
+    val scriptPubKey = ScriptPubKeyFactory.fromHex(scriptHex)
+    val scriptPubKeyFromBytes = ScriptPubKeyFactory.fromBytes(BitcoinSUtil.decodeHex(scriptHex))
+    val hexAfterRemovingOpCodeSeparators = TransactionSignatureSerializer.removeOpCodeSeparators(scriptPubKey).hex
+    hexAfterRemovingOpCodeSeparators must be (scriptHex)
+  }
+
   it must "serialize a transaction for SIGHASH_ALL correctly" in {
     require(scriptPubKey.hex == BitcoinSUtil.encodeHex(multiSigScript.getProgram), "Script pub key hex not the same as multiSigScript hex")
     val spendingTx = Transaction.factory(bitcoinjMultiSigTransaction.bitcoinSerialize())
@@ -222,6 +231,56 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers {
       bitcoinjMultiSigTransaction,0,multiSigScript.getProgram,SIGHASH_NONE_ANYONECANPAY.byte))
   }
 
+  it must "serialize a simple transaction with one input for signing" in {
+    val (spendingTx,spendingInput, inputIndex, creditingOutput) =
+      TransactionTestUtil.transactionWithSpendingInputAndCreditingOutput
+
+
+    val hashType = spendingInput.scriptSignature.hashType(spendingInput.scriptSignature.signatures.head)
+    val serializedTxForSig : String = BitcoinSUtil.encodeHex(
+      TransactionSignatureSerializer.serializeForSignature(spendingTx,inputIndex,creditingOutput.scriptPubKey,hashType
+      ))
+
+    val bitcoinjTx = BitcoinjConversions.transaction(spendingTx)
+    val bitcoinjTx1 = BitcoinjConversions.transaction(spendingTx)
+
+    val bitcoinjSerializedTxForSig = BitcoinSUtil.encodeHex(BitcoinJSignatureSerialization.serializeForSignature(
+      bitcoinjTx,inputIndex,creditingOutput.scriptPubKey.bytes.toArray,hashType.byte
+    ))
+
+
+/*    val bitcoinjHash = bitcoinjTx1.hashForSignature(inputIndex,creditingOutput.scriptPubKey.bytes.toArray,hashType.byte)
+
+    val x = BitcoinJSignatureSerialization.hashForSignature(bitcoinjTx,inputIndex,
+      creditingOutput.scriptPubKey.bytes.toArray,hashType.byte)
+
+    bitcoinjHash must be (BitcoinSUtil.encodeHex(x))*/
+
+    serializedTxForSig must be (bitcoinjSerializedTxForSig)
+  }
+
+  it must "hash a simple transaction with one input for signing" in {
+    val (spendingTx,spendingInput, inputIndex, creditingOutput) =
+      TransactionTestUtil.transactionWithSpendingInputAndCreditingOutput
+
+
+    val hashType = spendingInput.scriptSignature.hashType(spendingInput.scriptSignature.signatures.head)
+    val hashedTxForSig : String = BitcoinSUtil.encodeHex(
+      TransactionSignatureSerializer.hashForSignature(spendingTx,inputIndex,creditingOutput.scriptPubKey,hashType
+      ))
+
+    val bitcoinjTx = BitcoinjConversions.transaction(spendingTx)
+
+    val bitcoinjSerializedTxForSig = BitcoinSUtil.encodeHex(BitcoinJSignatureSerialization.serializeForSignature(
+      bitcoinjTx,inputIndex,creditingOutput.scriptPubKey.bytes.toArray,hashType.byte
+    ))
+
+
+    val bitcoinjHash = bitcoinjTx.hashForSignature(inputIndex,creditingOutput.scriptPubKey.bytes.toArray,hashType.byte)
+
+    BitcoinSUtil.encodeHex(bitcoinjHash.getBytes) must be (hashedTxForSig)
+  }
+
 
 
   /**
@@ -250,7 +309,7 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers {
     //https://github.com/bitcoinj/bitcoinj/blob/master/core/src/test/java/org/bitcoinj/script/ScriptTest.java#L127
     val txHex = "01000000013df681ff83b43b6585fa32dd0e12b0b502e6481e04ee52ff0fdaf55a16a4ef61000000006b483045022100a84acca7906c13c5895a1314c165d33621cdcf8696145080895cbf301119b7cf0220730ff511106aa0e0a8570ff00ee57d7a6f24e30f592a10cae1deffac9e13b990012102b8d567bcd6328fd48a429f9cf4b315b859a58fd28c5088ef3cb1d98125fc4e8dffffffff02364f1c00000000001976a91439a02793b418de8ec748dd75382656453dc99bcb88ac40420f000000000017a9145780b80be32e117f675d6e0ada13ba799bf248e98700000000"
     val params = TestNet3Params.get()
-    val creditingTx = new org.bitcoinj.core.Transaction(params,ScalacoinUtil.decodeHex(txHex).toArray)
+    val creditingTx = new org.bitcoinj.core.Transaction(params,BitcoinSUtil.decodeHex(txHex).toArray)
     val output = creditingTx.getOutput(1)
     val spendTx = new org.bitcoinj.core.Transaction(params)
     val address = new org.bitcoinj.core.Address(params, "n3CFiCmBXVt5d3HXKQ15EFZyhPz4yj5F3H")

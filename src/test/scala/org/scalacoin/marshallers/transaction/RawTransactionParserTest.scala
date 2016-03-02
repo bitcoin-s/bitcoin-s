@@ -41,4 +41,12 @@ class RawTransactionParserTest extends FlatSpec with MustMatchers {
     val serializedTx = RawTransactionParser.write(tx)
     serializedTx must be (rawTx)
   }
+
+  it must "read then write a simple raw transaction with one input and two outputs" in {
+    val rawTx = TestUtil.simpleRawTransaction
+    val tx = RawTransactionParser.read(rawTx)
+    val serializedTx = RawTransactionParser.write(tx)
+
+    serializedTx must be (rawTx)
+  }
 }

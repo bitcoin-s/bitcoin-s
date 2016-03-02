@@ -2,7 +2,7 @@ package org.scalacoin.marshallers.script
 
 import org.scalacoin.protocol.script.ScriptPubKey
 import org.scalacoin.script.bitwise.OP_EQUALVERIFY
-import org.scalacoin.script.constant.{BytesToPushOntoStackImpl, ScriptConstantImpl}
+import org.scalacoin.script.constant.{ScriptToken, BytesToPushOntoStackImpl, ScriptConstantImpl}
 import org.scalacoin.script.crypto.{OP_CHECKSIG, OP_HASH160}
 import org.scalacoin.script.stack.OP_DUP
 import org.scalacoin.util.TestUtil
@@ -24,6 +24,24 @@ class RawScriptPubKeyParserTest extends FlatSpec with MustMatchers with RawScrip
   it must "read then write the scriptPubKey and get the original scriptPubKey" in {
     val scriptPubKey : ScriptPubKey = read(TestUtil.rawScriptPubKey)
     write(scriptPubKey) must be (TestUtil.rawScriptPubKey)
+  }
+
+  it must "read a raw scriptPubKey from an output" in {
+    //from b30d3148927f620f5b1228ba941c211fdabdae75d0ba0b688a58accbf018f3cc
+    val rawScriptPubKey = "76a91431a420903c05a0a7de2de40c9f02ebedbacdc17288ac"
+    val scriptPubKey = read(rawScriptPubKey)
+    write(scriptPubKey) must be (rawScriptPubKey)
+  }
+
+  it must "read a raw scriptPubKey and give us the expected asm" in {
+    //from b30d3148927f620f5b1228ba941c211fdabdae75d0ba0b688a58accbf018f3cc
+    val rawScriptPubKey = "1976a91431a420903c05a0a7de2de40c9f02ebedbacdc17288ac"
+    val scriptPubKey = read(rawScriptPubKey)
+    val expectedAsm : Seq[ScriptToken] =
+      List(OP_DUP, OP_HASH160, BytesToPushOntoStackImpl(20), ScriptConstantImpl("31a420903c05a0a7de2de40c9f02ebedbacdc172"),
+        OP_EQUALVERIFY, OP_CHECKSIG)
+    scriptPubKey.asm must be (expectedAsm)
+
   }
 
 }

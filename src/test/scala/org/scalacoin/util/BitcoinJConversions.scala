@@ -3,9 +3,10 @@ package org.scalacoin.util
 import java.io.{IOException, ByteArrayOutputStream}
 import java.util
 
-import org.bitcoinj.core.Sha256Hash
+import org.bitcoinj.core.{ECKey, Sha256Hash}
 import org.bitcoinj.params.TestNet3Params
 import org.scalacoin.config.TestNet3
+import org.scalacoin.crypto.ECPublicKey
 import org.scalacoin.protocol.script.{UpdateScriptPubKeyAsm, ScriptPubKeyFactory, ScriptPubKey}
 import org.scalacoin.script.ScriptOperationFactory
 import org.scalacoin.script.constant.{ScriptConstantImpl, ScriptToken}
@@ -15,7 +16,7 @@ import scala.collection.JavaConversions._
  * Created by chris on 2/23/16.
  */
 trait BitcoinjConversions {
-
+  private def params = TestNet3Params.get
   private def logger = LoggerFactory.getLogger(this.getClass().toString)
   /**
    * Converts a bitcoinj script to a bitcoin-s ScriptPubKey
@@ -129,14 +130,34 @@ trait BitcoinjConversions {
       val txBytes = bos.toByteArray
       bos.close();
 
-      return ScalacoinUtil.encodeHex(txBytes)
+      return BitcoinSUtil.encodeHex(txBytes)
     } catch  {
       case e : IOException => throw new RuntimeException(e);  // Cannot happen.
     }
-    //ScalacoinUtil.encodeHex(tx.bitcoinSerialize())
   }
 
+  /**
+   * Helper function to create bitcoinj ECKey
+   * @param bytes
+   * @return
+   */
+  def publicKey(bytes : Seq[Byte]) : ECKey = ECKey.fromPublicOnly(bytes.toArray)
+  /**
+   * Helper function to create bitcoinj ECKey
+   * @param bytes
+   * @return
+   */
+  def publicKey(key : ECPublicKey) : ECKey = publicKey(key.bytes)
 
+
+  /**
+   * Builds a bitcoinj transaction out of a bitcoin-s transaction
+   * @param tx
+   * @return
+   */
+  def transaction(tx : org.scalacoin.protocol.transaction.Transaction) : org.bitcoinj.core.Transaction = {
+    new org.bitcoinj.core.Transaction(params,BitcoinSUtil.decodeHex(tx.hex).toArray)
+  }
 }
 
 

@@ -19,13 +19,14 @@ trait TransactionSignatureChecker {
    * @param spendingTransaction
    * @param inputIndex
    * @param scriptPubKey
-   * @param signature
    * @param pubKey
-   * @param hashType
    * @return
    */
   def checkSignature(spendingTransaction : Transaction, inputIndex : Int, scriptPubKey : ScriptPubKey,
-                      signature : ECDigitalSignature, pubKey: ECPublicKey, hashType : HashType) : Boolean = {
+                     pubKey: ECPublicKey) : Boolean = {
+    val input = spendingTransaction.inputs(inputIndex)
+    val signature = input.scriptSignature.signatures.head
+    val hashType = input.scriptSignature.hashType(signature)
     val hashForSignature = TransactionSignatureSerializer.hashForSignature(spendingTransaction,inputIndex,scriptPubKey,hashType)
     logger.info("Hash for signature: " + BitcoinSUtil.encodeHex(hashForSignature))
 

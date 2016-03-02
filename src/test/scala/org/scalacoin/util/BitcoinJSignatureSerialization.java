@@ -1,11 +1,14 @@
 package org.scalacoin.util;
 
+
 import org.bitcoinj.core.*;
 import org.bitcoinj.params.TestNet3Params;
 import org.bitcoinj.script.Script;
 import org.bitcoinj.script.ScriptBuilder;
 import org.bitcoinj.script.ScriptOpCodes;
 import org.scalacoin.config.TestNet3;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -19,7 +22,7 @@ import static org.bitcoinj.core.Utils.uint32ToByteStreamLE;
  * Created by chris on 2/24/16.
  */
 public class BitcoinJSignatureSerialization {
-
+    public static final Logger logger = LoggerFactory.getLogger("BitcoinJSignatureSerialization");
 
     /**
      * This is required for signatures which use a sigHashType which cannot be represented using SigHash and anyoneCanPay
@@ -54,8 +57,9 @@ public class BitcoinJSignatureSerialization {
             // OP_CODESEPARATOR instruction having no purpose as it was only meant to be used internally, not actually
             // ever put into scripts. Deleting OP_CODESEPARATOR is a step that should never be required but if we don't
             // do it, we could split off the main chain.
+            logger.info("Bitcoinj Script to be connected: " + Utils.HEX.encode(connectedScript));
             connectedScript = Script.removeAllInstancesOfOp(connectedScript, ScriptOpCodes.OP_CODESEPARATOR);
-
+            logger.info("Bitcoinj Script to be connected: " + Utils.HEX.encode(connectedScript));
             // Set the input to the script of its output. Satoshi does this but the step has no obvious purpose as
             // the signature covers the hash of the prevout transaction which obviously includes the output script
             // already. Perhaps it felt safer to him in some way, or is another leftover from how the code was written.

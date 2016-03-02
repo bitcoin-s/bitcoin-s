@@ -1,6 +1,6 @@
 package org.scalacoin.protocol.script
 
-import org.scalacoin.marshallers.script.ScriptParser
+import org.scalacoin.marshallers.script.{RawScriptPubKeyParser, ScriptParser}
 import org.scalacoin.script.constant.ScriptToken
 import org.scalacoin.util.{BitcoinSUtil, Factory, ScalacoinUtil}
 
@@ -32,10 +32,8 @@ trait ScriptPubKeyFactory extends Factory[ScriptPubKey] {
 
   def empty : ScriptPubKey = ScriptPubKeyImpl(Seq(),"",Seq())
 
-  def fromBytes(bytes : Seq[Byte]) : ScriptPubKey = {
-    val asm = ScriptParser.parse(bytes)
-    ScriptPubKeyImpl(asm,BitcoinSUtil.encodeHex(bytes),Seq())
-  }
+  def fromBytes(bytes : Seq[Byte]) : ScriptPubKey = RawScriptPubKeyParser.read(bytes)
+
 }
 
 sealed trait ScriptPubKeyUpdateIndicator

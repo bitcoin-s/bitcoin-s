@@ -2,7 +2,7 @@ package org.scalacoin.util
 
 /**
  * Created by chris on 2/26/16.
- * Trait to implement ubiqutious factory functions across our codebase
+ * Trait to implement ubiquitous factory functions across our codebase
  */
 trait Factory[T] {
 
