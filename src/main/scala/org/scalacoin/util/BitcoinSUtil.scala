@@ -74,7 +74,9 @@ trait BitcoinSUtil extends NumberUtil {
    */
   def littleEndianToBigEndian(hex : String) = encodeHex(decodeHex(hex).reverse)
 
-  def flipEndianess(hex : String) = littleEndianToBigEndian(hex)
+  def flipEndianess(hex : String) : String = littleEndianToBigEndian(hex)
+
+  def flipEndianess(bytes : Seq[Byte]) : String = flipEndianess(BitcoinSUtil.encodeHex(bytes))
   /**
    * Flips the hex chars in a hex strings
    * Example: abcd would become badc

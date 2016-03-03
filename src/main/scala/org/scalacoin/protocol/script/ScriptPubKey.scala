@@ -3,8 +3,8 @@ package org.scalacoin.protocol.script
 import org.scalacoin.marshallers.transaction.TransactionElement
 import org.scalacoin.protocol._
 import org.scalacoin.script.bitwise.{OP_EQUAL, OP_EQUALVERIFY}
-import org.scalacoin.script.constant.{BytesToPushOntoStackImpl, ScriptConstantImpl, ScriptToken}
-import org.scalacoin.script.crypto.{OP_CHECKSIG, OP_HASH160}
+import org.scalacoin.script.constant._
+import org.scalacoin.script.crypto.{OP_CHECKMULTISIG, OP_CHECKSIG, OP_HASH160}
 import org.scalacoin.script.stack.OP_DUP
 
 /**
@@ -22,17 +22,22 @@ sealed trait ScriptPubKey extends TransactionElement {
 
 
   def reqSigs : Option[Int] = {
-    addressType match {
+    scriptType match {
       case P2PKH => Some(1)
       //TODO: Figure out how many signatures are actually required by the scriptPubKey
       case P2SH => None
+      case MultiSignature =>
+        val signatureCount = asm.count(_.isInstanceOf[ScriptConstant])
+        Some(signatureCount)
       case NonStandard => None
     }
   }
-  def addressType : AddressType = {
+  def scriptType : ScriptType = {
     asm match {
       case List(OP_DUP, OP_HASH160, BytesToPushOntoStackImpl(x), ScriptConstantImpl(pubKeyHash), OP_EQUALVERIFY, OP_CHECKSIG) => P2PKH
       case List(OP_HASH160, BytesToPushOntoStackImpl(x), ScriptConstantImpl(scriptHash), OP_EQUAL) => P2SH
+      //TODO: make this more robust, this isn't the pattern that multsignature scriptPubKeys follow
+      case _ if (asm.last == OP_CHECKMULTISIG) => MultiSignature
       case _ => NonStandard
     }
   }
