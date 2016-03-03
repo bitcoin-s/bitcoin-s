@@ -30,7 +30,7 @@ object ScriptPubKeyMarshaller extends DefaultJsonProtocol with MarshallerUtil {
         ScriptSignatureMarshaller.asmKey -> JsString(scriptPubKey.asm.toString),
         ScriptSignatureMarshaller.hexKey -> JsString(scriptPubKey.hex),
         reqSigsKey -> JsNumber(scriptPubKey.reqSigs.get),
-        typeKey -> JsString(scriptPubKey.addressType.toString),
+        typeKey -> JsString(scriptPubKey.scriptType.toString),
         addressesKey -> addressList
       )
 

@@ -2,7 +2,7 @@ package org.scalacoin.crypto
 
 import java.util
 
-import org.bitcoinj.core.{ DumpedPrivateKey}
+import org.bitcoinj.core.{Sha256Hash, Utils, DumpedPrivateKey}
 import org.bitcoinj.core.Transaction.SigHash
 import org.bitcoinj.params.TestNet3Params
 import org.bitcoinj.script.{ScriptOpCodes, ScriptChunk, ScriptBuilder}
@@ -45,18 +45,21 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers {
 
   it must "serialize a transaction for SIGHASH_ALL correctly" in {
     require(scriptPubKey.hex == BitcoinSUtil.encodeHex(multiSigScript.getProgram), "Script pub key hex not the same as multiSigScript hex")
+
     val spendingTx = Transaction.factory(bitcoinjMultiSigTransaction.bitcoinSerialize())
 
     spendingTx.hex must be (BitcoinSUtil.encodeHex(bitcoinjMultiSigTransaction.bitcoinSerialize()))
 
+    println(BitcoinSUtil.encodeHex(multiSigScript.getProgram))
     val sigBytes : Seq[Byte] = TransactionSignatureSerializer.serializeForSignature(spendingTx,0,scriptPubKey,SIGHASH_ALL)
     val bitcoinjSerialization = BitcoinSUtil.encodeHex(
       BitcoinJSignatureSerialization.serializeForSignature(bitcoinjMultiSigTransaction,0,multiSigScript.getProgram(),SIGHASH_ALL.byte)
     )
+
     BitcoinSUtil.encodeHex(sigBytes) must be (bitcoinjSerialization)
   }
 
-  it must "hash a transction with SIGHASH_ALL correctly" in {
+/*  it must "hash a transction with SIGHASH_ALL correctly" in {
 
     val spendingTx = Transaction.factory(bitcoinjMultiSigTransaction.bitcoinSerialize())
     spendingTx.hex must be (BitcoinSUtil.encodeHex(bitcoinjMultiSigTransaction.bitcoinSerialize()))
@@ -235,51 +238,68 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers {
     val (spendingTx,spendingInput, inputIndex, creditingOutput) =
       TransactionTestUtil.transactionWithSpendingInputAndCreditingOutput
 
+    //build bitcoinj tx
+    val params = TestNet3Params.get()
+    val rawTx = TestUtil.simpleRawTransaction
+    val rawParentTx = TestUtil.parentSimpleRawTransaction
+    val bitcoinjTx = new org.bitcoinj.core.Transaction(params,Utils.HEX.decode(rawTx))
+    val input = bitcoinjTx.getInput(inputIndex)
+    val scriptSig = input.getScriptSig
+    val parentTx = new org.bitcoinj.core.Transaction(params,Utils.HEX.decode(rawParentTx))
+    val parentOutput = parentTx.getOutput(input.getOutpoint.getIndex)
+
+    //connect the input to the output
+    input.connect(parentOutput)
+    val pubKey : Array[Byte]  = scriptSig.getPubKey
+    val signature  : Array[Byte] = scriptSig.getChunks().get(0).data
+    val bitcoinjSerializeForSig : Seq[Byte] =
+      BitcoinJSignatureSerialization.serializeForSignature(bitcoinjTx,inputIndex,
+        parentOutput.getScriptBytes, SIGHASH_ALL.byte)
+
 
     val hashType = spendingInput.scriptSignature.hashType(spendingInput.scriptSignature.signatures.head)
     val serializedTxForSig : String = BitcoinSUtil.encodeHex(
       TransactionSignatureSerializer.serializeForSignature(spendingTx,inputIndex,creditingOutput.scriptPubKey,hashType
       ))
 
-    val bitcoinjTx = BitcoinjConversions.transaction(spendingTx)
-    val bitcoinjTx1 = BitcoinjConversions.transaction(spendingTx)
-
-    val bitcoinjSerializedTxForSig = BitcoinSUtil.encodeHex(BitcoinJSignatureSerialization.serializeForSignature(
-      bitcoinjTx,inputIndex,creditingOutput.scriptPubKey.bytes.toArray,hashType.byte
-    ))
 
 
-/*    val bitcoinjHash = bitcoinjTx1.hashForSignature(inputIndex,creditingOutput.scriptPubKey.bytes.toArray,hashType.byte)
-
-    val x = BitcoinJSignatureSerialization.hashForSignature(bitcoinjTx,inputIndex,
-      creditingOutput.scriptPubKey.bytes.toArray,hashType.byte)
-
-    bitcoinjHash must be (BitcoinSUtil.encodeHex(x))*/
-
-    serializedTxForSig must be (bitcoinjSerializedTxForSig)
+    serializedTxForSig must be (BitcoinSUtil.encodeHex(bitcoinjSerializeForSig))
   }
 
   it must "hash a simple transaction with one input for signing" in {
+
     val (spendingTx,spendingInput, inputIndex, creditingOutput) =
       TransactionTestUtil.transactionWithSpendingInputAndCreditingOutput
 
+    //build bitcoinj tx
+    val params = TestNet3Params.get()
+    val rawTx = TestUtil.simpleRawTransaction
+    val rawParentTx = TestUtil.parentSimpleRawTransaction
+    val bitcoinjTx = new org.bitcoinj.core.Transaction(params,Utils.HEX.decode(rawTx))
+    val input = bitcoinjTx.getInput(inputIndex)
+    val scriptSig = input.getScriptSig
+    val parentTx = new org.bitcoinj.core.Transaction(params,Utils.HEX.decode(rawParentTx))
+    val parentOutput = parentTx.getOutput(input.getOutpoint.getIndex)
+
+    //connect the input to the output
+    input.connect(parentOutput)
+    val pubKey : Array[Byte]  = scriptSig.getPubKey
+    val signature  : Array[Byte] = scriptSig.getChunks().get(0).data
+    val bitcoinjSerializeForSig : Seq[Byte] =
+      BitcoinJSignatureSerialization.serializeForSignature(bitcoinjTx,inputIndex,
+        parentOutput.getScriptBytes, SIGHASH_ALL.byte)
 
     val hashType = spendingInput.scriptSignature.hashType(spendingInput.scriptSignature.signatures.head)
-    val hashedTxForSig : String = BitcoinSUtil.encodeHex(
-      TransactionSignatureSerializer.hashForSignature(spendingTx,inputIndex,creditingOutput.scriptPubKey,hashType
-      ))
-
-    val bitcoinjTx = BitcoinjConversions.transaction(spendingTx)
-
-    val bitcoinjSerializedTxForSig = BitcoinSUtil.encodeHex(BitcoinJSignatureSerialization.serializeForSignature(
-      bitcoinjTx,inputIndex,creditingOutput.scriptPubKey.bytes.toArray,hashType.byte
+    val serializedTxForSig : String = BitcoinSUtil.encodeHex(
+      TransactionSignatureSerializer.serializeForSignature(spendingTx,inputIndex,creditingOutput.scriptPubKey,hashType
     ))
+    println("Bitcoin-S: " +  serializedTxForSig)
+    println("Bitcoin-J: " + BitcoinSUtil.encodeHex(bitcoinjSerializeForSig))
 
 
-    val bitcoinjHash = bitcoinjTx.hashForSignature(inputIndex,creditingOutput.scriptPubKey.bytes.toArray,hashType.byte)
-
-    BitcoinSUtil.encodeHex(bitcoinjHash.getBytes) must be (hashedTxForSig)
-  }
+    serializedTxForSig must be (BitcoinSUtil.encodeHex(bitcoinjSerializeForSig))
+  }*/
 
 
 

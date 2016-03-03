@@ -3,6 +3,7 @@ package org.scalacoin.crypto
 import org.scalacoin.currency.CurrencyUnits
 import org.scalacoin.marshallers.RawBitcoinSerializerHelper
 import org.scalacoin.marshallers.transaction.RawTransactionOutputParser
+import org.scalacoin.protocol.{NonStandard, P2SH, P2PKH}
 import org.scalacoin.protocol.script._
 import org.scalacoin.protocol.transaction._
 import org.scalacoin.script.constant.ScriptToken
@@ -181,10 +182,22 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper {
   def removeOpCodeSeparators(script : ScriptPubKey) : ScriptPubKey = {
    logger.info("Tokens: " + script.asm)
     if (script.asm.contains(OP_CODESEPARATOR)) {
+      //TODO: This needs to be tested
       val scriptWithoutOpCodeSeparators : Seq[ScriptToken] = script.asm.filterNot(_ == OP_CODESEPARATOR)
       val scriptBytes = BitcoinScriptUtil.asmToBytes(scriptWithoutOpCodeSeparators)
       ScriptPubKeyFactory.fromBytes(scriptBytes)
-    } else script
+    } else {
+      script.scriptType match {
+        case P2PKH =>
+          //remove the first byte of the script as that is not part of raw scriptPubKey
+          //this indicates the size of the script, which is not needed for signature serialization
+          ScriptPubKeyFactory.fromBytes(script.bytes)
+        case P2SH => script
+        case NonStandard => throw new RuntimeException("Excpected a p2sh or p2kh address type")
+      }
+
+    }
+
   }
 
   /**

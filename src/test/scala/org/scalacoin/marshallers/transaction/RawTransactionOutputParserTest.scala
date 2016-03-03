@@ -26,8 +26,8 @@ class RawTransactionOutputParserTest extends FlatSpec with MustMatchers with Raw
     secondOutput.value must be (CurrencyUnits.toSatoshis(Bitcoins(0.02981145)))
     firstOutput.scriptPubKey.asm must be (Seq(OP_HASH160, BytesToPushOntoStackImpl(20),ScriptConstantImpl("eda8ae08b5c9f973f49543e90a7c292367b3337c"), OP_EQUAL))
     secondOutput.scriptPubKey.asm must be (Seq(OP_HASH160,BytesToPushOntoStackImpl(20), ScriptConstantImpl("be2319b9060429692ebeffaa3be38497dc5380c8"), OP_EQUAL))
-    firstOutput.scriptPubKey.addressType must be (P2SH)
-    secondOutput.scriptPubKey.addressType must be (P2SH)
+    firstOutput.scriptPubKey.scriptType must be (P2SH)
+    secondOutput.scriptPubKey.scriptType must be (P2SH)
   }
 
   it must "seralialize a transaction output" in {
