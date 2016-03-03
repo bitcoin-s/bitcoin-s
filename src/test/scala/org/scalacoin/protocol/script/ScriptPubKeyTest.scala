@@ -1,5 +1,6 @@
 package org.scalacoin.protocol.script
 
+import org.scalacoin.protocol.{P2SH, P2PKH}
 import org.scalacoin.script.bitwise.OP_EQUALVERIFY
 import org.scalacoin.script.constant.{ScriptConstantImpl, BytesToPushOntoStackImpl, ScriptToken}
 import org.scalacoin.script.crypto.{OP_CHECKSIG, OP_HASH160, OP_CODESEPARATOR}
@@ -20,5 +21,15 @@ class ScriptPubKeyTest extends FlatSpec with MustMatchers {
   val scriptPubKey = ScriptPubKeyFactory.fromHex(rawScriptPubKey)
   "ScriptPubKey"  must "give the expected asm from creating a scriptPubKey from hex" in {
     scriptPubKey.asm must be (expectedAsm)
+  }
+
+  it must "derive a P2PKH address type from a scriptPubKey" in {
+    scriptPubKey.addressType must be (P2PKH)
+  }
+
+  it must "derive a P2SH address type for a scriptPubKey" in {
+    val p2shRawScriptPubKey = "17a9145780b80be32e117f675d6e0ada13ba799bf248e987"
+    val p2shScriptPubKey = ScriptPubKeyFactory.fromHex(p2shRawScriptPubKey)
+    p2shScriptPubKey.addressType must be (P2SH)
   }
 }
