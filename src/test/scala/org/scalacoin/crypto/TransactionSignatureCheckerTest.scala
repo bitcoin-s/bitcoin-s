@@ -16,44 +16,24 @@ import org.scalatest.{FlatSpec, MustMatchers}
  */
 class TransactionSignatureCheckerTest extends FlatSpec with MustMatchers {
 
-  "TransactionSignatureChecker" must "check to see if an input correctly spends a scriptPubKey" in {
+  "TransactionSignatureChecker" must "check to see if an input correctly spends a p2pkh scriptPubKey" in {
     val (spendingTx,spendingInput,inputIndex,creditingOutput) : (Transaction,TransactionInput,Int,TransactionOutput) =
       TransactionTestUtil.transactionWithSpendingInputAndCreditingOutput
-
-    val rawPubKey = BitcoinSUtil.decodeHex("0241d746ca08da0a668735c3e01c1fa02045f2f399c5937079b6434b5a31dfe353")
-    val rawSig = BitcoinSUtil.decodeHex("30450221008337ce3ce0c6ac0ab72509f" +
-      "889c1d52701817a2362d6357457b63e3bdedc0c0602202908963b9cf1a095ab3b34" +
-      "b95ce2bc0d67fb0f19be1cc5f7b3de0b3a325629bf01")
     val scriptSig : ScriptSignature = spendingInput.scriptSignature
     val pubKey : ECPublicKey = ECFactory.publicKey(scriptSig.asm.last.bytes)
     val digitalSignature = scriptSig.signatures.head
-    val bitcoinjSig : TransactionSignature = TransactionSignature.decodeFromBitcoin(digitalSignature.bytes.toArray,false)
     val hashType = scriptSig.hashType(scriptSig.signatures.head)
     require(scriptSig.signatures.head.hex == "30450221008337ce3ce0c6ac0ab72509f889c1d52701817a2362d6357457b63e3bdedc0c0602202908963b9cf1a095ab3b34b95ce2bc0d67fb0f19be1cc5f7b3de0b3a325629bf01")
     require(pubKey.hex == "0241d746ca08da0a668735c3e01c1fa02045f2f399c5937079b6434b5a31dfe353" )
     require(hashType == SIGHASH_ALL)
-    val bitcoinjTx = BitcoinjConversions.transaction(spendingTx)
 
-/*    require("6cfc2246bbdaf35820ba5f2073f28269763c66b07bd85e0661a210c500d19702" == flippedEndianess,
-      "6cfc2246bbdaf35820ba5f2073f28269763c66b07bd85e0661a210c500d19702\n" +
-        flippedEndianess)*/
-/*    TransactionSignatureChecker.checkSignature(spendingTx,0,creditingOutput.scriptPubKey,
-      pubKey) must be (true)*/
-
-    val s = new Script(spendingInput.scriptSignature.bytes.toArray)
-
-    s.correctlySpends(bitcoinjTx,inputIndex,
-      new Script(creditingOutput.scriptPubKey.bytes.toArray))
-
-    val bitcoinjPubKey = BitcoinjConversions.publicKey(pubKey)
-    val hashForSig = bitcoinjTx.hashForSignature(inputIndex,creditingOutput.scriptPubKey.bytes.toArray,SIGHASH_ALL.byte)
-    require(hashForSig == "13bbfd870180eb1860e95d8ada8203b9373869d45eea2d40d0a75574fc188c92")
-    //ECKey.verify(hashForSig.getBytes, signature, pubKey) must be (true)
+    TransactionSignatureChecker.checkSignature(spendingTx,inputIndex,creditingOutput.scriptPubKey,
+      pubKey) must be (true)
   }
 
 
 
-  it must "" in {
+  it must "check to see if an input spends a multisignature scriptPubKey correctly" in {
 
     //txid is 92efdd5abb43efd4fe4f89bd080bcddd287a630e8cb6920388dd7880acf4c964 on testnet
     val params = TestNet3Params.get()
