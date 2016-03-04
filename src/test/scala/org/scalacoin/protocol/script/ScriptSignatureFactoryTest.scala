@@ -43,12 +43,4 @@ class ScriptSignatureFactoryTest extends FlatSpec with MustMatchers {
     actualScriptSig.asm must be (TestUtil.p2pkhInputScriptAsm)
   }
 
-  it must "build a script signature for a p2sh script signature" in {
-    val digitalSignatures : Seq[ECDigitalSignature] = TestUtil.p2shInputScript2Of3.signatures
-    val redeemScript : ScriptConstant = ScriptConstantFactory.factory(TestUtil.p2shInputScript2Of3.asm.last.bytes)
-    val actualScriptSig = ScriptSignatureFactory.factory(digitalSignatures, redeemScript)
-
-    actualScriptSig.asm must be (TestUtil.p2shInputScript2Of3.asm)
-
-  }
 }
