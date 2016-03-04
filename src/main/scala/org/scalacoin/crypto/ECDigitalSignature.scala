@@ -5,10 +5,11 @@ import org.scalacoin.util.BitcoinSUtil
 /**
  * Created by chris on 2/26/16.
  */
-trait ECDigitalSignature {
+sealed trait ECDigitalSignature {
 
   def hex : String = BitcoinSUtil.encodeHex(bytes)
   def bytes : Seq[Byte]
+  override def toString = hex
 }
 
-case class ECDigitalSignatureImpl(bytes : Seq[Byte]) extends ECDigitalSignature
+sealed case class ECDigitalSignatureImpl(bytes : Seq[Byte]) extends ECDigitalSignature

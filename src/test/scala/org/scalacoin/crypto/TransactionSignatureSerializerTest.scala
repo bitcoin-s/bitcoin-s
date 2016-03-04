@@ -28,6 +28,7 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers {
   val key3 = new DumpedPrivateKey(params, "cVHwXSPRZmL9adctwBwmn4oTZdZMbaCsR5XF6VznqMgcvt1FDDxg").getKey();
   val multiSigScript : org.bitcoinj.script.Script = ScriptBuilder.createMultiSigOutputScript(2, util.Arrays.asList(key1, key2, key3));
   val scriptPubKey = BitcoinjConversions.toScriptPubKey(multiSigScript)
+
   "TransactionSignatureSerializer" must "serialize a given script signature without OP_CODESEPARATORS" in {
     val scriptPubKey = TestUtil.scriptPubKey
     val expectedScript = TransactionSignatureSerializer.removeOpCodeSeparators(scriptPubKey)

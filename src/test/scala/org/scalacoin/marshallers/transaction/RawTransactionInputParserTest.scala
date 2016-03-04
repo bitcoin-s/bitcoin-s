@@ -1,7 +1,8 @@
 package org.scalacoin.marshallers.transaction
 
 import org.scalacoin.protocol.transaction.TransactionInput
-import org.scalacoin.script.constant.{BytesToPushOntoStackImpl, ScriptConstantImpl, OP_0}
+import org.scalacoin.script.constant.{OP_1, BytesToPushOntoStackImpl, ScriptConstantImpl, OP_0}
+import org.scalacoin.script.crypto.OP_CHECKMULTISIG
 import org.scalacoin.util.{ScalacoinUtil, TestUtil}
 import org.scalatest.{ FlatSpec, MustMatchers}
 
@@ -27,8 +28,9 @@ class RawTransactionInputParserTest extends FlatSpec with MustMatchers with RawT
     txInputs.head.scriptSignature.hex must be ("0047304402207df6dd8dad22d49c3c83d8031733c32a53719278eb7985d3b35b375d776f84f102207054f9209a1e87d55feafc90aa04c33008e5bae9191da22aeaa16efde96f41f00125512102b022902a0fdd71e831c37e4136c2754a59887be0618fb75336d7ab67e2982ff551ae")
     txInputs.head.scriptSignature.asm must be (Seq(OP_0, BytesToPushOntoStackImpl(71),
       ScriptConstantImpl("304402207df6dd8dad22d49c3c83d8031733c32a53719278eb7985d3b35b375d776f84f102207054f9209a1e87d55feafc90aa04c33008e5bae9191da22aeaa16efde96f41f001"),
-      BytesToPushOntoStackImpl(37),
-      ScriptConstantImpl("512102b022902a0fdd71e831c37e4136c2754a59887be0618fb75336d7ab67e2982ff551ae")
+      BytesToPushOntoStackImpl(37), OP_1, BytesToPushOntoStackImpl(33),
+      ScriptConstantImpl("02b022902a0fdd71e831c37e4136c2754a59887be0618fb75336d7ab67e2982ff5"),
+      OP_1, OP_CHECKMULTISIG
     ))
   }
 
