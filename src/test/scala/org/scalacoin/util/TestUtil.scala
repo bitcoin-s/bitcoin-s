@@ -5,8 +5,8 @@ import org.scalacoin.marshallers.transaction.{RawTransactionInputParser, RawTran
 import org.scalacoin.protocol.{AssetAddress, BitcoinAddress}
 import org.scalacoin.script.ScriptProgramImpl
 import org.scalacoin.script.bitwise.{OP_EQUAL, OP_EQUALVERIFY}
-import org.scalacoin.script.constant.{BytesToPushOntoStackImpl, ScriptToken, OP_0, ScriptConstantImpl}
-import org.scalacoin.script.crypto.{OP_CHECKSIG, OP_HASH160}
+import org.scalacoin.script.constant._
+import org.scalacoin.script.crypto.{OP_CHECKMULTISIG, OP_CHECKSIG, OP_HASH160}
 import org.scalacoin.script.stack.OP_DUP
 
 /**
@@ -44,8 +44,8 @@ object TestUtil {
   val p2shInputScriptAsm = List(
     OP_0,BytesToPushOntoStackImpl(71),
     ScriptConstantImpl("304402207df6dd8dad22d49c3c83d8031733c32a53719278eb7985d3b35b375d776f84f102207054f9209a1e87d55feafc90aa04c33008e5bae9191da22aeaa16efde96f41f001"),
-    BytesToPushOntoStackImpl(37),
-    ScriptConstantImpl("512102b022902a0fdd71e831c37e4136c2754a59887be0618fb75336d7ab67e2982ff551ae")
+    BytesToPushOntoStackImpl(37), OP_1, BytesToPushOntoStackImpl(33),
+    ScriptConstantImpl("02b022902a0fdd71e831c37e4136c2754a59887be0618fb75336d7ab67e2982ff5"), OP_1, OP_CHECKMULTISIG
   )
 
 

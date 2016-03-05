@@ -41,7 +41,7 @@ trait TransactionTestUtil {
     val outpoint = TransactionOutPointImpl(tx.txId,0)
     val input = TransactionInputImpl(outpoint,scriptSignature,0xFFFFFFFF)
     //empty script pubkey
-    val scriptPubKey = ScriptPubKeyImpl(Seq(),"",Seq())
+    val scriptPubKey = ScriptPubKeyFactory.fromHex("")
     val output = TransactionOutputImpl(CurrencyUnits.oneSatoshi,0,scriptPubKey)
     TransactionImpl(TransactionConstants.version,Seq(input),Seq(output),TransactionConstants.lockTime)
   }
@@ -56,7 +56,7 @@ trait TransactionTestUtil {
   def buildCreditingTransaction(scriptPubKey : ScriptPubKey) : Transaction = {
     val outpoint = TransactionOutPointImpl("",0)
 
-    val scriptSignature = ScriptSignatureImpl(Seq(OP_0,OP_0),"0000")
+    val scriptSignature = ScriptSignatureFactory.fromHex("0000")
     val input = TransactionInputImpl(outpoint,scriptSignature,0xFFFFFFFF)
     val output = TransactionOutputImpl(CurrencyUnits.oneSatoshi,0,scriptPubKey)
 
@@ -71,6 +71,7 @@ trait TransactionTestUtil {
   def transactionWithSpendingInputAndCreditingOutput : (Transaction, TransactionInput, Int, TransactionOutput) = {
     val spendingTx = TestUtil.simpleTransaction
     val creditingTx = TestUtil.parentSimpleTransaction
+    println(creditingTx)
     val creditingOutput = TestUtil.parentSimpleTransaction.outputs(spendingTx.inputs.head.previousOutput.vout)
     //make sure the outpoint index and the outpoint txid are correct
     require(spendingTx.inputs.head.previousOutput.txId == creditingTx.txId)

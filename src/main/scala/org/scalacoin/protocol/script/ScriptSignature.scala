@@ -1,6 +1,7 @@
 package org.scalacoin.protocol.script
 
 import org.scalacoin.crypto.{ECFactory, ECDigitalSignature}
+import org.scalacoin.marshallers.script.ScriptParser
 import org.scalacoin.marshallers.transaction.TransactionElement
 
 import org.scalacoin.script.constant._
@@ -24,7 +25,7 @@ sealed trait ScriptSignature extends TransactionElement {
    * see if a script evaluates to true
    * @return
    */
-  def asm : Seq[ScriptToken]
+  def asm : Seq[ScriptToken] = ScriptParser.fromBytes(bytes)
 
   /**
    * The digital signatures contained inside of the script signature
@@ -112,4 +113,7 @@ sealed trait ScriptSignature extends TransactionElement {
   }
 }
 
-case class ScriptSignatureImpl(asm : Seq[ScriptToken], hex : String) extends ScriptSignature
+case class ScriptSignatureImpl(hex : String) extends ScriptSignature
+case class P2PKHScriptSignature(hex : String) extends ScriptSignature
+case class P2SHScriptSignature(hex : String) extends ScriptSignature
+case class MultiSignatureScriptSignature(hex : String) extends ScriptSignature
