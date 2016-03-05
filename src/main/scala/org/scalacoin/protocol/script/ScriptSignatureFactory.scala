@@ -3,6 +3,7 @@ package org.scalacoin.protocol.script
 import org.scalacoin.crypto.{ECPublicKey, ECDigitalSignature}
 import org.scalacoin.marshallers.script.{RawScriptSignatureParser, ScriptParser}
 import org.scalacoin.script.constant._
+import org.scalacoin.script.crypto.{OP_CHECKMULTISIGVERIFY, OP_CHECKMULTISIG}
 import org.scalacoin.util.{Factory, BitcoinSUtil, ScalacoinUtil}
 
 /**
@@ -40,16 +41,32 @@ trait ScriptSignatureFactory extends Factory[ScriptSignature] {
     val asm : Seq[ScriptToken] = Seq(signatureBytesToPushOntoStack.get, ScriptConstantImpl(signature.hex),
       pubKeyBytesToPushOntoStack.get, ScriptConstantImpl(pubKey.hex))
     val hex = asm.map(_.hex).mkString
-    ScriptSignatureImpl(asm,hex)
+    ScriptSignatureImpl(hex)
   }
 
   /**
    * Returns an empty script signature
    * @return
    */
-  def empty = ScriptSignatureImpl(Seq(),"")
+  def empty = ScriptSignatureImpl("")
 
-  def fromBytes(bytes : Seq[Byte]) : ScriptSignature = RawScriptSignatureParser.read(bytes)
+  def fromBytes(bytes : Seq[Byte]) : ScriptSignature =  {
+    RawScriptSignatureParser.read(bytes)
+  }
+
+
+  def fromAsm(tokens : Seq[ScriptToken]) : ScriptSignature = {
+    val scriptSigHex = tokens.map(_.hex).mkString
+    tokens match {
+      case _  if (tokens.contains(OP_CHECKMULTISIG) && tokens.count(_.isInstanceOf[ScriptNumberOperation]) == 3) =>
+        P2SHScriptSignature(scriptSigHex)
+      case List(w : BytesToPushOntoStack, x : ScriptConstant, y : BytesToPushOntoStack,
+        z : ScriptConstant) => P2PKHScriptSignature(scriptSigHex)
+      case _ if (tokens.size > 0 && tokens.head == OP_0) => MultiSignatureScriptSignature(scriptSigHex)
+      case _ => ScriptSignatureImpl(scriptSigHex)
+    }
+  }
+
 }
 
 object ScriptSignatureFactory extends ScriptSignatureFactory

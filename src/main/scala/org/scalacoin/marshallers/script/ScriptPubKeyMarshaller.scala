@@ -1,7 +1,7 @@
 package org.scalacoin.marshallers.script
 
 import org.scalacoin.marshallers.MarshallerUtil
-import org.scalacoin.protocol.script.{ScriptPubKeyImpl, ScriptPubKey}
+import org.scalacoin.protocol.script.{ScriptPubKeyFactory, ScriptPubKeyImpl, ScriptPubKey}
 import spray.json._
 import DefaultJsonProtocol._
 
@@ -17,10 +17,8 @@ object ScriptPubKeyMarshaller extends DefaultJsonProtocol with MarshallerUtil {
 
     override def read(value : JsValue) : ScriptPubKey = {
       val obj = value.asJsObject
-      val asm = ScriptParser.parse(obj.fields(ScriptSignatureMarshaller.asmKey).convertTo[String])
-      val hex = obj.fields(ScriptSignatureMarshaller.hexKey)
-      val addresses = convertToAddressList(obj.fields(addressesKey))
-      ScriptPubKeyImpl(asm, hex.convertTo[String], addresses)
+      val asm = obj.fields(ScriptSignatureMarshaller.asmKey)
+      ScriptPubKeyFactory.fromAsm(ScriptParser.fromString(asm.convertTo[String]))
     }
 
     override def write(scriptPubKey : ScriptPubKey) : JsValue = {

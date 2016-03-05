@@ -46,13 +46,10 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers {
   }
 
   it must "serialize a transaction for SIGHASH_ALL correctly" in {
-    require(scriptPubKey.hex == BitcoinSUtil.encodeHex(multiSigScript.getProgram), "Script pub key hex not the same as multiSigScript hex")
-
     val spendingTx = Transaction.factory(BitcoinJTestUtil.multiSigTransaction.bitcoinSerialize())
 
     spendingTx.hex must be (BitcoinSUtil.encodeHex(BitcoinJTestUtil.multiSigTransaction.bitcoinSerialize()))
 
-    println(BitcoinSUtil.encodeHex(multiSigScript.getProgram))
     val sigBytes : Seq[Byte] = TransactionSignatureSerializer.serializeForSignature(spendingTx,0,scriptPubKey,SIGHASH_ALL)
     val bitcoinjSerialization = BitcoinSUtil.encodeHex(
       BitcoinJSignatureSerialization.serializeForSignature(BitcoinJTestUtil.multiSigTransaction,0,multiSigScript.getProgram(),SIGHASH_ALL.byte)

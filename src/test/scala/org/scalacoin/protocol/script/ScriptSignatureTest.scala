@@ -17,7 +17,6 @@ class ScriptSignatureTest extends FlatSpec with MustMatchers {
     val scriptSig = ScriptSignatureFactory.factory(TestUtil.rawScriptSig)
     scriptSig.signatures.head.hex must be ("3045022100ad8e961fe3c22b2647d92b078f4c0cf81b3106ea5bf8b900ab8646aa4430216f022071d4edc2b5588be20ac4c2d07edd8ed069e10b2402d3dce2d3b835ccd075f28301")
   }
-
    it must "derive the signature hash type from the signature" in {
     TestUtil.scriptSig.hashType(TestUtil.scriptSig.signatures.head) must be (SIGHASH_ALL)
   }
@@ -56,7 +55,7 @@ class ScriptSignatureTest extends FlatSpec with MustMatchers {
     TestUtil.p2shInputScriptSigHashSingle.hashType(TestUtil.p2shInputScriptSigHashSingle.signatures.head) must be (SIGHASH_SINGLE)
   }
 
-  it must "the hash type for the weird occurrence of hash type being 0 on the blockchain" in {
+  it must "find the hash type for the weird occurrence of hash type being 0 on the blockchain" in {
     //from this tx https://btc.blockr.io/api/v1/tx/raw/c99c49da4c38af669dea436d3e73780dfdb6c1ecf9958baa52960e8baee30e73
     val hex = "493046022100d23459d03ed7e9511a47d13292d3430a04627de6235b6e51a40f9cd386f2abe3022100e7d25b080f0bb8d8d5f878bba7d54ad2fda650ea8d158a33ee3cbd11768191fd004104b0e2c879e4daf7b9ab68350228c159766676a14f5815084ba166432aab46198d4cca98fa3e9981d0a90b2effc514b76279476550ba3663fdcaff94c38420e9d5"
     val scriptSig : ScriptSignature = RawScriptSignatureParser.read(hex)

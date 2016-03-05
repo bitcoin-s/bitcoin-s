@@ -24,11 +24,13 @@ trait BitcoinjConversions {
    * @return
    */
   def toScriptPubKey(bitcoinjScript : org.bitcoinj.script.Script) : ScriptPubKey = {
-    val scriptPubKey = ScriptPubKeyFactory.factory(bitcoinjScript.getProgram)
-    require(ScalacoinUtil.encodeHex(bitcoinjScript.getProgram) == scriptPubKey.hex,
+    val bytesLength : Int = bitcoinjScript.getProgram.size
+    val bitcoinjProgramWithBytesLength : List[Byte] = bytesLength.toByte :: bitcoinjScript.getProgram.toList
+    val scriptPubKey = ScriptPubKeyFactory.fromBytes(bitcoinjProgramWithBytesLength)
+    require(BitcoinSUtil.encodeHex(bitcoinjScript.getProgram) == scriptPubKey.hexWithoutScriptSize,
       "ScriptPubKey must be the same as the given bitcoinj script\n" +
-        ScalacoinUtil.encodeHex(bitcoinjScript.getProgram) + "\n" +
-        scriptPubKey.hex)
+        BitcoinSUtil.encodeHex(bitcoinjScript.getProgram) + "\n" +
+        scriptPubKey.hexWithoutScriptSize)
     scriptPubKey
   }
 

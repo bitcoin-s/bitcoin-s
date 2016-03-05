@@ -1,24 +1,30 @@
 package org.scalacoin.protocol.script
 
+import org.scalacoin.marshallers.script.{ScriptParser, RawScriptPubKeyParser}
 import org.scalacoin.marshallers.transaction.TransactionElement
 import org.scalacoin.protocol._
 import org.scalacoin.script.bitwise.{OP_EQUAL, OP_EQUALVERIFY}
 import org.scalacoin.script.constant._
 import org.scalacoin.script.crypto.{OP_CHECKMULTISIG, OP_CHECKSIG, OP_HASH160}
 import org.scalacoin.script.stack.OP_DUP
+import org.scalacoin.util.BitcoinSUtil
 
 /**
  * Created by chris on 12/26/15.
  */
 sealed trait ScriptPubKey extends TransactionElement {
 
+
+
+  def bytesWithoutScriptSize = BitcoinSUtil.decodeHex(hexWithoutScriptSize)
+  def hexWithoutScriptSize = BitcoinSUtil.encodeHex(bytes.tail)
   /**
    * Representation of a scriptSignature in a parsed assembly format
    * this data structure can be run through the script interpreter to
    * see if a script evaluates to true
    * @return
    */
-  def asm : Seq[ScriptToken]
+  def asm : Seq[ScriptToken] = ScriptParser.fromBytes(bytes.tail)
 
 
   def reqSigs : Option[Int] = {
@@ -43,9 +49,12 @@ sealed trait ScriptPubKey extends TransactionElement {
   }
 
   //the addresses that the bitcoins correlated to the output
-  def addresses : Seq[BitcoinAddress]
+  def addresses : Seq[BitcoinAddress] = ???
 
 }
 
 
-case class ScriptPubKeyImpl(asm : Seq[ScriptToken], hex : String, addresses : Seq[BitcoinAddress]) extends ScriptPubKey
+sealed case class ScriptPubKeyImpl(hex : String) extends ScriptPubKey
+sealed case class P2PKHScriptPubKey(hex : String) extends ScriptPubKey
+sealed case class MultiSignatureScriptPubKey(hex : String) extends ScriptPubKey
+sealed case class P2SHScriptPubKey(hex : String) extends ScriptPubKey

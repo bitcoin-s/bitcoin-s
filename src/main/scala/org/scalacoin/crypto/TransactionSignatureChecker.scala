@@ -34,6 +34,17 @@ trait TransactionSignatureChecker {
     isValid
   }
 
+  /**
+   * Checks the signatures on a given input against the scriptPubKey
+   * @param spendingTransaction
+   * @param inputIndex
+   * @param scriptPubKey
+   * @return
+   */
+  def checkSignature(spendingTransaction : Transaction, inputIndex : Int, scriptPubKey: ScriptPubKey) : Boolean = {
+    ???
+  }
+
 }
 
 object TransactionSignatureChecker extends TransactionSignatureChecker

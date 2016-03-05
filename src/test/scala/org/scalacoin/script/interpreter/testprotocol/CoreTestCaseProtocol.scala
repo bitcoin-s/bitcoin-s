@@ -5,7 +5,7 @@ import org.scalacoin.marshallers.script.ScriptPubKeyMarshaller.ScriptPubKeyForma
 import org.scalacoin.marshallers.script.ScriptSignatureMarshaller.ScriptSignatureFormatter
 import org.scalacoin.protocol.script._
 import org.scalacoin.script.constant.{ScriptOperation, ScriptToken}
-import org.scalacoin.util.ScalacoinUtil
+import org.scalacoin.util.{BitcoinSUtil}
 import org.slf4j.LoggerFactory
 import spray.json._
 
@@ -29,14 +29,14 @@ object CoreTestCaseProtocol extends DefaultJsonProtocol {
         None
       } else if (elements.size == 3) {
         val scriptSignatureAsm : Seq[ScriptToken] = parseScriptSignatureAsm(elements.head)
-        val scriptSignature : ScriptSignature = ScriptSignatureImpl(scriptSignatureAsm, scriptSignatureAsm.map(_.hex).mkString)
+        val scriptSignature : ScriptSignature = ScriptSignatureFactory.fromHex(scriptSignatureAsm.map(_.hex).mkString)
         val scriptPubKeyAsm = parseScriptPubKeyAsm(elements(1))
         val scriptPubKey = ScriptPubKeyFactory.factory(UpdateScriptPubKeyAsm(scriptPubKeyAsm))
         val flags = elements(2).convertTo[String]
         Some(CoreTestCaseImpl(scriptSignature,scriptPubKey,flags,"No comments from bitcoin core ",elements.toString))
       } else if (elements.size == 4) {
         val scriptSignatureAsm : Seq[ScriptToken] = parseScriptSignatureAsm(elements.head)
-        val scriptSignature : ScriptSignature = ScriptSignatureImpl(scriptSignatureAsm, scriptSignatureAsm.map(_.hex).mkString)
+        val scriptSignature : ScriptSignature = ScriptSignatureFactory.fromHex(scriptSignatureAsm.map(_.hex).mkString)
         val scriptPubKeyAsm : Seq[ScriptToken] = parseScriptPubKeyAsm(elements(1))
         val scriptPubKey = ScriptPubKeyFactory.factory(UpdateScriptPubKeyAsm(scriptPubKeyAsm))
         val flags = elements(2).convertTo[String]
@@ -56,7 +56,7 @@ object CoreTestCaseProtocol extends DefaultJsonProtocol {
      * @return
      */
     private def parseScriptSignatureAsm(element : JsValue) : Seq[ScriptToken] = {
-      ScriptParser.parse(element.convertTo[String])
+      ScriptParser.fromString(element.convertTo[String])
     }
 
 
@@ -71,9 +71,9 @@ object CoreTestCaseProtocol extends DefaultJsonProtocol {
      */
     private def parseScriptPubKeyAsm(element : JsValue) : Seq[ScriptToken] = {
       try {
-        ScriptParser.parse(ScalacoinUtil.decodeHex(element.convertTo[String].toLowerCase))
+        ScriptParser.fromBytes(BitcoinSUtil.decodeHex(element.convertTo[String].toLowerCase))
       } catch {
-        case _ : Throwable => ScriptParser.parse(element.convertTo[String])
+        case _ : Throwable => ScriptParser.fromString(element.convertTo[String])
       }
 
     }
