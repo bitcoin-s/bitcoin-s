@@ -54,24 +54,25 @@ trait TransactionSignatureChecker {
       case multiSignatureScript : MultiSignatureScriptSignature =>
         scriptPubKey match {
           case x : MultiSignatureScriptPubKey =>
-            val pubKeys = ???
-            ???
+            val result : Seq[Boolean] = for {
+              (sig,pubKey) <- multiSignatureScript.signatures.zip(x.publicKeys)
+            } yield {
+                val hashType = multiSignatureScript.hashType(sig)
+                val hashForSig : Seq[Byte] =
+                  TransactionSignatureSerializer.hashForSignature(spendingTransaction,inputIndex,scriptPubKey,hashType)
+                pubKey.verify(hashForSig,sig)
+              }
+            !result.exists(_ == false)
           case x : P2PKHScriptPubKey =>
             throw new RuntimeException("Cannot check multisignature script signature against a non multisignature scriptPubKey type")
-
           case y : P2SHScriptPubKey =>
             throw new RuntimeException("Cannot check multisignature script signature against a non multisignature scriptPubKey type")
-
           case z : P2PKScriptPubKey =>
             throw new RuntimeException("Cannot check multisignature script signature against a non multisignature scriptPubKey type")
-
-          case  q : NonStandardScriptPubKey =>
+          case q : NonStandardScriptPubKey =>
             throw new RuntimeException("Cannot check multisignature script signature against a non multisignature scriptPubKey type")
-
         }
-/*        val result : Seq[Boolean] = for {
-          (sig,pubKey) <- multiSignatureScript.signatures.zip(multiSignatureScript)
-        }*/
+
     }
   }
 

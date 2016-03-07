@@ -83,7 +83,9 @@ trait MultiSignatureScriptPubKey extends ScriptPubKey {
    * Returns the public keys encoded into the scriptPubKey
    * @return
    */
-  def publicKeys : Seq[ECPublicKey] = asm.slice(1,asm.size-2).map(key => ECFactory.publicKey(key.hex))
+  def publicKeys : Seq[ECPublicKey] = {
+    asm.slice(1, asm.size - 2).filter(_.isInstanceOf[ScriptConstant]).map(key => ECFactory.publicKey(key.hex))
+  }
 }
 
 /**
