@@ -26,4 +26,6 @@ class ECFactoryTest extends FlatSpec with MustMatchers {
       val privateKey : ECPrivateKey = ECFactory.privateKey(bytes)
       privateKey.hex must be (bitcoinJKey.getPrivateKeyAsHex)
     }
+
+
 }

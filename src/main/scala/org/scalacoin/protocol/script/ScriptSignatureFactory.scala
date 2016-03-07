@@ -59,10 +59,10 @@ trait ScriptSignatureFactory extends Factory[ScriptSignature] {
     val scriptSigHex = tokens.map(_.hex).mkString
     tokens match {
       case _  if (tokens.contains(OP_CHECKMULTISIG) && tokens.count(_.isInstanceOf[ScriptNumberOperation]) == 3) =>
-        P2SHScriptSignature(scriptSigHex)
-      case _ if (tokens.size > 0 && tokens.head == OP_0) => MultiSignatureScriptSignature(scriptSigHex)
+        P2SHScriptSignatureImpl(scriptSigHex)
+      case _ if (tokens.size > 0 && tokens.head == OP_0) => MultiSignatureScriptSignatureImpl(scriptSigHex)
       case List(w : BytesToPushOntoStack, x : ScriptConstant, y : BytesToPushOntoStack,
-        z : ScriptConstant) => P2PKHScriptSignature(scriptSigHex)
+        z : ScriptConstant) => P2PKHScriptSignatureImpl(scriptSigHex)
 
       case _ => ScriptSignatureImpl(scriptSigHex)
     }

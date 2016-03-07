@@ -49,10 +49,9 @@ class TransactionSignatureCheckerTest extends FlatSpec with MustMatchers {
     val hashForSig : Seq[Byte] = TransactionSignatureSerializer.hashForSignature(spendingTx,inputIndex,multiSigScriptPubKey,SIGHASH_ALL)
     val input = spendingTx.inputs(0)
     val signatures : Seq[ECDigitalSignature] = input.scriptSignature.signatures
-/*    println("First bitcoinjSig: " + BitcoinSUtil.encodeHex(bitcoinjFirstSig))
-    println("Second bitcoinjSig: " + BitcoinSUtil.encodeHex(bitcoinjSecondSig))*/
-    println(signatures)
     ECKey.verify(hashForSig.toArray, signatures(0).bytes.toArray, keys.head.bytes.toArray) must be (true)
     ECKey.verify(hashForSig.toArray, signatures(1).bytes.toArray, keys(1).bytes.toArray) must be (true)
+
+    TransactionSignatureChecker.checkSignature(spendingTx,inputIndex,multiSigScriptPubKey)
   }
 }

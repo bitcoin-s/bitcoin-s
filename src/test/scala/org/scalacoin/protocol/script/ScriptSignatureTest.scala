@@ -17,6 +17,8 @@ class ScriptSignatureTest extends FlatSpec with MustMatchers {
     val scriptSig = ScriptSignatureFactory.factory(TestUtil.rawScriptSig)
     scriptSig.signatures.head.hex must be ("3045022100ad8e961fe3c22b2647d92b078f4c0cf81b3106ea5bf8b900ab8646aa4430216f022071d4edc2b5588be20ac4c2d07edd8ed069e10b2402d3dce2d3b835ccd075f28301")
   }
+
+
    it must "derive the signature hash type from the signature" in {
     TestUtil.scriptSig.hashType(TestUtil.scriptSig.signatures.head) must be (SIGHASH_ALL)
   }
@@ -65,7 +67,6 @@ class ScriptSignatureTest extends FlatSpec with MustMatchers {
   it must "find all of the digital signatures for a multisignature scriptSig" in {
     val (spendingTx,inputIndex,_,_) = TransactionTestUtil.signedMultiSignatureTransaction
     val scriptSig = spendingTx.inputs(inputIndex).scriptSignature
-    println(scriptSig)
     scriptSig.signatures.size must be (2)
   }
 
