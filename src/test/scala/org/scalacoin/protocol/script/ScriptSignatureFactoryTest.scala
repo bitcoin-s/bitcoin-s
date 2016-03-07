@@ -31,4 +31,5 @@ class ScriptSignatureFactoryTest extends FlatSpec with MustMatchers {
     actualScriptSig.asm must be (TestUtil.p2pkhInputScriptAsm)
   }
 
+
 }

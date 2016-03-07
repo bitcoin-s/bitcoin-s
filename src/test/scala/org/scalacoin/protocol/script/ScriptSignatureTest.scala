@@ -63,7 +63,7 @@ class ScriptSignatureTest extends FlatSpec with MustMatchers {
   }
 
   it must "find all of the digital signatures for a multisignature scriptSig" in {
-    val (spendingTx,inputIndex,_) = TransactionTestUtil.signedMultiSignatureTransaction
+    val (spendingTx,inputIndex,_,_) = TransactionTestUtil.signedMultiSignatureTransaction
     val scriptSig = spendingTx.inputs(inputIndex).scriptSignature
     println(scriptSig)
     scriptSig.signatures.size must be (2)

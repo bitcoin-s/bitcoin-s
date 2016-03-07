@@ -63,7 +63,7 @@ trait BitcoinSUtil extends NumberUtil {
 
   def hexToLong(hex : String) : Long = toLong(hex)
 
-  def decodeBase58(base58 : String) : List[Byte] = Base58.decode(base58).toList
+  def decodeBase58(base58 : String) : Seq[Byte] = Base58.decode(base58).toList
 
   def encodeBase58(bytes : List[Byte]) : String = Base58.encode(bytes.toArray)
 

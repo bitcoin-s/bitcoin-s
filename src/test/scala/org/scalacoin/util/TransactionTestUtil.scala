@@ -1,5 +1,8 @@
 package org.scalacoin.util
 
+import org.bitcoinj.core.DumpedPrivateKey
+import org.scalacoin.config.TestNet3
+import org.scalacoin.crypto.{ECFactory, ECPublicKey}
 import org.scalacoin.currency.CurrencyUnits
 import org.scalacoin.protocol.{CompactSizeUIntImpl}
 import org.scalacoin.protocol.script._
@@ -80,8 +83,11 @@ trait TransactionTestUtil {
     (spendingTx,spendingTx.inputs.head,0, creditingOutput)
   }
 
-  def signedMultiSignatureTransaction : (Transaction, Int, ScriptPubKey) = {
-    (signedMultiSignatureTx,0,multiSignatureScriptPubKey)
+  def signedMultiSignatureTransaction : (Transaction, Int, ScriptPubKey, Seq[ECPublicKey]) = {
+    val key1 = ECFactory.fromBase58ToPrivateKey("cVLwRLTvz3BxDAWkvS3yzT9pUcTCup7kQnfT2smRjvmmm1wAP6QT", TestNet3)
+    val key2 = ECFactory.fromBase58ToPrivateKey("cTine92s8GLpVqvebi8rYce3FrUYq78ZGQffBYCS1HmDPJdSTxUo",TestNet3)
+    def key3 = ECFactory.fromBase58ToPrivateKey("cVHwXSPRZmL9adctwBwmn4oTZdZMbaCsR5XF6VznqMgcvt1FDDxg",TestNet3)
+    (signedMultiSignatureTx,0,multiSignatureScriptPubKey, Seq(key1.publicKey,key2.publicKey,key3.publicKey))
   }
 }
 

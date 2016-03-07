@@ -32,6 +32,8 @@ class ScriptPubKeyTest extends FlatSpec with MustMatchers {
     TestUtil.p2shScriptPubKey.scriptType must be (P2SH)
   }
 
+
+
   it must "derive a multisignature script type for a scriptPubKey" in {
     val multiSigRawScriptPubKey = "5221025878e270211662a27181cf" +
       "4d6ad4d2cf0e69a98a3815c086f587c7e9388d87182103fc85980e3fac1f3d" +

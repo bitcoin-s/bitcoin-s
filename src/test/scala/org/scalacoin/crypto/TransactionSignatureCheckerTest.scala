@@ -37,26 +37,22 @@ class TransactionSignatureCheckerTest extends FlatSpec with MustMatchers {
 
     val (bitcoinjTx,bitcoinjInputIndex,bitcoinjMultiSigScriptPubKey) = BitcoinJTestUtil.signedMultiSigTransaction
     val (key1,key2) = (BitcoinJTestUtil.key1, BitcoinJTestUtil.key2)
-    val bitcoinjHashForSig : Sha256Hash =
-      bitcoinjTx.hashForSignature(bitcoinjInputIndex,
-        bitcoinjMultiSigScriptPubKey.getProgram, 0x01)
 
-    val bitcoinjInput = bitcoinjTx.getInput(bitcoinjInputIndex)
+/*    val bitcoinjHashForSig : Sha256Hash =
+      bitcoinjTx.hashForSignature(bitcoinjInputIndex,
+        bitcoinjMultiSigScriptPubKey.getProgram, 0x01)*/
+
+/*    val bitcoinjInput = bitcoinjTx.getInput(bitcoinjInputIndex)
     val bitcoinjFirstSig = bitcoinjInput.getScriptSig.getChunks.get(1).data
-    val bitcoinjSecondSig = bitcoinjInput.getScriptSig.getChunks.get(2).data
-/*
-    println("Spending Tx: " + BitcoinSUtil.encodeHex(spendingTx.bitcoinSerialize()))
-    println("MultiSigScriptPubKey: " + BitcoinSUtil.encodeHex(multiSigScriptPubKey.getProgram))
-    ECKey.verify(hashForSig.getBytes, firstSig, key1.getPubKey) must be (true)
-    ECKey.verify(hashForSig.getBytes, secondSig, key2.getPubKey) must be (true)*/
-    val (spendingTx,inputIndex,multiSigScriptPubKey) = TransactionTestUtil.signedMultiSignatureTransaction
+    val bitcoinjSecondSig = bitcoinjInput.getScriptSig.getChunks.get(2).data*/
+    val (spendingTx,inputIndex,multiSigScriptPubKey,keys) = TransactionTestUtil.signedMultiSignatureTransaction
     val hashForSig : Seq[Byte] = TransactionSignatureSerializer.hashForSignature(spendingTx,inputIndex,multiSigScriptPubKey,SIGHASH_ALL)
     val input = spendingTx.inputs(0)
     val signatures : Seq[ECDigitalSignature] = input.scriptSignature.signatures
-    println("First bitcoinjSig: " + BitcoinSUtil.encodeHex(bitcoinjFirstSig))
-    println("Second bitcoinjSig: " + BitcoinSUtil.encodeHex(bitcoinjSecondSig))
+/*    println("First bitcoinjSig: " + BitcoinSUtil.encodeHex(bitcoinjFirstSig))
+    println("Second bitcoinjSig: " + BitcoinSUtil.encodeHex(bitcoinjSecondSig))*/
     println(signatures)
-    ECKey.verify(hashForSig.toArray, signatures(0).bytes.toArray, BitcoinJTestUtil.key1.getPubKey) must be (true)
-    ECKey.verify(hashForSig.toArray, signatures(1).bytes.toArray, BitcoinJTestUtil.key2.getPubKey) must be (true)
+    ECKey.verify(hashForSig.toArray, signatures(0).bytes.toArray, keys.head.bytes.toArray) must be (true)
+    ECKey.verify(hashForSig.toArray, signatures(1).bytes.toArray, keys(1).bytes.toArray) must be (true)
   }
 }
