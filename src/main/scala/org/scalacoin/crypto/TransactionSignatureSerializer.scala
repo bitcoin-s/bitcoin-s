@@ -76,6 +76,7 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper {
     // Set the input to the script of its output. Bitcoin Core does this but the step has no obvious purpose as
     // the signature covers the hash of the prevout transaction which obviously includes the output script
     // already. Perhaps it felt safer to him in some way, or is another leftover from how the code was written.
+
     val inputWithConnectedScript = inputToSign.factory(scriptWithOpCodeSeparatorsRemoved)
 
     //update the input at index i with inputWithConnectScript
@@ -188,10 +189,7 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper {
       ScriptPubKeyFactory.fromBytes(scriptBytes)
     } else {
       script.scriptType match {
-        case P2PKH =>
-          //remove the first byte of the script as that is not part of raw scriptPubKey
-          //this indicates the size of the script, which is not needed for signature serialization
-          ScriptPubKeyFactory.fromBytes(script.bytes.tail)
+        case P2PKH => script
         case P2SH => script
         case MultiSignature => script
         case NonStandard => throw new RuntimeException("Excpected a p2sh or p2kh address type")

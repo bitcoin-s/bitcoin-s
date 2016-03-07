@@ -20,6 +20,8 @@ trait BitcoinJTestUtil {
   def key1 = new DumpedPrivateKey(params, "cVLwRLTvz3BxDAWkvS3yzT9pUcTCup7kQnfT2smRjvmmm1wAP6QT").getKey();
   def key2 = new DumpedPrivateKey(params, "cTine92s8GLpVqvebi8rYce3FrUYq78ZGQffBYCS1HmDPJdSTxUo").getKey();
   def key3 = new DumpedPrivateKey(params, "cVHwXSPRZmL9adctwBwmn4oTZdZMbaCsR5XF6VznqMgcvt1FDDxg").getKey();
+  def multiSigScript : org.bitcoinj.script.Script = ScriptBuilder.createMultiSigOutputScript(2,
+    util.Arrays.asList(BitcoinJTestUtil.key1, key2, key3));
 
   /**
    * Returns a bitcoinj multsignature tx (NOT a p2sh tx)

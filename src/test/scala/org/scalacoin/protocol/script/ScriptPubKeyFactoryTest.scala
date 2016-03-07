@@ -1,6 +1,6 @@
 package org.scalacoin.protocol.script
 
-import org.scalacoin.util.{BitcoinjConversions, BitcoinJTestUtil, BitcoinSUtil}
+import org.scalacoin.util.{TestUtil, BitcoinjConversions, BitcoinJTestUtil, BitcoinSUtil}
 import org.scalatest.{FlatSpec, MustMatchers}
 
 /**
@@ -10,7 +10,7 @@ class ScriptPubKeyFactoryTest extends FlatSpec with MustMatchers {
 
   "ScriptPubKeyFactory" must "create a scriptPubKey from a sequences of bytes and hex and get the same thing" in {
     //from b30d3148927f620f5b1228ba941c211fdabdae75d0ba0b688a58accbf018f3cc
-    val rawScriptPubKey = "76a91431a420903c05a0a7de2de40c9f02ebedbacdc17288ac"
+    val rawScriptPubKey = TestUtil.rawP2PKHScriptPubKey
     val scriptPubKeyFromBytes = ScriptPubKeyFactory.fromBytes(BitcoinSUtil.decodeHex(rawScriptPubKey))
     val scriptPubKeyFromHex = ScriptPubKeyFactory.fromHex(rawScriptPubKey)
 
@@ -25,7 +25,7 @@ class ScriptPubKeyFactoryTest extends FlatSpec with MustMatchers {
 
   it must "create a multsignature scriptPubkey from its hexadecimal representation and then convert it back to the original hex" in {
     val (_,_,bitcoinJScriptPubKey) = BitcoinJTestUtil.signedMultiSigTransaction
-    BitcoinjConversions.toScriptPubKey(bitcoinJScriptPubKey).hexWithoutScriptSize must be
+    BitcoinjConversions.toScriptPubKey(bitcoinJScriptPubKey).hex must be
     (BitcoinSUtil.encodeHex(bitcoinJScriptPubKey.getProgram))
   }
 

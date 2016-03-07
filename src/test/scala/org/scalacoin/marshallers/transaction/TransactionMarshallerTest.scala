@@ -91,11 +91,11 @@ class TransactionMarshallerTest extends FlatSpec with MustMatchers {
 
     tx.outputs.head.value must be (Bitcoins(0.01970000))
     tx.outputs.head.n must be (0)
-    tx.outputs.head.scriptPubKey.hex must be ("1976a9147ecaa33ef3cd6169517e43188ad3c034db091f5e88ac")
+    tx.outputs.head.scriptPubKey.hex must be ("76a9147ecaa33ef3cd6169517e43188ad3c034db091f5e88ac")
 
     tx.outputs(1).value must be (Bitcoins(0.00020000))
     tx.outputs(1).n must be (1)
-    tx.outputs(1).scriptPubKey.hex must be ("1976a914321908115d8a138942f98b0b53f86c9a1848501a88ac")
+    tx.outputs(1).scriptPubKey.hex must be ("76a914321908115d8a138942f98b0b53f86c9a1848501a88ac")
 
   }
 

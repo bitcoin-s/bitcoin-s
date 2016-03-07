@@ -24,7 +24,7 @@ trait RawTransactionParser extends RawBitcoinSerializer[Transaction] {
 
     val outputsStartIndex = inputsSize + 5
     val outputsBytes = bytes.slice(outputsStartIndex, bytes.size)
-
+    logger.info("Output bytes: " + BitcoinSUtil.encodeHex(outputsBytes))
     val outputs = RawTransactionOutputParser.read(outputsBytes)
     val outputsSize = outputs.map(_.size).sum
 

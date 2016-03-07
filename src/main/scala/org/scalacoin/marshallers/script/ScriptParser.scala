@@ -209,7 +209,9 @@ trait ScriptParser extends Factory[List[ScriptToken]] {
     logger.info("Checking if last token is redeem script")
     val tryRedeemScript = parseRedeemScript(token)
     tryRedeemScript match {
-      case Success(redeemScript) => redeemScript.contains(OP_CHECKMULTISIG) || redeemScript.contains(OP_CHECKMULTISIGVERIFY)
+      case Success(redeemScript) =>
+        if (redeemScript.size > 0 ) redeemScript.last == OP_CHECKMULTISIG || redeemScript.last == OP_CHECKMULTISIGVERIFY
+        else false
       case Failure(_) => false
     }
   }

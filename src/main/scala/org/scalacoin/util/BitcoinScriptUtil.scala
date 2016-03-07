@@ -14,9 +14,7 @@ trait BitcoinScriptUtil {
    */
   def asmToHex(asm : Seq[ScriptToken]) : String = {
     val hex = asm.map(_.hex).mkString
-    //the above hex val does NOT take into account the size of the entire asm script
-    //we need to prepend the hex value of the size of the string
-    BitcoinSUtil.longToHex(hex.size / 2) + hex
+    hex
   }
 
 
