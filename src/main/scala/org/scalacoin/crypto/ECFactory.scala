@@ -1,5 +1,7 @@
 package org.scalacoin.crypto
 
+import org.bitcoinj.core.DumpedPrivateKey
+import org.scalacoin.config.NetworkParameters
 import org.scalacoin.util.{Factory, BitcoinSUtil}
 
 /**
@@ -79,6 +81,18 @@ trait ECFactory extends Factory[BaseECKey] {
    * @return
    */
   override def fromBytes(bytes : Seq[Byte]) : BaseECKey = privateKey(bytes)
+
+
+  /**
+   * Takes in a base58 string and converts it into a private key
+   * @param base58
+   * @return
+   */
+  def fromBase58ToPrivateKey(base58 : String, network : NetworkParameters) : ECPrivateKey = {
+    val bitcoinJDumpedPrivKey = new DumpedPrivateKey(network.network,base58)
+
+    privateKey(bitcoinJDumpedPrivKey.getKey.getPrivKeyBytes)
+  }
 
 }
 

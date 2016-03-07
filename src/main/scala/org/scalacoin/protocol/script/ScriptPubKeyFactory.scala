@@ -44,7 +44,7 @@ trait ScriptPubKeyFactory extends Factory[ScriptPubKey] {
       case List(OP_DUP, OP_HASH160, BytesToPushOntoStackImpl(x), ScriptConstantImpl(pubKeyHash), OP_EQUALVERIFY, OP_CHECKSIG) => P2PKHScriptPubKey(scriptPubKeyHex)
       case List(OP_HASH160, BytesToPushOntoStackImpl(x), ScriptConstantImpl(scriptHash), OP_EQUAL) => P2SHScriptPubKey(scriptPubKeyHex)
       //TODO: make this more robust, this isn't the pattern that multsignature scriptPubKeys follow
-      case _ if (asm.last == OP_CHECKMULTISIG) => MultiSignatureScriptPubKey(scriptPubKeyHex)
+      case _ if (asm.size > 0 && asm.last == OP_CHECKMULTISIG) => MultiSignatureScriptPubKey(scriptPubKeyHex)
       case _ => ScriptPubKeyImpl(scriptPubKeyHex)
     }
   }

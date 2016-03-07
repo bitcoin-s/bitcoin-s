@@ -19,6 +19,8 @@ class ECPublicKeyTest extends FlatSpec with MustMatchers {
     isValid must be (true)
   }
 
+
+
   it must "fail to verify a piece of data if the wrong public key is given" in {
     val privateKeyHex = "180cb41c7c600be951b5d3d0a7334acc7506173875834f7a6c4c786a28fcbb19"
     val key: ECPrivateKey = ECFactory.privateKey(privateKeyHex)

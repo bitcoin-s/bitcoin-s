@@ -29,5 +29,10 @@ class ScriptPubKeyFactoryTest extends FlatSpec with MustMatchers {
     (BitcoinSUtil.encodeHex(bitcoinJScriptPubKey.getProgram))
   }
 
+  it must "create a scriptPubKey from an empty string" in {
+    val scriptPubKey = ScriptPubKeyFactory.fromHex("")
+    scriptPubKey.hex must be ("")
+  }
+
 
 }

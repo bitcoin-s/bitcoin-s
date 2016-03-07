@@ -3,7 +3,7 @@ package org.scalacoin.crypto
 /**
  * Created by chris on 2/16/16.
  */
-trait ECPrivateKey extends BaseECKey {
+sealed trait ECPrivateKey extends BaseECKey {
   import org.bitcoinj.core._
 
   /**
@@ -17,4 +17,4 @@ trait ECPrivateKey extends BaseECKey {
 
 }
 
-case class ECPrivateKeyImpl(bytes : Seq[Byte]) extends ECPrivateKey
+sealed case class ECPrivateKeyImpl(bytes : Seq[Byte]) extends ECPrivateKey
