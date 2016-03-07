@@ -5,13 +5,14 @@ import org.scalacoin.protocol.{CompactSizeUIntImpl}
 import org.scalacoin.protocol.script._
 import org.scalacoin.protocol.transaction._
 import org.scalacoin.script.constant.{OP_0, ScriptToken}
+import org.slf4j.LoggerFactory
 
 /**
  * Created by chris on 2/12/16.
  */
 trait TransactionTestUtil {
 
-
+  private def logger = LoggerFactory.getLogger(this.getClass())
   /**
    * Raw multisignature script pub key output
    * @return
@@ -65,13 +66,13 @@ trait TransactionTestUtil {
 
 
   /**
-   * Returns a transaction and its crediting output
+   * Returns a transaction, the input that is spending the output, and the inputIndex inside of the tx
    * @return
    */
   def transactionWithSpendingInputAndCreditingOutput : (Transaction, TransactionInput, Int, TransactionOutput) = {
     val spendingTx = TestUtil.simpleTransaction
     val creditingTx = TestUtil.parentSimpleTransaction
-    println(creditingTx)
+    logger.info("Crediting transaction: " + creditingTx)
     val creditingOutput = TestUtil.parentSimpleTransaction.outputs(spendingTx.inputs.head.previousOutput.vout)
     //make sure the outpoint index and the outpoint txid are correct
     require(spendingTx.inputs.head.previousOutput.txId == creditingTx.txId)

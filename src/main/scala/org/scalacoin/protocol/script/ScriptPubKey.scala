@@ -14,17 +14,13 @@ import org.scalacoin.util.BitcoinSUtil
  */
 sealed trait ScriptPubKey extends TransactionElement {
 
-
-
-  def bytesWithoutScriptSize = BitcoinSUtil.decodeHex(hexWithoutScriptSize)
-  def hexWithoutScriptSize = BitcoinSUtil.encodeHex(bytes.tail)
   /**
    * Representation of a scriptSignature in a parsed assembly format
    * this data structure can be run through the script interpreter to
    * see if a script evaluates to true
    * @return
    */
-  def asm : Seq[ScriptToken] = ScriptParser.fromBytes(bytes.tail)
+  def asm : Seq[ScriptToken] = ScriptParser.fromBytes(bytes)
 
 
   def reqSigs : Option[Int] = {

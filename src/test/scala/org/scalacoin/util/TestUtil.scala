@@ -2,6 +2,7 @@ package org.scalacoin.util
 
 import org.scalacoin.marshallers.script.{RawScriptSignatureParser, RawScriptPubKeyParser}
 import org.scalacoin.marshallers.transaction.{RawTransactionInputParser, RawTransactionParser}
+import org.scalacoin.protocol.script.ScriptPubKeyFactory
 import org.scalacoin.protocol.{AssetAddress, BitcoinAddress}
 import org.scalacoin.script.ScriptProgramImpl
 import org.scalacoin.script.bitwise.{OP_EQUAL, OP_EQUALVERIFY}
@@ -99,13 +100,24 @@ object TestUtil {
   //parent to the 'simpleRawTransaction' val in this file. It is referenced by the input,
   //which needs to have access to this tx to view the scriptPubKey
   //txid b30d3148927f620f5b1228ba941c211fdabdae75d0ba0b688a58accbf018f3cc
-  val parentSimpleRawTransaction = "0100000001cda741646fada7272b900719f7ac9d68d633d0e8aa9501eed3c90afbd323bd65010000006a4730440220048e15422cf62349dc586ffb8c749d40280781edd5064ff27a5910ff5cf225a802206a82685dbc2cf195d158c29309939d5a3cd41a889db6f766f3809fff35722305012103dcfc9882c1b3ae4e03fb6cac08bdb39e284e81d70c7aa8b27612457b2774509bffffffff026c405d05000000001976a91431a420903c05a0a7de2de40c9f02ebedbacdc17288ac809698000000000017a914af575bd77c5ce7eba3bd9ce6f89774713ae62c798700000000"
+  val parentSimpleRawTransaction = "0100000001cda741646fada7272b900719f7ac9d68d633d0e8aa9501eed3c90afbd323bd65" +
+    "010000006a4730440220048e15422cf62349dc586ffb8c749d40280781edd5064ff27a5910ff5cf225a802206a82685dbc2cf195d" +
+    "158c29309939d5a3cd41a889db6f766f3809fff35722305012103dcfc9882c1b3ae4e03fb6cac08bdb39e284e81d70c7aa8b27612" +
+    "457b2774509bffffffff026c405d05000000001976a91431a420903c05a0a7de2de40c9f02ebedbacdc17288ac809698000000000" +
+    "017a914af575bd77c5ce7eba3bd9ce6f89774713ae62c798700000000"
   def parentSimpleTransaction = RawTransactionParser.read(parentSimpleRawTransaction)
 
   //scriptPubKey taken from https://bitcoin.org/en/developer-reference#raw-transaction-format
-  val rawScriptPubKey = "1976a914cbc20a7664f2f69e5355aa427045bc15e7c6c77288ac"
+  val rawScriptPubKey = "76a914cbc20a7664f2f69e5355aa427045bc15e7c6c77288ac"
   def scriptPubKey = RawScriptPubKeyParser.read(rawScriptPubKey)
 
+  //from b30d3148927f620f5b1228ba941c211fdabdae75d0ba0b688a58accbf018f3cc
+  //ouptut is index 0
+  val rawP2PKHScriptPubKey = "76a91431a420903c05a0a7de2de40c9f02ebedbacdc17288ac"
+  def p2pkhScriptPubKey = ScriptPubKeyFactory.fromHex(rawP2PKHScriptPubKey)
+
+  val rawP2SHScriptPubKey = "a9145780b80be32e117f675d6e0ada13ba799bf248e987"
+  def p2shScriptPubKey = ScriptPubKeyFactory.fromHex(rawP2SHScriptPubKey)
   //https://tbtc.blockr.io/api/v1/tx/raw/bdc221db675c06dbee2ae75d33e31cad4e2555efea10c337ff32c8cdf97f8e74
   val rawScriptSig = "483045022100ad8e961fe3c22b2647d92b078f4c0cf81b3106ea5bf8b900ab8646aa4430216f022071d4edc2b5588be20ac4c2d07edd8ed069e10b2402d3dce2d3b835ccd075f283014104fa79182bbc26c708b5d9f36b8635947d4a834ea356cf612ede08395c295f962e0b1dc2557aba34188640e51a58ed547f2c89c8265cd0c04ff890d8435648746e"
   val scriptSig = RawScriptSignatureParser.read(rawScriptSig)

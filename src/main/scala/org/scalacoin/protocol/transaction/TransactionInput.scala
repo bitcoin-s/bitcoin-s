@@ -31,5 +31,5 @@ object TransactionInput extends TransactionInput {
   override def scriptSigCompactSizeUInt = empty.scriptSigCompactSizeUInt
 }
 
-case class TransactionInputImpl(previousOutput : TransactionOutPoint,
+sealed case class TransactionInputImpl(previousOutput : TransactionOutPoint,
   scriptSignature : ScriptSignature, sequence : Long) extends TransactionInput

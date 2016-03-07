@@ -1,6 +1,6 @@
 package org.scalacoin.marshallers.transaction
 
-import org.scalacoin.protocol.transaction.Transaction
+import org.scalacoin.protocol.transaction.{TransactionConstants, Transaction}
 import org.scalacoin.util.TestUtil
 import org.scalatest.{FlatSpec, MustMatchers}
 
@@ -48,5 +48,15 @@ class RawTransactionParserTest extends FlatSpec with MustMatchers {
     val serializedTx = RawTransactionParser.write(tx)
 
     serializedTx must be (rawTx)
+  }
+
+  it must "parse a transaction with one input and two outputs" in {
+    val tx = RawTransactionParser.read(TestUtil.parentSimpleRawTransaction)
+    tx.inputs.size must be (1)
+    tx.inputs.head.scriptSignature.hex must be ("4730440220048e15422cf62349dc586ffb8c749d40280781edd5064ff27a5910ff5cf225a802206a82685dbc2cf195d158c29309939d5a3cd41a889db6f766f3809fff35722305012103dcfc9882c1b3ae4e03fb6cac08bdb39e284e81d70c7aa8b27612457b2774509b")
+    tx.inputs.head.previousOutput.vout must be (1)
+    tx.inputs.head.previousOutput.txId must be ("65bd23d3fb0ac9d3ee0195aae8d033d6689dacf71907902b27a7ad6f6441a7cd")
+    tx.inputs.head.sequence must be (TransactionConstants.sequence)
+    tx.outputs.size must be (2)
   }
 }

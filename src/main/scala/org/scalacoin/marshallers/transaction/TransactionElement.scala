@@ -1,6 +1,6 @@
 package org.scalacoin.marshallers.transaction
 
-import org.scalacoin.util.ScalacoinUtil
+import org.scalacoin.util.{BitcoinSUtil}
 
 /**
  * Created by chris on 1/14/16.
@@ -25,5 +25,5 @@ trait TransactionElement {
    * The byte representation of the transaction element
    * @return
    */
-  def bytes : Seq[Byte] = ScalacoinUtil.decodeHex(hex)
+  def bytes : Seq[Byte] = BitcoinSUtil.decodeHex(hex)
 }
