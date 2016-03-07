@@ -1,7 +1,7 @@
 package org.scalacoin.marshallers.script
 
 import org.scalacoin.marshallers.MarshallerUtil
-import org.scalacoin.protocol.script.{ScriptPubKeyFactory, ScriptPubKeyImpl, ScriptPubKey}
+import org.scalacoin.protocol.script.{ScriptPubKeyFactory, ScriptPubKey}
 import spray.json._
 import DefaultJsonProtocol._
 
@@ -27,7 +27,7 @@ object ScriptPubKeyMarshaller extends DefaultJsonProtocol with MarshallerUtil {
       val m : Map[String,JsValue] = Map(
         ScriptSignatureMarshaller.asmKey -> JsString(scriptPubKey.asm.toString),
         ScriptSignatureMarshaller.hexKey -> JsString(scriptPubKey.hex),
-        reqSigsKey -> JsNumber(scriptPubKey.reqSigs.get),
+        reqSigsKey -> JsNumber(-1),
         typeKey -> JsString(scriptPubKey.scriptType.toString),
         addressesKey -> addressList
       )

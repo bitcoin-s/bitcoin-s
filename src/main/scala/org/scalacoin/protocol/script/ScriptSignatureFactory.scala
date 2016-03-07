@@ -40,15 +40,14 @@ trait ScriptSignatureFactory extends Factory[ScriptSignature] {
     val pubKeyBytesToPushOntoStack = BytesToPushOntoStackFactory.factory(pubKey.bytes.size)
     val asm : Seq[ScriptToken] = Seq(signatureBytesToPushOntoStack.get, ScriptConstantImpl(signature.hex),
       pubKeyBytesToPushOntoStack.get, ScriptConstantImpl(pubKey.hex))
-    val hex = asm.map(_.hex).mkString
-    ScriptSignatureImpl(hex)
+    fromAsm(asm)
   }
 
   /**
    * Returns an empty script signature
    * @return
    */
-  def empty = ScriptSignatureImpl("")
+  def empty = fromAsm(List())
 
   def fromBytes(bytes : Seq[Byte]) : ScriptSignature =  {
     RawScriptSignatureParser.read(bytes)
@@ -64,7 +63,7 @@ trait ScriptSignatureFactory extends Factory[ScriptSignature] {
       case List(w : BytesToPushOntoStack, x : ScriptConstant, y : BytesToPushOntoStack,
         z : ScriptConstant) => P2PKHScriptSignatureImpl(scriptSigHex)
 
-      case _ => ScriptSignatureImpl(scriptSigHex)
+      case _ => NonStandardScriptSignatureImpl(scriptSigHex)
     }
   }
 

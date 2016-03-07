@@ -1,5 +1,6 @@
 package org.scalacoin.protocol.script
 
+import org.scalacoin.crypto.{ECFactory, ECPublicKey}
 import org.scalacoin.marshallers.script.{ScriptParser, RawScriptPubKeyParser}
 import org.scalacoin.marshallers.transaction.TransactionElement
 import org.scalacoin.protocol._
@@ -22,18 +23,10 @@ sealed trait ScriptPubKey extends TransactionElement {
    */
   def asm : Seq[ScriptToken] = ScriptParser.fromBytes(bytes)
 
-
-  def reqSigs : Option[Int] = {
-    scriptType match {
-      case P2PKH => Some(1)
-      //TODO: Figure out how many signatures are actually required by the scriptPubKey
-      case P2SH => None
-      case MultiSignature =>
-        val signatureCount = asm.count(_.isInstanceOf[ScriptConstant])
-        Some(signatureCount)
-      case NonStandard => None
-    }
-  }
+  /**
+   * Returns the script type of this scriptPubKey
+   * @return
+   */
   def scriptType : ScriptType = {
     asm match {
       case List(OP_DUP, OP_HASH160, BytesToPushOntoStackImpl(x), ScriptConstantImpl(pubKeyHash), OP_EQUALVERIFY, OP_CHECKSIG) => P2PKH
@@ -61,7 +54,37 @@ trait P2PKHScriptPubKey extends ScriptPubKey
  * https://bitcoin.org/en/developer-guide#multisig
  * Format: <m> <A pubkey> [B pubkey] [C pubkey...] <n> OP_CHECKMULTISIG
  */
-trait MultiSignatureScriptPubKey extends ScriptPubKey
+trait MultiSignatureScriptPubKey extends ScriptPubKey {
+
+
+  /**
+   * Returns the amount of required signatures for this multisignature script pubkey output
+   * @return
+   */
+  def requiredSigs = {
+    asm.head match {
+      case x : ScriptNumberOperation => x.num
+      case _ => throw new RuntimeException("The first element of the multisignature pubkey must be a script number operation")
+    }
+  }
+
+  /**
+   * The maximum amount of signatures for this multisignature script pubkey output
+   * @return
+   */
+  def maxSigs = {
+    asm.reverse(1) match {
+      case x : ScriptNumberOperation => x.num
+      case _ => throw new RuntimeException("The second to last element of a multisignature pubkey must be a script number operation")
+    }
+  }
+
+  /**
+   * Returns the public keys encoded into the scriptPubKey
+   * @return
+   */
+  def publicKeys : Seq[ECPublicKey] = asm.slice(1,asm.size-2).map(key => ECFactory.publicKey(key.hex))
+}
 
 /**
  * Represents a pay-to-scripthash public key
@@ -77,8 +100,9 @@ trait P2SHScriptPubKey extends ScriptPubKey
  */
 trait P2PKScriptPubKey extends ScriptPubKey
 
+trait NonStandardScriptPubKey extends ScriptPubKey
 
-case class ScriptPubKeyImpl(hex : String) extends ScriptPubKey
+case class NonStandardScriptPubKeyImpl(hex : String) extends NonStandardScriptPubKey
 case class P2PKHScriptPubKeyImpl(hex : String) extends P2PKHScriptPubKey
 case class MultiSignatureScriptPubKeyImpl(hex : String) extends MultiSignatureScriptPubKey
 case class P2SHScriptPubKeyImpl(hex : String) extends P2SHScriptPubKey

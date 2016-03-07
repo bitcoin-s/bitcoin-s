@@ -1,6 +1,6 @@
 package org.scalacoin.marshallers.script
 
-import org.scalacoin.protocol.script.{ScriptSignatureFactory, ScriptSignature, ScriptSignatureImpl}
+import org.scalacoin.protocol.script.{ScriptSignatureFactory, ScriptSignature}
 import org.slf4j.LoggerFactory
 import spray.json._
 

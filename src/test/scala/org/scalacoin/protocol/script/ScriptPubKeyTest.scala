@@ -43,4 +43,15 @@ class ScriptPubKeyTest extends FlatSpec with MustMatchers {
 
     multiSigScriptPubKey.scriptType must be (MultiSignature)
   }
+
+  it must "derive the amount of required signatures from a multisignature script" in {
+    val multiSigRawScriptPubKeyHex = "5221025878e270211662a27181cf" +
+      "4d6ad4d2cf0e69a98a3815c086f587c7e9388d87182103fc85980e3fac1f3d" +
+      "8a5c3223c3ef5bffc1bd42d2cc42add8c3899cc66e7f1906210215b5bd0508" +
+      "69166a70a7341b4f216e268b7c6c7504576dcea2cce7d11cc9a35f53ae"
+    val multiSigRawScriptPubKey = MultiSignatureScriptPubKeyImpl(multiSigRawScriptPubKeyHex)
+
+    multiSigRawScriptPubKey.requiredSigs must be (2)
+    multiSigRawScriptPubKey.maxSigs must be (3)
+  }
 }

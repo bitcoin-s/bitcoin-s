@@ -39,7 +39,6 @@ class TransactionOutputMarshallerTest extends FlatSpec with MustMatchers {
       ScriptConstantImpl("321908115d8a138942f98b0b53f86c9a1848501a"),
       OP_EQUALVERIFY, OP_CHECKSIG))
     output.scriptPubKey.hex must be ("76a914321908115d8a138942f98b0b53f86c9a1848501a88ac")
-    output.scriptPubKey.reqSigs must be (Some(1))
     output.scriptPubKey.scriptType must be (P2PKH)
   }
 

@@ -1,9 +1,8 @@
 package org.scalacoin.marshallers.script
 
 import org.scalacoin.marshallers.RawBitcoinSerializer
-import org.scalacoin.protocol.script.{ScriptPubKeyFactory, ScriptPubKeyImpl, ScriptPubKey}
+import org.scalacoin.protocol.script.{ScriptPubKeyFactory, ScriptPubKey}
 import org.scalacoin.script.constant.ScriptToken
-import org.scalacoin.util.{BitcoinSUtil}
 import org.slf4j.LoggerFactory
 
 /**

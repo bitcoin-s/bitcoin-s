@@ -16,8 +16,7 @@ trait ScriptPubKeyFactory extends Factory[ScriptPubKey] {
   def factory(hex : String) : ScriptPubKey = fromHex(hex)
 
   def factory(indicator: UpdateScriptPubKeyAsm) : ScriptPubKey = {
-    val hex = indicator.asm.map(_.hex).mkString
-    ScriptPubKeyImpl(hex)
+    fromAsm(indicator.asm)
   }
 
   def factory(indicator: UpdateScriptPubKeyBytes) : ScriptPubKey = {
@@ -34,7 +33,7 @@ trait ScriptPubKeyFactory extends Factory[ScriptPubKey] {
 
   def factory(bytes : Array[Byte]) : ScriptPubKey = fromBytes(bytes.toSeq)
 
-  def empty : ScriptPubKey = ScriptPubKeyImpl("")
+  def empty : ScriptPubKey = fromAsm(List())
 
   def fromBytes(bytes : Seq[Byte]) : ScriptPubKey = RawScriptPubKeyParser.read(bytes)
 
@@ -49,7 +48,7 @@ trait ScriptPubKeyFactory extends Factory[ScriptPubKey] {
       //TODO: make this more robust, this isn't the pattern that multsignature scriptPubKeys follow
       case _ if (asm.size > 0 && asm.last == OP_CHECKMULTISIG) =>
         MultiSignatureScriptPubKeyImpl(scriptPubKeyHex)
-      case _ => ScriptPubKeyImpl(scriptPubKeyHex)
+      case _ => NonStandardScriptPubKeyImpl(scriptPubKeyHex)
     }
   }
 
