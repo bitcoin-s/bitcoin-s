@@ -1,6 +1,6 @@
 package org.scalacoin.crypto
 
-import org.scalacoin.protocol.script.{P2PKHScriptSignature, MultiSignatureScriptSignature, ScriptPubKey}
+import org.scalacoin.protocol.script._
 import org.scalacoin.protocol.transaction.{Transaction, TransactionInput}
 import org.scalacoin.script.crypto.HashType
 import org.scalacoin.util.BitcoinSUtil
@@ -52,9 +52,26 @@ trait TransactionSignatureChecker {
         p2pkhScriptSig.publicKeys.head.verify(hashForSignature,p2pkhScriptSig.signatures.head)
 
       case multiSignatureScript : MultiSignatureScriptSignature =>
+        scriptPubKey match {
+          case x : MultiSignatureScriptPubKey =>
+            val pubKeys = ???
+            ???
+          case x : P2PKHScriptPubKey =>
+            throw new RuntimeException("Cannot check multisignature script signature against a non multisignature scriptPubKey type")
+
+          case y : P2SHScriptPubKey =>
+            throw new RuntimeException("Cannot check multisignature script signature against a non multisignature scriptPubKey type")
+
+          case z : P2PKScriptPubKey =>
+            throw new RuntimeException("Cannot check multisignature script signature against a non multisignature scriptPubKey type")
+
+          case  q : NonStandardScriptPubKey =>
+            throw new RuntimeException("Cannot check multisignature script signature against a non multisignature scriptPubKey type")
+
+        }
 /*        val result : Seq[Boolean] = for {
           (sig,pubKey) <- multiSignatureScript.signatures.zip(multiSignatureScript)
-        }*/???
+        }*/
     }
   }
 

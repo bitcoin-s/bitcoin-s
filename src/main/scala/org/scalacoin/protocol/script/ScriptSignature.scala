@@ -113,8 +113,7 @@ sealed trait ScriptSignature extends TransactionElement {
   }
 }
 
-case class ScriptSignatureImpl(hex : String) extends ScriptSignature {
-
+trait NonStandardScriptSignature extends ScriptSignature {
   def signatures : Seq[ECDigitalSignature]  = {
     if (asm.headOption.isDefined && asm.head == OP_0 && asm.contains(OP_CHECKMULTISIG)) {
       //must be p2sh because of bug that forces p2sh scripts
@@ -141,6 +140,7 @@ case class ScriptSignatureImpl(hex : String) extends ScriptSignature {
     } else Seq(ECFactory.digitalSignature(asm(1).bytes))
   }
 }
+case class NonStandardScriptSignatureImpl(hex : String) extends NonStandardScriptSignature
 
 
 /**
