@@ -14,14 +14,14 @@ trait ECFactory extends Factory[BaseECKey] {
    * @param hex
    * @return
    */
-  def privateKey(hex : String) : ECPrivateKey = privateKey(BitcoinSUtil.decodeHex(hex))
+  def privateKey(hex : String) : ECPrivateKey = ECPrivateKeyImpl(hex)
 
   /**
    * Creates a private key from a sequence of bytes
    * @param bytes
    * @return
    */
-  def privateKey(bytes : Seq[Byte]) : ECPrivateKey = ECPrivateKeyImpl(bytes)
+  def privateKey(bytes : Seq[Byte]) : ECPrivateKey = privateKey(BitcoinSUtil.encodeHex(bytes))
 
   /**
    * Generates a fresh ECPrivateKey
@@ -37,14 +37,14 @@ trait ECFactory extends Factory[BaseECKey] {
    * @param hex
    * @return
    */
-  def publicKey(hex : String) : ECPublicKey = publicKey(BitcoinSUtil.decodeHex(hex))
+  def publicKey(hex : String) : ECPublicKey = ECPublicKeyImpl(hex)
 
   /**
    * Creates a public key from a sequence of bytes
    * @param bytes
    * @return
    */
-  def publicKey(bytes : Seq[Byte]) : ECPublicKey = ECPublicKeyImpl(bytes)
+  def publicKey(bytes : Seq[Byte]) : ECPublicKey = publicKey(BitcoinSUtil.encodeHex(bytes))
 
   /**
    * Generates a fresh public key

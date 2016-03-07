@@ -17,4 +17,4 @@ sealed trait ECPrivateKey extends BaseECKey {
 
 }
 
-sealed case class ECPrivateKeyImpl(bytes : Seq[Byte]) extends ECPrivateKey
+sealed case class ECPrivateKeyImpl(hex : String) extends ECPrivateKey

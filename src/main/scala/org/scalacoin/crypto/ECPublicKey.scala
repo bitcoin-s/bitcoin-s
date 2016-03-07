@@ -20,4 +20,4 @@ trait ECPublicKey extends BaseECKey {
   }
 }
 
-case class ECPublicKeyImpl(bytes : Seq[Byte]) extends ECPublicKey
+case class ECPublicKeyImpl(hex : String) extends ECPublicKey

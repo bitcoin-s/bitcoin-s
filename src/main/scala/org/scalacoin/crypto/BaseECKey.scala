@@ -8,9 +8,9 @@ import org.scalacoin.util.{BitcoinSUtil, ScalacoinUtil}
  */
 trait BaseECKey {
   import org.bitcoinj.core.ECKey
-  def hex : String = BitcoinSUtil.encodeHex(bytes)
+  def hex : String
 
-  def bytes : Seq[Byte]
+  def bytes : Seq[Byte] = BitcoinSUtil.decodeHex(hex)
 
   /**
    * Signs a given sequence of bytes with the signingKey
