@@ -49,8 +49,37 @@ sealed trait ScriptPubKey extends TransactionElement {
 
 }
 
+/**
+ * Represents a pay-to-pubkey hash script pubkey
+ * https://bitcoin.org/en/developer-guide#pay-to-public-key-hash-p2pkh
+ * Format: OP_DUP OP_HASH160 <PubKeyHash> OP_EQUALVERIFY OP_CHECKSIG
+ */
+trait P2PKHScriptPubKey extends ScriptPubKey
 
-sealed case class ScriptPubKeyImpl(hex : String) extends ScriptPubKey
-sealed case class P2PKHScriptPubKey(hex : String) extends ScriptPubKey
-sealed case class MultiSignatureScriptPubKey(hex : String) extends ScriptPubKey
-sealed case class P2SHScriptPubKey(hex : String) extends ScriptPubKey
+/**
+ * Represents a multisignature script public key
+ * https://bitcoin.org/en/developer-guide#multisig
+ * Format: <m> <A pubkey> [B pubkey] [C pubkey...] <n> OP_CHECKMULTISIG
+ */
+trait MultiSignatureScriptPubKey extends ScriptPubKey
+
+/**
+ * Represents a pay-to-scripthash public key
+ * https://bitcoin.org/en/developer-guide#pay-to-script-hash-p2sh
+ * Format: OP_HASH160 <Hash160(redeemScript)> OP_EQUAL
+ */
+trait P2SHScriptPubKey extends ScriptPubKey
+
+/**
+ * Represents a pay to public key script public key
+ * https://bitcoin.org/en/developer-guide#pubkey
+ * Format: <pubkey> OP_CHECKSIG
+ */
+trait P2PKScriptPubKey extends ScriptPubKey
+
+
+case class ScriptPubKeyImpl(hex : String) extends ScriptPubKey
+case class P2PKHScriptPubKeyImpl(hex : String) extends P2PKHScriptPubKey
+case class MultiSignatureScriptPubKeyImpl(hex : String) extends MultiSignatureScriptPubKey
+case class P2SHScriptPubKeyImpl(hex : String) extends P2SHScriptPubKey
+case class P2PKScriptPubKeyImpl(hex : String) extends P2PKScriptPubKey

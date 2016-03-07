@@ -1,6 +1,6 @@
 package org.scalacoin.crypto
 
-import org.scalacoin.protocol.script.ScriptPubKey
+import org.scalacoin.protocol.script.{P2PKHScriptSignature, MultiSignatureScriptSignature, ScriptPubKey}
 import org.scalacoin.protocol.transaction.{Transaction, TransactionInput}
 import org.scalacoin.script.crypto.HashType
 import org.scalacoin.util.BitcoinSUtil
@@ -42,6 +42,38 @@ trait TransactionSignatureChecker {
    * @return
    */
   def checkSignature(spendingTransaction : Transaction, inputIndex : Int, scriptPubKey: ScriptPubKey) : Boolean = {
+    val input = spendingTransaction.inputs(inputIndex)
+    val scriptSig = input.scriptSignature
+    scriptSig match {
+      case p2pkhScriptSig : P2PKHScriptSignature =>
+        val hashType = p2pkhScriptSig.hashType(p2pkhScriptSig.signatures.head)
+        val hashForSignature : Seq[Byte] =
+          TransactionSignatureSerializer.hashForSignature(spendingTransaction,inputIndex,scriptPubKey,hashType)
+        p2pkhScriptSig.publicKeys.head.verify(hashForSignature,p2pkhScriptSig.signatures.head)
+
+      case multiSignatureScript : MultiSignatureScriptSignature =>
+/*        val result : Seq[Boolean] = for {
+          (sig,pubKey) <- multiSignatureScript.signatures.zip(multiSignatureScript)
+        }*/???
+    }
+  }
+
+
+  /**
+   * Checks the list of signatures against the list of public keys
+   * sigs are checked against the public key at the corresponding index
+   * @param sigs
+   * @param pubKeys
+   * @return
+   */
+  private def checkSigsAgainstPubKeys(spendingTx : Transaction, inputIndex : Int, sigs : Seq[ECDigitalSignature], pubKeys : Seq[ECPublicKey]) : Boolean = {
+    require(sigs.size == pubKeys.size, "You gave a different amount of signatures to check than public keys provided")
+/*    val result : Seq[Boolean] = for {
+      (sig,pubKey) <- (sigs.zip(pubKeys))
+    } yield {
+        val hashForSig = TransactionSignatureSerializer.hashForSignature(spendingTx,inputIndex,)
+        pubKey.verify(_,sig)
+      }*/
     ???
   }
 
