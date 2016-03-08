@@ -30,7 +30,7 @@ class ScriptSignatureTest extends FlatSpec with MustMatchers {
   }
 
   it must "find the digital signatures for a p2sh script signature for a 2/3 p2sh address" in {
-    val scriptSig = TestUtil.p2shInputScript2Of3
+    val scriptSig = TestUtil.p2shInputScript2Of2
     scriptSig.signatures must be (Seq(
       ECFactory.digitalSignature("304402207d764cb90c9fd84b74d33a47cf3a0ffead9ded98333776becd6acd32c4426dac02203905a0d064e7f53d07793e86136571b6e4f700c1cfb888174e84d78638335b8101"),
       ECFactory.digitalSignature("3045022100906aaca39f022acd8b7a38fd2f92aca9e9f35cfeaee69a6f13e1d083ae18222602204c9ed96fc6c4de56fd85c679fc59c16ee1ccc80c42563b86174e1a506fc007c801")
@@ -49,7 +49,7 @@ class ScriptSignatureTest extends FlatSpec with MustMatchers {
     ))
   }
   it must "find the hash type for a p2sh script signature" in {
-    TestUtil.p2shInputScript.hashType(TestUtil.p2shInputScript2Of3.signatures.head) must be (SIGHASH_ALL)
+    TestUtil.p2shInputScript.hashType(TestUtil.p2shInputScript2Of2.signatures.head) must be (SIGHASH_ALL)
   }
 
   it must "find the digital signature and hash type for a SIGHASH_SINGLE" in {
@@ -64,10 +64,6 @@ class ScriptSignatureTest extends FlatSpec with MustMatchers {
     scriptSig.hashType(scriptSig.signatures.head) must be (SIGHASH_ALL)
   }
 
-  it must "find all of the digital signatures for a multisignature scriptSig" in {
-    val (spendingTx,inputIndex,_,_) = TransactionTestUtil.signedMultiSignatureTransaction
-    val scriptSig = spendingTx.inputs(inputIndex).scriptSignature
-    scriptSig.signatures.size must be (2)
-  }
+
 
 }

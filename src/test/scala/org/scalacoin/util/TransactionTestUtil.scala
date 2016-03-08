@@ -89,6 +89,24 @@ trait TransactionTestUtil {
     def key3 = ECFactory.fromBase58ToPrivateKey("cVHwXSPRZmL9adctwBwmn4oTZdZMbaCsR5XF6VznqMgcvt1FDDxg",TestNet3)
     (signedMultiSignatureTx,0,multiSignatureScriptPubKey, Seq(key1.publicKey,key2.publicKey,key3.publicKey))
   }
+
+
+  /**
+   * Returns a p2sh transaction with its corresponding crediting output
+   * @return
+   */
+  def p2shTransactionWithSpendingInputAndCreditingOutput : (Transaction, TransactionInput, Int, TransactionOutput) = {
+    //https://tbtc.blockr.io/api/v1/tx/raw/e17d316006850c1764301befcf82c8c84cd1794f3f0d0382b296df2edab0d685
+    val rawCreditingTx = "01000000014d9a8a29a473e30de8ec22b10481a5b33c86d4b6d5ee6804ee207e85db39f067000000007000483045022100eac0b98d87a21fc03b38e3f6c19b93a5ba8d37899fbbb5ccfbdd77cb2d8b684b02202e91762fa619c0dd6b036ca43129199d7d87226ad84e759bd0d70229749846bf0125512103c6d44c0db5a214ed5c3c417ba462878b2618967030dd138d4fce5a7462508e7451aeffffffff02d2f72d000000000017a914ce7d72f3b316149977fc5a1075c3733019a89c7b8750c30000000000001976a914849a3f60fdec175a56eedd1e7ad20ef057b330b888ac00000000"
+    val creditingTx = Transaction.fromHex(rawCreditingTx)
+    val spendingRawTx = "010000000185d6b0da2edf96b282030d3f4f79d14cc8c882cfef1b3064170c850660317de1000000006f0047304402207df6dd8dad22d49c3c83d8031733c32a53719278eb7985d3b35b375d776f84f102207054f9209a1e87d55feafc90aa04c33008e5bae9191da22aeaa16efde96f41f00125512102b022902a0fdd71e831c37e4136c2754a59887be0618fb75336d7ab67e2982ff551aeffffffff02204e00000000000017a914eda8ae08b5c9f973f49543e90a7c292367b3337c87197d2d000000000017a914be2319b9060429692ebeffaa3be38497dc5380c88700000000"
+    val spendingTx = Transaction.fromHex(spendingRawTx)
+    val inputIndex = 0
+    val input = spendingTx.inputs(inputIndex)
+
+    (spendingTx, input, inputIndex, creditingTx.outputs(input.previousOutput.vout))
+
+  }
 }
 
 object TransactionTestUtil extends TransactionTestUtil
