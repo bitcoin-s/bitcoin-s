@@ -182,6 +182,7 @@ trait P2SHScriptSignature extends ScriptSignature {
    */
   def publicKeys : Seq[ECPublicKey] = {
     val pubKeys : Seq[ScriptToken] = redeemScript.filter(_.isInstanceOf[ScriptConstant])
+      .filterNot(_.isInstanceOf[ScriptNumberOperation])
     pubKeys.map(k => ECFactory.publicKey(k.hex))
   }
 

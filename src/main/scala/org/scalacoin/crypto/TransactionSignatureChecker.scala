@@ -52,47 +52,77 @@ trait TransactionSignatureChecker {
         p2pkhScriptSig.publicKeys.head.verify(hashForSignature,p2pkhScriptSig.signatures.head)
 
       case multiSignatureScript : MultiSignatureScriptSignature =>
-        scriptPubKey match {
-          case x : MultiSignatureScriptPubKey =>
-            val result : Seq[Boolean] = for {
-              (sig,pubKey) <- multiSignatureScript.signatures.zip(x.publicKeys)
-            } yield {
-                val hashType = multiSignatureScript.hashType(sig)
-                val hashForSig : Seq[Byte] =
-                  TransactionSignatureSerializer.hashForSignature(spendingTransaction,inputIndex,scriptPubKey,hashType)
-                pubKey.verify(hashForSig,sig)
-              }
-            !result.exists(_ == false)
-          case x : P2PKHScriptPubKey =>
-            throw new RuntimeException("Cannot check multisignature script signature against a non multisignature scriptPubKey type")
-          case y : P2SHScriptPubKey =>
-            throw new RuntimeException("Cannot check multisignature script signature against a non multisignature scriptPubKey type")
-          case z : P2PKScriptPubKey =>
-            throw new RuntimeException("Cannot check multisignature script signature against a non multisignature scriptPubKey type")
-          case q : NonStandardScriptPubKey =>
-            throw new RuntimeException("Cannot check multisignature script signature against a non multisignature scriptPubKey type")
-        }
+        checkMultiSignatureScriptSig(spendingTransaction,inputIndex,scriptPubKey,multiSignatureScript)
+      case p2shSignatureScript : P2SHScriptSignature =>
+        checkP2SHScriptSignature(spendingTransaction,inputIndex,scriptPubKey, p2shSignatureScript)
 
     }
   }
 
 
   /**
-   * Checks the list of signatures against the list of public keys
-   * sigs are checked against the public key at the corresponding index
-   * @param sigs
-   * @param pubKeys
+   * Checks the p2sh scriptsig against the given scriptPubKey
+   * throws an exception if the given scriptPubKey isn't a P2SHScriptPubKey
+   * @param spendingTransaction
+   * @param inputIndex
+   * @param scriptPubKey
+   * @param p2shScriptSignature
    * @return
    */
-  private def checkSigsAgainstPubKeys(spendingTx : Transaction, inputIndex : Int, sigs : Seq[ECDigitalSignature], pubKeys : Seq[ECPublicKey]) : Boolean = {
-    require(sigs.size == pubKeys.size, "You gave a different amount of signatures to check than public keys provided")
-/*    val result : Seq[Boolean] = for {
-      (sig,pubKey) <- (sigs.zip(pubKeys))
-    } yield {
-        val hashForSig = TransactionSignatureSerializer.hashForSignature(spendingTx,inputIndex,)
-        pubKey.verify(_,sig)
-      }*/
-    ???
+  private def checkP2SHScriptSignature(spendingTransaction : Transaction, inputIndex : Int, scriptPubKey : ScriptPubKey,
+                                       p2shScriptSignature : P2SHScriptSignature) : Boolean = {
+    scriptPubKey match {
+      case x : P2SHScriptPubKey =>
+        val result : Seq[Boolean] = for {
+          (sig,pubKey) <- p2shScriptSignature.signatures.zip(p2shScriptSignature.publicKeys)
+        } yield {
+          val hashType = p2shScriptSignature.hashType(sig)
+          val hashForSig = TransactionSignatureSerializer.hashForSignature(spendingTransaction,inputIndex,x,hashType)
+          pubKey.verify(hashForSig, sig)
+        }
+        !result.exists(_ == false)
+      case x : MultiSignatureScriptPubKey =>
+        throw new RuntimeException("Cannot check p2sh script signature against a non p2sh scriptPubKey type")
+
+      case x : P2PKHScriptPubKey =>
+        throw new RuntimeException("Cannot check p2sh script signature against a non p2sh scriptPubKey type")
+      case x : P2PKScriptPubKey =>
+        throw new RuntimeException("Cannot check p2sh script signature against a non p2sh scriptPubKey type")
+      case x : NonStandardScriptPubKey =>
+        throw new RuntimeException("Cannot check p2sh script signature against a non p2sh scriptPubKey type")
+    }
+  }
+  /**
+   * Checks a multisignature script sig against the given scriptPubKey
+   * throws and exception if the given scriptPubKey is not of type MultiSignatureScriptPubKey
+   * @param spendingTransaction
+   * @param inputIndex
+   * @param scriptPubKey
+   * @param multiSignatureScript
+   * @return
+   */
+  private def checkMultiSignatureScriptSig(spendingTransaction : Transaction, inputIndex : Int, scriptPubKey : ScriptPubKey,
+                                           multiSignatureScript : MultiSignatureScriptSignature) : Boolean = {
+    scriptPubKey match {
+      case x : MultiSignatureScriptPubKey =>
+        val result : Seq[Boolean] = for {
+          (sig,pubKey) <- multiSignatureScript.signatures.zip(x.publicKeys)
+        } yield {
+            val hashType = multiSignatureScript.hashType(sig)
+            val hashForSig : Seq[Byte] =
+              TransactionSignatureSerializer.hashForSignature(spendingTransaction,inputIndex,scriptPubKey,hashType)
+            pubKey.verify(hashForSig,sig)
+          }
+        !result.exists(_ == false)
+      case x : P2PKHScriptPubKey =>
+        throw new RuntimeException("Cannot check multisignature script signature against a non multisignature scriptPubKey type")
+      case y : P2SHScriptPubKey =>
+        throw new RuntimeException("Cannot check multisignature script signature against a non multisignature scriptPubKey type")
+      case z : P2PKScriptPubKey =>
+        throw new RuntimeException("Cannot check multisignature script signature against a non multisignature scriptPubKey type")
+      case q : NonStandardScriptPubKey =>
+        throw new RuntimeException("Cannot check multisignature script signature against a non multisignature scriptPubKey type")
+    }
   }
 
 }
