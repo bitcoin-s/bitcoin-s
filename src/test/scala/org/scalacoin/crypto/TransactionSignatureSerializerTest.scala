@@ -280,6 +280,42 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers {
    }
 
 
+  it must "serialize a transaction that has a p2sh input script" in {
+    val (spendingTx,spendingInput,inputIndex,creditingOutput) =
+      TransactionTestUtil.p2shTransactionWithSpendingInputAndCreditingOutput
+
+    val bitcoinjTx = BitcoinjConversions.transaction(spendingTx)
+    val hashType = spendingInput.scriptSignature.hashType(spendingInput.scriptSignature.signatures.head)
+    val bitcoinjSerializeForSig : Seq[Byte] = BitcoinJSignatureSerialization.serializeForSignature(
+      bitcoinjTx, inputIndex, creditingOutput.scriptPubKey.bytes.toArray, hashType.byte
+    )
+
+
+    val serializedTxForSig : String = BitcoinSUtil.encodeHex(
+      TransactionSignatureSerializer.serializeForSignature(spendingTx,inputIndex,creditingOutput.scriptPubKey,hashType
+      ))
+
+    serializedTxForSig must be (BitcoinSUtil.encodeHex(bitcoinjSerializeForSig))
+
+  }
+
+  it must "hash a transaction that has p2sh input script" in {
+    val (spendingTx,spendingInput,inputIndex,creditingOutput) =
+      TransactionTestUtil.p2shTransactionWithSpendingInputAndCreditingOutput
+
+    val bitcoinjTx = BitcoinjConversions.transaction(spendingTx)
+    val hashType = spendingInput.scriptSignature.hashType(spendingInput.scriptSignature.signatures.head)
+    val bitcoinjHashForSig : Seq[Byte] = BitcoinJSignatureSerialization.hashForSignature(
+      bitcoinjTx, inputIndex, creditingOutput.scriptPubKey.bytes.toArray, hashType.byte
+    )
+    val hashedTxForSig : String = BitcoinSUtil.encodeHex(
+      TransactionSignatureSerializer.hashForSignature(spendingTx,inputIndex,creditingOutput.scriptPubKey,hashType
+      ))
+
+    hashedTxForSig must be (BitcoinSUtil.encodeHex(bitcoinjHashForSig))
+  }
+
+
 
   /**
    * Mimics a test case inside of bitcoinj
