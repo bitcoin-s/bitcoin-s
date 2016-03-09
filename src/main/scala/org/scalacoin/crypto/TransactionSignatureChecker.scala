@@ -46,11 +46,7 @@ trait TransactionSignatureChecker {
     val scriptSig = input.scriptSignature
     scriptSig match {
       case p2pkhScriptSig : P2PKHScriptSignature =>
-        val hashType = p2pkhScriptSig.hashType(p2pkhScriptSig.signatures.head)
-        val hashForSignature : Seq[Byte] =
-          TransactionSignatureSerializer.hashForSignature(spendingTransaction,inputIndex,scriptPubKey,hashType)
-        p2pkhScriptSig.publicKeys.head.verify(hashForSignature,p2pkhScriptSig.signatures.head)
-
+        checkP2PKHScriptSignature(spendingTransaction,inputIndex,scriptPubKey, p2pkhScriptSig)
       case multiSignatureScript : MultiSignatureScriptSignature =>
         checkMultiSignatureScriptSig(spendingTransaction,inputIndex,scriptPubKey,multiSignatureScript)
       case p2shSignatureScript : P2SHScriptSignature =>
@@ -59,6 +55,14 @@ trait TransactionSignatureChecker {
     }
   }
 
+
+  def checkP2PKHScriptSignature(spendingTransaction : Transaction, inputIndex : Int, scriptPubKey : ScriptPubKey,
+                                p2pkhScriptSig : P2PKHScriptSignature) : Boolean = {
+    val hashType = p2pkhScriptSig.hashType(p2pkhScriptSig.signatures.head)
+    val hashForSignature : Seq[Byte] =
+      TransactionSignatureSerializer.hashForSignature(spendingTransaction,inputIndex,scriptPubKey,hashType)
+    p2pkhScriptSig.publicKeys.head.verify(hashForSignature,p2pkhScriptSig.signatures.head)
+  }
 
   /**
    * Checks the p2sh scriptsig against the given scriptPubKey
@@ -78,12 +82,18 @@ trait TransactionSignatureChecker {
         } yield {
           val hashType = p2shScriptSignature.hashType(sig)
           val hashForSig = TransactionSignatureSerializer.hashForSignature(spendingTransaction,inputIndex,x,hashType)
+          logger.info("sig: " + sig)
+          logger.info("Hash for sig: " + BitcoinSUtil.encodeHex(hashForSig))
           pubKey.verify(hashForSig, sig)
         }
-        !result.exists(_ == false)
+        logger.info("P2SH sigs:  " + p2shScriptSignature.signatures)
+        logger.info("P2SH pub keys: " + p2shScriptSignature.publicKeys)
+        logger.info("P2SH sigs & keys: " + p2shScriptSignature.signatures.zip(p2shScriptSignature.publicKeys))
+        logger.info("Redeem script: " + p2shScriptSignature.redeemScript)
+        logger.info("Results from checking p2sh scriptSig: " + result)
+        !result.contains(false)
       case x : MultiSignatureScriptPubKey =>
         throw new RuntimeException("Cannot check p2sh script signature against a non p2sh scriptPubKey type")
-
       case x : P2PKHScriptPubKey =>
         throw new RuntimeException("Cannot check p2sh script signature against a non p2sh scriptPubKey type")
       case x : P2PKScriptPubKey =>
@@ -110,10 +120,10 @@ trait TransactionSignatureChecker {
         } yield {
             val hashType = multiSignatureScript.hashType(sig)
             val hashForSig : Seq[Byte] =
-              TransactionSignatureSerializer.hashForSignature(spendingTransaction,inputIndex,scriptPubKey,hashType)
+              TransactionSignatureSerializer.hashForSignature(spendingTransaction,inputIndex,x,hashType)
             pubKey.verify(hashForSig,sig)
           }
-        !result.exists(_ == false)
+        !result.contains(false)
       case x : P2PKHScriptPubKey =>
         throw new RuntimeException("Cannot check multisignature script signature against a non multisignature scriptPubKey type")
       case y : P2SHScriptPubKey =>

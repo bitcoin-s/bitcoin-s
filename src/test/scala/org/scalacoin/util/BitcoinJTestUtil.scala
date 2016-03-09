@@ -75,6 +75,23 @@ trait BitcoinJTestUtil {
     (spendTx,inputIndex,multisigScript)
   }
 
+  /**
+   * Returns a p2sh transaction with its corresponding crediting output
+   * @return
+   */
+  def p2shTransactionWithSpendingInputAndCreditingOutput : (org.bitcoinj.core.Transaction,
+    org.bitcoinj.core.TransactionInput, Int, org.bitcoinj.core.TransactionOutput) = {
+    val rawCreditingTx = TestUtil.rawP2SH2Of2CreditingTx
+    val creditingTx = new org.bitcoinj.core.Transaction(params, BitcoinSUtil.decodeHex(rawCreditingTx).toArray)
+
+    val spendingRawTx = TestUtil.rawP2SH2Of2Tx
+    val spendingTx = new org.bitcoinj.core.Transaction(params, BitcoinSUtil.decodeHex(spendingRawTx).toArray)
+    val inputIndex = 0
+    val input = spendingTx.getInput(inputIndex)
+    val output = creditingTx.getOutput(input.getOutpoint.getIndex)
+    (spendingTx,input,inputIndex,output)
+
+  }
 }
 
 object BitcoinJTestUtil extends BitcoinJTestUtil

@@ -8,6 +8,7 @@ import org.bitcoinj.params.TestNet3Params
 import org.scalacoin.config.TestNet3
 import org.scalacoin.crypto.ECPublicKey
 import org.scalacoin.protocol.script.{UpdateScriptPubKeyAsm, ScriptPubKeyFactory, ScriptPubKey}
+import org.scalacoin.protocol.transaction.{TransactionOutput, Transaction}
 import org.scalacoin.script.ScriptOperationFactory
 import org.scalacoin.script.constant.{ScriptConstantImpl, ScriptToken}
 import org.slf4j.LoggerFactory
@@ -44,7 +45,6 @@ trait BitcoinjConversions {
     try {
       import org.bitcoinj.core._
       import org.bitcoinj.script._
-      import Transaction._
       for { i <- 0 until tx.getInputs.size} {
         //empty script
         tx.getInput(i).setScriptSig(new ScriptBuilder().build())
@@ -66,7 +66,7 @@ trait BitcoinjConversions {
       // already. Perhaps it felt safer to him in some way, or is another leftover from how the code was written.
       val input = tx.getInputs.get(inputIndex);
       input.setScriptSig(connectedScript1);
-      if ((sigHashType & 0x1f) == (SigHash.NONE.ordinal() + 1)) {
+      if ((sigHashType & 0x1f) == (org.bitcoinj.core.Transaction.SigHash.NONE.ordinal() + 1)) {
         // SIGHASH_NONE means no outputs are signed at all - the signature is effectively for a "blank cheque".
         //tx.outputs = new util.ArrayList[TransactionOutput](0);
         tx.clearOutputs()
@@ -77,7 +77,7 @@ trait BitcoinjConversions {
             tx.getInputs.get(i).setSequenceNumber(0);
         }
 
-      } else if ((sigHashType & 0x1f) == (SigHash.SINGLE.ordinal() + 1)) {
+      } else if ((sigHashType & 0x1f) == (org.bitcoinj.core.Transaction.SigHash.SINGLE.ordinal() + 1)) {
         logger.info("Sighash type was SIGHASH_SINGLE")
         // SIGHASH_SINGLE means only sign the output at the same index as the input (ie, my output).
         if (inputIndex >= tx.getOutputs.size()) {
@@ -90,14 +90,14 @@ trait BitcoinjConversions {
 
           // Bitcoin Core's bug is that SignatureHash was supposed to return a hash and on this codepath it
           // actually returns the constant "1" to indicate an error, which is never checked for. Oops.
-          return ScalacoinUtil.encodeHex(Sha256Hash.wrap("0100000000000000000000000000000000000000000000000000000000000000").getBytes)
+          return BitcoinSUtil.encodeHex(Sha256Hash.wrap("0100000000000000000000000000000000000000000000000000000000000000").getBytes)
         }
         // In SIGHASH_SINGLE the outputs after the matching input index are deleted, and the outputs before
         // that position are "nulled out". Unintuitively, the value in a "null" transaction is set to -1.
         //tx.outputs = new util.ArrayList[TransactionOutput](tx.getOutputs.subList(0, inputIndex + 1))
         tx.clearOutputs()
         for { i <- 0 until inputIndex } {
-          tx.addOutput(new TransactionOutput(params, tx, Coin.NEGATIVE_SATOSHI, List[Byte]().toArray))
+          tx.addOutput(new org.bitcoinj.core.TransactionOutput(params, tx, Coin.NEGATIVE_SATOSHI, List[Byte]().toArray))
         }
         // The signature isn't broken by new versions of the transaction issued by other parties.
         for {i <- 0 until tx.getInputs.size }
@@ -158,6 +158,10 @@ trait BitcoinjConversions {
   def transaction(tx : org.scalacoin.protocol.transaction.Transaction) : org.bitcoinj.core.Transaction = {
     new org.bitcoinj.core.Transaction(params,BitcoinSUtil.decodeHex(tx.hex).toArray)
   }
+
+
+
+
 }
 
 

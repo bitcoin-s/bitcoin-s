@@ -30,35 +30,12 @@ sealed trait ScriptSignature extends TransactionElement {
   /**
    * The digital signatures contained inside of the script signature
    * p2pkh script signatures only have one sig
+   * p2pk script signatures only have one sigs
    * p2sh script signatures can have m sigs
    * multisignature scripts can have m sigs
    * @return
    */
-  def signatures : Seq[ECDigitalSignature]/*  = {
-    if (asm.headOption.isDefined && asm.head == OP_0 && asm.contains(OP_CHECKMULTISIG)) {
-      //must be p2sh because of bug that forces p2sh scripts
-      //to begin with OP_0
-      //scripSig for p2sh input script
-      //OP_0 <scriptSig> <scriptSig> ... <scriptSig> <redeemScript>
-
-      val (scriptSigs,_) = splitAtRedeemScript(asm)
-      logger.info("Script sigs: " + scriptSigs)
-      //filter out all of the PUSHDATA / BytesToPushOntoStack operations
-
-      val scriptSigsWithoutPushOps = filterPushOps(scriptSigs)
-      //remove the OP_0 that precedes every p2sh input script
-      val scriptSigsWithoutPushOpsAndOp0 = scriptSigsWithoutPushOps.tail
-      scriptSigsWithoutPushOpsAndOp0.map(sig => ECFactory.digitalSignature(sig.bytes))
-    } else if (asm.headOption.isDefined && asm.head == OP_0) {
-      //this means we have a traditional multisignature scriptSig
-      val scriptSigs = asm.slice(1,asm.size)
-      val scriptSigsWithoutPushOps = filterPushOps(scriptSigs)
-      //remove the OP_0 that precedes every multisignature input script
-      val scriptSigsWithoutPushOpsAndOp0 = scriptSigsWithoutPushOps.tail
-      scriptSigsWithoutPushOpsAndOp0.map(sig => ECFactory.digitalSignature(sig.bytes))
-      scriptSigsWithoutPushOps.map(sig => ECFactory.digitalSignature(sig.bytes))
-    } else Seq(ECFactory.digitalSignature(asm(1).bytes))
-  }*/
+  def signatures : Seq[ECDigitalSignature]
 
   /**
    * Derives the hash type for a given digitalSignature
@@ -174,18 +151,22 @@ trait P2SHScriptSignature extends ScriptSignature {
    * The redeemScript represents the conditions that must be satisfied to spend the output
    * @return
    */
-  def redeemScript : Seq[ScriptToken] = splitAtRedeemScript(asm)._2
+  def redeemScript : ScriptPubKey = ScriptPubKeyFactory.fromAsm(splitAtRedeemScript(asm)._2)
 
   /**
    * Returns the public keys for the p2sh scriptSignature
    * @return
    */
   def publicKeys : Seq[ECPublicKey] = {
-    val pubKeys : Seq[ScriptToken] = redeemScript.filter(_.isInstanceOf[ScriptConstant])
+    val pubKeys : Seq[ScriptToken] = redeemScript.asm.filter(_.isInstanceOf[ScriptConstant])
       .filterNot(_.isInstanceOf[ScriptNumberOperation])
     pubKeys.map(k => ECFactory.publicKey(k.hex))
   }
 
+  /**
+   * The digital signatures inside of the scriptSig
+   * @return
+   */
   def signatures : Seq[ECDigitalSignature] = {
     val nonRedeemScript = splitAtRedeemScript(asm)._1
     val sigs = nonRedeemScript.filter(_.isInstanceOf[ScriptConstant]).filterNot(_.isInstanceOf[ScriptNumberOperation])
@@ -201,6 +182,10 @@ trait P2SHScriptSignature extends ScriptSignature {
  * OP_0 <A sig> [B sig] [C sig...]
  */
 trait MultiSignatureScriptSignature extends ScriptSignature {
+  /**
+   * The digital signatures inside of the scriptSig
+   * @return
+   */
   def signatures : Seq[ECDigitalSignature] = {
     asm.filter(_.isInstanceOf[ScriptConstant])
       .filterNot(_.isInstanceOf[ScriptNumberOperation])
@@ -213,6 +198,10 @@ trait MultiSignatureScriptSignature extends ScriptSignature {
  * https://bitcoin.org/en/developer-guide#pubkey
  */
 trait PubKeyScriptSignature extends ScriptSignature {
+  /**
+   * The digital signatures inside of the scriptSig
+   * @return
+   */
   def signatures : Seq[ECDigitalSignature] = {
     Seq(ECFactory.digitalSignature(asm.head.hex))
   }

@@ -34,7 +34,7 @@ class MultiSignatureScriptPubKeyTest extends FlatSpec with MustMatchers {
       case s : MultiSignatureScriptPubKey => s
       case _ => throw new RuntimeException("Should be a multisig script pub key")
     }
-    
+
     multiSigScriptPubKey.publicKeys must be (Seq(
       ECFactory.publicKey("025878e270211662a27181cf4d6ad4d2cf0e69a98a3815c086f587c7e9388d8718"),
       ECFactory.publicKey("03fc85980e3fac1f3d8a5c3223c3ef5bffc1bd42d2cc42add8c3899cc66e7f1906"),
