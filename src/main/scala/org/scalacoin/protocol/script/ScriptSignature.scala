@@ -9,8 +9,6 @@ import org.scalacoin.script.crypto.{OP_CHECKMULTISIG, HashType, HashTypeFactory}
 import org.scalacoin.util.{BitcoinSUtil}
 import org.slf4j.LoggerFactory
 
-//TODO: Need to add a scriptPubKey field to this script signature
-//this corresponds to the output script that this scriptSignature is input for
 /**
  * Created by chris on 12/26/15.
  *
@@ -62,60 +60,10 @@ sealed trait ScriptSignature extends TransactionElement {
   }
 
 
-  /**
-   * Splits the given asm into two parts
-   * the first part is the digital signatures
-   * the second part is the redeem script
-   * @param asm
-   * @return
-   */
-  def splitAtRedeemScript(asm : Seq[ScriptToken]) : (Seq[ScriptToken],Seq[ScriptToken]) = {
-    //using the first instance of a ScriptNumberOperation (i.e. OP_2, OP_3 etc...) as the beginning
-    //of the redeemScript
-
-    val result : Option[(ScriptToken,Int)] = asm.headOption match {
-      case Some(OP_0) =>
-        //skip the first index since OP_0 is put in input scripts because of a bug
-        //in the original bitcoin implementation
-        val r = asm.tail.zipWithIndex.find { case (token, index) => (token.isInstanceOf[ScriptNumberOperation])}
-        //need to increment the result by one since the index is relative to the
-        //tail of the list
-        r.map(res => (res._1,res._2+1))
-      case Some(_) => asm.zipWithIndex.find { case (token, index) => (token.isInstanceOf[ScriptNumberOperation]) }
-      case None => asm.zipWithIndex.find { case (token, index) => (token.isInstanceOf[ScriptNumberOperation]) }
-    }
-
-    if (result.isDefined) asm.splitAt(result.get._2)
-    else (asm,List())
-  }
 }
 
 trait NonStandardScriptSignature extends ScriptSignature {
-  def signatures : Seq[ECDigitalSignature]  = {
-    if (asm.headOption.isDefined && asm.head == OP_0 && asm.contains(OP_CHECKMULTISIG)) {
-      //must be p2sh because of bug that forces p2sh scripts
-      //to begin with OP_0
-      //scripSig for p2sh input script
-      //OP_0 <scriptSig> <scriptSig> ... <scriptSig> <redeemScript>
-
-      val (scriptSigs,_) = splitAtRedeemScript(asm)
-      logger.info("Script sigs: " + scriptSigs)
-      //filter out all of the PUSHDATA / BytesToPushOntoStack operations
-
-      val scriptSigsWithoutPushOps = filterPushOps(scriptSigs)
-      //remove the OP_0 that precedes every p2sh input script
-      val scriptSigsWithoutPushOpsAndOp0 = scriptSigsWithoutPushOps.tail
-      scriptSigsWithoutPushOpsAndOp0.map(sig => ECFactory.digitalSignature(sig.bytes))
-    } else if (asm.headOption.isDefined && asm.head == OP_0) {
-      //this means we have a traditional multisignature scriptSig
-      val scriptSigs = asm.slice(1,asm.size)
-      val scriptSigsWithoutPushOps = filterPushOps(scriptSigs)
-      //remove the OP_0 that precedes every multisignature input script
-      val scriptSigsWithoutPushOpsAndOp0 = scriptSigsWithoutPushOps.tail
-      scriptSigsWithoutPushOpsAndOp0.map(sig => ECFactory.digitalSignature(sig.bytes))
-      scriptSigsWithoutPushOps.map(sig => ECFactory.digitalSignature(sig.bytes))
-    } else Seq(ECFactory.digitalSignature(asm(1).bytes))
-  }
+  def signatures : Seq[ECDigitalSignature]  = ???
 }
 case class NonStandardScriptSignatureImpl(hex : String) extends NonStandardScriptSignature
 
@@ -127,6 +75,13 @@ case class NonStandardScriptSignatureImpl(hex : String) extends NonStandardScrip
  * <sig> <pubkey>
  */
 trait P2PKHScriptSignature extends ScriptSignature {
+
+
+  /**
+   * P2PKH scriptSigs only have one signature
+   * @return
+   */
+  def signature : ECDigitalSignature = signatures.head
 
   /**
    * Gives us the public key inside of a p2pkh script signature
@@ -173,6 +128,34 @@ trait P2SHScriptSignature extends ScriptSignature {
     sigs.map(s => ECFactory.digitalSignature(s.hex))
   }
 
+
+  /**
+   * Splits the given asm into two parts
+   * the first part is the digital signatures
+   * the second part is the redeem script
+   * @param asm
+   * @return
+   */
+  def splitAtRedeemScript(asm : Seq[ScriptToken]) : (Seq[ScriptToken],Seq[ScriptToken]) = {
+    //using the first instance of a ScriptNumberOperation (i.e. OP_2, OP_3 etc...) as the beginning
+    //of the redeemScript
+
+    val result : Option[(ScriptToken,Int)] = asm.headOption match {
+      case Some(OP_0) =>
+        //skip the first index since OP_0 is put in input scripts because of a bug
+        //in the original bitcoin implementation
+        val r = asm.tail.zipWithIndex.find { case (token, index) => (token.isInstanceOf[ScriptNumberOperation])}
+        //need to increment the result by one since the index is relative to the
+        //tail of the list
+        r.map(res => (res._1,res._2+1))
+      case Some(_) => asm.zipWithIndex.find { case (token, index) => (token.isInstanceOf[ScriptNumberOperation]) }
+      case None => asm.zipWithIndex.find { case (token, index) => (token.isInstanceOf[ScriptNumberOperation]) }
+    }
+
+    if (result.isDefined) asm.splitAt(result.get._2)
+    else (asm,List())
+  }
+
 }
 
 /**
@@ -189,7 +172,7 @@ trait MultiSignatureScriptSignature extends ScriptSignature {
   def signatures : Seq[ECDigitalSignature] = {
     asm.filter(_.isInstanceOf[ScriptConstant])
       .filterNot(_.isInstanceOf[ScriptNumberOperation])
-      .map( sig => ECFactory.digitalSignature(sig.hex))
+      .map(sig => ECFactory.digitalSignature(sig.hex))
   }
 }
 
@@ -198,6 +181,13 @@ trait MultiSignatureScriptSignature extends ScriptSignature {
  * https://bitcoin.org/en/developer-guide#pubkey
  */
 trait PubKeyScriptSignature extends ScriptSignature {
+
+
+  /**
+   * PubKey scriptSignatures only have one signature
+   * @return
+   */
+  def signature : ECDigitalSignature = signatures.head
   /**
    * The digital signatures inside of the scriptSig
    * @return
