@@ -284,18 +284,20 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers {
     val (spendingTx,spendingInput,inputIndex,creditingOutput) =
       TransactionTestUtil.p2shTransactionWithSpendingInputAndCreditingOutput
 
-    val bitcoinjTx = BitcoinjConversions.transaction(spendingTx)
-    val hashType = spendingInput.scriptSignature.hashType(spendingInput.scriptSignature.signatures.head)
-    val bitcoinjSerializeForSig : Seq[Byte] = BitcoinJSignatureSerialization.serializeForSignature(
-      bitcoinjTx, inputIndex, creditingOutput.scriptPubKey.bytes.toArray, hashType.byte
-    )
-
-
-    val serializedTxForSig : String = BitcoinSUtil.encodeHex(
-      TransactionSignatureSerializer.serializeForSignature(spendingTx,inputIndex,creditingOutput.scriptPubKey,hashType
-      ))
-
-    serializedTxForSig must be (BitcoinSUtil.encodeHex(bitcoinjSerializeForSig))
+    for {
+      signature <- spendingInput.scriptSignature.signatures
+    } yield {
+      //needs to be inside yield statement because of mutability issues
+      val bitcoinjTx = BitcoinjConversions.transaction(spendingTx)
+      val hashType = spendingInput.scriptSignature.hashType(spendingInput.scriptSignature.signatures.head)
+      val bitcoinjHashForSig : Seq[Byte] = BitcoinJSignatureSerialization.serializeForSignature(
+        bitcoinjTx, inputIndex, creditingOutput.scriptPubKey.bytes.toArray, hashType.byte
+      )
+      val hashedTxForSig : String = BitcoinSUtil.encodeHex(
+        TransactionSignatureSerializer.serializeForSignature(spendingTx,inputIndex,creditingOutput.scriptPubKey,hashType
+        ))
+      hashedTxForSig must be (BitcoinSUtil.encodeHex(bitcoinjHashForSig))
+    }
 
   }
 
@@ -304,15 +306,27 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers {
       TransactionTestUtil.p2shTransactionWithSpendingInputAndCreditingOutput
 
     val bitcoinjTx = BitcoinjConversions.transaction(spendingTx)
-    val hashType = spendingInput.scriptSignature.hashType(spendingInput.scriptSignature.signatures.head)
+    val bitcoinjTx1 = BitcoinjConversions.transaction(spendingTx)
     val bitcoinjHashForSig : Seq[Byte] = BitcoinJSignatureSerialization.hashForSignature(
-      bitcoinjTx, inputIndex, creditingOutput.scriptPubKey.bytes.toArray, hashType.byte
+      bitcoinjTx, inputIndex, creditingOutput.scriptPubKey.bytes.toArray, SIGHASH_ALL.byte
     )
-    val hashedTxForSig : String = BitcoinSUtil.encodeHex(
-      TransactionSignatureSerializer.hashForSignature(spendingTx,inputIndex,creditingOutput.scriptPubKey,hashType
-      ))
+    bitcoinjTx1.hashForSignature(inputIndex,creditingOutput.bytes.toArray,SIGHASH_ALL.byte) must be (
+      BitcoinSUtil.encodeHex(bitcoinjHashForSig)
+    )
+    /*   for {
+         signature <- spendingInput.scriptSignature.signatures
+       } yield {
+         //needs to be inside yield statement because of mutability issues
 
-    hashedTxForSig must be (BitcoinSUtil.encodeHex(bitcoinjHashForSig))
+         val hashType = spendingInput.scriptSignature.hashType(spendingInput.scriptSignature.signatures.head)
+         val bitcoinjHashForSig : Seq[Byte] = BitcoinJSignatureSerialization.hashForSignature(
+           bitcoinjTx, inputIndex, creditingOutput.scriptPubKey.bytes.toArray, hashType.byte
+         )
+         val hashedTxForSig : String = BitcoinSUtil.encodeHex(
+           TransactionSignatureSerializer.hashForSignature(spendingTx,inputIndex,creditingOutput.scriptPubKey,hashType
+           ))
+         hashedTxForSig must be (BitcoinSUtil.encodeHex(bitcoinjHashForSig))
+       }*/
   }
 
 

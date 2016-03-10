@@ -68,7 +68,7 @@ trait ScriptParser extends Factory[List[ScriptToken]] {
    * @return
    */
   private def parse(str : String) : List[ScriptToken] = {
-    logger.info("Parsing string: " + str + " into a list of script tokens")
+    logger.debug("Parsing string: " + str + " into a list of script tokens")
 
     @tailrec
     def loop(operations : List[String], accum : List[ScriptToken]) : List[ScriptToken] = {
@@ -168,7 +168,7 @@ trait ScriptParser extends Factory[List[ScriptToken]] {
    * @return
    */
   private def parse(bytes : List[Byte]) : List[ScriptToken] = {
-    logger.info("Parsing byte list: " + bytes + " into a list of script tokens")
+    logger.debug("Parsing byte list: " + bytes + " into a list of script tokens")
     @tailrec
     def loop(bytes : List[Byte], accum : List[ScriptToken]) : List[ScriptToken] = {
       logger.debug("Byte to be parsed: " + bytes.headOption)
@@ -206,7 +206,7 @@ trait ScriptParser extends Factory[List[ScriptToken]] {
    * @return
    */
   private def isRedeemScript(token : ScriptToken) : Boolean = {
-    logger.info("Checking if last token is redeem script")
+    logger.debug("Checking if last token is redeem script")
     val tryRedeemScript = parseRedeemScript(token)
     tryRedeemScript match {
       case Success(redeemScript) =>

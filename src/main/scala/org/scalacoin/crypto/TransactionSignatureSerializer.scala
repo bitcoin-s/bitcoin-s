@@ -263,6 +263,7 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper {
       (output,index) <- spendingTransaction.outputs.zipWithIndex
     } yield {
         if (index < inputIndex) Some(output.empty.factory(CurrencyUnits.negativeSatoshi))
+        else if (index == inputIndex) Some(output)
         else None
       }
     val updatedOutputs : Seq[TransactionOutput] = updatedOutputsOpt.flatten

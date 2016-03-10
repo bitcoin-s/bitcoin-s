@@ -82,6 +82,7 @@ trait TransactionSignatureChecker {
         } yield {
           val hashType = p2shScriptSignature.hashType(sig)
           val hashForSig = TransactionSignatureSerializer.hashForSignature(spendingTransaction,inputIndex,x,hashType)
+          logger.info("pubKey: " + pubKey)
           logger.info("sig: " + sig)
           logger.info("Hash for sig: " + BitcoinSUtil.encodeHex(hashForSig))
           pubKey.verify(hashForSig, sig)
@@ -89,7 +90,7 @@ trait TransactionSignatureChecker {
         logger.info("P2SH sigs:  " + p2shScriptSignature.signatures)
         logger.info("P2SH pub keys: " + p2shScriptSignature.publicKeys)
         logger.info("P2SH sigs & keys: " + p2shScriptSignature.signatures.zip(p2shScriptSignature.publicKeys))
-        logger.info("Redeem script: " + p2shScriptSignature.redeemScript)
+        logger.info("Redeem script: " + p2shScriptSignature.redeemScript.asm)
         logger.info("Results from checking p2sh scriptSig: " + result)
         !result.contains(false)
       case x : MultiSignatureScriptPubKey =>

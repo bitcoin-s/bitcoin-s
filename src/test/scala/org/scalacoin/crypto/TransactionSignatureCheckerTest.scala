@@ -21,7 +21,6 @@ class TransactionSignatureCheckerTest extends FlatSpec with MustMatchers {
       TransactionTestUtil.transactionWithSpendingInputAndCreditingOutput
     val scriptSig : ScriptSignature = spendingInput.scriptSignature
     val pubKey : ECPublicKey = ECFactory.publicKey(scriptSig.asm.last.bytes)
-    val digitalSignature = scriptSig.signatures.head
     TransactionSignatureChecker.checkSignature(spendingTx,inputIndex,creditingOutput.scriptPubKey,
       pubKey) must be (true)
   }
@@ -32,11 +31,10 @@ class TransactionSignatureCheckerTest extends FlatSpec with MustMatchers {
     TransactionSignatureChecker.checkSignature(spendingTx,inputIndex,multiSigScriptPubKey) must be (true)
   }
 
-
-
   it must "" in {
     val (spendingTx,input,inputIndex,creditingOutput) = BitcoinJTestUtil.p2shTransactionWithSpendingInputAndCreditingOutput
     input.getScriptSig.correctlySpends(spendingTx,inputIndex,creditingOutput.getScriptPubKey)
+    println(input.getScriptSig.getScriptType)
 
   }
 
