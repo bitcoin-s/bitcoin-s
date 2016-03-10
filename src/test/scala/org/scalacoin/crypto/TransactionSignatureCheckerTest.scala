@@ -31,13 +31,6 @@ class TransactionSignatureCheckerTest extends FlatSpec with MustMatchers {
     TransactionSignatureChecker.checkSignature(spendingTx,inputIndex,multiSigScriptPubKey) must be (true)
   }
 
-  it must "" in {
-    val (spendingTx,input,inputIndex,creditingOutput) = BitcoinJTestUtil.p2shTransactionWithSpendingInputAndCreditingOutput
-    input.getScriptSig.correctlySpends(spendingTx,inputIndex,creditingOutput.getScriptPubKey)
-    println(input.getScriptSig.getScriptType)
-
-  }
-
   it must "check to see if an input spends a p2sh scriptPubKey correctly" in {
     val (spendingTx,input,inputIndex,creditingOutput) = TransactionTestUtil.p2shTransactionWithSpendingInputAndCreditingOutput
     TransactionSignatureChecker.checkSignature(spendingTx,inputIndex,creditingOutput.scriptPubKey) must be (true)
