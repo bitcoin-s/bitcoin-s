@@ -52,7 +52,8 @@ trait TransactionSignatureChecker {
         checkMultiSignatureScriptSig(spendingTransaction,inputIndex,scriptPubKey,multiSignatureScript)
       case p2shSignatureScript : P2SHScriptSignature =>
         checkP2SHScriptSignature(spendingTransaction,inputIndex,scriptPubKey, p2shSignatureScript)
-
+      case p2pkScriptSignature : P2PKScriptSignature =>
+        throw new RuntimeException("This is an old script signature type that is not supported by wallets anymore")
     }
   }
 

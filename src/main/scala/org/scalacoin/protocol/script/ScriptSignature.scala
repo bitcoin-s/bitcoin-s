@@ -180,7 +180,7 @@ trait MultiSignatureScriptSignature extends ScriptSignature {
  * Represents a pay to public key script signature
  * https://bitcoin.org/en/developer-guide#pubkey
  */
-trait PubKeyScriptSignature extends ScriptSignature {
+trait P2PKScriptSignature extends ScriptSignature {
 
 
   /**
@@ -201,4 +201,4 @@ trait PubKeyScriptSignature extends ScriptSignature {
 case class P2PKHScriptSignatureImpl(hex : String) extends P2PKHScriptSignature
 case class P2SHScriptSignatureImpl(hex : String) extends P2SHScriptSignature
 case class MultiSignatureScriptSignatureImpl(hex : String) extends MultiSignatureScriptSignature
-case class PubKeyScriptSignatureImpl(hex : String) extends PubKeyScriptSignature
+case class P2PKScriptSignatureImpl(hex : String) extends P2PKScriptSignature
