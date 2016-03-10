@@ -1,5 +1,6 @@
 package org.scalacoin.crypto
 
+import org.scalacoin.config.TestNet3
 import org.scalacoin.protocol.script._
 import org.scalacoin.protocol.transaction.{Transaction, TransactionInput}
 import org.scalacoin.script.crypto.HashType
@@ -81,17 +82,10 @@ trait TransactionSignatureChecker {
           (sig,pubKey) <- p2shScriptSignature.signatures.zip(p2shScriptSignature.publicKeys)
         } yield {
           val hashType = p2shScriptSignature.hashType(sig)
-          val hashForSig = TransactionSignatureSerializer.hashForSignature(spendingTransaction,inputIndex,x,hashType)
-          logger.info("pubKey: " + pubKey)
-          logger.info("sig: " + sig)
-          logger.info("Hash for sig: " + BitcoinSUtil.encodeHex(hashForSig))
+          val hashForSig = TransactionSignatureSerializer.hashForSignature(spendingTransaction,
+            inputIndex,p2shScriptSignature.redeemScript,hashType)
           pubKey.verify(hashForSig, sig)
         }
-        logger.info("P2SH sigs:  " + p2shScriptSignature.signatures)
-        logger.info("P2SH pub keys: " + p2shScriptSignature.publicKeys)
-        logger.info("P2SH sigs & keys: " + p2shScriptSignature.signatures.zip(p2shScriptSignature.publicKeys))
-        logger.info("Redeem script: " + p2shScriptSignature.redeemScript.asm)
-        logger.info("Results from checking p2sh scriptSig: " + result)
         !result.contains(false)
       case x : MultiSignatureScriptPubKey =>
         throw new RuntimeException("Cannot check p2sh script signature against a non p2sh scriptPubKey type")
