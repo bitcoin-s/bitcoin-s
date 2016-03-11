@@ -25,7 +25,7 @@ trait BitcoinjConversions {
    * @return
    */
   def toScriptPubKey(bitcoinjScript : org.bitcoinj.script.Script) : ScriptPubKey = {
-    val scriptPubKey = ScriptPubKeyFactory.fromBytes(bitcoinjScript.getProgram)
+    val scriptPubKey = ScriptPubKey.fromBytes(bitcoinjScript.getProgram)
     require(BitcoinSUtil.encodeHex(bitcoinjScript.getProgram) == scriptPubKey.hex,
       "ScriptPubKey must be the same as the given bitcoinj script\n" +
         BitcoinSUtil.encodeHex(bitcoinjScript.getProgram) + "\n" +

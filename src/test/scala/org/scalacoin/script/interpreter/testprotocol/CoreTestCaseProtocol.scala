@@ -31,14 +31,14 @@ object CoreTestCaseProtocol extends DefaultJsonProtocol {
         val scriptSignatureAsm : Seq[ScriptToken] = parseScriptSignatureAsm(elements.head)
         val scriptSignature : ScriptSignature = ScriptSignatureFactory.fromHex(scriptSignatureAsm.map(_.hex).mkString)
         val scriptPubKeyAsm = parseScriptPubKeyAsm(elements(1))
-        val scriptPubKey = ScriptPubKeyFactory.factory(UpdateScriptPubKeyAsm(scriptPubKeyAsm))
+        val scriptPubKey = ScriptPubKey.factory(UpdateScriptPubKeyAsm(scriptPubKeyAsm))
         val flags = elements(2).convertTo[String]
         Some(CoreTestCaseImpl(scriptSignature,scriptPubKey,flags,"No comments from bitcoin core ",elements.toString))
       } else if (elements.size == 4) {
         val scriptSignatureAsm : Seq[ScriptToken] = parseScriptSignatureAsm(elements.head)
         val scriptSignature : ScriptSignature = ScriptSignatureFactory.fromHex(scriptSignatureAsm.map(_.hex).mkString)
         val scriptPubKeyAsm : Seq[ScriptToken] = parseScriptPubKeyAsm(elements(1))
-        val scriptPubKey = ScriptPubKeyFactory.factory(UpdateScriptPubKeyAsm(scriptPubKeyAsm))
+        val scriptPubKey = ScriptPubKey.factory(UpdateScriptPubKeyAsm(scriptPubKeyAsm))
         val flags = elements(2).convertTo[String]
         val comments = elements(3).convertTo[String]
         Some(CoreTestCaseImpl(scriptSignature,scriptPubKey,flags,comments, elements.toString))
@@ -52,7 +52,7 @@ object CoreTestCaseProtocol extends DefaultJsonProtocol {
      * such as byte strings i.e. 0x02 0x01 0x00
      * and numbers   1  2
      * look at scirpt_valid.json file for example formats
-     * @param elements
+     * @param element
      * @return
      */
     private def parseScriptSignatureAsm(element : JsValue) : Seq[ScriptToken] = {

@@ -106,7 +106,7 @@ trait P2SHScriptSignature extends ScriptSignature {
    * The redeemScript represents the conditions that must be satisfied to spend the output
    * @return
    */
-  def redeemScript : ScriptPubKey = ScriptPubKeyFactory.fromAsm(splitAtRedeemScript(asm)._2)
+  def redeemScript : ScriptPubKey = ScriptPubKey.fromAsm(splitAtRedeemScript(asm)._2)
 
   /**
    * Returns the public keys for the p2sh scriptSignature

@@ -186,7 +186,7 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper {
       //TODO: This needs to be tested
       val scriptWithoutOpCodeSeparators : Seq[ScriptToken] = script.asm.filterNot(_ == OP_CODESEPARATOR)
       val scriptBytes = BitcoinScriptUtil.asmToBytes(scriptWithoutOpCodeSeparators)
-      ScriptPubKeyFactory.fromBytes(scriptBytes)
+      ScriptPubKey.fromBytes(scriptBytes)
     } else {
       script.scriptType match {
         case P2PKH => script

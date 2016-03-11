@@ -11,7 +11,7 @@ import org.scalacoin.util.{BitcoinScriptUtil, BitcoinSUtil, Factory, ScalacoinUt
 /**
  * Created by chris on 1/19/16.
  */
-trait ScriptPubKeyFactory extends Factory[ScriptPubKey] {
+trait ScriptPubKeyFactory extends Factory[ScriptPubKey] { this : ScriptPubKey =>
 
   def factory(hex : String) : ScriptPubKey = fromHex(hex)
 
@@ -37,6 +37,11 @@ trait ScriptPubKeyFactory extends Factory[ScriptPubKey] {
 
   def fromBytes(bytes : Seq[Byte]) : ScriptPubKey = RawScriptPubKeyParser.read(bytes)
 
+  /**
+   * Creates a scriptPubKey from its asm representation
+   * @param asm
+   * @return
+   */
   def fromAsm(asm : Seq[ScriptToken]) : ScriptPubKey = {
     val scriptPubKeyHex = BitcoinScriptUtil.asmToHex(asm)
     asm match {
@@ -57,4 +62,4 @@ trait ScriptPubKeyFactory extends Factory[ScriptPubKey] {
 sealed trait ScriptPubKeyUpdateIndicator
 case class UpdateScriptPubKeyAsm(asm : Seq[ScriptToken]) extends ScriptPubKeyUpdateIndicator
 case class UpdateScriptPubKeyBytes(bytes : Seq[Byte]) extends ScriptPubKeyUpdateIndicator
-object ScriptPubKeyFactory extends ScriptPubKeyFactory
+
