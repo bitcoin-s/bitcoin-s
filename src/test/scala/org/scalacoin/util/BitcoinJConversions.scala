@@ -142,9 +142,10 @@ trait BitcoinjConversions {
    * @return
    */
   def publicKey(bytes : Seq[Byte]) : ECKey = ECKey.fromPublicOnly(bytes.toArray)
+
   /**
    * Helper function to create bitcoinj ECKey
-   * @param bytes
+   * @param key
    * @return
    */
   def publicKey(key : ECPublicKey) : ECKey = publicKey(key.bytes)

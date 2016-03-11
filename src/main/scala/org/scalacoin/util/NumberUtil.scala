@@ -7,11 +7,7 @@ import org.slf4j.LoggerFactory
 /**
  * Created by chris on 2/8/16.
  */
-trait NumberUtil {
-
-
-  private def logger = LoggerFactory.getLogger(this.getClass())
-
+trait NumberUtil extends BitcoinSLogger {
 
   /**
    * Takes a hex number and converts it into a signed number

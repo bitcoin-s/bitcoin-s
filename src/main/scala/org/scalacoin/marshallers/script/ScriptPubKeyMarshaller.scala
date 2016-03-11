@@ -31,7 +31,6 @@ object ScriptPubKeyMarshaller extends DefaultJsonProtocol with MarshallerUtil {
         typeKey -> JsString(scriptPubKey.scriptType.toString),
         addressesKey -> addressList
       )
-
       JsObject(m)
     }
 
