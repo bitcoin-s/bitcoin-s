@@ -8,12 +8,11 @@ import org.scalacoin.script.bitwise.{OP_EQUAL, OP_EQUALVERIFY}
 import org.scalacoin.script.constant._
 import org.scalacoin.script.crypto.{OP_CHECKMULTISIG, OP_CHECKSIG, OP_HASH160}
 import org.scalacoin.script.stack.OP_DUP
-import org.scalacoin.util.BitcoinSUtil
 
 /**
  * Created by chris on 12/26/15.
  */
-sealed trait ScriptPubKey extends TransactionElement {
+sealed trait ScriptPubKey extends TransactionElement with ScriptPubKeyFactory {
 
   /**
    * Representation of a scriptSignature in a parsed assembly format
@@ -109,3 +108,7 @@ case class P2PKHScriptPubKeyImpl(hex : String) extends P2PKHScriptPubKey
 case class MultiSignatureScriptPubKeyImpl(hex : String) extends MultiSignatureScriptPubKey
 case class P2SHScriptPubKeyImpl(hex : String) extends P2SHScriptPubKey
 case class P2PKScriptPubKeyImpl(hex : String) extends P2PKScriptPubKey
+
+object ScriptPubKey extends ScriptPubKey {
+  def hex = ""
+}

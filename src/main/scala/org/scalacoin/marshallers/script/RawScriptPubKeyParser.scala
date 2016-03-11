@@ -15,7 +15,7 @@ trait RawScriptPubKeyParser extends RawBitcoinSerializer[ScriptPubKey] {
 
   override def read(bytes : List[Byte]) : ScriptPubKey = {
     val script : List[ScriptToken] = ScriptParser.fromBytes(bytes)
-    ScriptPubKeyFactory.fromAsm(script)
+    ScriptPubKey.fromAsm(script)
   }
 
   override def write(scriptPubKey : ScriptPubKey) : String = {

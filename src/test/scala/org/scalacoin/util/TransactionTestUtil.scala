@@ -21,7 +21,7 @@ trait TransactionTestUtil {
    * @return
    */
   def rawMultiSignatureScriptPubKey = "5221025878e270211662a27181cf4d6ad4d2cf0e69a98a3815c086f587c7e9388d87182103fc85980e3fac1f3d8a5c3223c3ef5bffc1bd42d2cc42add8c3899cc66e7f1906210215b5bd050869166a70a7341b4f216e268b7c6c7504576dcea2cce7d11cc9a35f53ae"
-  def multiSignatureScriptPubKey = ScriptPubKeyFactory.fromHex(rawMultiSignatureScriptPubKey)
+  def multiSignatureScriptPubKey = ScriptPubKey.fromHex(rawMultiSignatureScriptPubKey)
   /**
    * First input of this raw tx is a spending a multisignature output
    * the first input is signed for this tx
@@ -45,7 +45,7 @@ trait TransactionTestUtil {
     val outpoint = TransactionOutPointImpl(tx.txId,0)
     val input = TransactionInputImpl(outpoint,scriptSignature,0xFFFFFFFF)
     //empty script pubkey
-    val scriptPubKey = ScriptPubKeyFactory.fromHex("")
+    val scriptPubKey = ScriptPubKey.fromHex("")
     val output = TransactionOutputImpl(CurrencyUnits.oneSatoshi,0,scriptPubKey)
     TransactionImpl(TransactionConstants.version,Seq(input),Seq(output),TransactionConstants.lockTime)
   }
