@@ -4,16 +4,14 @@ import org.scalacoin.config.TestNet3
 import org.scalacoin.protocol.script._
 import org.scalacoin.protocol.transaction.{Transaction, TransactionInput}
 import org.scalacoin.script.crypto.HashType
-import org.scalacoin.util.BitcoinSUtil
+import org.scalacoin.util.{BitcoinSLogger, BitcoinSUtil}
 import org.slf4j.LoggerFactory
 
 /**
  * Created by chris on 2/16/16.
  */
-trait TransactionSignatureChecker {
+trait TransactionSignatureChecker extends BitcoinSLogger {
 
-
-  private def logger = LoggerFactory.getLogger(this.getClass())
   /**
    * Checks the signature of a scriptSig in the spending transaction against the
    * given scriptPubKey
@@ -54,6 +52,9 @@ trait TransactionSignatureChecker {
         checkP2SHScriptSignature(spendingTransaction,inputIndex,scriptPubKey, p2shSignatureScript)
       case p2pkScriptSignature : P2PKScriptSignature =>
         throw new RuntimeException("This is an old script signature type that is not supported by wallets anymore")
+      case scriptPubKey : ScriptPubKey =>
+        throw new RuntimeException("We don't know how to check scriptSignatures of generic scriptPubKeys\n" +
+          "scriptPubKey: " + scriptPubKey)
     }
   }
 
@@ -89,13 +90,20 @@ trait TransactionSignatureChecker {
         }
         !result.contains(false)
       case x : MultiSignatureScriptPubKey =>
-        throw new RuntimeException("Cannot check p2sh script signature against a non p2sh scriptPubKey type")
+        logger.warn("Trying to check if a p2sScriptSignature spends a multisignature scriptPubKey properly - this is trivially false")
+        false
       case x : P2PKHScriptPubKey =>
-        throw new RuntimeException("Cannot check p2sh script signature against a non p2sh scriptPubKey type")
+        logger.warn("Trying to check if a p2sScriptSignature spends a p2pkh scriptPubKey properly - this is trivially false")
+        false
       case x : P2PKScriptPubKey =>
-        throw new RuntimeException("Cannot check p2sh script signature against a non p2sh scriptPubKey type")
+        logger.warn("Trying to check if a p2sScriptSignature spends a p2pk scriptPubKey properly - this is trivially false")
+        false
       case x : NonStandardScriptPubKey =>
-        throw new RuntimeException("Cannot check p2sh script signature against a non p2sh scriptPubKey type")
+        logger.warn("Trying to check if a p2sScriptSignature spends a nonstandard scriptPubKey properly - this is trivially false")
+        false
+      case x : ScriptPubKey =>
+        logger.warn("Trying to check if a p2sScriptSignature spends a scriptPubKey properly - this is trivially false")
+        false
     }
   }
   /**
@@ -110,24 +118,31 @@ trait TransactionSignatureChecker {
   private def checkMultiSignatureScriptSig(spendingTransaction : Transaction, inputIndex : Int, scriptPubKey : ScriptPubKey,
                                            multiSignatureScript : MultiSignatureScriptSignature) : Boolean = {
     scriptPubKey match {
-      case x : MultiSignatureScriptPubKey =>
-        val result : Seq[Boolean] = for {
-          (sig,pubKey) <- multiSignatureScript.signatures.zip(x.publicKeys)
+      case x: MultiSignatureScriptPubKey =>
+        val result: Seq[Boolean] = for {
+          (sig, pubKey) <- multiSignatureScript.signatures.zip(x.publicKeys)
         } yield {
             val hashType = multiSignatureScript.hashType(sig)
-            val hashForSig : Seq[Byte] =
-              TransactionSignatureSerializer.hashForSignature(spendingTransaction,inputIndex,x,hashType)
-            pubKey.verify(hashForSig,sig)
+            val hashForSig: Seq[Byte] =
+              TransactionSignatureSerializer.hashForSignature(spendingTransaction, inputIndex, x, hashType)
+            pubKey.verify(hashForSig, sig)
           }
         !result.contains(false)
-      case x : P2PKHScriptPubKey =>
-        throw new RuntimeException("Cannot check multisignature script signature against a non multisignature scriptPubKey type")
-      case y : P2SHScriptPubKey =>
-        throw new RuntimeException("Cannot check multisignature script signature against a non multisignature scriptPubKey type")
-      case z : P2PKScriptPubKey =>
-        throw new RuntimeException("Cannot check multisignature script signature against a non multisignature scriptPubKey type")
-      case q : NonStandardScriptPubKey =>
-        throw new RuntimeException("Cannot check multisignature script signature against a non multisignature scriptPubKey type")
+      case x: P2PKHScriptPubKey =>
+        logger.warn("Trying to check if a multisignature scriptSig spends a p2pkh scriptPubKey properly - this is trivially false")
+        false
+      case x: P2PKScriptPubKey =>
+        logger.warn("Trying to check if a multisignature scriptSig spends a p2pk scriptPubKey properly - this is trivially false")
+        false
+      case x: NonStandardScriptPubKey =>
+        logger.warn("Trying to check if a multisignature scriptSig spends a p2sh scriptPubKey properly - this is trivially false")
+        false
+      case x: P2SHScriptPubKey =>
+        logger.warn("Trying to check if a multisignature scriptSig spends a nonstandard scriptPubKey properly - this is trivially false")
+        false
+      case x: ScriptPubKey =>
+        logger.warn("Trying to check if a multisignature scriptSig spends a scriptPubKey properly - this is trivially false")
+        false
     }
   }
 

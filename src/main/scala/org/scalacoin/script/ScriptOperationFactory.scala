@@ -9,7 +9,7 @@ import org.scalacoin.script.locktime.LocktimeOperationFactory
 import org.scalacoin.script.reserved.ReservedOperationFactory
 import org.scalacoin.script.splice.SpliceOperationsFactory
 import org.scalacoin.script.stack.StackOperationFactory
-import org.scalacoin.util.ScalacoinUtil
+import org.scalacoin.util.{BitcoinSUtil, BitcoinSLogger, ScalacoinUtil}
 import org.slf4j.LoggerFactory
 
 /**
@@ -17,9 +17,8 @@ import org.slf4j.LoggerFactory
  * Responsible for matching script op codes with their given
  * hexadecimal representation or byte representation
  */
-trait ScriptOperationFactory[T <: ScriptOperation] extends ScalacoinUtil {
+trait ScriptOperationFactory[T <: ScriptOperation] extends BitcoinSLogger {
 
-  private def logger = LoggerFactory.getLogger(this.getClass())
   /**
    * All of the script operations for a particular T
    * @tparam T
@@ -63,7 +62,7 @@ trait ScriptOperationFactory[T <: ScriptOperation] extends ScalacoinUtil {
    * @return
    */
   def fromByte(byte : Byte) : Option[T] = {
-    val hex = encodeHex(byte)
+    val hex = BitcoinSUtil.encodeHex(byte)
     fromHex(hex)
   }
 }
