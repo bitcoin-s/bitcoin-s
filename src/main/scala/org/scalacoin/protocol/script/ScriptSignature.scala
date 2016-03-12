@@ -13,7 +13,7 @@ import org.slf4j.LoggerFactory
  * Created by chris on 12/26/15.
  *
  */
-sealed trait ScriptSignature extends TransactionElement {
+sealed trait ScriptSignature extends TransactionElement with ScriptSignatureFactory {
 
   protected def logger = LoggerFactory.getLogger(this.getClass())
 
@@ -202,3 +202,8 @@ case class P2PKHScriptSignatureImpl(hex : String) extends P2PKHScriptSignature
 case class P2SHScriptSignatureImpl(hex : String) extends P2SHScriptSignature
 case class MultiSignatureScriptSignatureImpl(hex : String) extends MultiSignatureScriptSignature
 case class P2PKScriptSignatureImpl(hex : String) extends P2PKScriptSignature
+
+object ScriptSignature extends ScriptSignature {
+  def hex = ""
+  def signatures = Seq()
+}

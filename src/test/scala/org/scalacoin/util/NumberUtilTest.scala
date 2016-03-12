@@ -1,6 +1,6 @@
 package org.scalacoin.util
 
-import org.scalacoin.protocol.script.ScriptSignatureFactory
+import org.scalacoin.protocol.script.{ScriptSignature, ScriptSignatureFactory}
 
 import org.scalacoin.protocol.CompactSizeUIntImpl
 import org.scalacoin.script.constant.ScriptNumberImpl
@@ -110,29 +110,29 @@ class NumberUtilTest extends FlatSpec with MustMatchers with NumberUtil {
   it must "change a sign bit from negative to positive" in {
     val hex = "ff"
     val expectedHex = "7f"
-    ScalacoinUtil.encodeHex(changeSignBitToPositive(ScalacoinUtil.decodeHex(hex))) must be (expectedHex)
+    BitcoinSUtil.encodeHex(changeSignBitToPositive(BitcoinSUtil.decodeHex(hex))) must be (expectedHex)
 
     //-32767
     val hex1 = "ffff"
     val expectedHex1 = "7fff"
-    ScalacoinUtil.encodeHex(changeSignBitToPositive(ScalacoinUtil.decodeHex(hex1))) must be (expectedHex1)
+    BitcoinSUtil.encodeHex(changeSignBitToPositive(BitcoinSUtil.decodeHex(hex1))) must be (expectedHex1)
   }
 
   it must "change a sign bit from positive to negative" in {
 
     val hex = "01"
     val expectedHex = "81"
-    ScalacoinUtil.encodeHex(changeSignBitToNegative(hex)) must be (expectedHex)
+    BitcoinSUtil.encodeHex(changeSignBitToNegative(hex)) must be (expectedHex)
 
     //32767
     val hex1 = "7fff"
     val expectedHex1 = "ffff"
-    ScalacoinUtil.encodeHex(changeSignBitToNegative(hex1)) must be (expectedHex1)
+    BitcoinSUtil.encodeHex(changeSignBitToNegative(hex1)) must be (expectedHex1)
 
     //128
     val hex2 = "8000"
     val expectedHex2 = "8000"
-    ScalacoinUtil.encodeHex(changeSignBitToNegative(hex2)) must be (expectedHex2)
+    BitcoinSUtil.encodeHex(changeSignBitToNegative(hex2)) must be (expectedHex2)
   }
 
   it must "detect if the last two bytes are all zeros" in {
@@ -212,7 +212,7 @@ class NumberUtilTest extends FlatSpec with MustMatchers with NumberUtil {
   }
 
   it must "parse the variable length integer of the empty script" in {
-    parseCompactSizeUInt(ScriptSignatureFactory.empty) must be (CompactSizeUIntImpl(0,1))
+    parseCompactSizeUInt(ScriptSignature.empty) must be (CompactSizeUIntImpl(0,1))
   }
 
 

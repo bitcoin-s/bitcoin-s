@@ -60,7 +60,7 @@ trait TransactionTestUtil {
   def buildCreditingTransaction(scriptPubKey : ScriptPubKey) : Transaction = {
     val outpoint = TransactionOutPointImpl("",0)
 
-    val scriptSignature = ScriptSignatureFactory.fromHex("0000")
+    val scriptSignature = ScriptSignature.fromHex("0000")
     val input = TransactionInputImpl(outpoint,scriptSignature,0xFFFFFFFF)
     val output = TransactionOutputImpl(CurrencyUnits.oneSatoshi,0,scriptPubKey)
 
