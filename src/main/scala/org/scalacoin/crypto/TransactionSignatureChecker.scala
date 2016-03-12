@@ -9,6 +9,8 @@ import org.slf4j.LoggerFactory
 
 /**
  * Created by chris on 2/16/16.
+ * Responsible for checkign digital signatures on inputs against their respective
+ * public keys
  */
 trait TransactionSignatureChecker extends BitcoinSLogger {
 
@@ -52,14 +54,22 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
         checkP2SHScriptSignature(spendingTransaction,inputIndex,scriptPubKey, p2shSignatureScript)
       case p2pkScriptSignature : P2PKScriptSignature =>
         throw new RuntimeException("This is an old script signature type that is not supported by wallets anymore")
-      case scriptPubKey : ScriptPubKey =>
+      case scriptPubKey : ScriptSignature =>
         throw new RuntimeException("We don't know how to check scriptSignatures of generic scriptPubKeys\n" +
           "scriptPubKey: " + scriptPubKey)
     }
   }
 
 
-  def checkP2PKHScriptSignature(spendingTransaction : Transaction, inputIndex : Int, scriptPubKey : ScriptPubKey,
+  /**
+   * Checks a pay-to-pubkey-hash scriptSignature against the given scriptPubKey, transaction, and inputIndex
+   * @param spendingTransaction
+   * @param inputIndex
+   * @param scriptPubKey
+   * @param p2pkhScriptSig
+   * @return
+   */
+  private def checkP2PKHScriptSignature(spendingTransaction : Transaction, inputIndex : Int, scriptPubKey : ScriptPubKey,
                                 p2pkhScriptSig : P2PKHScriptSignature) : Boolean = {
     val hashType = p2pkhScriptSig.hashType(p2pkhScriptSig.signatures.head)
     val hashForSignature : Seq[Byte] =

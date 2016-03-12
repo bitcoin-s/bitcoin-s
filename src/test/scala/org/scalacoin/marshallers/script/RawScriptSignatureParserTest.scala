@@ -71,7 +71,7 @@ class RawScriptSignatureParserTest extends FlatSpec with MustMatchers with RawSc
   }
 
   it must "read a empty script sig" in {
-    val emptyScriptSig = ScriptSignatureFactory.empty
+    val emptyScriptSig = ScriptSignature.empty
     val parsedScriptSig = RawScriptSignatureParser.read(emptyScriptSig.hex)
 
     parsedScriptSig.hex must be (emptyScriptSig.hex)
