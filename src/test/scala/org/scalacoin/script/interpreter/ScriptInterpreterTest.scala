@@ -10,7 +10,7 @@ import org.scalacoin.script.crypto.{OP_CHECKSIG, OP_HASH160}
 import org.scalacoin.script.interpreter.testprotocol.{CoreTestCaseProtocol, CoreTestCase}
 import org.scalacoin.script.reserved.OP_NOP
 import org.scalacoin.script.stack.OP_DUP
-import org.scalacoin.util.{TransactionTestUtil, TestUtil}
+import org.scalacoin.util.{BitcoinSLogger, TransactionTestUtil, TestUtil}
 import org.scalatest.{MustMatchers, FlatSpec}
 import org.slf4j.LoggerFactory
 
@@ -18,10 +18,7 @@ import spray.json._
 /**
  * Created by chris on 1/6/16.
  */
-class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterpreter with TransactionTestUtil {
-
-
-  private val logger = LoggerFactory.getLogger(this.getClass())
+class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterpreter with BitcoinSLogger {
 
   "ScriptInterpreter" must "evaluate a valid script to true" in {
     //this is in asm format, not hex
@@ -79,7 +76,7 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterp
 
     for {
       testCase <- testCases
-      tx = buildSpendingTransaction(testCase.scriptSig, buildCreditingTransaction(testCase.scriptPubKey))
+      tx = TransactionTestUtil.buildSpendingTransaction(testCase.scriptSig, TransactionTestUtil.buildCreditingTransaction(testCase.scriptPubKey))
     } yield {
       logger.info("Raw test case: " + testCase.raw)
       logger.info("Parsed ScriptSig: " + testCase.scriptSig)

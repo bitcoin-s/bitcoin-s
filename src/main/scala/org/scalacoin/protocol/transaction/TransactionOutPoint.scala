@@ -5,7 +5,7 @@ import org.scalacoin.marshallers.transaction.{RawTransactionOutPointParser, Tran
 /**
  * Created by chris on 12/26/15.
  */
-trait TransactionOutPoint extends TransactionElement {
+sealed trait TransactionOutPoint extends TransactionElement with TransactionOutPointFactory {
   def txId : String
   def vout : Int
 
@@ -15,4 +15,9 @@ trait TransactionOutPoint extends TransactionElement {
   override def hex = RawTransactionOutPointParser.write(this)
 }
 
+object TransactionOutPoint extends TransactionOutPoint {
+  def txId : String = ""
+  def vout = -1
+
+}
 case class TransactionOutPointImpl(txId : String, vout : Int) extends TransactionOutPoint

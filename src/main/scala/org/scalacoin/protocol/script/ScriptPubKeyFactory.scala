@@ -1,26 +1,65 @@
 package org.scalacoin.protocol.script
 
-import org.scalacoin.marshallers.script.ScriptParser
-import org.scalacoin.script.constant.ScriptToken
+import org.scalacoin.marshallers.script.{RawScriptPubKeyParser, ScriptParser}
+import org.scalacoin.protocol.{NonStandard, MultiSignature, P2SH, P2PKH}
+import org.scalacoin.script.bitwise.{OP_EQUAL, OP_EQUALVERIFY}
+import org.scalacoin.script.constant.{ScriptConstant, ScriptConstantImpl, BytesToPushOntoStackImpl, ScriptToken}
+import org.scalacoin.script.crypto.{OP_CHECKMULTISIG, OP_CHECKSIG, OP_HASH160}
+import org.scalacoin.script.stack.OP_DUP
+import org.scalacoin.util.{BitcoinScriptUtil, BitcoinSUtil, Factory, ScalacoinUtil}
 
 /**
  * Created by chris on 1/19/16.
  */
-object ScriptPubKeyFactory {
+trait ScriptPubKeyFactory extends Factory[ScriptPubKey] { this : ScriptPubKey =>
 
-  def factory(hex : String) : ScriptPubKey = {
-    val asm : Seq[ScriptToken] = ScriptParser.parse(hex)
-    ScriptPubKeyImpl(asm,hex,Seq())
+  def factory(hex : String) : ScriptPubKey = fromHex(hex)
+
+  def factory(indicator: UpdateScriptPubKeyAsm) : ScriptPubKey = {
+    fromAsm(indicator.asm)
   }
 
-  def factory(asm : Seq[ScriptToken]) : ScriptPubKey = {
-    val hex = asm.map(_.hex).mkString
-    ScriptPubKeyImpl(asm,hex,Seq())
+  def factory(indicator: UpdateScriptPubKeyBytes) : ScriptPubKey = {
+    val asm = ScriptParser.fromBytes(indicator.bytes)
+    factory(UpdateScriptPubKeyAsm(asm))
   }
 
-  def factory(bytes : List[Byte]) : ScriptPubKey = {
-    val asm = ScriptParser.parse(bytes.toList)
-    factory(asm)
+  /**
+   * Parses a script from its byte represenatation and returns a ScriptPubKey
+   * @param bytes
+   * @return
+   */
+  def factory(bytes : Seq[Byte]) : ScriptPubKey =  fromBytes(bytes)
+
+  def factory(bytes : Array[Byte]) : ScriptPubKey = fromBytes(bytes.toSeq)
+
+  def empty : ScriptPubKey = fromAsm(List())
+
+  def fromBytes(bytes : Seq[Byte]) : ScriptPubKey = RawScriptPubKeyParser.read(bytes)
+
+  /**
+   * Creates a scriptPubKey from its asm representation
+   * @param asm
+   * @return
+   */
+  def fromAsm(asm : Seq[ScriptToken]) : ScriptPubKey = {
+    val scriptPubKeyHex = BitcoinScriptUtil.asmToHex(asm)
+    asm match {
+      case List(OP_DUP, OP_HASH160, BytesToPushOntoStackImpl(x), ScriptConstantImpl(pubKeyHash), OP_EQUALVERIFY, OP_CHECKSIG) =>
+        P2PKHScriptPubKeyImpl(scriptPubKeyHex)
+      case List(OP_HASH160, BytesToPushOntoStackImpl(x), ScriptConstantImpl(scriptHash), OP_EQUAL) =>
+        P2SHScriptPubKeyImpl(scriptPubKeyHex)
+      case List(x : ScriptConstant, OP_CHECKSIG) => P2PKScriptPubKeyImpl(scriptPubKeyHex)
+      //TODO: make this more robust, this isn't the pattern that multsignature scriptPubKeys follow
+      case _ if (asm.size > 0 && asm.last == OP_CHECKMULTISIG) =>
+        MultiSignatureScriptPubKeyImpl(scriptPubKeyHex)
+      case _ => NonStandardScriptPubKeyImpl(scriptPubKeyHex)
+    }
   }
 
 }
+
+sealed trait ScriptPubKeyUpdateIndicator
+case class UpdateScriptPubKeyAsm(asm : Seq[ScriptToken]) extends ScriptPubKeyUpdateIndicator
+case class UpdateScriptPubKeyBytes(bytes : Seq[Byte]) extends ScriptPubKeyUpdateIndicator
+

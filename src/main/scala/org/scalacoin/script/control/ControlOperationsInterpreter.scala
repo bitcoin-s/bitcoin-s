@@ -209,9 +209,12 @@ trait ControlOperationsInterpreter {
       }
 
   }
+
+
   /**
-   * Parses an OP_IF expression in Script
-   * @param t
+   * Parses an OP_IF script token
+   * @param script
+   * @param tree
    * @return
    */
   private def parseOpIf(script : List[ScriptToken],tree : BinaryTree[ScriptToken]) : (List[ScriptToken],BinaryTree[ScriptToken]) = script match {
@@ -224,9 +227,11 @@ trait ControlOperationsInterpreter {
     case Nil => (script,tree)
   }
 
+
   /**
-   * Parses an OP_NOTIF expression in Script
-   * @param t
+   * Parses an OP_NOTIF script token
+   * @param script
+   * @param tree
    * @return
    */
   private def parseOpNotIf(script : List[ScriptToken],tree : BinaryTree[ScriptToken]) : (List[ScriptToken],BinaryTree[ScriptToken]) = script match {
@@ -271,13 +276,21 @@ trait ControlOperationsInterpreter {
   }
 
 
+  /**
+   * Checks if an OP_IF script token has a matching OP_ENDIF
+   * @param script
+   * @return
+   */
   def checkMatchingOpIfOpEndIf(script : List[ScriptToken]) : Boolean = {
     script.count(_ == OP_IF) == script.count(_ == OP_ENDIF)
   }
 
-
-
-
+  /**
+   * Finds the first occurrence of OP_IF in our script
+   * returns None if one DNE
+   * @param script
+   * @return
+   */
   def findFirstOpIf(script : List[ScriptToken]) : Option[Int] = findFirstScriptToken(script,OP_IF)
 
   /**
@@ -380,7 +393,6 @@ trait ControlOperationsInterpreter {
   /**
    * Removes the first OP_ELSE {expression} in a binary tree
    * @param tree
-   * @tparam T
    * @return
    */
   def removeFirstOpElse(tree : BinaryTree[ScriptToken]) : BinaryTree[ScriptToken] = {

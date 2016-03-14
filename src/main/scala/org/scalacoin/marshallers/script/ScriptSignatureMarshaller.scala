@@ -1,6 +1,6 @@
 package org.scalacoin.marshallers.script
 
-import org.scalacoin.protocol.script.{ScriptSignature, ScriptSignatureImpl}
+import org.scalacoin.protocol.script.{ScriptSignatureFactory, ScriptSignature}
 import org.slf4j.LoggerFactory
 import spray.json._
 
@@ -17,9 +17,8 @@ object ScriptSignatureMarshaller extends DefaultJsonProtocol {
     override def read(value : JsValue) : ScriptSignature = {
       logger.debug(this.getClass().toString + " is marshalling json value: " + value)
       val obj = value.asJsObject
-      val asm = ScriptParser.parse(obj.fields(asmKey).convertTo[String])
       val hex = obj.fields(hexKey)
-      ScriptSignatureImpl(asm, hex.convertTo[String])
+      ScriptSignature.fromHex(hex.convertTo[String])
     }
 
     override def write(scriptSig : ScriptSignature) : JsValue = {

@@ -1,17 +1,13 @@
 package org.scalacoin.util
 
-import org.scalacoin.protocol.script.ScriptSignature
+import org.scalacoin.protocol.script.{ScriptPubKey, ScriptSignature}
 import org.scalacoin.protocol.{CompactSizeUInt, CompactSizeUIntImpl}
 import org.slf4j.LoggerFactory
 
 /**
  * Created by chris on 2/8/16.
  */
-trait NumberUtil {
-
-
-  private def logger = LoggerFactory.getLogger(this.getClass())
-
+trait NumberUtil extends BitcoinSLogger {
 
   /**
    * Takes a hex number and converts it into a signed number
@@ -115,8 +111,21 @@ trait NumberUtil {
 
   def toByteList(long : Long) = BigInt(long).toByteArray.toList
 
+
+  /**
+   * Parses a VarInt from a string of hex characters
+   * https://bitcoin.org/en/developer-reference#compactsize-unsigned-integers
+   * @param hex
+   * @return
+   */
   def parseCompactSizeUInt(hex : String) : CompactSizeUInt = parseCompactSizeUInt(ScalacoinUtil.decodeHex(hex))
 
+  /**
+   * Parses a CompactSizeUInt from a sequence of bytes
+   * https://bitcoin.org/en/developer-reference#compactsize-unsigned-integers
+   * @param bytes
+   * @return
+   */
   def parseCompactSizeUInt(bytes : Seq[Byte]) : CompactSizeUInt = {
     require(bytes.size > 0, "Cannot parse a VarInt if the byte array is size 0")
     //8 bit number
@@ -131,6 +140,7 @@ trait NumberUtil {
 
   /**
    * Returns the size of a VarInt in the number of bytes
+   * https://en.bitcoin.it/wiki/Protocol_documentation#Variable_length_integer
    * @param byte
    * @return
    */
@@ -161,6 +171,23 @@ trait NumberUtil {
       CompactSizeUIntImpl(script.bytes.size,5)
     }
     else CompactSizeUIntImpl(script.bytes.size,9)
+  }
+
+  /**
+   * Parses a compact size uint from a script pubkey
+   * https://bitcoin.org/en/developer-reference#compactsize-unsigned-integers
+   * @param scriptPubKey
+   * @return
+   */
+  def parseCompactSizeUInt(scriptPubKey : ScriptPubKey) : CompactSizeUInt = {
+    if (scriptPubKey.bytes.size <=252 ) {
+      CompactSizeUIntImpl(scriptPubKey.bytes.size,1)
+    } else if (scriptPubKey.bytes.size <= 0xffff) {
+      CompactSizeUIntImpl(scriptPubKey.bytes.size,3)
+    } else if (scriptPubKey.bytes.size <= 0xffffffff) {
+      CompactSizeUIntImpl(scriptPubKey.bytes.size,5)
+    }
+    else CompactSizeUIntImpl(scriptPubKey.bytes.size,9)
   }
 
   private def parseLong(hex : String) : Long = java.lang.Long.parseLong(hex,16)

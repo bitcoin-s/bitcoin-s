@@ -2,7 +2,7 @@ package org.scalacoin.marshallers.transaction
 
 import org.scalacoin.marshallers.RawBitcoinSerializer
 import org.scalacoin.protocol.transaction.{TransactionImpl, Transaction}
-import org.scalacoin.util.{CryptoUtil, ScalacoinUtil}
+import org.scalacoin.util.{BitcoinSUtil, CryptoUtil}
 import org.slf4j.LoggerFactory
 
 /**
@@ -17,19 +17,19 @@ trait RawTransactionParser extends RawBitcoinSerializer[Transaction] {
   def read(bytes : List[Byte]) = {
 
     val versionBytes = bytes.take(4)
-    val version = Integer.parseInt(ScalacoinUtil.encodeHex(versionBytes.reverse),16)
+    val version = Integer.parseInt(BitcoinSUtil.encodeHex(versionBytes.reverse),16)
     val txInputBytes = bytes.slice(4,bytes.size)
     val inputs = RawTransactionInputParser.read(txInputBytes)
     val inputsSize = inputs.map(_.size).sum
 
     val outputsStartIndex = inputsSize + 5
     val outputsBytes = bytes.slice(outputsStartIndex, bytes.size)
-
+    logger.info("Output bytes: " + BitcoinSUtil.encodeHex(outputsBytes))
     val outputs = RawTransactionOutputParser.read(outputsBytes)
     val outputsSize = outputs.map(_.size).sum
 
     val lockTimeBytes = bytes.slice(bytes.size - 4, bytes.size)
-    val lockTime = Integer.parseInt(ScalacoinUtil.encodeHex(lockTimeBytes.reverse),16)
+    val lockTime = Integer.parseInt(BitcoinSUtil.encodeHex(lockTimeBytes.reverse),16)
 
     TransactionImpl(version,inputs,outputs,lockTime)
   }
@@ -41,7 +41,7 @@ trait RawTransactionParser extends RawBitcoinSerializer[Transaction] {
     val version = addPadding(8,versionWithoutPadding)
     val inputs : String = RawTransactionInputParser.write(tx.inputs)
     val outputs : String = RawTransactionOutputParser.write(tx.outputs)
-    val lockTimeWithoutPadding : String = ScalacoinUtil.flipHalfByte(tx.lockTime.toHexString.reverse)
+    val lockTimeWithoutPadding : String = BitcoinSUtil.flipHalfByte(tx.lockTime.toHexString.reverse)
     val lockTime = addPadding(8,lockTimeWithoutPadding)
     version + inputs + outputs + lockTime
   }

@@ -1,7 +1,8 @@
 package org.scalacoin.marshallers.transaction
 
-import org.scalacoin.protocol.transaction.TransactionInput
-import org.scalacoin.script.constant.{BytesToPushOntoStackImpl, ScriptConstantImpl, OP_0}
+import org.scalacoin.protocol.transaction.{TransactionConstants, TransactionInput}
+import org.scalacoin.script.constant.{OP_1, BytesToPushOntoStackImpl, ScriptConstantImpl, OP_0}
+import org.scalacoin.script.crypto.OP_CHECKMULTISIG
 import org.scalacoin.util.{ScalacoinUtil, TestUtil}
 import org.scalatest.{ FlatSpec, MustMatchers}
 
@@ -27,8 +28,9 @@ class RawTransactionInputParserTest extends FlatSpec with MustMatchers with RawT
     txInputs.head.scriptSignature.hex must be ("0047304402207df6dd8dad22d49c3c83d8031733c32a53719278eb7985d3b35b375d776f84f102207054f9209a1e87d55feafc90aa04c33008e5bae9191da22aeaa16efde96f41f00125512102b022902a0fdd71e831c37e4136c2754a59887be0618fb75336d7ab67e2982ff551ae")
     txInputs.head.scriptSignature.asm must be (Seq(OP_0, BytesToPushOntoStackImpl(71),
       ScriptConstantImpl("304402207df6dd8dad22d49c3c83d8031733c32a53719278eb7985d3b35b375d776f84f102207054f9209a1e87d55feafc90aa04c33008e5bae9191da22aeaa16efde96f41f001"),
-      BytesToPushOntoStackImpl(37),
-      ScriptConstantImpl("512102b022902a0fdd71e831c37e4136c2754a59887be0618fb75336d7ab67e2982ff551ae")
+      BytesToPushOntoStackImpl(37), OP_1, BytesToPushOntoStackImpl(33),
+      ScriptConstantImpl("02b022902a0fdd71e831c37e4136c2754a59887be0618fb75336d7ab67e2982ff5"),
+      OP_1, OP_CHECKMULTISIG
     ))
   }
 
@@ -148,6 +150,21 @@ class RawTransactionInputParserTest extends FlatSpec with MustMatchers with RawT
     txInputs(1).sequence must be (4294967295L)
 
     RawTransactionInputParser.write(txInputs) must be (rawTxInputs)
+  }
+
+  it must "parse this transaction input and its script signature" in {
+    //txid b30d3148927f620f5b1228ba941c211fdabdae75d0ba0b688a58accbf018f3cc
+    val rawTxInput = "01cda741646fada7272b900719f7ac9d68d633d0e8aa9501eed3c90afbd323bd65" +
+      "010000006a4730440220048e15422cf62349dc586ffb8c749d40280781edd5064ff27a5910ff5cf225a802206a82685dbc2cf195d" +
+      "158c29309939d5a3cd41a889db6f766f3809fff35722305012103dcfc9882c1b3ae4e03fb6cac08bdb39e284e81d70c7aa8b27612" +
+      "457b2774509bffffffff"
+
+    val inputs = RawTransactionInputParser.read(rawTxInput)
+
+    inputs.head.scriptSignature.hex must be ("4730440220048e15422cf62349dc586ffb8c749d40280781edd5064ff27a5910ff5cf225a802206a82685dbc2cf195d158c29309939d5a3cd41a889db6f766f3809fff35722305012103dcfc9882c1b3ae4e03fb6cac08bdb39e284e81d70c7aa8b27612457b2774509b")
+    inputs.head.previousOutput.vout must be (1)
+    inputs.head.previousOutput.txId must be ("65bd23d3fb0ac9d3ee0195aae8d033d6689dacf71907902b27a7ad6f6441a7cd")
+    inputs.head.sequence must be (TransactionConstants.sequence)
   }
 
 

@@ -5,14 +5,14 @@ import org.scalacoin.protocol.transaction.Transaction
 import org.scalacoin.script.control.{ControlOperationsInterpreter, OP_VERIFY}
 import org.scalacoin.script.{ScriptProgramFactory, ScriptProgramImpl, ScriptProgram}
 import org.scalacoin.script.constant._
-import org.scalacoin.util.{CryptoUtil, ScalacoinUtil}
+import org.scalacoin.util.{BitcoinSUtil, CryptoUtil}
 import org.slf4j.LoggerFactory
 
 
 /**
  * Created by chris on 1/6/16.
  */
-trait CryptoInterpreter extends ControlOperationsInterpreter with ScalacoinUtil {
+trait CryptoInterpreter extends ControlOperationsInterpreter {
 
   private def logger = LoggerFactory.getLogger(this.getClass())
   /**
@@ -24,7 +24,7 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with ScalacoinUtil 
     require(program.stack.headOption.isDefined, "The top of the stack must be defined for OP_HASH160")
     require(program.script.headOption.isDefined && program.script.head == OP_HASH160, "Script operation must be OP_HASH160")
     val stackTop = program.stack.head
-    val hash = ScriptConstantImpl(ScalacoinUtil.encodeHex(CryptoUtil.sha256Hash160(stackTop.bytes)))
+    val hash = ScriptConstantImpl(BitcoinSUtil.encodeHex(CryptoUtil.sha256Hash160(stackTop.bytes)))
     ScriptProgramFactory.factory(program, hash :: program.stack, program.script.tail)
   }
 
@@ -39,7 +39,7 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with ScalacoinUtil 
     require(program.script.headOption.isDefined && program.script.head == OP_RIPEMD160, "Script operation must be OP_RIPEMD160")
     val stackTop = program.stack.head
     val hash = CryptoUtil.ripeMd160(stackTop.bytes)
-    val newStackTop = ScriptConstantImpl(ScalacoinUtil.encodeHex(hash))
+    val newStackTop = ScriptConstantImpl(BitcoinSUtil.encodeHex(hash))
     ScriptProgramFactory.factory(program,newStackTop :: program.stack.tail, program.script.tail)
   }
 
@@ -53,7 +53,7 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with ScalacoinUtil 
     require(program.script.headOption.isDefined && program.script.head == OP_SHA256, "Script operation must be OP_SHA256")
     val stackTop = program.stack.head
     val hash = CryptoUtil.sha256(stackTop.bytes)
-    val newStackTop = ScriptConstantImpl(ScalacoinUtil.encodeHex(hash))
+    val newStackTop = ScriptConstantImpl(BitcoinSUtil.encodeHex(hash))
     ScriptProgramFactory.factory(program, newStackTop :: program.stack.tail, program.script.tail)
   }
 
@@ -67,7 +67,7 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with ScalacoinUtil 
     require(program.script.headOption.isDefined && program.script.head == OP_HASH256, "Script operation must be OP_HASH256")
     val stackTop = program.stack.head
     val hash = CryptoUtil.doubleSHA256(stackTop.bytes)
-    val newStackTop = ScriptConstantImpl(ScalacoinUtil.encodeHex(hash))
+    val newStackTop = ScriptConstantImpl(BitcoinSUtil.encodeHex(hash))
     ScriptProgramFactory.factory(program, newStackTop :: program.stack.tail, program.script.tail)
   }
 
@@ -87,7 +87,7 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with ScalacoinUtil 
     val pubKey = program.stack.head
     val signature = program.stack.tail.head
     val restOfStack = program.stack.tail.tail
-    val hashType = HashTypeFactory.fromByte(ScalacoinUtil.decodeHex(signature.hex).last)
+    val hashType = HashTypeFactory.fromByte(BitcoinSUtil.decodeHex(signature.hex).last)
     ???
   }
 
@@ -102,7 +102,7 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with ScalacoinUtil 
     require(program.stack.headOption.isDefined, "We must have an element on the stack for OP_SHA1")
 
     val constant = program.stack.head
-    val hash = ScriptConstantImpl(ScalacoinUtil.encodeHex(CryptoUtil.sha1(constant.bytes)))
+    val hash = ScriptConstantImpl(BitcoinSUtil.encodeHex(CryptoUtil.sha1(constant.bytes)))
     ScriptProgramFactory.factory(program, hash :: program.stack.tail, program.script.tail)
   }
 
@@ -181,27 +181,5 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with ScalacoinUtil 
     val programFromOpVerify = opVerify(programFromOpCheckMultiSig)
     programFromOpVerify
   }
-
-  private def hashForSignature(inputScript : Seq[ScriptToken], spendingTx : Transaction,
-                            inputIndex : Int, hashType : HashType) : String = {
-    require(inputIndex < spendingTx.inputs.size, "Given input index is out of range of the inputs in the spending tx")
-    //Note: The transaction that uses SIGHASH_SINGLE type of signature should not have more inputs than outputs.
-    //However if it does (because of the pre-existing implementation), it shall not be rejected,
-    //but instead for every "illegal" input (meaning: an input that has an index bigger than the maximum output index)
-    //the node should still verify it, though assuming the hash of
-    val one = "0000000000000000000000000000000000000000000000000000000000000001"
-    if(hashType == SIGHASH_SINGLE && inputIndex >= spendingTx.outputs.size) {
-      one
-    }
-
-    ???
-
-  }
-
-
-
-
-
-
 
 }

@@ -22,4 +22,5 @@ class HashTypeFactoryTest extends FlatSpec with MustMatchers  {
     HashTypeFactory.fromByte(0x80.toByte) must be (Some(SIGHASH_ANYONECANPAY))
   }
 
+
 }

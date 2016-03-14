@@ -31,8 +31,6 @@ class ScriptPubKeyMarshallerTest extends FlatSpec with MustMatchers {
     val scriptPubKey = ScriptPubKeyMarshaller.ScriptPubKeyFormatter.read(json)
     scriptPubKey.asm must be (List(OP_DUP, OP_HASH160, BytesToPushOntoStackImpl(20), ScriptConstantImpl("7ecaa33ef3cd6169517e43188ad3c034db091f5e"), OP_EQUALVERIFY, OP_CHECKSIG))
     scriptPubKey.hex must be ("76a9147ecaa33ef3cd6169517e43188ad3c034db091f5e88ac")
-    scriptPubKey.reqSigs must be (Some(1))
-    scriptPubKey.addressType must be (P2PKH)
-    scriptPubKey.addresses must be (Seq(BitcoinAddress("1CZQtge31s59Evu716oP3teYWjcGhX8oKn")))
+    scriptPubKey.scriptType must be (P2PKH)
   }
 }

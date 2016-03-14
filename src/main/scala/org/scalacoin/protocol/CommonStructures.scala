@@ -21,7 +21,7 @@ trait CompactSizeUInt {
   def size : Long
 
   def hex = size match {
-    case 1 => num.toHexString
+    case 1 => if (num.toHexString.size == 1) "0" + num.toHexString else num.toHexString
     case 3 => "fd" + ScalacoinUtil.littleEndianToBigEndian(ScalacoinUtil.longToHex(num))
     case 5 => "fe" + ScalacoinUtil.littleEndianToBigEndian(ScalacoinUtil.longToHex(num))
     case _ => "ff" + ScalacoinUtil.littleEndianToBigEndian(ScalacoinUtil.longToHex(num))

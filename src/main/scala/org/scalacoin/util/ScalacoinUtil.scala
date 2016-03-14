@@ -8,6 +8,7 @@ import scala.math.BigInt
 /**
  * Created by chris on 7/26/15.
  */
+@deprecated("This is going to be removed since the project name is changing")
 trait ScalacoinUtil extends NumberUtil {
 
   def hexToBigInt(hex : String) : BigInt = BigInt(hex, 16)
@@ -84,4 +85,5 @@ trait ScalacoinUtil extends NumberUtil {
   def flipHalfByte(hex : String) = hex.grouped(2).map(_.reverse).mkString
 }
 
+@deprecated("This is going to be removed since the project name is changing")
 object ScalacoinUtil extends ScalacoinUtil

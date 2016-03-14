@@ -19,4 +19,9 @@ class CommonStructuresTest extends FlatSpec with MustMatchers  {
     val varInt = CompactSizeUIntImpl(139,1)
     varInt.hex must be ("8b")
   }
+
+  it must "serialize a VarInt with that is the number zero correctly" in {
+    val varInt = CompactSizeUIntImpl(0,1)
+    varInt.hex must be ("00")
+  }
 }

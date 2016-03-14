@@ -10,7 +10,7 @@ object ScalaCoinBuild extends Build {
   val logbackV = "1.0.13"
   val appDependencies = Seq(
     "org.scalatest" % "scalatest_2.11" % "2.2.0",
-    ("org.bitcoinj" % "bitcoinj-core" % "0.13.3").exclude("org.slf4j", "slf4j-api"),
+    ("org.bitcoinj" % "bitcoinj-core" % "0.13.4").exclude("org.slf4j", "slf4j-api"),
     "org.slf4j" % "slf4j-api" % slf4jV /*% "provided"*/,
     "io.spray" %%  "spray-json" % "1.3.0" withSources() withJavadoc(), 
     "ch.qos.logback" % "logback-classic" % logbackV
