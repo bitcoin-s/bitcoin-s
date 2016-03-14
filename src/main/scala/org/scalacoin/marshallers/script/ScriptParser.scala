@@ -47,6 +47,7 @@ trait ScriptParser extends Factory[List[ScriptToken]] {
     val scriptTokens : List[ScriptToken] = parse(str)
     //check if we have a redeem script that needs to be parsed
     if (scriptTokens.size > 0 && isRedeemScript(scriptTokens.last)) {
+      logger.debug("Last token was redeem script")
       val redeemScript : Try[List[ScriptToken]] = parseRedeemScript(scriptTokens.last)
       redeemScript match {
         case Success(redeemScript : List[ScriptToken]) => scriptTokens.reverse.tail.reverse ++ redeemScript

@@ -9,12 +9,12 @@ import org.scalacoin.protocol.script.{ScriptPubKey, ScriptSignature}
  * files.
  */
 trait CoreTestCase {
-  def scriptSig : ScriptSignature
-  def scriptPubKey : ScriptPubKey
+  def scriptSig : ScriptSignatureCoreTestCase
+  def scriptPubKey : ScriptPubKeyCoreTestCase
   def flags : String
   def comments : String
   def raw : String
 }
 
-case class CoreTestCaseImpl(scriptSig : ScriptSignature,
-  scriptPubKey: ScriptPubKey, flags : String, comments : String, raw : String) extends CoreTestCase
+case class CoreTestCaseImpl(scriptSig : ScriptSignatureCoreTestCase,
+  scriptPubKey: ScriptPubKeyCoreTestCase, flags : String, comments : String, raw : String) extends CoreTestCase
