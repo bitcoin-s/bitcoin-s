@@ -203,6 +203,9 @@ case class P2SHScriptSignatureImpl(hex : String) extends P2SHScriptSignature
 case class MultiSignatureScriptSignatureImpl(hex : String) extends MultiSignatureScriptSignature
 case class P2PKScriptSignatureImpl(hex : String) extends P2PKScriptSignature
 
+/**
+ * Companion object that can be used to create a ScriptSignature object
+ */
 object ScriptSignature extends ScriptSignature {
   def hex = ""
   def signatures = Seq()

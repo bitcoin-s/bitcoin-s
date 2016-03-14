@@ -1,9 +1,10 @@
 package org.scalacoin.marshallers
 
-import org.scalacoin.util.{BitcoinSUtil}
+import org.scalacoin.util.BitcoinSUtil
 
 /**
  * Created by chris on 1/11/16.
+ * A common trait for reading/writing bitcoin objects to/from bytes/hex
  */
 trait RawBitcoinSerializer[T] extends RawBitcoinSerializerHelper {
 
