@@ -1,13 +1,7 @@
 package org.scalacoin.crypto
 
-import org.bitcoinj.core.Transaction.SigHash
-import org.bitcoinj.core.{Utils, Sha256Hash, ECKey}
-import org.bitcoinj.crypto.TransactionSignature
-import org.bitcoinj.params.TestNet3Params
-import org.bitcoinj.script.{Script, ScriptBuilder}
 import org.scalacoin.protocol.script.ScriptSignature
 import org.scalacoin.protocol.transaction.{UpdateTransactionInputs, TransactionInput, Transaction, TransactionOutput}
-import org.scalacoin.script.crypto.SIGHASH_ALL
 import org.scalacoin.util._
 import org.scalatest.{FlatSpec, MustMatchers}
 

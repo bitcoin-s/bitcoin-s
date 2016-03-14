@@ -54,6 +54,11 @@ trait ScriptSignatureFactory extends Factory[ScriptSignature] { this : ScriptSig
   }
 
 
+  /**
+   * Creates a scriptSignature from the list of script tokens
+   * @param tokens
+   * @return
+   */
   def fromAsm(tokens : Seq[ScriptToken]) : ScriptSignature = {
     val scriptSigHex = tokens.map(_.hex).mkString
     tokens match {
