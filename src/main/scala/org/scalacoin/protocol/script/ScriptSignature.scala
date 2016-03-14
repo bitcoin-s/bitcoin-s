@@ -1,7 +1,7 @@
 package org.scalacoin.protocol.script
 
 import org.scalacoin.crypto.{ECPublicKey, ECFactory, ECDigitalSignature}
-import org.scalacoin.marshallers.script.ScriptParser
+import org.scalacoin.marshallers.script.{RawScriptSignatureParser, RawScriptPubKeyParser, ScriptParser}
 import org.scalacoin.marshallers.transaction.TransactionElement
 
 import org.scalacoin.script.constant._
@@ -23,7 +23,7 @@ sealed trait ScriptSignature extends TransactionElement with ScriptSignatureFact
    * see if a script evaluates to true
    * @return
    */
-  def asm : Seq[ScriptToken] = ScriptParser.fromBytes(bytes)
+  def asm : Seq[ScriptToken]
 
   /**
    * The digital signatures contained inside of the script signature
@@ -65,7 +65,11 @@ sealed trait ScriptSignature extends TransactionElement with ScriptSignatureFact
 trait NonStandardScriptSignature extends ScriptSignature {
   def signatures : Seq[ECDigitalSignature]  = ???
 }
-case class NonStandardScriptSignatureImpl(hex : String) extends NonStandardScriptSignature
+
+object NonStandardScriptSignatureImpl {
+  def apply(hex : String) : NonStandardScriptSignatureImpl = NonStandardScriptSignatureImpl(hex, RawScriptSignatureParser.read(hex).asm)
+}
+case class NonStandardScriptSignatureImpl(hex : String, asm : Seq[ScriptToken]) extends NonStandardScriptSignature
 
 
 /**
@@ -197,11 +201,25 @@ trait P2PKScriptSignature extends ScriptSignature {
   }
 }
 
+object P2PKHScriptSignatureImpl {
+  def apply(hex : String) : P2PKHScriptSignatureImpl = P2PKHScriptSignatureImpl(hex, RawScriptSignatureParser.read(hex).asm)
+}
+case class P2PKHScriptSignatureImpl(hex : String, asm : Seq[ScriptToken]) extends P2PKHScriptSignature
 
-case class P2PKHScriptSignatureImpl(hex : String) extends P2PKHScriptSignature
-case class P2SHScriptSignatureImpl(hex : String) extends P2SHScriptSignature
-case class MultiSignatureScriptSignatureImpl(hex : String) extends MultiSignatureScriptSignature
-case class P2PKScriptSignatureImpl(hex : String) extends P2PKScriptSignature
+object P2SHScriptSignatureImpl {
+  def apply(hex : String) : P2SHScriptSignatureImpl = P2SHScriptSignatureImpl(hex, RawScriptSignatureParser.read(hex).asm)
+}
+case class P2SHScriptSignatureImpl(hex : String, asm : Seq[ScriptToken]) extends P2SHScriptSignature
+
+object MultiSignatureScriptSignatureImpl {
+  def apply(hex : String) : MultiSignatureScriptSignatureImpl = MultiSignatureScriptSignatureImpl(hex, RawScriptSignatureParser.read(hex).asm)
+}
+case class MultiSignatureScriptSignatureImpl(hex : String, asm : Seq[ScriptToken]) extends MultiSignatureScriptSignature
+
+object P2PKScriptSignatureImpl {
+  def apply(hex : String) : P2PKScriptSignatureImpl = P2PKScriptSignatureImpl(hex, RawScriptSignatureParser.read(hex).asm)
+}
+case class P2PKScriptSignatureImpl(hex : String, asm : Seq[ScriptToken]) extends P2PKScriptSignature
 
 /**
  * Companion object that can be used to create a ScriptSignature object
@@ -209,4 +227,5 @@ case class P2PKScriptSignatureImpl(hex : String) extends P2PKScriptSignature
 object ScriptSignature extends ScriptSignature {
   def hex = ""
   def signatures = Seq()
+  def asm = List()
 }
