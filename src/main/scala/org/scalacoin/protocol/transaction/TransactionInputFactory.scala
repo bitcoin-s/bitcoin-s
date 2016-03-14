@@ -6,6 +6,7 @@ import org.scalacoin.util.{Factory, ScalacoinUtil}
 
 /**
  * Created by chris on 2/19/16.
+ * Responsible for creating TransactionInputs
  */
 trait TransactionInputFactory extends Factory[TransactionInput] { this : TransactionInput =>
 

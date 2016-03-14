@@ -13,9 +13,8 @@ import org.slf4j.LoggerFactory
 /**
  * Created by chris on 2/12/16.
  */
-trait TransactionTestUtil {
+trait TransactionTestUtil extends BitcoinSLogger {
 
-  private def logger = LoggerFactory.getLogger(this.getClass())
   /**
    * Raw multisignature script pub key output
    * @return
