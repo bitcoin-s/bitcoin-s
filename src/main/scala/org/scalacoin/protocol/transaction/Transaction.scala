@@ -1,15 +1,15 @@
 package org.scalacoin.protocol.transaction
 
 import org.scalacoin.marshallers.transaction.{RawTransactionParser, TransactionElement}
-import org.scalacoin.util.{ScalacoinUtil, CryptoUtil}
+import org.scalacoin.util.{BitcoinSUtil, CryptoUtil}
 
 /**
  * Created by chris on 7/14/15.
  */
 
 
-trait Transaction extends TransactionElement {
-  def txId : String = ScalacoinUtil.encodeHex(CryptoUtil.doubleSHA256(hex).reverse)
+sealed trait Transaction extends TransactionElement with TransactionFactory {
+  def txId : String = BitcoinSUtil.encodeHex(CryptoUtil.doubleSHA256(hex).reverse)
   def version : Long
   def inputs  : Seq[TransactionInput]
   def outputs : Seq[TransactionOutput]
@@ -25,6 +25,12 @@ trait Transaction extends TransactionElement {
   override def hex = RawTransactionParser.write(this)
 }
 
+object Transaction extends Transaction {
+  override def version = TransactionConstants.version
+  override def inputs = Seq()
+  override def outputs = Seq()
+  override def lockTime = TransactionConstants.lockTime
+}
 case class TransactionImpl(version : Long, inputs : Seq[TransactionInput],
   outputs : Seq[TransactionOutput], lockTime : Long) extends Transaction
 

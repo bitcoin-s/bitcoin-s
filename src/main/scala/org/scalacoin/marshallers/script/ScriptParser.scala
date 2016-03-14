@@ -2,17 +2,40 @@ package org.scalacoin.marshallers.script
 
 import org.scalacoin.script._
 import org.scalacoin.script.constant._
-import org.scalacoin.util.ScalacoinUtil
+import org.scalacoin.script.crypto.{OP_CHECKMULTISIGVERIFY, OP_CHECKMULTISIG}
+import org.scalacoin.util.{Factory, BitcoinSUtil}
 import org.slf4j.LoggerFactory
 
 import scala.annotation.tailrec
+import scala.util.{Failure, Success, Try}
 
 /**
  * Created by chris on 1/7/16.
  */
-trait ScriptParser extends ScalacoinUtil {
+trait ScriptParser extends Factory[List[ScriptToken]] {
 
   private def logger = LoggerFactory.getLogger(this.getClass)
+
+
+  /**
+   * Parses a list of bytes into a list of script tokens
+   * @param bytes
+   * @return
+   */
+  def fromBytes(bytes : Seq[Byte]) : List[ScriptToken] = {
+    val scriptTokens : List[ScriptToken] = parse(bytes)
+    //check if we have a redeem script that needs to be parsed
+    if (scriptTokens.size > 0 && isRedeemScript(scriptTokens.last)) {
+      val redeemScript : Try[List[ScriptToken]] = parseRedeemScript(scriptTokens.last)
+      redeemScript match {
+        case Success(redeemScript : List[ScriptToken]) => scriptTokens.reverse.tail.reverse ++ redeemScript
+        case Failure(_) => scriptTokens
+      }
+    } else scriptTokens
+
+  }
+
+
   /**
    * Parses an asm output script of a transaction
    * example: "OP_DUP OP_HASH160 e2e7c1ab3f807151e832dd1accb3d4f5d7d19b4b OP_EQUALVERIFY OP_CHECKSIG"
@@ -20,8 +43,32 @@ trait ScriptParser extends ScalacoinUtil {
    * @param str
    * @return
    */
-  def parse(str : String) : List[ScriptToken] = {
-    logger.info("Parsing string: " + str + " into a list of script tokens")
+  def fromString(str : String) : List[ScriptToken] = {
+    val scriptTokens : List[ScriptToken] = parse(str)
+    //check if we have a redeem script that needs to be parsed
+    if (scriptTokens.size > 0 && isRedeemScript(scriptTokens.last)) {
+      val redeemScript : Try[List[ScriptToken]] = parseRedeemScript(scriptTokens.last)
+      redeemScript match {
+        case Success(redeemScript : List[ScriptToken]) => scriptTokens.reverse.tail.reverse ++ redeemScript
+        case Failure(_) => scriptTokens
+      }
+    } else scriptTokens
+  }
+
+
+
+
+
+
+  /**
+   * Parses an asm output script of a transaction
+   * example: "OP_DUP OP_HASH160 e2e7c1ab3f807151e832dd1accb3d4f5d7d19b4b OP_EQUALVERIFY OP_CHECKSIG"
+   * example: ["0", "IF 0x50 ENDIF 1", "P2SH,STRICTENC", "0x50 is reserved (ok if not executed)"] (from script_valid.json)
+   * @param str
+   * @return
+   */
+  private def parse(str : String) : List[ScriptToken] = {
+    logger.debug("Parsing string: " + str + " into a list of script tokens")
 
     @tailrec
     def loop(operations : List[String], accum : List[ScriptToken]) : List[ScriptToken] = {
@@ -34,7 +81,7 @@ trait ScriptParser extends ScalacoinUtil {
           logger.debug("Found a string constant")
           val strippedQuotes = h.replace("'","")
           if (strippedQuotes.size == 0) loop(t, OP_0 :: accum)
-          else loop(t, ScriptConstantImpl(ScalacoinUtil.encodeHex(strippedQuotes.getBytes)) :: accum)
+          else loop(t, ScriptConstantImpl(BitcoinSUtil.encodeHex(strippedQuotes.getBytes)) :: accum)
 
         //for the case that we last saw a ByteToPushOntoStack operation
         //this means that the next byte needs to be parsed as a constant
@@ -44,7 +91,7 @@ trait ScriptParser extends ScalacoinUtil {
           logger.debug("Found a script operation preceded by a BytesToPushOntoStackImpl")
           val hexString = h.substring(2,h.size).toLowerCase
           logger.debug("Hex string: " + hexString)
-          loop(t,ScriptNumberImpl(ScalacoinUtil.hexToLong(hexString)) :: accum)
+          loop(t,ScriptNumberImpl(BitcoinSUtil.hexToLong(hexString)) :: accum)
 
         //OP_PUSHDATA operations are always followed by the amount of bytes to be pushed
         //onto the stack
@@ -54,7 +101,7 @@ trait ScriptParser extends ScalacoinUtil {
           //this is weird because the number is unsigned unlike other numbers
           //in bitcoin, but it is still encoded in little endian hence the .reverse call
           val byteToPushOntoStack = BytesToPushOntoStackImpl(
-            java.lang.Long.parseLong(ScalacoinUtil.littleEndianToBigEndian(h.slice(2,h.size).toLowerCase),16).toInt)
+            java.lang.Long.parseLong(BitcoinSUtil.littleEndianToBigEndian(h.slice(2,h.size).toLowerCase),16).toInt)
           loop(t, byteToPushOntoStack :: accum)
 
         //if we see a byte constant of just 0x09
@@ -91,19 +138,15 @@ trait ScriptParser extends ScalacoinUtil {
         case Nil => accum
       }
     }
-
-
-
-
     if (tryParsingLong(str) && str.size > 1 && str.substring(0,2) != "0x") {
       //for the case when there is just a single decimal constant
       //i.e. "8388607"
       List(ScriptNumberImpl(parseLong(str)))
     }
-    else if (ScalacoinUtil.isHex(str)) {
+    else if (BitcoinSUtil.isHex(str)) {
       //if the given string is hex, it is pretty straight forward to parse it
       //convert the hex string to a byte array and parse it
-      val bytes = ScalacoinUtil.decodeHex(str)
+      val bytes = BitcoinSUtil.decodeHex(str)
       parse(bytes)
     } else {
       //this handles weird cases for parsing with various formats in bitcoin core.
@@ -112,8 +155,10 @@ trait ScriptParser extends ScalacoinUtil {
       //https://github.com/bitcoin/bitcoin/blob/master/src/test/data/script_valid.json
       loop(str.split(" ").toList, List()).reverse
     }
-
   }
+
+
+
 
 
   /**
@@ -122,8 +167,8 @@ trait ScriptParser extends ScalacoinUtil {
    * @param bytes
    * @return
    */
-  def parse(bytes : List[Byte]) : List[ScriptToken] = {
-    logger.info("Parsing byte list: " + bytes + " into a list of script tokens")
+  private def parse(bytes : List[Byte]) : List[ScriptToken] = {
+    logger.debug("Parsing byte list: " + bytes + " into a list of script tokens")
     @tailrec
     def loop(bytes : List[Byte], accum : List[ScriptToken]) : List[ScriptToken] = {
       logger.debug("Byte to be parsed: " + bytes.headOption)
@@ -136,9 +181,40 @@ trait ScriptParser extends ScalacoinUtil {
       }
     }
     loop(bytes, List()).reverse
+
   }
 
-  def parse(bytes : Seq[Byte]) : List[ScriptToken] = parse(bytes.toList)
+  private def parse(bytes : Seq[Byte]) : List[ScriptToken] = parse(bytes.toList)
+
+
+
+
+  /**
+   * Parses a redeem script from the given script token
+   * @param scriptToken
+   * @return
+   */
+  def parseRedeemScript(scriptToken : ScriptToken) : Try[List[ScriptToken]] = {
+    val redeemScript : Try[List[ScriptToken]] = Try(parse(scriptToken.bytes))
+    redeemScript
+  }
+
+
+  /**
+   * Detects if the given script token is a redeem script
+   * @param token
+   * @return
+   */
+  private def isRedeemScript(token : ScriptToken) : Boolean = {
+    logger.debug("Checking if last token is redeem script")
+    val tryRedeemScript = parseRedeemScript(token)
+    tryRedeemScript match {
+      case Success(redeemScript) =>
+        if (redeemScript.size > 0 ) redeemScript.last == OP_CHECKMULTISIG || redeemScript.last == OP_CHECKMULTISIGVERIFY
+        else false
+      case Failure(_) => false
+    }
+  }
 
   /**
    * Slices the amount of bytes specified in the bytesToPushOntoStack parameter and then creates a script constant
@@ -173,7 +249,7 @@ trait ScriptParser extends ScalacoinUtil {
       //fit inside of a scala long
       //therefore store it as a script constant
       if (g.group(1).size <= 16) {
-        ScriptNumberImpl(ScalacoinUtil.hexToLong(g.group(1)))
+        ScriptNumberImpl(BitcoinSUtil.hexToLong(g.group(1)))
       } else {
         ScriptConstantImpl(g.group(1))
     }).toList)
@@ -224,20 +300,20 @@ trait ScriptParser extends ScalacoinUtil {
     op match {
       case OP_PUSHDATA1 =>
         //next byte is size of the script constant
-        val bytesToPushOntoStack = BytesToPushOntoStackImpl(Integer.parseInt(ScalacoinUtil.encodeHex(tail.head), 16))
+        val bytesToPushOntoStack = BytesToPushOntoStackImpl(Integer.parseInt(BitcoinSUtil.encodeHex(tail.head), 16))
         val scriptConstant = new ScriptConstantImpl(tail.slice(1,bytesToPushOntoStack.num+1))
         ParsingHelper[Byte](tail.slice(bytesToPushOntoStack.num+1,tail.size),
           scriptConstant :: bytesToPushOntoStack :: op :: accum)
       case OP_PUSHDATA2 =>
         //next 2 bytes is the size of the script constant
-        val scriptConstantHex = ScalacoinUtil.encodeHex(tail.slice(0,2))
+        val scriptConstantHex = BitcoinSUtil.encodeHex(tail.slice(0,2))
         val bytesToPushOntoStack = BytesToPushOntoStackImpl(Integer.parseInt(scriptConstantHex, 16))
         val scriptConstant = new ScriptConstantImpl(tail.slice(2,bytesToPushOntoStack.num + 2))
         ParsingHelper[Byte](tail.slice(bytesToPushOntoStack.num + 2,tail.size),
           scriptConstant :: bytesToPushOntoStack :: op ::  accum)
       case OP_PUSHDATA4 =>
         //nextt 4 bytes is the size of the script constant
-        val scriptConstantHex = ScalacoinUtil.encodeHex(tail.slice(0,4))
+        val scriptConstantHex = BitcoinSUtil.encodeHex(tail.slice(0,4))
         val bytesToPushOntoStack = BytesToPushOntoStackImpl(Integer.parseInt(scriptConstantHex, 16))
         val scriptConstant = new ScriptConstantImpl(tail.slice(4,bytesToPushOntoStack.num + 4))
         ParsingHelper[Byte](tail.slice(bytesToPushOntoStack.num + 4,tail.size),
@@ -287,7 +363,7 @@ trait ScriptParser extends ScalacoinUtil {
   private def parseLong(str : String) = {
     if (str.substring(0,2) == "0x") {
       val strRemoveHex = str.substring(2,str.size)
-      ScalacoinUtil.hexToLong(strRemoveHex)
+      BitcoinSUtil.hexToLong(strRemoveHex)
     } else str.toLong
   }
 }
