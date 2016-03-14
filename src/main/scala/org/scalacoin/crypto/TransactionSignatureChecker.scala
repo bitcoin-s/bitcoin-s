@@ -88,17 +88,39 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
    */
   private def checkP2SHScriptSignature(spendingTransaction : Transaction, inputIndex : Int, scriptPubKey : ScriptPubKey,
                                        p2shScriptSignature : P2SHScriptSignature) : Boolean = {
-    scriptPubKey match {
-      case x : P2SHScriptPubKey =>
-        val result : Seq[Boolean] = for {
-          (sig,pubKey) <- p2shScriptSignature.signatures.zip(p2shScriptSignature.publicKeys)
-        } yield {
-          val hashType = p2shScriptSignature.hashType(sig)
-          val hashForSig = TransactionSignatureSerializer.hashForSignature(spendingTransaction,
-            inputIndex,p2shScriptSignature.redeemScript,hashType)
-          pubKey.verify(hashForSig, sig)
+
+    /**
+     * This is a helper function to check digital signatures against public keys
+     * if the signature does not match this public key, check it against the next
+     * public key in the sequence
+     * @param sigs
+     * @param pubKeys
+     * @return
+     */
+    def helper(sigs : List[ECDigitalSignature], pubKeys : List[ECPublicKey]) : Boolean = {
+      if (!sigs.isEmpty && !pubKeys.isEmpty) {
+        val sig = sigs.head
+        val pubKey = pubKeys.head
+        val hashType = p2shScriptSignature.hashType(sig)
+        val hashForSig = TransactionSignatureSerializer.hashForSignature(spendingTransaction,
+          inputIndex,p2shScriptSignature.redeemScript,hashType)
+        val result = pubKey.verify(hashForSig, sig)
+        result match {
+          case true => helper(sigs.tail,pubKeys.tail)
+          case false => helper(sigs,pubKeys.tail)
         }
-        !result.contains(false)
+      } else if (pubKeys.isEmpty && !sigs.isEmpty) {
+        //means that we have no more pubKeys to check signatures against, therefore
+        //the validation for the tx fails
+        false
+      } else if (sigs.isEmpty) {
+        //means that we have checked all of the sigs against the public keys
+        //validation succeeds
+        true
+      } else false
+    }
+    scriptPubKey match {
+      case x : P2SHScriptPubKey => helper(p2shScriptSignature.signatures.toList, p2shScriptSignature.publicKeys.toList)
       case x : MultiSignatureScriptPubKey =>
         logger.warn("Trying to check if a p2sScriptSignature spends a multisignature scriptPubKey properly - this is trivially false")
         false
