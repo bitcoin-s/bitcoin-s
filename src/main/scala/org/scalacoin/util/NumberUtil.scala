@@ -15,7 +15,7 @@ trait NumberUtil extends BitcoinSLogger {
    * @param hex
    * @return
    */
-  def toLong(hex : String) : Long = toLong(ScalacoinUtil.decodeHex(hex))
+  def toLong(hex : String) : Long = toLong(BitcoinSUtil.decodeHex(hex))
 
   /**
    * Takes a list of bytes and converts it in to signed number inside of bitcoins
@@ -50,12 +50,12 @@ trait NumberUtil extends BitcoinSLogger {
   def longToHex(long : Long) : String = {
     if (long > -1) {
       val bytes = toByteList(long)
-      ScalacoinUtil.encodeHex(bytes)
+      BitcoinSUtil.encodeHex(bytes)
     } else {
       val bytes = toByteList(long.abs)
       //add sign bit
       val negativeNumberBytes : List[Byte] = changeSignBitToNegative(bytes)
-      val hex = ScalacoinUtil.encodeHex(negativeNumberBytes.reverse)
+      val hex = BitcoinSUtil.encodeHex(negativeNumberBytes.reverse)
       hex
     }
   }
@@ -65,7 +65,7 @@ trait NumberUtil extends BitcoinSLogger {
    * @param hex
    * @return
    */
-  def isPositive(hex : String) : Boolean = isPositive(ScalacoinUtil.decodeHex(hex))
+  def isPositive(hex : String) : Boolean = isPositive(BitcoinSUtil.decodeHex(hex))
 
   /**
    * Determines if a byte array is a positive or negative number
@@ -91,17 +91,17 @@ trait NumberUtil extends BitcoinSLogger {
     newByte :: bytes.tail
   }
 
-  def changeSignBitToPositive(hex : String) : List[Byte] = changeSignBitToPositive(ScalacoinUtil.decodeHex(hex))
+  def changeSignBitToPositive(hex : String) : List[Byte] = changeSignBitToPositive(BitcoinSUtil.decodeHex(hex))
 
   def changeSignBitToNegative(bytes : List[Byte]) : List[Byte] = {
     val newByte = (bytes.head | 0x80).toByte
     (newByte :: bytes.tail)
   }
 
-  def changeSignBitToNegative(hex : String) : List[Byte] = changeSignBitToNegative(ScalacoinUtil.decodeHex(hex))
+  def changeSignBitToNegative(hex : String) : List[Byte] = changeSignBitToNegative(BitcoinSUtil.decodeHex(hex))
 
 
-  def firstByteAllZeros(hex : String) : Boolean = firstByteAllZeros(ScalacoinUtil.decodeHex(hex))
+  def firstByteAllZeros(hex : String) : Boolean = firstByteAllZeros(BitcoinSUtil.decodeHex(hex))
 
   def firstByteAllZeros(bytes : List[Byte]) : Boolean = {
     val lastByte = bytes.head
@@ -118,7 +118,7 @@ trait NumberUtil extends BitcoinSLogger {
    * @param hex
    * @return
    */
-  def parseCompactSizeUInt(hex : String) : CompactSizeUInt = parseCompactSizeUInt(ScalacoinUtil.decodeHex(hex))
+  def parseCompactSizeUInt(hex : String) : CompactSizeUInt = parseCompactSizeUInt(BitcoinSUtil.decodeHex(hex))
 
   /**
    * Parses a CompactSizeUInt from a sequence of bytes
@@ -192,7 +192,7 @@ trait NumberUtil extends BitcoinSLogger {
 
   private def parseLong(hex : String) : Long = java.lang.Long.parseLong(hex,16)
 
-  private def parseLong(bytes : List[Byte]) : Long = parseLong(ScalacoinUtil.encodeHex(bytes))
+  private def parseLong(bytes : List[Byte]) : Long = parseLong(BitcoinSUtil.encodeHex(bytes))
 
   private def parseLong(byte : Byte) : Long = parseLong(List(byte))
 

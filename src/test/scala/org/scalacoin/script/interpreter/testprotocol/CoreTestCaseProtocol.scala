@@ -30,18 +30,22 @@ object CoreTestCaseProtocol extends DefaultJsonProtocol {
       } else if (elements.size == 3) {
         val scriptSignatureAsm : Seq[ScriptToken] = parseScriptSignatureAsm(elements.head)
         val scriptSignature : ScriptSignature = ScriptSignature.fromHex(scriptSignatureAsm.map(_.hex).mkString)
+        val scriptSignatureCoreTestCase = ScriptSignatureCoreTestCaseImpl(scriptSignatureAsm,scriptSignature)
         val scriptPubKeyAsm = parseScriptPubKeyAsm(elements(1))
         val scriptPubKey = ScriptPubKey.factory(UpdateScriptPubKeyAsm(scriptPubKeyAsm))
+        val scriptPubKeyCoreTestCase = ScriptPubKeyCoreTestCaseImpl(scriptPubKeyAsm, scriptPubKey)
         val flags = elements(2).convertTo[String]
-        Some(CoreTestCaseImpl(scriptSignature,scriptPubKey,flags,"No comments from bitcoin core ",elements.toString))
+        Some(CoreTestCaseImpl(scriptSignatureCoreTestCase,scriptPubKeyCoreTestCase,flags,"No comments from bitcoin core ",elements.toString))
       } else if (elements.size == 4) {
         val scriptSignatureAsm : Seq[ScriptToken] = parseScriptSignatureAsm(elements.head)
         val scriptSignature : ScriptSignature = ScriptSignature.fromHex(scriptSignatureAsm.map(_.hex).mkString)
+        val scriptSignatureCoreTestCase = ScriptSignatureCoreTestCaseImpl(scriptSignatureAsm,scriptSignature)
         val scriptPubKeyAsm : Seq[ScriptToken] = parseScriptPubKeyAsm(elements(1))
         val scriptPubKey = ScriptPubKey.factory(UpdateScriptPubKeyAsm(scriptPubKeyAsm))
+        val scriptPubKeyCoreTestCase = ScriptPubKeyCoreTestCaseImpl(scriptPubKeyAsm, scriptPubKey)
         val flags = elements(2).convertTo[String]
         val comments = elements(3).convertTo[String]
-        Some(CoreTestCaseImpl(scriptSignature,scriptPubKey,flags,comments, elements.toString))
+        Some(CoreTestCaseImpl(scriptSignatureCoreTestCase,scriptPubKeyCoreTestCase,flags,comments, elements.toString))
       } else None
 
     }
