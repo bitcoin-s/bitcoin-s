@@ -7,6 +7,8 @@ import org.scalacoin.script.crypto.HashType
 import org.scalacoin.util.{BitcoinSLogger, BitcoinSUtil}
 import org.slf4j.LoggerFactory
 
+import scala.annotation.tailrec
+
 /**
  * Created by chris on 2/16/16.
  * Responsible for checkign digital signatures on inputs against their respective
@@ -97,6 +99,7 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
      * @param pubKeys
      * @return
      */
+    @tailrec
     def helper(sigs : List[ECDigitalSignature], pubKeys : List[ECPublicKey]) : Boolean = {
       if (!sigs.isEmpty && !pubKeys.isEmpty) {
         val sig = sigs.head
@@ -119,6 +122,7 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
         true
       } else false
     }
+
     scriptPubKey match {
       case x : P2SHScriptPubKey => helper(p2shScriptSignature.signatures.toList, p2shScriptSignature.publicKeys.toList)
       case x : MultiSignatureScriptPubKey =>
@@ -150,7 +154,7 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
   private def checkMultiSignatureScriptSig(spendingTransaction : Transaction, inputIndex : Int, scriptPubKey : ScriptPubKey,
                                            multiSignatureScript : MultiSignatureScriptSignature) : Boolean = {
     scriptPubKey match {
-      case x: MultiSignatureScriptPubKey =>
+      case x : MultiSignatureScriptPubKey =>
         val result: Seq[Boolean] = for {
           (sig, pubKey) <- multiSignatureScript.signatures.zip(x.publicKeys)
         } yield {
@@ -160,19 +164,19 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
             pubKey.verify(hashForSig, sig)
           }
         !result.contains(false)
-      case x: P2PKHScriptPubKey =>
+      case x : P2PKHScriptPubKey =>
         logger.warn("Trying to check if a multisignature scriptSig spends a p2pkh scriptPubKey properly - this is trivially false")
         false
-      case x: P2PKScriptPubKey =>
+      case x : P2PKScriptPubKey =>
         logger.warn("Trying to check if a multisignature scriptSig spends a p2pk scriptPubKey properly - this is trivially false")
         false
-      case x: NonStandardScriptPubKey =>
+      case x : NonStandardScriptPubKey =>
         logger.warn("Trying to check if a multisignature scriptSig spends a p2sh scriptPubKey properly - this is trivially false")
         false
-      case x: P2SHScriptPubKey =>
+      case x : P2SHScriptPubKey =>
         logger.warn("Trying to check if a multisignature scriptSig spends a nonstandard scriptPubKey properly - this is trivially false")
         false
-      case x: ScriptPubKey =>
+      case x : ScriptPubKey =>
         logger.warn("Trying to check if a multisignature scriptSig spends a scriptPubKey properly - this is trivially false")
         false
     }
