@@ -20,7 +20,7 @@ sealed trait ScriptPubKey extends TransactionElement with ScriptPubKeyFactory {
    * see if a script evaluates to true
    * @return
    */
-  def asm : Seq[ScriptToken] = ScriptParser.fromBytes(bytes)
+  def asm : Seq[ScriptToken]
 
   /**
    * Returns the script type of this scriptPubKey
@@ -103,12 +103,34 @@ trait P2PKScriptPubKey extends ScriptPubKey
 
 trait NonStandardScriptPubKey extends ScriptPubKey
 
-case class NonStandardScriptPubKeyImpl(hex : String) extends NonStandardScriptPubKey
-case class P2PKHScriptPubKeyImpl(hex : String) extends P2PKHScriptPubKey
-case class MultiSignatureScriptPubKeyImpl(hex : String) extends MultiSignatureScriptPubKey
-case class P2SHScriptPubKeyImpl(hex : String) extends P2SHScriptPubKey
-case class P2PKScriptPubKeyImpl(hex : String) extends P2PKScriptPubKey
+
+object NonStandardScriptPubKeyImpl {
+  def apply(hex : String) : NonStandardScriptPubKeyImpl = NonStandardScriptPubKeyImpl(hex, RawScriptPubKeyParser.read(hex).asm)
+}
+case class NonStandardScriptPubKeyImpl(hex : String, asm : Seq[ScriptToken]) extends NonStandardScriptPubKey
+
+object P2PKHScriptPubKeyImpl {
+  def apply(hex : String) : P2PKHScriptPubKeyImpl = P2PKHScriptPubKeyImpl(hex, RawScriptPubKeyParser.read(hex).asm)
+}
+case class P2PKHScriptPubKeyImpl(hex : String, asm : Seq[ScriptToken]) extends P2PKHScriptPubKey
+
+
+object MultiSignatureScriptPubKeyImpl {
+  def apply(hex : String) : MultiSignatureScriptPubKeyImpl = MultiSignatureScriptPubKeyImpl(hex, RawScriptPubKeyParser.read(hex).asm)
+}
+case class MultiSignatureScriptPubKeyImpl(hex : String,asm : Seq[ScriptToken]) extends MultiSignatureScriptPubKey
+
+object P2SHScriptPubKeyImpl {
+  def apply(hex : String) : P2SHScriptPubKeyImpl = P2SHScriptPubKeyImpl(hex, RawScriptPubKeyParser.read(hex).asm)
+}
+case class P2SHScriptPubKeyImpl(hex : String,asm : Seq[ScriptToken]) extends P2SHScriptPubKey
+
+object P2PKScriptPubKeyImpl {
+  def apply(hex : String) : P2PKScriptPubKeyImpl = P2PKScriptPubKeyImpl(hex, RawScriptPubKeyParser.read(hex).asm)
+}
+case class P2PKScriptPubKeyImpl(hex : String,asm : Seq[ScriptToken]) extends P2PKScriptPubKey
 
 object ScriptPubKey extends ScriptPubKey {
+  def asm = List()
   def hex = ""
 }

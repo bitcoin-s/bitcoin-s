@@ -3,6 +3,8 @@ package org.scalacoin.script.interpreter
 import java.io.File
 
 import com.sun.org.apache.bcel.internal.generic.NOP
+import org.scalacoin.protocol.script.ScriptPubKey
+import org.scalacoin.script.ScriptProgramFactory
 import org.scalacoin.script.bitwise.{OP_EQUAL, OP_EQUALVERIFY}
 import org.scalacoin.script.constant._
 import org.scalacoin.script.control.OP_VERIFY
@@ -65,8 +67,7 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterp
 /*    val lines =
     """
       |
-      |[["0x4b 0x417a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a",
-      | "'Azzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz' EQUAL", "P2SH,STRICTENC", "push 75 bytes"]]
+      |[["0x02 0x417a", "'Az' EQUAL", "P2SH,STRICTENC"]]
     """.stripMargin*/
 
     val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n" finally source.close()
@@ -77,16 +78,20 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterp
 
     for {
       testCase <- testCases
-      tx = TransactionTestUtil.buildSpendingTransaction(testCase.scriptSig.scriptSignature,
-        TransactionTestUtil.buildCreditingTransaction(testCase.scriptPubKey.scriptPubKey))
+      creditingTx = TransactionTestUtil.buildCreditingTransaction(testCase.scriptPubKey.scriptPubKey)
+      tx = TransactionTestUtil.buildSpendingTransaction(creditingTx,testCase.scriptSig.scriptSignature,0)
     } yield {
+      require(testCase.scriptPubKey.asm == testCase.scriptPubKey.scriptPubKey.asm)
       logger.info("Raw test case: " + testCase.raw)
       logger.info("Parsed ScriptSig: " + testCase.scriptSig)
       logger.info("Parsed ScriptPubKey: " + testCase.scriptPubKey)
       logger.info("Flags: " + testCase.flags)
       logger.info("Comments: " + testCase.comments)
+      val scriptPubKey = ScriptPubKey.fromAsm(testCase.scriptPubKey.asm)
+      val inputIndex = 0
+      val program = ScriptProgramFactory.factory(tx,scriptPubKey, inputIndex)
       withClue(testCase.raw) {
-        ScriptInterpreter.run(testCase.scriptSig.asm, testCase.scriptPubKey.asm, tx) must equal (true)
+        ScriptInterpreter.run(program) must equal (true)
       }
     }
 

@@ -46,14 +46,14 @@ trait ScriptPubKeyFactory extends Factory[ScriptPubKey] { this : ScriptPubKey =>
     val scriptPubKeyHex = BitcoinScriptUtil.asmToHex(asm)
     asm match {
       case List(OP_DUP, OP_HASH160, BytesToPushOntoStackImpl(x), ScriptConstantImpl(pubKeyHash), OP_EQUALVERIFY, OP_CHECKSIG) =>
-        P2PKHScriptPubKeyImpl(scriptPubKeyHex)
+        P2PKHScriptPubKeyImpl(scriptPubKeyHex,asm)
       case List(OP_HASH160, BytesToPushOntoStackImpl(x), ScriptConstantImpl(scriptHash), OP_EQUAL) =>
-        P2SHScriptPubKeyImpl(scriptPubKeyHex)
-      case List(x : ScriptConstant, OP_CHECKSIG) => P2PKScriptPubKeyImpl(scriptPubKeyHex)
+        P2SHScriptPubKeyImpl(scriptPubKeyHex,asm)
+      case List(x : ScriptConstant, OP_CHECKSIG) => P2PKScriptPubKeyImpl(scriptPubKeyHex,asm)
       //TODO: make this more robust, this isn't the pattern that multsignature scriptPubKeys follow
       case _ if (asm.size > 0 && asm.last == OP_CHECKMULTISIG) =>
-        MultiSignatureScriptPubKeyImpl(scriptPubKeyHex)
-      case _ => NonStandardScriptPubKeyImpl(scriptPubKeyHex)
+        MultiSignatureScriptPubKeyImpl(scriptPubKeyHex,asm)
+      case _ => NonStandardScriptPubKeyImpl(scriptPubKeyHex,asm)
     }
   }
 

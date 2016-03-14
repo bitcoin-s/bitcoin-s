@@ -37,14 +37,15 @@ trait TransactionTestUtil extends BitcoinSLogger {
    * Mimics the test utility found in bitcoin core
    * https://github.com/bitcoin/bitcoin/blob/605c17844ea32b6d237db6d83871164dc7d59dab/src/test/script_tests.cpp#L73
    * @param scriptSignature
-   * @param tx
+   * @param creditingTx
+   * @param outputIndex
    */
-  def buildSpendingTransaction(scriptSignature : ScriptSignature, tx : Transaction) : Transaction = {
+  def buildSpendingTransaction(creditingTx : Transaction,scriptSignature : ScriptSignature, outputIndex : Int) : Transaction = {
 
-    val outpoint = TransactionOutPointImpl(tx.txId,0)
-    val input = TransactionInputImpl(outpoint,scriptSignature,0xFFFFFFFF)
+    val outpoint = TransactionOutPointImpl(creditingTx.txId,outputIndex)
+    val input = TransactionInput.factory(outpoint,scriptSignature,0xFFFFFFFF)
     //empty script pubkey
-    val scriptPubKey = ScriptPubKey.fromHex("")
+    val scriptPubKey = creditingTx.outputs(outputIndex).scriptPubKey
     val output = TransactionOutputImpl(CurrencyUnits.oneSatoshi,0,scriptPubKey)
     TransactionImpl(TransactionConstants.version,Seq(input),Seq(output),TransactionConstants.lockTime)
   }

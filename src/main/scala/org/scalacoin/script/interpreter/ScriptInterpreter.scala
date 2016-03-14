@@ -28,16 +28,10 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
   /**
    * Runs an entire script though our script programming language and
    * returns true or false depending on if the script was valid
-   * @param inputScript
-   * @param outputScript
-   * @param transaction
+   * @param program the program to be interpreted
    * @return
    */
-  def run(inputScript : List[ScriptToken], outputScript : List[ScriptToken], transaction : Transaction) : Boolean = {
-    val fullInputScript = inputScript
-    val fullOutputScript = outputScript
-    val fullScript = inputScript ++ fullOutputScript
-
+  def run(program : ScriptProgram) : Boolean = {
     @tailrec
     def loop(program : ScriptProgram) : Boolean = {
       logger.debug("Stack: " + program.stack)
@@ -149,16 +143,9 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
       }
     }
 
-    loop(ScriptProgramImpl(List(),fullScript,transaction, List(),fullScript))
+    loop(program)
   }
 
-  def run(inputScript : Seq[ScriptToken], outputScript : Seq[ScriptToken], transaction : Transaction) : Boolean = {
-    run(inputScript.toList, outputScript.toList,transaction)
-  }
-
-  def run(scriptSignature : ScriptSignature, scriptPubKey : ScriptPubKey, transaction : Transaction) : Boolean = {
-    run(scriptSignature.asm, scriptPubKey.asm,transaction)
-  }
 
 }
 

@@ -1,5 +1,6 @@
 package org.scalacoin.script
 
+import org.scalacoin.protocol.script.ScriptPubKey
 import org.scalacoin.protocol.transaction.Transaction
 import org.scalacoin.script.ScriptProgramFactory.UpdateIndicator
 import org.scalacoin.script.constant.ScriptToken
@@ -13,77 +14,132 @@ trait ScriptProgramFactory {
   sealed trait UpdateIndicator
   case object Stack extends UpdateIndicator
   case object Script extends UpdateIndicator
-  case object FullScript extends UpdateIndicator
   case object AltStack extends UpdateIndicator
 
+  /**
+   * Changes the validity of a script program
+   * @param oldProgram
+   * @param valid
+   * @return
+   */
   def factory(oldProgram : ScriptProgram, valid : Boolean) : ScriptProgram = {
-    ScriptProgramImpl(oldProgram.stack,oldProgram.script,oldProgram.transaction,
-      oldProgram.altStack, oldProgram.fullScript, valid, oldProgram.lastCodeSeparator)
+    ScriptProgramImpl(oldProgram.transaction,oldProgram.scriptPubKey,oldProgram.inputIndex,
+      oldProgram.stack,oldProgram.script, oldProgram.altStack, valid, oldProgram.lastCodeSeparator)
   }
 
-  def factory(oldProgram : ScriptProgram, tx : Transaction) : ScriptProgram = {
-    ScriptProgramImpl(oldProgram.stack,oldProgram.script,tx,
-      oldProgram.altStack, oldProgram.fullScript,oldProgram.valid, oldProgram.lastCodeSeparator)
-  }
 
+  /**
+   * Changes the tokens in either the Stack or the Script dependong in the indicactor
+   * @param oldProgram
+   * @param tokens
+   * @param indicator
+   * @return
+   */
   def factory(oldProgram : ScriptProgram, tokens : Seq[ScriptToken], indicator : UpdateIndicator) : ScriptProgram = {
     indicator match {
-      case Stack => ScriptProgramImpl(tokens.toList, oldProgram.script, oldProgram.transaction,
-        oldProgram.altStack, oldProgram.fullScript, oldProgram.valid, oldProgram.lastCodeSeparator)
-      case Script => ScriptProgramImpl(oldProgram.stack, tokens.toList, oldProgram.transaction,
-        oldProgram.altStack, oldProgram.fullScript, oldProgram.valid, oldProgram.lastCodeSeparator)
-      case AltStack => ScriptProgramImpl(oldProgram.stack, oldProgram.script, oldProgram.transaction,
-        tokens.toList, oldProgram.fullScript, oldProgram.valid, oldProgram.lastCodeSeparator)
-      case FullScript => ScriptProgramImpl(oldProgram.stack, oldProgram.script, oldProgram.transaction,
-        oldProgram.altStack, tokens.toList, oldProgram.valid, oldProgram.lastCodeSeparator)
+      case Stack => ScriptProgramImpl(oldProgram.transaction,oldProgram.scriptPubKey,
+        oldProgram.inputIndex,tokens.toList, oldProgram.script,
+        oldProgram.altStack, oldProgram.valid, oldProgram.lastCodeSeparator)
+      case Script => ScriptProgramImpl(oldProgram.transaction, oldProgram.scriptPubKey, oldProgram.inputIndex,
+        oldProgram.stack, tokens.toList, oldProgram.altStack, oldProgram.valid, oldProgram.lastCodeSeparator)
+      case AltStack => ScriptProgramImpl(oldProgram.transaction,oldProgram.scriptPubKey, oldProgram.inputIndex,
+        oldProgram.stack, oldProgram.script, tokens.toList,  oldProgram.valid, oldProgram.lastCodeSeparator)
     }
   }
 
+  /**
+   * Changes the stack tokens and script tokens in a ScriptProgram
+   * @param oldProgram
+   * @param stackTokens
+   * @param scriptTokens
+   * @return
+   */
   def factory(oldProgram : ScriptProgram, stackTokens : Seq[ScriptToken], scriptTokens : Seq[ScriptToken]) = {
-    ScriptProgramImpl(stackTokens.toList,scriptTokens.toList,oldProgram.transaction, oldProgram.altStack,
-      oldProgram.fullScript,
-      valid = oldProgram.valid, lastCodeSeparator = oldProgram.lastCodeSeparator)
+    ScriptProgramImpl(oldProgram.transaction, oldProgram.scriptPubKey, oldProgram.inputIndex,
+      stackTokens.toList,scriptTokens.toList, oldProgram.altStack,
+      oldProgram.valid,oldProgram.lastCodeSeparator)
   }
 
+  /**
+   * Updates the last OP_CODESEPARATOR index
+   * @param oldProgram
+   * @param lastCodeSeparator
+   * @return
+   */
   def factory(oldProgram : ScriptProgram, lastCodeSeparator : Int) : ScriptProgram = {
-    ScriptProgramImpl(oldProgram.stack, oldProgram.script, oldProgram.transaction,
-      oldProgram.altStack, oldProgram.fullScript, valid = oldProgram.valid, lastCodeSeparator = lastCodeSeparator)
+    ScriptProgramImpl(oldProgram.transaction, oldProgram.scriptPubKey, oldProgram.inputIndex,
+      oldProgram.stack, oldProgram.script,
+      oldProgram.altStack, valid = oldProgram.valid, lastCodeSeparator = lastCodeSeparator)
   }
 
+  /**
+   * Updates the tokens in either the stack or script and the last OP_CODESEPARATOR index
+   * @param oldProgram
+   * @param tokens
+   * @param indicator
+   * @param lastCodeSeparator
+   * @return
+   */
   def factory(oldProgram : ScriptProgram, tokens : Seq[ScriptToken], indicator: UpdateIndicator,
               lastCodeSeparator : Int) : ScriptProgram = {
     indicator match {
-      case Stack => ScriptProgramImpl(tokens.toList, oldProgram.script, oldProgram.transaction,
-        oldProgram.altStack, oldProgram.fullScript, oldProgram.valid, lastCodeSeparator)
-      case Script => ScriptProgramImpl(oldProgram.stack, tokens.toList, oldProgram.transaction,
-        oldProgram.altStack, oldProgram.fullScript, oldProgram.valid, lastCodeSeparator)
-      case AltStack => ScriptProgramImpl(oldProgram.stack, oldProgram.script, oldProgram.transaction,
-        tokens.toList, oldProgram.fullScript, oldProgram.valid, lastCodeSeparator)
-      case FullScript => ScriptProgramImpl(oldProgram.stack, oldProgram.script, oldProgram.transaction,
-        oldProgram.altStack, tokens.toList, oldProgram.valid, lastCodeSeparator)
+      case Stack => ScriptProgramImpl(oldProgram.transaction, oldProgram.scriptPubKey, oldProgram.inputIndex,
+        tokens.toList, oldProgram.script, oldProgram.altStack, oldProgram.valid, lastCodeSeparator)
+      case Script => ScriptProgramImpl(oldProgram.transaction, oldProgram.scriptPubKey, oldProgram.inputIndex,
+        oldProgram.stack, tokens.toList, oldProgram.altStack, oldProgram.valid, lastCodeSeparator)
+      case AltStack => ScriptProgramImpl(oldProgram.transaction, oldProgram.scriptPubKey,
+        oldProgram.inputIndex,oldProgram.stack, oldProgram.script,
+        tokens.toList, oldProgram.valid, lastCodeSeparator)
     }
   }
 
 
+  /**
+   * Updates the stack, script and validity of a script program
+   * @param oldProgram
+   * @param stack
+   * @param script
+   * @param valid
+   * @return
+   */
   def factory(oldProgram : ScriptProgram, stack : Seq[ScriptToken], script : Seq[ScriptToken], valid : Boolean) = {
-    ScriptProgramImpl(stack.toList, script.toList, oldProgram.transaction,
-      oldProgram.altStack,oldProgram.fullScript,valid, oldProgram.lastCodeSeparator)
+    ScriptProgramImpl(oldProgram.transaction, oldProgram.scriptPubKey, oldProgram.inputIndex,
+      stack.toList, script.toList, oldProgram.altStack,valid, oldProgram.lastCodeSeparator)
   }
 
 
+  /**
+   * Updates the stack, script
+   * @param oldProgram
+   * @param stack
+   * @param script
+   * @param that
+   * @param updateIndicator
+   * @return
+   */
   def factory(oldProgram : ScriptProgram, stack : Seq[ScriptToken], script : Seq[ScriptToken], that : Seq[ScriptToken],
                updateIndicator: UpdateIndicator) = {
     updateIndicator match {
-      case FullScript =>
-        ScriptProgramImpl(stack.toList,script.toList,oldProgram.transaction,
-          oldProgram.altStack,that.toList,oldProgram.valid,oldProgram.lastCodeSeparator)
       case AltStack =>
-        ScriptProgramImpl(stack.toList,script.toList,oldProgram.transaction,
-          that.toList,oldProgram.fullScript,oldProgram.valid,oldProgram.lastCodeSeparator)
-      case _ => ScriptProgramImpl(stack.toList,script.toList,oldProgram.transaction,
-        oldProgram.altStack,oldProgram.fullScript,oldProgram.valid,oldProgram.lastCodeSeparator)
+        ScriptProgramImpl(oldProgram.transaction, oldProgram.scriptPubKey, oldProgram.inputIndex,
+          stack.toList,script.toList,that.toList,oldProgram.valid,oldProgram.lastCodeSeparator)
+      case _ => ScriptProgramImpl(oldProgram.transaction, oldProgram.scriptPubKey, oldProgram.inputIndex,
+        stack.toList,script.toList, oldProgram.altStack,oldProgram.valid,oldProgram.lastCodeSeparator)
     }
 
+  }
+
+  /**
+   * Creates a new script program that can be used to verify if a transaction at the given inputIndex
+   * spends a given scriptPubKey correctly
+   * @param transaction
+   * @param scriptPubKey
+   * @param inputIndex
+   * @return
+   */
+  def factory(transaction: Transaction, scriptPubKey : ScriptPubKey, inputIndex : Int) = {
+    val script = transaction.inputs(inputIndex).scriptSignature.asm ++ scriptPubKey.asm
+    ScriptProgramImpl(transaction,scriptPubKey,inputIndex,List(),script.toList,List())
   }
 
 }

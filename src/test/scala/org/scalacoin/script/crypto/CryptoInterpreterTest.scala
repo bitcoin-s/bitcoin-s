@@ -3,13 +3,13 @@ package org.scalacoin.script.crypto
 import org.scalacoin.protocol.script.ScriptPubKey
 import org.scalacoin.script.{ScriptProgramFactory, ScriptProgramImpl}
 import org.scalacoin.script.constant._
-import org.scalacoin.util.TestUtil
+import org.scalacoin.util.{BitcoinSLogger, TestUtil}
 import org.scalatest.{MustMatchers, FlatSpec}
 
 /**
  * Created by chris on 1/6/16.
  */
-class CryptoInterpreterTest extends FlatSpec with MustMatchers with CryptoInterpreter {
+class CryptoInterpreterTest extends FlatSpec with MustMatchers with CryptoInterpreter with BitcoinSLogger {
   val stack = List(ScriptConstantImpl("02218AD6CDC632E7AE7D04472374311CEBBBBF0AB540D2D08C3400BB844C654231".toLowerCase))
   "CryptoInterpreter" must "evaluate OP_HASH160 correctly when it is on top of the script stack" in {
 
@@ -85,21 +85,6 @@ class CryptoInterpreterTest extends FlatSpec with MustMatchers with CryptoInterp
     result must be (true)*/
   }
 
-  it must "update the program with the index of the latest OP_CODESEPARATOR" in {
-    val stack = List(ScriptNumberImpl(1))
-    val script = List(OP_CODESEPARATOR)
-    val fullScript = stack ++ script
-    val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script,fullScript, ScriptProgramFactory.FullScript)
-    opCodeSeparator(program).lastCodeSeparator must be (1)
-
-
-    val stack1 = List(ScriptNumberImpl(1), ScriptNumberImpl(2), ScriptNumberImpl(3))
-    val script1 = List(OP_CODESEPARATOR,OP_0,OP_1,OP_2,OP_3 )
-    val fullScript1 = stack1 ++ script1
-    val program1 = ScriptProgramFactory.factory(TestUtil.testProgram, stack1,script1,fullScript1, ScriptProgramFactory.FullScript)
-    opCodeSeparator(program1).lastCodeSeparator must be (3)
-
-  }
 
 
   it must "evaluate an OP_CHECKMULTISIG with zero signatures and zero pubkeys" in {

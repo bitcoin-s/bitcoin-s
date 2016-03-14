@@ -32,6 +32,11 @@ trait TransactionInputFactory extends Factory[TransactionInput] { this : Transac
     TransactionInputImpl(outPoint,scriptSignature,sequence)
   }
 
+
+  def factory(outPoint : TransactionOutPoint, scriptSignature : ScriptSignature, sequenceNumber : Long) : TransactionInput = {
+    TransactionInputImpl(outPoint, scriptSignature, sequenceNumber)
+  }
+
   def empty : TransactionInput = {
     TransactionInputImpl(TransactionOutPoint.empty,
       ScriptSignature.empty,TransactionConstants.sequence)
