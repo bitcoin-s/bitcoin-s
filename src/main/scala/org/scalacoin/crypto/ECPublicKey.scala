@@ -8,6 +8,8 @@ package org.scalacoin.crypto
 trait ECPublicKey extends BaseECKey {
   import org.bitcoinj.core.ECKey
 
+
+  private def emptySignature = new org.bitcoinj.core.ECKey.ECDSASignature(java.math.BigInteger.valueOf(0), java.math.BigInteger.valueOf(0))
   /**
    * Verifies if a given piece of data is signed by the private key corresponding public key
    * @param data
@@ -16,7 +18,13 @@ trait ECPublicKey extends BaseECKey {
    */
   def verify(data : Seq[Byte], signature : ECDigitalSignature) : Boolean = {
     val bitcoinjKey = ECKey.fromPublicOnly(bytes.toArray)
-    bitcoinjKey.verify(data.toArray,signature.bytes.toArray)
+    if (signature.isEmpty) {
+      bitcoinjKey.verify(data.toArray,emptySignature.encodeToDER())
+    } else {
+
+      bitcoinjKey.verify(data.toArray,signature.bytes.toArray)
+    }
+
   }
 }
 

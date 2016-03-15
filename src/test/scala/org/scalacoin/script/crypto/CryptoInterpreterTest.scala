@@ -1,6 +1,7 @@
 package org.scalacoin.script.crypto
 
 import org.scalacoin.protocol.script.ScriptPubKey
+import org.scalacoin.script.arithmetic.OP_NOT
 import org.scalacoin.script.{ScriptProgramFactory, ScriptProgramImpl}
 import org.scalacoin.script.constant._
 import org.scalacoin.util.{BitcoinSLogger, TestUtil}
@@ -135,6 +136,16 @@ class CryptoInterpreterTest extends FlatSpec with MustMatchers with CryptoInterp
     newProgram.stack must be (List(ScriptTrue))
     newProgram.script.isEmpty must be (true)
     newProgram.valid must be (true)
+
+  }
+
+  it must "push a ScriptFalse onto the stack if signature validation fails for an OP_CHECKSIG" in {
+    val stack = List(ScriptConstantImpl("02865c40293a680cb9c020e7b1e106d8c1916d3cef99aa431a56d253e69256dac0"), OP_0)
+    val script = List(OP_CHECKSIG, OP_NOT)
+    val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
+    val newProgram = opCheckSig(program)
+    newProgram.stack must be (List(ScriptFalse))
+    newProgram.script must be (List(OP_NOT))
 
   }
 
