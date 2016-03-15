@@ -127,7 +127,7 @@ trait ControlOperationsInterpreter {
       ScriptProgramFactory.factory(program, program.stack.tail,program.script.tail,true)
     } else if (program.stack.exists(t => t != OP_0 && t != ScriptFalse)) {
       ScriptProgramFactory.factory(program, program.stack.tail,program.script.tail,true)
-    } else ScriptProgramFactory.factory(program, program.stack,program.script.tail, false)
+    } else ScriptProgramFactory.factory(program, program.stack.tail,program.script.tail, false)
   }
 
 

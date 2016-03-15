@@ -61,7 +61,9 @@ trait MultiSignatureScriptPubKey extends ScriptPubKey {
    * @return
    */
   def requiredSigs = {
-    asm.head match {
+    val op0Index = asm.indexOf(OP_0)
+    val numSigsRequired = asm(op0Index + 1)
+    numSigsRequired match {
       case x : ScriptNumberOperation => x.num
       case _ => throw new RuntimeException("The first element of the multisignature pubkey must be a script number operation")
     }
