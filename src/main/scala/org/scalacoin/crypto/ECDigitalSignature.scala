@@ -9,6 +9,7 @@ sealed trait ECDigitalSignature {
 
   def hex : String = BitcoinSUtil.encodeHex(bytes)
   def bytes : Seq[Byte]
+  def isEmpty = bytes.isEmpty
   override def toString = hex
 }
 

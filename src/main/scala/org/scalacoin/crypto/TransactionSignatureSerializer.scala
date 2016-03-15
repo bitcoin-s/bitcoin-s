@@ -186,15 +186,7 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper {
       val scriptWithoutOpCodeSeparators : Seq[ScriptToken] = script.asm.filterNot(_ == OP_CODESEPARATOR)
       val scriptBytes = BitcoinScriptUtil.asmToBytes(scriptWithoutOpCodeSeparators)
       ScriptPubKey.fromBytes(scriptBytes)
-    } else {
-      script.scriptType match {
-        case P2PKH => script
-        case P2SH => script
-        case MultiSignature => script
-        case NonStandard => throw new RuntimeException("Excpected a p2sh or p2kh address type")
-      }
-
-    }
+    } else script
 
   }
 

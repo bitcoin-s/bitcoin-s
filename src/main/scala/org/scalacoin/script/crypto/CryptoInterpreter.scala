@@ -1,5 +1,6 @@
 package org.scalacoin.script.crypto
 
+import org.scalacoin.crypto.{ECFactory, TransactionSignatureSerializer}
 import org.scalacoin.protocol.script.ScriptPubKey
 import org.scalacoin.protocol.transaction.Transaction
 import org.scalacoin.script.control.{ControlOperationsInterpreter, OP_VERIFY}
@@ -84,11 +85,20 @@ trait CryptoInterpreter extends ControlOperationsInterpreter {
   def opCheckSig(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.isDefined && program.script.head == OP_CHECKSIG, "Script top must be OP_CHECKSIG")
     require(program.stack.size > 1, "Stack must have at least 2 items on it for OP_CHECKSIG")
-    val pubKey = program.stack.head
-    val signature = program.stack.tail.head
+    val pubKey = ECFactory.publicKey(program.stack.head.bytes)
+    val signature = ECFactory.digitalSignature(program.stack.tail.head.bytes)
     val restOfStack = program.stack.tail.tail
-    val hashType = HashTypeFactory.fromByte(BitcoinSUtil.decodeHex(signature.hex).last)
-    ???
+    val hashType = (signature.bytes.size == 0) match {
+      case true => SIGHASH_ALL
+      case false => HashTypeFactory.fromByte(BitcoinSUtil.decodeHex(signature.hex).last).get
+    }
+
+    val hashForSig = TransactionSignatureSerializer.hashForSignature(program.transaction,
+      program.inputIndex,program.scriptPubKey,hashType)
+    val isValid = pubKey.verify(hashForSig, signature)
+    if (isValid) ScriptProgramFactory.factory(program, ScriptTrue :: restOfStack,program.script.tail,isValid)
+    else ScriptProgramFactory.factory(program, ScriptFalse :: restOfStack,program.script.tail,isValid)
+
   }
 
 
