@@ -62,6 +62,7 @@ trait ScriptSignatureFactory extends Factory[ScriptSignature] { this : ScriptSig
   def fromAsm(tokens : Seq[ScriptToken]) : ScriptSignature = {
     val scriptSigHex = tokens.map(_.hex).mkString
     tokens match {
+      case Seq() => EmptyScriptSignature
       case _  if (tokens.contains(OP_CHECKMULTISIG) && tokens.count(_.isInstanceOf[ScriptNumberOperation]) == 3) =>
         P2SHScriptSignatureImpl(scriptSigHex,tokens)
       case _ if (tokens.size > 0 && tokens.head == OP_0) => MultiSignatureScriptSignatureImpl(scriptSigHex,tokens)
