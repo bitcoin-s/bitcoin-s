@@ -47,7 +47,7 @@ trait ScriptSignatureFactory extends Factory[ScriptSignature] { this : ScriptSig
    * Returns an empty script signature
    * @return
    */
-  def empty = fromAsm(List())
+  def empty : ScriptSignature = EmptyScriptSignature
 
   def fromBytes(bytes : Seq[Byte]) : ScriptSignature =  {
     RawScriptSignatureParser.read(bytes)

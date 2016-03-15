@@ -115,7 +115,7 @@ class CryptoInterpreterTest extends FlatSpec with MustMatchers with CryptoInterp
     newProgram.valid must be (false)
     newProgram.script.isEmpty must be (true)
 
-    newProgram.stack.isEmpty must be (false)
+    newProgram.stack.isEmpty must be (true)
   }
 
   it must "evaluate an OP_CHECKMULTISIGVERIFY and leave the remaining operations on the stack" in {
