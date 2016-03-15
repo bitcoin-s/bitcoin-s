@@ -56,9 +56,8 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
         checkP2SHScriptSignature(spendingTransaction,inputIndex,scriptPubKey, p2shSignatureScript)
       case p2pkScriptSignature : P2PKScriptSignature =>
         throw new RuntimeException("This is an old script signature type that is not supported by wallets anymore")
-      case scriptPubKey : ScriptSignature =>
-        throw new RuntimeException("We don't know how to check scriptSignatures of generic scriptPubKeys\n" +
-          "scriptPubKey: " + scriptPubKey)
+      case EmptyScriptSignature => checkEmptyScriptSig(spendingTransaction,inputIndex,scriptPubKey)
+      case x : NonStandardScriptSignature => false
     }
   }
 
@@ -176,9 +175,18 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
       case x : P2SHScriptPubKey =>
         logger.warn("Trying to check if a multisignature scriptSig spends a nonstandard scriptPubKey properly - this is trivially false")
         false
-      case x : ScriptPubKey =>
-        logger.warn("Trying to check if a multisignature scriptSig spends a scriptPubKey properly - this is trivially false")
-        false
+
+    }
+  }
+
+  private def checkEmptyScriptSig(spendingTransaction : Transaction, inputIndex : Int, scriptPubKey : ScriptPubKey) : Boolean = {
+    scriptPubKey match {
+      case x : MultiSignatureScriptPubKey =>
+       if (x.requiredSigs == 0) true else false
+      case x : P2PKHScriptPubKey => false
+      case x : P2PKScriptPubKey => false
+      case x : NonStandardScriptPubKey => false
+      case x : P2SHScriptPubKey => false
     }
   }
 

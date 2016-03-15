@@ -1,6 +1,6 @@
 package org.scalacoin.script.crypto
 
-import org.scalacoin.crypto.{ECFactory, TransactionSignatureSerializer}
+import org.scalacoin.crypto.{TransactionSignatureChecker, ECFactory, TransactionSignatureSerializer}
 import org.scalacoin.protocol.script.ScriptPubKey
 import org.scalacoin.protocol.transaction.Transaction
 import org.scalacoin.script.control.{ControlOperationsInterpreter, OP_VERIFY}
@@ -170,10 +170,12 @@ trait CryptoInterpreter extends ControlOperationsInterpreter {
     val stackWithoutPubKeysAndSignatures = stackWithoutPubKeys.tail.slice(mRequiredSignatures+1, stackWithoutPubKeys.tail.size)
 
     val restOfStack = stackWithoutPubKeysAndSignatures
+
+    val result = TransactionSignatureChecker.checkSignature(program.transaction,program.inputIndex,program.scriptPubKey)
     //if there are zero signatures required for the m/n signature
     //the transaction is valid by default
-    if (mRequiredSignatures == 0) ScriptProgramFactory.factory(program, ScriptTrue :: restOfStack, program.script.tail,true)
-    else program
+    if (result) ScriptProgramFactory.factory(program, ScriptTrue :: restOfStack, program.script.tail,true)
+    else ScriptProgramFactory.factory(program, ScriptFalse :: restOfStack, program.script.tail,false)
   }
 
 

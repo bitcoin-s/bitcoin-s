@@ -64,7 +64,7 @@ trait ScriptProgram {
   def valid : Boolean
 
   /**
-   * The index of the last OP_CODESEPARATOR inside of our script
+   * The index of the last OP_CODE_SEPA
    * @return
    */
   def lastCodeSeparator : Int

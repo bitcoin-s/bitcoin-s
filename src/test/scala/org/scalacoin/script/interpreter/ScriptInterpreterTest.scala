@@ -67,7 +67,7 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterp
     val lines =
     """
       |
-      |[["0", "0x21 0x02865c40293a680cb9c020e7b1e106d8c1916d3cef99aa431a56d253e69256dac0 CHECKSIG NOT", "STRICTENC"]]
+      |[["", "0 0 0 CHECKMULTISIG VERIFY DEPTH 0 EQUAL", "P2SH,STRICTENC", "CHECKMULTISIG is allowed to have zero keys and/or sigs"]]
     """.stripMargin
 
     //val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n" finally source.close()

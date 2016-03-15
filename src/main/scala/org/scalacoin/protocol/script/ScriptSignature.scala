@@ -222,6 +222,14 @@ object P2PKScriptSignatureImpl {
 case class P2PKScriptSignatureImpl(hex : String, asm : Seq[ScriptToken]) extends P2PKScriptSignature
 
 /**
+ * Represents the empty script signature
+ */
+case object EmptyScriptSignature extends ScriptSignature {
+  def asm = List()
+  def signatures = List()
+  def hex = ""
+}
+/**
  * Companion object that can be used to create a ScriptSignature object
  */
 object ScriptSignature extends ScriptSignature {
