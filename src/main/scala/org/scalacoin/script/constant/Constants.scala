@@ -104,7 +104,7 @@ case object OP_0 extends ScriptNumberOperation {
   override def scriptNumber = ScriptNumberImpl(0)
 
   //empty byte vector
-  override def bytes = List(0x0.toByte)
+  override def bytes = List()
 
   override def bytesSize = 1
 }

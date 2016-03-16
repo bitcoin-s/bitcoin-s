@@ -67,7 +67,7 @@ trait ScriptSignatureFactory extends Factory[ScriptSignature] {
       case _ if (tokens.size > 0 && tokens.head == OP_0) => MultiSignatureScriptSignatureImpl(scriptSigHex,tokens)
       case List(w : BytesToPushOntoStack, x : ScriptConstant, y : BytesToPushOntoStack,
         z : ScriptConstant) => P2PKHScriptSignatureImpl(scriptSigHex,tokens)
-
+      case List(w : BytesToPushOntoStack, x : ScriptConstant) => P2PKScriptSignatureImpl(scriptSigHex,tokens)
       case _ => NonStandardScriptSignatureImpl(scriptSigHex,tokens)
     }
   }

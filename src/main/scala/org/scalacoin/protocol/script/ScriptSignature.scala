@@ -181,6 +181,7 @@ trait MultiSignatureScriptSignature extends ScriptSignature {
 /**
  * Represents a pay to public key script signature
  * https://bitcoin.org/en/developer-guide#pubkey
+ * Signature script: <sig>
  */
 trait P2PKScriptSignature extends ScriptSignature {
 
