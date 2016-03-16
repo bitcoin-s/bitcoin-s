@@ -34,5 +34,16 @@ class ScriptPubKeyFactoryTest extends FlatSpec with MustMatchers {
     scriptPubKey.hex must be ("")
   }
 
+  it must "create a p2pk scriptPubKey from its hexadecimal representation" in {
+    val rawScriptPubKey = TestUtil.rawP2PKScriptPubKey
+    val scriptPubKey = ScriptPubKeyFactory.fromHex(rawScriptPubKey)
+    val result = scriptPubKey match {
+      case script : P2PKScriptPubKey => true
+      case _ => false
+    }
+    result must be (true)
+
+  }
+
 
 }
