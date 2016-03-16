@@ -1,6 +1,6 @@
 package org.scalacoin.crypto
 
-import org.scalacoin.protocol.script.ScriptSignature
+import org.scalacoin.protocol.script.{ScriptSignatureFactory, ScriptSignature}
 import org.scalacoin.protocol.transaction.{UpdateTransactionInputs, TransactionInput, Transaction, TransactionOutput}
 import org.scalacoin.util._
 import org.scalatest.{FlatSpec, MustMatchers}
@@ -40,7 +40,7 @@ class TransactionSignatureCheckerTest extends FlatSpec with MustMatchers {
     val (spendingTx,input,inputIndex,creditingOutput) =  TransactionTestUtil.p2sh2Of3TransactionWithSpendingInputAndCreditingOutput
     val scriptSig : ScriptSignature = spendingTx.inputs.head.scriptSignature
     val newScriptSigAsm = Seq(scriptSig.asm.head) ++ scriptSig.asm.slice(3,scriptSig.asm.size)
-    val newScriptSigWithSignatureRemoved = ScriptSignature.fromAsm(newScriptSigAsm)
+    val newScriptSigWithSignatureRemoved = ScriptSignatureFactory.fromAsm(newScriptSigAsm)
     val newInput = spendingTx.inputs(inputIndex).factory(newScriptSigWithSignatureRemoved)
     val txNewInputs = Transaction.factory(UpdateTransactionInputs(Seq(newInput)))
     TransactionSignatureChecker.checkSignature(txNewInputs,inputIndex,creditingOutput.scriptPubKey) must be (false)

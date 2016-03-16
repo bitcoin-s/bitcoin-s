@@ -2,7 +2,7 @@ package org.scalacoin.script.stack
 
 import org.scalacoin.script.{ScriptProgramFactory, ScriptProgramImpl, ScriptProgram}
 import org.scalacoin.script.constant._
-import org.scalacoin.util.ScalacoinUtil
+import org.scalacoin.util.{BitcoinSUtil, ScalacoinUtil}
 
 /**
  * Created by chris on 1/6/16.
@@ -131,7 +131,7 @@ trait StackInterpreter {
     require(program.script.headOption.isDefined && program.script.head == OP_PICK, "Top of script stack must be OP_PICK")
     require(program.stack.size > 0,"Stack must have at least two items on it for OP_PICK")
 
-    val n = ScalacoinUtil.hexToLong(program.stack.head.hex).toInt
+    val n = BitcoinSUtil.hexToLong(program.stack.head.hex).toInt
     val newStackTop = program.stack.tail(n)
     ScriptProgramFactory.factory(program,newStackTop :: program.stack.tail, program.script.tail)
   }
@@ -144,7 +144,7 @@ trait StackInterpreter {
   def opRoll(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.isDefined && program.script.head == OP_ROLL, "Top of script stack must be OP_ROLL")
     require(program.stack.size > 0,"Stack must have at least one items on it for OP_ROLL")
-    val n = ScalacoinUtil.hexToLong(program.stack.head.hex).toInt
+    val n = BitcoinSUtil.hexToLong(program.stack.head.hex).toInt
     val newStackTop = program.stack.tail(n)
     //removes the old instance of the stack top, appends the new index to the head
     val newStack = newStackTop :: program.stack.tail.diff(List(newStackTop))

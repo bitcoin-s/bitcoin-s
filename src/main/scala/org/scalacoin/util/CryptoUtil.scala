@@ -10,7 +10,7 @@ import org.spongycastle.crypto.digests.RIPEMD160Digest
  * Created by chris on 1/14/16.
  * Utility cryptographic functions
  */
-trait CryptoUtil extends ScalacoinUtil {
+trait CryptoUtil {
 
   /**
    * Does the following computation
@@ -18,7 +18,7 @@ trait CryptoUtil extends ScalacoinUtil {
    * @param hex
    * @return
    */
-  def sha256Hash160(hex : String) : List[Byte] = sha256Hash160(decodeHex(hex))
+  def sha256Hash160(hex : String) : List[Byte] = sha256Hash160(BitcoinSUtil.decodeHex(hex))
 
   def sha256Hash160(bytes : List[Byte]) = {
     val hash = org.bitcoinj.core.Utils.sha256hash160(bytes.toArray)
@@ -29,7 +29,7 @@ trait CryptoUtil extends ScalacoinUtil {
    * @param hex
    * @return
    */
-  def doubleSHA256(hex : String) : Seq[Byte] = doubleSHA256(decodeHex(hex))
+  def doubleSHA256(hex : String) : Seq[Byte] = doubleSHA256(BitcoinSUtil.decodeHex(hex))
   /**
    * Performs sha256(sha256(hex))
    * @param bytes
@@ -47,7 +47,7 @@ trait CryptoUtil extends ScalacoinUtil {
    * @param str
    * @return
    */
-  def sha256(hex : String) : List[Byte] = sha256(decodeHex(hex))
+  def sha256(hex : String) : List[Byte] = sha256(BitcoinSUtil.decodeHex(hex))
 
   /**
    * Takes sha256(bytes)
@@ -73,7 +73,7 @@ trait CryptoUtil extends ScalacoinUtil {
    * @param hex
    * @return
    */
-  def sha1(hex : String) : List[Byte] = sha1(decodeHex(hex))
+  def sha1(hex : String) : List[Byte] = sha1(BitcoinSUtil.decodeHex(hex))
 
 
   /**
@@ -81,7 +81,7 @@ trait CryptoUtil extends ScalacoinUtil {
    * @param str
    * @return
    */
-  def ripeMd160(hex : String) : List[Byte] = ripeMd160(decodeHex(hex))
+  def ripeMd160(hex : String) : List[Byte] = ripeMd160(BitcoinSUtil.decodeHex(hex))
 
 
   /**

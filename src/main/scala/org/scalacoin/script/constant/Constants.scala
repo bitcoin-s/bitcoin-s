@@ -1,6 +1,6 @@
 package org.scalacoin.script.constant
 
-import org.scalacoin.util.ScalacoinUtil
+import org.scalacoin.util.{BitcoinSUtil}
 
 /**
  * Created by chris on 1/6/16.
@@ -9,21 +9,21 @@ import org.scalacoin.util.ScalacoinUtil
 
 trait ScriptToken {
   def hex : String
-  def bytes = ScalacoinUtil.decodeHex(hex)
+  def bytes = BitcoinSUtil.decodeHex(hex)
   def bytesSize = bytes.size
-  def toLong = ScalacoinUtil.hexToLong(hex)
+  def toLong = BitcoinSUtil.hexToLong(hex)
 }
 
 trait ScriptOperation extends ScriptToken {
   def opCode : Int
-  override def hex : String = ScalacoinUtil.encodeHex(opCode.toByte)
+  override def hex : String = BitcoinSUtil.encodeHex(opCode.toByte)
 }
 
 sealed trait ScriptConstant extends ScriptToken
 
 sealed trait ScriptNumber extends ScriptConstant {
   def num : Long
-  override def hex = ScalacoinUtil.longToHex(num)
+  override def hex = BitcoinSUtil.longToHex(num)
   def + (that : ScriptNumber) : ScriptNumber = ScriptNumberImpl(num + that.num)
   def - (that : ScriptNumber) : ScriptNumber = ScriptNumberImpl(num - that.num)
   def * (that : ScriptNumber) : ScriptNumber = ScriptNumberImpl(num * that.num)
@@ -51,7 +51,7 @@ case object ScriptFalse extends ScriptBoolean {
  * @param hex
  */
 case class ScriptConstantImpl(hex : String) extends ScriptConstant {
-  def this(bytes : List[Byte]) = this(ScalacoinUtil.encodeHex(bytes))
+  def this(bytes : List[Byte]) = this(BitcoinSUtil.encodeHex(bytes))
 }
 
 
@@ -104,7 +104,7 @@ case object OP_0 extends ScriptNumberOperation {
   override def scriptNumber = ScriptNumberImpl(0)
 
   //empty byte vector
-  override def bytes = List()
+  override def bytes = List(0x0.toByte)
 
   override def bytesSize = 1
 }

@@ -26,7 +26,7 @@ sealed trait TransactionOutput extends TransactionElement with TransactionOutput
 object TransactionOutput extends TransactionOutput {
   def value = CurrencyUnits.negativeSatoshi
   def n = 0
-  override def scriptPubKey = ScriptPubKey.empty
+  override def scriptPubKey = ScriptPubKeyFactory.empty
 
 }
 

@@ -14,7 +14,7 @@ import org.scalatest.{FlatSpec, MustMatchers}
 class ScriptSignatureTest extends FlatSpec with MustMatchers {
 
   "ScriptSignature" must "find the digital signature for the transaction inside of a p2pkh script signature" in {
-    val scriptSig = ScriptSignature.factory(TestUtil.rawScriptSig)
+    val scriptSig = ScriptSignatureFactory.factory(TestUtil.rawScriptSig)
     scriptSig.signatures.head.hex must be ("3045022100ad8e961fe3c22b2647d92b078f4c0cf81b3106ea5bf8b900ab8646aa4430216f022071d4edc2b5588be20ac4c2d07edd8ed069e10b2402d3dce2d3b835ccd075f28301")
   }
 

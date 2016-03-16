@@ -11,7 +11,7 @@ class P2SHScriptSignatureTest extends FlatSpec with MustMatchers {
 
   "P2SHScriptSignature" must "find the public keys embedded inside of the redeemScript" in {
     val rawP2SHScriptSig = TestUtil.rawP2shInputScript2Of2
-    val p2shScriptSig : P2SHScriptSignature = ScriptSignature.fromHex(rawP2SHScriptSig) match {
+    val p2shScriptSig : P2SHScriptSignature = ScriptSignatureFactory.fromHex(rawP2SHScriptSig) match {
       case x : P2SHScriptSignature => x
       case _ => throw new RuntimeException("Must be p2sh script sig")
     }

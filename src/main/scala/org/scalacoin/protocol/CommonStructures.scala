@@ -1,6 +1,6 @@
 package org.scalacoin.protocol
 
-import org.scalacoin.util.ScalacoinUtil
+import org.scalacoin.util.{BitcoinSUtil}
 
 /**
  * Created by chris on 7/14/15.
@@ -22,9 +22,9 @@ trait CompactSizeUInt {
 
   def hex = size match {
     case 1 => if (num.toHexString.size == 1) "0" + num.toHexString else num.toHexString
-    case 3 => "fd" + ScalacoinUtil.littleEndianToBigEndian(ScalacoinUtil.longToHex(num))
-    case 5 => "fe" + ScalacoinUtil.littleEndianToBigEndian(ScalacoinUtil.longToHex(num))
-    case _ => "ff" + ScalacoinUtil.littleEndianToBigEndian(ScalacoinUtil.longToHex(num))
+    case 3 => "fd" + BitcoinSUtil.littleEndianToBigEndian(BitcoinSUtil.longToHex(num))
+    case 5 => "fe" + BitcoinSUtil.littleEndianToBigEndian(BitcoinSUtil.longToHex(num))
+    case _ => "ff" + BitcoinSUtil.littleEndianToBigEndian(BitcoinSUtil.longToHex(num))
   }
 
 
