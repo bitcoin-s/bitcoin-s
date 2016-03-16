@@ -2,7 +2,7 @@ package org.scalacoin.util
 
 import org.scalacoin.marshallers.script.{RawScriptSignatureParser, RawScriptPubKeyParser}
 import org.scalacoin.marshallers.transaction.{RawTransactionInputParser, RawTransactionParser}
-import org.scalacoin.protocol.script.{ScriptPubKey, ScriptPubKeyFactory}
+import org.scalacoin.protocol.script.{ScriptSignatureFactory, ScriptPubKey, ScriptPubKeyFactory}
 import org.scalacoin.protocol.transaction.Transaction
 import org.scalacoin.protocol.{AssetAddress, BitcoinAddress}
 import org.scalacoin.script.{ScriptProgram, ScriptProgramImpl}
@@ -137,4 +137,6 @@ object TestUtil {
   def testProgram : ScriptProgram = ScriptProgramImpl(transaction,scriptPubKey,0,List(),List(),List(),false,0)
 
 
+  val rawP2PKScriptSig = "47304402200a5c6163f07b8d3b013c4d1d6dba25e780b39658d79ba37af7057a3b7f15ffa102201fd9b4eaa9943f734928b99a83592c2e7bf342ea2680f6a2bb705167966b742001"
+  def p2pkScriptSig = ScriptSignatureFactory.fromHex(rawP2PKScriptSig)
 }

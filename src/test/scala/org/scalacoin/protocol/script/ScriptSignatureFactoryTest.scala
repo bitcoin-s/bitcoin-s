@@ -31,5 +31,16 @@ class ScriptSignatureFactoryTest extends FlatSpec with MustMatchers {
     actualScriptSig.asm must be (TestUtil.p2pkhInputScriptAsm)
   }
 
+  it must "parse a p2pk scriptSignature from a raw scriptSig" in {
+    val rawScriptSig = TestUtil.rawP2PKScriptSig
+    val scriptSig = ScriptSignatureFactory.fromHex(rawScriptSig)
+    val result = scriptSig match {
+      case s : P2PKScriptSignature => true
+      case _ => false
+    }
+    result must be (true)
+
+  }
+
 
 }
