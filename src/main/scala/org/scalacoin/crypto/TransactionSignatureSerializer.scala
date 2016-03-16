@@ -55,7 +55,7 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper {
     // EC math so we'll do it anyway.
     val inputSigsRemoved = for {
       input <- spendingTransaction.inputs
-    } yield input.factory(ScriptSignature.empty)
+    } yield input.factory(ScriptSignatureFactory.empty)
 
     inputSigsRemoved.map(input =>
       require(input.scriptSignature.bytes.size == 0,"Input byte size was " + input.scriptSignature.bytes))
@@ -167,7 +167,7 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper {
     val hash = hashForSignature(spendingTx, inputIndex,script,hashType)
     val signature = key.sign(hash)
     //create the input's scriptSig
-    val scriptSig = ScriptSignature.factory(signature,key.publicKey)
+    val scriptSig = ScriptSignatureFactory.factory(signature,key.publicKey)
     val updatedInput : TransactionInput = spendingTx.inputs(inputIndex).factory(scriptSig)
     //replace the updatedInput in the sequence of inputs in transaction
     val updatedInputs = updateInputIndex(spendingTx.inputs,updatedInput,inputIndex)
@@ -185,7 +185,7 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper {
       //TODO: This needs to be tested
       val scriptWithoutOpCodeSeparators : Seq[ScriptToken] = script.asm.filterNot(_ == OP_CODESEPARATOR)
       val scriptBytes = BitcoinScriptUtil.asmToBytes(scriptWithoutOpCodeSeparators)
-      ScriptPubKey.fromBytes(scriptBytes)
+      ScriptPubKeyFactory.fromBytes(scriptBytes)
     } else script
 
   }

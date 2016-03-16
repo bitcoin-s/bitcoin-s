@@ -6,16 +6,14 @@ import org.scalacoin.marshallers.transaction.TransactionElement
 
 import org.scalacoin.script.constant._
 import org.scalacoin.script.crypto.{OP_CHECKMULTISIG, HashType, HashTypeFactory}
-import org.scalacoin.util.{BitcoinSUtil}
+import org.scalacoin.util.{BitcoinSLogger, BitcoinSUtil}
 import org.slf4j.LoggerFactory
 
 /**
  * Created by chris on 12/26/15.
  *
  */
-sealed trait ScriptSignature extends TransactionElement with ScriptSignatureFactory {
-
-  protected def logger = LoggerFactory.getLogger(this.getClass())
+sealed abstract class ScriptSignature extends TransactionElement with ScriptSignatureFactory with BitcoinSLogger {
 
   /**
    * Representation of a scriptSignature in a parsed assembly format
@@ -110,7 +108,7 @@ trait P2SHScriptSignature extends ScriptSignature {
    * The redeemScript represents the conditions that must be satisfied to spend the output
    * @return
    */
-  def redeemScript : ScriptPubKey = ScriptPubKey.fromAsm(splitAtRedeemScript(asm)._2)
+  def redeemScript : ScriptPubKey = ScriptPubKeyFactory.fromAsm(splitAtRedeemScript(asm)._2)
 
   /**
    * Returns the public keys for the p2sh scriptSignature
@@ -228,12 +226,4 @@ case object EmptyScriptSignature extends ScriptSignature {
   def asm = List()
   def signatures = List()
   def hex = ""
-}
-/**
- * Companion object that can be used to create a ScriptSignature object
- */
-object ScriptSignature extends ScriptSignature {
-  def hex = ""
-  def signatures = Seq()
-  def asm = List()
 }

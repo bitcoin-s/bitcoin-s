@@ -11,15 +11,15 @@ class ScriptPubKeyFactoryTest extends FlatSpec with MustMatchers {
   "ScriptPubKeyFactory" must "create a scriptPubKey from a sequences of bytes and hex and get the same thing" in {
     //from b30d3148927f620f5b1228ba941c211fdabdae75d0ba0b688a58accbf018f3cc
     val rawScriptPubKey = TestUtil.rawP2PKHScriptPubKey
-    val scriptPubKeyFromBytes = ScriptPubKey.fromBytes(BitcoinSUtil.decodeHex(rawScriptPubKey))
-    val scriptPubKeyFromHex = ScriptPubKey.fromHex(rawScriptPubKey)
+    val scriptPubKeyFromBytes = ScriptPubKeyFactory.fromBytes(BitcoinSUtil.decodeHex(rawScriptPubKey))
+    val scriptPubKeyFromHex = ScriptPubKeyFactory.fromHex(rawScriptPubKey)
 
     scriptPubKeyFromBytes must be (scriptPubKeyFromHex)
   }
 
   it must "create a multisignature scriptPubKey from a sequence of bytes and get the same thing back" in {
     val (_,_,bitcoinJScriptPubKey) = BitcoinJTestUtil.signedMultiSigTransaction
-    ScriptPubKey.fromBytes(bitcoinJScriptPubKey.getProgram).bytes must be
+    ScriptPubKeyFactory.fromBytes(bitcoinJScriptPubKey.getProgram).bytes must be
     (BitcoinSUtil.encodeHex(bitcoinJScriptPubKey.getProgram))
   }
 
@@ -30,7 +30,7 @@ class ScriptPubKeyFactoryTest extends FlatSpec with MustMatchers {
   }
 
   it must "create a scriptPubKey from an empty string" in {
-    val scriptPubKey = ScriptPubKey.fromHex("")
+    val scriptPubKey = ScriptPubKeyFactory.fromHex("")
     scriptPubKey.hex must be ("")
   }
 

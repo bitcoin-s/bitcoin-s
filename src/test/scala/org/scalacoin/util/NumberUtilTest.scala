@@ -212,7 +212,7 @@ class NumberUtilTest extends FlatSpec with MustMatchers with NumberUtil {
   }
 
   it must "parse the variable length integer of the empty script" in {
-    parseCompactSizeUInt(ScriptSignature.empty) must be (CompactSizeUIntImpl(0,1))
+    parseCompactSizeUInt(ScriptSignatureFactory.empty) must be (CompactSizeUIntImpl(0,1))
   }
 
 

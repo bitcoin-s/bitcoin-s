@@ -20,7 +20,7 @@ trait TransactionOutputFactory extends Factory[TransactionOutput] { this : Trans
   def factory(newCurrencyUnit: CurrencyUnit, newScriptPubKey: ScriptPubKey) : TransactionOutput = {
     TransactionOutputImpl(newCurrencyUnit,n,newScriptPubKey)
   }
-  def empty : TransactionOutput = TransactionOutputImpl(CurrencyUnits.negativeSatoshi,0,ScriptPubKey.empty)
+  def empty : TransactionOutput = TransactionOutputImpl(CurrencyUnits.negativeSatoshi,0,ScriptPubKeyFactory.empty)
 
   //TODO: This could bomb if the transaction output is not in the right format,
   //probably should put more thought into this to make it more robust

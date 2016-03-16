@@ -33,7 +33,7 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers {
   it must "not remove any bytes from a script that does not contain OP_CODESEPARATORS" in {
     //from b30d3148927f620f5b1228ba941c211fdabdae75d0ba0b688a58accbf018f3cc
     val scriptHex = TestUtil.rawP2PKHScriptPubKey
-    val scriptPubKey = ScriptPubKey.fromHex(scriptHex)
+    val scriptPubKey = ScriptPubKeyFactory.fromHex(scriptHex)
     val hexAfterRemovingOpCodeSeparators = TransactionSignatureSerializer.removeOpCodeSeparators(scriptPubKey).hex
     //for some reason p2pkh scripts do not include the amount of bytes included on the script aka the lead byte
     hexAfterRemovingOpCodeSeparators  must be (scriptHex)
@@ -322,27 +322,6 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers {
   }
 
 
-
-  /**
-   * Mimics a test case inside of bitcoinj
-   * https://github.com/bitcoinj/bitcoinj/blob/c9cce479624bfd4d6f94824f9da885e24d18ea7c/core/src/test/java/org/bitcoinj/script/ScriptTest.java#L127
-   * hashes a bitcoinj tx for a signature
-   * @return
-   */
-  private def createBitcoinjMultiSigScriptHashForSig(hashType : HashType) : String = {
-    val spendTx = BitcoinJTestUtil.multiSigTransaction
-
-    val sighash : Seq[Byte] = hashType match {
-      case SIGHASH_ALL => spendTx.hashForSignature(0, BitcoinJTestUtil.multiSigScript, SigHash.ALL, false).getBytes
-      case SIGHASH_SINGLE => spendTx.hashForSignature(0,BitcoinJTestUtil.multiSigScript,SigHash.SINGLE, false).getBytes
-      case SIGHASH_NONE => spendTx.hashForSignature(0,BitcoinJTestUtil.multiSigScript,SigHash.NONE, false).getBytes
-      case SIGHASH_ANYONECANPAY => spendTx.hashForSignature(0,BitcoinJTestUtil.multiSigScript.getProgram,0x80.toByte).getBytes
-      case SIGHASH_ALL_ANYONECANPAY => spendTx.hashForSignature(0,BitcoinJTestUtil.multiSigScript.getProgram,SIGHASH_ALL_ANYONECANPAY.byte).getBytes
-      case SIGHASH_SINGLE_ANYONECANPAY => spendTx.hashForSignature(0,BitcoinJTestUtil.multiSigScript.getProgram,SIGHASH_SINGLE_ANYONECANPAY.byte).getBytes
-      case SIGHASH_NONE_ANYONECANPAY => spendTx.hashForSignature(0,BitcoinJTestUtil.multiSigScript.getProgram,SIGHASH_NONE_ANYONECANPAY.byte).getBytes
-    }
-    BitcoinSUtil.encodeHex(sighash)
-  }
 
 
 

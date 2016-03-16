@@ -3,7 +3,7 @@ package org.scalacoin.script.interpreter
 import java.io.File
 
 import com.sun.org.apache.bcel.internal.generic.NOP
-import org.scalacoin.protocol.script.ScriptPubKey
+import org.scalacoin.protocol.script.{ScriptPubKeyFactory, ScriptPubKey}
 import org.scalacoin.script.ScriptProgramFactory
 import org.scalacoin.script.bitwise.{OP_EQUAL, OP_EQUALVERIFY}
 import org.scalacoin.script.constant._
@@ -23,20 +23,24 @@ import spray.json._
 class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterpreter with BitcoinSLogger {
 
   "ScriptInterpreter" must "evaluate a valid script to true" in {
-/*    //this is in asm format, not hex
+    //this is in asm format, not hex
     val inputScript = TestUtil.p2pkhInputScriptAsm
     //this is asm format, not hex
     val outputScript : List[ScriptToken] = TestUtil.p2pkhOutputScriptAsm
-    val result = run(inputScript, outputScript,TestUtil.transaction)
-    result must be (true)*/
+    val stack = List()
+    val script = inputScript ++ outputScript
+    val program = ScriptProgramFactory.factory(TestUtil.testProgram,stack,script)
+    val result = run(program)
+    result must be (true)
   }
 
 
-/*
   it must "evaluate a script that asks to push 20 bytes onto the stack correctly" in {
     val stack = List(ScriptConstantImpl("68ca4fec736264c13b859bac43d5173df6871682"))
     val script = List(BytesToPushOntoStackImpl(20), ScriptConstantImpl("68ca4fec736264c13b859bac43d5173df6871682"), OP_EQUAL)
-    run(stack,script,TestUtil.transaction) must be (true)
+
+    val program = ScriptProgramFactory.factory(TestUtil.testProgram,stack,script)
+    run(program) must be (true)
   }
 
   it must "evaluate a 5 byte representation of 0x0000000001 as 0x01 when pushed onto the stack" in {
@@ -44,16 +48,17 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterp
     //["1 0x05 0x01 0x00 0x00 0x00 0x00", "VERIFY", "P2SH,STRICTENC", "values >4 bytes can be cast to boolean"]
     val stack = List(OP_1)
     val script = List(BytesToPushOntoStackImpl(5), ScriptNumberImpl(1), OP_0, OP_0, OP_0, OP_0,OP_VERIFY)
-    run(stack,script,TestUtil.transaction) must equal (true)
+    val program = ScriptProgramFactory.factory(TestUtil.testProgram,stack,script)
+    run(program) must equal (true)
   }
 
   it must "evaluate a NOP correctly" in {
     val stack = List()
     val script = List(OP_NOP)
-    run(stack,script,TestUtil.transaction) must equal (true)
+    val program = ScriptProgramFactory.factory(TestUtil.testProgram,stack,script)
+    run(program) must equal (true)
 
   }
-*/
 
 
 
@@ -67,10 +72,7 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterp
     val lines =
     """
       |
-      |[["",
-      |"NOP NOP NOP NOP NOP NOP NOP NOP NOP NOP NOP NOP 0 0 'a' 'b' 'c' 'd' 'e' 'f' 'g' 'h' 'i' 'j' 'k' 'l' 'm' 'n' 'o' 'p' 'q' 'r' 's' 't' 20 CHECKMULTISIG 0 0 'a' 'b' 'c' 'd' 'e' 'f' 'g' 'h' 'i' 'j' 'k' 'l' 'm' 'n' 'o' 'p' 'q' 'r' 's' 't' 20 CHECKMULTISIG 0 0 'a' 'b' 'c' 'd' 'e' 'f' 'g' 'h' 'i' 'j' 'k' 'l' 'm' 'n' 'o' 'p' 'q' 'r' 's' 't' 20 CHECKMULTISIG 0 0 'a' 'b' 'c' 'd' 'e' 'f' 'g' 'h' 'i' 'j' 'k' 'l' 'm' 'n' 'o' 'p' 'q' 'r' 's' 't' 20 CHECKMULTISIG 0 0 'a' 'b' 'c' 'd' 'e' 'f' 'g' 'h' 'i' 'j' 'k' 'l' 'm' 'n' 'o' 'p' 'q' 'r' 's' 't' 20 CHECKMULTISIG 0 0 'a' 'b' 'c' 'd' 'e' 'f' 'g' 'h' 'i' 'j' 'k' 'l' 'm' 'n' 'o' 'p' 'q' 'r' 's' 't' 20 CHECKMULTISIG 0 0 'a' 'b' 'c' 'd' 'e' 'f' 'g' 'h' 'i' 'j' 'k' 'l' 'm' 'n' 'o' 'p' 'q' 'r' 's' 't' 20 CHECKMULTISIG 0 0 'a' 'b' 'c' 'd' 'e' 'f' 'g' 'h' 'i' 'j' 'k' 'l' 'm' 'n' 'o' 'p' 'q' 'r' 's' 't' 20 CHECKMULTISIG 0 0 'a' 'b' 'c' 'd' 'e' 'f' 'g' 'h' 'i' 'j' 'k' 'l' 'm' 'n' 'o' 'p' 'q' 'r' 's' 't' 20 CHECKMULTISIG",
-      |"P2SH,STRICTENC",
-      |"Even though there are no signatures being checked nOpCount is incremented by the number of keys."]]
+      |[["0x4a 0x0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", "0 CHECKSIG NOT", "", "Overly long signature is correctly encoded"]]
     """.stripMargin
 
     //val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n" finally source.close()
@@ -90,7 +92,7 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterp
       logger.info("Parsed ScriptPubKey: " + testCase.scriptPubKey)
       logger.info("Flags: " + testCase.flags)
       logger.info("Comments: " + testCase.comments)
-      val scriptPubKey = ScriptPubKey.fromAsm(testCase.scriptPubKey.asm)
+      val scriptPubKey = ScriptPubKeyFactory.fromAsm(testCase.scriptPubKey.asm)
       val inputIndex = 0
       val program = ScriptProgramFactory.factory(tx,scriptPubKey, inputIndex)
       withClue(testCase.raw) {

@@ -15,8 +15,8 @@ class ScriptSignatureFactoryTest extends FlatSpec with MustMatchers {
       "f6bac4c9a94e0aad311a4268e082a725f8aeae0573fb12ff866a5f01"
     val signatureBytes : Seq[Byte] = BitcoinSUtil.decodeHex(signatureHex)
 
-    val scriptSigFromHex = ScriptSignature.factory(signatureHex)
-    val scriptSigFromBytes = ScriptSignature.factory(signatureBytes)
+    val scriptSigFromHex = ScriptSignatureFactory.factory(signatureHex)
+    val scriptSigFromBytes = ScriptSignatureFactory.factory(signatureBytes)
 
     scriptSigFromHex must be (scriptSigFromBytes)
 
@@ -27,7 +27,7 @@ class ScriptSignatureFactoryTest extends FlatSpec with MustMatchers {
     val digitalSignature : ECDigitalSignature = ECFactory.digitalSignature(digitalSignatureBytes)
     val publicKeyBytes = TestUtil.p2pkhInputScriptAsm(3).bytes
     val publicKey : ECPublicKey = ECFactory.publicKey(publicKeyBytes)
-    val actualScriptSig : ScriptSignature = ScriptSignature.factory(digitalSignature,publicKey)
+    val actualScriptSig : ScriptSignature = ScriptSignatureFactory.factory(digitalSignature,publicKey)
     actualScriptSig.asm must be (TestUtil.p2pkhInputScriptAsm)
   }
 

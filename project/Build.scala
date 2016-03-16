@@ -11,7 +11,7 @@ object ScalaCoinBuild extends Build {
   val appDependencies = Seq(
     "org.scalatest" % "scalatest_2.11" % "2.2.0",
     ("org.bitcoinj" % "bitcoinj-core" % "0.13.4").exclude("org.slf4j", "slf4j-api"),
-    "org.slf4j" % "slf4j-api" % slf4jV /*% "provided"*/,
+    "org.slf4j" % "slf4j-api" % slf4jV,
     "io.spray" %%  "spray-json" % "1.3.0" withSources() withJavadoc(), 
     "ch.qos.logback" % "logback-classic" % logbackV
   ) 
@@ -20,7 +20,8 @@ object ScalaCoinBuild extends Build {
     version := appV,
     scalaVersion := scalaV,
     resolvers += Resolver.sonatypeRepo("releases"),  
-    libraryDependencies ++= appDependencies
+    libraryDependencies ++= appDependencies,
+    scalacOptions ++= Seq("-unchecked", "-deprecation")  
   )
 } 
 

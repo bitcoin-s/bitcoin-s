@@ -10,8 +10,7 @@ import org.scalacoin.util.{Factory, BitcoinSUtil, ScalacoinUtil}
  * Created by chris on 1/19/16.
  * Responsible for the instantiation of ScriptSignature objects
  */
-trait ScriptSignatureFactory extends Factory[ScriptSignature] { this : ScriptSignature =>
-
+trait ScriptSignatureFactory extends Factory[ScriptSignature] {
 
   /**
    * Creates a ScriptSignature object from a given hexadecimal script
@@ -74,4 +73,6 @@ trait ScriptSignatureFactory extends Factory[ScriptSignature] { this : ScriptSig
   }
 
 }
+
+object ScriptSignatureFactory extends ScriptSignatureFactory
 
