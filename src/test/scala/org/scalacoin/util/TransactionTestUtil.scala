@@ -7,7 +7,7 @@ import org.scalacoin.currency.CurrencyUnits
 import org.scalacoin.protocol.{CompactSizeUIntImpl}
 import org.scalacoin.protocol.script._
 import org.scalacoin.protocol.transaction._
-import org.scalacoin.script.constant.{OP_0, ScriptToken}
+import org.scalacoin.script.constant.{ScriptNumberImpl, OP_0, ScriptToken}
 import org.slf4j.LoggerFactory
 
 /**
@@ -58,11 +58,15 @@ trait TransactionTestUtil extends BitcoinSLogger {
    * @return
    */
   def buildCreditingTransaction(scriptPubKey : ScriptPubKey) : Transaction = {
-    val outpoint = TransactionOutPointImpl("",0)
+    //this needs to be all zeros according to these 3 lines in bitcoin core
+    //https://github.com/bitcoin/bitcoin/blob/605c17844ea32b6d237db6d83871164dc7d59dab/src/test/script_tests.cpp#L64
+    //https://github.com/bitcoin/bitcoin/blob/80d1f2e48364f05b2cdf44239b3a1faa0277e58e/src/primitives/transaction.h#L32
+    //https://github.com/bitcoin/bitcoin/blob/605c17844ea32b6d237db6d83871164dc7d59dab/src/uint256.h#L40
+    val outpoint = TransactionOutPointImpl("0000000000000000000000000000000000000000000000000000000000000000",0xFFFFFFFF)
 
-    val scriptSignature = ScriptSignatureFactory.fromAsm(Seq(OP_0,OP_0))
+    val scriptSignature = ScriptSignatureFactory.fromHex("")
     val input = TransactionInputImpl(outpoint,scriptSignature,0xFFFFFFFF)
-    val output = TransactionOutputImpl(CurrencyUnits.oneSatoshi,0,scriptPubKey)
+    val output = TransactionOutputImpl(CurrencyUnits.zeroSatoshis,0,scriptPubKey)
 
     TransactionImpl(TransactionConstants.version,Seq(input),Seq(output),TransactionConstants.lockTime)
   }

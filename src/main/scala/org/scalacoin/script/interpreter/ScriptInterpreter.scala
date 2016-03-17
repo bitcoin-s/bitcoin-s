@@ -12,6 +12,7 @@ import org.scalacoin.script.control._
 import org.scalacoin.script.crypto._
 import org.scalacoin.script.reserved.NOP
 import org.scalacoin.script.stack._
+import org.scalacoin.util.BitcoinSLogger
 import org.slf4j.LoggerFactory
 
 import scala.annotation.tailrec
@@ -21,9 +22,9 @@ import scala.annotation.tailrec
  */
 trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with ControlOperationsInterpreter
   with BitwiseInterpreter with ConstantInterpreter with ArithmeticInterpreter with SpliceInterpreter
-  with LockTimeInterpreter {
+  with LockTimeInterpreter with BitcoinSLogger {
 
-  private def logger = LoggerFactory.getLogger(this.getClass().toString)
+
 
   /**
    * Runs an entire script though our script programming language and
