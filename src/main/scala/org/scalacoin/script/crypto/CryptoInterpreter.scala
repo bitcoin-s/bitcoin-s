@@ -1,21 +1,20 @@
 package org.scalacoin.script.crypto
 
 import org.scalacoin.crypto.{TransactionSignatureChecker, ECFactory, TransactionSignatureSerializer}
-import org.scalacoin.protocol.script.ScriptPubKey
+import org.scalacoin.protocol.script._
 import org.scalacoin.protocol.transaction.Transaction
 import org.scalacoin.script.control.{ControlOperationsInterpreter, OP_VERIFY}
 import org.scalacoin.script.{ScriptProgramFactory, ScriptProgramImpl, ScriptProgram}
 import org.scalacoin.script.constant._
-import org.scalacoin.util.{BitcoinSUtil, CryptoUtil}
+import org.scalacoin.util.{BitcoinSLogger, BitcoinSUtil, CryptoUtil}
 import org.slf4j.LoggerFactory
 
 
 /**
  * Created by chris on 1/6/16.
  */
-trait CryptoInterpreter extends ControlOperationsInterpreter {
+trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger {
 
-  private def logger = LoggerFactory.getLogger(this.getClass())
   /**
    * The input is hashed twice: first with SHA-256 and then with RIPEMD-160.
    * @param program
@@ -85,8 +84,18 @@ trait CryptoInterpreter extends ControlOperationsInterpreter {
   def opCheckSig(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.isDefined && program.script.head == OP_CHECKSIG, "Script top must be OP_CHECKSIG")
     require(program.stack.size > 1, "Stack must have at least 2 items on it for OP_CHECKSIG")
-    val pubKey = ECFactory.publicKey(program.stack.head.bytes)
-    val signature = ECFactory.digitalSignature(program.stack.tail.head.bytes)
+
+    val (pubKey,signature) = program.scriptSignature match {
+      case _ : MultiSignatureScriptSignature | _ : P2SHScriptSignature | _ : P2PKHScriptSignature | _ : P2PKScriptSignature =>
+        val pubKey = ECFactory.publicKey(program.stack.head.bytes)
+        val signature = ECFactory.digitalSignature(program.stack.tail.head.bytes)
+        (pubKey,signature)
+      case EmptyScriptSignature | _ : NonStandardScriptSignature =>
+        throw new RuntimeException("We do not know how to evaluate a nonstandard or EmptyScriptSignature for an OP_CHECKSIG operation")
+    }
+
+
+
     val restOfStack = program.stack.tail.tail
     val hashType = (signature.bytes.size == 0) match {
       case true => SIGHASH_ALL
@@ -95,6 +104,7 @@ trait CryptoInterpreter extends ControlOperationsInterpreter {
 
     val hashForSig = TransactionSignatureSerializer.hashForSignature(program.transaction,
       program.inputIndex,program.scriptPubKey,hashType)
+    logger.info("Hash for sig inside of opChecksig: " + BitcoinSUtil.encodeHex(hashForSig))
     val isValid = pubKey.verify(hashForSig, signature)
     if (isValid) ScriptProgramFactory.factory(program, ScriptTrue :: restOfStack,program.script.tail,isValid)
     else ScriptProgramFactory.factory(program, ScriptFalse :: restOfStack,program.script.tail,isValid)

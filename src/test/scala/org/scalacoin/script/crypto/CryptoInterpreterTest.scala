@@ -4,7 +4,7 @@ import org.scalacoin.protocol.script.ScriptPubKey
 import org.scalacoin.script.arithmetic.OP_NOT
 import org.scalacoin.script.{ScriptProgramFactory, ScriptProgramImpl}
 import org.scalacoin.script.constant._
-import org.scalacoin.util.{BitcoinSLogger, TestUtil}
+import org.scalacoin.util.{TransactionTestUtil, BitcoinSLogger, TestUtil}
 import org.scalatest.{MustMatchers, FlatSpec}
 
 /**
@@ -75,19 +75,6 @@ class CryptoInterpreterTest extends FlatSpec with MustMatchers with CryptoInterp
     newProgram.script.isEmpty must be (true)
   }
 
-
-  it must "evaluate a OP_CHECKSIG to true for a valid tx on the network" in {
-/*    val tx = TestUtil.simpleTransaction
-    val parentTx = TestUtil.parentSimpleTransaction
-    val vout : Int = tx.inputs.head.previousOutput.vout
-    require(vout == 0)
-    val scriptPubKey = tx.outputs(vout).scriptPubKey
-    val result = checkSig(tx,scriptPubKey)
-    result must be (true)*/
-  }
-
-
-
   it must "evaluate an OP_CHECKMULTISIG with zero signatures and zero pubkeys" in {
     val stack = List(OP_0,OP_0,OP_0)
     val script = List(OP_CHECKMULTISIG)
@@ -136,7 +123,19 @@ class CryptoInterpreterTest extends FlatSpec with MustMatchers with CryptoInterp
     newProgram.stack must be (List(ScriptFalse))
     newProgram.script.isEmpty must be (true)
     newProgram.valid must be (false)
+  }
 
+  it must "evaluate an OP_CHECKSIG for a p2pk transaction" in {
+    val creditingTx = TransactionTestUtil.buildCreditingTransaction(TestUtil.p2pkScriptPubKey)
+    val spendingTx = TransactionTestUtil.buildSpendingTransaction(creditingTx,TestUtil.p2pkScriptSig,0)
+    val baseProgram = ScriptProgramFactory.factory(spendingTx,creditingTx.outputs(0).scriptPubKey,0)
+    val stack = Seq(TestUtil.p2pkScriptPubKey.asm(1)) ++ TestUtil.p2pkScriptSig.asm.tail
+
+    val script = List(TestUtil.p2pkScriptPubKey.asm.last)
+    val program = ScriptProgramFactory.factory(baseProgram,stack,script)
+    val newProgram = opCheckSig(program)
+    newProgram.stack must be (List(ScriptFalse))
+    newProgram.script.isEmpty must be (true)
   }
 
 
