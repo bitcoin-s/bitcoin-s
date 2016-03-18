@@ -41,12 +41,22 @@ trait TransactionTestUtil extends BitcoinSLogger {
    * @param outputIndex
    */
   def buildSpendingTransaction(creditingTx : Transaction,scriptSignature : ScriptSignature, outputIndex : Int) : Transaction = {
+/*
+    CMutableTransaction txSpend;
+    txSpend.nVersion = 1;
+    txSpend.nLockTime = 0;
+    txSpend.vin.resize(1);
+    txSpend.vout.resize(1);
+    txSpend.vin[0].prevout.hash = txCredit.GetHash();
+    txSpend.vin[0].prevout.n = 0;
+    txSpend.vin[0].scriptSig = scriptSig;
+    txSpend.vin[0].nSequence = std::numeric_limits<unsigned int>::max();
+    txSpend.vout[0].scriptPubKey = CScript();
+    txSpend.vout[0].nValue = 0;*/
 
     val outpoint = TransactionOutPointImpl(creditingTx.txId,outputIndex)
     val input = TransactionInput.factory(outpoint,scriptSignature,0xFFFFFFFF)
-    //empty script pubkey
-    val scriptPubKey = creditingTx.outputs(outputIndex).scriptPubKey
-    val output = TransactionOutputImpl(CurrencyUnits.oneSatoshi,0,scriptPubKey)
+    val output = TransactionOutputImpl(CurrencyUnits.zeroSatoshis,0,EmptyScriptPubKey)
     TransactionImpl(TransactionConstants.version,Seq(input),Seq(output),TransactionConstants.lockTime)
   }
 
@@ -62,9 +72,21 @@ trait TransactionTestUtil extends BitcoinSLogger {
     //https://github.com/bitcoin/bitcoin/blob/605c17844ea32b6d237db6d83871164dc7d59dab/src/test/script_tests.cpp#L64
     //https://github.com/bitcoin/bitcoin/blob/80d1f2e48364f05b2cdf44239b3a1faa0277e58e/src/primitives/transaction.h#L32
     //https://github.com/bitcoin/bitcoin/blob/605c17844ea32b6d237db6d83871164dc7d59dab/src/uint256.h#L40
+/*
+    CMutableTransaction txCredit;
+    txCredit.nVersion = 1;
+    txCredit.nLockTime = 0;
+    txCredit.vin.resize(1);
+    txCredit.vout.resize(1);
+    txCredit.vin[0].prevout.SetNull();
+    txCredit.vin[0].scriptSig = CScript() << CScriptNum(0) << CScriptNum(0);
+    txCredit.vin[0].nSequence = std::numeric_limits<unsigned int>::max();
+    txCredit.vout[0].scriptPubKey = scriptPubKey;
+    txCredit.vout[0].nValue = 0;*/
+
     val outpoint = TransactionOutPointImpl("0000000000000000000000000000000000000000000000000000000000000000",0xFFFFFFFF)
 
-    val scriptSignature = ScriptSignatureFactory.fromHex("")
+    val scriptSignature = ScriptSignatureFactory.fromHex("0000")
     val input = TransactionInputImpl(outpoint,scriptSignature,0xFFFFFFFF)
     val output = TransactionOutputImpl(CurrencyUnits.zeroSatoshis,0,scriptPubKey)
 
