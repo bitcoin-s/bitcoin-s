@@ -5,7 +5,8 @@ package org.scalacoin.script.crypto
  */
 trait HashTypeFactory {
 
-  def hashTypes = Seq(SIGHASH_ALL,SIGHASH_ANYONECANPAY,SIGHASH_NONE,SIGHASH_SINGLE)
+  def hashTypes = Seq(SIGHASH_ALL,SIGHASH_ANYONECANPAY,SIGHASH_NONE,SIGHASH_SINGLE,
+    SIGHASH_NONE_ANYONECANPAY, SIGHASH_ALL_ANYONECANPAY, SIGHASH_SINGLE_ANYONECANPAY)
 
   def fromString(hex : String) : Option[HashType] = {
     //Besides the four listed hashtypes only a hashtype of value 0 appears a few times in the (main)
