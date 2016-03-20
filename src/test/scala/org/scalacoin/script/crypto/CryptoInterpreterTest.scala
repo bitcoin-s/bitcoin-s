@@ -134,7 +134,7 @@ class CryptoInterpreterTest extends FlatSpec with MustMatchers with CryptoInterp
     val script = List(TestUtil.p2pkScriptPubKey.asm.last)
     val program = ScriptProgramFactory.factory(baseProgram,stack,script)
     val newProgram = opCheckSig(program)
-    newProgram.stack must be (List(ScriptFalse))
+    newProgram.stack must be (List(ScriptTrue))
     newProgram.script.isEmpty must be (true)
   }
 
