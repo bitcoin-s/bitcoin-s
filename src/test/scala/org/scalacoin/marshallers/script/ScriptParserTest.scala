@@ -123,22 +123,8 @@ class ScriptParserTest extends FlatSpec with MustMatchers with ScriptParser with
     //https://tbtc.blockr.io/api/v1/tx/raw/5d254a872c9197c683ea9111fb5c0e2e0f49280a89961c45b9fea76834d335fe
     val str = "4cf1" +
       "55210269992fb441ae56968e5b77d46a3e53b69f136444ae65a94041fc937bdb28d93321021df31471281d4478df85bfce08a10aab82601dca949a79950f8ddf7002bd915a2102174c82021492c2c6dfcbfa4187d10d38bed06afb7fdcd72c880179fddd641ea121033f96e43d72c33327b6a4631ccaa6ea07f0b106c88b9dc71c9000bb6044d5e88a210313d8748790f2a86fb524579b46ce3c68fedd58d2a738716249a9f7d5458a15c221030b632eeb079eb83648886122a04c7bf6d98ab5dfb94cf353ee3e9382a4c2fab02102fb54a7fcaa73c307cfd70f3fa66a2e4247a71858ca731396343ad30c7c4009ce57ae"
-    fromString(str) must be (Seq(OP_PUSHDATA1, BytesToPushOntoStackImpl(241),
-      OP_5, BytesToPushOntoStackImpl(33),
-      ScriptConstantImpl("0269992fb441ae56968e5b77d46a3e53b69f136444ae65a94041fc937bdb28d933"),
-      BytesToPushOntoStackImpl(33),
-      ScriptConstantImpl("021df31471281d4478df85bfce08a10aab82601dca949a79950f8ddf7002bd915a"),
-      BytesToPushOntoStackImpl(33),
-      ScriptConstantImpl("02174c82021492c2c6dfcbfa4187d10d38bed06afb7fdcd72c880179fddd641ea1"),
-      BytesToPushOntoStackImpl(33),
-      ScriptConstantImpl("033f96e43d72c33327b6a4631ccaa6ea07f0b106c88b9dc71c9000bb6044d5e88a"),
-      BytesToPushOntoStackImpl(33),
-      ScriptConstantImpl("0313d8748790f2a86fb524579b46ce3c68fedd58d2a738716249a9f7d5458a15c2"),
-      BytesToPushOntoStackImpl(33),
-      ScriptConstantImpl("030b632eeb079eb83648886122a04c7bf6d98ab5dfb94cf353ee3e9382a4c2fab0"),
-      BytesToPushOntoStackImpl(33),
-      ScriptConstantImpl("02fb54a7fcaa73c307cfd70f3fa66a2e4247a71858ca731396343ad30c7c4009ce"),
-      OP_7, OP_CHECKMULTISIG)
+    fromString(str) must be (List(OP_PUSHDATA1, BytesToPushOntoStackImpl(241),
+      ScriptConstantImpl("55210269992fb441ae56968e5b77d46a3e53b69f136444ae65a94041fc937bdb28d93321021df31471281d4478df85bfce08a10aab82601dca949a79950f8ddf7002bd915a2102174c82021492c2c6dfcbfa4187d10d38bed06afb7fdcd72c880179fddd641ea121033f96e43d72c33327b6a4631ccaa6ea07f0b106c88b9dc71c9000bb6044d5e88a210313d8748790f2a86fb524579b46ce3c68fedd58d2a738716249a9f7d5458a15c221030b632eeb079eb83648886122a04c7bf6d98ab5dfb94cf353ee3e9382a4c2fab02102fb54a7fcaa73c307cfd70f3fa66a2e4247a71858ca731396343ad30c7c4009ce57ae"))
     )
   }
 
@@ -194,21 +180,6 @@ class ScriptParserTest extends FlatSpec with MustMatchers with ScriptParser with
     val scriptTokens : List[ScriptToken] = ScriptParser.fromHex(rawScriptSig)
 
     scriptTokens must be (expectedAsm)
-  }
-
-  it must "parse a weird push operation for the redeemScript inside of this scriptSig" in {
-    val rawP2SHScriptSig =  "0 0x47 0x304402205b7d2c2f177ae76cfbbf14d589c113b0b35db753d305d5562dd0b61cbf366cfb02202e56f93c4f08a27f986cd424ffc48a462c3202c4902104d4d0ff98ed28f4bf8001 " +
-      "0x47 0x30440220563e5b3b1fc11662a84bc5ea2a32cc3819703254060ba30d639a1aaf2d5068ad0220601c1f47ddc76d93284dd9ed68f7c9974c4a0ea7cbe8a247d6bc3878567a5fca01 " +
-      "0x4c 0x69 0x52210279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f8179821038282263212c609d9ea2a6e3e172de238d8c39cabd5ac1ca10646e23fd5f515082103363d90d447b00c9c99ceac05b6262ee053441c7e55552ffe526bad8f83ff464053ae"
-
-    val p2shScriptSig : List[ScriptToken] = ScriptParser.fromString(rawP2SHScriptSig)
-
-    logger.info("Script Parser: " + p2shScriptSig)
-    p2shScriptSig must be (List(OP_0, BytesToPushOntoStackImpl(71), ScriptConstantImpl("304402205b7d2c2f177ae76cfbbf14d589c113b0b35db753d305d5562dd0b61cbf366cfb02202e56f93c4f08a27f986cd424ffc48a462c3202c4902104d4d0ff98ed28f4bf8001"),
-      BytesToPushOntoStackImpl(71), ScriptConstantImpl("30440220563e5b3b1fc11662a84bc5ea2a32cc3819703254060ba30d639a1aaf2d5068ad0220601c1f47ddc76d93284dd9ed68f7c9974c4a0ea7cbe8a247d6bc3878567a5fca01"),
-      OP_PUSHDATA1, BytesToPushOntoStackImpl(105), OP_2, BytesToPushOntoStackImpl(33), ScriptConstantImpl("0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"),
-      BytesToPushOntoStackImpl(33), ScriptConstantImpl("038282263212c609d9ea2a6e3e172de238d8c39cabd5ac1ca10646e23fd5f51508"),
-      BytesToPushOntoStackImpl(33), ScriptConstantImpl("03363d90d447b00c9c99ceac05b6262ee053441c7e55552ffe526bad8f83ff4640"), OP_3, OP_CHECKMULTISIG))
   }
 
 }

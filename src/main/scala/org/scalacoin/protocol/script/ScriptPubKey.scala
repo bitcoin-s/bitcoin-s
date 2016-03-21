@@ -134,7 +134,7 @@ object P2PKScriptPubKeyImpl {
 case class P2PKScriptPubKeyImpl(hex : String,asm : Seq[ScriptToken]) extends P2PKScriptPubKey
 
 /**
- * Represents the empty script pub
+ * Represents the empty script pub key
  */
 case object EmptyScriptPubKey extends ScriptPubKey {
   def asm = List()
