@@ -1,5 +1,6 @@
 package org.scalacoin.marshallers.script
 
+import org.scalacoin.protocol.script.ScriptSignature
 import org.scalacoin.script.arithmetic.OP_ADD
 import org.scalacoin.script.bitwise.OP_EQUAL
 import org.scalacoin.script.constant._
@@ -20,6 +21,7 @@ class ScriptParserTest extends FlatSpec with MustMatchers with ScriptParser with
   "ScriptParser" must "parse 0x00 to a OP_0" in {
     fromBytes(List(0.toByte)) must be (List(OP_0))
   }
+
   it must "parse a number larger than an integer into a ScriptNumberImpl" in {
     fromString("2147483648") must be (List(ScriptNumberImpl(2147483648L)))
   }
@@ -194,5 +196,19 @@ class ScriptParserTest extends FlatSpec with MustMatchers with ScriptParser with
     scriptTokens must be (expectedAsm)
   }
 
+  it must "parse a weird push operation for the redeemScript inside of this scriptSig" in {
+    val rawP2SHScriptSig =  "0 0x47 0x304402205b7d2c2f177ae76cfbbf14d589c113b0b35db753d305d5562dd0b61cbf366cfb02202e56f93c4f08a27f986cd424ffc48a462c3202c4902104d4d0ff98ed28f4bf8001 " +
+      "0x47 0x30440220563e5b3b1fc11662a84bc5ea2a32cc3819703254060ba30d639a1aaf2d5068ad0220601c1f47ddc76d93284dd9ed68f7c9974c4a0ea7cbe8a247d6bc3878567a5fca01 " +
+      "0x4c 0x69 0x52210279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f8179821038282263212c609d9ea2a6e3e172de238d8c39cabd5ac1ca10646e23fd5f515082103363d90d447b00c9c99ceac05b6262ee053441c7e55552ffe526bad8f83ff464053ae"
+
+    val p2shScriptSig : List[ScriptToken] = ScriptParser.fromString(rawP2SHScriptSig)
+
+    logger.info("Script Parser: " + p2shScriptSig)
+    p2shScriptSig must be (List(OP_0, BytesToPushOntoStackImpl(71), ScriptConstantImpl("304402205b7d2c2f177ae76cfbbf14d589c113b0b35db753d305d5562dd0b61cbf366cfb02202e56f93c4f08a27f986cd424ffc48a462c3202c4902104d4d0ff98ed28f4bf8001"),
+      BytesToPushOntoStackImpl(71), ScriptConstantImpl("30440220563e5b3b1fc11662a84bc5ea2a32cc3819703254060ba30d639a1aaf2d5068ad0220601c1f47ddc76d93284dd9ed68f7c9974c4a0ea7cbe8a247d6bc3878567a5fca01"),
+      OP_PUSHDATA1, BytesToPushOntoStackImpl(105), OP_2, BytesToPushOntoStackImpl(33), ScriptConstantImpl("0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"),
+      BytesToPushOntoStackImpl(33), ScriptConstantImpl("038282263212c609d9ea2a6e3e172de238d8c39cabd5ac1ca10646e23fd5f51508"),
+      BytesToPushOntoStackImpl(33), ScriptConstantImpl("03363d90d447b00c9c99ceac05b6262ee053441c7e55552ffe526bad8f83ff4640"), OP_3, OP_CHECKMULTISIG))
+  }
 
 }

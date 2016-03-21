@@ -3,13 +3,13 @@ package org.scalacoin.marshallers.script
 import org.scalacoin.protocol.script.{ScriptSignatureFactory, ScriptSignature}
 import org.scalacoin.script.constant._
 import org.scalacoin.script.crypto.OP_CHECKMULTISIG
-import org.scalacoin.util.TestUtil
+import org.scalacoin.util.{BitcoinSLogger, TestUtil}
 import org.scalatest.{FlatSpec, MustMatchers}
 
 /**
  * Created by chris on 1/12/16.
  */
-class RawScriptSignatureParserTest extends FlatSpec with MustMatchers with RawScriptSignatureParser {
+class RawScriptSignatureParserTest extends FlatSpec with MustMatchers with RawScriptSignatureParser with BitcoinSLogger {
 
   //from bitcoin developer examples
   //https://bitcoin.org/en/developer-reference#raw-transaction-format
@@ -98,4 +98,6 @@ class RawScriptSignatureParserTest extends FlatSpec with MustMatchers with RawSc
     write(scriptSig) must be (rawScriptSig)
 
   }
+
+
 }

@@ -1,6 +1,6 @@
 package org.scalacoin.script.crypto
 
-import org.scalacoin.protocol.script.ScriptPubKey
+import org.scalacoin.protocol.script.{ScriptPubKeyFactory, ScriptSignatureFactory, ScriptPubKey}
 import org.scalacoin.script.arithmetic.OP_NOT
 import org.scalacoin.script.{ScriptProgramFactory, ScriptProgramImpl}
 import org.scalacoin.script.constant._
@@ -136,6 +136,43 @@ class CryptoInterpreterTest extends FlatSpec with MustMatchers with CryptoInterp
     val newProgram = opCheckSig(program)
     newProgram.stack must be (List(ScriptTrue))
     newProgram.script.isEmpty must be (true)
+  }
+
+
+  it must "evaluate an OP_CHECKMULTISIG for a p2sh transaction" in {
+
+    val rawScriptSig = "0047304402205b7d2c2f177ae76cfbbf14d589c113b0b35db753d305d5562dd0b61cbf366cfb02202e56f93c4f08a27f986cd424ffc48a462c3202c4902104d4d0ff98ed28f4bf80014730440220563e5b3b1fc11662a84bc5ea2a32cc3819703254060ba30d639a1aaf2d5068ad0220601c1f47ddc76d93284dd9ed68f7c9974c4a0ea7cbe8a247d6bc3878567a5fca014c6952210279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f8179821038282263212c609d9ea2a6e3e172de238d8c39cabd5ac1ca10646e23fd5f515082103363d90d447b00c9c99ceac05b6262ee053441c7e55552ffe526bad8f83ff464053ae"
+    val p2shScriptSig = ScriptSignatureFactory.fromHex(rawScriptSig)
+
+    val rawScriptPubKey = "a914c9e4a896d149702d0d1695434feddd52e24ad78d87"
+    val p2shScriptPubKey = ScriptPubKeyFactory.fromHex(rawScriptPubKey)
+
+
+    val creditingTx = TransactionTestUtil.buildCreditingTransaction(p2shScriptPubKey)
+    val spendingTx = TransactionTestUtil.buildSpendingTransaction(creditingTx,p2shScriptSig,0)
+
+    val stack = List(ScriptNumberImpl(3),
+      ScriptConstantImpl("03363d90d447b00c9c99ceac05b6262ee053441c7e55552ffe526bad8f83ff4640"),
+      ScriptConstantImpl("038282263212c609d9ea2a6e3e172de238d8c39cabd5ac1ca10646e23fd5f51508"),
+      ScriptConstantImpl("0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"),
+      ScriptNumberImpl(2),
+      ScriptConstantImpl("30440220563e5b3b1fc11662a84bc5ea2a32cc3819703254060ba30d639a1aaf2d5068ad0220601c1f47ddc76d93284dd9ed68f7c9974c4a0ea7cbe8a247d6bc3878567a5fca01"),
+      ScriptConstantImpl("304402205b7d2c2f177ae76cfbbf14d589c113b0b35db753d305d5562dd0b61cbf366cfb02202e56f93c4f08a27f986cd424ffc48a462c3202c4902104d4d0ff98ed28f4bf8001"),
+      OP_0)
+
+    val script = List(OP_CHECKMULTISIG)
+
+    val baseProgram = ScriptProgramFactory.factory(spendingTx,creditingTx.outputs(0).scriptPubKey,0)
+
+    val program = ScriptProgramFactory.factory(baseProgram,stack,script)
+    val newProgram = opCheckMultiSig(program)
+
+    newProgram.stackTopIsTrue must be (true)
+    newProgram.stack.size must be (1)
+
+    newProgram.script.isEmpty must be (true)
+
+
   }
 
 
