@@ -42,5 +42,13 @@ class ScriptSignatureFactoryTest extends FlatSpec with MustMatchers {
 
   }
 
+  it must "parse a p2sh scriptSignature from a raw scriptSig" in {
+    val result = TestUtil.p2shInputScript2Of2 match {
+      case s : P2SHScriptSignature => true
+      case y => throw new RuntimeException("Should be p2sh input: " + y )
+    }
+    result must be (true)
+  }
+
 
 }

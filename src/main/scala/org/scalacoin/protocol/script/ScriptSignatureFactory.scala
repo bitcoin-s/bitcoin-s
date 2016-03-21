@@ -4,13 +4,15 @@ import org.scalacoin.crypto.{ECPublicKey, ECDigitalSignature}
 import org.scalacoin.marshallers.script.{RawScriptSignatureParser, ScriptParser}
 import org.scalacoin.script.constant._
 import org.scalacoin.script.crypto.{OP_CHECKMULTISIGVERIFY, OP_CHECKMULTISIG}
-import org.scalacoin.util.{Factory, BitcoinSUtil, ScalacoinUtil}
+import org.scalacoin.util.{BitcoinSLogger, Factory, BitcoinSUtil, ScalacoinUtil}
+
+import scala.util.{Failure, Success, Try}
 
 /**
  * Created by chris on 1/19/16.
  * Responsible for the instantiation of ScriptSignature objects
  */
-trait ScriptSignatureFactory extends Factory[ScriptSignature] {
+trait ScriptSignatureFactory extends Factory[ScriptSignature] with BitcoinSLogger {
 
   /**
    * Creates a ScriptSignature object from a given hexadecimal script
@@ -62,7 +64,7 @@ trait ScriptSignatureFactory extends Factory[ScriptSignature] {
     val scriptSigHex = tokens.map(_.hex).mkString
     tokens match {
       case Seq() => EmptyScriptSignature
-      case _  if (tokens.contains(OP_CHECKMULTISIG) && tokens.count(_.isInstanceOf[ScriptNumberOperation]) == 3) =>
+      case _  if (tokens.size > 1 && isRedeemScript(tokens.last)) =>
         P2SHScriptSignatureImpl(scriptSigHex,tokens)
       case _ if (tokens.size > 0 && tokens.head == OP_0) => MultiSignatureScriptSignatureImpl(scriptSigHex,tokens)
       case List(w : BytesToPushOntoStack, x : ScriptConstant, y : BytesToPushOntoStack,
@@ -70,6 +72,42 @@ trait ScriptSignatureFactory extends Factory[ScriptSignature] {
       case List(w : BytesToPushOntoStack, x : ScriptConstant) => P2PKScriptSignatureImpl(scriptSigHex,tokens)
       case _ => NonStandardScriptSignatureImpl(scriptSigHex,tokens)
     }
+  }
+
+
+
+  /**
+   * Detects if the given script token is a redeem script
+   * @param token
+   * @return
+   */
+  private def isRedeemScript(token : ScriptToken) : Boolean = {
+    logger.debug("Checking if last token is redeem script")
+    val reedemScriptTry : Try[ScriptPubKey] = parseRedeemScript(token)
+    reedemScriptTry match {
+      case Success(redeemScript) =>
+        logger.debug("Possible redeemScript: " + redeemScript)
+        redeemScript match {
+          case x : P2PKHScriptPubKey => true
+          case x : MultiSignatureScriptPubKey => true
+          case x : P2SHScriptPubKey => true
+          case x : P2PKScriptPubKey => true
+          case x : NonStandardScriptPubKey => false
+          case EmptyScriptPubKey => false
+        }
+      case Failure(_) => false
+    }
+
+  }
+
+  /**
+   * Parses a redeem script from the given script token
+   * @param scriptToken
+   * @return
+   */
+  def parseRedeemScript(scriptToken : ScriptToken) : Try[ScriptPubKey] = {
+    val redeemScript : Try[ScriptPubKey] = Try(ScriptPubKeyFactory.fromBytes(scriptToken.bytes))
+    redeemScript
   }
 
 }

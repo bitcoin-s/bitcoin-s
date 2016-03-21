@@ -174,7 +174,6 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
     }
 
     logger.debug("mRequiredSignatures: " + mRequiredSignatures )
-    val signatures : Seq[ScriptToken] = program.stack.slice(nPossibleSignatures+2,mRequiredSignatures+2)
 
     //+1 is for bug in OP_CHECKMULTSIG that requires an extra OP to be pushed onto the stack
     val stackWithoutPubKeysAndSignatures = stackWithoutPubKeys.tail.slice(mRequiredSignatures+1, stackWithoutPubKeys.tail.size)

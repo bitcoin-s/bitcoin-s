@@ -13,7 +13,7 @@ import org.slf4j.LoggerFactory
  * Created by chris on 12/26/15.
  *
  */
-sealed abstract class ScriptSignature extends TransactionElement with ScriptSignatureFactory with BitcoinSLogger {
+sealed trait ScriptSignature extends TransactionElement with ScriptSignatureFactory with BitcoinSLogger {
 
   /**
    * Representation of a scriptSignature in a parsed assembly format
@@ -108,7 +108,7 @@ trait P2SHScriptSignature extends ScriptSignature {
    * The redeemScript represents the conditions that must be satisfied to spend the output
    * @return
    */
-  def redeemScript : ScriptPubKey = ScriptPubKeyFactory.fromAsm(splitAtRedeemScript(asm)._2)
+  def redeemScript : ScriptPubKey = ScriptPubKeyFactory.fromBytes(asm.last.bytes)
 
   /**
    * Returns the public keys for the p2sh scriptSignature
@@ -139,23 +139,7 @@ trait P2SHScriptSignature extends ScriptSignature {
    * @return
    */
   def splitAtRedeemScript(asm : Seq[ScriptToken]) : (Seq[ScriptToken],Seq[ScriptToken]) = {
-    //using the first instance of a ScriptNumberOperation (i.e. OP_2, OP_3 etc...) as the beginning
-    //of the redeemScript
-
-    val result : Option[(ScriptToken,Int)] = asm.headOption match {
-      case Some(OP_0) =>
-        //skip the first index since OP_0 is put in input scripts because of a bug
-        //in the original bitcoin implementation
-        val r = asm.tail.zipWithIndex.find { case (token, index) => (token.isInstanceOf[ScriptNumberOperation])}
-        //need to increment the result by one since the index is relative to the
-        //tail of the list
-        r.map(res => (res._1,res._2+1))
-      case Some(_) => asm.zipWithIndex.find { case (token, index) => (token.isInstanceOf[ScriptNumberOperation]) }
-      case None => asm.zipWithIndex.find { case (token, index) => (token.isInstanceOf[ScriptNumberOperation]) }
-    }
-
-    if (result.isDefined) asm.splitAt(result.get._2)
-    else (asm,List())
+    (asm.reverse.tail.reverse, Seq(asm.last))
   }
 
 }

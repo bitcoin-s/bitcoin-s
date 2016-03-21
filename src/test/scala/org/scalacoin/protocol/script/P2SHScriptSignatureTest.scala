@@ -13,7 +13,7 @@ class P2SHScriptSignatureTest extends FlatSpec with MustMatchers {
     val rawP2SHScriptSig = TestUtil.rawP2shInputScript2Of2
     val p2shScriptSig : P2SHScriptSignature = ScriptSignatureFactory.fromHex(rawP2SHScriptSig) match {
       case x : P2SHScriptSignature => x
-      case _ => throw new RuntimeException("Must be p2sh script sig")
+      case y => throw new RuntimeException("Must be p2sh script sig: " + y)
     }
     p2shScriptSig.publicKeys must be (Seq(
       ECFactory.publicKey("0369d26ebd086523384a0f89f293d4c327a65fa73332d8efd1097cb35231295b83"),
