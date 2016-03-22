@@ -37,6 +37,11 @@ trait CryptoUtil {
    */
   def doubleSHA256(bytes : List[Byte]) : Seq[Byte] = doubleSHA256(bytes.toSeq)
 
+  /**
+   * Performs sha256(sha256(bytes))
+   * @param bytes
+   * @return
+   */
   def doubleSHA256(bytes : Seq[Byte]) : Seq[Byte] = {
     val hash : List[Byte] = Sha256Hash.hashTwice(bytes.toArray).toList
     hash
@@ -44,7 +49,7 @@ trait CryptoUtil {
 
   /**
    * Takes sha256(hex)
-   * @param str
+   * @param hex
    * @return
    */
   def sha256(hex : String) : List[Byte] = sha256(BitcoinSUtil.decodeHex(hex))
@@ -78,7 +83,7 @@ trait CryptoUtil {
 
   /**
    * Performs RIPEMD160(hex)
-   * @param str
+   * @param hex
    * @return
    */
   def ripeMd160(hex : String) : List[Byte] = ripeMd160(BitcoinSUtil.decodeHex(hex))

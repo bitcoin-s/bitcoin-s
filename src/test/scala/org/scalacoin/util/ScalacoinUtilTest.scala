@@ -5,7 +5,7 @@ import org.scalatest.{FlatSpec, MustMatchers}
 /**
  * Created by chris on 1/21/16.
  */
-class ScalacoinUtilTest extends FlatSpec with MustMatchers with ScalacoinUtil {
+class ScalacoinUtilTest extends FlatSpec with MustMatchers with BitcoinSUtil {
 
   "ScalacoinUtil" must "identify if a string is a hex string" in {
 

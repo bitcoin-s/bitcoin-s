@@ -8,12 +8,14 @@ object ScalaCoinBuild extends Build {
   val organization = "org.scalacoin"
   val slf4jV = "1.7.5"
   val logbackV = "1.0.13"
+  val spongyCastleV = "1.51.0.0"
   val appDependencies = Seq(
     "org.scalatest" % "scalatest_2.11" % "2.2.0",
     ("org.bitcoinj" % "bitcoinj-core" % "0.13.4").exclude("org.slf4j", "slf4j-api"),
     "org.slf4j" % "slf4j-api" % slf4jV,
     "io.spray" %%  "spray-json" % "1.3.0" withSources() withJavadoc(), 
-    "ch.qos.logback" % "logback-classic" % logbackV
+    "ch.qos.logback" % "logback-classic" % logbackV, 
+    "com.madgag.spongycastle" % "core" % spongyCastleV
   ) 
   
   val main = Project(appName, file(".")).enablePlugins().settings(

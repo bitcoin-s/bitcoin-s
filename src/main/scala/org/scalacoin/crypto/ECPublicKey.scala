@@ -1,11 +1,12 @@
 package org.scalacoin.crypto
 
+import org.scalacoin.util.{BitcoinSLogger, BitcoinSUtil}
 
 
 /**
  * Created by chris on 2/16/16.
  */
-trait ECPublicKey extends BaseECKey {
+trait ECPublicKey extends BaseECKey with BitcoinSLogger {
   import org.bitcoinj.core.ECKey
 
 
@@ -17,11 +18,13 @@ trait ECPublicKey extends BaseECKey {
    * @return
    */
   def verify(data : Seq[Byte], signature : ECDigitalSignature) : Boolean = {
+    logger.debug("PubKey for verifying: " + BitcoinSUtil.encodeHex(bytes))
+    logger.debug("Data to verify: " + BitcoinSUtil.encodeHex(data))
+    logger.debug("Signature to check against data: " + signature.hex)
     val bitcoinjKey = ECKey.fromPublicOnly(bytes.toArray)
     if (signature.isEmpty) {
       bitcoinjKey.verify(data.toArray,emptySignature.encodeToDER())
     } else {
-
       bitcoinjKey.verify(data.toArray,signature.bytes.toArray)
     }
 

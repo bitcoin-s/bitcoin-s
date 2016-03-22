@@ -8,7 +8,7 @@ import org.scalacoin.script.crypto.OP_RIPEMD160
 import org.scalacoin.script.locktime.OP_CHECKLOCKTIMEVERIFY
 import org.scalacoin.script.splice.OP_SUBSTR
 import org.scalacoin.script.stack.OP_TOALTSTACK
-import org.scalacoin.util.ScalacoinUtil
+import org.scalacoin.util.{BitcoinSUtil, ScalacoinUtil}
 import org.scalatest.{FlatSpec, MustMatchers}
 
 /**
@@ -33,7 +33,7 @@ class ScriptOperationFactoryTest extends FlatSpec with MustMatchers {
   }
 
   it must "find OP_4 from it's byte representation" in {
-    val byteRepresentation = ScalacoinUtil.decodeHex("54").head
+    val byteRepresentation = BitcoinSUtil.decodeHex("54").head
     ScriptOperationFactory.fromByte(byteRepresentation) must be (Some(OP_4))
   }
 
