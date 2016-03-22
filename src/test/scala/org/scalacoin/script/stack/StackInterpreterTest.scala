@@ -3,7 +3,7 @@ package org.scalacoin.script.stack
 import org.scalacoin.script.{ScriptProgramFactory, ScriptProgramImpl}
 import org.scalacoin.script.bitwise.OP_EQUAL
 import org.scalacoin.script.constant.{ScriptNumberImpl, OP_1, OP_0, ScriptConstantImpl}
-import org.scalacoin.util.{TestUtil, ScalacoinUtil}
+import org.scalacoin.util.{BitcoinSUtil, TestUtil, ScalacoinUtil}
 import org.scalatest.{FlatSpec, MustMatchers}
 
 /**
@@ -47,7 +47,7 @@ class StackInterpreterTest extends FlatSpec with MustMatchers with StackInterpre
     val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
     val newProgram = opDepth(program)
 
-    newProgram.stack.head.hex must be (ScalacoinUtil.encodeHex(stack.size.toByte))
+    newProgram.stack.head.hex must be (BitcoinSUtil.encodeHex(stack.size.toByte))
   }
 
   it must "evaluate OP_DEPTH operator correctly when there are zero items on the stack" in {

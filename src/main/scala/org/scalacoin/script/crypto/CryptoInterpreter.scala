@@ -86,11 +86,11 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
     require(program.stack.size > 1, "Stack must have at least 2 items on it for OP_CHECKSIG")
 
     val (pubKey,signature) = program.scriptSignature match {
-      case _ : MultiSignatureScriptSignature | _ : P2SHScriptSignature | _ : P2PKHScriptSignature | _ : P2PKScriptSignature =>
+      case _ : MultiSignatureScriptSignature | _ : P2SHScriptSignature | _ : P2PKHScriptSignature | _ : P2PKScriptSignature | _ : NonStandardScriptSignature =>
         val pubKey = ECFactory.publicKey(program.stack.head.bytes)
         val signature = ECFactory.digitalSignature(program.stack.tail.head.bytes)
         (pubKey,signature)
-      case EmptyScriptSignature | _ : NonStandardScriptSignature =>
+      case EmptyScriptSignature =>
         throw new RuntimeException("We do not know how to evaluate a nonstandard or EmptyScriptSignature for an OP_CHECKSIG operation")
     }
 

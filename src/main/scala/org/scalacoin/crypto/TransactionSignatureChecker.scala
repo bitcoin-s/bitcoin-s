@@ -175,10 +175,22 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
       case x : P2SHScriptPubKey =>
         logger.warn("Trying to check if a multisignature scriptSig spends a nonstandard scriptPubKey properly - this is trivially false")
         false
-
+      case EmptyScriptPubKey =>
+        logger.warn("Trying to check if a multisignature scriptSig spends a empty scriptPubKey properly - this is trivially false")
+        false
     }
   }
 
+  /**
+   * Checks if the scriptPubKey correlated with the empty script signature is valid
+   * there are two ways this can be true.
+   * 1.) If the multisig scriptPubKey requires 0 signatures
+   * 2.) We have the empty script pubkey
+   * @param spendingTransaction
+   * @param inputIndex
+   * @param scriptPubKey
+   * @return
+   */
   private def checkEmptyScriptSig(spendingTransaction : Transaction, inputIndex : Int, scriptPubKey : ScriptPubKey) : Boolean = {
     scriptPubKey match {
       case x : MultiSignatureScriptPubKey =>
@@ -187,6 +199,7 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
       case x : P2PKScriptPubKey => false
       case x : NonStandardScriptPubKey => false
       case x : P2SHScriptPubKey => false
+      case EmptyScriptPubKey => true
     }
   }
 
