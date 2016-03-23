@@ -75,14 +75,12 @@ trait DERSignatureUtil extends BitcoinSLogger {
       val asn1InputStream = new ASN1InputStream(bytes.toArray)
       //TODO: this is nasty, is there any way to get rid of all this casting???
       //https://stackoverflow.com/questions/2409618/how-do-i-decode-a-der-encoded-string-in-java
-      //
       val seq : DLSequence = asn1InputStream.readObject.asInstanceOf[DLSequence]
       val r = seq.getObjectAt(0).asInstanceOf[ASN1Integer]
       val s = seq.getObjectAt(1).asInstanceOf[ASN1Integer]
       asn1InputStream.close()
       (r.getPositiveValue, s.getPositiveValue)
     } else throw new RuntimeException("The given sequence of bytes was not a DER signature: " + BitcoinSUtil.encodeHex(bytes))
-
   }
 }
 

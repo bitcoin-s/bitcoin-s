@@ -21,6 +21,12 @@ sealed trait ECDigitalSignature extends BitcoinSLogger {
   def isDEREncoded : Boolean = DERSignatureUtil.isDEREncoded(this)
 
 
+  /**
+   * Decodes the digital signature into it's r and s points
+   * throws an exception if the given sequence of bytes is not a DER encoded signature
+   * @return the (r,s) values for the elliptic curve digital signature
+   */
+  def decodeSignature : (BigInt,BigInt) = DERSignatureUtil.decodeSignature(this)
 
 
 }
