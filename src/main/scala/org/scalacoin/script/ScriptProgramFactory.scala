@@ -4,6 +4,7 @@ import org.scalacoin.protocol.script.ScriptPubKey
 import org.scalacoin.protocol.transaction.Transaction
 import org.scalacoin.script.ScriptProgramFactory.UpdateIndicator
 import org.scalacoin.script.constant.ScriptToken
+import org.scalacoin.script.flag.ScriptFlag
 
 /**
  * Created by chris on 2/10/16.
@@ -24,7 +25,7 @@ trait ScriptProgramFactory {
    */
   def factory(oldProgram : ScriptProgram, valid : Boolean) : ScriptProgram = {
     ScriptProgramImpl(oldProgram.transaction,oldProgram.scriptPubKey,oldProgram.inputIndex,
-      oldProgram.stack,oldProgram.script, oldProgram.altStack, valid, oldProgram.lastCodeSeparator)
+      oldProgram.stack,oldProgram.script, oldProgram.altStack, oldProgram.flags, valid, oldProgram.lastCodeSeparator)
   }
 
 
@@ -39,11 +40,11 @@ trait ScriptProgramFactory {
     indicator match {
       case Stack => ScriptProgramImpl(oldProgram.transaction,oldProgram.scriptPubKey,
         oldProgram.inputIndex,tokens.toList, oldProgram.script,
-        oldProgram.altStack, oldProgram.valid, oldProgram.lastCodeSeparator)
+        oldProgram.altStack, oldProgram.flags, oldProgram.valid, oldProgram.lastCodeSeparator)
       case Script => ScriptProgramImpl(oldProgram.transaction, oldProgram.scriptPubKey, oldProgram.inputIndex,
-        oldProgram.stack, tokens.toList, oldProgram.altStack, oldProgram.valid, oldProgram.lastCodeSeparator)
+        oldProgram.stack, tokens.toList, oldProgram.altStack, oldProgram.flags, oldProgram.valid, oldProgram.lastCodeSeparator)
       case AltStack => ScriptProgramImpl(oldProgram.transaction,oldProgram.scriptPubKey, oldProgram.inputIndex,
-        oldProgram.stack, oldProgram.script, tokens.toList,  oldProgram.valid, oldProgram.lastCodeSeparator)
+        oldProgram.stack, oldProgram.script, tokens.toList, oldProgram.flags, oldProgram.valid, oldProgram.lastCodeSeparator)
     }
   }
 
@@ -56,7 +57,7 @@ trait ScriptProgramFactory {
    */
   def factory(oldProgram : ScriptProgram, stackTokens : Seq[ScriptToken], scriptTokens : Seq[ScriptToken]) = {
     ScriptProgramImpl(oldProgram.transaction, oldProgram.scriptPubKey, oldProgram.inputIndex,
-      stackTokens.toList,scriptTokens.toList, oldProgram.altStack,
+      stackTokens.toList,scriptTokens.toList, oldProgram.altStack, oldProgram.flags,
       oldProgram.valid,oldProgram.lastCodeSeparator)
   }
 
@@ -69,7 +70,7 @@ trait ScriptProgramFactory {
   def factory(oldProgram : ScriptProgram, lastCodeSeparator : Int) : ScriptProgram = {
     ScriptProgramImpl(oldProgram.transaction, oldProgram.scriptPubKey, oldProgram.inputIndex,
       oldProgram.stack, oldProgram.script,
-      oldProgram.altStack, valid = oldProgram.valid, lastCodeSeparator = lastCodeSeparator)
+      oldProgram.altStack, oldProgram.flags, valid = oldProgram.valid, lastCodeSeparator = lastCodeSeparator)
   }
 
   /**
@@ -84,12 +85,12 @@ trait ScriptProgramFactory {
               lastCodeSeparator : Int) : ScriptProgram = {
     indicator match {
       case Stack => ScriptProgramImpl(oldProgram.transaction, oldProgram.scriptPubKey, oldProgram.inputIndex,
-        tokens.toList, oldProgram.script, oldProgram.altStack, oldProgram.valid, lastCodeSeparator)
+        tokens.toList, oldProgram.script, oldProgram.altStack, oldProgram.flags, oldProgram.valid, lastCodeSeparator)
       case Script => ScriptProgramImpl(oldProgram.transaction, oldProgram.scriptPubKey, oldProgram.inputIndex,
-        oldProgram.stack, tokens.toList, oldProgram.altStack, oldProgram.valid, lastCodeSeparator)
+        oldProgram.stack, tokens.toList, oldProgram.altStack, oldProgram.flags, oldProgram.valid, lastCodeSeparator)
       case AltStack => ScriptProgramImpl(oldProgram.transaction, oldProgram.scriptPubKey,
         oldProgram.inputIndex,oldProgram.stack, oldProgram.script,
-        tokens.toList, oldProgram.valid, lastCodeSeparator)
+        tokens.toList, oldProgram.flags, oldProgram.valid, lastCodeSeparator)
     }
   }
 
@@ -104,7 +105,7 @@ trait ScriptProgramFactory {
    */
   def factory(oldProgram : ScriptProgram, stack : Seq[ScriptToken], script : Seq[ScriptToken], valid : Boolean) = {
     ScriptProgramImpl(oldProgram.transaction, oldProgram.scriptPubKey, oldProgram.inputIndex,
-      stack.toList, script.toList, oldProgram.altStack,valid, oldProgram.lastCodeSeparator)
+      stack.toList, script.toList, oldProgram.altStack,oldProgram.flags, valid, oldProgram.lastCodeSeparator)
   }
 
 
@@ -122,9 +123,9 @@ trait ScriptProgramFactory {
     updateIndicator match {
       case AltStack =>
         ScriptProgramImpl(oldProgram.transaction, oldProgram.scriptPubKey, oldProgram.inputIndex,
-          stack.toList,script.toList,that.toList,oldProgram.valid,oldProgram.lastCodeSeparator)
+          stack.toList,script.toList,that.toList, oldProgram.flags, oldProgram.valid,oldProgram.lastCodeSeparator)
       case _ => ScriptProgramImpl(oldProgram.transaction, oldProgram.scriptPubKey, oldProgram.inputIndex,
-        stack.toList,script.toList, oldProgram.altStack,oldProgram.valid,oldProgram.lastCodeSeparator)
+        stack.toList,script.toList, oldProgram.altStack,oldProgram.flags,oldProgram.valid,oldProgram.lastCodeSeparator)
     }
 
   }
@@ -137,9 +138,9 @@ trait ScriptProgramFactory {
    * @param inputIndex
    * @return
    */
-  def factory(transaction: Transaction, scriptPubKey : ScriptPubKey, inputIndex : Int) = {
+  def factory(transaction: Transaction, scriptPubKey : ScriptPubKey, inputIndex : Int,flags : Seq[ScriptFlag]) = {
     val script = transaction.inputs(inputIndex).scriptSignature.asm ++ scriptPubKey.asm
-    ScriptProgramImpl(transaction,scriptPubKey,inputIndex,List(),script.toList,List())
+    ScriptProgramImpl(transaction,scriptPubKey,inputIndex,List(),script.toList,List(),flags)
   }
 
 }

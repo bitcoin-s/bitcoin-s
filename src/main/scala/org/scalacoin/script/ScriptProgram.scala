@@ -3,6 +3,7 @@ package org.scalacoin.script
 import org.scalacoin.protocol.script.{ScriptSignature, ScriptPubKey}
 import org.scalacoin.protocol.transaction.Transaction
 import org.scalacoin.script.constant.{OP_0, ScriptNumberImpl, ScriptFalse, ScriptToken}
+import org.scalacoin.script.flag.ScriptFlag
 
 /**
  * Created by chris on 2/3/16.
@@ -58,6 +59,14 @@ trait ScriptProgram {
   def altStack : List[ScriptToken]
 
   /**
+   * Flags that are run with the script
+   * these flags indicate special conditions that a script needs to be run with
+   * see: https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.h#L31
+   * @return
+   */
+  def flags : Seq[ScriptFlag]
+
+  /**
    * A function to determine if the transaction is valid or not
    * @return
    */
@@ -89,6 +98,6 @@ trait ScriptProgram {
 
 case class ScriptProgramImpl(transaction : Transaction, scriptPubKey : ScriptPubKey, inputIndex : Int,
   stack : List[ScriptToken],script : List[ScriptToken], altStack : List[ScriptToken],
-  valid : Boolean = true, lastCodeSeparator : Int = 0) extends ScriptProgram
+  flags : Seq[ScriptFlag], valid : Boolean = true, lastCodeSeparator : Int = 0) extends ScriptProgram
 
 
