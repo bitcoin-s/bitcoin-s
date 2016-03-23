@@ -1,7 +1,6 @@
 package org.scalacoin.util
 
 import scala.annotation.tailrec
-
 /**
  * Created by chris on 1/27/16.
  */

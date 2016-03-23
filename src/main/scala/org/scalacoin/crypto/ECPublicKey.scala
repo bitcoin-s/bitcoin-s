@@ -2,7 +2,6 @@ package org.scalacoin.crypto
 
 import org.scalacoin.util.{BitcoinSLogger, BitcoinSUtil}
 
-
 /**
  * Created by chris on 2/16/16.
  */
@@ -27,7 +26,6 @@ trait ECPublicKey extends BaseECKey with BitcoinSLogger {
     } else {
       bitcoinjKey.verify(data.toArray,signature.bytes.toArray)
     }
-
   }
 }
 
