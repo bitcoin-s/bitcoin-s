@@ -9,6 +9,7 @@ import org.scalacoin.script.bitwise.{OP_EQUAL, OP_EQUALVERIFY}
 import org.scalacoin.script.constant._
 import org.scalacoin.script.control.OP_VERIFY
 import org.scalacoin.script.crypto.{OP_CHECKSIG, OP_HASH160}
+import org.scalacoin.script.flag.ScriptFlagFactory
 import org.scalacoin.script.interpreter.testprotocol.{CoreTestCaseProtocol, CoreTestCase}
 import org.scalacoin.script.reserved.OP_NOP
 import org.scalacoin.script.stack.OP_DUP
@@ -114,7 +115,8 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterp
       logger.info("Comments: " + testCase.comments)
       val scriptPubKey = ScriptPubKeyFactory.fromAsm(testCase.scriptPubKey.asm)
       val inputIndex = 0
-      val program = ScriptProgramFactory.factory(tx,scriptPubKey, inputIndex)
+      val flags = ScriptFlagFactory.fromList(testCase.flags)
+      val program = ScriptProgramFactory.factory(tx,scriptPubKey,inputIndex,flags)
       withClue(testCase.raw) {
         ScriptInterpreter.run(program) must equal (true)
       }

@@ -9,19 +9,31 @@ import org.scalacoin.util.BitcoinSUtil
  * these flags indicate how to evaluate a certain script
  */
 sealed trait ScriptFlag {
+  /**
+   * The flag's representation represented as an intege
+   * @return
+   */
   def flag : Int
+
+  /**
+   * The name of the flag as found in bitcoin core
+   * @return
+   */
+  def name : String
 }
 
 
 case object ScriptVerifyNone extends ScriptFlag {
-  def flag = 0
+  override def flag = 0
+  override def name = "NONE"
 }
 
 /**
  * Evaluate P2SH subscripts (softfork safe, BIP16).
  */
 case object ScriptVerifyP2SH extends ScriptFlag {
-  def flag = 1
+  override def flag = 1
+  override def name = "P2SH"
 }
 
 /**
@@ -30,14 +42,16 @@ case object ScriptVerifyP2SH extends ScriptFlag {
  * (softfork safe, but not used or intended as a consensus rule).
  */
 case object ScriptVerifyStrictEnc extends ScriptFlag {
-  def flag = 1 << 1
+  override def flag = 1 << 1
+  override def name = "STRICTENC"
 }
 
 /**
  * Passing a non-strict-DER signature to a checksig operation causes script failure (softfork safe, BIP62 rule 1)
  */
 case object ScriptVerifyDerSig extends ScriptFlag {
-  def flag = 1 << 2
+  override def flag = 1 << 2
+  override def name = "DERSIG"
 }
 
 /**
@@ -45,21 +59,24 @@ case object ScriptVerifyDerSig extends ScriptFlag {
  * (softfork safe, BIP62 rule 5).
  */
 case object ScriptVerifyLowS extends ScriptFlag {
-  def flag = 1 << 3
+  override def flag = 1 << 3
+  override def name = "LOW_S"
 }
 
 /**
  * Verify dummy stack item consumed by CHECKMULTISIG is of zero-length (softfork safe, BIP62 rule 7)
  */
 case object ScriptVerifyNullDummy extends ScriptFlag {
-  def flag = 1 << 4
+  override def flag = 1 << 4
+  override def name = "NULLDUMMY"
 }
 
 /**
  * Using a non-push operator in the scriptSig causes script failure (softfork safe, BIP62 rule 2).
  */
 case object ScriptVerifySigPushOnly extends ScriptFlag {
-  def flag = 1 << 5
+  override def flag = 1 << 5
+  override def name = "SIGPUSHONLY"
 }
 
 /**
@@ -70,7 +87,8 @@ case object ScriptVerifySigPushOnly extends ScriptFlag {
  * (softfork safe)
  */
 case object ScriptVerifyMinimalData extends ScriptFlag {
-  def flag = 1 << 6
+  override def flag = 1 << 6
+  override def name = "MINIMALDATA"
 }
 
 
@@ -84,7 +102,8 @@ case object ScriptVerifyMinimalData extends ScriptFlag {
  * executed, e.g.  within an unexecuted IF ENDIF block, are *not* rejected.
  */
 case object ScriptVerifyDiscourageUpgradableNOPs extends ScriptFlag {
-  def flag = 1 << 7
+  override def flag = 1 << 7
+  override def name = "DISCOURAGE_UPGRADABLE_NOPS"
 }
 
 /**
@@ -95,21 +114,24 @@ case object ScriptVerifyDiscourageUpgradableNOPs extends ScriptFlag {
  * Note: CLEANSTACK should never be used without P2SH.
  */
 case object ScriptVerifyCleanStack extends ScriptFlag {
-  def flag = 1 << 8
+  override def flag = 1 << 8
+  override def name = "CLEANSTACK"
 }
 
 /**
  * See BIP65 for details
  */
 case object ScriptVerifyCheckLocktimeVerify extends ScriptFlag {
-  def flag = 1 << 9
+  override def flag = 1 << 9
+  override def name = "CHECKLOCKTIMEVERIFY"
 }
 
 /**
  * See BIP112 for details
  */
 case object ScriptVerifyCheckSequenceVerify extends ScriptFlag {
-  def flag = 1 << 10
+  override def flag = 1 << 10
+  override def name = "CHECKSEQUENCEVERIFY"
 }
 
 

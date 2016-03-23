@@ -137,7 +137,7 @@ object TestUtil {
   //https://tbtc.blockr.io/api/v1/tx/raw/bdc221db675c06dbee2ae75d33e31cad4e2555efea10c337ff32c8cdf97f8e74
   val rawScriptSig = "483045022100ad8e961fe3c22b2647d92b078f4c0cf81b3106ea5bf8b900ab8646aa4430216f022071d4edc2b5588be20ac4c2d07edd8ed069e10b2402d3dce2d3b835ccd075f283014104fa79182bbc26c708b5d9f36b8635947d4a834ea356cf612ede08395c295f962e0b1dc2557aba34188640e51a58ed547f2c89c8265cd0c04ff890d8435648746e"
   val scriptSig = RawScriptSignatureParser.read(rawScriptSig)
-  def testProgram : ScriptProgram = ScriptProgramImpl(transaction,scriptPubKey,0,List(),List(),List(),false,0)
+  def testProgram : ScriptProgram = ScriptProgramImpl(transaction,scriptPubKey,0,List(),List(),List(),Seq(),false,0)
 
 
   val rawP2PKScriptSig = "47304402200a5c6163f07b8d3b013c4d1d6dba25e780b39658d79ba37af7057a3b7f15ffa102201fd9b4eaa9943f734928b99a83592c2e7bf342ea2680f6a2bb705167966b742001"
