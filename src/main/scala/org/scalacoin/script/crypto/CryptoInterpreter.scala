@@ -1,9 +1,10 @@
 package org.scalacoin.script.crypto
 
-import org.scalacoin.crypto.{TransactionSignatureChecker, ECFactory, TransactionSignatureSerializer}
+import org.scalacoin.crypto.{DERSignatureUtil, TransactionSignatureChecker, ECFactory, TransactionSignatureSerializer}
 import org.scalacoin.protocol.script._
 import org.scalacoin.protocol.transaction.Transaction
 import org.scalacoin.script.control.{ControlOperationsInterpreter, OP_VERIFY}
+import org.scalacoin.script.flag.ScriptVerifyDerSig
 import org.scalacoin.script.{ScriptProgramFactory, ScriptProgramImpl, ScriptProgram}
 import org.scalacoin.script.constant._
 import org.scalacoin.util.{BitcoinSLogger, BitcoinSUtil, CryptoUtil}
@@ -94,7 +95,13 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
         throw new RuntimeException("We do not know how to evaluate a nonstandard or EmptyScriptSignature for an OP_CHECKSIG operation")
     }
 
-
+    //TODO: Check if strict dersig flag
+    if (program.flags.contains(ScriptVerifyDerSig)) {
+      //this means all of the signatures must encoded according to BIP66 strict dersig
+      //https://github.com/bitcoin/bips/blob/master/bip-0066.mediawiki
+      require(DERSignatureUtil.isDEREncoded(signature), "Since the ScriptVerifyDerSig flag is set the signature being checked must be a strict dersig signature as per BIP 66\n" +
+        "Sig: " + signature.hex)
+    }
 
     val restOfStack = program.stack.tail.tail
     val hashType = (signature.bytes.size == 0) match {
@@ -157,6 +164,8 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
   def opCheckMultiSig(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.isDefined && program.script.head == OP_CHECKMULTISIG, "Script top must be OP_CHECKMULTISIG")
     require(program.stack.size > 2, "Stack must contain at least 3 items for OP_CHECKMULTISIG")
+
+    //TODO: Check if strict dersig flag
     //head should be n for m/n
     val nPossibleSignatures : Int  = program.stack.head match {
       case s : ScriptNumber => s.num.toInt

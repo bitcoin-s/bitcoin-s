@@ -2,15 +2,21 @@ package org.scalacoin.script.flag
 
 /**
  * Created by chris on 3/23/16.
- * Trait used to create a script flag used to evalaute scripts in a
+ * Trait used to create a script flag used to evaluate scripts in a
  * certain way
  */
 trait ScriptFlagFactory {
 
+  /**
+   * All the script flags found inside of bitcoin core
+   * https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.h#L31
+   * @return
+   */
   private def flags = Seq(ScriptVerifyNone, ScriptVerifyP2SH, ScriptVerifyStrictEnc,
     ScriptVerifyDerSig, ScriptVerifyLowS, ScriptVerifySigPushOnly, ScriptVerifyMinimalData,
     ScriptVerifyNullDummy, ScriptVerifyDiscourageUpgradableNOPs, ScriptVerifyCleanStack,
     ScriptVerifyCheckLocktimeVerify, ScriptVerifyCheckSequenceVerify)
+
   /**
    * Takes in a string and tries to match it with a script flag
    * @param str the string to try and match with a script flag
