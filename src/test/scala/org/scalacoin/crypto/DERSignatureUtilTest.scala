@@ -41,5 +41,18 @@ class DERSignatureUtilTest extends FlatSpec with MustMatchers {
     r must be (BitcoinSUtil.hexToBigInt("0a5c6163f07b8d3b013c4d1d6dba25e780b39658d79ba37af7057a3b7f15ffa1"))
     s must be (BitcoinSUtil.hexToBigInt("1fd9b4eaa9943f734928b99a83592c2e7bf342ea2680f6a2bb705167966b7420"))
   }
+
+  it must "say that a signature taken from a p2sh transaction is a valid stirctly DER encoded signature" in {
+    DERSignatureUtil.isStrictDEREncoding(p2shSignature) must be (true)
+  }
+
+  it must "say that signature taken from a p2pkh transaction is a valid strictly DER encoded signature" in  {
+    DERSignatureUtil.isStrictDEREncoding(p2pkhSignature) must be (true)
+  }
+
+  it must "say that a signature taken from a p2pk transaction is a valid strictly DER encoded signature" in {
+
+    DERSignatureUtil.isStrictDEREncoding(p2pkSignature) must be (true)
+  }
 }
 

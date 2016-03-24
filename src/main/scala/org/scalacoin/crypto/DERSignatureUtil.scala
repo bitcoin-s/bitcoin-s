@@ -82,6 +82,90 @@ trait DERSignatureUtil extends BitcoinSLogger {
       (r.getPositiveValue, s.getPositiveValue)
     } else throw new RuntimeException("The given sequence of bytes was not a DER signature: " + BitcoinSUtil.encodeHex(bytes))
   }
+
+  /**
+   * This functions implements the strict der encoding rules that were created in BIP66
+   * https://github.com/bitcoin/bips/blob/master/bip-0066.mediawiki
+   * @param signature the signature to check if they are strictly der encoded
+   * @return boolean indicating whether the signature was der encoded or not
+   */
+  def isStrictDEREncoding(signature : ECDigitalSignature) : Boolean = isStrictDEREncoding(signature.bytes)
+
+
+  /**
+   * This functions implements the strict der encoding rules that were created in BIP66
+   * https://github.com/bitcoin/bips/blob/master/bip-0066.mediawiki
+   * @param bytes the bytes to check if they are strictly der encoded
+   * @return boolean indicating whether the bytes were der encoded or not
+   */
+  def isStrictDEREncoding(bytes : Seq[Byte]) : Boolean = {
+    // Format: 0x30 [total-length] 0x02 [R-length] [R] 0x02 [S-length] [S] [sighash]
+    // * total-length: 1-byte length descriptor of everything that follows,
+    //   excluding the sighash byte.
+    // * R-length: 1-byte length descriptor of the R value that follows.
+    // * R: arbitrary-length big-endian encoded R value. It must use the shortest
+    //   possible encoding for a positive integers (which means no null bytes at
+    //   the start, except a single one when the next byte has its highest bit set).
+    // * S-length: 1-byte length descriptor of the S value that follows.
+    // * S: arbitrary-length big-endian encoded S value. The same rules apply.
+    // * sighash: 1-byte value indicating what data is hashed (not part of the DER
+    //   signature)
+
+    //check if the bytes are ATLEAST der encoded
+    val isDerEncoded = isDEREncoded(bytes)
+    if (!isDerEncoded) return false
+
+
+    if (bytes.size < 9) return false
+    if (bytes.size > 73) return false
+
+    // A signature is of type 0x30 (compound)
+    if (bytes.head != 0x30) return false
+
+    // Make sure the length covers the entire signature.
+    if (bytes(1) != bytes.size - 3) return false
+
+    val rSize = bytes(3)
+
+    // Make sure the length of the S element is still inside the signature.
+    if (5 + rSize >= bytes.size) return false
+
+    // Extract the length of the S element.
+    val sSize = bytes(5 + rSize)
+
+    // Verify that the length of the signature matches the sum of the length
+    // of the elements.
+    if ((rSize + sSize + 7) != bytes.size) return false
+
+    // Check whether the R element is an integer.
+    if (bytes(2) != 0x02) return false
+
+    // Zero-length integers are not allowed for R.
+    if (rSize == 0) return false
+
+    // Negative numbers are not allowed for R.
+    if ((bytes(4) & 0x80) != 0) return false
+
+    // Null bytes at the start of R are not allowed, unless R would
+    // otherwise be interpreted as a negative number.
+    if (rSize > 1 && (bytes(4) == 0x00) && !((bytes(5) & 0x80) != 0 )) return false
+
+    // Check whether the S element is an integer.
+    if (bytes(rSize + 4) != 0x02) return false
+
+    // Zero-length integers are not allowed for S.
+    if (rSize == 0) return false
+
+    // Negative numbers are not allowed for S.
+    if ((bytes(rSize + 6) & 0x80) != 0) return false
+
+    // Null bytes at the start of S are not allowed, unless S would otherwise be
+    // interpreted as a negative number.
+    if (sSize > 1 && (bytes(rSize + 6) == 0x00) && !((bytes(rSize + 7) & 0x80) != 0)) return false
+
+    //if we made it to this point without returning false this must be a valid strictly encoded der sig
+    true
+  }
 }
 
 object DERSignatureUtil extends DERSignatureUtil
