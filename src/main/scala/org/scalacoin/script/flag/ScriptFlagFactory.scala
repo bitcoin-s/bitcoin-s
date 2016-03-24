@@ -2,6 +2,8 @@ package org.scalacoin.script.flag
 
 /**
  * Created by chris on 3/23/16.
+ * Trait used to create a script flag used to evalaute scripts in a
+ * certain way
  */
 trait ScriptFlagFactory {
 

@@ -85,18 +85,18 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterp
     val source = scala.io.Source.fromFile("src/test/scala/org/scalacoin/script/interpreter/script_valid.json")
 
     //use this to represent a single test case from script_valid.json
-    val lines =
+/*    val lines =
     """
       |
       |[[
       |    "1",
       |    "0x21 0x038282263212c609d9ea2a6e3e172de238d8c39cabd5ac1ca10646e23fd5f51508 CHECKSIG NOT",
-      |    "",
+      |    "STRICTENC",
       |    "BIP66 example 6, without DERSIG"
       |]]
-    """.stripMargin
+    """.stripMargin*/
 
-    //val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n" finally source.close()
+    val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n" finally source.close()
     val json = lines.parseJson
     val testCasesOpt : Seq[Option[CoreTestCase]] = json.convertTo[Seq[Option[CoreTestCase]]]
     val testCases : Seq[CoreTestCase] = testCasesOpt.flatten
@@ -116,6 +116,7 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterp
       val scriptPubKey = ScriptPubKeyFactory.fromAsm(testCase.scriptPubKey.asm)
       val inputIndex = 0
       val flags = ScriptFlagFactory.fromList(testCase.flags)
+      logger.info("Flags after parsing: " + flags)
       val program = ScriptProgramFactory.factory(tx,scriptPubKey,inputIndex,flags)
       withClue(testCase.raw) {
         ScriptInterpreter.run(program) must equal (true)
