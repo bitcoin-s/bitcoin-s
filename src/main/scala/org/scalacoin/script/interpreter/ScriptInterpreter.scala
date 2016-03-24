@@ -2,6 +2,7 @@ package org.scalacoin.script.interpreter
 
 import org.scalacoin.protocol.script.{ScriptSignature, ScriptPubKey}
 import org.scalacoin.protocol.transaction.Transaction
+import org.scalacoin.script.flag.ScriptVerifyCheckLocktimeVerify
 import org.scalacoin.script.locktime.{OP_CHECKLOCKTIMEVERIFY, LockTimeInterpreter}
 import org.scalacoin.script.splice.{SpliceInterpreter, OP_SIZE}
 import org.scalacoin.script.{ScriptProgramFactory, ScriptProgramImpl, ScriptProgram}
@@ -136,8 +137,12 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
         case OP_SIZE :: t => loop(opSize(program))
 
         //locktime operations
-        case OP_CHECKLOCKTIMEVERIFY :: t => loop(opCheckLockTimeVerify(program))
-
+        case OP_CHECKLOCKTIMEVERIFY :: t =>
+          //check if CLTV is enforced yet
+          if (program.flags.contains(ScriptVerifyCheckLocktimeVerify)) loop(opCheckLockTimeVerify(program))
+          //treat this as OP_NOP2 since CLTV is not enforced yet
+          //in this case, just remove OP_CLTV from the stack and continue
+          else loop(ScriptProgramFactory.factory(program, program.script.tail, ScriptProgramFactory.Script))
         //no more script operations to run, True is represented by any representation of non-zero
         case Nil => program.stack.headOption != Some(ScriptFalse)
         case h :: t => throw new RuntimeException(h + " was unmatched")
