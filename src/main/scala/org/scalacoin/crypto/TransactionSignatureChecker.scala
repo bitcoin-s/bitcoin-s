@@ -122,8 +122,14 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
     scriptPubKey match {
       case x : P2SHScriptPubKey =>
         val redeemScript = p2shScriptSignature.redeemScript
-        helper(spendingTransaction, inputIndex, redeemScript,
-        p2shScriptSignature.signatures.toList, p2shScriptSignature.publicKeys.toList, requireStrictDEREncoding)
+        redeemScript match {
+          case y : MultiSignatureScriptPubKey =>
+            multiSignatureHelper(spendingTransaction, inputIndex, y,
+              p2shScriptSignature.signatures.toList, p2shScriptSignature.publicKeys.toList, requireStrictDEREncoding, y.requiredSigs)
+          case _ : P2PKHScriptPubKey | _ : P2PKScriptPubKey | _ : P2SHScriptPubKey | _ : NonStandardScriptPubKey | EmptyScriptPubKey =>
+            throw new RuntimeException("Don't know how to implement this scriptPubKeys in a redeemScript")
+        }
+
       case x : MultiSignatureScriptPubKey =>
         logger.warn("Trying to check if a p2sScriptSignature spends a multisignature scriptPubKey properly - this is trivially false")
         false
@@ -155,24 +161,8 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
     scriptPubKey match {
       case x : MultiSignatureScriptPubKey =>
         logger.info("multisig public keys: " + x.publicKeys)
-        helper(spendingTransaction,inputIndex,scriptPubKey,multiSignatureScript.signatures.toList,
-          x.publicKeys.toList,requireStrictDEREncoding)
-/*        val result: Seq[Boolean] = for {
-          (sig, pubKey) <- multiSignatureScript.signatures.zip(x.publicKeys)
-        } yield
-          {
-            if (requireStrictDEREncoding && DERSignatureUtil.isStrictDEREncoding(sig)) {
-              logger.warn("Signature for multiSignatureScriptSig was not strictly der encoded: " + sig.hex)
-              false
-            } else {
-              val hashType = multiSignatureScript.hashType(sig)
-              val hashForSig: Seq[Byte] =
-                TransactionSignatureSerializer.hashForSignature(spendingTransaction, inputIndex, x, hashType)
-              pubKey.verify(hashForSig, sig)
-            }
-
-          }
-        !result.contains(false)*/
+        multiSignatureHelper(spendingTransaction,inputIndex,x,multiSignatureScript.signatures.toList,
+          x.publicKeys.toList,requireStrictDEREncoding,x.requiredSigs)
       case x : P2PKHScriptPubKey =>
         logger.warn("Trying to check if a multisignature scriptSig spends a p2pkh scriptPubKey properly - this is trivially false")
         false
@@ -216,23 +206,28 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
    * This is a helper function to check digital signatures against public keys
    * if the signature does not match this public key, check it against the next
    * public key in the sequence
-   * @param spendingTransaction
-   * @param inputIndex
-   * @param scriptPubKey
-   * @param sigs
-   * @param pubKeys
-   * @param requireStrictDEREncoding
-   * @return
+   * @param spendingTransaction the transaction being checked
+   * @param inputIndex the input of the transaction being checked
+   * @param scriptPubKey the scriptPubKey which the transaction's input is being checked against
+   * @param sigs the signatures that are being checked for validity
+   * @param pubKeys the public keys which are needed to verify that the signatures are correct
+   * @param requireStrictDEREncoding if this transaction requires a strict der encoding as per BIP66
+   * @return a boolean indicating if all of the signatures are valid against the given public keys
    */
   @tailrec
-  private def helper(spendingTransaction : Transaction, inputIndex : Int, scriptPubKey : ScriptPubKey,
-                     sigs : List[ECDigitalSignature], pubKeys : List[ECPublicKey], requireStrictDEREncoding : Boolean) : Boolean = {
+  private def multiSignatureHelper(spendingTransaction : Transaction, inputIndex : Int, scriptPubKey : MultiSignatureScriptPubKey,
+                     sigs : List[ECDigitalSignature], pubKeys : List[ECPublicKey], requireStrictDEREncoding : Boolean,
+                     requiredSigs : Long) : Boolean = {
     logger.info("public keys inside of helper: " + pubKeys)
     if (sigs.size > pubKeys.size) {
       //this is how bitcoin core treats this. If there are ever any more
       //signatures than public keys remaining we immediately return
       //false https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L955-L959
       logger.info("We have more sigs than we have public keys remaining")
+      false
+    }
+    else if (requiredSigs > sigs.size) {
+      logger.info("We do not have enough sigs to meet the threshold of requireSigs in the multiSignatureScriptPubKey")
       false
     }
     else if (!sigs.isEmpty && !pubKeys.isEmpty) {
@@ -247,8 +242,10 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
           inputIndex,scriptPubKey,hashType)
         val result = pubKey.verify(hashForSig, sig)
         result match {
-          case true => helper(spendingTransaction,inputIndex, scriptPubKey, sigs.tail,pubKeys.tail,requireStrictDEREncoding)
-          case false => helper(spendingTransaction,inputIndex, scriptPubKey, sigs,pubKeys.tail,requireStrictDEREncoding)
+          case true =>
+            multiSignatureHelper(spendingTransaction,inputIndex, scriptPubKey, sigs.tail,pubKeys.tail,requireStrictDEREncoding, requiredSigs -1)
+          case false =>
+            multiSignatureHelper(spendingTransaction,inputIndex, scriptPubKey, sigs,pubKeys.tail,requireStrictDEREncoding, requiredSigs)
         }
       }
     } else if (sigs.isEmpty) {
