@@ -2,6 +2,7 @@ package org.scalacoin.crypto
 
 
 import org.scalacoin.config.TestNet3
+import org.scalacoin.protocol.script.EmptyScriptSignature
 import org.scalacoin.util.{BitcoinSUtil, BitcoinJTestUtil, CryptoTestUtil, TestUtil}
 import org.scalatest.{MustMatchers, FlatSpec}
 
@@ -25,6 +26,14 @@ class ECFactoryTest extends FlatSpec with MustMatchers {
       val bitcoinJKey = org.bitcoinj.core.ECKey.fromPrivate(bytes.toArray)
       val privateKey : ECPrivateKey = ECFactory.privateKey(bytes)
       privateKey.hex must be (bitcoinJKey.getPrivateKeyAsHex)
+    }
+
+    it must "create an empty digital signature when given 0 in hex or byte format" in {
+      val hex = ECFactory.digitalSignature("00")
+      val byte = ECFactory.digitalSignature(Seq(0.toByte))
+      val emptySignature = ECFactory.digitalSignature("")
+      byte must be (emptySignature)
+      hex must be (emptySignature)
     }
 
 

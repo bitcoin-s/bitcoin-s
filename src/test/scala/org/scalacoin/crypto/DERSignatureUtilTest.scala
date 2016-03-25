@@ -57,6 +57,7 @@ class DERSignatureUtilTest extends FlatSpec with MustMatchers {
 
   it must "say that the empty signature is a valid strictly encoded DER signature" in {
     DERSignatureUtil.isStrictDEREncoding(ECFactory.digitalSignature("")) must be (true)
+    DERSignatureUtil.isStrictDEREncoding(EmptyDigitalSignature) must be (true)
   }
 }
 

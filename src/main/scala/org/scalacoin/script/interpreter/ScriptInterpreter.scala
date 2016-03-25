@@ -121,8 +121,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
         case OP_HASH160 :: t => loop(opHash160(program))
         case OP_CHECKSIG :: t =>
           val newProgram = opCheckSig(program)
-          if (t.isEmpty) newProgram.isValid
-          else if (!newProgram.isValid) {
+          if (!newProgram.isValid) {
             logger.warn("OP_CHECKSIG verification failed")
             newProgram.isValid
           }
@@ -132,7 +131,13 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
         case OP_SHA256 :: t => loop(opSha256(program))
         case OP_HASH256 :: t => loop(opHash256(program))
         case OP_CODESEPARATOR :: t => loop(opCodeSeparator(program))
-        case OP_CHECKMULTISIG :: t => loop(opCheckMultiSig(program))
+        case OP_CHECKMULTISIG :: t =>
+          val newProgram = opCheckMultiSig(program)
+          if (!newProgram.isValid) {
+            logger.warn("OP_CHECKMULTISIG verification failed")
+            newProgram.isValid
+          }
+          else loop(newProgram)
         case OP_CHECKMULTISIGVERIFY :: t => loop(opCheckMultiSigVerify(program))
         //reserved operations
         case (nop : NOP) :: t => loop(ScriptProgramFactory.factory(program,program.stack,t))

@@ -66,7 +66,13 @@ trait ECFactory extends Factory[BaseECKey] {
    * @param bytes
    * @return
    */
-  def digitalSignature(bytes : Seq[Byte]) : ECDigitalSignature = ECDigitalSignatureImpl(bytes)
+  def digitalSignature(bytes : Seq[Byte]) : ECDigitalSignature = {
+    //this represents the empty signature
+    if (bytes.size == 1 && bytes.head == 0x0) EmptyDigitalSignature
+    else if (bytes.size == 0) EmptyDigitalSignature
+    else ECDigitalSignatureImpl(bytes)
+  }
+
 
   /**
    * Creates a private key from a hex string
