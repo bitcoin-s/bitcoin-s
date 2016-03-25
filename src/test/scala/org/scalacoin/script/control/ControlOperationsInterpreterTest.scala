@@ -20,7 +20,7 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers with C
     val result = opVerify(program)
     result.stack.isEmpty must be (true)
     result.script.isEmpty must be (true)
-    result.valid must be (true)
+    result.isValid must be (true)
   }
 
   it must "have OP_VERIFY evaluate to true when there are multiple items on the stack that can be cast to an int" in {
@@ -30,7 +30,7 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers with C
     val script = List(OP_VERIFY)
     val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
     val result = opVerify(program)
-    result.valid must be (true)
+    result.isValid must be (true)
   }
 
   it must "have OP_VERIFY evaluate to false with '0' on the stack" in {
@@ -38,7 +38,7 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers with C
     val script = List(OP_VERIFY)
     val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
     val result = opVerify(program)
-    result.valid must be (false)
+    result.isValid must be (false)
   }
 
   it must "fail for OP_VERIFY when there is nothing on the stack" in {

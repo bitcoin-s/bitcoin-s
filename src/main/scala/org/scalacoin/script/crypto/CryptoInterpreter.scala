@@ -95,26 +95,29 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
         throw new RuntimeException("We do not know how to evaluate a nonstandard or EmptyScriptSignature for an OP_CHECKSIG operation")
     }
 
-    //TODO: Check if strict dersig flag
-    if (program.flags.contains(ScriptVerifyDerSig)) {
+
+    if (program.flags.contains(ScriptVerifyDerSig) && !DERSignatureUtil.isStrictDEREncoding(signature)) {
       //this means all of the signatures must encoded according to BIP66 strict dersig
       //https://github.com/bitcoin/bips/blob/master/bip-0066.mediawiki
-      require(DERSignatureUtil.isDEREncoded(signature), "Since the ScriptVerifyDerSig flag is set the signature being checked must be a strict dersig signature as per BIP 66\n" +
+      //script verification fails since the sig is not strictly der encoded
+      logger.warn("Since the ScriptVerifyDerSig flag is set the signature being checked must be a strict dersig signature as per BIP 66\n" +
         "Sig: " + signature.hex)
+      ScriptProgramFactory.factory(program,false)
+    } else {
+      val restOfStack = program.stack.tail.tail
+      val hashType = (signature.bytes.size == 0) match {
+        case true => SIGHASH_ALL
+        case false => HashTypeFactory.fromByte(BitcoinSUtil.decodeHex(signature.hex).last).get
+      }
+
+      val hashForSig = TransactionSignatureSerializer.hashForSignature(program.transaction,
+        program.inputIndex,program.scriptPubKey,hashType)
+      val isValid = pubKey.verify(hashForSig, signature)
+      if (isValid) ScriptProgramFactory.factory(program, ScriptTrue :: restOfStack,program.script.tail)
+      else ScriptProgramFactory.factory(program, ScriptFalse :: restOfStack,program.script.tail)
+
     }
 
-    val restOfStack = program.stack.tail.tail
-    val hashType = (signature.bytes.size == 0) match {
-      case true => SIGHASH_ALL
-      case false => HashTypeFactory.fromByte(BitcoinSUtil.decodeHex(signature.hex).last).get
-    }
-
-    val hashForSig = TransactionSignatureSerializer.hashForSignature(program.transaction,
-      program.inputIndex,program.scriptPubKey,hashType)
-    logger.info("Hash for sig inside of opChecksig: " + BitcoinSUtil.encodeHex(hashForSig))
-    val isValid = pubKey.verify(hashForSig, signature)
-    if (isValid) ScriptProgramFactory.factory(program, ScriptTrue :: restOfStack,program.script.tail,isValid)
-    else ScriptProgramFactory.factory(program, ScriptFalse :: restOfStack,program.script.tail,isValid)
 
   }
 

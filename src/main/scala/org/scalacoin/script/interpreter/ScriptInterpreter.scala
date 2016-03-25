@@ -89,7 +89,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
           else if (newProgram.stack.head == ScriptFalse && newProgram.script.size == 0) false
           else loop(newProgram)
         }
-        case OP_EQUALVERIFY :: t => opEqualVerify(program).valid
+        case OP_EQUALVERIFY :: t => opEqualVerify(program).isValid
         //script constants
         //TODO: Implement these
         case ScriptConstantImpl(x) :: t if x == "1" => throw new RuntimeException("Not implemented yet")
@@ -114,14 +114,18 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
         case OP_RETURN :: t => opReturn(program)
         case OP_VERIFY :: t =>
           val newProgram = opVerify(program)
-          if (newProgram.valid) loop(newProgram)
+          if (newProgram.isValid) loop(newProgram)
           else false
 
         //crypto operations
         case OP_HASH160 :: t => loop(opHash160(program))
         case OP_CHECKSIG :: t =>
           val newProgram = opCheckSig(program)
-          if (t.isEmpty) newProgram.valid
+          if (t.isEmpty) newProgram.isValid
+          else if (!newProgram.isValid) {
+            logger.warn("OP_CHECKSIG verification failed")
+            newProgram.isValid
+          }
           else loop(newProgram)
         case OP_SHA1 :: t => loop(opSha1(program))
         case OP_RIPEMD160 :: t => loop(opRipeMd160(program))
