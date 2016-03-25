@@ -75,9 +75,15 @@ trait MultiSignatureScriptPubKey extends ScriptPubKey {
    * @return
    */
   def maxSigs = {
-    asm.reverse(1) match {
-      case x : ScriptNumberOperation => x.num
-      case _ => throw new RuntimeException("The second to last element of a multisignature pubkey must be a script number operation")
+    val checkMultiSigIndex = asm.indexOf(OP_CHECKMULTISIG)
+    if (checkMultiSigIndex == -1 || checkMultiSigIndex == 0) {
+      //means that we do not have a max signature requirement
+      0.toLong
+    } else {
+      asm(checkMultiSigIndex - 1) match {
+        case x : ScriptNumberOperation => x.num
+        case _ => throw new RuntimeException("The second to last element of a multisignature pubkey must be a script number operation")
+      }
     }
   }
 
@@ -86,7 +92,7 @@ trait MultiSignatureScriptPubKey extends ScriptPubKey {
    * @return
    */
   def publicKeys : Seq[ECPublicKey] = {
-    asm.slice(1, asm.size - 2).filter(_.isInstanceOf[ScriptConstant]).map(key => ECFactory.publicKey(key.hex))
+    asm.filter(_.isInstanceOf[ScriptConstant]).slice(1, maxSigs.toInt + 1).map(key => ECFactory.publicKey(key.hex))
   }
 }
 
