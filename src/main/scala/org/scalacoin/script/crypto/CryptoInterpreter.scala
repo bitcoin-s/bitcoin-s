@@ -104,6 +104,7 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
         "Sig: " + signature.hex)
       ScriptProgramFactory.factory(program,false)
     } else {
+      logger.debug("Old program isValid: " + program.isValid)
       val restOfStack = program.stack.tail.tail
       val hashType = (signature.bytes.size == 0) match {
         case true => SIGHASH_ALL
@@ -112,7 +113,9 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
 
       val hashForSig = TransactionSignatureSerializer.hashForSignature(program.transaction,
         program.inputIndex,program.scriptPubKey,hashType)
+      logger.debug("Hash for sig inside of opChecksig: " + BitcoinSUtil.encodeHex(hashForSig))
       val isValid = pubKey.verify(hashForSig, signature)
+      logger.debug("signature verification isValid: " + isValid)
       if (isValid) ScriptProgramFactory.factory(program, ScriptTrue :: restOfStack,program.script.tail)
       else ScriptProgramFactory.factory(program, ScriptFalse :: restOfStack,program.script.tail)
 

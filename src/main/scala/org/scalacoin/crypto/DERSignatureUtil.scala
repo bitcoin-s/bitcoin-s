@@ -111,6 +111,10 @@ trait DERSignatureUtil extends BitcoinSLogger {
     // * sighash: 1-byte value indicating what data is hashed (not part of the DER
     //   signature)
 
+    //there is a caveat here that this function is trivially true if the
+    //empty signature is given to us, aka 0 bytes.
+    if (bytes.size == 0) return true
+
     //check if the bytes are ATLEAST der encoded
     val isDerEncoded = isDEREncoded(bytes)
     if (!isDerEncoded) return false
