@@ -2,6 +2,8 @@ package org.scalacoin.crypto
 
 import org.scalacoin.util.{BitcoinSLogger, BitcoinSUtil}
 
+import scala.util.{Failure, Success, Try}
+
 /**
  * Created by chris on 2/16/16.
  */
@@ -24,7 +26,14 @@ trait ECPublicKey extends BaseECKey with BitcoinSLogger {
     val bitcoinjKey = ECKey.fromPublicOnly(bytes.toArray)
 
     if (signature.isEmpty) bitcoinjKey.verify(data.toArray,emptySignature.encodeToDER())
-    else bitcoinjKey.verify(data.toArray,signature.bytes.toArray)
+    else {
+      val resultTry = Try(bitcoinjKey.verify(data.toArray, signature.bytes.toArray))
+      val result : Boolean = resultTry match  {
+        case Success(bool) => bool
+        case Failure(_) => false
+      }
+      result
+    }
 
   }
 }
