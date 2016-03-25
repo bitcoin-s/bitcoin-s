@@ -4,10 +4,14 @@ import org.scalacoin.script.constant.ScriptOperation
 
 /**
  * Created by chris on 1/6/16.
+ * Represents an operation where a cryptographic function is applied
  */
 sealed trait CryptoOperation extends ScriptOperation
 
-
+/**
+ * Represents an operation where ECDSA signatures are evaluated
+ */
+sealed trait CryptoSignatureEvaluation extends CryptoOperation
 /**
  * The input is hashed using RIPEMD-160.
  */
@@ -57,14 +61,14 @@ case object OP_CODESEPARATOR extends CryptoOperation {
  * The signature used by OP_CHECKSIG must be a valid signature for this hash and public key.
  * If it is, 1 is returned, 0 otherwise.
  */
-case object OP_CHECKSIG extends CryptoOperation {
+case object OP_CHECKSIG extends CryptoSignatureEvaluation {
   override def opCode = 172
 }
 
 /**
  * Same as OP_CHECKSIG, but OP_VERIFY is executed afterward.
  */
-case object OP_CHECKSIGVERIFY extends CryptoOperation {
+case object OP_CHECKSIGVERIFY extends CryptoSignatureEvaluation {
   override def opCode = 173
 }
 
@@ -79,13 +83,13 @@ case object OP_CHECKSIGVERIFY extends CryptoOperation {
  * were placed in the scriptPubKey or redeemScript. If all signatures are valid, 1 is returned, 0 otherwise.
  * Due to a bug, one extra unused value is removed from the stack.
  */
-case object OP_CHECKMULTISIG extends CryptoOperation {
+case object OP_CHECKMULTISIG extends CryptoSignatureEvaluation {
   override def opCode = 174
 }
 
 /**
  * 	Same as OP_CHECKMULTISIG, but OP_VERIFY is executed afterward.
  */
-case object OP_CHECKMULTISIGVERIFY extends CryptoOperation {
+case object OP_CHECKMULTISIGVERIFY extends CryptoSignatureEvaluation {
   override def opCode = 175
 }

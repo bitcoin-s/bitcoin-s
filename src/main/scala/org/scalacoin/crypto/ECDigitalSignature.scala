@@ -31,4 +31,7 @@ sealed trait ECDigitalSignature extends BitcoinSLogger {
 
 }
 
+case object EmptyDigitalSignature extends ECDigitalSignature {
+  def bytes = Seq()
+}
 sealed case class ECDigitalSignatureImpl(bytes : Seq[Byte]) extends ECDigitalSignature

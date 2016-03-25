@@ -104,7 +104,6 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
         "Sig: " + signature.hex)
       ScriptProgramFactory.factory(program,false)
     } else {
-      logger.debug("Old program isValid: " + program.isValid)
       val restOfStack = program.stack.tail.tail
       val hashType = (signature.bytes.size == 0) match {
         case true => SIGHASH_ALL
@@ -171,35 +170,53 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
     require(program.script.headOption.isDefined && program.script.head == OP_CHECKMULTISIG, "Script top must be OP_CHECKMULTISIG")
     require(program.stack.size > 2, "Stack must contain at least 3 items for OP_CHECKMULTISIG")
 
-    //TODO: Check if strict dersig flag
-    //head should be n for m/n
+    val isValidSignatures = TransactionSignatureChecker.checkSignature(program)
+
+    //these next lines remove the appropriate stack/script values after the signatures have been checked
     val nPossibleSignatures : Int  = program.stack.head match {
       case s : ScriptNumber => s.num.toInt
       case _ => throw new RuntimeException("n must be a script number for OP_CHECKMULTISIG")
     }
-
     logger.debug("nPossibleSignatures: " + nPossibleSignatures)
-
-    val pubKeys : Seq[ScriptToken] = program.stack.tail.slice(0,nPossibleSignatures)
     val stackWithoutPubKeys = program.stack.tail.slice(nPossibleSignatures,program.stack.tail.size)
-
     val mRequiredSignatures : Int = stackWithoutPubKeys.head match {
       case s: ScriptNumber => s.num.toInt
       case _ => throw new RuntimeException("m must be a script number for OP_CHECKMULTISIG")
     }
-
     logger.debug("mRequiredSignatures: " + mRequiredSignatures )
 
+    //+1 is for the fact that we have the # of sigs + the script token indicating the # of sigs
+    val signaturesScriptTokens : Seq[ScriptToken] = program.stack.tail.slice(nPossibleSignatures + 1, nPossibleSignatures + mRequiredSignatures + 1)
+    val signatures = signaturesScriptTokens.map(token => ECFactory.digitalSignature(token.bytes))
+    logger.debug("Signatures on the stack: " + signatures)
     //+1 is for bug in OP_CHECKMULTSIG that requires an extra OP to be pushed onto the stack
     val stackWithoutPubKeysAndSignatures = stackWithoutPubKeys.tail.slice(mRequiredSignatures+1, stackWithoutPubKeys.tail.size)
-
     val restOfStack = stackWithoutPubKeysAndSignatures
 
-    val result = TransactionSignatureChecker.checkSignature(program.transaction,program.inputIndex,program.scriptPubKey)
+
     //if there are zero signatures required for the m/n signature
     //the transaction is valid by default
-    if (result) ScriptProgramFactory.factory(program, ScriptTrue :: restOfStack, program.script.tail,true)
-    else ScriptProgramFactory.factory(program, ScriptFalse :: restOfStack, program.script.tail,false)
+    val allSigsValidEncoding : Boolean = if (program.flags.contains(ScriptVerifyDerSig)) {
+      val signaturesValidStrictDerEncoding = signatures.map(sig => DERSignatureUtil.isStrictDEREncoding(sig))
+      !signaturesValidStrictDerEncoding.exists(_ == false)
+    } else true
+
+    if (isValidSignatures && allSigsValidEncoding) {
+      //means that all of the signatures were correctly encoded and
+      //that all of the signatures were valid signatures for the given
+      //public keys
+      ScriptProgramFactory.factory(program, ScriptTrue :: restOfStack, program.script.tail)
+    } else if (!allSigsValidEncoding) {
+      //this means the script fails immediately
+      //set the valid flag to false on the script
+      //see BIP66 for more information on this
+      //https://github.com/bitcoin/bips/blob/master/bip-0066.mediawiki#specification
+      ScriptProgramFactory.factory(program, restOfStack, program.script.tail,false)
+    } else {
+      //this means that signature verification failed, however all signatures were encoded correctly
+      //just push a ScriptFalse onto the stack
+      ScriptProgramFactory.factory(program, ScriptFalse :: restOfStack, program.script.tail)
+    }
   }
 
 

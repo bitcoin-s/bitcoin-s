@@ -3,7 +3,8 @@ package org.scalacoin.crypto
 import org.scalacoin.config.TestNet3
 import org.scalacoin.protocol.script._
 import org.scalacoin.protocol.transaction.{Transaction, TransactionInput}
-import org.scalacoin.script.crypto.HashType
+import org.scalacoin.script.ScriptProgram
+import org.scalacoin.script.crypto._
 import org.scalacoin.util.{BitcoinSLogger, BitcoinSUtil}
 import org.slf4j.LoggerFactory
 
@@ -15,6 +16,20 @@ import scala.annotation.tailrec
  * public keys
  */
 trait TransactionSignatureChecker extends BitcoinSLogger {
+
+
+  /**
+   * Checks the signatures inside of a script program
+   * @param program the program whose transaction's input at the program's input index need to be checked against the scriptPubkey
+   * @return a boolean indicating if the signatures in tx are valid or not
+   */
+  def checkSignature(program : ScriptProgram) : Boolean = {
+    require(program.script.size > 0 && CryptoSignatureEvaluationFactory.fromHex(program.script.head.hex).isDefined,
+      "The program script must contain atleast one operation and that operation must be in the CryptoOperationFactory" +
+      "\nGiven operation: " + program.script.headOption)
+
+    checkSignature(program.transaction,program.inputIndex,program.scriptPubKey)
+  }
 
   /**
    * Checks the signature of a scriptSig in the spending transaction against the
@@ -32,7 +47,6 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
     val hashType = input.scriptSignature.hashType(signature)
     val hashForSignature = TransactionSignatureSerializer.hashForSignature(spendingTransaction,inputIndex,scriptPubKey,hashType)
     logger.info("Hash for signature: " + BitcoinSUtil.encodeHex(hashForSignature))
-
     val isValid = pubKey.verify(hashForSignature,signature)
     isValid
   }

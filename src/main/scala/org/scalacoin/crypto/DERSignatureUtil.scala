@@ -89,7 +89,12 @@ trait DERSignatureUtil extends BitcoinSLogger {
    * @param signature the signature to check if they are strictly der encoded
    * @return boolean indicating whether the signature was der encoded or not
    */
-  def isStrictDEREncoding(signature : ECDigitalSignature) : Boolean = isStrictDEREncoding(signature.bytes)
+  def isStrictDEREncoding(signature : ECDigitalSignature) : Boolean = {
+    signature match {
+      case EmptyDigitalSignature => true
+      case signature : ECDigitalSignature => isStrictDEREncoding(signature.bytes)
+    }
+  }
 
 
   /**
@@ -118,55 +123,68 @@ trait DERSignatureUtil extends BitcoinSLogger {
     //check if the bytes are ATLEAST der encoded
     val isDerEncoded = isDEREncoded(bytes)
     if (!isDerEncoded) return false
-
+    logger.debug("Signature is at minimum DER encoded")
 
     if (bytes.size < 9) return false
+    logger.debug("signature is the minimum size for strict der encoding")
     if (bytes.size > 73) return false
+    logger.debug("signature is under the maximum size for strict der encoding")
 
     // A signature is of type 0x30 (compound)
     if (bytes.head != 0x30) return false
+    logger.debug("First  byte is 0x30")
 
     // Make sure the length covers the entire signature.
     if (bytes(1) != bytes.size - 3) return false
+    logger.debug("Signature length covers the entire signature")
 
     val rSize = bytes(3)
+    logger.debug("rSize: " + rSize)
 
     // Make sure the length of the S element is still inside the signature.
     if (5 + rSize >= bytes.size) return false
+    logger.debug("Length of S element is contained in the signature")
 
     // Extract the length of the S element.
     val sSize = bytes(5 + rSize)
+    logger.debug("sSize: " + sSize)
 
     // Verify that the length of the signature matches the sum of the length
     // of the elements.
     if ((rSize + sSize + 7) != bytes.size) return false
+    logger.debug("Verify that the length of the signature matches the sum of the length of the elements.")
 
     // Check whether the R element is an integer.
     if (bytes(2) != 0x02) return false
+    logger.debug("R element is an integer")
 
     // Zero-length integers are not allowed for R.
     if (rSize == 0) return false
+    logger.debug("r is not a zero length integer")
 
     // Negative numbers are not allowed for R.
     if ((bytes(4) & 0x80) != 0) return false
+    logger.debug("r is not a negative number")
 
     // Null bytes at the start of R are not allowed, unless R would
     // otherwise be interpreted as a negative number.
     if (rSize > 1 && (bytes(4) == 0x00) && !((bytes(5) & 0x80) != 0 )) return false
-
+    logger.debug("There were not any null bytes at the start of R")
     // Check whether the S element is an integer.
     if (bytes(rSize + 4) != 0x02) return false
+    logger.debug("The S element is an integer")
 
     // Zero-length integers are not allowed for S.
-    if (rSize == 0) return false
+    if (sSize == 0) return false
+    logger.debug("S was not a zero length integer")
 
     // Negative numbers are not allowed for S.
     if ((bytes(rSize + 6) & 0x80) != 0) return false
-
+    logger.debug("s was not a negative number")
     // Null bytes at the start of S are not allowed, unless S would otherwise be
     // interpreted as a negative number.
     if (sSize > 1 && (bytes(rSize + 6) == 0x00) && !((bytes(rSize + 7) & 0x80) != 0)) return false
-
+    logger.debug("There were not any null bytes at the start of S")
     //if we made it to this point without returning false this must be a valid strictly encoded der sig
     true
   }
