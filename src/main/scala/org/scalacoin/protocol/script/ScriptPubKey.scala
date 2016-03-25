@@ -6,7 +6,7 @@ import org.scalacoin.marshallers.transaction.TransactionElement
 import org.scalacoin.protocol._
 import org.scalacoin.script.bitwise.{OP_EQUAL, OP_EQUALVERIFY}
 import org.scalacoin.script.constant._
-import org.scalacoin.script.crypto.{OP_CHECKMULTISIG, OP_CHECKSIG, OP_HASH160}
+import org.scalacoin.script.crypto.{OP_CHECKMULTISIGVERIFY, OP_CHECKMULTISIG, OP_CHECKSIG, OP_HASH160}
 import org.scalacoin.script.stack.OP_DUP
 import org.scalacoin.util.BitcoinSLogger
 
@@ -62,11 +62,18 @@ trait MultiSignatureScriptPubKey extends ScriptPubKey {
    * @return
    */
   def requiredSigs = {
-    val op0Index = asm.indexOf(OP_0)
-    val numSigsRequired = asm(op0Index + 1)
+    val asmWithoutPushOps = asm.filterNot(_.isInstanceOf[BytesToPushOntoStack])
+    val opCheckMultiSigIndex = if (asm.indexOf(OP_CHECKMULTISIG) != -1) asmWithoutPushOps.indexOf(OP_CHECKMULTISIG) else asmWithoutPushOps.indexOf(OP_CHECKMULTISIGVERIFY)
+    logger.debug("OP_CHECKMULTISIG index: " + opCheckMultiSigIndex)
+    logger.debug("Max sigs: " + maxSigs)
+    logger.debug("asm filter push ops: " + asmWithoutPushOps)
+    //magic number 2 represents the maxSig operation and the OP_CHECKMULTISIG operation at the end of the asm
+    val numSigsRequired = asmWithoutPushOps(opCheckMultiSigIndex - maxSigs.toInt - 2)
+    logger.debug("num sigs required: " + numSigsRequired)
     numSigsRequired match {
-      case x : ScriptNumberOperation => x.num
-      case _ => throw new RuntimeException("The first element of the multisignature pubkey must be a script number operation")
+      case x : ScriptNumber => x.num
+      case _ => throw new RuntimeException("The first element of the multisignature pubkey must be a script number operation\n" +
+      "scriptPubKey: " + this)
     }
   }
 
@@ -81,8 +88,8 @@ trait MultiSignatureScriptPubKey extends ScriptPubKey {
       0.toLong
     } else {
       asm(checkMultiSigIndex - 1) match {
-        case x : ScriptNumberOperation => x.num
-        case _ => throw new RuntimeException("The second to last element of a multisignature pubkey must be a script number operation")
+        case x : ScriptNumber => x.num
+        case _ => throw new RuntimeException("The element preceding a OP_CHECKMULTISIG operation in a  multisignature pubkey must be a script number operation")
       }
     }
   }
