@@ -40,11 +40,11 @@ trait ScriptProgramFactory {
     indicator match {
       case Stack => ScriptProgramImpl(oldProgram.transaction,oldProgram.scriptPubKey,
         oldProgram.inputIndex,tokens.toList, oldProgram.script,
-        oldProgram.altStack, oldProgram.flags, oldProgram.valid, oldProgram.lastCodeSeparator)
+        oldProgram.altStack, oldProgram.flags, oldProgram.isValid, oldProgram.lastCodeSeparator)
       case Script => ScriptProgramImpl(oldProgram.transaction, oldProgram.scriptPubKey, oldProgram.inputIndex,
-        oldProgram.stack, tokens.toList, oldProgram.altStack, oldProgram.flags, oldProgram.valid, oldProgram.lastCodeSeparator)
+        oldProgram.stack, tokens.toList, oldProgram.altStack, oldProgram.flags, oldProgram.isValid, oldProgram.lastCodeSeparator)
       case AltStack => ScriptProgramImpl(oldProgram.transaction,oldProgram.scriptPubKey, oldProgram.inputIndex,
-        oldProgram.stack, oldProgram.script, tokens.toList, oldProgram.flags, oldProgram.valid, oldProgram.lastCodeSeparator)
+        oldProgram.stack, oldProgram.script, tokens.toList, oldProgram.flags, oldProgram.isValid, oldProgram.lastCodeSeparator)
     }
   }
 
@@ -58,7 +58,7 @@ trait ScriptProgramFactory {
   def factory(oldProgram : ScriptProgram, stackTokens : Seq[ScriptToken], scriptTokens : Seq[ScriptToken]) = {
     ScriptProgramImpl(oldProgram.transaction, oldProgram.scriptPubKey, oldProgram.inputIndex,
       stackTokens.toList,scriptTokens.toList, oldProgram.altStack, oldProgram.flags,
-      oldProgram.valid,oldProgram.lastCodeSeparator)
+      oldProgram.isValid,oldProgram.lastCodeSeparator)
   }
 
   /**
@@ -70,7 +70,7 @@ trait ScriptProgramFactory {
   def factory(oldProgram : ScriptProgram, lastCodeSeparator : Int) : ScriptProgram = {
     ScriptProgramImpl(oldProgram.transaction, oldProgram.scriptPubKey, oldProgram.inputIndex,
       oldProgram.stack, oldProgram.script,
-      oldProgram.altStack, oldProgram.flags, valid = oldProgram.valid, lastCodeSeparator = lastCodeSeparator)
+      oldProgram.altStack, oldProgram.flags, isValid = oldProgram.isValid, lastCodeSeparator = lastCodeSeparator)
   }
 
   /**
@@ -85,12 +85,12 @@ trait ScriptProgramFactory {
               lastCodeSeparator : Int) : ScriptProgram = {
     indicator match {
       case Stack => ScriptProgramImpl(oldProgram.transaction, oldProgram.scriptPubKey, oldProgram.inputIndex,
-        tokens.toList, oldProgram.script, oldProgram.altStack, oldProgram.flags, oldProgram.valid, lastCodeSeparator)
+        tokens.toList, oldProgram.script, oldProgram.altStack, oldProgram.flags, oldProgram.isValid, lastCodeSeparator)
       case Script => ScriptProgramImpl(oldProgram.transaction, oldProgram.scriptPubKey, oldProgram.inputIndex,
-        oldProgram.stack, tokens.toList, oldProgram.altStack, oldProgram.flags, oldProgram.valid, lastCodeSeparator)
+        oldProgram.stack, tokens.toList, oldProgram.altStack, oldProgram.flags, oldProgram.isValid, lastCodeSeparator)
       case AltStack => ScriptProgramImpl(oldProgram.transaction, oldProgram.scriptPubKey,
         oldProgram.inputIndex,oldProgram.stack, oldProgram.script,
-        tokens.toList, oldProgram.flags, oldProgram.valid, lastCodeSeparator)
+        tokens.toList, oldProgram.flags, oldProgram.isValid, lastCodeSeparator)
     }
   }
 
@@ -123,9 +123,9 @@ trait ScriptProgramFactory {
     updateIndicator match {
       case AltStack =>
         ScriptProgramImpl(oldProgram.transaction, oldProgram.scriptPubKey, oldProgram.inputIndex,
-          stack.toList,script.toList,that.toList, oldProgram.flags, oldProgram.valid,oldProgram.lastCodeSeparator)
+          stack.toList,script.toList,that.toList, oldProgram.flags, oldProgram.isValid,oldProgram.lastCodeSeparator)
       case _ => ScriptProgramImpl(oldProgram.transaction, oldProgram.scriptPubKey, oldProgram.inputIndex,
-        stack.toList,script.toList, oldProgram.altStack,oldProgram.flags,oldProgram.valid,oldProgram.lastCodeSeparator)
+        stack.toList,script.toList, oldProgram.altStack,oldProgram.flags,oldProgram.isValid,oldProgram.lastCodeSeparator)
     }
 
   }

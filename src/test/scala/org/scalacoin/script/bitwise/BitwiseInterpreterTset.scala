@@ -38,7 +38,7 @@ class BitwiseInterpreterTest extends FlatSpec with MustMatchers with BitwiseInte
     val script = List(OP_EQUALVERIFY)
     val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
     val result = opEqualVerify(program)
-    result.valid must be (true)
+    result.isValid must be (true)
   }
 
   it must "evaluate OP_EQUALVERIFY to false given two different pub keys" in {
@@ -47,7 +47,7 @@ class BitwiseInterpreterTest extends FlatSpec with MustMatchers with BitwiseInte
     val script = List(OP_EQUALVERIFY)
     val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
     val result = opEqualVerify(program)
-    result.valid must be (false)
+    result.isValid must be (false)
   }
 
 

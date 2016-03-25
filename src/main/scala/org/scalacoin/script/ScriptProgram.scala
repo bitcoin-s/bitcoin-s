@@ -70,7 +70,7 @@ trait ScriptProgram {
    * A function to determine if the transaction is valid or not
    * @return
    */
-  def valid : Boolean
+  def isValid : Boolean
 
   /**
    * The index of the last OP_CODE_SEPA
@@ -98,6 +98,6 @@ trait ScriptProgram {
 
 case class ScriptProgramImpl(transaction : Transaction, scriptPubKey : ScriptPubKey, inputIndex : Int,
   stack : List[ScriptToken],script : List[ScriptToken], altStack : List[ScriptToken],
-  flags : Seq[ScriptFlag], valid : Boolean = true, lastCodeSeparator : Int = 0) extends ScriptProgram
+  flags : Seq[ScriptFlag], isValid : Boolean = true, lastCodeSeparator : Int = 0) extends ScriptProgram
 
 
