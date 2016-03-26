@@ -122,10 +122,13 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
     scriptPubKey match {
       case x : P2SHScriptPubKey =>
         val redeemScript = p2shScriptSignature.redeemScript
+
         redeemScript match {
           case y : MultiSignatureScriptPubKey =>
+            //the signatures & pubkeys need to be reversed so that they are evaluated the
+            //same way as if they were getting pushed then popped off of a stack
             multiSignatureHelper(spendingTransaction, inputIndex, y,
-              p2shScriptSignature.signatures.toList, p2shScriptSignature.publicKeys.toList, requireStrictDEREncoding, y.requiredSigs)
+              p2shScriptSignature.signatures.toList.reverse, p2shScriptSignature.publicKeys.toList.reverse, requireStrictDEREncoding, y.requiredSigs)
           case _ : P2PKHScriptPubKey | _ : P2PKScriptPubKey | _ : P2SHScriptPubKey | _ : NonStandardScriptPubKey | EmptyScriptPubKey =>
             throw new RuntimeException("Don't know how to implement this scriptPubKeys in a redeemScript")
         }
@@ -160,9 +163,12 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
                                            multiSignatureScript : MultiSignatureScriptSignature, requireStrictDEREncoding : Boolean) : Boolean = {
     scriptPubKey match {
       case x : MultiSignatureScriptPubKey =>
+        //the signatures & pubkeys need to be reversed so that they are evaluated the
+        //same way as if they were getting pushed then popped off of a stack
         logger.info("multisig public keys: " + x.publicKeys)
-        multiSignatureHelper(spendingTransaction,inputIndex,x,multiSignatureScript.signatures.toList,
-          x.publicKeys.toList,requireStrictDEREncoding,x.requiredSigs)
+        logger.info("multisig sigs: " + multiSignatureScript.signatures)
+        multiSignatureHelper(spendingTransaction,inputIndex,x,multiSignatureScript.signatures.toList.reverse,
+          x.publicKeys.toList.reverse,requireStrictDEREncoding,x.requiredSigs)
       case x : P2PKHScriptPubKey =>
         logger.warn("Trying to check if a multisignature scriptSig spends a p2pkh scriptPubKey properly - this is trivially false")
         false
@@ -218,6 +224,7 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
   private def multiSignatureHelper(spendingTransaction : Transaction, inputIndex : Int, scriptPubKey : MultiSignatureScriptPubKey,
                      sigs : List[ECDigitalSignature], pubKeys : List[ECPublicKey], requireStrictDEREncoding : Boolean,
                      requiredSigs : Long) : Boolean = {
+    logger.info("Signatures inside of helper: " + sigs)
     logger.info("public keys inside of helper: " + pubKeys)
     if (sigs.size > pubKeys.size) {
       //this is how bitcoin core treats this. If there are ever any more

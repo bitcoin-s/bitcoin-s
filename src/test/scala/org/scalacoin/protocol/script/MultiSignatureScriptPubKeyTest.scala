@@ -58,4 +58,6 @@ class MultiSignatureScriptPubKeyTest extends FlatSpec with MustMatchers {
     ))
 
   }
+
+
 }
