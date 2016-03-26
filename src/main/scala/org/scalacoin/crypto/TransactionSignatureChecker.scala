@@ -17,14 +17,12 @@ import scala.annotation.tailrec
  * public keys
  */
 trait TransactionSignatureChecker extends BitcoinSLogger {
-
-
   /**
    * Checks the signatures inside of a script program
    * @param program the program whose transaction's input at the program's input index need to be checked against the scriptPubkey
    * @return a boolean indicating if the signatures in tx are valid or not
    */
-  def checkSignature(program : ScriptProgram) : Boolean = {
+  def checkSignature(program : ScriptProgram) : TransactionSignatureCheckerResult = {
     require(program.script.size > 0 && CryptoSignatureEvaluationFactory.fromHex(program.script.head.hex).isDefined,
       "The program script must contain atleast one operation and that operation must be in the CryptoOperationFactory" +
       "\nGiven operation: " + program.script.headOption)
@@ -42,18 +40,18 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
    * @return
    */
   def checkSignature(spendingTransaction : Transaction, inputIndex : Int, scriptPubKey : ScriptPubKey,
-                     pubKey: ECPublicKey, requireStrictDEREncoding : Boolean) : Boolean = {
+                     pubKey: ECPublicKey, requireStrictDEREncoding : Boolean) : TransactionSignatureCheckerResult = {
     val input = spendingTransaction.inputs(inputIndex)
     val signature = input.scriptSignature.signatures.head
     if (requireStrictDEREncoding && !DERSignatureUtil.isStrictDEREncoding(signature)) {
       logger.warn("Signature was not stricly encoded der: " + signature.hex)
-      false
+      SignatureValidationFailureNotStrictDerEncoding
     } else {
       val hashType = input.scriptSignature.hashType(signature)
       val hashForSignature = TransactionSignatureSerializer.hashForSignature(spendingTransaction,inputIndex,scriptPubKey,hashType)
       logger.info("Hash for signature: " + BitcoinSUtil.encodeHex(hashForSignature))
       val isValid = pubKey.verify(hashForSignature,signature)
-      isValid
+      if (isValid) SignatureValidationSuccess else SignatureValidationfailureIncorrectSignatures
     }
 
   }
@@ -65,7 +63,7 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
    * @param scriptPubKey
    * @return
    */
-  def checkSignature(spendingTransaction : Transaction, inputIndex : Int, scriptPubKey: ScriptPubKey, requireStrictDEREncoding : Boolean) : Boolean = {
+  def checkSignature(spendingTransaction : Transaction, inputIndex : Int, scriptPubKey: ScriptPubKey, requireStrictDEREncoding : Boolean) : TransactionSignatureCheckerResult = {
     val input = spendingTransaction.inputs(inputIndex)
     val scriptSig = input.scriptSignature
     scriptSig match {
@@ -78,7 +76,7 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
       case p2pkScriptSignature : P2PKScriptSignature =>
         throw new RuntimeException("This is an old script signature type that is not supported by wallets anymore")
       case EmptyScriptSignature => checkEmptyScriptSig(spendingTransaction,inputIndex,scriptPubKey)
-      case x : NonStandardScriptSignature => false
+      case x : NonStandardScriptSignature => SignatureValidationfailureIncorrectSignatures
     }
   }
 
@@ -92,16 +90,17 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
    * @return
    */
   private def checkP2PKHScriptSignature(spendingTransaction : Transaction, inputIndex : Int, scriptPubKey : ScriptPubKey,
-                                p2pkhScriptSig : P2PKHScriptSignature,requireStrictDEREncoding : Boolean) : Boolean = {
+                                p2pkhScriptSig : P2PKHScriptSignature,requireStrictDEREncoding : Boolean) : TransactionSignatureCheckerResult = {
     val signature = p2pkhScriptSig.signatures.head
     if (requireStrictDEREncoding && !DERSignatureUtil.isStrictDEREncoding(signature)) {
       logger.warn("Signature for p2pkh scriptSig was not strictly der encoded: " + signature.hex)
-      false
+      SignatureValidationFailureNotStrictDerEncoding
     } else {
       val hashType = p2pkhScriptSig.hashType(signature)
       val hashForSignature : Seq[Byte] =
         TransactionSignatureSerializer.hashForSignature(spendingTransaction,inputIndex,scriptPubKey,hashType)
-      p2pkhScriptSig.publicKeys.head.verify(hashForSignature,p2pkhScriptSig.signatures.head)
+      val isValid = p2pkhScriptSig.publicKeys.head.verify(hashForSignature,p2pkhScriptSig.signatures.head)
+      if (isValid) SignatureValidationSuccess else SignatureValidationfailureIncorrectSignatures
     }
   }
 
@@ -115,7 +114,7 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
    * @return
    */
   private def checkP2SHScriptSignature(spendingTransaction : Transaction, inputIndex : Int, scriptPubKey : ScriptPubKey,
-                                       p2shScriptSignature : P2SHScriptSignature, requireStrictDEREncoding : Boolean) : Boolean = {
+                                       p2shScriptSignature : P2SHScriptSignature, requireStrictDEREncoding : Boolean) : TransactionSignatureCheckerResult = {
 
 
 
@@ -135,19 +134,19 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
 
       case x : MultiSignatureScriptPubKey =>
         logger.warn("Trying to check if a p2sScriptSignature spends a multisignature scriptPubKey properly - this is trivially false")
-        false
+        SignatureValidationfailureIncorrectSignatures
       case x : P2PKHScriptPubKey =>
         logger.warn("Trying to check if a p2sScriptSignature spends a p2pkh scriptPubKey properly - this is trivially false")
-        false
+        SignatureValidationfailureIncorrectSignatures
       case x : P2PKScriptPubKey =>
         logger.warn("Trying to check if a p2sScriptSignature spends a p2pk scriptPubKey properly - this is trivially false")
-        false
+        SignatureValidationfailureIncorrectSignatures
       case x : NonStandardScriptPubKey =>
         logger.warn("Trying to check if a p2sScriptSignature spends a nonstandard scriptPubKey properly - this is trivially false")
-        false
+        SignatureValidationfailureIncorrectSignatures
       case x : ScriptPubKey =>
         logger.warn("Trying to check if a p2sScriptSignature spends a scriptPubKey properly - this is trivially false")
-        false
+        SignatureValidationfailureIncorrectSignatures
     }
   }
   /**
@@ -160,7 +159,7 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
    * @return
    */
   private def checkMultiSignatureScriptSig(spendingTransaction : Transaction, inputIndex : Int, scriptPubKey : ScriptPubKey,
-                                           multiSignatureScript : MultiSignatureScriptSignature, requireStrictDEREncoding : Boolean) : Boolean = {
+                                           multiSignatureScript : MultiSignatureScriptSignature, requireStrictDEREncoding : Boolean) : TransactionSignatureCheckerResult = {
     scriptPubKey match {
       case x : MultiSignatureScriptPubKey =>
         //the signatures & pubkeys need to be reversed so that they are evaluated the
@@ -171,19 +170,19 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
           x.publicKeys.toList.reverse,requireStrictDEREncoding,x.requiredSigs)
       case x : P2PKHScriptPubKey =>
         logger.warn("Trying to check if a multisignature scriptSig spends a p2pkh scriptPubKey properly - this is trivially false")
-        false
+        SignatureValidationfailureIncorrectSignatures
       case x : P2PKScriptPubKey =>
         logger.warn("Trying to check if a multisignature scriptSig spends a p2pk scriptPubKey properly - this is trivially false")
-        false
+        SignatureValidationfailureIncorrectSignatures
       case x : NonStandardScriptPubKey =>
         logger.warn("Trying to check if a multisignature scriptSig spends a p2sh scriptPubKey properly - this is trivially false")
-        false
+        SignatureValidationfailureIncorrectSignatures
       case x : P2SHScriptPubKey =>
         logger.warn("Trying to check if a multisignature scriptSig spends a nonstandard scriptPubKey properly - this is trivially false")
-        false
+        SignatureValidationfailureIncorrectSignatures
       case EmptyScriptPubKey =>
         logger.warn("Trying to check if a multisignature scriptSig spends a empty scriptPubKey properly - this is trivially false")
-        false
+        SignatureValidationfailureIncorrectSignatures
     }
   }
 
@@ -197,15 +196,15 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
    * @param scriptPubKey
    * @return
    */
-  private def checkEmptyScriptSig(spendingTransaction : Transaction, inputIndex : Int, scriptPubKey : ScriptPubKey) : Boolean = {
+  private def checkEmptyScriptSig(spendingTransaction : Transaction, inputIndex : Int, scriptPubKey : ScriptPubKey) : TransactionSignatureCheckerResult = {
     scriptPubKey match {
       case x : MultiSignatureScriptPubKey =>
-       if (x.requiredSigs == 0) true else false
-      case x : P2PKHScriptPubKey => false
-      case x : P2PKScriptPubKey => false
-      case x : NonStandardScriptPubKey => false
-      case x : P2SHScriptPubKey => false
-      case EmptyScriptPubKey => true
+       if (x.requiredSigs == 0) SignatureValidationSuccess else SignatureValidationfailureIncorrectSignatures
+      case x : P2PKHScriptPubKey => SignatureValidationfailureIncorrectSignatures
+      case x : P2PKScriptPubKey => SignatureValidationfailureIncorrectSignatures
+      case x : NonStandardScriptPubKey => SignatureValidationfailureIncorrectSignatures
+      case x : P2SHScriptPubKey => SignatureValidationfailureIncorrectSignatures
+      case EmptyScriptPubKey => SignatureValidationfailureIncorrectSignatures
     }
   }
   /**
@@ -223,7 +222,7 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
   @tailrec
   private def multiSignatureHelper(spendingTransaction : Transaction, inputIndex : Int, scriptPubKey : MultiSignatureScriptPubKey,
                      sigs : List[ECDigitalSignature], pubKeys : List[ECPublicKey], requireStrictDEREncoding : Boolean,
-                     requiredSigs : Long) : Boolean = {
+                     requiredSigs : Long) : TransactionSignatureCheckerResult = {
     logger.info("Signatures inside of helper: " + sigs)
     logger.info("public keys inside of helper: " + pubKeys)
     if (sigs.size > pubKeys.size) {
@@ -231,17 +230,17 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
       //signatures than public keys remaining we immediately return
       //false https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L955-L959
       logger.info("We have more sigs than we have public keys remaining")
-      false
+      SignatureValidationfailureIncorrectSignatures
     }
     else if (requiredSigs > sigs.size) {
       logger.info("We do not have enough sigs to meet the threshold of requireSigs in the multiSignatureScriptPubKey")
-      false
+      SignatureValidationfailureIncorrectSignatures
     }
     else if (!sigs.isEmpty && !pubKeys.isEmpty) {
       val sig = sigs.head
       if (requireStrictDEREncoding && !DERSignatureUtil.isStrictDEREncoding(sig)) {
         logger.warn("Signature for multi signature script was not strictly encoded: " + sig.hex)
-        false
+        SignatureValidationFailureNotStrictDerEncoding
       } else {
         val pubKey = pubKeys.head
         val hashType = spendingTransaction.inputs(inputIndex).scriptSignature.hashType(sig)
@@ -258,10 +257,46 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
     } else if (sigs.isEmpty) {
       //means that we have checked all of the sigs against the public keys
       //validation succeeds
-      true
-    } else false
+      SignatureValidationSuccess
+    } else SignatureValidationfailureIncorrectSignatures
   }
 
 }
 
 object TransactionSignatureChecker extends TransactionSignatureChecker
+
+/**
+ * The result type returned by checking a signature
+ */
+sealed trait TransactionSignatureCheckerResult {
+  /**
+   * Indicates if the transaction signature checker was successful or failed
+   * @return
+   */
+  def isValid : Boolean
+}
+
+/**
+ * Represents the case that the signatures checked inside of the transaction were
+ * all validly encoded as per the script verify flag & that the signatures
+ * were valid when checked against the public keys
+ */
+case object SignatureValidationSuccess extends TransactionSignatureCheckerResult {
+  def isValid = true
+}
+
+/**
+ * Signature validation failed because a signature was not encoded
+ * per the BIP66 rules https://github.com/bitcoin/bips/blob/master/bip-0066.mediawiki#specification
+ */
+case object SignatureValidationFailureNotStrictDerEncoding extends TransactionSignatureCheckerResult {
+  def isValid = false
+}
+
+/**
+ * Signature validation failed because there were not enough correct signatures for the transaction
+ * we were given
+ */
+case object SignatureValidationfailureIncorrectSignatures extends TransactionSignatureCheckerResult {
+  def isValid = false
+}
