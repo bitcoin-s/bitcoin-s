@@ -1,11 +1,11 @@
 package org.scalacoin.protocol.script
 
-import org.scalacoin.crypto.{ECPublicKey, ECFactory, ECDigitalSignature}
+import org.scalacoin.crypto.{EmptyDigitalSignature, ECPublicKey, ECFactory, ECDigitalSignature}
 import org.scalacoin.marshallers.script.{RawScriptSignatureParser, RawScriptPubKeyParser, ScriptParser}
 import org.scalacoin.marshallers.transaction.TransactionElement
 
 import org.scalacoin.script.constant._
-import org.scalacoin.script.crypto.{OP_CHECKMULTISIG, HashType, HashTypeFactory}
+import org.scalacoin.script.crypto.{SIGHASH_ALL, OP_CHECKMULTISIG, HashType, HashTypeFactory}
 import org.scalacoin.util.{BitcoinSLogger, BitcoinSUtil}
 import org.slf4j.LoggerFactory
 
@@ -39,9 +39,10 @@ sealed trait ScriptSignature extends TransactionElement with ScriptSignatureFact
    * @return
    */
   def hashType(digitalSignature: ECDigitalSignature) = {
-    require(HashTypeFactory.fromByte(digitalSignature.bytes.last).isDefined,
-      "Hash type could not be read for this scriptSig: " + digitalSignature.hex)
-    HashTypeFactory.fromByte(digitalSignature.bytes.last).get
+    digitalSignature match {
+      case EmptyDigitalSignature => SIGHASH_ALL
+      case sig : ECDigitalSignature => HashTypeFactory.fromByte(digitalSignature.bytes.last).get
+    }
   }
 
   /**
@@ -156,8 +157,8 @@ trait MultiSignatureScriptSignature extends ScriptSignature {
    * @return
    */
   def signatures : Seq[ECDigitalSignature] = {
-    asm.filter(_.isInstanceOf[ScriptConstant])
-      .filterNot(_.isInstanceOf[ScriptNumberOperation])
+    asm.tail.filter(_.isInstanceOf[ScriptConstant])
+/*      .filterNot(_.isInstanceOf[BytesToPushOntoStack])*/
       .map(sig => ECFactory.digitalSignature(sig.hex))
   }
 }

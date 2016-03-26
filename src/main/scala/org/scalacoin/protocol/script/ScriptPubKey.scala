@@ -64,12 +64,8 @@ trait MultiSignatureScriptPubKey extends ScriptPubKey {
   def requiredSigs = {
     val asmWithoutPushOps = asm.filterNot(_.isInstanceOf[BytesToPushOntoStack])
     val opCheckMultiSigIndex = if (asm.indexOf(OP_CHECKMULTISIG) != -1) asmWithoutPushOps.indexOf(OP_CHECKMULTISIG) else asmWithoutPushOps.indexOf(OP_CHECKMULTISIGVERIFY)
-    logger.debug("OP_CHECKMULTISIG index: " + opCheckMultiSigIndex)
-    logger.debug("Max sigs: " + maxSigs)
-    logger.debug("asm filter push ops: " + asmWithoutPushOps)
     //magic number 2 represents the maxSig operation and the OP_CHECKMULTISIG operation at the end of the asm
     val numSigsRequired = asmWithoutPushOps(opCheckMultiSigIndex - maxSigs.toInt - 2)
-    logger.debug("num sigs required: " + numSigsRequired)
     numSigsRequired match {
       case x : ScriptNumber => x.num
       case _ => throw new RuntimeException("The first element of the multisignature pubkey must be a script number operation\n" +
