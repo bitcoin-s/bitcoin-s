@@ -16,23 +16,23 @@ class TransactionSignatureCheckerTest extends FlatSpec with MustMatchers {
     val scriptSig : ScriptSignature = spendingInput.scriptSignature
     val pubKey : ECPublicKey = ECFactory.publicKey(scriptSig.asm.last.bytes)
     TransactionSignatureChecker.checkSignature(spendingTx,inputIndex,creditingOutput.scriptPubKey,
-      pubKey,true) must be (true)
+      pubKey,true) must be (SignatureValidationSuccess)
   }
 
 
   it must "check to see if an input spends a multisignature scriptPubKey correctly" in {
     val (spendingTx,inputIndex,multiSigScriptPubKey,keys) = TransactionTestUtil.signedMultiSignatureTransaction
-    TransactionSignatureChecker.checkSignature(spendingTx,inputIndex,multiSigScriptPubKey,true) must be (true)
+    TransactionSignatureChecker.checkSignature(spendingTx,inputIndex,multiSigScriptPubKey,true) must be (SignatureValidationSuccess)
   }
 
   it must "check to see if an input spends a p2sh scriptPubKey correctly" in {
     val (spendingTx,input,inputIndex,creditingOutput) = TransactionTestUtil.p2shTransactionWithSpendingInputAndCreditingOutput
-    TransactionSignatureChecker.checkSignature(spendingTx,inputIndex,creditingOutput.scriptPubKey,true) must be (true)
+    TransactionSignatureChecker.checkSignature(spendingTx,inputIndex,creditingOutput.scriptPubKey,true) must be (SignatureValidationSuccess)
   }
 
   it must "check a 2/3 p2sh input script correctly" in  {
     val (spendingTx,input,inputIndex,creditingOutput) =  TransactionTestUtil.p2sh2Of3TransactionWithSpendingInputAndCreditingOutput
-    TransactionSignatureChecker.checkSignature(spendingTx,inputIndex,creditingOutput.scriptPubKey,true) must be (true)
+    TransactionSignatureChecker.checkSignature(spendingTx,inputIndex,creditingOutput.scriptPubKey,true) must be (SignatureValidationSuccess)
 
   }
 
@@ -43,6 +43,6 @@ class TransactionSignatureCheckerTest extends FlatSpec with MustMatchers {
     val newScriptSigWithSignatureRemoved = ScriptSignatureFactory.fromAsm(newScriptSigAsm)
     val newInput = spendingTx.inputs(inputIndex).factory(newScriptSigWithSignatureRemoved)
     val txNewInputs = Transaction.factory(UpdateTransactionInputs(Seq(newInput)))
-    TransactionSignatureChecker.checkSignature(txNewInputs,inputIndex,creditingOutput.scriptPubKey,true) must be (false)
+    TransactionSignatureChecker.checkSignature(txNewInputs,inputIndex,creditingOutput.scriptPubKey,true) must be (SignatureValidationfailureIncorrectSignatures)
   }
 }

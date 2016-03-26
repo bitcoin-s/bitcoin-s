@@ -1,6 +1,6 @@
 package org.scalacoin.script.crypto
 
-import org.scalacoin.crypto.{DERSignatureUtil, TransactionSignatureChecker, ECFactory, TransactionSignatureSerializer}
+import org.scalacoin.crypto._
 import org.scalacoin.protocol.script._
 import org.scalacoin.protocol.transaction.Transaction
 import org.scalacoin.script.control.{ControlOperationsInterpreter, OP_VERIFY}
@@ -201,21 +201,23 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
       !signaturesValidStrictDerEncoding.exists(_ == false)
     } else true
 
-    if (isValidSignatures && allSigsValidEncoding) {
-      //means that all of the signatures were correctly encoded and
-      //that all of the signatures were valid signatures for the given
-      //public keys
-      ScriptProgramFactory.factory(program, ScriptTrue :: restOfStack, program.script.tail)
-    } else if (!allSigsValidEncoding) {
-      //this means the script fails immediately
-      //set the valid flag to false on the script
-      //see BIP66 for more information on this
-      //https://github.com/bitcoin/bips/blob/master/bip-0066.mediawiki#specification
-      ScriptProgramFactory.factory(program, restOfStack, program.script.tail,false)
-    } else {
-      //this means that signature verification failed, however all signatures were encoded correctly
-      //just push a ScriptFalse onto the stack
-      ScriptProgramFactory.factory(program, ScriptFalse :: restOfStack, program.script.tail)
+
+    isValidSignatures match {
+      case SignatureValidationSuccess =>
+        //means that all of the signatures were correctly encoded and
+        //that all of the signatures were valid signatures for the given
+        //public keys
+        ScriptProgramFactory.factory(program, ScriptTrue :: restOfStack, program.script.tail)
+      case SignatureValidationFailureNotStrictDerEncoding =>
+        //this means the script fails immediately
+        //set the valid flag to false on the script
+        //see BIP66 for more information on this
+        //https://github.com/bitcoin/bips/blob/master/bip-0066.mediawiki#specification
+        ScriptProgramFactory.factory(program, restOfStack, program.script.tail,false)
+      case SignatureValidationfailureIncorrectSignatures =>
+        //this means that signature verification failed, however all signatures were encoded correctly
+        //just push a ScriptFalse onto the stack
+        ScriptProgramFactory.factory(program, ScriptFalse :: restOfStack, program.script.tail)
     }
   }
 
