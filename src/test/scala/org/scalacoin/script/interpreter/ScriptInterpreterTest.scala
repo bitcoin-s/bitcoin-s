@@ -85,7 +85,7 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterp
     val source = scala.io.Source.fromFile("src/test/scala/org/scalacoin/script/interpreter/script_valid.json")
 
     //use this to represent a single test case from script_valid.json
-    val lines =
+/*    val lines =
     """
       |
       |[[
@@ -94,9 +94,9 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterp
       |    "DERSIG",
       |    "BIP66 example 12, with DERSIG"
       |]]
-    """.stripMargin
+    """.stripMargin*/
 
-    //val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n" finally source.close()
+    val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n" finally source.close()
     val json = lines.parseJson
     val testCasesOpt : Seq[Option[CoreTestCase]] = json.convertTo[Seq[Option[CoreTestCase]]]
     val testCases : Seq[CoreTestCase] = testCasesOpt.flatten

@@ -107,7 +107,7 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
       val restOfStack = program.stack.tail.tail
       val hashType = (signature.bytes.size == 0) match {
         case true => SIGHASH_ALL
-        case false => HashTypeFactory.fromByte(BitcoinSUtil.decodeHex(signature.hex).last).get
+        case false => HashTypeFactory.fromByte(BitcoinSUtil.decodeHex(signature.hex).last)
       }
 
       val hashForSig = TransactionSignatureSerializer.hashForSignature(program.transaction,
@@ -192,15 +192,6 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
     //+1 is for bug in OP_CHECKMULTSIG that requires an extra OP to be pushed onto the stack
     val stackWithoutPubKeysAndSignatures = stackWithoutPubKeys.tail.slice(mRequiredSignatures+1, stackWithoutPubKeys.tail.size)
     val restOfStack = stackWithoutPubKeysAndSignatures
-
-
-    //if there are zero signatures required for the m/n signature
-    //the transaction is valid by default
-    val allSigsValidEncoding : Boolean = if (program.flags.contains(ScriptVerifyDerSig)) {
-      val signaturesValidStrictDerEncoding = signatures.map(sig => DERSignatureUtil.isStrictDEREncoding(sig))
-      !signaturesValidStrictDerEncoding.exists(_ == false)
-    } else true
-
 
     isValidSignatures match {
       case SignatureValidationSuccess =>

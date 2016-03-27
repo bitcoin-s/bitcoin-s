@@ -41,7 +41,7 @@ sealed trait ScriptSignature extends TransactionElement with ScriptSignatureFact
   def hashType(digitalSignature: ECDigitalSignature) = {
     digitalSignature match {
       case EmptyDigitalSignature => SIGHASH_ALL
-      case sig : ECDigitalSignature => HashTypeFactory.fromByte(digitalSignature.bytes.last).get
+      case sig : ECDigitalSignature => HashTypeFactory.fromByte(digitalSignature.bytes.last)
     }
   }
 
