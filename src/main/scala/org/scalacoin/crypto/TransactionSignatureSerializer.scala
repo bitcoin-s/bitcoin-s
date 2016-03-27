@@ -115,7 +115,7 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper {
           sigHashSingleTx.bytes ++ sigHashBytes
         }
 
-      case SIGHASH_ALL =>
+      case hash : SIGHASH_ALL =>
         val sigHashAllTx : Transaction = sigHashAll(txWithInputSigsRemoved,inputIndex)
         sigHashAllTx.bytes ++ sigHashBytes
 

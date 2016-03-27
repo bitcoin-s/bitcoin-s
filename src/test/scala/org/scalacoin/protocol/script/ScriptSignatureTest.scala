@@ -20,7 +20,7 @@ class ScriptSignatureTest extends FlatSpec with MustMatchers {
 
 
    it must "derive the signature hash type from the signature" in {
-    TestUtil.scriptSig.hashType(TestUtil.scriptSig.signatures.head) must be (SIGHASH_ALL)
+    TestUtil.scriptSig.hashType(TestUtil.scriptSig.signatures.head) must be (SIGHASH_ALL())
   }
 
 
@@ -49,7 +49,7 @@ class ScriptSignatureTest extends FlatSpec with MustMatchers {
     ))
   }
   it must "find the hash type for a p2sh script signature" in {
-    TestUtil.p2shInputScript.hashType(TestUtil.p2shInputScript2Of2.signatures.head) must be (SIGHASH_ALL)
+    TestUtil.p2shInputScript.hashType(TestUtil.p2shInputScript2Of2.signatures.head) must be (SIGHASH_ALL())
   }
 
   it must "find the digital signature and hash type for a SIGHASH_SINGLE" in {
@@ -61,7 +61,7 @@ class ScriptSignatureTest extends FlatSpec with MustMatchers {
     //from this tx https://btc.blockr.io/api/v1/tx/raw/c99c49da4c38af669dea436d3e73780dfdb6c1ecf9958baa52960e8baee30e73
     val hex = "493046022100d23459d03ed7e9511a47d13292d3430a04627de6235b6e51a40f9cd386f2abe3022100e7d25b080f0bb8d8d5f878bba7d54ad2fda650ea8d158a33ee3cbd11768191fd004104b0e2c879e4daf7b9ab68350228c159766676a14f5815084ba166432aab46198d4cca98fa3e9981d0a90b2effc514b76279476550ba3663fdcaff94c38420e9d5"
     val scriptSig : ScriptSignature = RawScriptSignatureParser.read(hex)
-    scriptSig.hashType(scriptSig.signatures.head) must be (SIGHASH_ALL)
+    scriptSig.hashType(scriptSig.signatures.head) must be (SIGHASH_ALL(0))
   }
 
 

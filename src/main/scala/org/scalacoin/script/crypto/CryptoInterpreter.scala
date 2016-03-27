@@ -106,7 +106,7 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
     } else {
       val restOfStack = program.stack.tail.tail
       val hashType = (signature.bytes.size == 0) match {
-        case true => SIGHASH_ALL
+        case true => SIGHASH_ALL()
         case false => HashTypeFactory.fromByte(BitcoinSUtil.decodeHex(signature.hex).last)
       }
 
