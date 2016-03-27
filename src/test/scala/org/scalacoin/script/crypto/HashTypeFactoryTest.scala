@@ -21,7 +21,7 @@ class HashTypeFactoryTest extends FlatSpec with MustMatchers  {
     HashTypeFactory.fromByte(0x03) must be (SIGHASH_SINGLE)
     HashTypeFactory.fromByte(0x80.toByte) must be (SIGHASH_ANYONECANPAY)
   }
-  
+
   it must "default to SIGHASH_ALL if the given string/byte is not known" in {
     HashTypeFactory.fromByte(0x96.toByte) must be (SIGHASH_ALL)
     HashTypeFactory.fromString("RANDOM STRING") must be (SIGHASH_ALL)
