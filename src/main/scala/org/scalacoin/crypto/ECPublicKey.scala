@@ -25,15 +25,25 @@ trait ECPublicKey extends BaseECKey with BitcoinSLogger {
     logger.debug("Signature to check against data: " + signature.hex)
     val bitcoinjKey = ECKey.fromPublicOnly(bytes.toArray)
 
-    if (signature.isEmpty) bitcoinjKey.verify(data.toArray,emptySignature.encodeToDER())
-    else {
-      val resultTry = Try(bitcoinjKey.verify(data.toArray, signature.bytes.toArray))
-      val result : Boolean = resultTry match  {
-        case Success(bool) => bool
-        case Failure(_) => false
-      }
-      result
+    signature match {
+      case EmptyDigitalSignature =>  bitcoinjKey.verify(data.toArray,emptySignature.encodeToDER())
+      case sig : ECDigitalSignature =>
+        val resultTry = Try(bitcoinjKey.verify(data.toArray, signature.bytes.toArray))
+        val result : Boolean = resultTry match {
+          case Success(bool) =>
+            logger.info("Signature verification inside of bitcoinj did not hit an exception")
+            bool
+          case Failure(_) =>
+            logger.warn("Signature verification inside of bitcoinj hit an exception")
+            false
+        }
+        result
+
     }
+/*    if (signature.isEmpty)
+    else {
+
+    }*/
 
   }
 }
