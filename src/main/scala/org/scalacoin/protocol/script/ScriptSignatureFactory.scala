@@ -66,7 +66,10 @@ trait ScriptSignatureFactory extends Factory[ScriptSignature] with BitcoinSLogge
       case Seq() => EmptyScriptSignature
       case _  if (tokens.size > 1 && isRedeemScript(tokens.last)) =>
         P2SHScriptSignatureImpl(scriptSigHex,tokens)
-      case _ if (tokens.size > 1 && tokens.head == OP_0) => MultiSignatureScriptSignatureImpl(scriptSigHex,tokens)
+      case _ if (tokens.size > 1 && tokens.head.isInstanceOf[ScriptNumberOperation]) =>
+        //the head of the asm does not neccessarily have to be an OP_0 if the NULLDUMMY script
+        //flag is not set. It can be any script number operation
+        MultiSignatureScriptSignatureImpl(scriptSigHex,tokens)
       case List(w : BytesToPushOntoStack, x : ScriptConstant, y : BytesToPushOntoStack,
         z : ScriptConstant) => P2PKHScriptSignatureImpl(scriptSigHex,tokens)
       case List(w : BytesToPushOntoStack, x : ScriptConstant) => P2PKScriptSignatureImpl(scriptSigHex,tokens)
