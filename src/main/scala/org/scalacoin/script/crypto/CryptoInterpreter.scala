@@ -4,7 +4,7 @@ import org.scalacoin.crypto._
 import org.scalacoin.protocol.script._
 import org.scalacoin.protocol.transaction.Transaction
 import org.scalacoin.script.control.{ControlOperationsInterpreter, OP_VERIFY}
-import org.scalacoin.script.flag.ScriptVerifyDerSig
+import org.scalacoin.script.flag.{ScriptVerifyNullDummy, ScriptVerifyDerSig}
 import org.scalacoin.script.{ScriptProgramFactory, ScriptProgramImpl, ScriptProgram}
 import org.scalacoin.script.constant._
 import org.scalacoin.util.{BitcoinSLogger, BitcoinSUtil, CryptoUtil}
@@ -170,46 +170,52 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
     require(program.script.headOption.isDefined && program.script.head == OP_CHECKMULTISIG, "Script top must be OP_CHECKMULTISIG")
     require(program.stack.size > 2, "Stack must contain at least 3 items for OP_CHECKMULTISIG")
 
-    val isValidSignatures = TransactionSignatureChecker.checkSignature(program)
+    if (program.flags.contains(ScriptVerifyNullDummy) && program.scriptSignature.asm.head != OP_0) {
+      logger.warn("Script flag null dummy was set however the first element in the script signature was not an OP_0")
+      ScriptProgramFactory.factory(program,false)
+    } else {
+      val isValidSignatures = TransactionSignatureChecker.checkSignature(program)
 
-    //these next lines remove the appropriate stack/script values after the signatures have been checked
-    val nPossibleSignatures : Int  = program.stack.head match {
-      case s : ScriptNumber => s.num.toInt
-      case _ => throw new RuntimeException("n must be a script number for OP_CHECKMULTISIG")
-    }
-    logger.debug("nPossibleSignatures: " + nPossibleSignatures)
-    val stackWithoutPubKeys = program.stack.tail.slice(nPossibleSignatures,program.stack.tail.size)
-    val mRequiredSignatures : Int = stackWithoutPubKeys.head match {
-      case s: ScriptNumber => s.num.toInt
-      case _ => throw new RuntimeException("m must be a script number for OP_CHECKMULTISIG")
-    }
-    logger.debug("mRequiredSignatures: " + mRequiredSignatures )
+      //these next lines remove the appropriate stack/script values after the signatures have been checked
+      val nPossibleSignatures : Int  = program.stack.head match {
+        case s : ScriptNumber => s.num.toInt
+        case _ => throw new RuntimeException("n must be a script number for OP_CHECKMULTISIG")
+      }
+      logger.debug("nPossibleSignatures: " + nPossibleSignatures)
+      val stackWithoutPubKeys = program.stack.tail.slice(nPossibleSignatures,program.stack.tail.size)
+      val mRequiredSignatures : Int = stackWithoutPubKeys.head match {
+        case s: ScriptNumber => s.num.toInt
+        case _ => throw new RuntimeException("m must be a script number for OP_CHECKMULTISIG")
+      }
+      logger.debug("mRequiredSignatures: " + mRequiredSignatures )
 
-    //+1 is for the fact that we have the # of sigs + the script token indicating the # of sigs
-    val signaturesScriptTokens : Seq[ScriptToken] = program.stack.tail.slice(nPossibleSignatures + 1, nPossibleSignatures + mRequiredSignatures + 1)
-    val signatures = signaturesScriptTokens.map(token => ECFactory.digitalSignature(token.bytes))
-    logger.debug("Signatures on the stack: " + signatures)
-    //+1 is for bug in OP_CHECKMULTSIG that requires an extra OP to be pushed onto the stack
-    val stackWithoutPubKeysAndSignatures = stackWithoutPubKeys.tail.slice(mRequiredSignatures+1, stackWithoutPubKeys.tail.size)
-    val restOfStack = stackWithoutPubKeysAndSignatures
+      //+1 is for the fact that we have the # of sigs + the script token indicating the # of sigs
+      val signaturesScriptTokens : Seq[ScriptToken] = program.stack.tail.slice(nPossibleSignatures + 1, nPossibleSignatures + mRequiredSignatures + 1)
+      val signatures = signaturesScriptTokens.map(token => ECFactory.digitalSignature(token.bytes))
+      logger.debug("Signatures on the stack: " + signatures)
+      //+1 is for bug in OP_CHECKMULTSIG that requires an extra OP to be pushed onto the stack
+      val stackWithoutPubKeysAndSignatures = stackWithoutPubKeys.tail.slice(mRequiredSignatures+1, stackWithoutPubKeys.tail.size)
+      val restOfStack = stackWithoutPubKeysAndSignatures
 
-    isValidSignatures match {
-      case SignatureValidationSuccess =>
-        //means that all of the signatures were correctly encoded and
-        //that all of the signatures were valid signatures for the given
-        //public keys
-        ScriptProgramFactory.factory(program, ScriptTrue :: restOfStack, program.script.tail)
-      case SignatureValidationFailureNotStrictDerEncoding =>
-        //this means the script fails immediately
-        //set the valid flag to false on the script
-        //see BIP66 for more information on this
-        //https://github.com/bitcoin/bips/blob/master/bip-0066.mediawiki#specification
-        ScriptProgramFactory.factory(program, restOfStack, program.script.tail,false)
-      case SignatureValidationfailureIncorrectSignatures =>
-        //this means that signature verification failed, however all signatures were encoded correctly
-        //just push a ScriptFalse onto the stack
-        ScriptProgramFactory.factory(program, ScriptFalse :: restOfStack, program.script.tail)
+      isValidSignatures match {
+        case SignatureValidationSuccess =>
+          //means that all of the signatures were correctly encoded and
+          //that all of the signatures were valid signatures for the given
+          //public keys
+          ScriptProgramFactory.factory(program, ScriptTrue :: restOfStack, program.script.tail)
+        case SignatureValidationFailureNotStrictDerEncoding =>
+          //this means the script fails immediately
+          //set the valid flag to false on the script
+          //see BIP66 for more information on this
+          //https://github.com/bitcoin/bips/blob/master/bip-0066.mediawiki#specification
+          ScriptProgramFactory.factory(program, restOfStack, program.script.tail,false)
+        case SignatureValidationfailureIncorrectSignatures =>
+          //this means that signature verification failed, however all signatures were encoded correctly
+          //just push a ScriptFalse onto the stack
+          ScriptProgramFactory.factory(program, ScriptFalse :: restOfStack, program.script.tail)
+      }
     }
+
   }
 
 

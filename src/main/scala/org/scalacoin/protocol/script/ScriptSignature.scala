@@ -158,7 +158,6 @@ trait MultiSignatureScriptSignature extends ScriptSignature {
    */
   def signatures : Seq[ECDigitalSignature] = {
     asm.tail.filter(_.isInstanceOf[ScriptConstant])
-/*      .filterNot(_.isInstanceOf[BytesToPushOntoStack])*/
       .map(sig => ECFactory.digitalSignature(sig.hex))
   }
 }
