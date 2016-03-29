@@ -63,10 +63,10 @@ trait ScriptSignatureFactory extends Factory[ScriptSignature] with BitcoinSLogge
   def fromAsm(tokens : Seq[ScriptToken]) : ScriptSignature = {
     val scriptSigHex = tokens.map(_.hex).mkString
     tokens match {
-      case Seq() => EmptyScriptSignature
+      case Nil => EmptyScriptSignature
       case _  if (tokens.size > 1 && isRedeemScript(tokens.last)) =>
         P2SHScriptSignatureImpl(scriptSigHex,tokens)
-      case _ if (tokens.size > 1 && tokens.head.isInstanceOf[ScriptNumberOperation]) =>
+      case _ if (isMultiSignatureScriptSignature(tokens)) =>
         //the head of the asm does not neccessarily have to be an OP_0 if the NULLDUMMY script
         //flag is not set. It can be any script number operation
         MultiSignatureScriptSignatureImpl(scriptSigHex,tokens)
@@ -100,7 +100,6 @@ trait ScriptSignatureFactory extends Factory[ScriptSignature] with BitcoinSLogge
         }
       case Failure(_) => false
     }
-
   }
 
   /**
@@ -113,6 +112,26 @@ trait ScriptSignatureFactory extends Factory[ScriptSignature] with BitcoinSLogge
     redeemScript
   }
 
+  /**
+   * Checks if the given script tokens are a multisignature script sig
+   * format: OP_0 <A sig> [B sig] [C sig...]
+   * @param asm the asm to check if it falls in the multisignature script sig format
+   * @return boolean indicating if the scriptsignature is a multisignature script signature
+   */
+  def isMultiSignatureScriptSignature(asm : Seq[ScriptToken]) : Boolean = {
+    asm.isEmpty match {
+      case true => false
+      case false if (asm.size == 1) => false
+      case false =>
+        val firstTokenIsScriptNumberOperation = asm.head.isInstanceOf[ScriptNumberOperation]
+        val restOfScriptIsPushOpsOrScriptConstants = asm.tail.map(
+          token => token.isInstanceOf[ScriptConstant] || StackPushOperationFactory.isPushOperation(token)
+        ).exists(_ == false)
+        logger.debug("First number is script op: " + firstTokenIsScriptNumberOperation)
+        logger.debug("tail is true: " +restOfScriptIsPushOpsOrScriptConstants )
+        firstTokenIsScriptNumberOperation && !restOfScriptIsPushOpsOrScriptConstants
+    }
+  }
 }
 
 object ScriptSignatureFactory extends ScriptSignatureFactory
