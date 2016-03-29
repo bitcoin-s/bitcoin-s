@@ -85,18 +85,18 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterp
     val source = scala.io.Source.fromFile("src/test/scala/org/scalacoin/script/interpreter/script_valid.json")
 
     //use this to represent a single test case from script_valid.json
-/*    val lines =
+    val lines =
     """
       |
       |[[
-    "1 0x47 0x3044022051254b9fb476a52d85530792b578f86fea70ec1ffb4393e661bcccb23d8d63d3022076505f94a403c86097841944e044c70c2045ce90e36de51f7e9d3828db98a07501 0x47 0x304402200a358f750934b3feb822f1966bfcd8bbec9eeaa3a8ca941e11ee5960e181fa01022050bf6b5a8e7750f70354ae041cb68a7bade67ec6c3ab19eb359638974410626e01 0x47 0x304402200955d031fff71d8653221e85e36c3c85533d2312fc3045314b19650b7ae2f81002202a6bb8505e36201909d0921f01abff390ae6b7ff97bbf959f98aedeb0a56730901",
-    "3 0x21 0x0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798 0x21 0x038282263212c609d9ea2a6e3e172de238d8c39cabd5ac1ca10646e23fd5f51508 0x21 0x03363d90d447b00c9c99ceac05b6262ee053441c7e55552ffe526bad8f83ff4640 3 CHECKMULTISIG",
-    "",
-    "3-of-3 with nonzero dummy but no NULLDUMMY"
-]]
-    """.stripMargin*/
+      |    "0 0x47 0x304402200abeb4bd07f84222f474aed558cfbdfc0b4e96cde3c2935ba7098b1ff0bd74c302204a04c1ca67b2a20abee210cf9a21023edccbbf8024b988812634233115c6b73901 DUP",
+      |    "2 0x21 0x038282263212c609d9ea2a6e3e172de238d8c39cabd5ac1ca10646e23fd5f51508 0x21 0x038282263212c609d9ea2a6e3e172de238d8c39cabd5ac1ca10646e23fd5f51508 2 CHECKMULTISIG",
+      |    "",
+      |    "2-of-2 with two identical keys and sigs pushed using OP_DUP but no SIGPUSHONLY"
+      |]]
+    """.stripMargin
 
-    val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n" finally source.close()
+    //val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n" finally source.close()
     val json = lines.parseJson
     val testCasesOpt : Seq[Option[CoreTestCase]] = json.convertTo[Seq[Option[CoreTestCase]]]
     val testCases : Seq[CoreTestCase] = testCasesOpt.flatten
