@@ -126,7 +126,7 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
           case y : MultiSignatureScriptPubKey =>
             //the signatures & pubkeys need to be reversed so that they are evaluated the
             //same way as if they were getting pushed then popped off of a stack
-            multiSignatureHelper(spendingTransaction, inputIndex, y,
+            multiSignatureEvaluator(spendingTransaction, inputIndex, y,
               p2shScriptSignature.signatures.toList.reverse, p2shScriptSignature.publicKeys.toList.reverse, requireStrictDEREncoding, y.requiredSigs)
           case _ : P2PKHScriptPubKey | _ : P2PKScriptPubKey | _ : P2SHScriptPubKey | _ : NonStandardScriptPubKey | EmptyScriptPubKey =>
             throw new RuntimeException("Don't know how to implement this scriptPubKeys in a redeemScript")
@@ -166,7 +166,7 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
         //same way as if they were getting pushed then popped off of a stack
         logger.info("multisig public keys: " + x.publicKeys)
         logger.info("multisig sigs: " + multiSignatureScript.signatures)
-        multiSignatureHelper(spendingTransaction,inputIndex,x,multiSignatureScript.signatures.toList.reverse,
+        multiSignatureEvaluator(spendingTransaction,inputIndex,x,multiSignatureScript.signatures.toList.reverse,
           x.publicKeys.toList.reverse,requireStrictDEREncoding,x.requiredSigs)
       case x : P2PKHScriptPubKey =>
         logger.warn("Trying to check if a multisignature scriptSig spends a p2pkh scriptPubKey properly - this is trivially false")
@@ -220,7 +220,7 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
    * @return a boolean indicating if all of the signatures are valid against the given public keys
    */
   @tailrec
-  private def multiSignatureHelper(spendingTransaction : Transaction, inputIndex : Int, scriptPubKey : MultiSignatureScriptPubKey,
+  final def multiSignatureEvaluator(spendingTransaction : Transaction, inputIndex : Int, scriptPubKey : ScriptPubKey,
                      sigs : List[ECDigitalSignature], pubKeys : List[ECPublicKey], requireStrictDEREncoding : Boolean,
                      requiredSigs : Long) : TransactionSignatureCheckerResult = {
     logger.info("Signatures inside of helper: " + sigs)
@@ -249,9 +249,9 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
         val result = pubKey.verify(hashForSig, sig)
         result match {
           case true =>
-            multiSignatureHelper(spendingTransaction,inputIndex, scriptPubKey, sigs.tail,pubKeys.tail,requireStrictDEREncoding, requiredSigs -1)
+            multiSignatureEvaluator(spendingTransaction,inputIndex, scriptPubKey, sigs.tail,pubKeys.tail,requireStrictDEREncoding, requiredSigs -1)
           case false =>
-            multiSignatureHelper(spendingTransaction,inputIndex, scriptPubKey, sigs,pubKeys.tail,requireStrictDEREncoding, requiredSigs)
+            multiSignatureEvaluator(spendingTransaction,inputIndex, scriptPubKey, sigs,pubKeys.tail,requireStrictDEREncoding, requiredSigs)
         }
       }
     } else if (sigs.isEmpty) {

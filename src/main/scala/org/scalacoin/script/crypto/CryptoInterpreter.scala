@@ -174,15 +174,16 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
       logger.warn("Script flag null dummy was set however the first element in the script signature was not an OP_0")
       ScriptProgramFactory.factory(program,false)
     } else {
-      val isValidSignatures = TransactionSignatureChecker.checkSignature(program)
-
       //these next lines remove the appropriate stack/script values after the signatures have been checked
       val nPossibleSignatures : Int  = program.stack.head match {
         case s : ScriptNumber => s.num.toInt
         case _ => throw new RuntimeException("n must be a script number for OP_CHECKMULTISIG")
       }
       logger.debug("nPossibleSignatures: " + nPossibleSignatures)
-      val stackWithoutPubKeys = program.stack.tail.slice(nPossibleSignatures,program.stack.tail.size)
+      val (pubKeysScriptTokens,stackWithoutPubKeys) =
+        (program.stack.tail.slice(0,nPossibleSignatures),program.stack.tail.slice(nPossibleSignatures,program.stack.tail.size))
+      val pubKeys = pubKeysScriptTokens.map(key => ECFactory.publicKey(key.hex))
+      logger.debug("Public keys on the stack: " + pubKeys)
       val mRequiredSignatures : Int = stackWithoutPubKeys.head match {
         case s: ScriptNumber => s.num.toInt
         case _ => throw new RuntimeException("m must be a script number for OP_CHECKMULTISIG")
@@ -190,12 +191,26 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
       logger.debug("mRequiredSignatures: " + mRequiredSignatures )
 
       //+1 is for the fact that we have the # of sigs + the script token indicating the # of sigs
-      val signaturesScriptTokens : Seq[ScriptToken] = program.stack.tail.slice(nPossibleSignatures + 1, nPossibleSignatures + mRequiredSignatures + 1)
+      val signaturesScriptTokens = program.stack.tail.slice(nPossibleSignatures + 1, nPossibleSignatures + mRequiredSignatures + 1)
       val signatures = signaturesScriptTokens.map(token => ECFactory.digitalSignature(token.bytes))
       logger.debug("Signatures on the stack: " + signatures)
+      logger.debug("ScriptPubKey: " + program.scriptPubKey)
       //+1 is for bug in OP_CHECKMULTSIG that requires an extra OP to be pushed onto the stack
       val stackWithoutPubKeysAndSignatures = stackWithoutPubKeys.tail.slice(mRequiredSignatures+1, stackWithoutPubKeys.tail.size)
       val restOfStack = stackWithoutPubKeysAndSignatures
+
+
+      val isValidSignatures : TransactionSignatureCheckerResult = program.scriptSignature match {
+        case EmptyScriptSignature =>
+          TransactionSignatureChecker.checkSignature(program)
+        case _ : MultiSignatureScriptSignature | _ : P2SHScriptSignature=>
+          TransactionSignatureChecker.checkSignature(program)
+        case scriptSignature : NonStandardScriptSignature =>
+          TransactionSignatureChecker.multiSignatureEvaluator(program.transaction,program.inputIndex,program.scriptPubKey,
+            signatures.toList,pubKeys,program.flags.contains(ScriptVerifyDerSig),mRequiredSignatures)
+        case _ : P2PKScriptSignature | _ : P2PKHScriptSignature =>
+          TransactionSignatureChecker.checkSignature(program)
+      }
 
       isValidSignatures match {
         case SignatureValidationSuccess =>
