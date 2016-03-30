@@ -3,6 +3,8 @@ package org.scalacoin.crypto
 import org.scalacoin.util.{BitcoinSLogger, BitcoinSUtil}
 import org.spongycastle.asn1.{ASN1Primitive, ASN1Integer, DLSequence, ASN1InputStream}
 
+import scala.util.{Failure, Success, Try}
+
 /**
  * Created by chris on 3/23/16.
  */
@@ -71,16 +73,44 @@ trait DERSignatureUtil extends BitcoinSLogger {
    * @return
    */
   def decodeSignature(bytes : Seq[Byte]) : (BigInt,BigInt) = {
-    if (isDEREncoded(bytes)) {
-      val asn1InputStream = new ASN1InputStream(bytes.toArray)
-      //TODO: this is nasty, is there any way to get rid of all this casting???
-      //https://stackoverflow.com/questions/2409618/how-do-i-decode-a-der-encoded-string-in-java
-      val seq : DLSequence = asn1InputStream.readObject.asInstanceOf[DLSequence]
-      val r = seq.getObjectAt(0).asInstanceOf[ASN1Integer]
-      val s = seq.getObjectAt(1).asInstanceOf[ASN1Integer]
-      asn1InputStream.close()
-      (r.getPositiveValue, s.getPositiveValue)
-    } else throw new RuntimeException("The given sequence of bytes was not a DER signature: " + BitcoinSUtil.encodeHex(bytes))
+    logger.debug("Signature to decode: " + BitcoinSUtil.encodeHex(bytes))
+    val asn1InputStream = new ASN1InputStream(bytes.toArray)
+    logger.debug("hello")
+    //TODO: this is nasty, is there any way to get rid of all this casting???
+    //TODO: Not 100% this is completely right for signatures that are incorrectly DER encoded
+    //the behavior right now is to return the defaults in the case the signature is not DER encoded
+    //https://stackoverflow.com/questions/2409618/how-do-i-decode-a-der-encoded-string-in-java
+    val seq : DLSequence = Try(asn1InputStream.readObject.asInstanceOf[DLSequence]) match {
+      case Success(seq) => seq
+      case Failure(err) => new DLSequence()
+    }
+    val default = new ASN1Integer(0)
+    logger.debug("world")
+    //logger.debug("seq: " + seq.toString)
+    val r : ASN1Integer = Try(seq.getObjectAt(0).asInstanceOf[ASN1Integer]) match {
+      case Success(r) =>
+        //this is needed for a bug inside of bouncy castle where zero length values throw an exception
+        //we need to treat these like zero
+        Try(r.getValue) match {
+          case Success(_) => r
+          case Failure(_) => default
+      }
+      case Failure(_) => default
+    }
+    logger.debug("r: " + r)
+    val s : ASN1Integer = Try(seq.getObjectAt(1).asInstanceOf[ASN1Integer]) match {
+      case Success(s) =>
+        //this is needed for a bug inside of bouncy castle where zero length values throw an exception
+        //we need to treat these like zero
+        Try(s.getValue) match {
+          case Success(_) => s
+          case Failure(_) => default
+        }
+      case Failure(_) => default
+    }
+    logger.debug("s: " + s)
+    asn1InputStream.close()
+    (r.getPositiveValue, s.getPositiveValue)
   }
 
   /**

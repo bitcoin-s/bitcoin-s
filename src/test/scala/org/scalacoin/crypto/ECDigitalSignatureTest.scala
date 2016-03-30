@@ -28,4 +28,9 @@ class ECDigitalSignatureTest extends FlatSpec with MustMatchers {
     val signature = ECFactory.digitalSignature("304402200a5c6163f07b8d3b013c4d1d6dba25e780b39658d79ba37af7057a3b7f15ffa102201fd9b4eaa9943f734928b99a83592c2e7bf342ea2680f6a2bb705167966b742001")
     signature.isDEREncoded must be (true)
   }
+
+  it must "say that the empty digital signatures r,s values are both 0" in {
+    EmptyDigitalSignature.r must be (0)
+    EmptyDigitalSignature.s must be (0)
+  }
 }

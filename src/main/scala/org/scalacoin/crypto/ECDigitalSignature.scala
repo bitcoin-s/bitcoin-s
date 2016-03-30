@@ -29,9 +29,24 @@ sealed trait ECDigitalSignature extends BitcoinSLogger {
   def decodeSignature : (BigInt,BigInt) = DERSignatureUtil.decodeSignature(this)
 
 
+  /**
+   * Represents the r value found in a elliptic curve digital signature
+   */
+  def r = decodeSignature._1
+
+
+  /**
+   * Represents the s value found in a elliptic curve digital signature
+   * @return
+   */
+  def s = decodeSignature._2
+
 }
 
 case object EmptyDigitalSignature extends ECDigitalSignature {
   def bytes = Seq()
+  override def r = java.math.BigInteger.valueOf(0)
+  override def s = r
+
 }
 sealed case class ECDigitalSignatureImpl(bytes : Seq[Byte]) extends ECDigitalSignature
