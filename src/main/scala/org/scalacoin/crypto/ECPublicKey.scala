@@ -1,6 +1,10 @@
 package org.scalacoin.crypto
 
+import java.math.BigInteger
+
 import org.scalacoin.util.{BitcoinSLogger, BitcoinSUtil}
+import org.spongycastle.crypto.params.ECPublicKeyParameters
+import org.spongycastle.crypto.signers.ECDSASigner
 
 import scala.util.{Failure, Success, Try}
 
@@ -11,6 +15,16 @@ trait ECPublicKey extends BaseECKey with BitcoinSLogger {
   import org.bitcoinj.core.ECKey
 
 
+  /**
+   * The elliptic curve used by bitcoin
+   * @return
+   */
+  private def curve = CryptoParams.curve
+
+  /**
+   * This represents this public key in the bouncy castle library
+   */
+  private def publicKeyParams = new ECPublicKeyParameters(curve.getCurve.decodePoint(bytes.toArray), curve)
 
   private def emptySignature = new org.bitcoinj.core.ECKey.ECDSASignature(java.math.BigInteger.valueOf(0), java.math.BigInteger.valueOf(0))
   /**
@@ -23,12 +37,17 @@ trait ECPublicKey extends BaseECKey with BitcoinSLogger {
     logger.debug("PubKey for verifying: " + BitcoinSUtil.encodeHex(bytes))
     logger.debug("Data to verify: " + BitcoinSUtil.encodeHex(data))
     logger.debug("Signature to check against data: " + signature.hex)
-    val bitcoinjKey = ECKey.fromPublicOnly(bytes.toArray)
 
+
+    val signer = new ECDSASigner
+    signer.init(false,publicKeyParams)
     signature match {
-      case EmptyDigitalSignature =>  bitcoinjKey.verify(data.toArray,emptySignature.encodeToDER())
+      case EmptyDigitalSignature =>  signer.verifySignature(data.toArray,java.math.BigInteger.valueOf(0),java.math.BigInteger.valueOf(0))
       case sig : ECDigitalSignature =>
-        val resultTry = Try(bitcoinjKey.verify(data.toArray, signature.bytes.toArray))
+        logger.debug("Public key bytes: " + BitcoinSUtil.encodeHex(bytes))
+        val rBigInteger : BigInteger = new BigInteger(signature.r.toString())
+        val sBigInteger : BigInteger = new BigInteger(signature.s.toString())
+        val resultTry = Try(signer.verifySignature(data.toArray, rBigInteger, sBigInteger))
         val result : Boolean = resultTry match {
           case Success(bool) =>
             logger.info("Signature verification inside of bitcoinj did not hit an exception")
@@ -38,13 +57,7 @@ trait ECPublicKey extends BaseECKey with BitcoinSLogger {
             false
         }
         result
-
     }
-/*    if (signature.isEmpty)
-    else {
-
-    }*/
-
   }
 }
 

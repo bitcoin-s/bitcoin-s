@@ -37,7 +37,10 @@ trait ECFactory extends Factory[BaseECKey] {
    * @param hex
    * @return
    */
-  def publicKey(hex : String) : ECPublicKey = ECPublicKeyImpl(hex)
+  def publicKey(hex : String) : ECPublicKey =  {
+    if (hex == "") ECPublicKeyImpl("00")
+    else ECPublicKeyImpl(hex)
+  }
 
   /**
    * Creates a public key from a sequence of bytes
@@ -50,9 +53,8 @@ trait ECFactory extends Factory[BaseECKey] {
    * Generates a fresh public key
    * @return
    */
-  def publicKey = {
-    privateKey.publicKey
-  }
+  def publicKey = privateKey.publicKey
+
 
   /**
    * Creates a digital signature from the given hex string
@@ -70,6 +72,10 @@ trait ECFactory extends Factory[BaseECKey] {
     //this represents the empty signature
     if (bytes.size == 1 && bytes.head == 0x0) EmptyDigitalSignature
     else if (bytes.size == 0) EmptyDigitalSignature
+    else if (!bytes.map(_ == 0x00).exists(_ == false)) {
+      //this means that the string only contains '0'
+      EmptyDigitalSignature
+    }
     else ECDigitalSignatureImpl(bytes)
   }
 
