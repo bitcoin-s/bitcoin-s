@@ -27,6 +27,16 @@ trait TransactionFactory extends Factory[Transaction] {
     TransactionImpl(oldTx.version,updatedInputs.inputs,oldTx.outputs,oldTx.lockTime)
   }
 
+  /**
+   * Factory function that modifies a transactions locktime
+   * @param oldTx
+   * @param lockTime
+   * @return
+   */
+  def factory(oldTx : Transaction, lockTime : Long) : Transaction = {
+    TransactionImpl(oldTx.version,oldTx.inputs,oldTx.outputs,lockTime)
+  }
+
 
   /**
    * Removes the inputs of the transactions

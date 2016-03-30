@@ -35,10 +35,16 @@ trait LockTimeInterpreter extends BitcoinSLogger {
     }
     else {
       val isValid = program.stack.head match {
-        case s : ScriptNumber if (s < ScriptNumberImpl(0)) => false
-        case s : ScriptNumber if (s > ScriptNumberImpl(500000000) && program.transaction.lockTime < 500000000) => false
-        case s : ScriptNumber if (s < ScriptNumberImpl(500000000) && program.transaction.lockTime > 500000000) => false
-        case _ => false
+        case s : ScriptNumber if (s < ScriptNumberImpl(0)) =>
+          logger.warn("OP_CHECKLOCKTIMEVERIFY marks tx as invalid if the stack top is negative")
+          false
+        case s : ScriptNumber if (s >= ScriptNumberImpl(500000000) && program.transaction.lockTime < 500000000) =>
+          logger.warn("OP_CHECKLOCKTIMEVERIFY marks the tx as invalid if stack top >= 500000000 & tx locktime < 500000000")
+          false
+        case s : ScriptNumber if (s < ScriptNumberImpl(500000000) && program.transaction.lockTime >= 500000000) =>
+          logger.warn("OP_CHECKLOCKTIMEVERIFY marks the tx as invalid if stack top < 500000000 & tx locktime >= 500000000")
+          false
+        case _ => true
       }
       ScriptProgramFactory.factory(program,program.stack, program.script.tail, isValid)
     }
