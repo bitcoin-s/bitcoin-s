@@ -22,7 +22,7 @@ sealed trait TransactionOutput extends TransactionElement {
   override def hex = RawTransactionOutputParser.write(Seq(this))
 }
 
-case object TransactionOutput extends TransactionOutput {
+case object EmptyTransactionOutput extends TransactionOutput {
   override def value = CurrencyUnits.negativeSatoshi
   override def scriptPubKey = ScriptPubKeyFactory.empty
 }

@@ -16,4 +16,11 @@ class TransactionTest extends FlatSpec with MustMatchers {
 
     tx.txId must be ("cddda897b0e9322937ee1f4fd5d6147d60f04a0f4d3b461e4f87066ac3918f2a")
   }
+
+  it must "have an empty transaction with the correct fields" in {
+    EmptyTransaction.inputs.isEmpty must be (true)
+    EmptyTransaction.outputs.isEmpty must be (true)
+    EmptyTransaction.lockTime must be (TransactionConstants.lockTime)
+    EmptyTransaction.txId must be ("0000000000000000000000000000000000000000000000000000000000000000")
+  }
 }

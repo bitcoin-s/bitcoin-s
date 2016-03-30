@@ -26,7 +26,6 @@ trait ECPublicKey extends BaseECKey with BitcoinSLogger {
    */
   private def publicKeyParams = new ECPublicKeyParameters(curve.getCurve.decodePoint(bytes.toArray), curve)
 
-  private def emptySignature = new org.bitcoinj.core.ECKey.ECDSASignature(java.math.BigInteger.valueOf(0), java.math.BigInteger.valueOf(0))
   /**
    * Verifies if a given piece of data is signed by the private key corresponding public key
    * @param data

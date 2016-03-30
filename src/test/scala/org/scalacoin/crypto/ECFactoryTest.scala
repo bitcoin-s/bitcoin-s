@@ -36,5 +36,10 @@ class ECFactoryTest extends FlatSpec with MustMatchers {
       hex must be (emptySignature)
     }
 
+    it must "create a private key from bytes" in {
+      val privKeyBytes = Seq[Byte](0.toByte)
+      ECFactory.privateKey(privKeyBytes).bytes must be (privKeyBytes)
+    }
+
 
 }

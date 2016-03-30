@@ -1,7 +1,6 @@
 package org.scalacoin.protocol.script
 
 import org.scalacoin.marshallers.script.{RawScriptPubKeyParser, ScriptParser}
-import org.scalacoin.protocol.{NonStandard, MultiSignature, P2SH, P2PKH}
 import org.scalacoin.script.bitwise.{OP_EQUAL, OP_EQUALVERIFY}
 import org.scalacoin.script.constant._
 import org.scalacoin.script.crypto.{OP_CHECKMULTISIG, OP_CHECKSIG, OP_HASH160}
@@ -45,6 +44,7 @@ trait ScriptPubKeyFactory extends Factory[ScriptPubKey] {
   def fromAsm(asm : Seq[ScriptToken]) : ScriptPubKey = {
     val scriptPubKeyHex = BitcoinScriptUtil.asmToHex(asm)
     asm match {
+      case Seq() => EmptyScriptPubKey
       case List(OP_DUP, OP_HASH160, x : BytesToPushOntoStack, ScriptConstantImpl(pubKeyHash), OP_EQUALVERIFY, OP_CHECKSIG) =>
         P2PKHScriptPubKeyImpl(scriptPubKeyHex,asm)
       case List(OP_HASH160, x : BytesToPushOntoStack, ScriptConstantImpl(scriptHash), OP_EQUAL) =>

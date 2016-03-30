@@ -26,6 +26,7 @@ sealed trait Transaction extends TransactionElement {
 }
 
 case object EmptyTransaction extends Transaction {
+  override def txId = "0000000000000000000000000000000000000000000000000000000000000000"
   override def version = TransactionConstants.version
   override def inputs = Seq()
   override def outputs = Seq()

@@ -3,7 +3,6 @@ package org.scalacoin.crypto
 import org.scalacoin.currency.CurrencyUnits
 import org.scalacoin.marshallers.RawBitcoinSerializerHelper
 import org.scalacoin.marshallers.transaction.RawTransactionOutputParser
-import org.scalacoin.protocol.{MultiSignature, NonStandard, P2SH, P2PKH}
 import org.scalacoin.protocol.script._
 import org.scalacoin.protocol.transaction._
 import org.scalacoin.script.constant.ScriptToken
