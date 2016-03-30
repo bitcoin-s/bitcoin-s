@@ -15,13 +15,6 @@ sealed trait Transaction extends TransactionElement {
   def outputs : Seq[TransactionOutput]
   def lockTime : Long
 
-  def inputsSize = inputs.map(_.size).sum
-  def outputsSize = outputs.map(_.size).sum
-
-
-  //https://bitcoin.org/en/developer-reference#raw-transaction-format
-  override def size = 4 + inputsSize + outputsSize  + 4
-
   override def hex = RawTransactionParser.write(this)
 }
 

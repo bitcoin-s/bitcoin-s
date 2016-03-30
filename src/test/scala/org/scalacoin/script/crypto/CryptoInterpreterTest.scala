@@ -1,7 +1,9 @@
 package org.scalacoin.script.crypto
 
 import org.scalacoin.protocol.script.{ScriptPubKeyFactory, ScriptSignatureFactory, ScriptPubKey}
+import org.scalacoin.protocol.transaction._
 import org.scalacoin.script.arithmetic.OP_NOT
+import org.scalacoin.script.flag.{ScriptVerifyDerSig, ScriptVerifyNullDummy}
 import org.scalacoin.script.{ScriptProgramFactory, ScriptProgramImpl}
 import org.scalacoin.script.constant._
 import org.scalacoin.util.{TransactionTestUtil, BitcoinSLogger, TestUtil}
@@ -171,7 +173,31 @@ class CryptoInterpreterTest extends FlatSpec with MustMatchers with CryptoInterp
     newProgram.stack.size must be (1)
 
     newProgram.script.isEmpty must be (true)
+  }
 
+
+  it must "mark a transaction invalid when the NULLDUMMY flag is set for a OP_CHECKMULTISIG operation & the scriptSig does not begin with OP_0" in {
+    val flags = Seq(ScriptVerifyNullDummy)
+    val scriptSig = ScriptSignatureFactory.fromAsm(Seq(OP_1))
+    val input = TransactionInputFactory.factory(EmptyTransactionOutPoint, scriptSig, TransactionConstants.sequence)
+    val tx = TransactionFactory.factory(TestUtil.transaction,UpdateTransactionInputs(Seq(input)))
+    val baseProgram = ScriptProgramFactory.factory(tx,TestUtil.scriptPubKey,0,flags)
+    val stack = Seq(OP_2,OP_2,OP_2)
+    val script = Seq(OP_CHECKMULTISIG)
+    val program = ScriptProgramFactory.factory(baseProgram,stack,script)
+    val newProgram = opCheckMultiSig(program)
+    newProgram.isValid must be (false)
+
+  }
+
+  it must "mark a transaction invalid when the DERSIG flag is set for a OP_CHECKSIG operaetion & the signature is not a strict der sig" in {
+    val flags = Seq(ScriptVerifyDerSig)
+    //signature is from script_valid.json, it has a negative S value which makes it non strict der
+    val stack = Seq(OP_0,ScriptConstantImpl("302402107777777777777777777777777777777702108777777777777777777777777777777701"))
+    val script = Seq(OP_CHECKSIG)
+    val program = ScriptProgramFactory.factory(TestUtil.testProgram,stack,script,flags)
+    val newProgram = opCheckSig(program)
+    newProgram.isValid must be (false)
 
   }
 

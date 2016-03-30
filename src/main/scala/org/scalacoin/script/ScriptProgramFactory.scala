@@ -62,6 +62,20 @@ trait ScriptProgramFactory {
   }
 
   /**
+   * Updates the programs stack tokens, script tokens & script verify flags
+   * @param oldProgram
+   * @param stackTokens
+   * @param scriptTokens
+   * @param flags
+   * @return
+   */
+  def factory(oldProgram : ScriptProgram, stackTokens : Seq[ScriptToken], scriptTokens : Seq[ScriptToken], flags : Seq[ScriptFlag]) = {
+    ScriptProgramImpl(oldProgram.transaction, oldProgram.scriptPubKey, oldProgram.inputIndex,
+      stackTokens.toList,scriptTokens.toList, oldProgram.altStack, flags,
+      oldProgram.isValid,oldProgram.lastCodeSeparator)
+  }
+
+  /**
    * Updates the last OP_CODESEPARATOR index
    * @param oldProgram
    * @param lastCodeSeparator

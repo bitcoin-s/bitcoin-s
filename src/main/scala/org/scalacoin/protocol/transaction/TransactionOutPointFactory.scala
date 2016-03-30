@@ -22,7 +22,6 @@ trait TransactionOutPointFactory extends Factory[TransactionOutPoint] {
   def factory(txId : String, index : Int) = {
     TransactionOutPointImpl(txId, index)
   }
-  def empty : TransactionOutPoint = TransactionOutPointImpl("",-1)
 
   def fromBytes(bytes : Seq[Byte]) : TransactionOutPoint = RawTransactionOutPointParser.read(bytes)
 

@@ -1,6 +1,7 @@
 package org.scalacoin.protocol.transaction
 
 import org.scalacoin.marshallers.transaction.RawTransactionParser
+import org.scalacoin.util.TestUtil
 import org.scalatest.{FlatSpec, MustMatchers}
 
 /**
@@ -22,5 +23,12 @@ class TransactionTest extends FlatSpec with MustMatchers {
     EmptyTransaction.outputs.isEmpty must be (true)
     EmptyTransaction.lockTime must be (TransactionConstants.lockTime)
     EmptyTransaction.txId must be ("0000000000000000000000000000000000000000000000000000000000000000")
+  }
+
+  it must "calculate the size of a tranaction correctly" in {
+    val rawTx = TestUtil.rawTransaction
+    val tx = TransactionFactory.fromHex(rawTx)
+    //size is in bytes so divide by 2
+    tx.size must be (rawTx.size / 2)
   }
 }

@@ -5,7 +5,7 @@ import org.scalacoin.marshallers.RawBitcoinSerializer
 import org.scalacoin.marshallers.script.{RawScriptPubKeyParser, ScriptParser}
 import org.scalacoin.protocol.CompactSizeUInt
 import org.scalacoin.protocol.transaction.{TransactionOutputFactory, TransactionOutputImpl, TransactionOutput}
-import org.scalacoin.util.{BitcoinSUtil}
+import org.scalacoin.util.{BitcoinSLogger, BitcoinSUtil}
 import org.slf4j.LoggerFactory
 
 import scala.annotation.tailrec
@@ -14,9 +14,8 @@ import scala.annotation.tailrec
  * Created by chris on 1/11/16.
  * https://bitcoin.org/en/developer-reference#txout
  */
-trait RawTransactionOutputParser extends RawBitcoinSerializer[Seq[TransactionOutput]] with ScriptParser {
+trait RawTransactionOutputParser extends RawBitcoinSerializer[Seq[TransactionOutput]] with ScriptParser with BitcoinSLogger {
 
-  private lazy val logger = LoggerFactory.getLogger(this.getClass().toString())
   override def read(bytes : List[Byte]) : Seq[TransactionOutput] = {
     val numOutputs = bytes.head.toInt
     @tailrec
@@ -66,7 +65,6 @@ trait RawTransactionOutputParser extends RawBitcoinSerializer[Seq[TransactionOut
   def write(output : TransactionOutput) : String = {
     val satoshis = CurrencyUnits.toSatoshis(output.value)
     val compactSizeUIntHex = output.scriptPubKeyCompactSizeUInt.hex
-    //TODO: Clean this up, this is very confusing. If you remove this .reverse method calls you can see the unit test failing
     val satoshisHexWithoutPadding : String = BitcoinSUtil.encodeHex(satoshis)
     val satoshisHex = addPadding(16,satoshisHexWithoutPadding)
     satoshisHex + compactSizeUIntHex + output.scriptPubKey.hex
