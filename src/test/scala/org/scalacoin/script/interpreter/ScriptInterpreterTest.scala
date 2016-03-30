@@ -111,4 +111,52 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterp
     }
 
   }
+
+  it must "evaluate all valid scripts from the bitcoin core script_invalid.json" in {
+    import CoreTestCaseProtocol._
+
+    /**
+     * These are test cases that were in script_valid.json that I have removed since i'm not sure how relevant
+     * they are going forward to bitcoin  - for historical purposes though these should pass
+     * they all have to do with DER encoded sigs
+     * bitcoinj currently fails on these
+     * ,
+     */
+    val source = scala.io.Source.fromFile("src/test/scala/org/scalacoin/script/interpreter/script_invalid.json")
+
+    //use this to represent a single test case from script_valid.json
+    /*    val lines =
+        """
+          |
+          |[ ["0x17 0x3014020002107777777777777777777777777777777701", "0 CHECKSIG NOT", "", "Zero-length R is correctly encoded"]]
+        """.stripMargin*/
+
+    val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n" finally source.close()
+    val json = lines.parseJson
+    val testCasesOpt : Seq[Option[CoreTestCase]] = json.convertTo[Seq[Option[CoreTestCase]]]
+    val testCases : Seq[CoreTestCase] = testCasesOpt.flatten
+
+
+    for {
+      testCase <- testCases
+      creditingTx = TransactionTestUtil.buildCreditingTransaction(testCase.scriptPubKey.scriptPubKey)
+      tx = TransactionTestUtil.buildSpendingTransaction(creditingTx,testCase.scriptSig.scriptSignature,0)
+    } yield {
+      require(testCase.scriptPubKey.asm == testCase.scriptPubKey.scriptPubKey.asm)
+      logger.info("Raw test case: " + testCase.raw)
+      logger.info("Parsed ScriptSig: " + testCase.scriptSig)
+      logger.info("Parsed ScriptPubKey: " + testCase.scriptPubKey)
+      logger.info("Flags: " + testCase.flags)
+      logger.info("Comments: " + testCase.comments)
+      val scriptPubKey = ScriptPubKeyFactory.fromAsm(testCase.scriptPubKey.asm)
+      val inputIndex = 0
+      val flags = ScriptFlagFactory.fromList(testCase.flags)
+      logger.info("Flags after parsing: " + flags)
+      val program = ScriptProgramFactory.factory(tx,scriptPubKey,inputIndex,flags)
+      withClue(testCase.raw) {
+        ScriptInterpreter.run(program) must equal (false)
+      }
+    }
+
+  }
 }
