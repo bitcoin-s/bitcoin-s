@@ -23,7 +23,7 @@ sealed trait ScriptPubKey extends TransactionElement with BitcoinSLogger {
    */
   def asm : Seq[ScriptToken]
 
-  /**
+/*  /**
    * Returns the script type of this scriptPubKey
    * @return
    */
@@ -35,7 +35,7 @@ sealed trait ScriptPubKey extends TransactionElement with BitcoinSLogger {
       case _ if (asm.last == OP_CHECKMULTISIG) => MultiSignature
       case _ => NonStandard
     }
-  }
+  }*/
 
   //the addresses that the bitcoins correlated to the output
   def addresses : Seq[BitcoinAddress] = ???

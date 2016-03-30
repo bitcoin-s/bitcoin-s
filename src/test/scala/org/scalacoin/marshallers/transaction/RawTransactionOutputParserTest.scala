@@ -1,7 +1,6 @@
 package org.scalacoin.marshallers.transaction
 
 import org.scalacoin.currency.{Satoshis, CurrencyUnits, Bitcoins}
-import org.scalacoin.protocol.{P2PKH, P2SH}
 import org.scalacoin.protocol.transaction.TransactionOutput
 import org.scalacoin.script.bitwise.OP_EQUAL
 import org.scalacoin.script.constant.{BytesToPushOntoStackImpl, ScriptConstantImpl}
@@ -26,8 +25,6 @@ class RawTransactionOutputParserTest extends FlatSpec with MustMatchers with Raw
     secondOutput.value must be (CurrencyUnits.toSatoshis(Bitcoins(0.02981145)))
     firstOutput.scriptPubKey.asm must be (Seq(OP_HASH160, BytesToPushOntoStackImpl(20),ScriptConstantImpl("eda8ae08b5c9f973f49543e90a7c292367b3337c"), OP_EQUAL))
     secondOutput.scriptPubKey.asm must be (Seq(OP_HASH160,BytesToPushOntoStackImpl(20), ScriptConstantImpl("be2319b9060429692ebeffaa3be38497dc5380c8"), OP_EQUAL))
-    firstOutput.scriptPubKey.scriptType must be (P2SH)
-    secondOutput.scriptPubKey.scriptType must be (P2SH)
   }
 
   it must "seralialize a transaction output" in {
@@ -54,7 +51,5 @@ class RawTransactionOutputParserTest extends FlatSpec with MustMatchers with Raw
     val rawTwoOutputs = "026c405d05000000001976a91431a420903c05a0a7de2de40c9f02ebedbacdc17288ac809698000000000017a914af575bd77c5ce7eba3bd9ce6f89774713ae62c7987"
     val outputs = RawTransactionOutputParser.read(rawTwoOutputs)
     outputs.size must be (2)
-    outputs.head.scriptPubKey.scriptType must be (P2PKH)
-    outputs(1).scriptPubKey.scriptType must be (P2SH)
   }
 }

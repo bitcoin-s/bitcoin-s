@@ -1,12 +1,14 @@
 package org.scalacoin.script.locktime
 
+import org.scalacoin.protocol.transaction.TransactionConstants
 import org.scalacoin.script.constant.{ScriptNumberImpl, ScriptNumber}
 import org.scalacoin.script.{ScriptProgramFactory, ScriptProgramImpl, ScriptProgram}
+import org.scalacoin.util.BitcoinSLogger
 
 /**
  * Created by chris on 2/8/16.
  */
-trait LockTimeInterpreter {
+trait LockTimeInterpreter extends BitcoinSLogger {
 
 
   /**
@@ -25,14 +27,18 @@ trait LockTimeInterpreter {
     require(program.script.headOption.isDefined && program.script.head == OP_CHECKLOCKTIMEVERIFY,
       "Script top must be OP_CHECKLOCKTIMEVERIFY")
     if (program.stack.size == 0) {
+      logger.warn("Transaction validation failing in OP_CHECKLOCKTIMEVERIFY because we have no stack items")
       ScriptProgramFactory.factory(program, program.stack, program.script.tail, false)
-    } else {
+    } else if (program.transaction.inputs(program.inputIndex).sequence == TransactionConstants.sequence) {
+      logger.warn("Transaction validation failing in OP_CHECKLOCKTIMEVERIFY because the sequence number is 0xffffffff")
+      ScriptProgramFactory.factory(program, program.stack, program.script.tail, false)
+    }
+    else {
       val isValid = program.stack.head match {
         case s : ScriptNumber if (s < ScriptNumberImpl(0)) => false
         case s : ScriptNumber if (s > ScriptNumberImpl(500000000) && program.transaction.lockTime < 500000000) => false
         case s : ScriptNumber if (s < ScriptNumberImpl(500000000) && program.transaction.lockTime > 500000000) => false
-        case s if (program.transaction.inputs.map(_.sequence == 0xffffffff).exists(_ == true)) => false
-        case _ => true
+        case _ => false
       }
       ScriptProgramFactory.factory(program,program.stack, program.script.tail, isValid)
     }
