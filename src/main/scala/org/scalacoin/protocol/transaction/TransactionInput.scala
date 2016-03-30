@@ -9,7 +9,7 @@ import org.scalacoin.util.{BitcoinSUtil, ScalacoinUtil}
 /**
  * Created by chris on 12/26/15.
  */
-sealed trait TransactionInput extends TransactionElement with TransactionInputFactory {
+sealed trait TransactionInput extends TransactionElement  {
 
   def previousOutput : TransactionOutPoint
   def scriptSignature : ScriptSignature
@@ -24,11 +24,11 @@ sealed trait TransactionInput extends TransactionElement with TransactionInputFa
   def hex = RawTransactionInputParser.write(Seq(this))
 }
 
-object TransactionInput extends TransactionInput {
-  override def previousOutput = empty.previousOutput
-  override def scriptSignature = empty.scriptSignature
-  override def sequence = empty.sequence
-  override def scriptSigCompactSizeUInt = empty.scriptSigCompactSizeUInt
+case object EmptyTransactionInput extends TransactionInput {
+  override def previousOutput = TransactionInputFactory.empty.previousOutput
+  override def scriptSignature = TransactionInputFactory.empty.scriptSignature
+  override def sequence = TransactionInputFactory.empty.sequence
+  override def scriptSigCompactSizeUInt = TransactionInputFactory.empty.scriptSigCompactSizeUInt
 }
 
 sealed case class TransactionInputImpl(previousOutput : TransactionOutPoint,

@@ -1,7 +1,7 @@
 package org.scalacoin.crypto
 
 import org.scalacoin.protocol.script.{ScriptSignatureFactory, ScriptSignature}
-import org.scalacoin.protocol.transaction.{UpdateTransactionInputs, TransactionInput, Transaction, TransactionOutput}
+import org.scalacoin.protocol.transaction._
 import org.scalacoin.util._
 import org.scalatest.{FlatSpec, MustMatchers}
 
@@ -41,8 +41,8 @@ class TransactionSignatureCheckerTest extends FlatSpec with MustMatchers {
     val scriptSig : ScriptSignature = spendingTx.inputs.head.scriptSignature
     val newScriptSigAsm = Seq(scriptSig.asm.head) ++ scriptSig.asm.slice(3,scriptSig.asm.size)
     val newScriptSigWithSignatureRemoved = ScriptSignatureFactory.fromAsm(newScriptSigAsm)
-    val newInput = spendingTx.inputs(inputIndex).factory(newScriptSigWithSignatureRemoved)
-    val txNewInputs = Transaction.factory(UpdateTransactionInputs(Seq(newInput)))
+    val newInput = TransactionInputFactory.factory(spendingTx.inputs(inputIndex),newScriptSigWithSignatureRemoved)
+    val txNewInputs = TransactionFactory.factory(EmptyTransaction,UpdateTransactionInputs(Seq(newInput)))
     TransactionSignatureChecker.checkSignature(txNewInputs,inputIndex,creditingOutput.scriptPubKey,true) must be (SignatureValidationfailureIncorrectSignatures)
   }
 }

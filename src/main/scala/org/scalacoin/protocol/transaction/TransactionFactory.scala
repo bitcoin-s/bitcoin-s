@@ -6,7 +6,7 @@ import org.scalacoin.util.Factory
 /**
  * Created by chris on 2/21/16.
  */
-trait TransactionFactory extends Factory[Transaction] { this : Transaction =>
+trait TransactionFactory extends Factory[Transaction] {
 
 
   /**
@@ -14,8 +14,8 @@ trait TransactionFactory extends Factory[Transaction] { this : Transaction =>
    * @param updatedOutputs
    * @return
    */
-  def factory(updatedOutputs : UpdateTransactionOutputs) : Transaction = {
-    TransactionImpl(version,inputs,updatedOutputs.outputs,lockTime)
+  def factory(oldTx : Transaction, updatedOutputs : UpdateTransactionOutputs) : Transaction = {
+    TransactionImpl(oldTx.version,oldTx.inputs,updatedOutputs.outputs,oldTx.lockTime)
   }
 
   /**
@@ -23,8 +23,8 @@ trait TransactionFactory extends Factory[Transaction] { this : Transaction =>
    * @param updatedInputs
    * @return
    */
-  def factory(updatedInputs : UpdateTransactionInputs) : Transaction = {
-    TransactionImpl(version,updatedInputs.inputs,outputs,lockTime)
+  def factory(oldTx : Transaction,updatedInputs : UpdateTransactionInputs) : Transaction = {
+    TransactionImpl(oldTx.version,updatedInputs.inputs,oldTx.outputs,oldTx.lockTime)
   }
 
 
@@ -32,13 +32,13 @@ trait TransactionFactory extends Factory[Transaction] { this : Transaction =>
    * Removes the inputs of the transactions
    * @return
    */
-  def emptyInputs : Transaction = TransactionImpl(version,Seq(),outputs,lockTime)
+  def emptyInputs(oldTx : Transaction) : Transaction = TransactionImpl(oldTx.version,Seq(),oldTx.outputs,oldTx.lockTime)
 
   /**
    * Removes the outputs of the transactions
    * @return
    */
-  def emptyOutputs : Transaction = TransactionImpl(version,inputs,Seq(),lockTime)
+  def emptyOutputs(oldTx : Transaction) : Transaction = TransactionImpl(oldTx.version,oldTx.inputs,Seq(),oldTx.lockTime)
 
   def empty : Transaction = TransactionImpl(TransactionConstants.version,Seq(),Seq(),TransactionConstants.lockTime)
 
@@ -63,6 +63,7 @@ trait TransactionFactory extends Factory[Transaction] { this : Transaction =>
 
 }
 
+object TransactionFactory extends TransactionFactory
 sealed trait TransactionFactoryHelper
 case class UpdateTransactionOutputs(outputs : Seq[TransactionOutput]) extends TransactionFactoryHelper
 case class UpdateTransactionInputs(inputs : Seq[TransactionInput]) extends TransactionFactoryHelper
