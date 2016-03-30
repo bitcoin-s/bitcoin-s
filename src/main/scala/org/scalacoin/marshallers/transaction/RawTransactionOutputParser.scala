@@ -4,7 +4,7 @@ import org.scalacoin.currency.{CurrencyUnits, Satoshis}
 import org.scalacoin.marshallers.RawBitcoinSerializer
 import org.scalacoin.marshallers.script.{RawScriptPubKeyParser, ScriptParser}
 import org.scalacoin.protocol.CompactSizeUInt
-import org.scalacoin.protocol.transaction.{TransactionOutputImpl, TransactionOutput}
+import org.scalacoin.protocol.transaction.{TransactionOutputFactory, TransactionOutputImpl, TransactionOutput}
 import org.scalacoin.util.{BitcoinSUtil}
 import org.slf4j.LoggerFactory
 
@@ -37,7 +37,7 @@ trait RawTransactionOutputParser extends RawBitcoinSerializer[Seq[TransactionOut
         val scriptPubKeyBytes = bytes.slice(firstScriptPubKeyByte + scriptCompactSizeUIntSize,
           firstScriptPubKeyByte + scriptCompactSizeUIntSize + scriptSigCompactSizeUInt.num.toInt)
         val scriptPubKey = RawScriptPubKeyParser.read(scriptPubKeyBytes)
-        val parsedOutput = TransactionOutputImpl(satoshis, 0, scriptPubKey)
+        val parsedOutput = TransactionOutputFactory.factory(satoshis,scriptPubKey)
         val newAccum =  parsedOutput:: accum
         val bytesToBeParsed = bytes.slice(parsedOutput.size, bytes.size)
         val outputsLeft = outputsLeftToParse-1

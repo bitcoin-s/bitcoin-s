@@ -14,7 +14,6 @@ import org.scalacoin.util.BitcoinSUtil
 sealed trait TransactionOutput extends TransactionElement {
 
   def value : CurrencyUnit
-  def n : Int
   def scriptPubKey : ScriptPubKey
   def scriptPubKeyCompactSizeUInt : CompactSizeUInt = BitcoinSUtil.parseCompactSizeUInt(scriptPubKey)
   //https://bitcoin.org/en/developer-reference#txout
@@ -25,10 +24,8 @@ sealed trait TransactionOutput extends TransactionElement {
 
 case object TransactionOutput extends TransactionOutput {
   override def value = CurrencyUnits.negativeSatoshi
-  override def n = 0
   override def scriptPubKey = ScriptPubKeyFactory.empty
-
 }
 
 
-case class TransactionOutputImpl(value : CurrencyUnit, n : Int, scriptPubKey: ScriptPubKey) extends TransactionOutput
+case class TransactionOutputImpl(value : CurrencyUnit, scriptPubKey: ScriptPubKey) extends TransactionOutput

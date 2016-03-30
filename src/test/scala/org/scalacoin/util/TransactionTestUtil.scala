@@ -57,12 +57,12 @@ trait TransactionTestUtil extends BitcoinSLogger {
         txCredit.vout[0].scriptPubKey = scriptPubKey;
         txCredit.vout[0].nValue = 0;*/
 
-    val outpoint = TransactionOutPointImpl("0000000000000000000000000000000000000000000000000000000000000000",0xFFFFFFFF)
+    val outpoint = TransactionOutPointFactory.factory("0000000000000000000000000000000000000000000000000000000000000000",0xFFFFFFFF)
 /*    require(outpoint.hex == "0000000000000000000000000000000000000000000000000000000000000000ffffffff", "Outpoint hex is wrong")*/
     val scriptSignature = ScriptSignatureFactory.fromHex("0000")
 /*    require(scriptSignature.hex == "0000", "Wrong scriptSig\n Expected scriptSig: 0000\nActual scriptSig: " + scriptSignature.hex )*/
-    val input = TransactionInputImpl(outpoint,scriptSignature,TransactionConstants.sequence)
-    val output = TransactionOutputImpl(CurrencyUnits.zeroSatoshis,0,scriptPubKey)
+    val input = TransactionInputFactory.factory(outpoint,scriptSignature,TransactionConstants.sequence)
+    val output = TransactionOutputFactory.factory(CurrencyUnits.zeroSatoshis,scriptPubKey)
 
     val tx = TransactionImpl(TransactionConstants.version,Seq(input),Seq(output),TransactionConstants.lockTime)
 /*    require(tx.hex == "01000000010000000000000000000000000000000000000000000000000000000000000000ffffffff020000ffffffff01000000000000000043410479be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8ac00000000",
@@ -86,9 +86,9 @@ trait TransactionTestUtil extends BitcoinSLogger {
     txSpend.vout[0].scriptPubKey = CScript();
     txSpend.vout[0].nValue = 0;*/
 
-    val outpoint = TransactionOutPointImpl(creditingTx.txId,outputIndex)
+    val outpoint = TransactionOutPointFactory.factory(creditingTx.txId,outputIndex)
     val input = TransactionInputFactory.factory(outpoint,scriptSignature,TransactionConstants.sequence)
-    val output = TransactionOutputImpl(CurrencyUnits.zeroSatoshis,0,EmptyScriptPubKey)
+    val output = TransactionOutputFactory.factory(CurrencyUnits.zeroSatoshis,EmptyScriptPubKey)
     val tx = TransactionImpl(TransactionConstants.version,Seq(input),Seq(output),TransactionConstants.lockTime)
 /*    val expectedHex = "01000000019ce5586f04dd407719ab7e2ed3583583b9022f29652702cfac5ed082013461fe000000004847304402200a5c6163f07b8d3b013c4d1d6dba25e780b39658d79ba37af7057a3b7f15ffa102201fd9b4eaa9943f734928b99a83592c2e7bf342ea2680f6a2bb705167966b742001ffffffff0100000000000000000000000000"
     require(tx.hex == expectedHex,"\nExpected hex: " + expectedHex + "\nActual hex:   " +  tx.hex)*/
