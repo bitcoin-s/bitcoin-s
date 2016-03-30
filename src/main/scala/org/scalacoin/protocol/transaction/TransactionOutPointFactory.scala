@@ -14,9 +14,14 @@ trait TransactionOutPointFactory extends Factory[TransactionOutPoint] {
    * @return
    */
   def factory(output : TransactionOutput,parentTransaction : Transaction) : TransactionOutPoint = {
-    TransactionOutPointImpl(parentTransaction.txId,output.n)
+    val indexOfOutput = parentTransaction.outputs.indexOf(output)
+    if (indexOfOutput == -1) throw new RuntimeException("This output is not contained in the parent transaction")
+    else TransactionOutPointImpl(parentTransaction.txId,indexOfOutput)
   }
 
+  def factory(txId : String, index : Int) = {
+    TransactionOutPointImpl(txId, index)
+  }
   def empty : TransactionOutPoint = TransactionOutPointImpl("",-1)
 
   def fromBytes(bytes : Seq[Byte]) : TransactionOutPoint = RawTransactionOutPointParser.read(bytes)

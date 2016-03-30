@@ -11,7 +11,6 @@ import spray.json._
  */
 object TransactionOutputMarshaller extends DefaultJsonProtocol {
   val valueKey = "value"
-  val nKey = "n"
 
 
   implicit object TransactionOutputFormatter extends RootJsonFormat[TransactionOutput] {
@@ -19,16 +18,14 @@ object TransactionOutputMarshaller extends DefaultJsonProtocol {
     override def read(value : JsValue) : TransactionOutput = {
       val obj = value.asJsObject
       val bitcoins = Bitcoins(obj.fields(valueKey).convertTo[Double])
-      val n = obj.fields(nKey)
       val scriptPubKey : ScriptPubKey = ScriptPubKeyMarshaller.ScriptPubKeyFormatter.read(obj.fields(ScriptPubKeyMarshaller.scriptPubKeyKey))
-      TransactionOutputImpl(bitcoins,n.convertTo[Int], scriptPubKey)
+      TransactionOutputImpl(bitcoins, scriptPubKey)
     }
 
     override def write(output : TransactionOutput) : JsValue = {
       val valueInBitcoins = CurrencyUnits.sataoshisToBitcoin(CurrencyUnits.toSatoshis(output.value))
       val m : Map[String,JsValue] = Map(
         valueKey -> JsNumber(valueInBitcoins.value),
-        nKey -> JsNumber(output.n),
         ScriptPubKeyMarshaller.scriptPubKeyKey -> ScriptPubKeyMarshaller.ScriptPubKeyFormatter.write(output.scriptPubKey)
       )
       JsObject(m)

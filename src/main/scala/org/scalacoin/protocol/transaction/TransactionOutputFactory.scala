@@ -12,15 +12,17 @@ trait TransactionOutputFactory extends Factory[TransactionOutput] {
 
 
   def factory(oldOutput : TransactionOutput, newCurrencyUnit: CurrencyUnit) : TransactionOutput =
-    TransactionOutputImpl(newCurrencyUnit,oldOutput.n,oldOutput.scriptPubKey)
+    TransactionOutputImpl(newCurrencyUnit,oldOutput.scriptPubKey)
 
   def factory(oldOutput : TransactionOutput, newScriptPubKey : ScriptPubKey) : TransactionOutput =
-    TransactionOutputImpl(oldOutput.value,oldOutput.n,newScriptPubKey)
+    TransactionOutputImpl(oldOutput.value,newScriptPubKey)
 
   def factory(oldOutput : TransactionOutput, newCurrencyUnit: CurrencyUnit, newScriptPubKey: ScriptPubKey) : TransactionOutput = {
-    TransactionOutputImpl(newCurrencyUnit,oldOutput.n,newScriptPubKey)
+    TransactionOutputImpl(newCurrencyUnit,newScriptPubKey)
   }
-  def empty : TransactionOutput = TransactionOutputImpl(CurrencyUnits.negativeSatoshi,0,ScriptPubKeyFactory.empty)
+
+  def factory(currencyUnit: CurrencyUnit, scriptPubKey: ScriptPubKey) = TransactionOutputImpl(currencyUnit,scriptPubKey)
+  def empty : TransactionOutput = TransactionOutputImpl(CurrencyUnits.negativeSatoshi,ScriptPubKeyFactory.empty)
 
   //TODO: This could bomb if the transaction output is not in the right format,
   //probably should put more thought into this to make it more robust
