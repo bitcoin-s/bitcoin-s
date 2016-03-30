@@ -8,17 +8,17 @@ import org.scalacoin.util.Factory
 /**
  * Created by chris on 2/22/16.
  */
-trait TransactionOutputFactory extends Factory[TransactionOutput] { this : TransactionOutput =>
+trait TransactionOutputFactory extends Factory[TransactionOutput] {
 
 
-  def factory(newCurrencyUnit: CurrencyUnit) : TransactionOutput = TransactionOutputImpl(newCurrencyUnit,n,scriptPubKey)
+  def factory(oldOutput : TransactionOutput, newCurrencyUnit: CurrencyUnit) : TransactionOutput =
+    TransactionOutputImpl(newCurrencyUnit,oldOutput.n,oldOutput.scriptPubKey)
 
-  def factory(newOutputIndex : Int) : TransactionOutput = TransactionOutputImpl(value,newOutputIndex,scriptPubKey)
+  def factory(oldOutput : TransactionOutput, newScriptPubKey : ScriptPubKey) : TransactionOutput =
+    TransactionOutputImpl(oldOutput.value,oldOutput.n,newScriptPubKey)
 
-  def factory(newScriptPubKey : ScriptPubKey) : TransactionOutput = TransactionOutputImpl(value,n,newScriptPubKey)
-
-  def factory(newCurrencyUnit: CurrencyUnit, newScriptPubKey: ScriptPubKey) : TransactionOutput = {
-    TransactionOutputImpl(newCurrencyUnit,n,newScriptPubKey)
+  def factory(oldOutput : TransactionOutput, newCurrencyUnit: CurrencyUnit, newScriptPubKey: ScriptPubKey) : TransactionOutput = {
+    TransactionOutputImpl(newCurrencyUnit,oldOutput.n,newScriptPubKey)
   }
   def empty : TransactionOutput = TransactionOutputImpl(CurrencyUnits.negativeSatoshi,0,ScriptPubKeyFactory.empty)
 
@@ -27,3 +27,6 @@ trait TransactionOutputFactory extends Factory[TransactionOutput] { this : Trans
   def fromBytes(bytes : Seq[Byte]) : TransactionOutput = RawTransactionOutputParser.read(bytes).head
 
 }
+
+
+object TransactionOutputFactory extends TransactionOutputFactory

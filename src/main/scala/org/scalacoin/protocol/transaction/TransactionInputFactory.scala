@@ -8,28 +8,28 @@ import org.scalacoin.util.{Factory, ScalacoinUtil}
  * Created by chris on 2/19/16.
  * Responsible for creating TransactionInputs
  */
-trait TransactionInputFactory extends Factory[TransactionInput] { this : TransactionInput =>
+trait TransactionInputFactory extends Factory[TransactionInput] {
 
-  def factory(scriptSig : ScriptSignature) : TransactionInput = {
-    TransactionInputImpl(previousOutput,scriptSig,sequence)
+  def factory(oldInput : TransactionInput, scriptSig : ScriptSignature) : TransactionInput = {
+    TransactionInputImpl(oldInput.previousOutput,scriptSig,oldInput.sequence)
   }
 
-  def factory(scriptPubKey: ScriptPubKey) : TransactionInput = {
+  def factory(oldInput : TransactionInput, scriptPubKey: ScriptPubKey) : TransactionInput = {
     val scriptSig = ScriptSignatureFactory.fromHex(scriptPubKey.hex)
-    factory(scriptSig)
+    factory(oldInput,scriptSig)
   }
 
-  def factory(sequenceNumber : Long) : TransactionInput = {
-    TransactionInputImpl(previousOutput, scriptSignature,sequenceNumber)
+  def factory(oldInput : TransactionInput,sequenceNumber : Long) : TransactionInput = {
+    TransactionInputImpl(oldInput.previousOutput, oldInput.scriptSignature,sequenceNumber)
   }
 
-  def factory(output : TransactionOutput, outputsTransaction : Transaction) : TransactionInput = {
-    val outPoint = TransactionOutPoint.factory(output,outputsTransaction)
-    factory(outPoint)
+  def factory(oldInput : TransactionInput,output : TransactionOutput, outputsTransaction : Transaction) : TransactionInput = {
+    val outPoint = TransactionOutPointFactory.factory(output,outputsTransaction)
+    factory(oldInput,outPoint)
   }
 
-  def factory(outPoint: TransactionOutPoint) : TransactionInput = {
-    TransactionInputImpl(outPoint,scriptSignature,sequence)
+  def factory(oldInput : TransactionInput, outPoint: TransactionOutPoint) : TransactionInput = {
+    TransactionInputImpl(outPoint,oldInput.scriptSignature,oldInput.sequence)
   }
 
 
@@ -38,7 +38,7 @@ trait TransactionInputFactory extends Factory[TransactionInput] { this : Transac
   }
 
   def empty : TransactionInput = {
-    TransactionInputImpl(TransactionOutPoint.empty,
+    TransactionInputImpl(EmptyTransactionOutPoint,
       ScriptSignatureFactory.empty,TransactionConstants.sequence)
   }
 
@@ -47,3 +47,6 @@ trait TransactionInputFactory extends Factory[TransactionInput] { this : Transac
   def fromBytes(bytes : Seq[Byte]) : TransactionInput = RawTransactionInputParser.read(bytes).head
 
 }
+
+
+object TransactionInputFactory extends TransactionInputFactory

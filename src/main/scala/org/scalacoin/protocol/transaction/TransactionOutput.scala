@@ -11,7 +11,7 @@ import org.scalacoin.util.BitcoinSUtil
 /**
  * Created by chris on 12/26/15.
  */
-sealed trait TransactionOutput extends TransactionElement with TransactionOutputFactory {
+sealed trait TransactionOutput extends TransactionElement {
 
   def value : CurrencyUnit
   def n : Int
@@ -23,9 +23,9 @@ sealed trait TransactionOutput extends TransactionElement with TransactionOutput
   override def hex = RawTransactionOutputParser.write(Seq(this))
 }
 
-object TransactionOutput extends TransactionOutput {
-  def value = CurrencyUnits.negativeSatoshi
-  def n = 0
+case object TransactionOutput extends TransactionOutput {
+  override def value = CurrencyUnits.negativeSatoshi
+  override def n = 0
   override def scriptPubKey = ScriptPubKeyFactory.empty
 
 }

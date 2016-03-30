@@ -16,9 +16,8 @@ sealed trait TransactionOutPoint extends TransactionElement with TransactionOutP
   override def hex = RawTransactionOutPointParser.write(this)
 }
 
-object TransactionOutPoint extends TransactionOutPoint {
+case object EmptyTransactionOutPoint extends TransactionOutPoint {
   def txId : String = ""
   def vout = -1
-
 }
-case class TransactionOutPointImpl(txId : String, vout : Int) extends TransactionOutPoint
+sealed case class TransactionOutPointImpl(txId : String, vout : Int) extends TransactionOutPoint

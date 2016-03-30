@@ -6,7 +6,7 @@ import org.scalacoin.util.Factory
 /**
  * Created by chris on 2/22/16.
  */
-trait TransactionOutPointFactory extends Factory[TransactionOutPoint] { this : TransactionOutPoint =>
+trait TransactionOutPointFactory extends Factory[TransactionOutPoint] {
 
   /**
    * Creates a transaction outpoint from a TransactionOutput & it's Transaction
@@ -22,4 +22,6 @@ trait TransactionOutPointFactory extends Factory[TransactionOutPoint] { this : T
   def fromBytes(bytes : Seq[Byte]) : TransactionOutPoint = RawTransactionOutPointParser.read(bytes)
 
 }
+
+object TransactionOutPointFactory extends TransactionOutPointFactory
 
