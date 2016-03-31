@@ -33,6 +33,6 @@ case object SignatureValidationFailureNotStrictDerEncoding extends TransactionSi
  * Signature validation failed because there were not enough correct signatures for the transaction
  * we were given
  */
-case object SignatureValidationfailureIncorrectSignatures extends TransactionSignatureCheckerResult {
+case object SignatureValidationFailureIncorrectSignatures extends TransactionSignatureCheckerResult {
   def isValid = false
 }

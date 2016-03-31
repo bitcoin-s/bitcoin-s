@@ -3,7 +3,7 @@ package org.scalacoin.protocol.script
 
 import org.scalacoin.crypto.ECFactory
 import org.scalacoin.marshallers.script.RawScriptSignatureParser
-import org.scalacoin.script.constant.ScriptConstantImpl
+import org.scalacoin.script.constant._
 import org.scalacoin.script.crypto.{SIGHASH_SINGLE, SIGHASH_ALL}
 import org.scalacoin.util.{TransactionTestUtil, TestUtil}
 import org.scalatest.{FlatSpec, MustMatchers}
@@ -69,6 +69,13 @@ class ScriptSignatureTest extends FlatSpec with MustMatchers {
     EmptyScriptSignature.bytes must be (Seq())
     EmptyScriptSignature.asm must be (Seq())
     EmptyScriptSignature.signatures must be (Seq())
+  }
+
+
+  it must "filter out all of the push operations in a scriptSig" in {
+    EmptyScriptSignature.filterPushOps(Seq(OP_PUSHDATA1, OP_PUSHDATA2, OP_PUSHDATA4) ++
+      BytesToPushOntoStackFactory.operations).isEmpty must be (true)
+
   }
 
 

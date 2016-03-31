@@ -11,8 +11,6 @@ import org.slf4j.LoggerFactory
  */
 trait BitwiseInterpreter extends ControlOperationsInterpreter  {
 
-  private def logger = LoggerFactory.getLogger(this.getClass())
-
   /**
    * Returns 1 if the inputs are exactly equal, 0 otherwise.
    * @param program
