@@ -5,7 +5,7 @@ import org.scalacoin.script.bitwise.OP_EQUALVERIFY
 import org.scalacoin.script.constant.{ScriptConstantImpl, BytesToPushOntoStackImpl, ScriptToken}
 import org.scalacoin.script.crypto.{OP_CHECKSIG, OP_HASH160, OP_CODESEPARATOR}
 import org.scalacoin.script.stack.OP_DUP
-import org.scalacoin.util.{ScalacoinUtil, TestUtil}
+import org.scalacoin.util.{TestUtil}
 import org.scalatest.{MustMatchers, FlatSpec}
 
 /**

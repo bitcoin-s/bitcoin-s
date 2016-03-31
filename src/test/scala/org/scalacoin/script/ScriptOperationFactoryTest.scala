@@ -8,7 +8,7 @@ import org.scalacoin.script.crypto.OP_RIPEMD160
 import org.scalacoin.script.locktime.OP_CHECKLOCKTIMEVERIFY
 import org.scalacoin.script.splice.OP_SUBSTR
 import org.scalacoin.script.stack.OP_TOALTSTACK
-import org.scalacoin.util.{BitcoinSUtil, ScalacoinUtil}
+import org.scalacoin.util.{BitcoinSUtil}
 import org.scalatest.{FlatSpec, MustMatchers}
 
 /**

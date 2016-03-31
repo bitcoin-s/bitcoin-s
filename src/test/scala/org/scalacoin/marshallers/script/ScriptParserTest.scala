@@ -8,7 +8,7 @@ import org.scalacoin.script.control.{OP_ENDIF, OP_IF}
 import org.scalacoin.script.crypto.{OP_CHECKMULTISIG, OP_HASH160}
 import org.scalacoin.script.reserved.OP_NOP
 import org.scalacoin.script.stack.OP_PICK
-import org.scalacoin.util.{BitcoinSUtil, ScalacoinUtil, TestUtil}
+import org.scalacoin.util.{BitcoinSUtil, TestUtil}
 import org.scalatest.{FlatSpec, MustMatchers}
 
 /**

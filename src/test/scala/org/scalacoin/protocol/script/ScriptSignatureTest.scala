@@ -5,7 +5,7 @@ import org.scalacoin.crypto.ECFactory
 import org.scalacoin.marshallers.script.RawScriptSignatureParser
 import org.scalacoin.script.constant.ScriptConstantImpl
 import org.scalacoin.script.crypto.{SIGHASH_SINGLE, SIGHASH_ALL}
-import org.scalacoin.util.{TransactionTestUtil, TestUtil, ScalacoinUtil}
+import org.scalacoin.util.{TransactionTestUtil, TestUtil}
 import org.scalatest.{FlatSpec, MustMatchers}
 
 /**
@@ -62,6 +62,13 @@ class ScriptSignatureTest extends FlatSpec with MustMatchers {
     val hex = "493046022100d23459d03ed7e9511a47d13292d3430a04627de6235b6e51a40f9cd386f2abe3022100e7d25b080f0bb8d8d5f878bba7d54ad2fda650ea8d158a33ee3cbd11768191fd004104b0e2c879e4daf7b9ab68350228c159766676a14f5815084ba166432aab46198d4cca98fa3e9981d0a90b2effc514b76279476550ba3663fdcaff94c38420e9d5"
     val scriptSig : ScriptSignature = RawScriptSignatureParser.read(hex)
     scriptSig.hashType(scriptSig.signatures.head) must be (SIGHASH_ALL(0))
+  }
+
+  it must "have an empty script signature" in {
+    EmptyScriptSignature.hex must be ("")
+    EmptyScriptSignature.bytes must be (Seq())
+    EmptyScriptSignature.asm must be (Seq())
+    EmptyScriptSignature.signatures must be (Seq())
   }
 
 

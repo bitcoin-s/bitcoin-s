@@ -1,6 +1,6 @@
 package org.scalacoin.script.crypto
 
-import org.scalacoin.util.{BitcoinSUtil, ScalacoinUtil}
+import org.scalacoin.util.{BitcoinSUtil}
 
 /**
  * Created by chris on 1/18/16.

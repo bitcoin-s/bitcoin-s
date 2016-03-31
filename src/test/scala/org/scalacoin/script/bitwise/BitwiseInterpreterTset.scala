@@ -77,10 +77,4 @@ class BitwiseInterpreterTest extends FlatSpec with MustMatchers with BitwiseInte
     val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
     opEqual(program).stack.head must be (ScriptTrue)
   }
-
-  it must "evaluate two "
-
-
-
-
 }

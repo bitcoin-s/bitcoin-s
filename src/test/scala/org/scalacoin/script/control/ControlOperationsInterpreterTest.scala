@@ -463,6 +463,15 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers with C
 
   }
 
+  it must "mark a transaction as invalid if it is trying to spend an OP_RETURN output" in {
+    val stack = Seq()
+    val script = Seq(OP_RETURN)
+    val program = ScriptProgramFactory.factory(TestUtil.testProgram,stack,script)
+    val newProgram = opReturn(program)
+
+    newProgram.isValid must be (false)
+  }
+
 }
 
 
