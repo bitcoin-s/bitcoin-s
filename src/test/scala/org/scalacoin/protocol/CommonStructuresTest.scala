@@ -1,6 +1,5 @@
 package org.scalacoin.protocol
 
-import org.scalacoin.util.ScalacoinUtil
 import org.scalatest.{MustMatchers, FlatSpec}
 
 /**

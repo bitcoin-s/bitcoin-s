@@ -2,7 +2,6 @@ package org.scalacoin.script.splice
 
 import org.scalacoin.script.{ScriptProgramFactory, ScriptOperationFactory, ScriptProgramImpl, ScriptProgram}
 import org.scalacoin.script.constant._
-import org.scalacoin.util.ScalacoinUtil
 import Math._
 /**
  * Created by chris on 2/4/16.

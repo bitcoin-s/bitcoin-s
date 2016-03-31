@@ -4,7 +4,7 @@ import org.scalacoin.crypto.{ECPublicKey, ECDigitalSignature}
 import org.scalacoin.marshallers.script.{RawScriptSignatureParser, ScriptParser}
 import org.scalacoin.script.constant._
 import org.scalacoin.script.crypto.{OP_CHECKMULTISIGVERIFY, OP_CHECKMULTISIG}
-import org.scalacoin.util.{BitcoinSLogger, Factory, BitcoinSUtil, ScalacoinUtil}
+import org.scalacoin.util.{BitcoinSLogger, Factory, BitcoinSUtil}
 
 import scala.util.{Failure, Success, Try}
 

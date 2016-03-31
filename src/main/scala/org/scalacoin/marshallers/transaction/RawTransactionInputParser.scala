@@ -5,7 +5,7 @@ import org.scalacoin.marshallers.script.RawScriptSignatureParser
 import org.scalacoin.protocol.{CompactSizeUInt}
 import org.scalacoin.protocol.script.ScriptSignature
 import org.scalacoin.protocol.transaction.{TransactionInputImpl, TransactionOutPoint, TransactionInput}
-import org.scalacoin.util.{BitcoinSUtil, ScalacoinUtil}
+import org.scalacoin.util.{BitcoinSUtil}
 import org.slf4j.LoggerFactory
 
 import scala.annotation.tailrec

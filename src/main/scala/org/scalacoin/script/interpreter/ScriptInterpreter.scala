@@ -111,7 +111,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
         case OP_NOTIF :: t => loop(opNotIf(program))
         case OP_ELSE :: t => loop(opElse(program))
         case OP_ENDIF :: t => loop(opEndIf(program))
-        case OP_RETURN :: t => opReturn(program)
+        case OP_RETURN :: t => opReturn(program).isValid
         case OP_VERIFY :: t =>
           val newProgram = opVerify(program)
           if (newProgram.isValid) loop(newProgram)

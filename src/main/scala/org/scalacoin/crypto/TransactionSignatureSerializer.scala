@@ -8,7 +8,7 @@ import org.scalacoin.protocol.transaction._
 import org.scalacoin.script.constant.ScriptToken
 import org.scalacoin.script.crypto._
 import org.scalacoin.script.stack.OP_DUP
-import org.scalacoin.util.{BitcoinScriptUtil, BitcoinSUtil, ScalacoinUtil, CryptoUtil}
+import org.scalacoin.util.{BitcoinScriptUtil, BitcoinSUtil, CryptoUtil}
 import org.slf4j.LoggerFactory
 
 /**

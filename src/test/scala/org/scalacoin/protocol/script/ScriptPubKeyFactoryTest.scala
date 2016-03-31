@@ -59,5 +59,5 @@ class ScriptPubKeyFactoryTest extends FlatSpec with MustMatchers {
     isMultiSigScriptPubKey must be (true)
 
   }
-  
+
 }

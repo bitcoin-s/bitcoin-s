@@ -2,7 +2,7 @@ package org.scalacoin.protocol.transaction
 
 import org.scalacoin.marshallers.transaction.RawTransactionInputParser
 import org.scalacoin.protocol.script.{ScriptSignatureFactory, ScriptSignature, ScriptPubKey}
-import org.scalacoin.util.{Factory, ScalacoinUtil}
+import org.scalacoin.util.{Factory}
 
 /**
  * Created by chris on 2/19/16.

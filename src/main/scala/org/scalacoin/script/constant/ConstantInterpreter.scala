@@ -1,7 +1,6 @@
 package org.scalacoin.script.constant
 
 import org.scalacoin.script.{ScriptProgramFactory, ScriptProgramImpl, ScriptProgram}
-import org.scalacoin.util.ScalacoinUtil
 import org.slf4j.LoggerFactory
 
 import scala.annotation.tailrec

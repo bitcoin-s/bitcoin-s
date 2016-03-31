@@ -1,7 +1,7 @@
 package org.scalacoin.crypto
 
 import org.bitcoinj.core.Sha256Hash
-import org.scalacoin.util.{BitcoinSUtil, ScalacoinUtil}
+import org.scalacoin.util.{BitcoinSUtil}
 
 /**
  * Created by chris on 2/16/16.

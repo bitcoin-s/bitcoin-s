@@ -1,7 +1,6 @@
 package org.scalacoin.marshallers.transaction
 
 import org.scalacoin.protocol.transaction.TransactionOutPointImpl
-import org.scalacoin.util.ScalacoinUtil
 import org.scalatest.{FlatSpec, MustMatchers}
 
 /**

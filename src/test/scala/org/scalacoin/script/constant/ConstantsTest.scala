@@ -1,6 +1,5 @@
 package org.scalacoin.script.constant
 
-import org.scalacoin.util.ScalacoinUtil
 import org.scalatest.{FlatSpec, MustMatchers}
 
 /**

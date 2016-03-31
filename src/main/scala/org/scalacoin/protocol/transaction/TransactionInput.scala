@@ -4,7 +4,7 @@ import org.scalacoin.marshallers.transaction.{RawTransactionInputParser, Transac
 import org.scalacoin.protocol.{CompactSizeUInt}
 import org.scalacoin.protocol.script.ScriptSignature
 
-import org.scalacoin.util.{BitcoinSUtil, ScalacoinUtil}
+import org.scalacoin.util.{BitcoinSUtil}
 
 /**
  * Created by chris on 12/26/15.

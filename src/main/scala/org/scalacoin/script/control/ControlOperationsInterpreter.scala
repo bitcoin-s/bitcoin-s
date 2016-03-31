@@ -107,9 +107,9 @@ trait ControlOperationsInterpreter {
    * @param program
    * @return
    */
-  def opReturn(program : ScriptProgram) : Boolean = {
+  def opReturn(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.isDefined && program.script.head == OP_RETURN)
-    false
+    ScriptProgramFactory.factory(program,false)
   }
 
 

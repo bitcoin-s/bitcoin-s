@@ -9,7 +9,7 @@ import org.scalacoin.script.locktime.LocktimeOperationFactory
 import org.scalacoin.script.reserved.ReservedOperationFactory
 import org.scalacoin.script.splice.SpliceOperationsFactory
 import org.scalacoin.script.stack.StackOperationFactory
-import org.scalacoin.util.{BitcoinSUtil, BitcoinSLogger, ScalacoinUtil}
+import org.scalacoin.util.{BitcoinSUtil, BitcoinSLogger}
 import org.slf4j.LoggerFactory
 
 /**
