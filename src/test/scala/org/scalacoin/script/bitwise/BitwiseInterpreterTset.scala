@@ -78,6 +78,8 @@ class BitwiseInterpreterTest extends FlatSpec with MustMatchers with BitwiseInte
     opEqual(program).stack.head must be (ScriptTrue)
   }
 
+  it must "evaluate two "
+
 
 
 

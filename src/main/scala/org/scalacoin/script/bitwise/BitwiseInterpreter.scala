@@ -28,9 +28,6 @@ trait BitwiseInterpreter extends ControlOperationsInterpreter  {
 
     val result = (h,h1) match {
       case (ScriptConstantImpl(x),ScriptConstantImpl(y)) => x == y
-      case (BytesToPushOntoStackImpl(x), BytesToPushOntoStackImpl(y)) => x == y
-      case (BytesToPushOntoStackImpl(x), ScriptConstantImpl(y)) => BytesToPushOntoStackImpl(x).hex == y
-      case (ScriptConstantImpl(x), BytesToPushOntoStackImpl(y)) => x == BytesToPushOntoStackImpl(y).hex
       case (ScriptConstantImpl(x), ScriptNumberImpl(y)) => BitcoinSUtil.hexToLong(x) == y
       case (ScriptNumberImpl(x), ScriptConstantImpl(y)) => x == BitcoinSUtil.hexToLong(y)
       case (OP_0, x) => OP_0.hex == x.hex

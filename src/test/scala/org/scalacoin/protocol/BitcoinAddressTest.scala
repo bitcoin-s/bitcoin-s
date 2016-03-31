@@ -48,7 +48,7 @@ class BitcoinAddressTest extends FlatSpec with MustMatchers {
 
   "An asset address with the first character replaced" must "not be a valid asset address" in {
     //3J98t1WpEZ73CNmQviecrnyiWrnqRhWNLyy
-    intercept[org.bitcoinj.core.AddressFormatException] {
+    intercept[IllegalArgumentException] {
       val assetAddress = AssetAddress("aJ98t1WpEZ73CNmQviecrnyiWrnqRhWNLyy")
     }
   }

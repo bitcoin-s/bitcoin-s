@@ -3,6 +3,8 @@ package org.scalacoin.protocol
 import org.bitcoinj.core.{VersionedChecksummedBytes, Base58, Utils}
 import org.scalacoin.config.{RegTest, TestNet3, MainNet}
 
+import scala.util.{Failure, Success, Try}
+
 case class AddressInfo(bitcoinAddress: BitcoinAddress, n_tx: Long, total_received: Long, total_sent: Long,
   final_balance: Long)
 
@@ -89,12 +91,16 @@ object BitcoinAddress {
 }
 
 object AssetAddress {
-  def validate(assetAddress : String) = {
+  def validate(assetAddress : String) : Boolean = {
     //asset addresses must have the one byte namespace equivalent to 19
     //which ends up being 'a' in the ascii character set
-    val base58decodechecked : Array[Byte] = Base58.decodeChecked(assetAddress)
-    require(base58decodechecked != null)
-    base58decodechecked.size == 22  && base58decodechecked(0) == 0x13
+    val base58DecodeChecked : Try[Array[Byte]] = Try(Base58.decodeChecked(assetAddress))
+    base58DecodeChecked match {
+      case Success(bytes) =>
+        if (bytes == null) false
+        else bytes.size == 22  && bytes(0) == 0x13
+      case Failure(_) => false
+    }
   }
 
   /**
