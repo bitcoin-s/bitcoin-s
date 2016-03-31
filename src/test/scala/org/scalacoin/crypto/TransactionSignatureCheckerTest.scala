@@ -43,6 +43,6 @@ class TransactionSignatureCheckerTest extends FlatSpec with MustMatchers {
     val newScriptSigWithSignatureRemoved = ScriptSignatureFactory.fromAsm(newScriptSigAsm)
     val newInput = TransactionInputFactory.factory(spendingTx.inputs(inputIndex),newScriptSigWithSignatureRemoved)
     val txNewInputs = TransactionFactory.factory(EmptyTransaction,UpdateTransactionInputs(Seq(newInput)))
-    TransactionSignatureChecker.checkSignature(txNewInputs,inputIndex,creditingOutput.scriptPubKey,true) must be (SignatureValidationfailureIncorrectSignatures)
+    TransactionSignatureChecker.checkSignature(txNewInputs,inputIndex,creditingOutput.scriptPubKey,true) must be (SignatureValidationFailureIncorrectSignatures)
   }
 }

@@ -10,10 +10,9 @@ import scala.annotation.tailrec
 /**
  * Created by chris on 1/6/16.
  */
-trait ControlOperationsInterpreter {
+trait ControlOperationsInterpreter extends BitcoinSLogger {
 
 
-  private def logger = LoggerFactory.getLogger(this.getClass())
 
   /**
    * If the top stack value is not 0, the statements are executed. The top stack value is removed.
@@ -286,42 +285,6 @@ trait ControlOperationsInterpreter {
   }
 
   /**
-   * Finds the first occurrence of OP_IF in our script
-   * returns None if one DNE
-   * @param script
-   * @return
-   */
-  def findFirstOpIf(script : List[ScriptToken]) : Option[Int] = findFirstScriptToken(script,OP_IF)
-
-  /**
-   * Finds the first instance of a given script token
-   * @param script
-   * @param scriptToken
-   * @return
-   */
-  private def findFirstScriptToken(script : List[ScriptToken], scriptToken : ScriptToken) : Option[Int] = {
-    val index = script.indexOf(scriptToken)
-    index match {
-      case -1 => None
-      case _ => Some(index)
-    }
-  }
-
-  /**
-   * Finds the last instance of  a given script token
-   * @param script
-   * @param scriptToken
-   * @return
-   */
-  private def findLastScriptToken(script : List[ScriptToken], scriptToken : ScriptToken) = {
-    val index = script.reverse.indexOf(scriptToken)
-    index match {
-      case -1 => None
-      case _ => Some(script.size - index)
-    }
-  }
-
-  /**
    * Returns the first index of an OP_ENDIF
    * @param script
    * @return
@@ -358,17 +321,6 @@ trait ControlOperationsInterpreter {
       case _ => Some(index)
     }
   }
-
-  /**
-   * Returns the index of the last OP_ELSE statement
-   * @param script
-   * @return
-   */
-  def findLastOpElse(script : List[ScriptToken]) : Option[Int] = {
-    val zipped = script.zipWithIndex.filter(_._1 == OP_ELSE)
-    if (zipped.size > 0) Some(zipped.last._2) else None
-  }
-
 
   /**
    * Removes the first OP_ELSE expression encountered in the script
@@ -466,7 +418,7 @@ trait ControlOperationsInterpreter {
   }
 
 
-  /**
+   /**
    * Returns the index of the matching OP_ENDIF for the OP_IF statement
    * @param script
    * @return

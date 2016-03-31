@@ -128,20 +128,14 @@ trait ScriptProgramFactory {
    * @param oldProgram
    * @param stack
    * @param script
-   * @param that
+   * @param altStack
    * @param updateIndicator
    * @return
    */
-  def factory(oldProgram : ScriptProgram, stack : Seq[ScriptToken], script : Seq[ScriptToken], that : Seq[ScriptToken],
+  def factory(oldProgram : ScriptProgram, stack : Seq[ScriptToken], script : Seq[ScriptToken], altStack : Seq[ScriptToken],
                updateIndicator: UpdateIndicator) = {
-    updateIndicator match {
-      case AltStack =>
-        ScriptProgramImpl(oldProgram.transaction, oldProgram.scriptPubKey, oldProgram.inputIndex,
-          stack.toList,script.toList,that.toList, oldProgram.flags, oldProgram.isValid,oldProgram.lastCodeSeparator)
-      case _ => ScriptProgramImpl(oldProgram.transaction, oldProgram.scriptPubKey, oldProgram.inputIndex,
-        stack.toList,script.toList, oldProgram.altStack,oldProgram.flags,oldProgram.isValid,oldProgram.lastCodeSeparator)
-    }
-
+    ScriptProgramImpl(oldProgram.transaction, oldProgram.scriptPubKey, oldProgram.inputIndex,
+      stack.toList,script.toList,altStack.toList, oldProgram.flags, oldProgram.isValid,oldProgram.lastCodeSeparator)
   }
 
   /**

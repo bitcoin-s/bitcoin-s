@@ -58,6 +58,15 @@ trait ECPublicKey extends BaseECKey with BitcoinSLogger {
         result
     }
   }
+
+
+  /**
+   * Verifies that the given hexadecimal string is signed by the private key corresponding to this public key
+   * @param hex the original piece of data that was signed by the private key
+   * @param signature the signature to be verified
+   * @return
+   */
+  def verify(hex : String, signature : ECDigitalSignature) : Boolean = verify(BitcoinSUtil.decodeHex(hex),signature)
 }
 
 case class ECPublicKeyImpl(hex : String) extends ECPublicKey

@@ -224,7 +224,7 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
           //see BIP66 for more information on this
           //https://github.com/bitcoin/bips/blob/master/bip-0066.mediawiki#specification
           ScriptProgramFactory.factory(program, restOfStack, program.script.tail,false)
-        case SignatureValidationfailureIncorrectSignatures =>
+        case SignatureValidationFailureIncorrectSignatures =>
           //this means that signature verification failed, however all signatures were encoded correctly
           //just push a ScriptFalse onto the stack
           ScriptProgramFactory.factory(program, ScriptFalse :: restOfStack, program.script.tail)

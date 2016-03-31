@@ -472,6 +472,22 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers with C
     newProgram.isValid must be (false)
   }
 
+
+  it must "remove nothing when trying to remove an OP_ELSE if the tree is empty" in {
+    removeFirstOpElse(Empty) must be (Empty)
+  }
+
+  it must "remove an OP_ELSE from the left branch from a binary tree if an OP_IF DNE on the left branch" in {
+    val tree = Node(OP_0,Node(OP_ELSE,Empty,Empty),Empty)
+
+    removeFirstOpElse(tree) must be (Node(OP_0,Empty,Empty))
+  }
+
+  it must "remove the first OP_IF expression a sequence" in {
+    val asm = List(OP_IF,OP_0,OP_ELSE,OP_1,OP_ENDIF)
+    removeFirstOpIf(asm) must be (Seq(OP_ELSE,OP_1,OP_ENDIF))
+  }
+
 }
 
 
