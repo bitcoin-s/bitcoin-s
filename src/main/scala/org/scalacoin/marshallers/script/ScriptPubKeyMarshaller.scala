@@ -23,12 +23,10 @@ object ScriptPubKeyMarshaller extends DefaultJsonProtocol with MarshallerUtil {
 
     override def write(scriptPubKey : ScriptPubKey) : JsValue = {
       import org.scalacoin.marshallers.BitcoinAddressProtocol._
-      val addressList = convertToJsArray(scriptPubKey.addresses)
       val m : Map[String,JsValue] = Map(
         ScriptSignatureMarshaller.asmKey -> JsString(scriptPubKey.asm.toString),
         ScriptSignatureMarshaller.hexKey -> JsString(scriptPubKey.hex),
-        reqSigsKey -> JsNumber(-1),
-        addressesKey -> addressList
+        reqSigsKey -> JsNumber(-1)
       )
       JsObject(m)
     }

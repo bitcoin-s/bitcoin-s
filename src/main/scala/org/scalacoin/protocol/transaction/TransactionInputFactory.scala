@@ -23,6 +23,13 @@ trait TransactionInputFactory extends Factory[TransactionInput] {
     TransactionInputImpl(oldInput.previousOutput, oldInput.scriptSignature,sequenceNumber)
   }
 
+  /**
+   * Creates a transaction input from a given output and the output's transaction
+   * @param oldInput
+   * @param output
+   * @param outputsTransaction
+   * @return
+   */
   def factory(oldInput : TransactionInput,output : TransactionOutput, outputsTransaction : Transaction) : TransactionInput = {
     val outPoint = TransactionOutPointFactory.factory(output,outputsTransaction)
     factory(oldInput,outPoint)

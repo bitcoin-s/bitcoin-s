@@ -3,7 +3,7 @@ package org.scalacoin.protocol.script
 import org.scalacoin.marshallers.script.{RawScriptPubKeyParser, ScriptParser}
 import org.scalacoin.script.bitwise.{OP_EQUAL, OP_EQUALVERIFY}
 import org.scalacoin.script.constant._
-import org.scalacoin.script.crypto.{OP_CHECKMULTISIG, OP_CHECKSIG, OP_HASH160}
+import org.scalacoin.script.crypto.{OP_CHECKMULTISIGVERIFY, OP_CHECKMULTISIG, OP_CHECKSIG, OP_HASH160}
 import org.scalacoin.script.stack.OP_DUP
 import org.scalacoin.util.{BitcoinScriptUtil, BitcoinSUtil, Factory, ScalacoinUtil}
 
@@ -50,11 +50,25 @@ trait ScriptPubKeyFactory extends Factory[ScriptPubKey] {
       case List(OP_HASH160, x : BytesToPushOntoStack, ScriptConstantImpl(scriptHash), OP_EQUAL) =>
         P2SHScriptPubKeyImpl(scriptPubKeyHex,asm)
       case List(b : BytesToPushOntoStack, x : ScriptConstant, OP_CHECKSIG) => P2PKScriptPubKeyImpl(scriptPubKeyHex,asm)
-      //TODO: make this more robust, this isn't the pattern that multsignature scriptPubKeys follow
-      case _ if (asm.size > 0 && asm.contains(OP_CHECKMULTISIG) && asm.count(_.isInstanceOf[ScriptNumberOperation]) >= 2) =>
+      case _ if (isMultiSignatureScriptPubKey(asm)) =>
         MultiSignatureScriptPubKeyImpl(scriptPubKeyHex,asm)
       case _ => NonStandardScriptPubKeyImpl(scriptPubKeyHex,asm)
     }
+  }
+
+
+  /**
+   * Determines if the given script tokens are a multisignature scriptPubKey
+   * @param asm the tokens to check
+   * @return a boolean indicating if the given tokens are a multisignature scriptPubKey
+   */
+  private def isMultiSignatureScriptPubKey(asm : Seq[ScriptToken]) : Boolean = {
+    val isNotEmpty = asm.size > 0
+    val containsMultSigOp = asm.contains(OP_CHECKMULTISIG) || asm.contains(OP_CHECKMULTISIGVERIFY)
+    //we need at least two script operations to indicate m required signatures & n maximum signatures
+    val has2ScriptOperations = asm.count(_.isInstanceOf[ScriptNumberOperation]) >= 2
+    isNotEmpty && containsMultSigOp && has2ScriptOperations
+
   }
 
 }

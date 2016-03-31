@@ -65,7 +65,8 @@ trait BitcoinSUtil extends NumberUtil {
 
   def decodeBase58(base58 : String) : Seq[Byte] = Base58.decode(base58).toList
 
-  def encodeBase58(bytes : List[Byte]) : String = Base58.encode(bytes.toArray)
+  def encodeBase58(bytes : Seq[Byte]) : String = Base58.encode(bytes.toArray)
+
 
   /**
    * Converts a little endian encoded hex string to a big endian encoded hex string

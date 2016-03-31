@@ -7,7 +7,7 @@ import spray.json._
  */
 object BitcoinAddressProtocol extends DefaultJsonProtocol {
 
-  implicit val bitcoinAddressFormat = jsonFormat1(BitcoinAddress.apply _)
+  implicit val bitcoinAddressFormat = jsonFormat(BitcoinAddress.apply _, "value")
 
 }
 
