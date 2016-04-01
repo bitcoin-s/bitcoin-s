@@ -109,6 +109,28 @@ class StackInterpreterTest extends FlatSpec with MustMatchers with StackInterpre
     newProgram.script.isEmpty must be (true)
   }
 
+  it must "throw an exception if there is less than 2 elements on the stack for OP_NIP" in {
+    val stack = List(OP_0)
+    val script = List(OP_NIP)
+
+    val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
+
+    intercept[IllegalArgumentException] {
+      val newProgram = opNip(program)
+    }
+  }
+
+  it must "throw an exception if there is no elements on the stack for OP_NIP" in {
+    val stack = List()
+    val script = List(OP_NIP)
+
+    val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
+
+    intercept[IllegalArgumentException] {
+      val newProgram = opNip(program)
+    }
+  }
+
   it must "evaluate an OP_OVER correctly" in {
     val stack = List(OP_0,OP_1)
     val script = List(OP_OVER)
@@ -116,6 +138,28 @@ class StackInterpreterTest extends FlatSpec with MustMatchers with StackInterpre
     val newProgram = opOver(program)
     newProgram.stack must be (List(OP_1,OP_0,OP_1))
     newProgram.script.isEmpty must be (true)
+  }
+
+  it must "throw an exception if there is less than 2 elements on the stack for OP_OVER" in {
+    val stack = List(OP_0)
+    val script = List(OP_OVER)
+
+    val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
+
+    intercept[IllegalArgumentException] {
+      val newProgram = opOver(program)
+    }
+  }
+
+  it must "throw an exception if there is no elements on the stack for OP_OVER" in {
+    val stack = List()
+    val script = List(OP_OVER)
+
+    val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
+
+    intercept[IllegalArgumentException] {
+      val newProgram = opOver(program)
+    }
   }
 
   it must "evaluate an OP_PICK correctly" in {
@@ -151,6 +195,18 @@ class StackInterpreterTest extends FlatSpec with MustMatchers with StackInterpre
     newProgram.script.isEmpty must be (true)
   }
 
+  it must "throw an exception if there is less than 3 elements on the stack for OP_ROT" in {
+    val stack = List(ScriptConstantImpl("14"), ScriptConstantImpl("15"))
+    val script = List(OP_ROT)
+
+    val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
+
+    intercept[IllegalArgumentException] {
+      val newProgram = opRot(program)
+    }
+  }
+
+
   it must "evaluate an OP_2ROT correctly" in {
     val stack = List(ScriptConstantImpl("14"), ScriptConstantImpl("15"), ScriptConstantImpl("16"),
       ScriptConstantImpl("17"), ScriptConstantImpl("18"), ScriptConstantImpl("19"))
@@ -161,6 +217,18 @@ class StackInterpreterTest extends FlatSpec with MustMatchers with StackInterpre
     newProgram.stack must be (List(ScriptConstantImpl("18"),ScriptConstantImpl("19"),ScriptConstantImpl("14"),
       ScriptConstantImpl("15"),ScriptConstantImpl("16"), ScriptConstantImpl("17")))
     newProgram.script.isEmpty must be (true)
+  }
+
+  it must "throw an exception if there is less than 6 elements on the stack for OP_2ROT" in {
+    val stack = List(ScriptConstantImpl("14"), ScriptConstantImpl("15"), ScriptConstantImpl("16"),
+      ScriptConstantImpl("17"), ScriptConstantImpl("18"))
+    val script = List(OP_2ROT)
+
+    val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
+
+    intercept[IllegalArgumentException] {
+      val newProgram = op2Rot(program)
+    }
   }
 
   it must "evalauate an OP_2DROP correctly" in {
@@ -197,6 +265,17 @@ class StackInterpreterTest extends FlatSpec with MustMatchers with StackInterpre
     newProgram.script.isEmpty must be (true)
   }
 
+  it must "throw an exception if there is less than 2 elements on the stack for OP_TUCK" in {
+    val stack = List(OP_0)
+    val script = List(OP_TUCK)
+
+    val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
+
+    intercept[IllegalArgumentException] {
+      val newProgram = opTuck(program)
+    }
+  }
+
   it must "evaluate an OP_2DUP correctly" in  {
     val stack = List(ScriptConstantImpl("14"), ScriptConstantImpl("15"), ScriptConstantImpl("16"),
       ScriptConstantImpl("17"), ScriptConstantImpl("18"), ScriptConstantImpl("19"))
@@ -207,6 +286,17 @@ class StackInterpreterTest extends FlatSpec with MustMatchers with StackInterpre
       ScriptConstantImpl("14"),ScriptConstantImpl("15"), ScriptConstantImpl("16"),
       ScriptConstantImpl("17"), ScriptConstantImpl("18"), ScriptConstantImpl("19")))
     newProgram.script.isEmpty must be (true)
+  }
+
+  it must "throw an exception if there is less than 2 elements on the stack for OP_2DUP" in {
+    val stack = List(OP_0)
+    val script = List(OP_2DUP)
+
+    val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
+
+    intercept[IllegalArgumentException] {
+      val newProgram = op2Dup(program)
+    }
   }
 
   it must "evaluate an OP_3DUP correctly" in {
@@ -235,6 +325,17 @@ class StackInterpreterTest extends FlatSpec with MustMatchers with StackInterpre
     newProgram.script.isEmpty must be (true)
   }
 
+  it must "throw an exception if there is less than 4 elements on the stack for OP_2OVER" in {
+    val stack = List(ScriptConstantImpl("14"), ScriptConstantImpl("15"), ScriptConstantImpl("16"))
+    val script = List(OP_2OVER)
+
+    val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
+
+    intercept[IllegalArgumentException] {
+      val newProgram = op2Over(program)
+    }
+  }
+
 
   it must "evaluate an OP_2SWAP correctly" in {
     val stack = List(ScriptConstantImpl("14"), ScriptConstantImpl("15"), ScriptConstantImpl("16"),
@@ -246,5 +347,16 @@ class StackInterpreterTest extends FlatSpec with MustMatchers with StackInterpre
     newProgram.stack must be (List(ScriptConstantImpl("16"), ScriptConstantImpl("17"),ScriptConstantImpl("14"),
       ScriptConstantImpl("15"), ScriptConstantImpl("18"), ScriptConstantImpl("19")))
     newProgram.script.isEmpty must be (true)
+  }
+
+  it must "throw an exception if there is less than 4 elements on the stack for OP_2SWAP" in {
+    val stack = List(ScriptConstantImpl("14"), ScriptConstantImpl("15"), ScriptConstantImpl("16"))
+    val script = List(OP_2SWAP)
+
+    val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
+
+    intercept[IllegalArgumentException] {
+      val newProgram = op2Swap(program)
+    }
   }
 }

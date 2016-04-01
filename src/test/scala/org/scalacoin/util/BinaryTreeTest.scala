@@ -110,4 +110,17 @@ class BinaryTreeTest extends FlatSpec with MustMatchers {
     val tree = Node[String]("Hello",Node("there",Leaf("1"),Leaf("2")),Node("3",Empty,Leaf("4")))
     tree.replace(Node("thre",Leaf("1"),Leaf("2")),Empty)() must be (tree)
   }
+
+  it must "insert an element into an empty binary tree" in {
+    Empty.insert(1) must be (Leaf(1))
+  }
+
+  it must "insert an element into a leaf binary tree" in {
+    Leaf(1).insert(2) must be (Node(1,Leaf(2),Empty))
+  }
+
+  it must "insert an element into a node binary tree" in {
+    Node(1,Empty,Empty).insert(2) must be (Node(1,Leaf(2),Empty))
+  }
+
 }
