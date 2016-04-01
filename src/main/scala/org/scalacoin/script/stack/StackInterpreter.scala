@@ -48,7 +48,6 @@ trait StackInterpreter {
   def opDepth(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.isDefined && program.script.head == OP_DEPTH, "Top of script stack must be OP_DEPTH")
     require(program.script.size >= 1, "OP_DEPTH requires at least two elements on the script stack")
-    val operation = program.script.head
     val stackSize = program.stack.size
 
     val numberToPush : ScriptNumber= if (stackSize == 0) OP_0 else ScriptNumberImpl(stackSize)
@@ -98,11 +97,10 @@ trait StackInterpreter {
    */
   def opNip(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.isDefined && program.script.head == OP_NIP, "Top of script stack must be OP_NIP")
-    require(program.stack.size > 1,"Stack must have at least two items on it for OP_NIP")
     program.stack match {
       case h :: _ :: t => ScriptProgramFactory.factory(program, h :: t, program.script.tail)
-      case h :: t => throw new RuntimeException("Stack must have at least two items on it for OP_NIP")
-      case Nil => throw new RuntimeException("Stack must have at least two items on it for OP_NIP")
+      case h :: t => throw new IllegalArgumentException("Stack must have at least two items on it for OP_NIP")
+      case Nil => throw new IllegalArgumentException("Stack must have at least two items on it for OP_NIP")
     }
   }
 
@@ -114,11 +112,10 @@ trait StackInterpreter {
    */
   def opOver(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.isDefined && program.script.head == OP_OVER, "Top of script stack must be OP_OVER")
-    require(program.stack.size > 1,"Stack must have at least two items on it for OP_OVER")
     program.stack match {
       case _ :: h1 :: _ => ScriptProgramFactory.factory(program, h1 :: program.stack, program.script.tail)
-      case h :: t => throw new RuntimeException("Stack must have at least two items on it for OP_OVER")
-      case Nil => throw new RuntimeException("Stack must have at least two items on it for OP_OVER")
+      case h :: t => throw new IllegalArgumentException("Stack must have at least two items on it for OP_OVER")
+      case Nil => throw new IllegalArgumentException("Stack must have at least two items on it for OP_OVER")
     }
   }
 
@@ -159,11 +156,10 @@ trait StackInterpreter {
    */
   def opRot(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.isDefined && program.script.head == OP_ROT, "Top of script stack must be OP_ROT")
-    require(program.stack.size > 2,"Stack must have at least 3 items on it for OP_ROT")
 
     val newStack = program.stack match {
       case h :: h1 :: h2 :: t => h2 :: h :: h1 :: t
-      case _ => throw new RuntimeException("Stack must have at least 3 items on it for OP_ROT")
+      case _ => throw new IllegalArgumentException("Stack must have at least 3 items on it for OP_ROT")
     }
     ScriptProgramFactory.factory(program, newStack,program.script.tail)
   }
@@ -176,11 +172,9 @@ trait StackInterpreter {
    */
   def op2Rot(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.isDefined && program.script.head == OP_2ROT, "Top of script stack must be OP_2ROT")
-    require(program.stack.size > 5,"Stack must have at least 5 items on it for OP_2ROT")
-
     val newStack = program.stack match {
       case h :: h1 :: h2 :: h3 :: h4 :: h5 :: t => h4 :: h5 :: h :: h1 :: h2 :: h3 ::  t
-      case _ => throw new RuntimeException("Stack must have at least 5 items on it for OP_2ROT")
+      case _ => throw new IllegalArgumentException("Stack must have at least 5 items on it for OP_2ROT")
     }
     ScriptProgramFactory.factory(program, newStack,program.script.tail)
   }
@@ -218,11 +212,10 @@ trait StackInterpreter {
    */
   def opTuck(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.isDefined && program.script.head == OP_TUCK, "Top of script stack must be OP_TUCK")
-    require(program.stack.size > 1,"Stack must have at least 2 items on it for OP_TUCK")
 
     val newStack = program.stack match {
       case h :: h1 :: t => h1 :: h :: h1 :: t
-      case _ => throw new RuntimeException("Stack must have at least 2 items on it for OP_TUCK")
+      case _ => throw new IllegalArgumentException("Stack must have at least 2 items on it for OP_TUCK")
     }
     ScriptProgramFactory.factory(program, newStack, program.script.tail)
   }
@@ -235,11 +228,10 @@ trait StackInterpreter {
    */
   def op2Dup(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.isDefined && program.script.head == OP_2DUP, "Top of script stack must be OP_2DUP")
-    require(program.stack.size > 1,"Stack must have at least 2 items on it for OP_2DUP")
 
     val newStack = program.stack match {
       case h :: h1 :: t => h :: h1 :: h :: h1 :: t
-      case _ => throw new RuntimeException("Stack must have at least 2 items on it for OP_2DUP")
+      case _ => throw new IllegalArgumentException("Stack must have at least 2 items on it for OP_2DUP")
     }
     ScriptProgramFactory.factory(program, newStack, program.script.tail)
   }
@@ -251,10 +243,9 @@ trait StackInterpreter {
    */
   def op3Dup(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.isDefined && program.script.head == OP_3DUP, "Top of script stack must be OP_3DUP")
-    require(program.stack.size > 2,"Stack must have at least 3 items on it for OP_3DUP")
     val newStack = program.stack match {
       case h :: h1 :: h2 :: t => h :: h1 :: h2 :: h :: h1 :: h2 :: t
-      case _ => throw new RuntimeException("Stack must have at least 3 items on it for OP_3DUP")
+      case _ => throw new IllegalArgumentException("Stack must have at least 3 items on it for OP_3DUP")
     }
     ScriptProgramFactory.factory(program,newStack,program.script.tail)
   }
@@ -268,10 +259,10 @@ trait StackInterpreter {
    */
   def op2Over(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.isDefined && program.script.head == OP_2OVER, "Top of script stack must be OP_2OVER")
-    require(program.stack.size > 3,"Stack must have at least 4 items on it for OP_2OVER")
+
     val newStack = program.stack match {
       case h :: h1 :: h2 :: h3 :: t => h2 :: h3 :: h :: h1 :: h2 :: h3 :: t
-      case _ => throw new RuntimeException("Stack must have at least 4 items on it for OP_2OVER")
+      case _ => throw new IllegalArgumentException("Stack must have at least 4 items on it for OP_2OVER")
     }
     ScriptProgramFactory.factory(program, newStack,program.script.tail)
   }
@@ -283,11 +274,10 @@ trait StackInterpreter {
    */
   def op2Swap(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.isDefined && program.script.head == OP_2SWAP, "Top of script stack must be OP_2SWAP")
-    require(program.stack.size > 3,"Stack must have at least 4 items on it for OP_2SWAP")
 
     val newStack = program.stack match {
       case h :: h1 :: h2 :: h3 :: t  => h2 :: h3 :: h :: h1 :: t
-      case _ => throw new RuntimeException("Stack must have at least 4 items on it for OP_2SWAP")
+      case _ => throw new IllegalArgumentException("Stack must have at least 4 items on it for OP_2SWAP")
     }
     ScriptProgramFactory.factory(program,newStack,program.script.tail)
   }
