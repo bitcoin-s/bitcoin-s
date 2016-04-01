@@ -88,6 +88,7 @@ class NumberUtilTest extends FlatSpec with MustMatchers with NumberUtil {
     val hex2 = "ff7f"
     val hexIsPositive2 = isPositive(hex2)
     hexIsPositive2 must be (true)
+
   }
 
   it must "determine if a hex string is a negative number" in {
@@ -105,6 +106,10 @@ class NumberUtilTest extends FlatSpec with MustMatchers with NumberUtil {
     val hex2 = "ffff"
     val hexIsNegative2 = isNegative(hex2)
     hexIsNegative2 must be (true)
+
+
+    //must also work for bytes
+    isNegative(BitcoinSUtil.decodeHex(hex2)) must be (true)
   }
 
   it must "change a sign bit from negative to positive" in {
@@ -115,7 +120,7 @@ class NumberUtilTest extends FlatSpec with MustMatchers with NumberUtil {
     //-32767
     val hex1 = "ffff"
     val expectedHex1 = "7fff"
-    BitcoinSUtil.encodeHex(changeSignBitToPositive(BitcoinSUtil.decodeHex(hex1))) must be (expectedHex1)
+    BitcoinSUtil.encodeHex(changeSignBitToPositive(hex1)) must be (expectedHex1)
   }
 
   it must "change a sign bit from positive to negative" in {

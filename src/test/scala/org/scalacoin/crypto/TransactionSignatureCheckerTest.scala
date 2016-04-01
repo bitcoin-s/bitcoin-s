@@ -3,6 +3,7 @@ package org.scalacoin.crypto
 import org.scalacoin.protocol.script.{ScriptSignatureFactory, ScriptSignature}
 import org.scalacoin.protocol.transaction._
 import org.scalacoin.script.ScriptProgramFactory
+import org.scalacoin.script.flag.ScriptVerifyDerSig
 import org.scalacoin.util._
 import org.scalatest.{FlatSpec, MustMatchers}
 
@@ -53,6 +54,23 @@ class TransactionSignatureCheckerTest extends FlatSpec with MustMatchers {
     val program = ScriptProgramFactory.factory(spendingTx,TestUtil.p2pkScriptPubKey,inputIndex,Seq())
     val result = TransactionSignatureChecker.checkSignature(program)
     result must be (SignatureValidationSuccess)
+  }
 
+  it must "check a standard p2pkh transaction" in {
+    val (spendingTx, inputIndex, scriptPubKey) = TransactionTestUtil.p2pkhTransactionWithCreditingScriptPubKey
+    val program = ScriptProgramFactory.factory(spendingTx,scriptPubKey,inputIndex,Seq())
+    val result = TransactionSignatureChecker.checkSignature(program)
+    result must be (SignatureValidationSuccess)
+  }
+
+  it must "fail checking a standard p2pkh transactin if the strict der encoding flag is set and we don't have a strict der encoded signature" in {
+    val (creditingTx,outputIndex) = TransactionTestUtil.buildCreditingTransaction(TestUtil.p2pkhScriptPubKey)
+    val scriptPubKey = creditingTx.outputs(outputIndex).scriptPubKey
+    val (spendingTx,inputIndex) = TransactionTestUtil.buildSpendingTransaction(creditingTx,
+      TestUtil.p2pkhScriptSigNotStrictDerEncoded,outputIndex)
+    val program = ScriptProgramFactory.factory(spendingTx,scriptPubKey,inputIndex,Seq(ScriptVerifyDerSig))
+
+    val result = TransactionSignatureChecker.checkSignature(program)
+    result must be (SignatureValidationFailureNotStrictDerEncoding)
   }
 }

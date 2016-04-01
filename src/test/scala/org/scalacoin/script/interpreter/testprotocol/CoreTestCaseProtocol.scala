@@ -32,7 +32,7 @@ object CoreTestCaseProtocol extends DefaultJsonProtocol {
         val scriptSignature : ScriptSignature = ScriptSignatureFactory.fromAsm(scriptSignatureAsm)
         val scriptSignatureCoreTestCase = ScriptSignatureCoreTestCaseImpl(scriptSignatureAsm,scriptSignature)
         val scriptPubKeyAsm = parseScriptPubKeyAsm(elements(1))
-        val scriptPubKey = ScriptPubKeyFactory.factory(UpdateScriptPubKeyAsm(scriptPubKeyAsm))
+        val scriptPubKey = ScriptPubKeyFactory.fromAsm(scriptPubKeyAsm)
         val scriptPubKeyCoreTestCase = ScriptPubKeyCoreTestCaseImpl(scriptPubKeyAsm, scriptPubKey)
         val flags = elements(2).convertTo[String]
         Some(CoreTestCaseImpl(scriptSignatureCoreTestCase,scriptPubKeyCoreTestCase,flags,"No comments from bitcoin core ",elements.toString))
@@ -41,7 +41,7 @@ object CoreTestCaseProtocol extends DefaultJsonProtocol {
         val scriptSignature : ScriptSignature = ScriptSignatureFactory.fromAsm(scriptSignatureAsm)
         val scriptSignatureCoreTestCase = ScriptSignatureCoreTestCaseImpl(scriptSignatureAsm,scriptSignature)
         val scriptPubKeyAsm : Seq[ScriptToken] = parseScriptPubKeyAsm(elements(1))
-        val scriptPubKey = ScriptPubKeyFactory.factory(UpdateScriptPubKeyAsm(scriptPubKeyAsm))
+        val scriptPubKey = ScriptPubKeyFactory.fromAsm(scriptPubKeyAsm)
         val scriptPubKeyCoreTestCase = ScriptPubKeyCoreTestCaseImpl(scriptPubKeyAsm, scriptPubKey)
         val flags = elements(2).convertTo[String]
         val comments = elements(3).convertTo[String]

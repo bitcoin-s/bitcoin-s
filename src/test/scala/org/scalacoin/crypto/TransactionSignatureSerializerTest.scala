@@ -50,9 +50,6 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers {
         BitcoinJTestUtil.multiSigScript.getProgram(),SIGHASH_ALL().byte)
     )
 
-    println("Bitcoin-S: " + BitcoinSUtil.encodeHex(sigBytes))
-    println("Bitcoin-J: " + bitcoinjSerialization)
-
     BitcoinSUtil.encodeHex(sigBytes) must be (bitcoinjSerialization)
   }
 
@@ -319,9 +316,17 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers {
        ))
      hashedTxForSig must be (BitcoinSUtil.encodeHex(bitcoinjHashForSig))
     }
+
+
   }
 
-
+  it must "remove OP_CODESEPARATORs from a scriptPubKey" in {
+    val scriptPubKeyWithOpCodeSepaprators = ScriptPubKeyFactory.fromAsm(
+      Seq(OP_0,OP_1,OP_2,OP_CODESEPARATOR, OP_3,OP_CODESEPARATOR, OP_4, OP_CODESEPARATOR))
+    val expectedScriptPubKey = ScriptPubKeyFactory.fromAsm(Seq(OP_0,OP_1,OP_2, OP_3, OP_4))
+    val actualScriptPubKey = TransactionSignatureSerializer.removeOpCodeSeparators(scriptPubKeyWithOpCodeSepaprators)
+    actualScriptPubKey must be (expectedScriptPubKey)
+  }
 
 
 

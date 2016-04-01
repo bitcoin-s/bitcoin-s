@@ -14,24 +14,6 @@ trait ScriptPubKeyFactory extends Factory[ScriptPubKey] {
 
   def factory(hex : String) : ScriptPubKey = fromHex(hex)
 
-  def factory(indicator: UpdateScriptPubKeyAsm) : ScriptPubKey = {
-    fromAsm(indicator.asm)
-  }
-
-  def factory(indicator: UpdateScriptPubKeyBytes) : ScriptPubKey = {
-    val asm = ScriptParser.fromBytes(indicator.bytes)
-    factory(UpdateScriptPubKeyAsm(asm))
-  }
-
-  /**
-   * Parses a script from its byte represenatation and returns a ScriptPubKey
-   * @param bytes
-   * @return
-   */
-  def factory(bytes : Seq[Byte]) : ScriptPubKey =  fromBytes(bytes)
-
-  def factory(bytes : Array[Byte]) : ScriptPubKey = fromBytes(bytes.toSeq)
-
   def empty : ScriptPubKey = fromAsm(List())
 
   def fromBytes(bytes : Seq[Byte]) : ScriptPubKey = RawScriptPubKeyParser.read(bytes)

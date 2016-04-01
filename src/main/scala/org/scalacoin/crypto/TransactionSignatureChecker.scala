@@ -126,20 +126,8 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
             throw new RuntimeException("Don't know how to implement this scriptPubKeys in a redeemScript")
         }
 
-      case x : MultiSignatureScriptPubKey =>
-        logger.warn("Trying to check if a p2sScriptSignature spends a multisignature scriptPubKey properly - this is trivially false")
-        SignatureValidationFailureIncorrectSignatures
-      case x : P2PKHScriptPubKey =>
-        logger.warn("Trying to check if a p2sScriptSignature spends a p2pkh scriptPubKey properly - this is trivially false")
-        SignatureValidationFailureIncorrectSignatures
-      case x : P2PKScriptPubKey =>
-        logger.warn("Trying to check if a p2sScriptSignature spends a p2pk scriptPubKey properly - this is trivially false")
-        SignatureValidationFailureIncorrectSignatures
-      case x : NonStandardScriptPubKey =>
-        logger.warn("Trying to check if a p2sScriptSignature spends a nonstandard scriptPubKey properly - this is trivially false")
-        SignatureValidationFailureIncorrectSignatures
-      case x : ScriptPubKey =>
-        logger.warn("Trying to check if a p2sScriptSignature spends a scriptPubKey properly - this is trivially false")
+      case _ : MultiSignatureScriptPubKey | _ : P2PKHScriptPubKey | _ : P2PKScriptPubKey | _ : NonStandardScriptPubKey | EmptyScriptPubKey  =>
+        logger.warn("Trying to check if a p2sScriptSignature spends a a non p2sh scriptPubKey properly - this is trivially false")
         SignatureValidationFailureIncorrectSignatures
     }
   }
@@ -162,20 +150,8 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
         logger.info("multisig sigs: " + multiSignatureScript.signatures)
         multiSignatureEvaluator(spendingTransaction,inputIndex,x,multiSignatureScript.signatures.toList.reverse,
           x.publicKeys.toList.reverse,requireStrictDEREncoding,x.requiredSigs)
-      case x : P2PKHScriptPubKey =>
-        logger.warn("Trying to check if a multisignature scriptSig spends a p2pkh scriptPubKey properly - this is trivially false")
-        SignatureValidationFailureIncorrectSignatures
-      case x : P2PKScriptPubKey =>
-        logger.warn("Trying to check if a multisignature scriptSig spends a p2pk scriptPubKey properly - this is trivially false")
-        SignatureValidationFailureIncorrectSignatures
-      case x : NonStandardScriptPubKey =>
-        logger.warn("Trying to check if a multisignature scriptSig spends a p2sh scriptPubKey properly - this is trivially false")
-        SignatureValidationFailureIncorrectSignatures
-      case x : P2SHScriptPubKey =>
-        logger.warn("Trying to check if a multisignature scriptSig spends a nonstandard scriptPubKey properly - this is trivially false")
-        SignatureValidationFailureIncorrectSignatures
-      case EmptyScriptPubKey =>
-        logger.warn("Trying to check if a multisignature scriptSig spends a empty scriptPubKey properly - this is trivially false")
+      case _ : P2PKHScriptPubKey | _ : P2PKScriptPubKey  | _ : NonStandardScriptPubKey | _ : P2SHScriptPubKey | EmptyScriptPubKey =>
+        logger.warn("Trying to check if a multisignature scriptSig spends a non MultiSignatureScriptPubKey properly - this is trivially false")
         SignatureValidationFailureIncorrectSignatures
     }
   }
@@ -194,11 +170,10 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
     scriptPubKey match {
       case x : MultiSignatureScriptPubKey =>
        if (x.requiredSigs == 0) SignatureValidationSuccess else SignatureValidationFailureIncorrectSignatures
-      case x : P2PKHScriptPubKey => SignatureValidationFailureIncorrectSignatures
-      case x : P2PKScriptPubKey => SignatureValidationFailureIncorrectSignatures
-      case x : NonStandardScriptPubKey => SignatureValidationFailureIncorrectSignatures
-      case x : P2SHScriptPubKey => SignatureValidationFailureIncorrectSignatures
-      case EmptyScriptPubKey => SignatureValidationFailureIncorrectSignatures
+      case EmptyScriptPubKey => SignatureValidationSuccess
+      case _ : P2PKHScriptPubKey | _ : P2PKScriptPubKey | _ : NonStandardScriptPubKey | _ : P2SHScriptPubKey  =>
+        logger.warn("Attempting to check an empty script signature against a scriptPubKey")
+        SignatureValidationFailureIncorrectSignatures
     }
   }
 

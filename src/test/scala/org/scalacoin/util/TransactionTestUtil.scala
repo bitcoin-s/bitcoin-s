@@ -159,6 +159,16 @@ trait TransactionTestUtil extends BitcoinSLogger {
     val (spendingTx,inputIndex) = buildSpendingTransaction(creditingTx,TestUtil.scriptSigNotStrictDerEncoded,outputIndex)
     (spendingTx,inputIndex)
   }
+
+
+  /**
+   * Returns a valid transaction that spends a p2pkh output at the inputIndex
+   * @return
+   */
+  def p2pkhTransactionWithCreditingScriptPubKey : (Transaction, Int, ScriptPubKey) = {
+    val outputIndex = TestUtil.simpleTransaction.inputs.head.previousOutput.vout
+    (TestUtil.simpleTransaction, 0, TestUtil.parentSimpleTransaction.outputs(outputIndex).scriptPubKey)
+  }
 }
 
 object TransactionTestUtil extends TransactionTestUtil

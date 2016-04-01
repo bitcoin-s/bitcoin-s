@@ -86,7 +86,7 @@ trait ScriptParser extends Factory[List[ScriptToken]] {
           //this is weird because the number is unsigned unlike other numbers
           //in bitcoin, but it is still encoded in little endian hence the .reverse call
           val byteToPushOntoStack = BytesToPushOntoStackImpl(
-            java.lang.Long.parseLong(BitcoinSUtil.littleEndianToBigEndian(h.slice(2,h.size).toLowerCase),16).toInt)
+            java.lang.Long.parseLong(BitcoinSUtil.flipEndianess(h.slice(2,h.size).toLowerCase),16).toInt)
           loop(t, byteToPushOntoStack :: accum)
 
         //if we see a byte constant of just 0x09
