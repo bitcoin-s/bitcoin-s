@@ -38,41 +38,31 @@ trait TransactionTestUtil extends BitcoinSLogger {
    * Mimics this test utility found in bitcoin core
    * https://github.com/bitcoin/bitcoin/blob/605c17844ea32b6d237db6d83871164dc7d59dab/src/test/script_tests.cpp#L57
    * @param scriptPubKey
-   * @return
+   * @return the transaction and the output index of the scriptPubKey
    */
-  def buildCreditingTransaction(scriptPubKey : ScriptPubKey) : Transaction = {
+  def buildCreditingTransaction(scriptPubKey : ScriptPubKey) : (Transaction,Int) = {
     //this needs to be all zeros according to these 3 lines in bitcoin core
     //https://github.com/bitcoin/bitcoin/blob/605c17844ea32b6d237db6d83871164dc7d59dab/src/test/script_tests.cpp#L64
     //https://github.com/bitcoin/bitcoin/blob/80d1f2e48364f05b2cdf44239b3a1faa0277e58e/src/primitives/transaction.h#L32
     //https://github.com/bitcoin/bitcoin/blob/605c17844ea32b6d237db6d83871164dc7d59dab/src/uint256.h#L40
-    /*
-        CMutableTransaction txCredit;
-        txCredit.nVersion = 1;
-        txCredit.nLockTime = 0;
-        txCredit.vin.resize(1);
-        txCredit.vout.resize(1);
-        txCredit.vin[0].prevout.SetNull();
-        txCredit.vin[0].scriptSig = CScript() << CScriptNum(0) << CScriptNum(0);
-        txCredit.vin[0].nSequence = std::numeric_limits<unsigned int>::max();
-        txCredit.vout[0].scriptPubKey = scriptPubKey;
-        txCredit.vout[0].nValue = 0;*/
 
     val outpoint = TransactionOutPointFactory.factory("0000000000000000000000000000000000000000000000000000000000000000",0xFFFFFFFF)
-/*    require(outpoint.hex == "0000000000000000000000000000000000000000000000000000000000000000ffffffff", "Outpoint hex is wrong")*/
     val scriptSignature = ScriptSignatureFactory.fromHex("0000")
-/*    require(scriptSignature.hex == "0000", "Wrong scriptSig\n Expected scriptSig: 0000\nActual scriptSig: " + scriptSignature.hex )*/
     val input = TransactionInputFactory.factory(outpoint,scriptSignature,TransactionConstants.sequence)
     val output = TransactionOutputFactory.factory(CurrencyUnits.zeroSatoshis,scriptPubKey)
 
     val tx = TransactionImpl(TransactionConstants.version,Seq(input),Seq(output),TransactionConstants.lockTime)
-/*    require(tx.hex == "01000000010000000000000000000000000000000000000000000000000000000000000000ffffffff020000ffffffff01000000000000000043410479be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8ac00000000",
-      "\nExpected hex: 01000000010000000000000000000000000000000000000000000000000000000000000000ffffffff020000ffffffff01000000000000000043410479be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8ac00000000\n" +
-        "Actual hex: " + tx.hex)
-    require( tx.txId == "fe61340182d05eaccf022765292f02b9833558d32e7eab197740dd046f58e59c","txid not the same as core's")*/
-    tx
+    (tx,0)
   }
 
-  def buildSpendingTransaction(creditingTx : Transaction,scriptSignature : ScriptSignature, outputIndex : Int) : Transaction = {
+  /**
+   * Builds a spending transaction according to bitcoin core
+   * @param creditingTx
+   * @param scriptSignature
+   * @param outputIndex
+   * @return the built spending transaction adn the input index for the script signature
+   */
+  def buildSpendingTransaction(creditingTx : Transaction,scriptSignature : ScriptSignature, outputIndex : Int) : (Transaction,Int) = {
 /*
     CMutableTransaction txSpend;
     txSpend.nVersion = 1;
@@ -92,7 +82,7 @@ trait TransactionTestUtil extends BitcoinSLogger {
     val tx = TransactionImpl(TransactionConstants.version,Seq(input),Seq(output),TransactionConstants.lockTime)
 /*    val expectedHex = "01000000019ce5586f04dd407719ab7e2ed3583583b9022f29652702cfac5ed082013461fe000000004847304402200a5c6163f07b8d3b013c4d1d6dba25e780b39658d79ba37af7057a3b7f15ffa102201fd9b4eaa9943f734928b99a83592c2e7bf342ea2680f6a2bb705167966b742001ffffffff0100000000000000000000000000"
     require(tx.hex == expectedHex,"\nExpected hex: " + expectedHex + "\nActual hex:   " +  tx.hex)*/
-    tx
+    (tx,0)
   }
 
 
@@ -157,6 +147,17 @@ trait TransactionTestUtil extends BitcoinSLogger {
     val input = p2sh2Of3Transaction.inputs(inputIndex)
     val output = p2sh2Of3CreditingTransaction.outputs(input.previousOutput.vout)
     (p2sh2Of3Transaction,input,inputIndex,output)
+  }
+
+
+  /**
+   * Builds a transaction with a non strict der encoded signature
+   * @return the transaction and the inputIndex of the non strict der encoded signature
+   */
+  def transactionWithNonStrictDerSignature : (Transaction, Int) = {
+    val (creditingTx,outputIndex) = buildCreditingTransaction(TestUtil.scriptPubKey)
+    val (spendingTx,inputIndex) = buildSpendingTransaction(creditingTx,TestUtil.scriptSigNotStrictDerEncoded,outputIndex)
+    (spendingTx,inputIndex)
   }
 }
 

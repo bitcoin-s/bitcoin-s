@@ -2,6 +2,7 @@ package org.scalacoin.crypto
 
 import org.scalacoin.protocol.script.{ScriptSignatureFactory, ScriptSignature}
 import org.scalacoin.protocol.transaction._
+import org.scalacoin.script.ScriptProgramFactory
 import org.scalacoin.util._
 import org.scalatest.{FlatSpec, MustMatchers}
 
@@ -10,17 +11,7 @@ import org.scalatest.{FlatSpec, MustMatchers}
  */
 class TransactionSignatureCheckerTest extends FlatSpec with MustMatchers {
 
-  "TransactionSignatureChecker" must "check to see if an input correctly spends a p2pkh scriptPubKey" in {
-    val (spendingTx,spendingInput,inputIndex,creditingOutput) : (Transaction,TransactionInput,Int,TransactionOutput) =
-      TransactionTestUtil.transactionWithSpendingInputAndCreditingOutput
-    val scriptSig : ScriptSignature = spendingInput.scriptSignature
-    val pubKey : ECPublicKey = ECFactory.publicKey(scriptSig.asm.last.bytes)
-    TransactionSignatureChecker.checkSignature(spendingTx,inputIndex,creditingOutput.scriptPubKey,
-      pubKey,true) must be (SignatureValidationSuccess)
-  }
-
-
-  it must "check to see if an input spends a multisignature scriptPubKey correctly" in {
+  "TransactionSignatureChecker" must "check to see if an input spends a multisignature scriptPubKey correctly" in {
     val (spendingTx,inputIndex,multiSigScriptPubKey,keys) = TransactionTestUtil.signedMultiSignatureTransaction
     TransactionSignatureChecker.checkSignature(spendingTx,inputIndex,multiSigScriptPubKey,true) must be (SignatureValidationSuccess)
   }
@@ -44,5 +35,24 @@ class TransactionSignatureCheckerTest extends FlatSpec with MustMatchers {
     val newInput = TransactionInputFactory.factory(spendingTx.inputs(inputIndex),newScriptSigWithSignatureRemoved)
     val txNewInputs = TransactionFactory.factory(EmptyTransaction,UpdateTransactionInputs(Seq(newInput)))
     TransactionSignatureChecker.checkSignature(txNewInputs,inputIndex,creditingOutput.scriptPubKey,true) must be (SignatureValidationFailureIncorrectSignatures)
+  }
+
+  it must "fail to check a transaction when strict der encoding is required but the signature is not strict der encoded" in {
+    val (tx,inputIndex) = TransactionTestUtil.transactionWithNonStrictDerSignature
+    val signature = tx.inputs(inputIndex).scriptSignature.signatures.head
+    val result = TransactionSignatureChecker.checkSignature(tx,inputIndex,TestUtil.scriptPubKey,
+      ECFactory.publicKey(""), signature, true)
+    result must be (SignatureValidationFailureNotStrictDerEncoding)
+  }
+
+
+  it must "check a standard p2pk transaction" in {
+    val (creditingTx,outputIndex) = TransactionTestUtil.buildCreditingTransaction(TestUtil.p2pkScriptPubKey)
+    val (spendingTx,inputIndex) =
+      TransactionTestUtil.buildSpendingTransaction(creditingTx,TestUtil.p2pkScriptSig,outputIndex)
+    val program = ScriptProgramFactory.factory(spendingTx,TestUtil.p2pkScriptPubKey,inputIndex,Seq())
+    val result = TransactionSignatureChecker.checkSignature(program)
+    result must be (SignatureValidationSuccess)
+
   }
 }

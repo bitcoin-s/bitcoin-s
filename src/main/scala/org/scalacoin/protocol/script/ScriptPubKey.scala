@@ -8,7 +8,7 @@ import org.scalacoin.script.bitwise.{OP_EQUAL, OP_EQUALVERIFY}
 import org.scalacoin.script.constant._
 import org.scalacoin.script.crypto.{OP_CHECKMULTISIGVERIFY, OP_CHECKMULTISIG, OP_CHECKSIG, OP_HASH160}
 import org.scalacoin.script.stack.OP_DUP
-import org.scalacoin.util.BitcoinSLogger
+import org.scalacoin.util.{BitcoinScriptUtil, BitcoinSLogger}
 
 /**
  * Created by chris on 12/26/15.
@@ -107,7 +107,9 @@ trait P2SHScriptPubKey extends ScriptPubKey
  * https://bitcoin.org/en/developer-guide#pubkey
  * Format: <pubkey> OP_CHECKSIG
  */
-trait P2PKScriptPubKey extends ScriptPubKey
+trait P2PKScriptPubKey extends ScriptPubKey {
+  def publicKey = ECFactory.publicKey(BitcoinScriptUtil.filterPushOps(asm).head.bytes)
+}
 
 trait NonStandardScriptPubKey extends ScriptPubKey
 

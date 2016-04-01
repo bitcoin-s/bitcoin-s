@@ -1,6 +1,6 @@
 package org.scalacoin.util
 
-import org.scalacoin.script.constant.ScriptToken
+import org.scalacoin.script.constant._
 
 /**
  * Created by chris on 3/2/16.
@@ -24,6 +24,19 @@ trait BitcoinScriptUtil {
    * @return
    */
   def asmToBytes(asm : Seq[ScriptToken]) : Seq[Byte] = BitcoinSUtil.decodeHex(asmToHex(asm))
+
+  /**
+   * Filters out push operations in our scriptSig
+   * this removes OP_PUSHDATA1, OP_PUSHDATA2, OP_PUSHDATA4 and all ByteToPushOntoStack tokens
+   * @param asm
+   * @return
+   */
+  def filterPushOps(asm : Seq[ScriptToken]) : Seq[ScriptToken] = {
+    asm.filterNot(op => op.isInstanceOf[BytesToPushOntoStack]
+      || op == OP_PUSHDATA1
+      || op == OP_PUSHDATA2
+      || op == OP_PUSHDATA4)
+  }
 }
 
 

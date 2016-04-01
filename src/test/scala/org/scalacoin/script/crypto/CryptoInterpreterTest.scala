@@ -128,8 +128,8 @@ class CryptoInterpreterTest extends FlatSpec with MustMatchers with CryptoInterp
   }
 
   it must "evaluate an OP_CHECKSIG for a p2pk transaction" in {
-    val creditingTx = TransactionTestUtil.buildCreditingTransaction(TestUtil.p2pkScriptPubKey)
-    val spendingTx = TransactionTestUtil.buildSpendingTransaction(creditingTx,TestUtil.p2pkScriptSig,0)
+    val (creditingTx,outputIndex) = TransactionTestUtil.buildCreditingTransaction(TestUtil.p2pkScriptPubKey)
+    val (spendingTx,inputIndex) = TransactionTestUtil.buildSpendingTransaction(creditingTx,TestUtil.p2pkScriptSig,outputIndex)
     val baseProgram = ScriptProgramFactory.factory(spendingTx,creditingTx.outputs(0).scriptPubKey,0,List())
     val stack = Seq(TestUtil.p2pkScriptPubKey.asm(1)) ++ TestUtil.p2pkScriptSig.asm.tail
 
@@ -150,8 +150,8 @@ class CryptoInterpreterTest extends FlatSpec with MustMatchers with CryptoInterp
     val p2shScriptPubKey = ScriptPubKeyFactory.fromHex(rawScriptPubKey)
 
 
-    val creditingTx = TransactionTestUtil.buildCreditingTransaction(p2shScriptPubKey)
-    val spendingTx = TransactionTestUtil.buildSpendingTransaction(creditingTx,p2shScriptSig,0)
+    val (creditingTx,outputIndex) = TransactionTestUtil.buildCreditingTransaction(p2shScriptPubKey)
+    val (spendingTx,inputIndex) = TransactionTestUtil.buildSpendingTransaction(creditingTx,p2shScriptSig,outputIndex)
 
     val stack = List(ScriptNumberImpl(3),
       ScriptConstantImpl("03363d90d447b00c9c99ceac05b6262ee053441c7e55552ffe526bad8f83ff4640"),
@@ -200,6 +200,5 @@ class CryptoInterpreterTest extends FlatSpec with MustMatchers with CryptoInterp
     newProgram.isValid must be (false)
 
   }
-
 
 }
