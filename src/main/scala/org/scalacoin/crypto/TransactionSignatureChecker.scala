@@ -13,26 +13,24 @@ import scala.annotation.tailrec
 
 /**
  * Created by chris on 2/16/16.
- * Responsible for checkign digital signatures on inputs against their respective
+ * Responsible for checking digital signatures on inputs against their respective
  * public keys
  */
 trait TransactionSignatureChecker extends BitcoinSLogger {
   /**
    * Checks the signatures inside of a script program
    * @param program the program whose transaction's input at the program's input index need to be checked against the scriptPubkey
-   * @return a boolean indicating if the signatures in tx are valid or not
+   * @return a TransactionSignatureCheckerResult indicating if the signatures in tx are valid or not
    */
   def checkSignature(program : ScriptProgram) : TransactionSignatureCheckerResult = {
-    require(program.script.size > 0 && CryptoSignatureEvaluationFactory.fromHex(program.script.head.hex).isDefined,
-      "The program script must contain atleast one operation and that operation must be in the CryptoOperationFactory" +
-      "\nGiven operation: " + program.script.headOption)
-
     checkSignature(program.transaction,program.inputIndex,program.scriptPubKey, program.flags.contains(ScriptVerifyDerSig))
   }
 
+
   /**
    * Checks the signature of a scriptSig in the spending transaction against the
-   * given scriptPubKey
+   * given scriptPubKey & explicitly given public key
+   * This is useful for instances of non standard scriptSigs
    * @param spendingTransaction
    * @param inputIndex
    * @param scriptPubKey
@@ -40,14 +38,13 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
    * @return
    */
   def checkSignature(spendingTransaction : Transaction, inputIndex : Int, scriptPubKey : ScriptPubKey,
-                     pubKey: ECPublicKey, requireStrictDEREncoding : Boolean) : TransactionSignatureCheckerResult = {
-    val input = spendingTransaction.inputs(inputIndex)
-    val signature = input.scriptSignature.signatures.head
+                     pubKey: ECPublicKey, signature : ECDigitalSignature, requireStrictDEREncoding : Boolean) : TransactionSignatureCheckerResult = {
     if (requireStrictDEREncoding && !DERSignatureUtil.isStrictDEREncoding(signature)) {
       logger.warn("Signature was not stricly encoded der: " + signature.hex)
       SignatureValidationFailureNotStrictDerEncoding
     } else {
-      val hashType = input.scriptSignature.hashType(signature)
+      val hashTypeByte = if (signature.bytes.size > 0) signature.bytes.last else 0x00.toByte
+      val hashType = HashTypeFactory.fromByte(hashTypeByte)
       val hashForSignature = TransactionSignatureSerializer.hashForSignature(spendingTransaction,inputIndex,scriptPubKey,hashType)
       logger.info("Hash for signature: " + BitcoinSUtil.encodeHex(hashForSignature))
       val isValid = pubKey.verify(hashForSignature,signature)
@@ -55,7 +52,6 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
     }
 
   }
-
   /**
    * Checks the signatures on a given input against the scriptPubKey
    * @param spendingTransaction
@@ -74,7 +70,7 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
       case p2shSignatureScript : P2SHScriptSignature =>
         checkP2SHScriptSignature(spendingTransaction,inputIndex,scriptPubKey, p2shSignatureScript,requireStrictDEREncoding)
       case p2pkScriptSignature : P2PKScriptSignature =>
-        throw new RuntimeException("This is an old script signature type that is not supported by wallets anymore")
+        checkP2PKScriptSig(spendingTransaction,inputIndex,scriptPubKey,p2pkScriptSignature,requireStrictDEREncoding)
       case EmptyScriptSignature => checkEmptyScriptSig(spendingTransaction,inputIndex,scriptPubKey)
       case x : NonStandardScriptSignature => SignatureValidationFailureIncorrectSignatures
     }
@@ -99,7 +95,7 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
       val hashType = p2pkhScriptSig.hashType(signature)
       val hashForSignature : Seq[Byte] =
         TransactionSignatureSerializer.hashForSignature(spendingTransaction,inputIndex,scriptPubKey,hashType)
-      val isValid = p2pkhScriptSig.publicKeys.head.verify(hashForSignature,p2pkhScriptSig.signatures.head)
+      val isValid = p2pkhScriptSig.publicKey.verify(hashForSignature,p2pkhScriptSig.signatures.head)
       if (isValid) SignatureValidationSuccess else SignatureValidationFailureIncorrectSignatures
     }
   }
@@ -115,8 +111,6 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
    */
   private def checkP2SHScriptSignature(spendingTransaction : Transaction, inputIndex : Int, scriptPubKey : ScriptPubKey,
                                        p2shScriptSignature : P2SHScriptSignature, requireStrictDEREncoding : Boolean) : TransactionSignatureCheckerResult = {
-
-
 
     scriptPubKey match {
       case x : P2SHScriptPubKey =>
@@ -202,6 +196,31 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
        if (x.requiredSigs == 0) SignatureValidationSuccess else SignatureValidationFailureIncorrectSignatures
       case x : P2PKHScriptPubKey => SignatureValidationFailureIncorrectSignatures
       case x : P2PKScriptPubKey => SignatureValidationFailureIncorrectSignatures
+      case x : NonStandardScriptPubKey => SignatureValidationFailureIncorrectSignatures
+      case x : P2SHScriptPubKey => SignatureValidationFailureIncorrectSignatures
+      case EmptyScriptPubKey => SignatureValidationFailureIncorrectSignatures
+    }
+  }
+
+
+  /**
+   * Checks a pay-to-pubkey transaction
+   * @param spendingTransaction
+   * @param inputIndex
+   * @param scriptPubKey
+   * @return
+   */
+  private def checkP2PKScriptSig(spendingTransaction : Transaction, inputIndex : Int, scriptPubKey : ScriptPubKey,
+                                 p2pkScriptSignature : P2PKScriptSignature, requireStrictDEREncoding : Boolean) : TransactionSignatureCheckerResult = {
+    scriptPubKey match {
+
+      case x : P2PKScriptPubKey =>
+        val hashType = p2pkScriptSignature.hashType
+        val hashForSig = TransactionSignatureSerializer.hashForSignature(spendingTransaction,inputIndex,scriptPubKey,hashType)
+        val result = x.publicKey.verify(hashForSig,p2pkScriptSignature.signature)
+        if (result) SignatureValidationSuccess else SignatureValidationFailureIncorrectSignatures
+      case x : MultiSignatureScriptPubKey => SignatureValidationFailureIncorrectSignatures
+      case x : P2PKHScriptPubKey => SignatureValidationFailureIncorrectSignatures
       case x : NonStandardScriptPubKey => SignatureValidationFailureIncorrectSignatures
       case x : P2SHScriptPubKey => SignatureValidationFailureIncorrectSignatures
       case EmptyScriptPubKey => SignatureValidationFailureIncorrectSignatures

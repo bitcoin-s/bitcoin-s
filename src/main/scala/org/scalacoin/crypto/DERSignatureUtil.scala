@@ -75,7 +75,6 @@ trait DERSignatureUtil extends BitcoinSLogger {
   def decodeSignature(bytes : Seq[Byte]) : (BigInt,BigInt) = {
     logger.debug("Signature to decode: " + BitcoinSUtil.encodeHex(bytes))
     val asn1InputStream = new ASN1InputStream(bytes.toArray)
-    logger.debug("hello")
     //TODO: this is nasty, is there any way to get rid of all this casting???
     //TODO: Not 100% this is completely right for signatures that are incorrectly DER encoded
     //the behavior right now is to return the defaults in the case the signature is not DER encoded
@@ -85,8 +84,6 @@ trait DERSignatureUtil extends BitcoinSLogger {
       case Failure(err) => new DLSequence()
     }
     val default = new ASN1Integer(0)
-    logger.debug("world")
-    //logger.debug("seq: " + seq.toString)
     val r : ASN1Integer = Try(seq.getObjectAt(0).asInstanceOf[ASN1Integer]) match {
       case Success(r) =>
         //this is needed for a bug inside of bouncy castle where zero length values throw an exception

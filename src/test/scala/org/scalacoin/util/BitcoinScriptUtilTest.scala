@@ -1,7 +1,7 @@
 package org.scalacoin.util
 
 import org.scalacoin.script.bitwise.OP_EQUALVERIFY
-import org.scalacoin.script.constant.{ScriptConstantImpl, BytesToPushOntoStackImpl, ScriptToken}
+import org.scalacoin.script.constant._
 import org.scalacoin.script.crypto.{OP_CHECKSIG, OP_HASH160}
 import org.scalacoin.script.stack.OP_DUP
 import org.scalatest.{FlatSpec, MustMatchers}
@@ -21,6 +21,12 @@ class BitcoinScriptUtilTest extends FlatSpec with MustMatchers {
 
   it must "give us the correct byte representation of an asm script" in {
     BitcoinScriptUtil.asmToBytes(asm) must be (BitcoinSUtil.decodeHex(expectedHex))
+  }
+
+  it must "filter out all of the push operations in a scriptSig" in {
+    BitcoinScriptUtil.filterPushOps(Seq(OP_PUSHDATA1, OP_PUSHDATA2, OP_PUSHDATA4) ++
+      BytesToPushOntoStackFactory.operations).isEmpty must be (true)
+
   }
 
 }

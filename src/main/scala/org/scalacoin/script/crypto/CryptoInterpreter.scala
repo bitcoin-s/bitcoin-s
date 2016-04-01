@@ -105,22 +105,17 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
       ScriptProgramFactory.factory(program,false)
     } else {
       val restOfStack = program.stack.tail.tail
-      val hashType = (signature.bytes.size == 0) match {
-        case true => SIGHASH_ALL()
-        case false => HashTypeFactory.fromByte(BitcoinSUtil.decodeHex(signature.hex).last)
+      val result = TransactionSignatureChecker.checkSignature(program.transaction,
+        program.inputIndex,program.scriptPubKey,pubKey,signature,program.flags.contains(ScriptVerifyDerSig))
+      logger.debug("signature verification isValid: " + result)
+      result match {
+        case SignatureValidationSuccess => ScriptProgramFactory.factory(program, ScriptTrue :: restOfStack,program.script.tail)
+        case SignatureValidationFailureNotStrictDerEncoding =>
+          ScriptProgramFactory.factory(program, ScriptFalse :: restOfStack,program.script.tail,SignatureValidationFailureNotStrictDerEncoding.isValid)
+        case SignatureValidationFailureIncorrectSignatures =>
+          ScriptProgramFactory.factory(program, ScriptFalse :: restOfStack,program.script.tail)
       }
-
-      val hashForSig = TransactionSignatureSerializer.hashForSignature(program.transaction,
-        program.inputIndex,program.scriptPubKey,hashType)
-      logger.debug("Hash for sig inside of opChecksig: " + BitcoinSUtil.encodeHex(hashForSig))
-      val isValid = pubKey.verify(hashForSig, signature)
-      logger.debug("signature verification isValid: " + isValid)
-      if (isValid) ScriptProgramFactory.factory(program, ScriptTrue :: restOfStack,program.script.tail)
-      else ScriptProgramFactory.factory(program, ScriptFalse :: restOfStack,program.script.tail)
-
     }
-
-
   }
 
 

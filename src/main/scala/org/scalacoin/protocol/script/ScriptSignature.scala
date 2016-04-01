@@ -6,7 +6,7 @@ import org.scalacoin.marshallers.transaction.TransactionElement
 
 import org.scalacoin.script.constant._
 import org.scalacoin.script.crypto.{SIGHASH_ALL, OP_CHECKMULTISIG, HashType, HashTypeFactory}
-import org.scalacoin.util.{BitcoinSLogger, BitcoinSUtil}
+import org.scalacoin.util.{BitcoinScriptUtil, BitcoinSLogger, BitcoinSUtil}
 import org.slf4j.LoggerFactory
 
 /**
@@ -45,18 +45,7 @@ sealed trait ScriptSignature extends TransactionElement with ScriptSignatureFact
     }
   }
 
-  /**
-   * Filters out push operations in our scriptSig
-   * this removes OP_PUSHDATA1, OP_PUSHDATA2, OP_PUSHDATA4 and all ByteToPushOntoStack tokens
-   * @param asm
-   * @return
-   */
-  def filterPushOps(asm : Seq[ScriptToken]) : Seq[ScriptToken] = {
-    asm.filterNot(op => op.isInstanceOf[BytesToPushOntoStack]
-      || op == OP_PUSHDATA1
-      || op == OP_PUSHDATA2
-      || op == OP_PUSHDATA4)
-  }
+
 
 
 }
@@ -90,12 +79,18 @@ trait P2PKHScriptSignature extends ScriptSignature {
    * Gives us the public key inside of a p2pkh script signature
    * @return
    */
-  def publicKeys : Seq[ECPublicKey] = Seq(ECFactory.publicKey(asm.last.bytes))
+  def publicKey : ECPublicKey = ECFactory.publicKey(asm.last.bytes)
 
+  /**
+   * Returns the hash type for the p2pkh script signature
+   * @return
+   */
+  def hashType : HashType = HashTypeFactory.fromByte(signature.bytes.last)
 
-  def signatures : Seq[ECDigitalSignature] = {
+  override def signatures : Seq[ECDigitalSignature] = {
     Seq(ECFactory.digitalSignature(asm(1).hex))
   }
+
 }
 
 /**
@@ -171,6 +166,11 @@ trait P2PKScriptSignature extends ScriptSignature {
 
 
   /**
+   * Returns the hash type for the signature inside of the p2pk script signature
+   * @return
+   */
+  def hashType = HashTypeFactory.fromByte(signature.bytes.last)
+  /**
    * PubKey scriptSignatures only have one signature
    * @return
    */
@@ -180,7 +180,7 @@ trait P2PKScriptSignature extends ScriptSignature {
    * @return
    */
   def signatures : Seq[ECDigitalSignature] = {
-    Seq(ECFactory.digitalSignature(asm.head.hex))
+    Seq(ECFactory.digitalSignature(BitcoinScriptUtil.filterPushOps(asm).head.hex))
   }
 }
 

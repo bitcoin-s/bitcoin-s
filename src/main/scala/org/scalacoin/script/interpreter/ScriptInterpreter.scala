@@ -122,7 +122,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
         case OP_CHECKSIG :: t =>
           val newProgram = opCheckSig(program)
           if (!newProgram.isValid) {
-            logger.warn("OP_CHECKSIG verification failed")
+            logger.warn("OP_CHECKSIG marked the transaction as invalid")
             newProgram.isValid
           }
           else loop(newProgram)
@@ -134,7 +134,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
         case OP_CHECKMULTISIG :: t =>
           val newProgram = opCheckMultiSig(program)
           if (!newProgram.isValid) {
-            logger.warn("OP_CHECKMULTISIG verification failed")
+            logger.warn("OP_CHECKMULTISIG marked the transaction as invalid")
             newProgram.isValid
           }
           else loop(newProgram)
