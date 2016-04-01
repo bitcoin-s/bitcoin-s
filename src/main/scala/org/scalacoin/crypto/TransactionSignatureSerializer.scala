@@ -156,24 +156,6 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper {
   }
 
   /**
-   * Signs the input at the given inputIndex with the given ECKey
-   * @param inputIndex
-   * @param script
-   * @param key
-   * @param hashType
-   */
-  def signInput(spendingTx : Transaction, inputIndex : Int, script : ScriptPubKey, key : ECPrivateKey, hashType : HashType) : Transaction = {
-    val hash = hashForSignature(spendingTx, inputIndex,script,hashType)
-    val signature = key.sign(hash)
-    //create the input's scriptSig
-    val scriptSig = ScriptSignatureFactory.factory(signature,key.publicKey)
-    val updatedInput : TransactionInput = TransactionInputFactory.factory(spendingTx.inputs(inputIndex),scriptSig)
-    //replace the updatedInput in the sequence of inputs in transaction
-    val updatedInputs = updateInputIndex(spendingTx.inputs,updatedInput,inputIndex)
-    val updatedTx : Transaction = TransactionFactory.factory(spendingTx,UpdateTransactionInputs(updatedInputs))
-    updatedTx
-  }
-  /**
    * Removes OP_CODESEPARATOR operations then returns the script
    * format
    * @return

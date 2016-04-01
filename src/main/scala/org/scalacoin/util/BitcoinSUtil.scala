@@ -15,8 +15,6 @@ trait BitcoinSUtil extends NumberUtil {
 
   def decodeHex(hex : String) : List[Byte] = Utils.HEX.decode(hex.trim).toList
 
-  def decodeHex(char : Char) : Byte = Utils.HEX.decode(char.toString).toList.head
-
   def encodeHex(bytes : Array[Byte]) : String = Utils.HEX.encode(bytes)
 
   def encodeHex(bytes : List[Byte]) : String = encodeHex(bytes.toSeq)
@@ -45,38 +43,24 @@ trait BitcoinSUtil extends NumberUtil {
     }
   }
 
-  /**
-   * Converts an int to a list of bytes
-   * @param x
-   * @return
-   */
-  def intToByteList(x : Int) : List[Byte] = {
-    //https://stackoverflow.com/questions/17870193/scala-serialize-int-to-arraybufferbyte-bit-twiddle-goes-wrong
-    val intBytes:Int = 4 // int is 4 bytes
-    val sizeByte:Short = 8
-    val buf = new ArrayBuffer[Byte](intBytes)
-    for(i <- 0 until intBytes) {
-      buf += ((x >>> (intBytes - i - 1 << 3)) & 0xFF).toByte
-    }
-    buf.toList
-  }
-
   def hexToLong(hex : String) : Long = toLong(hex)
 
   def decodeBase58(base58 : String) : Seq[Byte] = Base58.decode(base58).toList
 
   def encodeBase58(bytes : Seq[Byte]) : String = Base58.encode(bytes.toArray)
 
-
   /**
-   * Converts a little endian encoded hex string to a big endian encoded hex string
+   * Flips the endianess of the give hex string
    * @param hex
    * @return
    */
-  def littleEndianToBigEndian(hex : String) = encodeHex(decodeHex(hex).reverse)
+  def flipEndianess(hex : String) : String = encodeHex(decodeHex(hex).reverse)
 
-  def flipEndianess(hex : String) : String = littleEndianToBigEndian(hex)
-
+  /**
+   * Flips the endianess of the given sequence of bytes
+   * @param bytes
+   * @return
+   */
   def flipEndianess(bytes : Seq[Byte]) : String = flipEndianess(BitcoinSUtil.encodeHex(bytes))
   /**
    * Flips the hex chars in a hex strings
