@@ -90,10 +90,6 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
           else loop(newProgram)
         }
         case OP_EQUALVERIFY :: t => opEqualVerify(program).isValid
-        //script constants
-        //TODO: Implement these
-        case ScriptConstantImpl(x) :: t if x == "1" => throw new RuntimeException("Not implemented yet")
-        case ScriptConstantImpl(x) :: t if x == "0" => throw new RuntimeException("Not implemented yet")
         case (scriptNumberOp : ScriptNumberOperation) :: t =>
           if (scriptNumberOp == OP_0) loop(ScriptProgramFactory.factory(program,OP_0 :: program.stack, t))
           else loop(ScriptProgramFactory.factory(program, scriptNumberOp.scriptNumber :: program.stack, t))

@@ -11,6 +11,8 @@ class ConstantsTest extends FlatSpec with MustMatchers {
     OP_FALSE.opCode must be (0)
     OP_FALSE.hex must be ("00")
     OP_FALSE.scriptNumber must be (OP_0.scriptNumber)
+    OP_FALSE.bytes.isEmpty must be (true)
+    OP_FALSE.bytesSize must be (1)
   }
 
   it must "define an OP_PUSHDATA1" in {
@@ -37,6 +39,7 @@ class ConstantsTest extends FlatSpec with MustMatchers {
   it must "define an OP_TRUE" in {
     OP_TRUE.opCode must be (81)
     OP_TRUE.hex must be ("51")
+    OP_TRUE.scriptNumber must be (ScriptNumberImpl(1))
   }
 
   it must "define an OP_2" in {
@@ -132,6 +135,10 @@ class ConstantsTest extends FlatSpec with MustMatchers {
     val number3 = ScriptNumberImpl(-32768)
     val expectedHex3 = "008080"
     number3.hex must be (expectedHex3)
+  }
+
+  it must "evaluate ScriptTrue to non zero" in {
+    ScriptTrue.hex must not equal ("00")
   }
 
 

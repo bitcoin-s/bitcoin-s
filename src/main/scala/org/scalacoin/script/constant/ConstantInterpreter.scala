@@ -83,7 +83,7 @@ trait ConstantInterpreter {
     require(program.script.size > 1, "Script size must be atleast to to push constants onto the stack")
     val bytesNeeded = program.script.head match {
       case scriptNumber : BytesToPushOntoStack => scriptNumber.opCode
-      case _ => throw new RuntimeException("Stack top must be BytesToPushOntoStack to push a numbero bytes onto the stack")
+      case _ => throw new IllegalArgumentException("Stack top must be BytesToPushOntoStack to push a numbero bytes onto the stack")
     }
     /**
      * Parses the script tokens that need to be pushed onto our stack
@@ -111,22 +111,5 @@ trait ConstantInterpreter {
     ScriptProgramFactory.factory(program, bytesToPushOntoStack ++ program.stack, newScript)
   }
 
-  /**
-   * Responsible for pushing the amount of bytes specified by the param numberOfBytes onto the stack
-   * @param stack
-   * @param script
-   * @param numberOfBytes
-   * @return
-   */
-  private def opPushData(stack : List[ScriptToken], script : List[ScriptToken],numberOfBytes : Int) : (List[ScriptToken],List[ScriptToken]) = {
-    val tokensToBePushed : List[ScriptToken] = script.slice(0,numberOfBytes)
-    val newStackWithByteToPush = tokensToBePushed.reverse ++ stack
-    val newStack = newStackWithByteToPush.map {
-      case b : BytesToPushOntoStackImpl => ScriptNumberImpl(b.opCode)
-      case x => x
-    }
-    val newScript = script.slice(numberOfBytes,script.size)
-    (newStack,newScript)
-  }
 
 }

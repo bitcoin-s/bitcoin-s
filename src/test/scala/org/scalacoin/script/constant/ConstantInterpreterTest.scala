@@ -77,4 +77,14 @@ class ConstantInterpreterTest extends FlatSpec with MustMatchers with ConstantIn
     newProgram2.stack must be (List(OP_0))
   }
 
+  it must "throw an illegal argument exception if we attempt to push bytes onto the stack when there are none" in {
+    val stack = List()
+    val script = List(OP_PUSHDATA1)
+    val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
+    intercept[IllegalArgumentException] {
+      val newProgram = pushScriptNumberBytesToStack(program)
+    }
+
+
+  }
 }

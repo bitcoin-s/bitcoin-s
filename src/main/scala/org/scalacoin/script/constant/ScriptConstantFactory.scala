@@ -6,27 +6,12 @@ import org.scalacoin.util.{Factory, BitcoinSUtil}
  * Created by chris on 2/26/16.
  */
 trait ScriptConstantFactory extends Factory[ScriptConstant] {
-
   /**
-   * Factory method for script constants
-   * @param hex
-   * @return
-   */
-  def factory(hex : String) : ScriptConstant = {
-    ScriptConstantImpl(hex)
-  }
-
-  /**
-   * Factory method for script constants
+   * Creates a script constant from a sequence of bytes
    * @param bytes
    * @return
    */
-  def factory(bytes : Seq[Byte]) : ScriptConstant = {
-    factory(BitcoinSUtil.encodeHex(bytes))
-  }
-
-
-  def fromBytes(bytes : Seq[Byte]) : ScriptConstant = factory(bytes)
+  def fromBytes(bytes : Seq[Byte]) : ScriptConstant = ScriptConstantImpl(BitcoinSUtil.encodeHex(bytes))
 }
 
 object ScriptConstantFactory extends ScriptConstantFactory

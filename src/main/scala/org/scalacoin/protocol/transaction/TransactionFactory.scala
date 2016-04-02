@@ -50,21 +50,6 @@ trait TransactionFactory extends Factory[Transaction] {
    */
   def emptyOutputs(oldTx : Transaction) : Transaction = TransactionImpl(oldTx.version,oldTx.inputs,Seq(),oldTx.lockTime)
 
-  def empty : Transaction = TransactionImpl(TransactionConstants.version,Seq(),Seq(),TransactionConstants.lockTime)
-
-  /**
-   * Creates a transaction object from a sequence of bytes
-   * @param bytes
-   * @return
-   */
-  def factory(bytes : Seq[Byte]) : Transaction = fromBytes(bytes)
-
-  /**
-   * Creates a transction object from its hexadecimal representation
-   * @param hex
-   * @return
-   */
-  def factory(hex : String) : Transaction = fromHex(hex)
 
 
   def factory(bytes : Array[Byte]) : Transaction = fromBytes(bytes.toSeq)

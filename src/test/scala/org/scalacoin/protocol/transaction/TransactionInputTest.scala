@@ -1,6 +1,7 @@
 package org.scalacoin.protocol.transaction
 
 import org.scalacoin.protocol.script.EmptyScriptSignature
+import org.scalacoin.util.TestUtil
 import org.scalatest.{FlatSpec, MustMatchers}
 
 /**
@@ -15,5 +16,10 @@ class TransactionInputTest extends FlatSpec with MustMatchers {
     EmptyTransactionInput.scriptSigCompactSizeUInt.num must be (0)
     EmptyTransactionInput.scriptSigCompactSizeUInt.size must be (1)
     EmptyTransactionInput.sequence must be (TransactionConstants.sequence)
+  }
+
+
+  it must "write a transaction output to hex accurately" in {
+    TransactionInputFactory.fromHex(TestUtil.rawTxInput).hex must be (TestUtil.rawTxInput)
   }
 }
