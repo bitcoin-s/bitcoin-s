@@ -2,6 +2,7 @@ package org.scalacoin.protocol.transaction
 
 import org.scalacoin.currency.CurrencyUnits
 import org.scalacoin.protocol.script.EmptyScriptPubKey
+import org.scalacoin.util.TestUtil
 import org.scalatest.{FlatSpec, MustMatchers}
 
 /**
@@ -10,7 +11,7 @@ import org.scalatest.{FlatSpec, MustMatchers}
 class TransactionOutputTest extends FlatSpec with MustMatchers  {
 
   "TransactionOutput" must "define an empty transaction output" in {
-    EmptyTransactionOutput.scriptPubKey must be (EmptyScriptPubKey)
-    EmptyTransactionOutput.value must be (CurrencyUnits.negativeSatoshi)
+    EmptyTransactionOutput.scriptPubKey must be(EmptyScriptPubKey)
+    EmptyTransactionOutput.value must be(CurrencyUnits.negativeSatoshi)
   }
 }
