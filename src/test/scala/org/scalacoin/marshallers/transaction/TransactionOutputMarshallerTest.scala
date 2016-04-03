@@ -40,4 +40,11 @@ class TransactionOutputMarshallerTest extends FlatSpec with MustMatchers {
     output.scriptPubKey.hex must be ("76a914321908115d8a138942f98b0b53f86c9a1848501a88ac")
   }
 
+  it must "write a transaction output" in {
+    val output : TransactionOutput = TransactionOutputMarshaller.TransactionOutputFormatter.read(json)
+    val writtenOutput = TransactionOutputMarshaller.TransactionOutputFormatter.write(output)
+
+    writtenOutput.asJsObject.fields("value") must be (JsNumber(0.0002))
+  }
+
 }

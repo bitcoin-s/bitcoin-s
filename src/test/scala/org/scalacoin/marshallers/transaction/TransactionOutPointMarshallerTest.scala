@@ -22,11 +22,21 @@ class TransactionOutPointMarshallerTest extends FlatSpec with MustMatchers {
       |}
     """.stripMargin
 
-  "" must "parse the transaction outpoint from a json input" in {
+  "TransactionOutPointMarshaller" must "parse the transaction outpoint from a json input" in {
     val json = str.parseJson
     val outPoint : TransactionOutPoint = TransactionOutPointMarshaller.TransactionOutPointFormatter.read(json)
 
     outPoint.txId must be ("808105ed5feff1c05daf6efd202e5966fcdda71ca961e393a1fc83f2b03315d1")
     outPoint.vout must be (0)
   }
+
+  it must "write a transaction outpoint" in {
+    val json = str.parseJson
+    val outPoint : TransactionOutPoint = TransactionOutPointMarshaller.TransactionOutPointFormatter.read(json)
+    val writtenOutPoint = TransactionOutPointMarshaller.TransactionOutPointFormatter.write(outPoint)
+    writtenOutPoint.asJsObject.fields("txid") must be (JsString("808105ed5feff1c05daf6efd202e5966fcdda71ca961e393a1fc83f2b03315d1"))
+
+  }
+
+
 }
