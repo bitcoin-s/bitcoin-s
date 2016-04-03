@@ -34,11 +34,10 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
    */
   def op1Add(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.isDefined && program.script.head == OP_1ADD, "Script top must be OP_1ADD")
-    require(program.stack.size > 0, "Stack size must be 1 or more perform an OP_1ADD")
-
+    require(program.stack.size > 0, "Must have one item on the stack to execute OP_1ADD")
     val newStackTop = program.stack.head match {
       case s : ScriptNumber => s + ScriptNumberImpl(1)
-      case x => throw new RuntimeException("Stack must be script number to perform OP_1ADD, stack top was: " + x)
+      case x => throw new IllegalArgumentException("Stack must be script number to perform OP_1ADD, stack top was: " + x)
     }
 
     ScriptProgramFactory.factory(program, newStackTop :: program.stack.tail, program.script.tail)
@@ -55,7 +54,7 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
 
     val newStackTop = program.stack.head match {
       case s : ScriptNumber => s - ScriptNumberImpl(1)
-      case x => throw new RuntimeException("Stack must be script number to perform OP_1ADD, stack top was: " + x)
+      case x => throw new IllegalArgumentException("Stack must be script number to perform OP_1ADD, stack top was: " + x)
     }
 
     ScriptProgramFactory.factory(program, newStackTop :: program.stack.tail, program.script.tail)
@@ -69,17 +68,13 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
    */
   def opSub(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.isDefined && program.script.head == OP_SUB, "Script top must be OP_SUB")
-    require(program.stack.size > 1, "Stack size must be 2 or more perform an OP_SUB")
+    require(program.stack.size > 1, "Stack must contain two elements to do an OP_SUB")
 
-    val b = program.stack.head match {
-      case s : ScriptNumber => s - ScriptNumberImpl(1)
-      case x => throw new RuntimeException("Stack must be script number to perform OP_SUB, stack top was: " + x)
-    }
-    val a = program.stack.tail.head match {
-      case s : ScriptNumber => s - ScriptNumberImpl(1)
-      case x => throw new RuntimeException("Stack must be script number to perform OP_SUB, stack top was: " + x)
-    }
+    val (b,a) = program.stack match {
+      case (h : ScriptNumber) :: (h1 : ScriptNumber) :: t => (h,h1)
+      case x => throw new IllegalArgumentException("Stack must be script number to perform OP_SUB, stack top was: " + x)
 
+    }
     val newScriptNumber = a - b
     ScriptProgramFactory.factory(program, newScriptNumber :: program.stack.tail, program.script.tail)
   }
@@ -94,7 +89,7 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
     require(program.stack.size > 0, "Stack size must be 1 or more perform an OP_ABS")
     val newStackTop = program.stack.head match {
       case s : ScriptNumber => ScriptNumberImpl(s.num.abs)
-      case x => throw new RuntimeException("Stack must be script number to perform OP_ABS, stack top was: " + x)
+      case x => throw new IllegalArgumentException("Stack must be script number to perform OP_ABS, stack top was: " + x)
     }
     ScriptProgramFactory.factory(program, newStackTop :: program.stack.tail, program.script.tail)
   }
@@ -109,7 +104,7 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
     require(program.stack.size > 0, "Stack size must be 1 or more perform an OP_NEGATE")
     val newStackTop = program.stack.head match {
       case s : ScriptNumber => ScriptNumberImpl(-s.num)
-      case x => throw new RuntimeException("Stack must be script number to perform OP_ABS, stack top was: " + x)
+      case x => throw new IllegalArgumentException("Stack must be script number to perform OP_ABS, stack top was: " + x)
     }
     ScriptProgramFactory.factory(program, newStackTop :: program.stack.tail, program.script.tail)
   }

@@ -151,23 +151,21 @@ trait ControlOperationsInterpreter extends BitcoinSLogger {
     logger.debug("Tree: " + tree)*/
     script match {
       case OP_IF :: t =>
-        val (newTail, parsedTree) = parseOpIf(script, Empty)
+        val (newTail, parsedTree) = parseOpIf(script)
         val newTree = insertSubTree(tree,parsedTree)
         loop(newTail, newTree)
       case OP_NOTIF :: t =>
-        val (newTail, parsedTree) = parseOpNotIf(script, Empty)
+        val (newTail, parsedTree) = parseOpNotIf(script)
         val newTree = insertSubTree(tree,parsedTree)
         loop(newTail, newTree)
       case OP_ELSE :: t =>
-        val (newTail, parsedTree) = parseOpElse(script, Empty)
+        val (newTail, parsedTree) = parseOpElse(script)
         val newTree = insertSubTree(tree,parsedTree)
         loop(newTail, newTree)
       case OP_ENDIF :: t =>
-        val (newTail, parsedTree) = parseOpEndIf(script, Empty)
+        val (newTail, parsedTree) = parseOpEndIf(script)
         val newTree = insertSubTree(tree,parsedTree)
         loop(newTail, newTree)
-      case (x: ScriptConstant) :: Nil => insertSubTree(tree, Leaf(x))
-      case (x: BytesToPushOntoStack) :: Nil => insertSubTree(tree, Leaf(x))
       case (x: ScriptConstant) :: t => loop(t, insertSubTree(tree, Leaf(x)))
       case (x: BytesToPushOntoStack) :: t => loop(t, insertSubTree(tree, Leaf(x)))
       case h :: t => loop(t,insertSubTree(tree,Leaf(h)))
@@ -213,34 +211,24 @@ trait ControlOperationsInterpreter extends BitcoinSLogger {
   /**
    * Parses an OP_IF script token
    * @param script
-   * @param tree
    * @return
    */
-  private def parseOpIf(script : List[ScriptToken],tree : BinaryTree[ScriptToken]) : (List[ScriptToken],BinaryTree[ScriptToken]) = script match {
-    case OP_IF :: t => tree match {
-      case n : Node[ScriptToken] => (t,Node(n.v,Node(OP_IF,Empty,Empty),n.r))
-      case l : Leaf[ScriptToken] => (t,Node(l.v,Node(OP_IF,Empty,Empty),Empty))
-      case Empty => (t, Node(OP_IF,Empty,Empty))
-    }
-    case h :: t => throw new RuntimeException("Cannot parse " + h + " as an OP_IF")
-    case Nil => (script,tree)
+  private def parseOpIf(script : List[ScriptToken]) : (List[ScriptToken],BinaryTree[ScriptToken]) = script match {
+    case OP_IF :: t  => (t, Node(OP_IF,Empty,Empty))
+    case h :: t => throw new IllegalArgumentException("Cannot parse " + h + " as an OP_IF")
+    case Nil => (script,Empty)
   }
 
 
   /**
    * Parses an OP_NOTIF script token
    * @param script
-   * @param tree
    * @return
    */
-  private def parseOpNotIf(script : List[ScriptToken],tree : BinaryTree[ScriptToken]) : (List[ScriptToken],BinaryTree[ScriptToken]) = script match {
-    case OP_NOTIF :: t => tree match {
-      case n : Node[ScriptToken] => (t,Node(n.v,Node(OP_NOTIF,Empty,Empty),n.r))
-      case l : Leaf[ScriptToken] => (t,Node(l.v,Node(OP_NOTIF,Empty,Empty),Empty))
-      case Empty => (t, Node(OP_NOTIF,Empty,Empty))
-    }
-    case h :: t => throw new RuntimeException("Cannot parse " + h + " as an OP_NOTIF")
-    case Nil => (script,tree)
+  private def parseOpNotIf(script : List[ScriptToken]) : (List[ScriptToken],BinaryTree[ScriptToken]) = script match {
+    case OP_NOTIF :: t =>  (t, Node(OP_NOTIF,Empty,Empty))
+    case h :: t => throw new IllegalArgumentException("Cannot parse " + h + " as an OP_NOTIF")
+    case Nil => (script,Empty)
   }
 
   /**
@@ -248,30 +236,16 @@ trait ControlOperationsInterpreter extends BitcoinSLogger {
    * @param script
    * @return
    */
-  private def parseOpElse(script : List[ScriptToken],tree : BinaryTree[ScriptToken]) : (List[ScriptToken],BinaryTree[ScriptToken]) = script match {
-    case OP_ELSE :: t => tree match {
-      case n : Node[ScriptToken] => n.r match {
-        //means that the right branch is already populated
-        //this is a problem because we always insert OP_ELSES on the right branch
-        case Empty => (t,Node(n.v,n.l,Node(OP_ELSE,Empty,Empty)))
-        case l : Leaf[ScriptToken] => (t, Node(n.v,n.l,Node(l.v, Empty, Node(OP_ELSE,Empty,Empty))))
-        case n1 : Node[ScriptToken] => parseOpElse(script,n1)
-      }
-      case l : Leaf[ScriptToken] => (t,Node(l.v,Empty,Node(OP_ELSE,Empty,Empty)))
-      case Empty => (t,Node(OP_ELSE,Empty,Empty))
-    }
+  private def parseOpElse(script : List[ScriptToken]) : (List[ScriptToken],BinaryTree[ScriptToken]) = script match {
+    case OP_ELSE :: t => (t,Node(OP_ELSE,Empty,Empty))
     case h :: t => throw new RuntimeException("Cannot parse " + h + " as an OP_ELSE")
-    case Nil => (script,tree)
+    case Nil => (script,Empty)
   }
 
-  private def parseOpEndIf(script : List[ScriptToken],tree : BinaryTree[ScriptToken]) : (List[ScriptToken],BinaryTree[ScriptToken]) = script match {
-    case OP_ENDIF :: t => tree match {
-      case Empty => (t,Leaf(OP_ENDIF))
-      case l : Leaf[ScriptToken] => (t,Node(l.v, Leaf(OP_ENDIF), Empty))
-      case n : Node[ScriptToken] => (t, insertSubTree(tree,Leaf(OP_ENDIF)))
-    }
-    case h :: t => throw new RuntimeException("Cannot parse " + h + " as an OP_ENDIF")
-    case Nil => (script,tree)
+  private def parseOpEndIf(script : List[ScriptToken]) : (List[ScriptToken],BinaryTree[ScriptToken]) = script match {
+    case OP_ENDIF :: t => (t,Leaf(OP_ENDIF))
+    case h :: t => throw new IllegalArgumentException("Cannot parse " + h + " as an OP_ENDIF")
+    case Nil => (script,Empty)
   }
 
 
