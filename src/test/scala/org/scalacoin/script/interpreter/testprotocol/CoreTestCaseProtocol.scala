@@ -82,10 +82,6 @@ object CoreTestCaseProtocol extends DefaultJsonProtocol {
 
     }
 
-
-
-
-
     override def write(coreTestCase : Option[CoreTestCase]) : JsValue = ???
   }
 

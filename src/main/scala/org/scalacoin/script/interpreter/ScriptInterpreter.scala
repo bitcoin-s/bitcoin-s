@@ -157,7 +157,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
       }
     }
 
-    program.scriptSignature match {
+    val (result,executedProgram) = program.scriptSignature match {
       case scriptSig : P2SHScriptSignature =>
 
         //first run the serialized redeemScript && the p2shScriptPubKey to see if the hashes match
@@ -171,20 +171,22 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
             logger.debug("P2sh stack: " + stack)
             logger.debug("P2sh redeemScript: " + scriptSig.redeemScript.asm )
             val p2shRedeemScriptProgram = ScriptProgramFactory.factory(program,stack, scriptSig.redeemScript.asm)
-
-            val (result,newProgram) = loop(p2shRedeemScriptProgram)
-            logger.debug("hashCheckProgram stack: " + hashCheckProgram.stack)
-            result
+            loop(p2shRedeemScriptProgram)
           case false =>
             logger.warn("P2SH scriptPubKey hash did not match the hash for the serialized redeemScript")
-            hashesMatch._1
+            hashesMatch
         }
       case _ : P2PKHScriptSignature | _ : P2PKScriptSignature | _ : MultiSignatureScriptSignature |
            _ : NonStandardScriptSignature | EmptyScriptSignature =>
         logger.debug("We do not check a redeemScript against a non p2sh scriptSig")
         val result = loop(program)
-        result._1
+        result
     }
+
+    if (result && executedProgram.flags.contains(ScriptVerifyCleanStack)) {
+      //require that the stack after execution has exactly one element on it
+      result && executedProgram.stack.size == 1
+    } else result
 
   }
 
