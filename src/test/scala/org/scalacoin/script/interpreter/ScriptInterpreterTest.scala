@@ -63,17 +63,10 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterp
 
 
 
-
+/*
   it must "evaluate all valid scripts from the bitcoin core script_valid.json" in {
     import CoreTestCaseProtocol._
 
-    /**
-     * These are test cases that were in script_valid.json that I have removed since i'm not sure how relevant
-     * they are going forward to bitcoin  - for historical purposes though these should pass
-     * they all have to do with DER encoded sigs
-     * bitcoinj currently fails on these
-     * ,
-     */
     val source = scala.io.Source.fromFile("src/test/scala/org/scalacoin/script/interpreter/script_valid.json")
 
     //use this to represent a single test case from script_valid.json
@@ -113,7 +106,7 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterp
       }
     }
 
-  }
+  }*/
 
   it must "evaluate all valid scripts from the bitcoin core script_invalid.json" in {
     import CoreTestCaseProtocol._
@@ -131,26 +124,30 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterp
 /*        val lines =
         """
           |
-          |[[
-    "11 0x47 0x304402202f7505132be14872581f35d74b759212d9da40482653f1ffa3116c3294a4a51702206adbf347a2240ca41c66522b1a22a41693610b76a8e7770645dc721d1635854f01 0x43 0x410479be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8ac",
-    "HASH160 0x14 0x31edc23bdafda4639e669f89ad6b2318dd79d032 EQUAL",
-    "CLEANSTACK,P2SH",
-    "P2SH with unnecessary input"
-]]
+          |[["", "DEPTH", "P2SH,STRICTENC",   "Test the test: we should have an empty stack after scriptSig evaluation"]]
         """.stripMargin*/
 
-    val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n" finally source.close()
-    val json = lines.parseJson
-    val testCasesOpt : Seq[Option[CoreTestCase]] = json.convertTo[Seq[Option[CoreTestCase]]]
-    val testCases : Seq[CoreTestCase] = testCasesOpt.flatten
 
+    val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n" finally source.close()
+    logger.info("1")
+    val json = lines.parseJson
+    logger.info("2")
+    val testCasesOpt : Seq[Option[CoreTestCase]] = json.convertTo[Seq[Option[CoreTestCase]]]
+    logger.info("3")
+    val testCases : Seq[CoreTestCase] = testCasesOpt.flatten
+    logger.info("4")
 
     for {
       testCase <- testCases
+      _ = logger.info(testCase.toString)
       (creditingTx,outputIndex) = TransactionTestUtil.buildCreditingTransaction(testCase.scriptPubKey.scriptPubKey)
+      _ = logger.info("6")
       (tx,inputIndex) = TransactionTestUtil.buildSpendingTransaction(creditingTx,testCase.scriptSig.scriptSignature,outputIndex)
+      _ = logger.info("7")
     } yield {
+
       require(testCase.scriptPubKey.asm == testCase.scriptPubKey.scriptPubKey.asm)
+
       logger.info("Raw test case: " + testCase.raw)
       logger.info("Parsed ScriptSig: " + testCase.scriptSig)
       logger.info("Parsed ScriptPubKey: " + testCase.scriptPubKey)

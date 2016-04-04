@@ -20,3 +20,32 @@ case object OP_EQUAL extends BitwiseOperation {
 case object OP_EQUALVERIFY extends BitwiseOperation {
   override def opCode = 136
 }
+
+/**
+ * Flips all of the bits in the input. disabled.
+ */
+case object OP_INVERT extends BitwiseOperation {
+  override def opCode = 131
+}
+
+/**
+ * Boolean and between each bit in the inputs. disabled.
+ */
+case object OP_AND extends BitwiseOperation {
+  override def opCode = 132
+}
+
+/**
+ * Boolean or between each bit in the inputs. disabled.
+ */
+case object OP_OR extends BitwiseOperation {
+  override def opCode = 133
+}
+
+/**
+ * Boolean exclusive or between each bit in the inputs. disabled.
+ */
+case object OP_XOR extends BitwiseOperation {
+  override def opCode = 134
+}
+
