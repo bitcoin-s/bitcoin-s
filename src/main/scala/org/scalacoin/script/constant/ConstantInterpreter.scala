@@ -1,6 +1,7 @@
 package org.scalacoin.script.constant
 
 import org.scalacoin.script.{ScriptProgramFactory, ScriptProgramImpl, ScriptProgram}
+import org.scalacoin.util.BitcoinSUtil
 import org.slf4j.LoggerFactory
 
 import scala.annotation.tailrec
@@ -108,7 +109,13 @@ trait ConstantInterpreter {
     }
 
     val (newScript,bytesToPushOntoStack) = takeUntilBytesNeeded(program.script.tail,List())
-    ScriptProgramFactory.factory(program, bytesToPushOntoStack ++ program.stack, newScript)
+    logger.debug("new script: " + newScript)
+    logger.debug("Bytes to push onto stack" + bytesToPushOntoStack)
+    val constant : ScriptToken = if (bytesToPushOntoStack.size == 1) bytesToPushOntoStack.head
+    else ScriptConstantFactory.fromHex(BitcoinSUtil.flipEndianess(bytesToPushOntoStack.flatMap(_.bytes)))
+
+    logger.debug("Constant: " + constant)
+    ScriptProgramFactory.factory(program, constant :: program.stack, newScript)
   }
 
 

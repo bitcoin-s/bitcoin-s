@@ -151,7 +151,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
           //in this case, just remove OP_CLTV from the stack and continue
           else loop(ScriptProgramFactory.factory(program, program.script.tail, ScriptProgramFactory.Script))
         //no more script operations to run, True is represented by any representation of non-zero
-        case Nil => (program.stack.headOption != Some(ScriptFalse), program)
+        case Nil => (program.stackTopIsTrue, program)
 
         case h :: t => throw new RuntimeException(h + " was unmatched")
       }
