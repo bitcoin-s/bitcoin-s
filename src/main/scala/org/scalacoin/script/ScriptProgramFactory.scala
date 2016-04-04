@@ -55,7 +55,7 @@ trait ScriptProgramFactory {
    * @param scriptTokens
    * @return
    */
-  def factory(oldProgram : ScriptProgram, stackTokens : Seq[ScriptToken], scriptTokens : Seq[ScriptToken]) = {
+  def factory(oldProgram : ScriptProgram, stackTokens : Seq[ScriptToken], scriptTokens : Seq[ScriptToken]) : ScriptProgram = {
     ScriptProgramImpl(oldProgram.transaction, oldProgram.scriptPubKey, oldProgram.inputIndex,
       stackTokens.toList,scriptTokens.toList, oldProgram.altStack, oldProgram.flags,
       oldProgram.isValid,oldProgram.lastCodeSeparator)
@@ -69,7 +69,7 @@ trait ScriptProgramFactory {
    * @param flags
    * @return
    */
-  def factory(oldProgram : ScriptProgram, stackTokens : Seq[ScriptToken], scriptTokens : Seq[ScriptToken], flags : Seq[ScriptFlag]) = {
+  def factory(oldProgram : ScriptProgram, stackTokens : Seq[ScriptToken], scriptTokens : Seq[ScriptToken], flags : Seq[ScriptFlag]) : ScriptProgram = {
     ScriptProgramImpl(oldProgram.transaction, oldProgram.scriptPubKey, oldProgram.inputIndex,
       stackTokens.toList,scriptTokens.toList, oldProgram.altStack, flags,
       oldProgram.isValid,oldProgram.lastCodeSeparator)

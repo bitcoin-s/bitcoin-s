@@ -1,8 +1,8 @@
 package org.scalacoin.script.interpreter
 
-import org.scalacoin.protocol.script.{ScriptSignature, ScriptPubKey}
+import org.scalacoin.protocol.script._
 import org.scalacoin.protocol.transaction.Transaction
-import org.scalacoin.script.flag.ScriptVerifyCheckLocktimeVerify
+import org.scalacoin.script.flag.{ScriptVerifyCleanStack, ScriptVerifyCheckLocktimeVerify}
 import org.scalacoin.script.locktime.{OP_CHECKLOCKTIMEVERIFY, LockTimeInterpreter}
 import org.scalacoin.script.splice.{SpliceInterpreter, OP_SIZE}
 import org.scalacoin.script.{ScriptProgramFactory, ScriptProgramImpl, ScriptProgram}
@@ -13,7 +13,7 @@ import org.scalacoin.script.control._
 import org.scalacoin.script.crypto._
 import org.scalacoin.script.reserved.NOP
 import org.scalacoin.script.stack._
-import org.scalacoin.util.BitcoinSLogger
+import org.scalacoin.util.{BitcoinScriptUtil, BitcoinSLogger}
 import org.slf4j.LoggerFactory
 
 import scala.annotation.tailrec
@@ -35,7 +35,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
    */
   def run(program : ScriptProgram) : Boolean = {
     @tailrec
-    def loop(program : ScriptProgram) : Boolean = {
+    def loop(program : ScriptProgram) : (Boolean,ScriptProgram) = {
       logger.debug("Stack: " + program.stack)
       logger.debug("Script: " + program.script)
       program.script match {
@@ -83,13 +83,13 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
         case OP_WITHIN :: t => loop(opWithin(program))
 
         //bitwise operations
-        case OP_EQUAL :: t => {
+        case OP_EQUAL :: t =>
           val newProgram = opEqual(program)
-          if (newProgram.stack.head == ScriptTrue && newProgram.script.size == 0) true
-          else if (newProgram.stack.head == ScriptFalse && newProgram.script.size == 0) false
-          else loop(newProgram)
-        }
-        case OP_EQUALVERIFY :: t => opEqualVerify(program).isValid
+          loop(newProgram)
+
+        case OP_EQUALVERIFY :: t =>
+          val newProgram = opEqualVerify(program)
+          (newProgram.isValid, newProgram)
         case (scriptNumberOp : ScriptNumberOperation) :: t =>
           if (scriptNumberOp == OP_0) loop(ScriptProgramFactory.factory(program,OP_0 :: program.stack, t))
           else loop(ScriptProgramFactory.factory(program, scriptNumberOp.scriptNumber :: program.stack, t))
@@ -107,11 +107,13 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
         case OP_NOTIF :: t => loop(opNotIf(program))
         case OP_ELSE :: t => loop(opElse(program))
         case OP_ENDIF :: t => loop(opEndIf(program))
-        case OP_RETURN :: t => opReturn(program).isValid
+        case OP_RETURN :: t =>
+          val newProgram = opReturn(program)
+          (newProgram.isValid, newProgram)
         case OP_VERIFY :: t =>
           val newProgram = opVerify(program)
           if (newProgram.isValid) loop(newProgram)
-          else false
+          else (false,newProgram)
 
         //crypto operations
         case OP_HASH160 :: t => loop(opHash160(program))
@@ -119,7 +121,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
           val newProgram = opCheckSig(program)
           if (!newProgram.isValid) {
             logger.warn("OP_CHECKSIG marked the transaction as invalid")
-            newProgram.isValid
+            (newProgram.isValid,newProgram)
           }
           else loop(newProgram)
         case OP_SHA1 :: t => loop(opSha1(program))
@@ -131,7 +133,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
           val newProgram = opCheckMultiSig(program)
           if (!newProgram.isValid) {
             logger.warn("OP_CHECKMULTISIG marked the transaction as invalid")
-            newProgram.isValid
+            (newProgram.isValid,newProgram)
           }
           else loop(newProgram)
         case OP_CHECKMULTISIGVERIFY :: t => loop(opCheckMultiSigVerify(program))
@@ -149,14 +151,42 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
           //in this case, just remove OP_CLTV from the stack and continue
           else loop(ScriptProgramFactory.factory(program, program.script.tail, ScriptProgramFactory.Script))
         //no more script operations to run, True is represented by any representation of non-zero
-        case Nil => program.stack.headOption != Some(ScriptFalse)
+        case Nil => (program.stack.headOption != Some(ScriptFalse), program)
+
         case h :: t => throw new RuntimeException(h + " was unmatched")
       }
     }
 
-    loop(program)
-  }
+    program.scriptSignature match {
+      case scriptSig : P2SHScriptSignature =>
 
+        //first run the serialized redeemScript && the p2shScriptPubKey to see if the hashes match
+        val hashCheckProgram = ScriptProgramFactory.factory(program, Seq(scriptSig.asm.last), program.scriptPubKey.asm)
+        val hashesMatch = loop(hashCheckProgram)
+        hashesMatch._1 match {
+          case true =>
+            logger.info("Hashes matched between the p2shScriptSignature & the p2shScriptPubKey")
+            //we need to run the deserialized redeemScript & the scriptSignature without the serialized redeemScript
+            val stack = BitcoinScriptUtil.filterPushOps(scriptSig.scriptSignatureNoRedeemScript.asm.reverse)
+            logger.debug("P2sh stack: " + stack)
+            logger.debug("P2sh redeemScript: " + scriptSig.redeemScript.asm )
+            val p2shRedeemScriptProgram = ScriptProgramFactory.factory(program,stack, scriptSig.redeemScript.asm)
+
+            val (result,newProgram) = loop(p2shRedeemScriptProgram)
+            logger.debug("hashCheckProgram stack: " + hashCheckProgram.stack)
+            result
+          case false =>
+            logger.warn("P2SH scriptPubKey hash did not match the hash for the serialized redeemScript")
+            hashesMatch._1
+        }
+      case _ : P2PKHScriptSignature | _ : P2PKScriptSignature | _ : MultiSignatureScriptSignature |
+           _ : NonStandardScriptSignature | EmptyScriptSignature =>
+        logger.debug("We do not check a redeemScript against a non p2sh scriptSig")
+        val result = loop(program)
+        result._1
+    }
+
+  }
 
 }
 

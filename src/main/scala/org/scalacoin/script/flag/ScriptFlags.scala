@@ -10,7 +10,7 @@ import org.scalacoin.util.BitcoinSUtil
  */
 sealed trait ScriptFlag {
   /**
-   * The flag's representation represented as an intege
+   * The flag's representation represented as an integer
    * @return
    */
   def flag : Int

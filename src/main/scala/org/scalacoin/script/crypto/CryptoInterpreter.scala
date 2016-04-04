@@ -26,7 +26,7 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
     require(program.script.headOption.isDefined && program.script.head == OP_HASH160, "Script operation must be OP_HASH160")
     val stackTop = program.stack.head
     val hash = ScriptConstantImpl(BitcoinSUtil.encodeHex(CryptoUtil.sha256Hash160(stackTop.bytes)))
-    ScriptProgramFactory.factory(program, hash :: program.stack, program.script.tail)
+    ScriptProgramFactory.factory(program, hash :: program.stack.tail, program.script.tail)
   }
 
 
@@ -105,8 +105,16 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
       ScriptProgramFactory.factory(program,false)
     } else {
       val restOfStack = program.stack.tail.tail
+      //we need to check if the scriptSignature has a redeemScript
+      //in that case, we need to pass the redeemScript to the TransactionSignatureChecker
+      //as the scriptPubKey instead of the one inside of ScriptProgram
+      val scriptPubKey = program.scriptSignature match {
+        case s : P2SHScriptSignature => s.redeemScript
+        case _ : P2PKHScriptSignature | _ : P2PKScriptSignature | _ : NonStandardScriptSignature
+             | _ : MultiSignatureScriptSignature | EmptyScriptSignature => program.scriptPubKey
+      }
       val result = TransactionSignatureChecker.checkSignature(program.transaction,
-        program.inputIndex,program.scriptPubKey,pubKey,signature,program.flags.contains(ScriptVerifyDerSig))
+        program.inputIndex,scriptPubKey,pubKey,signature,program.flags.contains(ScriptVerifyDerSig))
       logger.debug("signature verification isValid: " + result)
       result match {
         case SignatureValidationSuccess => ScriptProgramFactory.factory(program, ScriptTrue :: restOfStack,program.script.tail)
