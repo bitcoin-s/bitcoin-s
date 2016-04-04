@@ -118,11 +118,12 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
     require(program.script.headOption.isDefined && program.script.head == OP_NOT, "Script top must be OP_NOT")
     require(program.stack.size > 0, "Stack size must be 1 or more perform an OP_NOT")
     val newStackTop = program.stack.head match {
-      case OP_0 => OP_1
+      case OP_0 => OP_TRUE
+      case OP_FALSE => OP_TRUE
       case OP_1 => OP_0
-      case ScriptNumberImpl(0) => OP_1
-      case ScriptNumberImpl(1) => OP_0
-      case _ => OP_0
+      case ScriptNumberImpl(0) => OP_TRUE
+      case ScriptNumberImpl(1) => OP_FALSE
+      case _ => OP_FALSE
     }
     ScriptProgramFactory.factory(program, newStackTop :: program.stack.tail, program.script.tail)
   }
@@ -154,7 +155,9 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
     require(program.stack.size > 1, "Stack size must be 2 or more perform an OP_BOOLAND")
     val b = program.stack.head
     val a = program.stack.tail.head
-    val newStackTop = if ( b == a && (a == ScriptNumberImpl(0) || a == OP_0)) OP_1 else OP_0
+    val aIsFalse = (a == ScriptNumberImpl(0) || a == OP_0)
+    val bIsFalse = (b == ScriptNumberImpl(0) || b == OP_0)
+    val newStackTop = if (aIsFalse || bIsFalse) OP_FALSE else OP_TRUE
     ScriptProgramFactory.factory(program, newStackTop :: program.stack.tail.tail, program.script.tail)
 
   }
@@ -184,12 +187,13 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
     val b = program.stack.head
     val a = program.stack.tail.head
     val isSame = (a,b) match {
+      case (x : ScriptNumberOperation, y : ScriptNumberOperation) => x == y
       case (x : ScriptNumberOperation, y : ScriptNumber) => x.scriptNumber == y
       case (x : ScriptNumber, y : ScriptNumberOperation) => x == y.scriptNumber
       case (x,y) => x == y
     }
 
-    val newStackTop = if (isSame) OP_1 else OP_0
+    val newStackTop = if (isSame) OP_TRUE else OP_FALSE
     ScriptProgramFactory.factory(program, newStackTop :: program.stack.tail.tail, program.script.tail)
   }
 
@@ -386,14 +390,11 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
     val a = program.stack.tail.tail.head
 
     val isWithinRange = (a,b,c) match {
-      case (x : ScriptNumberOperation, y : ScriptNumber, z : ScriptNumber) => z >= x && z < y
-      case (x : ScriptNumber, y : ScriptNumberOperation, z : ScriptNumber) => z >= x && z < y.scriptNumber
-      case (x : ScriptNumber, y : ScriptNumber, z : ScriptNumberOperation) => z.scriptNumber >= x && z.scriptNumber < y
-      case (x : ScriptNumber, y : ScriptNumber, z : ScriptNumber) => z >= x && z < y
-      case (x,y,z) => z.toLong >= x.toLong && z.toLong < y.toLong
+      case (x : ScriptNumber, y : ScriptNumber, z : ScriptNumber) => x >= y && x < z
+      case (x,y,z) => x.toLong >= y.toLong && x.toLong < z.toLong
     }
 
-    val newStackTop = if (isWithinRange) OP_1 else OP_0
+    val newStackTop = if (isWithinRange) OP_TRUE else OP_FALSE
     ScriptProgramFactory.factory(program, newStackTop :: program.stack.tail.tail.tail, program.script.tail)
   }
 

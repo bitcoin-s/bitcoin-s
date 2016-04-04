@@ -2,7 +2,7 @@ package org.scalacoin.script
 
 import org.scalacoin.protocol.script.{ScriptSignature, ScriptPubKey}
 import org.scalacoin.protocol.transaction.Transaction
-import org.scalacoin.script.constant.{OP_0, ScriptNumberImpl, ScriptFalse, ScriptToken}
+import org.scalacoin.script.constant._
 import org.scalacoin.script.flag.ScriptFlag
 
 /**
@@ -90,7 +90,7 @@ trait ScriptProgram {
    */
   def stackTopIsFalse : Boolean = {
     if (stack.headOption.isDefined &&
-      (stack.head == ScriptFalse || stack.head == ScriptNumberImpl(0) || stack.head == OP_0)) true
+      (stack.head == ScriptFalse || stack.head == ScriptNumberImpl(0) || stack.head == OP_0 || stack.head == OP_FALSE)) true
     else if (!stack.headOption.isDefined) true
     else false
   }

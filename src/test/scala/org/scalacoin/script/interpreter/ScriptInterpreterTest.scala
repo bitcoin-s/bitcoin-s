@@ -53,17 +53,8 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterp
     run(program) must equal (true)
   }
 
-  it must "evaluate a NOP correctly" in {
-    val stack = List()
-    val script = List(OP_NOP)
-    val program = ScriptProgramFactory.factory(TestUtil.testProgram,stack,script)
-    run(program) must equal (true)
-
-  }
 
 
-
-/*
   it must "evaluate all valid scripts from the bitcoin core script_valid.json" in {
     import CoreTestCaseProtocol._
 
@@ -106,9 +97,9 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterp
       }
     }
 
-  }*/
+  }
 
-  it must "evaluate all valid scripts from the bitcoin core script_invalid.json" in {
+/*  it must "evaluate all valid scripts from the bitcoin core script_invalid.json" in {
     import CoreTestCaseProtocol._
 
     /**
@@ -129,21 +120,15 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterp
 
 
     val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n" finally source.close()
-    logger.info("1")
     val json = lines.parseJson
-    logger.info("2")
     val testCasesOpt : Seq[Option[CoreTestCase]] = json.convertTo[Seq[Option[CoreTestCase]]]
-    logger.info("3")
     val testCases : Seq[CoreTestCase] = testCasesOpt.flatten
-    logger.info("4")
+
 
     for {
       testCase <- testCases
-      _ = logger.info(testCase.toString)
       (creditingTx,outputIndex) = TransactionTestUtil.buildCreditingTransaction(testCase.scriptPubKey.scriptPubKey)
-      _ = logger.info("6")
       (tx,inputIndex) = TransactionTestUtil.buildSpendingTransaction(creditingTx,testCase.scriptSig.scriptSignature,outputIndex)
-      _ = logger.info("7")
     } yield {
 
       require(testCase.scriptPubKey.asm == testCase.scriptPubKey.scriptPubKey.asm)
@@ -162,5 +147,5 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterp
       }
     }
 
-  }
+  }*/
 }

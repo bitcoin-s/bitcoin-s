@@ -1,7 +1,7 @@
 package org.scalacoin.script.arithmetic
 
 import org.scalacoin.script.{ScriptProgramFactory, ScriptProgramImpl}
-import org.scalacoin.script.constant.{OP_0, OP_1, ScriptConstantImpl, ScriptNumberImpl}
+import org.scalacoin.script.constant._
 import org.scalacoin.util.TestUtil
 import org.scalatest.{FlatSpec, MustMatchers}
 
@@ -219,7 +219,8 @@ class ArithmeticInterpreterTest extends FlatSpec with MustMatchers with Arithmet
     val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
     val newProgram = opNot(program)
 
-    newProgram.stack.head must be (OP_1)
+    newProgram.stackTopIsTrue must be (true)
+    newProgram.stack.head must be (OP_TRUE)
     newProgram.script.isEmpty must be (true)
   }
 
@@ -229,7 +230,8 @@ class ArithmeticInterpreterTest extends FlatSpec with MustMatchers with Arithmet
     val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
     val newProgram = opNot(program)
 
-    newProgram.stack.head must be (OP_0)
+    newProgram.stackTopIsFalse must be (true)
+    newProgram.stack.head must be (OP_FALSE)
     newProgram.script.isEmpty must be (true)
   }
 
@@ -259,7 +261,8 @@ class ArithmeticInterpreterTest extends FlatSpec with MustMatchers with Arithmet
     val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
     val newProgram = opBoolAnd(program)
 
-    newProgram.stack.head must be (OP_1)
+    newProgram.stackTopIsFalse must be (true)
+    newProgram.stack.head must be (OP_FALSE)
     newProgram.script.isEmpty must be (true)
 
     val stack1 = List(OP_0, OP_0)
@@ -267,7 +270,8 @@ class ArithmeticInterpreterTest extends FlatSpec with MustMatchers with Arithmet
     val program1 = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
     val newProgram1 = opBoolAnd(program)
 
-    newProgram1.stack.head must be (OP_1)
+    newProgram.stackTopIsFalse must be (true)
+    newProgram1.stack.head must be (OP_FALSE)
     newProgram1.script.isEmpty must be (true)
   }
 
@@ -277,7 +281,8 @@ class ArithmeticInterpreterTest extends FlatSpec with MustMatchers with Arithmet
     val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
     val newProgram = opBoolAnd(program)
 
-    newProgram.stack.head must be (OP_0)
+    newProgram.stackTopIsTrue must be (false)
+    newProgram.stack.head must be (OP_FALSE)
     newProgram.script.isEmpty must be (true)
   }
 
@@ -287,7 +292,8 @@ class ArithmeticInterpreterTest extends FlatSpec with MustMatchers with Arithmet
     val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
     val newProgram = opBoolAnd(program)
 
-    newProgram.stack.head must be (OP_0)
+    newProgram.stackTopIsTrue must be (true)
+    newProgram.stack.head must be (OP_TRUE)
     newProgram.script.isEmpty must be (true)
   }
 
@@ -327,7 +333,18 @@ class ArithmeticInterpreterTest extends FlatSpec with MustMatchers with Arithmet
     val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
     val newProgram = opNumEqual(program)
 
-    newProgram.stack.head must be (OP_1)
+    newProgram.stack.head must be (OP_TRUE)
+    newProgram.script.isEmpty must be (true)
+  }
+
+  it must "evaulate an OP_NUMEQUAL for two OP_0" in {
+    val stack = List(OP_0, OP_0)
+    val script = List(OP_NUMEQUAL)
+    val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
+    val newProgram = opNumEqual(program)
+
+    newProgram.stackTopIsTrue must be (true)
+    newProgram.stack.head must be (OP_TRUE)
     newProgram.script.isEmpty must be (true)
   }
 
@@ -340,6 +357,8 @@ class ArithmeticInterpreterTest extends FlatSpec with MustMatchers with Arithmet
     newProgram.stack.head must be (OP_0)
     newProgram.script.isEmpty must be (true)
   }
+
+
 
   it must "evaluate an OP_NUMNOTEQUAL for two numbers that are not the same" in {
     val stack = List(OP_0, ScriptNumberImpl(1))
@@ -424,19 +443,19 @@ class ArithmeticInterpreterTest extends FlatSpec with MustMatchers with Arithmet
   }
 
   it must "evaluate an OP_WITHIN correctly" in {
-    val stack = List(OP_0,ScriptNumberImpl(2), ScriptNumberImpl(1))
+    val stack = List(ScriptNumberImpl(2), ScriptNumberImpl(1), OP_0)
     val script = List(OP_WITHIN)
     val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
     val newProgram = opWithin(program)
-    newProgram.stack must be (List(OP_0))
+    newProgram.stack must be (List(OP_FALSE))
     newProgram.script.isEmpty must be (true)
 
 
-    val stack1 = List(OP_0, ScriptNumberImpl(1),ScriptNumberImpl(0))
+    val stack1 = List(ScriptNumberImpl(1), OP_0, ScriptNumberImpl(0))
     val script1 = List(OP_WITHIN)
     val program1 = ScriptProgramFactory.factory(TestUtil.testProgram, stack1,script1)
     val newProgram1 = opWithin(program1)
-    newProgram1.stack must be (List(OP_1))
+    newProgram1.stack must be (List(OP_TRUE))
     newProgram1.script.isEmpty must be (true)
   }
 
