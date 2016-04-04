@@ -23,10 +23,10 @@ class ScriptProgramTest extends FlatSpec with MustMatchers  {
     program.stackTopIsTrue must be (false)
 
 
-    val program1 = program.copy(stack = List(ScriptFalse))
+    val program1 = ScriptProgramFactory.factory(program,List(ScriptFalse), ScriptProgramFactory.Stack)
     program1.stackTopIsTrue must be (false)
 
-    val program2 = program.copy(stack = List(OP_0))
+    val program2 = ScriptProgramFactory.factory(program, List(OP_0), ScriptProgramFactory.Stack)
     program2.stackTopIsTrue must be (false)
   }
 

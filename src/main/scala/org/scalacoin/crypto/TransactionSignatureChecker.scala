@@ -127,7 +127,7 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
         }
 
       case _ : MultiSignatureScriptPubKey | _ : P2PKHScriptPubKey | _ : P2PKScriptPubKey | _ : NonStandardScriptPubKey | EmptyScriptPubKey  =>
-        logger.warn("Trying to check if a p2sScriptSignature spends a a non p2sh scriptPubKey properly - this is trivially false")
+        logger.warn("Trying to check if a p2shScriptSignature spends a a non p2sh scriptPubKey properly - this is trivially false")
         SignatureValidationFailureIncorrectSignatures
     }
   }

@@ -106,6 +106,13 @@ trait P2SHScriptSignature extends ScriptSignature {
    */
   def redeemScript : ScriptPubKey = ScriptPubKeyFactory.fromBytes(asm.last.bytes)
 
+
+  /**
+   * Returns the script signature of this p2shScriptSig with no serialized redeemScript
+   * @return
+   */
+  def scriptSignatureNoRedeemScript = ScriptSignatureFactory.fromAsm(splitAtRedeemScript(asm)._1)
+
   /**
    * Returns the public keys for the p2sh scriptSignature
    * @return
@@ -135,7 +142,8 @@ trait P2SHScriptSignature extends ScriptSignature {
    * @return
    */
   def splitAtRedeemScript(asm : Seq[ScriptToken]) : (Seq[ScriptToken],Seq[ScriptToken]) = {
-    (asm.reverse.tail.reverse, Seq(asm.last))
+    //call .tail twice to remove the serialized redeemScript & it's bytesToPushOntoStack constant
+    (asm.reverse.tail.tail.reverse, Seq(asm.last))
   }
 
 }
@@ -163,8 +171,6 @@ trait MultiSignatureScriptSignature extends ScriptSignature {
  * Signature script: <sig>
  */
 trait P2PKScriptSignature extends ScriptSignature {
-
-
   /**
    * Returns the hash type for the signature inside of the p2pk script signature
    * @return
