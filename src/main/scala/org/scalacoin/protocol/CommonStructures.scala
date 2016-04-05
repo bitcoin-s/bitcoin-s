@@ -22,9 +22,9 @@ trait CompactSizeUInt {
 
   def hex = size match {
     case 1 => if (num.toHexString.size == 1) "0" + num.toHexString else num.toHexString
-    case 3 => "fd" + BitcoinSUtil.flipEndianess(BitcoinSUtil.longToHex(num))
-    case 5 => "fe" + BitcoinSUtil.flipEndianess(BitcoinSUtil.longToHex(num))
-    case _ => "ff" + BitcoinSUtil.flipEndianess(BitcoinSUtil.longToHex(num))
+    case 3 => "fd" + BitcoinSUtil.longToHex(num)
+    case 5 => "fe" + BitcoinSUtil.longToHex(num)
+    case _ => "ff" + BitcoinSUtil.longToHex(num)
   }
 
 

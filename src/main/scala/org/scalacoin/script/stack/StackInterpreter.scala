@@ -206,7 +206,7 @@ trait StackInterpreter {
 
   /**
    * The item at the top of the stack is copied and inserted before the second-to-top item.
-   * x1 x2 -> x2 x1 x2
+   * x1 x2 -> x1 x1 x2
    * @param program
    * @return
    */
@@ -214,7 +214,7 @@ trait StackInterpreter {
     require(program.script.headOption.isDefined && program.script.head == OP_TUCK, "Top of script stack must be OP_TUCK")
 
     val newStack = program.stack match {
-      case h :: h1 :: t => h1 :: h :: h1 :: t
+      case h :: h1 :: t => h :: h :: h1 :: t
       case _ => throw new IllegalArgumentException("Stack must have at least 2 items on it for OP_TUCK")
     }
     ScriptProgramFactory.factory(program, newStack, program.script.tail)

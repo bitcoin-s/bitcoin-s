@@ -22,7 +22,7 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
     val b  = numFromScriptToken(program.stack.head)
     val a = numFromScriptToken(program.stack(1))
 
-    val result = numberToScriptToken(a + b)
+    val result = ScriptNumberFactory.fromNumber(a + b)
     ScriptProgramFactory.factory(program, result :: program.stack.slice(2,program.stack.size),
       program.script.tail)
   }
@@ -36,7 +36,7 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
     require(program.script.headOption.isDefined && program.script.head == OP_1ADD, "Script top must be OP_1ADD")
     require(program.stack.size > 0, "Must have one item on the stack to execute OP_1ADD")
     val newStackTop = program.stack.head match {
-      case s : ScriptNumber => s + ScriptNumberImpl(1)
+      case s : ScriptNumber => s + ScriptNumberFactory.one
       case x => throw new IllegalArgumentException("Stack must be script number to perform OP_1ADD, stack top was: " + x)
     }
 
@@ -53,7 +53,7 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
     require(program.stack.size > 0, "Stack size must be 1 or more perform an OP_1SUB")
 
     val newStackTop = program.stack.head match {
-      case s : ScriptNumber => s - ScriptNumberImpl(1)
+      case s : ScriptNumber => s - ScriptNumberFactory.one
       case x => throw new IllegalArgumentException("Stack must be script number to perform OP_1ADD, stack top was: " + x)
     }
 
@@ -88,7 +88,7 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
     require(program.script.headOption.isDefined && program.script.head == OP_ABS, "Script top must be OP_ABS")
     require(program.stack.size > 0, "Stack size must be 1 or more perform an OP_ABS")
     val newStackTop = program.stack.head match {
-      case s : ScriptNumber => ScriptNumberImpl(s.num.abs)
+      case s : ScriptNumber => ScriptNumberFactory.fromNumber(s.num.abs)
       case x => throw new IllegalArgumentException("Stack must be script number to perform OP_ABS, stack top was: " + x)
     }
     ScriptProgramFactory.factory(program, newStackTop :: program.stack.tail, program.script.tail)
@@ -103,7 +103,7 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
     require(program.script.headOption.isDefined && program.script.head == OP_NEGATE, "Script top must be OP_NEGATE")
     require(program.stack.size > 0, "Stack size must be 1 or more perform an OP_NEGATE")
     val newStackTop = program.stack.head match {
-      case s : ScriptNumber => ScriptNumberImpl(-s.num)
+      case s : ScriptNumber => ScriptNumberFactory.fromNumber(-s.num)
       case x => throw new IllegalArgumentException("Stack must be script number to perform OP_ABS, stack top was: " + x)
     }
     ScriptProgramFactory.factory(program, newStackTop :: program.stack.tail, program.script.tail)
@@ -117,12 +117,15 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
   def opNot(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.isDefined && program.script.head == OP_NOT, "Script top must be OP_NOT")
     require(program.stack.size > 0, "Stack size must be 1 or more perform an OP_NOT")
+    //TODO: this needs to be modified to have an exhaustive type check
     val newStackTop = program.stack.head match {
       case OP_0 => OP_TRUE
       case OP_FALSE => OP_TRUE
       case OP_1 => OP_0
-      case ScriptNumberImpl(0) => OP_TRUE
-      case ScriptNumberImpl(1) => OP_FALSE
+      case ScriptNumberFactory.zero => OP_TRUE
+      case ScriptNumberFactory.one => OP_FALSE
+      case ScriptFalse => ScriptTrue
+      case ScriptTrue => ScriptFalse
       case _ => OP_FALSE
     }
     ScriptProgramFactory.factory(program, newStackTop :: program.stack.tail, program.script.tail)
@@ -138,7 +141,7 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
     require(program.stack.size > 0, "Stack size must be 1 or more perform an OP_0NOTEQUAL")
     val newStackTop = program.stack.head match {
       case OP_0 => OP_0
-      case ScriptNumberImpl(0) => OP_0
+      case ScriptNumberFactory.zero => OP_0
       case _ => OP_1
     }
     ScriptProgramFactory.factory(program, newStackTop :: program.stack.tail, program.script.tail)
@@ -155,8 +158,8 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
     require(program.stack.size > 1, "Stack size must be 2 or more perform an OP_BOOLAND")
     val b = program.stack.head
     val a = program.stack.tail.head
-    val aIsFalse = (a == ScriptNumberImpl(0) || a == OP_0)
-    val bIsFalse = (b == ScriptNumberImpl(0) || b == OP_0)
+    val aIsFalse = (a == ScriptNumberFactory.zero || a == OP_0)
+    val bIsFalse = (b == ScriptNumberFactory.zero || b == OP_0)
     val newStackTop = if (aIsFalse || bIsFalse) OP_FALSE else OP_TRUE
     ScriptProgramFactory.factory(program, newStackTop :: program.stack.tail.tail, program.script.tail)
 
@@ -172,7 +175,7 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
     require(program.stack.size > 1, "Stack size must be 2 or more perform an OP_BOOLOR")
     val b = program.stack.head
     val a = program.stack.tail.head
-    val newStackTop = if (a == b && (a == ScriptNumberImpl(0) || a == OP_0)) OP_0 else OP_1
+    val newStackTop = if (a == b && (a == ScriptNumberFactory.zero || a == OP_0)) OP_0 else OP_1
     ScriptProgramFactory.factory(program, newStackTop :: program.stack.tail.tail, program.script.tail)
   }
 
@@ -187,9 +190,7 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
     val b = program.stack.head
     val a = program.stack.tail.head
     val isSame = (a,b) match {
-      case (x : ScriptNumberOperation, y : ScriptNumberOperation) => x == y
-      case (x : ScriptNumberOperation, y : ScriptNumber) => x.scriptNumber == y
-      case (x : ScriptNumber, y : ScriptNumberOperation) => x == y.scriptNumber
+      case (x : ScriptNumber, y : ScriptNumber) => x.num == y.num
       case (x,y) => x == y
     }
 
@@ -396,17 +397,6 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
 
     val newStackTop = if (isWithinRange) OP_TRUE else OP_FALSE
     ScriptProgramFactory.factory(program, newStackTop :: program.stack.tail.tail.tail, program.script.tail)
-  }
-
-
-
-  /**
-   * Wraps a scala number into a script token for the script language
-   * @param num
-   * @return
-   */
-  private def numberToScriptToken(num : Long) : ScriptToken = {
-    ScriptNumberImpl(num)
   }
 
 

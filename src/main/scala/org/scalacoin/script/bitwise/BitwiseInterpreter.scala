@@ -25,14 +25,14 @@ trait BitwiseInterpreter extends ControlOperationsInterpreter  {
     val h1 = program.stack.tail.head
 
     val result = (h,h1) match {
-      case (ScriptConstantImpl(x),ScriptConstantImpl(y)) => x == y
-      case (ScriptConstantImpl(x), ScriptNumberImpl(y)) => BitcoinSUtil.hexToLong(x) == y
-      case (ScriptNumberImpl(x), ScriptConstantImpl(y)) => x == BitcoinSUtil.hexToLong(y)
       case (OP_0, x) => OP_0.hex == x.hex
       case (x, OP_0) => x.hex == OP_0.hex
       case (OP_1,x) => OP_1.scriptNumber == x
       case (x,OP_1) => x == OP_1.scriptNumber
-      case _ => h == h1
+/*      case (x : ScriptConstant, y : ScriptConstant) => x == y
+      case (ScriptConstantImpl(x), y : ScriptNumber) => BitcoinSUtil.hexToLong(x) == y.num
+      case (x : ScriptNumber, y : ScriptConstant) => x.num == BitcoinSUtil.hexToLong(y.hex)*/
+      case _ => h.bytes == h1.bytes
     }
 
     val scriptBoolean : ScriptBoolean = if (result) ScriptTrue else ScriptFalse

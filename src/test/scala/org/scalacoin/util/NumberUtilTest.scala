@@ -185,13 +185,21 @@ class NumberUtilTest extends FlatSpec with MustMatchers with NumberUtil {
     val expectedHex1 = "01"
     hex1 must be (expectedHex1)
 
-    val hex2 = longToHex(32767)
-    val expectedHex2 = "7fff"
+    val hex2 = longToHex(127)
+    val expectedHex2 = "7f"
     hex2 must be (expectedHex2)
 
-    val hex3 = longToHex(32768)
-    val expectedHex3 = "008000"
+    val hex3 = longToHex(128)
+    val expectedHex3 = "8000"
     hex3 must be (expectedHex3)
+
+    val hex4 = longToHex(32767)
+    val expectedHex4 = "ff7f"
+    hex4 must be (expectedHex4)
+
+    val hex5 = longToHex(32768)
+    val expectedHex5 = "008000"
+    hex5 must be (expectedHex5)
   }
 
 

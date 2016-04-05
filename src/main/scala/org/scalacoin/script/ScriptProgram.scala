@@ -90,7 +90,8 @@ trait ScriptProgram {
    */
   def stackTopIsFalse : Boolean = {
     if (stack.headOption.isDefined &&
-      (stack.head == ScriptFalse || stack.head == ScriptNumberImpl(0) || stack.head == OP_0 || stack.head == OP_FALSE)) true
+      (stack.head == ScriptFalse || stack.head == ScriptNumberFactory.zero || stack.head == ScriptNumberFactory.negativeZero
+        || stack.head == OP_0 || stack.head == OP_FALSE)) true
     else if (!stack.headOption.isDefined) true
     else false
   }

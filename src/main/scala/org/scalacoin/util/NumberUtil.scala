@@ -23,19 +23,19 @@ trait NumberUtil extends BitcoinSLogger {
    * @param bytes
    * @return
    */
-  def toLong(bytes : List[Byte]) : Long = {
+  def toLong(bytes : Seq[Byte]) : Long = {
     logger.debug("bytes: " + bytes)
     val reversedBytes = bytes.reverse
     if (bytes.size == 1 && bytes.head == -128) {
       //the case for negative zero
       0
     } else if (isPositive(bytes)) {
-      if (firstByteAllZeros(reversedBytes) && reversedBytes.size > 1) {
+      if (firstByteAllZeros(reversedBytes.toList) && reversedBytes.size > 1) {
         parseLong(reversedBytes.slice(1,reversedBytes.size))
       } else parseLong(reversedBytes)
     } else {
       //remove the sign bit
-      val removedSignBit : List[Byte] = changeSignBitToPositive(reversedBytes)
+      val removedSignBit : List[Byte] = changeSignBitToPositive(reversedBytes.toList)
       if (firstByteAllZeros(removedSignBit)) -parseLong(removedSignBit.slice(1,removedSignBit.size))
       else -parseLong(removedSignBit)
     }
@@ -43,14 +43,14 @@ trait NumberUtil extends BitcoinSLogger {
 
 
   /**
-   * Converts a long number to a signed number hex representation
+   * Converts a long number to the representation of number inside of Bitcoin's number system
    * @param long
    * @return
    */
   def longToHex(long : Long) : String = {
     if (long > -1) {
       val bytes = toByteList(long)
-      BitcoinSUtil.encodeHex(bytes)
+      BitcoinSUtil.flipEndianess(BitcoinSUtil.encodeHex(bytes))
     } else {
       val bytes = toByteList(long.abs)
       //add sign bit
@@ -72,7 +72,7 @@ trait NumberUtil extends BitcoinSLogger {
    * @param bytes
    * @return
    */
-  def isPositive(bytes : List[Byte]) = {
+  def isPositive(bytes : Seq[Byte]) = {
     val result: Int = bytes(bytes.size-1) & 0x80
     if (result == 0x80) false else true
   }
