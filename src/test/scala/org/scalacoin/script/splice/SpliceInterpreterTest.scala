@@ -2,7 +2,7 @@ package org.scalacoin.script.splice
 
 import org.scalacoin.script.{ScriptProgramFactory, ScriptProgramImpl}
 import org.scalacoin.script.bitwise.OP_EQUAL
-import org.scalacoin.script.constant.{ScriptNumberImpl, OP_2, ScriptConstantImpl, OP_0}
+import org.scalacoin.script.constant._
 import org.scalacoin.util.TestUtil
 import org.scalatest.{MustMatchers, FlatSpec}
 
@@ -31,7 +31,7 @@ class SpliceInterpreterTest extends FlatSpec with MustMatchers with SpliceInterp
   }
 
   it must "evaluate an OP_SIZE correctly with 0x7f" in {
-    val stack = List(ScriptConstantImpl("7f"))
+    val stack = List(ScriptConstantFactory.fromHex("7f"))
     val script = List(OP_SIZE)
     val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
     val newProgram = opSize(program)

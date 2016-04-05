@@ -64,12 +64,7 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterp
 /*    val lines =
         """
           |
-          |[[
-    "0x47 0x3044022003fef42ed6c7be8917441218f525a60e2431be978e28b7aca4d7a532cc413ae8022067a1f82c74e8d69291b90d148778405c6257bbcfc2353cc38a3e1f22bf44254601 0x23 0x210279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798ac",
-    "HASH160 0x14 0x23b0ad3477f2178bc0b3eed26e4e6316f4e83aa1 EQUAL",
-    "P2SH",
-    "P2SH(P2PK)"
-]]
+          |[["1", "0x02 0x0100 EQUAL NOT", "P2SH,STRICTENC", "Not the same byte array..."]]
    """.stripMargin*/
     val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n" finally source.close()
     val json = lines.parseJson

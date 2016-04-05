@@ -42,7 +42,7 @@ class BitwiseInterpreterTest extends FlatSpec with MustMatchers with BitwiseInte
   }
 
   it must "evaluate OP_EQUALVERIFY to false given two different pub keys" in {
-    val uniquePubKey = ScriptConstantImpl(pubKeyHash +"0")
+    val uniquePubKey = ScriptConstantImpl(pubKeyHash.hex +"00")
     val stack = List(pubKeyHash,uniquePubKey)
     val script = List(OP_EQUALVERIFY)
     val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)

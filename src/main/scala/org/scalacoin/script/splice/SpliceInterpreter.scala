@@ -3,10 +3,13 @@ package org.scalacoin.script.splice
 import org.scalacoin.script.{ScriptProgramFactory, ScriptOperationFactory, ScriptProgramImpl, ScriptProgram}
 import org.scalacoin.script.constant._
 import Math._
+
+import org.scalacoin.util.BitcoinSLogger
+
 /**
  * Created by chris on 2/4/16.
  */
-trait SpliceInterpreter {
+trait SpliceInterpreter extends BitcoinSLogger {
 
   /**
    * Pushes the string length of the top element of the stack (without popping it).
@@ -20,8 +23,8 @@ trait SpliceInterpreter {
       ScriptProgramFactory.factory(program, OP_0 :: program.stack, program.script.tail)
     } else {
       val scriptNumber = program.stack.head match {
-        case ScriptNumberImpl(0) => ScriptNumberImpl(0)
-        case x : ScriptToken => ScriptNumberImpl(x.hex.size / 2)
+        case ScriptNumberFactory.zero => ScriptNumberFactory.zero
+        case x : ScriptToken => ScriptNumberFactory.fromNumber(x.bytes.size)
       }
       ScriptProgramFactory.factory(program, scriptNumber :: program.stack, program.script.tail)
     }

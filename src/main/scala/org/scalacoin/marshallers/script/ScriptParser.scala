@@ -76,7 +76,7 @@ trait ScriptParser extends Factory[List[ScriptToken]] {
           logger.debug("Found a script operation preceded by a BytesToPushOntoStackImpl")
           val hexString = h.substring(2,h.size).toLowerCase
           logger.debug("Hex string: " + hexString)
-          loop(t,ScriptNumberImpl(BitcoinSUtil.hexToLong(hexString)) :: accum)
+          loop(t,ScriptNumberFactory.fromHex(hexString) :: accum)
 
         //OP_PUSHDATA operations are always followed by the amount of bytes to be pushed
         //onto the stack
@@ -114,7 +114,7 @@ trait ScriptParser extends Factory[List[ScriptToken]] {
         case h :: t if (tryParsingLong(h)) =>
           logger.debug("Found a decimal number")
           //convert the string to int, then convert to hex
-          loop(t, ScriptNumberImpl(h.toLong) :: accum)
+          loop(t, ScriptNumberFactory.fromNumber(h.toLong) :: accum)
         //means that it must be a BytesToPushOntoStack followed by a script constant
         case h :: t =>
           //find the size of the string in bytes
@@ -126,7 +126,7 @@ trait ScriptParser extends Factory[List[ScriptToken]] {
     if (tryParsingLong(str) && str.size > 1 && str.substring(0,2) != "0x") {
       //for the case when there is just a single decimal constant
       //i.e. "8388607"
-      List(ScriptNumberImpl(parseLong(str)))
+      List(ScriptNumberFactory.fromNumber(parseLong(str)))
     }
     else if (BitcoinSUtil.isHex(str)) {
       //if the given string is hex, it is pretty straight forward to parse it
@@ -234,9 +234,9 @@ trait ScriptParser extends Factory[List[ScriptToken]] {
       //fit inside of a scala long
       //therefore store it as a script constant
       if (g.group(1).size <= 16) {
-        ScriptNumberImpl(BitcoinSUtil.hexToLong(g.group(1)))
+        ScriptNumberFactory.fromHex(g.group(1))
       } else {
-        ScriptConstantImpl(g.group(1))
+        ScriptConstantFactory.fromHex(g.group(1))
     }).toList)
     scriptConstants
   }
