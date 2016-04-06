@@ -8,7 +8,7 @@ import org.scalacoin.protocol.transaction._
 import org.scalacoin.script.constant.ScriptToken
 import org.scalacoin.script.crypto._
 import org.scalacoin.script.stack.OP_DUP
-import org.scalacoin.util.{BitcoinScriptUtil, BitcoinSUtil, CryptoUtil}
+import org.scalacoin.util.{BitcoinSLogger, BitcoinScriptUtil, BitcoinSUtil, CryptoUtil}
 import org.slf4j.LoggerFactory
 
 /**
@@ -19,9 +19,8 @@ import org.slf4j.LoggerFactory
  * bitcoinj version of this
  * https://github.com/bitcoinj/bitcoinj/blob/master/core/src/main/java/org/bitcoinj/core/Transaction.java#L924-L1008
  */
-trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper {
+trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with BitcoinSLogger {
 
-  private def logger = LoggerFactory.getLogger(this.getClass())
   /**
    * Bitcoin Core's bug is that SignatureHash was supposed to return a hash and on this codepath it
    * actually returns the constant "1" to indicate an error

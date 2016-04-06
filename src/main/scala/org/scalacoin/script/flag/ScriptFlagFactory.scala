@@ -45,6 +45,12 @@ trait ScriptFlagFactory {
   def fromList(str : String) : Seq[ScriptFlag] = {
     fromList(str.split(","))
   }
+
+  /**
+   * Empty script flag
+   * @return
+   */
+  def empty : Seq[ScriptFlag] = Seq()
 }
 
 object ScriptFlagFactory extends ScriptFlagFactory

@@ -2,10 +2,11 @@ package org.scalacoin.util
 
 import org.scalacoin.marshallers.script.{RawScriptSignatureParser, RawScriptPubKeyParser}
 import org.scalacoin.marshallers.transaction.{RawTransactionInputParser, RawTransactionParser}
-import org.scalacoin.protocol.script.{ScriptSignature, ScriptSignatureFactory, ScriptPubKey, ScriptPubKeyFactory}
-import org.scalacoin.protocol.transaction.{TransactionFactory, Transaction}
+import org.scalacoin.policy.Policy
+import org.scalacoin.protocol.script._
+import org.scalacoin.protocol.transaction.{EmptyTransaction, TransactionFactory, Transaction}
 import org.scalacoin.protocol.{AssetAddress, BitcoinAddress}
-import org.scalacoin.script.{ScriptProgram, ScriptProgramImpl}
+import org.scalacoin.script.{ScriptProgramFactory, ScriptProgram}
 import org.scalacoin.script.bitwise.{OP_EQUAL, OP_EQUALVERIFY}
 import org.scalacoin.script.constant._
 import org.scalacoin.script.crypto.{OP_CHECKMULTISIG, OP_CHECKSIG, OP_HASH160}
@@ -138,7 +139,8 @@ object TestUtil {
   //https://tbtc.blockr.io/api/v1/tx/raw/bdc221db675c06dbee2ae75d33e31cad4e2555efea10c337ff32c8cdf97f8e74
   val rawScriptSig = "483045022100ad8e961fe3c22b2647d92b078f4c0cf81b3106ea5bf8b900ab8646aa4430216f022071d4edc2b5588be20ac4c2d07edd8ed069e10b2402d3dce2d3b835ccd075f283014104fa79182bbc26c708b5d9f36b8635947d4a834ea356cf612ede08395c295f962e0b1dc2557aba34188640e51a58ed547f2c89c8265cd0c04ff890d8435648746e"
   val scriptSig = RawScriptSignatureParser.read(rawScriptSig)
-  def testProgram : ScriptProgram = ScriptProgramImpl(transaction,scriptPubKey,0,List(),List(),List(),Seq(),false,0)
+  def testProgram : ScriptProgram = ScriptProgramFactory.factory(TransactionTestUtil.testTransaction,
+    EmptyScriptPubKey,0,List(),Policy.standardScriptVerifyFlags)
 
 
   val rawP2PKScriptSig = "47304402200a5c6163f07b8d3b013c4d1d6dba25e780b39658d79ba37af7057a3b7f15ffa102201fd9b4eaa9943f734928b99a83592c2e7bf342ea2680f6a2bb705167966b742001"

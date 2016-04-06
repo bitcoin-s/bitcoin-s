@@ -1,6 +1,6 @@
 package org.scalacoin.script.constant
 
-import org.scalacoin.script.{ScriptProgramFactory, ScriptProgramImpl}
+import org.scalacoin.script.{ScriptProgramFactory}
 import org.scalacoin.script.bitwise.OP_EQUAL
 import org.scalacoin.util.TestUtil
 import org.scalatest.{FlatSpec, MustMatchers}

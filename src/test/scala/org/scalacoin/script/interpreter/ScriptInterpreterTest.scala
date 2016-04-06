@@ -23,39 +23,7 @@ import spray.json._
  */
 class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterpreter with BitcoinSLogger {
 
-  "ScriptInterpreter" must "evaluate a valid script to true" in {
-    //this is in asm format, not hex
-    val inputScript = TestUtil.p2pkhInputScriptAsm
-    //this is asm format, not hex
-    val outputScript : List[ScriptToken] = TestUtil.p2pkhOutputScriptAsm
-    val stack = List()
-    val script = inputScript ++ outputScript
-    val program = ScriptProgramFactory.factory(TestUtil.testProgram,stack,script)
-    val result = run(program)
-    result must be (true)
-  }
-
-
-  it must "evaluate a script that asks to push 20 bytes onto the stack correctly" in {
-    val stack = List(ScriptConstantImpl("68ca4fec736264c13b859bac43d5173df6871682"))
-    val script = List(BytesToPushOntoStackImpl(20), ScriptConstantImpl("68ca4fec736264c13b859bac43d5173df6871682"), OP_EQUAL)
-
-    val program = ScriptProgramFactory.factory(TestUtil.testProgram,stack,script)
-    run(program) must be (true)
-  }
-
-  it must "evaluate a 5 byte representation of 0x0000000001 as 0x01 when pushed onto the stack" in {
-    //this is for the following test case inside of script_valid.json
-    //["1 0x05 0x01 0x00 0x00 0x00 0x00", "VERIFY", "P2SH,STRICTENC", "values >4 bytes can be cast to boolean"]
-    val stack = List(OP_1)
-    val script = List(BytesToPushOntoStackImpl(5), ScriptNumberImpl(1), OP_0, OP_0, OP_0, OP_0,OP_VERIFY)
-    val program = ScriptProgramFactory.factory(TestUtil.testProgram,stack,script)
-    run(program) must equal (true)
-  }
-
-
-
-  it must "evaluate all valid scripts from the bitcoin core script_valid.json" in {
+  "ScriptInterpreter" must "evaluate all valid scripts from the bitcoin core script_valid.json" in {
     import CoreTestCaseProtocol._
 
     val source = scala.io.Source.fromFile("src/test/scala/org/scalacoin/script/interpreter/script_valid.json")
@@ -64,7 +32,7 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterp
 /*    val lines =
         """
           |
-          |[["1", "0x02 0x0100 EQUAL NOT", "P2SH,STRICTENC", "Not the same byte array..."]]
+          |[["1 2", "2 EQUALVERIFY 1 EQUAL", "P2SH,STRICTENC", "Similarly whitespace around and between symbols"]]
    """.stripMargin*/
     val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n" finally source.close()
     val json = lines.parseJson

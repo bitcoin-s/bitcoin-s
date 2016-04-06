@@ -1,6 +1,6 @@
 package org.scalacoin.script.bitwise
 
-import org.scalacoin.script.{ScriptProgramFactory, ScriptProgramImpl}
+import org.scalacoin.script.{ScriptProgramFactory}
 import org.scalacoin.script.arithmetic.OP_NUMEQUAL
 import org.scalacoin.script.constant._
 import org.scalacoin.util.TestUtil

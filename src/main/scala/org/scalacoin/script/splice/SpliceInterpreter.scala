@@ -1,6 +1,6 @@
 package org.scalacoin.script.splice
 
-import org.scalacoin.script.{ScriptProgramFactory, ScriptOperationFactory, ScriptProgramImpl, ScriptProgram}
+import org.scalacoin.script.{ScriptProgramFactory, ScriptOperationFactory, ScriptProgram}
 import org.scalacoin.script.constant._
 import Math._
 

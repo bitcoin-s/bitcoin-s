@@ -1,7 +1,7 @@
 package org.scalacoin.script.arithmetic
 
 import org.scalacoin.script.control.{ControlOperationsInterpreter, OP_VERIFY}
-import org.scalacoin.script.{ScriptProgramFactory, ScriptProgramImpl, ScriptProgram}
+import org.scalacoin.script.{ScriptProgramFactory, ScriptProgram}
 import org.scalacoin.script.constant._
 
 /**

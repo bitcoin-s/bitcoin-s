@@ -5,7 +5,7 @@ import org.scalacoin.protocol.transaction.Transaction
 import org.scalacoin.script.flag.{ScriptVerifyCleanStack, ScriptVerifyCheckLocktimeVerify}
 import org.scalacoin.script.locktime.{OP_CHECKLOCKTIMEVERIFY, LockTimeInterpreter}
 import org.scalacoin.script.splice.{SpliceInterpreter, OP_SIZE}
-import org.scalacoin.script.{ScriptProgramFactory, ScriptProgramImpl, ScriptProgram}
+import org.scalacoin.script.{ScriptProgramFactory, ScriptProgram}
 import org.scalacoin.script.arithmetic._
 import org.scalacoin.script.bitwise.{OP_EQUAL, BitwiseInterpreter, OP_EQUALVERIFY}
 import org.scalacoin.script.constant._
@@ -157,29 +157,39 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
       }
     }
 
-    val (result,executedProgram) = program.scriptSignature match {
+    val scriptSigProgram = ScriptProgramFactory.factory(program,Seq(),program.txSignatureComponent.scriptSignature.asm)
+
+    logger.debug("program.txSignatureComponent.scriptSignature.asm: " + program.txSignatureComponent.scriptSignature.asm)
+    logger.debug("stack after scriptSig execution: " + scriptSigProgram.stack)
+    logger.debug("script pubkey to be executed: " + program.txSignatureComponent.scriptPubKey)
+    //now we need to run the scriptPubKey script through the interpreter with the stack arguements from scriptSigResult
+    val (result,executedProgram) = program.txSignatureComponent.scriptSignature match {
       case scriptSig : P2SHScriptSignature =>
 
         //first run the serialized redeemScript && the p2shScriptPubKey to see if the hashes match
-        val hashCheckProgram = ScriptProgramFactory.factory(program, Seq(scriptSig.asm.last), program.scriptPubKey.asm)
-        val hashesMatch = loop(hashCheckProgram)
-        hashesMatch._1 match {
+        val hashCheckProgram = ScriptProgramFactory.factory(program, Seq(scriptSig.asm.last), program.txSignatureComponent.scriptPubKey.asm)
+        val (hashesMatch, hashesMatchProgram) = loop(hashCheckProgram)
+        hashesMatch match {
           case true =>
             logger.info("Hashes matched between the p2shScriptSignature & the p2shScriptPubKey")
             //we need to run the deserialized redeemScript & the scriptSignature without the serialized redeemScript
             val stack = BitcoinScriptUtil.filterPushOps(scriptSig.scriptSignatureNoRedeemScript.asm.reverse)
             logger.debug("P2sh stack: " + stack)
             logger.debug("P2sh redeemScript: " + scriptSig.redeemScript.asm )
-            val p2shRedeemScriptProgram = ScriptProgramFactory.factory(program,stack, scriptSig.redeemScript.asm)
+            val p2shRedeemScriptProgram = ScriptProgramFactory.factory(hashesMatchProgram,stack, scriptSig.redeemScript.asm)
             loop(p2shRedeemScriptProgram)
           case false =>
             logger.warn("P2SH scriptPubKey hash did not match the hash for the serialized redeemScript")
-            hashesMatch
+            (hashesMatch,hashesMatchProgram)
         }
       case _ : P2PKHScriptSignature | _ : P2PKScriptSignature | _ : MultiSignatureScriptSignature |
            _ : NonStandardScriptSignature | EmptyScriptSignature =>
+        val (_,scriptSigExecutedProgram) = loop(scriptSigProgram)
         logger.debug("We do not check a redeemScript against a non p2sh scriptSig")
-        val result = loop(program)
+        //now run the scriptPubKey script through the interpreter with the scriptSig as the stack arguments
+        val scriptPubKeyProgram = ScriptProgramFactory.factory(scriptSigExecutedProgram,
+          scriptSigProgram.txSignatureComponent.scriptPubKey.asm, ScriptProgramFactory.Script)
+        val result = loop(scriptPubKeyProgram)
         result
     }
 
