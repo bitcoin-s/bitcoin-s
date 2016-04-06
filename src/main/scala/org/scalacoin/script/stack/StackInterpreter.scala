@@ -1,6 +1,6 @@
 package org.scalacoin.script.stack
 
-import org.scalacoin.script.{ScriptProgramFactory, ScriptProgramImpl, ScriptProgram}
+import org.scalacoin.script.{ScriptProgramFactory, ScriptProgram}
 import org.scalacoin.script.constant._
 import org.scalacoin.util.{BitcoinSUtil}
 

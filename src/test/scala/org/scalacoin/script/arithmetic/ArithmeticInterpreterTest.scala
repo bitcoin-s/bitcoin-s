@@ -1,6 +1,6 @@
 package org.scalacoin.script.arithmetic
 
-import org.scalacoin.script.{ScriptProgramFactory, ScriptProgramImpl}
+import org.scalacoin.script.{ScriptProgramFactory}
 import org.scalacoin.script.constant._
 import org.scalacoin.util.TestUtil
 import org.scalatest.{FlatSpec, MustMatchers}

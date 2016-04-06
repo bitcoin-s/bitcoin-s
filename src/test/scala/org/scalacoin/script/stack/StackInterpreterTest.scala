@@ -1,6 +1,6 @@
 package org.scalacoin.script.stack
 
-import org.scalacoin.script.{ScriptProgramFactory, ScriptProgramImpl}
+import org.scalacoin.script.{ScriptProgramFactory}
 import org.scalacoin.script.bitwise.OP_EQUAL
 import org.scalacoin.script.constant.{ScriptNumberImpl, OP_1, OP_0, ScriptConstantImpl}
 import org.scalacoin.util.{BitcoinSUtil, TestUtil}

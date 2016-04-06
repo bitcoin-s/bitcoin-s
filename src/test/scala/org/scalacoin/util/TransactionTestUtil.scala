@@ -169,6 +169,17 @@ trait TransactionTestUtil extends BitcoinSLogger {
     val outputIndex = TestUtil.simpleTransaction.inputs.head.previousOutput.vout
     (TestUtil.simpleTransaction, 0, TestUtil.parentSimpleTransaction.outputs(outputIndex).scriptPubKey)
   }
+
+
+  /**
+   * This transaction has one input which is set to EmptyTransactionInput
+   * The purpose of this transaction is a base transaction that can be used to manipulate
+   * the scriptSignature to be whatever we need it to be
+   * @return
+   */
+  def testTransaction : Transaction = {
+    TransactionFactory.factory(EmptyTransaction,UpdateTransactionInputs(Seq(EmptyTransactionInput)))
+  }
 }
 
 object TransactionTestUtil extends TransactionTestUtil

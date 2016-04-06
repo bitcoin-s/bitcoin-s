@@ -1,7 +1,7 @@
 package org.scalacoin.script.constant
 
-import org.scalacoin.script.{ScriptProgramFactory, ScriptProgramImpl, ScriptProgram}
-import org.scalacoin.util.BitcoinSUtil
+import org.scalacoin.script.{ScriptProgramFactory, ScriptProgram}
+import org.scalacoin.util.{BitcoinSLogger, BitcoinSUtil}
 import org.slf4j.LoggerFactory
 
 import scala.annotation.tailrec
@@ -9,10 +9,7 @@ import scala.annotation.tailrec
 /**
  * Created by chris on 1/24/16.
  */
-trait ConstantInterpreter {
-
-  private def logger = LoggerFactory.getLogger(this.getClass())
-
+trait ConstantInterpreter extends BitcoinSLogger {
 
   /**
    * The next byte contains the number of bytes to be pushed onto the stack.
