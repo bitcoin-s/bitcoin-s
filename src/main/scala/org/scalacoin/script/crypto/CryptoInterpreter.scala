@@ -143,7 +143,13 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
    */
   def opCodeSeparator(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.isDefined && program.script.head == OP_CODESEPARATOR, "Script top must be OP_CODESEPARATOR")
-    ???
+    val fullScript = program.txSignatureComponent.scriptSignature.asm.containsSlice(program.script) match {
+      case true => program.txSignatureComponent.scriptSignature.asm
+      case false => program.txSignatureComponent.scriptPubKey.asm
+    }
+    val indexOfOpCodeSeparator = fullScript.indexOf(OP_CODESEPARATOR)
+    require(indexOfOpCodeSeparator != -1,"The script we searched MUST contain an OP_CODESEPARTOR. Script: " + fullScript)
+    ScriptProgramFactory.factory(program,program.script.tail,ScriptProgramFactory.Script,indexOfOpCodeSeparator)
   }
 
 
