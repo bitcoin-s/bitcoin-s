@@ -34,6 +34,13 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
    * @return
    */
   def run(program : ScriptProgram) : Boolean = {
+    /**
+     *
+     * @param program
+     * @return boolean this boolean represents if the program hit any invalid states within the execution
+     *         this does NOT indicate if the final value of the stack is true/false
+     * @return program the final state of the program after being evaluated by the interpreter
+     */
     @tailrec
     def loop(program : ScriptProgram) : (Boolean,ScriptProgram) = {
       logger.debug("Stack: " + program.stack)
@@ -95,9 +102,8 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
           val newProgram = opEqual(program)
           loop(newProgram)
 
-        case OP_EQUALVERIFY :: t =>
-          val newProgram = opEqualVerify(program)
-          (newProgram.isValid, newProgram)
+        case OP_EQUALVERIFY :: t => loop(opEqualVerify(program))
+
         case (scriptNumberOp : ScriptNumberOperation) :: t =>
           if (scriptNumberOp == OP_0) loop(ScriptProgramFactory.factory(program,OP_0 :: program.stack, t))
           else loop(ScriptProgramFactory.factory(program, scriptNumberOp.scriptNumber :: program.stack, t))
@@ -118,32 +124,29 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
         case OP_RETURN :: t =>
           val newProgram = opReturn(program)
           (newProgram.isValid, newProgram)
-        case OP_VERIFY :: t =>
-          val newProgram = opVerify(program)
-          if (newProgram.isValid) loop(newProgram)
-          else (false,newProgram)
+        case OP_VERIFY :: t => loop(opVerify(program))
 
         //crypto operations
         case OP_HASH160 :: t => loop(opHash160(program))
-        case OP_CHECKSIG :: t =>
-          val newProgram = opCheckSig(program)
+        case OP_CHECKSIG :: t => loop(opCheckSig(program))
+/*          val newProgram = opCheckSig(program)
           if (!newProgram.isValid) {
             logger.warn("OP_CHECKSIG marked the transaction as invalid")
             (newProgram.isValid,newProgram)
           }
-          else loop(newProgram)
+          else loop(newProgram)*/
         case OP_SHA1 :: t => loop(opSha1(program))
         case OP_RIPEMD160 :: t => loop(opRipeMd160(program))
         case OP_SHA256 :: t => loop(opSha256(program))
         case OP_HASH256 :: t => loop(opHash256(program))
         case OP_CODESEPARATOR :: t => loop(opCodeSeparator(program))
-        case OP_CHECKMULTISIG :: t =>
-          val newProgram = opCheckMultiSig(program)
+        case OP_CHECKMULTISIG :: t => loop(opCheckMultiSig(program))
+/*          val newProgram = opCheckMultiSig(program)
           if (!newProgram.isValid) {
             logger.warn("OP_CHECKMULTISIG marked the transaction as invalid")
             (newProgram.isValid,newProgram)
           }
-          else loop(newProgram)
+          else loop(newProgram)*/
         case OP_CHECKMULTISIGVERIFY :: t => loop(opCheckMultiSigVerify(program))
         //reserved operations
         case (nop : NOP) :: t => loop(ScriptProgramFactory.factory(program,program.stack,t))
@@ -169,8 +172,8 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
           //treat this as OP_NOP2 since CLTV is not enforced yet
           //in this case, just remove OP_CLTV from the stack and continue
           else loop(ScriptProgramFactory.factory(program, program.script.tail, ScriptProgramFactory.Script))
-        //no more script operations to run, True is represented by any representation of non-zero
-        case Nil => (program.stackTopIsTrue, program)
+        //no more script operations to run, return whether the program is valid and the final state of the program
+        case Nil => (program.isValid, program)
 
         case h :: t => throw new RuntimeException(h + " was unmatched")
       }
@@ -178,10 +181,6 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
 
     val scriptSigProgram = ScriptProgramFactory.factory(program,Seq(),program.txSignatureComponent.scriptSignature.asm)
 
-    logger.debug("program.txSignatureComponent.scriptSignature.asm: " + program.txSignatureComponent.scriptSignature.asm)
-    logger.debug("stack after scriptSig execution: " + scriptSigProgram.stack)
-    logger.debug("script pubkey to be executed: " + program.txSignatureComponent.scriptPubKey)
-    //now we need to run the scriptPubKey script through the interpreter with the stack arguements from scriptSigResult
     val (result,executedProgram) = program.txSignatureComponent.scriptSignature match {
       //if the P2SH script flag is not set, we evaluate a p2sh scriptSig just like any other scriptSig
       case scriptSig : P2SHScriptSignature if (program.flags.contains(ScriptVerifyP2SH)) =>
@@ -204,13 +203,26 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
         }
       case _ : P2PKHScriptSignature | _ : P2PKScriptSignature | _ : MultiSignatureScriptSignature |
            _ : NonStandardScriptSignature | _ : P2SHScriptSignature | EmptyScriptSignature =>
-        val (_,scriptSigExecutedProgram) = loop(scriptSigProgram)
-        logger.debug("We do not check a redeemScript against a non p2sh scriptSig")
-        //now run the scriptPubKey script through the interpreter with the scriptSig as the stack arguments
-        val scriptPubKeyProgram = ScriptProgramFactory.factory(scriptSigExecutedProgram.txSignatureComponent,
-          scriptSigExecutedProgram.stack,scriptSigProgram.txSignatureComponent.scriptPubKey.asm)
-        val result = loop(scriptPubKeyProgram)
-        result
+
+        val (scriptSigProgramIsValid,scriptSigExecutedProgram) = loop(scriptSigProgram)
+        logger.debug("program.txSignatureComponent.scriptSignature.asm: " + scriptSigExecutedProgram.txSignatureComponent.scriptSignature.asm)
+        logger.debug("stack after scriptSig execution: " + scriptSigExecutedProgram.stack)
+        logger.debug("script pubkey to be executed: " + scriptSigExecutedProgram.txSignatureComponent.scriptPubKey)
+        if (scriptSigProgramIsValid) {
+          logger.debug("We do not check a redeemScript against a non p2sh scriptSig")
+          //now run the scriptPubKey script through the interpreter with the scriptSig as the stack arguments
+          val scriptPubKeyProgram = ScriptProgramFactory.factory(scriptSigExecutedProgram.txSignatureComponent,
+            scriptSigExecutedProgram.stack,scriptSigExecutedProgram.txSignatureComponent.scriptPubKey.asm)
+          val (scriptPubKeyProgramIsValid, scriptPubKeyExecutedProgram) = loop(scriptPubKeyProgram)
+          //if the program is valid, return if the stack top is true
+          //else the program is false since something illegal happened during script evaluation
+          scriptPubKeyProgramIsValid match {
+            case true =>  (scriptPubKeyExecutedProgram.stackTopIsTrue,scriptPubKeyExecutedProgram)
+            case false => (false, scriptPubKeyExecutedProgram)
+          }
+
+        } else (scriptSigProgramIsValid,scriptSigExecutedProgram)
+
     }
 
     if (result && executedProgram.flags.contains(ScriptVerifyCleanStack)) {

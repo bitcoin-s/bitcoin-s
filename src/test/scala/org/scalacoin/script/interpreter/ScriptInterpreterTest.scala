@@ -32,12 +32,7 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterp
 /*    val lines =
         """
           |
-          |[[
-    "0x47 0x304402204e2eb034be7b089534ac9e798cf6a2c79f38bcb34d1b179efd6f2de0841735db022071461beb056b5a7be1819da6a3e3ce3662831ecc298419ca101eb6887b5dd6a401 0x19 0x76a9147cf9c846cd4882efec4bf07e44ebdad495c94f4b88ac",
-    "HASH160 0x14 0x2df519943d5acc0ef5222091f9dfe3543f489a82 EQUAL",
-    "",
-    "P2SH(P2PKH), bad sig but no VERIFY_P2SH"
-]]
+          |[["0 1", "TUCK DEPTH 3 EQUALVERIFY SWAP 2DROP", "P2SH,STRICTENC"]]
    """.stripMargin*/
     val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n" finally source.close()
     val json = lines.parseJson
@@ -76,16 +71,14 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterp
      * bitcoinj currently fails on these
      * ,
      */
-/*    val source = scala.io.Source.fromFile("src/test/scala/org/scalacoin/script/interpreter/script_invalid.json")
+    val source = scala.io.Source.fromFile("src/test/scala/org/scalacoin/script/interpreter/script_invalid.json")
 
     //use this to represent a single test case from script_valid.json
-/*
     val lines =
     """
       |
       |[["1 IF 0 ENDIF", "1 ENDIF", "P2SH,STRICTENC"]]
     """.stripMargin
-*/
 
 
     //val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n" finally source.close()
@@ -114,7 +107,7 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterp
       withClue(testCase.raw) {
         ScriptInterpreter.run(program) must equal (false)
       }
-    }*/
+    }
 
   }
 }

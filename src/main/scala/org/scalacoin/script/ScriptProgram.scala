@@ -32,7 +32,7 @@ trait ScriptProgram {
 
 
   /**
-   * The original script that was given to the script program for execution
+   * The original script that was given t
    * @return
    */
   def originalScript : List[ScriptToken]
