@@ -1,1 +1,2 @@
 language: scala
+sudo: required
