@@ -1,7 +1,7 @@
 package org.scalacoin.marshallers.script
 
 import org.scalacoin.protocol.script.ScriptSignature
-import org.scalacoin.script.arithmetic.OP_ADD
+import org.scalacoin.script.arithmetic.{OP_1ADD, OP_ADD}
 import org.scalacoin.script.bitwise.OP_EQUAL
 import org.scalacoin.script.constant._
 import org.scalacoin.script.control.{OP_ENDIF, OP_IF}
@@ -181,6 +181,10 @@ class ScriptParserTest extends FlatSpec with MustMatchers with ScriptParser with
     val scriptTokens : List[ScriptToken] = ScriptParser.fromHex(rawScriptSig)
 
     scriptTokens must be (expectedAsm)
+  }
+
+  it must "parse 1ADD to an OP_1ADD" in {
+    ScriptParser.fromString("1ADD") must be (Seq(OP_1ADD))
   }
 
 }
