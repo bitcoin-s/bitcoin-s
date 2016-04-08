@@ -12,29 +12,29 @@ class ConstantInterpreterTest extends FlatSpec with MustMatchers with ConstantIn
 
   "ConstantInterpreter" must "interpret OP_PUSHDATA1 correctly" in {
     val stack = List()
-    val script = List(OP_PUSHDATA1, ScriptNumberImpl(1), ScriptNumberImpl(7), OP_7, OP_EQUAL)
+    val script = List(OP_PUSHDATA1, ScriptNumberFactory.one, ScriptNumberFactory.fromNumber(8), OP_7, OP_EQUAL)
     val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
     val newProgram = opPushData1(program)
-
+    newProgram.stack must be (List(ScriptNumberFactory.fromNumber(8)))
     newProgram.script must be (List(OP_7,OP_EQUAL))
   }
 
   it must "interpret OP_PUSHDATA2 correctly" in {
     val stack = List()
-    val script = List(OP_PUSHDATA2, ScriptConstantImpl("0100"), ScriptNumberImpl(8), OP_8, OP_EQUAL)
+    val script = List(OP_PUSHDATA2, ScriptNumberFactory.fromHex("0100"), ScriptNumberFactory.fromNumber(8), OP_8, OP_EQUAL)
     val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
     val newProgram = opPushData2(program)
-    newProgram.stack must be (List())
-    newProgram.script must be (List(ScriptNumberImpl(8), OP_8,OP_EQUAL))
+    newProgram.stack must be (List(ScriptNumberFactory.fromNumber(8)))
+    newProgram.script must be (List(OP_8,OP_EQUAL))
   }
 
   it must "interpret OP_PUSHDATA4 correctly" in {
     val stack = List()
-    val script = List(OP_PUSHDATA4, ScriptConstantImpl("01000000"), ScriptNumberImpl(9), OP_9, OP_EQUAL)
+    val script = List(OP_PUSHDATA4, ScriptNumberFactory.fromHex("01000000"), ScriptNumberFactory.fromNumber(9), OP_9, OP_EQUAL)
     val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
     val newProgram = opPushData4(program)
-    newProgram.stack must be (List())
-    newProgram.script must be (List(ScriptNumberImpl(9),OP_9, OP_EQUAL))
+    newProgram.stack must be (List(ScriptNumberFactory.fromNumber(9)))
+    newProgram.script must be (List(OP_9, OP_EQUAL))
   }
 
 
@@ -68,16 +68,12 @@ class ConstantInterpreterTest extends FlatSpec with MustMatchers with ConstantIn
     newProgram2.stack must be (List(OP_0))
   }
 
-/*  it must "throw an illegal argument exception if we attempt to push bytes onto the stack when there are none" in {
-    val stack = List()
-    val script = List(OP_PUSHDATA1)
-    val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
-    intercept[IllegalArgumentException] {
-      val newProgram = pushScriptNumberBytesToStack(program)
-    }
-  }
 
   it must "mark a program as invalid if we have do not have enough bytes to be pushed onto the stack by the push operation" in {
-
-  }*/
+    val stack = List()
+    val script = List(OP_PUSHDATA1,BytesToPushOntoStackFactory.factory(1).get)
+    val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
+    val newProgram  = opPushData1(program)
+    newProgram.isValid must be (false)
+  }
 }

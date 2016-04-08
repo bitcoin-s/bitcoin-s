@@ -29,7 +29,7 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterp
     val source = scala.io.Source.fromFile("src/test/scala/org/scalacoin/script/interpreter/script_valid.json")
 
     //use this to represent a single test case from script_valid.json
-/*    val lines =
+    val lines =
         """
           |
           |[[
@@ -38,8 +38,8 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterp
     "",
     "P2SH(P2PKH), bad sig but no VERIFY_P2SH"
 ]]
-   """.stripMargin*/
-    val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n" finally source.close()
+   """.stripMargin
+    //val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n" finally source.close()
     val json = lines.parseJson
     val testCasesOpt : Seq[Option[CoreTestCase]] = json.convertTo[Seq[Option[CoreTestCase]]]
     val testCases : Seq[CoreTestCase] = testCasesOpt.flatten
@@ -77,17 +77,17 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterp
      * bitcoinj currently fails on these
      * ,
      */
-/*    val source = scala.io.Source.fromFile("src/test/scala/org/scalacoin/script/interpreter/script_invalid.json")
+    val source = scala.io.Source.fromFile("src/test/scala/org/scalacoin/script/interpreter/script_invalid.json")
 
     //use this to represent a single test case from script_valid.json
-    val lines =
+/*    val lines =
     """
       |
       |[["0x4c 01","0x01 NOP", "P2SH,STRICTENC", "PUSHDATA1 with not enough bytes"]]
-    """.stripMargin
+    """.stripMargin*/
 
 
-    //val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n" finally source.close()
+    val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n" finally source.close()
     val json = lines.parseJson
     val testCasesOpt : Seq[Option[CoreTestCase]] = json.convertTo[Seq[Option[CoreTestCase]]]
     val testCases : Seq[CoreTestCase] = testCasesOpt.flatten
@@ -113,7 +113,7 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterp
       withClue(testCase.raw) {
         ScriptInterpreter.run(program) must equal (false)
       }
-    }*/
+    }
 
   }
 }
