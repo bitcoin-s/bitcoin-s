@@ -30,6 +30,13 @@ trait ScriptProgram {
    */
   def script : List[ScriptToken]
 
+
+  /**
+   * The original script that was given to the script program for execution
+   * @return
+   */
+  def originalScript : List[ScriptToken]
+
   /**
    * The alternative stack is used in some Script op codes
    * @return

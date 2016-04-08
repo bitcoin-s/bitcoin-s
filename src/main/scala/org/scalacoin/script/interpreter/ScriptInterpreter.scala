@@ -207,8 +207,8 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
         val (_,scriptSigExecutedProgram) = loop(scriptSigProgram)
         logger.debug("We do not check a redeemScript against a non p2sh scriptSig")
         //now run the scriptPubKey script through the interpreter with the scriptSig as the stack arguments
-        val scriptPubKeyProgram = ScriptProgramFactory.factory(scriptSigExecutedProgram,
-          scriptSigProgram.txSignatureComponent.scriptPubKey.asm, ScriptProgramFactory.Script)
+        val scriptPubKeyProgram = ScriptProgramFactory.factory(scriptSigExecutedProgram.txSignatureComponent,
+          scriptSigExecutedProgram.stack,scriptSigProgram.txSignatureComponent.scriptPubKey.asm)
         val result = loop(scriptPubKeyProgram)
         result
     }

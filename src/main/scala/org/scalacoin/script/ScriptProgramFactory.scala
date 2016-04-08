@@ -13,7 +13,7 @@ import org.scalacoin.script.flag.ScriptFlag
 trait ScriptProgramFactory {
 
   private sealed case class ScriptProgramImpl(txSignatureComponent : TransactionSignatureComponent,
-    stack : List[ScriptToken],script : List[ScriptToken], altStack : List[ScriptToken],
+    stack : List[ScriptToken],script : List[ScriptToken], originalScript : List[ScriptToken], altStack : List[ScriptToken],
     flags : Seq[ScriptFlag],  isValid : Boolean = true, lastCodeSeparator : Int = 0) extends ScriptProgram
 
 
@@ -32,7 +32,8 @@ trait ScriptProgramFactory {
    */
   def factory(oldProgram : ScriptProgram, valid : Boolean) : ScriptProgram = {
     ScriptProgramImpl(oldProgram.txSignatureComponent,
-      oldProgram.stack,oldProgram.script, oldProgram.altStack, oldProgram.flags, valid, oldProgram.lastCodeSeparator)
+      oldProgram.stack,oldProgram.script, oldProgram.originalScript,
+      oldProgram.altStack, oldProgram.flags, valid, oldProgram.lastCodeSeparator)
   }
 
 
@@ -44,7 +45,8 @@ trait ScriptProgramFactory {
    */
   def factory(oldProgram : ScriptProgram, flags : Seq[ScriptFlag]) : ScriptProgram = {
     ScriptProgramImpl(oldProgram.txSignatureComponent,
-      oldProgram.stack,oldProgram.script, oldProgram.altStack, flags, oldProgram.isValid, oldProgram.lastCodeSeparator)
+      oldProgram.stack,oldProgram.script, oldProgram.originalScript,
+      oldProgram.altStack, flags, oldProgram.isValid, oldProgram.lastCodeSeparator)
   }
 
 
@@ -58,13 +60,13 @@ trait ScriptProgramFactory {
   def factory(oldProgram : ScriptProgram, tokens : Seq[ScriptToken], indicator : UpdateIndicator) : ScriptProgram = {
     indicator match {
       case Stack => ScriptProgramImpl(oldProgram.txSignatureComponent,tokens.toList, oldProgram.script,
-        oldProgram.altStack, oldProgram.flags,
+        oldProgram.originalScript,oldProgram.altStack, oldProgram.flags,
         oldProgram.isValid, oldProgram.lastCodeSeparator)
       case Script => ScriptProgramImpl(oldProgram.txSignatureComponent,
-        oldProgram.stack, tokens.toList, oldProgram.altStack,  oldProgram.flags,
+        oldProgram.stack, tokens.toList, oldProgram.originalScript,oldProgram.altStack,  oldProgram.flags,
         oldProgram.isValid, oldProgram.lastCodeSeparator)
       case AltStack => ScriptProgramImpl(oldProgram.txSignatureComponent,
-        oldProgram.stack, oldProgram.script, tokens.toList,oldProgram.flags,
+        oldProgram.stack, oldProgram.script, oldProgram.originalScript,tokens.toList,oldProgram.flags,
         oldProgram.isValid, oldProgram.lastCodeSeparator)
     }
   }
@@ -103,7 +105,7 @@ trait ScriptProgramFactory {
    */
   def factory(oldProgram : ScriptProgram, lastCodeSeparator : Int) : ScriptProgram = {
     ScriptProgramImpl(oldProgram.txSignatureComponent,
-      oldProgram.stack, oldProgram.script,
+      oldProgram.stack, oldProgram.script, oldProgram.originalScript,
       oldProgram.altStack, oldProgram.flags,  isValid = oldProgram.isValid, lastCodeSeparator = lastCodeSeparator)
   }
 
@@ -119,11 +121,11 @@ trait ScriptProgramFactory {
               lastCodeSeparator : Int) : ScriptProgram = {
     indicator match {
       case Stack => ScriptProgramImpl(oldProgram.txSignatureComponent,
-        tokens.toList, oldProgram.script, oldProgram.altStack, oldProgram.flags,  oldProgram.isValid, lastCodeSeparator)
+        tokens.toList, oldProgram.script, oldProgram.originalScript, oldProgram.altStack, oldProgram.flags,  oldProgram.isValid, lastCodeSeparator)
       case Script => ScriptProgramImpl(oldProgram.txSignatureComponent,
-        oldProgram.stack, tokens.toList, oldProgram.altStack, oldProgram.flags,  oldProgram.isValid, lastCodeSeparator)
+        oldProgram.stack, tokens.toList, oldProgram.originalScript,oldProgram.altStack, oldProgram.flags,  oldProgram.isValid, lastCodeSeparator)
       case AltStack => ScriptProgramImpl(oldProgram.txSignatureComponent,
-        oldProgram.stack, oldProgram.script,
+        oldProgram.stack, oldProgram.script,oldProgram.originalScript,
         tokens.toList, oldProgram.flags,  oldProgram.isValid, lastCodeSeparator)
     }
   }
@@ -155,7 +157,7 @@ trait ScriptProgramFactory {
   def factory(oldProgram : ScriptProgram, stack : Seq[ScriptToken], script : Seq[ScriptToken], altStack : Seq[ScriptToken],
                updateIndicator: UpdateIndicator) : ScriptProgram = {
     ScriptProgramImpl(oldProgram.txSignatureComponent,
-      stack.toList,script.toList,altStack.toList,oldProgram.flags,  oldProgram.isValid,oldProgram.lastCodeSeparator)
+      stack.toList,script.toList,oldProgram.originalScript,altStack.toList,oldProgram.flags,  oldProgram.isValid,oldProgram.lastCodeSeparator)
   }
 
 
@@ -189,12 +191,40 @@ trait ScriptProgramFactory {
   def factory(transaction: Transaction, scriptPubKey : ScriptPubKey, inputIndex : Int, script : Seq[ScriptToken],
               flags : Seq[ScriptFlag]) : ScriptProgram = {
     val txSignatureComponent = TransactionSignatureComponentFactory.factory(transaction,inputIndex,scriptPubKey,flags)
-    ScriptProgramImpl(txSignatureComponent,List(),script.toList,List(),flags)
+    ScriptProgramImpl(txSignatureComponent,List(),script.toList,script.toList,List(),flags)
   }
 
 
-  def factory(oldProgram : ScriptProgram, newTxSignatureComponent : TransactionSignatureComponent) : ScriptProgram = {
-    ScriptProgramImpl(newTxSignatureComponent,oldProgram.stack,oldProgram.script,oldProgram.altStack,oldProgram.flags)
+  /**
+   * The intention for this factory function is to allow us to create a program that already has a stack state. This
+   * is useful for after execution of a scriptSig, copying the stack into this program with the scriptPubKey read to
+   * run inside the script variable
+   * @param transaction the transaction being checked
+   * @param scriptPubKey the scriptPubKey which the input is spending
+   * @param inputIndex the input's index inside of the transaction we are spending
+   * @param stack the current stack state of the program
+   * @param script the script that we need to execute
+   * @param flags the flags which we are enforcing inside of the script interpeter
+   */
+  def factory(transaction: Transaction, scriptPubKey : ScriptPubKey, inputIndex : Int, stack : Seq[ScriptToken],
+              script : Seq[ScriptToken], flags : Seq[ScriptFlag]) : ScriptProgram = {
+    val program = factory(transaction,scriptPubKey,inputIndex,script,flags)
+    factory(program,stack,Stack)
+  }
+
+
+  /**
+   * The intention for this factory function is to allow us to create a program that already has a stack state. This
+   * is useful for after execution of a scriptSig, copying the stack into this program with the scriptPubKey read to
+   * run inside the script variable
+   * @param txSignatureComponent the relevant transaction information for execution of a script program
+   * @param stack the current stack state of the program
+   * @param script the script that we need to execute
+   * @return
+   */
+  def factory(txSignatureComponent : TransactionSignatureComponent, stack : Seq[ScriptToken], script : Seq[ScriptToken]) : ScriptProgram = {
+    factory(txSignatureComponent.transaction,txSignatureComponent.scriptPubKey,txSignatureComponent.inputIndex,
+      stack,script,txSignatureComponent.flags)
   }
 
 }

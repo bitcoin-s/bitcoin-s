@@ -314,16 +314,16 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers with C
 
   it must "check that every OP_IF has a matching OP_ENDIF" in {
     val script0 = List()
-    checkMatchingOpIfOpEndIf(script0) must be (true)
+    checkMatchingOpIfOpNotIfOpEndIf(script0) must be (true)
 
     val script1 = List(OP_IF, OP_ENDIF)
-    checkMatchingOpIfOpEndIf(script1) must be (true)
+    checkMatchingOpIfOpNotIfOpEndIf(script1) must be (true)
 
     val script2 = List(OP_IF)
-    checkMatchingOpIfOpEndIf(script2) must be (false)
+    checkMatchingOpIfOpNotIfOpEndIf(script2) must be (false)
 
-    val script3 = List(OP_IF,OP_IF,OP_IF,OP_ELSE,OP_ELSE,OP_ELSE,OP_ENDIF,OP_ENDIF,OP_ENDIF)
-    checkMatchingOpIfOpEndIf(script3) must be (true)
+    val script3 = List(OP_IF,OP_IF,OP_NOTIF,OP_ELSE,OP_ELSE,OP_ELSE,OP_ENDIF,OP_ENDIF,OP_ENDIF)
+    checkMatchingOpIfOpNotIfOpEndIf(script3) must be (true)
   }
 
   it must "evaluate an OP_IF block correctly if the stack top is true" in {

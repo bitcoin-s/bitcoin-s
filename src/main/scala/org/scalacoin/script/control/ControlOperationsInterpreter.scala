@@ -23,7 +23,11 @@ trait ControlOperationsInterpreter extends BitcoinSLogger {
     require(program.script.headOption.isDefined && program.script.head == OP_IF, "Script top was not OP_IF")
     val binaryTree = parseBinaryTree(program.script)
     logger.debug("Parsed binary tree: " + binaryTree)
-    if (program.stackTopIsTrue) {
+    if (!checkMatchingOpIfOpNotIfOpEndIf(program.originalScript)) {
+      logger.error("We do not have a matching OP_ENDIF for every OP_IF we have")
+      ScriptProgramFactory.factory(program,false)
+    }
+    else if (program.stackTopIsTrue) {
       //if the left branch contains and OP_IF & OP_ENDIF there must be a nested OP_IF
       //remove OP_ELSE from binary tree
       val newTreeWithoutOpElse = removeFirstOpElse(binaryTree)
@@ -47,7 +51,11 @@ trait ControlOperationsInterpreter extends BitcoinSLogger {
     require(program.script.headOption.isDefined && program.script.head == OP_NOTIF, "Script top was not OP_NOTIF")
     val binaryTree = parseBinaryTree(program.script)
     logger.debug("Parsed binary tree: " + binaryTree)
-    if (program.stackTopIsTrue) {
+
+    if (!checkMatchingOpIfOpNotIfOpEndIf(program.originalScript)) {
+      logger.error("We do not have a matching OP_ENDIF for every OP_NOTIF we have")
+      ScriptProgramFactory.factory(program,false)
+    } else if (program.stackTopIsTrue) {
       //remove the OP_NOTIF
       val scriptWithoutOpIf : BinaryTree[ScriptToken] = removeFirstOpIf(binaryTree)
       ScriptProgramFactory.factory(program, program.stack.tail,scriptWithoutOpIf.toList)
@@ -94,7 +102,12 @@ trait ControlOperationsInterpreter extends BitcoinSLogger {
    */
   def opEndIf(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.isDefined && program.script.head == OP_ENDIF, "Script top must be OP_ENDIF")
-    ScriptProgramFactory.factory(program, program.stack,program.script.tail)
+    if (!checkMatchingOpIfOpNotIfOpEndIf(program.originalScript)) {
+      //means we do not have a matching OP_IF for our OP_ENDIF
+      logger.error("We do not have a matching OP_IF/OP_NOTIF for every OP_ENDIF we have")
+      ScriptProgramFactory.factory(program,false)
+    } else ScriptProgramFactory.factory(program, program.stack,program.script.tail)
+
   }
 
 
@@ -247,13 +260,15 @@ trait ControlOperationsInterpreter extends BitcoinSLogger {
 
 
   /**
-   * Checks if an OP_IF script token has a matching OP_ENDIF
+   * Checks if an OP_IF/OP_NOTIF script token has a matching OP_ENDIF
    * @param script
    * @return
    */
-  def checkMatchingOpIfOpEndIf(script : List[ScriptToken]) : Boolean = {
-    script.count(_ == OP_IF) == script.count(_ == OP_ENDIF)
+  def checkMatchingOpIfOpNotIfOpEndIf(script : List[ScriptToken]) : Boolean = {
+    script.count(_ == OP_IF) + script.count(_ == OP_NOTIF) == script.count(_ == OP_ENDIF)
   }
+
+
 
   /**
    * Returns the first index of an OP_ENDIF
