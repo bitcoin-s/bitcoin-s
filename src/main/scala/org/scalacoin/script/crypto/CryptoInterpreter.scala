@@ -99,21 +99,17 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
       ScriptProgramFactory.factory(program,false)
     } else {
       val restOfStack = program.stack.tail.tail
-      //we need to check if the scriptSignature has a redeemScript
-      //in that case, we need to pass the redeemScript to the TransactionSignatureChecker
-      //as the scriptPubKey instead of the one inside of ScriptProgram
-      val scriptPubKey = program.txSignatureComponent.scriptSignature match {
-        case s : P2SHScriptSignature => s.redeemScript
-        case _ : P2PKHScriptSignature | _ : P2PKScriptSignature | _ : NonStandardScriptSignature
-             | _ : MultiSignatureScriptSignature | EmptyScriptSignature => program.txSignatureComponent.scriptPubKey
-      }
-      val result = TransactionSignatureChecker.checkSignature(program.txSignatureComponent.transaction,
-        program.txSignatureComponent.inputIndex,scriptPubKey,pubKey,signature,program.flags.contains(ScriptVerifyDerSig))
+
+
+      val result = TransactionSignatureChecker.checkSignature(program.txSignatureComponent,pubKey,
+        signature,program.flags)
       logger.debug("signature verification isValid: " + result)
       result match {
-        case SignatureValidationSuccess => ScriptProgramFactory.factory(program, ScriptTrue :: restOfStack,program.script.tail)
+        case SignatureValidationSuccess => ScriptProgramFactory.factory(program,
+          ScriptTrue :: restOfStack,program.script.tail)
         case SignatureValidationFailureNotStrictDerEncoding =>
-          ScriptProgramFactory.factory(program, ScriptFalse :: restOfStack,program.script.tail,SignatureValidationFailureNotStrictDerEncoding.isValid)
+          ScriptProgramFactory.factory(program, ScriptFalse :: restOfStack,
+            program.script.tail,SignatureValidationFailureNotStrictDerEncoding.isValid)
         case SignatureValidationFailureIncorrectSignatures =>
           ScriptProgramFactory.factory(program, ScriptFalse :: restOfStack,program.script.tail)
       }
