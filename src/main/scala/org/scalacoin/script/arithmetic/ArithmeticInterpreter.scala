@@ -193,7 +193,6 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
       case (x : ScriptNumber, y : ScriptNumber) => x.num == y.num
       case (x,y) => x == y
     }
-
     val newStackTop = if (isSame) OP_TRUE else OP_FALSE
     ScriptProgramFactory.factory(program, newStackTop :: program.stack.tail.tail, program.script.tail)
   }
@@ -210,7 +209,7 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
     require(program.stack.size > 1, "Stack size must be 2 or more perform an OP_NUMEQUALVERIFY")
     val numEqualProgram = ScriptProgramFactory.factory(program, program.stack, OP_NUMEQUAL :: program.script.tail)
     val numEqualResult = opNumEqual(numEqualProgram)
-    val verifyProgram = ScriptProgramFactory.factory(numEqualResult, program.stack, OP_VERIFY :: numEqualResult.script)
+    val verifyProgram = ScriptProgramFactory.factory(numEqualResult, numEqualResult.stack, OP_VERIFY :: numEqualResult.script)
     val verifyResult = opVerify(verifyProgram)
     verifyResult
   }

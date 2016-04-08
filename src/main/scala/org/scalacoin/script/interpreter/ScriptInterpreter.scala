@@ -39,6 +39,11 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
       logger.debug("Stack: " + program.stack)
       logger.debug("Script: " + program.script)
       program.script match {
+        //if at any time we see that the program is not valid
+        //cease script execution
+        case _ if !program.isValid =>
+          logger.error("Script program was marked as invalid: " + program)
+          (false,program)
         //stack operations
         case OP_DUP :: t => loop(opDup(program))
         case OP_DEPTH :: t => loop(opDepth(program))

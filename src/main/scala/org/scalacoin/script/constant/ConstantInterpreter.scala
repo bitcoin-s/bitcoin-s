@@ -18,17 +18,7 @@ trait ConstantInterpreter extends BitcoinSLogger {
    */
   def opPushData1(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.isDefined && program.script.head == OP_PUSHDATA1, "Top of script stack must be OP_PUSHDATA1")
-
-    val bytesToPush = program.script(1)
-    if (bytesToPush == BytesToPushOntoStackImpl(0)) {
-      ScriptProgramFactory.factory(program, OP_0 :: program.stack, program.script.tail.tail)
-    } else {
-      //leave the constant on the script to be pushed onto the stack by the next iteration of script interpreter
-      //TODO: probably push the script token on the stack here, but it needs to be converted to the
-      //appropriate type i.e. OP_1 is converted to ScriptNumberImpl(1)
-      ScriptProgramFactory.factory(program, program.stack, program.script.slice(2,program.script.size))
-    }
-
+    pushScriptNumberBytesToStack(ScriptProgramFactory.factory(program,program.script.tail, ScriptProgramFactory.Script))
   }
 
   /**
@@ -38,16 +28,7 @@ trait ConstantInterpreter extends BitcoinSLogger {
    */
   def opPushData2(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.isDefined && program.script.head == OP_PUSHDATA2, "Top of script stack must be OP_PUSHDATA2")
-    //convert the hex string from little endian to big endian
-    val bytesToPush = program.script(1)
-    if (bytesToPush == BytesToPushOntoStackImpl(0)) {
-      ScriptProgramFactory.factory(program, OP_0 :: program.stack, program.script.tail.tail)
-    } else {
-      //leave the constant on the script to be pushed onto the stack by the next iteration of script interpreter
-      //TODO: probably push the script token on the stack here, but it needs to be converted to the
-      //appropriate type i.e. OP_1 is converted to ScriptNumberImpl(1)
-      ScriptProgramFactory.factory(program, program.stack, program.script.slice(2,program.script.size))
-    }
+    pushScriptNumberBytesToStack(ScriptProgramFactory.factory(program,program.script.tail, ScriptProgramFactory.Script))
   }
 
   /**
@@ -57,17 +38,7 @@ trait ConstantInterpreter extends BitcoinSLogger {
    */
   def opPushData4(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.isDefined && program.script.head == OP_PUSHDATA4, "Top of script stack must be OP_PUSHDATA4")
-    //convert the hex string from little endian to big endian
-
-    val bytesToPush = program.script(1)
-    if (bytesToPush == BytesToPushOntoStackImpl(0)) {
-      ScriptProgramFactory.factory(program, OP_0 :: program.stack, program.script.tail.tail)
-    } else {
-      //leave the constant on the script to be pushed onto the stack by the next iteration of script interpreter
-      //TODO: probably push the script token on the stack here, but it needs to be converted to the
-      //appropriate type i.e. OP_1 is converted to ScriptNumberImpl(1)
-      ScriptProgramFactory.factory(program, program.stack, program.script.slice(2,program.script.size))
-    }
+    pushScriptNumberBytesToStack(ScriptProgramFactory.factory(program,program.script.tail, ScriptProgramFactory.Script))
   }
 
 
@@ -77,11 +48,10 @@ trait ConstantInterpreter extends BitcoinSLogger {
    * @return
    */
   def pushScriptNumberBytesToStack(program : ScriptProgram) : ScriptProgram = {
-    require(program.script.headOption.isDefined && program.script.head.isInstanceOf[BytesToPushOntoStack], "Top of script must be a script number")
-    require(program.script.size > 1, "Script size must be atleast to to push constants onto the stack")
-    val bytesNeeded = program.script.head match {
+    val bytesNeeded : Long = program.script.head match {
       case scriptNumber : BytesToPushOntoStack => scriptNumber.opCode
-      case _ => throw new IllegalArgumentException("Stack top must be BytesToPushOntoStack to push a numbero bytes onto the stack")
+      case scriptNumber : ScriptNumber => scriptNumber.num
+      case _ => throw new IllegalArgumentException("Stack top must be BytesToPushOntoStack to push a number of bytes onto the stack")
     }
     /**
      * Parses the script tokens that need to be pushed onto our stack
@@ -98,21 +68,28 @@ trait ConstantInterpreter extends BitcoinSLogger {
       else {
         //for the case when a ScriptNumberImpl(x) was parsed as a ByteToPushOntoStackImpl(x)
         val scriptToken = scriptTokens.head match {
-          case BytesToPushOntoStackImpl(x) => ScriptNumberImpl(x)
+          case x : BytesToPushOntoStack => ScriptNumberFactory.fromNumber(x.opCode)
           case x => x
         }
         takeUntilBytesNeeded(scriptTokens.tail, scriptToken :: accum)
       }
     }
 
-    val (newScript,bytesToPushOntoStack) = takeUntilBytesNeeded(program.script.tail,List())
+    val (newScript,bytesToPushOntoStack) = if (bytesNeeded == 0) {
+      //this means we need to push an empty byte vector on to the stack
+      (program.script.tail, Seq(OP_0))
+    } else takeUntilBytesNeeded(program.script.tail,List())
     logger.debug("new script: " + newScript)
     logger.debug("Bytes to push onto stack" + bytesToPushOntoStack)
     val constant : ScriptToken = if (bytesToPushOntoStack.size == 1) bytesToPushOntoStack.head
     else ScriptConstantFactory.fromHex(BitcoinSUtil.flipEndianess(bytesToPushOntoStack.flatMap(_.bytes)))
 
-    logger.debug("Constant: " + constant)
-    ScriptProgramFactory.factory(program, constant :: program.stack, newScript)
+    logger.debug("Constant to be pushed onto stack: " + constant)
+    //check to see if we have the exact amount of bytes needed to be pushed onto the stack
+    //if we do not, mark the program as invalid
+    if (bytesNeeded == 0 && bytesToPushOntoStack.headOption == Some(OP_0)) ScriptProgramFactory.factory(program, constant :: program.stack, newScript)
+    else if (bytesNeeded != bytesToPushOntoStack.map(_.bytesSize).sum) ScriptProgramFactory.factory(program,false)
+    else ScriptProgramFactory.factory(program, constant :: program.stack, newScript)
   }
 
 

@@ -74,12 +74,12 @@ object CoreTestCaseProtocol extends DefaultJsonProtocol {
      * @return
      */
     private def parseScriptPubKeyAsm(element : JsValue) : Seq[ScriptToken] = {
-      try {
+/*      try {
         ScriptParser.fromBytes(BitcoinSUtil.decodeHex(element.convertTo[String].toLowerCase))
       } catch {
-        case _ : Throwable => ScriptParser.fromString(element.convertTo[String])
-      }
-
+        case _ : Throwable =>
+      }*/
+      ScriptParser.fromString(element.convertTo[String])
     }
 
     override def write(coreTestCase : Option[CoreTestCase]) : JsValue = ???

@@ -7,6 +7,12 @@ import org.scalacoin.script.ScriptOperationFactory
  */
 trait BytesToPushOntoStackFactory extends ScriptOperationFactory[BytesToPushOntoStack] {
 
+  /**
+   * Represents that zero bytes need to be pushed onto the stack
+   * this really means we need to push an empty byte vector on the stack
+   */
+  lazy val zero : BytesToPushOntoStack = factory(0).get
+
   override def operations : Seq[BytesToPushOntoStack] =
       (for { i <- 0 to 75 } yield BytesToPushOntoStackImpl(i)).toList
 

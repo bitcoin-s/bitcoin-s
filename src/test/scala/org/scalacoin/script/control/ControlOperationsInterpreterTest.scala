@@ -1,5 +1,6 @@
 package org.scalacoin.script.control
 
+import org.scalacoin.marshallers.script.ScriptParser
 import org.scalacoin.script.{ScriptProgramFactory}
 import org.scalacoin.script.arithmetic.OP_ADD
 import org.scalacoin.script.bitwise.OP_EQUAL
@@ -26,7 +27,7 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers with C
   it must "have OP_VERIFY evaluate to true when there are multiple items on the stack that can be cast to an int" in {
     //for this test case in bitcoin core's script test suite
     //https://github.com/bitcoin/bitcoin/blob/master/src/test/data/script_valid.json#L21
-    val stack = List(OP_0, OP_0, OP_0, OP_0, ScriptNumberImpl(1), ScriptNumberImpl(1))
+    val stack = ScriptParser.fromString("0x09 0x00000000 0x00000000 0x10")
     val script = List(OP_VERIFY)
     val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
     val result = opVerify(program)

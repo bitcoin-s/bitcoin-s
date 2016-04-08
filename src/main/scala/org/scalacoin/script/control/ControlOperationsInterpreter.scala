@@ -122,11 +122,8 @@ trait ControlOperationsInterpreter extends BitcoinSLogger {
     //off of the stack..
     require(program.script.headOption.isDefined && program.script.head == OP_VERIFY, "Script top must be OP_VERIFY")
     require(program.stack.size > 0, "Stack must have at least one element on it to run OP_VERIFY")
-    if (program.stack.head != OP_0 && program.stack.head != ScriptFalse ) {
-      ScriptProgramFactory.factory(program, program.stack.tail,program.script.tail,true)
-    } else if (program.stack.exists(t => t != OP_0 && t != ScriptFalse)) {
-      ScriptProgramFactory.factory(program, program.stack.tail,program.script.tail,true)
-    } else ScriptProgramFactory.factory(program, program.stack.tail,program.script.tail, false)
+    if (program.stackTopIsFalse) ScriptProgramFactory.factory(program,false)
+    else ScriptProgramFactory.factory(program, program.stack.tail,program.script.tail)
   }
 
 
