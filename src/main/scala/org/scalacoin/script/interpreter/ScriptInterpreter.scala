@@ -11,7 +11,7 @@ import org.scalacoin.script.bitwise.{OP_EQUAL, BitwiseInterpreter, OP_EQUALVERIF
 import org.scalacoin.script.constant._
 import org.scalacoin.script.control._
 import org.scalacoin.script.crypto._
-import org.scalacoin.script.reserved.NOP
+import org.scalacoin.script.reserved._
 import org.scalacoin.script.stack._
 import org.scalacoin.util.{BitcoinScriptUtil, BitcoinSLogger}
 import org.slf4j.LoggerFactory
@@ -43,6 +43,9 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
         //cease script execution
         case _ if !program.isValid =>
           logger.error("Script program was marked as invalid: " + program)
+          (false,program)
+        case _ if (program.script.contains(OP_VERIF) || program.script.contains(OP_VERNOTIF)) =>
+          logger.error("Transaction is invalid even when a OP_VERIF or OP_VERNOTIF occurs in an unexecuted OP_IF branch")
           (false,program)
         //stack operations
         case OP_DUP :: t => loop(opDup(program))
@@ -144,7 +147,18 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
         case OP_CHECKMULTISIGVERIFY :: t => loop(opCheckMultiSigVerify(program))
         //reserved operations
         case (nop : NOP) :: t => loop(ScriptProgramFactory.factory(program,program.stack,t))
-
+        case OP_RESERVED :: t =>
+          logger.error("OP_RESERVED automatically marks transaction invalid")
+          (false,program)
+        case OP_VER :: t =>
+          logger.error("Transaction is invalid when executing OP_VER")
+          (false,program)
+        case OP_RESERVED1 :: t =>
+          logger.error("Transaction is invalid when executing OP_RESERVED1")
+          (false,program)
+        case OP_RESERVED2 :: t =>
+          logger.error("Transaction is invalid when executing OP_RESERVED2")
+          (false,program)
         //splice operations
         case OP_SIZE :: t => loop(opSize(program))
 
