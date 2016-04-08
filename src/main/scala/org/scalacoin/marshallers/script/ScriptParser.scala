@@ -36,8 +36,17 @@ trait ScriptParser extends Factory[List[ScriptToken]] {
    * @return
    */
   def fromString(str : String) : List[ScriptToken] = {
-    val scriptTokens : List[ScriptToken] = parse(str)
-    scriptTokens
+
+    if (str.size > 1 && str.substring(0,2) == "0x" && str.split(" ").size == 1) {
+      //parse this as a byte array that is led with a 0x for example
+      //0x4e03000000ffff
+      val hex = str.substring(2,str.size)
+      fromBytes(BitcoinSUtil.decodeHex(hex))
+    } else {
+      val scriptTokens : List[ScriptToken] = parse(str)
+      scriptTokens
+    }
+
   }
 
 

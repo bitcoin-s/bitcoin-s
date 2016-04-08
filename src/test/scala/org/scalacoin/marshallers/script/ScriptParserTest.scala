@@ -62,8 +62,8 @@ class ScriptParserTest extends FlatSpec with MustMatchers with ScriptParser with
   }
 
   it must "parse a script number that has a leading zero" in {
-    val str = "0x0100"
-    fromString(str) must equal (List(ScriptNumberFactory.fromHex("0100")))
+    val str = "0x01 0x0100"
+    fromString(str) must equal (List(BytesToPushOntoStackFactory.factory(1).get, ScriptNumberFactory.fromHex("0100")))
   }
 
 
