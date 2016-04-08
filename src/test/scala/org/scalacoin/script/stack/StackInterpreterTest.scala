@@ -260,7 +260,7 @@ class StackInterpreterTest extends FlatSpec with MustMatchers with StackInterpre
     val script = List(OP_TUCK)
     val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
     val newProgram = opTuck(program)
-    newProgram.stack must be (List(ScriptConstantImpl("14"),ScriptConstantImpl("14"),ScriptConstantImpl("15"), ScriptConstantImpl("16"),
+    newProgram.stack must be (List(ScriptConstantImpl("14"),ScriptConstantImpl("15"),ScriptConstantImpl("14"), ScriptConstantImpl("16"),
       ScriptConstantImpl("17"), ScriptConstantImpl("18"), ScriptConstantImpl("19")))
     newProgram.script.isEmpty must be (true)
   }
