@@ -1,6 +1,6 @@
 package org.scalacoin.crypto
 
-import org.scalacoin.protocol.script.ScriptPubKey
+import org.scalacoin.protocol.script.{P2SHScriptSignature, P2SHScriptPubKey, ScriptPubKey}
 import org.scalacoin.protocol.transaction.Transaction
 import org.scalacoin.script.flag.ScriptFlag
 
@@ -15,6 +15,17 @@ trait TransactionSignatureComponentFactory {
   def factory(transaction : Transaction, inputIndex : Int, scriptPubKey : ScriptPubKey,
                flags : Seq[ScriptFlag]) : TransactionSignatureComponent = {
     TransactionSignatureComponentImpl(transaction,inputIndex,scriptPubKey, flags)
+  }
+
+  /**
+   * This factory method is used for changing the scriptPubKey inside of a txSignatureComponent
+   * @param oldTxSignatureComponent
+   * @param scriptPubKey
+   * @return
+   */
+  def factory(oldTxSignatureComponent : TransactionSignatureComponent, scriptPubKey : ScriptPubKey) : TransactionSignatureComponent = {
+    TransactionSignatureComponentImpl(oldTxSignatureComponent.transaction,
+      oldTxSignatureComponent.inputIndex,scriptPubKey, oldTxSignatureComponent.flags)
   }
 
 }

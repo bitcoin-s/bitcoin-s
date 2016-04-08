@@ -192,6 +192,11 @@ trait ScriptProgramFactory {
     ScriptProgramImpl(txSignatureComponent,List(),script.toList,List(),flags)
   }
 
+
+  def factory(oldProgram : ScriptProgram, newTxSignatureComponent : TransactionSignatureComponent) : ScriptProgram = {
+    ScriptProgramImpl(newTxSignatureComponent,oldProgram.stack,oldProgram.script,oldProgram.altStack,oldProgram.flags)
+  }
+
 }
 
 object ScriptProgramFactory extends ScriptProgramFactory
