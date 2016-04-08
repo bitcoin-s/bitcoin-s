@@ -5,15 +5,15 @@ import org.scalacoin.marshallers.script.ScriptPubKeyMarshaller.ScriptPubKeyForma
 import org.scalacoin.marshallers.script.ScriptSignatureMarshaller.ScriptSignatureFormatter
 import org.scalacoin.protocol.script._
 import org.scalacoin.script.constant.{ScriptOperation, ScriptToken}
-import org.scalacoin.util.{BitcoinSUtil}
+import org.scalacoin.util.{BitcoinSLogger, BitcoinSUtil}
 import org.slf4j.LoggerFactory
 import spray.json._
 
 /**
  * Created by chris on 1/18/16.
  */
-object CoreTestCaseProtocol extends DefaultJsonProtocol {
-  private lazy val logger = LoggerFactory.getLogger(this.getClass().toString())
+object CoreTestCaseProtocol extends DefaultJsonProtocol with BitcoinSLogger {
+
   implicit object CoreTestCaseFormatter extends RootJsonFormat[Option[CoreTestCase]] {
 
     override def read(value : JsValue) : Option[CoreTestCase] = {

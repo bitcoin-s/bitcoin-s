@@ -16,15 +16,15 @@ import org.scalacoin.script.stack.OP_DUP
 import org.scalacoin.util.{BitcoinSLogger, TransactionTestUtil, TestUtil}
 import org.scalatest.{MustMatchers, FlatSpec}
 import org.slf4j.LoggerFactory
-
+import CoreTestCaseProtocol._
 import spray.json._
 /**
  * Created by chris on 1/6/16.
  */
-class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterpreter {
+class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterpreter with BitcoinSLogger {
 
   "ScriptInterpreter" must "evaluate all valid scripts from the bitcoin core script_valid.json" in {
-    import CoreTestCaseProtocol._
+
 
     val source = scala.io.Source.fromFile("src/test/scala/org/scalacoin/script/interpreter/script_valid.json")
 
@@ -68,7 +68,6 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterp
   }
 
   it must "evaluate all valid scripts from the bitcoin core script_invalid.json" in {
-    import CoreTestCaseProtocol._
 
     /**
      * These are test cases that were in script_valid.json that I have removed since i'm not sure how relevant
