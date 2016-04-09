@@ -154,8 +154,16 @@ trait StackInterpreter extends BitcoinSLogger {
     require(program.stack.size > 0,"Stack must have at least two items on it for OP_PICK")
 
     val n = BitcoinSUtil.hexToLong(program.stack.head.hex).toInt
-    val newStackTop = program.stack.tail(n)
-    ScriptProgramFactory.factory(program,newStackTop :: program.stack.tail, program.script.tail)
+    //check if n is within the bound of the script
+    (n >= 0 && n < program.stack.tail.size) match {
+      case true =>
+        val newStackTop = program.stack.tail(n)
+        ScriptProgramFactory.factory(program,newStackTop :: program.stack.tail, program.script.tail)
+      case false =>
+        logger.error("The index for OP_PICK would have caused an index out of bounds exception")
+        ScriptProgramFactory.factory(program,false)
+    }
+
   }
 
   /**
@@ -167,10 +175,16 @@ trait StackInterpreter extends BitcoinSLogger {
     require(program.script.headOption.isDefined && program.script.head == OP_ROLL, "Top of script stack must be OP_ROLL")
     require(program.stack.size > 0,"Stack must have at least one items on it for OP_ROLL")
     val n = BitcoinSUtil.hexToLong(program.stack.head.hex).toInt
-    val newStackTop = program.stack.tail(n)
-    //removes the old instance of the stack top, appends the new index to the head
-    val newStack = newStackTop :: program.stack.tail.diff(List(newStackTop))
-    ScriptProgramFactory.factory(program,newStack,program.script.tail)
+    (n >= 0 && n < program.stack.tail.size) match {
+      case true =>
+        val newStackTop = program.stack.tail(n)
+        //removes the old instance of the stack top, appends the new index to the head
+        val newStack = newStackTop :: program.stack.tail.diff(List(newStackTop))
+        ScriptProgramFactory.factory(program,newStack,program.script.tail)
+      case false =>
+        logger.error("The index for OP_ROLL would have caused an index out of bounds exception")
+        ScriptProgramFactory.factory(program,false)
+    }
   }
 
   /**
@@ -182,11 +196,15 @@ trait StackInterpreter extends BitcoinSLogger {
   def opRot(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.isDefined && program.script.head == OP_ROT, "Top of script stack must be OP_ROT")
 
-    val newStack = program.stack match {
-      case h :: h1 :: h2 :: t => h2 :: h :: h1 :: t
-      case _ => throw new IllegalArgumentException("Stack must have at least 3 items on it for OP_ROT")
+    program.stack match {
+      case h :: h1 :: h2 :: t =>
+        val newStack = h2 :: h :: h1 :: t
+        ScriptProgramFactory.factory(program, newStack,program.script.tail)
+      case _ =>
+        logger.error("Stack must have at least 3 items on it for OP_ROT")
+        ScriptProgramFactory.factory(program,false)
     }
-    ScriptProgramFactory.factory(program, newStack,program.script.tail)
+
   }
 
   /**
@@ -223,9 +241,15 @@ trait StackInterpreter extends BitcoinSLogger {
    */
   def opSwap(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.isDefined && program.script.head == OP_SWAP, "Top of script stack must be OP_SWAP")
-    require(program.stack.size > 1,"Stack must have at least 2 items on it for OP_SWAP")
-    val newStack = program.stack.tail.head :: program.stack.head :: program.stack.tail.tail
-    ScriptProgramFactory.factory(program, newStack, program.script.tail)
+    program.stack.size > 1 match {
+      case true =>
+        val newStack = program.stack.tail.head :: program.stack.head :: program.stack.tail.tail
+        ScriptProgramFactory.factory(program, newStack, program.script.tail)
+      case false =>
+        logger.error("Stack must have at least 2 items on it for OP_SWAP")
+        ScriptProgramFactory.factory(program,false)
+    }
+
   }
 
 
@@ -238,11 +262,15 @@ trait StackInterpreter extends BitcoinSLogger {
   def opTuck(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.isDefined && program.script.head == OP_TUCK, "Top of script stack must be OP_TUCK")
 
-    val newStack = program.stack match {
-      case h :: h1 :: t => h  :: h1 :: h:: t
-      case _ => throw new IllegalArgumentException("Stack must have at least 2 items on it for OP_TUCK")
+    program.stack match {
+      case h :: h1 :: t =>
+        val newStack = h  :: h1 :: h:: t
+        ScriptProgramFactory.factory(program, newStack, program.script.tail)
+      case _ =>
+        logger.error("Stack must have at least 2 items on it for OP_TUCK")
+        ScriptProgramFactory.factory(program,false)
     }
-    ScriptProgramFactory.factory(program, newStack, program.script.tail)
+
   }
 
 
@@ -254,11 +282,15 @@ trait StackInterpreter extends BitcoinSLogger {
   def op2Dup(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.isDefined && program.script.head == OP_2DUP, "Top of script stack must be OP_2DUP")
 
-    val newStack = program.stack match {
-      case h :: h1 :: t => h :: h1 :: h :: h1 :: t
-      case _ => throw new IllegalArgumentException("Stack must have at least 2 items on it for OP_2DUP")
+    program.stack match {
+      case h :: h1 :: t =>
+        val newStack = h :: h1 :: h :: h1 :: t
+        ScriptProgramFactory.factory(program, newStack, program.script.tail)
+      case _ =>
+        logger.error("Stack must have at least 2 items on it for OP_2DUP")
+        ScriptProgramFactory.factory(program,false)
     }
-    ScriptProgramFactory.factory(program, newStack, program.script.tail)
+
   }
 
   /**
@@ -268,11 +300,15 @@ trait StackInterpreter extends BitcoinSLogger {
    */
   def op3Dup(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.isDefined && program.script.head == OP_3DUP, "Top of script stack must be OP_3DUP")
-    val newStack = program.stack match {
-      case h :: h1 :: h2 :: t => h :: h1 :: h2 :: h :: h1 :: h2 :: t
-      case _ => throw new IllegalArgumentException("Stack must have at least 3 items on it for OP_3DUP")
+    program.stack match {
+      case h :: h1 :: h2 :: t =>
+        val newStack = h :: h1 :: h2 :: h :: h1 :: h2 :: t
+        ScriptProgramFactory.factory(program,newStack,program.script.tail)
+      case _ =>
+        logger.error("Stack must have at least 3 items on it for OP_3DUP")
+        ScriptProgramFactory.factory(program,false)
     }
-    ScriptProgramFactory.factory(program,newStack,program.script.tail)
+
   }
 
 
@@ -285,11 +321,15 @@ trait StackInterpreter extends BitcoinSLogger {
   def op2Over(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.isDefined && program.script.head == OP_2OVER, "Top of script stack must be OP_2OVER")
 
-    val newStack = program.stack match {
-      case h :: h1 :: h2 :: h3 :: t => h2 :: h3 :: h :: h1 :: h2 :: h3 :: t
-      case _ => throw new IllegalArgumentException("Stack must have at least 4 items on it for OP_2OVER")
+    program.stack match {
+      case h :: h1 :: h2 :: h3 :: t =>
+        val newStack = h2 :: h3 :: h :: h1 :: h2 :: h3 :: t
+        ScriptProgramFactory.factory(program, newStack,program.script.tail)
+      case _ =>
+        logger.error("Stack must have at least 4 items on it for OP_2OVER")
+        ScriptProgramFactory.factory(program,false)
     }
-    ScriptProgramFactory.factory(program, newStack,program.script.tail)
+
   }
 
   /**
@@ -300,11 +340,15 @@ trait StackInterpreter extends BitcoinSLogger {
   def op2Swap(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.isDefined && program.script.head == OP_2SWAP, "Top of script stack must be OP_2SWAP")
 
-    val newStack = program.stack match {
-      case h :: h1 :: h2 :: h3 :: t  => h2 :: h3 :: h :: h1 :: t
-      case _ => throw new IllegalArgumentException("Stack must have at least 4 items on it for OP_2SWAP")
+    program.stack match {
+      case h :: h1 :: h2 :: h3 :: t  =>
+        val newStack = h2 :: h3 :: h :: h1 :: t
+        ScriptProgramFactory.factory(program,newStack,program.script.tail)
+      case _ =>
+        logger.error("Stack must have at least 4 items on it for OP_2SWAP")
+        ScriptProgramFactory.factory(program,false)
     }
-    ScriptProgramFactory.factory(program,newStack,program.script.tail)
+
   }
 
 }
