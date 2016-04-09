@@ -31,14 +31,12 @@ class StackInterpreterTest extends FlatSpec with MustMatchers with StackInterpre
     }
   }
 
-  it must "throw an exception when calling opDup without an element on top of the stack" in {
+  it must "mark the script invalid when calling opDup without an element on top of the stack" in {
+    val stack = List()
+    val script = List(OP_DUP)
+    val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
+    opDup(program).isValid must be (false)
 
-    intercept[IllegalArgumentException] {
-      val stack = List()
-      val script = List(OP_DUP)
-      val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
-      opDup(program)
-    }
   }
 
   it must "evaluate the OP_DEPTH operator correctly" in {
@@ -109,15 +107,14 @@ class StackInterpreterTest extends FlatSpec with MustMatchers with StackInterpre
     newProgram.script.isEmpty must be (true)
   }
 
-  it must "throw an exception if there is less than 2 elements on the stack for OP_NIP" in {
+  it must "mark the script as invalid if there is less than 2 elements on the stack for OP_NIP" in {
     val stack = List(OP_0)
     val script = List(OP_NIP)
 
     val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
+    val newProgram = opNip(program)
+    newProgram.isValid must be (false)
 
-    intercept[IllegalArgumentException] {
-      val newProgram = opNip(program)
-    }
   }
 
   it must "throw an exception if there is no elements on the stack for OP_NIP" in {
@@ -125,10 +122,8 @@ class StackInterpreterTest extends FlatSpec with MustMatchers with StackInterpre
     val script = List(OP_NIP)
 
     val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
-
-    intercept[IllegalArgumentException] {
-      val newProgram = opNip(program)
-    }
+    val newProgram = opNip(program)
+    newProgram.isValid must be (false)
   }
 
   it must "evaluate an OP_OVER correctly" in {
@@ -140,26 +135,24 @@ class StackInterpreterTest extends FlatSpec with MustMatchers with StackInterpre
     newProgram.script.isEmpty must be (true)
   }
 
-  it must "throw an exception if there is less than 2 elements on the stack for OP_OVER" in {
+  it must "mark the script as invalid if there is less than 2 elements on the stack for OP_OVER" in {
     val stack = List(OP_0)
     val script = List(OP_OVER)
 
     val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
+    val newProgram = opOver(program)
+    newProgram.isValid must be (false)
 
-    intercept[IllegalArgumentException] {
-      val newProgram = opOver(program)
-    }
   }
 
-  it must "throw an exception if there is no elements on the stack for OP_OVER" in {
+  it must "mark the script as invalid if there is no elements on the stack for OP_OVER" in {
     val stack = List()
     val script = List(OP_OVER)
 
     val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
+    val newProgram = opOver(program)
+    newProgram.isValid must be (false)
 
-    intercept[IllegalArgumentException] {
-      val newProgram = opOver(program)
-    }
   }
 
   it must "evaluate an OP_PICK correctly" in {

@@ -2,14 +2,14 @@ package org.scalacoin.script.stack
 
 import org.scalacoin.script.{ScriptProgramFactory, ScriptProgram}
 import org.scalacoin.script.constant._
-import org.scalacoin.util.{BitcoinSUtil}
+import org.scalacoin.util.{BitcoinSLogger, BitcoinSUtil}
 
 /**
  * Created by chris on 1/6/16.
  * Stack operations implemented in the script programming language
  * https://en.bitcoin.it/wiki/Script#Stack
  */
-trait StackInterpreter {
+trait StackInterpreter extends BitcoinSLogger {
 
   /**
    * Duplicates the element on top of the stack
@@ -19,10 +19,11 @@ trait StackInterpreter {
    */
   def opDup(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.isDefined && program.script.head == OP_DUP, "Top of the script stack must be OP_DUP")
-    require(program.stack.headOption.isDefined, "Cannot duplicate the top element on an empty stack")
     program.stack match {
       case h :: t => ScriptProgramFactory.factory(program, h :: program.stack, program.script.tail)
-      case Nil => throw new RuntimeException("Received an empty stack! Cannot duplicate an element on an empty stack")
+      case Nil =>
+        logger.error("Cannot duplicate the top element on an empty stack")
+        ScriptProgramFactory.factory(program,false)
     }
   }
 
@@ -33,11 +34,16 @@ trait StackInterpreter {
    */
   def opIfDup(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.isDefined && program.script.head == OP_IFDUP, "Top of the script stack must be OP_DUP")
-    require(program.stack.headOption.isDefined, "Cannot duplicate the top element on an empty stack")
-    if (program.stack.head == OP_0) {
-      ScriptProgramFactory.factory(program,program.stack,program.script.tail)
-    } else ScriptProgramFactory.factory(program, program.stack.head :: program.stack,
-      program.script.tail)
+    program.stack.headOption.isDefined match {
+      case true if (program.stack.head == OP_0) =>
+        ScriptProgramFactory.factory(program,program.stack,program.script.tail)
+      case true => ScriptProgramFactory.factory(program, program.stack.head :: program.stack,
+        program.script.tail)
+      case false =>
+        logger.error("Cannot duplicate the top element on an empty stack")
+        ScriptProgramFactory.factory(program,false)
+    }
+
   }
 
   /**
@@ -73,9 +79,16 @@ trait StackInterpreter {
    */
   def opFromAltStack(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.isDefined && program.script.head == OP_FROMALTSTACK, "Top of script stack must be OP_FROMALTSTACK")
-    require(program.altStack.size > 0,"Alt Stack must have at least one item on it for OP_FROMALTSTACK")
-    ScriptProgramFactory.factory(program, program.altStack.head :: program.stack,
-      program.script.tail, program.altStack.tail, ScriptProgramFactory.AltStack)
+
+
+    program.altStack.size > 0 match {
+      case true => ScriptProgramFactory.factory(program, program.altStack.head :: program.stack,
+        program.script.tail, program.altStack.tail, ScriptProgramFactory.AltStack)
+      case false =>
+        logger.error("Alt Stack must have at least one item on it for OP_FROMALTSTACK")
+        ScriptProgramFactory.factory(program,false)
+    }
+
   }
 
   /**
@@ -85,8 +98,13 @@ trait StackInterpreter {
    */
   def opDrop(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.isDefined && program.script.head == OP_DROP, "Top of script stack must be OP_DROP")
-    require(program.stack.size > 0,"Stack must have at least one item on it for OP_DROP")
-    ScriptProgramFactory.factory(program, program.stack.tail,program.script.tail)
+    program.stack.size > 0 match {
+      case true => ScriptProgramFactory.factory(program, program.stack.tail,program.script.tail)
+      case false =>
+        logger.error("Stack must have at least one item on it for OP_DROP")
+        ScriptProgramFactory.factory(program,false)
+    }
+
   }
 
 
@@ -99,8 +117,12 @@ trait StackInterpreter {
     require(program.script.headOption.isDefined && program.script.head == OP_NIP, "Top of script stack must be OP_NIP")
     program.stack match {
       case h :: _ :: t => ScriptProgramFactory.factory(program, h :: t, program.script.tail)
-      case h :: t => throw new IllegalArgumentException("Stack must have at least two items on it for OP_NIP")
-      case Nil => throw new IllegalArgumentException("Stack must have at least two items on it for OP_NIP")
+      case h :: t  =>
+        logger.error("Stack must have at least two items on it for OP_NIP")
+        ScriptProgramFactory.factory(program,false)
+      case Nil =>
+        logger.error("Stack must have at least two items on it for OP_NIP")
+        ScriptProgramFactory.factory(program,false)
     }
   }
 
@@ -114,8 +136,11 @@ trait StackInterpreter {
     require(program.script.headOption.isDefined && program.script.head == OP_OVER, "Top of script stack must be OP_OVER")
     program.stack match {
       case _ :: h1 :: _ => ScriptProgramFactory.factory(program, h1 :: program.stack, program.script.tail)
-      case h :: t => throw new IllegalArgumentException("Stack must have at least two items on it for OP_OVER")
-      case Nil => throw new IllegalArgumentException("Stack must have at least two items on it for OP_OVER")
+      case h :: t => logger.error("Stack must have at least two items on it for OP_OVER")
+        ScriptProgramFactory.factory(program,false)
+      case Nil =>
+        logger.error("Stack must have at least two items on it for OP_OVER")
+        ScriptProgramFactory.factory(program,false)
     }
   }
 
