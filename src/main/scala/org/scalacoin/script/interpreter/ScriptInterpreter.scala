@@ -4,10 +4,10 @@ import org.scalacoin.protocol.script._
 import org.scalacoin.protocol.transaction.Transaction
 import org.scalacoin.script.flag.{ScriptVerifyP2SH, ScriptVerifyCleanStack, ScriptVerifyCheckLocktimeVerify}
 import org.scalacoin.script.locktime.{OP_CHECKLOCKTIMEVERIFY, LockTimeInterpreter}
-import org.scalacoin.script.splice.{SpliceInterpreter, OP_SIZE}
+import org.scalacoin.script.splice._
 import org.scalacoin.script.{ScriptProgramFactory, ScriptProgram}
 import org.scalacoin.script.arithmetic._
-import org.scalacoin.script.bitwise.{OP_EQUAL, BitwiseInterpreter, OP_EQUALVERIFY}
+import org.scalacoin.script.bitwise._
 import org.scalacoin.script.constant._
 import org.scalacoin.script.control._
 import org.scalacoin.script.crypto._
@@ -50,10 +50,21 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
         //cease script execution
         case _ if !program.isValid =>
           logger.error("Script program was marked as invalid: " + program)
-          (false,program)
-        case _ if (program.script.contains(OP_VERIF) || program.script.contains(OP_VERNOTIF)) =>
-          logger.error("Transaction is invalid even when a OP_VERIF or OP_VERNOTIF occurs in an unexecuted OP_IF branch")
-          (false,program)
+          (false,ScriptProgramFactory.factory(program,false))
+        case _ if !program.script.intersect(Seq(OP_VERIF,OP_VERNOTIF)).isEmpty =>
+          logger.error("Script is invalid even when a OP_VERIF or OP_VERNOTIF occurs in an unexecuted OP_IF branch")
+          (false,ScriptProgramFactory.factory(program,false))
+        //disabled splice operation
+        case _ if !program.script.intersect(Seq(OP_CAT,OP_SUBSTR,OP_LEFT,OP_RIGHT)).isEmpty =>
+          logger.error("Script is invalid because it contains a disabled splice operation")
+          (false,ScriptProgramFactory.factory(program,false))
+
+        case _ if !program.script.intersect(Seq(OP_INVERT, OP_AND, OP_OR, OP_XOR)).isEmpty =>
+          logger.error("Script is invalid because it contains a disabled bitwise operation")
+          (false,ScriptProgramFactory.factory(program,false))
+        case _ if !program.script.intersect(Seq(OP_MUL, OP_2MUL, OP_DIV, OP_2DIV, OP_MOD, OP_LSHIFT, OP_RSHIFT)).isEmpty =>
+          logger.error("Script is invalid because it contains a disabled arithmetic operation")
+          (false,ScriptProgramFactory.factory(program,false))
         //stack operations
         case OP_DUP :: t => loop(opDup(program))
         case OP_DEPTH :: t => loop(opDepth(program))
@@ -129,24 +140,12 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
         //crypto operations
         case OP_HASH160 :: t => loop(opHash160(program))
         case OP_CHECKSIG :: t => loop(opCheckSig(program))
-/*          val newProgram = opCheckSig(program)
-          if (!newProgram.isValid) {
-            logger.warn("OP_CHECKSIG marked the transaction as invalid")
-            (newProgram.isValid,newProgram)
-          }
-          else loop(newProgram)*/
         case OP_SHA1 :: t => loop(opSha1(program))
         case OP_RIPEMD160 :: t => loop(opRipeMd160(program))
         case OP_SHA256 :: t => loop(opSha256(program))
         case OP_HASH256 :: t => loop(opHash256(program))
         case OP_CODESEPARATOR :: t => loop(opCodeSeparator(program))
         case OP_CHECKMULTISIG :: t => loop(opCheckMultiSig(program))
-/*          val newProgram = opCheckMultiSig(program)
-          if (!newProgram.isValid) {
-            logger.warn("OP_CHECKMULTISIG marked the transaction as invalid")
-            (newProgram.isValid,newProgram)
-          }
-          else loop(newProgram)*/
         case OP_CHECKMULTISIGVERIFY :: t => loop(opCheckMultiSigVerify(program))
         //reserved operations
         case (nop : NOP) :: t => loop(ScriptProgramFactory.factory(program,program.stack,t))
@@ -164,7 +163,6 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
           (false,program)
         //splice operations
         case OP_SIZE :: t => loop(opSize(program))
-
         //locktime operations
         case OP_CHECKLOCKTIMEVERIFY :: t =>
           //check if CLTV is enforced yet

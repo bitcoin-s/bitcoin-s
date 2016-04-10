@@ -7,7 +7,7 @@ import org.scalacoin.util.{BitcoinSUtil}
  */
 
 
-trait ScriptToken {
+sealed trait ScriptToken {
   def hex : String
   def bytes = BitcoinSUtil.decodeHex(hex)
   def bytesSize = bytes.size
