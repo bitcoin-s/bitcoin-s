@@ -18,16 +18,24 @@ trait SpliceInterpreter extends BitcoinSLogger {
    */
   def opSize(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.isDefined && program.script.head == OP_SIZE, "Script top must be OP_SIZE")
-    require(program.stack.size > 0, "Must have at least 1 element on the stack for OP_SIZE")
-    if (program.stack.head == OP_0) {
-      ScriptProgramFactory.factory(program, OP_0 :: program.stack, program.script.tail)
-    } else {
-      val scriptNumber = program.stack.head match {
-        case ScriptNumberFactory.zero => ScriptNumberFactory.zero
-        case x : ScriptToken => ScriptNumberFactory.fromNumber(x.bytes.size)
-      }
-      ScriptProgramFactory.factory(program, scriptNumber :: program.stack, program.script.tail)
+
+    program.stack.size > 0 match {
+      case true =>
+        if (program.stack.head == OP_0) {
+          ScriptProgramFactory.factory(program, OP_0 :: program.stack, program.script.tail)
+        } else {
+          val scriptNumber = program.stack.head match {
+            case ScriptNumberFactory.zero => ScriptNumberFactory.zero
+            case x : ScriptToken => ScriptNumberFactory.fromNumber(x.bytes.size)
+          }
+          ScriptProgramFactory.factory(program, scriptNumber :: program.stack, program.script.tail)
+        }
+      case false =>
+        logger.error("Must have at least 1 element on the stack for OP_SIZE")
+        ScriptProgramFactory.factory(program,false)
     }
 
+
   }
+
 }
