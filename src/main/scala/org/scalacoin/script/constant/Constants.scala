@@ -25,6 +25,8 @@ sealed trait ScriptNumber extends ScriptConstant {
   def num : Long
 
   def + (that : ScriptNumber) : ScriptNumber = ScriptNumberFactory.fromNumber(num + that.num)
+
+  def - = ScriptNumberFactory.fromNumber(-num)
   def - (that : ScriptNumber) : ScriptNumber = ScriptNumberFactory.fromNumber(num - that.num)
   def * (that : ScriptNumber) : ScriptNumber = ScriptNumberFactory.fromNumber(num * that.num)
 
@@ -32,6 +34,8 @@ sealed trait ScriptNumber extends ScriptConstant {
   def <= (that : ScriptNumber) : Boolean = num <= that.num
   def > (that : ScriptNumber) : Boolean = num > that.num
   def >= (that : ScriptNumber) : Boolean = num >= that.num
+
+  def numEqual(that : ScriptNumber) : Boolean = num == that.num
 }
 
 /**
@@ -42,19 +46,23 @@ sealed trait ScriptNumber extends ScriptConstant {
  */
 case class ScriptNumberImpl(num : Long, override val hex : String) extends ScriptNumber
 
+
 object ScriptNumberImpl {
   def apply(num : Long) : ScriptNumber = ScriptNumberImpl(num, BitcoinSUtil.longToHex(num))
   def apply(hex : String) : ScriptNumber = ScriptNumberImpl(BitcoinSUtil.hexToLong(hex), hex)
   def apply(bytes : Seq[Byte]) : ScriptNumber = ScriptNumberImpl(BitcoinSUtil.encodeHex(bytes))
 }
-sealed trait ScriptBoolean extends ScriptConstant
+sealed trait ScriptBoolean extends ScriptNumber
 
+//TODO: Need to remove ScriptTrue & ScriptFalse - make OP_TRUE/FALSE inherit from ScriptBoolean
 case object ScriptTrue extends ScriptBoolean {
-  override def hex = "01"
+  override def hex = OP_TRUE.hex
+  override def num = OP_TRUE.num
 }
 
 case object ScriptFalse extends ScriptBoolean {
-  override def hex = "00"
+  override def hex = OP_FALSE.hex
+  override def num = OP_FALSE.num
 }
 
 /**

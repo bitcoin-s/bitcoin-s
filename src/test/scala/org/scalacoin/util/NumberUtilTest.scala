@@ -228,5 +228,4 @@ class NumberUtilTest extends FlatSpec with MustMatchers with NumberUtil {
     parseCompactSizeUInt(ScriptSignatureFactory.empty) must be (CompactSizeUIntImpl(0,1))
   }
 
-
 }

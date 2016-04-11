@@ -58,10 +58,11 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
         case _ if !program.script.intersect(Seq(OP_CAT,OP_SUBSTR,OP_LEFT,OP_RIGHT)).isEmpty =>
           logger.error("Script is invalid because it contains a disabled splice operation")
           (false,ScriptProgramFactory.factory(program,false))
-
+        //disabled bitwise operations
         case _ if !program.script.intersect(Seq(OP_INVERT, OP_AND, OP_OR, OP_XOR)).isEmpty =>
           logger.error("Script is invalid because it contains a disabled bitwise operation")
           (false,ScriptProgramFactory.factory(program,false))
+        //disabled arithmetic operations
         case _ if !program.script.intersect(Seq(OP_MUL, OP_2MUL, OP_DIV, OP_2DIV, OP_MOD, OP_LSHIFT, OP_RSHIFT)).isEmpty =>
           logger.error("Script is invalid because it contains a disabled arithmetic operation")
           (false,ScriptProgramFactory.factory(program,false))

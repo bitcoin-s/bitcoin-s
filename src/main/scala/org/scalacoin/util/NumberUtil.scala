@@ -49,12 +49,12 @@ trait NumberUtil extends BitcoinSLogger {
    */
   def longToHex(long : Long) : String = {
     if (long > -1) {
-      val bytes = toByteList(long)
+      val bytes = toByteSeq(long)
       BitcoinSUtil.flipEndianess(BitcoinSUtil.encodeHex(bytes))
     } else {
-      val bytes = toByteList(long.abs)
+      val bytes = toByteSeq(long.abs)
       //add sign bit
-      val negativeNumberBytes : List[Byte] = changeSignBitToNegative(bytes)
+      val negativeNumberBytes : List[Byte] = changeSignBitToNegative(bytes.toList)
       val hex = BitcoinSUtil.encodeHex(negativeNumberBytes.reverse)
       hex
     }
@@ -109,7 +109,7 @@ trait NumberUtil extends BitcoinSLogger {
   }
 
 
-  def toByteList(long : Long) = BigInt(long).toByteArray.toList
+  def toByteSeq(long : Long) : Seq[Byte] = BigInt(long).toByteArray
 
 
   /**

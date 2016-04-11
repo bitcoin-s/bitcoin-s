@@ -32,7 +32,7 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterp
 /*    val lines =
         """
           |
-          |[["0 1", "TUCK DEPTH 3 EQUALVERIFY SWAP 2DROP", "P2SH,STRICTENC"]]
+          |[["1", "0x02 0x0100 EQUAL NOT", "P2SH,STRICTENC", "Not the same byte array..."]]
    """.stripMargin*/
     val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n" finally source.close()
     val json = lines.parseJson
@@ -79,7 +79,6 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterp
       |
       |[["1 IF 0 ENDIF", "1 ENDIF", "P2SH,STRICTENC"]]
     """.stripMargin*/
-
 
     val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n" finally source.close()
     val json = lines.parseJson
