@@ -20,6 +20,15 @@ class BitwiseInterpreterTest extends FlatSpec with MustMatchers with BitwiseInte
     newProgram.stack.head must be (ScriptTrue)
   }
 
+
+  it must "evaluate OP_1 and OP_TRUE to equal" in {
+    val stack = List(OP_1, OP_TRUE)
+    val script = List(OP_EQUAL)
+    val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack, script)
+    val newProgram = opEqual(program)
+    newProgram.stack.head must be (ScriptTrue)
+  }
+
   it must "throw an exception for OP_EQUAL when we don't have enough items on the stack" in {
     intercept[IllegalArgumentException] {
       opEqual(ScriptProgramFactory.factory(TestUtil.testProgram, List(),List()))
@@ -52,27 +61,19 @@ class BitwiseInterpreterTest extends FlatSpec with MustMatchers with BitwiseInte
 
 
   it must "evaluate a ScriptNumber & ScriptConstant to true if they are the same" in {
-    val stack = List(ScriptNumberImpl(2), ScriptConstantImpl("02"))
+    val stack = List(ScriptNumberFactory.fromNumber(2), ScriptConstantImpl("02"))
     val script = List(OP_EQUAL)
     val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
     opEqual(program).stack.head must be (ScriptTrue)
 
-    val stack1 = List( ScriptConstantImpl("02"),ScriptNumberImpl(2))
+    val stack1 = List( ScriptConstantImpl("02"),ScriptNumberFactory.fromNumber(2))
     val script1 = List(OP_EQUAL)
     val program1 = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
     opEqual(program1).stack.head must be (ScriptTrue)
   }
 
   it must "evaluate an OP_0 and ScriptNumberImpl(0) to equal" in {
-    val stack = List(OP_0, ScriptNumberImpl(0))
-    val script = List(OP_EQUAL)
-    val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
-    opEqual(program).stack.head must be (ScriptTrue)
-  }
-
-
-  it must "evaluate an OP_1 and ScriptNumberImpl(1) to equal" in {
-    val stack = List(OP_1, ScriptNumberImpl(1))
+    val stack = List(OP_0, ScriptNumberFactory.zero)
     val script = List(OP_EQUAL)
     val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
     opEqual(program).stack.head must be (ScriptTrue)

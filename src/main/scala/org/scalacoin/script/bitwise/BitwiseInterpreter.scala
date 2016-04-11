@@ -17,27 +17,36 @@ trait BitwiseInterpreter extends ControlOperationsInterpreter  {
    * @return
    */
   def opEqual(program : ScriptProgram) : ScriptProgram = {
-    require(program.stack.size > 1, "Stack size must be 2 or more to compare the top two values for OP_EQUAL")
     require(program.script.headOption.isDefined && program.script.head == OP_EQUAL, "Script operation must be OP_EQUAL")
 
-    logger.debug("Original stack: " + program.stack)
-    val h = program.stack.head
-    val h1 = program.stack.tail.head
-
-    val result = (h,h1) match {
-      case (OP_0, x) => OP_0.hex == x.hex
-      case (x, OP_0) => x.hex == OP_0.hex
-      case (OP_1,x) => OP_1.scriptNumber == x
-      case (x,OP_1) => x == OP_1.scriptNumber
-/*      case (x : ScriptConstant, y : ScriptConstant) => x == y
-      case (ScriptConstantImpl(x), y : ScriptNumber) => BitcoinSUtil.hexToLong(x) == y.num
-      case (x : ScriptNumber, y : ScriptConstant) => x.num == BitcoinSUtil.hexToLong(y.hex)*/
-      case _ => h.bytes == h1.bytes
+    if (program.stack.size < 2) {
+      ScriptProgramFactory.factory(program,false)
+    } else {
+      val h = program.stack.head
+      val h1 = program.stack.tail.head
+      val result = (h,h1) match {
+        case (OP_0,ScriptNumberFactory.zero) | (ScriptNumberFactory.zero, OP_0) =>
+          OP_0.scriptNumber == ScriptNumberFactory.zero
+        case (OP_FALSE,ScriptNumberFactory.zero) | (ScriptNumberFactory.zero, OP_FALSE) =>
+          OP_FALSE.scriptNumber == ScriptNumberFactory.zero
+        case (OP_TRUE,ScriptNumberFactory.one) | (ScriptNumberFactory.one, OP_TRUE) =>
+          OP_TRUE.scriptNumber == ScriptNumberFactory.one
+        case (OP_1, ScriptNumberFactory.one) | (ScriptNumberFactory.one, OP_1) =>
+          OP_1.scriptNumber == ScriptNumberFactory.one
+        case (ScriptFalse, ScriptNumberFactory.zero) | (ScriptNumberFactory.zero, ScriptFalse) =>
+          ScriptFalse.num == ScriptNumberFactory.zero.num
+        case (ScriptFalse, OP_0) | (OP_0, ScriptFalse) =>
+          ScriptFalse.num == OP_0.num
+        case (ScriptTrue, ScriptNumberFactory.one) | (ScriptNumberFactory.one, ScriptTrue) =>
+          ScriptTrue.num == ScriptNumberFactory.one.num
+        case (ScriptTrue, OP_1) | (OP_1, ScriptTrue) =>
+          ScriptTrue.num == OP_1.num
+        case _ => h.bytes == h1.bytes
+      }
+      val scriptBoolean : ScriptBoolean = if (result) ScriptTrue else ScriptFalse
+      ScriptProgramFactory.factory(program,scriptBoolean :: program.stack.tail.tail, program.script.tail)
     }
 
-    val scriptBoolean : ScriptBoolean = if (result) ScriptTrue else ScriptFalse
-
-    ScriptProgramFactory.factory(program,scriptBoolean :: program.stack.tail.tail, program.script.tail)
   }
 
 
