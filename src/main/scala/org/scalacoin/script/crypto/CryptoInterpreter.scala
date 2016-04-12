@@ -22,11 +22,8 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
    * @return
    */
   def opHash160(program : ScriptProgram) : ScriptProgram = {
-    require(program.stack.headOption.isDefined, "The top of the stack must be defined for OP_HASH160")
     require(program.script.headOption.isDefined && program.script.head == OP_HASH160, "Script operation must be OP_HASH160")
-    val stackTop = program.stack.head
-    val hash = ScriptConstantFactory.fromBytes(CryptoUtil.sha256Hash160(stackTop.bytes))
-    ScriptProgramFactory.factory(program, hash :: program.stack.tail, program.script.tail)
+    executeHashFunction(program, CryptoUtil.sha256Hash160(_ : List[Byte]))
   }
 
 
@@ -36,12 +33,8 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
    * @return
    */
   def opRipeMd160(program : ScriptProgram) : ScriptProgram = {
-    require(program.stack.headOption.isDefined, "The top of the stack must be defined for OP_RIPEMD160")
     require(program.script.headOption.isDefined && program.script.head == OP_RIPEMD160, "Script operation must be OP_RIPEMD160")
-    val stackTop = program.stack.head
-    val hash = CryptoUtil.ripeMd160(stackTop.bytes)
-    val newStackTop = ScriptConstantFactory.fromBytes((hash))
-    ScriptProgramFactory.factory(program,newStackTop :: program.stack.tail, program.script.tail)
+    executeHashFunction(program, CryptoUtil.ripeMd160(_ : List[Byte]))
   }
 
   /**
@@ -50,12 +43,8 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
    * @return
    */
   def opSha256(program : ScriptProgram) : ScriptProgram = {
-    require(program.stack.headOption.isDefined, "The top of the stack must be defined for OP_SHA256")
     require(program.script.headOption.isDefined && program.script.head == OP_SHA256, "Script operation must be OP_SHA256")
-    val stackTop = program.stack.head
-    val hash = CryptoUtil.sha256(stackTop.bytes)
-    val newStackTop = ScriptConstantFactory.fromBytes(hash)
-    ScriptProgramFactory.factory(program, newStackTop :: program.stack.tail, program.script.tail)
+    executeHashFunction(program, CryptoUtil.sha256(_ : List[Byte]))
   }
 
   /**
@@ -64,14 +53,19 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
    * @return
    */
   def opHash256(program : ScriptProgram) : ScriptProgram = {
-    require(program.stack.headOption.isDefined, "The top of the stack must be defined for OP_HASH256")
     require(program.script.headOption.isDefined && program.script.head == OP_HASH256, "Script operation must be OP_HASH256")
-    val stackTop = program.stack.head
-    val hash = CryptoUtil.doubleSHA256(stackTop.bytes)
-    val newStackTop = ScriptConstantFactory.fromBytes(hash)
-    ScriptProgramFactory.factory(program, newStackTop :: program.stack.tail, program.script.tail)
+    executeHashFunction(program, CryptoUtil.doubleSHA256(_ : List[Byte]))
   }
 
+  /**
+   * The input is hashed using SHA-1.
+   * @param program
+   * @return
+   */
+  def opSha1(program : ScriptProgram) : ScriptProgram = {
+    require(program.script.headOption.isDefined && program.script.head == OP_SHA1, "Script top must be OP_SHA1")
+    executeHashFunction(program, CryptoUtil.sha1(_ : List[Byte]))
+  }
 
   /**
    * The entire transaction's outputs, inputs, and script (from the most
@@ -117,19 +111,7 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
   }
 
 
-  /**
-   * The input is hashed using SHA-1.
-   * @param program
-   * @return
-   */
-  def opSha1(program : ScriptProgram) : ScriptProgram = {
-    require(program.script.headOption.isDefined && program.script.head == OP_SHA1, "Script top must be OP_SHA1")
-    require(program.stack.headOption.isDefined, "We must have an element on the stack for OP_SHA1")
 
-    val constant = program.stack.head
-    val hash = ScriptConstantFactory.fromBytes(CryptoUtil.sha1(constant.bytes))
-    ScriptProgramFactory.factory(program, hash :: program.stack.tail, program.script.tail)
-  }
 
   /**
    * All of the signature checking words will only match signatures to the data
@@ -236,6 +218,26 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
     logger.debug("Stack after OP_CHECKMULTSIG execution: " + programFromOpCheckMultiSig.stack)
     val programFromOpVerify = opVerify(programFromOpCheckMultiSig)
     programFromOpVerify
+  }
+
+
+  /**
+   * This is a higher order function designed to execute a hash function on the stack top of the program
+   * For instance, we could pass in CryptoUtil.sha256 function as the 'hashFunction' argument, which would then
+   * apply sha256 to the stack top
+   * @param program the script program whose stack top needs to be hashed
+   * @param hashFunction the hash function which needs to be used on the stack top (sha256,ripemd160,etc..)
+   * @return
+   */
+  private def executeHashFunction(program : ScriptProgram, hashFunction : List[Byte] => List[Byte]) : ScriptProgram = {
+    if (program.stack.headOption.isDefined) {
+      val stackTop = program.stack.head
+      val hash = ScriptConstantFactory.fromBytes(hashFunction(stackTop.bytes))
+      ScriptProgramFactory.factory(program, hash :: program.stack.tail, program.script.tail)
+    } else {
+      logger.error("We must have the stack top defined to execute a hash function")
+      ScriptProgramFactory.factory(program,false)
+    }
   }
 
 }

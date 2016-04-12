@@ -24,13 +24,12 @@ class CryptoInterpreterTest extends FlatSpec with MustMatchers with CryptoInterp
     newProgram.script.size must be (0)
   }
 
-  it must "fail to evaluate OP_HASH160 when the stack is empty" in {
-    intercept[IllegalArgumentException] {
-      val stack = List()
-      val script = List(OP_HASH160)
-      val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
-      opHash160(program)
-    }
+  it must "mark the script as invalid when there are no arguments for OP_HASH160" in {
+    val stack = List()
+    val script = List(OP_HASH160)
+    val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
+    opHash160(program).isValid must be (false)
+
   }
 
   it must "fail to evaluate OP_HASH160 when the script stack is empty" in {
