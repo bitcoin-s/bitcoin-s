@@ -29,20 +29,20 @@ trait CryptoUtil {
    * @param hex
    * @return
    */
-  def doubleSHA256(hex : String) : Seq[Byte] = doubleSHA256(BitcoinSUtil.decodeHex(hex))
+  def doubleSHA256(hex : String) : List[Byte] = doubleSHA256(BitcoinSUtil.decodeHex(hex))
   /**
    * Performs sha256(sha256(hex))
    * @param bytes
    * @return
    */
-  def doubleSHA256(bytes : List[Byte]) : Seq[Byte] = doubleSHA256(bytes.toSeq)
+  def doubleSHA256(bytes : List[Byte]) : List[Byte] = doubleSHA256(bytes.toSeq)
 
   /**
    * Performs sha256(sha256(bytes))
    * @param bytes
    * @return
    */
-  def doubleSHA256(bytes : Seq[Byte]) : Seq[Byte] = {
+  def doubleSHA256(bytes : Seq[Byte]) : List[Byte] = {
     val hash : List[Byte] = Sha256Hash.hashTwice(bytes.toArray).toList
     hash
   }
