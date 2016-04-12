@@ -2,7 +2,7 @@ package org.scalacoin.script.interpreter
 
 import org.scalacoin.protocol.script._
 import org.scalacoin.protocol.transaction.Transaction
-import org.scalacoin.script.flag.{ScriptVerifyP2SH, ScriptVerifyCleanStack, ScriptVerifyCheckLocktimeVerify}
+import org.scalacoin.script.flag._
 import org.scalacoin.script.locktime.{OP_CHECKLOCKTIMEVERIFY, LockTimeInterpreter}
 import org.scalacoin.script.splice._
 import org.scalacoin.script.{ScriptProgramFactory, ScriptProgram}
@@ -149,6 +149,13 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
         case OP_CHECKMULTISIG :: t => loop(opCheckMultiSig(program))
         case OP_CHECKMULTISIGVERIFY :: t => loop(opCheckMultiSigVerify(program))
         //reserved operations
+        case OP_NOP :: t =>
+          //script discourage upgradeable flag does not apply to a OP_NOP
+          loop(ScriptProgramFactory.factory(program,program.stack,t))
+        //if we see an OP_NOP and the DISCOURAGE_UPGRADABLE_OP_NOPS flag is set we must fail our program
+        case (nop : NOP) :: t if ScriptFlagUtil.discourageUpgradableNOPs(program.flags) =>
+          logger.error("We cannot execute a NOP when the ScriptVerifyDiscourageUpgradableNOPs is set")
+          (false,ScriptProgramFactory.factory(program,false))
         case (nop : NOP) :: t => loop(ScriptProgramFactory.factory(program,program.stack,t))
         case OP_RESERVED :: t =>
           logger.error("OP_RESERVED automatically marks transaction invalid")
@@ -164,12 +171,17 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
           (false,program)
         //splice operations
         case OP_SIZE :: t => loop(opSize(program))
+
         //locktime operations
         case OP_CHECKLOCKTIMEVERIFY :: t =>
           //check if CLTV is enforced yet
-          if (program.flags.contains(ScriptVerifyCheckLocktimeVerify)) loop(opCheckLockTimeVerify(program))
-          //treat this as OP_NOP2 since CLTV is not enforced yet
-          //in this case, just remove OP_CLTV from the stack and continue
+          if (ScriptFlagUtil.checkLockTimeVerifyEnabled(program.flags)) loop(opCheckLockTimeVerify(program))
+          //if not, check to see if we should discourage NOPs
+          else if (ScriptFlagUtil.discourageUpgradableNOPs(program.flags)) {
+            logger.error("We cannot execute a NOP when the ScriptVerifyDiscourageUpgradableNOPs is set")
+            (false,ScriptProgramFactory.factory(program,false))
+          }
+          //in this case, just reat OP_CLTV just like a NOP and remove it from the stack
           else loop(ScriptProgramFactory.factory(program, program.script.tail, ScriptProgramFactory.Script))
         //no more script operations to run, return whether the program is valid and the final state of the program
         case Nil => (program.isValid, program)

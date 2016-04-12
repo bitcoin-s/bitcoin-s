@@ -195,22 +195,6 @@ trait ScriptParser extends Factory[List[ScriptToken]] {
 
 
   /**
-   * Detects if the given script token is a redeem script
-   * @param token
-   * @return
-   */
-  private def isRedeemScript(token : ScriptToken) : Boolean = {
-    logger.debug("Checking if last token is redeem script")
-    val tryRedeemScript = parseRedeemScript(token)
-    tryRedeemScript match {
-      case Success(redeemScript) =>
-        if (redeemScript.size > 0 ) redeemScript.last == OP_CHECKMULTISIG || redeemScript.last == OP_CHECKMULTISIGVERIFY
-        else false
-      case Failure(_) => false
-    }
-  }
-
-  /**
    * Slices the amount of bytes specified in the bytesToPushOntoStack parameter and then creates a script constant
    * from those bytes. Returns the script constant and the byte array without the script constant
    * @param bytesToPushOntoStack

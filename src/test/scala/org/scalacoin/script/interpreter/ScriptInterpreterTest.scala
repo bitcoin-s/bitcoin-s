@@ -63,21 +63,14 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterp
   }
 
   it must "evaluate all valid scripts from the bitcoin core script_invalid.json" in {
-
-    /**
-     * These are test cases that were in script_valid.json that I have removed since i'm not sure how relevant
-     * they are going forward to bitcoin  - for historical purposes though these should pass
-     * they all have to do with DER encoded sigs
-     * bitcoinj currently fails on these
-     * ,
-     */
     val source = scala.io.Source.fromFile("src/test/scala/org/scalacoin/script/interpreter/script_invalid.json")
 
     //use this to represent a single test case from script_valid.json
 /*    val lines =
     """
       |
-      |[["1 IF 0 ENDIF", "1 ENDIF", "P2SH,STRICTENC"]]
+      |[["1 0x01 0xb9", "HASH160 0x14 0x15727299b05b45fdaf9ac9ecf7565cfe27c3e567 EQUAL",
+      | "P2SH,DISCOURAGE_UPGRADABLE_NOPS", "Discouraged NOP10 in redeemScript"]]
     """.stripMargin*/
 
     val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n" finally source.close()

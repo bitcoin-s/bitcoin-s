@@ -6,7 +6,7 @@ import org.scalacoin.script.bitwise.OP_EQUAL
 import org.scalacoin.script.constant._
 import org.scalacoin.script.control.{OP_ENDIF, OP_IF}
 import org.scalacoin.script.crypto.{OP_CHECKMULTISIG, OP_HASH160}
-import org.scalacoin.script.reserved.OP_NOP
+import org.scalacoin.script.reserved.{OP_NOP10, OP_NOP}
 import org.scalacoin.script.stack.OP_PICK
 import org.scalacoin.util.{BitcoinSUtil, TestUtil}
 import org.scalatest.{FlatSpec, MustMatchers}
@@ -186,5 +186,4 @@ class ScriptParserTest extends FlatSpec with MustMatchers with ScriptParser with
   it must "parse 1ADD to an OP_1ADD" in {
     ScriptParser.fromString("1ADD") must be (Seq(OP_1ADD))
   }
-
 }
