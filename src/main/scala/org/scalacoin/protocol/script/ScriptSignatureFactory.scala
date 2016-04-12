@@ -78,6 +78,27 @@ trait ScriptSignatureFactory extends Factory[ScriptSignature] with BitcoinSLogge
   }
 
 
+  /**
+   * Creates a script signature from the given tokens and scriptPubKey
+   * @param tokens the script signature's tokens
+   * @param scriptPubKey the scriptPubKey which the script signature is trying to spend
+   * @return
+   */
+  def fromScriptPubKey(tokens : Seq[ScriptToken], scriptPubKey : ScriptPubKey) : ScriptSignature = {
+    val scriptSigHex = tokens.map(_.hex).mkString
+    scriptPubKey match {
+      case s : P2SHScriptPubKey => P2SHScriptSignatureImpl(scriptSigHex,tokens)
+      case s : P2PKHScriptPubKey => P2PKHScriptSignatureImpl(scriptSigHex,tokens)
+      case s : P2PKScriptPubKey => P2PKScriptSignatureImpl(scriptSigHex,tokens)
+      case s : MultiSignatureScriptPubKey => MultiSignatureScriptSignatureImpl(scriptSigHex,tokens)
+      case s : NonStandardScriptPubKey => NonStandardScriptSignatureImpl(scriptSigHex, tokens)
+      case EmptyScriptPubKey if (tokens.size == 0) => EmptyScriptSignature
+      case EmptyScriptPubKey => NonStandardScriptSignatureImpl(scriptSigHex,tokens)
+    }
+  }
+
+
+
 
   /**
    * Detects if the given script token is a redeem script
@@ -86,8 +107,8 @@ trait ScriptSignatureFactory extends Factory[ScriptSignature] with BitcoinSLogge
    */
   private def isRedeemScript(token : ScriptToken) : Boolean = {
     logger.debug("Checking if last token is redeem script")
-    val reedemScriptTry : Try[ScriptPubKey] = parseRedeemScript(token)
-    reedemScriptTry match {
+    val redeemScriptTry : Try[ScriptPubKey] = parseRedeemScript(token)
+    redeemScriptTry match {
       case Success(redeemScript) =>
         logger.debug("Possible redeemScript: " + redeemScript)
         redeemScript match {
