@@ -46,7 +46,6 @@ trait ScriptParser extends Factory[List[ScriptToken]] {
       val scriptTokens : List[ScriptToken] = parse(str)
       scriptTokens
     }
-
   }
 
 
@@ -65,7 +64,7 @@ trait ScriptParser extends Factory[List[ScriptToken]] {
     logger.debug("Parsing string: " + str + " into a list of script tokens")
 
     @tailrec
-    def loop(operations : List[String], accum : List[ScriptToken]) : List[ScriptToken] = {
+    def loop(operations : List[String], accum : List[Byte]) : List[Byte] = {
       logger.debug("Attempting to parse: " + operations.headOption)
       logger.debug("Accum: " + accum)
       operations match {
@@ -74,29 +73,38 @@ trait ScriptParser extends Factory[List[ScriptToken]] {
         case h :: t if (h.size > 0 && h.head == ''' && h.last == ''') =>
           logger.debug("Found a string constant")
           val strippedQuotes = h.replace("'","")
-          if (strippedQuotes.size == 0) loop(t, OP_0 :: accum)
-          else loop(t, ScriptConstantImpl(BitcoinSUtil.encodeHex(strippedQuotes.getBytes)) :: accum)
+          if (strippedQuotes.size == 0) {
+            loop(t, OP_0.bytes ++ accum)
+          } else {
+            val bytes : Seq[Byte] = BitcoinSUtil.decodeHex(BitcoinSUtil.flipEndianess(strippedQuotes.getBytes.toList))
+
+            val bytesToPushOntoStack : BytesToPushOntoStack = BytesToPushOntoStackFactory.fromNumber(bytes.size).get
+            loop(t, bytes.toList ++ bytesToPushOntoStack.bytes ++  accum)
+          }
 
         //for the case that we last saw a ByteToPushOntoStack operation
         //this means that the next byte needs to be parsed as a constant
         //not a script operation
+/*
         case h :: t if (h.size == 4 && h.substring(0,2) == "0x"
           && accum.headOption.isDefined && accum.head.isInstanceOf[BytesToPushOntoStackImpl]) =>
           logger.debug("Found a script operation preceded by a BytesToPushOntoStackImpl")
           val hexString = h.substring(2,h.size).toLowerCase
           logger.debug("Hex string: " + hexString)
-          loop(t,ScriptNumberFactory.fromHex(hexString) :: accum)
+          loop(t, BitcoinSUtil.decodeHex(hexString) ++ accum)
+*/
 
         //OP_PUSHDATA operations are always followed by the amount of bytes to be pushed
         //onto the stack
-        case h :: t if (h.size > 1 && h.substring(0,2) == "0x" &&
+/*        case h :: t if (h.size > 1 && h.substring(0,2) == "0x" &&
           accum.headOption.isDefined && List(OP_PUSHDATA1, OP_PUSHDATA2,OP_PUSHDATA4).contains(accum.head)) =>
           logger.debug("Found a hexadecimal number preceded by an OP_PUSHDATA operation")
           //this is weird because the number is unsigned unlike other numbers
           //in bitcoin, but it is still encoded in little endian hence the .reverse call
+          val hex = h.slice(2,h.size).toLowerCase
           val byteToPushOntoStack = BytesToPushOntoStackImpl(
-            java.lang.Long.parseLong(BitcoinSUtil.flipEndianess(h.slice(2,h.size).toLowerCase),16).toInt)
-          loop(t, byteToPushOntoStack :: accum)
+            java.lang.Long.parseLong(BitcoinSUtil.flipEndianess(hex),16).toInt)
+          loop(t, BitcoinSUtil.decodeHex(hex) ++ accum)*/
 
         //if we see a byte constant of just 0x09
         //parse the characters as a hex op
@@ -104,31 +112,31 @@ trait ScriptParser extends Factory[List[ScriptToken]] {
           logger.debug("Found a script operation")
           val hexString = h.substring(2,h.size)
           logger.debug("Hex string: " + hexString)
-          loop(t,ScriptOperationFactory.fromHex(hexString).get :: accum)
+          loop(t, BitcoinSUtil.decodeHex(hexString) ++ accum)
 
         //if we see a byte constant in the form of "0x09adb"
-        case h  :: t if (h.size > 1 && h.substring(0,2) == "0x") =>
+        case h :: t if (h.size > 1 && h.substring(0,2) == "0x") =>
           logger.debug("Found a hexadecimal number")
-          loop(t,parseBytesFromString(h) ++ accum)
+          loop(t,BitcoinSUtil.decodeHex(h.substring(2,h.size)) ++ accum)
         //skip the empty string
         case h :: t if (h == "") => loop(t,accum)
-        case h :: t if (h == "0") => loop(t, OP_0 :: accum)
+        case h :: t if (h == "0") => loop(t, OP_0.bytes ++ accum)
 
 
         case h :: t if (ScriptOperationFactory.fromString(h).isDefined) =>
           logger.debug("Founding a script operation in string form i.e. NOP or ADD")
           val op = ScriptOperationFactory.fromString(h).get
-          val parsingHelper : ParsingHelper[String] = parseOperationString(op,accum,t)
-          loop(parsingHelper.tail,parsingHelper.accum)
+          loop(t,op.bytes ++ accum)
         case h :: t if (tryParsingLong(h)) =>
           logger.debug("Found a decimal number")
           //convert the string to int, then convert to hex
-          loop(t, ScriptNumberFactory.fromNumber(h.toLong) :: accum)
+          loop(t, BitcoinSUtil.decodeHex(BitcoinSUtil.longToHex(h.toLong)) ++ accum)
         //means that it must be a BytesToPushOntoStack followed by a script constant
         case h :: t =>
+          logger.debug("Generic h :: t")
           //find the size of the string in bytes
           val bytesToPushOntoStack = BytesToPushOntoStackImpl(h.size / 2)
-          loop(t, ScriptConstantImpl(h) :: bytesToPushOntoStack :: accum)
+          loop(t, BitcoinSUtil.decodeHex(BitcoinSUtil.flipEndianess(h)) ++ bytesToPushOntoStack.bytes ++  accum)
         case Nil => accum
       }
     }
@@ -147,7 +155,9 @@ trait ScriptParser extends Factory[List[ScriptToken]] {
       //take a look at https://github.com/bitcoin/bitcoin/blob/605c17844ea32b6d237db6d83871164dc7d59dab/src/core_read.cpp#L53-L88
       //for the offical parsing algorithm, for examples of weird formats look inside of
       //https://github.com/bitcoin/bitcoin/blob/master/src/test/data/script_valid.json
-      loop(str.split(" ").toList, List()).reverse
+      val parsedBytesFromString = loop(str.split(" ").toList, List()).reverse
+      logger.info("Parsed bytes from the given string: " + BitcoinSUtil.encodeHex(parsedBytesFromString))
+      parse(parsedBytesFromString)
     }
   }
 
