@@ -3,6 +3,8 @@ package org.scalacoin.util
 import org.scalacoin.script.bitwise.OP_EQUALVERIFY
 import org.scalacoin.script.constant._
 import org.scalacoin.script.crypto.{OP_CHECKSIG, OP_HASH160}
+import org.scalacoin.script.locktime.OP_CHECKLOCKTIMEVERIFY
+import org.scalacoin.script.reserved.{OP_NOP, OP_RESERVED}
 import org.scalacoin.script.stack.OP_DUP
 import org.scalatest.{FlatSpec, MustMatchers}
 
@@ -26,7 +28,15 @@ class BitcoinScriptUtilTest extends FlatSpec with MustMatchers {
   it must "filter out all of the push operations in a scriptSig" in {
     BitcoinScriptUtil.filterPushOps(Seq(OP_PUSHDATA1, OP_PUSHDATA2, OP_PUSHDATA4) ++
       BytesToPushOntoStackFactory.operations).isEmpty must be (true)
+  }
 
+  it must "determine if a script op count towards the bitcoin script op code limit" in {
+    BitcoinScriptUtil.countsTowardsScriptOpLimit(OP_1) must be (false)
+    BitcoinScriptUtil.countsTowardsScriptOpLimit(OP_16) must be (false)
+    BitcoinScriptUtil.countsTowardsScriptOpLimit(OP_RESERVED) must be (false)
+
+    BitcoinScriptUtil.countsTowardsScriptOpLimit(OP_NOP) must be (true)
+    BitcoinScriptUtil.countsTowardsScriptOpLimit(OP_CHECKLOCKTIMEVERIFY) must be (true)
   }
 
 }

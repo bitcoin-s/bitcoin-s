@@ -1,6 +1,7 @@
 package org.scalacoin.util
 
 import org.scalacoin.script.constant._
+import org.scalacoin.script.reserved.{OP_RESERVED, NOP, ReservedOperation}
 
 /**
  * Created by chris on 3/2/16.
@@ -36,6 +37,20 @@ trait BitcoinScriptUtil {
       || op == OP_PUSHDATA1
       || op == OP_PUSHDATA2
       || op == OP_PUSHDATA4)
+  }
+
+  /**
+   * Returns true if the given script token counts towards our max script operations in a script
+   * See https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L269-L271
+   * which is how bitcoin core handles this
+   * @param token
+   * @return
+   */
+  def countsTowardsScriptOpLimit(token : ScriptToken) : Boolean = token match {
+    case scriptNumOp : ScriptNumberOperation => false
+    case OP_RESERVED => false
+    case scriptOp : ScriptOperation => true
+    case _ : ScriptToken => false
   }
 }
 
