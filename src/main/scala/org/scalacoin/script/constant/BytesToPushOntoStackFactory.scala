@@ -16,8 +16,10 @@ trait BytesToPushOntoStackFactory extends ScriptOperationFactory[BytesToPushOnto
   override def operations : Seq[BytesToPushOntoStack] =
       (for { i <- 0 to 75 } yield BytesToPushOntoStackImpl(i)).toList
 
-  def factory(num : Int) : Option[BytesToPushOntoStack] = operations.find(_.opCode == num)
+  def factory(num : Int) : Option[BytesToPushOntoStack] = fromNumber(num)
 
+
+  def fromNumber(num : Int) : Option[BytesToPushOntoStack] = operations.find(_.opCode == num)
 }
 
 object BytesToPushOntoStackFactory extends BytesToPushOntoStackFactory

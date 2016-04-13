@@ -41,149 +41,149 @@ class ScriptParserTest extends FlatSpec with MustMatchers with ScriptParser with
     fromBytes(bytes) must be (TestUtil.p2pkhOutputScriptAsm)
   }
 
-  it must "parse a p2pkh input script from a byte array to script tokens" in {
-    val bytes = decodeHex(TestUtil.p2pkhInputScript)
-    fromBytes(bytes) must be (TestUtil.p2pkhInputScriptAsm)
-  }
+   it must "parse a p2pkh input script from a byte array to script tokens" in {
+     val bytes = decodeHex(TestUtil.p2pkhInputScript)
+     fromBytes(bytes) must be (TestUtil.p2pkhInputScriptAsm)
+   }
 
-  it must "parse a p2sh input script from a byte array into script tokens" in {
-    val bytes = decodeHex(TestUtil.rawP2shInputScript)
-    fromBytes(bytes) must be (TestUtil.p2shInputScriptAsm)
-  }
+   it must "parse a p2sh input script from a byte array into script tokens" in {
+     val bytes = decodeHex(TestUtil.rawP2shInputScript)
+     fromBytes(bytes) must be (TestUtil.p2shInputScriptAsm)
+   }
 
-  it must "parse a p2sh outputscript from a byte array into script tokens" in {
-    val bytes = decodeHex(TestUtil.p2shOutputScript)
-    fromBytes(bytes) must be (TestUtil.p2shOutputScriptAsm)
-  }
+   it must "parse a p2sh outputscript from a byte array into script tokens" in {
+     val bytes = decodeHex(TestUtil.p2shOutputScript)
+     fromBytes(bytes) must be (TestUtil.p2shOutputScriptAsm)
+   }
 
-  it must "parse a script constant from 'Az' EQUAL" in {
-    val str = "'Az' EQUAL"
-    fromString(str) must equal (List(ScriptConstantImpl("417a"), OP_EQUAL))
-  }
+   it must "parse a script constant from 'Az' EQUAL" in {
+     val str = "'Az' EQUAL"
+     fromString(str) must equal (List(BytesToPushOntoStackFactory.fromNumber(2).get, ScriptConstantImpl("417a"), OP_EQUAL))
+   }
 
-  it must "parse a script number that has a leading zero" in {
-    val str = "0x01 0x0100"
-    fromString(str) must equal (List(BytesToPushOntoStackFactory.factory(1).get, ScriptNumberFactory.fromHex("0100")))
-  }
-
-
-  it must "parse an OP_PICK" in {
-    val str = "PICK"
-    fromString(str) must equal (List(OP_PICK))
-  }
-
-  it must "parse an OP_NOP" in {
-    val str = "NOP"
-    fromString(str) must equal (List(OP_NOP))
-  }
-
-  it must "parse a script that has a decimal and a hexadecimal number in it " in  {
-    val str = "32767 0x02 0xff7f EQUAL"
-    fromString(str) must equal (List(ScriptNumberFactory.fromNumber(32767),
-      BytesToPushOntoStackImpl(2), ScriptNumberFactory.fromNumber(32767), OP_EQUAL))
-  }
-
-  it must "parse an OP_1" in {
-    val str = "0x51"
-    fromString(str) must equal (List(OP_1))
-  }
-
-  it must "parse an extremely long hex constant" in {
-    val str = "0x4b 0x417a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a " +
-    "'Azzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz' EQUAL"
-
-    fromString(str) must equal (List(BytesToPushOntoStackImpl(75),
-      ScriptConstantImpl("417a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a"),
-      ScriptConstantImpl("417a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a"), OP_EQUAL))
-  }
-
-  it must "parse a hexadecimal number and a string constant as the same thing" in {
-    val str = "0x02 0x417a 'Az' EQUAL"
-    fromString(str) must be (List(BytesToPushOntoStackImpl(2),ScriptNumberFactory.fromNumber(31297),ScriptConstantImpl("417a"),OP_EQUAL))
-  }
-
-  it must "parse a combination of decimal and hexadecimal constants correctly" in {
-    val str = "127 0x01 0x7F EQUAL"
-    fromString(str) must be (List(ScriptNumberFactory.fromNumber(127), BytesToPushOntoStackImpl(1), ScriptNumberFactory.fromNumber(127), OP_EQUAL))
-  }
-
-  it must "parse an OP_IF OP_ENDIF block" in {
-    val str = "1 0x01 0x80 IF 0 ENDIF"
-    fromString(str) must be (List(OP_1, BytesToPushOntoStackImpl(1), ScriptNumberFactory.negativeZero, OP_IF, OP_0, OP_ENDIF))
-  }
+   it must "parse a script number that has a leading zero" in {
+     val str = "0x01 0x0100"
+     fromString(str) must equal (List(BytesToPushOntoStackFactory.factory(1).get, ScriptNumberFactory.fromHex("0100")))
+   }
 
 
-  it must "parse an OP_PUSHDATA1 correctly" in {
-    val str = "'abcdefghijklmnopqrstuvwxyz' HASH160 0x4c 0x14 0xc286a1af0947f58d1ad787385b1c2c4a976f9e71 EQUAL"
-    val expectedScript = List(ScriptConstantImpl("6162636465666768696a6b6c6d6e6f707172737475767778797a"),OP_HASH160,
-      OP_PUSHDATA1, BytesToPushOntoStackImpl(20), ScriptConstantImpl("c286a1af0947f58d1ad787385b1c2c4a976f9e71"), OP_EQUAL)
-    fromString(str) must be (expectedScript)
-  }
+   it must "parse an OP_PICK" in {
+     val str = "PICK"
+     fromString(str) must equal (List(OP_PICK))
+   }
 
-  it must "parse a OP_PUSHDATA1 correct from a scriptSig" in {
-    //https://tbtc.blockr.io/api/v1/tx/raw/5d254a872c9197c683ea9111fb5c0e2e0f49280a89961c45b9fea76834d335fe
-    val str = "4cf1" +
-      "55210269992fb441ae56968e5b77d46a3e53b69f136444ae65a94041fc937bdb28d93321021df31471281d4478df85bfce08a10aab82601dca949a79950f8ddf7002bd915a2102174c82021492c2c6dfcbfa4187d10d38bed06afb7fdcd72c880179fddd641ea121033f96e43d72c33327b6a4631ccaa6ea07f0b106c88b9dc71c9000bb6044d5e88a210313d8748790f2a86fb524579b46ce3c68fedd58d2a738716249a9f7d5458a15c221030b632eeb079eb83648886122a04c7bf6d98ab5dfb94cf353ee3e9382a4c2fab02102fb54a7fcaa73c307cfd70f3fa66a2e4247a71858ca731396343ad30c7c4009ce57ae"
-    fromString(str) must be (List(OP_PUSHDATA1, BytesToPushOntoStackImpl(241),
-      ScriptConstantImpl("55210269992fb441ae56968e5b77d46a3e53b69f136444ae65a94041fc937bdb28d93321021df31471281d4478df85bfce08a10aab82601dca949a79950f8ddf7002bd915a2102174c82021492c2c6dfcbfa4187d10d38bed06afb7fdcd72c880179fddd641ea121033f96e43d72c33327b6a4631ccaa6ea07f0b106c88b9dc71c9000bb6044d5e88a210313d8748790f2a86fb524579b46ce3c68fedd58d2a738716249a9f7d5458a15c221030b632eeb079eb83648886122a04c7bf6d98ab5dfb94cf353ee3e9382a4c2fab02102fb54a7fcaa73c307cfd70f3fa66a2e4247a71858ca731396343ad30c7c4009ce57ae"))
-    )
-  }
+   it must "parse an OP_NOP" in {
+     val str = "NOP"
+     fromString(str) must equal (List(OP_NOP))
+   }
 
+   it must "parse a script that has a decimal and a hexadecimal number in it " in  {
+     val str = "32767 0x02 0xff7f EQUAL"
+     fromString(str) must equal (List(ScriptNumberFactory.fromNumber(32767),
+       BytesToPushOntoStackImpl(2), ScriptNumberFactory.fromNumber(32767), OP_EQUAL))
+   }
 
-  it must "parse bytes from a string" in {
-    val str = "0xFF00"
-    parseBytesFromString(str) must be (List(ScriptNumberFactory.fromNumber(255)))
-  }
+   it must "parse an OP_1" in {
+     val str = "0x51"
+     fromString(str) must equal (List(OP_1))
+   }
 
-  it must "parse an OP_PUSHDATA2 correctly" in {
-    val str = "0x4d 0xFF00 " +
-      "0x111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111 " +
-      "0x4c 0xFF 0x111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111 " +
-      "EQUAL"
-    val expectedScript  =  List(OP_PUSHDATA2, BytesToPushOntoStackImpl(255),
-      ScriptConstantImpl("111111111111111111111111111111111111111111111111111111111111111111111111111111111111111" +
-        "11111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111" +
-        "11111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111" +
-        "11111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111" +
-        "11111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111" +
-        "1111111"), OP_PUSHDATA1, BytesToPushOntoStackImpl(255),
-      ScriptConstantImpl("111111111111111111111111111111111111111111111111111111111111111111111111111111111111111" +
-        "11111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111" +
-        "11111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111" +
-        "11111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111" +
-        "11111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111" +
-        "1111111"), OP_EQUAL)
+   it must "parse an extremely long hex constant" in {
+     val str = "0x4b 0x417a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a " +
+     "'Azzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz' EQUAL"
 
-    fromString(str) must be (expectedScript)
-  }
+     fromString(str) must equal (List(BytesToPushOntoStackImpl(75),
+       ScriptConstantImpl("417a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a"),
+       ScriptConstantImpl("417a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a"), OP_EQUAL))
+   }
 
+   it must "parse a hexadecimal number and a string constant as the same thing" in {
+     val str = "0x02 0x417a 'Az' EQUAL"
+     fromString(str) must be (List(BytesToPushOntoStackImpl(2),ScriptNumberFactory.fromNumber(31297),ScriptConstantImpl("417a"),OP_EQUAL))
+   }
 
-  it must "parse a hex string to a list of script tokens, and then back again" in {
-    //from this question
-    //https://bitcoin.stackexchange.com/questions/37125/how-are-sighash-flags-encoded-into-a-signature
-    val hex = "304402206e3729f021476102a06ea453cea0a26cb9c096cca641efc4229c1111ed3a96fd022037dce1456a93f53d3e868c789b1b750a48a4c1110cd5b7049779b5f4f3c8b6200103ff1104b46b2141df1948dd0df2223720a3a471ec57404cace47063843a699a0f"
+   it must "parse a combination of decimal and hexadecimal constants correctly" in {
+     val str = "127 0x01 0x7F EQUAL"
+     fromString(str) must be (List(ScriptNumberFactory.fromNumber(127), BytesToPushOntoStackImpl(1), ScriptNumberFactory.fromNumber(127), OP_EQUAL))
+   }
 
-    val scriptTokens : Seq[ScriptToken] = fromHex(hex)
-    scriptTokens.map(_.hex).mkString must be (hex)
-  }
+   it must "parse an OP_IF OP_ENDIF block" in {
+     val str = "1 0x01 0x80 IF 0 ENDIF"
+     fromString(str) must be (List(OP_1, BytesToPushOntoStackImpl(1), ScriptNumberFactory.negativeZero, OP_IF, OP_0, OP_ENDIF))
+   }
 
 
-  it must "parse a p2pkh scriptSig properly" in {
-    //from b30d3148927f620f5b1228ba941c211fdabdae75d0ba0b688a58accbf018f3cc
-    val rawScriptSig = "4730440220048e15422cf62349dc586ffb8c749d40280781edd5064ff27a5910ff5cf225a802206a82685dbc2cf195d158c29309939d5a3cd41a889db6f766f3809fff35722305012103dcfc9882c1b3ae4e03fb6cac08bdb39e284e81d70c7aa8b27612457b2774509b"
+   it must "parse an OP_PUSHDATA1 correctly" in {
+     val str = "'abcdefghijklmnopqrstuvwxyz' HASH160 0x4c 0x14 0xc286a1af0947f58d1ad787385b1c2c4a976f9e71 EQUAL"
+     val expectedScript = List(ScriptConstantImpl("6162636465666768696a6b6c6d6e6f707172737475767778797a"),OP_HASH160,
+       OP_PUSHDATA1, BytesToPushOntoStackImpl(20), ScriptConstantImpl("c286a1af0947f58d1ad787385b1c2c4a976f9e71"), OP_EQUAL)
+     fromString(str) must be (expectedScript)
+   }
 
-    val expectedAsm = List(BytesToPushOntoStackImpl(71),
-      ScriptConstantImpl("30440220048e15422cf62349dc586ffb8c749d40280781edd5064ff27a5910ff5cf" +
-        "225a802206a82685dbc2cf195d158c29309939d5a3cd41a889db6f766f3809fff3572230501"),
-      BytesToPushOntoStackImpl(33),
-      ScriptConstantImpl("03dcfc9882c1b3ae4e03fb6cac08bdb39e284e81d70c7aa8b27612457b2774509b"))
+   it must "parse a OP_PUSHDATA1 correct from a scriptSig" in {
+     //https://tbtc.blockr.io/api/v1/tx/raw/5d254a872c9197c683ea9111fb5c0e2e0f49280a89961c45b9fea76834d335fe
+     val str = "4cf1" +
+       "55210269992fb441ae56968e5b77d46a3e53b69f136444ae65a94041fc937bdb28d93321021df31471281d4478df85bfce08a10aab82601dca949a79950f8ddf7002bd915a2102174c82021492c2c6dfcbfa4187d10d38bed06afb7fdcd72c880179fddd641ea121033f96e43d72c33327b6a4631ccaa6ea07f0b106c88b9dc71c9000bb6044d5e88a210313d8748790f2a86fb524579b46ce3c68fedd58d2a738716249a9f7d5458a15c221030b632eeb079eb83648886122a04c7bf6d98ab5dfb94cf353ee3e9382a4c2fab02102fb54a7fcaa73c307cfd70f3fa66a2e4247a71858ca731396343ad30c7c4009ce57ae"
+     fromString(str) must be (List(OP_PUSHDATA1, BytesToPushOntoStackImpl(241),
+       ScriptConstantImpl("55210269992fb441ae56968e5b77d46a3e53b69f136444ae65a94041fc937bdb28d93321021df31471281d4478df85bfce08a10aab82601dca949a79950f8ddf7002bd915a2102174c82021492c2c6dfcbfa4187d10d38bed06afb7fdcd72c880179fddd641ea121033f96e43d72c33327b6a4631ccaa6ea07f0b106c88b9dc71c9000bb6044d5e88a210313d8748790f2a86fb524579b46ce3c68fedd58d2a738716249a9f7d5458a15c221030b632eeb079eb83648886122a04c7bf6d98ab5dfb94cf353ee3e9382a4c2fab02102fb54a7fcaa73c307cfd70f3fa66a2e4247a71858ca731396343ad30c7c4009ce57ae"))
+     )
+   }
 
-    val scriptTokens : List[ScriptToken] = ScriptParser.fromHex(rawScriptSig)
 
-    scriptTokens must be (expectedAsm)
-  }
+   it must "parse bytes from a string" in {
+     val str = "0xFF00"
+     parseBytesFromString(str) must be (List(ScriptNumberFactory.fromNumber(255)))
+   }
 
-  it must "parse 1ADD to an OP_1ADD" in {
-    ScriptParser.fromString("1ADD") must be (Seq(OP_1ADD))
-  }
+   it must "parse an OP_PUSHDATA2 correctly" in {
+     val str = "0x4d 0xFF00 " +
+       "0x111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111 " +
+       "0x4c 0xFF 0x111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111 " +
+       "EQUAL"
+     val expectedScript  =  List(OP_PUSHDATA2, BytesToPushOntoStackImpl(255),
+       ScriptConstantImpl("111111111111111111111111111111111111111111111111111111111111111111111111111111111111111" +
+         "11111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111" +
+         "11111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111" +
+         "11111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111" +
+         "11111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111" +
+         "1111111"), OP_PUSHDATA1, BytesToPushOntoStackImpl(255),
+       ScriptConstantImpl("111111111111111111111111111111111111111111111111111111111111111111111111111111111111111" +
+         "11111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111" +
+         "11111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111" +
+         "11111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111" +
+         "11111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111" +
+         "1111111"), OP_EQUAL)
+
+     fromString(str) must be (expectedScript)
+   }
+
+
+   it must "parse a hex string to a list of script tokens, and then back again" in {
+     //from this question
+     //https://bitcoin.stackexchange.com/questions/37125/how-are-sighash-flags-encoded-into-a-signature
+     val hex = "304402206e3729f021476102a06ea453cea0a26cb9c096cca641efc4229c1111ed3a96fd022037dce1456a93f53d3e868c789b1b750a48a4c1110cd5b7049779b5f4f3c8b6200103ff1104b46b2141df1948dd0df2223720a3a471ec57404cace47063843a699a0f"
+
+     val scriptTokens : Seq[ScriptToken] = fromHex(hex)
+     scriptTokens.map(_.hex).mkString must be (hex)
+   }
+
+
+   it must "parse a p2pkh scriptSig properly" in {
+     //from b30d3148927f620f5b1228ba941c211fdabdae75d0ba0b688a58accbf018f3cc
+     val rawScriptSig = "4730440220048e15422cf62349dc586ffb8c749d40280781edd5064ff27a5910ff5cf225a802206a82685dbc2cf195d158c29309939d5a3cd41a889db6f766f3809fff35722305012103dcfc9882c1b3ae4e03fb6cac08bdb39e284e81d70c7aa8b27612457b2774509b"
+
+     val expectedAsm = List(BytesToPushOntoStackImpl(71),
+       ScriptConstantImpl("30440220048e15422cf62349dc586ffb8c749d40280781edd5064ff27a5910ff5cf" +
+         "225a802206a82685dbc2cf195d158c29309939d5a3cd41a889db6f766f3809fff3572230501"),
+       BytesToPushOntoStackImpl(33),
+       ScriptConstantImpl("03dcfc9882c1b3ae4e03fb6cac08bdb39e284e81d70c7aa8b27612457b2774509b"))
+
+     val scriptTokens : List[ScriptToken] = ScriptParser.fromHex(rawScriptSig)
+
+     scriptTokens must be (expectedAsm)
+   }
+
+   it must "parse 1ADD to an OP_1ADD" in {
+     ScriptParser.fromString("1ADD") must be (Seq(OP_1ADD))
+   }
 }
