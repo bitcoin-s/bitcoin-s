@@ -6,21 +6,53 @@ import org.scalacoin.util.{BitcoinSUtil}
  * Created by chris on 1/6/16.
  */
 
-
+/**
+ * This is the root class of Script. Every element in the Script language is a
+ * ScriptToken - think of this the same way you think about Object in Java.
+ */
 sealed trait ScriptToken {
+  /**
+   * The hexadecimal representation of this script token
+   * @return
+   */
   def hex : String
+
+  /**
+   * The byte representation of this script token
+   * @return
+   */
   def bytes = BitcoinSUtil.decodeHex(hex)
+
+  /**
+   * The conversion from the byte representation of a token to a number
+   * @return
+   */
   def toLong = BitcoinSUtil.hexToLong(hex)
 }
 
+/**
+ * A script operation is an instruction that takes an input and gives an output
+ * Think of these as functions
+ */
 trait ScriptOperation extends ScriptToken {
   def opCode : Int
   override def hex : String = BitcoinSUtil.encodeHex(opCode.toByte)
 }
 
+/**
+ * A constant in the Script language for instance as String or a number
+ */
 sealed trait ScriptConstant extends ScriptToken
 
+
+/**
+ * Represents a number in the Script language
+ */
 sealed trait ScriptNumber extends ScriptConstant {
+  /**
+   * The underlying number of the ScriptNumber
+   * @return
+   */
   def num : Long
 
   def + (that : ScriptNumber) : ScriptNumber = ScriptNumberFactory.fromNumber(num + that.num)
@@ -34,6 +66,13 @@ sealed trait ScriptNumber extends ScriptConstant {
   def > (that : ScriptNumber) : Boolean = num > that.num
   def >= (that : ScriptNumber) : Boolean = num >= that.num
 
+  /**
+   * This equality just checks that the underlying scala numbers are equivalent, NOT if the numbers
+   * are bitwise equivalent in Script. For instance ScriptNumber(0x01).numEqual(ScriptNumber(0x00000000001)) == true
+   * but (ScriptNumber(0x01) == (ScriptNumber(0x00000000001))) == false
+   * @param that
+   * @return
+   */
   def numEqual(that : ScriptNumber) : Boolean = num == that.num
 }
 
@@ -46,11 +85,16 @@ sealed trait ScriptNumber extends ScriptConstant {
 case class ScriptNumberImpl(num : Long, override val hex : String) extends ScriptNumber
 
 
+/**
+ * Companion object for ScriptNumberImpl that gives us access to more constructor types for the
+ * ScriptNumberImpl case class
+ */
 object ScriptNumberImpl {
   def apply(num : Long) : ScriptNumber = ScriptNumberImpl(num, BitcoinSUtil.longToHex(num))
   def apply(hex : String) : ScriptNumber = ScriptNumberImpl(BitcoinSUtil.hexToLong(hex), hex)
   def apply(bytes : Seq[Byte]) : ScriptNumber = ScriptNumberImpl(BitcoinSUtil.encodeHex(bytes))
 }
+
 sealed trait ScriptBoolean extends ScriptNumber
 
 //TODO: Need to remove ScriptTrue & ScriptFalse - make OP_TRUE/FALSE inherit from ScriptBoolean

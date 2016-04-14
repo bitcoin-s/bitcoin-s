@@ -390,4 +390,16 @@ class ArithmeticInterpreterTest extends FlatSpec with MustMatchers with Arithmet
   }
 
 
+  it must "interpret two script constants as numbers and then add them" in {
+    val scriptConstant1 = ScriptConstantFactory.fromHex("ffffffff")
+    val scriptConstant2 = ScriptConstantFactory.fromHex("ffffff7f")
+    val stack = List(scriptConstant1, scriptConstant2)
+    val script = List(OP_ADD)
+    val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack, script)
+    val newProgram = opAdd(program)
+    newProgram.stack must be (List(OP_0))
+    newProgram.script.isEmpty must be (true)
+  }
+
+
 }
