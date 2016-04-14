@@ -36,4 +36,8 @@ class ScriptNumberFactoryTest extends FlatSpec with MustMatchers {
     val number = -32768
     ScriptNumberFactory.fromNumber(number).hex must be (hex)
   }
+
+  it must "give us OP_0 back if we try to create the number zero" in {
+    ScriptNumberFactory.fromNumber(0) must be (OP_0)
+  }
 }

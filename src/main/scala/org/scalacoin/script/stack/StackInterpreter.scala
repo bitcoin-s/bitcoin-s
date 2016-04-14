@@ -56,7 +56,7 @@ trait StackInterpreter extends BitcoinSLogger {
     require(program.script.size >= 1, "OP_DEPTH requires at least two elements on the script stack")
     val stackSize = program.stack.size
 
-    val numberToPush : ScriptNumber= if (stackSize == 0) OP_0 else ScriptNumberImpl(stackSize)
+    val numberToPush : ScriptNumber = ScriptNumberFactory.fromNumber(stackSize)
     ScriptProgramFactory.factory(program, numberToPush :: program.stack, program.script.tail)
   }
 

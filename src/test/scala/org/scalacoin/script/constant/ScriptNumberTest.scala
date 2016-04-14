@@ -7,9 +7,9 @@ import org.scalatest.{FlatSpec, MustMatchers}
  */
 class ScriptNumberTest extends FlatSpec with MustMatchers {
 
-  val zero = ScriptNumberImpl(0)
-  val one = ScriptNumberImpl(1)
-  val ten = ScriptNumberImpl(10)
+  val zero = ScriptNumberFactory.zero
+  val one = ScriptNumberFactory.one
+  val ten = ScriptNumberFactory.fromNumber(10)
   "ScriptNumber" must "derive the correct hex value from a script number" in {
     ScriptNumberImpl(1).hex must be ("01")
 

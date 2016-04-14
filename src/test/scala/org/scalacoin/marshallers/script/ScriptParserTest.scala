@@ -22,6 +22,10 @@ class ScriptParserTest extends FlatSpec with MustMatchers with ScriptParser with
     fromBytes(List(0.toByte)) must be (List(OP_0))
   }
 
+  it must "parse the number 0 as an OP_0" in {
+    fromString("0") must be (List(OP_0))
+  }
+
   it must "parse a number larger than an integer into a ScriptNumberImpl" in {
     fromString("2147483648") must be (List(ScriptNumberFactory.fromNumber(2147483648L)))
   }
@@ -175,5 +179,16 @@ class ScriptParserTest extends FlatSpec with MustMatchers with ScriptParser with
 
   it must "parse 1ADD to an OP_1ADD" in {
     ScriptParser.fromString("1ADD") must be (Seq(OP_1ADD))
+  }
+
+  it must "parse a OP_PUSHDATA operation that pushes zero bytes correctly" in {
+    val str = "0x4c 0x00"
+    ScriptParser.fromString(str) must be (List(OP_PUSHDATA1, ScriptNumberFactory.zero))
+
+    val str1 = "0x4d 0x00"
+    ScriptParser.fromString(str1) must be (List(OP_PUSHDATA2, ScriptNumberFactory.zero))
+
+    val str2 = "0x4e 0x00"
+    ScriptParser.fromString(str2) must be (List(OP_PUSHDATA4, ScriptNumberFactory.zero))
   }
 }
