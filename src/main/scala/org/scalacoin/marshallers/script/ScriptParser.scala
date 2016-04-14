@@ -3,7 +3,7 @@ package org.scalacoin.marshallers.script
 import org.scalacoin.script._
 import org.scalacoin.script.constant._
 import org.scalacoin.script.crypto.{OP_CHECKMULTISIGVERIFY, OP_CHECKMULTISIG}
-import org.scalacoin.util.{Factory, BitcoinSUtil}
+import org.scalacoin.util.{BitcoinSLogger, Factory, BitcoinSUtil}
 import org.slf4j.LoggerFactory
 
 import scala.annotation.tailrec
@@ -12,9 +12,7 @@ import scala.util.{Failure, Success, Try}
 /**
  * Created by chris on 1/7/16.
  */
-trait ScriptParser extends Factory[List[ScriptToken]] {
-
-  private def logger = LoggerFactory.getLogger(this.getClass)
+trait ScriptParser extends Factory[List[ScriptToken]] with BitcoinSLogger {
 
 
   /**
@@ -106,18 +104,9 @@ trait ScriptParser extends Factory[List[ScriptToken]] {
             java.lang.Long.parseLong(BitcoinSUtil.flipEndianess(hex),16).toInt)
           loop(t, BitcoinSUtil.decodeHex(hex) ++ accum)*/
 
-        //if we see a byte constant of just 0x09
-        //parse the characters as a hex op
-        case h :: t if (h.size == 4 && h.substring(0,2) == "0x") =>
-          logger.debug("Found a script operation")
-          val hexString = h.substring(2,h.size)
-          logger.debug("Hex string: " + hexString)
-          loop(t, BitcoinSUtil.decodeHex(hexString) ++ accum)
-
         //if we see a byte constant in the form of "0x09adb"
         case h :: t if (h.size > 1 && h.substring(0,2) == "0x") =>
-          logger.debug("Found a hexadecimal number")
-          loop(t,BitcoinSUtil.decodeHex(h.substring(2,h.size)) ++ accum)
+          loop(t,BitcoinSUtil.decodeHex(h.substring(2,h.size).toLowerCase).reverse ++ accum)
         //skip the empty string
         case h :: t if (h == "") => loop(t,accum)
         case h :: t if (h == "0") => loop(t, OP_0.bytes ++ accum)
@@ -129,8 +118,10 @@ trait ScriptParser extends Factory[List[ScriptToken]] {
           loop(t,op.bytes ++ accum)
         case h :: t if (tryParsingLong(h)) =>
           logger.debug("Found a decimal number")
+          val hexLong = BitcoinSUtil.flipEndianess(BitcoinSUtil.longToHex(h.toLong))
+          val bytesToPushOntoStack = BytesToPushOntoStackFactory.fromNumber(hexLong.size / 2).get
           //convert the string to int, then convert to hex
-          loop(t, BitcoinSUtil.decodeHex(BitcoinSUtil.longToHex(h.toLong)) ++ accum)
+          loop(t, BitcoinSUtil.decodeHex(hexLong) ++ bytesToPushOntoStack.bytes ++ accum)
         //means that it must be a BytesToPushOntoStack followed by a script constant
         case h :: t =>
           logger.debug("Generic h :: t")
@@ -288,25 +279,28 @@ trait ScriptParser extends Factory[List[ScriptToken]] {
     op match {
       case OP_PUSHDATA1 =>
         //next byte is size of the script constant
-        val bytesToPushOntoStack = BytesToPushOntoStackImpl(Integer.parseInt(BitcoinSUtil.encodeHex(tail.head), 16))
-        val scriptConstant = new ScriptConstantImpl(tail.slice(1,bytesToPushOntoStack.num+1))
-        ParsingHelper[Byte](tail.slice(bytesToPushOntoStack.num+1,tail.size),
+        val bytesToPushOntoStack = ScriptNumberFactory.fromNumber(Integer.parseInt(BitcoinSUtil.encodeHex(tail.head),16))
+        val scriptConstant = ScriptConstantFactory.fromBytes(tail.slice(1,(bytesToPushOntoStack.num+1).toInt))
+
+        ParsingHelper[Byte](tail.slice((bytesToPushOntoStack.num+1).toInt,tail.size),
           scriptConstant :: bytesToPushOntoStack :: op :: accum)
       case OP_PUSHDATA2 =>
         //next 2 bytes is the size of the script constant
-        val scriptConstantHex = BitcoinSUtil.encodeHex(tail.slice(0,2))
-        val bytesToPushOntoStack = BytesToPushOntoStackImpl(Integer.parseInt(scriptConstantHex, 16))
-        val scriptConstant = new ScriptConstantImpl(tail.slice(2,bytesToPushOntoStack.num + 2))
-        ParsingHelper[Byte](tail.slice(bytesToPushOntoStack.num + 2,tail.size),
+        val scriptConstantHex = BitcoinSUtil.flipEndianess(tail.slice(0,2))
+        logger.debug("SCIRPT CONSTANT HEX: " + scriptConstantHex)
+        val bytesToPushOntoStack = ScriptNumberFactory.fromNumber(Integer.parseInt(scriptConstantHex,16))
+        logger.debug("BYTES TO PUSH ONTO STACK: " + bytesToPushOntoStack)
+        val scriptConstant = ScriptConstantFactory.fromBytes(tail.slice(2,(bytesToPushOntoStack.num + 2).toInt))
+        ParsingHelper[Byte](tail.slice((bytesToPushOntoStack.num + 2).toInt,tail.size),
           scriptConstant :: bytesToPushOntoStack :: op ::  accum)
       case OP_PUSHDATA4 =>
         //nextt 4 bytes is the size of the script constant
-        val scriptConstantHex = BitcoinSUtil.encodeHex(tail.slice(0,4))
+        val scriptConstantHex = BitcoinSUtil.flipEndianess(tail.slice(0,4))
         val bytesToPushOntoStack = BytesToPushOntoStackImpl(Integer.parseInt(scriptConstantHex, 16))
         val scriptConstant = new ScriptConstantImpl(tail.slice(4,bytesToPushOntoStack.num + 4))
         ParsingHelper[Byte](tail.slice(bytesToPushOntoStack.num + 4,tail.size),
           scriptConstant :: bytesToPushOntoStack :: op :: accum)
-      case _ => throw new RuntimeException("parseOpPushData can only parse OP_PUSHDATA operations")
+      case _ : ScriptToken => throw new RuntimeException("parseOpPushData can only parse OP_PUSHDATA operations")
     }
   }
 
