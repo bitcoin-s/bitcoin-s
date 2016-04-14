@@ -123,7 +123,7 @@ case object OP_0 extends ScriptNumberOperation {
   override def scriptNumber = ScriptNumberFactory.zero
 
   //empty byte vector
-  override def bytes = List()
+  override def bytes = List(0x0)
 
   override def bytesSize = 1
 }
@@ -135,7 +135,7 @@ case object OP_FALSE extends ScriptNumberOperation {
   override def hex = OP_0.hex
   override def scriptNumber = OP_0.scriptNumber
   //empty byte vector
-  override def bytes = List()
+  override def bytes = OP_0.bytes
 
   override def bytesSize = 1
 }
