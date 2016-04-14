@@ -10,21 +10,24 @@ trait ScriptNumberFactory extends Factory[ScriptNumber] {
   /**
    * Bitcoin has a numbering system which has a negative zero
    */
-  lazy val negativeZero = fromHex("80")
+  lazy val negativeZero : ScriptNumber = fromHex("80")
   /**
    * Represents the number zero inside of bitcoin's script language
    * @return
    */
-  lazy val zero = fromNumber(0)
-
+  lazy val zero : ScriptNumber = OP_0
   /**
    * Represents the number one inside of bitcoin's script language
    * @return
    */
-  lazy val one = fromNumber(1)
+  lazy val one : ScriptNumber = fromNumber(1)
 
 
-  def fromBytes(bytes : Seq[Byte]) : ScriptNumber = ScriptNumberImpl(bytes)
+  def fromBytes(bytes : Seq[Byte]) : ScriptNumber = {
+    if (bytes.isEmpty || bytes == Seq(0x0)) zero
+    else ScriptNumberImpl(bytes)
+  }
+
 
 
   /**

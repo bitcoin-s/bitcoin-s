@@ -29,12 +29,12 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterp
     val source = scala.io.Source.fromFile("src/test/scala/org/scalacoin/script/interpreter/script_valid.json")
 
     //use this to represent a single test case from script_valid.json
-    val lines =
+/*    val lines =
         """
           |
-          |[["1", "0x02 0x0100 EQUAL NOT", "P2SH,STRICTENC", "Not the same byte array..."]]
-   """.stripMargin
-    //val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n" finally source.close()
+          |[["0x4c 0x00","0 EQUAL", "P2SH,STRICTENC"]]
+   """.stripMargin*/
+    val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n" finally source.close()
     val json = lines.parseJson
     val testCasesOpt : Seq[Option[CoreTestCase]] = json.convertTo[Seq[Option[CoreTestCase]]]
     val testCases : Seq[CoreTestCase] = testCasesOpt.flatten
@@ -59,7 +59,6 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterp
         ScriptInterpreter.run(program) must equal (true)
       }
     }
-
   }
 
   it must "evaluate all valid scripts from the bitcoin core script_invalid.json" in {
@@ -76,7 +75,7 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterp
     """.stripMargin
 
     //val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n" finally source.close()
-    val json = lines.parseJson
+/*    val json = lines.parseJson
     val testCasesOpt : Seq[Option[CoreTestCase]] = json.convertTo[Seq[Option[CoreTestCase]]]
     val testCases : Seq[CoreTestCase] = testCasesOpt.flatten
 
@@ -101,7 +100,7 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterp
       withClue(testCase.raw) {
         ScriptInterpreter.run(program) must equal (false)
       }
-    }
+    }*/
 
   }
 }

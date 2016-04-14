@@ -61,7 +61,7 @@ trait ConstantInterpreter extends BitcoinSLogger {
      */
     @tailrec
     def takeUntilBytesNeeded(scriptTokens : List[ScriptToken], accum : List[ScriptToken]) : (List[ScriptToken],List[ScriptToken]) = {
-      val bytesSum = accum.map(_.bytesSize).sum
+      val bytesSum = accum.map(_.bytes.size).sum
       if (bytesSum == bytesNeeded) (scriptTokens,accum)
       else if (scriptTokens.size == 0) (Nil,accum)
       else if (bytesSum > bytesNeeded) throw new RuntimeException("We cannot have more bytes than what our script number specified")
@@ -75,10 +75,7 @@ trait ConstantInterpreter extends BitcoinSLogger {
       }
     }
 
-    val (newScript,bytesToPushOntoStack) = if (bytesNeeded == 0) {
-      //this means we need to push an empty byte vector on to the stack
-      (program.script.tail, Seq(OP_0))
-    } else takeUntilBytesNeeded(program.script.tail,List())
+    val (newScript,bytesToPushOntoStack) = takeUntilBytesNeeded(program.script.tail,List())
     logger.debug("new script: " + newScript)
     logger.debug("Bytes to push onto stack" + bytesToPushOntoStack)
     val constant : ScriptToken = if (bytesToPushOntoStack.size == 1) bytesToPushOntoStack.head
@@ -87,8 +84,8 @@ trait ConstantInterpreter extends BitcoinSLogger {
     logger.debug("Constant to be pushed onto stack: " + constant)
     //check to see if we have the exact amount of bytes needed to be pushed onto the stack
     //if we do not, mark the program as invalid
-    if (bytesNeeded == 0 && bytesToPushOntoStack.headOption == Some(OP_0)) ScriptProgramFactory.factory(program, constant :: program.stack, newScript)
-    else if (bytesNeeded != bytesToPushOntoStack.map(_.bytesSize).sum) ScriptProgramFactory.factory(program,false)
+    if (bytesNeeded == 0) ScriptProgramFactory.factory(program, OP_0 :: program.stack, newScript)
+    else if (bytesNeeded != bytesToPushOntoStack.map(_.bytes.size).sum) ScriptProgramFactory.factory(program,false)
     else ScriptProgramFactory.factory(program, constant :: program.stack, newScript)
   }
 

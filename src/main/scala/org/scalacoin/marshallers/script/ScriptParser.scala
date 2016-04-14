@@ -75,8 +75,11 @@ trait ScriptParser extends Factory[List[ScriptToken]] with BitcoinSLogger {
             loop(t, OP_0.bytes ++ accum)
           } else {
             val bytes : Seq[Byte] = BitcoinSUtil.decodeHex(BitcoinSUtil.flipEndianess(strippedQuotes.getBytes.toList))
+            val bytesToPushOntoStack : ScriptToken = bytes.size > 75 match {
+              case true => ScriptNumberFactory.fromNumber(bytes.size)
+              case false => BytesToPushOntoStackFactory.fromNumber(bytes.size).get
+            }
 
-            val bytesToPushOntoStack : BytesToPushOntoStack = BytesToPushOntoStackFactory.fromNumber(bytes.size).get
             loop(t, bytes.toList ++ bytesToPushOntoStack.bytes ++  accum)
           }
 
@@ -280,28 +283,47 @@ trait ScriptParser extends Factory[List[ScriptToken]] with BitcoinSLogger {
       case OP_PUSHDATA1 =>
         //next byte is size of the script constant
         val bytesToPushOntoStack = ScriptNumberFactory.fromNumber(Integer.parseInt(BitcoinSUtil.encodeHex(tail.head),16))
-        val scriptConstant = ScriptConstantFactory.fromBytes(tail.slice(1,(bytesToPushOntoStack.num+1).toInt))
-
-        ParsingHelper[Byte](tail.slice((bytesToPushOntoStack.num+1).toInt,tail.size),
-          scriptConstant :: bytesToPushOntoStack :: op :: accum)
+        val scriptConstantBytes = tail.slice(1,(bytesToPushOntoStack.num+1).toInt)
+        val scriptConstant = ScriptConstantFactory.fromBytes(scriptConstantBytes)
+        val restOfBytes = tail.slice((bytesToPushOntoStack.num+1).toInt,tail.size)
+        buildParsingHelper(op,bytesToPushOntoStack,scriptConstant,restOfBytes,accum)
       case OP_PUSHDATA2 =>
         //next 2 bytes is the size of the script constant
         val scriptConstantHex = BitcoinSUtil.flipEndianess(tail.slice(0,2))
-        logger.debug("SCIRPT CONSTANT HEX: " + scriptConstantHex)
         val bytesToPushOntoStack = ScriptNumberFactory.fromNumber(Integer.parseInt(scriptConstantHex,16))
-        logger.debug("BYTES TO PUSH ONTO STACK: " + bytesToPushOntoStack)
-        val scriptConstant = ScriptConstantFactory.fromBytes(tail.slice(2,(bytesToPushOntoStack.num + 2).toInt))
-        ParsingHelper[Byte](tail.slice((bytesToPushOntoStack.num + 2).toInt,tail.size),
-          scriptConstant :: bytesToPushOntoStack :: op ::  accum)
+        val scriptConstantBytes = tail.slice(2,(bytesToPushOntoStack.num + 2).toInt)
+        val scriptConstant = ScriptConstantFactory.fromBytes(scriptConstantBytes)
+        val restOfBytes = tail.slice((bytesToPushOntoStack.num + 2).toInt,tail.size)
+        buildParsingHelper(op,bytesToPushOntoStack,scriptConstant,restOfBytes,accum)
       case OP_PUSHDATA4 =>
-        //nextt 4 bytes is the size of the script constant
+        //next 4 bytes is the size of the script constant
         val scriptConstantHex = BitcoinSUtil.flipEndianess(tail.slice(0,4))
-        val bytesToPushOntoStack = BytesToPushOntoStackImpl(Integer.parseInt(scriptConstantHex, 16))
-        val scriptConstant = new ScriptConstantImpl(tail.slice(4,bytesToPushOntoStack.num + 4))
-        ParsingHelper[Byte](tail.slice(bytesToPushOntoStack.num + 4,tail.size),
-          scriptConstant :: bytesToPushOntoStack :: op :: accum)
+        val bytesToPushOntoStack = ScriptNumberFactory.fromNumber(Integer.parseInt(scriptConstantHex, 16))
+        val scriptConstantBytes = tail.slice(4,bytesToPushOntoStack.num.toInt + 4)
+        val scriptConstant = ScriptConstantFactory.fromBytes(scriptConstantBytes)
+        val restOfBytes = tail.slice(bytesToPushOntoStack.num.toInt + 4,tail.size)
+        buildParsingHelper(op,bytesToPushOntoStack,scriptConstant,restOfBytes,accum)
       case _ : ScriptToken => throw new RuntimeException("parseOpPushData can only parse OP_PUSHDATA operations")
     }
+  }
+
+  /**
+   * Helper function to build the parsing helper for parsing an OP_PUSHDATA operation
+   * @param op the OP_PUSHDATA operation being added to the accum
+   * @param bytesToPushOntoStack the number of bytes that are pushed onto the stack by the OP_PUSHDATA operation
+   * @param scriptConstant the constant that is being pushed onto the stack by the OP_PUSHDATA operation
+   * @param restOfBytes the remaining bytes that need to be parsed
+   * @param accum the accumulator filled with script tokens that have already been parsed
+   * @return
+   */
+  private def buildParsingHelper( op : ScriptOperation, bytesToPushOntoStack : ScriptNumber,
+                                  scriptConstant : ScriptConstant, restOfBytes : List[Byte], accum : List[ScriptToken]) : ParsingHelper[Byte] = {
+    if (bytesToPushOntoStack.num == 0) {
+      //if we need to push 0 bytes onto the stack we do not add the script constant
+      ParsingHelper[Byte](restOfBytes,
+        bytesToPushOntoStack :: op :: accum)
+    } else ParsingHelper[Byte](restOfBytes,
+      scriptConstant :: bytesToPushOntoStack :: op :: accum)
   }
 
   /**

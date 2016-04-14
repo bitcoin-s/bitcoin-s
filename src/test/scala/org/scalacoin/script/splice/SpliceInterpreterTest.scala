@@ -22,11 +22,11 @@ class SpliceInterpreterTest extends FlatSpec with MustMatchers with SpliceInterp
   }
 
   it must "deterine the size of script number 0 correctly" in {
-    val stack = List(ScriptNumberImpl(0))
+    val stack = List(ScriptNumberFactory.zero)
     val script = List(OP_SIZE)
     val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
     val newProgram = opSize(program)
-    newProgram.stack must be (List(ScriptNumberImpl(0),ScriptNumberImpl(0)))
+    newProgram.stack must be (List(ScriptNumberFactory.zero,ScriptNumberFactory.zero))
     newProgram.script.isEmpty must be (true)
   }
 
@@ -41,21 +41,21 @@ class SpliceInterpreterTest extends FlatSpec with MustMatchers with SpliceInterp
 
   it must "evaluate an OP_SIZE correctly with 0x8000" in {
     //0x8000 == 128 in bitcoin
-    val stack = List(ScriptNumberImpl(128))
+    val stack = List(ScriptNumberFactory.fromNumber(128))
     val script = List(OP_SIZE)
     val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
     val newProgram = opSize(program)
-    newProgram.stack must be (List(ScriptNumberImpl(2), ScriptNumberImpl(128)))
+    newProgram.stack must be (List(ScriptNumberFactory.fromNumber(2), ScriptNumberFactory.fromNumber(128)))
     newProgram.script.isEmpty must be (true)
   }
 
 
   it must "evaluate an OP_SIZE correctly with a negative number" in {
-    val stack = List(ScriptNumberImpl(-1))
+    val stack = List(ScriptNumberFactory.fromNumber(-1))
     val script = List(OP_SIZE)
     val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
     val newProgram = opSize(program)
-    newProgram.stack must be (List(ScriptNumberImpl(1),ScriptNumberImpl(-1)))
+    newProgram.stack must be (List(ScriptNumberFactory.one,ScriptNumberFactory.fromNumber(-1)))
     newProgram.script.isEmpty must be (true)
   }
 }

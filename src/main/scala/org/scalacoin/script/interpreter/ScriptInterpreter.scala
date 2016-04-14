@@ -140,7 +140,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
 
           case (scriptNumberOp: ScriptNumberOperation) :: t =>
             if (scriptNumberOp == OP_0) loop(ScriptProgramFactory.factory(program, OP_0 :: program.stack, t))
-            else loop(ScriptProgramFactory.factory(program, scriptNumberOp.scriptNumber :: program.stack, t))
+            else loop(ScriptProgramFactory.factory(program, ScriptNumberFactory.fromNumber(scriptNumberOp.num) :: program.stack, t))
           case (bytesToPushOntoStack: BytesToPushOntoStack) :: t => loop(pushScriptNumberBytesToStack(program))
           case (scriptNumber: ScriptNumber) :: t =>
             loop(ScriptProgramFactory.factory(program, scriptNumber :: program.stack, t))
@@ -148,7 +148,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
           case OP_PUSHDATA2 :: t => loop(opPushData2(program))
           case OP_PUSHDATA4 :: t => loop(opPushData4(program))
 
-          case ScriptConstantImpl(x) :: t => loop(ScriptProgramFactory.factory(program, ScriptConstantImpl(x) :: program.stack, t))
+          case (x : ScriptConstant) :: t => loop(ScriptProgramFactory.factory(program, x :: program.stack, t))
 
           //control operations
           case OP_IF :: t => loop(opIf(program))
