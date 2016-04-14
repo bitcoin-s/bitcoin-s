@@ -28,12 +28,15 @@ trait ControlOperationsInterpreter extends BitcoinSLogger {
       ScriptProgramFactory.factory(program,false)
     }
     else if (program.stackTopIsTrue) {
+      logger.debug("OP_IF stack top was true")
+      logger.debug("Stack top: " + program.stack)
       //if the left branch contains and OP_IF & OP_ENDIF there must be a nested OP_IF
       //remove OP_ELSE from binary tree
       val newTreeWithoutOpElse = removeFirstOpElse(binaryTree)
       val newScript = newTreeWithoutOpElse.toList
       ScriptProgramFactory.factory(program, program.stack.tail,newScript.tail)
     } else {
+      logger.debug("OP_IF stack top was false")
       //remove the OP_IF
       val scriptWithoutOpIf : BinaryTree[ScriptToken] = removeFirstOpIf(binaryTree)
       ScriptProgramFactory.factory(program, program.stack.tail,scriptWithoutOpIf.toList)
