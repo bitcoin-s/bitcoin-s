@@ -397,7 +397,7 @@ class ArithmeticInterpreterTest extends FlatSpec with MustMatchers with Arithmet
     val script = List(OP_ADD)
     val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack, script)
     val newProgram = opAdd(program)
-    newProgram.stack must be (List(OP_0))
+    newProgram.stack must be (List(ScriptNumberFactory.zero))
     newProgram.script.isEmpty must be (true)
   }
 

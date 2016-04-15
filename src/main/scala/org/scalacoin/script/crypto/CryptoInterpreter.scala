@@ -200,7 +200,6 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
           ScriptProgramFactory.factory(program, ScriptFalse :: restOfStack, program.script.tail)
       }
     }
-
   }
 
 

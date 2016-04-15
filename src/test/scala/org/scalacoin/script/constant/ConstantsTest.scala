@@ -12,6 +12,7 @@ class ConstantsTest extends FlatSpec with MustMatchers {
     OP_FALSE.hex must be ("00")
 
     OP_FALSE.bytes.size must be (1)
+    OP_FALSE.toLong must be (0)
   }
 
   it must "define an OP_PUSHDATA1" in {

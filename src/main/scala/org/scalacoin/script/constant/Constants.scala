@@ -74,6 +74,11 @@ sealed trait ScriptNumber extends ScriptConstant {
    * @return
    */
   def numEqual(that : ScriptNumber) : Boolean = num == that.num
+
+  override def toLong = num match {
+    case 0 => 0L
+    case _ : Long => super.toLong
+  }
 }
 
 /**

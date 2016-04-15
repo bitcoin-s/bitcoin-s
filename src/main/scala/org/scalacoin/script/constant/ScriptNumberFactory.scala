@@ -15,7 +15,7 @@ trait ScriptNumberFactory extends Factory[ScriptNumber] {
    * Represents the number zero inside of bitcoin's script language
    * @return
    */
-  lazy val zero : ScriptNumber = OP_0
+  lazy val zero : ScriptNumber = ScriptNumberImpl(0,"")
   /**
    * Represents the number one inside of bitcoin's script language
    * @return
@@ -24,9 +24,11 @@ trait ScriptNumberFactory extends Factory[ScriptNumber] {
 
 
   def fromBytes(bytes : Seq[Byte]) : ScriptNumber = {
-    if (bytes.isEmpty || bytes == Seq(0x0)) zero
+    if (bytes.isEmpty || (bytes.size == 1 && bytes.head == 0x00)) zero
     else ScriptNumberImpl(bytes)
   }
+
+
 
 
 

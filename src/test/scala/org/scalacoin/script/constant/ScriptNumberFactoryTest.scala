@@ -37,7 +37,13 @@ class ScriptNumberFactoryTest extends FlatSpec with MustMatchers {
     ScriptNumberFactory.fromNumber(number).hex must be (hex)
   }
 
-  it must "give us OP_0 back if we try to create the number zero" in {
-    ScriptNumberFactory.fromNumber(0) must be (OP_0)
+  it must "it must give us the same object when we create the number zero from the ScriptNumberFactory" in {
+    ScriptNumberFactory.fromNumber(0) must be (ScriptNumberFactory.zero)
+    ScriptNumberFactory.fromHex("00") must be (ScriptNumberFactory.zero)
+    ScriptNumberFactory.fromBytes(Seq(0x00)) must be (ScriptNumberFactory.zero)
+  }
+
+  it must "convert our script number 0 to a long" in {
+    ScriptNumberFactory.zero.toLong must be (0)
   }
 }
