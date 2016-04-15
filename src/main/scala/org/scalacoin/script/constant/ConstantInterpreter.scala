@@ -84,7 +84,7 @@ trait ConstantInterpreter extends BitcoinSLogger {
     logger.debug("Constant to be pushed onto stack: " + constant)
     //check to see if we have the exact amount of bytes needed to be pushed onto the stack
     //if we do not, mark the program as invalid
-    if (bytesNeeded == 0) ScriptProgramFactory.factory(program, OP_0 :: program.stack, newScript)
+    if (bytesNeeded == 0) ScriptProgramFactory.factory(program, ScriptNumberFactory.zero :: program.stack, newScript)
     else if (bytesNeeded != bytesToPushOntoStack.map(_.bytes.size).sum) ScriptProgramFactory.factory(program,false)
     else ScriptProgramFactory.factory(program, constant :: program.stack, newScript)
   }

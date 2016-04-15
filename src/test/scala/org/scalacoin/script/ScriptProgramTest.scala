@@ -17,7 +17,7 @@ class ScriptProgramTest extends FlatSpec with MustMatchers  {
   }
 
   it must "determine if the stack stop is false" in {
-    val stack = List(ScriptNumberImpl(0))
+    val stack = List(ScriptNumberFactory.zero)
     val script = List()
     val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
     program.stackTopIsTrue must be (false)

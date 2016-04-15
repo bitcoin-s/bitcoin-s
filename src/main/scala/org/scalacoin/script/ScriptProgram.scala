@@ -75,7 +75,8 @@ trait ScriptProgram {
    */
   def stackTopIsFalse : Boolean = {
     if (stack.headOption.isDefined &&
-      (stack.head.hex == OP_FALSE.hex || stack.head.hex == ScriptNumberFactory.negativeZero.hex)) true
+      (stack.head.hex == OP_FALSE.hex || stack.head.hex == ScriptNumberFactory.negativeZero.hex ||
+        stack.head.hex == ScriptNumberFactory.zero.hex)) true
     else if (!stack.headOption.isDefined) true
     else false
   }
