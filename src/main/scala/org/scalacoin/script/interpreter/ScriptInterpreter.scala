@@ -39,7 +39,13 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
    * @return
    */
   def run(program : ScriptProgram) : Boolean = {
-    // Maximum number of non-push operations per script
+    //TODO: Think about this more to change this from being mutable to immutable - perhaps
+    //passing this as an implicit argument to our loop function
+    /**
+     * The current operation count that a script has performed
+     * This is limited by bitcoin core to be 201 operations
+     *
+     */
     var opCount = 0
     /**
      *
@@ -57,6 +63,8 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
 
       if (opCount > maxScriptOps) {
         logger.error("We have reached the maximum amount of script operations allowed")
+        logger.error("Original script: " + program.originalScript)
+        logger.error("Original script size: " + program.originalScript.size)
         (false,ScriptProgramFactory.factory(program,false))
       } else {
         program.script match {
@@ -206,7 +214,12 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
             //in this case, just reat OP_CLTV just like a NOP and remove it from the stack
             else loop(ScriptProgramFactory.factory(program, program.script.tail, ScriptProgramFactory.Script))
           //no more script operations to run, return whether the program is valid and the final state of the program
-          case Nil => (program.isValid, program)
+          case Nil =>
+            //reset opCount variable to zero since we may need to count the ops
+            //in the scriptPubKey - we don't want the op count of the scriptSig
+            //to count towards the scriptPubKey op count
+            opCount = 0
+            (program.isValid, program)
 
           case h :: t => throw new RuntimeException(h + " was unmatched")
         }
@@ -222,6 +235,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
         //first run the serialized redeemScript && the p2shScriptPubKey to see if the hashes match
         val hashCheckProgram = ScriptProgramFactory.factory(program, Seq(scriptSig.asm.last), program.txSignatureComponent.scriptPubKey.asm)
         val (hashesMatch, hashesMatchProgram) = loop(hashCheckProgram)
+
         hashesMatch match {
           case true =>
             logger.info("Hashes matched between the p2shScriptSignature & the p2shScriptPubKey")
