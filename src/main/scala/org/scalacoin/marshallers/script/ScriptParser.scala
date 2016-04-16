@@ -75,12 +75,22 @@ trait ScriptParser extends Factory[List[ScriptToken]] with BitcoinSLogger {
             loop(t, OP_0.bytes ++ accum)
           } else {
             val bytes : Seq[Byte] = BitcoinSUtil.decodeHex(BitcoinSUtil.flipEndianess(strippedQuotes.getBytes.toList))
-            val bytesToPushOntoStack : ScriptToken = bytes.size > 75 match {
-              case true => ScriptNumberFactory.fromNumber(bytes.size)
-              case false => BytesToPushOntoStackFactory.fromNumber(bytes.size).get
+
+            val bytesToPushOntoStack : List[ScriptToken] = (bytes.size > 75) match {
+              case true =>
+                val scriptNumber = ScriptNumberFactory.fromHex(BitcoinSUtil.flipEndianess(BitcoinSUtil.longToHex(bytes.size)))
+                bytes.size match {
+                  case size if size < Byte.MaxValue =>
+                    List(scriptNumber,OP_PUSHDATA1)
+                  case size if size < Short.MaxValue =>
+                    List(scriptNumber,OP_PUSHDATA2)
+                  case size if size < Int.MaxValue =>
+                    List(scriptNumber,OP_PUSHDATA4)
+                }
+              case false => List(BytesToPushOntoStackFactory.fromNumber(bytes.size).get)
             }
 
-            loop(t, bytes.toList ++ bytesToPushOntoStack.bytes ++  accum)
+            loop(t, bytes.toList ++  bytesToPushOntoStack.flatMap(_.bytes) ++  accum)
           }
 
         //for the case that we last saw a ByteToPushOntoStack operation
