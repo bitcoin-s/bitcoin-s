@@ -52,7 +52,7 @@ trait ScriptParser extends Factory[List[ScriptToken]] with BitcoinSLogger {
 
 
   /**
-   * Parses an asm output script of a transaction
+   * Parses a string to a sequence of script tokens
    * example: "OP_DUP OP_HASH160 e2e7c1ab3f807151e832dd1accb3d4f5d7d19b4b OP_EQUALVERIFY OP_CHECKSIG"
    * example: ["0", "IF 0x50 ENDIF 1", "P2SH,STRICTENC", "0x50 is reserved (ok if not executed)"] (from script_valid.json)
    * @param str
