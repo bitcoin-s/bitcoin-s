@@ -59,12 +59,13 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
       logger.debug("Stack: " + program.stack)
       logger.debug("Script: " + program.script)
       if (program.script.headOption.isDefined &&
-        BitcoinScriptUtil.countsTowardsScriptOpLimit(program.script.head)) opCount = opCount + 1
-
+        BitcoinScriptUtil.countsTowardsScriptOpLimit(program.script.head)) {
+        logger.error("Counting "  + program.script.head + " towards op count limit ")
+        opCount = opCount + 1
+      }
       if (opCount > maxScriptOps) {
         logger.error("We have reached the maximum amount of script operations allowed")
-        logger.error("Original script: " + program.originalScript)
-        logger.error("Original script size: " + program.originalScript.size)
+        logger.error("Here are the remaining operations in the script: " + program.script)
         (false,ScriptProgramFactory.factory(program,false))
       } else {
         program.script match {
