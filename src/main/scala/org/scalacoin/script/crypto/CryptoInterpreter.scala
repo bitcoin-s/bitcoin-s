@@ -155,7 +155,8 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
       //these next lines remove the appropriate stack/script values after the signatures have been checked
       val nPossibleSignatures : Int  = program.stack.head match {
         case s : ScriptNumber => s.num.toInt
-        case _ => throw new RuntimeException("n must be a script number for OP_CHECKMULTISIG")
+        case s : ScriptConstant => BitcoinSUtil.hexToInt(s.hex)
+        case _ => throw new RuntimeException("n must be a script number or script constant for OP_CHECKMULTISIG")
       }
       logger.debug("nPossibleSignatures: " + nPossibleSignatures)
       val (pubKeysScriptTokens,stackWithoutPubKeys) =
@@ -164,7 +165,8 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
       logger.debug("Public keys on the stack: " + pubKeys)
       val mRequiredSignatures : Int = stackWithoutPubKeys.head match {
         case s: ScriptNumber => s.num.toInt
-        case _ => throw new RuntimeException("m must be a script number for OP_CHECKMULTISIG")
+        case s : ScriptConstant => BitcoinSUtil.hexToInt(s.hex)
+        case _ => throw new RuntimeException("m must be a script number or script constant for OP_CHECKMULTISIG")
       }
       logger.debug("mRequiredSignatures: " + mRequiredSignatures )
 

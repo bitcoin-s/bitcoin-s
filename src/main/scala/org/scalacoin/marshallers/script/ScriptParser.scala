@@ -63,8 +63,8 @@ trait ScriptParser extends Factory[List[ScriptToken]] with BitcoinSLogger {
 
     @tailrec
     def loop(operations : List[String], accum : List[Byte]) : List[Byte] = {
-      logger.debug("Attempting to parse: " + operations.headOption)
-      logger.debug("Accum: " + accum)
+/*      logger.debug("Attempting to parse: " + operations.headOption)
+      logger.debug("Accum: " + accum)*/
       operations match {
         //for parsing strings like 'Az', need to remove single quotes
         //example: https://github.com/bitcoin/bitcoin/blob/master/src/test/data/script_valid.json#L24
@@ -92,31 +92,6 @@ trait ScriptParser extends Factory[List[ScriptToken]] with BitcoinSLogger {
 
             loop(t, bytes.toList ++  bytesToPushOntoStack.flatMap(_.bytes) ++  accum)
           }
-
-        //for the case that we last saw a ByteToPushOntoStack operation
-        //this means that the next byte needs to be parsed as a constant
-        //not a script operation
-/*
-        case h :: t if (h.size == 4 && h.substring(0,2) == "0x"
-          && accum.headOption.isDefined && accum.head.isInstanceOf[BytesToPushOntoStackImpl]) =>
-          logger.debug("Found a script operation preceded by a BytesToPushOntoStackImpl")
-          val hexString = h.substring(2,h.size).toLowerCase
-          logger.debug("Hex string: " + hexString)
-          loop(t, BitcoinSUtil.decodeHex(hexString) ++ accum)
-*/
-
-        //OP_PUSHDATA operations are always followed by the amount of bytes to be pushed
-        //onto the stack
-/*        case h :: t if (h.size > 1 && h.substring(0,2) == "0x" &&
-          accum.headOption.isDefined && List(OP_PUSHDATA1, OP_PUSHDATA2,OP_PUSHDATA4).contains(accum.head)) =>
-          logger.debug("Found a hexadecimal number preceded by an OP_PUSHDATA operation")
-          //this is weird because the number is unsigned unlike other numbers
-          //in bitcoin, but it is still encoded in little endian hence the .reverse call
-          val hex = h.slice(2,h.size).toLowerCase
-          val byteToPushOntoStack = BytesToPushOntoStackImpl(
-            java.lang.Long.parseLong(BitcoinSUtil.flipEndianess(hex),16).toInt)
-          loop(t, BitcoinSUtil.decodeHex(hex) ++ accum)*/
-
         //if we see a byte constant in the form of "0x09adb"
         case h :: t if (h.size > 1 && h.substring(0,2) == "0x") =>
           loop(t,BitcoinSUtil.decodeHex(h.substring(2,h.size).toLowerCase).reverse ++ accum)
