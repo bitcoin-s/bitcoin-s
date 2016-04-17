@@ -12,6 +12,7 @@ trait ScriptConstantFactory extends Factory[ScriptConstant] {
    * @return
    */
   def fromBytes(bytes : Seq[Byte]) : ScriptConstant = ScriptConstantImpl(BitcoinSUtil.encodeHex(bytes))
+
 }
 
 object ScriptConstantFactory extends ScriptConstantFactory

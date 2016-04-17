@@ -72,14 +72,20 @@ trait NumberUtil extends BitcoinSLogger {
    * @param bytes
    * @return
    */
-  def isPositive(bytes : Seq[Byte]) = {
-    val result: Int = bytes(bytes.size-1) & 0x80
-    if (result == 0x80) false else true
+  def isPositive(bytes : Seq[Byte]) : Boolean = {
+    if (bytes.isEmpty) false
+    else {
+      val result: Int = bytes(bytes.size-1) & 0x80
+      if (result == 0x80) false else true
+    }
+
   }
 
-  def isNegative(hex : String) = !isPositive(hex)
+  def isNegative(hex : String) : Boolean = isNegative(BitcoinSUtil.decodeHex(hex))
 
-  def isNegative(bytes : List[Byte]) = !isPositive(bytes)
+  def isNegative(bytes : List[Byte]) : Boolean = {
+    if (bytes.isEmpty) false else !isPositive(bytes)
+  }
 
   /**
    * Change sign bit to positive

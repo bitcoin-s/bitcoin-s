@@ -77,15 +77,6 @@ class ArithmeticInterpreterTest extends FlatSpec with MustMatchers with Arithmet
     }
   }
 
-  it must "throw an exception if we have an OP_SUB with one of the two numbers a non script number on the stack" in {
-
-    val stack = List(ScriptNumberFactory.one, ScriptConstantImpl("nan"))
-    val script = List(OP_SUB)
-    val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
-    val newProgram = opSub(program)
-    newProgram.isValid must be (false)
-  }
-
   it must "perform an OP_ABS on a negative number corectly" in {
     val stack = List(ScriptNumberFactory.fromNumber(-1))
     val script = List(OP_ABS)
@@ -396,6 +387,18 @@ class ArithmeticInterpreterTest extends FlatSpec with MustMatchers with Arithmet
     val newProgram1 = opWithin(program1)
     newProgram1.stack must be (List(OP_TRUE))
     newProgram1.script.isEmpty must be (true)
+  }
+
+
+  it must "interpret two script constants as numbers and then add them" in {
+    val scriptConstant1 = ScriptConstantFactory.fromHex("ffffffff")
+    val scriptConstant2 = ScriptConstantFactory.fromHex("ffffff7f")
+    val stack = List(scriptConstant1, scriptConstant2)
+    val script = List(OP_ADD)
+    val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack, script)
+    val newProgram = opAdd(program)
+    newProgram.stack must be (List(ScriptNumberFactory.zero))
+    newProgram.script.isEmpty must be (true)
   }
 
 

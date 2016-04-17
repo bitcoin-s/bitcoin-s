@@ -22,6 +22,10 @@ class ScriptParserTest extends FlatSpec with MustMatchers with ScriptParser with
     fromBytes(List(0.toByte)) must be (List(OP_0))
   }
 
+  it must "parse the number 0 as an OP_0" in {
+    fromString("0") must be (List(OP_0))
+  }
+
   it must "parse a number larger than an integer into a ScriptNumberImpl" in {
     fromString("2147483648") must be (List(ScriptNumberFactory.fromNumber(2147483648L)))
   }
@@ -41,82 +45,72 @@ class ScriptParserTest extends FlatSpec with MustMatchers with ScriptParser with
     fromBytes(bytes) must be (TestUtil.p2pkhOutputScriptAsm)
   }
 
-  it must "parse a p2pkh input script from a byte array to script tokens" in {
-    val bytes = decodeHex(TestUtil.p2pkhInputScript)
-    fromBytes(bytes) must be (TestUtil.p2pkhInputScriptAsm)
-  }
+   it must "parse a p2pkh input script from a byte array to script tokens" in {
+     val bytes = decodeHex(TestUtil.p2pkhInputScript)
+     fromBytes(bytes) must be (TestUtil.p2pkhInputScriptAsm)
+   }
 
-  it must "parse a p2sh input script from a byte array into script tokens" in {
-    val bytes = decodeHex(TestUtil.rawP2shInputScript)
-    fromBytes(bytes) must be (TestUtil.p2shInputScriptAsm)
-  }
+   it must "parse a p2sh input script from a byte array into script tokens" in {
+     val bytes = decodeHex(TestUtil.rawP2shInputScript)
+     fromBytes(bytes) must be (TestUtil.p2shInputScriptAsm)
+   }
 
-  it must "parse a p2sh outputscript from a byte array into script tokens" in {
-    val bytes = decodeHex(TestUtil.p2shOutputScript)
-    fromBytes(bytes) must be (TestUtil.p2shOutputScriptAsm)
-  }
+   it must "parse a p2sh outputscript from a byte array into script tokens" in {
+     val bytes = decodeHex(TestUtil.p2shOutputScript)
+     fromBytes(bytes) must be (TestUtil.p2shOutputScriptAsm)
+   }
 
-  it must "parse a script constant from 'Az' EQUAL" in {
-    val str = "'Az' EQUAL"
-    fromString(str) must equal (List(ScriptConstantImpl("417a"), OP_EQUAL))
-  }
+   it must "parse a script constant from 'Az' EQUAL" in {
+     val str = "'Az' EQUAL"
+     fromString(str) must equal (List(BytesToPushOntoStackFactory.fromNumber(2).get, ScriptConstantFactory.fromHex("417a"), OP_EQUAL))
+   }
 
-  it must "parse a script number that has a leading zero" in {
-    val str = "0x01 0x0100"
-    fromString(str) must equal (List(BytesToPushOntoStackFactory.factory(1).get, ScriptNumberFactory.fromHex("0100")))
-  }
+   it must "parse a script number that has a leading zero" in {
+     val str = "0x02 0x0100"
+     fromString(str) must equal (List(BytesToPushOntoStackFactory.factory(2).get, ScriptConstantFactory.fromHex("0100")))
+   }
 
 
-  it must "parse an OP_PICK" in {
-    val str = "PICK"
-    fromString(str) must equal (List(OP_PICK))
-  }
+   it must "parse an OP_PICK" in {
+     val str = "PICK"
+     fromString(str) must equal (List(OP_PICK))
+   }
 
-  it must "parse an OP_NOP" in {
-    val str = "NOP"
-    fromString(str) must equal (List(OP_NOP))
-  }
+   it must "parse an OP_NOP" in {
+     val str = "NOP"
+     fromString(str) must equal (List(OP_NOP))
+   }
 
-  it must "parse a script that has a decimal and a hexadecimal number in it " in  {
-    val str = "32767 0x02 0xff7f EQUAL"
-    fromString(str) must equal (List(ScriptNumberFactory.fromNumber(32767),
-      BytesToPushOntoStackImpl(2), ScriptNumberFactory.fromNumber(32767), OP_EQUAL))
-  }
+   it must "parse a script that has a decimal and a hexadecimal number in it " in  {
+     val str = "32767 0x02 0xff7f EQUAL"
+     fromString(str) must equal (List(BytesToPushOntoStackFactory.fromNumber(2).get, ScriptConstantFactory.fromHex("ff7f"),
+       BytesToPushOntoStackImpl(2), ScriptConstantFactory.fromHex("ff7f"), OP_EQUAL))
+   }
+   it must "parse an OP_1" in {
+     val str = "0x51"
+     fromString(str) must equal (List(OP_1))
+   }
 
-  it must "parse an OP_1" in {
-    val str = "0x51"
-    fromString(str) must equal (List(OP_1))
-  }
+   it must "parse an extremely long hex constant" in {
+     val str = "0x4b 0x417a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a " +
+     "'Azzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz' EQUAL"
 
-  it must "parse an extremely long hex constant" in {
-    val str = "0x4b 0x417a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a " +
-    "'Azzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz' EQUAL"
-
-    fromString(str) must equal (List(BytesToPushOntoStackImpl(75),
-      ScriptConstantImpl("417a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a"),
-      ScriptConstantImpl("417a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a"), OP_EQUAL))
-  }
-
-  it must "parse a hexadecimal number and a string constant as the same thing" in {
-    val str = "0x02 0x417a 'Az' EQUAL"
-    fromString(str) must be (List(BytesToPushOntoStackImpl(2),ScriptNumberFactory.fromNumber(31297),ScriptConstantImpl("417a"),OP_EQUAL))
-  }
-
-  it must "parse a combination of decimal and hexadecimal constants correctly" in {
-    val str = "127 0x01 0x7F EQUAL"
-    fromString(str) must be (List(ScriptNumberFactory.fromNumber(127), BytesToPushOntoStackImpl(1), ScriptNumberFactory.fromNumber(127), OP_EQUAL))
-  }
+     fromString(str) must equal (List(BytesToPushOntoStackFactory.fromNumber(75).get,
+       ScriptConstantFactory.fromHex("417a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a"),
+       BytesToPushOntoStackFactory.fromNumber(75).get,
+       ScriptConstantFactory.fromHex("417a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a"), OP_EQUAL))
+   }
 
   it must "parse an OP_IF OP_ENDIF block" in {
     val str = "1 0x01 0x80 IF 0 ENDIF"
-    fromString(str) must be (List(OP_1, BytesToPushOntoStackImpl(1), ScriptNumberFactory.negativeZero, OP_IF, OP_0, OP_ENDIF))
+    fromString(str) must be (List(OP_1, BytesToPushOntoStackImpl(1), ScriptConstantFactory.fromHex("80"), OP_IF, OP_0, OP_ENDIF))
   }
 
 
   it must "parse an OP_PUSHDATA1 correctly" in {
     val str = "'abcdefghijklmnopqrstuvwxyz' HASH160 0x4c 0x14 0xc286a1af0947f58d1ad787385b1c2c4a976f9e71 EQUAL"
-    val expectedScript = List(ScriptConstantImpl("6162636465666768696a6b6c6d6e6f707172737475767778797a"),OP_HASH160,
-      OP_PUSHDATA1, BytesToPushOntoStackImpl(20), ScriptConstantImpl("c286a1af0947f58d1ad787385b1c2c4a976f9e71"), OP_EQUAL)
+    val expectedScript = List(BytesToPushOntoStackFactory.fromNumber(26).get, ScriptConstantImpl("6162636465666768696a6b6c6d6e6f707172737475767778797a"),OP_HASH160,
+      OP_PUSHDATA1, ScriptNumberFactory.fromNumber(20), ScriptConstantImpl("c286a1af0947f58d1ad787385b1c2c4a976f9e71"), OP_EQUAL)
     fromString(str) must be (expectedScript)
   }
 
@@ -124,8 +118,8 @@ class ScriptParserTest extends FlatSpec with MustMatchers with ScriptParser with
     //https://tbtc.blockr.io/api/v1/tx/raw/5d254a872c9197c683ea9111fb5c0e2e0f49280a89961c45b9fea76834d335fe
     val str = "4cf1" +
       "55210269992fb441ae56968e5b77d46a3e53b69f136444ae65a94041fc937bdb28d93321021df31471281d4478df85bfce08a10aab82601dca949a79950f8ddf7002bd915a2102174c82021492c2c6dfcbfa4187d10d38bed06afb7fdcd72c880179fddd641ea121033f96e43d72c33327b6a4631ccaa6ea07f0b106c88b9dc71c9000bb6044d5e88a210313d8748790f2a86fb524579b46ce3c68fedd58d2a738716249a9f7d5458a15c221030b632eeb079eb83648886122a04c7bf6d98ab5dfb94cf353ee3e9382a4c2fab02102fb54a7fcaa73c307cfd70f3fa66a2e4247a71858ca731396343ad30c7c4009ce57ae"
-    fromString(str) must be (List(OP_PUSHDATA1, BytesToPushOntoStackImpl(241),
-      ScriptConstantImpl("55210269992fb441ae56968e5b77d46a3e53b69f136444ae65a94041fc937bdb28d93321021df31471281d4478df85bfce08a10aab82601dca949a79950f8ddf7002bd915a2102174c82021492c2c6dfcbfa4187d10d38bed06afb7fdcd72c880179fddd641ea121033f96e43d72c33327b6a4631ccaa6ea07f0b106c88b9dc71c9000bb6044d5e88a210313d8748790f2a86fb524579b46ce3c68fedd58d2a738716249a9f7d5458a15c221030b632eeb079eb83648886122a04c7bf6d98ab5dfb94cf353ee3e9382a4c2fab02102fb54a7fcaa73c307cfd70f3fa66a2e4247a71858ca731396343ad30c7c4009ce57ae"))
+    fromString(str) must be (List(OP_PUSHDATA1, ScriptNumberFactory.fromNumber(241),
+      ScriptConstantFactory.fromHex("55210269992fb441ae56968e5b77d46a3e53b69f136444ae65a94041fc937bdb28d93321021df31471281d4478df85bfce08a10aab82601dca949a79950f8ddf7002bd915a2102174c82021492c2c6dfcbfa4187d10d38bed06afb7fdcd72c880179fddd641ea121033f96e43d72c33327b6a4631ccaa6ea07f0b106c88b9dc71c9000bb6044d5e88a210313d8748790f2a86fb524579b46ce3c68fedd58d2a738716249a9f7d5458a15c221030b632eeb079eb83648886122a04c7bf6d98ab5dfb94cf353ee3e9382a4c2fab02102fb54a7fcaa73c307cfd70f3fa66a2e4247a71858ca731396343ad30c7c4009ce57ae"))
     )
   }
 
@@ -140,14 +134,14 @@ class ScriptParserTest extends FlatSpec with MustMatchers with ScriptParser with
       "0x111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111 " +
       "0x4c 0xFF 0x111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111 " +
       "EQUAL"
-    val expectedScript  =  List(OP_PUSHDATA2, BytesToPushOntoStackImpl(255),
-      ScriptConstantImpl("111111111111111111111111111111111111111111111111111111111111111111111111111111111111111" +
+    val expectedScript  =  List(OP_PUSHDATA2, ScriptNumberFactory.fromNumber(255),
+      ScriptConstantFactory.fromHex("111111111111111111111111111111111111111111111111111111111111111111111111111111111111111" +
         "11111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111" +
         "11111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111" +
         "11111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111" +
         "11111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111" +
-        "1111111"), OP_PUSHDATA1, BytesToPushOntoStackImpl(255),
-      ScriptConstantImpl("111111111111111111111111111111111111111111111111111111111111111111111111111111111111111" +
+        "1111111"), OP_PUSHDATA1, ScriptNumberFactory.fromNumber(255),
+      ScriptConstantFactory.fromHex("111111111111111111111111111111111111111111111111111111111111111111111111111111111111111" +
         "11111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111" +
         "11111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111" +
         "11111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111" +
@@ -185,5 +179,24 @@ class ScriptParserTest extends FlatSpec with MustMatchers with ScriptParser with
 
   it must "parse 1ADD to an OP_1ADD" in {
     ScriptParser.fromString("1ADD") must be (Seq(OP_1ADD))
+  }
+
+  it must "parse a OP_PUSHDATA operation that pushes zero bytes correctly" in {
+    val str = "0x4c 0x00"
+    ScriptParser.fromString(str) must be (List(OP_PUSHDATA1, ScriptNumberFactory.zero))
+
+    val str1 = "0x4d 0x00"
+    ScriptParser.fromString(str1) must be (List(OP_PUSHDATA2, ScriptNumberFactory.zero))
+
+    val str2 = "0x4e 0x00"
+    ScriptParser.fromString(str2) must be (List(OP_PUSHDATA4, ScriptNumberFactory.zero))
+  }
+
+  it must "parse a large string constant found inside of script_valid.json" in {
+    val str = "'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'"
+    val parsed = fromString(str)
+     parsed must be (List(OP_PUSHDATA2, ScriptNumberFactory.fromNumber(520), ScriptConstantFactory.fromHex(
+      "62626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262"
+    )))
   }
 }
