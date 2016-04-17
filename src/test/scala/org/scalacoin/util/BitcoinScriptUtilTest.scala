@@ -39,4 +39,14 @@ class BitcoinScriptUtilTest extends FlatSpec with MustMatchers {
     BitcoinScriptUtil.countsTowardsScriptOpLimit(OP_CHECKLOCKTIMEVERIFY) must be (true)
   }
 
+  it must "not count script constants towards the script count limit" in {
+    BitcoinScriptUtil.countsTowardsScriptOpLimit(ScriptConstantFactory.fromHex("1234")) must be (false)
+  }
+
+  it must "not count OP_PUSHDATA operations towards the script count" in {
+    BitcoinScriptUtil.countsTowardsScriptOpLimit(OP_PUSHDATA1) must be (false)
+    BitcoinScriptUtil.countsTowardsScriptOpLimit(OP_PUSHDATA2) must be (false)
+    BitcoinScriptUtil.countsTowardsScriptOpLimit(OP_PUSHDATA4) must be (false)
+  }
+
 }

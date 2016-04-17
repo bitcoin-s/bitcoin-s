@@ -35,7 +35,7 @@ trait StackInterpreter extends BitcoinSLogger {
   def opIfDup(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.isDefined && program.script.head == OP_IFDUP, "Top of the script stack must be OP_DUP")
     program.stack.headOption.isDefined match {
-      case true if (program.stack.head == OP_0) =>
+      case true if (program.stack.head == ScriptNumberFactory.zero) =>
         ScriptProgramFactory.factory(program,program.stack,program.script.tail)
       case true => ScriptProgramFactory.factory(program, program.stack.head :: program.stack,
         program.script.tail)
@@ -56,7 +56,7 @@ trait StackInterpreter extends BitcoinSLogger {
     require(program.script.size >= 1, "OP_DEPTH requires at least two elements on the script stack")
     val stackSize = program.stack.size
 
-    val numberToPush : ScriptNumber= if (stackSize == 0) OP_0 else ScriptNumberImpl(stackSize)
+    val numberToPush : ScriptNumber = ScriptNumberFactory.fromNumber(stackSize)
     ScriptProgramFactory.factory(program, numberToPush :: program.stack, program.script.tail)
   }
 
@@ -153,7 +153,7 @@ trait StackInterpreter extends BitcoinSLogger {
     require(program.script.headOption.isDefined && program.script.head == OP_PICK, "Top of script stack must be OP_PICK")
     require(program.stack.size > 0,"Stack must have at least two items on it for OP_PICK")
 
-    val n = BitcoinSUtil.hexToLong(program.stack.head.hex).toInt
+    val n = program.stack.head.toLong.toInt
     //check if n is within the bound of the script
     (n >= 0 && n < program.stack.tail.size) match {
       case true =>
@@ -174,7 +174,7 @@ trait StackInterpreter extends BitcoinSLogger {
   def opRoll(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.isDefined && program.script.head == OP_ROLL, "Top of script stack must be OP_ROLL")
     require(program.stack.size > 0,"Stack must have at least one items on it for OP_ROLL")
-    val n = BitcoinSUtil.hexToLong(program.stack.head.hex).toInt
+    val n = program.stack.head.toLong.toInt
     (n >= 0 && n < program.stack.tail.size) match {
       case true =>
         val newStackTop = program.stack.tail(n)

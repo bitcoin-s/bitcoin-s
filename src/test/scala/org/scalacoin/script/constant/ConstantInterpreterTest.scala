@@ -40,32 +40,32 @@ class ConstantInterpreterTest extends FlatSpec with MustMatchers with ConstantIn
 
   it must "push a constant 2 bytes onto the stack" in {
     val stack = List()
-    val script = List(BytesToPushOntoStackImpl(2), ScriptNumberFactory.one, OP_0)
+    val script = List(BytesToPushOntoStackFactory.fromNumber(2).get, ScriptNumberFactory.one, OP_0)
     val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
     val newProgram = pushScriptNumberBytesToStack(program)
     newProgram.script.isEmpty must be (true)
-    newProgram.stack must be (List(ScriptConstantFactory.fromHex("01")))
+    newProgram.stack must be (List(ScriptConstantFactory.fromHex("0100")))
   }
 
   it must "push 0 bytes onto the stack which is OP_0" in {
     val stack = List()
-    val script = List(OP_PUSHDATA1,BytesToPushOntoStackImpl(0))
+    val script = List(OP_PUSHDATA1,BytesToPushOntoStackFactory.fromNumber(0).get)
     val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
     val newProgram  = opPushData1(program)
     newProgram.isValid must be (true)
-    newProgram.stack must be (List(OP_0))
+    newProgram.stack must be (List(ScriptNumberFactory.zero))
 
     val stack1 = List()
-    val script1 = List(OP_PUSHDATA2,BytesToPushOntoStackImpl(0))
+    val script1 = List(OP_PUSHDATA2,BytesToPushOntoStackFactory.fromNumber(0).get)
     val program1 = ScriptProgramFactory.factory(TestUtil.testProgram, stack1,script1)
     val newProgram1  = opPushData2(program1)
-    newProgram1.stack must be (List(OP_0))
+    newProgram1.stack must be (List(ScriptNumberFactory.zero))
 
     val stack2 = List()
-    val script2 = List(OP_PUSHDATA4,BytesToPushOntoStackImpl(0))
+    val script2 = List(OP_PUSHDATA4,BytesToPushOntoStackFactory.fromNumber(0).get)
     val program2 = ScriptProgramFactory.factory(TestUtil.testProgram, stack2,script2)
     val newProgram2 = opPushData4(program2)
-    newProgram2.stack must be (List(OP_0))
+    newProgram2.stack must be (List(ScriptNumberFactory.zero))
   }
 
 
