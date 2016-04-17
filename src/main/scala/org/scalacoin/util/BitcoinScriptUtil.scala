@@ -27,7 +27,7 @@ trait BitcoinScriptUtil {
   def asmToBytes(asm : Seq[ScriptToken]) : Seq[Byte] = BitcoinSUtil.decodeHex(asmToHex(asm))
 
   /**
-   * Filters out push operations in our scriptSig
+   * Filters out push operations in our sequence of script tokens
    * this removes OP_PUSHDATA1, OP_PUSHDATA2, OP_PUSHDATA4 and all ByteToPushOntoStack tokens
    * @param asm
    * @return
@@ -47,9 +47,7 @@ trait BitcoinScriptUtil {
    * @return
    */
   def countsTowardsScriptOpLimit(token : ScriptToken) : Boolean = token match {
-    case scriptNumOp : ScriptNumberOperation => false
-    case OP_RESERVED => false
-    case scriptOp : ScriptOperation => true
+    case scriptOp : ScriptOperation if (scriptOp.opCode > OP_16.opCode) => true
     case _ : ScriptToken => false
   }
 }
