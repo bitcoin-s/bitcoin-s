@@ -161,7 +161,6 @@ case object OP_0 extends ScriptNumberOperation {
   override def opCode = 0
   override def hex = "00"
   override def num = 0
-  /*override def scriptNumber = ScriptNumberFactory.zero*/
 }
 /**
  * An empty array of bytes is pushed onto the stack. (This is not a no-op: an item is added to the stack.)
@@ -169,8 +168,6 @@ case object OP_0 extends ScriptNumberOperation {
 case object OP_FALSE extends ScriptNumberOperation {
   override def opCode = OP_0.opCode
   override def hex = OP_0.hex
-  /*override def scriptNumber = OP_0.scriptNumber*/
-  //empty byte vector
   override def num = OP_0.num
   override def bytes = OP_0.bytes
 }
@@ -181,7 +178,6 @@ case object OP_FALSE extends ScriptNumberOperation {
 case object OP_TRUE extends ScriptNumberOperation {
   override def opCode = 81
   override def num = 1
-  /*override def scriptNumber = ScriptNumberFactory.one*/
 }
 
 /**
@@ -190,7 +186,6 @@ case object OP_TRUE extends ScriptNumberOperation {
 case object OP_1NEGATE extends ScriptNumberOperation {
   override def opCode = 79
   override def num = -1
-  /*override def scriptNumber = ScriptNumberFactory.fromNumber(-1)*/
 }
 
 
@@ -200,7 +195,6 @@ case object OP_1NEGATE extends ScriptNumberOperation {
 case object OP_1 extends ScriptNumberOperation {
   override def opCode = OP_TRUE.opCode
   override def num = OP_TRUE.num
-  /*override def scriptNumber = OP_TRUE.scriptNumber*/
 }
 
 /**
@@ -209,7 +203,6 @@ case object OP_1 extends ScriptNumberOperation {
 case object OP_2 extends ScriptNumberOperation {
   override def opCode = 82
   override def num = 2
-  /*override def scriptNumber = ScriptNumberFactory.fromNumber(2)*/
 }
 
 /**
@@ -218,7 +211,6 @@ case object OP_2 extends ScriptNumberOperation {
 case object OP_3 extends ScriptNumberOperation {
   override def opCode = 83
   override def num = 3
-  /*override def scriptNumber = ScriptNumberFactory.fromNumber(3)*/
 }
 
 /**
@@ -227,7 +219,6 @@ case object OP_3 extends ScriptNumberOperation {
 case object OP_4 extends ScriptNumberOperation {
   override def opCode = 84
   override def num = 4
-  /*override def scriptNumber = ScriptNumberFactory.fromNumber(4)*/
 }
 
 /**
@@ -236,7 +227,6 @@ case object OP_4 extends ScriptNumberOperation {
 case object OP_5 extends ScriptNumberOperation {
   override def opCode = 85
   override def num = 5
-  /*override def scriptNumber = ScriptNumberFactory.fromNumber(5)*/
 }
 
 /**
@@ -245,7 +235,6 @@ case object OP_5 extends ScriptNumberOperation {
 case object OP_6 extends ScriptNumberOperation {
   override def opCode = 86
   override def num = 6
-  /*override def scriptNumber = ScriptNumberFactory.fromNumber(6)*/
 }
 
 /**
@@ -254,7 +243,6 @@ case object OP_6 extends ScriptNumberOperation {
 case object OP_7 extends ScriptNumberOperation {
   override def opCode = 87
   override def num = 7
-  /*override def scriptNumber = ScriptNumberFactory.fromNumber(7)*/
 }
 
 /**
@@ -263,7 +251,6 @@ case object OP_7 extends ScriptNumberOperation {
 case object OP_8 extends ScriptNumberOperation {
   override def opCode = 88
   override def num = 8
-  //override def scriptNumber = ScriptNumberFactory.fromNumber(8)
 }
 
 /**
@@ -272,7 +259,6 @@ case object OP_8 extends ScriptNumberOperation {
 case object OP_9 extends ScriptNumberOperation {
   override def opCode = 89
   override def num = 9
-  //override def scriptNumber = ScriptNumberFactory.fromNumber(9)
 }
 
 /**
@@ -281,7 +267,6 @@ case object OP_9 extends ScriptNumberOperation {
 case object OP_10 extends ScriptNumberOperation {
   override def opCode = 90
   override def num = 10
-  //override def scriptNumber = ScriptNumberFactory.fromNumber(10)
 }
 
 /**
@@ -290,7 +275,6 @@ case object OP_10 extends ScriptNumberOperation {
 case object OP_11 extends ScriptNumberOperation {
   override def opCode = 91
   override def num = 11
-  //override def scriptNumber = ScriptNumberFactory.fromNumber(11)
 }
 
 /**
@@ -299,7 +283,6 @@ case object OP_11 extends ScriptNumberOperation {
 case object OP_12 extends ScriptNumberOperation {
   override def opCode = 92
   override def num = 12
-  //override def scriptNumber = ScriptNumberFactory.fromNumber(12)
 }
 
 /**
@@ -308,7 +291,6 @@ case object OP_12 extends ScriptNumberOperation {
 case object OP_13 extends ScriptNumberOperation {
   override def opCode = 93
   override def num = 13
-  //override def scriptNumber = ScriptNumberFactory.fromNumber(13)
 }
 
 /**
@@ -317,7 +299,6 @@ case object OP_13 extends ScriptNumberOperation {
 case object OP_14 extends ScriptNumberOperation {
   override def opCode = 94
   override def num = 14
-  //override def scriptNumber = ScriptNumberFactory.fromNumber(14)
 }
 
 /**
@@ -326,7 +307,6 @@ case object OP_14 extends ScriptNumberOperation {
 case object OP_15 extends ScriptNumberOperation {
   override def opCode = 95
   override def num = 15
-  //override def scriptNumber = ScriptNumberFactory.fromNumber(15)
 }
 
 /**
@@ -335,7 +315,6 @@ case object OP_15 extends ScriptNumberOperation {
 case object OP_16 extends ScriptNumberOperation {
   override def opCode = 96
   override def num = 16
-  //override def scriptNumber = ScriptNumberFactory.fromNumber(16)
 }
 
 
