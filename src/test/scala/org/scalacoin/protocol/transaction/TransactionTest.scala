@@ -27,7 +27,7 @@ class TransactionTest extends FlatSpec with MustMatchers {
 
   it must "calculate the size of a tranaction correctly" in {
     val rawTx = TestUtil.rawTransaction
-    val tx = TransactionFactory.fromHex(rawTx)
+    val tx = Transaction(rawTx)
     //size is in bytes so divide by 2
     tx.size must be (rawTx.size / 2)
   }
