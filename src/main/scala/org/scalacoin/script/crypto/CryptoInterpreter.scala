@@ -107,6 +107,8 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
               program.script.tail,SignatureValidationFailureNotStrictDerEncoding.isValid)
           case SignatureValidationFailureIncorrectSignatures =>
             ScriptProgramFactory.factory(program, ScriptFalse :: restOfStack,program.script.tail)
+          case SignatureValidationFailureSignatureCount =>
+            ScriptProgramFactory.factory(program, restOfStack, program.script.tail,false)
         }
       }
     }
@@ -206,6 +208,8 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
           //this means that signature verification failed, however all signatures were encoded correctly
           //just push a ScriptFalse onto the stack
           ScriptProgramFactory.factory(program, ScriptFalse :: restOfStack, program.script.tail)
+        case SignatureValidationFailureSignatureCount =>
+          ScriptProgramFactory.factory(program, restOfStack, program.script.tail,false)
       }
     }
   }
@@ -218,13 +222,18 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
    */
   def opCheckMultiSigVerify(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.isDefined && program.script.head == OP_CHECKMULTISIGVERIFY, "Script top must be OP_CHECKMULTISIGVERIFY")
-    require(program.stack.size > 2, "Stack must contain at least 3 items for OP_CHECKMULTISIGVERIFY")
-    val newScript = OP_CHECKMULTISIG :: OP_VERIFY :: program.script.tail
-    val newProgram = ScriptProgramFactory.factory(program,newScript, ScriptProgramFactory.Script)
-    val programFromOpCheckMultiSig = opCheckMultiSig(newProgram)
-    logger.debug("Stack after OP_CHECKMULTSIG execution: " + programFromOpCheckMultiSig.stack)
-    val programFromOpVerify = opVerify(programFromOpCheckMultiSig)
-    programFromOpVerify
+    if (program.stack.size < 3) {
+      logger.error("Stack must contain at least 3 items for OP_CHECKMULTISIGVERIFY")
+      ScriptProgramFactory.factory(program,false)
+    } else {
+      val newScript = OP_CHECKMULTISIG :: OP_VERIFY :: program.script.tail
+      val newProgram = ScriptProgramFactory.factory(program,newScript, ScriptProgramFactory.Script)
+      val programFromOpCheckMultiSig = opCheckMultiSig(newProgram)
+      logger.debug("Stack after OP_CHECKMULTSIG execution: " + programFromOpCheckMultiSig.stack)
+      val programFromOpVerify = opVerify(programFromOpCheckMultiSig)
+      programFromOpVerify
+    }
+
   }
 
 
