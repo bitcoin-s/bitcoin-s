@@ -132,10 +132,10 @@ object TestUtil {
   //from b30d3148927f620f5b1228ba941c211fdabdae75d0ba0b688a58accbf018f3cc
   //ouptut is index 0
   val rawP2PKHScriptPubKey = "76a91431a420903c05a0a7de2de40c9f02ebedbacdc17288ac"
-  def p2pkhScriptPubKey = ScriptPubKeyFactory.fromHex(rawP2PKHScriptPubKey)
+  def p2pkhScriptPubKey = ScriptPubKey(rawP2PKHScriptPubKey)
 
   val rawP2SHScriptPubKey = "a9145780b80be32e117f675d6e0ada13ba799bf248e987"
-  def p2shScriptPubKey = ScriptPubKeyFactory.fromHex(rawP2SHScriptPubKey)
+  def p2shScriptPubKey = ScriptPubKey(rawP2SHScriptPubKey)
   //https://tbtc.blockr.io/api/v1/tx/raw/bdc221db675c06dbee2ae75d33e31cad4e2555efea10c337ff32c8cdf97f8e74
   val rawScriptSig = "483045022100ad8e961fe3c22b2647d92b078f4c0cf81b3106ea5bf8b900ab8646aa4430216f022071d4edc2b5588be20ac4c2d07edd8ed069e10b2402d3dce2d3b835ccd075f283014104fa79182bbc26c708b5d9f36b8635947d4a834ea356cf612ede08395c295f962e0b1dc2557aba34188640e51a58ed547f2c89c8265cd0c04ff890d8435648746e"
   val scriptSig = ScriptSignatureFactory.fromHex(rawScriptSig)
@@ -147,7 +147,7 @@ object TestUtil {
   def p2pkScriptSig = ScriptSignatureFactory.fromHex(rawP2PKScriptSig)
 
   val rawP2PKScriptPubKey = "410479be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8ac"
-  def p2pkScriptPubKey = ScriptPubKeyFactory.fromHex(rawP2PKScriptPubKey)
+  def p2pkScriptPubKey = ScriptPubKey(rawP2PKScriptPubKey)
 
 
   /**
