@@ -2,6 +2,7 @@ package org.scalacoin.protocol
 
 import org.bitcoinj.core.{VersionedChecksummedBytes, Base58, Utils}
 import org.scalacoin.config.{RegTest, TestNet3, MainNet}
+import org.scalacoin.util.{Factory, BitcoinSUtil}
 
 import scala.util.{Failure, Success, Try}
 
@@ -28,7 +29,8 @@ object BitcoinAddress {
 
   /**
    * Converts a bitcoin address to an asset address
-   * @param address
+    *
+    * @param address
    * @return
    */
   def convertToAssetAddress(address : BitcoinAddress) : AssetAddress = {
@@ -42,7 +44,8 @@ object BitcoinAddress {
 
   /**
    * Checks if a address is a valid p2sh address
-   * @param address
+    *
+    * @param address
    * @return
    */
   def p2shAddress(address : String) : Boolean = {
@@ -59,14 +62,16 @@ object BitcoinAddress {
 
   /**
    * Checks if a address is a valid p2sh address
-   * @param address
+    *
+    * @param address
    * @return
    */
   def p2shAddress(address : BitcoinAddress) : Boolean = p2shAddress(address.value)
 
   /**
    * Checks if an address is a valid p2pkh address
-   * @param address
+    *
+    * @param address
    * @return
    */
   def p2pkh(address : String) : Boolean = {
@@ -84,7 +89,8 @@ object BitcoinAddress {
 
   /**
    * Checks if an address is a valid p2pkh address
-   * @param address
+    *
+    * @param address
    * @return
    */
   def p2pkh(address : BitcoinAddress) : Boolean = p2pkh(address.value)
@@ -105,7 +111,8 @@ object AssetAddress {
 
   /**
    * Converts an asset address into a bitcoin address
-   * @param assetAddress
+    *
+    * @param assetAddress
    * @return
    */
   def convertToBitcoinAddress(assetAddress : AssetAddress) = {
@@ -117,4 +124,29 @@ object AssetAddress {
     val slice = base58decodeChecked.slice(2, base58decodeChecked.length)
     BitcoinAddress(new VersionedChecksummedBytes(base58decodeChecked(1), slice){}.toString())
   }
+}
+
+object Address extends Factory[Address] {
+  /**
+    * Factory method for creating addresses
+    * Takes in a string to check if it is an address
+    * if it is it creates the address
+    * if not it throws a runtime exception
+    *
+    * @param str
+    * @return
+    */
+  def factory(str : String) : Address = {
+    if (AssetAddress.validate(str)) AssetAddress(str)
+    else if (BitcoinAddress.validate(str)) BitcoinAddress(str)
+    else throw new RuntimeException("The address that you passed in is invalid")
+  }
+
+
+  def fromBytes(bytes : Seq[Byte]) : Address = factory(BitcoinSUtil.encodeBase58(bytes))
+
+  override def fromHex(hex : String) : Address = throw new RuntimeException("We cannot create a bitcoin address from hex - bitcoin addresses are base 58 encoded")
+
+  def apply(bytes : Seq[Byte]) : Address = fromBytes(bytes)
+  def apply(str : String) : Address = factory(str)
 }
