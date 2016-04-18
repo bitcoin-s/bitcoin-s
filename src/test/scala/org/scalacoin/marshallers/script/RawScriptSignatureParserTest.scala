@@ -1,6 +1,6 @@
 package org.scalacoin.marshallers.script
 
-import org.scalacoin.protocol.script.{ScriptSignatureFactory, ScriptSignature}
+import org.scalacoin.protocol.script.ScriptSignature
 import org.scalacoin.script.constant._
 import org.scalacoin.script.crypto.OP_CHECKMULTISIG
 import org.scalacoin.util.{BitcoinSLogger, TestUtil}
