@@ -1,7 +1,7 @@
 package org.scalacoin.crypto
 
 import org.scalacoin.policy.Policy
-import org.scalacoin.protocol.script.{ScriptSignatureFactory, ScriptSignature}
+import org.scalacoin.protocol.script.ScriptSignature
 import org.scalacoin.protocol.transaction._
 import org.scalacoin.script.ScriptProgramFactory
 import org.scalacoin.script.flag.ScriptVerifyDerSig

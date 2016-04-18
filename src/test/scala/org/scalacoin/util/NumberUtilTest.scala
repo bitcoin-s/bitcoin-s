@@ -1,6 +1,6 @@
 package org.scalacoin.util
 
-import org.scalacoin.protocol.script.{ScriptSignature, ScriptSignatureFactory}
+import org.scalacoin.protocol.script.ScriptSignature
 
 import org.scalacoin.protocol.CompactSizeUIntImpl
 import org.scalacoin.script.constant.ScriptNumberImpl

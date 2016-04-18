@@ -1,6 +1,6 @@
 package org.scalacoin.script.crypto
 
-import org.scalacoin.protocol.script.{ScriptSignatureFactory, ScriptPubKey}
+import org.scalacoin.protocol.script.ScriptPubKey
 import org.scalacoin.protocol.transaction._
 import org.scalacoin.script.arithmetic.OP_NOT
 import org.scalacoin.script.flag.{ScriptFlagFactory, ScriptVerifyDerSig, ScriptVerifyNullDummy}
