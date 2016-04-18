@@ -69,7 +69,7 @@ trait StackInterpreter extends BitcoinSLogger {
     require(program.script.headOption.isDefined && program.script.head == OP_TOALTSTACK, "Top of script stack must be OP_TOALTSTACK")
     require(program.stack.size > 0,"Stack must have at least one item on it for OP_TOALTSTACK")
     ScriptProgramFactory.factory(program, program.stack.tail,
-      program.script.tail, List(program.stack.head), ScriptProgramFactory.AltStack)
+      program.script.tail, program.stack.head :: program.altStack, ScriptProgramFactory.AltStack)
   }
 
   /**
@@ -79,8 +79,6 @@ trait StackInterpreter extends BitcoinSLogger {
    */
   def opFromAltStack(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.isDefined && program.script.head == OP_FROMALTSTACK, "Top of script stack must be OP_FROMALTSTACK")
-
-
     program.altStack.size > 0 match {
       case true => ScriptProgramFactory.factory(program, program.altStack.head :: program.stack,
         program.script.tail, program.altStack.tail, ScriptProgramFactory.AltStack)
@@ -88,7 +86,6 @@ trait StackInterpreter extends BitcoinSLogger {
         logger.error("Alt Stack must have at least one item on it for OP_FROMALTSTACK")
         ScriptProgramFactory.factory(program,false)
     }
-
   }
 
   /**

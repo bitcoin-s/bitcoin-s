@@ -65,6 +65,9 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
         logger.error("We have reached the maximum amount of script operations allowed")
         logger.error("Here are the remaining operations in the script: " + program.script)
         (false,ScriptProgramFactory.factory(program,false))
+      } else if (program.script.flatMap(_.bytes).size > 10000) {
+        logger.error("We cannot run a script that is larger than 10,000 bytes")
+        (false,ScriptProgramFactory.factory(program,false))
       } else {
         program.script match {
           //if at any time we see that the program is not valid
@@ -91,10 +94,11 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
           case _ if (program.script.exists(token => token.bytes.size > 520)) =>
             logger.error("We have a script constant that is larger than 520 bytes, this is illegal: " + program.script)
             loop(ScriptProgramFactory.factory(program, false))
-
-          case _ if (program.stack.size > 1000) =>
-            logger.error("We cannot have a stack size larger than 1000 elements")
+          //program stack size cannot be greater than 1000 elements
+          case _ if ((program.stack.size + program.altStack.size) > 1000) =>
+            logger.error("We cannot have a stack + alt stack size larger than 1000 elements")
             loop(ScriptProgramFactory.factory(program, false))
+
           //stack operations
           case OP_DUP :: t => loop(opDup(program))
           case OP_DEPTH :: t => loop(opDepth(program))
@@ -252,15 +256,15 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
            _ : NonStandardScriptSignature | _ : P2SHScriptSignature | EmptyScriptSignature =>
 
         val (scriptSigProgramIsValid,scriptSigExecutedProgram) = loop(scriptSigProgram)
-        logger.debug("program.txSignatureComponent.scriptSignature.asm: " + scriptSigExecutedProgram.txSignatureComponent.scriptSignature.asm)
-        logger.debug("stack after scriptSig execution: " + scriptSigExecutedProgram.stack)
-        logger.debug("script pubkey to be executed: " + scriptSigExecutedProgram.txSignatureComponent.scriptPubKey)
+        logger.info("Stack state after scriptSig execution: " + scriptSigExecutedProgram.stack)
         if (scriptSigProgramIsValid) {
           logger.debug("We do not check a redeemScript against a non p2sh scriptSig")
           //now run the scriptPubKey script through the interpreter with the scriptSig as the stack arguments
           val scriptPubKeyProgram = ScriptProgramFactory.factory(scriptSigExecutedProgram.txSignatureComponent,
             scriptSigExecutedProgram.stack,scriptSigExecutedProgram.txSignatureComponent.scriptPubKey.asm)
           val (scriptPubKeyProgramIsValid, scriptPubKeyExecutedProgram) = loop(scriptPubKeyProgram)
+
+          logger.info("Stack state after scriptPubKey execution: " + scriptPubKeyExecutedProgram.stack)
           //if the program is valid, return if the stack top is true
           //else the program is false since something illegal happened during script evaluation
           scriptPubKeyProgramIsValid match {
