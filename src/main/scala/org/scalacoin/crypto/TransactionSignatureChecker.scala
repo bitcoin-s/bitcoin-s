@@ -3,7 +3,7 @@ package org.scalacoin.crypto
 import org.scalacoin.config.TestNet3
 import org.scalacoin.protocol.script._
 import org.scalacoin.protocol.transaction.{Transaction, TransactionInput}
-import org.scalacoin.script.{ScriptProgramFactory, ScriptProgram}
+import org.scalacoin.script.{ScriptProgram}
 import org.scalacoin.script.crypto._
 import org.scalacoin.script.flag.{ScriptFlagUtil, ScriptFlag, ScriptVerifyDerSig}
 import org.scalacoin.util.{BitcoinSLogger, BitcoinSUtil}

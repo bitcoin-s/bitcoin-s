@@ -1,7 +1,7 @@
 package org.scalacoin.script.control
 
 import org.scalacoin.marshallers.script.ScriptParser
-import org.scalacoin.script.{ScriptProgramFactory}
+import org.scalacoin.script.{ScriptProgram}
 import org.scalacoin.script.arithmetic.OP_ADD
 import org.scalacoin.script.bitwise.OP_EQUAL
 import org.scalacoin.script.constant._
@@ -17,7 +17,7 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers with C
   "ControlOperationsInterpreter" must "have OP_VERIFY evaluate to true with '1' on the stack" in {
     val stack = List(ScriptTrue)
     val script = List(OP_VERIFY)
-    val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
+    val program = ScriptProgram(TestUtil.testProgram, stack,script)
     val result = opVerify(program)
     result.stack.isEmpty must be (true)
     result.script.isEmpty must be (true)
@@ -29,7 +29,7 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers with C
     //https://github.com/bitcoin/bitcoin/blob/master/src/test/data/script_valid.json#L21
     val stack = ScriptParser.fromString("0x09 0x00000000 0x00000000 0x10")
     val script = List(OP_VERIFY)
-    val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
+    val program = ScriptProgram(TestUtil.testProgram, stack,script)
     val result = opVerify(program)
     result.isValid must be (true)
   }
@@ -37,7 +37,7 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers with C
   it must "have OP_VERIFY evaluate to false with '0' on the stack" in {
     val stack = List(ScriptFalse)
     val script = List(OP_VERIFY)
-    val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
+    val program = ScriptProgram(TestUtil.testProgram, stack,script)
     val result = opVerify(program)
     result.isValid must be (false)
   }
@@ -46,7 +46,7 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers with C
 
     val stack = List()
     val script = List(OP_VERIFY)
-    val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
+    val program = ScriptProgram(TestUtil.testProgram, stack,script)
     val result = opVerify(program)
     result.isValid must be (false)
 
@@ -56,7 +56,7 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers with C
     intercept[IllegalArgumentException]  {
       val stack = List(ScriptConstantImpl("1"))
       val script = List()
-      val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
+      val program = ScriptProgram(TestUtil.testProgram, stack,script)
       val result = opVerify(program)
     }
   }
@@ -299,7 +299,7 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers with C
   it must "evaluate an OP_IF correctly" in {
     val stack = List(OP_0)
     val script = List(OP_IF, OP_RESERVED, OP_ENDIF, OP_1)
-    val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
+    val program = ScriptProgram(TestUtil.testProgram, stack,script)
     val newProgram = opIf(program)
     newProgram.stack.isEmpty must be (true)
     newProgram.script must be (List(OP_ENDIF,OP_1))
@@ -308,7 +308,7 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers with C
   it must "evaluate an OP_IF OP_ELSE OP_ENDIF block" in {
     val stack = List(OP_0)
     val script = List(OP_IF, OP_VER, OP_ELSE, OP_1, OP_ENDIF)
-    val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
+    val program = ScriptProgram(TestUtil.testProgram, stack,script)
     val newProgram = opIf(program)
     newProgram.script must be (List(OP_ELSE,OP_1,OP_ENDIF))
   }
@@ -330,7 +330,7 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers with C
   it must "evaluate an OP_IF block correctly if the stack top is true" in {
     val stack = List(OP_1)
     val script = List(OP_IF, OP_1, OP_ELSE, OP_0, OP_ENDIF)
-    val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
+    val program = ScriptProgram(TestUtil.testProgram, stack,script)
     val newProgram = opIf(program)
 
     newProgram.stack must be (List())
@@ -340,7 +340,7 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers with C
   it must "evaluate a weird case using multiple OP_ELSEs" in {
     val stack = List(ScriptNumberImpl(1))
     val script = List(OP_IF, OP_ELSE, OP_0, OP_ELSE, OP_1, OP_ENDIF)
-    val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
+    val program = ScriptProgram(TestUtil.testProgram, stack,script)
     val newProgram = opIf(program)
 
     newProgram.script must be (List(OP_ELSE,OP_1,OP_ENDIF))
@@ -355,7 +355,7 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers with C
       OP_ELSE,
       OP_IF, OP_2, OP_ELSE, OP_3, OP_ENDIF,
       OP_ENDIF)
-    val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
+    val program = ScriptProgram(TestUtil.testProgram, stack,script)
     val newProgram = opIf(program)
 
     newProgram.stack.isEmpty must be (true)
@@ -373,7 +373,7 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers with C
       OP_IF,OP_1,OP_ELSE, OP_RETURN,OP_ELSE,OP_1,OP_ENDIF,
       OP_ELSE,OP_RETURN,OP_ENDIF,OP_ADD,OP_2,OP_EQUAL)
 
-    val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
+    val program = ScriptProgram(TestUtil.testProgram, stack,script)
     val newProgram = opIf(program)
 
     newProgram.stack.isEmpty must be (true)
@@ -395,7 +395,7 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers with C
     val script = List(OP_IF, OP_1, OP_ELSE, OP_RETURN, OP_ELSE, OP_1, OP_ENDIF, OP_ELSE, OP_RETURN, OP_ENDIF,
       OP_ADD, OP_2, OP_EQUAL)
 
-    val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
+    val program = ScriptProgram(TestUtil.testProgram, stack,script)
     val newProgram = opIf(program)
 
     newProgram.stack.isEmpty must be (true)
@@ -405,7 +405,7 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers with C
   it must "evaluate an OP_ENDIF correctly" in {
     val stack = List(ScriptNumberImpl(1), ScriptNumberImpl(1))
     val script = List(OP_ENDIF, OP_ELSE, OP_RETURN, OP_ENDIF, OP_ADD, OP_2, OP_EQUAL)
-    val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
+    val program = ScriptProgram(TestUtil.testProgram, stack,script)
     val newProgram = opEndIf(program)
 
     newProgram.stack must be (stack)
@@ -434,7 +434,7 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers with C
       OP_NOTIF, OP_RETURN, OP_ELSE, OP_RETURN, OP_ELSE, OP_RETURN, OP_ENDIF,
       OP_ELSE, OP_0, OP_NOTIF, OP_1, OP_ELSE, OP_RETURN, OP_ELSE, OP_1, OP_ENDIF, OP_ELSE, OP_RETURN, OP_ENDIF,
       OP_ADD, OP_2, OP_EQUAL)
-    val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
+    val program = ScriptProgram(TestUtil.testProgram, stack,script)
     val newProgram = opNotIf(program)
 
     newProgram.stack.isEmpty must be (true)
@@ -446,16 +446,16 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers with C
     newProgram1.script must be (List(OP_0, OP_NOTIF, OP_1, OP_ELSE, OP_RETURN, OP_ELSE, OP_1, OP_ENDIF, OP_ENDIF,
       OP_ADD, OP_2, OP_EQUAL))
 
-    val newProgram2 = opNotIf(ScriptProgramFactory.factory(newProgram1,List(OP_0),newProgram1.script.tail))
+    val newProgram2 = opNotIf(ScriptProgram(newProgram1,List(OP_0),newProgram1.script.tail))
     newProgram2.stack.isEmpty must be (true)
     newProgram2.script must be (List(OP_1,OP_ELSE, OP_1, OP_ENDIF, OP_ENDIF,
       OP_ADD, OP_2, OP_EQUAL))
 
-    val newProgram3 = opElse(ScriptProgramFactory.factory(newProgram2,List(OP_1),newProgram2.script.tail))
+    val newProgram3 = opElse(ScriptProgram(newProgram2,List(OP_1),newProgram2.script.tail))
     newProgram3.stack must be (List(OP_1))
     newProgram3.script must be (List(OP_1,OP_ENDIF,OP_ENDIF,OP_ADD, OP_2, OP_EQUAL))
 
-    val newProgram4 = opEndIf(ScriptProgramFactory.factory(newProgram3, newProgram3.script.head :: newProgram3.stack, newProgram3.script.tail))
+    val newProgram4 = opEndIf(ScriptProgram(newProgram3, newProgram3.script.head :: newProgram3.stack, newProgram3.script.tail))
     newProgram4.stack must be (List(OP_1,OP_1))
     newProgram4.script must be (List(OP_ENDIF,OP_ADD, OP_2, OP_EQUAL))
 
@@ -468,7 +468,7 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers with C
   it must "mark a transaction as invalid if it is trying to spend an OP_RETURN output" in {
     val stack = Seq()
     val script = Seq(OP_RETURN)
-    val program = ScriptProgramFactory.factory(TestUtil.testProgram,stack,script)
+    val program = ScriptProgram(TestUtil.testProgram,stack,script)
     val newProgram = opReturn(program)
 
     newProgram.isValid must be (false)
