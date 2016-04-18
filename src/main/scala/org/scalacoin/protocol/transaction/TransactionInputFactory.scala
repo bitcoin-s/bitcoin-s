@@ -31,7 +31,7 @@ trait TransactionInputFactory extends Factory[TransactionInput] {
    * @return
    */
   def factory(oldInput : TransactionInput,output : TransactionOutput, outputsTransaction : Transaction) : TransactionInput = {
-    val outPoint = TransactionOutPointFactory.factory(output,outputsTransaction)
+    val outPoint = TransactionOutPoint(output,outputsTransaction)
     factory(oldInput,outPoint)
   }
 

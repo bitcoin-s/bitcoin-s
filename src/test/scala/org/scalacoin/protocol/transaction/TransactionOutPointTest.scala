@@ -15,6 +15,6 @@ class TransactionOutPointTest extends FlatSpec with MustMatchers {
   it must "read then write a transaction outpoint" in {
 
     val outPoint = TestUtil.simpleTransaction.inputs.head.previousOutput
-    TransactionOutPointFactory.fromHex(outPoint.hex).hex must be (outPoint.hex)
+    TransactionOutPoint(outPoint.hex).hex must be (outPoint.hex)
   }
 }

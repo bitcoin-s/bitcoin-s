@@ -46,7 +46,7 @@ trait TransactionTestUtil extends BitcoinSLogger {
     //https://github.com/bitcoin/bitcoin/blob/80d1f2e48364f05b2cdf44239b3a1faa0277e58e/src/primitives/transaction.h#L32
     //https://github.com/bitcoin/bitcoin/blob/605c17844ea32b6d237db6d83871164dc7d59dab/src/uint256.h#L40
 
-    val outpoint = TransactionOutPointFactory.factory("0000000000000000000000000000000000000000000000000000000000000000",0xFFFFFFFF)
+    val outpoint = TransactionOutPoint("0000000000000000000000000000000000000000000000000000000000000000",0xFFFFFFFF)
     val scriptSignature = ScriptSignature("0000")
     val input = TransactionInputFactory.factory(outpoint,scriptSignature,TransactionConstants.sequence)
     val output = TransactionOutputFactory.factory(CurrencyUnits.zeroSatoshis,scriptPubKey)
@@ -76,7 +76,7 @@ trait TransactionTestUtil extends BitcoinSLogger {
     txSpend.vout[0].scriptPubKey = CScript();
     txSpend.vout[0].nValue = 0;*/
 
-    val outpoint = TransactionOutPointFactory.factory(creditingTx.txId,outputIndex)
+    val outpoint = TransactionOutPoint(creditingTx.txId,outputIndex)
     val input = TransactionInputFactory.factory(outpoint,scriptSignature,TransactionConstants.sequence)
     val output = TransactionOutputFactory.factory(CurrencyUnits.zeroSatoshis,EmptyScriptPubKey)
     val tx = TransactionImpl(TransactionConstants.version,Seq(input),Seq(output),TransactionConstants.lockTime)
