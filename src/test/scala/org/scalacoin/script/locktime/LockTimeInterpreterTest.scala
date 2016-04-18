@@ -1,6 +1,6 @@
 package org.scalacoin.script.locktime
 
-import org.scalacoin.protocol.transaction.{UpdateTransactionInputs, TransactionInputFactory, TransactionFactory}
+import org.scalacoin.protocol.transaction.{Transaction, UpdateTransactionInputs, TransactionInputFactory}
 import org.scalacoin.script.ScriptProgramFactory
 import org.scalacoin.script.constant.{ScriptNumberImpl, OP_0}
 import org.scalacoin.util.TestUtil
@@ -31,8 +31,8 @@ class LockTimeInterpreterTest extends FlatSpec with MustMatchers with LockTimeIn
     val stack = Seq(ScriptNumberImpl(-1))
     val script = Seq(OP_CHECKLOCKTIMEVERIFY)
     val txInputAdjustedSequenceNumber = TransactionInputFactory.factory(TestUtil.transaction.inputs(0),0)
-    val txAdjustedSequenceNumber = TransactionFactory.factory(TestUtil.transaction,UpdateTransactionInputs(Seq(txInputAdjustedSequenceNumber)))
-    val adjustedLockTimeTx = TransactionFactory.factory(txAdjustedSequenceNumber,0)
+    val txAdjustedSequenceNumber = Transaction(TestUtil.transaction,UpdateTransactionInputs(Seq(txInputAdjustedSequenceNumber)))
+    val adjustedLockTimeTx = Transaction(txAdjustedSequenceNumber,0)
     val baseProgram = ScriptProgramFactory.factory(adjustedLockTimeTx,TestUtil.testProgram.txSignatureComponent.scriptPubKey,
       TestUtil.testProgram.txSignatureComponent.inputIndex,TestUtil.testProgram.flags)
     val program = ScriptProgramFactory.factory(baseProgram,stack,script)
@@ -44,8 +44,8 @@ class LockTimeInterpreterTest extends FlatSpec with MustMatchers with LockTimeIn
     val stack = Seq(ScriptNumberImpl(500000000))
     val script = Seq(OP_CHECKLOCKTIMEVERIFY)
     val txInputAdjustedSequenceNumber = TransactionInputFactory.factory(TestUtil.transaction.inputs(0),0)
-    val txAdjustedSequenceNumber = TransactionFactory.factory(TestUtil.transaction,UpdateTransactionInputs(Seq(txInputAdjustedSequenceNumber)))
-    val adjustedLockTimeTx = TransactionFactory.factory(txAdjustedSequenceNumber,0)
+    val txAdjustedSequenceNumber = Transaction(TestUtil.transaction,UpdateTransactionInputs(Seq(txInputAdjustedSequenceNumber)))
+    val adjustedLockTimeTx = Transaction(txAdjustedSequenceNumber,0)
     val baseProgram = ScriptProgramFactory.factory(adjustedLockTimeTx,TestUtil.testProgram.txSignatureComponent.scriptPubKey,
       TestUtil.testProgram.txSignatureComponent.inputIndex,TestUtil.testProgram.flags)
     val program = ScriptProgramFactory.factory(baseProgram,stack,script)
@@ -57,8 +57,8 @@ class LockTimeInterpreterTest extends FlatSpec with MustMatchers with LockTimeIn
     val stack = Seq(ScriptNumberImpl(499999999))
     val script = Seq(OP_CHECKLOCKTIMEVERIFY)
     val txInputAdjustedSequenceNumber = TransactionInputFactory.factory(TestUtil.transaction.inputs(0),0)
-    val txAdjustedSequenceNumber = TransactionFactory.factory(TestUtil.transaction,UpdateTransactionInputs(Seq(txInputAdjustedSequenceNumber)))
-    val adjustedLockTimeTx = TransactionFactory.factory(txAdjustedSequenceNumber,500000000)
+    val txAdjustedSequenceNumber = Transaction(TestUtil.transaction,UpdateTransactionInputs(Seq(txInputAdjustedSequenceNumber)))
+    val adjustedLockTimeTx = Transaction(txAdjustedSequenceNumber,500000000)
     val baseProgram = ScriptProgramFactory.factory(adjustedLockTimeTx,TestUtil.testProgram.txSignatureComponent.scriptPubKey,
       TestUtil.testProgram.txSignatureComponent.inputIndex,TestUtil.testProgram.flags)
     val program = ScriptProgramFactory.factory(baseProgram,stack,script)
@@ -70,8 +70,8 @@ class LockTimeInterpreterTest extends FlatSpec with MustMatchers with LockTimeIn
     val stack = Seq(ScriptNumberImpl(499999999))
     val script = Seq(OP_CHECKLOCKTIMEVERIFY)
     val txInputAdjustedSequenceNumber = TransactionInputFactory.factory(TestUtil.transaction.inputs(0),0)
-    val txAdjustedSequenceNumber = TransactionFactory.factory(TestUtil.transaction,UpdateTransactionInputs(Seq(txInputAdjustedSequenceNumber)))
-    val adjustedLockTimeTx = TransactionFactory.factory(txAdjustedSequenceNumber,0)
+    val txAdjustedSequenceNumber = Transaction(TestUtil.transaction,UpdateTransactionInputs(Seq(txInputAdjustedSequenceNumber)))
+    val adjustedLockTimeTx = Transaction(txAdjustedSequenceNumber,0)
     val baseProgram = ScriptProgramFactory.factory(adjustedLockTimeTx,TestUtil.testProgram.txSignatureComponent.scriptPubKey,
       TestUtil.testProgram.txSignatureComponent.inputIndex,TestUtil.testProgram.flags)
     val program = ScriptProgramFactory.factory(baseProgram,stack,script)
@@ -83,8 +83,8 @@ class LockTimeInterpreterTest extends FlatSpec with MustMatchers with LockTimeIn
     val stack = Seq(ScriptNumberImpl(500000000))
     val script = Seq(OP_CHECKLOCKTIMEVERIFY)
     val txInputAdjustedSequenceNumber = TransactionInputFactory.factory(TestUtil.transaction.inputs(0),0)
-    val txAdjustedSequenceNumber = TransactionFactory.factory(TestUtil.transaction,UpdateTransactionInputs(Seq(txInputAdjustedSequenceNumber)))
-    val adjustedLockTimeTx = TransactionFactory.factory(txAdjustedSequenceNumber,500000000)
+    val txAdjustedSequenceNumber = Transaction(TestUtil.transaction,UpdateTransactionInputs(Seq(txInputAdjustedSequenceNumber)))
+    val adjustedLockTimeTx = Transaction(txAdjustedSequenceNumber,500000000)
     val baseProgram = ScriptProgramFactory.factory(adjustedLockTimeTx,TestUtil.testProgram.txSignatureComponent.scriptPubKey,
       TestUtil.testProgram.txSignatureComponent.inputIndex,TestUtil.testProgram.flags)
     val program = ScriptProgramFactory.factory(baseProgram,stack,script)

@@ -40,7 +40,7 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers {
   }
 
   it must "serialize a transaction for SIGHASH_ALL correctly" in {
-    val spendingTx = TransactionFactory.factory(BitcoinJTestUtil.multiSigTransaction.bitcoinSerialize())
+    val spendingTx = Transaction(BitcoinJTestUtil.multiSigTransaction.bitcoinSerialize())
 
     spendingTx.hex must be (BitcoinSUtil.encodeHex(BitcoinJTestUtil.multiSigTransaction.bitcoinSerialize()))
 
@@ -55,7 +55,7 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers {
 
    it must "hash a tranasction with SIGHASH_ALL correctly" in {
 
-     val spendingTx = TransactionFactory.factory(BitcoinJTestUtil.multiSigTransaction.bitcoinSerialize())
+     val spendingTx = Transaction(BitcoinJTestUtil.multiSigTransaction.bitcoinSerialize())
      spendingTx.hex must be (BitcoinSUtil.encodeHex(BitcoinJTestUtil.multiSigTransaction.bitcoinSerialize()))
 
      val bitcoinsTxSigHash : Seq[Byte] = TransactionSignatureSerializer.hashForSignature(spendingTx,0,scriptPubKey,SIGHASH_ALL())
@@ -65,7 +65,7 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers {
      BitcoinSUtil.encodeHex(bitcoinsTxSigHash) must be (bitcoinjTxSigHash)
    }
    it must "serialize a transaction for a SIGHASH_SINGLE transaction correctly" in {
-     val spendingTx = TransactionFactory.factory(BitcoinJTestUtil.multiSigTransaction.bitcoinSerialize())
+     val spendingTx = Transaction(BitcoinJTestUtil.multiSigTransaction.bitcoinSerialize())
 
      spendingTx.hex must be (BitcoinSUtil.encodeHex(BitcoinJTestUtil.multiSigTransaction.bitcoinSerialize()))
 
@@ -77,7 +77,7 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers {
    }
 
    it must "hash a transaction for a SIGHASH_SINGLE signature correctly" in {
-     val spendingTx = TransactionFactory.factory(BitcoinJTestUtil.multiSigTransaction.bitcoinSerialize())
+     val spendingTx = Transaction(BitcoinJTestUtil.multiSigTransaction.bitcoinSerialize())
 
      spendingTx.hex must be (BitcoinSUtil.encodeHex(BitcoinJTestUtil.multiSigTransaction.bitcoinSerialize()))
 
@@ -89,7 +89,7 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers {
    }
 
    it must "serialize a transaction for SIGHASH_NONE signature correctly" in {
-     val spendingTx = TransactionFactory.factory(BitcoinJTestUtil.multiSigTransaction.bitcoinSerialize())
+     val spendingTx = Transaction(BitcoinJTestUtil.multiSigTransaction.bitcoinSerialize())
 
      spendingTx.hex must be (BitcoinSUtil.encodeHex(BitcoinJTestUtil.multiSigTransaction.bitcoinSerialize()))
 
@@ -101,7 +101,7 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers {
    }
 
    it must "hash a transaction for a SIGHASH_NONE signature correctly" in {
-     val spendingTx = TransactionFactory.factory(BitcoinJTestUtil.multiSigTransaction.bitcoinSerialize())
+     val spendingTx = Transaction(BitcoinJTestUtil.multiSigTransaction.bitcoinSerialize())
 
      spendingTx.hex must be (BitcoinSUtil.encodeHex(BitcoinJTestUtil.multiSigTransaction.bitcoinSerialize()))
 
@@ -114,7 +114,7 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers {
    }
 
    it must "serialize a transaction that has the SIGHASH_ANYONECANPAY flag set" in {
-     val spendingTx = TransactionFactory.factory(BitcoinJTestUtil.multiSigTransaction.bitcoinSerialize())
+     val spendingTx = Transaction(BitcoinJTestUtil.multiSigTransaction.bitcoinSerialize())
 
      spendingTx.hex must be (BitcoinSUtil.encodeHex(BitcoinJTestUtil.multiSigTransaction.bitcoinSerialize()))
 
@@ -127,7 +127,7 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers {
    }
 
    it must "hash a transaction for SIGHASH_ANYONECANPAY correctly" in {
-     val spendingTx = TransactionFactory.factory(BitcoinJTestUtil.multiSigTransaction.bitcoinSerialize())
+     val spendingTx = Transaction(BitcoinJTestUtil.multiSigTransaction.bitcoinSerialize())
 
      spendingTx.hex must be (BitcoinSUtil.encodeHex(BitcoinJTestUtil.multiSigTransaction.bitcoinSerialize()))
 
@@ -140,7 +140,7 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers {
    }
 
    it must "serialize a transaction that uses both SIGHASH_ANYONECANPAY & SIGHASH_ALL" in {
-     val spendingTx = TransactionFactory.factory(BitcoinJTestUtil.multiSigTransaction.bitcoinSerialize())
+     val spendingTx = Transaction(BitcoinJTestUtil.multiSigTransaction.bitcoinSerialize())
 
      spendingTx.hex must be (BitcoinSUtil.encodeHex(BitcoinJTestUtil.multiSigTransaction.bitcoinSerialize()))
 
@@ -153,7 +153,7 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers {
    }
 
    it must "serialize a transaction that uses both SIGHASH_ANYONECANPAY & SIGHASH_SINGLE" in {
-     val spendingTx = TransactionFactory.factory(BitcoinJTestUtil.multiSigTransaction.bitcoinSerialize())
+     val spendingTx = Transaction(BitcoinJTestUtil.multiSigTransaction.bitcoinSerialize())
 
      spendingTx.hex must be (BitcoinSUtil.encodeHex(BitcoinJTestUtil.multiSigTransaction.bitcoinSerialize()))
 
@@ -166,7 +166,7 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers {
    }
 
    it must "serialize a transaction that uses both SIGHASH_ANYONECANPAY & SIGHASH_NONE" in {
-     val spendingTx = TransactionFactory.factory(BitcoinJTestUtil.multiSigTransaction.bitcoinSerialize())
+     val spendingTx = Transaction(BitcoinJTestUtil.multiSigTransaction.bitcoinSerialize())
 
      spendingTx.hex must be (BitcoinSUtil.encodeHex(BitcoinJTestUtil.multiSigTransaction.bitcoinSerialize()))
 
@@ -179,7 +179,7 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers {
    }
 
    it must "hash a transaction that uses both SIGHASH_ANYONECANPAY & SIGHASH_ALL" in {
-     val spendingTx = TransactionFactory.factory(BitcoinJTestUtil.multiSigTransaction.bitcoinSerialize())
+     val spendingTx = Transaction(BitcoinJTestUtil.multiSigTransaction.bitcoinSerialize())
 
      spendingTx.hex must be (BitcoinSUtil.encodeHex(BitcoinJTestUtil.multiSigTransaction.bitcoinSerialize()))
 
@@ -192,7 +192,7 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers {
    }
 
    it must "hash a transaction that uses both SIGHASH_ANYONECANPAY & SIGHASH_SINGLE" in {
-     val spendingTx = TransactionFactory.factory(BitcoinJTestUtil.multiSigTransaction.bitcoinSerialize())
+     val spendingTx = Transaction(BitcoinJTestUtil.multiSigTransaction.bitcoinSerialize())
 
      spendingTx.hex must be (BitcoinSUtil.encodeHex(BitcoinJTestUtil.multiSigTransaction.bitcoinSerialize()))
 
@@ -205,7 +205,7 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers {
    }
 
    it must "hash a transaction that uses both SIGHASH_ANYONECANPAY & SIGHASH_NONE" in {
-     val spendingTx = TransactionFactory.factory(BitcoinJTestUtil.multiSigTransaction.bitcoinSerialize())
+     val spendingTx = Transaction(BitcoinJTestUtil.multiSigTransaction.bitcoinSerialize())
 
      spendingTx.hex must be (BitcoinSUtil.encodeHex(BitcoinJTestUtil.multiSigTransaction.bitcoinSerialize()))
 
