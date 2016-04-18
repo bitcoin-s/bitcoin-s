@@ -78,36 +78,40 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
    */
   def opCheckSig(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.isDefined && program.script.head == OP_CHECKSIG, "Script top must be OP_CHECKSIG")
-    require(program.stack.size > 1, "Stack must have at least 2 items on it for OP_CHECKSIG")
-
-
-    val pubKey = ECFactory.publicKey(program.stack.head.bytes)
-    val signature = ECFactory.digitalSignature(program.stack.tail.head.bytes)
-
-    if (program.flags.contains(ScriptVerifyDerSig) && !DERSignatureUtil.isStrictDEREncoding(signature)) {
-      //this means all of the signatures must encoded according to BIP66 strict dersig
-      //https://github.com/bitcoin/bips/blob/master/bip-0066.mediawiki
-      //script verification fails since the sig is not strictly der encoded
-      logger.warn("Since the ScriptVerifyDerSig flag is set the signature being checked must be a strict dersig signature as per BIP 66\n" +
-        "Sig: " + signature.hex)
+    if (program.stack.size < 2) {
+      logger.error("OP_CHECKSIG requires at lest two stack elements")
       ScriptProgramFactory.factory(program,false)
     } else {
-      val restOfStack = program.stack.tail.tail
+      val pubKey = ECFactory.publicKey(program.stack.head.bytes)
+      val signature = ECFactory.digitalSignature(program.stack.tail.head.bytes)
+
+      if (program.flags.contains(ScriptVerifyDerSig) && !DERSignatureUtil.isStrictDEREncoding(signature)) {
+        //this means all of the signatures must encoded according to BIP66 strict dersig
+        //https://github.com/bitcoin/bips/blob/master/bip-0066.mediawiki
+        //script verification fails since the sig is not strictly der encoded
+        logger.warn("Since the ScriptVerifyDerSig flag is set the signature being checked must be a strict dersig signature as per BIP 66\n" +
+          "Sig: " + signature.hex)
+        ScriptProgramFactory.factory(program,false)
+      } else {
+        val restOfStack = program.stack.tail.tail
 
 
-      val result = TransactionSignatureChecker.checkSignature(program.txSignatureComponent,pubKey,
-        signature,program.flags)
-      logger.debug("signature verification isValid: " + result)
-      result match {
-        case SignatureValidationSuccess => ScriptProgramFactory.factory(program,
-          ScriptTrue :: restOfStack,program.script.tail)
-        case SignatureValidationFailureNotStrictDerEncoding =>
-          ScriptProgramFactory.factory(program, ScriptFalse :: restOfStack,
-            program.script.tail,SignatureValidationFailureNotStrictDerEncoding.isValid)
-        case SignatureValidationFailureIncorrectSignatures =>
-          ScriptProgramFactory.factory(program, ScriptFalse :: restOfStack,program.script.tail)
+        val result = TransactionSignatureChecker.checkSignature(program.txSignatureComponent,pubKey,
+          signature,program.flags)
+        logger.debug("signature verification isValid: " + result)
+        result match {
+          case SignatureValidationSuccess => ScriptProgramFactory.factory(program,
+            ScriptTrue :: restOfStack,program.script.tail)
+          case SignatureValidationFailureNotStrictDerEncoding =>
+            ScriptProgramFactory.factory(program, ScriptFalse :: restOfStack,
+              program.script.tail,SignatureValidationFailureNotStrictDerEncoding.isValid)
+          case SignatureValidationFailureIncorrectSignatures =>
+            ScriptProgramFactory.factory(program, ScriptFalse :: restOfStack,program.script.tail)
+        }
       }
     }
+
+
   }
 
 
@@ -146,10 +150,12 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
    */
   def opCheckMultiSig(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.isDefined && program.script.head == OP_CHECKMULTISIG, "Script top must be OP_CHECKMULTISIG")
-    require(program.stack.size > 2, "Stack must contain at least 3 items for OP_CHECKMULTISIG")
 
     if (program.flags.contains(ScriptVerifyNullDummy) && program.txSignatureComponent.scriptSignature.asm.head != OP_0) {
       logger.warn("Script flag null dummy was set however the first element in the script signature was not an OP_0")
+      ScriptProgramFactory.factory(program,false)
+    } else if (program.stack.size < 3) {
+      logger.error("OP_CHECKMULTISIG requires at least 3 stack elements")
       ScriptProgramFactory.factory(program,false)
     } else {
       //these next lines remove the appropriate stack/script values after the signatures have been checked

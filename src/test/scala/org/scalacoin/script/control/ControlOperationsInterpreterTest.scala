@@ -42,13 +42,14 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers with C
     result.isValid must be (false)
   }
 
-  it must "fail for OP_VERIFY when there is nothing on the stack" in {
-    intercept[IllegalArgumentException] {
-      val stack = List()
-      val script = List(OP_VERIFY)
-      val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
-      val result = opVerify(program)
-    }
+  it must "mark the script as invalid for OP_VERIFY when there is nothing on the stack" in {
+
+    val stack = List()
+    val script = List(OP_VERIFY)
+    val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
+    val result = opVerify(program)
+    result.isValid must be (false)
+
   }
 
   it must "fail for verify when there is nothing on the script stack" in {

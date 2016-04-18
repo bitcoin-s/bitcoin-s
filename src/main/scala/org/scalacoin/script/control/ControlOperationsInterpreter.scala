@@ -26,6 +26,9 @@ trait ControlOperationsInterpreter extends BitcoinSLogger {
     if (!checkMatchingOpIfOpNotIfOpEndIf(program.originalScript)) {
       logger.error("We do not have a matching OP_ENDIF for every OP_IF we have")
       ScriptProgramFactory.factory(program,false)
+    } else if (program.stack.isEmpty) {
+      logger.error("We do not have any stack elements for our OP_IF")
+      ScriptProgramFactory.factory(program,false)
     }
     else if (program.stackTopIsTrue) {
       logger.debug("OP_IF stack top was true")
@@ -57,6 +60,9 @@ trait ControlOperationsInterpreter extends BitcoinSLogger {
 
     if (!checkMatchingOpIfOpNotIfOpEndIf(program.originalScript)) {
       logger.error("We do not have a matching OP_ENDIF for every OP_NOTIF we have")
+      ScriptProgramFactory.factory(program,false)
+    } else if (program.stack.isEmpty) {
+      logger.error("We do not have any stack elements for our OP_NOTIF")
       ScriptProgramFactory.factory(program,false)
     } else if (program.stackTopIsTrue) {
       //remove the OP_NOTIF
@@ -134,13 +140,17 @@ trait ControlOperationsInterpreter extends BitcoinSLogger {
    * @return
    */
   def opVerify(program : ScriptProgram) : ScriptProgram = {
-    //TODO: There is a bug here, if the value is cast to an int and is != 0 then we need to pop the cast values
-    //off of the stack..
     require(program.script.headOption.isDefined && program.script.head == OP_VERIFY, "Script top must be OP_VERIFY")
-    require(program.stack.size > 0, "Stack must have at least one element on it to run OP_VERIFY")
-    logger.debug("Stack for OP_VERIFY: " + program.stack)
-    if (program.stackTopIsFalse) ScriptProgramFactory.factory(program,false)
-    else ScriptProgramFactory.factory(program, program.stack.tail,program.script.tail)
+    program.script.size > 0 match {
+      case true =>
+        logger.debug("Stack for OP_VERIFY: " + program.stack)
+        if (program.stackTopIsFalse) ScriptProgramFactory.factory(program,false)
+        else ScriptProgramFactory.factory(program, program.stack.tail,program.script.tail)
+      case false =>
+        logger.error("OP_VERIFY requires an element to be on the stack")
+        ScriptProgramFactory.factory(program,false)
+    }
+
   }
 
 
