@@ -185,6 +185,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
           case OP_NOP :: t =>
             //script discourage upgradeable flag does not apply to a OP_NOP
             loop(ScriptProgramFactory.factory(program, program.stack, t))
+
           //if we see an OP_NOP and the DISCOURAGE_UPGRADABLE_OP_NOPS flag is set we must fail our program
           case (nop: NOP) :: t if ScriptFlagUtil.discourageUpgradableNOPs(program.flags) =>
             logger.error("We cannot execute a NOP when the ScriptVerifyDiscourageUpgradableNOPs is set")
@@ -202,6 +203,10 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
           case OP_RESERVED2 :: t =>
             logger.error("Transaction is invalid when executing OP_RESERVED2")
             (false, program)
+
+          case (reservedOperation : ReservedOperation) :: t =>
+            logger.error("Undefined operation found which automatically fails the script: " + reservedOperation)
+            loop(ScriptProgramFactory.factory(program,false))
           //splice operations
           case OP_SIZE :: t => loop(opSize(program))
 
