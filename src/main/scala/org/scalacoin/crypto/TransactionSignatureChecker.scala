@@ -77,8 +77,10 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
       SignatureValidationFailureIncorrectSignatures
     }
     else if (requiredSigs > sigs.size) {
+      //for the case when we do not have enough sigs left to check to meet the required signature threshold
+      //https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L914-915
       logger.info("We do not have enough sigs to meet the threshold of requireSigs in the multiSignatureScriptPubKey")
-      SignatureValidationFailureIncorrectSignatures
+      SignatureValidationFailureSignatureCount
     }
     else if (!sigs.isEmpty && !pubKeys.isEmpty) {
       val sig = sigs.head
@@ -91,6 +93,8 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
           multiSignatureEvaluator(txSignatureComponent, sigs,pubKeys.tail,flags, requiredSigs)
         case SignatureValidationFailureNotStrictDerEncoding =>
           SignatureValidationFailureNotStrictDerEncoding
+        case SignatureValidationFailureSignatureCount =>
+          SignatureValidationFailureSignatureCount
       }
     } else if (sigs.isEmpty) {
       //means that we have checked all of the sigs against the public keys

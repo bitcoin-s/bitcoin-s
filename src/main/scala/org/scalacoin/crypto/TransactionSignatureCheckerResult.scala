@@ -36,3 +36,13 @@ case object SignatureValidationFailureNotStrictDerEncoding extends TransactionSi
 case object SignatureValidationFailureIncorrectSignatures extends TransactionSignatureCheckerResult {
   def isValid = false
 }
+
+
+/**
+ * This indicates that the signature validation failed because we have more signatures left to check
+ * than public keys remaining to check them against
+ * see https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L914-915
+ */
+case object SignatureValidationFailureSignatureCount extends TransactionSignatureCheckerResult {
+  def isValid = false
+}
