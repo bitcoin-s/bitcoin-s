@@ -15,7 +15,7 @@ trait TransactionInputFactory extends Factory[TransactionInput] {
   }
 
   def factory(oldInput : TransactionInput, scriptPubKey: ScriptPubKey) : TransactionInput = {
-    val scriptSig = ScriptSignatureFactory.fromHex(scriptPubKey.hex)
+    val scriptSig = ScriptSignature(scriptPubKey.hex)
     factory(oldInput,scriptSig)
   }
 
@@ -46,7 +46,7 @@ trait TransactionInputFactory extends Factory[TransactionInput] {
 
   def empty : TransactionInput = {
     TransactionInputImpl(EmptyTransactionOutPoint,
-      ScriptSignatureFactory.empty,TransactionConstants.sequence)
+      ScriptSignature.empty,TransactionConstants.sequence)
   }
 
   //TODO: This could bomb if the serialized tx input is not in the right format

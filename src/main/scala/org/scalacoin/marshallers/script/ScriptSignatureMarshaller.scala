@@ -19,7 +19,7 @@ object ScriptSignatureMarshaller extends DefaultJsonProtocol with BitcoinSLogger
       logger.debug(this.getClass().toString + " is marshalling json value: " + value)
       val obj = value.asJsObject
       val hex = obj.fields(hexKey)
-      ScriptSignatureFactory.fromHex(hex.convertTo[String])
+      ScriptSignature(hex.convertTo[String])
     }
 
     override def write(scriptSig : ScriptSignature) : JsValue = {
