@@ -53,7 +53,7 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
     // EC math so we'll do it anyway.
     val inputSigsRemoved = for {
       input <- spendingTransaction.inputs
-    } yield TransactionInputFactory.factory(input,ScriptSignatureFactory.empty)
+    } yield TransactionInputFactory.factory(input,ScriptSignature.empty)
 
     inputSigsRemoved.map(input =>
       require(input.scriptSignature.bytes.size == 0,"Input byte size was " + input.scriptSignature.bytes))

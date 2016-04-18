@@ -47,7 +47,7 @@ trait TransactionTestUtil extends BitcoinSLogger {
     //https://github.com/bitcoin/bitcoin/blob/605c17844ea32b6d237db6d83871164dc7d59dab/src/uint256.h#L40
 
     val outpoint = TransactionOutPointFactory.factory("0000000000000000000000000000000000000000000000000000000000000000",0xFFFFFFFF)
-    val scriptSignature = ScriptSignatureFactory.fromHex("0000")
+    val scriptSignature = ScriptSignature("0000")
     val input = TransactionInputFactory.factory(outpoint,scriptSignature,TransactionConstants.sequence)
     val output = TransactionOutputFactory.factory(CurrencyUnits.zeroSatoshis,scriptPubKey)
 
