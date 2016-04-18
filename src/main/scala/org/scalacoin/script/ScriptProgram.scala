@@ -4,6 +4,7 @@ import org.scalacoin.crypto.{TransactionSignatureComponentFactory, TransactionSi
 import org.scalacoin.protocol.script.{ScriptSignature, ScriptPubKey}
 import org.scalacoin.protocol.transaction.Transaction
 import org.scalacoin.script.constant._
+import org.scalacoin.script.error.ScriptError
 import org.scalacoin.script.flag.ScriptFlag
 import org.scalacoin.util.Factory
 
@@ -91,6 +92,12 @@ trait ScriptProgram {
     else if (!stack.headOption.isDefined) true
     else false
   }
+
+  /**
+   * Indicates if the program has encountered a ScriptError in its execution
+   * @return
+   */
+  def error : Option[ScriptError] = None
 }
 
 object ScriptProgram {
