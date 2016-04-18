@@ -53,7 +53,7 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
     // EC math so we'll do it anyway.
     val inputSigsRemoved = for {
       input <- spendingTransaction.inputs
-    } yield TransactionInputFactory.factory(input,ScriptSignature.empty)
+    } yield TransactionInput(input,ScriptSignature.empty)
 
     inputSigsRemoved.map(input =>
       require(input.scriptSignature.bytes.size == 0,"Input byte size was " + input.scriptSignature.bytes))
@@ -75,7 +75,7 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
     // the signature covers the hash of the prevout transaction which obviously includes the output script
     // already. Perhaps it felt safer to him in some way, or is another leftover from how the code was written.
 
-    val inputWithConnectedScript = TransactionInputFactory.factory(inputToSign,scriptWithOpCodeSeparatorsRemoved)
+    val inputWithConnectedScript = TransactionInput(inputToSign,scriptWithOpCodeSeparatorsRemoved)
 
     //update the input at index i with inputWithConnectScript
     val updatedInputs = for {
@@ -181,7 +181,7 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
       (input,index) <- inputs.zipWithIndex
     } yield {
       if (index == inputIndex) input
-      else TransactionInputFactory.factory(input,0)
+      else TransactionInput(input,0)
     }
   }
 
