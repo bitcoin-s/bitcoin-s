@@ -13,7 +13,7 @@ class MultiSignatureScriptPubKeyTest extends FlatSpec with MustMatchers {
       "4d6ad4d2cf0e69a98a3815c086f587c7e9388d87182103fc85980e3fac1f3d" +
       "8a5c3223c3ef5bffc1bd42d2cc42add8c3899cc66e7f1906210215b5bd0508" +
       "69166a70a7341b4f216e268b7c6c7504576dcea2cce7d11cc9a35f53ae"
-    val scriptPubKey = ScriptPubKeyFactory.fromHex(multiSigRawScriptPubKeyHex)
+    val scriptPubKey = ScriptPubKey(multiSigRawScriptPubKeyHex)
     val multiSigScriptPubKey : MultiSignatureScriptPubKey = scriptPubKey match {
       case s : MultiSignatureScriptPubKey => s
       case _ => throw new RuntimeException("Should be a multisig script pub key")
@@ -29,7 +29,7 @@ class MultiSignatureScriptPubKeyTest extends FlatSpec with MustMatchers {
       "4d6ad4d2cf0e69a98a3815c086f587c7e9388d87182103fc85980e3fac1f3d" +
       "8a5c3223c3ef5bffc1bd42d2cc42add8c3899cc66e7f1906210215b5bd0508" +
       "69166a70a7341b4f216e268b7c6c7504576dcea2cce7d11cc9a35f53ae"
-    val scriptPubKey = ScriptPubKeyFactory.fromHex(multiSigRawScriptPubKeyHex)
+    val scriptPubKey = ScriptPubKey(multiSigRawScriptPubKeyHex)
     val multiSigScriptPubKey : MultiSignatureScriptPubKey = scriptPubKey match {
       case s : MultiSignatureScriptPubKey => s
       case _ => throw new RuntimeException("Should be a multisig script pub key")
@@ -46,7 +46,7 @@ class MultiSignatureScriptPubKeyTest extends FlatSpec with MustMatchers {
 
   it must "find the public keys without the public inside of the multisignature script with an OP_NOT at the end" in {
     val rawPubKey = "522102865c40293a680cb9c020e7b1e106d8c1916d3cef99aa431a56d253e69256dac02102865c40293a680cb9c020e7b1e106d8c1916d3cef99aa431a56d253e69256dac052ae91"
-    val scriptPubKey = ScriptPubKeyFactory.fromHex(rawPubKey)
+    val scriptPubKey = ScriptPubKey(rawPubKey)
     val multiSigScriptPubKey : MultiSignatureScriptPubKey = scriptPubKey match {
       case s : MultiSignatureScriptPubKey => s
       case _ => throw new RuntimeException("Should be a multisig script pub key")
@@ -65,7 +65,7 @@ class MultiSignatureScriptPubKeyTest extends FlatSpec with MustMatchers {
       "4d6ad4d2cf0e69a98a3815c086f587c7e9388d87182103fc85980e3fac1f3d" +
       "8a5c3223c3ef5bffc1bd42d2cc42add8c3899cc66e7f1906210215b5bd0508" +
       "69166a70a7341b4f216e268b7c6c7504576dcea2cce7d11cc9a35f53af"
-    val scriptPubKey = ScriptPubKeyFactory.fromHex(multiSigRawScriptPubKeyHex)
+    val scriptPubKey = ScriptPubKey(multiSigRawScriptPubKeyHex)
     val multiSigScriptPubKey : MultiSignatureScriptPubKey = scriptPubKey match {
       case s : MultiSignatureScriptPubKey => s
       case _ => throw new RuntimeException("Should be a multisig script pub key")

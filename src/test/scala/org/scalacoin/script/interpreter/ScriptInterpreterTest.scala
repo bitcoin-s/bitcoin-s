@@ -3,7 +3,7 @@ package org.scalacoin.script.interpreter
 import java.io.File
 
 import com.sun.org.apache.bcel.internal.generic.NOP
-import org.scalacoin.protocol.script.{ScriptPubKeyFactory, ScriptPubKey}
+import org.scalacoin.protocol.script.{ScriptPubKey}
 import org.scalacoin.script.ScriptProgramFactory
 import org.scalacoin.script.bitwise.{OP_EQUAL, OP_EQUALVERIFY}
 import org.scalacoin.script.constant._
@@ -54,7 +54,7 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterp
       logger.info("Parsed ScriptPubKey: " + testCase.scriptPubKey)
       logger.info("Flags: " + testCase.flags)
       logger.info("Comments: " + testCase.comments)
-      val scriptPubKey = ScriptPubKeyFactory.fromAsm(testCase.scriptPubKey.asm)
+      val scriptPubKey = ScriptPubKey.fromAsm(testCase.scriptPubKey.asm)
       val flags = ScriptFlagFactory.fromList(testCase.flags)
       logger.info("Flags after parsing: " + flags)
       val program = ScriptProgramFactory.factory(tx,scriptPubKey,inputIndex,flags)
@@ -95,7 +95,7 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterp
       logger.info("Parsed ScriptPubKey: " + testCase.scriptPubKey)
       logger.info("Flags: " + testCase.flags)
       logger.info("Comments: " + testCase.comments)
-      val scriptPubKey = ScriptPubKeyFactory.fromAsm(testCase.scriptPubKey.asm)
+      val scriptPubKey = ScriptPubKey.fromAsm(testCase.scriptPubKey.asm)
       val flags = ScriptFlagFactory.fromList(testCase.flags)
       logger.info("Flags after parsing: " + flags)
       val program = ScriptProgramFactory.factory(tx,scriptPubKey,inputIndex,flags)

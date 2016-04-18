@@ -2,7 +2,7 @@ package org.scalacoin.protocol.transaction
 
 import org.scalacoin.currency.{CurrencyUnits, CurrencyUnit, Satoshis}
 import org.scalacoin.marshallers.transaction.RawTransactionOutputParser
-import org.scalacoin.protocol.script.{ScriptPubKey, ScriptPubKeyFactory}
+import org.scalacoin.protocol.script.{ScriptPubKey}
 import org.scalacoin.util.Factory
 
 /**

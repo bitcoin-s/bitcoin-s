@@ -1,7 +1,7 @@
 package org.scalacoin.marshallers.script
 
 import org.scalacoin.marshallers.RawBitcoinSerializer
-import org.scalacoin.protocol.script.{ScriptPubKeyFactory, ScriptPubKey}
+import org.scalacoin.protocol.script.{ScriptPubKey}
 import org.scalacoin.script.constant.ScriptToken
 import org.scalacoin.util.BitcoinSLogger
 import org.slf4j.LoggerFactory
@@ -13,7 +13,7 @@ trait RawScriptPubKeyParser extends RawBitcoinSerializer[ScriptPubKey] with Bitc
 
   override def read(bytes : List[Byte]) : ScriptPubKey = {
     val script : List[ScriptToken] = ScriptParser.fromBytes(bytes)
-    ScriptPubKeyFactory.fromAsm(script)
+    ScriptPubKey.fromAsm(script)
   }
 
   override def write(scriptPubKey : ScriptPubKey) : String = {

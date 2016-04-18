@@ -30,7 +30,7 @@ object CoreTestCaseProtocol extends DefaultJsonProtocol with BitcoinSLogger {
       } else if (elements.size == 3) {
 
         val scriptPubKeyAsm = parseScriptPubKeyAsm(elements(1))
-        val scriptPubKey = ScriptPubKeyFactory.fromAsm(scriptPubKeyAsm)
+        val scriptPubKey = ScriptPubKey.fromAsm(scriptPubKeyAsm)
         val scriptPubKeyCoreTestCase = ScriptPubKeyCoreTestCaseImpl(scriptPubKeyAsm, scriptPubKey)
         val scriptSignatureAsm : Seq[ScriptToken] = parseScriptSignatureAsm(elements.head)
         val scriptSignature : ScriptSignature = ScriptSignatureFactory.fromScriptPubKey(scriptSignatureAsm,scriptPubKey)
@@ -40,7 +40,7 @@ object CoreTestCaseProtocol extends DefaultJsonProtocol with BitcoinSLogger {
         Some(CoreTestCaseImpl(scriptSignatureCoreTestCase,scriptPubKeyCoreTestCase,flags,"No comments from bitcoin core ",elements.toString))
       } else if (elements.size == 4) {
         val scriptPubKeyAsm : Seq[ScriptToken] = parseScriptPubKeyAsm(elements(1))
-        val scriptPubKey = ScriptPubKeyFactory.fromAsm(scriptPubKeyAsm)
+        val scriptPubKey = ScriptPubKey.fromAsm(scriptPubKeyAsm)
         val scriptPubKeyCoreTestCase = ScriptPubKeyCoreTestCaseImpl(scriptPubKeyAsm, scriptPubKey)
         val scriptSignatureAsm : Seq[ScriptToken] = parseScriptSignatureAsm(elements.head)
         val scriptSignature : ScriptSignature = ScriptSignatureFactory.fromScriptPubKey(scriptSignatureAsm,scriptPubKey)

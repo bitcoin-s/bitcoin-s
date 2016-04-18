@@ -4,7 +4,7 @@ import org.scalacoin.currency.{CurrencyUnits, CurrencyUnit, Satoshis}
 import org.scalacoin.marshallers.transaction.{RawTransactionOutputParser, TransactionElement}
 import org.scalacoin.protocol.CompactSizeUInt
 
-import org.scalacoin.protocol.script.{ScriptPubKeyFactory, ScriptPubKey}
+import org.scalacoin.protocol.script.{ScriptPubKey}
 import org.scalacoin.util.BitcoinSUtil
 
 
@@ -24,7 +24,7 @@ sealed trait TransactionOutput extends TransactionElement {
 
 case object EmptyTransactionOutput extends TransactionOutput {
   override def value = CurrencyUnits.negativeSatoshi
-  override def scriptPubKey = ScriptPubKeyFactory.empty
+  override def scriptPubKey = ScriptPubKey.empty
 }
 
 

@@ -129,7 +129,7 @@ trait ScriptSignatureFactory extends Factory[ScriptSignature] with BitcoinSLogge
    * @return
    */
   def parseRedeemScript(scriptToken : ScriptToken) : Try[ScriptPubKey] = {
-    val redeemScript : Try[ScriptPubKey] = Try(ScriptPubKeyFactory.fromBytes(scriptToken.bytes))
+    val redeemScript : Try[ScriptPubKey] = Try(ScriptPubKey(scriptToken.bytes))
     redeemScript
   }
 
