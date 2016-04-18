@@ -3,7 +3,6 @@ package org.scalacoin.crypto
 import org.scalacoin.policy.Policy
 import org.scalacoin.protocol.script.ScriptSignature
 import org.scalacoin.protocol.transaction._
-import org.scalacoin.script.ScriptProgramFactory
 import org.scalacoin.script.flag.ScriptVerifyDerSig
 import org.scalacoin.util._
 import org.scalatest.{FlatSpec, MustMatchers}

@@ -4,7 +4,7 @@ import java.io.File
 
 import com.sun.org.apache.bcel.internal.generic.NOP
 import org.scalacoin.protocol.script.{ScriptPubKey}
-import org.scalacoin.script.ScriptProgramFactory
+import org.scalacoin.script.ScriptProgram
 import org.scalacoin.script.bitwise.{OP_EQUAL, OP_EQUALVERIFY}
 import org.scalacoin.script.constant._
 import org.scalacoin.script.control.OP_VERIFY
@@ -57,7 +57,7 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterp
       val scriptPubKey = ScriptPubKey.fromAsm(testCase.scriptPubKey.asm)
       val flags = ScriptFlagFactory.fromList(testCase.flags)
       logger.info("Flags after parsing: " + flags)
-      val program = ScriptProgramFactory.factory(tx,scriptPubKey,inputIndex,flags)
+      val program = ScriptProgram(tx,scriptPubKey,inputIndex,flags)
       withClue(testCase.raw) {
         ScriptInterpreter.run(program) must equal (true)
       }
@@ -98,7 +98,7 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterp
       val scriptPubKey = ScriptPubKey.fromAsm(testCase.scriptPubKey.asm)
       val flags = ScriptFlagFactory.fromList(testCase.flags)
       logger.info("Flags after parsing: " + flags)
-      val program = ScriptProgramFactory.factory(tx,scriptPubKey,inputIndex,flags)
+      val program = ScriptProgram(tx,scriptPubKey,inputIndex,flags)
       withClue(testCase.raw) {
         ScriptInterpreter.run(program) must equal (false)
       }

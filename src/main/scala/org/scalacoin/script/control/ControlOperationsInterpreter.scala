@@ -1,6 +1,6 @@
 package org.scalacoin.script.control
 
-import org.scalacoin.script.{ScriptProgramFactory, ScriptProgram}
+import org.scalacoin.script.{ScriptProgram}
 import org.scalacoin.script.constant._
 import org.scalacoin.util._
 import org.slf4j.LoggerFactory
@@ -25,10 +25,10 @@ trait ControlOperationsInterpreter extends BitcoinSLogger {
     logger.debug("Parsed binary tree: " + binaryTree)
     if (!checkMatchingOpIfOpNotIfOpEndIf(program.originalScript)) {
       logger.error("We do not have a matching OP_ENDIF for every OP_IF we have")
-      ScriptProgramFactory.factory(program,false)
+      ScriptProgram(program,false)
     } else if (program.stack.isEmpty) {
       logger.error("We do not have any stack elements for our OP_IF")
-      ScriptProgramFactory.factory(program,false)
+      ScriptProgram(program,false)
     }
     else if (program.stackTopIsTrue) {
       logger.debug("OP_IF stack top was true")
@@ -37,12 +37,12 @@ trait ControlOperationsInterpreter extends BitcoinSLogger {
       //remove OP_ELSE from binary tree
       val newTreeWithoutOpElse = removeFirstOpElse(binaryTree)
       val newScript = newTreeWithoutOpElse.toList
-      ScriptProgramFactory.factory(program, program.stack.tail,newScript.tail)
+      ScriptProgram(program, program.stack.tail,newScript.tail)
     } else {
       logger.debug("OP_IF stack top was false")
       //remove the OP_IF
       val scriptWithoutOpIf : BinaryTree[ScriptToken] = removeFirstOpIf(binaryTree)
-      ScriptProgramFactory.factory(program, program.stack.tail,scriptWithoutOpIf.toList)
+      ScriptProgram(program, program.stack.tail,scriptWithoutOpIf.toList)
     }
 
   }
@@ -60,20 +60,20 @@ trait ControlOperationsInterpreter extends BitcoinSLogger {
 
     if (!checkMatchingOpIfOpNotIfOpEndIf(program.originalScript)) {
       logger.error("We do not have a matching OP_ENDIF for every OP_NOTIF we have")
-      ScriptProgramFactory.factory(program,false)
+      ScriptProgram(program,false)
     } else if (program.stack.isEmpty) {
       logger.error("We do not have any stack elements for our OP_NOTIF")
-      ScriptProgramFactory.factory(program,false)
+      ScriptProgram(program,false)
     } else if (program.stackTopIsTrue) {
       //remove the OP_NOTIF
       val scriptWithoutOpIf : BinaryTree[ScriptToken] = removeFirstOpIf(binaryTree)
-      ScriptProgramFactory.factory(program, program.stack.tail,scriptWithoutOpIf.toList)
+      ScriptProgram(program, program.stack.tail,scriptWithoutOpIf.toList)
     } else {
       //if the left branch contains and OP_NOTIF & OP_ENDIF there must be a nested OP_IF or OP_NOTIF
       //remove OP_ELSE from binary tree
       val newTreeWithoutOpElse = removeFirstOpElse(binaryTree)
       val newScript = newTreeWithoutOpElse.toList
-      ScriptProgramFactory.factory(program, program.stack.tail,newScript.tail)
+      ScriptProgram(program, program.stack.tail,newScript.tail)
     }
   }
 
@@ -100,7 +100,7 @@ trait ControlOperationsInterpreter extends BitcoinSLogger {
         }
         else node
     }
-    ScriptProgramFactory.factory(program, program.stack,treeWithNextOpElseRemoved.toList.tail)
+    ScriptProgram(program, program.stack,treeWithNextOpElseRemoved.toList.tail)
   }
 
 
@@ -114,8 +114,8 @@ trait ControlOperationsInterpreter extends BitcoinSLogger {
     if (!checkMatchingOpIfOpNotIfOpEndIf(program.originalScript)) {
       //means we do not have a matching OP_IF for our OP_ENDIF
       logger.error("We do not have a matching OP_IF/OP_NOTIF for every OP_ENDIF we have")
-      ScriptProgramFactory.factory(program,false)
-    } else ScriptProgramFactory.factory(program, program.stack,program.script.tail)
+      ScriptProgram(program,false)
+    } else ScriptProgram(program, program.stack,program.script.tail)
 
   }
 
@@ -130,7 +130,7 @@ trait ControlOperationsInterpreter extends BitcoinSLogger {
    */
   def opReturn(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.isDefined && program.script.head == OP_RETURN)
-    ScriptProgramFactory.factory(program,false)
+    ScriptProgram(program,false)
   }
 
 
@@ -144,11 +144,11 @@ trait ControlOperationsInterpreter extends BitcoinSLogger {
     program.script.size > 0 match {
       case true =>
         logger.debug("Stack for OP_VERIFY: " + program.stack)
-        if (program.stackTopIsFalse) ScriptProgramFactory.factory(program,false)
-        else ScriptProgramFactory.factory(program, program.stack.tail,program.script.tail)
+        if (program.stackTopIsFalse) ScriptProgram(program,false)
+        else ScriptProgram(program, program.stack.tail,program.script.tail)
       case false =>
         logger.error("OP_VERIFY requires an element to be on the stack")
-        ScriptProgramFactory.factory(program,false)
+        ScriptProgram(program,false)
     }
 
   }

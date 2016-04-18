@@ -1,6 +1,6 @@
 package org.scalacoin.script.bitwise
 
-import org.scalacoin.script.{ScriptProgramFactory, ScriptProgram}
+import org.scalacoin.script.{ScriptProgram}
 import org.scalacoin.script.constant._
 import org.scalacoin.script.control.{OP_VERIFY, ControlOperationsInterpreter}
 import org.scalacoin.util.BitcoinSUtil
@@ -20,7 +20,7 @@ trait BitwiseInterpreter extends ControlOperationsInterpreter  {
     require(program.script.headOption.isDefined && program.script.head == OP_EQUAL, "Script operation must be OP_EQUAL")
 
     if (program.stack.size < 2) {
-      ScriptProgramFactory.factory(program,false)
+      ScriptProgram(program,false)
     } else {
       val h = program.stack.head
       val h1 = program.stack.tail.head
@@ -44,7 +44,7 @@ trait BitwiseInterpreter extends ControlOperationsInterpreter  {
         case _ => h.bytes == h1.bytes
       }
       val scriptBoolean : ScriptBoolean = if (result) ScriptTrue else ScriptFalse
-      ScriptProgramFactory.factory(program,scriptBoolean :: program.stack.tail.tail, program.script.tail)
+      ScriptProgram(program,scriptBoolean :: program.stack.tail.tail, program.script.tail)
     }
 
   }
@@ -61,11 +61,11 @@ trait BitwiseInterpreter extends ControlOperationsInterpreter  {
       case true =>
         //first replace OP_EQUALVERIFY with OP_EQUAL and OP_VERIFY
         val simpleScript = OP_EQUAL :: OP_VERIFY :: program.script.tail
-        val newProgram: ScriptProgram = opEqual(ScriptProgramFactory.factory(program, program.stack, simpleScript))
+        val newProgram: ScriptProgram = opEqual(ScriptProgram(program, program.stack, simpleScript))
         opVerify(newProgram)
       case false =>
         logger.error("OP_EQUALVERIFY requires at least 2 elements on the stack")
-        ScriptProgramFactory.factory(program,false)
+        ScriptProgram(program,false)
     }
   }
 }
