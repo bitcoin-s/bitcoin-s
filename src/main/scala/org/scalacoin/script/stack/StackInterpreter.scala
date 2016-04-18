@@ -67,9 +67,14 @@ trait StackInterpreter extends BitcoinSLogger {
    */
   def opToAltStack(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.isDefined && program.script.head == OP_TOALTSTACK, "Top of script stack must be OP_TOALTSTACK")
-    require(program.stack.size > 0,"Stack must have at least one item on it for OP_TOALTSTACK")
-    ScriptProgramFactory.factory(program, program.stack.tail,
-      program.script.tail, program.stack.head :: program.altStack, ScriptProgramFactory.AltStack)
+    program.stack.size > 0 match {
+      case true => ScriptProgramFactory.factory(program, program.stack.tail,
+        program.script.tail, program.stack.head :: program.altStack, ScriptProgramFactory.AltStack)
+      case false =>
+        logger.error("OP_TOALTSTACK requires an element to be on the stack")
+        ScriptProgramFactory.factory(program,false)
+    }
+
   }
 
   /**
@@ -212,11 +217,15 @@ trait StackInterpreter extends BitcoinSLogger {
    */
   def op2Rot(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.isDefined && program.script.head == OP_2ROT, "Top of script stack must be OP_2ROT")
-    val newStack = program.stack match {
-      case h :: h1 :: h2 :: h3 :: h4 :: h5 :: t => h4 :: h5 :: h :: h1 :: h2 :: h3 ::  t
-      case _ => throw new IllegalArgumentException("Stack must have at least 5 items on it for OP_2ROT")
+    program.stack match {
+      case h :: h1 :: h2 :: h3 :: h4 :: h5 :: t =>
+        val newStack = h4 :: h5 :: h :: h1 :: h2 :: h3 ::  t
+        ScriptProgramFactory.factory(program, newStack,program.script.tail)
+      case _ =>
+        logger.error("OP_2ROT requires 6 elements on the stack")
+        ScriptProgramFactory.factory(program,false)
     }
-    ScriptProgramFactory.factory(program, newStack,program.script.tail)
+
   }
 
   /**
@@ -226,8 +235,14 @@ trait StackInterpreter extends BitcoinSLogger {
    */
   def op2Drop(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.isDefined && program.script.head == OP_2DROP, "Top of script stack must be OP_2DROP")
-    require(program.stack.size > 1,"Stack must have at least 2 items on it for OP_2DROP")
-    ScriptProgramFactory.factory(program, program.stack.tail.tail, program.script.tail)
+    program.stack.size > 1 match {
+      case true =>
+        ScriptProgramFactory.factory(program, program.stack.tail.tail, program.script.tail)
+      case false =>
+        logger.error("OP_2DROP requires two elements to be on the stack")
+        ScriptProgramFactory.factory(program,false)
+    }
+
   }
 
 

@@ -30,13 +30,14 @@ class ArithmeticInterpreterTest extends FlatSpec with MustMatchers with Arithmet
     newProgram.script.isEmpty must be (true)
   }
 
-  it must "throw an exception if we have an OP_1ADD with nothing on the stack" in {
-    intercept[IllegalArgumentException] {
-      val stack = List()
-      val script = List(OP_1ADD)
-      val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
-      val newProgram = op1Add(program)
-    }
+  it must "mark the script as invalid if we have an OP_1ADD with nothing on the stack" in {
+
+    val stack = List()
+    val script = List(OP_1ADD)
+    val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
+    val newProgram = op1Add(program)
+    newProgram.isValid must be (false)
+
   }
 
   it must "perform an OP_1SUB corectly" in {
@@ -49,13 +50,13 @@ class ArithmeticInterpreterTest extends FlatSpec with MustMatchers with Arithmet
     newProgram.script.isEmpty must be (true)
   }
 
-  it must "throw an exception if we have an OP_1SUB with nothing on the stack" in {
-    intercept[IllegalArgumentException] {
-      val stack = List()
-      val script = List(OP_1SUB)
-      val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
-      val newProgram = op1Sub(program)
-    }
+  it must "mark a script as invalid if we have an OP_1SUB with nothing on the stack" in {
+
+    val stack = List()
+    val script = List(OP_1SUB)
+    val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
+    val newProgram = op1Sub(program)
+    newProgram.isValid must be (false)
   }
 
   it must "perform an OP_SUB corectly" in {
@@ -68,13 +69,12 @@ class ArithmeticInterpreterTest extends FlatSpec with MustMatchers with Arithmet
     newProgram.script.isEmpty must be (true)
   }
 
-  it must "throw an exception if we have an OP_SUB with nothing on the stack" in {
-    intercept[IllegalArgumentException] {
-      val stack = List()
-      val script = List(OP_SUB)
-      val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
-      val newProgram = opSub(program)
-    }
+  it must "mark a script as invalid if we have an OP_SUB with nothing on the stack" in {
+    val stack = List()
+    val script = List(OP_SUB)
+    val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
+    val newProgram = opSub(program)
+    newProgram.isValid must be (false)
   }
 
   it must "perform an OP_ABS on a negative number corectly" in {
@@ -96,13 +96,12 @@ class ArithmeticInterpreterTest extends FlatSpec with MustMatchers with Arithmet
     newProgram.stack.head must be (ScriptNumberFactory.zero)
     newProgram.script.isEmpty must be (true)
   }
-  it must "throw an exception if we have an OP_ABS with nothing on the stack" in {
-    intercept[IllegalArgumentException] {
-      val stack = List()
-      val script = List(OP_ABS)
-      val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
-      val newProgram = opAbs(program)
-    }
+  it must "mark a script as invalid if we have an OP_ABS with nothing on the stack" in {
+    val stack = List()
+    val script = List(OP_ABS)
+    val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
+    val newProgram = opAbs(program)
+    newProgram.isValid must be (false)
   }
 
   it must "perform an OP_NEGATE on a zero correctly" in {
@@ -134,13 +133,13 @@ class ArithmeticInterpreterTest extends FlatSpec with MustMatchers with Arithmet
     newProgram.stack.head must be (ScriptNumberFactory.one)
     newProgram.script.isEmpty must be (true)
   }
-  it must "throw an exception if we have an OP_NEGATE with nothing on the stack" in {
-    intercept[IllegalArgumentException] {
-      val stack = List()
-      val script = List(OP_NEGATE)
-      val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
-      val newProgram = opNegate(program)
-    }
+  it must "mark a script as invalid if we have an OP_NEGATE with nothing on the stack" in {
+
+    val stack = List()
+    val script = List(OP_NEGATE)
+    val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
+    val newProgram = opNegate(program)
+    newProgram.isValid must be (false)
   }
 
   it must "perform an OP_NOT correctly where 0 is the stack top" in {

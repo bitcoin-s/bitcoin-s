@@ -56,13 +56,16 @@ trait BitwiseInterpreter extends ControlOperationsInterpreter  {
    * @return
    */
   def opEqualVerify(program : ScriptProgram) : ScriptProgram = {
-    require(program.stack.size > 1, "Stack size must be 2 or more to compare the top two values")
     require(program.script.headOption.isDefined && program.script.head == OP_EQUALVERIFY, "Script operation must be OP_EQUALVERIFY")
-    //first replace OP_EQUALVERIFY with OP_EQUAL and OP_VERIFY
-    val simpleScript = OP_EQUAL :: OP_VERIFY :: program.script.tail
-    val newProgram: ScriptProgram = opEqual(ScriptProgramFactory.factory(program, program.stack, simpleScript))
-    opVerify(newProgram)
+    program.stack.size > 1 match {
+      case true =>
+        //first replace OP_EQUALVERIFY with OP_EQUAL and OP_VERIFY
+        val simpleScript = OP_EQUAL :: OP_VERIFY :: program.script.tail
+        val newProgram: ScriptProgram = opEqual(ScriptProgramFactory.factory(program, program.stack, simpleScript))
+        opVerify(newProgram)
+      case false =>
+        logger.error("OP_EQUALVERIFY requires at least 2 elements on the stack")
+        ScriptProgramFactory.factory(program,false)
+    }
   }
-
-
 }
