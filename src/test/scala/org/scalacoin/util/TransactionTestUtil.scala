@@ -49,7 +49,7 @@ trait TransactionTestUtil extends BitcoinSLogger {
     val outpoint = TransactionOutPoint("0000000000000000000000000000000000000000000000000000000000000000",0xFFFFFFFF)
     val scriptSignature = ScriptSignature("0000")
     val input = TransactionInput(outpoint,scriptSignature,TransactionConstants.sequence)
-    val output = TransactionOutputFactory.factory(CurrencyUnits.zeroSatoshis,scriptPubKey)
+    val output = TransactionOutput(CurrencyUnits.zeroSatoshis,scriptPubKey)
 
     val tx = TransactionImpl(TransactionConstants.version,Seq(input),Seq(output),TransactionConstants.lockTime)
     (tx,0)
@@ -78,7 +78,7 @@ trait TransactionTestUtil extends BitcoinSLogger {
 
     val outpoint = TransactionOutPoint(creditingTx.txId,outputIndex)
     val input = TransactionInput(outpoint,scriptSignature,TransactionConstants.sequence)
-    val output = TransactionOutputFactory.factory(CurrencyUnits.zeroSatoshis,EmptyScriptPubKey)
+    val output = TransactionOutput(CurrencyUnits.zeroSatoshis,EmptyScriptPubKey)
     val tx = TransactionImpl(TransactionConstants.version,Seq(input),Seq(output),TransactionConstants.lockTime)
 /*    val expectedHex = "01000000019ce5586f04dd407719ab7e2ed3583583b9022f29652702cfac5ed082013461fe000000004847304402200a5c6163f07b8d3b013c4d1d6dba25e780b39658d79ba37af7057a3b7f15ffa102201fd9b4eaa9943f734928b99a83592c2e7bf342ea2680f6a2bb705167966b742001ffffffff0100000000000000000000000000"
     require(tx.hex == expectedHex,"\nExpected hex: " + expectedHex + "\nActual hex:   " +  tx.hex)*/

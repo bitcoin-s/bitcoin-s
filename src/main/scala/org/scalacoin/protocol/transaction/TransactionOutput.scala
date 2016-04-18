@@ -5,7 +5,7 @@ import org.scalacoin.marshallers.transaction.{RawTransactionOutputParser, Transa
 import org.scalacoin.protocol.CompactSizeUInt
 
 import org.scalacoin.protocol.script.{ScriptPubKey}
-import org.scalacoin.util.BitcoinSUtil
+import org.scalacoin.util.{Factory, BitcoinSUtil}
 
 
 /**
@@ -29,3 +29,22 @@ case object EmptyTransactionOutput extends TransactionOutput {
 
 
 case class TransactionOutputImpl(value : CurrencyUnit, scriptPubKey: ScriptPubKey) extends TransactionOutput
+
+object TransactionOutput extends Factory[TransactionOutput] {
+  def factory(oldOutput : TransactionOutput, newCurrencyUnit: CurrencyUnit) : TransactionOutput =
+    TransactionOutputImpl(newCurrencyUnit,oldOutput.scriptPubKey)
+
+  def factory(oldOutput : TransactionOutput, newScriptPubKey : ScriptPubKey) : TransactionOutput =
+    TransactionOutputImpl(oldOutput.value,newScriptPubKey)
+
+  def factory(currencyUnit: CurrencyUnit, scriptPubKey: ScriptPubKey) : TransactionOutput = TransactionOutputImpl(currencyUnit,scriptPubKey)
+
+  //TODO: This could bomb if the transaction output is not in the right format,
+  //probably should put more thought into this to make it more robust
+  def fromBytes(bytes : Seq[Byte]) : TransactionOutput = RawTransactionOutputParser.read(bytes).head
+
+  def apply(oldOutput : TransactionOutput, newCurrencyUnit: CurrencyUnit) : TransactionOutput = factory(oldOutput,newCurrencyUnit)
+  def apply(oldOutput : TransactionOutput, newScriptPubKey : ScriptPubKey) : TransactionOutput = factory(oldOutput, newScriptPubKey)
+  def apply(currencyUnit: CurrencyUnit, scriptPubKey: ScriptPubKey) : TransactionOutput = factory(currencyUnit, scriptPubKey)
+  def apply(bytes : Seq[Byte]) : TransactionOutput = fromBytes(bytes)
+}
