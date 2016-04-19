@@ -6,20 +6,23 @@ import org.scalacoin.marshallers.transaction.TransactionElement
 
 import org.scalacoin.script.constant._
 import org.scalacoin.script.crypto.{SIGHASH_ALL, OP_CHECKMULTISIG, HashType, HashTypeFactory}
-import org.scalacoin.util.{BitcoinScriptUtil, BitcoinSLogger, BitcoinSUtil}
+import org.scalacoin.util.{Factory, BitcoinScriptUtil, BitcoinSLogger, BitcoinSUtil}
 import org.slf4j.LoggerFactory
 
+import scala.util.{Failure, Success, Try}
+
 /**
- * Created by chris on 12/26/15.
- *
- */
-sealed trait ScriptSignature extends TransactionElement with ScriptSignatureFactory with BitcoinSLogger {
+  * Created by chris on 12/26/15.
+  *
+  */
+sealed trait ScriptSignature extends TransactionElement with BitcoinSLogger {
 
   /**
    * Representation of a scriptSignature in a parsed assembly format
    * this data structure can be run through the script interpreter to
    * see if a script evaluates to true
-   * @return
+    *
+    * @return
    */
   def asm : Seq[ScriptToken]
 
@@ -29,13 +32,15 @@ sealed trait ScriptSignature extends TransactionElement with ScriptSignatureFact
    * p2pk script signatures only have one sigs
    * p2sh script signatures can have m sigs
    * multisignature scripts can have m sigs
-   * @return
+    *
+    * @return
    */
   def signatures : Seq[ECDigitalSignature]
 
   /**
    * Derives the hash type for a given digitalSignature
-   * @param digitalSignature
+    *
+    * @param digitalSignature
    * @return
    */
   def hashType(digitalSignature: ECDigitalSignature) = {
@@ -71,19 +76,22 @@ trait P2PKHScriptSignature extends ScriptSignature {
 
   /**
    * P2PKH scriptSigs only have one signature
-   * @return
+    *
+    * @return
    */
   def signature : ECDigitalSignature = signatures.head
 
   /**
    * Gives us the public key inside of a p2pkh script signature
-   * @return
+    *
+    * @return
    */
   def publicKey : ECPublicKey = ECFactory.publicKey(asm.last.bytes)
 
   /**
    * Returns the hash type for the p2pkh script signature
-   * @return
+    *
+    * @return
    */
   def hashType : HashType = HashTypeFactory.fromByte(signature.bytes.last)
 
@@ -102,20 +110,23 @@ trait P2PKHScriptSignature extends ScriptSignature {
 trait P2SHScriptSignature extends ScriptSignature {
   /**
    * The redeemScript represents the conditions that must be satisfied to spend the output
-   * @return
+    *
+    * @return
    */
-  def redeemScript : ScriptPubKey = ScriptPubKeyFactory.fromBytes(asm.last.bytes)
+  def redeemScript : ScriptPubKey = ScriptPubKey(asm.last.bytes)
 
 
   /**
    * Returns the script signature of this p2shScriptSig with no serialized redeemScript
-   * @return
+    *
+    * @return
    */
-  def scriptSignatureNoRedeemScript = ScriptSignatureFactory.fromAsm(splitAtRedeemScript(asm)._1)
+  def scriptSignatureNoRedeemScript = ScriptSignature.fromAsm(splitAtRedeemScript(asm)._1)
 
   /**
    * Returns the public keys for the p2sh scriptSignature
-   * @return
+    *
+    * @return
    */
   def publicKeys : Seq[ECPublicKey] = {
     val pubKeys : Seq[ScriptToken] = redeemScript.asm.filter(_.isInstanceOf[ScriptConstant])
@@ -125,7 +136,8 @@ trait P2SHScriptSignature extends ScriptSignature {
 
   /**
    * The digital signatures inside of the scriptSig
-   * @return
+    *
+    * @return
    */
   def signatures : Seq[ECDigitalSignature] = {
     val nonRedeemScript = splitAtRedeemScript(asm)._1
@@ -138,7 +150,8 @@ trait P2SHScriptSignature extends ScriptSignature {
    * Splits the given asm into two parts
    * the first part is the digital signatures
    * the second part is the redeem script
-   * @param asm
+    *
+    * @param asm
    * @return
    */
   def splitAtRedeemScript(asm : Seq[ScriptToken]) : (Seq[ScriptToken],Seq[ScriptToken]) = {
@@ -157,7 +170,8 @@ trait P2SHScriptSignature extends ScriptSignature {
 trait MultiSignatureScriptSignature extends ScriptSignature {
   /**
    * The digital signatures inside of the scriptSig
-   * @return
+    *
+    * @return
    */
   def signatures : Seq[ECDigitalSignature] = {
     asm.tail.filter(_.isInstanceOf[ScriptConstant])
@@ -173,17 +187,20 @@ trait MultiSignatureScriptSignature extends ScriptSignature {
 trait P2PKScriptSignature extends ScriptSignature {
   /**
    * Returns the hash type for the signature inside of the p2pk script signature
-   * @return
+    *
+    * @return
    */
   def hashType = HashTypeFactory.fromByte(signature.bytes.last)
   /**
    * PubKey scriptSignatures only have one signature
-   * @return
+    *
+    * @return
    */
   def signature : ECDigitalSignature = signatures.head
   /**
    * The digital signatures inside of the scriptSig
-   * @return
+    *
+    * @return
    */
   def signatures : Seq[ECDigitalSignature] = {
     Seq(ECFactory.digitalSignature(BitcoinScriptUtil.filterPushOps(asm).head.hex))
@@ -218,3 +235,143 @@ case object EmptyScriptSignature extends ScriptSignature {
   def signatures = List()
   def hex = ""
 }
+
+object ScriptSignature extends Factory[ScriptSignature] with BitcoinSLogger {
+    /**
+      * Builds a script signature from a digital signature and a public key
+      * this is a pay to public key hash script sig
+      *
+      * @param signature
+      * @param pubKey
+      * @return
+      */
+    def factory(signature : ECDigitalSignature, pubKey : ECPublicKey) : ScriptSignature = {
+      val signatureBytesToPushOntoStack = BytesToPushOntoStackFactory.factory(signature.bytes.size)
+      val pubKeyBytesToPushOntoStack = BytesToPushOntoStackFactory.factory(pubKey.bytes.size)
+      val asm : Seq[ScriptToken] = Seq(signatureBytesToPushOntoStack.get, ScriptConstantImpl(signature.hex),
+        pubKeyBytesToPushOntoStack.get, ScriptConstantImpl(pubKey.hex))
+      fromAsm(asm)
+    }
+
+    /**
+      * Returns an empty script signature
+      *
+      * @return
+      */
+    def empty : ScriptSignature = EmptyScriptSignature
+
+    def fromBytes(bytes : Seq[Byte]) : ScriptSignature =  {
+      RawScriptSignatureParser.read(bytes)
+    }
+
+
+    /**
+      * Creates a scriptSignature from the list of script tokens
+      *
+      * @param tokens
+      * @return
+      */
+    def fromAsm(tokens : Seq[ScriptToken]) : ScriptSignature = {
+      val scriptSigHex = tokens.map(_.hex).mkString
+      tokens match {
+        case Nil => EmptyScriptSignature
+        case _  if (tokens.size > 1 && isRedeemScript(tokens.last)) =>
+          P2SHScriptSignatureImpl(scriptSigHex,tokens)
+        case _ if (isMultiSignatureScriptSignature(tokens)) =>
+          //the head of the asm does not neccessarily have to be an OP_0 if the NULLDUMMY script
+          //flag is not set. It can be any script number operation
+          MultiSignatureScriptSignatureImpl(scriptSigHex,tokens)
+        case List(w : BytesToPushOntoStack, x : ScriptConstant, y : BytesToPushOntoStack,
+        z : ScriptConstant) => P2PKHScriptSignatureImpl(scriptSigHex,tokens)
+        case List(w : BytesToPushOntoStack, x : ScriptConstant) => P2PKScriptSignatureImpl(scriptSigHex,tokens)
+        case _ => NonStandardScriptSignatureImpl(scriptSigHex,tokens)
+      }
+    }
+
+
+    /**
+      * Creates a script signature from the given tokens and scriptPubKey
+      *
+      * @param tokens the script signature's tokens
+      * @param scriptPubKey the scriptPubKey which the script signature is trying to spend
+      * @return
+      */
+    def fromScriptPubKey(tokens : Seq[ScriptToken], scriptPubKey : ScriptPubKey) : ScriptSignature = {
+      val scriptSigHex = tokens.map(_.hex).mkString
+      scriptPubKey match {
+        case s : P2SHScriptPubKey => P2SHScriptSignatureImpl(scriptSigHex,tokens)
+        case s : P2PKHScriptPubKey => P2PKHScriptSignatureImpl(scriptSigHex,tokens)
+        case s : P2PKScriptPubKey => P2PKScriptSignatureImpl(scriptSigHex,tokens)
+        case s : MultiSignatureScriptPubKey => MultiSignatureScriptSignatureImpl(scriptSigHex,tokens)
+        case s : NonStandardScriptPubKey => NonStandardScriptSignatureImpl(scriptSigHex, tokens)
+        case EmptyScriptPubKey if (tokens.size == 0) => EmptyScriptSignature
+        case EmptyScriptPubKey => NonStandardScriptSignatureImpl(scriptSigHex,tokens)
+      }
+    }
+
+
+
+
+    /**
+      * Detects if the given script token is a redeem script
+      *
+      * @param token
+      * @return
+      */
+    private def isRedeemScript(token : ScriptToken) : Boolean = {
+      logger.debug("Checking if last token is redeem script")
+      val redeemScriptTry : Try[ScriptPubKey] = parseRedeemScript(token)
+      redeemScriptTry match {
+        case Success(redeemScript) =>
+          logger.debug("Possible redeemScript: " + redeemScript)
+          redeemScript match {
+            case x : P2PKHScriptPubKey => true
+            case x : MultiSignatureScriptPubKey => true
+            case x : P2SHScriptPubKey => true
+            case x : P2PKScriptPubKey => true
+            case x : NonStandardScriptPubKey => false
+            case EmptyScriptPubKey => false
+          }
+        case Failure(_) => false
+      }
+    }
+
+    /**
+      * Parses a redeem script from the given script token
+      *
+      * @param scriptToken
+      * @return
+      */
+    def parseRedeemScript(scriptToken : ScriptToken) : Try[ScriptPubKey] = {
+      val redeemScript : Try[ScriptPubKey] = Try(ScriptPubKey(scriptToken.bytes))
+      redeemScript
+    }
+
+    /**
+      * Checks if the given script tokens are a multisignature script sig
+      * format: OP_0 <A sig> [B sig] [C sig...]
+      *
+      * @param asm the asm to check if it falls in the multisignature script sig format
+      * @return boolean indicating if the scriptsignature is a multisignature script signature
+      */
+    def isMultiSignatureScriptSignature(asm : Seq[ScriptToken]) : Boolean = {
+      asm.isEmpty match {
+        case true => false
+        case false if (asm.size == 1) => false
+        case false =>
+          val firstTokenIsScriptNumberOperation = asm.head.isInstanceOf[ScriptNumberOperation]
+          val restOfScriptIsPushOpsOrScriptConstants = asm.tail.map(
+            token => token.isInstanceOf[ScriptConstant] || StackPushOperationFactory.isPushOperation(token)
+          ).exists(_ == false)
+          logger.debug("First number is script op: " + firstTokenIsScriptNumberOperation)
+          logger.debug("tail is true: " +restOfScriptIsPushOpsOrScriptConstants )
+          firstTokenIsScriptNumberOperation && !restOfScriptIsPushOpsOrScriptConstants
+      }
+    }
+
+  def apply(bytes: Seq[Byte]) : ScriptSignature = fromBytes(bytes)
+  def apply(hex : String) : ScriptSignature = fromHex(hex)
+  def apply(signature : ECDigitalSignature, pubKey : ECPublicKey) : ScriptSignature = factory(signature,pubKey)
+  def apply(tokens : Seq[ScriptToken], scriptPubKey : ScriptPubKey) : ScriptSignature = fromScriptPubKey(tokens, scriptPubKey)
+}
+

@@ -5,7 +5,7 @@ import org.scalacoin.protocol.script._
 import org.scalacoin.protocol.transaction.Transaction
 import org.scalacoin.script.control.{ControlOperationsInterpreter, OP_VERIFY}
 import org.scalacoin.script.flag.{ScriptVerifyNullDummy, ScriptVerifyDerSig}
-import org.scalacoin.script.{ScriptProgramFactory, ScriptProgram}
+import org.scalacoin.script.{ScriptProgram}
 import org.scalacoin.script.constant._
 import org.scalacoin.util.{BitcoinSLogger, BitcoinSUtil, CryptoUtil}
 import org.slf4j.LoggerFactory
@@ -80,7 +80,7 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
     require(program.script.headOption.isDefined && program.script.head == OP_CHECKSIG, "Script top must be OP_CHECKSIG")
     if (program.stack.size < 2) {
       logger.error("OP_CHECKSIG requires at lest two stack elements")
-      ScriptProgramFactory.factory(program,false)
+      ScriptProgram(program,false)
     } else {
       val pubKey = ECFactory.publicKey(program.stack.head.bytes)
       val signature = ECFactory.digitalSignature(program.stack.tail.head.bytes)
@@ -91,7 +91,7 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
         //script verification fails since the sig is not strictly der encoded
         logger.warn("Since the ScriptVerifyDerSig flag is set the signature being checked must be a strict dersig signature as per BIP 66\n" +
           "Sig: " + signature.hex)
-        ScriptProgramFactory.factory(program,false)
+        ScriptProgram(program,false)
       } else {
         val restOfStack = program.stack.tail.tail
 
@@ -100,13 +100,13 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
           signature,program.flags)
         logger.debug("signature verification isValid: " + result)
         result match {
-          case SignatureValidationSuccess => ScriptProgramFactory.factory(program,
+          case SignatureValidationSuccess => ScriptProgram(program,
             ScriptTrue :: restOfStack,program.script.tail)
           case SignatureValidationFailureNotStrictDerEncoding =>
-            ScriptProgramFactory.factory(program, ScriptFalse :: restOfStack,
+            ScriptProgram(program, ScriptFalse :: restOfStack,
               program.script.tail,SignatureValidationFailureNotStrictDerEncoding.isValid)
           case SignatureValidationFailureIncorrectSignatures =>
-            ScriptProgramFactory.factory(program, ScriptFalse :: restOfStack,program.script.tail)
+            ScriptProgram(program, ScriptFalse :: restOfStack,program.script.tail)
         }
       }
     }
@@ -131,7 +131,7 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
     }
     val indexOfOpCodeSeparator = fullScript.indexOf(OP_CODESEPARATOR)
     require(indexOfOpCodeSeparator != -1,"The script we searched MUST contain an OP_CODESEPARTOR. Script: " + fullScript)
-    ScriptProgramFactory.factory(program,program.script.tail,ScriptProgramFactory.Script,indexOfOpCodeSeparator)
+    ScriptProgram(program,program.script.tail,ScriptProgram.Script,indexOfOpCodeSeparator)
   }
 
 
@@ -153,10 +153,10 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
 
     if (program.flags.contains(ScriptVerifyNullDummy) && program.txSignatureComponent.scriptSignature.asm.head != OP_0) {
       logger.warn("Script flag null dummy was set however the first element in the script signature was not an OP_0")
-      ScriptProgramFactory.factory(program,false)
+      ScriptProgram(program,false)
     } else if (program.stack.size < 3) {
       logger.error("OP_CHECKMULTISIG requires at least 3 stack elements")
-      ScriptProgramFactory.factory(program,false)
+      ScriptProgram(program,false)
     } else {
       //these next lines remove the appropriate stack/script values after the signatures have been checked
       val nPossibleSignatures : Int  = program.stack.head match {
@@ -195,17 +195,17 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
           //means that all of the signatures were correctly encoded and
           //that all of the signatures were valid signatures for the given
           //public keys
-          ScriptProgramFactory.factory(program, ScriptTrue :: restOfStack, program.script.tail)
+          ScriptProgram(program, ScriptTrue :: restOfStack, program.script.tail)
         case SignatureValidationFailureNotStrictDerEncoding =>
           //this means the script fails immediately
           //set the valid flag to false on the script
           //see BIP66 for more information on this
           //https://github.com/bitcoin/bips/blob/master/bip-0066.mediawiki#specification
-          ScriptProgramFactory.factory(program, restOfStack, program.script.tail,false)
+          ScriptProgram(program, restOfStack, program.script.tail,false)
         case SignatureValidationFailureIncorrectSignatures =>
           //this means that signature verification failed, however all signatures were encoded correctly
           //just push a ScriptFalse onto the stack
-          ScriptProgramFactory.factory(program, ScriptFalse :: restOfStack, program.script.tail)
+          ScriptProgram(program, ScriptFalse :: restOfStack, program.script.tail)
       }
     }
   }
@@ -220,7 +220,7 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
     require(program.script.headOption.isDefined && program.script.head == OP_CHECKMULTISIGVERIFY, "Script top must be OP_CHECKMULTISIGVERIFY")
     require(program.stack.size > 2, "Stack must contain at least 3 items for OP_CHECKMULTISIGVERIFY")
     val newScript = OP_CHECKMULTISIG :: OP_VERIFY :: program.script.tail
-    val newProgram = ScriptProgramFactory.factory(program,newScript, ScriptProgramFactory.Script)
+    val newProgram = ScriptProgram(program,newScript, ScriptProgram.Script)
     val programFromOpCheckMultiSig = opCheckMultiSig(newProgram)
     logger.debug("Stack after OP_CHECKMULTSIG execution: " + programFromOpCheckMultiSig.stack)
     val programFromOpVerify = opVerify(programFromOpCheckMultiSig)
@@ -240,10 +240,10 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
     if (program.stack.headOption.isDefined) {
       val stackTop = program.stack.head
       val hash = ScriptConstantFactory.fromBytes(hashFunction(stackTop.bytes))
-      ScriptProgramFactory.factory(program, hash :: program.stack.tail, program.script.tail)
+      ScriptProgram(program, hash :: program.stack.tail, program.script.tail)
     } else {
       logger.error("We must have the stack top defined to execute a hash function")
-      ScriptProgramFactory.factory(program,false)
+      ScriptProgram(program,false)
     }
   }
 

@@ -5,7 +5,7 @@ import org.scalacoin.protocol.transaction.Transaction
 import org.scalacoin.script.flag._
 import org.scalacoin.script.locktime.{OP_CHECKLOCKTIMEVERIFY, LockTimeInterpreter}
 import org.scalacoin.script.splice._
-import org.scalacoin.script.{ScriptProgramFactory, ScriptProgram}
+import org.scalacoin.script.{ScriptProgram}
 import org.scalacoin.script.arithmetic._
 import org.scalacoin.script.bitwise._
 import org.scalacoin.script.constant._
@@ -64,40 +64,40 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
       if (opCount > maxScriptOps) {
         logger.error("We have reached the maximum amount of script operations allowed")
         logger.error("Here are the remaining operations in the script: " + program.script)
-        (false,ScriptProgramFactory.factory(program,false))
+        (false,ScriptProgram(program,false))
       } else if (program.script.flatMap(_.bytes).size > 10000) {
         logger.error("We cannot run a script that is larger than 10,000 bytes")
-        (false,ScriptProgramFactory.factory(program,false))
+        (false,ScriptProgram(program,false))
       } else {
         program.script match {
           //if at any time we see that the program is not valid
           //cease script execution
           case _ if !program.isValid =>
             logger.error("Script program was marked as invalid: " + program)
-            (false, ScriptProgramFactory.factory(program, false))
+            (false, ScriptProgram(program, false))
           case _ if !program.script.intersect(Seq(OP_VERIF, OP_VERNOTIF)).isEmpty =>
             logger.error("Script is invalid even when a OP_VERIF or OP_VERNOTIF occurs in an unexecuted OP_IF branch")
-            (false, ScriptProgramFactory.factory(program, false))
+            (false, ScriptProgram(program, false))
           //disabled splice operation
           case _ if !program.script.intersect(Seq(OP_CAT, OP_SUBSTR, OP_LEFT, OP_RIGHT)).isEmpty =>
             logger.error("Script is invalid because it contains a disabled splice operation")
-            (false, ScriptProgramFactory.factory(program, false))
+            (false, ScriptProgram(program, false))
           //disabled bitwise operations
           case _ if !program.script.intersect(Seq(OP_INVERT, OP_AND, OP_OR, OP_XOR)).isEmpty =>
             logger.error("Script is invalid because it contains a disabled bitwise operation")
-            (false, ScriptProgramFactory.factory(program, false))
+            (false, ScriptProgram(program, false))
           //disabled arithmetic operations
           case _ if !program.script.intersect(Seq(OP_MUL, OP_2MUL, OP_DIV, OP_2DIV, OP_MOD, OP_LSHIFT, OP_RSHIFT)).isEmpty =>
             logger.error("Script is invalid because it contains a disabled arithmetic operation")
-            (false, ScriptProgramFactory.factory(program, false))
+            (false, ScriptProgram(program, false))
           //program cannot contain a push operation > 520 bytes
           case _ if (program.script.exists(token => token.bytes.size > 520)) =>
             logger.error("We have a script constant that is larger than 520 bytes, this is illegal: " + program.script)
-            loop(ScriptProgramFactory.factory(program, false))
+            loop(ScriptProgram(program, false))
           //program stack size cannot be greater than 1000 elements
           case _ if ((program.stack.size + program.altStack.size) > 1000) =>
             logger.error("We cannot have a stack + alt stack size larger than 1000 elements")
-            loop(ScriptProgramFactory.factory(program, false))
+            loop(ScriptProgram(program, false))
 
           //stack operations
           case OP_DUP :: t => loop(opDup(program))
@@ -150,16 +150,16 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
           case OP_EQUALVERIFY :: t => loop(opEqualVerify(program))
 
           case (scriptNumberOp: ScriptNumberOperation) :: t =>
-            if (scriptNumberOp == OP_0) loop(ScriptProgramFactory.factory(program, ScriptNumberFactory.zero :: program.stack, t))
-            else loop(ScriptProgramFactory.factory(program, ScriptNumberFactory.fromNumber(scriptNumberOp.num) :: program.stack, t))
+            if (scriptNumberOp == OP_0) loop(ScriptProgram(program, ScriptNumberFactory.zero :: program.stack, t))
+            else loop(ScriptProgram(program, ScriptNumberFactory.fromNumber(scriptNumberOp.num) :: program.stack, t))
           case (bytesToPushOntoStack: BytesToPushOntoStack) :: t => loop(pushScriptNumberBytesToStack(program))
           case (scriptNumber: ScriptNumber) :: t =>
-            loop(ScriptProgramFactory.factory(program, scriptNumber :: program.stack, t))
+            loop(ScriptProgram(program, scriptNumber :: program.stack, t))
           case OP_PUSHDATA1 :: t => loop(opPushData1(program))
           case OP_PUSHDATA2 :: t => loop(opPushData2(program))
           case OP_PUSHDATA4 :: t => loop(opPushData4(program))
 
-          case (x : ScriptConstant) :: t => loop(ScriptProgramFactory.factory(program, x :: program.stack, t))
+          case (x : ScriptConstant) :: t => loop(ScriptProgram(program, x :: program.stack, t))
 
           //control operations
           case OP_IF :: t => loop(opIf(program))
@@ -184,13 +184,13 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
           //reserved operations
           case OP_NOP :: t =>
             //script discourage upgradeable flag does not apply to a OP_NOP
-            loop(ScriptProgramFactory.factory(program, program.stack, t))
+            loop(ScriptProgram(program, program.stack, t))
 
           //if we see an OP_NOP and the DISCOURAGE_UPGRADABLE_OP_NOPS flag is set we must fail our program
           case (nop: NOP) :: t if ScriptFlagUtil.discourageUpgradableNOPs(program.flags) =>
             logger.error("We cannot execute a NOP when the ScriptVerifyDiscourageUpgradableNOPs is set")
-            (false, ScriptProgramFactory.factory(program, false))
-          case (nop: NOP) :: t => loop(ScriptProgramFactory.factory(program, program.stack, t))
+            (false, ScriptProgram(program, false))
+          case (nop: NOP) :: t => loop(ScriptProgram(program, program.stack, t))
           case OP_RESERVED :: t =>
             logger.error("OP_RESERVED automatically marks transaction invalid")
             (false, program)
@@ -206,7 +206,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
 
           case (reservedOperation : ReservedOperation) :: t =>
             logger.error("Undefined operation found which automatically fails the script: " + reservedOperation)
-            loop(ScriptProgramFactory.factory(program,false))
+            loop(ScriptProgram(program,false))
           //splice operations
           case OP_SIZE :: t => loop(opSize(program))
 
@@ -217,10 +217,10 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
             //if not, check to see if we should discourage NOPs
             else if (ScriptFlagUtil.discourageUpgradableNOPs(program.flags)) {
               logger.error("We cannot execute a NOP when the ScriptVerifyDiscourageUpgradableNOPs is set")
-              (false, ScriptProgramFactory.factory(program, false))
+              (false, ScriptProgram(program, false))
             }
             //in this case, just reat OP_CLTV just like a NOP and remove it from the stack
-            else loop(ScriptProgramFactory.factory(program, program.script.tail, ScriptProgramFactory.Script))
+            else loop(ScriptProgram(program, program.script.tail, ScriptProgram.Script))
           //no more script operations to run, return whether the program is valid and the final state of the program
           case Nil =>
             //reset opCount variable to zero since we may need to count the ops
@@ -234,14 +234,14 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
       }
     }
 
-    val scriptSigProgram = ScriptProgramFactory.factory(program,Seq(),program.txSignatureComponent.scriptSignature.asm)
+    val scriptSigProgram = ScriptProgram(program,Seq(),program.txSignatureComponent.scriptSignature.asm)
 
     val (result,executedProgram) = program.txSignatureComponent.scriptSignature match {
       //if the P2SH script flag is not set, we evaluate a p2sh scriptSig just like any other scriptSig
       case scriptSig : P2SHScriptSignature if (program.flags.contains(ScriptVerifyP2SH)) =>
 
         //first run the serialized redeemScript && the p2shScriptPubKey to see if the hashes match
-        val hashCheckProgram = ScriptProgramFactory.factory(program, Seq(scriptSig.asm.last), program.txSignatureComponent.scriptPubKey.asm)
+        val hashCheckProgram = ScriptProgram(program, Seq(scriptSig.asm.last), program.txSignatureComponent.scriptPubKey.asm)
         val (hashesMatch, hashesMatchProgram) = loop(hashCheckProgram)
 
         hashesMatch match {
@@ -251,7 +251,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
             val stack = BitcoinScriptUtil.filterPushOps(scriptSig.scriptSignatureNoRedeemScript.asm.reverse)
             logger.debug("P2sh stack: " + stack)
             logger.debug("P2sh redeemScript: " + scriptSig.redeemScript.asm)
-            val p2shRedeemScriptProgram = ScriptProgramFactory.factory(hashesMatchProgram,stack, scriptSig.redeemScript.asm)
+            val p2shRedeemScriptProgram = ScriptProgram(hashesMatchProgram,stack, scriptSig.redeemScript.asm)
             loop(p2shRedeemScriptProgram)
           case false =>
             logger.warn("P2SH scriptPubKey hash did not match the hash for the serialized redeemScript")
@@ -265,7 +265,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
         if (scriptSigProgramIsValid) {
           logger.debug("We do not check a redeemScript against a non p2sh scriptSig")
           //now run the scriptPubKey script through the interpreter with the scriptSig as the stack arguments
-          val scriptPubKeyProgram = ScriptProgramFactory.factory(scriptSigExecutedProgram.txSignatureComponent,
+          val scriptPubKeyProgram = ScriptProgram(scriptSigExecutedProgram.txSignatureComponent,
             scriptSigExecutedProgram.stack,scriptSigExecutedProgram.txSignatureComponent.scriptPubKey.asm)
           val (scriptPubKeyProgramIsValid, scriptPubKeyExecutedProgram) = loop(scriptPubKeyProgram)
 

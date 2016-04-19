@@ -1,7 +1,7 @@
 package org.scalacoin.script.arithmetic
 
 import org.scalacoin.script.control.{ControlOperationsInterpreter, OP_VERIFY}
-import org.scalacoin.script.{ScriptProgramFactory, ScriptProgram}
+import org.scalacoin.script.{ScriptProgram}
 import org.scalacoin.script.constant._
 import org.scalacoin.util.BitcoinSUtil
 
@@ -142,11 +142,11 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
       "Script top must be OP_NUMEQUALVERIFY")
     if (program.stack.size < 2) {
       logger.error("OP_NUMEQUALVERIFY requires two stack elements")
-      ScriptProgramFactory.factory(program,false)
+      ScriptProgram(program,false)
     } else {
-      val numEqualProgram = ScriptProgramFactory.factory(program, program.stack, OP_NUMEQUAL :: program.script.tail)
+      val numEqualProgram = ScriptProgram(program, program.stack, OP_NUMEQUAL :: program.script.tail)
       val numEqualResult = opNumEqual(numEqualProgram)
-      val verifyProgram = ScriptProgramFactory.factory(numEqualResult, numEqualResult.stack, OP_VERIFY :: numEqualResult.script)
+      val verifyProgram = ScriptProgram(numEqualResult, numEqualResult.stack, OP_VERIFY :: numEqualResult.script)
       val verifyResult = opVerify(verifyProgram)
       verifyResult
     }
@@ -225,7 +225,7 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
 
     if (program.stack.size < 2) {
       logger.error("OP_MIN requires at least two stack elements")
-      ScriptProgramFactory.factory(program,false)
+      ScriptProgram(program,false)
     } else {
       val b = program.stack.head
       val a = program.stack.tail.head
@@ -236,7 +236,7 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
       }
 
       val newStackTop = if (isLessThanOrEqual) a else b
-      ScriptProgramFactory.factory(program, newStackTop :: program.stack.tail.tail, program.script.tail)
+      ScriptProgram(program, newStackTop :: program.stack.tail.tail, program.script.tail)
     }
 
   }
@@ -252,7 +252,7 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
       "Script top must be OP_MAX")
     if (program.stack.size < 2) {
       logger.error("OP_MAX requires at least two stack elements")
-      ScriptProgramFactory.factory(program,false)
+      ScriptProgram(program,false)
     } else {
       val b = program.stack.head
       val a = program.stack.tail.head
@@ -264,7 +264,7 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
       }
 
       val newStackTop = if (isGreaterThanOrEqual) a else b
-      ScriptProgramFactory.factory(program, newStackTop :: program.stack.tail.tail, program.script.tail)
+      ScriptProgram(program, newStackTop :: program.stack.tail.tail, program.script.tail)
     }
 
 
@@ -281,7 +281,7 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
       "Script top must be OP_WITHIN")
     if (program.stack.size < 3) {
       logger.error("OP_WITHIN requires at least 3 elements on the stack")
-      ScriptProgramFactory.factory(program,false)
+      ScriptProgram(program,false)
     } else {
       val c = program.stack.head
       val b = program.stack.tail.head
@@ -293,7 +293,7 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
       }
 
       val newStackTop = if (isWithinRange) OP_TRUE else OP_FALSE
-      ScriptProgramFactory.factory(program, newStackTop :: program.stack.tail.tail.tail, program.script.tail)
+      ScriptProgram(program, newStackTop :: program.stack.tail.tail.tail, program.script.tail)
     }
 
   }
@@ -319,23 +319,23 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
     program.stack.headOption match {
       case None =>
         logger.error("We need one stack element for performing a unary arithmetic operation")
-        ScriptProgramFactory.factory(program,false)
+        ScriptProgram(program,false)
       case Some(s : ScriptNumber) =>
         if (checkBitcoinIntByteSize(s)) {
           val newScriptNumber = op(s)
-          ScriptProgramFactory.factory(program, newScriptNumber :: program.stack.tail, program.script.tail)
+          ScriptProgram(program, newScriptNumber :: program.stack.tail, program.script.tail)
         }
         else {
           logger.error("Cannot perform arithmetic operation on a number larger than 4 bytes, here is the number: " + s)
-          ScriptProgramFactory.factory(program,false)
+          ScriptProgram(program,false)
         }
       case Some(s : ScriptConstant) =>
         val interpretedNumber = ScriptNumberFactory.fromNumber(BitcoinSUtil.hexToLong(s.hex))
-        val newProgram = ScriptProgramFactory.factory(program, interpretedNumber ::  program.stack.tail, ScriptProgramFactory.Stack)
+        val newProgram = ScriptProgram(program, interpretedNumber ::  program.stack.tail, ScriptProgram.Stack)
         performUnaryArithmeticOperation(newProgram, op)
       case Some(s : ScriptToken) =>
         logger.error("Stack top must be a script number to perform an arithmetic operation")
-        ScriptProgramFactory.factory(program,false)
+        ScriptProgram(program,false)
     }
   }
 
@@ -348,37 +348,37 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
   private def performBinaryArithmeticOperation(program : ScriptProgram, op : (ScriptNumber, ScriptNumber) => ScriptNumber) : ScriptProgram = {
     if (program.stack.size < 2) {
       logger.error("We must have two elements to perform a binary arithmetic operation")
-      ScriptProgramFactory.factory(program,false)
+      ScriptProgram(program,false)
     } else {
       (program.stack.head, program.stack.tail.head) match {
         case (x : ScriptNumber, y : ScriptNumber) =>
           if (checkBitcoinIntByteSize(x) && checkBitcoinIntByteSize(y)) {
             val newStackTop = op(x,y)
-            ScriptProgramFactory.factory(program,newStackTop :: program.stack.tail.tail,program.script.tail)
+            ScriptProgram(program,newStackTop :: program.stack.tail.tail,program.script.tail)
           }
           else {
             logger.error("Cannot perform arithmetic operation on a number larger than 4 bytes, one of these two numbers is larger than 4 bytes: " + x + " " + y)
-            ScriptProgramFactory.factory(program,false)
+            ScriptProgram(program,false)
           }
         case (x : ScriptConstant, y : ScriptNumber) =>
           //interpret x as a number
           val interpretedNumber = ScriptNumberFactory.fromNumber(BitcoinSUtil.hexToLong(x.hex))
-          val newProgram = ScriptProgramFactory.factory(program, interpretedNumber ::  program.stack.tail, ScriptProgramFactory.Stack)
+          val newProgram = ScriptProgram(program, interpretedNumber ::  program.stack.tail, ScriptProgram.Stack)
           performBinaryArithmeticOperation(newProgram, op)
         case (x : ScriptNumber, y : ScriptConstant) =>
           //interpret y as a number
           val interpretedNumber = ScriptNumberFactory.fromNumber(BitcoinSUtil.hexToLong(y.hex))
-          val newProgram = ScriptProgramFactory.factory(program, x :: interpretedNumber ::  program.stack.tail, ScriptProgramFactory.Stack)
+          val newProgram = ScriptProgram(program, x :: interpretedNumber ::  program.stack.tail, ScriptProgram.Stack)
           performBinaryArithmeticOperation(newProgram, op)
         case (x : ScriptConstant, y : ScriptConstant) =>
           //interpret x and y as a number
           val interpretedNumberX = ScriptNumberFactory.fromNumber(BitcoinSUtil.hexToLong(x.hex))
           val interpretedNumberY = ScriptNumberFactory.fromNumber(BitcoinSUtil.hexToLong(y.hex))
-          val newProgram = ScriptProgramFactory.factory(program, interpretedNumberX :: interpretedNumberY ::  program.stack.tail.tail, ScriptProgramFactory.Stack)
+          val newProgram = ScriptProgram(program, interpretedNumberX :: interpretedNumberY ::  program.stack.tail.tail, ScriptProgram.Stack)
           performBinaryArithmeticOperation(newProgram, op)
         case (x : ScriptToken, y : ScriptToken) =>
           logger.error("The top two stack items must be script numbers to perform an arithmetic operation")
-          ScriptProgramFactory.factory(program,false)
+          ScriptProgram(program,false)
       }
     }
 
@@ -395,37 +395,37 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
 
     if (program.stack.size < 2) {
       logger.error("We need two stack elements for a binary boolean operation")
-      ScriptProgramFactory.factory(program,false)
+      ScriptProgram(program,false)
     } else {
       (program.stack.head, program.stack.tail.head) match {
         case (x : ScriptNumber, y : ScriptNumber) =>
           if (checkBitcoinIntByteSize(x) && checkBitcoinIntByteSize(y)) {
             val newStackTop = if(op(x,y)) OP_TRUE else OP_FALSE
-            ScriptProgramFactory.factory(program,newStackTop :: program.stack.tail.tail,program.script.tail)
+            ScriptProgram(program,newStackTop :: program.stack.tail.tail,program.script.tail)
           }
           else {
             logger.error("Cannot perform boolean operation on a number larger than 4 bytes, one of these two numbers is larger than 4 bytes: " + x + " " + y)
-            ScriptProgramFactory.factory(program,false)
+            ScriptProgram(program,false)
           }
         case (x : ScriptConstant, y : ScriptNumber) =>
           //interpret x as a number
           val interpretedNumber = ScriptNumberFactory.fromNumber(BitcoinSUtil.hexToLong(x.hex))
-          val newProgram = ScriptProgramFactory.factory(program, interpretedNumber ::  program.stack.tail, ScriptProgramFactory.Stack)
+          val newProgram = ScriptProgram(program, interpretedNumber ::  program.stack.tail, ScriptProgram.Stack)
           performBinaryBooleanOperation(newProgram, op)
         case (x : ScriptNumber, y : ScriptConstant) =>
           //interpret y as a number
           val interpretedNumber = ScriptNumberFactory.fromNumber(BitcoinSUtil.hexToLong(y.hex))
-          val newProgram = ScriptProgramFactory.factory(program, x :: interpretedNumber ::  program.stack.tail, ScriptProgramFactory.Stack)
+          val newProgram = ScriptProgram(program, x :: interpretedNumber ::  program.stack.tail, ScriptProgram.Stack)
           performBinaryBooleanOperation(newProgram, op)
         case (x : ScriptConstant, y : ScriptConstant) =>
           //interpret x and y as a number
           val interpretedNumberX = ScriptNumberFactory.fromNumber(BitcoinSUtil.hexToLong(x.hex))
           val interpretedNumberY = ScriptNumberFactory.fromNumber(BitcoinSUtil.hexToLong(y.hex))
-          val newProgram = ScriptProgramFactory.factory(program, interpretedNumberX :: interpretedNumberY ::  program.stack.tail.tail, ScriptProgramFactory.Stack)
+          val newProgram = ScriptProgram(program, interpretedNumberX :: interpretedNumberY ::  program.stack.tail.tail, ScriptProgram.Stack)
           performBinaryBooleanOperation(newProgram, op)
         case (x : ScriptToken, y : ScriptToken) =>
           logger.error("The top two stack items must be script numbers to perform an arithmetic operation")
-          ScriptProgramFactory.factory(program,false)
+          ScriptProgram(program,false)
       }
     }
 
