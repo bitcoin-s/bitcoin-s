@@ -1,6 +1,6 @@
 package org.scalacoin.util
 
-import org.scalacoin.protocol.script.{ScriptSignature, ScriptSignatureFactory}
+import org.scalacoin.protocol.script.ScriptSignature
 
 import org.scalacoin.protocol.CompactSizeUIntImpl
 import org.scalacoin.script.constant.ScriptNumberImpl
@@ -225,7 +225,7 @@ class NumberUtilTest extends FlatSpec with MustMatchers with NumberUtil {
   }
 
   it must "parse the variable length integer of the empty script" in {
-    parseCompactSizeUInt(ScriptSignatureFactory.empty) must be (CompactSizeUIntImpl(0,1))
+    parseCompactSizeUInt(ScriptSignature.empty) must be (CompactSizeUIntImpl(0,1))
   }
 
 }

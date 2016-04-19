@@ -2,7 +2,7 @@ package org.scalacoin.script.locktime
 
 import org.scalacoin.protocol.transaction.TransactionConstants
 import org.scalacoin.script.constant.{ScriptNumberFactory, ScriptNumberImpl, ScriptNumber}
-import org.scalacoin.script.{ScriptProgramFactory, ScriptProgram}
+import org.scalacoin.script.{ScriptProgram}
 import org.scalacoin.util.BitcoinSLogger
 
 /**
@@ -28,10 +28,10 @@ trait LockTimeInterpreter extends BitcoinSLogger {
       "Script top must be OP_CHECKLOCKTIMEVERIFY")
     if (program.stack.size == 0) {
       logger.warn("Transaction validation failing in OP_CHECKLOCKTIMEVERIFY because we have no stack items")
-      ScriptProgramFactory.factory(program, program.stack, program.script.tail, false)
+      ScriptProgram(program, program.stack, program.script.tail, false)
     } else if (program.txSignatureComponent.transaction.inputs(program.txSignatureComponent.inputIndex).sequence == TransactionConstants.sequence) {
       logger.warn("Transaction validation failing in OP_CHECKLOCKTIMEVERIFY because the sequence number is 0xffffffff")
-      ScriptProgramFactory.factory(program, program.stack, program.script.tail, false)
+      ScriptProgram(program, program.stack, program.script.tail, false)
     }
     else {
       val isValid = program.stack.head match {
@@ -46,7 +46,7 @@ trait LockTimeInterpreter extends BitcoinSLogger {
           false
         case _ => true
       }
-      ScriptProgramFactory.factory(program,program.stack, program.script.tail, isValid)
+      ScriptProgram(program,program.stack, program.script.tail, isValid)
     }
   }
 

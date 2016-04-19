@@ -15,15 +15,15 @@ class ScriptSignatureFactoryTest extends FlatSpec with MustMatchers {
       "f6bac4c9a94e0aad311a4268e082a725f8aeae0573fb12ff866a5f01"
     val signatureBytes : Seq[Byte] = BitcoinSUtil.decodeHex(signatureHex)
 
-    val scriptSigFromHex = ScriptSignatureFactory.factory(signatureHex)
-    val scriptSigFromBytes = ScriptSignatureFactory.factory(signatureBytes)
+    val scriptSigFromHex = ScriptSignature(signatureHex)
+    val scriptSigFromBytes = ScriptSignature(signatureBytes)
 
     scriptSigFromHex must be (scriptSigFromBytes)
 
   }
 
   it must "given a single 0 a scriptSignature type of non standard" in {
-    val scriptSig = ScriptSignatureFactory.fromHex("00")
+    val scriptSig = ScriptSignature("00")
     val result = scriptSig match {
       case _ : NonStandardScriptSignature => true
       case _ => false
@@ -36,13 +36,13 @@ class ScriptSignatureFactoryTest extends FlatSpec with MustMatchers {
     val digitalSignature : ECDigitalSignature = ECFactory.digitalSignature(digitalSignatureBytes)
     val publicKeyBytes = TestUtil.p2pkhInputScriptAsm(3).bytes
     val publicKey : ECPublicKey = ECFactory.publicKey(publicKeyBytes)
-    val actualScriptSig : ScriptSignature = ScriptSignatureFactory.factory(digitalSignature,publicKey)
+    val actualScriptSig : ScriptSignature = ScriptSignature(digitalSignature,publicKey)
     actualScriptSig.asm must be (TestUtil.p2pkhInputScriptAsm)
   }
 
   it must "parse a p2pk scriptSignature from a raw scriptSig" in {
     val rawScriptSig = TestUtil.rawP2PKScriptSig
-    val scriptSig = ScriptSignatureFactory.fromHex(rawScriptSig)
+    val scriptSig = ScriptSignature(rawScriptSig)
     val result = scriptSig match {
       case s : P2PKScriptSignature => true
       case _ => false
