@@ -1,5 +1,6 @@
 package org.scalacoin.script.constant
 
+import org.scalacoin.script.error.ScriptErrorInvalidStackOperation
 import org.scalacoin.script.{ScriptProgram}
 import org.scalacoin.util.{BitcoinSLogger, BitcoinSUtil}
 import org.slf4j.LoggerFactory
@@ -85,7 +86,7 @@ trait ConstantInterpreter extends BitcoinSLogger {
     //check to see if we have the exact amount of bytes needed to be pushed onto the stack
     //if we do not, mark the program as invalid
     if (bytesNeeded == 0) ScriptProgram(program, ScriptNumberFactory.zero :: program.stack, newScript)
-    else if (bytesNeeded != bytesToPushOntoStack.map(_.bytes.size).sum) ScriptProgram(program,false)
+    else if (bytesNeeded != bytesToPushOntoStack.map(_.bytes.size).sum) ScriptProgram(program,ScriptErrorInvalidStackOperation)
     else ScriptProgram(program, constant :: program.stack, newScript)
   }
 
