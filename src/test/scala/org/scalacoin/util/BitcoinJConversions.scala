@@ -7,7 +7,7 @@ import org.bitcoinj.core.{ECKey, Sha256Hash}
 import org.bitcoinj.params.TestNet3Params
 import org.scalacoin.config.TestNet3
 import org.scalacoin.crypto.ECPublicKey
-import org.scalacoin.protocol.script.{UpdateScriptPubKeyAsm, ScriptPubKeyFactory, ScriptPubKey}
+import org.scalacoin.protocol.script.{UpdateScriptPubKeyAsm, ScriptPubKey}
 import org.scalacoin.protocol.transaction.{TransactionOutput, Transaction}
 import org.scalacoin.script.ScriptOperationFactory
 import org.scalacoin.script.constant.{ScriptConstantImpl, ScriptToken}
@@ -25,7 +25,7 @@ trait BitcoinjConversions {
    * @return
    */
   def toScriptPubKey(bitcoinjScript : org.bitcoinj.script.Script) : ScriptPubKey = {
-    val scriptPubKey = ScriptPubKeyFactory.fromBytes(bitcoinjScript.getProgram)
+    val scriptPubKey = ScriptPubKey(bitcoinjScript.getProgram)
     require(BitcoinSUtil.encodeHex(bitcoinjScript.getProgram) == scriptPubKey.hex,
       "ScriptPubKey must be the same as the given bitcoinj script\n" +
         BitcoinSUtil.encodeHex(bitcoinjScript.getProgram) + "\n" +

@@ -1,6 +1,6 @@
 package org.scalacoin.script.constant
 
-import org.scalacoin.script.{ScriptProgramFactory, ScriptProgram}
+import org.scalacoin.script.{ScriptProgram}
 import org.scalacoin.util.{BitcoinSLogger, BitcoinSUtil}
 import org.slf4j.LoggerFactory
 
@@ -18,7 +18,7 @@ trait ConstantInterpreter extends BitcoinSLogger {
    */
   def opPushData1(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.isDefined && program.script.head == OP_PUSHDATA1, "Top of script stack must be OP_PUSHDATA1")
-    pushScriptNumberBytesToStack(ScriptProgramFactory.factory(program,program.script.tail, ScriptProgramFactory.Script))
+    pushScriptNumberBytesToStack(ScriptProgram(program,program.script.tail, ScriptProgram.Script))
   }
 
   /**
@@ -28,7 +28,7 @@ trait ConstantInterpreter extends BitcoinSLogger {
    */
   def opPushData2(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.isDefined && program.script.head == OP_PUSHDATA2, "Top of script stack must be OP_PUSHDATA2")
-    pushScriptNumberBytesToStack(ScriptProgramFactory.factory(program,program.script.tail, ScriptProgramFactory.Script))
+    pushScriptNumberBytesToStack(ScriptProgram(program,program.script.tail, ScriptProgram.Script))
   }
 
   /**
@@ -38,7 +38,7 @@ trait ConstantInterpreter extends BitcoinSLogger {
    */
   def opPushData4(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.isDefined && program.script.head == OP_PUSHDATA4, "Top of script stack must be OP_PUSHDATA4")
-    pushScriptNumberBytesToStack(ScriptProgramFactory.factory(program,program.script.tail, ScriptProgramFactory.Script))
+    pushScriptNumberBytesToStack(ScriptProgram(program,program.script.tail, ScriptProgram.Script))
   }
 
 
@@ -84,9 +84,9 @@ trait ConstantInterpreter extends BitcoinSLogger {
     logger.debug("Constant to be pushed onto stack: " + constant)
     //check to see if we have the exact amount of bytes needed to be pushed onto the stack
     //if we do not, mark the program as invalid
-    if (bytesNeeded == 0) ScriptProgramFactory.factory(program, ScriptNumberFactory.zero :: program.stack, newScript)
-    else if (bytesNeeded != bytesToPushOntoStack.map(_.bytes.size).sum) ScriptProgramFactory.factory(program,false)
-    else ScriptProgramFactory.factory(program, constant :: program.stack, newScript)
+    if (bytesNeeded == 0) ScriptProgram(program, ScriptNumberFactory.zero :: program.stack, newScript)
+    else if (bytesNeeded != bytesToPushOntoStack.map(_.bytes.size).sum) ScriptProgram(program,false)
+    else ScriptProgram(program, constant :: program.stack, newScript)
   }
 
 

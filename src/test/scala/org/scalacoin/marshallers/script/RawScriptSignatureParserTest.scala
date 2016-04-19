@@ -1,6 +1,6 @@
 package org.scalacoin.marshallers.script
 
-import org.scalacoin.protocol.script.{ScriptSignatureFactory, ScriptSignature}
+import org.scalacoin.protocol.script.ScriptSignature
 import org.scalacoin.script.constant._
 import org.scalacoin.script.crypto.OP_CHECKMULTISIG
 import org.scalacoin.util.{BitcoinSLogger, TestUtil}
@@ -57,7 +57,7 @@ class RawScriptSignatureParserTest extends FlatSpec with MustMatchers with RawSc
   }
 
   it must "read a empty script sig" in {
-    val emptyScriptSig = ScriptSignatureFactory.empty
+    val emptyScriptSig = ScriptSignature.empty
     val parsedScriptSig = RawScriptSignatureParser.read(emptyScriptSig.hex)
 
     parsedScriptSig.hex must be (emptyScriptSig.hex)

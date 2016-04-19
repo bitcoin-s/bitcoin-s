@@ -53,7 +53,7 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
     // EC math so we'll do it anyway.
     val inputSigsRemoved = for {
       input <- spendingTransaction.inputs
-    } yield TransactionInputFactory.factory(input,ScriptSignatureFactory.empty)
+    } yield TransactionInput(input,ScriptSignature.empty)
 
     inputSigsRemoved.map(input =>
       require(input.scriptSignature.bytes.size == 0,"Input byte size was " + input.scriptSignature.bytes))
@@ -75,7 +75,7 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
     // the signature covers the hash of the prevout transaction which obviously includes the output script
     // already. Perhaps it felt safer to him in some way, or is another leftover from how the code was written.
 
-    val inputWithConnectedScript = TransactionInputFactory.factory(inputToSign,scriptWithOpCodeSeparatorsRemoved)
+    val inputWithConnectedScript = TransactionInput(inputToSign,scriptWithOpCodeSeparatorsRemoved)
 
     //update the input at index i with inputWithConnectScript
     val updatedInputs = for {
@@ -85,7 +85,7 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
         else input
       }
 
-    val txWithInputSigsRemoved = TransactionFactory.factory(spendingTransaction,UpdateTransactionInputs(updatedInputs))
+    val txWithInputSigsRemoved = Transaction(spendingTransaction,UpdateTransactionInputs(updatedInputs))
 
     //just need to add the hash type and hash the tx
     val sigHashBytes : List[Byte] = List(0x00.toByte, 0x00.toByte, 0x00.toByte, hashType.byte).reverse
@@ -165,7 +165,7 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
       //TODO: This needs to be tested
       val scriptWithoutOpCodeSeparators : Seq[ScriptToken] = script.asm.filterNot(_ == OP_CODESEPARATOR)
       val scriptBytes = BitcoinScriptUtil.asmToBytes(scriptWithoutOpCodeSeparators)
-      ScriptPubKeyFactory.fromBytes(scriptBytes)
+      ScriptPubKey(scriptBytes)
     } else script
 
   }
@@ -181,7 +181,7 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
       (input,index) <- inputs.zipWithIndex
     } yield {
       if (index == inputIndex) input
-      else TransactionInputFactory.factory(input,0)
+      else TransactionInput(input,0)
     }
   }
 
@@ -211,10 +211,10 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
     //following this implementation from bitcoinj
     //https://github.com/bitcoinj/bitcoinj/blob/09a2ca64d2134b0dcbb27b1a6eb17dda6087f448/core/src/main/java/org/bitcoinj/core/Transaction.java#L957
     //means that no outputs are signed at all
-    val txWithNoOutputs = TransactionFactory.emptyOutputs(spendingTransaction)
+    val txWithNoOutputs = Transaction.emptyOutputs(spendingTransaction)
     //set the sequence number of all inputs to 0 EXCEPT the input at inputIndex
     val updatedInputs :  Seq[TransactionInput] = setSequenceNumbersZero(spendingTransaction.inputs,inputIndex)
-    val sigHashNoneTx = TransactionFactory.factory(txWithNoOutputs,UpdateTransactionInputs(updatedInputs))
+    val sigHashNoneTx = Transaction(txWithNoOutputs,UpdateTransactionInputs(updatedInputs))
     //append hash type byte onto the end of the tx bytes
     sigHashNoneTx
   }
@@ -233,18 +233,18 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
     val updatedOutputsOpt : Seq[Option[TransactionOutput]] = for {
       (output,index) <- spendingTransaction.outputs.zipWithIndex
     } yield {
-        if (index < inputIndex) Some(TransactionOutputFactory.factory(output,CurrencyUnits.negativeSatoshi))
+        if (index < inputIndex) Some(TransactionOutput(output,CurrencyUnits.negativeSatoshi))
         else if (index == inputIndex) Some(output)
         else None
       }
     val updatedOutputs : Seq[TransactionOutput] = updatedOutputsOpt.flatten
 
-    val spendingTxOutputsEmptied = TransactionFactory.factory(spendingTransaction,UpdateTransactionOutputs(updatedOutputs))
+    val spendingTxOutputsEmptied = Transaction(spendingTransaction,UpdateTransactionOutputs(updatedOutputs))
     //create blank inputs with sequence numbers set to zero EXCEPT
     //the input at the inputIndex
     val updatedInputs = setSequenceNumbersZero(spendingTxOutputsEmptied.inputs,inputIndex)
 
-    val sigHashSingleTx = TransactionFactory.factory(spendingTxOutputsEmptied,UpdateTransactionInputs(updatedInputs))
+    val sigHashSingleTx = Transaction(spendingTxOutputsEmptied,UpdateTransactionInputs(updatedInputs))
     //append hash type byte onto the end of the tx bytes
     sigHashSingleTx
   }
@@ -266,8 +266,8 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
    * @return
    */
   private def sigHashAnyoneCanPay(spendingTransaction : Transaction, input : TransactionInput) : Transaction = {
-    val txWithEmptyInputs = TransactionFactory.emptyInputs(spendingTransaction)
-    val txWithInputsRemoved = TransactionFactory.factory(txWithEmptyInputs,UpdateTransactionInputs(Seq(input)))
+    val txWithEmptyInputs = Transaction.emptyInputs(spendingTransaction)
+    val txWithInputsRemoved = Transaction(txWithEmptyInputs,UpdateTransactionInputs(Seq(input)))
     txWithInputsRemoved
   }
 }

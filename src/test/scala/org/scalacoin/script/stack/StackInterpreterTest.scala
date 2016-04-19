@@ -1,6 +1,6 @@
 package org.scalacoin.script.stack
 
-import org.scalacoin.script.{ScriptProgramFactory}
+import org.scalacoin.script.{ScriptProgram}
 import org.scalacoin.script.bitwise.OP_EQUAL
 import org.scalacoin.script.constant._
 import org.scalacoin.util.{BitcoinSUtil, TestUtil}
@@ -14,7 +14,7 @@ class StackInterpreterTest extends FlatSpec with MustMatchers with StackInterpre
   "StackInterpreter" must "duplicate elements on top of the stack" in {
 
     val script = List(OP_DUP)
-    val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
+    val program = ScriptProgram(TestUtil.testProgram, stack,script)
     val newProgram = opDup(program)
 
     newProgram.stack.head must be (ScriptConstantImpl("Hello"))
@@ -26,7 +26,7 @@ class StackInterpreterTest extends FlatSpec with MustMatchers with StackInterpre
 
     intercept[IllegalArgumentException] {
       val script = List()
-      val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
+      val program = ScriptProgram(TestUtil.testProgram, stack,script)
       opDup(program)
     }
   }
@@ -34,7 +34,7 @@ class StackInterpreterTest extends FlatSpec with MustMatchers with StackInterpre
   it must "mark the script invalid when calling opDup without an element on top of the stack" in {
     val stack = List()
     val script = List(OP_DUP)
-    val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
+    val program = ScriptProgram(TestUtil.testProgram, stack,script)
     opDup(program).isValid must be (false)
 
   }
@@ -42,7 +42,7 @@ class StackInterpreterTest extends FlatSpec with MustMatchers with StackInterpre
   it must "evaluate the OP_DEPTH operator correctly" in {
     val stack = List(ScriptConstantImpl("Hello"),ScriptConstantImpl("World"))
     val script = List(OP_DEPTH)
-    val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
+    val program = ScriptProgram(TestUtil.testProgram, stack,script)
     val newProgram = opDepth(program)
 
     newProgram.stack.head.hex must be (BitcoinSUtil.encodeHex(stack.size.toByte))
@@ -51,7 +51,7 @@ class StackInterpreterTest extends FlatSpec with MustMatchers with StackInterpre
   it must "evaluate OP_DEPTH operator correctly when there are zero items on the stack" in {
     val stack = List()
     val script = List(OP_DEPTH)
-    val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
+    val program = ScriptProgram(TestUtil.testProgram, stack,script)
     val newProgram = opDepth(program)
     newProgram.stack.head must be (ScriptNumberFactory.zero)
   }
@@ -59,7 +59,7 @@ class StackInterpreterTest extends FlatSpec with MustMatchers with StackInterpre
   it must "evaluate an OP_TOALTSTACK operator correctly" in {
     val stack = List(OP_0)
     val script = List(OP_TOALTSTACK)
-    val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
+    val program = ScriptProgram(TestUtil.testProgram, stack,script)
     val newProgram = opToAltStack(program)
 
     newProgram.stack.isEmpty must be (true)
@@ -71,7 +71,7 @@ class StackInterpreterTest extends FlatSpec with MustMatchers with StackInterpre
   it must "evaluate an OP_DROP operator correctly" in {
     val stack = List(OP_0)
     val script = List(OP_DROP)
-    val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
+    val program = ScriptProgram(TestUtil.testProgram, stack,script)
     val newProgram = opDrop(program)
 
     newProgram.stack.isEmpty must be (true)
@@ -81,14 +81,14 @@ class StackInterpreterTest extends FlatSpec with MustMatchers with StackInterpre
   it must "evaluate an OP_IFDUP correctly" in {
     val stack = List(ScriptNumberFactory.zero)
     val script = List(OP_IFDUP)
-    val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
+    val program = ScriptProgram(TestUtil.testProgram, stack,script)
     val newProgram = opIfDup(program)
 
     newProgram.stack must be (stack)
     newProgram.script.isEmpty must be (true)
 
     val stack1 = List(OP_1)
-    val program1 = ScriptProgramFactory.factory(TestUtil.testProgram, stack1,script)
+    val program1 = ScriptProgram(TestUtil.testProgram, stack1,script)
     val newProgram1 = opIfDup(program1)
     newProgram1.stack must be (List(OP_1,OP_1))
     newProgram1.script.isEmpty must be (true)
@@ -99,7 +99,7 @@ class StackInterpreterTest extends FlatSpec with MustMatchers with StackInterpre
     val stack = List(OP_0,OP_1)
     val script = List(OP_NIP)
 
-    val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
+    val program = ScriptProgram(TestUtil.testProgram, stack,script)
 
     val newProgram = opNip(program)
 
@@ -111,7 +111,7 @@ class StackInterpreterTest extends FlatSpec with MustMatchers with StackInterpre
     val stack = List(OP_0)
     val script = List(OP_NIP)
 
-    val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
+    val program = ScriptProgram(TestUtil.testProgram, stack,script)
     val newProgram = opNip(program)
     newProgram.isValid must be (false)
 
@@ -121,7 +121,7 @@ class StackInterpreterTest extends FlatSpec with MustMatchers with StackInterpre
     val stack = List()
     val script = List(OP_NIP)
 
-    val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
+    val program = ScriptProgram(TestUtil.testProgram, stack,script)
     val newProgram = opNip(program)
     newProgram.isValid must be (false)
   }
@@ -129,7 +129,7 @@ class StackInterpreterTest extends FlatSpec with MustMatchers with StackInterpre
   it must "evaluate an OP_OVER correctly" in {
     val stack = List(OP_0,OP_1)
     val script = List(OP_OVER)
-    val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
+    val program = ScriptProgram(TestUtil.testProgram, stack,script)
     val newProgram = opOver(program)
     newProgram.stack must be (List(OP_1,OP_0,OP_1))
     newProgram.script.isEmpty must be (true)
@@ -139,7 +139,7 @@ class StackInterpreterTest extends FlatSpec with MustMatchers with StackInterpre
     val stack = List(OP_0)
     val script = List(OP_OVER)
 
-    val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
+    val program = ScriptProgram(TestUtil.testProgram, stack,script)
     val newProgram = opOver(program)
     newProgram.isValid must be (false)
 
@@ -149,7 +149,7 @@ class StackInterpreterTest extends FlatSpec with MustMatchers with StackInterpre
     val stack = List()
     val script = List(OP_OVER)
 
-    val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
+    val program = ScriptProgram(TestUtil.testProgram, stack,script)
     val newProgram = opOver(program)
     newProgram.isValid must be (false)
 
@@ -158,7 +158,7 @@ class StackInterpreterTest extends FlatSpec with MustMatchers with StackInterpre
   it must "evaluate an OP_PICK correctly" in {
     val stack = List(ScriptNumberFactory.zero, ScriptConstantImpl("14"), ScriptConstantImpl("15"), ScriptConstantImpl("16"))
     val script = List(OP_PICK)
-    val program = ScriptProgramFactory.factory(TestUtil.testProgram, stack,script)
+    val program = ScriptProgram(TestUtil.testProgram, stack,script)
     val newProgram = opPick(program)
 
     newProgram.stack must be (List(ScriptConstantImpl("14"),ScriptConstantImpl("14"),

@@ -1,6 +1,6 @@
 package org.scalacoin.script.splice
 
-import org.scalacoin.script.{ScriptProgramFactory, ScriptOperationFactory, ScriptProgram}
+import org.scalacoin.script.{ScriptOperationFactory, ScriptProgram}
 import org.scalacoin.script.constant._
 import Math._
 
@@ -22,17 +22,17 @@ trait SpliceInterpreter extends BitcoinSLogger {
     program.stack.size > 0 match {
       case true =>
         if (program.stack.head == OP_0) {
-          ScriptProgramFactory.factory(program, OP_0 :: program.stack, program.script.tail)
+          ScriptProgram(program, OP_0 :: program.stack, program.script.tail)
         } else {
           val scriptNumber = program.stack.head match {
             case ScriptNumberFactory.zero => ScriptNumberFactory.zero
             case x : ScriptToken => ScriptNumberFactory.fromNumber(x.bytes.size)
           }
-          ScriptProgramFactory.factory(program, scriptNumber :: program.stack, program.script.tail)
+          ScriptProgram(program, scriptNumber :: program.stack, program.script.tail)
         }
       case false =>
         logger.error("Must have at least 1 element on the stack for OP_SIZE")
-        ScriptProgramFactory.factory(program,false)
+        ScriptProgram(program,false)
     }
 
 
