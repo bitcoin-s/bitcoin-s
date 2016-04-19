@@ -4,8 +4,9 @@ import org.scalacoin.crypto._
 import org.scalacoin.protocol.script._
 import org.scalacoin.protocol.transaction.Transaction
 import org.scalacoin.script.control.{ControlOperationsInterpreter, OP_VERIFY}
+import org.scalacoin.script.error.{ScriptErrorSigNullDummy, ScriptErrorSigDer, ScriptErrorInvalidStackOperation}
 import org.scalacoin.script.flag.{ScriptVerifyNullDummy, ScriptVerifyDerSig}
-import org.scalacoin.script.{ScriptProgram}
+import org.scalacoin.script.{ExecutionInProgressScriptProgram, ScriptProgram}
 import org.scalacoin.script.constant._
 import org.scalacoin.util.{BitcoinSLogger, BitcoinSUtil, CryptoUtil}
 import org.slf4j.LoggerFactory
@@ -80,7 +81,7 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
     require(program.script.headOption.isDefined && program.script.head == OP_CHECKSIG, "Script top must be OP_CHECKSIG")
     if (program.stack.size < 2) {
       logger.error("OP_CHECKSIG requires at lest two stack elements")
-      ScriptProgram(program,false)
+      ScriptProgram(program,ScriptErrorInvalidStackOperation)
     } else {
       val pubKey = ECFactory.publicKey(program.stack.head.bytes)
       val signature = ECFactory.digitalSignature(program.stack.tail.head.bytes)
@@ -91,7 +92,7 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
         //script verification fails since the sig is not strictly der encoded
         logger.warn("Since the ScriptVerifyDerSig flag is set the signature being checked must be a strict dersig signature as per BIP 66\n" +
           "Sig: " + signature.hex)
-        ScriptProgram(program,false)
+        ScriptProgram(program,ScriptErrorSigDer)
       } else {
         val restOfStack = program.stack.tail.tail
 
@@ -103,8 +104,7 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
           case SignatureValidationSuccess => ScriptProgram(program,
             ScriptTrue :: restOfStack,program.script.tail)
           case SignatureValidationFailureNotStrictDerEncoding =>
-            ScriptProgram(program, ScriptFalse :: restOfStack,
-              program.script.tail,SignatureValidationFailureNotStrictDerEncoding.isValid)
+            ScriptProgram(program, ScriptErrorSigDer)
           case SignatureValidationFailureIncorrectSignatures =>
             ScriptProgram(program, ScriptFalse :: restOfStack,program.script.tail)
           case SignatureValidationFailureSignatureCount =>
@@ -133,7 +133,10 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
     }
     val indexOfOpCodeSeparator = fullScript.indexOf(OP_CODESEPARATOR)
     require(indexOfOpCodeSeparator != -1,"The script we searched MUST contain an OP_CODESEPARTOR. Script: " + fullScript)
-    ScriptProgram(program,program.script.tail,ScriptProgram.Script,indexOfOpCodeSeparator)
+    val e = program match {
+      case e : ExecutionInProgressScriptProgram => e
+    }
+    ScriptProgram(e,program.script.tail,ScriptProgram.Script,indexOfOpCodeSeparator)
   }
 
 
@@ -155,10 +158,10 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
 
     if (program.flags.contains(ScriptVerifyNullDummy) && program.txSignatureComponent.scriptSignature.asm.head != OP_0) {
       logger.warn("Script flag null dummy was set however the first element in the script signature was not an OP_0")
-      ScriptProgram(program,false)
+      ScriptProgram(program,ScriptErrorSigNullDummy)
     } else if (program.stack.size < 3) {
       logger.error("OP_CHECKMULTISIG requires at least 3 stack elements")
-      ScriptProgram(program,false)
+      ScriptProgram(program,ScriptErrorInvalidStackOperation)
     } else {
       //these next lines remove the appropriate stack/script values after the signatures have been checked
       val nPossibleSignatures : Int  = program.stack.head match {
@@ -203,7 +206,7 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
           //set the valid flag to false on the script
           //see BIP66 for more information on this
           //https://github.com/bitcoin/bips/blob/master/bip-0066.mediawiki#specification
-          ScriptProgram(program, restOfStack, program.script.tail,false)
+          ScriptProgram(program, ScriptErrorSigDer)
         case SignatureValidationFailureIncorrectSignatures =>
           //this means that signature verification failed, however all signatures were encoded correctly
           //just push a ScriptFalse onto the stack
@@ -224,7 +227,7 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
     require(program.script.headOption.isDefined && program.script.head == OP_CHECKMULTISIGVERIFY, "Script top must be OP_CHECKMULTISIGVERIFY")
     if (program.stack.size < 3) {
       logger.error("Stack must contain at least 3 items for OP_CHECKMULTISIGVERIFY")
-      ScriptProgram(program,false)
+      ScriptProgram(program,ScriptErrorInvalidStackOperation)
     } else {
       val newScript = OP_CHECKMULTISIG :: OP_VERIFY :: program.script.tail
       val newProgram = ScriptProgram(program,newScript, ScriptProgram.Script)
@@ -251,7 +254,7 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
       ScriptProgram(program, hash :: program.stack.tail, program.script.tail)
     } else {
       logger.error("We must have the stack top defined to execute a hash function")
-      ScriptProgram(program,false)
+      ScriptProgram(program,ScriptErrorInvalidStackOperation)
     }
   }
 
