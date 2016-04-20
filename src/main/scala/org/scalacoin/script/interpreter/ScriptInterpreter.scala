@@ -64,10 +64,15 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
         logger.error("We have reached the maximum amount of script operations allowed")
         logger.error("Here are the remaining operations in the script: " + program.script)
         loop(ScriptProgram(program,ScriptErrorOpCount))
-      } else if (program.script.flatMap(_.bytes).size > 10000) {
+      } else if (program.script.flatMap(_.bytes).size > 10000 && !program.isInstanceOf[ExecutedScriptProgram]) {
         logger.error("We cannot run a script that is larger than 10,000 bytes")
-        loop(ScriptProgram(program, ScriptErrorScriptSize))
-      }  else {
+        program match {
+          case p : PreExecutionScriptProgram =>
+            loop(ScriptProgram(ScriptProgram.toExecutionInProgress(p), ScriptErrorScriptSize))
+          case _ : ExecutionInProgressScriptProgram | _ : ExecutedScriptProgram =>
+            loop(ScriptProgram(program, ScriptErrorScriptSize))
+        }
+      } else {
         program match {
           case p : PreExecutionScriptProgram => loop(ScriptProgram.toExecutionInProgress(p,Some(p.stack)))
           case p : ExecutedScriptProgram =>
