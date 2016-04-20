@@ -435,5 +435,38 @@ object ScriptProgram {
 
   def apply(txSignatureComponent : TransactionSignatureComponent, stack : Seq[ScriptToken], script : Seq[ScriptToken]) : ScriptProgram =
     factory(txSignatureComponent, stack, script)
+
+
+  /**
+   * Changes a program that is being executed inside o
+   * @param executionInProgressScriptProgram
+   * @return
+   */
+  def toExecutedProgram(executionInProgressScriptProgram: ExecutionInProgressScriptProgram) : ExecutedScriptProgram = {
+    ExecutedScriptProgramImpl(executionInProgressScriptProgram.txSignatureComponent, executionInProgressScriptProgram.stack,
+      executionInProgressScriptProgram.script,executionInProgressScriptProgram.originalScript,executionInProgressScriptProgram.altStack,
+      executionInProgressScriptProgram.flags,None)
+  }
+
+  /**
+   * Takes a script program that is pre execution and changes it to an execution in progress script program
+   * @param preExecutionScriptProgram
+   * @return
+   */
+  def toExecutionInProgress(preExecutionScriptProgram: PreExecutionScriptProgram) : ExecutionInProgressScriptProgram = {
+    toExecutionInProgress(preExecutionScriptProgram,List())
+  }
+
+  /**
+   * Changes a pre execution script program to a execution in progress script program with the given stack state
+   * @param preExecutionScriptProgram
+   * @param stack
+   * @return
+   */
+  def toExecutionInProgress(preExecutionScriptProgram: PreExecutionScriptProgram, stack : List[ScriptToken]) : ExecutionInProgressScriptProgram = {
+    ExecutionInProgressScriptProgramImpl(preExecutionScriptProgram.txSignatureComponent,stack,preExecutionScriptProgram.script,
+      preExecutionScriptProgram.originalScript,preExecutionScriptProgram.altStack,preExecutionScriptProgram.flags, 0)
+  }
+
 }
 
