@@ -1,5 +1,6 @@
 package org.scalacoin.script.bitwise
 
+import org.scalacoin.script.error.ScriptErrorInvalidStackOperation
 import org.scalacoin.script.{ScriptProgram}
 import org.scalacoin.script.constant._
 import org.scalacoin.script.control.{OP_VERIFY, ControlOperationsInterpreter}
@@ -20,7 +21,7 @@ trait BitwiseInterpreter extends ControlOperationsInterpreter  {
     require(program.script.headOption.isDefined && program.script.head == OP_EQUAL, "Script operation must be OP_EQUAL")
 
     if (program.stack.size < 2) {
-      ScriptProgram(program,false)
+      ScriptProgram(program,ScriptErrorInvalidStackOperation)
     } else {
       val h = program.stack.head
       val h1 = program.stack.tail.head
@@ -65,7 +66,7 @@ trait BitwiseInterpreter extends ControlOperationsInterpreter  {
         opVerify(newProgram)
       case false =>
         logger.error("OP_EQUALVERIFY requires at least 2 elements on the stack")
-        ScriptProgram(program,false)
+        ScriptProgram(program,ScriptErrorInvalidStackOperation)
     }
   }
 }

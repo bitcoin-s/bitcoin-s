@@ -1,5 +1,6 @@
 package org.scalacoin.script.stack
 
+import org.scalacoin.script.error.ScriptErrorInvalidStackOperation
 import org.scalacoin.script.{ScriptProgram}
 import org.scalacoin.script.constant._
 import org.scalacoin.util.{BitcoinSLogger, BitcoinSUtil}
@@ -23,7 +24,7 @@ trait StackInterpreter extends BitcoinSLogger {
       case h :: t => ScriptProgram(program, h :: program.stack, program.script.tail)
       case Nil =>
         logger.error("Cannot duplicate the top element on an empty stack")
-        ScriptProgram(program,false)
+        ScriptProgram(program,ScriptErrorInvalidStackOperation)
     }
   }
 
@@ -41,7 +42,7 @@ trait StackInterpreter extends BitcoinSLogger {
         program.script.tail)
       case false =>
         logger.error("Cannot duplicate the top element on an empty stack")
-        ScriptProgram(program,false)
+        ScriptProgram(program,ScriptErrorInvalidStackOperation)
     }
 
   }
@@ -72,7 +73,7 @@ trait StackInterpreter extends BitcoinSLogger {
         program.script.tail, program.stack.head :: program.altStack, ScriptProgram.AltStack)
       case false =>
         logger.error("OP_TOALTSTACK requires an element to be on the stack")
-        ScriptProgram(program,false)
+        ScriptProgram(program,ScriptErrorInvalidStackOperation)
     }
 
   }
@@ -89,7 +90,7 @@ trait StackInterpreter extends BitcoinSLogger {
         program.script.tail, program.altStack.tail, ScriptProgram.AltStack)
       case false =>
         logger.error("Alt Stack must have at least one item on it for OP_FROMALTSTACK")
-        ScriptProgram(program,false)
+        ScriptProgram(program,ScriptErrorInvalidStackOperation)
     }
   }
 
@@ -104,7 +105,7 @@ trait StackInterpreter extends BitcoinSLogger {
       case true => ScriptProgram(program, program.stack.tail,program.script.tail)
       case false =>
         logger.error("Stack must have at least one item on it for OP_DROP")
-        ScriptProgram(program,false)
+        ScriptProgram(program,ScriptErrorInvalidStackOperation)
     }
 
   }
@@ -121,10 +122,10 @@ trait StackInterpreter extends BitcoinSLogger {
       case h :: _ :: t => ScriptProgram(program, h :: t, program.script.tail)
       case h :: t  =>
         logger.error("Stack must have at least two items on it for OP_NIP")
-        ScriptProgram(program,false)
+        ScriptProgram(program,ScriptErrorInvalidStackOperation)
       case Nil =>
         logger.error("Stack must have at least two items on it for OP_NIP")
-        ScriptProgram(program,false)
+        ScriptProgram(program,ScriptErrorInvalidStackOperation)
     }
   }
 
@@ -139,10 +140,10 @@ trait StackInterpreter extends BitcoinSLogger {
     program.stack match {
       case _ :: h1 :: _ => ScriptProgram(program, h1 :: program.stack, program.script.tail)
       case h :: t => logger.error("Stack must have at least two items on it for OP_OVER")
-        ScriptProgram(program,false)
+        ScriptProgram(program,ScriptErrorInvalidStackOperation)
       case Nil =>
         logger.error("Stack must have at least two items on it for OP_OVER")
-        ScriptProgram(program,false)
+        ScriptProgram(program,ScriptErrorInvalidStackOperation)
     }
   }
 
@@ -163,7 +164,7 @@ trait StackInterpreter extends BitcoinSLogger {
         ScriptProgram(program,newStackTop :: program.stack.tail, program.script.tail)
       case false =>
         logger.error("The index for OP_PICK would have caused an index out of bounds exception")
-        ScriptProgram(program,false)
+        ScriptProgram(program,ScriptErrorInvalidStackOperation)
     }
 
   }
@@ -185,7 +186,7 @@ trait StackInterpreter extends BitcoinSLogger {
         ScriptProgram(program,newStack,program.script.tail)
       case false =>
         logger.error("The index for OP_ROLL would have caused an index out of bounds exception")
-        ScriptProgram(program,false)
+        ScriptProgram(program,ScriptErrorInvalidStackOperation)
     }
   }
 
@@ -204,7 +205,7 @@ trait StackInterpreter extends BitcoinSLogger {
         ScriptProgram(program, newStack,program.script.tail)
       case _ =>
         logger.error("Stack must have at least 3 items on it for OP_ROT")
-        ScriptProgram(program,false)
+        ScriptProgram(program,ScriptErrorInvalidStackOperation)
     }
 
   }
@@ -223,7 +224,7 @@ trait StackInterpreter extends BitcoinSLogger {
         ScriptProgram(program, newStack,program.script.tail)
       case _ =>
         logger.error("OP_2ROT requires 6 elements on the stack")
-        ScriptProgram(program,false)
+        ScriptProgram(program,ScriptErrorInvalidStackOperation)
     }
 
   }
@@ -240,7 +241,7 @@ trait StackInterpreter extends BitcoinSLogger {
         ScriptProgram(program, program.stack.tail.tail, program.script.tail)
       case false =>
         logger.error("OP_2DROP requires two elements to be on the stack")
-        ScriptProgram(program,false)
+        ScriptProgram(program,ScriptErrorInvalidStackOperation)
     }
 
   }
@@ -259,7 +260,7 @@ trait StackInterpreter extends BitcoinSLogger {
         ScriptProgram(program, newStack, program.script.tail)
       case false =>
         logger.error("Stack must have at least 2 items on it for OP_SWAP")
-        ScriptProgram(program,false)
+        ScriptProgram(program,ScriptErrorInvalidStackOperation)
     }
 
   }
@@ -280,7 +281,7 @@ trait StackInterpreter extends BitcoinSLogger {
         ScriptProgram(program, newStack, program.script.tail)
       case _ =>
         logger.error("Stack must have at least 2 items on it for OP_TUCK")
-        ScriptProgram(program,false)
+        ScriptProgram(program,ScriptErrorInvalidStackOperation)
     }
 
   }
@@ -300,7 +301,7 @@ trait StackInterpreter extends BitcoinSLogger {
         ScriptProgram(program, newStack, program.script.tail)
       case _ =>
         logger.error("Stack must have at least 2 items on it for OP_2DUP")
-        ScriptProgram(program,false)
+        ScriptProgram(program,ScriptErrorInvalidStackOperation)
     }
 
   }
@@ -318,7 +319,7 @@ trait StackInterpreter extends BitcoinSLogger {
         ScriptProgram(program,newStack,program.script.tail)
       case _ =>
         logger.error("Stack must have at least 3 items on it for OP_3DUP")
-        ScriptProgram(program,false)
+        ScriptProgram(program,ScriptErrorInvalidStackOperation)
     }
 
   }
@@ -339,7 +340,7 @@ trait StackInterpreter extends BitcoinSLogger {
         ScriptProgram(program, newStack,program.script.tail)
       case _ =>
         logger.error("Stack must have at least 4 items on it for OP_2OVER")
-        ScriptProgram(program,false)
+        ScriptProgram(program,ScriptErrorInvalidStackOperation)
     }
 
   }
@@ -358,7 +359,7 @@ trait StackInterpreter extends BitcoinSLogger {
         ScriptProgram(program,newStack,program.script.tail)
       case _ =>
         logger.error("Stack must have at least 4 items on it for OP_2SWAP")
-        ScriptProgram(program,false)
+        ScriptProgram(program,ScriptErrorInvalidStackOperation)
     }
 
   }

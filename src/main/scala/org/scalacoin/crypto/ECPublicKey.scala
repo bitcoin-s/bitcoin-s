@@ -37,26 +37,27 @@ trait ECPublicKey extends BaseECKey with BitcoinSLogger {
     logger.debug("Data to verify: " + BitcoinSUtil.encodeHex(data))
     logger.debug("Signature to check against data: " + signature.hex)
 
-
-    val signer = new ECDSASigner
-    signer.init(false,publicKeyParams)
-    signature match {
-      case EmptyDigitalSignature =>  signer.verifySignature(data.toArray,java.math.BigInteger.valueOf(0),java.math.BigInteger.valueOf(0))
-      case sig : ECDigitalSignature =>
-        logger.debug("Public key bytes: " + BitcoinSUtil.encodeHex(bytes))
-        val rBigInteger : BigInteger = new BigInteger(signature.r.toString())
-        val sBigInteger : BigInteger = new BigInteger(signature.s.toString())
-        val resultTry = Try(signer.verifySignature(data.toArray, rBigInteger, sBigInteger))
-        val result : Boolean = resultTry match {
-          case Success(bool) =>
-            logger.info("Signature verification inside of bitcoinj did not hit an exception")
-            bool
-          case Failure(_) =>
-            logger.warn("Signature verification inside of bitcoinj hit an exception")
-            false
-        }
-        result
+    val resultTry = Try {
+      val signer = new ECDSASigner
+      signer.init(false, publicKeyParams)
+      signature match {
+        case EmptyDigitalSignature => signer.verifySignature(data.toArray, java.math.BigInteger.valueOf(0), java.math.BigInteger.valueOf(0))
+        case sig: ECDigitalSignature =>
+          logger.debug("Public key bytes: " + BitcoinSUtil.encodeHex(bytes))
+          val rBigInteger: BigInteger = new BigInteger(signature.r.toString())
+          val sBigInteger: BigInteger = new BigInteger(signature.s.toString())
+          signer.verifySignature(data.toArray, rBigInteger, sBigInteger)
+      }
     }
+    val result : Boolean = resultTry match {
+      case Success(bool) =>
+        logger.info("Signature verification inside of bitcoinj did not hit an exception")
+        bool
+      case Failure(_) =>
+        logger.warn("Signature verification inside of bitcoinj hit an exception")
+        false
+    }
+    result
   }
 
 

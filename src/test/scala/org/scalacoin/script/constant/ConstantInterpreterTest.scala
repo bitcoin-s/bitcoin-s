@@ -2,7 +2,8 @@ package org.scalacoin.script.constant
 
 import org.scalacoin.script.ScriptProgram
 import org.scalacoin.script.bitwise.OP_EQUAL
-import org.scalacoin.util.TestUtil
+import org.scalacoin.script.error.ScriptErrorInvalidStackOperation
+import org.scalacoin.util.{ScriptProgramTestUtil, TestUtil}
 import org.scalatest.{FlatSpec, MustMatchers}
 
 /**
@@ -52,7 +53,7 @@ class ConstantInterpreterTest extends FlatSpec with MustMatchers with ConstantIn
     val script = List(OP_PUSHDATA1,BytesToPushOntoStackFactory.fromNumber(0).get)
     val program = ScriptProgram(TestUtil.testProgram, stack,script)
     val newProgram  = opPushData1(program)
-    newProgram.isValid must be (true)
+    newProgram.stackTopIsFalse must be (true)
     newProgram.stack must be (List(ScriptNumberFactory.zero))
 
     val stack1 = List()
@@ -72,8 +73,8 @@ class ConstantInterpreterTest extends FlatSpec with MustMatchers with ConstantIn
   it must "mark a program as invalid if we have do not have enough bytes to be pushed onto the stack by the push operation" in {
     val stack = List()
     val script = List(OP_PUSHDATA1,BytesToPushOntoStackFactory.factory(1).get)
-    val program = ScriptProgram(TestUtil.testProgram, stack,script)
-    val newProgram  = opPushData1(program)
-    newProgram.isValid must be (false)
+    val program = ScriptProgram(TestUtil.testProgramExecutionInProgress, stack,script)
+    val newProgram  = ScriptProgramTestUtil.toExecutedScriptProgram(opPushData1(program))
+    newProgram.error must be (Some(ScriptErrorInvalidStackOperation))
   }
 }

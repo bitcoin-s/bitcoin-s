@@ -1,8 +1,9 @@
 package org.scalacoin.script.arithmetic
 
+import org.scalacoin.script.error.ScriptErrorInvalidStackOperation
 import org.scalacoin.script.{ScriptProgram}
 import org.scalacoin.script.constant._
-import org.scalacoin.util.TestUtil
+import org.scalacoin.util.{ScriptProgramTestUtil, TestUtil}
 import org.scalatest.{FlatSpec, MustMatchers}
 
 /**
@@ -34,9 +35,9 @@ class ArithmeticInterpreterTest extends FlatSpec with MustMatchers with Arithmet
 
     val stack = List()
     val script = List(OP_1ADD)
-    val program = ScriptProgram(TestUtil.testProgram, stack,script)
-    val newProgram = op1Add(program)
-    newProgram.isValid must be (false)
+    val program = ScriptProgram(TestUtil.testProgramExecutionInProgress, stack,script)
+    val newProgram = ScriptProgramTestUtil.toExecutedScriptProgram(op1Add(program))
+    newProgram.error must be (Some(ScriptErrorInvalidStackOperation))
 
   }
 
@@ -54,9 +55,9 @@ class ArithmeticInterpreterTest extends FlatSpec with MustMatchers with Arithmet
 
     val stack = List()
     val script = List(OP_1SUB)
-    val program = ScriptProgram(TestUtil.testProgram, stack,script)
-    val newProgram = op1Sub(program)
-    newProgram.isValid must be (false)
+    val program = ScriptProgram(TestUtil.testProgramExecutionInProgress, stack,script)
+    val newProgram = ScriptProgramTestUtil.toExecutedScriptProgram(op1Sub(program))
+    newProgram.error must be (Some(ScriptErrorInvalidStackOperation))
   }
 
   it must "perform an OP_SUB corectly" in {
@@ -65,16 +66,16 @@ class ArithmeticInterpreterTest extends FlatSpec with MustMatchers with Arithmet
     val program = ScriptProgram(TestUtil.testProgram, stack,script)
     val newProgram = opSub(program)
 
-    newProgram.stack.head must be (ScriptNumberImpl(-1))
+    newProgram.stack.head must be (ScriptNumberFactory.fromNumber(-1))
     newProgram.script.isEmpty must be (true)
   }
 
   it must "mark a script as invalid if we have an OP_SUB with nothing on the stack" in {
     val stack = List()
     val script = List(OP_SUB)
-    val program = ScriptProgram(TestUtil.testProgram, stack,script)
-    val newProgram = opSub(program)
-    newProgram.isValid must be (false)
+    val program = ScriptProgram(TestUtil.testProgramExecutionInProgress, stack,script)
+    val newProgram = ScriptProgramTestUtil.toExecutedScriptProgram(opSub(program))
+    newProgram.error must be (Some(ScriptErrorInvalidStackOperation))
   }
 
   it must "perform an OP_ABS on a negative number corectly" in {
@@ -99,9 +100,9 @@ class ArithmeticInterpreterTest extends FlatSpec with MustMatchers with Arithmet
   it must "mark a script as invalid if we have an OP_ABS with nothing on the stack" in {
     val stack = List()
     val script = List(OP_ABS)
-    val program = ScriptProgram(TestUtil.testProgram, stack,script)
-    val newProgram = opAbs(program)
-    newProgram.isValid must be (false)
+    val program = ScriptProgram(TestUtil.testProgramExecutionInProgress, stack,script)
+    val newProgram = ScriptProgramTestUtil.toExecutedScriptProgram(opAbs(program))
+    newProgram.error must be (Some(ScriptErrorInvalidStackOperation))
   }
 
   it must "perform an OP_NEGATE on a zero correctly" in {
@@ -137,9 +138,9 @@ class ArithmeticInterpreterTest extends FlatSpec with MustMatchers with Arithmet
 
     val stack = List()
     val script = List(OP_NEGATE)
-    val program = ScriptProgram(TestUtil.testProgram, stack,script)
-    val newProgram = opNegate(program)
-    newProgram.isValid must be (false)
+    val program = ScriptProgram(TestUtil.testProgramExecutionInProgress, stack,script)
+    val newProgram = ScriptProgramTestUtil.toExecutedScriptProgram(opNegate(program))
+    newProgram.error must be (Some(ScriptErrorInvalidStackOperation))
   }
 
   it must "perform an OP_NOT correctly where 0 is the stack top" in {
@@ -317,7 +318,7 @@ class ArithmeticInterpreterTest extends FlatSpec with MustMatchers with Arithmet
     newProgram1.stack.head must be (OP_FALSE)
     newProgram1.script.isEmpty must be (true)
 
-    val stack2 = List(OP_1, ScriptNumberImpl(0))
+    val stack2 = List(OP_1, ScriptNumberFactory.zero)
     val script2 = List(OP_LESSTHAN)
     val program2 = ScriptProgram(TestUtil.testProgram, stack2,script2)
     val newProgram2 = opLessThan(program2)
