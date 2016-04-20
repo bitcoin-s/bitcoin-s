@@ -4,7 +4,7 @@ import org.scalacoin.crypto._
 import org.scalacoin.protocol.script._
 import org.scalacoin.protocol.transaction.Transaction
 import org.scalacoin.script.control.{ControlOperationsInterpreter, OP_VERIFY}
-import org.scalacoin.script.error.{ScriptErrorSigNullDummy, ScriptErrorSigDer, ScriptErrorInvalidStackOperation}
+import org.scalacoin.script.error.{ScriptErrorSigCount, ScriptErrorSigNullDummy, ScriptErrorSigDer, ScriptErrorInvalidStackOperation}
 import org.scalacoin.script.flag.{ScriptVerifyNullDummy, ScriptVerifyDerSig}
 import org.scalacoin.script.{ExecutionInProgressScriptProgram, ScriptProgram}
 import org.scalacoin.script.constant._
@@ -212,7 +212,8 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
           //just push a ScriptFalse onto the stack
           ScriptProgram(program, ScriptFalse :: restOfStack, program.script.tail)
         case SignatureValidationFailureSignatureCount =>
-          ScriptProgram(program, ScriptFalse :: restOfStack, program.script.tail)
+          //means that we did not have enough signatures for OP_CHECKMULTISIG
+          ScriptProgram(program, ScriptErrorSigCount)
       }
     }
   }
