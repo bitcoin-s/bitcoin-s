@@ -59,39 +59,45 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
     def loop(program : ScriptProgram) : (Boolean,ExecutedScriptProgram) = {
       logger.debug("Stack: " + program.stack)
       logger.debug("Script: " + program.script)
-      if (program.script.headOption.isDefined &&
-        BitcoinScriptUtil.countsTowardsScriptOpLimit(program.script.head)) opCount = opCount + 1
 
-      if (opCount > maxScriptOps) {
+      if (opCount > maxScriptOps && !program.isInstanceOf[ExecutedScriptProgram]) {
         logger.error("We have reached the maximum amount of script operations allowed")
         logger.error("Here are the remaining operations in the script: " + program.script)
-        (false,ScriptProgram(program,ScriptErrorOpCount))
+        loop(ScriptProgram(program,ScriptErrorOpCount))
       } else if (program.script.flatMap(_.bytes).size > 10000) {
         logger.error("We cannot run a script that is larger than 10,000 bytes")
-        (false, ScriptProgram(program, ScriptErrorScriptSize))
+        loop(ScriptProgram(program, ScriptErrorScriptSize))
       }  else {
         program match {
           case p : PreExecutionScriptProgram => loop(ScriptProgram.toExecutionInProgress(p,Some(p.stack)))
-          case p : ExecutedScriptProgram => (!p.error.isDefined, p)
+          case p : ExecutedScriptProgram =>
+            //reset opCount variable to zero since we may need to count the ops
+            //in the scriptPubKey - we don't want the op count of the scriptSig
+            //to count towards the scriptPubKey op count
+            opCount = 0
+            (!p.error.isDefined, p)
           case p : ExecutionInProgressScriptProgram =>
+            //increment the op count
+            if (p.script.headOption.isDefined &&
+              BitcoinScriptUtil.countsTowardsScriptOpLimit(p.script.head)) opCount = opCount + 1
             p.script match {
               //if at any time we see that the program is not valid
               //cease script execution
               case _ if !p.script.intersect(Seq(OP_VERIF, OP_VERNOTIF)).isEmpty =>
                 logger.error("Script is invalid even when a OP_VERIF or OP_VERNOTIF occurs in an unexecuted OP_IF branch")
-                (false, ScriptProgram(p, ScriptErrorDisabledOpCode))
+                loop(ScriptProgram(p, ScriptErrorDisabledOpCode))
               //disabled splice operation
               case _ if !p.script.intersect(Seq(OP_CAT, OP_SUBSTR, OP_LEFT, OP_RIGHT)).isEmpty =>
                 logger.error("Script is invalid because it contains a disabled splice operation")
-                (false, ScriptProgram(p, ScriptErrorDisabledOpCode))
+                loop(ScriptProgram(p, ScriptErrorDisabledOpCode))
               //disabled bitwise operations
               case _ if !p.script.intersect(Seq(OP_INVERT, OP_AND, OP_OR, OP_XOR)).isEmpty =>
                 logger.error("Script is invalid because it contains a disabled bitwise operation")
-                (false, ScriptProgram(p, ScriptErrorDisabledOpCode))
+                loop(ScriptProgram(p, ScriptErrorDisabledOpCode))
               //disabled arithmetic operations
               case _ if !p.script.intersect(Seq(OP_MUL, OP_2MUL, OP_DIV, OP_2DIV, OP_MOD, OP_LSHIFT, OP_RSHIFT)).isEmpty =>
                 logger.error("Script is invalid because it contains a disabled arithmetic operation")
-                (false, ScriptProgram(p, ScriptErrorDisabledOpCode))
+                loop(ScriptProgram(p, ScriptErrorDisabledOpCode))
               //program cannot contain a push operation > 520 bytes
               case _ if (p.script.exists(token => token.bytes.size > 520)) =>
                 logger.error("We have a script constant that is larger than 520 bytes, this is illegal: " + p.script)
@@ -151,7 +157,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
 
               case OP_EQUALVERIFY :: t => loop(opEqualVerify(p))
 
-              case (scriptNumberOp: ScriptNumberOperation) :: t =>
+              case (scriptNumberOp : ScriptNumberOperation) :: t =>
                 if (scriptNumberOp == OP_0) loop(ScriptProgram(p, ScriptNumberFactory.zero :: p.stack, t))
                 else loop(ScriptProgram(p, ScriptNumberFactory.fromNumber(scriptNumberOp.num) :: p.stack, t))
               case (bytesToPushOntoStack: BytesToPushOntoStack) :: t => loop(pushScriptNumberBytesToStack(p))
@@ -223,13 +229,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
                 //in this case, just reat OP_CLTV just like a NOP and remove it from the stack
                 else loop(ScriptProgram(p, p.script.tail, ScriptProgram.Script))
               //no more script operations to run, return whether the program is valid and the final state of the program
-              case Nil =>
-                //reset opCount variable to zero since we may need to count the ops
-                //in the scriptPubKey - we don't want the op count of the scriptSig
-                //to count towards the scriptPubKey op count
-                opCount = 0
-                loop(ScriptProgram.toExecutedProgram(p))
-
+              case Nil => loop(ScriptProgram.toExecutedProgram(p))
               case h :: t => throw new RuntimeException(h + " was unmatched")
             }
         }
@@ -254,7 +254,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
             val stack = BitcoinScriptUtil.filterPushOps(scriptSig.scriptSignatureNoRedeemScript.asm.reverse)
             logger.debug("P2sh stack: " + stack)
             logger.debug("P2sh redeemScript: " + scriptSig.redeemScript.asm)
-            val p2shRedeemScriptProgram = ScriptProgram(hashesMatchProgram,stack, scriptSig.redeemScript.asm)
+            val p2shRedeemScriptProgram = ScriptProgram(hashesMatchProgram.txSignatureComponent,stack, scriptSig.redeemScript.asm)
             loop(p2shRedeemScriptProgram)
           case false =>
             logger.warn("P2SH scriptPubKey hash did not match the hash for the serialized redeemScript")
@@ -277,6 +277,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
           val (scriptPubKeyProgramIsValid, scriptPubKeyExecutedProgram) = loop(scriptPubKeyProgram)
 
           logger.info("Stack state after scriptPubKey execution: " + scriptPubKeyExecutedProgram.stack)
+
           //if the program is valid, return if the stack top is true
           //else the program is false since something illegal happened during script evaluation
           scriptPubKeyProgramIsValid match {
