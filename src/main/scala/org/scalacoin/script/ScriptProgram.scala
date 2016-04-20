@@ -261,7 +261,7 @@ object ScriptProgram {
     * @param lastCodeSeparator
     * @return
     */
-  def factory(oldProgram : ExecutionInProgressScriptProgram, lastCodeSeparator : Int) : ScriptProgram = {
+  def factory(oldProgram : ExecutionInProgressScriptProgram, lastCodeSeparator : Int) : ExecutionInProgressScriptProgram = {
     ExecutionInProgressScriptProgramImpl(oldProgram.txSignatureComponent,
       oldProgram.stack, oldProgram.script, oldProgram.originalScript,
       oldProgram.altStack, oldProgram.flags,lastCodeSeparator)
@@ -276,26 +276,15 @@ object ScriptProgram {
     * @return
     */
   def factory(oldProgram : ExecutionInProgressScriptProgram, tokens : Seq[ScriptToken], indicator: UpdateIndicator,
-              lastCodeSeparator : Int) : ScriptProgram = {
-    val updatedLastCodeSeparatorIndexScriptProgram = factory(oldProgram,lastCodeSeparator)
-    apply(updatedLastCodeSeparatorIndexScriptProgram, tokens, indicator)
+              lastCodeSeparator : Int) : ExecutionInProgressScriptProgram = {
+    val updatedIndicator = apply(oldProgram, tokens, indicator)
+    updatedIndicator match {
+      case e : ExecutionInProgressScriptProgram =>
+        apply(e,lastCodeSeparator)
+      case _ : PreExecutionScriptProgram | _ : ExecutedScriptProgram =>
+        throw new RuntimeException("We must have a ExecutionInProgressScriptProgram to update the last OP_CODESEPARATOR index")
+    }
   }
-
-
-  /**
-   * Updates the stack, script and validity of a script program
-   * @param oldProgram the program whose stack, script and error fields are being updated
-   * @param stack the new stack state
-   * @param script the new script state
-   * @param error the error that is being set
-   * @return
-   */
-  //this doesn't really make sense, why would we want to set the stack & script while an error is being set
- /* def factory(oldProgram : ScriptProgram, stack : Seq[ScriptToken], script : Seq[ScriptToken], error : ScriptError) : ScriptProgram = {
-    val stackAndScriptUpdate = factory(oldProgram, stack,script)
-    apply(stackAndScriptUpdate, error)
-  }*/
-
 
   /**
     * Updates the stack, script, alt stack of the given oldProgram
@@ -313,23 +302,6 @@ object ScriptProgram {
   }
 
   /**
-   * Updates the programs stack tokens, script tokens & script verify flags
-   * @param oldProgram
-   * @param stackTokens
-   * @param scriptTokens
-   * @param flags
-   * @return
-   */
-/*  def factory(oldProgram : ScriptProgram, stackTokens : Seq[ScriptToken], scriptTokens : Seq[ScriptToken],
-              flags : Seq[ScriptFlag]) : ScriptProgram = {
-    val updatedStackAndScript = factory(oldProgram,stackTokens,scriptTokens)
-    apply(updatedStackAndScript,flags)
-  }*/
-
-
-
-
-  /**
     * Creates a new script program that can be used to verify if a transaction at the given inputIndex
     * spends a given scriptPubKey correctly. Assumes that the script to be executed is the
     * scriptSignature at the given input index
@@ -341,7 +313,7 @@ object ScriptProgram {
     * @return the script program representing all of this information
     */
   def factory(transaction: Transaction, scriptPubKey : ScriptPubKey, inputIndex : Int,
-              flags : Seq[ScriptFlag]) : ScriptProgram = {
+              flags : Seq[ScriptFlag]) : PreExecutionScriptProgram = {
     val script = transaction.inputs(inputIndex).scriptSignature.asm
     apply(transaction,scriptPubKey,inputIndex,script.toList,flags)
   }
@@ -358,7 +330,7 @@ object ScriptProgram {
     * @return the script program representing all of this information
     */
   def factory(transaction: Transaction, scriptPubKey : ScriptPubKey, inputIndex : Int, script : Seq[ScriptToken],
-              flags : Seq[ScriptFlag]) : ScriptProgram = {
+              flags : Seq[ScriptFlag]) : PreExecutionScriptProgram = {
     val txSignatureComponent = TransactionSignatureComponentFactory.factory(transaction,inputIndex,scriptPubKey,flags)
     PreExecutionScriptProgramImpl(txSignatureComponent,List(),script.toList,script.toList,List(),flags)
   }
@@ -368,7 +340,6 @@ object ScriptProgram {
     * The intention for this factory function is to allow us to create a program that already has a stack state. This
     * is useful for after execution of a scriptSig, copying the stack into this program with the scriptPubKey read to
     * run inside the script variable
-    *
     * @param transaction the transaction being checked
     * @param scriptPubKey the scriptPubKey which the input is spending
     * @param inputIndex the input's index inside of the transaction we are spending
@@ -398,7 +369,7 @@ object ScriptProgram {
       stack,script,txSignatureComponent.flags)
   }
 
-  def apply(oldProgram : ScriptProgram, error : ScriptError) : ScriptProgram = factory(oldProgram, error)
+  def apply(oldProgram : ScriptProgram, error : ScriptError) : ExecutedScriptProgram = factory(oldProgram, error)
 
   def apply(oldProgram : ScriptProgram, flags : Seq[ScriptFlag]) : ScriptProgram = factory(oldProgram, flags)
 
@@ -408,27 +379,19 @@ object ScriptProgram {
   def apply(oldProgram : ScriptProgram, stackTokens : Seq[ScriptToken], scriptTokens : Seq[ScriptToken]) : ScriptProgram =
     factory(oldProgram, stackTokens, scriptTokens)
 
-/*
-  def apply(oldProgram : ScriptProgram, stackTokens : Seq[ScriptToken], scriptTokens : Seq[ScriptToken], flags : Seq[ScriptFlag]) : ScriptProgram =
-    factory(oldProgram, stackTokens, scriptTokens, flags)
-*/
+  def apply(oldProgram : ExecutionInProgressScriptProgram, lastCodeSeparator : Int) : ExecutionInProgressScriptProgram = factory(oldProgram, lastCodeSeparator)
 
-  def apply(oldProgram : ExecutionInProgressScriptProgram, lastCodeSeparator : Int) : ScriptProgram = factory(oldProgram, lastCodeSeparator)
-
-  def apply(oldProgram : ExecutionInProgressScriptProgram, tokens : Seq[ScriptToken], indicator: UpdateIndicator, lastCodeSeparator : Int) : ScriptProgram =
+  def apply(oldProgram : ExecutionInProgressScriptProgram, tokens : Seq[ScriptToken], indicator: UpdateIndicator, lastCodeSeparator : Int) : ExecutionInProgressScriptProgram =
     factory(oldProgram, tokens, indicator, lastCodeSeparator)
-
-/*  def apply(oldProgram : ScriptProgram, stack : Seq[ScriptToken], script : Seq[ScriptToken], valid : Boolean) : ScriptProgram =
-    factory(oldProgram, stack, script, valid)*/
 
   def apply(oldProgram : ScriptProgram, stack : Seq[ScriptToken], script : Seq[ScriptToken], altStack : Seq[ScriptToken],
             updateIndicator: UpdateIndicator) : ScriptProgram = factory(oldProgram, stack, script, altStack)
 
   def apply(transaction: Transaction, scriptPubKey : ScriptPubKey, inputIndex : Int,
-            flags : Seq[ScriptFlag]) : ScriptProgram = factory(transaction, scriptPubKey, inputIndex, flags)
+            flags : Seq[ScriptFlag]) : PreExecutionScriptProgram = factory(transaction, scriptPubKey, inputIndex, flags)
 
   def apply(transaction: Transaction, scriptPubKey : ScriptPubKey, inputIndex : Int, script : Seq[ScriptToken],
-            flags : Seq[ScriptFlag]) : ScriptProgram = factory(transaction, scriptPubKey, inputIndex, script, flags)
+            flags : Seq[ScriptFlag]) : PreExecutionScriptProgram = factory(transaction, scriptPubKey, inputIndex, script, flags)
 
   def apply(transaction: Transaction, scriptPubKey : ScriptPubKey, inputIndex : Int, stack : Seq[ScriptToken],
             script : Seq[ScriptToken], flags : Seq[ScriptFlag]) : ScriptProgram = factory(transaction, scriptPubKey, inputIndex, stack, script, flags)
@@ -454,7 +417,7 @@ object ScriptProgram {
    * @return
    */
   def toExecutionInProgress(preExecutionScriptProgram: PreExecutionScriptProgram) : ExecutionInProgressScriptProgram = {
-    toExecutionInProgress(preExecutionScriptProgram,List())
+    toExecutionInProgress(preExecutionScriptProgram,None)
   }
 
   /**
@@ -463,10 +426,18 @@ object ScriptProgram {
    * @param stack
    * @return
    */
-  def toExecutionInProgress(preExecutionScriptProgram: PreExecutionScriptProgram, stack : List[ScriptToken]) : ExecutionInProgressScriptProgram = {
-    ExecutionInProgressScriptProgramImpl(preExecutionScriptProgram.txSignatureComponent,stack,preExecutionScriptProgram.script,
-      preExecutionScriptProgram.originalScript,preExecutionScriptProgram.altStack,preExecutionScriptProgram.flags, 0)
+  def toExecutionInProgress(preExecutionScriptProgram: PreExecutionScriptProgram, stack : Option[List[ScriptToken]]) : ExecutionInProgressScriptProgram = {
+    stack match {
+      case Some(stackTokens) => ExecutionInProgressScriptProgramImpl(preExecutionScriptProgram.txSignatureComponent,stackTokens,preExecutionScriptProgram.script,
+    preExecutionScriptProgram.originalScript,preExecutionScriptProgram.altStack,preExecutionScriptProgram.flags, 0)
+      case None =>
+        ExecutionInProgressScriptProgramImpl(preExecutionScriptProgram.txSignatureComponent,preExecutionScriptProgram.stack,preExecutionScriptProgram.script,
+          preExecutionScriptProgram.originalScript,preExecutionScriptProgram.altStack,preExecutionScriptProgram.flags, 0)
+    }
   }
+
+
+
 
 }
 
