@@ -1,5 +1,6 @@
 package org.scalacoin.script.splice
 
+import org.scalacoin.script.error.ScriptErrorInvalidStackOperation
 import org.scalacoin.script.{ScriptOperationFactory, ScriptProgram}
 import org.scalacoin.script.constant._
 import Math._
@@ -32,7 +33,7 @@ trait SpliceInterpreter extends BitcoinSLogger {
         }
       case false =>
         logger.error("Must have at least 1 element on the stack for OP_SIZE")
-        ScriptProgram(program,false)
+        ScriptProgram(program,ScriptErrorInvalidStackOperation)
     }
 
 

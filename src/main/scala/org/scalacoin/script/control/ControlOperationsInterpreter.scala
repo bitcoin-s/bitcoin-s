@@ -1,5 +1,6 @@
 package org.scalacoin.script.control
 
+import org.scalacoin.script.error.{ScriptErrorVerify, ScriptErrorOpReturn, ScriptErrorInvalidStackOperation, ScriptErrorUnbalancedConditional}
 import org.scalacoin.script.{ScriptProgram}
 import org.scalacoin.script.constant._
 import org.scalacoin.util._
@@ -25,10 +26,10 @@ trait ControlOperationsInterpreter extends BitcoinSLogger {
     logger.debug("Parsed binary tree: " + binaryTree)
     if (!checkMatchingOpIfOpNotIfOpEndIf(program.originalScript)) {
       logger.error("We do not have a matching OP_ENDIF for every OP_IF we have")
-      ScriptProgram(program,false)
+      ScriptProgram(program,ScriptErrorUnbalancedConditional)
     } else if (program.stack.isEmpty) {
       logger.error("We do not have any stack elements for our OP_IF")
-      ScriptProgram(program,false)
+      ScriptProgram(program,ScriptErrorInvalidStackOperation)
     }
     else if (program.stackTopIsTrue) {
       logger.debug("OP_IF stack top was true")
@@ -60,10 +61,10 @@ trait ControlOperationsInterpreter extends BitcoinSLogger {
 
     if (!checkMatchingOpIfOpNotIfOpEndIf(program.originalScript)) {
       logger.error("We do not have a matching OP_ENDIF for every OP_NOTIF we have")
-      ScriptProgram(program,false)
+      ScriptProgram(program,ScriptErrorUnbalancedConditional)
     } else if (program.stack.isEmpty) {
       logger.error("We do not have any stack elements for our OP_NOTIF")
-      ScriptProgram(program,false)
+      ScriptProgram(program,ScriptErrorInvalidStackOperation)
     } else if (program.stackTopIsTrue) {
       //remove the OP_NOTIF
       val scriptWithoutOpIf : BinaryTree[ScriptToken] = removeFirstOpIf(binaryTree)
@@ -114,7 +115,7 @@ trait ControlOperationsInterpreter extends BitcoinSLogger {
     if (!checkMatchingOpIfOpNotIfOpEndIf(program.originalScript)) {
       //means we do not have a matching OP_IF for our OP_ENDIF
       logger.error("We do not have a matching OP_IF/OP_NOTIF for every OP_ENDIF we have")
-      ScriptProgram(program,false)
+      ScriptProgram(program,ScriptErrorUnbalancedConditional)
     } else ScriptProgram(program, program.stack,program.script.tail)
 
   }
@@ -130,7 +131,7 @@ trait ControlOperationsInterpreter extends BitcoinSLogger {
    */
   def opReturn(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.isDefined && program.script.head == OP_RETURN)
-    ScriptProgram(program,false)
+    ScriptProgram(program,ScriptErrorOpReturn)
   }
 
 
@@ -141,14 +142,14 @@ trait ControlOperationsInterpreter extends BitcoinSLogger {
    */
   def opVerify(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.isDefined && program.script.head == OP_VERIFY, "Script top must be OP_VERIFY")
-    program.script.size > 0 match {
+    program.stack.size > 0 match {
       case true =>
         logger.debug("Stack for OP_VERIFY: " + program.stack)
-        if (program.stackTopIsFalse) ScriptProgram(program,false)
+        if (program.stackTopIsFalse) ScriptProgram(program,ScriptErrorVerify)
         else ScriptProgram(program, program.stack.tail,program.script.tail)
       case false =>
         logger.error("OP_VERIFY requires an element to be on the stack")
-        ScriptProgram(program,false)
+        ScriptProgram(program,ScriptErrorInvalidStackOperation)
     }
 
   }

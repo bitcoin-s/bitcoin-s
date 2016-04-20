@@ -1,7 +1,8 @@
 package org.scalacoin.script.locktime
 
 import org.scalacoin.protocol.transaction.TransactionConstants
-import org.scalacoin.script.constant.{ScriptNumberFactory, ScriptNumberImpl, ScriptNumber}
+import org.scalacoin.script.constant.{ScriptToken, ScriptNumberFactory, ScriptNumberImpl, ScriptNumber}
+import org.scalacoin.script.error.{ScriptError, ScriptErrorNegativeLockTime, ScriptErrorUnsatisfiedLocktime, ScriptErrorInvalidStackOperation}
 import org.scalacoin.script.{ScriptProgram}
 import org.scalacoin.util.BitcoinSLogger
 
@@ -28,25 +29,26 @@ trait LockTimeInterpreter extends BitcoinSLogger {
       "Script top must be OP_CHECKLOCKTIMEVERIFY")
     if (program.stack.size == 0) {
       logger.warn("Transaction validation failing in OP_CHECKLOCKTIMEVERIFY because we have no stack items")
-      ScriptProgram(program, program.stack, program.script.tail, false)
+      ScriptProgram(program, ScriptErrorInvalidStackOperation)
     } else if (program.txSignatureComponent.transaction.inputs(program.txSignatureComponent.inputIndex).sequence == TransactionConstants.sequence) {
       logger.warn("Transaction validation failing in OP_CHECKLOCKTIMEVERIFY because the sequence number is 0xffffffff")
-      ScriptProgram(program, program.stack, program.script.tail, false)
+      ScriptProgram(program, ScriptErrorUnsatisfiedLocktime)
     }
     else {
-      val isValid = program.stack.head match {
+      val isError : Option[ScriptError] = program.stack.head match {
         case s : ScriptNumber if (s < ScriptNumberFactory.zero) =>
           logger.warn("OP_CHECKLOCKTIMEVERIFY marks tx as invalid if the stack top is negative")
-          false
+          Some(ScriptErrorNegativeLockTime)
         case s : ScriptNumber if (s >= ScriptNumberFactory.fromNumber(500000000) && program.txSignatureComponent.transaction.lockTime < 500000000) =>
           logger.warn("OP_CHECKLOCKTIMEVERIFY marks the tx as invalid if stack top >= 500000000 & tx locktime < 500000000")
-          false
+          Some(ScriptErrorUnsatisfiedLocktime)
         case s : ScriptNumber if (s < ScriptNumberFactory.fromNumber(500000000) && program.txSignatureComponent.transaction.lockTime >= 500000000) =>
           logger.warn("OP_CHECKLOCKTIMEVERIFY marks the tx as invalid if stack top < 500000000 & tx locktime >= 500000000")
-          false
-        case _ => true
+          Some(ScriptErrorUnsatisfiedLocktime)
+        case _ : ScriptToken => None
       }
-      ScriptProgram(program,program.stack, program.script.tail, isValid)
+      if (isError.isDefined) ScriptProgram(program,isError.get)
+      else ScriptProgram(program,program.stack, program.script.tail)
     }
   }
 

@@ -1,6 +1,6 @@
 package org.scalacoin.script.bitwise
 
-import org.scalacoin.script.{ScriptProgram}
+import org.scalacoin.script.{ExecutedScriptProgram, ScriptProgram}
 import org.scalacoin.script.arithmetic.OP_NUMEQUAL
 import org.scalacoin.script.constant._
 import org.scalacoin.util.TestUtil
@@ -42,21 +42,22 @@ class BitwiseInterpreterTest extends FlatSpec with MustMatchers with BitwiseInte
     }
   }
 
-  it must "evaulate OP_EQUALVERIFY to true given two of the same pub keys" in {
+  it must "evaulate OP_EQUALVERIFY must not evaluate a transaction to invalid with two of the same pubkeys" in {
     val stack = List(pubKeyHash, pubKeyHash)
     val script = List(OP_EQUALVERIFY)
-    val program = ScriptProgram(TestUtil.testProgram, stack,script)
+    val program = ScriptProgram(TestUtil.testProgramExecutionInProgress, stack,script)
     val result = opEqualVerify(program)
-    result.isValid must be (true)
+    //if verification fails it will transform the script to a ExecutedProgram with an error set
+    result.isInstanceOf[ExecutedScriptProgram] must be (false)
   }
 
   it must "evaluate OP_EQUALVERIFY to false given two different pub keys" in {
     val uniquePubKey = ScriptConstantImpl(pubKeyHash.hex +"00")
     val stack = List(pubKeyHash,uniquePubKey)
     val script = List(OP_EQUALVERIFY)
-    val program = ScriptProgram(TestUtil.testProgram, stack,script)
+    val program = ScriptProgram(TestUtil.testProgramExecutionInProgress, stack,script)
     val result = opEqualVerify(program)
-    result.isValid must be (false)
+    result.stackTopIsTrue must be (false)
   }
 
 
@@ -68,7 +69,7 @@ class BitwiseInterpreterTest extends FlatSpec with MustMatchers with BitwiseInte
 
     val stack1 = List( ScriptConstantImpl("02"),ScriptNumberFactory.fromNumber(2))
     val script1 = List(OP_EQUAL)
-    val program1 = ScriptProgram(TestUtil.testProgram, stack,script)
+    val program1 = ScriptProgram(TestUtil.testProgram, stack1,script1)
     opEqual(program1).stack.head must be (ScriptTrue)
   }
 

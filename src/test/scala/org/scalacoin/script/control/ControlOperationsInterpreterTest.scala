@@ -1,12 +1,13 @@
 package org.scalacoin.script.control
 
 import org.scalacoin.marshallers.script.ScriptParser
+import org.scalacoin.script.error.{ScriptErrorOpReturn, ScriptErrorInvalidStackOperation}
 import org.scalacoin.script.{ScriptProgram}
 import org.scalacoin.script.arithmetic.OP_ADD
 import org.scalacoin.script.bitwise.OP_EQUAL
 import org.scalacoin.script.constant._
 import org.scalacoin.script.reserved.{OP_VER, OP_RESERVED}
-import org.scalacoin.util.{TestUtil, Empty, Node, Leaf}
+import org.scalacoin.util._
 import org.scalatest.{MustMatchers, FlatSpec}
 
 /**
@@ -21,7 +22,6 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers with C
     val result = opVerify(program)
     result.stack.isEmpty must be (true)
     result.script.isEmpty must be (true)
-    result.isValid must be (true)
   }
 
   it must "have OP_VERIFY evaluate to true when there are multiple items on the stack that can be cast to an int" in {
@@ -31,24 +31,23 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers with C
     val script = List(OP_VERIFY)
     val program = ScriptProgram(TestUtil.testProgram, stack,script)
     val result = opVerify(program)
-    result.isValid must be (true)
   }
 
   it must "have OP_VERIFY evaluate to false with '0' on the stack" in {
     val stack = List(ScriptFalse)
     val script = List(OP_VERIFY)
-    val program = ScriptProgram(TestUtil.testProgram, stack,script)
+    val program = ScriptProgram(TestUtil.testProgramExecutionInProgress, stack,script)
     val result = opVerify(program)
-    result.isValid must be (false)
+    result.stackTopIsFalse must be (true)
   }
 
   it must "mark the script as invalid for OP_VERIFY when there is nothing on the stack" in {
 
     val stack = List()
     val script = List(OP_VERIFY)
-    val program = ScriptProgram(TestUtil.testProgram, stack,script)
-    val result = opVerify(program)
-    result.isValid must be (false)
+    val program = ScriptProgram(TestUtil.testProgramExecutionInProgress, stack,script)
+    val result = ScriptProgramTestUtil.toExecutedScriptProgram(opVerify(program))
+    result.error must be (Some(ScriptErrorInvalidStackOperation))
 
   }
 
@@ -468,10 +467,10 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers with C
   it must "mark a transaction as invalid if it is trying to spend an OP_RETURN output" in {
     val stack = Seq()
     val script = Seq(OP_RETURN)
-    val program = ScriptProgram(TestUtil.testProgram,stack,script)
-    val newProgram = opReturn(program)
+    val program = ScriptProgram(TestUtil.testProgramExecutionInProgress,stack,script)
+    val newProgram = ScriptProgramTestUtil.toExecutedScriptProgram(opReturn(program))
 
-    newProgram.isValid must be (false)
+    newProgram.error must be (Some(ScriptErrorOpReturn))
   }
 
 
