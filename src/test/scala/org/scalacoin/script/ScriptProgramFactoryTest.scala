@@ -1,6 +1,7 @@
 package org.scalacoin.script
 
 import org.scalacoin.script.constant.{OP_1, OP_0}
+import org.scalacoin.script.flag.ScriptFlagFactory
 import org.scalacoin.util.TestUtil
 import org.scalatest.{MustMatchers, FlatSpec}
 
@@ -24,14 +25,14 @@ class ScriptProgramFactoryTest extends FlatSpec with MustMatchers {
 
   it must "update the OP_CODESEPARATOR index" in {
     val index = 999
-    val program = ScriptProgram(TestUtil.testProgram,index)
+    val program = ScriptProgram(TestUtil.testProgramExecutionInProgress,index)
     program.lastCodeSeparator must be (999)
   }
 
   it must "update the OP_CODESEPARATOR index & stack simultaneously" in {
     val index = 999
     val stack = Seq(OP_0)
-    val program = ScriptProgram(TestUtil.testProgram,stack,ScriptProgram.Stack,index)
+    val program = ScriptProgram(TestUtil.testProgramExecutionInProgress,stack,ScriptProgram.Stack,index)
     program.stack must be (stack)
     program.lastCodeSeparator must be (index)
   }
@@ -39,8 +40,17 @@ class ScriptProgramFactoryTest extends FlatSpec with MustMatchers {
   it must "update the OP_CODESEPARATOR index & altStack simultaneously" in {
     val index = 999
     val altStack = Seq(OP_0)
-    val program = ScriptProgram(TestUtil.testProgram,altStack,ScriptProgram.AltStack,index)
+    val program = ScriptProgram(TestUtil.testProgramExecutionInProgress,altStack,ScriptProgram.AltStack,index)
     program.altStack must be (altStack)
     program.lastCodeSeparator must be (index)
+  }
+
+
+  it must "update the script program to the given stack and script" in {
+    val stack = List(OP_0)
+    val script = List(OP_1)
+    val program = ScriptProgram(TestUtil.transaction, TestUtil.scriptPubKey, 0, stack,script, ScriptFlagFactory.empty)
+    program.stack must be (stack)
+    program.script must be (script)
   }
 }

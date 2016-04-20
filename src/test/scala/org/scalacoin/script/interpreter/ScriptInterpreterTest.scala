@@ -76,7 +76,7 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterp
 ">1,000 stack+altstack size"]]
     """.stripMargin*/
 
-    val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n" finally source.close()
+/*    val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n" finally source.close()
     val json = lines.parseJson
     val testCasesOpt : Seq[Option[CoreTestCase]] = json.convertTo[Seq[Option[CoreTestCase]]]
     val testCases : Seq[CoreTestCase] = testCasesOpt.flatten
@@ -102,7 +102,7 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterp
       withClue(testCase.raw) {
         ScriptInterpreter.run(program) must equal (false)
       }
-    }
+    }*/
 
   }
 }

@@ -142,7 +142,7 @@ trait ControlOperationsInterpreter extends BitcoinSLogger {
    */
   def opVerify(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.isDefined && program.script.head == OP_VERIFY, "Script top must be OP_VERIFY")
-    program.script.size > 0 match {
+    program.stack.size > 0 match {
       case true =>
         logger.debug("Stack for OP_VERIFY: " + program.stack)
         if (program.stackTopIsFalse) ScriptProgram(program,ScriptErrorVerify)

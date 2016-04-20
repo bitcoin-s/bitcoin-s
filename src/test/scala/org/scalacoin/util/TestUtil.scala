@@ -6,7 +6,7 @@ import org.scalacoin.policy.Policy
 import org.scalacoin.protocol.script._
 import org.scalacoin.protocol.transaction.{EmptyTransaction, Transaction}
 import org.scalacoin.protocol.{AssetAddress, BitcoinAddress}
-import org.scalacoin.script.{ScriptProgram}
+import org.scalacoin.script.{ExecutionInProgressScriptProgram, PreExecutionScriptProgram, ExecutedScriptProgram, ScriptProgram}
 import org.scalacoin.script.bitwise.{OP_EQUAL, OP_EQUALVERIFY}
 import org.scalacoin.script.constant._
 import org.scalacoin.script.crypto.{OP_CHECKMULTISIG, OP_CHECKSIG, OP_HASH160}
@@ -142,6 +142,14 @@ object TestUtil {
   def testProgram : ScriptProgram = ScriptProgram(TransactionTestUtil.testTransaction,
     EmptyScriptPubKey,0,List(),Policy.standardScriptVerifyFlags)
 
+  def testProgramPreExecution = testProgram match {
+    case p : PreExecutionScriptProgram => p
+    case _ => throw new RuntimeException("this must be a script program that is pre execution")
+  }
+
+  def testProgramExecutionInProgress = ScriptProgram.toExecutionInProgress(testProgramPreExecution)
+
+
 
   val rawP2PKScriptSig = "47304402200a5c6163f07b8d3b013c4d1d6dba25e780b39658d79ba37af7057a3b7f15ffa102201fd9b4eaa9943f734928b99a83592c2e7bf342ea2680f6a2bb705167966b742001"
   def p2pkScriptSig = ScriptSignature(rawP2PKScriptSig)
@@ -161,4 +169,9 @@ object TestUtil {
     ScriptConstantImpl("173014020002107777777777777777777777777777777701"),
     BytesToPushOntoStackImpl(33),
     ScriptConstantImpl("02af7dad03e682fcd0427b5c24140c220ac9d8abe286c15f8cf5bf77eed19c3652")))
+
+
+
+
+
 }

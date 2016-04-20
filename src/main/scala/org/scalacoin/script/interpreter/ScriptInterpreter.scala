@@ -56,7 +56,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
      * @return program the final state of the program after being evaluated by the interpreter
      */
     @tailrec
-    def loop(program : ScriptProgram) : (Boolean,ScriptProgram) = {
+    def loop(program : ScriptProgram) : (Boolean,ExecutedScriptProgram) = {
       logger.debug("Stack: " + program.stack)
       logger.debug("Script: " + program.script)
       if (program.script.headOption.isDefined &&
@@ -71,8 +71,8 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
         (false, ScriptProgram(program, ScriptErrorScriptSize))
       }  else {
         program match {
-          case p : PreExecutionScriptProgram => loop(ScriptProgram.toExecutionInProgress(p,p.stack))
-          case p : ExecutedScriptProgram => (p.error.isDefined, p)
+          case p : PreExecutionScriptProgram => loop(ScriptProgram.toExecutionInProgress(p,Some(p.stack)))
+          case p : ExecutedScriptProgram => (!p.error.isDefined, p)
           case p : ExecutionInProgressScriptProgram =>
             p.script match {
               //if at any time we see that the program is not valid
@@ -194,16 +194,16 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
               case (nop: NOP) :: t => loop(ScriptProgram(p, p.stack, t))
               case OP_RESERVED :: t =>
                 logger.error("OP_RESERVED automatically marks transaction invalid")
-                (false, p)
+                loop(ScriptProgram(p,ScriptErrorDisabledOpCode))
               case OP_VER :: t =>
                 logger.error("Transaction is invalid when executing OP_VER")
-                (false, p)
+                loop(ScriptProgram(p,ScriptErrorDisabledOpCode))
               case OP_RESERVED1 :: t =>
                 logger.error("Transaction is invalid when executing OP_RESERVED1")
-                (false, p)
+                loop(ScriptProgram(p,ScriptErrorDisabledOpCode))
               case OP_RESERVED2 :: t =>
                 logger.error("Transaction is invalid when executing OP_RESERVED2")
-                (false, p)
+                loop(ScriptProgram(p,ScriptErrorDisabledOpCode))
 
               case (reservedOperation : ReservedOperation) :: t =>
                 logger.error("Undefined operation found which automatically fails the script: " + reservedOperation)
@@ -238,7 +238,6 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
       }
     }
 
-    val scriptSigProgram = ScriptProgram(program,Seq(),program.txSignatureComponent.scriptSignature.asm)
 
     val (result,executedProgram) = program.txSignatureComponent.scriptSignature match {
       //if the P2SH script flag is not set, we evaluate a p2sh scriptSig just like any other scriptSig
@@ -264,13 +263,17 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
       case _ : P2PKHScriptSignature | _ : P2PKScriptSignature | _ : MultiSignatureScriptSignature |
            _ : NonStandardScriptSignature | _ : P2SHScriptSignature | EmptyScriptSignature =>
 
+        val scriptSigProgram = ScriptProgram(program,Seq(),program.txSignatureComponent.scriptSignature.asm)
         val (scriptSigProgramIsValid,scriptSigExecutedProgram) = loop(scriptSigProgram)
         logger.info("Stack state after scriptSig execution: " + scriptSigExecutedProgram.stack)
+        logger.info("scriptSigExecutedProgram: " + scriptSigExecutedProgram.error)
+        logger.info("scriptSigProgramIsValid: " + scriptSigProgramIsValid)
         if (scriptSigProgramIsValid) {
           logger.debug("We do not check a redeemScript against a non p2sh scriptSig")
           //now run the scriptPubKey script through the interpreter with the scriptSig as the stack arguments
           val scriptPubKeyProgram = ScriptProgram(scriptSigExecutedProgram.txSignatureComponent,
             scriptSigExecutedProgram.stack,scriptSigExecutedProgram.txSignatureComponent.scriptPubKey.asm)
+          require(scriptPubKeyProgram.script == scriptSigExecutedProgram.txSignatureComponent.scriptPubKey.asm)
           val (scriptPubKeyProgramIsValid, scriptPubKeyExecutedProgram) = loop(scriptPubKeyProgram)
 
           logger.info("Stack state after scriptPubKey execution: " + scriptPubKeyExecutedProgram.stack)
