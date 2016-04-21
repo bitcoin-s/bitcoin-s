@@ -1,6 +1,8 @@
 package org.scalacoin.util
 
+import org.scalacoin.script.{ScriptProgram, ExecutionInProgressScriptProgram, ScriptSettings}
 import org.scalacoin.script.constant._
+import org.scalacoin.script.crypto.{OP_CHECKMULTISIGVERIFY, OP_CHECKMULTISIG, OP_CHECKSIG, OP_CHECKSIGVERIFY}
 import org.scalacoin.script.reserved.{OP_RESERVED, NOP, ReservedOperation}
 
 /**
@@ -50,6 +52,68 @@ trait BitcoinScriptUtil {
     case scriptOp : ScriptOperation if (scriptOp.opCode > OP_16.opCode) => true
     case _ : ScriptToken => false
   }
+
+
+  /**
+   * Counts the amount of sigops in a script
+   * https://github.com/bitcoin/bitcoin/blob/master/src/script/script.cpp#L156-L202
+   * @param script the script whose sigops are being counted
+   * @return the number of signature operations in the script
+   */
+  def countSigOps(script : Seq[ScriptToken]) : Long = {
+    val checkSigCount = script.count(token => token == OP_CHECKSIG || token == OP_CHECKSIGVERIFY)
+    val multiSigOps = Seq(OP_CHECKMULTISIG,OP_CHECKMULTISIGVERIFY)
+    val multiSigCount : Long = script.zipWithIndex.map { case (token, index) =>
+      if (multiSigOps.contains(token) && index != 0) {
+        script(index-1) match {
+          case scriptNum : ScriptNumber => scriptNum.num
+          case scriptConstant : ScriptConstant => BitcoinSUtil.hexToLong(scriptConstant.hex)
+          case _ : ScriptToken => ScriptSettings.maxPublicKeysPerMultiSig
+        }
+      } else 0
+    }.sum
+    checkSigCount + multiSigCount
+  }
+
+
+  /**
+   * Parses the number of signatures on the stack
+   * This can only be called when an OP_CHECKMULTISIG operation is about to be executed
+   * on the stack
+   * For instance if this was a 2/3 multisignature script, it would return the number 3
+   * @param program
+   * @return
+   */
+  def numPossibleSignaturesOnStack(program : ScriptProgram) : Int = {
+    require(program.script.headOption == Some(OP_CHECKMULTISIG) || program.script.headOption == Some(OP_CHECKMULTISIGVERIFY),
+    "We can only parse the nubmer of signatures the stack when we are executing a OP_CHECKMULTISIG or OP_CHECKMULTISIGVERIFY op")
+    val nPossibleSignatures : Int  = program.stack.head match {
+      case s : ScriptNumber => s.num.toInt
+      case s : ScriptConstant => BitcoinSUtil.hexToInt(s.hex)
+      case _ : ScriptToken => throw new RuntimeException("n must be a script number or script constant for OP_CHECKMULTISIG")
+    }
+    nPossibleSignatures
+  }
+
+  /**
+   * Returns the number of required signatures on the stack, for instance if this was a
+   * 2/3 multisignature script, it would return the number 2
+   * @param program
+   * @return
+   */
+  def numRequiredSignaturesOnStack(program : ScriptProgram) : Int = {
+    require(program.script.headOption == Some(OP_CHECKMULTISIG) || program.script.headOption == Some(OP_CHECKMULTISIGVERIFY),
+      "We can only parse the nubmer of signatures the stack when we are executing a OP_CHECKMULTISIG or OP_CHECKMULTISIGVERIFY op")
+    val nPossibleSignatures = numPossibleSignaturesOnStack(program)
+    val stackWithoutPubKeys = program.stack.tail.slice(nPossibleSignatures,program.stack.tail.size)
+    val mRequiredSignatures : Int = stackWithoutPubKeys.head match {
+      case s: ScriptNumber => s.num.toInt
+      case s : ScriptConstant => BitcoinSUtil.hexToInt(s.hex)
+      case _ : ScriptToken => throw new RuntimeException("m must be a script number or script constant for OP_CHECKMULTISIG")
+    }
+    mRequiredSignatures
+  }
+
 }
 
 

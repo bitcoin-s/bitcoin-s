@@ -79,6 +79,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
             //reset opCount variable to zero since we may need to count the ops
             //in the scriptPubKey - we don't want the op count of the scriptSig
             //to count towards the scriptPubKey op count
+            logger.info("Final op count: " + opCount)
             opCount = 0
             (!p.error.isDefined, p)
           case p : ExecutionInProgressScriptProgram =>
@@ -191,8 +192,31 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
               case OP_SHA256 :: t => loop(opSha256(p))
               case OP_HASH256 :: t => loop(opHash256(p))
               case OP_CODESEPARATOR :: t => loop(opCodeSeparator(p))
-              case OP_CHECKMULTISIG :: t => loop(opCheckMultiSig(p))
-              case OP_CHECKMULTISIGVERIFY :: t => loop(opCheckMultiSigVerify(p))
+              case OP_CHECKMULTISIG :: t =>
+                opCheckMultiSig(p) match {
+                  case newProgram : ExecutedScriptProgram =>
+                    //script was marked invalid for other reasons, don't need to update the opcount
+                    loop(newProgram)
+                  case newProgram : ExecutionInProgressScriptProgram =>
+                    opCount = opCount + BitcoinScriptUtil.numPossibleSignaturesOnStack(program)
+                    loop(newProgram)
+                  case newProgram : PreExecutionScriptProgram =>
+                    opCount = opCount + BitcoinScriptUtil.numPossibleSignaturesOnStack(program)
+                    loop(newProgram)
+                }
+
+              case OP_CHECKMULTISIGVERIFY :: t =>
+                opCheckMultiSigVerify(p) match {
+                  case newProgram : ExecutedScriptProgram =>
+                    //script was marked invalid for other reasons, don't need to update the opcount
+                    loop(newProgram)
+                  case newProgram : ExecutionInProgressScriptProgram =>
+                    opCount = opCount + BitcoinScriptUtil.numPossibleSignaturesOnStack(program)
+                    loop(newProgram)
+                  case newProgram : PreExecutionScriptProgram =>
+                    opCount = opCount + BitcoinScriptUtil.numPossibleSignaturesOnStack(program)
+                    loop(newProgram)
+                }
               //reserved operations
               case OP_NOP :: t =>
                 //script discourage upgradeable flag does not apply to a OP_NOP

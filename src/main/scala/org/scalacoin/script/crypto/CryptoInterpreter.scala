@@ -8,7 +8,7 @@ import org.scalacoin.script.error.{ScriptErrorSigCount, ScriptErrorSigNullDummy,
 import org.scalacoin.script.flag.{ScriptVerifyNullDummy, ScriptVerifyDerSig}
 import org.scalacoin.script.{ExecutionInProgressScriptProgram, ScriptProgram}
 import org.scalacoin.script.constant._
-import org.scalacoin.util.{BitcoinSLogger, BitcoinSUtil, CryptoUtil}
+import org.scalacoin.util.{BitcoinScriptUtil, BitcoinSLogger, BitcoinSUtil, CryptoUtil}
 import org.slf4j.LoggerFactory
 
 
@@ -164,22 +164,14 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
       ScriptProgram(program,ScriptErrorInvalidStackOperation)
     } else {
       //these next lines remove the appropriate stack/script values after the signatures have been checked
-      val nPossibleSignatures : Int  = program.stack.head match {
-        case s : ScriptNumber => s.num.toInt
-        case s : ScriptConstant => BitcoinSUtil.hexToInt(s.hex)
-        case _ => throw new RuntimeException("n must be a script number or script constant for OP_CHECKMULTISIG")
-      }
+      val nPossibleSignatures : Int  = BitcoinScriptUtil.numPossibleSignaturesOnStack(program)
       logger.debug("nPossibleSignatures: " + nPossibleSignatures)
       val (pubKeysScriptTokens,stackWithoutPubKeys) =
         (program.stack.tail.slice(0,nPossibleSignatures),program.stack.tail.slice(nPossibleSignatures,program.stack.tail.size))
       val pubKeys = pubKeysScriptTokens.map(key => ECFactory.publicKey(key.hex))
       logger.debug("Public keys on the stack: " + pubKeys)
-      val mRequiredSignatures : Int = stackWithoutPubKeys.head match {
-        case s: ScriptNumber => s.num.toInt
-        case s : ScriptConstant => BitcoinSUtil.hexToInt(s.hex)
-        case _ => throw new RuntimeException("m must be a script number or script constant for OP_CHECKMULTISIG")
-      }
-      logger.debug("mRequiredSignatures: " + mRequiredSignatures )
+      val mRequiredSignatures : Int = BitcoinScriptUtil.numRequiredSignaturesOnStack(program)
+      logger.debug("mRequiredSignatures: " + mRequiredSignatures)
 
       //+1 is for the fact that we have the # of sigs + the script token indicating the # of sigs
       val signaturesScriptTokens = program.stack.tail.slice(nPossibleSignatures + 1, nPossibleSignatures + mRequiredSignatures + 1)
