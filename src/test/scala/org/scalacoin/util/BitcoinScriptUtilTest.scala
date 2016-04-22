@@ -194,6 +194,6 @@ class BitcoinScriptUtilTest extends FlatSpec with MustMatchers {
       ScriptConstantImpl("73"), BytesToPushOntoStackImpl(1), ScriptConstantImpl("74"), BytesToPushOntoStackImpl(1),
       ScriptConstantImpl("14"), OP_CHECKMULTISIG)
 
-    BitcoinScriptUtil.countSigOps(script) must be (0)
+    BitcoinScriptUtil.countSigOps(script) must be (180)
   }
 }
