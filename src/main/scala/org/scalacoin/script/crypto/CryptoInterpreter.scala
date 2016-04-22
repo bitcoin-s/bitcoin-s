@@ -4,9 +4,9 @@ import org.scalacoin.crypto._
 import org.scalacoin.protocol.script._
 import org.scalacoin.protocol.transaction.Transaction
 import org.scalacoin.script.control.{ControlOperationsInterpreter, OP_VERIFY}
-import org.scalacoin.script.error.{ScriptErrorSigCount, ScriptErrorSigNullDummy, ScriptErrorSigDer, ScriptErrorInvalidStackOperation}
+import org.scalacoin.script.error._
 import org.scalacoin.script.flag.{ScriptVerifyNullDummy, ScriptVerifyDerSig}
-import org.scalacoin.script.{ExecutionInProgressScriptProgram, ScriptProgram}
+import org.scalacoin.script.{ScriptSettings, ExecutionInProgressScriptProgram, ScriptProgram}
 import org.scalacoin.script.constant._
 import org.scalacoin.util.{BitcoinScriptUtil, BitcoinSLogger, BitcoinSUtil, CryptoUtil}
 import org.slf4j.LoggerFactory
@@ -168,6 +168,8 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
       logger.debug("nPossibleSignatures: " + nPossibleSignatures)
       val (pubKeysScriptTokens,stackWithoutPubKeys) =
         (program.stack.tail.slice(0,nPossibleSignatures),program.stack.tail.slice(nPossibleSignatures,program.stack.tail.size))
+
+
       val pubKeys = pubKeysScriptTokens.map(key => ECFactory.publicKey(key.hex))
       logger.debug("Public keys on the stack: " + pubKeys)
       val mRequiredSignatures : Int = BitcoinScriptUtil.numRequiredSignaturesOnStack(program)
@@ -183,30 +185,41 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
       val restOfStack = stackWithoutPubKeysAndSignatures
 
 
-      val isValidSignatures : TransactionSignatureCheckerResult =
-        TransactionSignatureChecker.multiSignatureEvaluator(program.txSignatureComponent,signatures,
-          pubKeys,program.flags,mRequiredSignatures)
-
-      isValidSignatures match {
-        case SignatureValidationSuccess =>
-          //means that all of the signatures were correctly encoded and
-          //that all of the signatures were valid signatures for the given
-          //public keys
-          ScriptProgram(program, ScriptTrue :: restOfStack, program.script.tail)
-        case SignatureValidationFailureNotStrictDerEncoding =>
-          //this means the script fails immediately
-          //set the valid flag to false on the script
-          //see BIP66 for more information on this
-          //https://github.com/bitcoin/bips/blob/master/bip-0066.mediawiki#specification
-          ScriptProgram(program, ScriptErrorSigDer)
-        case SignatureValidationFailureIncorrectSignatures =>
-          //this means that signature verification failed, however all signatures were encoded correctly
-          //just push a ScriptFalse onto the stack
-          ScriptProgram(program, ScriptFalse :: restOfStack, program.script.tail)
-        case SignatureValidationFailureSignatureCount =>
-          //means that we did not have enough signatures for OP_CHECKMULTISIG
-          ScriptProgram(program, ScriptErrorSigCount)
+      if (pubKeys.size > ScriptSettings.maxPublicKeysPerMultiSig) {
+        logger.error("We have more public keys than the maximum amount of public keys allowed")
+        ScriptProgram(program,ScriptErrorPubKeyCount)
       }
+      else if (signatures.size > pubKeys.size) {
+        logger.error("We have more signatures than public keys inside OP_CHECKMULTISIG")
+        ScriptProgram(program, ScriptErrorSigCount)
+      } else {
+        val isValidSignatures : TransactionSignatureCheckerResult =
+          TransactionSignatureChecker.multiSignatureEvaluator(program.txSignatureComponent,signatures,
+            pubKeys,program.flags,mRequiredSignatures)
+
+        isValidSignatures match {
+          case SignatureValidationSuccess =>
+            //means that all of the signatures were correctly encoded and
+            //that all of the signatures were valid signatures for the given
+            //public keys
+            ScriptProgram(program, ScriptTrue :: restOfStack, program.script.tail)
+          case SignatureValidationFailureNotStrictDerEncoding =>
+            //this means the script fails immediately
+            //set the valid flag to false on the script
+            //see BIP66 for more information on this
+            //https://github.com/bitcoin/bips/blob/master/bip-0066.mediawiki#specification
+            ScriptProgram(program, ScriptErrorSigDer)
+          case SignatureValidationFailureIncorrectSignatures =>
+            //this means that signature verification failed, however all signatures were encoded correctly
+            //just push a ScriptFalse onto the stack
+            ScriptProgram(program, ScriptFalse :: restOfStack, program.script.tail)
+          case SignatureValidationFailureSignatureCount =>
+            //means that we did not have enough signatures for OP_CHECKMULTISIG
+            ScriptProgram(program, ScriptErrorSigCount)
+        }
+      }
+
+
     }
   }
 
