@@ -5,6 +5,8 @@ import org.scalacoin.script.constant._
 import org.scalacoin.script.crypto.{OP_CHECKMULTISIGVERIFY, OP_CHECKMULTISIG, OP_CHECKSIG, OP_CHECKSIGVERIFY}
 import org.scalacoin.script.reserved.{OP_RESERVED, NOP, ReservedOperation}
 
+import scala.annotation.tailrec
+
 /**
  * Created by chris on 3/2/16.
  */
@@ -114,6 +116,24 @@ trait BitcoinScriptUtil {
     mRequiredSignatures
   }
 
+
+  /**
+   * Determines if a script contains only script operations
+   * This is equivalent to
+   * https://github.com/bitcoin/bitcoin/blob/master/src/script/script.cpp#L213
+   * @param script
+   * @return
+   */
+  def isPushOnly(script : Seq[ScriptToken]) : Boolean = {
+    def loop(tokens: Seq[ScriptToken], accum: List[Boolean]): Seq[Boolean] = tokens match {
+      case h :: t => h match {
+        case scriptOp: ScriptOperation => loop(t, (scriptOp.opCode < OP_16.opCode) :: accum)
+        case _: ScriptToken => loop(t, true :: accum)
+      }
+      case Nil => accum
+    }
+    !loop(script, List()).exists(_ == false)
+  }
 }
 
 
