@@ -20,11 +20,18 @@ class NetworkTotalsMarshallerTest extends FlatSpec with MustMatchers {
     """.stripMargin
 
   val json = str.parseJson
+  val NetworkDetail : NetworkTotals = NetworkTotalsMarshaller.NetworkTotalFormatter.read(json)
 
   "NetworkTotals" must "parse network total infos" in {
-    val NetworkDetail : NetworkTotals = NetworkTotalsMarshaller.NetworkTotalFormatter.read(json)
     NetworkDetail.totalBytesRecv must be (1972832211)
     NetworkDetail.totalBytesSent must be (71483458)
     NetworkDetail.timeInMilliSeconds must be (BigInt("1452264952971"))
+  }
+
+  it must "write network total info" in {
+    val writtenNetworkTotal = NetworkTotalsMarshaller.NetworkTotalFormatter.write(NetworkDetail)
+    writtenNetworkTotal.asJsObject.fields("totalbytesrecv") must be (JsNumber(1972832211))
+    writtenNetworkTotal.asJsObject.fields("totalbytessent") must be (JsNumber(71483458))
+    writtenNetworkTotal.asJsObject.fields("timemillis") must be (BigInt("1452264952971"))
   }
 }

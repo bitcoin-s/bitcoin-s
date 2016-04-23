@@ -47,9 +47,9 @@ class NetworkInfoMarshallerTest extends FlatSpec with MustMatchers{
     """.stripMargin
 
   val json = str.parseJson
+  val network : NetworkInfo = NetworkMarshaller.NetworkInfoFormatter.read(json)
 
   "NetworkMarshaller" must "parse network information" in {
-    val network : NetworkInfo = NetworkMarshaller.NetworkInfoFormatter.read(json)
     network.version must be (110200)
     network.subVersion must be ("/Satoshi:0.11.2/")
     network.protocolVersion must be (70002)
@@ -59,6 +59,19 @@ class NetworkInfoMarshallerTest extends FlatSpec with MustMatchers{
     network.networks.size must be (3)
     network.relayFee must be (0.00005000)
     network.localAddresses must be (Seq())
+  }
+
+  it must "write network info" in {
+    val writtenNetworkInfo = NetworkMarshaller.NetworkInfoFormatter.write(network)
+    writtenNetworkInfo.asJsObject.fields("version") must be (JsNumber(110200))
+    writtenNetworkInfo.asJsObject.fields("subversion") must be (JsString("/Satoshi:0.11.2/"))
+    writtenNetworkInfo.asJsObject.fields("protocolversion") must be (JsNumber(70002))
+    writtenNetworkInfo.asJsObject.fields("localservices") must be (JsString("0000000000000001"))
+    writtenNetworkInfo.asJsObject.fields("timeoffset") must be (JsNumber(2))
+    writtenNetworkInfo.asJsObject.fields("connections") must be (JsNumber(8))
+    writtenNetworkInfo.asJsObject.fields("relayfee") must be (JsNumber(0.00005000))
+    writtenNetworkInfo.asJsObject.fields("localaddresses") must be (Seq())
+
   }
 
 }

@@ -17,10 +17,16 @@ class MemPoolInfoMarshallerTest extends FlatSpec with MustMatchers {
     """.stripMargin
 
   val json = str.parseJson
+  val mempool : MemPoolInfo = MemPoolInfoMarshaller.MemPoolInfoFormatter.read(json)
 
   "MemPoolInfo" must "parse node's tx memory pool" in {
-    val mempool : MemPoolInfo = MemPoolInfoMarshaller.MemPoolInfoFormatter.read(json)
       mempool.size must be (270)
       mempool.bytes must be (295151)
+  }
+
+  it must "write mempool info" in {
+    val writtenMemPool = MemPoolInfoMarshaller.MemPoolInfoFormatter.write(mempool)
+    writtenMemPool.asJsObject.fields("size") must be (JsNumber(270))
+    writtenMemPool.asJsObject.fields("bytes") must be (JsNumber(295151))
   }
 }

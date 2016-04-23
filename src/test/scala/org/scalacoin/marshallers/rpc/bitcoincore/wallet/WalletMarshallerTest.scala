@@ -33,4 +33,18 @@ class WalletMarshallerTest extends FlatSpec with MustMatchers {
     wallet.keyPoolOldest must be (1430522134)
     wallet.keyPoolSize must be (101)
   }
+
+  it must "write wallet info" in {
+    val json = str.parseJson
+    val wallet : WalletInfo = WalletMarshaller.WalletFormatter.read(json)
+    val writtenWallet = WalletMarshaller.WalletFormatter.write(wallet)
+    writtenWallet.asJsObject.fields("walletversion") must be (JsNumber(60000))
+    writtenWallet.asJsObject.fields("balance") must be (JsNumber(39842624))
+    writtenWallet.asJsObject.fields("unconfirmed_balance") must be (JsNumber(0.00000000))
+    writtenWallet.asJsObject.fields("immature_balance") must be (JsNumber(0.00000000))
+    writtenWallet.asJsObject.fields("txcount") must be (JsNumber(38))
+    writtenWallet.asJsObject.fields("keypoololdest") must be (JsNumber(1430522134))
+    writtenWallet.asJsObject.fields("keypoolsize") must be (JsNumber(101))
+  }
+
 }

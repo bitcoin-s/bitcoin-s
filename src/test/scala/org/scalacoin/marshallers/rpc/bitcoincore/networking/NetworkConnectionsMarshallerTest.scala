@@ -20,13 +20,23 @@ class NetworkConnectionsMarshallerTest extends FlatSpec with MustMatchers {
     """.stripMargin
 
   val json = str.parseJson
+  val detail : NetworkConnections = NetworkConnectionsMarshaller.NetworkConnectionsFormatter.read(json)
+
 
   "NetworkConnections" must "parse network info connections" in {
-    val detail : NetworkConnections = NetworkConnectionsMarshaller.NetworkConnectionsFormatter.read(json)
     detail.name must be ("ipv4")
     detail.limited must be (false)
     detail.reachable must be (false)
     detail.proxy must be ("")
     detail.proxyRandomizeCredentials must be (false)
+  }
+
+  it must "write network connection info" in {
+    val writtenNetworkConnections = NetworkConnectionsMarshaller.NetworkConnectionsFormatter.write(detail)
+    writtenNetworkConnections.asJsObject.fields("name") must be (JsString("ipv4"))
+    writtenNetworkConnections.asJsObject.fields("limited") must be (JsBoolean(false))
+    writtenNetworkConnections.asJsObject.fields("reachable") must be (JsBoolean(false))
+    writtenNetworkConnections.asJsObject.fields("proxy") must be (JsString(""))
+    writtenNetworkConnections.asJsObject.fields("proxy_randomize_credentials") must be (JsBoolean(false))
   }
 }
