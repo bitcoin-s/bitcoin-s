@@ -32,6 +32,7 @@ class NetworkTotalsMarshallerTest extends FlatSpec with MustMatchers {
     val writtenNetworkTotal = NetworkTotalsMarshaller.NetworkTotalFormatter.write(NetworkDetail)
     writtenNetworkTotal.asJsObject.fields("totalbytesrecv") must be (JsNumber(1972832211))
     writtenNetworkTotal.asJsObject.fields("totalbytessent") must be (JsNumber(71483458))
-    writtenNetworkTotal.asJsObject.fields("timemillis") must be (JsNumber(1452264952971L))
+    writtenNetworkTotal.asJsObject.fields("timemillis") must be (JsNumber(BigInt("1452264952971")))
+
   }
 }

@@ -50,7 +50,7 @@ class MiningInfoMarshallerTest extends FlatSpec with MustMatchers {
     writtenMining.asJsObject.fields("difficulty") must be (JsNumber(1.00000000))
     writtenMining.asJsObject.fields("errors") must be (JsString(""))
     writtenMining.asJsObject.fields("genproclimit") must be (JsNumber(-1))
-    writtenMining.asJsObject.fields("networkhashps") must be (BigInt("2302003138855"))
+    writtenMining.asJsObject.fields("networkhashps") must be (JsNumber(BigInt("2302003138855")))
     writtenMining.asJsObject.fields("pooledtx") must be (JsNumber(78))
     writtenMining.asJsObject.fields("testnet") must be (JsBoolean(true))
     writtenMining.asJsObject.fields("chain") must be (JsString("test"))
