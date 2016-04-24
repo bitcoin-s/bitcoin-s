@@ -5,8 +5,8 @@ import org.scalacoin.protocol.script._
 import org.scalacoin.protocol.transaction.Transaction
 import org.scalacoin.script.control.{ControlOperationsInterpreter, OP_VERIFY}
 import org.scalacoin.script.error._
-import org.scalacoin.script.flag.{ScriptVerifyNullDummy, ScriptVerifyDerSig}
-import org.scalacoin.script.{ScriptSettings, ExecutionInProgressScriptProgram, ScriptProgram}
+import org.scalacoin.script.flag.{ScriptFlagUtil, ScriptVerifyNullDummy, ScriptVerifyDerSig}
+import org.scalacoin.script._
 import org.scalacoin.script.constant._
 import org.scalacoin.util.{BitcoinScriptUtil, BitcoinSLogger, BitcoinSUtil, CryptoUtil}
 import org.slf4j.LoggerFactory
@@ -164,60 +164,71 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
       ScriptProgram(program,ScriptErrorInvalidStackOperation)
     } else {
       //these next lines remove the appropriate stack/script values after the signatures have been checked
-      val nPossibleSignatures : Int  = BitcoinScriptUtil.numPossibleSignaturesOnStack(program)
-      logger.debug("nPossibleSignatures: " + nPossibleSignatures)
-      val (pubKeysScriptTokens,stackWithoutPubKeys) =
-        (program.stack.tail.slice(0,nPossibleSignatures),program.stack.tail.slice(nPossibleSignatures,program.stack.tail.size))
+      val nPossibleSignatures : ScriptNumber  = BitcoinScriptUtil.numPossibleSignaturesOnStack(program)
+      val mRequiredSignatures : ScriptNumber = BitcoinScriptUtil.numRequiredSignaturesOnStack(program)
 
-
-      val pubKeys = pubKeysScriptTokens.map(key => ECFactory.publicKey(key.hex))
-      logger.debug("Public keys on the stack: " + pubKeys)
-      val mRequiredSignatures : Int = BitcoinScriptUtil.numRequiredSignaturesOnStack(program)
-      logger.debug("mRequiredSignatures: " + mRequiredSignatures)
-
-      //+1 is for the fact that we have the # of sigs + the script token indicating the # of sigs
-      val signaturesScriptTokens = program.stack.tail.slice(nPossibleSignatures + 1, nPossibleSignatures + mRequiredSignatures + 1)
-      val signatures = signaturesScriptTokens.map(token => ECFactory.digitalSignature(token.bytes))
-      logger.debug("Signatures on the stack: " + signatures)
-      logger.debug("ScriptPubKey: " + program.txSignatureComponent.scriptPubKey)
-      //+1 is for bug in OP_CHECKMULTSIG that requires an extra OP to be pushed onto the stack
-      val stackWithoutPubKeysAndSignatures = stackWithoutPubKeys.tail.slice(mRequiredSignatures+1, stackWithoutPubKeys.tail.size)
-      val restOfStack = stackWithoutPubKeysAndSignatures
-
-
-      if (pubKeys.size > ScriptSettings.maxPublicKeysPerMultiSig) {
-        logger.error("We have more public keys than the maximum amount of public keys allowed")
-        ScriptProgram(program,ScriptErrorPubKeyCount)
-      }
-      else if (signatures.size > pubKeys.size) {
-        logger.error("We have more signatures than public keys inside OP_CHECKMULTISIG")
-        ScriptProgram(program, ScriptErrorSigCount)
+      if (ScriptFlagUtil.requireMinimalData(program.flags) && (!nPossibleSignatures.isShortestEncoding
+        || !mRequiredSignatures.isShortestEncoding)) {
+        logger.error("The required signatures and the possible signatures must be encoded as the shortest number possible")
+        ScriptProgram(program, ScriptErrorMinimalData)
       } else {
-        val isValidSignatures : TransactionSignatureCheckerResult =
-          TransactionSignatureChecker.multiSignatureEvaluator(program.txSignatureComponent,signatures,
-            pubKeys,program.flags,mRequiredSignatures)
+        logger.debug("nPossibleSignatures: " + nPossibleSignatures)
+        val (pubKeysScriptTokens,stackWithoutPubKeys) =
+          (program.stack.tail.slice(0,nPossibleSignatures.num.toInt),
+            program.stack.tail.slice(nPossibleSignatures.num.toInt,program.stack.tail.size))
 
-        isValidSignatures match {
-          case SignatureValidationSuccess =>
-            //means that all of the signatures were correctly encoded and
-            //that all of the signatures were valid signatures for the given
-            //public keys
-            ScriptProgram(program, ScriptTrue :: restOfStack, program.script.tail)
-          case SignatureValidationFailureNotStrictDerEncoding =>
-            //this means the script fails immediately
-            //set the valid flag to false on the script
-            //see BIP66 for more information on this
-            //https://github.com/bitcoin/bips/blob/master/bip-0066.mediawiki#specification
-            ScriptProgram(program, ScriptErrorSigDer)
-          case SignatureValidationFailureIncorrectSignatures =>
-            //this means that signature verification failed, however all signatures were encoded correctly
-            //just push a ScriptFalse onto the stack
-            ScriptProgram(program, ScriptFalse :: restOfStack, program.script.tail)
-          case SignatureValidationFailureSignatureCount =>
-            //means that we did not have enough signatures for OP_CHECKMULTISIG
-            ScriptProgram(program, ScriptErrorSigCount)
+        val pubKeys = pubKeysScriptTokens.map(key => ECFactory.publicKey(key.hex))
+        logger.debug("Public keys on the stack: " + pubKeys)
+
+        logger.debug("mRequiredSignatures: " + mRequiredSignatures)
+
+        //+1 is for the fact that we have the # of sigs + the script token indicating the # of sigs
+        val signaturesScriptTokens = program.stack.tail.slice(nPossibleSignatures.num.toInt + 1,
+          nPossibleSignatures.num.toInt + mRequiredSignatures.num.toInt + 1)
+        val signatures = signaturesScriptTokens.map(token => ECFactory.digitalSignature(token.bytes))
+        logger.debug("Signatures on the stack: " + signatures)
+        logger.debug("ScriptPubKey: " + program.txSignatureComponent.scriptPubKey)
+        //+1 is for bug in OP_CHECKMULTSIG that requires an extra OP to be pushed onto the stack
+        val stackWithoutPubKeysAndSignatures = stackWithoutPubKeys.tail.slice(mRequiredSignatures.num.toInt+1, stackWithoutPubKeys.tail.size)
+        val restOfStack = stackWithoutPubKeysAndSignatures
+
+
+        if (pubKeys.size > ScriptSettings.maxPublicKeysPerMultiSig) {
+          logger.error("We have more public keys than the maximum amount of public keys allowed")
+          ScriptProgram(program,ScriptErrorPubKeyCount)
+        }
+        else if (signatures.size > pubKeys.size) {
+          logger.error("We have more signatures than public keys inside OP_CHECKMULTISIG")
+          ScriptProgram(program, ScriptErrorSigCount)
+        } else {
+          val isValidSignatures : TransactionSignatureCheckerResult =
+            TransactionSignatureChecker.multiSignatureEvaluator(program.txSignatureComponent,signatures,
+              pubKeys,program.flags,mRequiredSignatures.num)
+
+          isValidSignatures match {
+            case SignatureValidationSuccess =>
+              //means that all of the signatures were correctly encoded and
+              //that all of the signatures were valid signatures for the given
+              //public keys
+              ScriptProgram(program, ScriptTrue :: restOfStack, program.script.tail)
+            case SignatureValidationFailureNotStrictDerEncoding =>
+              //this means the script fails immediately
+              //set the valid flag to false on the script
+              //see BIP66 for more information on this
+              //https://github.com/bitcoin/bips/blob/master/bip-0066.mediawiki#specification
+              ScriptProgram(program, ScriptErrorSigDer)
+            case SignatureValidationFailureIncorrectSignatures =>
+              //this means that signature verification failed, however all signatures were encoded correctly
+              //just push a ScriptFalse onto the stack
+              ScriptProgram(program, ScriptFalse :: restOfStack, program.script.tail)
+            case SignatureValidationFailureSignatureCount =>
+              //means that we did not have enough signatures for OP_CHECKMULTISIG
+              ScriptProgram(program, ScriptErrorSigCount)
+          }
         }
       }
+
+
 
 
     }
@@ -239,8 +250,11 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
       val newProgram = ScriptProgram(program,newScript, ScriptProgram.Script)
       val programFromOpCheckMultiSig = opCheckMultiSig(newProgram)
       logger.debug("Stack after OP_CHECKMULTSIG execution: " + programFromOpCheckMultiSig.stack)
-      val programFromOpVerify = opVerify(programFromOpCheckMultiSig)
-      programFromOpVerify
+      programFromOpCheckMultiSig match {
+        case _ : PreExecutionScriptProgram | _ : ExecutedScriptProgram =>
+          programFromOpCheckMultiSig
+        case _ : ExecutionInProgressScriptProgram => opVerify(programFromOpCheckMultiSig)
+      }
     }
   }
 
