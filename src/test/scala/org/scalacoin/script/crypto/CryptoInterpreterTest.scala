@@ -99,20 +99,21 @@ class CryptoInterpreterTest extends FlatSpec with MustMatchers with CryptoInterp
   }
 
   it must "evaluate an OP_CHECKMULTISIGVERIFY with zero signatures and zero pubkeys" in {
-    val stack = List(OP_0,OP_0,OP_0)
+    val stack = List(ScriptNumber.zero,ScriptNumber.zero,ScriptNumber.zero)
     val script = List(OP_CHECKMULTISIGVERIFY)
-    val program = ScriptProgram(TestUtil.testProgram, stack,script)
+    val program = ScriptProgram(TestUtil.testProgramExecutionInProgress, stack,script)
     val programNoFlags = ScriptProgram(program, ScriptFlagFactory.empty)
     val newProgram = opCheckMultiSigVerify(programNoFlags)
+    println(newProgram.script)
     newProgram.script.isEmpty must be (true)
     newProgram.stack.isEmpty must be (true)
     newProgram.isInstanceOf[ExecutedScriptProgram] must be (false)
   }
 
-  it must "evaluate an OP_CHECKMULTISIGVERIFY and leave the remaining operations on the stack" in {
+ it must "evaluate an OP_CHECKMULTISIGVERIFY and leave the remaining operations on the stack" in {
     val stack = List(OP_0,OP_0,OP_0, OP_16,OP_16,OP_16)
     val script = List(OP_CHECKMULTISIGVERIFY,OP_16,OP_16,OP_16,OP_16)
-    val program = ScriptProgram(TestUtil.testProgram, stack,script)
+    val program = ScriptProgram(TestUtil.testProgramExecutionInProgress, stack,script)
     val programNoFlags = ScriptProgram(program, ScriptFlagFactory.empty)
     val newProgram = opCheckMultiSigVerify(programNoFlags)
     newProgram.stack must be (List(OP_16,OP_16,OP_16))
@@ -120,92 +121,92 @@ class CryptoInterpreterTest extends FlatSpec with MustMatchers with CryptoInterp
     newProgram.isInstanceOf[ExecutedScriptProgram] must be (false)
   }
 
-  it must "evaluate an OP_CHECKMULTISIG for" in {
-    //0 0 0 1 CHECKMULTISIG VERIFY DEPTH 0 EQUAL
-    val stack = List(OP_1,OP_0,OP_0,OP_0)
-    val script = List(OP_CHECKMULTISIG)
-    val program = ScriptProgram(TestUtil.testProgram, stack,script)
-    val programNoFlags = ScriptProgram(program, ScriptFlagFactory.empty)
-    val newProgram = opCheckMultiSig(programNoFlags)
-    newProgram.stack must be (List(ScriptTrue))
-    newProgram.script.isEmpty must be (true)
-    newProgram.isInstanceOf[ExecutedScriptProgram] must be (false)
-  }
+   it must "evaluate an OP_CHECKMULTISIG for" in {
+      //0 0 0 1 CHECKMULTISIG VERIFY DEPTH 0 EQUAL
+      val stack = List(OP_1,OP_0,OP_0,OP_0)
+      val script = List(OP_CHECKMULTISIG)
+      val program = ScriptProgram(TestUtil.testProgram, stack,script)
+      val programNoFlags = ScriptProgram(program, ScriptFlagFactory.empty)
+      val newProgram = opCheckMultiSig(programNoFlags)
+      newProgram.stack must be (List(ScriptTrue))
+      newProgram.script.isEmpty must be (true)
+      newProgram.isInstanceOf[ExecutedScriptProgram] must be (false)
+    }
 
-  it must "evaluate an OP_CHECKSIG for a p2pk transaction" in {
-    val (creditingTx,outputIndex) = TransactionTestUtil.buildCreditingTransaction(TestUtil.p2pkScriptPubKey)
-    val (spendingTx,inputIndex) = TransactionTestUtil.buildSpendingTransaction(creditingTx,TestUtil.p2pkScriptSig,outputIndex)
-    val baseProgram = ScriptProgram(spendingTx,creditingTx.outputs(0).scriptPubKey,0,ScriptFlagFactory.empty)
-    val stack = Seq(TestUtil.p2pkScriptPubKey.asm(1)) ++ TestUtil.p2pkScriptSig.asm.tail
+    it must "evaluate an OP_CHECKSIG for a p2pk transaction" in {
+      val (creditingTx,outputIndex) = TransactionTestUtil.buildCreditingTransaction(TestUtil.p2pkScriptPubKey)
+      val (spendingTx,inputIndex) = TransactionTestUtil.buildSpendingTransaction(creditingTx,TestUtil.p2pkScriptSig,outputIndex)
+      val baseProgram = ScriptProgram(spendingTx,creditingTx.outputs(0).scriptPubKey,0,ScriptFlagFactory.empty)
+      val stack = Seq(TestUtil.p2pkScriptPubKey.asm(1)) ++ TestUtil.p2pkScriptSig.asm.tail
 
-    val script = List(TestUtil.p2pkScriptPubKey.asm.last)
-    val program = ScriptProgram(baseProgram,stack,script)
-    val newProgram = opCheckSig(program)
-    newProgram.stack must be (List(ScriptTrue))
-    newProgram.script.isEmpty must be (true)
-  }
-
-
-  it must "evaluate an OP_CHECKMULTISIG for a p2sh transaction" in {
-
-    val rawScriptSig = "0047304402205b7d2c2f177ae76cfbbf14d589c113b0b35db753d305d5562dd0b61cbf366cfb02202e56f93c4f08a27f986cd424ffc48a462c3202c4902104d4d0ff98ed28f4bf80014730440220563e5b3b1fc11662a84bc5ea2a32cc3819703254060ba30d639a1aaf2d5068ad0220601c1f47ddc76d93284dd9ed68f7c9974c4a0ea7cbe8a247d6bc3878567a5fca014c6952210279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f8179821038282263212c609d9ea2a6e3e172de238d8c39cabd5ac1ca10646e23fd5f515082103363d90d447b00c9c99ceac05b6262ee053441c7e55552ffe526bad8f83ff464053ae"
-    val p2shScriptSig = ScriptSignature(rawScriptSig)
-
-    val rawScriptPubKey = "a914c9e4a896d149702d0d1695434feddd52e24ad78d87"
-    val p2shScriptPubKey = ScriptPubKey(rawScriptPubKey)
+      val script = List(TestUtil.p2pkScriptPubKey.asm.last)
+      val program = ScriptProgram(baseProgram,stack,script)
+      val newProgram = opCheckSig(program)
+      newProgram.stack must be (List(ScriptTrue))
+      newProgram.script.isEmpty must be (true)
+    }
 
 
-    val (creditingTx,outputIndex) = TransactionTestUtil.buildCreditingTransaction(p2shScriptPubKey)
-    val (spendingTx,inputIndex) = TransactionTestUtil.buildSpendingTransaction(creditingTx,p2shScriptSig,outputIndex)
+    it must "evaluate an OP_CHECKMULTISIG for a p2sh transaction" in {
 
-    val stack = List(ScriptNumberImpl(3),
-      ScriptConstantImpl("03363d90d447b00c9c99ceac05b6262ee053441c7e55552ffe526bad8f83ff4640"),
-      ScriptConstantImpl("038282263212c609d9ea2a6e3e172de238d8c39cabd5ac1ca10646e23fd5f51508"),
-      ScriptConstantImpl("0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"),
-      ScriptNumberImpl(2),
-      ScriptConstantImpl("30440220563e5b3b1fc11662a84bc5ea2a32cc3819703254060ba30d639a1aaf2d5068ad0220601c1f47ddc76d93284dd9ed68f7c9974c4a0ea7cbe8a247d6bc3878567a5fca01"),
-      ScriptConstantImpl("304402205b7d2c2f177ae76cfbbf14d589c113b0b35db753d305d5562dd0b61cbf366cfb02202e56f93c4f08a27f986cd424ffc48a462c3202c4902104d4d0ff98ed28f4bf8001"),
-      OP_0)
+      val rawScriptSig = "0047304402205b7d2c2f177ae76cfbbf14d589c113b0b35db753d305d5562dd0b61cbf366cfb02202e56f93c4f08a27f986cd424ffc48a462c3202c4902104d4d0ff98ed28f4bf80014730440220563e5b3b1fc11662a84bc5ea2a32cc3819703254060ba30d639a1aaf2d5068ad0220601c1f47ddc76d93284dd9ed68f7c9974c4a0ea7cbe8a247d6bc3878567a5fca014c6952210279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f8179821038282263212c609d9ea2a6e3e172de238d8c39cabd5ac1ca10646e23fd5f515082103363d90d447b00c9c99ceac05b6262ee053441c7e55552ffe526bad8f83ff464053ae"
+      val p2shScriptSig = ScriptSignature(rawScriptSig)
 
-    val script = List(OP_CHECKMULTISIG)
-
-    val baseProgram = ScriptProgram(spendingTx,creditingTx.outputs(0).scriptPubKey,0,ScriptFlagFactory.empty)
-
-    val program = ScriptProgram(baseProgram,stack,script)
-    val newProgram = opCheckMultiSig(program)
-
-    newProgram.stackTopIsTrue must be (true)
-    newProgram.stack.size must be (1)
-
-    newProgram.script.isEmpty must be (true)
-  }
+      val rawScriptPubKey = "a914c9e4a896d149702d0d1695434feddd52e24ad78d87"
+      val p2shScriptPubKey = ScriptPubKey(rawScriptPubKey)
 
 
-  it must "mark a transaction invalid when the NULLDUMMY flag is set for a OP_CHECKMULTISIG operation & the scriptSig does not begin with OP_0" in {
-    val flags = Seq(ScriptVerifyNullDummy)
-    val scriptSig = ScriptSignature.fromAsm(Seq(OP_1))
-    val input = TransactionInput(EmptyTransactionOutPoint, scriptSig, TransactionConstants.sequence)
-    val tx = Transaction(TestUtil.transaction,UpdateTransactionInputs(Seq(input)))
+      val (creditingTx,outputIndex) = TransactionTestUtil.buildCreditingTransaction(p2shScriptPubKey)
+      val (spendingTx,inputIndex) = TransactionTestUtil.buildSpendingTransaction(creditingTx,p2shScriptSig,outputIndex)
 
-    val baseProgram = ScriptProgram.toExecutionInProgress(ScriptProgram(tx,TestUtil.scriptPubKey,0,flags))
-    val stack = Seq(OP_2,OP_2,OP_2)
-    val script = Seq(OP_CHECKMULTISIG)
-    val program = ScriptProgram(baseProgram,stack,script)
-    val newProgram = ScriptProgramTestUtil.toExecutedScriptProgram(opCheckMultiSig(program))
-    newProgram.error must be (Some(ScriptErrorSigNullDummy))
+      val stack = List(ScriptNumberImpl(3),
+        ScriptConstantImpl("03363d90d447b00c9c99ceac05b6262ee053441c7e55552ffe526bad8f83ff4640"),
+        ScriptConstantImpl("038282263212c609d9ea2a6e3e172de238d8c39cabd5ac1ca10646e23fd5f51508"),
+        ScriptConstantImpl("0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"),
+        ScriptNumberImpl(2),
+        ScriptConstantImpl("30440220563e5b3b1fc11662a84bc5ea2a32cc3819703254060ba30d639a1aaf2d5068ad0220601c1f47ddc76d93284dd9ed68f7c9974c4a0ea7cbe8a247d6bc3878567a5fca01"),
+        ScriptConstantImpl("304402205b7d2c2f177ae76cfbbf14d589c113b0b35db753d305d5562dd0b61cbf366cfb02202e56f93c4f08a27f986cd424ffc48a462c3202c4902104d4d0ff98ed28f4bf8001"),
+        OP_0)
 
-  }
+      val script = List(OP_CHECKMULTISIG)
 
-  it must "mark a transaction invalid when the DERSIG flag is set for a OP_CHECKSIG operaetion & the signature is not a strict der sig" in {
-    val flags = Seq(ScriptVerifyDerSig)
-    //signature is from script_valid.json, it has a negative S value which makes it non strict der
-    val stack = Seq(OP_0,ScriptConstantFactory.fromHex("302402107777777777777777777777777777777702108777777777777777777777777777777701"))
-    val script = Seq(OP_CHECKSIG)
-    val program = ScriptProgram(TestUtil.testProgramExecutionInProgress,stack,script)
-    val programWithFlags = ScriptProgram(program,flags)
-    val newProgram = ScriptProgramTestUtil.toExecutedScriptProgram(opCheckSig(programWithFlags))
-    newProgram.error must be (Some(ScriptErrorSigDer))
+      val baseProgram = ScriptProgram(spendingTx,creditingTx.outputs(0).scriptPubKey,0,ScriptFlagFactory.empty)
 
-  }
+      val program = ScriptProgram(baseProgram,stack,script)
+      val newProgram = opCheckMultiSig(program)
+
+      newProgram.stackTopIsTrue must be (true)
+      newProgram.stack.size must be (1)
+
+      newProgram.script.isEmpty must be (true)
+    }
+
+
+    it must "mark a transaction invalid when the NULLDUMMY flag is set for a OP_CHECKMULTISIG operation & the scriptSig does not begin with OP_0" in {
+      val flags = Seq(ScriptVerifyNullDummy)
+      val scriptSig = ScriptSignature.fromAsm(Seq(OP_1))
+      val input = TransactionInput(EmptyTransactionOutPoint, scriptSig, TransactionConstants.sequence)
+      val tx = Transaction(TestUtil.transaction,UpdateTransactionInputs(Seq(input)))
+
+      val baseProgram = ScriptProgram.toExecutionInProgress(ScriptProgram(tx,TestUtil.scriptPubKey,0,flags))
+      val stack = Seq(OP_2,OP_2,OP_2)
+      val script = Seq(OP_CHECKMULTISIG)
+      val program = ScriptProgram(baseProgram,stack,script)
+      val newProgram = ScriptProgramTestUtil.toExecutedScriptProgram(opCheckMultiSig(program))
+      newProgram.error must be (Some(ScriptErrorSigNullDummy))
+
+    }
+
+    it must "mark a transaction invalid when the DERSIG flag is set for a OP_CHECKSIG operaetion & the signature is not a strict der sig" in {
+      val flags = Seq(ScriptVerifyDerSig)
+      //signature is from script_valid.json, it has a negative S value which makes it non strict der
+      val stack = Seq(OP_0,ScriptConstantFactory.fromHex("302402107777777777777777777777777777777702108777777777777777777777777777777701"))
+      val script = Seq(OP_CHECKSIG)
+      val program = ScriptProgram(TestUtil.testProgramExecutionInProgress,stack,script)
+      val programWithFlags = ScriptProgram(program,flags)
+      val newProgram = ScriptProgramTestUtil.toExecutedScriptProgram(opCheckSig(programWithFlags))
+      newProgram.error must be (Some(ScriptErrorSigDer))
+
+    }
 
 }

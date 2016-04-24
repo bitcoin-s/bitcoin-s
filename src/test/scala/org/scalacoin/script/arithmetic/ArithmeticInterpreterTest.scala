@@ -1,6 +1,7 @@
 package org.scalacoin.script.arithmetic
 
 import org.scalacoin.script.error.ScriptErrorInvalidStackOperation
+import org.scalacoin.script.flag.ScriptFlag
 import org.scalacoin.script.{ScriptProgram}
 import org.scalacoin.script.constant._
 import org.scalacoin.util.{ScriptProgramTestUtil, TestUtil}
@@ -353,9 +354,9 @@ class ArithmeticInterpreterTest extends FlatSpec with MustMatchers with Arithmet
   }
 
   it must "evaluate an OP_WITHIN correctly" in {
-    val stack = List(ScriptNumberFactory.fromNumber(2), ScriptNumberFactory.one, OP_0)
+    val stack = List(ScriptNumber(2), ScriptNumber.one, ScriptNumber.zero)
     val script = List(OP_WITHIN)
-    val program = ScriptProgram(TestUtil.testProgram, stack,script)
+    val program = ScriptProgram(ScriptProgram(TestUtil.testProgramExecutionInProgress, stack,script), Seq[ScriptFlag]())
     val newProgram = opWithin(program)
     newProgram.stack must be (List(OP_FALSE))
     newProgram.script.isEmpty must be (true)
@@ -363,7 +364,7 @@ class ArithmeticInterpreterTest extends FlatSpec with MustMatchers with Arithmet
 
     val stack1 = List(ScriptNumberFactory.one, OP_0, ScriptNumberFactory.zero)
     val script1 = List(OP_WITHIN)
-    val program1 = ScriptProgram(TestUtil.testProgram, stack1,script1)
+    val program1 = ScriptProgram(ScriptProgram(TestUtil.testProgramExecutionInProgress, stack1,script1), Seq[ScriptFlag]())
     val newProgram1 = opWithin(program1)
     newProgram1.stack must be (List(OP_TRUE))
     newProgram1.script.isEmpty must be (true)
