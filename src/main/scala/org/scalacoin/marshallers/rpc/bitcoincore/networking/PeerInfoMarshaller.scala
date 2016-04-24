@@ -67,6 +67,7 @@ object PeerInfoMarshaller extends DefaultJsonProtocol with MarshallerUtil {
         bytesSentKey -> JsNumber(peer.bytesSent),
         bytesRecvKey -> JsNumber(peer.bytesRecv),
         connectionTimeKey -> JsNumber(peer.connTime),
+        timeOffSetKey -> JsNumber(peer.timeOffSet),
         pingTimeKey -> JsNumber(peer.pingTime),
         versionKey -> JsNumber(peer.version),
         subVersionKey -> JsString(peer.subVer),
