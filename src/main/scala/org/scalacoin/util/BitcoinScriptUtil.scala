@@ -128,12 +128,70 @@ trait BitcoinScriptUtil {
     def loop(tokens: Seq[ScriptToken], accum: List[Boolean]): Seq[Boolean] = tokens match {
       case h :: t => h match {
         case scriptOp: ScriptOperation => loop(t, (scriptOp.opCode < OP_16.opCode) :: accum)
-        case _: ScriptToken => loop(t, true :: accum)
+        case _ : ScriptToken => loop(t, true :: accum)
       }
       case Nil => accum
     }
     !loop(script, List()).exists(_ == false)
   }
+
+
+  /**
+   * Determines if the token being pushed onto the stack is being pushed by the SMALLEST push operation possible
+   * This is equivalent to
+   * https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L209
+   * @param pushOp the operation that is pushing the data onto the stack
+   * @param token the token that is being pushed onto the stack by the pushOp
+   * @return
+   */
+  def isMinimalPush(pushOp : ScriptToken, token : ScriptToken) : Boolean = token match {
+    case scriptNumOp : ScriptNumberOperation =>
+      scriptNumOp == pushOp
+    case ScriptConstantFactory.zero | ScriptConstantFactory.negativeZero =>
+      //weird case where OP_0 pushes an empty byte vector on the stack, NOT "00" or "81"
+      //so we can push the constant "00" or "81" onto the stack with a BytesToPushOntoStack pushop
+      pushOp == BytesToPushOntoStackFactory.fromNumber(1).get
+    case _ : ScriptToken if ( token.bytes.size == 1 && ScriptNumberOperation.fromNumber(token.toLong.toInt).isDefined) =>
+      //could have used the ScriptNumberOperation to push the number onto the stack
+      false
+    case token : ScriptToken => token.bytes.size match {
+      case size if (size == 0) => pushOp == OP_0
+      case size if (size == 1 && token.bytes.head == OP_1NEGATE.opCode) =>
+        pushOp == OP_1NEGATE
+      case size if (size <= 75) => token.bytes.size == pushOp.toLong
+      case size if (size <= 255) => pushOp == OP_PUSHDATA1
+      case size if (size <= 65535) => pushOp == OP_PUSHDATA2
+      case size =>
+        //default case is true because we have to use the largest push op as possible which is OP_PUSHDATA4
+        true
+    }
+  }
+
+
+  /**
+   * Whenever a script constant is interpreted to a number BIP62 could enforce that number to be encoded
+   * in the smallest encoding possible
+   * https://github.com/bitcoin/bitcoin/blob/a6a860796a44a2805a58391a009ba22752f64e32/src/script/script.h#L220-L237
+   * @param constant
+   * @return
+   */
+  def isShortestEncoding(constant : ScriptConstant) : Boolean = {
+    // If the most-significant-byte - excluding the sign bit - is zero
+    // then we're not minimal. Note how this test also rejects the
+    // negative-zero encoding, 0x80.
+    if ((constant.bytes.size > 0 && (constant.bytes.last & 0x7f) == 0)) {
+      // One exception: if there's more than one byte and the most
+      // significant bit of the second-most-significant-byte is set
+      // it would conflict with the sign bit. An example of this case
+      // is +-255, which encode to 0xff00 and 0xff80 respectively.
+      // (big-endian).
+      if (constant.bytes.size <= 1 || (constant.bytes(constant.bytes.size - 2) & 0x80) == 0) {
+        false
+      } else true
+     } else true
+
+  }
+
 }
 
 

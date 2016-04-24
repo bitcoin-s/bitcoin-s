@@ -185,7 +185,7 @@ class ArithmeticInterpreterTest extends FlatSpec with MustMatchers with Arithmet
     newProgram.script.isEmpty must be (true)
   }
 
-  it must "have an OP_BOOLAND correctly for two OP_0s" in {
+  it must "have an OP_BOOLAND correctly for two 0s" in {
     val stack = List(ScriptNumberFactory.zero, ScriptNumberFactory.zero)
     val script = List(OP_BOOLAND)
     val program = ScriptProgram(TestUtil.testProgram, stack,script)
@@ -205,8 +205,8 @@ class ArithmeticInterpreterTest extends FlatSpec with MustMatchers with Arithmet
     newProgram1.script.isEmpty must be (true)
   }
 
-  it must "have an OP_BOOLAND correctly for one OP_0" in {
-    val stack = List(ScriptNumberFactory.zero, OP_1)
+  it must "have an OP_BOOLAND correctly for one 0" in {
+    val stack = List(ScriptNumber.zero, OP_1)
     val script = List(OP_BOOLAND)
     val program = ScriptProgram(TestUtil.testProgram, stack,script)
     val newProgram = opBoolAnd(program)
@@ -216,19 +216,9 @@ class ArithmeticInterpreterTest extends FlatSpec with MustMatchers with Arithmet
     newProgram.script.isEmpty must be (true)
   }
 
-  it must "have an OP_BOOLAND correctly for zero OP_0" in {
-    val stack = List(OP_1, OP_1)
-    val script = List(OP_BOOLAND)
-    val program = ScriptProgram(TestUtil.testProgram, stack,script)
-    val newProgram = opBoolAnd(program)
 
-    newProgram.stackTopIsTrue must be (true)
-    newProgram.stack.head must be (OP_TRUE)
-    newProgram.script.isEmpty must be (true)
-  }
-
-  it must "have an OP_BOOLOR correctly for two OP_1s" in {
-    val stack = List(OP_1, OP_1)
+  it must "have an OP_BOOLOR correctly for two 1s" in {
+    val stack = List(ScriptNumber.one, ScriptNumber.one)
     val script = List(OP_BOOLOR)
     val program = ScriptProgram(TestUtil.testProgram, stack,script)
     val newProgram = opBoolOr(program)
@@ -237,8 +227,8 @@ class ArithmeticInterpreterTest extends FlatSpec with MustMatchers with Arithmet
     newProgram.script.isEmpty must be (true)
   }
 
-  it must "have an OP_BOOLOR correctly for two OP_0s" in {
-    val stack = List(OP_0, OP_0)
+  it must "have an OP_BOOLOR correctly for two 0s" in {
+    val stack = List(ScriptNumber.zero, ScriptNumber.zero)
     val script = List(OP_BOOLOR)
     val program = ScriptProgram(TestUtil.testProgram, stack,script)
     val newProgram = opBoolOr(program)
@@ -248,7 +238,7 @@ class ArithmeticInterpreterTest extends FlatSpec with MustMatchers with Arithmet
   }
 
   it must "have an OP_BOOLOR correctly for one OP_0" in {
-    val stack = List(OP_0, OP_1)
+    val stack = List(ScriptNumber.zero, ScriptNumber.one)
     val script = List(OP_BOOLOR)
     val program = ScriptProgram(TestUtil.testProgram, stack,script)
     val newProgram = opBoolOr(program)
@@ -257,18 +247,8 @@ class ArithmeticInterpreterTest extends FlatSpec with MustMatchers with Arithmet
     newProgram.script.isEmpty must be (true)
   }
 
-  it must "evaluate an OP_NUMEQUAL correctly" in {
-    val stack = List(OP_0, ScriptNumberFactory.zero)
-    val script = List(OP_NUMEQUAL)
-    val program = ScriptProgram(TestUtil.testProgram, stack,script)
-    val newProgram = opNumEqual(program)
-
-    newProgram.stack.head must be (OP_TRUE)
-    newProgram.script.isEmpty must be (true)
-  }
-
-  it must "evaulate an OP_NUMEQUAL for two OP_0" in {
-    val stack = List(OP_0, OP_0)
+  it must "evaulate an OP_NUMEQUAL for two zeros" in {
+    val stack = List(ScriptNumber.zero, ScriptNumber.zero)
     val script = List(OP_NUMEQUAL)
     val program = ScriptProgram(TestUtil.testProgram, stack,script)
     val newProgram = opNumEqual(program)
@@ -279,7 +259,7 @@ class ArithmeticInterpreterTest extends FlatSpec with MustMatchers with Arithmet
   }
 
   it must "evaluate an OP_NUMNOTEQUAL for two numbers that are the same" in {
-    val stack = List(OP_0, ScriptNumberFactory.zero)
+    val stack = List(ScriptNumber.zero, ScriptNumberFactory.zero)
     val script = List(OP_NUMNOTEQUAL)
     val program = ScriptProgram(TestUtil.testProgram, stack,script)
     val newProgram = opNumNotEqual(program)
@@ -291,7 +271,7 @@ class ArithmeticInterpreterTest extends FlatSpec with MustMatchers with Arithmet
 
 
   it must "evaluate an OP_NUMNOTEQUAL for two numbers that are not the same" in {
-    val stack = List(OP_0, ScriptNumberFactory.one)
+    val stack = List(ScriptNumber.zero, ScriptNumberFactory.one)
     val script = List(OP_NUMNOTEQUAL)
     val program = ScriptProgram(TestUtil.testProgram, stack,script)
     val newProgram = opNumNotEqual(program)
@@ -301,7 +281,7 @@ class ArithmeticInterpreterTest extends FlatSpec with MustMatchers with Arithmet
   }
 
   it must "evaluate an OP_LESSTHAN correctly" in  {
-    val stack = List(OP_0, ScriptNumberFactory.one)
+    val stack = List(ScriptNumber.zero, ScriptNumber.one)
     val script = List(OP_LESSTHAN)
     val program = ScriptProgram(TestUtil.testProgram, stack,script)
     val newProgram = opLessThan(program)
@@ -309,7 +289,7 @@ class ArithmeticInterpreterTest extends FlatSpec with MustMatchers with Arithmet
     newProgram.stack.head must be (OP_FALSE)
     newProgram.script.isEmpty must be (true)
 
-    val stack1 = List(OP_0, ScriptNumberFactory.zero)
+    val stack1 = List(ScriptNumber.zero, ScriptNumber.zero)
     val script1 = List(OP_LESSTHAN)
     ScriptProgram(TestUtil.testProgram, stack,script)
     val program1 = ScriptProgram(TestUtil.testProgram,stack1,script1)
@@ -318,7 +298,7 @@ class ArithmeticInterpreterTest extends FlatSpec with MustMatchers with Arithmet
     newProgram1.stack.head must be (OP_FALSE)
     newProgram1.script.isEmpty must be (true)
 
-    val stack2 = List(OP_1, ScriptNumberFactory.zero)
+    val stack2 = List(ScriptNumber.one, ScriptNumberFactory.zero)
     val script2 = List(OP_LESSTHAN)
     val program2 = ScriptProgram(TestUtil.testProgram, stack2,script2)
     val newProgram2 = opLessThan(program2)
@@ -328,7 +308,7 @@ class ArithmeticInterpreterTest extends FlatSpec with MustMatchers with Arithmet
   }
 
   it must "evaluate an OP_GREATERTHAN correctly" in  {
-    val stack = List(OP_0, ScriptNumberFactory.one)
+    val stack = List(ScriptNumber.zero, ScriptNumber.one)
     val script = List(OP_GREATERTHAN)
     val program = ScriptProgram(TestUtil.testProgram, stack,script)
     val newProgram = opGreaterThan(program)
@@ -336,7 +316,7 @@ class ArithmeticInterpreterTest extends FlatSpec with MustMatchers with Arithmet
     newProgram.stack.head must be (OP_TRUE)
     newProgram.script.isEmpty must be (true)
 
-    val stack1 = List(OP_0, ScriptNumberFactory.zero)
+    val stack1 = List(ScriptNumber.zero, ScriptNumber.zero)
     val script1 = List(OP_GREATERTHAN)
     val program1 = ScriptProgram(TestUtil.testProgram,stack1,script1)
     val newProgram1 = opGreaterThan(program1)
@@ -344,7 +324,7 @@ class ArithmeticInterpreterTest extends FlatSpec with MustMatchers with Arithmet
     newProgram1.stack.head must be (OP_FALSE)
     newProgram1.script.isEmpty must be (true)
 
-    val stack2 = List(OP_1, ScriptNumberFactory.zero)
+    val stack2 = List(ScriptNumber.one, ScriptNumberFactory.zero)
     val script2 = List(OP_GREATERTHAN)
     val program2 = ScriptProgram(TestUtil.testProgram, stack2,script2)
     val newProgram2 = opGreaterThan(program2)
@@ -355,18 +335,18 @@ class ArithmeticInterpreterTest extends FlatSpec with MustMatchers with Arithmet
 
 
   it must "evaluate an OP_MIN correctly" in {
-    val stack = List(OP_0, ScriptNumberFactory.one)
+    val stack = List(ScriptNumber.zero, ScriptNumberFactory.one)
     val script = List(OP_MIN)
-    val program = ScriptProgram(TestUtil.testProgram, stack,script)
+    val program = ScriptProgram(TestUtil.testProgramExecutionInProgress, stack,script)
     val newProgram = opMin(program)
 
-    newProgram.stack must be (List(OP_0))
+    newProgram.stack must be (List(ScriptNumber.zero))
   }
 
   it must "evaluate an OP_MAX correctly" in {
-    val stack = List(OP_0, ScriptNumberFactory.one)
+    val stack = List(ScriptNumber.zero, ScriptNumber.one)
     val script = List(OP_MAX)
-    val program = ScriptProgram(TestUtil.testProgram, stack,script)
+    val program = ScriptProgram(TestUtil.testProgramExecutionInProgress, stack,script)
     val newProgram = opMax(program)
 
     newProgram.stack must be (List(ScriptNumberFactory.one))

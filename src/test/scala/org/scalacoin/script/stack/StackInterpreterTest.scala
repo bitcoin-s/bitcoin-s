@@ -157,7 +157,7 @@ class StackInterpreterTest extends FlatSpec with MustMatchers with StackInterpre
   }
 
   it must "evaluate an OP_PICK correctly" in {
-    val stack = List(ScriptNumberFactory.zero, ScriptConstantImpl("14"), ScriptConstantImpl("15"), ScriptConstantImpl("16"))
+    val stack = List(ScriptNumber.zero, ScriptConstantImpl("14"), ScriptConstantImpl("15"), ScriptConstantImpl("16"))
     val script = List(OP_PICK)
     val program = ScriptProgram(TestUtil.testProgram, stack,script)
     val newProgram = opPick(program)
@@ -168,9 +168,9 @@ class StackInterpreterTest extends FlatSpec with MustMatchers with StackInterpre
   }
 
   it must "evaluate an OP_ROLL correctly" in {
-    val stack = List(OP_0, ScriptConstantImpl("14"), ScriptConstantImpl("15"), ScriptConstantImpl("16"))
+    val stack = List(ScriptNumber.zero, ScriptConstantImpl("14"), ScriptConstantImpl("15"), ScriptConstantImpl("16"))
     val script = List(OP_ROLL)
-    val program = ScriptProgram(TestUtil.testProgram, stack,script)
+    val program = ScriptProgram(TestUtil.testProgramExecutionInProgress, stack,script)
     val newProgram = opRoll(program)
 
     newProgram.stack must be (List(ScriptConstantImpl("14"),

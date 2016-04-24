@@ -1,9 +1,12 @@
 package org.scalacoin.script.stack
 
-import org.scalacoin.script.error.ScriptErrorInvalidStackOperation
+import org.scalacoin.script.error.{ScriptErrorMinimalData, ScriptErrorInvalidStackOperation}
+import org.scalacoin.script.flag.ScriptFlagUtil
 import org.scalacoin.script.{ScriptProgram}
 import org.scalacoin.script.constant._
-import org.scalacoin.util.{BitcoinSLogger, BitcoinSUtil}
+import org.scalacoin.util.{BitcoinScriptUtil, BitcoinSLogger, BitcoinSUtil}
+
+import scala.util.{Failure, Success, Try}
 
 /**
  * Created by chris on 1/6/16.
@@ -155,18 +158,17 @@ trait StackInterpreter extends BitcoinSLogger {
   def opPick(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.isDefined && program.script.head == OP_PICK, "Top of script stack must be OP_PICK")
     require(program.stack.size > 0,"Stack must have at least two items on it for OP_PICK")
-
-    val n = program.stack.head.toLong.toInt
-    //check if n is within the bound of the script
-    (n >= 0 && n < program.stack.tail.size) match {
+    executeOpWithStackTopAsNumberArg(program, (number : ScriptNumber) =>
+      //check if n is within the bound of the script
+      (number.num >= 0 && number.num < program.stack.tail.size) match {
       case true =>
-        val newStackTop = program.stack.tail(n)
-        ScriptProgram(program,newStackTop :: program.stack.tail, program.script.tail)
+        val newStackTop = program.stack.tail (number.num.toInt)
+        ScriptProgram (program, newStackTop :: program.stack.tail, program.script.tail)
       case false =>
-        logger.error("The index for OP_PICK would have caused an index out of bounds exception")
-        ScriptProgram(program,ScriptErrorInvalidStackOperation)
-    }
-
+        logger.error ("The index for OP_PICK would have caused an index out of bounds exception")
+        ScriptProgram (program, ScriptErrorInvalidStackOperation)
+      }
+    )
   }
 
   /**
@@ -177,17 +179,18 @@ trait StackInterpreter extends BitcoinSLogger {
   def opRoll(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.isDefined && program.script.head == OP_ROLL, "Top of script stack must be OP_ROLL")
     require(program.stack.size > 0,"Stack must have at least one items on it for OP_ROLL")
-    val n = program.stack.head.toLong.toInt
-    (n >= 0 && n < program.stack.tail.size) match {
-      case true =>
-        val newStackTop = program.stack.tail(n)
-        //removes the old instance of the stack top, appends the new index to the head
-        val newStack = newStackTop :: program.stack.tail.diff(List(newStackTop))
-        ScriptProgram(program,newStack,program.script.tail)
-      case false =>
-        logger.error("The index for OP_ROLL would have caused an index out of bounds exception")
-        ScriptProgram(program,ScriptErrorInvalidStackOperation)
-    }
+    executeOpWithStackTopAsNumberArg(program, (number : ScriptNumber) =>
+      (number.num >= 0 && number.num  < program.stack.tail.size) match {
+        case true =>
+          val newStackTop = program.stack.tail(number.num.toInt)
+          //removes the old instance of the stack top, appends the new index to the head
+          val newStack = newStackTop :: program.stack.tail.diff(List(newStackTop))
+          ScriptProgram(program,newStack,program.script.tail)
+        case false =>
+          logger.error("The index for OP_ROLL would have caused an index out of bounds exception")
+          ScriptProgram(program,ScriptErrorInvalidStackOperation)
+      }
+    )
   }
 
   /**
@@ -361,7 +364,22 @@ trait StackInterpreter extends BitcoinSLogger {
         logger.error("Stack must have at least 4 items on it for OP_2SWAP")
         ScriptProgram(program,ScriptErrorInvalidStackOperation)
     }
+  }
 
+  /**
+   * Executes an operation with the stack top inside of the program as the argument
+   * @param program the program whose stack top is used as an argument for the operation
+   * @param op the operation that is executed with the script number on the top of the stack
+   * @return the program with the result of the op pushed onto to the top of the stack
+   */
+  private def executeOpWithStackTopAsNumberArg(program : ScriptProgram, op : ScriptNumber => ScriptProgram) : ScriptProgram = {
+    val number : Try[ScriptNumber] = ScriptNumber(program.stack.head.bytes, ScriptFlagUtil.requireMinimalData(program.flags))
+    number match {
+      case Success(n) => op(n)
+      case Failure(_) =>
+        logger.error("Script number was not minimally encoded")
+        ScriptProgram(program,ScriptErrorMinimalData)
+    }
   }
 
 }
