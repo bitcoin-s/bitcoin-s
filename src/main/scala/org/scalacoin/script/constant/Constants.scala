@@ -45,7 +45,13 @@ trait ScriptOperation extends ScriptToken {
 /**
  * A constant in the Script language for instance as String or a number
  */
-sealed trait ScriptConstant extends ScriptToken
+sealed trait ScriptConstant extends ScriptToken {
+  /**
+   * Returns if the constant is encoded in the shortest possible way
+   * @return
+   */
+  def isShortestEncoding : Boolean = BitcoinScriptUtil.isShortestEncoding(this)
+}
 
 
 /**

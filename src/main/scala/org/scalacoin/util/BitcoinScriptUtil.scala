@@ -1,5 +1,6 @@
 package org.scalacoin.util
 
+import org.scalacoin.script.flag.ScriptFlagUtil
 import org.scalacoin.script.{ScriptProgram, ExecutionInProgressScriptProgram, ScriptSettings}
 import org.scalacoin.script.constant._
 import org.scalacoin.script.crypto.{OP_CHECKMULTISIGVERIFY, OP_CHECKMULTISIG, OP_CHECKSIG, OP_CHECKSIGVERIFY}
@@ -86,12 +87,12 @@ trait BitcoinScriptUtil {
    * @param program
    * @return
    */
-  def numPossibleSignaturesOnStack(program : ScriptProgram) : Int = {
+  def numPossibleSignaturesOnStack(program : ScriptProgram) : ScriptNumber = {
     require(program.script.headOption == Some(OP_CHECKMULTISIG) || program.script.headOption == Some(OP_CHECKMULTISIGVERIFY),
     "We can only parse the nubmer of signatures the stack when we are executing a OP_CHECKMULTISIG or OP_CHECKMULTISIGVERIFY op")
-    val nPossibleSignatures : Int  = program.stack.head match {
-      case s : ScriptNumber => s.num.toInt
-      case s : ScriptConstant => BitcoinSUtil.hexToInt(s.hex)
+    val nPossibleSignatures : ScriptNumber  = program.stack.head match {
+      case s : ScriptNumber => s
+      case s : ScriptConstant => ScriptNumber(s.bytes)
       case _ : ScriptToken => throw new RuntimeException("n must be a script number or script constant for OP_CHECKMULTISIG")
     }
     nPossibleSignatures
@@ -103,14 +104,14 @@ trait BitcoinScriptUtil {
    * @param program
    * @return
    */
-  def numRequiredSignaturesOnStack(program : ScriptProgram) : Int = {
+  def numRequiredSignaturesOnStack(program : ScriptProgram) : ScriptNumber = {
     require(program.script.headOption == Some(OP_CHECKMULTISIG) || program.script.headOption == Some(OP_CHECKMULTISIGVERIFY),
       "We can only parse the nubmer of signatures the stack when we are executing a OP_CHECKMULTISIG or OP_CHECKMULTISIGVERIFY op")
     val nPossibleSignatures = numPossibleSignaturesOnStack(program)
-    val stackWithoutPubKeys = program.stack.tail.slice(nPossibleSignatures,program.stack.tail.size)
-    val mRequiredSignatures : Int = stackWithoutPubKeys.head match {
-      case s: ScriptNumber => s.num.toInt
-      case s : ScriptConstant => BitcoinSUtil.hexToInt(s.hex)
+    val stackWithoutPubKeys = program.stack.tail.slice(nPossibleSignatures.num.toInt,program.stack.tail.size)
+    val mRequiredSignatures : ScriptNumber = stackWithoutPubKeys.head match {
+      case s: ScriptNumber => s
+      case s : ScriptConstant => ScriptNumber(s.bytes)
       case _ : ScriptToken => throw new RuntimeException("m must be a script number or script constant for OP_CHECKMULTISIG")
     }
     mRequiredSignatures
