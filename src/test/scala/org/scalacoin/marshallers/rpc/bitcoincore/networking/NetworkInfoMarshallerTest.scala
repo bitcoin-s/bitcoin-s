@@ -70,7 +70,7 @@ class NetworkInfoMarshallerTest extends FlatSpec with MustMatchers{
     writtenNetworkInfo.asJsObject.fields("timeoffset") must be (JsNumber(2))
     writtenNetworkInfo.asJsObject.fields("connections") must be (JsNumber(8))
     writtenNetworkInfo.asJsObject.fields("relayfee") must be (JsNumber(0.00005000))
-    writtenNetworkInfo.asJsObject.fields("localaddresses") must be (Seq())
+    writtenNetworkInfo.asJsObject.fields("localaddresses") must be (JsArray())
 
   }
 

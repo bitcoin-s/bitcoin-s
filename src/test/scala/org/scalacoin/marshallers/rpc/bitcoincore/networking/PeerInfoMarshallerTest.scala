@@ -65,7 +65,7 @@ class PeerInfoMarshallerTest extends FlatSpec with MustMatchers {
     val writtenPeerInfo = PeerInfoMarshaller.PeerInfoFormatter.write(peer)
     writtenPeerInfo.asJsObject.fields("id") must be (JsNumber(20))
     writtenPeerInfo.asJsObject.fields("addr") must be (JsString("158.85.83.84:18333"))
-    writtenPeerInfo.asJsObject.fields("addrlocal") must be (JsString("158.85.83.84:18333"))
+    writtenPeerInfo.asJsObject.fields("addrlocal") must be (JsString("173.26.115.141:63270"))
     writtenPeerInfo.asJsObject.fields("services") must be (JsString("0000000000000001"))
     writtenPeerInfo.asJsObject.fields("lastsend") must be (JsNumber(1452098899))
     writtenPeerInfo.asJsObject.fields("lastrecv") must be (JsNumber(1452098899))
@@ -81,7 +81,7 @@ class PeerInfoMarshallerTest extends FlatSpec with MustMatchers {
     writtenPeerInfo.asJsObject.fields("banscore") must be (JsNumber(0))
     writtenPeerInfo.asJsObject.fields("synced_headers") must be (JsNumber(495724))
     writtenPeerInfo.asJsObject.fields("synced_blocks") must be (JsNumber(-1))
-    writtenPeerInfo.asJsObject.fields("inflight") must be (Seq(9,10))
-    writtenPeerInfo.asJsObject.fields("whitelsited") must be (JsBoolean(false))
+    writtenPeerInfo.asJsObject.fields("inflight") must be (JsArray(JsNumber(9), JsNumber(10)))
+    writtenPeerInfo.asJsObject.fields("whitelisted") must be (JsBoolean(false))
   }
 }

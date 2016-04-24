@@ -39,7 +39,7 @@ class WalletMarshallerTest extends FlatSpec with MustMatchers {
     val wallet : WalletInfo = WalletMarshaller.WalletFormatter.read(json)
     val writtenWallet = WalletMarshaller.WalletFormatter.write(wallet)
     writtenWallet.asJsObject.fields("walletversion") must be (JsNumber(60000))
-    writtenWallet.asJsObject.fields("balance") must be (JsNumber(39842624))
+    writtenWallet.asJsObject.fields("balance") must be (JsNumber(0.39842624))
     writtenWallet.asJsObject.fields("unconfirmed_balance") must be (JsNumber(0.00000000))
     writtenWallet.asJsObject.fields("immature_balance") must be (JsNumber(0.00000000))
     writtenWallet.asJsObject.fields("txcount") must be (JsNumber(38))
