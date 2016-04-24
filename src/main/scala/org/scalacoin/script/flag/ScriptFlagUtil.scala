@@ -34,6 +34,14 @@ trait ScriptFlagUtil {
   def discourageUpgradableNOPs(flags : Seq[ScriptFlag]) : Boolean = {
     flags.contains(ScriptVerifyDiscourageUpgradableNOPs)
   }
+
+  /**
+   * Checks to see if the script flag is set to require minimal push operations
+   * see BIP62
+   * @param flags
+   * @return
+   */
+  def requireMinimalData(flags : Seq[ScriptFlag]) : Boolean = flags.contains(ScriptVerifyMinimalData)
 }
 
 

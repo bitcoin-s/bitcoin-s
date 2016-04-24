@@ -2,6 +2,8 @@ package org.scalacoin.script.constant
 
 import org.scalatest.{FlatSpec, MustMatchers}
 
+import scala.util.Try
+
 /**
  * Created by chris on 1/6/16.
  */
@@ -125,8 +127,9 @@ class ConstantsTest extends FlatSpec with MustMatchers {
     ScriptTrue.hex must not equal ("00")
   }
 
-
-
-
-
+  it must "create the number zero from an empty sequence" in {
+    val number : Try[ScriptNumber] = ScriptNumber(Seq(),true)
+    number.isSuccess must be (true)
+    number.get must be (ScriptNumber.zero)
+  }
 }

@@ -1,6 +1,9 @@
 package org.scalacoin.script.constant
 
-import org.scalacoin.util.{BitcoinSUtil}
+import org.scalacoin.script.ScriptOperationFactory
+import org.scalacoin.util.{BitcoinScriptUtil, Factory, BitcoinSUtil}
+
+import scala.util.{Failure, Success, Try}
 
 /**
  * Created by chris on 1/6/16.
@@ -79,6 +82,33 @@ sealed trait ScriptNumber extends ScriptConstant {
     case 0 => 0L
     case _ : Long => super.toLong
   }
+}
+
+
+object ScriptNumber extends Factory[ScriptNumber] {
+
+  lazy val zero = ScriptNumberImpl(0,"")
+  lazy val one = ScriptNumberImpl(1)
+  lazy val negativeOne = ScriptNumberImpl(-1)
+
+  def fromBytes(bytes : Seq[Byte]) = {
+    if (bytes.size == 0) zero
+    else ScriptNumberImpl(BitcoinSUtil.encodeHex(bytes))
+  }
+
+  def apply(num : Long) : ScriptNumber = ScriptNumberImpl(num, BitcoinSUtil.longToHex(num))
+  def apply(hex : String) : ScriptNumber = fromHex(hex)
+  def apply(bytes : Seq[Byte]) : ScriptNumber = fromBytes(bytes)
+
+  def apply(hex : String, requireMinimal : Boolean) : Try[ScriptNumber] = {
+    val number = fromHex(hex)
+    if (requireMinimal && !BitcoinScriptUtil.isShortestEncoding(number)) {
+      Failure(new IllegalArgumentException("The given hex was not the shortest encoding for the script number: " + hex))
+    } else Success(number)
+
+  }
+
+  def apply(bytes : Seq[Byte], requireMinimal : Boolean) : Try[ScriptNumber] = apply(BitcoinSUtil.encodeHex(bytes),requireMinimal)
 }
 
 /**
@@ -317,6 +347,19 @@ case object OP_16 extends ScriptNumberOperation {
   override def num = 16
 }
 
+
+object ScriptNumberOperation extends ScriptOperationFactory[ScriptNumberOperation] {
+
+  def operations = Seq(OP_0,OP_1, OP_1NEGATE, OP_2,OP_3,OP_4,OP_5,OP_6,OP_7,OP_8,OP_9,OP_10,OP_11,OP_12,OP_13,OP_14,OP_15,OP_16)
+
+  /**
+   * Finds the script number operation based on the given integer
+   * @param num
+   * @return
+   */
+  def fromNumber(num : Int) : Option[ScriptNumberOperation] = operations.find(_.num == num)
+
+}
 
 
 

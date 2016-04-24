@@ -96,7 +96,78 @@ class BitcoinScriptUtilTest extends FlatSpec with MustMatchers {
     BitcoinScriptUtil.isPushOnly(Seq(OP_NOP, OP_0,OP_0,OP_0)) must be (false)
   }
 
-  it must "determine that the script is not push only if it contains an undefined scropt operation" in {
+  it must "determine that the script is not push only if it contains an script number operation" in {
+    BitcoinScriptUtil.isMinimalPush(BytesToPushOntoStackFactory.fromNumber(1).get,OP_1) must be (false)
+  }
 
+  it must "determine that a script is push only if it only contains pushing an empty script constant" in {
+    BitcoinScriptUtil.isMinimalPush(OP_0,ScriptConstantFactory.fromHex("")) must be (true)
+  }
+
+  it must "determine that a script is not push only if it uses an OP_PUSHDATA operation while pushing < 75 bytes" in {
+    BitcoinScriptUtil.isMinimalPush(OP_PUSHDATA1,OP_0) must be (false)
+  }
+
+  it must "determine that a OP_PUSHDATA1 operation is the minimal push op for a 76 byte script constant" in {
+    val byteConstantSize = 76
+    val byteConstant = for { x <- 0 to byteConstantSize} yield 0x0.toByte
+    val scriptConstant = ScriptConstantFactory.fromBytes(byteConstant)
+    BitcoinScriptUtil.isMinimalPush(OP_PUSHDATA1, scriptConstant) must be (true)
+  }
+
+  it must "determine that a OP_PUSHDATA1 operation is NOT the minimal push op for a 75 byte script constant" in {
+    val byteConstantSize = 75
+    val byteConstant = for { x <- 0 until byteConstantSize } yield 0x0.toByte
+    val scriptConstant = ScriptConstantFactory.fromBytes(byteConstant)
+    BitcoinScriptUtil.isMinimalPush(OP_PUSHDATA1, scriptConstant) must be (false)
+  }
+
+  it must "determine that a OP_PUSHDATA2 operation is NOT the minimal push op for a 255 byte script constant" in {
+    val byteConstantSize = 255
+    val byteConstant = for { x <- 0 until byteConstantSize } yield 0x0.toByte
+    val scriptConstant = ScriptConstantFactory.fromBytes(byteConstant)
+    BitcoinScriptUtil.isMinimalPush(OP_PUSHDATA2, scriptConstant) must be (false)
+  }
+
+  it must "determine that a OP_PUSHDATA2 operation is the minimal push op for a 256 byte script constant" in {
+    val byteConstantSize = 256
+    val byteConstant = for { x <- 0 until byteConstantSize } yield 0x0.toByte
+    val scriptConstant = ScriptConstantFactory.fromBytes(byteConstant)
+    BitcoinScriptUtil.isMinimalPush(OP_PUSHDATA2, scriptConstant) must be (true)
+  }
+
+  it must "determine that a OP_PUSHDATA4 operation is NOT the minimal push op for a 65535 byte script constant" in {
+    val byteConstantSize = 65535
+    val byteConstant = for { x <- 0 until byteConstantSize } yield 0x0.toByte
+    val scriptConstant = ScriptConstantFactory.fromBytes(byteConstant)
+    BitcoinScriptUtil.isMinimalPush(OP_PUSHDATA4, scriptConstant) must be (false)
+  }
+
+  it must "determine that a OP_PUSHDATA4 operation is the minimal push op for a 65536 byte script constant" in {
+    val byteConstantSize = 65536
+    val byteConstant = for { x <- 0 until byteConstantSize } yield 0x0.toByte
+    val scriptConstant = ScriptConstantFactory.fromBytes(byteConstant)
+    BitcoinScriptUtil.isMinimalPush(OP_PUSHDATA4, scriptConstant) must be (true)
+  }
+
+
+  it must "determine if a number is encoded in the shortest way possible" in {
+    BitcoinScriptUtil.isShortestEncoding(ScriptConstantFactory.fromHex("00")) must be (false)
+    BitcoinScriptUtil.isShortestEncoding(ScriptConstantFactory.fromHex("0000")) must be (false)
+
+    BitcoinScriptUtil.isShortestEncoding(ScriptConstantFactory.fromHex("80")) must be (false)
+    BitcoinScriptUtil.isShortestEncoding(ScriptConstantFactory.fromHex("0080")) must be (false)
+
+    BitcoinScriptUtil.isShortestEncoding(ScriptConstantFactory.fromHex("0500")) must be (false)
+    BitcoinScriptUtil.isShortestEncoding(ScriptConstantFactory.fromHex("050000")) must be (false)
+
+    BitcoinScriptUtil.isShortestEncoding(ScriptConstantFactory.fromHex("0580")) must be (false)
+    BitcoinScriptUtil.isShortestEncoding(ScriptConstantFactory.fromHex("050080")) must be (false)
+
+    BitcoinScriptUtil.isShortestEncoding(ScriptConstantFactory.fromHex("ff7f80")) must be (false)
+    BitcoinScriptUtil.isShortestEncoding(ScriptConstantFactory.fromHex("ff7f00")) must be (false)
+
+    BitcoinScriptUtil.isShortestEncoding(ScriptConstantFactory.fromHex("ffff7f80")) must be (false)
+    BitcoinScriptUtil.isShortestEncoding(ScriptConstantFactory.fromHex("ffff7f00")) must be (false)
   }
 }
