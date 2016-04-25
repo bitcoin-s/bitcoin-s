@@ -72,12 +72,11 @@ trait ScriptOperationFactory[T <: ScriptOperation] extends BitcoinSLogger {
 }
 
 
-object ScriptOperationFactory extends ScriptOperationFactory[ScriptOperation] {
+object ScriptOperation extends ScriptOperationFactory[ScriptOperation] {
 
   lazy val operations = ScriptNumberOperation.operations ++ Seq(OP_FALSE,OP_PUSHDATA1, OP_PUSHDATA2,OP_PUSHDATA4,OP_TRUE) ++ StackOperationFactory.operations ++ LocktimeOperationFactory.operations ++
     CryptoOperationFactory.operations ++ ControlOperationsFactory.operations ++ BitwiseOperationsFactory.operations ++
     ArithmeticOperationsFactory.operations ++  BytesToPushOntoStackFactory.operations ++ SpliceOperationsFactory.operations ++
     ReservedOperationFactory.operations
-
 
 }

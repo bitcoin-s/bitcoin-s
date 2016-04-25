@@ -73,7 +73,7 @@ trait ConstantInterpreter extends BitcoinSLogger {
       else {
         //for the case when a ScriptNumberImpl(x) was parsed as a ByteToPushOntoStackImpl(x)
         val scriptToken = scriptTokens.head match {
-          case x : BytesToPushOntoStack => ScriptNumberFactory.fromNumber(x.opCode)
+          case x : BytesToPushOntoStack => ScriptNumber(x.opCode)
           case x => x
         }
         takeUntilBytesNeeded(scriptTokens.tail, scriptToken :: accum)
@@ -92,7 +92,7 @@ trait ConstantInterpreter extends BitcoinSLogger {
     logger.debug("Constant to be pushed onto stack: " + constant)
     //check to see if we have the exact amount of bytes needed to be pushed onto the stack
     //if we do not, mark the program as invalid
-    if (bytesNeeded == 0) ScriptProgram(program, ScriptNumberFactory.zero :: program.stack, newScript)
+    if (bytesNeeded == 0) ScriptProgram(program, ScriptNumber.zero :: program.stack, newScript)
 /*    else if (ScriptFlagUtil.requireMinimalData(program.flags) && bytesNeeded == 1 &&
       constant.isInstanceOf[ScriptNumber] &&constant.toLong <= 16) {
       logger.error("We can push this constant onto the stack with OP_0 - OP_16 instead of using a script constant")
@@ -137,11 +137,11 @@ trait ConstantInterpreter extends BitcoinSLogger {
     } else {
       //for the case where we have to push 0 bytes onto the stack, which is technically the empty byte vector
       program.script(1) match {
-        case OP_0 | BytesToPushOntoStackFactory.zero | ScriptNumberFactory.zero
-             | ScriptNumberFactory.negativeZero if (ScriptFlagUtil.requireMinimalData(program.flags)) =>
+        case OP_0 | BytesToPushOntoStackFactory.zero | ScriptNumber.zero
+             | ScriptNumber.negativeZero if (ScriptFlagUtil.requireMinimalData(program.flags)) =>
           ScriptProgram(program,ScriptErrorMinimalData)
-        case OP_0 | BytesToPushOntoStackFactory.zero | ScriptNumberFactory.zero | ScriptNumberFactory.negativeZero =>
-          ScriptProgram(program, ScriptNumberFactory.zero :: program.stack, program.script.tail.tail)
+        case OP_0 | BytesToPushOntoStackFactory.zero | ScriptNumber.zero | ScriptNumber.negativeZero =>
+          ScriptProgram(program, ScriptNumber.zero :: program.stack, program.script.tail.tail)
         case _ : ScriptToken =>
           pushScriptNumberBytesToStack(ScriptProgram(program, program.script, ScriptProgram.Script))
       }

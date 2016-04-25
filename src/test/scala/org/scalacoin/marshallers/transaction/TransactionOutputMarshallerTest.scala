@@ -3,7 +3,7 @@ package org.scalacoin.marshallers.transaction
 import org.scalacoin.protocol.{BitcoinAddress}
 import org.scalacoin.protocol.transaction.TransactionOutput
 import org.scalacoin.script.bitwise.OP_EQUALVERIFY
-import org.scalacoin.script.constant.{BytesToPushOntoStackImpl, ScriptConstantImpl}
+import org.scalacoin.script.constant.{ScriptToken, BytesToPushOntoStackImpl, ScriptConstantImpl}
 import org.scalacoin.script.crypto.{OP_CHECKSIG, OP_HASH160}
 import org.scalacoin.script.stack.OP_DUP
 import org.scalatest.{FlatSpec, MustMatchers}
@@ -44,7 +44,11 @@ class TransactionOutputMarshallerTest extends FlatSpec with MustMatchers {
     val output : TransactionOutput = TransactionOutputMarshaller.TransactionOutputFormatter.read(json)
     val writtenOutput = TransactionOutputMarshaller.TransactionOutputFormatter.write(output)
 
-    writtenOutput.asJsObject.fields("value") must be (JsNumber(0.0002))
+    writtenOutput.asJsObject.fields("value") must be (JsNumber(0.00020000))
+
+   /* val expectedAsm : Seq[ScriptToken] = {
+      Seq()
+    }*/
   }
 
 }

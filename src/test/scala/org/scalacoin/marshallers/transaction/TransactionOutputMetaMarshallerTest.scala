@@ -1,7 +1,12 @@
 package org.scalacoin.marshallers.transaction
 
-import org.scalacoin.protocol.BitcoinAddress
+import org.scalacoin.marshallers.script.{ScriptPubKeyMarshaller, ScriptParser}
+import org.scalacoin.protocol.{script, BitcoinAddress}
+import org.scalacoin.protocol.script.ScriptPubKey
 import org.scalacoin.protocol.transaction.TransactionOutputMeta
+import org.scalacoin.script.bitwise.OP_EQUAL
+import org.scalacoin.script.constant.{BytesToPushOntoStackImpl, ScriptConstantImpl, ScriptToken}
+import org.scalacoin.script.crypto.OP_HASH160
 import org.scalatest.{FlatSpec, MustMatchers}
 import spray.json._
 
@@ -30,15 +35,28 @@ class TransactionOutputMetaMarshallerTest extends FlatSpec with MustMatchers {
     """.stripMargin
 
   val json = str.parseJson
+  val meta : TransactionOutputMeta = TransactionOutputMetaMarshaller.TransactionOutputMetaFormatter.read(json)
 
   "TransactionOutputMetaMarshaller" must "parse meta information for tx output" in {
-    val meta : TransactionOutputMeta = TransactionOutputMetaMarshaller.TransactionOutputMetaFormatter.read(json)
     meta.bestBlock must be ("000000000000078233dfa9376fe6bc3b68e2bbda04700b5e663a1d4c8b322e62")
     meta.confirmations must be (1)
     meta.value.value must be (0.75829574)
-    meta.scriptPubKey.asm must be ("OP_HASH160 5a81f53ac1ecf0312a2a4df29a734b8f2c0d8c93 OP_EQUAL")
+    //println(meta.scriptPubKey.asm)
+    //println(ScriptPubKey("OP_HASH160 5a81f53ac1ecf0312a2a4df29a734b8f2c0d8c93 OP_EQUAL"))
+    val expectedAsm : Seq[ScriptToken] = {
+      Seq(OP_HASH160, BytesToPushOntoStackImpl(20), ScriptConstantImpl("5a81f53ac1ecf0312a2a4df29a734b8f2c0d8c93"), OP_EQUAL)
+    }
+    meta.scriptPubKey.asm must be (expectedAsm)
     meta.scriptPubKey.hex must be ("a9145a81f53ac1ecf0312a2a4df29a734b8f2c0d8c9387")
     meta.version must be (1)
     meta.coinbase must be (false)
+  }
+  it must "write meta info in tx output" in {
+    val writtenTxMeta = TransactionOutputMetaMarshaller.TransactionOutputMetaFormatter.write(meta)
+    writtenTxMeta.asJsObject.fields("bestblock") must be (JsString("000000000000078233dfa9376fe6bc3b68e2bbda04700b5e663a1d4c8b322e62"))
+    writtenTxMeta.asJsObject.fields("confirmations") must be (JsNumber(1))
+    writtenTxMeta.asJsObject.fields("value") must be (JsNumber(0.75829574))
+    writtenTxMeta.asJsObject.fields("version") must be (JsNumber(1))
+    writtenTxMeta.asJsObject.fields("coinbase") must be (JsBoolean(false))
   }
 }

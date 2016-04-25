@@ -1,6 +1,6 @@
 package org.scalacoin.script
 
-import org.scalacoin.script.constant.{ScriptNumberFactory, OP_0, ScriptFalse, ScriptNumberImpl}
+import org.scalacoin.script.constant._
 import org.scalacoin.util.TestUtil
 import org.scalatest.{FlatSpec, MustMatchers}
 
@@ -17,7 +17,7 @@ class ScriptProgramTest extends FlatSpec with MustMatchers  {
   }
 
   it must "determine if the stack stop is false" in {
-    val stack = List(ScriptNumberFactory.zero)
+    val stack = List(ScriptNumber.zero)
     val script = List()
     val program = ScriptProgram(TestUtil.testProgram, stack,script)
     program.stackTopIsTrue must be (false)
@@ -30,7 +30,7 @@ class ScriptProgramTest extends FlatSpec with MustMatchers  {
     program2.stackTopIsTrue must be (false)
 
     //stack top should not be true for negative zero
-    val program3 = ScriptProgram(program, List(ScriptNumberFactory.negativeZero), ScriptProgram.Stack)
+    val program3 = ScriptProgram(program, List(ScriptNumber.negativeZero), ScriptProgram.Stack)
     program3.stackTopIsTrue must be (false)
   }
 

@@ -21,5 +21,5 @@ trait BytesToPushOntoStackFactory extends ScriptOperationFactory[BytesToPushOnto
 
   def fromNumber(num : Int) : Option[BytesToPushOntoStack] = operations.find(_.opCode == num)
 }
-
+@deprecated
 object BytesToPushOntoStackFactory extends BytesToPushOntoStackFactory

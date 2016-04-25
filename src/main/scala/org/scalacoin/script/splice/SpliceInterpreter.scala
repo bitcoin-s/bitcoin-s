@@ -26,8 +26,8 @@ trait SpliceInterpreter extends BitcoinSLogger {
           ScriptProgram(program, OP_0 :: program.stack, program.script.tail)
         } else {
           val scriptNumber = program.stack.head match {
-            case ScriptNumberFactory.zero => ScriptNumberFactory.zero
-            case x : ScriptToken => ScriptNumberFactory.fromNumber(x.bytes.size)
+            case ScriptNumber.zero => ScriptNumber.zero
+            case x : ScriptToken => ScriptNumber(x.bytes.size)
           }
           ScriptProgram(program, scriptNumber :: program.stack, program.script.tail)
         }
