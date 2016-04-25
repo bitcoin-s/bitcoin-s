@@ -17,7 +17,7 @@ class ConstantInterpreterTest extends FlatSpec with MustMatchers with ConstantIn
   "ConstantInterpreter" must "interpret OP_PUSHDATA1 correctly" in {
     val byteConstantSize = 76
     val byteConstant = for { x <- 0 until byteConstantSize} yield 0x0.toByte
-    val scriptConstant = ScriptConstantFactory.fromBytes(byteConstant)
+    val scriptConstant = ScriptConstant(byteConstant)
     val stack = List()
     val script = List(OP_PUSHDATA1,ScriptNumber(byteConstantSize), scriptConstant,OP_7,OP_EQUAL)
     val program = ScriptProgram(TestUtil.testProgramExecutionInProgress, stack,script)
@@ -30,7 +30,7 @@ class ConstantInterpreterTest extends FlatSpec with MustMatchers with ConstantIn
   it must "interpret OP_PUSHDATA2 correctly" in {
     val byteConstantSize = 256
     val byteConstant = for { x <- 0 until byteConstantSize} yield 0x0.toByte
-    val scriptConstant = ScriptConstantFactory.fromBytes(byteConstant)
+    val scriptConstant = ScriptConstant(byteConstant)
     val stack = List()
     val script = List(OP_PUSHDATA2, ScriptNumber(256), scriptConstant, OP_8, OP_EQUAL)
     val program = ScriptProgram(TestUtil.testProgramExecutionInProgress, stack,script)
@@ -42,7 +42,7 @@ class ConstantInterpreterTest extends FlatSpec with MustMatchers with ConstantIn
   it must "interpret OP_PUSHDATA4 correctly" in {
     val byteConstantSize = 65536
     val byteConstant = for { x <- 0 until byteConstantSize} yield 0x0.toByte
-    val scriptConstant = ScriptConstantFactory.fromBytes(byteConstant)
+    val scriptConstant = ScriptConstant(byteConstant)
     val stack = List()
     val script = List(OP_PUSHDATA4, ScriptNumber(byteConstantSize), scriptConstant, OP_9, OP_EQUAL)
     val program = ScriptProgram(TestUtil.testProgramExecutionInProgress, stack,script)
@@ -58,7 +58,7 @@ class ConstantInterpreterTest extends FlatSpec with MustMatchers with ConstantIn
     val program = ScriptProgram(TestUtil.testProgram, stack,script)
     val newProgram = pushScriptNumberBytesToStack(program)
     newProgram.script.isEmpty must be (true)
-    newProgram.stack must be (List(ScriptConstantFactory.fromHex("0100")))
+    newProgram.stack must be (List(ScriptConstant("0100")))
   }
 
   it must "push 0 bytes onto the stack which is OP_0" in {

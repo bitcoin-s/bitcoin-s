@@ -1,6 +1,6 @@
 package org.scalacoin.script
 
-import org.scalacoin.script.constant.ScriptConstantFactory
+import org.scalacoin.script.constant.ScriptConstant
 import org.scalacoin.util.BitcoinSUtil
 import org.scalatest.{MustMatchers, FlatSpec}
 
@@ -11,7 +11,7 @@ class ScriptConstantFactoryTest extends FlatSpec with MustMatchers {
 
   "ScriptConstantFactory" must "create a constant from bytes" in {
     val bytes = BitcoinSUtil.decodeHex("abc123")
-    ScriptConstantFactory.fromBytes(bytes).bytes must be (bytes)
+    ScriptConstant(bytes).bytes must be (bytes)
   }
 
 }

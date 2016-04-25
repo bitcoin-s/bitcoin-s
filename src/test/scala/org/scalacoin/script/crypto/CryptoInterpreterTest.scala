@@ -21,7 +21,7 @@ class CryptoInterpreterTest extends FlatSpec with MustMatchers with CryptoInterp
     val program = ScriptProgram(TestUtil.testProgram, stack,script)
     val newProgram = opHash160(program)
 
-    newProgram.stack.head must be (ScriptConstantFactory.fromHex("5238C71458E464D9FF90299ABCA4A1D7B9CB76AB".toLowerCase))
+    newProgram.stack.head must be (ScriptConstant("5238C71458E464D9FF90299ABCA4A1D7B9CB76AB".toLowerCase))
     newProgram.script.size must be (0)
   }
 
@@ -200,7 +200,7 @@ class CryptoInterpreterTest extends FlatSpec with MustMatchers with CryptoInterp
     it must "mark a transaction invalid when the DERSIG flag is set for a OP_CHECKSIG operaetion & the signature is not a strict der sig" in {
       val flags = Seq(ScriptVerifyDerSig)
       //signature is from script_valid.json, it has a negative S value which makes it non strict der
-      val stack = Seq(OP_0,ScriptConstantFactory.fromHex("302402107777777777777777777777777777777702108777777777777777777777777777777701"))
+      val stack = Seq(OP_0,ScriptConstant("302402107777777777777777777777777777777702108777777777777777777777777777777701"))
       val script = Seq(OP_CHECKSIG)
       val program = ScriptProgram(TestUtil.testProgramExecutionInProgress,stack,script)
       val programWithFlags = ScriptProgram(program,flags)

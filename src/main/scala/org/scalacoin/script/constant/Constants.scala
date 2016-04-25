@@ -386,5 +386,18 @@ object ScriptNumberOperation extends ScriptOperationFactory[ScriptNumberOperatio
 
 }
 
+object ScriptConstant extends Factory[ScriptConstant] {
+  lazy val zero = ScriptConstant("00")
+  lazy val negativeZero = ScriptConstant("80")
+  lazy val negativeOne = ScriptConstant("81")
+  /**
+    * Creates a script constant from a sequence of bytes
+    * @param bytes
+    * @return
+    */
+  def fromBytes(bytes : Seq[Byte]) : ScriptConstant = ScriptConstantImpl(BitcoinSUtil.encodeHex(bytes))
 
+  def apply(hex : String) : ScriptConstant = fromHex(hex)
 
+  def apply(bytes : Seq[Byte]) : ScriptConstant = fromBytes(bytes)
+}

@@ -31,7 +31,7 @@ class SpliceInterpreterTest extends FlatSpec with MustMatchers with SpliceInterp
   }
 
   it must "evaluate an OP_SIZE correctly with 0x7f" in {
-    val stack = List(ScriptConstantFactory.fromHex("7f"))
+    val stack = List(ScriptConstant("7f"))
     val script = List(OP_SIZE)
     val program = ScriptProgram(TestUtil.testProgram, stack,script)
     val newProgram = opSize(program)
