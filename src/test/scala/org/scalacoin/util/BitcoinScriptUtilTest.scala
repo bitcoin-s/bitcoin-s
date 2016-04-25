@@ -1,5 +1,6 @@
 package org.scalacoin.util
 
+import org.scalacoin.crypto.ECFactory
 import org.scalacoin.script.bitwise.OP_EQUALVERIFY
 import org.scalacoin.script.constant._
 import org.scalacoin.script.crypto._
@@ -169,5 +170,12 @@ class BitcoinScriptUtilTest extends FlatSpec with MustMatchers {
 
     BitcoinScriptUtil.isShortestEncoding(ScriptConstantFactory.fromHex("ffff7f80")) must be (false)
     BitcoinScriptUtil.isShortestEncoding(ScriptConstantFactory.fromHex("ffff7f00")) must be (false)
+  }
+
+  it must "check a public key's encoding" in {
+    //pubkeys must be compressed or uncompressed or else that are not validly encoded
+    val key = ECFactory.publicKey("00")
+    val program = TestUtil.testProgram
+    BitcoinScriptUtil.checkPubKeyEncoding(key,program) must be (false)
   }
 }

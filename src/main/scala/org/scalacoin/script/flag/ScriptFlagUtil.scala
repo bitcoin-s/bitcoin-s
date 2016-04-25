@@ -16,6 +16,13 @@ trait ScriptFlagUtil {
   }
 
   /**
+   * Checks if we are required to check for strict encoding
+   * @param flags
+   * @return
+   */
+  def requireStrictEncoding(flags : Seq[ScriptFlag]) : Boolean = flags.contains(ScriptVerifyStrictEnc)
+
+  /**
    * Checks if the script flag for checklocktimeverify is enabled
    * @param flags
    * @return

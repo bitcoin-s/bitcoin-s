@@ -95,8 +95,6 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
         ScriptProgram(program,ScriptErrorSigDer)
       } else {
         val restOfStack = program.stack.tail.tail
-
-
         val result = TransactionSignatureChecker.checkSignature(program.txSignatureComponent,pubKey,
           signature,program.flags)
         logger.debug("signature verification isValid: " + result)
@@ -109,6 +107,9 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
             ScriptProgram(program, ScriptFalse :: restOfStack,program.script.tail)
           case SignatureValidationFailureSignatureCount =>
             ScriptProgram(program, ScriptFalse :: restOfStack,program.script.tail)
+          case SignatureValidationFailurePubKeyEncoding =>
+            //means that a public key was not encoded correctly
+            ScriptProgram(program,ScriptErrorPubKeyType)
         }
       }
     }
@@ -177,7 +178,7 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
           (program.stack.tail.slice(0,nPossibleSignatures.num.toInt),
             program.stack.tail.slice(nPossibleSignatures.num.toInt,program.stack.tail.size))
 
-        val pubKeys = pubKeysScriptTokens.map(key => ECFactory.publicKey(key.hex))
+        val pubKeys = pubKeysScriptTokens.map(key => ECFactory.publicKey(key.bytes))
         logger.debug("Public keys on the stack: " + pubKeys)
 
         logger.debug("mRequiredSignatures: " + mRequiredSignatures)
@@ -224,6 +225,9 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
             case SignatureValidationFailureSignatureCount =>
               //means that we did not have enough signatures for OP_CHECKMULTISIG
               ScriptProgram(program, ScriptErrorSigCount)
+            case SignatureValidationFailurePubKeyEncoding =>
+              //means that a public key was not encoded correctly
+              ScriptProgram(program,ScriptErrorPubKeyType)
           }
         }
       }
