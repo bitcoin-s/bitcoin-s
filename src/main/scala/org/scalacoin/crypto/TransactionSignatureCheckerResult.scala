@@ -46,3 +46,11 @@ case object SignatureValidationFailureIncorrectSignatures extends TransactionSig
 case object SignatureValidationFailureSignatureCount extends TransactionSignatureCheckerResult {
   def isValid = false
 }
+
+/**
+ * This indicates that the public key was not encoded correctly according to this function
+ * https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L202
+ */
+case object SignatureValidationFailurePubKeyEncoding extends TransactionSignatureCheckerResult {
+  def isValid = false
+}

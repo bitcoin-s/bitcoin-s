@@ -1,6 +1,7 @@
 package org.scalacoin.util
 
-import org.scalacoin.script.flag.ScriptFlagUtil
+import org.scalacoin.crypto.ECPublicKey
+import org.scalacoin.script.flag.{ScriptFlag, ScriptFlagUtil}
 import org.scalacoin.script.{ScriptProgram, ExecutionInProgressScriptProgram, ScriptSettings}
 import org.scalacoin.script.constant._
 import org.scalacoin.script.crypto.{OP_CHECKMULTISIGVERIFY, OP_CHECKMULTISIG, OP_CHECKSIG, OP_CHECKSIGVERIFY}
@@ -190,9 +191,57 @@ trait BitcoinScriptUtil {
         false
       } else true
      } else true
-
   }
 
+  /**
+   * Checks the public key encoding according to bitcoin core's function
+   * https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L202
+   * @param key the key whose encoding we are checking
+   * @param program the program whose flags which dictate the rules for the public keys encoding
+   * @return if the key is encoded correctly against the rules give in the flags parameter
+   */
+  def checkPubKeyEncoding(key : ECPublicKey, program : ScriptProgram) : Boolean = checkPubKeyEncoding(key,program.flags)
+
+  /**
+   * Checks the public key encoding according to bitcoin core's function
+   * https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L202
+   * @param key the key whose encoding we are checking
+   * @param flags the flags which dictate the rules for the public keys encoding
+   * @return if the key is encoded correctly against the rules givein the flags parameter
+   */
+  def checkPubKeyEncoding(key : ECPublicKey, flags : Seq[ScriptFlag]) : Boolean = {
+    if (ScriptFlagUtil.requireStrictEncoding(flags) &&
+      !isCompressedOrUncompressedPubKey(key)) false else true
+  }
+
+
+  /**
+   * Returns true if the key is compressed or uncompressed, false otherwise
+   * https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L66
+   * @param key the public key that is being checked
+   * @return true if the key is compressed/uncompressed otherwise false
+   */
+  def isCompressedOrUncompressedPubKey(key : ECPublicKey) : Boolean = {
+    if (key.bytes.size < 33) {
+      //  Non-canonical public key: too short
+      return false
+    }
+    if (key.bytes.head == 0x04) {
+      if (key.bytes.size != 65) {
+        //  Non-canonical public key: invalid length for uncompressed key
+        return false
+      }
+    } else if (key.bytes.head == 0x02 || key.bytes.head == 0x03) {
+      if (key.bytes.size != 33) {
+        //  Non-canonical public key: invalid length for compressed key
+        return false
+      }
+    } else {
+      //  Non-canonical public key: neither compressed nor uncompressed
+      return false
+    }
+    return true
+  }
 }
 
 
