@@ -123,9 +123,6 @@ class ConstantsTest extends FlatSpec with MustMatchers {
     number3.hex must be (expectedHex3)
   }
 
-  it must "evaluate ScriptTrue to non zero" in {
-    ScriptTrue.hex must not equal ("00")
-  }
 
   it must "create the number zero from an empty sequence" in {
     val number : Try[ScriptNumber] = ScriptNumber(Seq(),true)

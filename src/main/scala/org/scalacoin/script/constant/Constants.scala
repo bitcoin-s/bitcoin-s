@@ -136,19 +136,6 @@ object ScriptNumberImpl {
   def apply(bytes : Seq[Byte]) : ScriptNumber = ScriptNumberImpl(BitcoinSUtil.encodeHex(bytes))
 }
 
-sealed trait ScriptBoolean extends ScriptNumber
-
-//TODO: Need to remove ScriptTrue & ScriptFalse - make OP_TRUE/FALSE inherit from ScriptBoolean
-case object ScriptTrue extends ScriptBoolean {
-  override def hex = OP_TRUE.hex
-  override def num = OP_TRUE.num
-}
-
-case object ScriptFalse extends ScriptBoolean {
-  override def hex = OP_FALSE.hex
-  override def num = OP_FALSE.num
-}
-
 /**
  * Represent a pubkey or hash of a pub key on our stack
  * @param hex

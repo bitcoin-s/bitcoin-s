@@ -1,6 +1,6 @@
 package org.scalacoin.script
 
-import org.scalacoin.script.constant.{ScriptNumberFactory, OP_0, ScriptFalse, ScriptNumberImpl}
+import org.scalacoin.script.constant.{ScriptNumberFactory, OP_0, ScriptNumberImpl}
 import org.scalacoin.util.TestUtil
 import org.scalatest.{FlatSpec, MustMatchers}
 
@@ -21,10 +21,6 @@ class ScriptProgramTest extends FlatSpec with MustMatchers  {
     val script = List()
     val program = ScriptProgram(TestUtil.testProgram, stack,script)
     program.stackTopIsTrue must be (false)
-
-
-    val program1 = ScriptProgram(program,List(ScriptFalse), ScriptProgram.Stack)
-    program1.stackTopIsTrue must be (false)
 
     val program2 = ScriptProgram(program, List(OP_0), ScriptProgram.Stack)
     program2.stackTopIsTrue must be (false)
