@@ -154,7 +154,7 @@ trait ScriptParser extends Factory[List[ScriptToken]] with BitcoinSLogger {
     logger.debug("Parsing byte list: " + bytes + " into a list of script tokens")
     @tailrec
     def loop(bytes : List[Byte], accum : List[ScriptToken]) : List[ScriptToken] = {
-      logger.debug("Byte to be parsed: " + bytes.headOption)
+      //logger.debug("Byte to be parsed: " + bytes.headOption)
       bytes match {
         case h :: t =>
           val op  = ScriptOperation(h).get
@@ -207,7 +207,7 @@ trait ScriptParser extends Factory[List[ScriptToken]] with BitcoinSLogger {
    * @return
    */
   def parseBytesFromString(s: String) : List[ScriptConstant] = {
-    logger.debug("Parsing bytes from string " + s)
+    //logger.debug("Parsing bytes from string " + s)
     val scriptConstants : List[ScriptConstant] = (raw"\b0x([0-9a-f]+)\b".r
       .findAllMatchIn(s.toLowerCase)
       .map(g =>
@@ -240,7 +240,7 @@ trait ScriptParser extends Factory[List[ScriptToken]] with BitcoinSLogger {
   private def parseOperationByte(op : ScriptOperation, accum : List[ScriptToken], tail : List[Byte]) : ParsingHelper[Byte] = {
     op match {
       case bytesToPushOntoStack : BytesToPushOntoStack =>
-        logger.debug("Parsing operation byte: " +bytesToPushOntoStack )
+        //logger.debug("Parsing operation byte: " +bytesToPushOntoStack )
         //means that we need to push x amount of bytes on to the stack
         val (constant,newTail) = sliceConstant(bytesToPushOntoStack,tail)
         val scriptConstant = new ScriptConstantImpl(constant)

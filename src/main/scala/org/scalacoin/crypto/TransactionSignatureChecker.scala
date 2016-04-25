@@ -6,7 +6,7 @@ import org.scalacoin.protocol.transaction.{Transaction, TransactionInput}
 import org.scalacoin.script.{ScriptProgram}
 import org.scalacoin.script.crypto._
 import org.scalacoin.script.flag.{ScriptFlagUtil, ScriptFlag, ScriptVerifyDerSig}
-import org.scalacoin.util.{BitcoinSLogger, BitcoinSUtil}
+import org.scalacoin.util.{BitcoinScriptUtil, BitcoinSLogger, BitcoinSUtil}
 import org.slf4j.LoggerFactory
 
 import scala.annotation.tailrec
@@ -28,9 +28,13 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
    */
   def checkSignature(txSignatureComponent : TransactionSignatureComponent,
                      pubKey: ECPublicKey, signature : ECDigitalSignature, flags : Seq[ScriptFlag]) : TransactionSignatureCheckerResult = {
+    val pubKeyEncodedCorrectly = BitcoinScriptUtil.checkPubKeyEncoding(pubKey,flags)
     if (ScriptFlagUtil.requiresStrictDerEncoding(flags) && !DERSignatureUtil.isStrictDEREncoding(signature)) {
-      logger.warn("Signature was not stricly encoded der: " + signature.hex)
+      logger.error("Signature was not stricly encoded der: " + signature.hex)
       SignatureValidationFailureNotStrictDerEncoding
+    } else if (!pubKeyEncodedCorrectly) {
+      logger.error("The public key given for signature checking was not encoded correctly")
+      SignatureValidationFailurePubKeyEncoding
     } else {
       //we need to check if the scriptSignature has a redeemScript
       //in that case, we need to pass the redeemScript to the TransactionSignatureChecker
@@ -50,7 +54,6 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
       val isValid = pubKey.verify(hashForSignature,signature)
       if (isValid) SignatureValidationSuccess else SignatureValidationFailureIncorrectSignatures
     }
-
   }
 
   /**
@@ -95,6 +98,8 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
           SignatureValidationFailureNotStrictDerEncoding
         case SignatureValidationFailureSignatureCount =>
           SignatureValidationFailureSignatureCount
+        case SignatureValidationFailurePubKeyEncoding =>
+          SignatureValidationFailurePubKeyEncoding
       }
     } else if (sigs.isEmpty) {
       //means that we have checked all of the sigs against the public keys

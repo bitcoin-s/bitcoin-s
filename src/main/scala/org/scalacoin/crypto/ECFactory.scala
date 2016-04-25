@@ -72,10 +72,6 @@ trait ECFactory extends Factory[BaseECKey] {
     //this represents the empty signature
     if (bytes.size == 1 && bytes.head == 0x0) EmptyDigitalSignature
     else if (bytes.size == 0) EmptyDigitalSignature
-    else if (!bytes.map(_ == 0x00).exists(_ == false)) {
-      //this means that the string only contains '0'
-      EmptyDigitalSignature
-    }
     else ECDigitalSignatureImpl(bytes)
   }
 

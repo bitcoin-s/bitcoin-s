@@ -86,7 +86,7 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
       val pubKey = ECFactory.publicKey(program.stack.head.bytes)
       val signature = ECFactory.digitalSignature(program.stack.tail.head.bytes)
 
-      if (program.flags.contains(ScriptVerifyDerSig) && !DERSignatureUtil.isStrictDEREncoding(signature)) {
+      if (ScriptFlagUtil.requiresStrictDerEncoding(program.flags) && !DERSignatureUtil.isStrictDEREncoding(signature)) {
         //this means all of the signatures must encoded according to BIP66 strict dersig
         //https://github.com/bitcoin/bips/blob/master/bip-0066.mediawiki
         //script verification fails since the sig is not strictly der encoded
@@ -95,20 +95,21 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
         ScriptProgram(program,ScriptErrorSigDer)
       } else {
         val restOfStack = program.stack.tail.tail
-
-
         val result = TransactionSignatureChecker.checkSignature(program.txSignatureComponent,pubKey,
           signature,program.flags)
         logger.debug("signature verification isValid: " + result)
         result match {
           case SignatureValidationSuccess => ScriptProgram(program,
-            ScriptTrue :: restOfStack,program.script.tail)
+            OP_TRUE :: restOfStack,program.script.tail)
           case SignatureValidationFailureNotStrictDerEncoding =>
             ScriptProgram(program, ScriptErrorSigDer)
           case SignatureValidationFailureIncorrectSignatures =>
-            ScriptProgram(program, ScriptFalse :: restOfStack,program.script.tail)
+            ScriptProgram(program, OP_FALSE :: restOfStack,program.script.tail)
           case SignatureValidationFailureSignatureCount =>
-            ScriptProgram(program, ScriptFalse :: restOfStack,program.script.tail)
+            ScriptProgram(program, OP_FALSE :: restOfStack,program.script.tail)
+          case SignatureValidationFailurePubKeyEncoding =>
+            //means that a public key was not encoded correctly
+            ScriptProgram(program,ScriptErrorPubKeyType)
         }
       }
     }
@@ -177,7 +178,7 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
           (program.stack.tail.slice(0,nPossibleSignatures.num.toInt),
             program.stack.tail.slice(nPossibleSignatures.num.toInt,program.stack.tail.size))
 
-        val pubKeys = pubKeysScriptTokens.map(key => ECFactory.publicKey(key.hex))
+        val pubKeys = pubKeysScriptTokens.map(key => ECFactory.publicKey(key.bytes))
         logger.debug("Public keys on the stack: " + pubKeys)
 
         logger.debug("mRequiredSignatures: " + mRequiredSignatures)
@@ -210,7 +211,7 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
               //means that all of the signatures were correctly encoded and
               //that all of the signatures were valid signatures for the given
               //public keys
-              ScriptProgram(program, ScriptTrue :: restOfStack, program.script.tail)
+              ScriptProgram(program, OP_TRUE :: restOfStack, program.script.tail)
             case SignatureValidationFailureNotStrictDerEncoding =>
               //this means the script fails immediately
               //set the valid flag to false on the script
@@ -220,10 +221,13 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
             case SignatureValidationFailureIncorrectSignatures =>
               //this means that signature verification failed, however all signatures were encoded correctly
               //just push a ScriptFalse onto the stack
-              ScriptProgram(program, ScriptFalse :: restOfStack, program.script.tail)
+              ScriptProgram(program, OP_FALSE :: restOfStack, program.script.tail)
             case SignatureValidationFailureSignatureCount =>
               //means that we did not have enough signatures for OP_CHECKMULTISIG
               ScriptProgram(program, ScriptErrorSigCount)
+            case SignatureValidationFailurePubKeyEncoding =>
+              //means that a public key was not encoded correctly
+              ScriptProgram(program,ScriptErrorPubKeyType)
           }
         }
       }
