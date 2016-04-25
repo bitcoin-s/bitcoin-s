@@ -27,7 +27,7 @@ class BitcoinScriptUtilTest extends FlatSpec with MustMatchers {
 
   it must "filter out all of the push operations in a scriptSig" in {
     BitcoinScriptUtil.filterPushOps(Seq(OP_PUSHDATA1, OP_PUSHDATA2, OP_PUSHDATA4) ++
-      BytesToPushOntoStackFactory.operations).isEmpty must be (true)
+      BytesToPushOntoStack.operations).isEmpty must be (true)
   }
 
   it must "determine if a script op count towards the bitcoin script op code limit" in {
@@ -97,7 +97,7 @@ class BitcoinScriptUtilTest extends FlatSpec with MustMatchers {
   }
 
   it must "determine that the script is not push only if it contains an script number operation" in {
-    BitcoinScriptUtil.isMinimalPush(BytesToPushOntoStackFactory.fromNumber(1).get,OP_1) must be (false)
+    BitcoinScriptUtil.isMinimalPush(BytesToPushOntoStack(1).get,OP_1) must be (false)
   }
 
   it must "determine that a script is push only if it only contains pushing an empty script constant" in {

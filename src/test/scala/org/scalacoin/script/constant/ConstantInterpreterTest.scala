@@ -54,7 +54,7 @@ class ConstantInterpreterTest extends FlatSpec with MustMatchers with ConstantIn
 
   it must "push a constant 2 bytes onto the stack" in {
     val stack = List()
-    val script = List(BytesToPushOntoStackFactory.fromNumber(2).get, ScriptNumber.one, OP_0)
+    val script = List(BytesToPushOntoStack(2).get, ScriptNumber.one, OP_0)
     val program = ScriptProgram(TestUtil.testProgram, stack,script)
     val newProgram = pushScriptNumberBytesToStack(program)
     newProgram.script.isEmpty must be (true)
@@ -63,20 +63,20 @@ class ConstantInterpreterTest extends FlatSpec with MustMatchers with ConstantIn
 
   it must "push 0 bytes onto the stack which is OP_0" in {
     val stack = List()
-    val script = List(OP_PUSHDATA1,BytesToPushOntoStackFactory.fromNumber(0).get)
+    val script = List(OP_PUSHDATA1,BytesToPushOntoStack(0).get)
     val program = ScriptProgram(ScriptProgram(TestUtil.testProgram, stack,script),Seq[ScriptFlag]())
     val newProgram  = opPushData1(program)
     newProgram.stackTopIsFalse must be (true)
     newProgram.stack must be (List(ScriptNumber.zero))
 
     val stack1 = List()
-    val script1 = List(OP_PUSHDATA2,BytesToPushOntoStackFactory.fromNumber(0).get)
+    val script1 = List(OP_PUSHDATA2,BytesToPushOntoStack(0).get)
     val program1 = ScriptProgram(ScriptProgram(TestUtil.testProgram, stack1,script1),Seq[ScriptFlag]())
     val newProgram1  = opPushData2(program1)
     newProgram1.stack must be (List(ScriptNumber.zero))
 
     val stack2 = List()
-    val script2 = List(OP_PUSHDATA4,BytesToPushOntoStackFactory.fromNumber(0).get)
+    val script2 = List(OP_PUSHDATA4,BytesToPushOntoStack(0).get)
     val program2 = ScriptProgram(ScriptProgram(TestUtil.testProgram, stack2,script2),Seq[ScriptFlag]())
     val newProgram2 = opPushData4(program2)
     newProgram2.stack must be (List(ScriptNumber.zero))
@@ -85,7 +85,7 @@ class ConstantInterpreterTest extends FlatSpec with MustMatchers with ConstantIn
 
   it must "mark a program as invalid if we have do not have enough bytes to be pushed onto the stack by the push operation" in {
     val stack = List()
-    val script = List(OP_PUSHDATA1,BytesToPushOntoStackFactory.factory(1).get)
+    val script = List(OP_PUSHDATA1,BytesToPushOntoStack(1).get)
     val program = ScriptProgram(ScriptProgram(TestUtil.testProgramExecutionInProgress, stack,script),Seq[ScriptFlag]())
 
     val newProgram  = ScriptProgramTestUtil.toExecutedScriptProgram(opPushData1(program))

@@ -62,12 +62,12 @@ class ScriptParserTest extends FlatSpec with MustMatchers with ScriptParser with
 
    it must "parse a script constant from 'Az' EQUAL" in {
      val str = "'Az' EQUAL"
-     fromString(str) must equal (List(BytesToPushOntoStackFactory.fromNumber(2).get, ScriptConstantFactory.fromHex("417a"), OP_EQUAL))
+     fromString(str) must equal (List(BytesToPushOntoStack(2).get, ScriptConstantFactory.fromHex("417a"), OP_EQUAL))
    }
 
    it must "parse a script number that has a leading zero" in {
      val str = "0x02 0x0100"
-     fromString(str) must equal (List(BytesToPushOntoStackFactory.factory(2).get, ScriptConstantFactory.fromHex("0100")))
+     fromString(str) must equal (List(BytesToPushOntoStack(2).get, ScriptConstantFactory.fromHex("0100")))
    }
 
 
@@ -83,7 +83,7 @@ class ScriptParserTest extends FlatSpec with MustMatchers with ScriptParser with
 
    it must "parse a script that has a decimal and a hexadecimal number in it " in  {
      val str = "32767 0x02 0xff7f EQUAL"
-     fromString(str) must equal (List(BytesToPushOntoStackFactory.fromNumber(2).get, ScriptConstantFactory.fromHex("ff7f"),
+     fromString(str) must equal (List(BytesToPushOntoStack(2).get, ScriptConstantFactory.fromHex("ff7f"),
        BytesToPushOntoStackImpl(2), ScriptConstantFactory.fromHex("ff7f"), OP_EQUAL))
    }
    it must "parse an OP_1" in {
@@ -95,9 +95,9 @@ class ScriptParserTest extends FlatSpec with MustMatchers with ScriptParser with
      val str = "0x4b 0x417a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a " +
      "'Azzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz' EQUAL"
 
-     fromString(str) must equal (List(BytesToPushOntoStackFactory.fromNumber(75).get,
+     fromString(str) must equal (List(BytesToPushOntoStack(75).get,
        ScriptConstantFactory.fromHex("417a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a"),
-       BytesToPushOntoStackFactory.fromNumber(75).get,
+       BytesToPushOntoStack(75).get,
        ScriptConstantFactory.fromHex("417a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a"), OP_EQUAL))
    }
 
@@ -109,7 +109,7 @@ class ScriptParserTest extends FlatSpec with MustMatchers with ScriptParser with
 
   it must "parse an OP_PUSHDATA1 correctly" in {
     val str = "'abcdefghijklmnopqrstuvwxyz' HASH160 0x4c 0x14 0xc286a1af0947f58d1ad787385b1c2c4a976f9e71 EQUAL"
-    val expectedScript = List(BytesToPushOntoStackFactory.fromNumber(26).get, ScriptConstantImpl("6162636465666768696a6b6c6d6e6f707172737475767778797a"),OP_HASH160,
+    val expectedScript = List(BytesToPushOntoStack(26).get, ScriptConstantImpl("6162636465666768696a6b6c6d6e6f707172737475767778797a"),OP_HASH160,
       OP_PUSHDATA1, ScriptNumber(20), ScriptConstantImpl("c286a1af0947f58d1ad787385b1c2c4a976f9e71"), OP_EQUAL)
     fromString(str) must be (expectedScript)
   }
