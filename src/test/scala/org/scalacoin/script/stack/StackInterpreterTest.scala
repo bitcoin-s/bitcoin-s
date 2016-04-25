@@ -54,7 +54,7 @@ class StackInterpreterTest extends FlatSpec with MustMatchers with StackInterpre
     val script = List(OP_DEPTH)
     val program = ScriptProgram(TestUtil.testProgram, stack,script)
     val newProgram = opDepth(program)
-    newProgram.stack.head must be (ScriptNumberFactory.zero)
+    newProgram.stack.head must be (ScriptNumber.zero)
   }
 
   it must "evaluate an OP_TOALTSTACK operator correctly" in {
@@ -80,7 +80,7 @@ class StackInterpreterTest extends FlatSpec with MustMatchers with StackInterpre
   }
 
   it must "evaluate an OP_IFDUP correctly" in {
-    val stack = List(ScriptNumberFactory.zero)
+    val stack = List(ScriptNumber.zero)
     val script = List(OP_IFDUP)
     val program = ScriptProgram(TestUtil.testProgram, stack,script)
     val newProgram = opIfDup(program)

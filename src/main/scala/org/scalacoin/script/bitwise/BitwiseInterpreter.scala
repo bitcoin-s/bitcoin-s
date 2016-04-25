@@ -26,20 +26,20 @@ trait BitwiseInterpreter extends ControlOperationsInterpreter  {
       val h = program.stack.head
       val h1 = program.stack.tail.head
       val result = (h,h1) match {
-        case (OP_0,ScriptNumberFactory.zero) | (ScriptNumberFactory.zero, OP_0) =>
-          OP_0.num == ScriptNumberFactory.zero.num
-        case (OP_FALSE,ScriptNumberFactory.zero) | (ScriptNumberFactory.zero, OP_FALSE) =>
-          OP_FALSE.num == ScriptNumberFactory.zero.num
-        case (OP_TRUE,ScriptNumberFactory.one) | (ScriptNumberFactory.one, OP_TRUE) =>
-          OP_TRUE.num == ScriptNumberFactory.one.num
-        case (OP_1, ScriptNumberFactory.one) | (ScriptNumberFactory.one, OP_1) =>
-          OP_1.num == ScriptNumberFactory.one.num
-        case (ScriptFalse, ScriptNumberFactory.zero) | (ScriptNumberFactory.zero, ScriptFalse) =>
-          ScriptFalse.num == ScriptNumberFactory.zero.num
+        case (OP_0,ScriptNumber.zero) | (ScriptNumber.zero, OP_0) =>
+          OP_0.num == ScriptNumber.zero.num
+        case (OP_FALSE,ScriptNumber.zero) | (ScriptNumber.zero, OP_FALSE) =>
+          OP_FALSE.num == ScriptNumber.zero.num
+        case (OP_TRUE,ScriptNumber.one) | (ScriptNumber.one, OP_TRUE) =>
+          OP_TRUE.num == ScriptNumber.one.num
+        case (OP_1, ScriptNumber.one) | (ScriptNumber.one, OP_1) =>
+          OP_1.num == ScriptNumber.one.num
+        case (ScriptFalse, ScriptNumber.zero) | (ScriptNumber.zero, ScriptFalse) =>
+          ScriptFalse.num == ScriptNumber.zero.num
         case (ScriptFalse, OP_0) | (OP_0, ScriptFalse) =>
           ScriptFalse.num == OP_0.num
-        case (ScriptTrue, ScriptNumberFactory.one) | (ScriptNumberFactory.one, ScriptTrue) =>
-          ScriptTrue.num == ScriptNumberFactory.one.num
+        case (ScriptTrue, ScriptNumber.one) | (ScriptNumber.one, ScriptTrue) =>
+          ScriptTrue.num == ScriptNumber.one.num
         case (ScriptTrue, OP_1) | (OP_1, ScriptTrue) =>
           ScriptTrue.num == OP_1.num
         case _ => h.bytes == h1.bytes

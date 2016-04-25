@@ -74,8 +74,8 @@ sealed trait ScriptProgram {
    */
   def stackTopIsFalse : Boolean = {
     if (stack.headOption.isDefined &&
-      (stack.head.hex == OP_FALSE.hex || stack.head.hex == ScriptNumberFactory.negativeZero.hex ||
-        stack.head.hex == ScriptNumberFactory.zero.hex)) true
+      (stack.head.hex == OP_FALSE.hex || stack.head.hex == ScriptNumber.negativeZero.hex ||
+        stack.head.hex == ScriptNumber.zero.hex)) true
     else if (!stack.headOption.isDefined) true
     else false
   }

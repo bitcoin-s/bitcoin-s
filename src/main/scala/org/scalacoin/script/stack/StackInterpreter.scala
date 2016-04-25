@@ -39,7 +39,7 @@ trait StackInterpreter extends BitcoinSLogger {
   def opIfDup(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.isDefined && program.script.head == OP_IFDUP, "Top of the script stack must be OP_DUP")
     program.stack.headOption.isDefined match {
-      case true if (program.stack.head == ScriptNumberFactory.zero) =>
+      case true if (program.stack.head == ScriptNumber.zero) =>
         ScriptProgram(program,program.stack,program.script.tail)
       case true => ScriptProgram(program, program.stack.head :: program.stack,
         program.script.tail)
@@ -60,7 +60,7 @@ trait StackInterpreter extends BitcoinSLogger {
     require(program.script.size >= 1, "OP_DEPTH requires at least two elements on the script stack")
     val stackSize = program.stack.size
 
-    val numberToPush : ScriptNumber = ScriptNumberFactory.fromNumber(stackSize)
+    val numberToPush : ScriptNumber = ScriptNumber(stackSize)
     ScriptProgram(program, numberToPush :: program.stack, program.script.tail)
   }
 

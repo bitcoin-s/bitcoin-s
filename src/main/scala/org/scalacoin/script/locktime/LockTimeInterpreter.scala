@@ -1,7 +1,7 @@
 package org.scalacoin.script.locktime
 
 import org.scalacoin.protocol.transaction.TransactionConstants
-import org.scalacoin.script.constant.{ScriptToken, ScriptNumberFactory, ScriptNumberImpl, ScriptNumber}
+import org.scalacoin.script.constant.{ScriptToken, ScriptNumberImpl, ScriptNumber}
 import org.scalacoin.script.error.{ScriptError, ScriptErrorNegativeLockTime, ScriptErrorUnsatisfiedLocktime, ScriptErrorInvalidStackOperation}
 import org.scalacoin.script.{ScriptProgram}
 import org.scalacoin.util.BitcoinSLogger
@@ -36,13 +36,13 @@ trait LockTimeInterpreter extends BitcoinSLogger {
     }
     else {
       val isError : Option[ScriptError] = program.stack.head match {
-        case s : ScriptNumber if (s < ScriptNumberFactory.zero) =>
+        case s : ScriptNumber if (s < ScriptNumber.zero) =>
           logger.warn("OP_CHECKLOCKTIMEVERIFY marks tx as invalid if the stack top is negative")
           Some(ScriptErrorNegativeLockTime)
-        case s : ScriptNumber if (s >= ScriptNumberFactory.fromNumber(500000000) && program.txSignatureComponent.transaction.lockTime < 500000000) =>
+        case s : ScriptNumber if (s >= ScriptNumber(500000000) && program.txSignatureComponent.transaction.lockTime < 500000000) =>
           logger.warn("OP_CHECKLOCKTIMEVERIFY marks the tx as invalid if stack top >= 500000000 & tx locktime < 500000000")
           Some(ScriptErrorUnsatisfiedLocktime)
-        case s : ScriptNumber if (s < ScriptNumberFactory.fromNumber(500000000) && program.txSignatureComponent.transaction.lockTime >= 500000000) =>
+        case s : ScriptNumber if (s < ScriptNumber(500000000) && program.txSignatureComponent.transaction.lockTime >= 500000000) =>
           logger.warn("OP_CHECKLOCKTIMEVERIFY marks the tx as invalid if stack top < 500000000 & tx locktime >= 500000000")
           Some(ScriptErrorUnsatisfiedLocktime)
         case _ : ScriptToken => None

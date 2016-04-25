@@ -13,22 +13,22 @@ import org.scalatest.{FlatSpec, MustMatchers}
 class ArithmeticInterpreterTest extends FlatSpec with MustMatchers with ArithmeticInterpreter {
 
   "ArithmeticInterpreter" must "perform an OP_ADD correctly" in {
-    val stack = List(ScriptNumberFactory.one, ScriptNumberFactory.fromNumber(2))
+    val stack = List(ScriptNumber.one, ScriptNumber(2))
     val script = List(OP_ADD)
     val program = ScriptProgram(TestUtil.testProgram, stack,script)
     val newProgram = opAdd(program)
-    newProgram.stack.head must be (ScriptNumberFactory.fromNumber(3))
+    newProgram.stack.head must be (ScriptNumber(3))
     newProgram.script.isEmpty must be (true)
   }
 
 
   it must "perform an OP_1ADD correctly" in {
-    val stack = List(ScriptNumberFactory.zero)
+    val stack = List(ScriptNumber.zero)
     val script = List(OP_1ADD)
     val program = ScriptProgram(TestUtil.testProgram, stack,script)
     val newProgram = op1Add(program)
 
-    newProgram.stack.head must be (ScriptNumberFactory.one)
+    newProgram.stack.head must be (ScriptNumber.one)
     newProgram.script.isEmpty must be (true)
   }
 
@@ -43,12 +43,12 @@ class ArithmeticInterpreterTest extends FlatSpec with MustMatchers with Arithmet
   }
 
   it must "perform an OP_1SUB corectly" in {
-    val stack = List(ScriptNumberFactory.zero)
+    val stack = List(ScriptNumber.zero)
     val script = List(OP_1SUB)
     val program = ScriptProgram(TestUtil.testProgram, stack,script)
     val newProgram = op1Sub(program)
 
-    newProgram.stack.head must be (ScriptNumberFactory.fromNumber(-1))
+    newProgram.stack.head must be (ScriptNumber(-1))
     newProgram.script.isEmpty must be (true)
   }
 
@@ -62,12 +62,12 @@ class ArithmeticInterpreterTest extends FlatSpec with MustMatchers with Arithmet
   }
 
   it must "perform an OP_SUB corectly" in {
-    val stack = List(ScriptNumberFactory.one,ScriptNumberFactory.zero)
+    val stack = List(ScriptNumber.one,ScriptNumber.zero)
     val script = List(OP_SUB)
     val program = ScriptProgram(TestUtil.testProgram, stack,script)
     val newProgram = opSub(program)
 
-    newProgram.stack.head must be (ScriptNumberFactory.fromNumber(-1))
+    newProgram.stack.head must be (ScriptNumber(-1))
     newProgram.script.isEmpty must be (true)
   }
 
@@ -80,22 +80,22 @@ class ArithmeticInterpreterTest extends FlatSpec with MustMatchers with Arithmet
   }
 
   it must "perform an OP_ABS on a negative number corectly" in {
-    val stack = List(ScriptNumberFactory.fromNumber(-1))
+    val stack = List(ScriptNumber(-1))
     val script = List(OP_ABS)
     val program = ScriptProgram(TestUtil.testProgram, stack,script)
     val newProgram = opAbs(program)
 
-    newProgram.stack.head must be (ScriptNumberFactory.one)
+    newProgram.stack.head must be (ScriptNumber.one)
     newProgram.script.isEmpty must be (true)
   }
 
   it must "perform OP_ABS on zero correctly" in {
-    val stack = List(ScriptNumberFactory.zero)
+    val stack = List(ScriptNumber.zero)
     val script = List(OP_ABS)
     val program = ScriptProgram(TestUtil.testProgram, stack,script)
     val newProgram = opAbs(program)
 
-    newProgram.stack.head must be (ScriptNumberFactory.zero)
+    newProgram.stack.head must be (ScriptNumber.zero)
     newProgram.script.isEmpty must be (true)
   }
   it must "mark a script as invalid if we have an OP_ABS with nothing on the stack" in {
@@ -107,32 +107,32 @@ class ArithmeticInterpreterTest extends FlatSpec with MustMatchers with Arithmet
   }
 
   it must "perform an OP_NEGATE on a zero correctly" in {
-    val stack = List(ScriptNumberFactory.zero)
+    val stack = List(ScriptNumber.zero)
     val script = List(OP_NEGATE)
     val program = ScriptProgram(TestUtil.testProgram, stack,script)
     val newProgram = opNegate(program)
 
-    newProgram.stack.head must be (ScriptNumberFactory.zero)
+    newProgram.stack.head must be (ScriptNumber.zero)
     newProgram.script.isEmpty must be (true)
   }
 
   it must "perform an OP_NEGATE on a positive number correctly" in {
-    val stack = List(ScriptNumberFactory.one)
+    val stack = List(ScriptNumber.one)
     val script = List(OP_NEGATE)
     val program = ScriptProgram(TestUtil.testProgram, stack,script)
     val newProgram = opNegate(program)
 
-    newProgram.stack.head must be (ScriptNumberFactory.fromNumber(-1))
+    newProgram.stack.head must be (ScriptNumber(-1))
     newProgram.script.isEmpty must be (true)
   }
 
   it must "perform an OP_NEGATE on a negative number correctly" in {
-    val stack = List(ScriptNumberFactory.fromNumber(-1))
+    val stack = List(ScriptNumber(-1))
     val script = List(OP_NEGATE)
     val program = ScriptProgram(TestUtil.testProgram, stack,script)
     val newProgram = opNegate(program)
 
-    newProgram.stack.head must be (ScriptNumberFactory.one)
+    newProgram.stack.head must be (ScriptNumber.one)
     newProgram.script.isEmpty must be (true)
   }
   it must "mark a script as invalid if we have an OP_NEGATE with nothing on the stack" in {
@@ -145,7 +145,7 @@ class ArithmeticInterpreterTest extends FlatSpec with MustMatchers with Arithmet
   }
 
   it must "perform an OP_NOT correctly where 0 is the stack top" in {
-    val stack = List(ScriptNumberFactory.zero)
+    val stack = List(ScriptNumber.zero)
     val script = List(OP_NOT)
     val program = ScriptProgram(TestUtil.testProgram, stack,script)
     val newProgram = opNot(program)
@@ -156,7 +156,7 @@ class ArithmeticInterpreterTest extends FlatSpec with MustMatchers with Arithmet
   }
 
   it must "perform an OP_NOT correctly where 1 is the stack top" in {
-    val stack = List(ScriptNumberFactory.one)
+    val stack = List(ScriptNumber.one)
     val script = List(OP_NOT)
     val program = ScriptProgram(TestUtil.testProgram, stack,script)
     val newProgram = opNot(program)
@@ -167,7 +167,7 @@ class ArithmeticInterpreterTest extends FlatSpec with MustMatchers with Arithmet
   }
 
   it must "perform an OP_0NOTEQUAL correctly where 0 is the stack top" in {
-    val stack = List(ScriptNumberFactory.zero)
+    val stack = List(ScriptNumber.zero)
     val script = List(OP_0NOTEQUAL)
     val program = ScriptProgram(TestUtil.testProgram, stack,script)
     val newProgram = op0NotEqual(program)
@@ -177,7 +177,7 @@ class ArithmeticInterpreterTest extends FlatSpec with MustMatchers with Arithmet
   }
 
   it must "perform an OP_0NOTEQUAL correctly where 1 is the stack top" in {
-    val stack = List(ScriptNumberFactory.one)
+    val stack = List(ScriptNumber.one)
     val script = List(OP_0NOTEQUAL)
     val program = ScriptProgram(TestUtil.testProgram, stack,script)
     val newProgram = op0NotEqual(program)
@@ -187,7 +187,7 @@ class ArithmeticInterpreterTest extends FlatSpec with MustMatchers with Arithmet
   }
 
   it must "have an OP_BOOLAND correctly for two 0s" in {
-    val stack = List(ScriptNumberFactory.zero, ScriptNumberFactory.zero)
+    val stack = List(ScriptNumber.zero, ScriptNumber.zero)
     val script = List(OP_BOOLAND)
     val program = ScriptProgram(TestUtil.testProgram, stack,script)
     val newProgram = opBoolAnd(program)
@@ -260,7 +260,7 @@ class ArithmeticInterpreterTest extends FlatSpec with MustMatchers with Arithmet
   }
 
   it must "evaluate an OP_NUMNOTEQUAL for two numbers that are the same" in {
-    val stack = List(ScriptNumber.zero, ScriptNumberFactory.zero)
+    val stack = List(ScriptNumber.zero, ScriptNumber.zero)
     val script = List(OP_NUMNOTEQUAL)
     val program = ScriptProgram(TestUtil.testProgram, stack,script)
     val newProgram = opNumNotEqual(program)
@@ -272,7 +272,7 @@ class ArithmeticInterpreterTest extends FlatSpec with MustMatchers with Arithmet
 
 
   it must "evaluate an OP_NUMNOTEQUAL for two numbers that are not the same" in {
-    val stack = List(ScriptNumber.zero, ScriptNumberFactory.one)
+    val stack = List(ScriptNumber.zero, ScriptNumber.one)
     val script = List(OP_NUMNOTEQUAL)
     val program = ScriptProgram(TestUtil.testProgram, stack,script)
     val newProgram = opNumNotEqual(program)
@@ -299,7 +299,7 @@ class ArithmeticInterpreterTest extends FlatSpec with MustMatchers with Arithmet
     newProgram1.stack.head must be (OP_FALSE)
     newProgram1.script.isEmpty must be (true)
 
-    val stack2 = List(ScriptNumber.one, ScriptNumberFactory.zero)
+    val stack2 = List(ScriptNumber.one, ScriptNumber.zero)
     val script2 = List(OP_LESSTHAN)
     val program2 = ScriptProgram(TestUtil.testProgram, stack2,script2)
     val newProgram2 = opLessThan(program2)
@@ -325,7 +325,7 @@ class ArithmeticInterpreterTest extends FlatSpec with MustMatchers with Arithmet
     newProgram1.stack.head must be (OP_FALSE)
     newProgram1.script.isEmpty must be (true)
 
-    val stack2 = List(ScriptNumber.one, ScriptNumberFactory.zero)
+    val stack2 = List(ScriptNumber.one, ScriptNumber.zero)
     val script2 = List(OP_GREATERTHAN)
     val program2 = ScriptProgram(TestUtil.testProgram, stack2,script2)
     val newProgram2 = opGreaterThan(program2)
@@ -336,7 +336,7 @@ class ArithmeticInterpreterTest extends FlatSpec with MustMatchers with Arithmet
 
 
   it must "evaluate an OP_MIN correctly" in {
-    val stack = List(ScriptNumber.zero, ScriptNumberFactory.one)
+    val stack = List(ScriptNumber.zero, ScriptNumber.one)
     val script = List(OP_MIN)
     val program = ScriptProgram(TestUtil.testProgramExecutionInProgress, stack,script)
     val newProgram = opMin(program)
@@ -350,7 +350,7 @@ class ArithmeticInterpreterTest extends FlatSpec with MustMatchers with Arithmet
     val program = ScriptProgram(TestUtil.testProgramExecutionInProgress, stack,script)
     val newProgram = opMax(program)
 
-    newProgram.stack must be (List(ScriptNumberFactory.one))
+    newProgram.stack must be (List(ScriptNumber.one))
   }
 
   it must "evaluate an OP_WITHIN correctly" in {
@@ -362,7 +362,7 @@ class ArithmeticInterpreterTest extends FlatSpec with MustMatchers with Arithmet
     newProgram.script.isEmpty must be (true)
 
 
-    val stack1 = List(ScriptNumberFactory.one, OP_0, ScriptNumberFactory.zero)
+    val stack1 = List(ScriptNumber.one, OP_0, ScriptNumber.zero)
     val script1 = List(OP_WITHIN)
     val program1 = ScriptProgram(ScriptProgram(TestUtil.testProgramExecutionInProgress, stack1,script1), Seq[ScriptFlag]())
     val newProgram1 = opWithin(program1)
@@ -378,7 +378,7 @@ class ArithmeticInterpreterTest extends FlatSpec with MustMatchers with Arithmet
     val script = List(OP_ADD)
     val program = ScriptProgram(TestUtil.testProgram, stack, script)
     val newProgram = opAdd(program)
-    newProgram.stack must be (List(ScriptNumberFactory.zero))
+    newProgram.stack must be (List(ScriptNumber.zero))
     newProgram.script.isEmpty must be (true)
   }
 
