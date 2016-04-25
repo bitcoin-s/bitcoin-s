@@ -1,5 +1,6 @@
 package org.scalacoin.script.splice
 
+import org.scalacoin.script.ScriptOperationFactory
 import org.scalacoin.script.constant.ScriptOperation
 
 /**
@@ -26,4 +27,8 @@ case object OP_RIGHT extends SpliceOperation {
 
 case object OP_SIZE extends SpliceOperation {
   override def opCode = 130
+}
+
+object SpliceOperation extends ScriptOperationFactory[SpliceOperation] {
+  def operations = Seq(OP_CAT, OP_LEFT, OP_RIGHT, OP_SIZE, OP_SUBSTR)
 }

@@ -5,11 +5,11 @@ import org.scalatest.{FlatSpec, MustMatchers}
 /**
  * Created by chris on 1/8/16.
  */
-class BitwiseOperationsFactoryTest extends FlatSpec with MustMatchers with BitwiseOperationsFactory {
+class BitwiseOperationsFactoryTest extends FlatSpec with MustMatchers {
 
   "BitwiseOperationsFactory" must "match strings with bitwise operations" in {
-    fromString("OP_EQUAL") must be (Some(OP_EQUAL))
-    fromString("OP_EQUALVERIFY") must be (Some(OP_EQUALVERIFY))
-    fromString("RANDOM") must be (None)
+    BitwiseOperation.fromString("OP_EQUAL") must be (Some(OP_EQUAL))
+    BitwiseOperation.fromString("OP_EQUALVERIFY") must be (Some(OP_EQUALVERIFY))
+    BitwiseOperation.fromString("RANDOM") must be (None)
   }
 }

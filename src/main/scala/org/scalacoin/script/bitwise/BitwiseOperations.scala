@@ -1,5 +1,6 @@
 package org.scalacoin.script.bitwise
 
+import org.scalacoin.script.ScriptOperationFactory
 import org.scalacoin.script.constant.ScriptOperation
 
 /**
@@ -49,3 +50,6 @@ case object OP_XOR extends BitwiseOperation {
   override def opCode = 134
 }
 
+object BitwiseOperation extends ScriptOperationFactory[BitwiseOperation] {
+  override def operations = Seq(OP_EQUAL, OP_EQUALVERIFY, OP_INVERT, OP_AND, OP_OR, OP_XOR)
+}
