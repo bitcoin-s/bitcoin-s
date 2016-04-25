@@ -15,5 +15,17 @@ case class BytesToPushOntoStackImpl(num : Int) extends BytesToPushOntoStack {
   override def opCode = num
 }
 
+object BytesToPushOntoStack extends ScriptOperationFactory[BytesToPushOntoStack] {
+  /**
+    * Represents that zero bytes need to be pushed onto the stack
+    * this really means we need to push an empty byte vector on the stack
+    */
+  lazy val zero : BytesToPushOntoStack = apply(0).get
 
+  override def operations : Seq[BytesToPushOntoStack] =
+    (for { i <- 0 to 75 } yield BytesToPushOntoStackImpl(i)).toList
 
+  def fromNumber(num : Int) : Option[BytesToPushOntoStack] = operations.find(_.opCode == num)
+
+  def apply(num : Int) : Option[BytesToPushOntoStack] = fromNumber(num)
+}
