@@ -65,5 +65,10 @@ class DERSignatureUtilTest extends FlatSpec with MustMatchers {
     val sig = ECFactory.digitalSignature("0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000")
     DERSignatureUtil.isStrictDEREncoding(sig) must be (false)
   }
+
+  it must "determine if a signature is encoded with a low s value" in {
+    val highS = ECFactory.digitalSignature("304502203e4516da7253cf068effec6b95c41221c0cf3a8e6ccb8cbf1725b562e9afde2c022100ab1e3da73d67e32045a20e0b999e049978ea8d6ee5480d485fcf2ce0d03b2ef001".toLowerCase)
+    DERSignatureUtil.isLowDerSignature(highS) must be (false)
+  }
 }
 

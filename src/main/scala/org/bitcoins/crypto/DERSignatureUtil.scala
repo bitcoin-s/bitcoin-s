@@ -223,6 +223,30 @@ trait DERSignatureUtil extends BitcoinSLogger {
     //if we made it to this point without returning false this must be a valid strictly encoded der sig
     true
   }
+
+
+  /**
+   * Requires the S value in signatures to be the low version of the S value
+   * https://github.com/bitcoin/bips/blob/master/bip-0062.mediawiki#low-s-values-in-signatures
+   * @param signature
+   * @return if the S value is the low version
+   */
+  def isLowDerSignature(signature : ECDigitalSignature) : Boolean = isLowDerSignature(signature.bytes)
+
+  /**
+   * Requires the S value in signatures to be the low version of the S value
+   * https://github.com/bitcoin/bips/blob/master/bip-0062.mediawiki#low-s-values-in-signatures
+   * @param signature
+   * @return if the S value is the low version
+   */
+  def isLowDerSignature(signature : Seq[Byte]) : Boolean = {
+    if (!isDEREncoded(signature)) false
+    else {
+      val (r,s) = decodeSignature(signature)
+      val upperBound = BigInt("7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0",16)
+      s >= 0x1 && s <= upperBound
+    }
+  }
 }
 
 object DERSignatureUtil extends DERSignatureUtil

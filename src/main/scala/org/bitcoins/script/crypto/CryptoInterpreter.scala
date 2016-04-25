@@ -116,6 +116,8 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
           case SignatureValidationFailurePubKeyEncoding =>
             //means that a public key was not encoded correctly
             ScriptProgram(program,ScriptErrorPubKeyType)
+          case ScriptValidationFailureHighSValue =>
+            ScriptProgram(program,ScriptErrorSigHighS)
         }
       }
     }
@@ -205,8 +207,7 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
         if (pubKeys.size > ScriptSettings.maxPublicKeysPerMultiSig) {
           logger.error("We have more public keys than the maximum amount of public keys allowed")
           ScriptProgram(program,ScriptErrorPubKeyCount)
-        }
-        else if (signatures.size > pubKeys.size) {
+        } else if (signatures.size > pubKeys.size) {
           logger.error("We have more signatures than public keys inside OP_CHECKMULTISIG")
           ScriptProgram(program, ScriptErrorSigCount)
         } else {
@@ -236,13 +237,11 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
             case SignatureValidationFailurePubKeyEncoding =>
               //means that a public key was not encoded correctly
               ScriptProgram(program,ScriptErrorPubKeyType)
+            case ScriptValidationFailureHighSValue =>
+              ScriptProgram(program,ScriptErrorSigHighS)
           }
         }
       }
-
-
-
-
     }
   }
 

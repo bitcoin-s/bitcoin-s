@@ -8,6 +8,7 @@ trait ScriptFlagUtil {
   /**
    * Checks if the strict encoding is required in the set of flags
    * given to us
+   * https://github.com/bitcoin/bips/blob/master/bip-0062.mediawiki#DER_encoding
    * @param flags
    * @return
    */
@@ -44,11 +45,20 @@ trait ScriptFlagUtil {
 
   /**
    * Checks to see if the script flag is set to require minimal push operations
-   * see BIP62
+   * https://github.com/bitcoin/bips/blob/master/bip-0062.mediawiki#Push_operators
    * @param flags
    * @return
    */
   def requireMinimalData(flags : Seq[ScriptFlag]) : Boolean = flags.contains(ScriptVerifyMinimalData)
+
+
+  /**
+   * Checks to see if the script flag is set to require low s values in digital signatures
+   * https://github.com/bitcoin/bips/blob/master/bip-0062.mediawiki#low-s-values-in-signatures
+   * @param flags
+   * @return
+   */
+  def requireLowSValue(flags : Seq[ScriptFlag]) : Boolean = flags.contains(ScriptVerifyLowS)
 }
 
 
