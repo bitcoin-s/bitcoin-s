@@ -87,7 +87,7 @@ trait ConstantInterpreter extends BitcoinSLogger {
     logger.debug("new script: " + newScript)
     logger.debug("Bytes to push onto stack" + bytesToPushOntoStack)
     val constant : ScriptToken = if (bytesToPushOntoStack.size == 1) bytesToPushOntoStack.head
-    else ScriptConstantFactory.fromHex(BitcoinSUtil.flipEndianess(bytesToPushOntoStack.flatMap(_.bytes)))
+    else ScriptConstant(BitcoinSUtil.flipEndianess(bytesToPushOntoStack.flatMap(_.bytes)))
 
     logger.debug("Constant to be pushed onto stack: " + constant)
     //check to see if we have the exact amount of bytes needed to be pushed onto the stack

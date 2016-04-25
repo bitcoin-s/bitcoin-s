@@ -1,7 +1,7 @@
 package org.scalacoin.protocol.script
 
 import org.scalacoin.crypto._
-import org.scalacoin.script.constant.{ScriptConstantFactory, ScriptConstant}
+import org.scalacoin.script.constant.{ScriptConstant}
 import org.scalacoin.util.{TestUtil, BitcoinSUtil}
 import org.scalatest.{FlatSpec, MustMatchers}
 

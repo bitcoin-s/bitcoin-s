@@ -1,5 +1,6 @@
 package org.scalacoin.script.locktime
 
+import org.scalacoin.script.ScriptOperationFactory
 import org.scalacoin.script.constant.ScriptOperation
 
 /**
@@ -18,4 +19,8 @@ sealed trait LocktimeOperation extends ScriptOperation
  */
 case object OP_CHECKLOCKTIMEVERIFY extends LocktimeOperation {
   override def opCode = 177
+}
+
+object LocktimeOperation extends ScriptOperationFactory[LocktimeOperation] {
+  override def operations = Seq(OP_CHECKLOCKTIMEVERIFY)
 }
