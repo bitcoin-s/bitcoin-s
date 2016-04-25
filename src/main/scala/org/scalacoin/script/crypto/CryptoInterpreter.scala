@@ -100,13 +100,13 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
         logger.debug("signature verification isValid: " + result)
         result match {
           case SignatureValidationSuccess => ScriptProgram(program,
-            ScriptTrue :: restOfStack,program.script.tail)
+            OP_TRUE :: restOfStack,program.script.tail)
           case SignatureValidationFailureNotStrictDerEncoding =>
             ScriptProgram(program, ScriptErrorSigDer)
           case SignatureValidationFailureIncorrectSignatures =>
-            ScriptProgram(program, ScriptFalse :: restOfStack,program.script.tail)
+            ScriptProgram(program, OP_FALSE :: restOfStack,program.script.tail)
           case SignatureValidationFailureSignatureCount =>
-            ScriptProgram(program, ScriptFalse :: restOfStack,program.script.tail)
+            ScriptProgram(program, OP_FALSE :: restOfStack,program.script.tail)
           case SignatureValidationFailurePubKeyEncoding =>
             //means that a public key was not encoded correctly
             ScriptProgram(program,ScriptErrorPubKeyType)
@@ -211,7 +211,7 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
               //means that all of the signatures were correctly encoded and
               //that all of the signatures were valid signatures for the given
               //public keys
-              ScriptProgram(program, ScriptTrue :: restOfStack, program.script.tail)
+              ScriptProgram(program, OP_TRUE :: restOfStack, program.script.tail)
             case SignatureValidationFailureNotStrictDerEncoding =>
               //this means the script fails immediately
               //set the valid flag to false on the script
@@ -221,7 +221,7 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
             case SignatureValidationFailureIncorrectSignatures =>
               //this means that signature verification failed, however all signatures were encoded correctly
               //just push a ScriptFalse onto the stack
-              ScriptProgram(program, ScriptFalse :: restOfStack, program.script.tail)
+              ScriptProgram(program, OP_FALSE :: restOfStack, program.script.tail)
             case SignatureValidationFailureSignatureCount =>
               //means that we did not have enough signatures for OP_CHECKMULTISIG
               ScriptProgram(program, ScriptErrorSigCount)
