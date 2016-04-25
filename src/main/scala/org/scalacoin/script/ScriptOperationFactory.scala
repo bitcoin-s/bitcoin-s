@@ -2,13 +2,13 @@ package org.scalacoin.script
 
 //import org.scalacoin.script.arithmetic.{ArithmeticOperations}
 import org.scalacoin.script.arithmetic.ArithmeticOperation
-import org.scalacoin.script.bitwise.BitwiseOperationsFactory
+import org.scalacoin.script.bitwise.BitwiseOperation
 import org.scalacoin.script.constant._
-import org.scalacoin.script.control.ControlOperationsFactory
-import org.scalacoin.script.crypto.CryptoOperationFactory
+import org.scalacoin.script.control.ControlOperations
+import org.scalacoin.script.crypto.CryptoOperation
 import org.scalacoin.script.locktime.LocktimeOperation
-import org.scalacoin.script.reserved.ReservedOperationFactory
-import org.scalacoin.script.splice.SpliceOperationsFactory
+import org.scalacoin.script.reserved.ReservedOperation
+import org.scalacoin.script.splice.SpliceOperation
 import org.scalacoin.script.stack.StackOperation
 import org.scalacoin.util.{BitcoinSUtil, BitcoinSLogger}
 import org.slf4j.LoggerFactory
@@ -81,8 +81,8 @@ trait ScriptOperationFactory[T <: ScriptOperation] extends BitcoinSLogger {
 object ScriptOperation extends ScriptOperationFactory[ScriptOperation] {
 
   lazy val operations = ScriptNumberOperation.operations ++ Seq(OP_FALSE,OP_PUSHDATA1, OP_PUSHDATA2,OP_PUSHDATA4,OP_TRUE) ++ StackOperation.operations ++ LocktimeOperation.operations ++
-    CryptoOperationFactory.operations ++ ControlOperationsFactory.operations ++ BitwiseOperationsFactory.operations ++
-    ArithmeticOperation.operations ++  BytesToPushOntoStack.operations ++ SpliceOperationsFactory.operations ++
-    ReservedOperationFactory.operations
+    CryptoOperation.operations ++ ControlOperations.operations ++ BitwiseOperation.operations ++
+    ArithmeticOperation.operations ++  BytesToPushOntoStack.operations ++ SpliceOperation.operations ++
+    ReservedOperation.operations
 
 }
