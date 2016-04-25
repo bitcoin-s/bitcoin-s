@@ -59,5 +59,11 @@ class DERSignatureUtilTest extends FlatSpec with MustMatchers {
     DERSignatureUtil.isStrictDEREncoding(ECFactory.digitalSignature("")) must be (true)
     DERSignatureUtil.isStrictDEREncoding(EmptyDigitalSignature) must be (true)
   }
+
+
+  it must "say that an overly long signature is NOT strict der encoded" in {
+    val sig = ECFactory.digitalSignature("0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000")
+    DERSignatureUtil.isStrictDEREncoding(sig) must be (false)
+  }
 }
 

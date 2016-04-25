@@ -86,7 +86,7 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
       val pubKey = ECFactory.publicKey(program.stack.head.bytes)
       val signature = ECFactory.digitalSignature(program.stack.tail.head.bytes)
 
-      if (program.flags.contains(ScriptVerifyDerSig) && !DERSignatureUtil.isStrictDEREncoding(signature)) {
+      if (ScriptFlagUtil.requiresStrictDerEncoding(program.flags) && !DERSignatureUtil.isStrictDEREncoding(signature)) {
         //this means all of the signatures must encoded according to BIP66 strict dersig
         //https://github.com/bitcoin/bips/blob/master/bip-0066.mediawiki
         //script verification fails since the sig is not strictly der encoded
