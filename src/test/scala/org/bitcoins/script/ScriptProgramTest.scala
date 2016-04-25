@@ -29,7 +29,4 @@ class ScriptProgramTest extends FlatSpec with MustMatchers  {
     val program3 = ScriptProgram(program, List(ScriptNumber.negativeZero), ScriptProgram.Stack)
     program3.stackTopIsTrue must be (false)
   }
-
-
-
 }

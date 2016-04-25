@@ -54,3 +54,11 @@ case object SignatureValidationFailureSignatureCount extends TransactionSignatur
 case object SignatureValidationFailurePubKeyEncoding extends TransactionSignatureCheckerResult {
   def isValid = false
 }
+
+/**
+ * This indicates that the digital signature did not have a Low S value as per BIP62
+ * https://github.com/bitcoin/bips/blob/master/bip-0062.mediawiki#Low_S_values_in_signatures
+ */
+case object ScriptValidationFailureHighSValue extends TransactionSignatureCheckerResult {
+  def isValid = false
+}
