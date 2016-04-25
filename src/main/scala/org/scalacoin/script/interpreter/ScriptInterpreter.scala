@@ -56,7 +56,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
      * @return program the final state of the program after being evaluated by the interpreter
      */
     @tailrec
-    def loop(program : ScriptProgram) : (Boolean,ExecutedScriptProgram) = {
+    def loop(program : ScriptProgram) : ExecutedScriptProgram = {
       logger.debug("Stack: " + program.stack)
       logger.debug("Script: " + program.script)
 
@@ -81,7 +81,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
             //to count towards the scriptPubKey op count
             logger.info("Final op count: " + opCount)
             opCount = 0
-            (!p.error.isDefined, p)
+            p
           case p : ExecutionInProgressScriptProgram =>
             //increment the op count
             if (p.script.headOption.isDefined &&
@@ -266,19 +266,19 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
     }
 
 
-    val (result,executedProgram) = program.txSignatureComponent.scriptSignature match {
+    val executedProgram : ExecutedScriptProgram = program.txSignatureComponent.scriptSignature match {
       //if the P2SH script flag is not set, we evaluate a p2sh scriptSig just like any other scriptSig
       case scriptSig : P2SHScriptSignature if (program.flags.contains(ScriptVerifyP2SH)) =>
         if (!BitcoinScriptUtil.isPushOnly(scriptSig.asm)) {
           val executionInProgress = ScriptProgram.toExecutionInProgress(program)
           logger.error("P2SH script signatures must be push only")
-          (false,ScriptProgram(executionInProgress,ScriptErrorSigPushOnly))
+          ScriptProgram(executionInProgress,ScriptErrorSigPushOnly)
         } else {
           //first run the serialized redeemScript && the p2shScriptPubKey to see if the hashes match
           val hashCheckProgram = ScriptProgram(program, Seq(scriptSig.asm.last), program.txSignatureComponent.scriptPubKey.asm)
-          val (hashesMatch, hashesMatchProgram) = loop(hashCheckProgram)
+          val hashesMatchProgram = loop(hashCheckProgram)
 
-          hashesMatch match {
+          hashesMatchProgram.stackTopIsTrue match {
             case true =>
               logger.info("Hashes matched between the p2shScriptSignature & the p2shScriptPubKey")
               //we need to run the deserialized redeemScript & the scriptSignature without the serialized redeemScript
@@ -289,42 +289,42 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
               loop(p2shRedeemScriptProgram)
             case false =>
               logger.warn("P2SH scriptPubKey hash did not match the hash for the serialized redeemScript")
-              (hashesMatch,hashesMatchProgram)
+              hashesMatchProgram
           }
         }
       case _ : P2PKHScriptSignature | _ : P2PKScriptSignature | _ : MultiSignatureScriptSignature |
            _ : NonStandardScriptSignature | _ : P2SHScriptSignature | EmptyScriptSignature =>
 
         val scriptSigProgram = ScriptProgram(program,Seq(),program.txSignatureComponent.scriptSignature.asm)
-        val (scriptSigProgramIsValid,scriptSigExecutedProgram) = loop(scriptSigProgram)
+        val scriptSigExecutedProgram = loop(scriptSigProgram)
         logger.info("Stack state after scriptSig execution: " + scriptSigExecutedProgram.stack)
         logger.info("scriptSigExecutedProgram: " + scriptSigExecutedProgram.error)
-        logger.info("scriptSigProgramIsValid: " + scriptSigProgramIsValid)
-        if (scriptSigProgramIsValid) {
+        if (!scriptSigExecutedProgram.error.isDefined) {
           logger.debug("We do not check a redeemScript against a non p2sh scriptSig")
           //now run the scriptPubKey script through the interpreter with the scriptSig as the stack arguments
           val scriptPubKeyProgram = ScriptProgram(scriptSigExecutedProgram.txSignatureComponent,
             scriptSigExecutedProgram.stack,scriptSigExecutedProgram.txSignatureComponent.scriptPubKey.asm)
           require(scriptPubKeyProgram.script == scriptSigExecutedProgram.txSignatureComponent.scriptPubKey.asm)
-          val (scriptPubKeyProgramIsValid, scriptPubKeyExecutedProgram) = loop(scriptPubKeyProgram)
+          val scriptPubKeyExecutedProgram : ExecutedScriptProgram = loop(scriptPubKeyProgram)
 
           logger.info("Stack state after scriptPubKey execution: " + scriptPubKeyExecutedProgram.stack)
 
           //if the program is valid, return if the stack top is true
           //else the program is false since something illegal happened during script evaluation
-          scriptPubKeyProgramIsValid match {
-            case true =>  (scriptPubKeyExecutedProgram.stackTopIsTrue,scriptPubKeyExecutedProgram)
-            case false => (false, scriptPubKeyExecutedProgram)
+          scriptPubKeyExecutedProgram.error.isDefined match {
+            case true =>  scriptPubKeyExecutedProgram
+            case false => scriptPubKeyExecutedProgram
           }
 
-        } else (scriptSigProgramIsValid,scriptSigExecutedProgram)
+        } else scriptSigExecutedProgram
 
     }
 
-    if (result && executedProgram.flags.contains(ScriptVerifyCleanStack)) {
+    if (executedProgram.error.isDefined) false
+    else if (executedProgram.stackTopIsTrue && executedProgram.flags.contains(ScriptVerifyCleanStack)) {
       //require that the stack after execution has exactly one element on it
-      result && executedProgram.stack.size == 1
-    } else result
+      executedProgram.stack.size == 1
+    } else executedProgram.stackTopIsTrue
 
   }
 

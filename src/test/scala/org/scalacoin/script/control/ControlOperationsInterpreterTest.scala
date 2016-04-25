@@ -16,7 +16,7 @@ import org.scalatest.{MustMatchers, FlatSpec}
 class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers with ControlOperationsInterpreter {
 
   "ControlOperationsInterpreter" must "have OP_VERIFY evaluate to true with '1' on the stack" in {
-    val stack = List(ScriptTrue)
+    val stack = List(OP_TRUE)
     val script = List(OP_VERIFY)
     val program = ScriptProgram(TestUtil.testProgram, stack,script)
     val result = opVerify(program)
@@ -34,7 +34,7 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers with C
   }
 
   it must "have OP_VERIFY evaluate to false with '0' on the stack" in {
-    val stack = List(ScriptFalse)
+    val stack = List(OP_FALSE)
     val script = List(OP_VERIFY)
     val program = ScriptProgram(TestUtil.testProgramExecutionInProgress, stack,script)
     val result = opVerify(program)

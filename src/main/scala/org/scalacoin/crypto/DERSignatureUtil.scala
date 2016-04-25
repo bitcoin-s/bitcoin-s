@@ -24,7 +24,9 @@ trait DERSignatureUtil extends BitcoinSLogger {
    */
   def isDEREncoded(bytes : Seq[Byte]) : Boolean = {
     //signature is trivially valid if the signature is empty
-    if (!bytes.isEmpty) {
+
+    if (!bytes.isEmpty && bytes.size < 9) false
+    else if (!bytes.isEmpty) {
       //first byte must be 0x30
       val firstByteIs0x30 = bytes.head == 0x30
       logger.debug("firstByteIs0x30: " + firstByteIs0x30)
