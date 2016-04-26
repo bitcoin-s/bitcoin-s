@@ -123,12 +123,7 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
         }
       }
     }
-
-
   }
-
-
-
 
   /**
    * All of the signature checking words will only match signatures to the data
@@ -146,9 +141,12 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
     val indexOfOpCodeSeparator = fullScript.indexOf(OP_CODESEPARATOR)
     require(indexOfOpCodeSeparator != -1,"The script we searched MUST contain an OP_CODESEPARTOR. Script: " + fullScript)
     val e = program match {
-      case e : ExecutionInProgressScriptProgram => e
+      case e : PreExecutionScriptProgram => ScriptProgram.toExecutionInProgress(e)
+      case e : ExecutionInProgressScriptProgram => ScriptProgram(e,program.script.tail,ScriptProgram.Script,indexOfOpCodeSeparator)
+      case e : ExecutedScriptProgram => ScriptProgram(e,ScriptErrorUnknownError)
     }
-    ScriptProgram(e,program.script.tail,ScriptProgram.Script,indexOfOpCodeSeparator)
+    e
+
   }
 
 
@@ -204,7 +202,6 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
         //+1 is for bug in OP_CHECKMULTSIG that requires an extra OP to be pushed onto the stack
         val stackWithoutPubKeysAndSignatures = stackWithoutPubKeys.tail.slice(mRequiredSignatures.num.toInt+1, stackWithoutPubKeys.tail.size)
         val restOfStack = stackWithoutPubKeysAndSignatures
-
 
         if (pubKeys.size > ScriptSettings.maxPublicKeysPerMultiSig) {
           logger.error("We have more public keys than the maximum amount of public keys allowed")
