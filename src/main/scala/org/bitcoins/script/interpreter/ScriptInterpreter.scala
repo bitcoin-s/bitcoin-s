@@ -268,6 +268,11 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
 
 
     val executedProgram : ExecutedScriptProgram = program.txSignatureComponent.scriptSignature match {
+      case scriptSig : ScriptSignature if (ScriptFlagUtil.requirePushOnly(program.flags) &&
+        !BitcoinScriptUtil.isPushOnly(scriptSig.asm)) =>
+        logger.error("We can only have push operations inside of the script sig when the SIGPUSHONLY flag is set")
+        val programBeingExecuted = ScriptProgram.toExecutionInProgress(program)
+        ScriptProgram(programBeingExecuted,ScriptErrorSigPushOnly)
       //if the P2SH script flag is not set, we evaluate a p2sh scriptSig just like any other scriptSig
       case scriptSig : P2SHScriptSignature if (program.flags.contains(ScriptVerifyP2SH)) =>
         if (!BitcoinScriptUtil.isPushOnly(scriptSig.asm)) {
@@ -287,7 +292,10 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
               logger.debug("P2sh stack: " + stack)
               logger.debug("P2sh redeemScript: " + scriptSig.redeemScript.asm)
               val p2shRedeemScriptProgram = ScriptProgram(hashesMatchProgram.txSignatureComponent,stack, scriptSig.redeemScript.asm)
-              loop(p2shRedeemScriptProgram)
+              if (ScriptFlagUtil.requirePushOnly(p2shRedeemScriptProgram.flags) && !BitcoinScriptUtil.isPushOnly(scriptSig.redeemScript.asm)) {
+                logger.error("p2sh redeem script must be push only operations whe SIGPUSHONLY flag is set")
+                ScriptProgram(p2shRedeemScriptProgram,ScriptErrorSigPushOnly)
+              } else loop(p2shRedeemScriptProgram)
             case false =>
               logger.warn("P2SH scriptPubKey hash did not match the hash for the serialized redeemScript")
               hashesMatchProgram
