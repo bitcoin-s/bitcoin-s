@@ -30,13 +30,13 @@ object TestUtil {
     "3044022016ffdbb7c57634903c5e018fcfc48d59f4e37dc4bc3bbc9ba4e6ee39150bca030220119c2241a931819bc1a75d3596e4029d803d1cd6de123bf8a1a1a2c3665e1fac01" +
       " 02af7dad03e682fcd0427b5c24140c220ac9d8abe286c15f8cf5bf77eed19c3652"
   val p2pkhInputScriptAsm : List[ScriptToken] = List(BytesToPushOntoStackImpl(71),
-    ScriptConstantImpl("3044022016ffdbb7c57634903c5e018fcfc48d59f4e37dc4bc3bbc9ba4e6ee39150bca030220119c2241a931819bc1a75d3596e4029d803d1cd6de123bf8a1a1a2c3665e1fac01"),
+    ScriptConstant("3044022016ffdbb7c57634903c5e018fcfc48d59f4e37dc4bc3bbc9ba4e6ee39150bca030220119c2241a931819bc1a75d3596e4029d803d1cd6de123bf8a1a1a2c3665e1fac01"),
     BytesToPushOntoStackImpl(33),
-    ScriptConstantImpl("02af7dad03e682fcd0427b5c24140c220ac9d8abe286c15f8cf5bf77eed19c3652"))
+    ScriptConstant("02af7dad03e682fcd0427b5c24140c220ac9d8abe286c15f8cf5bf77eed19c3652"))
 
   val p2pkhOutputScript = "76a914e2e7c1ab3f807151e832dd1accb3d4f5d7d19b4b88ac"
   val p2pkhOutputScriptNotParsedAsm = "OP_DUP OP_HASH160 e2e7c1ab3f807151e832dd1accb3d4f5d7d19b4b OP_EQUALVERIFY OP_CHECKSIG"
-  val p2pkhOutputScriptAsm = List(OP_DUP,OP_HASH160,BytesToPushOntoStackImpl(20), ScriptConstantImpl("e2e7c1ab3f807151e832dd1accb3d4f5d7d19b4b"),OP_EQUALVERIFY, OP_CHECKSIG)
+  val p2pkhOutputScriptAsm = List(OP_DUP,OP_HASH160,BytesToPushOntoStackImpl(20), ScriptConstant("e2e7c1ab3f807151e832dd1accb3d4f5d7d19b4b"),OP_EQUALVERIFY, OP_CHECKSIG)
 
 
   //tx id for p2sh inputs/outputs cad1082e674a7bd3bc9ab1bc7804ba8a57523607c876b8eb2cbe645f2b1803d6
@@ -48,15 +48,15 @@ object TestUtil {
   val p2shInputScriptAsm = List(
     OP_0,
     BytesToPushOntoStackImpl(71),
-    ScriptConstantImpl("304402207df6dd8dad22d49c3c83d8031733c32a53719278eb7985d3b35b375d776f84f102207054f9209a1e87d55feafc90aa04c33008e5bae9191da22aeaa16efde96f41f001"),
+    ScriptConstant("304402207df6dd8dad22d49c3c83d8031733c32a53719278eb7985d3b35b375d776f84f102207054f9209a1e87d55feafc90aa04c33008e5bae9191da22aeaa16efde96f41f001"),
     BytesToPushOntoStackImpl(37),
-    ScriptConstantImpl("512102b022902a0fdd71e831c37e4136c2754a59887be0618fb75336d7ab67e2982ff551ae")
+    ScriptConstant("512102b022902a0fdd71e831c37e4136c2754a59887be0618fb75336d7ab67e2982ff551ae")
   )
 
 
   val p2shOutputScript = "a914eda8ae08b5c9f973f49543e90a7c292367b3337c87"
   val p2shOutputScriptNotParsedAsm = "OP_HASH160 eda8ae08b5c9f973f49543e90a7c292367b3337c OP_EQUAL"
-  val p2shOutputScriptAsm = List(OP_HASH160,  BytesToPushOntoStackImpl(20), ScriptConstantImpl("eda8ae08b5c9f973f49543e90a7c292367b3337c"), OP_EQUAL)
+  val p2shOutputScriptAsm = List(OP_HASH160,  BytesToPushOntoStackImpl(20), ScriptConstant("eda8ae08b5c9f973f49543e90a7c292367b3337c"), OP_EQUAL)
 
   //https://btc.blockr.io/api/v1/tx/raw/791fe035d312dcf9196b48649a5c9a027198f623c0a5f5bd4cc311b8864dd0cf
   val rawP2shInputScriptSigHashSingle = "00483045022100dfcfafcea73d83e1c54d444a19fb30d17317f922c19e2ff92dcda65ad09cba24022001e7a805c5672c49b222c5f2f1e67bb01f87215fb69df184e7c16f66c1f87c290347304402204a657ab8358a2edb8fd5ed8a45f846989a43655d2e8f80566b385b8f5a70dab402207362f870ce40f942437d43b6b99343419b14fb18fa69bee801d696a39b3410b8034c695221023927b5cd7facefa7b85d02f73d1e1632b3aaf8dd15d4f9f359e37e39f05611962103d2c0e82979b8aba4591fe39cffbf255b3b9c67b3d24f94de79c5013420c67b802103ec010970aae2e3d75eef0b44eaa31d7a0d13392513cd0614ff1c136b3b1020df53ae"
@@ -71,13 +71,13 @@ object TestUtil {
   def p2shInputScript2Of2 = ScriptSignature(rawP2shInputScript2Of2)
   def p2sh2Of2Tx = Transaction(rawP2SH2Of2Tx)
   def p2shInputScript2Of2Asm = Seq(OP_0, BytesToPushOntoStackImpl(71),
-    ScriptConstantImpl("304402207d764cb90c9fd84b74d33a47cf3a0ffead9ded98333776becd6acd32c4426dac02203905a0d064e7f53d07793e86136571b6e4f700c1cfb888174e84d78638335b8101"),
+    ScriptConstant("304402207d764cb90c9fd84b74d33a47cf3a0ffead9ded98333776becd6acd32c4426dac02203905a0d064e7f53d07793e86136571b6e4f700c1cfb888174e84d78638335b8101"),
     BytesToPushOntoStackImpl(72),
-    ScriptConstantImpl("3045022100906aaca39f022acd8b7a38fd2f92aca9e9f35cfeaee69a6f13e1d083ae18222602204c9ed96fc6c4de56fd85c679fc59c16ee1ccc80c42563b86174e1a506fc007c801"),
+    ScriptConstant("3045022100906aaca39f022acd8b7a38fd2f92aca9e9f35cfeaee69a6f13e1d083ae18222602204c9ed96fc6c4de56fd85c679fc59c16ee1ccc80c42563b86174e1a506fc007c801"),
     BytesToPushOntoStackImpl(71), OP_2, BytesToPushOntoStackImpl(33),
-    ScriptConstantImpl("0369d26ebd086523384a0f89f293d4c327a65fa73332d8efd1097cb35231295b83"),
+    ScriptConstant("0369d26ebd086523384a0f89f293d4c327a65fa73332d8efd1097cb35231295b83"),
     BytesToPushOntoStackImpl(33),
-    ScriptConstantImpl("02480863e5c4a4e9763f5380c44fcfe6a3b7787397076cf9ea1049303a9d34f721"), OP_2, OP_CHECKMULTISIG)
+    ScriptConstant("02480863e5c4a4e9763f5380c44fcfe6a3b7787397076cf9ea1049303a9d34f721"), OP_2, OP_CHECKMULTISIG)
   //https://tbtc.blockr.io/api/v1/tx/raw/8f516300d4525f4a784a8c415d7b89768a9ddbe2cd0737a829c45930ce8e9bd6
   def rawP2SH2Of2CreditingTx = "0100000001fef43d6ed62f34bd1502ae0569c0c125cb484d183f887a2857ec112e548b5ba8000000006a473044022010a8b76add9224782f2ac741e32b0467c523d27632b594ae679da991975b882d022019138d13753bc7713a72c8a32f9cec8fee8c9475d6b2e386dc31e70936099c93012103f62a2ce04da197ba3efa3bcd9ae0a4021227d75f854c22bdf49c65107c3e1e7fffffffff01c80bcb000000000017a9148bee4cf71fbefe568b173dc69ec951ea3f7a05278700000000"
   def p2sh2Of2CreditingTx = Transaction(rawP2SH2Of2CreditingTx)
@@ -166,9 +166,9 @@ object TestUtil {
   def scriptSigNotStrictDerEncoded = ScriptSignature(rawScriptSigNotStrictDerEncoded)
 
   val p2pkhScriptSigNotStrictDerEncoded  = ScriptSignature.fromAsm(List(BytesToPushOntoStackImpl(71),
-    ScriptConstantImpl("173014020002107777777777777777777777777777777701"),
+    ScriptConstant("173014020002107777777777777777777777777777777701"),
     BytesToPushOntoStackImpl(33),
-    ScriptConstantImpl("02af7dad03e682fcd0427b5c24140c220ac9d8abe286c15f8cf5bf77eed19c3652")))
+    ScriptConstant("02af7dad03e682fcd0427b5c24140c220ac9d8abe286c15f8cf5bf77eed19c3652")))
 
 
 

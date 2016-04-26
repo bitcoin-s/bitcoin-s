@@ -35,7 +35,7 @@ class SpliceInterpreterTest extends FlatSpec with MustMatchers with SpliceInterp
     val script = List(OP_SIZE)
     val program = ScriptProgram(TestUtil.testProgram, stack,script)
     val newProgram = opSize(program)
-    newProgram.stack must be (List(ScriptNumberImpl(1),ScriptConstantImpl("7f")))
+    newProgram.stack must be (List(ScriptNumber(1),ScriptConstant("7f")))
     newProgram.script.isEmpty must be (true)
   }
 

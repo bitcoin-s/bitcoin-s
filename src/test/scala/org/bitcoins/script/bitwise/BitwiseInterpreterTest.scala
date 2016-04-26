@@ -10,7 +10,7 @@ import org.scalatest.{MustMatchers, FlatSpec}
  * Created by chris on 1/6/16.
  */
 class BitwiseInterpreterTest extends FlatSpec with MustMatchers with BitwiseInterpreter {
-  private val pubKeyHash = ScriptConstantImpl("5238C71458E464D9FF90299ABCA4A1D7B9CB76AB".toLowerCase)
+  private val pubKeyHash = ScriptConstant("5238C71458E464D9FF90299ABCA4A1D7B9CB76AB".toLowerCase)
 
   "BitwiseInterpreter" must "evaluate OP_EQUAL" in {
     val stack = List(pubKeyHash, pubKeyHash)
@@ -52,7 +52,7 @@ class BitwiseInterpreterTest extends FlatSpec with MustMatchers with BitwiseInte
   }
 
   it must "evaluate OP_EQUALVERIFY to false given two different pub keys" in {
-    val uniquePubKey = ScriptConstantImpl(pubKeyHash.hex +"00")
+    val uniquePubKey = ScriptConstant(pubKeyHash.hex +"00")
     val stack = List(pubKeyHash,uniquePubKey)
     val script = List(OP_EQUALVERIFY)
     val program = ScriptProgram(TestUtil.testProgramExecutionInProgress, stack,script)
@@ -62,12 +62,12 @@ class BitwiseInterpreterTest extends FlatSpec with MustMatchers with BitwiseInte
 
 
   it must "evaluate a ScriptNumber & ScriptConstant to true if they are the same" in {
-    val stack = List(ScriptNumber(2), ScriptConstantImpl("02"))
+    val stack = List(ScriptNumber(2), ScriptConstant("02"))
     val script = List(OP_EQUAL)
     val program = ScriptProgram(TestUtil.testProgram, stack,script)
     opEqual(program).stack.head must be (OP_TRUE)
 
-    val stack1 = List( ScriptConstantImpl("02"),ScriptNumber(2))
+    val stack1 = List( ScriptConstant("02"),ScriptNumber(2))
     val script1 = List(OP_EQUAL)
     val program1 = ScriptProgram(TestUtil.testProgram, stack1,script1)
     opEqual(program1).stack.head must be (OP_TRUE)

@@ -28,18 +28,7 @@ object CoreTestCaseProtocol extends DefaultJsonProtocol with BitcoinSLogger {
         //means that the line is probably a separator between different types of test cases i.e.
         //["Equivalency of different numeric encodings"]
         None
-      } /*else if (elements.size == 3) {
-
-        val scriptPubKeyAsm = parseScriptPubKeyAsm(elements(1))
-        val scriptPubKey = ScriptPubKey.fromAsm(scriptPubKeyAsm)
-        val scriptPubKeyCoreTestCase = ScriptPubKeyCoreTestCaseImpl(scriptPubKeyAsm, scriptPubKey)
-        val scriptSignatureAsm : Seq[ScriptToken] = parseScriptSignatureAsm(elements.head)
-        val scriptSignature : ScriptSignature = ScriptSignature(scriptSignatureAsm,scriptPubKey)
-        val scriptSignatureCoreTestCase = ScriptSignatureCoreTestCaseImpl(scriptSignatureAsm,scriptSignature)
-
-        val flags = elements(2).convertTo[String]
-        Some(CoreTestCaseImpl(scriptSignatureCoreTestCase,scriptPubKeyCoreTestCase,flags,"No comments from bitcoin core ",elements.toString))
-      }*/ else if (elements.size == 5) {
+      } else if (elements.size == 5) {
         val scriptPubKeyAsm : Seq[ScriptToken] = parseScriptPubKeyAsm(elements(1))
         val scriptPubKey = ScriptPubKey.fromAsm(scriptPubKeyAsm)
         val scriptPubKeyCoreTestCase = ScriptPubKeyCoreTestCaseImpl(scriptPubKeyAsm, scriptPubKey)
@@ -53,7 +42,6 @@ object CoreTestCaseProtocol extends DefaultJsonProtocol with BitcoinSLogger {
         Some(CoreTestCaseImpl(scriptSignatureCoreTestCase,scriptPubKeyCoreTestCase,flags,
           expectedResult,comments, elements.toString))
       } else None
-
     }
 
 

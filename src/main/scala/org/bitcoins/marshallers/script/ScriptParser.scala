@@ -251,7 +251,7 @@ trait ScriptParser extends Factory[List[ScriptToken]] with BitcoinSLogger {
         //logger.debug("Parsing operation byte: " +bytesToPushOntoStack )
         //means that we need to push x amount of bytes on to the stack
         val (constant,newTail) = sliceConstant(bytesToPushOntoStack,tail)
-        val scriptConstant = new ScriptConstantImpl(constant)
+        val scriptConstant = ScriptConstant(constant)
         ParsingHelper(newTail,scriptConstant :: bytesToPushOntoStack ::  accum)
       case OP_PUSHDATA1 => parseOpPushData(op,accum,tail)
       case OP_PUSHDATA2 => parseOpPushData(op,accum,tail)
@@ -321,36 +321,7 @@ trait ScriptParser extends Factory[List[ScriptToken]] with BitcoinSLogger {
       scriptConstant :: bytesToPushOntoStack :: op :: accum)
   }
 
-  /**
-   * Parses an operation if the tail is a List[String]
-   * If the operation is a bytesToPushOntoStack, it pushes the number of bytes onto the stack
-   * specified by the bytesToPushOntoStack
-   * i.e. If the operation was BytesToPushOntoStackImpl(5), it would slice 5 bytes off of the tail and
-   * places them into a ScriptConstant and add them to the accumulator.
- *
-   * @param op
-   * @param accum
-   * @param tail
-   * @return
-   */
-  private def parseOperationString(op : ScriptOperation, accum : List[ScriptToken], tail : List[String]) : ParsingHelper[String] = {
-    op match {
-      case bytesToPushOntoStack : BytesToPushOntoStack =>
-        //means that we need to push x amount of bytes on to the stack
-        val (constant,newTail) = sliceConstant[String](bytesToPushOntoStack,tail)
-        val scriptConstant = ScriptConstantImpl(constant.mkString)
-        ParsingHelper(newTail,scriptConstant :: bytesToPushOntoStack ::  accum)
-
-      case _ =>
-        //means that we need to push the operation onto the stack
-        ParsingHelper(tail,op :: accum)
-    }
-  }
-
-
-  /**
-   * Checks if a string can be cast to an int
- *
+  /** Checks if a string can be cast to an int
    * @param str
    * @return
    */

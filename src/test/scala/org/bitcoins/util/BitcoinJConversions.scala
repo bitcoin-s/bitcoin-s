@@ -10,7 +10,7 @@ import org.bitcoins.crypto.ECPublicKey
 import org.bitcoins.protocol.script.{UpdateScriptPubKeyAsm, ScriptPubKey}
 import org.bitcoins.protocol.transaction.{TransactionOutput, Transaction}
 import org.bitcoins.script.ScriptOperationFactory
-import org.bitcoins.script.constant.{ScriptConstantImpl, ScriptToken}
+import org.bitcoins.script.constant.{ ScriptToken}
 import org.slf4j.LoggerFactory
 import scala.collection.JavaConversions._
 /**

@@ -53,7 +53,7 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers with C
 
   it must "fail for verify when there is nothing on the script stack" in {
     intercept[IllegalArgumentException]  {
-      val stack = List(ScriptConstantImpl("1"))
+      val stack = List(ScriptConstant("1"))
       val script = List()
       val program = ScriptProgram(TestUtil.testProgram, stack,script)
       val result = opVerify(program)
@@ -337,7 +337,7 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers with C
   }
 
   it must "evaluate a weird case using multiple OP_ELSEs" in {
-    val stack = List(ScriptNumberImpl(1))
+    val stack = List(ScriptNumber(1))
     val script = List(OP_IF, OP_ELSE, OP_0, OP_ELSE, OP_1, OP_ENDIF)
     val program = ScriptProgram(TestUtil.testProgram, stack,script)
     val newProgram = opIf(program)
@@ -390,7 +390,7 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers with C
 
 
   it must "remove the first OP_ELSE if the stack top is true for an OP_IF" in  {
-    val stack = List(ScriptNumberImpl(1))
+    val stack = List(ScriptNumber(1))
     val script = List(OP_IF, OP_1, OP_ELSE, OP_RETURN, OP_ELSE, OP_1, OP_ENDIF, OP_ELSE, OP_RETURN, OP_ENDIF,
       OP_ADD, OP_2, OP_EQUAL)
 
@@ -402,7 +402,7 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers with C
   }
 
   it must "evaluate an OP_ENDIF correctly" in {
-    val stack = List(ScriptNumberImpl(1), ScriptNumberImpl(1))
+    val stack = List(ScriptNumber(1), ScriptNumber(1))
     val script = List(OP_ENDIF, OP_ELSE, OP_RETURN, OP_ENDIF, OP_ADD, OP_2, OP_EQUAL)
     val program = ScriptProgram(TestUtil.testProgram, stack,script)
     val newProgram = opEndIf(program)
@@ -428,7 +428,7 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers with C
   }
 
   it must "mechanically evaluate this entire script correctly" in {
-    val stack = List(ScriptNumberImpl(1))
+    val stack = List(ScriptNumber(1))
     val script = List(OP_NOTIF, OP_0,
       OP_NOTIF, OP_RETURN, OP_ELSE, OP_RETURN, OP_ELSE, OP_RETURN, OP_ENDIF,
       OP_ELSE, OP_0, OP_NOTIF, OP_1, OP_ELSE, OP_RETURN, OP_ELSE, OP_1, OP_ENDIF, OP_ELSE, OP_RETURN, OP_ENDIF,
