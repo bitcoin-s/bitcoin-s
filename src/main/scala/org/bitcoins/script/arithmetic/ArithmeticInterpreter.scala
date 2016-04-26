@@ -458,8 +458,10 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
       logger.error("We need two stack elements for a binary boolean operation")
       ScriptProgram(program,ScriptErrorInvalidStackOperation)
     } else {
+
       val (x,y) = parseTopTwoStackElementsAsScriptNumbers(program)
-      if (ScriptFlagUtil.requireMinimalData(program.flags) && (!BitcoinScriptUtil.isShortestEncoding(x) || !BitcoinScriptUtil.isShortestEncoding(y))) {
+      if (ScriptFlagUtil.requireMinimalData(program.flags) &&
+        (!BitcoinScriptUtil.isShortestEncoding(x) || !BitcoinScriptUtil.isShortestEncoding(y))) {
         logger.error("The constant you gave us is not encoded in the shortest way possible")
         ScriptProgram(program, ScriptErrorMinimalData)
       } else if (isLargerThan4Bytes(x) || isLargerThan4Bytes(y)) {

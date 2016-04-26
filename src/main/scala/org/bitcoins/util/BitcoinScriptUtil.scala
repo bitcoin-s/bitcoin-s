@@ -187,22 +187,38 @@ trait BitcoinScriptUtil {
    * @param constant
    * @return
    */
-  def isShortestEncoding(constant : ScriptConstant) : Boolean = {
+  def isShortestEncoding(constant : ScriptConstant) : Boolean = isShortestEncoding(constant.bytes)
+  /**
+   * Whenever a script constant is interpreted to a number BIP62 could enforce that number to be encoded
+   * in the smallest encoding possible
+   * https://github.com/bitcoin/bitcoin/blob/a6a860796a44a2805a58391a009ba22752f64e32/src/script/script.h#L220-L237
+   * @param bytes
+   * @return
+   */
+  def isShortestEncoding(bytes : Seq[Byte]) : Boolean = {
     // If the most-significant-byte - excluding the sign bit - is zero
     // then we're not minimal. Note how this test also rejects the
     // negative-zero encoding, 0x80.
-    if ((constant.bytes.size > 0 && (constant.bytes.last & 0x7f) == 0)) {
+    if ((bytes.size > 0 && (bytes.last & 0x7f) == 0)) {
       // One exception: if there's more than one byte and the most
       // significant bit of the second-most-significant-byte is set
       // it would conflict with the sign bit. An example of this case
       // is +-255, which encode to 0xff00 and 0xff80 respectively.
       // (big-endian).
-      if (constant.bytes.size <= 1 || (constant.bytes(constant.bytes.size - 2) & 0x80) == 0) {
+      if (bytes.size <= 1 || (bytes(bytes.size - 2) & 0x80) == 0) {
         false
       } else true
-     } else true
+    } else true
   }
 
+  /**
+   * Whenever a script constant is interpreted to a number BIP62 could enforce that number to be encoded
+   * in the smallest encoding possible
+   * https://github.com/bitcoin/bitcoin/blob/a6a860796a44a2805a58391a009ba22752f64e32/src/script/script.h#L220-L237
+   * @param hex
+   * @return
+   */
+  def isShortestEncoding(hex : String) : Boolean = isShortestEncoding(BitcoinSUtil.decodeHex(hex))
   /**
    * Checks the public key encoding according to bitcoin core's function
    * https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L202
