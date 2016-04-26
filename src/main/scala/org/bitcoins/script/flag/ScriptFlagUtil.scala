@@ -59,6 +59,14 @@ trait ScriptFlagUtil {
    * @return
    */
   def requireLowSValue(flags : Seq[ScriptFlag]) : Boolean = flags.contains(ScriptVerifyLowS)
+
+
+  /**
+   * Checks to see if the script flag is set to require we only have push operations inside of a scriptSig
+   * @param flags
+   * @return
+   */
+  def requirePushOnly(flags : Seq[ScriptFlag]) : Boolean = flags.contains(ScriptVerifySigPushOnly)
 }
 
 
