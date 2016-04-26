@@ -1,7 +1,7 @@
 package org.scalacoin.marshallers.rpc.bitcoincore.blockchain
 
 import org.scalacoin.marshallers.rpc.bitcoincore.blockchain.ConfirmedUnspentTransactionOutputMarshaller.ConfirmedUnspentTransactionOutputFormatter
-import org.scalacoin.protocol.rpc.bitcoincore.blockchain.ConfirmedUnspentTransactionOutput
+import org.scalacoin.rpc.bitcoincore.blockchain.ConfirmedUnspentTransactionOutput
 import org.scalatest.{FlatSpec, MustMatchers}
 import spray.json._
 

@@ -1,6 +1,6 @@
 package org.scalacoin.marshallers.rpc.bitcoincore.blockchain
 
-import org.scalacoin.protocol.rpc.bitcoincore.blockchain.{ConfirmedUnspentTransactionOutput, ConfirmedUnspentTransactionOutputImpl}
+import org.scalacoin.rpc.bitcoincore.blockchain.{ConfirmedUnspentTransactionOutput, ConfirmedUnspentTransactionOutputImpl}
 import spray.json._
 
 /**

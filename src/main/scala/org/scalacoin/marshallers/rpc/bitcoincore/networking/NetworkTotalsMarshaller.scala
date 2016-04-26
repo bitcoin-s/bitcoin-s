@@ -1,6 +1,6 @@
 package org.scalacoin.marshallers.rpc.bitcoincore.networking
 
-import org.scalacoin.protocol.rpc.bitcoincore.networking.{NetworkTotals, NetworkTotalsImpl}
+import org.scalacoin.rpc.bitcoincore.networking.{NetworkTotals, NetworkTotalsImpl}
 import scala.math.BigInt
 import spray.json._
 

@@ -1,6 +1,6 @@
-package org.scalacoin.protocol.rpc.bitcoincore.blockchain
+package org.scalacoin.rpc.bitcoincore.blockchain
 
-import org.scalacoin.protocol.rpc.bitcoincore.blockchain.softforks.SoftForks
+import org.scalacoin.rpc.bitcoincore.blockchain.softforks.SoftForks
 
 /**
  * Created by Tom on 1/11/2016.
@@ -13,10 +13,9 @@ trait BlockchainInfo {
   def difficulty : Double
   def verificationProgress : Double
   def chainWork : String
-  def pruned : Boolean
-  def softForks : Seq[SoftForks]
+  //def softForks : Seq[SoftForks]
 }
 
 case class BlockChainInfoImpl(chain : String, blockCount: Int, headerCount: Int, bestBlockHash: String, difficulty: Double,
-         verificationProgress : Double, chainWork : String, pruned : Boolean, softForks : Seq[SoftForks]) extends BlockchainInfo
+         verificationProgress : Double, chainWork : String /*,softForks : Seq[SoftForks]*/) extends BlockchainInfo
 

@@ -1,6 +1,6 @@
 package org.scalacoin.marshallers.rpc.bitcoincore.wallet
 
-import org.scalacoin.protocol.rpc.bitcoincore.wallet.WalletInfo
+import org.scalacoin.rpc.bitcoincore.wallet.WalletInfo
 import org.scalatest.{FlatSpec, MustMatchers}
 import spray.json._
 

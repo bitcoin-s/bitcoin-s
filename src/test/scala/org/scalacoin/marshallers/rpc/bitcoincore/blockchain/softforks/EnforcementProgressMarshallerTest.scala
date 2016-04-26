@@ -1,6 +1,6 @@
 package org.scalacoin.marshallers.rpc.bitcoincore.blockchain.softforks
 
-import org.scalacoin.protocol.rpc.bitcoincore.blockchain.softforks.EnforcementProgress
+import org.scalacoin.rpc.bitcoincore.blockchain.softforks.EnforcementProgress
 import org.scalatest.{FlatSpec, MustMatchers}
 import spray.json._
 

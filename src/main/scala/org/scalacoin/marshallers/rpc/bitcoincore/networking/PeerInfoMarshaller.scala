@@ -1,7 +1,7 @@
 package org.scalacoin.marshallers.rpc.bitcoincore.networking
 
 import org.scalacoin.marshallers.MarshallerUtil
-import org.scalacoin.protocol.rpc.bitcoincore.networking.{PeerInfo, PeerInfoImpl}
+import org.scalacoin.rpc.bitcoincore.networking.{PeerInfo, PeerInfoImpl}
 import spray.json._
 
 /**

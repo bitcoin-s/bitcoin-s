@@ -1,4 +1,4 @@
-package org.scalacoin.protocol.rpc
+package org.scalacoin.rpc
 
 import org.scalacoin.marshallers.MarshallerUtil
 import org.scalacoin.marshallers.rpc.bitcoincore.blockchain.{BlockchainInfoMarshaller, ConfirmedUnspentTransactionOutputMarshaller, MemPoolInfoMarshaller}
@@ -6,10 +6,10 @@ import org.scalacoin.marshallers.rpc.bitcoincore.mining.MiningInfoMarshaller
 import org.scalacoin.marshallers.rpc.bitcoincore.networking.NetworkMarshaller
 import org.scalacoin.marshallers.rpc.bitcoincore.wallet.WalletMarshaller
 import org.scalacoin.protocol.Address
-import org.scalacoin.protocol.rpc.bitcoincore.blockchain.{BlockchainInfo, ConfirmedUnspentTransactionOutput, MemPoolInfo}
-import org.scalacoin.protocol.rpc.bitcoincore.mining.GetMiningInfo
-import org.scalacoin.protocol.rpc.bitcoincore.networking.{NetworkInfo, PeerInfo}
-import org.scalacoin.protocol.rpc.bitcoincore.wallet.WalletInfo
+import org.scalacoin.rpc.bitcoincore.blockchain.{BlockchainInfo, ConfirmedUnspentTransactionOutput, MemPoolInfo}
+import org.scalacoin.rpc.bitcoincore.mining.GetMiningInfo
+import org.scalacoin.rpc.bitcoincore.networking.{NetworkInfo, PeerInfo}
+import org.scalacoin.rpc.bitcoincore.wallet.WalletInfo
 import spray.json._
 
 import scala.sys.process._
@@ -143,7 +143,7 @@ class ScalaRPCClient (client : String, network : String) extends MarshallerUtil 
  *
    * @return
    */
-  def getNewAddress : String = sendCommand("getnewaddress")
+  def getNewAddress : Address = Address(sendCommand("getnewaddress").trim)
 
   /**
    * The getrawchangeaddress RPC returns a new Bitcoin address for receiving change. This is for use with raw
@@ -152,7 +152,7 @@ class ScalaRPCClient (client : String, network : String) extends MarshallerUtil 
  *
    * @return
    */
-  def getRawChangeAddress : String = sendCommand("getrawchangeaddress")
+  def getRawChangeAddress : Address = Address(sendCommand("getrawchangeaddress").trim)
 
   /**
    * The getbalance RPC gets the balance in decimal bitcoins across all accounts or for a particular account.
@@ -176,32 +176,30 @@ class ScalaRPCClient (client : String, network : String) extends MarshallerUtil 
     * https://bitcoin.org/en/developer-reference#addmultisigaddress
  *
     * @param sigsRequired
-    * @param addressesInJsonFormat
+    * @param address
     * @return
     */
 
-  /*
-   def sendCommand(command : String) : String = {
-    val cmd = client + " " + network + " " + command
-    val result = cmd.!!
-    result
-  }
-   */
-  def generateMultiSigAddress(sigsRequired : Int, addressesInJsonFormat: String) : Address = {
-    val cmd = "addmultisigaddress " + sigsRequired + " " + addressesInJsonFormat
+  def generateOneOfOneMultiSigAddress(sigsRequired : Int, address: String) : Address = {
+    //val cmd = "addmultisigaddress " + sigsRequired + " [\\\"" + address + "\\\"]"
+    val addressInJson = "[\"" + address + "\"]"
+    val cmd = "addmultisigaddress " + sigsRequired + " " + addressInJson
     val result : String = sendCommand(cmd)
-    Address(result)
+    Address(result.trim)
   }
-
-  def createMultiSigAddress(sigsRequired: Int, addressesInJsonFormat : String) : String = {
+  /*
+  def createMultiSigAddress(sigsRequired: Int, addressesInJsonFormat : Array[Address]) : String = {
     val cmd = "createmultisig " + sigsRequired + " " + addressesInJsonFormat
     val result : String = sendCommand(cmd)
     result
   }
+   */
 
+  /*
   def multi(command : String, sigsRequired : Int, addressesInJsonFormat : String) : String = {
     val cmd = command + " " + sigsRequired + " " + addressesInJsonFormat
     sendCommand(cmd)
   }
+   */
 }
 

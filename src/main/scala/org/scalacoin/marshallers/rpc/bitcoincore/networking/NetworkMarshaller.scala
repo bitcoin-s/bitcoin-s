@@ -1,7 +1,7 @@
 package org.scalacoin.marshallers.rpc.bitcoincore.networking
 
 import org.scalacoin.marshallers.MarshallerUtil
-import org.scalacoin.protocol.rpc.bitcoincore.networking.{NetworkInfo, NetworkInfoImpl, NetworkConnections}
+import org.scalacoin.rpc.bitcoincore.networking.{NetworkInfo, NetworkInfoImpl, NetworkConnections}
 import spray.json._
 
 

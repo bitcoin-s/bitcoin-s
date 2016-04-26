@@ -1,4 +1,4 @@
-package org.scalacoin.protocol.rpc.bitcoincore.blockchain
+package org.scalacoin.rpc.bitcoincore.blockchain
 
 /**
  * Created by Tom on 1/11/2016.

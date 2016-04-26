@@ -1,4 +1,4 @@
-package org.scalacoin.protocol.rpc.bitcoincore.networking
+package org.scalacoin.rpc.bitcoincore.networking
 
 import scala.math.BigInt
 

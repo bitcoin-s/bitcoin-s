@@ -1,6 +1,6 @@
 package org.scalacoin.marshallers.rpc.bitcoincore.networking
 
-import org.scalacoin.protocol.rpc.bitcoincore.networking.PeerInfo
+import org.scalacoin.rpc.bitcoincore.networking.PeerInfo
 import org.scalatest.{FlatSpec, MustMatchers}
 import spray.json._
 

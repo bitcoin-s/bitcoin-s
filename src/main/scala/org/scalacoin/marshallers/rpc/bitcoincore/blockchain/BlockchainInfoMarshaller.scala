@@ -2,8 +2,8 @@ package org.scalacoin.marshallers.rpc.bitcoincore.blockchain
 
 import org.scalacoin.marshallers.MarshallerUtil
 import org.scalacoin.marshallers.rpc.bitcoincore.blockchain.softforks.SoftForkMarshaller
-import org.scalacoin.protocol.rpc.bitcoincore.blockchain.softforks.SoftForks
-import org.scalacoin.protocol.rpc.bitcoincore.blockchain.{BlockChainInfoImpl, BlockchainInfo}
+import org.scalacoin.rpc.bitcoincore.blockchain.softforks.SoftForks
+import org.scalacoin.rpc.bitcoincore.blockchain.{BlockChainInfoImpl, BlockchainInfo}
 import spray.json._
 import SoftForkMarshaller._
 
@@ -18,8 +18,7 @@ object BlockchainInfoMarshaller extends DefaultJsonProtocol with MarshallerUtil{
   val difficultyKey = "difficulty"
   val verificationProgressKey = "verificationprogress"
   val chainWorkKey = "chainwork"
-  val prunedKey = "pruned"
-  val softForksKey = "softforks"
+  //val softForksKey = "softforks"
 
   implicit object BlockchainInfoFormatter extends RootJsonFormat[BlockchainInfo] {
     override def read (value : JsValue) : BlockchainInfo = {
@@ -31,13 +30,12 @@ object BlockchainInfoMarshaller extends DefaultJsonProtocol with MarshallerUtil{
       val difficulty = obj.fields(difficultyKey).convertTo[Double]
       val verificationProgress = obj.fields(verificationProgressKey).convertTo[Double]
       val chainWork = obj.fields(chainWorkKey).convertTo[String]
-      val pruned = obj.fields(prunedKey).convertTo[Boolean]
-      val softForks : Seq[SoftForks] = convertToSoftForksList(obj.fields(softForksKey))
-      BlockChainInfoImpl(chain, blockCount, headerCount, bestBlockHash, difficulty, verificationProgress, chainWork, pruned, softForks)
+      //val softForks : Seq[SoftForks] = convertToSoftForksList(obj.fields(softForksKey))
+      BlockChainInfoImpl(chain, blockCount, headerCount, bestBlockHash, difficulty, verificationProgress, chainWork) //softForks
     }
 
     override def write (detail : BlockchainInfo) : JsValue = {
-      val softForks : JsArray = convertToJsArray(detail.softForks)
+      //val softForks : JsArray = convertToJsArray(detail.softForks)
 
 
       val m : Map[String, JsValue] = Map (
@@ -47,9 +45,8 @@ object BlockchainInfoMarshaller extends DefaultJsonProtocol with MarshallerUtil{
         bestBlockHashKey -> JsString(detail.bestBlockHash),
         difficultyKey -> JsNumber(detail.difficulty),
         verificationProgressKey -> JsNumber(detail.verificationProgress),
-        chainWorkKey -> JsString(detail.chainWork),
-        prunedKey -> JsBoolean(detail.pruned),
-        softForksKey -> softForks
+        chainWorkKey -> JsString(detail.chainWork)
+        //softForksKey -> softForks
         )
       JsObject(m)
     }

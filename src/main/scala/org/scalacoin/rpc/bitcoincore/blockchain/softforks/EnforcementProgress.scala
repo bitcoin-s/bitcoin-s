@@ -1,4 +1,4 @@
-package org.scalacoin.protocol.rpc.bitcoincore.blockchain.softforks
+package org.scalacoin.rpc.bitcoincore.blockchain.softforks
 
 /**
  * Created by Tom on 1/11/2016.

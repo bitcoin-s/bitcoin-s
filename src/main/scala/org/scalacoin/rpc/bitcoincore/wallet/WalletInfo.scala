@@ -1,4 +1,4 @@
-package org.scalacoin.protocol.rpc.bitcoincore.wallet
+package org.scalacoin.rpc.bitcoincore.wallet
 
 /**
  * Created by Tom on 1/6/2016.

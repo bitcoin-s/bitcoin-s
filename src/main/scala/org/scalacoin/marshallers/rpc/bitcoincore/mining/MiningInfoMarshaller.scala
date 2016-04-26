@@ -1,6 +1,6 @@
 package org.scalacoin.marshallers.rpc.bitcoincore.mining
 
-import org.scalacoin.protocol.rpc.bitcoincore.mining.{GetMiningInfo, GetMiningInfoImpl}
+import org.scalacoin.rpc.bitcoincore.mining.{GetMiningInfo, GetMiningInfoImpl}
 import spray.json._
 
 /**

@@ -1,4 +1,4 @@
-package org.scalacoin.protocol.rpc.bitcoincore.mining
+package org.scalacoin.rpc.bitcoincore.mining
 
 /**
  * Created by Tom on 1/13/2016.

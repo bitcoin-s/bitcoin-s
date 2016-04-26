@@ -1,7 +1,7 @@
 package org.scalacoin.marshallers.rpc.bitcoincore.blockchain.softforks
 
 import org.scalacoin.marshallers.MarshallerUtil
-import org.scalacoin.protocol.rpc.bitcoincore.blockchain.softforks.{SoftForksImpl, RejectionProgress, EnforcementProgress, SoftForks}
+import org.scalacoin.rpc.bitcoincore.blockchain.softforks.{SoftForksImpl, RejectionProgress, EnforcementProgress, SoftForks}
 import spray.json._
 import RejectionProgressMarshaller._
 import EnforcementProgressMarshaller._

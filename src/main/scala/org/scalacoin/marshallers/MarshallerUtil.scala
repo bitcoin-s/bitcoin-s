@@ -6,8 +6,8 @@ import org.scalacoin.marshallers.rpc.bitcoincore.networking.PeerInfoMarshaller.P
 import org.scalacoin.marshallers.transaction.TransactionInputMarshaller.TransactionInputFormatter
 import org.scalacoin.marshallers.transaction.TransactionOutputMarshaller.TransactionOutputFormatter
 import org.scalacoin.protocol.BitcoinAddress
-import org.scalacoin.protocol.rpc.bitcoincore.blockchain.softforks.SoftForks
-import org.scalacoin.protocol.rpc.bitcoincore.networking.{NetworkConnections, PeerInfo}
+import org.scalacoin.rpc.bitcoincore.blockchain.softforks.SoftForks
+import org.scalacoin.rpc.bitcoincore.networking.{NetworkConnections, PeerInfo}
 import org.scalacoin.protocol.transaction.{TransactionOutput, TransactionInput}
 import spray.json.{JsonWriter, JsArray, DefaultJsonProtocol, JsValue}
 import scala.collection.breakOut

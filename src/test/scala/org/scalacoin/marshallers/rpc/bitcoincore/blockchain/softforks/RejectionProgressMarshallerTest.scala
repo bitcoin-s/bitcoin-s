@@ -1,6 +1,6 @@
 package org.scalacoin.marshallers.rpc.bitcoincore.blockchain.softforks
 
-import org.scalacoin.protocol.rpc.bitcoincore.blockchain.softforks.RejectionProgress
+import org.scalacoin.rpc.bitcoincore.blockchain.softforks.RejectionProgress
 import org.scalatest.{MustMatchers, FlatSpec}
 import spray.json._
 
