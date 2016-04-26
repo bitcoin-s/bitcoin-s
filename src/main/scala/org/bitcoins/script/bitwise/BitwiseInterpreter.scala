@@ -35,14 +35,6 @@ trait BitwiseInterpreter extends ControlOperationsInterpreter  {
           OP_TRUE.num == ScriptNumber.one.num
         case (OP_1, ScriptNumber.one) | (ScriptNumber.one, OP_1) =>
           OP_1.num == ScriptNumber.one.num
-        case (OP_0,ScriptNumber.zero) | (ScriptNumber.zero, OP_0) =>
-          OP_0.num == ScriptNumber.zero.num
-        case (OP_FALSE,ScriptNumber.zero) | (ScriptNumber.zero, OP_FALSE) =>
-          OP_FALSE.num == ScriptNumber.zero.num
-        case (OP_TRUE,ScriptNumber.one) | (ScriptNumber.one, OP_TRUE) =>
-          OP_TRUE.num == ScriptNumber.one.num
-        case (OP_1, ScriptNumber.one) | (ScriptNumber.one, OP_1) =>
-          OP_1.num == ScriptNumber.one.num
         case _ => h.bytes == h1.bytes
       }
       val scriptBoolean  = if (result) OP_TRUE else OP_FALSE
