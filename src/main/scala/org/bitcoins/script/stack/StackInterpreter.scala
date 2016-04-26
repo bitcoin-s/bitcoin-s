@@ -171,7 +171,7 @@ trait StackInterpreter extends BitcoinSLogger {
       //check if n is within the bound of the script
       (number.num >= 0 && number.num < program.stack.tail.size) match {
       case true =>
-        val newStackTop = program.stack.tail (number.num.toInt)
+        val newStackTop = program.stack.tail(number.num.toInt)
         ScriptProgram (program, newStackTop :: program.stack.tail, program.script.tail)
       case false =>
         logger.error ("The index for OP_PICK would have caused an index out of bounds exception")

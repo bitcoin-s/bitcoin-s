@@ -129,4 +129,10 @@ class ConstantsTest extends FlatSpec with MustMatchers {
     number.isSuccess must be (true)
     number.get must be (ScriptNumber.zero)
   }
+
+  it must "fail to create a number when the minimal flag is set and the hex is not minimal" in {
+    val hex = "00"
+    val number : Try[ScriptNumber] = ScriptNumber(hex,true)
+    number.isSuccess must be (false)
+  }
 }

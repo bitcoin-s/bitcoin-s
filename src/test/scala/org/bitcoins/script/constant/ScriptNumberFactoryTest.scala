@@ -39,8 +39,6 @@ class ScriptNumberFactoryTest extends FlatSpec with MustMatchers {
 
   it must "it must give us the same object when we create the number zero from the ScriptNumber" in {
     ScriptNumber(0) must be (ScriptNumber.zero)
-    ScriptNumber("00") must be (ScriptNumber.zero)
-    ScriptNumber(Seq(0x00.toByte)) must be (ScriptNumber.zero)
   }
 
   it must "convert our script number 0 to a long" in {
