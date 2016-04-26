@@ -62,3 +62,10 @@ case object SignatureValidationFailurePubKeyEncoding extends TransactionSignatur
 case object ScriptValidationFailureHighSValue extends TransactionSignatureCheckerResult {
   def isValid = false
 }
+
+/**
+ * Fails the script if the hash type is not defined on a digital signature
+ */
+case object ScriptValidationFailureHashType extends TransactionSignatureCheckerResult {
+  def isValid = false
+}
