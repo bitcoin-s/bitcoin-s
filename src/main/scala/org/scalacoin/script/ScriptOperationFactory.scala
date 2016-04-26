@@ -1,6 +1,5 @@
 package org.scalacoin.script
 
-//import org.scalacoin.script.arithmetic.{ArithmeticOperations}
 import org.scalacoin.script.arithmetic.ArithmeticOperation
 import org.scalacoin.script.bitwise.BitwiseOperation
 import org.scalacoin.script.constant._
