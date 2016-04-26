@@ -29,6 +29,7 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
    */
   def checkSignature(txSignatureComponent : TransactionSignatureComponent,
                      pubKey: ECPublicKey, signature : ECDigitalSignature, flags : Seq[ScriptFlag]) : TransactionSignatureCheckerResult = {
+    logger.info("Signature: " + signature)
     val pubKeyEncodedCorrectly = BitcoinScriptUtil.checkPubKeyEncoding(pubKey,flags)
     if (ScriptFlagUtil.requiresStrictDerEncoding(flags) && !DERSignatureUtil.isStrictDEREncoding(signature)) {
       logger.error("Signature was not stricly encoded der: " + signature.hex)
@@ -36,6 +37,10 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
     } else if (ScriptFlagUtil.requireLowSValue(flags) && !DERSignatureUtil.isLowDerSignature(signature)) {
       logger.error("Signature did not have a low s value")
       ScriptValidationFailureHighSValue
+    } else if (ScriptFlagUtil.requireStrictEncoding(flags) && signature.bytes.size > 0 &&
+      !HashTypeFactory.hashTypes.find(_.byte == signature.bytes.last).isDefined) {
+      logger.error("Hash type was not defined on the signature")
+      ScriptValidationFailureHashType
     } else if (!pubKeyEncodedCorrectly) {
       logger.error("The public key given for signature checking was not encoded correctly")
       SignatureValidationFailurePubKeyEncoding
@@ -96,7 +101,7 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
       val result = checkSignature(txSignatureComponent,pubKey,sig,flags)
       result match {
         case SignatureValidationSuccess =>
-          multiSignatureEvaluator(txSignatureComponent, sigs.tail,pubKeys.tail,flags, requiredSigs -1)
+          multiSignatureEvaluator(txSignatureComponent, sigs.tail,pubKeys.tail,flags, requiredSigs - 1)
         case SignatureValidationFailureIncorrectSignatures =>
           multiSignatureEvaluator(txSignatureComponent, sigs,pubKeys.tail,flags, requiredSigs)
         case SignatureValidationFailureNotStrictDerEncoding =>
@@ -106,6 +111,7 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
         case SignatureValidationFailurePubKeyEncoding =>
           SignatureValidationFailurePubKeyEncoding
         case ScriptValidationFailureHighSValue => ScriptValidationFailureHighSValue
+        case ScriptValidationFailureHashType => ScriptValidationFailureHashType
       }
     } else if (sigs.isEmpty) {
       //means that we have checked all of the sigs against the public keys

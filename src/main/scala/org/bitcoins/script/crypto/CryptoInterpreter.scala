@@ -118,6 +118,8 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
             ScriptProgram(program,ScriptErrorPubKeyType)
           case ScriptValidationFailureHighSValue =>
             ScriptProgram(program,ScriptErrorSigHighS)
+          case ScriptValidationFailureHashType =>
+            ScriptProgram(program,ScriptErrorSigHashType)
         }
       }
     }
@@ -239,6 +241,8 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
               ScriptProgram(program,ScriptErrorPubKeyType)
             case ScriptValidationFailureHighSValue =>
               ScriptProgram(program,ScriptErrorSigHighS)
+            case ScriptValidationFailureHashType =>
+              ScriptProgram(program,ScriptErrorSigHashType)
           }
         }
       }
