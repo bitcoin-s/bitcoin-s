@@ -103,18 +103,18 @@ object ScriptNumber extends Factory[ScriptNumber] {
  *
     * @return
     */
-  lazy val zero = ScriptNumberImpl(0,"")
+  lazy val zero : ScriptNumber = ScriptNumberImpl(0,"")
 
   /**
     * Represents the number one inside of bitcoin's script language
  *
     * @return
     */
-  lazy val one = ScriptNumberImpl(1)
+  lazy val one : ScriptNumber = ScriptNumberImpl(1)
   /**
     * Represents the number negative one inside of bitcoin's script language
     */
-  lazy val negativeOne = ScriptNumberImpl(-1)
+  lazy val negativeOne : ScriptNumber = ScriptNumberImpl(-1)
 
   /**
     * Bitcoin has a numbering system which has a negative zero
@@ -144,36 +144,30 @@ object ScriptNumber extends Factory[ScriptNumber] {
   }
 
   def apply(bytes : Seq[Byte], requireMinimal : Boolean) : Try[ScriptNumber] = apply(BitcoinSUtil.encodeHex(bytes),requireMinimal)
+
+  /**
+   * This represents a script number inside of bitcoin
+   * @param num the number being represented
+   * @param hex the hex representation of the number - this can be different than the obvious value for
+   *            the number. For instance we could have padded the number with another word of zeros
+   */
+  private case class ScriptNumberImpl(num : Long, override val hex : String) extends ScriptNumber
+
+
+  /**
+   * Companion object for ScriptNumberImpl that gives us access to more constructor types for the
+   * ScriptNumberImpl case class
+   */
+  private object ScriptNumberImpl {
+    def apply(num : Long) : ScriptNumber = ScriptNumberImpl(num, BitcoinSUtil.longToHex(num))
+    def apply(hex : String) : ScriptNumber = ScriptNumberImpl(BitcoinSUtil.hexToLong(hex), hex)
+    def apply(bytes : Seq[Byte]) : ScriptNumber = ScriptNumberImpl(BitcoinSUtil.encodeHex(bytes))
+  }
 }
 
-/**
- * This represents a script number inside of bitcoin
- *
- * @param num the number being represented
- * @param hex the hex representation of the number - this can be different than the obvious value for
- *            the number. For instance we could have padded the number with another word of zeros
- */
-case class ScriptNumberImpl(num : Long, override val hex : String) extends ScriptNumber
 
 
-/**
- * Companion object for ScriptNumberImpl that gives us access to more constructor types for the
- * ScriptNumberImpl case class
- */
-object ScriptNumberImpl {
-  def apply(num : Long) : ScriptNumber = ScriptNumberImpl(num, BitcoinSUtil.longToHex(num))
-  def apply(hex : String) : ScriptNumber = ScriptNumberImpl(BitcoinSUtil.hexToLong(hex), hex)
-  def apply(bytes : Seq[Byte]) : ScriptNumber = ScriptNumberImpl(BitcoinSUtil.encodeHex(bytes))
-}
 
-/**
- * Represent a pubkey or hash of a pub key on our stack
- *
- * @param hex
- */
-case class ScriptConstantImpl(hex : String) extends ScriptConstant {
-  def this(bytes : List[Byte]) = this(BitcoinSUtil.encodeHex(bytes))
-}
 
 
 /**
@@ -387,6 +381,13 @@ object ScriptNumberOperation extends ScriptOperationFactory[ScriptNumberOperatio
 }
 
 object ScriptConstant extends Factory[ScriptConstant] {
+  /**
+   * Represent a pubkey or hash of a pub key on our stack
+   * @param hex
+   */
+  private case class ScriptConstantImpl(hex : String) extends ScriptConstant {
+    def this(bytes : List[Byte]) = this(BitcoinSUtil.encodeHex(bytes))
+  }
   lazy val zero = ScriptConstant("00")
   lazy val negativeZero = ScriptConstant("80")
   lazy val negativeOne = ScriptConstant("81")

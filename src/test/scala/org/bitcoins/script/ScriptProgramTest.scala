@@ -10,7 +10,7 @@ import org.scalatest.{FlatSpec, MustMatchers}
 class ScriptProgramTest extends FlatSpec with MustMatchers  {
 
   "ScriptProgram" must "determine if the stack top is true" in {
-    val stack = List(ScriptNumberImpl(1))
+    val stack = List(ScriptNumber(1))
     val script = List()
     val program = ScriptProgram(TestUtil.testProgram, stack,script)
     program.stackTopIsTrue must be (true)

@@ -3,7 +3,6 @@ package org.bitcoins.util
 import java.security.MessageDigest
 
 import org.bitcoinj.core.Sha256Hash
-import org.bitcoins.script.constant.{ScriptConstantImpl, ScriptConstant}
 import org.spongycastle.crypto.digests.RIPEMD160Digest
 
 /**

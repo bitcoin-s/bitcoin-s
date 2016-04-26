@@ -1,13 +1,13 @@
 package org.bitcoins.util
 
 import org.bitcoinj.core.DumpedPrivateKey
+
 import org.bitcoins.config.TestNet3
 import org.bitcoins.crypto.{ECFactory, ECPublicKey}
 import org.bitcoins.currency.CurrencyUnits
 import org.bitcoins.protocol.{CompactSizeUIntImpl}
 import org.bitcoins.protocol.script._
 import org.bitcoins.protocol.transaction._
-import org.bitcoins.script.constant.{ScriptNumberImpl, OP_0, ScriptToken}
 import org.slf4j.LoggerFactory
 
 /**

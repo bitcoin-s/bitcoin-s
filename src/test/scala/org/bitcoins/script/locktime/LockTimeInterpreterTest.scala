@@ -1,9 +1,10 @@
 package org.bitcoins.script.locktime
 
+
 import org.bitcoins.protocol.transaction.{TransactionInput, Transaction, UpdateTransactionInputs}
 import org.bitcoins.script.error.{ScriptErrorNegativeLockTime, ScriptErrorUnsatisfiedLocktime, ScriptErrorInvalidStackOperation}
 import org.bitcoins.script.{ExecutionInProgressScriptProgram, ExecutedScriptProgram, PreExecutionScriptProgram, ScriptProgram}
-import org.bitcoins.script.constant.{ScriptNumber, ScriptNumberImpl, OP_0}
+import org.bitcoins.script.constant.{ScriptNumber, OP_0}
 import org.bitcoins.util.{ScriptProgramTestUtil, TestUtil}
 import org.scalatest.{MustMatchers, FlatSpec}
 

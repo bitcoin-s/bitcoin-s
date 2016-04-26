@@ -171,9 +171,9 @@ object ScriptPubKey extends Factory[ScriptPubKey] {
     val scriptPubKeyHex = BitcoinScriptUtil.asmToHex(asm)
     asm match {
       case Seq() => EmptyScriptPubKey
-      case List(OP_DUP, OP_HASH160, x : BytesToPushOntoStack, ScriptConstantImpl(pubKeyHash), OP_EQUALVERIFY, OP_CHECKSIG) =>
+      case List(OP_DUP, OP_HASH160, x : BytesToPushOntoStack, y : ScriptConstant, OP_EQUALVERIFY, OP_CHECKSIG) =>
         P2PKHScriptPubKeyImpl(scriptPubKeyHex,asm)
-      case List(OP_HASH160, x : BytesToPushOntoStack, ScriptConstantImpl(scriptHash), OP_EQUAL) =>
+      case List(OP_HASH160, x : BytesToPushOntoStack, y : ScriptConstant, OP_EQUAL) =>
         P2SHScriptPubKeyImpl(scriptPubKeyHex,asm)
       case List(b : BytesToPushOntoStack, x : ScriptConstant, OP_CHECKSIG) => P2PKScriptPubKeyImpl(scriptPubKeyHex,asm)
       case _ if (isMultiSignatureScriptPubKey(asm)) =>

@@ -1,7 +1,8 @@
 package org.bitcoins.protocol.script
 
-import org.bitcoins.crypto.{ECFactory}
-import org.bitcoins.script.constant.{OP_0, BytesToPushOntoStackImpl, ScriptConstantImpl}
+
+import org.bitcoins.crypto.ECFactory
+import org.bitcoins.script.constant.{BytesToPushOntoStackImpl, OP_0, ScriptConstant}
 import org.bitcoins.util.TestUtil
 import org.scalatest.{FlatSpec, MustMatchers}
 
@@ -31,9 +32,9 @@ class P2SHScriptSignatureTest extends FlatSpec with MustMatchers {
     }
 
     p2shScriptSig.scriptSignatureNoRedeemScript.asm must be (Seq(
-      OP_0, BytesToPushOntoStackImpl(71), ScriptConstantImpl("304402207d764cb90c9fd84b74d33a47cf3a0ffead9ded98333776becd6acd32c4426dac02203905a0d064e7f53d07793e86136571b6e4f700c1cfb888174e84d78638335b8101"),
+      OP_0, BytesToPushOntoStackImpl(71), ScriptConstant("304402207d764cb90c9fd84b74d33a47cf3a0ffead9ded98333776becd6acd32c4426dac02203905a0d064e7f53d07793e86136571b6e4f700c1cfb888174e84d78638335b8101"),
       BytesToPushOntoStackImpl(72),
-      ScriptConstantImpl("3045022100906aaca39f022acd8b7a38fd2f92aca9e9f35cfeaee69a6f13e1d083ae18222602204c9ed96fc6c4de56fd85c679fc59c16ee1ccc80c42563b86174e1a506fc007c801")
+      ScriptConstant("3045022100906aaca39f022acd8b7a38fd2f92aca9e9f35cfeaee69a6f13e1d083ae18222602204c9ed96fc6c4de56fd85c679fc59c16ee1ccc80c42563b86174e1a506fc007c801")
     ))
   }
 }
