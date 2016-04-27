@@ -1,6 +1,5 @@
 package org.bitcoins.marshallers.transaction
 
-
 import org.bitcoins.protocol.BitcoinAddress
 import org.bitcoins.protocol.transaction.TransactionOutput
 import org.bitcoins.script.bitwise.OP_EQUALVERIFY
@@ -35,7 +34,7 @@ class TransactionOutputMarshallerTest extends FlatSpec with MustMatchers {
     val output : TransactionOutput = TransactionOutputMarshaller.TransactionOutputFormatter.read(json)
     output.value.value must be (0.0002)
     output.scriptPubKey.asm must be (List(OP_DUP, OP_HASH160,
-      BytesToPushOntoStackImpl(20),
+      BytesToPushOntoStack(20),
       ScriptConstant("321908115d8a138942f98b0b53f86c9a1848501a"),
       OP_EQUALVERIFY, OP_CHECKSIG))
     output.scriptPubKey.hex must be ("76a914321908115d8a138942f98b0b53f86c9a1848501a88ac")

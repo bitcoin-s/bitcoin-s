@@ -98,7 +98,7 @@ class BitcoinScriptUtilTest extends FlatSpec with MustMatchers {
   }
 
   it must "determine that the script is not push only if it contains an script number operation" in {
-    BitcoinScriptUtil.isMinimalPush(BytesToPushOntoStack(1).get,OP_1) must be (false)
+    BitcoinScriptUtil.isMinimalPush(BytesToPushOntoStack(1),OP_1) must be (false)
   }
 
   it must "determine that a script is push only if it only contains pushing an empty script constant" in {

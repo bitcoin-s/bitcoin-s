@@ -1,5 +1,6 @@
 package org.bitcoins.marshallers.transaction
 
+
 import org.bitcoins.marshallers.script.{ScriptParser, ScriptPubKeyMarshaller}
 import org.bitcoins.protocol.{BitcoinAddress, script}
 import org.bitcoins.protocol.script.ScriptPubKey
@@ -44,7 +45,7 @@ class TransactionOutputMetaMarshallerTest extends FlatSpec with MustMatchers {
     //println(meta.scriptPubKey.asm)
     //println(ScriptPubKey("OP_HASH160 5a81f53ac1ecf0312a2a4df29a734b8f2c0d8c93 OP_EQUAL"))
     val expectedAsm : Seq[ScriptToken] = {
-      Seq(OP_HASH160, BytesToPushOntoStackImpl(20), ScriptConstant("5a81f53ac1ecf0312a2a4df29a734b8f2c0d8c93"), OP_EQUAL)
+      Seq(OP_HASH160, BytesToPushOntoStack(20), ScriptConstant("5a81f53ac1ecf0312a2a4df29a734b8f2c0d8c93"), OP_EQUAL)
     }
     meta.scriptPubKey.asm must be (expectedAsm)
     meta.scriptPubKey.hex must be ("a9145a81f53ac1ecf0312a2a4df29a734b8f2c0d8c9387")

@@ -62,12 +62,12 @@ class ScriptParserTest extends FlatSpec with MustMatchers with ScriptParser with
 
    it must "parse a script constant from 'Az' EQUAL" in {
      val str = "'Az' EQUAL"
-     fromString(str) must equal (List(BytesToPushOntoStack(2).get, ScriptConstant("417a"), OP_EQUAL))
+     fromString(str) must equal (List(BytesToPushOntoStack(2), ScriptConstant("417a"), OP_EQUAL))
    }
 
    it must "parse a script number that has a leading zero" in {
      val str = "0x02 0x0100"
-     fromString(str) must equal (List(BytesToPushOntoStack(2).get, ScriptConstant("0100")))
+     fromString(str) must equal (List(BytesToPushOntoStack(2), ScriptConstant("0100")))
    }
 
 
@@ -83,8 +83,8 @@ class ScriptParserTest extends FlatSpec with MustMatchers with ScriptParser with
 
    it must "parse a script that has a decimal and a hexadecimal number in it " in  {
      val str = "32767 0x02 0xff7f EQUAL"
-     fromString(str) must equal (List(BytesToPushOntoStack(2).get, ScriptConstant("ff7f"),
-       BytesToPushOntoStackImpl(2), ScriptConstant("ff7f"), OP_EQUAL))
+     fromString(str) must equal (List(BytesToPushOntoStack(2), ScriptConstant("ff7f"),
+       BytesToPushOntoStack(2), ScriptConstant("ff7f"), OP_EQUAL))
    }
    it must "parse an OP_1" in {
      val str = "0x51"
@@ -95,21 +95,21 @@ class ScriptParserTest extends FlatSpec with MustMatchers with ScriptParser with
      val str = "0x4b 0x417a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a " +
      "'Azzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz' EQUAL"
 
-     fromString(str) must equal (List(BytesToPushOntoStack(75).get,
+     fromString(str) must equal (List(BytesToPushOntoStack(75),
        ScriptConstant("417a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a"),
-       BytesToPushOntoStack(75).get,
+       BytesToPushOntoStack(75),
        ScriptConstant("417a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a"), OP_EQUAL))
    }
 
   it must "parse an OP_IF OP_ENDIF block" in {
     val str = "1 0x01 0x80 IF 0 ENDIF"
-    fromString(str) must be (List(OP_1, BytesToPushOntoStackImpl(1), ScriptConstant("80"), OP_IF, OP_0, OP_ENDIF))
+    fromString(str) must be (List(OP_1, BytesToPushOntoStack(1), ScriptConstant("80"), OP_IF, OP_0, OP_ENDIF))
   }
 
 
   it must "parse an OP_PUSHDATA1 correctly" in {
     val str = "'abcdefghijklmnopqrstuvwxyz' HASH160 0x4c 0x14 0xc286a1af0947f58d1ad787385b1c2c4a976f9e71 EQUAL"
-    val expectedScript = List(BytesToPushOntoStack(26).get, ScriptConstant("6162636465666768696a6b6c6d6e6f707172737475767778797a"),OP_HASH160,
+    val expectedScript = List(BytesToPushOntoStack(26), ScriptConstant("6162636465666768696a6b6c6d6e6f707172737475767778797a"),OP_HASH160,
       OP_PUSHDATA1, ScriptNumber(20), ScriptConstant("c286a1af0947f58d1ad787385b1c2c4a976f9e71"), OP_EQUAL)
     fromString(str) must be (expectedScript)
   }
@@ -166,10 +166,10 @@ class ScriptParserTest extends FlatSpec with MustMatchers with ScriptParser with
     //from b30d3148927f620f5b1228ba941c211fdabdae75d0ba0b688a58accbf018f3cc
     val rawScriptSig = "4730440220048e15422cf62349dc586ffb8c749d40280781edd5064ff27a5910ff5cf225a802206a82685dbc2cf195d158c29309939d5a3cd41a889db6f766f3809fff35722305012103dcfc9882c1b3ae4e03fb6cac08bdb39e284e81d70c7aa8b27612457b2774509b"
 
-    val expectedAsm = List(BytesToPushOntoStackImpl(71),
+    val expectedAsm = List(BytesToPushOntoStack(71),
       ScriptConstant("30440220048e15422cf62349dc586ffb8c749d40280781edd5064ff27a5910ff5cf" +
         "225a802206a82685dbc2cf195d158c29309939d5a3cd41a889db6f766f3809fff3572230501"),
-      BytesToPushOntoStackImpl(33),
+      BytesToPushOntoStack(33),
       ScriptConstant("03dcfc9882c1b3ae4e03fb6cac08bdb39e284e81d70c7aa8b27612457b2774509b"))
 
     val scriptTokens : List[ScriptToken] = ScriptParser.fromHex(rawScriptSig)
