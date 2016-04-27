@@ -1,5 +1,6 @@
 package org.bitcoins.script.bitwise
 
+
 import org.bitcoins.script.error.ScriptErrorInvalidStackOperation
 import org.bitcoins.script.{ScriptProgram}
 import org.bitcoins.script.constant._
@@ -57,7 +58,15 @@ trait BitwiseInterpreter extends ControlOperationsInterpreter  {
         //first replace OP_EQUALVERIFY with OP_EQUAL and OP_VERIFY
         val simpleScript = OP_EQUAL :: OP_VERIFY :: program.script.tail
         val newProgram: ScriptProgram = opEqual(ScriptProgram(program, program.stack, simpleScript))
-        opVerify(newProgram)
+        opVerify(newProgram) match {
+          case p : ExecutedScriptProgram if (p.error.isDefined) =>
+            //need to switch the error set on this to ScriptErrorEqualVerify instead of ScriptErrorVerify
+            ScriptProgram(p,ScriptErrorEqualVerify)
+          case p : PreExecutionScriptProgram => p
+          case p : ExecutedScriptProgram => p
+          case p : ExecutionInProgressScriptProgram => p
+
+        }
       case false =>
         logger.error("OP_EQUALVERIFY requires at least 2 elements on the stack")
         ScriptProgram(program,ScriptErrorInvalidStackOperation)

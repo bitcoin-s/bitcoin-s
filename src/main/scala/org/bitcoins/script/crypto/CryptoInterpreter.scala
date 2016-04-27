@@ -170,19 +170,33 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
     if (program.flags.contains(ScriptVerifyNullDummy) && program.txSignatureComponent.scriptSignature.asm.head != OP_0) {
       logger.warn("Script flag null dummy was set however the first element in the script signature was not an OP_0")
       ScriptProgram(program,ScriptErrorSigNullDummy)
-    } else if (program.stack.size < 3) {
-      logger.error("OP_CHECKMULTISIG requires at least 3 stack elements")
+    } else if (program.stack.size < 1) {
+      logger.error("OP_CHECKMULTISIG requires at least 1 stack elements")
       ScriptProgram(program,ScriptErrorInvalidStackOperation)
     } else {
       //these next lines remove the appropriate stack/script values after the signatures have been checked
       val nPossibleSignatures : ScriptNumber  = BitcoinScriptUtil.numPossibleSignaturesOnStack(program)
-      val mRequiredSignatures : ScriptNumber = BitcoinScriptUtil.numRequiredSignaturesOnStack(program)
-
-      if (ScriptFlagUtil.requireMinimalData(program.flags) && (!nPossibleSignatures.isShortestEncoding
-        || !mRequiredSignatures.isShortestEncoding)) {
+      if (nPossibleSignatures < ScriptNumber.zero) {
+        logger.error("We cannot have the number of pubkeys in the script be negative")
+        ScriptProgram(program,ScriptErrorPubKeyCount)
+      } else if (ScriptFlagUtil.requireMinimalData(program.flags) && !nPossibleSignatures.isShortestEncoding) {
         logger.error("The required signatures and the possible signatures must be encoded as the shortest number possible")
         ScriptProgram(program, ScriptErrorMinimalData)
+      } else if (program.stack.size < 2) {
+        logger.error("We need at least 2 operations on the stack")
+        ScriptProgram(program,ScriptErrorInvalidStackOperation)
       } else {
+        val mRequiredSignatures : ScriptNumber = BitcoinScriptUtil.numRequiredSignaturesOnStack(program)
+
+        if (ScriptFlagUtil.requireMinimalData(program.flags) && !mRequiredSignatures.isShortestEncoding) {
+          logger.error("The required signatures val must be the shortest encoding as possible")
+          return ScriptProgram(program,ScriptErrorMinimalData)
+        }
+
+        if (mRequiredSignatures < ScriptNumber.zero) {
+          logger.error("We cannot have the number of signatures specified in the script be negative")
+          return ScriptProgram(program,ScriptErrorSigCount)
+        }
         logger.debug("nPossibleSignatures: " + nPossibleSignatures)
         val (pubKeysScriptTokens,stackWithoutPubKeys) =
           (program.stack.tail.slice(0,nPossibleSignatures.num.toInt),
@@ -232,7 +246,7 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
               ScriptProgram(program, OP_FALSE :: restOfStack, program.script.tail)
             case SignatureValidationFailureSignatureCount =>
               //means that we did not have enough signatures for OP_CHECKMULTISIG
-              ScriptProgram(program, ScriptErrorSigCount)
+              ScriptProgram(program, ScriptErrorInvalidStackOperation)
             case SignatureValidationFailurePubKeyEncoding =>
               //means that a public key was not encoded correctly
               ScriptProgram(program,ScriptErrorPubKeyType)

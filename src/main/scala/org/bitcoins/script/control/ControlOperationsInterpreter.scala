@@ -30,7 +30,7 @@ trait ControlOperationsInterpreter extends BitcoinSLogger {
       ScriptProgram(program,ScriptErrorUnbalancedConditional)
     } else if (program.stack.isEmpty) {
       logger.error("We do not have any stack elements for our OP_IF")
-      ScriptProgram(program,ScriptErrorInvalidStackOperation)
+      ScriptProgram(program,ScriptErrorUnbalancedConditional)
     }
     else if (program.stackTopIsTrue) {
       logger.debug("OP_IF stack top was true")
@@ -66,7 +66,7 @@ trait ControlOperationsInterpreter extends BitcoinSLogger {
       ScriptProgram(program,ScriptErrorUnbalancedConditional)
     } else if (program.stack.isEmpty) {
       logger.error("We do not have any stack elements for our OP_NOTIF")
-      ScriptProgram(program,ScriptErrorInvalidStackOperation)
+      ScriptProgram(program,ScriptErrorUnbalancedConditional)
     } else if (program.stackTopIsTrue) {
       //remove the OP_NOTIF
       val scriptWithoutOpIf : BinaryTree[ScriptToken] = removeFirstOpIf(binaryTree)
