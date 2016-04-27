@@ -41,13 +41,13 @@ class ScriptOperationFactoryTest extends FlatSpec with MustMatchers {
   it must "find a byte to push onto stack from its byte representation" in {
     val result = ScriptOperation(2.toByte)
     result.isDefined must be (true)
-    result.get must be (BytesToPushOntoStackImpl(2))
+    result.get must be (BytesToPushOntoStack(2))
   }
 
   it must "find a script number from its hex representation" in {
     val result = ScriptOperation("02")
     result.isDefined must be (true)
-    result.get must be (BytesToPushOntoStackImpl(2))
+    result.get must be (BytesToPushOntoStack(2))
   }
 
   it must "find undefined op codes"in {

@@ -1,3 +1,4 @@
+
 package org.bitcoins.marshallers.transaction
 
 
@@ -24,8 +25,8 @@ class RawTransactionOutputParserTest extends FlatSpec with MustMatchers with Raw
     val secondOutput = txOutput(1)
     firstOutput.value must be (CurrencyUnits.toSatoshis(Bitcoins(0.0002)))
     secondOutput.value must be (CurrencyUnits.toSatoshis(Bitcoins(0.02981145)))
-    firstOutput.scriptPubKey.asm must be (Seq(OP_HASH160, BytesToPushOntoStackImpl(20),ScriptConstant("eda8ae08b5c9f973f49543e90a7c292367b3337c"), OP_EQUAL))
-    secondOutput.scriptPubKey.asm must be (Seq(OP_HASH160,BytesToPushOntoStackImpl(20), ScriptConstant("be2319b9060429692ebeffaa3be38497dc5380c8"), OP_EQUAL))
+    firstOutput.scriptPubKey.asm must be (Seq(OP_HASH160, BytesToPushOntoStack(20),ScriptConstant("eda8ae08b5c9f973f49543e90a7c292367b3337c"), OP_EQUAL))
+    secondOutput.scriptPubKey.asm must be (Seq(OP_HASH160,BytesToPushOntoStack(20), ScriptConstant("be2319b9060429692ebeffaa3be38497dc5380c8"), OP_EQUAL))
   }
 
   it must "seralialize a transaction output" in {

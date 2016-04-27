@@ -1,5 +1,6 @@
 package org.bitcoins.marshallers.transaction
 
+
 import org.bitcoins.protocol.transaction.{TransactionConstants, TransactionInput}
 import org.bitcoins.script.constant.{OP_1, BytesToPushOntoStackImpl, OP_0}
 import org.bitcoins.script.crypto.OP_CHECKMULTISIG

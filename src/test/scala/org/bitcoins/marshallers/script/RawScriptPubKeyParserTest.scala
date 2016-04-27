@@ -17,7 +17,7 @@ class RawScriptPubKeyParserTest extends FlatSpec with MustMatchers with RawScrip
 
   "RawScriptPubKeyParser" must "parse a hex string into a scriptPubKey" in {
     val scriptPubKey : ScriptPubKey = read(TestUtil.rawScriptPubKey)
-    scriptPubKey.asm must be (Seq(OP_DUP,OP_HASH160, BytesToPushOntoStack(20).get,
+    scriptPubKey.asm must be (Seq(OP_DUP,OP_HASH160, BytesToPushOntoStack(20),
       ScriptConstant("cbc20a7664f2f69e5355aa427045bc15e7c6c772"),OP_EQUALVERIFY,OP_CHECKSIG))
 
   }
@@ -30,7 +30,7 @@ class RawScriptPubKeyParserTest extends FlatSpec with MustMatchers with RawScrip
   it must "read a raw scriptPubKey and give us the expected asm" in {
     val scriptPubKey = read(TestUtil.rawP2PKHScriptPubKey)
     val expectedAsm : Seq[ScriptToken] =
-      List(OP_DUP, OP_HASH160, BytesToPushOntoStack(20).get, ScriptConstant("31a420903c05a0a7de2de40c9f02ebedbacdc172"),
+      List(OP_DUP, OP_HASH160, BytesToPushOntoStack(20), ScriptConstant("31a420903c05a0a7de2de40c9f02ebedbacdc172"),
         OP_EQUALVERIFY, OP_CHECKSIG)
     scriptPubKey.asm must be (expectedAsm)
 

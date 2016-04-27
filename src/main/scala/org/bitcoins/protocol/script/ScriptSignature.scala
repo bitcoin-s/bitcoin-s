@@ -248,8 +248,8 @@ object ScriptSignature extends Factory[ScriptSignature] with BitcoinSLogger {
     def factory(signature : ECDigitalSignature, pubKey : ECPublicKey) : ScriptSignature = {
       val signatureBytesToPushOntoStack = BytesToPushOntoStack(signature.bytes.size)
       val pubKeyBytesToPushOntoStack = BytesToPushOntoStack(pubKey.bytes.size)
-      val asm : Seq[ScriptToken] = Seq(signatureBytesToPushOntoStack.get, ScriptConstant(signature.hex),
-        pubKeyBytesToPushOntoStack.get, ScriptConstant(pubKey.hex))
+      val asm : Seq[ScriptToken] = Seq(signatureBytesToPushOntoStack, ScriptConstant(signature.hex),
+        pubKeyBytesToPushOntoStack, ScriptConstant(pubKey.hex))
       fromAsm(asm)
     }
 
