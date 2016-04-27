@@ -94,7 +94,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
               //cease script execution
               case _ if !p.script.intersect(Seq(OP_VERIF, OP_VERNOTIF)).isEmpty =>
                 logger.error("Script is invalid even when a OP_VERIF or OP_VERNOTIF occurs in an unexecuted OP_IF branch")
-                loop(ScriptProgram(p, ScriptErrorDisabledOpCode))
+                loop(ScriptProgram(p, ScriptErrorBadOpCode))
               //disabled splice operation
               case _ if !p.script.intersect(Seq(OP_CAT, OP_SUBSTR, OP_LEFT, OP_RIGHT)).isEmpty =>
                 logger.error("Script is invalid because it contains a disabled splice operation")
@@ -232,16 +232,16 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
               case (nop: NOP) :: t => loop(ScriptProgram(p, p.stack, t))
               case OP_RESERVED :: t =>
                 logger.error("OP_RESERVED automatically marks transaction invalid")
-                loop(ScriptProgram(p,ScriptErrorDisabledOpCode))
+                loop(ScriptProgram(p,ScriptErrorBadOpCode))
               case OP_VER :: t =>
                 logger.error("Transaction is invalid when executing OP_VER")
-                loop(ScriptProgram(p,ScriptErrorDisabledOpCode))
+                loop(ScriptProgram(p,ScriptErrorBadOpCode))
               case OP_RESERVED1 :: t =>
                 logger.error("Transaction is invalid when executing OP_RESERVED1")
-                loop(ScriptProgram(p,ScriptErrorDisabledOpCode))
+                loop(ScriptProgram(p,ScriptErrorBadOpCode))
               case OP_RESERVED2 :: t =>
                 logger.error("Transaction is invalid when executing OP_RESERVED2")
-                loop(ScriptProgram(p,ScriptErrorDisabledOpCode))
+                loop(ScriptProgram(p,ScriptErrorBadOpCode))
 
               case (reservedOperation : ReservedOperation) :: t =>
                 logger.error("Undefined operation found which automatically fails the script: " + reservedOperation)
@@ -322,11 +322,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
 
           //if the program is valid, return if the stack top is true
           //else the program is false since something illegal happened during script evaluation
-          scriptPubKeyExecutedProgram.error.isDefined match {
-            case true =>  scriptPubKeyExecutedProgram
-            case false => scriptPubKeyExecutedProgram
-          }
-
+          scriptPubKeyExecutedProgram
         } else scriptSigExecutedProgram
 
     }

@@ -8,7 +8,7 @@ import org.bitcoins.util.{ScriptProgramTestUtil, TestUtil}
 import org.scalacoin.script.ScriptProgram
 import org.scalacoin.script.bitwise.OP_EQUAL
 import org.scalacoin.script.flag.ScriptFlag
-import org.scalacoin.script.result.ScriptErrorInvalidStackOperation
+import org.scalacoin.script.result.{ScriptErrorBadOpCode, ScriptErrorInvalidStackOperation}
 import org.scalacoin.util.{ScriptProgramTestUtil, TestUtil}
 import org.scalatest.{FlatSpec, MustMatchers}
 
@@ -94,7 +94,7 @@ class ConstantInterpreterTest extends FlatSpec with MustMatchers with ConstantIn
     val program = ScriptProgram(ScriptProgram(TestUtil.testProgramExecutionInProgress, stack,script),Seq[ScriptFlag]())
 
     val newProgram  = ScriptProgramTestUtil.toExecutedScriptProgram(opPushData1(program))
-    newProgram.error must be (Some(ScriptErrorInvalidStackOperation))
+    newProgram.error must be (Some(ScriptErrorBadOpCode))
   }
 
 

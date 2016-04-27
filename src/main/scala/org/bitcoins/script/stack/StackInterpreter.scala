@@ -1,6 +1,7 @@
 package org.bitcoins.script.stack
 
 
+
 import org.bitcoins.script.error.{ScriptErrorMinimalData, ScriptErrorInvalidStackOperation}
 import org.bitcoins.script.flag.ScriptFlagUtil
 import org.bitcoins.script.{ScriptProgram}
@@ -83,7 +84,6 @@ trait StackInterpreter extends BitcoinSLogger {
         logger.error("OP_TOALTSTACK requires an element to be on the stack")
         ScriptProgram(program,ScriptErrorInvalidStackOperation)
     }
-
   }
 
   /**
@@ -99,7 +99,7 @@ trait StackInterpreter extends BitcoinSLogger {
         program.script.tail, program.altStack.tail, ScriptProgram.AltStack)
       case false =>
         logger.error("Alt Stack must have at least one item on it for OP_FROMALTSTACK")
-        ScriptProgram(program,ScriptErrorInvalidStackOperation)
+        ScriptProgram(program,ScriptErrorInvalidAltStackOperation)
     }
   }
 

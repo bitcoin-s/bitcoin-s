@@ -181,12 +181,12 @@ case object ScriptErrorCleanStack extends ScriptError {
 /* softfork safeness */
 //SCRIPT_ERR_DISCOURAGE_UPGRADABLE_NOPS,
 case object ScriptErrorDiscourageUpgradableNOPs extends ScriptError {
-  override def description : String = ""
+  override def description : String = "DISCOURAGE_UPGRADABLE_NOPS"
 }
 
 //SCRIPT_ERR_ERROR_COUNT
 case object ScriptErrorCount extends ScriptError {
-  override def description : String = "DISCOURAGE_UPGRADABLE_NOPS"
+  override def description : String = "ERROR_COUNT"
 }
 
 

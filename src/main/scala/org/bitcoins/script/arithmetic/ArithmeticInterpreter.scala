@@ -360,7 +360,7 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
       case Some(s : ScriptConstant) =>
         if (ScriptFlagUtil.requireMinimalData(program.flags) && !BitcoinScriptUtil.isShortestEncoding(s)) {
           logger.error("The number you gave us is not encoded in the shortest way possible")
-          ScriptProgram(program, ScriptErrorMinimalData)
+          ScriptProgram(program, ScriptErrorUnknownError)
         } else {
           val interpretedNumber = ScriptNumber(BitcoinSUtil.hexToLong(s.hex))
           val newProgram = ScriptProgram(program, interpretedNumber ::  program.stack.tail, ScriptProgram.Stack)
