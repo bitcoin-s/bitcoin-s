@@ -5,6 +5,11 @@ import org.bitcoins.script.bitwise.OP_EQUAL
 import org.bitcoins.script.error.ScriptErrorInvalidStackOperation
 import org.bitcoins.script.flag.ScriptFlag
 import org.bitcoins.util.{ScriptProgramTestUtil, TestUtil}
+import org.scalacoin.script.ScriptProgram
+import org.scalacoin.script.bitwise.OP_EQUAL
+import org.scalacoin.script.flag.ScriptFlag
+import org.scalacoin.script.result.ScriptErrorInvalidStackOperation
+import org.scalacoin.util.{ScriptProgramTestUtil, TestUtil}
 import org.scalatest.{FlatSpec, MustMatchers}
 
 import scala.util.Try

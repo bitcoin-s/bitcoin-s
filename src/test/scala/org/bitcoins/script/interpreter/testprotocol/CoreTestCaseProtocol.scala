@@ -1,5 +1,6 @@
 package org.bitcoins.script.interpreter.testprotocol
 
+
 import org.bitcoins.marshallers.script.ScriptParser
 import org.bitcoins.marshallers.script.ScriptPubKeyMarshaller.ScriptPubKeyFormatter
 import org.bitcoins.marshallers.script.ScriptSignatureMarshaller.ScriptSignatureFormatter
@@ -27,7 +28,7 @@ object CoreTestCaseProtocol extends DefaultJsonProtocol with BitcoinSLogger {
         //means that the line is probably a separator between different types of test cases i.e.
         //["Equivalency of different numeric encodings"]
         None
-      } else if (elements.size == 3) {
+      } /*else if (elements.size == 3) {
 
         val scriptPubKeyAsm = parseScriptPubKeyAsm(elements(1))
         val scriptPubKey = ScriptPubKey.fromAsm(scriptPubKeyAsm)
@@ -38,7 +39,7 @@ object CoreTestCaseProtocol extends DefaultJsonProtocol with BitcoinSLogger {
 
         val flags = elements(2).convertTo[String]
         Some(CoreTestCaseImpl(scriptSignatureCoreTestCase,scriptPubKeyCoreTestCase,flags,"No comments from bitcoin core ",elements.toString))
-      } else if (elements.size == 4) {
+      }*/ else if (elements.size == 5) {
         val scriptPubKeyAsm : Seq[ScriptToken] = parseScriptPubKeyAsm(elements(1))
         val scriptPubKey = ScriptPubKey.fromAsm(scriptPubKeyAsm)
         val scriptPubKeyCoreTestCase = ScriptPubKeyCoreTestCaseImpl(scriptPubKeyAsm, scriptPubKey)
@@ -46,8 +47,11 @@ object CoreTestCaseProtocol extends DefaultJsonProtocol with BitcoinSLogger {
         val scriptSignature : ScriptSignature = ScriptSignature(scriptSignatureAsm,scriptPubKey)
         val scriptSignatureCoreTestCase = ScriptSignatureCoreTestCaseImpl(scriptSignatureAsm,scriptSignature)
         val flags = elements(2).convertTo[String]
-        val comments = elements(3).convertTo[String]
-        Some(CoreTestCaseImpl(scriptSignatureCoreTestCase,scriptPubKeyCoreTestCase,flags,comments, elements.toString))
+        logger.info("Result: " + elements(3).convertTo[String])
+        val expectedResult = ScriptResult(elements(3).convertTo[String])
+        val comments = elements(4).convertTo[String]
+        Some(CoreTestCaseImpl(scriptSignatureCoreTestCase,scriptPubKeyCoreTestCase,flags,
+          expectedResult,comments, elements.toString))
       } else None
 
     }

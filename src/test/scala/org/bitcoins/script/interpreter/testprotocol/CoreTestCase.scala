@@ -1,6 +1,7 @@
 package org.bitcoins.script.interpreter.testprotocol
 
 import org.bitcoins.protocol.script.{ScriptPubKey, ScriptSignature}
+import org.scalacoin.script.result.ScriptResult
 
 /**
  * Created by chris on 1/18/16.
@@ -12,9 +13,11 @@ trait CoreTestCase {
   def scriptSig : ScriptSignatureCoreTestCase
   def scriptPubKey : ScriptPubKeyCoreTestCase
   def flags : String
+  def expectedResult : ScriptResult
   def comments : String
   def raw : String
 }
 
 case class CoreTestCaseImpl(scriptSig : ScriptSignatureCoreTestCase,
-  scriptPubKey: ScriptPubKeyCoreTestCase, flags : String, comments : String, raw : String) extends CoreTestCase
+  scriptPubKey: ScriptPubKeyCoreTestCase, flags : String, expectedResult : ScriptResult,
+  comments : String, raw : String) extends CoreTestCase

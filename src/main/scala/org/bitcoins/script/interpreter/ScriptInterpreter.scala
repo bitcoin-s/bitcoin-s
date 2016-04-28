@@ -1,12 +1,13 @@
+
 package org.bitcoins.script.interpreter
 
 import org.bitcoins.protocol.script._
 import org.bitcoins.protocol.transaction.Transaction
 import org.bitcoins.script.error._
 import org.bitcoins.script.flag._
-import org.bitcoins.script.locktime.{OP_CHECKLOCKTIMEVERIFY, LockTimeInterpreter}
+import org.bitcoins.script.locktime.{LockTimeInterpreter, OP_CHECKLOCKTIMEVERIFY}
 import org.bitcoins.script.splice._
-import org.bitcoins.script.{ExecutionInProgressScriptProgram, PreExecutionScriptProgram, ExecutedScriptProgram, ScriptProgram}
+import org.bitcoins.script.{ExecutedScriptProgram, ExecutionInProgressScriptProgram, PreExecutionScriptProgram, ScriptProgram}
 import org.bitcoins.script.arithmetic._
 import org.bitcoins.script.bitwise._
 import org.bitcoins.script.constant._
@@ -14,7 +15,8 @@ import org.bitcoins.script.control._
 import org.bitcoins.script.crypto._
 import org.bitcoins.script.reserved._
 import org.bitcoins.script.stack._
-import org.bitcoins.util.{BitcoinScriptUtil, BitcoinSLogger}
+import org.bitcoins.util.{BitcoinSLogger, BitcoinScriptUtil}
+import org.scalacoin.script.result.{ScriptOk, ScriptResult}
 import org.slf4j.LoggerFactory
 
 import scala.annotation.tailrec
@@ -40,7 +42,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
    * @param program the program to be interpreted
    * @return
    */
-  def run(program : PreExecutionScriptProgram) : Boolean = {
+  def run(program : PreExecutionScriptProgram) : ScriptResult = {
     //TODO: Think about this more to change this from being mutable to immutable - perhaps
     //passing this as an implicit argument to our loop function
     /**
@@ -329,11 +331,15 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
 
     }
 
-    if (executedProgram.error.isDefined) false
+    if (executedProgram.error.isDefined) executedProgram.error.get
     else if (executedProgram.stackTopIsTrue && executedProgram.flags.contains(ScriptVerifyCleanStack)) {
       //require that the stack after execution has exactly one element on it
-      executedProgram.stack.size == 1
-    } else executedProgram.stackTopIsTrue
+      executedProgram.stack.size == 1 match {
+        case true => ScriptOk
+        case false => ScriptErrorCleanStack
+      }
+    } else if (executedProgram.stackTopIsTrue) ScriptOk
+    else ScriptErrorEvalFalse
 
   }
 

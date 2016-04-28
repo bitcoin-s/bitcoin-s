@@ -1,5 +1,6 @@
 package org.bitcoins.script
 
+
 import org.bitcoins.crypto.{TransactionSignatureComponentFactory, TransactionSignatureComponent}
 import org.bitcoins.protocol.script.{ScriptSignature, ScriptPubKey}
 import org.bitcoins.protocol.transaction.Transaction
