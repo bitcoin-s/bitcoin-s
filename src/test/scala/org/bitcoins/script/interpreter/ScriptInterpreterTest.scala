@@ -3,21 +3,23 @@ package org.bitcoins.script.interpreter
 import java.io.File
 
 import com.sun.org.apache.bcel.internal.generic.NOP
-import org.bitcoins.protocol.script.{ScriptPubKey}
+import org.bitcoins.protocol.script.ScriptPubKey
 import org.bitcoins.script.ScriptProgram
 import org.bitcoins.script.bitwise.{OP_EQUAL, OP_EQUALVERIFY}
 import org.bitcoins.script.constant._
 import org.bitcoins.script.control.OP_VERIFY
 import org.bitcoins.script.crypto.{OP_CHECKSIG, OP_HASH160}
 import org.bitcoins.script.flag.ScriptFlagFactory
-import org.bitcoins.script.interpreter.testprotocol.{CoreTestCaseProtocol, CoreTestCase}
+import org.bitcoins.script.interpreter.testprotocol.{CoreTestCase, CoreTestCaseProtocol}
 import org.bitcoins.script.reserved.OP_NOP
 import org.bitcoins.script.stack.OP_DUP
-import org.bitcoins.util.{BitcoinSLogger, TransactionTestUtil, TestUtil}
-import org.scalatest.{MustMatchers, FlatSpec}
+import org.bitcoins.util.{BitcoinSLogger, TestUtil, TransactionTestUtil}
+import org.scalatest.{FlatSpec, MustMatchers}
 import org.slf4j.LoggerFactory
 import CoreTestCaseProtocol._
 import spray.json._
+
+import scala.io.Source
 /**
  * Created by chris on 1/6/16.
  */
@@ -26,7 +28,8 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterp
   "ScriptInterpreter" must "evaluate all the scripts from the bitcoin core script_tests.json" in {
 
 
-    val source = scala.io.Source.fromFile("src/test/scala/org/scalacoin/script/interpreter/script_tests.json")
+
+    val source = Source.fromURL(getClass.getResource("/script_tests.json"))
 
     //use this to represent a single test case from script_valid.json
 /*    val lines =
@@ -63,5 +66,4 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterp
       }
     }
   }
-
 }
