@@ -170,6 +170,10 @@ class ScalaRPCClient (client : String, network : String) extends MarshallerUtil 
    */
   def getBestBlockHash : String = sendCommand("getbestblockhash")
 
+  def getNewBlockHex : String = sendCommand("getnewblockhex")
+
+  
+
 
 
 
