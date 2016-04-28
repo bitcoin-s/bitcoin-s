@@ -20,6 +20,6 @@
         <appender-ref ref="STDOUT" />
     </root>
 
-    <logger name="org.scalacoin" level="INFO"/>
+    <logger name="org.bitcoins" level="INFO"/>
 
 </configuration>
