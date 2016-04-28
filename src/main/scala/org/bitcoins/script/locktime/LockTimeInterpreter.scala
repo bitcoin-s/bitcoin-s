@@ -1,7 +1,7 @@
 package org.bitcoins.script.locktime
 
 import org.bitcoins.protocol.transaction.TransactionConstants
-import org.bitcoins.script.constant.{ScriptToken, ScriptNumberImpl, ScriptNumber}
+import org.bitcoins.script.constant.{ScriptToken,  ScriptNumber}
 import org.bitcoins.script.error.{ScriptError, ScriptErrorNegativeLockTime, ScriptErrorUnsatisfiedLocktime, ScriptErrorInvalidStackOperation}
 import org.bitcoins.script.{ScriptProgram}
 import org.bitcoins.util.BitcoinSLogger

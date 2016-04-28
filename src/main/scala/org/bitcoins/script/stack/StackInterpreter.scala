@@ -1,5 +1,6 @@
 package org.bitcoins.script.stack
 
+
 import org.bitcoins.script.error.{ScriptErrorMinimalData, ScriptErrorInvalidStackOperation}
 import org.bitcoins.script.flag.ScriptFlagUtil
 import org.bitcoins.script.{ScriptProgram}
