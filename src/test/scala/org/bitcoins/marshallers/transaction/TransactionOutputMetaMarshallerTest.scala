@@ -6,7 +6,7 @@ import org.bitcoins.protocol.{BitcoinAddress, script}
 import org.bitcoins.protocol.script.ScriptPubKey
 import org.bitcoins.protocol.transaction.TransactionOutputMeta
 import org.bitcoins.script.bitwise.OP_EQUAL
-import org.bitcoins.script.constant.{BytesToPushOntoStackImpl, ScriptConstant, ScriptToken}
+import org.bitcoins.script.constant.{BytesToPushOntoStack, ScriptConstant, ScriptToken}
 import org.bitcoins.script.crypto.OP_HASH160
 import org.scalatest.{FlatSpec, MustMatchers}
 import spray.json._

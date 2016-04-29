@@ -2,7 +2,7 @@ package org.bitcoins.protocol.script
 
 import org.bitcoins.crypto.ECFactory
 import org.bitcoins.script.bitwise.OP_EQUALVERIFY
-import org.bitcoins.script.constant.{BytesToPushOntoStackImpl, ScriptConstant, ScriptToken}
+import org.bitcoins.script.constant.{BytesToPushOntoStack, ScriptConstant, ScriptToken}
 import org.bitcoins.script.crypto.{OP_CHECKSIG, OP_CODESEPARATOR, OP_HASH160}
 import org.bitcoins.script.stack.OP_DUP
 import org.bitcoins.util.TestUtil

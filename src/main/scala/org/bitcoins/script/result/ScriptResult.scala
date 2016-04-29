@@ -1,4 +1,4 @@
-package org.scalacoin.script.result
+package org.bitcoins.script.result
 
 
 

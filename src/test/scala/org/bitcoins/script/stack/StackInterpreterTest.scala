@@ -1,11 +1,11 @@
 package org.bitcoins.script.stack
 
-import org.bitcoins.script.error.ScriptErrorInvalidStackOperation
 import org.bitcoins.script.{ScriptProgram}
 import org.bitcoins.script.bitwise.OP_EQUAL
 import org.bitcoins.script.constant._
 import org.bitcoins.util.{ScriptProgramTestUtil, BitcoinSUtil, TestUtil}
 import org.scalatest.{FlatSpec, MustMatchers}
+import org.bitcoins.script.result._
 
 /**
  * Created by chris on 1/6/16.

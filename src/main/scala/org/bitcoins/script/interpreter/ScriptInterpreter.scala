@@ -3,7 +3,6 @@ package org.bitcoins.script.interpreter
 
 import org.bitcoins.protocol.script._
 import org.bitcoins.protocol.transaction.Transaction
-import org.bitcoins.script.error._
 import org.bitcoins.script.flag._
 import org.bitcoins.script.locktime.{LockTimeInterpreter, OP_CHECKLOCKTIMEVERIFY}
 import org.bitcoins.script.splice._
@@ -16,7 +15,7 @@ import org.bitcoins.script.crypto._
 import org.bitcoins.script.reserved._
 import org.bitcoins.script.stack._
 import org.bitcoins.util.{BitcoinSLogger, BitcoinScriptUtil}
-import org.scalacoin.script.result.{ScriptOk, ScriptResult}
+import org.bitcoins.script.result._
 import org.slf4j.LoggerFactory
 
 import scala.annotation.tailrec

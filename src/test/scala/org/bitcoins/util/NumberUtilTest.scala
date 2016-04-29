@@ -3,7 +3,6 @@ package org.bitcoins.util
 import org.bitcoins.protocol.script.ScriptSignature
 
 import org.bitcoins.protocol.CompactSizeUIntImpl
-import org.bitcoins.script.constant.ScriptNumberImpl
 import org.scalatest.{FlatSpec, MustMatchers}
 
 /**

@@ -2,11 +2,11 @@ package org.bitcoins.script.stack
 
 
 
-import org.bitcoins.script.error.{ScriptErrorMinimalData, ScriptErrorInvalidStackOperation}
 import org.bitcoins.script.flag.ScriptFlagUtil
-import org.bitcoins.script.{ScriptProgram}
+import org.bitcoins.script.ScriptProgram
 import org.bitcoins.script.constant._
-import org.bitcoins.util.{BitcoinScriptUtil, BitcoinSLogger, BitcoinSUtil}
+import org.bitcoins.script.result._
+import org.bitcoins.util.{BitcoinSLogger, BitcoinSUtil, BitcoinScriptUtil}
 
 import scala.util.{Failure, Success, Try}
 

@@ -6,6 +6,7 @@ import org.bitcoins.marshallers.script.ScriptPubKeyMarshaller.ScriptPubKeyFormat
 import org.bitcoins.marshallers.script.ScriptSignatureMarshaller.ScriptSignatureFormatter
 import org.bitcoins.protocol.script._
 import org.bitcoins.script.constant.{ScriptOperation, ScriptToken}
+import org.bitcoins.script.result.ScriptResult
 import org.bitcoins.util.{BitcoinSLogger, BitcoinSUtil}
 import org.slf4j.LoggerFactory
 import spray.json._

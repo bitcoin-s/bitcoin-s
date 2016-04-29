@@ -1,10 +1,10 @@
 package org.bitcoins.script.splice
 
-import org.bitcoins.script.error.ScriptErrorInvalidStackOperation
 import org.bitcoins.script.{ScriptOperationFactory, ScriptProgram}
 import org.bitcoins.script.constant._
 import Math._
 
+import org.bitcoins.script.result.ScriptErrorInvalidStackOperation
 import org.bitcoins.util.BitcoinSLogger
 
 /**

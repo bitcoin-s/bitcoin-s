@@ -1,14 +1,14 @@
 package org.bitcoins.script.control
 
 import org.bitcoins.marshallers.script.ScriptParser
-import org.bitcoins.script.error.{ScriptErrorOpReturn, ScriptErrorInvalidStackOperation}
-import org.bitcoins.script.{ScriptProgram}
+import org.bitcoins.script.ScriptProgram
 import org.bitcoins.script.arithmetic.OP_ADD
 import org.bitcoins.script.bitwise.OP_EQUAL
 import org.bitcoins.script.constant._
-import org.bitcoins.script.reserved.{OP_VER, OP_RESERVED}
+import org.bitcoins.script.reserved.{OP_RESERVED, OP_VER}
+import org.bitcoins.script.result.{ScriptErrorInvalidStackOperation, ScriptErrorOpReturn}
 import org.bitcoins.util._
-import org.scalatest.{MustMatchers, FlatSpec}
+import org.scalatest.{FlatSpec, MustMatchers}
 
 /**
  * Created by chris on 1/6/16.

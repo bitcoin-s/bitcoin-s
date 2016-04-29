@@ -1,10 +1,10 @@
 package org.bitcoins.script.bitwise
 
 
-import org.bitcoins.script.error.ScriptErrorInvalidStackOperation
-import org.bitcoins.script.{ScriptProgram}
+import org.bitcoins.script.result._
+import org.bitcoins.script.{ExecutedScriptProgram, ExecutionInProgressScriptProgram, PreExecutionScriptProgram, ScriptProgram}
 import org.bitcoins.script.constant._
-import org.bitcoins.script.control.{OP_VERIFY, ControlOperationsInterpreter}
+import org.bitcoins.script.control.{ControlOperationsInterpreter, OP_VERIFY}
 import org.bitcoins.util.BitcoinSUtil
 import org.slf4j.LoggerFactory
 

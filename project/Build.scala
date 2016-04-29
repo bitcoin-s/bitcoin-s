@@ -4,7 +4,7 @@ object BitcoinSBuild extends Build {
 
   val appName = "bitcoins"
   val appV = "0.0.1" 
-  val scalaV = "2.11.4"
+  val scalaV = "2.11.7"
   val organization = "org.bitcoins"
   val slf4jV = "1.7.5"
   val appDependencies = Seq(

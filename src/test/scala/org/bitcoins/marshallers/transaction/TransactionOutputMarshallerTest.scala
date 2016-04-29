@@ -3,7 +3,7 @@ package org.bitcoins.marshallers.transaction
 import org.bitcoins.protocol.BitcoinAddress
 import org.bitcoins.protocol.transaction.TransactionOutput
 import org.bitcoins.script.bitwise.OP_EQUALVERIFY
-import org.bitcoins.script.constant.{BytesToPushOntoStackImpl, ScriptConstant, ScriptToken}
+import org.bitcoins.script.constant.{BytesToPushOntoStack, ScriptConstant, ScriptToken}
 import org.bitcoins.script.crypto.{OP_CHECKSIG, OP_HASH160}
 import org.bitcoins.script.stack.OP_DUP
 import org.scalatest.{FlatSpec, MustMatchers}

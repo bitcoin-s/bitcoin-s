@@ -1,6 +1,6 @@
 package org.bitcoins.script.constant
 
-import org.bitcoins.script.error.{ScriptErrorMinimalData, ScriptErrorInvalidStackOperation}
+import org.bitcoins.script.result._
 import org.bitcoins.script.flag.{ScriptFlagUtil, ScriptVerifyMinimalData}
 import org.bitcoins.script.ScriptProgram
 import org.bitcoins.util.{BitcoinScriptUtil, BitcoinSLogger, BitcoinSUtil}

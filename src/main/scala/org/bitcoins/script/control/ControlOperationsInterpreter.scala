@@ -1,6 +1,6 @@
 package org.bitcoins.script.control
 
-import org.bitcoins.script.error.{ScriptErrorVerify, ScriptErrorOpReturn, ScriptErrorInvalidStackOperation, ScriptErrorUnbalancedConditional}
+import org.bitcoins.script.result._
 import org.bitcoins.script.{ScriptProgram}
 import org.bitcoins.script.constant._
 import org.bitcoins.util._

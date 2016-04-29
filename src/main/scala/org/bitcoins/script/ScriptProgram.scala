@@ -5,7 +5,7 @@ import org.bitcoins.crypto.{TransactionSignatureComponentFactory, TransactionSig
 import org.bitcoins.protocol.script.{ScriptSignature, ScriptPubKey}
 import org.bitcoins.protocol.transaction.Transaction
 import org.bitcoins.script.constant._
-import org.bitcoins.script.error.ScriptError
+import org.bitcoins.script.result._
 import org.bitcoins.script.flag.ScriptFlag
 import org.bitcoins.util.Factory
 
