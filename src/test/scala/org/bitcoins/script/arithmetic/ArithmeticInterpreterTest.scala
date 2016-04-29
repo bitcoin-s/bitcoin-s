@@ -1,7 +1,7 @@
 package org.bitcoins.script.arithmetic
 
 
-import org.bitcoins.script.error.ScriptErrorInvalidStackOperation
+import org.bitcoins.script.result._
 import org.bitcoins.script.flag.ScriptFlag
 import org.bitcoins.script.{ScriptProgram}
 import org.bitcoins.script.constant._

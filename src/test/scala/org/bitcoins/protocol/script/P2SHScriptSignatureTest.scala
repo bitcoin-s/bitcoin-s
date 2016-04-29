@@ -2,7 +2,7 @@ package org.bitcoins.protocol.script
 
 
 import org.bitcoins.crypto.ECFactory
-import org.bitcoins.script.constant.{BytesToPushOntoStackImpl, OP_0, ScriptConstant}
+import org.bitcoins.script.constant.{BytesToPushOntoStack, OP_0, ScriptConstant}
 import org.bitcoins.util.TestUtil
 import org.scalatest.{FlatSpec, MustMatchers}
 

@@ -1,7 +1,7 @@
 package org.bitcoins.script.interpreter.testprotocol
 
 import org.bitcoins.protocol.script.{ScriptPubKey, ScriptSignature}
-import org.scalacoin.script.result.ScriptResult
+import org.bitcoins.script.result.ScriptResult
 
 /**
  * Created by chris on 1/18/16.

@@ -31,6 +31,7 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterp
 
     val source = Source.fromURL(getClass.getResource("/script_tests.json"))
 
+
     //use this to represent a single test case from script_valid.json
 /*    val lines =
         """

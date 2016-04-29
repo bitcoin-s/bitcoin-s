@@ -4,7 +4,7 @@ import org.bitcoins.crypto._
 import org.bitcoins.protocol.script._
 import org.bitcoins.protocol.transaction.Transaction
 import org.bitcoins.script.control.{ControlOperationsInterpreter, OP_VERIFY}
-import org.bitcoins.script.error._
+import org.bitcoins.script.result._
 import org.bitcoins.script.flag.{ScriptFlagUtil, ScriptVerifyNullDummy, ScriptVerifyDerSig}
 import org.bitcoins.script._
 import org.bitcoins.script.constant._

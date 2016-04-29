@@ -5,7 +5,7 @@ package org.bitcoins.marshallers.transaction
 import org.bitcoins.currency.{Bitcoins, CurrencyUnits, Satoshis}
 import org.bitcoins.protocol.transaction.TransactionOutput
 import org.bitcoins.script.bitwise.OP_EQUAL
-import org.bitcoins.script.constant.{BytesToPushOntoStackImpl, ScriptConstant}
+import org.bitcoins.script.constant.{BytesToPushOntoStack, ScriptConstant}
 import org.bitcoins.script.crypto.OP_HASH160
 import org.scalatest.{FlatSpec, MustMatchers}
 

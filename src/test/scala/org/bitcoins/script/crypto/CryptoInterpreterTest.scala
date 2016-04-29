@@ -2,7 +2,7 @@ package org.bitcoins.script.crypto
 
 import org.bitcoins.protocol.script.{ScriptSignature, ScriptPubKey}
 import org.bitcoins.protocol.transaction._
-import org.bitcoins.script.error.{ScriptErrorSigDer, ScriptErrorSigNullDummy, ScriptErrorInvalidStackOperation}
+import org.bitcoins.script.result._
 import org.bitcoins.script.{ExecutionInProgressScriptProgram, PreExecutionScriptProgram, ExecutedScriptProgram, ScriptProgram}
 import org.bitcoins.script.arithmetic.OP_NOT
 import org.bitcoins.script.flag.{ScriptFlagFactory, ScriptVerifyDerSig, ScriptVerifyNullDummy}
@@ -14,7 +14,7 @@ import org.scalatest.{MustMatchers, FlatSpec}
  * Created by chris on 1/6/16.
  */
 class CryptoInterpreterTest extends FlatSpec with MustMatchers with CryptoInterpreter with BitcoinSLogger {
-  val stack = List(ScriptConstantImpl("02218AD6CDC632E7AE7D04472374311CEBBBBF0AB540D2D08C3400BB844C654231".toLowerCase))
+  val stack = List(ScriptConstant("02218AD6CDC632E7AE7D04472374311CEBBBBF0AB540D2D08C3400BB844C654231".toLowerCase))
   "CryptoInterpreter" must "evaluate OP_HASH160 correctly when it is on top of the script stack" in {
 
     val script = List(OP_HASH160)
@@ -43,38 +43,38 @@ class CryptoInterpreterTest extends FlatSpec with MustMatchers with CryptoInterp
   }
 
   it must "evaluate an OP_RIPEMD160 correctly" in {
-    val stack = List(ScriptConstantImpl(""))
+    val stack = List(ScriptConstant(""))
     val script = List(OP_RIPEMD160)
     val program = ScriptProgram(TestUtil.testProgram, stack,script)
     val newProgram = opRipeMd160(program)
-    newProgram.stack must be (List(ScriptConstantImpl("9c1185a5c5e9fc54612808977ee8f548b2258d31")))
+    newProgram.stack must be (List(ScriptConstant("9c1185a5c5e9fc54612808977ee8f548b2258d31")))
     newProgram.script.isEmpty must be (true)
   }
 
   it must "evaluate a OP_SHA1 correctly" in {
-    val stack = List(ScriptConstantImpl("ab"))
+    val stack = List(ScriptConstant("ab"))
     val script = List(OP_SHA1)
     val program = ScriptProgram(TestUtil.testProgram, stack,script)
     val newProgram = opSha1(program)
-    newProgram.stack.head must be (ScriptConstantImpl("fe83f217d464f6fdfa5b2b1f87fe3a1a47371196"))
+    newProgram.stack.head must be (ScriptConstant("fe83f217d464f6fdfa5b2b1f87fe3a1a47371196"))
     newProgram.script.isEmpty must be (true)
   }
 
   it must "evaluate an OP_SHA256 correctly" in {
-    val stack = List(ScriptConstantImpl(""))
+    val stack = List(ScriptConstant(""))
     val script = List(OP_SHA256)
     val program = ScriptProgram(TestUtil.testProgram, stack,script)
     val newProgram = opSha256(program)
-    newProgram.stack must be (List(ScriptConstantImpl("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855")))
+    newProgram.stack must be (List(ScriptConstant("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855")))
     newProgram.script.isEmpty must be (true)
   }
 
   it must "evaluate an OP_HASH256 correctly" in {
-    val stack = List(ScriptConstantImpl(""))
+    val stack = List(ScriptConstant(""))
     val script = List(OP_HASH256)
     val program = ScriptProgram(TestUtil.testProgram, stack,script)
     val newProgram = opHash256(program)
-    newProgram.stack must be (List(ScriptConstantImpl("5df6e0e2761359d30a8275058e299fcc0381534545f55cf43e41983f5d4c9456")))
+    newProgram.stack must be (List(ScriptConstant("5df6e0e2761359d30a8275058e299fcc0381534545f55cf43e41983f5d4c9456")))
     newProgram.script.isEmpty must be (true)
   }
 
@@ -159,13 +159,13 @@ class CryptoInterpreterTest extends FlatSpec with MustMatchers with CryptoInterp
     val (creditingTx,outputIndex) = TransactionTestUtil.buildCreditingTransaction(p2shScriptPubKey)
     val (spendingTx,inputIndex) = TransactionTestUtil.buildSpendingTransaction(creditingTx,p2shScriptSig,outputIndex)
 
-    val stack = List(ScriptNumberImpl(3),
-      ScriptConstantImpl("03363d90d447b00c9c99ceac05b6262ee053441c7e55552ffe526bad8f83ff4640"),
-      ScriptConstantImpl("038282263212c609d9ea2a6e3e172de238d8c39cabd5ac1ca10646e23fd5f51508"),
-      ScriptConstantImpl("0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"),
-      ScriptNumberImpl(2),
-      ScriptConstantImpl("30440220563e5b3b1fc11662a84bc5ea2a32cc3819703254060ba30d639a1aaf2d5068ad0220601c1f47ddc76d93284dd9ed68f7c9974c4a0ea7cbe8a247d6bc3878567a5fca01"),
-      ScriptConstantImpl("304402205b7d2c2f177ae76cfbbf14d589c113b0b35db753d305d5562dd0b61cbf366cfb02202e56f93c4f08a27f986cd424ffc48a462c3202c4902104d4d0ff98ed28f4bf8001"),
+    val stack = List(ScriptNumber(3),
+      ScriptConstant("03363d90d447b00c9c99ceac05b6262ee053441c7e55552ffe526bad8f83ff4640"),
+      ScriptConstant("038282263212c609d9ea2a6e3e172de238d8c39cabd5ac1ca10646e23fd5f51508"),
+      ScriptConstant("0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"),
+      ScriptNumber(2),
+      ScriptConstant("30440220563e5b3b1fc11662a84bc5ea2a32cc3819703254060ba30d639a1aaf2d5068ad0220601c1f47ddc76d93284dd9ed68f7c9974c4a0ea7cbe8a247d6bc3878567a5fca01"),
+      ScriptConstant("304402205b7d2c2f177ae76cfbbf14d589c113b0b35db753d305d5562dd0b61cbf366cfb02202e56f93c4f08a27f986cd424ffc48a462c3202c4902104d4d0ff98ed28f4bf8001"),
       OP_0)
 
     val script = List(OP_CHECKMULTISIG)

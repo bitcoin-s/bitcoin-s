@@ -1,7 +1,7 @@
 package org.bitcoins.script.arithmetic
 
 import org.bitcoins.script.control.{ControlOperationsInterpreter, OP_VERIFY}
-import org.bitcoins.script.error.{ScriptErrorMinimalData, ScriptErrorUnknownError, ScriptErrorInvalidStackOperation}
+import org.bitcoins.script.result._
 import org.bitcoins.script.flag.ScriptFlagUtil
 import org.bitcoins.script.{ExecutedScriptProgram, PreExecutionScriptProgram, ExecutionInProgressScriptProgram, ScriptProgram}
 import org.bitcoins.script.constant._
