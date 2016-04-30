@@ -1,7 +1,7 @@
 This is the core functionality of bitcoin-s. 
 
 This repostitory includes the following functionality:
-  - Native Scala objects for various protocol types (Transactio n, TransactionInput, ScriptSignatures...)
+  - Native Scala objects for various protocol types (Transaction, TransactionInput, ScriptSignatures...)
   - Serializers and deserializers for bitcoin data structures mentioned above
   - An implementation of Bitcoin's Script programming language 
     - This passes all of the test cases found inside of script_tests.json on the Bitcoin Core repo
