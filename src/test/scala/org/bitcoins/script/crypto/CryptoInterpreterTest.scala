@@ -1,14 +1,14 @@
 package org.bitcoins.script.crypto
 
-import org.bitcoins.protocol.script.{ScriptSignature, ScriptPubKey}
+import org.bitcoins.protocol.script.{ScriptPubKey, ScriptSignature}
 import org.bitcoins.protocol.transaction._
 import org.bitcoins.script.result._
-import org.bitcoins.script.{ExecutionInProgressScriptProgram, PreExecutionScriptProgram, ExecutedScriptProgram, ScriptProgram}
+import org.bitcoins.script._
 import org.bitcoins.script.arithmetic.OP_NOT
 import org.bitcoins.script.flag.{ScriptFlagFactory, ScriptVerifyDerSig, ScriptVerifyNullDummy}
 import org.bitcoins.script.constant._
-import org.bitcoins.util.{ScriptProgramTestUtil, TransactionTestUtil, BitcoinSLogger, TestUtil}
-import org.scalatest.{MustMatchers, FlatSpec}
+import org.bitcoins.util.{BitcoinSLogger, ScriptProgramTestUtil, TestUtil, TransactionTestUtil}
+import org.scalatest.{FlatSpec, MustMatchers}
 
 /**
  * Created by chris on 1/6/16.
@@ -209,4 +209,17 @@ class CryptoInterpreterTest extends FlatSpec with MustMatchers with CryptoInterp
 
   }
 
+  it must "evaluate an OP_CODESEPARATOR" in {
+    val stack = List()
+    val script = Seq(OP_CODESEPARATOR)
+    val program = ScriptProgram(ScriptProgram(TestUtil.testProgramExecutionInProgress,stack,script),script,ScriptProgram.OriginalScript)
+    println(program)
+    println(program.script)
+    println(program.originalScript)
+    val newProgram = ScriptProgramTestUtil.toExecutionInProgressScriptProgram(opCodeSeparator(program))
+    newProgram.lastCodeSeparator must be (0)
+
+
+
+  }
 }

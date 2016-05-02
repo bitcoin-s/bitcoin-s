@@ -17,7 +17,6 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
 
   /**
    * a is added to b
- *
    * @param program
    * @return
    */
@@ -28,7 +27,6 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
 
   /**
    * Increments the stack top by 1
- *
    * @param program
    * @return
    */
@@ -39,7 +37,6 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
 
   /**
    * Decrements the stack top by 1
- *
    * @param program
    * @return
    */
@@ -51,7 +48,6 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
 
   /**
    * b is subtracted from a.
- *
    * @param program
    * @return
    */
@@ -62,7 +58,6 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
 
   /**
    * Takes the absolute value of the stack top
- *
    * @param program
    * @return
    */
@@ -76,7 +71,6 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
 
   /**
    * Negates the stack top
- *
    * @param program
    * @return
    */
@@ -87,7 +81,6 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
 
   /**
    * If the input is 0 or 1, it is flipped. Otherwise the output will be 0.
- *
    * @param program
    * @return
    */
@@ -99,7 +92,6 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
 
   /**
    * Returns 0 if the input is 0. 1 otherwise.
- *
    * @param program
    * @return
    */
@@ -111,7 +103,6 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
 
   /**
    * 	If both a and b are not 0, the output is 1. Otherwise 0.
- *
    * @param program
    * @return
    */
@@ -127,7 +118,6 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
 
   /**
    * If a or b is not 0, the output is 1. Otherwise 0.
- *
    * @param program
    * @return
    */
@@ -140,7 +130,6 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
 
   /**
    * Returns 1 if the numbers are equal, 0 otherwise.
- *
    * @param program
    * @return
    */
@@ -152,7 +141,6 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
 
   /**
    * Same as OP_NUMEQUAL, but runs OP_VERIFY afterward.
- *
    * @param program
    * @return
    */
@@ -178,8 +166,7 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
 
 
   /**
-   * 	Returns 1 if the numbers are not equal, 0 otherwise.
- *
+   * Returns 1 if the numbers are not equal, 0 otherwise.
    * @param program
    * @return
    */
@@ -193,8 +180,7 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
 
 
   /**
-   * 	Returns 1 if a is less than b, 0 otherwise.
- *
+   * Returns 1 if a is less than b, 0 otherwise.
    * @param program
    * @return
    */
@@ -206,8 +192,7 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
 
 
   /**
-   * 	Returns 1 if a is greater than b, 0 otherwise.
- *
+   * Returns 1 if a is greater than b, 0 otherwise.
    * @param program
    * @return
    */
@@ -219,7 +204,6 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
 
   /**
    * Returns 1 if a is less than or equal to b, 0 otherwise.
- *
    * @param program
    * @return
    */
@@ -231,7 +215,6 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
 
   /**
    *	Returns 1 if a is greater than or equal to b, 0 otherwise.
- *
    * @param program
    * @return
    */
@@ -244,7 +227,6 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
 
   /**
    * Returns the smaller of a and b.
- *
    * @param program
    * @return
    */
@@ -264,7 +246,6 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
 
   /**
    * Returns the larger of a and b.
- *
    * @param program
    * @return
    */
@@ -282,7 +263,6 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
 
   /**
    * Returns 1 if x is within the specified range (left-inclusive), 0 otherwise.
- *
    * @param program
    * @return
    */
@@ -301,7 +281,7 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
         !BitcoinScriptUtil.isShortestEncoding(b) || !BitcoinScriptUtil.isShortestEncoding(a))) {
 
         logger.error("The constant you gave us is not encoded in the shortest way possible")
-        ScriptProgram(program, ScriptErrorMinimalData)
+        ScriptProgram(program, ScriptErrorUnknownError)
       } else if (isLargerThan4Bytes(c) || isLargerThan4Bytes(b) || isLargerThan4Bytes(a)) {
         //pretty sure that an error is thrown inside of CScriptNum which in turn is caught by interpreter.cpp here
         //https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L999-L1002
@@ -324,7 +304,6 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
    * This function checks if a number is <= 4 bytes in size
    * We cannot perform arithmetic operations on bitcoin numbers that are larger than 4 bytes.
    * https://github.com/bitcoin/bitcoin/blob/a6a860796a44a2805a58391a009ba22752f64e32/src/script/script.h#L214-L239
- *
    * @param scriptNumber the script number to be checked
    * @return false if the number is larger than 4 bytes
    */
@@ -333,7 +312,6 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
 
   /**
    * Performs the given arithmetic operation on the stack head
- *
    * @param program the program whose stack top is used as an argument for the arithmetic operation
    * @param op the arithmetic ooperation that needs to be executed on the number, for instance incrementing by 1
    * @return the program with the result from performing the arithmetic operation pushed onto the top of the stack
@@ -366,7 +344,6 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
           val newProgram = ScriptProgram(program, interpretedNumber ::  program.stack.tail, ScriptProgram.Stack)
           performUnaryArithmeticOperation(newProgram, op)
         }
-
       case Some(s : ScriptToken) =>
         //pretty sure that an error is thrown inside of CScriptNum which in turn is caught by interpreter.cpp here
         //https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L999-L1002
@@ -392,7 +369,7 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
         case (x : ScriptNumber, y : ScriptNumber) =>
           if (ScriptFlagUtil.requireMinimalData(program.flags) && (!BitcoinScriptUtil.isShortestEncoding(x) || !BitcoinScriptUtil.isShortestEncoding(y))) {
             logger.error("The constant you gave us is not encoded in the shortest way possible")
-            ScriptProgram(program, ScriptErrorMinimalData)
+            ScriptProgram(program, ScriptErrorUnknownError)
           } else if (isLargerThan4Bytes(x) || isLargerThan4Bytes(y)) {
             //pretty sure that an error is thrown inside of CScriptNum which in turn is caught by interpreter.cpp here
             //https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L999-L1002
@@ -403,38 +380,20 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
             ScriptProgram(program,newStackTop :: program.stack.tail.tail,program.script.tail)
           }
         case (x : ScriptConstant, y : ScriptNumber) =>
-          if (ScriptFlagUtil.requireMinimalData(program.flags) && !BitcoinScriptUtil.isShortestEncoding(x)) {
-            logger.error("The number you gave us is not encoded in the shortest way possible")
-            ScriptProgram(program, ScriptErrorMinimalData)
-          } else {
-            //interpret x as a number
-            val interpretedNumber = ScriptNumber(BitcoinSUtil.hexToLong(x.hex))
-            val newProgram = ScriptProgram(program, interpretedNumber :: program.stack.tail, ScriptProgram.Stack)
-            performBinaryArithmeticOperation(newProgram, op)
-          }
+          //interpret x as a number
+          val interpretedNumber = ScriptNumber(x.hex)
+          val newProgram = ScriptProgram(program, interpretedNumber :: program.stack.tail, ScriptProgram.Stack)
+          performBinaryArithmeticOperation(newProgram, op)
         case (x : ScriptNumber, y : ScriptConstant) =>
-          if (ScriptFlagUtil.requireMinimalData(program.flags) && !BitcoinScriptUtil.isShortestEncoding(y)) {
-            logger.error("The number you gave us is not encoded in the shortest way possible")
-            ScriptProgram(program, ScriptErrorMinimalData)
-          } else {
-          //interpret y as a number
-            val interpretedNumber = ScriptNumber(BitcoinSUtil.hexToLong(y.hex))
-            val newProgram = ScriptProgram(program, x :: interpretedNumber ::  program.stack.tail, ScriptProgram.Stack)
-            performBinaryArithmeticOperation(newProgram, op)
-          }
+          val interpretedNumber = ScriptNumber(y.hex)
+          val newProgram = ScriptProgram(program, x :: interpretedNumber ::  program.stack.tail, ScriptProgram.Stack)
+          performBinaryArithmeticOperation(newProgram, op)
         case (x : ScriptConstant, y : ScriptConstant) =>
-
-          if (ScriptFlagUtil.requireMinimalData(program.flags) && (!BitcoinScriptUtil.isShortestEncoding(x) || !BitcoinScriptUtil.isShortestEncoding(y))) {
-            logger.error("The constant you gave us is not encoded in the shortest way possible")
-            ScriptProgram(program, ScriptErrorMinimalData)
-          } else {
-            //interpret x and y as a number
-            val interpretedNumberX = ScriptNumber(BitcoinSUtil.hexToLong(x.hex))
-            val interpretedNumberY = ScriptNumber(BitcoinSUtil.hexToLong(y.hex))
-            val newProgram = ScriptProgram(program, interpretedNumberX :: interpretedNumberY ::  program.stack.tail.tail, ScriptProgram.Stack)
-            performBinaryArithmeticOperation(newProgram, op)
-          }
-
+          //interpret x and y as a number
+          val interpretedNumberX = ScriptNumber(x.hex)
+          val interpretedNumberY = ScriptNumber(y.hex)
+          val newProgram = ScriptProgram(program, interpretedNumberX :: interpretedNumberY ::  program.stack.tail.tail, ScriptProgram.Stack)
+          performBinaryArithmeticOperation(newProgram, op)
         case (x : ScriptToken, y : ScriptToken) =>
           //pretty sure that an error is thrown inside of CScriptNum which in turn is caught by interpreter.cpp here
           //https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L999-L1002
@@ -442,8 +401,6 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
           ScriptProgram(program,ScriptErrorUnknownError)
       }
     }
-
-
   }
 
   /**
@@ -463,7 +420,7 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
       if (ScriptFlagUtil.requireMinimalData(program.flags) &&
         (!BitcoinScriptUtil.isShortestEncoding(x) || !BitcoinScriptUtil.isShortestEncoding(y))) {
         logger.error("The constant you gave us is not encoded in the shortest way possible")
-        ScriptProgram(program, ScriptErrorMinimalData)
+        ScriptProgram(program, ScriptErrorUnknownError)
       } else if (isLargerThan4Bytes(x) || isLargerThan4Bytes(y)) {
         //pretty sure that an error is thrown inside of CScriptNum which in turn is caught by interpreter.cpp here
         //https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L999-L1002
@@ -480,7 +437,6 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
   /**
    * Takes the top two stack items, parses them to numbers then executes the op function on them and places the result
    * onto the stack top
- *
    * @param program the script program whose two top stack items are used as arguments for op
    * @param op the operation that needs to be executed on the two stack top items
    * @return the program with the result of op pushed onto the top of the stack
@@ -493,7 +449,6 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
 
   /**
    * Takes the top two stack elements and parses them as script numbers
- *
    * @param program the program whose top two stack elements are being parsed as script numbers
    * @return the tuple with the first element being the first stack element, the second element in the tuple being the second stack element
    */
