@@ -281,7 +281,7 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
         !BitcoinScriptUtil.isShortestEncoding(b) || !BitcoinScriptUtil.isShortestEncoding(a))) {
 
         logger.error("The constant you gave us is not encoded in the shortest way possible")
-        ScriptProgram(program, ScriptErrorMinimalData)
+        ScriptProgram(program, ScriptErrorUnknownError)
       } else if (isLargerThan4Bytes(c) || isLargerThan4Bytes(b) || isLargerThan4Bytes(a)) {
         //pretty sure that an error is thrown inside of CScriptNum which in turn is caught by interpreter.cpp here
         //https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L999-L1002
@@ -369,7 +369,7 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
         case (x : ScriptNumber, y : ScriptNumber) =>
           if (ScriptFlagUtil.requireMinimalData(program.flags) && (!BitcoinScriptUtil.isShortestEncoding(x) || !BitcoinScriptUtil.isShortestEncoding(y))) {
             logger.error("The constant you gave us is not encoded in the shortest way possible")
-            ScriptProgram(program, ScriptErrorMinimalData)
+            ScriptProgram(program, ScriptErrorUnknownError)
           } else if (isLargerThan4Bytes(x) || isLargerThan4Bytes(y)) {
             //pretty sure that an error is thrown inside of CScriptNum which in turn is caught by interpreter.cpp here
             //https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L999-L1002
@@ -420,7 +420,7 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
       if (ScriptFlagUtil.requireMinimalData(program.flags) &&
         (!BitcoinScriptUtil.isShortestEncoding(x) || !BitcoinScriptUtil.isShortestEncoding(y))) {
         logger.error("The constant you gave us is not encoded in the shortest way possible")
-        ScriptProgram(program, ScriptErrorMinimalData)
+        ScriptProgram(program, ScriptErrorUnknownError)
       } else if (isLargerThan4Bytes(x) || isLargerThan4Bytes(y)) {
         //pretty sure that an error is thrown inside of CScriptNum which in turn is caught by interpreter.cpp here
         //https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L999-L1002

@@ -170,7 +170,7 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
         ScriptProgram(program,ScriptErrorPubKeyCount)
       } else if (ScriptFlagUtil.requireMinimalData(program.flags) && !nPossibleSignatures.isShortestEncoding) {
         logger.error("The required signatures and the possible signatures must be encoded as the shortest number possible")
-        ScriptProgram(program, ScriptErrorMinimalData)
+        ScriptProgram(program, ScriptErrorUnknownError)
       } else if (program.stack.size < 2) {
         logger.error("We need at least 2 operations on the stack")
         ScriptProgram(program,ScriptErrorInvalidStackOperation)
@@ -179,7 +179,7 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
 
         if (ScriptFlagUtil.requireMinimalData(program.flags) && !mRequiredSignatures.isShortestEncoding) {
           logger.error("The required signatures val must be the shortest encoding as possible")
-          return ScriptProgram(program,ScriptErrorMinimalData)
+          return ScriptProgram(program,ScriptErrorUnknownError)
         }
 
         if (mRequiredSignatures < ScriptNumber.zero) {

@@ -381,7 +381,7 @@ trait StackInterpreter extends BitcoinSLogger {
       case Success(n) => op(n)
       case Failure(_) =>
         logger.error("Script number was not minimally encoded")
-        ScriptProgram(program,ScriptErrorMinimalData)
+        ScriptProgram(program,ScriptErrorUnknownError)
     }
   }
 
