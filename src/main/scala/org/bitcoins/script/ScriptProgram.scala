@@ -163,6 +163,7 @@ object ScriptProgram {
   case object Stack extends UpdateIndicator
   case object Script extends UpdateIndicator
   case object AltStack extends UpdateIndicator
+  case object OriginalScript extends UpdateIndicator
 
 
   /**
@@ -247,6 +248,18 @@ object ScriptProgram {
         case program : ExecutedScriptProgram =>
           throw new RuntimeException("Cannot update the alt stack for a program that has been fully executed")
       }
+
+      case OriginalScript => oldProgram match {
+        case program : PreExecutionScriptProgram =>
+          PreExecutionScriptProgramImpl(program.txSignatureComponent, program.stack,program.script,tokens.toList,
+            program.altStack,program.flags)
+        case program : ExecutionInProgressScriptProgram =>
+          ExecutionInProgressScriptProgramImpl(program.txSignatureComponent, program.stack, program.script, tokens.toList,
+            program.altStack, program.flags)
+        case program : ExecutedScriptProgram =>
+          throw new RuntimeException("Cannot update the alt stack for a program that has been fully executed")
+      }
+
     }
   }
 
