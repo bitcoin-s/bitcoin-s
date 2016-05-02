@@ -142,7 +142,6 @@ trait ControlOperationsInterpreter extends BitcoinSLogger {
 
   /**
    * Marks transaction as invalid if top stack value is not true.
- *
    * @param program
    * @return
    */
