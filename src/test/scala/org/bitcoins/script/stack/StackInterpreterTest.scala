@@ -214,7 +214,7 @@ class StackInterpreterTest extends FlatSpec with MustMatchers with StackInterpre
     val newProgram = opRoll(program)
 
     newProgram.isInstanceOf[ExecutedScriptProgram] must be (true)
-    newProgram.asInstanceOf[ExecutedScriptProgram].error must be (Some(ScriptErrorMinimalData))
+    newProgram.asInstanceOf[ExecutedScriptProgram].error must be (Some(ScriptErrorUnknownError))
   }
 
   it must "evaluate an OP_ROT correctly" in {

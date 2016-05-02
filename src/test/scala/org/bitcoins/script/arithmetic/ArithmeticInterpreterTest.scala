@@ -478,7 +478,7 @@ class ArithmeticInterpreterTest extends FlatSpec with MustMatchers with Arithmet
     val program = ScriptProgram(TestUtil.testProgramExecutionInProgress, stack,script)
     val newProgram = opWithin(program)
     newProgram.isInstanceOf[ExecutedScriptProgram] must be (true)
-    newProgram.asInstanceOf[ExecutedScriptProgram].error must be (Some(ScriptErrorMinimalData))
+    newProgram.asInstanceOf[ExecutedScriptProgram].error must be (Some(ScriptErrorUnknownError))
   }
 
   it must "mark the script as invalid for OP_WITHIN if one of the numbers is larger than 4 bytes" in {
