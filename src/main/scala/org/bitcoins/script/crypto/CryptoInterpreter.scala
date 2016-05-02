@@ -31,7 +31,6 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
 
   /**
    * The input is hashed using RIPEMD-160.
- *
    * @param program
    * @return
    */
@@ -42,7 +41,6 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
 
   /**
    * The input is hashed using SHA-256.
- *
    * @param program
    * @return
    */
@@ -53,7 +51,6 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
 
   /**
    * The input is hashed two times with SHA-256.
- *
    * @param program
    * @return
    */
@@ -64,7 +61,6 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
 
   /**
    * The input is hashed using SHA-1.
- *
    * @param program
    * @return
    */
@@ -79,7 +75,6 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
    * The signature used by OP_CHECKSIG must be a valid signature for this hash and public key.
    * If it is, 1 is returned, 0 otherwise.
    * https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L818
- *
    * @param program
    * @return
    */
@@ -128,18 +123,13 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
   /**
    * All of the signature checking words will only match signatures to the data
    * after the most recently-executed OP_CODESEPARATOR.
- *
    * @param program
    * @return
    */
   def opCodeSeparator(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.isDefined && program.script.head == OP_CODESEPARATOR, "Script top must be OP_CODESEPARATOR")
-    val fullScript = program.txSignatureComponent.scriptSignature.asm.containsSlice(program.script) match {
-      case true => program.txSignatureComponent.scriptSignature.asm
-      case false => program.txSignatureComponent.scriptPubKey.asm
-    }
-    val indexOfOpCodeSeparator = fullScript.indexOf(OP_CODESEPARATOR)
-    require(indexOfOpCodeSeparator != -1,"The script we searched MUST contain an OP_CODESEPARTOR. Script: " + fullScript)
+    val indexOfOpCodeSeparator = program.originalScript.indexOf(OP_CODESEPARATOR)
+    require(indexOfOpCodeSeparator != -1,"The script we searched MUST contain an OP_CODESEPARTOR. Script: " + program.originalScript)
     val e = program match {
       case e : PreExecutionScriptProgram => ScriptProgram.toExecutionInProgress(e)
       case e : ExecutionInProgressScriptProgram => ScriptProgram(e,program.script.tail,ScriptProgram.Script,indexOfOpCodeSeparator)
@@ -160,7 +150,6 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
    * signatures must be placed in the scriptSig using the same order as their corresponding public keys
    * were placed in the scriptPubKey or redeemScript. If all signatures are valid, 1 is returned, 0 otherwise.
    * Due to a bug, one extra unused value is removed from the stack.
- *
    * @param program
    * @return
    */
@@ -181,7 +170,7 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
         ScriptProgram(program,ScriptErrorPubKeyCount)
       } else if (ScriptFlagUtil.requireMinimalData(program.flags) && !nPossibleSignatures.isShortestEncoding) {
         logger.error("The required signatures and the possible signatures must be encoded as the shortest number possible")
-        ScriptProgram(program, ScriptErrorMinimalData)
+        ScriptProgram(program, ScriptErrorUnknownError)
       } else if (program.stack.size < 2) {
         logger.error("We need at least 2 operations on the stack")
         ScriptProgram(program,ScriptErrorInvalidStackOperation)
@@ -190,7 +179,7 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
 
         if (ScriptFlagUtil.requireMinimalData(program.flags) && !mRequiredSignatures.isShortestEncoding) {
           logger.error("The required signatures val must be the shortest encoding as possible")
-          return ScriptProgram(program,ScriptErrorMinimalData)
+          return ScriptProgram(program,ScriptErrorUnknownError)
         }
 
         if (mRequiredSignatures < ScriptNumber.zero) {
@@ -263,7 +252,6 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
 
   /**
    * Runs OP_CHECKMULTISIG with an OP_VERIFY afterwards
- *
    * @param program
    * @return
    */
@@ -290,7 +278,6 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
    * This is a higher order function designed to execute a hash function on the stack top of the program
    * For instance, we could pass in CryptoUtil.sha256 function as the 'hashFunction' argument, which would then
    * apply sha256 to the stack top
- *
    * @param program the script program whose stack top needs to be hashed
    * @param hashFunction the hash function which needs to be used on the stack top (sha256,ripemd160,etc..)
    * @return

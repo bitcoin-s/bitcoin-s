@@ -14,7 +14,6 @@ trait SpliceInterpreter extends BitcoinSLogger {
 
   /**
    * Pushes the string length of the top element of the stack (without popping it).
- *
    * @param program
    * @return
    */

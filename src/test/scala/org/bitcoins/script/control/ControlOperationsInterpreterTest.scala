@@ -106,7 +106,7 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers with C
   it must "remove the first OP_ELSE in a binary tree" in {
     val script1 = List(OP_IF,OP_ELSE,OP_ENDIF)
     val bTree1 = parseBinaryTree(script1)
-    removeFirstOpElse(bTree1).toSeq must be (List(OP_IF))
+    removeFirstOpElse(bTree1).toSeq must be (List(OP_IF,OP_ENDIF))
 
     val script2 = List(OP_IF,OP_ENDIF)
     val bTree2 = parseBinaryTree(script2)
@@ -334,6 +334,15 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers with C
 
     newProgram.stack must be (List())
     newProgram.script must be (List(OP_1))
+  }
+
+  it must "evalute an OP_IF block with and leave the remaining operations outside of the OP_IF" in {
+    val stack = List(OP_TRUE)
+    val script = List(OP_IF, OP_ELSE, OP_ENDIF, OP_ELSE)
+    val program = ScriptProgram(TestUtil.testProgram, stack, script)
+    val newProgram = opIf(program)
+    newProgram.stack.isEmpty must be (true)
+    newProgram.script must be (List(OP_ENDIF,OP_ELSE))
   }
 
   it must "evaluate a weird case using multiple OP_ELSEs" in {
