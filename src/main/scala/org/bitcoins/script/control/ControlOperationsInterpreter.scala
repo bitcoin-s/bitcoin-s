@@ -31,14 +31,14 @@ trait ControlOperationsInterpreter extends BitcoinSLogger {
     } else if (program.stack.isEmpty) {
       logger.error("We do not have any stack elements for our OP_IF")
       ScriptProgram(program,ScriptErrorUnbalancedConditional)
-    }
-    else if (program.stackTopIsTrue) {
+    } else if (program.stackTopIsTrue) {
       logger.debug("OP_IF stack top was true")
       logger.debug("Stack top: " + program.stack)
       //if the left branch contains and OP_IF & OP_ENDIF there must be a nested OP_IF
       //remove OP_ELSE from binary tree
       val newTreeWithoutOpElse = removeFirstOpElse(binaryTree)
       val newScript = newTreeWithoutOpElse.toList
+      logger.debug("New script after removing OP_ELSE branch " + newScript)
       ScriptProgram(program, program.stack.tail,newScript.tail)
     } else {
       logger.debug("OP_IF stack top was false")
@@ -82,35 +82,41 @@ trait ControlOperationsInterpreter extends BitcoinSLogger {
 
   /**
    * Evaluates the OP_ELSE operator
- *
    * @param program
    * @return
    */
   def opElse(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.isDefined && program.script.head == OP_ELSE, "First script opt must be OP_ELSE")
-    val tree = parseBinaryTree(program.script)
-    val treeWithNextOpElseRemoved = tree match {
-      case Empty => Empty
-      case leaf : Leaf[ScriptToken] => leaf
-      case node : Node[ScriptToken] =>
-        if (node.r.value == Some(OP_ELSE)) {
-          val replacementTree = node.r.left.getOrElse(Empty).findFirstDFS[ScriptToken](OP_ENDIF)().getOrElse(Empty)
-          val replacementNode = replacementTree match {
-            case Empty => Empty
-            case leaf : Leaf[ScriptToken] => Node(leaf.v, Empty, node.r.right.getOrElse(Empty))
-            case node1 : Node[ScriptToken] => Node(node1.v,node1.l,node.r.right.getOrElse(Empty))
+
+    if (!program.script.tail.contains(OP_ENDIF)) {
+      logger.error("OP_ELSE does not have a OP_ENDIF")
+      ScriptProgram(program,ScriptErrorUnbalancedConditional)
+    } else {
+      val tree = parseBinaryTree(program.script)
+      val treeWithNextOpElseRemoved = tree match {
+        case Empty => Empty
+        case leaf : Leaf[ScriptToken] => leaf
+        case node : Node[ScriptToken] =>
+          if (node.r.value == Some(OP_ELSE)) {
+            val replacementTree = node.r.left.getOrElse(Empty).findFirstDFS[ScriptToken](OP_ENDIF)().getOrElse(Empty)
+            val replacementNode = replacementTree match {
+              case Empty => Empty
+              case leaf : Leaf[ScriptToken] => Node(leaf.v, Empty, node.r.right.getOrElse(Empty))
+              case node1 : Node[ScriptToken] => Node(node1.v,node1.l,node.r.right.getOrElse(Empty))
+            }
+            Node(node.v,node.l,replacementNode)
           }
-          Node(node.v,node.l,replacementNode)
-        }
-        else node
+          else node
+      }
+      ScriptProgram(program, program.stack,treeWithNextOpElseRemoved.toList.tail)
     }
-    ScriptProgram(program, program.stack,treeWithNextOpElseRemoved.toList.tail)
+
+
   }
 
 
   /**
    * Evaluates an OP_ENDIF operator
- *
    * @param program
    * @return
    */
@@ -130,7 +136,6 @@ trait ControlOperationsInterpreter extends BitcoinSLogger {
    * with a scriptPubKey consisting of OP_RETURN followed by exactly one pushdata op. Such outputs are provably unspendable,
    * reducing their cost to the network. Currently it is usually considered non-standard (though valid) for a transaction to
    * have more than one OP_RETURN output or an OP_RETURN output with more than one pushdata op.
- *
    * @param program
    * @return
    */
@@ -287,19 +292,26 @@ trait ControlOperationsInterpreter extends BitcoinSLogger {
 
   /**
    * Checks if an OP_IF/OP_NOTIF script token has a matching OP_ENDIF
- *
    * @param script
    * @return
    */
   def checkMatchingOpIfOpNotIfOpEndIf(script : List[ScriptToken]) : Boolean = {
-    script.count(_ == OP_IF) + script.count(_ == OP_NOTIF) == script.count(_ == OP_ENDIF)
+    @tailrec
+    def loop(script : List[ScriptToken], counter : Int) : Boolean = script match {
+      case _ if (counter < 0) => false
+      case OP_ENDIF :: t => loop(t,counter-1)
+      case OP_IF :: t => loop(t, counter + 1)
+      case OP_NOTIF :: t => loop(t, counter + 1)
+      case (token : ScriptToken) :: t => loop(t, counter)
+      case Nil => counter == 0
+    }
+    loop(script,0)
   }
 
 
 
   /**
    * Returns the first index of an OP_ENDIF
- *
    * @param script
    * @return
    */
@@ -314,7 +326,6 @@ trait ControlOperationsInterpreter extends BitcoinSLogger {
 
   /**
    * Finds the last OP_ENDIF in the given script
- *
    * @param script
    * @return
    */
@@ -326,7 +337,6 @@ trait ControlOperationsInterpreter extends BitcoinSLogger {
 
   /**
    * Returns the first index of an OP_ENDIF
- *
    * @param script
    * @return
    */
@@ -340,7 +350,6 @@ trait ControlOperationsInterpreter extends BitcoinSLogger {
 
   /**
    * Removes the first OP_ELSE expression encountered in the script
- *
    * @param script
    * @return
    */
@@ -361,7 +370,6 @@ trait ControlOperationsInterpreter extends BitcoinSLogger {
 
   /**
    * Removes the first OP_ELSE {expression} in a binary tree
- *
    * @param tree
    * @return
    */
@@ -370,9 +378,12 @@ trait ControlOperationsInterpreter extends BitcoinSLogger {
       case Empty => Empty
       case leaf : Leaf[ScriptToken] => leaf
       case node : Node[ScriptToken] =>
+        logger.debug("Node: " + node)
         //need to traverse the tree to see if there is an OP_ENDIF on the left hand side
         val leftBranchContainsOpElse = node.l.contains[ScriptToken](OP_ELSE)()
         val leftBranchContainsOpIf = node.l.contains[ScriptToken](OP_IF)()
+        logger.debug("leftBranchContainsOpElse " + leftBranchContainsOpElse)
+        logger.debug("leftBranchContainsOpIf " + leftBranchContainsOpIf)
         if (leftBranchContainsOpElse && !leftBranchContainsOpIf) {
           //if the left branch contains an OP_ELSE but no OP_IF
           //then we need to delete the OP_ELSE in the left branch
@@ -382,8 +393,10 @@ trait ControlOperationsInterpreter extends BitcoinSLogger {
           //need to insert the right branch of the subtree into the original place of the OP_ELSE
           if (subTree.isDefined) tree.replace(subTree.get, subTree.get.right.getOrElse(Empty))
           else tree
-        } else if (node.r.value == Some(OP_ELSE)) {
+        } else if (node.r.value == Some(OP_ELSE) && node.r.left.isDefined && node.r.left.get.value == Some(OP_ENDIF)) {
           logger.debug("============================**********************************")
+          Node(node.v,node.l,node.r.left.getOrElse(Empty))
+        } else if (node.r.value == Some(OP_ELSE)) {
           Node(node.v,node.l,node.r.right.getOrElse(Empty))
         } else tree
     }
@@ -392,7 +405,6 @@ trait ControlOperationsInterpreter extends BitcoinSLogger {
 
   /**
    * Removes the first OP_IF { expression } encountered in the script
- *
    * @param script
    * @return
    */
@@ -416,7 +428,6 @@ trait ControlOperationsInterpreter extends BitcoinSLogger {
 
   /**
    * Removes the first occurrence of OP_IF or OP_NOTIF in the binary tree
- *
    * @param tree
    * @return
    */

@@ -36,7 +36,7 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterp
 /*    val lines =
         """
           |
-          |[["'a'", "SHA256 0x20 0xca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb EQUAL", "P2SH,STRICTENC", "OK"]]
+          |[["1", "IF ELSE ENDIF ELSE", "P2SH,STRICTENC", "UNBALANCED_CONDITIONAL"]]
    """.stripMargin*/
     val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n" finally source.close()
     val json = lines.parseJson
