@@ -56,7 +56,6 @@ trait StackInterpreter extends BitcoinSLogger {
 
   /**
    * Puts the number of stack items onto the stack.
- *
    * @param program
    * @return
    */
@@ -71,7 +70,6 @@ trait StackInterpreter extends BitcoinSLogger {
 
   /**
    * Puts the input onto the top of the alt stack. Removes it from the main stack.
- *
    * @param program
    * @return
    */
@@ -88,7 +86,6 @@ trait StackInterpreter extends BitcoinSLogger {
 
   /**
    * Puts the input onto the top of the main stack. Removes it from the alt stack.
- *
    * @param program
    * @return
    */
@@ -105,7 +102,6 @@ trait StackInterpreter extends BitcoinSLogger {
 
   /**
    * Removes the top stack item.
- *
    * @param program
    * @return
    */
@@ -123,7 +119,6 @@ trait StackInterpreter extends BitcoinSLogger {
 
   /**
    * Removes the second-to-top stack item
- *
    * @param program
    * @return
    */
@@ -143,7 +138,6 @@ trait StackInterpreter extends BitcoinSLogger {
 
   /**
    * Copies the second-to-top stack item to the top.
- *
    * @param program
    * @return
    */
@@ -161,7 +155,6 @@ trait StackInterpreter extends BitcoinSLogger {
 
   /**
    * The item n back in the stack is copied to the top.
- *
    * @param program
    * @return
    */
@@ -183,7 +176,6 @@ trait StackInterpreter extends BitcoinSLogger {
 
   /**
    * The item n back in the stack is moved to the top
- *
    * @param program
    * @return
    */
@@ -207,7 +199,6 @@ trait StackInterpreter extends BitcoinSLogger {
   /**
    * The top three items on the stack are rotated to the left.
    * x1 x2 x3 -> x2 x3 x1
- *
    * @param program
    * @return
    */
@@ -228,7 +219,6 @@ trait StackInterpreter extends BitcoinSLogger {
   /**
    * The fifth and sixth items back are moved to the top of the stack.
    * x1 x2 x3 x4 x5 x6 -> x3 x4 x5 x6 x1 x2
- *
    * @param program
    * @return
    */
@@ -247,7 +237,6 @@ trait StackInterpreter extends BitcoinSLogger {
 
   /**
    * Removes the top two stack items.
- *
    * @param program
    * @return
    */
@@ -266,7 +255,6 @@ trait StackInterpreter extends BitcoinSLogger {
 
   /**
    * The top two items on the stack are swapped.
- *
    * @param program
    * @return
    */
@@ -287,7 +275,6 @@ trait StackInterpreter extends BitcoinSLogger {
   /**
    * The item at the top of the stack is copied and inserted before the second-to-top item.
    * x1 x2 -> x1 x2 x1
- *
    * @param program
    * @return
    */
@@ -308,7 +295,6 @@ trait StackInterpreter extends BitcoinSLogger {
 
   /**
    * Duplicates the top two stack items.
- *
    * @param program
    * @return
    */
@@ -328,7 +314,6 @@ trait StackInterpreter extends BitcoinSLogger {
 
   /**
    * Duplicates the top three stack items.
- *
    * @param program
    * @return
    */
@@ -349,7 +334,6 @@ trait StackInterpreter extends BitcoinSLogger {
   /**
    * Copies the pair of items two spaces back in the stack to the front.
    * x1 x2 x3 x4 -> x1 x2 x3 x4 x1 x2
- *
    * @param program
    * @return
    */
@@ -369,7 +353,6 @@ trait StackInterpreter extends BitcoinSLogger {
 
   /**
    * Swaps the top two pairs of items.
- *
    * @param program
    * @return
    */
@@ -388,7 +371,6 @@ trait StackInterpreter extends BitcoinSLogger {
 
   /**
    * Executes an operation with the stack top inside of the program as the argument
- *
    * @param program the program whose stack top is used as an argument for the operation
    * @param op the operation that is executed with the script number on the top of the stack
    * @return the program with the result of the op pushed onto to the top of the stack
@@ -399,7 +381,7 @@ trait StackInterpreter extends BitcoinSLogger {
       case Success(n) => op(n)
       case Failure(_) =>
         logger.error("Script number was not minimally encoded")
-        ScriptProgram(program,ScriptErrorMinimalData)
+        ScriptProgram(program,ScriptErrorUnknownError)
     }
   }
 
