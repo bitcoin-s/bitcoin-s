@@ -1,9 +1,9 @@
 package org.bitcoins.script.stack
 
-import org.bitcoins.script.{ScriptProgram}
+import org.bitcoins.script.{ExecutedScriptProgram, ScriptProgram}
 import org.bitcoins.script.bitwise.OP_EQUAL
 import org.bitcoins.script.constant._
-import org.bitcoins.util.{ScriptProgramTestUtil, BitcoinSUtil, TestUtil}
+import org.bitcoins.util.{BitcoinSUtil, ScriptProgramTestUtil, TestUtil}
 import org.scalatest.{FlatSpec, MustMatchers}
 import org.bitcoins.script.result._
 
@@ -26,7 +26,6 @@ class StackInterpreterTest extends FlatSpec with MustMatchers with StackInterpre
   }
 
   it must "throw an exception when calling opDup without an OP_DUP on top of the script stack" in {
-
     intercept[IllegalArgumentException] {
       val script = List()
       val program = ScriptProgram(TestUtil.testProgram, stack,script)
@@ -78,6 +77,15 @@ class StackInterpreterTest extends FlatSpec with MustMatchers with StackInterpre
 
     newProgram.stack.isEmpty must be (true)
     newProgram.script.isEmpty must be (true)
+  }
+
+  it must "mark the script as invalid for an OP_DROP if we do not have a stack element" in {
+    val stack = List()
+    val script = List(OP_DROP)
+    val program = ScriptProgram(TestUtil.testProgramExecutionInProgress, stack,script)
+    val newProgram = opDrop(program)
+    newProgram.isInstanceOf[ExecutedScriptProgram] must be (true)
+    newProgram.asInstanceOf[ExecutedScriptProgram].error must be (Some(ScriptErrorInvalidStackOperation))
   }
 
   it must "evaluate an OP_IFDUP correctly" in {
@@ -168,6 +176,16 @@ class StackInterpreterTest extends FlatSpec with MustMatchers with StackInterpre
     newProgram.script.isEmpty must be (true)
   }
 
+  it must "mark the script as invalid for OP_PICK if we do not have enough items on the stack for the first number" in {
+    val stack = List(ScriptNumber.one)
+    val script = List(OP_PICK)
+    val program = ScriptProgram(TestUtil.testProgramExecutionInProgress, stack,script)
+    val newProgram = opPick(program)
+
+    newProgram.isInstanceOf[ExecutedScriptProgram] must be (true)
+    newProgram.asInstanceOf[ExecutedScriptProgram].error must be (Some(ScriptErrorInvalidStackOperation))
+
+  }
   it must "evaluate an OP_ROLL correctly" in {
     val stack = List(ScriptNumber.zero, ScriptConstant("14"), ScriptConstant("15"), ScriptConstant("16"))
     val script = List(OP_ROLL)
@@ -177,7 +195,26 @@ class StackInterpreterTest extends FlatSpec with MustMatchers with StackInterpre
     newProgram.stack must be (List(ScriptConstant("14"),
       ScriptConstant("15"), ScriptConstant("16")))
     newProgram.script.isEmpty must be (true)
+  }
 
+  it must "mark an OP_ROLL as invalid if we do not have the enough stack elements indicated by the stack top" in {
+    val stack = List(ScriptNumber.one)
+    val script = List(OP_ROLL)
+    val program = ScriptProgram(TestUtil.testProgramExecutionInProgress, stack,script)
+    val newProgram = opRoll(program)
+
+    newProgram.isInstanceOf[ExecutedScriptProgram] must be (true)
+    newProgram.asInstanceOf[ExecutedScriptProgram].error must be (Some(ScriptErrorInvalidStackOperation))
+  }
+
+  it must "mark an OP_ROLL as invalid if the script number is not minimall encoded" in {
+    val stack = List(ScriptNumber("0100"))
+    val script = List(OP_ROLL)
+    val program = ScriptProgram(TestUtil.testProgramExecutionInProgress, stack,script)
+    val newProgram = opRoll(program)
+
+    newProgram.isInstanceOf[ExecutedScriptProgram] must be (true)
+    newProgram.asInstanceOf[ExecutedScriptProgram].error must be (Some(ScriptErrorMinimalData))
   }
 
   it must "evaluate an OP_ROT correctly" in {
@@ -233,6 +270,14 @@ class StackInterpreterTest extends FlatSpec with MustMatchers with StackInterpre
       ScriptConstant("17"), ScriptConstant("18"), ScriptConstant("19")))
   }
 
+  it must "mark a script invalid if an OP_2DROP script does not have two stack items" in {
+    val stack = List(ScriptConstant("14"))
+    val script = List(OP_2DROP)
+    val program = ScriptProgram(TestUtil.testProgramExecutionInProgress, stack,script)
+    val newProgram = op2Drop(program)
+    newProgram.isInstanceOf[ExecutedScriptProgram] must  be (true)
+    newProgram.asInstanceOf[ExecutedScriptProgram].error must be (Some(ScriptErrorInvalidStackOperation))
+  }
 
   it must "evaluate an OP_SWAP correctly" in {
     val stack = List(ScriptConstant("14"), ScriptConstant("15"), ScriptConstant("16"),
@@ -243,6 +288,15 @@ class StackInterpreterTest extends FlatSpec with MustMatchers with StackInterpre
     newProgram.stack must be (List(ScriptConstant("15"),ScriptConstant("14"), ScriptConstant("16"),
       ScriptConstant("17"), ScriptConstant("18"), ScriptConstant("19")))
     newProgram.script.isEmpty must be (true)
+  }
+
+  it must "mark a script invalid if an OP_SWAP script does not have two stack items" in {
+    val stack = List(ScriptConstant("14"))
+    val script = List(OP_SWAP)
+    val program = ScriptProgram(TestUtil.testProgramExecutionInProgress, stack,script)
+    val newProgram = opSwap(program)
+    newProgram.isInstanceOf[ExecutedScriptProgram] must  be (true)
+    newProgram.asInstanceOf[ExecutedScriptProgram].error must be (Some(ScriptErrorInvalidStackOperation))
   }
 
   it must "evaluate an OP_TUCK correctly" in  {
@@ -301,6 +355,15 @@ class StackInterpreterTest extends FlatSpec with MustMatchers with StackInterpre
     newProgram.script.isEmpty must be (true)
   }
 
+  it must "mark the script as invalid if OP_3DUP does not have three stack elements" in {
+    val stack = List(ScriptConstant("14"), ScriptConstant("15"))
+    val script = List(OP_3DUP)
+    val program = ScriptProgram(TestUtil.testProgramExecutionInProgress, stack,script)
+    val newProgram = op3Dup(program)
+    newProgram.isInstanceOf[ExecutedScriptProgram] must be (true)
+    newProgram.asInstanceOf[ExecutedScriptProgram].error must be (Some(ScriptErrorInvalidStackOperation))
+  }
+
   it must "evaluate an OP_2OVER correctly" in {
     val stack = List(ScriptConstant("14"), ScriptConstant("15"), ScriptConstant("16"),
       ScriptConstant("17"), ScriptConstant("18"), ScriptConstant("19"))
@@ -343,5 +406,15 @@ class StackInterpreterTest extends FlatSpec with MustMatchers with StackInterpre
     val program = ScriptProgram(TestUtil.testProgramExecutionInProgress, stack,script)
     val newProgram = ScriptProgramTestUtil.toExecutedScriptProgram(op2Swap(program))
     newProgram.error must be (Some(ScriptErrorInvalidStackOperation))
+  }
+
+  it must "move an element from the alt stack to the main stack" in {
+    val stack = List()
+    val script = List(OP_FROMALTSTACK)
+    val altStack = List(OP_0)
+    val program = ScriptProgram(TestUtil.testProgramExecutionInProgress, stack,script)
+    val programWithAltStack = ScriptProgram(program, altStack ,ScriptProgram.AltStack)
+    val executedProgram = opFromAltStack(programWithAltStack)
+    executedProgram.stack must be (altStack)
   }
 }
