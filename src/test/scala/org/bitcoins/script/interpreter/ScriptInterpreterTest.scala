@@ -36,17 +36,14 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterp
 /*    val lines =
         """
           |
-          |[["1",
-"0x616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161",
-"P2SH,STRICTENC",
-"201 opcodes executed. 0x61 is NOP"]]
+          |[["'a'", "SHA256 0x20 0xca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb EQUAL", "P2SH,STRICTENC", "OK"]]
    """.stripMargin*/
     val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n" finally source.close()
     val json = lines.parseJson
     val testCasesOpt : Seq[Option[CoreTestCase]] = json.convertTo[Seq[Option[CoreTestCase]]]
     val testCases : Seq[CoreTestCase] = testCasesOpt.flatten
 
-
+    println(testCases)
     for {
       testCase <- testCases
       (creditingTx,outputIndex) = TransactionTestUtil.buildCreditingTransaction(testCase.scriptPubKey.scriptPubKey)
