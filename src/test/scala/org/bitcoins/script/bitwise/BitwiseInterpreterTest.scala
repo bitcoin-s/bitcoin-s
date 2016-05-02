@@ -3,8 +3,9 @@ package org.bitcoins.script.bitwise
 import org.bitcoins.script.{ExecutedScriptProgram, ScriptProgram}
 import org.bitcoins.script.arithmetic.OP_NUMEQUAL
 import org.bitcoins.script.constant._
+import org.bitcoins.script.result.ScriptErrorInvalidStackOperation
 import org.bitcoins.util.TestUtil
-import org.scalatest.{MustMatchers, FlatSpec}
+import org.scalatest.{FlatSpec, MustMatchers}
 
 /**
  * Created by chris on 1/6/16.
@@ -78,5 +79,15 @@ class BitwiseInterpreterTest extends FlatSpec with MustMatchers with BitwiseInte
     val script = List(OP_EQUAL)
     val program = ScriptProgram(TestUtil.testProgram, stack,script)
     opEqual(program).stack.head must be (OP_TRUE)
+  }
+
+
+  it must "mark the script as invalid of OP_EQUALVERIFY is run without two stack elements" in {
+    val stack = List(OP_0)
+    val script = List(OP_EQUALVERIFY)
+    val program = ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script)
+    val newProgram = opEqualVerify(program)
+    newProgram.isInstanceOf[ExecutedScriptProgram] must be (true)
+    newProgram.asInstanceOf[ExecutedScriptProgram].error must be (Some(ScriptErrorInvalidStackOperation))
   }
 }
