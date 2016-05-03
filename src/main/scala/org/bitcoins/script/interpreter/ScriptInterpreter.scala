@@ -4,7 +4,7 @@ package org.bitcoins.script.interpreter
 import org.bitcoins.protocol.script._
 import org.bitcoins.protocol.transaction.Transaction
 import org.bitcoins.script.flag._
-import org.bitcoins.script.locktime.{LockTimeInterpreter, OP_CHECKLOCKTIMEVERIFY}
+import org.bitcoins.script.locktime.{LockTimeInterpreter, OP_CHECKLOCKTIMEVERIFY, OP_CHECKSEQUENCEVERIFY}
 import org.bitcoins.script.splice._
 import org.bitcoins.script.{ExecutedScriptProgram, ExecutionInProgressScriptProgram, PreExecutionScriptProgram, ScriptProgram}
 import org.bitcoins.script.arithmetic._
@@ -258,6 +258,16 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
                   loop(ScriptProgram(p, ScriptErrorDiscourageUpgradableNOPs))
                 }
                 //in this case, just reat OP_CLTV just like a NOP and remove it from the stack
+                else loop(ScriptProgram(p, p.script.tail, ScriptProgram.Script))
+              case OP_CHECKSEQUENCEVERIFY :: t =>
+                //check if CLTV is enforced yet
+                if (ScriptFlagUtil.checkSequenceVerifyEnabled(p.flags)) loop(opCheckSequenceVerify(p))
+                //if not, check to see if we should discourage p
+                else if (ScriptFlagUtil.discourageUpgradableNOPs(p.flags)) {
+                  logger.error("We cannot execute a NOP when the ScriptVerifyDiscourageUpgradableNOPs is set")
+                  loop(ScriptProgram(p, ScriptErrorDiscourageUpgradableNOPs))
+                }
+                //in this case, just reat OP_CSV just like a NOP and remove it from the stack
                 else loop(ScriptProgram(p, p.script.tail, ScriptProgram.Script))
               //no more script operations to run, return whether the program is valid and the final state of the program
               case Nil => loop(ScriptProgram.toExecutedProgram(p))

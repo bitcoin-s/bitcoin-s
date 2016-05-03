@@ -33,6 +33,15 @@ trait ScriptFlagUtil {
   }
 
   /**
+    * Checks if the script flag for checksequenceverify is enabled
+    * @param flags
+    * @return
+    */
+  def checkSequenceVerifyEnabled(flags : Seq[ScriptFlag]) : Boolean = {
+    flags.contains(ScriptVerifyCheckSequenceVerify)
+  }
+
+  /**
    * Checks to see if the script flag is set to discourage NOPs that are not in use
    * NOPs are used by soft forks to repurpose NOPs to actual functionality such as checklocktimeverify
    * See BIP65 for an example of this
