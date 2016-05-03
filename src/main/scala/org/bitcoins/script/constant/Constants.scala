@@ -80,6 +80,10 @@ sealed trait ScriptNumber extends ScriptConstant {
   def > (that : ScriptNumber) : Boolean = num > that.num
   def >= (that : ScriptNumber) : Boolean = num >= that.num
 
+  def &(that : ScriptNumber) : ScriptNumber = ScriptNumber(num & that.num)
+
+  def | (that : ScriptNumber) : ScriptNumber = ScriptNumber(num | that.num)
+
   /**
    * This equality just checks that the underlying scala numbers are equivalent, NOT if the numbers
    * are bitwise equivalent in Script. For instance ScriptNumber(0x01).numEqual(ScriptNumber(0x00000000001)) == true
