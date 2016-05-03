@@ -2,11 +2,13 @@ package org.bitcoins.script.locktime
 
 
 import org.bitcoins.protocol.transaction.TransactionConstants
-import org.bitcoins.script.constant.{ScriptNumber, ScriptToken}
+import org.bitcoins.script.constant.{ScriptConstant, ScriptNumber, ScriptToken}
 import org.bitcoins.script.result._
 import org.bitcoins.script.ScriptProgram
 import org.bitcoins.script.flag.ScriptFlagUtil
 import org.bitcoins.util.BitcoinSLogger
+
+import scala.annotation.tailrec
 /**
  * Created by chris on 2/8/16.
  */
@@ -70,7 +72,8 @@ trait LockTimeInterpreter extends BitcoinSLogger {
     * @param program
     * @return
     */
-  def opCheckSequenceVerify(program : ScriptProgram) : ScriptProgram = {
+  @tailrec
+  final def opCheckSequenceVerify(program : ScriptProgram) : ScriptProgram = {
     if (program.stack.isEmpty) {
       logger.error("Cannot execute OP_CHECKSEQUENCEVERIFY on an empty stack")
       ScriptProgram(program,ScriptErrorInvalidStackOperation)
@@ -80,11 +83,16 @@ trait LockTimeInterpreter extends BitcoinSLogger {
         case s : ScriptNumber if (ScriptFlagUtil.requireMinimalData(program.flags) && !s.isShortestEncoding) =>
           logger.error("Sequence number is not encoded in the shortest way possible")
           ScriptProgram(program,ScriptErrorUnknownError)
-        case s : ScriptNumber if ((s.num & locktimeDisabledFlag) != 0) =>
-          //see BIP68 for sematnic of locktimeDisableFalg
+        case s : ScriptNumber if (!isLockTimeBitOff(s)) =>
+          //see BIP68 for semantic of locktimeDisableFalg
           logger.info("Locktime disable flag was set so OP_CHECKSEQUENCEVERIFY is treated as a NOP")
           ScriptProgram(program,program.script.tail,ScriptProgram.Script)
-        case _ => ScriptProgram(program, program.stack.tail, program.script.tail)
+        case s : ScriptNumber if (isLockTimeBitOff(s) && program.txSignatureComponent.transaction.version < 2) =>
+          logger.error("OP_CSV fails if locktime bit is not set and the tx version < 2")
+          ScriptProgram(program, ScriptErrorUnsatisfiedLocktime)
+        case s : ScriptConstant =>
+          opCheckSequenceVerify(ScriptProgram(program, ScriptNumber(s.hex) :: program.stack.tail, ScriptProgram.Stack))
+        case _ : ScriptToken => ScriptProgram(program, program.stack.tail, program.script.tail)
       }
     }
 
@@ -96,6 +104,13 @@ trait LockTimeInterpreter extends BitcoinSLogger {
     * in any block under all currently possible circumstances.
     * @return the mask that ben used with a bitwise and to indicate if the sequence number has any meaning
     */
-  def locktimeDisabledFlag = 1 << 31
+  def locktimeDisabledFlag = 1L << 31
+
+  /**
+    * The script number on the stack has the disable flag (1 << 31) unset
+    * @param s
+    * @return
+    */
+  def isLockTimeBitOff(s : ScriptNumber) : Boolean = (s.num & locktimeDisabledFlag) == 0
 
 }
