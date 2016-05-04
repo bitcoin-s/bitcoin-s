@@ -189,6 +189,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
               //crypto operations
               case OP_HASH160 :: t => loop(opHash160(p))
               case OP_CHECKSIG :: t => loop(opCheckSig(p))
+              case OP_CHECKSIGVERIFY :: t => loop(opCheckSigVerify(p))
               case OP_SHA1 :: t => loop(opSha1(p))
               case OP_RIPEMD160 :: t => loop(opRipeMd160(p))
               case OP_SHA256 :: t => loop(opSha256(p))

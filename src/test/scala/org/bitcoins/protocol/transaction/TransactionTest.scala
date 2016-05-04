@@ -5,9 +5,10 @@ import org.bitcoins.protocol.script.ScriptPubKey
 import org.bitcoins.protocol.transaction.testprotocol.CoreTransactionTestCase
 import org.bitcoins.script.ScriptProgram
 import org.bitcoins.script.flag.ScriptFlagFactory
-
 import org.bitcoins.protocol.transaction.testprotocol.CoreTransactionTestCaseProtocol._
-import org.bitcoins.util.{TestUtil, TransactionTestUtil}
+import org.bitcoins.script.interpreter.ScriptInterpreter
+import org.bitcoins.script.result.ScriptOk
+import org.bitcoins.util.{BitcoinSLogger, TestUtil, TransactionTestUtil}
 import org.scalatest.{FlatSpec, MustMatchers}
 
 import scala.io.Source
@@ -16,7 +17,7 @@ import spray.json._
 /**
  * Created by chris on 7/14/15.
  */
-class TransactionTest extends FlatSpec with MustMatchers {
+class TransactionTest extends FlatSpec with MustMatchers with BitcoinSLogger {
 
 
   "Transaction" must "derive the correct txid from the transaction contents" in {
@@ -58,26 +59,20 @@ class TransactionTest extends FlatSpec with MustMatchers {
     val json = lines.parseJson
     val testCasesOpt : Seq[Option[CoreTransactionTestCase]] = json.convertTo[Seq[Option[CoreTransactionTestCase]]]
     val testCases : Seq[CoreTransactionTestCase] = testCasesOpt.flatten
-
-    println(testCases)
-/*    for {
+    for {
       testCase <- testCases
-      (creditingTx,outputIndex) = TransactionTestUtil.buildCreditingTransaction(testCase.scriptPubKey.scriptPubKey)
-      (tx,inputIndex) = TransactionTestUtil.buildSpendingTransaction(creditingTx,testCase.scriptSig.scriptSignature,outputIndex)
+      ((outPoint,scriptPubKey),inputIndex) <- testCase.creditingTxsInfo.zipWithIndex
+      (creditingTx,outputIndex) = TransactionTestUtil.buildCreditingTransaction(scriptPubKey)
+      tx = testCase.spendingTx
     } yield {
-      require(testCase.scriptPubKey.asm == testCase.scriptPubKey.scriptPubKey.asm)
       logger.info("Raw test case: " + testCase.raw)
-      logger.info("Parsed ScriptSig: " + testCase.scriptSig)
-      logger.info("Parsed ScriptPubKey: " + testCase.scriptPubKey)
-      logger.info("Flags: " + testCase.flags)
-      logger.info("Comments: " + testCase.comments)
-      val scriptPubKey = ScriptPubKey.fromAsm(testCase.scriptPubKey.asm)
-      val flags = ScriptFlagFactory.fromList(testCase.flags)
-      logger.info("Flags after parsing: " + flags)
-      val program = ScriptProgram(tx,scriptPubKey,inputIndex,flags)
+      logger.info("Parsed ScriptSig: " + tx.inputs(inputIndex).scriptSignature)
+      logger.info("Parsed ScriptPubKey: " + scriptPubKey)
+      logger.info("Flags after parsing: " + testCase.flags)
+      val program = ScriptProgram(tx,scriptPubKey,inputIndex,testCase.flags)
       withClue(testCase.raw) {
-        ScriptInterpreter.run(program) must equal (testCase.expectedResult)
+        ScriptInterpreter.run(program) must equal (ScriptOk)
       }
-    }*/
+    }
   }
 }

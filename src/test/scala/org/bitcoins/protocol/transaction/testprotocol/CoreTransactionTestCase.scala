@@ -20,8 +20,10 @@ trait CoreTransactionTestCase {
   def spendingTx : Transaction
 
   def flags : Seq[ScriptFlag]
+
+  def raw : String
 }
 
 
 case class CoreTransactionTestCaseImpl(creditingTxsInfo : Seq[(TransactionOutPoint,ScriptPubKey)],
-  spendingTx : Transaction, flags  : Seq[ScriptFlag]) extends CoreTransactionTestCase
+  spendingTx : Transaction, flags  : Seq[ScriptFlag], raw : String) extends CoreTransactionTestCase
