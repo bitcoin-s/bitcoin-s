@@ -121,6 +121,30 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
   }
 
   /**
+    * Runs OP_CHECKMULTISIG with an OP_VERIFY afterwards
+    * @param program
+    * @return
+    */
+  def opCheckSigVerify(program : ScriptProgram) : ScriptProgram = {
+    require(program.script.headOption.isDefined && program.script.head == OP_CHECKSIGVERIFY,
+      "Script top must be OP_CHECKSIGVERIFY")
+    if (program.stack.size < 2) {
+      logger.error("Stack must contain at least 3 items for OP_CHECKSIGVERIFY")
+      ScriptProgram(program,ScriptErrorInvalidStackOperation)
+    } else {
+      val newScript = OP_CHECKSIG :: OP_VERIFY :: program.script.tail
+      val newProgram = ScriptProgram(program,newScript, ScriptProgram.Script)
+      val programFromOpCheckSig = opCheckSig(newProgram)
+      logger.debug("Stack after OP_CHECKSIG execution: " + programFromOpCheckSig.stack)
+      programFromOpCheckSig match {
+        case _ : PreExecutionScriptProgram | _ : ExecutedScriptProgram =>
+          programFromOpCheckSig
+        case _ : ExecutionInProgressScriptProgram => opVerify(programFromOpCheckSig)
+      }
+    }
+  }
+  
+  /**
    * All of the signature checking words will only match signatures to the data
    * after the most recently-executed OP_CODESEPARATOR.
    * @param program
