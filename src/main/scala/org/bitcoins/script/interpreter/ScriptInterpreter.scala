@@ -319,7 +319,6 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
         val scriptSigProgram = ScriptProgram(program,Seq(),program.txSignatureComponent.scriptSignature.asm)
         val scriptSigExecutedProgram = loop(scriptSigProgram)
         logger.info("Stack state after scriptSig execution: " + scriptSigExecutedProgram.stack)
-        logger.info("scriptSigExecutedProgram: " + scriptSigExecutedProgram.error)
         if (!scriptSigExecutedProgram.error.isDefined) {
           logger.debug("We do not check a redeemScript against a non p2sh scriptSig")
           //now run the scriptPubKey script through the interpreter with the scriptSig as the stack arguments
