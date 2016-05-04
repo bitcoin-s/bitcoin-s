@@ -17,6 +17,7 @@ import org.bitcoins.util.{BitcoinSLogger, TestUtil, TransactionTestUtil}
 import org.scalatest.{FlatSpec, MustMatchers}
 import org.slf4j.LoggerFactory
 import CoreTestCaseProtocol._
+import org.bitcoins.protocol.transaction.testprotocol.CoreTransactionTestCase
 import spray.json._
 
 import scala.io.Source

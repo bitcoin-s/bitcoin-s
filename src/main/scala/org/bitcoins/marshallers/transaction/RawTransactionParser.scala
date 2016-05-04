@@ -1,7 +1,7 @@
 package org.bitcoins.marshallers.transaction
 
 import org.bitcoins.marshallers.RawBitcoinSerializer
-import org.bitcoins.protocol.transaction.{TransactionImpl, Transaction}
+import org.bitcoins.protocol.transaction.{Transaction}
 import org.bitcoins.util.{BitcoinSUtil, CryptoUtil}
 import org.slf4j.LoggerFactory
 
@@ -31,7 +31,7 @@ trait RawTransactionParser extends RawBitcoinSerializer[Transaction] {
     val lockTimeBytes = bytes.slice(bytes.size - 4, bytes.size)
     val lockTime = Integer.parseInt(BitcoinSUtil.encodeHex(lockTimeBytes.reverse),16)
 
-    TransactionImpl(version,inputs,outputs,lockTime)
+    Transaction(version,inputs,outputs,lockTime)
   }
 
   def write(tx : Transaction) : String = {
