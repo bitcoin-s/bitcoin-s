@@ -48,13 +48,14 @@ class TransactionTest extends FlatSpec with MustMatchers with BitcoinSLogger {
     val source = Source.fromURL(getClass.getResource("/tx_valid.json"))
 
 
-    /*    //use this to represent a single test case from script_valid.json
-        val lines =
+        //use this to represent a single test case from script_valid.json
+/*        val lines =
             """
-              |
-              |[["4294967296", "CHECKSEQUENCEVERIFY", "CHECKSEQUENCEVERIFY", "UNSATISFIED_LOCKTIME",
-      "CSV fails if stack top bit 1 << 31 is not set, and tx version < 2"]]
-       """.stripMargin*/
+              |[
+              |[[["0000000000000000000000000000000000000000000000000000000000000100", 0, "DUP HASH160 0x14 0x5b6462475454710f3c22f5fdf0b40704c92f25c3 EQUALVERIFY CHECKSIGVERIFY 1 0x47 0x3044022067288ea50aa799543a536ff9306f8e1cba05b9c6b10951175b924f96732555ed022026d7b5265f38d21541519e4a1e55044d5b9e17e15cdbaf29ae3792e99e883e7a01"]],
+              |"01000000010001000000000000000000000000000000000000000000000000000000000000000000006a473044022067288ea50aa799543a536ff9306f8e1cba05b9c6b10951175b924f96732555ed022026d7b5265f38d21541519e4a1e55044d5b9e17e15cdbaf29ae3792e99e883e7a012103ba8c8b86dea131c22ab967e6dd99bdae8eff7a1f75a2c35f1f944109e3fe5e22ffffffff010000000000000000015100000000", "P2SH"]
+              |]
+            """.stripMargin*/
     val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n" finally source.close()
     val json = lines.parseJson
     val testCasesOpt : Seq[Option[CoreTransactionTestCase]] = json.convertTo[Seq[Option[CoreTransactionTestCase]]]
