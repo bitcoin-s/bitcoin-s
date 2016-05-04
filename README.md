@@ -36,7 +36,7 @@ This gives us an example of a bitcoin transaction that is encoded in hex format 
 
 Transactions are run through the interpreter to check the validity of the Transaction. These are packaged up into an object called ScriptProgram, which contains the following:
   - The transaction that is being checked
-  - The specific input index that it is
+  - The specific input index that it is checking
   - The scriptPubKey for the crediting transaction
   - The flags used to verify the script
 
