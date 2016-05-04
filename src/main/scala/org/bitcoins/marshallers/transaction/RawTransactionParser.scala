@@ -29,7 +29,7 @@ trait RawTransactionParser extends RawBitcoinSerializer[Transaction] {
     val outputsSize = outputs.map(_.size).sum
 
     val lockTimeBytes = bytes.slice(bytes.size - 4, bytes.size)
-    val lockTime = Integer.parseInt(BitcoinSUtil.encodeHex(lockTimeBytes.reverse),16)
+    val lockTime = java.lang.Long.parseLong(BitcoinSUtil.encodeHex(lockTimeBytes.reverse),16)
 
     Transaction(version,inputs,outputs,lockTime)
   }
