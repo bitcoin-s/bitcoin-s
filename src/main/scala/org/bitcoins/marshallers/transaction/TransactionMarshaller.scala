@@ -1,7 +1,7 @@
 package org.bitcoins.marshallers.transaction
 
 import org.bitcoins.marshallers.MarshallerUtil
-import org.bitcoins.protocol.transaction.{TransactionImpl, TransactionOutput, TransactionInput, Transaction}
+import org.bitcoins.protocol.transaction.{TransactionOutput, TransactionInput, Transaction}
 import spray.json._
 import DefaultJsonProtocol._
 
@@ -25,7 +25,7 @@ object TransactionMarshaller extends DefaultJsonProtocol with MarshallerUtil {
       val lockTime = obj.fields(lockTimeKey).convertTo[Long]
       val inputs : Seq[TransactionInput] = convertToTransactionInputList(obj.fields(vinKey))
       val outputs : Seq[TransactionOutput] = convertToTransactionOutputList(obj.fields(voutKey))
-      TransactionImpl(version,inputs,outputs,lockTime)
+      Transaction(version,inputs,outputs,lockTime)
 
     }
 

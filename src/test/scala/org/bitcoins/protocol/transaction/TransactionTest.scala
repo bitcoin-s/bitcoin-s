@@ -1,8 +1,17 @@
 package org.bitcoins.protocol.transaction
 
 import org.bitcoins.marshallers.transaction.RawTransactionParser
-import org.bitcoins.util.TestUtil
+import org.bitcoins.protocol.script.ScriptPubKey
+import org.bitcoins.protocol.transaction.testprotocol.CoreTransactionTestCase
+import org.bitcoins.script.ScriptProgram
+import org.bitcoins.script.flag.ScriptFlagFactory
+
+import org.bitcoins.protocol.transaction.testprotocol.CoreTransactionTestCaseProtocol._
+import org.bitcoins.util.{TestUtil, TransactionTestUtil}
 import org.scalatest.{FlatSpec, MustMatchers}
+
+import scala.io.Source
+import spray.json._
 
 /**
  * Created by chris on 7/14/15.
@@ -30,5 +39,45 @@ class TransactionTest extends FlatSpec with MustMatchers {
     val tx = Transaction(rawTx)
     //size is in bytes so divide by 2
     tx.size must be (rawTx.size / 2)
+  }
+
+  it must "read all of the tx_valid.json's contents and return ScriptOk" in {
+
+
+    val source = Source.fromURL(getClass.getResource("/tx_valid.json"))
+
+
+    /*    //use this to represent a single test case from script_valid.json
+        val lines =
+            """
+              |
+              |[["4294967296", "CHECKSEQUENCEVERIFY", "CHECKSEQUENCEVERIFY", "UNSATISFIED_LOCKTIME",
+      "CSV fails if stack top bit 1 << 31 is not set, and tx version < 2"]]
+       """.stripMargin*/
+    val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n" finally source.close()
+    val json = lines.parseJson
+    val testCasesOpt : Seq[Option[CoreTransactionTestCase]] = json.convertTo[Seq[Option[CoreTransactionTestCase]]]
+    val testCases : Seq[CoreTransactionTestCase] = testCasesOpt.flatten
+
+    println(testCases)
+/*    for {
+      testCase <- testCases
+      (creditingTx,outputIndex) = TransactionTestUtil.buildCreditingTransaction(testCase.scriptPubKey.scriptPubKey)
+      (tx,inputIndex) = TransactionTestUtil.buildSpendingTransaction(creditingTx,testCase.scriptSig.scriptSignature,outputIndex)
+    } yield {
+      require(testCase.scriptPubKey.asm == testCase.scriptPubKey.scriptPubKey.asm)
+      logger.info("Raw test case: " + testCase.raw)
+      logger.info("Parsed ScriptSig: " + testCase.scriptSig)
+      logger.info("Parsed ScriptPubKey: " + testCase.scriptPubKey)
+      logger.info("Flags: " + testCase.flags)
+      logger.info("Comments: " + testCase.comments)
+      val scriptPubKey = ScriptPubKey.fromAsm(testCase.scriptPubKey.asm)
+      val flags = ScriptFlagFactory.fromList(testCase.flags)
+      logger.info("Flags after parsing: " + flags)
+      val program = ScriptProgram(tx,scriptPubKey,inputIndex,flags)
+      withClue(testCase.raw) {
+        ScriptInterpreter.run(program) must equal (testCase.expectedResult)
+      }
+    }*/
   }
 }
