@@ -90,9 +90,17 @@ trait LockTimeInterpreter extends BitcoinSLogger {
         case s : ScriptNumber if (isLockTimeBitOff(s) && program.txSignatureComponent.transaction.version < 2) =>
           logger.error("OP_CSV fails if locktime bit is not set and the tx version < 2")
           ScriptProgram(program, ScriptErrorUnsatisfiedLocktime)
+        case s : ScriptNumber =>
+          if (checkSequence(program,s)) {
+            ScriptProgram(program, program.stack.tail, program.script.tail)
+          } else {
+            logger.error("Stack top sequence and transaction input's sequence number comparison failed")
+            ScriptProgram(program, ScriptErrorUnsatisfiedLocktime)
+          }
         case s : ScriptConstant =>
           opCheckSequenceVerify(ScriptProgram(program, ScriptNumber(s.hex) :: program.stack.tail, ScriptProgram.Stack))
-        case _ : ScriptToken => ScriptProgram(program, program.stack.tail, program.script.tail)
+        case token : ScriptToken =>
+          throw new RuntimeException("Stack top must be either a ScriptConstant or a ScriptNumber, we got: " + token)
       }
     }
 
@@ -113,4 +121,56 @@ trait LockTimeInterpreter extends BitcoinSLogger {
     */
   def isLockTimeBitOff(s : ScriptNumber) : Boolean = (s.num & locktimeDisabledFlag) == 0
 
+
+  /**
+    * If a transaction's input's sequence number encodes a relative lock-time, this mask is
+    * applied to extract that lock-time from the sequence field.
+    */
+  def sequenceLockTimeMask = 0x0000ffff
+
+  /**
+    * If the transaction input sequence number encodes a relative lock-time and this flag
+    * is set, the relative lock-time has units of 512 seconds,
+    * otherwise it specifies blocks with a granularity of 1.
+   */
+  def sequenceLockTimeTypeFlag = (1L << 22)
+
+  /**
+    * Mimics this function inside of bitcoin core
+    * https://github.com/bitcoin/bitcoin/blob/e26b62093ae21e89ed7d36a24a6b863f38ec631d/src/script/interpreter.cpp#L1196
+    * @param program the program whose transaction input's sequence is being compared
+    * @param nSequence the script number on the stack top to compare to the input's sequence number
+    * @return if the given script number is valid or not
+    */
+  def checkSequence(program : ScriptProgram, nSequence : ScriptNumber) : Boolean = {
+    val inputIndex = program.txSignatureComponent.inputIndex
+    val txToSequence : ScriptNumber = ScriptNumber(program.txSignatureComponent.transaction.inputs(inputIndex).sequence)
+
+    if (program.txSignatureComponent.transaction.version < 2) return false
+
+    val nLockTimeMask : Long = sequenceLockTimeTypeFlag | sequenceLockTimeMask
+    val txToSequenceMasked : ScriptNumber = txToSequence & ScriptNumber(nLockTimeMask)
+
+    val nSequenceMasked : ScriptNumber = nSequence & ScriptNumber(nLockTimeMask)
+
+    // There are two kinds of nSequence: lock-by-blockheight
+    // and lock-by-blocktime, distinguished by whether
+    // nSequenceMasked < CTxIn::SEQUENCE_LOCKTIME_TYPE_FLAG.
+    //
+    // We want to compare apples to apples, so fail the script
+    // unless the type of nSequenceMasked being tested is the same as
+    // the nSequenceMasked in the transaction.
+    if (!(
+      (txToSequenceMasked <  ScriptNumber(sequenceLockTimeTypeFlag) &&
+        nSequenceMasked < ScriptNumber(sequenceLockTimeTypeFlag)) ||
+        (txToSequenceMasked >= ScriptNumber(sequenceLockTimeTypeFlag) &&
+          nSequenceMasked >= ScriptNumber(sequenceLockTimeTypeFlag))
+      )) return false
+
+    // Now that we know we're comparing apples-to-apples, the
+    // comparison is a simple numeric one.
+    if (nSequenceMasked > txToSequenceMasked) return false
+
+    true
+  }
 }
