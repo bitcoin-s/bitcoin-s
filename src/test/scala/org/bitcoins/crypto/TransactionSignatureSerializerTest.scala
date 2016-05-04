@@ -2,11 +2,12 @@ package org.bitcoins.crypto
 
 import java.util
 
-import org.bitcoinj.core.{Sha256Hash, Utils, DumpedPrivateKey}
+import org.bitcoinj.core.{DumpedPrivateKey, Sha256Hash, Utils}
 import org.bitcoinj.core.Transaction.SigHash
 import org.bitcoinj.params.TestNet3Params
-import org.bitcoinj.script.{ScriptOpCodes, ScriptChunk, ScriptBuilder}
-import org.bitcoins.protocol.script.{UpdateScriptPubKeyAsm, UpdateScriptPubKeyBytes, ScriptPubKey}
+import org.bitcoinj.script.{ScriptBuilder, ScriptChunk, ScriptOpCodes}
+import org.bitcoins.marshallers.script.ScriptParser
+import org.bitcoins.protocol.script.{ScriptPubKey, UpdateScriptPubKeyAsm, UpdateScriptPubKeyBytes}
 import org.bitcoins.protocol.transaction._
 import org.bitcoins.script.ScriptOperationFactory
 import org.bitcoins.script.bitwise.OP_EQUALVERIFY
@@ -15,6 +16,7 @@ import org.bitcoins.script.crypto._
 import org.bitcoins.script.stack.OP_DUP
 import org.bitcoins.util._
 import org.scalatest.{FlatSpec, MustMatchers}
+
 import scala.collection.JavaConversions._
 
 
@@ -64,6 +66,7 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers {
      )
      BitcoinSUtil.encodeHex(bitcoinsTxSigHash) must be (bitcoinjTxSigHash)
    }
+
    it must "serialize a transaction for a SIGHASH_SINGLE transaction correctly" in {
      val spendingTx = Transaction(BitcoinJTestUtil.multiSigTransaction.bitcoinSerialize())
 
@@ -329,9 +332,27 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers {
   }
 
 
+  it must "hash a transaction that has script operations after OP_CHECKSIGVERIFY" in {
+    //this example is from tx_valid.json
+    val rawTx = "01000000010001000000000000000000000000000000000000000000000000000000000000000000006a473044022067288ea50aa799543a536ff9306f8e1cba05b9c6b10951175b924f96732555ed022026d7b5265f38d21541519e4a1e55044d5b9e17e15cdbaf29ae3792e99e883e7a012103ba8c8b86dea131c22ab967e6dd99bdae8eff7a1f75a2c35f1f944109e3fe5e22ffffffff010000000000000000015100000000"
+    val inputIndex = 0
+    val spendingTx = Transaction(rawTx)
+    val scriptPubKeyFromString = ScriptParser.fromString("DUP HASH160 0x14 0x5b6462475454710f3c22f5fdf0b40704c92f25c3 " +
+      "EQUALVERIFY CHECKSIGVERIFY 1 0x47 0x3044022067288ea50aa799543a536ff9306f8e1cba05b9c6b10951175b924f96732555ed02" +
+      "2026d7b5265f38d21541519e4a1e55044d5b9e17e15cdbaf29ae3792e99e883e7a01")
+
+    val scriptPubKey = ScriptPubKey.fromAsm(scriptPubKeyFromString)
 
 
+    val bitcoinjTx = BitcoinjConversions.transaction(spendingTx)
+    val bitcoinjHashForSig : Seq[Byte] = BitcoinJSignatureSerialization.hashForSignature(
+      bitcoinjTx, inputIndex, scriptPubKey.bytes.toArray, SIGHASH_ALL(0x01).byte
+    )
 
+    val hashedTxForSig : String = BitcoinSUtil.encodeHex(
+      TransactionSignatureSerializer.hashForSignature(spendingTx,inputIndex,scriptPubKey,SIGHASH_ALL(0x01)
+      ))
+    hashedTxForSig must be (BitcoinSUtil.encodeHex(bitcoinjHashForSig))
 
-
+  }
 }

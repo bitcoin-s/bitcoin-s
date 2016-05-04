@@ -3,10 +3,11 @@ package org.bitcoins.crypto
 import org.bitcoins.config.TestNet3
 import org.bitcoins.protocol.script._
 import org.bitcoins.protocol.transaction.{Transaction, TransactionInput}
-import org.bitcoins.script.{ScriptProgram}
+import org.bitcoins.script.ScriptProgram
+import org.bitcoins.script.constant.ScriptConstant
 import org.bitcoins.script.crypto._
-import org.bitcoins.script.flag.{ScriptFlagUtil, ScriptFlag, ScriptVerifyDerSig}
-import org.bitcoins.util.{BitcoinScriptUtil, BitcoinSLogger, BitcoinSUtil}
+import org.bitcoins.script.flag.{ScriptFlag, ScriptFlagUtil, ScriptVerifyDerSig}
+import org.bitcoins.util.{BitcoinSLogger, BitcoinSUtil, BitcoinScriptUtil}
 import org.slf4j.LoggerFactory
 
 import scala.annotation.tailrec
@@ -22,7 +23,6 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
    * Checks the signature of a scriptSig in the spending transaction against the
    * given scriptPubKey & explicitly given public key
    * This is useful for instances of non standard scriptSigs
- *
    * @param txSignatureComponent the tx signature component that contains all relevant tx information
    * @param pubKey
    * @return
@@ -51,14 +51,30 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
       //instead of the p2sh scriptPubKey it was previously
       //as the scriptPubKey instead of the one inside of ScriptProgram
       val txSignatureComponentWithScriptPubKeyAdjusted = txSignatureComponent.scriptSignature match {
-        case s : P2SHScriptSignature => TransactionSignatureComponentFactory.factory(txSignatureComponent,s.redeemScript)
+        case s : P2SHScriptSignature =>
+          logger.info("Replacing redeemScript in txSignature component")
+          logger.info("Redeem script: " + s.redeemScript)
+          TransactionSignatureComponentFactory.factory(txSignatureComponent,s.redeemScript)
         case _ : P2PKHScriptSignature | _ : P2PKScriptSignature | _ : NonStandardScriptSignature
-             | _ : MultiSignatureScriptSignature | EmptyScriptSignature => txSignatureComponent
+             | _ : MultiSignatureScriptSignature | EmptyScriptSignature =>
+
+          if (txSignatureComponent.scriptPubKey.asm.contains(ScriptConstant(signature.hex))) {
+            //replicates this line in bitcoin core
+            //https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L872
+            val sigIndex = txSignatureComponent.scriptPubKey.asm.indexOf(ScriptConstant(signature.hex))
+            //remove sig and it's corresponding BytesToPushOntoStack
+            val sigRemoved = txSignatureComponent.scriptPubKey.asm.slice(0,sigIndex-1) ++
+              txSignatureComponent.scriptPubKey.asm.slice(sigIndex+1,txSignatureComponent.scriptPubKey.asm.size)
+            logger.debug("Sig removed: " + sigRemoved)
+            val scriptPubKeySigRemoved = ScriptPubKey.fromAsm(sigRemoved)
+            TransactionSignatureComponentFactory.factory(txSignatureComponent,scriptPubKeySigRemoved)
+          } else txSignatureComponent
       }
       val hashTypeByte = if (signature.bytes.size > 0) signature.bytes.last else 0x00.toByte
       val hashType = HashTypeFactory.fromByte(hashTypeByte)
       val hashForSignature = TransactionSignatureSerializer.hashForSignature(txSignatureComponentWithScriptPubKeyAdjusted.transaction,
         txSignatureComponentWithScriptPubKeyAdjusted.inputIndex,txSignatureComponentWithScriptPubKeyAdjusted.scriptPubKey,hashType)
+      logger.debug("Tx signature component: " + txSignatureComponentWithScriptPubKeyAdjusted)
       logger.info("Hash for signature: " + BitcoinSUtil.encodeHex(hashForSignature))
       val isValid = pubKey.verify(hashForSignature,signature)
       if (isValid) SignatureValidationSuccess else SignatureValidationFailureIncorrectSignatures
@@ -69,7 +85,6 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
    * This is a helper function to check digital signatures against public keys
    * if the signature does not match this public key, check it against the next
    * public key in the sequence
- *
    * @param txSignatureComponent the tx signature component that contains all relevant transaction information
    * @param sigs the signatures that are being checked for validity
    * @param pubKeys the public keys which are needed to verify that the signatures are correct

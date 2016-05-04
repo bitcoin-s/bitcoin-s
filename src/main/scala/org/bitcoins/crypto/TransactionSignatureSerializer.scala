@@ -24,7 +24,6 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
   /**
    * Bitcoin Core's bug is that SignatureHash was supposed to return a hash and on this codepath it
    * actually returns the constant "1" to indicate an error
- *
    * @return
    */
   private def errorHash : Seq[Byte] = BitcoinSUtil.decodeHex("0100000000000000000000000000000000000000000000000000000000000000")
@@ -32,7 +31,6 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
   /**
    * Serialized the passed in script code, skipping OP_CODESEPARATORs
    * definition for CScript https://github.com/bitcoin/bitcoin/blob/93c85d458ac3e2c496c1a053e1f5925f55e29100/src/script/script.h#L373
- *
    * @param script
    * @return
    */
@@ -43,8 +41,6 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
    * Serializes a transaction to be signed by an ECKey
    * follows the bitcoinj implementation which can be found here
    * hashing is done in the hashForSignature function
-   * hashing is NOT done in this function
- *
    * @param inputIndex
    * @param script
    * @param hashType
@@ -77,7 +73,6 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
     // Set the input to the script of its output. Bitcoin Core does this but the step has no obvious purpose as
     // the signature covers the hash of the prevout transaction which obviously includes the output script
     // already. Perhaps it felt safer to him in some way, or is another leftover from how the code was written.
-
     val inputWithConnectedScript = TransactionInput(inputToSign,scriptWithOpCodeSeparatorsRemoved)
 
     //update the input at index i with inputWithConnectScript
@@ -147,7 +142,6 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
    * Serializes then hashes a transaction for signing
    * this is an implementation of it's bitcoinj equivalent found here
    * https://github.com/bitcoinj/bitcoinj/blob/master/core/src/main/java/org/bitcoinj/core/Transaction.java#L924
- *
    * @param inputIndex
    * @param script
    * @param hashType
@@ -161,7 +155,6 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
   /**
    * Removes OP_CODESEPARATOR operations then returns the script
    * format
- *
    * @return
    */
   def removeOpCodeSeparators(script : ScriptPubKey) : ScriptPubKey = {
@@ -177,7 +170,6 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
 
   /**
    * Sets the input's sequence number to zero EXCEPT for the input at inputIndex
- *
    * @param inputs
    * @param inputIndex
    * @return
@@ -193,7 +185,6 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
 
   /**
    * Updates an input at the given inputIndex and returns the updated sequence of inputs
- *
    * @param inputs
    * @param updatedInput
    * @param inputIndex
@@ -210,7 +201,6 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
 
   /**
    * Executes the SIGHASH_NONE procedure on a spending transaction for the input specified by inputIndex
- *
    * @param spendingTransaction
    * @param inputIndex
    * @return
@@ -229,7 +219,6 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
 
   /**
    * Executes the SIGHASH_SINGLE procedure on a spending transaction for the input specified by inputIndex
- *
    * @param spendingTransaction
    * @param inputIndex
    * @return
@@ -260,7 +249,6 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
 
   /**
    * Executes the SIGHASH_ALL procedure on a spending transaction at inputIndex
- *
    * @param spendingTransaction
    * @param inputIndex
    * @return
@@ -271,7 +259,6 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
 
   /**
    * Executes the SIGHASH_ANYONECANPAY procedure on a spending transaction at inputIndex
- *
    * @param spendingTransaction
    * @param input
    * @return

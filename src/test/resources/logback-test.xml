@@ -16,11 +16,9 @@
 
 
 
-    <root level="WARN">
+    <root level="INFO">
         <appender-ref ref="STDOUT" />
     </root>
-
-    <logger name="org.bitcoins" level="WARN"/>
 
 
 </configuration>
