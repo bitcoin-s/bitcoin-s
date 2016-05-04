@@ -101,39 +101,11 @@ trait LockTimeInterpreter extends BitcoinSLogger {
           opCheckSequenceVerify(ScriptProgram(program, ScriptNumber(s.hex) :: program.stack.tail, ScriptProgram.Stack))
         case token : ScriptToken =>
           throw new RuntimeException("Stack top must be either a ScriptConstant or a ScriptNumber, we got: " + token)
+
       }
     }
 
   }
-
-  /**
-    * If bit (1 << 31) of the sequence number is set,
-    * then no consensus meaning is applied to the sequence number and can be included
-    * in any block under all currently possible circumstances.
-    * @return the mask that ben used with a bitwise and to indicate if the sequence number has any meaning
-    */
-  def locktimeDisabledFlag = 1L << 31
-
-  /**
-    * The script number on the stack has the disable flag (1 << 31) unset
-    * @param s
-    * @return
-    */
-  def isLockTimeBitOff(s : ScriptNumber) : Boolean = (s.num & locktimeDisabledFlag) == 0
-
-
-  /**
-    * If a transaction's input's sequence number encodes a relative lock-time, this mask is
-    * applied to extract that lock-time from the sequence field.
-    */
-  def sequenceLockTimeMask = 0x0000ffff
-
-  /**
-    * If the transaction input sequence number encodes a relative lock-time and this flag
-    * is set, the relative lock-time has units of 512 seconds,
-    * otherwise it specifies blocks with a granularity of 1.
-   */
-  def sequenceLockTimeTypeFlag = (1L << 22)
 
   /**
     * Mimics this function inside of bitcoin core
@@ -148,7 +120,7 @@ trait LockTimeInterpreter extends BitcoinSLogger {
 
     if (program.txSignatureComponent.transaction.version < 2) return false
 
-    val nLockTimeMask : Long = sequenceLockTimeTypeFlag | sequenceLockTimeMask
+    val nLockTimeMask : Long = TransactionConstants.sequenceLockTimeTypeFlag | TransactionConstants.sequenceLockTimeMask
     val txToSequenceMasked : ScriptNumber = txToSequence & ScriptNumber(nLockTimeMask)
 
     val nSequenceMasked : ScriptNumber = nSequence & ScriptNumber(nLockTimeMask)
@@ -161,10 +133,10 @@ trait LockTimeInterpreter extends BitcoinSLogger {
     // unless the type of nSequenceMasked being tested is the same as
     // the nSequenceMasked in the transaction.
     if (!(
-      (txToSequenceMasked <  ScriptNumber(sequenceLockTimeTypeFlag) &&
-        nSequenceMasked < ScriptNumber(sequenceLockTimeTypeFlag)) ||
-        (txToSequenceMasked >= ScriptNumber(sequenceLockTimeTypeFlag) &&
-          nSequenceMasked >= ScriptNumber(sequenceLockTimeTypeFlag))
+      (txToSequenceMasked <  ScriptNumber(TransactionConstants.sequenceLockTimeTypeFlag) &&
+        nSequenceMasked < ScriptNumber(TransactionConstants.sequenceLockTimeTypeFlag)) ||
+        (txToSequenceMasked >= ScriptNumber(TransactionConstants.sequenceLockTimeTypeFlag) &&
+          nSequenceMasked >= ScriptNumber(TransactionConstants.sequenceLockTimeTypeFlag))
       )) return false
 
     // Now that we know we're comparing apples-to-apples, the
@@ -173,4 +145,11 @@ trait LockTimeInterpreter extends BitcoinSLogger {
 
     true
   }
+
+  /**
+    * The script number on the stack has the disable flag (1 << 31) unset
+    * @param s
+    * @return
+    */
+  def isLockTimeBitOff(s : ScriptNumber) : Boolean = (s.num & TransactionConstants.locktimeDisabledFlag) == 0
 }

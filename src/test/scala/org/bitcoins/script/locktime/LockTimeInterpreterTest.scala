@@ -2,7 +2,7 @@ package org.bitcoins.script.locktime
 
 
 import org.bitcoins.policy.Policy
-import org.bitcoins.protocol.transaction.{Transaction, TransactionInput, UpdateTransactionInputs}
+import org.bitcoins.protocol.transaction.{Transaction, TransactionConstants, TransactionInput, UpdateTransactionInputs}
 import org.bitcoins.script.result._
 import org.bitcoins.script.{ExecutedScriptProgram, ExecutionInProgressScriptProgram, PreExecutionScriptProgram, ScriptProgram}
 import org.bitcoins.script.constant.{OP_0, ScriptNumber}
@@ -127,7 +127,7 @@ class LockTimeInterpreterTest extends FlatSpec with MustMatchers with LockTimeIn
   }
 
   it must "treat OP_CHECKSEQUENCEVERIFY as a NOP if the locktime disabled flag is set in the sequence number" in {
-    val stack = List(ScriptNumber(locktimeDisabledFlag))
+    val stack = List(ScriptNumber(TransactionConstants.locktimeDisabledFlag))
     val script = List(OP_CHECKSEQUENCEVERIFY)
     val program = ScriptProgram(TestUtil.testProgramExecutionInProgress,stack,script)
     val newProgram = opCheckSequenceVerify(program)
