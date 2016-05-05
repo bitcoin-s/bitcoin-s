@@ -32,11 +32,12 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterp
     val source = Source.fromURL(getClass.getResource("/script_tests.json"))
 
 
-    //use this to represent a single test case from script_valid.json
-/*    val lines =
+/*    //use this to represent a single test case from script_valid.json
+    val lines =
         """
           |
-          |[["1", "IF ELSE ENDIF ELSE", "P2SH,STRICTENC", "UNBALANCED_CONDITIONAL"]]
+          |[["4294967296", "CHECKSEQUENCEVERIFY", "CHECKSEQUENCEVERIFY", "UNSATISFIED_LOCKTIME",
+  "CSV fails if stack top bit 1 << 31 is not set, and tx version < 2"]]
    """.stripMargin*/
     val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n" finally source.close()
     val json = lines.parseJson

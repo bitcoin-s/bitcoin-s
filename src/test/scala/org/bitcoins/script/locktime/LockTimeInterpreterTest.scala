@@ -1,12 +1,13 @@
 package org.bitcoins.script.locktime
 
 
-import org.bitcoins.protocol.transaction.{TransactionInput, Transaction, UpdateTransactionInputs}
+import org.bitcoins.policy.Policy
+import org.bitcoins.protocol.transaction.{Transaction, TransactionConstants, TransactionInput, UpdateTransactionInputs}
 import org.bitcoins.script.result._
-import org.bitcoins.script.{ExecutionInProgressScriptProgram, ExecutedScriptProgram, PreExecutionScriptProgram, ScriptProgram}
-import org.bitcoins.script.constant.{ScriptNumber, OP_0}
+import org.bitcoins.script.{ExecutedScriptProgram, ExecutionInProgressScriptProgram, PreExecutionScriptProgram, ScriptProgram}
+import org.bitcoins.script.constant.{OP_0, ScriptNumber}
 import org.bitcoins.util.{ScriptProgramTestUtil, TestUtil}
-import org.scalatest.{MustMatchers, FlatSpec}
+import org.scalatest.{FlatSpec, MustMatchers}
 
 /**
  * Created by chris on 3/30/16.
@@ -96,6 +97,42 @@ class LockTimeInterpreterTest extends FlatSpec with MustMatchers with LockTimeIn
     //if an error is hit, the newProgram will be an instance of ExecutedScriptProgram
     //if an error is not hit it will still be a ExecutionInProgressScriptProgram
     newProgram.isInstanceOf[ExecutedScriptProgram] must be (false)
+  }
+
+  it must "mark the script as invalid for OP_CHECKSEQUENCEVERIFY if there are no tokens on the stack" in {
+    val stack = List()
+    val script = List(OP_CHECKSEQUENCEVERIFY)
+    val program = ScriptProgram(TestUtil.testProgramExecutionInProgress,stack,script)
+    val newProgram = opCheckSequenceVerify(program)
+    newProgram.isInstanceOf[ExecutedScriptProgram] must be (true)
+    newProgram.asInstanceOf[ExecutedScriptProgram].error must be (Some(ScriptErrorInvalidStackOperation))
+  }
+
+  it must "mark the script as invalid for OP_CHECKSEQUENCEVERIFY if the stack top is negative" in {
+    val stack = List(ScriptNumber.negativeOne)
+    val script = List(OP_CHECKSEQUENCEVERIFY)
+    val program = ScriptProgram(TestUtil.testProgramExecutionInProgress,stack,script)
+    val newProgram = opCheckSequenceVerify(program)
+    newProgram.isInstanceOf[ExecutedScriptProgram] must be (true)
+    newProgram.asInstanceOf[ExecutedScriptProgram].error must be (Some(ScriptErrorNegativeLockTime))
+  }
+
+  it must "mark the script as invalid if we are requiring minimal encoding of numbers and the stack top is not minimal" in {
+    val stack = List(ScriptNumber("0100"))
+    val script = List(OP_CHECKSEQUENCEVERIFY)
+    val program = ScriptProgram(TestUtil.testProgramExecutionInProgress,stack,script)
+    val newProgram = opCheckSequenceVerify(program)
+    newProgram.isInstanceOf[ExecutedScriptProgram] must be (true)
+    newProgram.asInstanceOf[ExecutedScriptProgram].error must be (Some(ScriptErrorUnknownError))
+  }
+
+  it must "treat OP_CHECKSEQUENCEVERIFY as a NOP if the locktime disabled flag is set in the sequence number" in {
+    val stack = List(ScriptNumber(TransactionConstants.locktimeDisabledFlag))
+    val script = List(OP_CHECKSEQUENCEVERIFY)
+    val program = ScriptProgram(TestUtil.testProgramExecutionInProgress,stack,script)
+    val newProgram = opCheckSequenceVerify(program)
+    newProgram.stack must be (stack)
+    newProgram.script.isEmpty must be (true)
   }
 }
 
