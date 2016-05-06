@@ -30,7 +30,7 @@ object CoreTransactionTestCaseProtocol extends DefaultJsonProtocol {
         val spendingTx : Transaction = Transaction(elements(1).convertTo[String])
         val flags : Seq[ScriptFlag] = ScriptFlagFactory.fromList(elements(2).convertTo[String])
 
-        Some(CoreTransactionTestCaseImpl(creditingTxsInfo,spendingTx,flags, elements.toString))
+        Some(CoreTransactionTestCaseImpl(creditingTxsInfo.reverse,spendingTx,flags, elements.toString))
       }
 
     }

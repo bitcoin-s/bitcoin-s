@@ -49,13 +49,13 @@ class TransactionTest extends FlatSpec with MustMatchers with BitcoinSLogger {
 
 
         //use this to represent a single test case from script_valid.json
-/*        val lines =
-            """
-              |[
-              |[[["0000000000000000000000000000000000000000000000000000000000000100", 0, "DUP HASH160 0x14 0x5b6462475454710f3c22f5fdf0b40704c92f25c3 EQUALVERIFY CHECKSIGVERIFY 1 0x47 0x3044022067288ea50aa799543a536ff9306f8e1cba05b9c6b10951175b924f96732555ed022026d7b5265f38d21541519e4a1e55044d5b9e17e15cdbaf29ae3792e99e883e7a01"]],
-              |"01000000010001000000000000000000000000000000000000000000000000000000000000000000006a473044022067288ea50aa799543a536ff9306f8e1cba05b9c6b10951175b924f96732555ed022026d7b5265f38d21541519e4a1e55044d5b9e17e15cdbaf29ae3792e99e883e7a012103ba8c8b86dea131c22ab967e6dd99bdae8eff7a1f75a2c35f1f944109e3fe5e22ffffffff010000000000000000015100000000", "P2SH"]
-              |]
-            """.stripMargin*/
+/*    val lines =
+        """
+          |[
+          |[[["0000000000000000000000000000000000000000000000000000000000000100", 0, "DUP HASH160 0x14 0xe52b482f2faa8ecbf0db344f93c84ac908557f33 EQUALVERIFY CHECKSIG"], ["0000000000000000000000000000000000000000000000000000000000000200", 0, "1"]],
+          |"01000000020002000000000000000000000000000000000000000000000000000000000000000000000151ffffffff0001000000000000000000000000000000000000000000000000000000000000000000006b483045022100c9cdd08798a28af9d1baf44a6c77bcc7e279f47dc487c8c899911bc48feaffcc0220503c5c50ae3998a733263c5c0f7061b483e2b56c4c41b456e7d2f5a78a74c077032102d5c25adb51b61339d2b05315791e21bbe80ea470a49db0135720983c905aace0ffffffff010000000000000000015100000000", "P2SH"]
+          |]
+        """.stripMargin*/
     val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n" finally source.close()
     val json = lines.parseJson
     val testCasesOpt : Seq[Option[CoreTransactionTestCase]] = json.convertTo[Seq[Option[CoreTransactionTestCase]]]
@@ -63,13 +63,16 @@ class TransactionTest extends FlatSpec with MustMatchers with BitcoinSLogger {
     for {
       testCase <- testCases
       ((outPoint,scriptPubKey),inputIndex) <- testCase.creditingTxsInfo.zipWithIndex
-      (creditingTx,outputIndex) = TransactionTestUtil.buildCreditingTransaction(scriptPubKey)
       tx = testCase.spendingTx
     } yield {
       logger.info("Raw test case: " + testCase.raw)
       logger.info("Parsed ScriptSig: " + tx.inputs(inputIndex).scriptSignature)
-      logger.info("Parsed ScriptPubKey: " + scriptPubKey)
+      logger.info("ScriptPubKey: " + scriptPubKey)
+      logger.info("OutPoint: " + outPoint)
       logger.info("Flags after parsing: " + testCase.flags)
+/*      require(outPoint.txId == tx.inputs(inputIndex).previousOutput.txId,
+        "OutPoint txId not the same as input prevout txid\noutPoint.txId: " + outPoint.txId + "\n" +
+          "input prevout txid: " + tx.inputs(inputIndex).previousOutput.txId)*/
       val program = ScriptProgram(tx,scriptPubKey,inputIndex,testCase.flags)
       withClue(testCase.raw) {
         ScriptInterpreter.run(program) must equal (ScriptOk)
