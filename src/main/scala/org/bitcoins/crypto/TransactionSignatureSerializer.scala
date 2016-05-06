@@ -47,6 +47,11 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
    * @return
    */
   def serializeForSignature(spendingTransaction : Transaction, inputIndex : Int, script : ScriptPubKey, hashType : HashType) : Seq[Byte] = {
+    logger.debug("Serializing for signature")
+
+
+
+
     // Clear input scripts in preparation for signing. If we're signing a fresh
     // transaction that step isn't very helpful, but it doesn't add much cost relative to the actual
     // EC math so we'll do it anyway.
@@ -147,9 +152,20 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
    * @param hashType
    * @return
    */
-  def hashForSignature(spendingTransction : Transaction, inputIndex : Int, script : ScriptPubKey, hashType : HashType) : Seq[Byte] = {
-    val serializedTxForSignature = serializeForSignature(spendingTransction,inputIndex,script,hashType)
-    CryptoUtil.doubleSHA256(serializedTxForSignature)
+  def hashForSignature(spendingTransaction : Transaction, inputIndex : Int, script : ScriptPubKey, hashType : HashType) : Seq[Byte] = {
+    //these first two checks are in accordance with behavior in bitcoin core
+    //https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L1112-L1123
+    if (inputIndex >= spendingTransaction.inputs.size ) {
+      logger.warn("Our inputIndex is out of the range of the inputs in the spending transaction")
+      errorHash
+    }
+    else if(hashType == SIGHASH_SINGLE  && inputIndex >= spendingTransaction.outputs.size) {
+      logger.warn("When we have a SIGHASH_SINGLE we cannot have more inputs than outputs")
+      errorHash
+    } else {
+      val serializedTxForSignature = serializeForSignature(spendingTransaction,inputIndex,script,hashType)
+      CryptoUtil.doubleSHA256(serializedTxForSignature)
+    }
   }
 
   /**
