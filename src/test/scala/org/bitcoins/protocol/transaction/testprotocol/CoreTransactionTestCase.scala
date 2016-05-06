@@ -17,6 +17,7 @@ trait CoreTransactionTestCase {
   def scriptPubKeys : Seq[ScriptPubKey] = creditingTxsInfo.map(_._2)
 
   def creditingTxsInfo : Seq[(TransactionOutPoint, ScriptPubKey)]
+
   def spendingTx : Transaction
 
   def flags : Seq[ScriptFlag]
