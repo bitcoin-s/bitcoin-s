@@ -164,6 +164,7 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
       errorHash
     } else {
       val serializedTxForSignature = serializeForSignature(spendingTransaction,inputIndex,script,hashType)
+      logger.debug("Serialized tx for signature: " + BitcoinSUtil.encodeHex(serializedTxForSignature))
       CryptoUtil.doubleSHA256(serializedTxForSignature)
     }
   }
