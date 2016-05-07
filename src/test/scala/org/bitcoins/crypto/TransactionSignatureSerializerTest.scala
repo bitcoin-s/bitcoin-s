@@ -31,7 +31,6 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers {
     val expectedScript = TransactionSignatureSerializer.removeOpCodeSeparators(scriptPubKey)
     TransactionSignatureSerializer.serializeScriptCode(scriptPubKey) must be (expectedScript)
   }
-
   it must "not remove any bytes from a script that does not contain OP_CODESEPARATORS" in {
     //from b30d3148927f620f5b1228ba941c211fdabdae75d0ba0b688a58accbf018f3cc
     val scriptHex = TestUtil.rawP2PKHScriptPubKey
@@ -354,5 +353,43 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers {
       ))
     hashedTxForSig must be (BitcoinSUtil.encodeHex(bitcoinjHashForSig))
 
+  }
+
+  it must "correctly serialize an input that is being checked where another input in the same tx is using SIGHASH_ANYONECANPAY" in {
+    //this is from a test case inside of tx_valid.json
+    //https://github.com/bitcoin/bitcoin/blob/master/src/test/data/tx_valid.json#L91
+    val rawTx = "01000000020001000000000000000000000000000000000000000000000000000000000000000000004948304502203a0f5f0e1f2bdbcd04db3061d18f3af70e07f4f467cbc1b8116f267025f5360b022100c792b6e215afc5afc721a351ec413e714305cb749aae3d7fee76621313418df101010000000002000000000000000000000000000000000000000000000000000000000000000000004847304402205f7530653eea9b38699e476320ab135b74771e1c48b81a5d041e2ca84b9be7a802200ac8d1f40fb026674fe5a5edd3dea715c27baa9baca51ed45ea750ac9dc0a55e81ffffffff010100000000000000015100000000"
+    val inputIndex = 0
+    val spendingTx = Transaction(rawTx)
+    val scriptPubKeyFromString = ScriptParser.fromString("0x21 0x035e7f0d4d0841bcd56c39337ed086b1a633ee770c1ffdd94ac552a95ac2ce0efc CHECKSIG")
+    val scriptPubKey = ScriptPubKey.fromAsm(scriptPubKeyFromString)
+
+    val bitcoinjTx = BitcoinjConversions.transaction(spendingTx)
+    val bitcoinjHashForSig : Seq[Byte] = BitcoinJSignatureSerialization.hashForSignature(
+      bitcoinjTx, inputIndex, scriptPubKey.bytes.toArray, SIGHASH_ALL(0x01).byte
+    )
+    val hashedTxForSig : String = BitcoinSUtil.encodeHex(
+      TransactionSignatureSerializer.hashForSignature(spendingTx,inputIndex,scriptPubKey,SIGHASH_ALL(0x01)
+      ))
+    hashedTxForSig must be (BitcoinSUtil.encodeHex(bitcoinjHashForSig))
+  }
+
+  it must "correctly serialize an input that is using the SIGHASH_ANYONE can pay flag in conjunction with another input that uses SIGHASH_ALL" in {
+    //this is from a test case inside of tx_valid.json
+    //https://github.com/bitcoin/bitcoin/blob/master/src/test/data/tx_valid.json#L91
+    val rawTx = "01000000020001000000000000000000000000000000000000000000000000000000000000000000004948304502203a0f5f0e1f2bdbcd04db3061d18f3af70e07f4f467cbc1b8116f267025f5360b022100c792b6e215afc5afc721a351ec413e714305cb749aae3d7fee76621313418df101010000000002000000000000000000000000000000000000000000000000000000000000000000004847304402205f7530653eea9b38699e476320ab135b74771e1c48b81a5d041e2ca84b9be7a802200ac8d1f40fb026674fe5a5edd3dea715c27baa9baca51ed45ea750ac9dc0a55e81ffffffff010100000000000000015100000000"
+    val inputIndex = 1
+    val spendingTx = Transaction(rawTx)
+    val scriptPubKeyFromString = ScriptParser.fromString("0x21 0x035e7f0d4d0841bcd56c39337ed086b1a633ee770c1ffdd94ac552a95ac2ce0efc CHECKSIG")
+    val scriptPubKey = ScriptPubKey.fromAsm(scriptPubKeyFromString)
+
+    val bitcoinjTx = BitcoinjConversions.transaction(spendingTx)
+    val bitcoinjHashForSig : Seq[Byte] = BitcoinJSignatureSerialization.hashForSignature(
+      bitcoinjTx, inputIndex, scriptPubKey.bytes.toArray, SIGHASH_ALL_ANYONECANPAY.byte
+    )
+    val hashedTxForSig : String = BitcoinSUtil.encodeHex(
+      TransactionSignatureSerializer.hashForSignature(spendingTx,inputIndex,scriptPubKey,SIGHASH_ALL_ANYONECANPAY
+      ))
+    hashedTxForSig must be (BitcoinSUtil.encodeHex(bitcoinjHashForSig))
   }
 }
