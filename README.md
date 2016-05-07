@@ -9,7 +9,7 @@ This repostitory includes the following functionality:
   - Serializers and deserializers for bitcoin data structures mentioned above
   - An implementation of Bitcoin's Script programming language 
     - This passes all of the test cases found inside of script_tests.json on the Bitcoin Core repo
-    - Currently up to date through OP_CHECKLOCKTIMEVERIFY, OP_CHECKSEQUENCEVERIFY still needs to be implemented
+    - Currently up to date through OP_CHECKSEQUENCEVERIFY
   - 90% test coverage throughout the codebase to ensure high quality code. 
   - Functions documented with Scaladocs for user friendliness 
 
@@ -81,3 +81,34 @@ program: org.bitcoins.script.PreExecutionScriptProgram = PreExecutionScriptProgr
 scala> ScriptInterpreter.run(program)
 res0: org.bitcoins.script.result.ScriptResult = ScriptOk
 ```
+# Running tests
+
+To run the entire test suite all you need to do is run the following command
+```scala 
+
+chris@chris:~/dev/bitcoins-core$ sbt test
+[info] Run completed in 8 seconds, 805 milliseconds.
+[info] Total number of tests run: 613
+[info] Suites: completed 91, aborted 0
+[info] Tests: succeeded 613, failed 0, canceled 0, ignored 0, pending 0
+[info] All tests passed.
+[success] Total time: 17 s, completed May 7, 2016 1:11:34 PM
+chris@chris:~/dev/bitcoins-core$ 
+```
+
+To run a specific suite of tests you can specify the suite name in the following way
+```scala
+chris@chris:~/dev/bitcoins-core$ sbt
+> test-only *ScriptInterpreterTest*
+[info] ScriptInterpreterTest:
+[info] ScriptInterpreter
+[info] - must evaluate all the scripts from the bitcoin core script_tests.json
+[info] Run completed in 8 seconds, 208 milliseconds.
+[info] Total number of tests run: 1
+[info] Suites: completed 1, aborted 0
+[info] Tests: succeeded 1, failed 0, canceled 0, ignored 0, pending 0
+[info] All tests passed.
+>
+```
+
+
