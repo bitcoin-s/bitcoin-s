@@ -49,36 +49,40 @@ class TransactionTest extends FlatSpec with MustMatchers with BitcoinSLogger {
 
 
         //use this to represent a single test case from script_valid.json
-    val lines =
+/*    val lines =
         """
           |[
           |[[["0000000000000000000000000000000000000000000000000000000000000100", 0, "0x21 0x035e7f0d4d0841bcd56c39337ed086b1a633ee770c1ffdd94ac552a95ac2ce0efc CHECKSIG"],
           |  ["0000000000000000000000000000000000000000000000000000000000000200", 0, "0x21 0x035e7f0d4d0841bcd56c39337ed086b1a633ee770c1ffdd94ac552a95ac2ce0efc CHECKSIG"]],
           | "01000000020001000000000000000000000000000000000000000000000000000000000000000000004948304502203a0f5f0e1f2bdbcd04db3061d18f3af70e07f4f467cbc1b8116f267025f5360b022100c792b6e215afc5afc721a351ec413e714305cb749aae3d7fee76621313418df101010000000002000000000000000000000000000000000000000000000000000000000000000000004847304402205f7530653eea9b38699e476320ab135b74771e1c48b81a5d041e2ca84b9be7a802200ac8d1f40fb026674fe5a5edd3dea715c27baa9baca51ed45ea750ac9dc0a55e81ffffffff010100000000000000015100000000", "P2SH"]
           |]
-        """.stripMargin
-    //val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n" finally source.close()
+        """.stripMargin*/
+    val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n" finally source.close()
     val json = lines.parseJson
     val testCasesOpt : Seq[Option[CoreTransactionTestCase]] = json.convertTo[Seq[Option[CoreTransactionTestCase]]]
     val testCases : Seq[CoreTransactionTestCase] = testCasesOpt.flatten
     for {
       testCase <- testCases
-      ((outPoint,scriptPubKey),inputIndex) <- testCase.creditingTxsInfo.reverse.zipWithIndex
+      (outPoint,scriptPubKey) <- testCase.creditingTxsInfo
       tx = testCase.spendingTx
+      (input,inputIndex) = findInput(tx,outPoint)
     } yield {
       logger.info("Raw test case: " + testCase.raw)
       logger.info("Parsed ScriptSig: " + tx.inputs(inputIndex).scriptSignature)
       logger.info("ScriptPubKey: " + scriptPubKey)
       logger.info("OutPoint: " + outPoint)
       logger.info("Flags after parsing: " + testCase.flags)
-      logger.info("Input index: " + inputIndex)
-      require(outPoint.txId == tx.inputs(inputIndex).previousOutput.txId,
+      require(outPoint.txId == input.previousOutput.txId,
         "OutPoint txId not the same as input prevout txid\noutPoint.txId: " + outPoint.txId + "\n" +
-          "input prevout txid: " + tx.inputs(inputIndex).previousOutput.txId)
+          "input prevout txid: " + input.previousOutput.txId)
       val program = ScriptProgram(tx,scriptPubKey,inputIndex,testCase.flags)
       withClue(testCase.raw) {
         ScriptInterpreter.run(program) must equal (ScriptOk)
       }
     }
+  }
+
+  private def findInput(tx : Transaction, outPoint : TransactionOutPoint) : (TransactionInput,Int) = {
+    tx.inputs.zipWithIndex.find{case  (input,index) => input.previousOutput == outPoint}.get
   }
 }
