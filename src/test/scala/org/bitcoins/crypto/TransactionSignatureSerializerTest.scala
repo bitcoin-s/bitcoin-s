@@ -374,7 +374,6 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers {
       TransactionSignatureSerializer.serializeForSignature(spendingTx,inputIndex,scriptPubKey,SIGHASH_ALL(0x01)
     ))
 
-    println("Serialized tx: " + serializedTxForSig)
     //serialization is from bitcoin core
     serializedTxForSig must be ("01000000020001000000000000000000000000000000000000000000000000000000000000000000002321035e7f0d4d0841bcd56c39337ed086b1a633ee770c1ffdd94ac552a95ac2ce0efcac0100000000020000000000000000000000000000000000000000000000000000000000000000000000ffffffff01010000000000000001510000000001000000")
 
