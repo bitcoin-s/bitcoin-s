@@ -48,7 +48,7 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
    */
   def serializeForSignature(spendingTransaction : Transaction, inputIndex : Int, script : ScriptPubKey, hashType : HashType) : Seq[Byte] = {
     logger.debug("Serializing for signature")
-
+    logger.debug("Lock time spendingTx: " + spendingTransaction.lockTime)
     // Clear input scripts in preparation for signing. If we're signing a fresh
     // transaction that step isn't very helpful, but it doesn't add much cost relative to the actual
     // EC math so we'll do it anyway.
@@ -110,6 +110,7 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
           errorHash
         } else {
           val sigHashSingleTx = sigHashSingle(txWithInputSigsRemoved,inputIndex)
+          logger.debug("Sighash single tx outputs: " + sigHashSingleTx.outputs)
           sigHashSingleTx.bytes ++ sigHashBytes
         }
 
@@ -245,7 +246,10 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
     val updatedOutputsOpt : Seq[Option[TransactionOutput]] = for {
       (output,index) <- spendingTransaction.outputs.zipWithIndex
     } yield {
-        if (index < inputIndex) Some(TransactionOutput(output,CurrencyUnits.negativeSatoshi))
+        if (index < inputIndex) {
+          logger.debug("Updating tx output to null in bitcoin core")
+          Some(EmptyTransactionOutput)
+        }
         else if (index == inputIndex) Some(output)
         else None
       }
@@ -254,10 +258,9 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
     val spendingTxOutputsEmptied = Transaction(spendingTransaction,UpdateTransactionOutputs(updatedOutputs))
     //create blank inputs with sequence numbers set to zero EXCEPT
     //the input at the inputIndex
-    val updatedInputs = setSequenceNumbersZero(spendingTxOutputsEmptied.inputs,inputIndex)
+    val updatedInputs : Seq[TransactionInput] = setSequenceNumbersZero(spendingTxOutputsEmptied.inputs,inputIndex)
 
     val sigHashSingleTx = Transaction(spendingTxOutputsEmptied,UpdateTransactionInputs(updatedInputs))
-    //append hash type byte onto the end of the tx bytes
     sigHashSingleTx
   }
 
