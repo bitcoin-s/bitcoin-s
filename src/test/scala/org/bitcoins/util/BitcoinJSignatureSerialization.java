@@ -162,7 +162,6 @@ public class BitcoinJSignatureSerialization {
             for (int i = 0; i < outputs.size(); i++) {
                 tx.addOutput(outputs.get(i));
             }
-            logger.error("HERHERHEREHRERHERHERHEHRHEHREHRHEHREHR");
             return txSignatureBytes;
         } catch (IOException e) {
             throw new RuntimeException(e);  // Cannot happen.

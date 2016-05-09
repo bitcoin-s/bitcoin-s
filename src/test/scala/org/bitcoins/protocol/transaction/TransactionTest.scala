@@ -63,7 +63,7 @@ class TransactionTest extends FlatSpec with MustMatchers with BitcoinSLogger {
     val testCases : Seq[CoreTransactionTestCase] = testCasesOpt.flatten
     for {
       testCase <- testCases
-      ((outPoint,scriptPubKey),inputIndex) <- testCase.creditingTxsInfo.zipWithIndex
+      ((outPoint,scriptPubKey),inputIndex) <- testCase.creditingTxsInfo.reverse.zipWithIndex
       tx = testCase.spendingTx
     } yield {
       logger.info("Raw test case: " + testCase.raw)
@@ -71,10 +71,10 @@ class TransactionTest extends FlatSpec with MustMatchers with BitcoinSLogger {
       logger.info("ScriptPubKey: " + scriptPubKey)
       logger.info("OutPoint: " + outPoint)
       logger.info("Flags after parsing: " + testCase.flags)
-      logger.info("Input number: " + inputIndex)
-/*      require(outPoint.txId == tx.inputs(inputIndex).previousOutput.txId,
+      logger.info("Input index: " + inputIndex)
+      require(outPoint.txId == tx.inputs(inputIndex).previousOutput.txId,
         "OutPoint txId not the same as input prevout txid\noutPoint.txId: " + outPoint.txId + "\n" +
-          "input prevout txid: " + tx.inputs(inputIndex).previousOutput.txId)*/
+          "input prevout txid: " + tx.inputs(inputIndex).previousOutput.txId)
       val program = ScriptProgram(tx,scriptPubKey,inputIndex,testCase.flags)
       withClue(testCase.raw) {
         ScriptInterpreter.run(program) must equal (ScriptOk)
