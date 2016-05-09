@@ -49,9 +49,6 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
   def serializeForSignature(spendingTransaction : Transaction, inputIndex : Int, script : ScriptPubKey, hashType : HashType) : Seq[Byte] = {
     logger.debug("Serializing for signature")
 
-
-
-
     // Clear input scripts in preparation for signing. If we're signing a fresh
     // transaction that step isn't very helpful, but it doesn't add much cost relative to the actual
     // EC math so we'll do it anyway.
@@ -139,9 +136,8 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
         val sigHashSingleAnyoneCanPay = sigHashAnyoneCanPay(sigHashSingleTx,inputWithConnectedScript)
         sigHashSingleAnyoneCanPay.bytes  ++ sigHashBytes
     }
-
-
   }
+
 
   /**
    * Serializes then hashes a transaction for signing
@@ -155,7 +151,7 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
   def hashForSignature(spendingTransaction : Transaction, inputIndex : Int, script : ScriptPubKey, hashType : HashType) : Seq[Byte] = {
     //these first two checks are in accordance with behavior in bitcoin core
     //https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L1112-L1123
-    if (inputIndex >= spendingTransaction.inputs.size ) {
+    if (inputIndex >= spendingTransaction.inputs.size) {
       logger.warn("Our inputIndex is out of the range of the inputs in the spending transaction")
       errorHash
     }
@@ -165,6 +161,7 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
     } else {
       val serializedTxForSignature = serializeForSignature(spendingTransaction,inputIndex,script,hashType)
       logger.debug("Serialized tx for signature: " + BitcoinSUtil.encodeHex(serializedTxForSignature))
+      logger.debug("HashType: " + hashType)
       CryptoUtil.doubleSHA256(serializedTxForSignature)
     }
   }

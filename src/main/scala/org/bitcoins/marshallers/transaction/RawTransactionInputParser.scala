@@ -87,7 +87,7 @@ trait RawTransactionInputParser extends RawBitcoinSerializer[Seq[TransactionInpu
     val paddingNeeded = 8 - sequenceWithoutPadding.size
     val padding = for { i <- 0 until paddingNeeded} yield "0"
 
-    val sequence = sequenceWithoutPadding + padding.mkString
+    val sequence = BitcoinSUtil.flipEndianess(sequenceWithoutPadding + padding.mkString).reverse
     outPoint + varInt + scriptSig + sequence
   }
 }
