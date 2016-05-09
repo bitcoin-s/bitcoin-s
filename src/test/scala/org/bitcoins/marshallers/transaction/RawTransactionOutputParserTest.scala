@@ -3,7 +3,7 @@ package org.bitcoins.marshallers.transaction
 
 
 import org.bitcoins.currency.{Bitcoins, CurrencyUnits, Satoshis}
-import org.bitcoins.protocol.transaction.TransactionOutput
+import org.bitcoins.protocol.transaction.{EmptyTransactionOutput, TransactionOutput}
 import org.bitcoins.script.bitwise.OP_EQUAL
 import org.bitcoins.script.constant.{BytesToPushOntoStack, ScriptConstant}
 import org.bitcoins.script.crypto.OP_HASH160
@@ -53,5 +53,10 @@ class RawTransactionOutputParserTest extends FlatSpec with MustMatchers with Raw
     val rawTwoOutputs = "026c405d05000000001976a91431a420903c05a0a7de2de40c9f02ebedbacdc17288ac809698000000000017a914af575bd77c5ce7eba3bd9ce6f89774713ae62c7987"
     val outputs = RawTransactionOutputParser.read(rawTwoOutputs)
     outputs.size must be (2)
+  }
+
+  it must "serialize the empty transaction output correctly" in {
+    RawTransactionOutputParser.write(EmptyTransactionOutput) must be ("ffffffffffffffff00")
+
   }
 }

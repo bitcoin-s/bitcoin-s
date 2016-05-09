@@ -365,10 +365,6 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers {
       "Script sig not right")
     val scriptPubKeyFromString = ScriptParser.fromString("0x21 0x035e7f0d4d0841bcd56c39337ed086b1a633ee770c1ffdd94ac552a95ac2ce0efc CHECKSIG")
     val scriptPubKey = ScriptPubKey.fromAsm(scriptPubKeyFromString)
-    val bitcoinjTx = BitcoinjConversions.transaction(spendingTx)
-    val bitcoinjHashForSig : String = BitcoinSUtil.encodeHex(BitcoinJSignatureSerialization.serializeForSignature(
-      bitcoinjTx, inputIndex, scriptPubKey.bytes.toArray, SIGHASH_ALL(0x01).byte
-    ))
 
     val serializedTxForSig : String = BitcoinSUtil.encodeHex(
       TransactionSignatureSerializer.serializeForSignature(spendingTx,inputIndex,scriptPubKey,SIGHASH_ALL(0x01)
@@ -397,5 +393,39 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers {
       ))
     //hash is from bitcoin core
     hashedTxForSig must be ("57f5a54d548db73fa8ef7a43d011120f9935fe792f0a0630d28ee70b4c72a7e8")
+  }
+
+
+  it must "correctly serialize a tx for signing with multiple inputs using SIGHASH_SINGLE" in {
+    //this is from a test case inside of tx_valid.json
+    //https://github.com/bitcoin/bitcoin/blob/master/src/test/data/tx_valid.json#L96
+    val rawTx = "010000000370ac0a1ae588aaf284c308d67ca92c69a39e2db81337e563bf40c59da0a5cf63000000006a4730440220360d20baff382059040ba9be98947fd678fb08aab2bb0c172efa996fd8ece9b702201b4fb0de67f015c90e7ac8a193aeab486a1f587e0f54d0fb9552ef7f5ce6caec032103579ca2e6d107522f012cd00b52b9a65fb46f0c57b9b8b6e377c48f526a44741affffffff7d815b6447e35fbea097e00e028fb7dfbad4f3f0987b4734676c84f3fcd0e804010000006b483045022100c714310be1e3a9ff1c5f7cacc65c2d8e781fc3a88ceb063c6153bf950650802102200b2d0979c76e12bb480da635f192cc8dc6f905380dd4ac1ff35a4f68f462fffd032103579ca2e6d107522f012cd00b52b9a65fb46f0c57b9b8b6e377c48f526a44741affffffff3f1f097333e4d46d51f5e77b53264db8f7f5d2e18217e1099957d0f5af7713ee010000006c493046022100b663499ef73273a3788dea342717c2640ac43c5a1cf862c9e09b206fcb3f6bb8022100b09972e75972d9148f2bdd462e5cb69b57c1214b88fc55ca638676c07cfc10d8032103579ca2e6d107522f012cd00b52b9a65fb46f0c57b9b8b6e377c48f526a44741affffffff0380841e00000000001976a914bfb282c70c4191f45b5a6665cad1682f2c9cfdfb88ac80841e00000000001976a9149857cc07bed33a5cf12b9c5e0500b675d500c81188ace0fd1c00000000001976a91443c52850606c872403c0601e69fa34b26f62db4a88ac00000000"
+    val inputIndex = 0
+    val spendingTx = Transaction(rawTx)
+    val scriptPubKeyFromString = ScriptParser.fromString("DUP HASH160 0x14 0xdcf72c4fd02f5a987cf9b02f2fabfcac3341a87d EQUALVERIFY CHECKSIG")
+    val scriptPubKey = ScriptPubKey.fromAsm(scriptPubKeyFromString)
+
+    val serializedTxForSig : String = BitcoinSUtil.encodeHex(
+      TransactionSignatureSerializer.serializeForSignature(spendingTx,inputIndex,scriptPubKey,SIGHASH_SINGLE))
+    //serialization is from bitcoin core
+    serializedTxForSig must be ("010000000370ac0a1ae588aaf284c308d67ca92c69a39e2db81337e563bf40c59da0a5cf63000000001976a914dcf72c4fd02f5a987cf9b02f2fabfcac3341a87d88acffffffff7d815b6447e35fbea097e00e028fb7dfbad4f3f0987b4734676c84f3fcd0e8040100000000000000003f1f097333e4d46d51f5e77b53264db8f7f5d2e18217e1099957d0f5af7713ee0100000000000000000180841e00000000001976a914bfb282c70c4191f45b5a6665cad1682f2c9cfdfb88ac0000000003000000")
+
+  }
+
+
+  it must "correctly serialize a tx for signing with the last input using SIGHASH_SINGLE" in {
+    //this is from a test case inside of tx_valid.json
+    //https://github.com/bitcoin/bitcoin/blob/master/src/test/data/tx_valid.json#L96
+    val rawTx = "010000000370ac0a1ae588aaf284c308d67ca92c69a39e2db81337e563bf40c59da0a5cf63000000006a4730440220360d20baff382059040ba9be98947fd678fb08aab2bb0c172efa996fd8ece9b702201b4fb0de67f015c90e7ac8a193aeab486a1f587e0f54d0fb9552ef7f5ce6caec032103579ca2e6d107522f012cd00b52b9a65fb46f0c57b9b8b6e377c48f526a44741affffffff7d815b6447e35fbea097e00e028fb7dfbad4f3f0987b4734676c84f3fcd0e804010000006b483045022100c714310be1e3a9ff1c5f7cacc65c2d8e781fc3a88ceb063c6153bf950650802102200b2d0979c76e12bb480da635f192cc8dc6f905380dd4ac1ff35a4f68f462fffd032103579ca2e6d107522f012cd00b52b9a65fb46f0c57b9b8b6e377c48f526a44741affffffff3f1f097333e4d46d51f5e77b53264db8f7f5d2e18217e1099957d0f5af7713ee010000006c493046022100b663499ef73273a3788dea342717c2640ac43c5a1cf862c9e09b206fcb3f6bb8022100b09972e75972d9148f2bdd462e5cb69b57c1214b88fc55ca638676c07cfc10d8032103579ca2e6d107522f012cd00b52b9a65fb46f0c57b9b8b6e377c48f526a44741affffffff0380841e00000000001976a914bfb282c70c4191f45b5a6665cad1682f2c9cfdfb88ac80841e00000000001976a9149857cc07bed33a5cf12b9c5e0500b675d500c81188ace0fd1c00000000001976a91443c52850606c872403c0601e69fa34b26f62db4a88ac00000000"
+    val inputIndex = 2
+    val spendingTx = Transaction(rawTx)
+    val scriptPubKeyFromString = ScriptParser.fromString("DUP HASH160 0x14 0xdcf72c4fd02f5a987cf9b02f2fabfcac3341a87d EQUALVERIFY CHECKSIG")
+    val scriptPubKey = ScriptPubKey.fromAsm(scriptPubKeyFromString)
+
+    val serializedTxForSig : String = BitcoinSUtil.encodeHex(
+      TransactionSignatureSerializer.serializeForSignature(spendingTx,inputIndex,scriptPubKey,SIGHASH_SINGLE))
+    //serialization is from bitcoin core
+    serializedTxForSig must be ("010000000370ac0a1ae588aaf284c308d67ca92c69a39e2db81337e563bf40c59da0a5cf630000000000000000007d815b6447e35fbea097e00e028fb7dfbad4f3f0987b4734676c84f3fcd0e8040100000000000000003f1f097333e4d46d51f5e77b53264db8f7f5d2e18217e1099957d0f5af7713ee010000001976a914dcf72c4fd02f5a987cf9b02f2fabfcac3341a87d88acffffffff03ffffffffffffffff00ffffffffffffffff00e0fd1c00000000001976a91443c52850606c872403c0601e69fa34b26f62db4a88ac0000000003000000")
+
   }
 }

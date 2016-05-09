@@ -40,8 +40,8 @@ trait RawTransactionParser extends RawBitcoinSerializer[Transaction] {
     val version = addPadding(8,versionWithoutPadding)
     val inputs : String = RawTransactionInputParser.write(tx.inputs)
     val outputs : String = RawTransactionOutputParser.write(tx.outputs)
-    val lockTimeWithoutPadding : String = BitcoinSUtil.flipHalfByte(tx.lockTime.toHexString.reverse)
-    val lockTime = addPadding(8,lockTimeWithoutPadding)
+    val lockTimeWithoutPadding : String = tx.lockTime.toHexString
+    val lockTime = BitcoinSUtil.flipEndianess(addPadding(8,lockTimeWithoutPadding))
     version + inputs + outputs + lockTime
   }
 }
