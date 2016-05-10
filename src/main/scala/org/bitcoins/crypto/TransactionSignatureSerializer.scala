@@ -48,7 +48,7 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
    */
   def serializeForSignature(spendingTransaction : Transaction, inputIndex : Int, script : ScriptPubKey, hashType : HashType) : Seq[Byte] = {
     logger.debug("Serializing for signature")
-    logger.debug("Lock time spendingTx: " + spendingTransaction.lockTime)
+    logger.debug("ScriptPubKey: " + script)
     // Clear input scripts in preparation for signing. If we're signing a fresh
     // transaction that step isn't very helpful, but it doesn't add much cost relative to the actual
     // EC math so we'll do it anyway.
@@ -70,6 +70,7 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
     val scriptWithOpCodeSeparatorsRemoved : ScriptPubKey = removeOpCodeSeparators(script)
 
     logger.info("After Bitcoin-S Script to be connected: " + scriptWithOpCodeSeparatorsRemoved.hex)
+
     val inputToSign = inputSigsRemoved(inputIndex)
 
     // Set the input to the script of its output. Bitcoin Core does this but the step has no obvious purpose as
@@ -175,6 +176,7 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
   def removeOpCodeSeparators(script : ScriptPubKey) : ScriptPubKey = {
    logger.info("Tokens: " + script.asm)
     if (script.asm.contains(OP_CODESEPARATOR)) {
+      logger.debug("Contains OP_CODESEPARATOR")
       //TODO: This needs to be tested
       val scriptWithoutOpCodeSeparators : Seq[ScriptToken] = script.asm.filterNot(_ == OP_CODESEPARATOR)
       val scriptBytes = BitcoinScriptUtil.asmToBytes(scriptWithoutOpCodeSeparators)

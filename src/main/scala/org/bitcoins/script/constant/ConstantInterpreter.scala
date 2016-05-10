@@ -153,13 +153,15 @@ trait ConstantInterpreter extends BitcoinSLogger {
 
   /**
    * Parses the bytes needed for a push op (for instance OP_PUSHDATA1)
- *
    * @param token
    * @return
    */
   private def bytesNeededForPushOp(token : ScriptToken) : Long = token match {
     case scriptNumber: BytesToPushOntoStack => scriptNumber.opCode
     case scriptNumber: ScriptNumber => scriptNumber.num
+    case scriptConstant : ScriptConstant =>
+      val constantFlippedEndianess = BitcoinSUtil.flipEndianess(scriptConstant.hex)
+      java.lang.Long.parseLong(constantFlippedEndianess,16)
     case _ => throw new IllegalArgumentException("Token must be BytesToPushOntoStack to push a number of bytes onto the stack")
   }
 }

@@ -31,6 +31,7 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers {
     val expectedScript = TransactionSignatureSerializer.removeOpCodeSeparators(scriptPubKey)
     TransactionSignatureSerializer.serializeScriptCode(scriptPubKey) must be (expectedScript)
   }
+  
   it must "not remove any bytes from a script that does not contain OP_CODESEPARATORS" in {
     //from b30d3148927f620f5b1228ba941c211fdabdae75d0ba0b688a58accbf018f3cc
     val scriptHex = TestUtil.rawP2PKHScriptPubKey
@@ -426,6 +427,24 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers {
       TransactionSignatureSerializer.serializeForSignature(spendingTx,inputIndex,scriptPubKey,SIGHASH_SINGLE))
     //serialization is from bitcoin core
     serializedTxForSig must be ("010000000370ac0a1ae588aaf284c308d67ca92c69a39e2db81337e563bf40c59da0a5cf630000000000000000007d815b6447e35fbea097e00e028fb7dfbad4f3f0987b4734676c84f3fcd0e8040100000000000000003f1f097333e4d46d51f5e77b53264db8f7f5d2e18217e1099957d0f5af7713ee010000001976a914dcf72c4fd02f5a987cf9b02f2fabfcac3341a87d88acffffffff03ffffffffffffffff00ffffffffffffffff00e0fd1c00000000001976a91443c52850606c872403c0601e69fa34b26f62db4a88ac0000000003000000")
+
+  }
+
+  it must "correctly serialize a tx which spends an input that pushes using a PUSHDATA1 that is negative when read as signed" in {
+    //this is from a test case inside of tx_valid.json
+    //https://github.com/bitcoin/bitcoin/blob/master/src/test/data/tx_valid.json#L102
+    val rawTx = "0100000001482f7a028730a233ac9b48411a8edfb107b749e61faf7531f4257ad95d0a51c5000000008b483045022100bf0bbae9bde51ad2b222e87fbf67530fbafc25c903519a1e5dcc52a32ff5844e022028c4d9ad49b006dd59974372a54291d5764be541574bb0c4dc208ec51f80b7190141049dd4aad62741dc27d5f267f7b70682eee22e7e9c1923b9c0957bdae0b96374569b460eb8d5b40d972e8c7c0ad441de3d94c4a29864b212d56050acb980b72b2bffffffff0180969800000000001976a914e336d0017a9d28de99d16472f6ca6d5a3a8ebc9988ac00000000"
+    val inputIndex = 0
+    val spendingTx = Transaction(rawTx)
+    val scriptPubKeyFromString = ScriptParser.fromString("0x4c 0xae 0x606563686f2022553246736447566b58312b5a536e587574356542793066794778625456415675534a6c376a6a334878416945325364667657734f53474f36633338584d7439435c6e543249584967306a486956304f376e775236644546673d3d22203e20743b206f70656e73736c20656e63202d7061737320706173733a5b314a564d7751432d707269766b65792d6865785d202d64202d6165732d3235362d636263202d61202d696e207460 DROP DUP HASH160 0x14 0xbfd7436b6265aa9de506f8a994f881ff08cc2872 EQUALVERIFY CHECKSIG")
+    println("Script pubKey from string asm: " + scriptPubKeyFromString)
+    val scriptPubKey = ScriptPubKey.fromAsm(scriptPubKeyFromString)
+    require(scriptPubKey.hex == "4cae606563686f2022553246736447566b58312b5a536e587574356542793066794778625456415675534a6c376a6a334878416945325364667657734f53474f36633338584d7439435c6e543249584967306a486956304f376e775236644546673d3d22203e20743b206f70656e73736c20656e63202d7061737320706173733a5b314a564d7751432d707269766b65792d6865785d202d64202d6165732d3235362d636263202d61202d696e2074607576a914bfd7436b6265aa9de506f8a994f881ff08cc287288ac")
+    val serializedTxForSig : String = BitcoinSUtil.encodeHex(
+      TransactionSignatureSerializer.serializeForSignature(spendingTx,inputIndex,scriptPubKey,SIGHASH_ALL(1.toByte)))
+    //serialization is from bitcoin core
+    println("Serialized tx for sig: " + serializedTxForSig)
+    serializedTxForSig must be ("0100000001482f7a028730a233ac9b48411a8edfb107b749e61faf7531f4257ad95d0a51c500000000ca4cae606563686f2022553246736447566b58312b5a536e587574356542793066794778625456415675534a6c376a6a334878416945325364667657734f53474f36633338584d7439435c6e543249584967306a486956304f376e775236644546673d3d22203e20743b206f70656e73736c20656e63202d7061737320706173733a5b314a564d7751432d707269766b65792d6865785d202d64202d6165732d3235362d636263202d61202d696e2074607576a914bfd7436b6265aa9de506f8a994f881ff08cc287288acffffffff0180969800000000001976a914e336d0017a9d28de99d16472f6ca6d5a3a8ebc9988ac0000000001000000")
 
   }
 }
