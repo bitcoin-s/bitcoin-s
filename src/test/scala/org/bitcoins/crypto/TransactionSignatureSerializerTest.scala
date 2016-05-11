@@ -31,7 +31,7 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers {
     val expectedScript = TransactionSignatureSerializer.removeOpCodeSeparators(scriptPubKey)
     TransactionSignatureSerializer.serializeScriptCode(scriptPubKey) must be (expectedScript)
   }
-  
+
   it must "not remove any bytes from a script that does not contain OP_CODESEPARATORS" in {
     //from b30d3148927f620f5b1228ba941c211fdabdae75d0ba0b688a58accbf018f3cc
     val scriptHex = TestUtil.rawP2PKHScriptPubKey
