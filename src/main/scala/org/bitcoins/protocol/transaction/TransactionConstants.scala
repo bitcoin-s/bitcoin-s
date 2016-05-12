@@ -15,12 +15,9 @@ trait TransactionConstants {
     * If bit (1 << 31) of the sequence number is set,
     * then no consensus meaning is applied to the sequence number and can be included
     * in any block under all currently possible circumstances.
-    *
     * @return the mask that ben used with a bitwise and to indicate if the sequence number has any meaning
     */
   def locktimeDisabledFlag = 1L << 31
-
-
 
   /**
     * If a transaction's input's sequence number encodes a relative lock-time, this mask is

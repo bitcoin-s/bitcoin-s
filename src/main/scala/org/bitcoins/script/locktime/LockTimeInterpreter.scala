@@ -116,15 +116,25 @@ trait LockTimeInterpreter extends BitcoinSLogger {
     */
   def checkSequence(program : ScriptProgram, nSequence : ScriptNumber) : Boolean = {
     val inputIndex = program.txSignatureComponent.inputIndex
-    val txToSequence : ScriptNumber = ScriptNumber(program.txSignatureComponent.transaction.inputs(inputIndex).sequence)
+    logger.debug("inputIndex: " + inputIndex)
+    val transaction = program.txSignatureComponent.transaction
+    val txToSequence : ScriptNumber = ScriptNumber(transaction.inputs(inputIndex).sequence)
 
-    if (program.txSignatureComponent.transaction.version < 2) return false
+    if (program.txSignatureComponent.transaction.version < 2) {
+      logger.error("Transaction version is too low for OP_CSV")
+      return false
+    }
 
     val nLockTimeMask : Long = TransactionConstants.sequenceLockTimeTypeFlag | TransactionConstants.sequenceLockTimeMask
     val txToSequenceMasked : ScriptNumber = txToSequence & ScriptNumber(nLockTimeMask)
 
     val nSequenceMasked : ScriptNumber = nSequence & ScriptNumber(nLockTimeMask)
 
+    logger.info("tx sequence number: " + transaction.inputs(inputIndex).sequence)
+    logger.info("txToSequenceMasked: " + txToSequenceMasked)
+    logger.info("nSequence: " + nSequence)
+    logger.info("nSequenceMasked: " + nSequenceMasked)
+    logger.info("Sequence locktime flag: " + TransactionConstants.sequenceLockTimeTypeFlag)
     // There are two kinds of nSequence: lock-by-blockheight
     // and lock-by-blocktime, distinguished by whether
     // nSequenceMasked < CTxIn::SEQUENCE_LOCKTIME_TYPE_FLAG.
@@ -133,15 +143,21 @@ trait LockTimeInterpreter extends BitcoinSLogger {
     // unless the type of nSequenceMasked being tested is the same as
     // the nSequenceMasked in the transaction.
     if (!(
-      (txToSequenceMasked <  ScriptNumber(TransactionConstants.sequenceLockTimeTypeFlag) &&
+      (txToSequenceMasked < ScriptNumber(TransactionConstants.sequenceLockTimeTypeFlag) &&
         nSequenceMasked < ScriptNumber(TransactionConstants.sequenceLockTimeTypeFlag)) ||
         (txToSequenceMasked >= ScriptNumber(TransactionConstants.sequenceLockTimeTypeFlag) &&
           nSequenceMasked >= ScriptNumber(TransactionConstants.sequenceLockTimeTypeFlag))
-      )) return false
+      )) {
+      logger.error("The nSequence mask is not the same as it was in the transaction")
+      return false
+    }
 
     // Now that we know we're comparing apples-to-apples, the
     // comparison is a simple numeric one.
-    if (nSequenceMasked > txToSequenceMasked) return false
+    if (nSequenceMasked > txToSequenceMasked) {
+      logger.error("OP_CSV fails because locktime in transaction has not been met yet")
+      return false
+    }
 
     true
   }

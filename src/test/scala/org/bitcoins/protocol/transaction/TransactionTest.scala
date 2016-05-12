@@ -49,15 +49,14 @@ class TransactionTest extends FlatSpec with MustMatchers with BitcoinSLogger {
 
 
         //use this to represent a single test case from script_valid.json
-/*    val lines =
+    val lines =
         """
           |[
-          |[[["0000000000000000000000000000000000000000000000000000000000000100", 0, "499999999 CHECKLOCKTIMEVERIFY 1"]],
-          |"0100000001000100000000000000000000000000000000000000000000000000000000000000000000000000000001000000000000000000ff64cd1d", "P2SH,CHECKLOCKTIMEVERIFY"]
-          |
+          |[[["0000000000000000000000000000000000000000000000000000000000000100", 0, "65535 NOP3 1"]],
+          |"020000000100010000000000000000000000000000000000000000000000000000000000000000000000ffff00000100000000000000000000000000", "P2SH,CHECKSEQUENCEVERIFY"]
           |]
-        """.stripMargin*/
-    val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n" finally source.close()
+        """.stripMargin
+    //val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n" finally source.close()
     val json = lines.parseJson
     val testCasesOpt : Seq[Option[CoreTransactionTestCase]] = json.convertTo[Seq[Option[CoreTransactionTestCase]]]
     val testCases : Seq[CoreTransactionTestCase] = testCasesOpt.flatten
@@ -69,6 +68,7 @@ class TransactionTest extends FlatSpec with MustMatchers with BitcoinSLogger {
     } yield {
       logger.info("Raw test case: " + testCase.raw)
       logger.info("Parsed ScriptSig: " + tx.inputs(inputIndex).scriptSignature)
+      logger.info("Sequence number: " + tx.inputs(inputIndex).sequence)
       logger.info("ScriptPubKey: " + scriptPubKey)
       logger.info("OutPoint: " + outPoint)
       logger.info("Flags after parsing: " + testCase.flags)
