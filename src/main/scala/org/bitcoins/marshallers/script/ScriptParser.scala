@@ -148,7 +148,6 @@ trait ScriptParser extends Factory[List[ScriptToken]] with BitcoinSLogger {
    * @return
    */
   private def parse(bytes : List[Byte]) : List[ScriptToken] = {
-    logger.debug("Parsing byte list: " + bytes + " into a list of script tokens")
     @tailrec
     def loop(bytes : List[Byte], accum : List[ScriptToken]) : List[ScriptToken] = {
       //logger.debug("Byte to be parsed: " + bytes.headOption)
@@ -165,9 +164,6 @@ trait ScriptParser extends Factory[List[ScriptToken]] with BitcoinSLogger {
   }
 
   private def parse(bytes : Seq[Byte]) : List[ScriptToken] = parse(bytes.toList)
-
-
-
 
   /**
    * Parses a redeem script from the given script token

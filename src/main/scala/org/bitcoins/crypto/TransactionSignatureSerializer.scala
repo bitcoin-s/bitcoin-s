@@ -29,17 +29,6 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
   private def errorHash : Seq[Byte] = BitcoinSUtil.decodeHex("0100000000000000000000000000000000000000000000000000000000000000")
 
   /**
-   * Serialized the passed in script code, skipping OP_CODESEPARATORs
-   * definition for CScript https://github.com/bitcoin/bitcoin/blob/93c85d458ac3e2c496c1a053e1f5925f55e29100/src/script/script.h#L373
-   * @param script
-   * @return
-   */
-/*
-  def serializeScriptCode(script : ScriptPubKey) : ScriptPubKey = script.filterNot(_ == OP_CODESEPARATOR)
-
-*/
-
-  /**
    * Serializes a transaction to be signed by an ECKey
    * follows the bitcoinj implementation which can be found here
    * hashing is done in the hashForSignature function
