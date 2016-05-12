@@ -24,11 +24,11 @@ trait LockTimeInterpreter extends BitcoinSLogger {
    * or vice versa; or
    * 4. the input's nSequence field is equal to 0xffffffff.
    * The precise semantics are described in BIP 0065
- *
    * @param program
    * @return
    */
-  def opCheckLockTimeVerify(program : ScriptProgram) : ScriptProgram = {
+  @tailrec
+  final def opCheckLockTimeVerify(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.isDefined && program.script.head == OP_CHECKLOCKTIMEVERIFY,
       "Script top must be OP_CHECKLOCKTIMEVERIFY")
     if (program.stack.size == 0) {
@@ -39,21 +39,21 @@ trait LockTimeInterpreter extends BitcoinSLogger {
       ScriptProgram(program, ScriptErrorUnsatisfiedLocktime)
     }
     else {
-      val isError : Option[ScriptError] = program.stack.head match {
+      program.stack.head match {
         case s : ScriptNumber if (s < ScriptNumber.zero) =>
           logger.warn("OP_CHECKLOCKTIMEVERIFY marks tx as invalid if the stack top is negative")
-          Some(ScriptErrorNegativeLockTime)
+          ScriptProgram(program,ScriptErrorNegativeLockTime)
         case s : ScriptNumber if (s >= ScriptNumber(500000000) && program.txSignatureComponent.transaction.lockTime < 500000000) =>
           logger.warn("OP_CHECKLOCKTIMEVERIFY marks the tx as invalid if stack top >= 500000000 & tx locktime < 500000000")
-          Some(ScriptErrorUnsatisfiedLocktime)
+          ScriptProgram(program,ScriptErrorUnsatisfiedLocktime)
         case s : ScriptNumber if (s < ScriptNumber(500000000) && program.txSignatureComponent.transaction.lockTime >= 500000000) =>
           logger.warn("OP_CHECKLOCKTIMEVERIFY marks the tx as invalid if stack top < 500000000 & tx locktime >= 500000000")
-          Some(ScriptErrorUnsatisfiedLocktime)
-        case _ : ScriptNumber => None
-        case _ : ScriptToken => Some(ScriptErrorUnknownError)
+          ScriptProgram(program,ScriptErrorUnsatisfiedLocktime)
+        case _ : ScriptNumber => ScriptProgram(program,program.stack, program.script.tail)
+        case s : ScriptConstant =>
+          opCheckLockTimeVerify(ScriptProgram(program, ScriptNumber(s.hex) :: program.stack.tail, ScriptProgram.Stack))
+        case _ : ScriptToken => ScriptProgram(program,ScriptErrorUnknownError)
       }
-      if (isError.isDefined) ScriptProgram(program,isError.get)
-      else ScriptProgram(program,program.stack, program.script.tail)
     }
   }
 
