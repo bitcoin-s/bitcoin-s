@@ -170,6 +170,13 @@ class RawTransactionInputParserTest extends FlatSpec with MustMatchers with RawT
     RawTransactionInputParser.write(input) must be (rawInput)
   }
 
+  it must "read and write an input with everything that is empty besides the sequence number" in {
+    val rawInput = "0100010000000000000000000000000000000000000000000000000000000000000000000000ffff0000"
+    val input = RawTransactionInputParser.read(rawInput)
+    input.head.sequence must be (65535)
+    RawTransactionInputParser.write(input) must be (rawInput)
+  }
+
 
 
 }
