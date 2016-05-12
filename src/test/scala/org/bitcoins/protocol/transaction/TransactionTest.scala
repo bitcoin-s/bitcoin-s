@@ -49,15 +49,15 @@ class TransactionTest extends FlatSpec with MustMatchers with BitcoinSLogger {
 
 
         //use this to represent a single test case from script_valid.json
-/*    val lines =
+    val lines =
         """
           |[
-          |[[["a955032f4d6b0c9bfe8cad8f00a8933790b9c1dc28c82e0f48e75b35da0e4944", 0, "0x21 0x038479a0fa998cd35259a2ef0a7a5c68662c1474f88ccb6d08a7677bbec7f22041 CHECKSIGVERIFY CODESEPARATOR 0x21 0x038479a0fa998cd35259a2ef0a7a5c68662c1474f88ccb6d08a7677bbec7f22041 CHECKSIGVERIFY CODESEPARATOR 1"]],
-          |"010000000144490eda355be7480f2ec828dcc1b9903793a8008fad8cfe9b0c6b4d2f0355a900000000924830450221009c0a27f886a1d8cb87f6f595fbc3163d28f7a81ec3c4b252ee7f3ac77fd13ffa02203caa8dfa09713c8c4d7ef575c75ed97812072405d932bd11e6a1593a98b679370148304502201e3861ef39a526406bad1e20ecad06be7375ad40ddb582c9be42d26c3a0d7b240221009d0a3985e96522e59635d19cc4448547477396ce0ef17a58e7d74c3ef464292301ffffffff010000000000000000016a00000000", "P2SH"]
+          |[[["0000000000000000000000000000000000000000000000000000000000000100", 0, "499999999 CHECKLOCKTIMEVERIFY 1"]],
+          |"0100000001000100000000000000000000000000000000000000000000000000000000000000000000000000000001000000000000000000ff64cd1d", "P2SH,CHECKLOCKTIMEVERIFY"]
           |
           |]
-        """.stripMargin*/
-    val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n" finally source.close()
+        """.stripMargin
+    //val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n" finally source.close()
     val json = lines.parseJson
     val testCasesOpt : Seq[Option[CoreTransactionTestCase]] = json.convertTo[Seq[Option[CoreTransactionTestCase]]]
     val testCases : Seq[CoreTransactionTestCase] = testCasesOpt.flatten

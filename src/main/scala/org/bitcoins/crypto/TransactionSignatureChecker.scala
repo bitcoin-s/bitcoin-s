@@ -53,35 +53,26 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
       //we do this by setting the scriptPubKey inside of txSignatureComponent to the redeemScript
       //instead of the p2sh scriptPubKey it was previously
       //as the scriptPubKey instead of the one inside of ScriptProgram
-      val txSignatureComponentWithScriptPubKeyAdjusted = txSignatureComponent.scriptSignature match {
+      val sigsRemovedScript : Seq[ScriptToken] = txSignatureComponent.scriptSignature match {
         case s : P2SHScriptSignature =>
           logger.info("Replacing redeemScript in txSignature component")
           logger.info("Redeem script: " + s.redeemScript)
-          TransactionSignatureComponentFactory.factory(txSignatureComponent,s.redeemScript)
+          logger.info("Signature: " + signature)
+          val sigsRemoved = removeSignaturesFromScript(s.signatures, s.redeemScript.asm)
+          sigsRemoved
         case _ : P2PKHScriptSignature | _ : P2PKScriptSignature | _ : NonStandardScriptSignature
              | _ : MultiSignatureScriptSignature | EmptyScriptSignature =>
-
           logger.debug("Script before sigRemoved: "  + script)
           logger.debug("Signature: " + signature)
           logger.debug("PubKey: " + pubKey)
-          val sigRemoved = if (script.contains(ScriptConstant(signature.hex))) {
-            //replicates this line in bitcoin core
-            //https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L872
-            val sigIndex = script.indexOf(ScriptConstant(signature.hex))
-            logger.debug("SigIndex: " + sigIndex)
-            //remove sig and it's corresponding BytesToPushOntoStack
-            script.slice(0,sigIndex-1) ++ script.slice(sigIndex+1,script.size)
-          } else script
-          logger.debug("Sig removed: " + sigRemoved)
-          val scriptPubKeySigRemoved = ScriptPubKey.fromAsm(sigRemoved)
-          TransactionSignatureComponentFactory.factory(txSignatureComponent,scriptPubKeySigRemoved)
+          val sigsRemoved = removeSignatureFromScript(signature,script)
+          sigsRemoved
       }
       val hashTypeByte = if (signature.bytes.size > 0) signature.bytes.last else 0x00.toByte
       val hashType = HashTypeFactory.fromByte(hashTypeByte)
-      val hashForSignature = TransactionSignatureSerializer.hashForSignature(txSignatureComponentWithScriptPubKeyAdjusted.transaction,
-        txSignatureComponentWithScriptPubKeyAdjusted.inputIndex,
-        txSignatureComponentWithScriptPubKeyAdjusted.scriptPubKey.asm, hashType)
-      logger.debug("Tx signature component: " + txSignatureComponentWithScriptPubKeyAdjusted)
+      val hashForSignature = TransactionSignatureSerializer.hashForSignature(txSignatureComponent.transaction,
+        txSignatureComponent.inputIndex,
+        sigsRemovedScript, hashType)
       logger.info("Hash for signature: " + BitcoinSUtil.encodeHex(hashForSignature))
       val isValid = pubKey.verify(hashForSignature,signature)
       if (isValid) SignatureValidationSuccess else SignatureValidationFailureIncorrectSignatures
@@ -141,6 +132,43 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
       //validation succeeds
       SignatureValidationSuccess
     } else SignatureValidationFailureIncorrectSignatures
+  }
+
+
+  /**
+    * Removes the given digtial signature from the list of script tokens if it exists
+    * @param signature
+    * @param script
+    * @return
+    */
+  def removeSignatureFromScript(signature : ECDigitalSignature, script : Seq[ScriptToken]) : Seq[ScriptToken] = {
+    if (script.contains(ScriptConstant(signature.hex))) {
+      //replicates this line in bitcoin core
+      //https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L872
+      val sigIndex = script.indexOf(ScriptConstant(signature.hex))
+      logger.debug("SigIndex: " + sigIndex)
+      //remove sig and it's corresponding BytesToPushOntoStack
+      script.slice(0,sigIndex-1) ++ script.slice(sigIndex+1,script.size)
+    } else script
+  }
+
+  /**
+    * Removes the list of digital signatures from the list of script tokens
+    * @param sigs
+    * @param script
+    * @return
+    */
+  def removeSignaturesFromScript(sigs : Seq[ECDigitalSignature], script : Seq[ScriptToken]) : Seq[ScriptToken] = {
+    @tailrec
+    def loop(remainingSigs : Seq[ECDigitalSignature], scriptTokens : Seq[ScriptToken]) : Seq[ScriptToken] = {
+      remainingSigs match {
+        case Nil => scriptTokens
+        case h :: t =>
+          val newScriptTokens = removeSignatureFromScript(h,scriptTokens)
+          loop(t,newScriptTokens)
+      }
+    }
+    loop(sigs,script)
   }
 
 }
