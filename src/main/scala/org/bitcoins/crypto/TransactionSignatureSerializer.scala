@@ -35,9 +35,9 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
    * @return
    */
 /*
-  def serializeScriptCode(script : ScriptPubKey) : ScriptPubKey = script
-*/
+  def serializeScriptCode(script : ScriptPubKey) : ScriptPubKey = script.filterNot(_ == OP_CODESEPARATOR)
 
+*/
 
   /**
    * Serializes a transaction to be signed by an ECKey
@@ -69,7 +69,7 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
     // ever put into scripts. Deleting OP_CODESEPARATOR is a step that should never be required but if we don't
     // do it, we could split off the main chain.
     logger.info("Before Bitcoin-S Script to be connected: " + script)
-    val scriptWithOpCodeSeparatorsRemoved : Seq[ScriptToken] = script
+    val scriptWithOpCodeSeparatorsRemoved : Seq[ScriptToken] = removeOpCodeSeparators(script)
 
     logger.info("After Bitcoin-S Script to be connected: " + scriptWithOpCodeSeparatorsRemoved)
 
@@ -271,6 +271,20 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
     val txWithEmptyInputs = Transaction.emptyInputs(spendingTransaction)
     val txWithInputsRemoved = Transaction(txWithEmptyInputs,UpdateTransactionInputs(Seq(input)))
     txWithInputsRemoved
+  }
+
+  /**
+    * Removes OP_CODESEPARATOR operations then returns the script
+    * format
+    * @return
+    */
+  def removeOpCodeSeparators(script : Seq[ScriptToken]) : Seq[ScriptToken] = {
+    logger.info("Tokens: " + script)
+    if (script.contains(OP_CODESEPARATOR)) {
+      //TODO: This needs to be tested
+      val scriptWithoutOpCodeSeparators : Seq[ScriptToken] = script.filterNot(_ == OP_CODESEPARATOR)
+      scriptWithoutOpCodeSeparators
+    } else script
   }
 }
 
