@@ -34,7 +34,9 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
    * @param script
    * @return
    */
-  def serializeScriptCode(script : ScriptPubKey) : ScriptPubKey = removeOpCodeSeparators(script)
+/*
+  def serializeScriptCode(script : ScriptPubKey) : ScriptPubKey = script
+*/
 
 
   /**
@@ -46,9 +48,9 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
    * @param hashType
    * @return
    */
-  def serializeForSignature(spendingTransaction : Transaction, inputIndex : Int, script : ScriptPubKey, hashType : HashType) : Seq[Byte] = {
+  def serializeForSignature(spendingTransaction : Transaction, inputIndex : Int, script : Seq[ScriptToken], hashType : HashType) : Seq[Byte] = {
     logger.debug("Serializing for signature")
-    logger.debug("ScriptPubKey: " + script)
+    logger.debug("Script: " + script)
     // Clear input scripts in preparation for signing. If we're signing a fresh
     // transaction that step isn't very helpful, but it doesn't add much cost relative to the actual
     // EC math so we'll do it anyway.
@@ -66,10 +68,10 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
     // OP_CODESEPARATOR instruction having no purpose as it was only meant to be used internally, not actually
     // ever put into scripts. Deleting OP_CODESEPARATOR is a step that should never be required but if we don't
     // do it, we could split off the main chain.
-    logger.info("Before Bitcoin-S Script to be connected: " + script.hex)
-    val scriptWithOpCodeSeparatorsRemoved : ScriptPubKey = removeOpCodeSeparators(script)
+    logger.info("Before Bitcoin-S Script to be connected: " + script)
+    val scriptWithOpCodeSeparatorsRemoved : Seq[ScriptToken] = script
 
-    logger.info("After Bitcoin-S Script to be connected: " + scriptWithOpCodeSeparatorsRemoved.hex)
+    logger.info("After Bitcoin-S Script to be connected: " + scriptWithOpCodeSeparatorsRemoved)
 
     val inputToSign = inputSigsRemoved(inputIndex)
 
@@ -111,7 +113,6 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
           errorHash
         } else {
           val sigHashSingleTx = sigHashSingle(txWithInputSigsRemoved,inputIndex)
-          logger.debug("Sighash single tx outputs: " + sigHashSingleTx.outputs)
           sigHashSingleTx.bytes ++ sigHashBytes
         }
 
@@ -150,14 +151,13 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
    * @param hashType
    * @return
    */
-  def hashForSignature(spendingTransaction : Transaction, inputIndex : Int, script : ScriptPubKey, hashType : HashType) : Seq[Byte] = {
+  def hashForSignature(spendingTransaction : Transaction, inputIndex : Int, script : Seq[ScriptToken], hashType : HashType) : Seq[Byte] = {
     //these first two checks are in accordance with behavior in bitcoin core
     //https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L1112-L1123
     if (inputIndex >= spendingTransaction.inputs.size) {
       logger.warn("Our inputIndex is out of the range of the inputs in the spending transaction")
       errorHash
-    }
-    else if(hashType == SIGHASH_SINGLE  && inputIndex >= spendingTransaction.outputs.size) {
+    } else if(hashType == SIGHASH_SINGLE  && inputIndex >= spendingTransaction.outputs.size) {
       logger.warn("When we have a SIGHASH_SINGLE we cannot have more inputs than outputs")
       errorHash
     } else {
@@ -168,22 +168,7 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
     }
   }
 
-  /**
-   * Removes OP_CODESEPARATOR operations then returns the script
-   * format
-   * @return
-   */
-  def removeOpCodeSeparators(script : ScriptPubKey) : ScriptPubKey = {
-   logger.info("Tokens: " + script.asm)
-    if (script.asm.contains(OP_CODESEPARATOR)) {
-      logger.debug("Contains OP_CODESEPARATOR")
-      //TODO: This needs to be tested
-      val scriptWithoutOpCodeSeparators : Seq[ScriptToken] = script.asm.filterNot(_ == OP_CODESEPARATOR)
-      val scriptBytes = BitcoinScriptUtil.asmToBytes(scriptWithoutOpCodeSeparators)
-      ScriptPubKey(scriptBytes)
-    } else script
 
-  }
 
   /**
    * Sets the input's sequence number to zero EXCEPT for the input at inputIndex
