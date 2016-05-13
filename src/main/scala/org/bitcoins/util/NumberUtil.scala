@@ -26,7 +26,6 @@ trait NumberUtil extends BitcoinSLogger {
    * @return
    */
   def toLong(bytes : Seq[Byte]) : Long = {
-    logger.debug("bytes: " + bytes)
     val reversedBytes = bytes.reverse
     if (bytes.size == 1 && bytes.head == -128) {
       //the case for negative zero

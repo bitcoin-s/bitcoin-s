@@ -49,14 +49,14 @@ class TransactionTest extends FlatSpec with MustMatchers with BitcoinSLogger {
 
 
         //use this to represent a single test case from script_valid.json
-/*    val lines =
+    val lines =
         """
           |[
-          |[[["0000000000000000000000000000000000000000000000000000000000000100", 0, "65535 NOP3 1"]],
-          |"020000000100010000000000000000000000000000000000000000000000000000000000000000000000ffff00000100000000000000000000000000", "P2SH,CHECKSEQUENCEVERIFY"]
+          |[[["0000000000000000000000000000000000000000000000000000000000000100", 0, "HASH160 0x14 0x7c17aff532f22beb54069942f9bf567a66133eaf EQUAL"]],
+          |"0200000001000100000000000000000000000000000000000000000000000000000000000000000000030251b2010000000100000000000000000000000000", "P2SH,CHECKSEQUENCEVERIFY"]
           |]
-        """.stripMargin*/
-/*    val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n" finally source.close()
+        """.stripMargin
+    //val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n" finally source.close()
     val json = lines.parseJson
     val testCasesOpt : Seq[Option[CoreTransactionTestCase]] = json.convertTo[Seq[Option[CoreTransactionTestCase]]]
     val testCases : Seq[CoreTransactionTestCase] = testCasesOpt.flatten
@@ -79,25 +79,25 @@ class TransactionTest extends FlatSpec with MustMatchers with BitcoinSLogger {
       withClue(testCase.raw) {
         ScriptInterpreter.run(program) must equal (ScriptOk)
       }
-    }*/
+    }
   }
 
-  it must "read all of the tx_invalid.json's contents and return a ScriptError" in {
+/*  it must "read all of the tx_invalid.json's contents and return a ScriptError" in {
 
 
     val source = Source.fromURL(getClass.getResource("/tx_invalid.json"))
 
 
     //use this to represent a single test case from script_valid.json
-/*        val lines =
-            """
-              |[
-              |[[["0000000000000000000000000000000000000000000000000000000000000100", 0, "DUP HASH160 0x14 0x5b6462475454710f3c22f5fdf0b40704c92f25c3 EQUALVERIFY CHECKSIGVERIFY 1 0x4c 0x47 0x3044022067288ea50aa799543a536ff9306f8e1cba05b9c6b10951175b924f96732555ed022026d7b5265f38d21541519e4a1e55044d5b9e17e15cdbaf29ae3792e99e883e7a01"]],
-              |"01000000010001000000000000000000000000000000000000000000000000000000000000000000006a473044022067288ea50aa799543a536ff9306f8e1cba05b9c6b10951175b924f96732555ed022026d7b5265f38d21541519e4a1e55044d5b9e17e15cdbaf29ae3792e99e883e7a012103ba8c8b86dea131c22ab967e6dd99bdae8eff7a1f75a2c35f1f944109e3fe5e22ffffffff010000000000000000015100000000", "P2SH"]
-              |
-              |]
-            """.stripMargin*/
-    val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n" finally source.close()
+    val lines =
+        """
+          |[
+          |[[["0000000000000000000000000000000000000000000000000000000000000100", 0, "HASH160 0x14 0x7a052c840ba73af26755de42cf01cc9e0a49fef0 EQUAL"]],
+          |"010000000100010000000000000000000000000000000000000000000000000000000000000000000009085768617420697320ffffffff010000000000000000015100000000", "P2SH"]
+          |
+          |]
+        """.stripMargin
+    //val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n" finally source.close()
     val json = lines.parseJson
     val testCasesOpt : Seq[Option[CoreTransactionTestCase]] = json.convertTo[Seq[Option[CoreTransactionTestCase]]]
     val testCases : Seq[CoreTransactionTestCase] = testCasesOpt.flatten
@@ -121,7 +121,7 @@ class TransactionTest extends FlatSpec with MustMatchers with BitcoinSLogger {
         ScriptInterpreter.run(program).isInstanceOf[ScriptError] must equal (true)
       }
     }
-  }
+  }*/
 
   private def findInput(tx : Transaction, outPoint : TransactionOutPoint) : (TransactionInput,Int) = {
     tx.inputs.zipWithIndex.find{case (input,index) => input.previousOutput == outPoint}.get

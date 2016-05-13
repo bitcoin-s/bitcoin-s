@@ -24,7 +24,6 @@ object CoreTransactionTestCaseProtocol extends DefaultJsonProtocol with BitcoinS
 
       if (elements.size < 3) None
       else {
-        logger.info("JsValue: " + value)
         val creditingTxsInfo : Seq[(TransactionOutPoint, ScriptPubKey)]= elements.head match {
           case array : JsArray => parseOutPointsAndScriptPubKeys(array)
           case _ : JsValue => throw new RuntimeException("Needs to be a js array")

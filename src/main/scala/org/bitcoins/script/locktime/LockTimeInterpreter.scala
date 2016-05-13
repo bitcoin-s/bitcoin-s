@@ -92,7 +92,7 @@ trait LockTimeInterpreter extends BitcoinSLogger {
           ScriptProgram(program, ScriptErrorUnsatisfiedLocktime)
         case s : ScriptNumber =>
           if (checkSequence(program,s)) {
-            ScriptProgram(program, program.stack.tail, program.script.tail)
+            ScriptProgram(program, program.stack, program.script.tail)
           } else {
             logger.error("Stack top sequence and transaction input's sequence number comparison failed")
             ScriptProgram(program, ScriptErrorUnsatisfiedLocktime)

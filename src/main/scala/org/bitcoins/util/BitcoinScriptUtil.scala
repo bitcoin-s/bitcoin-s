@@ -135,9 +135,10 @@ trait BitcoinScriptUtil {
    * @return
    */
   def isPushOnly(script : Seq[ScriptToken]) : Boolean = {
+    @tailrec
     def loop(tokens: Seq[ScriptToken], accum: List[Boolean]): Seq[Boolean] = tokens match {
       case h :: t => h match {
-        case scriptOp: ScriptOperation => loop(t, (scriptOp.opCode < OP_16.opCode) :: accum)
+        case scriptOp : ScriptOperation => loop(t, (scriptOp.opCode < OP_16.opCode) :: accum)
         case _ : ScriptToken => loop(t, true :: accum)
       }
       case Nil => accum
