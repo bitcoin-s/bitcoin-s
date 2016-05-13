@@ -33,6 +33,13 @@ trait ScriptFlagUtil {
   }
 
   /**
+    * Checks if the p2sh flag is enabled
+    * @param flags
+    * @return
+    */
+  def p2shEnabled(flags : Seq[ScriptFlag]) : Boolean = flags.contains(ScriptVerifyP2SH)
+
+  /**
     * Checks if the script flag for checksequenceverify is enabled
     * @param flags
     * @return
