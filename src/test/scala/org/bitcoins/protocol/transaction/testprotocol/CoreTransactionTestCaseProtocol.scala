@@ -5,12 +5,13 @@ import org.bitcoins.protocol.script.ScriptPubKey
 import org.bitcoins.protocol.transaction.{Transaction, TransactionOutPoint}
 import org.bitcoins.script.constant.ScriptToken
 import org.bitcoins.script.flag.{ScriptFlag, ScriptFlagFactory}
+import org.bitcoins.util.BitcoinSLogger
 import spray.json.{DefaultJsonProtocol, JsArray, JsValue, RootJsonFormat}
 
 /**
   * Created by chris on 5/4/16.
   */
-object CoreTransactionTestCaseProtocol extends DefaultJsonProtocol {
+object CoreTransactionTestCaseProtocol extends DefaultJsonProtocol with BitcoinSLogger {
 
   implicit object CoreTransactionTestCaseProtocol extends RootJsonFormat[Option[CoreTransactionTestCase]] {
 
@@ -23,6 +24,7 @@ object CoreTransactionTestCaseProtocol extends DefaultJsonProtocol {
 
       if (elements.size < 3) None
       else {
+        logger.info("JsValue: " + value)
         val creditingTxsInfo : Seq[(TransactionOutPoint, ScriptPubKey)]= elements.head match {
           case array : JsArray => parseOutPointsAndScriptPubKeys(array)
           case _ : JsValue => throw new RuntimeException("Needs to be a js array")
