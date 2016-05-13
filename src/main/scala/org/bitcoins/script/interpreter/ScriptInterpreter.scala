@@ -105,61 +105,6 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
           } else scriptSigExecutedProgram
       }
     }
-/*
-    val executedProgram : ExecutedScriptProgram = program.txSignatureComponent.scriptSignature match {
-      case scriptSig : ScriptSignature if (ScriptFlagUtil.requirePushOnly(program.flags) &&
-        !BitcoinScriptUtil.isPushOnly(scriptSig.asm)) =>
-
-      //if the P2SH script flag is not set, we evaluate a p2sh scriptSig just like any other scriptSig
-      case scriptSig : P2SHScriptSignature if (program.flags.contains(ScriptVerifyP2SH)) =>
-        if (!BitcoinScriptUtil.isPushOnly(scriptSig.asm)) {
-          val executionInProgress = ScriptProgram.toExecutionInProgress(program)
-          logger.error("P2SH script signatures must be push only")
-          ScriptProgram(executionInProgress,ScriptErrorSigPushOnly)
-        } else {
-          //first run the serialized redeemScript && the p2shScriptPubKey to see if the hashes match
-          val hashCheckProgram = ScriptProgram(program, Seq(scriptSig.asm.last), program.txSignatureComponent.scriptPubKey.asm)
-          val hashesMatchProgram = loop(hashCheckProgram)
-
-          hashesMatchProgram.stackTopIsTrue match {
-            case true =>
-              logger.info("Hashes matched between the p2shScriptSignature & the p2shScriptPubKey")
-              //we need to run the deserialized redeemScript & the scriptSignature without the serialized redeemScript
-              val stack = BitcoinScriptUtil.filterPushOps(scriptSig.scriptSignatureNoRedeemScript.asm.reverse)
-              logger.debug("P2sh stack: " + stack)
-              logger.debug("P2sh redeemScript: " + scriptSig.redeemScript.asm)
-              val p2shRedeemScriptProgram = ScriptProgram(hashesMatchProgram.txSignatureComponent,stack, scriptSig.redeemScript.asm)
-              if (ScriptFlagUtil.requirePushOnly(p2shRedeemScriptProgram.flags) && !BitcoinScriptUtil.isPushOnly(scriptSig.redeemScript.asm)) {
-                logger.error("p2sh redeem script must be push only operations whe SIGPUSHONLY flag is set")
-                ScriptProgram(p2shRedeemScriptProgram,ScriptErrorSigPushOnly)
-              } else loop(p2shRedeemScriptProgram)
-            case false =>
-              logger.warn("P2SH scriptPubKey hash did not match the hash for the serialized redeemScript")
-              hashesMatchProgram
-          }
-        }
-      case _ : P2PKHScriptSignature | _ : P2PKScriptSignature | _ : MultiSignatureScriptSignature |
-           _ : NonStandardScriptSignature | _ : P2SHScriptSignature | EmptyScriptSignature =>
-
-        val scriptSigProgram = ScriptProgram(program,Seq(),program.txSignatureComponent.scriptSignature.asm)
-        val scriptSigExecutedProgram = loop(scriptSigProgram)
-        logger.info("Stack state after scriptSig execution: " + scriptSigExecutedProgram.stack)
-        if (!scriptSigExecutedProgram.error.isDefined) {
-          logger.debug("We do not check a redeemScript against a non p2sh scriptSig")
-          //now run the scriptPubKey script through the interpreter with the scriptSig as the stack arguments
-          val scriptPubKeyProgram = ScriptProgram(scriptSigExecutedProgram.txSignatureComponent,
-            scriptSigExecutedProgram.stack,scriptSigExecutedProgram.txSignatureComponent.scriptPubKey.asm)
-          require(scriptPubKeyProgram.script == scriptSigExecutedProgram.txSignatureComponent.scriptPubKey.asm)
-          val scriptPubKeyExecutedProgram : ExecutedScriptProgram = loop(scriptPubKeyProgram)
-
-          logger.info("Stack state after scriptPubKey execution: " + scriptPubKeyExecutedProgram.stack)
-
-          //if the program is valid, return if the stack top is true
-          //else the program is false since something illegal happened during script evaluation
-          scriptPubKeyExecutedProgram
-        } else scriptSigExecutedProgram
-
-    }*/
     logger.debug("Executed Script Program: " + executedProgram)
     if (executedProgram.error.isDefined) executedProgram.error.get
     else if (executedProgram.stackTopIsTrue && executedProgram.flags.contains(ScriptVerifyCleanStack)) {

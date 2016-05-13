@@ -82,22 +82,22 @@ class TransactionTest extends FlatSpec with MustMatchers with BitcoinSLogger {
     }
   }
 
-/*  it must "read all of the tx_invalid.json's contents and return a ScriptError" in {
+  it must "read all of the tx_invalid.json's contents and return a ScriptError" in {
 
 
     val source = Source.fromURL(getClass.getResource("/tx_invalid.json"))
 
 
     //use this to represent a single test case from script_valid.json
-    val lines =
+/*    val lines =
         """
           |[
           |[[["0000000000000000000000000000000000000000000000000000000000000100", 0, "HASH160 0x14 0x7a052c840ba73af26755de42cf01cc9e0a49fef0 EQUAL"]],
           |"010000000100010000000000000000000000000000000000000000000000000000000000000000000009085768617420697320ffffffff010000000000000000015100000000", "P2SH"]
           |
           |]
-        """.stripMargin
-    //val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n" finally source.close()
+        """.stripMargin*/
+    val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n" finally source.close()
     val json = lines.parseJson
     val testCasesOpt : Seq[Option[CoreTransactionTestCase]] = json.convertTo[Seq[Option[CoreTransactionTestCase]]]
     val testCases : Seq[CoreTransactionTestCase] = testCasesOpt.flatten
@@ -121,9 +121,10 @@ class TransactionTest extends FlatSpec with MustMatchers with BitcoinSLogger {
         ScriptInterpreter.run(program).isInstanceOf[ScriptError] must equal (true)
       }
     }
-  }*/
+  }
 
   private def findInput(tx : Transaction, outPoint : TransactionOutPoint) : (TransactionInput,Int) = {
+    logger.debug("tx.hex: " + tx.hex)
     tx.inputs.zipWithIndex.find{case (input,index) => input.previousOutput == outPoint}.get
   }
 }
