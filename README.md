@@ -1,3 +1,4 @@
+[![Build Status](https://travis-ci.org/bitcoin-s/bitcoin-s-core.svg?branch=master)](https://travis-ci.org/bitcoin-s/bitcoin-s-core) [![Coverage Status](https://coveralls.io/repos/github/bitcoin-s/bitcoin-s-core/badge.svg?branch=master)](https://coveralls.io/github/bitcoin-s/bitcoin-s-core?branch=master)
 
 # Bitcoin-S-Core
 
@@ -8,7 +9,7 @@ This repostitory includes the following functionality:
   - Serializers and deserializers for bitcoin data structures mentioned above
   - An implementation of Bitcoin's Script programming language 
     - This passes all of the test cases found inside of script_tests.json on the Bitcoin Core repo
-    - Currently up to date through OP_CHECKLOCKTIMEVERIFY, OP_CHECKSEQUENCEVERIFY still needs to be implemented
+    - Currently up to date through OP_CHECKSEQUENCEVERIFY
   - 90% test coverage throughout the codebase to ensure high quality code. 
   - Functions documented with Scaladocs for user friendliness 
 
@@ -32,15 +33,15 @@ scala> val tx = Transaction(simpleRawTransaction)
 tx: org.bitcoins.protocol.transaction.Transaction = TransactionImpl(1,List(TransactionInputImpl(TransactionOutPointImpl(b30d3148927f620f5b1228ba941c211fdabdae75d0ba0b688a58accbf018f3cc,0),P2PKHScriptSignatureImpl(4830450221008337ce3ce0c6ac0ab72509f889c1d52701817a2362d6357457b63e3bdedc0c0602202908963b9cf1a095ab3b34b95ce2bc0d67fb0f19be1cc5f7b3de0b3a325629bf01210241d746ca08da0a668735c3e01c1fa02045f2f399c5937079b6434b5a31dfe353,List(BytesToPushOntoStackImpl(72), ScriptConstantImpl(30450221008337ce3ce0c6ac0ab72509f889c1d52701817a2362d6357457b63e3bdedc0c0602202908963b9cf1a095ab3b34b95ce2bc0d67fb0f19be1cc5f7b3de0b3a325629bf01), BytesToPushOntoStackImpl(33), ScriptConstantImpl(0241d746ca08da0a668735c3e01c1fa02045f2f399c5937079b6434b5a31dfe353))),4294967295)),List(TransactionOutputImpl(89994000 ...
 ```
 
-This gives us an example of a bitcoin transaction that is encoded in hex format that is deserialized to a native Scala ojbect called a Transaction.
+This gives us an example of a bitcoin transaction that is encoded in hex format that is deserialized to a native Scala object called a Transaction.
 
-Transaction's are run through the interpreter to check the validity of the Transaction. These packaged up up into an object called ScriptProgram which contains the following four things
+Transactions are run through the interpreter to check the validity of the Transaction. These are packaged up into an object called ScriptProgram, which contains the following:
   - The transaction that is being checked
-  - The specific input index that is 
+  - The specific input index that it is checking
   - The scriptPubKey for the crediting transaction
   - The flags used to verify the script
 
-Here is an example of a transaction spending a scriptPubKey which is correctly evaluated with our interpreter implementation
+Here is an example of a transaction spending a scriptPubKey which is correctly evaluated with our interpreter implementation:
 
 ```scala
 chris@chris:~/dev/bitcoins-core$ sbt console
@@ -80,3 +81,34 @@ program: org.bitcoins.script.PreExecutionScriptProgram = PreExecutionScriptProgr
 scala> ScriptInterpreter.run(program)
 res0: org.bitcoins.script.result.ScriptResult = ScriptOk
 ```
+# Running tests
+
+To run the entire test suite all you need to do is run the following command
+```scala 
+
+chris@chris:~/dev/bitcoins-core$ sbt test
+[info] Run completed in 8 seconds, 805 milliseconds.
+[info] Total number of tests run: 613
+[info] Suites: completed 91, aborted 0
+[info] Tests: succeeded 613, failed 0, canceled 0, ignored 0, pending 0
+[info] All tests passed.
+[success] Total time: 17 s, completed May 7, 2016 1:11:34 PM
+chris@chris:~/dev/bitcoins-core$ 
+```
+
+To run a specific suite of tests you can specify the suite name in the following way
+```scala
+chris@chris:~/dev/bitcoins-core$ sbt
+> test-only *ScriptInterpreterTest*
+[info] ScriptInterpreterTest:
+[info] ScriptInterpreter
+[info] - must evaluate all the scripts from the bitcoin core script_tests.json
+[info] Run completed in 8 seconds, 208 milliseconds.
+[info] Total number of tests run: 1
+[info] Suites: completed 1, aborted 0
+[info] Tests: succeeded 1, failed 0, canceled 0, ignored 0, pending 0
+[info] All tests passed.
+>
+```
+
+
