@@ -64,7 +64,7 @@ class TransactionTest extends FlatSpec with MustMatchers with BitcoinSLogger {
       testCase <- testCases
       (outPoint,scriptPubKey) <- testCase.creditingTxsInfo
       tx = testCase.spendingTx
-      (input,inputIndex) = findInput(tx,outPoint)
+      (input,inputIndex) = findInput(tx,outPoint).getOrElse((EmptyTransactionInput,0))
     } yield {
       logger.info("Raw test case: " + testCase.raw)
       logger.info("Parsed ScriptSig: " + tx.inputs(inputIndex).scriptSignature)
@@ -105,26 +105,32 @@ class TransactionTest extends FlatSpec with MustMatchers with BitcoinSLogger {
       testCase <- testCases
       (outPoint,scriptPubKey) <- testCase.creditingTxsInfo
       tx = testCase.spendingTx
-      (input,inputIndex) = findInput(tx,outPoint)
+      (input,inputIndex) = findInput(tx,outPoint).getOrElse((EmptyTransactionInput,0))
     } yield {
       logger.info("Raw test case: " + testCase.raw)
-      logger.info("Parsed ScriptSig: " + tx.inputs(inputIndex).scriptSignature)
-      logger.info("Sequence number: " + tx.inputs(inputIndex).sequence)
       logger.info("ScriptPubKey: " + scriptPubKey)
       logger.info("OutPoint: " + outPoint)
       logger.info("Flags after parsing: " + testCase.flags)
-      require(outPoint.txId == input.previousOutput.txId,
+/*      require(outPoint.txId == input.previousOutput.txId,
         "OutPoint txId not the same as input prevout txid\noutPoint.txId: " + outPoint.txId + "\n" +
-          "input prevout txid: " + input.previousOutput.txId)
-      val program = ScriptProgram(tx,scriptPubKey,inputIndex,testCase.flags)
+          "input prevout txid: " + input.previousOutput.txId)*/
+
       withClue(testCase.raw) {
-        ScriptInterpreter.run(program).isInstanceOf[ScriptError] must equal (true)
+
+        val isValidTx = ScriptInterpreter.checkTransaction(tx)
+        if (isValidTx) {
+          val program = ScriptProgram(tx,scriptPubKey,inputIndex,testCase.flags)
+          ScriptInterpreter.run(program).isInstanceOf[ScriptError] must equal (true)
+        } else {
+          isValidTx must be (false)
+        }
+
       }
     }
   }
 
-  private def findInput(tx : Transaction, outPoint : TransactionOutPoint) : (TransactionInput,Int) = {
+  private def findInput(tx : Transaction, outPoint : TransactionOutPoint) : Option[(TransactionInput,Int)] = {
     logger.debug("tx.hex: " + tx.hex)
-    tx.inputs.zipWithIndex.find{case (input,index) => input.previousOutput == outPoint}.get
+    tx.inputs.zipWithIndex.find{case (input,index) => input.previousOutput == outPoint}
   }
 }

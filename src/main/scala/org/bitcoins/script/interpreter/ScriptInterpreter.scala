@@ -1,8 +1,10 @@
 
 package org.bitcoins.script.interpreter
 
+import org.bitcoins.consensus.Consensus
+import org.bitcoins.currency.{CurrencyUnit, CurrencyUnits}
 import org.bitcoins.protocol.script._
-import org.bitcoins.protocol.transaction.Transaction
+import org.bitcoins.protocol.transaction.{Transaction, TransactionOutput}
 import org.bitcoins.script.flag._
 import org.bitcoins.script.locktime.{LockTimeInterpreter, OP_CHECKLOCKTIMEVERIFY, OP_CHECKSEQUENCEVERIFY}
 import org.bitcoins.script.splice._
@@ -50,6 +52,9 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
    * @return
    */
   def run(program : PreExecutionScriptProgram) : ScriptResult = {
+    if (!checkTransaction(program.txSignatureComponent.transaction)) {
+      return ScriptErrorUnknownError
+    }
     val scriptSig = program.txSignatureComponent.scriptSignature
     val scriptPubKey = program.txSignatureComponent.scriptPubKey
     val executedProgram : ExecutedScriptProgram = if (ScriptFlagUtil.requirePushOnly(program.flags)
@@ -345,6 +350,35 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
       }
     }
   }
+
+
+  /**
+    * Checks the validity of a transaction in accordance to bitcoin core's CheckTransaction function
+    * https://github.com/bitcoin/bitcoin/blob/f7a21dae5dbf71d5bc00485215e84e6f2b309d0a/src/main.cpp#L939
+    * @param transaction
+    * @return
+    */
+  def checkTransaction(transaction : Transaction) : Boolean = {
+    val inputOutputsNotZero = !(transaction.inputs.isEmpty || transaction.outputs.isEmpty)
+    //TODO: replace 1000000 with a value that represents the max block size
+    val txNotLargerThanBlock = transaction.bytes.size < Consensus.maxBlockSize
+    val outputsSpendValidAmountsOfMoney = !transaction.outputs.exists(o =>
+      o.value < CurrencyUnits.zeroSatoshis || o.value > Consensus.maxMoney)
+
+    val outputValues = transaction.outputs.map(_.value)
+    val totalSpentByOutputs : CurrencyUnit = outputValues.fold(CurrencyUnits.zero)(_ + _)
+    val allOutputsValidMoneyRange = validMoneyRange(totalSpentByOutputs)
+    val prevOutputTxIds = transaction.inputs.map(_.previousOutput.txId)
+    val noDuplicateInputs = prevOutputTxIds.distinct.size == prevOutputTxIds.size
+    inputOutputsNotZero && txNotLargerThanBlock && outputsSpendValidAmountsOfMoney && noDuplicateInputs &&
+      allOutputsValidMoneyRange && noDuplicateInputs
+  }
+
+
+  def validMoneyRange(currencyUnit : CurrencyUnit) : Boolean = {
+    currencyUnit >= CurrencyUnits.zeroSatoshis && currencyUnit < Consensus.maxMoney
+  }
+
 
 }
 
