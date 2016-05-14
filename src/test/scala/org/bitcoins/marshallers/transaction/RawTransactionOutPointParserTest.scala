@@ -1,6 +1,5 @@
 package org.bitcoins.marshallers.transaction
 
-import org.bitcoins.protocol.transaction.TransactionOutPointImpl
 import org.scalatest.{FlatSpec, MustMatchers}
 
 /**
