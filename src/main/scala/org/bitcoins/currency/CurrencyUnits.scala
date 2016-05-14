@@ -62,6 +62,7 @@ case class MilliBitcoins(override val value : Double) extends CurrencyUnit(value
 }
 
 object CurrencyUnits {
+  def zero : CurrencyUnit = zeroSatoshis
   def negativeSatoshi = Satoshis(-1)
   def zeroSatoshis = Satoshis(0)
   def oneSatoshi = Satoshis(1)
