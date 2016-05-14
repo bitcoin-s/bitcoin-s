@@ -3,7 +3,7 @@ package org.bitcoins.marshallers.transaction
 import org.bitcoins.marshallers.script.ScriptSignatureMarshaller
 import org.bitcoins.marshallers.transaction.TransactionOutPointMarshaller.TransactionOutPointFormatter
 import org.bitcoins.protocol.script.ScriptSignature
-import org.bitcoins.protocol.transaction.{TransactionInputImpl, TransactionOutPoint, TransactionInput}
+import org.bitcoins.protocol.transaction.{TransactionOutPoint, TransactionInput}
 import org.bitcoins.util.{BitcoinSUtil}
 import spray.json._
 
@@ -30,7 +30,7 @@ object TransactionInputMarshaller extends DefaultJsonProtocol {
       val scriptSigBytes : Seq[Byte] = BitcoinSUtil.decodeHex(scriptSig.hex)
       val varIntSize = BitcoinSUtil.parseCompactSizeUIntSize(scriptSigBytes.head)
       val varInt = BitcoinSUtil.parseCompactSizeUInt(scriptSigBytes.slice(0,varIntSize.toInt))
-      TransactionInputImpl(outPoint, scriptSig, sequence.convertTo[Long])
+      TransactionInput(outPoint, scriptSig, sequence.convertTo[Long])
     }
 
     override def write(input : TransactionInput) : JsValue = {
