@@ -123,10 +123,8 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
 
   }
   /**
-    *
-    * @param program
-    * @return boolean this boolean represents if the program hit any invalid states within the execution
-    *         this does NOT indicate if the final value of the stack is true/false
+    * The execution loop for a script
+    * @param program the program whose script needs to be evaluated
     * @return program the final state of the program after being evaluated by the interpreter
     */
   @tailrec
@@ -375,8 +373,13 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
   }
 
 
+  /**
+    * Determines if the given currency unit is within the valid range for the system
+    * @param currencyUnit
+    * @return
+    */
   def validMoneyRange(currencyUnit : CurrencyUnit) : Boolean = {
-    currencyUnit >= CurrencyUnits.zeroSatoshis && currencyUnit < Consensus.maxMoney
+    currencyUnit >= CurrencyUnits.zeroSatoshis && currencyUnit <= Consensus.maxMoney
   }
 
 
