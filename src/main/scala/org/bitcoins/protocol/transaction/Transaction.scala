@@ -9,13 +9,49 @@ import org.bitcoins.util.{Factory, BitcoinSUtil, CryptoUtil}
 
 
 sealed trait Transaction extends TransactionElement {
+  /**
+    * The sha256(sha256(tx)) of this transaction
+    * @return
+    */
   def txId : String = BitcoinSUtil.encodeHex(CryptoUtil.doubleSHA256(hex).reverse)
+
+  /**
+    * The version number for this transaction
+    * @return
+    */
   def version : Long
+
+  /**
+    * The inputs for this transaction
+    * @return
+    */
   def inputs  : Seq[TransactionInput]
+
+  /**
+    * The outputs for this transaction
+    * @return
+    */
   def outputs : Seq[TransactionOutput]
+
+  /**
+    * The locktime for this transaction
+    * @return
+    */
   def lockTime : Long
 
   override def hex = RawTransactionParser.write(this)
+
+  /**
+    * Determines if this transaction is a coinbase transaction
+    * @return
+    */
+  def isCoinbase : Boolean = inputs.size match {
+    case 1 => inputs.head match {
+      case coinbase : CoinbaseInput => true
+      case _ : TransactionInput => false
+    }
+    case _ : Int => false
+  }
 }
 
 case object EmptyTransaction extends Transaction {
