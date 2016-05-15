@@ -4,7 +4,7 @@ package org.bitcoins.script.interpreter
 import org.bitcoins.consensus.Consensus
 import org.bitcoins.currency.{CurrencyUnit, CurrencyUnits}
 import org.bitcoins.protocol.script._
-import org.bitcoins.protocol.transaction.{Transaction, TransactionOutput}
+import org.bitcoins.protocol.transaction.{EmptyTransactionOutPoint, Transaction, TransactionOutput}
 import org.bitcoins.script.flag._
 import org.bitcoins.script.locktime.{LockTimeInterpreter, OP_CHECKLOCKTIMEVERIFY, OP_CHECKSEQUENCEVERIFY}
 import org.bitcoins.script.splice._
@@ -369,8 +369,16 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
     val allOutputsValidMoneyRange = validMoneyRange(totalSpentByOutputs)
     val prevOutputTxIds = transaction.inputs.map(_.previousOutput.txId)
     val noDuplicateInputs = prevOutputTxIds.distinct.size == prevOutputTxIds.size
+
+    val isValidScriptSigForCoinbaseTx = transaction.isCoinbase match {
+      case true => transaction.inputs.head.scriptSignature.size >= 2 &&
+        transaction.inputs.head.scriptSignature.size <= 100
+      case false =>
+        //since this is not a coinbase tx we cannot have any empty previous outs inside of inputs
+        !transaction.inputs.exists(_.previousOutput == EmptyTransactionOutPoint)
+    }
     inputOutputsNotZero && txNotLargerThanBlock && outputsSpendValidAmountsOfMoney && noDuplicateInputs &&
-      allOutputsValidMoneyRange && noDuplicateInputs
+      allOutputsValidMoneyRange && noDuplicateInputs && isValidScriptSigForCoinbaseTx
   }
 
 
