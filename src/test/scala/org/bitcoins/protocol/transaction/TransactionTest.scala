@@ -52,8 +52,10 @@ class TransactionTest extends FlatSpec with MustMatchers with BitcoinSLogger {
     val lines =
         """
           |[
-          |[[["0000000000000000000000000000000000000000000000000000000000000100", 0, "HASH160 0x14 0x7c17aff532f22beb54069942f9bf567a66133eaf EQUAL"]],
-          |"0200000001000100000000000000000000000000000000000000000000000000000000000000000000030251b2010000000100000000000000000000000000", "P2SH,CHECKSEQUENCEVERIFY"]
+          |[[["ceafe58e0f6e7d67c0409fbbf673c84c166e3c5d3c24af58f7175b18df3bb3db", 0, "DUP HASH160 0x14 0xf6f365c40f0739b61de827a44751e5e99032ed8f EQUALVERIFY CHECKSIG"],
+          |  ["ceafe58e0f6e7d67c0409fbbf673c84c166e3c5d3c24af58f7175b18df3bb3db", 1, "2 0x48 0x3045022015bd0139bcccf990a6af6ec5c1c52ed8222e03a0d51c334df139968525d2fcd20221009f9efe325476eb64c3958e4713e9eefe49bf1d820ed58d2112721b134e2a1a5303 0x21 0x0378d430274f8c5ec1321338151e9f27f4c676a008bdf8638d07c0b6be9ab35c71 0x21 0x0378d430274f8c5ec1321338151e9f27f4c676a008bdf8638d07c0b6be9ab35c71 3 CHECKMULTISIG"]],
+          |"0100000002dbb33bdf185b17f758af243c5d3c6e164cc873f6bb9f40c0677d6e0f8ee5afce000000006b4830450221009627444320dc5ef8d7f68f35010b4c050a6ed0d96b67a84db99fda9c9de58b1e02203e4b4aaa019e012e65d69b487fdf8719df72f488fa91506a80c49a33929f1fd50121022b78b756e2258af13779c1a1f37ea6800259716ca4b7f0b87610e0bf3ab52a01ffffffffdbb33bdf185b17f758af243c5d3c6e164cc873f6bb9f40c0677d6e0f8ee5afce010000009300483045022015bd0139bcccf990a6af6ec5c1c52ed8222e03a0d51c334df139968525d2fcd20221009f9efe325476eb64c3958e4713e9eefe49bf1d820ed58d2112721b134e2a1a5303483045022015bd0139bcccf990a6af6ec5c1c52ed8222e03a0d51c334df139968525d2fcd20221009f9efe325476eb64c3958e4713e9eefe49bf1d820ed58d2112721b134e2a1a5303ffffffff01a0860100000000001976a9149bc0bbdd3024da4d0c38ed1aecf5c68dd1d3fa1288ac00000000", "P2SH"]
+          |
           |]
         """.stripMargin
     //val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n" finally source.close()
@@ -92,8 +94,9 @@ class TransactionTest extends FlatSpec with MustMatchers with BitcoinSLogger {
 /*    val lines =
         """
           |[
-          |[[["0000000000000000000000000000000000000000000000000000000000000000", -1, "1"]],
-          |"01000000010000000000000000000000000000000000000000000000000000000000000000ffffffff0151ffffffff010000000000000000015100000000", "P2SH"]
+          |[[["0000000000000000000000000000000000000000000000000000000000000100", 0, "0x21 0x035e7f0d4d0841bcd56c39337ed086b1a633ee770c1ffdd94ac552a95ac2ce0efc CHECKSIG"],
+          |  ["0000000000000000000000000000000000000000000000000000000000000200", 0, "0x21 0x035e7f0d4d0841bcd56c39337ed086b1a633ee770c1ffdd94ac552a95ac2ce0efc CHECKSIG"]],
+          | "01000000020001000000000000000000000000000000000000000000000000000000000000000000004948304502203a0f5f0e1f2bdbcd04db3061d18f3af70e07f4f467cbc1b8116f267025f5360b022100c792b6e215afc5afc721a351ec413e714305cb749aae3d7fee76621313418df10101000000000200000000000000000000000000000000000000000000000000000000000000000000484730440220201dc2d030e380e8f9cfb41b442d930fa5a685bb2c8db5906671f865507d0670022018d9e7a8d4c8d86a73c2a724ee38ef983ec249827e0e464841735955c707ece98101000000010100000000000000015100000000", "P2SH"]
           |
           |]
         """.stripMargin*/
@@ -103,28 +106,28 @@ class TransactionTest extends FlatSpec with MustMatchers with BitcoinSLogger {
     val testCases : Seq[CoreTransactionTestCase] = testCasesOpt.flatten
     for {
       testCase <- testCases
-      (outPoint,scriptPubKey) <- testCase.creditingTxsInfo
-      tx = testCase.spendingTx
-      (input,inputIndex) = findInput(tx,outPoint).getOrElse((EmptyTransactionInput,0))
     } yield {
-      logger.info("Raw test case: " + testCase.raw)
-      logger.info("ScriptPubKey: " + scriptPubKey)
-      logger.info("OutPoint: " + outPoint)
-      logger.info("Flags after parsing: " + testCase.flags)
-/*      require(outPoint.txId == input.previousOutput.txId,
-        "OutPoint txId not the same as input prevout txid\noutPoint.txId: " + outPoint.txId + "\n" +
-          "input prevout txid: " + input.previousOutput.txId)*/
-
-      withClue(testCase.raw) {
-
+      val txInputValidity : Seq[Boolean] = for {
+        (outPoint,scriptPubKey) <- testCase.creditingTxsInfo
+        tx = testCase.spendingTx
+        (input,inputIndex) = findInput(tx,outPoint).getOrElse((EmptyTransactionInput,0))
+      } yield {
+        logger.info("Raw test case: " + testCase.raw)
+        logger.info("ScriptPubKey: " + scriptPubKey)
+        logger.info("OutPoint: " + outPoint)
+        logger.info("Flags after parsing: " + testCase.flags)
         val isValidTx = ScriptInterpreter.checkTransaction(tx)
         if (isValidTx) {
           val program = ScriptProgram(tx,scriptPubKey,inputIndex,testCase.flags)
-          ScriptInterpreter.run(program).isInstanceOf[ScriptError] must equal (true)
+          ScriptInterpreter.run(program) == ScriptOk
         } else {
-          isValidTx must be (false)
+          logger.error("Transaction does not pass CheckTransaction()")
+          isValidTx
         }
-
+      }
+      withClue(testCase.raw) {
+        //only one input is required to be false to make the transaction invalid
+        txInputValidity.exists(_ == false) must be (true)
       }
     }
   }

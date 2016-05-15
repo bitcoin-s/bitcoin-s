@@ -55,24 +55,21 @@ sealed trait ScriptProgram {
    * Flags that are run with the script
    * these flags indicate special conditions that a script needs to be run with
    * see: https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.h#L31
-    *
-    * @return
+   * @return
    */
   def flags : Seq[ScriptFlag]
 
   /**
-
-   * Returns if the stack top is true
-    *
+    * Returns true if the stack top is true
     * @return
-   */
+    */
   def stackTopIsTrue = !stackTopIsFalse
 
+
   /**
-   * Returns if the stack top is false
-    *
+    * Returns true if the stack top is false
     * @return
-   */
+    */
   def stackTopIsFalse : Boolean = {
     if (stack.headOption.isDefined &&
       (stack.head.hex == OP_FALSE.hex || stack.head.hex == ScriptNumber.negativeZero.hex ||
