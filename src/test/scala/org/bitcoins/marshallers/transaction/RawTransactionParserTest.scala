@@ -59,4 +59,5 @@ class RawTransactionParserTest extends FlatSpec with MustMatchers {
     tx.inputs.head.sequence must be (TransactionConstants.sequence)
     tx.outputs.size must be (2)
   }
+
 }

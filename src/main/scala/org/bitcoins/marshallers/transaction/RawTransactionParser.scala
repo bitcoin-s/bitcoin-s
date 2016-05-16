@@ -1,7 +1,7 @@
 package org.bitcoins.marshallers.transaction
 
 import org.bitcoins.marshallers.RawBitcoinSerializer
-import org.bitcoins.protocol.transaction.{TransactionImpl, Transaction}
+import org.bitcoins.protocol.transaction.{Transaction}
 import org.bitcoins.util.{BitcoinSUtil, CryptoUtil}
 import org.slf4j.LoggerFactory
 
@@ -26,12 +26,11 @@ trait RawTransactionParser extends RawBitcoinSerializer[Transaction] {
     val outputsBytes = bytes.slice(outputsStartIndex, bytes.size)
     logger.info("Output bytes: " + BitcoinSUtil.encodeHex(outputsBytes))
     val outputs = RawTransactionOutputParser.read(outputsBytes)
-    val outputsSize = outputs.map(_.size).sum
 
     val lockTimeBytes = bytes.slice(bytes.size - 4, bytes.size)
-    val lockTime = Integer.parseInt(BitcoinSUtil.encodeHex(lockTimeBytes.reverse),16)
+    val lockTime = java.lang.Long.parseLong(BitcoinSUtil.encodeHex(lockTimeBytes.reverse),16)
 
-    TransactionImpl(version,inputs,outputs,lockTime)
+    Transaction(version,inputs,outputs,lockTime)
   }
 
   def write(tx : Transaction) : String = {
@@ -41,8 +40,8 @@ trait RawTransactionParser extends RawBitcoinSerializer[Transaction] {
     val version = addPadding(8,versionWithoutPadding)
     val inputs : String = RawTransactionInputParser.write(tx.inputs)
     val outputs : String = RawTransactionOutputParser.write(tx.outputs)
-    val lockTimeWithoutPadding : String = BitcoinSUtil.flipHalfByte(tx.lockTime.toHexString.reverse)
-    val lockTime = addPadding(8,lockTimeWithoutPadding)
+    val lockTimeWithoutPadding : String = tx.lockTime.toHexString
+    val lockTime = BitcoinSUtil.flipEndianess(addPadding(8,lockTimeWithoutPadding))
     version + inputs + outputs + lockTime
   }
 }

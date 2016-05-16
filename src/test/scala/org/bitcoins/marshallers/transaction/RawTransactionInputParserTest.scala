@@ -163,6 +163,20 @@ class RawTransactionInputParserTest extends FlatSpec with MustMatchers with RawT
     inputs.head.sequence must be (TransactionConstants.sequence)
   }
 
+  it must "read and write a input with a sequence number that is not symmetric" in {
+    //input's sequence number on this tx is 01 which is not symmetrical
+    val rawInput = "020001000000000000000000000000000000000000000000000000000000000000000000004948304502203a0f5f0e1f2bdbcd04db3061d18f3af70e07f4f467cbc1b8116f267025f5360b022100c792b6e215afc5afc721a351ec413e714305cb749aae3d7fee76621313418df101010000000002000000000000000000000000000000000000000000000000000000000000000000004847304402205f7530653eea9b38699e476320ab135b74771e1c48b81a5d041e2ca84b9be7a802200ac8d1f40fb026674fe5a5edd3dea715c27baa9baca51ed45ea750ac9dc0a55e81ffffffff"
+    val input = RawTransactionInputParser.read(rawInput)
+    RawTransactionInputParser.write(input) must be (rawInput)
+  }
+
+  it must "read and write an input with everything that is empty besides the sequence number" in {
+    val rawInput = "0100010000000000000000000000000000000000000000000000000000000000000000000000ffff0000"
+    val input = RawTransactionInputParser.read(rawInput)
+    input.head.sequence must be (65535)
+    RawTransactionInputParser.write(input) must be (rawInput)
+  }
+
 
 
 }

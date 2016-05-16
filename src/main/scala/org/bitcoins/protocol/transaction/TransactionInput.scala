@@ -1,10 +1,10 @@
 package org.bitcoins.protocol.transaction
 
 import org.bitcoins.marshallers.transaction.{RawTransactionInputParser, TransactionElement}
-import org.bitcoins.protocol.{CompactSizeUInt}
-import org.bitcoins.protocol.script.{ScriptSignature, ScriptPubKey}
-
-import org.bitcoins.util.{Factory, BitcoinSUtil}
+import org.bitcoins.protocol.CompactSizeUInt
+import org.bitcoins.protocol.script.{ScriptPubKey, ScriptSignature}
+import org.bitcoins.script.constant.ScriptToken
+import org.bitcoins.util.{BitcoinSUtil, Factory}
 
 /**
  * Created by chris on 12/26/15.
@@ -80,10 +80,21 @@ object TransactionInput extends Factory[TransactionInput] {
   def fromBytes(bytes : Seq[Byte]) : TransactionInput = RawTransactionInputParser.read(bytes).head
 
   def apply(oldInput : TransactionInput, scriptSig : ScriptSignature) : TransactionInput = factory(oldInput,scriptSig)
+
+  def apply(oldInput : TransactionInput, script : Seq[ScriptToken]) : TransactionInput = {
+    val scriptSig = ScriptSignature.fromAsm(script)
+    apply(oldInput,scriptSig)
+  }
+
   def apply(oldInput : TransactionInput, scriptPubKey: ScriptPubKey) : TransactionInput = factory(oldInput, scriptPubKey)
+
   def apply(oldInput : TransactionInput,sequenceNumber : Long) : TransactionInput = factory(oldInput, sequenceNumber)
+
   def apply(oldInput : TransactionInput,output : TransactionOutput, outputsTransaction : Transaction) : TransactionInput = factory(oldInput,output,outputsTransaction)
+
   def apply(oldInput : TransactionInput, outPoint: TransactionOutPoint) : TransactionInput = factory(oldInput,outPoint)
+
   def apply(outPoint : TransactionOutPoint, scriptSignature : ScriptSignature, sequenceNumber : Long) : TransactionInput = factory(outPoint,scriptSignature,sequenceNumber)
+
   def apply(bytes : Seq[Byte]) : TransactionInput = fromBytes(bytes)
 }

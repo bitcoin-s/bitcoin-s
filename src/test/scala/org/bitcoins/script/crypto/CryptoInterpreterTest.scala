@@ -1,5 +1,6 @@
 package org.bitcoins.script.crypto
 
+import org.bitcoins.crypto.TransactionSignatureSerializer
 import org.bitcoins.protocol.script.{ScriptPubKey, ScriptSignature}
 import org.bitcoins.protocol.transaction._
 import org.bitcoins.script.result._
@@ -133,18 +134,6 @@ class CryptoInterpreterTest extends FlatSpec with MustMatchers with CryptoInterp
     newProgram.isInstanceOf[ExecutedScriptProgram] must be (false)
   }
 
-  it must "evaluate an OP_CHECKSIG for a p2pk transaction" in {
-    val (creditingTx,outputIndex) = TransactionTestUtil.buildCreditingTransaction(TestUtil.p2pkScriptPubKey)
-    val (spendingTx,inputIndex) = TransactionTestUtil.buildSpendingTransaction(creditingTx,TestUtil.p2pkScriptSig,outputIndex)
-    val baseProgram = ScriptProgram(spendingTx,creditingTx.outputs(0).scriptPubKey,0,ScriptFlagFactory.empty)
-    val stack = Seq(TestUtil.p2pkScriptPubKey.asm(1)) ++ TestUtil.p2pkScriptSig.asm.tail
-
-    val script = List(TestUtil.p2pkScriptPubKey.asm.last)
-    val program = ScriptProgram(baseProgram,stack,script)
-    val newProgram = opCheckSig(program)
-    newProgram.stack must be (List(OP_TRUE))
-    newProgram.script.isEmpty must be (true)
-  }
 
 
   it must "evaluate an OP_CHECKMULTISIG for a p2sh transaction" in {
@@ -213,13 +202,8 @@ class CryptoInterpreterTest extends FlatSpec with MustMatchers with CryptoInterp
     val stack = List()
     val script = Seq(OP_CODESEPARATOR)
     val program = ScriptProgram(ScriptProgram(TestUtil.testProgramExecutionInProgress,stack,script),script,ScriptProgram.OriginalScript)
-    println(program)
-    println(program.script)
-    println(program.originalScript)
     val newProgram = ScriptProgramTestUtil.toExecutionInProgressScriptProgram(opCodeSeparator(program))
-    newProgram.lastCodeSeparator must be (0)
-
-
-
+    newProgram.lastCodeSeparator must be (Some(0))
   }
+
 }

@@ -99,16 +99,18 @@ trait ConstantInterpreter extends BitcoinSLogger {
     //if we do not, mark the program as invalid
     if (bytesNeeded == 0) ScriptProgram(program, ScriptNumber.zero :: program.stack, newScript)
     else if (ScriptFlagUtil.requireMinimalData(program.flags) && bytesNeeded == 1 &&
-      constant.isInstanceOf[ScriptNumber] &&constant.toLong <= 16) {
+      constant.isInstanceOf[ScriptNumber] && constant.toLong <= 16) {
       logger.error("We can push this constant onto the stack with OP_0 - OP_16 instead of using a script constant")
       ScriptProgram(program,ScriptErrorMinimalData)
-    } else if (bytesNeeded != bytesToPushOntoStack.map(_.bytes.size).sum) ScriptProgram(program,ScriptErrorBadOpCode)
+    } else if (bytesNeeded != bytesToPushOntoStack.map(_.bytes.size).sum) {
+      ScriptProgram(program,ScriptErrorBadOpCode)
+    }
     else if (ScriptFlagUtil.requireMinimalData(program.flags) && !BitcoinScriptUtil.isMinimalPush(program.script.head,constant)) {
         logger.debug("Pushing operation: " + program.script.head)
         logger.debug("Constant parsed: " + constant)
         logger.debug("Constant size: " + constant.bytes.size)
         ScriptProgram(program,ScriptErrorMinimalData)
-    } else ScriptProgram(program, constant :: program.stack, newScript)
+    } else ScriptProgram.apply(program, constant :: program.stack, newScript)
   }
 
 
@@ -153,13 +155,15 @@ trait ConstantInterpreter extends BitcoinSLogger {
 
   /**
    * Parses the bytes needed for a push op (for instance OP_PUSHDATA1)
- *
    * @param token
    * @return
    */
   private def bytesNeededForPushOp(token : ScriptToken) : Long = token match {
     case scriptNumber: BytesToPushOntoStack => scriptNumber.opCode
     case scriptNumber: ScriptNumber => scriptNumber.num
+    case scriptConstant : ScriptConstant =>
+      val constantFlippedEndianess = BitcoinSUtil.flipEndianess(scriptConstant.hex)
+      java.lang.Long.parseLong(constantFlippedEndianess,16)
     case _ => throw new IllegalArgumentException("Token must be BytesToPushOntoStack to push a number of bytes onto the stack")
   }
 }

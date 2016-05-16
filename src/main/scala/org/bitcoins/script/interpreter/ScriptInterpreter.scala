@@ -168,7 +168,8 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
               case OP_0 :: t => loop(ScriptProgram(p, ScriptNumber.zero :: p.stack, t))
               case (scriptNumberOp : ScriptNumberOperation) :: t =>
                 loop(ScriptProgram(p, ScriptNumber(scriptNumberOp.num) :: p.stack, t))
-              case (bytesToPushOntoStack: BytesToPushOntoStack) :: t => loop(pushScriptNumberBytesToStack(p))
+              case (bytesToPushOntoStack: BytesToPushOntoStack) :: t =>
+                loop(pushScriptNumberBytesToStack(p))
               case (scriptNumber: ScriptNumber) :: t =>
                 loop(ScriptProgram(p, scriptNumber :: p.stack, t))
               case OP_PUSHDATA1 :: t => loop(opPushData1(p))
@@ -189,6 +190,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
               //crypto operations
               case OP_HASH160 :: t => loop(opHash160(p))
               case OP_CHECKSIG :: t => loop(opCheckSig(p))
+              case OP_CHECKSIGVERIFY :: t => loop(opCheckSigVerify(p))
               case OP_SHA1 :: t => loop(opSha1(p))
               case OP_RIPEMD160 :: t => loop(opRipeMd160(p))
               case OP_SHA256 :: t => loop(opSha256(p))
@@ -318,7 +320,6 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
         val scriptSigProgram = ScriptProgram(program,Seq(),program.txSignatureComponent.scriptSignature.asm)
         val scriptSigExecutedProgram = loop(scriptSigProgram)
         logger.info("Stack state after scriptSig execution: " + scriptSigExecutedProgram.stack)
-        logger.info("scriptSigExecutedProgram: " + scriptSigExecutedProgram.error)
         if (!scriptSigExecutedProgram.error.isDefined) {
           logger.debug("We do not check a redeemScript against a non p2sh scriptSig")
           //now run the scriptPubKey script through the interpreter with the scriptSig as the stack arguments

@@ -130,11 +130,12 @@ public class BitcoinJSignatureSerialization {
             }
 
             List<TransactionInput> inputs = tx.getInputs();
-            if ((sigHashType & (byte)0x80) == 0x80) {
+
+            if ((sigHashType & (byte)0x80) == (byte)0x80) {
                 // SIGHASH_ANYONECANPAY means the signature in the input is not broken by changes/additions/removals
                 // of other inputs. For example, this is useful for building assurance contracts.
                 tx.clearInputs();
-                tx.getInputs().add(input);
+                tx.addInput(input);
             }
 
             ByteArrayOutputStream bos = new UnsafeByteArrayOutputStream(256);

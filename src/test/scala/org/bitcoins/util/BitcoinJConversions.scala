@@ -1,17 +1,19 @@
 package org.bitcoins.util
 
-import java.io.{IOException, ByteArrayOutputStream}
+import java.io.{ByteArrayOutputStream, IOException}
 import java.util
 
 import org.bitcoinj.core.{ECKey, Sha256Hash}
 import org.bitcoinj.params.TestNet3Params
 import org.bitcoins.config.TestNet3
 import org.bitcoins.crypto.ECPublicKey
-import org.bitcoins.protocol.script.{UpdateScriptPubKeyAsm, ScriptPubKey}
-import org.bitcoins.protocol.transaction.{TransactionOutput, Transaction}
+import org.bitcoins.protocol.script.{ScriptPubKey, UpdateScriptPubKeyAsm}
+import org.bitcoins.protocol.transaction.{Transaction, TransactionOutput}
 import org.bitcoins.script.ScriptOperationFactory
-import org.bitcoins.script.constant.{ ScriptToken}
+import org.bitcoins.script.constant.ScriptToken
+import org.bitcoins.script.crypto.SIGHASH_ANYONECANPAY
 import org.slf4j.LoggerFactory
+
 import scala.collection.JavaConversions._
 /**
  * Created by chris on 2/23/16.
@@ -36,7 +38,6 @@ trait BitcoinjConversions {
 
   /**
    * Performs the signature serialization that is implemented inside of bitcoinj
- *
    * @param tx
    * @param inputIndex
    * @param connectedScript
@@ -113,17 +114,15 @@ trait BitcoinjConversions {
 
       }
 
-/*
-      if ((sigHashType & SIGHASH_ANYONECANPAY_VALUE) == SIGHASH_ANYONECANPAY_VALUE) {
+      if ((sigHashType & SIGHASH_ANYONECANPAY.byte) == SIGHASH_ANYONECANPAY.byte) {
         // SIGHASH_ANYONECANPAY means the signature in the input is not broken by changes/additions/removals
         // of other inputs. For example, this is useful for building assurance contracts.
         tx.clearInputs()
-        tx.addInput(input);
+        tx.addInput(input)
       }
-*/
 
-      val bos : ByteArrayOutputStream = new UnsafeByteArrayOutputStream(256);
-      tx.bitcoinSerialize(bos);
+      val bos : ByteArrayOutputStream = new UnsafeByteArrayOutputStream(256)
+      tx.bitcoinSerialize(bos)
       // We also have to write a hash type (sigHashType is actually an unsigned char)
       Utils.uint32ToByteStreamLE(0x000000ff & sigHashType, bos);
       // Note that this is NOT reversed to ensure it will be signed correctly. If it were to be printed out

@@ -24,33 +24,22 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
   /**
    * Bitcoin Core's bug is that SignatureHash was supposed to return a hash and on this codepath it
    * actually returns the constant "1" to indicate an error
- *
    * @return
    */
   private def errorHash : Seq[Byte] = BitcoinSUtil.decodeHex("0100000000000000000000000000000000000000000000000000000000000000")
 
   /**
-   * Serialized the passed in script code, skipping OP_CODESEPARATORs
-   * definition for CScript https://github.com/bitcoin/bitcoin/blob/93c85d458ac3e2c496c1a053e1f5925f55e29100/src/script/script.h#L373
- *
-   * @param script
-   * @return
-   */
-  def serializeScriptCode(script : ScriptPubKey) : ScriptPubKey = removeOpCodeSeparators(script)
-
-
-  /**
    * Serializes a transaction to be signed by an ECKey
    * follows the bitcoinj implementation which can be found here
    * hashing is done in the hashForSignature function
-   * hashing is NOT done in this function
- *
    * @param inputIndex
    * @param script
    * @param hashType
    * @return
    */
-  def serializeForSignature(spendingTransaction : Transaction, inputIndex : Int, script : ScriptPubKey, hashType : HashType) : Seq[Byte] = {
+  def serializeForSignature(spendingTransaction : Transaction, inputIndex : Int, script : Seq[ScriptToken], hashType : HashType) : Seq[Byte] = {
+    logger.debug("Serializing for signature")
+    logger.debug("Script: " + script)
     // Clear input scripts in preparation for signing. If we're signing a fresh
     // transaction that step isn't very helpful, but it doesn't add much cost relative to the actual
     // EC math so we'll do it anyway.
@@ -68,16 +57,16 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
     // OP_CODESEPARATOR instruction having no purpose as it was only meant to be used internally, not actually
     // ever put into scripts. Deleting OP_CODESEPARATOR is a step that should never be required but if we don't
     // do it, we could split off the main chain.
-    logger.info("Before Bitcoin-S Script to be connected: " + script.hex)
-    val scriptWithOpCodeSeparatorsRemoved : ScriptPubKey = removeOpCodeSeparators(script)
+    logger.info("Before Bitcoin-S Script to be connected: " + script)
+    val scriptWithOpCodeSeparatorsRemoved : Seq[ScriptToken] = removeOpCodeSeparators(script)
 
-    logger.info("After Bitcoin-S Script to be connected: " + scriptWithOpCodeSeparatorsRemoved.hex)
+    logger.info("After Bitcoin-S Script to be connected: " + scriptWithOpCodeSeparatorsRemoved)
+
     val inputToSign = inputSigsRemoved(inputIndex)
 
     // Set the input to the script of its output. Bitcoin Core does this but the step has no obvious purpose as
     // the signature covers the hash of the prevout transaction which obviously includes the output script
     // already. Perhaps it felt safer to him in some way, or is another leftover from how the code was written.
-
     val inputWithConnectedScript = TransactionInput(inputToSign,scriptWithOpCodeSeparatorsRemoved)
 
     //update the input at index i with inputWithConnectScript
@@ -139,45 +128,39 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
         val sigHashSingleAnyoneCanPay = sigHashAnyoneCanPay(sigHashSingleTx,inputWithConnectedScript)
         sigHashSingleAnyoneCanPay.bytes  ++ sigHashBytes
     }
-
-
   }
+
 
   /**
    * Serializes then hashes a transaction for signing
    * this is an implementation of it's bitcoinj equivalent found here
    * https://github.com/bitcoinj/bitcoinj/blob/master/core/src/main/java/org/bitcoinj/core/Transaction.java#L924
- *
    * @param inputIndex
    * @param script
    * @param hashType
    * @return
    */
-  def hashForSignature(spendingTransction : Transaction, inputIndex : Int, script : ScriptPubKey, hashType : HashType) : Seq[Byte] = {
-    val serializedTxForSignature = serializeForSignature(spendingTransction,inputIndex,script,hashType)
-    CryptoUtil.doubleSHA256(serializedTxForSignature)
+  def hashForSignature(spendingTransaction : Transaction, inputIndex : Int, script : Seq[ScriptToken], hashType : HashType) : Seq[Byte] = {
+    //these first two checks are in accordance with behavior in bitcoin core
+    //https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L1112-L1123
+    if (inputIndex >= spendingTransaction.inputs.size) {
+      logger.warn("Our inputIndex is out of the range of the inputs in the spending transaction")
+      errorHash
+    } else if(hashType == SIGHASH_SINGLE  && inputIndex >= spendingTransaction.outputs.size) {
+      logger.warn("When we have a SIGHASH_SINGLE we cannot have more inputs than outputs")
+      errorHash
+    } else {
+      val serializedTxForSignature = serializeForSignature(spendingTransaction,inputIndex,script,hashType)
+      logger.debug("Serialized tx for signature: " + BitcoinSUtil.encodeHex(serializedTxForSignature))
+      logger.debug("HashType: " + hashType)
+      CryptoUtil.doubleSHA256(serializedTxForSignature)
+    }
   }
 
-  /**
-   * Removes OP_CODESEPARATOR operations then returns the script
-   * format
- *
-   * @return
-   */
-  def removeOpCodeSeparators(script : ScriptPubKey) : ScriptPubKey = {
-   logger.info("Tokens: " + script.asm)
-    if (script.asm.contains(OP_CODESEPARATOR)) {
-      //TODO: This needs to be tested
-      val scriptWithoutOpCodeSeparators : Seq[ScriptToken] = script.asm.filterNot(_ == OP_CODESEPARATOR)
-      val scriptBytes = BitcoinScriptUtil.asmToBytes(scriptWithoutOpCodeSeparators)
-      ScriptPubKey(scriptBytes)
-    } else script
 
-  }
 
   /**
    * Sets the input's sequence number to zero EXCEPT for the input at inputIndex
- *
    * @param inputs
    * @param inputIndex
    * @return
@@ -193,7 +176,6 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
 
   /**
    * Updates an input at the given inputIndex and returns the updated sequence of inputs
- *
    * @param inputs
    * @param updatedInput
    * @param inputIndex
@@ -210,7 +192,6 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
 
   /**
    * Executes the SIGHASH_NONE procedure on a spending transaction for the input specified by inputIndex
- *
    * @param spendingTransaction
    * @param inputIndex
    * @return
@@ -229,7 +210,6 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
 
   /**
    * Executes the SIGHASH_SINGLE procedure on a spending transaction for the input specified by inputIndex
- *
    * @param spendingTransaction
    * @param inputIndex
    * @return
@@ -242,7 +222,10 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
     val updatedOutputsOpt : Seq[Option[TransactionOutput]] = for {
       (output,index) <- spendingTransaction.outputs.zipWithIndex
     } yield {
-        if (index < inputIndex) Some(TransactionOutput(output,CurrencyUnits.negativeSatoshi))
+        if (index < inputIndex) {
+          logger.debug("Updating tx output to null in bitcoin core")
+          Some(EmptyTransactionOutput)
+        }
         else if (index == inputIndex) Some(output)
         else None
       }
@@ -251,16 +234,14 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
     val spendingTxOutputsEmptied = Transaction(spendingTransaction,UpdateTransactionOutputs(updatedOutputs))
     //create blank inputs with sequence numbers set to zero EXCEPT
     //the input at the inputIndex
-    val updatedInputs = setSequenceNumbersZero(spendingTxOutputsEmptied.inputs,inputIndex)
+    val updatedInputs : Seq[TransactionInput] = setSequenceNumbersZero(spendingTxOutputsEmptied.inputs,inputIndex)
 
     val sigHashSingleTx = Transaction(spendingTxOutputsEmptied,UpdateTransactionInputs(updatedInputs))
-    //append hash type byte onto the end of the tx bytes
     sigHashSingleTx
   }
 
   /**
    * Executes the SIGHASH_ALL procedure on a spending transaction at inputIndex
- *
    * @param spendingTransaction
    * @param inputIndex
    * @return
@@ -271,7 +252,6 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
 
   /**
    * Executes the SIGHASH_ANYONECANPAY procedure on a spending transaction at inputIndex
- *
    * @param spendingTransaction
    * @param input
    * @return
@@ -280,6 +260,20 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
     val txWithEmptyInputs = Transaction.emptyInputs(spendingTransaction)
     val txWithInputsRemoved = Transaction(txWithEmptyInputs,UpdateTransactionInputs(Seq(input)))
     txWithInputsRemoved
+  }
+
+  /**
+    * Removes OP_CODESEPARATOR operations then returns the script
+    * format
+    * @return
+    */
+  def removeOpCodeSeparators(script : Seq[ScriptToken]) : Seq[ScriptToken] = {
+    logger.info("Tokens: " + script)
+    if (script.contains(OP_CODESEPARATOR)) {
+      //TODO: This needs to be tested
+      val scriptWithoutOpCodeSeparators : Seq[ScriptToken] = script.filterNot(_ == OP_CODESEPARATOR)
+      scriptWithoutOpCodeSeparators
+    } else script
   }
 }
 

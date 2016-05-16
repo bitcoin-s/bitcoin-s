@@ -26,7 +26,7 @@ class ScriptProgramFactoryTest extends FlatSpec with MustMatchers {
   it must "update the OP_CODESEPARATOR index" in {
     val index = 999
     val program = ScriptProgram(TestUtil.testProgramExecutionInProgress,index)
-    program.lastCodeSeparator must be (999)
+    program.lastCodeSeparator must be (Some(index))
   }
 
   it must "update the OP_CODESEPARATOR index & stack simultaneously" in {
@@ -34,7 +34,7 @@ class ScriptProgramFactoryTest extends FlatSpec with MustMatchers {
     val stack = Seq(OP_0)
     val program = ScriptProgram(TestUtil.testProgramExecutionInProgress,stack,ScriptProgram.Stack,index)
     program.stack must be (stack)
-    program.lastCodeSeparator must be (index)
+    program.lastCodeSeparator must be (Some(index))
   }
 
   it must "update the OP_CODESEPARATOR index & altStack simultaneously" in {
@@ -42,7 +42,7 @@ class ScriptProgramFactoryTest extends FlatSpec with MustMatchers {
     val altStack = Seq(OP_0)
     val program = ScriptProgram(TestUtil.testProgramExecutionInProgress,altStack,ScriptProgram.AltStack,index)
     program.altStack must be (altStack)
-    program.lastCodeSeparator must be (index)
+    program.lastCodeSeparator must be (Some(index))
   }
 
 

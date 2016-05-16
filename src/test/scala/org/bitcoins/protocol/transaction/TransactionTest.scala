@@ -1,13 +1,23 @@
 package org.bitcoins.protocol.transaction
 
 import org.bitcoins.marshallers.transaction.RawTransactionParser
-import org.bitcoins.util.TestUtil
+import org.bitcoins.protocol.script.ScriptPubKey
+import org.bitcoins.protocol.transaction.testprotocol.CoreTransactionTestCase
+import org.bitcoins.script.ScriptProgram
+import org.bitcoins.script.flag.ScriptFlagFactory
+import org.bitcoins.protocol.transaction.testprotocol.CoreTransactionTestCaseProtocol._
+import org.bitcoins.script.interpreter.ScriptInterpreter
+import org.bitcoins.script.result.ScriptOk
+import org.bitcoins.util.{BitcoinSLogger, TestUtil, TransactionTestUtil}
 import org.scalatest.{FlatSpec, MustMatchers}
+
+import scala.io.Source
+import spray.json._
 
 /**
  * Created by chris on 7/14/15.
  */
-class TransactionTest extends FlatSpec with MustMatchers {
+class TransactionTest extends FlatSpec with MustMatchers with BitcoinSLogger {
 
 
   "Transaction" must "derive the correct txid from the transaction contents" in {
@@ -30,5 +40,49 @@ class TransactionTest extends FlatSpec with MustMatchers {
     val tx = Transaction(rawTx)
     //size is in bytes so divide by 2
     tx.size must be (rawTx.size / 2)
+  }
+
+  it must "read all of the tx_valid.json's contents and return ScriptOk" in {
+
+
+    val source = Source.fromURL(getClass.getResource("/tx_valid.json"))
+
+
+        //use this to represent a single test case from script_valid.json
+/*    val lines =
+        """
+          |[
+          |[[["0000000000000000000000000000000000000000000000000000000000000100", 0, "65535 NOP3 1"]],
+          |"020000000100010000000000000000000000000000000000000000000000000000000000000000000000ffff00000100000000000000000000000000", "P2SH,CHECKSEQUENCEVERIFY"]
+          |]
+        """.stripMargin*/
+    val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n" finally source.close()
+    val json = lines.parseJson
+    val testCasesOpt : Seq[Option[CoreTransactionTestCase]] = json.convertTo[Seq[Option[CoreTransactionTestCase]]]
+    val testCases : Seq[CoreTransactionTestCase] = testCasesOpt.flatten
+    for {
+      testCase <- testCases
+      (outPoint,scriptPubKey) <- testCase.creditingTxsInfo
+      tx = testCase.spendingTx
+      (input,inputIndex) = findInput(tx,outPoint)
+    } yield {
+      logger.info("Raw test case: " + testCase.raw)
+      logger.info("Parsed ScriptSig: " + tx.inputs(inputIndex).scriptSignature)
+      logger.info("Sequence number: " + tx.inputs(inputIndex).sequence)
+      logger.info("ScriptPubKey: " + scriptPubKey)
+      logger.info("OutPoint: " + outPoint)
+      logger.info("Flags after parsing: " + testCase.flags)
+      require(outPoint.txId == input.previousOutput.txId,
+        "OutPoint txId not the same as input prevout txid\noutPoint.txId: " + outPoint.txId + "\n" +
+          "input prevout txid: " + input.previousOutput.txId)
+      val program = ScriptProgram(tx,scriptPubKey,inputIndex,testCase.flags)
+      withClue(testCase.raw) {
+        ScriptInterpreter.run(program) must equal (ScriptOk)
+      }
+    }
+  }
+
+  private def findInput(tx : Transaction, outPoint : TransactionOutPoint) : (TransactionInput,Int) = {
+    tx.inputs.zipWithIndex.find{case (input,index) => input.previousOutput == outPoint}.get
   }
 }
