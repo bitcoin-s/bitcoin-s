@@ -31,6 +31,14 @@ trait TransactionConstants {
     * otherwise it specifies blocks with a granularity of 1.
     */
   def sequenceLockTimeTypeFlag = (1L << 22)
+
+
+  /**
+    * Threshold for nLockTime: below this value it is interpreted as block number,
+    * otherwise as UNIX timestamp.
+    * @return
+    */
+  def locktimeThreshold = 500000000
 }
 
 object TransactionConstants extends TransactionConstants

@@ -64,7 +64,6 @@ sealed trait ScriptConstant extends ScriptToken {
 sealed trait ScriptNumber extends ScriptConstant {
   /**
    * The underlying number of the ScriptNumber
- *
    * @return
    */
   def num : Long
@@ -104,14 +103,12 @@ sealed trait ScriptNumber extends ScriptConstant {
 object ScriptNumber extends Factory[ScriptNumber] {
   /**
     * Represents the number zero inside of bitcoin's script language
- *
     * @return
     */
   lazy val zero : ScriptNumber = ScriptNumberImpl(0,"")
 
   /**
     * Represents the number one inside of bitcoin's script language
- *
     * @return
     */
   lazy val one : ScriptNumber = ScriptNumberImpl(1)
@@ -131,20 +128,20 @@ object ScriptNumber extends Factory[ScriptNumber] {
   }
 
   def apply(num : Long) : ScriptNumber = {
-    if (num == 0) zero else ScriptNumberImpl(num, BitcoinSUtil.longToHex(num))
+    if (num == 0) zero else apply(BitcoinSUtil.longToHex(num))
   }
+
   def apply(hex : String) : ScriptNumber = fromHex(hex)
+
   def apply(bytes : Seq[Byte]) : ScriptNumber = fromBytes(bytes)
 
   def apply(hex : String, requireMinimal : Boolean) : Try[ScriptNumber] = {
-
     if (requireMinimal && !BitcoinScriptUtil.isShortestEncoding(hex)) {
       Failure(new IllegalArgumentException("The given hex was not the shortest encoding for the script number: " + hex))
     } else {
       val number = apply(hex)
       Success(number)
     }
-
   }
 
   def apply(bytes : Seq[Byte], requireMinimal : Boolean) : Try[ScriptNumber] = apply(BitcoinSUtil.encodeHex(bytes),requireMinimal)

@@ -137,13 +137,11 @@ class CryptoInterpreterTest extends FlatSpec with MustMatchers with CryptoInterp
 
 
   it must "evaluate an OP_CHECKMULTISIG for a p2sh transaction" in {
-
     val rawScriptSig = "0047304402205b7d2c2f177ae76cfbbf14d589c113b0b35db753d305d5562dd0b61cbf366cfb02202e56f93c4f08a27f986cd424ffc48a462c3202c4902104d4d0ff98ed28f4bf80014730440220563e5b3b1fc11662a84bc5ea2a32cc3819703254060ba30d639a1aaf2d5068ad0220601c1f47ddc76d93284dd9ed68f7c9974c4a0ea7cbe8a247d6bc3878567a5fca014c6952210279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f8179821038282263212c609d9ea2a6e3e172de238d8c39cabd5ac1ca10646e23fd5f515082103363d90d447b00c9c99ceac05b6262ee053441c7e55552ffe526bad8f83ff464053ae"
     val p2shScriptSig = ScriptSignature(rawScriptSig)
 
     val rawScriptPubKey = "a914c9e4a896d149702d0d1695434feddd52e24ad78d87"
     val p2shScriptPubKey = ScriptPubKey(rawScriptPubKey)
-
 
     val (creditingTx,outputIndex) = TransactionTestUtil.buildCreditingTransaction(p2shScriptPubKey)
     val (spendingTx,inputIndex) = TransactionTestUtil.buildSpendingTransaction(creditingTx,p2shScriptSig,outputIndex)
@@ -178,10 +176,11 @@ class CryptoInterpreterTest extends FlatSpec with MustMatchers with CryptoInterp
     val tx = Transaction(TestUtil.transaction,UpdateTransactionInputs(Seq(input)))
 
     val baseProgram = ScriptProgram.toExecutionInProgress(ScriptProgram(tx,TestUtil.scriptPubKey,0,flags))
-    val stack = Seq(OP_2,OP_2,OP_2)
+    val stack = Seq(OP_0,OP_0,OP_1)
     val script = Seq(OP_CHECKMULTISIG)
     val program = ScriptProgram(baseProgram,stack,script)
-    val newProgram = ScriptProgramTestUtil.toExecutedScriptProgram(opCheckMultiSig(program))
+    val executedProgram = opCheckMultiSig(program)
+    val newProgram = ScriptProgramTestUtil.toExecutedScriptProgram(executedProgram)
     newProgram.error must be (Some(ScriptErrorSigNullDummy))
 
   }
