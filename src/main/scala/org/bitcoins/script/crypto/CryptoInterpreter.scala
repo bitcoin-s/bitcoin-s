@@ -182,19 +182,18 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
 
 
   /**
-   * Compares the first signature against each public key until it finds an ECDSA match.
-   * Starting with the subsequent public key, it compares the second signature against each remaining
-   * public key until it finds an ECDSA match. The process is repeated until all signatures have been
-   * checked or not enough public keys remain to produce a successful result.
-   * All signatures need to match a public key.
-   * Because public keys are not checked again if they fail any signature comparison,
-   * signatures must be placed in the scriptSig using the same order as their corresponding public keys
-   * were placed in the scriptPubKey or redeemScript. If all signatures are valid, 1 is returned, 0 otherwise.
-   * Due to a bug, one extra unused value is removed from the stack.
-    *
+    * Compares the first signature against each public key until it finds an ECDSA match.
+    * Starting with the subsequent public key, it compares the second signature against each remaining
+    * public key until it finds an ECDSA match. The process is repeated until all signatures have been
+    * checked or not enough public keys remain to produce a successful result.
+    * All signatures need to match a public key.
+    * Because public keys are not checked again if they fail any signature comparison,
+    * signatures must be placed in the scriptSig using the same order as their corresponding public keys
+    * were placed in the scriptPubKey or redeemScript. If all signatures are valid, 1 is returned, 0 otherwise.
+    * Due to a bug, one extra unused value is removed from the stack.
     * @param program
-   * @return
-   */
+    * @return
+    */
   def opCheckMultiSig(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.isDefined && program.script.head == OP_CHECKMULTISIG, "Script top must be OP_CHECKMULTISIG")
 
@@ -204,16 +203,12 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
       case executedScriptProgram : ExecutedScriptProgram =>
         executedScriptProgram
       case executionInProgressScriptProgram : ExecutionInProgressScriptProgram =>
-        if (executionInProgressScriptProgram.flags.contains(ScriptVerifyNullDummy) &&
-          executionInProgressScriptProgram.txSignatureComponent.scriptSignature.asm.head != OP_0) {
-          logger.warn("Script flag null dummy was set however the first element in the script signature was not an OP_0")
-          ScriptProgram(executionInProgressScriptProgram,ScriptErrorSigNullDummy)
-        } else if (program.stack.size < 1) {
+        if (program.stack.size < 1) {
           logger.error("OP_CHECKMULTISIG requires at least 1 stack elements")
           ScriptProgram(executionInProgressScriptProgram,ScriptErrorInvalidStackOperation)
         } else {
           //these next lines remove the appropriate stack/script values after the signatures have been checked
-          val nPossibleSignatures : ScriptNumber  = BitcoinScriptUtil.numPossibleSignaturesOnStack(program)
+          val nPossibleSignatures : ScriptNumber = BitcoinScriptUtil.numPossibleSignaturesOnStack(program)
           if (nPossibleSignatures < ScriptNumber.zero) {
             logger.error("We cannot have the number of pubkeys in the script be negative")
             ScriptProgram(program,ScriptErrorPubKeyCount)
@@ -242,7 +237,7 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
 
             val pubKeys = pubKeysScriptTokens.map(key => ECFactory.publicKey(key.bytes))
             logger.debug("Public keys on the stack: " + pubKeys)
-
+            logger.debug("Stack without pubkeys: " + stackWithoutPubKeys)
             logger.debug("mRequiredSignatures: " + mRequiredSignatures)
 
             //+1 is for the fact that we have the # of sigs + the script token indicating the # of sigs
@@ -250,18 +245,27 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
               nPossibleSignatures.num.toInt + mRequiredSignatures.num.toInt + 1)
             val signatures = signaturesScriptTokens.map(token => ECFactory.digitalSignature(token.bytes))
             logger.debug("Signatures on the stack: " + signatures)
-            logger.debug("ScriptPubKey: " + program.txSignatureComponent.scriptPubKey)
-            //+1 is for bug in OP_CHECKMULTSIG that requires an extra OP to be pushed onto the stack
-            val stackWithoutPubKeysAndSignatures = stackWithoutPubKeys.tail.slice(mRequiredSignatures.num.toInt + 1, stackWithoutPubKeys.tail.size)
-            val restOfStack = stackWithoutPubKeysAndSignatures
 
+            //this contains the extra Script OP that is required for OP_CHECKMULTISIG
+            val stackWithoutPubKeysAndSignatures = stackWithoutPubKeys.tail.slice(mRequiredSignatures.num.toInt, stackWithoutPubKeys.tail.size)
+            logger.debug("stackWithoutPubKeysAndSignatures: " + stackWithoutPubKeysAndSignatures)
             if (pubKeys.size > ScriptSettings.maxPublicKeysPerMultiSig) {
               logger.error("We have more public keys than the maximum amount of public keys allowed")
               ScriptProgram(executionInProgressScriptProgram, ScriptErrorPubKeyCount)
             } else if (signatures.size > pubKeys.size) {
               logger.error("We have more signatures than public keys inside OP_CHECKMULTISIG")
               ScriptProgram(executionInProgressScriptProgram, ScriptErrorSigCount)
+            } else if (stackWithoutPubKeysAndSignatures.size < 1) {
+              logger.error("OP_CHECKMULTISIG must have a remaining element on the stack afterk execution")
+              //this is because of a bug in bitcoin core for the implementation of OP_CHECKMULTISIG
+              //https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L966
+              ScriptProgram(executionInProgressScriptProgram,ScriptErrorInvalidStackOperation)
+            } else if (ScriptFlagUtil.requireNullDummy(program.flags) &&
+              !(stackWithoutPubKeysAndSignatures.headOption == Some(OP_0))) {
+              logger.warn("Script flag null dummy was set however the first element in the script signature was not an OP_0")
+              ScriptProgram(executionInProgressScriptProgram,ScriptErrorSigNullDummy)
             } else {
+
               //remove the last OP_CODESEPARATOR
               val removedOpCodeSeparatorsScript = removeOpCodeSeparator(executionInProgressScriptProgram)
               val isValidSignatures: TransactionSignatureCheckerResult =
@@ -269,6 +273,8 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
                   removedOpCodeSeparatorsScript, signatures,
                   pubKeys, program.flags, mRequiredSignatures.num)
 
+              //remove the extra op for OP_CHECKMULTISIG from the stack
+              val restOfStack = stackWithoutPubKeysAndSignatures.tail
               isValidSignatures match {
                 case SignatureValidationSuccess =>
                   //means that all of the signatures were correctly encoded and
@@ -305,8 +311,7 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
 
   /**
    * Runs OP_CHECKMULTISIG with an OP_VERIFY afterwards
-    *
-    * @param program
+   * @param program
    * @return
    */
   def opCheckMultiSigVerify(program : ScriptProgram) : ScriptProgram = {

@@ -51,7 +51,7 @@ trait ScriptFlagUtil {
   /**
    * Checks to see if the script flag is set to discourage NOPs that are not in use
    * NOPs are used by soft forks to repurpose NOPs to actual functionality such as checklocktimeverify
-   * See BIP65 for an example of this
+   * See BIP65 for an example of this seq
    * @param flags
    * @return
    */
@@ -83,6 +83,16 @@ trait ScriptFlagUtil {
    * @return
    */
   def requirePushOnly(flags : Seq[ScriptFlag]) : Boolean = flags.contains(ScriptVerifySigPushOnly)
+
+
+  /**
+    * Checks to see if the script flag is set to require that we need a NULLDUMMY to be OP_0 for
+    * OP_CHECKMULTISIG operations
+    * @param flags
+    * @return
+    */
+  def requireNullDummy(flags : Seq[ScriptFlag]) : Boolean = flags.contains(ScriptVerifyNullDummy)
+
 }
 
 
