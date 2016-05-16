@@ -52,6 +52,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
    * @return
    */
   def run(program : PreExecutionScriptProgram) : ScriptResult = {
+
     val scriptSig = program.txSignatureComponent.scriptSignature
     val scriptPubKey = program.txSignatureComponent.scriptPubKey
     val executedProgram : ExecutedScriptProgram = if (ScriptFlagUtil.requirePushOnly(program.flags)

@@ -69,14 +69,33 @@ class LockTimeInterpreterTest extends FlatSpec with MustMatchers with LockTimeIn
     newProgram.error must be (Some(ScriptErrorUnsatisfiedLocktime))
   }
 
-  it must "mark the transaction as valid if the locktime on the tx is < 500000000 && stack top is < 500000000" in {
+
+  it must "mark the transaction as invalid if the stack top item is greater than the tx locktime" in {
     val stack = Seq(ScriptNumber(499999999))
     val script = Seq(OP_CHECKLOCKTIMEVERIFY)
     val txInputAdjustedSequenceNumber = TransactionInput(TestUtil.transaction.inputs(0),0)
-    val txAdjustedSequenceNumber = Transaction(TestUtil.transaction,UpdateTransactionInputs(Seq(txInputAdjustedSequenceNumber)))
+    val txAdjustedSequenceNumber = Transaction(TestUtil.transaction,
+      UpdateTransactionInputs(Seq(txInputAdjustedSequenceNumber)))
     val adjustedLockTimeTx = Transaction(txAdjustedSequenceNumber,0)
-    val baseProgram = ScriptProgram(adjustedLockTimeTx,TestUtil.testProgram.txSignatureComponent.scriptPubKey,
-      TestUtil.testProgram.txSignatureComponent.inputIndex,TestUtil.testProgram.flags)
+    val baseProgram = ScriptProgram.toExecutionInProgress(ScriptProgram(adjustedLockTimeTx,TestUtil.testProgram.txSignatureComponent.scriptPubKey,
+      TestUtil.testProgram.txSignatureComponent.inputIndex,TestUtil.testProgram.flags))
+    val program = ScriptProgram(baseProgram,stack,script)
+    val newProgram = opCheckLockTimeVerify(program)
+    //if an error is hit, the newProgram will be an instance of ExecutedScriptProgram
+    //if an error is not hit it will still be a ExecutionInProgressScriptProgram
+    newProgram.isInstanceOf[ExecutedScriptProgram] must be (true)
+    newProgram.asInstanceOf[ExecutedScriptProgram].error must be (Some(ScriptErrorUnsatisfiedLocktime))
+  }
+
+  it must "mark the transaction as valid if the locktime on the tx is < 500000000 && stack top is < 500000000" in {
+    val stack = Seq(ScriptNumber(0))
+    val script = Seq(OP_CHECKLOCKTIMEVERIFY)
+    val txInputAdjustedSequenceNumber = TransactionInput(TestUtil.transaction.inputs(0),0)
+    val txAdjustedSequenceNumber = Transaction(TestUtil.transaction,
+      UpdateTransactionInputs(Seq(txInputAdjustedSequenceNumber)))
+    val adjustedLockTimeTx = Transaction(txAdjustedSequenceNumber,0)
+    val baseProgram = ScriptProgram.toExecutionInProgress(ScriptProgram(adjustedLockTimeTx,TestUtil.testProgram.txSignatureComponent.scriptPubKey,
+      TestUtil.testProgram.txSignatureComponent.inputIndex,TestUtil.testProgram.flags))
     val program = ScriptProgram(baseProgram,stack,script)
     val newProgram = opCheckLockTimeVerify(program)
     //if an error is hit, the newProgram will be an instance of ExecutedScriptProgram
