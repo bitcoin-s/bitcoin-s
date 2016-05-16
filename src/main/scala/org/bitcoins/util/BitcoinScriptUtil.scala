@@ -90,7 +90,6 @@ trait BitcoinScriptUtil {
    * This can only be called when an OP_CHECKMULTISIG operation is about to be executed
    * on the stack
    * For instance if this was a 2/3 multisignature script, it would return the number 3
- *
    * @param program
    * @return
    */
@@ -108,7 +107,6 @@ trait BitcoinScriptUtil {
   /**
    * Returns the number of required signatures on the stack, for instance if this was a
    * 2/3 multisignature script, it would return the number 2
- *
    * @param program
    * @return
    */
@@ -130,7 +128,6 @@ trait BitcoinScriptUtil {
    * Determines if a script contains only script operations
    * This is equivalent to
    * https://github.com/bitcoin/bitcoin/blob/master/src/script/script.cpp#L213
- *
    * @param script
    * @return
    */
@@ -151,7 +148,6 @@ trait BitcoinScriptUtil {
    * Determines if the token being pushed onto the stack is being pushed by the SMALLEST push operation possible
    * This is equivalent to
    * https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L209
- *
    * @param pushOp the operation that is pushing the data onto the stack
    * @param token the token that is being pushed onto the stack by the pushOp
    * @return
@@ -184,11 +180,11 @@ trait BitcoinScriptUtil {
    * Whenever a script constant is interpreted to a number BIP62 could enforce that number to be encoded
    * in the smallest encoding possible
    * https://github.com/bitcoin/bitcoin/blob/a6a860796a44a2805a58391a009ba22752f64e32/src/script/script.h#L220-L237
- *
    * @param constant
    * @return
    */
   def isShortestEncoding(constant : ScriptConstant) : Boolean = isShortestEncoding(constant.bytes)
+
   /**
    * Whenever a script constant is interpreted to a number BIP62 could enforce that number to be encoded
    * in the smallest encoding possible
