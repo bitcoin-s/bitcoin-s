@@ -23,11 +23,16 @@ trait BitcoinSUtil extends NumberUtil {
 
   def encodeHex(unit : CurrencyUnit) : String = {
     val satoshis = CurrencyUnits.toSatoshis(unit)
-    //TODO: this is ugly, clean this up. Shouldn't have to use .toLong
-    flipHalfByte(encodeHex(BigInt(satoshis.value.toLong).toByteArray).reverse)
+    if (satoshis == CurrencyUnits.negativeSatoshi) {
+      "ffffffffffffffff"
+    } else {
+      //TODO: this is ugly, clean this up. Shouldn't have to use .toLong
+      flipHalfByte(encodeHex(BigInt(satoshis.value.toLong).toByteArray).reverse)
+    }
+
   }
 
-  def encodeHex(byte : Byte) : String = Utils.HEX.encode(Array(byte))
+  def encodeHex(byte : Byte) : String = encodeHex(Seq(byte))
 
   /**
    * Tests if a given string is a hexadecimal string
