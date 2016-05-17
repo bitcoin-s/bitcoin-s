@@ -13,11 +13,13 @@ trait BitcoinSUtil extends NumberUtil {
 
   def hexToBigInt(hex : String) : BigInt = BigInt(hex, 16)
 
-  def decodeHex(hex : String) : List[Byte] = Utils.HEX.decode(hex.trim).toList
+  def decodeHex(hex : String) : Seq[Byte] = {
+    hex.replaceAll("[^0-9A-Fa-f]", "").sliding(2, 2).toArray.map(Integer.parseInt(_, 16).toByte)
+  }
 
-  def encodeHex(bytes : Array[Byte]) : String = Utils.HEX.encode(bytes)
-
-  def encodeHex(bytes : List[Byte]) : String = encodeHex(bytes.toSeq)
+  def encodeHex(bytes : Array[Byte]) : String = {
+    bytes.map("%02x".format(_)).mkString
+  }
 
   def encodeHex(bytes : Seq[Byte]) : String = encodeHex(bytes.toArray)
 
@@ -36,7 +38,6 @@ trait BitcoinSUtil extends NumberUtil {
 
   /**
    * Tests if a given string is a hexadecimal string
- *
    * @param str
    * @return
    */
@@ -53,13 +54,12 @@ trait BitcoinSUtil extends NumberUtil {
 
   def hexToInt(hex : String) : Int = toLong(hex).toInt
 
-  def decodeBase58(base58 : String) : Seq[Byte] = Base58.decode(base58).toList
+  def decodeBase58(base58 : String) : Seq[Byte] = Base58.decode(base58).toSeq
 
   def encodeBase58(bytes : Seq[Byte]) : String = Base58.encode(bytes.toArray)
 
   /**
    * Flips the endianess of the give hex string
- *
    * @param hex
    * @return
    */
@@ -67,7 +67,6 @@ trait BitcoinSUtil extends NumberUtil {
 
   /**
    * Flips the endianess of the given sequence of bytes
- *
    * @param bytes
    * @return
    */
@@ -76,11 +75,12 @@ trait BitcoinSUtil extends NumberUtil {
    * Flips the hex chars in a hex strings
    * Example: abcd would become badc
    * https://stackoverflow.com/questions/34799611/easiest-way-to-flip-the-endianness-of-a-byte-in-scala/34802270#34802270
- *
    * @param hex
    * @return
    */
   def flipHalfByte(hex : String) = hex.grouped(2).map(_.reverse).mkString
+
+
 }
 
 object BitcoinSUtil extends BitcoinSUtil

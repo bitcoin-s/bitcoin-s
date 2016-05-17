@@ -4,7 +4,6 @@ package org.bitcoins.core.crypto
  * Created by chris on 2/16/16.
  */
 sealed trait ECPrivateKey extends BaseECKey {
-  import org.bitcoinj.core._
 
   /**
    * Derives the public for a the private key

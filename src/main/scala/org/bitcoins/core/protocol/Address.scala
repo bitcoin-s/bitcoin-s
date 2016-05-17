@@ -1,15 +1,11 @@
 package org.bitcoins.core.protocol
 
-import org.bitcoinj.core.{VersionedChecksummedBytes, Base58, Utils}
 import org.bitcoins.core.config.{RegTest, TestNet3, MainNet}
 import org.bitcoins.core.util.{Factory, BitcoinSUtil}
 
 import scala.util.{Failure, Success, Try}
 
-case class AddressInfo(bitcoinAddress: BitcoinAddress, n_tx: Long, total_received: Long, total_sent: Long,
-  final_balance: Long)
-
-sealed abstract class Address( val value : String)
+sealed abstract class Address(val value : String)
 
 sealed case class BitcoinAddress(override val value: String) extends Address(value ) {
   require(BitcoinAddress.validate(value), "Bitcoin address was invalid " + value)
@@ -35,11 +31,12 @@ object BitcoinAddress {
    */
   def convertToAssetAddress(address : BitcoinAddress) : AssetAddress = {
     val underlying : String  = address.value
-    val base58decodeChecked : Array[Byte] = Base58.decodeChecked(underlying)
+    val base58decodeChecked : Seq[Byte] = BitcoinSUtil.decodeBase58(underlying)
     require (
       base58decodeChecked.size == 21
     )
-    AssetAddress(new VersionedChecksummedBytes(0x13, base58decodeChecked){}.toString())
+    val str = BitcoinSUtil.encodeBase58(Seq(0x13.toByte) ++ BitcoinSUtil.decodeHex(underlying))
+    AssetAddress(str)
   }
 
   /**
@@ -50,7 +47,7 @@ object BitcoinAddress {
    */
   def p2shAddress(address : String) : Boolean = {
     try {
-      val base58decodeChecked : Array[Byte] = Base58.decodeChecked(address)
+      val base58decodeChecked : Seq[Byte] = BitcoinSUtil.decodeBase58(address)
       val firstByte = base58decodeChecked(0)
       ((firstByte == MainNet.p2shNetworkByte || firstByte == TestNet3.p2shNetworkByte || RegTest.p2shNetworkByte == firstByte)
         && base58decodeChecked.size == 21)
@@ -76,7 +73,7 @@ object BitcoinAddress {
    */
   def p2pkh(address : String) : Boolean = {
     try {
-      val base58decodeChecked : Array[Byte] = Base58.decodeChecked(address)
+      val base58decodeChecked : Seq[Byte] = BitcoinSUtil.decodeBase58(address)
       val firstByte = base58decodeChecked(0)
 
       ((firstByte == MainNet.p2pkhNetworkByte || firstByte == TestNet3.p2pkhNetworkByte ||
@@ -100,7 +97,7 @@ object AssetAddress {
   def validate(assetAddress : String) : Boolean = {
     //asset addresses must have the one byte namespace equivalent to 19
     //which ends up being 'a' in the ascii character set
-    val base58DecodeChecked : Try[Array[Byte]] = Try(Base58.decodeChecked(assetAddress))
+    val base58DecodeChecked : Try[Seq[Byte]] = Try(BitcoinSUtil.decodeBase58(assetAddress))
     base58DecodeChecked match {
       case Success(bytes) =>
         if (bytes == null) false
@@ -117,12 +114,13 @@ object AssetAddress {
    */
   def convertToBitcoinAddress(assetAddress : AssetAddress) = {
     val underlying : String = assetAddress.value
-    val base58decodeChecked : Array[Byte] = Base58.decodeChecked(underlying)
+    val base58decodeChecked : Seq[Byte] = BitcoinSUtil.decodeBase58(underlying)
 
     require(base58decodeChecked.size == 22)
 
     val slice = base58decodeChecked.slice(2, base58decodeChecked.length)
-    BitcoinAddress(new VersionedChecksummedBytes(base58decodeChecked(1), slice){}.toString())
+    val str = BitcoinSUtil.encodeBase58(slice)
+    BitcoinAddress(str)
   }
 }
 
@@ -132,7 +130,6 @@ object Address extends Factory[Address] {
     * Takes in a string to check if it is an address
     * if it is it creates the address
     * if not it throws a runtime exception
-    *
     * @param str
     * @return
     */
