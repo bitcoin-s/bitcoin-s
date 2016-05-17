@@ -37,12 +37,8 @@ trait BitcoinSUtil extends NumberUtil {
    * @return
    */
   def isHex(str : String) = {
-    try {
-      java.lang.Long.parseLong(str,16)
-      true
-    } catch {
-      case _ : Throwable => false
-    }
+    //check valid characters & hex strings have to have an even number of chars
+    str.matches("^[0-9a-f]+$") && (str.size % 2 == 0)
   }
 
   def hexToLong(hex : String) : Long = toLong(hex)

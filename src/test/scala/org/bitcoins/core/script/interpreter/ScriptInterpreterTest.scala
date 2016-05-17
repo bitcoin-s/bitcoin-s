@@ -27,9 +27,7 @@ import scala.io.Source
 class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterpreter with BitcoinSLogger {
 
   "ScriptInterpreter" must "evaluate all the scripts from the bitcoin core script_tests.json" in {
-
-
-
+    
     val source = Source.fromURL(getClass.getResource("/script_tests.json"))
 
 
@@ -37,7 +35,7 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterp
 /*    val lines =
         """
           | [ ["NOP 0x01 1", "HASH160 0x14 0xda1745e9b549bd0bfa1a569971c77eba30cd5a4b EQUAL", "P2SH,STRICTENC", "SIG_PUSHONLY", "Tests for Script.IsPushOnly()"]]
-   """.stripMargin*/
+""".stripMargin*/
     val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n" finally source.close()
     val json = lines.parseJson
     val testCasesOpt : Seq[Option[CoreTestCase]] = json.convertTo[Seq[Option[CoreTestCase]]]

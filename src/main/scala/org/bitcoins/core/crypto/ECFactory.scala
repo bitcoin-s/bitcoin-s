@@ -86,13 +86,19 @@ trait ECFactory extends Factory[BaseECKey] {
   }
 
   /**
-    * Takes in the r and s component of a digital signature and gives back a ECDigital signature object
+    * Takes in the r and s component of a digital signature and gives back a ECDigitalSignature object
+    * The ECDigitalSignature object complies with strict der encoding as per BIP62
+    * note: That the hash type for the signature CANNOT be added to the digital signature
     * @param r the r component of the digital signature
     * @param s the s component of the digital signature
     * @return
     */
-  def digitalSignature(r : BigInteger, s : BigInteger) : ECDigitalSignature = {
-    ???
+  def digitalSignature(r : BigInt, s : BigInt) : ECDigitalSignature = {
+    val rsSize = r.toByteArray.size + s.toByteArray.size
+    val totalSize = 4 + rsSize
+    val bytes : Seq[Byte] = Seq(0x30.toByte, totalSize.toByte, 0x2.toByte, r.toByteArray.size.toByte) ++
+      r.toByteArray.toSeq ++ Seq(0x2.toByte, s.toByteArray.size.toByte) ++ s.toByteArray.toSeq
+    digitalSignature(bytes)
   }
 
 

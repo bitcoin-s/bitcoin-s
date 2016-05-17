@@ -93,7 +93,7 @@ trait ScriptParser extends Factory[List[ScriptToken]] with BitcoinSLogger {
               case false => List(BytesToPushOntoStack(bytes.size))
             }
 
-            loop(t, bytes.toList ++  bytesToPushOntoStack.flatMap(_.bytes) ++  accum)
+            loop(t, bytes.toList ++ bytesToPushOntoStack.flatMap(_.bytes) ++  accum)
           }
         //if we see a byte constant in the form of "0x09adb"
         case h :: t if (h.size > 1 && h.substring(0,2) == "0x") =>
