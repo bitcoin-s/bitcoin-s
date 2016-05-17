@@ -75,7 +75,7 @@ trait ScriptParser extends Factory[List[ScriptToken]] with BitcoinSLogger {
           logger.debug("Found a string constant")
           val strippedQuotes = h.replace("'","")
           if (strippedQuotes.size == 0) {
-            loop(t, OP_0.bytes ++ accum)
+            loop(t, OP_0.bytes.toList ++ accum)
           } else {
             val bytes : Seq[Byte] = BitcoinSUtil.decodeHex(BitcoinSUtil.flipEndianess(strippedQuotes.getBytes.toList))
 
@@ -97,28 +97,28 @@ trait ScriptParser extends Factory[List[ScriptToken]] with BitcoinSLogger {
           }
         //if we see a byte constant in the form of "0x09adb"
         case h :: t if (h.size > 1 && h.substring(0,2) == "0x") =>
-          loop(t,BitcoinSUtil.decodeHex(h.substring(2,h.size).toLowerCase).reverse ++ accum)
+          loop(t,BitcoinSUtil.decodeHex(h.substring(2,h.size).toLowerCase).toList.reverse ++ accum)
         //skip the empty string
         case h :: t if (h == "") => loop(t,accum)
-        case h :: t if (h == "0") => loop(t, OP_0.bytes ++ accum)
+        case h :: t if (h == "0") => loop(t, OP_0.bytes.toList ++ accum)
 
 
         case h :: t if (ScriptOperation.fromString(h).isDefined) =>
           logger.debug("Founding a script operation in string form i.e. NOP or ADD")
           val op = ScriptOperation.fromString(h).get
-          loop(t,op.bytes ++ accum)
+          loop(t,op.bytes.toList ++ accum)
         case h :: t if (tryParsingLong(h)) =>
           logger.debug("Found a decimal number")
           val hexLong = BitcoinSUtil.flipEndianess(BitcoinSUtil.longToHex(h.toLong))
           val bytesToPushOntoStack = BytesToPushOntoStack(hexLong.size / 2)
           //convert the string to int, then convert to hex
-          loop(t, BitcoinSUtil.decodeHex(hexLong) ++ bytesToPushOntoStack.bytes ++ accum)
+          loop(t, BitcoinSUtil.decodeHex(hexLong).toList ++ bytesToPushOntoStack.bytes.toList ++ accum)
         //means that it must be a BytesToPushOntoStack followed by a script constant
         case h :: t =>
           logger.debug("Generic h :: t")
           //find the size of the string in bytes
           val bytesToPushOntoStack = BytesToPushOntoStack(h.size / 2)
-          loop(t, BitcoinSUtil.decodeHex(BitcoinSUtil.flipEndianess(h)) ++ bytesToPushOntoStack.bytes ++  accum)
+          loop(t, BitcoinSUtil.decodeHex(BitcoinSUtil.flipEndianess(h)).toList ++ bytesToPushOntoStack.bytes.toList ++ accum)
         case Nil => accum
       }
     }
