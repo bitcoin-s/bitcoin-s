@@ -4,11 +4,11 @@ import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.util.{Factory, BitcoinSUtil}
 import java.math.BigInteger
 import java.security.SecureRandom
-
 import org.bitcoins.config.NetworkParameters
 import org.spongycastle.crypto.AsymmetricCipherKeyPair
 import org.spongycastle.crypto.generators.ECKeyPairGenerator
 import org.spongycastle.crypto.params.{ECKeyGenerationParameters, ECPrivateKeyParameters}
+import org.bitcoins.core.util.{Base58, Factory, BitcoinSUtil}
 
 /**
  * Created by chris on 2/16/16.
@@ -125,8 +125,12 @@ trait ECFactory extends Factory[BaseECKey] {
    * @return
    */
   def fromBase58ToPrivateKey(base58 : String) : ECPrivateKey = {
-    val decodedBase58 = Base58.decode(base58)
-    ECFactory.privateKey(decodedBase58)
+    val decodedBase58 : Seq[Byte] = Base58.decode(base58)
+    //Drop(1) will drop the network byte. The last 5 bytes are dropped included the checksum (4 bytes), and 0x01 byte that
+    //is appended to compressed keys (which we implemented as the default option).
+    val trim = decodedBase58.drop(1).dropRight(5)
+    val privateKeyBytesToHex = BitcoinSUtil.encodeHex(trim)
+    ECFactory.privateKey(privateKeyBytesToHex)
   }
 
 }

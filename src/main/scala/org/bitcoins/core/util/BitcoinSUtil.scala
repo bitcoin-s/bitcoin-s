@@ -2,8 +2,6 @@ package org.bitcoins.core.util
 
 import org.bitcoinj.core.{Base58, Utils}
 import org.bitcoins.core.currency.{CurrencyUnits, CurrencyUnit}
-
-import scala.collection.mutable.ArrayBuffer
 import scala.math.BigInt
 
 /**
@@ -44,10 +42,6 @@ trait BitcoinSUtil extends NumberUtil {
   def hexToLong(hex : String) : Long = toLong(hex)
 
   def hexToInt(hex : String) : Int = toLong(hex).toInt
-
-  def decodeBase58(base58 : String) : Seq[Byte] = Base58.decode(base58).toSeq
-
-  def encodeBase58(bytes : Seq[Byte]) : String = Base58.encode(bytes.toArray)
 
   /**
    * Flips the endianess of the give hex string

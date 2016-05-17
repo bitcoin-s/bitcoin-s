@@ -2,7 +2,7 @@ package org.bitcoins.core.crypto
 
 import org.bitcoinj.core.ECKey.ECDSASignature
 import org.bitcoinj.core.Sha256Hash
-import org.bitcoins.core.util.BitcoinSUtil
+import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil}
 import org.scalatest.{FlatSpec, MustMatchers}
 /**
  * Created by chris on 2/29/16.

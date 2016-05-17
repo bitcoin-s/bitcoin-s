@@ -1,12 +1,12 @@
 package org.bitcoins.core.protocol
 
-import org.bitcoins.core.util.TestUtil
+import org.bitcoins.core.util.{BitcoinSLogger, TestUtil}
 import org.scalatest.{FlatSpec, MustMatchers}
 
 /**
  * Created by chris on 3/23/15.
  */
-class AddressTest extends FlatSpec with MustMatchers {
+class AddressTest extends FlatSpec with MustMatchers with BitcoinSLogger {
   val assetAddress = TestUtil.assetAddress
   "Addresses" must "be able to convert back and forth between a Bitcoin Address & an asset address" in {
     val convertedOnce = BitcoinAddress.convertToAssetAddress(TestUtil.bitcoinAddress)
