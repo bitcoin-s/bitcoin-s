@@ -66,8 +66,8 @@ trait ScriptParser extends Factory[List[ScriptToken]] with BitcoinSLogger {
 
     @tailrec
     def loop(operations : List[String], accum : List[Byte]) : List[Byte] = {
-      logger.debug("Attempting to parse: " + operations.headOption)
-      logger.debug("Accum: " + accum)
+/*      logger.debug("Attempting to parse: " + operations.headOption)
+      logger.debug("Accum: " + accum)*/
       operations match {
         //for parsing strings like 'Az', need to remove single quotes
         //example: https://github.com/bitcoin/bitcoin/blob/master/src/test/data/script_valid.json#L24
