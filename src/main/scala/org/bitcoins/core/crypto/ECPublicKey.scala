@@ -14,7 +14,6 @@ import scala.util.{Failure, Success, Try}
 trait ECPublicKey extends BaseECKey with BitcoinSLogger {
   /**
    * The elliptic curve used by bitcoin
- *
    * @return
    */
   private def curve = CryptoParams.curve
