@@ -1,5 +1,6 @@
 package org.bitcoins.protocol.transaction
 
+import org.bitcoins.protocol.script.ScriptSignature
 import org.bitcoins.util.TestUtil
 import org.scalatest.{FlatSpec, MustMatchers}
 
@@ -28,6 +29,10 @@ class TransactionInputFactoryTest extends FlatSpec with MustMatchers {
     val input = TestUtil.txInput.head
     val newInput = TransactionInput(input,EmptyTransactionOutPoint)
     newInput.previousOutput must be (EmptyTransactionOutPoint)
+  }
 
+  it must "create a coinbase input if a we give an empty transaction outpoint" in {
+    val input = TransactionInput(EmptyTransactionOutPoint,ScriptSignature.empty, TransactionConstants.sequence)
+    input.isInstanceOf[CoinbaseInput] must be (true)
   }
 }

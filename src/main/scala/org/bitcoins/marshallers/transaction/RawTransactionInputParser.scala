@@ -4,7 +4,7 @@ import org.bitcoins.marshallers.RawBitcoinSerializer
 import org.bitcoins.marshallers.script.RawScriptSignatureParser
 import org.bitcoins.protocol.{CompactSizeUInt}
 import org.bitcoins.protocol.script.ScriptSignature
-import org.bitcoins.protocol.transaction.{TransactionInputImpl, TransactionOutPoint, TransactionInput}
+import org.bitcoins.protocol.transaction.{TransactionOutPoint, TransactionInput}
 import org.bitcoins.util.{BitcoinSUtil}
 import org.slf4j.LoggerFactory
 
@@ -49,7 +49,7 @@ trait RawTransactionInputParser extends RawBitcoinSerializer[Seq[TransactionInpu
         val sequenceNumberFlippedEndianess = BitcoinSUtil.flipEndianess(sequenceNumberHex)
         val sequenceNumber : Long = java.lang.Long.parseLong(sequenceNumberFlippedEndianess,16)
         logger.debug("Parsed sequence number: " + sequenceNumber)
-        val txInput = TransactionInputImpl(outPoint,scriptSig,sequenceNumber)
+        val txInput = TransactionInput(outPoint,scriptSig,sequenceNumber)
 
         val newAccum =  txInput :: accum
         val bytesToBeParsed = bytes.slice(lastInputByte, bytes.size)
