@@ -14,14 +14,10 @@ trait BitcoinSUtil extends NumberUtil {
   def hexToBigInt(hex : String) : BigInt = BigInt(hex, 16)
 
   def decodeHex(hex : String) : Seq[Byte] = {
-    hex.replaceAll("[^0-9A-Fa-f]", "").sliding(2, 2).toArray.map(Integer.parseInt(_, 16).toByte)
+    hex.replaceAll("[^0-9A-Fa-f]", "").sliding(2, 2).toArray.map(Integer.parseInt(_, 16).toByte).toList
   }
 
-  def encodeHex(bytes : Array[Byte]) : String = {
-    bytes.map("%02x".format(_)).mkString
-  }
-
-  def encodeHex(bytes : Seq[Byte]) : String = encodeHex(bytes.toArray)
+  def encodeHex(bytes : Seq[Byte]) : String = bytes.map("%02x".format(_)).mkString
 
   def encodeHex(unit : CurrencyUnit) : String = {
     val satoshis = CurrencyUnits.toSatoshis(unit)
@@ -31,7 +27,6 @@ trait BitcoinSUtil extends NumberUtil {
       //TODO: this is ugly, clean this up. Shouldn't have to use .toLong
       flipHalfByte(encodeHex(BigInt(satoshis.value.toLong).toByteArray).reverse)
     }
-
   }
 
   def encodeHex(byte : Byte) : String = encodeHex(Seq(byte))
@@ -43,7 +38,7 @@ trait BitcoinSUtil extends NumberUtil {
    */
   def isHex(str : String) = {
     try {
-      decodeHex(str.trim)
+      java.lang.Long.parseLong(str,16)
       true
     } catch {
       case _ : Throwable => false
