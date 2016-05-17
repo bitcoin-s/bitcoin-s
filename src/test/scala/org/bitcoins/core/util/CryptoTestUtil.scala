@@ -13,7 +13,7 @@ trait CryptoTestUtil {
   def privateKeyHex = BitcoinSUtil.encodeHex(privateKeyBytes)
   def bitcoinjDumpedPrivateKey = new DumpedPrivateKey(BitcoinJTestUtil.params,privateKeyBase58)
   def bitcoinjPrivateKey = bitcoinjDumpedPrivateKey.getKey
-  def privateKey = ECFactory.fromBase58ToPrivateKey(privateKeyBase58,TestNet3)
+  def privateKey = ECFactory.fromBase58ToPrivateKey(privateKeyBase58)
 
 }
 

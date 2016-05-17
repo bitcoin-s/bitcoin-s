@@ -1,7 +1,7 @@
 package org.bitcoins.core.crypto
 
 import org.bitcoinj.core.Sha256Hash
-import org.bitcoins.core.util.{BitcoinSUtil}
+import org.bitcoins.core.util.{BitcoinSUtil, BitcoinSLogger}
 import java.math.BigInteger
 import org.spongycastle.crypto.digests.SHA256Digest
 import org.spongycastle.crypto.params.ECPrivateKeyParameters
@@ -10,7 +10,7 @@ import org.spongycastle.crypto.signers.{ECDSASigner, HMacDSAKCalculator}
 /**
  * Created by chris on 2/16/16.
  */
-trait BaseECKey {
+trait BaseECKey extends BitcoinSLogger {
   def hex : String
 
   def bytes : Seq[Byte] = BitcoinSUtil.decodeHex(hex)
@@ -22,11 +22,17 @@ trait BaseECKey {
    * @return the digital signature
    */
   def sign(bytes : Seq[Byte], signingKey : BaseECKey) : ECDigitalSignature = {
+    logger.debug("1")
     val signer: ECDSASigner = new ECDSASigner(new HMacDSAKCalculator(new SHA256Digest))
+    logger.debug("2")
     val privKey: ECPrivateKeyParameters = new ECPrivateKeyParameters(new BigInteger(bytes.toArray), CryptoParams.curve)
+    logger.debug("3")
     signer.init(true, privKey)
+    logger.debug("4")
     val components : Array[BigInteger] = signer.generateSignature(bytes.toArray)
+    logger.debug("5")
     val (r,s) = (components(0),components(1))
+    logger.debug("6")
     ECFactory.digitalSignature(r,s)
 /*    val bitcoinjKey = ECKey.fromPrivate(signingKey.bytes.toArray)
     val sha256Hash = Sha256Hash.wrap(bytes.toArray)

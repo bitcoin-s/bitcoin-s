@@ -15,7 +15,7 @@ class ECFactoryTest extends FlatSpec with MustMatchers {
     val privateKeyBase58 = CryptoTestUtil.privateKeyBase58
     val bitcoinjDumpedPrivateKey = new org.bitcoinj.core.DumpedPrivateKey(BitcoinJTestUtil.params,privateKeyBase58)
     val bitcoinjPrivateKey = bitcoinjDumpedPrivateKey.getKey
-    val privateKey = ECFactory.fromBase58ToPrivateKey(privateKeyBase58,TestNet3)
+    val privateKey = ECFactory.fromBase58ToPrivateKey(privateKeyBase58)
 
     privateKey.hex must be (bitcoinjPrivateKey.getPrivateKeyAsHex)
 

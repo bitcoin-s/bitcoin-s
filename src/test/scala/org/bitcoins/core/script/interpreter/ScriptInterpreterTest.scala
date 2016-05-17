@@ -27,7 +27,7 @@ import scala.io.Source
 class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterpreter with BitcoinSLogger {
 
   "ScriptInterpreter" must "evaluate all the scripts from the bitcoin core script_tests.json" in {
-    
+
     val source = Source.fromURL(getClass.getResource("/script_tests.json"))
 
 
