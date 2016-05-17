@@ -8,7 +8,7 @@ import org.scalatest.{FlatSpec, MustMatchers}
  */
 class TransactionOutPointTest extends FlatSpec with MustMatchers {
   "TransactionOutPoint" must "define an empty transaction outpoint" in {
-    EmptyTransactionOutPoint.txId must be ("")
+    EmptyTransactionOutPoint.txId must be ("0000000000000000000000000000000000000000000000000000000000000000")
     EmptyTransactionOutPoint.vout must be (-1)
   }
 

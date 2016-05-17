@@ -8,7 +8,16 @@ import org.bitcoins.util.Factory
  *
  */
 sealed trait TransactionOutPoint extends TransactionElement {
+  /**
+    * The transaction id for the crediting transaction for this input
+    * @return
+    */
   def txId : String
+
+  /**
+    * The output index in the parent transaction for the output we are spending
+    * @return
+    */
   def vout : Int
 
   //https://bitcoin.org/en/developer-reference#outpoint
@@ -18,26 +27,28 @@ sealed trait TransactionOutPoint extends TransactionElement {
 }
 
 case object EmptyTransactionOutPoint extends TransactionOutPoint {
-  def txId : String = ""
+  def txId : String = "0000000000000000000000000000000000000000000000000000000000000000"
   def vout = -1
 }
 
 object TransactionOutPoint extends Factory[TransactionOutPoint] {
 
+  private sealed case class TransactionOutPointImpl(txId : String, vout : Int) extends TransactionOutPoint
   /**
-    * Creates a transaction outpoint from a TransactionOutput & it's Transaction
- *
+    * Creates a transaction outpoint from a TransactionOutput & it's parent transaction
     * @param output
     * @return
     */
-  def factory(output : TransactionOutput,parentTransaction : Transaction) : TransactionOutPoint = {
+  private def factory(output : TransactionOutput, parentTransaction : Transaction) : TransactionOutPoint = {
     val indexOfOutput = parentTransaction.outputs.indexOf(output)
     if (indexOfOutput == -1) throw new RuntimeException("This output is not contained in the parent transaction")
-    else TransactionOutPointImpl(parentTransaction.txId,indexOfOutput)
+    else factory(parentTransaction.txId,indexOfOutput)
   }
 
-  def factory(txId : String, index : Int) = {
-    TransactionOutPointImpl(txId, index)
+  private def factory(txId : String, index : Int) = {
+    if (txId == EmptyTransactionOutPoint.txId && index == EmptyTransactionOutPoint.vout) {
+      EmptyTransactionOutPoint
+    } else TransactionOutPointImpl(txId, index)
   }
 
   def fromBytes(bytes : Seq[Byte]) : TransactionOutPoint = RawTransactionOutPointParser.read(bytes)
@@ -48,4 +59,3 @@ object TransactionOutPoint extends Factory[TransactionOutPoint] {
   def apply(txId : String, index: Int) : TransactionOutPoint = factory(txId,index)
 }
 
-sealed case class TransactionOutPointImpl(txId : String, vout : Int) extends TransactionOutPoint
