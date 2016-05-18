@@ -20,6 +20,7 @@ trait BaseECKey extends BitcoinSLogger {
     * @return
     */
   def compressed : Boolean = true
+
   /**
    * Signs a given sequence of bytes with the signingKey
    * @param bytes the bytes to be signed
@@ -32,7 +33,7 @@ trait BaseECKey extends BitcoinSLogger {
       new BigInteger(signingKey.bytes.toArray), CryptoParams.curve)
     signer.init(true, privKey)
     val components : Array[BigInteger] = signer.generateSignature(signingKey.bytes.toArray)
-    val (r,s) = (components(0),components(1))
+    val (s,r) = (components(0),components(1))
     ECFactory.digitalSignature(r,s)
   }
 
