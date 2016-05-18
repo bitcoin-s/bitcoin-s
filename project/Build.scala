@@ -11,7 +11,7 @@ object BitcoinSCoreBuild extends Build {
   val appDependencies = Seq(
     "org.scalatest" % "scalatest_2.11" % "2.2.0",
     ("org.bitcoinj" % "bitcoinj-core" % "0.13.3" % "test").exclude("org.slf4j", "slf4j-api"),
-    "com.madgag.spongycastle" % "core" % "1.50.0.0",
+    "com.madgag.spongycastle" % "core" % "1.51.0.0",
     "org.slf4j" % "slf4j-api" % slf4jV /*% "provided"*/,
     "io.spray" %%  "spray-json" % "1.3.0" withSources() withJavadoc(),
      "ch.qos.logback" % "logback-classic" % logbackV

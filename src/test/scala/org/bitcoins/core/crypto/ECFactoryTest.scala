@@ -41,6 +41,12 @@ class ECFactoryTest extends FlatSpec with MustMatchers {
     ECFactory.privateKey(privKeyBytes).bytes must be (privKeyBytes)
   }
 
+  it must "create a private key from its hex representation" in {
+    val privateKeyHex = "180cb41c7c600be951b5d3d0a7334acc7506173875834f7a6c4c786a28fcbb19"
+    val key: ECPrivateKey = ECFactory.privateKey(privateKeyHex)
+    key.hex must be (privateKeyHex)
+  }
+
   it must "create a digital signature from it's r,s components" in {
     //from the tx 44e504f5b7649d215be05ad9f09026dee95201244a3b218013c504a6a49a26ff
     val rawDigitalSignature = "3044022040f91c48f4011bf2e2edb6621bfa8fb802241de939cb86f1872c99c580ef0fe402204fc27388bc525e1b655b5f5b35f9d601d28602432dd5672f29e0a47f5b8bbb26"

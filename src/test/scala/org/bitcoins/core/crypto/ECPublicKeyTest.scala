@@ -1,5 +1,7 @@
 package org.bitcoins.core.crypto
 
+import java.math.BigInteger
+
 import org.bitcoinj.core.Sha256Hash
 import org.bitcoins.core.util.BitcoinSUtil
 import org.scalatest.{FlatSpec, MustMatchers}
@@ -13,6 +15,9 @@ class ECPublicKeyTest extends FlatSpec with MustMatchers {
 
     val privateKeyHex = "180cb41c7c600be951b5d3d0a7334acc7506173875834f7a6c4c786a28fcbb19"
     val key: ECPrivateKey = ECFactory.privateKey(privateKeyHex)
+    require(key.hex == privateKeyHex)
+    require(new BigInteger(key.bytes.toArray) != 0)
+    println(new BigInteger(key.bytes.toArray))
     val signature: ECDigitalSignature = key.sign(Sha256Hash.ZERO_HASH.getBytes.toSeq)
 
     /* val isValid : Boolean = key.publicKey.verify(Sha256Hash.ZERO_HASH.getBytes.toSeq,signature)
