@@ -11,21 +11,18 @@ trait TransactionElement {
 
   /**
    * The size of the TransactionElement in bytes.
- *
    * @return
    */
   def size : Int = bytes.size
 
   /**
    * The hexadecimal representation of the transaction element
- *
    * @return
    */
   def hex : String
 
   /**
    * The byte representation of the transaction element
- *
    * @return
    */
   def bytes : Seq[Byte] = BitcoinSUtil.decodeHex(hex)
