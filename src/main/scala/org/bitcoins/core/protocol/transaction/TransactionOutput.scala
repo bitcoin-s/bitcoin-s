@@ -1,7 +1,7 @@
 package org.bitcoins.core.protocol.transaction
 
 import org.bitcoins.core.currency.{CurrencyUnits, CurrencyUnit, Satoshis}
-import org.bitcoins.core.marshallers.transaction.{RawTransactionOutputParser, TransactionElement}
+import org.bitcoins.core.serializers.transaction.RawTransactionOutputParser
 import org.bitcoins.core.protocol.CompactSizeUInt
 
 import org.bitcoins.core.protocol.script.{ScriptPubKey}

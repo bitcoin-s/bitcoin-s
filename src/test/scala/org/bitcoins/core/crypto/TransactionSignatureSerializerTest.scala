@@ -6,7 +6,7 @@ import org.bitcoinj.core.{DumpedPrivateKey, Sha256Hash, Utils}
 import org.bitcoinj.core.Transaction.SigHash
 import org.bitcoinj.params.TestNet3Params
 import org.bitcoinj.script.{ScriptBuilder, ScriptChunk, ScriptOpCodes}
-import org.bitcoins.core.marshallers.script.ScriptParser
+import org.bitcoins.core.serializers.script.ScriptParser
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.ScriptOperationFactory

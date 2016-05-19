@@ -1,6 +1,6 @@
 package org.bitcoins.core.protocol.transaction.testprotocol
 
-import org.bitcoins.core.marshallers.script.ScriptParser
+import org.bitcoins.core.serializers.script.ScriptParser
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint}
 import org.bitcoins.core.script.constant.ScriptToken
