@@ -1,9 +1,9 @@
 package org.bitcoins.core.script.interpreter.testprotocol
 
 
-import org.bitcoins.core.marshallers.script.ScriptParser
-import org.bitcoins.core.marshallers.script.ScriptPubKeyMarshaller.ScriptPubKeyFormatter
-import org.bitcoins.core.marshallers.script.ScriptSignatureMarshaller.ScriptSignatureFormatter
+import org.bitcoins.core.serializers.script.ScriptParser
+import org.bitcoins.core.serializers.script.ScriptPubKeySerializer.ScriptPubKeyFormatter
+import org.bitcoins.core.serializers.script.ScriptSignatureSerializer.ScriptSignatureFormatter
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.script.constant.{ScriptOperation, ScriptToken}
 import org.bitcoins.core.script.result.ScriptResult

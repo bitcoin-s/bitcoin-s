@@ -2,7 +2,7 @@ package org.bitcoins.core.protocol.script
 
 
 import org.bitcoins.core.crypto.ECFactory
-import org.bitcoins.core.marshallers.script.RawScriptSignatureParser
+import org.bitcoins.core.serializers.script.RawScriptSignatureParser
 import org.bitcoins.core.script.constant._
 import org.bitcoins.core.script.crypto.{SIGHASH_SINGLE, SIGHASH_ALL}
 import org.bitcoins.core.util.{BitcoinScriptUtil, TransactionTestUtil, TestUtil}

@@ -1,6 +1,6 @@
 package org.bitcoins.core.protocol.transaction
 
-import org.bitcoins.core.marshallers.transaction.{RawTransactionInputParser, TransactionElement}
+import org.bitcoins.core.serializers.transaction.RawTransactionInputParser
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptSignature}
 import org.bitcoins.core.script.constant.ScriptToken

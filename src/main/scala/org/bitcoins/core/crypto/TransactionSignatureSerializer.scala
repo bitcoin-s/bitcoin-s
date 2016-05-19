@@ -1,8 +1,8 @@
 package org.bitcoins.core.crypto
 
 import org.bitcoins.core.currency.CurrencyUnits
-import org.bitcoins.core.marshallers.RawBitcoinSerializerHelper
-import org.bitcoins.core.marshallers.transaction.RawTransactionOutputParser
+import org.bitcoins.core.serializers.RawBitcoinSerializerHelper
+import org.bitcoins.core.serializers.transaction.RawTransactionOutputParser
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.constant.ScriptToken

@@ -1,14 +1,14 @@
 package org.bitcoins.core.protocol.script
 
 import org.bitcoins.core.crypto.{ECFactory, ECPublicKey}
-import org.bitcoins.core.marshallers.script.{ScriptParser, RawScriptPubKeyParser}
-import org.bitcoins.core.marshallers.transaction.TransactionElement
+import org.bitcoins.core.serializers.script.{RawScriptPubKeyParser, ScriptParser}
 import org.bitcoins.core.protocol._
+import org.bitcoins.core.protocol.transaction.TransactionElement
 import org.bitcoins.core.script.bitwise.{OP_EQUAL, OP_EQUALVERIFY}
 import org.bitcoins.core.script.constant._
-import org.bitcoins.core.script.crypto.{OP_CHECKMULTISIGVERIFY, OP_CHECKMULTISIG, OP_CHECKSIG, OP_HASH160}
+import org.bitcoins.core.script.crypto.{OP_CHECKMULTISIG, OP_CHECKMULTISIGVERIFY, OP_CHECKSIG, OP_HASH160}
 import org.bitcoins.core.script.stack.OP_DUP
-import org.bitcoins.core.util.{Factory, BitcoinScriptUtil, BitcoinSLogger}
+import org.bitcoins.core.util.{BitcoinSLogger, BitcoinScriptUtil, Factory}
 
 /**
  * Created by chris on 12/26/15.

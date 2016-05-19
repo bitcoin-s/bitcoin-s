@@ -1,6 +1,6 @@
 package org.bitcoins.core.script.control
 
-import org.bitcoins.core.marshallers.script.ScriptParser
+import org.bitcoins.core.serializers.script.ScriptParser
 import org.bitcoins.core.script.ScriptProgram
 import org.bitcoins.core.script.arithmetic.OP_ADD
 import org.bitcoins.core.script.bitwise.OP_EQUAL
