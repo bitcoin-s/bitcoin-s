@@ -19,7 +19,6 @@ class ECPrivateKeyTest extends FlatSpec with MustMatchers {
   it must "derive the same public from a private key as bitcoinj" in {
     val bitcoinjPublicKeyBytes = CryptoTestUtil.bitcoinjPrivateKey.getPubKey
     CryptoTestUtil.privateKey.publicKey.hex must be (BitcoinSUtil.encodeHex(bitcoinjPublicKeyBytes))
-
   }
 
 }

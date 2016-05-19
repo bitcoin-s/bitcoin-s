@@ -7,7 +7,7 @@ import org.scalatest.{FlatSpec, MustMatchers}
 /**
  * Created by chris on 2/29/16.
  */
-class BaseECKeyTest extends FlatSpec with MustMatchers  {
+class BaseECKeyTest extends FlatSpec with MustMatchers {
 
   "BaseECKey" must "sign a arbitrary piece of data" in {
     //follows this bitcoinj test case
@@ -34,4 +34,5 @@ class BaseECKeyTest extends FlatSpec with MustMatchers  {
     val signature = key1.sign("180cb41c7c600be951b5d3d0a7334acc7506173875834f7a6c4c786a28fcbb19",key2)
     key2.publicKey.verify("180cb41c7c600be951b5d3d0a7334acc7506173875834f7a6c4c786a28fcbb19", signature) must be (true)
   }
+
 }

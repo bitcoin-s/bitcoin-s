@@ -23,17 +23,17 @@ trait BaseECKey extends BitcoinSLogger {
 
   /**
    * Signs a given sequence of bytes with the signingKey
-   * @param bytes the bytes to be signed
+   * @param dataToSign the bytes to be signed
    * @param signingKey the key to sign the bytes with
    * @return the digital signature
    */
-  def sign(bytes : Seq[Byte], signingKey : BaseECKey) : ECDigitalSignature = {
+  def sign(dataToSign : Seq[Byte], signingKey : BaseECKey) : ECDigitalSignature = {
     val signer: ECDSASigner = new ECDSASigner(new HMacDSAKCalculator(new SHA256Digest()))
     val privKey: ECPrivateKeyParameters = new ECPrivateKeyParameters(
       new BigInteger(signingKey.bytes.toArray), CryptoParams.curve)
     signer.init(true, privKey)
-    val components : Array[BigInteger] = signer.generateSignature(signingKey.bytes.toArray)
-    val (s,r) = (components(0),components(1))
+    val components : Array[BigInteger] = signer.generateSignature(dataToSign.toArray)
+    val (r,s) = (components(0),components(1))
     ECFactory.digitalSignature(r,s)
   }
 
