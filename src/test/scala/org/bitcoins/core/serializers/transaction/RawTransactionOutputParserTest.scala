@@ -1,5 +1,5 @@
 
-package org.bitcoins.core.marshallers.transaction
+package org.bitcoins.core.serializers.transaction
 
 
 import org.bitcoins.core.currency.{Bitcoins, CurrencyUnits, Satoshis}

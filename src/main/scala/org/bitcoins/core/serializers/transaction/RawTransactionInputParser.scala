@@ -1,7 +1,7 @@
-package org.bitcoins.core.marshallers.transaction
+package org.bitcoins.core.serializers.transaction
 
-import org.bitcoins.core.marshallers.RawBitcoinSerializer
-import org.bitcoins.core.marshallers.script.RawScriptSignatureParser
+import org.bitcoins.core.serializers.RawBitcoinSerializer
+import org.bitcoins.core.serializers.script.RawScriptSignatureParser
 import org.bitcoins.core.protocol.{CompactSizeUInt}
 import org.bitcoins.core.protocol.script.ScriptSignature
 import org.bitcoins.core.protocol.transaction.{TransactionOutPoint, TransactionInput}

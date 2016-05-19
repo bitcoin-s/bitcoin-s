@@ -1,6 +1,6 @@
-package org.bitcoins.core.marshallers.transaction
+package org.bitcoins.core.serializers.transaction
 
-import org.bitcoins.core.marshallers.RawBitcoinSerializer
+import org.bitcoins.core.serializers.RawBitcoinSerializer
 import org.bitcoins.core.protocol.transaction.{ TransactionOutPoint}
 import org.bitcoins.core.util.BitcoinSUtil
 

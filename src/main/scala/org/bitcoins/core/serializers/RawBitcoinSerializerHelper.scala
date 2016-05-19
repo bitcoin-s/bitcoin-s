@@ -1,4 +1,4 @@
-package org.bitcoins.core.marshallers
+package org.bitcoins.core.serializers
 
 /**
  * Created by chris on 2/18/16.

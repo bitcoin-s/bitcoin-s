@@ -1,4 +1,4 @@
-package org.bitcoins.core.marshallers.script
+package org.bitcoins.core.serializers.script
 
 import org.bitcoins.core.protocol.script.ScriptSignature
 import org.bitcoins.core.script.constant._

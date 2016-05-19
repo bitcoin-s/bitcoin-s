@@ -1,6 +1,6 @@
-package org.bitcoins.core.marshallers.script
+package org.bitcoins.core.serializers.script
 
-import org.bitcoins.core.marshallers.RawBitcoinSerializer
+import org.bitcoins.core.serializers.RawBitcoinSerializer
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.script.constant.{ScriptConstant, ScriptToken}
 import org.bitcoins.core.script.crypto.{OP_CHECKMULTISIGVERIFY, OP_CHECKMULTISIG}

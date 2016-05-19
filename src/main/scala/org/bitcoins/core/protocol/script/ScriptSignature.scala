@@ -1,12 +1,11 @@
 package org.bitcoins.core.protocol.script
 
-import org.bitcoins.core.crypto.{EmptyDigitalSignature, ECPublicKey, ECFactory, ECDigitalSignature}
-import org.bitcoins.core.marshallers.script.{RawScriptSignatureParser, RawScriptPubKeyParser, ScriptParser}
-import org.bitcoins.core.marshallers.transaction.TransactionElement
-
+import org.bitcoins.core.crypto.{ECDigitalSignature, ECFactory, ECPublicKey, EmptyDigitalSignature}
+import org.bitcoins.core.protocol.transaction.TransactionElement
+import org.bitcoins.core.serializers.script.{RawScriptPubKeyParser, RawScriptSignatureParser, ScriptParser}
 import org.bitcoins.core.script.constant._
-import org.bitcoins.core.script.crypto.{SIGHASH_ALL, OP_CHECKMULTISIG, HashType, HashTypeFactory}
-import org.bitcoins.core.util.{Factory, BitcoinScriptUtil, BitcoinSLogger, BitcoinSUtil}
+import org.bitcoins.core.script.crypto.{HashType, HashTypeFactory, OP_CHECKMULTISIG, SIGHASH_ALL}
+import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil, BitcoinScriptUtil, Factory}
 import org.slf4j.LoggerFactory
 
 import scala.util.{Failure, Success, Try}

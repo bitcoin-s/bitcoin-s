@@ -1,7 +1,7 @@
 package org.bitcoins.core.util
 
-import org.bitcoins.core.marshallers.script.{RawScriptSignatureParser, RawScriptPubKeyParser}
-import org.bitcoins.core.marshallers.transaction.{RawTransactionInputParser, RawTransactionParser}
+import org.bitcoins.core.serializers.script.{RawScriptSignatureParser, RawScriptPubKeyParser}
+import org.bitcoins.core.serializers.transaction.{RawTransactionInputParser, RawTransactionParser}
 import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction.{EmptyTransaction, Transaction}
