@@ -79,7 +79,6 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
    */
   def opCheckSig(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.isDefined && program.script.head == OP_CHECKSIG, "Script top must be OP_CHECKSIG")
-
     program match {
       case preExecutionScriptProgram : PreExecutionScriptProgram =>
         opCheckSig(ScriptProgram.toExecutionInProgress(preExecutionScriptProgram))
