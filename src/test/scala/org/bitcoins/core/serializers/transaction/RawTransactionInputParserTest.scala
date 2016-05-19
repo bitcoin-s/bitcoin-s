@@ -1,4 +1,4 @@
-package org.bitcoins.core.marshallers.transaction
+package org.bitcoins.core.serializers.transaction
 
 
 import org.bitcoins.core.protocol.transaction.{TransactionConstants, TransactionInput}

@@ -1,4 +1,4 @@
-package org.bitcoins.core.marshallers
+package org.bitcoins.core.serializers
 
 import org.bitcoins.core.util.BitcoinSUtil
 

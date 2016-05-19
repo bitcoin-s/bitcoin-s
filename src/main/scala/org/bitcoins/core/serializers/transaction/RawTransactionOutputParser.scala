@@ -1,8 +1,8 @@
-package org.bitcoins.core.marshallers.transaction
+package org.bitcoins.core.serializers.transaction
 
 import org.bitcoins.core.currency.{CurrencyUnits, Satoshis}
-import org.bitcoins.core.marshallers.RawBitcoinSerializer
-import org.bitcoins.core.marshallers.script.{RawScriptPubKeyParser, ScriptParser}
+import org.bitcoins.core.serializers.RawBitcoinSerializer
+import org.bitcoins.core.serializers.script.{RawScriptPubKeyParser, ScriptParser}
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.protocol.transaction.{TransactionOutputImpl, TransactionOutput}
 import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil}

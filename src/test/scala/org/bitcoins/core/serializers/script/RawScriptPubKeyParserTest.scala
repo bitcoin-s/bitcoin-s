@@ -1,5 +1,5 @@
 
-package org.bitcoins.core.marshallers.script
+package org.bitcoins.core.serializers.script
 
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.script.bitwise.OP_EQUALVERIFY

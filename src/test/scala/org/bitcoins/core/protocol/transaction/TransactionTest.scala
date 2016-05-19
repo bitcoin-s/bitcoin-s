@@ -1,6 +1,6 @@
 package org.bitcoins.core.protocol.transaction
 
-import org.bitcoins.core.marshallers.transaction.RawTransactionParser
+import org.bitcoins.core.serializers.transaction.RawTransactionParser
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.testprotocol.CoreTransactionTestCase
 import org.bitcoins.core.script.ScriptProgram

@@ -1,6 +1,6 @@
 package org.bitcoins.core.protocol.transaction
 
-import org.bitcoins.core.marshallers.transaction.{RawTransactionParser, RawTransactionInputParser}
+import org.bitcoins.core.serializers.transaction.{RawTransactionParser, RawTransactionInputParser}
 import org.bitcoins.core.util.Factory
 
 /**
