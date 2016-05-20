@@ -11,7 +11,6 @@ trait RawBitcoinSerializer[T] extends RawBitcoinSerializerHelper {
   /**
    * Reads a hexadecimal value and transforms it into the native
    * scala type T
- *
    * @param hex
    * @return
    */
@@ -19,7 +18,6 @@ trait RawBitcoinSerializer[T] extends RawBitcoinSerializerHelper {
 
   /**
    * Reads in bytes and transforms it into the approriate scala type T
- *
    * @param bytes
    * @return
    */
@@ -27,7 +25,6 @@ trait RawBitcoinSerializer[T] extends RawBitcoinSerializerHelper {
 
   /**
    * Reads in bytes and transforms it into the approriate scala type T
- *
    * @param bytes
    * @return
    */
@@ -35,7 +32,6 @@ trait RawBitcoinSerializer[T] extends RawBitcoinSerializerHelper {
 
   /**
    * Takes a type T and writes it into the appropriate hexadecimal serialization for type T
- *
    * @param t
    * @return
    */
