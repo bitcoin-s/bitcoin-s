@@ -19,7 +19,6 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
 
   /**
    * The input is hashed twice: first with SHA-256 and then with RIPEMD-160.
- *
    * @param program
    * @return
    */
@@ -31,8 +30,7 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
 
   /**
    * The input is hashed using RIPEMD-160.
-    *
-    * @param program
+   * @param program
    * @return
    */
   def opRipeMd160(program : ScriptProgram) : ScriptProgram = {
@@ -42,8 +40,7 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
 
   /**
    * The input is hashed using SHA-256.
-    *
-    * @param program
+   * @param program
    * @return
    */
   def opSha256(program : ScriptProgram) : ScriptProgram = {
@@ -53,8 +50,7 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
 
   /**
    * The input is hashed two times with SHA-256.
-    *
-    * @param program
+   * @param program
    * @return
    */
   def opHash256(program : ScriptProgram) : ScriptProgram = {
@@ -64,8 +60,7 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
 
   /**
    * The input is hashed using SHA-1.
-    *
-    * @param program
+   * @param program
    * @return
    */
   def opSha1(program : ScriptProgram) : ScriptProgram = {
@@ -79,7 +74,6 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
    * The signature used by OP_CHECKSIG must be a valid signature for this hash and public key.
    * If it is, 1 is returned, 0 otherwise.
    * https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L818
- *
    * @param program
    * @return
    */
@@ -139,7 +133,6 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
 
   /**
     * Runs OP_CHECKSIG with an OP_VERIFY afterwards
- *
     * @param program
     * @return
     */
@@ -165,7 +158,6 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
   /**
    * All of the signature checking words will only match signatures to the data
    * after the most recently-executed OP_CODESEPARATOR.
- *
    * @param program
    * @return
    */
@@ -194,7 +186,6 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
     * signatures must be placed in the scriptSig using the same order as their corresponding public keys
     * were placed in the scriptPubKey or redeemScript. If all signatures are valid, 1 is returned, 0 otherwise.
     * Due to a bug, one extra unused value is removed from the stack.
- *
     * @param program
     * @return
     */
@@ -315,7 +306,6 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
 
   /**
    * Runs OP_CHECKMULTISIG with an OP_VERIFY afterwards
- *
    * @param program
    * @return
    */
@@ -380,7 +370,6 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
    * This is a higher order function designed to execute a hash function on the stack top of the program
    * For instance, we could pass in CryptoUtil.sha256 function as the 'hashFunction' argument, which would then
    * apply sha256 to the stack top
- *
    * @param program the script program whose stack top needs to be hashed
    * @param hashFunction the hash function which needs to be used on the stack top (sha256,ripemd160,etc..)
    * @return
@@ -400,7 +389,6 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
   /**
     * Removes the OP_CODESEPARATOR in the original script according to
     * the last code separator index in the script
- *
     * @param program
     * @return
     */
