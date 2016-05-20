@@ -19,7 +19,6 @@ trait Block {
     */
   def blockHeader : BlockHeader
 
-
   /**
     * The total number of transactions in this block,
     * including the coinbase transaction.
