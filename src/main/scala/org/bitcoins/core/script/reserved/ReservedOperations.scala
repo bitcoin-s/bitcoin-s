@@ -73,10 +73,10 @@ case object OP_NOP1 extends NOP {
 case object OP_NOP3 extends NOP {
   override def opCode = 178
 }
-case object OP_NOP4 extends NOP {
+case object OP_WITHDRAWPROOFVERIFY extends NOP {
   override def opCode = 179
 }
-case object OP_NOP5 extends NOP {
+case object OP_REORGPROOFVERIFY extends NOP {
   override def opCode = 180
 }
 case object OP_NOP6 extends NOP {
