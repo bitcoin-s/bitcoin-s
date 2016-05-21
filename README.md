@@ -3,6 +3,9 @@
 # Bitcoin-S-Sidechains
 
 This is a base implementation for a sidechain in Scala. 
+There are currently two branches under development on this repository
+  - Mainchain - this is a slightly modified version of bitcoin to support the validation of SPV proofs. This is a soft fork change as described in section 3.2 in the sidechains [whitepaper](https://blockstream.com/wp-content/uploads/2014/10/sidechains.pdf)
+  - Alpha - this is the actual sidechain implementation where all new op codes, experimental features etc. happen
 
 # What are sidechains? 
 Sidechains are a blockchain that is pegged to another blockchain. An example of this could be a sidechain designed to facilitate sports betting that is pegged to the bitcoin blockchain. For more information on the design of sidechains please see the [whitepaper](https://blockstream.com/wp-content/uploads/2014/10/sidechains.pdf). 
@@ -10,6 +13,7 @@ Sidechains are a blockchain that is pegged to another blockchain. An example of 
 # Goal
 This implementation of a sidechain is designed to be a base implementation for which other sidechains (and their features) can be built off of. For the most part, it is going to mirror the [elements project](https://github.com/ElementsProject/elements). This project aims to provide a solid base implementation on the JVM. 
 # TODO: 
+  - Implement verification of SPV proofs inside of the mainchain branch
   - Implement REORGPROOFVERIFY & WITHDRAWPROOFVERIFY
   - [Implement disabled op codes in Bitcoin (OP_OR, OP_AND, OP_XOR...)](https://www.elementsproject.org/elements/opcodes/)
   - [Signed blocks](https://www.elementsproject.org/elements/signed-blocks/)
