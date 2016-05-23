@@ -53,6 +53,16 @@ trait BitcoinSUtil extends NumberUtil {
 
   def hexToInt(hex : String) : Int = toLong(hex).toInt
 
+  /**
+    * Converts a two character hex string to its byte representation
+    * @param hex
+    * @return
+    */
+  def hexToByte(hex : String): Byte = {
+    require(hex.size == 2)
+    BitcoinSUtil.decodeHex(hex).head
+  }
+
   def decodeBase58(base58 : String) : Seq[Byte] = Base58.decode(base58).toList
 
   def encodeBase58(bytes : Seq[Byte]) : String = Base58.encode(bytes.toArray)
@@ -81,6 +91,8 @@ trait BitcoinSUtil extends NumberUtil {
    * @return
    */
   def flipHalfByte(hex : String) = hex.grouped(2).map(_.reverse).mkString
+
+
 }
 
 object BitcoinSUtil extends BitcoinSUtil

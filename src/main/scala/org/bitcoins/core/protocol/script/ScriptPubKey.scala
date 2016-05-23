@@ -44,7 +44,6 @@ trait MultiSignatureScriptPubKey extends ScriptPubKey {
 
   /**
    * Returns the amount of required signatures for this multisignature script pubkey output
- *
    * @return
    */
   def requiredSigs : Long = {
@@ -65,7 +64,6 @@ trait MultiSignatureScriptPubKey extends ScriptPubKey {
 
   /**
    * The maximum amount of signatures for this multisignature script pubkey output
- *
    * @return
    */
   def maxSigs : Long = {
