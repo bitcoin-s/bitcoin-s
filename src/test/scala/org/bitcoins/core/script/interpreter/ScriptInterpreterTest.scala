@@ -3,21 +3,25 @@ package org.bitcoins.core.script.interpreter
 import java.io.File
 
 import com.sun.org.apache.bcel.internal.generic.NOP
-import org.bitcoins.core.protocol.script.ScriptPubKey
+import org.bitcoins.core.protocol.script.{EmptyScriptSignature, ScriptPubKey, ScriptSignature}
 import org.bitcoins.core.script.ScriptProgram
 import org.bitcoins.core.script.bitwise.{OP_EQUAL, OP_EQUALVERIFY}
 import org.bitcoins.core.script.constant._
 import org.bitcoins.core.script.control.OP_VERIFY
-import org.bitcoins.core.script.crypto.{OP_CHECKSIG, OP_HASH160}
-import org.bitcoins.core.script.flag.ScriptFlagFactory
+import org.bitcoins.core.script.crypto.{OP_CHECKSIG, OP_HASH160, SIGHASH_ALL}
+import org.bitcoins.core.script.flag.{ScriptFlagFactory, ScriptVerifyP2SH}
 import org.bitcoins.core.script.interpreter.testprotocol.{CoreTestCase, CoreTestCaseProtocol}
 import org.bitcoins.core.script.reserved.OP_NOP
 import org.bitcoins.core.script.stack.OP_DUP
-import org.bitcoins.core.util.{BitcoinSLogger, TestUtil, TransactionTestUtil}
+import org.bitcoins.core.util._
 import org.scalatest.{FlatSpec, MustMatchers}
 import org.slf4j.LoggerFactory
 import CoreTestCaseProtocol._
+import org.bitcoins.core.crypto.{ECFactory, TransactionSignatureSerializer}
+import org.bitcoins.core.policy.Policy
+import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.protocol.transaction.testprotocol.CoreTransactionTestCase
+import org.bitcoins.core.script.result.ScriptOk
 import spray.json._
 
 import scala.io.Source
@@ -28,8 +32,6 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterp
 
   "ScriptInterpreter" must "evaluate all the scripts from the bitcoin core script_tests.json" in {
 
-
-
     val source = Source.fromURL(getClass.getResource("/script_tests.json"))
 
 
@@ -37,12 +39,12 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterp
 /*    val lines =
         """
           | [[
-          |  "0x47 0x3044022003fef42ed6c7be8917441218f525a60e2431be978e28b7aca4d7a532cc413ae8022067a1f82c74e8d69291b90d148778405c6257bbcfc2353cc38a3e1f22bf44254601 0x23 0x210279be667ef9dcbbac54a06295ce870b07029bfcdb2dce28d959f2815b16f81798ac",
-          |  "HASH160 0x14 0x23b0ad3477f2178bc0b3eed26e4e6316f4e83aa1 EQUAL",
-          |  "P2SH",
-          |  "EVAL_FALSE",
-          |  "P2SH(P2PK), bad redeemscript"
-          | ]]
+          |    "0x48 0x3045022100e58c2307fb6569d0f25b4375f1074e48592bfc62d423bdc8f016365c980c0ae602204984523016f6320dc275cb90c6c1be80b4c9753de2e9fe19f2e5290844587da101 0x20 0x0228b426496c6a96846561a40b241ead0e03fe217d52de26cf2e707f0f181999fb 0x19 0x76a914364ddb17f9997cd91984c897eb5c0123f0a4b43f88ac",
+          |    "HASH160 0x14 0x8a24f3c75f6d401a977bc63f854cc5d7dadfa7de EQUAL",
+          |    "P2SH",
+               "OK",
+          |    "P2SH(P2PKH)"
+          |]]
    """.stripMargin*/
     val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n" finally source.close()
     val json = lines.parseJson
@@ -68,4 +70,5 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterp
       }
     }
   }
+
 }
