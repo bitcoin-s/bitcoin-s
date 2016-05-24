@@ -1,14 +1,15 @@
 package org.bitcoins.core.protocol.transaction
 
+import org.bitcoins.core.protocol.NetworkElement
 import org.bitcoins.core.serializers.transaction.RawTransactionParser
-import org.bitcoins.core.util.{Factory, BitcoinSUtil, CryptoUtil}
+import org.bitcoins.core.util.{BitcoinSUtil, CryptoUtil, Factory}
 
 /**
  * Created by chris on 7/14/15.
  */
 
 
-sealed trait Transaction extends TransactionElement {
+sealed trait Transaction extends NetworkElement {
   /**
     * The sha256(sha256(tx)) of this transaction
  *
