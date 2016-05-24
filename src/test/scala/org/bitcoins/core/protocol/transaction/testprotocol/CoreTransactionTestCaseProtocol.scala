@@ -1,11 +1,12 @@
 package org.bitcoins.core.protocol.transaction.testprotocol
 
+import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.serializers.script.ScriptParser
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint}
 import org.bitcoins.core.script.constant.ScriptToken
 import org.bitcoins.core.script.flag.{ScriptFlag, ScriptFlagFactory}
-import org.bitcoins.core.util.BitcoinSLogger
+import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil}
 import spray.json.{DefaultJsonProtocol, JsArray, JsValue, RootJsonFormat}
 
 /**
@@ -50,7 +51,7 @@ object CoreTransactionTestCaseProtocol extends DefaultJsonProtocol with BitcoinS
   def parseOutPointsAndScriptPubKeys(array : JsArray) : Seq[(TransactionOutPoint,ScriptPubKey)] = {
     val result = array.elements.map {
       case array : JsArray =>
-        val prevoutHash = array.elements.head.convertTo[String]
+        val prevoutHash = DoubleSha256Digest(BitcoinSUtil.decodeHex(array.elements.head.convertTo[String]))
         val prevoutIndex = array.elements(1).convertTo[Int]
         val outPoint = TransactionOutPoint(prevoutHash,prevoutIndex)
         val scriptTokens : Seq[ScriptToken] = ScriptParser.fromString(array.elements(2).convertTo[String])

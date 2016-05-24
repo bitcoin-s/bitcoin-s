@@ -336,10 +336,10 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
    * @param hashFunction the hash function which needs to be used on the stack top (sha256,ripemd160,etc..)
    * @return
    */
-  private def executeHashFunction(program : ScriptProgram, hashFunction : List[Byte] => List[Byte]) : ScriptProgram = {
+  private def executeHashFunction(program : ScriptProgram, hashFunction : List[Byte] => HashDigest) : ScriptProgram = {
     if (program.stack.headOption.isDefined) {
       val stackTop = program.stack.head
-      val hash = ScriptConstant(hashFunction(stackTop.bytes))
+      val hash = ScriptConstant(hashFunction(stackTop.bytes).bytes)
       ScriptProgram(program, hash :: program.stack.tail, program.script.tail)
     } else {
       logger.error("We must have the stack top defined to execute a hash function")

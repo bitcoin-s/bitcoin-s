@@ -1,5 +1,6 @@
 package org.bitcoins.core.protocol.transaction
 
+import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.protocol.NetworkElement
 import org.bitcoins.core.serializers.transaction.RawTransactionParser
 import org.bitcoins.core.util.{BitcoinSUtil, CryptoUtil, Factory}
@@ -15,7 +16,7 @@ sealed trait Transaction extends NetworkElement {
  *
     * @return
     */
-  def txId : String = BitcoinSUtil.encodeHex(CryptoUtil.doubleSHA256(hex).reverse)
+  def txId : DoubleSha256Digest = DoubleSha256Digest(CryptoUtil.doubleSHA256(hex).bytes.reverse)
 
   /**
     * The version number for this transaction
@@ -62,7 +63,8 @@ sealed trait Transaction extends NetworkElement {
 }
 
 case object EmptyTransaction extends Transaction {
-  override def txId = "0000000000000000000000000000000000000000000000000000000000000000"
+  override def txId = DoubleSha256Digest(
+    BitcoinSUtil.decodeHex("0000000000000000000000000000000000000000000000000000000000000000"))
   override def version = TransactionConstants.version
   override def inputs = Seq()
   override def outputs = Seq()
