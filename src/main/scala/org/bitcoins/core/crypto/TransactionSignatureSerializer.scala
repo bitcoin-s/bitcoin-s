@@ -27,7 +27,7 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
  *
    * @return
    */
-  private def errorHash : Seq[Byte] = BitcoinSUtil.decodeHex("0100000000000000000000000000000000000000000000000000000000000000")
+  private def errorHash : DoubleSha256Digest = DoubleSha256Digest(BitcoinSUtil.decodeHex("0100000000000000000000000000000000000000000000000000000000000000"))
 
   /**
    * Serializes a transaction to be signed by an ECKey
@@ -101,7 +101,7 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
 
           // Bitcoin Core's bug is that SignatureHash was supposed to return a hash and on this codepath it
           // actually returns the constant "1" to indicate an error, which is never checked for. Oops.
-          errorHash
+          errorHash.bytes
         } else {
           val sigHashSingleTx = sigHashSingle(txWithInputSigsRemoved,inputIndex)
           sigHashSingleTx.bytes ++ sigHashBytes
@@ -143,7 +143,7 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
    * @param hashType
    * @return
    */
-  def hashForSignature(spendingTransaction : Transaction, inputIndex : Int, script : Seq[ScriptToken], hashType : HashType) : Seq[Byte] = {
+  def hashForSignature(spendingTransaction : Transaction, inputIndex : Int, script : Seq[ScriptToken], hashType : HashType) : DoubleSha256Digest = {
     //these first two checks are in accordance with behavior in bitcoin core
     //https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L1112-L1123
     if (inputIndex >= spendingTransaction.inputs.size) {
