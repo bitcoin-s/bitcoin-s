@@ -1,5 +1,8 @@
 package org.bitcoins.core.protocol.blockchain
 
+import org.bitcoins.core.protocol.NetworkElement
+import org.bitcoins.core.util.BitcoinSLogger
+
 /**
   * Created by chris on 5/19/16.
   * Nodes collect new transactions into a block, hash them into a hash tree,
@@ -13,13 +16,14 @@ package org.bitcoins.core.protocol.blockchain
   * Bitcoin Core implementation:
   * https://github.com/bitcoin/bitcoin/blob/master/src/primitives/block.h#L20
   */
-trait BlockHeader {
+sealed trait BlockHeader extends NetworkElement with BitcoinSLogger {
 
   /**
     * The block version number indicates which set of block validation rules to follow.
     * See the list of block versions below.
     * See BIP9 for more information on what version number signify
     * https://github.com/bitcoin/bips/blob/master/bip-0009.mediawiki
+    *
     * @return the version number for this block
     */
   def version : Long
@@ -28,6 +32,7 @@ trait BlockHeader {
   /**
     * A SHA256(SHA256()) hash in internal byte order of the previous block’s header.
     * This ensures no previous block can be changed without also changing this block’s header.
+    *
     * @return the previous block's hash
     */
   def previousBlockHash : String
@@ -37,6 +42,7 @@ trait BlockHeader {
     * The merkle root is derived from the hashes of all transactions included in this block,
     * ensuring that none of those transactions can be modified without modifying the header.
     * https://bitcoin.org/en/developer-reference#merkle-trees
+    *
     * @return the merkle root of the merkle tree
     */
   def merkleRootHash : String
@@ -46,6 +52,7 @@ trait BlockHeader {
     * The block time is a Unix epoch time when the miner started hashing the header (according to the miner).
     * Must be greater than or equal to the median time of the previous 11 blocks.
     * Full nodes will not accept blocks with headers more than two hours in the future according to their clock.
+    *
     * @return the time when the miner started solving the block
     */
   def time : Long
@@ -54,6 +61,7 @@ trait BlockHeader {
     * An encoded version of the target threshold this block’s header hash must be less than or equal to.
     * See the nBits format described below.
     * https://bitcoin.org/en/developer-reference#target-nbits
+    *
     * @return
     */
   def nBits : Long
@@ -62,6 +70,7 @@ trait BlockHeader {
     * An arbitrary number miners change to modify the header hash in order to produce a hash below the target threshold.
     * If all 32-bit values are tested, the time can be updated or the coinbase
     * transaction can be changed and the merkle root updated.
+    *
     * @return the nonce used to try and solve a block
     */
   def nonce : Long

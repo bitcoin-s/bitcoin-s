@@ -1,5 +1,11 @@
 package org.bitcoins.core.protocol.blockchain
 
+import org.bitcoins.core.currency.CurrencyUnit
+import org.bitcoins.core.protocol.{CompactSizeUInt}
+import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptSignature}
+import org.bitcoins.core.protocol.transaction.{Transaction, TransactionConstants, TransactionInput, TransactionOutput}
+import org.bitcoins.core.script.constant.{BytesToPushOntoStack, ScriptConstant, ScriptNumber}
+import org.bitcoins.core.script.crypto.OP_CHECKSIG
 import org.bitcoins.core.util.BitcoinSUtil
 
 /**
@@ -56,6 +62,52 @@ sealed trait ChainParams {
     * @return
     */
   def dnsSeeds : Seq[String]
+
+
+  /**
+    * Creates the genesis block for this blockchain
+    * Mimics this function in bitcoin core
+    * https://github.com/bitcoin/bitcoin/blob/master/src/chainparams.cpp#L51
+    * @param time the time when the miner started hashing the block header
+    * @param nonce the nonce to mine the block
+    * @param nBits An encoded version of the target threshold this block’s header hash must be less than or equal to.
+    * @param version the block version
+    * @param amount the block reward for the gensis block (50 BTC in Bitcoin)
+    * @return the newly minted genesis block
+    */
+  def createGenesisBlock(time : Long, nonce : Long, nBits : Long, version : Int, amount : CurrencyUnit) : Block = {
+    val timestamp = "The Times 03/Jan/2009 Chancellor on brink of second bailout for banks"
+    val genesisOutputScript = ScriptPubKey.fromAsm(
+      Seq(ScriptConstant("04678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51e" +
+        "c112de5c384df7ba0b8d578a4c702b6bf11d5f"), OP_CHECKSIG))
+    createGenesisBlock(timestamp,genesisOutputScript,time,nonce,nBits,version,amount)
+  }
+
+  /**
+    * @param timestamp a piece of data to signify when this block was first created - satoshi used an article headline
+    * @param scriptPubKey the scriptPubKey that needs to be satisfied in able to spend the genesis block reward
+    * @param time the time when the miner started hashing the block header
+    * @param nonce the nonce used to mine the block
+    * @param nBits An encoded version of the target threshold this block's header hash must be less than or equal to
+    * @param version the block version
+    * @param amount the block reward for the genesis block (50 BTC in Bitcoin)
+    * @return the newly minted genesis block
+    */
+  def createGenesisBlock(timestamp : String, scriptPubKey : ScriptPubKey, time : Long, nonce : Long, nBits : Long,
+                         version : Int, amount : CurrencyUnit) : Block = {
+    val timestampHex = BitcoinSUtil.flipEndianess(timestamp.map(_.toByte))
+    val scriptSignature = ScriptSignature.fromAsm(Seq(ScriptNumber(486604799), BytesToPushOntoStack(4),
+      ScriptConstant(timestampHex)))
+    val input = TransactionInput(scriptSignature)
+    val output = TransactionOutput(amount,scriptPubKey)
+    val tx = Transaction(TransactionConstants.version,Seq(input), Seq(output), TransactionConstants.lockTime)
+    val prevBlockHash = "00000000000000"
+    //TODO: Replace this with a merkle root hash computed algorithmically
+    val merkleRootHash = "4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b"
+    val genesisBlockHeader = BlockHeader(version,prevBlockHash,merkleRootHash,time,nBits,nonce)
+    val genesisBlock = Block(genesisBlockHeader,CompactSizeUInt(1,1),Seq(tx))
+    genesisBlock
+  }
 }
 
 

@@ -18,7 +18,7 @@ trait RawBlockSerializer extends RawBitcoinSerializer[Block] {
   def read(bytes : List[Byte]) : Block = ???
 
   /**
-    * Takes in a block and converts it a hexadecimal string
+    * Takes in a block and converts it to a hexadecimal string
     * @param block the block that needs to be converted to a hexadecimal string
     * @return the hexadecimal string representing a block
     */
