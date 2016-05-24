@@ -1,5 +1,6 @@
 package org.bitcoins.core.protocol.transaction
 
+import org.bitcoins.core.protocol.NetworkElement
 import org.bitcoins.core.serializers.transaction.RawTransactionOutPointParser
 import org.bitcoins.core.util.Factory
 
@@ -7,7 +8,7 @@ import org.bitcoins.core.util.Factory
  * Created by chris on 12/26/15.
  *
  */
-sealed trait TransactionOutPoint extends TransactionElement {
+sealed trait TransactionOutPoint extends NetworkElement {
   /**
     * The transaction id for the crediting transaction for this input
  *
