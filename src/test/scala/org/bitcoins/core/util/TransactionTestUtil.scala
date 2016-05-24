@@ -5,7 +5,6 @@ import org.bitcoinj.core.DumpedPrivateKey
 import org.bitcoins.core.config.TestNet3
 import org.bitcoins.core.crypto.{ECFactory, ECPublicKey}
 import org.bitcoins.core.currency.CurrencyUnits
-import org.bitcoins.core.protocol.{CompactSizeUIntImpl}
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.slf4j.LoggerFactory

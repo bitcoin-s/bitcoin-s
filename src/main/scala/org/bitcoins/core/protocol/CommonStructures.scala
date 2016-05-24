@@ -11,13 +11,11 @@ trait CompactSizeUInt {
 
   /**
    * The number parsed from VarInt
- *
    * @return
    */
   def num : Long
   /**
-   * The length of the VarInt in  bytes
- *
+   * The length of the VarInt in bytes
    * @return
    */
   def size : Long
@@ -33,7 +31,14 @@ trait CompactSizeUInt {
 
 }
 
-case class CompactSizeUIntImpl(num : Long, size : Long) extends CompactSizeUInt
+object CompactSizeUInt {
+  private sealed case class CompactSizeUIntImpl(num : Long, size : Long) extends CompactSizeUInt
+  def apply(num : Long, size : Long) : CompactSizeUInt = {
+    CompactSizeUIntImpl(num,size)
+  }
+}
+
+
 
 
 

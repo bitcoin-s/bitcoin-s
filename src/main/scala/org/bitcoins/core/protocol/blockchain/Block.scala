@@ -1,7 +1,9 @@
 package org.bitcoins.core.protocol.blockchain
 
-import org.bitcoins.core.protocol.CompactSizeUInt
+import org.bitcoins.core.protocol.{CompactSizeUInt, NetworkElement}
 import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.core.serializers.blockchain.RawBlockSerializer
+import org.bitcoins.core.util.{BitcoinSLogger, CryptoUtil, Factory}
 
 /**
   * Created by chris on 5/19/16.
@@ -11,7 +13,7 @@ import org.bitcoins.core.protocol.transaction.Transaction
   * Bitcoin Developer Reference link:
   * https://bitcoin.org/en/developer-reference#serialized-blocks
   */
-trait Block {
+sealed trait Block extends NetworkElement with BitcoinSLogger {
 
   /**
     * The block header for this block
@@ -32,13 +34,22 @@ trait Block {
     */
   def transactions : Seq[Transaction]
 
+  /**
+    * Returns the block's hash
+    * @return
+    */
+  def hash : Seq[Byte] = CryptoUtil.doubleSHA256(bytes)
+
+
+  def hex = RawBlockSerializer.write(this)
+
 }
 
 
 /**
   * Companion object for creating Blocks
   */
-object Block {
+object Block extends Factory[Block] {
 
   private sealed case class BlockImpl(blockHeader : BlockHeader,
     txCount : CompactSizeUInt, transactions : Seq[Transaction]) extends Block
@@ -46,4 +57,8 @@ object Block {
   def apply(blockHeader : BlockHeader, txCount : CompactSizeUInt, transactions : Seq[Transaction]) : Block = {
     BlockImpl(blockHeader, txCount, transactions)
   }
+
+  def fromBytes(bytes : Seq[Byte]) : Block = RawBlockSerializer.read(bytes)
+
+  def apply(bytes : Seq[Byte]) : Block = fromBytes(bytes)
 }
