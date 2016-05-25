@@ -1,7 +1,9 @@
 package org.bitcoins.core.protocol.blockchain
 
+import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.protocol.NetworkElement
-import org.bitcoins.core.util.BitcoinSLogger
+import org.bitcoins.core.serializers.blockchain.RawBlockHeaderSerializer
+import org.bitcoins.core.util.{BitcoinSLogger, Factory}
 
 /**
   * Created by chris on 5/19/16.
@@ -35,7 +37,7 @@ sealed trait BlockHeader extends NetworkElement with BitcoinSLogger {
     *
     * @return the previous block's hash
     */
-  def previousBlockHash : String
+  def previousBlockHash : DoubleSha256Digest
 
   /**
     * A SHA256(SHA256()) hash in internal byte order.
@@ -45,7 +47,7 @@ sealed trait BlockHeader extends NetworkElement with BitcoinSLogger {
     *
     * @return the merkle root of the merkle tree
     */
-  def merkleRootHash : String
+  def merkleRootHash : DoubleSha256Digest
 
 
   /**
@@ -74,19 +76,25 @@ sealed trait BlockHeader extends NetworkElement with BitcoinSLogger {
     * @return the nonce used to try and solve a block
     */
   def nonce : Long
+
+  override def hex : String = RawBlockHeaderSerializer.write(this)
 }
 
 
 /**
   * Companion object used for creating BlockHeaders
   */
-object BlockHeader {
+object BlockHeader extends Factory[BlockHeader] {
 
-  private sealed case class BlockHeaderImpl(version : Long, previousBlockHash : String,
-    merkleRootHash : String, time : Long, nBits : Long, nonce : Long) extends BlockHeader
+  private sealed case class BlockHeaderImpl(version : Long, previousBlockHash : DoubleSha256Digest,
+                                            merkleRootHash : DoubleSha256Digest, time : Long, nBits : Long, nonce : Long) extends BlockHeader
 
-  def apply(version : Long, previousBlockHash : String, merkleRootHash : String,
+  def apply(version : Long, previousBlockHash : DoubleSha256Digest, merkleRootHash : DoubleSha256Digest,
             time : Long, nBits : Long, nonce : Long) : BlockHeader = {
     BlockHeaderImpl(version,previousBlockHash,merkleRootHash,time,nBits,nonce)
   }
+
+  def fromBytes(bytes : Seq[Byte]) : BlockHeader = RawBlockHeaderSerializer.read(bytes)
+
+  def apply(bytes : Seq[Byte]) : BlockHeader = fromBytes(bytes)
 }

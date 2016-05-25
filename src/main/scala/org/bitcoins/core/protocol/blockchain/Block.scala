@@ -1,5 +1,6 @@
 package org.bitcoins.core.protocol.blockchain
 
+import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.protocol.{CompactSizeUInt, NetworkElement}
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.serializers.blockchain.RawBlockSerializer
@@ -38,7 +39,7 @@ sealed trait Block extends NetworkElement with BitcoinSLogger {
     * Returns the block's hash
     * @return
     */
-  def hash : Seq[Byte] = CryptoUtil.doubleSHA256(bytes)
+  def hash : DoubleSha256Digest = CryptoUtil.doubleSHA256(bytes)
 
 
   def hex = RawBlockSerializer.write(this)
