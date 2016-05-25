@@ -23,7 +23,7 @@ sealed trait ScriptSignature extends NetworkElement with BitcoinSLogger {
     * see if a script evaluates to true
     * @return
     */
-  def asm : Seq[ScriptToken]
+  def asm : Seq[ScriptToken] = ScriptParser.fromHex(hex)
 
 
   /**
@@ -194,40 +194,29 @@ trait P2PKScriptSignature extends ScriptSignature {
   }
 }
 
-object P2PKHScriptSignatureImpl {
-  def apply(hex : String) : P2PKHScriptSignatureImpl = P2PKHScriptSignatureImpl(hex, RawScriptSignatureParser.read(hex).asm)
-}
-case class P2PKHScriptSignatureImpl(hex : String, asm : Seq[ScriptToken]) extends P2PKHScriptSignature
 
-object P2SHScriptSignatureImpl {
-  def apply(hex : String) : P2SHScriptSignatureImpl = P2SHScriptSignatureImpl(hex, RawScriptSignatureParser.read(hex).asm)
-}
-case class P2SHScriptSignatureImpl(hex : String, asm : Seq[ScriptToken]) extends P2SHScriptSignature
 
-object MultiSignatureScriptSignatureImpl {
-  def apply(hex : String) : MultiSignatureScriptSignatureImpl = MultiSignatureScriptSignatureImpl(hex, RawScriptSignatureParser.read(hex).asm)
-}
-case class MultiSignatureScriptSignatureImpl(hex : String, asm : Seq[ScriptToken]) extends MultiSignatureScriptSignature
 
-object P2PKScriptSignatureImpl {
-  def apply(hex : String) : P2PKScriptSignatureImpl = P2PKScriptSignatureImpl(hex, RawScriptSignatureParser.read(hex).asm)
-}
-case class P2PKScriptSignatureImpl(hex : String, asm : Seq[ScriptToken]) extends P2PKScriptSignature
 
 /**
  * Represents the empty script signature
  */
 case object EmptyScriptSignature extends ScriptSignature {
-  def asm = List()
   def signatures = List()
   def hex = ""
 }
 
 object ScriptSignature extends Factory[ScriptSignature] with BitcoinSLogger {
 
-  private sealed case class NonStandardScriptSignatureImpl(hex : String) extends NonStandardScriptSignature {
-    def asm = ScriptParser.fromHex(hex)
-  }
+  private case class NonStandardScriptSignatureImpl(hex : String) extends NonStandardScriptSignature
+
+  private case class P2PKScriptSignatureImpl(hex : String) extends P2PKScriptSignature
+
+  private case class MultiSignatureScriptSignatureImpl(hex : String) extends MultiSignatureScriptSignature
+
+  private case class P2SHScriptSignatureImpl(hex : String) extends P2SHScriptSignature
+
+  private case class P2PKHScriptSignatureImpl(hex : String) extends P2PKHScriptSignature
 
   /**
     * Builds a script signature from a digital signature and a public key
@@ -265,14 +254,14 @@ object ScriptSignature extends Factory[ScriptSignature] with BitcoinSLogger {
     tokens match {
       case Nil => EmptyScriptSignature
       case _  if (tokens.size > 1 && isRedeemScript(tokens.last)) =>
-        P2SHScriptSignatureImpl(scriptSigHex,tokens)
+        P2SHScriptSignatureImpl(scriptSigHex)
       case _ if (isMultiSignatureScriptSignature(tokens)) =>
         //the head of the asm does not neccessarily have to be an OP_0 if the NULLDUMMY script
         //flag is not set. It can be any script number operation
-        MultiSignatureScriptSignatureImpl(scriptSigHex,tokens)
+        MultiSignatureScriptSignatureImpl(scriptSigHex)
       case List(w : BytesToPushOntoStack, x : ScriptConstant, y : BytesToPushOntoStack,
-      z : ScriptConstant) => P2PKHScriptSignatureImpl(scriptSigHex,tokens)
-      case List(w : BytesToPushOntoStack, x : ScriptConstant) => P2PKScriptSignatureImpl(scriptSigHex,tokens)
+      z : ScriptConstant) => P2PKHScriptSignatureImpl(scriptSigHex)
+      case List(w : BytesToPushOntoStack, x : ScriptConstant) => P2PKScriptSignatureImpl(scriptSigHex)
       case _ => NonStandardScriptSignatureImpl(scriptSigHex)
     }
   }
@@ -288,10 +277,10 @@ object ScriptSignature extends Factory[ScriptSignature] with BitcoinSLogger {
   def fromScriptPubKey(tokens : Seq[ScriptToken], scriptPubKey : ScriptPubKey) : ScriptSignature = {
     val scriptSigHex = tokens.map(_.hex).mkString
     scriptPubKey match {
-      case s : P2SHScriptPubKey => P2SHScriptSignatureImpl(scriptSigHex,tokens)
-      case s : P2PKHScriptPubKey => P2PKHScriptSignatureImpl(scriptSigHex,tokens)
-      case s : P2PKScriptPubKey => P2PKScriptSignatureImpl(scriptSigHex,tokens)
-      case s : MultiSignatureScriptPubKey => MultiSignatureScriptSignatureImpl(scriptSigHex,tokens)
+      case s : P2SHScriptPubKey => P2SHScriptSignatureImpl(scriptSigHex)
+      case s : P2PKHScriptPubKey => P2PKHScriptSignatureImpl(scriptSigHex)
+      case s : P2PKScriptPubKey => P2PKScriptSignatureImpl(scriptSigHex)
+      case s : MultiSignatureScriptPubKey => MultiSignatureScriptSignatureImpl(scriptSigHex)
       case s : NonStandardScriptPubKey => NonStandardScriptSignatureImpl(scriptSigHex)
       case EmptyScriptPubKey if (tokens.size == 0) => EmptyScriptSignature
       case EmptyScriptPubKey => NonStandardScriptSignatureImpl(scriptSigHex)
