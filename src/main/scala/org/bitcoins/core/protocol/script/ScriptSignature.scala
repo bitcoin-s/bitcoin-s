@@ -23,7 +23,7 @@ sealed trait ScriptSignature extends NetworkElement with BitcoinSLogger {
     * see if a script evaluates to true
     * @return
     */
-  def asm : Seq[ScriptToken] = ScriptParser.fromHex(hex)
+  lazy val asm : Seq[ScriptToken] = ScriptParser.fromHex(hex)
 
 
   /**

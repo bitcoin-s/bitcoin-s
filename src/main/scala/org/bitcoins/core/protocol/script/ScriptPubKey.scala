@@ -20,8 +20,8 @@ sealed trait ScriptPubKey extends NetworkElement with BitcoinSLogger {
    * see if a script evaluates to true
    * @return
    */
-  def asm : Seq[ScriptToken] = ScriptParser.fromBytes(bytes)
-  
+  lazy val asm : Seq[ScriptToken] = ScriptParser.fromBytes(bytes)
+
 }
 
 /**
