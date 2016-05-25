@@ -8,10 +8,16 @@ This repostitory includes the following functionality:
   - Native Scala objects for various protocol types (Transaction, TransactionInput, ScriptSignatures...)
   - Serializers and deserializers for bitcoin data structures mentioned above
   - An implementation of Bitcoin's Script programming language 
-    - This passes all of the test cases found inside of script_tests.json on the Bitcoin Core repo
+    - Passes all tests found in Bitcoin Core's regression test suite called [script_test.json](https://github.com/bitcoin/bitcoin/blob/master/src/test/data/script_tests.json)
+    - Passes all tests inside of Bitcoin Core's transaction regression test suite [tx_valid.json](https://github.com/bitcoin/bitcoin/blob/master/src/test/data/tx_valid.json) / [tx_invalid.json](https://github.com/bitcoin/bitcoin/blob/master/src/test/data/tx_invalid.json)
     - Currently up to date through OP_CHECKSEQUENCEVERIFY
   - 90% test coverage throughout the codebase to ensure high quality code. 
   - Functions documented with Scaladocs for user friendliness 
+
+# Design Principles
+  - Immutable data structures everywhere
+  - Using Algebraic Data Types to allow the compiler to check for exhaustiveness on match statements
+  - Favoring readability over terseness
 
 # Examples
 
