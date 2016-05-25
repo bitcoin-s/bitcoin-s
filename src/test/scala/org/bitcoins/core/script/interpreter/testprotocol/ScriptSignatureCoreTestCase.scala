@@ -6,6 +6,7 @@ import org.bitcoins.core.script.constant.ScriptToken
 /**
  * Created by chris on 3/14/16.
  */
+/*
 trait ScriptSignatureCoreTestCase {
   /**
    * The parsed asm representation for the core test case
@@ -30,3 +31,4 @@ trait ScriptSignatureCoreTestCase {
 }
 
 case class ScriptSignatureCoreTestCaseImpl(asm : Seq[ScriptToken], scriptSignature : ScriptSignature) extends ScriptSignatureCoreTestCase
+*/
