@@ -1,7 +1,8 @@
 package org.bitcoins.core.protocol.blockchain
 
-import org.bitcoins.core.currency.CurrencyUnit
-import org.bitcoins.core.protocol.{CompactSizeUInt}
+import org.bitcoins.core.crypto.DoubleSha256Digest
+import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit}
+import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptSignature}
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionConstants, TransactionInput, TransactionOutput}
 import org.bitcoins.core.script.constant.{BytesToPushOntoStack, ScriptConstant, ScriptNumber}
@@ -78,7 +79,7 @@ sealed trait ChainParams {
   def createGenesisBlock(time : Long, nonce : Long, nBits : Long, version : Int, amount : CurrencyUnit) : Block = {
     val timestamp = "The Times 03/Jan/2009 Chancellor on brink of second bailout for banks"
     val genesisOutputScript = ScriptPubKey.fromAsm(
-      Seq(ScriptConstant("04678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51e" +
+      Seq(ScriptNumber(486604799), ScriptConstant("04678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51e" +
         "c112de5c384df7ba0b8d578a4c702b6bf11d5f"), OP_CHECKSIG))
     createGenesisBlock(timestamp,genesisOutputScript,time,nonce,nBits,version,amount)
   }
@@ -95,15 +96,20 @@ sealed trait ChainParams {
     */
   def createGenesisBlock(timestamp : String, scriptPubKey : ScriptPubKey, time : Long, nonce : Long, nBits : Long,
                          version : Int, amount : CurrencyUnit) : Block = {
-    val timestampHex = BitcoinSUtil.flipEndianess(timestamp.map(_.toByte))
-    val scriptSignature = ScriptSignature.fromAsm(Seq(ScriptNumber(486604799), BytesToPushOntoStack(4),
+    val timestampHex = timestamp.toCharArray.map(_.toByte)
+    //see https://bitcoin.stackexchange.com/questions/13122/scriptsig-coinbase-structure-of-the-genesis-block
+    //for a full breakdown of the genesis block & its script signature
+    val scriptSignature = ScriptSignature.fromAsm(Seq(BytesToPushOntoStack(4), ScriptNumber(486604799),
+      BytesToPushOntoStack(1),
+      ScriptNumber(4),
+      BytesToPushOntoStack(69),
       ScriptConstant(timestampHex)))
     val input = TransactionInput(scriptSignature)
     val output = TransactionOutput(amount,scriptPubKey)
     val tx = Transaction(TransactionConstants.version,Seq(input), Seq(output), TransactionConstants.lockTime)
-    val prevBlockHash = "00000000000000"
+    val prevBlockHash = DoubleSha256Digest(BitcoinSUtil.decodeHex("00000000000000"))
     //TODO: Replace this with a merkle root hash computed algorithmically
-    val merkleRootHash = "4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b"
+    val merkleRootHash = DoubleSha256Digest(BitcoinSUtil.decodeHex("4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b"))
     val genesisBlockHeader = BlockHeader(version,prevBlockHash,merkleRootHash,time,nBits,nonce)
     val genesisBlock = Block(genesisBlockHeader,CompactSizeUInt(1,1),Seq(tx))
     genesisBlock
@@ -116,7 +122,7 @@ sealed trait ChainParams {
   */
 object MainNetChainParams extends ChainParams {
   override def networkId = "main"
-  override def genesisBlock = ???
+  override def genesisBlock = createGenesisBlock(1231006505, 2083236893, 0x1d00ffff, 1, Bitcoins(50))
   override def requireStandardTransaction = ???
 
   override def base58Prefixes : Map[Base58Type,Seq[Byte]] =
