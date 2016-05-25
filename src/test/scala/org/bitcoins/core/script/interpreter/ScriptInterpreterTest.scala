@@ -44,10 +44,9 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterp
     val testCases : Seq[CoreTestCase] = testCasesOpt.flatten
     for {
       testCase <- testCases
-      (creditingTx,outputIndex) = TransactionTestUtil.buildCreditingTransaction(testCase.scriptPubKey.scriptPubKey)
+      (creditingTx,outputIndex) = TransactionTestUtil.buildCreditingTransaction(testCase.scriptPubKey)
       (tx,inputIndex) = TransactionTestUtil.buildSpendingTransaction(creditingTx,testCase.scriptSig,outputIndex)
     } yield {
-      require(testCase.scriptPubKey.asm == testCase.scriptPubKey.scriptPubKey.asm)
       logger.info("Raw test case: " + testCase.raw)
       logger.info("Parsed ScriptSig: " + testCase.scriptSig)
       logger.info("Parsed ScriptPubKey: " + testCase.scriptPubKey)

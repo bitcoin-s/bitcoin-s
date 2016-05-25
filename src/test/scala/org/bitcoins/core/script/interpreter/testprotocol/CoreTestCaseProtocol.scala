@@ -28,27 +28,25 @@ object CoreTestCaseProtocol extends DefaultJsonProtocol with BitcoinSLogger {
         //["Equivalency of different numeric encodings"]
         None
       } else if (elements.size == 4) {
-        val scriptPubKeyAsm : Seq[ScriptToken] = parseScriptPubKey(elements(1))
-        val scriptPubKey = ScriptPubKey.fromAsm(scriptPubKeyAsm)
-        val scriptPubKeyCoreTestCase = ScriptPubKeyCoreTestCaseImpl(scriptPubKeyAsm, scriptPubKey)
+        val scriptPubKeyAsm : Seq[Byte] = parseScriptPubKey(elements(1))
+        val scriptPubKey = ScriptPubKey(scriptPubKeyAsm)
         val scriptSignatureBytes : Seq[Byte] = parseScriptSignature(elements.head)
         val scriptSignature : ScriptSignature = ScriptSignature(scriptSignatureBytes)
         val flags = elements(2).convertTo[String]
         logger.info("Result: " + elements(3).convertTo[String])
         val expectedResult = ScriptResult(elements(3).convertTo[String])
-        Some(CoreTestCaseImpl(scriptSignature,scriptPubKeyCoreTestCase,flags,
+        Some(CoreTestCaseImpl(scriptSignature,scriptPubKey,flags,
           expectedResult,"", elements.toString))
       } else if (elements.size == 5) {
-        val scriptPubKeyAsm : Seq[ScriptToken] = parseScriptPubKey(elements(1))
-        val scriptPubKey = ScriptPubKey.fromAsm(scriptPubKeyAsm)
-        val scriptPubKeyCoreTestCase = ScriptPubKeyCoreTestCaseImpl(scriptPubKeyAsm, scriptPubKey)
+        val scriptPubKeyAsm : Seq[Byte] = parseScriptPubKey(elements(1))
+        val scriptPubKey = ScriptPubKey(scriptPubKeyAsm)
         val scriptSignatureBytes : Seq[Byte] = parseScriptSignature(elements.head)
         val scriptSignature : ScriptSignature = ScriptSignature(scriptSignatureBytes)
         val flags = elements(2).convertTo[String]
         logger.info("Result: " + elements(3).convertTo[String])
         val expectedResult = ScriptResult(elements(3).convertTo[String])
         val comments = elements(4).convertTo[String]
-        Some(CoreTestCaseImpl(scriptSignature,scriptPubKeyCoreTestCase,flags,
+        Some(CoreTestCaseImpl(scriptSignature,scriptPubKey,flags,
           expectedResult,comments, elements.toString))
       } else None
     }
@@ -64,8 +62,7 @@ object CoreTestCaseProtocol extends DefaultJsonProtocol with BitcoinSLogger {
      * @return
      */
     private def parseScriptSignature(element : JsValue) : Seq[Byte] = {
-      val asm : Seq[ScriptToken] = ScriptParser.fromString(element.convertTo[String])
-      logger.info("Asm: " + asm)
+      val asm = ScriptParser.fromString(element.convertTo[String])
       BitcoinScriptUtil.asmToBytes(asm)
     }
 
@@ -80,8 +77,9 @@ object CoreTestCaseProtocol extends DefaultJsonProtocol with BitcoinSLogger {
      * @param element
      * @return
      */
-    private def parseScriptPubKey(element : JsValue) : Seq[ScriptToken] = {
-      ScriptParser.fromString(element.convertTo[String])
+    private def parseScriptPubKey(element : JsValue) : Seq[Byte] = {
+      val asm = ScriptParser.fromString(element.convertTo[String])
+      BitcoinScriptUtil.asmToBytes(asm)
     }
 
     override def write(coreTestCase : Option[CoreTestCase]) : JsValue = ???
