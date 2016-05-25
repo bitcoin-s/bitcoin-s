@@ -83,10 +83,6 @@ class ScriptSignatureTest extends FlatSpec with MustMatchers {
     P2PKScriptSignatureImpl(TestUtil.p2pkScriptSig.hex).hex must be (TestUtil.p2pkScriptSig.hex)
   }
 
-  it must "use the nonstandard scriptSig companion object to create a nonstandard scriptSig" in {
-    NonStandardScriptSignatureImpl(TestUtil.p2pkScriptSig.hex).hex must be (TestUtil.p2pkScriptSig.hex)
-  }
-
 
 
 }

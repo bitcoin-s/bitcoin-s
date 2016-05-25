@@ -5,7 +5,7 @@ import org.bitcoins.core.serializers.script.ScriptParser
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.script.constant.{ScriptOperation, ScriptToken}
 import org.bitcoins.core.script.result.ScriptResult
-import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil}
+import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil, BitcoinScriptUtil}
 import org.slf4j.LoggerFactory
 import spray.json._
 
@@ -28,29 +28,27 @@ object CoreTestCaseProtocol extends DefaultJsonProtocol with BitcoinSLogger {
         //["Equivalency of different numeric encodings"]
         None
       } else if (elements.size == 4) {
-        val scriptPubKeyAsm : Seq[ScriptToken] = parseScriptPubKeyAsm(elements(1))
+        val scriptPubKeyAsm : Seq[ScriptToken] = parseScriptPubKey(elements(1))
         val scriptPubKey = ScriptPubKey.fromAsm(scriptPubKeyAsm)
         val scriptPubKeyCoreTestCase = ScriptPubKeyCoreTestCaseImpl(scriptPubKeyAsm, scriptPubKey)
-        val scriptSignatureAsm : Seq[ScriptToken] = parseScriptSignatureAsm(elements.head)
-        val scriptSignature : ScriptSignature = ScriptSignature(scriptSignatureAsm,scriptPubKey)
-        val scriptSignatureCoreTestCase = ScriptSignatureCoreTestCaseImpl(scriptSignatureAsm,scriptSignature)
+        val scriptSignatureBytes : Seq[Byte] = parseScriptSignature(elements.head)
+        val scriptSignature : ScriptSignature = ScriptSignature(scriptSignatureBytes)
         val flags = elements(2).convertTo[String]
         logger.info("Result: " + elements(3).convertTo[String])
         val expectedResult = ScriptResult(elements(3).convertTo[String])
-        Some(CoreTestCaseImpl(scriptSignatureCoreTestCase,scriptPubKeyCoreTestCase,flags,
+        Some(CoreTestCaseImpl(scriptSignature,scriptPubKeyCoreTestCase,flags,
           expectedResult,"", elements.toString))
       } else if (elements.size == 5) {
-        val scriptPubKeyAsm : Seq[ScriptToken] = parseScriptPubKeyAsm(elements(1))
+        val scriptPubKeyAsm : Seq[ScriptToken] = parseScriptPubKey(elements(1))
         val scriptPubKey = ScriptPubKey.fromAsm(scriptPubKeyAsm)
         val scriptPubKeyCoreTestCase = ScriptPubKeyCoreTestCaseImpl(scriptPubKeyAsm, scriptPubKey)
-        val scriptSignatureAsm : Seq[ScriptToken] = parseScriptSignatureAsm(elements.head)
-        val scriptSignature : ScriptSignature = ScriptSignature(scriptSignatureAsm,scriptPubKey)
-        val scriptSignatureCoreTestCase = ScriptSignatureCoreTestCaseImpl(scriptSignatureAsm,scriptSignature)
+        val scriptSignatureBytes : Seq[Byte] = parseScriptSignature(elements.head)
+        val scriptSignature : ScriptSignature = ScriptSignature(scriptSignatureBytes)
         val flags = elements(2).convertTo[String]
         logger.info("Result: " + elements(3).convertTo[String])
         val expectedResult = ScriptResult(elements(3).convertTo[String])
         val comments = elements(4).convertTo[String]
-        Some(CoreTestCaseImpl(scriptSignatureCoreTestCase,scriptPubKeyCoreTestCase,flags,
+        Some(CoreTestCaseImpl(scriptSignature,scriptPubKeyCoreTestCase,flags,
           expectedResult,comments, elements.toString))
       } else None
     }
@@ -65,8 +63,10 @@ object CoreTestCaseProtocol extends DefaultJsonProtocol with BitcoinSLogger {
      * @param element
      * @return
      */
-    private def parseScriptSignatureAsm(element : JsValue) : Seq[ScriptToken] = {
-      ScriptParser.fromString(element.convertTo[String])
+    private def parseScriptSignature(element : JsValue) : Seq[Byte] = {
+      val asm : Seq[ScriptToken] = ScriptParser.fromString(element.convertTo[String])
+      logger.info("Asm: " + asm)
+      BitcoinScriptUtil.asmToBytes(asm)
     }
 
 
@@ -80,7 +80,7 @@ object CoreTestCaseProtocol extends DefaultJsonProtocol with BitcoinSLogger {
      * @param element
      * @return
      */
-    private def parseScriptPubKeyAsm(element : JsValue) : Seq[ScriptToken] = {
+    private def parseScriptPubKey(element : JsValue) : Seq[ScriptToken] = {
       ScriptParser.fromString(element.convertTo[String])
     }
 

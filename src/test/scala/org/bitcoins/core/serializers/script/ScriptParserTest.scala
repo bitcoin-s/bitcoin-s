@@ -27,7 +27,16 @@ class ScriptParserTest extends FlatSpec with MustMatchers with ScriptParser with
   }
 
   it must "parse a number larger than an integer into a ScriptNumberImpl" in {
-    fromString("2147483648") must be (List(ScriptNumber(2147483648L)))
+    fromString("2147483648") must be (List(BytesToPushOntoStack(5),ScriptNumber(2147483648L)))
+  }
+
+  it must "parse a decimal number and correctly add its corresponding BytesToPushOntoStack" in {
+    fromString("127") must be (List(BytesToPushOntoStack(1), ScriptNumber(127)))
+  }
+
+  it must "parse a decimal number that is pushed onto the stack" in {
+    val str = "NOP 0x01 1"
+    fromString(str) must be (List(OP_NOP, BytesToPushOntoStack(1), ScriptConstant("51")))
   }
 
   it must "parse a pay-to-pubkey-hash output script" in {
