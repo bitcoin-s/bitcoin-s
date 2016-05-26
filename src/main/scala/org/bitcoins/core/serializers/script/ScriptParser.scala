@@ -125,7 +125,9 @@ trait ScriptParser extends Factory[List[ScriptToken]] with BitcoinSLogger {
     if (tryParsingLong(str) && str.size > 1 && str.substring(0,2) != "0x") {
       //for the case when there is just a single decimal constant
       //i.e. "8388607"
-      List(ScriptNumber(parseLong(str)))
+      val scriptNumber = ScriptNumber(parseLong(str))
+      val bytesToPushOntoStack = BytesToPushOntoStack(scriptNumber.bytes.size)
+      List(bytesToPushOntoStack,scriptNumber)
     }
     else if (BitcoinSUtil.isHex(str)) {
       //if the given string is hex, it is pretty straight forward to parse it
