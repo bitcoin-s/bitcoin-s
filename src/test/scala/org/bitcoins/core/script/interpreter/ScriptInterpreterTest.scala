@@ -36,7 +36,7 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterp
 
 
     //use this to represent a single test case from script_valid.json
-/*    val lines =
+    /*val lines =
         """
           | [[
           |    "0x48 0x3045022100e58c2307fb6569d0f25b4375f1074e48592bfc62d423bdc8f016365c980c0ae602204984523016f6320dc275cb90c6c1be80b4c9753de2e9fe19f2e5290844587da101 0x20 0x0228b426496c6a96846561a40b241ead0e03fe217d52de26cf2e707f0f181999fb 0x19 0x76a914364ddb17f9997cd91984c897eb5c0123f0a4b43f88ac",

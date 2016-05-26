@@ -26,6 +26,7 @@ sealed trait ScriptSignature extends NetworkElement with BitcoinSLogger {
   lazy val asm : Seq[ScriptToken] = ScriptParser.fromHex(hex)
 
 
+
   /**
     * The digital signatures contained inside of the script signature
     * p2pkh script signatures only have one sig
@@ -64,13 +65,11 @@ trait NonStandardScriptSignature extends ScriptSignature {
  */
 trait P2PKHScriptSignature extends ScriptSignature {
 
-
   /**
     * P2PKH scriptSigs only have one signature
     * @return
     */
   def signature : ECDigitalSignature = signatures.head
-
 
   /**
     * Gives us the public key inside of a p2pkh script signature
