@@ -73,7 +73,7 @@ trait BitcoinSUtil extends NumberUtil {
    * @param hex
    * @return
    */
-  def flipEndianess(hex : String) : String = encodeHex(decodeHex(hex).reverse)
+  def flipEndianess(hex : String) : String = flipEndianess(decodeHex(hex))
 
   /**
    * Flips the endianess of the given sequence of bytes
@@ -81,7 +81,7 @@ trait BitcoinSUtil extends NumberUtil {
    * @param bytes
    * @return
    */
-  def flipEndianess(bytes : Seq[Byte]) : String = flipEndianess(BitcoinSUtil.encodeHex(bytes))
+  def flipEndianess(bytes : Seq[Byte]) : String = encodeHex(bytes.reverse)
   /**
    * Flips the hex chars in a hex strings
    * Example: abcd would become badc

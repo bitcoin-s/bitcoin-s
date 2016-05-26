@@ -1,6 +1,7 @@
 package org.bitcoins.core.consensus
 
 import org.bitcoins.core.protocol.blockchain.MainNetChainParams
+import org.bitcoins.core.protocol.transaction.Transaction
 import org.scalatest.{FlatSpec, MustMatchers}
 
 /**
@@ -9,6 +10,33 @@ import org.scalatest.{FlatSpec, MustMatchers}
 class MerkleTest extends FlatSpec with MustMatchers {
 
   "Merkle" must "compute the merkle root for the genesis block" in {
-    Merkle.computeBlockMerkleRoot(MainNetChainParams.genesisBlock).hex must be ("4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b")
+    //Merkle.computeBlockMerkleRoot(MainNetChainParams.genesisBlock).hex must be ("4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b")
+  }
+
+  it must "correctly compute the merkle root for block 80,000 which has 2 transactions" in {
+    //this block has 2 transactions in it which makes a nice symmetric merkle tree
+    //https://blockchain.info/block-height/80000
+    val coinbaseTx = Transaction("01000000010000000000000000000000000000000000000000000000000000000000000000ffffffff0704e6ed5b1b014effffffff0100f2052a01000000434104b68a50eaa0287eff855189f949c1c6e5f58b37c88231373d8a59809cbae83059cc6469d65c665ccfd1cfeb75c6e8e19413bba7fbff9bc762419a76d87b16086eac00000000")
+    require(coinbaseTx.txId.hex == "c06fbab289f723c6261d3030ddb6be121f7d2508d77862bb1e484f5cd7f92b25")
+    val tx1 = Transaction("0100000001a6b97044d03da79c005b20ea9c0e1a6d9dc12d9f7b91a5911c9030a439eed8f5000000004948304502206e21798a42fae0e854281abd38bacd1aeed3ee3738d9e1446618c4571d1090db022100e2ac980643b0b82c0e88ffdfec6b64e3e6ba35e7ba5fdd7d5d6cc8d25c6b241501ffffffff0100f2052a010000001976a914404371705fa9bd789a2fcd52d2c580b65d35549d88ac00000000")
+    require(tx1.txId.hex == "5a4ebf66822b0b2d56bd9dc64ece0bc38ee7844a23ff1d7320a88c5fdb2ad3e2")
+
+    val transactions = Seq(coinbaseTx,tx1)
+    Merkle.computeMerkleRoot(transactions).hex must be ("8fb300e3fdb6f30a4c67233b997f99fdd518b968b9a3fd65857bfe78b2600719")
+  }
+
+  it must "correctly compute the merkle root for the 100,000 block which has 4 transactions" in {
+    //this block has 4 transactions in it which makes a nice symmetric merkle tree
+    //https://blockchain.info/block-height/100000
+    val coinbaseTx = Transaction("01000000010000000000000000000000000000000000000000000000000000000000000000ffffffff08044c86041b020602ffffffff0100f2052a010000004341041b0e8c2567c12536aa13357b79a073dc4444acb83c4ec7a0e2f99dd7457516c5817242da796924ca4e99947d087fedf9ce467cb9f7c6287078f801df276fdf84ac00000000")
+    val tx1 = Transaction("0100000001032e38e9c0a84c6046d687d10556dcacc41d275ec55fc00779ac88fdf357a187000000008c493046022100c352d3dd993a981beba4a63ad15c209275ca9470abfcd57da93b58e4eb5dce82022100840792bc1f456062819f15d33ee7055cf7b5ee1af1ebcc6028d9cdb1c3af7748014104f46db5e9d61a9dc27b8d64ad23e7383a4e6ca164593c2527c038c0857eb67ee8e825dca65046b82c9331586c82e0fd1f633f25f87c161bc6f8a630121df2b3d3ffffffff0200e32321000000001976a914c398efa9c392ba6013c5e04ee729755ef7f58b3288ac000fe208010000001976a914948c765a6914d43f2a7ac177da2c2f6b52de3d7c88ac00000000")
+    val tx2 = Transaction("0100000001c33ebff2a709f13d9f9a7569ab16a32786af7d7e2de09265e41c61d078294ecf010000008a4730440220032d30df5ee6f57fa46cddb5eb8d0d9fe8de6b342d27942ae90a3231e0ba333e02203deee8060fdc70230a7f5b4ad7d7bc3e628cbe219a886b84269eaeb81e26b4fe014104ae31c31bf91278d99b8377a35bbce5b27d9fff15456839e919453fc7b3f721f0ba403ff96c9deeb680e5fd341c0fc3a7b90da4631ee39560639db462e9cb850fffffffff0240420f00000000001976a914b0dcbf97eabf4404e31d952477ce822dadbe7e1088acc060d211000000001976a9146b1281eec25ab4e1e0793ff4e08ab1abb3409cd988ac00000000")
+    val tx3 = Transaction("01000000010b6072b386d4a773235237f64c1126ac3b240c84b917a3909ba1c43ded5f51f4000000008c493046022100bb1ad26df930a51cce110cf44f7a48c3c561fd977500b1ae5d6b6fd13d0b3f4a022100c5b42951acedff14abba2736fd574bdb465f3e6f8da12e2c5303954aca7f78f3014104a7135bfe824c97ecc01ec7d7e336185c81e2aa2c41ab175407c09484ce9694b44953fcb751206564a9c24dd094d42fdbfdd5aad3e063ce6af4cfaaea4ea14fbbffffffff0140420f00000000001976a91439aa3d569e06a1d7926dc4be1193c99bf2eb9ee088ac00000000")
+
+    val transactions = Seq(coinbaseTx, tx1,tx2,tx3)
+
+    Merkle.computeMerkleRoot(transactions).hex must be ("f3e94742aca4b5ef85488dc37c06c3282295ffec960994b2c0d5ac2a25a95766")
+
+
   }
 }
