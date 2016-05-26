@@ -40,21 +40,20 @@ trait Base58 extends BitcoinSLogger {
     */
 
   def encode(bytes : Seq[Byte]) : String = {
-    val head : Byte = bytes.head
+    @tailrec
+    def loop(current : BigInt, str : String) : String = current match {
+      case a if current == BigInt(0) =>
+        if (bytes.head == 0.toByte) '1' + str.reverse else str.reverse
+      case _ : BigInt =>
+        val quotient : BigInt = current / BigInt(58L)
+        val remainder : BigInt  = current.mod(58L)
+        val char = base58Characters.charAt(remainder.toInt).toString
+        val accum =  str + char
+        loop(quotient, accum)
+    }
     if (bytes.isEmpty) ""
     else {
       val big : BigInt = BigInt(1, bytes.toArray)
-      @tailrec
-      def loop(current : BigInt, str : String) : String = current match {
-        case a if current == BigInt(0) =>
-          if (head == 0.toByte) '1' + str.reverse else str.reverse
-        case _ =>
-          val quotient : BigInt = current / BigInt(58L)
-          val remainder : BigInt  = current.mod(58L)
-          val char = base58Characters.charAt(remainder.toInt).toString
-          val accum =  str + char
-          loop(quotient, accum)
-      }
       loop(big, "")
     }
   }
