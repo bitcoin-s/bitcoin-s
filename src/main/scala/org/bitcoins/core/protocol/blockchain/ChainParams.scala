@@ -95,6 +95,7 @@ sealed trait ChainParams {
     */
   def createGenesisBlock(timestamp : String, scriptPubKey : ScriptPubKey, time : Long, nonce : Long, nBits : Long,
                          version : Int, amount : CurrencyUnit) : Block = {
+
     val timestampHex = timestamp.toCharArray.map(_.toByte)
     //see https://bitcoin.stackexchange.com/questions/13122/scriptsig-coinbase-structure-of-the-genesis-block
     //for a full breakdown of the genesis block & its script signature
