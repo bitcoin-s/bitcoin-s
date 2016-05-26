@@ -28,6 +28,7 @@ object CoreTestCaseProtocol extends DefaultJsonProtocol with BitcoinSLogger {
         //["Equivalency of different numeric encodings"]
         None
       } else if (elements.size == 4) {
+
         val scriptPubKeyAsm : Seq[Byte] = parseScriptPubKey(elements(1))
         val scriptPubKey = ScriptPubKey(scriptPubKeyAsm)
         val scriptSignatureBytes : Seq[Byte] = parseScriptSignature(elements.head)
