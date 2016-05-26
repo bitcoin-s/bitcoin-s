@@ -13,10 +13,11 @@ import org.bitcoins.core.util.{BitcoinSUtil, CryptoUtil, Factory}
 sealed trait Transaction extends NetworkElement {
   /**
     * The sha256(sha256(tx)) of this transaction
- *
+    * Note that this is the little endian encoding of the hash NOT the big endian encoding
+    * which bitcoin core uses
     * @return
     */
-  def txId : DoubleSha256Digest = DoubleSha256Digest(CryptoUtil.doubleSHA256(hex).bytes.reverse)
+  def txId : DoubleSha256Digest = DoubleSha256Digest(CryptoUtil.doubleSHA256(bytes).bytes.reverse)
 
   /**
     * The version number for this transaction
@@ -63,8 +64,7 @@ sealed trait Transaction extends NetworkElement {
 }
 
 case object EmptyTransaction extends Transaction {
-  override def txId = DoubleSha256Digest(
-    BitcoinSUtil.decodeHex("0000000000000000000000000000000000000000000000000000000000000000"))
+  override def txId = DoubleSha256Digest(BitcoinSUtil.decodeHex("0000000000000000000000000000000000000000000000000000000000000000"))
   override def version = TransactionConstants.version
   override def inputs = Seq()
   override def outputs = Seq()
