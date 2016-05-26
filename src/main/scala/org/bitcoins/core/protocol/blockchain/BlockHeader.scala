@@ -5,6 +5,7 @@ import org.bitcoins.core.protocol.NetworkElement
 import org.bitcoins.core.serializers.blockchain.RawBlockHeaderSerializer
 import org.bitcoins.core.util.{BitcoinSLogger, Factory}
 
+
 /**
   * Created by chris on 5/19/16.
   * Nodes collect new transactions into a block, hash them into a hash tree,
@@ -37,6 +38,7 @@ sealed trait BlockHeader extends NetworkElement with BitcoinSLogger {
     *
     * @return the previous block's hash
     */
+
   def previousBlockHash : DoubleSha256Digest
 
   /**
@@ -47,8 +49,8 @@ sealed trait BlockHeader extends NetworkElement with BitcoinSLogger {
     *
     * @return the merkle root of the merkle tree
     */
-  def merkleRootHash : DoubleSha256Digest
 
+  def merkleRootHash : DoubleSha256Digest
 
   /**
     * The block time is a Unix epoch time when the miner started hashing the header (according to the miner).
@@ -78,6 +80,7 @@ sealed trait BlockHeader extends NetworkElement with BitcoinSLogger {
   def nonce : Long
 
   override def hex : String = RawBlockHeaderSerializer.write(this)
+
 }
 
 
@@ -97,4 +100,5 @@ object BlockHeader extends Factory[BlockHeader] {
   def fromBytes(bytes : Seq[Byte]) : BlockHeader = RawBlockHeaderSerializer.read(bytes)
 
   def apply(bytes : Seq[Byte]) : BlockHeader = fromBytes(bytes)
+
 }
