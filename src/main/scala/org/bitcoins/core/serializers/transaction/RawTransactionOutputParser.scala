@@ -37,7 +37,7 @@ trait RawTransactionOutputParser extends RawBitcoinSerializer[Seq[TransactionOut
           firstScriptPubKeyByte + scriptCompactSizeUIntSize + scriptSigCompactSizeUInt.num.toInt)
         val scriptPubKey = RawScriptPubKeyParser.read(scriptPubKeyBytes)
         val parsedOutput = TransactionOutput(satoshis,scriptPubKey)
-        val newAccum =  parsedOutput:: accum
+        val newAccum =  parsedOutput :: accum
         val bytesToBeParsed = bytes.slice(parsedOutput.size, bytes.size)
         val outputsLeft = outputsLeftToParse-1
         logger.debug("Parsed output: " + parsedOutput)

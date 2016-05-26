@@ -78,9 +78,8 @@ sealed trait ChainParams {
     */
   def createGenesisBlock(time : Long, nonce : Long, nBits : Long, version : Int, amount : CurrencyUnit) : Block = {
     val timestamp = "The Times 03/Jan/2009 Chancellor on brink of second bailout for banks"
-    val genesisOutputScript = ScriptPubKey.fromAsm(
-      Seq(ScriptNumber(486604799), ScriptConstant("04678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51e" +
-        "c112de5c384df7ba0b8d578a4c702b6bf11d5f"), OP_CHECKSIG))
+    val asm = Seq(BytesToPushOntoStack(65), ScriptConstant("04678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5f"), OP_CHECKSIG)
+    val genesisOutputScript = ScriptPubKey.fromAsm(asm)
     createGenesisBlock(timestamp,genesisOutputScript,time,nonce,nBits,version,amount)
   }
 
@@ -100,10 +99,7 @@ sealed trait ChainParams {
     //see https://bitcoin.stackexchange.com/questions/13122/scriptsig-coinbase-structure-of-the-genesis-block
     //for a full breakdown of the genesis block & its script signature
     val scriptSignature = ScriptSignature.fromAsm(Seq(BytesToPushOntoStack(4), ScriptNumber(486604799),
-      BytesToPushOntoStack(1),
-      ScriptNumber(4),
-      BytesToPushOntoStack(69),
-      ScriptConstant(timestampHex)))
+      BytesToPushOntoStack(1), ScriptNumber(4), BytesToPushOntoStack(69), ScriptConstant(timestampHex)))
     val input = TransactionInput(scriptSignature)
     val output = TransactionOutput(amount,scriptPubKey)
     val tx = Transaction(TransactionConstants.version,Seq(input), Seq(output), TransactionConstants.lockTime)
