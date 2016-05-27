@@ -53,4 +53,9 @@ class ChainParamsTest extends FlatSpec with MustMatchers {
 
     genesisTransaction.txId.hex must be ("4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b")
   }
+
+
+  it must "generate the correctly merkle root for the testnet genesis block" in {
+    TestNetChainParams.genesisBlock.merkleRoot.hex must be ("4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b")
+  }
 }

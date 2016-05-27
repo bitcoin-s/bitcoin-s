@@ -1,5 +1,6 @@
 package org.bitcoins.core.protocol.blockchain
 
+import org.bitcoins.core.consensus.Merkle
 import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.protocol.{CompactSizeUInt, NetworkElement}
 import org.bitcoins.core.protocol.transaction.Transaction
@@ -40,6 +41,12 @@ sealed trait Block extends NetworkElement with BitcoinSLogger {
     * @return
     */
   def hash : DoubleSha256Digest = CryptoUtil.doubleSHA256(bytes)
+
+  /**
+    * Computes the merkle root for this block
+    * @return the merkle root for the transactions inside of this block
+    */
+  def merkleRoot : DoubleSha256Digest = Merkle.computeBlockMerkleRoot(this)
 
   def hex = RawBlockSerializer.write(this)
 
