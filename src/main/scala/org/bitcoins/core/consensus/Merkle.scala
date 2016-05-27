@@ -45,7 +45,7 @@ trait Merkle extends BitcoinSLogger {
       logger.debug("We have an odd amount of txids")
       logger.debug("Hashes: " + hashes.map(_.hex))
       //means that we have an odd amount of txids, this means we duplicate the last hash in the tree
-      val hash = DoubleSha256Digest(CryptoUtil.doubleSHA256(h.bytes ++ h.bytes).bytes.reverse)
+      val hash = CryptoUtil.doubleSHA256(h.bytes ++ h.bytes)
       computeMerkleRoot(t,hash :: accum)
   }
 
