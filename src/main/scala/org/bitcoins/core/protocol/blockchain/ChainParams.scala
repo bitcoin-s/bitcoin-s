@@ -1,5 +1,6 @@
 package org.bitcoins.core.protocol.blockchain
 
+import org.bitcoins.core.consensus.Merkle
 import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit}
 import org.bitcoins.core.protocol.CompactSizeUInt
@@ -105,8 +106,7 @@ sealed trait ChainParams {
     val output = TransactionOutput(amount,scriptPubKey)
     val tx = Transaction(TransactionConstants.version,Seq(input), Seq(output), TransactionConstants.lockTime)
     val prevBlockHash = DoubleSha256Digest(BitcoinSUtil.decodeHex("00000000000000"))
-    //TODO: Replace this with a merkle root hash computed algorithmically
-    val merkleRootHash = DoubleSha256Digest(BitcoinSUtil.decodeHex("4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b"))
+    val merkleRootHash = Merkle.computeMerkleRoot(Seq(tx))
     val genesisBlockHeader = BlockHeader(version,prevBlockHash,merkleRootHash,time,nBits,nonce)
     val genesisBlock = Block(genesisBlockHeader,CompactSizeUInt(1,1),Seq(tx))
     genesisBlock
@@ -119,7 +119,9 @@ sealed trait ChainParams {
   */
 object MainNetChainParams extends ChainParams {
   override def networkId = "main"
+
   override def genesisBlock = createGenesisBlock(1231006505, 2083236893, 0x1d00ffff, 1, Bitcoins(50))
+
   override def requireStandardTransaction = ???
 
   override def base58Prefixes : Map[Base58Type,Seq[Byte]] =
@@ -140,7 +142,9 @@ object MainNetChainParams extends ChainParams {
 object TestNetChainParams extends ChainParams {
 
   override def networkId = "test"
-  override def genesisBlock : Block = ???
+
+  override def genesisBlock : Block = createGenesisBlock(1296688602, 414098458, 0x1d00ffff, 1, Bitcoins(50))
+
   override def requireStandardTransaction = ???
 
   override def base58Prefixes : Map[Base58Type,Seq[Byte]] = Map(
