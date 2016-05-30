@@ -35,7 +35,7 @@ sealed trait ECPrivateKey extends BaseECKey {
     * @return the public key's ECPoint
     */
   private def publicKeyPoint : ECPoint = {
-    val privKeyBigInteger = new BigInteger(bytes.toArray)
+    val privKeyBigInteger = new BigInteger(1,bytes.toArray)
     val privKey = if (privKeyBigInteger.bitLength > CryptoParams.curve.getN.bitLength()) {
       privKeyBigInteger.mod(CryptoParams.curve.getN())
     } else privKeyBigInteger
