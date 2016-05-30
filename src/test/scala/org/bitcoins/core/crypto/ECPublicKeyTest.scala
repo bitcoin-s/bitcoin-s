@@ -34,4 +34,21 @@ class ECPublicKeyTest extends FlatSpec with MustMatchers {
     isValid must be (false)
   }
 
+  it must "verify a piece of data signed with a bitcoinj private key" in {
+    val bitcoinjPrivKey = new org.bitcoinj.core.ECKey
+    val bitcoinjSignature = bitcoinjPrivKey.sign(Sha256Hash.ZERO_HASH)
+    val bitcoinsSignature = ECFactory.digitalSignature(bitcoinjSignature.encodeToDER())
+    val bitcoinsPublicKey = ECFactory.publicKey(bitcoinjPrivKey.getPubKey)
+    bitcoinsPublicKey.verify(Sha256Hash.ZERO_HASH.getBytes, bitcoinsSignature) must be (true)
+
+  }
+
+
+  it must "verify a piece of data was signed with a bitcoins private key inside of bitcoinj" in {
+    val bitcoinsPrivKey = ECFactory.privateKey
+    val bitcoinsSignature = bitcoinsPrivKey.sign(Sha256Hash.ZERO_HASH.getBytes)
+    val bitcoinjPublicKey = org.bitcoinj.core.ECKey.fromPublicOnly(bitcoinsPrivKey.publicKey.bytes.toArray)
+    bitcoinjPublicKey.verify(Sha256Hash.ZERO_HASH.getBytes, bitcoinsSignature.bytes.toArray) must be (true)
+  }
+
 }
