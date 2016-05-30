@@ -1,18 +1,19 @@
 package org.bitcoins.core.protocol.script
 
 import org.bitcoins.core.crypto.{ECDigitalSignature, ECFactory, ECPublicKey, EmptyDigitalSignature}
-import org.bitcoins.core.protocol.transaction.TransactionElement
+import org.bitcoins.core.protocol.NetworkElement
 import org.bitcoins.core.serializers.script.{RawScriptPubKeyParser, RawScriptSignatureParser, ScriptParser}
 import org.bitcoins.core.script.constant._
 import org.bitcoins.core.script.crypto.{HashType, HashTypeFactory, OP_CHECKMULTISIG, SIGHASH_ALL}
 import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil, BitcoinScriptUtil, Factory}
+
 import scala.util.{Failure, Success, Try}
 
 /**
   * Created by chris on 12/26/15.
   *
   */
-sealed trait ScriptSignature extends TransactionElement with BitcoinSLogger {
+sealed trait ScriptSignature extends NetworkElement with BitcoinSLogger {
 
   /**
    * Representation of a scriptSignature in a parsed assembly format

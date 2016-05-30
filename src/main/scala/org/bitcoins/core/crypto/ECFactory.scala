@@ -1,10 +1,7 @@
 package org.bitcoins.core.crypto
 
-import org.bitcoins.core.config.NetworkParameters
-import org.bitcoins.core.util.{Factory, BitcoinSUtil}
 import java.math.BigInteger
 import java.security.SecureRandom
-import org.bitcoins.config.NetworkParameters
 import org.spongycastle.crypto.AsymmetricCipherKeyPair
 import org.spongycastle.crypto.generators.ECKeyPairGenerator
 import org.spongycastle.crypto.params.{ECKeyGenerationParameters, ECPrivateKeyParameters}

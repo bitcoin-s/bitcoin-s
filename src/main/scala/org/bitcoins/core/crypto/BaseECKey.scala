@@ -1,6 +1,5 @@
 package org.bitcoins.core.crypto
 
-import org.bitcoinj.core.Sha256Hash
 import org.bitcoins.core.util.{BitcoinSUtil, BitcoinSLogger}
 import java.math.BigInteger
 import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil}
