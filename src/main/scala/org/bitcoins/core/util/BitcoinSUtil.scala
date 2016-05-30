@@ -1,6 +1,5 @@
 package org.bitcoins.core.util
 
-import org.bitcoinj.core.{Base58, Utils}
 import org.bitcoins.core.currency.{CurrencyUnits, CurrencyUnit}
 import scala.math.BigInt
 

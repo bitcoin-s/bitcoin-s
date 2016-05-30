@@ -25,7 +25,7 @@ trait Base58 extends BitcoinSLogger {
       val splitSeqs = decoded.splitAt(decoded.length - 4)
       val data : Seq[Byte] = splitSeqs._1
       val checksum : Seq[Byte] = splitSeqs._2
-      val actualChecksum : Seq[Byte] = CryptoUtil.doubleSHA256(data).slice(0, 4)
+      val actualChecksum : Seq[Byte] = CryptoUtil.doubleSHA256(data).bytes.slice(0, 4)
       if (checksum == actualChecksum)
       Success(data)
       else Failure(new IllegalArgumentException("checksums don't validate"))

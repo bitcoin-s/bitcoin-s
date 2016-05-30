@@ -38,7 +38,7 @@ object BitcoinAddress {
     val decodedWithNameSpaceByte = Seq(0x13.toByte) ++ decodedBase58
     val split = decodedWithNameSpaceByte.splitAt(decodedWithNameSpaceByte.length - 4)
     val data = split._1
-    val newCheckSum = CryptoUtil.doubleSHA256(data).slice(0,4)
+    val newCheckSum = CryptoUtil.doubleSHA256(data).bytes.slice(0,4)
     val constructedAssetAddress = data ++ newCheckSum
     val encodedAssetAddress = Base58.encode(constructedAssetAddress)
     AssetAddress(encodedAssetAddress)
@@ -122,7 +122,7 @@ object AssetAddress {
     }
     val data = decodedAsset.slice(0, decodedAsset.length - 4)
     val dataDroppedNameSpace = data.drop(1)
-    val checkSum = CryptoUtil.doubleSHA256(dataDroppedNameSpace).slice(0,4)
+    val checkSum = CryptoUtil.doubleSHA256(dataDroppedNameSpace).bytes.slice(0,4)
     val value = Base58.encode(dataDroppedNameSpace ++ checkSum)
     BitcoinAddress(value)
   }
