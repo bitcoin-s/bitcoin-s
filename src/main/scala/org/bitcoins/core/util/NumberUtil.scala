@@ -12,7 +12,6 @@ trait NumberUtil extends BitcoinSLogger {
   /**
    * Takes a hex number and converts it into a signed number
    * used in the bitcoin numbering system
- *
    * @param hex
    * @return
    */
@@ -21,7 +20,6 @@ trait NumberUtil extends BitcoinSLogger {
   /**
    * Takes a list of bytes and converts it in to signed number inside of bitcoins
    * numbering system
- *
    * @param bytes
    * @return
    */
@@ -36,7 +34,7 @@ trait NumberUtil extends BitcoinSLogger {
       } else parseLong(reversedBytes)
     } else {
       //remove the sign bit
-      val removedSignBit : List[Byte] = changeSignBitToPositive(reversedBytes.toList)
+      val removedSignBit = changeSignBitToPositive(reversedBytes.toList)
       if (firstByteAllZeros(removedSignBit)) -parseLong(removedSignBit.slice(1,removedSignBit.size))
       else -parseLong(removedSignBit)
     }
@@ -45,7 +43,6 @@ trait NumberUtil extends BitcoinSLogger {
 
   /**
    * Converts a long number to the representation of number inside of Bitcoin's number system
- *
    * @param long
    * @return
    */
@@ -56,7 +53,7 @@ trait NumberUtil extends BitcoinSLogger {
     } else {
       val bytes = toByteSeq(long.abs)
       //add sign bit
-      val negativeNumberBytes : List[Byte] = changeSignBitToNegative(bytes.toList)
+      val negativeNumberBytes = changeSignBitToNegative(bytes)
       val hex = BitcoinSUtil.encodeHex(negativeNumberBytes.reverse)
       hex
     }
@@ -64,7 +61,6 @@ trait NumberUtil extends BitcoinSLogger {
 
   /**
    * Determines if a given hex string is a positive number
- *
    * @param hex
    * @return
    */
@@ -72,7 +68,6 @@ trait NumberUtil extends BitcoinSLogger {
 
   /**
    * Determines if a byte array is a positive or negative number
- *
    * @param bytes
    * @return
    */
@@ -87,34 +82,34 @@ trait NumberUtil extends BitcoinSLogger {
 
   def isNegative(hex : String) : Boolean = isNegative(BitcoinSUtil.decodeHex(hex))
 
-  def isNegative(bytes : List[Byte]) : Boolean = {
+  def isNegative(bytes : Seq[Byte]) : Boolean = {
     if (bytes.isEmpty) false else !isPositive(bytes)
   }
 
   /**
    * Change sign bit to positive
- *
    * @param bytes
    * @return
    */
-  def changeSignBitToPositive(bytes : List[Byte]) : List[Byte] = {
+  def changeSignBitToPositive(bytes : Seq[Byte]) : Seq[Byte] = {
     val newByte : Byte = (bytes.head & 0x7F).toByte
-    newByte :: bytes.tail
+    (newByte :: bytes.tail.toList)
   }
 
-  def changeSignBitToPositive(hex : String) : List[Byte] = changeSignBitToPositive(BitcoinSUtil.decodeHex(hex))
+  def changeSignBitToPositive(hex : String) : Seq[Byte] = changeSignBitToPositive(BitcoinSUtil.decodeHex(hex))
 
-  def changeSignBitToNegative(bytes : List[Byte]) : List[Byte] = {
+
+  def changeSignBitToNegative(bytes : Seq[Byte]) : Seq[Byte] = {
     val newByte = (bytes.head | 0x80).toByte
-    (newByte :: bytes.tail)
+    (newByte :: bytes.tail.toList)
   }
 
-  def changeSignBitToNegative(hex : String) : List[Byte] = changeSignBitToNegative(BitcoinSUtil.decodeHex(hex))
+  def changeSignBitToNegative(hex : String) : Seq[Byte] = changeSignBitToNegative(BitcoinSUtil.decodeHex(hex))
 
 
   def firstByteAllZeros(hex : String) : Boolean = firstByteAllZeros(BitcoinSUtil.decodeHex(hex))
 
-  def firstByteAllZeros(bytes : List[Byte]) : Boolean = {
+  def firstByteAllZeros(bytes : Seq[Byte]) : Boolean = {
     val lastByte = bytes.head
     (lastByte & 0xFF) == 0
   }
@@ -126,7 +121,6 @@ trait NumberUtil extends BitcoinSLogger {
   /**
    * Parses a VarInt from a string of hex characters
    * https://bitcoin.org/en/developer-reference#compactsize-unsigned-integers
- *
    * @param hex
    * @return
    */
@@ -135,7 +129,6 @@ trait NumberUtil extends BitcoinSLogger {
   /**
    * Parses a CompactSizeUInt from a sequence of bytes
    * https://bitcoin.org/en/developer-reference#compactsize-unsigned-integers
- *
    * @param bytes
    * @return
    */
@@ -154,7 +147,6 @@ trait NumberUtil extends BitcoinSLogger {
   /**
    * Returns the size of a VarInt in the number of bytes
    * https://en.bitcoin.it/wiki/Protocol_documentation#Variable_length_integer
- *
    * @param byte
    * @return
    */
@@ -173,7 +165,6 @@ trait NumberUtil extends BitcoinSLogger {
   /**
    * Parses the compact size uint from a script signature
    * https://bitcoin.org/en/developer-reference#compactsize-unsigned-integers
- *
    * @param script
    * @return
    */
@@ -191,7 +182,6 @@ trait NumberUtil extends BitcoinSLogger {
   /**
    * Parses a compact size uint from a script pubkey
    * https://bitcoin.org/en/developer-reference#compactsize-unsigned-integers
- *
    * @param scriptPubKey
    * @return
    */

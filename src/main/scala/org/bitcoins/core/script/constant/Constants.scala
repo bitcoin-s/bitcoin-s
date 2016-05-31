@@ -23,10 +23,9 @@ sealed trait ScriptToken {
 
   /**
    * The byte representation of this script token
- *
    * @return
    */
-  def bytes = BitcoinSUtil.decodeHex(hex)
+  def bytes : Seq[Byte] = BitcoinSUtil.decodeHex(hex)
 
   /**
    * The conversion from the byte representation of a token to a number

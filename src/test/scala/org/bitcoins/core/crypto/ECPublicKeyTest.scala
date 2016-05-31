@@ -1,5 +1,7 @@
 package org.bitcoins.core.crypto
 
+import java.math.BigInteger
+
 import org.bitcoinj.core.Sha256Hash
 import org.bitcoins.core.util.BitcoinSUtil
 import org.scalatest.{FlatSpec, MustMatchers}
@@ -13,10 +15,11 @@ class ECPublicKeyTest extends FlatSpec with MustMatchers {
 
     val privateKeyHex = "180cb41c7c600be951b5d3d0a7334acc7506173875834f7a6c4c786a28fcbb19"
     val key: ECPrivateKey = ECFactory.privateKey(privateKeyHex)
+
     val signature: ECDigitalSignature = key.sign(Sha256Hash.ZERO_HASH.getBytes.toSeq)
 
-    val isValid : Boolean = key.publicKey.verify(Sha256Hash.ZERO_HASH.getBytes.toSeq,signature)
-    isValid must be (true)
+     val isValid : Boolean = key.publicKey.verify(Sha256Hash.ZERO_HASH.getBytes.toSeq,signature)
+     isValid must be (true)
   }
 
 
@@ -29,6 +32,23 @@ class ECPublicKeyTest extends FlatSpec with MustMatchers {
     val wrongPublicKey = ECFactory.publicKey
     val isValid : Boolean = wrongPublicKey.verify(Sha256Hash.ZERO_HASH.getBytes.toSeq,signature)
     isValid must be (false)
+  }
+
+  it must "verify a piece of data signed with a bitcoinj private key" in {
+    val bitcoinjPrivKey = new org.bitcoinj.core.ECKey
+    val bitcoinjSignature = bitcoinjPrivKey.sign(Sha256Hash.ZERO_HASH)
+    val bitcoinsSignature = ECFactory.digitalSignature(bitcoinjSignature.encodeToDER())
+    val bitcoinsPublicKey = ECFactory.publicKey(bitcoinjPrivKey.getPubKey)
+    bitcoinsPublicKey.verify(Sha256Hash.ZERO_HASH.getBytes, bitcoinsSignature) must be (true)
+
+  }
+
+
+  it must "verify a piece of data was signed with a bitcoins private key inside of bitcoinj" in {
+    val bitcoinsPrivKey = ECFactory.privateKey
+    val bitcoinsSignature = bitcoinsPrivKey.sign(Sha256Hash.ZERO_HASH.getBytes)
+    val bitcoinjPublicKey = org.bitcoinj.core.ECKey.fromPublicOnly(bitcoinsPrivKey.publicKey.bytes.toArray)
+    bitcoinjPublicKey.verify(Sha256Hash.ZERO_HASH.getBytes, bitcoinsSignature.bytes.toArray) must be (true)
   }
 
 }
