@@ -1,7 +1,7 @@
 package org.bitcoins.core.protocol.script
 
 
-import org.bitcoins.core.crypto.ECFactory
+import org.bitcoins.core.crypto.{ECPublicKey}
 import org.bitcoins.core.script.constant.{BytesToPushOntoStack, OP_0, ScriptConstant}
 import org.bitcoins.core.util.TestUtil
 import org.scalatest.{FlatSpec, MustMatchers}
@@ -18,8 +18,8 @@ class P2SHScriptSignatureTest extends FlatSpec with MustMatchers {
       case y => throw new RuntimeException("Must be p2sh script sig: " + y)
     }
     p2shScriptSig.publicKeys must be (Seq(
-      ECFactory.publicKey("0369d26ebd086523384a0f89f293d4c327a65fa73332d8efd1097cb35231295b83"),
-      ECFactory.publicKey("02480863e5c4a4e9763f5380c44fcfe6a3b7787397076cf9ea1049303a9d34f721")
+      ECPublicKey("0369d26ebd086523384a0f89f293d4c327a65fa73332d8efd1097cb35231295b83"),
+      ECPublicKey("02480863e5c4a4e9763f5380c44fcfe6a3b7787397076cf9ea1049303a9d34f721")
     ))
 
   }
