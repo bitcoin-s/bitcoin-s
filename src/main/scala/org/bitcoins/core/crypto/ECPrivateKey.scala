@@ -3,6 +3,7 @@ package org.bitcoins.core.crypto
 import java.math.BigInteger
 import java.security.spec.ECPrivateKeySpec
 
+import org.bitcoins.core.util.{BitcoinSUtil, Factory}
 import org.spongycastle.crypto.params.{ECPrivateKeyParameters, ECPublicKeyParameters}
 import org.spongycastle.math.ec.{ECPoint, FixedPointCombMultiplier}
 
@@ -41,7 +42,19 @@ sealed trait ECPrivateKey extends BaseECKey {
     } else privKeyBigInteger
     return new FixedPointCombMultiplier().multiply(CryptoParams.curve.getG, privKey);
   }
-
 }
 
-sealed case class ECPrivateKeyImpl(hex : String) extends ECPrivateKey
+object ECPrivateKey extends Factory[ECPrivateKey] {
+
+  private case class ECPrivateKeyImpl(bytes : Seq[Byte]) extends ECPrivateKey
+
+  override def fromBytes(bytes : Seq[Byte]) : ECPrivateKey = ECPrivateKeyImpl(bytes)
+
+  override def fromHex(hex : String) : ECPrivateKey = fromBytes(BitcoinSUtil.decodeHex(hex))
+
+  def apply(bytes : Seq[Byte]) : ECPrivateKey = fromBytes(bytes)
+
+  def apply(hex : String) : ECPrivateKey = fromHex(hex)
+}
+
+
