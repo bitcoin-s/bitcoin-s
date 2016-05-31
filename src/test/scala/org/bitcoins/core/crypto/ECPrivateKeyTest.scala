@@ -20,7 +20,7 @@ class ECPrivateKeyTest extends FlatSpec with MustMatchers {
 
   it must "create a bitcoin-s private key from a bitcoinj private key, then convert to the same public key" in {
     val bitcoinjKey = new org.bitcoinj.core.ECKey()
-    val bitcoinsPrivKey = ECFactory.privateKey(bitcoinjKey.getSecretBytes)
+    val bitcoinsPrivKey = ECPrivateKey(bitcoinjKey.getSecretBytes)
     val bitcoinsPublicKey = bitcoinsPrivKey.publicKey
     val bitcoinjPublicKey = bitcoinjKey.getPubKey
 
@@ -28,7 +28,7 @@ class ECPrivateKeyTest extends FlatSpec with MustMatchers {
   }
 
   it must "create a bitcionj private key from a bitcoins private key and get the same public key" in {
-    val bitcoinsPrivKey = ECFactory.privateKey
+    val bitcoinsPrivKey = ECPrivateKey.freshPrivateKey
     val bitcoinjPrivKey = org.bitcoinj.core.ECKey.fromPrivate(bitcoinsPrivKey.bytes.toArray)
     val bitcoinjPublicKey = bitcoinjPrivKey.getPubKey
     val bitcoinsPublicKey = bitcoinsPrivKey.publicKey
@@ -49,18 +49,18 @@ class ECPrivateKeyTest extends FlatSpec with MustMatchers {
   it must "create a private key from a sequence of bytes that has the same byte representation of bitcoinj ECKeys" in {
     val bytes = CryptoTestUtil.bitcoinjPrivateKey.getPrivKeyBytes.toList
     val bitcoinJKey = org.bitcoinj.core.ECKey.fromPrivate(bytes.toArray)
-    val privateKey : ECPrivateKey = ECFactory.privateKey(bytes)
+    val privateKey : ECPrivateKey = ECPrivateKey(bytes)
     privateKey.hex must be (bitcoinJKey.getPrivateKeyAsHex)
   }
 
   it must "create a private key from bytes" in {
     val privKeyBytes = Seq(0.toByte)
-    ECFactory.privateKey(privKeyBytes).bytes must be (privKeyBytes)
+    ECPrivateKey(privKeyBytes).bytes must be (privKeyBytes)
   }
 
   it must "create a private key from its hex representation" in {
     val privateKeyHex = "180cb41c7c600be951b5d3d0a7334acc7506173875834f7a6c4c786a28fcbb19"
-    val key: ECPrivateKey = ECFactory.privateKey(privateKeyHex)
+    val key: ECPrivateKey = ECPrivateKey(privateKeyHex)
     key.hex must be (privateKeyHex)
   }
 

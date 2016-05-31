@@ -93,7 +93,7 @@ object ECPrivateKey extends Factory[ECPrivateKey] {
     //is appended to compressed keys (which we implemented as the default option).
     val trim = decodedBase58.drop(1).dropRight(5)
     val privateKeyBytesToHex = BitcoinSUtil.encodeHex(trim)
-    ECFactory.privateKey(privateKeyBytesToHex)
+    apply(privateKeyBytesToHex)
   }
 }
 

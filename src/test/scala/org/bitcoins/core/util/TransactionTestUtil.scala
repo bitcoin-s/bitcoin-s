@@ -1,13 +1,9 @@
 package org.bitcoins.core.util
 
-import org.bitcoinj.core.DumpedPrivateKey
-import org.bitcoins.core.config.TestNet3
-import org.bitcoins.core.crypto.{ECFactory, ECPrivateKey, ECPublicKey}
+import org.bitcoins.core.crypto.{ECPrivateKey, ECPublicKey}
 import org.bitcoins.core.currency.CurrencyUnits
-import org.bitcoins.core.protocol.CompactSizeUIntImpl
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
-import org.slf4j.LoggerFactory
 
 /**
  * Created by chris on 2/12/16.

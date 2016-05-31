@@ -14,7 +14,7 @@ class ECPublicKeyTest extends FlatSpec with MustMatchers {
   "ECPublicKey" must "verify that a arbitrary piece of data was signed by the private key corresponding to a public key" in {
 
     val privateKeyHex = "180cb41c7c600be951b5d3d0a7334acc7506173875834f7a6c4c786a28fcbb19"
-    val key: ECPrivateKey = ECFactory.privateKey(privateKeyHex)
+    val key: ECPrivateKey = ECPrivateKey(privateKeyHex)
 
     val signature: ECDigitalSignature = key.sign(Sha256Hash.ZERO_HASH.getBytes.toSeq)
 
@@ -26,10 +26,10 @@ class ECPublicKeyTest extends FlatSpec with MustMatchers {
 
   it must "fail to verify a piece of data if the wrong public key is given" in {
     val privateKeyHex = "180cb41c7c600be951b5d3d0a7334acc7506173875834f7a6c4c786a28fcbb19"
-    val key: ECPrivateKey = ECFactory.privateKey(privateKeyHex)
+    val key: ECPrivateKey = ECPrivateKey(privateKeyHex)
     val signature: ECDigitalSignature = key.sign(Sha256Hash.ZERO_HASH.getBytes.toSeq)
 
-    val wrongPublicKey = ECFactory.publicKey
+    val wrongPublicKey = ECPublicKey.freshPublicKey
     val isValid : Boolean = wrongPublicKey.verify(Sha256Hash.ZERO_HASH.getBytes.toSeq,signature)
     isValid must be (false)
   }
@@ -37,15 +37,15 @@ class ECPublicKeyTest extends FlatSpec with MustMatchers {
   it must "verify a piece of data signed with a bitcoinj private key" in {
     val bitcoinjPrivKey = new org.bitcoinj.core.ECKey
     val bitcoinjSignature = bitcoinjPrivKey.sign(Sha256Hash.ZERO_HASH)
-    val bitcoinsSignature = ECFactory.digitalSignature(bitcoinjSignature.encodeToDER())
-    val bitcoinsPublicKey = ECFactory.publicKey(bitcoinjPrivKey.getPubKey)
+    val bitcoinsSignature = ECDigitalSignature(bitcoinjSignature.encodeToDER())
+    val bitcoinsPublicKey = ECPublicKey(bitcoinjPrivKey.getPubKey)
     bitcoinsPublicKey.verify(Sha256Hash.ZERO_HASH.getBytes, bitcoinsSignature) must be (true)
 
   }
 
 
   it must "verify a piece of data was signed with a bitcoins private key inside of bitcoinj" in {
-    val bitcoinsPrivKey = ECFactory.privateKey
+    val bitcoinsPrivKey = ECPrivateKey.freshPrivateKey
     val bitcoinsSignature = bitcoinsPrivKey.sign(Sha256Hash.ZERO_HASH.getBytes)
     val bitcoinjPublicKey = org.bitcoinj.core.ECKey.fromPublicOnly(bitcoinsPrivKey.publicKey.bytes.toArray)
     bitcoinjPublicKey.verify(Sha256Hash.ZERO_HASH.getBytes, bitcoinsSignature.bytes.toArray) must be (true)

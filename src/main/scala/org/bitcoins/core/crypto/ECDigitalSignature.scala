@@ -70,6 +70,7 @@ object ECDigitalSignature extends Factory[ECDigitalSignature] {
 
   def apply(hex : String) : ECDigitalSignature = fromHex(hex)
 
+  def apply(r : BigInt, s : BigInt) = fromRS(r,s)
   /**
     * Takes in the r and s component of a digital signature and gives back a ECDigitalSignature object
     * The ECDigitalSignature object complies with strict der encoding as per BIP62
@@ -78,7 +79,7 @@ object ECDigitalSignature extends Factory[ECDigitalSignature] {
     * @param s the s component of the digital signature
     * @return
     */
-  def digitalSignature(r : BigInt, s : BigInt) : ECDigitalSignature = {
+  def fromRS(r : BigInt, s : BigInt) : ECDigitalSignature = {
     val rsSize = r.toByteArray.size + s.toByteArray.size
     val totalSize = 4 + rsSize
     val bytes : Seq[Byte] = Seq(0x30.toByte, totalSize.toByte, 0x2.toByte, r.toByteArray.size.toByte) ++

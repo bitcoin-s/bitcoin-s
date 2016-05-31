@@ -1,6 +1,5 @@
 package org.bitcoins.core.protocol.script
 
-import org.bitcoins.core.crypto.ECFactory
 import org.bitcoins.core.script.bitwise.OP_EQUALVERIFY
 import org.bitcoins.core.script.constant.{BytesToPushOntoStack, ScriptConstant, ScriptToken}
 import org.bitcoins.core.script.crypto.{OP_CHECKSIG, OP_CODESEPARATOR, OP_HASH160}
