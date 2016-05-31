@@ -21,7 +21,7 @@ object AddressProtocol extends DefaultJsonProtocol {
           case s if s(0) == '1' || s(0) == '3' => BitcoinAddress(s)
           case _ => throw new RuntimeException("Addresses should always start with 'a' '1' or '3'")
         }
-        case _ => throw new RuntimeException("Addresses should always be reprsented by a JsString")
+        case _ => throw new RuntimeException("Addresses should always be represented by a JsString")
       }
     }
 
