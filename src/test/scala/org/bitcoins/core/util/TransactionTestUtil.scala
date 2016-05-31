@@ -1,11 +1,10 @@
 package org.bitcoins.core.util
 
 import org.bitcoinj.core.DumpedPrivateKey
-
 import org.bitcoins.core.config.TestNet3
-import org.bitcoins.core.crypto.{ECFactory, ECPublicKey}
+import org.bitcoins.core.crypto.{ECFactory, ECPrivateKey, ECPublicKey}
 import org.bitcoins.core.currency.CurrencyUnits
-import org.bitcoins.core.protocol.{CompactSizeUIntImpl}
+import org.bitcoins.core.protocol.CompactSizeUIntImpl
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.slf4j.LoggerFactory
@@ -107,9 +106,9 @@ trait TransactionTestUtil extends BitcoinSLogger {
   }
 
   def signedMultiSignatureTransaction : (Transaction, Int, ScriptPubKey, Seq[ECPublicKey]) = {
-    val key1 = ECFactory.fromBase58ToPrivateKey("cVLwRLTvz3BxDAWkvS3yzT9pUcTCup7kQnfT2smRjvmmm1wAP6QT")
-    val key2 = ECFactory.fromBase58ToPrivateKey("cTine92s8GLpVqvebi8rYce3FrUYq78ZGQffBYCS1HmDPJdSTxUo")
-    def key3 = ECFactory.fromBase58ToPrivateKey("cVHwXSPRZmL9adctwBwmn4oTZdZMbaCsR5XF6VznqMgcvt1FDDxg")
+    val key1 = ECPrivateKey.fromBase58ToPrivateKey("cVLwRLTvz3BxDAWkvS3yzT9pUcTCup7kQnfT2smRjvmmm1wAP6QT")
+    val key2 = ECPrivateKey.fromBase58ToPrivateKey("cTine92s8GLpVqvebi8rYce3FrUYq78ZGQffBYCS1HmDPJdSTxUo")
+    def key3 = ECPrivateKey.fromBase58ToPrivateKey("cVHwXSPRZmL9adctwBwmn4oTZdZMbaCsR5XF6VznqMgcvt1FDDxg")
     (signedMultiSignatureTx,0,multiSignatureScriptPubKey, Seq(key1.publicKey,key2.publicKey,key3.publicKey))
   }
 
@@ -123,21 +122,17 @@ trait TransactionTestUtil extends BitcoinSLogger {
     val spendingTx = TestUtil.p2sh2Of2Tx
     val inputIndex = 0
     val input = spendingTx.inputs(inputIndex)
-
     (spendingTx, input, inputIndex, creditingTx.outputs(input.previousOutput.vout))
-
   }
-
-
-
-
 
   //https://tbtc.blockr.io/api/v1/tx/raw/d77d905fc29f86bc3db39fdb68cfcab4e35f677d4f2ec33ed749912e0fa5f385
   def rawP2sh2Of3Transaction = "010000000197e355df4b040cdca3b5623864dfcd9b94cce06417a620e2826e81d6335186c300000000fc004730440220724714702c6c172dfb72dbc1536e3a7604b9fb5f9dcdf05d76c284010f97f75602200c0c749f2efc71234a752dddee42f38967a2c5eb725be3752c4d8c3a2e2403d60147304402200173f0628f05258829a71d62bfe3baaf48d9fa9f1b4c39355be74acc2db0cee6022067357b735da08fdc63546c81437b182e84ee505d7748cbcd32f8cb9098fb0df6014c69522102ab07ab88e8211f8d48820b78ca1276960e1d09ecdc5382afc59f17c660e01d7d210346d594bfc39dc5bc4a2afb62a8717bb049d1543289d78ceec533359e77d845092103c1d5b135b3b082dc20eab6ae7d39d80bb26b5fb33b8f1b4da72f995bca9fe05353aeffffffff02bbda02000000000017a91432f3a016b96be26f9cd088675012c26fca675cfc87a08601000000000017a9149fe9d38bb4054f1827285097f3ce7293030365ee8700000000"
+
   def p2sh2Of3Transaction = Transaction(rawP2sh2Of3Transaction)
 
   //https://tbtc.blockr.io/api/v1/tx/raw/c3865133d6816e82e220a61764e0cc949bcddf643862b5a3dc0c044bdf55e397
   def rawP2sh2Of3CreditingTransaction = "01000000016f817a337d3b7c09a7d3484eaad5467730cb48404492968047a0877232a081d000000000fdfd0000473044022053b21ad6a9c63c36792fa9ccabcecaca90015ef5cf93515010fb2f55597b4498022045889d57c7eb01113b50a403287baa1202f7e6cf65ff74c04d1b2bac18f6622201483045022100cdbe4cf74116ef080b0251dc79c65fc94cb601466dcca46852aaf648af7c701302206330a9f97c952cf033faca3dd623aa8150e4f325e228244c737950d38abd7bde014c69522103ed9accffc87e17042feb7dcffb8af8231739aa6ee87a4fc09b5523b5997a295f210310d24963b6777568731efe17a4d06cfeb207b55d869ab641636468ec5e551889210393d6f0fad0c89c190b5a6ce77241e4ff416bc562003c9308394021707f0fd9bd53aeffffffff022e8204000000000017a914aa75a01abb09b58eedd4a97612056c94a3ceafcf87a0860100000000001976a914c810ad20630f02790741f5458f666798b86470c688ac00000000"
+
   def p2sh2Of3CreditingTransaction = Transaction(rawP2sh2Of3CreditingTransaction)
   /**
    * Returns a p2sh transaction that has 2 of 3 signatures with the creiditing output

@@ -33,4 +33,23 @@ class ECDigitalSignatureTest extends FlatSpec with MustMatchers {
     EmptyDigitalSignature.r must be (0)
     EmptyDigitalSignature.s must be (0)
   }
+
+
+  it must "create a digital signature from it's r,s components" in {
+    //from the tx 44e504f5b7649d215be05ad9f09026dee95201244a3b218013c504a6a49a26ff
+    val rawDigitalSignature = "3044022040f91c48f4011bf2e2edb6621bfa8fb802241de939cb86f1872c99c580ef0fe402204fc27388bc525e1b655b5f5b35f9d601d28602432dd5672f29e0a47f5b8bbb26"
+    val digitalSignature = ECFactory.digitalSignature(rawDigitalSignature)
+    val (r,s) = (digitalSignature.r, digitalSignature.s)
+    val digitalSignatureFromRS = ECFactory.digitalSignature(r,s)
+    digitalSignatureFromRS must be (digitalSignature)
+  }
+
+
+  it must "create an empty digital signature when given 0 in hex or byte format" in {
+    val hex = ECFactory.digitalSignature("00")
+    val byte = ECFactory.digitalSignature(Seq(0.toByte))
+    val emptySignature = ECFactory.digitalSignature("")
+    byte must be (emptySignature)
+    hex must be (emptySignature)
+  }
 }

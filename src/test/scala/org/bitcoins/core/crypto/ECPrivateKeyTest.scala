@@ -1,7 +1,7 @@
 package org.bitcoins.core.crypto
 
-import org.bitcoins.core.util.{BitcoinSUtil, CryptoTestUtil}
-import org.scalatest.{MustMatchers, FlatSpec}
+import org.bitcoins.core.util.{BitcoinJTestUtil, BitcoinSUtil, CryptoTestUtil}
+import org.scalatest.{FlatSpec, MustMatchers}
 
 /**
  * Created by chris on 3/7/16.
@@ -34,6 +34,34 @@ class ECPrivateKeyTest extends FlatSpec with MustMatchers {
     val bitcoinsPublicKey = bitcoinsPrivKey.publicKey
 
     bitcoinsPublicKey.bytes must be (bitcoinjPublicKey)
+  }
+
+  it must "create a private key from the dumped base58 in bitcoin-cli" in {
+    val privateKeyBase58 = CryptoTestUtil.privateKeyBase58
+    val bitcoinjDumpedPrivateKey = new org.bitcoinj.core.DumpedPrivateKey(BitcoinJTestUtil.params,privateKeyBase58)
+    val bitcoinjPrivateKey = bitcoinjDumpedPrivateKey.getKey
+    val privateKey = ECPrivateKey.fromBase58ToPrivateKey(privateKeyBase58)
+
+    privateKey.hex must be (bitcoinjPrivateKey.getPrivateKeyAsHex)
+
+  }
+
+  it must "create a private key from a sequence of bytes that has the same byte representation of bitcoinj ECKeys" in {
+    val bytes = CryptoTestUtil.bitcoinjPrivateKey.getPrivKeyBytes.toList
+    val bitcoinJKey = org.bitcoinj.core.ECKey.fromPrivate(bytes.toArray)
+    val privateKey : ECPrivateKey = ECFactory.privateKey(bytes)
+    privateKey.hex must be (bitcoinJKey.getPrivateKeyAsHex)
+  }
+
+  it must "create a private key from bytes" in {
+    val privKeyBytes = Seq(0.toByte)
+    ECFactory.privateKey(privKeyBytes).bytes must be (privKeyBytes)
+  }
+
+  it must "create a private key from its hex representation" in {
+    val privateKeyHex = "180cb41c7c600be951b5d3d0a7334acc7506173875834f7a6c4c786a28fcbb19"
+    val key: ECPrivateKey = ECFactory.privateKey(privateKeyHex)
+    key.hex must be (privateKeyHex)
   }
 
 }
