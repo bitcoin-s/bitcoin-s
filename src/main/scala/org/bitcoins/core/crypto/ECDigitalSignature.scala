@@ -7,10 +7,12 @@ import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil, Factory}
 sealed trait ECDigitalSignature extends BitcoinSLogger {
 
   def hex : String = BitcoinSUtil.encodeHex(bytes)
-  def bytes : Seq[Byte]
-  def isEmpty = bytes.isEmpty
-  override def toString = hex
 
+  def bytes : Seq[Byte]
+
+  def isEmpty = bytes.isEmpty
+
+  override def toString = "ECDigitalSignature(" + hex + ")"
 
   /**
    * Checks if this signature is encoded to DER correctly

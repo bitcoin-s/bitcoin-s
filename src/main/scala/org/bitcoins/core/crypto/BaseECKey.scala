@@ -11,6 +11,7 @@ import org.spongycastle.crypto.signers.{ECDSASigner, HMacDSAKCalculator}
  * Created by chris on 2/16/16.
  */
 trait BaseECKey extends BitcoinSLogger {
+
   def hex : String = BitcoinSUtil.encodeHex(bytes)
 
   def bytes : Seq[Byte]
@@ -42,6 +43,5 @@ trait BaseECKey extends BitcoinSLogger {
   def sign(hex : String) : ECDigitalSignature = sign(hex,this)
 
   def sign(bytes : Seq[Byte]) : ECDigitalSignature = sign(bytes,this)
-
 
 }

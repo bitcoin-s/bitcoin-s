@@ -1,10 +1,13 @@
 package org.bitcoins.core.crypto
 
 import java.math.BigInteger
+import java.security.SecureRandom
 import java.security.spec.ECPrivateKeySpec
 
-import org.bitcoins.core.util.{BitcoinSUtil, Factory}
-import org.spongycastle.crypto.params.{ECPrivateKeyParameters, ECPublicKeyParameters}
+import org.bitcoins.core.util.{Base58, BitcoinSUtil, Factory}
+import org.spongycastle.crypto.AsymmetricCipherKeyPair
+import org.spongycastle.crypto.generators.ECKeyPairGenerator
+import org.spongycastle.crypto.params.{ECKeyGenerationParameters, ECPrivateKeyParameters, ECPublicKeyParameters}
 import org.spongycastle.math.ec.{ECPoint, FixedPointCombMultiplier}
 
 /**
@@ -26,7 +29,7 @@ sealed trait ECPrivateKey extends BaseECKey {
    */
   def publicKey : ECPublicKey = {
     val pubKeyBytes : Seq[Byte] = publicKeyPoint.getEncoded(compressed)
-    ECFactory.publicKey(pubKeyBytes)
+    ECPublicKey(pubKeyBytes)
   }
 
 
@@ -42,6 +45,8 @@ sealed trait ECPrivateKey extends BaseECKey {
     } else privKeyBigInteger
     return new FixedPointCombMultiplier().multiply(CryptoParams.curve.getG, privKey);
   }
+
+  override def toString = "ECPrivateKey(" + hex + ")"
 }
 
 object ECPrivateKey extends Factory[ECPrivateKey] {
@@ -55,6 +60,41 @@ object ECPrivateKey extends Factory[ECPrivateKey] {
   def apply(bytes : Seq[Byte]) : ECPrivateKey = fromBytes(bytes)
 
   def apply(hex : String) : ECPrivateKey = fromHex(hex)
+
+  /**
+    * This function creates a fresh private key to use
+    * @return
+    */
+  def apply() : ECPrivateKey = freshPrivateKey
+
+  /**
+    * This function creates a fresh private key to use
+    * @return
+    */
+  def freshPrivateKey : ECPrivateKey = {
+    val secureRandom = new SecureRandom
+    val generator : ECKeyPairGenerator = new ECKeyPairGenerator
+    val keyGenParams : ECKeyGenerationParameters = new ECKeyGenerationParameters(CryptoParams.curve, secureRandom)
+    generator.init(keyGenParams)
+    val keypair : AsymmetricCipherKeyPair = generator.generateKeyPair
+    val privParams: ECPrivateKeyParameters = keypair.getPrivate.asInstanceOf[ECPrivateKeyParameters]
+    val priv : BigInteger = privParams.getD
+    apply(priv.toByteArray)
+  }
+
+  /**
+    * Takes in a base58 string and converts it into a private key
+    * @param base58
+    * @return
+    */
+  def fromBase58ToPrivateKey(base58 : String) : ECPrivateKey = {
+    val decodedBase58 : Seq[Byte] = Base58.decode(base58)
+    //Drop(1) will drop the network byte. The last 5 bytes are dropped included the checksum (4 bytes), and 0x01 byte that
+    //is appended to compressed keys (which we implemented as the default option).
+    val trim = decodedBase58.drop(1).dropRight(5)
+    val privateKeyBytesToHex = BitcoinSUtil.encodeHex(trim)
+    ECFactory.privateKey(privateKeyBytesToHex)
+  }
 }
 
 

@@ -76,6 +76,7 @@ trait ECPublicKey extends BaseECKey with BitcoinSLogger {
    */
   def verify(hex : String, signature : ECDigitalSignature) : Boolean = verify(BitcoinSUtil.decodeHex(hex),signature)
 
+  override def toString = "ECPublicKey(" + hex + ")"
 }
 
 object ECPublicKey extends Factory[ECPublicKey] {
@@ -89,6 +90,18 @@ object ECPublicKey extends Factory[ECPublicKey] {
   def apply(bytes : Seq[Byte]) : ECPublicKey = fromBytes(bytes)
 
   def apply(hex : String) : ECPublicKey = fromHex(hex)
+
+  /**
+    * Generates a fresh public key that has not been used before
+    * @return
+    */
+  def apply() = freshPublicKey
+
+  /**
+    * Generates a fresh public key that has not been used before
+    * @return
+    */
+  def freshPublicKey = ECPrivateKey.freshPrivateKey.publicKey
 }
 
 
