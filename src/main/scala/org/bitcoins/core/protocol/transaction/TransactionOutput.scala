@@ -1,17 +1,16 @@
 package org.bitcoins.core.protocol.transaction
 
-import org.bitcoins.core.currency.{CurrencyUnits, CurrencyUnit, Satoshis}
+import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits, Satoshis}
 import org.bitcoins.core.serializers.transaction.RawTransactionOutputParser
-import org.bitcoins.core.protocol.CompactSizeUInt
-
-import org.bitcoins.core.protocol.script.{ScriptPubKey}
-import org.bitcoins.core.util.{Factory, BitcoinSUtil}
+import org.bitcoins.core.protocol.{CompactSizeUInt, NetworkElement}
+import org.bitcoins.core.protocol.script.ScriptPubKey
+import org.bitcoins.core.util.{BitcoinSUtil, Factory}
 
 
 /**
  * Created by chris on 12/26/15.
  */
-sealed trait TransactionOutput extends TransactionElement {
+sealed trait TransactionOutput extends NetworkElement {
 
   def value : CurrencyUnit
   def scriptPubKey : ScriptPubKey

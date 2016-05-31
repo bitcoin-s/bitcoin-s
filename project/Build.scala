@@ -1,11 +1,11 @@
 import sbt._
 import Keys._ 
-object BitcoinSBuild extends Build {
+object BitcoinSCoreBuild extends Build {
 
-  val appName = "bitcoins"
+  val appName = "bitcoin-s-core"
   val appV = "0.0.1" 
   val scalaV = "2.11.7"
-  val organization = "org.bitcoins"
+  val organization = "org.bitcoins.core"
   val slf4jV = "1.7.5"
   val logbackV = "1.0.13"
   val appDependencies = Seq(

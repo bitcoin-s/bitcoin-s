@@ -1,7 +1,7 @@
 package org.bitcoins.core.protocol.transaction
 
 import org.bitcoins.core.serializers.transaction.RawTransactionInputParser
-import org.bitcoins.core.protocol.CompactSizeUInt
+import org.bitcoins.core.protocol.{CompactSizeUInt, NetworkElement}
 import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptSignature}
 import org.bitcoins.core.script.constant.ScriptToken
 import org.bitcoins.core.util.{BitcoinSUtil, Factory}
@@ -10,7 +10,7 @@ import org.bitcoins.core.util.{BitcoinSUtil, Factory}
  * Created by chris on 12/26/15.
   * Algebraic data type that represents a transaction input
  */
-sealed trait TransactionInput extends TransactionElement {
+sealed trait TransactionInput extends NetworkElement {
 
   def previousOutput : TransactionOutPoint
   def scriptSignature : ScriptSignature
