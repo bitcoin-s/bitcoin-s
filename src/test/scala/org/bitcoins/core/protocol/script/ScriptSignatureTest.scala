@@ -88,5 +88,4 @@ class ScriptSignatureTest extends FlatSpec with MustMatchers {
     scriptSig.isInstanceOf[P2PKScriptSignature] must be (true)
     scriptSig.hex must be (TestUtil.p2pkScriptSig.hex)
   }
-
 }
