@@ -13,7 +13,6 @@ class CryptoUtilTest extends FlatSpec with MustMatchers {
     hash.hex must be ("da39a3ee5e6b4b0d3255bfef95601890afd80709")
   }
 
-
   it must "perform the correct RIPEMD160 on a string" in {
     val str = ""
     val expectedDigest = "9c1185a5c5e9fc54612808977ee8f548b2258d31"
@@ -33,8 +32,5 @@ class CryptoUtilTest extends FlatSpec with MustMatchers {
     val expected = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     CryptoUtil.sha256(strBytes).hex must be (expected)
     CryptoUtil.sha256(hex).hex must be (expected)
-
-
-
   }
 }

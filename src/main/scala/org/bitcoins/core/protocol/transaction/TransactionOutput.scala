@@ -1,11 +1,11 @@
 package org.bitcoins.core.protocol.transaction
 
-import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits, Satoshis}
-import org.bitcoins.core.serializers.transaction.RawTransactionOutputParser
 import org.bitcoins.core.protocol.{CompactSizeUInt, NetworkElement}
-import org.bitcoins.core.protocol.script.ScriptPubKey
-import org.bitcoins.core.util.{BitcoinSUtil, Factory}
+import org.bitcoins.core.currency.{CurrencyUnits, CurrencyUnit, Satoshis}
+import org.bitcoins.core.serializers.transaction.RawTransactionOutputParser
 
+import org.bitcoins.core.protocol.script.{ScriptPubKey}
+import org.bitcoins.core.util.{Factory, BitcoinSUtil}
 
 /**
  * Created by chris on 12/26/15.

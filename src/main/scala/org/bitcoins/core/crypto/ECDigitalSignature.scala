@@ -1,7 +1,6 @@
 package org.bitcoins.core.crypto
 
 import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil}
-
 /**
  * Created by chris on 2/26/16.
  */
