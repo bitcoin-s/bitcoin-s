@@ -1,6 +1,6 @@
 package org.bitcoins.core.protocol.script
 
-import org.bitcoins.core.crypto.{ECFactory, ECPublicKey}
+import org.bitcoins.core.crypto.{ECPublicKey}
 import org.bitcoins.core.serializers.script.{RawScriptPubKeyParser, ScriptParser}
 import org.bitcoins.core.protocol._
 import org.bitcoins.core.script.bitwise.{OP_EQUAL, OP_EQUALVERIFY}
@@ -88,7 +88,7 @@ trait MultiSignatureScriptPubKey extends ScriptPubKey {
    * @return
    */
   def publicKeys : Seq[ECPublicKey] = {
-    asm.filter(_.isInstanceOf[ScriptConstant]).slice(1, maxSigs.toInt + 1).map(key => ECFactory.publicKey(key.hex))
+    asm.filter(_.isInstanceOf[ScriptConstant]).slice(1, maxSigs.toInt + 1).map(key => ECPublicKey(key.hex))
   }
 }
 
@@ -105,7 +105,7 @@ trait P2SHScriptPubKey extends ScriptPubKey
  * Format: <pubkey> OP_CHECKSIG
  */
 trait P2PKScriptPubKey extends ScriptPubKey {
-  def publicKey = ECFactory.publicKey(BitcoinScriptUtil.filterPushOps(asm).head.bytes)
+  def publicKey = ECPublicKey(BitcoinScriptUtil.filterPushOps(asm).head.bytes)
 }
 
 trait NonStandardScriptPubKey extends ScriptPubKey
