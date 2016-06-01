@@ -1,6 +1,6 @@
 package org.bitcoins.core.util
 
-import org.bitcoins.core.crypto.ECFactory
+import org.bitcoins.core.crypto.ECPublicKey
 import org.bitcoins.core.script.bitwise.OP_EQUALVERIFY
 import org.bitcoins.core.script.constant._
 import org.bitcoins.core.script.crypto._
@@ -178,7 +178,7 @@ class BitcoinScriptUtilTest extends FlatSpec with MustMatchers {
 
   it must "check a public key's encoding" in {
     //pubkeys must be compressed or uncompressed or else that are not validly encoded
-    val key = ECFactory.publicKey("00")
+    val key = ECPublicKey("00")
     val program = TestUtil.testProgram
     BitcoinScriptUtil.checkPubKeyEncoding(key,program) must be (false)
   }
