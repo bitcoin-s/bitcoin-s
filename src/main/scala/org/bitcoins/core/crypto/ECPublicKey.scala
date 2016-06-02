@@ -85,12 +85,6 @@ object ECPublicKey extends Factory[ECPublicKey] {
 
   override def fromBytes(bytes : Seq[Byte]) : ECPublicKey = ECPublicKeyImpl(bytes)
 
-  override def fromHex(hex : String) : ECPublicKey = fromBytes(BitcoinSUtil.decodeHex(hex))
-
-  def apply(bytes : Seq[Byte]) : ECPublicKey = fromBytes(bytes)
-
-  def apply(hex : String) : ECPublicKey = fromHex(hex)
-
   /**
     * Generates a fresh public key that has not been used before
     * @return

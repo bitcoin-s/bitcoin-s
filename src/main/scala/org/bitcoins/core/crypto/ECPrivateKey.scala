@@ -55,12 +55,6 @@ object ECPrivateKey extends Factory[ECPrivateKey] {
 
   override def fromBytes(bytes : Seq[Byte]) : ECPrivateKey = ECPrivateKeyImpl(bytes)
 
-  override def fromHex(hex : String) : ECPrivateKey = fromBytes(BitcoinSUtil.decodeHex(hex))
-
-  def apply(bytes : Seq[Byte]) : ECPrivateKey = fromBytes(bytes)
-
-  def apply(hex : String) : ECPrivateKey = fromHex(hex)
-
   /**
     * This function creates a fresh private key to use
     * @return

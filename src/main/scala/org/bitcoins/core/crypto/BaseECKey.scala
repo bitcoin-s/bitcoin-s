@@ -62,8 +62,4 @@ object BaseECKey extends Factory[BaseECKey] {
     * @return
     */
   override def fromBytes(bytes : Seq[Byte]) : BaseECKey = ECPrivateKey(bytes)
-  
-  def apply(hex : String) : BaseECKey = fromHex(hex)
-
-  def apply(bytes : Seq[Byte]) : BaseECKey = fromBytes(bytes)
 }
