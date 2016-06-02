@@ -149,6 +149,5 @@ object Address extends Factory[Address] {
 
   override def fromHex(hex : String) : Address = throw new RuntimeException("We cannot create a bitcoin address from hex - bitcoin addresses are base 58 encoded")
 
-  def apply(bytes : Seq[Byte]) : Address = fromBytes(bytes)
-  def apply(str : String) : Address = factory(str)
+  override def apply(str : String) : Address = factory(str)
 }

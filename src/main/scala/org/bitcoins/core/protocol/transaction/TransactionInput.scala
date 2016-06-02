@@ -112,5 +112,4 @@ object TransactionInput extends Factory[TransactionInput] {
 
   def apply(outPoint : TransactionOutPoint, scriptSignature : ScriptSignature, sequenceNumber : Long) : TransactionInput = factory(outPoint,scriptSignature,sequenceNumber)
 
-  def apply(bytes : Seq[Byte]) : TransactionInput = fromBytes(bytes)
 }

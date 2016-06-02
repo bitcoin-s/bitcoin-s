@@ -347,9 +347,8 @@ object ScriptSignature extends Factory[ScriptSignature] with BitcoinSLogger {
     }
   }
 
-  def apply(bytes: Seq[Byte]) : ScriptSignature = fromBytes(bytes)
-  def apply(hex : String) : ScriptSignature = fromHex(hex)
   def apply(signature : ECDigitalSignature, pubKey : ECPublicKey) : ScriptSignature = factory(signature,pubKey)
+
   def apply(tokens : Seq[ScriptToken], scriptPubKey : ScriptPubKey) : ScriptSignature = fromScriptPubKey(tokens, scriptPubKey)
 }
 
