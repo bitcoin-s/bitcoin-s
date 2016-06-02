@@ -133,10 +133,6 @@ object ScriptNumber extends Factory[ScriptNumber] {
     if (num == 0) zero else apply(BitcoinSUtil.longToHex(num))
   }
 
-  def apply(hex : String) : ScriptNumber = fromHex(hex)
-
-  def apply(bytes : Seq[Byte]) : ScriptNumber = fromBytes(bytes)
-
   def apply(hex : String, requireMinimal : Boolean) : Try[ScriptNumber] = {
     if (requireMinimal && !BitcoinScriptUtil.isShortestEncoding(hex)) {
       Failure(new IllegalArgumentException("The given hex was not the shortest encoding for the script number: " + hex))
@@ -404,7 +400,4 @@ object ScriptConstant extends Factory[ScriptConstant] {
     */
   def fromBytes(bytes : Seq[Byte]) : ScriptConstant = ScriptConstantImpl(BitcoinSUtil.encodeHex(bytes))
 
-  def apply(hex : String) : ScriptConstant = fromHex(hex)
-
-  def apply(bytes : Seq[Byte]) : ScriptConstant = fromBytes(bytes)
 }

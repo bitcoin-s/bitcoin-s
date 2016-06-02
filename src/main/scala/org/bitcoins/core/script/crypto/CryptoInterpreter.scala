@@ -89,8 +89,8 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
           logger.error("OP_CHECKSIG requires at lest two stack elements")
           ScriptProgram(program,ScriptErrorInvalidStackOperation)
         } else {
-          val pubKey = ECFactory.publicKey(executionInProgressScriptProgram.stack.head.bytes)
-          val signature = ECFactory.digitalSignature(executionInProgressScriptProgram.stack.tail.head.bytes)
+          val pubKey = ECPublicKey(executionInProgressScriptProgram.stack.head.bytes)
+          val signature = ECDigitalSignature(executionInProgressScriptProgram.stack.tail.head.bytes)
 
           if (ScriptFlagUtil.requiresStrictDerEncoding(executionInProgressScriptProgram.flags) &&
             !DERSignatureUtil.isStrictDEREncoding(signature)) {
@@ -229,7 +229,7 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
               (program.stack.tail.slice(0, nPossibleSignatures.num.toInt),
                 program.stack.tail.slice(nPossibleSignatures.num.toInt, program.stack.tail.size))
 
-            val pubKeys = pubKeysScriptTokens.map(key => ECFactory.publicKey(key.bytes))
+            val pubKeys = pubKeysScriptTokens.map(key => ECPublicKey(key.bytes))
             logger.debug("Public keys on the stack: " + pubKeys)
             logger.debug("Stack without pubkeys: " + stackWithoutPubKeys)
             logger.debug("mRequiredSignatures: " + mRequiredSignatures)
@@ -237,7 +237,7 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
             //+1 is for the fact that we have the # of sigs + the script token indicating the # of sigs
             val signaturesScriptTokens = program.stack.tail.slice(nPossibleSignatures.num.toInt + 1,
               nPossibleSignatures.num.toInt + mRequiredSignatures.num.toInt + 1)
-            val signatures = signaturesScriptTokens.map(token => ECFactory.digitalSignature(token.bytes))
+            val signatures = signaturesScriptTokens.map(token => ECDigitalSignature(token.bytes))
             logger.debug("Signatures on the stack: " + signatures)
 
             //this contains the extra Script OP that is required for OP_CHECKMULTISIG
