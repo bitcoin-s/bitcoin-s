@@ -64,12 +64,6 @@ object ECDigitalSignature extends Factory[ECDigitalSignature] {
     else ECDigitalSignatureImpl(bytes)
   }
 
-  override def fromHex(hex : String) : ECDigitalSignature = fromBytes(BitcoinSUtil.decodeHex(hex))
-
-  def apply(bytes : Seq[Byte]) : ECDigitalSignature = fromBytes(bytes)
-
-  def apply(hex : String) : ECDigitalSignature = fromHex(hex)
-
   def apply(r : BigInt, s : BigInt) = fromRS(r,s)
   /**
     * Takes in the r and s component of a digital signature and gives back a ECDigitalSignature object

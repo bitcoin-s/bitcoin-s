@@ -58,9 +58,8 @@ object TransactionOutPoint extends Factory[TransactionOutPoint] {
 
   def fromBytes(bytes : Seq[Byte]) : TransactionOutPoint = RawTransactionOutPointParser.read(bytes)
 
-  def apply(bytes : Seq[Byte]) : TransactionOutPoint = fromBytes(bytes)
-  def apply(hex : String) : TransactionOutPoint = fromHex(hex)
   def apply(output : TransactionOutput,parentTransaction : Transaction) : TransactionOutPoint = factory(output,parentTransaction)
+
   def apply(txId : DoubleSha256Digest, index: Int) : TransactionOutPoint = factory(txId,index)
 }
 
