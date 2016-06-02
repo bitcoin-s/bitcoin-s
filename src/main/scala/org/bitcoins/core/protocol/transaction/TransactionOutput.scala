@@ -43,7 +43,9 @@ object TransactionOutput extends Factory[TransactionOutput] {
   def fromBytes(bytes : Seq[Byte]) : TransactionOutput = RawTransactionOutputParser.read(bytes).head
 
   def apply(oldOutput : TransactionOutput, newCurrencyUnit: CurrencyUnit) : TransactionOutput = factory(oldOutput,newCurrencyUnit)
+
   def apply(oldOutput : TransactionOutput, newScriptPubKey : ScriptPubKey) : TransactionOutput = factory(oldOutput, newScriptPubKey)
+
   def apply(currencyUnit: CurrencyUnit, scriptPubKey: ScriptPubKey) : TransactionOutput = factory(currencyUnit, scriptPubKey)
-  def apply(bytes : Seq[Byte]) : TransactionOutput = fromBytes(bytes)
+
 }

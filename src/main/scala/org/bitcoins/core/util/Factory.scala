@@ -20,4 +20,17 @@ trait Factory[T] {
    */
   def fromBytes(bytes : Seq[Byte]) : T
 
+  /**
+    * Creates a T out of a sequence of bytes
+    * @param bytes
+    * @return
+    */
+  def apply(bytes : Seq[Byte]) : T = fromBytes(bytes)
+
+  /**
+    * Creates a T from a hex string
+    * @param hex
+    * @return
+    */
+  def apply(hex : String) : T = fromHex(hex)
 }
