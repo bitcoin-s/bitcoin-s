@@ -1,8 +1,8 @@
 package org.bitcoins.core.protocol.script
 
-import org.bitcoins.core.crypto.ECFactory
+import org.bitcoins.core.crypto.{ECDigitalSignature}
 import org.bitcoins.core.util.TestUtil
-import org.scalatest.{MustMatchers, FlatSpec}
+import org.scalatest.{FlatSpec, MustMatchers}
 
 /**
  * Created by chris on 3/16/16.
@@ -14,6 +14,6 @@ class P2PKScriptSignatureTest extends FlatSpec with MustMatchers {
       case s : P2PKScriptSignature => s
       case _ => throw new RuntimeException("SHould have been a p2pk scriptSig")
     }
-    p2pkScriptSig.signature must be (ECFactory.digitalSignature("304402200a5c6163f07b8d3b013c4d1d6dba25e780b39658d79ba37af7057a3b7f15ffa102201fd9b4eaa9943f734928b99a83592c2e7bf342ea2680f6a2bb705167966b742001"))
+    p2pkScriptSig.signature must be (ECDigitalSignature("304402200a5c6163f07b8d3b013c4d1d6dba25e780b39658d79ba37af7057a3b7f15ffa102201fd9b4eaa9943f734928b99a83592c2e7bf342ea2680f6a2bb705167966b742001"))
   }
 }

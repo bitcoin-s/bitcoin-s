@@ -1,6 +1,5 @@
 package org.bitcoins.core.util
 
-import org.bitcoins.core.crypto.ECFactory
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.util
 import org.scalatest.{FlatSpec, MustMatchers}

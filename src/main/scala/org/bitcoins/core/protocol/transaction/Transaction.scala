@@ -126,8 +126,6 @@ object Transaction extends Factory[Transaction] {
 
   def fromBytes(bytes : Seq[Byte]) : Transaction = RawTransactionParser.read(bytes)
 
-  def apply(bytes : Seq[Byte]) : Transaction = fromBytes(bytes)
-  def apply(hex: String) : Transaction = fromHex(hex)
   def apply(bytes : Array[Byte]) : Transaction = factory(bytes)
   def apply(oldTx : Transaction, lockTime : Long)  : Transaction = factory(oldTx,lockTime)
   def apply(oldTx : Transaction, updatedInputs : UpdateTransactionInputs) : Transaction = factory(oldTx, updatedInputs)

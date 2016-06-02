@@ -1,6 +1,6 @@
 package org.bitcoins.core.protocol.script
 
-import org.bitcoins.core.crypto.ECFactory
+import org.bitcoins.core.crypto.{ECDigitalSignature}
 import org.bitcoins.core.script.crypto.SIGHASH_ALL
 import org.bitcoins.core.util.TestUtil
 import org.scalatest.{FlatSpec, MustMatchers}
@@ -23,7 +23,7 @@ class P2PKHScriptSignatureTest extends FlatSpec with MustMatchers {
       case s : P2PKHScriptSignature => s
       case _ => throw new RuntimeException("Must be p2pkh scriptSig")
     }
-    p2pkhScriptSig.signature must be (ECFactory.digitalSignature("3044022016ffdbb7c57634903c5e018fcfc48d59f4e37dc4bc3bbc9ba4e6ee39150bca030220119c2241a931819bc1a75d3596e4029d803d1cd6de123bf8a1a1a2c3665e1fac01"))
+    p2pkhScriptSig.signature must be (ECDigitalSignature("3044022016ffdbb7c57634903c5e018fcfc48d59f4e37dc4bc3bbc9ba4e6ee39150bca030220119c2241a931819bc1a75d3596e4029d803d1cd6de123bf8a1a1a2c3665e1fac01"))
   }
 
 }
