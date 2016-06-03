@@ -17,11 +17,11 @@ import org.bitcoins.core.script.stack.OP_DUP
  */
 object TestUtil {
 
-  val testBitcoinAddress = BitcoinAddress("n3p1ct69ao3qxWvEvzLhLtWG2zJGTjN3EV")
-  val testP2SHAddress = BitcoinAddress("2MzYbQdkSVp5wVyMRp6A5PHPuQNHpiaTbCj")
-  val bitcoinAddress = BitcoinAddress("1C4kYhyLftmkn48YarSoLupxHfYFo8kp64")
-  val multiSigAddress = BitcoinAddress("342ftSRCvFHfCeFFBuz4xwbeqnDw6BGUey")
-  val assetAddress = AssetAddress("akJsoCcyh34FGPotxfEoSXGwFPCNAkyCgTA")
+  def testBitcoinAddress = BitcoinAddress("n3p1ct69ao3qxWvEvzLhLtWG2zJGTjN3EV")
+  def testP2SHAddress = BitcoinAddress("2MzYbQdkSVp5wVyMRp6A5PHPuQNHpiaTbCj")
+  def bitcoinAddress = BitcoinAddress("1C4kYhyLftmkn48YarSoLupxHfYFo8kp64")
+  def multiSigAddress = BitcoinAddress("342ftSRCvFHfCeFFBuz4xwbeqnDw6BGUey")
+  def assetAddress = AssetAddress("akJsoCcyh34FGPotxfEoSXGwFPCNAkyCgTA")
 
   val p2pkhInputScript = "473044022016ffdbb7c57634903c5e018fcfc48d59f4e37dc4bc3bbc9ba4e6ee39150bca030220119c2241a931819bc1a75d3596e4029d803d1cd6de123bf8a1a1a2c3665e1fac012102af7dad03e682fcd0427b5c24140c220ac9d8abe286c15f8cf5bf77eed19c3652"
   def p2pkhScriptSig = ScriptSignature(p2pkhInputScript)
@@ -141,7 +141,7 @@ object TestUtil {
   def p2shScriptPubKey = ScriptPubKey(rawP2SHScriptPubKey)
   //https://tbtc.blockr.io/api/v1/tx/raw/bdc221db675c06dbee2ae75d33e31cad4e2555efea10c337ff32c8cdf97f8e74
   val rawScriptSig = "483045022100ad8e961fe3c22b2647d92b078f4c0cf81b3106ea5bf8b900ab8646aa4430216f022071d4edc2b5588be20ac4c2d07edd8ed069e10b2402d3dce2d3b835ccd075f283014104fa79182bbc26c708b5d9f36b8635947d4a834ea356cf612ede08395c295f962e0b1dc2557aba34188640e51a58ed547f2c89c8265cd0c04ff890d8435648746e"
-  val scriptSig = ScriptSignature(rawScriptSig)
+  def scriptSig = ScriptSignature(rawScriptSig)
   def testProgram : ScriptProgram = ScriptProgram(TransactionTestUtil.testTransaction,
     EmptyScriptPubKey,0,List(),Policy.standardScriptVerifyFlags)
 
@@ -165,10 +165,10 @@ object TestUtil {
    * This is a script sig that doesn't have a signature strictly der encoded
    * Zero-length R is correctly encoded
    */
-  val rawScriptSigNotStrictDerEncoded = "173014020002107777777777777777777777777777777701"
+  def  rawScriptSigNotStrictDerEncoded = "173014020002107777777777777777777777777777777701"
   def scriptSigNotStrictDerEncoded = ScriptSignature(rawScriptSigNotStrictDerEncoded)
 
-  val p2pkhScriptSigNotStrictDerEncoded  = ScriptSignature.fromAsm(List(BytesToPushOntoStack(71),
+  def p2pkhScriptSigNotStrictDerEncoded  = ScriptSignature.fromAsm(List(BytesToPushOntoStack(71),
     ScriptConstant("173014020002107777777777777777777777777777777701"),
     BytesToPushOntoStack(33),
     ScriptConstant("02af7dad03e682fcd0427b5c24140c220ac9d8abe286c15f8cf5bf77eed19c3652")))

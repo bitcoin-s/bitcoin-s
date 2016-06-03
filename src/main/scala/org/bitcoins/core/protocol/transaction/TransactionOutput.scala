@@ -1,11 +1,11 @@
 package org.bitcoins.core.protocol.transaction
 
-import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits, Satoshis}
-import org.bitcoins.core.serializers.transaction.RawTransactionOutputParser
 import org.bitcoins.core.protocol.{CompactSizeUInt, NetworkElement}
-import org.bitcoins.core.protocol.script.ScriptPubKey
-import org.bitcoins.core.util.{BitcoinSUtil, Factory}
+import org.bitcoins.core.currency.{CurrencyUnits, CurrencyUnit, Satoshis}
+import org.bitcoins.core.serializers.transaction.RawTransactionOutputParser
 
+import org.bitcoins.core.protocol.script.{ScriptPubKey}
+import org.bitcoins.core.util.{Factory, BitcoinSUtil}
 
 /**
  * Created by chris on 12/26/15.
@@ -43,7 +43,9 @@ object TransactionOutput extends Factory[TransactionOutput] {
   def fromBytes(bytes : Seq[Byte]) : TransactionOutput = RawTransactionOutputParser.read(bytes).head
 
   def apply(oldOutput : TransactionOutput, newCurrencyUnit: CurrencyUnit) : TransactionOutput = factory(oldOutput,newCurrencyUnit)
+
   def apply(oldOutput : TransactionOutput, newScriptPubKey : ScriptPubKey) : TransactionOutput = factory(oldOutput, newScriptPubKey)
+
   def apply(currencyUnit: CurrencyUnit, scriptPubKey: ScriptPubKey) : TransactionOutput = factory(currencyUnit, scriptPubKey)
-  def apply(bytes : Seq[Byte]) : TransactionOutput = fromBytes(bytes)
+
 }

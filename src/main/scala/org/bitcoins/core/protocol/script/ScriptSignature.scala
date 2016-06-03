@@ -1,6 +1,6 @@
 package org.bitcoins.core.protocol.script
 
-import org.bitcoins.core.crypto.{ECDigitalSignature, ECFactory, ECPublicKey, EmptyDigitalSignature}
+import org.bitcoins.core.crypto.{ECDigitalSignature, ECPublicKey, EmptyDigitalSignature}
 import org.bitcoins.core.protocol.NetworkElement
 import org.bitcoins.core.serializers.script.{RawScriptPubKeyParser, RawScriptSignatureParser, ScriptParser}
 import org.bitcoins.core.script.constant._
@@ -75,7 +75,7 @@ trait P2PKHScriptSignature extends ScriptSignature {
     * Gives us the public key inside of a p2pkh script signature
     * @return
     */
-  def publicKey : ECPublicKey = ECFactory.publicKey(asm.last.bytes)
+  def publicKey : ECPublicKey = ECPublicKey(asm.last.bytes)
 
   /**
     * Returns the hash type for the p2pkh script signature
@@ -84,7 +84,7 @@ trait P2PKHScriptSignature extends ScriptSignature {
   def hashType : HashType = HashTypeFactory.fromByte(signature.bytes.last)
 
   override def signatures : Seq[ECDigitalSignature] = {
-    Seq(ECFactory.digitalSignature(asm(1).hex))
+    Seq(ECDigitalSignature(asm(1).hex))
   }
 
 }
@@ -118,7 +118,7 @@ trait P2SHScriptSignature extends ScriptSignature {
   def publicKeys : Seq[ECPublicKey] = {
     val pubKeys : Seq[ScriptToken] = redeemScript.asm.filter(_.isInstanceOf[ScriptConstant])
       .filterNot(_.isInstanceOf[ScriptNumberOperation])
-    pubKeys.map(k => ECFactory.publicKey(k.hex))
+    pubKeys.map(k => ECPublicKey(k.hex))
   }
 
 
@@ -129,7 +129,7 @@ trait P2SHScriptSignature extends ScriptSignature {
   def signatures : Seq[ECDigitalSignature] = {
     val nonRedeemScript = splitAtRedeemScript(asm)._1
     val sigs = nonRedeemScript.filter(_.isInstanceOf[ScriptConstant]).filterNot(_.isInstanceOf[ScriptNumberOperation])
-    sigs.map(s => ECFactory.digitalSignature(s.hex))
+    sigs.map(s => ECDigitalSignature(s.hex))
   }
 
 
@@ -161,7 +161,7 @@ trait MultiSignatureScriptSignature extends ScriptSignature {
     */
   def signatures : Seq[ECDigitalSignature] = {
     asm.tail.filter(_.isInstanceOf[ScriptConstant])
-      .map(sig => ECFactory.digitalSignature(sig.hex))
+      .map(sig => ECDigitalSignature(sig.hex))
   }
 }
 
@@ -189,7 +189,7 @@ trait P2PKScriptSignature extends ScriptSignature {
     * @return
     */
   def signatures : Seq[ECDigitalSignature] = {
-    Seq(ECFactory.digitalSignature(BitcoinScriptUtil.filterPushOps(asm).head.hex))
+    Seq(ECDigitalSignature(BitcoinScriptUtil.filterPushOps(asm).head.hex))
   }
 }
 
@@ -346,9 +346,8 @@ object ScriptSignature extends Factory[ScriptSignature] with BitcoinSLogger {
     }
   }
 
-  def apply(bytes: Seq[Byte]) : ScriptSignature = fromBytes(bytes)
-  def apply(hex : String) : ScriptSignature = fromHex(hex)
   def apply(signature : ECDigitalSignature, pubKey : ECPublicKey) : ScriptSignature = factory(signature,pubKey)
+
   def apply(tokens : Seq[ScriptToken], scriptPubKey : ScriptPubKey) : ScriptSignature = fromScriptPubKey(tokens, scriptPubKey)
 }
 

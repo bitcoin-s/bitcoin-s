@@ -3,7 +3,7 @@ package org.bitcoins.core.protocol.transaction
 import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.protocol.NetworkElement
 import org.bitcoins.core.serializers.transaction.RawTransactionParser
-import org.bitcoins.core.util.{BitcoinSUtil, CryptoUtil, Factory}
+import org.bitcoins.core.util.{Factory, BitcoinSUtil, CryptoUtil}
 
 /**
  * Created by chris on 7/14/15.
@@ -126,8 +126,6 @@ object Transaction extends Factory[Transaction] {
 
   def fromBytes(bytes : Seq[Byte]) : Transaction = RawTransactionParser.read(bytes)
 
-  def apply(bytes : Seq[Byte]) : Transaction = fromBytes(bytes)
-  def apply(hex: String) : Transaction = fromHex(hex)
   def apply(bytes : Array[Byte]) : Transaction = factory(bytes)
   def apply(oldTx : Transaction, lockTime : Long)  : Transaction = factory(oldTx,lockTime)
   def apply(oldTx : Transaction, updatedInputs : UpdateTransactionInputs) : Transaction = factory(oldTx, updatedInputs)

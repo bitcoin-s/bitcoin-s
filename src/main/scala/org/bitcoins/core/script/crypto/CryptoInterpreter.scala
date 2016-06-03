@@ -24,7 +24,7 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
    */
   def opHash160(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.isDefined && program.script.head == OP_HASH160, "Script operation must be OP_HASH160")
-    executeHashFunction(program, CryptoUtil.sha256Hash160(_ : List[Byte]))
+    executeHashFunction(program, CryptoUtil.sha256Hash160(_ : Seq[Byte]))
   }
 
 
@@ -35,7 +35,7 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
    */
   def opRipeMd160(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.isDefined && program.script.head == OP_RIPEMD160, "Script operation must be OP_RIPEMD160")
-    executeHashFunction(program, CryptoUtil.ripeMd160(_ : List[Byte]))
+    executeHashFunction(program, CryptoUtil.ripeMd160(_ : Seq[Byte]))
   }
 
   /**
@@ -45,7 +45,7 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
    */
   def opSha256(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.isDefined && program.script.head == OP_SHA256, "Script operation must be OP_SHA256")
-    executeHashFunction(program, CryptoUtil.sha256(_ : List[Byte]))
+    executeHashFunction(program, CryptoUtil.sha256(_ : Seq[Byte]))
   }
 
   /**
@@ -55,7 +55,7 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
    */
   def opHash256(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.isDefined && program.script.head == OP_HASH256, "Script operation must be OP_HASH256")
-    executeHashFunction(program, CryptoUtil.doubleSHA256(_ : List[Byte]))
+    executeHashFunction(program, CryptoUtil.doubleSHA256(_ : Seq[Byte]))
   }
 
   /**
@@ -65,7 +65,7 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
    */
   def opSha1(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.isDefined && program.script.head == OP_SHA1, "Script top must be OP_SHA1")
-    executeHashFunction(program, CryptoUtil.sha1(_ : List[Byte]))
+    executeHashFunction(program, CryptoUtil.sha1(_ : Seq[Byte]))
   }
 
   /**
@@ -79,7 +79,6 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
    */
   def opCheckSig(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.isDefined && program.script.head == OP_CHECKSIG, "Script top must be OP_CHECKSIG")
-
     program match {
       case preExecutionScriptProgram : PreExecutionScriptProgram =>
         opCheckSig(ScriptProgram.toExecutionInProgress(preExecutionScriptProgram))
@@ -90,8 +89,8 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
           logger.error("OP_CHECKSIG requires at lest two stack elements")
           ScriptProgram(program,ScriptErrorInvalidStackOperation)
         } else {
-          val pubKey = ECFactory.publicKey(executionInProgressScriptProgram.stack.head.bytes)
-          val signature = ECFactory.digitalSignature(executionInProgressScriptProgram.stack.tail.head.bytes)
+          val pubKey = ECPublicKey(executionInProgressScriptProgram.stack.head.bytes)
+          val signature = ECDigitalSignature(executionInProgressScriptProgram.stack.tail.head.bytes)
 
           if (ScriptFlagUtil.requiresStrictDerEncoding(executionInProgressScriptProgram.flags) &&
             !DERSignatureUtil.isStrictDEREncoding(signature)) {
@@ -230,7 +229,7 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
               (program.stack.tail.slice(0, nPossibleSignatures.num.toInt),
                 program.stack.tail.slice(nPossibleSignatures.num.toInt, program.stack.tail.size))
 
-            val pubKeys = pubKeysScriptTokens.map(key => ECFactory.publicKey(key.bytes))
+            val pubKeys = pubKeysScriptTokens.map(key => ECPublicKey(key.bytes))
             logger.debug("Public keys on the stack: " + pubKeys)
             logger.debug("Stack without pubkeys: " + stackWithoutPubKeys)
             logger.debug("mRequiredSignatures: " + mRequiredSignatures)
@@ -238,7 +237,7 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
             //+1 is for the fact that we have the # of sigs + the script token indicating the # of sigs
             val signaturesScriptTokens = program.stack.tail.slice(nPossibleSignatures.num.toInt + 1,
               nPossibleSignatures.num.toInt + mRequiredSignatures.num.toInt + 1)
-            val signatures = signaturesScriptTokens.map(token => ECFactory.digitalSignature(token.bytes))
+            val signatures = signaturesScriptTokens.map(token => ECDigitalSignature(token.bytes))
             logger.debug("Signatures on the stack: " + signatures)
 
             //this contains the extra Script OP that is required for OP_CHECKMULTISIG
@@ -336,7 +335,7 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
    * @param hashFunction the hash function which needs to be used on the stack top (sha256,ripemd160,etc..)
    * @return
    */
-  private def executeHashFunction(program : ScriptProgram, hashFunction : List[Byte] => HashDigest) : ScriptProgram = {
+  private def executeHashFunction(program : ScriptProgram, hashFunction : Seq[Byte] => HashDigest) : ScriptProgram = {
     if (program.stack.headOption.isDefined) {
       val stackTop = program.stack.head
       val hash = ScriptConstant(hashFunction(stackTop.bytes).bytes)

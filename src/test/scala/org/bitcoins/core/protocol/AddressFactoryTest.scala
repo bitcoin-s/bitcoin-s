@@ -1,6 +1,6 @@
 package org.bitcoins.core.protocol
 
-import org.bitcoins.core.util.{BitcoinSUtil, TestUtil}
+import org.bitcoins.core.util.{Base58, BitcoinSUtil, TestUtil}
 import org.scalatest.{FlatSpec, MustMatchers}
 
 /**
@@ -13,12 +13,12 @@ class AddressFactoryTest extends FlatSpec with MustMatchers {
   }
 
   it must "create an address from a sequence of bytes"  in {
-    Address(BitcoinSUtil.decodeBase58(TestUtil.bitcoinAddress.value)) must be (TestUtil.bitcoinAddress)
+    Address(Base58.decode(TestUtil.bitcoinAddress.value)) must be (TestUtil.bitcoinAddress)
   }
 
 
   it must "create an asset address from a base58 encoded string" in {
-    Address(BitcoinSUtil.decodeBase58(TestUtil.assetAddress.value)) must be (TestUtil.assetAddress)
+    Address(Base58.decode(TestUtil.assetAddress.value)) must be (TestUtil.assetAddress)
   }
 
   it must "throw an exception if the given string" in {
