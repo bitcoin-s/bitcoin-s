@@ -13,7 +13,6 @@ trait DERSignatureUtil extends BitcoinSLogger {
   /**
    * Checks if this signature is encoded to DER correctly
    * https://crypto.stackexchange.com/questions/1795/how-can-i-convert-a-der-ecdsa-signature-to-asn-1
- *
    * @return boolean representing if the signature is a valid
    */
   def isDEREncoded(signature : ECDigitalSignature) : Boolean = isDEREncoded(signature.bytes)
@@ -21,7 +20,6 @@ trait DERSignatureUtil extends BitcoinSLogger {
   /**
    * Checks if the bytes are encoded to DER correctly
    * https://crypto.stackexchange.com/questions/1795/how-can-i-convert-a-der-ecdsa-signature-to-asn-1
- *
    * @return boolean representing if the signature is a valid
    */
   def isDEREncoded(bytes : Seq[Byte]) : Boolean = {
@@ -65,7 +63,6 @@ trait DERSignatureUtil extends BitcoinSLogger {
 
   /**
    * Decodes the given digital signature into it's r and s points
- *
    * @param signature
    * @return
    */
@@ -74,7 +71,6 @@ trait DERSignatureUtil extends BitcoinSLogger {
   /**
    * Decodes the given sequence of bytes into it's r and s points
    * throws an exception if the given sequence of bytes is not a DER encoded signature
- *
    * @param bytes
    * @return
    */
@@ -119,7 +115,6 @@ trait DERSignatureUtil extends BitcoinSLogger {
   /**
    * This functions implements the strict der encoding rules that were created in BIP66
    * https://github.com/bitcoin/bips/blob/master/bip-0066.mediawiki
- *
    * @param signature the signature to check if they are strictly der encoded
    * @return boolean indicating whether the signature was der encoded or not
    */
@@ -134,7 +129,6 @@ trait DERSignatureUtil extends BitcoinSLogger {
   /**
    * This functions implements the strict der encoding rules that were created in BIP66
    * https://github.com/bitcoin/bips/blob/master/bip-0066.mediawiki
- *
    * @param bytes the bytes to check if they are strictly der encoded
    * @return boolean indicating whether the bytes were der encoded or not
    */

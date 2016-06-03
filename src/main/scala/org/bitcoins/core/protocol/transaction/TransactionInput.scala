@@ -112,8 +112,6 @@ object TransactionInput extends Factory[TransactionInput] {
 
   def apply(outPoint : TransactionOutPoint, scriptSignature : ScriptSignature, sequenceNumber : Long) : TransactionInput = factory(outPoint,scriptSignature,sequenceNumber)
 
-  def apply(bytes : Seq[Byte]) : TransactionInput = fromBytes(bytes)
-
   /**
     * Creates a coinbase input - coinbase inputs always have an empty outpoint
     * @param scriptSignature this can contain anything, miners use this to signify support for various protocol BIPs

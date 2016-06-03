@@ -33,9 +33,9 @@ class ScriptSignatureFactoryTest extends FlatSpec with MustMatchers {
   }
   it must "build a script signature from a digital signature and a public key" in {
     val digitalSignatureBytes = TestUtil.p2pkhInputScriptAsm(1).bytes
-    val digitalSignature : ECDigitalSignature = ECFactory.digitalSignature(digitalSignatureBytes)
+    val digitalSignature : ECDigitalSignature = ECDigitalSignature(digitalSignatureBytes)
     val publicKeyBytes = TestUtil.p2pkhInputScriptAsm(3).bytes
-    val publicKey : ECPublicKey = ECFactory.publicKey(publicKeyBytes)
+    val publicKey : ECPublicKey = ECPublicKey(publicKeyBytes)
     val actualScriptSig : ScriptSignature = ScriptSignature(digitalSignature,publicKey)
     actualScriptSig.asm must be (TestUtil.p2pkhInputScriptAsm)
   }

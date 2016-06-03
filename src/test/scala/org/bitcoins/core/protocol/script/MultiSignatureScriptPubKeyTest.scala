@@ -1,7 +1,7 @@
 package org.bitcoins.core.protocol.script
 
-import org.bitcoins.core.crypto.ECFactory
-import org.scalatest.{MustMatchers, FlatSpec}
+import org.bitcoins.core.crypto.ECPublicKey
+import org.scalatest.{FlatSpec, MustMatchers}
 
 /**
  * Created by chris on 3/8/16.
@@ -36,9 +36,9 @@ class MultiSignatureScriptPubKeyTest extends FlatSpec with MustMatchers {
     }
 
     multiSigScriptPubKey.publicKeys must be (Seq(
-      ECFactory.publicKey("025878e270211662a27181cf4d6ad4d2cf0e69a98a3815c086f587c7e9388d8718"),
-      ECFactory.publicKey("03fc85980e3fac1f3d8a5c3223c3ef5bffc1bd42d2cc42add8c3899cc66e7f1906"),
-      ECFactory.publicKey("0215b5bd050869166a70a7341b4f216e268b7c6c7504576dcea2cce7d11cc9a35f")
+      ECPublicKey("025878e270211662a27181cf4d6ad4d2cf0e69a98a3815c086f587c7e9388d8718"),
+      ECPublicKey("03fc85980e3fac1f3d8a5c3223c3ef5bffc1bd42d2cc42add8c3899cc66e7f1906"),
+      ECPublicKey("0215b5bd050869166a70a7341b4f216e268b7c6c7504576dcea2cce7d11cc9a35f")
     ))
 
   }
@@ -53,8 +53,8 @@ class MultiSignatureScriptPubKeyTest extends FlatSpec with MustMatchers {
     }
 
     multiSigScriptPubKey.publicKeys must be (Seq(
-      ECFactory.publicKey("02865c40293a680cb9c020e7b1e106d8c1916d3cef99aa431a56d253e69256dac0"),
-      ECFactory.publicKey("02865c40293a680cb9c020e7b1e106d8c1916d3cef99aa431a56d253e69256dac0")
+      ECPublicKey("02865c40293a680cb9c020e7b1e106d8c1916d3cef99aa431a56d253e69256dac0"),
+      ECPublicKey("02865c40293a680cb9c020e7b1e106d8c1916d3cef99aa431a56d253e69256dac0")
     ))
 
   }

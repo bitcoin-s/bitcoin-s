@@ -23,10 +23,9 @@ sealed trait ScriptToken {
 
   /**
    * The byte representation of this script token
- *
    * @return
    */
-  def bytes = BitcoinSUtil.decodeHex(hex)
+  def bytes : Seq[Byte] = BitcoinSUtil.decodeHex(hex)
 
   /**
    * The conversion from the byte representation of a token to a number
@@ -133,10 +132,6 @@ object ScriptNumber extends Factory[ScriptNumber] {
   def apply(num : Long) : ScriptNumber = {
     if (num == 0) zero else apply(BitcoinSUtil.longToHex(num))
   }
-
-  def apply(hex : String) : ScriptNumber = fromHex(hex)
-
-  def apply(bytes : Seq[Byte]) : ScriptNumber = fromBytes(bytes)
 
   def apply(hex : String, requireMinimal : Boolean) : Try[ScriptNumber] = {
     if (requireMinimal && !BitcoinScriptUtil.isShortestEncoding(hex)) {
@@ -405,7 +400,4 @@ object ScriptConstant extends Factory[ScriptConstant] {
     */
   def fromBytes(bytes : Seq[Byte]) : ScriptConstant = ScriptConstantImpl(BitcoinSUtil.encodeHex(bytes))
 
-  def apply(hex : String) : ScriptConstant = fromHex(hex)
-
-  def apply(bytes : Seq[Byte]) : ScriptConstant = fromBytes(bytes)
 }

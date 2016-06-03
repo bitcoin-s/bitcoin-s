@@ -99,6 +99,4 @@ object BlockHeader extends Factory[BlockHeader] {
 
   def fromBytes(bytes : Seq[Byte]) : BlockHeader = RawBlockHeaderSerializer.read(bytes)
 
-  def apply(bytes : Seq[Byte]) : BlockHeader = fromBytes(bytes)
-
 }

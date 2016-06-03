@@ -17,7 +17,7 @@ import org.bitcoins.core.util._
 import org.scalatest.{FlatSpec, MustMatchers}
 import org.slf4j.LoggerFactory
 import CoreTestCaseProtocol._
-import org.bitcoins.core.crypto.{ECFactory, TransactionSignatureSerializer}
+import org.bitcoins.core.crypto.{TransactionSignatureSerializer}
 import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.protocol.transaction.testprotocol.CoreTransactionTestCase

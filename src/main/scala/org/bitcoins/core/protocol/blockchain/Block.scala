@@ -59,6 +59,4 @@ object Block extends Factory[Block] {
   }
 
   def fromBytes(bytes : Seq[Byte]) : Block = RawBlockSerializer.read(bytes)
-
-  def apply(bytes : Seq[Byte]) : Block = fromBytes(bytes)
 }

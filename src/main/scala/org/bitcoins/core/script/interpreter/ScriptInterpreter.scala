@@ -146,6 +146,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
   }
   /**
     * The execution loop for a script
+ *
     * @param program the program whose script needs to be evaluated
     * @return program the final state of the program after being evaluated by the interpreter
     */
@@ -375,6 +376,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
   /**
     * Checks the validity of a transaction in accordance to bitcoin core's CheckTransaction function
     * https://github.com/bitcoin/bitcoin/blob/f7a21dae5dbf71d5bc00485215e84e6f2b309d0a/src/main.cpp#L939
+ *
     * @param transaction
     * @return
     */
@@ -405,6 +407,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
 
   /**
     * Determines if the given currency unit is within the valid range for the system
+ *
     * @param currencyUnit
     * @return
     */

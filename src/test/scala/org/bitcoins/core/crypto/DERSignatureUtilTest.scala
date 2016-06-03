@@ -8,9 +8,9 @@ import org.scalatest.{FlatSpec, MustMatchers}
  */
 class DERSignatureUtilTest extends FlatSpec with MustMatchers {
 
-  val p2shSignature = ECFactory.digitalSignature("304402205b7d2c2f177ae76cfbbf14d589c113b0b35db753d305d5562dd0b61cbf366cfb02202e56f93c4f08a27f986cd424ffc48a462c3202c4902104d4d0ff98ed28f4bf8001")
-  val p2pkhSignature = ECFactory.digitalSignature("3044022016ffdbb7c57634903c5e018fcfc48d59f4e37dc4bc3bbc9ba4e6ee39150bca030220119c2241a931819bc1a75d3596e4029d803d1cd6de123bf8a1a1a2c3665e1fac01")
-  val p2pkSignature = ECFactory.digitalSignature("304402200a5c6163f07b8d3b013c4d1d6dba25e780b39658d79ba37af7057a3b7f15ffa102201fd9b4eaa9943f734928b99a83592c2e7bf342ea2680f6a2bb705167966b742001")
+  val p2shSignature = ECDigitalSignature("304402205b7d2c2f177ae76cfbbf14d589c113b0b35db753d305d5562dd0b61cbf366cfb02202e56f93c4f08a27f986cd424ffc48a462c3202c4902104d4d0ff98ed28f4bf8001")
+  val p2pkhSignature = ECDigitalSignature("3044022016ffdbb7c57634903c5e018fcfc48d59f4e37dc4bc3bbc9ba4e6ee39150bca030220119c2241a931819bc1a75d3596e4029d803d1cd6de123bf8a1a1a2c3665e1fac01")
+  val p2pkSignature = ECDigitalSignature("304402200a5c6163f07b8d3b013c4d1d6dba25e780b39658d79ba37af7057a3b7f15ffa102201fd9b4eaa9943f734928b99a83592c2e7bf342ea2680f6a2bb705167966b742001")
   "DERSignatureUtil" must "say that a signature taken from a p2sh transaction is a valid DER encoded signature" in  {
     DERSignatureUtil.isDEREncoded(p2shSignature) must be (true)
   }
@@ -56,18 +56,18 @@ class DERSignatureUtilTest extends FlatSpec with MustMatchers {
   }
 
   it must "say that the empty signature is a valid strictly encoded DER signature" in {
-    DERSignatureUtil.isStrictDEREncoding(ECFactory.digitalSignature("")) must be (true)
+    DERSignatureUtil.isStrictDEREncoding(ECDigitalSignature("")) must be (true)
     DERSignatureUtil.isStrictDEREncoding(EmptyDigitalSignature) must be (true)
   }
 
 
   it must "say that an overly long signature is NOT strict der encoded" in {
-    val sig = ECFactory.digitalSignature("0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000")
+    val sig = ECDigitalSignature("0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000")
     DERSignatureUtil.isStrictDEREncoding(sig) must be (false)
   }
 
   it must "determine if a signature is encoded with a low s value" in {
-    val highS = ECFactory.digitalSignature("304502203e4516da7253cf068effec6b95c41221c0cf3a8e6ccb8cbf1725b562e9afde2c022100ab1e3da73d67e32045a20e0b999e049978ea8d6ee5480d485fcf2ce0d03b2ef001".toLowerCase)
+    val highS = ECDigitalSignature("304502203e4516da7253cf068effec6b95c41221c0cf3a8e6ccb8cbf1725b562e9afde2c022100ab1e3da73d67e32045a20e0b999e049978ea8d6ee5480d485fcf2ce0d03b2ef001".toLowerCase)
     DERSignatureUtil.isLowDerSignature(highS) must be (false)
   }
 }
