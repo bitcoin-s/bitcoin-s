@@ -22,7 +22,7 @@ trait BitcoinSUtil extends NumberUtil {
       "ffffffffffffffff"
     } else {
       //TODO: this is ugly, clean this up. Shouldn't have to use .toLong
-      flipHalfByte(encodeHex(BigInt(satoshis.value.toLong).toByteArray).reverse)
+      flipEndianess(BigInt(satoshis.value.toLong).toByteArray)
     }
   }
 
@@ -55,14 +55,7 @@ trait BitcoinSUtil extends NumberUtil {
    * @return
    */
   def flipEndianess(bytes : Seq[Byte]) : String = flipEndianess(BitcoinSUtil.encodeHex(bytes))
-  /**
-   * Flips the hex chars in a hex strings
-   * Example: abcd would become badc
-   * https://stackoverflow.com/questions/34799611/easiest-way-to-flip-the-endianness-of-a-byte-in-scala/34802270#34802270
-   * @param hex
-   * @return
-   */
-  def flipHalfByte(hex : String) = hex.grouped(2).map(_.reverse).mkString
+
 
 
 }
