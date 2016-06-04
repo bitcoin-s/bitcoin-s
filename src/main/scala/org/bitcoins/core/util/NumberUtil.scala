@@ -17,6 +17,7 @@ trait NumberUtil extends BitcoinSLogger {
    */
   def toLong(hex : String) : Long = toLong(BitcoinSUtil.decodeHex(hex))
 
+
   /**
    * Takes a list of bytes and converts it in to signed number inside of bitcoins
    * numbering system
