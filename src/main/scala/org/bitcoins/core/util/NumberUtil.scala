@@ -2,7 +2,6 @@ package org.bitcoins.core.util
 
 import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptSignature}
 import org.bitcoins.core.protocol.{CompactSizeUInt, CompactSizeUIntImpl}
-import org.slf4j.LoggerFactory
 
 /**
  * Created by chris on 2/8/16.
@@ -10,19 +9,21 @@ import org.slf4j.LoggerFactory
 trait NumberUtil extends BitcoinSLogger {
 
   /**
-   * Takes a hex number and converts it into a signed number
-   * used in the bitcoin numbering system
-   * @param hex
-   * @return
+    * Takes a hex number and converts it into a signed number
+    * used in the bitcoin numbering system.
+    * This function interprets the bytes as little endian numbers
+    * @param hex
+    * @return
    */
   def toLong(hex : String) : Long = toLong(BitcoinSUtil.decodeHex(hex))
 
 
   /**
-   * Takes a list of bytes and converts it in to signed number inside of bitcoins
-   * numbering system
-   * @param bytes
-   * @return
+    * Takes a sequence of bytes and converts it in to signed number inside of bitcoins
+    * numbering system
+    * This function interprets the bytes as little endian numbers
+    * @param bytes
+    * @return
    */
   def toLong(bytes : Seq[Byte]) : Long = {
     val reversedBytes = bytes.reverse
@@ -59,6 +60,24 @@ trait NumberUtil extends BitcoinSLogger {
       hex
     }
   }
+
+  /**
+    * Takes in a sequence of bytes and converts it into a signed number
+    * @param bytes
+    * @return
+    */
+  def toInt(bytes : Seq[Byte]) : Int = {
+    require(bytes.size <= 4, "We cannot have an integer with more than 4 bytes (32 bits)")
+    toLong(bytes).toInt
+  }
+
+  /**
+    * Takes in a hex string and converts it into a signed number
+    * This function interprets the bytes as little endian numbers
+    * @param hex
+    * @return
+    */
+  def toInt(hex : String) : Int = toInt(BitcoinSUtil.decodeHex(hex))
 
   /**
    * Determines if a given hex string is a positive number
@@ -205,3 +224,5 @@ trait NumberUtil extends BitcoinSLogger {
 
   private def parseLong(bytes : Seq[Byte]) : Long = parseLong(bytes.toList)
 }
+
+object NumberUtil extends NumberUtil
