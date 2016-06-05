@@ -53,6 +53,7 @@ class NumberUtilTest extends FlatSpec with MustMatchers with NumberUtil {
     val hex = "81"
     val long = toLong(hex)
     long must be (-1)
+
     //-127
     val hex1 = "ff"
     val long1 = toLong(hex1)
@@ -199,6 +200,24 @@ class NumberUtilTest extends FlatSpec with MustMatchers with NumberUtil {
     val hex5 = longToHex(32768)
     val expectedHex5 = "008000"
     hex5 must be (expectedHex5)
+  }
+
+  it must "convert a sequence of bytes to a max value for int" in {
+    val max = Int.MaxValue
+    NumberUtil.toInt("FFFFFF7F") must be (max)
+  }
+
+  it must "convert a sequence of bytes to  the min value for an int" in {
+    val min = Int.MinValue + 1
+    //the minimum number we can represent in ScriptNumbers i
+    //is Int.MinValue + 1 since we have a negative zero and zero
+    NumberUtil.toInt("ffffffff") must be (min)
+  }
+
+  it must "throw an exception when we try and convert a 33 byte sequence to an int" in {
+    intercept[IllegalArgumentException] {
+      NumberUtil.toInt("FFFFFF7F00")
+    }
   }
 
 
