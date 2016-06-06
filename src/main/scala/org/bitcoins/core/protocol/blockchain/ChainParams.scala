@@ -21,6 +21,7 @@ import org.bitcoins.core.util.BitcoinSUtil
   * https://github.com/bitcoin/bitcoin/blob/master/src/chainparams.h#L42
   */
 sealed trait ChainParams {
+
   /**
     * Return the BIP70 network string (main, test or regtest)
     *
@@ -58,12 +59,7 @@ sealed trait ChainParams {
     */
   def base58Prefixes : Map[Base58Type,Seq[Byte]]
 
-  /**
-    * The seeds used to bootstrap the network
-    *
-    * @return
-    */
-  def dnsSeeds : Seq[String]
+
 
 
   /**
@@ -132,11 +128,6 @@ object MainNetChainParams extends ChainParams {
         BitcoinSUtil.hexToByte("b2"), BitcoinSUtil.hexToByte("1e")),
       ExtSecretKey -> Seq(BitcoinSUtil.hexToByte("04"), BitcoinSUtil.hexToByte("88"),
         BitcoinSUtil.hexToByte("ad"), BitcoinSUtil.hexToByte("e4")))
-
-
-  override def dnsSeeds = Seq("seed.bitcoin.sipa.be","dnsseed.bluematt.me","dnsseed.bitcoin.dashjr.org",
-    "seed.bitcoinstats.com","bitseed.xf2.org","seed.bitcoin.jonasschnelli.ch")
-
 }
 
 object TestNetChainParams extends ChainParams {
@@ -155,10 +146,6 @@ object TestNetChainParams extends ChainParams {
         BitcoinSUtil.hexToByte("87"), BitcoinSUtil.hexToByte("cf")),
       ExtSecretKey -> Seq(BitcoinSUtil.hexToByte("04"), BitcoinSUtil.hexToByte("35"),
         BitcoinSUtil.hexToByte("83"), BitcoinSUtil.hexToByte("94")))
-
-
-  override def dnsSeeds = Seq("testnet-seed.bitcoin.petertodd.org",
-    "testnet-seed.bluematt.me","testnet-seed.bitcoin.schildbach.de")
 }
 
 
@@ -168,8 +155,6 @@ object RegTestNetChainParams extends ChainParams {
   override def requireStandardTransaction = ???
 
   override def base58Prefixes : Map[Base58Type, Seq[Byte]] = TestNetChainParams.base58Prefixes
-
-  override def dnsSeeds = Seq()
 }
 
 
