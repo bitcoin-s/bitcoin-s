@@ -43,18 +43,28 @@ trait BitcoinSUtil extends NumberUtil {
   def hexToInt(hex : String) : Int = toLong(hex).toInt
 
   /**
+    * Converts a two character hex string to its byte representation
+    * @param hex
+    * @return
+    */
+  def hexToByte(hex : String): Byte = {
+    require(hex.size == 2)
+    BitcoinSUtil.decodeHex(hex).head
+  }
+
+  /**
    * Flips the endianess of the give hex string
    * @param hex
    * @return
    */
-  def flipEndianess(hex : String) : String = encodeHex(decodeHex(hex).reverse)
+  def flipEndianess(hex : String) : String = flipEndianess(decodeHex(hex))
 
   /**
    * Flips the endianess of the given sequence of bytes
    * @param bytes
    * @return
    */
-  def flipEndianess(bytes : Seq[Byte]) : String = flipEndianess(BitcoinSUtil.encodeHex(bytes))
+  def flipEndianess(bytes : Seq[Byte]) : String = encodeHex(bytes.reverse)
   /**
    * Flips the hex chars in a hex strings
    * Example: abcd would become badc
