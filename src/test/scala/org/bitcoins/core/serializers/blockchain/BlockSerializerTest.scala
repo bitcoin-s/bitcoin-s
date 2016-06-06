@@ -4,7 +4,7 @@ import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.serializers.blockchain
 import org.bitcoins.core.serializers.transaction.RawTransactionParser
-import org.bitcoins.core.util.BitcoinSUtil
+import org.bitcoins.core.util.{CryptoUtil, BitcoinSUtil}
 import org.scalatest.{MustMatchers, FlatSpec}
 
 /**
@@ -33,8 +33,11 @@ class BlockSerializerTest extends FlatSpec with MustMatchers {
   "RawBlockSerializer" must "parse a block" in {
     val block = RawBlockSerializer.read(hex)
     block.txCount.num must be (txSeq.size)
+    block.txCount must be (uInt)
     block.blockHeader must be (RawBlockHeaderSerializer.read(header))
     block.transactions must be (List(RawTransactionParser.read(rawTx1)))
+    block.hash must be (CryptoUtil.doubleSHA256(hex))
+    block.hex must be (hex)
   }
 
   it must "write a block" in {
