@@ -76,7 +76,7 @@ trait BitcoinScriptUtil {
       if (multiSigOps.contains(token) && index != 0) {
         script(index-1) match {
           case scriptNum : ScriptNumber => scriptNum.num
-          case scriptConstant : ScriptConstant => BitcoinSUtil.hexToLong(scriptConstant.hex)
+          case scriptConstant : ScriptConstant => ScriptNumberUtil.toLong(scriptConstant.hex)
           case _ : ScriptToken => ScriptSettings.maxPublicKeysPerMultiSig
         }
       } else 0

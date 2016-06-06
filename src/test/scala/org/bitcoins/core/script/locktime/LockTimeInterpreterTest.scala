@@ -136,7 +136,7 @@ class LockTimeInterpreterTest extends FlatSpec with MustMatchers with LockTimeIn
     newProgram.asInstanceOf[ExecutedScriptProgram].error must be (Some(ScriptErrorNegativeLockTime))
   }
 
-  it must "mark the script as invalid if we are requiring minimal encoding of numbers and the stack top is not minimal" in {
+  it must "mark the script as invalid for OP_CHECKSEQUENCEVERIFY if we are requiring minimal encoding of numbers and the stack top is not minimal" in {
     val stack = List(ScriptNumber("0100"))
     val script = List(OP_CHECKSEQUENCEVERIFY)
     val program = ScriptProgram(TestUtil.testProgramExecutionInProgress,stack,script)

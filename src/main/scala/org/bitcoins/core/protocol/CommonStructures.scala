@@ -1,6 +1,7 @@
 package org.bitcoins.core.protocol
 
-import org.bitcoins.core.util.{BitcoinSUtil}
+import org.bitcoins.core.script.constant.ScriptNumberUtil
+import org.bitcoins.core.util.BitcoinSUtil
 
 /**
  * Created by chris on 7/14/15.
@@ -24,9 +25,9 @@ trait CompactSizeUInt {
 
   def hex = size match {
     case 1 => if (num.toHexString.size == 1) "0" + num.toHexString else num.toHexString
-    case 3 => "fd" + BitcoinSUtil.longToHex(num)
-    case 5 => "fe" + BitcoinSUtil.longToHex(num)
-    case _ => "ff" + BitcoinSUtil.longToHex(num)
+    case 3 => "fd" + ScriptNumberUtil.longToHex(num)
+    case 5 => "fe" + ScriptNumberUtil.longToHex(num)
+    case _ => "ff" + ScriptNumberUtil.longToHex(num)
   }
 
 

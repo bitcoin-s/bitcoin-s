@@ -362,7 +362,7 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
           logger.error("The number you gave us is not encoded in the shortest way possible")
           ScriptProgram(program, ScriptErrorUnknownError)
         } else {
-          val interpretedNumber = ScriptNumber(BitcoinSUtil.hexToLong(s.hex))
+          val interpretedNumber = ScriptNumber(ScriptNumberUtil.toLong(s.hex))
           val newProgram = ScriptProgram(program, interpretedNumber ::  program.stack.tail, ScriptProgram.Stack)
           performUnaryArithmeticOperation(newProgram, op)
         }

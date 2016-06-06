@@ -1,6 +1,6 @@
 package org.bitcoins.core.script.crypto
 
-import org.bitcoins.core.util.BitcoinSUtil
+import org.bitcoins.core.script.constant.ScriptNumberUtil
 
 /**
  * Created by chris on 1/18/16.
@@ -15,7 +15,7 @@ trait HashTypeFactory {
     //Besides the four listed hashtypes only a hashtype of value 0 appears a few times in the (main)
     //block chain (and is handled like SIGHASH_ALL).
     val hashType = hashTypes.find(_.hex == hex)
-    if (hashType.isDefined) hashType.get else SIGHASH_ALL(BitcoinSUtil.hexToLong(hex).toByte)
+    if (hashType.isDefined) hashType.get else SIGHASH_ALL(ScriptNumberUtil.toLong(hex).toByte)
   }
 
   def fromByte(byte : Byte) : HashType = {

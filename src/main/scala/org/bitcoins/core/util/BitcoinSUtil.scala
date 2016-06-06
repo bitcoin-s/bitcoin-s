@@ -38,10 +38,6 @@ trait BitcoinSUtil extends NumberUtil {
     str.matches("^[0-9a-f]+$") && (str.size % 2 == 0)
   }
 
-  def hexToLong(hex : String) : Long = toLong(hex)
-
-  def hexToInt(hex : String) : Int = toLong(hex).toInt
-
   /**
    * Flips the endianess of the give hex string
    * @param hex
