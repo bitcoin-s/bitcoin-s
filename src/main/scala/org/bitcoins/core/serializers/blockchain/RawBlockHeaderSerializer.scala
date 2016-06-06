@@ -51,7 +51,7 @@ trait RawBlockHeaderSerializer extends RawBitcoinSerializer[BlockHeader] {
     * @return the hexadecimal string representing the block header
     */
   def write(blockHeader: BlockHeader) : String = {
-    val headerVersion = blockHeader.version.toHexString
+    val headerVersion = BitcoinSUtil.flipEndianess(blockHeader.version.toHexString)
     val versionSubPadding = addPrecedingZero(headerVersion)
     val version = addPadding(8,versionSubPadding)
 
