@@ -160,6 +160,7 @@ class BitcoinScriptUtilTest extends FlatSpec with MustMatchers {
     BitcoinScriptUtil.isShortestEncoding(ScriptConstant("00")) must be (false)
     BitcoinScriptUtil.isShortestEncoding(ScriptConstant("0000")) must be (false)
 
+    BitcoinScriptUtil.isShortestEncoding(ScriptConstant("0100")) must be (false)
     BitcoinScriptUtil.isShortestEncoding(ScriptConstant("80")) must be (false)
     BitcoinScriptUtil.isShortestEncoding(ScriptConstant("0080")) must be (false)
 

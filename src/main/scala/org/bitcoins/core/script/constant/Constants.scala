@@ -1,7 +1,7 @@
 package org.bitcoins.core.script.constant
 
 import org.bitcoins.core.script.ScriptOperationFactory
-import org.bitcoins.core.util.{BitcoinScriptUtil, Factory, BitcoinSUtil}
+import org.bitcoins.core.util.{BitcoinSUtil, BitcoinScriptUtil, Factory}
 
 import scala.util.{Failure, Success, Try}
 
@@ -32,7 +32,7 @@ sealed trait ScriptToken {
  *
    * @return
    */
-  def toLong = BitcoinSUtil.hexToLong(hex)
+  def toLong = ScriptNumberUtil.toLong(hex)
 }
 
 /**
@@ -97,10 +97,22 @@ sealed trait ScriptNumber extends ScriptConstant {
     case 0 => 0L
     case _ : Long => super.toLong
   }
+
+
 }
 
 
 object ScriptNumber extends Factory[ScriptNumber] {
+
+  /**
+    * This represents a script number inside of bitcoin
+    *
+    * @param num the number being represented
+    * @param hex the hex representation of the number - this can be different than the obvious value for
+    *            the number. For instance we could have padded the number with another word of zeros
+    */
+  private case class ScriptNumberImpl(num : Long, override val hex : String) extends ScriptNumber
+
   /**
     * Represents the number zero inside of bitcoin's script language
  *
@@ -126,11 +138,11 @@ object ScriptNumber extends Factory[ScriptNumber] {
 
   def fromBytes(bytes : Seq[Byte]) = {
     if (bytes.size == 0) zero
-    else ScriptNumberImpl(BitcoinSUtil.encodeHex(bytes))
+    else ScriptNumberImpl(ScriptNumberUtil.toLong(bytes), BitcoinSUtil.encodeHex(bytes))
   }
 
   def apply(num : Long) : ScriptNumber = {
-    if (num == 0) zero else apply(BitcoinSUtil.longToHex(num))
+    if (num == 0) zero else apply(ScriptNumberUtil.longToHex(num))
   }
 
   def apply(hex : String, requireMinimal : Boolean) : Try[ScriptNumber] = {
@@ -144,14 +156,6 @@ object ScriptNumber extends Factory[ScriptNumber] {
 
   def apply(bytes : Seq[Byte], requireMinimal : Boolean) : Try[ScriptNumber] = apply(BitcoinSUtil.encodeHex(bytes),requireMinimal)
 
-  /**
-   * This represents a script number inside of bitcoin
- *
-   * @param num the number being represented
-   * @param hex the hex representation of the number - this can be different than the obvious value for
-   *            the number. For instance we could have padded the number with another word of zeros
-   */
-  private case class ScriptNumberImpl(num : Long, override val hex : String) extends ScriptNumber
 
 
   /**
@@ -159,9 +163,9 @@ object ScriptNumber extends Factory[ScriptNumber] {
    * ScriptNumberImpl case class
    */
   private object ScriptNumberImpl {
-    def apply(num : Long) : ScriptNumber = ScriptNumberImpl(num, BitcoinSUtil.longToHex(num))
-    def apply(hex : String) : ScriptNumber = ScriptNumberImpl(BitcoinSUtil.hexToLong(hex), hex)
-    def apply(bytes : Seq[Byte]) : ScriptNumber = ScriptNumberImpl(BitcoinSUtil.encodeHex(bytes))
+    def apply(num : Long) : ScriptNumber = ScriptNumberImpl(num, ScriptNumberUtil.longToHex(num))
+    def apply(hex : String) : ScriptNumber = ScriptNumberImpl(ScriptNumberUtil.toLong(hex), hex)
+    def apply(bytes : Seq[Byte]) : ScriptNumber = ScriptNumberImpl(ScriptNumberUtil.toLong(bytes))
   }
 }
 
