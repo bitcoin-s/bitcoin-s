@@ -84,7 +84,9 @@ sealed trait BlockHeader extends NetworkElement with BitcoinSLogger {
  *
     * @return
     */
-  def hash : DoubleSha256Digest = DoubleSha256Digest(BitcoinSUtil.flipEndianess(CryptoUtil.doubleSHA256(bytes).hex))
+  def hash : DoubleSha256Digest = {
+    DoubleSha256Digest(BitcoinSUtil.flipEndianess(CryptoUtil.doubleSHA256(bytes).hex))
+  }
 
   override def hex : String = RawBlockHeaderSerializer.write(this)
 
