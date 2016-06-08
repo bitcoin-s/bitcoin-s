@@ -104,9 +104,9 @@ sealed trait ChainParams {
     val input = TransactionInput(scriptSignature)
     val output = TransactionOutput(amount,scriptPubKey)
     val tx = Transaction(TransactionConstants.version,Seq(input), Seq(output), TransactionConstants.lockTime)
-    val prevBlockHash = DoubleSha256Digest(BitcoinSUtil.decodeHex("00000000000000"))
+    val prevBlockHash = DoubleSha256Digest("0000000000000000000000000000000000000000000000000000000000000000")
     //TODO: Replace this with a merkle root hash computed algorithmically
-    val merkleRootHash = DoubleSha256Digest(BitcoinSUtil.decodeHex("4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b"))
+    val merkleRootHash = DoubleSha256Digest(BitcoinSUtil.flipEndianess("4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b"))
     val genesisBlockHeader = BlockHeader(version,prevBlockHash,merkleRootHash,time,nBits,nonce)
     val genesisBlock = Block(genesisBlockHeader,CompactSizeUInt(1,1),Seq(tx))
     genesisBlock

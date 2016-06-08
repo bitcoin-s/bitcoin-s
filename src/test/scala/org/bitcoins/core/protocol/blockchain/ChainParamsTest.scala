@@ -17,8 +17,17 @@ class ChainParamsTest extends FlatSpec with MustMatchers {
   val expectedGenesisInput = TransactionInput(expectedGenesisScriptSig)
   val expectedGenesisScriptPubKey = ScriptPubKey("4104678AFDB0FE5548271967F1A67130B7105CD6A828E03909A67962E0EA1F61DEB649F6BC3F4CEF38C4F35504E51EC112DE5C384DF7BA0B8D578A4C702B6BF11D5FAC".toLowerCase)
   val expectedGenesisOutput = TransactionOutput(CurrencyUnits.toSatoshis(Bitcoins(50)),expectedGenesisScriptPubKey)
-  "ChainParams" must "create the bitcoin genesis block" in {
-    genesisBlock.hash must be ("000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f")
+  "ChainParams" must "generate correct block hex for genesis block" in {
+    val hex = "0100000000000000000000000000000000000000000000000000000000000000000000003ba3edfd7a7b12b27ac72c3e6" +
+      "7768f617fc81bc3888a51323a9fb8aa4b1e5e4a29ab5f49ffff001d1dac2b7c010100000001000000000000000000000000000" +
+      "0000000000000000000000000000000000000ffffffff4d04ffff001d0104455468652054696d65732030332f4a616e2f32303" +
+      "039204368616e63656c6c6f72206f6e206272696e6b206f66207365636f6e64206261696c6f757420666f722062616e6b73fff" +
+      "fffff0100f2052a01000000434104678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3" +
+      "f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5fac00000000"
+    genesisBlock.hex must be (hex)
+  }
+  it must "hash the bitcoin genesis block" in {
+    genesisBlock.blockHeader.hash.hex must be ("000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f")
   }
 
   it must "compute the script signature for the coinbase tx in the mainnet genesis block" in {

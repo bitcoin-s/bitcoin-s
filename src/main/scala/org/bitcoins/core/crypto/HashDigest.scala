@@ -22,15 +22,27 @@ sealed trait HashDigest {
 
 /**
   * Represents the result of SHA1()
-  * @param bytes
   */
-case class Sha1Digest(bytes : Seq[Byte]) extends HashDigest
+sealed trait Sha1Digest extends HashDigest
+
+object Sha1Digest extends Factory[Sha1Digest] {
+  private case class Sha1DigestImpl(bytes : Seq[Byte]) extends Sha1Digest {
+    override def toString = "Sha1DigestImpl(" + hex + ")"
+  }
+  override def fromBytes(bytes: Seq[Byte]) : Sha1Digest = Sha1DigestImpl(bytes)
+}
 
 /**
   * Represents the result of SHA256()
-  * @param bytes
   */
-case class Sha256Digest(bytes : Seq[Byte]) extends HashDigest
+sealed trait Sha256Digest extends HashDigest
+
+object Sha256Digest extends Factory[Sha256Digest] {
+  private case class Sha256DigestImpl(bytes: Seq[Byte]) extends Sha256Digest {
+    override def toString = "Sha256DigestImpl(" + hex + ")"
+  }
+  override def fromBytes(bytes:Seq[Byte]) : Sha256Digest = Sha256DigestImpl(bytes)
+}
 
 /**
   * Represents the result of SHA256(SHA256())
@@ -47,12 +59,24 @@ object DoubleSha256Digest extends Factory[DoubleSha256Digest] {
 
 /**
   * Represents the result of RIPEMD160()
-  * @param bytes
   */
-case class RipeMd160Digest(bytes : Seq[Byte]) extends HashDigest
+sealed trait RipeMd160Digest extends HashDigest
 
+object RipeMd160Digest extends Factory[RipeMd160Digest] {
+  private case class RipeMd160DigestImpl(bytes : Seq[Byte]) extends RipeMd160Digest {
+    override def toString = "RipeMd160DigestImpl(" + hex + ")"
+  }
+  override def fromBytes(bytes : Seq[Byte]) : RipeMd160Digest = RipeMd160DigestImpl(bytes)
+
+}
 /**
   * Represents the result of RIPEMD160(SHA256())
-  * @param bytes
   */
-case class Sha256Hash160Digest(bytes : Seq[Byte]) extends HashDigest
+sealed trait Sha256Hash160Digest extends HashDigest
+
+object Sha256Hash160Digest extends Factory[Sha256Hash160Digest] {
+  case class Sha256Hash160DigestImpl(bytes : Seq[Byte]) extends Sha256Hash160Digest {
+    override def toString = "Sha256Hash160DigestImpl(" + hex + ")"
+  }
+  override def fromBytes(bytes : Seq[Byte]) = Sha256Hash160DigestImpl(bytes)
+}
