@@ -21,8 +21,8 @@ trait RawBlockHeaderSerializer extends RawBitcoinSerializer[BlockHeader] {
   def read(bytes : List[Byte]) : BlockHeader = {
     //version first 4 bytes
     val versionBytes = bytes.slice(0,4)
-    val versionHex = BitcoinSUtil.encodeHex(versionBytes)
-    val version = BitcoinSUtil.hexToLong(versionHex)
+    val versionHex = BitcoinSUtil.encodeHex(versionBytes.reverse)
+    val version = java.lang.Long.parseLong(versionHex, 16)
     //previous header hash next 32 bytes
     val prevBlockHashBytes = bytes.slice(4, 36)
     val prevBlockHash : DoubleSha256Digest = DoubleSha256Digest(prevBlockHashBytes)
@@ -31,16 +31,16 @@ trait RawBlockHeaderSerializer extends RawBitcoinSerializer[BlockHeader] {
     val merkleRoot : DoubleSha256Digest = DoubleSha256Digest(merkleRootBytes)
     //time 4 bytes
     val timeBytes = bytes.slice(68,72)
-    val timeHex = BitcoinSUtil.encodeHex(timeBytes)
-    val time = BitcoinSUtil.hexToLong(timeHex)
+    val timeHex = BitcoinSUtil.encodeHex(timeBytes.reverse)
+    val time = java.lang.Long.parseLong(timeHex, 16)
     //nbits 4 bytes
     val nBitsBytes = bytes.slice(72,76)
-    val nBitsHex = BitcoinSUtil.encodeHex(nBitsBytes)
-    val nBits = BitcoinSUtil.hexToLong(nBitsHex)
+    val nBitsHex = BitcoinSUtil.encodeHex(nBitsBytes.reverse)
+    val nBits = java.lang.Long.parseLong(nBitsHex, 16)
     //nonce 4 bytes
     val nonceBytes = bytes.slice(76,80)
-    val nonceHex = BitcoinSUtil.encodeHex(nonceBytes)
-    val nonce = BitcoinSUtil.hexToLong(nonceHex)
+    val nonceHex = BitcoinSUtil.encodeHex(nonceBytes.reverse)
+    val nonce = java.lang.Long.parseLong(nonceHex, 16)
     BlockHeader(version,prevBlockHash, merkleRoot, time, nBits, nonce)
   }
 

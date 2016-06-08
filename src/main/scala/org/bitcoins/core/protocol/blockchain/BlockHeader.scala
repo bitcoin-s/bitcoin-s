@@ -3,7 +3,7 @@ package org.bitcoins.core.protocol.blockchain
 import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.protocol.NetworkElement
 import org.bitcoins.core.serializers.blockchain.RawBlockHeaderSerializer
-import org.bitcoins.core.util.{BitcoinSLogger, Factory}
+import org.bitcoins.core.util.{BitcoinSUtil, CryptoUtil, BitcoinSLogger, Factory}
 
 
 /**
@@ -78,6 +78,13 @@ sealed trait BlockHeader extends NetworkElement with BitcoinSLogger {
     * @return the nonce used to try and solve a block
     */
   def nonce : Long
+
+  /**
+    * Returns the block's hash
+ *
+    * @return
+    */
+  def hash : DoubleSha256Digest = DoubleSha256Digest(BitcoinSUtil.flipEndianess(CryptoUtil.doubleSHA256(bytes).hex))
 
   override def hex : String = RawBlockHeaderSerializer.write(this)
 
