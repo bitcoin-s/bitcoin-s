@@ -15,14 +15,12 @@ class RawBlockSerializerTest extends FlatSpec with MustMatchers with BitcoinSLog
   //https://webbtc.com/block/000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f
   val version = "01000000"
   val prevBlockHash = "0000000000000000000000000000000000000000000000000000000000000000"
-  val merkleRoot = "4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b"
-  val merkleRootFlipped = "3BA3EDFD7A7B12B27AC72C3E67768F617FC81BC3888A51323A9FB8AA4B1E5E4A".toLowerCase
+  val merkleRoot = "3BA3EDFD7A7B12B27AC72C3E67768F617FC81BC3888A51323A9FB8AA4B1E5E4A".toLowerCase
   val timeStamp = "29AB5F49".toLowerCase
   val nBits = "FFFF001D".toLowerCase
   val nonce = "1DAC2B7C".toLowerCase
   val hash = "000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f"
   val header = version + prevBlockHash + merkleRoot + timeStamp + nBits + nonce
-  val writtenHeader = version + prevBlockHash + merkleRootFlipped + timeStamp + nBits + nonce //prevHash not flipped b/c all zeroes
   val rawTx1 = "01000000010000000000000000000000000000000000000000000000000000000000000000ffffffff4" +
     "d04ffff001d0104455468652054696d65732030332f4a616e2f32303039204368616e63656c6c6f72206f6e2062726" +
     "96e6b206f66207365636f6e64206261696c6f757420666f722062616e6b73ffffffff0100f2052a01000000434104678" +
@@ -32,7 +30,6 @@ class RawBlockSerializerTest extends FlatSpec with MustMatchers with BitcoinSLog
   val txSeq = List(tx1)
   val uInt = CompactSizeUInt(1, 1)
   val hex = header + uInt.hex + rawTx1
-  val writtenHex = writtenHeader + uInt.hex + rawTx1
 
   "RawBlockSerializer" must "parse genesis block" in {
     val block = RawBlockSerializer.read(hex)
@@ -40,27 +37,24 @@ class RawBlockSerializerTest extends FlatSpec with MustMatchers with BitcoinSLog
     block.txCount must be (uInt)
     block.blockHeader must be (RawBlockHeaderSerializer.read(header))
     block.transactions must be (txSeq)
-    block.blockHeader.hash.hex must be ("000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f")
-    block.hex must be (writtenHex)
+    block.blockHeader.hash.hex must be ("6fe28c0ab6f1b372c1a6a246ae63f74f931e8365e15a089c68d6190000000000")
+    block.hex must be (hex)
   }
 
   it must "write genesis block" in {
     val block = RawBlockSerializer.read(hex)
-    RawBlockSerializer.write(block) must be(writtenHex)
+    RawBlockSerializer.write(block) must be(hex)
   }
 
   it must "parse/write a block other than genesis" in {
     //https://test-insight.bitpay.com/block/00000000009fdf81e6efa251bc1902aedc07dc499cbe17db6e33db61eb64a7c5
     val version = "00000020"
-    val merkleRoot = "244e2160bc723be6a5f82fe3133daeafce417da3560e89bdc6c50aa20774fb8d"
-    val prevBlockHash = "0000000000f2dcc3d0b1d39296a24de96bb56185734d00932b101a5ed30fcd06"
-    val merkleRootFlipped = "8dfb7407a20ac5c6bd890e56a37d41ceafae3d13e32ff8a5e63b72bc60214e24" // flipped
-    val prevBlockHashFlipped = "06cd0fd35e1a102b93004d738561b56be94da29692d3b1d0c3dcf20000000000" //flipped
+    val merkleRoot = "8dfb7407a20ac5c6bd890e56a37d41ceafae3d13e32ff8a5e63b72bc60214e24"
+    val prevBlockHash = "06cd0fd35e1a102b93004d738561b56be94da29692d3b1d0c3dcf20000000000"
     val timeStamp = "0ae75557" //1465247498
     val nBits = "FFFF001D".toLowerCase
     val nonce = "43e3fe9e"
     val header = version + prevBlockHash + merkleRoot + timeStamp + nBits + nonce
-    val writtenHeader = version + prevBlockHashFlipped + merkleRootFlipped + timeStamp + nBits + nonce
     val rawTx1 = "0100000001000000000000000000000000000000000000000000000000000000000" +
       "0000000ffffffff04031d410dffffffff04f8f3b1110000000017a914349ef962198fcc875f45" +
       "e786598272ecace9818d87286bee000000000017a914349ef962198fcc875f45e786598272ecac" +
@@ -70,32 +64,28 @@ class RawBlockSerializerTest extends FlatSpec with MustMatchers with BitcoinSLog
     val txSeq = List(tx1)
     val uInt = CompactSizeUInt(1, 1)
     val hex = header + uInt.hex + rawTx1
-    val writtenHex = writtenHeader + uInt.hex + rawTx1
     //matches real hex from
     //https://test.webbtc.com/block/00000000009fdf81e6efa251bc1902aedc07dc499cbe17db6e33db61eb64a7c5.hex
     val block = RawBlockSerializer.read(hex)
-    block.blockHeader.hex must be (writtenHeader)
+    block.blockHeader.hex must be (header)
     block.transactions must be (txSeq)
-    block.blockHeader.hash.hex must be ("00000000009fdf81e6efa251bc1902aedc07dc499cbe17db6e33db61eb64a7c5")
-    block.hex must be (writtenHex)
+    block.blockHeader.hash.hex must be ("c5a764eb61db336edb17be9c49dc07dcae0219bc51a2efe681df9f0000000000")
+    block.hex must be (hex)
     block.txCount must be (uInt)
     block.txCount.num must be (1)
 
-    RawBlockSerializer.write(block) must be (writtenHex)
+    RawBlockSerializer.write(block) must be (hex)
   }
 
   it must "parse block with more than 1 transaction" in {
     //https://test.webbtc.com/block/000000000000189efaecf3ed9108b9de5320671c66a161a038f87b3e11493d5f.json
     val version = "00000020"
-    val prevBlockHash = "0000000000d874314a3d72f62fe4ef2c9faa09f4f37747e8d99509317c3be3cd"
-    val merkleRoot = "85a6607c24ea4db917264d4e7722b69888e02d6469579ed466eea663a86c83cf"
-    val prevBlockHashFlipped = BitcoinSUtil.flipEndianess("0000000000d874314a3d72f62fe4ef2c9faa09f4f37747e8d99509317c3be3cd")
-    val merkleRootFlipped = BitcoinSUtil.flipEndianess("85a6607c24ea4db917264d4e7722b69888e02d6469579ed466eea663a86c83cf")
+    val prevBlockHash = "cde33b7c310995d9e84777f3f409aa9f2cefe42ff6723d4a3174d80000000000"
+    val merkleRoot = "cf836ca863a6ee66d49e5769642de08898b622774e4d2617b94dea247c60a685"
     val timeStamp = "90895757" //in hex. 1465354640 as long
     val nBits = "6271191a"
     val nonce = "8f548695"
     val header = version + prevBlockHash + merkleRoot + timeStamp + nBits + nonce
-    val writtenHeader = version + prevBlockHashFlipped + merkleRootFlipped + timeStamp + nBits + nonce
     val rawTx1 = "01000000010000000000000000000000000000000000000000000000000000000000000000ffffffff1f0" +
       "343430d2f48616f4254432f48616f427463506f6f6c2f0504ecfde9ff0400ffffffff01757fa012000000001976a9149" +
       "f9a1576ec07a376fa1955bd063674cc341154d188ac00000000"
@@ -112,17 +102,16 @@ class RawBlockSerializerTest extends FlatSpec with MustMatchers with BitcoinSLog
     val txSeq = List(tx1, tx2)
     val uInt = CompactSizeUInt(2,1)
     val hex = header + uInt.hex + rawTx1 + rawTx2
-    val writtenHex = writtenHeader + uInt.hex + rawTx1 + rawTx2
 
     val block = RawBlockSerializer.read(hex)
-    block.blockHeader.hash.hex must be ("000000000000189efaecf3ed9108b9de5320671c66a161a038f87b3e11493d5f")
+    block.blockHeader.hash.hex must be ("5f3d49113e7bf838a061a1661c672053deb90891edf3ecfa9e18000000000000")
     block.blockHeader.version must be (536870912)
-    block.blockHeader.previousBlockHash must be (DoubleSha256Digest("0000000000d874314a3d72f62fe4ef2c9faa09f4f37747e8d99509317c3be3cd"))
-    block.blockHeader.merkleRootHash must be (DoubleSha256Digest("85a6607c24ea4db917264d4e7722b69888e02d6469579ed466eea663a86c83cf"))
+    block.blockHeader.previousBlockHash must be (DoubleSha256Digest(prevBlockHash))
+    block.blockHeader.merkleRootHash must be (DoubleSha256Digest(merkleRoot))
     block.blockHeader.time must be (1465354640)
     block.blockHeader.nBits must be (437875042)
     block.blockHeader must be (RawBlockHeaderSerializer.read(header))
     block.txCount.num must be (txSeq.size)
-    block.hex must be (writtenHex)
+    block.hex must be (hex)
   }
 }

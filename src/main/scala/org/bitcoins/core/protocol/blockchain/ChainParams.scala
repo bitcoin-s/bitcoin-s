@@ -106,7 +106,7 @@ sealed trait ChainParams {
     val tx = Transaction(TransactionConstants.version,Seq(input), Seq(output), TransactionConstants.lockTime)
     val prevBlockHash = DoubleSha256Digest("0000000000000000000000000000000000000000000000000000000000000000")
     //TODO: Replace this with a merkle root hash computed algorithmically
-    val merkleRootHash = DoubleSha256Digest("4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b")
+    val merkleRootHash = DoubleSha256Digest("3ba3edfd7a7b12b27ac72c3e67768f617fc81bc3888a51323a9fb8aa4b1e5e4a")
     val genesisBlockHeader = BlockHeader(version,prevBlockHash,merkleRootHash,time,nBits,nonce)
     val genesisBlock = Block(genesisBlockHeader,CompactSizeUInt(1,1),Seq(tx))
     genesisBlock
