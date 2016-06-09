@@ -59,9 +59,6 @@ sealed trait ChainParams {
     */
   def base58Prefixes : Map[Base58Type,Seq[Byte]]
 
-
-
-
   /**
     * Creates the genesis block for this blockchain
     * Mimics this function in bitcoin core
@@ -134,7 +131,7 @@ object TestNetChainParams extends ChainParams {
 
   override def networkId = "test"
 
-  override def genesisBlock : Block = createGenesisBlock(1296688602, 414098458, 0x1d00ffff, 1, Bitcoins(50))
+  override def genesisBlock = createGenesisBlock(1296688602, 414098458, 0x1d00ffff, 1, Bitcoins(50))
 
   override def requireStandardTransaction = ???
 

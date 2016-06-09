@@ -21,6 +21,7 @@ class ChainParamsTest extends FlatSpec with MustMatchers {
     genesisBlock.hash must be ("000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f")
   }
 
+
   it must "compute the script signature for the coinbase tx in the mainnet genesis block" in {
     val scriptSig = genesisBlock.transactions.head.inputs.head.scriptSignature
     scriptSig.hex must be (expectedGenesisScriptSig.hex)
