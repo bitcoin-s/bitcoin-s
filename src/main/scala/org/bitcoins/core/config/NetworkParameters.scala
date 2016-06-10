@@ -15,6 +15,15 @@ trait NetworkParameters {
     * @return
     */
   def dnsSeeds : Seq[String]
+
+  /**
+    * The message start string is designed to be unlikely to occur in normal data.
+    * The characters are rarely used upper ASCII, not valid as UTF-8, and produce
+    * a large 32-bit integer with any alignment.
+    * https://github.com/bitcoin/bitcoin/blob/master/src/chainparams.cpp#L108
+    * @return
+    */
+  def magicBytes : Seq[Byte]
 }
 
 trait MainNet extends NetworkParameters {
@@ -25,6 +34,7 @@ trait MainNet extends NetworkParameters {
   override def dnsSeeds = Seq("seed.bitcoin.sipa.be","dnsseed.bluematt.me","dnsseed.bitcoin.dashjr.org",
     "seed.bitcoinstats.com","bitseed.xf2.org","seed.bitcoin.jonasschnelli.ch")
 
+  override def magicBytes = Seq(0xf9.toByte, 0xbe.toByte, 0xb4.toByte, 0xd9.toByte)
 }
 
 object MainNet extends MainNet
@@ -36,6 +46,7 @@ trait TestNet3 extends NetworkParameters {
   override def port = 18333
   override def dnsSeeds = Seq("testnet-seed.bitcoin.petertodd.org",
     "testnet-seed.bluematt.me","testnet-seed.bitcoin.schildbach.de")
+  override def magicBytes = Seq(0x0b.toByte, 0x11.toByte, 0x09.toByte, 0x07.toByte)
 }
 
 object TestNet3 extends TestNet3
@@ -46,7 +57,7 @@ trait RegTest extends NetworkParameters {
   override def privateKey = TestNet3.privateKey
   override def port = 18444
   override def dnsSeeds = Seq()
-
+  override def magicBytes = Seq(0xfa.toByte, 0xbf.toByte, 0xb5.toByte, 0xda.toByte)
 }
 
 object RegTest extends RegTest
