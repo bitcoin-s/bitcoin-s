@@ -1,5 +1,6 @@
 package org.bitcoins.core.protocol.blockchain
 
+import org.bitcoins.core.consensus.Merkle
 import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.protocol.{CompactSizeUInt, NetworkElement}
 import org.bitcoins.core.protocol.transaction.Transaction
@@ -53,4 +54,5 @@ object Block extends Factory[Block] {
   }
 
   def fromBytes(bytes : Seq[Byte]) : Block = RawBlockSerializer.read(bytes)
+
 }

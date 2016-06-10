@@ -118,6 +118,8 @@ trait NumberUtil extends BitcoinSLogger {
   def toByteSeq(long : Long) : Seq[Byte] = BigInt(long).toByteArray
 
 
+
+
   /**
    * Parses a VarInt from a string of hex characters
    * https://bitcoin.org/en/developer-reference#compactsize-unsigned-integers

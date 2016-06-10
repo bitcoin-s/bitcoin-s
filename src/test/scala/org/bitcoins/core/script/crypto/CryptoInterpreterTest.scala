@@ -161,7 +161,6 @@ class CryptoInterpreterTest extends FlatSpec with MustMatchers with CryptoInterp
 
     val program = ScriptProgram(baseProgram,stack,script)
     val newProgram = opCheckMultiSig(program)
-
     newProgram.stackTopIsTrue must be (true)
     newProgram.stack.size must be (1)
 

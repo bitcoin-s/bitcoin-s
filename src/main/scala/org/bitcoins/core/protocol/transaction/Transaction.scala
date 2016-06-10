@@ -13,11 +13,10 @@ import org.bitcoins.core.util.{Factory, BitcoinSUtil, CryptoUtil}
 sealed trait Transaction extends NetworkElement {
   /**
     * The sha256(sha256(tx)) of this transaction
-    * Note that this is the little endian encoding of the hash NOT the big endian encoding
-    * which bitcoin core uses
+    * Note that this is the big endian encoding of the hash NOT the little endian encoding displayed on block explorers
     * @return
     */
-  def txId : DoubleSha256Digest = DoubleSha256Digest(CryptoUtil.doubleSHA256(bytes).bytes.reverse)
+  def txId : DoubleSha256Digest = CryptoUtil.doubleSHA256(bytes)
 
   /**
     * The version number for this transaction

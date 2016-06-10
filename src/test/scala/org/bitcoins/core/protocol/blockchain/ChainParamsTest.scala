@@ -3,6 +3,7 @@ package org.bitcoins.core.protocol.blockchain
 import org.bitcoins.core.currency.{Bitcoins, CurrencyUnits}
 import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptSignature}
 import org.bitcoins.core.protocol.transaction.{TransactionConstants, TransactionInput, TransactionOutput}
+import org.bitcoins.core.util.BitcoinSUtil
 import org.scalatest.{FlatSpec, MustMatchers}
 
 /**
@@ -29,6 +30,7 @@ class ChainParamsTest extends FlatSpec with MustMatchers {
   it must "hash the bitcoin genesis block" in {
     genesisBlock.blockHeader.hash.hex must be ("6fe28c0ab6f1b372c1a6a246ae63f74f931e8365e15a089c68d6190000000000")
   }
+
 
   it must "compute the script signature for the coinbase tx in the mainnet genesis block" in {
     val scriptSig = genesisBlock.transactions.head.inputs.head.scriptSignature
@@ -60,6 +62,11 @@ class ChainParamsTest extends FlatSpec with MustMatchers {
     genesisTransaction.inputs must be (Seq(expectedGenesisInput))
     genesisTransaction.outputs must be (Seq(expectedGenesisOutput))
 
-    genesisTransaction.txId.hex must be ("4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b")
+    genesisTransaction.txId.hex must be (BitcoinSUtil.flipEndianess("4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b"))
+  }
+
+
+  it must "generate the correctly merkle root for the testnet genesis block" in {
+    TestNetChainParams.genesisBlock.blockHeader.merkleRootHash.hex must be (BitcoinSUtil.flipEndianess("4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b"))
   }
 }
