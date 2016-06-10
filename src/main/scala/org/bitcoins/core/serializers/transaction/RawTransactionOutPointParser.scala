@@ -15,7 +15,7 @@ trait RawTransactionOutPointParser extends RawBitcoinSerializer[TransactionOutPo
 
 
   override def read(bytes : List[Byte]) : TransactionOutPoint = {
-    val txId : List[Byte] = bytes.slice(0,32).reverse
+    val txId : List[Byte] = bytes.slice(0,32)
     val index : BigInt = BigInt(bytes.slice(32, bytes.size).toArray.reverse)
     TransactionOutPoint(DoubleSha256Digest(txId), index.toInt)
   }
@@ -23,8 +23,8 @@ trait RawTransactionOutPointParser extends RawBitcoinSerializer[TransactionOutPo
   def write(outPoint : TransactionOutPoint) : String = {
     val indexHexWithoutPadding : String = addPrecedingZero(outPoint.vout.toHexString)
     val indexHex = addPadding(8,indexHexWithoutPadding)
-    val littleEndianTxId = BitcoinSUtil.flipEndianess(outPoint.txId.bytes)
-    littleEndianTxId + indexHex
+    val txIdHex = outPoint.txId.hex
+    txIdHex + indexHex
   }
 
 }

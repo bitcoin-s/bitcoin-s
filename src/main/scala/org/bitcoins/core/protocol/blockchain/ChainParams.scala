@@ -1,5 +1,6 @@
 package org.bitcoins.core.protocol.blockchain
 
+import org.bitcoins.core.consensus.Merkle
 import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit}
 import org.bitcoins.core.protocol.CompactSizeUInt
@@ -20,6 +21,7 @@ import org.bitcoins.core.util.BitcoinSUtil
   * https://github.com/bitcoin/bitcoin/blob/master/src/chainparams.h#L42
   */
 sealed trait ChainParams {
+
   /**
     * Return the BIP70 network string (main, test or regtest)
     *
@@ -56,14 +58,6 @@ sealed trait ChainParams {
     * @return
     */
   def base58Prefixes : Map[Base58Type,Seq[Byte]]
-
-  /**
-    * The seeds used to bootstrap the network
-    *
-    * @return
-    */
-  def dnsSeeds : Seq[String]
-
 
   /**
     * Creates the genesis block for this blockchain
@@ -105,8 +99,7 @@ sealed trait ChainParams {
     val output = TransactionOutput(amount,scriptPubKey)
     val tx = Transaction(TransactionConstants.version,Seq(input), Seq(output), TransactionConstants.lockTime)
     val prevBlockHash = DoubleSha256Digest("0000000000000000000000000000000000000000000000000000000000000000")
-    //TODO: Replace this with a merkle root hash computed algorithmically
-    val merkleRootHash = DoubleSha256Digest("3ba3edfd7a7b12b27ac72c3e67768f617fc81bc3888a51323a9fb8aa4b1e5e4a")
+    val merkleRootHash = Merkle.computeMerkleRoot(Seq(tx))
     val genesisBlockHeader = BlockHeader(version,prevBlockHash,merkleRootHash,time,nBits,nonce)
     val genesisBlock = Block(genesisBlockHeader,CompactSizeUInt(1,1),Seq(tx))
     genesisBlock
@@ -119,7 +112,9 @@ sealed trait ChainParams {
   */
 object MainNetChainParams extends ChainParams {
   override def networkId = "main"
+
   override def genesisBlock = createGenesisBlock(1231006505, 2083236893, 0x1d00ffff, 1, Bitcoins(50))
+
   override def requireStandardTransaction = ???
 
   override def base58Prefixes : Map[Base58Type,Seq[Byte]] =
@@ -130,17 +125,14 @@ object MainNetChainParams extends ChainParams {
         BitcoinSUtil.hexToByte("b2"), BitcoinSUtil.hexToByte("1e")),
       ExtSecretKey -> Seq(BitcoinSUtil.hexToByte("04"), BitcoinSUtil.hexToByte("88"),
         BitcoinSUtil.hexToByte("ad"), BitcoinSUtil.hexToByte("e4")))
-
-
-  override def dnsSeeds = Seq("seed.bitcoin.sipa.be","dnsseed.bluematt.me","dnsseed.bitcoin.dashjr.org",
-    "seed.bitcoinstats.com","bitseed.xf2.org","seed.bitcoin.jonasschnelli.ch")
-
 }
 
 object TestNetChainParams extends ChainParams {
 
   override def networkId = "test"
-  override def genesisBlock : Block = ???
+
+  override def genesisBlock = createGenesisBlock(1296688602, 414098458, 0x1d00ffff, 1, Bitcoins(50))
+
   override def requireStandardTransaction = ???
 
   override def base58Prefixes : Map[Base58Type,Seq[Byte]] = Map(
@@ -151,10 +143,6 @@ object TestNetChainParams extends ChainParams {
         BitcoinSUtil.hexToByte("87"), BitcoinSUtil.hexToByte("cf")),
       ExtSecretKey -> Seq(BitcoinSUtil.hexToByte("04"), BitcoinSUtil.hexToByte("35"),
         BitcoinSUtil.hexToByte("83"), BitcoinSUtil.hexToByte("94")))
-
-
-  override def dnsSeeds = Seq("testnet-seed.bitcoin.petertodd.org",
-    "testnet-seed.bluematt.me","testnet-seed.bitcoin.schildbach.de")
 }
 
 
@@ -164,8 +152,6 @@ object RegTestNetChainParams extends ChainParams {
   override def requireStandardTransaction = ???
 
   override def base58Prefixes : Map[Base58Type, Seq[Byte]] = TestNetChainParams.base58Prefixes
-
-  override def dnsSeeds = Seq()
 }
 
 
