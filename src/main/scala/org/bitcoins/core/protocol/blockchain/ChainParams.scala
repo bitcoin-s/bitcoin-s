@@ -30,7 +30,7 @@ sealed trait ChainParams {
   def networkId : String
 
   /**
-    * The gensis block in the blockchain
+    * The genesis block in the blockchain
     *
     * @return
     */
@@ -111,16 +111,17 @@ sealed trait ChainParams {
   * This is the main network parameters
   */
 object MainNetChainParams extends ChainParams {
+
   override def networkId = "main"
 
   override def genesisBlock = createGenesisBlock(1231006505, 2083236893, 0x1d00ffff, 1, Bitcoins(50))
 
-  override def requireStandardTransaction = ???
+  override def requireStandardTransaction = true
 
   override def base58Prefixes : Map[Base58Type,Seq[Byte]] =
-    Map(PubKeyAddress -> Seq(1.toByte, 0.toByte),
-      ScriptAddress -> Seq(1.toByte, 5.toByte),
-      SecretKey -> Seq(1.toByte, 128.toByte),
+    Map(PubKeyAddress -> BitcoinSUtil.decodeHex("00"),
+      ScriptAddress -> BitcoinSUtil.decodeHex("05"),
+      SecretKey -> BitcoinSUtil.decodeHex("80"),
       ExtPublicKey -> Seq(BitcoinSUtil.hexToByte("04"), BitcoinSUtil.hexToByte("88"),
         BitcoinSUtil.hexToByte("b2"), BitcoinSUtil.hexToByte("1e")),
       ExtSecretKey -> Seq(BitcoinSUtil.hexToByte("04"), BitcoinSUtil.hexToByte("88"),
@@ -133,12 +134,12 @@ object TestNetChainParams extends ChainParams {
 
   override def genesisBlock = createGenesisBlock(1296688602, 414098458, 0x1d00ffff, 1, Bitcoins(50))
 
-  override def requireStandardTransaction = ???
+  override def requireStandardTransaction = true
 
   override def base58Prefixes : Map[Base58Type,Seq[Byte]] = Map(
-    PubKeyAddress -> Seq(1.toByte, 111.toByte),
-      ScriptAddress -> Seq(1.toByte, 196.toByte),
-      SecretKey -> Seq(1.toByte, 239.toByte),
+    PubKeyAddress -> BitcoinSUtil.decodeHex("6f")  ,
+      ScriptAddress -> BitcoinSUtil.decodeHex("c4") ,
+      SecretKey -> BitcoinSUtil.decodeHex("ef") ,
       ExtPublicKey -> Seq(BitcoinSUtil.hexToByte("04"), BitcoinSUtil.hexToByte("35"),
         BitcoinSUtil.hexToByte("87"), BitcoinSUtil.hexToByte("cf")),
       ExtSecretKey -> Seq(BitcoinSUtil.hexToByte("04"), BitcoinSUtil.hexToByte("35"),
@@ -148,8 +149,8 @@ object TestNetChainParams extends ChainParams {
 
 object RegTestNetChainParams extends ChainParams {
   override def networkId = "regtest"
-  override def genesisBlock : Block = ???
-  override def requireStandardTransaction = ???
+  override def genesisBlock = createGenesisBlock(1296688602, 2, 0x207fffff, 1, Bitcoins(50))
+  override def requireStandardTransaction = TestNetChainParams.requireStandardTransaction
 
   override def base58Prefixes : Map[Base58Type, Seq[Byte]] = TestNetChainParams.base58Prefixes
 }

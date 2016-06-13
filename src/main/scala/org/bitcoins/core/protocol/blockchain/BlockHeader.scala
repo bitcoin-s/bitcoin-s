@@ -81,7 +81,6 @@ sealed trait BlockHeader extends NetworkElement with BitcoinSLogger {
 
   /**
     * Returns the block's hash
- *
     * @return
     */
   def hash : DoubleSha256Digest = CryptoUtil.doubleSHA256(bytes)
