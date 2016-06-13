@@ -51,7 +51,7 @@ object CoreTransactionTestCaseProtocol extends DefaultJsonProtocol with BitcoinS
   def parseOutPointsAndScriptPubKeys(array : JsArray) : Seq[(TransactionOutPoint,ScriptPubKey)] = {
     val result = array.elements.map {
       case array : JsArray =>
-        val prevoutHashHex = BitcoinSUtil.flipEndianess(BitcoinSUtil.decodeHex(array.elements.head.convertTo[String]))
+        val prevoutHashHex = BitcoinSUtil.flipEndianess(array.elements.head.convertTo[String])
         val prevoutHash = DoubleSha256Digest(prevoutHashHex)
         val prevoutIndex = array.elements(1).convertTo[Int]
         val outPoint = TransactionOutPoint(prevoutHash,prevoutIndex)

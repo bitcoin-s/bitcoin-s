@@ -60,7 +60,7 @@ trait RawBlockHeaderSerializer extends RawBitcoinSerializer[BlockHeader] {
     val prevHash = blockHeader.previousBlockHash.hex
     val merkleRoot = blockHeader.merkleRootHash.hex
 
-    val time = BitcoinSUtil.flipEndianess(blockHeader.time.toHexString)
+    val time = addPadding(8,BitcoinSUtil.flipEndianess(blockHeader.time.toHexString))
     val nBits = addPadding(8,BitcoinSUtil.flipEndianess(blockHeader.nBits.toHexString))
     val nonce = addPadding(8,BitcoinSUtil.flipEndianess(blockHeader.nonce.toHexString))
 
