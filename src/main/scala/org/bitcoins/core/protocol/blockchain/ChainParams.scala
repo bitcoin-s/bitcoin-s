@@ -118,6 +118,11 @@ object MainNetChainParams extends ChainParams {
 
   override def requireStandardTransaction = true
 
+  /**
+    * Base58 prefixes for various keys/hashes on the network
+    * See: https://en.bitcoin.it/wiki/List_of_address_prefixes
+    * @return
+    */
   override def base58Prefixes : Map[Base58Type,Seq[Byte]] =
     Map(PubKeyAddress -> BitcoinSUtil.decodeHex("00"),
       ScriptAddress -> BitcoinSUtil.decodeHex("05"),
@@ -136,6 +141,11 @@ object TestNetChainParams extends ChainParams {
 
   override def requireStandardTransaction = true
 
+  /**
+    * Base58 prefixes for various keys/hashes on the network
+    * See: https://en.bitcoin.it/wiki/List_of_address_prefixes
+    * @return
+    */
   override def base58Prefixes : Map[Base58Type,Seq[Byte]] = Map(
     PubKeyAddress -> BitcoinSUtil.decodeHex("6f")  ,
       ScriptAddress -> BitcoinSUtil.decodeHex("c4") ,
@@ -152,6 +162,11 @@ object RegTestNetChainParams extends ChainParams {
   override def genesisBlock = createGenesisBlock(1296688602, 2, 0x207fffff, 1, Bitcoins(50))
   override def requireStandardTransaction = TestNetChainParams.requireStandardTransaction
 
+  /**
+    * Base58 prefixes for various keys/hashes on the network
+    * See: https://en.bitcoin.it/wiki/List_of_address_prefixes
+    * @return
+    */
   override def base58Prefixes : Map[Base58Type, Seq[Byte]] = TestNetChainParams.base58Prefixes
 }
 
