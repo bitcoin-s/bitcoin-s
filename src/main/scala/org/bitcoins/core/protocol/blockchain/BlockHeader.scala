@@ -3,7 +3,7 @@ package org.bitcoins.core.protocol.blockchain
 import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.protocol.NetworkElement
 import org.bitcoins.core.serializers.blockchain.RawBlockHeaderSerializer
-import org.bitcoins.core.util.{BitcoinSLogger, Factory}
+import org.bitcoins.core.util.{BitcoinSUtil, CryptoUtil, BitcoinSLogger, Factory}
 
 
 /**
@@ -79,6 +79,13 @@ sealed trait BlockHeader extends NetworkElement with BitcoinSLogger {
     */
   def nonce : Long
 
+  /**
+    * Returns the block's hash
+ *
+    * @return
+    */
+  def hash : DoubleSha256Digest = CryptoUtil.doubleSHA256(bytes)
+
   override def hex : String = RawBlockHeaderSerializer.write(this)
 
 }
@@ -98,6 +105,5 @@ object BlockHeader extends Factory[BlockHeader] {
   }
 
   def fromBytes(bytes : Seq[Byte]) : BlockHeader = RawBlockHeaderSerializer.read(bytes)
-
 
 }

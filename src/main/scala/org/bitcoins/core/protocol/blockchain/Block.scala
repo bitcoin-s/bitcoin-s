@@ -36,19 +36,7 @@ sealed trait Block extends NetworkElement with BitcoinSLogger {
     */
   def transactions : Seq[Transaction]
 
-  /**
-    * Returns the block's hash
-    * @return
-    */
-  def hash : DoubleSha256Digest = CryptoUtil.doubleSHA256(bytes)
-
-  /**
-    * Computes the merkle root for this block
-    * @return the merkle root for the transactions inside of this block
-    */
-  def merkleRoot : DoubleSha256Digest = Merkle.computeBlockMerkleRoot(this)
-
-  def hex = RawBlockSerializer.write(this)
+  override def hex = RawBlockSerializer.write(this)
 
 }
 
