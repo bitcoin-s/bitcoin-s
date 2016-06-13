@@ -61,8 +61,8 @@ trait RawBlockHeaderSerializer extends RawBitcoinSerializer[BlockHeader] {
     val merkleRoot = blockHeader.merkleRootHash.hex
 
     val time = BitcoinSUtil.flipEndianess(blockHeader.time.toHexString)
-    val nBits = BitcoinSUtil.flipEndianess(blockHeader.nBits.toHexString)
-    val nonce = BitcoinSUtil.flipEndianess(blockHeader.nonce.toHexString)
+    val nBits = addPadding(8,BitcoinSUtil.flipEndianess(blockHeader.nBits.toHexString))
+    val nonce = addPadding(8,BitcoinSUtil.flipEndianess(blockHeader.nonce.toHexString))
 
     version + prevHash + merkleRoot + time + nBits + nonce
   }
