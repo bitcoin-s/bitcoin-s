@@ -51,6 +51,7 @@ trait BitcoinSUtil extends NumberUtil {
     require(hex.size == 2)
     BitcoinSUtil.decodeHex(hex).head
   }
+
   /**
    * Flips the endianess of the give hex string
    * @param hex

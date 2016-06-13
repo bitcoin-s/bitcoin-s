@@ -56,10 +56,10 @@ trait Merkle extends BitcoinSLogger {
     */
   def computeMerkleRoot(transactions : Seq[Transaction]) : DoubleSha256Digest = transactions match {
     case Nil => throw new RuntimeException("We cannot have zero transactions in the block. There always should be ATLEAST one - the coinbase tx")
-    case h :: Nil => h.txId
+    case h :: Nil => DoubleSha256Digest(h.txId.bytes)
     case h :: t =>
       //we need to switch our txIds from little endian encoding to big endian encoding for computing merkle trees
-      val txHashes = transactions.map(tx => DoubleSha256Digest(tx.txId.bytes.reverse))
+      val txHashes = transactions.map(tx => tx.txId)
       computeMerkleRoot(txHashes)
   }
 }
