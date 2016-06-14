@@ -85,9 +85,17 @@ object ECPrivateKey extends Factory[ECPrivateKey] {
     val decodedBase58 : Seq[Byte] = Base58.decode(base58)
     //Drop(1) will drop the network byte. The last 5 bytes are dropped included the checksum (4 bytes), and 0x01 byte that
     //is appended to compressed keys (which we implemented as the default option).
-    val trim = decodedBase58.drop(1).dropRight(5)
+    val trim = {
+      if (base58.head == '5' || base58.head == '9') {
+        decodedBase58.drop(1).dropRight(4)
+      } else {
+        require(base58.head == 'K' || base58.head == 'L' || base58.head == 'c', "Unrecognized private key format. Must" +
+          " start with '5', 'K', 'L' for MainNet, or '9', 'c' for TestNet")
+        decodedBase58.drop(1).dropRight(5)
+      }
+    }
     val privateKeyBytesToHex = BitcoinSUtil.encodeHex(trim)
-    apply(privateKeyBytesToHex)
+    ECPrivateKey(privateKeyBytesToHex)
   }
 }
 

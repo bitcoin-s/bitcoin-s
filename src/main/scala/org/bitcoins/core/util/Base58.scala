@@ -1,5 +1,9 @@
 package org.bitcoins.core.util
 
+import org.bitcoins.core.config.{TestNet3, MainNet}
+import org.bitcoins.core.crypto.ECPrivateKey
+import org.bitcoins.core.protocol.script.ScriptPubKey
+
 import scala.annotation.tailrec
 import scala.util.{Try, Failure, Success}
 
@@ -58,6 +62,54 @@ trait Base58 extends BitcoinSLogger {
     }
   }
 
+  /**
+    * Encodes a Base58 address from a scriptPubKey
+    * @param scriptPubKey
+    * @param addressType string
+    * @param isTestNet boolean
+    * @return
+    */
+  def encodePubKeyToBase58Address(scriptPubKey: ScriptPubKey,
+                                  addressType : String,
+                                  isTestNet : Boolean) : String = {
+    val versionByte : Byte = {
+      require(addressType != "pubkey" || addressType != "script",
+        throw new IllegalArgumentException("Address must be of type 'pubkey' or 'script'."))
+      if (!isTestNet) {
+        if (addressType == "pubkey") MainNet.p2pkhNetworkByte
+        else MainNet.p2shNetworkByte
+      }
+      else if (isTestNet) {
+        if (addressType == "pubkey") TestNet3.p2pkhNetworkByte
+        else TestNet3.p2shNetworkByte
+      }
+      else throw new IllegalArgumentException("Something broke -- Check your parameters. There should be a " +
+        "scriptPubKey, addressType('pubkey' or 'script'), and whether or not it's testnet (true or false).")
+    }
+
+    val bytes : Seq[Byte] = Seq(versionByte.toByte) ++ scriptPubKey.bytes
+    val checksum = CryptoUtil.doubleSHA256(bytes).bytes.take(4)
+    encode(bytes ++ checksum)
+  }
+
+  def encodePrivateKeyToBase58Address(privateKey : ECPrivateKey,
+                                      isCompressed : Boolean,
+                                      isTestNet : Boolean) : String = {
+    val versionByte : Byte = {
+      if (!isTestNet) MainNet.privateKey
+      else {
+        TestNet3.privateKey
+      }
+    }
+    val compressedByte : Option[Byte] = isCompressed match {
+      case true => Some(0x01.toByte)
+      case false => None
+    }
+
+    val bytes : Seq[Byte] = Seq(versionByte.toByte) ++ BitcoinSUtil.decodeHex(privateKey.hex) ++ compressedByte
+    val checksum =  CryptoUtil.doubleSHA256(bytes).bytes.take(4)
+    encode(bytes ++ checksum)
+  }
 
   /**
     * Takes in base58 string and returns sequence of bytes
@@ -71,7 +123,6 @@ trait Base58 extends BitcoinSLogger {
     val decoded = trim.foldLeft(BigInt(0))((a,b) =>a.*(BigInt(58L)).+(BigInt(base58Pairs(b))))
     if (trim.isEmpty) zeroes else zeroes ++ decoded.toByteArray.dropWhile(_ == 0)
   }
-
 }
 
 object Base58 extends Base58
