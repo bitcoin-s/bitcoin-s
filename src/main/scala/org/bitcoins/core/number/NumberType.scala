@@ -97,5 +97,8 @@ object Int32 extends Factory[Int32] {
 object Int64 extends Factory[Int64] {
   private case class Int64Impl(underlying : Long) extends Int64
 
-  override def fromBytes(bytes : Seq[Byte]): Int64 = Int64Impl(BigInt(bytes.toArray).toLong)
+  override def fromBytes(bytes : Seq[Byte]): Int64 = {
+    require(bytes.size <= 8, "We cannot have an Int64 be larger than 8 bytes")
+    Int64Impl(BigInt(bytes.toArray).toLong)
+  }
 }
