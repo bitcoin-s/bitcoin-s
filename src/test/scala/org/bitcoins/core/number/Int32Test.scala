@@ -12,6 +12,16 @@ class Int32Test extends FlatSpec with MustMatchers {
     int32.underlying must be (0)
   }
 
+  it must "represent the number -1" in {
+    val int32 = Int32(Seq(0xff.toByte))
+    int32.underlying must be (-1)
+  }
+
+  it must "represent the number -1 with 4 bytes" in {
+    val int32 = Int32(Seq(0xff.toByte, 0xff.toByte, 0xff.toByte, 0xff.toByte))
+    int32.underlying must be (-1)
+  }
+
   it must "create the max number for a single byte" in {
     val int32 = Int32(Seq(0x7f.toByte))
     int32.underlying must be (127)
