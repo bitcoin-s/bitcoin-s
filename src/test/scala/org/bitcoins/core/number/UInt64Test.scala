@@ -34,4 +34,18 @@ class UInt64Test extends FlatSpec with MustMatchers {
       UInt64(Seq(1.toByte, 0.toByte, 0.toByte, 0.toByte, 0.toByte, 0.toByte, 0.toByte, 0.toByte, 0.toByte))
     }
   }
+
+  it must "have the correct representation for 0" in {
+    UInt64.zero.underlying must be (0)
+  }
+
+  it must "have the correct representation for 1"
+
+  it must "have the correct min number for a UInt64" in {
+    UInt64.min.underlying must be (0)
+  }
+
+  it must "have the correct max number for a UInt64" in {
+    UInt64.max.underlying must be (BigInt("18446744073709551615"))
+  }
 }

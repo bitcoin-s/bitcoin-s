@@ -54,4 +54,20 @@ class UInt32Test extends FlatSpec with MustMatchers {
       UInt32(Seq(0.toByte,0.toByte,0.toByte,0.toByte,0.toByte))
     }
   }
+
+  it must "have the correct representation for 0" in {
+    UInt32.zero.underlying must be (0)
+  }
+
+  it must "have the correct representation for 1" in {
+    UInt32.one.underlying must be (1)
+  }
+
+  it must "have the correct minimum number for a UInt32" in {
+    UInt32.min.underlying must be (0)
+  }
+
+  it must "have the correct maximum number representation for UInt32" in {
+    UInt32.max.underlying must be (4294967295L)
+  }
 }
