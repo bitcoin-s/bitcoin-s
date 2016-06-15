@@ -2,7 +2,7 @@ package org.bitcoins.core.util
 
 import org.bitcoins.core.protocol.script.ScriptSignature
 
-import org.bitcoins.core.protocol.CompactSizeUIntImpl
+import org.bitcoins.core.protocol.CompactSizeUInt
 import org.scalatest.{FlatSpec, MustMatchers}
 
 /**
@@ -204,13 +204,13 @@ class NumberUtilTest extends FlatSpec with MustMatchers with NumberUtil {
 
   it must "parse a variable length integer (VarInt)" in {
     val str = "fdfd00"
-    parseCompactSizeUInt(str) must be (CompactSizeUIntImpl(253,3))
+    parseCompactSizeUInt(str) must be (CompactSizeUInt(253,3))
 
     val str1 = "00"
-    parseCompactSizeUInt(str1) must be (CompactSizeUIntImpl(0,1))
+    parseCompactSizeUInt(str1) must be (CompactSizeUInt(0,1))
 
     val str2 = "ffffffffff"
-    parseCompactSizeUInt(str2) must be (CompactSizeUIntImpl(4294967295L,9))
+    parseCompactSizeUInt(str2) must be (CompactSizeUInt(4294967295L,9))
   }
 
 
@@ -224,7 +224,7 @@ class NumberUtilTest extends FlatSpec with MustMatchers with NumberUtil {
   }
 
   it must "parse the variable length integer of the empty script" in {
-    parseCompactSizeUInt(ScriptSignature.empty) must be (CompactSizeUIntImpl(0,1))
+    parseCompactSizeUInt(ScriptSignature.empty) must be (CompactSizeUInt(0,1))
   }
 
 }
