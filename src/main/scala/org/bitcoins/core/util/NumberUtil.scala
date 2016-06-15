@@ -8,7 +8,6 @@ import org.bitcoins.core.protocol.{CompactSizeUInt, CompactSizeUIntImpl}
  */
 trait NumberUtil extends BitcoinSLogger {
 
-
   /**
    * Parses a VarInt from a string of hex characters
    * https://bitcoin.org/en/developer-reference#compactsize-unsigned-integers
