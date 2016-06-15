@@ -1,23 +1,12 @@
 package org.bitcoins.core.script.interpreter
 
-import java.io.File
-
-import com.sun.org.apache.bcel.internal.generic.NOP
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.script.ScriptProgram
-import org.bitcoins.core.script.bitwise.{OP_EQUAL, OP_EQUALVERIFY}
-import org.bitcoins.core.script.constant._
-import org.bitcoins.core.script.control.OP_VERIFY
-import org.bitcoins.core.script.crypto.{OP_CHECKSIG, OP_HASH160}
 import org.bitcoins.core.script.flag.ScriptFlagFactory
+import org.bitcoins.core.script.interpreter.testprotocol.CoreTestCaseProtocol._
 import org.bitcoins.core.script.interpreter.testprotocol.{CoreTestCase, CoreTestCaseProtocol}
-import org.bitcoins.core.script.reserved.OP_NOP
-import org.bitcoins.core.script.stack.OP_DUP
-import org.bitcoins.core.util.{BitcoinSLogger, TestUtil, TransactionTestUtil}
+import org.bitcoins.core.util.{BitcoinSLogger, TransactionTestUtil}
 import org.scalatest.{FlatSpec, MustMatchers}
-import org.slf4j.LoggerFactory
-import CoreTestCaseProtocol._
-import org.bitcoins.core.protocol.transaction.testprotocol.CoreTransactionTestCase
 import spray.json._
 
 import scala.io.Source

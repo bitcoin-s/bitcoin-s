@@ -1,6 +1,5 @@
 package org.bitcoins.core.util
 
-import org.bitcoins.core.number.UInt32._
 import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptSignature}
 import org.bitcoins.core.protocol.{CompactSizeUInt, CompactSizeUIntImpl}
 

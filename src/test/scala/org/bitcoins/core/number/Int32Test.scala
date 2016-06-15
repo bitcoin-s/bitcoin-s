@@ -47,4 +47,20 @@ class Int32Test extends FlatSpec with MustMatchers {
       Int32(Seq(0.toByte, 0.toByte, 0.toByte, 0.toByte, 0.toByte))
     }
   }
+
+  it must "have the correct representation for 0" in {
+    Int32.zero.underlying must be (0)
+  }
+
+  it must "have the correct representation for 1" in {
+    Int32.one.underlying must be (1)
+  }
+
+  it must "have the correct minimum number representation" in {
+    Int32.min.underlying must be (-2147483648)
+  }
+
+  it must "have the correct maximum number representation" in {
+    Int32.max.underlying must be (2147483647)
+  }
 }
