@@ -1,7 +1,6 @@
 package org.bitcoins.core.number
 
-import org.bitcoins.core.script.constant.ScriptNumberUtil
-import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil, Factory, NumberUtil}
+import org.bitcoins.core.util.{BitcoinSLogger, Factory, NumberUtil}
 
 /**
   * Created by chris on 6/4/16.
@@ -63,46 +62,24 @@ object UInt32 extends Factory[UInt32] with BitcoinSLogger {
     require(bytes.size <= 4, "We cannot have a UInt32 be larger than 4 bytes")
     val individualByteValues = for {
       (byte,index) <- bytes.reverse.zipWithIndex
-    } yield calculateNumberFromByte(index, byte)
-    logger.debug("Individual byte values: " + individualByteValues)
-    UInt32Impl(individualByteValues.sum)
+    } yield NumberUtil.calculateNumberFromByte(index, byte)
+    UInt32Impl(individualByteValues.sum.toLong)
   }
 
-  def pow2(num : Int) : Long = math.pow(2,num).toLong
-
-  /**
-    * Calculates the unsigned number for a byte
-    * @param byteIndex this is used to tell what position this byte is out of a 4 byte integer
-    *                     For instance, if byte was equal to 0x0001 and we were trying to calculate the unsigned int for
-    *                     the following byte value Seq(0xf000, 0x0f00, 0x0001, 0x0000) we would have byteIndex 1
-    * @param byte the byte which we need to calculate the unsigned integer for
-    * @return the unsigned integer corresponding to the given byteIndex and byte
-    */
-  private def calculateNumberFromByte(byteIndex : Int, byte : Byte): Long = {
-    val setBits = for {
-      i <- 0 until 8
-      bitIndex = i + (byteIndex * 8)
-    } yield {
-      //check if index i is set in the byte, if so we need to calculate 2 ^ bitIndex
-      if ((pow2(i) & byte) != 0) {
-        logger.debug("Bitindex: " + bitIndex)
-        pow2(bitIndex)
-      }
-      else 0
-    }
-    logger.debug("Set bits: " + setBits)
-    setBits.sum
-  }
 }
 
 
 
-object UInt64 extends Factory[UInt64] {
+object UInt64 extends Factory[UInt64] with BitcoinSLogger {
   private case class UInt64Impl(underlying : BigInt) extends UInt64
 
   override def fromBytes(bytes : Seq[Byte]): UInt64 = {
     require(bytes.size <= 8, "We cannot have a UInt64 larger than 8 bytes")
-    UInt64Impl(BigInt(bytes.toArray))
+    val individualByteValues : Seq[BigInt] = for {
+      (byte,index) <- bytes.reverse.zipWithIndex
+    } yield NumberUtil.calculateNumberFromByte(index, byte)
+    logger.debug("Individual bytes values: " + individualByteValues)
+    UInt64Impl(individualByteValues.sum)
   }
 }
 
@@ -110,7 +87,10 @@ object UInt64 extends Factory[UInt64] {
 object Int32 extends Factory[Int32] {
   private case class Int32Impl(underlying : Int) extends Int32
 
-  override def fromBytes(bytes : Seq[Byte]): Int32 = Int32Impl(BigInt(bytes.toArray).toInt)
+  override def fromBytes(bytes : Seq[Byte]): Int32 =  {
+    require(bytes.size <= 4, "We cannot have an Int32 be larger than 4 bytes")
+    Int32Impl(BigInt(bytes.toArray).toInt)
+  }
 }
 
 

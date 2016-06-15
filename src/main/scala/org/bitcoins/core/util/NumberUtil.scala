@@ -1,5 +1,6 @@
 package org.bitcoins.core.util
 
+import org.bitcoins.core.number.UInt32._
 import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptSignature}
 import org.bitcoins.core.protocol.{CompactSizeUInt, CompactSizeUIntImpl}
 
@@ -93,6 +94,40 @@ trait NumberUtil extends BitcoinSLogger {
   private def parseLong(byte : Byte) : Long = parseLong(List(byte))
 
   private def parseLong(bytes : Seq[Byte]) : Long = parseLong(bytes.toList)
+
+  /**
+    * Takes 2^^num
+    * @param exponent the exponent
+    * @return
+    */
+  def pow2(exponent : Int) : BigInt = {
+    require(exponent < 64, "We cannot have anything larger than 2^64 - 1 in a long, you tried to do 2^" + exponent)
+    BigInt(1) << exponent
+  }
+
+  /**
+    * Calculates the unsigned number for a byte
+    * @param byteIndex this is used to tell what position this byte is out of a 4 byte integer
+    *                     For instance, if byte was equal to 0x0001 and we were trying to calculate the unsigned int for
+    *                     the following byte value Seq(0xf000, 0x0f00, 0x0001, 0x0000) we would have byteIndex 1
+    * @param byte the byte which we need to calculate the unsigned integer for
+    * @return the unsigned integer corresponding to the given byteIndex and byte
+    */
+  def calculateNumberFromByte(byteIndex : Int, byte : Byte): BigInt = {
+    val setBits : Seq[BigInt] = for {
+      i <- 0 until 8
+      bitIndex = i + (byteIndex * 8)
+    } yield {
+      //check if index i is set in the byte, if so we need to calculate 2 ^ bitIndex
+      if ((pow2(i) & byte) != 0) {
+        logger.debug("Bitindex: " + bitIndex)
+        pow2(bitIndex)
+      }
+      else BigInt(0)
+    }
+    logger.debug("Set bits: " + setBits)
+    setBits.foldLeft(BigInt(0)){_ + _}
+  }
 }
 
 object NumberUtil extends NumberUtil
