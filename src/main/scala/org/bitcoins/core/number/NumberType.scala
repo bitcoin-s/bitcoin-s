@@ -10,8 +10,13 @@ sealed trait Number extends NetworkElement with BitcoinSLogger {
   type A
   def underlying : A
   def + (num : Number): Number
-  def - (num : A) : A = ???
-  def * (num : A) : A = ???
+  def - (num : A): A = ???
+  def * (num : A): A = ???
+  def > (num : Number): Boolean
+  def >= (num : Number): Boolean
+  def < (num : Number): Boolean
+  def <= (num : Number): Boolean
+  def == (num : Number): Boolean
 }
 
 sealed trait SignedNumber extends Number
@@ -23,28 +28,64 @@ sealed trait UInt32 extends UnsignedNumber {
 
   def + (num : Number): Number = num match {
     case uInt32 : UInt32 =>
-      val n : BigInt = underlying + uInt32.underlying
+      val n : BigInt = BigInt(underlying) + uInt32.underlying
       if (n == n.toLong) UInt32(n.toLong)
       else UInt64(n)
     case uInt64 : UInt64 => UInt64(uInt64.underlying + underlying)
     case int32 : Int32 => ???
     case int64 : Int64 => ???
   }
+
+  def > (num : Number): Boolean = ??? //underlying > num.underlying
+  def >= (num : Number): Boolean = num match {
+    case uInt32 : UInt32 => underlying >= uInt32.underlying
+    case uInt64 : UInt64 => underlying >= uInt64.underlying
+    case int32 : Int32 => underlying >= int32.underlying
+    case int64 : Int64 => underlying >= int64.underlying
+  }
+  def < (num : Number): Boolean = ???
+  def <= (num : Number): Boolean = ???
+  def == (num : Number): Boolean = num match {
+    case uInt32 : UInt32 => underlying == uInt32.underlying
+    case uInt64 : UInt64 => underlying == uInt64.underlying
+    case int32 : Int32 => underlying == int32.underlying
+    case int64 : Int64 => underlying == int64.underlying
+  }
 }
 
 sealed trait UInt64 extends UnsignedNumber {
   override type A = BigInt
   override def + (num : Number) = ???
+  def > (num : Number): Boolean = ???
+  def >= (num : Number): Boolean = num match {
+    case uInt32 : UInt32 => underlying >= uInt32.underlying
+    case uInt64 : UInt64 => underlying >= uInt64.underlying
+    case int32 : Int32 => underlying >= int32.underlying
+    case int64 : Int64 => underlying >= int64.underlying
+  }
+  def < (num : Number): Boolean = ???
+  def <= (num : Number): Boolean = ???
+  def == (num : Number): Boolean = ???
 }
 
 sealed trait Int32 extends SignedNumber {
   override type A = Int
   override def + (num : Number) = ???
+  def > (num : Number): Boolean = ???
+  def >= (num : Number): Boolean = ???
+  def < (num : Number): Boolean = ???
+  def <= (num : Number): Boolean = ???
+  def == (num : Number): Boolean = ???
 }
 
 sealed trait Int64 extends SignedNumber {
   override type A = Long
   override def + (num : Number) = ???
+  def > (num : Number): Boolean = ???
+  def >= (num : Number): Boolean = ???
+  def < (num : Number): Boolean = ???
+  def <= (num : Number): Boolean = ???
+  def == (num : Number): Boolean = ???
 }
 
 
@@ -76,7 +117,9 @@ trait BaseNumbers[T <: Number] {
 }
 
 object UInt32 extends Factory[UInt32] with BitcoinSLogger with BaseNumbers[UInt32] {
-  private case class UInt32Impl(underlying : Long, hex : String) extends UInt32
+  private case class UInt32Impl(underlying : Long, hex : String) extends UInt32{
+    require(underlying >= 0, "We cannot have a negative number in an unsigned number")
+  }
 
   lazy val zero = fromBytes(Seq(0.toByte))
   lazy val one = fromBytes(Seq(1.toByte))
@@ -99,7 +142,9 @@ object UInt32 extends Factory[UInt32] with BitcoinSLogger with BaseNumbers[UInt3
 
 
 object UInt64 extends Factory[UInt64] with BitcoinSLogger with BaseNumbers[UInt64] {
-  private case class UInt64Impl(underlying : BigInt, hex : String) extends UInt64
+  private case class UInt64Impl(underlying : BigInt, hex : String) extends UInt64 {
+    require(underlying >= 0, "We cannot have a negative number in an unsigned number")
+  }
 
   lazy val zero = fromBytes(Seq(0.toByte))
   lazy val one = fromBytes(Seq(1.toByte))
