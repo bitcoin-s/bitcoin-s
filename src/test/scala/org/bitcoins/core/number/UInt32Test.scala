@@ -49,6 +49,12 @@ class UInt32Test extends FlatSpec with MustMatchers {
     uInt32.underlying must be (4294967295L)
   }
 
+  it must "throw an exception if we try and create a UInt32 with a negative number" in {
+    intercept[IllegalArgumentException] {
+      UInt32(-1)
+    }
+  }
+
   it must "throw an exception if we try and create a 5 byte integer" in {
     intercept[IllegalArgumentException] {
       UInt32(Seq(0.toByte,0.toByte,0.toByte,0.toByte,0.toByte))
@@ -76,5 +82,12 @@ class UInt32Test extends FlatSpec with MustMatchers {
 
   it must "say 0 + 0 = 0" in {
     (UInt32.zero + UInt32.zero) must be (UInt32.zero)
+  }
+
+  it must "" in {
+    val num1 = 400509857241609396L
+    val num2 = 8822862179613166412L
+
+    (UInt32(num1) + UInt32(num2)).underlying must be (BigInt(num1) + BigInt(num2))
   }
 }
