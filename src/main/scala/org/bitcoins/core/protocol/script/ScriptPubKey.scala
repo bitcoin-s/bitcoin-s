@@ -167,7 +167,6 @@ object ScriptPubKey extends Factory[ScriptPubKey] {
 
   }
 
-
   def fromBytes(bytes : Seq[Byte]) : ScriptPubKey = RawScriptPubKeyParser.read(bytes)
 
 }
