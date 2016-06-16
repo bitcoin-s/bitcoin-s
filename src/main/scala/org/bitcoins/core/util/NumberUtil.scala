@@ -1,7 +1,7 @@
 package org.bitcoins.core.util
 
 import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptSignature}
-import org.bitcoins.core.protocol.{CompactSizeUInt, CompactSizeUIntImpl}
+import org.bitcoins.core.protocol.{CompactSizeUInt}
 import org.slf4j.LoggerFactory
 
 /**
@@ -118,6 +118,8 @@ trait NumberUtil extends BitcoinSLogger {
   def toByteSeq(long : Long) : Seq[Byte] = BigInt(long).toByteArray
 
 
+
+
   /**
    * Parses a VarInt from a string of hex characters
    * https://bitcoin.org/en/developer-reference#compactsize-unsigned-integers
@@ -135,13 +137,13 @@ trait NumberUtil extends BitcoinSLogger {
   def parseCompactSizeUInt(bytes : Seq[Byte]) : CompactSizeUInt = {
     require(bytes.size > 0, "Cannot parse a VarInt if the byte array is size 0")
     //8 bit number
-    if (parseLong(bytes.head) < 253) CompactSizeUIntImpl(parseLong(bytes.head),1)
+    if (parseLong(bytes.head) < 253) CompactSizeUInt(parseLong(bytes.head),1)
     //16 bit number
-    else if (parseLong(bytes.head) == 253) CompactSizeUIntImpl(parseLong(bytes.slice(1,3).reverse),3)
+    else if (parseLong(bytes.head) == 253) CompactSizeUInt(parseLong(bytes.slice(1,3).reverse),3)
     //32 bit number
-    else if (parseLong(bytes.head) == 254) CompactSizeUIntImpl(parseLong(bytes.slice(1,5).reverse),5)
+    else if (parseLong(bytes.head) == 254) CompactSizeUInt(parseLong(bytes.slice(1,5).reverse),5)
     //64 bit number
-    else CompactSizeUIntImpl(parseLong(bytes.slice(1,9).reverse),9)
+    else CompactSizeUInt(parseLong(bytes.slice(1,9).reverse),9)
   }
 
   /**
@@ -170,13 +172,13 @@ trait NumberUtil extends BitcoinSLogger {
    */
   def parseCompactSizeUInt(script : ScriptSignature) : CompactSizeUInt = {
     if (script.bytes.size <=252 ) {
-      CompactSizeUIntImpl(script.bytes.size,1)
+      CompactSizeUInt(script.bytes.size,1)
     } else if (script.bytes.size <= 0xffff) {
-      CompactSizeUIntImpl(script.bytes.size,3)
+      CompactSizeUInt(script.bytes.size,3)
     } else if (script.bytes.size <= 0xffffffff) {
-      CompactSizeUIntImpl(script.bytes.size,5)
+      CompactSizeUInt(script.bytes.size,5)
     }
-    else CompactSizeUIntImpl(script.bytes.size,9)
+    else CompactSizeUInt(script.bytes.size,9)
   }
 
   /**
@@ -187,13 +189,12 @@ trait NumberUtil extends BitcoinSLogger {
    */
   def parseCompactSizeUInt(scriptPubKey : ScriptPubKey) : CompactSizeUInt = {
     if (scriptPubKey.bytes.size <=252 ) {
-      CompactSizeUIntImpl(scriptPubKey.bytes.size,1)
+      CompactSizeUInt(scriptPubKey.bytes.size,1)
     } else if (scriptPubKey.bytes.size <= 0xffff) {
-      CompactSizeUIntImpl(scriptPubKey.bytes.size,3)
+      CompactSizeUInt(scriptPubKey.bytes.size,3)
     } else if (scriptPubKey.bytes.size <= 0xffffffff) {
-      CompactSizeUIntImpl(scriptPubKey.bytes.size,5)
-    }
-    else CompactSizeUIntImpl(scriptPubKey.bytes.size,9)
+      CompactSizeUInt(scriptPubKey.bytes.size,5)
+    } else CompactSizeUInt(scriptPubKey.bytes.size,9)
   }
 
   private def parseLong(hex : String) : Long = java.lang.Long.parseLong(hex,16)
