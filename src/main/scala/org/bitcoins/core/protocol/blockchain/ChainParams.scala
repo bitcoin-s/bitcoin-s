@@ -123,14 +123,14 @@ object MainNetChainParams extends ChainParams {
     * See: https://en.bitcoin.it/wiki/List_of_address_prefixes
     * @return
     */
-  override def base58Prefixes : Map[Base58Type,Seq[Byte]] =
-    Map(PubKeyAddress -> BitcoinSUtil.decodeHex("00"),
-      ScriptAddress -> BitcoinSUtil.decodeHex("05"),
-      SecretKey -> BitcoinSUtil.decodeHex("80"),
-      ExtPublicKey -> Seq(BitcoinSUtil.hexToByte("04"), BitcoinSUtil.hexToByte("88"),
-        BitcoinSUtil.hexToByte("b2"), BitcoinSUtil.hexToByte("1e")),
-      ExtSecretKey -> Seq(BitcoinSUtil.hexToByte("04"), BitcoinSUtil.hexToByte("88"),
-        BitcoinSUtil.hexToByte("ad"), BitcoinSUtil.hexToByte("e4")))
+  override def base58Prefixes : Map[Base58Type,Seq[Byte]] = Map(
+    PubKeyAddress -> BitcoinSUtil.decodeHex("00"),
+    ScriptAddress -> BitcoinSUtil.decodeHex("05"),
+    SecretKey -> BitcoinSUtil.decodeHex("80"),
+    ExtPublicKey -> Seq(BitcoinSUtil.hexToByte("04"), BitcoinSUtil.hexToByte("88"),
+      BitcoinSUtil.hexToByte("b2"), BitcoinSUtil.hexToByte("1e")),
+    ExtSecretKey -> Seq(BitcoinSUtil.hexToByte("04"), BitcoinSUtil.hexToByte("88"),
+      BitcoinSUtil.hexToByte("ad"), BitcoinSUtil.hexToByte("e4")))
 }
 
 object TestNetChainParams extends ChainParams {
@@ -147,13 +147,13 @@ object TestNetChainParams extends ChainParams {
     * @return
     */
   override def base58Prefixes : Map[Base58Type,Seq[Byte]] = Map(
-    PubKeyAddress -> BitcoinSUtil.decodeHex("6f")  ,
-      ScriptAddress -> BitcoinSUtil.decodeHex("c4") ,
-      SecretKey -> BitcoinSUtil.decodeHex("ef") ,
-      ExtPublicKey -> Seq(BitcoinSUtil.hexToByte("04"), BitcoinSUtil.hexToByte("35"),
-        BitcoinSUtil.hexToByte("87"), BitcoinSUtil.hexToByte("cf")),
-      ExtSecretKey -> Seq(BitcoinSUtil.hexToByte("04"), BitcoinSUtil.hexToByte("35"),
-        BitcoinSUtil.hexToByte("83"), BitcoinSUtil.hexToByte("94")))
+    PubKeyAddress -> BitcoinSUtil.decodeHex("6f"),
+    ScriptAddress -> BitcoinSUtil.decodeHex("c4"),
+    SecretKey -> BitcoinSUtil.decodeHex("ef"),
+    ExtPublicKey -> Seq(BitcoinSUtil.hexToByte("04"), BitcoinSUtil.hexToByte("35"),
+      BitcoinSUtil.hexToByte("87"), BitcoinSUtil.hexToByte("cf")),
+    ExtSecretKey -> Seq(BitcoinSUtil.hexToByte("04"), BitcoinSUtil.hexToByte("35"),
+      BitcoinSUtil.hexToByte("83"), BitcoinSUtil.hexToByte("94")))
 }
 
 
