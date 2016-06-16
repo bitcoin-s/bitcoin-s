@@ -70,4 +70,11 @@ class UInt32Test extends FlatSpec with MustMatchers {
   it must "have the correct maximum number representation for UInt32" in {
     UInt32.max.underlying must be (4294967295L)
   }
+
+
+  //addition tests
+
+  it must "say 0 + 0 = 0" in {
+    (UInt32.zero + UInt32.zero) must be (UInt32.zero)
+  }
 }
