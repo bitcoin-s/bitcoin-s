@@ -24,20 +24,20 @@ class UInt32Specification extends Properties("UInt32") with BitcoinSLogger {
   }
 
   property("add two uint32s and get the mathematical sum of the two numbers") =
-    Prop.forAll(NumberGenerator.positiveLongs,NumberGenerator.positiveLongs) { (num1 : Long, num2 : Long) =>
+    Prop.forAll(NumberGenerator.positiveLongs,NumberGenerator.positiveLongs) { (num1: Long, num2: Long) =>
       val uIntResult = UInt32(num1) + UInt32(num2)
       val expectedResult = BigInt(num1) + BigInt(num2)
       uIntResult.underlying == expectedResult
   }
 
   property("subtract zero from a UInt32 and get the original UInt32") =
-    Prop.forAll(NumberGenerator.positiveLongs) { num1 : Long =>
+    Prop.forAll(NumberGenerator.positiveLongs) { num1: Long =>
       val uInt32 = UInt32(num1)
       uInt32 - UInt32.zero == uInt32
     }
 
   property("subtract one from a UInt32 and get the UInt32 - 1") =
-    Prop.forAll(NumberGenerator.positiveLongsNoZero) { num1 : Long =>
+    Prop.forAll(NumberGenerator.positiveLongsNoZero) { num1: Long =>
       val uInt32 = UInt32(num1)
       (uInt32 - UInt32.one).underlying == (num1 - 1)
     }
@@ -54,4 +54,17 @@ class UInt32Specification extends Properties("UInt32") with BitcoinSLogger {
         Try(uInt321 - uInt322).isFailure
       }
     }
+
+  property("multiplying by zero gives us zero") =
+    Prop.forAll(NumberGenerator.positiveLongs) { num1: Long =>
+      val uInt32 = UInt32(num1)
+      uInt32 * UInt32.zero == UInt32.zero
+    }
+
+  property("multiplicative identity") =
+    Prop.forAll(NumberGenerator.positiveLongs) { num1: Long =>
+      val uInt32 = UInt32(num1)
+      uInt32 * UInt32.one == uInt32
+    }
+
 }

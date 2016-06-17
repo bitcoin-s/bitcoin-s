@@ -77,17 +77,4 @@ class UInt32Test extends FlatSpec with MustMatchers {
     UInt32.max.underlying must be (4294967295L)
   }
 
-
-  //addition tests
-
-  it must "say 0 + 0 = 0" in {
-    (UInt32.zero + UInt32.zero) must be (UInt32.zero)
-  }
-
-  it must "" in {
-    val num1 = 400509857241609396L
-    val num2 = 8822862179613166412L
-
-    (UInt32(num1) + UInt32(num2)).underlying must be (BigInt(num1) + BigInt(num2))
-  }
 }
