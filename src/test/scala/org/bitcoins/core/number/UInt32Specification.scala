@@ -94,5 +94,12 @@ class UInt32Specification extends Properties("UInt32") with BitcoinSLogger {
       else num1 != num2
     }
   }
-  
+
+  property("serialization symmetry") = {
+    Prop.forAll(NumberGenerator.uInt32s) { uInt32 : UInt32 =>
+      UInt32(uInt32.hex) == uInt32
+      UInt32(uInt32.hex).hex == uInt32.hex
+    }
+  }
+
 }
