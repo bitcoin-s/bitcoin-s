@@ -29,6 +29,16 @@ trait BitcoinSUtil extends NumberUtil {
   def encodeHex(byte : Byte) : String = encodeHex(Seq(byte))
 
   /**
+    * Encodes a long number to a hex string, pads it with an extra '0' char
+    * if the hex string is an odd amount of characters
+    * @param long
+    * @return
+    */
+  def encodeHex(long : Long) : String = long.toHexString.length % 2 match {
+    case 1 => "0" + long.toHexString
+    case _ : Int => long.toHexString
+  }
+  /**
    * Tests if a given string is a hexadecimal string
    * @param str
    * @return

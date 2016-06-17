@@ -226,7 +226,7 @@ object UInt32 extends Factory[UInt32] with BitcoinSLogger with BaseNumbers[UInt3
     UInt32Impl(individualByteValues.sum.toLong, BitcoinSUtil.encodeHex(bytes))
   }
 
-  def apply(long : Long) : UInt32 = UInt32Impl(long, BitcoinSUtil.encodeHex(BigInt(long).toByteArray))
+  def apply(long : Long) : UInt32 = UInt32Impl(long, BitcoinSUtil.encodeHex(long))
 
 }
 
