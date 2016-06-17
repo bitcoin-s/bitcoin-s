@@ -1,5 +1,6 @@
 package org.bitcoins.core.number
 
+import org.bitcoins.core.util.NumberUtil
 import org.scalacheck.Gen
 
 /**
@@ -19,7 +20,9 @@ trait NumberGenerator {
     * Creates a number generator that generates negative long numbers
     * @return
     */
-  def negativeLongs: Gen[Long] = Gen.choose(Long.MinValue, -1)
+  def negativeLongs: Gen[Long] = Gen.choose(Long.MinValue,-1)
+
+  def uInt32s: Gen[UInt32] = Gen.choose(0L,(NumberUtil.pow2(32)-1).toLong).map(UInt32(_))
 }
 
 object NumberGenerator extends NumberGenerator

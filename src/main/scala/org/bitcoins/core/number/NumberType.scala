@@ -203,7 +203,7 @@ object UInt32 extends Factory[UInt32] with BitcoinSLogger with BaseNumbers[UInt3
   lazy val one = fromBytes(Seq(1.toByte))
 
   lazy val min = zero
-  lazy val max = UInt32(Long.MaxValue)
+  lazy val max = fromBytes(Seq(0xff.toByte, 0xff.toByte, 0xff.toByte, 0xff.toByte))
 
   override def fromBytes(bytes : Seq[Byte]): UInt32 = {
     require(bytes.size <= 4, "We cannot have a UInt32 be larger than 4 bytes")
