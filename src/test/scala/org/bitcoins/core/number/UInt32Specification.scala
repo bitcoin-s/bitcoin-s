@@ -29,4 +29,29 @@ class UInt32Specification extends Properties("UInt32") with BitcoinSLogger {
       val expectedResult = BigInt(num1) + BigInt(num2)
       uIntResult.underlying == expectedResult
   }
+
+  property("subtract zero from a UInt32 and get the original UInt32") =
+    Prop.forAll(NumberGenerator.positiveLongs) { num1 : Long =>
+      val uInt32 = UInt32(num1)
+      uInt32 - UInt32.zero == uInt32
+    }
+
+  property("subtract one from a UInt32 and get the UInt32 - 1") =
+    Prop.forAll(NumberGenerator.positiveLongsNoZero) { num1 : Long =>
+      val uInt32 = UInt32(num1)
+      (uInt32 - UInt32.one).underlying == (num1 - 1)
+    }
+
+  property("subtract a uint32 from another uint32 and get the correct result") =
+    Prop.forAll(NumberGenerator.positiveLongs, NumberGenerator.positiveLongs) { (num1 : Long, num2 : Long) =>
+      val uInt321 = UInt32(num1)
+      val uInt322 = UInt32(num2)
+      if (num1 >= num2) {
+        (uInt321 - uInt322).underlying == num1 - num2
+      } else {
+        //this will give us a negative number since num2 > num1
+        //which should result in a failure
+        Try(uInt321 - uInt322).isFailure
+      }
+    }
 }
