@@ -6,86 +6,128 @@ import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil, Factory, NumberUtil
 /**
   * Created by chris on 6/4/16.
   */
+
+/**
+  * A number can either be a signed or an unsigned number
+  */
 sealed trait Number extends NetworkElement with BitcoinSLogger {
   type A
   def underlying : A
-  def + (num : Number): Number
-  def - (num : A): A = ???
-  def * (num : A): A = ???
-  def > (num : Number): Boolean
-  def >= (num : Number): Boolean
-  def < (num : Number): Boolean
-  def <= (num : Number): Boolean
-  def == (num : Number): Boolean
 }
 
+/**
+  * Represents a signed number in our number system
+  * Instances of this are [[Int32]] or [[Int64]]
+  */
 sealed trait SignedNumber extends Number
 
+/**
+  * Represents an unsigned number in our number system
+  * Instances of this are [[UInt32]] or [[UInt64]]
+  */
 sealed trait UnsignedNumber extends Number
 
-sealed trait UInt32 extends UnsignedNumber {
+/**
+  * This trait represents all numeric operations we have for [[Number]]
+  * @tparam T the type our numeric operations return
+  *           currently either an [[UnsignedNumber]] or [[SignedNumber]]
+  */
+sealed trait NumberOperations[T <: Number] {
+  def + (num : T): T
+  def - (num : T): T
+  def * (num : T): T = ???
+  def > (num : T): Boolean
+  def >= (num : T): Boolean
+  def < (num : T): Boolean
+  def <= (num : T): Boolean
+  def == (num : T): Boolean
+}
+
+
+/**
+  * Represents a uint32_t in C
+  */
+sealed trait UInt32 extends UnsignedNumber with NumberOperations[UnsignedNumber] {
   override type A = Long
 
-  def + (num : Number): Number = num match {
+  def + (num : UnsignedNumber): UnsignedNumber = num match {
     case uInt32 : UInt32 =>
       val n : BigInt = BigInt(underlying) + uInt32.underlying
       if (n == n.toLong) UInt32(n.toLong)
       else UInt64(n)
     case uInt64 : UInt64 => UInt64(uInt64.underlying + underlying)
-    case int32 : Int32 => ???
-    case int64 : Int64 => ???
   }
 
-  def > (num : Number): Boolean = ??? //underlying > num.underlying
-  def >= (num : Number): Boolean = num match {
+  def - (num : UnsignedNumber): UnsignedNumber = num match {
+    case uInt32 : UInt32 =>
+      val result = underlying - uInt32.underlying
+      if (result < 0) throw new RuntimeException("Subtraction cannot lead to a negative number in UInt32")
+      else UInt32(result)
+    case uInt64 : UInt64 =>
+      val result = underlying - uInt64.underlying
+      if (result < 0) throw new RuntimeException("Subtracting UInt64 from a UInt32 cannot lead to a negative number")
+      else {
+        require(result == result.toLong, "Subtracting a UInt64 from a UInt32 should give us a UInt32")
+        UInt32(result.toLong)
+      }
+  }
+
+  def > (num : UnsignedNumber): Boolean = ??? //underlying > num.underlying
+  def >= (num : UnsignedNumber): Boolean = num match {
     case uInt32 : UInt32 => underlying >= uInt32.underlying
     case uInt64 : UInt64 => underlying >= uInt64.underlying
-    case int32 : Int32 => underlying >= int32.underlying
-    case int64 : Int64 => underlying >= int64.underlying
   }
-  def < (num : Number): Boolean = ???
-  def <= (num : Number): Boolean = ???
-  def == (num : Number): Boolean = num match {
+  def < (num : UnsignedNumber): Boolean = ???
+  def <= (num : UnsignedNumber): Boolean = ???
+  def == (num : UnsignedNumber): Boolean = num match {
     case uInt32 : UInt32 => underlying == uInt32.underlying
     case uInt64 : UInt64 => underlying == uInt64.underlying
-    case int32 : Int32 => underlying == int32.underlying
-    case int64 : Int64 => underlying == int64.underlying
   }
 }
 
-sealed trait UInt64 extends UnsignedNumber {
+/**
+  * Represents a uint64_t in C
+  */
+sealed trait UInt64 extends UnsignedNumber with NumberOperations[UnsignedNumber] {
   override type A = BigInt
-  override def + (num : Number) = ???
-  def > (num : Number): Boolean = ???
-  def >= (num : Number): Boolean = num match {
+  override def + (num : UnsignedNumber) = ???
+  def - (num : UnsignedNumber) = ???
+  def > (num : UnsignedNumber): Boolean = ???
+  def >= (num : UnsignedNumber): Boolean = num match {
     case uInt32 : UInt32 => underlying >= uInt32.underlying
     case uInt64 : UInt64 => underlying >= uInt64.underlying
-    case int32 : Int32 => underlying >= int32.underlying
-    case int64 : Int64 => underlying >= int64.underlying
   }
-  def < (num : Number): Boolean = ???
-  def <= (num : Number): Boolean = ???
-  def == (num : Number): Boolean = ???
+  def < (num : UnsignedNumber): Boolean = ???
+  def <= (num : UnsignedNumber): Boolean = ???
+  def == (num : UnsignedNumber): Boolean = ???
 }
 
-sealed trait Int32 extends SignedNumber {
+/**
+  * Represents a int32_t in C
+  */
+sealed trait Int32 extends SignedNumber with NumberOperations[SignedNumber] {
   override type A = Int
-  override def + (num : Number) = ???
-  def > (num : Number): Boolean = ???
-  def >= (num : Number): Boolean = ???
-  def < (num : Number): Boolean = ???
-  def <= (num : Number): Boolean = ???
-  def == (num : Number): Boolean = ???
+  override def + (num : SignedNumber) = ???
+  def -(num : SignedNumber) = ???
+  def > (num : SignedNumber): Boolean = ???
+  def >= (num : SignedNumber): Boolean = ???
+  def < (num : SignedNumber): Boolean = ???
+  def <= (num : SignedNumber): Boolean = ???
+  def == (num : SignedNumber): Boolean = ???
 }
 
-sealed trait Int64 extends SignedNumber {
+/**
+  * Represents a int64_t in C
+  */
+sealed trait Int64 extends SignedNumber with NumberOperations[SignedNumber] {
   override type A = Long
-  override def + (num : Number) = ???
-  def > (num : Number): Boolean = ???
-  def >= (num : Number): Boolean = ???
-  def < (num : Number): Boolean = ???
-  def <= (num : Number): Boolean = ???
-  def == (num : Number): Boolean = ???
+  override def + (num : SignedNumber) = ???
+  def - (num : SignedNumber) = ???
+  def > (num : SignedNumber): Boolean = ???
+  def >= (num : SignedNumber): Boolean = ???
+  def < (num : SignedNumber): Boolean = ???
+  def <= (num : SignedNumber): Boolean = ???
+  def == (num : SignedNumber): Boolean = ???
 }
 
 

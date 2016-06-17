@@ -13,6 +13,8 @@ trait NumberGenerator {
     */
   def positiveLongs: Gen[Long] = Gen.choose(0, Long.MaxValue)
 
+  def positiveLongsNoZero : Gen[Long] = Gen.choose(1,Long.MaxValue)
+
   /**
     * Creates a number generator that generates negative long numbers
     * @return
