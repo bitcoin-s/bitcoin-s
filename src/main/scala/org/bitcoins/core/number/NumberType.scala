@@ -84,13 +84,26 @@ sealed trait UInt32 extends UnsignedNumber with NumberOperations[UnsignedNumber]
       checkResult(result)
   }
 
-  def > (num : UnsignedNumber): Boolean = ??? //underlying > num.underlying
+  def > (num : UnsignedNumber): Boolean = num match {
+    case uInt32 : UInt32 => underlying > uInt32.underlying
+    case uInt64 : UInt64 => underlying > uInt64.underlying
+  }
+
   def >= (num : UnsignedNumber): Boolean = num match {
     case uInt32 : UInt32 => underlying >= uInt32.underlying
     case uInt64 : UInt64 => underlying >= uInt64.underlying
   }
-  def < (num : UnsignedNumber): Boolean = ???
-  def <= (num : UnsignedNumber): Boolean = ???
+
+  def < (num : UnsignedNumber): Boolean = num match {
+    case uInt32 : UInt32 => underlying < uInt32.underlying
+    case uInt64 : UInt64 => underlying < uInt64.underlying
+  }
+
+  def <= (num : UnsignedNumber): Boolean = num match {
+    case uInt32 : UInt32 => underlying <= uInt32.underlying
+    case uInt64 : UInt64 => underlying <= uInt64.underlying
+  }
+
   def == (num : UnsignedNumber): Boolean = num match {
     case uInt32 : UInt32 => underlying == uInt32.underlying
     case uInt64 : UInt64 => underlying == uInt64.underlying
