@@ -10,6 +10,14 @@ import scala.util.Try
   */
 class UInt32Specification extends Properties("UInt32") with BitcoinSLogger {
 
+
+  property("serialization symmetry") = {
+    Prop.forAll(NumberGenerator.uInt32s) { uInt32 : UInt32 =>
+      UInt32(uInt32.hex) == uInt32
+      UInt32(uInt32.hex).hex == uInt32.hex
+    }
+  }
+
   property("additive identity") = Prop.forAll(NumberGenerator.uInt32s) { num : UInt32 =>
     num + UInt32.zero == num
   }
@@ -102,11 +110,6 @@ class UInt32Specification extends Properties("UInt32") with BitcoinSLogger {
     }
   }
 
-  property("serialization symmetry") = {
-    Prop.forAll(NumberGenerator.uInt32s) { uInt32 : UInt32 =>
-      UInt32(uInt32.hex) == uInt32
-      UInt32(uInt32.hex).hex == uInt32.hex
-    }
-  }
+
 
 }

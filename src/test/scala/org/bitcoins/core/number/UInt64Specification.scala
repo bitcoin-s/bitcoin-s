@@ -14,6 +14,7 @@ class UInt64Specification extends Properties("UInt64Spec") with BitcoinSLogger {
   property("Serialization symmetry") =
     Prop.forAll(NumberGenerator.uInt64s) { uInt64 : UInt64 =>
       UInt64(uInt64.hex) == uInt64
+      UInt64(uInt64.hex).hex == uInt64.hex
     }
 
   property("additive identity") =
@@ -34,7 +35,6 @@ class UInt64Specification extends Properties("UInt64Spec") with BitcoinSLogger {
       else Try(num1 + num2).isFailure
     }
 
-
   property("subtractive identity") =
     Prop.forAll(NumberGenerator.uInt64s) { uInt64 : UInt64 =>
       uInt64 - UInt64.zero == uInt64
@@ -53,5 +53,30 @@ class UInt64Specification extends Properties("UInt64Spec") with BitcoinSLogger {
       val result = num1.underlying - num2.underlying
       if (result >= 0) num1 - num2 == UInt64(result)
       else Try(num1 - num2).isFailure
+    }
+
+  property("multiplying by zero") =
+    Prop.forAll(NumberGenerator.uInt64s) { uInt64 : UInt64 =>
+      uInt64 * UInt64.zero == UInt64.zero
+    }
+
+  property("multiplicative identity") =
+    Prop.forAll(NumberGenerator.uInt64s) { uInt64 : UInt64 =>
+      if (uInt64 == UInt64.zero) uInt64 * UInt64.one == UInt64.zero
+      else uInt64 * UInt64.one == uInt64
+    }
+
+  property("multiply uInt64 and a uInt32") =
+    Prop.forAll(NumberGenerator.uInt64s, NumberGenerator.uInt32s) { (uInt64 : UInt64, uInt32 : UInt32) =>
+    val result = uInt64.underlying * uInt32.underlying
+    if (result <= UInt64.max.underlying) uInt64 * uInt32 == UInt64(result)
+    else Try(uInt64 * uInt32).isFailure
+  }
+
+  property("multiply two uInt64s") =
+    Prop.forAll(NumberGenerator.uInt64s, NumberGenerator.uInt64s) { (num1 : UInt64, num2 : UInt64) =>
+      val result = num1.underlying * num2.underlying
+      if (result <= UInt64.max.underlying) num1 * num2 == UInt64(result)
+      else Try(num1 * num2).isFailure
     }
 }
