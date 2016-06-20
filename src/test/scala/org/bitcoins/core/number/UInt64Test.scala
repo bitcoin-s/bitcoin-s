@@ -39,7 +39,9 @@ class UInt64Test extends FlatSpec with MustMatchers {
     UInt64.zero.underlying must be (0)
   }
 
-  it must "have the correct representation for 1"
+  it must "have the correct representation for 1" in {
+    UInt64.one.underlying must be (1)
+  }
 
   it must "have the correct min number for a UInt64" in {
     UInt64.min.underlying must be (0)

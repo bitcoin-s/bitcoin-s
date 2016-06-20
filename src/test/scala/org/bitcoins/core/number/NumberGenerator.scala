@@ -1,6 +1,7 @@
 package org.bitcoins.core.number
 
 import org.bitcoins.core.util.NumberUtil
+import org.scalacheck.Gen._
 import org.scalacheck.{Arbitrary, Gen}
 
 /**
@@ -27,8 +28,6 @@ trait NumberGenerator {
   def negativeLongs: Gen[Long] = Gen.choose(Long.MinValue,-1)
 
 
-  def bigInts : Gen[BigInt] = Arbitrary.arbBigInt.arbitrary
-
   /**
     * Generates a number in the range 0 <= x <= 2 ^^32 - 1
     * then wraps it in a UInt32
@@ -36,15 +35,28 @@ trait NumberGenerator {
     */
   def uInt32s: Gen[UInt32] = Gen.choose(0L,(NumberUtil.pow2(32)-1).toLong).map(UInt32(_))
 
+
+  /**
+    * Chooses a BigInt in the ranges of 0 <= bigInt < 2^^64
+    * @return
+    */
+  def bigInts : Gen[BigInt] = for {
+    bigInt <- Arbitrary.arbBigInt.arbitrary
+    exponent <- Gen.choose(1,2)
+  } yield bigInt.abs.pow(exponent)
+
+  def positiveBigInts : Gen[BigInt] = bigInts.filter(_ >= 0)
+
+  def bigIntsUInt64Range : Gen[BigInt] = positiveBigInts.filter(_ < (BigInt(1) << 64))
   /**
     * Generates a number in the range 0 <= x < 2^^64
     * then wraps it in a UInt64
     * @return
     */
   def uInt64s : Gen[UInt64] = for {
-    n <- Arbitrary.arbBigInt.arbitrary
-    if n >= BigInt(0) && n < BigInt(2).pow(64)
-  } yield UInt64(n)
+    bigInt <- bigIntsUInt64Range
+  } yield UInt64(bigInt)
+
 
 }
 

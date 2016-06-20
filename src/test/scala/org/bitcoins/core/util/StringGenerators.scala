@@ -28,7 +28,6 @@ trait StringGenerators {
     }
     hexStringGen.map(_.mkString)
   }
-
 }
 
 object StringGenerators extends StringGenerators

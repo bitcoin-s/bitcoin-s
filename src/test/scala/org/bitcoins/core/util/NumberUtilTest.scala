@@ -1,7 +1,5 @@
 package org.bitcoins.core.util
 
-import org.bitcoins.core.protocol.script.ScriptSignature
-import org.bitcoins.core.protocol.CompactSizeUInt
 import org.scalatest.{FlatSpec, MustMatchers}
 
 /**
