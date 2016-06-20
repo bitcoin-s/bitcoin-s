@@ -27,7 +27,31 @@ sealed trait SignedNumber extends Number
   * Represents an unsigned number in our number system
   * Instances of this are [[UInt32]] or [[UInt64]]
   */
-sealed trait UnsignedNumber extends Number
+sealed trait UnsignedNumber extends Number {
+  /**
+    * Takes in a BigInt and packages it in the smallest [[UnsignedNumber]]
+    * else it returns an exception if it cannot fit in a [[UInt64]]
+    * @param bigInt
+    * @return
+    */
+  protected def packageInSmallestType(bigInt : BigInt) : Try[UnsignedNumber] = {
+    logger.debug("BigInt: "+ bigInt)
+    if (bigInt <= UInt32.max.underlying) Success(UInt32(bigInt.toLong))
+    else if (bigInt <= UInt64.max.underlying) Success(UInt64(bigInt))
+    else Failure(new RuntimeException("Buffer overflow with two UnsignedIntegers"))
+  }
+
+  /**
+    * Checks the result of the arithmetic operation to see if an error occurred
+    * if an error does occur throw it, else return the [[UnsignedNumber]]
+    * @param result the try type wrapping the result of the arithmetic operation
+    * @return the result of the unsigned number operation
+    */
+  protected def checkResult(result : Try[UnsignedNumber]): UnsignedNumber = result match {
+    case Success(number) => number
+    case Failure(exception) => throw exception
+  }
+}
 
 /**
   * This trait represents all numeric operations we have for [[Number]]
@@ -108,30 +132,6 @@ sealed trait UInt32 extends UnsignedNumber with NumberOperations[UnsignedNumber]
     case uInt32 : UInt32 => underlying == uInt32.underlying
     case uInt64 : UInt64 => underlying == uInt64.underlying
   }
-
-  /**
-    * Takes in a BigInt and packages it in the smallest [[UnsignedNumber]]
-    * else it returns an exception if it cannot fit in a [[UInt64]]
-    * @param bigInt
-    * @return
-    */
-  private def packageInSmallestType(bigInt : BigInt) : Try[UnsignedNumber] = {
-    logger.debug("BigInt: "+ bigInt)
-    if (bigInt <= UInt32.max.underlying) Success(UInt32(bigInt.toLong))
-    else if (bigInt <= UInt64.max.underlying) Success(UInt64(bigInt))
-    else Failure(new RuntimeException("Buffer overflow with two UnsignedIntegers"))
-  }
-
-  /**
-    * Checks the result of the arithmetic operation to see if an error occurred
-    * if an error does occur throw it, else return the [[UnsignedNumber]]
-    * @param result the try type wrapping the result of the arithmetic operation
-    * @return the result of the unsigned number operation
-    */
-  private def checkResult(result : Try[UnsignedNumber]): UnsignedNumber = result match {
-    case Success(number) => number
-    case Failure(exception) => throw exception
-  }
 }
 
 /**
@@ -139,7 +139,15 @@ sealed trait UInt32 extends UnsignedNumber with NumberOperations[UnsignedNumber]
   */
 sealed trait UInt64 extends UnsignedNumber with NumberOperations[UnsignedNumber] {
   override type A = BigInt
-  override def + (num : UnsignedNumber) = ???
+  def + (num : UnsignedNumber): UnsignedNumber = num match {
+    case uInt32 : UInt32 =>
+      val sum = underlying + uInt32.underlying
+      UInt64(sum)
+    case uInt64 : UInt64 =>
+      val sum = underlying + uInt64.underlying
+      UInt64(sum)
+  }
+
   def - (num : UnsignedNumber) = ???
   def > (num : UnsignedNumber): Boolean = ???
   def >= (num : UnsignedNumber): Boolean = num match {
@@ -208,15 +216,16 @@ trait BaseNumbers[T <: Number] {
 }
 
 object UInt32 extends Factory[UInt32] with BitcoinSLogger with BaseNumbers[UInt32] {
-  private case class UInt32Impl(underlying : Long, hex : String) extends UInt32{
-    require(underlying >= 0, "We cannot have a negative number in an unsigned number")
+  private case class UInt32Impl(underlying : Long, hex : String) extends UInt32 {
+    require(underlying >= 0, "We cannot have a negative number in an unsigned number, got: " + underlying)
+    require(underlying <= 4294967295L, "We cannot have a number larger than 2^32 -1 in UInt32, got: " + underlying)
   }
 
   lazy val zero = fromBytes(Seq(0.toByte))
   lazy val one = fromBytes(Seq(1.toByte))
 
   lazy val min = zero
-  lazy val max = fromBytes(Seq(0xff.toByte, 0xff.toByte, 0xff.toByte, 0xff.toByte))
+  lazy val max = UInt32(4294967295L)
 
   override def fromBytes(bytes : Seq[Byte]): UInt32 = {
     require(bytes.size <= 4, "We cannot have a UInt32 be larger than 4 bytes")
@@ -234,7 +243,8 @@ object UInt32 extends Factory[UInt32] with BitcoinSLogger with BaseNumbers[UInt3
 
 object UInt64 extends Factory[UInt64] with BitcoinSLogger with BaseNumbers[UInt64] {
   private case class UInt64Impl(underlying : BigInt, hex : String) extends UInt64 {
-    require(underlying >= 0, "We cannot have a negative number in an unsigned number")
+    require(underlying >= 0, "We cannot have a negative number in an unsigned number: " + underlying)
+    require(underlying <= BigInt("18446744073709551615"), "We cannot have a number larger than 2^64 -1 in UInt32, got: " + underlying)
   }
 
   lazy val zero = fromBytes(Seq(0.toByte))

@@ -18,7 +18,6 @@ trait Base58 extends BitcoinSLogger {
     * @return decoded bytes excluding the checksum
     */
   def decodeCheck(input: String) : Try[Seq[Byte]] = {
-
     val decoded : Seq[Byte] = decode(input)
     if (decoded.length < 4) Failure(new IllegalArgumentException("Invalid input"))
     else {
@@ -26,8 +25,7 @@ trait Base58 extends BitcoinSLogger {
       val data : Seq[Byte] = splitSeqs._1
       val checksum : Seq[Byte] = splitSeqs._2
       val actualChecksum : Seq[Byte] = CryptoUtil.doubleSHA256(data).bytes.slice(0, 4)
-      if (checksum == actualChecksum)
-      Success(data)
+      if (checksum == actualChecksum) Success(data)
       else Failure(new IllegalArgumentException("checksums don't validate"))
     }
   }
@@ -38,7 +36,6 @@ trait Base58 extends BitcoinSLogger {
     * @param bytes sequence of bytes to be encoded into base58
     * @return base58 String
     */
-
   def encode(bytes : Seq[Byte]) : String = {
     @tailrec
     def loop(current : BigInt, str : String) : String = current match {

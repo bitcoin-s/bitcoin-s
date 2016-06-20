@@ -25,9 +25,10 @@ class UInt32Specification extends Properties("UInt32") with BitcoinSLogger {
 
   property("add two uint32s and get the mathematical sum of the two numbers") =
     Prop.forAll(NumberGenerator.uInt32s,NumberGenerator.uInt32s) { (num1: UInt32, num2: UInt32) =>
-      val uIntResult = num1 + num2
+      val uIntResult = Try(num1 + num2)
       val expectedResult = BigInt(num1.underlying) + BigInt(num2.underlying)
-      uIntResult.underlying == expectedResult
+      if (expectedResult <= UInt32.max.underlying) uIntResult.get.underlying == expectedResult
+      else uIntResult.isFailure
   }
 
   property("subtract zero from a UInt32 and get the original UInt32") =

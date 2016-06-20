@@ -48,4 +48,10 @@ class UInt64Test extends FlatSpec with MustMatchers {
   it must "have the correct max number for a UInt64" in {
     UInt64.max.underlying must be (BigInt("18446744073709551615"))
   }
+
+  it must "throw an exception if we try to create a BigInt outside the range of UInt64" in {
+    intercept[IllegalArgumentException] {
+      UInt64(UInt64.max.underlying + 1)
+    }
+  }
 }
