@@ -17,7 +17,7 @@ sealed trait TransactionInput extends NetworkElement {
   def sequence : Long
 
 
-  def scriptSigCompactSizeUInt : CompactSizeUInt = BitcoinSUtil.parseCompactSizeUInt(scriptSignature)
+  def scriptSigCompactSizeUInt : CompactSizeUInt = CompactSizeUInt.parseCompactSizeUInt(scriptSignature)
   //https://bitcoin.org/en/developer-reference#txin
   override def size = previousOutput.size + scriptSignature.size +
     scriptSigCompactSizeUInt.size.toInt + 4
@@ -38,6 +38,7 @@ case object EmptyTransactionInput extends TransactionInput {
   */
 sealed trait CoinbaseInput extends TransactionInput {
   override def previousOutput = EmptyTransactionOutPoint
+  override def sequence = TransactionConstants.sequence
 }
 
 
@@ -50,7 +51,7 @@ object TransactionInput extends Factory[TransactionInput] {
                                          scriptSignature : ScriptSignature, sequence : Long) extends TransactionInput
 
   private sealed case class CoinbaseInputImpl(
-    scriptSignature : ScriptSignature, sequence : Long) extends CoinbaseInput
+    scriptSignature : ScriptSignature) extends CoinbaseInput
 
   private def factory(oldInput : TransactionInput, scriptPubKey: ScriptPubKey) : TransactionInput = {
     val scriptSig = ScriptSignature(scriptPubKey.hex)
@@ -63,7 +64,6 @@ object TransactionInput extends Factory[TransactionInput] {
 
   /**
     * Creates a transaction input from a given output and the output's transaction
- *
     * @param oldInput
     * @param output
     * @param outputsTransaction
@@ -81,7 +81,7 @@ object TransactionInput extends Factory[TransactionInput] {
 
   private def factory(outPoint : TransactionOutPoint, scriptSignature : ScriptSignature, sequenceNumber : Long) : TransactionInput = {
     outPoint match {
-      case EmptyTransactionOutPoint => CoinbaseInputImpl(scriptSignature,sequenceNumber)
+      case EmptyTransactionOutPoint => CoinbaseInputImpl(scriptSignature)
       case _ : TransactionOutPoint => TransactionInputImpl(outPoint, scriptSignature, sequenceNumber)
     }
   }
@@ -112,4 +112,12 @@ object TransactionInput extends Factory[TransactionInput] {
 
   def apply(outPoint : TransactionOutPoint, scriptSignature : ScriptSignature, sequenceNumber : Long) : TransactionInput = factory(outPoint,scriptSignature,sequenceNumber)
 
+  /**
+    * Creates a coinbase input - coinbase inputs always have an empty outpoint
+    * @param scriptSignature this can contain anything, miners use this to signify support for various protocol BIPs
+    * @return the coinbase input
+    */
+  def apply(scriptSignature: ScriptSignature) : CoinbaseInput = {
+    CoinbaseInputImpl(scriptSignature)
+  }
 }

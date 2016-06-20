@@ -1,6 +1,6 @@
 package org.bitcoins.core.crypto
 
-import org.bitcoins.core.util.BitcoinSUtil
+import org.bitcoins.core.util.{BitcoinSUtil, NumberUtil}
 import org.scalatest.{FlatSpec, MustMatchers}
 
 /**
@@ -26,20 +26,20 @@ class DERSignatureUtilTest extends FlatSpec with MustMatchers {
 
   it must "retrieve the (r,s) values for a p2sh signature in bitcoin" in {
     val (r,s) = DERSignatureUtil.decodeSignature(p2shSignature)
-    r must be (BitcoinSUtil.hexToBigInt("5b7d2c2f177ae76cfbbf14d589c113b0b35db753d305d5562dd0b61cbf366cfb"))
-    s must be (BitcoinSUtil.hexToBigInt("2e56f93c4f08a27f986cd424ffc48a462c3202c4902104d4d0ff98ed28f4bf80"))
+    r must be (NumberUtil.toBigInt("5b7d2c2f177ae76cfbbf14d589c113b0b35db753d305d5562dd0b61cbf366cfb"))
+    s must be (NumberUtil.toBigInt("2e56f93c4f08a27f986cd424ffc48a462c3202c4902104d4d0ff98ed28f4bf80"))
   }
 
   it must "retrieve the (r,s) values for a p2pkh signature in bitcoin" in {
     val (r,s) = DERSignatureUtil.decodeSignature(p2pkhSignature)
-    r must be (BitcoinSUtil.hexToBigInt("16ffdbb7c57634903c5e018fcfc48d59f4e37dc4bc3bbc9ba4e6ee39150bca03"))
-    s must be (BitcoinSUtil.hexToBigInt("119c2241a931819bc1a75d3596e4029d803d1cd6de123bf8a1a1a2c3665e1fac"))
+    r must be (NumberUtil.toBigInt("16ffdbb7c57634903c5e018fcfc48d59f4e37dc4bc3bbc9ba4e6ee39150bca03"))
+    s must be (NumberUtil.toBigInt("119c2241a931819bc1a75d3596e4029d803d1cd6de123bf8a1a1a2c3665e1fac"))
   }
 
   it must "retrieve the (r,s) values from a p2pk signature in bitcoin" in {
     val (r,s) = DERSignatureUtil.decodeSignature(p2pkSignature)
-    r must be (BitcoinSUtil.hexToBigInt("0a5c6163f07b8d3b013c4d1d6dba25e780b39658d79ba37af7057a3b7f15ffa1"))
-    s must be (BitcoinSUtil.hexToBigInt("1fd9b4eaa9943f734928b99a83592c2e7bf342ea2680f6a2bb705167966b7420"))
+    r must be (NumberUtil.toBigInt("0a5c6163f07b8d3b013c4d1d6dba25e780b39658d79ba37af7057a3b7f15ffa1"))
+    s must be (NumberUtil.toBigInt("1fd9b4eaa9943f734928b99a83592c2e7bf342ea2680f6a2bb705167966b7420"))
   }
 
   it must "say that a signature taken from a p2sh transaction is a valid stirctly DER encoded signature" in {

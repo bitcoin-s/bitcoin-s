@@ -19,6 +19,9 @@ This repostitory includes the following functionality:
   - Using Algebraic Data Types to allow the compiler to check for exhaustiveness on match statements
   - Favoring readability over terseness
 
+# TODO
+  - Segwit support
+
 # Examples
 
 Here is an example scala console session with bitcoin-core-s
