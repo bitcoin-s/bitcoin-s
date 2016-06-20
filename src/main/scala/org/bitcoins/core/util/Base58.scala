@@ -1,7 +1,7 @@
 package org.bitcoins.core.util
 
 import org.bitcoins.core.config.{TestNet3, MainNet}
-import org.bitcoins.core.crypto.ECPrivateKey
+import org.bitcoins.core.crypto.{Sha256Hash160Digest, ECPrivateKey}
 import org.bitcoins.core.protocol.script.ScriptPubKey
 
 import scala.annotation.tailrec
@@ -18,6 +18,7 @@ trait Base58 extends BitcoinSLogger {
 
   /**
     * Verifies a given base58 string against its checksum (last 4 decoded bytes)
+ *
     * @param input base58 string
     * @return decoded bytes excluding the checksum
     */
@@ -37,9 +38,11 @@ trait Base58 extends BitcoinSLogger {
 
   /**
     * Takes in sequence of bytes and returns base58 bitcoin string
+ *
     * @param bytes sequence of bytes to be encoded into base58
     * @return base58 String
     */
+  //TODO: Create Base58 Type
   def encode(bytes : Seq[Byte]) : String = {
     @tailrec
     def loop(current : BigInt, str : String) : String = current match {
@@ -60,13 +63,14 @@ trait Base58 extends BitcoinSLogger {
   }
 
   /**
-    * Encodes a Base58 address from a scriptPubKey
-    * @param scriptPubKey
-    * @param addressType string
+    * Encodes a Base58 address from a hash
+ *
+    * @param hash The result of Sha256(RipeMD-160(public key))
+    * @param addressType string. Either "pubkey" or "script"
     * @param isTestNet boolean
     * @return
     */
-  def encodePubKeyToBase58Address(scriptPubKey: ScriptPubKey,
+  def encodePubKeyHashToBase58Address(hash: Sha256Hash160Digest,
                                   addressType : String,
                                   isTestNet : Boolean) : String = {
     val versionByte : Byte = {
@@ -81,28 +85,34 @@ trait Base58 extends BitcoinSLogger {
         else TestNet3.p2shNetworkByte
       }
       else throw new IllegalArgumentException("Something broke -- Check your parameters. There should be a " +
-        "scriptPubKey, addressType('pubkey' or 'script'), and whether or not it's testnet (true or false).")
+        "Sha256RipeMD160 hash, addressType('pubkey' or 'script'), and testnet boolean (true or false).")
     }
 
-    val bytes : Seq[Byte] = Seq(versionByte.toByte) ++ scriptPubKey.bytes
+    val bytes : Seq[Byte] = Seq(versionByte.toByte) ++ hash.bytes
     val checksum = CryptoUtil.doubleSHA256(bytes).bytes.take(4)
     encode(bytes ++ checksum)
   }
 
-  def encodePrivateKeyToBase58Address(privateKey : ECPrivateKey,
-                                      isCompressed : Boolean,
-                                      isTestNet : Boolean) : String = {
-    val versionByte : Byte = {
-      if (!isTestNet) MainNet.privateKey
-      else {
-        TestNet3.privateKey
-      }
+  /**
+    * Encodes a private key into Wallet Import Format (WIF)
+    * https://en.bitcoin.it/wiki/Wallet_import_format
+    * @param privateKey
+    * @param isCompressed
+    * @param isTestNet
+    * @return
+    */
+  //TODO: Create WIF PrivateKey Type
+  def encodePrivateKeyToWIF(privateKey : ECPrivateKey,
+                            isCompressed : Boolean,
+                            isTestNet : Boolean) : String = {
+    val versionByte : Byte = isTestNet match {
+      case true => TestNet3.privateKey
+      case false => MainNet.privateKey
     }
     val compressedByte : Option[Byte] = isCompressed match {
       case true => Some(0x01.toByte)
       case false => None
     }
-
     val bytes : Seq[Byte] = Seq(versionByte.toByte) ++ BitcoinSUtil.decodeHex(privateKey.hex) ++ compressedByte
     val checksum =  CryptoUtil.doubleSHA256(bytes).bytes.take(4)
     encode(bytes ++ checksum)
@@ -111,13 +121,15 @@ trait Base58 extends BitcoinSLogger {
   /**
     * Takes in base58 string and returns sequence of bytes
     * https://github.com/ACINQ/bitcoin-lib/blob/master/src/main/scala/fr/acinq/bitcoin/Base58.scala
+ *
     * @param input base58 string to be decoded into a sequence of bytes
     * @return decoded sequence of bytes
     */
   def decode(input: String) : Seq[Byte] = {
     val zeroes = input.takeWhile(_ == '1').map(_ => 0:Byte).toArray
     val trim  = input.dropWhile(_ == '1').toList
-    val decoded = trim.foldLeft(BigInt(0))((a,b) =>a.*(BigInt(58L)).+(BigInt(base58Pairs(b))))
+    val decoded = trim.foldLeft(BigInt(0))((a,b) =>
+      a.*(BigInt(58L)).+(BigInt(base58Pairs(b))))
     if (trim.isEmpty) zeroes else zeroes ++ decoded.toByteArray.dropWhile(_ == 0)
   }
 }
