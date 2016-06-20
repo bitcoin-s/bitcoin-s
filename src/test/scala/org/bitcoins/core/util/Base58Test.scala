@@ -35,6 +35,37 @@ class Base58Test extends FlatSpec with MustMatchers {
     Base58.decode(address) must be (bitcoinj)
   }
 
+  it must "encode/decode tests in base58_encode_decode.json" in {
+    /*
+    [
+    ["", ""],
+    ["61", "2g"],
+    ["626262", "a3gV"],
+    ["636363", "aPEr"],
+    ["73696d706c792061206c6f6e6720737472696e67", "2cFupjhnEsSn59qHXstmK2ffpLv2"],
+    ["00eb15231dfceb60925886b67d065299925915aeb172c06647", "1NS17iag9jJgTHD1VXjvLCEnZuQ3rJDE9L"],
+    ["516b6fcd0f", "ABnLTmg"],
+    ["bf4f89001e670274dd", "3SEo3LWLoPntC"],
+    ["572e4794", "3EFU7m"],
+    ["ecac89cad93923c02321", "EJDM8drfXA6uyA"],
+    ["10c8511e", "Rt5zm"],
+    ["00000000000000000000", "1111111111"]
+    ]
+     */
+    Base58.encode("") must be ("")
+    Base58.encode("61") must be ("2g")
+    Base58.encode("626262") must be ("a3gV")
+    Base58.encode("636363") must be ("aPEr")
+    Base58.encode("73696d706c792061206c6f6e6720737472696e67") must be ("2cFupjhnEsSn59qHXstmK2ffpLv2")
+    Base58.encode("00eb15231dfceb60925886b67d065299925915aeb172c06647") must be ("1NS17iag9jJgTHD1VXjvLCEnZuQ3rJDE9L")
+    Base58.encode("516b6fcd0f") must be ("ABnLTmg")
+    Base58.encode("bf4f89001e670274dd") must be ("3SEo3LWLoPntC")
+    Base58.encode("572e4794") must be ("3EFU7m")
+    Base58.encode("ecac89cad93923c02321") must be ("EJDM8drfXA6uyA")
+    Base58.encode("10c8511e") must be ("Rt5zm")
+    Base58.encode("00000000000000000000") must be ("1111111111")
+  }
+
   it must "decode address into bytes, then encode bytes back to address the same as bitcoinj" in {
     //1C4kYhyLftmkn48YarSoLupxHfYFo8kp64
     val address = TestUtil.bitcoinAddress.value
