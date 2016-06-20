@@ -18,7 +18,6 @@ trait Base58 extends BitcoinSLogger {
 
   /**
     * Verifies a given base58 string against its checksum (last 4 decoded bytes)
- *
     * @param input base58 string
     * @return decoded bytes excluding the checksum
     */
@@ -38,16 +37,16 @@ trait Base58 extends BitcoinSLogger {
 
   /**
     * Takes in sequence of bytes and returns base58 bitcoin string
- *
     * @param bytes sequence of bytes to be encoded into base58
     * @return base58 String
     */
   //TODO: Create Base58 Type
   def encode(bytes : Seq[Byte]) : String = {
+    val ones : String = bytes.takeWhile(_ == 0).map(_ => '1').mkString
     @tailrec
     def loop(current : BigInt, str : String) : String = current match {
       case a if current == BigInt(0) =>
-        if (bytes.head == 0.toByte) '1' + str.reverse else str.reverse
+        ones + str.reverse
       case _ : BigInt =>
         val quotient : BigInt = current / BigInt(58L)
         val remainder : BigInt  = current.mod(58L)
@@ -62,9 +61,13 @@ trait Base58 extends BitcoinSLogger {
     }
   }
 
+  def encode(hex : String) : String = {
+    val bytes = BitcoinSUtil.decodeHex(hex)
+    encode(bytes)
+  }
+
   /**
     * Encodes a Base58 address from a hash
- *
     * @param hash The result of Sha256(RipeMD-160(public key))
     * @param addressType string. Either "pubkey" or "script"
     * @param isTestNet boolean
@@ -121,7 +124,6 @@ trait Base58 extends BitcoinSLogger {
   /**
     * Takes in base58 string and returns sequence of bytes
     * https://github.com/ACINQ/bitcoin-lib/blob/master/src/main/scala/fr/acinq/bitcoin/Base58.scala
- *
     * @param input base58 string to be decoded into a sequence of bytes
     * @return decoded sequence of bytes
     */
