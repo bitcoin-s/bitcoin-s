@@ -1,8 +1,13 @@
 package org.bitcoins.core.util
 
-import org.bitcoins.core.protocol.BitcoinAddress
-import org.bitcoins.core.util
+import org.bitcoins.core.crypto.{ECPrivateKey, Sha256Hash160Digest}
+import org.bitcoins.core.protocol.Address
+import org.bitcoins.core.util.testprotocol.{ConfigParamsImpl, Base58TestCaseImpl, Base58TestCase}
+import org.bitcoins.core.util.testprotocol.Base58TestCaseProtocol._
 import org.scalatest.{FlatSpec, MustMatchers}
+import spray.json._
+
+import scala.io.Source
 
 /**
   * Created by tom on 5/17/16.
@@ -51,6 +56,30 @@ class Base58Test extends FlatSpec with MustMatchers {
     val bitcoinj = org.bitcoinj.core.Base58.encode(org.bitcoinj.core.Base58.decode(multi))
     Base58.encode(Base58.decode(multi)) must be (TestUtil.multiSigAddress.value)
     Base58.encode(Base58.decode(multi)) must be (bitcoinj)
+  }
+
+  it must "read base58_keys_valid.json and validate each case" in {
+    val source = Source.fromURL(this.getClass.getResource("/base58_keys_valid.json"))
+    val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n" finally source.close()
+    val json = lines.parseJson
+    val testCases : Seq[Base58TestCase] = json.convertTo[Seq[Base58TestCase]]
+    for {
+      testCase <- testCases
+    } yield {
+      testCase must be (Base58TestCaseImpl(testCase.addressOrWIFPrivKey, testCase.hashOrPrivKey, testCase.configParams))
+    }
+
+    //first, second and 48th test cases:
+    testCases.head must be (Base58TestCaseImpl(Left(Address("1AGNa15ZQXAZUgFiqJ2i7Z2DPU2J6hW62i")),
+      Left(Sha256Hash160Digest("65a16059864a2fdbc7c99a4723a8395bc6f188eb")),
+      ConfigParamsImpl(Left("pubkey"), false, false)))
+
+    testCases(1) must be (Base58TestCaseImpl(Left(Address("3CMNFxN1oHBc4R1EpboAL5yzHGgE611Xou")),
+      Left(Sha256Hash160Digest("74f209f6ea907e2ea48f74fae05782ae8a665257")), ConfigParamsImpl(Left("script"), false, false)))
+
+    testCases(47) must be (Base58TestCaseImpl(Right("cMxXusSihaX58wpJ3tNuuUcZEQGt6DKJ1wEpxys88FFaQCYjku9h"),
+      Right(ECPrivateKey("0b3b34f0958d8a268193a9814da92c3e8b58b4a4378a542863e34ac289cd830c")),
+      ConfigParamsImpl(Right(true), true, true)))
   }
 
 
