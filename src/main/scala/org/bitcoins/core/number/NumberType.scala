@@ -66,7 +66,6 @@ sealed trait NumberOperations[T <: Number] {
   def >= (num : T): Boolean
   def < (num : T): Boolean
   def <= (num : T): Boolean
-  def == (num : T): Boolean
 }
 
 
@@ -128,10 +127,6 @@ sealed trait UInt32 extends UnsignedNumber with NumberOperations[UnsignedNumber]
     case uInt64 : UInt64 => underlying <= uInt64.underlying
   }
 
-  def == (num : UnsignedNumber): Boolean = num match {
-    case uInt32 : UInt32 => underlying == uInt32.underlying
-    case uInt64 : UInt64 => underlying == uInt64.underlying
-  }
 }
 
 /**
@@ -148,17 +143,24 @@ sealed trait UInt64 extends UnsignedNumber with NumberOperations[UnsignedNumber]
       UInt64(sum)
   }
 
-  def - (num : UnsignedNumber) = num match {
-    case uInt32 : UInt32 =>
-      val result = underlying - uInt32.underlying
-      if (result < 0) throw new RuntimeException("Cannot have a negative unsigned number, " +
-        "got one subtracting: " + underlying + " and " + uInt32.underlying)
-      else UInt64(result)
-    case uInt64 : UInt64 =>
-      val result = underlying - uInt64.underlying
-      if (result < 0) throw new RuntimeException("Cannot have a negative unsigned number, " +
-        "got one subtracting: " + underlying + " and " + uInt64.underlying)
-      else UInt64(result)
+  def - (num : UnsignedNumber): UnsignedNumber = {
+    val result = num match {
+      case uInt32 : UInt32 =>underlying - uInt32.underlying
+      case uInt64 : UInt64 => underlying - uInt64.underlying
+    }
+    if (result < 0) throw new RuntimeException("Cannot have a negative unsigned number, " +
+      "got one subtracting: " + this + " and " + num)
+    else UInt64(result)
+  }
+
+  override def * (num : UnsignedNumber): UnsignedNumber = {
+    val result = num match {
+      case uInt32 : UInt32 => underlying * uInt32.underlying
+      case uInt64 : UInt64 => underlying * uInt64.underlying
+    }
+    if (result > UInt64.max.underlying) throw new RuntimeException("The product of " + this +
+      " and " + num + " was too large for UInt64")
+    else UInt64(result)
   }
 
   def > (num : UnsignedNumber): Boolean = ???
@@ -168,10 +170,7 @@ sealed trait UInt64 extends UnsignedNumber with NumberOperations[UnsignedNumber]
   }
   def < (num : UnsignedNumber): Boolean = ???
   def <= (num : UnsignedNumber): Boolean = ???
-  def == (num : UnsignedNumber): Boolean = num match {
-    case uInt32 : UInt32 => num.underlying == uInt32.underlying
-    case uInt64 : UInt64 => num.underlying == uInt64.underlying
-  }
+
 }
 
 /**
