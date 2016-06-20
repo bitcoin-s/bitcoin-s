@@ -52,6 +52,12 @@ class UInt32Specification extends Properties("UInt32") with BitcoinSLogger {
       }
     }
 
+  property("subtract a uint64 from a uint32 and get the correct  result") =
+    Prop.forAll(NumberGenerator.uInt32s, NumberGenerator.uInt64s) { (uInt32 : UInt32, uInt64 : UInt64) =>
+      if (uInt32 >= uInt64) uInt32 - uInt64 == UInt32((uInt32.underlying - uInt64.underlying).toLong)
+      else Try(uInt32 - uInt64).isFailure
+    }
+
   property("multiplying by zero gives us zero") =
     Prop.forAll(NumberGenerator.uInt32s) { uInt32: UInt32 =>
       uInt32 * UInt32.zero == UInt32.zero

@@ -148,7 +148,19 @@ sealed trait UInt64 extends UnsignedNumber with NumberOperations[UnsignedNumber]
       UInt64(sum)
   }
 
-  def - (num : UnsignedNumber) = ???
+  def - (num : UnsignedNumber) = num match {
+    case uInt32 : UInt32 =>
+      val result = underlying - uInt32.underlying
+      if (result < 0) throw new RuntimeException("Cannot have a negative unsigned number, " +
+        "got one subtracting: " + underlying + " and " + uInt32.underlying)
+      else UInt64(result)
+    case uInt64 : UInt64 =>
+      val result = underlying - uInt64.underlying
+      if (result < 0) throw new RuntimeException("Cannot have a negative unsigned number, " +
+        "got one subtracting: " + underlying + " and " + uInt64.underlying)
+      else UInt64(result)
+  }
+
   def > (num : UnsignedNumber): Boolean = ???
   def >= (num : UnsignedNumber): Boolean = num match {
     case uInt32 : UInt32 => underlying >= uInt32.underlying
@@ -156,7 +168,10 @@ sealed trait UInt64 extends UnsignedNumber with NumberOperations[UnsignedNumber]
   }
   def < (num : UnsignedNumber): Boolean = ???
   def <= (num : UnsignedNumber): Boolean = ???
-  def == (num : UnsignedNumber): Boolean = ???
+  def == (num : UnsignedNumber): Boolean = num match {
+    case uInt32 : UInt32 => num.underlying == uInt32.underlying
+    case uInt64 : UInt64 => num.underlying == uInt64.underlying
+  }
 }
 
 /**
@@ -263,7 +278,16 @@ object UInt64 extends Factory[UInt64] with BitcoinSLogger with BaseNumbers[UInt6
     UInt64Impl(individualByteValues.sum, BitcoinSUtil.encodeHex(bytes))
   }
 
-  def apply(num : BigInt): UInt64 = UInt64Impl(num, BitcoinSUtil.encodeHex(num.toByteArray))
+  def apply(num : BigInt): UInt64 = {
+    if (num >= (BigInt(1) << 63)) {
+      //since Scala uses twos complement, it will add a padding byte
+      //if the number is > 2^63. We can remove this since we want to
+      //represent this number as unsigned
+      val bytes = num.toByteArray.tail
+      UInt64Impl(num, BitcoinSUtil.encodeHex(bytes))
+    } else UInt64Impl(num, BitcoinSUtil.encodeHex(num))
+  }
+
 }
 
 
