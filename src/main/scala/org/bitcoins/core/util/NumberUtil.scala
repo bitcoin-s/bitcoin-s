@@ -1,9 +1,5 @@
 package org.bitcoins.core.util
 
-import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptSignature}
-import org.bitcoins.core.protocol.{CompactSizeUInt}
-import org.slf4j.LoggerFactory
-
 import scala.math.BigInt
 
 /**

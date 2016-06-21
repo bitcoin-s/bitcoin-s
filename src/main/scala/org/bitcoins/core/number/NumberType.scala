@@ -47,7 +47,8 @@ sealed trait UnsignedNumber extends Number {
     */
   protected def packageInSmallestType(bigInt : BigInt) : Try[UnsignedNumber] = {
     logger.debug("BigInt: "+ bigInt)
-    if (bigInt <= UInt32.max.underlying) Success(UInt32(bigInt.toLong))
+    if (bigInt < 0) Failure(new RuntimeException("We cannot have a negative number with unsigned integers"))
+    else if (bigInt <= UInt32.max.underlying) Success(UInt32(bigInt.toLong))
     else if (bigInt <= UInt64.max.underlying) Success(UInt64(bigInt))
     else Failure(new RuntimeException("Buffer overflow with two UnsignedIntegers"))
   }
@@ -86,26 +87,22 @@ sealed trait NumberOperations[T <: Number] {
 sealed trait UInt32 extends UnsignedNumber with NumberOperations[UnsignedNumber] {
   override type A = Long
 
-  def + (num : UnsignedNumber): UnsignedNumber = num match {
-    case uInt32 : UInt32 =>
-      val n : BigInt = BigInt(underlying) + uInt32.underlying
-      if (n == n.toLong) UInt32(n.toLong)
-      else UInt64(n)
-    case uInt64 : UInt64 => UInt64(uInt64.underlying + underlying)
+  def + (num : UnsignedNumber): UnsignedNumber = {
+    val sum = num match {
+      case uInt32 : UInt32 => BigInt(underlying) + uInt32.underlying
+      case uInt64 : UInt64 => uInt64.underlying + underlying
+    }
+    val result = packageInSmallestType(sum)
+    checkResult(result)
   }
 
-  def - (num : UnsignedNumber): UnsignedNumber = num match {
-    case uInt32 : UInt32 =>
-      val result = underlying - uInt32.underlying
-      if (result < 0) throw new RuntimeException("Subtraction cannot lead to a negative number in UInt32")
-      else UInt32(result)
-    case uInt64 : UInt64 =>
-      val result = underlying - uInt64.underlying
-      if (result < 0) throw new RuntimeException("Subtracting UInt64 from a UInt32 cannot lead to a negative number")
-      else {
-        require(result == result.toLong, "Subtracting a UInt64 from a UInt32 should give us a UInt32")
-        UInt32(result.toLong)
-      }
+  def - (num : UnsignedNumber): UnsignedNumber =  {
+    val difference = num match {
+      case uInt32 : UInt32 => BigInt(underlying) - uInt32.underlying
+      case uInt64 : UInt64 => BigInt(underlying) - uInt64.underlying
+    }
+    val result = packageInSmallestType(difference)
+    checkResult(result)
   }
 
   override def * (num : UnsignedNumber): UnsignedNumber = num match {
@@ -145,34 +142,31 @@ sealed trait UInt32 extends UnsignedNumber with NumberOperations[UnsignedNumber]
   */
 sealed trait UInt64 extends UnsignedNumber with NumberOperations[UnsignedNumber] {
   override type A = BigInt
-  def + (num : UnsignedNumber): UnsignedNumber = {
-    val result = num match {
+  override def + (num : UnsignedNumber): UnsignedNumber = {
+    val sum = num match {
       case uInt32 : UInt32 => underlying + uInt32.underlying
       case uInt64 : UInt64 => underlying + uInt64.underlying
     }
-    if (result > UInt64.max.underlying) throw new RuntimeException("The sum of " + this + " and " + num +
-      "is larger than UInt64.max")
-    else UInt64(result)
+    val result = packageInSmallestType(sum)
+    checkResult(result)
   }
 
-  def - (num : UnsignedNumber): UnsignedNumber = {
-    val result = num match {
+  override def - (num : UnsignedNumber): UnsignedNumber = {
+    val difference = num match {
       case uInt32 : UInt32 =>underlying - uInt32.underlying
       case uInt64 : UInt64 => underlying - uInt64.underlying
     }
-    if (result < 0) throw new RuntimeException("Cannot have a negative unsigned number, " +
-      "got one subtracting: " + this + " and " + num)
-    else UInt64(result)
+    val result = packageInSmallestType(difference)
+    checkResult(result)
   }
 
   override def * (num : UnsignedNumber): UnsignedNumber = {
-    val result = num match {
+    val product = num match {
       case uInt32 : UInt32 => underlying * uInt32.underlying
       case uInt64 : UInt64 => underlying * uInt64.underlying
     }
-    if (result > UInt64.max.underlying) throw new RuntimeException("The product of " + this +
-      " and " + num + " was too large for UInt64")
-    else UInt64(result)
+    val result = packageInSmallestType(product)
+    checkResult(result)
   }
 
   def > (num : UnsignedNumber): Boolean = num match {
