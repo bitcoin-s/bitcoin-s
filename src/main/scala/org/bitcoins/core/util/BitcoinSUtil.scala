@@ -1,6 +1,7 @@
 package org.bitcoins.core.util
 
 import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits}
+import org.bitcoins.core.serializers.RawBitcoinSerializerHelper
 
 import scala.math.BigInt
 
@@ -33,12 +34,21 @@ trait BitcoinSUtil {
     * @param long
     * @return
     */
-  def encodeHex(long : Long) : String = long.toHexString.length % 2 match {
-    case 1 => "0" + long.toHexString
-    case _ : Int => long.toHexString
+  def encodeHex(long : Long) : String = {
+    val hex = long.toHexString.length % 2 match {
+      case 1 => "0" + long.toHexString
+      case _ : Int => long.toHexString
+    }
+    addPadding(16,hex)
   }
 
-  def encodeHex(int : Int) : String = encodeHex(int.toLong)
+  def encodeHex(int : Int) : String = {
+    val hex = int.toHexString.length % 2 match {
+      case 1 => "0" + int.toHexString
+      case _ : Int => int.toHexString
+    }
+    addPadding(8,hex)
+  }
 
   def encodeHex(bigInt : BigInt) : String = BitcoinSUtil.encodeHex(bigInt.toByteArray)
 
@@ -77,6 +87,21 @@ trait BitcoinSUtil {
   def flipEndianess(bytes : Seq[Byte]) : String = encodeHex(bytes.reverse)
 
 
+  /**
+    * Adds the amount padding bytes needed to fix the size of the hex string
+    * for instance, ints are required to be 4 bytes. If the number is just 1
+    * it will only take 1 byte. We need to pad the byte with an extra 3 bytes so the result is
+    * 00000001 instead of just 1
+    * @param charactersNeeded
+    * @param hex
+    * @return
+    */
+  private def addPadding(charactersNeeded : Int, hex : String) : String = {
+    val paddingNeeded = charactersNeeded - hex.size
+    val padding = for { i <- 0 until paddingNeeded} yield "0"
+    val paddedHex = padding.mkString + hex
+    paddedHex
+  }
 }
 
 object BitcoinSUtil extends BitcoinSUtil

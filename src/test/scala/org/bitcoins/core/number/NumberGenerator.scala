@@ -58,6 +58,9 @@ trait NumberGenerator {
   } yield UInt64(bigInt)
 
 
+  def int32s : Gen[Int32] = Gen.choose(Int32.min.underlying,Int32.max.underlying).map(Int32(_))
+
+  def int64s : Gen[Int64] = Gen.choose(Int64.min.underlying, Int64.max.underlying).map(Int64(_))
 }
 
 object NumberGenerator extends NumberGenerator

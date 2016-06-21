@@ -55,12 +55,6 @@ class UInt32Test extends FlatSpec with MustMatchers {
     }
   }
 
-  it must "throw an exception if we try and create a 5 byte integer" in {
-    intercept[IllegalArgumentException] {
-      UInt32(Seq(0.toByte,0.toByte,0.toByte,0.toByte,0.toByte))
-    }
-  }
-
   it must "have the correct representation for 0" in {
     UInt32.zero.underlying must be (0)
   }

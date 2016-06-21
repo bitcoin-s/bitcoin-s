@@ -21,7 +21,18 @@ sealed trait Number extends NetworkElement with BitcoinSLogger {
   * Represents a signed number in our number system
   * Instances of this are [[Int32]] or [[Int64]]
   */
-sealed trait SignedNumber extends Number
+sealed trait SignedNumber extends Number {
+  protected def packageInSmallestType(long : Long) : Try[SignedNumber] = {
+    if (long >= Int32.min.underlying && long <= Int32.max.underlying) Success(Int32(long.toInt))
+    else if (long >= Int64.min.underlying && long <= Int64.max.underlying) Success(Int64(long))
+    else Failure(new RuntimeException("The number: " + long + " is outside the range for valid signed numbers (-2^32 to 2^32-1 "))
+  }
+
+  protected def checkResult(result : Try[SignedNumber]) : SignedNumber = result match {
+    case Success(number) => number
+    case Failure(exception) => throw exception
+  }
+}
 
 /**
   * Represents an unsigned number in our number system
@@ -61,7 +72,7 @@ sealed trait UnsignedNumber extends Number {
 sealed trait NumberOperations[T <: Number] {
   def + (num : T): T
   def - (num : T): T
-  def * (num : T): T = ???
+  def * (num : T): T
   def > (num : T): Boolean
   def >= (num : T): Boolean
   def < (num : T): Boolean
@@ -188,13 +199,28 @@ sealed trait UInt64 extends UnsignedNumber with NumberOperations[UnsignedNumber]
   */
 sealed trait Int32 extends SignedNumber with NumberOperations[SignedNumber] {
   override type A = Int
-  override def + (num : SignedNumber) = ???
-  def -(num : SignedNumber) = ???
+  override def + (num : SignedNumber) = {
+    val sum = num match {
+      case int32 : Int32 => underlying + int32.underlying
+      case int64 : Int64 => underlying + int64.underlying
+    }
+    val result = packageInSmallestType(sum)
+    checkResult(result)
+  }
+  def - (num : SignedNumber) = {
+    val difference = num match {
+      case int32 : Int32 => underlying - int32.underlying
+      case int64 : Int64 => underlying - int64.underlying
+    }
+    val result = packageInSmallestType(difference)
+    checkResult(result)
+  }
+
+  override def *(num : SignedNumber) = ???
   def > (num : SignedNumber): Boolean = ???
   def >= (num : SignedNumber): Boolean = ???
   def < (num : SignedNumber): Boolean = ???
   def <= (num : SignedNumber): Boolean = ???
-  def == (num : SignedNumber): Boolean = ???
 }
 
 /**
@@ -204,11 +230,11 @@ sealed trait Int64 extends SignedNumber with NumberOperations[SignedNumber] {
   override type A = Long
   override def + (num : SignedNumber) = ???
   def - (num : SignedNumber) = ???
+  override def * (num : SignedNumber) = ???
   def > (num : SignedNumber): Boolean = ???
   def >= (num : SignedNumber): Boolean = ???
   def < (num : SignedNumber): Boolean = ???
   def <= (num : SignedNumber): Boolean = ???
-  def == (num : SignedNumber): Boolean = ???
 }
 
 
@@ -245,14 +271,14 @@ object UInt32 extends Factory[UInt32] with BitcoinSLogger with BaseNumbers[UInt3
     require(underlying <= 4294967295L, "We cannot have a number larger than 2^32 -1 in UInt32, got: " + underlying)
   }
 
-  lazy val zero = fromBytes(Seq(0.toByte))
-  lazy val one = fromBytes(Seq(1.toByte))
+  lazy val zero = UInt32(0)
+  lazy val one = UInt32(1)
 
   lazy val min = zero
   lazy val max = UInt32(4294967295L)
 
   override def fromBytes(bytes : Seq[Byte]): UInt32 = {
-    require(bytes.size <= 4, "We cannot have a UInt32 be larger than 4 bytes")
+
     val individualByteValues = for {
       (byte,index) <- bytes.reverse.zipWithIndex
     } yield NumberUtil.calculateNumberFromByte(index, byte)
@@ -271,15 +297,14 @@ object UInt64 extends Factory[UInt64] with BitcoinSLogger with BaseNumbers[UInt6
     require(underlying <= BigInt("18446744073709551615"), "We cannot have a number larger than 2^64 -1 in UInt32, got: " + underlying)
   }
 
-  lazy val zero = fromBytes(Seq(0.toByte))
-  lazy val one = fromBytes(Seq(1.toByte))
+  lazy val zero = UInt64(0)
+  lazy val one = UInt64(1)
 
   lazy val min = zero
   lazy val max = fromBytes(Seq(0xff.toByte, 0xff.toByte, 0xff.toByte, 0xff.toByte,
     0xff.toByte, 0xff.toByte, 0xff.toByte, 0xff.toByte))
 
   override def fromBytes(bytes : Seq[Byte]): UInt64 = {
-    require(bytes.size <= 8, "We cannot have a UInt64 larger than 8 bytes")
     val individualByteValues : Seq[BigInt] = for {
       (byte,index) <- bytes.reverse.zipWithIndex
     } yield NumberUtil.calculateNumberFromByte(index, byte)
@@ -303,8 +328,8 @@ object UInt64 extends Factory[UInt64] with BitcoinSLogger with BaseNumbers[UInt6
 object Int32 extends Factory[Int32] with BaseNumbers[Int32] {
   private case class Int32Impl(underlying : Int, hex : String) extends Int32
 
-  lazy val zero = fromBytes(Seq(0.toByte))
-  lazy val one = fromBytes(Seq(1.toByte))
+  lazy val zero = Int32(0)
+  lazy val one = Int32(1)
 
   lazy val min = fromBytes(Seq(0x80.toByte, 0.toByte, 0.toByte, 0.toByte))
   lazy val max = fromBytes(Seq(0x7f.toByte, 0xff.toByte, 0xff.toByte, 0xff.toByte))
@@ -321,8 +346,8 @@ object Int32 extends Factory[Int32] with BaseNumbers[Int32] {
 object Int64 extends Factory[Int64] with BaseNumbers[Int64] {
   private case class Int64Impl(underlying : Long, hex : String) extends Int64
 
-  lazy val zero = fromBytes(Seq(0.toByte))
-  lazy val one = fromBytes(Seq(1.toByte))
+  lazy val zero = Int64(0)
+  lazy val one = Int64(1)
 
   lazy val min = fromBytes(Seq(0x80.toByte,0.toByte, 0.toByte, 0.toByte,0.toByte, 0.toByte, 0.toByte, 0.toByte))
   lazy val max = fromBytes(Seq(0x7f.toByte, 0xff.toByte, 0xff.toByte, 0xff.toByte,
