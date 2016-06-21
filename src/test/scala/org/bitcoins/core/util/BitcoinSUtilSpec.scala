@@ -4,7 +4,7 @@ import org.scalacheck.{Gen, Prop, Properties}
 /**
   * Created by chris on 6/20/16.
   */
-class BitcoinSUtilSpecification extends Properties("BitcoinSUtilSpec") with BitcoinSLogger {
+class BitcoinSUtilSpec extends Properties("BitcoinSUtilSpec") with BitcoinSLogger {
 
   property("Serialization symmetry for encodeHex & decodeHex") =
     Prop.forAll(StringGenerators.hexString) { hex : String =>

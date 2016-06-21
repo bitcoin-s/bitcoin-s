@@ -313,6 +313,8 @@ object Int32 extends Factory[Int32] with BaseNumbers[Int32] {
     require(bytes.size <= 4, "We cannot have an Int32 be larger than 4 bytes")
     Int32Impl(BigInt(bytes.toArray).toInt, BitcoinSUtil.encodeHex(bytes))
   }
+
+  def apply(int : Int): Int32 = Int32Impl(int, BitcoinSUtil.encodeHex(int))
 }
 
 
@@ -325,8 +327,11 @@ object Int64 extends Factory[Int64] with BaseNumbers[Int64] {
   lazy val min = fromBytes(Seq(0x80.toByte,0.toByte, 0.toByte, 0.toByte,0.toByte, 0.toByte, 0.toByte, 0.toByte))
   lazy val max = fromBytes(Seq(0x7f.toByte, 0xff.toByte, 0xff.toByte, 0xff.toByte,
     0xff.toByte, 0xff.toByte, 0xff.toByte, 0xff.toByte))
+
   override def fromBytes(bytes : Seq[Byte]): Int64 = {
     require(bytes.size <= 8, "We cannot have an Int64 be larger than 8 bytes")
     Int64Impl(BigInt(bytes.toArray).toLong, BitcoinSUtil.encodeHex(bytes))
   }
+
+  def apply(long : Long): Int64 = Int64Impl(long, BitcoinSUtil.encodeHex(long))
 }
