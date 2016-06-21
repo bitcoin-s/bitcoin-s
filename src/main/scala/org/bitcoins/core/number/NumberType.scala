@@ -247,13 +247,47 @@ sealed trait Int32 extends SignedNumber with NumberOperations[SignedNumber] {
   */
 sealed trait Int64 extends SignedNumber with NumberOperations[SignedNumber] {
   override type A = Long
-  override def + (num : SignedNumber) = ???
-  def - (num : SignedNumber) = ???
-  override def * (num : SignedNumber) = ???
-  def > (num : SignedNumber): Boolean = ???
-  def >= (num : SignedNumber): Boolean = ???
-  def < (num : SignedNumber): Boolean = ???
-  def <= (num : SignedNumber): Boolean = ???
+  override def + (num : SignedNumber) = {
+    val sum = num match {
+      case int32 : Int32 => underlying + int32.underlying
+      case int64 : Int64 => underlying + int64.underlying
+    }
+    val result = packageInSmallestType(sum)
+    checkResult(result)
+  }
+  override def - (num : SignedNumber) = {
+    val difference = num match {
+      case int32 : Int32 => underlying - int32.underlying
+      case int64 : Int64 => underlying - int64.underlying
+    }
+    val result = packageInSmallestType(difference)
+    checkResult(result)
+  }
+  override def * (num : SignedNumber) = {
+    val product = num match {
+      case int32 : Int32 => underlying * int32.underlying
+      case int64 : Int64 => underlying * int64.underlying
+    }
+    val result = packageInSmallestType(product)
+    checkResult(result)
+  }
+
+  override def > (num : SignedNumber): Boolean = num match {
+    case int32 : Int32 => underlying > int32.underlying
+    case int64 : Int64 => underlying > int64.underlying
+  }
+  override def >= (num : SignedNumber): Boolean = num match {
+    case int32 : Int32 => underlying >= int32.underlying
+    case int64 : Int64 => underlying >= int64.underlying
+  }
+  override def < (num : SignedNumber): Boolean = num match {
+    case int32 : Int32 => underlying < int32.underlying
+    case int64 : Int64 => underlying < int64.underlying
+  }
+  override def <= (num : SignedNumber): Boolean = num match {
+    case int32 : Int32 => underlying <= int32.underlying
+    case int64 : Int64 => underlying <= int64.underlying
+  }
 }
 
 
