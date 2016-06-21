@@ -134,13 +134,14 @@ sealed trait UInt32 extends UnsignedNumber with NumberOperations[UnsignedNumber]
   */
 sealed trait UInt64 extends UnsignedNumber with NumberOperations[UnsignedNumber] {
   override type A = BigInt
-  def + (num : UnsignedNumber): UnsignedNumber = num match {
-    case uInt32 : UInt32 =>
-      val sum = underlying + uInt32.underlying
-      UInt64(sum)
-    case uInt64 : UInt64 =>
-      val sum = underlying + uInt64.underlying
-      UInt64(sum)
+  def + (num : UnsignedNumber): UnsignedNumber = {
+    val result = num match {
+      case uInt32 : UInt32 => underlying + uInt32.underlying
+      case uInt64 : UInt64 => underlying + uInt64.underlying
+    }
+    if (result > UInt64.max.underlying) throw new RuntimeException("The sum of " + this + " and " + num +
+      "is larger than UInt64.max")
+    else UInt64(result)
   }
 
   def - (num : UnsignedNumber): UnsignedNumber = {
@@ -163,13 +164,22 @@ sealed trait UInt64 extends UnsignedNumber with NumberOperations[UnsignedNumber]
     else UInt64(result)
   }
 
-  def > (num : UnsignedNumber): Boolean = ???
+  def > (num : UnsignedNumber): Boolean = num match {
+    case uInt32: UInt32 => underlying > uInt32.underlying
+    case uInt64: UInt64 => underlying > uInt64.underlying
+  }
   def >= (num : UnsignedNumber): Boolean = num match {
     case uInt32 : UInt32 => underlying >= uInt32.underlying
     case uInt64 : UInt64 => underlying >= uInt64.underlying
   }
-  def < (num : UnsignedNumber): Boolean = ???
-  def <= (num : UnsignedNumber): Boolean = ???
+  def < (num : UnsignedNumber): Boolean = num match {
+    case uInt32 : UInt32 => underlying < uInt32.underlying
+    case uInt64 : UInt64 => underlying < uInt64.underlying
+  }
+  def <= (num : UnsignedNumber): Boolean = num match {
+    case uInt32: UInt32 => underlying <= uInt32.underlying
+    case uInt64: UInt64 => underlying <= uInt64.underlying
+  }
 
 }
 
