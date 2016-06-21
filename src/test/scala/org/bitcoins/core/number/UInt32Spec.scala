@@ -33,20 +33,23 @@ class UInt32Spec extends Properties("UInt32") with BitcoinSLogger {
 
   property("add two uint32s and get the mathematical sum of the two numbers") =
     Prop.forAll(NumberGenerator.uInt32s,NumberGenerator.uInt32s) { (num1: UInt32, num2: UInt32) =>
-      val uIntResult = Try(num1 + num2)
-      val expectedResult = BigInt(num1.underlying) + BigInt(num2.underlying)
-      if (expectedResult <= UInt32.max.underlying) uIntResult.get.underlying == expectedResult
-      else uIntResult.isFailure
+      val result = BigInt(num1.underlying) + num2.underlying
+      if (result <= UInt32.max.underlying) num1 + num2 == UInt32(result.toLong)
+      else if (result <= UInt64.max.underlying) num1 + num2 == UInt64(result)
+      else Try(num1 + num2).isFailure
   }
 
-  property("subtract zero from a UInt32 and get the original UInt32") =
-    Prop.forAll(NumberGenerator.uInt32s) { uInt32: UInt32 =>
-      uInt32 - UInt32.zero == uInt32
+  property("add a uint32 and a uint64") =
+    Prop.forAll(NumberGenerator.uInt32s, NumberGenerator.uInt64s) { (uInt32 : UInt32, uInt64 : UInt64) =>
+      val result = uInt64.underlying + uInt32.underlying
+      if (result <= UInt32.max.underlying) uInt32 + uInt64 == UInt32(result.toLong)
+      else if (result <= UInt64.max.underlying) uInt32 + uInt64 == UInt64(result)
+      else Try(uInt32 + uInt64).isFailure
     }
 
-  property("subtract one from a UInt32 and get the UInt32 - 1") =
+  property("subtractive identity") =
     Prop.forAll(NumberGenerator.uInt32s) { uInt32: UInt32 =>
-      (uInt32 - UInt32.one).underlying == (uInt32.underlying - 1)
+      uInt32 - UInt32.zero == uInt32
     }
 
   property("subtract a uint32 from another uint32 and get the correct result") =
