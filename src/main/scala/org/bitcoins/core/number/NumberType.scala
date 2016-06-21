@@ -207,7 +207,7 @@ sealed trait Int32 extends SignedNumber with NumberOperations[SignedNumber] {
     val result = packageInSmallestType(sum)
     checkResult(result)
   }
-  def - (num : SignedNumber) = {
+  override def - (num : SignedNumber) = {
     val difference = num match {
       case int32 : Int32 => underlying - int32.underlying
       case int64 : Int64 => underlying - int64.underlying
@@ -216,11 +216,30 @@ sealed trait Int32 extends SignedNumber with NumberOperations[SignedNumber] {
     checkResult(result)
   }
 
-  override def *(num : SignedNumber) = ???
-  def > (num : SignedNumber): Boolean = ???
-  def >= (num : SignedNumber): Boolean = ???
-  def < (num : SignedNumber): Boolean = ???
-  def <= (num : SignedNumber): Boolean = ???
+  override def *(num : SignedNumber) = {
+    val product = num match {
+      case int32 : Int32 => underlying * int32.underlying
+      case int64 : Int64 => underlying * int64.underlying
+    }
+    val result = packageInSmallestType(product)
+    checkResult(result)
+  }
+  override def > (num : SignedNumber): Boolean = num match {
+    case int32 : Int32 => underlying > int32.underlying
+    case int64 : Int64 => underlying > int64.underlying
+  }
+  override def >= (num : SignedNumber): Boolean = num match {
+    case int32 : Int32 => underlying >= int32.underlying
+    case int64 : Int64 => underlying >= int64.underlying
+  }
+  override def < (num : SignedNumber): Boolean = num match {
+    case int32 : Int32 => underlying < int32.underlying
+    case int64 : Int64 => underlying < int64.underlying
+  }
+  override def <= (num : SignedNumber): Boolean = num match {
+    case int32 : Int32 => underlying <= int32.underlying
+    case int64 : Int64 => underlying <= int64.underlying
+  }
 }
 
 /**
