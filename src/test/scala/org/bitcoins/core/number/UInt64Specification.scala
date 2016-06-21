@@ -79,4 +79,34 @@ class UInt64Specification extends Properties("UInt64Spec") with BitcoinSLogger {
       if (result <= UInt64.max.underlying) num1 * num2 == UInt64(result)
       else Try(num1 * num2).isFailure
     }
+
+  property("< & >= for uInt64s") =
+    Prop.forAll(NumberGenerator.uInt64s, NumberGenerator.uInt64s) { (num1: UInt64, num2: UInt64) =>
+      if (num1.underlying < num2.underlying) num1 < num2
+      else num1 >= num2
+    }
+
+  property("< & >= for a uInt64 and a uInt32") =
+    Prop.forAll(NumberGenerator.uInt64s, NumberGenerator.uInt32s) { (num1: UInt64, num2: UInt32) =>
+      if (num1.underlying < num2.underlying) num1 < num2
+      else num1 >= num2
+    }
+
+  property("<= & > with two uInt64s") =
+    Prop.forAll(NumberGenerator.uInt64s, NumberGenerator.uInt64s) { (num1: UInt64, num2: UInt64) =>
+      if (num1.underlying <= num2.underlying) num1 <= num2
+      else num1 > num2
+    }
+
+  property("<= & > for a uInt64 and a uInt32") =
+    Prop.forAll(NumberGenerator.uInt64s, NumberGenerator.uInt32s) { (num1: UInt64, num2: UInt32) =>
+      if (num1.underlying <= num2.underlying) num1 <= num2
+      else num1 > num2
+    }
+
+  property("== & != for two UInt64s") = 
+    Prop.forAll(NumberGenerator.uInt64s, NumberGenerator.uInt64s) { (num1 : UInt64, num2 : UInt64) =>
+      if (num1.underlying == num2.underlying) num1 == num2
+      else num1 != num2
+    }
 }
