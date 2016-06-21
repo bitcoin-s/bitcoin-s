@@ -38,6 +38,8 @@ trait BitcoinSUtil {
     case _ : Int => long.toHexString
   }
 
+  def encodeHex(int : Int) : String = encodeHex(int.toLong)
+
   def encodeHex(bigInt : BigInt) : String = BitcoinSUtil.encodeHex(bigInt.toByteArray)
 
   /**

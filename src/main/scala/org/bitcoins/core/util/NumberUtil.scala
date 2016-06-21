@@ -81,6 +81,34 @@ trait NumberUtil extends BitcoinSLogger {
     }
   }
 
+  /**
+    * Converts a sequence of bytes to a [[Int]]
+    * @param bytes
+    * @return
+    */
+  def toInt(bytes : Seq[Byte]) : Int = toBigInt(bytes).toInt
+
+  /**
+    * Converts a hex string to a [[Int]]
+    * @param hex
+    * @return
+    */
+  def toInt(hex : String) : Int = toInt(BitcoinSUtil.decodeHex(hex))
+
+  /**
+    * Converts a sequence of bytes to a [[Long]]
+    * @param bytes
+    * @return
+    */
+  def toLong(bytes : Seq[Byte]) : Long = toBigInt(bytes).toLong
+
+  /**
+    * Converts a hex string to a [[Long]]
+    * @param hex
+    * @return
+    */
+  def toLong(hex : String): Long = toLong(BitcoinSUtil.decodeHex(hex))
+
 }
 
 object NumberUtil extends NumberUtil

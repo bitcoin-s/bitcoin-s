@@ -8,7 +8,7 @@ import scala.util.Try
 /**
   * Created by chris on 6/20/16.
   */
-class UInt64Specification extends Properties("UInt64Spec") with BitcoinSLogger {
+class UInt64Spec extends Properties("UInt64Spec") with BitcoinSLogger {
 
 
   property("Serialization symmetry") =
@@ -104,7 +104,7 @@ class UInt64Specification extends Properties("UInt64Spec") with BitcoinSLogger {
       else num1 > num2
     }
 
-  property("== & != for two UInt64s") = 
+  property("== & != for two UInt64s") =
     Prop.forAll(NumberGenerator.uInt64s, NumberGenerator.uInt64s) { (num1 : UInt64, num2 : UInt64) =>
       if (num1.underlying == num2.underlying) num1 == num2
       else num1 != num2
