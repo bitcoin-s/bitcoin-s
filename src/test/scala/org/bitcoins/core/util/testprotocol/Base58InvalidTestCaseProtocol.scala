@@ -1,6 +1,5 @@
 package org.bitcoins.core.util.testprotocol
 
-import org.bitcoins.core.util.BitcoinSLogger
 import spray.json._
 
 import scala.annotation.tailrec
@@ -51,19 +50,3 @@ object Base58InvalidTestCaseProtocol extends DefaultJsonProtocol {
     case error : JsValue => throw new RuntimeException("Expected array. Got: " + error)
   }
 }
-/*
-  def elementToBase58TestCase (jsValue : Option[JsValue]) : Base58InvalidTestCase =  jsValue match {
-    case Some(str : JsString) =>
-      val base58TestCase = Base58InvalidTestCaseImpl(str.convertTo[String])
-      base58TestCase
-    case None => Base58InvalidTestCaseImpl("")
-    case error : JsValue => throw new RuntimeException("Expected array. Got: " + error)
-  }
-
-
-    def elementToBase58TestCase (jsValue : JsValue) : Base58InvalidTestCase =  jsValue match {
-    case str : JsString =>
-      val base58TestCase = Base58InvalidTestCaseImpl(str.convertTo[String])
-      base58TestCase
-    case error : JsValue => throw new RuntimeException("Expected array. Got: " + error)
- */
