@@ -33,7 +33,7 @@ trait NumberUtil extends BitcoinSLogger {
     * @param byte the byte which we need to calculate the unsigned integer for
     * @return the unsigned integer corresponding to the given byteIndex and byte
     */
-  def calculateNumberFromByte(byteIndex : Int, byte : Byte): BigInt = {
+  def calculateUnsignedNumberFromByte(byteIndex : Int, byte : Byte): BigInt = {
     val setBits : Seq[BigInt] = for {
       i <- 0 until 8
       bitIndex = i + (byteIndex * 8)

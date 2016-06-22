@@ -87,7 +87,7 @@ sealed trait NumberOperations[T <: Number] {
 sealed trait UInt32 extends UnsignedNumber with NumberOperations[UnsignedNumber] {
   override type A = Long
 
-  def + (num : UnsignedNumber): UnsignedNumber = {
+  override def + (num : UnsignedNumber): UnsignedNumber = {
     val sum = num match {
       case uInt32 : UInt32 => BigInt(underlying) + uInt32.underlying
       case uInt64 : UInt64 => uInt64.underlying + underlying
@@ -96,7 +96,7 @@ sealed trait UInt32 extends UnsignedNumber with NumberOperations[UnsignedNumber]
     checkResult(result)
   }
 
-  def - (num : UnsignedNumber): UnsignedNumber =  {
+  override def - (num : UnsignedNumber): UnsignedNumber =  {
     val difference = num match {
       case uInt32 : UInt32 => BigInt(underlying) - uInt32.underlying
       case uInt64 : UInt64 => BigInt(underlying) - uInt64.underlying
@@ -105,32 +105,31 @@ sealed trait UInt32 extends UnsignedNumber with NumberOperations[UnsignedNumber]
     checkResult(result)
   }
 
-  override def * (num : UnsignedNumber): UnsignedNumber = num match {
-    case uInt32 : UInt32 =>
-      val product = BigInt(underlying) * BigInt(uInt32.underlying)
-      val result = packageInSmallestType(product)
-      checkResult(result)
-    case uInt64 : UInt64 =>
-      val result = packageInSmallestType(uInt64.underlying * underlying)
-      checkResult(result)
+  override def * (num : UnsignedNumber): UnsignedNumber =  {
+    val product = num match {
+      case uInt32 : UInt32 => BigInt(underlying) * BigInt(uInt32.underlying)
+      case uInt64 : UInt64 => uInt64.underlying * underlying
+    }
+    val result = packageInSmallestType(product)
+    checkResult(result)
   }
 
-  def > (num : UnsignedNumber): Boolean = num match {
+  override def > (num : UnsignedNumber): Boolean = num match {
     case uInt32 : UInt32 => underlying > uInt32.underlying
     case uInt64 : UInt64 => underlying > uInt64.underlying
   }
 
-  def >= (num : UnsignedNumber): Boolean = num match {
+  override def >= (num : UnsignedNumber): Boolean = num match {
     case uInt32 : UInt32 => underlying >= uInt32.underlying
     case uInt64 : UInt64 => underlying >= uInt64.underlying
   }
 
-  def < (num : UnsignedNumber): Boolean = num match {
+  override def < (num : UnsignedNumber): Boolean = num match {
     case uInt32 : UInt32 => underlying < uInt32.underlying
     case uInt64 : UInt64 => underlying < uInt64.underlying
   }
 
-  def <= (num : UnsignedNumber): Boolean = num match {
+  override def <= (num : UnsignedNumber): Boolean = num match {
     case uInt32 : UInt32 => underlying <= uInt32.underlying
     case uInt64 : UInt64 => underlying <= uInt64.underlying
   }
@@ -169,19 +168,22 @@ sealed trait UInt64 extends UnsignedNumber with NumberOperations[UnsignedNumber]
     checkResult(result)
   }
 
-  def > (num : UnsignedNumber): Boolean = num match {
+  override def > (num : UnsignedNumber): Boolean = num match {
     case uInt32: UInt32 => underlying > uInt32.underlying
     case uInt64: UInt64 => underlying > uInt64.underlying
   }
-  def >= (num : UnsignedNumber): Boolean = num match {
+
+  override def >= (num : UnsignedNumber): Boolean = num match {
     case uInt32 : UInt32 => underlying >= uInt32.underlying
     case uInt64 : UInt64 => underlying >= uInt64.underlying
   }
-  def < (num : UnsignedNumber): Boolean = num match {
+
+  override def < (num : UnsignedNumber): Boolean = num match {
     case uInt32 : UInt32 => underlying < uInt32.underlying
     case uInt64 : UInt64 => underlying < uInt64.underlying
   }
-  def <= (num : UnsignedNumber): Boolean = num match {
+
+  override def <= (num : UnsignedNumber): Boolean = num match {
     case uInt32: UInt32 => underlying <= uInt32.underlying
     case uInt64: UInt64 => underlying <= uInt64.underlying
   }
@@ -328,7 +330,7 @@ object UInt32 extends Factory[UInt32] with BitcoinSLogger with BaseNumbers[UInt3
 
     val individualByteValues = for {
       (byte,index) <- bytes.reverse.zipWithIndex
-    } yield NumberUtil.calculateNumberFromByte(index, byte)
+    } yield NumberUtil.calculateUnsignedNumberFromByte(index, byte)
     UInt32Impl(individualByteValues.sum.toLong, BitcoinSUtil.encodeHex(bytes))
   }
 
@@ -354,7 +356,7 @@ object UInt64 extends Factory[UInt64] with BitcoinSLogger with BaseNumbers[UInt6
   override def fromBytes(bytes : Seq[Byte]): UInt64 = {
     val individualByteValues : Seq[BigInt] = for {
       (byte,index) <- bytes.reverse.zipWithIndex
-    } yield NumberUtil.calculateNumberFromByte(index, byte)
+    } yield NumberUtil.calculateUnsignedNumberFromByte(index, byte)
     logger.debug("Individual bytes values: " + individualByteValues)
     UInt64Impl(individualByteValues.sum, BitcoinSUtil.encodeHex(bytes))
   }
