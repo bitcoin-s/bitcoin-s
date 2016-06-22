@@ -120,7 +120,7 @@ case object EmptyScriptPubKey extends ScriptPubKey {
 /**
   * Factory companion object used to create ScriptPubKey objects
   */
-object ScriptPubKey extends Factory[ScriptPubKey] {
+object ScriptPubKey extends Factory[ScriptPubKey] with BitcoinSLogger {
   def empty : ScriptPubKey = fromAsm(List())
 
   private case class P2PKScriptPubKeyImpl(hex : String) extends P2PKScriptPubKey
@@ -163,7 +163,10 @@ object ScriptPubKey extends Factory[ScriptPubKey] {
     val containsMultSigOp = asm.contains(OP_CHECKMULTISIG) || asm.contains(OP_CHECKMULTISIGVERIFY)
     //we need at least two script operations to indicate m required signatures & n maximum signatures
     val has2ScriptOperations = asm.count(_.isInstanceOf[ScriptNumberOperation]) >= 2
-    isNotEmpty && containsMultSigOp && has2ScriptOperations
+    val standardOps = asm.filter(op =>  op.isInstanceOf[ScriptNumberOperation] || op == OP_CHECKMULTISIG ||
+      op == OP_CHECKMULTISIGVERIFY || op.isInstanceOf[ScriptConstant] || op.isInstanceOf[BytesToPushOntoStack])
+    logger.info("Non standard ops: " + standardOps)
+    isNotEmpty && containsMultSigOp && has2ScriptOperations && standardOps.size == asm.size
 
   }
 

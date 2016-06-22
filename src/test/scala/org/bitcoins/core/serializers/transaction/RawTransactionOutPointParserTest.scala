@@ -57,6 +57,6 @@ class RawTransactionOutPointParserTest extends FlatSpec with MustMatchers  {
     outPoint.vout must be (322937100)
     outPoint.hex must be (rawOutPoint)
   }
-  
+
 
 }
