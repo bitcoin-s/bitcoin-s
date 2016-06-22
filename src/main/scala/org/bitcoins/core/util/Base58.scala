@@ -1,11 +1,10 @@
 package org.bitcoins.core.util
 
-import org.bitcoins.core.config.{TestNet3, MainNet}
-import org.bitcoins.core.crypto.{Sha256Hash160Digest, ECPrivateKey}
-import org.bitcoins.core.protocol.script.ScriptPubKey
+import org.bitcoins.core.config.{MainNet, TestNet3}
+import org.bitcoins.core.crypto.{ECPrivateKey, Sha256Hash160Digest}
 
 import scala.annotation.tailrec
-import scala.util.{Try, Failure, Success}
+import scala.util.{Failure, Success, Try}
 
 /**
   * Created by chris on 5/16/16.
