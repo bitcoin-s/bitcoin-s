@@ -167,7 +167,6 @@ object ScriptPubKey extends Factory[ScriptPubKey] with BitcoinSLogger {
       op == OP_CHECKMULTISIGVERIFY || op.isInstanceOf[ScriptConstant] || op.isInstanceOf[BytesToPushOntoStack])
     logger.info("Non standard ops: " + standardOps)
     isNotEmpty && containsMultSigOp && has2ScriptOperations && standardOps.size == asm.size
-
   }
 
   def fromBytes(bytes : Seq[Byte]) : ScriptPubKey = RawScriptPubKeyParser.read(bytes)

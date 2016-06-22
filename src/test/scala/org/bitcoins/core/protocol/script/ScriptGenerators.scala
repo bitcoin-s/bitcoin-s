@@ -1,6 +1,7 @@
 package org.bitcoins.core.protocol.script
 
-import org.bitcoins.core.crypto.CryptoGenerators
+import org.bitcoins.core.crypto.{CryptoGenerators, ECDigitalSignature, ECPrivateKey}
+import org.bitcoins.core.script.ScriptSettings
 import org.bitcoins.core.util.StringGenerators
 import org.scalacheck.Gen
 
@@ -20,6 +21,18 @@ trait ScriptGenerators {
     signature = privKey.sign(hexString)
   } yield P2PKHScriptSignature(signature,privKey.publicKey)
 
+  def multiSignatureScriptSignature : Gen[MultiSignatureScriptSignature] = {
+    val signatures : Gen[Seq[ECDigitalSignature]] = for {
+      numKeys <- Gen.choose(1, ScriptSettings.maxPublicKeysPerMultiSig)
+      hexString <- StringGenerators.hexString
+    } yield for {
+      _ <- 0 until numKeys
+      privKey = ECPrivateKey()
+    } yield privKey.sign(hexString)
+    signatures.map(sigs => MultiSignatureScriptSignature(sigs))
+  }
+
+  
 }
 
 object ScriptGenerators extends ScriptGenerators
