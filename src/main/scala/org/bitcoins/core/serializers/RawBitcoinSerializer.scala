@@ -17,14 +17,14 @@ trait RawBitcoinSerializer[T] extends RawBitcoinSerializerHelper {
   def read(hex : String) : T = read(BitcoinSUtil.decodeHex(hex))
 
   /**
-   * Reads in bytes and transforms it into the approriate scala type T
+   * Reads in bytes and transforms it into the appropriate scala type T
    * @param bytes
    * @return
    */
   def read(bytes : List[Byte]) : T
 
   /**
-   * Reads in bytes and transforms it into the approriate scala type T
+   * Reads in bytes and transforms it into the appropriate scala type T
    * @param bytes
    * @return
    */
