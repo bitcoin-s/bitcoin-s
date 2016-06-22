@@ -32,7 +32,15 @@ trait ScriptGenerators {
     signatures.map(sigs => MultiSignatureScriptSignature(sigs))
   }
 
-  
+  def p2pkScriptPubKey : Gen[P2PKScriptPubKey] = for {
+    pubKey <- CryptoGenerators.publicKey
+  } yield P2PKScriptPubKey(pubKey)
+
+  def p2pkhScriptPubKey : Gen[P2PKHScriptPubKey] = for {
+    pubKey <- CryptoGenerators.publicKey
+  } yield P2PKHScriptPubKey(pubKey)
+
+
 }
 
 object ScriptGenerators extends ScriptGenerators
