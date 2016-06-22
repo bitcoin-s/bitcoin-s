@@ -2,11 +2,10 @@ package org.bitcoins.core.protocol.script
 
 import org.bitcoins.core.crypto.{ECDigitalSignature, ECPublicKey, EmptyDigitalSignature}
 import org.bitcoins.core.protocol.NetworkElement
-import org.bitcoins.core.serializers.script.{RawScriptPubKeyParser, RawScriptSignatureParser, ScriptParser}
 import org.bitcoins.core.script.constant._
-import org.bitcoins.core.script.crypto.{HashType, HashTypeFactory, OP_CHECKMULTISIG, SIGHASH_ALL}
-import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil, BitcoinScriptUtil, Factory}
-import org.slf4j.LoggerFactory
+import org.bitcoins.core.script.crypto.{HashType, HashTypeFactory, SIGHASH_ALL}
+import org.bitcoins.core.serializers.script.{RawScriptSignatureParser, ScriptParser}
+import org.bitcoins.core.util.{BitcoinSLogger, BitcoinScriptUtil, Factory}
 
 import scala.util.{Failure, Success, Try}
 
@@ -87,6 +86,25 @@ trait P2PKHScriptSignature extends ScriptSignature {
     Seq(ECDigitalSignature(asm(1).hex))
   }
 
+}
+
+object P2PKHScriptSignature extends Factory[P2PKHScriptSignature] {
+  override def fromBytes(bytes : Seq[Byte]): P2PKHScriptSignature = {
+    val scriptSig = RawScriptSignatureParser.read(bytes)
+    matchP2PKHScriptSig(scriptSig)
+  }
+
+  def apply(signature : ECDigitalSignature, pubKey : ECPublicKey): P2PKHScriptSignature = {
+    val scriptSig = ScriptSignature(signature,pubKey)
+    matchP2PKHScriptSig(scriptSig)
+  }
+
+  private def matchP2PKHScriptSig(scriptSig : ScriptSignature): P2PKHScriptSignature = scriptSig match {
+    case p2pkhScriptSig : P2PKHScriptSignature => p2pkhScriptSig
+    case _ : MultiSignatureScriptSignature | _ : P2PKScriptSignature | _ : NonStandardScriptSignature |
+         _ : P2SHScriptSignature | EmptyScriptSignature =>
+      throw new IllegalArgumentException("We cannot have a non p2pkh scriptSig returned from the p2pkh script sig factory")
+  }
 }
 
 /**
@@ -193,8 +211,34 @@ trait P2PKScriptSignature extends ScriptSignature {
   }
 }
 
+object P2PKScriptSignature extends Factory[P2PKScriptSignature] {
+  def apply(signature : ECDigitalSignature): P2PKScriptSignature= {
+    val bytesToPushOntoStack = BytesToPushOntoStack(signature.bytes.size)
+    val signatureConstant = ScriptConstant(signature.bytes)
+    val scriptSig = ScriptSignature.fromAsm(Seq(bytesToPushOntoStack, signatureConstant))
+    matchP2pkScriptSig(scriptSig)
+  }
 
+  override def fromBytes(bytes : Seq[Byte]): P2PKScriptSignature = {
+    val scriptSig = RawScriptSignatureParser.read(bytes)
+    matchP2pkScriptSig(scriptSig)
+  }
 
+  private def matchP2pkScriptSig(scriptSig : ScriptSignature) = scriptSig match {
+    case p2pkScriptSig : P2PKScriptSignature => p2pkScriptSig
+    case x : MultiSignatureScriptSignature =>
+      throw new IllegalArgumentException("We cannot have a non p2pk scriptsig returned from the p2pk script sig factory, got: " + x)
+    case x : P2PKHScriptSignature =>
+      throw new IllegalArgumentException("We cannot have a non p2pk scriptsig returned from the p2pk script sig factory, got: " + x)
+    case x : NonStandardScriptSignature =>
+      throw new IllegalArgumentException("We cannot have a non p2pk scriptsig returned from the p2pk script sig factory, got: " + x)
+    case x : P2SHScriptSignature =>
+      throw new IllegalArgumentException("We cannot have a non p2pk scriptsig returned from the p2pk script sig factory, got: " + x)
+    case EmptyScriptSignature =>
+      throw new IllegalArgumentException("We cannot have a non p2pk scriptsig returned from the p2pk script sig factory, got: " + EmptyScriptSignature)
+
+  }
+}
 
 
 /**

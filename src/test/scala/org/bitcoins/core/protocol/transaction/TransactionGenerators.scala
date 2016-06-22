@@ -1,6 +1,6 @@
 package org.bitcoins.core.protocol.transaction
 
-import org.bitcoins.core.util.CryptoGenerators
+import org.bitcoins.core.crypto.CryptoGenerators
 import org.scalacheck.Gen
 
 /**
