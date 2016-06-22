@@ -2,8 +2,8 @@ package org.bitcoins.core.protocol.transaction
 
 import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.protocol.NetworkElement
-import org.bitcoins.core.util.{BitcoinSUtil, Factory}
 import org.bitcoins.core.serializers.transaction.RawTransactionOutPointParser
+import org.bitcoins.core.util.{BitcoinSUtil, Factory}
 /**
  * Created by chris on 12/26/15.
  *
