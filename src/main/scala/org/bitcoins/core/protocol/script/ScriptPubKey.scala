@@ -1,13 +1,13 @@
 package org.bitcoins.core.protocol.script
 
-import org.bitcoins.core.crypto.{ECPublicKey}
+import org.bitcoins.core.crypto.ECPublicKey
 import org.bitcoins.core.serializers.script.{RawScriptPubKeyParser, ScriptParser}
 import org.bitcoins.core.protocol._
 import org.bitcoins.core.script.bitwise.{OP_EQUAL, OP_EQUALVERIFY}
 import org.bitcoins.core.script.constant._
 import org.bitcoins.core.script.crypto.{OP_CHECKMULTISIG, OP_CHECKMULTISIGVERIFY, OP_CHECKSIG, OP_HASH160}
 import org.bitcoins.core.script.stack.OP_DUP
-import org.bitcoins.core.util.{BitcoinSLogger, BitcoinScriptUtil, Factory}
+import org.bitcoins.core.util.{BitcoinSLogger, BitcoinScriptUtil, CryptoUtil, Factory}
 
 /**
  * Created by chris on 12/26/15.
@@ -31,6 +31,26 @@ sealed trait ScriptPubKey extends NetworkElement with BitcoinSLogger {
  */
 trait P2PKHScriptPubKey extends ScriptPubKey
 
+
+object P2PKHScriptPubKey extends Factory[P2PKHScriptPubKey] {
+  override def fromBytes(bytes : Seq[Byte]): P2PKHScriptPubKey = {
+    val scriptPubKey = RawScriptPubKeyParser.read(bytes)
+    matchP2PKHScriptPubKey(scriptPubKey)
+  }
+
+  def apply(pubKey : ECPublicKey) = {
+    val hash = CryptoUtil.ripeMd160(pubKey.bytes)
+    val bytesToPushOntoStack = BytesToPushOntoStack(hash.bytes.size)
+    val asm = Seq(OP_DUP, OP_HASH160, bytesToPushOntoStack,  ScriptConstant(hash.bytes), OP_EQUALVERIFY, OP_CHECKSIG)
+    val scriptPubKey = ScriptPubKey.fromAsm(asm)
+    matchP2PKHScriptPubKey(scriptPubKey)
+  }
+
+  private def matchP2PKHScriptPubKey(scriptPubKey: ScriptPubKey) = scriptPubKey match {
+    case p2pkhScriptPubKey : P2PKHScriptPubKey => p2pkhScriptPubKey
+    case x : ScriptPubKey => throw new IllegalArgumentException("Expected a p2pkh scriptPubKey, got: " + x)
+  }
+}
 /**
  * Represents a multisignature script public key
  * https://bitcoin.org/en/developer-guide#multisig
@@ -92,6 +112,8 @@ trait MultiSignatureScriptPubKey extends ScriptPubKey {
   }
 }
 
+
+
 /**
  * Represents a pay-to-scripthash public key
  * https://bitcoin.org/en/developer-guide#pay-to-script-hash-p2sh
@@ -106,6 +128,25 @@ trait P2SHScriptPubKey extends ScriptPubKey
  */
 trait P2PKScriptPubKey extends ScriptPubKey {
   def publicKey = ECPublicKey(BitcoinScriptUtil.filterPushOps(asm).head.bytes)
+}
+
+object P2PKScriptPubKey extends Factory[P2PKScriptPubKey] {
+  override def fromBytes(bytes : Seq[Byte]) = {
+    val scriptPubKey = RawScriptPubKeyParser.read(bytes)
+    matchP2PKScriptPubKey(scriptPubKey)
+  }
+
+  def apply(pubKey : ECPublicKey): P2PKScriptPubKey = {
+    val bytesToPushOntoStack = BytesToPushOntoStack(pubKey.bytes.size)
+    val asm = Seq(bytesToPushOntoStack, ScriptConstant(pubKey.bytes), OP_CHECKSIG)
+    val scriptPubKey = ScriptPubKey.fromAsm(asm)
+    matchP2PKScriptPubKey(scriptPubKey)
+  }
+
+  private def matchP2PKScriptPubKey(scriptPubKey: ScriptPubKey) = scriptPubKey match {
+    case p2pkScriptPubKey : P2PKScriptPubKey => p2pkScriptPubKey
+    case x : ScriptPubKey => throw new IllegalArgumentException("Must match a p2pk scriptPubkey inside of this function, got: " + x)
+  }
 }
 
 trait NonStandardScriptPubKey extends ScriptPubKey
