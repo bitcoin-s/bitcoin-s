@@ -66,6 +66,8 @@ trait Base58 extends BitcoinSLogger {
     encode(bytes)
   }
 
+  def encode(byte : Byte) : String = encode(Seq(byte))
+
   /**
     * Encodes a Base58 address from a hash
     * @param hash The result of Sha256(RipeMD-160(public key))
@@ -133,6 +135,18 @@ trait Base58 extends BitcoinSLogger {
     val decoded = trim.foldLeft(BigInt(0))((a,b) =>
       a.*(BigInt(58L)).+(BigInt(base58Pairs(b))))
     if (trim.isEmpty) zeroes else zeroes ++ decoded.toByteArray.dropWhile(_ == 0)
+  }
+
+  def isValid(base58 : String) : Boolean = {
+    val firstByte : Seq[Byte]= if (base58.isEmpty) List() else Seq(decode(base58).head)
+    val length = base58.length
+    val validFirstByteInHex = List("00", "05", "80", "6f", "c4", "ef")
+    val invalidChars = List('0','O','l','I')
+    val firstByteInHex = BitcoinSUtil.encodeHex(firstByte)
+    if (!validFirstByteInHex.contains(firstByteInHex)) false
+    else if (length < 25 || length > 36) false
+    else if (base58.contains(invalidChars)) false
+    else true
   }
 }
 
