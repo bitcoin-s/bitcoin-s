@@ -2,6 +2,8 @@ package org.bitcoins.core.util
 
 import org.bitcoins.core.config.{MainNet, TestNet3}
 import org.bitcoins.core.crypto.{ECPrivateKey, Sha256Hash160Digest}
+import org.bitcoins.core.protocol.Address
+import org.bitcoins.core.protocol.blockchain._
 
 import scala.annotation.tailrec
 import scala.util.{Failure, Success, Try}
@@ -17,6 +19,7 @@ trait Base58 extends BitcoinSLogger {
 
   /**
     * Verifies a given base58 string against its checksum (last 4 decoded bytes)
+    *
     * @param input base58 string
     * @return decoded bytes excluding the checksum
     */
@@ -36,6 +39,7 @@ trait Base58 extends BitcoinSLogger {
 
   /**
     * Takes in sequence of bytes and returns base58 bitcoin string
+    *
     * @param bytes sequence of bytes to be encoded into base58
     * @return base58 String
     */
@@ -69,6 +73,7 @@ trait Base58 extends BitcoinSLogger {
 
   /**
     * Encodes a Base58 address from a hash
+    *
     * @param hash The result of Sha256(RipeMD-160(public key))
     * @param addressType string. Either "pubkey" or "script"
     * @param isTestNet boolean
@@ -77,7 +82,7 @@ trait Base58 extends BitcoinSLogger {
   def encodePubKeyHashToBase58Address(hash: Sha256Hash160Digest,
                                   addressType : String,
                                   isTestNet : Boolean) : String = {
-    val versionByte : Byte = {
+/*    val versionByte : Byte = {
       require(addressType != "pubkey" || addressType != "script",
         throw new IllegalArgumentException("Address must be of type 'pubkey' or 'script'."))
       if (!isTestNet) {
@@ -90,9 +95,14 @@ trait Base58 extends BitcoinSLogger {
       }
       else throw new IllegalArgumentException("Something broke -- Check your parameters. There should be a " +
         "Sha256RipeMD160 hash, addressType('pubkey' or 'script'), and testnet boolean (true or false).")
-    }
+    }*/
 
-    val bytes : Seq[Byte] = Seq(versionByte.toByte) ++ hash.bytes
+    def parseVersionByte(addressType : String, isTestnet : Boolean) : Byte = isTestnet match {
+      case true => if (addressType == "pubkey") TestNet3.p2pkhNetworkByte else TestNet3.p2shNetworkByte
+      case false => if (addressType == "pubkey") MainNet.p2pkhNetworkByte else MainNet.p2shNetworkByte
+    }
+    val versionByte : Byte = parseVersionByte(addressType, isTestNet)
+    val bytes : Seq[Byte] = Seq(versionByte) ++ hash.bytes
     val checksum = CryptoUtil.doubleSHA256(bytes).bytes.take(4)
     encode(bytes ++ checksum)
   }
@@ -100,6 +110,7 @@ trait Base58 extends BitcoinSLogger {
   /**
     * Encodes a private key into Wallet Import Format (WIF)
     * https://en.bitcoin.it/wiki/Wallet_import_format
+    *
     * @param privateKey
     * @param isCompressed
     * @param isTestNet
@@ -125,6 +136,7 @@ trait Base58 extends BitcoinSLogger {
   /**
     * Takes in base58 string and returns sequence of bytes
     * https://github.com/ACINQ/bitcoin-lib/blob/master/src/main/scala/fr/acinq/bitcoin/Base58.scala
+    *
     * @param input base58 string to be decoded into a sequence of bytes
     * @return decoded sequence of bytes
     */
@@ -137,6 +149,37 @@ trait Base58 extends BitcoinSLogger {
   }
 
   def isValid(base58 : String) : Boolean = {
+    if (base58.isEmpty) false
+    else {
+      val decoded = decode(base58)
+      val firstByte = decoded.head
+      val validAddressPreFixBytes: Seq[Byte] =
+        MainNetChainParams.base58Prefixes(PubKeyAddress) ++ MainNetChainParams.base58Prefixes(ScriptAddress) ++
+          TestNetChainParams.base58Prefixes(PubKeyAddress) ++ TestNetChainParams.base58Prefixes(ScriptAddress)
+      val validSecretKeyPreFixBytes : Seq[Byte] =
+        MainNetChainParams.base58Prefixes(SecretKey) ++ TestNetChainParams.base58Prefixes(SecretKey)
+      val compressedPubKey = List('K', 'L', 'c').contains(base58.head)
+      def checkCompressedPubKeyValidity : Boolean = {
+        val compressedByte = decoded(decoded.length - 5)
+        compressedByte == 0x01.toByte
+      }
+      try {
+        if (base58.contains(List('0', 'O', 'l', 'I'))) false
+        else if (compressedPubKey) checkCompressedPubKeyValidity
+        else if (validAddressPreFixBytes.contains(firstByte)) base58.length >= 26 && base58.length <= 35
+        else if (validSecretKeyPreFixBytes.contains(firstByte)) {
+          val byteSize = ECPrivateKey.fromBase58ToPrivateKey(base58).bytes.size
+          byteSize == 32
+        }
+        else false
+      }
+      catch {
+        case error : IllegalArgumentException => false
+      }
+    }
+  }
+
+/*    def isValid(base58 : String) : Boolean = {
     val firstByte : Seq[Byte]= if (base58.isEmpty) List() else Seq(decode(base58).head)
     val length = base58.length
     val validFirstByteInHex = List("00", "05", "80", "6f", "c4", "ef")
@@ -146,7 +189,7 @@ trait Base58 extends BitcoinSLogger {
     else if (length < 25 || length > 36) false
     else if (base58.contains(invalidChars)) false
     else true
-  }
+  }*/
 }
 
 object Base58 extends Base58

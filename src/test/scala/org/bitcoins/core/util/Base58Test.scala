@@ -100,10 +100,14 @@ class Base58Test extends FlatSpec with MustMatchers with BitcoinSLogger {
       testCase <- testCases
     } yield {
       testCase must be (Base58ValidTestCaseImpl(testCase.addressOrWIFPrivKey, testCase.hashOrPrivKey, testCase.configParams))
+      //if testCase is an Address, it must have a valid base58 representation
       if (testCase.addressOrWIFPrivKey.isLeft) {
         Base58.isValid(testCase.addressOrWIFPrivKey.left.get.value) must be (true)
       }
-      else println("Base58.isValid(testCase.addressOrWIFPrivKey.right.get): " + Base58.isValid(testCase.addressOrWIFPrivKey.right.get))
+      else {
+        //logger.debug(testCase.addressOrWIFPrivKey.right.get + " should be true, but showed as " + Base58.isValid(testCase.addressOrWIFPrivKey.right.get))
+        Base58.isValid(testCase.addressOrWIFPrivKey.right.get) must be (true)
+      }
     }
 
     //first, second and 48th test cases:
@@ -131,12 +135,9 @@ class Base58Test extends FlatSpec with MustMatchers with BitcoinSLogger {
       testCase <- testCases
     } yield {
       testCase must be (Base58InvalidTestCaseImpl(testCase.base58EncodedString))
-      Base58.isValid(testCase.base58EncodedString) match {
-        case false => false
-        case true => logger.info("true but should be false: " + testCase)
-      }
+      //logger.debug(testCase.base58EncodedString + "  is " + Base58.isValid(testCase.base58EncodedString))
+      Base58.isValid(testCase.base58EncodedString) must be (false)
     }
   }
-
 
 }
