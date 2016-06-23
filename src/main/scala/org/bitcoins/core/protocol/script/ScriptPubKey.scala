@@ -253,7 +253,7 @@ object ScriptPubKey extends Factory[ScriptPubKey] with BitcoinSLogger {
   private def isMultiSignatureScriptPubKey(asm : Seq[ScriptToken]) : Boolean = {
 
     val isNotEmpty = asm.size > 0
-    val containsMultSigOp = asm.contains(OP_CHECKMULTISIG) || asm.contains(OP_CHECKMULTISIGVERIFY)
+    val containsMultiSigOp = asm.contains(OP_CHECKMULTISIG) || asm.contains(OP_CHECKMULTISIGVERIFY)
     //we need either the first or second asm operation to indicate how many signatures are required
     val hasRequiredSignaturesTry = Try {
       asm.headOption match {
@@ -277,10 +277,8 @@ object ScriptPubKey extends Factory[ScriptPubKey] with BitcoinSLogger {
     logger.info("Non standard ops: " + standardOps)
     (hasRequiredSignaturesTry, hasMaximumSignaturesTry) match {
       case (Success(hasRequiredSignatures), Success(hasMaximumSignatures)) =>
-        logger.info("Has required signatures: " + hasRequiredSignatures)
-        logger.info("Has maximum signatures: " + hasMaximumSignatures)
-        val result = isNotEmpty && containsMultSigOp && hasRequiredSignatures && hasMaximumSignatures && standardOps.size == asm.size
-        logger.info("Result: " + result)
+        val result = isNotEmpty && containsMultiSigOp && hasRequiredSignatures &&
+          hasMaximumSignatures && standardOps.size == asm.size
         result
       case (Success(_), Failure(_)) => false
       case (Failure(_), Success(_)) => false

@@ -1,8 +1,5 @@
 package org.bitcoins.core.util
 
-import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits}
-import org.bitcoins.core.serializers.RawBitcoinSerializerHelper
-
 import scala.math.BigInt
 
 /**
@@ -15,16 +12,6 @@ trait BitcoinSUtil {
   }
 
   def encodeHex(bytes : Seq[Byte]) : String = bytes.map("%02x".format(_)).mkString
-
-  def encodeHex(unit : CurrencyUnit) : String = {
-    val satoshis = CurrencyUnits.toSatoshis(unit)
-    if (satoshis == CurrencyUnits.negativeSatoshi) {
-      "ffffffffffffffff"
-    } else {
-      //TODO: this is ugly, clean this up. Shouldn't have to use .toLong
-      flipEndianess(BigInt(satoshis.value.toLong).toByteArray)
-    }
-  }
 
   def encodeHex(byte : Byte) : String = encodeHex(Seq(byte))
 
