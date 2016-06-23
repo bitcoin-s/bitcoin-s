@@ -47,7 +47,7 @@ class CurrencyUnitSpec extends Properties("CurrencyUnitSpec") {
 
   property("Multiplicative identity") =
     Prop.forAll(CurrencyUnitGenerator.satoshis) { satoshis =>
-      satoshis * CurrencyUnits.oneSatoshi == satoshis
+      satoshis * Satoshis.one == satoshis
 
     }
 
