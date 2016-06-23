@@ -2,7 +2,8 @@ package org.bitcoins.core.protocol.blockchain
 
 import org.bitcoins.core.consensus.Merkle
 import org.bitcoins.core.crypto.DoubleSha256Digest
-import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit}
+import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
+import org.bitcoins.core.number.Int64
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptSignature}
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionConstants, TransactionInput, TransactionOutput}
@@ -114,7 +115,7 @@ object MainNetChainParams extends ChainParams {
 
   override def networkId = "main"
 
-  override def genesisBlock = createGenesisBlock(1231006505, 2083236893, 0x1d00ffff, 1, Bitcoins(50))
+  override def genesisBlock = createGenesisBlock(1231006505, 2083236893, 0x1d00ffff, 1, Satoshis(Int64(5000000000L)))
 
   override def requireStandardTransaction = true
 
@@ -137,7 +138,7 @@ object TestNetChainParams extends ChainParams {
 
   override def networkId = "test"
 
-  override def genesisBlock = createGenesisBlock(1296688602, 414098458, 0x1d00ffff, 1, Bitcoins(50))
+  override def genesisBlock = createGenesisBlock(1296688602, 414098458, 0x1d00ffff, 1, Satoshis(Int64(5000000000L)))
 
   override def requireStandardTransaction = true
 
@@ -159,7 +160,7 @@ object TestNetChainParams extends ChainParams {
 
 object RegTestNetChainParams extends ChainParams {
   override def networkId = "regtest"
-  override def genesisBlock = createGenesisBlock(1296688602, 2, 0x207fffff, 1, Bitcoins(50))
+  override def genesisBlock = createGenesisBlock(1296688602, 2, 0x207fffff, 1, Satoshis(Int64(5000000000L)))
   override def requireStandardTransaction = TestNetChainParams.requireStandardTransaction
 
   /**
