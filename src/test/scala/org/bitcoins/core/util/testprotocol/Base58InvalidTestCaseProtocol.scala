@@ -15,7 +15,7 @@ object Base58InvalidTestCaseProtocol extends DefaultJsonProtocol {
         case _ : JsValue => throw new RuntimeException("TestCase must be in format of jsArray")
       }
       val elements : Vector[JsValue] = jsArray.elements
-      parser(elements)
+      parseInvalidTestCases(elements)
     }
     override def write (testCase : Seq[Base58InvalidTestCase]) : JsValue = ???
   }
@@ -25,7 +25,7 @@ object Base58InvalidTestCaseProtocol extends DefaultJsonProtocol {
     * @param elements
     * @return
     */
-  def parser(elements : Seq[JsValue]) : Seq[Base58InvalidTestCase] = {
+  private def parseInvalidTestCases(elements : Seq[JsValue]) : Seq[Base58InvalidTestCase] = {
     @tailrec
     def loop(remainingElements : List[JsValue], accum: List[Base58InvalidTestCase]) : Seq[Base58InvalidTestCase] = {
       remainingElements match {

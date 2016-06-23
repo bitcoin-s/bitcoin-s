@@ -83,18 +83,20 @@ object ECPrivateKey extends Factory[ECPrivateKey] {
     */
   def fromBase58ToPrivateKey(base58 : String) : ECPrivateKey = {
     val decodedBase58 : Seq[Byte] = Base58.decode(base58)
+    //Private keys starting with 'K', 'L', or 'c' correspond to compressed public keys.
+    def isCompressed : Boolean = {
+      if (List('K', 'L', 'c').contains(base58.head)) decodedBase58(decodedBase58.length - 5) == 0x01.toByte
+      else false
+    }
     //Drop(1) will drop the network byte. The last 5 bytes are dropped included the checksum (4 bytes), and 0x01 byte that
     //is appended to compressed keys (which we implemented as the default option).
-    val trim = {
-      if (base58.head == '5' || base58.head == '9') {
-        decodedBase58.drop(1).dropRight(4)
-      } else {
-        require(base58.head == 'K' || base58.head == 'L' || base58.head == 'c', "Unrecognized private key format. Must" +
-          " start with '5', 'K', 'L' for MainNet, or '9', 'c' for TestNet")
-        decodedBase58.drop(1).dropRight(5)
-      }
+    def trimFunction(base58 : String) : Seq[Byte] = base58.head match {
+      case h if h == '9' || h == '5' => decodedBase58.drop(1).dropRight(4)
+      case g if isCompressed => decodedBase58.drop(1).dropRight(5)
+      case _ => throw new IllegalArgumentException("The base58 string passed through was not a private key.")
     }
-    val privateKeyBytesToHex = BitcoinSUtil.encodeHex(trim)
+    val trimmedBytes = trimFunction(base58)
+    val privateKeyBytesToHex = BitcoinSUtil.encodeHex(trimmedBytes)
     ECPrivateKey(privateKeyBytesToHex)
   }
 }
