@@ -21,49 +21,13 @@ sealed trait Number extends NetworkElement with BitcoinSLogger {
   * Represents a signed number in our number system
   * Instances of this are [[Int32]] or [[Int64]]
   */
-sealed trait SignedNumber extends Number {
-  protected def packageInSmallestType(long : Long) : Try[SignedNumber] = {
-    if (long >= Int32.min.underlying && long <= Int32.max.underlying) Success(Int32(long.toInt))
-    else if (long >= Int64.min.underlying && long <= Int64.max.underlying) Success(Int64(long))
-    else Failure(new RuntimeException("The number: " + long + " is outside the range for valid signed numbers (-2^32 to 2^32-1 "))
-  }
-
-  protected def checkResult(result : Try[SignedNumber]) : SignedNumber = result match {
-    case Success(number) => number
-    case Failure(exception) => throw exception
-  }
-}
+sealed trait SignedNumber extends Number
 
 /**
   * Represents an unsigned number in our number system
   * Instances of this are [[UInt32]] or [[UInt64]]
   */
-sealed trait UnsignedNumber extends Number {
-  /**
-    * Takes in a BigInt and packages it in the smallest [[UnsignedNumber]]
-    * else it returns an exception if it cannot fit in a [[UInt64]]
-    * @param bigInt
-    * @return
-    */
-  protected def packageInSmallestType(bigInt : BigInt) : Try[UnsignedNumber] = {
-    logger.debug("BigInt: "+ bigInt)
-    if (bigInt < 0) Failure(new RuntimeException("We cannot have a negative number with unsigned integers"))
-    else if (bigInt <= UInt32.max.underlying) Success(UInt32(bigInt.toLong))
-    else if (bigInt <= UInt64.max.underlying) Success(UInt64(bigInt))
-    else Failure(new RuntimeException("Buffer overflow with two UnsignedIntegers"))
-  }
-
-  /**
-    * Checks the result of the arithmetic operation to see if an error occurred
-    * if an error does occur throw it, else return the [[UnsignedNumber]]
-    * @param result the try type wrapping the result of the arithmetic operation
-    * @return the result of the unsigned number operation
-    */
-  protected def checkResult(result : Try[UnsignedNumber]): UnsignedNumber = result match {
-    case Success(number) => number
-    case Failure(exception) => throw exception
-  }
-}
+sealed trait UnsignedNumber extends Number
 
 /**
   * This trait represents all numeric operations we have for [[Number]]
@@ -84,206 +48,173 @@ sealed trait NumberOperations[T <: Number] {
 /**
   * Represents a uint32_t in C
   */
-sealed trait UInt32 extends UnsignedNumber with NumberOperations[UnsignedNumber] {
+sealed trait UInt32 extends UnsignedNumber with NumberOperations[UInt32] {
   override type A = Long
 
-  override def + (num : UnsignedNumber): UnsignedNumber = {
-    val sum = num match {
-      case uInt32 : UInt32 => BigInt(underlying) + uInt32.underlying
-      case uInt64 : UInt64 => uInt64.underlying + underlying
-    }
-    val result = packageInSmallestType(sum)
+  override def + (num : UInt32): UInt32 = {
+    val sum = underlying + num.underlying
+    val result = Try(UInt32(sum))
     checkResult(result)
   }
 
-  override def - (num : UnsignedNumber): UnsignedNumber =  {
-    val difference = num match {
-      case uInt32 : UInt32 => BigInt(underlying) - uInt32.underlying
-      case uInt64 : UInt64 => BigInt(underlying) - uInt64.underlying
-    }
-    val result = packageInSmallestType(difference)
+  override def - (num : UInt32): UInt32 =  {
+    val difference = underlying - num.underlying
+    val result = Try(UInt32(difference))
     checkResult(result)
   }
 
-  override def * (num : UnsignedNumber): UnsignedNumber =  {
-    val product = num match {
-      case uInt32 : UInt32 => BigInt(underlying) * BigInt(uInt32.underlying)
-      case uInt64 : UInt64 => uInt64.underlying * underlying
-    }
-    val result = packageInSmallestType(product)
+  override def * (num : UInt32): UInt32 =  {
+    val product = underlying * num.underlying
+    val result = Try(UInt32(product))
     checkResult(result)
   }
 
-  override def > (num : UnsignedNumber): Boolean = num match {
-    case uInt32 : UInt32 => underlying > uInt32.underlying
-    case uInt64 : UInt64 => underlying > uInt64.underlying
-  }
+  override def > (num : UInt32): Boolean = underlying > num.underlying
 
-  override def >= (num : UnsignedNumber): Boolean = num match {
-    case uInt32 : UInt32 => underlying >= uInt32.underlying
-    case uInt64 : UInt64 => underlying >= uInt64.underlying
-  }
+  override def >= (num : UInt32): Boolean = underlying >= num.underlying
 
-  override def < (num : UnsignedNumber): Boolean = num match {
-    case uInt32 : UInt32 => underlying < uInt32.underlying
-    case uInt64 : UInt64 => underlying < uInt64.underlying
-  }
+  override def < (num : UInt32): Boolean = underlying < num.underlying
 
-  override def <= (num : UnsignedNumber): Boolean = num match {
-    case uInt32 : UInt32 => underlying <= uInt32.underlying
-    case uInt64 : UInt64 => underlying <= uInt64.underlying
-  }
+  override def <= (num : UInt32): Boolean = underlying <= num.underlying
 
+  /**
+    * Checks the result of the arithmetic operation to see if an error occurred
+    * if an error does occur throw it, else return the [[UInt32]]
+    * @param result the try type wrapping the result of the arithmetic operation
+    * @return the result of the unsigned number operation
+    */
+  private def checkResult(result : Try[UInt32]): UInt32 = result match {
+    case Success(number) => number
+    case Failure(exception) => throw exception
+  }
 }
 
 /**
   * Represents a uint64_t in C
   */
-sealed trait UInt64 extends UnsignedNumber with NumberOperations[UnsignedNumber] {
+sealed trait UInt64 extends UnsignedNumber with NumberOperations[UInt64] {
   override type A = BigInt
-  override def + (num : UnsignedNumber): UnsignedNumber = {
-    val sum = num match {
-      case uInt32 : UInt32 => underlying + uInt32.underlying
-      case uInt64 : UInt64 => underlying + uInt64.underlying
-    }
-    val result = packageInSmallestType(sum)
+  override def + (num : UInt64): UInt64 = {
+    val sum = underlying + num.underlying
+    val result = Try(UInt64(sum))
     checkResult(result)
   }
 
-  override def - (num : UnsignedNumber): UnsignedNumber = {
-    val difference = num match {
-      case uInt32 : UInt32 =>underlying - uInt32.underlying
-      case uInt64 : UInt64 => underlying - uInt64.underlying
-    }
-    val result = packageInSmallestType(difference)
+  override def - (num : UInt64): UInt64 = {
+    val difference = underlying - num.underlying
+    val result = Try(UInt64(difference))
     checkResult(result)
   }
 
-  override def * (num : UnsignedNumber): UnsignedNumber = {
-    val product = num match {
-      case uInt32 : UInt32 => underlying * uInt32.underlying
-      case uInt64 : UInt64 => underlying * uInt64.underlying
-    }
-    val result = packageInSmallestType(product)
+  override def * (num : UInt64): UInt64 = {
+    val product = underlying * num.underlying
+    val result = Try(UInt64(product))
     checkResult(result)
   }
 
-  override def > (num : UnsignedNumber): Boolean = num match {
-    case uInt32: UInt32 => underlying > uInt32.underlying
-    case uInt64: UInt64 => underlying > uInt64.underlying
-  }
+  override def > (num : UInt64): Boolean = underlying > num.underlying
 
-  override def >= (num : UnsignedNumber): Boolean = num match {
-    case uInt32 : UInt32 => underlying >= uInt32.underlying
-    case uInt64 : UInt64 => underlying >= uInt64.underlying
-  }
+  override def >= (num : UInt64): Boolean = underlying >= num.underlying
 
-  override def < (num : UnsignedNumber): Boolean = num match {
-    case uInt32 : UInt32 => underlying < uInt32.underlying
-    case uInt64 : UInt64 => underlying < uInt64.underlying
-  }
+  override def < (num : UInt64): Boolean = underlying < num.underlying
 
-  override def <= (num : UnsignedNumber): Boolean = num match {
-    case uInt32: UInt32 => underlying <= uInt32.underlying
-    case uInt64: UInt64 => underlying <= uInt64.underlying
-  }
+  override def <= (num : UInt64): Boolean = underlying <= num.underlying
 
+  /**
+    * Checks the result of the arithmetic operation to see if an error occurred
+    * if an error does occur throw it, else return the [[UInt64]]
+    * @param result the try type wrapping the result of the arithmetic operation
+    * @return the result of the unsigned number operation
+    */
+  private def checkResult(result : Try[UInt64]): UInt64 = result match {
+    case Success(number) => number
+    case Failure(exception) => throw exception
+  }
 }
 
 /**
   * Represents a int32_t in C
   */
-sealed trait Int32 extends SignedNumber with NumberOperations[SignedNumber] {
+sealed trait Int32 extends SignedNumber with NumberOperations[Int32] {
   override type A = Int
-  override def + (num : SignedNumber) = {
-    val sum = num match {
-      case int32 : Int32 => underlying + int32.underlying
-      case int64 : Int64 => underlying + int64.underlying
-    }
-    val result = packageInSmallestType(sum)
+  override def + (num : Int32) = {
+    val sum = underlying + num.underlying
+    val result = Try(Int32(sum))
     checkResult(result)
   }
-  override def - (num : SignedNumber) = {
-    val difference = num match {
-      case int32 : Int32 => underlying - int32.underlying
-      case int64 : Int64 => underlying - int64.underlying
-    }
-    val result = packageInSmallestType(difference)
+  override def - (num : Int32) = {
+    val difference = underlying - num.underlying
+    val result = Try(Int32(difference))
     checkResult(result)
   }
 
-  override def *(num : SignedNumber) = {
-    val product = num match {
-      case int32 : Int32 => underlying * int32.underlying
-      case int64 : Int64 => underlying * int64.underlying
-    }
-    val result = packageInSmallestType(product)
+  override def *(num : Int32) = {
+    val product = underlying * num.underlying
+    val result = Try(Int32(product))
     checkResult(result)
   }
-  override def > (num : SignedNumber): Boolean = num match {
-    case int32 : Int32 => underlying > int32.underlying
-    case int64 : Int64 => underlying > int64.underlying
+
+  override def > (num : Int32): Boolean = underlying > num.underlying
+
+  override def >= (num : Int32): Boolean = underlying >= num.underlying
+
+  override def < (num : Int32): Boolean = underlying < num.underlying
+
+  override def <= (num : Int32): Boolean = underlying <= num.underlying
+
+  /**
+    * Checks the result of the arithmetic operation to see if an error occurred
+    * if an error does occur throw it, else return the [[Int32]]
+    * @param result the try type wrapping the result of the arithmetic operation
+    * @return the result of the unsigned number operation
+    */
+  private def checkResult(result : Try[Int32]): Int32 = result match {
+    case Success(number) => number
+    case Failure(exception) => throw exception
   }
-  override def >= (num : SignedNumber): Boolean = num match {
-    case int32 : Int32 => underlying >= int32.underlying
-    case int64 : Int64 => underlying >= int64.underlying
-  }
-  override def < (num : SignedNumber): Boolean = num match {
-    case int32 : Int32 => underlying < int32.underlying
-    case int64 : Int64 => underlying < int64.underlying
-  }
-  override def <= (num : SignedNumber): Boolean = num match {
-    case int32 : Int32 => underlying <= int32.underlying
-    case int64 : Int64 => underlying <= int64.underlying
-  }
+
 }
 
 /**
   * Represents a int64_t in C
   */
-sealed trait Int64 extends SignedNumber with NumberOperations[SignedNumber] {
+sealed trait Int64 extends SignedNumber with NumberOperations[Int64] {
   override type A = Long
-  override def + (num : SignedNumber) = {
-    val sum = num match {
-      case int32 : Int32 => underlying + int32.underlying
-      case int64 : Int64 => underlying + int64.underlying
-    }
-    val result = packageInSmallestType(sum)
+  override def + (num : Int64) = {
+    val sum = underlying + num.underlying
+    val result = Try(Int64(sum))
     checkResult(result)
   }
-  override def - (num : SignedNumber) = {
-    val difference = num match {
-      case int32 : Int32 => underlying - int32.underlying
-      case int64 : Int64 => underlying - int64.underlying
-    }
-    val result = packageInSmallestType(difference)
+  override def - (num : Int64) = {
+    val difference = underlying - num.underlying
+    val result = Try(Int64(difference))
     checkResult(result)
   }
-  override def * (num : SignedNumber) = {
-    val product = num match {
-      case int32 : Int32 => underlying * int32.underlying
-      case int64 : Int64 => underlying * int64.underlying
-    }
-    val result = packageInSmallestType(product)
+  override def * (num : Int64) = {
+    val product = underlying * num.underlying
+    val result = Try(Int64(product))
     checkResult(result)
   }
 
-  override def > (num : SignedNumber): Boolean = num match {
-    case int32 : Int32 => underlying > int32.underlying
-    case int64 : Int64 => underlying > int64.underlying
+  override def > (num : Int64): Boolean = underlying > num.underlying
+
+  override def >= (num : Int64): Boolean = underlying >= num.underlying
+
+  override def < (num : Int64): Boolean = underlying < num.underlying
+
+  override def <= (num : Int64): Boolean = underlying <= num.underlying
+
+  /**
+    * Checks the result of the arithmetic operation to see if an error occurred
+    * if an error does occur throw it, else return the [[Int64]]
+    * @param result the try type wrapping the result of the arithmetic operation
+    * @return the result of the unsigned number operation
+    */
+  private def checkResult(result : Try[Int64]): Int64 = result match {
+    case Success(number) => number
+    case Failure(exception) => throw exception
   }
-  override def >= (num : SignedNumber): Boolean = num match {
-    case int32 : Int32 => underlying >= int32.underlying
-    case int64 : Int64 => underlying >= int64.underlying
-  }
-  override def < (num : SignedNumber): Boolean = num match {
-    case int32 : Int32 => underlying < int32.underlying
-    case int64 : Int64 => underlying < int64.underlying
-  }
-  override def <= (num : SignedNumber): Boolean = num match {
-    case int32 : Int32 => underlying <= int32.underlying
-    case int64 : Int64 => underlying <= int64.underlying
-  }
+
 }
 
 
