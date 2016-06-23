@@ -236,9 +236,9 @@ object UnsignedNumber extends Factory[UnsignedNumber] {
 
 /**
   * Represents various numbers that should be implemented
-  * inside of any companion object for a [[Number]]
+  * inside of any companion object for a number
   */
-trait BaseNumbers[T <: Number] {
+trait BaseNumbers[T] {
   def zero : T
   def one : T
   def min : T
