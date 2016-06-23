@@ -61,10 +61,8 @@ object Satoshis extends Factory[Satoshis] with BaseNumbers[Satoshis] {
 }
 
 object CurrencyUnits {
-  def zero : CurrencyUnit = zeroSatoshis
+  def zero : CurrencyUnit = Satoshis.zero
   def negativeSatoshi = Satoshis(Int64(-1))
-  def zeroSatoshis = Satoshis(Int64.zero)
-  def oneSatoshi = Satoshis(Int64.one)
 
   def toSatoshis(unit : CurrencyUnit): Satoshis = unit match {
     case x : Satoshis => x
