@@ -2,7 +2,6 @@ package org.bitcoins.core.util
 
 import org.bitcoins.core.config.{MainNet, TestNet3}
 import org.bitcoins.core.crypto.{ECPrivateKey, Sha256Hash160Digest}
-import org.bitcoins.core.protocol.Address
 import org.bitcoins.core.protocol.blockchain._
 
 import scala.annotation.tailrec
@@ -35,7 +34,6 @@ trait Base58 extends BitcoinSLogger {
       else Failure(new IllegalArgumentException("checksums don't validate"))
     }
   }
-
 
   /**
     * Takes in sequence of bytes and returns base58 bitcoin string
@@ -79,24 +77,10 @@ trait Base58 extends BitcoinSLogger {
     * @param isTestNet boolean
     * @return
     */
+    //TODO: add logic to determine pubkey/script from first byte
   def encodePubKeyHashToBase58Address(hash: Sha256Hash160Digest,
                                   addressType : String,
                                   isTestNet : Boolean) : String = {
-/*    val versionByte : Byte = {
-      require(addressType != "pubkey" || addressType != "script",
-        throw new IllegalArgumentException("Address must be of type 'pubkey' or 'script'."))
-      if (!isTestNet) {
-        if (addressType == "pubkey") MainNet.p2pkhNetworkByte
-        else MainNet.p2shNetworkByte
-      }
-      else if (isTestNet) {
-        if (addressType == "pubkey") TestNet3.p2pkhNetworkByte
-        else TestNet3.p2shNetworkByte
-      }
-      else throw new IllegalArgumentException("Something broke -- Check your parameters. There should be a " +
-        "Sha256RipeMD160 hash, addressType('pubkey' or 'script'), and testnet boolean (true or false).")
-    }*/
-
     def parseVersionByte(addressType : String, isTestnet : Boolean) : Byte = isTestnet match {
       case true => if (addressType == "pubkey") TestNet3.p2pkhNetworkByte else TestNet3.p2shNetworkByte
       case false => if (addressType == "pubkey") MainNet.p2pkhNetworkByte else MainNet.p2shNetworkByte
@@ -148,51 +132,79 @@ trait Base58 extends BitcoinSLogger {
     if (trim.isEmpty) zeroes else zeroes ++ decoded.toByteArray.dropWhile(_ == 0)
   }
 
-  def isValid(base58 : String) : Boolean = {
-    if (base58.isEmpty) false
-    else {
-      val decoded = decode(base58)
-      val firstByte = decoded.head
-      val validAddressPreFixBytes: Seq[Byte] =
-        MainNetChainParams.base58Prefixes(PubKeyAddress) ++ MainNetChainParams.base58Prefixes(ScriptAddress) ++
-          TestNetChainParams.base58Prefixes(PubKeyAddress) ++ TestNetChainParams.base58Prefixes(ScriptAddress)
-      val validSecretKeyPreFixBytes : Seq[Byte] =
-        MainNetChainParams.base58Prefixes(SecretKey) ++ TestNetChainParams.base58Prefixes(SecretKey)
-      val compressedPubKey = List('K', 'L', 'c').contains(base58.head)
-      def checkCompressedPubKeyValidity : Boolean = {
-        val compressedByte = decoded(decoded.length - 5)
-        compressedByte == 0x01.toByte
-      }
-      try {
-        if (base58.contains(List('0', 'O', 'l', 'I'))) false
-        else if (compressedPubKey) checkCompressedPubKeyValidity
-        else if (validAddressPreFixBytes.contains(firstByte)) base58.length >= 26 && base58.length <= 35
-        else if (validSecretKeyPreFixBytes.contains(firstByte)) {
-          val byteSize = ECPrivateKey.fromBase58ToPrivateKey(base58).bytes.size
-          byteSize == 32
-        }
-        else false
-      }
-      catch {
-        case error : IllegalArgumentException => false
-      }
-    }
+  /**
+    * Determines if a string is a valid Base58-encoded string.
+    *
+    * @param base58
+    * @return
+    */
+  def isValid(base58 : String) : Boolean = validityChecks(base58) match {
+      case Success(bool) => bool
+      case Failure(exception) => false
   }
 
-/*    def isValid(base58 : String) : Boolean = {
-    val firstByte : Seq[Byte]= if (base58.isEmpty) List() else Seq(decode(base58).head)
-    val length = base58.length
-    val validFirstByteInHex = List("00", "05", "80", "6f", "c4", "ef")
-    val invalidChars = List('0','O','l','I')
-    val firstByteInHex = BitcoinSUtil.encodeHex(firstByte)
-    if (!validFirstByteInHex.contains(firstByteInHex)) false
-    else if (length < 25 || length > 36) false
-    else if (base58.contains(invalidChars)) false
-    else true
-  }*/
+  /**
+    * Checks a private key that begins with a symbol corresponding that private key to a compressed public key ('K', 'L', 'c').
+    * In a Base58-encoded private key corresponding to a compressed public key, the 5th-to-last byte should be 0x01.
+    *
+    * @param base58
+    * @return
+    */
+  private def checkCompressedPubKeyValidity(base58 : String) : Boolean = {
+    val decoded = Base58.decode(base58)
+    val compressedByte = decoded(decoded.length - 5)
+    compressedByte == 0x01.toByte
+  }
+
+  /**
+    * Checks if the string begins with an Address prefix byte/character.
+    * ('1', '3', 'm', 'n', '2')
+    *
+    * @param byte
+    * @return
+    */
+  private def isValidAddressPreFixByte(byte : Byte) : Boolean = {
+    val validAddressPreFixBytes: Seq[Byte] =
+      MainNetChainParams.base58Prefixes(PubKeyAddress) ++ MainNetChainParams.base58Prefixes(ScriptAddress) ++
+        TestNetChainParams.base58Prefixes(PubKeyAddress) ++ TestNetChainParams.base58Prefixes(ScriptAddress)
+    validAddressPreFixBytes.contains(byte)
+  }
+
+  /**
+    * Checks if the string begins with a private key prefix byte/character.
+    * ('5', '9', 'c')
+    *
+    * @param byte
+    * @return
+    */
+  private def isValidSecretKeyPreFixByte(byte : Byte) : Boolean = {
+    val validSecretKeyPreFixBytes : Seq[Byte] =
+      MainNetChainParams.base58Prefixes(SecretKey) ++ TestNetChainParams.base58Prefixes(SecretKey)
+    validSecretKeyPreFixBytes.contains(byte)
+  }
+
+  /**
+    * Checks the validity of a Base58 encoded string. A Base58 encoded string must not contain ('0', 'O', 'l', 'I').
+    * If the string is an address: it must have a valid address prefix byte and  must be between 26-35 characters in length.
+    * If the string is a private key: it must have a valid private key prefix byte and must have a byte size of 32.
+    * If the string is a private key corresponding to a compressed public key, the 5th-to-last byte must be 0x01.
+    *
+    * @param base58
+    * @return
+    */
+  private def validityChecks(base58: String) : Try[Boolean] = Try {
+    val decoded = decode(base58)
+    val firstByte = decoded.head
+    val compressedPubKey = List('K', 'L', 'c').contains(base58.head)
+    if (base58.contains(List('0', 'O', 'l', 'I'))) false
+    else if (compressedPubKey) checkCompressedPubKeyValidity(base58)
+    else if (isValidAddressPreFixByte(firstByte)) base58.length >= 26 && base58.length <= 35
+    else if (isValidSecretKeyPreFixByte(firstByte)) {
+      val byteSize = ECPrivateKey.fromWIFToPrivateKey(base58).bytes.size
+      byteSize == 32
+    }
+    else false
+  }
 }
 
 object Base58 extends Base58
-
-
-

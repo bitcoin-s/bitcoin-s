@@ -40,7 +40,7 @@ class ECPrivateKeyTest extends FlatSpec with MustMatchers {
     val privateKeyBase58 = CryptoTestUtil.privateKeyBase58
     val bitcoinjDumpedPrivateKey = new org.bitcoinj.core.DumpedPrivateKey(BitcoinJTestUtil.params,privateKeyBase58)
     val bitcoinjPrivateKey = bitcoinjDumpedPrivateKey.getKey
-    val privateKey = ECPrivateKey.fromBase58ToPrivateKey(privateKeyBase58)
+    val privateKey = ECPrivateKey.fromWIFToPrivateKey(privateKeyBase58)
 
     privateKey.hex must be (bitcoinjPrivateKey.getPrivateKeyAsHex)
 
