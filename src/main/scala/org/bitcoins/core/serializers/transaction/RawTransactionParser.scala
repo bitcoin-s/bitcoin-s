@@ -1,8 +1,9 @@
 package org.bitcoins.core.serializers.transaction
 
+import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.serializers.RawBitcoinSerializer
-import org.bitcoins.core.protocol.transaction.{Transaction}
-import org.bitcoins.core.util.{BitcoinSUtil, CryptoUtil}
+import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil, CryptoUtil}
 import org.slf4j.LoggerFactory
 
 /**
@@ -10,14 +11,13 @@ import org.slf4j.LoggerFactory
  * For deserializing and re-serializing a bitcoin transaction
  * https://bitcoin.org/en/developer-reference#raw-transaction-format
  */
-trait RawTransactionParser extends RawBitcoinSerializer[Transaction] {
-
-  private lazy val logger = LoggerFactory.getLogger(this.getClass().toString())
+trait RawTransactionParser extends RawBitcoinSerializer[Transaction] with BitcoinSLogger {
 
   def read(bytes : List[Byte]) = {
-
     val versionBytes = bytes.take(4)
-    val version = Integer.parseInt(BitcoinSUtil.encodeHex(versionBytes.reverse),16)
+    logger.info("Version bytes: " + BitcoinSUtil.encodeHex(versionBytes))
+    val version = UInt32(versionBytes.reverse).underlying
+    logger.info("UInt32 version: " + version)
     val txInputBytes = bytes.slice(4,bytes.size)
     val inputs = RawTransactionInputParser.read(txInputBytes)
     val inputsSize = inputs.map(_.size).sum
@@ -34,10 +34,14 @@ trait RawTransactionParser extends RawBitcoinSerializer[Transaction] {
   }
 
   def write(tx : Transaction) : String = {
+    logger.info("Tx version: " + tx.version)
     //add leading zero if the version byte doesn't require two hex numbers
     val txVersionHex = tx.version.toHexString
-    val versionWithoutPadding = addPrecedingZero(txVersionHex)
+    logger.info("txVersionHex: " + txVersionHex)
+    val versionWithoutPadding = BitcoinSUtil.flipEndianess(addPrecedingZero(txVersionHex))
+    logger.info("Version wthout padding: " + versionWithoutPadding)
     val version = addPadding(8,versionWithoutPadding)
+    logger.info("Version: " + version)
     val inputs : String = RawTransactionInputParser.write(tx.inputs)
     val outputs : String = RawTransactionOutputParser.write(tx.outputs)
     val lockTimeWithoutPadding : String = tx.lockTime.toHexString

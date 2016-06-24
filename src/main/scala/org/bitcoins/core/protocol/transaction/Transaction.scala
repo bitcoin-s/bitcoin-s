@@ -130,7 +130,7 @@ object Transaction extends Factory[Transaction] {
   def apply(oldTx : Transaction, updatedInputs : UpdateTransactionInputs) : Transaction = factory(oldTx, updatedInputs)
   def apply(oldTx : Transaction, updatedOutputs : UpdateTransactionOutputs) : Transaction = factory(oldTx, updatedOutputs)
 
-  def apply(version : Int, inputs : Seq[TransactionInput],
+  def apply(version : Long, inputs : Seq[TransactionInput],
             outputs : Seq[TransactionOutput], lockTime : Long) : Transaction = {
     TransactionImpl(version,inputs,outputs,lockTime)
   }
