@@ -2,10 +2,10 @@ package org.bitcoins.core.script.locktime
 
 
 import org.bitcoins.core.protocol.transaction.TransactionConstants
-import org.bitcoins.core.script.constant.{ScriptConstant, ScriptNumber, ScriptToken}
-import org.bitcoins.core.script.result._
 import org.bitcoins.core.script.ScriptProgram
+import org.bitcoins.core.script.constant.{ScriptConstant, ScriptNumber, ScriptToken}
 import org.bitcoins.core.script.flag.ScriptFlagUtil
+import org.bitcoins.core.script.result._
 import org.bitcoins.core.util.BitcoinSLogger
 
 import scala.annotation.tailrec

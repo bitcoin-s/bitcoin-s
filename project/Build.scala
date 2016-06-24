@@ -14,7 +14,8 @@ object BitcoinSCoreBuild extends Build {
     "com.madgag.spongycastle" % "core" % "1.51.0.0",
     "org.slf4j" % "slf4j-api" % slf4jV /*% "provided"*/,
     "io.spray" %%  "spray-json" % "1.3.0" withSources() withJavadoc(),
-     "ch.qos.logback" % "logback-classic" % logbackV
+    "ch.qos.logback" % "logback-classic" % logbackV,
+    "org.scalacheck" %% "scalacheck" % "1.13.0" % "test"
   )
   
   val main = Project(appName, file(".")).enablePlugins().settings(

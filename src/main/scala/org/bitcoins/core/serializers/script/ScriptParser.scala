@@ -81,7 +81,7 @@ trait ScriptParser extends Factory[List[ScriptToken]] with BitcoinSLogger {
 
             val bytesToPushOntoStack : List[ScriptToken] = (bytes.size > 75) match {
               case true =>
-                val scriptNumber = ScriptNumber(BitcoinSUtil.flipEndianess(BitcoinSUtil.longToHex(bytes.size)))
+                val scriptNumber = ScriptNumber(BitcoinSUtil.flipEndianess(ScriptNumberUtil.longToHex(bytes.size)))
                 bytes.size match {
                   case size if size < Byte.MaxValue =>
                     List(scriptNumber,OP_PUSHDATA1)
@@ -110,7 +110,7 @@ trait ScriptParser extends Factory[List[ScriptToken]] with BitcoinSLogger {
           loop(t,op.bytes.toList ++ accum)
         case h :: t if (tryParsingLong(h)) =>
           logger.debug("Found a decimal number")
-          val hexLong = BitcoinSUtil.flipEndianess(BitcoinSUtil.longToHex(h.toLong))
+          val hexLong = BitcoinSUtil.flipEndianess(ScriptNumberUtil.longToHex(h.toLong))
           val bytesToPushOntoStack = BytesToPushOntoStack(hexLong.size / 2)
           //convert the string to int, then convert to hex
           loop(t, BitcoinSUtil.decodeHex(hexLong).toList ++ bytesToPushOntoStack.bytes.toList ++ accum)
@@ -332,7 +332,7 @@ trait ScriptParser extends Factory[List[ScriptToken]] with BitcoinSLogger {
   private def parseLong(str : String) = {
     if (str.substring(0,2) == "0x") {
       val strRemoveHex = str.substring(2,str.size)
-      BitcoinSUtil.hexToLong(strRemoveHex)
+      ScriptNumberUtil.toLong(strRemoveHex)
     } else str.toLong
   }
 }

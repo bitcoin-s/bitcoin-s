@@ -4,21 +4,20 @@ package org.bitcoins.core.script.interpreter
 import org.bitcoins.core.consensus.Consensus
 import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits}
 import org.bitcoins.core.protocol.script._
-import org.bitcoins.core.protocol.transaction.{EmptyTransactionOutPoint, Transaction, TransactionOutput}
-import org.bitcoins.core.script.flag._
-import org.bitcoins.core.script.locktime.{LockTimeInterpreter, OP_CHECKLOCKTIMEVERIFY, OP_CHECKSEQUENCEVERIFY}
-import org.bitcoins.core.script.splice._
+import org.bitcoins.core.protocol.transaction.{EmptyTransactionOutPoint, Transaction}
 import org.bitcoins.core.script._
 import org.bitcoins.core.script.arithmetic._
 import org.bitcoins.core.script.bitwise._
 import org.bitcoins.core.script.constant._
 import org.bitcoins.core.script.control._
 import org.bitcoins.core.script.crypto._
+import org.bitcoins.core.script.flag._
+import org.bitcoins.core.script.locktime.{LockTimeInterpreter, OP_CHECKLOCKTIMEVERIFY, OP_CHECKSEQUENCEVERIFY}
 import org.bitcoins.core.script.reserved._
+import org.bitcoins.core.script.result._
+import org.bitcoins.core.script.splice._
 import org.bitcoins.core.script.stack._
 import org.bitcoins.core.util.{BitcoinSLogger, BitcoinScriptUtil}
-import org.bitcoins.core.script.result._
-import org.slf4j.LoggerFactory
 
 import scala.annotation.tailrec
 
@@ -385,7 +384,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
     //TODO: replace 1000000 with a value that represents the max block size
     val txNotLargerThanBlock = transaction.bytes.size < Consensus.maxBlockSize
     val outputsSpendValidAmountsOfMoney = !transaction.outputs.exists(o =>
-      o.value < CurrencyUnits.zeroSatoshis || o.value > Consensus.maxMoney)
+      o.value < CurrencyUnits.zero || o.value > Consensus.maxMoney)
 
     val outputValues = transaction.outputs.map(_.value)
     val totalSpentByOutputs : CurrencyUnit = outputValues.fold(CurrencyUnits.zero)(_ + _)
@@ -412,7 +411,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
     * @return
     */
   def validMoneyRange(currencyUnit : CurrencyUnit) : Boolean = {
-    currencyUnit >= CurrencyUnits.zeroSatoshis && currencyUnit <= Consensus.maxMoney
+    currencyUnit >= CurrencyUnits.zero && currencyUnit <= Consensus.maxMoney
   }
 
 

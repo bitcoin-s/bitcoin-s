@@ -19,7 +19,6 @@ class MultiSignatureScriptPubKeyTest extends FlatSpec with MustMatchers {
       case _ => throw new RuntimeException("Should be a multisig script pub key")
     }
 
-
     multiSigScriptPubKey.requiredSigs must be (2)
     multiSigScriptPubKey.maxSigs must be (3)
   }
@@ -42,23 +41,6 @@ class MultiSignatureScriptPubKeyTest extends FlatSpec with MustMatchers {
     ))
 
   }
-
-
-  it must "find the public keys without the public inside of the multisignature script with an OP_NOT at the end" in {
-    val rawPubKey = "522102865c40293a680cb9c020e7b1e106d8c1916d3cef99aa431a56d253e69256dac02102865c40293a680cb9c020e7b1e106d8c1916d3cef99aa431a56d253e69256dac052ae91"
-    val scriptPubKey = ScriptPubKey(rawPubKey)
-    val multiSigScriptPubKey : MultiSignatureScriptPubKey = scriptPubKey match {
-      case s : MultiSignatureScriptPubKey => s
-      case _ => throw new RuntimeException("Should be a multisig script pub key")
-    }
-
-    multiSigScriptPubKey.publicKeys must be (Seq(
-      ECPublicKey("02865c40293a680cb9c020e7b1e106d8c1916d3cef99aa431a56d253e69256dac0"),
-      ECPublicKey("02865c40293a680cb9c020e7b1e106d8c1916d3cef99aa431a56d253e69256dac0")
-    ))
-
-  }
-
 
   it must "find the required signatures from a multisignature scriptPubKey using an OP_CHECKMULTISIGVERFIY" in {
     val multiSigRawScriptPubKeyHex = "5221025878e270211662a27181cf" +

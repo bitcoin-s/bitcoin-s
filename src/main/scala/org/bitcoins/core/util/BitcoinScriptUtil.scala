@@ -1,11 +1,10 @@
 package org.bitcoins.core.util
 
 import org.bitcoins.core.crypto.ECPublicKey
-import org.bitcoins.core.script.flag.{ScriptFlag, ScriptFlagUtil}
-import org.bitcoins.core.script.{ScriptProgram, ExecutionInProgressScriptProgram, ScriptSettings}
 import org.bitcoins.core.script.constant._
-import org.bitcoins.core.script.crypto.{OP_CHECKMULTISIGVERIFY, OP_CHECKMULTISIG, OP_CHECKSIG, OP_CHECKSIGVERIFY}
-import org.bitcoins.core.script.reserved.{OP_RESERVED, NOP, ReservedOperation}
+import org.bitcoins.core.script.crypto.{OP_CHECKMULTISIG, OP_CHECKMULTISIGVERIFY, OP_CHECKSIG, OP_CHECKSIGVERIFY}
+import org.bitcoins.core.script.flag.{ScriptFlag, ScriptFlagUtil}
+import org.bitcoins.core.script.{ScriptProgram, ScriptSettings}
 
 import scala.annotation.tailrec
 
@@ -76,7 +75,7 @@ trait BitcoinScriptUtil {
       if (multiSigOps.contains(token) && index != 0) {
         script(index-1) match {
           case scriptNum : ScriptNumber => scriptNum.num
-          case scriptConstant : ScriptConstant => BitcoinSUtil.hexToLong(scriptConstant.hex)
+          case scriptConstant : ScriptConstant => ScriptNumberUtil.toLong(scriptConstant.hex)
           case _ : ScriptToken => ScriptSettings.maxPublicKeysPerMultiSig
         }
       } else 0
