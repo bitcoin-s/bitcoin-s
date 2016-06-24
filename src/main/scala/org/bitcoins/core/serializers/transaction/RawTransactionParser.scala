@@ -15,9 +15,7 @@ trait RawTransactionParser extends RawBitcoinSerializer[Transaction] with Bitcoi
 
   def read(bytes : List[Byte]) = {
     val versionBytes = bytes.take(4)
-    logger.info("Version bytes: " + BitcoinSUtil.encodeHex(versionBytes))
     val version = UInt32(versionBytes.reverse).underlying
-    logger.info("UInt32 version: " + version)
     val txInputBytes = bytes.slice(4,bytes.size)
     val inputs = RawTransactionInputParser.read(txInputBytes)
     val inputsSize = inputs.map(_.size).sum
@@ -34,14 +32,10 @@ trait RawTransactionParser extends RawBitcoinSerializer[Transaction] with Bitcoi
   }
 
   def write(tx : Transaction) : String = {
-    logger.info("Tx version: " + tx.version)
     //add leading zero if the version byte doesn't require two hex numbers
     val txVersionHex = tx.version.toHexString
-    logger.info("txVersionHex: " + txVersionHex)
     val versionWithoutPadding = BitcoinSUtil.flipEndianess(addPrecedingZero(txVersionHex))
-    logger.info("Version wthout padding: " + versionWithoutPadding)
     val version = addPadding(8,versionWithoutPadding)
-    logger.info("Version: " + version)
     val inputs : String = RawTransactionInputParser.write(tx.inputs)
     val outputs : String = RawTransactionOutputParser.write(tx.outputs)
     val lockTimeWithoutPadding : String = tx.lockTime.toHexString

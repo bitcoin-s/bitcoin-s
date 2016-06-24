@@ -70,9 +70,6 @@ trait MultiSignatureScriptPubKey extends ScriptPubKey {
   def requiredSigs : Long = {
     val asmWithoutPushOps = asm.filterNot(_.isInstanceOf[BytesToPushOntoStack])
     val opCheckMultiSigIndex = if (asm.indexOf(OP_CHECKMULTISIG) != -1) asmWithoutPushOps.indexOf(OP_CHECKMULTISIG) else asmWithoutPushOps.indexOf(OP_CHECKMULTISIGVERIFY)
-    logger.debug("opCheckMultiSigIndex: " + opCheckMultiSigIndex)
-    logger.debug("maxSigs: " + maxSigs)
-    logger.debug("asmWithoutPushOps: " + asmWithoutPushOps)
     //magic number 2 represents the maxSig operation and the OP_CHECKMULTISIG operation at the end of the asm
     val numSigsRequired = asmWithoutPushOps(opCheckMultiSigIndex - maxSigs.toInt - 2)
     numSigsRequired match {
@@ -294,7 +291,6 @@ object ScriptPubKey extends Factory[ScriptPubKey] with BitcoinSLogger {
 
     val standardOps = asm.filter(op =>  op.isInstanceOf[ScriptNumber] || op == OP_CHECKMULTISIG ||
       op == OP_CHECKMULTISIGVERIFY || op.isInstanceOf[ScriptConstant] || op.isInstanceOf[BytesToPushOntoStack])
-    logger.info("Non standard ops: " + standardOps)
     (hasRequiredSignaturesTry, hasMaximumSignaturesTry) match {
       case (Success(hasRequiredSignatures), Success(hasMaximumSignatures)) =>
         val result = isNotEmpty && containsMultiSigOp && hasRequiredSignatures &&
