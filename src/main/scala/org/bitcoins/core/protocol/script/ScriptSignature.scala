@@ -173,6 +173,27 @@ trait P2SHScriptSignature extends ScriptSignature {
     //call .tail twice to remove the serialized redeemScript & it's bytesToPushOntoStack constant
     (asm.reverse.tail.tail.reverse, Seq(asm.last))
   }
+}
+
+object P2SHScriptSignature extends Factory[P2SHScriptSignature] with BitcoinSLogger {
+  override def fromBytes(bytes : Seq[Byte]): P2SHScriptSignature = {
+    val scriptSig = RawScriptSignatureParser.read(bytes)
+    logger.info("p2sh script sig asm: " + scriptSig.asm)
+    matchP2SHScriptSignature(scriptSig)
+  }
+
+  def apply(scriptSig : ScriptSignature, redeemScript : ScriptPubKey): P2SHScriptSignature = {
+    //we need to calculate the size of the redeemScript and add the corresponding push op
+    val pushOps = BitcoinScriptUtil.calculatePushOp(ScriptConstant(redeemScript.bytes))
+    val bytes = scriptSig.bytes ++ pushOps.flatMap(_.bytes) ++ redeemScript.bytes
+    fromBytes(bytes)
+  }
+
+  private def matchP2SHScriptSignature(scriptSig : ScriptSignature): P2SHScriptSignature = scriptSig match {
+    case p2shScriptSig : P2SHScriptSignature => p2shScriptSig
+    case x : ScriptSignature => throw new IllegalArgumentException("Expected p2sh script signature, got: " + x)
+  }
+
 
 }
 

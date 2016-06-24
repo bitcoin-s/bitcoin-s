@@ -50,7 +50,6 @@ trait ScriptOperation extends ScriptToken {
 sealed trait ScriptConstant extends ScriptToken {
   /**
    * Returns if the constant is encoded in the shortest possible way
- *
    * @return
    */
   def isShortestEncoding : Boolean = BitcoinScriptUtil.isShortestEncoding(this)
@@ -63,7 +62,6 @@ sealed trait ScriptConstant extends ScriptToken {
 sealed trait ScriptNumber extends ScriptConstant {
   /**
    * The underlying number of the ScriptNumber
- *
    * @return
    */
   def num : Long
@@ -87,7 +85,6 @@ sealed trait ScriptNumber extends ScriptConstant {
    * This equality just checks that the underlying scala numbers are equivalent, NOT if the numbers
    * are bitwise equivalent in Script. For instance ScriptNumber(0x01).numEqual(ScriptNumber(0x00000000001)) == true
    * but (ScriptNumber(0x01) == (ScriptNumber(0x00000000001))) == false
- *
    * @param that
    * @return
    */
@@ -179,6 +176,11 @@ object ScriptNumber extends Factory[ScriptNumber] {
  */
 case object OP_PUSHDATA1 extends ScriptOperation {
   override def opCode = 76
+
+  /**
+    * The maximum amount of bytes OP_PUSHDATA1 can push onto the stack
+    */
+  def max = 255
 }
 
 /**
@@ -186,6 +188,12 @@ case object OP_PUSHDATA1 extends ScriptOperation {
  */
 case object OP_PUSHDATA2 extends ScriptOperation {
   override def opCode = 77
+
+  /**
+    * The max amount of data that OP_PUSHDATA2 can push onto the stack
+    * @return
+    */
+  def max = 65535
 }
 
 /**
@@ -193,6 +201,12 @@ case object OP_PUSHDATA2 extends ScriptOperation {
  */
 case object OP_PUSHDATA4 extends ScriptOperation {
   override def opCode = 78
+
+  /**
+    * The maximum amount of data that OP_PUSHDATA4 can be push on the stack
+    * @return
+    */
+  def max = 4294967295L
 }
 
 
