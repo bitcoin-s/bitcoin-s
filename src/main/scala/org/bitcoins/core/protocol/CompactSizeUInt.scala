@@ -1,5 +1,6 @@
 package org.bitcoins.core.protocol
 
+import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptSignature}
 import org.bitcoins.core.script.constant.ScriptNumberUtil
 import org.bitcoins.core.util.BitcoinSUtil
@@ -49,11 +50,11 @@ object CompactSizeUInt {
     */
   def calculateCompactSizeUInt(bytes : Seq[Byte]) : CompactSizeUInt = {
     //means we can represent the number with a single byte
-    if (bytes.size <= 0xff) CompactSizeUInt(bytes.size,1)
+    if (bytes.size <= 252) CompactSizeUInt(bytes.size,1)
     // can be represented with two bytes
-    else if (bytes.size <= 0xffff) CompactSizeUInt(bytes.size,3)
+    else if (bytes.size <= 65535) CompactSizeUInt(bytes.size,3)
     //can be represented with 4 bytes
-    else if (bytes.size <= 0xffffffff) CompactSizeUInt(bytes.size,5)
+    else if (bytes.size <= UInt32.max.underlying) CompactSizeUInt(bytes.size,5)
     else CompactSizeUInt(bytes.size,9)
   }
 
