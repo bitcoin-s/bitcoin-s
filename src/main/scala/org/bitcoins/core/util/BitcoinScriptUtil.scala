@@ -191,10 +191,12 @@ trait BitcoinScriptUtil {
     val bytes = scriptTokenSize.bytes
     if (scriptTokenSize <= UInt32(75)) Seq(BytesToPushOntoStack(scriptToken.bytes.size))
     else if (scriptTokenSize <= UInt32(OP_PUSHDATA1.max)) {
+      //we need the push op to be only 1 byte in size
       val pushConstant = ScriptConstant(BitcoinSUtil.flipEndianess(bytes.slice(bytes.length-1,bytes.length)))
       Seq(OP_PUSHDATA1, pushConstant)
     }
     else if (scriptTokenSize <= UInt32(OP_PUSHDATA2.max)) {
+      //we need the push op to be only 2 bytes in size
       val pushConstant = ScriptConstant(BitcoinSUtil.flipEndianess(bytes.slice(bytes.length-2,bytes.length)))
       Seq(OP_PUSHDATA2, pushConstant)
     }
