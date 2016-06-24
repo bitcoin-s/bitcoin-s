@@ -20,7 +20,7 @@ trait Base58 extends BitcoinSLogger {
     * Verifies a given base58 string against its checksum (last 4 decoded bytes)
     *
     * @param input base58 string
-    * @return decoded bytes excluding the checksum
+    * @return
     */
   def decodeCheck(input: String) : Try[Seq[Byte]] = {
     val decoded : Seq[Byte] = decode(input)
@@ -39,7 +39,7 @@ trait Base58 extends BitcoinSLogger {
     * Takes in sequence of bytes and returns base58 bitcoin string
     *
     * @param bytes sequence of bytes to be encoded into base58
-    * @return base58 String
+    * @return
     */
   //TODO: Create Base58 Type
   def encode(bytes : Seq[Byte]) : String = {
@@ -73,37 +73,40 @@ trait Base58 extends BitcoinSLogger {
     * Encodes a Base58 address from a hash
     *
     * @param hash The result of Sha256(RipeMD-160(public key))
-    * @param addressType string. Either "pubkey" or "script"
-    * @param isTestNet boolean
+    * @param addressType "pubkey" or "script"
+    * @param isTestNet Boolean
     * @return
     */
     //TODO: add logic to determine pubkey/script from first byte
-  def encodePubKeyHashToBase58Address(hash: Sha256Hash160Digest,
-                                  addressType : String,
-                                  isTestNet : Boolean) : String = {
-    def parseVersionByte(addressType : String, isTestnet : Boolean) : Byte = isTestnet match {
-      case true => if (addressType == "pubkey") TestNet3.p2pkhNetworkByte else TestNet3.p2shNetworkByte
-      case false => if (addressType == "pubkey") MainNet.p2pkhNetworkByte else MainNet.p2shNetworkByte
-    }
-    val versionByte : Byte = parseVersionByte(addressType, isTestNet)
+  def encodePubKeyHashToBase58Address(hash: Sha256Hash160Digest, addressType : String, isTestNet : Boolean) : String = {
+    val versionByte : Byte = findVersionByte(addressType, isTestNet)
     val bytes : Seq[Byte] = Seq(versionByte) ++ hash.bytes
     val checksum = CryptoUtil.doubleSHA256(bytes).bytes.take(4)
     encode(bytes ++ checksum)
   }
 
   /**
+    * Determines the version byte of an address given the address type and network
+    * @param addressType "pubkey" or "script"
+    * @param isTestnet Boolean
+    * @return
+    */
+  private def findVersionByte(addressType : String, isTestnet : Boolean) : Byte = isTestnet match {
+    case true => if (addressType == "pubkey") TestNet3.p2pkhNetworkByte else TestNet3.p2shNetworkByte
+    case false => if (addressType == "pubkey") MainNet.p2pkhNetworkByte else MainNet.p2shNetworkByte
+  }
+
+  /**
     * Encodes a private key into Wallet Import Format (WIF)
     * https://en.bitcoin.it/wiki/Wallet_import_format
     *
-    * @param privateKey
-    * @param isCompressed
-    * @param isTestNet
+    * @param privateKey Private Key in Hex format
+    * @param isCompressed Boolean
+    * @param isTestNet Boolean
     * @return
     */
   //TODO: Create WIF PrivateKey Type
-  def encodePrivateKeyToWIF(privateKey : ECPrivateKey,
-                            isCompressed : Boolean,
-                            isTestNet : Boolean) : String = {
+  def encodePrivateKeyToWIF(privateKey : ECPrivateKey, isCompressed : Boolean, isTestNet : Boolean) : String = {
     val versionByte : Byte = isTestNet match {
       case true => TestNet3.privateKey
       case false => MainNet.privateKey
@@ -121,8 +124,8 @@ trait Base58 extends BitcoinSLogger {
     * Takes in base58 string and returns sequence of bytes
     * https://github.com/ACINQ/bitcoin-lib/blob/master/src/main/scala/fr/acinq/bitcoin/Base58.scala
     *
-    * @param input base58 string to be decoded into a sequence of bytes
-    * @return decoded sequence of bytes
+    * @param input Base58 string to be decoded into a sequence of bytes
+    * @return
     */
   def decode(input: String) : Seq[Byte] = {
     val zeroes = input.takeWhile(_ == '1').map(_ => 0:Byte).toArray
@@ -160,7 +163,7 @@ trait Base58 extends BitcoinSLogger {
     * Checks if the string begins with an Address prefix byte/character.
     * ('1', '3', 'm', 'n', '2')
     *
-    * @param byte
+    * @param byte first byte in the sequence
     * @return
     */
   private def isValidAddressPreFixByte(byte : Byte) : Boolean = {
@@ -174,7 +177,7 @@ trait Base58 extends BitcoinSLogger {
     * Checks if the string begins with a private key prefix byte/character.
     * ('5', '9', 'c')
     *
-    * @param byte
+    * @param byte first byte in the sequence
     * @return
     */
   private def isValidSecretKeyPreFixByte(byte : Byte) : Boolean = {
