@@ -52,34 +52,9 @@ class TransactionTest extends FlatSpec with MustMatchers with BitcoinSLogger {
     tx.hex must be (rawTx)
     (Transaction(tx.hex) == tx) must be (true)
   }
+  
 
-  it must "deserialize and reserialize a generated transaction" in {
-    val tx = TransactionGenerators.transactions.sample.get
-    logger.info("Generated tx; "+ tx)
-    logger.info("Tx hex: " + tx.hex)
-    val hex = tx.hex
-
-    val deseriallized = Transaction(hex)
-
-    deseriallized.version must be (tx.version)
-/*    for {
-      actualInput <- deseriallized.inputs
-      expectedInput <- tx.inputs
-    } {
-      actualInput must be (expectedInput)
-    }*/
-
-    logger.info("Actual inputs: " + deseriallized.inputs)
-    logger.info("expected inputs: " + tx.inputs)
-
-
-    deseriallized.inputs must be (tx.inputs)
-    deseriallized.outputs must be (tx.outputs)
-    deseriallized.lockTime must be (tx.lockTime)
-     //must be (tx)
-  }
-
-/*  it must "read all of the tx_valid.json's contents and return ScriptOk" in {
+  it must "read all of the tx_valid.json's contents and return ScriptOk" in {
 
 
     val source = Source.fromURL(getClass.getResource("/tx_valid.json"))
@@ -119,9 +94,9 @@ class TransactionTest extends FlatSpec with MustMatchers with BitcoinSLogger {
         ScriptInterpreter.run(program) must equal (ScriptOk)
       }
     }
-  }*/
+  }
 
-/*  it must "read all of the tx_invalid.json's contents and return a ScriptError" in {
+  it must "read all of the tx_invalid.json's contents and return a ScriptError" in {
 
 
     val source = Source.fromURL(getClass.getResource("/tx_invalid.json"))
@@ -165,7 +140,7 @@ class TransactionTest extends FlatSpec with MustMatchers with BitcoinSLogger {
         txInputValidity.exists(_ == false) must be (true)
       }
     }
-  }*/
+  }
 
   private def findInput(tx : Transaction, outPoint : TransactionOutPoint) : Option[(TransactionInput,Int)] = {
     logger.debug("tx.hex: " + tx.hex)
