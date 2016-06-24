@@ -177,6 +177,12 @@ class RawTransactionInputParserTest extends FlatSpec with MustMatchers with RawT
     RawTransactionInputParser.write(input) must be (rawInput)
   }
 
+  it must "read and write an input with a large vout index in the outpoint" in {
+    val rawInput = "01b32667dc69ce8030bffb7d7cf9a87c985da6552f71ac39363d043ff9d75d230411d2346448473045022100f9649ac255ce97a132233f896a70babd1f4d8eaeaa4108165be97309817ad5bb02205bf70f31b4bb605cb9d1ce1a860d40bc92e2b5fca7be335edfea874570619d6da6ab6f7e"
+    val input = RawTransactionInputParser.read(rawInput)
+    RawTransactionInputParser.write(input) must be (rawInput)
+  }
+
 
 
 }

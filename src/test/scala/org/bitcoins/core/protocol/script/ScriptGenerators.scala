@@ -80,10 +80,10 @@ trait ScriptGenerators extends BitcoinSLogger {
   def emptyScriptPubKey = p2pkScriptPubKey.map(_ => EmptyScriptPubKey)
 
   private def pickRandomNonP2SHScriptPubKey : Gen[ScriptPubKey] = {
-    val randomNum = (scala.util.Random.nextInt() % 4).abs
+    val randomNum = (scala.util.Random.nextInt() % 3).abs
     if (randomNum == 0) p2pkScriptPubKey
     else if (randomNum == 1) p2pkhScriptPubKey
-    else if (randomNum == 2) emptyScriptPubKey
+/*    else if (randomNum == 2) emptyScriptPubKey*/
     else multiSigScriptPubKey
   }
 
@@ -98,6 +98,19 @@ trait ScriptGenerators extends BitcoinSLogger {
     else if (randomNum == 2) multiSigScriptPubKey
     else if (randomNum == 3) emptyScriptPubKey
     else p2shScriptPubKey
+  }
+
+  /**
+    * Generates an arbitrary script signature
+    * @return
+    */
+  def scriptSignature : Gen[ScriptSignature] = {
+    val randomNum = (scala.util.Random.nextInt() % 5).abs
+    if (randomNum == 0) p2pkScriptSignature
+    else if (randomNum == 1) p2pkhScriptSignature
+    else if (randomNum == 2) multiSignatureScriptSignature
+    else if (randomNum == 3) emptyScriptSignature
+    else p2shScriptSignature
   }
 
 

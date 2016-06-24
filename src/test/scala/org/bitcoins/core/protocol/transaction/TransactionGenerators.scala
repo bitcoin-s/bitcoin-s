@@ -21,10 +21,26 @@ trait TransactionGenerators {
   } yield TransactionOutPoint(txId, vout)
 
 
+  /**
+    * Generates a random [[TransactionOutput]]
+    * @return
+    */
   def outputs : Gen[TransactionOutput] = for {
     satoshis <- CurrencyUnitGenerator.satoshis
     scriptPubKey <- ScriptGenerators.scriptPubKey
   } yield TransactionOutput(satoshis, scriptPubKey)
+
+  /**
+    * Generates a random [[TransactionInput]]
+    * @return
+    */
+  def inputs : Gen[TransactionInput] = for {
+    outPoint <- outPoints
+    scriptSig <- ScriptGenerators.scriptSignature
+    sequenceNumber <- Gen.choose(0,TransactionConstants.sequence)
+  } yield TransactionInput(outPoint,scriptSig,sequenceNumber)
+
+
 }
 
 
