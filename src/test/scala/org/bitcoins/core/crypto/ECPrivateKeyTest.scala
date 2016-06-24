@@ -41,9 +41,7 @@ class ECPrivateKeyTest extends FlatSpec with MustMatchers {
     val bitcoinjDumpedPrivateKey = new org.bitcoinj.core.DumpedPrivateKey(BitcoinJTestUtil.params,privateKeyBase58)
     val bitcoinjPrivateKey = bitcoinjDumpedPrivateKey.getKey
     val privateKey = ECPrivateKey.fromWIFToPrivateKey(privateKeyBase58)
-
     privateKey.hex must be (bitcoinjPrivateKey.getPrivateKeyAsHex)
-
   }
 
   it must "create a private key from a sequence of bytes that has the same byte representation of bitcoinj ECKeys" in {
@@ -62,6 +60,17 @@ class ECPrivateKeyTest extends FlatSpec with MustMatchers {
     val privateKeyHex = "180cb41c7c600be951b5d3d0a7334acc7506173875834f7a6c4c786a28fcbb19"
     val key: ECPrivateKey = ECPrivateKey(privateKeyHex)
     key.hex must be (privateKeyHex)
+  }
+
+  it must "determine if a private key corresponds to a compressed public key or not" in {
+    val compressedKey = "L1RrrnXkcKut5DEMwtDthjwRcTTwED36thyL1DebVrKuwvohjMNi"
+    val uncompressedKey = "93DVKyFYwSN6wEo3E2fCrFPUp17FtrtNi2Lf7n4G3garFb16CRj"
+    ECPrivateKey.isCompressed(compressedKey) must be (true)
+    ECPrivateKey.isCompressed(uncompressedKey) must be (false)
+  }
+
+  it must "create a fresh private key" in {
+    ECPrivateKey.apply().isInstanceOf[ECPrivateKey] must be (true)
   }
 
 }
