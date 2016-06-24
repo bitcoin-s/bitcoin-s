@@ -31,9 +31,9 @@ trait RawTransactionInputParser extends RawBitcoinSerializer[Seq[TransactionInpu
         val outPointBytes = bytes.take(outPointBytesSize)
         val outPoint : TransactionOutPoint  = RawTransactionOutPointParser.read(outPointBytes)
 
-        val scriptCompactSizeUIntSize : Int = BitcoinSUtil.parseCompactSizeUIntSize(bytes(outPointBytesSize)).toInt
+        val scriptCompactSizeUIntSize : Int = CompactSizeUInt.parseCompactSizeUIntSize(bytes(outPointBytesSize)).toInt
         logger.debug("VarInt hex: " + BitcoinSUtil.encodeHex(bytes.slice(outPointBytesSize,outPointBytesSize + scriptCompactSizeUIntSize)))
-        val scriptSigCompactSizeUInt : CompactSizeUInt = BitcoinSUtil.parseCompactSizeUInt(bytes.slice(outPointBytesSize,outPointBytesSize + scriptCompactSizeUIntSize))
+        val scriptSigCompactSizeUInt : CompactSizeUInt = CompactSizeUInt.parseCompactSizeUInt(bytes.slice(outPointBytesSize,outPointBytesSize + scriptCompactSizeUIntSize))
 
 
         val scriptSigBytes = bytes.slice(outPointBytesSize+ scriptCompactSizeUIntSize,

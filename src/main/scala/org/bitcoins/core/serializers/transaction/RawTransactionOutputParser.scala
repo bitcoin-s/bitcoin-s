@@ -1,10 +1,10 @@
 package org.bitcoins.core.serializers.transaction
 
 import org.bitcoins.core.currency.{CurrencyUnits, Satoshis}
-import org.bitcoins.core.serializers.RawBitcoinSerializer
+import org.bitcoins.core.serializers.{RawBitcoinSerializer, RawSatoshisSerializer}
 import org.bitcoins.core.serializers.script.{RawScriptPubKeyParser, ScriptParser}
 import org.bitcoins.core.protocol.CompactSizeUInt
-import org.bitcoins.core.protocol.transaction.{TransactionOutputImpl, TransactionOutput}
+import org.bitcoins.core.protocol.transaction.{TransactionOutput, TransactionOutputImpl}
 import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil}
 import org.slf4j.LoggerFactory
 
@@ -28,10 +28,10 @@ trait RawTransactionOutputParser extends RawBitcoinSerializer[Seq[TransactionOut
         val satoshis = parseSatoshis(satoshisHex)
         //it doesn't include itself towards the size, thats why it is incremented by one
         val firstScriptPubKeyByte = 8
-        val scriptCompactSizeUIntSize : Int = BitcoinSUtil.parseCompactSizeUIntSize(bytes(firstScriptPubKeyByte)).toInt
+        val scriptCompactSizeUIntSize : Int = CompactSizeUInt.parseCompactSizeUIntSize(bytes(firstScriptPubKeyByte)).toInt
         logger.debug("VarInt hex: " + BitcoinSUtil.encodeHex(bytes.slice(firstScriptPubKeyByte,firstScriptPubKeyByte + scriptCompactSizeUIntSize)))
         val scriptSigCompactSizeUInt : CompactSizeUInt =
-          BitcoinSUtil.parseCompactSizeUInt(bytes.slice(firstScriptPubKeyByte,firstScriptPubKeyByte + scriptCompactSizeUIntSize))
+          CompactSizeUInt.parseCompactSizeUInt(bytes.slice(firstScriptPubKeyByte,firstScriptPubKeyByte + scriptCompactSizeUIntSize))
 
         val scriptPubKeyBytes = bytes.slice(firstScriptPubKeyByte + scriptCompactSizeUIntSize,
           firstScriptPubKeyByte + scriptCompactSizeUIntSize + scriptSigCompactSizeUInt.num.toInt)
@@ -66,7 +66,7 @@ trait RawTransactionOutputParser extends RawBitcoinSerializer[Seq[TransactionOut
   def write(output : TransactionOutput) : String = {
     val satoshis = CurrencyUnits.toSatoshis(output.value)
     val compactSizeUIntHex = output.scriptPubKeyCompactSizeUInt.hex
-    val satoshisHexWithoutPadding : String = BitcoinSUtil.encodeHex(satoshis)
+    val satoshisHexWithoutPadding : String = BitcoinSUtil.flipEndianess(satoshis.hex)
     val satoshisHex = addPadding(16,satoshisHexWithoutPadding)
     logger.debug("compactSizeUIntHex: " + compactSizeUIntHex)
     logger.debug("satoshis: " + satoshisHex)
@@ -80,12 +80,7 @@ trait RawTransactionOutputParser extends RawBitcoinSerializer[Seq[TransactionOut
     * @param hex the hex string that is being parsed to satoshis
     * @return the value of the hex string in satoshis
     */
-  private def parseSatoshis(hex : String) : Satoshis = {
-    if (hex == "ffffffffffffffff") {
-      //this represents a negative satoshis
-      CurrencyUnits.negativeSatoshi
-    } else Satoshis(java.lang.Long.parseLong(hex, 16))
-  }
+  private def parseSatoshis(hex : String) : Satoshis = RawSatoshisSerializer.read(hex)
 }
 
 

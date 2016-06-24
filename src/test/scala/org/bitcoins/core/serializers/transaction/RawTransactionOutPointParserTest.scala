@@ -50,5 +50,13 @@ class RawTransactionOutPointParserTest extends FlatSpec with MustMatchers  {
     outPoint.size must be (36)
   }
 
+  it must "parse a outpoint with extremely large vout" in {
+    //vout should be 20183580
+    val rawOutPoint = "4435c4ea162d51135c9b2bbb867a86f25001c246224b60e8ab2307edce7fc28a0ca13f13"
+    val outPoint = RawTransactionOutPointParser.read(rawOutPoint)
+    outPoint.vout must be (322937100)
+    outPoint.hex must be (rawOutPoint)
+  }
+
 
 }
