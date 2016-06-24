@@ -1,6 +1,8 @@
 package org.bitcoins.core.protocol.transaction
 
 import org.bitcoins.core.crypto.CryptoGenerators
+import org.bitcoins.core.currency.CurrencyUnitGenerator
+import org.bitcoins.core.protocol.script.ScriptGenerators
 import org.scalacheck.Gen
 
 /**
@@ -18,6 +20,11 @@ trait TransactionGenerators {
     vout <- Gen.choose(1,Int.MaxValue)
   } yield TransactionOutPoint(txId, vout)
 
+
+  def outputs : Gen[TransactionOutput] = for {
+    satoshis <- CurrencyUnitGenerator.satoshis
+    scriptPubKey <- ScriptGenerators.scriptPubKey
+  } yield TransactionOutput(satoshis, scriptPubKey)
 }
 
 

@@ -8,6 +8,7 @@ import org.scalacheck.Gen
 /**
   * Created by chris on 6/22/16.
   */
+//TODO: Need to provide generators for [[NonStandardScriptSignature]] and [[NonStandardScriptPubKey]]
 trait ScriptGenerators extends BitcoinSLogger {
 
 
@@ -32,6 +33,13 @@ trait ScriptGenerators extends BitcoinSLogger {
     signatures.map(sigs => MultiSignatureScriptSignature(sigs))
   }
 
+  def emptyScriptSignature = p2pkhScriptSignature.map(_ => EmptyScriptSignature)
+  /**
+    * Generates a [[P2SHScriptSignature]]
+    * WARNING: the redeem script and the script signature DO NOT evaluate to true
+    * if executed by [[org.bitcoins.core.script.interpreter.ScriptInterpreter]]
+    * @return
+    */
   def p2shScriptSignature : Gen[P2SHScriptSignature] = for {
     scriptPubKey <- pickRandomNonP2SHScriptPubKey
     scriptSig <- pickCorrespondingScriptSignature(scriptPubKey)
@@ -69,17 +77,35 @@ trait ScriptGenerators extends BitcoinSLogger {
   } yield P2SHScriptPubKey(randomScriptPubKey)
 
 
+  def emptyScriptPubKey = p2pkScriptPubKey.map(_ => EmptyScriptPubKey)
+
   private def pickRandomNonP2SHScriptPubKey : Gen[ScriptPubKey] = {
-    val randomNum = scala.util.Random.nextInt() % 3
-    if (randomNum == 0) p2pkhScriptPubKey
+    val randomNum = (scala.util.Random.nextInt() % 4).abs
+    if (randomNum == 0) p2pkScriptPubKey
     else if (randomNum == 1) p2pkhScriptPubKey
+    else if (randomNum == 2) emptyScriptPubKey
     else multiSigScriptPubKey
   }
+
+  /**
+    * Generates an arbitrary scriptPubKey
+    * @return
+    */
+  def scriptPubKey : Gen[ScriptPubKey] = {
+    val randomNum = (scala.util.Random.nextInt() % 5).abs
+    if (randomNum == 0) p2pkScriptPubKey
+    else if (randomNum == 1) p2pkhScriptPubKey
+    else if (randomNum == 2) multiSigScriptPubKey
+    else if (randomNum == 3) emptyScriptPubKey
+    else p2shScriptPubKey
+  }
+
 
   private def pickCorrespondingScriptSignature(scriptPubKey : ScriptPubKey): Gen[ScriptSignature] = scriptPubKey match {
     case p2pk : P2PKScriptPubKey => p2pkScriptSignature
     case p2pkh : P2PKHScriptPubKey => p2pkhScriptSignature
     case multisig : MultiSignatureScriptPubKey => multiSignatureScriptSignature
+    case EmptyScriptPubKey => emptyScriptSignature
     case x : ScriptPubKey =>
       throw new IllegalArgumentException("Cannot pick for p2sh script pubkey, " +
         "non standard script pubkey or Empty script pubKey, got: " + x)

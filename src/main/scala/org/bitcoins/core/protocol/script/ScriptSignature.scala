@@ -193,8 +193,6 @@ object P2SHScriptSignature extends Factory[P2SHScriptSignature] with BitcoinSLog
     case p2shScriptSig : P2SHScriptSignature => p2shScriptSig
     case x : ScriptSignature => throw new IllegalArgumentException("Expected p2sh script signature, got: " + x)
   }
-
-
 }
 
 /**
