@@ -170,6 +170,26 @@ object MultiSignatureScriptPubKey extends Factory[MultiSignatureScriptPubKey] wi
  */
 trait P2SHScriptPubKey extends ScriptPubKey
 
+object P2SHScriptPubKey extends Factory[P2SHScriptPubKey] {
+  override def fromBytes(bytes : Seq[Byte]): P2SHScriptPubKey = {
+    val scriptPubKey = RawScriptPubKeyParser.read(bytes)
+    matchP2SHScriptPubKey(scriptPubKey)
+  }
+
+  def apply(scriptPubKey: ScriptPubKey) : P2SHScriptPubKey = {
+    val hash = CryptoUtil.ripeMd160(scriptPubKey.bytes)
+    val asm = Seq(OP_HASH160, BytesToPushOntoStack(hash.bytes.size), ScriptConstant(hash.bytes), OP_EQUAL)
+    val p2shScriptPubKey = ScriptPubKey.fromAsm(asm)
+    matchP2SHScriptPubKey(p2shScriptPubKey)
+  }
+
+  private def matchP2SHScriptPubKey(scriptPubKey : ScriptPubKey): P2SHScriptPubKey = scriptPubKey match {
+    case p2shScriptPubKey : P2SHScriptPubKey => p2shScriptPubKey
+    case scriptPubKey : ScriptPubKey =>
+      throw new IllegalArgumentException("Exepected multisignature scriptPubKey, got: " + scriptPubKey)
+  }
+}
+
 /**
  * Represents a pay to public key script public key
  * https://bitcoin.org/en/developer-guide#pubkey

@@ -32,6 +32,12 @@ trait ScriptGenerators extends BitcoinSLogger {
     signatures.map(sigs => MultiSignatureScriptSignature(sigs))
   }
 
+  def p2shScriptSignature : Gen[P2SHScriptSignature] = for {
+    scriptPubKey <- pickRandomNonP2SHScriptPubKey
+    scriptSig <- pickCorrespondingScriptSignature(scriptPubKey)
+    p2shScriptSig = P2SHScriptSignature(scriptSig, scriptPubKey)
+  } yield p2shScriptSig
+
   def p2pkScriptPubKey : Gen[P2PKScriptPubKey] = for {
     pubKey <- CryptoGenerators.publicKey
   } yield P2PKScriptPubKey(pubKey)
@@ -56,6 +62,27 @@ trait ScriptGenerators extends BitcoinSLogger {
         MultiSignatureScriptPubKey(requiredSigs,pubKeys)
     }
     multiSignatureScriptPubKey
+  }
+
+  def p2shScriptPubKey : Gen[P2SHScriptPubKey] = for {
+    randomScriptPubKey <- pickRandomNonP2SHScriptPubKey
+  } yield P2SHScriptPubKey(randomScriptPubKey)
+
+
+  private def pickRandomNonP2SHScriptPubKey : Gen[ScriptPubKey] = {
+    val randomNum = scala.util.Random.nextInt() % 3
+    if (randomNum == 0) p2pkhScriptPubKey
+    else if (randomNum == 1) p2pkhScriptPubKey
+    else multiSigScriptPubKey
+  }
+
+  private def pickCorrespondingScriptSignature(scriptPubKey : ScriptPubKey): Gen[ScriptSignature] = scriptPubKey match {
+    case p2pk : P2PKScriptPubKey => p2pkScriptSignature
+    case p2pkh : P2PKHScriptPubKey => p2pkhScriptSignature
+    case multisig : MultiSignatureScriptPubKey => multiSignatureScriptSignature
+    case x : ScriptPubKey =>
+      throw new IllegalArgumentException("Cannot pick for p2sh script pubkey, " +
+        "non standard script pubkey or Empty script pubKey, got: " + x)
   }
 
 }
