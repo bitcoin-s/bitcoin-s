@@ -1,11 +1,11 @@
 package org.bitcoins.core.serializers.transaction
 
+import org.bitcoins.core.protocol.CompactSizeUInt
+import org.bitcoins.core.protocol.script.ScriptSignature
+import org.bitcoins.core.protocol.transaction.{TransactionInput, TransactionOutPoint}
 import org.bitcoins.core.serializers.RawBitcoinSerializer
 import org.bitcoins.core.serializers.script.RawScriptSignatureParser
-import org.bitcoins.core.protocol.{CompactSizeUInt}
-import org.bitcoins.core.protocol.script.ScriptSignature
-import org.bitcoins.core.protocol.transaction.{TransactionOutPoint, TransactionInput}
-import org.bitcoins.core.util.{BitcoinSUtil}
+import org.bitcoins.core.util.BitcoinSUtil
 import org.slf4j.LoggerFactory
 
 import scala.annotation.tailrec
@@ -76,7 +76,6 @@ trait RawTransactionInputParser extends RawBitcoinSerializer[Seq[TransactionInpu
 
   /**
    * Writes a single transaction input
- *
    * @param input
    * @return
    */
@@ -84,11 +83,7 @@ trait RawTransactionInputParser extends RawBitcoinSerializer[Seq[TransactionInpu
     val outPoint = RawTransactionOutPointParser.write(input.previousOutput)
     val varInt = input.scriptSigCompactSizeUInt.hex
     val scriptSig = RawScriptSignatureParser.write(input.scriptSignature)
-    val sequenceWithoutPadding = input.sequence.toHexString
-    val paddingNeeded = 8 - sequenceWithoutPadding.size
-    val padding = for { i <- 0 until paddingNeeded} yield "0"
-
-    val sequence = BitcoinSUtil.flipEndianess(sequenceWithoutPadding + padding.mkString).reverse
+    val sequence = addPadding(8,BitcoinSUtil.flipEndianess(input.sequence.toHexString))
     outPoint + varInt + scriptSig + sequence
   }
 }
