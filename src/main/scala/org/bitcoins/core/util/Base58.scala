@@ -2,6 +2,7 @@ package org.bitcoins.core.util
 
 import org.bitcoins.core.config.{MainNet, TestNet3}
 import org.bitcoins.core.crypto.{ECPrivateKey, Sha256Hash160Digest}
+import org.bitcoins.core.protocol.Address
 import org.bitcoins.core.protocol.blockchain._
 
 import scala.annotation.tailrec
@@ -78,15 +79,16 @@ trait Base58 extends BitcoinSLogger {
     * @return
     */
     //TODO: add logic to determine pubkey/script from first byte
-  def encodePubKeyHashToBase58Address(hash: Sha256Hash160Digest, addressType : String, isTestNet : Boolean) : String = {
+  def encodePubKeyHashToBase58Address(hash: Sha256Hash160Digest, addressType : String, isTestNet : Boolean) : Address = {
     val versionByte : Byte = findVersionByte(addressType, isTestNet)
     val bytes : Seq[Byte] = Seq(versionByte) ++ hash.bytes
     val checksum = CryptoUtil.doubleSHA256(bytes).bytes.take(4)
-    encode(bytes ++ checksum)
+    Address(encode(bytes ++ checksum))
   }
 
   /**
     * Determines the version byte of an address given the address type and network
+ *
     * @param addressType "pubkey" or "script"
     * @param isTestnet Boolean
     * @return

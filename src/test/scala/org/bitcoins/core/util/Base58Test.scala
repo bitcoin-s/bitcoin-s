@@ -140,4 +140,28 @@ class Base58Test extends FlatSpec with MustMatchers with BitcoinSLogger {
     }
   }
 
+  it must "check validity of base58 string with illegal characters and fail" in {
+    Base58.isValid("3CMNFxN1oHBc4R1EpboAL5yzHGgE611Xol") must be (false)
+  }
+
+  it must "decodeCheck a string with a length less than 4 and fail" in {
+      Base58.decodeCheck("asf").isFailure must be (true)
+  }
+  it must "decodeCheck a valid string and succeed" in {
+    Base58.decodeCheck("3CMNFxN1oHBc4R1EpboAL5yzHGgE611Xou").isSuccess must be (true)
+  }
+
+  it must "encode a pubKeyHash to an address" in {
+    val hash = Sha256Hash160Digest("74f209f6ea907e2ea48f74fae05782ae8a665257")
+    val address = Address("3CMNFxN1oHBc4R1EpboAL5yzHGgE611Xou")
+    Base58.encodePubKeyHashToBase58Address(hash, "script", false) must be (address)
+  }
+
+  it must "encode a private key to WIF, then decode it from WIF to hex private key" in {
+    val WIF = "5Kd3NBUAdUnhyzenEwVLy9pBKxSwXvE9FMPyR4UKZvpe6E3AgLr"
+    val privateKey = ECPrivateKey.fromWIFToPrivateKey(WIF)
+    Base58.encodePrivateKeyToWIF(privateKey, false, false) must be (WIF)
+  }
+
+
 }

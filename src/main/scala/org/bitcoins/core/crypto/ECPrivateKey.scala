@@ -113,7 +113,7 @@ object ECPrivateKey extends Factory[ECPrivateKey] {
   }
 
   def isCompressed(WIF : String) : Boolean = {
-    val bytes = BitcoinSUtil.decodeHex(WIF)
+    val bytes = Base58.decode(WIF)
     isCompressed(bytes)
   }
 
