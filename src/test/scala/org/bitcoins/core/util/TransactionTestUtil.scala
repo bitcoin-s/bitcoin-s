@@ -102,9 +102,9 @@ trait TransactionTestUtil extends BitcoinSLogger {
   }
 
   def signedMultiSignatureTransaction : (Transaction, Int, ScriptPubKey, Seq[ECPublicKey]) = {
-    val key1 = ECPrivateKey.fromBase58ToPrivateKey("cVLwRLTvz3BxDAWkvS3yzT9pUcTCup7kQnfT2smRjvmmm1wAP6QT")
-    val key2 = ECPrivateKey.fromBase58ToPrivateKey("cTine92s8GLpVqvebi8rYce3FrUYq78ZGQffBYCS1HmDPJdSTxUo")
-    def key3 = ECPrivateKey.fromBase58ToPrivateKey("cVHwXSPRZmL9adctwBwmn4oTZdZMbaCsR5XF6VznqMgcvt1FDDxg")
+    val key1 = ECPrivateKey.fromWIFToPrivateKey("cVLwRLTvz3BxDAWkvS3yzT9pUcTCup7kQnfT2smRjvmmm1wAP6QT")
+    val key2 = ECPrivateKey.fromWIFToPrivateKey("cTine92s8GLpVqvebi8rYce3FrUYq78ZGQffBYCS1HmDPJdSTxUo")
+    def key3 = ECPrivateKey.fromWIFToPrivateKey("cVHwXSPRZmL9adctwBwmn4oTZdZMbaCsR5XF6VznqMgcvt1FDDxg")
     (signedMultiSignatureTx,0,multiSignatureScriptPubKey, Seq(key1.publicKey,key2.publicKey,key3.publicKey))
   }
 
