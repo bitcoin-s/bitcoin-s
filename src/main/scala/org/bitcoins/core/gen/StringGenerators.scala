@@ -18,7 +18,7 @@ trait StringGenerators {
 
   /**
     * Generates a random hex string
- *
+    *
     * @return
     */
   def hexString : Gen[String] = {
@@ -29,6 +29,27 @@ trait StringGenerators {
     }
     hexStringGen.map(_.mkString)
   }
+
+  def strChar: Gen[Char] = {
+    val char : Gen[Gen[Char]] = for {
+      randomNum <- Gen.choose(0,4)
+    } yield {
+      if (randomNum == 0) Gen.numChar
+      else if (randomNum == 1) Gen.alphaUpperChar
+      else if (randomNum == 2) Gen.alphaLowerChar
+      else if (randomNum == 3) Gen.alphaChar
+      else  Gen.alphaNumChar
+    }
+    char.flatMap(g => g)
+  }
+
+  def genString(size : Int) : Gen[String] = {
+    val l : Gen[Seq[Char]] = Gen.listOfN(size,strChar)
+    l.map(_.mkString)
+  }
+
+
+  def randomPositiveNumber(upperBound:Long) = scala.util.Random.nextInt() % upperBound
 }
 
 object StringGenerators extends StringGenerators
