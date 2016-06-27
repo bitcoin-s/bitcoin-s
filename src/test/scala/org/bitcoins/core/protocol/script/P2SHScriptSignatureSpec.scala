@@ -1,5 +1,6 @@
 package org.bitcoins.core.protocol.script
 
+import org.bitcoins.core.gen.ScriptGenerators
 import org.scalacheck.{Prop, Properties}
 
 /**

@@ -308,10 +308,6 @@ object UInt64 extends Factory[UInt64] with BitcoinSLogger with BaseNumbers[UInt6
   }
 
   def apply(num : BigInt): UInt64 = UInt64Impl(num)
-  
-
-
-
 
 }
 

@@ -1,6 +1,7 @@
 package org.bitcoins.core.serializers
 
-import org.bitcoins.core.currency.{CurrencyUnitGenerator, Satoshis}
+import org.bitcoins.core.currency.Satoshis
+import org.bitcoins.core.gen.CurrencyUnitGenerator
 import org.scalacheck.{Prop, Properties}
 
 /**
