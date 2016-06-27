@@ -9,7 +9,14 @@ class UInt64Test extends FlatSpec with MustMatchers {
 
   "UInt64" must "hold the number 0" in {
     val uInt64 = UInt64(Seq(0.toByte))
+    uInt64.hex must be ("0000000000000000")
     uInt64.underlying must be (0)
+  }
+
+  it must "encode the number 1" in {
+    val uInt64 = UInt64(1)
+    uInt64.underlying must be (1)
+    uInt64.hex must be ("0000000000000001")
   }
 
   it must "hold the max for a uint32_t" in {

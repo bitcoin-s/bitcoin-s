@@ -94,6 +94,8 @@ sealed trait UInt32 extends UnsignedNumber with NumberOperations[UInt32] {
   */
 sealed trait UInt64 extends UnsignedNumber with NumberOperations[UInt64] {
   override type A = BigInt
+  override def hex = encodeHex(underlying)
+
   override def + (num : UInt64): UInt64 = {
     val sum = underlying + num.underlying
     val result = Try(UInt64(sum))
@@ -129,6 +131,19 @@ sealed trait UInt64 extends UnsignedNumber with NumberOperations[UInt64] {
   private def checkResult(result : Try[UInt64]): UInt64 = result match {
     case Success(number) => number
     case Failure(exception) => throw exception
+  }
+
+  /**
+    * The converts a [[BigInt]] to a 8 byte hex representation
+    * [[BigInt]] will only allocate 1 byte for numbers like 1 which require 1 byte, giving us the hex representation 01
+    * this function pads the hex chars to be 0000000000000001
+    * @param bigInt
+    * @return
+    */
+  private def encodeHex(bigInt : BigInt): String = {
+    val hex = BitcoinSUtil.encodeHex(bigInt)
+    val padding = for { _ <- 0 until 16 - hex.length} yield "0"
+    padding.mkString ++ hex
   }
 }
 
@@ -272,13 +287,13 @@ object UInt32 extends Factory[UInt32] with BitcoinSLogger with BaseNumbers[UInt3
 
 
 object UInt64 extends Factory[UInt64] with BitcoinSLogger with BaseNumbers[UInt64] {
-  private case class UInt64Impl(underlying : BigInt, hex : String) extends UInt64 {
+  private case class UInt64Impl(underlying : BigInt) extends UInt64 {
     require(underlying >= 0, "We cannot have a negative number in an unsigned number: " + underlying)
     require(underlying <= BigInt("18446744073709551615"), "We cannot have a number larger than 2^64 -1 in UInt32, got: " + underlying)
   }
 
-  lazy val zero = UInt64(0)
-  lazy val one = UInt64(1)
+  lazy val zero = UInt64(BigInt(0))
+  lazy val one = UInt64(BigInt(1))
 
   lazy val min = zero
   lazy val max = fromBytes(Seq(0xff.toByte, 0xff.toByte, 0xff.toByte, 0xff.toByte,
@@ -289,18 +304,14 @@ object UInt64 extends Factory[UInt64] with BitcoinSLogger with BaseNumbers[UInt6
       (byte,index) <- bytes.reverse.zipWithIndex
     } yield NumberUtil.calculateUnsignedNumberFromByte(index, byte)
     logger.debug("Individual bytes values: " + individualByteValues)
-    UInt64Impl(individualByteValues.sum, BitcoinSUtil.encodeHex(bytes))
+    UInt64Impl(individualByteValues.sum)
   }
 
-  def apply(num : BigInt): UInt64 = {
-    if (num >= (BigInt(1) << 63)) {
-      //since Scala uses twos complement, it will add a padding byte
-      //if the number is > 2^63. We can remove this since we want to
-      //represent this number as unsigned
-      val bytes = num.toByteArray.tail
-      UInt64Impl(num, BitcoinSUtil.encodeHex(bytes))
-    } else UInt64Impl(num, BitcoinSUtil.encodeHex(num))
-  }
+  def apply(num : BigInt): UInt64 = UInt64Impl(num)
+  
+
+
+
 
 }
 
