@@ -1,5 +1,6 @@
 package org.bitcoins.core.number
 
+import org.bitcoins.core.gen.NumberGenerator
 import org.bitcoins.core.util.{BitcoinSLogger, NumberUtil}
 import org.scalacheck.{Gen, Prop, Properties}
 

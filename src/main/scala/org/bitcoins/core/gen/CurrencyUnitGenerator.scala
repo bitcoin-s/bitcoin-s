@@ -1,6 +1,6 @@
-package org.bitcoins.core.currency
+package org.bitcoins.core.gen
 
-import org.bitcoins.core.number.{Int64, NumberGenerator}
+import org.bitcoins.core.currency.Satoshis
 import org.scalacheck.Gen
 
 /**

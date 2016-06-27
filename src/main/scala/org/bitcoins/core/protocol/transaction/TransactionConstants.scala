@@ -1,7 +1,5 @@
 package org.bitcoins.core.protocol.transaction
 
-import org.bitcoins.core.script.constant.ScriptNumber
-
 /**
   * Created by chris on 2/12/16.
  */

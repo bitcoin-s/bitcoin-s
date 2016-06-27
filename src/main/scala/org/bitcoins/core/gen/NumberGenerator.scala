@@ -1,8 +1,8 @@
-package org.bitcoins.core.number
+package org.bitcoins.core.gen
 
+import org.bitcoins.core.number.{Int32, Int64, UInt32, UInt64}
 import org.bitcoins.core.util.NumberUtil
-import org.scalacheck.Gen._
-import org.scalacheck.{Arbitrary, Gen}
+import org.scalacheck.Gen
 
 /**
   * Created by chris on 6/16/16.
@@ -40,14 +40,13 @@ trait NumberGenerator {
     * Chooses a BigInt in the ranges of 0 <= bigInt < 2^^64
     * @return
     */
-  def bigInts : Gen[BigInt] = for {
-    bigInt <- Arbitrary.arbBigInt.arbitrary
-    exponent <- Gen.choose(1,2)
-  } yield bigInt.abs.pow(exponent)
+  def bigInts : Gen[BigInt] = Gen.chooseNum(Long.MinValue,Long.MaxValue)
+    .map(x => BigInt(x) + BigInt(2).pow(63))
 
   def positiveBigInts : Gen[BigInt] = bigInts.filter(_ >= 0)
 
   def bigIntsUInt64Range : Gen[BigInt] = positiveBigInts.filter(_ < (BigInt(1) << 64))
+
   /**
     * Generates a number in the range 0 <= x < 2^^64
     * then wraps it in a UInt64

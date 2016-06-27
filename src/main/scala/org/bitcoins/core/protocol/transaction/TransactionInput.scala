@@ -17,7 +17,8 @@ sealed trait TransactionInput extends NetworkElement {
   def sequence : Long
 
 
-  def scriptSigCompactSizeUInt : CompactSizeUInt = CompactSizeUInt.parseCompactSizeUInt(scriptSignature)
+  def scriptSigCompactSizeUInt : CompactSizeUInt = CompactSizeUInt.calculateCompactSizeUInt(scriptSignature.bytes)
+
   //https://bitcoin.org/en/developer-reference#txin
   override def size = previousOutput.size + scriptSignature.size +
     scriptSigCompactSizeUInt.size.toInt + 4

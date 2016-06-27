@@ -1,5 +1,6 @@
 package org.bitcoins.core.currency
 
+import org.bitcoins.core.gen.CurrencyUnitGenerator
 import org.scalacheck.{Prop, Properties}
 
 import scala.util.Try
