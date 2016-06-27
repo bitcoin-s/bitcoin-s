@@ -1,8 +1,9 @@
-package org.bitcoins.core.protocol.script
+package org.bitcoins.core.gen
 
-import org.bitcoins.core.crypto.{CryptoGenerators, ECDigitalSignature, ECPrivateKey, ECPublicKey}
+import org.bitcoins.core.crypto.{ECDigitalSignature, ECPrivateKey, ECPublicKey}
+import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.script.ScriptSettings
-import org.bitcoins.core.util.{BitcoinSLogger, StringGenerators}
+import org.bitcoins.core.util.BitcoinSLogger
 import org.scalacheck.Gen
 
 /**
@@ -35,7 +36,7 @@ trait ScriptGenerators extends BitcoinSLogger {
 
   def emptyScriptSignature = p2pkhScriptSignature.map(_ => EmptyScriptSignature)
   /**
-    * Generates a [[P2SHScriptSignature]]
+    * Generates a [[org.bitcoins.core.protocol.script.P2SHScriptSignature]]
     * WARNING: the redeem script and the script signature DO NOT evaluate to true
     * if executed by [[org.bitcoins.core.script.interpreter.ScriptInterpreter]]
     * @return

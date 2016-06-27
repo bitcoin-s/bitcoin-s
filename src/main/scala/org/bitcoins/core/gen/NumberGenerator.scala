@@ -1,8 +1,8 @@
-package org.bitcoins.core.number
+package org.bitcoins.core.gen
 
+import org.bitcoins.core.number.{Int32, Int64, UInt32, UInt64}
 import org.bitcoins.core.util.NumberUtil
-import org.scalacheck.Gen._
-import org.scalacheck.{Arbitrary, Gen}
+import org.scalacheck.Gen
 
 /**
   * Created by chris on 6/16/16.

@@ -1,9 +1,6 @@
-package org.bitcoins.core.protocol.transaction
+package org.bitcoins.core.gen
 
-import org.bitcoins.core.crypto.CryptoGenerators
-import org.bitcoins.core.currency.CurrencyUnitGenerator
-import org.bitcoins.core.number.NumberGenerator
-import org.bitcoins.core.protocol.script.ScriptGenerators
+import org.bitcoins.core.protocol.transaction._
 import org.scalacheck.Gen
 
 import scala.annotation.tailrec
@@ -14,7 +11,7 @@ import scala.annotation.tailrec
 trait TransactionGenerators {
 
   /**
-    * Responsible for generating [[TransactionOutPoint]]
+    * Responsible for generating [[org.bitcoins.core.protocol.transaction.TransactionOutPoint]]
     * @return
     */
   def outPoints : Gen[TransactionOutPoint] = for {
@@ -25,7 +22,7 @@ trait TransactionGenerators {
 
 
   /**
-    * Generates a random [[TransactionOutput]]
+    * Generates a random [[org.bitcoins.core.protocol.transaction.TransactionOutput]]
     * @return
     */
   def outputs : Gen[TransactionOutput] = for {
@@ -34,7 +31,7 @@ trait TransactionGenerators {
   } yield TransactionOutput(satoshis, scriptPubKey)
 
   /**
-    * Generates a random [[TransactionInput]]
+    * Generates a random [[org.bitcoins.core.protocol.transaction.TransactionInput]]
     * @return
     */
   def inputs : Gen[TransactionInput] = for {
@@ -52,7 +49,7 @@ trait TransactionGenerators {
 
 
   /**
-    * Generates an arbitrary [[Transaction]]
+    * Generates an arbitrary [[org.bitcoins.core.protocol.transaction.Transaction]]
     * This transaction's [[TransactionInput]]s will not evaluate to true
     * inside of the [[org.bitcoins.core.script.interpreter.ScriptInterpreter]]
     * @return

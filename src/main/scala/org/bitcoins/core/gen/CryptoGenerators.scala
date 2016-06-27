@@ -1,6 +1,7 @@
-package org.bitcoins.core.crypto
+package org.bitcoins.core.gen
 
-import org.bitcoins.core.util.{CryptoUtil, StringGenerators}
+import org.bitcoins.core.crypto.{DoubleSha256Digest, ECDigitalSignature, ECPrivateKey, ECPublicKey}
+import org.bitcoins.core.util.CryptoUtil
 import org.scalacheck.Gen
 
 /**

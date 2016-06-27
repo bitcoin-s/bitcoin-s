@@ -1,4 +1,4 @@
-package org.bitcoins.core.util
+package org.bitcoins.core.gen
 
 import org.scalacheck.Gen
 
@@ -18,6 +18,7 @@ trait StringGenerators {
 
   /**
     * Generates a random hex string
+ *
     * @return
     */
   def hexString : Gen[String] = {
