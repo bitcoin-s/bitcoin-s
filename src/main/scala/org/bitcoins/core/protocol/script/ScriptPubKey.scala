@@ -70,9 +70,6 @@ trait MultiSignatureScriptPubKey extends ScriptPubKey {
   def requiredSigs : Long = {
     val asmWithoutPushOps = asm.filterNot(_.isInstanceOf[BytesToPushOntoStack])
     val opCheckMultiSigIndex = if (asm.indexOf(OP_CHECKMULTISIG) != -1) asmWithoutPushOps.indexOf(OP_CHECKMULTISIG) else asmWithoutPushOps.indexOf(OP_CHECKMULTISIGVERIFY)
-    logger.debug("opCheckMultiSigIndex: " + opCheckMultiSigIndex)
-    logger.debug("maxSigs: " + maxSigs)
-    logger.debug("asmWithoutPushOps: " + asmWithoutPushOps)
     //magic number 2 represents the maxSig operation and the OP_CHECKMULTISIG operation at the end of the asm
     val numSigsRequired = asmWithoutPushOps(opCheckMultiSigIndex - maxSigs.toInt - 2)
     numSigsRequired match {
@@ -169,6 +166,26 @@ object MultiSignatureScriptPubKey extends Factory[MultiSignatureScriptPubKey] wi
  * Format: OP_HASH160 <Hash160(redeemScript)> OP_EQUAL
  */
 trait P2SHScriptPubKey extends ScriptPubKey
+
+object P2SHScriptPubKey extends Factory[P2SHScriptPubKey] {
+  override def fromBytes(bytes : Seq[Byte]): P2SHScriptPubKey = {
+    val scriptPubKey = RawScriptPubKeyParser.read(bytes)
+    matchP2SHScriptPubKey(scriptPubKey)
+  }
+
+  def apply(scriptPubKey: ScriptPubKey) : P2SHScriptPubKey = {
+    val hash = CryptoUtil.ripeMd160(scriptPubKey.bytes)
+    val asm = Seq(OP_HASH160, BytesToPushOntoStack(hash.bytes.size), ScriptConstant(hash.bytes), OP_EQUAL)
+    val p2shScriptPubKey = ScriptPubKey.fromAsm(asm)
+    matchP2SHScriptPubKey(p2shScriptPubKey)
+  }
+
+  private def matchP2SHScriptPubKey(scriptPubKey : ScriptPubKey): P2SHScriptPubKey = scriptPubKey match {
+    case p2shScriptPubKey : P2SHScriptPubKey => p2shScriptPubKey
+    case scriptPubKey : ScriptPubKey =>
+      throw new IllegalArgumentException("Exepected multisignature scriptPubKey, got: " + scriptPubKey)
+  }
+}
 
 /**
  * Represents a pay to public key script public key
@@ -274,7 +291,6 @@ object ScriptPubKey extends Factory[ScriptPubKey] with BitcoinSLogger {
 
     val standardOps = asm.filter(op =>  op.isInstanceOf[ScriptNumber] || op == OP_CHECKMULTISIG ||
       op == OP_CHECKMULTISIGVERIFY || op.isInstanceOf[ScriptConstant] || op.isInstanceOf[BytesToPushOntoStack])
-    logger.info("Non standard ops: " + standardOps)
     (hasRequiredSignaturesTry, hasMaximumSignaturesTry) match {
       case (Success(hasRequiredSignatures), Success(hasMaximumSignatures)) =>
         val result = isNotEmpty && containsMultiSigOp && hasRequiredSignatures &&

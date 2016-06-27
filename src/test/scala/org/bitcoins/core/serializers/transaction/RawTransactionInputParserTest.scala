@@ -1,22 +1,19 @@
 package org.bitcoins.core.serializers.transaction
 
 
-import org.bitcoins.core.protocol.transaction.{TransactionConstants, TransactionInput}
-import org.bitcoins.core.script.constant.{OP_1, OP_0}
-import org.bitcoins.core.script.crypto.OP_CHECKMULTISIG
-import org.bitcoins.core.util.{BitcoinSUtil, TestUtil}
-import org.scalatest.{ FlatSpec, MustMatchers}
+import org.bitcoins.core.crypto.DoubleSha256Digest
+import org.bitcoins.core.protocol.script.P2PKScriptSignature
+import org.bitcoins.core.protocol.transaction.{TransactionConstants, TransactionInput, TransactionOutPoint}
+import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil, TestUtil}
+import org.scalatest.{FlatSpec, MustMatchers}
 
 /**
  * Created by chris on 1/13/16.
  */
-class RawTransactionInputParserTest extends FlatSpec with MustMatchers with RawTransactionInputParser {
+class RawTransactionInputParserTest extends FlatSpec with MustMatchers with RawTransactionInputParser with BitcoinSLogger {
 
   //txid cad1082e674a7bd3bc9ab1bc7804ba8a57523607c876b8eb2cbe645f2b1803d6
-  val rawTxInput = "01" +
-    "85d6b0da2edf96b282030d3f4f79d14cc8c882cfef1b3064170c850660317de100000000" +
-    "6f0047304402207df6dd8dad22d49c3c83d8031733c32a53719278eb7985d3b35b375d776f84f102207054f9209a1e87d55feafc90aa04c33008e5bae9191da22aeaa16efde96f41f00125512102b022902a0fdd71e831c37e4136c2754a59887be0618fb75336d7ab67e2982ff551ae" +
-    "ffffffff"
+  val rawTxInput = "01" + "85d6b0da2edf96b282030d3f4f79d14cc8c882cfef1b3064170c850660317de100000000" + "6f0047304402207df6dd8dad22d49c3c83d8031733c32a53719278eb7985d3b35b375d776f84f102207054f9209a1e87d55feafc90aa04c33008e5bae9191da22aeaa16efde96f41f00125512102b022902a0fdd71e831c37e4136c2754a59887be0618fb75336d7ab67e2982ff551ae" + "ffffffff"
   //from txid 44e504f5b7649d215be05ad9f09026dee95201244a3b218013c504a6a49a26ff
   val rawTxInputs = "02df80e3e6eba7dcd4650281d3c13f140dafbb823a7227a78eb6ee9f6cedd040011b0000006a473044022040f91c48f4011bf2e2edb6621bfa8fb802241de939cb86f1872c99c580ef0fe402204fc27388bc525e1b655b5f5b35f9d601d28602432dd5672f29e0a47f5b8bbb26012102c114f376c98d12a0540c3a81ab99bb1c5234245c05e8239d09f48229f9ebf011ffffffff" +
     "df80e3e6eba7dcd4650281d3c13f140dafbb823a7227a78eb6ee9f6cedd04001340000006b483045022100cf317c320d078c5b884c44e7488825dab5bcdf3f88c66314ac925770cd8773a7022033fde60d33cc2842ea73fce5d9cf4f8da6fadf414a75b7085efdcd300407f438012102605c23537b27b80157c770cd23e066cd11db3800d3066a38b9b592fc08ae9c70ffffffff"
@@ -25,9 +22,10 @@ class RawTransactionInputParserTest extends FlatSpec with MustMatchers with RawT
     val txInputs : Seq[TransactionInput] = read(rawTxInput)
     txInputs.head.previousOutput.vout must be (0)
     txInputs.head.previousOutput.txId.hex must be (BitcoinSUtil.flipEndianess("e17d316006850c1764301befcf82c8c84cd1794f3f0d0382b296df2edab0d685"))
-    txInputs.head.sequence must be (BigInt("4294967295"))
     txInputs.head.scriptSignature.hex must be (TestUtil.rawP2shInputScript)
     txInputs.head.scriptSignature.asm must be (TestUtil.p2shInputScript.asm)
+    txInputs.head.sequence must be (BigInt("4294967295"))
+
   }
 
 
@@ -44,17 +42,17 @@ class RawTransactionInputParserTest extends FlatSpec with MustMatchers with RawT
     secondInput.scriptSignature.hex must be ("483045022100cf317c320d078c5b884c44e7488825dab5bcdf3f88c66314ac925770cd8773a7022033fde60d33cc2842ea73fce5d9cf4f8da6fadf414a75b7085efdcd300407f438012102605c23537b27b80157c770cd23e066cd11db3800d3066a38b9b592fc08ae9c70")
   }
 
-  it must "find the correct size for an input" in {
-    val txInput : TransactionInput = RawTransactionInputParser.read(rawTxInput).head
-    txInput.size must be (BitcoinSUtil.decodeHex(rawTxInput).size - 1)
+   it must "find the correct size for an input" in {
+     val txInput : TransactionInput = RawTransactionInputParser.read(rawTxInput).head
+     txInput.size must be (BitcoinSUtil.decodeHex(rawTxInput).size - 1)
 
-  }
+   }
 
-  it must "write a single input" in {
-    val txInputs = RawTransactionInputParser.read(rawTxInput)
-    val serializedInputs = RawTransactionInputParser.write(txInputs)
-    serializedInputs must be (rawTxInput)
-  }
+   it must "write a single input" in {
+     val txInputs = RawTransactionInputParser.read(rawTxInput)
+     val serializedInputs = RawTransactionInputParser.write(txInputs)
+     serializedInputs must be (rawTxInput)
+   }
 
   it must "write a single input not in a sequence" in {
     val txInputs = RawTransactionInputParser.read(rawTxInput)
@@ -177,6 +175,23 @@ class RawTransactionInputParserTest extends FlatSpec with MustMatchers with RawT
     RawTransactionInputParser.write(input) must be (rawInput)
   }
 
+  it must "read and write an input with a large vout index in the outpoint" in {
+    val rawInput = "01b32667dc69ce8030bffb7d7cf9a87c985da6552f71ac39363d043ff9d75d230411d2346448473045022100f9649ac255ce97a132233f896a70babd1f4d8eaeaa4108165be97309817ad5bb02205bf70f31b4bb605cb9d1ce1a860d40bc92e2b5fca7be335edfea874570619d6da6ab6f7e"
+    val input = RawTransactionInputParser.read(rawInput)
+    RawTransactionInputParser.write(input) must be (rawInput)
+  }
+
+
+  it must "write then read this list of inputs with large sequence numbers" in {
+    val input = List(TransactionInput(TransactionOutPoint(
+        DoubleSha256Digest("ba3dd35a9b55c48114590d9bce52686ffd4b52f9c3f530bf65ad89d2b6109703"),1311080620),
+          P2PKScriptSignature("46304402204a77315e14decd47650f5ecc2c84a411c6ae7049e01637ebbd8f63eaab007c2e0220425cff64ca35a6fe426459eb4b7596cea75fdb057c843518046568f6ecba81b3"),30250565))
+
+    val hex = RawTransactionInputParser.write(input)
+
+    logger.info("Input hex: " + hex)
+    RawTransactionInputParser.read(hex) must be (input)
+  }
 
 
 }
