@@ -34,6 +34,7 @@ class UInt64Test extends FlatSpec with MustMatchers {
     val uInt64 = UInt64(Seq(0xff.toByte, 0xff.toByte, 0xff.toByte, 0xff.toByte,
       0xff.toByte, 0xff.toByte, 0xff.toByte, 0xff.toByte))
     uInt64.underlying must be (BigInt("18446744073709551615"))
+    uInt64.hex must be ("ffffffffffffffff")
   }
 
   it must "throw an exception if we try and create a number larger than 8 bytes" in {

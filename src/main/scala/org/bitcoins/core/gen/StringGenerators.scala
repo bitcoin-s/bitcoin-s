@@ -43,10 +43,15 @@ trait StringGenerators {
     char.flatMap(g => g)
   }
 
-  def genString(size : Int) : Gen[String] = {
+  def genString(size : Int): Gen[String] = {
     val l : Gen[Seq[Char]] = Gen.listOfN(size,strChar)
     l.map(_.mkString)
   }
+
+  def genString: Gen[String] = for {
+    randomNum <- Gen.choose(0,100)
+    randomString <- genString(randomNum)
+  } yield randomString
 
 
   def randomPositiveNumber(upperBound:Long) = scala.util.Random.nextInt() % upperBound

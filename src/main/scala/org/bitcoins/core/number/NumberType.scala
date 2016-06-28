@@ -142,8 +142,14 @@ sealed trait UInt64 extends UnsignedNumber with NumberOperations[UInt64] {
     */
   private def encodeHex(bigInt : BigInt): String = {
     val hex = BitcoinSUtil.encodeHex(bigInt)
-    val padding = for { _ <- 0 until 16 - hex.length} yield "0"
-    padding.mkString ++ hex
+    if (hex.length == 18) {
+      //means that encodeHex(BigInt) padded an extra byte, giving us 9 bytes instead of 8
+      hex.slice(2,hex.length)
+    } else {
+      val padding = for { _ <- 0 until 16 - hex.length} yield "0"
+      padding.mkString ++ hex
+    }
+
   }
 }
 
