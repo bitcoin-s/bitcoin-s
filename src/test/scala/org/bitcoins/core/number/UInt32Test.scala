@@ -47,6 +47,7 @@ class UInt32Test extends FlatSpec with MustMatchers {
     //this is UInt32_t's max value
     val uInt32 = UInt32(Seq(0xff.toByte, 0xff.toByte, 0xff.toByte, 0xff.toByte))
     uInt32.underlying must be (4294967295L)
+    uInt32.hex must be ("ffffffff")
   }
 
   it must "throw an exception if we try and create a UInt32 with a negative number" in {
