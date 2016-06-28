@@ -1,6 +1,7 @@
 package org.bitcoins.core.serializers.blockchain
 
 import org.bitcoins.core.crypto.DoubleSha256Digest
+import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil}
@@ -105,11 +106,11 @@ class RawBlockSerializerTest extends FlatSpec with MustMatchers with BitcoinSLog
 
     val block = RawBlockSerializer.read(hex)
     block.blockHeader.hash.hex must be ("5f3d49113e7bf838a061a1661c672053deb90891edf3ecfa9e18000000000000")
-    block.blockHeader.version must be (536870912)
+    block.blockHeader.version must be (UInt32(536870912))
     block.blockHeader.previousBlockHash must be (DoubleSha256Digest(prevBlockHash))
     block.blockHeader.merkleRootHash must be (DoubleSha256Digest(merkleRoot))
-    block.blockHeader.time must be (1465354640)
-    block.blockHeader.nBits must be (437875042)
+    block.blockHeader.time must be (UInt32(1465354640))
+    block.blockHeader.nBits must be (UInt32(437875042))
     block.blockHeader must be (RawBlockHeaderSerializer.read(header))
     block.txCount.num must be (txSeq.size)
     block.hex must be (hex)
