@@ -42,7 +42,6 @@ trait NumberUtil extends BitcoinSLogger {
       if ((pow2(i) & byte) != 0) pow2(bitIndex)
       else BigInt(0)
     }
-    logger.debug("Set bits: " + setBits)
     setBits.foldLeft(BigInt(0)){_ + _}
   }
 
