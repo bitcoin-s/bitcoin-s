@@ -33,7 +33,6 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
    * Serializes a transaction to be signed by an ECKey
    * follows the bitcoinj implementation which can be found here
    * hashing is done in the hashForSignature function
- *
    * @param inputIndex
    * @param script
    * @param hashType
