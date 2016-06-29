@@ -9,7 +9,10 @@ import org.bitcoins.core.util.BitcoinSUtil
  * Created by chris on 7/14/15.
  */
 
-
+/**
+  * Compact sized unsigned integer as described in:
+  * https://bitcoin.org/en/developer-reference#compactsize-unsigned-integers
+  */
 trait CompactSizeUInt {
 
   /**
@@ -37,10 +40,25 @@ trait CompactSizeUInt {
 
 object CompactSizeUInt {
   private sealed case class CompactSizeUIntImpl(num : Long, size : Long) extends CompactSizeUInt
+
   def apply(num : Long, size : Long) : CompactSizeUInt = {
     CompactSizeUIntImpl(num,size)
   }
 
+  def apply(num : Long): CompactSizeUInt = {
+    //means we can represent the number with a single byte
+    val size = calcSizeForNum(num)
+    CompactSizeUInt(num,size)
+  }
+
+  private def calcSizeForNum(num : Long) : Int = {
+    if (num <= 255) 1
+    // can be represented with two bytes
+    else if (num <= 65535) 3
+    //can be represented with 4 bytes
+    else if (num <= UInt32.max.underlying) 5
+    else 9
+  }
   /**
     * This function is responsible for calculating what the compact size unsigned integer is for a
     * sequence of bytes
@@ -64,8 +82,6 @@ object CompactSizeUInt {
     * @return
     */
   def calculateCompactSizeUInt(hex : String) : CompactSizeUInt = calculateCompactSizeUInt(BitcoinSUtil.decodeHex(hex))
-
-
 
   /**
     * Parses a VarInt from a string of hex characters

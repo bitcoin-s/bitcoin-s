@@ -28,7 +28,7 @@ trait CryptoGenerators {
     digest = CryptoUtil.doubleSHA256(hex)
   } yield digest
 
-
+  def doubleSha256DigestSeq(num : Int): Gen[Seq[DoubleSha256Digest]] = Gen.listOfN(num,doubleSha256Digest)
 
 }
 
