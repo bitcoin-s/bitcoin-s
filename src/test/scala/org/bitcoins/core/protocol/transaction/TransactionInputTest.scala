@@ -21,6 +21,8 @@ class TransactionInputTest extends FlatSpec with MustMatchers {
 
 
   it must "write a transaction output to hex accurately" in {
+    val input = TransactionInput(TestUtil.rawTxInput)
+
     TransactionInput.fromHex(TestUtil.rawTxInput).hex must be (TestUtil.rawTxInput)
   }
 

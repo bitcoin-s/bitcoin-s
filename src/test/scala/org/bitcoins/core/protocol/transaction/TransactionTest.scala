@@ -1,5 +1,6 @@
 package org.bitcoins.core.protocol.transaction
 
+import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.transaction.testprotocol.CoreTransactionTestCase
 import org.bitcoins.core.protocol.transaction.testprotocol.CoreTransactionTestCaseProtocol._
 import org.bitcoins.core.script.ScriptProgram
@@ -89,7 +90,7 @@ class TransactionTest extends FlatSpec with MustMatchers with BitcoinSLogger {
       require(outPoint.txId == input.previousOutput.txId,
         "OutPoint txId not the same as input prevout txid\noutPoint.txId: " + outPoint.txId + "\n" +
           "input prevout txid: " + input.previousOutput.txId)
-      val program = ScriptProgram(tx,scriptPubKey,inputIndex,testCase.flags)
+      val program = ScriptProgram(tx,scriptPubKey,UInt32(inputIndex),testCase.flags)
       withClue(testCase.raw) {
         ScriptInterpreter.run(program) must equal (ScriptOk)
       }
@@ -103,14 +104,14 @@ class TransactionTest extends FlatSpec with MustMatchers with BitcoinSLogger {
 
 
     //use this to represent a single test case from script_valid.json
-/*    val lines =
+    val lines =
         """
           |[
-          |[[["0000000000000000000000000000000000000000000000000000000000000100", 0, "0x06 0x000000000000 CHECKLOCKTIMEVERIFY 1"]],
-          |"010000000100010000000000000000000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000", "P2SH,CHECKLOCKTIMEVERIFY"]
+[[["0000000000000000000000000000000000000000000000000000000000000000", -1, "1"]],
+"01000000010000000000000000000000000000000000000000000000000000000000000000ffffffff0151ffffffff010000000000000000015100000000", "P2SH"]
           |]
-        """.stripMargin*/
-    val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n" finally source.close()
+        """.stripMargin
+    //val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n" finally source.close()
     val json = lines.parseJson
     val testCasesOpt : Seq[Option[CoreTransactionTestCase]] = json.convertTo[Seq[Option[CoreTransactionTestCase]]]
     val testCases : Seq[CoreTransactionTestCase] = testCasesOpt.flatten
@@ -126,9 +127,11 @@ class TransactionTest extends FlatSpec with MustMatchers with BitcoinSLogger {
         logger.info("ScriptPubKey: " + scriptPubKey)
         logger.info("OutPoint: " + outPoint)
         logger.info("Flags after parsing: " + testCase.flags)
+        logger.info("spending tx: " + testCase.spendingTx)
+        logger.info("" + testCase.scriptPubKeys)
         val isValidTx = ScriptInterpreter.checkTransaction(tx)
         if (isValidTx) {
-          val program = ScriptProgram(tx,scriptPubKey,inputIndex,testCase.flags)
+          val program = ScriptProgram(tx,scriptPubKey,UInt32(inputIndex),testCase.flags)
           ScriptInterpreter.run(program) == ScriptOk
         } else {
           logger.error("Transaction does not pass CheckTransaction()")
@@ -137,7 +140,7 @@ class TransactionTest extends FlatSpec with MustMatchers with BitcoinSLogger {
       }
       withClue(testCase.raw) {
         //only one input is required to be false to make the transaction invalid
-        txInputValidity.exists(_ == false) must be (true)
+        txInputValidity.contains(false) must be (true)
       }
     }
   }

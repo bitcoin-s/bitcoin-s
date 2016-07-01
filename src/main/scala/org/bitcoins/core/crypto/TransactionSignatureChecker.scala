@@ -69,7 +69,7 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
           val sigsRemoved = removeSignatureFromScript(signature,script)
           sigsRemoved
       }
-      val hashTypeByte = if (signature.bytes.size > 0) signature.bytes.last else 0x00.toByte
+      val hashTypeByte = if (signature.bytes.nonEmpty) signature.bytes.last else 0x00.toByte
       val hashType = HashTypeFactory.fromByte(hashTypeByte)
       val hashForSignature = TransactionSignatureSerializer.hashForSignature(txSignatureComponent.transaction,
         txSignatureComponent.inputIndex,
