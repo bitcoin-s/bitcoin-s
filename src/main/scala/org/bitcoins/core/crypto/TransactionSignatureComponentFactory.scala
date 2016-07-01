@@ -1,5 +1,6 @@
 package org.bitcoins.core.crypto
 
+import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script.{P2SHScriptSignature, P2SHScriptPubKey, ScriptPubKey}
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.script.flag.ScriptFlag
@@ -9,10 +10,10 @@ import org.bitcoins.core.script.flag.ScriptFlag
  */
 trait TransactionSignatureComponentFactory {
 
-  private sealed case class TransactionSignatureComponentImpl(transaction : Transaction, inputIndex : Int,
+  private sealed case class TransactionSignatureComponentImpl(transaction : Transaction, inputIndex : UInt32,
     scriptPubKey : ScriptPubKey, flags : Seq[ScriptFlag]) extends TransactionSignatureComponent
 
-  def factory(transaction : Transaction, inputIndex : Int, scriptPubKey : ScriptPubKey,
+  def factory(transaction : Transaction, inputIndex : UInt32, scriptPubKey : ScriptPubKey,
                flags : Seq[ScriptFlag]) : TransactionSignatureComponent = {
     TransactionSignatureComponentImpl(transaction,inputIndex,scriptPubKey, flags)
   }

@@ -1,5 +1,6 @@
 package org.bitcoins.core.gen
 
+import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.transaction._
 import org.scalacheck.Gen
 
@@ -12,17 +13,19 @@ trait TransactionGenerators {
 
   /**
     * Responsible for generating [[org.bitcoins.core.protocol.transaction.TransactionOutPoint]]
+ *
     * @return
     */
   def outPoints : Gen[TransactionOutPoint] = for {
     txId <- CryptoGenerators.doubleSha256Digest
     //TODO: Needs to be changed to NumberGenerator.uInt32 when type is changed
-    vout <- Gen.choose(1,Int.MaxValue)
+    vout <- NumberGenerator.uInt32s
   } yield TransactionOutPoint(txId, vout)
 
 
   /**
     * Generates a random [[org.bitcoins.core.protocol.transaction.TransactionOutput]]
+ *
     * @return
     */
   def outputs : Gen[TransactionOutput] = for {
@@ -32,12 +35,13 @@ trait TransactionGenerators {
 
   /**
     * Generates a random [[org.bitcoins.core.protocol.transaction.TransactionInput]]
+ *
     * @return
     */
   def inputs : Gen[TransactionInput] = for {
     outPoint <- outPoints
     scriptSig <- ScriptGenerators.scriptSignature
-    sequenceNumber <- Gen.choose(0,TransactionConstants.sequence)
+    sequenceNumber <- NumberGenerator.uInt32s
     randomNum = randomNumber(10)
   } yield {
     if (randomNum == 0) {
@@ -52,6 +56,7 @@ trait TransactionGenerators {
     * Generates an arbitrary [[org.bitcoins.core.protocol.transaction.Transaction]]
     * This transaction's [[TransactionInput]]s will not evaluate to true
     * inside of the [[org.bitcoins.core.script.interpreter.ScriptInterpreter]]
+ *
     * @return
     */
   def transactions : Gen[Transaction] = {
@@ -62,7 +67,7 @@ trait TransactionGenerators {
     for {
       lockTime <- NumberGenerator.uInt32s
       version <- NumberGenerator.uInt32s
-    } yield Transaction(version.underlying, generatedInputs, generatedOutputs, lockTime.underlying)
+    } yield Transaction(version, generatedInputs, generatedOutputs, lockTime)
 
   }
 

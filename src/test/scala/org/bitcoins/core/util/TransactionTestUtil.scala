@@ -2,6 +2,7 @@ package org.bitcoins.core.util
 
 import org.bitcoins.core.crypto.{ECPrivateKey, ECPublicKey}
 import org.bitcoins.core.currency.CurrencyUnits
+import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 
@@ -35,20 +36,20 @@ trait TransactionTestUtil extends BitcoinSLogger {
    * @param scriptPubKey
    * @return the transaction and the output index of the scriptPubKey
    */
-  def buildCreditingTransaction(scriptPubKey : ScriptPubKey) : (Transaction,Int) = {
+  def buildCreditingTransaction(scriptPubKey : ScriptPubKey) : (Transaction,UInt32) = {
     //this needs to be all zeros according to these 3 lines in bitcoin core
     //https://github.com/bitcoin/bitcoin/blob/605c17844ea32b6d237db6d83871164dc7d59dab/src/test/script_tests.cpp#L64
     //https://github.com/bitcoin/bitcoin/blob/80d1f2e48364f05b2cdf44239b3a1faa0277e58e/src/primitives/transaction.h#L32
     //https://github.com/bitcoin/bitcoin/blob/605c17844ea32b6d237db6d83871164dc7d59dab/src/uint256.h#L40
 
     
-    val outpoint = TransactionOutPoint(EmptyTransactionOutPoint.txId,0xFFFFFFFF)
+    val outpoint = EmptyTransactionOutPoint
     val scriptSignature = ScriptSignature("0000")
     val input = TransactionInput(outpoint,scriptSignature,TransactionConstants.sequence)
     val output = TransactionOutput(CurrencyUnits.zero,scriptPubKey)
 
     val tx = Transaction(TransactionConstants.version,Seq(input),Seq(output),TransactionConstants.lockTime)
-    (tx,0)
+    (tx,UInt32.zero)
   }
 
   /**
@@ -56,9 +57,9 @@ trait TransactionTestUtil extends BitcoinSLogger {
    * @param creditingTx
    * @param scriptSignature
    * @param outputIndex
-   * @return the built spending transaction adn the input index for the script signature
+   * @return the built spending transaction and the input index for the script signature
    */
-  def buildSpendingTransaction(creditingTx : Transaction,scriptSignature : ScriptSignature, outputIndex : Int) : (Transaction,Int) = {
+  def buildSpendingTransaction(creditingTx : Transaction,scriptSignature : ScriptSignature, outputIndex : UInt32) : (Transaction,UInt32) = {
 /*
     CMutableTransaction txSpend;
     txSpend.nVersion = 1;
@@ -78,7 +79,7 @@ trait TransactionTestUtil extends BitcoinSLogger {
     val tx = Transaction(TransactionConstants.version,Seq(input),Seq(output),TransactionConstants.lockTime)
 /*    val expectedHex = "01000000019ce5586f04dd407719ab7e2ed3583583b9022f29652702cfac5ed082013461fe000000004847304402200a5c6163f07b8d3b013c4d1d6dba25e780b39658d79ba37af7057a3b7f15ffa102201fd9b4eaa9943f734928b99a83592c2e7bf342ea2680f6a2bb705167966b742001ffffffff0100000000000000000000000000"
     require(tx.hex == expectedHex,"\nExpected hex: " + expectedHex + "\nActual hex:   " +  tx.hex)*/
-    (tx,0)
+    (tx,UInt32.zero)
   }
 
 
@@ -89,16 +90,16 @@ trait TransactionTestUtil extends BitcoinSLogger {
    * Returns a transaction, the input that is spending the output, and the inputIndex inside of the tx
    * @return
    */
-  def transactionWithSpendingInputAndCreditingOutput : (Transaction, TransactionInput, Int, TransactionOutput) = {
+  def transactionWithSpendingInputAndCreditingOutput : (Transaction, TransactionInput, UInt32, TransactionOutput) = {
     val spendingTx = TestUtil.simpleTransaction
     val creditingTx = TestUtil.parentSimpleTransaction
     logger.info("Crediting transaction: " + creditingTx)
-    val creditingOutput = TestUtil.parentSimpleTransaction.outputs(spendingTx.inputs.head.previousOutput.vout)
+    val creditingOutput = TestUtil.parentSimpleTransaction.outputs(spendingTx.inputs.head.previousOutput.vout.underlying.toInt)
     //make sure the outpoint index and the outpoint txid are correct
     require(spendingTx.inputs.head.previousOutput.txId == creditingTx.txId)
-    require(spendingTx.inputs.head.previousOutput.vout == 0)
+    require(spendingTx.inputs.head.previousOutput.vout == UInt32.zero)
 
-    (spendingTx,spendingTx.inputs.head,0, creditingOutput)
+    (spendingTx,spendingTx.inputs.head,UInt32.zero, creditingOutput)
   }
 
   def signedMultiSignatureTransaction : (Transaction, Int, ScriptPubKey, Seq[ECPublicKey]) = {
@@ -113,12 +114,12 @@ trait TransactionTestUtil extends BitcoinSLogger {
    * Returns a p2sh transaction with its corresponding crediting output
    * @return
    */
-  def p2shTransactionWithSpendingInputAndCreditingOutput : (Transaction, TransactionInput, Int, TransactionOutput) = {
+  def p2shTransactionWithSpendingInputAndCreditingOutput : (Transaction, TransactionInput, UInt32, TransactionOutput) = {
     val creditingTx = TestUtil.p2sh2Of2CreditingTx
     val spendingTx = TestUtil.p2sh2Of2Tx
-    val inputIndex = 0
-    val input = spendingTx.inputs(inputIndex)
-    (spendingTx, input, inputIndex, creditingTx.outputs(input.previousOutput.vout))
+    val inputIndex = UInt32.zero
+    val input = spendingTx.inputs(inputIndex.underlying.toInt)
+    (spendingTx, input, inputIndex, creditingTx.outputs(input.previousOutput.vout.underlying.toInt))
   }
 
   //https://tbtc.blockr.io/api/v1/tx/raw/d77d905fc29f86bc3db39fdb68cfcab4e35f677d4f2ec33ed749912e0fa5f385
@@ -134,10 +135,10 @@ trait TransactionTestUtil extends BitcoinSLogger {
    * Returns a p2sh transaction that has 2 of 3 signatures with the creiditing output
    * @return
    */
-  def p2sh2Of3TransactionWithSpendingInputAndCreditingOutput : (Transaction, TransactionInput, Int, TransactionOutput) = {
-    val inputIndex = 0
-    val input = p2sh2Of3Transaction.inputs(inputIndex)
-    val output = p2sh2Of3CreditingTransaction.outputs(input.previousOutput.vout)
+  def p2sh2Of3TransactionWithSpendingInputAndCreditingOutput : (Transaction, TransactionInput, UInt32, TransactionOutput) = {
+    val inputIndex = UInt32.zero
+    val input = p2sh2Of3Transaction.inputs(inputIndex.underlying.toInt)
+    val output = p2sh2Of3CreditingTransaction.outputs(input.previousOutput.vout.underlying.toInt)
     (p2sh2Of3Transaction,input,inputIndex,output)
   }
 
@@ -146,7 +147,7 @@ trait TransactionTestUtil extends BitcoinSLogger {
    * Builds a transaction with a non strict der encoded signature
    * @return the transaction and the inputIndex of the non strict der encoded signature
    */
-  def transactionWithNonStrictDerSignature : (Transaction, Int) = {
+  def transactionWithNonStrictDerSignature : (Transaction, UInt32) = {
     val (creditingTx,outputIndex) = buildCreditingTransaction(TestUtil.scriptPubKey)
     val (spendingTx,inputIndex) = buildSpendingTransaction(creditingTx,TestUtil.scriptSigNotStrictDerEncoded,outputIndex)
     (spendingTx,inputIndex)
@@ -157,9 +158,9 @@ trait TransactionTestUtil extends BitcoinSLogger {
    * Returns a valid transaction that spends a p2pkh output at the inputIndex
    * @return
    */
-  def p2pkhTransactionWithCreditingScriptPubKey : (Transaction, Int, ScriptPubKey) = {
+  def p2pkhTransactionWithCreditingScriptPubKey : (Transaction, UInt32, ScriptPubKey) = {
     val outputIndex = TestUtil.simpleTransaction.inputs.head.previousOutput.vout
-    (TestUtil.simpleTransaction, 0, TestUtil.parentSimpleTransaction.outputs(outputIndex).scriptPubKey)
+    (TestUtil.simpleTransaction, UInt32.zero, TestUtil.parentSimpleTransaction.outputs(outputIndex.underlying.toInt).scriptPubKey)
   }
 
 

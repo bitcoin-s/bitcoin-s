@@ -1,5 +1,6 @@
 package org.bitcoins.core.protocol.transaction
 
+import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script.ScriptSignature
 import org.bitcoins.core.util.TestUtil
 import org.scalatest.{FlatSpec, MustMatchers}
@@ -22,7 +23,7 @@ class TransactionInputFactoryTest extends FlatSpec with MustMatchers {
     val newInput = TransactionInput(input,TestUtil.simpleTransaction.outputs(0), TestUtil.simpleTransaction)
 
     newInput.previousOutput.txId must be (TestUtil.simpleTransaction.txId)
-    newInput.previousOutput.vout must be (0)
+    newInput.previousOutput.vout must be (UInt32.zero)
   }
 
   it must "chage the input's outpoint to the given outpoint" in {

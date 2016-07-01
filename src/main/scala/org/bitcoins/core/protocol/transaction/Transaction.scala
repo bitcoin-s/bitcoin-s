@@ -1,6 +1,7 @@
 package org.bitcoins.core.protocol.transaction
 
 import org.bitcoins.core.crypto.DoubleSha256Digest
+import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.NetworkElement
 import org.bitcoins.core.serializers.transaction.RawTransactionParser
 import org.bitcoins.core.util.{Factory, BitcoinSUtil, CryptoUtil}
@@ -14,6 +15,7 @@ sealed trait Transaction extends NetworkElement {
   /**
     * The sha256(sha256(tx)) of this transaction
     * Note that this is the big endian encoding of the hash NOT the little endian encoding displayed on block explorers
+    *
     * @return
     */
   def txId : DoubleSha256Digest = CryptoUtil.doubleSHA256(bytes)
@@ -23,7 +25,7 @@ sealed trait Transaction extends NetworkElement {
  *
     * @return
     */
-  def version : Long
+  def version : UInt32
 
   /**
     * The inputs for this transaction
@@ -44,7 +46,7 @@ sealed trait Transaction extends NetworkElement {
  *
     * @return
     */
-  def lockTime : Long
+  def lockTime : UInt32
 
   override def hex = RawTransactionParser.write(this)
 
@@ -73,8 +75,8 @@ case object EmptyTransaction extends Transaction {
 
 object Transaction extends Factory[Transaction] {
 
-  private sealed case class TransactionImpl(version : Long, inputs : Seq[TransactionInput],
-    outputs : Seq[TransactionOutput], lockTime : Long) extends Transaction
+  private sealed case class TransactionImpl(version : UInt32, inputs : Seq[TransactionInput],
+    outputs : Seq[TransactionOutput], lockTime : UInt32) extends Transaction
   /**
     * Updates a transaction outputs
  *
@@ -102,7 +104,7 @@ object Transaction extends Factory[Transaction] {
     * @param lockTime
     * @return
     */
-  def factory(oldTx : Transaction, lockTime : Long) : Transaction = {
+  def factory(oldTx : Transaction, lockTime : UInt32) : Transaction = {
     TransactionImpl(oldTx.version,oldTx.inputs,oldTx.outputs,lockTime)
   }
 
@@ -126,12 +128,12 @@ object Transaction extends Factory[Transaction] {
   def fromBytes(bytes : Seq[Byte]) : Transaction = RawTransactionParser.read(bytes)
 
   def apply(bytes : Array[Byte]) : Transaction = factory(bytes)
-  def apply(oldTx : Transaction, lockTime : Long)  : Transaction = factory(oldTx,lockTime)
+  def apply(oldTx : Transaction, lockTime : UInt32)  : Transaction = factory(oldTx,lockTime)
   def apply(oldTx : Transaction, updatedInputs : UpdateTransactionInputs) : Transaction = factory(oldTx, updatedInputs)
   def apply(oldTx : Transaction, updatedOutputs : UpdateTransactionOutputs) : Transaction = factory(oldTx, updatedOutputs)
 
-  def apply(version : Long, inputs : Seq[TransactionInput],
-            outputs : Seq[TransactionOutput], lockTime : Long) : Transaction = {
+  def apply(version : UInt32, inputs : Seq[TransactionInput],
+            outputs : Seq[TransactionOutput], lockTime : UInt32) : Transaction = {
     TransactionImpl(version,inputs,outputs,lockTime)
   }
 }

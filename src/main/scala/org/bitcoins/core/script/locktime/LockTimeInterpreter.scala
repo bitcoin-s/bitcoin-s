@@ -1,6 +1,7 @@
 package org.bitcoins.core.script.locktime
 
 
+import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.transaction.TransactionConstants
 import org.bitcoins.core.script.ScriptProgram
 import org.bitcoins.core.script.constant.{ScriptConstant, ScriptNumber, ScriptToken}
@@ -32,7 +33,7 @@ trait LockTimeInterpreter extends BitcoinSLogger {
   final def opCheckLockTimeVerify(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.isDefined && program.script.head == OP_CHECKLOCKTIMEVERIFY,
       "Script top must be OP_CHECKLOCKTIMEVERIFY")
-    val input = program.txSignatureComponent.transaction.inputs(program.txSignatureComponent.inputIndex)
+    val input = program.txSignatureComponent.transaction.inputs(program.txSignatureComponent.inputIndex.underlying.toInt)
     val transaction = program.txSignatureComponent.transaction
     if (program.stack.size == 0) {
       logger.error("Transaction validation failing in OP_CHECKLOCKTIMEVERIFY because we have no stack items")
@@ -45,10 +46,10 @@ trait LockTimeInterpreter extends BitcoinSLogger {
         case s : ScriptNumber if (s < ScriptNumber.zero) =>
           logger.error("OP_CHECKLOCKTIMEVERIFY marks tx as invalid if the stack top is negative")
           ScriptProgram(program,ScriptErrorNegativeLockTime)
-        case s : ScriptNumber if (s >= ScriptNumber(500000000) && transaction.lockTime < 500000000) =>
+        case s : ScriptNumber if (s >= ScriptNumber(500000000) && transaction.lockTime < UInt32(500000000)) =>
           logger.error("OP_CHECKLOCKTIMEVERIFY marks the tx as invalid if stack top >= 500000000 & tx locktime < 500000000")
           ScriptProgram(program,ScriptErrorUnsatisfiedLocktime)
-        case s : ScriptNumber if (s < ScriptNumber(500000000) && transaction.lockTime >= 500000000) =>
+        case s : ScriptNumber if (s < ScriptNumber(500000000) && transaction.lockTime >= UInt32(500000000)) =>
           logger.error("OP_CHECKLOCKTIMEVERIFY marks the tx as invalid if stack top < 500000000 & tx locktime >= 500000000")
           ScriptProgram(program,ScriptErrorUnsatisfiedLocktime)
         case s : ScriptNumber =>
@@ -99,7 +100,7 @@ trait LockTimeInterpreter extends BitcoinSLogger {
           //see BIP68 for semantic of locktimeDisableFalg
           logger.info("Locktime disable flag was set so OP_CHECKSEQUENCEVERIFY is treated as a NOP")
           ScriptProgram(program,program.script.tail,ScriptProgram.Script)
-        case s : ScriptNumber if (isLockTimeBitOff(s) && program.txSignatureComponent.transaction.version < 2) =>
+        case s : ScriptNumber if (isLockTimeBitOff(s) && program.txSignatureComponent.transaction.version < UInt32(2)) =>
           logger.error("OP_CSV fails if locktime bit is not set and the tx version < 2")
           ScriptProgram(program, ScriptErrorUnsatisfiedLocktime)
         case s : ScriptNumber =>
@@ -130,20 +131,20 @@ trait LockTimeInterpreter extends BitcoinSLogger {
     * @return if the given script number is valid or not
     */
   def checkSequence(program : ScriptProgram, nSequence : ScriptNumber) : Boolean = {
-    val inputIndex = program.txSignatureComponent.inputIndex
+    val inputIndex = program.txSignatureComponent.inputIndex.underlying.toInt
     logger.debug("inputIndex: " + inputIndex)
     val transaction = program.txSignatureComponent.transaction
-    val txToSequence : ScriptNumber = ScriptNumber(transaction.inputs(inputIndex).sequence)
+    val txToSequence : ScriptNumber = ScriptNumber(transaction.inputs(inputIndex).sequence.underlying)
 
-    if (program.txSignatureComponent.transaction.version < 2) {
+    if (program.txSignatureComponent.transaction.version < UInt32(2)) {
       logger.error("Transaction version is too low for OP_CSV")
       return false
     }
 
-    val nLockTimeMask : Long = TransactionConstants.sequenceLockTimeTypeFlag | TransactionConstants.sequenceLockTimeMask
-    val txToSequenceMasked : ScriptNumber = txToSequence & ScriptNumber(nLockTimeMask)
+    val nLockTimeMask : UInt32 = UInt32(TransactionConstants.sequenceLockTimeTypeFlag | TransactionConstants.sequenceLockTimeMask)
+    val txToSequenceMasked : ScriptNumber = txToSequence & ScriptNumber(nLockTimeMask.underlying)
 
-    val nSequenceMasked : ScriptNumber = nSequence & ScriptNumber(nLockTimeMask)
+    val nSequenceMasked : ScriptNumber = nSequence & ScriptNumber(nLockTimeMask.underlying)
 
     logger.info("tx sequence number: " + transaction.inputs(inputIndex).sequence)
     logger.info("txToSequenceMasked: " + txToSequenceMasked)
@@ -194,15 +195,15 @@ trait LockTimeInterpreter extends BitcoinSLogger {
     // unless the type of nLockTime being tested is the same as
     // the nLockTime in the transaction.
     val transaction = program.txSignatureComponent.transaction
-    val input = transaction.inputs(program.txSignatureComponent.inputIndex)
+    val input = transaction.inputs(program.txSignatureComponent.inputIndex.underlying.toInt)
     if (!(
-      (transaction.lockTime < TransactionConstants.locktimeThreshold && locktime.num < TransactionConstants.locktimeThreshold) ||
-        (transaction.lockTime >= TransactionConstants.locktimeThreshold && locktime.num >= TransactionConstants.locktimeThreshold)
+      (transaction.lockTime < TransactionConstants.locktimeThreshold && UInt32(locktime.num) < TransactionConstants.locktimeThreshold) ||
+        (transaction.lockTime >= TransactionConstants.locktimeThreshold && UInt32(locktime.num) >= TransactionConstants.locktimeThreshold)
       )) return false
 
     // Now that we know we're comparing apples-to-apples, the
     // comparison is a simple numeric one.
-    if (locktime.num > transaction.lockTime) return false
+    if (UInt32(locktime.num) > transaction.lockTime) return false
 
     // Finally the nLockTime feature can be disabled and thus
     // CHECKLOCKTIMEVERIFY bypassed if every txin has been

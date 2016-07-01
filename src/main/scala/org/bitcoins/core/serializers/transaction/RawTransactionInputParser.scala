@@ -18,7 +18,7 @@ trait RawTransactionInputParser extends RawBitcoinSerializer[Seq[TransactionInpu
 
 
   override def read(bytes : List[Byte]) : Seq[TransactionInput] = {
-    require(bytes.size > 0, "You passed in an empty list to read")
+    require(bytes.nonEmpty, "You passed in an empty list to read")
     val numInputs = bytes.head.toInt
     @tailrec
     def loop(bytes : List[Byte], accum : List[TransactionInput], inputsLeftToParse : Int) : Seq[TransactionInput] = {
@@ -54,7 +54,7 @@ trait RawTransactionInputParser extends RawBitcoinSerializer[Seq[TransactionInpu
     val outPoint = RawTransactionOutPointParser.write(input.previousOutput)
     val varInt = input.scriptSigCompactSizeUInt.hex
     val scriptSig = RawScriptSignatureParser.write(input.scriptSignature)
-    val sequence = addPadding(8,BitcoinSUtil.flipEndianess(UInt32(input.sequence).hex))
+    val sequence = addPadding(8,BitcoinSUtil.flipEndianess(input.sequence.hex))
     outPoint + varInt + scriptSig + sequence
   }
 
@@ -85,7 +85,7 @@ trait RawTransactionInputParser extends RawBitcoinSerializer[Seq[TransactionInpu
     logger.info("Sequence bytes: " + BitcoinSUtil.encodeHex(sequenceBytes))
     val sequenceNumberHex : String = BitcoinSUtil.encodeHex(sequenceBytes)
     val sequenceNumberFlippedEndianess = BitcoinSUtil.flipEndianess(sequenceNumberHex)
-    val sequenceNumber : Long = java.lang.Long.parseLong(sequenceNumberFlippedEndianess,16)
+    val sequenceNumber : UInt32 = UInt32(sequenceNumberFlippedEndianess)
     logger.debug("Parsed sequence number: " + sequenceNumber)
     val txInput = TransactionInput(outPoint,scriptSig,sequenceNumber)
     (txInput, bytes.slice(lastInputByte, bytes.length))

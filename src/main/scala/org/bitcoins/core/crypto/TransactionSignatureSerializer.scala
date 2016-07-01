@@ -1,6 +1,7 @@
 package org.bitcoins.core.crypto
 
 import org.bitcoins.core.currency.CurrencyUnits
+import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.serializers.RawBitcoinSerializerHelper
 import org.bitcoins.core.serializers.transaction.RawTransactionOutputParser
 import org.bitcoins.core.protocol.script._
@@ -39,7 +40,7 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
    * @param hashType
    * @return
    */
-  def serializeForSignature(spendingTransaction : Transaction, inputIndex : Int, script : Seq[ScriptToken], hashType : HashType) : Seq[Byte] = {
+  def serializeForSignature(spendingTransaction : Transaction, inputIndex : UInt32, script : Seq[ScriptToken], hashType : HashType) : Seq[Byte] = {
     logger.debug("Serializing for signature")
     logger.debug("Script: " + script)
     // Clear input scripts in preparation for signing. If we're signing a fresh
@@ -64,7 +65,7 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
 
     logger.info("After Bitcoin-S Script to be connected: " + scriptWithOpCodeSeparatorsRemoved)
 
-    val inputToSign = inputSigsRemoved(inputIndex)
+    val inputToSign = inputSigsRemoved(inputIndex.underlying.toInt)
 
     // Set the input to the script of its output. Bitcoin Core does this but the step has no obvious purpose as
     // the signature covers the hash of the prevout transaction which obviously includes the output script
@@ -75,7 +76,7 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
     val updatedInputs = for {
       (input,index) <- inputSigsRemoved.zipWithIndex
     } yield {
-        if (index == inputIndex) inputWithConnectedScript
+        if (UInt32(index) == inputIndex) inputWithConnectedScript
         else input
       }
 
@@ -91,7 +92,7 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
         sigHashNoneTx.bytes ++ sigHashBytes
 
       case SIGHASH_SINGLE =>
-        if (inputIndex >= spendingTransaction.outputs.size) {
+        if (inputIndex >= UInt32(spendingTransaction.outputs.size)) {
           // comment copied from bitcoinj
           // The input index is beyond the number of outputs, it's a buggy signature made by a broken
           // Bitcoin implementation. Bitcoin Core also contains a bug in handling this case:
@@ -143,13 +144,13 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
    * @param hashType
    * @return
    */
-  def hashForSignature(spendingTransaction : Transaction, inputIndex : Int, script : Seq[ScriptToken], hashType : HashType) : DoubleSha256Digest = {
+  def hashForSignature(spendingTransaction : Transaction, inputIndex : UInt32, script : Seq[ScriptToken], hashType : HashType) : DoubleSha256Digest = {
     //these first two checks are in accordance with behavior in bitcoin core
     //https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L1112-L1123
-    if (inputIndex >= spendingTransaction.inputs.size) {
+    if (inputIndex >= UInt32(spendingTransaction.inputs.size)) {
       logger.warn("Our inputIndex is out of the range of the inputs in the spending transaction")
       errorHash
-    } else if(hashType == SIGHASH_SINGLE  && inputIndex >= spendingTransaction.outputs.size) {
+    } else if(hashType == SIGHASH_SINGLE  && inputIndex >= UInt32(spendingTransaction.outputs.size)) {
       logger.warn("When we have a SIGHASH_SINGLE we cannot have more inputs than outputs")
       errorHash
     } else {
@@ -169,12 +170,12 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
    * @param inputIndex
    * @return
    */
-  private def setSequenceNumbersZero(inputs : Seq[TransactionInput], inputIndex : Int) : Seq[TransactionInput] =  {
+  private def setSequenceNumbersZero(inputs : Seq[TransactionInput], inputIndex : UInt32) : Seq[TransactionInput] =  {
     for {
       (input,index) <- inputs.zipWithIndex
     } yield {
-      if (index == inputIndex) input
-      else TransactionInput(input,0)
+      if (UInt32(index) == inputIndex) input
+      else TransactionInput(input,UInt32.zero)
     }
   }
 
@@ -186,11 +187,11 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
    * @param inputIndex
    * @return
    */
-  private def updateInputIndex(inputs : Seq[TransactionInput], updatedInput : TransactionInput, inputIndex : Int) : Seq[TransactionInput] = {
+  private def updateInputIndex(inputs : Seq[TransactionInput], updatedInput : TransactionInput, inputIndex : UInt32) : Seq[TransactionInput] = {
     for {
       (input,index) <- inputs.zipWithIndex
     } yield {
-      if (inputIndex == index) updatedInput
+      if (inputIndex == UInt32(index)) updatedInput
       else input
     }
   }
@@ -202,7 +203,7 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
    * @param inputIndex
    * @return
    */
-  private def sigHashNone(spendingTransaction : Transaction, inputIndex : Int) : Transaction = {
+  private def sigHashNone(spendingTransaction : Transaction, inputIndex : UInt32) : Transaction = {
     //following this implementation from bitcoinj
     //https://github.com/bitcoinj/bitcoinj/blob/09a2ca64d2134b0dcbb27b1a6eb17dda6087f448/core/src/main/java/org/bitcoinj/core/Transaction.java#L957
     //means that no outputs are signed at all
@@ -221,7 +222,7 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
    * @param inputIndex
    * @return
    */
-  private def sigHashSingle(spendingTransaction : Transaction, inputIndex : Int) : Transaction = {
+  private def sigHashSingle(spendingTransaction : Transaction, inputIndex : UInt32) : Transaction = {
     //following this implementation from bitcoinj
     //https://github.com/bitcoinj/bitcoinj/blob/09a2ca64d2134b0dcbb27b1a6eb17dda6087f448/core/src/main/java/org/bitcoinj/core/Transaction.java#L964
     // In SIGHASH_SINGLE the outputs after the matching input index are deleted, and the outputs before
@@ -229,11 +230,11 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
     val updatedOutputsOpt : Seq[Option[TransactionOutput]] = for {
       (output,index) <- spendingTransaction.outputs.zipWithIndex
     } yield {
-        if (index < inputIndex) {
+        if (UInt32(index) < inputIndex) {
           logger.debug("Updating tx output to null in bitcoin core")
           Some(EmptyTransactionOutput)
         }
-        else if (index == inputIndex) Some(output)
+        else if (UInt32(index) == inputIndex) Some(output)
         else None
       }
     val updatedOutputs : Seq[TransactionOutput] = updatedOutputsOpt.flatten
@@ -254,7 +255,7 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
    * @param inputIndex
    * @return
    */
-  private def sigHashAll(spendingTransaction : Transaction, inputIndex : Int) : Transaction = {
+  private def sigHashAll(spendingTransaction : Transaction, inputIndex : UInt32) : Transaction = {
     spendingTransaction
   }
 
