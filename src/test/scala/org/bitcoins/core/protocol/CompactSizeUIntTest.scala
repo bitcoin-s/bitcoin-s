@@ -19,6 +19,12 @@ class CompactSizeUIntTest extends FlatSpec with MustMatchers  {
     varInt.hex must be ("00")
   }
 
+  it must "serialize a compact size uint representing 255" in {
+    val compactSizeUInt = CompactSizeUInt(255)
+    compactSizeUInt must be (CompactSizeUInt(255,3))
+    compactSizeUInt.hex must be ("fdff00")
+  }
+
   it must "calculate the varint for the following hex string" in {
     CompactSizeUInt.calculateCompactSizeUInt("00") must be (CompactSizeUInt(1,1))
 
