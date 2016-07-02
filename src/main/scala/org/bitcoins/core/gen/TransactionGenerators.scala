@@ -18,7 +18,6 @@ trait TransactionGenerators {
     */
   def outPoints : Gen[TransactionOutPoint] = for {
     txId <- CryptoGenerators.doubleSha256Digest
-    //TODO: Needs to be changed to NumberGenerator.uInt32 when type is changed
     vout <- NumberGenerator.uInt32s
   } yield TransactionOutPoint(txId, vout)
 
