@@ -1,7 +1,7 @@
 package org.bitcoins.core.script.locktime
 
 
-import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.number.{Int64, UInt32}
 import org.bitcoins.core.protocol.transaction.TransactionConstants
 import org.bitcoins.core.script.ScriptProgram
 import org.bitcoins.core.script.constant.{ScriptConstant, ScriptNumber, ScriptToken}
@@ -134,7 +134,7 @@ trait LockTimeInterpreter extends BitcoinSLogger {
     val inputIndex = program.txSignatureComponent.inputIndex.underlying.toInt
     logger.debug("inputIndex: " + inputIndex)
     val transaction = program.txSignatureComponent.transaction
-    val txToSequence : ScriptNumber = ScriptNumber(transaction.inputs(inputIndex).sequence.underlying)
+    val txToSequence : Int64 = Int64(transaction.inputs(inputIndex).sequence.underlying)
 
     if (program.txSignatureComponent.transaction.version < UInt32(2)) {
       logger.error("Transaction version is too low for OP_CSV")
@@ -142,7 +142,7 @@ trait LockTimeInterpreter extends BitcoinSLogger {
     }
 
     val nLockTimeMask : UInt32 = UInt32(TransactionConstants.sequenceLockTimeTypeFlag | TransactionConstants.sequenceLockTimeMask)
-    val txToSequenceMasked : ScriptNumber = txToSequence & ScriptNumber(nLockTimeMask.underlying)
+    val txToSequenceMasked : Int64 = Int64(txToSequence.underlying & Int64(nLockTimeMask.underlying).underlying)
 
     val nSequenceMasked : ScriptNumber = nSequence & ScriptNumber(nLockTimeMask.underlying)
 
@@ -159,10 +159,10 @@ trait LockTimeInterpreter extends BitcoinSLogger {
     // unless the type of nSequenceMasked being tested is the same as
     // the nSequenceMasked in the transaction.
     if (!(
-      (txToSequenceMasked < ScriptNumber(TransactionConstants.sequenceLockTimeTypeFlag) &&
-        nSequenceMasked < ScriptNumber(TransactionConstants.sequenceLockTimeTypeFlag)) ||
-        (txToSequenceMasked >= ScriptNumber(TransactionConstants.sequenceLockTimeTypeFlag) &&
-          nSequenceMasked >= ScriptNumber(TransactionConstants.sequenceLockTimeTypeFlag))
+      (txToSequenceMasked.underlying < TransactionConstants.sequenceLockTimeTypeFlag &&
+        nSequenceMasked.num < TransactionConstants.sequenceLockTimeTypeFlag) ||
+        (txToSequenceMasked.underlying >= TransactionConstants.sequenceLockTimeTypeFlag &&
+          nSequenceMasked.num >= TransactionConstants.sequenceLockTimeTypeFlag)
       )) {
       logger.error("The nSequence mask is not the same as it was in the transaction")
       return false
@@ -170,7 +170,7 @@ trait LockTimeInterpreter extends BitcoinSLogger {
 
     // Now that we know we're comparing apples-to-apples, the
     // comparison is a simple numeric one.
-    if (nSequenceMasked > txToSequenceMasked) {
+    if (nSequenceMasked.num > txToSequenceMasked.underlying) {
       logger.error("OP_CSV fails because locktime in transaction has not been met yet")
       return false
     }
@@ -203,7 +203,7 @@ trait LockTimeInterpreter extends BitcoinSLogger {
 
     // Now that we know we're comparing apples-to-apples, the
     // comparison is a simple numeric one.
-    if (UInt32(locktime.num) > transaction.lockTime) return false
+    if (locktime.num > Int64(transaction.lockTime.underlying).underlying) return false
 
     // Finally the nLockTime feature can be disabled and thus
     // CHECKLOCKTIMEVERIFY bypassed if every txin has been
