@@ -160,9 +160,9 @@ trait LockTimeInterpreter extends BitcoinSLogger {
     // the nSequenceMasked in the transaction.
     if (!(
       (txToSequenceMasked.underlying < TransactionConstants.sequenceLockTimeTypeFlag &&
-        nSequenceMasked.num < TransactionConstants.sequenceLockTimeTypeFlag) ||
+        nSequenceMasked.underlying < TransactionConstants.sequenceLockTimeTypeFlag) ||
         (txToSequenceMasked.underlying >= TransactionConstants.sequenceLockTimeTypeFlag &&
-          nSequenceMasked.num >= TransactionConstants.sequenceLockTimeTypeFlag)
+          nSequenceMasked.underlying >= TransactionConstants.sequenceLockTimeTypeFlag)
       )) {
       logger.error("The nSequence mask is not the same as it was in the transaction")
       return false
@@ -170,7 +170,7 @@ trait LockTimeInterpreter extends BitcoinSLogger {
 
     // Now that we know we're comparing apples-to-apples, the
     // comparison is a simple numeric one.
-    if (nSequenceMasked.num > txToSequenceMasked.underlying) {
+    if (nSequenceMasked.underlying > txToSequenceMasked.underlying) {
       logger.error("OP_CSV fails because locktime in transaction has not been met yet")
       return false
     }
@@ -197,13 +197,13 @@ trait LockTimeInterpreter extends BitcoinSLogger {
     val transaction = program.txSignatureComponent.transaction
     val input = transaction.inputs(program.txSignatureComponent.inputIndex.underlying.toInt)
     if (!(
-      (transaction.lockTime < TransactionConstants.locktimeThreshold && UInt32(locktime.num) < TransactionConstants.locktimeThreshold) ||
-        (transaction.lockTime >= TransactionConstants.locktimeThreshold && UInt32(locktime.num) >= TransactionConstants.locktimeThreshold)
+      (transaction.lockTime < TransactionConstants.locktimeThreshold && UInt32(locktime.underlying) < TransactionConstants.locktimeThreshold) ||
+        (transaction.lockTime >= TransactionConstants.locktimeThreshold && UInt32(locktime.underlying) >= TransactionConstants.locktimeThreshold)
       )) return false
 
     // Now that we know we're comparing apples-to-apples, the
     // comparison is a simple numeric one.
-    if (locktime.num > Int64(transaction.lockTime.underlying).underlying) return false
+    if (locktime.underlying > Int64(transaction.lockTime.underlying).underlying) return false
 
     // Finally the nLockTime feature can be disabled and thus
     // CHECKLOCKTIMEVERIFY bypassed if every txin has been
@@ -226,5 +226,5 @@ trait LockTimeInterpreter extends BitcoinSLogger {
     * @param s
     * @return
     */
-  def isLockTimeBitOff(s : ScriptNumber) : Boolean = (s.num & TransactionConstants.locktimeDisabledFlag) == 0
+  def isLockTimeBitOff(s : ScriptNumber) : Boolean = (s.underlying & TransactionConstants.locktimeDisabledFlag) == 0
 }

@@ -259,7 +259,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
 
             case OP_0 :: t => loop(ScriptProgram(p, ScriptNumber.zero :: p.stack, t))
             case (scriptNumberOp : ScriptNumberOperation) :: t =>
-              loop(ScriptProgram(p, ScriptNumber(scriptNumberOp.num) :: p.stack, t))
+              loop(ScriptProgram(p, ScriptNumber(scriptNumberOp.underlying) :: p.stack, t))
             case (bytesToPushOntoStack: BytesToPushOntoStack) :: t =>
               loop(pushScriptNumberBytesToStack(p))
             case (scriptNumber: ScriptNumber) :: t =>
@@ -294,10 +294,10 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
                   //script was marked invalid for other reasons, don't need to update the opcount
                   loop(newProgram)
                 case newProgram : ExecutionInProgressScriptProgram =>
-                  opCount = opCount + BitcoinScriptUtil.numPossibleSignaturesOnStack(program).num.toInt
+                  opCount = opCount + BitcoinScriptUtil.numPossibleSignaturesOnStack(program).underlying.toInt
                   loop(newProgram)
                 case newProgram : PreExecutionScriptProgram =>
-                  opCount = opCount + BitcoinScriptUtil.numPossibleSignaturesOnStack(program).num.toInt
+                  opCount = opCount + BitcoinScriptUtil.numPossibleSignaturesOnStack(program).underlying.toInt
                   loop(newProgram)
               }
 
@@ -307,10 +307,10 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
                   //script was marked invalid for other reasons, don't need to update the opcount
                   loop(newProgram)
                 case newProgram : ExecutionInProgressScriptProgram =>
-                  opCount = opCount + BitcoinScriptUtil.numPossibleSignaturesOnStack(program).num.toInt
+                  opCount = opCount + BitcoinScriptUtil.numPossibleSignaturesOnStack(program).underlying.toInt
                   loop(newProgram)
                 case newProgram : PreExecutionScriptProgram =>
-                  opCount = opCount + BitcoinScriptUtil.numPossibleSignaturesOnStack(program).num.toInt
+                  opCount = opCount + BitcoinScriptUtil.numPossibleSignaturesOnStack(program).underlying.toInt
                   loop(newProgram)
               }
             //reserved operations
