@@ -18,20 +18,20 @@ trait TransactionConstants {
  *
     * @return the mask that ben used with a bitwise and to indicate if the sequence number has any meaning
     */
-  def locktimeDisabledFlag = 1L << 31
+  def locktimeDisabledFlag = UInt32(1L << 31)
 
   /**
     * If a transaction's input's sequence number encodes a relative lock-time, this mask is
     * applied to extract that lock-time from the sequence field.
     */
-  def sequenceLockTimeMask = 0x0000ffff
+  def sequenceLockTimeMask = UInt32(0x0000ffff)
 
   /**
     * If the transaction input sequence number encodes a relative lock-time and this flag
     * is set, the relative lock-time has units of 512 seconds,
     * otherwise it specifies blocks with a granularity of 1.
     */
-  def sequenceLockTimeTypeFlag = 1L << 22
+  def sequenceLockTimeTypeFlag = UInt32(1L << 22)
 
 
   /**

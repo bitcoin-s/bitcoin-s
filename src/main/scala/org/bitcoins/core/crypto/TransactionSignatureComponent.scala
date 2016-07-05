@@ -31,7 +31,7 @@ trait TransactionSignatureComponent {
  *
    * @return
    */
-  def scriptSignature = transaction.inputs(inputIndex.underlying.toInt).scriptSignature
+  def scriptSignature = transaction.inputs(inputIndex.toInt).scriptSignature
   /**
    * The scriptPubKey for which the input is being checked against
  *

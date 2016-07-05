@@ -131,7 +131,7 @@ trait LockTimeInterpreter extends BitcoinSLogger {
     * @return if the given script number is valid or not
     */
   def checkSequence(program : ScriptProgram, nSequence : ScriptNumber) : Boolean = {
-    val inputIndex = program.txSignatureComponent.inputIndex.underlying.toInt
+    val inputIndex = program.txSignatureComponent.inputIndex.toInt
     logger.debug("inputIndex: " + inputIndex)
     val transaction = program.txSignatureComponent.transaction
     val txToSequence : Int64 = Int64(transaction.inputs(inputIndex).sequence.underlying)
@@ -141,10 +141,9 @@ trait LockTimeInterpreter extends BitcoinSLogger {
       return false
     }
 
-    val nLockTimeMask : UInt32 = UInt32(TransactionConstants.sequenceLockTimeTypeFlag | TransactionConstants.sequenceLockTimeMask)
-    val txToSequenceMasked : Int64 = Int64(txToSequence.underlying & Int64(nLockTimeMask.underlying).underlying)
-
-    val nSequenceMasked : ScriptNumber = nSequence & ScriptNumber(nLockTimeMask.underlying)
+    val nLockTimeMask : UInt32 = UInt32(TransactionConstants.sequenceLockTimeTypeFlag.underlying | TransactionConstants.sequenceLockTimeMask.underlying)
+    val txToSequenceMasked : Int64 = Int64(txToSequence.underlying & nLockTimeMask.underlying)
+    val nSequenceMasked : ScriptNumber = nSequence & Int64(nLockTimeMask.underlying)
 
     logger.info("tx sequence number: " + transaction.inputs(inputIndex).sequence)
     logger.info("txToSequenceMasked: " + txToSequenceMasked)
@@ -159,10 +158,10 @@ trait LockTimeInterpreter extends BitcoinSLogger {
     // unless the type of nSequenceMasked being tested is the same as
     // the nSequenceMasked in the transaction.
     if (!(
-      (txToSequenceMasked.underlying < TransactionConstants.sequenceLockTimeTypeFlag &&
-        nSequenceMasked.underlying < TransactionConstants.sequenceLockTimeTypeFlag) ||
-        (txToSequenceMasked.underlying >= TransactionConstants.sequenceLockTimeTypeFlag &&
-          nSequenceMasked.underlying >= TransactionConstants.sequenceLockTimeTypeFlag)
+      (txToSequenceMasked < Int64(TransactionConstants.sequenceLockTimeTypeFlag.underlying) &&
+        nSequenceMasked < Int64(TransactionConstants.sequenceLockTimeTypeFlag.underlying)) ||
+        (txToSequenceMasked >= Int64(TransactionConstants.sequenceLockTimeTypeFlag.underlying) &&
+          nSequenceMasked >= Int64(TransactionConstants.sequenceLockTimeTypeFlag.underlying))
       )) {
       logger.error("The nSequence mask is not the same as it was in the transaction")
       return false
@@ -170,7 +169,7 @@ trait LockTimeInterpreter extends BitcoinSLogger {
 
     // Now that we know we're comparing apples-to-apples, the
     // comparison is a simple numeric one.
-    if (nSequenceMasked.underlying > txToSequenceMasked.underlying) {
+    if (nSequenceMasked > Int64(txToSequenceMasked.underlying)) {
       logger.error("OP_CSV fails because locktime in transaction has not been met yet")
       return false
     }
@@ -195,7 +194,7 @@ trait LockTimeInterpreter extends BitcoinSLogger {
     // unless the type of nLockTime being tested is the same as
     // the nLockTime in the transaction.
     val transaction = program.txSignatureComponent.transaction
-    val input = transaction.inputs(program.txSignatureComponent.inputIndex.underlying.toInt)
+    val input = transaction.inputs(program.txSignatureComponent.inputIndex.toInt)
     if (!(
       (transaction.lockTime < TransactionConstants.locktimeThreshold && UInt32(locktime.underlying) < TransactionConstants.locktimeThreshold) ||
         (transaction.lockTime >= TransactionConstants.locktimeThreshold && UInt32(locktime.underlying) >= TransactionConstants.locktimeThreshold)
@@ -203,7 +202,7 @@ trait LockTimeInterpreter extends BitcoinSLogger {
 
     // Now that we know we're comparing apples-to-apples, the
     // comparison is a simple numeric one.
-    if (locktime.underlying > Int64(transaction.lockTime.underlying).underlying) return false
+    if (locktime > Int64(transaction.lockTime.underlying)) return false
 
     // Finally the nLockTime feature can be disabled and thus
     // CHECKLOCKTIMEVERIFY bypassed if every txin has been
@@ -226,5 +225,5 @@ trait LockTimeInterpreter extends BitcoinSLogger {
     * @param s
     * @return
     */
-  def isLockTimeBitOff(s : ScriptNumber) : Boolean = (s.underlying & TransactionConstants.locktimeDisabledFlag) == 0
+  def isLockTimeBitOff(s : ScriptNumber) : Boolean = (s.underlying & TransactionConstants.locktimeDisabledFlag.underlying) == 0
 }

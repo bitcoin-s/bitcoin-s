@@ -341,7 +341,7 @@ object ScriptProgram {
     */
   def factory(transaction: Transaction, scriptPubKey : ScriptPubKey, inputIndex : UInt32,
               flags : Seq[ScriptFlag]) : PreExecutionScriptProgram = {
-    val script = transaction.inputs(inputIndex.underlying.toInt).scriptSignature.asm
+    val script = transaction.inputs(inputIndex.toInt).scriptSignature.asm
     apply(transaction,scriptPubKey,inputIndex,script.toList,flags)
   }
 
