@@ -15,6 +15,7 @@ import scala.util.{Failure, Success, Try}
 sealed trait Number extends NetworkElement with BitcoinSLogger {
   type A
   def underlying : A
+  def toInt : Int
 }
 
 /**
@@ -79,6 +80,12 @@ sealed trait UInt32 extends UnsignedNumber with NumberOperations[UInt32] {
 
   override def hex = BitcoinSUtil.encodeHex(underlying).slice(8,16)
 
+  override def toInt = {
+    if (underlying > Int.MaxValue) throw new IllegalArgumentException("Overflow error when casting " + this +
+    " to an integer.")
+    else underlying.toInt
+  }
+
   /**
     * Checks the result of the arithmetic operation to see if an error occurred
     * if an error does occur throw it, else return the [[UInt32]]
@@ -123,6 +130,12 @@ sealed trait UInt64 extends UnsignedNumber with NumberOperations[UInt64] {
   override def < (num : UInt64): Boolean = underlying < num.underlying
 
   override def <= (num : UInt64): Boolean = underlying <= num.underlying
+
+  override def toInt = {
+    if (underlying > Int.MaxValue) throw new IllegalArgumentException("Overflow error when casting " + this +
+      " to an integer.")
+    else underlying.toInt
+  }
 
   /**
     * Checks the result of the arithmetic operation to see if an error occurred
@@ -185,6 +198,12 @@ sealed trait Int32 extends SignedNumber with NumberOperations[Int32] {
 
   override def <= (num : Int32): Boolean = underlying <= num.underlying
 
+  override def toInt = {
+    if (underlying > Int.MaxValue) throw new IllegalArgumentException("Overflow error when casting " + this +
+      " to an integer.")
+    else underlying.toInt
+  }
+
   /**
     * Checks the result of the arithmetic operation to see if an error occurred
     * if an error does occur throw it, else return the [[Int32]]
@@ -226,6 +245,12 @@ sealed trait Int64 extends SignedNumber with NumberOperations[Int64] {
   override def < (num : Int64): Boolean = underlying < num.underlying
 
   override def <= (num : Int64): Boolean = underlying <= num.underlying
+
+  override def toInt = {
+    if (underlying > Int.MaxValue) throw new IllegalArgumentException("Overflow error when casting " + this +
+      " to an integer.")
+    else underlying.toInt
+  }
 
   /**
     * Checks the result of the arithmetic operation to see if an error occurred

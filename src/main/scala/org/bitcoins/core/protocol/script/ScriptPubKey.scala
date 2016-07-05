@@ -73,7 +73,7 @@ trait MultiSignatureScriptPubKey extends ScriptPubKey {
     //magic number 2 represents the maxSig operation and the OP_CHECKMULTISIG operation at the end of the asm
     val numSigsRequired = asmWithoutPushOps(opCheckMultiSigIndex - maxSigs.toInt - 2)
     numSigsRequired match {
-      case x : ScriptNumber => x.num
+      case x : ScriptNumber => x.underlying
       case _ => throw new RuntimeException("The first element of the multisignature pubkey must be a script number operation\n" +
         "operation: " + numSigsRequired +
         "\nscriptPubKey: " + this)
@@ -91,7 +91,7 @@ trait MultiSignatureScriptPubKey extends ScriptPubKey {
       0.toLong
     } else {
       asm(checkMultiSigIndex - 1) match {
-        case x : ScriptNumber => x.num
+        case x : ScriptNumber => x.underlying
         case _ => throw new RuntimeException("The element preceding a OP_CHECKMULTISIG operation in a  multisignature pubkey must be a script number operation")
       }
     }

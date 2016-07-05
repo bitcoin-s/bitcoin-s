@@ -64,22 +64,22 @@ sealed trait ScriptNumber extends ScriptConstant {
    * The underlying number of the ScriptNumber
    * @return
    */
-  def num : Long
+  def underlying : Long
 
-  def + (that : ScriptNumber) : ScriptNumber = ScriptNumber(num + that.num)
+  def + (that : ScriptNumber) : ScriptNumber = ScriptNumber(underlying + that.underlying)
 
-  def - = ScriptNumber(-num)
-  def - (that : ScriptNumber) : ScriptNumber = ScriptNumber(num - that.num)
-  def * (that : ScriptNumber) : ScriptNumber = ScriptNumber(num * that.num)
+  def - = ScriptNumber(-underlying)
+  def - (that : ScriptNumber) : ScriptNumber = ScriptNumber(underlying - that.underlying)
+  def * (that : ScriptNumber) : ScriptNumber = ScriptNumber(underlying * that.underlying)
 
-  def < (that : ScriptNumber) : Boolean = num < that.num
-  def <= (that : ScriptNumber) : Boolean = num <= that.num
-  def > (that : ScriptNumber) : Boolean = num > that.num
-  def >= (that : ScriptNumber) : Boolean = num >= that.num
+  def < (that : ScriptNumber) : Boolean = underlying < that.underlying
+  def <= (that : ScriptNumber) : Boolean = underlying <= that.underlying
+  def > (that : ScriptNumber) : Boolean = underlying > that.underlying
+  def >= (that : ScriptNumber) : Boolean = underlying >= that.underlying
 
-  def &(that : ScriptNumber) : ScriptNumber = ScriptNumber(num & that.num)
+  def &(that : ScriptNumber) : ScriptNumber = ScriptNumber(underlying & that.underlying)
 
-  def | (that : ScriptNumber) : ScriptNumber = ScriptNumber(num | that.num)
+  def | (that : ScriptNumber) : ScriptNumber = ScriptNumber(underlying | that.underlying)
 
   /**
    * This equality just checks that the underlying scala numbers are equivalent, NOT if the numbers
@@ -88,9 +88,9 @@ sealed trait ScriptNumber extends ScriptConstant {
    * @param that
    * @return
    */
-  def numEqual(that : ScriptNumber) : Boolean = num == that.num
+  def numEqual(that : ScriptNumber) : Boolean = underlying == that.underlying
 
-  override def toLong = num match {
+  override def toLong = underlying match {
     case 0 => 0L
     case _ : Long => super.toLong
   }
@@ -104,11 +104,11 @@ object ScriptNumber extends Factory[ScriptNumber] {
   /**
     * This represents a script number inside of bitcoin
     *
-    * @param num the number being represented
+    * @param underlying the number being represented
     * @param hex the hex representation of the number - this can be different than the obvious value for
     *            the number. For instance we could have padded the number with another word of zeros
     */
-  private case class ScriptNumberImpl(num : Long, override val hex : String) extends ScriptNumber
+  private case class ScriptNumberImpl(underlying : Long, override val hex : String) extends ScriptNumber
 
   /**
     * Represents the number zero inside of bitcoin's script language
@@ -138,8 +138,8 @@ object ScriptNumber extends Factory[ScriptNumber] {
     else ScriptNumberImpl(ScriptNumberUtil.toLong(bytes), BitcoinSUtil.encodeHex(bytes))
   }
 
-  def apply(num : Long) : ScriptNumber = {
-    if (num == 0) zero else apply(ScriptNumberUtil.longToHex(num))
+  def apply(underlying : Long) : ScriptNumber = {
+    if (underlying == 0) zero else apply(ScriptNumberUtil.longToHex(underlying))
   }
 
   def apply(hex : String, requireMinimal : Boolean) : Try[ScriptNumber] = {
@@ -160,7 +160,7 @@ object ScriptNumber extends Factory[ScriptNumber] {
    * ScriptNumberImpl case class
    */
   private object ScriptNumberImpl {
-    def apply(num : Long) : ScriptNumber = ScriptNumberImpl(num, ScriptNumberUtil.longToHex(num))
+    def apply(underlying : Long) : ScriptNumber = ScriptNumberImpl(underlying, ScriptNumberUtil.longToHex(underlying))
     def apply(hex : String) : ScriptNumber = ScriptNumberImpl(ScriptNumberUtil.toLong(hex), hex)
     def apply(bytes : Seq[Byte]) : ScriptNumber = ScriptNumberImpl(ScriptNumberUtil.toLong(bytes))
   }
@@ -226,7 +226,7 @@ sealed trait ScriptNumberOperation extends ScriptNumber with ScriptOperation {
 case object OP_0 extends ScriptNumberOperation {
   override def opCode = 0
   override def hex = "00"
-  override def num = 0
+  override def underlying = 0
 }
 /**
  * An empty array of bytes is pushed onto the stack. (This is not a no-op: an item is added to the stack.)
@@ -234,7 +234,7 @@ case object OP_0 extends ScriptNumberOperation {
 case object OP_FALSE extends ScriptNumberOperation {
   override def opCode = OP_0.opCode
   override def hex = OP_0.hex
-  override def num = OP_0.num
+  override def underlying = OP_0.underlying
   override def bytes = OP_0.bytes
 }
 
@@ -243,7 +243,7 @@ case object OP_FALSE extends ScriptNumberOperation {
  */
 case object OP_TRUE extends ScriptNumberOperation {
   override def opCode = 81
-  override def num = 1
+  override def underlying = 1
 }
 
 /**
@@ -251,7 +251,7 @@ case object OP_TRUE extends ScriptNumberOperation {
  */
 case object OP_1NEGATE extends ScriptNumberOperation {
   override def opCode = 79
-  override def num = -1
+  override def underlying = -1
 }
 
 
@@ -260,7 +260,7 @@ case object OP_1NEGATE extends ScriptNumberOperation {
  */
 case object OP_1 extends ScriptNumberOperation {
   override def opCode = OP_TRUE.opCode
-  override def num = OP_TRUE.num
+  override def underlying = OP_TRUE.underlying
 }
 
 /**
@@ -268,7 +268,7 @@ case object OP_1 extends ScriptNumberOperation {
  */
 case object OP_2 extends ScriptNumberOperation {
   override def opCode = 82
-  override def num = 2
+  override def underlying = 2
 }
 
 /**
@@ -276,7 +276,7 @@ case object OP_2 extends ScriptNumberOperation {
  */
 case object OP_3 extends ScriptNumberOperation {
   override def opCode = 83
-  override def num = 3
+  override def underlying = 3
 }
 
 /**
@@ -284,7 +284,7 @@ case object OP_3 extends ScriptNumberOperation {
  */
 case object OP_4 extends ScriptNumberOperation {
   override def opCode = 84
-  override def num = 4
+  override def underlying = 4
 }
 
 /**
@@ -292,7 +292,7 @@ case object OP_4 extends ScriptNumberOperation {
  */
 case object OP_5 extends ScriptNumberOperation {
   override def opCode = 85
-  override def num = 5
+  override def underlying = 5
 }
 
 /**
@@ -300,7 +300,7 @@ case object OP_5 extends ScriptNumberOperation {
  */
 case object OP_6 extends ScriptNumberOperation {
   override def opCode = 86
-  override def num = 6
+  override def underlying = 6
 }
 
 /**
@@ -308,7 +308,7 @@ case object OP_6 extends ScriptNumberOperation {
  */
 case object OP_7 extends ScriptNumberOperation {
   override def opCode = 87
-  override def num = 7
+  override def underlying = 7
 }
 
 /**
@@ -316,7 +316,7 @@ case object OP_7 extends ScriptNumberOperation {
  */
 case object OP_8 extends ScriptNumberOperation {
   override def opCode = 88
-  override def num = 8
+  override def underlying = 8
 }
 
 /**
@@ -324,7 +324,7 @@ case object OP_8 extends ScriptNumberOperation {
  */
 case object OP_9 extends ScriptNumberOperation {
   override def opCode = 89
-  override def num = 9
+  override def underlying = 9
 }
 
 /**
@@ -332,7 +332,7 @@ case object OP_9 extends ScriptNumberOperation {
  */
 case object OP_10 extends ScriptNumberOperation {
   override def opCode = 90
-  override def num = 10
+  override def underlying = 10
 }
 
 /**
@@ -340,7 +340,7 @@ case object OP_10 extends ScriptNumberOperation {
  */
 case object OP_11 extends ScriptNumberOperation {
   override def opCode = 91
-  override def num = 11
+  override def underlying = 11
 }
 
 /**
@@ -348,7 +348,7 @@ case object OP_11 extends ScriptNumberOperation {
  */
 case object OP_12 extends ScriptNumberOperation {
   override def opCode = 92
-  override def num = 12
+  override def underlying = 12
 }
 
 /**
@@ -356,7 +356,7 @@ case object OP_12 extends ScriptNumberOperation {
  */
 case object OP_13 extends ScriptNumberOperation {
   override def opCode = 93
-  override def num = 13
+  override def underlying = 13
 }
 
 /**
@@ -364,7 +364,7 @@ case object OP_13 extends ScriptNumberOperation {
  */
 case object OP_14 extends ScriptNumberOperation {
   override def opCode = 94
-  override def num = 14
+  override def underlying = 14
 }
 
 /**
@@ -372,7 +372,7 @@ case object OP_14 extends ScriptNumberOperation {
  */
 case object OP_15 extends ScriptNumberOperation {
   override def opCode = 95
-  override def num = 15
+  override def underlying = 15
 }
 
 /**
@@ -380,7 +380,7 @@ case object OP_15 extends ScriptNumberOperation {
  */
 case object OP_16 extends ScriptNumberOperation {
   override def opCode = 96
-  override def num = 16
+  override def underlying = 16
 }
 
 
@@ -391,10 +391,10 @@ object ScriptNumberOperation extends ScriptOperationFactory[ScriptNumberOperatio
   /**
    * Finds the script number operation based on the given integer
  *
-   * @param num
+   * @param underlying
    * @return
    */
-  def fromNumber(num : Int) : Option[ScriptNumberOperation] = operations.find(_.num == num)
+  def fromNumber(underlying : Int) : Option[ScriptNumberOperation] = operations.find(_.underlying == underlying)
 
 }
 
