@@ -2,12 +2,12 @@ package org.bitcoins.core.crypto
 
 import java.math.BigInteger
 import java.security.SecureRandom
-import java.security.spec.ECPrivateKeySpec
 
+import org.bitcoins.core.protocol.blockchain.{MainNetChainParams, SecretKey, TestNetChainParams}
 import org.bitcoins.core.util.{Base58, BitcoinSUtil, Factory}
 import org.spongycastle.crypto.AsymmetricCipherKeyPair
 import org.spongycastle.crypto.generators.ECKeyPairGenerator
-import org.spongycastle.crypto.params.{ECKeyGenerationParameters, ECPrivateKeyParameters, ECPublicKeyParameters}
+import org.spongycastle.crypto.params.{ECKeyGenerationParameters, ECPrivateKeyParameters}
 import org.spongycastle.math.ec.{ECPoint, FixedPointCombMultiplier}
 
 /**
@@ -18,6 +18,7 @@ sealed trait ECPrivateKey extends BaseECKey {
   private def ecPoint = CryptoParams.curve.getCurve.decodePoint(bytes.toArray)
   /**
     * This represents the private key inside of the bouncy castle library
+    *
     * @return
     */
   private def privateKeyParams =
@@ -25,7 +26,8 @@ sealed trait ECPrivateKey extends BaseECKey {
 
   /**
    * Derives the public for a the private key
-   * @return
+    *
+    * @return
    */
   def publicKey : ECPublicKey = {
     val pubKeyBytes : Seq[Byte] = publicKeyPoint.getEncoded(compressed)
@@ -36,6 +38,7 @@ sealed trait ECPrivateKey extends BaseECKey {
   /**
     * Derives the public key ECPoint from the private key
     * https://github.com/bitcoinj/bitcoinj/blob/master/core/src/main/java/org/bitcoinj/core/ECKey.java#L452
+    *
     * @return the public key's ECPoint
     */
   private def publicKeyPoint : ECPoint = {
@@ -43,7 +46,7 @@ sealed trait ECPrivateKey extends BaseECKey {
     val privKey = if (privKeyBigInteger.bitLength > CryptoParams.curve.getN.bitLength()) {
       privKeyBigInteger.mod(CryptoParams.curve.getN())
     } else privKeyBigInteger
-    return new FixedPointCombMultiplier().multiply(CryptoParams.curve.getG, privKey);
+    new FixedPointCombMultiplier().multiply(CryptoParams.curve.getG, privKey)
   }
 
   override def toString = "ECPrivateKey(" + hex + ")"
@@ -57,12 +60,14 @@ object ECPrivateKey extends Factory[ECPrivateKey] {
 
   /**
     * This function creates a fresh private key to use
+    *
     * @return
     */
   def apply() : ECPrivateKey = freshPrivateKey
 
   /**
     * This function creates a fresh private key to use
+    *
     * @return
     */
   def freshPrivateKey : ECPrivateKey = {
@@ -77,17 +82,55 @@ object ECPrivateKey extends Factory[ECPrivateKey] {
   }
 
   /**
-    * Takes in a base58 string and converts it into a private key
-    * @param base58
+    * Takes in a base58 string and converts it into a private key.
+    * Private keys starting with 'K', 'L', or 'c' correspond to compressed public keys.
+    * https://en.bitcoin.it/wiki/Wallet_import_format
+    *
+    * @param WIF Wallet Import Format. Encoded in Base58
     * @return
     */
-  def fromBase58ToPrivateKey(base58 : String) : ECPrivateKey = {
-    val decodedBase58 : Seq[Byte] = Base58.decode(base58)
-    //Drop(1) will drop the network byte. The last 5 bytes are dropped included the checksum (4 bytes), and 0x01 byte that
-    //is appended to compressed keys (which we implemented as the default option).
-    val trim = decodedBase58.drop(1).dropRight(5)
-    val privateKeyBytesToHex = BitcoinSUtil.encodeHex(trim)
-    apply(privateKeyBytesToHex)
+  def fromWIFToPrivateKey(WIF : String) : ECPrivateKey = {
+    val trimmedBytes = trimFunction(WIF)
+    val privateKeyBytesToHex = BitcoinSUtil.encodeHex(trimmedBytes)
+    ECPrivateKey(privateKeyBytesToHex)
+  }
+
+  /**
+    * Takes in WIF private key as a sequence of bytes and determines if it corresponds to a compressed public key.
+    * If the private key corresponds to a compressed public key, the last byte should be 0x01, and
+    * the WIF string will have started with K or L instead of 5 (or c instead of 9 on testnet).
+    *
+    * @param bytes private key in bytes
+    * @return
+    */
+  def isCompressed(bytes : Seq[Byte]) : Boolean = {
+    val validCompressedBytes: Seq[Byte] =
+      MainNetChainParams.base58Prefix(SecretKey) ++ TestNetChainParams.base58Prefixes(SecretKey)
+    val validCompressedBytesInHex: Seq[String] = validCompressedBytes.map(byte => BitcoinSUtil.encodeHex(byte))
+    val firstByteHex = BitcoinSUtil.encodeHex(bytes.head)
+    if (validCompressedBytesInHex.contains(firstByteHex)) bytes(bytes.length - 5) == 0x01.toByte
+    else false
+  }
+
+  def isCompressed(WIF : String) : Boolean = {
+    val bytes = Base58.decode(WIF)
+    isCompressed(bytes)
+  }
+
+  /**
+    * When decoding a WIF private key, we drop the first byte (network byte), and the last 4 bytes (checksum).
+    * If the private key corresponds to a compressed public key, we drop the last byte again.
+    *
+    * @param WIF Wallet Import Format. Encoded in Base58
+    * @return
+    */
+  private def trimFunction(WIF : String) : Seq[Byte] = {
+    val bytes = Base58.decode(WIF)
+    WIF.head match {
+      case h if h == '9' || h == '5' => bytes.drop(1).dropRight(4)
+      case g if isCompressed(bytes) => bytes.drop(1).dropRight(5)
+      case _ => throw new IllegalArgumentException("The base58 string passed through was not a private key.")
+    }
   }
 }
 

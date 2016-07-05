@@ -44,7 +44,6 @@ object CoreTransactionTestCaseProtocol extends DefaultJsonProtocol with BitcoinS
   /**
     * These are in the following format
     * [[prevout hash, prevout index, prevout scriptPubKey], [input 2], ...]
- *
     * @param array
     * @return
     */
@@ -60,7 +59,6 @@ object CoreTransactionTestCaseProtocol extends DefaultJsonProtocol with BitcoinS
         (outPoint,scriptPubKey)
       case _ : JsValue => throw new RuntimeException("All tx outpoint/scriptpubkey info must be array elements")
     }
-
     result
   }
 }
