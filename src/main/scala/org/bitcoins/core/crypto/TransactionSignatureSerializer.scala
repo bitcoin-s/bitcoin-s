@@ -64,7 +64,7 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
 
     logger.info("After Bitcoin-S Script to be connected: " + scriptWithOpCodeSeparatorsRemoved)
 
-    val inputToSign = inputSigsRemoved(inputIndex.underlying.toInt)
+    val inputToSign = inputSigsRemoved(inputIndex.toInt)
 
     // Set the input to the script of its output. Bitcoin Core does this but the step has no obvious purpose as
     // the signature covers the hash of the prevout transaction which obviously includes the output script

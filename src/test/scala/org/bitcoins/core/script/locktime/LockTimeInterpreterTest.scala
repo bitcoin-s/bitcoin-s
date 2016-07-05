@@ -147,7 +147,7 @@ class LockTimeInterpreterTest extends FlatSpec with MustMatchers with LockTimeIn
   }
 
   it must "treat OP_CHECKSEQUENCEVERIFY as a NOP if the locktime disabled flag is set in the sequence number" in {
-    val stack = List(ScriptNumber(TransactionConstants.locktimeDisabledFlag))
+    val stack = List(ScriptNumber(TransactionConstants.locktimeDisabledFlag.underlying))
     val script = List(OP_CHECKSEQUENCEVERIFY)
     val program = ScriptProgram(TestUtil.testProgramExecutionInProgress,stack,script)
     val newProgram = opCheckSequenceVerify(program)
