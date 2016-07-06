@@ -78,6 +78,8 @@ sealed trait UInt32 extends UnsignedNumber with NumberOperations[UInt32] {
 
   override def <= (num : UInt32): Boolean = underlying <= num.underlying
 
+  def | (num : UInt32) : UInt32 = UInt32(underlying | num.underlying)
+
   override def hex = BitcoinSUtil.encodeHex(underlying).slice(8,16)
 
   override def toInt = {
