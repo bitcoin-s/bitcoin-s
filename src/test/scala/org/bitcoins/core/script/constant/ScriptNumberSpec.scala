@@ -1,8 +1,6 @@
 package org.bitcoins.core.script.constant
 
-import com.oracle.webservices.internal.api.message.PropertySet.Property
 import org.bitcoins.core.gen.NumberGenerator
-import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.util.BitcoinSLogger
 import org.scalacheck.{Prop, Properties}
 
