@@ -94,7 +94,7 @@ trait TransactionTestUtil extends BitcoinSLogger {
     val spendingTx = TestUtil.simpleTransaction
     val creditingTx = TestUtil.parentSimpleTransaction
     logger.info("Crediting transaction: " + creditingTx)
-    val creditingOutput = TestUtil.parentSimpleTransaction.outputs(spendingTx.inputs.head.previousOutput.vout.underlying.toInt)
+    val creditingOutput = TestUtil.parentSimpleTransaction.outputs(spendingTx.inputs.head.previousOutput.vout.toInt)
     //make sure the outpoint index and the outpoint txid are correct
     require(spendingTx.inputs.head.previousOutput.txId == creditingTx.txId)
     require(spendingTx.inputs.head.previousOutput.vout == UInt32.zero)
@@ -118,8 +118,8 @@ trait TransactionTestUtil extends BitcoinSLogger {
     val creditingTx = TestUtil.p2sh2Of2CreditingTx
     val spendingTx = TestUtil.p2sh2Of2Tx
     val inputIndex = UInt32.zero
-    val input = spendingTx.inputs(inputIndex.underlying.toInt)
-    (spendingTx, input, inputIndex, creditingTx.outputs(input.previousOutput.vout.underlying.toInt))
+    val input = spendingTx.inputs(inputIndex.toInt)
+    (spendingTx, input, inputIndex, creditingTx.outputs(input.previousOutput.vout.toInt))
   }
 
   //https://tbtc.blockr.io/api/v1/tx/raw/d77d905fc29f86bc3db39fdb68cfcab4e35f677d4f2ec33ed749912e0fa5f385
@@ -137,8 +137,8 @@ trait TransactionTestUtil extends BitcoinSLogger {
    */
   def p2sh2Of3TransactionWithSpendingInputAndCreditingOutput : (Transaction, TransactionInput, UInt32, TransactionOutput) = {
     val inputIndex = UInt32.zero
-    val input = p2sh2Of3Transaction.inputs(inputIndex.underlying.toInt)
-    val output = p2sh2Of3CreditingTransaction.outputs(input.previousOutput.vout.underlying.toInt)
+    val input = p2sh2Of3Transaction.inputs(inputIndex.toInt)
+    val output = p2sh2Of3CreditingTransaction.outputs(input.previousOutput.vout.toInt)
     (p2sh2Of3Transaction,input,inputIndex,output)
   }
 
@@ -160,7 +160,7 @@ trait TransactionTestUtil extends BitcoinSLogger {
    */
   def p2pkhTransactionWithCreditingScriptPubKey : (Transaction, UInt32, ScriptPubKey) = {
     val outputIndex = TestUtil.simpleTransaction.inputs.head.previousOutput.vout
-    (TestUtil.simpleTransaction, UInt32.zero, TestUtil.parentSimpleTransaction.outputs(outputIndex.underlying.toInt).scriptPubKey)
+    (TestUtil.simpleTransaction, UInt32.zero, TestUtil.parentSimpleTransaction.outputs(outputIndex.toInt).scriptPubKey)
   }
 
 
