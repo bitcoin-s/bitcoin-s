@@ -33,7 +33,7 @@ trait LockTimeInterpreter extends BitcoinSLogger {
   final def opCheckLockTimeVerify(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.isDefined && program.script.head == OP_CHECKLOCKTIMEVERIFY,
       "Script top must be OP_CHECKLOCKTIMEVERIFY")
-    val input = program.txSignatureComponent.transaction.inputs(program.txSignatureComponent.inputIndex.underlying.toInt)
+    val input = program.txSignatureComponent.transaction.inputs(program.txSignatureComponent.inputIndex.toInt)
     val transaction = program.txSignatureComponent.transaction
     if (program.stack.size == 0) {
       logger.error("Transaction validation failing in OP_CHECKLOCKTIMEVERIFY because we have no stack items")
@@ -141,7 +141,7 @@ trait LockTimeInterpreter extends BitcoinSLogger {
       return false
     }
 
-    val nLockTimeMask : UInt32 = UInt32(TransactionConstants.sequenceLockTimeTypeFlag.underlying | TransactionConstants.sequenceLockTimeMask.underlying)
+    val nLockTimeMask : UInt32 = TransactionConstants.sequenceLockTimeTypeFlag | TransactionConstants.sequenceLockTimeMask
     val txToSequenceMasked : Int64 = Int64(txToSequence.underlying & nLockTimeMask.underlying)
     val nSequenceMasked : ScriptNumber = nSequence & Int64(nLockTimeMask.underlying)
 

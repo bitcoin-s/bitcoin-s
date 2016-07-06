@@ -53,7 +53,7 @@ object TransactionOutPoint extends Factory[TransactionOutPoint] {
     */
   private def factory(output : TransactionOutput, parentTransaction : Transaction) : TransactionOutPoint = {
     val indexOfOutput = UInt32(parentTransaction.outputs.indexOf(output))
-    if (indexOfOutput.underlying.toInt == (-1)) throw new RuntimeException("This output is not contained in the parent transaction")
+    if (indexOfOutput.toInt == (-1)) throw new RuntimeException("This output is not contained in the parent transaction")
     else factory(parentTransaction.txId,indexOfOutput)
   }
 

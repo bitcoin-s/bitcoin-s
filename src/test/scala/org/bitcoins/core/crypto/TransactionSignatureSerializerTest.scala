@@ -222,7 +222,7 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers with
      val rawTx = TestUtil.simpleRawTransaction
      val rawParentTx = TestUtil.parentSimpleRawTransaction
      val bitcoinjTx = new org.bitcoinj.core.Transaction(params,Utils.HEX.decode(rawTx))
-     val input = bitcoinjTx.getInput(inputIndex.underlying.toInt)
+     val input = bitcoinjTx.getInput(inputIndex.toInt)
      val scriptSig = input.getScriptSig
      val parentTx = new org.bitcoinj.core.Transaction(params,Utils.HEX.decode(rawParentTx))
      val parentOutput = parentTx.getOutput(input.getOutpoint.getIndex)
@@ -232,7 +232,7 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers with
      val pubKey : Array[Byte]  = scriptSig.getPubKey
      val signature  : Array[Byte] = scriptSig.getChunks().get(0).data
      val bitcoinjSerializeForSig : Seq[Byte] =
-       BitcoinJSignatureSerialization.serializeForSignature(bitcoinjTx,inputIndex.underlying.toInt,
+       BitcoinJSignatureSerialization.serializeForSignature(bitcoinjTx,inputIndex.toInt,
          parentOutput.getScriptBytes, SIGHASH_ALL().byte)
 
 
@@ -253,13 +253,13 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers with
      val rawTx = TestUtil.simpleRawTransaction
      val rawParentTx = TestUtil.parentSimpleRawTransaction
      val bitcoinjTx = new org.bitcoinj.core.Transaction(params,Utils.HEX.decode(rawTx))
-     val input = bitcoinjTx.getInput(inputIndex.underlying.toInt)
+     val input = bitcoinjTx.getInput(inputIndex.toInt)
      val scriptSig = input.getScriptSig
      val parentTx = new org.bitcoinj.core.Transaction(params,Utils.HEX.decode(rawParentTx))
      val parentOutput = parentTx.getOutput(input.getOutpoint.getIndex)
 
      val bitcoinjSerializeForSig : Seq[Byte] =
-       BitcoinJSignatureSerialization.serializeForSignature(bitcoinjTx,inputIndex.underlying.toInt,
+       BitcoinJSignatureSerialization.serializeForSignature(bitcoinjTx,inputIndex.toInt,
          parentOutput.getScriptBytes, SIGHASH_ALL().byte)
 
      val hashType = spendingInput.scriptSignature.hashType(spendingInput.scriptSignature.signatures.head)
@@ -283,7 +283,7 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers with
       val bitcoinjTx = BitcoinjConversions.transaction(spendingTx)
       val hashType = spendingInput.scriptSignature.hashType(spendingInput.scriptSignature.signatures.head)
       val bitcoinjHashForSig : Seq[Byte] = BitcoinJSignatureSerialization.serializeForSignature(
-        bitcoinjTx, inputIndex.underlying.toInt, creditingOutput.scriptPubKey.bytes.toArray, hashType.byte
+        bitcoinjTx, inputIndex.toInt, creditingOutput.scriptPubKey.bytes.toArray, hashType.byte
       )
       val hashedTxForSig : String = BitcoinSUtil.encodeHex(
         TransactionSignatureSerializer.serializeForSignature(spendingTx,inputIndex,creditingOutput.scriptPubKey.asm,hashType
@@ -304,7 +304,7 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers with
      val bitcoinjTx = BitcoinjConversions.transaction(spendingTx)
      val hashType = spendingInput.scriptSignature.hashType(spendingInput.scriptSignature.signatures.head)
      val bitcoinjHashForSig : Seq[Byte] = BitcoinJSignatureSerialization.hashForSignature(
-       bitcoinjTx, inputIndex.underlying.toInt, creditingOutput.scriptPubKey.bytes.toArray, hashType.byte
+       bitcoinjTx, inputIndex.toInt, creditingOutput.scriptPubKey.bytes.toArray, hashType.byte
      )
      val hashedTxForSig =
        TransactionSignatureSerializer.hashForSignature(spendingTx,inputIndex,creditingOutput.scriptPubKey.asm, hashType)
@@ -329,7 +329,7 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers with
 
     val bitcoinjTx = BitcoinjConversions.transaction(spendingTx)
     val bitcoinjHashForSig : Seq[Byte] = BitcoinJSignatureSerialization.hashForSignature(
-      bitcoinjTx, inputIndex.underlying.toInt, scriptPubKey.bytes.toArray, SIGHASH_ALL(0x01).byte
+      bitcoinjTx, inputIndex.toInt, scriptPubKey.bytes.toArray, SIGHASH_ALL(0x01).byte
     )
 
     val hashedTxForSig =
@@ -344,7 +344,7 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers with
     val rawTx = "01000000020001000000000000000000000000000000000000000000000000000000000000000000004948304502203a0f5f0e1f2bdbcd04db3061d18f3af70e07f4f467cbc1b8116f267025f5360b022100c792b6e215afc5afc721a351ec413e714305cb749aae3d7fee76621313418df101010000000002000000000000000000000000000000000000000000000000000000000000000000004847304402205f7530653eea9b38699e476320ab135b74771e1c48b81a5d041e2ca84b9be7a802200ac8d1f40fb026674fe5a5edd3dea715c27baa9baca51ed45ea750ac9dc0a55e81ffffffff010100000000000000015100000000"
     val inputIndex = UInt32.zero
     val spendingTx = Transaction(rawTx)
-    require(spendingTx.inputs(inputIndex.underlying.toInt).scriptSignature.hex == "48304502203a0f5f0e1f2bdbcd04db3061d18f3af70e07f4f467cbc1b8116f267025f5360b022100c792b6e215afc5afc721a351ec413e714305cb749aae3d7fee76621313418df101",
+    require(spendingTx.inputs(inputIndex.toInt).scriptSignature.hex == "48304502203a0f5f0e1f2bdbcd04db3061d18f3af70e07f4f467cbc1b8116f267025f5360b022100c792b6e215afc5afc721a351ec413e714305cb749aae3d7fee76621313418df101",
       "Script sig not right")
     val scriptPubKeyFromString = ScriptParser.fromString("0x21 0x035e7f0d4d0841bcd56c39337ed086b1a633ee770c1ffdd94ac552a95ac2ce0efc CHECKSIG")
     val scriptPubKey = ScriptPubKey.fromAsm(scriptPubKeyFromString)
@@ -369,7 +369,7 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers with
 
     val bitcoinjTx = BitcoinjConversions.transaction(spendingTx)
     val bitcoinjHashForSig : Seq[Byte] = BitcoinJSignatureSerialization.hashForSignature(
-      bitcoinjTx, inputIndex.underlying.toInt, scriptPubKey.bytes.toArray, SIGHASH_ALL_ANYONECANPAY.byte
+      bitcoinjTx, inputIndex.toInt, scriptPubKey.bytes.toArray, SIGHASH_ALL_ANYONECANPAY.byte
     )
     val hashedTxForSig =
       TransactionSignatureSerializer.hashForSignature(spendingTx,inputIndex,scriptPubKey.asm,SIGHASH_ALL_ANYONECANPAY)
