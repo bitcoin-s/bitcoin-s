@@ -13,4 +13,9 @@ class CompactSizeUIntSpec extends Properties("CompactSizeUIntSpec") {
     Prop.forAll(NumberGenerator.positiveLongs) { num : Long =>
       CompactSizeUInt.parseCompactSizeUInt(CompactSizeUInt(num).hex).num == num
     }
+  //:TODO Remove one of these
+  property("Serialization symmetry with separate generator") =
+    Prop.forAll(NumberGenerator.compactSizeUInts) { compact : CompactSizeUInt =>
+      CompactSizeUInt(compact.num, compact.size) == compact
+    }
 }
