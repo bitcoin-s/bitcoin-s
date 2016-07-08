@@ -9,7 +9,7 @@ import org.scalacheck.{Prop, Properties}
 class BlockSpec extends Properties("BlockSpec") {
   property("Serialization symmetry") =
   Prop.forAll(BlockchainElementsGenerator.block) { block =>
-    Block(block.blockHeader, block.txCount, block.transactions) == block
+    Block(block.blockHeader, block.txCount, block.transactions).hex == block.hex
   }
 
 }
