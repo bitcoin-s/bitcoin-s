@@ -30,12 +30,11 @@ class ScriptNumberSpec extends Properties("ScriptNumberSpec") with BitcoinSLogge
       if (num1.underlying > num2.underlying) num1 > num2
       else num1 <= num2
     }
-  property("== & !=") = {
+  property("== & !=") =
     Prop.forAll(NumberGenerator.scriptNumbers, NumberGenerator.scriptNumbers) { (num1 : ScriptNumber, num2 : ScriptNumber) =>
       if (num1.underlying == num2.underlying) num1 == num2
       else num1 != num2
     }
-  }
   property("add two script numbers") =
     Prop.forAll(NumberGenerator.scriptNumbers, NumberGenerator.scriptNumbers) { (num1 : ScriptNumber, num2: ScriptNumber) =>
       num1 + num2 == ScriptNumber(num1.underlying + num2.underlying)
@@ -52,8 +51,4 @@ class ScriptNumberSpec extends Properties("ScriptNumberSpec") with BitcoinSLogge
     Prop.forAll(NumberGenerator.scriptNumbers) { (num1 : ScriptNumber) =>
       num1 * ScriptNumber.zero == ScriptNumber.zero
     }
-
-
-
-
 }
