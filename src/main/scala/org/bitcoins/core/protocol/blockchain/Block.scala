@@ -53,6 +53,11 @@ object Block extends Factory[Block] {
     BlockImpl(blockHeader, txCount, transactions)
   }
 
+  def apply(blockHeader : BlockHeader, transactions : Seq[Transaction]) : Block = {
+    val txCount = CompactSizeUInt(transactions.size)
+    Block(blockHeader, txCount, transactions)
+  }
+
   def fromBytes(bytes : Seq[Byte]) : Block = RawBlockSerializer.read(bytes)
 
 }
