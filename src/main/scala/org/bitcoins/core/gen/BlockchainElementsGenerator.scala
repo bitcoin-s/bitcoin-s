@@ -1,10 +1,7 @@
 package org.bitcoins.core.gen
 
-import org.bitcoins.core.protocol.CompactSizeUInt
-import org.bitcoins.core.protocol.blockchain.{BlockHeader, Block}
-import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader}
 import org.scalacheck.Gen
-
 import scala.annotation.tailrec
 
 /**
@@ -12,12 +9,10 @@ import scala.annotation.tailrec
   */
 trait BlockchainElementsGenerator {
   def block : Gen[Block] = {
-    val numOfTxs = randomNumber(10)
-    val generatedTxs : Seq[Transaction] = generate(numOfTxs, TransactionGenerators.transactions, List())
-    val txCount : CompactSizeUInt = CompactSizeUInt(numOfTxs)
     for {
+      txs <- Gen.listOfN(randomNumber(10), TransactionGenerators.transactions)
       header <- blockHeader
-    } yield Block(header, txCount, generatedTxs)
+    } yield Block(header, txs)
   }
 
   def blockHeader : Gen[BlockHeader] = for {

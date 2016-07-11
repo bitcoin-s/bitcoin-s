@@ -71,7 +71,7 @@ trait NumberGenerator {
 
   def scriptNumbers: Gen[ScriptNumber] = Gen.choose(Int.MinValue, Int.MaxValue).map(ScriptNumber(_))
 
-  def compactSizeUInts : Gen[CompactSizeUInt] = NumberGenerator.positiveLongs.map(CompactSizeUInt(_))
+  def compactSizeUInts : Gen[CompactSizeUInt] = positiveLongs.map(CompactSizeUInt(_))
 
 }
 

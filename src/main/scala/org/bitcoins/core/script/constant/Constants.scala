@@ -17,21 +17,18 @@ import scala.util.{Failure, Success, Try}
 sealed trait ScriptToken {
   /**
    * The hexadecimal representation of this script token
- *
    * @return
    */
   def hex : String
 
   /**
    * The byte representation of this script token
-    *
-    * @return
+   * @return
    */
   def bytes : Seq[Byte] = BitcoinSUtil.decodeHex(hex)
 
   /**
    * The conversion from the byte representation of a token to a number
- *
    * @return
    */
   def toLong = ScriptNumberUtil.toLong(hex)
@@ -52,12 +49,10 @@ trait ScriptOperation extends ScriptToken {
 sealed trait ScriptConstant extends ScriptToken {
   /**
    * Returns if the constant is encoded in the shortest possible way
-    *
-    * @return
+   * @return
    */
   def isShortestEncoding : Boolean = BitcoinScriptUtil.isShortestEncoding(this)
 }
-
 
 /**
  * Represents a number in the Script language
@@ -65,13 +60,11 @@ sealed trait ScriptConstant extends ScriptToken {
 sealed trait ScriptNumber extends ScriptConstant {
   /**
    * The underlying number of the ScriptNumber
-    *
-    * @return
+   * @return
    */
   def underlying : Long
 
   def + (that : ScriptNumber) : ScriptNumber = ScriptNumber(underlying + that.underlying)
-
   def - = ScriptNumber(-underlying)
   def - (that : ScriptNumber) : ScriptNumber = ScriptNumber(underlying - that.underlying)
   def * (that : ScriptNumber) : ScriptNumber = ScriptNumber(underlying * that.underlying)
@@ -96,8 +89,7 @@ sealed trait ScriptNumber extends ScriptConstant {
    * This equality just checks that the underlying scala numbers are equivalent, NOT if the numbers
    * are bitwise equivalent in Script. For instance ScriptNumber(0x01).numEqual(ScriptNumber(0x00000000001)) == true
    * but (ScriptNumber(0x01) == (ScriptNumber(0x00000000001))) == false
-    *
-    * @param that
+   * @param that
    * @return
    */
   def numEqual(that : ScriptNumber) : Boolean = underlying == that.underlying
@@ -106,10 +98,7 @@ sealed trait ScriptNumber extends ScriptConstant {
     case 0 => 0L
     case _ : Long => super.toLong
   }
-
-
 }
-
 
 object ScriptNumber extends Factory[ScriptNumber] {
 
@@ -124,14 +113,12 @@ object ScriptNumber extends Factory[ScriptNumber] {
 
   /**
     * Represents the number zero inside of bitcoin's script language
- *
     * @return
     */
   lazy val zero : ScriptNumber = ScriptNumberImpl(0,"")
 
   /**
     * Represents the number one inside of bitcoin's script language
- *
     * @return
     */
   lazy val one : ScriptNumber = ScriptNumberImpl(1)
@@ -165,8 +152,6 @@ object ScriptNumber extends Factory[ScriptNumber] {
 
   def apply(bytes : Seq[Byte], requireMinimal : Boolean) : Try[ScriptNumber] = apply(BitcoinSUtil.encodeHex(bytes),requireMinimal)
 
-
-
   /**
    * Companion object for ScriptNumberImpl that gives us access to more constructor types for the
    * ScriptNumberImpl case class
@@ -177,11 +162,6 @@ object ScriptNumber extends Factory[ScriptNumber] {
     def apply(bytes : Seq[Byte]) : ScriptNumber = ScriptNumberImpl(ScriptNumberUtil.toLong(bytes))
   }
 }
-
-
-
-
-
 
 /**
  * 	The next byte contains the number of bytes to be pushed onto the stack.
@@ -203,7 +183,6 @@ case object OP_PUSHDATA2 extends ScriptOperation {
 
   /**
     * The max amount of data that OP_PUSHDATA2 can push onto the stack
-    *
     * @return
     */
   def max = 65535
@@ -217,23 +196,19 @@ case object OP_PUSHDATA4 extends ScriptOperation {
 
   /**
     * The maximum amount of data that OP_PUSHDATA4 can be push on the stack
-    *
     * @return
     */
   def max = 4294967295L
 }
-
 
 /**
  * Represents a script number operation where the the number in the operation is pushed onto the stack
  * i.e. OP_0 would be push 0 onto the stack, OP_1 would be push 1 onto the stack
  */
 sealed trait ScriptNumberOperation extends ScriptNumber with ScriptOperation {
-
   override def hex = opCode.toHexString
-
-
 }
+
 /**
  * An empty array of bytes is pushed onto the stack. (This is not a no-op: an item is added to the stack.)
  */
@@ -404,7 +379,6 @@ object ScriptNumberOperation extends ScriptOperationFactory[ScriptNumberOperatio
 
   /**
    * Finds the script number operation based on the given integer
- *
    * @param underlying
    * @return
    */
@@ -415,7 +389,6 @@ object ScriptNumberOperation extends ScriptOperationFactory[ScriptNumberOperatio
 object ScriptConstant extends Factory[ScriptConstant] {
   /**
    * Represent a pubkey or hash of a pub key on our stack
- *
    * @param hex
    */
   private case class ScriptConstantImpl(hex : String) extends ScriptConstant {
@@ -426,7 +399,6 @@ object ScriptConstant extends Factory[ScriptConstant] {
   lazy val negativeOne = ScriptConstant("81")
   /**
     * Creates a script constant from a sequence of bytes
- *
     * @param bytes
     * @return
     */

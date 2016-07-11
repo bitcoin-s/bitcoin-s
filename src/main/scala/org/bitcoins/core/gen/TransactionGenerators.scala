@@ -2,7 +2,6 @@ package org.bitcoins.core.gen
 
 import org.bitcoins.core.protocol.transaction._
 import org.scalacheck.Gen
-
 import scala.annotation.tailrec
 
 /**
@@ -50,16 +49,12 @@ trait TransactionGenerators {
     * inside of the [[org.bitcoins.core.script.interpreter.ScriptInterpreter]]
     * @return
     */
-  def transactions : Gen[Transaction] = {
-    val numInputs = randomNumber(10)
-    val generatedInputs : Seq[TransactionInput] = generate(numInputs, inputs, List())
-    val numOutputs = randomNumber(10)
-    val generatedOutputs : Seq[TransactionOutput] = generate(numOutputs, outputs, List())
-    for {
-      lockTime <- NumberGenerator.uInt32s
+  def transactions : Gen[Transaction] = for {
       version <- NumberGenerator.uInt32s
-    } yield Transaction(version, generatedInputs, generatedOutputs, lockTime)
-  }
+      inputs <- Gen.listOfN(randomNumber(10), inputs)
+      outputs <- Gen.listOfN(randomNumber(10), outputs)
+      lockTime <- NumberGenerator.uInt32s
+    } yield Transaction(version, inputs, outputs, lockTime)
 
   private def randomNumber(lessThan : Int) : Int = (scala.util.Random.nextInt() % lessThan).abs
 

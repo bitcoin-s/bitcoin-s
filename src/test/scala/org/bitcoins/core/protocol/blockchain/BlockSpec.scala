@@ -11,5 +11,4 @@ class BlockSpec extends Properties("BlockSpec") {
   Prop.forAll(BlockchainElementsGenerator.block) { block =>
     Block(block.blockHeader, block.txCount, block.transactions).hex == block.hex
   }
-
 }
