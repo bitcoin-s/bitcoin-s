@@ -98,6 +98,8 @@ sealed trait ScriptNumber extends ScriptConstant {
     case 0 => 0L
     case _ : Long => super.toLong
   }
+
+   def toInt = underlying.toInt
 }
 
 object ScriptNumber extends Factory[ScriptNumber] {
@@ -160,6 +162,7 @@ object ScriptNumber extends Factory[ScriptNumber] {
     def apply(underlying : Long) : ScriptNumber = ScriptNumberImpl(underlying, ScriptNumberUtil.longToHex(underlying))
     def apply(hex : String) : ScriptNumber = ScriptNumberImpl(ScriptNumberUtil.toLong(hex), hex)
     def apply(bytes : Seq[Byte]) : ScriptNumber = ScriptNumberImpl(ScriptNumberUtil.toLong(bytes))
+    def apply(int64: Int64) : ScriptNumber = ScriptNumberImpl(int64.underlying)
   }
 }
 

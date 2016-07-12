@@ -226,8 +226,8 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
             }
             logger.debug("nPossibleSignatures: " + nPossibleSignatures)
             val (pubKeysScriptTokens, stackWithoutPubKeys) =
-              (program.stack.tail.slice(0, nPossibleSignatures.underlying.toInt),
-                program.stack.tail.slice(nPossibleSignatures.underlying.toInt, program.stack.tail.size))
+              (program.stack.tail.slice(0, nPossibleSignatures.toInt),
+                program.stack.tail.slice(nPossibleSignatures.toInt, program.stack.tail.size))
 
             val pubKeys = pubKeysScriptTokens.map(key => ECPublicKey(key.bytes))
             logger.debug("Public keys on the stack: " + pubKeys)
@@ -235,13 +235,13 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
             logger.debug("mRequiredSignatures: " + mRequiredSignatures)
 
             //+1 is for the fact that we have the # of sigs + the script token indicating the # of sigs
-            val signaturesScriptTokens = program.stack.tail.slice(nPossibleSignatures.underlying.toInt + 1,
-              nPossibleSignatures.underlying.toInt + mRequiredSignatures.underlying.toInt + 1)
+            val signaturesScriptTokens = program.stack.tail.slice(nPossibleSignatures.toInt + 1,
+              nPossibleSignatures.toInt + mRequiredSignatures.toInt + 1)
             val signatures = signaturesScriptTokens.map(token => ECDigitalSignature(token.bytes))
             logger.debug("Signatures on the stack: " + signatures)
 
             //this contains the extra Script OP that is required for OP_CHECKMULTISIG
-            val stackWithoutPubKeysAndSignatures = stackWithoutPubKeys.tail.slice(mRequiredSignatures.underlying.toInt, stackWithoutPubKeys.tail.size)
+            val stackWithoutPubKeysAndSignatures = stackWithoutPubKeys.tail.slice(mRequiredSignatures.toInt, stackWithoutPubKeys.tail.size)
             logger.debug("stackWithoutPubKeysAndSignatures: " + stackWithoutPubKeysAndSignatures)
             if (pubKeys.size > ScriptSettings.maxPublicKeysPerMultiSig) {
               logger.error("We have more public keys than the maximum amount of public keys allowed")

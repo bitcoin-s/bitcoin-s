@@ -21,6 +21,7 @@ trait BaseECKey extends BitcoinSLogger {
     * Use compressed keys by default
     * @return
     */
+  //TODO: implement isCompressed function similar to that in ECPrivateKey
   def compressed : Boolean = true
 
   /**

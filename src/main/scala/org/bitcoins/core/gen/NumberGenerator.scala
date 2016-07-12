@@ -69,7 +69,7 @@ trait NumberGenerator {
 
   def int64s : Gen[Int64] = Gen.choose(Int64.min.underlying, Int64.max.underlying).map(Int64(_))
 
-  def scriptNumbers: Gen[ScriptNumber] = Gen.choose(Int.MinValue, Int.MaxValue).map(ScriptNumber(_))
+  def scriptNumbers: Gen[ScriptNumber] = Gen.choose(Int64.min.underlying, Int64.max.underlying).map(ScriptNumber(_))
 
   def compactSizeUInts : Gen[CompactSizeUInt] = positiveLongs.map(CompactSizeUInt(_))
 

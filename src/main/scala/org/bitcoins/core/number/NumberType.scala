@@ -83,9 +83,8 @@ sealed trait UInt32 extends UnsignedNumber with NumberOperations[UInt32] {
   override def hex = BitcoinSUtil.encodeHex(underlying).slice(8,16)
 
   override def toInt = {
-    if (underlying > Int.MaxValue) throw new IllegalArgumentException("Overflow error when casting " + this +
-    " to an integer.")
-    else underlying.toInt
+    require(underlying <= Int.MaxValue, "Overflow error when casting " + this + " to an integer.")
+    underlying.toInt
   }
 
   /**
@@ -134,9 +133,8 @@ sealed trait UInt64 extends UnsignedNumber with NumberOperations[UInt64] {
   override def <= (num : UInt64): Boolean = underlying <= num.underlying
 
   override def toInt = {
-    if (underlying > Int.MaxValue) throw new IllegalArgumentException("Overflow error when casting " + this +
-      " to an integer.")
-    else underlying.toInt
+    require(underlying <= Int.MaxValue, "Overflow error when casting " + this + " to an integer.")
+    underlying.toInt
   }
 
   /**
@@ -249,10 +247,10 @@ sealed trait Int64 extends SignedNumber with NumberOperations[Int64] {
   override def <= (num : Int64): Boolean = underlying <= num.underlying
 
   override def toInt = {
-    if (underlying > Int.MaxValue) throw new IllegalArgumentException("Overflow error when casting " + this +
-      " to an integer.")
-    else underlying.toInt
+    require(underlying <= Int.MaxValue, "Overflow error when casting " + this + " to an integer.")
+    underlying.toInt
   }
+
 
   /**
     * Checks the result of the arithmetic operation to see if an error occurred
