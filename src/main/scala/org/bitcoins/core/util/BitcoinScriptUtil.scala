@@ -76,7 +76,7 @@ trait BitcoinScriptUtil {
     val multiSigCount : Long = script.zipWithIndex.map { case (token, index) =>
       if (multiSigOps.contains(token) && index != 0) {
         script(index-1) match {
-          case scriptNum : ScriptNumber => scriptNum.num
+          case scriptNum : ScriptNumber => scriptNum.underlying
           case scriptConstant : ScriptConstant => ScriptNumberUtil.toLong(scriptConstant.hex)
           case _ : ScriptToken => ScriptSettings.maxPublicKeysPerMultiSig
         }
@@ -117,7 +117,7 @@ trait BitcoinScriptUtil {
     require(program.script.headOption == Some(OP_CHECKMULTISIG) || program.script.headOption == Some(OP_CHECKMULTISIGVERIFY),
       "We can only parse the nubmer of signatures the stack when we are executing a OP_CHECKMULTISIG or OP_CHECKMULTISIGVERIFY op")
     val nPossibleSignatures = numPossibleSignaturesOnStack(program)
-    val stackWithoutPubKeys = program.stack.tail.slice(nPossibleSignatures.num.toInt,program.stack.tail.size)
+    val stackWithoutPubKeys = program.stack.tail.slice(nPossibleSignatures.toInt,program.stack.tail.size)
     val mRequiredSignatures : ScriptNumber = stackWithoutPubKeys.head match {
       case s: ScriptNumber => s
       case s : ScriptConstant => ScriptNumber(s.bytes)

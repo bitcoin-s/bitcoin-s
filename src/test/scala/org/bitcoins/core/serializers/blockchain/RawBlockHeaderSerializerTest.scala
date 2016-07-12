@@ -1,6 +1,7 @@
 package org.bitcoins.core.serializers.blockchain
 
 import org.bitcoins.core.crypto.DoubleSha256Digest
+import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.util.BitcoinSUtil
 import org.scalatest.{FlatSpec, MustMatchers}
 
@@ -23,12 +24,12 @@ class RawBlockHeaderSerializerTest extends FlatSpec with MustMatchers{
   val hex = version + prevBlockHash + merkleRoot + timeStamp + nBits + nonce
   "BlockHeader" must "parse genesis block header" in {
     val blockHeader = RawBlockHeaderSerializer.read(hex)
-    blockHeader.version must be (java.lang.Long.parseLong(BitcoinSUtil.flipEndianess(version), 16))
+    blockHeader.version must be (UInt32(BitcoinSUtil.flipEndianess(version)))
     blockHeader.previousBlockHash must be (DoubleSha256Digest(prevBlockHash))
     blockHeader.merkleRootHash must be (DoubleSha256Digest(merkleRoot))
-    blockHeader.time must be (java.lang.Long.parseLong(BitcoinSUtil.flipEndianess(timeStamp), 16))
-    blockHeader.nBits must be (java.lang.Long.parseLong(BitcoinSUtil.flipEndianess(nBits), 16))
-    blockHeader.nonce must be (java.lang.Long.parseLong(BitcoinSUtil.flipEndianess(nonce), 16))
+    blockHeader.time must be (UInt32(BitcoinSUtil.flipEndianess(timeStamp)))
+    blockHeader.nBits must be (UInt32(BitcoinSUtil.flipEndianess(nBits)))
+    blockHeader.nonce must be (UInt32(BitcoinSUtil.flipEndianess(nonce)))
   }
 
   it must "properly hash genesis block header to return genesis block hash" in {
@@ -54,11 +55,11 @@ class RawBlockHeaderSerializerTest extends FlatSpec with MustMatchers{
     val hex2 = version2 + prevBlockHash2 + merkleRoot2 + timeStamp2 + nBits2 + nonce2
     val hash = "2837af674e81436b09e0c937e94d96fe32e5c872391ba1090000000000000000"
     val blockHeader = RawBlockHeaderSerializer.read(hex2)
-    blockHeader.version must be (2)
+    blockHeader.version must be (UInt32(2))
     blockHeader.previousBlockHash must be (DoubleSha256Digest(prevBlockHash2))
     blockHeader.merkleRootHash must be (DoubleSha256Digest(merkleRoot2))
-    blockHeader.time must be (1415239972)
-    blockHeader.nonce must be (1678286846)
+    blockHeader.time must be (UInt32(1415239972))
+    blockHeader.nonce must be (UInt32(1678286846))
     blockHeader.hash must be (DoubleSha256Digest(hash))
   }
 
@@ -73,12 +74,12 @@ class RawBlockHeaderSerializerTest extends FlatSpec with MustMatchers{
     val hex = version + prevBlockHash + merkleRoot + timeStamp + nBits + nonce
     val hash = "c5a764eb61db336edb17be9c49dc07dcae0219bc51a2efe681df9f0000000000"
     val blockHeader = RawBlockHeaderSerializer.read(hex)
-    blockHeader.version must be (536870912)
+    blockHeader.version must be (UInt32(536870912))
     blockHeader.previousBlockHash must be (DoubleSha256Digest(prevBlockHash))
     blockHeader.merkleRootHash must be (DoubleSha256Digest(merkleRoot))
-    blockHeader.time must be (1465247498)
-    blockHeader.nBits must be (486604799)
-    blockHeader.nonce must be (2667504451L)
+    blockHeader.time must be (UInt32(1465247498))
+    blockHeader.nBits must be (UInt32(486604799))
+    blockHeader.nonce must be (UInt32(2667504451L))
     blockHeader.hash must be (DoubleSha256Digest(hash))
     RawBlockHeaderSerializer.write(blockHeader) must be (hex)
   }

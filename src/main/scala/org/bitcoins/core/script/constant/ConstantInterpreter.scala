@@ -159,7 +159,7 @@ trait ConstantInterpreter extends BitcoinSLogger {
    */
   private def bytesNeededForPushOp(token : ScriptToken) : Long = token match {
     case scriptNumber: BytesToPushOntoStack => scriptNumber.opCode
-    case scriptNumber: ScriptNumber => scriptNumber.num
+    case scriptNumber: ScriptNumber => scriptNumber.underlying
     case scriptConstant : ScriptConstant =>
       val constantFlippedEndianess = BitcoinSUtil.flipEndianess(scriptConstant.hex)
       java.lang.Long.parseLong(constantFlippedEndianess,16)

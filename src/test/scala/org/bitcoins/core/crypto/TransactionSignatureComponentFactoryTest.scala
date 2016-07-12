@@ -1,5 +1,6 @@
 package org.bitcoins.core.crypto
 
+import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.util.TestUtil
 import org.scalatest.{FlatSpec, MustMatchers}
@@ -8,11 +9,11 @@ import org.scalatest.{FlatSpec, MustMatchers}
  * Created by chris on 4/7/16.
  */
 class TransactionSignatureComponentFactoryTest extends FlatSpec with MustMatchers {
-  val component = TransactionSignatureComponentFactory.factory(TestUtil.transaction, 0, TestUtil.scriptPubKey, Policy.standardScriptVerifyFlags)
+  val component = TransactionSignatureComponentFactory.factory(TestUtil.transaction, UInt32.zero, TestUtil.scriptPubKey, Policy.standardScriptVerifyFlags)
 
   "TransactionSignatureComponentFactory" must "create a tx signature component" in {
     component.transaction must be (TestUtil.transaction)
-    component.inputIndex must be (0)
+    component.inputIndex must be (UInt32.zero)
     component.scriptPubKey must be (TestUtil.scriptPubKey)
     component.flags must be (Policy.standardScriptVerifyFlags)
 

@@ -2,7 +2,6 @@ package org.bitcoins.core.gen
 
 import org.bitcoins.core.protocol.transaction._
 import org.scalacheck.Gen
-
 import scala.annotation.tailrec
 
 /**
@@ -16,10 +15,8 @@ trait TransactionGenerators {
     */
   def outPoints : Gen[TransactionOutPoint] = for {
     txId <- CryptoGenerators.doubleSha256Digest
-    //TODO: Needs to be changed to NumberGenerator.uInt32 when type is changed
-    vout <- Gen.choose(1,Int.MaxValue)
+    vout <- NumberGenerator.uInt32s
   } yield TransactionOutPoint(txId, vout)
-
 
   /**
     * Generates a random [[org.bitcoins.core.protocol.transaction.TransactionOutput]]
@@ -37,7 +34,7 @@ trait TransactionGenerators {
   def inputs : Gen[TransactionInput] = for {
     outPoint <- outPoints
     scriptSig <- ScriptGenerators.scriptSignature
-    sequenceNumber <- Gen.choose(0,TransactionConstants.sequence)
+    sequenceNumber <- NumberGenerator.uInt32s
     randomNum = randomNumber(10)
   } yield {
     if (randomNum == 0) {
@@ -46,25 +43,18 @@ trait TransactionGenerators {
     } else TransactionInput(outPoint,scriptSig,sequenceNumber)
   }
 
-
-
   /**
     * Generates an arbitrary [[org.bitcoins.core.protocol.transaction.Transaction]]
     * This transaction's [[TransactionInput]]s will not evaluate to true
     * inside of the [[org.bitcoins.core.script.interpreter.ScriptInterpreter]]
     * @return
     */
-  def transactions : Gen[Transaction] = {
-    val numInputs = randomNumber(10)
-    val generatedInputs : Seq[TransactionInput] = generate(numInputs, inputs, List())
-    val numOutputs = randomNumber(10)
-    val generatedOutputs : Seq[TransactionOutput] = generate(numOutputs, outputs, List())
-    for {
-      lockTime <- NumberGenerator.uInt32s
+  def transactions : Gen[Transaction] = for {
       version <- NumberGenerator.uInt32s
-    } yield Transaction(version.underlying, generatedInputs, generatedOutputs, lockTime.underlying)
-
-  }
+      inputs <- Gen.listOfN(randomNumber(10), inputs)
+      outputs <- Gen.listOfN(randomNumber(10), outputs)
+      lockTime <- NumberGenerator.uInt32s
+    } yield Transaction(version, inputs, outputs, lockTime)
 
   private def randomNumber(lessThan : Int) : Int = (scala.util.Random.nextInt() % lessThan).abs
 
@@ -74,6 +64,5 @@ trait TransactionGenerators {
     else generate(numToGenerate-1, gen, gen.sample.get :: accum)
   }
 }
-
 
 object TransactionGenerators extends TransactionGenerators

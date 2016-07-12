@@ -1,5 +1,6 @@
 package org.bitcoins.core.serializers.transaction
 
+import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.util.BitcoinSUtil
 import org.scalatest.{FlatSpec, MustMatchers}
 
@@ -13,12 +14,12 @@ class RawTransactionOutPointParserTest extends FlatSpec with MustMatchers  {
   "RawTransactionOutPointParser" must "read a raw outpoint into a native scala TransactionOutPoint" in {
     val outPoint = RawTransactionOutPointParser.read(rawOutPoint)
     outPoint.txId.hex must be (BitcoinSUtil.flipEndianess("e17d316006850c1764301befcf82c8c84cd1794f3f0d0382b296df2edab0d685"))
-    outPoint.vout must be (0)
+    outPoint.vout must be (UInt32.zero)
   }
 
   it must "parse a large vout for an outpoint" in {
     val outPoint = RawTransactionOutPointParser.read(rawOutPointLargeVout)
-    outPoint.vout must be (52)
+    outPoint.vout must be (UInt32(52))
     outPoint.txId.hex must be (BitcoinSUtil.flipEndianess("0140d0ed6c9feeb68ea727723a82bbaf0d143fc1d3810265d4dca7ebe6e380df"))
   }
   it must "write a TransactionOutPoint to a serialized format" in {
@@ -54,7 +55,7 @@ class RawTransactionOutPointParserTest extends FlatSpec with MustMatchers  {
     //vout should be 20183580
     val rawOutPoint = "4435c4ea162d51135c9b2bbb867a86f25001c246224b60e8ab2307edce7fc28a0ca13f13"
     val outPoint = RawTransactionOutPointParser.read(rawOutPoint)
-    outPoint.vout must be (322937100)
+    outPoint.vout must be (UInt32(322937100))
     outPoint.hex must be (rawOutPoint)
   }
 

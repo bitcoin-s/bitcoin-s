@@ -15,7 +15,7 @@ trait RawTransactionParser extends RawBitcoinSerializer[Transaction] with Bitcoi
 
   def read(bytes : List[Byte]) = {
     val versionBytes = bytes.take(4)
-    val version = UInt32(versionBytes.reverse).underlying
+    val version = UInt32(versionBytes.reverse)
     val txInputBytes = bytes.slice(4,bytes.size)
     val inputs = RawTransactionInputParser.read(txInputBytes)
     val inputsSize = inputs.map(_.size).sum
@@ -26,18 +26,18 @@ trait RawTransactionParser extends RawBitcoinSerializer[Transaction] with Bitcoi
     val outputs = RawTransactionOutputParser.read(outputsBytes)
 
     val lockTimeBytes = bytes.slice(bytes.size - 4, bytes.size)
-    val lockTime = java.lang.Long.parseLong(BitcoinSUtil.encodeHex(lockTimeBytes.reverse),16)
+    val lockTime = UInt32(lockTimeBytes.reverse)
 
     Transaction(version,inputs,outputs,lockTime)
   }
 
   def write(tx : Transaction) : String = {
-    //add leading zero if the version byte doesn't require two hex numbers
-    val txVersionHex = UInt32(tx.version).hex
+    //add leading zero if the version byte doesn't r.hexre two hex numbers
+    val txVersionHex = tx.version.hex
     val version = BitcoinSUtil.flipEndianess(txVersionHex)
     val inputs : String = RawTransactionInputParser.write(tx.inputs)
     val outputs : String = RawTransactionOutputParser.write(tx.outputs)
-    val lockTimeWithoutPadding : String = UInt32(tx.lockTime).hex
+    val lockTimeWithoutPadding : String = tx.lockTime.hex
     val lockTime = addPadding(8,BitcoinSUtil.flipEndianess(lockTimeWithoutPadding))
     version + inputs + outputs + lockTime
   }

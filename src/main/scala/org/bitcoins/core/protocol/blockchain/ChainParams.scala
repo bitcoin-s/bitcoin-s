@@ -3,7 +3,7 @@ package org.bitcoins.core.protocol.blockchain
 import org.bitcoins.core.consensus.Merkle
 import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
-import org.bitcoins.core.number.Int64
+import org.bitcoins.core.number.{UInt32, Int64}
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptSignature}
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionConstants, TransactionInput, TransactionOutput}
@@ -71,7 +71,7 @@ sealed trait ChainParams {
     * @param amount the block reward for the gensis block (50 BTC in Bitcoin)
     * @return the newly minted genesis block
     */
-  def createGenesisBlock(time : Long, nonce : Long, nBits : Long, version : Int, amount : CurrencyUnit) : Block = {
+  def createGenesisBlock(time : UInt32, nonce : UInt32, nBits : UInt32, version : UInt32, amount : CurrencyUnit) : Block = {
     val timestamp = "The Times 03/Jan/2009 Chancellor on brink of second bailout for banks"
     val asm = Seq(BytesToPushOntoStack(65), ScriptConstant("04678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5f"), OP_CHECKSIG)
     val genesisOutputScript = ScriptPubKey.fromAsm(asm)
@@ -88,8 +88,8 @@ sealed trait ChainParams {
     * @param amount the block reward for the genesis block (50 BTC in Bitcoin)
     * @return the newly minted genesis block
     */
-  def createGenesisBlock(timestamp : String, scriptPubKey : ScriptPubKey, time : Long, nonce : Long, nBits : Long,
-                         version : Int, amount : CurrencyUnit) : Block = {
+  def createGenesisBlock(timestamp : String, scriptPubKey : ScriptPubKey, time : UInt32, nonce : UInt32, nBits : UInt32,
+                         version : UInt32, amount : CurrencyUnit) : Block = {
 
     val timestampHex = timestamp.toCharArray.map(_.toByte)
     //see https://bitcoin.stackexchange.com/questions/13122/scriptsig-coinbase-structure-of-the-genesis-block
@@ -115,7 +115,7 @@ object MainNetChainParams extends ChainParams {
 
   override def networkId = "main"
 
-  override def genesisBlock = createGenesisBlock(1231006505, 2083236893, 0x1d00ffff, 1, Satoshis(Int64(5000000000L)))
+  override def genesisBlock = createGenesisBlock(UInt32(1231006505), UInt32(2083236893), UInt32(0x1d00ffff), UInt32.one, Satoshis(Int64(5000000000L)))
 
   override def requireStandardTransaction = true
 
@@ -138,7 +138,7 @@ object TestNetChainParams extends ChainParams {
 
   override def networkId = "test"
 
-  override def genesisBlock = createGenesisBlock(1296688602, 414098458, 0x1d00ffff, 1, Satoshis(Int64(5000000000L)))
+  override def genesisBlock = createGenesisBlock(UInt32(1296688602), UInt32(414098458), UInt32(0x1d00ffff), UInt32.one, Satoshis(Int64(5000000000L)))
 
   override def requireStandardTransaction = true
 
@@ -160,7 +160,7 @@ object TestNetChainParams extends ChainParams {
 
 object RegTestNetChainParams extends ChainParams {
   override def networkId = "regtest"
-  override def genesisBlock = createGenesisBlock(1296688602, 2, 0x207fffff, 1, Satoshis(Int64(5000000000L)))
+  override def genesisBlock = createGenesisBlock(UInt32(1296688602), UInt32(2), UInt32(0x207fffff), UInt32.one, Satoshis(Int64(5000000000L)))
   override def requireStandardTransaction = TestNetChainParams.requireStandardTransaction
 
   /**

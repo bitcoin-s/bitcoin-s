@@ -1,8 +1,9 @@
 package org.bitcoins.core.protocol.transaction.testprotocol
 
 import org.bitcoins.core.crypto.DoubleSha256Digest
+import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script.ScriptPubKey
-import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint}
+import org.bitcoins.core.protocol.transaction.{EmptyTransactionOutPoint, Transaction, TransactionOutPoint}
 import org.bitcoins.core.script.constant.ScriptToken
 import org.bitcoins.core.script.flag.{ScriptFlag, ScriptFlagFactory}
 import org.bitcoins.core.serializers.script.ScriptParser
@@ -44,6 +45,7 @@ object CoreTransactionTestCaseProtocol extends DefaultJsonProtocol with BitcoinS
   /**
     * These are in the following format
     * [[prevout hash, prevout index, prevout scriptPubKey], [input 2], ...]
+    *
     * @param array
     * @return
     */
@@ -52,7 +54,14 @@ object CoreTransactionTestCaseProtocol extends DefaultJsonProtocol with BitcoinS
       case array : JsArray =>
         val prevoutHashHex = BitcoinSUtil.flipEndianess(array.elements.head.convertTo[String])
         val prevoutHash = DoubleSha256Digest(prevoutHashHex)
-        val prevoutIndex = array.elements(1).convertTo[Int]
+       // println("prevoutindex in testcaseprotocol: " + array.elements(1).convertTo[Int])
+
+        val prevoutIndex = array.elements(1).convertTo[Long] match {
+          case -1 => UInt32("ffffffff")
+          case index if index >= UInt32.min.underlying && index <= UInt32.max.underlying => UInt32(index)
+        }
+
+        //val prevoutIndex = UInt32(array.elements(1).convertTo[Int])
         val outPoint = TransactionOutPoint(prevoutHash,prevoutIndex)
         val scriptTokens : Seq[ScriptToken] = ScriptParser.fromString(array.elements(2).convertTo[String])
         val scriptPubKey = ScriptPubKey.fromAsm(scriptTokens)

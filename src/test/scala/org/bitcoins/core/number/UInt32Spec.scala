@@ -80,13 +80,17 @@ class UInt32Spec extends Properties("UInt32") with BitcoinSLogger {
     }
   }
 
-
   property("== & !=") = {
     Prop.forAll(NumberGenerator.uInt32s, NumberGenerator.uInt32s) { (num1 : UInt32, num2 : UInt32) =>
       if (num1.underlying == num2.underlying) num1 == num2
       else num1 != num2
     }
   }
+
+  property("|") =
+    Prop.forAll(NumberGenerator.uInt32s, NumberGenerator.uInt32s) { (num1 : UInt32, num2 : UInt32) =>
+      UInt32(num1.underlying | num2.underlying) == (num1 | num2)
+    }
 
 
 

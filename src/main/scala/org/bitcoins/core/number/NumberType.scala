@@ -15,6 +15,7 @@ import scala.util.{Failure, Success, Try}
 sealed trait Number extends NetworkElement with BitcoinSLogger {
   type A
   def underlying : A
+  def toInt : Int
 }
 
 /**
@@ -77,6 +78,15 @@ sealed trait UInt32 extends UnsignedNumber with NumberOperations[UInt32] {
 
   override def <= (num : UInt32): Boolean = underlying <= num.underlying
 
+  def | (num : UInt32) : UInt32 = UInt32(underlying | num.underlying)
+
+  override def hex = BitcoinSUtil.encodeHex(underlying).slice(8,16)
+
+  override def toInt = {
+    require(underlying <= Int.MaxValue, "Overflow error when casting " + this + " to an integer.")
+    underlying.toInt
+  }
+
   /**
     * Checks the result of the arithmetic operation to see if an error occurred
     * if an error does occur throw it, else return the [[UInt32]]
@@ -121,6 +131,11 @@ sealed trait UInt64 extends UnsignedNumber with NumberOperations[UInt64] {
   override def < (num : UInt64): Boolean = underlying < num.underlying
 
   override def <= (num : UInt64): Boolean = underlying <= num.underlying
+
+  override def toInt = {
+    require(underlying <= Int.MaxValue, "Overflow error when casting " + this + " to an integer.")
+    underlying.toInt
+  }
 
   /**
     * Checks the result of the arithmetic operation to see if an error occurred
@@ -183,6 +198,12 @@ sealed trait Int32 extends SignedNumber with NumberOperations[Int32] {
 
   override def <= (num : Int32): Boolean = underlying <= num.underlying
 
+  override def toInt = {
+    if (underlying > Int.MaxValue) throw new IllegalArgumentException("Overflow error when casting " + this +
+      " to an integer.")
+    else underlying.toInt
+  }
+
   /**
     * Checks the result of the arithmetic operation to see if an error occurred
     * if an error does occur throw it, else return the [[Int32]]
@@ -224,6 +245,12 @@ sealed trait Int64 extends SignedNumber with NumberOperations[Int64] {
   override def < (num : Int64): Boolean = underlying < num.underlying
 
   override def <= (num : Int64): Boolean = underlying <= num.underlying
+
+  override def toInt = {
+    require(underlying <= Int.MaxValue, "Overflow error when casting " + this + " to an integer.")
+    underlying.toInt
+  }
+
 
   /**
     * Checks the result of the arithmetic operation to see if an error occurred
@@ -267,7 +294,7 @@ trait BaseNumbers[T] {
 }
 
 object UInt32 extends Factory[UInt32] with BitcoinSLogger with BaseNumbers[UInt32] {
-  private case class UInt32Impl(underlying : Long, hex : String) extends UInt32 {
+  private case class UInt32Impl(underlying : Long) extends UInt32 {
     require(underlying >= 0, "We cannot have a negative number in an unsigned number, got: " + underlying)
     require(underlying <= 4294967295L, "We cannot have a number larger than 2^32 -1 in UInt32, got: " + underlying)
   }
@@ -283,10 +310,10 @@ object UInt32 extends Factory[UInt32] with BitcoinSLogger with BaseNumbers[UInt3
     val individualByteValues = for {
       (byte,index) <- bytes.reverse.zipWithIndex
     } yield NumberUtil.calculateUnsignedNumberFromByte(index, byte)
-    UInt32Impl(individualByteValues.sum.toLong, BitcoinSUtil.encodeHex(bytes))
+    UInt32Impl(individualByteValues.sum.toLong)
   }
 
-  def apply(long : Long) : UInt32 = UInt32Impl(long, BitcoinSUtil.encodeHex(long).slice(8,16))
+  def apply(long : Long) : UInt32 = UInt32Impl(long)
 
 }
 
