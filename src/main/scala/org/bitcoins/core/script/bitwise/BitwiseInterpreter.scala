@@ -29,13 +29,13 @@ trait BitwiseInterpreter extends ControlOperationsInterpreter  {
       val h1 = program.stack.tail.head
       val result = (h,h1) match {
         case (OP_0,ScriptNumber.zero) | (ScriptNumber.zero, OP_0) =>
-          OP_0.num == ScriptNumber.zero.num
+          OP_0.underlying == ScriptNumber.zero.underlying
         case (OP_FALSE,ScriptNumber.zero) | (ScriptNumber.zero, OP_FALSE) =>
-          OP_FALSE.num == ScriptNumber.zero.num
+          OP_FALSE.underlying == ScriptNumber.zero.underlying
         case (OP_TRUE,ScriptNumber.one) | (ScriptNumber.one, OP_TRUE) =>
-          OP_TRUE.num == ScriptNumber.one.num
+          OP_TRUE.underlying == ScriptNumber.one.underlying
         case (OP_1, ScriptNumber.one) | (ScriptNumber.one, OP_1) =>
-          OP_1.num == ScriptNumber.one.num
+          OP_1.underlying == ScriptNumber.one.underlying
         case _ => h.bytes == h1.bytes
       }
       val scriptBoolean  = if (result) OP_TRUE else OP_FALSE

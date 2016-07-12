@@ -1,6 +1,7 @@
 package org.bitcoins.core.protocol.blockchain
 
 import org.bitcoins.core.crypto.DoubleSha256Digest
+import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.NetworkElement
 import org.bitcoins.core.serializers.blockchain.RawBlockHeaderSerializer
 import org.bitcoins.core.util.{BitcoinSUtil, CryptoUtil, BitcoinSLogger, Factory}
@@ -29,7 +30,7 @@ sealed trait BlockHeader extends NetworkElement with BitcoinSLogger {
     *
     * @return the version number for this block
     */
-  def version : Long
+  def version : UInt32
 
 
   /**
@@ -59,7 +60,7 @@ sealed trait BlockHeader extends NetworkElement with BitcoinSLogger {
     *
     * @return the time when the miner started solving the block
     */
-  def time : Long
+  def time : UInt32
 
   /**
     * An encoded version of the target threshold this block’s header hash must be less than or equal to.
@@ -68,7 +69,7 @@ sealed trait BlockHeader extends NetworkElement with BitcoinSLogger {
     *
     * @return
     */
-  def nBits : Long
+  def nBits : UInt32
 
   /**
     * An arbitrary number miners change to modify the header hash in order to produce a hash below the target threshold.
@@ -77,10 +78,11 @@ sealed trait BlockHeader extends NetworkElement with BitcoinSLogger {
     *
     * @return the nonce used to try and solve a block
     */
-  def nonce : Long
+  def nonce : UInt32
 
   /**
     * Returns the block's hash
+    *
     * @return
     */
   def hash : DoubleSha256Digest = CryptoUtil.doubleSHA256(bytes)
@@ -95,11 +97,11 @@ sealed trait BlockHeader extends NetworkElement with BitcoinSLogger {
   */
 object BlockHeader extends Factory[BlockHeader] {
 
-  private sealed case class BlockHeaderImpl(version : Long, previousBlockHash : DoubleSha256Digest,
-                                            merkleRootHash : DoubleSha256Digest, time : Long, nBits : Long, nonce : Long) extends BlockHeader
+  private sealed case class BlockHeaderImpl(version : UInt32, previousBlockHash : DoubleSha256Digest,
+                                            merkleRootHash : DoubleSha256Digest, time : UInt32, nBits : UInt32, nonce : UInt32) extends BlockHeader
 
-  def apply(version : Long, previousBlockHash : DoubleSha256Digest, merkleRootHash : DoubleSha256Digest,
-            time : Long, nBits : Long, nonce : Long) : BlockHeader = {
+  def apply(version : UInt32, previousBlockHash : DoubleSha256Digest, merkleRootHash : DoubleSha256Digest,
+            time : UInt32, nBits : UInt32, nonce : UInt32) : BlockHeader = {
     BlockHeaderImpl(version,previousBlockHash,merkleRootHash,time,nBits,nonce)
   }
 
