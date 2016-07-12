@@ -299,7 +299,7 @@ trait BaseNumbers[T] {
 object UInt32 extends Factory[UInt32] with BitcoinSLogger with BaseNumbers[UInt32] {
   private case class UInt32Impl(underlying : Long) extends UInt32 {
     require(underlying >= 0, "We cannot have a negative number in an unsigned number, got: " + underlying)
-    require(underlying <= 4294967295L, "We cannot have a number larger than 2^32 -1 in UInt32, got: " + underlying)
+    require(underlying  <= 4294967295L, "We cannot have a number larger than 2^32 -1 in UInt32, got: " + underlying)
   }
 
   lazy val zero = UInt32(0)
