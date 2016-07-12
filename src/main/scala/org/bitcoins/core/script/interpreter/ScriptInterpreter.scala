@@ -294,10 +294,10 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
                   //script was marked invalid for other reasons, don't need to update the opcount
                   loop(newProgram)
                 case newProgram : ExecutionInProgressScriptProgram =>
-                  opCount = opCount + BitcoinScriptUtil.numPossibleSignaturesOnStack(program).underlying.toInt
+                  opCount = opCount + BitcoinScriptUtil.numPossibleSignaturesOnStack(program).toInt
                   loop(newProgram)
                 case newProgram : PreExecutionScriptProgram =>
-                  opCount = opCount + BitcoinScriptUtil.numPossibleSignaturesOnStack(program).underlying.toInt
+                  opCount = opCount + BitcoinScriptUtil.numPossibleSignaturesOnStack(program).toInt
                   loop(newProgram)
               }
 
@@ -307,10 +307,10 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
                   //script was marked invalid for other reasons, don't need to update the opcount
                   loop(newProgram)
                 case newProgram : ExecutionInProgressScriptProgram =>
-                  opCount = opCount + BitcoinScriptUtil.numPossibleSignaturesOnStack(program).underlying.toInt
+                  opCount = opCount + BitcoinScriptUtil.numPossibleSignaturesOnStack(program).toInt
                   loop(newProgram)
                 case newProgram : PreExecutionScriptProgram =>
-                  opCount = opCount + BitcoinScriptUtil.numPossibleSignaturesOnStack(program).underlying.toInt
+                  opCount = opCount + BitcoinScriptUtil.numPossibleSignaturesOnStack(program).toInt
                   loop(newProgram)
               }
             //reserved operations

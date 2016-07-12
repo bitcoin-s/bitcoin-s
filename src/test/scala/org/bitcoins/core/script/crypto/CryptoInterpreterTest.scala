@@ -1,14 +1,12 @@
 package org.bitcoins.core.script.crypto
 
-import org.bitcoins.core.crypto.TransactionSignatureSerializer
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptSignature}
 import org.bitcoins.core.protocol.transaction._
-import org.bitcoins.core.script.result._
 import org.bitcoins.core.script._
-import org.bitcoins.core.script.arithmetic.OP_NOT
-import org.bitcoins.core.script.flag.{ScriptFlagFactory, ScriptVerifyDerSig, ScriptVerifyNullDummy}
 import org.bitcoins.core.script.constant._
+import org.bitcoins.core.script.flag.{ScriptFlagFactory, ScriptVerifyDerSig, ScriptVerifyNullDummy}
+import org.bitcoins.core.script.result._
 import org.bitcoins.core.util.{BitcoinSLogger, ScriptProgramTestUtil, TestUtil, TransactionTestUtil}
 import org.scalatest.{FlatSpec, MustMatchers}
 
