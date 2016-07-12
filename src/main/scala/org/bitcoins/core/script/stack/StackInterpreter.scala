@@ -172,7 +172,7 @@ trait StackInterpreter extends BitcoinSLogger {
       //check if n is within the bound of the script
       (number.underlying >= 0 && number.underlying < program.stack.tail.size) match {
         case true =>
-          val newStackTop = program.stack.tail(number.underlying.toInt)
+          val newStackTop = program.stack.tail(number.toInt)
           ScriptProgram(program, newStackTop :: program.stack.tail, program.script.tail)
         case false =>
           logger.error("The index for OP_PICK would have caused an index out of bounds exception")
@@ -193,7 +193,7 @@ trait StackInterpreter extends BitcoinSLogger {
     executeOpWithStackTopAsNumberArg(program, (number : ScriptNumber) =>
       (number.underlying >= 0 && number.underlying  < program.stack.tail.size) match {
         case true =>
-          val newStackTop = program.stack.tail(number.underlying.toInt)
+          val newStackTop = program.stack.tail(number.toInt)
           //removes the old instance of the stack top, appends the new index to the head
           val newStack = newStackTop :: program.stack.tail.diff(List(newStackTop))
           ScriptProgram(program,newStack,program.script.tail)
