@@ -11,8 +11,6 @@ class TransactionOutPointSpec extends Properties("TransactionOutPointSpec") with
 
   property("Serialization symmetry") =
     Prop.forAll(TransactionGenerators.outPoints) { outPoint =>
-      logger.debug("OutPoint: " + outPoint)
-      logger.debug("Hex: " + outPoint.hex)
       TransactionOutPoint(outPoint.hex) == outPoint
     }
 }

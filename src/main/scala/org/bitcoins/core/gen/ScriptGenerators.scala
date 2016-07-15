@@ -65,10 +65,7 @@ trait ScriptGenerators extends BitcoinSLogger {
     } yield pubKey)
 
     val multiSignatureScriptPubKey = pubKeys.map {
-      case (requiredSigs, pubKeys) =>
-        logger.info("Required sigs: " + requiredSigs)
-        logger.info("Pubkeys length: " +pubKeys.length)
-        MultiSignatureScriptPubKey(requiredSigs,pubKeys)
+      case (requiredSigs, pubKeys) => MultiSignatureScriptPubKey(requiredSigs,pubKeys)
     }
     multiSignatureScriptPubKey
   }
@@ -84,7 +81,6 @@ trait ScriptGenerators extends BitcoinSLogger {
     val randomNum = (scala.util.Random.nextInt() % 3).abs
     if (randomNum == 0) p2pkScriptPubKey
     else if (randomNum == 1) p2pkhScriptPubKey
-/*    else if (randomNum == 2) emptyScriptPubKey*/
     else multiSigScriptPubKey
   }
 
@@ -120,9 +116,9 @@ trait ScriptGenerators extends BitcoinSLogger {
     case p2pkh : P2PKHScriptPubKey => p2pkhScriptSignature
     case multisig : MultiSignatureScriptPubKey => multiSignatureScriptSignature
     case EmptyScriptPubKey => emptyScriptSignature
-    case x : ScriptPubKey =>
+    case x @ (_: P2SHScriptPubKey | _: NonStandardScriptPubKey) =>
       throw new IllegalArgumentException("Cannot pick for p2sh script pubkey, " +
-        "non standard script pubkey or Empty script pubKey, got: " + x)
+        "non standard script pubkey, got: " + x)
   }
 
 }

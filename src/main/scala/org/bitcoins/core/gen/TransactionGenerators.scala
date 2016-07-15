@@ -50,19 +50,14 @@ trait TransactionGenerators {
     * @return
     */
   def transactions : Gen[Transaction] = for {
-      version <- NumberGenerator.uInt32s
-      inputs <- Gen.listOfN(randomNumber(10), inputs)
-      outputs <- Gen.listOfN(randomNumber(10), outputs)
-      lockTime <- NumberGenerator.uInt32s
-    } yield Transaction(version, inputs, outputs, lockTime)
+    version <- NumberGenerator.uInt32s
+    inputs <- Gen.listOfN(randomNumber(10), inputs)
+    outputs <- Gen.listOfN(randomNumber(10), outputs)
+    lockTime <- NumberGenerator.uInt32s
+  } yield Transaction(version, inputs, outputs, lockTime)
 
   private def randomNumber(lessThan : Int) : Int = (scala.util.Random.nextInt() % lessThan).abs
 
-  @tailrec
-  private def generate[T](numToGenerate : Int, gen : Gen[T], accum : List[T]): List[T] = {
-    if (numToGenerate <= 0) accum
-    else generate(numToGenerate-1, gen, gen.sample.get :: accum)
-  }
 }
 
 object TransactionGenerators extends TransactionGenerators

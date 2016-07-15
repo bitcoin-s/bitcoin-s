@@ -54,7 +54,7 @@ trait StringGenerators {
   } yield randomString
 
 
-  def randomPositiveNumber(upperBound:Long) = scala.util.Random.nextInt() % upperBound
+  def randomPositiveNumber(upperBound:Long) = scala.util.Random.nextInt().abs % upperBound
 }
 
 object StringGenerators extends StringGenerators
