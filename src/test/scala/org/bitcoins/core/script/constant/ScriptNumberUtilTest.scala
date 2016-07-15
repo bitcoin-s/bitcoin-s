@@ -210,7 +210,7 @@ class ScriptNumberUtilTest extends FlatSpec with MustMatchers {
     ScriptNumberUtil.toInt("ffffffff") must be (min)
   }
 
-  it must "throw an exception when we try and convert a 33 byte sequence to an int" in {
+  it must "throw an exception when we try and convert a 33 bit sequence to an int" in {
     intercept[IllegalArgumentException] {
       ScriptNumberUtil.toInt("FFFFFF7F00")
     }
