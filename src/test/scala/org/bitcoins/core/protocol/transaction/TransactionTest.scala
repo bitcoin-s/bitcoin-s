@@ -104,14 +104,14 @@ class TransactionTest extends FlatSpec with MustMatchers with BitcoinSLogger {
 
 
     //use this to represent a single test case from script_valid.json
-    val lines =
+/*    val lines =
         """
           |[
 [[["0000000000000000000000000000000000000000000000000000000000000000", -1, "1"]],
 "01000000010000000000000000000000000000000000000000000000000000000000000000ffffffff0151ffffffff010000000000000000015100000000", "P2SH"]
           |]
-        """.stripMargin
-    //val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n" finally source.close()
+        """.stripMargin*/
+    val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n" finally source.close()
     val json = lines.parseJson
     val testCasesOpt : Seq[Option[CoreTransactionTestCase]] = json.convertTo[Seq[Option[CoreTransactionTestCase]]]
     val testCases : Seq[CoreTransactionTestCase] = testCasesOpt.flatten
