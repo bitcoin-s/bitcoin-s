@@ -196,8 +196,8 @@ trait LockTimeInterpreter extends BitcoinSLogger {
     val transaction = program.txSignatureComponent.transaction
     val input = transaction.inputs(program.txSignatureComponent.inputIndex.toInt)
     if (!(
-      (transaction.lockTime < TransactionConstants.locktimeThreshold && UInt32(locktime.underlying) < TransactionConstants.locktimeThreshold) ||
-        (transaction.lockTime >= TransactionConstants.locktimeThreshold && UInt32(locktime.underlying) >= TransactionConstants.locktimeThreshold)
+      (transaction.lockTime < TransactionConstants.locktimeThreshold && locktime.underlying < TransactionConstants.locktimeThreshold.underlying) ||
+        (transaction.lockTime >= TransactionConstants.locktimeThreshold && locktime.underlying >= TransactionConstants.locktimeThreshold.underlying)
       )) return false
 
     // Now that we know we're comparing apples-to-apples, the
