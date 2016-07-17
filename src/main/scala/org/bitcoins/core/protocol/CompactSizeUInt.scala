@@ -46,7 +46,6 @@ object CompactSizeUInt extends Factory[CompactSizeUInt] {
   }
 
   def apply(num : UInt64): CompactSizeUInt = {
-    //means we can represent the number with a single byte
     val size = calcSizeForNum(num)
     CompactSizeUInt(num,size)
   }

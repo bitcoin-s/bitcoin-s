@@ -8,7 +8,7 @@ import org.bitcoins.core.script.bitwise.{OP_EQUAL, OP_EQUALVERIFY}
 import org.bitcoins.core.script.constant._
 import org.bitcoins.core.script.crypto.{OP_CHECKMULTISIG, OP_CHECKMULTISIGVERIFY, OP_CHECKSIG, OP_HASH160}
 import org.bitcoins.core.script.stack.OP_DUP
-import org.bitcoins.core.util.{BitcoinSLogger, BitcoinScriptUtil, CryptoUtil, Factory}
+import org.bitcoins.core.util._
 
 import scala.util.{Failure, Success, Try}
 
@@ -139,16 +139,17 @@ object MultiSignatureScriptPubKey extends Factory[MultiSignatureScriptPubKey] wi
       case Some(scriptNumOp) => Seq(scriptNumOp)
       case None =>
         val scriptNum = ScriptNumber(pubKeys.length)
-        Seq(BytesToPushOntoStack(scriptNum.bytes.length), scriptNum)
+        val pushOps = BitcoinScriptUtil.calculatePushOp(scriptNum)
+        pushOps ++ Seq(scriptNum)
     }
     val pubKeysWithPushOps : Seq[Seq[ScriptToken]] = for {
       pubKey <- pubKeys
-      pushOp = BytesToPushOntoStack(pubKey.bytes.length)
+      pushOps = BitcoinScriptUtil.calculatePushOp(pubKey.bytes)
       constant = ScriptConstant(pubKey.bytes)
-    } yield Seq(pushOp, constant)
+    } yield pushOps ++ Seq(constant)
 
 
-    val asm = required ++ pubKeysWithPushOps.flatten ++ possible ++ Seq(OP_CHECKMULTISIG)
+    val asm: Seq[ScriptToken] = required ++ pubKeysWithPushOps.flatten ++ possible ++ Seq(OP_CHECKMULTISIG)
     logger.info("Asm created by multisignature companion object: " + asm)
     val scriptPubKey = ScriptPubKey.fromAsm(asm)
     matchMultiSigScriptPubKey(scriptPubKey)
@@ -175,7 +176,8 @@ object P2SHScriptPubKey extends Factory[P2SHScriptPubKey] {
 
   def apply(scriptPubKey: ScriptPubKey) : P2SHScriptPubKey = {
     val hash = CryptoUtil.ripeMd160(scriptPubKey.bytes)
-    val asm = Seq(OP_HASH160, BytesToPushOntoStack(hash.bytes.size), ScriptConstant(hash.bytes), OP_EQUAL)
+    val pushOps = BitcoinScriptUtil.calculatePushOp(hash.bytes)
+    val asm = Seq(OP_HASH160) ++ pushOps ++ Seq(ScriptConstant(hash.bytes), OP_EQUAL)
     val p2shScriptPubKey = ScriptPubKey.fromAsm(asm)
     matchP2SHScriptPubKey(p2shScriptPubKey)
   }
@@ -203,8 +205,8 @@ object P2PKScriptPubKey extends Factory[P2PKScriptPubKey] {
   }
 
   def apply(pubKey : ECPublicKey): P2PKScriptPubKey = {
-    val bytesToPushOntoStack = BytesToPushOntoStack(pubKey.bytes.size)
-    val asm = Seq(bytesToPushOntoStack, ScriptConstant(pubKey.bytes), OP_CHECKSIG)
+    val pushOps = BitcoinScriptUtil.calculatePushOp(pubKey.bytes)
+    val asm = pushOps ++ Seq(ScriptConstant(pubKey.bytes), OP_CHECKSIG)
     val scriptPubKey = ScriptPubKey.fromAsm(asm)
     matchP2PKScriptPubKey(scriptPubKey)
   }

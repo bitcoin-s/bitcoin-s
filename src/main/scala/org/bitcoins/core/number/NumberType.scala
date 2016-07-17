@@ -217,6 +217,8 @@ sealed trait Int32 extends SignedNumber with NumberOperations[Int32] {
     case Failure(exception) => throw exception
   }
 
+  override def hex = BitcoinSUtil.encodeHex(underlying)
+
 }
 
 /**
@@ -266,6 +268,7 @@ sealed trait Int64 extends SignedNumber with NumberOperations[Int64] {
     case Failure(exception) => throw exception
   }
 
+  override def hex = BitcoinSUtil.encodeHex(underlying)
 }
 
 
@@ -325,7 +328,7 @@ object UInt32 extends Factory[UInt32] with BitcoinSLogger with BaseNumbers[UInt3
 object UInt64 extends Factory[UInt64] with BitcoinSLogger with BaseNumbers[UInt64] {
   private case class UInt64Impl(underlying : BigInt) extends UInt64 {
     require(underlying >= 0, "We cannot have a negative number in an unsigned number: " + underlying)
-    require(underlying <= BigInt("18446744073709551615"), "We cannot have a number larger than 2^64 -1 in UInt32, got: " + underlying)
+    require(underlying <= BigInt("18446744073709551615"), "We cannot have a number larger than 2^64 -1 in UInt64, got: " + underlying)
   }
 
   lazy val zero = UInt64(BigInt(0))
@@ -339,7 +342,6 @@ object UInt64 extends Factory[UInt64] with BitcoinSLogger with BaseNumbers[UInt6
     val individualByteValues : Seq[BigInt] = for {
       (byte,index) <- bytes.reverse.zipWithIndex
     } yield NumberUtil.calculateUnsignedNumberFromByte(index, byte)
-    logger.debug("Individual bytes values: " + individualByteValues)
     UInt64Impl(individualByteValues.sum)
   }
 
@@ -349,7 +351,7 @@ object UInt64 extends Factory[UInt64] with BitcoinSLogger with BaseNumbers[UInt6
 
 
 object Int32 extends Factory[Int32] with BaseNumbers[Int32] {
-  private case class Int32Impl(underlying : Int, hex : String) extends Int32
+  private case class Int32Impl(underlying : Int) extends Int32
 
   lazy val zero = Int32(0)
   lazy val one = Int32(1)
@@ -359,15 +361,15 @@ object Int32 extends Factory[Int32] with BaseNumbers[Int32] {
 
   override def fromBytes(bytes : Seq[Byte]): Int32 =  {
     require(bytes.size <= 4, "We cannot have an Int32 be larger than 4 bytes")
-    Int32Impl(BigInt(bytes.toArray).toInt, BitcoinSUtil.encodeHex(bytes))
+    Int32(BigInt(bytes.toArray).toInt)
   }
 
-  def apply(int : Int): Int32 = Int32Impl(int, BitcoinSUtil.encodeHex(int))
+  def apply(int : Int): Int32 = Int32Impl(int)
 }
 
 
 object Int64 extends Factory[Int64] with BaseNumbers[Int64] {
-  private case class Int64Impl(underlying : Long, hex : String) extends Int64
+  private case class Int64Impl(underlying : Long) extends Int64
 
   lazy val zero = Int64(0)
   lazy val one = Int64(1)
@@ -378,8 +380,8 @@ object Int64 extends Factory[Int64] with BaseNumbers[Int64] {
 
   override def fromBytes(bytes : Seq[Byte]): Int64 = {
     require(bytes.size <= 8, "We cannot have an Int64 be larger than 8 bytes")
-    Int64Impl(BigInt(bytes.toArray).toLong, BitcoinSUtil.encodeHex(bytes))
+    Int64(BigInt(bytes.toArray).toLong)
   }
 
-  def apply(long : Long): Int64 = Int64Impl(long, BitcoinSUtil.encodeHex(long))
+  def apply(long : Long): Int64 = Int64Impl(long)
 }
