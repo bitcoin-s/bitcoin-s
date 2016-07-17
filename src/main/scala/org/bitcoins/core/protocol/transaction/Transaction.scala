@@ -24,17 +24,12 @@ sealed trait Transaction extends NetworkElement {
     */
   def version : UInt32
 
-
-  def inputsCompactSizeUInt: CompactSizeUInt = CompactSizeUInt(inputs.length)
-
   /**
     * The inputs for this transaction
     * @return
     */
   def inputs  : Seq[TransactionInput]
 
-
-  def outputsCompactSizeUInt: CompactSizeUInt = CompactSizeUInt(outputs.length)
   /**
     * The outputs for this transaction
     * @return

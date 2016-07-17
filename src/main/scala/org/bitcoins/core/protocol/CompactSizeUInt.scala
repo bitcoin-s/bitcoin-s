@@ -1,6 +1,6 @@
 package org.bitcoins.core.protocol
 
-import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.number.{UInt32, UInt64}
 import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptSignature}
 import org.bitcoins.core.script.constant.ScriptNumberUtil
 import org.bitcoins.core.util.{BitcoinSUtil, Factory}
@@ -19,44 +19,44 @@ trait CompactSizeUInt {
    * The number parsed from VarInt
    * @return
    */
-  def num : Long
+  def num: UInt64
   /**
    * The length of the VarInt in bytes
    * @return
    */
-  def size : Long
+  def size: Long
 
   def hex = size match {
-    case 1 => if (num.toHexString.size == 1) "0" + num.toHexString else num.toHexString
-    case 3 => "fd" + ScriptNumberUtil.longToHex(num)
-    case 5 => "fe" + ScriptNumberUtil.longToHex(num)
-    case _ => "ff" + ScriptNumberUtil.longToHex(num)
+    case 1 => BitcoinSUtil.flipEndianess(num.hex.slice(14,16))
+    case 3 => "fd" + BitcoinSUtil.flipEndianess(num.hex.slice(12,16))
+    case 5 => "fe" + BitcoinSUtil.flipEndianess(num.hex.slice(8,16))
+    case _ => "ff" + BitcoinSUtil.flipEndianess(num.hex)
   }
 }
 
 object CompactSizeUInt extends Factory[CompactSizeUInt] {
-  private sealed case class CompactSizeUIntImpl(num : Long, size : Long) extends CompactSizeUInt
+  private sealed case class CompactSizeUIntImpl(num : UInt64, size : Long) extends CompactSizeUInt
 
   override def fromBytes(bytes: Seq[Byte]): CompactSizeUInt = {
     parseCompactSizeUInt(bytes)
   }
 
-  def apply(num : Long, size : Long) : CompactSizeUInt = {
+  def apply(num : UInt64, size : Long) : CompactSizeUInt = {
     CompactSizeUIntImpl(num,size)
   }
 
-  def apply(num : Long): CompactSizeUInt = {
+  def apply(num : UInt64): CompactSizeUInt = {
     //means we can represent the number with a single byte
     val size = calcSizeForNum(num)
     CompactSizeUInt(num,size)
   }
 
-  private def calcSizeForNum(num : Long) : Int = {
-    if (num <= 252) 1
+  private def calcSizeForNum(num : UInt64) : Int = {
+    if (num.underlying <= 252) 1
     // can be represented with two bytes
-    else if (num <= 65535) 3
+    else if (num.underlying <= 65535) 3
     //can be represented with 4 bytes
-    else if (num <= UInt32.max.underlying) 5
+    else if (num.underlying <= UInt32.max.underlying) 5
     else 9
   }
   /**
@@ -68,12 +68,12 @@ object CompactSizeUInt extends Factory[CompactSizeUInt] {
     */
   def calculateCompactSizeUInt(bytes : Seq[Byte]) : CompactSizeUInt = {
     //means we can represent the number with a single byte
-    if (bytes.size <= 252) CompactSizeUInt(bytes.size,1)
+    if (bytes.size <= 252) CompactSizeUInt(UInt64(bytes.size),1)
     // can be represented with two bytes
-    else if (bytes.size <= 65535) CompactSizeUInt(bytes.size,3)
+    else if (bytes.size <= 65535) CompactSizeUInt(UInt64(bytes.size),3)
     //can be represented with 4 bytes
-    else if (bytes.size <= UInt32.max.underlying) CompactSizeUInt(bytes.size,5)
-    else CompactSizeUInt(bytes.size,9)
+    else if (bytes.size <= UInt32.max.underlying) CompactSizeUInt(UInt64(bytes.size),5)
+    else CompactSizeUInt(UInt64(bytes.size),9)
   }
 
   /**
@@ -100,13 +100,14 @@ object CompactSizeUInt extends Factory[CompactSizeUInt] {
   def parseCompactSizeUInt(bytes : Seq[Byte]) : CompactSizeUInt = {
     require(bytes.size > 0, "Cannot parse a VarInt if the byte array is size 0")
     //8 bit number
-    if (parseLong(bytes.head) < 253) CompactSizeUInt(parseLong(bytes.head),1)
+    if (UInt64(Seq(bytes.head)).underlying < 253)
+      CompactSizeUInt(UInt64(Seq(bytes.head)),1)
     //16 bit number
-    else if (parseLong(bytes.head) == 253) CompactSizeUInt(parseLong(bytes.slice(1,3).reverse),3)
+    else if (UInt64(Seq(bytes.head)).underlying == 253) CompactSizeUInt(UInt64(bytes.slice(1,3).reverse),3)
     //32 bit number
-    else if (parseLong(bytes.head) == 254) CompactSizeUInt(parseLong(bytes.slice(1,5).reverse),5)
+    else if (UInt64(Seq(bytes.head)).underlying == 254) CompactSizeUInt(UInt64(bytes.slice(1,5).reverse),5)
     //64 bit number
-    else CompactSizeUInt(parseLong(bytes.slice(1,9).reverse),9)
+    else CompactSizeUInt(UInt64(bytes.slice(1,9).reverse),9)
   }
 
   /**
@@ -135,13 +136,13 @@ object CompactSizeUInt extends Factory[CompactSizeUInt] {
     */
   def parseCompactSizeUInt(script : ScriptSignature) : CompactSizeUInt = {
     if (script.bytes.size <=252 ) {
-      CompactSizeUInt(script.bytes.size,1)
+      CompactSizeUInt(UInt64(script.bytes.size),1)
     } else if (script.bytes.size <= 0xffff) {
-      CompactSizeUInt(script.bytes.size,3)
+      CompactSizeUInt(UInt64(script.bytes.size),3)
     } else if (script.bytes.size <= 0xffffffff) {
-      CompactSizeUInt(script.bytes.size,5)
+      CompactSizeUInt(UInt64(script.bytes.size),5)
     }
-    else CompactSizeUInt(script.bytes.size,9)
+    else CompactSizeUInt(UInt64(script.bytes.size),9)
   }
 
   /**
@@ -152,12 +153,12 @@ object CompactSizeUInt extends Factory[CompactSizeUInt] {
     */
   def parseCompactSizeUInt(scriptPubKey : ScriptPubKey) : CompactSizeUInt = {
     if (scriptPubKey.bytes.size <=252 ) {
-      CompactSizeUInt(scriptPubKey.bytes.size,1)
+      CompactSizeUInt(UInt64(scriptPubKey.bytes.size),1)
     } else if (scriptPubKey.bytes.size <= 0xffff) {
-      CompactSizeUInt(scriptPubKey.bytes.size,3)
+      CompactSizeUInt(UInt64(scriptPubKey.bytes.size),3)
     } else if (scriptPubKey.bytes.size <= 0xffffffff) {
-      CompactSizeUInt(scriptPubKey.bytes.size,5)
-    } else CompactSizeUInt(scriptPubKey.bytes.size,9)
+      CompactSizeUInt(UInt64(scriptPubKey.bytes.size),5)
+    } else CompactSizeUInt(UInt64(scriptPubKey.bytes.size),9)
   }
 
   private def parseLong(hex : String) : Long = java.lang.Long.parseLong(hex,16)

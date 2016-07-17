@@ -1,6 +1,7 @@
 package org.bitcoins.core.serializers.transaction
 
 import org.bitcoins.core.currency.{CurrencyUnits, Satoshis}
+import org.bitcoins.core.number.UInt64
 import org.bitcoins.core.serializers.{RawBitcoinSerializer, RawSatoshisSerializer}
 import org.bitcoins.core.serializers.script.{RawScriptPubKeyParser, ScriptParser}
 import org.bitcoins.core.protocol.CompactSizeUInt
@@ -49,7 +50,7 @@ trait RawTransactionOutputParser extends RawBitcoinSerializer[Seq[TransactionOut
   }
 
   override def write(outputs : Seq[TransactionOutput]) : String = {
-    val numOutputs = CompactSizeUInt(outputs.length)
+    val numOutputs = CompactSizeUInt(UInt64(outputs.length))
     val serializedOutputs : Seq[String] = for {
       output <- outputs
     } yield write(output)

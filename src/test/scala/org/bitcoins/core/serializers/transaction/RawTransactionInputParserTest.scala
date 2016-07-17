@@ -2,7 +2,7 @@ package org.bitcoins.core.serializers.transaction
 
 
 import org.bitcoins.core.crypto.DoubleSha256Digest
-import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.number.{UInt32, UInt64}
 import org.bitcoins.core.protocol.script.P2PKScriptSignature
 import org.bitcoins.core.protocol.transaction.{TransactionConstants, TransactionInput, TransactionOutPoint}
 import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil, TestUtil}
@@ -97,7 +97,7 @@ class RawTransactionInputParserTest extends FlatSpec with MustMatchers with RawT
     txInput.head.previousOutput.txId.hex must be (BitcoinSUtil.flipEndianess("e99eb3e6551844d0db252ef242c043796b3b0ccfb126c0ae09f9dd0230e2f10d"))
     txInput.head.previousOutput.vout must be (UInt32.zero)
     txInput.head.scriptSignature.hex must be ("004730440220028c02f14654a0cc12c7e3229adb09d5d35bebb6ba1057e39adb1b2706607b0d0220564fab12c6da3d5acef332406027a7ff1cbba980175ffd880e1ba1bf40598f6b014830450221009362f8d67b60773745e983d07ba10efbe566127e244b724385b2ca2e47292dda022033def393954c320653843555ddbe7679b35cc1cacfe1dad923977de8cd6cc6d7014c695221025e9adcc3d65c11346c8a6069d6ebf5b51b348d1d6dc4b95e67480c34dc0bc75c21030585b3c80f4964bf0820086feda57c8e49fa1eab925db7c04c985467973df96521037753a5e3e9c4717d3f81706b38a6fb82b5fb89d29e580d7b98a37fea8cdefcad53ae")
-    txInput.head.scriptSigCompactSizeUInt.num must be (txInput.head.scriptSignature.size)
+    txInput.head.scriptSigCompactSizeUInt.num must be (UInt64(txInput.head.scriptSignature.size))
     txInput.head.sequence must be (UInt32(4294967295L))
     RawTransactionInputParser.write(txInput) must be (rawTxInput)
 

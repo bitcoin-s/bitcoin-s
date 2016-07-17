@@ -3,7 +3,7 @@ package org.bitcoins.core.protocol.blockchain
 import org.bitcoins.core.consensus.Merkle
 import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
-import org.bitcoins.core.number.{UInt32, Int64}
+import org.bitcoins.core.number.{Int64, UInt32, UInt64}
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptSignature}
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionConstants, TransactionInput, TransactionOutput}
@@ -102,7 +102,7 @@ sealed trait ChainParams {
     val prevBlockHash = DoubleSha256Digest("0000000000000000000000000000000000000000000000000000000000000000")
     val merkleRootHash = Merkle.computeMerkleRoot(Seq(tx))
     val genesisBlockHeader = BlockHeader(version,prevBlockHash,merkleRootHash,time,nBits,nonce)
-    val genesisBlock = Block(genesisBlockHeader,CompactSizeUInt(1,1),Seq(tx))
+    val genesisBlock = Block(genesisBlockHeader,CompactSizeUInt(UInt64.one,1),Seq(tx))
     genesisBlock
   }
 }

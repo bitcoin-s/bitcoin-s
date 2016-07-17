@@ -1,6 +1,6 @@
 package org.bitcoins.core.serializers.transaction
 
-import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.number.{UInt32, UInt64}
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.protocol.script.ScriptSignature
 import org.bitcoins.core.protocol.transaction.{TransactionInput, TransactionOutPoint}
@@ -37,7 +37,7 @@ trait RawTransactionInputParser extends RawBitcoinSerializer[Seq[TransactionInpu
     val serializedInputs : Seq[String] = for {
       input <- inputs
     } yield write(input)
-    val inputsSize = CompactSizeUInt(inputs.length)
+    val inputsSize = CompactSizeUInt(UInt64(inputs.length))
     inputsSize.hex + serializedInputs.mkString
   }
 
