@@ -221,11 +221,11 @@ object MultiSignatureScriptSignature extends Factory[MultiSignatureScriptSignatu
   }
 
   def apply(signatures : Seq[ECDigitalSignature]): MultiSignatureScriptSignature = {
-    val sigsPushOpsPairs : Seq[List[ScriptToken]] = for {
+    val sigsPushOpsPairs : Seq[Seq[ScriptToken]] = for {
       sig <- signatures
       constant = ScriptConstant(sig.bytes)
-      bytesToPushOntoStack = BytesToPushOntoStack(sig.bytes.length)
-    } yield List(bytesToPushOntoStack, constant)
+      pushOps = BitcoinScriptUtil.calculatePushOp(sig.bytes)
+    } yield pushOps ++ Seq(constant)
     val sigsWithPushOps = sigsPushOpsPairs.flatten
     val asm = OP_0 +: sigsWithPushOps
     val scriptSig = ScriptSignature.fromAsm(asm)
@@ -273,9 +273,9 @@ trait P2PKScriptSignature extends ScriptSignature {
 
 object P2PKScriptSignature extends Factory[P2PKScriptSignature] {
   def apply(signature: ECDigitalSignature): P2PKScriptSignature = {
-    val bytesToPushOntoStack = BytesToPushOntoStack(signature.bytes.size)
+    val pushOps = BitcoinScriptUtil.calculatePushOp(signature.bytes)
     val signatureConstant = ScriptConstant(signature.bytes)
-    val scriptSig = ScriptSignature.fromAsm(Seq(bytesToPushOntoStack, signatureConstant))
+    val scriptSig = ScriptSignature.fromAsm(pushOps ++ Seq(signatureConstant))
     matchP2pkScriptSig(scriptSig)
   }
 
@@ -321,10 +321,10 @@ object ScriptSignature extends Factory[ScriptSignature] with BitcoinSLogger {
     * @return
     */
   def factory(signature : ECDigitalSignature, pubKey : ECPublicKey) : ScriptSignature = {
-    val signatureBytesToPushOntoStack = BytesToPushOntoStack(signature.bytes.size)
-    val pubKeyBytesToPushOntoStack = BytesToPushOntoStack(pubKey.bytes.size)
-    val asm : Seq[ScriptToken] = Seq(signatureBytesToPushOntoStack, ScriptConstant(signature.hex),
-      pubKeyBytesToPushOntoStack, ScriptConstant(pubKey.hex))
+    val signatureBytesToPushOntoStack = BitcoinScriptUtil.calculatePushOp(signature.bytes)
+    val pubKeyBytesToPushOntoStack = BitcoinScriptUtil.calculatePushOp(pubKey.bytes)
+    val asm : Seq[ScriptToken] = signatureBytesToPushOntoStack ++ Seq(ScriptConstant(signature.hex)) ++
+      pubKeyBytesToPushOntoStack ++ Seq(ScriptConstant(pubKey.hex))
     fromAsm(asm)
   }
 

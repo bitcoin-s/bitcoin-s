@@ -208,6 +208,9 @@ trait BitcoinScriptUtil {
   }
 
 
+  def calculatePushOp(bytes: Seq[Byte]): Seq[ScriptToken] = calculatePushOp(ScriptConstant(bytes))
+
+
   /**
    * Whenever a script constant is interpreted to a number BIP62 could enforce that number to be encoded
    * in the smallest encoding possible
