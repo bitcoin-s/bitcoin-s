@@ -24,8 +24,10 @@ trait RawTransactionParser extends RawBitcoinSerializer[Transaction] with Bitcoi
     val outputsBytes = bytes.slice(outputsStartIndex, bytes.size)
     logger.info("Output bytes: " + BitcoinSUtil.encodeHex(outputsBytes))
     val outputs = RawTransactionOutputParser.read(outputsBytes)
+    val lockTimeStartIndex = outputsStartIndex + outputs.map(_.size).sum + 1
 
-    val lockTimeBytes = bytes.slice(bytes.size - 4, bytes.size)
+    val lockTimeBytes = bytes.slice(lockTimeStartIndex, lockTimeStartIndex + 4)
+
     val lockTime = UInt32(lockTimeBytes.reverse)
 
     Transaction(version,inputs,outputs,lockTime)

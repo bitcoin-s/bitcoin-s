@@ -1,11 +1,9 @@
 package org.bitcoins.core.protocol.blockchain
 
-import org.bitcoins.core.consensus.Merkle
-import org.bitcoins.core.crypto.DoubleSha256Digest
-import org.bitcoins.core.protocol.{CompactSizeUInt, NetworkElement}
 import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.core.protocol.{CompactSizeUInt, NetworkElement}
 import org.bitcoins.core.serializers.blockchain.RawBlockSerializer
-import org.bitcoins.core.util.{BitcoinSLogger, CryptoUtil, Factory}
+import org.bitcoins.core.util.{BitcoinSLogger, Factory}
 
 /**
   * Created by chris on 5/19/16.

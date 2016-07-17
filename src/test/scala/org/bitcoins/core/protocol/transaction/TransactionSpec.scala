@@ -12,6 +12,5 @@ class TransactionSpec extends Properties("TransactionSpec") with BitcoinSLogger 
   property("Serialization symmetry") =
     Prop.forAll(TransactionGenerators.transactions) { tx =>
       Transaction(tx.hex) == tx
-
     }
 }

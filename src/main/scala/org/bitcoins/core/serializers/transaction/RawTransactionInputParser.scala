@@ -37,11 +37,8 @@ trait RawTransactionInputParser extends RawBitcoinSerializer[Seq[TransactionInpu
     val serializedInputs : Seq[String] = for {
       input <- inputs
     } yield write(input)
-
-    val inputsSizeWithoutPadding = inputs.size.toHexString
-    val inputsSize = if (inputsSizeWithoutPadding.size == 1) "0" + inputsSizeWithoutPadding else inputsSizeWithoutPadding
-    logger.debug("Input size: " + inputsSize)
-    inputsSize + serializedInputs.mkString
+    val inputsSize = CompactSizeUInt(inputs.length)
+    inputsSize.hex + serializedInputs.mkString
   }
 
 

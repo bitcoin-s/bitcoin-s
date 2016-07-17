@@ -23,7 +23,7 @@ trait RawBlockSerializer extends RawBitcoinSerializer[Block] {
     * @return the block object parsed from the list of bytes
     */
   def read(bytes : List[Byte]) : Block = {
-    val blockHeader : BlockHeader = RawBlockHeaderSerializer.read(bytes.slice(0,80))
+    val blockHeader : BlockHeader = BlockHeader(bytes.take(80))
     val txCount : CompactSizeUInt = CompactSizeUInt.parseCompactSizeUInt(bytes.slice(80, bytes.length))
     val txBytes : Seq[Byte] = bytes.slice((80 + txCount.size).toInt, bytes.size)
     val (transactions, remainingBytes) = parseBlockTransactions(txCount, txBytes)
@@ -48,8 +48,7 @@ trait RawBlockSerializer extends RawBitcoinSerializer[Block] {
     def loop(remainingTxs : Long, remainingBytes : Seq[Byte], accum : List[Transaction]) : (Seq[Transaction], Seq[Byte]) = {
       if (remainingTxs <= 0) {
         (accum.reverse, remainingBytes)
-      }
-      else {
+      } else {
         val transaction = RawTransactionParser.read(remainingBytes)
         val newRemainingBytes = remainingBytes.slice(transaction.size, remainingBytes.size)
         loop(remainingTxs - 1, newRemainingBytes, transaction :: accum)

@@ -49,11 +49,11 @@ trait RawTransactionOutputParser extends RawBitcoinSerializer[Seq[TransactionOut
   }
 
   override def write(outputs : Seq[TransactionOutput]) : String = {
-    val numOutputs = BitcoinSUtil.encodeHex(outputs.size.toByte)
+    val numOutputs = CompactSizeUInt(outputs.length)
     val serializedOutputs : Seq[String] = for {
       output <- outputs
     } yield write(output)
-    numOutputs + serializedOutputs.mkString
+    numOutputs.hex + serializedOutputs.mkString
   }
 
 
