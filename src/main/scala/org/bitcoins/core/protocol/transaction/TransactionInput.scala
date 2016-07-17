@@ -14,9 +14,10 @@ import org.bitcoins.core.util.{BitcoinSUtil, Factory}
 sealed trait TransactionInput extends NetworkElement {
 
   def previousOutput : TransactionOutPoint
-  def scriptSignature : ScriptSignature
-  def sequence : UInt32
 
+  def scriptSignature : ScriptSignature
+
+  def sequence : UInt32
 
   def scriptSigCompactSizeUInt : CompactSizeUInt = CompactSizeUInt.calculateCompactSizeUInt(scriptSignature.bytes)
 

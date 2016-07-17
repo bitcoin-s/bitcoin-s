@@ -2,15 +2,13 @@ package org.bitcoins.core.protocol.transaction
 
 import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.NetworkElement
+import org.bitcoins.core.protocol.{CompactSizeUInt, NetworkElement}
 import org.bitcoins.core.serializers.transaction.RawTransactionParser
-import org.bitcoins.core.util.{Factory, BitcoinSUtil, CryptoUtil}
+import org.bitcoins.core.util.{BitcoinSUtil, CryptoUtil, Factory}
 
 /**
  * Created by chris on 7/14/15.
  */
-
-
 sealed trait Transaction extends NetworkElement {
   /**
     * The sha256(sha256(tx)) of this transaction
@@ -22,28 +20,29 @@ sealed trait Transaction extends NetworkElement {
 
   /**
     * The version number for this transaction
- *
     * @return
     */
   def version : UInt32
 
+
+  def inputsCompactSizeUInt: CompactSizeUInt = CompactSizeUInt(inputs.length)
+
   /**
     * The inputs for this transaction
- *
     * @return
     */
   def inputs  : Seq[TransactionInput]
 
+
+  def outputsCompactSizeUInt: CompactSizeUInt = CompactSizeUInt(outputs.length)
   /**
     * The outputs for this transaction
- *
     * @return
     */
   def outputs : Seq[TransactionOutput]
 
   /**
     * The locktime for this transaction
- *
     * @return
     */
   def lockTime : UInt32
@@ -79,7 +78,6 @@ object Transaction extends Factory[Transaction] {
     outputs : Seq[TransactionOutput], lockTime : UInt32) extends Transaction
   /**
     * Updates a transaction outputs
- *
     * @param updatedOutputs
     * @return
     */
@@ -89,7 +87,6 @@ object Transaction extends Factory[Transaction] {
 
   /**
     * Updates a transaction's inputs
- *
     * @param updatedInputs
     * @return
     */
@@ -99,7 +96,6 @@ object Transaction extends Factory[Transaction] {
 
   /**
     * Factory function that modifies a transactions locktime
- *
     * @param oldTx
     * @param lockTime
     * @return
@@ -111,14 +107,12 @@ object Transaction extends Factory[Transaction] {
 
   /**
     * Removes the inputs of the transactions
- *
     * @return
     */
   def emptyInputs(oldTx : Transaction) : Transaction = TransactionImpl(oldTx.version,Seq(),oldTx.outputs,oldTx.lockTime)
 
   /**
     * Removes the outputs of the transactions
- *
     * @return
     */
   def emptyOutputs(oldTx : Transaction) : Transaction = TransactionImpl(oldTx.version,oldTx.inputs,Seq(),oldTx.lockTime)
