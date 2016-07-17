@@ -10,6 +10,6 @@ class CompactSizeUIntSpec extends Properties("CompactSizeUIntSpec") {
 
   property("Serialization symmetry") =
     Prop.forAll(NumberGenerator.compactSizeUInts) { compact : CompactSizeUInt =>
-      CompactSizeUInt.parseCompactSizeUInt(compact.hex).hex == compact.hex
+      CompactSizeUInt.parseCompactSizeUInt(compact.hex) == compact
     }
 }

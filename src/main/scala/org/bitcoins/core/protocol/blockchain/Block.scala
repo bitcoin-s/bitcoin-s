@@ -1,5 +1,6 @@
 package org.bitcoins.core.protocol.blockchain
 
+import org.bitcoins.core.number.UInt64
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.protocol.{CompactSizeUInt, NetworkElement}
 import org.bitcoins.core.serializers.blockchain.RawBlockSerializer
@@ -52,7 +53,7 @@ object Block extends Factory[Block] {
   }
 
   def apply(blockHeader : BlockHeader, transactions : Seq[Transaction]) : Block = {
-    val txCount = CompactSizeUInt(transactions.size)
+    val txCount = CompactSizeUInt(UInt64(transactions.size))
     Block(blockHeader, txCount, transactions)
   }
 

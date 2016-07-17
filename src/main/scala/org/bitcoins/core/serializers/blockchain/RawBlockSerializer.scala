@@ -45,7 +45,7 @@ trait RawBlockSerializer extends RawBitcoinSerializer[Block] {
 
   private def parseBlockTransactions(txCount : CompactSizeUInt, bytes : Seq[Byte]) : (Seq[Transaction], Seq[Byte]) = {
     @tailrec
-    def loop(remainingTxs : Long, remainingBytes : Seq[Byte], accum : List[Transaction]) : (Seq[Transaction], Seq[Byte]) = {
+    def loop(remainingTxs : BigInt, remainingBytes : Seq[Byte], accum : List[Transaction]) : (Seq[Transaction], Seq[Byte]) = {
       if (remainingTxs <= 0) {
         (accum.reverse, remainingBytes)
       } else {
@@ -54,7 +54,7 @@ trait RawBlockSerializer extends RawBitcoinSerializer[Block] {
         loop(remainingTxs - 1, newRemainingBytes, transaction :: accum)
       }
     }
-    loop(txCount.num, bytes, List())
+    loop(txCount.num.underlying, bytes, List())
   }
 
 }

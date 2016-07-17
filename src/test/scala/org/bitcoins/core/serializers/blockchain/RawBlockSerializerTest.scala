@@ -1,11 +1,11 @@
 package org.bitcoins.core.serializers.blockchain
 
 import org.bitcoins.core.crypto.DoubleSha256Digest
-import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.number.{UInt32, UInt64}
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil}
-import org.scalatest.{MustMatchers, FlatSpec}
+import org.scalatest.{FlatSpec, MustMatchers}
 
 /**
   * Created by tom on 6/3/16.
@@ -29,12 +29,12 @@ class RawBlockSerializerTest extends FlatSpec with MustMatchers with BitcoinSLog
     "84df7ba0b8d578a4c702b6bf11d5fac00000000"
   val tx1 = Transaction(rawTx1)
   val txSeq = List(tx1)
-  val uInt = CompactSizeUInt(1, 1)
+  val uInt = CompactSizeUInt(UInt64.one, 1)
   val hex = header + uInt.hex + rawTx1
 
   "RawBlockSerializer" must "parse genesis block" in {
     val block = RawBlockSerializer.read(hex)
-    block.txCount.num must be (txSeq.size)
+    block.txCount.num must be (UInt64(txSeq.size))
     block.txCount must be (uInt)
     block.blockHeader must be (RawBlockHeaderSerializer.read(header))
     block.transactions must be (txSeq)
@@ -63,7 +63,7 @@ class RawBlockSerializerTest extends FlatSpec with MustMatchers with BitcoinSLog
       "0000ffff0000000000000000000000000a6a08ef5f706c2f00000000000000"
     val tx1 = Transaction(rawTx1)
     val txSeq = List(tx1)
-    val uInt = CompactSizeUInt(1, 1)
+    val uInt = CompactSizeUInt(UInt64.one, 1)
     val hex = header + uInt.hex + rawTx1
     //matches real hex from
     //https://test.webbtc.com/block/00000000009fdf81e6efa251bc1902aedc07dc499cbe17db6e33db61eb64a7c5.hex
@@ -73,7 +73,7 @@ class RawBlockSerializerTest extends FlatSpec with MustMatchers with BitcoinSLog
     block.blockHeader.hash.hex must be ("c5a764eb61db336edb17be9c49dc07dcae0219bc51a2efe681df9f0000000000")
     block.hex must be (hex)
     block.txCount must be (uInt)
-    block.txCount.num must be (1)
+    block.txCount.num must be (UInt64(1))
 
     RawBlockSerializer.write(block) must be (hex)
   }
@@ -101,7 +101,7 @@ class RawBlockSerializerTest extends FlatSpec with MustMatchers with BitcoinSLog
     val tx1 = Transaction(rawTx1)
     val tx2 = Transaction(rawTx2)
     val txSeq = List(tx1, tx2)
-    val uInt = CompactSizeUInt(2,1)
+    val uInt = CompactSizeUInt(UInt64(2),1)
     val hex = header + uInt.hex + rawTx1 + rawTx2
 
     val block = RawBlockSerializer.read(hex)
@@ -112,7 +112,7 @@ class RawBlockSerializerTest extends FlatSpec with MustMatchers with BitcoinSLog
     block.blockHeader.time must be (UInt32(1465354640))
     block.blockHeader.nBits must be (UInt32(437875042))
     block.blockHeader must be (RawBlockHeaderSerializer.read(header))
-    block.txCount.num must be (txSeq.size)
+    block.txCount.num must be (UInt64(txSeq.size))
     block.hex must be (hex)
   }
 }
