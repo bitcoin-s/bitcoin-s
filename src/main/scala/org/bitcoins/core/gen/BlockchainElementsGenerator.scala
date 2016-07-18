@@ -10,7 +10,8 @@ import scala.annotation.tailrec
 trait BlockchainElementsGenerator {
   def block : Gen[Block] = for {
     header <- blockHeader
-    txs <- Gen.listOfN(randomNumber(10), TransactionGenerators.transactions)
+    randomNum <- Gen.choose(1,10)
+    txs <- Gen.listOfN(randomNum, TransactionGenerators.transactions)
   } yield Block(header, txs)
 
 
@@ -22,8 +23,6 @@ trait BlockchainElementsGenerator {
     nBits <- NumberGenerator.uInt32s
     nonce <- NumberGenerator.uInt32s
   } yield BlockHeader(version, previousBlockHash, merkleRootHash, time, nBits, nonce)
-
-  private def randomNumber(lessThan : Int) : Int = (scala.util.Random.nextInt() % lessThan).abs
 
 }
 
