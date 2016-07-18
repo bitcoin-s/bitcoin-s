@@ -102,9 +102,9 @@ object CompactSizeUInt extends Factory[CompactSizeUInt] {
     if (UInt64(Seq(bytes.head)).underlying < 253)
       CompactSizeUInt(UInt64(Seq(bytes.head)),1)
     //16 bit number
-    else if (UInt64(Seq(bytes.head)).underlying == 253) CompactSizeUInt(UInt64(bytes.slice(1,3).reverse),3)
+    else if (UInt64(Seq(bytes.head)).toInt == 253) CompactSizeUInt(UInt64(bytes.slice(1,3).reverse),3)
     //32 bit number
-    else if (UInt64(Seq(bytes.head)).underlying == 254) CompactSizeUInt(UInt64(bytes.slice(1,5).reverse),5)
+    else if (UInt64(Seq(bytes.head)).toInt == 254) CompactSizeUInt(UInt64(bytes.slice(1,5).reverse),5)
     //64 bit number
     else CompactSizeUInt(UInt64(bytes.slice(1,9).reverse),9)
   }
@@ -138,7 +138,7 @@ object CompactSizeUInt extends Factory[CompactSizeUInt] {
       CompactSizeUInt(UInt64(script.bytes.size),1)
     } else if (script.bytes.size <= 0xffff) {
       CompactSizeUInt(UInt64(script.bytes.size),3)
-    } else if (script.bytes.size <= 0xffffffff) {
+    } else if (script.bytes.size <= 0xffffffffL) {
       CompactSizeUInt(UInt64(script.bytes.size),5)
     }
     else CompactSizeUInt(UInt64(script.bytes.size),9)
@@ -155,7 +155,7 @@ object CompactSizeUInt extends Factory[CompactSizeUInt] {
       CompactSizeUInt(UInt64(scriptPubKey.bytes.size),1)
     } else if (scriptPubKey.bytes.size <= 0xffff) {
       CompactSizeUInt(UInt64(scriptPubKey.bytes.size),3)
-    } else if (scriptPubKey.bytes.size <= 0xffffffff) {
+    } else if (scriptPubKey.bytes.size <= 0xffffffffL) {
       CompactSizeUInt(UInt64(scriptPubKey.bytes.size),5)
     } else CompactSizeUInt(UInt64(scriptPubKey.bytes.size),9)
   }
@@ -165,8 +165,6 @@ object CompactSizeUInt extends Factory[CompactSizeUInt] {
   private def parseLong(bytes : List[Byte]) : Long = parseLong(BitcoinSUtil.encodeHex(bytes))
 
   private def parseLong(byte : Byte) : Long = parseLong(List(byte))
-
-  private def parseLong(bytes : Seq[Byte]) : Long = parseLong(bytes.toList)
 }
 
 
