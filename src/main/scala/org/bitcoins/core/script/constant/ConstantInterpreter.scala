@@ -54,8 +54,6 @@ trait ConstantInterpreter extends BitcoinSLogger {
    * @return
    */
   def pushScriptNumberBytesToStack(program : ScriptProgram) : ScriptProgram = {
-
-
     val bytesNeeded : Long = program.script.head match {
       case OP_PUSHDATA1 | OP_PUSHDATA2 | OP_PUSHDATA4 =>
         bytesNeededForPushOp(program.script(1))
@@ -161,7 +159,7 @@ trait ConstantInterpreter extends BitcoinSLogger {
    */
   private def bytesNeededForPushOp(token : ScriptToken) : Long = token match {
     case scriptNumber: BytesToPushOntoStack => scriptNumber.opCode
-    case scriptNumber: ScriptNumber => scriptNumber.num
+    case scriptNumber: ScriptNumber => scriptNumber.underlying
     case scriptConstant : ScriptConstant =>
       val constantFlippedEndianess = BitcoinSUtil.flipEndianess(scriptConstant.hex)
       java.lang.Long.parseLong(constantFlippedEndianess,16)

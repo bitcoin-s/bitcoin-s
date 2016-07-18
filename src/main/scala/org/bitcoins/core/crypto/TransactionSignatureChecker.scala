@@ -23,7 +23,6 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
     * Checks the signature of a scriptSig in the spending transaction against the
     * given scriptPubKey & explicitly given public key
     * This is useful for instances of non standard scriptSigs
- *
     * @param txSignatureComponent the relevant transaction information for signature checking
     * @param script the current script state inside the interpreter - this is needed in the case of OP_CODESEPARATORS
     * @param pubKey the public key the signature is being checked against
@@ -69,7 +68,7 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
           val sigsRemoved = removeSignatureFromScript(signature,script)
           sigsRemoved
       }
-      val hashTypeByte = if (signature.bytes.size > 0) signature.bytes.last else 0x00.toByte
+      val hashTypeByte = if (signature.bytes.nonEmpty) signature.bytes.last else 0x00.toByte
       val hashType = HashTypeFactory.fromByte(hashTypeByte)
       val hashForSignature = TransactionSignatureSerializer.hashForSignature(txSignatureComponent.transaction,
         txSignatureComponent.inputIndex,
@@ -84,7 +83,6 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
    * This is a helper function to check digital signatures against public keys
    * if the signature does not match this public key, check it against the next
    * public key in the sequence
- *
    * @param txSignatureComponent the tx signature component that contains all relevant transaction information
    * @param script the script state this is needed in case there is an OP_CODESEPARATOR inside the script
    * @param sigs the signatures that are being checked for validity
@@ -138,8 +136,7 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
 
 
   /**
-    * Removes the given digtial signature from the list of script tokens if it exists
- *
+    * Removes the given digital signature from the list of script tokens if it exists
     * @param signature
     * @param script
     * @return
@@ -157,7 +154,6 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
 
   /**
     * Removes the list of digital signatures from the list of script tokens
- *
     * @param sigs
     * @param script
     * @return

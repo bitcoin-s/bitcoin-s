@@ -2,7 +2,8 @@
 package org.bitcoins.core.serializers.transaction
 
 
-import org.bitcoins.core.currency.{Bitcoins, CurrencyUnits, Satoshis}
+import org.bitcoins.core.currency.Satoshis
+import org.bitcoins.core.number.Int64
 import org.bitcoins.core.protocol.transaction.{EmptyTransactionOutput, TransactionOutput}
 import org.bitcoins.core.script.bitwise.OP_EQUAL
 import org.bitcoins.core.script.constant.{BytesToPushOntoStack, ScriptConstant}
@@ -23,8 +24,8 @@ class RawTransactionOutputParserTest extends FlatSpec with MustMatchers with Raw
     val txOutput : Seq[TransactionOutput] = read(rawTxOutput)
     val firstOutput = txOutput.head
     val secondOutput = txOutput(1)
-    firstOutput.value must be (CurrencyUnits.toSatoshis(Bitcoins(0.0002)))
-    secondOutput.value must be (CurrencyUnits.toSatoshis(Bitcoins(0.02981145)))
+    firstOutput.value must be (Satoshis(Int64(20000)))
+    secondOutput.value must be (Satoshis(Int64(2981145)))
     firstOutput.scriptPubKey.asm must be (Seq(OP_HASH160, BytesToPushOntoStack(20),ScriptConstant("eda8ae08b5c9f973f49543e90a7c292367b3337c"), OP_EQUAL))
     secondOutput.scriptPubKey.asm must be (Seq(OP_HASH160,BytesToPushOntoStack(20), ScriptConstant("be2319b9060429692ebeffaa3be38497dc5380c8"), OP_EQUAL))
   }
@@ -45,7 +46,7 @@ class RawTransactionOutputParserTest extends FlatSpec with MustMatchers with Raw
     //https://bitcoin.stackexchange.com/questions/2859/how-are-transaction-hashes-calculated
     val txOutput = "0100f2052a01000000434104678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5fac"
     val output = RawTransactionOutputParser.read(txOutput)
-    output.head.value must be (Satoshis(5000000000L))
+    output.head.value must be (Satoshis(Int64(5000000000L)))
   }
 
   it must "read a two serialized ouptuts" in {

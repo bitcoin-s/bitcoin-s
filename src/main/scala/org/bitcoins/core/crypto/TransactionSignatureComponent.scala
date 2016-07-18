@@ -1,5 +1,6 @@
 package org.bitcoins.core.crypto
 
+import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.script.flag.ScriptFlag
@@ -23,14 +24,14 @@ trait TransactionSignatureComponent {
  *
    * @return
    */
-  def inputIndex : Int
+  def inputIndex : UInt32
 
   /**
    * The script signature being checked
  *
    * @return
    */
-  def scriptSignature = transaction.inputs(inputIndex).scriptSignature
+  def scriptSignature = transaction.inputs(inputIndex.toInt).scriptSignature
   /**
    * The scriptPubKey for which the input is being checked against
  *

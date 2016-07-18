@@ -1,15 +1,15 @@
 package org.bitcoins.core.protocol.script
 
 
-import org.bitcoins.core.crypto.{ECPublicKey}
+import org.bitcoins.core.crypto.ECPublicKey
 import org.bitcoins.core.script.constant.{BytesToPushOntoStack, OP_0, ScriptConstant}
-import org.bitcoins.core.util.TestUtil
+import org.bitcoins.core.util.{BitcoinSLogger, TestUtil}
 import org.scalatest.{FlatSpec, MustMatchers}
 
 /**
  * Created by chris on 3/8/16.
  */
-class P2SHScriptSignatureTest extends FlatSpec with MustMatchers {
+class P2SHScriptSignatureTest extends FlatSpec with MustMatchers with BitcoinSLogger {
 
   "P2SHScriptSignature" must "find the public keys embedded inside of the redeemScript" in {
     val rawP2SHScriptSig = TestUtil.rawP2shInputScript2Of2
@@ -37,4 +37,5 @@ class P2SHScriptSignatureTest extends FlatSpec with MustMatchers {
       ScriptConstant("3045022100906aaca39f022acd8b7a38fd2f92aca9e9f35cfeaee69a6f13e1d083ae18222602204c9ed96fc6c4de56fd85c679fc59c16ee1ccc80c42563b86174e1a506fc007c801")
     ))
   }
+
 }

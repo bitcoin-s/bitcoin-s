@@ -2,6 +2,7 @@ package org.bitcoins.core.script
 
 
 import org.bitcoins.core.crypto.{TransactionSignatureComponentFactory, TransactionSignatureComponent}
+import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script.{ScriptSignature, ScriptPubKey}
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.script.constant._
@@ -338,9 +339,9 @@ object ScriptProgram {
     * @param flags the flags which we are enforcing inside of the script interpreter
     * @return the script program representing all of this information
     */
-  def factory(transaction: Transaction, scriptPubKey : ScriptPubKey, inputIndex : Int,
+  def factory(transaction: Transaction, scriptPubKey : ScriptPubKey, inputIndex : UInt32,
               flags : Seq[ScriptFlag]) : PreExecutionScriptProgram = {
-    val script = transaction.inputs(inputIndex).scriptSignature.asm
+    val script = transaction.inputs(inputIndex.toInt).scriptSignature.asm
     apply(transaction,scriptPubKey,inputIndex,script.toList,flags)
   }
 
@@ -355,7 +356,7 @@ object ScriptProgram {
     * @param flags the flags which we are enforcing inside of the script interpreter
     * @return the script program representing all of this information
     */
-  def factory(transaction: Transaction, scriptPubKey : ScriptPubKey, inputIndex : Int, script : Seq[ScriptToken],
+  def factory(transaction: Transaction, scriptPubKey : ScriptPubKey, inputIndex : UInt32, script : Seq[ScriptToken],
               flags : Seq[ScriptFlag]) : PreExecutionScriptProgram = {
     val txSignatureComponent = TransactionSignatureComponentFactory.factory(transaction,inputIndex,scriptPubKey,flags)
     PreExecutionScriptProgramImpl(txSignatureComponent,List(),script.toList,script.toList,List(),flags)
@@ -374,7 +375,7 @@ object ScriptProgram {
     * @param script the script that we need to execute
     * @param flags the flags which we are enforcing inside of the script interpeter
     */
-  def factory(transaction: Transaction, scriptPubKey : ScriptPubKey, inputIndex : Int, stack : Seq[ScriptToken],
+  def factory(transaction: Transaction, scriptPubKey : ScriptPubKey, inputIndex : UInt32, stack : Seq[ScriptToken],
               script : Seq[ScriptToken], flags : Seq[ScriptFlag]) : ScriptProgram = {
     val program = factory(transaction,scriptPubKey,inputIndex,script,flags)
     apply(program,stack,Stack)
@@ -414,13 +415,13 @@ object ScriptProgram {
   def apply(oldProgram : ScriptProgram, stack : Seq[ScriptToken], script : Seq[ScriptToken], altStack : Seq[ScriptToken],
             updateIndicator: UpdateIndicator) : ScriptProgram = factory(oldProgram, stack, script, altStack)
 
-  def apply(transaction: Transaction, scriptPubKey : ScriptPubKey, inputIndex : Int,
+  def apply(transaction: Transaction, scriptPubKey : ScriptPubKey, inputIndex : UInt32,
             flags : Seq[ScriptFlag]) : PreExecutionScriptProgram = factory(transaction, scriptPubKey, inputIndex, flags)
 
-  def apply(transaction: Transaction, scriptPubKey : ScriptPubKey, inputIndex : Int, script : Seq[ScriptToken],
+  def apply(transaction: Transaction, scriptPubKey : ScriptPubKey, inputIndex : UInt32, script : Seq[ScriptToken],
             flags : Seq[ScriptFlag]) : PreExecutionScriptProgram = factory(transaction, scriptPubKey, inputIndex, script, flags)
 
-  def apply(transaction: Transaction, scriptPubKey : ScriptPubKey, inputIndex : Int, stack : Seq[ScriptToken],
+  def apply(transaction: Transaction, scriptPubKey : ScriptPubKey, inputIndex : UInt32, stack : Seq[ScriptToken],
             script : Seq[ScriptToken], flags : Seq[ScriptFlag]) : ScriptProgram = factory(transaction, scriptPubKey, inputIndex, stack, script, flags)
 
   def apply(txSignatureComponent : TransactionSignatureComponent, stack : Seq[ScriptToken], script : Seq[ScriptToken]) : ScriptProgram =
