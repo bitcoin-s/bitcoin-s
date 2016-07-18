@@ -53,8 +53,6 @@ trait StringGenerators {
     randomString <- genString(randomNum)
   } yield randomString
 
-
-  def randomPositiveNumber(upperBound:Long) = scala.util.Random.nextInt().abs % upperBound
 }
 
 object StringGenerators extends StringGenerators

@@ -35,7 +35,7 @@ trait TransactionGenerators {
     outPoint <- outPoints
     scriptSig <- ScriptGenerators.scriptSignature
     sequenceNumber <- NumberGenerator.uInt32s
-    randomNum = randomNumber(10)
+    randomNum <- Gen.choose(0,10)
   } yield {
     if (randomNum == 0) {
       //gives us a coinbase input
@@ -51,12 +51,12 @@ trait TransactionGenerators {
     */
   def transactions : Gen[Transaction] = for {
     version <- NumberGenerator.uInt32s
-    inputs <- Gen.listOfN(randomNumber(10), inputs)
-    outputs <- Gen.listOfN(randomNumber(10), outputs)
+    randomInputNum <- Gen.choose(1,10)
+    inputs <- Gen.listOfN(randomInputNum, inputs)
+    randomOutputNum <- Gen.choose(1,10)
+    outputs <- Gen.listOfN(randomOutputNum, outputs)
     lockTime <- NumberGenerator.uInt32s
   } yield Transaction(version, inputs, outputs, lockTime)
-
-  private def randomNumber(lessThan : Int) : Int = (scala.util.Random.nextInt() % lessThan).abs
 
 }
 
