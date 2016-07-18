@@ -1,13 +1,12 @@
 package org.bitcoins.core.script.crypto
 
-import org.bitcoins.core.crypto.TransactionSignatureSerializer
+import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptSignature}
 import org.bitcoins.core.protocol.transaction._
-import org.bitcoins.core.script.result._
 import org.bitcoins.core.script._
-import org.bitcoins.core.script.arithmetic.OP_NOT
-import org.bitcoins.core.script.flag.{ScriptFlagFactory, ScriptVerifyDerSig, ScriptVerifyNullDummy}
 import org.bitcoins.core.script.constant._
+import org.bitcoins.core.script.flag.{ScriptFlagFactory, ScriptVerifyDerSig, ScriptVerifyNullDummy}
+import org.bitcoins.core.script.result._
 import org.bitcoins.core.util.{BitcoinSLogger, ScriptProgramTestUtil, TestUtil, TransactionTestUtil}
 import org.scalatest.{FlatSpec, MustMatchers}
 
@@ -157,7 +156,7 @@ class CryptoInterpreterTest extends FlatSpec with MustMatchers with CryptoInterp
 
     val script = List(OP_CHECKMULTISIG)
 
-    val baseProgram = ScriptProgram(spendingTx,creditingTx.outputs(0).scriptPubKey,0,ScriptFlagFactory.empty)
+    val baseProgram = ScriptProgram(spendingTx,creditingTx.outputs(0).scriptPubKey,UInt32.zero,ScriptFlagFactory.empty)
 
     val program = ScriptProgram(baseProgram,stack,script)
     val newProgram = opCheckMultiSig(program)
@@ -174,7 +173,7 @@ class CryptoInterpreterTest extends FlatSpec with MustMatchers with CryptoInterp
     val input = TransactionInput(EmptyTransactionOutPoint, scriptSig, TransactionConstants.sequence)
     val tx = Transaction(TestUtil.transaction,UpdateTransactionInputs(Seq(input)))
 
-    val baseProgram = ScriptProgram.toExecutionInProgress(ScriptProgram(tx,TestUtil.scriptPubKey,0,flags))
+    val baseProgram = ScriptProgram.toExecutionInProgress(ScriptProgram(tx,TestUtil.scriptPubKey,UInt32.zero,flags))
     val stack = Seq(OP_0,OP_0,OP_1)
     val script = Seq(OP_CHECKMULTISIG)
     val program = ScriptProgram(baseProgram,stack,script)

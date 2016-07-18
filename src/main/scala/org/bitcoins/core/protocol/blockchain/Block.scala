@@ -1,11 +1,10 @@
 package org.bitcoins.core.protocol.blockchain
 
-import org.bitcoins.core.consensus.Merkle
-import org.bitcoins.core.crypto.DoubleSha256Digest
-import org.bitcoins.core.protocol.{CompactSizeUInt, NetworkElement}
+import org.bitcoins.core.number.UInt64
 import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.core.protocol.{CompactSizeUInt, NetworkElement}
 import org.bitcoins.core.serializers.blockchain.RawBlockSerializer
-import org.bitcoins.core.util.{BitcoinSLogger, CryptoUtil, Factory}
+import org.bitcoins.core.util.{BitcoinSLogger, Factory}
 
 /**
   * Created by chris on 5/19/16.
@@ -51,6 +50,11 @@ object Block extends Factory[Block] {
 
   def apply(blockHeader : BlockHeader, txCount : CompactSizeUInt, transactions : Seq[Transaction]) : Block = {
     BlockImpl(blockHeader, txCount, transactions)
+  }
+
+  def apply(blockHeader : BlockHeader, transactions : Seq[Transaction]) : Block = {
+    val txCount = CompactSizeUInt(UInt64(transactions.size))
+    Block(blockHeader, txCount, transactions)
   }
 
   def fromBytes(bytes : Seq[Byte]) : Block = RawBlockSerializer.read(bytes)

@@ -1,5 +1,6 @@
 package org.bitcoins.core.protocol.transaction
 
+import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.util.TestUtil
 import org.scalatest.{FlatSpec, MustMatchers}
 
@@ -9,7 +10,7 @@ import org.scalatest.{FlatSpec, MustMatchers}
 class TransactionOutPointTest extends FlatSpec with MustMatchers {
   "TransactionOutPoint" must "define an empty transaction outpoint" in {
     EmptyTransactionOutPoint.txId.hex must be ("0000000000000000000000000000000000000000000000000000000000000000")
-    EmptyTransactionOutPoint.vout must be (-1)
+    EmptyTransactionOutPoint.vout must be (UInt32.max)
   }
 
   it must "read then write a transaction outpoint" in {

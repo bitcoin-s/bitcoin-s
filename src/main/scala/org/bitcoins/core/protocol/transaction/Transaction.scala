@@ -1,50 +1,46 @@
 package org.bitcoins.core.protocol.transaction
 
 import org.bitcoins.core.crypto.DoubleSha256Digest
-import org.bitcoins.core.protocol.NetworkElement
+import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.protocol.{CompactSizeUInt, NetworkElement}
 import org.bitcoins.core.serializers.transaction.RawTransactionParser
-import org.bitcoins.core.util.{Factory, BitcoinSUtil, CryptoUtil}
+import org.bitcoins.core.util.{BitcoinSUtil, CryptoUtil, Factory}
 
 /**
  * Created by chris on 7/14/15.
  */
-
-
 sealed trait Transaction extends NetworkElement {
   /**
     * The sha256(sha256(tx)) of this transaction
     * Note that this is the big endian encoding of the hash NOT the little endian encoding displayed on block explorers
+    *
     * @return
     */
   def txId : DoubleSha256Digest = CryptoUtil.doubleSHA256(bytes)
 
   /**
     * The version number for this transaction
- *
     * @return
     */
-  def version : Long
+  def version : UInt32
 
   /**
     * The inputs for this transaction
- *
     * @return
     */
   def inputs  : Seq[TransactionInput]
 
   /**
     * The outputs for this transaction
- *
     * @return
     */
   def outputs : Seq[TransactionOutput]
 
   /**
     * The locktime for this transaction
- *
     * @return
     */
-  def lockTime : Long
+  def lockTime : UInt32
 
   override def hex = RawTransactionParser.write(this)
 
@@ -73,11 +69,10 @@ case object EmptyTransaction extends Transaction {
 
 object Transaction extends Factory[Transaction] {
 
-  private sealed case class TransactionImpl(version : Long, inputs : Seq[TransactionInput],
-    outputs : Seq[TransactionOutput], lockTime : Long) extends Transaction
+  private sealed case class TransactionImpl(version : UInt32, inputs : Seq[TransactionInput],
+    outputs : Seq[TransactionOutput], lockTime : UInt32) extends Transaction
   /**
     * Updates a transaction outputs
- *
     * @param updatedOutputs
     * @return
     */
@@ -87,7 +82,6 @@ object Transaction extends Factory[Transaction] {
 
   /**
     * Updates a transaction's inputs
- *
     * @param updatedInputs
     * @return
     */
@@ -97,26 +91,23 @@ object Transaction extends Factory[Transaction] {
 
   /**
     * Factory function that modifies a transactions locktime
- *
     * @param oldTx
     * @param lockTime
     * @return
     */
-  def factory(oldTx : Transaction, lockTime : Long) : Transaction = {
+  def factory(oldTx : Transaction, lockTime : UInt32) : Transaction = {
     TransactionImpl(oldTx.version,oldTx.inputs,oldTx.outputs,lockTime)
   }
 
 
   /**
     * Removes the inputs of the transactions
- *
     * @return
     */
   def emptyInputs(oldTx : Transaction) : Transaction = TransactionImpl(oldTx.version,Seq(),oldTx.outputs,oldTx.lockTime)
 
   /**
     * Removes the outputs of the transactions
- *
     * @return
     */
   def emptyOutputs(oldTx : Transaction) : Transaction = TransactionImpl(oldTx.version,oldTx.inputs,Seq(),oldTx.lockTime)
@@ -126,12 +117,12 @@ object Transaction extends Factory[Transaction] {
   def fromBytes(bytes : Seq[Byte]) : Transaction = RawTransactionParser.read(bytes)
 
   def apply(bytes : Array[Byte]) : Transaction = factory(bytes)
-  def apply(oldTx : Transaction, lockTime : Long)  : Transaction = factory(oldTx,lockTime)
+  def apply(oldTx : Transaction, lockTime : UInt32)  : Transaction = factory(oldTx,lockTime)
   def apply(oldTx : Transaction, updatedInputs : UpdateTransactionInputs) : Transaction = factory(oldTx, updatedInputs)
   def apply(oldTx : Transaction, updatedOutputs : UpdateTransactionOutputs) : Transaction = factory(oldTx, updatedOutputs)
 
-  def apply(version : Int, inputs : Seq[TransactionInput],
-            outputs : Seq[TransactionOutput], lockTime : Long) : Transaction = {
+  def apply(version : UInt32, inputs : Seq[TransactionInput],
+            outputs : Seq[TransactionOutput], lockTime : UInt32) : Transaction = {
     TransactionImpl(version,inputs,outputs,lockTime)
   }
 }

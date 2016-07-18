@@ -70,7 +70,7 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
     require(program.script.headOption.isDefined && program.script.head == OP_ABS, "Script top must be OP_ABS")
     performUnaryArithmeticOperation(program, x => x match {
       case ScriptNumber.zero => ScriptNumber.zero
-      case _ : ScriptNumber => ScriptNumber(x.num.abs)
+      case _ : ScriptNumber => ScriptNumber(x.underlying.abs)
     })
   }
 
@@ -105,7 +105,7 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
    */
   def op0NotEqual(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.isDefined && program.script.head == OP_0NOTEQUAL, "Script top must be OP_0NOTEQUAL")
-    performUnaryArithmeticOperation(program, x => if(x.num == 0) OP_FALSE else OP_TRUE)
+    performUnaryArithmeticOperation(program, x => if(x.underlying == 0) OP_FALSE else OP_TRUE)
   }
 
 
@@ -187,7 +187,7 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
     require(program.script.headOption.isDefined && program.script.head == OP_NUMNOTEQUAL,
       "Script top must be OP_NUMNOTEQUAL")
     performBinaryBooleanOperation(program, (x,y) => {
-      x.num != y.num
+      x.underlying != y.underlying
     })
   }
 
@@ -362,7 +362,7 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
           logger.error("The number you gave us is not encoded in the shortest way possible")
           ScriptProgram(program, ScriptErrorUnknownError)
         } else {
-          val interpretedNumber = ScriptNumber(BitcoinSUtil.hexToLong(s.hex))
+          val interpretedNumber = ScriptNumber(ScriptNumberUtil.toLong(s.hex))
           val newProgram = ScriptProgram(program, interpretedNumber ::  program.stack.tail, ScriptProgram.Stack)
           performUnaryArithmeticOperation(newProgram, op)
         }

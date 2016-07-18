@@ -1,11 +1,12 @@
 package org.bitcoins.core.util
 
 import org.bitcoins.core.crypto.ECPublicKey
-import org.bitcoins.core.script.flag.{ScriptFlag, ScriptFlagUtil}
-import org.bitcoins.core.script.{ScriptProgram, ExecutionInProgressScriptProgram, ScriptSettings}
+import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.script.constant._
-import org.bitcoins.core.script.crypto.{OP_CHECKMULTISIGVERIFY, OP_CHECKMULTISIG, OP_CHECKSIG, OP_CHECKSIGVERIFY}
-import org.bitcoins.core.script.reserved.{OP_RESERVED, NOP, ReservedOperation}
+import org.bitcoins.core.script.crypto.{OP_CHECKMULTISIG, OP_CHECKMULTISIGVERIFY, OP_CHECKSIG, OP_CHECKSIGVERIFY}
+import org.bitcoins.core.script.flag.{ScriptFlag, ScriptFlagUtil}
+import org.bitcoins.core.script.{ScriptProgram, ScriptSettings}
 
 import scala.annotation.tailrec
 
@@ -75,8 +76,8 @@ trait BitcoinScriptUtil {
     val multiSigCount : Long = script.zipWithIndex.map { case (token, index) =>
       if (multiSigOps.contains(token) && index != 0) {
         script(index-1) match {
-          case scriptNum : ScriptNumber => scriptNum.num
-          case scriptConstant : ScriptConstant => BitcoinSUtil.hexToLong(scriptConstant.hex)
+          case scriptNum : ScriptNumber => scriptNum.underlying
+          case scriptConstant : ScriptConstant => ScriptNumberUtil.toLong(scriptConstant.hex)
           case _ : ScriptToken => ScriptSettings.maxPublicKeysPerMultiSig
         }
       } else 0
@@ -116,7 +117,7 @@ trait BitcoinScriptUtil {
     require(program.script.headOption == Some(OP_CHECKMULTISIG) || program.script.headOption == Some(OP_CHECKMULTISIGVERIFY),
       "We can only parse the nubmer of signatures the stack when we are executing a OP_CHECKMULTISIG or OP_CHECKMULTISIGVERIFY op")
     val nPossibleSignatures = numPossibleSignaturesOnStack(program)
-    val stackWithoutPubKeys = program.stack.tail.slice(nPossibleSignatures.num.toInt,program.stack.tail.size)
+    val stackWithoutPubKeys = program.stack.tail.slice(nPossibleSignatures.toInt,program.stack.tail.size)
     val mRequiredSignatures : ScriptNumber = stackWithoutPubKeys.head match {
       case s: ScriptNumber => s
       case s : ScriptConstant => ScriptNumber(s.bytes)
@@ -179,12 +180,41 @@ trait BitcoinScriptUtil {
     }
   }
 
+  /**
+    * Calculates the push operation for the given [[ScriptToken]]
+    * @param scriptToken
+    * @return
+    */
+  def calculatePushOp(scriptToken : ScriptToken) : Seq[ScriptToken] = {
+    //push ops following an OP_PUSHDATA operation are interpreted as unsigned numbers
+    val scriptTokenSize = UInt32(scriptToken.bytes.size)
+    val bytes = scriptTokenSize.bytes
+    if (scriptTokenSize <= UInt32(75)) Seq(BytesToPushOntoStack(scriptToken.bytes.size))
+    else if (scriptTokenSize <= UInt32(OP_PUSHDATA1.max)) {
+      //we need the push op to be only 1 byte in size
+      val pushConstant = ScriptConstant(BitcoinSUtil.flipEndianess(bytes.slice(bytes.length-1,bytes.length)))
+      Seq(OP_PUSHDATA1, pushConstant)
+    }
+    else if (scriptTokenSize <= UInt32(OP_PUSHDATA2.max)) {
+      //we need the push op to be only 2 bytes in size
+      val pushConstant = ScriptConstant(BitcoinSUtil.flipEndianess(bytes.slice(bytes.length-2,bytes.length)))
+      Seq(OP_PUSHDATA2, pushConstant)
+    }
+    else if (scriptTokenSize <= UInt32(OP_PUSHDATA4.max)) {
+      val pushConstant = ScriptConstant(BitcoinSUtil.flipEndianess(bytes))
+      Seq(OP_PUSHDATA4, pushConstant)
+    }
+    else throw new IllegalArgumentException("ScriptToken is to large for pushops, size: " + scriptTokenSize)
+  }
+
+
+  def calculatePushOp(bytes: Seq[Byte]): Seq[ScriptToken] = calculatePushOp(ScriptConstant(bytes))
+
 
   /**
    * Whenever a script constant is interpreted to a number BIP62 could enforce that number to be encoded
    * in the smallest encoding possible
    * https://github.com/bitcoin/bitcoin/blob/a6a860796a44a2805a58391a009ba22752f64e32/src/script/script.h#L220-L237
- *
    * @param constant
    * @return
    */
@@ -194,7 +224,6 @@ trait BitcoinScriptUtil {
    * Whenever a script constant is interpreted to a number BIP62 could enforce that number to be encoded
    * in the smallest encoding possible
    * https://github.com/bitcoin/bitcoin/blob/a6a860796a44a2805a58391a009ba22752f64e32/src/script/script.h#L220-L237
- *
    * @param bytes
    * @return
    */
@@ -218,7 +247,6 @@ trait BitcoinScriptUtil {
    * Whenever a script constant is interpreted to a number BIP62 could enforce that number to be encoded
    * in the smallest encoding possible
    * https://github.com/bitcoin/bitcoin/blob/a6a860796a44a2805a58391a009ba22752f64e32/src/script/script.h#L220-L237
- *
    * @param hex
    * @return
    */
@@ -226,7 +254,6 @@ trait BitcoinScriptUtil {
   /**
    * Checks the public key encoding according to bitcoin core's function
    * https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L202
- *
    * @param key the key whose encoding we are checking
    * @param program the program whose flags which dictate the rules for the public keys encoding
    * @return if the key is encoded correctly against the rules give in the flags parameter
@@ -236,7 +263,6 @@ trait BitcoinScriptUtil {
   /**
    * Checks the public key encoding according to bitcoin core's function
    * https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L202
- *
    * @param key the key whose encoding we are checking
    * @param flags the flags which dictate the rules for the public keys encoding
    * @return if the key is encoded correctly against the rules givein the flags parameter
@@ -250,7 +276,6 @@ trait BitcoinScriptUtil {
   /**
    * Returns true if the key is compressed or uncompressed, false otherwise
    * https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L66
- *
    * @param key the public key that is being checked
    * @return true if the key is compressed/uncompressed otherwise false
    */
