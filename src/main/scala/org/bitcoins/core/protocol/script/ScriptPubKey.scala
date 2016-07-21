@@ -182,12 +182,13 @@ object P2SHScriptPubKey extends Factory[P2SHScriptPubKey] with BitcoinSLogger {
 
   def apply(scriptPubKey: ScriptPubKey) : P2SHScriptPubKey = {
     val hash = CryptoUtil.sha256Hash160(scriptPubKey.bytes)
-    logger.error("calculated hash: " + hash.hex)
     val pushOps = BitcoinScriptUtil.calculatePushOp(hash.bytes)
     val asm = Seq(OP_HASH160) ++ pushOps ++ Seq(ScriptConstant(hash.bytes), OP_EQUAL)
     val p2shScriptPubKey = ScriptPubKey.fromAsm(asm)
     matchP2SHScriptPubKey(p2shScriptPubKey)
   }
+
+
 
   private def matchP2SHScriptPubKey(scriptPubKey : ScriptPubKey): P2SHScriptPubKey = scriptPubKey match {
     case p2shScriptPubKey : P2SHScriptPubKey => p2shScriptPubKey

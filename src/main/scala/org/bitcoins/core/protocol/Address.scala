@@ -1,7 +1,7 @@
 package org.bitcoins.core.protocol
 import org.bitcoins.core.config._
 import org.bitcoins.core.config.{MainNet, RegTest, TestNet3}
-import org.bitcoins.core.crypto.Sha256Hash160Digest
+import org.bitcoins.core.crypto.{ECPublicKey, Sha256Hash160Digest}
 import org.bitcoins.core.protocol.script.{P2SHScriptPubKey, ScriptPubKey}
 import org.bitcoins.core.util.{Base58, CryptoUtil, Factory}
 
@@ -38,6 +38,10 @@ object P2PKHAddress {
 
   def apply(hash: Sha256Hash160Digest, networkParameters: NetworkParameters): P2PKHAddress = encodePubKeyHashToAddress(hash,networkParameters)
 
+  def apply(pubKey: ECPublicKey, networkParameters: NetworkParameters): P2PKHAddress = {
+    val hash = CryptoUtil.sha256Hash160(pubKey.bytes)
+    P2PKHAddress(hash,networkParameters)
+  }
   /**
     * Checks if an address is a valid p2pkh address
     *
@@ -83,18 +87,27 @@ object P2SHAddress {
     * @return the [[P2SHAddress]]
     */
   def encodeScriptPubKeyToAddress(scriptPubKey: ScriptPubKey, network: NetworkParameters): P2SHAddress = {
-    val versionByte: Byte = network.p2shNetworkByte
     val p2shScriptPubKey = P2SHScriptPubKey(scriptPubKey)
+    P2SHAddress(p2shScriptPubKey,network)
+  }
+
+
+  /**
+    * Creates a [[P2SHScriptPubKey]] from the given [[ScriptPubKey]], then creates an address from that [[P2SHScriptPubKey]]
+    * @param scriptPubKey
+    * @param network
+    * @return
+    */
+  def apply(scriptPubKey: ScriptPubKey,network: NetworkParameters): P2SHAddress = encodeScriptPubKeyToAddress(scriptPubKey,network)
+
+
+  def apply(p2shScriptPubKey: P2SHScriptPubKey, network: NetworkParameters): P2SHAddress = {
+    val versionByte = network.p2shNetworkByte
     val hash = p2shScriptPubKey.scriptHash
     val bytes = Seq(versionByte) ++ hash.bytes
     val checksum = CryptoUtil.doubleSHA256(bytes).bytes.take(4)
     P2SHAddressImpl(Base58.encode(bytes ++ checksum))
   }
-
-
-
-  def apply(scriptPubKey: ScriptPubKey,network: NetworkParameters): P2SHAddress = encodeScriptPubKeyToAddress(scriptPubKey,network)
-
 
   def apply(value: String): P2SHAddress = P2SHAddressImpl(value)
   /**
