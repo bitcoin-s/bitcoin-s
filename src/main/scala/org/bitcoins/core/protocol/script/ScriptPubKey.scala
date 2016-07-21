@@ -1,6 +1,6 @@
 package org.bitcoins.core.protocol.script
 
-import org.bitcoins.core.crypto.ECPublicKey
+import org.bitcoins.core.crypto.{ECPublicKey, Sha256Hash160Digest}
 import org.bitcoins.core.serializers.script.{RawScriptPubKeyParser, ScriptParser}
 import org.bitcoins.core.protocol._
 import org.bitcoins.core.script.ScriptSettings
@@ -166,7 +166,13 @@ object MultiSignatureScriptPubKey extends Factory[MultiSignatureScriptPubKey] wi
  * https://bitcoin.org/en/developer-guide#pay-to-script-hash-p2sh
  * Format: OP_HASH160 <Hash160(redeemScript)> OP_EQUAL
  */
-trait P2SHScriptPubKey extends ScriptPubKey
+trait P2SHScriptPubKey extends ScriptPubKey {
+  /**
+    * The hash of the script for which this scriptPubKey is being created from
+    * @return
+    */
+  def scriptHash : Sha256Hash160Digest = Sha256Hash160Digest(asm(asm.length - 2).bytes)
+}
 
 object P2SHScriptPubKey extends Factory[P2SHScriptPubKey] {
   override def fromBytes(bytes : Seq[Byte]): P2SHScriptPubKey = {
