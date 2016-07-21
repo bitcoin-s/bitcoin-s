@@ -1,8 +1,9 @@
 package org.bitcoins.core.protocol
-import org.bitcoins.core.config.{RegTest, TestNet3, MainNet}
-import org.bitcoins.core.util.{Factory, BitcoinSUtil}
-import org.bitcoins.core.config.{RegTest, TestNet3, MainNet}
-import org.bitcoins.core.util.{CryptoUtil, Base58, Factory}
+import org.bitcoins.core.config._
+import org.bitcoins.core.config.{MainNet, RegTest, TestNet3}
+import org.bitcoins.core.crypto.Sha256Hash160Digest
+import org.bitcoins.core.util.{Base58, CryptoUtil, Factory}
+
 import scala.util.{Failure, Success, Try}
 
 sealed abstract class Address(val value : String)
@@ -94,6 +95,19 @@ object BitcoinAddress {
    * @return
    */
   def p2pkh(address : BitcoinAddress) : Boolean = p2pkh(address.value)
+
+  /**
+    * Encodes a pubkey hash to a base 58 address on the corresponding network
+    * @param hash the result of Sha256(RipeMD160(pubkey))
+    * @param network the network on which this address is being generated for
+    * @return
+    */
+  def encodePubKeyHashToAddress(hash: Sha256Hash160Digest, network: NetworkParameters): Address = {
+    val versionByte: Byte = network.p2pkhNetworkByte
+    val bytes = Seq(versionByte) ++ hash.bytes
+    val checksum = CryptoUtil.doubleSHA256(bytes).bytes.take(4)
+    Address(Base58.encode(bytes ++ checksum))
+  }
 }
 
 object AssetAddress {
