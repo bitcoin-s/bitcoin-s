@@ -5,6 +5,7 @@ import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.script.constant.ScriptNumber
 import org.bitcoins.core.util.NumberUtil
 import org.scalacheck.Gen
+import org.scalacheck.Arbitrary.arbitrary
 
 /**
   * Created by chris on 6/16/16.
@@ -73,6 +74,27 @@ trait NumberGenerator {
 
   def compactSizeUInts : Gen[CompactSizeUInt] = uInt64s.map(CompactSizeUInt(_))
 
+  /**
+    * Generates an arbitrary [[Byte]] in Scala
+    * @return
+    */
+  def byte: Gen[Byte] = arbitrary[Byte]
+
+  /**
+    * Generates a 100 byte sequence
+    * @return
+    */
+  def bytes: Gen[Seq[Byte]] = for {
+    num <- Gen.choose(0,100)
+    b <- bytes(num)
+  } yield b
+
+  /**
+    * Generates the number of bytes specified by num
+    * @param num
+    * @return
+    */
+  def bytes(num : Int): Gen[Seq[Byte]] = Gen.listOfN(num,byte)
 }
 
 object NumberGenerator extends NumberGenerator
