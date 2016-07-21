@@ -1,5 +1,8 @@
 package org.bitcoins.core.protocol
 
+import org.bitcoins.core.config.MainNet
+import org.bitcoins.core.crypto.Sha256Hash160Digest
+import org.bitcoins.core.util.Base58
 import org.scalatest.{FlatSpec, MustMatchers}
 
 class BitcoinAddressTest extends FlatSpec with MustMatchers {
@@ -51,5 +54,12 @@ class BitcoinAddressTest extends FlatSpec with MustMatchers {
     intercept[IllegalArgumentException] {
       val assetAddress = AssetAddress("aJ98t1WpEZ73CNmQviecrnyiWrnqRhWNLyy")
     }
+  }
+
+  it must "encode a pubKeyHash to an address" in {
+    //from https://stackoverflow.com/questions/19233053/hashing-from-a-public-key-to-a-bitcoin-address-in-php
+    val hash = Sha256Hash160Digest("010966776006953d5567439e5e39f86a0d273bee")
+    val address = Address("16UwLL9Risc3QfPqBUvKofHmBQ7wMtjvM")
+    BitcoinAddress.encodePubKeyHashToAddress(hash, MainNet) must be (address)
   }
 }

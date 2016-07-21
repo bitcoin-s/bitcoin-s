@@ -1,6 +1,6 @@
 package org.bitcoins.core.util
 
-import org.bitcoins.core.config.{MainNet, TestNet3}
+import org.bitcoins.core.config.{MainNet, NetworkParameters, TestNet3}
 import org.bitcoins.core.crypto.{ECPrivateKey, Sha256Hash160Digest}
 import org.bitcoins.core.protocol.Address
 import org.bitcoins.core.protocol.blockchain._
@@ -69,34 +69,6 @@ trait Base58 extends BitcoinSLogger {
   }
 
   def encode(byte : Byte) : String = encode(Seq(byte))
-
-  /**
-    * Encodes a Base58 address from a hash
-    *
-    * @param hash The result of Sha256(RipeMD-160(public key))
-    * @param addressType "pubkey" or "script"
-    * @param isTestNet Boolean
-    * @return
-    */
-    //TODO: add logic to determine pubkey/script from first byte
-  def encodePubKeyHashToBase58Address(hash: Sha256Hash160Digest, addressType : String, isTestNet : Boolean) : Address = {
-    val versionByte : Byte = findVersionByte(addressType, isTestNet)
-    val bytes : Seq[Byte] = Seq(versionByte) ++ hash.bytes
-    val checksum = CryptoUtil.doubleSHA256(bytes).bytes.take(4)
-    Address(encode(bytes ++ checksum))
-  }
-
-  /**
-    * Determines the version byte of an address given the address type and network
- *
-    * @param addressType "pubkey" or "script"
-    * @param isTestnet Boolean
-    * @return
-    */
-  private def findVersionByte(addressType : String, isTestnet : Boolean) : Byte = isTestnet match {
-    case true => if (addressType == "pubkey") TestNet3.p2pkhNetworkByte else TestNet3.p2shNetworkByte
-    case false => if (addressType == "pubkey") MainNet.p2pkhNetworkByte else MainNet.p2shNetworkByte
-  }
 
   /**
     * Encodes a private key into Wallet Import Format (WIF)
