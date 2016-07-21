@@ -77,7 +77,7 @@ trait ScriptGenerators extends BitcoinSLogger {
 
   def emptyScriptPubKey = p2pkScriptPubKey.map(_ => EmptyScriptPubKey)
 
-  private def pickRandomNonP2SHScriptPubKey : Gen[ScriptPubKey] = {
+  def pickRandomNonP2SHScriptPubKey : Gen[ScriptPubKey] = {
     val randomNum = (scala.util.Random.nextInt() % 3).abs
     if (randomNum == 0) p2pkScriptPubKey
     else if (randomNum == 1) p2pkhScriptPubKey

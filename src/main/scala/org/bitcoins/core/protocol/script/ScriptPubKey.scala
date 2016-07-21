@@ -1,6 +1,6 @@
 package org.bitcoins.core.protocol.script
 
-import org.bitcoins.core.crypto.ECPublicKey
+import org.bitcoins.core.crypto.{ECPublicKey, Sha256Hash160Digest}
 import org.bitcoins.core.serializers.script.{RawScriptPubKeyParser, ScriptParser}
 import org.bitcoins.core.protocol._
 import org.bitcoins.core.script.ScriptSettings
@@ -166,26 +166,34 @@ object MultiSignatureScriptPubKey extends Factory[MultiSignatureScriptPubKey] wi
  * https://bitcoin.org/en/developer-guide#pay-to-script-hash-p2sh
  * Format: OP_HASH160 <Hash160(redeemScript)> OP_EQUAL
  */
-trait P2SHScriptPubKey extends ScriptPubKey
+trait P2SHScriptPubKey extends ScriptPubKey {
+  /**
+    * The hash of the script for which this scriptPubKey is being created from
+    * @return
+    */
+  def scriptHash : Sha256Hash160Digest = Sha256Hash160Digest(asm(asm.length - 2).bytes)
+}
 
-object P2SHScriptPubKey extends Factory[P2SHScriptPubKey] {
+object P2SHScriptPubKey extends Factory[P2SHScriptPubKey] with BitcoinSLogger {
   override def fromBytes(bytes : Seq[Byte]): P2SHScriptPubKey = {
     val scriptPubKey = RawScriptPubKeyParser.read(bytes)
     matchP2SHScriptPubKey(scriptPubKey)
   }
 
   def apply(scriptPubKey: ScriptPubKey) : P2SHScriptPubKey = {
-    val hash = CryptoUtil.ripeMd160(scriptPubKey.bytes)
+    val hash = CryptoUtil.sha256Hash160(scriptPubKey.bytes)
     val pushOps = BitcoinScriptUtil.calculatePushOp(hash.bytes)
     val asm = Seq(OP_HASH160) ++ pushOps ++ Seq(ScriptConstant(hash.bytes), OP_EQUAL)
     val p2shScriptPubKey = ScriptPubKey.fromAsm(asm)
     matchP2SHScriptPubKey(p2shScriptPubKey)
   }
 
+
+
   private def matchP2SHScriptPubKey(scriptPubKey : ScriptPubKey): P2SHScriptPubKey = scriptPubKey match {
     case p2shScriptPubKey : P2SHScriptPubKey => p2shScriptPubKey
     case scriptPubKey : ScriptPubKey =>
-      throw new IllegalArgumentException("Exepected multisignature scriptPubKey, got: " + scriptPubKey)
+      throw new IllegalArgumentException("Exepected p2sh scriptPubKey, got: " + scriptPubKey)
   }
 }
 
