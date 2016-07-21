@@ -1,12 +1,17 @@
 package org.bitcoins.core.protocol.script
 
 
-import org.bitcoins.core.crypto.{ECDigitalSignature}
+import org.bitcoins.core.crypto.{TransactionSignatureSerializer, ECDigitalSignature}
+import org.bitcoins.core.number.{Int32, UInt32}
+import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.serializers.script.RawScriptSignatureParser
 import org.bitcoins.core.script.constant._
-import org.bitcoins.core.script.crypto.{SIGHASH_ALL, SIGHASH_SINGLE}
-import org.bitcoins.core.util.{BitcoinScriptUtil, TestUtil, TransactionTestUtil}
+import org.bitcoins.core.script.crypto.{HashTypeFactory, SIGHASH_ALL, SIGHASH_SINGLE}
+import org.bitcoins.core.util.{BitcoinSUtil, BitcoinScriptUtil, TestUtil, TransactionTestUtil}
 import org.scalatest.{FlatSpec, MustMatchers}
+import spray.json._
+
+import scala.io.Source
 
 /**
  * Created by chris on 2/17/16.
@@ -61,7 +66,7 @@ class ScriptSignatureTest extends FlatSpec with MustMatchers {
     //from this tx https://btc.blockr.io/api/v1/tx/raw/c99c49da4c38af669dea436d3e73780dfdb6c1ecf9958baa52960e8baee30e73
     val hex = "493046022100d23459d03ed7e9511a47d13292d3430a04627de6235b6e51a40f9cd386f2abe3022100e7d25b080f0bb8d8d5f878bba7d54ad2fda650ea8d158a33ee3cbd11768191fd004104b0e2c879e4daf7b9ab68350228c159766676a14f5815084ba166432aab46198d4cca98fa3e9981d0a90b2effc514b76279476550ba3663fdcaff94c38420e9d5"
     val scriptSig : ScriptSignature = RawScriptSignatureParser.read(hex)
-    scriptSig.hashType(scriptSig.signatures.head) must be (SIGHASH_ALL(0))
+    scriptSig.hashType(scriptSig.signatures.head) must be (SIGHASH_ALL(Int32.zero))
   }
 
   it must "have an empty script signature" in {
@@ -87,5 +92,27 @@ class ScriptSignatureTest extends FlatSpec with MustMatchers {
     val scriptSig = ScriptSignature(TestUtil.p2pkScriptSig.hex)
     scriptSig.isInstanceOf[P2PKScriptSignature] must be (true)
     scriptSig.hex must be (TestUtil.p2pkScriptSig.hex)
+  }
+
+  it must "read sighash.json and return result" in {
+    //["raw_transaction, script, input_index, hashType, signature_hash (result)"],
+/*    val str =
+      """
+        |	["907c2bc503ade11cc3b04eb2918b6f547b0630ab569273824748c87ea14b0696526c66ba740200000004ab65ababfd1f9bdd4ef073c7afc4ae00da8a66f429c917a0081ad1e1dabce28d373eab81d8628de802000000096aab5253ab52000052ad042b5f25efb33beec9f3364e8a9139e8439d9d7e26529c3c30b6c3fd89f8684cfd68ea0200000009ab53526500636a52ab599ac2fe02a526ed040000000008535300516352515164370e010000000003006300ab2ec229", "", 2, 1864164639, "31af167a6cf3f9d5f6875caa4d31704ceb0eba078d132b78dab52c3b8997317e"],
+        |
+      """.stripMargin
+    val json = str.parseJson*/
+
+/*    val source = Source.fromURL(getClass.getResource("/sighash.json"))
+    val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n" finally source.close()
+    val json = lines.parseJson*/
+
+    //TODO: MAKE SERIALIZER FOR JSON FILE TO READ/WRITE TESTS
+
+    val tx = Transaction("907c2bc503ade11cc3b04eb2918b6f547b0630ab569273824748c87ea14b0696526c66ba740200000004ab65ababfd1f9bdd4ef073c7afc4ae00da8a66f429c917a0081ad1e1dabce28d373eab81d8628de802000000096aab5253ab52000052ad042b5f25efb33beec9f3364e8a9139e8439d9d7e26529c3c30b6c3fd89f8684cfd68ea0200000009ab53526500636a52ab599ac2fe02a526ed040000000008535300516352515164370e010000000003006300ab2ec229")
+    val input = tx.inputs(2)
+    val serializedTxForSigning = TransactionSignatureSerializer.hashForSignature(tx, UInt32(2), Seq(), HashTypeFactory.fromBytes(Int32(1864164639).bytes))
+    serializedTxForSigning.hex must be (BitcoinSUtil.flipEndianess("31af167a6cf3f9d5f6875caa4d31704ceb0eba078d132b78dab52c3b8997317e"))
+
   }
 }

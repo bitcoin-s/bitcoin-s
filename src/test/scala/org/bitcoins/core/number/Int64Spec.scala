@@ -72,9 +72,14 @@ class Int64Spec extends Properties("Int64Spec") {
     }
 
   property("== & !=") =
-    Prop.forAll(NumberGenerator.int32s, NumberGenerator.int32s) { (num1 : Int32, num2 : Int32) =>
+    Prop.forAll(NumberGenerator.int64s, NumberGenerator.int64s) { (num1 : Int64, num2 : Int64) =>
       if (num1.underlying == num2.underlying) num1 == num2
       else num1 != num2
+    }
+
+  property("|") =
+    Prop.forAll(NumberGenerator.int64s, NumberGenerator.int64s) { (num1: Int64, num2: Int64) =>
+      Int64(num1.underlying | num2.underlying) == (num1 | num2)
     }
 }
 
