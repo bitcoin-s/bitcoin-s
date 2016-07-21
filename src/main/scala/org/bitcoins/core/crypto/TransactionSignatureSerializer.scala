@@ -80,9 +80,12 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
       }
 
     val txWithInputSigsRemoved = Transaction(spendingTransaction,UpdateTransactionInputs(updatedInputs))
-
+    println("txWithInputSigsRemoved: " + txWithInputSigsRemoved)
     //just need to add the hash type and hash the tx
-    val sigHashBytes : List[Byte] = List(0x00.toByte, 0x00.toByte, 0x00.toByte, hashType.byte).reverse
+    //val sigHashBytes : List[Byte] = List(0x00.toByte, 0x00.toByte, 0x00.toByte, hashType.byte)
+    val sigHashHex = BitcoinSUtil.flipEndianess(hashType.hex)  //flipEnd(encodeHex(BigInt(num)))
+    val sigHashBytes : List[Byte] = BitcoinSUtil.decodeHex(sigHashHex).toList
+    //val hashTypeByte : HashType = HashTypeFactory.fromBigInt(hashTypeNum)
 
     //check the hash type
     hashType match {

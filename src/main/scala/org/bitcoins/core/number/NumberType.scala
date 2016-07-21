@@ -133,6 +133,8 @@ sealed trait UInt64 extends UnsignedNumber with NumberOperations[UInt64] {
 
   override def <= (num : UInt64): Boolean = underlying <= num.underlying
 
+  def | (num : UInt64) : UInt64 = UInt64(underlying | num.underlying)
+
   override def toInt = {
     require(underlying <= Int.MaxValue, "Overflow error when casting " + this + " to an integer.")
     require(underlying >= 0, "Unsigned integer should not be cast to a number less than 0" + this)
@@ -200,9 +202,11 @@ sealed trait Int32 extends SignedNumber with NumberOperations[Int32] {
 
   override def <= (num : Int32): Boolean = underlying <= num.underlying
 
+  def | (num : Int32) : Int32 = Int32(underlying | num.underlying)
+
   override def toInt = {
     require(underlying <= Int.MaxValue, "Overflow error when casting " + this + " to an integer.")
-    require(underlying >= Int.MinValue, "Overfolow error when casting " + this + " to an integer.")
+    require(underlying >= Int.MinValue, "Overflow error when casting " + this + " to an integer.")
     underlying
   }
 
@@ -249,6 +253,8 @@ sealed trait Int64 extends SignedNumber with NumberOperations[Int64] {
   override def < (num : Int64): Boolean = underlying < num.underlying
 
   override def <= (num : Int64): Boolean = underlying <= num.underlying
+
+  def | (num : Int64) : Int64 = Int64(underlying | num.underlying)
 
   override def toInt = {
     require(underlying <= Int.MaxValue, "Overflow error when casting " + this + " to an integer.")
