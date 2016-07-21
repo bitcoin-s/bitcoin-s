@@ -174,14 +174,15 @@ trait P2SHScriptPubKey extends ScriptPubKey {
   def scriptHash : Sha256Hash160Digest = Sha256Hash160Digest(asm(asm.length - 2).bytes)
 }
 
-object P2SHScriptPubKey extends Factory[P2SHScriptPubKey] {
+object P2SHScriptPubKey extends Factory[P2SHScriptPubKey] with BitcoinSLogger {
   override def fromBytes(bytes : Seq[Byte]): P2SHScriptPubKey = {
     val scriptPubKey = RawScriptPubKeyParser.read(bytes)
     matchP2SHScriptPubKey(scriptPubKey)
   }
 
   def apply(scriptPubKey: ScriptPubKey) : P2SHScriptPubKey = {
-    val hash = CryptoUtil.ripeMd160(scriptPubKey.bytes)
+    val hash = CryptoUtil.sha256Hash160(scriptPubKey.bytes)
+    logger.error("calculated hash: " + hash.hex)
     val pushOps = BitcoinScriptUtil.calculatePushOp(hash.bytes)
     val asm = Seq(OP_HASH160) ++ pushOps ++ Seq(ScriptConstant(hash.bytes), OP_EQUAL)
     val p2shScriptPubKey = ScriptPubKey.fromAsm(asm)
@@ -191,7 +192,7 @@ object P2SHScriptPubKey extends Factory[P2SHScriptPubKey] {
   private def matchP2SHScriptPubKey(scriptPubKey : ScriptPubKey): P2SHScriptPubKey = scriptPubKey match {
     case p2shScriptPubKey : P2SHScriptPubKey => p2shScriptPubKey
     case scriptPubKey : ScriptPubKey =>
-      throw new IllegalArgumentException("Exepected multisignature scriptPubKey, got: " + scriptPubKey)
+      throw new IllegalArgumentException("Exepected p2sh scriptPubKey, got: " + scriptPubKey)
   }
 }
 

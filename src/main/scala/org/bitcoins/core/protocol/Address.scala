@@ -13,24 +13,127 @@ sealed abstract class Address {
 
 sealed trait BitcoinAddress extends Address
 sealed trait P2PKHAddress extends BitcoinAddress
+
+object P2PKHAddress {
+  private case class P2PKHAddressImpl(override val value: String) extends P2PKHAddress {
+    require(isP2PKHAddress(value), "Bitcoin address was invalid " + value)
+  }
+
+  /**
+    * Encodes a pubkey hash to a base 58 address on the corresponding network
+    *
+    * @param hash the result of Sha256(RipeMD160(pubkey))
+    * @param network the network on which this address is being generated for
+    * @return
+    */
+  def encodePubKeyHashToAddress(hash: Sha256Hash160Digest, network: NetworkParameters): P2PKHAddress = {
+    val versionByte: Byte = network.p2pkhNetworkByte
+    val bytes = Seq(versionByte) ++ hash.bytes
+    val checksum = CryptoUtil.doubleSHA256(bytes).bytes.take(4)
+    P2PKHAddressImpl(Base58.encode(bytes ++ checksum))
+  }
+
+
+  def apply(value : String): P2PKHAddress = P2PKHAddressImpl(value)
+
+  def apply(hash: Sha256Hash160Digest, networkParameters: NetworkParameters): P2PKHAddress = encodePubKeyHashToAddress(hash,networkParameters)
+
+  /**
+    * Checks if an address is a valid p2pkh address
+    *
+    * @param address
+    * @return
+    */
+  def isP2PKHAddress(address : String) : Boolean = {
+    val decodeCheckP2PKH : Try[Seq[Byte]] = Base58.decodeCheck(address)
+    decodeCheckP2PKH match {
+      case Success(bytes) =>
+        val firstByte = bytes.head
+        (firstByte == MainNet.p2pkhNetworkByte || firstByte == TestNet3.p2pkhNetworkByte ||
+          firstByte == RegTest.p2pkhNetworkByte) && bytes.size == 21
+      case Failure(exception) => false
+    }
+  }
+
+  /**
+    * Checks if an address is a valid p2pkh address
+    *
+    * @param address
+    * @return
+    */
+  def isP2PKHAddress(address : BitcoinAddress) : Boolean = isP2PKHAddress(address.value)
+
+}
+
 sealed trait P2SHAddress extends BitcoinAddress
+
+/**
+  * [[P2SHAddress]] companion object
+  */
+object P2SHAddress {
+  private case class P2SHAddressImpl(override val value: String) extends P2SHAddress {
+    require(isP2SHAddress(value), "Bitcoin address was invalid " + value)
+  }
+
+  /**
+    * Takes in an arbitrary [[ScriptPubKey]] and [[NetworkParameters]] and creates a [[P2SHAddress]]
+    *
+    * @param scriptPubKey the script which will need to provided as the redeem script
+    * @param network the network which this address is valid for
+    * @return the [[P2SHAddress]]
+    */
+  def encodeScriptPubKeyToAddress(scriptPubKey: ScriptPubKey, network: NetworkParameters): P2SHAddress = {
+    val versionByte: Byte = network.p2shNetworkByte
+    val p2shScriptPubKey = P2SHScriptPubKey(scriptPubKey)
+    val hash = p2shScriptPubKey.scriptHash
+    val bytes = Seq(versionByte) ++ hash.bytes
+    val checksum = CryptoUtil.doubleSHA256(bytes).bytes.take(4)
+    P2SHAddressImpl(Base58.encode(bytes ++ checksum))
+  }
+
+
+
+  def apply(scriptPubKey: ScriptPubKey,network: NetworkParameters): P2SHAddress = encodeScriptPubKeyToAddress(scriptPubKey,network)
+
+
+  def apply(value: String): P2SHAddress = P2SHAddressImpl(value)
+  /**
+    * Checks if a address is a valid p2sh address
+    *
+    * @param address
+    * @return
+    */
+  def isP2SHAddress(address : String) : Boolean = {
+    val decodeCheckP2SH : Try[Seq[Byte]] = Base58.decodeCheck(address)
+    decodeCheckP2SH match {
+      case Success(bytes) =>
+        val firstByte = bytes.head
+        ((firstByte == MainNet.p2shNetworkByte || firstByte == TestNet3.p2shNetworkByte ||
+          RegTest.p2shNetworkByte == firstByte)
+          && bytes.size == 21)
+      case Failure(exception) => false
+    }
+  }
+
+  /**
+    * Checks if a address is a valid p2sh address
+    *
+    * @param address
+    * @return
+    */
+  def isP2SHAddress(address : BitcoinAddress) : Boolean = isP2SHAddress(address.value)
+
+}
+
 
 sealed trait AssetAddress extends Address
 
 
 object BitcoinAddress {
-  private case class P2PKHAddressImpl(override val value: String) extends P2PKHAddress {
-    require(BitcoinAddress.p2pkh(value), "Bitcoin address was invalid " + value)
-  }
-
-  private case class P2SHAddressImpl(override val value: String) extends P2SHAddress {
-    require(BitcoinAddress.p2shAddress(value), "Bitcoin address was invalid " + value)
-  }
-
   def validate(bitcoinAddress: String): Boolean = {
     val illegalChars = List('O', 'I', 'l', '0')
     bitcoinAddress.length >= 26 && bitcoinAddress.length <= 35 &&
-      (p2pkh(bitcoinAddress) || p2shAddress(bitcoinAddress)) &&
+      (P2PKHAddress.isP2PKHAddress(bitcoinAddress) || P2SHAddress.isP2SHAddress(bitcoinAddress)) &&
       bitcoinAddress.filter(c => illegalChars.contains(c)).size == 0
   }
 
@@ -55,88 +158,9 @@ object BitcoinAddress {
     AssetAddress(encodedAssetAddress)
   }
 
-  /**
-   * Checks if a address is a valid p2sh address
-    *
-    * @param address
-   * @return
-   */
-  def p2shAddress(address : String) : Boolean = {
-    val decodeCheckP2SH : Try[Seq[Byte]] = Base58.decodeCheck(address)
-    decodeCheckP2SH match {
-      case Success(bytes) =>
-        val firstByte = bytes.head
-        ((firstByte == MainNet.p2shNetworkByte || firstByte == TestNet3.p2shNetworkByte ||
-          RegTest.p2shNetworkByte == firstByte)
-          && bytes.size == 21)
-      case Failure(exception) => false
-    }
-  }
-
-  /**
-   * Checks if a address is a valid p2sh address
-    *
-    * @param address
-   * @return
-   */
-  def p2shAddress(address : BitcoinAddress) : Boolean = p2shAddress(address.value)
-
-  /**
-   * Checks if an address is a valid p2pkh address
-    *
-    * @param address
-   * @return
-   */
-  def p2pkh(address : String) : Boolean = {
-    val decodeCheckP2PKH : Try[Seq[Byte]] = Base58.decodeCheck(address)
-    decodeCheckP2PKH match {
-      case Success(bytes) =>
-        val firstByte = bytes.head
-        (firstByte == MainNet.p2pkhNetworkByte || firstByte == TestNet3.p2pkhNetworkByte ||
-          firstByte == RegTest.p2pkhNetworkByte) && bytes.size == 21
-      case Failure(exception) => false
-    }
-  }
-
-  /**
-   * Checks if an address is a valid p2pkh address
-    *
-    * @param address
-   * @return
-   */
-  def p2pkh(address : BitcoinAddress) : Boolean = p2pkh(address.value)
-
-  /**
-    * Encodes a pubkey hash to a base 58 address on the corresponding network
-    * @param hash the result of Sha256(RipeMD160(pubkey))
-    * @param network the network on which this address is being generated for
-    * @return
-    */
-  def encodePubKeyHashToAddress(hash: Sha256Hash160Digest, network: NetworkParameters): P2PKHAddress = {
-    val versionByte: Byte = network.p2pkhNetworkByte
-    val bytes = Seq(versionByte) ++ hash.bytes
-    val checksum = CryptoUtil.doubleSHA256(bytes).bytes.take(4)
-    P2PKHAddressImpl(Base58.encode(bytes ++ checksum))
-  }
-
-  /**
-    * Takes in an arbitrary [[ScriptPubKey]] and [[NetworkParameters]] and creates a [[P2SHAddress]]
-    * @param scriptPubKey the script which will need to provided as the redeem script
-    * @param network the network which this address is valid for
-    * @return the [[P2SHAddress]]
-    */
-  def encodeScriptPubKeyToAddress(scriptPubKey: ScriptPubKey, network: NetworkParameters): P2SHAddress = {
-    val versionByte: Byte = network.p2shNetworkByte
-    val p2shScriptPubKey = P2SHScriptPubKey(scriptPubKey)
-    val hash = p2shScriptPubKey.scriptHash
-    val bytes = Seq(versionByte) ++ hash.bytes
-    val checksum = CryptoUtil.doubleSHA256(bytes).bytes.take(4)
-    P2SHAddressImpl(Base58.encode(bytes ++ checksum))
-  }
-
   def apply(value: String): BitcoinAddress = {
-    if (p2pkh(value)) P2PKHAddressImpl(value)
-    else if (p2shAddress(value)) P2SHAddressImpl(value)
+    if (P2PKHAddress.isP2PKHAddress(value)) P2PKHAddress(value)
+    else if (P2SHAddress.isP2SHAddress(value)) P2SHAddress(value)
     else throw new IllegalArgumentException("The address was not a p2pkh or p2sh address, got: " + value)
   }
 
