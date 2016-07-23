@@ -37,7 +37,13 @@ trait BaseECKey extends BitcoinSLogger {
     signer.init(true, privKey)
     val components : Array[BigInteger] = signer.generateSignature(dataToSign.toArray)
     val (r,s) = (components(0),components(1))
-    ECDigitalSignature(r,s)
+    val signature = ECDigitalSignature(r,s)
+    //make sure the signature follows BIP62's low-s value
+    //https://github.com/bitcoin/bips/blob/master/bip-0062.mediawiki#Low_S_values_in_signatures
+    //bitcoinj implementation
+    //https://github.com/bitcoinj/bitcoinj/blob/1e66b9a8e38d9ad425507bf5f34d64c5d3d23bb8/core/src/main/java/org/bitcoinj/core/ECKey.java#L551
+    if (s.compareTo(CryptoParams.halfCurveOrder) <= 0) signature
+    else ECDigitalSignature(r,CryptoParams.curve.getN().subtract(s))
   }
 
   def sign(hex : String, signingKey : BaseECKey) : ECDigitalSignature = sign(BitcoinSUtil.decodeHex(hex),signingKey)
@@ -46,6 +52,9 @@ trait BaseECKey extends BitcoinSLogger {
 
   def sign(bytes : Seq[Byte]) : ECDigitalSignature = sign(bytes,this)
 
+  def sign(hash: HashDigest): ECDigitalSignature = sign(hash,this)
+
+  def sign(hash: HashDigest, signingKey: BaseECKey): ECDigitalSignature = sign(hash.bytes,signingKey)
 }
 
 object BaseECKey extends Factory[BaseECKey] {

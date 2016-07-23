@@ -10,6 +10,8 @@ import org.spongycastle.crypto.generators.ECKeyPairGenerator
 import org.spongycastle.crypto.params.{ECKeyGenerationParameters, ECPrivateKeyParameters}
 import org.spongycastle.math.ec.{ECPoint, FixedPointCombMultiplier}
 
+import scala.util.{Failure, Success}
+
 /**
  * Created by chris on 2/16/16.
  */
@@ -132,6 +134,7 @@ object ECPrivateKey extends Factory[ECPrivateKey] {
       case _ => throw new IllegalArgumentException("The base58 string passed through was not a private key.")
     }
   }
+
 }
 
 

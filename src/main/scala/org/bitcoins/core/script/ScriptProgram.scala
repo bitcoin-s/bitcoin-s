@@ -1,7 +1,7 @@
 package org.bitcoins.core.script
 
 
-import org.bitcoins.core.crypto.{TransactionSignatureComponentFactory, TransactionSignatureComponent}
+import org.bitcoins.core.crypto.{TransactionSignatureComponent}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script.{ScriptSignature, ScriptPubKey}
 import org.bitcoins.core.protocol.transaction.Transaction
@@ -358,7 +358,7 @@ object ScriptProgram {
     */
   def factory(transaction: Transaction, scriptPubKey : ScriptPubKey, inputIndex : UInt32, script : Seq[ScriptToken],
               flags : Seq[ScriptFlag]) : PreExecutionScriptProgram = {
-    val txSignatureComponent = TransactionSignatureComponentFactory.factory(transaction,inputIndex,scriptPubKey,flags)
+    val txSignatureComponent = TransactionSignatureComponent(transaction,inputIndex,scriptPubKey,flags)
     PreExecutionScriptProgramImpl(txSignatureComponent,List(),script.toList,script.toList,List(),flags)
   }
 
