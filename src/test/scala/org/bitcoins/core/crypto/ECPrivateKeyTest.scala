@@ -70,7 +70,7 @@ class ECPrivateKeyTest extends FlatSpec with MustMatchers {
   }
 
   it must "create a fresh private key" in {
-    ECPrivateKey.apply().isInstanceOf[ECPrivateKey] must be (true)
+    ECPrivateKey() must not equal (ECPrivateKey())
   }
 
 }

@@ -160,6 +160,17 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
     }
   }
 
+  /**
+    * Wrapper function for hashForSignature
+    * @param txSignatureComponent this contains the transaction and inputIndex for hashForSignature
+    * @param scriptPubKey
+    * @param hashType
+    * @return
+    */
+  def hashForSignature(txSignatureComponent: TransactionSignatureComponent, scriptPubKey: ScriptPubKey, hashType: HashType): DoubleSha256Digest = {
+    hashForSignature(txSignatureComponent.transaction,txSignatureComponent.inputIndex,scriptPubKey.asm,hashType)
+  }
+
 
 
   /**

@@ -71,6 +71,30 @@ trait Base58 extends BitcoinSLogger {
   def encode(byte : Byte) : String = encode(Seq(byte))
 
   /**
+    * Encodes a pubkey hash to a base 58 address on the corresponding network
+    * @param hash the result of Sha256(RipeMD160(pubkey))
+    * @param network the network on which this address is being generated for
+    * @return
+    */
+  def encodePubKeyHashToAddress(hash: Sha256Hash160Digest, network: NetworkParameters): Address = {
+    val versionByte: Byte = network.p2pkhNetworkByte
+    val bytes = Seq(versionByte) ++ hash.bytes
+    val checksum = CryptoUtil.doubleSHA256(bytes).bytes.take(4)
+    Address(encode(bytes ++ checksum))
+  }
+
+  /**
+    * Determines the version byte of an address given the address type and network
+    * @param addressType "pubkey" or "script"
+    * @param isTestnet Boolean
+    * @return
+    */
+  private def findVersionByte(addressType : String, isTestnet : Boolean) : Byte = isTestnet match {
+    case true => if (addressType == "pubkey") TestNet3.p2pkhNetworkByte else TestNet3.p2shNetworkByte
+    case false => if (addressType == "pubkey") MainNet.p2pkhNetworkByte else MainNet.p2shNetworkByte
+  }
+
+  /**
     * Encodes a private key into Wallet Import Format (WIF)
     * https://en.bitcoin.it/wiki/Wallet_import_format
     *

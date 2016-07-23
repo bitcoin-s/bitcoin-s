@@ -100,28 +100,15 @@ class Base58Test extends FlatSpec with MustMatchers with BitcoinSLogger {
     for {
       testCase <- testCases
     } yield {
-      testCase must be (Base58ValidTestCaseImpl(testCase.addressOrWIFPrivKey, testCase.hashOrPrivKey, testCase.configParams))
       //if testCase is an Address, it must have a valid base58 representation
       if (testCase.addressOrWIFPrivKey.isLeft) {
         Base58.isValid(testCase.addressOrWIFPrivKey.left.get.value) must be (true)
       }
       else {
-        //logger.debug(testCase.addressOrWIFPrivKey.right.get + " should be true, but showed as " + Base58.isValid(testCase.addressOrWIFPrivKey.right.get))
+        logger.info(testCase.addressOrWIFPrivKey.right.get + " should be true, but showed as " + Base58.isValid(testCase.addressOrWIFPrivKey.right.get))
         Base58.isValid(testCase.addressOrWIFPrivKey.right.get) must be (true)
       }
     }
-
-    //first, second and 48th test cases:
-    testCases.head must be (Base58ValidTestCaseImpl(Left(Address("1AGNa15ZQXAZUgFiqJ2i7Z2DPU2J6hW62i")),
-      Left(Sha256Hash160Digest("65a16059864a2fdbc7c99a4723a8395bc6f188eb")),
-      ConfigParamsImpl(Left("pubkey"), false, false)))
-
-    testCases(1) must be (Base58ValidTestCaseImpl(Left(Address("3CMNFxN1oHBc4R1EpboAL5yzHGgE611Xou")),
-      Left(Sha256Hash160Digest("74f209f6ea907e2ea48f74fae05782ae8a665257")), ConfigParamsImpl(Left("script"), false, false)))
-
-    testCases(47) must be (Base58ValidTestCaseImpl(Right("cMxXusSihaX58wpJ3tNuuUcZEQGt6DKJ1wEpxys88FFaQCYjku9h"),
-      Right(ECPrivateKey("0b3b34f0958d8a268193a9814da92c3e8b58b4a4378a542863e34ac289cd830c")),
-      ConfigParamsImpl(Right(true), true, true)))
   }
 
   it must "read base58_keys_invalid.json and return each as an invalid base58 string" in {
@@ -152,7 +139,7 @@ class Base58Test extends FlatSpec with MustMatchers with BitcoinSLogger {
     Base58.decodeCheck("3CMNFxN1oHBc4R1EpboAL5yzHGgE611Xou").isSuccess must be (true)
   }
 
-  it must "encode a private key to WIF, then decode it from WIF to hex private key" in {
+  it must "decode a private key from WIF, then encode that decoded private key to WIF" in {
     val WIF = "5Kd3NBUAdUnhyzenEwVLy9pBKxSwXvE9FMPyR4UKZvpe6E3AgLr"
     val privateKey = ECPrivateKey.fromWIFToPrivateKey(WIF)
     Base58.encodePrivateKeyToWIF(privateKey, false, false) must be (WIF)

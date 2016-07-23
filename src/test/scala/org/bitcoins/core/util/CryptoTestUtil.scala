@@ -9,7 +9,7 @@ import org.bitcoins.core.crypto.{ECPrivateKey}
  */
 trait CryptoTestUtil {
   def privateKeyBase58 = "cVLwRLTvz3BxDAWkvS3yzT9pUcTCup7kQnfT2smRjvmmm1wAP6QT"
-  def privateKeyBytes  = Base58.decode(privateKeyBase58)
+  def privateKeyBytes  = Base58.decodeCheck(privateKeyBase58).get
   def privateKeyHex = BitcoinSUtil.encodeHex(privateKeyBytes)
   def bitcoinjDumpedPrivateKey = new DumpedPrivateKey(BitcoinJTestUtil.params,privateKeyBase58)
   def bitcoinjPrivateKey = bitcoinjDumpedPrivateKey.getKey
