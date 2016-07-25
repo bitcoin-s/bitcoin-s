@@ -145,7 +145,6 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
   }
   /**
     * The execution loop for a script
- *
     * @param program the program whose script needs to be evaluated
     * @return program the final state of the program after being evaluated by the interpreter
     */
