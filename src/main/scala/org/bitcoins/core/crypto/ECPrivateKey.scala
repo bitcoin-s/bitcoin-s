@@ -3,8 +3,9 @@ package org.bitcoins.core.crypto
 import java.math.BigInteger
 import java.security.SecureRandom
 
+import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.protocol.blockchain.{MainNetChainParams, SecretKey, TestNetChainParams}
-import org.bitcoins.core.util.{Base58, BitcoinSUtil, Factory}
+import org.bitcoins.core.util.{Base58, BitcoinSUtil, CryptoUtil, Factory}
 import org.spongycastle.crypto.AsymmetricCipherKeyPair
 import org.spongycastle.crypto.generators.ECKeyPairGenerator
 import org.spongycastle.crypto.params.{ECKeyGenerationParameters, ECPrivateKeyParameters}
@@ -49,6 +50,20 @@ sealed trait ECPrivateKey extends BaseECKey {
       privKeyBigInteger.mod(CryptoParams.curve.getN())
     } else privKeyBigInteger
     new FixedPointCombMultiplier().multiply(CryptoParams.curve.getG, privKey)
+  }
+
+  /**
+    * Converts a [[ECPrivateKey]] to WIF
+    * https://en.bitcoin.it/wiki/Wallet_import_format
+    * @return
+    */
+  def toWIF(network: NetworkParameters, compressed: Boolean = true): String = {
+    val networkByte = network.privateKey
+    val fullBytes = networkByte +: bytes
+    val hash = CryptoUtil.doubleSHA256(fullBytes)
+    val checksum = hash.bytes.take(4)
+    val encodedPrivKey = fullBytes ++ checksum
+    Base58.encode(encodedPrivKey)
   }
 
   override def toString = "ECPrivateKey(" + hex + ")"
@@ -122,16 +137,20 @@ object ECPrivateKey extends Factory[ECPrivateKey] {
   /**
     * When decoding a WIF private key, we drop the first byte (network byte), and the last 4 bytes (checksum).
     * If the private key corresponds to a compressed public key, we drop the last byte again.
-    *
+    * https://en.bitcoin.it/wiki/Wallet_import_format
     * @param WIF Wallet Import Format. Encoded in Base58
     * @return
     */
   private def trimFunction(WIF : String) : Seq[Byte] = {
-    val bytes = Base58.decode(WIF)
-    WIF.head match {
-      case h if h == '9' || h == '5' => bytes.drop(1).dropRight(4)
-      case g if isCompressed(bytes) => bytes.drop(1).dropRight(5)
-      case _ => throw new IllegalArgumentException("The base58 string passed through was not a private key.")
+    val bytesChecked = Base58.decodeCheck(WIF)
+    val uncompressedKeyPrefixes = Seq(Some('5'),Some('9'))
+    //see https://en.bitcoin.it/wiki/List_of_address_prefixes
+    //for where '5' and '9' come from
+    bytesChecked match {
+      case Success(bytes) if uncompressedKeyPrefixes.contains(WIF.headOption) => bytes.tail
+      case Success(bytes) if isCompressed(WIF) => bytes.tail.dropRight(1)
+      case Success(bytes) => bytes.tail
+      case Failure(exception) => throw exception
     }
   }
 

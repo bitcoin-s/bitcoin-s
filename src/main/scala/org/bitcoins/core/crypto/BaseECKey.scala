@@ -2,6 +2,7 @@ package org.bitcoins.core.crypto
 
 import java.math.BigInteger
 
+import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.util._
 import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil}
 import org.spongycastle.crypto.digests.SHA256Digest
@@ -33,7 +34,7 @@ trait BaseECKey extends BitcoinSLogger {
   def sign(dataToSign : Seq[Byte], signingKey : BaseECKey) : ECDigitalSignature = {
     val signer: ECDSASigner = new ECDSASigner(new HMacDSAKCalculator(new SHA256Digest()))
     val privKey: ECPrivateKeyParameters = new ECPrivateKeyParameters(
-      new BigInteger(signingKey.bytes.toArray), CryptoParams.curve)
+      new BigInteger(1,signingKey.bytes.toArray), CryptoParams.curve)
     signer.init(true, privKey)
     val components : Array[BigInteger] = signer.generateSignature(dataToSign.toArray)
     val (r,s) = (components(0),components(1))
@@ -55,6 +56,8 @@ trait BaseECKey extends BitcoinSLogger {
   def sign(hash: HashDigest): ECDigitalSignature = sign(hash,this)
 
   def sign(hash: HashDigest, signingKey: BaseECKey): ECDigitalSignature = sign(hash.bytes,signingKey)
+
+
 }
 
 object BaseECKey extends Factory[BaseECKey] {

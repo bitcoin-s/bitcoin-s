@@ -43,7 +43,7 @@ object P2PKHScriptPubKey extends Factory[P2PKHScriptPubKey] {
   }
 
   def apply(pubKey : ECPublicKey) = {
-    val hash = CryptoUtil.ripeMd160(pubKey.bytes)
+    val hash = CryptoUtil.sha256Hash160(pubKey.bytes)
     val bytesToPushOntoStack = BytesToPushOntoStack(hash.bytes.size)
     val asm = Seq(OP_DUP, OP_HASH160, bytesToPushOntoStack,  ScriptConstant(hash.bytes), OP_EQUALVERIFY, OP_CHECKSIG)
     val scriptPubKey = ScriptPubKey.fromAsm(asm)

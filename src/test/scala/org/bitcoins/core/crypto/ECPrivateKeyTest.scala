@@ -1,12 +1,13 @@
 package org.bitcoins.core.crypto
 
-import org.bitcoins.core.util.{BitcoinJTestUtil, BitcoinSUtil, CryptoTestUtil}
+import org.bitcoins.core.config.TestNet3
+import org.bitcoins.core.util.{BitcoinJTestUtil, BitcoinSLogger, BitcoinSUtil, CryptoTestUtil}
 import org.scalatest.{FlatSpec, MustMatchers}
 
 /**
  * Created by chris on 3/7/16.
  */
-class ECPrivateKeyTest extends FlatSpec with MustMatchers {
+class ECPrivateKeyTest extends FlatSpec with MustMatchers with BitcoinSLogger {
 
   "ECPrivateKey" must "have the same byte representation as a bitcoinj private key" in {
     val bitcoinjPrivateKey = CryptoTestUtil.bitcoinjPrivateKey.getPrivateKeyAsHex
@@ -73,4 +74,20 @@ class ECPrivateKeyTest extends FlatSpec with MustMatchers {
     ECPrivateKey() must not equal (ECPrivateKey())
   }
 
+
+  it must "serialize a private key to WIF and then be able to deserialize it" in {
+    val hex = "2cecbfb72f8d5146d7fe7e5a3f80402c6dd688652c332dff2e44618d2d3372"
+    val privKey = ECPrivateKey(hex)
+    val wif = privKey.toWIF(TestNet3)
+    logger.error("WIF: " + wif)
+    val privKeyFromWIF = ECPrivateKey.fromWIFToPrivateKey(wif)
+
+    privKeyFromWIF must be (privKey)
+  }
+
+  it must "correctly decode a private key from WIF" in {
+    val privateKey = ECPrivateKey.fromWIFToPrivateKey("cTPg4Zc5Jis2EZXy3NXShgbn487GWBTapbU63BerLDZM3w2hQSjC")
+    //derived hex on bitcore's playground
+    privateKey.hex must be ("ad59fb6aadf617fb0f93469741fcd9a9f48700f1d1f465ddc0f26fa7f7bfa1ac")
+  }
 }
