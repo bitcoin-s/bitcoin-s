@@ -79,9 +79,16 @@ class ECPrivateKeyTest extends FlatSpec with MustMatchers with BitcoinSLogger {
     val hex = "2cecbfb72f8d5146d7fe7e5a3f80402c6dd688652c332dff2e44618d2d3372"
     val privKey = ECPrivateKey(hex)
     val wif = privKey.toWIF(TestNet3)
-    logger.error("WIF: " + wif)
     val privKeyFromWIF = ECPrivateKey.fromWIFToPrivateKey(wif)
 
+    privKeyFromWIF must be (privKey)
+  }
+
+  it must "serialize a private key to WIF when the private key is prefixed with 0 bytes" in {
+    val hex = "00fc391adf4d6063a16a2e38b14d2be10133c4dacd4348b49d23ee0ce5ff4f1701"
+    val privKey = ECPrivateKey(hex)
+    val wif = privKey.toWIF(TestNet3)
+    val privKeyFromWIF = ECPrivateKey.fromWIFToPrivateKey(wif)
     privKeyFromWIF must be (privKey)
   }
 
@@ -90,4 +97,6 @@ class ECPrivateKeyTest extends FlatSpec with MustMatchers with BitcoinSLogger {
     //derived hex on bitcore's playground
     privateKey.hex must be ("ad59fb6aadf617fb0f93469741fcd9a9f48700f1d1f465ddc0f26fa7f7bfa1ac")
   }
+
+
 }

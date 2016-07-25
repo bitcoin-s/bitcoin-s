@@ -5,7 +5,7 @@ import java.security.SecureRandom
 
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.protocol.blockchain.{MainNetChainParams, SecretKey, TestNetChainParams}
-import org.bitcoins.core.util.{Base58, BitcoinSUtil, CryptoUtil, Factory}
+import org.bitcoins.core.util._
 import org.spongycastle.crypto.AsymmetricCipherKeyPair
 import org.spongycastle.crypto.generators.ECKeyPairGenerator
 import org.spongycastle.crypto.params.{ECKeyGenerationParameters, ECPrivateKeyParameters}
@@ -25,7 +25,7 @@ sealed trait ECPrivateKey extends BaseECKey {
     * @return
     */
   private def privateKeyParams =
-    new ECPrivateKeyParameters(new BigInteger(bytes.toArray), CryptoParams.curve)
+    new ECPrivateKeyParameters(new BigInteger(1,bytes.toArray), CryptoParams.curve)
 
   /**
    * Derives the public for a the private key
@@ -69,11 +69,17 @@ sealed trait ECPrivateKey extends BaseECKey {
   override def toString = "ECPrivateKey(" + hex + ")"
 }
 
-object ECPrivateKey extends Factory[ECPrivateKey] {
+object ECPrivateKey extends Factory[ECPrivateKey] with BitcoinSLogger {
 
   private case class ECPrivateKeyImpl(bytes : Seq[Byte]) extends ECPrivateKey
 
-  override def fromBytes(bytes : Seq[Byte]) : ECPrivateKey = ECPrivateKeyImpl(bytes)
+  override def fromBytes(bytes : Seq[Byte]) : ECPrivateKey = {
+    if (bytes.size <= 32) ECPrivateKeyImpl(bytes)
+    //this is for the case when java serialies a BigInteger to 33 bytes to hold the signed num representation
+    else if (bytes.size == 33) ECPrivateKeyImpl(bytes.slice(1,33))
+    else throw new IllegalArgumentException("Private keys cannot be greater than 33 bytes in size, got: " +
+      BitcoinSUtil.encodeHex(bytes) + " which is of size: " + bytes.size)
+  }
 
   /**
     * This function creates a fresh private key to use
@@ -95,7 +101,8 @@ object ECPrivateKey extends Factory[ECPrivateKey] {
     val keypair : AsymmetricCipherKeyPair = generator.generateKeyPair
     val privParams: ECPrivateKeyParameters = keypair.getPrivate.asInstanceOf[ECPrivateKeyParameters]
     val priv : BigInteger = privParams.getD
-    apply(priv.toByteArray)
+    val bytes = priv.toByteArray
+    ECPrivateKey(bytes)
   }
 
   /**
