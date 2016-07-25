@@ -26,7 +26,7 @@ trait Policy {
  *
    * @return
    */
-  def standardScriptVerifyFlags : Seq[ScriptFlag] = Seq(ScriptVerifyDerSig, ScriptVerifyStrictEnc,
+  def standardScriptVerifyFlags : Seq[ScriptFlag] = mandatoryScriptVerifyFlags ++ Seq(ScriptVerifyDerSig, ScriptVerifyStrictEnc,
     ScriptVerifyMinimalData, ScriptVerifyNullDummy, ScriptVerifyDiscourageUpgradableNOPs,
     ScriptVerifyCleanStack, ScriptVerifyCheckLocktimeVerify, ScriptVerifyCheckSequenceVerify,
     ScriptVerifyLowS)

@@ -14,4 +14,9 @@ class ECPrivateKeySpec extends Properties("ECPrivateKeySpec") {
       val wif = privKey.toWIF(TestNet3)
       ECPrivateKey.fromWIFToPrivateKey(wif) == privKey
     }
+
+  property("Serialization symmetry") =
+    Prop.forAll(CryptoGenerators.privateKey) { privKey =>
+      ECPrivateKey(privKey.hex) == privKey
+    }
 }
