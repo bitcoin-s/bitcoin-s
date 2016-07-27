@@ -215,9 +215,12 @@ trait MultiSignatureScriptSignature extends ScriptSignature {
 }
 
 object MultiSignatureScriptSignature extends Factory[MultiSignatureScriptSignature] {
+
+  private case class MultiSignatureScriptSignatureImpl(hex : String) extends MultiSignatureScriptSignature
+
   override def fromBytes(bytes : Seq[Byte]): MultiSignatureScriptSignature = {
-    val scriptSig = RawScriptSignatureParser.read(bytes)
-    matchMultiSignatureScriptSig(scriptSig)
+    val asm = ScriptParser.fromBytes(bytes)
+    MultiSignatureScriptSignature.fromAsm(asm)
   }
 
   def apply(signatures : Seq[ECDigitalSignature]): MultiSignatureScriptSignature = {
@@ -228,15 +231,36 @@ object MultiSignatureScriptSignature extends Factory[MultiSignatureScriptSignatu
     } yield pushOps ++ Seq(constant)
     val sigsWithPushOps = sigsPushOpsPairs.flatten
     val asm = OP_0 +: sigsWithPushOps
-    val scriptSig = ScriptSignature.fromAsm(asm)
-    matchMultiSignatureScriptSig(scriptSig)
+    fromAsm(asm)
   }
 
-  private def matchMultiSignatureScriptSig(scriptSig : ScriptSignature) = scriptSig match {
-    case multiSignature : MultiSignatureScriptSignature => multiSignature
-    case x : ScriptSignature =>
-      throw new IllegalArgumentException("We cannot have a non multisignature scriptsig returned from the multisignature script sig factory, got: " + x)
+  def fromAsm(asm: Seq[ScriptToken]): MultiSignatureScriptSignature = {
+    require(isMultiSignatureScriptSignature(asm), "The given asm tokens were not a multisignature script sig: " + asm)
+    val hex = asm.map(_.hex).mkString
+    logger.info("Asm created by multisignature scriptSig companion object " + asm)
+    MultiSignatureScriptSignatureImpl(hex)
+  }
 
+  /**
+    * Checks if the given script tokens are a multisignature script sig
+    * format: OP_0 <A sig> [B sig] [C sig...]
+    *
+    * @param asm the asm to check if it falls in the multisignature script sig format
+    * @return boolean indicating if the scriptsignature is a multisignature script signature
+    */
+  def isMultiSignatureScriptSignature(asm : Seq[ScriptToken]) : Boolean = {
+    asm.isEmpty match {
+      case true => false
+      case false if (asm.size == 1) => false
+      case false =>
+        val firstTokenIsScriptNumberOperation = asm.head.isInstanceOf[ScriptNumberOperation]
+        val restOfScriptIsPushOpsOrScriptConstants = asm.tail.map(
+          token => token.isInstanceOf[ScriptConstant] || StackPushOperationFactory.isPushOperation(token)
+        ).exists(_ == false)
+        logger.debug("First number is script op: " + firstTokenIsScriptNumberOperation)
+        logger.debug("tail is true: " +restOfScriptIsPushOpsOrScriptConstants )
+        firstTokenIsScriptNumberOperation && !restOfScriptIsPushOpsOrScriptConstants
+    }
   }
 }
 
@@ -306,8 +330,6 @@ object ScriptSignature extends Factory[ScriptSignature] with BitcoinSLogger {
 
   private case class P2PKScriptSignatureImpl(hex : String) extends P2PKScriptSignature
 
-  private case class MultiSignatureScriptSignatureImpl(hex : String) extends MultiSignatureScriptSignature
-
   private case class P2SHScriptSignatureImpl(hex : String) extends P2SHScriptSignature
 
   private case class P2PKHScriptSignatureImpl(hex : String) extends P2PKHScriptSignature
@@ -349,10 +371,10 @@ object ScriptSignature extends Factory[ScriptSignature] with BitcoinSLogger {
       case Nil => EmptyScriptSignature
       case _  if (tokens.size > 1 && isRedeemScript(tokens.last)) =>
         P2SHScriptSignatureImpl(scriptSigHex)
-      case _ if (isMultiSignatureScriptSignature(tokens)) =>
+      case _ if (MultiSignatureScriptSignature.isMultiSignatureScriptSignature(tokens)) =>
         //the head of the asm does not neccessarily have to be an OP_0 if the NULLDUMMY script
         //flag is not set. It can be any script number operation
-        MultiSignatureScriptSignatureImpl(scriptSigHex)
+        MultiSignatureScriptSignature(scriptSigHex)
       case List(w : BytesToPushOntoStack, x : ScriptConstant, y : BytesToPushOntoStack,
       z : ScriptConstant) => P2PKHScriptSignatureImpl(scriptSigHex)
       case List(w : BytesToPushOntoStack, x : ScriptConstant) => P2PKScriptSignatureImpl(scriptSigHex)
@@ -374,7 +396,7 @@ object ScriptSignature extends Factory[ScriptSignature] with BitcoinSLogger {
       case s : P2SHScriptPubKey => P2SHScriptSignatureImpl(scriptSigHex)
       case s : P2PKHScriptPubKey => P2PKHScriptSignatureImpl(scriptSigHex)
       case s : P2PKScriptPubKey => P2PKScriptSignatureImpl(scriptSigHex)
-      case s : MultiSignatureScriptPubKey => MultiSignatureScriptSignatureImpl(scriptSigHex)
+      case s : MultiSignatureScriptPubKey => MultiSignatureScriptSignature(scriptSigHex)
       case s : NonStandardScriptPubKey => NonStandardScriptSignatureImpl(scriptSigHex)
       case EmptyScriptPubKey if (tokens.size == 0) => EmptyScriptSignature
       case EmptyScriptPubKey => NonStandardScriptSignatureImpl(scriptSigHex)
@@ -417,28 +439,6 @@ object ScriptSignature extends Factory[ScriptSignature] with BitcoinSLogger {
   def parseRedeemScript(scriptToken : ScriptToken) : Try[ScriptPubKey] = {
     val redeemScript : Try[ScriptPubKey] = Try(ScriptPubKey(scriptToken.bytes))
     redeemScript
-  }
-
-  /**
-    * Checks if the given script tokens are a multisignature script sig
-    * format: OP_0 <A sig> [B sig] [C sig...]
-    *
-    * @param asm the asm to check if it falls in the multisignature script sig format
-    * @return boolean indicating if the scriptsignature is a multisignature script signature
-    */
-  def isMultiSignatureScriptSignature(asm : Seq[ScriptToken]) : Boolean = {
-    asm.isEmpty match {
-      case true => false
-      case false if (asm.size == 1) => false
-      case false =>
-        val firstTokenIsScriptNumberOperation = asm.head.isInstanceOf[ScriptNumberOperation]
-        val restOfScriptIsPushOpsOrScriptConstants = asm.tail.map(
-          token => token.isInstanceOf[ScriptConstant] || StackPushOperationFactory.isPushOperation(token)
-        ).exists(_ == false)
-        logger.debug("First number is script op: " + firstTokenIsScriptNumberOperation)
-        logger.debug("tail is true: " +restOfScriptIsPushOpsOrScriptConstants )
-        firstTokenIsScriptNumberOperation && !restOfScriptIsPushOpsOrScriptConstants
-    }
   }
 
   def apply(signature : ECDigitalSignature, pubKey : ECPublicKey) : ScriptSignature = factory(signature,pubKey)

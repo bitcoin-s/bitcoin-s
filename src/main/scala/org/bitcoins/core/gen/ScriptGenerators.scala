@@ -1,9 +1,12 @@
 package org.bitcoins.core.gen
 
-import org.bitcoins.core.crypto.{ECDigitalSignature, ECPrivateKey, ECPublicKey}
+import org.bitcoins.core.crypto.{TransactionSignatureCreator, _}
+import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.script.ScriptSettings
-import org.bitcoins.core.util.BitcoinSLogger
+import org.bitcoins.core.script.constant.OP_0
+import org.bitcoins.core.script.crypto.SIGHASH_ALL
+import org.bitcoins.core.util.{BitcoinSLogger}
 import org.scalacheck.Gen
 
 /**
@@ -39,6 +42,7 @@ trait ScriptGenerators extends BitcoinSLogger {
     * Generates a [[org.bitcoins.core.protocol.script.P2SHScriptSignature]]
     * WARNING: the redeem script and the script signature DO NOT evaluate to true
     * if executed by [[org.bitcoins.core.script.interpreter.ScriptInterpreter]]
+    *
     * @return
     */
   def p2shScriptSignature : Gen[P2SHScriptSignature] = for {
@@ -86,6 +90,7 @@ trait ScriptGenerators extends BitcoinSLogger {
 
   /**
     * Generates an arbitrary scriptPubKey
+    *
     * @return
     */
   def scriptPubKey : Gen[ScriptPubKey] = {
@@ -99,6 +104,7 @@ trait ScriptGenerators extends BitcoinSLogger {
 
   /**
     * Generates an arbitrary script signature
+    *
     * @return
     */
   def scriptSignature : Gen[ScriptSignature] = {
@@ -121,6 +127,72 @@ trait ScriptGenerators extends BitcoinSLogger {
         "non standard script pubkey, got: " + x)
   }
 
+  /**
+    * Generates a signed [[P2PKScriptSignature]] that spends the [[P2PKScriptPubKey]] correctly
+    * @return the signed [[P2PKScriptSignature]], the [[P2PKScriptPubKey]] it spends, and the
+    *         [[ECPrivateKey]] used to sign the scriptSig
+    */
+  def signedP2PKScriptSignature: Gen[(P2PKScriptSignature,P2PKScriptPubKey,ECPrivateKey)] = for {
+    privateKey <- CryptoGenerators.privateKey
+  } yield {
+    val publicKey = privateKey.publicKey
+    val scriptPubKey = P2PKScriptPubKey(publicKey)
+    val (creditingTx, outputIndex) = TransactionGenerators.buildCreditingTransaction(scriptPubKey)
+    val scriptSig = P2PKScriptSignature(EmptyDigitalSignature)
+    val (spendingTx, inputIndex) = TransactionGenerators.buildSpendingTransaction(creditingTx, scriptSig, outputIndex)
+    val txSignatureComponent = TransactionSignatureComponent(spendingTx, inputIndex, scriptPubKey, Policy.standardScriptVerifyFlags)
+    val txSignature = TransactionSignatureCreator.createSig(txSignatureComponent, privateKey, SIGHASH_ALL())
+
+    //add the signature to the scriptSig instead of having an empty scriptSig
+    val signedScriptSig = P2PKScriptSignature(txSignature)
+    (signedScriptSig,scriptPubKey,privateKey)
+  }
+
+  /**
+    * Generates a signed [[P2PKHScriptSignature]] that spends the [[P2PKHScriptPubKey]] correctly
+    * @return the signed [[P2PKHScriptSignature]], the [[P2PKHScriptPubKey]] it spends, and the
+    *         [[ECPrivateKey]] used to sign the scriptSig
+    */
+  def signedP2PKHScriptSignature: Gen[(P2PKHScriptSignature, P2PKHScriptPubKey, ECPrivateKey)] = for {
+    privateKey <- CryptoGenerators.privateKey
+  } yield {
+    val publicKey = privateKey.publicKey
+    val scriptPubKey = P2PKHScriptPubKey(publicKey)
+    val (creditingTx,outputIndex) = TransactionGenerators.buildCreditingTransaction(scriptPubKey)
+    val scriptSig = P2PKHScriptSignature(EmptyDigitalSignature,publicKey)
+    val (spendingTx,inputIndex) = TransactionGenerators.buildSpendingTransaction(creditingTx,scriptSig,outputIndex)
+    val txSignatureComponent = TransactionSignatureComponent(spendingTx,inputIndex,scriptPubKey,Policy.standardScriptVerifyFlags)
+    val txSignature = TransactionSignatureCreator.createSig(txSignatureComponent,privateKey, SIGHASH_ALL())
+
+    //add the signature to the scriptSig instead of having an empty scriptSig
+    val signedScriptSig = P2PKHScriptSignature(txSignature,publicKey)
+    (signedScriptSig, scriptPubKey, privateKey)
+  }
+
+  def signedMultiSignatureScriptSignature: Gen[(MultiSignatureScriptSignature, MultiSignatureScriptPubKey, Seq[ECPrivateKey])] = for {
+    (privateKeys, requiredSigs) <- CryptoGenerators.privateKeySeqWithRequiredSigs
+    if (requiredSigs > 0)
+  } yield {
+    val publicKeys = privateKeys.map(_.publicKey)
+    val scriptPubKey = MultiSignatureScriptPubKey(requiredSigs,publicKeys)
+    val (creditingTx,outputIndex) = TransactionGenerators.buildCreditingTransaction(scriptPubKey)
+    val emptyDigitalSignatures = publicKeys.map(_ => EmptyDigitalSignature)
+    //if we have 0 requiredSigs, we need to create a nonstandard scriptSig
+    val scriptSig = MultiSignatureScriptSignature(emptyDigitalSignatures)
+    val (spendingTx,inputIndex) = TransactionGenerators.buildSpendingTransaction(creditingTx,scriptSig,outputIndex)
+    val txSignatureComponent = TransactionSignatureComponent(spendingTx,inputIndex,
+      scriptPubKey,Policy.standardScriptVerifyFlags)
+
+
+    val txSignatures = for {
+      i <- 0 until requiredSigs
+    } yield TransactionSignatureCreator.createSig(txSignatureComponent,privateKeys(i), SIGHASH_ALL())
+
+    //add the signature to the scriptSig instead of having an empty scriptSig
+    //if we have 0 requiredSigs, we need to create a nonstandard scriptSig
+    val signedScriptSig = MultiSignatureScriptSignature(txSignatures)
+    (signedScriptSig, scriptPubKey, privateKeys)
+  }
 }
 
 object ScriptGenerators extends ScriptGenerators
