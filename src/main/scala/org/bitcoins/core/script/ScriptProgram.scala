@@ -428,6 +428,10 @@ object ScriptProgram {
     factory(txSignatureComponent, stack, script)
 
 
+  def apply(txSignatureComponent: TransactionSignatureComponent): PreExecutionScriptProgram = {
+    ScriptProgram(txSignatureComponent.transaction, txSignatureComponent.scriptPubKey, txSignatureComponent.inputIndex,txSignatureComponent.flags)
+  }
+
   /**
    * Changes a program that is being executed inside o
  *

@@ -256,10 +256,9 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
               ScriptProgram(executionInProgressScriptProgram,ScriptErrorInvalidStackOperation)
             } else if (ScriptFlagUtil.requireNullDummy(program.flags) &&
               !(Seq(Some(OP_0), Some(ScriptNumber.zero)).contains(stackWithoutPubKeysAndSignatures.headOption))) {
-              logger.error("Script flag null dummy was set however the first element in the script signature was not an OP_0")
+              logger.error("Script flag null dummy was set however the first element in the script signature was not an OP_0, stackWithoutPubKeysAndSignatures: " + stackWithoutPubKeysAndSignatures)
               ScriptProgram(executionInProgressScriptProgram,ScriptErrorSigNullDummy)
             } else {
-
               //remove the last OP_CODESEPARATOR
               val removedOpCodeSeparatorsScript = removeOpCodeSeparator(executionInProgressScriptProgram)
               val isValidSignatures: TransactionSignatureCheckerResult =
