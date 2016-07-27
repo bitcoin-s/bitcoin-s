@@ -21,6 +21,8 @@ This repostitory includes the following functionality:
 
 # TODO
   - Segwit support
+  - Java support
+  - Android support
 
 # Examples
 
