@@ -2,7 +2,7 @@ package org.bitcoins.core.crypto
 
 import org.bitcoins.core.gen.TransactionGenerators
 import org.bitcoins.core.script.interpreter.ScriptInterpreter
-import org.bitcoins.core.script.result.ScriptOk
+import org.bitcoins.core.script.result.{ScriptErrorPushSize, ScriptOk}
 import org.bitcoins.core.script.{PreExecutionScriptProgram, ScriptProgram}
 import org.bitcoins.core.util.BitcoinSLogger
 import org.scalacheck.{Prop, Properties}
@@ -46,6 +46,7 @@ class TransactionSignatureCreatorSpec extends Properties("TransactionSignatureCr
         //run it through the interpreter
         val program = ScriptProgram(txSignatureComponent)
         val result = ScriptInterpreter.run(program)
-        result == ScriptOk
+        //can be ScriptErrorPushSize if the redeemScript is larger than 520 bytes
+        Seq(ScriptOk, ScriptErrorPushSize).contains(result)
     }
 }

@@ -98,7 +98,6 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
       }
     } else if (executedProgram.stackTopIsTrue) ScriptOk
     else ScriptErrorEvalFalse
-
   }
 
 
@@ -112,12 +111,14 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
     * @param p2shScriptPubKey the p2sh scriptPubKey that contains the value the redeemScript must hash to
     * @return the executed program
     */
-  private def executeP2shScript(scriptSigExecutedProgram : ScriptProgram, originalProgram : ScriptProgram, p2shScriptPubKey : P2SHScriptPubKey) : ExecutedScriptProgram = {
+  private def executeP2shScript(scriptSigExecutedProgram : ExecutedScriptProgram, originalProgram : ScriptProgram, p2shScriptPubKey : P2SHScriptPubKey) : ExecutedScriptProgram = {
     val originalScriptSigAsm : Seq[ScriptToken] = scriptSigExecutedProgram.txSignatureComponent.scriptSignature.asm
     //need to check if the scriptSig is push only as required by bitcoin core
     //https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L1268
     if (!BitcoinScriptUtil.isPushOnly(originalScriptSigAsm)) {
       ScriptProgram(originalProgram,ScriptErrorSigPushOnly)
+    } else if (scriptSigExecutedProgram.error.isDefined) {
+      scriptSigExecutedProgram
     } else {
       val hashCheckProgram = ScriptProgram(originalProgram, scriptSigExecutedProgram.stack, p2shScriptPubKey.asm)
       val hashesMatchProgram = loop(hashCheckProgram)
