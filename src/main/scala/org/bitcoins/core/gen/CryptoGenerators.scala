@@ -37,7 +37,7 @@ trait CryptoGenerators {
   }
 
   def privateKeySeqWithRequiredSigs: Gen[(Seq[ECPrivateKey], Int)] = for {
-    num <- Gen.choose(1,10)
+    num <- Gen.choose(0,ScriptSettings.maxPublicKeysPerMultiSig)
     keysAndRequiredSigs <- privateKeySeqWithRequiredSigs(num)
   } yield keysAndRequiredSigs
 
