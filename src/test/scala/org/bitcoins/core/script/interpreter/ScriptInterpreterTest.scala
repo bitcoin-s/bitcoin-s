@@ -3,11 +3,11 @@ package org.bitcoins.core.script.interpreter
 
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.script.ScriptProgram
-import org.bitcoins.core.script.flag.{ScriptFlagFactory}
+import org.bitcoins.core.script.flag.ScriptFlagFactory
+import org.bitcoins.core.script.interpreter.testprotocol.CoreTestCaseProtocol._
 import org.bitcoins.core.script.interpreter.testprotocol.{CoreTestCase, CoreTestCaseProtocol}
 import org.bitcoins.core.util._
 import org.scalatest.{FlatSpec, MustMatchers}
-import CoreTestCaseProtocol._
 import spray.json._
 
 import scala.io.Source

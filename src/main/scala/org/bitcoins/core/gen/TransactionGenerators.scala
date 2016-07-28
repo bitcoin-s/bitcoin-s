@@ -1,15 +1,12 @@
 package org.bitcoins.core.gen
 
-import org.bitcoins.core.crypto.{ECPrivateKey, EmptyDigitalSignature, TransactionSignatureComponent, TransactionSignatureCreator}
+import org.bitcoins.core.crypto.{ECPrivateKey, TransactionSignatureComponent}
 import org.bitcoins.core.currency.CurrencyUnits
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction.{TransactionInput, TransactionOutPoint, TransactionOutput, _}
-import org.bitcoins.core.script.crypto.SIGHASH_ALL
 import org.scalacheck.Gen
-
-import scala.annotation.tailrec
 
 /**
   * Created by chris on 6/21/16.
@@ -106,6 +103,19 @@ trait TransactionGenerators {
     (signedTxSignatureComponent, privateKeys)
   }
 
+  /**
+    * Creates a transaction which contains a [[P2SHScriptSignature]] that correctly spends a [[P2SHScriptPubKey]]
+    * @return
+    */
+  def p2SHTransaction: Gen[(TransactionSignatureComponent, Seq[ECPrivateKey])] = for {
+    (signedScriptSig, scriptPubKey, privateKeys) <- ScriptGenerators.signedP2SHScriptSignature
+  } yield {
+    val (creditingTx,outputIndex) = buildCreditingTransaction(signedScriptSig.redeemScript)
+    val (signedTx,inputIndex) = buildSpendingTransaction(creditingTx,signedScriptSig,outputIndex)
+    val signedTxSignatureComponent = TransactionSignatureComponent(signedTx,inputIndex,scriptPubKey,Policy.standardScriptVerifyFlags)
+    (signedTxSignatureComponent, privateKeys)
+  }
+
 
   /**
     * Builds a spending transaction according to bitcoin core
@@ -132,13 +142,10 @@ trait TransactionGenerators {
     //https://github.com/bitcoin/bitcoin/blob/605c17844ea32b6d237db6d83871164dc7d59dab/src/test/script_tests.cpp#L64
     //https://github.com/bitcoin/bitcoin/blob/80d1f2e48364f05b2cdf44239b3a1faa0277e58e/src/primitives/transaction.h#L32
     //https://github.com/bitcoin/bitcoin/blob/605c17844ea32b6d237db6d83871164dc7d59dab/src/uint256.h#L40
-
-
     val outpoint = EmptyTransactionOutPoint
     val scriptSignature = ScriptSignature("0000")
     val input = TransactionInput(outpoint,scriptSignature,TransactionConstants.sequence)
     val output = TransactionOutput(CurrencyUnits.zero,scriptPubKey)
-
     val tx = Transaction(TransactionConstants.version,Seq(input),Seq(output),TransactionConstants.lockTime)
     (tx,UInt32.zero)
   }

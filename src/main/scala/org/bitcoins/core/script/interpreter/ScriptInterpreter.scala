@@ -140,9 +140,8 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
           hashesMatchProgram
       }
     }
-
-
   }
+
   /**
     * The execution loop for a script
     * @param program the program whose script needs to be evaluated

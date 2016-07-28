@@ -133,14 +133,15 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
 
 
   /**
-   * Serializes then hashes a transaction for signing
-   * this is an implementation of it's bitcoinj equivalent found here
-   * https://github.com/bitcoinj/bitcoinj/blob/master/core/src/main/java/org/bitcoinj/core/Transaction.java#L924
-   * @param inputIndex
-   * @param script
-   * @param hashType
-   * @return
-   */
+    * Serializes then hashes a transaction for signing
+    * this is an implementation of it's bitcoinj equivalent found here
+    * https://github.com/bitcoinj/bitcoinj/blob/master/core/src/main/java/org/bitcoinj/core/Transaction.java#L924
+    * @param spendingTransaction the transaction we are hashing
+    * @param inputIndex the inputIndex we are hashing for signing
+    * @param script the script which we are spending
+    * @param hashType the hash type we are serializign this tx for
+    * @return
+    */
   def hashForSignature(spendingTransaction : Transaction, inputIndex : UInt32, script : Seq[ScriptToken], hashType : HashType) : DoubleSha256Digest = {
     //these first two checks are in accordance with behavior in bitcoin core
     //https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L1112-L1123
