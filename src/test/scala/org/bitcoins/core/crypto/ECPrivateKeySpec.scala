@@ -19,4 +19,9 @@ class ECPrivateKeySpec extends Properties("ECPrivateKeySpec") {
     Prop.forAll(CryptoGenerators.privateKey) { privKey =>
       ECPrivateKey(privKey.hex) == privKey
     }
+
+  property("unique key generation") =
+    Prop.forAll(CryptoGenerators.privateKey, CryptoGenerators.privateKey) { (privKey1, privKey2) =>
+      privKey1 != privKey2
+    }
 }

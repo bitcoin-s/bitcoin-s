@@ -175,7 +175,6 @@ trait ScriptGenerators extends BitcoinSLogger {
     */
   def signedMultiSignatureScriptSignature: Gen[(MultiSignatureScriptSignature, MultiSignatureScriptPubKey, Seq[ECPrivateKey])] = for {
     (privateKeys, requiredSigs) <- CryptoGenerators.privateKeySeqWithRequiredSigs
-    if (requiredSigs > 0)
   } yield {
     val publicKeys = privateKeys.map(_.publicKey)
     val scriptPubKey = MultiSignatureScriptPubKey(requiredSigs,publicKeys)

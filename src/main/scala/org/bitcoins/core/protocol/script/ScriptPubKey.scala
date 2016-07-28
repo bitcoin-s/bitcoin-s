@@ -133,7 +133,8 @@ object MultiSignatureScriptPubKey extends Factory[MultiSignatureScriptPubKey] wi
       case Some(scriptNumOp) => Seq(scriptNumOp)
       case None =>
         val scriptNum = ScriptNumber(requiredSigs)
-        Seq(BytesToPushOntoStack(scriptNum.bytes.length), scriptNum)
+        val pushOps = BitcoinScriptUtil.calculatePushOp(scriptNum.bytes)
+        pushOps ++ Seq(scriptNum)
     }
     val possible = ScriptNumberOperation.fromNumber(pubKeys.length) match {
       case Some(scriptNumOp) => Seq(scriptNumOp)
