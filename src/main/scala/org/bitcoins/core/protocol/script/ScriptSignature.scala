@@ -230,6 +230,7 @@ object MultiSignatureScriptSignature extends Factory[MultiSignatureScriptSignatu
       pushOps = BitcoinScriptUtil.calculatePushOp(sig.bytes)
     } yield pushOps ++ Seq(constant)
     val sigsWithPushOps = sigsPushOpsPairs.flatten
+    //OP_0 is for the dummy input required by OP_CHECKMULTISIG
     val asm = OP_0 +: sigsWithPushOps
     fromAsm(asm)
   }
@@ -251,7 +252,7 @@ object MultiSignatureScriptSignature extends Factory[MultiSignatureScriptSignatu
   def isMultiSignatureScriptSignature(asm : Seq[ScriptToken]) : Boolean = {
     asm.isEmpty match {
       case true => false
-      case false if (asm.size == 1) => false
+      //case false if (asm.size == 1) => false
       case false =>
         val firstTokenIsScriptNumberOperation = asm.head.isInstanceOf[ScriptNumberOperation]
         val restOfScriptIsPushOpsOrScriptConstants = asm.tail.map(

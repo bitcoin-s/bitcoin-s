@@ -22,15 +22,6 @@ class ScriptSignatureFactoryTest extends FlatSpec with MustMatchers {
 
   }
 
-  it must "given a single 0 a scriptSignature type of non standard" in {
-    val scriptSig = ScriptSignature("00")
-    val result = scriptSig match {
-      case _ : NonStandardScriptSignature => true
-      case _ => false
-    }
-
-    result must be (true)
-  }
   it must "build a script signature from a digital signature and a public key" in {
     val digitalSignatureBytes = TestUtil.p2pkhInputScriptAsm(1).bytes
     val digitalSignature : ECDigitalSignature = ECDigitalSignature(digitalSignatureBytes)
