@@ -40,5 +40,12 @@ class TransactionSignatureCreatorSpec extends Properties("TransactionSignatureCr
         result == ScriptOk
   }
 
-  //property("generate a valid signature for a p2sh transaction") = ???
+  property("generate a valid signature for a p2sh transaction") =
+    Prop.forAll(TransactionGenerators.p2SHTransaction) {
+      case (txSignatureComponent: TransactionSignatureComponent, _) =>
+        //run it through the interpreter
+        val program = ScriptProgram(txSignatureComponent)
+        val result = ScriptInterpreter.run(program)
+        result == ScriptOk
+    }
 }

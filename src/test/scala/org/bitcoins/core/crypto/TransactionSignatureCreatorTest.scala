@@ -137,5 +137,4 @@ class TransactionSignatureCreatorTest extends FlatSpec with MustMatchers with Bi
     val result = ScriptInterpreter.run(program)
     result must be (ScriptOk)
   }
-
 }
