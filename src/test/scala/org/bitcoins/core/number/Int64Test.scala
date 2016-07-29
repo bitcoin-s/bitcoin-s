@@ -78,5 +78,4 @@ class Int64Test extends FlatSpec with MustMatchers {
     Int64.max.underlying must be (9223372036854775807L)
   }
 
-  it must ""
 }

@@ -86,4 +86,9 @@ class UInt64Spec extends Properties("UInt64Spec") with BitcoinSLogger {
     Prop.forAll(NumberGenerator.uInt64s, NumberGenerator.uInt64s) { (num1: UInt64, num2: UInt64) =>
       UInt64(num1.underlying | num2.underlying) == (num1 | num2)
     }
+
+  property("&") =
+    Prop.forAll(NumberGenerator.uInt64s, NumberGenerator.uInt64s) { (num1: UInt64, num2: UInt64) =>
+      UInt64(num1.underlying & num2.underlying) == (num1 & num2)
+    }
 }

@@ -1,7 +1,7 @@
 package org.bitcoins.core.crypto
 
 import org.bitcoins.core.currency.CurrencyUnits
-import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.serializers.RawBitcoinSerializerHelper
 import org.bitcoins.core.serializers.transaction.RawTransactionOutputParser
 import org.bitcoins.core.protocol.script._
@@ -36,10 +36,10 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
    * hashing is done in the hashForSignature function
    * @param inputIndex
    * @param script
-   * @param hashType
+   * @param hashTypeNum
    * @return
    */
-  def serializeForSignature(spendingTransaction : Transaction, inputIndex : UInt32, script : Seq[ScriptToken], hashType : HashType) : Seq[Byte] = {
+  def serializeForSignature(spendingTransaction : Transaction, inputIndex : UInt32, script : Seq[ScriptToken], hashTypeNum : Int32) : Seq[Byte] = {
     logger.debug("Serializing for signature")
     logger.debug("Script: " + script)
     // Clear input scripts in preparation for signing. If we're signing a fresh
@@ -75,18 +75,15 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
     val updatedInputs = for {
       (input,index) <- inputSigsRemoved.zipWithIndex
     } yield {
-        if (UInt32(index) == inputIndex) inputWithConnectedScript
+        if (UInt32(index) == inputIndex) {
+          inputWithConnectedScript
+        }
         else input
       }
 
     val txWithInputSigsRemoved = Transaction(spendingTransaction,UpdateTransactionInputs(updatedInputs))
-    println("txWithInputSigsRemoved: " + txWithInputSigsRemoved)
-    //just need to add the hash type and hash the tx
-    //val sigHashBytes : List[Byte] = List(0x00.toByte, 0x00.toByte, 0x00.toByte, hashType.byte)
-    val sigHashHex = BitcoinSUtil.flipEndianess(hashType.hex)  //flipEnd(encodeHex(BigInt(num)))
-    val sigHashBytes : List[Byte] = BitcoinSUtil.decodeHex(sigHashHex).toList
-    //val hashTypeByte : HashType = HashTypeFactory.fromBigInt(hashTypeNum)
-
+    val sigHashBytes : List[Byte] = hashTypeNum.bytes.reverse.toList
+    val hashType : HashType = HashTypeFactory.fromNumber(hashTypeNum)
     //check the hash type
     hashType match {
       case SIGHASH_NONE =>
@@ -143,22 +140,22 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
  *
    * @param inputIndex
    * @param script
-   * @param hashType
+   * @param hashTypeNum
    * @return
    */
-  def hashForSignature(spendingTransaction : Transaction, inputIndex : UInt32, script : Seq[ScriptToken], hashType : HashType) : DoubleSha256Digest = {
+  def hashForSignature(spendingTransaction : Transaction, inputIndex : UInt32, script : Seq[ScriptToken], hashTypeNum : Int32) : DoubleSha256Digest = {
     //these first two checks are in accordance with behavior in bitcoin core
     //https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L1112-L1123
     if (inputIndex >= UInt32(spendingTransaction.inputs.size)) {
       logger.warn("Our inputIndex is out of the range of the inputs in the spending transaction")
       errorHash
-    } else if(hashType == SIGHASH_SINGLE  && inputIndex >= UInt32(spendingTransaction.outputs.size)) {
+    } else if(hashTypeNum == SIGHASH_SINGLE.hashType  && inputIndex >= UInt32(spendingTransaction.outputs.size)) {
       logger.warn("When we have a SIGHASH_SINGLE we cannot have more inputs than outputs")
       errorHash
     } else {
-      val serializedTxForSignature = serializeForSignature(spendingTransaction,inputIndex,script,hashType)
+      val serializedTxForSignature = serializeForSignature(spendingTransaction,inputIndex,script,hashTypeNum)
       logger.debug("Serialized tx for signature: " + BitcoinSUtil.encodeHex(serializedTxForSignature))
-      logger.debug("HashType: " + hashType)
+      logger.debug("HashType: " + HashTypeFactory.fromNumber(hashTypeNum))
       CryptoUtil.doubleSHA256(serializedTxForSignature)
     }
   }

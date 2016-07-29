@@ -22,14 +22,14 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterp
 
 
     //use this to represent a single test case from script_valid.json
-    /*val lines =
+/*    val lines =
         """
           | [[
-          |    "0x48 0x3045022100e58c2307fb6569d0f25b4375f1074e48592bfc62d423bdc8f016365c980c0ae602204984523016f6320dc275cb90c6c1be80b4c9753de2e9fe19f2e5290844587da101 0x20 0x0228b426496c6a96846561a40b241ead0e03fe217d52de26cf2e707f0f181999fb 0x19 0x76a914364ddb17f9997cd91984c897eb5c0123f0a4b43f88ac",
-          |    "HASH160 0x14 0x8a24f3c75f6d401a977bc63f854cc5d7dadfa7de EQUAL",
-          |    "P2SH",
-               "OK",
-          |    "P2SH(P2PKH)"
+          |  "0x47 0x304402206177d513ec2cda444c021a1f4f656fc4c72ba108ae063e157eb86dc3575784940220666fc66702815d0e5413bb9b1df22aed44f5f1efb8b99d41dd5dc9a5be6d205205",
+          |  "0x41 0x048282263212c609d9ea2a6e3e172de238d8c39cabd5ac1ca10646e23fd5f5150811f8a8098557dfe45e8256e830b60ace62d613ac2f7b17bed31b6eaff6e26caf CHECKSIG",
+          |  "",
+          |  "OK",
+          |  "P2PK with undefined hashtype but no STRICTENC"
           |]]
    """.stripMargin*/
     val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n" finally source.close()

@@ -1,6 +1,7 @@
 package org.bitcoins.core.protocol.script
 
 import org.bitcoins.core.crypto.{ECDigitalSignature, ECPublicKey, EmptyDigitalSignature}
+import org.bitcoins.core.number.Int32
 import org.bitcoins.core.protocol.NetworkElement
 import org.bitcoins.core.script.constant._
 import org.bitcoins.core.script.crypto.{HashType, HashTypeFactory, SIGHASH_ALL}
@@ -47,7 +48,7 @@ sealed trait ScriptSignature extends NetworkElement with BitcoinSLogger {
     */
   def hashType(digitalSignature: ECDigitalSignature) : HashType = {
     digitalSignature match {
-      case EmptyDigitalSignature => SIGHASH_ALL()
+      case EmptyDigitalSignature => SIGHASH_ALL(Int32.one)
       case sig : ECDigitalSignature => HashTypeFactory.fromBytes(Seq(digitalSignature.bytes.last))
     }
   }

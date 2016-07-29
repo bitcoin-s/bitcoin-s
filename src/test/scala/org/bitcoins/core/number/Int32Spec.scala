@@ -81,4 +81,9 @@ class Int32Spec extends Properties("Int32Spec") {
     Prop.forAll(NumberGenerator.int32s, NumberGenerator.int32s) { (num1: Int32, num2: Int32) =>
       Int32(num1.underlying | num2.underlying) == (num1 | num2)
     }
+
+  property("&") =
+    Prop.forAll(NumberGenerator.int32s, NumberGenerator.int32s) { (num1: Int32, num2: Int32) =>
+      Int32(num1.underlying & num2.underlying) == (num1 & num2)
+    }
 }
