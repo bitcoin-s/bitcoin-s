@@ -63,13 +63,4 @@ class Int32Test extends FlatSpec with MustMatchers {
   it must "have the correct maximum number representation" in {
     Int32.max.underlying must be (2147483647)
   }
-
-/*  it must "intercept illegal argument exceptions when casting integer below minimum and above maximum values" in {
-    intercept[IllegalArgumentException] {
-      Int32(Int.MaxValue + 1)
-    }
-    intercept[IllegalArgumentException] {
-      Int32(Int.MinValue - 1)
-    }
-  }*/
 }
