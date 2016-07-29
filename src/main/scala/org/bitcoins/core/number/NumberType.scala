@@ -80,6 +80,8 @@ sealed trait UInt32 extends UnsignedNumber with NumberOperations[UInt32] {
 
   def | (num : UInt32) : UInt32 = UInt32(underlying | num.underlying)
 
+  def & (num : UInt32) : UInt32 = UInt32(underlying & num.underlying)
+
   override def hex = BitcoinSUtil.encodeHex(underlying).slice(8,16)
 
   override def toInt = {
@@ -134,6 +136,9 @@ sealed trait UInt64 extends UnsignedNumber with NumberOperations[UInt64] {
   override def <= (num : UInt64): Boolean = underlying <= num.underlying
 
   def | (num : UInt64) : UInt64 = UInt64(underlying | num.underlying)
+
+  def & (num : UInt64) : UInt64 = UInt64(underlying & num.underlying)
+
 
   override def toInt = {
     require(underlying <= Int.MaxValue, "Overflow error when casting " + this + " to an integer.")
@@ -204,6 +209,8 @@ sealed trait Int32 extends SignedNumber with NumberOperations[Int32] {
 
   def | (num : Int32) : Int32 = Int32(underlying | num.underlying)
 
+  def & (num : Int32) : Int32 = Int32(underlying & num.underlying)
+
   override def toInt = {
     require(underlying <= Int.MaxValue, "Overflow error when casting " + this + " to an integer.")
     require(underlying >= Int.MinValue, "Overflow error when casting " + this + " to an integer.")
@@ -255,6 +262,8 @@ sealed trait Int64 extends SignedNumber with NumberOperations[Int64] {
   override def <= (num : Int64): Boolean = underlying <= num.underlying
 
   def | (num : Int64) : Int64 = Int64(underlying | num.underlying)
+
+  def & (num : Int64) : Int64 = Int64(underlying & num.underlying)
 
   override def toInt = {
     require(underlying <= Int.MaxValue, "Overflow error when casting " + this + " to an integer.")

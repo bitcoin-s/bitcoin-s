@@ -1,8 +1,9 @@
 package org.bitcoins.core.protocol.script
 
 
-import org.bitcoins.core.crypto.{TransactionSignatureSerializer, ECDigitalSignature}
+import org.bitcoins.core.crypto.{DoubleSha256Digest, TransactionSignatureSerializer, ECDigitalSignature}
 import org.bitcoins.core.number.{Int32, UInt32}
+import org.bitcoins.core.protocol.script.testprotocol.SignatureHashTestCase
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.serializers.script.RawScriptSignatureParser
 import org.bitcoins.core.script.constant._
@@ -25,7 +26,7 @@ class ScriptSignatureTest extends FlatSpec with MustMatchers {
 
 
    it must "derive the signature hash type from the signature" in {
-    TestUtil.scriptSig.hashType(TestUtil.scriptSig.signatures.head) must be (SIGHASH_ALL())
+    TestUtil.scriptSig.hashType(TestUtil.scriptSig.signatures.head) must be (HashTypeFactory.fromBytes(Seq(TestUtil.scriptSig.signatures.head.bytes.last)))
   }
 
 
@@ -54,7 +55,7 @@ class ScriptSignatureTest extends FlatSpec with MustMatchers {
     ))
   }
   it must "find the hash type for a p2sh script signature" in {
-    TestUtil.p2shInputScript.hashType(TestUtil.p2shInputScript2Of2.signatures.head) must be (SIGHASH_ALL())
+    TestUtil.p2shInputScript.hashType(TestUtil.p2shInputScript2Of2.signatures.head) must be (HashTypeFactory.fromBytes(Seq(TestUtil.p2shInputScript2Of2.signatures.head.bytes.last)))
   }
 
   it must "find the digital signature and hash type for a SIGHASH_SINGLE" in {
@@ -95,24 +96,27 @@ class ScriptSignatureTest extends FlatSpec with MustMatchers {
   }
 
   it must "read sighash.json and return result" in {
+    import org.bitcoins.core.protocol.script.testprotocol.SignatureHashTestCaseProtocol._
     //["raw_transaction, script, input_index, hashType, signature_hash (result)"],
 /*    val str =
       """
-        |	["907c2bc503ade11cc3b04eb2918b6f547b0630ab569273824748c87ea14b0696526c66ba740200000004ab65ababfd1f9bdd4ef073c7afc4ae00da8a66f429c917a0081ad1e1dabce28d373eab81d8628de802000000096aab5253ab52000052ad042b5f25efb33beec9f3364e8a9139e8439d9d7e26529c3c30b6c3fd89f8684cfd68ea0200000009ab53526500636a52ab599ac2fe02a526ed040000000008535300516352515164370e010000000003006300ab2ec229", "", 2, 1864164639, "31af167a6cf3f9d5f6875caa4d31704ceb0eba078d132b78dab52c3b8997317e"],
+        |	["92c9fe210201e781b72554a0ed5e22507fb02434ddbaa69aff6e74ea8bad656071f1923f3f02000000056a63ac6a514470cef985ba83dcb8eee2044807bedbf0d983ae21286421506ae276142359c8c6a34d68020000000863ac63525265006aa796dd0102ca3f9d05000000000800abab52ab535353cd5c83010000000007ac00525252005322ac75ee", "5165", 0, 97879971, "6e6307cef4f3a9b386f751a6f40acebab12a0e7e17171d2989293cbec7fd45c2"]
         |
       """.stripMargin
     val json = str.parseJson*/
 
-/*    val source = Source.fromURL(getClass.getResource("/sighash.json"))
+    val source = Source.fromURL(this.getClass.getResource("/sighash.json"))
     val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n" finally source.close()
-    val json = lines.parseJson*/
+    val testCases : Seq[SignatureHashTestCase] = lines.parseJson.convertTo[Seq[SignatureHashTestCase]]
 
-    //TODO: MAKE SERIALIZER FOR JSON FILE TO READ/WRITE TESTS
-
-    val tx = Transaction("907c2bc503ade11cc3b04eb2918b6f547b0630ab569273824748c87ea14b0696526c66ba740200000004ab65ababfd1f9bdd4ef073c7afc4ae00da8a66f429c917a0081ad1e1dabce28d373eab81d8628de802000000096aab5253ab52000052ad042b5f25efb33beec9f3364e8a9139e8439d9d7e26529c3c30b6c3fd89f8684cfd68ea0200000009ab53526500636a52ab599ac2fe02a526ed040000000008535300516352515164370e010000000003006300ab2ec229")
-    val input = tx.inputs(2)
-    val serializedTxForSigning = TransactionSignatureSerializer.hashForSignature(tx, UInt32(2), Seq(), HashTypeFactory.fromBytes(Int32(1864164639).bytes))
-    serializedTxForSigning.hex must be (BitcoinSUtil.flipEndianess("31af167a6cf3f9d5f6875caa4d31704ceb0eba078d132b78dab52c3b8997317e"))
+    for {
+      testCase <- testCases
+    } yield {
+      val hashForSig = TransactionSignatureSerializer.hashForSignature(testCase.transaction, testCase.inputIndex, testCase.script.asm, testCase.hashTypeNum)
+      //the hash is returned with opposite endianness
+      val flipHash = BitcoinSUtil.flipEndianess(testCase.hash.hex)
+      hashForSig must be (DoubleSha256Digest(flipHash))
+    }
 
   }
 }

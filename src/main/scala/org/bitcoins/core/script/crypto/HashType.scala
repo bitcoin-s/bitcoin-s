@@ -19,7 +19,7 @@ sealed trait HashType {
  *
  * @param hashType
  */
-case class SIGHASH_ALL(hashType: Int32 = Int32.one) extends HashType
+case class SIGHASH_ALL(hashType: Int32) extends HashType
 
 case object SIGHASH_NONE extends HashType {
   override def hashType = Int32(2)
@@ -30,7 +30,7 @@ case object SIGHASH_SINGLE extends HashType {
 }
 
 case object SIGHASH_ANYONECANPAY extends HashType {
-  override def hashType = Int32(80)
+  override def hashType = Int32(0x80)
 }
 
 case object SIGHASH_ALL_ANYONECANPAY extends HashType {

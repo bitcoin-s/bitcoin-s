@@ -1,5 +1,6 @@
 package org.bitcoins.core.script.crypto
 
+import org.bitcoins.core.number.Int32
 import org.scalatest.{FlatSpec, MustMatchers}
 
 /**
@@ -7,9 +8,9 @@ import org.scalatest.{FlatSpec, MustMatchers}
  */
 class HashTypeTest extends FlatSpec with MustMatchers {
 
-  "HashType" must "combine hash types with SIGHASH_ANYONCANPAY" in {
-    SIGHASH_ALL_ANYONECANPAY.hashType.bytes.head must be (0x81.toByte)
-    SIGHASH_NONE_ANYONECANPAY.hashType.bytes.head must be (0x82.toByte)
-    SIGHASH_SINGLE_ANYONECANPAY.hashType.bytes.head must be (0x83.toByte)
+  "HashType" must "combine hash types with SIGHASH_ANYONECANPAY" in {
+    SIGHASH_ALL_ANYONECANPAY.hashType must be (Int32(0x81))
+    SIGHASH_NONE_ANYONECANPAY.hashType must be (Int32(0x82))
+    SIGHASH_SINGLE_ANYONECANPAY.hashType must be (Int32(0x83))
   }
 }
