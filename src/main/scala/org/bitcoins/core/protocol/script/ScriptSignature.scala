@@ -316,7 +316,7 @@ object MultiSignatureScriptSignature extends Factory[MultiSignatureScriptSignatu
     val sigsWithPushOps = sigsPushOpsPairs.flatten
     //OP_0 is for the dummy input required by OP_CHECKMULTISIG
     val asm = OP_0 +: sigsWithPushOps
-    fromAsm(asm)
+    MultiSignatureScriptSignature.fromAsm(asm)
   }
 
   def fromAsm(asm: Seq[ScriptToken]): MultiSignatureScriptSignature = {
