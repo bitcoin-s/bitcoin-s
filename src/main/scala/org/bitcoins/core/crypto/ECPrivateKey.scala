@@ -57,7 +57,7 @@ sealed trait ECPrivateKey extends BaseECKey {
     * https://en.bitcoin.it/wiki/Wallet_import_format
     * @return
     */
-  def toWIF(network: NetworkParameters, compressed: Boolean = true): String = {
+  def toWIF(network: NetworkParameters): String = {
     val networkByte = network.privateKey
     val fullBytes = networkByte +: bytes
     val hash = CryptoUtil.doubleSHA256(fullBytes)
