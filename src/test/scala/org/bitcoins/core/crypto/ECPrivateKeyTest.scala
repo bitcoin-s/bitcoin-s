@@ -38,17 +38,15 @@ class ECPrivateKeyTest extends FlatSpec with MustMatchers with BitcoinSLogger {
   }
 
   it must "create a private key from the dumped base58 in bitcoin-cli" in {
-    val privateKeyBase58 = CryptoTestUtil.privateKeyBase58
-    val bitcoinjDumpedPrivateKey = new org.bitcoinj.core.DumpedPrivateKey(BitcoinJTestUtil.params,privateKeyBase58)
+    val bitcoinjDumpedPrivateKey = CryptoTestUtil.bitcoinjDumpedPrivateKey
     val bitcoinjPrivateKey = bitcoinjDumpedPrivateKey.getKey
-    val privateKey = ECPrivateKey.fromWIFToPrivateKey(privateKeyBase58)
+    val privateKey = ECPrivateKey.fromWIFToPrivateKey(CryptoTestUtil.privateKeyBase58)
     privateKey.hex must be (bitcoinjPrivateKey.getPrivateKeyAsHex)
   }
 
   it must "create a private key from a sequence of bytes that has the same byte representation of bitcoinj ECKeys" in {
-    val bytes = CryptoTestUtil.bitcoinjPrivateKey.getPrivKeyBytes.toList
-    val bitcoinJKey = org.bitcoinj.core.ECKey.fromPrivate(bytes.toArray)
-    val privateKey : ECPrivateKey = ECPrivateKey(bytes)
+    val bitcoinJKey = CryptoTestUtil.bitcoinjPrivateKey
+    val privateKey : ECPrivateKey = ECPrivateKey(bitcoinJKey.getPrivKeyBytes)
     privateKey.hex must be (bitcoinJKey.getPrivateKeyAsHex)
   }
 
