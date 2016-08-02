@@ -322,7 +322,6 @@ object MultiSignatureScriptSignature extends Factory[MultiSignatureScriptSignatu
   def fromAsm(asm: Seq[ScriptToken]): MultiSignatureScriptSignature = {
     require(isMultiSignatureScriptSignature(asm), "The given asm tokens were not a multisignature script sig: " + asm)
     val hex = asm.map(_.hex).mkString
-    logger.info("Asm created by multisignature scriptSig companion object " + asm)
     MultiSignatureScriptSignatureImpl(hex)
   }
 
@@ -333,19 +332,17 @@ object MultiSignatureScriptSignature extends Factory[MultiSignatureScriptSignatu
     * @param asm the asm to check if it falls in the multisignature script sig format
     * @return boolean indicating if the scriptsignature is a multisignature script signature
     */
-  def isMultiSignatureScriptSignature(asm : Seq[ScriptToken]) : Boolean = {
-    asm.isEmpty match {
-      case true => false
-      //case false if (asm.size == 1) => false
-      case false =>
-        val firstTokenIsScriptNumberOperation = asm.head.isInstanceOf[ScriptNumberOperation]
-        val restOfScriptIsPushOpsOrScriptConstants = asm.tail.map(
-          token => token.isInstanceOf[ScriptConstant] || StackPushOperationFactory.isPushOperation(token)
-        ).exists(_ == false)
-        logger.debug("First number is script op: " + firstTokenIsScriptNumberOperation)
-        logger.debug("tail is true: " +restOfScriptIsPushOpsOrScriptConstants )
-        firstTokenIsScriptNumberOperation && !restOfScriptIsPushOpsOrScriptConstants
-    }
+  def isMultiSignatureScriptSignature(asm : Seq[ScriptToken]) : Boolean = asm.isEmpty match {
+    case true => false
+    //case false if (asm.size == 1) => false
+    case false =>
+      val firstTokenIsScriptNumberOperation = asm.head.isInstanceOf[ScriptNumberOperation]
+      val restOfScriptIsPushOpsOrScriptConstants = asm.tail.map(
+        token => token.isInstanceOf[ScriptConstant] || StackPushOperationFactory.isPushOperation(token)
+      ).exists(_ == false)
+      logger.debug("First number is script op: " + firstTokenIsScriptNumberOperation)
+      logger.debug("tail is true: " +restOfScriptIsPushOpsOrScriptConstants )
+      firstTokenIsScriptNumberOperation && !restOfScriptIsPushOpsOrScriptConstants
   }
 }
 
@@ -443,8 +440,6 @@ object ScriptSignature extends Factory[ScriptSignature] with BitcoinSLogger {
     case _  if (tokens.size > 1 && P2SHScriptSignature.isRedeemScript(tokens.last)) =>
       P2SHScriptSignature.fromAsm(tokens)
     case _ if (MultiSignatureScriptSignature.isMultiSignatureScriptSignature(tokens)) =>
-      //the head of the asm does not neccessarily have to be an OP_0 if the NULLDUMMY script
-      //flag is not set. It can be any script number operation
       MultiSignatureScriptSignature.fromAsm(tokens)
     case List(w : BytesToPushOntoStack, x : ScriptConstant, y : BytesToPushOntoStack,
     z : ScriptConstant) => P2PKHScriptSignature.fromAsm(tokens)

@@ -25,7 +25,7 @@ trait CryptoGenerators {
   /**
     * Generates a sequence of private keys, and determines an amount of 'required' private keys
     * that a transaction needs to be signed with
-    * @param num
+    * @param num the maximum number of keys to generate
     * @return
     */
   def privateKeySeqWithRequiredSigs(num: Int): Gen[(Seq[ECPrivateKey], Int)] = {

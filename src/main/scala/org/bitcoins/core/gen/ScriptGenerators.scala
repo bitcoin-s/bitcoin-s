@@ -209,7 +209,7 @@ trait ScriptGenerators extends BitcoinSLogger {
 
 
   /**
-    * This function chooses a random signed [[ScriptSignature]]
+    * This function chooses a random signed [[ScriptSignature]] that is NOT a [[P2SHScriptSignature]]
     * @return the signed [[ScriptSignature]], the [[ScriptPubKey]] it is spending,
     *         and the sequence of[[ECPrivateKey]] used to sign it
     */
