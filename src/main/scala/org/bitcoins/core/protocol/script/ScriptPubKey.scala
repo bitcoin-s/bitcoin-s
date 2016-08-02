@@ -37,22 +37,34 @@ trait P2PKHScriptPubKey extends ScriptPubKey
 
 
 object P2PKHScriptPubKey extends Factory[P2PKHScriptPubKey] {
+
+  private case class P2PKHScriptPubKeyImpl(hex : String) extends P2PKHScriptPubKey
+
   override def fromBytes(bytes : Seq[Byte]): P2PKHScriptPubKey = {
-    val scriptPubKey = RawScriptPubKeyParser.read(bytes)
-    matchP2PKHScriptPubKey(scriptPubKey)
+    val asm = ScriptParser.fromBytes(bytes)
+    P2PKHScriptPubKey.fromAsm(asm)
   }
 
   def apply(pubKey : ECPublicKey) = {
-    val hash = CryptoUtil.ripeMd160(pubKey.bytes)
-    val bytesToPushOntoStack = BytesToPushOntoStack(hash.bytes.size)
-    val asm = Seq(OP_DUP, OP_HASH160, bytesToPushOntoStack,  ScriptConstant(hash.bytes), OP_EQUALVERIFY, OP_CHECKSIG)
-    val scriptPubKey = ScriptPubKey.fromAsm(asm)
-    matchP2PKHScriptPubKey(scriptPubKey)
+    val hash = CryptoUtil.sha256Hash160(pubKey.bytes)
+    val pushOps = BitcoinScriptUtil.calculatePushOp(hash.bytes)
+    val asm = Seq(OP_DUP, OP_HASH160) ++ pushOps ++ Seq(ScriptConstant(hash.bytes), OP_EQUALVERIFY, OP_CHECKSIG)
+    P2PKHScriptPubKey.fromAsm(asm)
   }
 
-  private def matchP2PKHScriptPubKey(scriptPubKey: ScriptPubKey) = scriptPubKey match {
-    case p2pkhScriptPubKey : P2PKHScriptPubKey => p2pkhScriptPubKey
-    case x : ScriptPubKey => throw new IllegalArgumentException("Expected a p2pkh scriptPubKey, got: " + x)
+  def fromAsm(asm: Seq[ScriptToken]): P2PKHScriptPubKey = {
+    require(isP2PKHScriptPubKey(asm), "Given asm was not a p2pkh scriptPubKey, got: " + asm)
+    val hex = asm.map(_.hex).mkString
+    P2PKHScriptPubKeyImpl(hex)
+  }
+  /**
+    * Checks if the given asm matches the pattern for [[P2PKHScriptPubKey]]
+    * @param asm
+    * @return
+    */
+  def isP2PKHScriptPubKey(asm: Seq[ScriptToken]): Boolean = asm match {
+    case List(OP_DUP, OP_HASH160, x : BytesToPushOntoStack, y : ScriptConstant, OP_EQUALVERIFY, OP_CHECKSIG) => true
+    case _ => false
   }
 }
 /**
@@ -117,10 +129,13 @@ trait MultiSignatureScriptPubKey extends ScriptPubKey {
   }
 }
 
-object MultiSignatureScriptPubKey extends Factory[MultiSignatureScriptPubKey] with BitcoinSLogger {
+object MultiSignatureScriptPubKey extends Factory[MultiSignatureScriptPubKey] {
+
+  private case class MultiSignatureScriptPubKeyImpl(hex : String) extends MultiSignatureScriptPubKey
+
   override def fromBytes(bytes : Seq[Byte]): MultiSignatureScriptPubKey = {
-    val scriptPubKey = RawScriptPubKeyParser.read(bytes)
-    matchMultiSigScriptPubKey(scriptPubKey)
+    val asm = ScriptParser.fromBytes(bytes)
+    MultiSignatureScriptPubKey.fromAsm(asm)
   }
 
   def apply(requiredSigs : Int, pubKeys : Seq[ECPublicKey]): MultiSignatureScriptPubKey = {
@@ -133,7 +148,8 @@ object MultiSignatureScriptPubKey extends Factory[MultiSignatureScriptPubKey] wi
       case Some(scriptNumOp) => Seq(scriptNumOp)
       case None =>
         val scriptNum = ScriptNumber(requiredSigs)
-        Seq(BytesToPushOntoStack(scriptNum.bytes.length), scriptNum)
+        val pushOps = BitcoinScriptUtil.calculatePushOp(scriptNum.bytes)
+        pushOps ++ Seq(scriptNum)
     }
     val possible = ScriptNumberOperation.fromNumber(pubKeys.length) match {
       case Some(scriptNumOp) => Seq(scriptNumOp)
@@ -147,128 +163,14 @@ object MultiSignatureScriptPubKey extends Factory[MultiSignatureScriptPubKey] wi
       pushOps = BitcoinScriptUtil.calculatePushOp(pubKey.bytes)
       constant = ScriptConstant(pubKey.bytes)
     } yield pushOps ++ Seq(constant)
-
-
     val asm: Seq[ScriptToken] = required ++ pubKeysWithPushOps.flatten ++ possible ++ Seq(OP_CHECKMULTISIG)
-    logger.info("Asm created by multisignature companion object: " + asm)
-    val scriptPubKey = ScriptPubKey.fromAsm(asm)
-    matchMultiSigScriptPubKey(scriptPubKey)
+    MultiSignatureScriptPubKey.fromAsm(asm)
   }
 
-  private def matchMultiSigScriptPubKey(scriptPubKey: ScriptPubKey): MultiSignatureScriptPubKey = scriptPubKey match {
-    case multiSigScriptPubKey : MultiSignatureScriptPubKey => multiSigScriptPubKey
-    case x : ScriptPubKey => throw new IllegalArgumentException("Exepected multisignature scriptPubKey, got: " + x)
-  }
-}
-
-/**
- * Represents a pay-to-scripthash public key
- * https://bitcoin.org/en/developer-guide#pay-to-script-hash-p2sh
- * Format: OP_HASH160 <Hash160(redeemScript)> OP_EQUAL
- */
-trait P2SHScriptPubKey extends ScriptPubKey {
-  /**
-    * The hash of the script for which this scriptPubKey is being created from
-    * @return
-    */
-  def scriptHash : Sha256Hash160Digest = Sha256Hash160Digest(asm(asm.length - 2).bytes)
-}
-
-object P2SHScriptPubKey extends Factory[P2SHScriptPubKey] with BitcoinSLogger {
-  override def fromBytes(bytes : Seq[Byte]): P2SHScriptPubKey = {
-    val scriptPubKey = RawScriptPubKeyParser.read(bytes)
-    matchP2SHScriptPubKey(scriptPubKey)
-  }
-
-  def apply(scriptPubKey: ScriptPubKey) : P2SHScriptPubKey = {
-    val hash = CryptoUtil.sha256Hash160(scriptPubKey.bytes)
-    val pushOps = BitcoinScriptUtil.calculatePushOp(hash.bytes)
-    val asm = Seq(OP_HASH160) ++ pushOps ++ Seq(ScriptConstant(hash.bytes), OP_EQUAL)
-    val p2shScriptPubKey = ScriptPubKey.fromAsm(asm)
-    matchP2SHScriptPubKey(p2shScriptPubKey)
-  }
-
-
-
-  private def matchP2SHScriptPubKey(scriptPubKey : ScriptPubKey): P2SHScriptPubKey = scriptPubKey match {
-    case p2shScriptPubKey : P2SHScriptPubKey => p2shScriptPubKey
-    case scriptPubKey : ScriptPubKey =>
-      throw new IllegalArgumentException("Exepected p2sh scriptPubKey, got: " + scriptPubKey)
-  }
-}
-
-/**
- * Represents a pay to public key script public key
- * https://bitcoin.org/en/developer-guide#pubkey
- * Format: <pubkey> OP_CHECKSIG
- */
-trait P2PKScriptPubKey extends ScriptPubKey {
-  def publicKey = ECPublicKey(BitcoinScriptUtil.filterPushOps(asm).head.bytes)
-}
-
-object P2PKScriptPubKey extends Factory[P2PKScriptPubKey] {
-  override def fromBytes(bytes : Seq[Byte]) = {
-    val scriptPubKey = RawScriptPubKeyParser.read(bytes)
-    matchP2PKScriptPubKey(scriptPubKey)
-  }
-
-  def apply(pubKey : ECPublicKey): P2PKScriptPubKey = {
-    val pushOps = BitcoinScriptUtil.calculatePushOp(pubKey.bytes)
-    val asm = pushOps ++ Seq(ScriptConstant(pubKey.bytes), OP_CHECKSIG)
-    val scriptPubKey = ScriptPubKey.fromAsm(asm)
-    matchP2PKScriptPubKey(scriptPubKey)
-  }
-
-  private def matchP2PKScriptPubKey(scriptPubKey: ScriptPubKey) = scriptPubKey match {
-    case p2pkScriptPubKey : P2PKScriptPubKey => p2pkScriptPubKey
-    case x : ScriptPubKey => throw new IllegalArgumentException("Must match a p2pk scriptPubkey inside of this function, got: " + x)
-  }
-}
-
-trait NonStandardScriptPubKey extends ScriptPubKey
-
-/**
- * Represents the empty script pub key
- */
-case object EmptyScriptPubKey extends ScriptPubKey {
-  def hex = ""
-}
-
-/**
-  * Factory companion object used to create ScriptPubKey objects
-  */
-object ScriptPubKey extends Factory[ScriptPubKey] with BitcoinSLogger {
-  def empty : ScriptPubKey = fromAsm(List())
-
-  private case class P2PKScriptPubKeyImpl(hex : String) extends P2PKScriptPubKey
-
-  private case class NonStandardScriptPubKeyImpl(hex : String) extends NonStandardScriptPubKey
-
-  private case class P2PKHScriptPubKeyImpl(hex : String) extends P2PKHScriptPubKey
-
-  private case class MultiSignatureScriptPubKeyImpl(hex : String) extends MultiSignatureScriptPubKey
-
-  private case class P2SHScriptPubKeyImpl(hex : String) extends P2SHScriptPubKey
-
-  /**
-    * Creates a scriptPubKey from its asm representation
-    *
-    * @param asm
-    * @return
-    */
-  def fromAsm(asm : Seq[ScriptToken]) : ScriptPubKey = {
-    val scriptPubKeyHex = BitcoinScriptUtil.asmToHex(asm)
-    asm match {
-      case Seq() => EmptyScriptPubKey
-      case List(OP_DUP, OP_HASH160, x : BytesToPushOntoStack, y : ScriptConstant, OP_EQUALVERIFY, OP_CHECKSIG) =>
-        P2PKHScriptPubKeyImpl(scriptPubKeyHex)
-      case List(OP_HASH160, x : BytesToPushOntoStack, y : ScriptConstant, OP_EQUAL) =>
-        P2SHScriptPubKeyImpl(scriptPubKeyHex)
-      case List(b : BytesToPushOntoStack, x : ScriptConstant, OP_CHECKSIG) => P2PKScriptPubKeyImpl(scriptPubKeyHex)
-      case _ if (isMultiSignatureScriptPubKey(asm)) =>
-        MultiSignatureScriptPubKeyImpl(scriptPubKeyHex)
-      case _ => NonStandardScriptPubKeyImpl(scriptPubKeyHex)
-    }
+  def fromAsm(asm: Seq[ScriptToken]): MultiSignatureScriptPubKey = {
+    require(isMultiSignatureScriptPubKey(asm), "Given asm was not a MultSignatureScriptPubKey, got: " + asm)
+    val hex = asm.map(_.hex).mkString
+    MultiSignatureScriptPubKeyImpl(hex)
   }
 
   /**
@@ -277,8 +179,7 @@ object ScriptPubKey extends Factory[ScriptPubKey] with BitcoinSLogger {
     * @param asm the tokens to check
     * @return a boolean indicating if the given tokens are a multisignature scriptPubKey
     */
-  private def isMultiSignatureScriptPubKey(asm : Seq[ScriptToken]) : Boolean = {
-
+  def isMultiSignatureScriptPubKey(asm : Seq[ScriptToken]) : Boolean = {
     val isNotEmpty = asm.size > 0
     val containsMultiSigOp = asm.contains(OP_CHECKMULTISIG) || asm.contains(OP_CHECKMULTISIGVERIFY)
     //we need either the first or second asm operation to indicate how many signatures are required
@@ -325,6 +226,143 @@ object ScriptPubKey extends Factory[ScriptPubKey] with BitcoinSLogger {
         ScriptNumber(constant.bytes) <= ScriptNumber(ScriptSettings.maxPublicKeysPerMultiSig)
     case _ : ScriptToken => false
   }
+}
+
+/**
+ * Represents a pay-to-scripthash public key
+ * https://bitcoin.org/en/developer-guide#pay-to-script-hash-p2sh
+ * Format: OP_HASH160 <Hash160(redeemScript)> OP_EQUAL
+ */
+trait P2SHScriptPubKey extends ScriptPubKey {
+  /**
+    * The hash of the script for which this scriptPubKey is being created from
+    * @return
+    */
+  def scriptHash : Sha256Hash160Digest = Sha256Hash160Digest(asm(asm.length - 2).bytes)
+}
+
+object P2SHScriptPubKey extends Factory[P2SHScriptPubKey] with BitcoinSLogger {
+
+  private case class P2SHScriptPubKeyImpl(hex : String) extends P2SHScriptPubKey
+
+  override def fromBytes(bytes : Seq[Byte]): P2SHScriptPubKey = {
+    val asm = ScriptParser.fromBytes(bytes)
+    P2SHScriptPubKey.fromAsm(asm)
+  }
+
+  def apply(scriptPubKey: ScriptPubKey) : P2SHScriptPubKey = {
+    val hash = CryptoUtil.sha256Hash160(scriptPubKey.bytes)
+    val pushOps = BitcoinScriptUtil.calculatePushOp(hash.bytes)
+    val asm = Seq(OP_HASH160) ++ pushOps ++ Seq(ScriptConstant(hash.bytes), OP_EQUAL)
+    P2SHScriptPubKey.fromAsm(asm)
+  }
+
+  /**
+    * Checks if the given asm matches the pattern for [[P2SHScriptPubKey]]
+    * @param asm
+    * @return
+    */
+  def isP2SHScriptPubKey(asm: Seq[ScriptToken]): Boolean = asm match {
+    case List(OP_HASH160, x : BytesToPushOntoStack, y : ScriptConstant, OP_EQUAL) => true
+    case _ => false
+  }
+
+  def fromAsm(asm: Seq[ScriptToken]): P2SHScriptPubKey = {
+    require(isP2SHScriptPubKey(asm), "Given asm was not a p2sh scriptPubkey, got: " + asm)
+    val hex = asm.map(_.hex).mkString
+    P2SHScriptPubKeyImpl(hex)
+  }
+}
+
+/**
+ * Represents a pay to public key script public key
+ * https://bitcoin.org/en/developer-guide#pubkey
+ * Format: <pubkey> OP_CHECKSIG
+ */
+trait P2PKScriptPubKey extends ScriptPubKey {
+  def publicKey = ECPublicKey(BitcoinScriptUtil.filterPushOps(asm).head.bytes)
+}
+
+object P2PKScriptPubKey extends Factory[P2PKScriptPubKey] {
+
+  private case class P2PKScriptPubKeyImpl(hex : String) extends P2PKScriptPubKey
+
+  override def fromBytes(bytes : Seq[Byte]) = {
+    val asm = ScriptParser.fromBytes(bytes)
+    P2PKScriptPubKey.fromAsm(asm)
+  }
+
+  def apply(pubKey : ECPublicKey): P2PKScriptPubKey = {
+    val pushOps = BitcoinScriptUtil.calculatePushOp(pubKey.bytes)
+    val asm = pushOps ++ Seq(ScriptConstant(pubKey.bytes), OP_CHECKSIG)
+    P2PKScriptPubKey.fromAsm(asm)
+  }
+
+  def fromAsm(asm: Seq[ScriptToken]): P2PKScriptPubKey = {
+    require(isP2PKScriptPubKey(asm), "Given asm was not a p2pk scriptPubKey, got: " + asm)
+    val hex = asm.map(_.hex).mkString
+    P2PKScriptPubKeyImpl(hex)
+  }
+
+  /**
+    * Sees if the given asm matches the [[P2PKHScriptPubKey]] pattern
+    * @param asm
+    * @return
+    */
+  def isP2PKScriptPubKey(asm: Seq[ScriptToken]): Boolean = asm match {
+    case List(b : BytesToPushOntoStack, x : ScriptConstant, OP_CHECKSIG) => true
+    case _ => false
+  }
+
+}
+
+trait NonStandardScriptPubKey extends ScriptPubKey
+
+object NonStandardScriptPubKey extends Factory[NonStandardScriptPubKey] {
+  private case class NonStandardScriptPubKeyImpl(hex : String) extends NonStandardScriptPubKey
+
+  override def fromBytes(bytes: Seq[Byte]): NonStandardScriptPubKey = {
+    val asm = ScriptParser.fromBytes(bytes)
+    NonStandardScriptPubKey.fromAsm(asm)
+  }
+
+  def fromAsm(asm: Seq[ScriptToken]): NonStandardScriptPubKey = {
+    val hex = asm.map(_.hex).mkString
+    NonStandardScriptPubKeyImpl(hex)
+  }
+}
+
+/**
+ * Represents the empty script pub key
+ */
+case object EmptyScriptPubKey extends ScriptPubKey {
+  def hex = ""
+}
+
+/**
+  * Factory companion object used to create ScriptPubKey objects
+  */
+object ScriptPubKey extends Factory[ScriptPubKey] with BitcoinSLogger {
+  def empty : ScriptPubKey = fromAsm(List())
+
+  /**
+    * Creates a scriptPubKey from its asm representation
+    *
+    * @param asm
+    * @return
+    */
+  def fromAsm(asm : Seq[ScriptToken]) : ScriptPubKey = asm match {
+    case Seq() => EmptyScriptPubKey
+    case List(OP_DUP, OP_HASH160, x : BytesToPushOntoStack, y : ScriptConstant, OP_EQUALVERIFY, OP_CHECKSIG) =>
+      P2PKHScriptPubKey.fromAsm(asm)
+    case List(OP_HASH160, x : BytesToPushOntoStack, y : ScriptConstant, OP_EQUAL) =>
+      P2SHScriptPubKey.fromAsm(asm)
+    case List(b : BytesToPushOntoStack, x : ScriptConstant, OP_CHECKSIG) => P2PKScriptPubKey.fromAsm(asm)
+    case _ if (MultiSignatureScriptPubKey.isMultiSignatureScriptPubKey(asm)) =>
+      MultiSignatureScriptPubKey.fromAsm(asm)
+    case _ => NonStandardScriptPubKey.fromAsm(asm)
+  }
+
   def fromBytes(bytes : Seq[Byte]) : ScriptPubKey = RawScriptPubKeyParser.read(bytes)
 
 }

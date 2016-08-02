@@ -4,7 +4,7 @@ package org.bitcoins.core.util
  * Created by chris on 2/26/16.
  * Trait to implement ubiquitous factory functions across our codebase
  */
-trait Factory[T] {
+trait Factory[T] extends BitcoinSLogger {
 
   /**
    * Creates a T out of a hex string

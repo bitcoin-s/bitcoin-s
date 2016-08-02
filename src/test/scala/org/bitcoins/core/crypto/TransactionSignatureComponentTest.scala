@@ -8,8 +8,8 @@ import org.scalatest.{FlatSpec, MustMatchers}
 /**
  * Created by chris on 4/7/16.
  */
-class TransactionSignatureComponentFactoryTest extends FlatSpec with MustMatchers {
-  val component = TransactionSignatureComponentFactory.factory(TestUtil.transaction, UInt32.zero, TestUtil.scriptPubKey, Policy.standardScriptVerifyFlags)
+class TransactionSignatureComponentTest extends FlatSpec with MustMatchers {
+  val component = TransactionSignatureComponent(TestUtil.transaction, UInt32.zero, TestUtil.scriptPubKey, Policy.standardScriptVerifyFlags)
 
   "TransactionSignatureComponentFactory" must "create a tx signature component" in {
     component.transaction must be (TestUtil.transaction)
@@ -20,7 +20,7 @@ class TransactionSignatureComponentFactoryTest extends FlatSpec with MustMatcher
   }
 
   it must "replace a scriptPubKey with a new one" in {
-    val newComponent = TransactionSignatureComponentFactory.factory(component,TestUtil.p2shScriptPubKey)
+    val newComponent = TransactionSignatureComponent(component,TestUtil.p2shScriptPubKey)
     newComponent.scriptPubKey must be (TestUtil.p2shScriptPubKey)
   }
 }

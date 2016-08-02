@@ -56,12 +56,8 @@ trait ECPublicKey extends BaseECKey with BitcoinSLogger {
       }
     }
     val result : Boolean = resultTry match {
-      case Success(bool) =>
-        logger.info("Signature verification inside of bitcoinj did not hit an exception")
-        bool
-      case Failure(_) =>
-        logger.warn("Signature verification inside of bitcoinj hit an exception")
-        false
+      case Success(bool) => bool
+      case Failure(_) => false
     }
     result
   }

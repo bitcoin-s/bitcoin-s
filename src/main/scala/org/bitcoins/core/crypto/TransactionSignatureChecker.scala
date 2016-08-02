@@ -55,9 +55,16 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
       //as the scriptPubKey instead of the one inside of ScriptProgram
       val sigsRemovedScript : Seq[ScriptToken] = txSignatureComponent.scriptSignature match {
         case s : P2SHScriptSignature =>
+          //needs to be here for removing all sigs from OP_CHECKMULTISIG
+          //https://github.com/bitcoin/bitcoin/blob/master/src/test/data/tx_valid.json#L177
+          //Finally CHECKMULTISIG removes all signatures prior to hashing the script containing those signatures.
+          //In conjunction with the SIGHASH_SINGLE bug this lets us test whether or not FindAndDelete() is actually
+          // present in scriptPubKey/redeemScript evaluation by including a signature of the digest 0x01
+          // We can compute in advance for our pubkey, embed it it in the scriptPubKey, and then also
+          // using a normal SIGHASH_ALL signature. If FindAndDelete() wasn't run, the 'bugged'
+          //signature would still be in the hashed script, and the normal signature would fail."
           logger.info("Replacing redeemScript in txSignature component")
           logger.info("Redeem script: " + s.redeemScript)
-          logger.info("Signature: " + signature)
           val sigsRemoved = removeSignaturesFromScript(s.signatures, s.redeemScript.asm)
           sigsRemoved
         case _ : P2PKHScriptSignature | _ : P2PKScriptSignature | _ : NonStandardScriptSignature

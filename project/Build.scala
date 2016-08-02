@@ -15,7 +15,7 @@ object BitcoinSCoreBuild extends Build {
     "org.slf4j" % "slf4j-api" % slf4jV /*% "provided"*/,
     "io.spray" %%  "spray-json" % "1.3.0" withSources() withJavadoc(),
     "ch.qos.logback" % "logback-classic" % logbackV,
-    "org.scalacheck" %% "scalacheck" % "1.13.0"
+    "org.scalacheck" %% "scalacheck" % "1.13.0" withSources() withJavadoc()
   )
   
   val main = Project(appName, file(".")).enablePlugins().settings(
