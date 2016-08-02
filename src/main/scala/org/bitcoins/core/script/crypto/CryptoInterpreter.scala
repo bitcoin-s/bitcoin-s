@@ -1,14 +1,14 @@
 package org.bitcoins.core.script.crypto
 
-import org.bitcoins.core.crypto._
+import org.bitcoins.core.crypto.{SignatureValidationFailureIncorrectSignatures, _}
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.script.control.{ControlOperationsInterpreter, OP_VERIFY}
 import org.bitcoins.core.script.result._
-import org.bitcoins.core.script.flag.{ScriptFlagUtil, ScriptVerifyNullDummy, ScriptVerifyDerSig}
+import org.bitcoins.core.script.flag.{ScriptFlagUtil, ScriptVerifyDerSig, ScriptVerifyNullDummy}
 import org.bitcoins.core.script._
 import org.bitcoins.core.script.constant._
-import org.bitcoins.core.util.{BitcoinScriptUtil, BitcoinSLogger, BitcoinSUtil, CryptoUtil}
+import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil, BitcoinScriptUtil, CryptoUtil}
 import org.slf4j.LoggerFactory
 
 
@@ -106,23 +106,29 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
             val removedOpCodeSeparatorsScript = removeOpCodeSeparator(executionInProgressScriptProgram)
             logger.debug("Program after removing OP_CODESEPARATOR: " + removedOpCodeSeparatorsScript)
             val result = TransactionSignatureChecker.checkSignature(executionInProgressScriptProgram.txSignatureComponent,
-              removedOpCodeSeparatorsScript, pubKey, signature,program.flags)
+              removedOpCodeSeparatorsScript, pubKey, signature, program.flags)
             logger.debug("signature verification isValid: " + result)
             result match {
               case SignatureValidationSuccess => ScriptProgram(program,
                 OP_TRUE :: restOfStack,program.script.tail)
               case SignatureValidationFailureNotStrictDerEncoding =>
+                logger.info("Signature validation failed: " + SignatureValidationFailureNotStrictDerEncoding)
                 ScriptProgram(program, ScriptErrorSigDer)
               case SignatureValidationFailureIncorrectSignatures =>
+                logger.info("Signature validation failed: " + SignatureValidationFailureIncorrectSignatures)
                 ScriptProgram(program, OP_FALSE :: restOfStack,program.script.tail)
               case SignatureValidationFailureSignatureCount =>
+                logger.info("Signature validation failed: " + SignatureValidationFailureSignatureCount)
                 ScriptProgram(program, OP_FALSE :: restOfStack,program.script.tail)
               case SignatureValidationFailurePubKeyEncoding =>
+                logger.info("Signature validation failed: " + SignatureValidationFailurePubKeyEncoding)
                 //means that a public key was not encoded correctly
                 ScriptProgram(program,ScriptErrorPubKeyType)
               case ScriptValidationFailureHighSValue =>
+                logger.info("Signature validation failed: " + ScriptValidationFailureHighSValue)
                 ScriptProgram(program,ScriptErrorSigHighS)
               case ScriptValidationFailureHashType =>
+                logger.info("Signature validation failed: " + ScriptValidationFailureHashType)
                 ScriptProgram(program,ScriptErrorSigHashType)
             }
           }
@@ -256,10 +262,9 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
               ScriptProgram(executionInProgressScriptProgram,ScriptErrorInvalidStackOperation)
             } else if (ScriptFlagUtil.requireNullDummy(program.flags) &&
               !(Seq(Some(OP_0), Some(ScriptNumber.zero)).contains(stackWithoutPubKeysAndSignatures.headOption))) {
-              logger.error("Script flag null dummy was set however the first element in the script signature was not an OP_0")
+              logger.error("Script flag null dummy was set however the first element in the script signature was not an OP_0, stackWithoutPubKeysAndSignatures: " + stackWithoutPubKeysAndSignatures)
               ScriptProgram(executionInProgressScriptProgram,ScriptErrorSigNullDummy)
             } else {
-
               //remove the last OP_CODESEPARATOR
               val removedOpCodeSeparatorsScript = removeOpCodeSeparator(executionInProgressScriptProgram)
               val isValidSignatures: TransactionSignatureCheckerResult =

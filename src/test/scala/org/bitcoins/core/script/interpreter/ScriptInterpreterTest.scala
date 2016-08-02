@@ -3,11 +3,11 @@ package org.bitcoins.core.script.interpreter
 
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.script.ScriptProgram
-import org.bitcoins.core.script.flag.{ScriptFlagFactory}
+import org.bitcoins.core.script.flag.ScriptFlagFactory
+import org.bitcoins.core.script.interpreter.testprotocol.CoreTestCaseProtocol._
 import org.bitcoins.core.script.interpreter.testprotocol.{CoreTestCase, CoreTestCaseProtocol}
 import org.bitcoins.core.util._
 import org.scalatest.{FlatSpec, MustMatchers}
-import CoreTestCaseProtocol._
 import spray.json._
 
 import scala.io.Source
@@ -24,13 +24,11 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterp
     //use this to represent a single test case from script_valid.json
     /*val lines =
         """
-          | [[
-          |    "0x48 0x3045022100e58c2307fb6569d0f25b4375f1074e48592bfc62d423bdc8f016365c980c0ae602204984523016f6320dc275cb90c6c1be80b4c9753de2e9fe19f2e5290844587da101 0x20 0x0228b426496c6a96846561a40b241ead0e03fe217d52de26cf2e707f0f181999fb 0x19 0x76a914364ddb17f9997cd91984c897eb5c0123f0a4b43f88ac",
-          |    "HASH160 0x14 0x8a24f3c75f6d401a977bc63f854cc5d7dadfa7de EQUAL",
-          |    "P2SH",
-               "OK",
-          |    "P2SH(P2PKH)"
-          |]]
+          | [ ["1",
+  "0x61616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161",
+  "P2SH,STRICTENC",
+  "OP_COUNT",
+  ">201 opcodes executed. 0x61 is NOP"]]
    """.stripMargin*/
     val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n" finally source.close()
     val json = lines.parseJson

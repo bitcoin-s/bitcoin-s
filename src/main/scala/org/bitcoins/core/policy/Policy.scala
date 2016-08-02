@@ -9,7 +9,6 @@ import org.bitcoins.core.script.flag._
  */
 trait Policy {
 
-
   /**
    * Mandatory script verification flags that all new blocks must comply with for
    * them to be valid. (but old blocks may not comply with) Currently just P2SH,
@@ -23,23 +22,13 @@ trait Policy {
   /**
    * The default script verify flags used to validate the blockchain
    * and bitcoin transactions
- *
    * @return
    */
-  def standardScriptVerifyFlags : Seq[ScriptFlag] = Seq(ScriptVerifyDerSig, ScriptVerifyStrictEnc,
+  def standardScriptVerifyFlags : Seq[ScriptFlag] = mandatoryScriptVerifyFlags ++ Seq(ScriptVerifyDerSig, ScriptVerifyStrictEnc,
     ScriptVerifyMinimalData, ScriptVerifyNullDummy, ScriptVerifyDiscourageUpgradableNOPs,
     ScriptVerifyCleanStack, ScriptVerifyCheckLocktimeVerify, ScriptVerifyCheckSequenceVerify,
     ScriptVerifyLowS)
 
-
-  /**
-   * Returns the non mandatory script verify flags
- *
-   * @return
-   */
-  def standardNotMandatoryScriptVerifyFlags : Seq[ScriptFlag] = {
-    (standardScriptVerifyFlags.diff(mandatoryScriptVerifyFlags))
-  }
 }
 
 object Policy extends Policy

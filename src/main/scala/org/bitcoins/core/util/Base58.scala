@@ -30,7 +30,7 @@ trait Base58 extends BitcoinSLogger {
       val splitSeqs = decoded.splitAt(decoded.length - 4)
       val data : Seq[Byte] = splitSeqs._1
       val checksum : Seq[Byte] = splitSeqs._2
-      val actualChecksum : Seq[Byte] = CryptoUtil.doubleSHA256(data).bytes.slice(0, 4)
+      val actualChecksum : Seq[Byte] = CryptoUtil.doubleSHA256(data).bytes.take(4)
       if (checksum == actualChecksum) Success(data)
       else Failure(new IllegalArgumentException("checksums don't validate"))
     }
@@ -69,6 +69,30 @@ trait Base58 extends BitcoinSLogger {
   }
 
   def encode(byte : Byte) : String = encode(Seq(byte))
+
+  /**
+    * Encodes a pubkey hash to a base 58 address on the corresponding network
+    * @param hash the result of Sha256(RipeMD160(pubkey))
+    * @param network the network on which this address is being generated for
+    * @return
+    */
+  def encodePubKeyHashToAddress(hash: Sha256Hash160Digest, network: NetworkParameters): Address = {
+    val versionByte: Byte = network.p2pkhNetworkByte
+    val bytes = Seq(versionByte) ++ hash.bytes
+    val checksum = CryptoUtil.doubleSHA256(bytes).bytes.take(4)
+    Address(encode(bytes ++ checksum))
+  }
+
+  /**
+    * Determines the version byte of an address given the address type and network
+    * @param addressType "pubkey" or "script"
+    * @param isTestnet Boolean
+    * @return
+    */
+  private def findVersionByte(addressType : String, isTestnet : Boolean) : Byte = isTestnet match {
+    case true => if (addressType == "pubkey") TestNet3.p2pkhNetworkByte else TestNet3.p2shNetworkByte
+    case false => if (addressType == "pubkey") MainNet.p2pkhNetworkByte else MainNet.p2shNetworkByte
+  }
 
   /**
     * Encodes a private key into Wallet Import Format (WIF)
@@ -116,8 +140,8 @@ trait Base58 extends BitcoinSLogger {
     * @return
     */
   def isValid(base58 : String) : Boolean = validityChecks(base58) match {
-      case Success(bool) => bool
-      case Failure(exception) => false
+    case Success(bool) => bool
+    case Failure(exception) => false
   }
 
   /**

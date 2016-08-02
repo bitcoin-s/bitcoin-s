@@ -46,3 +46,27 @@ trait TransactionSignatureComponent {
    */
   def flags : Seq[ScriptFlag]
 }
+
+object TransactionSignatureComponent {
+
+  private sealed case class TransactionSignatureComponentImpl(transaction : Transaction, inputIndex : UInt32,
+                                                              scriptPubKey : ScriptPubKey, flags : Seq[ScriptFlag]) extends TransactionSignatureComponent
+
+  def apply(transaction : Transaction, inputIndex : UInt32, scriptPubKey : ScriptPubKey,
+            flags : Seq[ScriptFlag]) : TransactionSignatureComponent = {
+    TransactionSignatureComponentImpl(transaction,inputIndex,scriptPubKey, flags)
+  }
+
+  /**
+    * This factory method is used for changing the scriptPubKey inside of a txSignatureComponent
+    *
+    * @param oldTxSignatureComponent
+    * @param scriptPubKey
+    * @return
+    */
+  def apply(oldTxSignatureComponent : TransactionSignatureComponent, scriptPubKey : ScriptPubKey) : TransactionSignatureComponent = {
+    TransactionSignatureComponentImpl(oldTxSignatureComponent.transaction,
+      oldTxSignatureComponent.inputIndex,scriptPubKey, oldTxSignatureComponent.flags)
+  }
+
+}
