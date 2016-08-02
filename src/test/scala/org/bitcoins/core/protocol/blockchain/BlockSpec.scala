@@ -8,9 +8,9 @@ import org.scalacheck.{Prop, Properties}
   * Created by tom on 7/6/16.
   */
 class BlockSpec extends Properties("BlockSpec") with BitcoinSLogger {
+
   property("Serialization symmetry") =
   Prop.forAll(BlockchainElementsGenerator.block) { block =>
-
     Block(block.hex) == block
   }
 }
