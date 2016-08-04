@@ -21,4 +21,6 @@ class NetworkParametersTest extends FlatSpec with MustMatchers {
   it must "create the correct magic network bytes for regtest" in {
     BitcoinSUtil.encodeHex(RegTest.magicBytes) must be ("fabfb5da")
   }
+
+  it must ""
 }

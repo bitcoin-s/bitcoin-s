@@ -1,7 +1,7 @@
 package org.bitcoins.core.crypto
 
 import org.bitcoins.core.currency.CurrencyUnits
-import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.serializers.RawBitcoinSerializerHelper
 import org.bitcoins.core.serializers.transaction.RawTransactionOutputParser
 import org.bitcoins.core.protocol.script._
@@ -74,22 +74,21 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
     val updatedInputs = for {
       (input,index) <- inputSigsRemoved.zipWithIndex
     } yield {
-        if (UInt32(index) == inputIndex) inputWithConnectedScript
+        if (UInt32(index) == inputIndex) {
+          inputWithConnectedScript
+        }
         else input
       }
 
     val txWithInputSigsRemoved = Transaction(spendingTransaction,UpdateTransactionInputs(updatedInputs))
-
-    //just need to add the hash type and hash the tx
-    val sigHashBytes : List[Byte] = List(0x00.toByte, 0x00.toByte, 0x00.toByte, hashType.byte).reverse
-
+    val sigHashBytes : List[Byte] = hashType.num.bytes.reverse.toList
     //check the hash type
     hashType match {
-      case SIGHASH_NONE =>
+      case _ : SIGHASH_NONE =>
         val sigHashNoneTx : Transaction = sigHashNone(txWithInputSigsRemoved,inputIndex)
         sigHashNoneTx.bytes ++ sigHashBytes
 
-      case SIGHASH_SINGLE =>
+      case _ : SIGHASH_SINGLE =>
         if (inputIndex >= UInt32(spendingTransaction.outputs.size)) {
           // comment copied from bitcoinj
           // The input index is beyond the number of outputs, it's a buggy signature made by a broken
@@ -106,25 +105,25 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
           sigHashSingleTx.bytes ++ sigHashBytes
         }
 
-      case hash : SIGHASH_ALL =>
+      case _ : SIGHASH_ALL =>
         val sigHashAllTx : Transaction = sigHashAll(txWithInputSigsRemoved,inputIndex)
         sigHashAllTx.bytes ++ sigHashBytes
 
-      case SIGHASH_ANYONECANPAY =>
+      case _ : SIGHASH_ANYONECANPAY =>
         val txWithInputsRemoved = sigHashAnyoneCanPay(txWithInputSigsRemoved,inputWithConnectedScript)
         txWithInputsRemoved.bytes ++ sigHashBytes
 
-      case SIGHASH_ALL_ANYONECANPAY =>
+      case _ : SIGHASH_ALL_ANYONECANPAY =>
         val sigHashAllTx = sigHashAll(txWithInputSigsRemoved,inputIndex)
         val sigHashAllAnyoneCanPayTx = sigHashAnyoneCanPay(sigHashAllTx,inputWithConnectedScript)
         sigHashAllAnyoneCanPayTx.bytes ++ sigHashBytes
 
-      case SIGHASH_NONE_ANYONECANPAY =>
+      case _ : SIGHASH_NONE_ANYONECANPAY =>
         val sigHashNoneTx = sigHashNone(txWithInputSigsRemoved,inputIndex)
         val sigHashNoneAnyoneCanPay = sigHashAnyoneCanPay(sigHashNoneTx,inputWithConnectedScript)
         sigHashNoneAnyoneCanPay.bytes ++ sigHashBytes
 
-      case SIGHASH_SINGLE_ANYONECANPAY =>
+      case _ : SIGHASH_SINGLE_ANYONECANPAY =>
         val sigHashSingleTx = sigHashSingle(txWithInputSigsRemoved,inputIndex)
         val sigHashSingleAnyoneCanPay = sigHashAnyoneCanPay(sigHashSingleTx,inputWithConnectedScript)
         sigHashSingleAnyoneCanPay.bytes  ++ sigHashBytes
@@ -148,13 +147,13 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
     if (inputIndex >= UInt32(spendingTransaction.inputs.size)) {
       logger.warn("Our inputIndex is out of the range of the inputs in the spending transaction")
       errorHash
-    } else if(hashType == SIGHASH_SINGLE && inputIndex >= UInt32(spendingTransaction.outputs.size)) {
+    } else if(HashTypeOperations.isSIGHASH_SINGLE(hashType.num) && inputIndex >= UInt32(spendingTransaction.outputs.size)) {
       logger.warn("When we have a SIGHASH_SINGLE we cannot have more inputs than outputs")
       errorHash
     } else {
       val serializedTxForSignature = serializeForSignature(spendingTransaction,inputIndex,script,hashType)
       logger.debug("Serialized tx for signature: " + BitcoinSUtil.encodeHex(serializedTxForSignature))
-      logger.debug("HashType: " + hashType)
+      logger.debug("HashType: " + hashType.num)
       CryptoUtil.doubleSHA256(serializedTxForSignature)
     }
   }

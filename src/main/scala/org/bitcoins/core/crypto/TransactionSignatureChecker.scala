@@ -1,6 +1,7 @@
 package org.bitcoins.core.crypto
 
 import org.bitcoins.core.config.TestNet3
+import org.bitcoins.core.number.Int32
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionInput}
 import org.bitcoins.core.script.ScriptProgram
@@ -23,6 +24,7 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
     * Checks the signature of a scriptSig in the spending transaction against the
     * given scriptPubKey & explicitly given public key
     * This is useful for instances of non standard scriptSigs
+ *
     * @param txSignatureComponent the relevant transaction information for signature checking
     * @param script the current script state inside the interpreter - this is needed in the case of OP_CODESEPARATORS
     * @param pubKey the public key the signature is being checked against
@@ -40,8 +42,9 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
     } else if (ScriptFlagUtil.requireLowSValue(flags) && !DERSignatureUtil.isLowDerSignature(signature)) {
       logger.error("Signature did not have a low s value")
       ScriptValidationFailureHighSValue
-    } else if (ScriptFlagUtil.requireStrictEncoding(flags) && signature.bytes.size > 0 &&
-      !HashTypeFactory.hashTypes.find(_.byte == signature.bytes.last).isDefined) {
+    } else if (ScriptFlagUtil.requireStrictEncoding(flags) && signature.bytes.nonEmpty &&
+      !HashTypeOperations.hashTypes.contains(HashTypeOperations.fromNumber(Int32(signature.bytes.last)))) {
+      logger.error("signature: " + signature.bytes)
       logger.error("Hash type was not defined on the signature")
       ScriptValidationFailureHashType
     } else if (!pubKeyEncodedCorrectly) {
@@ -76,7 +79,7 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
           sigsRemoved
       }
       val hashTypeByte = if (signature.bytes.nonEmpty) signature.bytes.last else 0x00.toByte
-      val hashType = HashTypeFactory.fromByte(hashTypeByte)
+      val hashType = HashTypeOperations.fromBytes(Seq(0.toByte, 0.toByte, 0.toByte, hashTypeByte))
       val hashForSignature = TransactionSignatureSerializer.hashForSignature(txSignatureComponent.transaction,
         txSignatureComponent.inputIndex,
         sigsRemovedScript, hashType)
@@ -90,6 +93,7 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
    * This is a helper function to check digital signatures against public keys
    * if the signature does not match this public key, check it against the next
    * public key in the sequence
+ *
    * @param txSignatureComponent the tx signature component that contains all relevant transaction information
    * @param script the script state this is needed in case there is an OP_CODESEPARATOR inside the script
    * @param sigs the signatures that are being checked for validity
@@ -116,7 +120,7 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
       logger.info("We do not have enough sigs to meet the threshold of requireSigs in the multiSignatureScriptPubKey")
       SignatureValidationFailureSignatureCount
     }
-    else if (!sigs.isEmpty && !pubKeys.isEmpty) {
+    else if (sigs.nonEmpty && pubKeys.nonEmpty) {
       val sig = sigs.head
       val pubKey = pubKeys.head
       val result = checkSignature(txSignatureComponent,script,pubKey,sig,flags)
@@ -144,6 +148,7 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
 
   /**
     * Removes the given digital signature from the list of script tokens if it exists
+ *
     * @param signature
     * @param script
     * @return
@@ -161,6 +166,7 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
 
   /**
     * Removes the list of digital signatures from the list of script tokens
+ *
     * @param sigs
     * @param script
     * @return
