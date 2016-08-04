@@ -43,7 +43,9 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
       logger.error("Signature did not have a low s value")
       ScriptValidationFailureHighSValue
     } else if (ScriptFlagUtil.requireStrictEncoding(flags) && signature.bytes.nonEmpty &&
-      !HashTypeFactory.hashTypes.exists(_.hashType == Int32(signature.bytes.last))) {
+      //!HashTypeOperations.hashTypes.contains(HashTypeOperations.fromNumber(Int32(signature.bytes.last)))) {
+      !HashTypeOperations.hashTypes.contains(HashTypeOperations.fromNumber(Int32(signature.bytes.last)))) {
+      //!HashTypeFactory.hashTypes.exists(_.num == Int32(signature.bytes.last))) {
       logger.error("signature: " + signature.bytes)
       logger.error("Hash type was not defined on the signature")
       ScriptValidationFailureHashType
@@ -72,12 +74,12 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
           sigsRemoved
       }
       val hashTypeByte = if (signature.bytes.nonEmpty) signature.bytes.last else 0x00.toByte
-      val hashTypeNum = HashTypeFactory.fromBytes(Seq(hashTypeByte)).hashType
-      logger.debug("hashtypebyte in txsigchecker: " + hashTypeByte)
-      logger.debug("hashtype: " + HashTypeFactory.fromNumber(hashTypeNum))
+      //val hashTypeNum = HashTypeFactory.fromBytes(Seq(hashTypeByte)).hashType
+      val hashType = HashTypeOperations.fromBytes(Seq(0.toByte, 0.toByte, 0.toByte, hashTypeByte))
+      println("hashtypebyte in txsigchecker: " + hashTypeByte)
       val hashForSignature = TransactionSignatureSerializer.hashForSignature(txSignatureComponent.transaction,
         txSignatureComponent.inputIndex,
-        sigsRemovedScript, hashTypeNum)
+        sigsRemovedScript, hashType)
       logger.info("Hash for signature: " + BitcoinSUtil.encodeHex(hashForSignature.bytes))
       val isValid = pubKey.verify(hashForSignature,signature)
       if (isValid) SignatureValidationSuccess else SignatureValidationFailureIncorrectSignatures
