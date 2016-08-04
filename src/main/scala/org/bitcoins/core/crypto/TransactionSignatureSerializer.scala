@@ -117,8 +117,6 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
       case _ : SIGHASH_ALL_ANYONECANPAY =>
         val sigHashAllTx = sigHashAll(txWithInputSigsRemoved,inputIndex)
         val sigHashAllAnyoneCanPayTx = sigHashAnyoneCanPay(sigHashAllTx,inputWithConnectedScript)
-        println("sigHashAllAnyoneCanPayTx.bytes: " + sigHashAllAnyoneCanPayTx.bytes)
-        println("sigHashBytes: " + sigHashBytes)
         sigHashAllAnyoneCanPayTx.bytes ++ sigHashBytes
 
       case _ : SIGHASH_NONE_ANYONECANPAY =>
