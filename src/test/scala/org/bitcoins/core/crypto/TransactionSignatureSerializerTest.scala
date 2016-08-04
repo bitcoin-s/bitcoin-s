@@ -6,7 +6,7 @@ import org.bitcoinj.core.{DumpedPrivateKey, Sha256Hash, Utils}
 import org.bitcoinj.core.Transaction.SigHash
 import org.bitcoinj.params.TestNet3Params
 import org.bitcoinj.script.{ScriptBuilder, ScriptChunk, ScriptOpCodes}
-import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.serializers.script.ScriptParser
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
@@ -33,10 +33,10 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers with
 
     spendingTx.hex must be (BitcoinSUtil.encodeHex(BitcoinJTestUtil.multiSigTransaction.bitcoinSerialize()))
 
-    val sigBytes : Seq[Byte] = TransactionSignatureSerializer.serializeForSignature(spendingTx,UInt32.zero,scriptPubKey.asm,SIGHASH_ALL())
+    val sigBytes : Seq[Byte] = TransactionSignatureSerializer.serializeForSignature(spendingTx,UInt32.zero,scriptPubKey.asm,SIGHASH_ALL.value)
     val bitcoinjSerialization = BitcoinSUtil.encodeHex(
       BitcoinJSignatureSerialization.serializeForSignature(BitcoinJTestUtil.multiSigTransaction,0,
-        BitcoinJTestUtil.multiSigScript.getProgram(),SIGHASH_ALL().byte)
+        BitcoinJTestUtil.multiSigScript.getProgram(),0x01.toByte)
     )
 
     BitcoinSUtil.encodeHex(sigBytes) must be (bitcoinjSerialization)
@@ -47,9 +47,9 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers with
      val spendingTx = Transaction(BitcoinJTestUtil.multiSigTransaction.bitcoinSerialize())
      spendingTx.hex must be (BitcoinSUtil.encodeHex(BitcoinJTestUtil.multiSigTransaction.bitcoinSerialize()))
 
-     val bitcoinsTxSigHash = TransactionSignatureSerializer.hashForSignature(spendingTx,UInt32.zero,scriptPubKey.asm,SIGHASH_ALL())
+     val bitcoinsTxSigHash = TransactionSignatureSerializer.hashForSignature(spendingTx,UInt32.zero,scriptPubKey.asm,SIGHASH_ALL.value)
      val bitcoinjTxSigHash = BitcoinSUtil.encodeHex(
-       BitcoinJSignatureSerialization.hashForSignature(BitcoinJTestUtil.multiSigTransaction,0,BitcoinJTestUtil.multiSigScript.getProgram(),SIGHASH_ALL().byte)
+       BitcoinJSignatureSerialization.hashForSignature(BitcoinJTestUtil.multiSigTransaction,0,BitcoinJTestUtil.multiSigScript.getProgram(),0x01.toByte)
      )
      bitcoinsTxSigHash.hex must be (bitcoinjTxSigHash)
    }
@@ -60,10 +60,10 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers with
      spendingTx.hex must be (BitcoinSUtil.encodeHex(BitcoinJTestUtil.multiSigTransaction.bitcoinSerialize()))
 
      val serialiazedTxForSig : Seq[Byte] =
-       TransactionSignatureSerializer.serializeForSignature(spendingTx,UInt32.zero,scriptPubKey.asm,SIGHASH_SINGLE)
+       TransactionSignatureSerializer.serializeForSignature(spendingTx,UInt32.zero,scriptPubKey.asm,SIGHASH_SINGLE.value)
 
      val bitcoinjSigSerialization = BitcoinSUtil.encodeHex(BitcoinJSignatureSerialization.serializeForSignature(
-       BitcoinJTestUtil.multiSigTransaction,0,BitcoinJTestUtil.multiSigScript.getProgram,SIGHASH_SINGLE.byte))
+       BitcoinJTestUtil.multiSigTransaction,0,BitcoinJTestUtil.multiSigScript.getProgram,0x03.toByte))
      BitcoinSUtil.encodeHex(serialiazedTxForSig) must be (bitcoinjSigSerialization)
    }
 
@@ -73,10 +73,10 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers with
      spendingTx.hex must be (BitcoinSUtil.encodeHex(BitcoinJTestUtil.multiSigTransaction.bitcoinSerialize()))
 
      val hashedTxForSig =
-       TransactionSignatureSerializer.hashForSignature(spendingTx,UInt32.zero,scriptPubKey.asm,SIGHASH_SINGLE)
+       TransactionSignatureSerializer.hashForSignature(spendingTx,UInt32.zero,scriptPubKey.asm,SIGHASH_SINGLE.value)
 
      val bitcoinjSigSerialization = BitcoinSUtil.encodeHex(BitcoinJSignatureSerialization.hashForSignature(
-       BitcoinJTestUtil.multiSigTransaction,0,BitcoinJTestUtil.multiSigScript.getProgram,SIGHASH_SINGLE.byte))
+       BitcoinJTestUtil.multiSigTransaction,0,BitcoinJTestUtil.multiSigScript.getProgram,0x03.toByte))
      hashedTxForSig.hex must be (bitcoinjSigSerialization)
    }
 
@@ -86,10 +86,10 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers with
      spendingTx.hex must be (BitcoinSUtil.encodeHex(BitcoinJTestUtil.multiSigTransaction.bitcoinSerialize()))
 
      val serialiazedTxForSig : Seq[Byte] =
-       TransactionSignatureSerializer.serializeForSignature(spendingTx,UInt32.zero,scriptPubKey.asm,SIGHASH_NONE)
+       TransactionSignatureSerializer.serializeForSignature(spendingTx,UInt32.zero,scriptPubKey.asm,SIGHASH_NONE.value)
 
      val bitcoinjSigSerialization = BitcoinSUtil.encodeHex(BitcoinJSignatureSerialization.serializeForSignature(
-       BitcoinJTestUtil.multiSigTransaction,0,BitcoinJTestUtil.multiSigScript.getProgram,SIGHASH_NONE.byte))
+       BitcoinJTestUtil.multiSigTransaction,0,BitcoinJTestUtil.multiSigScript.getProgram,0x02.toByte))
      BitcoinSUtil.encodeHex(serialiazedTxForSig) must be (bitcoinjSigSerialization)
    }
 
@@ -99,10 +99,10 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers with
      spendingTx.hex must be (BitcoinSUtil.encodeHex(BitcoinJTestUtil.multiSigTransaction.bitcoinSerialize()))
 
      val hashedTxForSig =
-       TransactionSignatureSerializer.hashForSignature(spendingTx,UInt32.zero,scriptPubKey.asm,SIGHASH_NONE)
+       TransactionSignatureSerializer.hashForSignature(spendingTx,UInt32.zero,scriptPubKey.asm,SIGHASH_NONE.value)
 
      val bitcoinjSigSerialization = BitcoinSUtil.encodeHex(BitcoinJSignatureSerialization.hashForSignature(
-       BitcoinJTestUtil.multiSigTransaction,0,BitcoinJTestUtil.multiSigScript.getProgram,SIGHASH_NONE.byte))
+       BitcoinJTestUtil.multiSigTransaction,0,BitcoinJTestUtil.multiSigScript.getProgram,0x02.toByte))
      hashedTxForSig.hex must be (bitcoinjSigSerialization)
 
    }
@@ -113,9 +113,9 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers with
      spendingTx.hex must be (BitcoinSUtil.encodeHex(BitcoinJTestUtil.multiSigTransaction.bitcoinSerialize()))
 
      val serializedTxForSig : Seq[Byte] =
-       TransactionSignatureSerializer.serializeForSignature(spendingTx,UInt32.zero,scriptPubKey.asm, SIGHASH_ANYONECANPAY)
+       TransactionSignatureSerializer.serializeForSignature(spendingTx,UInt32.zero,scriptPubKey.asm, SIGHASH_ANYONECANPAY.value)
      val bitcoinjSigSerialization = BitcoinSUtil.encodeHex(BitcoinJSignatureSerialization.serializeForSignature(
-       BitcoinJTestUtil.multiSigTransaction,0,BitcoinJTestUtil.multiSigScript.getProgram,SIGHASH_ANYONECANPAY.byte))
+       BitcoinJTestUtil.multiSigTransaction,0,BitcoinJTestUtil.multiSigScript.getProgram,0x80.toByte))
 
      BitcoinSUtil.encodeHex(serializedTxForSig) must be (bitcoinjSigSerialization)
 
@@ -127,9 +127,9 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers with
      spendingTx.hex must be (BitcoinSUtil.encodeHex(BitcoinJTestUtil.multiSigTransaction.bitcoinSerialize()))
 
      val hashedTxForSig =
-       TransactionSignatureSerializer.hashForSignature(spendingTx,UInt32.zero,scriptPubKey.asm, SIGHASH_ANYONECANPAY)
+       TransactionSignatureSerializer.hashForSignature(spendingTx,UInt32.zero,scriptPubKey.asm, SIGHASH_ANYONECANPAY.value)
      val bitcoinjSigSerialization = BitcoinSUtil.encodeHex(BitcoinJSignatureSerialization.hashForSignature(
-       BitcoinJTestUtil.multiSigTransaction,0,BitcoinJTestUtil.multiSigScript.getProgram,SIGHASH_ANYONECANPAY.byte))
+       BitcoinJTestUtil.multiSigTransaction,0,BitcoinJTestUtil.multiSigScript.getProgram,0x80.toByte))
 
      hashedTxForSig.hex must be (bitcoinjSigSerialization)
    }
@@ -140,9 +140,9 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers with
      spendingTx.hex must be (BitcoinSUtil.encodeHex(BitcoinJTestUtil.multiSigTransaction.bitcoinSerialize()))
 
      val serializedTxForSig : Seq[Byte] =
-       TransactionSignatureSerializer.serializeForSignature(spendingTx,UInt32.zero,scriptPubKey.asm, SIGHASH_ALL_ANYONECANPAY)
+       TransactionSignatureSerializer.serializeForSignature(spendingTx,UInt32.zero,scriptPubKey.asm, SIGHASH_ALL_ANYONECANPAY.value)
      val bitcoinjSigSerialization = BitcoinSUtil.encodeHex(BitcoinJSignatureSerialization.serializeForSignature(
-       BitcoinJTestUtil.multiSigTransaction,0,BitcoinJTestUtil.multiSigScript.getProgram,SIGHASH_ALL_ANYONECANPAY.byte))
+       BitcoinJTestUtil.multiSigTransaction,0,BitcoinJTestUtil.multiSigScript.getProgram,(0x80 | 0x01).toByte))
 
      BitcoinSUtil.encodeHex(serializedTxForSig) must be (bitcoinjSigSerialization)
    }
@@ -153,9 +153,9 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers with
      spendingTx.hex must be (BitcoinSUtil.encodeHex(BitcoinJTestUtil.multiSigTransaction.bitcoinSerialize()))
 
      val serializedTxForSig : Seq[Byte] =
-       TransactionSignatureSerializer.serializeForSignature(spendingTx,UInt32.zero,scriptPubKey.asm, SIGHASH_SINGLE_ANYONECANPAY)
+       TransactionSignatureSerializer.serializeForSignature(spendingTx,UInt32.zero,scriptPubKey.asm, SIGHASH_SINGLE_ANYONECANPAY.value)
      val bitcoinjSigSerialization = BitcoinSUtil.encodeHex(BitcoinJSignatureSerialization.serializeForSignature(
-       BitcoinJTestUtil.multiSigTransaction,0,BitcoinJTestUtil.multiSigScript.getProgram,SIGHASH_SINGLE_ANYONECANPAY.byte))
+       BitcoinJTestUtil.multiSigTransaction,0,BitcoinJTestUtil.multiSigScript.getProgram,(0x80 | 0x03).toByte))
 
      BitcoinSUtil.encodeHex(serializedTxForSig) must be (bitcoinjSigSerialization)
    }
@@ -166,9 +166,9 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers with
      spendingTx.hex must be (BitcoinSUtil.encodeHex(BitcoinJTestUtil.multiSigTransaction.bitcoinSerialize()))
 
      val serializedTxForSig : Seq[Byte] =
-       TransactionSignatureSerializer.serializeForSignature(spendingTx,UInt32.zero,scriptPubKey.asm, SIGHASH_NONE_ANYONECANPAY)
+       TransactionSignatureSerializer.serializeForSignature(spendingTx,UInt32.zero,scriptPubKey.asm, SIGHASH_NONE_ANYONECANPAY.value)
      val bitcoinjSigSerialization = BitcoinSUtil.encodeHex(BitcoinJSignatureSerialization.serializeForSignature(
-       BitcoinJTestUtil.multiSigTransaction,0,BitcoinJTestUtil.multiSigScript.getProgram,SIGHASH_NONE_ANYONECANPAY.byte))
+       BitcoinJTestUtil.multiSigTransaction,0,BitcoinJTestUtil.multiSigScript.getProgram,(0x80 | 0x02).toByte))
 
      BitcoinSUtil.encodeHex(serializedTxForSig) must be (bitcoinjSigSerialization)
    }
@@ -179,9 +179,9 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers with
      spendingTx.hex must be (BitcoinSUtil.encodeHex(BitcoinJTestUtil.multiSigTransaction.bitcoinSerialize()))
 
      val hashedTxForSig =
-       TransactionSignatureSerializer.hashForSignature(spendingTx,UInt32.zero,scriptPubKey.asm, SIGHASH_ALL_ANYONECANPAY)
+       TransactionSignatureSerializer.hashForSignature(spendingTx,UInt32.zero,scriptPubKey.asm, SIGHASH_ALL_ANYONECANPAY.value)
      val bitcoinjTxHashForSig = BitcoinSUtil.encodeHex(BitcoinJSignatureSerialization.hashForSignature(
-       BitcoinJTestUtil.multiSigTransaction,0,BitcoinJTestUtil.multiSigScript.getProgram,SIGHASH_ALL_ANYONECANPAY.byte))
+       BitcoinJTestUtil.multiSigTransaction,0,BitcoinJTestUtil.multiSigScript.getProgram,(0x80 | 0x01).toByte))
 
      hashedTxForSig.hex must be (bitcoinjTxHashForSig)
    }
@@ -192,9 +192,9 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers with
      spendingTx.hex must be (BitcoinSUtil.encodeHex(BitcoinJTestUtil.multiSigTransaction.bitcoinSerialize()))
 
      val hashedTxForSig =
-       TransactionSignatureSerializer.hashForSignature(spendingTx,UInt32.zero,scriptPubKey.asm, SIGHASH_SINGLE_ANYONECANPAY)
+       TransactionSignatureSerializer.hashForSignature(spendingTx,UInt32.zero,scriptPubKey.asm, SIGHASH_SINGLE_ANYONECANPAY.value)
      val bitcoinjTxHashForSig = BitcoinSUtil.encodeHex(BitcoinJSignatureSerialization.hashForSignature(
-       BitcoinJTestUtil.multiSigTransaction,0,BitcoinJTestUtil.multiSigScript.getProgram,SIGHASH_SINGLE_ANYONECANPAY.byte))
+       BitcoinJTestUtil.multiSigTransaction,0,BitcoinJTestUtil.multiSigScript.getProgram,(0x80 | 0x03).toByte))
 
      hashedTxForSig.hex must be (bitcoinjTxHashForSig)
    }
@@ -205,9 +205,9 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers with
      spendingTx.hex must be (BitcoinSUtil.encodeHex(BitcoinJTestUtil.multiSigTransaction.bitcoinSerialize()))
 
      val hashedTxForSig =
-       TransactionSignatureSerializer.hashForSignature(spendingTx,UInt32.zero,scriptPubKey.asm, SIGHASH_NONE_ANYONECANPAY)
+       TransactionSignatureSerializer.hashForSignature(spendingTx,UInt32.zero,scriptPubKey.asm, SIGHASH_NONE_ANYONECANPAY.value)
      val bitcoinjTxHashForSig = BitcoinSUtil.encodeHex(BitcoinJSignatureSerialization.hashForSignature(
-       BitcoinJTestUtil.multiSigTransaction,0,BitcoinJTestUtil.multiSigScript.getProgram,SIGHASH_NONE_ANYONECANPAY.byte))
+       BitcoinJTestUtil.multiSigTransaction,0,BitcoinJTestUtil.multiSigScript.getProgram,(0x80 | 0x02).toByte))
 
      hashedTxForSig.hex must be (bitcoinjTxHashForSig)
    }
@@ -233,13 +233,12 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers with
      val signature  : Array[Byte] = scriptSig.getChunks().get(0).data
      val bitcoinjSerializeForSig : Seq[Byte] =
        BitcoinJSignatureSerialization.serializeForSignature(bitcoinjTx,inputIndex.toInt,
-         parentOutput.getScriptBytes, SIGHASH_ALL().byte)
+         parentOutput.getScriptBytes, 0x01.toByte)
 
 
      val hashType = spendingInput.scriptSignature.hashType(spendingInput.scriptSignature.signatures.head)
      val serializedTxForSig : String = BitcoinSUtil.encodeHex(
-       TransactionSignatureSerializer.serializeForSignature(spendingTx,inputIndex,creditingOutput.scriptPubKey.asm,hashType
-       ))
+       TransactionSignatureSerializer.serializeForSignature(spendingTx,inputIndex,creditingOutput.scriptPubKey.asm,hashType))
      serializedTxForSig must be (BitcoinSUtil.encodeHex(bitcoinjSerializeForSig))
    }
 
@@ -260,7 +259,7 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers with
 
      val bitcoinjSerializeForSig : Seq[Byte] =
        BitcoinJSignatureSerialization.serializeForSignature(bitcoinjTx,inputIndex.toInt,
-         parentOutput.getScriptBytes, SIGHASH_ALL().byte)
+         parentOutput.getScriptBytes, 0x01.toByte)
 
      val hashType = spendingInput.scriptSignature.hashType(spendingInput.scriptSignature.signatures.head)
      val serializedTxForSig : String = BitcoinSUtil.encodeHex(
@@ -283,7 +282,7 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers with
       val bitcoinjTx = BitcoinjConversions.transaction(spendingTx)
       val hashType = spendingInput.scriptSignature.hashType(spendingInput.scriptSignature.signatures.head)
       val bitcoinjHashForSig : Seq[Byte] = BitcoinJSignatureSerialization.serializeForSignature(
-        bitcoinjTx, inputIndex.toInt, creditingOutput.scriptPubKey.bytes.toArray, hashType.byte
+        bitcoinjTx, inputIndex.toInt, creditingOutput.scriptPubKey.bytes.toArray, spendingInput.scriptSignature.signatures.head.bytes.last
       )
       val hashedTxForSig : String = BitcoinSUtil.encodeHex(
         TransactionSignatureSerializer.serializeForSignature(spendingTx,inputIndex,creditingOutput.scriptPubKey.asm,hashType
@@ -304,7 +303,7 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers with
      val bitcoinjTx = BitcoinjConversions.transaction(spendingTx)
      val hashType = spendingInput.scriptSignature.hashType(spendingInput.scriptSignature.signatures.head)
      val bitcoinjHashForSig : Seq[Byte] = BitcoinJSignatureSerialization.hashForSignature(
-       bitcoinjTx, inputIndex.toInt, creditingOutput.scriptPubKey.bytes.toArray, hashType.byte
+       bitcoinjTx, inputIndex.toInt, creditingOutput.scriptPubKey.bytes.toArray, spendingInput.scriptSignature.signatures.head.bytes.last
      )
      val hashedTxForSig =
        TransactionSignatureSerializer.hashForSignature(spendingTx,inputIndex,creditingOutput.scriptPubKey.asm, hashType)
@@ -329,11 +328,11 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers with
 
     val bitcoinjTx = BitcoinjConversions.transaction(spendingTx)
     val bitcoinjHashForSig : Seq[Byte] = BitcoinJSignatureSerialization.hashForSignature(
-      bitcoinjTx, inputIndex.toInt, scriptPubKey.bytes.toArray, SIGHASH_ALL(0x01).byte
+      bitcoinjTx, inputIndex.toInt, scriptPubKey.bytes.toArray, 0x01.toByte
     )
 
     val hashedTxForSig =
-      TransactionSignatureSerializer.hashForSignature(spendingTx,inputIndex,scriptPubKey.asm,SIGHASH_ALL(0x01))
+      TransactionSignatureSerializer.hashForSignature(spendingTx,inputIndex,scriptPubKey.asm,SIGHASH_ALL.value)
     hashedTxForSig.hex must be (BitcoinSUtil.encodeHex(bitcoinjHashForSig))
 
   }
@@ -350,7 +349,7 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers with
     val scriptPubKey = ScriptPubKey.fromAsm(scriptPubKeyFromString)
 
     val serializedTxForSig : String = BitcoinSUtil.encodeHex(
-      TransactionSignatureSerializer.serializeForSignature(spendingTx,inputIndex,scriptPubKey.asm, SIGHASH_ALL(0x01)
+      TransactionSignatureSerializer.serializeForSignature(spendingTx,inputIndex,scriptPubKey.asm, SIGHASH_ALL.value
     ))
 
     //serialization is from bitcoin core
@@ -369,10 +368,10 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers with
 
     val bitcoinjTx = BitcoinjConversions.transaction(spendingTx)
     val bitcoinjHashForSig : Seq[Byte] = BitcoinJSignatureSerialization.hashForSignature(
-      bitcoinjTx, inputIndex.toInt, scriptPubKey.bytes.toArray, SIGHASH_ALL_ANYONECANPAY.byte
+      bitcoinjTx, inputIndex.toInt, scriptPubKey.bytes.toArray, (0x80 | 0x01).toByte
     )
     val hashedTxForSig =
-      TransactionSignatureSerializer.hashForSignature(spendingTx,inputIndex,scriptPubKey.asm,SIGHASH_ALL_ANYONECANPAY)
+      TransactionSignatureSerializer.hashForSignature(spendingTx,inputIndex,scriptPubKey.asm,SIGHASH_ALL_ANYONECANPAY.value)
     //hash is from bitcoin core
     hashedTxForSig.hex must be ("57f5a54d548db73fa8ef7a43d011120f9935fe792f0a0630d28ee70b4c72a7e8")
   }
@@ -388,7 +387,7 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers with
     val scriptPubKey = ScriptPubKey.fromAsm(scriptPubKeyFromString)
 
     val serializedTxForSig : String = BitcoinSUtil.encodeHex(
-      TransactionSignatureSerializer.serializeForSignature(spendingTx,inputIndex,scriptPubKey.asm,SIGHASH_SINGLE))
+      TransactionSignatureSerializer.serializeForSignature(spendingTx,inputIndex,scriptPubKey.asm,SIGHASH_SINGLE.value))
     //serialization is from bitcoin core
     serializedTxForSig must be ("010000000370ac0a1ae588aaf284c308d67ca92c69a39e2db81337e563bf40c59da0a5cf63000000001976a914dcf72c4fd02f5a987cf9b02f2fabfcac3341a87d88acffffffff7d815b6447e35fbea097e00e028fb7dfbad4f3f0987b4734676c84f3fcd0e8040100000000000000003f1f097333e4d46d51f5e77b53264db8f7f5d2e18217e1099957d0f5af7713ee0100000000000000000180841e00000000001976a914bfb282c70c4191f45b5a6665cad1682f2c9cfdfb88ac0000000003000000")
 
@@ -405,7 +404,7 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers with
     val scriptPubKey = ScriptPubKey.fromAsm(scriptPubKeyFromString)
 
     val serializedTxForSig : String = BitcoinSUtil.encodeHex(
-      TransactionSignatureSerializer.serializeForSignature(spendingTx,inputIndex,scriptPubKey.asm,SIGHASH_SINGLE))
+      TransactionSignatureSerializer.serializeForSignature(spendingTx,inputIndex,scriptPubKey.asm,SIGHASH_SINGLE.value))
     //serialization is from bitcoin core
     serializedTxForSig must be ("010000000370ac0a1ae588aaf284c308d67ca92c69a39e2db81337e563bf40c59da0a5cf630000000000000000007d815b6447e35fbea097e00e028fb7dfbad4f3f0987b4734676c84f3fcd0e8040100000000000000003f1f097333e4d46d51f5e77b53264db8f7f5d2e18217e1099957d0f5af7713ee010000001976a914dcf72c4fd02f5a987cf9b02f2fabfcac3341a87d88acffffffff03ffffffffffffffff00ffffffffffffffff00e0fd1c00000000001976a91443c52850606c872403c0601e69fa34b26f62db4a88ac0000000003000000")
 
@@ -420,7 +419,7 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers with
     val scriptPubKeyFromString = ScriptParser.fromString("0x4c 0xae 0x606563686f2022553246736447566b58312b5a536e587574356542793066794778625456415675534a6c376a6a334878416945325364667657734f53474f36633338584d7439435c6e543249584967306a486956304f376e775236644546673d3d22203e20743b206f70656e73736c20656e63202d7061737320706173733a5b314a564d7751432d707269766b65792d6865785d202d64202d6165732d3235362d636263202d61202d696e207460 DROP DUP HASH160 0x14 0xbfd7436b6265aa9de506f8a994f881ff08cc2872 EQUALVERIFY CHECKSIG")
     val scriptPubKey = ScriptPubKey.fromAsm(scriptPubKeyFromString)
     val serializedTxForSig : String = BitcoinSUtil.encodeHex(
-      TransactionSignatureSerializer.serializeForSignature(spendingTx,inputIndex,scriptPubKey.asm,SIGHASH_ALL(1.toByte)))
+      TransactionSignatureSerializer.serializeForSignature(spendingTx,inputIndex,scriptPubKey.asm,SIGHASH_ALL.value))
     //serialization is from bitcoin core
     serializedTxForSig must be ("0100000001482f7a028730a233ac9b48411a8edfb107b749e61faf7531f4257ad95d0a51c500000000ca4cae606563686f2022553246736447566b58312b5a536e587574356542793066794778625456415675534a6c376a6a334878416945325364667657734f53474f36633338584d7439435c6e543249584967306a486956304f376e775236644546673d3d22203e20743b206f70656e73736c20656e63202d7061737320706173733a5b314a564d7751432d707269766b65792d6865785d202d64202d6165732d3235362d636263202d61202d696e2074607576a914bfd7436b6265aa9de506f8a994f881ff08cc287288acffffffff0180969800000000001976a914e336d0017a9d28de99d16472f6ca6d5a3a8ebc9988ac0000000001000000")
   }
@@ -435,7 +434,7 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers with
     val scriptPubKey = ScriptPubKey.fromAsm(scriptPubKeyFromString)
 
     val serializedTxForSig : String = BitcoinSUtil.encodeHex(
-      TransactionSignatureSerializer.serializeForSignature(spendingTx,inputIndex,scriptPubKey.asm,SIGHASH_ALL(1.toByte)))
+      TransactionSignatureSerializer.serializeForSignature(spendingTx,inputIndex,scriptPubKey.asm,SIGHASH_ALL.value))
     serializedTxForSig must be ("01000000020001000000000000000000000000000000000000000000000000000000000000000000002321035e7f0d4d0841bcd56c39337ed086b1a633ee770c1ffdd94ac552a95ac2ce0efcac01000000000200000000000000000000000000000000000000000000000000000000000000000000000100000001010000000000000001510000000001000000")
 
   }
