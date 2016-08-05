@@ -71,11 +71,8 @@ class ECPrivateKeyTest extends FlatSpec with MustMatchers with BitcoinSLogger {
   it must "serialize a private key to WIF and then be able to deserialize it" in {
     val hex = "2cecbfb72f8d5146d7fe7e5a3f80402c6dd688652c332dff2e44618d2d3372"
     val privKey = ECPrivateKey(hex)
-    require(privKey.isCompressed == true)
     val wif = privKey.toWIF(TestNet3)
     val privKeyFromWIF = ECPrivateKey.fromWIFToPrivateKey(wif)
-    require(privKeyFromWIF.isCompressed == true)
-
     privKeyFromWIF must be (privKey)
   }
 
