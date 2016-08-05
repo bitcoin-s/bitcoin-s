@@ -115,7 +115,7 @@ trait BitcoinjConversions {
 
       }
 
-      if ((sigHashType & SIGHASH_ANYONECANPAY.byte) == SIGHASH_ANYONECANPAY.byte) {
+      if ((sigHashType & 0x80.toByte) == 0x80.toByte) {
         // SIGHASH_ANYONECANPAY means the signature in the input is not broken by changes/additions/removals
         // of other inputs. For example, this is useful for building assurance contracts.
         tx.clearInputs()

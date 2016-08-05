@@ -77,4 +77,5 @@ class Int64Test extends FlatSpec with MustMatchers {
   it must "have the correct number representation for the maximum number that can be stored in a Int64" in {
     Int64.max.underlying must be (9223372036854775807L)
   }
+
 }
