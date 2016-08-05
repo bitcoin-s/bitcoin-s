@@ -11,29 +11,19 @@ import org.spongycastle.crypto.generators.ECKeyPairGenerator
 import org.spongycastle.crypto.params.{ECKeyGenerationParameters, ECPrivateKeyParameters}
 import org.spongycastle.math.ec.{ECPoint, FixedPointCombMultiplier}
 
+import scala.annotation.tailrec
 import scala.util.{Failure, Success}
 
 /**
  * Created by chris on 2/16/16.
  */
 sealed trait ECPrivateKey extends BaseECKey {
+  /** Signifies if the this private key corresponds to a compressed public key */
+  def isCompressed : Boolean
 
-  private def ecPoint = CryptoParams.curve.getCurve.decodePoint(bytes.toArray)
-  /**
-    * This represents the private key inside of the bouncy castle library
-    *
-    * @return
-    */
-  private def privateKeyParams =
-    new ECPrivateKeyParameters(new BigInteger(1,bytes.toArray), CryptoParams.curve)
-
-  /**
-   * Derives the public for a the private key
-    *
-    * @return
-   */
+  /** Derives the public for a the private key */
   def publicKey : ECPublicKey = {
-    val pubKeyBytes : Seq[Byte] = publicKeyPoint.getEncoded(compressed)
+    val pubKeyBytes : Seq[Byte] = publicKeyPoint.getEncoded(isCompressed)
     ECPublicKey(pubKeyBytes)
   }
 
@@ -59,41 +49,57 @@ sealed trait ECPrivateKey extends BaseECKey {
     */
   def toWIF(network: NetworkParameters): String = {
     val networkByte = network.privateKey
-    val fullBytes = networkByte +: bytes
+    //append 1 byte to the end of the priv key byte representation if we need a compressed pub key
+    val fullBytes = if (isCompressed) networkByte +: (bytes ++ Seq(1.toByte)) else networkByte +: bytes
     val hash = CryptoUtil.doubleSHA256(fullBytes)
     val checksum = hash.bytes.take(4)
     val encodedPrivKey = fullBytes ++ checksum
     Base58.encode(encodedPrivKey)
   }
 
-  override def toString = "ECPrivateKey(" + hex + ")"
+  override def toString = "ECPrivateKey(" + hex + "," + isCompressed +")"
 }
 
 object ECPrivateKey extends Factory[ECPrivateKey] with BitcoinSLogger {
 
-  private case class ECPrivateKeyImpl(bytes : Seq[Byte]) extends ECPrivateKey
+  private case class ECPrivateKeyImpl(bytes : Seq[Byte], isCompressed: Boolean) extends ECPrivateKey {
+    require(bytes.size == 32, "Keys are required to be 32 bytes in size as per bitcoin core, got: " + bytes.size + " hex: " + BitcoinSUtil.encodeHex(bytes))
+  }
 
-  override def fromBytes(bytes : Seq[Byte]) : ECPrivateKey = {
-    if (bytes.size <= 32) ECPrivateKeyImpl(bytes)
+  override def fromBytes(bytes : Seq[Byte]) : ECPrivateKey = fromBytes(bytes,true)
+
+  @tailrec
+  def fromBytes(bytes: Seq[Byte], isCompressed: Boolean): ECPrivateKey = {
+    if (bytes.size == 32) ECPrivateKeyImpl(bytes,isCompressed)
+    else if (bytes.size < 32) {
+      //means we need to pad the private key with 0 bytes so we have 32 bytes
+      val paddingNeeded = 32 - bytes.size
+      val padding = for { _ <- 0 until paddingNeeded} yield 0.toByte
+      ECPrivateKey.fromBytes(padding ++ bytes,isCompressed)
+    }
     //this is for the case when java serialies a BigInteger to 33 bytes to hold the signed num representation
-    else if (bytes.size == 33) ECPrivateKeyImpl(bytes.slice(1,33))
+    else if (bytes.size == 33) ECPrivateKey.fromBytes(bytes.slice(1,33),isCompressed)
     else throw new IllegalArgumentException("Private keys cannot be greater than 33 bytes in size, got: " +
       BitcoinSUtil.encodeHex(bytes) + " which is of size: " + bytes.size)
   }
 
+  def fromHex(hex: String, isCompressed: Boolean): ECPrivateKey = fromBytes(BitcoinSUtil.decodeHex(hex),isCompressed)
   /**
     * This function creates a fresh private key to use
     *
     * @return
     */
-  def apply() : ECPrivateKey = freshPrivateKey
+  def apply() : ECPrivateKey = ECPrivateKey(true)
 
+  def apply(isCompressed: Boolean) = freshPrivateKey(isCompressed)
   /**
     * This function creates a fresh private key to use
     *
     * @return
     */
-  def freshPrivateKey : ECPrivateKey = {
+  def freshPrivateKey : ECPrivateKey = freshPrivateKey(true)
+
+  def freshPrivateKey(isCompressed: Boolean): ECPrivateKey = {
     val secureRandom = new SecureRandom
     val generator : ECKeyPairGenerator = new ECKeyPairGenerator
     val keyGenParams : ECKeyGenerationParameters = new ECKeyGenerationParameters(CryptoParams.curve, secureRandom)
@@ -102,9 +108,8 @@ object ECPrivateKey extends Factory[ECPrivateKey] with BitcoinSLogger {
     val privParams: ECPrivateKeyParameters = keypair.getPrivate.asInstanceOf[ECPrivateKeyParameters]
     val priv : BigInteger = privParams.getD
     val bytes = priv.toByteArray
-    ECPrivateKey(bytes)
+    ECPrivateKey.fromBytes(bytes,isCompressed)
   }
-
   /**
     * Takes in a base58 string and converts it into a private key.
     * Private keys starting with 'K', 'L', or 'c' correspond to compressed public keys.
@@ -114,9 +119,10 @@ object ECPrivateKey extends Factory[ECPrivateKey] with BitcoinSLogger {
     * @return
     */
   def fromWIFToPrivateKey(WIF : String) : ECPrivateKey = {
+    val isCompressed = ECPrivateKey.isCompressed(WIF)
     val trimmedBytes = trimFunction(WIF)
-    val privateKeyBytesToHex = BitcoinSUtil.encodeHex(trimmedBytes)
-    ECPrivateKey(privateKeyBytesToHex)
+    val privateKeyBytes = trimmedBytes
+    ECPrivateKey.fromBytes(privateKeyBytes,isCompressed)
   }
 
   /**
@@ -150,7 +156,7 @@ object ECPrivateKey extends Factory[ECPrivateKey] with BitcoinSLogger {
     */
   private def trimFunction(WIF : String) : Seq[Byte] = {
     val bytesChecked = Base58.decodeCheck(WIF)
-    val uncompressedKeyPrefixes = Seq(Some('5'),Some('9'))
+
     //see https://en.bitcoin.it/wiki/List_of_address_prefixes
     //for where '5' and '9' come from
     bytesChecked match {
@@ -161,6 +167,11 @@ object ECPrivateKey extends Factory[ECPrivateKey] with BitcoinSLogger {
     }
   }
 
+  /** The Base58 prefixes that represent compressed private keys */
+  def compressedKeyPrefixes = Seq(Some('K'), Some('L'), Some('c'))
+
+  /** The Base58 prefixes that represent uncompressed private keys */
+  def uncompressedKeyPrefixes = Seq(Some('5'),Some('9'))
 }
 
 
