@@ -50,11 +50,6 @@ class ECPrivateKeyTest extends FlatSpec with MustMatchers with BitcoinSLogger {
     privateKey.hex must be (bitcoinJKey.getPrivateKeyAsHex)
   }
 
-  it must "create a private key from bytes" in {
-    val privKeyBytes = Seq(0.toByte)
-    ECPrivateKey(privKeyBytes).bytes must be (privKeyBytes)
-  }
-
   it must "create a private key from its hex representation" in {
     val privateKeyHex = "180cb41c7c600be951b5d3d0a7334acc7506173875834f7a6c4c786a28fcbb19"
     val key: ECPrivateKey = ECPrivateKey(privateKeyHex)
@@ -76,8 +71,10 @@ class ECPrivateKeyTest extends FlatSpec with MustMatchers with BitcoinSLogger {
   it must "serialize a private key to WIF and then be able to deserialize it" in {
     val hex = "2cecbfb72f8d5146d7fe7e5a3f80402c6dd688652c332dff2e44618d2d3372"
     val privKey = ECPrivateKey(hex)
+    require(privKey.isCompressed == true)
     val wif = privKey.toWIF(TestNet3)
     val privKeyFromWIF = ECPrivateKey.fromWIFToPrivateKey(wif)
+    require(privKeyFromWIF.isCompressed == true)
 
     privKeyFromWIF must be (privKey)
   }
@@ -85,10 +82,14 @@ class ECPrivateKeyTest extends FlatSpec with MustMatchers with BitcoinSLogger {
   it must "serialize a private key to WIF when the private key is prefixed with 0 bytes" in {
     val hex = "00fc391adf4d6063a16a2e38b14d2be10133c4dacd4348b49d23ee0ce5ff4f1701"
     val privKey = ECPrivateKey(hex)
+    require(privKey.isCompressed == true)
     val wif = privKey.toWIF(TestNet3)
+    require(ECPrivateKey.isCompressed(wif) == true)
+    logger.debug("WIF:" + wif)
     val privKeyFromWIF = ECPrivateKey.fromWIFToPrivateKey(wif)
     privKeyFromWIF must be (privKey)
   }
+
 
   it must "correctly decode a private key from WIF" in {
     val privateKey = ECPrivateKey.fromWIFToPrivateKey("cTPg4Zc5Jis2EZXy3NXShgbn487GWBTapbU63BerLDZM3w2hQSjC")
@@ -96,5 +97,10 @@ class ECPrivateKeyTest extends FlatSpec with MustMatchers with BitcoinSLogger {
     privateKey.hex must be ("ad59fb6aadf617fb0f93469741fcd9a9f48700f1d1f465ddc0f26fa7f7bfa1ac")
   }
 
+  it must "decode a WIF private key corresponding to uncompressed public key" in {
+    val wif = "5Kg1gnAjaLfKiwhhPpGS3QfRg2m6awQvaj98JCZBZQ5SuS2F15C"
+    val privKey = ECPrivateKey.fromWIFToPrivateKey(wif)
+    privKey.publicKey.hex must be ("045b81f0017e2091e2edcd5eecf10d5bdd120a5514cb3ee65b8447ec18bfc4575c6d5bf415e54e03b1067934a0f0ba76b01c6b9ab227142ee1d543764b69d901e0")
+  }
 
 }

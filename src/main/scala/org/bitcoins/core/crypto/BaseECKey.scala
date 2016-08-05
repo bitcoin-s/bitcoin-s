@@ -19,13 +19,6 @@ trait BaseECKey extends BitcoinSLogger {
   def bytes : Seq[Byte]
 
   /**
-    * Use compressed keys by default
-    * @return
-    */
-  //TODO: implement isCompressed function similar to that in ECPrivateKey
-  def compressed : Boolean = true
-
-  /**
    * Signs a given sequence of bytes with the signingKey
    * @param dataToSign the bytes to be signed
    * @param signingKey the key to sign the bytes with
