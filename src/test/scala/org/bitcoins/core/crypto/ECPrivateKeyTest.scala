@@ -50,11 +50,6 @@ class ECPrivateKeyTest extends FlatSpec with MustMatchers with BitcoinSLogger {
     privateKey.hex must be (bitcoinJKey.getPrivateKeyAsHex)
   }
 
-  it must "create a private key from bytes" in {
-    val privKeyBytes = Seq(0.toByte)
-    ECPrivateKey(privKeyBytes).bytes must be (privKeyBytes)
-  }
-
   it must "create a private key from its hex representation" in {
     val privateKeyHex = "180cb41c7c600be951b5d3d0a7334acc7506173875834f7a6c4c786a28fcbb19"
     val key: ECPrivateKey = ECPrivateKey(privateKeyHex)
@@ -78,7 +73,6 @@ class ECPrivateKeyTest extends FlatSpec with MustMatchers with BitcoinSLogger {
     val privKey = ECPrivateKey(hex)
     val wif = privKey.toWIF(TestNet3)
     val privKeyFromWIF = ECPrivateKey.fromWIFToPrivateKey(wif)
-
     privKeyFromWIF must be (privKey)
   }
 
@@ -90,11 +84,17 @@ class ECPrivateKeyTest extends FlatSpec with MustMatchers with BitcoinSLogger {
     privKeyFromWIF must be (privKey)
   }
 
+
   it must "correctly decode a private key from WIF" in {
     val privateKey = ECPrivateKey.fromWIFToPrivateKey("cTPg4Zc5Jis2EZXy3NXShgbn487GWBTapbU63BerLDZM3w2hQSjC")
     //derived hex on bitcore's playground
     privateKey.hex must be ("ad59fb6aadf617fb0f93469741fcd9a9f48700f1d1f465ddc0f26fa7f7bfa1ac")
   }
 
+  it must "decode a WIF private key corresponding to uncompressed public key" in {
+    val wif = "5Kg1gnAjaLfKiwhhPpGS3QfRg2m6awQvaj98JCZBZQ5SuS2F15C"
+    val privKey = ECPrivateKey.fromWIFToPrivateKey(wif)
+    privKey.publicKey.hex must be ("045b81f0017e2091e2edcd5eecf10d5bdd120a5514cb3ee65b8447ec18bfc4575c6d5bf415e54e03b1067934a0f0ba76b01c6b9ab227142ee1d543764b69d901e0")
+  }
 
 }
