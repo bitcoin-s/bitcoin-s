@@ -47,7 +47,7 @@ sealed trait ScriptSignature extends NetworkElement with BitcoinSLogger {
   def hashType(digitalSignature: ECDigitalSignature) : HashType = {
     digitalSignature match {
       case EmptyDigitalSignature => SIGHASH_ALL(Int32.one)
-      case sig : ECDigitalSignature => HashType.fromBytes(Seq(digitalSignature.bytes.last))
+      case sig : ECDigitalSignature => HashType(Seq(digitalSignature.bytes.last))
     }
   }
 }
@@ -100,7 +100,7 @@ trait P2PKHScriptSignature extends ScriptSignature {
     *
     * @return
     */
-  def hashType : HashType = HashType.fromBytes(Seq(signature.bytes.last))
+  def hashType : HashType = HashType(Seq(signature.bytes.last))
 
   override def signatures : Seq[ECDigitalSignature] = {
     Seq(ECDigitalSignature(asm(1).hex))
@@ -359,7 +359,7 @@ trait P2PKScriptSignature extends ScriptSignature {
     *
     * @return
     */
-  def hashType : HashType = HashType.fromBytes(Seq(signature.bytes.last))
+  def hashType : HashType = HashType(Seq(signature.bytes.last))
 
   /**
     * PubKey scriptSignatures only have one signature

@@ -22,7 +22,7 @@ object SignatureHashTestCaseProtocol extends DefaultJsonProtocol {
       val script : ScriptPubKey = ScriptPubKey(elements.apply(1).convertTo[String])
       val inputIndex : UInt32 = UInt32(elements(2).convertTo[Int])
       val hashTypeNum : Int32 = Int32(elements(3).convertTo[Int])
-      val hashType : HashType = HashType.fromNumber(hashTypeNum)
+      val hashType : HashType = HashType(hashTypeNum)
       val hash : DoubleSha256Digest = DoubleSha256Digest(elements.last.toString)
       SignatureHashTestCaseImpl(transaction, script, inputIndex, hashTypeNum, hashType, hash)
     }
