@@ -187,22 +187,6 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
   }
 
   /**
-   * Updates an input at the given inputIndex and returns the updated sequence of inputs
-   * @param inputs
-   * @param updatedInput
-   * @param inputIndex
-   * @return
-   */
-  private def updateInputIndex(inputs : Seq[TransactionInput], updatedInput : TransactionInput, inputIndex : UInt32) : Seq[TransactionInput] = {
-    for {
-      (input,index) <- inputs.zipWithIndex
-    } yield {
-      if (inputIndex == UInt32(index)) updatedInput
-      else input
-    }
-  }
-
-  /**
    * Executes the SIGHASH_NONE procedure on a spending transaction for the input specified by inputIndex
    * @param spendingTransaction
    * @param inputIndex
