@@ -72,7 +72,7 @@ object ECPrivateKey extends Factory[ECPrivateKey] with BitcoinSLogger {
   def fromBytes(bytes: Seq[Byte], isCompressed: Boolean): ECPrivateKey = {
     if (bytes.size == 32) ECPrivateKeyImpl(bytes,isCompressed)
     else if (bytes.size < 32) {
-      //means we need to pad the private key with 0 bytes so we have 32 bytes    val paddingNeeded = 32 - bytes.size
+      //means we need to pad the private key with 0 bytes so we have 32 bytes
       val paddingNeeded = 32 - bytes.size
       val padding = for { _ <- 0 until paddingNeeded} yield 0.toByte
       ECPrivateKey.fromBytes(padding ++ bytes,isCompressed)
