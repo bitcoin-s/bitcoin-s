@@ -1,18 +1,16 @@
 package org.bitcoins.core.script.crypto
 
 import org.bitcoins.core.number.Int32
-import org.bitcoins.core.script.crypto.SIGHASH_ALL.SIGHASH_ALLImpl
-import org.bitcoins.core.util.{Factory, BitcoinSUtil}
+import org.bitcoins.core.util.Factory
 
 /**
  * Created by chris on 1/18/16.
  */
 sealed trait HashType {
-  type HashType
   def num : Int32
 }
 
-trait HashTypeOperations extends Factory[HashType] {
+object HashType extends Factory[HashType] {
   def fromBytes(bytes : Seq[Byte]) : HashType = {
     val num = Int32(bytes)
     fromNumber(num)
@@ -26,7 +24,11 @@ trait HashTypeOperations extends Factory[HashType] {
       if (isSIGHASH_SINGLE_ANYONECANPAY(num)) SIGHASH_SINGLE_ANYONECANPAY(num) else SIGHASH_SINGLE(num)
     }
     else if (isSIGHASH_ANYONECANPAY(num)) {
-      if (isSIGHASH_ALL_ANYONECANPAY(num)) SIGHASH_ALL_ANYONECANPAY(num) else SIGHASH_ANYONECANPAY(num)
+      if (isSIGHASH_ALL_ANYONECANPAY(num)) SIGHASH_ALL_ANYONECANPAY(num)
+      else {
+        require(isONLY_ANYONE_CANPAY(num))
+        SIGHASH_ANYONECANPAY(num)
+      }
     }
     else {
       SIGHASH_ALL(num)
@@ -34,14 +36,13 @@ trait HashTypeOperations extends Factory[HashType] {
   }
 
   def byte (hashType : HashType) : Byte = hashType match {
-    case zero if zero.num == Int32.zero => 0x00.toByte
-    case _ : SIGHASH_ALL => 0x01.toByte
-    case _ : SIGHASH_NONE => 0x02.toByte
-    case _ : SIGHASH_SINGLE => 0x03.toByte
-    case _ : SIGHASH_ANYONECANPAY => 0x80.toByte
-    case _ : SIGHASH_ALL_ANYONECANPAY => 0x81.toByte
-    case _ : SIGHASH_NONE_ANYONECANPAY => 0x82.toByte
-    case _ : SIGHASH_SINGLE_ANYONECANPAY => 0x83.toByte
+    case _ : SIGHASH_ALL => SIGHASH_ALL.defaultValue.num.underlying.toByte
+    case _ : SIGHASH_NONE => SIGHASH_NONE.defaultValue.num.underlying.toByte
+    case _ : SIGHASH_SINGLE => SIGHASH_SINGLE.defaultValue.num.underlying.toByte
+    case _ : SIGHASH_ANYONECANPAY => SIGHASH_ANYONECANPAY.defaultValue.num.underlying.toByte
+    case _ : SIGHASH_ALL_ANYONECANPAY => SIGHASH_ALL_ANYONECANPAY.defaultValue.num.underlying.toByte
+    case _ : SIGHASH_NONE_ANYONECANPAY => SIGHASH_NONE_ANYONECANPAY.defaultValue.num.underlying.toByte
+    case _ : SIGHASH_SINGLE_ANYONECANPAY => SIGHASH_SINGLE_ANYONECANPAY.defaultValue.num.underlying.toByte
   }
 
   def isSIGHASH_ALL_ONE(num : Int32) : Boolean = (num & Int32(0x1f)) == Int32(1)
@@ -56,83 +57,93 @@ trait HashTypeOperations extends Factory[HashType] {
       isSIGHASH_SINGLE_ANYONECANPAY(num) || isSIGHASH_NONE_ANYONECANPAY(num))) true
     else false
   }
+  def isONLY_ANYONE_CANPAY(num : Int32) : Boolean = {
+    !(HashType.isSIGHASH_ALL_ANYONECANPAY(num) || HashType.isSIGHASH_NONE_ANYONECANPAY(num) || HashType.isSIGHASH_SINGLE_ANYONECANPAY(num))
+  }
 
-  val hashTypes = Seq(SIGHASH_ALL.value, SIGHASH_NONE, SIGHASH_SINGLE, SIGHASH_ANYONECANPAY,
+  val hashTypes = Seq(SIGHASH_ALL.defaultValue, SIGHASH_NONE, SIGHASH_SINGLE, SIGHASH_ANYONECANPAY,
     SIGHASH_NONE_ANYONECANPAY, SIGHASH_ALL_ANYONECANPAY, SIGHASH_SINGLE_ANYONECANPAY)
-
 }
-
-object HashTypeOperations extends HashTypeOperations
 
 /**
- * This seems strange, but it needs to take a parameter. This is because
- * SIGHASH_ALL is essentially a catch all if the none of the other hash types are matched.
- * Therefore SIGHASH_ALL could be represented by the byte 0x05 since 0x05 does not match
- * any of the other hash types. The default byte for SIGHASH_ALL is 0x01
- *
- */
+  * defaultValue is the underlying value of the HashType. The last byte of a signature determines the HashType.
+  * https://en.bitcoin.it/wiki/OP_CHECKSIG
+  */
 
- object SIGHASH_ALL extends Factory[HashType] with HashTypeOperations {
+ object SIGHASH_ALL extends Factory[SIGHASH_ALL] {
+   /**
+   * This seems strange, but it needs to take a parameter. This is because
+   * SIGHASH_ALL is essentially a catch all if the none of the other hash types are matched.
+   * Therefore SIGHASH_ALL could be represented by the byte 0x05 since 0x05 does not match
+   * any of the other hash types. The default byte for SIGHASH_ALL is 0x01
+   */
   private case class SIGHASH_ALLImpl(num: Int32) extends SIGHASH_ALL {
-    require(isSIGHASH_ALL(num), "SIGHASH_ALL acts as a 'catch-all' for undefined hashtypes, as well as the values of zero and one.")
+    require(HashType.isSIGHASH_ALL(num), "SIGHASH_ALL acts as a 'catch-all' for undefined hashtypes, and has a default " +
+      "value of one. Your input was: " + num + ", which is of hashType: " + HashType.fromNumber(num))
   }
-  def value : HashType = SIGHASH_ALL(Int32.one)
-  def apply(num : Int32) : HashType = SIGHASH_ALLImpl(num)
-  override def fromBytes (bytes : Seq[Byte]) : HashType = SIGHASH_ALL(bytes)
+  def defaultValue : SIGHASH_ALL = SIGHASH_ALL(Int32.one)
+  def apply(num : Int32) : SIGHASH_ALL = SIGHASH_ALLImpl(num)
+  override def fromBytes (bytes : Seq[Byte]) : SIGHASH_ALL = SIGHASH_ALL(bytes)
 }
 
- object SIGHASH_NONE extends Factory[HashType] with HashTypeOperations{
+ object SIGHASH_NONE extends Factory[SIGHASH_NONE] {
   private case class SIGHASH_NONEImpl(num : Int32) extends SIGHASH_NONE {
-    require(isSIGHASH_NONE(num), "The bitwise AND of 'num & 0x1f' must be 2 for a hashtype of SIGHASH_NONE.")
+    require(HashType.isSIGHASH_NONE(num), "The bitwise AND of 'num & 0x1f' must be 2 for a hashtype of SIGHASH_NONE. " +
+      "Your input was: " + num + ", which is of hashType: " + HashType.fromNumber(num))
   }
-  def value : HashType= SIGHASH_NONE(Int32(2))
-  def apply(num : Int32) : HashType = SIGHASH_NONEImpl(num)
-  override def fromBytes (bytes : Seq[Byte]) : HashType = SIGHASH_NONE(bytes)
+  def defaultValue : SIGHASH_NONE = SIGHASH_NONE(Int32(2))
+  def apply(num : Int32) : SIGHASH_NONE = SIGHASH_NONEImpl(num)
+  override def fromBytes (bytes : Seq[Byte]) : SIGHASH_NONE = SIGHASH_NONE(bytes)
 }
 
-object SIGHASH_SINGLE extends Factory[HashType] with HashTypeOperations{
+object SIGHASH_SINGLE extends Factory[SIGHASH_SINGLE] {
   private case class SIGHASH_SINGLEImpl(num : Int32) extends SIGHASH_SINGLE {
-    require(isSIGHASH_SINGLE(num), "The bitwise AND of 'num & 0x1f' must be 3 for a hashtype of SIGHASH_SINGLE.")
+    require(HashType.isSIGHASH_SINGLE(num), "The bitwise AND of 'num & 0x1f' must be 3 for a hashtype of SIGHASH_SINGLE." +
+      " Your input was: " + num + ", which is of hashType: " + HashType.fromNumber(num))
   }
-  def value : HashType = SIGHASH_SINGLE(Int32(3))
-  def apply(num : Int32) : HashType = SIGHASH_SINGLEImpl(num)
-  override def fromBytes (bytes : Seq[Byte]) : HashType = SIGHASH_SINGLE(bytes)
+  def defaultValue : SIGHASH_SINGLE = SIGHASH_SINGLE(Int32(3))
+  def apply(num : Int32) : SIGHASH_SINGLE = SIGHASH_SINGLEImpl(num)
+  override def fromBytes (bytes : Seq[Byte]) : SIGHASH_SINGLE = SIGHASH_SINGLE(bytes)
 }
 
-object SIGHASH_ANYONECANPAY extends Factory[HashType] with HashTypeOperations{
+object SIGHASH_ANYONECANPAY extends Factory[SIGHASH_ANYONECANPAY] {
   private case class SIGHASH_ANYONECANPAYImpl(num : Int32) extends SIGHASH_ANYONECANPAY {
-    require(isSIGHASH_ANYONECANPAY(num), "The bitwise AND of 'num & 0x80' must be 0x80 (or 128) for a hashtype of SIGHASH_ANYONECANPAY.")
+    require(HashType.isSIGHASH_ANYONECANPAY(num) && HashType.isONLY_ANYONE_CANPAY(num), "The bitwise AND of 'num & 0x80' must be 0x80 (or 128) for a hashtype of " +
+      "SIGHASH_ANYONECANPAY. Your input was: " + num + ", which is of hashType: " + HashType.fromNumber(num))
   }
-  def value : HashType = SIGHASH_ANYONECANPAY(Int32(0x80))
-  def apply(num : Int32) : HashType = SIGHASH_ANYONECANPAYImpl(num)
-  override def fromBytes (bytes : Seq[Byte]) : HashType = SIGHASH_ANYONECANPAY(bytes)
+  def defaultValue : SIGHASH_ANYONECANPAY = SIGHASH_ANYONECANPAY(Int32(0x80))
+  def apply(num : Int32) : SIGHASH_ANYONECANPAY = SIGHASH_ANYONECANPAYImpl(num)
+  override def fromBytes (bytes : Seq[Byte]) : SIGHASH_ANYONECANPAY = SIGHASH_ANYONECANPAY(bytes)
 }
 
-object SIGHASH_ALL_ANYONECANPAY extends Factory[HashType] with HashTypeOperations{
+object SIGHASH_ALL_ANYONECANPAY extends Factory[SIGHASH_ALL_ANYONECANPAY] {
   private case class SIGHASH_ALL_ANYONECANPAYImpl(num : Int32) extends SIGHASH_ALL_ANYONECANPAY {
-    require(isSIGHASH_ALL_ANYONECANPAY(num), "SIGHASH_ALL_ANYONECANPAY must be of both hashTypes: SIGHASH_ALL, and SIGHASH_ANYONECANPAY.")
+    require(HashType.isSIGHASH_ALL_ANYONECANPAY(num), "SIGHASH_ALL_ANYONECANPAY must be of both hashTypes: SIGHASH_ALL, and " +
+      "SIGHASH_ANYONECANPAY. Your input was: " + num + ", which is of hashType: " + HashType.fromNumber(num))
   }
-  def value : HashType = SIGHASH_ALL_ANYONECANPAY(SIGHASH_ANYONECANPAY.value.num | SIGHASH_ALL.value.num)
-  def apply(num : Int32) : HashType = SIGHASH_ALL_ANYONECANPAYImpl(num)
-  override def fromBytes (bytes : Seq[Byte]) : HashType = SIGHASH_ALL_ANYONECANPAY(bytes)
+  def defaultValue : SIGHASH_ALL_ANYONECANPAY = SIGHASH_ALL_ANYONECANPAY(SIGHASH_ANYONECANPAY.defaultValue.num | SIGHASH_ALL.defaultValue.num)
+  def apply(num : Int32) : SIGHASH_ALL_ANYONECANPAY = SIGHASH_ALL_ANYONECANPAYImpl(num)
+  override def fromBytes (bytes : Seq[Byte]) : SIGHASH_ALL_ANYONECANPAY = SIGHASH_ALL_ANYONECANPAY(bytes)
 }
 
-object SIGHASH_NONE_ANYONECANPAY extends Factory[HashType] with HashTypeOperations{
+object SIGHASH_NONE_ANYONECANPAY extends Factory[SIGHASH_NONE_ANYONECANPAY] {
   private case class SIGHASH_NONE_ANYONECANPAYImpl(num : Int32) extends SIGHASH_NONE_ANYONECANPAY {
-    require(isSIGHASH_NONE_ANYONECANPAY(num), "SIGHASH_NONE_ANYONECANPAY must be of both hashTypes: SIGHASH_NONE, and SIGHASH_ANYONECANPAY.")
+    require(HashType.isSIGHASH_NONE_ANYONECANPAY(num), "SIGHASH_NONE_ANYONECANPAY must be of both hashTypes: SIGHASH_NONE, and " +
+      "SIGHASH_ANYONECANPAY. Your input was: " + num + ", which is of hashType: " + HashType.fromNumber(num))
   }
-  def value : HashType = SIGHASH_NONE_ANYONECANPAY(SIGHASH_ANYONECANPAY.value.num | SIGHASH_NONE.value.num)
-  def apply(num : Int32) : HashType = SIGHASH_NONE_ANYONECANPAYImpl(num)
-  override def fromBytes (bytes : Seq[Byte]) : HashType = SIGHASH_NONE_ANYONECANPAY(bytes)
+  def defaultValue : SIGHASH_NONE_ANYONECANPAY = SIGHASH_NONE_ANYONECANPAY(SIGHASH_ANYONECANPAY.defaultValue.num | SIGHASH_NONE.defaultValue.num)
+  def apply(num : Int32) : SIGHASH_NONE_ANYONECANPAY = SIGHASH_NONE_ANYONECANPAYImpl(num)
+  override def fromBytes (bytes : Seq[Byte]) : SIGHASH_NONE_ANYONECANPAY = SIGHASH_NONE_ANYONECANPAY(bytes)
 }
 
-object SIGHASH_SINGLE_ANYONECANPAY extends Factory[HashType] with HashTypeOperations{
+object SIGHASH_SINGLE_ANYONECANPAY extends Factory[SIGHASH_SINGLE_ANYONECANPAY] {
   private case class SIGHASH_SINGLE_ANYONECANPAYImpl(num : Int32) extends SIGHASH_SINGLE_ANYONECANPAY {
-    require(isSIGHASH_SINGLE_ANYONECANPAY(num), "SIGHASH_SINGLE_ANYONECANPAY must be of both hashTypes: SIGHASH_SINGLE, and SIGHASH_ANYONECANPAY.")
+    require(HashType.isSIGHASH_SINGLE_ANYONECANPAY(num), "SIGHASH_SINGLE_ANYONECANPAY must be of both hashTypes: SIGHASH_SINGLE, " +
+      "and SIGHASH_ANYONECANPAY. Your input was: " + num + ", which is of hashType: " + HashType.fromNumber(num))
   }
-  def value : HashType = SIGHASH_SINGLE_ANYONECANPAY(SIGHASH_ANYONECANPAY.value.num | SIGHASH_SINGLE.value.num)
-  def apply(num : Int32) : HashType = SIGHASH_SINGLE_ANYONECANPAYImpl(num)
-  override def fromBytes (bytes : Seq[Byte]) : HashType = SIGHASH_SINGLE_ANYONECANPAY(bytes)
+  def defaultValue : SIGHASH_SINGLE_ANYONECANPAY = SIGHASH_SINGLE_ANYONECANPAY(SIGHASH_ANYONECANPAY.defaultValue.num | SIGHASH_SINGLE.defaultValue.num)
+  def apply(num : Int32) : SIGHASH_SINGLE_ANYONECANPAY = SIGHASH_SINGLE_ANYONECANPAYImpl(num)
+  override def fromBytes (bytes : Seq[Byte]) : SIGHASH_SINGLE_ANYONECANPAY = SIGHASH_SINGLE_ANYONECANPAY(bytes)
 }
 
 
