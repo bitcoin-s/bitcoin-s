@@ -77,12 +77,6 @@ object HashType extends Factory[HashType] {
   */
 
  object SIGHASH_ALL extends Factory[SIGHASH_ALL] {
-   /**
-   * This seems strange, but it needs to take a parameter. This is because
-   * SIGHASH_ALL is essentially a catch all if the none of the other hash types are matched.
-   * Therefore SIGHASH_ALL could be represented by the byte 0x05 since 0x05 does not match
-   * any of the other hash types. The default byte for SIGHASH_ALL is 0x01
-   */
   private case class SIGHASH_ALLImpl(num: Int32) extends SIGHASH_ALL {
     require(HashType.isSIGHASH_ALL(num), "SIGHASH_ALL acts as a 'catch-all' for undefined hashtypes, and has a default " +
       "value of one. Your input was: " + num + ", which is of hashType: " + HashType(num))
