@@ -147,7 +147,7 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
     if (inputIndex >= UInt32(spendingTransaction.inputs.size)) {
       logger.warn("Our inputIndex is out of the range of the inputs in the spending transaction")
       errorHash
-    } else if(HashTypeOperations.isSIGHASH_SINGLE(hashType.num) && inputIndex >= UInt32(spendingTransaction.outputs.size)) {
+    } else if(HashType.isSIGHASH_SINGLE(hashType.num) && inputIndex >= UInt32(spendingTransaction.outputs.size)) {
       logger.warn("When we have a SIGHASH_SINGLE we cannot have more inputs than outputs")
       errorHash
     } else {

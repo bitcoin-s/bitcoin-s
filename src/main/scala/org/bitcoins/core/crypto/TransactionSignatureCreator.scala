@@ -1,7 +1,6 @@
 package org.bitcoins.core.crypto
 
-import org.bitcoins.core.protocol.script.ScriptPubKey
-import org.bitcoins.core.script.crypto.{HashTypeOperations, HashType}
+import org.bitcoins.core.script.crypto.HashType
 
 /**
   * Created by chris on 7/21/16.
@@ -20,7 +19,7 @@ trait TransactionSignatureCreator {
     val hash = TransactionSignatureSerializer.hashForSignature(txSignatureComponent, hashType)
     val signature = privateKey.sign(hash)
     //append 1 byte hash type onto the end
-    ECDigitalSignature(signature.bytes ++ Seq(HashTypeOperations.byte(hashType)))
+    ECDigitalSignature(signature.bytes ++ Seq(HashType.byte(hashType)))
   }
 }
 

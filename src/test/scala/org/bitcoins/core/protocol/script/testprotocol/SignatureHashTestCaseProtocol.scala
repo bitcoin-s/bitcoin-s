@@ -4,7 +4,7 @@ import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.Transaction
-import org.bitcoins.core.script.crypto.{HashTypeOperations, HashType}
+import org.bitcoins.core.script.crypto.HashType
 import spray.json._
 
 /**
@@ -22,7 +22,7 @@ object SignatureHashTestCaseProtocol extends DefaultJsonProtocol {
       val script : ScriptPubKey = ScriptPubKey(elements.apply(1).convertTo[String])
       val inputIndex : UInt32 = UInt32(elements(2).convertTo[Int])
       val hashTypeNum : Int32 = Int32(elements(3).convertTo[Int])
-      val hashType : HashType = HashTypeOperations.fromNumber(hashTypeNum)
+      val hashType : HashType = HashType.fromNumber(hashTypeNum)
       val hash : DoubleSha256Digest = DoubleSha256Digest(elements.last.toString)
       SignatureHashTestCaseImpl(transaction, script, inputIndex, hashTypeNum, hashType, hash)
     }

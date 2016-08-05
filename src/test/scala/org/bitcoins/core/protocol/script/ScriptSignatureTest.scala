@@ -1,14 +1,12 @@
 package org.bitcoins.core.protocol.script
 
 
-import org.bitcoins.core.crypto.{DoubleSha256Digest, TransactionSignatureSerializer, ECDigitalSignature}
-import org.bitcoins.core.number.{Int32, UInt32}
+import org.bitcoins.core.crypto.{DoubleSha256Digest, ECDigitalSignature, TransactionSignatureSerializer}
+import org.bitcoins.core.number.Int32
 import org.bitcoins.core.protocol.script.testprotocol.SignatureHashTestCase
-import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.core.script.crypto.{HashType, SIGHASH_ALL, SIGHASH_SINGLE}
 import org.bitcoins.core.serializers.script.RawScriptSignatureParser
-import org.bitcoins.core.script.constant._
-import org.bitcoins.core.script.crypto.{HashTypeOperations, HashType, SIGHASH_ALL, SIGHASH_SINGLE}
-import org.bitcoins.core.util.{BitcoinSUtil, BitcoinScriptUtil, TestUtil, TransactionTestUtil}
+import org.bitcoins.core.util.{BitcoinSUtil, TestUtil}
 import org.scalatest.{FlatSpec, MustMatchers}
 import spray.json._
 
@@ -26,7 +24,7 @@ class ScriptSignatureTest extends FlatSpec with MustMatchers {
 
 
    it must "derive the signature hash type from the signature" in {
-    TestUtil.scriptSig.hashType(TestUtil.scriptSig.signatures.head) must be (HashTypeOperations.fromBytes(Seq(TestUtil.scriptSig.signatures.head.bytes.last)))
+    TestUtil.scriptSig.hashType(TestUtil.scriptSig.signatures.head) must be (HashType.fromBytes(Seq(TestUtil.scriptSig.signatures.head.bytes.last)))
   }
 
 
@@ -55,12 +53,12 @@ class ScriptSignatureTest extends FlatSpec with MustMatchers {
     ))
   }
   it must "find the hash type for a p2sh script signature" in {
-    TestUtil.p2shInputScript.hashType(TestUtil.p2shInputScript2Of2.signatures.head) must be (HashTypeOperations.fromBytes(Seq(TestUtil.p2shInputScript2Of2.signatures.head.bytes.last)))
+    TestUtil.p2shInputScript.hashType(TestUtil.p2shInputScript2Of2.signatures.head) must be (HashType.fromBytes(Seq(TestUtil.p2shInputScript2Of2.signatures.head.bytes.last)))
   }
 
   it must "find the digital signature and hash type for a SIGHASH_SINGLE" in {
     TestUtil.p2shInputScriptSigHashSingle.signatures.head.hex must be ("3045022100dfcfafcea73d83e1c54d444a19fb30d17317f922c19e2ff92dcda65ad09cba24022001e7a805c5672c49b222c5f2f1e67bb01f87215fb69df184e7c16f66c1f87c2903")
-    TestUtil.p2shInputScriptSigHashSingle.hashType(TestUtil.p2shInputScriptSigHashSingle.signatures.head) must be (SIGHASH_SINGLE.value)
+    TestUtil.p2shInputScriptSigHashSingle.hashType(TestUtil.p2shInputScriptSigHashSingle.signatures.head) must be (SIGHASH_SINGLE.defaultValue)
   }
 
   it must "find the hash type for the weird occurrence of hash type being 0 on the blockchain" in {
