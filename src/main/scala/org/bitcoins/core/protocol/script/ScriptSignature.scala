@@ -1,11 +1,12 @@
 package org.bitcoins.core.protocol.script
 
 import org.bitcoins.core.crypto.{ECDigitalSignature, ECPublicKey, EmptyDigitalSignature}
+import org.bitcoins.core.number.Int32
 import org.bitcoins.core.protocol.NetworkElement
 import org.bitcoins.core.script.constant._
-import org.bitcoins.core.script.crypto.{HashType, HashTypeFactory, SIGHASH_ALL}
+import org.bitcoins.core.script.crypto.{HashType, SIGHASH_ALL}
 import org.bitcoins.core.serializers.script.{RawScriptSignatureParser, ScriptParser}
-import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil, BitcoinScriptUtil, Factory}
+import org.bitcoins.core.util.{BitcoinSLogger, BitcoinScriptUtil, Factory}
 
 import scala.util.{Failure, Success, Try}
 
@@ -43,10 +44,10 @@ sealed trait ScriptSignature extends NetworkElement with BitcoinSLogger {
     * @param digitalSignature
     * @return
     */
-  def hashType(digitalSignature: ECDigitalSignature) = {
+  def hashType(digitalSignature: ECDigitalSignature) : HashType = {
     digitalSignature match {
-      case EmptyDigitalSignature => SIGHASH_ALL()
-      case sig : ECDigitalSignature => HashTypeFactory.fromByte(digitalSignature.bytes.last)
+      case EmptyDigitalSignature => SIGHASH_ALL(Int32.one)
+      case sig : ECDigitalSignature => HashType(Seq(digitalSignature.bytes.last))
     }
   }
 }
@@ -99,7 +100,7 @@ trait P2PKHScriptSignature extends ScriptSignature {
     *
     * @return
     */
-  def hashType : HashType = HashTypeFactory.fromByte(signature.bytes.last)
+  def hashType : HashType = HashType(Seq(signature.bytes.last))
 
   override def signatures : Seq[ECDigitalSignature] = {
     Seq(ECDigitalSignature(asm(1).hex))
@@ -358,7 +359,7 @@ trait P2PKScriptSignature extends ScriptSignature {
     *
     * @return
     */
-  def hashType = HashTypeFactory.fromByte(signature.bytes.last)
+  def hashType : HashType = HashType(Seq(signature.bytes.last))
 
   /**
     * PubKey scriptSignatures only have one signature
