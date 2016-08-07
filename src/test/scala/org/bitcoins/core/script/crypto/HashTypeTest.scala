@@ -22,11 +22,11 @@ class HashTypeTest extends FlatSpec with MustMatchers {
   }
 
   it must "find a hash type by its byte value" in {
-    HashType(Seq(0.toByte)) must be (SIGHASH_ALL(Int32.zero))
-    HashType(Seq(1.toByte)) must be (SIGHASH_ALL(Int32.one))
-    HashType(Seq(2.toByte)) must be (SIGHASH_NONE.defaultValue)
-    HashType(Seq(3.toByte)) must be (SIGHASH_SINGLE.defaultValue)
-    HashType(Int32(0x80).bytes) must be (SIGHASH_ANYONECANPAY.defaultValue)
+    HashType(0.toByte) must be (SIGHASH_ALL(Int32.zero))
+    HashType(1.toByte) must be (SIGHASH_ALL(Int32.one))
+    HashType(2.toByte) must be (SIGHASH_NONE.defaultValue)
+    HashType(3.toByte) must be (SIGHASH_SINGLE.defaultValue)
+    HashType(0x80) must be (SIGHASH_ANYONECANPAY.defaultValue)
 
   }
 
@@ -38,6 +38,7 @@ class HashTypeTest extends FlatSpec with MustMatchers {
     //1190874345 & 0x80 = 0x80
     val num = Int32(1190874345)
     HashType(num) must be (SIGHASH_ANYONECANPAY(num))
+    HashType(num.bytes) must be (SIGHASH_ANYONECANPAY(num.bytes))
   }
 
   it must "determine if a given number is of hashType SIGHASH_ALL" in {
@@ -50,13 +51,13 @@ class HashTypeTest extends FlatSpec with MustMatchers {
   }
 
   it must "return the correct byte for a given hashtype" in {
-    HashType.byte(SIGHASH_ALL.defaultValue) must be (0x01.toByte)
-    HashType.byte(SIGHASH_NONE.defaultValue) must be (0x02.toByte)
-    HashType.byte(SIGHASH_SINGLE.defaultValue) must be (0x03.toByte)
-    HashType.byte(SIGHASH_ANYONECANPAY.defaultValue) must be (0x80.toByte)
-    HashType.byte(SIGHASH_ALL_ANYONECANPAY.defaultValue) must be (0x81.toByte)
-    HashType.byte(SIGHASH_NONE_ANYONECANPAY.defaultValue) must be (0x82.toByte)
-    HashType.byte(SIGHASH_SINGLE_ANYONECANPAY.defaultValue) must be (0x83.toByte)
+    SIGHASH_ALL.byte must be (0x01.toByte)
+    SIGHASH_NONE.byte must be (0x02.toByte)
+    SIGHASH_SINGLE.byte must be (0x03.toByte)
+    SIGHASH_ANYONECANPAY.byte must be (0x80.toByte)
+    SIGHASH_ALL_ANYONECANPAY.byte must be (0x81.toByte)
+    SIGHASH_NONE_ANYONECANPAY.byte must be (0x82.toByte)
+    SIGHASH_SINGLE_ANYONECANPAY.byte must be (0x83.toByte)
   }
 
   it must "intercept require statements for each hashType with illegal inputs" in {
@@ -84,6 +85,7 @@ class HashTypeTest extends FlatSpec with MustMatchers {
   }
 
   it must "find each specific hashType from byte sequence of default value" in {
+    //tests each hashtypes overriding fromBytes function
     SIGHASH_ALL(SIGHASH_ALL.defaultValue.num.bytes).isInstanceOf[SIGHASH_ALL] must be (true)
     SIGHASH_NONE(SIGHASH_NONE.defaultValue.num.bytes).isInstanceOf[SIGHASH_NONE] must be (true)
     SIGHASH_SINGLE(SIGHASH_SINGLE.defaultValue.num.bytes).isInstanceOf[SIGHASH_SINGLE] must be (true)
@@ -91,16 +93,6 @@ class HashTypeTest extends FlatSpec with MustMatchers {
     SIGHASH_ALL_ANYONECANPAY(SIGHASH_ALL_ANYONECANPAY.defaultValue.num.bytes).isInstanceOf[SIGHASH_ALL_ANYONECANPAY] must be (true)
     SIGHASH_NONE_ANYONECANPAY(SIGHASH_NONE_ANYONECANPAY.defaultValue.num.bytes).isInstanceOf[SIGHASH_NONE_ANYONECANPAY] must be (true)
     SIGHASH_SINGLE_ANYONECANPAY(SIGHASH_SINGLE_ANYONECANPAY.defaultValue.num.bytes).isInstanceOf[SIGHASH_SINGLE_ANYONECANPAY] must be (true)
-  }
-
-  it must "verify default byte value of each hashtype" in {
-    SIGHASH_ALL.byte must be (0x01.toByte)
-    SIGHASH_NONE.byte must be (0x02.toByte)
-    SIGHASH_SINGLE.byte must be (0x03.toByte)
-    SIGHASH_ANYONECANPAY.byte must be (0x80.toByte)
-    SIGHASH_ALL_ANYONECANPAY.byte must be (0x81.toByte)
-    SIGHASH_NONE_ANYONECANPAY.byte must be (0x82.toByte)
-    SIGHASH_SINGLE_ANYONECANPAY.byte must be (0x83.toByte)
   }
 
   it must "find a hashtype with only an integer" in {

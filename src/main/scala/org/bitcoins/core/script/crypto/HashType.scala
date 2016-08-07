@@ -17,6 +17,8 @@ object HashType extends Factory[HashType] {
     fromNumber(num)
   }
 
+  def fromByte(byte: Byte) : HashType = fromBytes(Seq(byte))
+
   def fromNumber(num : Int32) : HashType = {
     if (isSIGHASH_NONE(num)) {
       if (isSIGHASH_NONE_ANYONECANPAY(num)) SIGHASH_NONE_ANYONECANPAY(num) else SIGHASH_NONE(num)
@@ -36,6 +38,11 @@ object HashType extends Factory[HashType] {
     }
   }
 
+  /**
+    * Returns a hashtype's default byte value
+    * @param hashType
+    * @return
+    */
   def byte (hashType : HashType) : Byte = hashType match {
     case _ : SIGHASH_ALL => SIGHASH_ALL.defaultValue.num.underlying.toByte
     case _ : SIGHASH_NONE => SIGHASH_NONE.defaultValue.num.underlying.toByte
@@ -70,6 +77,7 @@ object HashType extends Factory[HashType] {
     val num : Int32 = Int32(int)
     fromNumber(num)
   }
+  def apply (byte : Byte) : HashType = fromByte(byte)
 }
 
 /**
