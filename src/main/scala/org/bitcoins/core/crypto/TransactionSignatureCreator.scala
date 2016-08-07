@@ -1,6 +1,5 @@
 package org.bitcoins.core.crypto
 
-import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.script.crypto.HashType
 
 /**
@@ -10,6 +9,7 @@ trait TransactionSignatureCreator {
 
   /**
     * Creates a signature from a tx signature component
+ *
     * @param txSignatureComponent contains the tx, inputIndex which specify which input we are creating a sig for
     * @param privateKey the private key which we are signing the hash with
     * @param hashType the procedure to use for hashing to transaction

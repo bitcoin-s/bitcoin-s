@@ -1,12 +1,16 @@
 package org.bitcoins.core.protocol.script
 
 
-import org.bitcoins.core.crypto.{ECDigitalSignature}
+import org.bitcoins.core.crypto.{DoubleSha256Digest, ECDigitalSignature, TransactionSignatureSerializer}
+import org.bitcoins.core.number.Int32
+import org.bitcoins.core.protocol.script.testprotocol.SignatureHashTestCase
+import org.bitcoins.core.script.crypto.{HashType, SIGHASH_ALL, SIGHASH_SINGLE}
 import org.bitcoins.core.serializers.script.RawScriptSignatureParser
-import org.bitcoins.core.script.constant._
-import org.bitcoins.core.script.crypto.{SIGHASH_ALL, SIGHASH_SINGLE}
-import org.bitcoins.core.util.{BitcoinScriptUtil, TestUtil, TransactionTestUtil}
+import org.bitcoins.core.util.{BitcoinSUtil, TestUtil}
 import org.scalatest.{FlatSpec, MustMatchers}
+import spray.json._
+
+import scala.io.Source
 
 /**
  * Created by chris on 2/17/16.
@@ -20,7 +24,7 @@ class ScriptSignatureTest extends FlatSpec with MustMatchers {
 
 
    it must "derive the signature hash type from the signature" in {
-    TestUtil.scriptSig.hashType(TestUtil.scriptSig.signatures.head) must be (SIGHASH_ALL())
+    TestUtil.scriptSig.hashType(TestUtil.scriptSig.signatures.head) must be (HashType(Seq(TestUtil.scriptSig.signatures.head.bytes.last)))
   }
 
 
@@ -49,19 +53,19 @@ class ScriptSignatureTest extends FlatSpec with MustMatchers {
     ))
   }
   it must "find the hash type for a p2sh script signature" in {
-    TestUtil.p2shInputScript.hashType(TestUtil.p2shInputScript2Of2.signatures.head) must be (SIGHASH_ALL())
+    TestUtil.p2shInputScript.hashType(TestUtil.p2shInputScript2Of2.signatures.head) must be (HashType(Seq(TestUtil.p2shInputScript2Of2.signatures.head.bytes.last)))
   }
 
   it must "find the digital signature and hash type for a SIGHASH_SINGLE" in {
     TestUtil.p2shInputScriptSigHashSingle.signatures.head.hex must be ("3045022100dfcfafcea73d83e1c54d444a19fb30d17317f922c19e2ff92dcda65ad09cba24022001e7a805c5672c49b222c5f2f1e67bb01f87215fb69df184e7c16f66c1f87c2903")
-    TestUtil.p2shInputScriptSigHashSingle.hashType(TestUtil.p2shInputScriptSigHashSingle.signatures.head) must be (SIGHASH_SINGLE)
+    TestUtil.p2shInputScriptSigHashSingle.hashType(TestUtil.p2shInputScriptSigHashSingle.signatures.head) must be (SIGHASH_SINGLE.defaultValue)
   }
 
   it must "find the hash type for the weird occurrence of hash type being 0 on the blockchain" in {
     //from this tx https://btc.blockr.io/api/v1/tx/raw/c99c49da4c38af669dea436d3e73780dfdb6c1ecf9958baa52960e8baee30e73
     val hex = "493046022100d23459d03ed7e9511a47d13292d3430a04627de6235b6e51a40f9cd386f2abe3022100e7d25b080f0bb8d8d5f878bba7d54ad2fda650ea8d158a33ee3cbd11768191fd004104b0e2c879e4daf7b9ab68350228c159766676a14f5815084ba166432aab46198d4cca98fa3e9981d0a90b2effc514b76279476550ba3663fdcaff94c38420e9d5"
     val scriptSig : ScriptSignature = RawScriptSignatureParser.read(hex)
-    scriptSig.hashType(scriptSig.signatures.head) must be (SIGHASH_ALL(0))
+    scriptSig.hashType(scriptSig.signatures.head) must be (SIGHASH_ALL(Int32.zero))
   }
 
   it must "have an empty script signature" in {
@@ -87,5 +91,31 @@ class ScriptSignatureTest extends FlatSpec with MustMatchers {
     val scriptSig = ScriptSignature(TestUtil.p2pkScriptSig.hex)
     scriptSig.isInstanceOf[P2PKScriptSignature] must be (true)
     scriptSig.hex must be (TestUtil.p2pkScriptSig.hex)
+  }
+
+  it must "read sighash.json and return result" in {
+    import org.bitcoins.core.protocol.script.testprotocol.SignatureHashTestCaseProtocol._
+    //["raw_transaction, script, input_index, hashType, signature_hash (result)"],
+/*    val lines =
+      """
+        | [
+        | ["4ddaa680026ec4d8060640304b86823f1ac760c260cef81d85bd847952863d629a3002b54b0200000008526365636a656aab65457861fc6c24bdc760c8b2e906b6656edaf9ed22b5f50e1fb29ec076ceadd9e8ebcb6b000000000152ffffffff033ff04f00000000000551526a00657a1d900300000000002153af040000000003006a6300000000", "ab526a53acabab", 0, 1055317633, "7f21b62267ed52462e371a917eb3542569a4049b9dfca2de3c75872b39510b26"]
+        | ]
+        |
+      """.stripMargin*/
+
+    val source = Source.fromURL(this.getClass.getResource("/sighash.json"))
+    val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n" finally source.close()
+    val testCases : Seq[SignatureHashTestCase] = lines.parseJson.convertTo[Seq[SignatureHashTestCase]]
+
+    for {
+      testCase <- testCases
+    } yield {
+      val hashForSig = TransactionSignatureSerializer.hashForSignature(testCase.transaction, testCase.inputIndex, testCase.script.asm, testCase.hashType)
+      //the hash is returned with opposite endianness
+      val flipHash = BitcoinSUtil.flipEndianess(testCase.hash.hex)
+      hashForSig must be (DoubleSha256Digest(flipHash))
+    }
+
   }
 }
