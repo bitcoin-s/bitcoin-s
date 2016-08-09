@@ -37,6 +37,12 @@ trait Merkle extends BitcoinSLogger {
       merkleTree.value.get
   }
 
+  /** Builds a [[MerkleTree]] from sequence of sub merkle trees.
+    * This subTrees can be individual txids (leafs) or full blown subtrees
+    * @param subTrees the trees that need to be hashed
+    * @param accum the accumulated merkle trees, waiting to be hashed next round
+    * @return the entire Merkle tree computed from the given merkle trees
+    */
   @tailrec
   final def build(subTrees: Seq[MerkleTree], accum: Seq[MerkleTree]): MerkleTree = subTrees match {
     case Nil =>
@@ -44,22 +50,21 @@ trait Merkle extends BitcoinSLogger {
       else if (accum.isEmpty) throw new IllegalArgumentException("Should never have sub tree size of zero, this implies there was zero hashes given")
       else build(accum.reverse, Nil)
     case h :: h1 :: t =>
-      logger.debug("Computing the merkle tree for two sub merkle trees")
       logger.debug("Subtrees: " + subTrees)
       val newTree = computeTree(h,h1)
-      logger.debug("newTree: " + newTree)
-      logger.debug("new subtree seq: " + t)
       build(t, newTree +: accum)
     case h :: t =>
-      logger.debug("Computing the merkle tree for one sub merkle tree - this means duplicating the subtree")
       logger.debug("Subtrees: " + subTrees)
       //means that we have an odd amount of txids, this means we duplicate the last hash in the tree
       val newTree = computeTree(h,h)
-      logger.debug("newTree: " + newTree)
-      logger.debug("new subtree seq: " + t)
       build(t, newTree +: accum)
   }
 
+  /** Builds a merkle tree from a sequence of hashes */
+  def build(hashes: Seq[DoubleSha256Digest]): MerkleTree = {
+    val leafs = hashes.map(Leaf(_))
+    build(leafs,Nil)
+  }
 
   /** Computes the merkle tree of two sub merkle trees */
   def computeTree(tree1: MerkleTree, tree2: MerkleTree): MerkleTree = {
