@@ -1,12 +1,15 @@
 package org.bitcoins.core.protocol.script
 
+import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.crypto.{ECPublicKey, Sha256Hash160Digest}
 import org.bitcoins.core.protocol._
+import org.bitcoins.core.protocol.script.CLTVScriptPubKey.CLTVScriptPubKeyImpl
 import org.bitcoins.core.script.ScriptSettings
 import org.bitcoins.core.script.bitwise.{OP_EQUAL, OP_EQUALVERIFY}
 import org.bitcoins.core.script.constant._
 import org.bitcoins.core.script.crypto.{OP_CHECKMULTISIG, OP_CHECKMULTISIGVERIFY, OP_CHECKSIG, OP_HASH160}
-import org.bitcoins.core.script.stack.OP_DUP
+import org.bitcoins.core.script.locktime.{OP_CHECKSEQUENCEVERIFY, OP_CHECKLOCKTIMEVERIFY}
+import org.bitcoins.core.script.stack.{OP_DROP, OP_DUP}
 import org.bitcoins.core.serializers.script.{RawScriptPubKeyParser, ScriptParser}
 import org.bitcoins.core.util._
 
@@ -33,7 +36,9 @@ sealed trait ScriptPubKey extends NetworkElement with BitcoinSLogger {
  * https://bitcoin.org/en/developer-guide#pay-to-public-key-hash-p2pkh
  * Format: OP_DUP OP_HASH160 <PubKeyHash> OP_EQUALVERIFY OP_CHECKSIG
  */
-trait P2PKHScriptPubKey extends ScriptPubKey
+trait P2PKHScriptPubKey extends ScriptPubKey {
+  def pubKeyHash : Sha256Hash160Digest = Sha256Hash160Digest(asm(asm.length - 3).bytes)
+}
 
 
 object P2PKHScriptPubKey extends Factory[P2PKHScriptPubKey] {
@@ -42,14 +47,14 @@ object P2PKHScriptPubKey extends Factory[P2PKHScriptPubKey] {
 
   override def fromBytes(bytes : Seq[Byte]): P2PKHScriptPubKey = {
     val asm = ScriptParser.fromBytes(bytes)
-    P2PKHScriptPubKey.fromAsm(asm)
+    P2PKHScriptPubKey(asm)
   }
 
-  def apply(pubKey : ECPublicKey) = {
+  def apply(pubKey : ECPublicKey) : P2PKHScriptPubKey = {
     val hash = CryptoUtil.sha256Hash160(pubKey.bytes)
     val pushOps = BitcoinScriptUtil.calculatePushOp(hash.bytes)
     val asm = Seq(OP_DUP, OP_HASH160) ++ pushOps ++ Seq(ScriptConstant(hash.bytes), OP_EQUALVERIFY, OP_CHECKSIG)
-    P2PKHScriptPubKey.fromAsm(asm)
+    P2PKHScriptPubKey(asm)
   }
 
   def fromAsm(asm: Seq[ScriptToken]): P2PKHScriptPubKey = {
@@ -57,8 +62,11 @@ object P2PKHScriptPubKey extends Factory[P2PKHScriptPubKey] {
     val hex = asm.map(_.hex).mkString
     P2PKHScriptPubKeyImpl(hex)
   }
+
+  def apply(asm :Seq[ScriptToken]) : P2PKHScriptPubKey = fromAsm(asm)
   /**
     * Checks if the given asm matches the pattern for [[P2PKHScriptPubKey]]
+    *
     * @param asm
     * @return
     */
@@ -135,7 +143,7 @@ object MultiSignatureScriptPubKey extends Factory[MultiSignatureScriptPubKey] {
 
   override def fromBytes(bytes : Seq[Byte]): MultiSignatureScriptPubKey = {
     val asm = ScriptParser.fromBytes(bytes)
-    MultiSignatureScriptPubKey.fromAsm(asm)
+    MultiSignatureScriptPubKey(asm)
   }
 
   def apply(requiredSigs : Int, pubKeys : Seq[ECPublicKey]): MultiSignatureScriptPubKey = {
@@ -164,7 +172,7 @@ object MultiSignatureScriptPubKey extends Factory[MultiSignatureScriptPubKey] {
       constant = ScriptConstant(pubKey.bytes)
     } yield pushOps ++ Seq(constant)
     val asm: Seq[ScriptToken] = required ++ pubKeysWithPushOps.flatten ++ possible ++ Seq(OP_CHECKMULTISIG)
-    MultiSignatureScriptPubKey.fromAsm(asm)
+    MultiSignatureScriptPubKey(asm)
   }
 
   def fromAsm(asm: Seq[ScriptToken]): MultiSignatureScriptPubKey = {
@@ -172,6 +180,8 @@ object MultiSignatureScriptPubKey extends Factory[MultiSignatureScriptPubKey] {
     val hex = asm.map(_.hex).mkString
     MultiSignatureScriptPubKeyImpl(hex)
   }
+
+  def apply(asm :Seq[ScriptToken]) : MultiSignatureScriptPubKey = fromAsm(asm)
 
   /**
     * Determines if the given script tokens are a multisignature scriptPubKey
@@ -234,10 +244,7 @@ object MultiSignatureScriptPubKey extends Factory[MultiSignatureScriptPubKey] {
  * Format: OP_HASH160 <Hash160(redeemScript)> OP_EQUAL
  */
 trait P2SHScriptPubKey extends ScriptPubKey {
-  /**
-    * The hash of the script for which this scriptPubKey is being created from
-    * @return
-    */
+  /** The hash of the script for which this scriptPubKey is being created from */
   def scriptHash : Sha256Hash160Digest = Sha256Hash160Digest(asm(asm.length - 2).bytes)
 }
 
@@ -247,18 +254,19 @@ object P2SHScriptPubKey extends Factory[P2SHScriptPubKey] with BitcoinSLogger {
 
   override def fromBytes(bytes : Seq[Byte]): P2SHScriptPubKey = {
     val asm = ScriptParser.fromBytes(bytes)
-    P2SHScriptPubKey.fromAsm(asm)
+    P2SHScriptPubKey(asm)
   }
 
   def apply(scriptPubKey: ScriptPubKey) : P2SHScriptPubKey = {
     val hash = CryptoUtil.sha256Hash160(scriptPubKey.bytes)
     val pushOps = BitcoinScriptUtil.calculatePushOp(hash.bytes)
     val asm = Seq(OP_HASH160) ++ pushOps ++ Seq(ScriptConstant(hash.bytes), OP_EQUAL)
-    P2SHScriptPubKey.fromAsm(asm)
+    P2SHScriptPubKey(asm)
   }
 
   /**
     * Checks if the given asm matches the pattern for [[P2SHScriptPubKey]]
+    *
     * @param asm
     * @return
     */
@@ -272,6 +280,8 @@ object P2SHScriptPubKey extends Factory[P2SHScriptPubKey] with BitcoinSLogger {
     val hex = asm.map(_.hex).mkString
     P2SHScriptPubKeyImpl(hex)
   }
+
+  def apply(asm :Seq[ScriptToken]) : P2SHScriptPubKey = fromAsm(asm)
 }
 
 /**
@@ -280,7 +290,7 @@ object P2SHScriptPubKey extends Factory[P2SHScriptPubKey] with BitcoinSLogger {
  * Format: <pubkey> OP_CHECKSIG
  */
 trait P2PKScriptPubKey extends ScriptPubKey {
-  def publicKey = ECPublicKey(BitcoinScriptUtil.filterPushOps(asm).head.bytes)
+  def publicKey : ECPublicKey = ECPublicKey(BitcoinScriptUtil.filterPushOps(asm).head.bytes)
 }
 
 object P2PKScriptPubKey extends Factory[P2PKScriptPubKey] {
@@ -289,13 +299,13 @@ object P2PKScriptPubKey extends Factory[P2PKScriptPubKey] {
 
   override def fromBytes(bytes : Seq[Byte]) = {
     val asm = ScriptParser.fromBytes(bytes)
-    P2PKScriptPubKey.fromAsm(asm)
+    P2PKScriptPubKey(asm)
   }
 
   def apply(pubKey : ECPublicKey): P2PKScriptPubKey = {
     val pushOps = BitcoinScriptUtil.calculatePushOp(pubKey.bytes)
     val asm = pushOps ++ Seq(ScriptConstant(pubKey.bytes), OP_CHECKSIG)
-    P2PKScriptPubKey.fromAsm(asm)
+    P2PKScriptPubKey(asm)
   }
 
   def fromAsm(asm: Seq[ScriptToken]): P2PKScriptPubKey = {
@@ -304,8 +314,11 @@ object P2PKScriptPubKey extends Factory[P2PKScriptPubKey] {
     P2PKScriptPubKeyImpl(hex)
   }
 
+  def apply(asm :Seq[ScriptToken]) : P2PKScriptPubKey = fromAsm(asm)
+
   /**
     * Sees if the given asm matches the [[P2PKHScriptPubKey]] pattern
+    *
     * @param asm
     * @return
     */
@@ -316,6 +329,121 @@ object P2PKScriptPubKey extends Factory[P2PKScriptPubKey] {
 
 }
 
+/**
+  * Represents a scriptPubKey that contains OP_CHECKLOCKTIMEVERIFY.
+  * Adds an absolute/defined locktime condition to any scriptPubKey.
+  * [[https://github.com/bitcoin/bips/blob/master/bip-0065.mediawiki]]
+  * Format: <locktime> OP_CLTV OP_DROP <scriptPubKey>
+  */
+trait CLTVScriptPubKey extends ScriptPubKey {
+  /**
+    * Determines the nested ScriptPubKey inside the CLTVScriptPubKey
+    * @return
+    */
+  def scriptPubKeyAfterCLTV : ScriptPubKey = ScriptPubKey(asm.slice(4, asm.length))
+}
+
+object CLTVScriptPubKey extends Factory[CLTVScriptPubKey] {
+  private case class CLTVScriptPubKeyImpl(hex : String) extends CLTVScriptPubKey
+
+  override def fromBytes (bytes : Seq[Byte]) : CLTVScriptPubKey = {
+    val asm = ScriptParser.fromBytes(bytes)
+    CLTVScriptPubKey(asm)
+  }
+  def fromAsm (asm : Seq[ScriptToken]) : CLTVScriptPubKey = {
+    require(isCLTVScriptPubKey(asm), "Given asm was not a CLTVScriptPubKey, got: " + asm)
+    val hex = asm.map(_.hex).mkString
+    CLTVScriptPubKeyImpl(hex)
+  }
+
+  def apply (asm: Seq[ScriptToken]) : CLTVScriptPubKey = fromAsm(asm)
+
+  /**
+    * Creates a P2PKH-formatted CLTVScriptPubKey
+    * @param locktime block height or timestamp
+    * @param pubKey public key corresponding to the CLTV output
+    * @return
+    */
+  def apply(locktime : ScriptNumber, pubKey : ECPublicKey) : CLTVScriptPubKey = {
+    val pushOpsLockTime = BitcoinScriptUtil.calculatePushOp(locktime.bytes)
+    val pushOpsPubKey = BitcoinScriptUtil.calculatePushOp(pubKey.bytes)
+    val asm = pushOpsLockTime ++ Seq(ScriptConstant(locktime.bytes)) ++ Seq(OP_CHECKLOCKTIMEVERIFY, OP_DROP, OP_DUP, OP_HASH160) ++
+    pushOpsPubKey ++ Seq(ScriptConstant(pubKey.bytes)) ++ Seq(OP_CHECKSIG)
+    CLTVScriptPubKey(asm)
+  }
+
+  def apply(locktime : ScriptNumber, scriptPubKey : ScriptPubKey) : CLTVScriptPubKey = {
+    val pushOpsLockTime= BitcoinScriptUtil.calculatePushOp(locktime.bytes)
+    val cltvAsm = pushOpsLockTime ++ Seq(ScriptConstant(locktime.bytes)) ++ Seq(OP_CHECKLOCKTIMEVERIFY, OP_DROP)
+    val scriptPubKeyAsm = scriptPubKey.asm
+    val asm = cltvAsm ++ scriptPubKeyAsm
+    CLTVScriptPubKey(asm)
+  }
+
+  def isCLTVScriptPubKey(asm : Seq[ScriptToken]) : Boolean = asm.slice(0,4) match {
+    case List(lockTimeBytesToPush : BytesToPushOntoStack, lockTime : ScriptConstant, OP_CHECKLOCKTIMEVERIFY, OP_DROP) => true
+    case _ => false
+  }
+}
+
+/**
+  * Represents a scriptPubKey that contains OP_CHECKSEQUENCEVERIFY.
+  * Adds a relative lockTime condition to any scriptPubKey.
+  * https://github.com/bitcoin/bips/blob/master/bip-0112.mediawiki
+  * Format: <locktime> OP_CSV OP_DROP <scriptPubKey>
+  */
+trait CSVScriptPubKey extends ScriptPubKey {
+  /**
+    * Determines the nested ScriptPubKey inside the CSVScriptPubKey
+    * @return
+    */
+  def scriptPubKeyAfterCSV : ScriptPubKey = ScriptPubKey(asm.slice(4, asm.length))
+}
+
+object CSVScriptPubKey extends Factory[CSVScriptPubKey] {
+  private case class CSVScriptPubKeyImpl(hex : String) extends CSVScriptPubKey
+
+  override def fromBytes(bytes : Seq[Byte]) : CSVScriptPubKey = {
+    val asm = ScriptParser.fromBytes(bytes)
+    CSVScriptPubKey(asm)
+  }
+
+  def fromAsm (asm : Seq[ScriptToken]) : CSVScriptPubKey = {
+    require(isCSVScriptPubKey(asm), "Given asm was not a CSVScriptPubKey, got: " + asm)
+    val hex = asm.map(_.hex).mkString
+    CSVScriptPubKeyImpl(hex)
+  }
+
+  def apply(asm : Seq[ScriptToken]) : CSVScriptPubKey = fromAsm(asm)
+
+  /**
+    * Creates P2PKH-formatted CSVScriptPubKey
+    * @param relativeLockTime number of blocks OR timestamp to lock coins
+    * @param pubKey public key corresponding to CSV output
+    * @return
+    */
+  def apply(relativeLockTime : ScriptNumber, pubKey : ECPublicKey) : CSVScriptPubKey = {
+    val pushOpsTimeStamp = BitcoinScriptUtil.calculatePushOp(relativeLockTime.bytes)
+    val pushOpsPubKey = BitcoinScriptUtil.calculatePushOp(pubKey.bytes)
+    val asm = pushOpsTimeStamp ++ Seq(ScriptConstant(relativeLockTime.bytes)) ++ Seq(OP_CHECKSEQUENCEVERIFY, OP_DROP, OP_DUP, OP_HASH160) ++
+      pushOpsPubKey ++ Seq(ScriptConstant(pubKey.bytes)) ++ Seq(OP_CHECKSIG)
+    CSVScriptPubKey(asm)
+  }
+
+  def apply(relativeLockTime : ScriptNumber, scriptPubKey : ScriptPubKey) : CSVScriptPubKey = {
+    val pushOpsLockTime= BitcoinScriptUtil.calculatePushOp(relativeLockTime.bytes)
+    val csvAsm = pushOpsLockTime ++ Seq(ScriptConstant(relativeLockTime.bytes)) ++ Seq(OP_CHECKSEQUENCEVERIFY, OP_DROP)
+    val scriptPubKeyAsm = scriptPubKey.asm
+    val asm = csvAsm ++ scriptPubKeyAsm
+    CSVScriptPubKey(asm)
+  }
+
+  def isCSVScriptPubKey(asm : Seq[ScriptToken]) : Boolean = asm.slice(0,4) match {
+    case List(lockTimeBytesToPush : BytesToPushOntoStack, lockTime : ScriptConstant, OP_CHECKSEQUENCEVERIFY, OP_DROP) => true
+    case _ => false
+  }
+}
+
 trait NonStandardScriptPubKey extends ScriptPubKey
 
 object NonStandardScriptPubKey extends Factory[NonStandardScriptPubKey] {
@@ -323,13 +451,15 @@ object NonStandardScriptPubKey extends Factory[NonStandardScriptPubKey] {
 
   override def fromBytes(bytes: Seq[Byte]): NonStandardScriptPubKey = {
     val asm = ScriptParser.fromBytes(bytes)
-    NonStandardScriptPubKey.fromAsm(asm)
+    NonStandardScriptPubKey(asm)
   }
 
   def fromAsm(asm: Seq[ScriptToken]): NonStandardScriptPubKey = {
     val hex = asm.map(_.hex).mkString
     NonStandardScriptPubKeyImpl(hex)
   }
+
+  def apply(asm : Seq[ScriptToken]) : NonStandardScriptPubKey = fromAsm(asm)
 }
 
 /**
@@ -353,16 +483,17 @@ object ScriptPubKey extends Factory[ScriptPubKey] with BitcoinSLogger {
     */
   def fromAsm(asm : Seq[ScriptToken]) : ScriptPubKey = asm match {
     case Seq() => EmptyScriptPubKey
-    case List(OP_DUP, OP_HASH160, x : BytesToPushOntoStack, y : ScriptConstant, OP_EQUALVERIFY, OP_CHECKSIG) =>
-      P2PKHScriptPubKey.fromAsm(asm)
-    case List(OP_HASH160, x : BytesToPushOntoStack, y : ScriptConstant, OP_EQUAL) =>
-      P2SHScriptPubKey.fromAsm(asm)
-    case List(b : BytesToPushOntoStack, x : ScriptConstant, OP_CHECKSIG) => P2PKScriptPubKey.fromAsm(asm)
-    case _ if (MultiSignatureScriptPubKey.isMultiSignatureScriptPubKey(asm)) =>
-      MultiSignatureScriptPubKey.fromAsm(asm)
-    case _ => NonStandardScriptPubKey.fromAsm(asm)
+    case _ if P2PKHScriptPubKey.isP2PKHScriptPubKey(asm) => P2PKHScriptPubKey(asm)
+    case _ if P2SHScriptPubKey.isP2SHScriptPubKey(asm) => P2SHScriptPubKey(asm)
+    case _ if P2PKScriptPubKey.isP2PKScriptPubKey(asm) => P2PKScriptPubKey(asm)
+    case _ if MultiSignatureScriptPubKey.isMultiSignatureScriptPubKey(asm) => MultiSignatureScriptPubKey(asm)
+    case _ if CLTVScriptPubKey.isCLTVScriptPubKey(asm) => CLTVScriptPubKey(asm)
+    case _ if CSVScriptPubKey.isCSVScriptPubKey(asm) => CSVScriptPubKey(asm)
+    case _ => NonStandardScriptPubKey(asm)
   }
 
   def fromBytes(bytes : Seq[Byte]) : ScriptPubKey = RawScriptPubKeyParser.read(bytes)
+
+  def apply(asm : Seq[ScriptToken]) : ScriptPubKey = fromAsm(asm)
 
 }

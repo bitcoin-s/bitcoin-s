@@ -2,7 +2,7 @@ package org.bitcoins.core.util
 
 import org.bitcoins.core.config.{MainNet, NetworkParameters, TestNet3}
 import org.bitcoins.core.crypto.{ECPrivateKey, Sha256Hash160Digest}
-import org.bitcoins.core.protocol.Address
+import org.bitcoins.core.protocol.{BitcoinAddress, P2PKHAddress, P2SHAddress, Address}
 import org.bitcoins.core.protocol.blockchain._
 
 import scala.annotation.tailrec
@@ -69,54 +69,6 @@ trait Base58 extends BitcoinSLogger {
   }
 
   def encode(byte : Byte) : String = encode(Seq(byte))
-
-  /**
-    * Encodes a pubkey hash to a base 58 address on the corresponding network
-    * @param hash the result of Sha256(RipeMD160(pubkey))
-    * @param network the network on which this address is being generated for
-    * @return
-    */
-  def encodePubKeyHashToAddress(hash: Sha256Hash160Digest, network: NetworkParameters): Address = {
-    val versionByte: Byte = network.p2pkhNetworkByte
-    val bytes = Seq(versionByte) ++ hash.bytes
-    val checksum = CryptoUtil.doubleSHA256(bytes).bytes.take(4)
-    Address(encode(bytes ++ checksum))
-  }
-
-  /**
-    * Determines the version byte of an address given the address type and network
-    * @param addressType "pubkey" or "script"
-    * @param isTestnet Boolean
-    * @return
-    */
-  private def findVersionByte(addressType : String, isTestnet : Boolean) : Byte = isTestnet match {
-    case true => if (addressType == "pubkey") TestNet3.p2pkhNetworkByte else TestNet3.p2shNetworkByte
-    case false => if (addressType == "pubkey") MainNet.p2pkhNetworkByte else MainNet.p2shNetworkByte
-  }
-
-  /**
-    * Encodes a private key into Wallet Import Format (WIF)
-    * https://en.bitcoin.it/wiki/Wallet_import_format
-    *
-    * @param privateKey Private Key in Hex format
-    * @param isCompressed Boolean
-    * @param isTestNet Boolean
-    * @return
-    */
-  //TODO: Create WIF PrivateKey Type
-  def encodePrivateKeyToWIF(privateKey : ECPrivateKey, isCompressed : Boolean, isTestNet : Boolean) : String = {
-    val versionByte : Byte = isTestNet match {
-      case true => TestNet3.privateKey
-      case false => MainNet.privateKey
-    }
-    val compressedByte : Option[Byte] = isCompressed match {
-      case true => Some(0x01.toByte)
-      case false => None
-    }
-    val bytes : Seq[Byte] = Seq(versionByte.toByte) ++ BitcoinSUtil.decodeHex(privateKey.hex) ++ compressedByte
-    val checksum =  CryptoUtil.doubleSHA256(bytes).bytes.take(4)
-    encode(bytes ++ checksum)
-  }
 
   /**
     * Takes in base58 string and returns sequence of bytes

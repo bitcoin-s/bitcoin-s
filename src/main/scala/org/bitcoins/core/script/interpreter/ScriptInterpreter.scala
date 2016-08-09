@@ -342,7 +342,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
                 logger.error("We cannot execute a NOP when the ScriptVerifyDiscourageUpgradableNOPs is set")
                 loop(ScriptProgram(p, ScriptErrorDiscourageUpgradableNOPs),calcOpCount(opCount,OP_CHECKSEQUENCEVERIFY))
               }
-              //in this case, just reat OP_CSV just like a NOP and remove it from the stack
+              //in this case, just read OP_CSV just like a NOP and remove it from the stack
               else loop(ScriptProgram(p, p.script.tail, ScriptProgram.Script),calcOpCount(opCount,OP_CHECKSEQUENCEVERIFY))
             //no more script operations to run, return whether the program is valid and the final state of the program
             case Nil => loop(ScriptProgram.toExecutedProgram(p),opCount)

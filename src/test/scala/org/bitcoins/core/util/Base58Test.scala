@@ -38,7 +38,6 @@ class Base58Test extends FlatSpec with MustMatchers with BitcoinSLogger {
   }
 
   it must "encode tests in base58_encode_decode.json" in {
-    //:TODO same tests for decoding...encodedHex(base58.decoded(base58value))
     Base58.encode("") must be ("")
     Base58.encode("61") must be ("2g")
     Base58.encode("626262") must be ("a3gV")
@@ -123,7 +122,6 @@ class Base58Test extends FlatSpec with MustMatchers with BitcoinSLogger {
       testCase <- testCases
     } yield {
       testCase must be (Base58InvalidTestCaseImpl(testCase.base58EncodedString))
-      //logger.debug(testCase.base58EncodedString + "  is " + Base58.isValid(testCase.base58EncodedString))
       Base58.isValid(testCase.base58EncodedString) must be (false)
     }
   }
@@ -138,12 +136,4 @@ class Base58Test extends FlatSpec with MustMatchers with BitcoinSLogger {
   it must "decodeCheck a valid string and succeed" in {
     Base58.decodeCheck("3CMNFxN1oHBc4R1EpboAL5yzHGgE611Xou").isSuccess must be (true)
   }
-
-  it must "decode a private key from WIF, then encode that decoded private key to WIF" in {
-    val WIF = "5Kd3NBUAdUnhyzenEwVLy9pBKxSwXvE9FMPyR4UKZvpe6E3AgLr"
-    val privateKey = ECPrivateKey.fromWIFToPrivateKey(WIF)
-    Base58.encodePrivateKeyToWIF(privateKey, false, false) must be (WIF)
-  }
-
-
 }

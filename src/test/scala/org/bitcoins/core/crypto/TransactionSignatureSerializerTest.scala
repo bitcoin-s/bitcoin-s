@@ -236,7 +236,7 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers with
          parentOutput.getScriptBytes, SIGHASH_ALL.byte)
 
 
-     val hashType = spendingInput.scriptSignature.hashType(spendingInput.scriptSignature.signatures.head)
+     val hashType = HashType(spendingInput.scriptSignature.signatures.head.bytes.last)
      val serializedTxForSig : String = BitcoinSUtil.encodeHex(
        TransactionSignatureSerializer.serializeForSignature(spendingTx,inputIndex,creditingOutput.scriptPubKey.asm,hashType))
      serializedTxForSig must be (BitcoinSUtil.encodeHex(bitcoinjSerializeForSig))
@@ -261,7 +261,7 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers with
        BitcoinJSignatureSerialization.serializeForSignature(bitcoinjTx,inputIndex.toInt,
          parentOutput.getScriptBytes, SIGHASH_ALL.byte)
 
-     val hashType = spendingInput.scriptSignature.hashType(spendingInput.scriptSignature.signatures.head)
+     val hashType = HashType(spendingInput.scriptSignature.signatures.head.bytes.last)
      val serializedTxForSig : String = BitcoinSUtil.encodeHex(
        TransactionSignatureSerializer.serializeForSignature(spendingTx,inputIndex,creditingOutput.scriptPubKey.asm,hashType
      ))
@@ -280,7 +280,7 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers with
     } yield {
       //needs to be inside yield statement because of mutability issues
       val bitcoinjTx = BitcoinjConversions.transaction(spendingTx)
-      val hashType = spendingInput.scriptSignature.hashType(spendingInput.scriptSignature.signatures.head)
+      val hashType = HashType(spendingInput.scriptSignature.signatures.head.bytes.last)
       val bitcoinjHashForSig : Seq[Byte] = BitcoinJSignatureSerialization.serializeForSignature(
         bitcoinjTx, inputIndex.toInt, creditingOutput.scriptPubKey.bytes.toArray, spendingInput.scriptSignature.signatures.head.bytes.last
       )
@@ -301,7 +301,7 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers with
     } yield {
      //needs to be inside yield statement because of mutability issues
      val bitcoinjTx = BitcoinjConversions.transaction(spendingTx)
-     val hashType = spendingInput.scriptSignature.hashType(spendingInput.scriptSignature.signatures.head)
+     val hashType = HashType(spendingInput.scriptSignature.signatures.head.bytes.last)
      val bitcoinjHashForSig : Seq[Byte] = BitcoinJSignatureSerialization.hashForSignature(
        bitcoinjTx, inputIndex.toInt, creditingOutput.scriptPubKey.bytes.toArray, spendingInput.scriptSignature.signatures.head.bytes.last
      )

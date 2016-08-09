@@ -39,7 +39,7 @@ sealed trait ScriptProgram {
 
 
   /**
-   * The original script that was given t
+   * The original script that was given
     *
     * @return
    */
@@ -53,9 +53,9 @@ sealed trait ScriptProgram {
   def altStack : List[ScriptToken]
 
   /**
-   * Flags that are run with the script
-   * these flags indicate special conditions that a script needs to be run with
-   * see: https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.h#L31
+   * Flags that are run with the script.
+   * These flags indicate special conditions that a script needs to be run with.
+   * https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.h#L31
  *
    * @return
    */
@@ -171,7 +171,7 @@ object ScriptProgram {
    * Sets an error on the script program
  *
    * @param oldProgram the program who has hit an invalid state
-   * @param error the error that thet program hit while being executed in the script interpreter
+   * @param error the error that the program hit while being executed in the script interpreter
    * @return the ExecutedScriptProgram with the given error set inside of the trait
    */
   def factory(oldProgram : ScriptProgram, error : ScriptError) : ExecutedScriptProgram = oldProgram match {
