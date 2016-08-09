@@ -58,6 +58,16 @@ trait ScriptGenerators extends BitcoinSLogger {
     pubKey <- CryptoGenerators.publicKey
   } yield P2PKHScriptPubKey(pubKey)
 
+  def cltvScriptPubKey : Gen[CLTVScriptPubKey] = for {
+    scriptPubKey <- pickRandomNonLockTimeScriptPubKey
+    num <- NumberGenerator.scriptNumbers
+  } yield CLTVScriptPubKey(num, scriptPubKey)
+
+  def csvScriptPubKey : Gen[CSVScriptPubKey] = for {
+    scriptPubKey <- pickRandomNonLockTimeScriptPubKey
+    num <- NumberGenerator.scriptNumbers
+  } yield CSVScriptPubKey(num, scriptPubKey)
+
   def multiSigScriptPubKey : Gen[MultiSignatureScriptPubKey] = {
     val pubKeys : Gen[(Int, Seq[ECPublicKey])] = for {
       numKeys <- Gen.choose(0,ScriptSettings.maxPublicKeysPerMultiSig)
@@ -81,6 +91,15 @@ trait ScriptGenerators extends BitcoinSLogger {
   def emptyScriptPubKey = p2pkScriptPubKey.map(_ => EmptyScriptPubKey)
 
   def pickRandomNonP2SHScriptPubKey : Gen[ScriptPubKey] = {
+    val randomNum = (scala.util.Random.nextInt() % 5).abs
+    if (randomNum == 0) p2pkScriptPubKey
+    else if (randomNum == 1) p2pkhScriptPubKey
+    else if (randomNum == 2) cltvScriptPubKey
+    else if (randomNum == 3) csvScriptPubKey
+    else multiSigScriptPubKey
+  }
+
+  private def pickRandomNonLockTimeScriptPubKey : Gen[ScriptPubKey] = {
     val randomNum = (scala.util.Random.nextInt() % 3).abs
     if (randomNum == 0) p2pkScriptPubKey
     else if (randomNum == 1) p2pkhScriptPubKey
@@ -93,11 +112,13 @@ trait ScriptGenerators extends BitcoinSLogger {
     * @return
     */
   def scriptPubKey : Gen[ScriptPubKey] = {
-    val randomNum = (scala.util.Random.nextInt() % 5).abs
+    val randomNum = (scala.util.Random.nextInt() % 7).abs
     if (randomNum == 0) p2pkScriptPubKey
     else if (randomNum == 1) p2pkhScriptPubKey
     else if (randomNum == 2) multiSigScriptPubKey
     else if (randomNum == 3) emptyScriptPubKey
+    else if (randomNum == 4) cltvScriptPubKey
+    else if (randomNum == 5) csvScriptPubKey
     else p2shScriptPubKey
   }
 
@@ -120,6 +141,8 @@ trait ScriptGenerators extends BitcoinSLogger {
     case p2pkh : P2PKHScriptPubKey => p2pkhScriptSignature
     case multisig : MultiSignatureScriptPubKey => multiSignatureScriptSignature
     case EmptyScriptPubKey => emptyScriptSignature
+    case cltv : CLTVScriptPubKey => pickCorrespondingScriptSignature(cltv.scriptPubKeyAfterCLTV)
+    case csv : CSVScriptPubKey => pickCorrespondingScriptSignature(csv.scriptPubKeyAfterCSV)
     case x @ (_: P2SHScriptPubKey | _: NonStandardScriptPubKey) =>
       throw new IllegalArgumentException("Cannot pick for p2sh script pubkey, " +
         "non standard script pubkey, got: " + x)

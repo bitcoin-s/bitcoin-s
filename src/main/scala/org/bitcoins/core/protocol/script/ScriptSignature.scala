@@ -1,6 +1,6 @@
 package org.bitcoins.core.protocol.script
 
-import org.bitcoins.core.crypto.{ECDigitalSignature, ECPublicKey, EmptyDigitalSignature}
+import org.bitcoins.core.crypto.{ECDigitalSignature, ECPublicKey}
 import org.bitcoins.core.number.Int32
 import org.bitcoins.core.protocol.NetworkElement
 import org.bitcoins.core.script.constant._
@@ -37,19 +37,6 @@ sealed trait ScriptSignature extends NetworkElement with BitcoinSLogger {
     */
   def signatures : Seq[ECDigitalSignature]
 
-
-  /**
-    * Derives the hash type for a given digitalSignature
-    *
-    * @param digitalSignature
-    * @return
-    */
-  def hashType(digitalSignature: ECDigitalSignature) : HashType = {
-    digitalSignature match {
-      case EmptyDigitalSignature => SIGHASH_ALL(Int32.one)
-      case sig : ECDigitalSignature => HashType(Seq(digitalSignature.bytes.last))
-    }
-  }
 }
 
 trait NonStandardScriptSignature extends ScriptSignature {
@@ -94,13 +81,6 @@ trait P2PKHScriptSignature extends ScriptSignature {
     * @return
     */
   def publicKey : ECPublicKey = ECPublicKey(asm.last.bytes)
-
-  /**
-    * Returns the hash type for the p2pkh script signature
-    *
-    * @return
-    */
-  def hashType : HashType = HashType(Seq(signature.bytes.last))
 
   override def signatures : Seq[ECDigitalSignature] = {
     Seq(ECDigitalSignature(asm(1).hex))
@@ -239,7 +219,7 @@ object P2SHScriptSignature extends Factory[P2SHScriptSignature] with BitcoinSLog
     * @return
     */
   def isP2SHScriptSig(asm: Seq[ScriptToken]): Boolean = asm match {
-    case _ if (asm.size > 1 && isRedeemScript(asm.last)) => true
+    case _ if asm.size > 1 && isRedeemScript(asm.last) => true
     case _ => false
   }
 
@@ -260,6 +240,8 @@ object P2SHScriptSignature extends Factory[P2SHScriptSignature] with BitcoinSLog
           case x : MultiSignatureScriptPubKey => true
           case x : P2SHScriptPubKey => true
           case x : P2PKScriptPubKey => true
+          case x : CLTVScriptPubKey => true
+          case x : CSVScriptPubKey => true
           case x : NonStandardScriptPubKey => false
           case EmptyScriptPubKey => false
         }
@@ -353,13 +335,6 @@ object MultiSignatureScriptSignature extends Factory[MultiSignatureScriptSignatu
  * Signature script: <sig>
  */
 trait P2PKScriptSignature extends ScriptSignature {
-
-  /**
-    * Returns the hash type for the signature inside of the p2pk script signature
-    *
-    * @return
-    */
-  def hashType : HashType = HashType(Seq(signature.bytes.last))
 
   /**
     * PubKey scriptSignatures only have one signature

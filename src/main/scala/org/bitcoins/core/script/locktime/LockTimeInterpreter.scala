@@ -97,7 +97,7 @@ trait LockTimeInterpreter extends BitcoinSLogger {
           logger.error("Sequence number is not encoded in the shortest way possible")
           ScriptProgram(program,ScriptErrorUnknownError)
         case s : ScriptNumber if (!isLockTimeBitOff(s)) =>
-          //see BIP68 for semantic of locktimeDisableFalg
+          //see BIP68 for semantic of locktimeDisableFlag
           logger.info("Locktime disable flag was set so OP_CHECKSEQUENCEVERIFY is treated as a NOP")
           ScriptProgram(program,program.script.tail,ScriptProgram.Script)
         case s : ScriptNumber if (isLockTimeBitOff(s) && program.txSignatureComponent.transaction.version < UInt32(2)) =>

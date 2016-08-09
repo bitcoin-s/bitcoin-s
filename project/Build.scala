@@ -23,6 +23,28 @@ object BitcoinSCoreBuild extends Build {
     scalaVersion := scalaV,
     resolvers += Resolver.sonatypeRepo("releases"),  
     libraryDependencies ++= appDependencies,
-    scalacOptions ++= Seq("-unchecked", "-deprecation")  
+    scalacOptions ++= Seq("-unchecked", "-deprecation"),
+    initialCommands in console :=
+      """
+        |import org.bitcoins.core.protocol.transaction._
+        |import org.bitcoins.core.protocol.script._
+        |import org.bitcoins.core.crypto._
+        |import org.bitcoins.core.script.crypto._
+        |import org.bitcoins.core.script._
+        |import org.bitcoins.core.util._
+        |import org.bitcoins.core.number._
+        |import org.bitcoins.core.config._
+        |import org.bitcoins.core.protocol._
+        |import org.bitcoins.core.script.constant._
+        |import org.bitcoins.core.util.BitcoinScriptUtil
+        |import org.bitcoins.core.currency._
+        |
+        |
+        |val base = Base58
+        |val util = BitcoinSUtil
+        |val crypto = CryptoUtil
+        |val script = BitcoinScriptUtil
+        |val parser = org.bitcoins.core.serializers.script.ScriptParser
+      """.stripMargin
   )
 } 
