@@ -95,6 +95,22 @@ trait NumberGenerator {
     * @return
     */
   def bytes(num : Int): Gen[Seq[Byte]] = Gen.listOfN(num,byte)
+
+  /** Generates a random boolean */
+  def bool: Gen[Boolean] = for {
+    num <- Gen.choose(0,1)
+  } yield num == 1
+
+  /** Generates a bit vector */
+  def bitVector: Gen[Seq[Boolean]] = for {
+    vector <- Gen.listOfN(8,bool)
+  } yield vector
+
+  /** Generates a sequence of bit vectors */
+  def bitVectors: Gen[Seq[Seq[Boolean]]] = for {
+    num <- Gen.choose(0,100)
+    vectors <- Gen.listOfN(num,bitVector)
+  } yield vectors
 }
 
 object NumberGenerator extends NumberGenerator
