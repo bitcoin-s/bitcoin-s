@@ -52,11 +52,12 @@ trait BaseECKey extends BitcoinSLogger {
   def sign(hash: HashDigest, signingKey: BaseECKey): ECDigitalSignature = sign(hash.bytes,signingKey)
 
 
-  /** Checks if the given digital signature uses a low s value,
-    * if it does not it converts it to a low s value and returns it */
+  /** Checks if the given digital signature uses a low s value, if it does not it converts it to a low s value and returns it */
   private def lowS(signature: ECDigitalSignature): ECDigitalSignature = {
-    if (signature.s.bigInteger.compareTo(CryptoParams.halfCurveOrder) <= 0) signature
+    val sigLowS = if (signature.s.bigInteger.compareTo(CryptoParams.halfCurveOrder) <= 0) signature
     else ECDigitalSignature(signature.r,CryptoParams.curve.getN().subtract(signature.s.bigInteger))
+    require(DERSignatureUtil.isLowS(sigLowS))
+    sigLowS
   }
 }
 

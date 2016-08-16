@@ -19,6 +19,7 @@ trait TransactionSignatureCreator {
     val signature = privateKey.sign(hash)
     //append 1 byte hash type onto the end
     val sig = ECDigitalSignature(signature.bytes ++ Seq(hashType.byte))
+    require(sig.isStrictEncoded, "We did not create a signature that is strictly encoded, got: " + sig)
     sig
   }
 }

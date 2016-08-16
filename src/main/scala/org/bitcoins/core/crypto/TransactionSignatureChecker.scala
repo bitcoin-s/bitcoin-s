@@ -39,7 +39,7 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
     if (ScriptFlagUtil.requiresStrictDerEncoding(flags) && !DERSignatureUtil.isValidSignatureEncoding(signature)) {
       logger.error("Signature was not stricly encoded der: " + signature.hex)
       SignatureValidationFailureNotStrictDerEncoding
-    } else if (ScriptFlagUtil.requireLowSValue(flags) && !DERSignatureUtil.isLowDerSignature(signature)) {
+    } else if (ScriptFlagUtil.requireLowSValue(flags) && !DERSignatureUtil.isLowS(signature)) {
       logger.error("Signature did not have a low s value")
       ScriptValidationFailureHighSValue
     } else if (ScriptFlagUtil.requireStrictEncoding(flags) && signature.bytes.nonEmpty &&
