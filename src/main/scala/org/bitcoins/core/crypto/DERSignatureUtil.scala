@@ -228,7 +228,7 @@ trait DERSignatureUtil extends BitcoinSLogger {
    * @param signature
    * @return if the S value is the low version
    */
-  def isLowDerSignature(signature : ECDigitalSignature) : Boolean = isLowDerSignature(signature.bytes)
+  def isLowS(signature : ECDigitalSignature) : Boolean = isLowS(signature.bytes)
 
   /**
    * Requires the S value in signatures to be the low version of the S value
@@ -236,13 +236,16 @@ trait DERSignatureUtil extends BitcoinSLogger {
    * @param signature
    * @return if the S value is the low version
    */
-  def isLowDerSignature(signature : Seq[Byte]) : Boolean = {
-    if (!isValidSignatureEncoding(signature)) false
-    else {
+  def isLowS(signature : Seq[Byte]) : Boolean = {
+    val result = Try {
       val (r,s) = decodeSignature(signature)
-      val upperBound = BigInt("7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0",16)
-      s >= 0x1 && s <= upperBound
+      s.bigInteger.compareTo(CryptoParams.halfCurveOrder) <= 0
     }
+    result match {
+      case Success(bool) => bool
+      case Failure(_) => false
+    }
+
   }
 }
 

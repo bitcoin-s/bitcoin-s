@@ -46,6 +46,7 @@ class TransactionSignatureCreatorTest extends FlatSpec with MustMatchers with Bi
     txSignature.s must be (expectedSig.s)
     txSignature.hex must be (expectedSig.hex)
   }
+
   it must "create a p2pk scriptPubKey, create a crediting tx for scriptPubKey, " +
     "then create spending tx and make sure it evaluates to true in the interpreter" in {
     val privateKey = ECPrivateKey()
