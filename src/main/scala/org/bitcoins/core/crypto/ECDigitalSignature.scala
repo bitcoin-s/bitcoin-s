@@ -17,16 +17,18 @@ sealed trait ECDigitalSignature extends BitcoinSLogger {
   /**
    * Checks if this signature is encoded to DER correctly
    * https://crypto.stackexchange.com/questions/1795/how-can-i-convert-a-der-ecdsa-signature-to-asn-1
- *
    * @return boolean representing if the signature is a valid
    */
   def isDEREncoded : Boolean = DERSignatureUtil.isDEREncoded(this)
 
 
+  /** Checks if the signature is strictly der encoded as per BIP66
+    * [[https://github.com/bitcoin/bips/blob/master/bip-0066.mediawiki]]
+    * */
+  def isStrictEncoded: Boolean = DERSignatureUtil.isValidSignatureEncoding(this)
   /**
    * Decodes the digital signature into it's r and s points
    * throws an exception if the given sequence of bytes is not a DER encoded signature
- *
    * @return the (r,s) values for the elliptic curve digital signature
    */
   def decodeSignature : (BigInt,BigInt) = DERSignatureUtil.decodeSignature(this)
@@ -40,7 +42,6 @@ sealed trait ECDigitalSignature extends BitcoinSLogger {
 
   /**
    * Represents the s value found in a elliptic curve digital signature
- *
    * @return
    */
   def s = decodeSignature._2

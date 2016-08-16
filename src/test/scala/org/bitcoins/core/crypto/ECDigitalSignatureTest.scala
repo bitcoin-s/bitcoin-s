@@ -15,17 +15,17 @@ class ECDigitalSignatureTest extends FlatSpec with MustMatchers {
   }
 
   it must "say that a signature taken from a p2sh transaction is a valid DER encoded signature" in  {
-    val signature = ECDigitalSignature("304402205b7d2c2f177ae76cfbbf14d589c113b0b35db753d305d5562dd0b61cbf366cfb02202e56f93c4f08a27f986cd424ffc48a462c3202c4902104d4d0ff98ed28f4bf8001")
+    val signature = ECDigitalSignature("304402205b7d2c2f177ae76cfbbf14d589c113b0b35db753d305d5562dd0b61cbf366cfb02202e56f93c4f08a27f986cd424ffc48a462c3202c4902104d4d0ff98ed28f4bf80")
     signature.isDEREncoded must be (true)
   }
 
   it must "say that signature taken from a p2pkh transaction is a valid DER encoded signature" in  {
-    val signature = ECDigitalSignature("3044022016ffdbb7c57634903c5e018fcfc48d59f4e37dc4bc3bbc9ba4e6ee39150bca030220119c2241a931819bc1a75d3596e4029d803d1cd6de123bf8a1a1a2c3665e1fac01")
+    val signature = ECDigitalSignature("3044022016ffdbb7c57634903c5e018fcfc48d59f4e37dc4bc3bbc9ba4e6ee39150bca030220119c2241a931819bc1a75d3596e4029d803d1cd6de123bf8a1a1a2c3665e1fac")
     signature.isDEREncoded must be (true)
   }
 
   it must "say that a signature taken from a p2pk transaction is a valid DER encoded signature" in {
-    val signature = ECDigitalSignature("304402200a5c6163f07b8d3b013c4d1d6dba25e780b39658d79ba37af7057a3b7f15ffa102201fd9b4eaa9943f734928b99a83592c2e7bf342ea2680f6a2bb705167966b742001")
+    val signature = ECDigitalSignature("304402200a5c6163f07b8d3b013c4d1d6dba25e780b39658d79ba37af7057a3b7f15ffa102201fd9b4eaa9943f734928b99a83592c2e7bf342ea2680f6a2bb705167966b7420")
     signature.isDEREncoded must be (true)
   }
 

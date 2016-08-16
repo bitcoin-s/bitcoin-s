@@ -36,8 +36,9 @@ trait BaseECKey extends BitcoinSLogger {
     //https://github.com/bitcoin/bips/blob/master/bip-0062.mediawiki#Low_S_values_in_signatures
     //bitcoinj implementation
     //https://github.com/bitcoinj/bitcoinj/blob/1e66b9a8e38d9ad425507bf5f34d64c5d3d23bb8/core/src/main/java/org/bitcoinj/core/ECKey.java#L551
-    if (s.compareTo(CryptoParams.halfCurveOrder) <= 0) signature
-    else ECDigitalSignature(r,CryptoParams.curve.getN().subtract(s))
+    val signatureLowS = lowS(signature)
+    require(signatureLowS.isDEREncoded, "We must create DER encoded signatures when signing a peice of data, got: " + signatureLowS)
+    signatureLowS
   }
 
   def sign(hex : String, signingKey : BaseECKey) : ECDigitalSignature = sign(BitcoinSUtil.decodeHex(hex),signingKey)
@@ -51,6 +52,12 @@ trait BaseECKey extends BitcoinSLogger {
   def sign(hash: HashDigest, signingKey: BaseECKey): ECDigitalSignature = sign(hash.bytes,signingKey)
 
 
+  /** Checks if the given digital signature uses a low s value,
+    * if it does not it converts it to a low s value and returns it */
+  private def lowS(signature: ECDigitalSignature): ECDigitalSignature = {
+    if (signature.s.bigInteger.compareTo(CryptoParams.halfCurveOrder) <= 0) signature
+    else ECDigitalSignature(signature.r,CryptoParams.curve.getN().subtract(signature.s.bigInteger))
+  }
 }
 
 object BaseECKey extends Factory[BaseECKey] {
