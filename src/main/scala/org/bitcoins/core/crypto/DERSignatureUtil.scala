@@ -245,7 +245,14 @@ trait DERSignatureUtil extends BitcoinSLogger {
       case Success(bool) => bool
       case Failure(_) => false
     }
+  }
 
+  /** Checks if the given digital signature uses a low s value, if it does not it converts it to a low s value and returns it */
+  def lowS(signature: ECDigitalSignature): ECDigitalSignature = {
+    val sigLowS = if (isLowS(signature)) signature
+    else ECDigitalSignature(signature.r,CryptoParams.curve.getN().subtract(signature.s.bigInteger))
+    require(DERSignatureUtil.isLowS(sigLowS))
+    sigLowS
   }
 }
 
