@@ -93,7 +93,7 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
           val signature = ECDigitalSignature(executionInProgressScriptProgram.stack.tail.head.bytes)
 
           if (ScriptFlagUtil.requiresStrictDerEncoding(executionInProgressScriptProgram.flags) &&
-            !DERSignatureUtil.isStrictDEREncoding(signature)) {
+            !DERSignatureUtil.isValidSignatureEncoding(signature)) {
             //this means all of the signatures must encoded according to BIP66 strict dersig
             //https://github.com/bitcoin/bips/blob/master/bip-0066.mediawiki
             //script verification fails since the sig is not strictly der encoded
