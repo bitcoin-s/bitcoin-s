@@ -4,6 +4,8 @@
 
 This is the core functionality of bitcoin-s. 
 
+[Quick Build Guide](BUILD_README.md)
+
 This repostitory includes the following functionality:
   - Native Scala objects for various protocol types (Transaction, TransactionInput, ScriptSignatures...)
   - Serializers and deserializers for bitcoin data structures mentioned above
