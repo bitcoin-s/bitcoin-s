@@ -358,20 +358,6 @@ object CLTVScriptPubKey extends Factory[CLTVScriptPubKey] {
 
   def apply (asm: Seq[ScriptToken]) : CLTVScriptPubKey = fromAsm(asm)
 
-  /**
-    * Creates a P2PKH-formatted CLTVScriptPubKey
-    * @param locktime block height or timestamp
-    * @param pubKey public key corresponding to the CLTV output
-    * @return
-    */
-  def apply(locktime : ScriptNumber, pubKey : ECPublicKey) : CLTVScriptPubKey = {
-    val pushOpsLockTime = BitcoinScriptUtil.calculatePushOp(locktime.bytes)
-    val pushOpsPubKey = BitcoinScriptUtil.calculatePushOp(pubKey.bytes)
-    val asm = pushOpsLockTime ++ Seq(ScriptConstant(locktime.bytes)) ++ Seq(OP_CHECKLOCKTIMEVERIFY, OP_DROP, OP_DUP, OP_HASH160) ++
-    pushOpsPubKey ++ Seq(ScriptConstant(pubKey.bytes)) ++ Seq(OP_CHECKSIG)
-    CLTVScriptPubKey(asm)
-  }
-
   def apply(locktime : ScriptNumber, scriptPubKey : ScriptPubKey) : CLTVScriptPubKey = {
     val pushOpsLockTime= BitcoinScriptUtil.calculatePushOp(locktime.bytes)
     val cltvAsm = pushOpsLockTime ++ Seq(ScriptConstant(locktime.bytes)) ++ Seq(OP_CHECKLOCKTIMEVERIFY, OP_DROP)
@@ -415,20 +401,6 @@ object CSVScriptPubKey extends Factory[CSVScriptPubKey] {
   }
 
   def apply(asm : Seq[ScriptToken]) : CSVScriptPubKey = fromAsm(asm)
-
-  /**
-    * Creates P2PKH-formatted CSVScriptPubKey
-    * @param relativeLockTime number of blocks OR timestamp to lock coins
-    * @param pubKey public key corresponding to CSV output
-    * @return
-    */
-  def apply(relativeLockTime : ScriptNumber, pubKey : ECPublicKey) : CSVScriptPubKey = {
-    val pushOpsTimeStamp = BitcoinScriptUtil.calculatePushOp(relativeLockTime.bytes)
-    val pushOpsPubKey = BitcoinScriptUtil.calculatePushOp(pubKey.bytes)
-    val asm = pushOpsTimeStamp ++ Seq(ScriptConstant(relativeLockTime.bytes)) ++ Seq(OP_CHECKSEQUENCEVERIFY, OP_DROP, OP_DUP, OP_HASH160) ++
-      pushOpsPubKey ++ Seq(ScriptConstant(pubKey.bytes)) ++ Seq(OP_CHECKSIG)
-    CSVScriptPubKey(asm)
-  }
 
   def apply(relativeLockTime : ScriptNumber, scriptPubKey : ScriptPubKey) : CSVScriptPubKey = {
     val pushOpsLockTime= BitcoinScriptUtil.calculatePushOp(relativeLockTime.bytes)
