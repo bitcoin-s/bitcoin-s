@@ -33,7 +33,7 @@ sealed trait ScriptPubKey extends NetworkElement with BitcoinSLogger {
  * https://bitcoin.org/en/developer-guide#pay-to-public-key-hash-p2pkh
  * Format: OP_DUP OP_HASH160 <PubKeyHash> OP_EQUALVERIFY OP_CHECKSIG
  */
-trait P2PKHScriptPubKey extends ScriptPubKey
+sealed trait P2PKHScriptPubKey extends ScriptPubKey
 
 
 object P2PKHScriptPubKey extends Factory[P2PKHScriptPubKey] {
@@ -72,7 +72,7 @@ object P2PKHScriptPubKey extends Factory[P2PKHScriptPubKey] {
  * https://bitcoin.org/en/developer-guide#multisig
  * Format: <m> <A pubkey> [B pubkey] [C pubkey...] <n> OP_CHECKMULTISIG
  */
-trait MultiSignatureScriptPubKey extends ScriptPubKey {
+sealed trait MultiSignatureScriptPubKey extends ScriptPubKey {
 
   /**
     * Returns the amount of required signatures for this multisignature script pubkey output

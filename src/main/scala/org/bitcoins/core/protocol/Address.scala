@@ -2,20 +2,29 @@ package org.bitcoins.core.protocol
 import org.bitcoins.core.config._
 import org.bitcoins.core.config.{MainNet, RegTest, TestNet3}
 import org.bitcoins.core.crypto.{ECPublicKey, Sha256Hash160Digest}
+import org.bitcoins.core.protocol.transaction.TransactionOutput
 import org.bitcoins.core.protocol.script.{P2SHScriptPubKey, ScriptPubKey}
 import org.bitcoins.core.util.{Base58, CryptoUtil, Factory}
-
 import scala.util.{Failure, Success, Try}
 
 sealed abstract class Address {
+
+  /** The network that this address is valid for */
+  def networkParameters: NetworkParameters
+
+  /** The base58 string representation of this address */
   def value : String
+
+  /** Every address is derived from a [[Sha256Hash160Digest]] in a [[TransactionOutput]] */
+  def hash: Sha256Hash160Digest
 }
 
 sealed trait BitcoinAddress extends Address
 sealed trait P2PKHAddress extends BitcoinAddress
 
 object P2PKHAddress {
-  private case class P2PKHAddressImpl(override val value: String) extends P2PKHAddress {
+  private case class P2PKHAddressImpl(value: String, hash: Sha256Hash160Digest,
+                                      networkParameters: NetworkParameters) extends P2PKHAddress {
     require(isP2PKHAddress(value), "Bitcoin address was invalid " + value)
   }
 
@@ -30,11 +39,13 @@ object P2PKHAddress {
     val versionByte: Byte = network.p2pkhNetworkByte
     val bytes = Seq(versionByte) ++ hash.bytes
     val checksum = CryptoUtil.doubleSHA256(bytes).bytes.take(4)
-    P2PKHAddressImpl(Base58.encode(bytes ++ checksum))
+    P2PKHAddress(Base58.encode(bytes ++ checksum), hash, network)
   }
 
 
-  def apply(value : String): P2PKHAddress = P2PKHAddressImpl(value)
+  def apply(value : String, hash: Sha256Hash160Digest, networkParameters: NetworkParameters): P2PKHAddress = {
+    P2PKHAddressImpl(value,hash,networkParameters)
+  }
 
   def apply(hash: Sha256Hash160Digest, networkParameters: NetworkParameters): P2PKHAddress = encodePubKeyHashToAddress(hash,networkParameters)
 
@@ -75,7 +86,8 @@ sealed trait P2SHAddress extends BitcoinAddress
   * [[P2SHAddress]] companion object
   */
 object P2SHAddress {
-  private case class P2SHAddressImpl(override val value: String) extends P2SHAddress {
+  private case class P2SHAddressImpl(value: String, hash: Sha256Hash160Digest,
+                                     networkParameters: NetworkParameters) extends P2SHAddress {
     require(isP2SHAddress(value), "Bitcoin address was invalid " + value)
   }
 
@@ -106,10 +118,19 @@ object P2SHAddress {
     val hash = p2shScriptPubKey.scriptHash
     val bytes = Seq(versionByte) ++ hash.bytes
     val checksum = CryptoUtil.doubleSHA256(bytes).bytes.take(4)
-    P2SHAddressImpl(Base58.encode(bytes ++ checksum))
+    P2SHAddress(Base58.encode(bytes ++ checksum),hash,network)
   }
 
-  def apply(value: String): P2SHAddress = P2SHAddressImpl(value)
+  def apply(value: String, hash160Digest: Sha256Hash160Digest, networkParameters: NetworkParameters): P2SHAddress = {
+    P2SHAddressImpl(value, hash160Digest, networkParameters)
+  }
+
+  def apply(hash: Sha256Hash160Digest, network: NetworkParameters): P2SHAddress = {
+    val versionByte = network.p2shNetworkByte
+    val bytes = Seq(versionByte) ++ hash.bytes
+    val checksum = CryptoUtil.doubleSHA256(bytes).bytes.take(4)
+    P2SHAddress(Base58.encode(bytes ++ checksum), hash, network)
+  }
   /**
     * Checks if a address is a valid p2sh address
     *
@@ -138,10 +159,6 @@ object P2SHAddress {
 
 }
 
-
-sealed trait AssetAddress extends Address
-
-
 object BitcoinAddress {
   def validate(bitcoinAddress: String): Boolean = {
     val illegalChars = List('O', 'I', 'l', '0')
@@ -150,72 +167,28 @@ object BitcoinAddress {
       bitcoinAddress.filter(c => illegalChars.contains(c)).size == 0
   }
 
-  /**
-   * Converts a bitcoin address to an asset address
-    *
-    * @param address
-   * @return
-   */
-  def convertToAssetAddress(address : BitcoinAddress) : AssetAddress = {
-    val underlying : String  = address.value
-    val decodedBase58 : Seq[Byte] = Base58.decode(underlying)
-    require (
-      decodedBase58.size == 25
-    )
-    val decodedWithNameSpaceByte = Seq(0x13.toByte) ++ decodedBase58
-    val split = decodedWithNameSpaceByte.splitAt(decodedWithNameSpaceByte.length - 4)
-    val data = split._1
-    val newCheckSum = CryptoUtil.doubleSHA256(data).bytes.slice(0,4)
-    val constructedAssetAddress = data ++ newCheckSum
-    val encodedAssetAddress = Base58.encode(constructedAssetAddress)
-    AssetAddress(encodedAssetAddress)
-  }
 
   def apply(value: String): BitcoinAddress = {
-    if (P2PKHAddress.isP2PKHAddress(value)) P2PKHAddress(value)
-    else if (P2SHAddress.isP2SHAddress(value)) P2SHAddress(value)
-    else throw new IllegalArgumentException("The address was not a p2pkh or p2sh address, got: " + value)
-  }
-
-
-}
-
-object AssetAddress {
-  private case class AssetAddressImpl(value : String) extends AssetAddress {
-    require(AssetAddress.validate(value), "The provided asset was invalid: " + value)
-  }
-
-  def validate(assetAddress : String) : Boolean = {
-    //asset addresses must have the one byte namespace equivalent to 19
-    //which ends up being 'a' in the ascii character set.
-    //bytes size becomes 22
-    val decodeCheckAssetAddress : Try[Seq[Byte]] = Base58.decodeCheck(assetAddress)
-    decodeCheckAssetAddress match {
-      case Success(bytes) => bytes.size == 22  && bytes.head == 0x13
-      case Failure(_) => false
+    val decodeChecked = Base58.decodeCheck(value)
+    decodeChecked match {
+      case Success(bytes) =>
+        val network = matchNetwork(bytes.head)
+        if (P2PKHAddress.isP2PKHAddress(value)) {
+          P2PKHAddress(Sha256Hash160Digest(bytes.tail),network)
+        }
+        else if (P2SHAddress.isP2SHAddress(value)) {
+          P2SHAddress(Sha256Hash160Digest(bytes.tail), network)
+        } else throw new IllegalArgumentException("The address was not a p2pkh or p2sh address, got: " + value)
+      case Failure(exception) =>
+        throw exception
     }
   }
 
-  /**
-   * Converts an asset address into a bitcoin address
-    *
-    * @param assetAddress
-   * @return
-   */
-  def convertToBitcoinAddress(assetAddress : AssetAddress) : BitcoinAddress = {
-    val underlying : String = assetAddress.value
-    val decodedAsset = Base58.decode(underlying)
-    require {
-      decodedAsset.size == 26
-    }
-    val data = decodedAsset.slice(0, decodedAsset.length - 4)
-    val dataDroppedNameSpace = data.drop(1)
-    val checkSum = CryptoUtil.doubleSHA256(dataDroppedNameSpace).bytes.slice(0,4)
-    val value = Base58.encode(dataDroppedNameSpace ++ checkSum)
-    BitcoinAddress(value)
+  private def matchNetwork(byte: Byte): NetworkParameters = byte match {
+    case _ if Seq(MainNet.p2pkhNetworkByte,MainNet.p2shNetworkByte).contains(byte) => MainNet
+    case _ if Seq(TestNet3.p2pkhNetworkByte, TestNet3.p2shNetworkByte).contains(byte) => TestNet3
+    case _ if Seq(RegTest.p2pkhNetworkByte,RegTest.p2shNetworkByte).contains(byte) => RegTest
   }
-
-  def apply(value : String): AssetAddress = AssetAddressImpl(value)
 }
 
 object Address extends Factory[Address] {
@@ -229,11 +202,9 @@ object Address extends Factory[Address] {
     * @return
     */
   def factory(str : String) : Address = {
-    if (AssetAddress.validate(str)) AssetAddress(str)
-    else if (BitcoinAddress.validate(str)) BitcoinAddress(str)
+    if (BitcoinAddress.validate(str)) BitcoinAddress(str)
     else throw new RuntimeException("The address that you passed in is invalid")
   }
-
 
   def fromBytes(bytes : Seq[Byte]) : Address = factory(Base58.encode(bytes))
 
