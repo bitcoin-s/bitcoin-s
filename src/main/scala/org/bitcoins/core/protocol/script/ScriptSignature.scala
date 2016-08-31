@@ -255,7 +255,6 @@ object P2SHScriptSignature extends Factory[P2SHScriptSignature] with BitcoinSLog
     redeemScriptTry match {
       case Success(redeemScript) =>
         logger.debug("Possible redeemScript: " + redeemScript)
-        //logger.debug("Equals EmptyScriptPubKey: " + (EmptyScriptPubKey == redeemScript))
         redeemScript match {
           case x : P2PKHScriptPubKey => true
           case x : MultiSignatureScriptPubKey => true

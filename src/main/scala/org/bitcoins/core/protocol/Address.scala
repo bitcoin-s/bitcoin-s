@@ -7,7 +7,7 @@ import org.bitcoins.core.protocol.script.{P2SHScriptPubKey, ScriptPubKey}
 import org.bitcoins.core.util.{Base58, CryptoUtil, Factory}
 import scala.util.{Failure, Success, Try}
 
-sealed abstract class Address {
+sealed trait Address {
 
   /** The network that this address is valid for */
   def networkParameters: NetworkParameters
@@ -155,14 +155,14 @@ object P2SHAddress {
 }
 
 object BitcoinAddress {
+  /** Checks if the given base58 bitcoin address is a valid address */
   def validate(bitcoinAddress: String): Boolean = {
-    val illegalChars = List('O', 'I', 'l', '0')
-    bitcoinAddress.length >= 26 && bitcoinAddress.length <= 35 &&
-      (P2PKHAddress.isP2PKHAddress(bitcoinAddress) || P2SHAddress.isP2SHAddress(bitcoinAddress)) &&
-      bitcoinAddress.filter(c => illegalChars.contains(c)).size == 0
+    val decodeChecked = Base58.decodeCheck(bitcoinAddress)
+    decodeChecked.isSuccess
   }
 
 
+  /** Creates a [[BitcoinAddress]] from the given base58 string value */
   def apply(value: String): BitcoinAddress = {
     val decodeChecked = Base58.decodeCheck(value)
     decodeChecked match {
@@ -179,6 +179,7 @@ object BitcoinAddress {
     }
   }
 
+  /** Helper function for helping matching an address to a network byte */
   private def matchNetwork(byte: Byte): NetworkParameters = byte match {
     case _ if Seq(MainNet.p2pkhNetworkByte,MainNet.p2shNetworkByte).contains(byte) => MainNet
     case _ if Seq(TestNet3.p2pkhNetworkByte, TestNet3.p2shNetworkByte).contains(byte) => TestNet3

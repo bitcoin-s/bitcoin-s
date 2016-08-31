@@ -16,7 +16,6 @@ trait TransactionSignatureCreator {
     */
   def createSig(txSignatureComponent: TransactionSignatureComponent, privateKey: ECPrivateKey, hashType: HashType): ECDigitalSignature = {
     val hash = TransactionSignatureSerializer.hashForSignature(txSignatureComponent, hashType)
-
     val signature = privateKey.sign(hash)
     //append 1 byte hash type onto the end
     val sig = ECDigitalSignature(signature.bytes ++ Seq(hashType.byte))
