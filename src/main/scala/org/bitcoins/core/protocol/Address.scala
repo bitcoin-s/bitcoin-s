@@ -20,10 +20,20 @@ sealed abstract class Address {
 }
 
 sealed trait BitcoinAddress extends Address
-sealed trait P2PKHAddress extends BitcoinAddress
+
+sealed trait P2PKHAddress extends BitcoinAddress {
+  /** The base58 string representation of this address */
+  override def value : String = {
+    val versionByte = networkParameters.p2pkhNetworkByte
+    val bytes = Seq(versionByte) ++ hash.bytes
+    val checksum = CryptoUtil.doubleSHA256(bytes).bytes.take(4)
+    Base58.encode(bytes ++ checksum)
+  }
+
+}
 
 object P2PKHAddress {
-  private case class P2PKHAddressImpl(value: String, hash: Sha256Hash160Digest,
+  private case class P2PKHAddressImpl(hash: Sha256Hash160Digest,
                                       networkParameters: NetworkParameters) extends P2PKHAddress {
     require(isP2PKHAddress(value), "Bitcoin address was invalid " + value)
   }
@@ -35,17 +45,7 @@ object P2PKHAddress {
     * @param network the network on which this address is being generated for
     * @return
     */
-  def encodePubKeyHashToAddress(hash: Sha256Hash160Digest, network: NetworkParameters): P2PKHAddress = {
-    val versionByte: Byte = network.p2pkhNetworkByte
-    val bytes = Seq(versionByte) ++ hash.bytes
-    val checksum = CryptoUtil.doubleSHA256(bytes).bytes.take(4)
-    P2PKHAddress(Base58.encode(bytes ++ checksum), hash, network)
-  }
-
-
-  def apply(value : String, hash: Sha256Hash160Digest, networkParameters: NetworkParameters): P2PKHAddress = {
-    P2PKHAddressImpl(value,hash,networkParameters)
-  }
+  def encodePubKeyHashToAddress(hash: Sha256Hash160Digest, network: NetworkParameters): P2PKHAddress = P2PKHAddressImpl(hash,network)
 
   def apply(hash: Sha256Hash160Digest, networkParameters: NetworkParameters): P2PKHAddress = encodePubKeyHashToAddress(hash,networkParameters)
 
@@ -53,6 +53,7 @@ object P2PKHAddress {
     val hash = CryptoUtil.sha256Hash160(pubKey.bytes)
     P2PKHAddress(hash,networkParameters)
   }
+
   /**
     * Checks if an address is a valid p2pkh address
     *
@@ -80,13 +81,21 @@ object P2PKHAddress {
 
 }
 
-sealed trait P2SHAddress extends BitcoinAddress
+sealed trait P2SHAddress extends BitcoinAddress {
+  /** The base58 string representation of this address */
+  override def value : String = {
+    val versionByte = networkParameters.p2shNetworkByte
+    val bytes = Seq(versionByte) ++ hash.bytes
+    val checksum = CryptoUtil.doubleSHA256(bytes).bytes.take(4)
+    Base58.encode(bytes ++ checksum)
+  }
+}
 
 /**
   * [[P2SHAddress]] companion object
   */
 object P2SHAddress {
-  private case class P2SHAddressImpl(value: String, hash: Sha256Hash160Digest,
+  private case class P2SHAddressImpl(hash: Sha256Hash160Digest,
                                      networkParameters: NetworkParameters) extends P2SHAddress {
     require(isP2SHAddress(value), "Bitcoin address was invalid " + value)
   }
@@ -113,27 +122,13 @@ object P2SHAddress {
   def apply(scriptPubKey: ScriptPubKey,network: NetworkParameters): P2SHAddress = encodeScriptPubKeyToAddress(scriptPubKey,network)
 
 
-  def apply(p2shScriptPubKey: P2SHScriptPubKey, network: NetworkParameters): P2SHAddress = {
-    val versionByte = network.p2shNetworkByte
-    val hash = p2shScriptPubKey.scriptHash
-    val bytes = Seq(versionByte) ++ hash.bytes
-    val checksum = CryptoUtil.doubleSHA256(bytes).bytes.take(4)
-    P2SHAddress(Base58.encode(bytes ++ checksum),hash,network)
-  }
+  def apply(p2shScriptPubKey: P2SHScriptPubKey, network: NetworkParameters): P2SHAddress = P2SHAddress(p2shScriptPubKey.scriptHash,network)
 
-  def apply(value: String, hash160Digest: Sha256Hash160Digest, networkParameters: NetworkParameters): P2SHAddress = {
-    P2SHAddressImpl(value, hash160Digest, networkParameters)
-  }
 
-  def apply(hash: Sha256Hash160Digest, network: NetworkParameters): P2SHAddress = {
-    val versionByte = network.p2shNetworkByte
-    val bytes = Seq(versionByte) ++ hash.bytes
-    val checksum = CryptoUtil.doubleSHA256(bytes).bytes.take(4)
-    P2SHAddress(Base58.encode(bytes ++ checksum), hash, network)
-  }
+  def apply(hash: Sha256Hash160Digest, network: NetworkParameters): P2SHAddress = P2SHAddressImpl(hash, network)
+
   /**
     * Checks if a address is a valid p2sh address
-    *
     * @param address
     * @return
     */
