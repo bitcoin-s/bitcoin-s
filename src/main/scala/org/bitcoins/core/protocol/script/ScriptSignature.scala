@@ -39,7 +39,7 @@ sealed trait ScriptSignature extends NetworkElement with BitcoinSLogger {
 
 }
 
-trait NonStandardScriptSignature extends ScriptSignature {
+sealed trait NonStandardScriptSignature extends ScriptSignature {
   def signatures : Seq[ECDigitalSignature] = Seq()
 }
 
@@ -66,7 +66,7 @@ object NonStandardScriptSignature extends Factory[NonStandardScriptSignature] {
  * P2PKH scriptSigs follow this format
  * <sig> <pubkey>
  */
-trait P2PKHScriptSignature extends ScriptSignature {
+sealed trait P2PKHScriptSignature extends ScriptSignature {
 
   /**
     * P2PKH scriptSigs only have one signature
@@ -136,7 +136,7 @@ object P2PKHScriptSignature extends Factory[P2PKHScriptSignature] {
  * P2SH scriptSigs have the following format
  * <sig> [sig] [sig...] <redeemScript>
  */
-trait P2SHScriptSignature extends ScriptSignature {
+sealed trait P2SHScriptSignature extends ScriptSignature {
 
   /**
     * The redeemScript represents the conditions that must be satisfied to spend the output
@@ -268,7 +268,7 @@ object P2SHScriptSignature extends Factory[P2SHScriptSignature] with BitcoinSLog
  * Multisig script sigs have the following format
  * OP_0 <A sig> [B sig] [C sig...]
  */
-trait MultiSignatureScriptSignature extends ScriptSignature {
+sealed trait MultiSignatureScriptSignature extends ScriptSignature {
 
   /**
     * The digital signatures inside of the scriptSig
@@ -334,7 +334,7 @@ object MultiSignatureScriptSignature extends Factory[MultiSignatureScriptSignatu
  * https://bitcoin.org/en/developer-guide#pubkey
  * Signature script: <sig>
  */
-trait P2PKScriptSignature extends ScriptSignature {
+sealed trait P2PKScriptSignature extends ScriptSignature {
 
   /**
     * PubKey scriptSignatures only have one signature
@@ -384,6 +384,28 @@ object P2PKScriptSignature extends Factory[P2PKScriptSignature] {
     case _ => false
   }
 }
+
+sealed trait CLTVScriptSignature extends ScriptSignature {
+  def scriptSig : ScriptSignature
+
+  override def signatures : Seq[ECDigitalSignature] = scriptSig.signatures
+
+  override def hex = scriptSig.hex
+}
+
+object CLTVScriptSignature {
+  private case class CLTVScriptSignatureImpl(scriptSig : ScriptSignature) extends CLTVScriptSignature
+
+  def apply(scriptPubKey: ScriptPubKey, sigs : Seq[ECDigitalSignature], pubKeys : Seq[ECPublicKey]) : CLTVScriptSignature = scriptPubKey match {
+    case p2pkScriptPubKey : P2PKScriptPubKey => CLTVScriptSignatureImpl(P2PKScriptSignature(sigs.head))
+    case p2pkhScriptPubKey : P2PKHScriptPubKey => CLTVScriptSignatureImpl(P2PKHScriptSignature(sigs.head, pubKeys.head))
+    case multiSigScriptPubKey : MultiSignatureScriptPubKey => CLTVScriptSignatureImpl(MultiSignatureScriptSignature(sigs))
+    case cltvScriptPubKey : CLTVScriptPubKey => apply(cltvScriptPubKey.scriptPubKeyAfterCLTV, sigs, pubKeys)
+    case p2shScriptPubKey : P2SHScriptPubKey => ???
+  }
+
+}
+
 
 /**
  * Represents the empty script signature
@@ -437,6 +459,7 @@ object ScriptSignature extends Factory[ScriptSignature] with BitcoinSLogger {
     case s : P2PKScriptPubKey => P2PKScriptSignature.fromAsm(tokens)
     case s : MultiSignatureScriptPubKey => MultiSignatureScriptSignature.fromAsm(tokens)
     case s : NonStandardScriptPubKey => NonStandardScriptSignature.fromAsm(tokens)
+    case s : CLTVScriptPubKey => fromScriptPubKey(tokens, s.scriptPubKeyAfterCLTV)
     case EmptyScriptPubKey if (tokens.size == 0) => EmptyScriptSignature
     case EmptyScriptPubKey => NonStandardScriptSignature.fromAsm(tokens)
   }

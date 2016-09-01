@@ -61,7 +61,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
         case p2shScriptPubKey : P2SHScriptPubKey if (ScriptFlagUtil.p2shEnabled(program.flags)) =>
           executeP2shScript(scriptSigExecutedProgram, programBeingExecuted, p2shScriptPubKey)
         case _ : MultiSignatureScriptPubKey | _ : P2SHScriptPubKey | _ : P2PKHScriptPubKey |
-          _ : P2PKScriptPubKey | _ : NonStandardScriptPubKey | EmptyScriptPubKey =>
+          _ : P2PKScriptPubKey | _ : CLTVScriptPubKey | _ : CSVScriptPubKey | _ : NonStandardScriptPubKey | EmptyScriptPubKey =>
           logger.info("Stack state after scriptSig execution: " + scriptSigExecutedProgram.stack)
           if (!scriptSigExecutedProgram.error.isDefined) {
             logger.debug("We do not check a redeemScript against a non p2sh scriptSig")

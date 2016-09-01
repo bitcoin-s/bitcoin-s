@@ -2,6 +2,7 @@ package org.bitcoins.core.protocol.script
 
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.crypto.{ECPublicKey, Sha256Hash160Digest}
+import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol._
 import org.bitcoins.core.protocol.script.CLTVScriptPubKey.CLTVScriptPubKeyImpl
 import org.bitcoins.core.script.ScriptSettings
@@ -36,7 +37,7 @@ sealed trait ScriptPubKey extends NetworkElement with BitcoinSLogger {
  * https://bitcoin.org/en/developer-guide#pay-to-public-key-hash-p2pkh
  * Format: OP_DUP OP_HASH160 <PubKeyHash> OP_EQUALVERIFY OP_CHECKSIG
  */
-trait P2PKHScriptPubKey extends ScriptPubKey {
+sealed trait P2PKHScriptPubKey extends ScriptPubKey {
   def pubKeyHash : Sha256Hash160Digest = Sha256Hash160Digest(asm(asm.length - 3).bytes)
 }
 
@@ -80,7 +81,7 @@ object P2PKHScriptPubKey extends Factory[P2PKHScriptPubKey] {
  * https://bitcoin.org/en/developer-guide#multisig
  * Format: <m> <A pubkey> [B pubkey] [C pubkey...] <n> OP_CHECKMULTISIG
  */
-trait MultiSignatureScriptPubKey extends ScriptPubKey {
+sealed trait MultiSignatureScriptPubKey extends ScriptPubKey {
 
   /**
     * Returns the amount of required signatures for this multisignature script pubkey output
@@ -112,7 +113,7 @@ trait MultiSignatureScriptPubKey extends ScriptPubKey {
     } else {
       asm(checkMultiSigIndex - 1) match {
         case x : ScriptNumber => x.underlying
-        case _ => throw new RuntimeException("The element preceding a OP_CHECKMULTISIG operation in a  multisignature pubkey must be a script number operation")
+        case _ => throw new RuntimeException("The element preceding a OP_CHECKMULTISIG operation in a  multisignature pubkey must be a script number operation, got: " + this)
       }
     }
   }
@@ -243,7 +244,7 @@ object MultiSignatureScriptPubKey extends Factory[MultiSignatureScriptPubKey] {
  * https://bitcoin.org/en/developer-guide#pay-to-script-hash-p2sh
  * Format: OP_HASH160 <Hash160(redeemScript)> OP_EQUAL
  */
-trait P2SHScriptPubKey extends ScriptPubKey {
+sealed trait P2SHScriptPubKey extends ScriptPubKey {
   /** The hash of the script for which this scriptPubKey is being created from */
   def scriptHash : Sha256Hash160Digest = Sha256Hash160Digest(asm(asm.length - 2).bytes)
 }
@@ -289,7 +290,7 @@ object P2SHScriptPubKey extends Factory[P2SHScriptPubKey] with BitcoinSLogger {
  * https://bitcoin.org/en/developer-guide#pubkey
  * Format: <pubkey> OP_CHECKSIG
  */
-trait P2PKScriptPubKey extends ScriptPubKey {
+sealed trait P2PKScriptPubKey extends ScriptPubKey {
   def publicKey : ECPublicKey = ECPublicKey(BitcoinScriptUtil.filterPushOps(asm).head.bytes)
 }
 
@@ -335,9 +336,10 @@ object P2PKScriptPubKey extends Factory[P2PKScriptPubKey] {
   * [[https://github.com/bitcoin/bips/blob/master/bip-0065.mediawiki]]
   * Format: <locktime> OP_CLTV OP_DROP <scriptPubKey>
   */
-trait CLTVScriptPubKey extends ScriptPubKey {
+sealed trait CLTVScriptPubKey extends ScriptPubKey {
   /**
     * Determines the nested ScriptPubKey inside the CLTVScriptPubKey
+ *
     * @return
     */
   def scriptPubKeyAfterCLTV : ScriptPubKey = ScriptPubKey(asm.slice(4, asm.length))
@@ -378,12 +380,18 @@ object CLTVScriptPubKey extends Factory[CLTVScriptPubKey] {
   * https://github.com/bitcoin/bips/blob/master/bip-0112.mediawiki
   * Format: <locktime> OP_CSV OP_DROP <scriptPubKey>
   */
-trait CSVScriptPubKey extends ScriptPubKey {
+sealed trait CSVScriptPubKey extends ScriptPubKey {
   /**
     * Determines the nested ScriptPubKey inside the CSVScriptPubKey
+ *
     * @return
     */
   def scriptPubKeyAfterCSV : ScriptPubKey = ScriptPubKey(asm.slice(4, asm.length))
+
+  def locktime : UInt32 = {
+    val hex = BitcoinSUtil.flipEndianess(asm.head.hex)
+    UInt32(hex)
+  }
 }
 
 object CSVScriptPubKey extends Factory[CSVScriptPubKey] {
