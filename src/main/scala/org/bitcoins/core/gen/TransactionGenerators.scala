@@ -1,20 +1,23 @@
 package org.bitcoins.core.gen
 
-import org.bitcoins.core.crypto.{ECPrivateKey, TransactionSignatureComponent}
+import org.bitcoins.core.crypto.{EmptyDigitalSignature, ECPrivateKey, TransactionSignatureComponent}
 import org.bitcoins.core.currency.CurrencyUnits
-import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.number.{Int32, Int64, UInt32}
 import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction.{TransactionInput, TransactionOutPoint, TransactionOutput, _}
+import org.bitcoins.core.script.constant.ScriptNumber
+import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil}
 import org.scalacheck.Gen
 
 /**
   * Created by chris on 6/21/16.
   */
-trait TransactionGenerators {
+trait TransactionGenerators extends  BitcoinSLogger {
 
   /**
     * Responsible for generating [[org.bitcoins.core.protocol.transaction.TransactionOutPoint]]
+    *
     * @return
     */
   def outPoints : Gen[TransactionOutPoint] = for {
@@ -24,6 +27,7 @@ trait TransactionGenerators {
 
   /**
     * Generates a random [[org.bitcoins.core.protocol.transaction.TransactionOutput]]
+    *
     * @return
     */
   def outputs : Gen[TransactionOutput] = for {
@@ -33,6 +37,7 @@ trait TransactionGenerators {
 
   /**
     * Generates a random [[org.bitcoins.core.protocol.transaction.TransactionInput]]
+    *
     * @return
     */
   def inputs : Gen[TransactionInput] = for {
@@ -51,6 +56,7 @@ trait TransactionGenerators {
     * Generates an arbitrary [[org.bitcoins.core.protocol.transaction.Transaction]]
     * This transaction's [[TransactionInput]]s will not evaluate to true
     * inside of the [[org.bitcoins.core.script.interpreter.ScriptInterpreter]]
+    *
     * @return
     */
   def transactions : Gen[Transaction] = for {
@@ -92,6 +98,7 @@ trait TransactionGenerators {
   /**
     * Creates a sequence of [[ECPrivateKey]], then creates a [[MultiSignatureScriptPubKey]] from those private keys,
     * Finally creates a [[Transaction]] that spends the [[MultiSignatureScriptPubKey]] correctly
+    *
     * @return
     */
   def signedMultiSigTransaction: Gen[(TransactionSignatureComponent, Seq[ECPrivateKey])] = for {
@@ -105,6 +112,7 @@ trait TransactionGenerators {
 
   /**
     * Creates a transaction which contains a [[P2SHScriptSignature]] that correctly spends a [[P2SHScriptPubKey]]
+    *
     * @return
     */
   def p2SHTransaction: Gen[(TransactionSignatureComponent, Seq[ECPrivateKey])] = for {
@@ -116,24 +124,102 @@ trait TransactionGenerators {
     (signedTxSignatureComponent, privateKeys)
   }
 
+  /**
+    * Generates valid CLTVTransaction 50% of the time and an invalid CLTV transaction the other 50% of the time
+ *
+    * @return
+    */
+
+  def randomCLTVTransaction : Gen[(TransactionSignatureComponent, Seq[ECPrivateKey], ScriptNumber)] = {
+    val randomNum = (scala.util.Random.nextInt() % 2).abs
+    if (randomNum == 0) unspendableCLTVTransaction else spendableCLTVTransaction
+  }
+
+  /**
+    * Creates a [[ECPrivateKey]], then creates a [[CLTVScriptPubKey]] from that private key
+    * Finally creates a [[Transaction]] that CANNNOT spend the [[CLTVScriptPubKey]] because the LockTime requirement
+    * is not satisfied (i.e. the transaction's lockTime has not surpassed the CLTV value in the [[CLTVScriptPubKey]])
+    * @return
+    */
+  def unspendableCLTVTransaction : Gen[(TransactionSignatureComponent, Seq[ECPrivateKey], ScriptNumber)] = ( for {
+    txLockTime <- NumberGenerator.uInt32s
+    //Generate script Numbers that are greater than txLockTime values. the suchThat condition is for thoroughness as
+    //a random generated ScriptNumber will almost certainly be a greater value than a random generated UInt32.
+    cltvLockTime <- NumberGenerator.uInt32s.suchThat(num => num > txLockTime).map(x => ScriptNumber(x.underlying))
+    sequence <- NumberGenerator.uInt32s.suchThat(num => num != UInt32.max)
+    (signedScriptSig, cltvScriptPubkey, privateKeys) <- ScriptGenerators.signedCLTVScriptSignature(cltvLockTime, txLockTime, sequence)
+    (creditingTx, outputIndex) = buildCreditingTransaction(cltvScriptPubkey)
+    (spendingTx, inputIndex) = buildSpendingTransaction(creditingTx, signedScriptSig, outputIndex, txLockTime, sequence)
+
+    txSigComponent = TransactionSignatureComponent(spendingTx, inputIndex, cltvScriptPubkey, Policy.standardScriptVerifyFlags)
+  } yield (txSigComponent, privateKeys, cltvLockTime)).suchThat(txAndCLTVLockTimesOfSameType)
+
+  /**
+    *  Creates a [[ECPrivateKey]], then creates a [[CLTVScriptPubKey]] from that private key
+    *  Finally creates a [[Transaction]] that can successfully spend the [[CLTVScriptPubKey]]
+    * @return
+    */
+  def spendableCLTVTransaction : Gen[(TransactionSignatureComponent, Seq[ECPrivateKey], ScriptNumber)] = ( for {
+    txLockTime <- NumberGenerator.uInt32s
+    //Generate UInt32 values that are less than txLockTime values. UInt32 values are then mapped to ScriptNumbers
+    cltvLockTime <- NumberGenerator.uInt32s.suchThat(num => num < txLockTime).map(x => ScriptNumber(x.underlying))
+    sequence <- NumberGenerator.uInt32s.suchThat(num => num != UInt32.max)
+    (signedScriptSig, cltvScriptPubKey, privateKeys) <- ScriptGenerators.signedCLTVScriptSignature(cltvLockTime, txLockTime, sequence)
+    (creditingTx, outputIndex) = buildCreditingTransaction(cltvScriptPubKey)
+    (signedSpendingTx, inputIndex) = buildSpendingTransaction(creditingTx, signedScriptSig, outputIndex, txLockTime, sequence)
+
+    txSigComponent = TransactionSignatureComponent(signedSpendingTx, inputIndex, cltvScriptPubKey, Policy.standardScriptVerifyFlags)
+  } yield (txSigComponent, privateKeys, cltvLockTime)).suchThat(txAndCLTVLockTimesOfSameType)
+
+  private def txAndCLTVLockTimesOfSameType(generatorComponent : (TransactionSignatureComponent, Seq[ECPrivateKey],  ScriptNumber)) : Boolean = {
+    val (txSigComponent, keys, num) = generatorComponent
+    val tx = txSigComponent.transaction
+    val threshold = TransactionConstants.locktimeThreshold.underlying
+    num.underlying match {
+      case negativeCLTV if negativeCLTV < 0 => false
+      case positiveCLTV if positiveCLTV >= 0 =>
+        if ((tx.lockTime.underlying < threshold && num.underlying < threshold) ||
+          (tx.lockTime.underlying > threshold && num.underlying > threshold)) true
+        else {
+          false
+        }
+    }
+  }
 
   /**
     * Builds a spending transaction according to bitcoin core
+    *
+    * @param creditingTx
+    * @param scriptSignature
+    * @param outputIndex
+    * @param locktime
+    * @param sequence
+    * @return the built spending transaction and the input index for the script signature
+    */
+  def buildSpendingTransaction(creditingTx : Transaction,scriptSignature : ScriptSignature, outputIndex : UInt32, locktime : UInt32, sequence : UInt32) : (Transaction,UInt32) = {
+    val outpoint = TransactionOutPoint(creditingTx.txId,outputIndex)
+    val input = TransactionInput(outpoint,scriptSignature, sequence)
+    val output = TransactionOutput(CurrencyUnits.zero,EmptyScriptPubKey)
+    val tx = Transaction(TransactionConstants.version,Seq(input),Seq(output),locktime)
+    (tx,UInt32.zero)
+  }
+
+
+  /**
+    * Builds a spending transaction according to bitcoin core with max sequence and a locktime of zero.
+    *
     * @param creditingTx
     * @param scriptSignature
     * @param outputIndex
     * @return the built spending transaction and the input index for the script signature
     */
   def buildSpendingTransaction(creditingTx : Transaction,scriptSignature : ScriptSignature, outputIndex : UInt32) : (Transaction,UInt32) = {
-    val outpoint = TransactionOutPoint(creditingTx.txId,outputIndex)
-    val input = TransactionInput(outpoint,scriptSignature,TransactionConstants.sequence)
-    val output = TransactionOutput(CurrencyUnits.zero,EmptyScriptPubKey)
-    val tx = Transaction(TransactionConstants.version,Seq(input),Seq(output),TransactionConstants.lockTime)
-    (tx,UInt32.zero)
+    buildSpendingTransaction(creditingTx, scriptSignature, outputIndex, TransactionConstants.lockTime, TransactionConstants.sequence)
   }
   /**
     * Mimics this test utility found in bitcoin core
     * https://github.com/bitcoin/bitcoin/blob/605c17844ea32b6d237db6d83871164dc7d59dab/src/test/script_tests.cpp#L57
+    *
     * @param scriptPubKey
     * @return the transaction and the output index of the scriptPubKey
     */

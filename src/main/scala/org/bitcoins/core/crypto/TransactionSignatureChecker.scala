@@ -71,7 +71,7 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
           val sigsRemoved = removeSignaturesFromScript(s.signatures, s.redeemScript.asm)
           sigsRemoved
         case _ : P2PKHScriptSignature | _ : P2PKScriptSignature | _ : NonStandardScriptSignature
-             | _ : MultiSignatureScriptSignature | EmptyScriptSignature =>
+             | _ : MultiSignatureScriptSignature | _ : CLTVScriptSignature | EmptyScriptSignature =>
           logger.debug("Script before sigRemoved: "  + script)
           logger.debug("Signature: " + signature)
           logger.debug("PubKey: " + pubKey)

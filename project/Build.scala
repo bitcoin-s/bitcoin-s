@@ -38,6 +38,9 @@ object BitcoinSCoreBuild extends Build {
         |import org.bitcoins.core.script.constant._
         |import org.bitcoins.core.util.BitcoinScriptUtil
         |import org.bitcoins.core.currency._
+        |import org.bitcoins.core.script.interpreter._
+        |import org.bitcoins.core.gen._
+        |import org.bitcoins.core.policy._
         |
         |
         |val base = Base58
@@ -45,6 +48,7 @@ object BitcoinSCoreBuild extends Build {
         |val crypto = CryptoUtil
         |val script = BitcoinScriptUtil
         |val parser = org.bitcoins.core.serializers.script.ScriptParser
+        |val interpreter = ScriptInterpreter
       """.stripMargin
   )
 } 

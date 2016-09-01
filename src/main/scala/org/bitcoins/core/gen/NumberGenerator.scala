@@ -72,6 +72,8 @@ trait NumberGenerator {
 
   def scriptNumbers: Gen[ScriptNumber] = Gen.choose(Int64.min.underlying, Int64.max.underlying).map(ScriptNumber(_))
 
+  def unspendableLockTimeScriptNumbers : Gen[ScriptNumber] = Gen.choose(4294967296L, Int64.max.underlying).map(ScriptNumber(_))
+
   def compactSizeUInts : Gen[CompactSizeUInt] = uInt64s.map(CompactSizeUInt(_))
 
   /**
