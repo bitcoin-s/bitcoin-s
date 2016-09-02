@@ -15,7 +15,7 @@ import scala.util.{Failure, Success, Try}
 /**
  * Created by chris on 12/26/15.
  */
-trait ScriptPubKey extends NetworkElement with BitcoinSLogger {
+sealed trait ScriptPubKey extends NetworkElement with BitcoinSLogger {
 
   /**
    * Representation of a scriptSignature in a parsed assembly format
@@ -72,7 +72,7 @@ object P2PKHScriptPubKey extends Factory[P2PKHScriptPubKey] {
  * https://bitcoin.org/en/developer-guide#multisig
  * Format: <m> <A pubkey> [B pubkey] [C pubkey...] <n> OP_CHECKMULTISIG
  */
-sealed trait MultiSignatureScriptPubKey extends ScriptPubKey {
+trait MultiSignatureScriptPubKey extends ScriptPubKey {
 
   /**
     * Returns the amount of required signatures for this multisignature script pubkey output
