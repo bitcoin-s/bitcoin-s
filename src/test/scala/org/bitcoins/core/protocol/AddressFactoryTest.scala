@@ -16,11 +16,6 @@ class AddressFactoryTest extends FlatSpec with MustMatchers {
     Address(Base58.decode(TestUtil.bitcoinAddress.value)) must be (TestUtil.bitcoinAddress)
   }
 
-
-  it must "create an asset address from a base58 encoded string" in {
-    Address(Base58.decode(TestUtil.assetAddress.value)) must be (TestUtil.assetAddress)
-  }
-
   it must "throw an exception if the given string" in {
     intercept[RuntimeException] {
       Address("01234567890abcdef")
