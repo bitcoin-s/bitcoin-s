@@ -15,7 +15,7 @@ import scala.util.{Failure, Success, Try}
 /**
  * Created by chris on 12/26/15.
  */
-sealed trait ScriptPubKey extends NetworkElement with BitcoinSLogger {
+trait ScriptPubKey extends NetworkElement with BitcoinSLogger {
 
   /**
    * Representation of a scriptSignature in a parsed assembly format
@@ -33,7 +33,7 @@ sealed trait ScriptPubKey extends NetworkElement with BitcoinSLogger {
  * https://bitcoin.org/en/developer-guide#pay-to-public-key-hash-p2pkh
  * Format: OP_DUP OP_HASH160 <PubKeyHash> OP_EQUALVERIFY OP_CHECKSIG
  */
-sealed trait P2PKHScriptPubKey extends ScriptPubKey
+trait P2PKHScriptPubKey extends ScriptPubKey
 
 
 object P2PKHScriptPubKey extends Factory[P2PKHScriptPubKey] {
