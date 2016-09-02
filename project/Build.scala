@@ -23,6 +23,6 @@ object BitcoinSCoreBuild extends Build {
     scalaVersion := scalaV,
     resolvers += Resolver.sonatypeRepo("releases"),  
     libraryDependencies ++= appDependencies,
-    scalacOptions ++= Seq("-unchecked", "-deprecation")  
+    scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature")  
   )
 } 

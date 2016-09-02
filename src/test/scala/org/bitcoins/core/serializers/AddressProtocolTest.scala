@@ -9,21 +9,6 @@ import spray.json.{JsObject, JsValue, JsString}
  */
 class AddressProtocolTest extends FlatSpec with MustMatchers with BitcoinSLogger {
 
-  it must "read an asset address from a json string" in {
-    logger.debug("asset address as jsstring: akJsoCcyh34FGPotxfEoSXGwFPCNAkyCgTA")
-    logger.debug("testutil address: " + TestUtil.assetAddress)
-    val address = JsString(TestUtil.assetAddress.value)
-    AddressProtocol.AddressFormat.read(address) must be (TestUtil.assetAddress)
-  }
-
-  it must "throw an exception if it receives an invalid address" in {
-    val address = JsString("c123")
-
-    intercept[RuntimeException] {
-      AddressProtocol.AddressFormat.read(address) must be (TestUtil.assetAddress)
-    }
-  }
-
   it must "write a bitcoin address" in {
     AddressProtocol.AddressFormat.write(TestUtil.bitcoinAddress).fields("address") must be (JsString(TestUtil.bitcoinAddress.value))
   }

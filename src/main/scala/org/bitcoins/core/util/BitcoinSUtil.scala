@@ -90,10 +90,10 @@ trait BitcoinSUtil {
     paddedHex
   }
 
-  /** Converts a sequence of bytes to a sequence of bit vectors - assumes the sequence of bytes are big endian */
+  /** Converts a sequence of bytes to a sequence of bit vectors */
   def bytesToBitVectors(bytes: Seq[Byte]): Seq[Seq[Boolean]] = bytes.map(byteToBitVector)
 
-  /** Converts a byte to a bit vector representing that byte - the bit vector is big endian */
+  /** Converts a byte to a bit vector representing that byte */
   def byteToBitVector(byte: Byte): Seq[Boolean] = {
     (0 to 7).map(index => isBitSet(byte,7 - index))
   }
@@ -101,12 +101,12 @@ trait BitcoinSUtil {
   /** Checks if the bit at the given index is set */
   def isBitSet(byte: Byte, index: Int): Boolean = ((byte >> index) & 1) == 1
 
-  /** Converts a bit vector to a single byte -- assumes the bits are big endian */
+  /** Converts a bit vector to a single byte -- the resulting byte is big endian */
   def bitVectorToByte(bits: Seq[Boolean]): Byte = {
     require(bits.size <= 8, "Cannot convert a bit vector to a byte when the size of the bit vector is larger than 8, got: " + bits)
     val b = bits.reverse
     val result: Seq[Int] = b.zipWithIndex.map { case (b, index) =>
-        if (b) NumberUtil.pow2(index).toInt else 0
+      if (b) NumberUtil.pow2(index).toInt else 0
     }
     result.sum.toByte
   }
