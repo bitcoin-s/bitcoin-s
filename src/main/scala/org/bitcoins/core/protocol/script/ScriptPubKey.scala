@@ -339,11 +339,18 @@ object P2PKScriptPubKey extends Factory[P2PKScriptPubKey] {
 sealed trait CLTVScriptPubKey extends ScriptPubKey {
   /**
     * Determines the nested ScriptPubKey inside the CLTVScriptPubKey
- *
     * @return
     */
   def scriptPubKeyAfterCLTV : ScriptPubKey = ScriptPubKey(asm.slice(4, asm.length))
-}
+
+  /**
+    * The absolute CLTV-LockTime value (i.e. the output will remain unspendable until this timestamp or block height)
+    * @return
+    */
+  def locktime : UInt32 = {
+    val hex = BitcoinSUtil.flipEndianess(asm(1).hex)
+    UInt32(hex)
+  }}
 
 object CLTVScriptPubKey extends Factory[CLTVScriptPubKey] {
   private case class CLTVScriptPubKeyImpl(hex : String) extends CLTVScriptPubKey
@@ -383,13 +390,16 @@ object CLTVScriptPubKey extends Factory[CLTVScriptPubKey] {
 sealed trait CSVScriptPubKey extends ScriptPubKey {
   /**
     * Determines the nested ScriptPubKey inside the CSVScriptPubKey
- *
     * @return
     */
   def scriptPubKeyAfterCSV : ScriptPubKey = ScriptPubKey(asm.slice(4, asm.length))
 
+  /**
+    * The relative CSV-LockTime value (i.e. the amount of time the output should remain unspendable)
+    * @return
+    */
   def locktime : UInt32 = {
-    val hex = BitcoinSUtil.flipEndianess(asm.head.hex)
+    val hex = BitcoinSUtil.flipEndianess(asm(1).hex)
     UInt32(hex)
   }
 }
@@ -424,7 +434,7 @@ object CSVScriptPubKey extends Factory[CSVScriptPubKey] {
   }
 }
 
-trait NonStandardScriptPubKey extends ScriptPubKey
+sealed trait NonStandardScriptPubKey extends ScriptPubKey
 
 object NonStandardScriptPubKey extends Factory[NonStandardScriptPubKey] {
   private case class NonStandardScriptPubKeyImpl(hex : String) extends NonStandardScriptPubKey

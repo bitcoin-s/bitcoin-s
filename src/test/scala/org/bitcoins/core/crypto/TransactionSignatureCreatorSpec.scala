@@ -71,5 +71,14 @@ class TransactionSignatureCreatorSpec extends Properties("TransactionSignatureCr
         Seq(ScriptErrorUnsatisfiedLocktime).contains(result)
     }
 
+  property("generate a valid signature for a valid and spendable csv transaction") =
+    Prop.forAllNoShrink(TransactionGenerators.spendableCSVTransaction :| "csv") {
+      case (txSignatureComponent: TransactionSignatureComponent, keys, scriptNumber, sequence) =>
+        //run it through the interpreter
+        val program = ScriptProgram(txSignatureComponent)
+        val result = ScriptInterpreter.run(program)
+        Seq(ScriptOk).contains(result)
+    }
+
 
 }

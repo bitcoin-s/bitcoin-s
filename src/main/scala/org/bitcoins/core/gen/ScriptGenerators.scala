@@ -4,6 +4,7 @@ import org.bitcoins.core.crypto.{TransactionSignatureCreator, _}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script._
+import org.bitcoins.core.protocol.transaction.TransactionConstants
 import org.bitcoins.core.script.ScriptSettings
 import org.bitcoins.core.script.constant.{ScriptConstant, ScriptNumber}
 import org.bitcoins.core.script.crypto.SIGHASH_ALL
@@ -73,6 +74,14 @@ trait ScriptGenerators extends BitcoinSLogger {
     (cltv, privKey, num)
   }
 
+  def csvScriptPubKey(num : ScriptNumber) : Gen[(CSVScriptPubKey, ECPrivateKey, ScriptNumber)] = for {
+    privKey <- CryptoGenerators.privateKey
+    scriptPubKey <- pickRandomNonLockTimeScriptPubKey(privKey.publicKey)
+  } yield {
+    val csv = CSVScriptPubKey(num, scriptPubKey)
+    (csv, privKey, num)
+  }
+
   def csvScriptPubKey : Gen[CSVScriptPubKey] = for {
     privKey <- CryptoGenerators.privateKey
     scriptPubKey <- pickRandomNonLockTimeScriptPubKey(privKey.publicKey)
@@ -94,6 +103,7 @@ trait ScriptGenerators extends BitcoinSLogger {
     multiSignatureScriptPubKey
   }
 
+  //TODO: Improve the format of each scriptPubKey generator to return a privateKey needed to spend it.
   def p2shScriptPubKey : Gen[P2SHScriptPubKey] = for {
     randomScriptPubKey <- pickRandomNonP2SHScriptPubKey
   } yield P2SHScriptPubKey(randomScriptPubKey)
@@ -150,6 +160,7 @@ trait ScriptGenerators extends BitcoinSLogger {
 
   /**
     * Generates an arbitrary [[ScriptSignature]]
+    *
     * @return
     */
   def scriptSignature : Gen[ScriptSignature] = {
@@ -164,6 +175,7 @@ trait ScriptGenerators extends BitcoinSLogger {
   /**
     * Generates a [[ScriptSignature]] corresponding to the type of [[ScriptPubKey]] given.
     * Note: Does NOT generate a correct/valid signature
+    *
     * @param scriptPubKey
     * @return
     */
@@ -181,6 +193,7 @@ trait ScriptGenerators extends BitcoinSLogger {
 
   /**
     * Generates a signed [[P2PKScriptSignature]] that spends the [[P2PKScriptPubKey]] correctly
+    *
     * @return the signed [[P2PKScriptSignature]], the [[P2PKScriptPubKey]] it spends, and the
     *         [[ECPrivateKey]] used to sign the scriptSig
     */
@@ -202,6 +215,7 @@ trait ScriptGenerators extends BitcoinSLogger {
 
   /**
     * Generates a signed [[P2PKHScriptSignature]] that spends the [[P2PKHScriptPubKey]] correctly
+    *
     * @return the signed [[P2PKHScriptSignature]], the [[P2PKHScriptPubKey]] it spends, and the
     *         [[ECPrivateKey]] used to sign the scriptSig
     */
@@ -223,6 +237,7 @@ trait ScriptGenerators extends BitcoinSLogger {
 
   /**
     * Generates a signed [[MultiSignatureScriptSignature]] that spends the [[MultiSignatureScriptPubKey]] correctly
+    *
     * @return the signed [[MultiSignatureScriptSignature]], the [[MultiSignatureScriptPubKey]] it spends and the
     *         sequence of [[ECPrivateKey]] used to sign the scriptSig
     */
@@ -250,6 +265,7 @@ trait ScriptGenerators extends BitcoinSLogger {
 
   /**
     * Generates a signed [[P2SHScriptSignature]] that spends from a [[P2SHScriptPubKey]] correctly
+    *
     * @return the signed [[P2SHScriptSignature]], the [[P2SHScriptPubKey]] it spends, and the sequence of [[ECPrivateKey]]
     *         used to sign the scriptSig
     */
@@ -263,6 +279,7 @@ trait ScriptGenerators extends BitcoinSLogger {
 
   /**
     * Generates a signed [[CLTVScriptSignature]] that spends from a [[CLTVScriptPubKey]] correctly
+    *
     * @return the signed [[CLTVScriptSignature]], the [[CLTVScriptPubKey]] it spends, and the sequences of [[ECPrivateKey]]
     *         used to sign the scriptSig
     */
@@ -270,17 +287,39 @@ trait ScriptGenerators extends BitcoinSLogger {
     (cltv, privKey, num) <- cltvScriptPubKey(scriptNumber)
   } yield {
     val (creditingTx, outputIndex) = TransactionGenerators.buildCreditingTransaction(cltv)
+    val scriptSig = CLTVScriptSignature(cltv, Seq(EmptyDigitalSignature), Seq(privKey.publicKey), None)
     val (unsignedSpendingTx, inputIndex) = {
-      TransactionGenerators.buildSpendingTransaction(creditingTx, EmptyScriptSignature, outputIndex, lockTime, sequence)
+      TransactionGenerators.buildSpendingTransaction(TransactionConstants.version, creditingTx, scriptSig, outputIndex, lockTime, sequence)
     }
     val txSignatureComponent = TransactionSignatureComponent(unsignedSpendingTx, inputIndex, cltv, Policy.standardScriptVerifyFlags)
     val txSignature = TransactionSignatureCreator.createSig(txSignatureComponent, privKey, SIGHASH_ALL.defaultValue)
-    val signedScriptSig = CLTVScriptSignature(cltv, Seq(txSignature), Seq(privKey.publicKey))
+    val signedScriptSig = CLTVScriptSignature(cltv, Seq(txSignature), Seq(privKey.publicKey), None)
     (signedScriptSig, cltv, Seq(privKey))
   }
 
   /**
+    * Generates a signed [[CSVScriptSignature]] that spends from a [[CSVScriptPubKey]] correctly
+    * @return the signed [[CSVScriptSignature]], the [[CSVScriptPubKey]] it spends, and the sequences of [[ECPrivateKey]]
+    *         used to sign the scriptSig
+    */
+  def signedCSVScriptSignature(csvScriptNum : ScriptNumber, sequence : UInt32) : Gen[(ScriptSignature, CSVScriptPubKey, Seq[ECPrivateKey])] = for {
+    (csv, privKey, num) <- csvScriptPubKey(csvScriptNum)
+  } yield {
+    logger.debug("txSequence: " + sequence + ", and csvScriptNum: " + csvScriptNum)
+    val (creditingTx, outputIndex) = TransactionGenerators.buildCreditingTransaction(UInt32(2),csv)
+    val scriptSig = CSVScriptSignature(csv, Seq(EmptyDigitalSignature), Seq(privKey.publicKey), None)
+    val (unsignedSpendingTx, inputIndex) = {
+      TransactionGenerators.buildSpendingTransaction(UInt32(2), creditingTx, scriptSig, outputIndex, UInt32.zero, sequence)
+    }
+    val txSignatureComponent = TransactionSignatureComponent(unsignedSpendingTx, inputIndex, csv, Policy.standardScriptVerifyFlags)
+    val txSignature = TransactionSignatureCreator.createSig(txSignatureComponent, privKey, SIGHASH_ALL.defaultValue)
+    val signedScriptSig = CSVScriptSignature(csv, Seq(txSignature), Seq(privKey.publicKey), None)
+    (signedScriptSig, csv, Seq(privKey))
+  }
+
+  /**
     * This function chooses a random signed [[ScriptSignature]] that is NOT a [[P2SHScriptSignature]]
+ *
     * @return the signed [[ScriptSignature]], the [[ScriptPubKey]] it is spending,
     *         and the sequence of[[ECPrivateKey]] used to sign it
     */
