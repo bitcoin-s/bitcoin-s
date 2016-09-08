@@ -75,14 +75,6 @@ class Base58Test extends FlatSpec with MustMatchers with BitcoinSLogger {
     Base58.encode(Base58.decode(address)) must be ("1C4kYhyLftmkn48YarSoLupxHfYFo8kp64")
   }
 
-  it must "decode asset address into bytes then encode back to asset address" in {
-    //akJsoCcyh34FGPotxfEoSXGwFPCNAkyCgTA
-    val asset = TestUtil.assetAddress.value
-    val bitcoinj = org.bitcoinj.core.Base58.encode(org.bitcoinj.core.Base58.decode(asset))
-    Base58.encode(Base58.decode(asset)) must be ("akJsoCcyh34FGPotxfEoSXGwFPCNAkyCgTA")
-    Base58.encode(Base58.decode(asset)) must be (bitcoinj)
-  }
-
   it must "decode multisig address into bytes then encode back to multisig" in {
     val multi = TestUtil.multiSigAddress.value
     val bitcoinj = org.bitcoinj.core.Base58.encode(org.bitcoinj.core.Base58.decode(multi))

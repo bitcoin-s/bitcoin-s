@@ -45,17 +45,6 @@ class BitcoinAddressTest extends FlatSpec with MustMatchers {
     }
   }
 
-  "akJsoCcyh34FGPotxfEoSXGwFPCNAkyCgTA" must "be a valid asset address" in {
-    val assetAddress = AssetAddress("akJsoCcyh34FGPotxfEoSXGwFPCNAkyCgTA")
-    assetAddress.value must be ("akJsoCcyh34FGPotxfEoSXGwFPCNAkyCgTA")
-  }
-
-  "An asset address with the first character replaced" must "not be a valid asset address" in {
-    //3J98t1WpEZ73CNmQviecrnyiWrnqRhWNLyy
-    intercept[IllegalArgumentException] {
-      val assetAddress = AssetAddress("aJ98t1WpEZ73CNmQviecrnyiWrnqRhWNLyy")
-    }
-  }
 
   it must "encode a pubKeyHash to an address" in {
     //from https://stackoverflow.com/questions/19233053/hashing-from-a-public-key-to-a-bitcoin-address-in-php
@@ -69,6 +58,6 @@ class BitcoinAddressTest extends FlatSpec with MustMatchers {
     val hex = "5141042f90074d7a5bf30c72cf3a8dfd1381bdbd30407010e878f3a11269d5f74a58788505cdca22ea6eab7cfb40dc0e07aba200424ab0d79122a653ad0c7ec9896bdf51ae"
     val scriptPubKey = ScriptPubKey(hex)
     val addr = P2SHAddress.encodeScriptPubKeyToAddress(scriptPubKey,MainNet)
-    addr must be (P2SHAddress("3P14159f73E4gFr7JterCCQh9QjiTjiZrG"))
+    addr must be (BitcoinAddress("3P14159f73E4gFr7JterCCQh9QjiTjiZrG"))
   }
 }
