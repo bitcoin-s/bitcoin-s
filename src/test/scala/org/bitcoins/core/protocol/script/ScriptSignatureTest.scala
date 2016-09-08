@@ -1,7 +1,7 @@
 package org.bitcoins.core.protocol.script
 
 
-import org.bitcoins.core.crypto.{DoubleSha256Digest, ECDigitalSignature, TransactionSignatureSerializer}
+import org.bitcoins.core.crypto._
 import org.bitcoins.core.number.Int32
 import org.bitcoins.core.protocol.script.testprotocol.SignatureHashTestCase
 import org.bitcoins.core.script.crypto.{HashType, SIGHASH_ALL, SIGHASH_SINGLE}
@@ -116,6 +116,12 @@ class ScriptSignatureTest extends FlatSpec with MustMatchers {
       val flipHash = BitcoinSUtil.flipEndianess(testCase.hash.hex)
       hashForSig must be (DoubleSha256Digest(flipHash))
     }
+  }
 
+  it must "create a cltvScriptSig with the correct underlying scriptSig" in {
+    val cltvScriptPubKey = CLTVScriptPubKey("04e71bbe57b17576a914da88dc82530f0a4d1327dcfe75cc60c44277532c88ac")
+    val pubKey = ECPublicKey("039ba48e162b1f47246f4ce9dc40f197fab7bde11da1b2fe9ac21113959e9f381b")
+    val sig = ECDigitalSignature("3045022100d71cfe32fa4545c5a0fd665b3701eb458a1bacbba868a05fa703fd1fa4b4f5c502204ee706334f976d0bee9b0f0ff919c1dfe9ba027993bf3e39fc03416ba4255b2401")
+    CLTVScriptSignature(cltvScriptPubKey, Seq(sig), Seq(pubKey), None).scriptSig.isInstanceOf[P2PKHScriptSignature]
   }
 }

@@ -71,7 +71,7 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
           val sigsRemoved = removeSignaturesFromScript(s.signatures, s.redeemScript.asm)
           sigsRemoved
         case _ : P2PKHScriptSignature | _ : P2PKScriptSignature | _ : NonStandardScriptSignature
-             | _ : MultiSignatureScriptSignature | _ : CLTVScriptSignature | EmptyScriptSignature =>
+             | _ : MultiSignatureScriptSignature | _ : CLTVScriptSignature | _ : CSVScriptSignature | EmptyScriptSignature =>
           logger.debug("Script before sigRemoved: "  + script)
           logger.debug("Signature: " + signature)
           logger.debug("PubKey: " + pubKey)
@@ -147,10 +147,7 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
 
 
   /**
-    * Removes the given digital signature from the list of script tokens if it exists
- *
-    * @param signature
-    * @param script
+    * Removes the given [[ECDigitalSignature]] from the list of [[ScriptToken]] if it exists
     * @return
     */
   def removeSignatureFromScript(signature : ECDigitalSignature, script : Seq[ScriptToken]) : Seq[ScriptToken] = {
@@ -165,10 +162,7 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
   }
 
   /**
-    * Removes the list of digital signatures from the list of script tokens
- *
-    * @param sigs
-    * @param script
+    * Removes the list of [[ECDigitalSignature]] from the list of [[ScriptToken]]
     * @return
     */
   def removeSignaturesFromScript(sigs : Seq[ECDigitalSignature], script : Seq[ScriptToken]) : Seq[ScriptToken] = {
