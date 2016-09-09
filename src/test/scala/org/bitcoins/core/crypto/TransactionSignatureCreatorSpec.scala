@@ -51,19 +51,22 @@ class TransactionSignatureCreatorSpec extends Properties("TransactionSignatureCr
     }
 
   property("generate a valid signature for a valid and spendable cltv transaction") =
-    Prop.forAllNoShrink(TransactionGenerators.spendableCLTVTransaction :| "cltv") {
-      case (txSignatureComponent: TransactionSignatureComponent, keys, scriptNumber) =>
+    Prop.forAllNoShrink(TransactionGenerators.spendableCLTVTransaction :| "cltv_spendable") {
+      case (txSignatureComponent: TransactionSignatureComponent, _, scriptNumber) =>
         //run it through the interpreter
+        require(txSignatureComponent.transaction.lockTime.underlying >= scriptNumber.underlying, "TxLocktime must be satisifed so it should be greater than or equal to  " +
+          "the cltv value. Got TxLockTime : " + txSignatureComponent.transaction.lockTime.underlying + " , and cltv Value: " +
+          scriptNumber.underlying)
         val program = ScriptProgram(txSignatureComponent)
         val result = ScriptInterpreter.run(program)
         Seq(ScriptOk).contains(result)
     }
 
   property("generate a valid signature for a validly constructed, but NOT spendable cltv transaction") =
-    Prop.forAllNoShrink(TransactionGenerators.unspendableCLTVTransaction :| "cltv") {
-      case (txSignatureComponent: TransactionSignatureComponent, keys, scriptNumber) =>
+    Prop.forAllNoShrink(TransactionGenerators.unspendableCLTVTransaction :| "cltv_unspendable") {
+      case (txSignatureComponent: TransactionSignatureComponent, _, scriptNumber) =>
         //run it through the interpreter
-        require(txSignatureComponent.transaction.lockTime.underlying < scriptNumber.underlying, "Locktime must not be satisifed so it should be less than " +
+        require(txSignatureComponent.transaction.lockTime.underlying < scriptNumber.underlying, "TxLocktime must not be satisifed so it should be less than " +
           "the cltv value. Got TxLockTime : " + txSignatureComponent.transaction.lockTime.underlying + " , and cltv Value: " +
           scriptNumber.underlying)
         val program = ScriptProgram(txSignatureComponent)

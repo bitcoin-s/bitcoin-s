@@ -347,10 +347,11 @@ sealed trait CLTVScriptPubKey extends ScriptPubKey {
     * The absolute CLTV-LockTime value (i.e. the output will remain unspendable until this timestamp or block height)
     * @return
     */
-  def locktime : UInt32 = {
+  def locktime : ScriptNumber = {
     val hex = BitcoinSUtil.flipEndianess(asm(1).hex)
-    UInt32(hex)
-  }}
+    ScriptNumber(hex)
+  }
+}
 
 object CLTVScriptPubKey extends Factory[CLTVScriptPubKey] {
   private case class CLTVScriptPubKeyImpl(hex : String) extends CLTVScriptPubKey
@@ -398,9 +399,9 @@ sealed trait CSVScriptPubKey extends ScriptPubKey {
     * The relative CSV-LockTime value (i.e. the amount of time the output should remain unspendable)
     * @return
     */
-  def locktime : UInt32 = {
+  def locktime : ScriptNumber = {
     val hex = BitcoinSUtil.flipEndianess(asm(1).hex)
-    UInt32(hex)
+    ScriptNumber(hex)
   }
 }
 
