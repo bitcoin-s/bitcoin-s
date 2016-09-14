@@ -9,7 +9,7 @@ import org.scalacheck.{Prop, Properties}
 class P2PKScriptPubKeySpec extends Properties("P2PKScriptPubKeySpec") {
 
   property("Serialization symmetry") =
-    Prop.forAll(ScriptGenerators.p2pkScriptPubKey) { p2pkScriptPubKey =>
+    Prop.forAll(ScriptGenerators.p2pkScriptPubKey) { case (p2pkScriptPubKey, _) =>
       P2PKScriptPubKey(p2pkScriptPubKey.hex) == p2pkScriptPubKey
 
     }

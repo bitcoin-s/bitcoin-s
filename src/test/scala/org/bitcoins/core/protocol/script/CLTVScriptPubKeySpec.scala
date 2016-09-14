@@ -12,7 +12,7 @@ import org.scalacheck.{Properties, Prop}
   */
 class CLTVScriptPubKeySpec extends Properties("CLTVScriptPubKeySpec") with BitcoinSLogger {
   property("Serialization symmetry") =
-    Prop.forAll(ScriptGenerators.cltvScriptPubKey) { cltvScriptPubKey =>
+    Prop.forAll(ScriptGenerators.cltvScriptPubKey) { case (cltvScriptPubKey, _) =>
       CLTVScriptPubKey(cltvScriptPubKey.hex) == cltvScriptPubKey
     }
   property("a valid unspendable CLTV Transaction's locktime must be less than the script's CLTV value ") =
