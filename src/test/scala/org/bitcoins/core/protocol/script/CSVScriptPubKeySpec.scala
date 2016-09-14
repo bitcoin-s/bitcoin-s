@@ -8,7 +8,7 @@ import org.scalacheck.{Prop, Properties}
   */
 class CSVScriptPubKeySpec extends Properties("CSVScriptPubKeySpec") {
   property("Serialization Symmetry") =
-    Prop.forAll(ScriptGenerators.csvScriptPubKey) { csvScriptPubKey =>
+    Prop.forAll(ScriptGenerators.csvScriptPubKey) { case (csvScriptPubKey, _) =>
       CSVScriptPubKey(csvScriptPubKey.hex) == csvScriptPubKey
     }
 }

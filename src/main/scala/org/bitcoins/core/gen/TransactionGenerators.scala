@@ -32,7 +32,7 @@ trait TransactionGenerators extends  BitcoinSLogger {
     */
   def outputs : Gen[TransactionOutput] = for {
     satoshis <- CurrencyUnitGenerator.satoshis
-    scriptPubKey <- ScriptGenerators.scriptPubKey
+    (scriptPubKey, _) <- ScriptGenerators.scriptPubKey
   } yield TransactionOutput(satoshis, scriptPubKey)
 
   /**
@@ -115,7 +115,7 @@ trait TransactionGenerators extends  BitcoinSLogger {
     *
     * @return
     */
-  def p2SHTransaction: Gen[(TransactionSignatureComponent, Seq[ECPrivateKey])] = for {
+  def signedP2SHTransaction: Gen[(TransactionSignatureComponent, Seq[ECPrivateKey])] = for {
     (signedScriptSig, scriptPubKey, privateKeys) <- ScriptGenerators.signedP2SHScriptSignature
   } yield {
     val (creditingTx,outputIndex) = buildCreditingTransaction(signedScriptSig.redeemScript)
@@ -261,15 +261,14 @@ trait TransactionGenerators extends  BitcoinSLogger {
   private def cltvLockTimesOfSameType(generatorComponent : (TransactionSignatureComponent, Seq[ECPrivateKey],  ScriptNumber)) : Boolean = {
     val (txSigComponent, keys, num) = generatorComponent
     val tx = txSigComponent.transaction
-    val threshold = TransactionConstants.locktimeThreshold.underlying
     num.underlying match {
       case negative if negative < 0 => false
       case positive if positive >= 0 =>
-        if ((tx.lockTime.underlying < threshold && num.underlying < threshold) ||
-          (tx.lockTime.underlying > threshold && num.underlying > threshold)) true
-        else {
-          false
-        }
+        if (!(
+          (tx.lockTime < TransactionConstants.locktimeThreshold && num.underlying < TransactionConstants.locktimeThreshold.underlying) ||
+            (tx.lockTime >= TransactionConstants.locktimeThreshold && num.underlying >= TransactionConstants.locktimeThreshold.underlying)
+          )) return false
+        true
     }
   }
 
@@ -280,7 +279,6 @@ trait TransactionGenerators extends  BitcoinSLogger {
     */
   private def csvLockTimesOfSameType(sequenceNumbers : (ScriptNumber, UInt32)) : Boolean = {
     val (scriptNum, txSequence) = sequenceNumbers
-    val txToSequence : Int64 = Int64(txSequence.underlying)
     val nLockTimeMask : UInt32 = TransactionConstants.sequenceLockTimeTypeFlag | TransactionConstants.sequenceLockTimeMask
     val txToSequenceMasked : Int64 = Int64(txSequence.underlying & nLockTimeMask.underlying)
     val nSequenceMasked : ScriptNumber = scriptNum & Int64(nLockTimeMask.underlying)

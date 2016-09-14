@@ -7,7 +7,7 @@ import org.bitcoins.core.protocol.script.CLTVScriptSignature.CLTVScriptSignature
 import org.bitcoins.core.script.constant._
 import org.bitcoins.core.script.crypto.{HashType, SIGHASH_ALL}
 import org.bitcoins.core.serializers.script.{RawScriptSignatureParser, ScriptParser}
-import org.bitcoins.core.util.{BitcoinSLogger, BitcoinScriptUtil, Factory}
+import org.bitcoins.core.util.{BitcoinSUtil, BitcoinSLogger, BitcoinScriptUtil, Factory}
 
 import scala.util.{Failure, Success, Try}
 
@@ -173,7 +173,7 @@ sealed trait P2SHScriptSignature extends ScriptSignature {
     */
   def signatures : Seq[ECDigitalSignature] = {
     val nonRedeemScript = splitAtRedeemScript(asm)._1
-    val sigs = nonRedeemScript.filter(_.isInstanceOf[ScriptConstant]).filterNot(_.isInstanceOf[ScriptNumberOperation])
+    val sigs = nonRedeemScript.filter(_.isInstanceOf[ScriptConstant]).filterNot(_.isInstanceOf[ScriptNumberOperation]).filterNot(_.hex.length < 100)
     sigs.map(s => ECDigitalSignature(s.hex))
   }
 
@@ -388,15 +388,28 @@ object P2PKScriptSignature extends Factory[P2PKScriptSignature] {
 }
 
 sealed trait CLTVScriptSignature extends ScriptSignature {
-  def scriptSig : ScriptSignature
+  def scriptSig : ScriptSignature = ScriptSignature(hex)
 
   override def signatures : Seq[ECDigitalSignature] = scriptSig.signatures
 
   override def hex = scriptSig.hex
 }
 
-object CLTVScriptSignature {
-  private case class CLTVScriptSignatureImpl(scriptSig : ScriptSignature) extends CLTVScriptSignature
+object CLTVScriptSignature extends Factory[CLTVScriptSignature] {
+  private case class CLTVScriptSignatureImpl(override val hex : String) extends CLTVScriptSignature
+
+  override def fromBytes(bytes : Seq[Byte]) : CLTVScriptSignature = {
+    val hex = BitcoinSUtil.encodeHex(bytes)
+    fromHex(hex)
+  }
+
+  override def fromHex(hex : String) : CLTVScriptSignature = {
+    CLTVScriptSignatureImpl(hex)
+  }
+
+  def apply(scriptSig : ScriptSignature) : CLTVScriptSignature = {
+    fromHex(scriptSig.hex)
+  }
 
   /**
     * Creates a CLTVScriptSignature out the [[ScriptPubKey]] we are satisfying, a sequence of [[ECDigitalSignature]], and a sequence
@@ -404,16 +417,16 @@ object CLTVScriptSignature {
     * @return
     */
   def apply(scriptPubKey: ScriptPubKey, sigs : Seq[ECDigitalSignature], pubKeys : Seq[ECPublicKey], redeemScript : Option[ScriptPubKey]) : CLTVScriptSignature = scriptPubKey match {
-    case p2pkScriptPubKey : P2PKScriptPubKey => CLTVScriptSignatureImpl(P2PKScriptSignature(sigs.head))
-    case p2pkhScriptPubKey : P2PKHScriptPubKey => CLTVScriptSignatureImpl(P2PKHScriptSignature(sigs.head, pubKeys.head))
-    case multiSigScriptPubKey : MultiSignatureScriptPubKey => CLTVScriptSignatureImpl(MultiSignatureScriptSignature(sigs))
+    case p2pkScriptPubKey : P2PKScriptPubKey => CLTVScriptSignature(P2PKScriptSignature(sigs.head))
+    case p2pkhScriptPubKey : P2PKHScriptPubKey => CLTVScriptSignature(P2PKHScriptSignature(sigs.head, pubKeys.head))
+    case multiSigScriptPubKey : MultiSignatureScriptPubKey => CLTVScriptSignature(MultiSignatureScriptSignature(sigs))
     case cltvScriptPubKey : CLTVScriptPubKey => apply(cltvScriptPubKey.scriptPubKeyAfterCLTV, sigs, pubKeys, redeemScript)
     case csvScriptPubKey : CSVScriptPubKey => apply(csvScriptPubKey.scriptPubKeyAfterCSV, sigs, pubKeys, redeemScript)
     case p2shScriptPubKey : P2SHScriptPubKey =>
       require(redeemScript.isDefined, "If the underlying scriptSig is a P2SHScriptSignature, a redeemScript must be defined.")
       val cltvScriptSigBeforeRedeemScript = apply(redeemScript.get, sigs, pubKeys, None)
-      CLTVScriptSignatureImpl(P2SHScriptSignature(cltvScriptSigBeforeRedeemScript, redeemScript.get))
-    case EmptyScriptPubKey => CLTVScriptSignatureImpl(EmptyScriptSignature)
+      CLTVScriptSignature(P2SHScriptSignature(cltvScriptSigBeforeRedeemScript, redeemScript.get))
+    case EmptyScriptPubKey => CLTVScriptSignature(EmptyScriptSignature)
     case nonstandard : NonStandardScriptPubKey => throw new IllegalArgumentException("A NonStandardScriptSignature cannot be" +
       "the underlying scriptSig in a CLTVScriptSignature.")
   }
@@ -444,8 +457,8 @@ object CSVScriptSignature {
     case csvScriptPubKey : CSVScriptPubKey => apply(csvScriptPubKey.scriptPubKeyAfterCSV, sigs, pubKeys, redeemScript)
     case p2shScriptPubKey : P2SHScriptPubKey =>
       require(redeemScript.isDefined, "If the underlying scriptSig is a P2SHScriptSignature, a redeemScript must be defined.")
-      val cltvScriptSigBeforeRedeemScript = apply(redeemScript.get, sigs, pubKeys, None)
-      CSVScriptSignatureImpl(P2SHScriptSignature(cltvScriptSigBeforeRedeemScript, redeemScript.get))
+      val csvScriptSigBeforeRedeemScript = apply(redeemScript.get, sigs, pubKeys, None)
+      CSVScriptSignatureImpl(P2SHScriptSignature(csvScriptSigBeforeRedeemScript, redeemScript.get))
     case EmptyScriptPubKey => CSVScriptSignatureImpl(EmptyScriptSignature)
     case nonstandard : NonStandardScriptPubKey => throw new IllegalArgumentException("A NonStandardScriptSignature cannot be" +
       "the underlying scriptSig in a CSVScriptSignature.")
