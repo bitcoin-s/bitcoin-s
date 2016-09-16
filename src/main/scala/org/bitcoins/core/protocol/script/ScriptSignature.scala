@@ -416,52 +416,56 @@ object CLTVScriptSignature extends Factory[CLTVScriptSignature] {
     * of [[ECPublicKey]] needed to satisfy the scriptPubKey. If a [[P2SHScriptPubKey]] is provided, a redeemScript must also be provided.
     * @return
     */
-  def apply(scriptPubKey: ScriptPubKey, sigs : Seq[ECDigitalSignature], pubKeys : Seq[ECPublicKey], redeemScript : Option[ScriptPubKey]) : CLTVScriptSignature = scriptPubKey match {
+  def apply(scriptPubKey: ScriptPubKey, sigs : Seq[ECDigitalSignature], pubKeys : Seq[ECPublicKey]) : CLTVScriptSignature = scriptPubKey match {
     case p2pkScriptPubKey : P2PKScriptPubKey => CLTVScriptSignature(P2PKScriptSignature(sigs.head))
     case p2pkhScriptPubKey : P2PKHScriptPubKey => CLTVScriptSignature(P2PKHScriptSignature(sigs.head, pubKeys.head))
     case multiSigScriptPubKey : MultiSignatureScriptPubKey => CLTVScriptSignature(MultiSignatureScriptSignature(sigs))
-    case cltvScriptPubKey : CLTVScriptPubKey => apply(cltvScriptPubKey.scriptPubKeyAfterCLTV, sigs, pubKeys, redeemScript)
-    case csvScriptPubKey : CSVScriptPubKey => apply(csvScriptPubKey.scriptPubKeyAfterCSV, sigs, pubKeys, redeemScript)
-    case p2shScriptPubKey : P2SHScriptPubKey =>
-      require(redeemScript.isDefined, "If the underlying scriptSig is a P2SHScriptSignature, a redeemScript must be defined.")
-      val cltvScriptSigBeforeRedeemScript = apply(redeemScript.get, sigs, pubKeys, None)
-      CLTVScriptSignature(P2SHScriptSignature(cltvScriptSigBeforeRedeemScript, redeemScript.get))
+    case cltvScriptPubKey : CLTVScriptPubKey => apply(cltvScriptPubKey.scriptPubKeyAfterCLTV, sigs, pubKeys)
+    case csvScriptPubKey : CSVScriptPubKey => apply(csvScriptPubKey.scriptPubKeyAfterCSV, sigs, pubKeys)
     case EmptyScriptPubKey => CLTVScriptSignature(EmptyScriptSignature)
-    case nonstandard : NonStandardScriptPubKey => throw new IllegalArgumentException("A NonStandardScriptSignature cannot be" +
-      "the underlying scriptSig in a CLTVScriptSignature.")
+    case _ : NonStandardScriptPubKey | _ : P2SHScriptPubKey => throw new IllegalArgumentException("A NonStandardScriptSignature or P2SHScriptSignature cannot be" +
+      "the underlying scriptSig in a CLTVScriptSignature. Got: " + this)
   }
 
 }
 
 sealed trait CSVScriptSignature extends ScriptSignature {
-  def scriptSig : ScriptSignature
+  def scriptSig : ScriptSignature = ScriptSignature(hex)
 
   override def signatures : Seq[ECDigitalSignature] = scriptSig.signatures
 
   override def hex = scriptSig.hex
 }
 
-object CSVScriptSignature {
-  private case class CSVScriptSignatureImpl(scriptSig : ScriptSignature) extends CSVScriptSignature
+object CSVScriptSignature extends Factory[CSVScriptSignature] {
+  private case class CSVScriptSignatureImpl(override val hex : String) extends CSVScriptSignature
 
+  override def fromBytes(bytes : Seq[Byte]) : CSVScriptSignature = {
+    val hex = BitcoinSUtil.encodeHex(bytes)
+    fromHex(hex)
+  }
+
+  override def fromHex(hex : String) : CSVScriptSignature = {
+    CSVScriptSignatureImpl(hex)
+  }
+
+  def apply(scriptSig : ScriptSignature) : CSVScriptSignature = {
+    fromHex(scriptSig.hex)
+  }
   /**
     * Creates a CSVScriptSignature out the [[ScriptPubKey]] we are satisfying, a sequence of [[ECDigitalSignature]], and a sequence
     * of [[ECPublicKey]] needed to satisfy the scriptPubKey. If a [[P2SHScriptPubKey]] is provided, a redeemScript must also be provided.
     * @return
     */
-  def apply(scriptPubKey: ScriptPubKey, sigs : Seq[ECDigitalSignature], pubKeys : Seq[ECPublicKey], redeemScript : Option[ScriptPubKey]) : CSVScriptSignature = scriptPubKey match {
-    case p2pkScriptPubKey : P2PKScriptPubKey => CSVScriptSignatureImpl(P2PKScriptSignature(sigs.head))
-    case p2pkhScriptPubKey : P2PKHScriptPubKey => CSVScriptSignatureImpl(P2PKHScriptSignature(sigs.head, pubKeys.head))
-    case multiSigScriptPubKey : MultiSignatureScriptPubKey => CSVScriptSignatureImpl(MultiSignatureScriptSignature(sigs))
-    case cltvScriptPubKey : CLTVScriptPubKey => apply(cltvScriptPubKey.scriptPubKeyAfterCLTV, sigs, pubKeys, redeemScript)
-    case csvScriptPubKey : CSVScriptPubKey => apply(csvScriptPubKey.scriptPubKeyAfterCSV, sigs, pubKeys, redeemScript)
-    case p2shScriptPubKey : P2SHScriptPubKey =>
-      require(redeemScript.isDefined, "If the underlying scriptSig is a P2SHScriptSignature, a redeemScript must be defined.")
-      val csvScriptSigBeforeRedeemScript = apply(redeemScript.get, sigs, pubKeys, None)
-      CSVScriptSignatureImpl(P2SHScriptSignature(csvScriptSigBeforeRedeemScript, redeemScript.get))
-    case EmptyScriptPubKey => CSVScriptSignatureImpl(EmptyScriptSignature)
-    case nonstandard : NonStandardScriptPubKey => throw new IllegalArgumentException("A NonStandardScriptSignature cannot be" +
-      "the underlying scriptSig in a CSVScriptSignature.")
+  def apply(scriptPubKey: ScriptPubKey, sigs : Seq[ECDigitalSignature], pubKeys : Seq[ECPublicKey]) : CSVScriptSignature = scriptPubKey match {
+    case p2pkScriptPubKey : P2PKScriptPubKey => CSVScriptSignature(P2PKScriptSignature(sigs.head))
+    case p2pkhScriptPubKey : P2PKHScriptPubKey => CSVScriptSignature(P2PKHScriptSignature(sigs.head, pubKeys.head))
+    case multiSigScriptPubKey : MultiSignatureScriptPubKey => CSVScriptSignature(MultiSignatureScriptSignature(sigs))
+    case cltvScriptPubKey : CLTVScriptPubKey => apply(cltvScriptPubKey.scriptPubKeyAfterCLTV, sigs, pubKeys)
+    case csvScriptPubKey : CSVScriptPubKey => apply(csvScriptPubKey.scriptPubKeyAfterCSV, sigs, pubKeys)
+    case EmptyScriptPubKey => CSVScriptSignature(EmptyScriptSignature)
+    case _ : NonStandardScriptPubKey | _ : P2SHScriptPubKey => throw new IllegalArgumentException("A NonStandardScriptSignature or P2SHScriptSignature cannot be" +
+      "the underlying scriptSig in a CSVScriptSignature. Got: " + this)
   }
 }
 

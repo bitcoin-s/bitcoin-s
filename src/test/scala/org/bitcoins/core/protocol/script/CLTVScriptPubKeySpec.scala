@@ -15,17 +15,4 @@ class CLTVScriptPubKeySpec extends Properties("CLTVScriptPubKeySpec") with Bitco
     Prop.forAll(ScriptGenerators.cltvScriptPubKey) { case (cltvScriptPubKey, _) =>
       CLTVScriptPubKey(cltvScriptPubKey.hex) == cltvScriptPubKey
     }
-  property("a valid unspendable CLTV Transaction's locktime must be less than the script's CLTV value ") =
-    Prop.forAll(TransactionGenerators.unspendableCLTVTransaction) { txSigComponent =>
-      val locktime = txSigComponent._1.transaction.lockTime.underlying
-      val cltvScriptValue = txSigComponent._3.underlying
-      locktime < cltvScriptValue
-    }
-
-  property("a valid spendable CLTV Transaction's locktime must be greater than the script's CLTV value ") =
-    Prop.forAll(TransactionGenerators.spendableCLTVTransaction) { txSigComponent =>
-      val locktime = txSigComponent._1.transaction.lockTime.underlying
-      val cltvScriptValue = txSigComponent._3.underlying
-      locktime > cltvScriptValue
-    }
 }

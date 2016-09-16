@@ -31,7 +31,6 @@ trait LockTimeInterpreter extends BitcoinSLogger {
    */
   @tailrec
   final def opCheckLockTimeVerify(program : ScriptProgram) : ScriptProgram = {
-    logger.warn("+_+_+_+_!+_+_!!!!+_+_+_+_!+_+_!!!!+_+_+_+_!+_+_!!!!+_+_+_+_!+_+_!!!!+_+_+_+_!+_+_!!!!+_+_+_+_!+_+_!!!!+_+_+_+_!+_+_!!!!+_+_+_+_!+_+_!!!!")
     require(program.script.headOption.isDefined && program.script.head == OP_CHECKLOCKTIMEVERIFY,
       "Script top must be OP_CHECKLOCKTIMEVERIFY")
     val input = program.txSignatureComponent.transaction.inputs(program.txSignatureComponent.inputIndex.toInt)
@@ -176,7 +175,7 @@ trait LockTimeInterpreter extends BitcoinSLogger {
         (txToSequenceMasked >= Int64(TransactionConstants.sequenceLockTimeTypeFlag.underlying) &&
           nSequenceMasked >= Int64(TransactionConstants.sequenceLockTimeTypeFlag.underlying))
       )) {
-      logger.error("The nSequence mask is not the same as it was in the transaction")
+      logger.error("The txSequence and nSequence (OP_CSV value) are not of the same type (timestamp/block-height).")
       return false
     }
 
@@ -216,7 +215,6 @@ trait LockTimeInterpreter extends BitcoinSLogger {
 
     // Now that we know we're comparing apples-to-apples, the
     // comparison is a simple numeric one.
-    println("cltvLocktime: " + locktime + " and txLocktime: " + transaction.lockTime)
     if (locktime > Int64(transaction.lockTime.underlying)) return false
 
     // Finally the nLockTime feature can be disabled and thus
@@ -231,10 +229,7 @@ trait LockTimeInterpreter extends BitcoinSLogger {
     // required to prove correct CHECKLOCKTIMEVERIFY execution.
     if (input.sequence == TransactionConstants.sequence) {
       false
-    } else {
-      println("it passed")
-      true
-    }
+    } else true
   }
 
   /**
