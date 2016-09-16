@@ -1,13 +1,10 @@
 package org.bitcoins.core.protocol.script
 
 import org.bitcoins.core.crypto.{ECDigitalSignature, ECPublicKey}
-import org.bitcoins.core.number.Int32
 import org.bitcoins.core.protocol.NetworkElement
-import org.bitcoins.core.protocol.script.CLTVScriptSignature.CLTVScriptSignatureImpl
 import org.bitcoins.core.script.constant._
-import org.bitcoins.core.script.crypto.{HashType, SIGHASH_ALL}
 import org.bitcoins.core.serializers.script.{RawScriptSignatureParser, ScriptParser}
-import org.bitcoins.core.util.{BitcoinSUtil, BitcoinSLogger, BitcoinScriptUtil, Factory}
+import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil, BitcoinScriptUtil, Factory}
 
 import scala.util.{Failure, Success, Try}
 
