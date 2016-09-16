@@ -248,7 +248,7 @@ trait BitcoinScriptUtil {
   }
 
   /**
-   * Whenever a script constant is interpreted to a number BIP62 could enforce that number to be encoded
+   * Whenever a script constant is interpreted to a number BIP62 should enforce that number to be encoded
    * in the smallest encoding possible
    * https://github.com/bitcoin/bitcoin/blob/a6a860796a44a2805a58391a009ba22752f64e32/src/script/script.h#L220-L237
     *
@@ -307,6 +307,12 @@ trait BitcoinScriptUtil {
       return false
     }
     return true
+  }
+
+  def correctScriptNumberRepresentation(num : ScriptNumber) : Option[ScriptOperation] = {
+    val str = num.underlying.toInt.toString
+    val op  = Try(ScriptOperation.fromString(str))
+    op.get
   }
 }
 

@@ -366,7 +366,7 @@ object CLTVScriptPubKey extends Factory[CLTVScriptPubKey] {
   def apply (asm: Seq[ScriptToken]) : CLTVScriptPubKey = fromAsm(asm)
 
   def apply(locktime : ScriptNumber, scriptPubKey : ScriptPubKey) : CLTVScriptPubKey = {
-    val scriptOp = ScriptParser.correctScriptNumberRepresentation(locktime)
+    val scriptOp = BitcoinScriptUtil.correctScriptNumberRepresentation(locktime)
 
     val scriptNum : Seq[ScriptToken] = if (scriptOp.isDefined) {
       Seq(scriptOp.get)
@@ -440,7 +440,7 @@ object CSVScriptPubKey extends Factory[CSVScriptPubKey] {
   def apply(asm : Seq[ScriptToken]) : CSVScriptPubKey = fromAsm(asm)
 
   def apply(relativeLockTime : ScriptNumber, scriptPubKey : ScriptPubKey) : CSVScriptPubKey = {
-    val scriptOp = ScriptParser.correctScriptNumberRepresentation(relativeLockTime)
+    val scriptOp = BitcoinScriptUtil.correctScriptNumberRepresentation(relativeLockTime)
 
     val scriptNum : Seq[ScriptToken] = if (scriptOp.isDefined) {
       Seq(scriptOp.get)
