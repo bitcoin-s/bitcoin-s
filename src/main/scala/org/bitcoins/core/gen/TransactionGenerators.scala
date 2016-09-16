@@ -1,14 +1,14 @@
 package org.bitcoins.core.gen
 
-import org.bitcoins.core.crypto.{TransactionSignatureComponent, EmptyDigitalSignature, ECPrivateKey}
+import org.bitcoins.core.crypto.{ECPrivateKey, TransactionSignatureComponent}
 import org.bitcoins.core.currency.CurrencyUnits
-import org.bitcoins.core.number.{Int32, Int64, UInt32}
+import org.bitcoins.core.number.{Int64, UInt32}
 import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction.{TransactionInput, TransactionOutPoint, TransactionOutput, _}
 import org.bitcoins.core.script.constant.ScriptNumber
 import org.bitcoins.core.script.interpreter.ScriptInterpreter
-import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil}
+import org.bitcoins.core.util.BitcoinSLogger
 import org.scalacheck.Gen
 
 /**

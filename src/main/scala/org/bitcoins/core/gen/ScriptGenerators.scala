@@ -4,11 +4,10 @@ import org.bitcoins.core.crypto.{TransactionSignatureCreator, _}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script._
-import org.bitcoins.core.protocol.transaction.TransactionConstants
-import org.bitcoins.core.script.{ScriptProgram, ScriptSettings}
-import org.bitcoins.core.script.constant.{ScriptNumberOperation, ScriptConstant, ScriptNumber}
+import org.bitcoins.core.script.ScriptSettings
+import org.bitcoins.core.script.constant.ScriptNumber
 import org.bitcoins.core.script.crypto.SIGHASH_ALL
-import org.bitcoins.core.util.{BitcoinScriptUtil, BitcoinSLogger}
+import org.bitcoins.core.util.BitcoinSLogger
 import org.scalacheck.Gen
 
 /**
