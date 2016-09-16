@@ -2,7 +2,7 @@ package org.bitcoins.core.protocol.script
 
 import org.bitcoins.core.crypto.{ECPublicKey, Sha256Hash160Digest}
 import org.bitcoins.core.protocol._
-import org.bitcoins.core.script.ScriptSettings
+import org.bitcoins.core.script.{ScriptOperation, ScriptSettings}
 import org.bitcoins.core.script.bitwise.{OP_EQUAL, OP_EQUALVERIFY}
 import org.bitcoins.core.script.constant._
 import org.bitcoins.core.script.crypto.{OP_CHECKMULTISIG, OP_CHECKMULTISIGVERIFY, OP_CHECKSIG, OP_HASH160}
@@ -366,19 +366,36 @@ object CLTVScriptPubKey extends Factory[CLTVScriptPubKey] {
   def apply (asm: Seq[ScriptToken]) : CLTVScriptPubKey = fromAsm(asm)
 
   def apply(locktime : ScriptNumber, scriptPubKey : ScriptPubKey) : CLTVScriptPubKey = {
-    val pushOpsLockTime= BitcoinScriptUtil.calculatePushOp(locktime.bytes)
-    val cltvAsm = pushOpsLockTime ++ Seq(ScriptConstant(locktime.bytes)) ++ Seq(OP_CHECKLOCKTIMEVERIFY, OP_DROP)
+    val scriptOp = ScriptParser.correctScriptNumberRepresentation(locktime)
+
+    val scriptNum : Seq[ScriptToken] = if (scriptOp.isDefined) {
+      Seq(scriptOp.get)
+    } else {
+      val pushOpsLockTime= BitcoinScriptUtil.calculatePushOp(locktime.bytes)
+      pushOpsLockTime ++ Seq(ScriptConstant(locktime.bytes))
+    }
+
+    val cltvAsm = Seq(OP_CHECKLOCKTIMEVERIFY, OP_DROP)
     val scriptPubKeyAsm = scriptPubKey.asm
-    val asm = cltvAsm ++ scriptPubKeyAsm
+    val asm = scriptNum ++ cltvAsm ++ scriptPubKeyAsm
     CLTVScriptPubKey(asm)
   }
 
   def isCLTVScriptPubKey(asm : Seq[ScriptToken]) : Boolean = {
-    val tailTokens = asm.slice(4, asm.length)
-    if (P2SHScriptPubKey.isP2SHScriptPubKey(tailTokens) || tailTokens.contains(OP_CHECKLOCKTIMEVERIFY)) return false
-    asm.slice(0,4) match {
-      case List(lockTimeBytesToPush : BytesToPushOntoStack, lockTime : ScriptConstant, OP_CHECKLOCKTIMEVERIFY, OP_DROP) => true
-      case _ => false
+    if (asm.head.isInstanceOf[BytesToPushOntoStack]) {
+      val tailTokens = asm.slice(4, asm.length)
+      if (P2SHScriptPubKey.isP2SHScriptPubKey(tailTokens) || tailTokens.contains(OP_CHECKLOCKTIMEVERIFY)) return false
+      asm.slice(0,4) match {
+        case List(lockTimeBytesToPush : BytesToPushOntoStack, lockTime : ScriptConstant, OP_CHECKLOCKTIMEVERIFY, OP_DROP) => true
+        case _ => false
+      }
+    } else {
+      val tailTokens = asm.slice(3, asm.length)
+      if (P2SHScriptPubKey.isP2SHScriptPubKey(tailTokens) || tailTokens.contains(OP_CHECKLOCKTIMEVERIFY)) return false
+      asm.slice(0,3) match {
+        case List(scriptNumOp : ScriptNumberOperation, OP_CHECKLOCKTIMEVERIFY, OP_DROP) => true
+        case _ => false
+      }
     }
   }
 }
@@ -423,19 +440,36 @@ object CSVScriptPubKey extends Factory[CSVScriptPubKey] {
   def apply(asm : Seq[ScriptToken]) : CSVScriptPubKey = fromAsm(asm)
 
   def apply(relativeLockTime : ScriptNumber, scriptPubKey : ScriptPubKey) : CSVScriptPubKey = {
-    val pushOpsLockTime= BitcoinScriptUtil.calculatePushOp(relativeLockTime.bytes)
-    val csvAsm = pushOpsLockTime ++ Seq(ScriptConstant(relativeLockTime.bytes)) ++ Seq(OP_CHECKSEQUENCEVERIFY, OP_DROP)
+    val scriptOp = ScriptParser.correctScriptNumberRepresentation(relativeLockTime)
+
+    val scriptNum : Seq[ScriptToken] = if (scriptOp.isDefined) {
+      Seq(scriptOp.get)
+    } else {
+      val pushOpsLockTime= BitcoinScriptUtil.calculatePushOp(relativeLockTime.bytes)
+      pushOpsLockTime ++ Seq(ScriptConstant(relativeLockTime.bytes))
+    }
+
+    val csvAsm = Seq(OP_CHECKSEQUENCEVERIFY, OP_DROP)
     val scriptPubKeyAsm = scriptPubKey.asm
-    val asm = csvAsm ++ scriptPubKeyAsm
+    val asm = scriptNum ++ csvAsm ++ scriptPubKeyAsm
     CSVScriptPubKey(asm)
   }
 
   def isCSVScriptPubKey(asm : Seq[ScriptToken]) : Boolean = {
-    val tailTokens = asm.slice(4, asm.length)
-    if (P2SHScriptPubKey.isP2SHScriptPubKey(tailTokens) || tailTokens.contains(OP_CHECKSEQUENCEVERIFY)) return false
-    asm.slice(0,4) match {
-      case List(lockTimeBytesToPush : BytesToPushOntoStack, lockTime : ScriptConstant, OP_CHECKSEQUENCEVERIFY, OP_DROP) => true
-      case _ => false
+    if (asm.head.isInstanceOf[BytesToPushOntoStack]) {
+      val tailTokens = asm.slice(4, asm.length)
+      if (P2SHScriptPubKey.isP2SHScriptPubKey(tailTokens) || tailTokens.contains(OP_CHECKSEQUENCEVERIFY)) return false
+      asm.slice(0,4) match {
+        case List(lockTimeBytesToPush : BytesToPushOntoStack, lockTime : ScriptConstant, OP_CHECKSEQUENCEVERIFY, OP_DROP) => true
+        case _ => false
+      }
+    } else {
+      val tailTokens = asm.slice(3, asm.length)
+      if (P2SHScriptPubKey.isP2SHScriptPubKey(tailTokens) || tailTokens.contains(OP_CHECKSEQUENCEVERIFY)) return false
+      asm.slice(0,3) match {
+        case List(numberOp : ScriptNumberOperation, OP_CHECKSEQUENCEVERIFY, OP_DROP) => true
+        case _ => false
+      }
     }
   }
 
@@ -492,5 +526,12 @@ object ScriptPubKey extends Factory[ScriptPubKey] with BitcoinSLogger {
   def fromBytes(bytes : Seq[Byte]) : ScriptPubKey = RawScriptPubKeyParser.read(bytes)
 
   def apply(asm : Seq[ScriptToken]) : ScriptPubKey = fromAsm(asm)
+
+  private def isScriptNumberCorrectAsm(num : ScriptNumber) : Boolean = {
+    val str = num.underlying.toInt.toString
+    val op  = Try(ScriptOperation.fromString(str))
+    op.get.isDefined
+  }
+
 
 }
