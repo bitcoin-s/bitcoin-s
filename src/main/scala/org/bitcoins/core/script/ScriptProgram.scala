@@ -186,11 +186,9 @@ object ScriptProgram {
           case program : PreExecutionScriptProgram =>
             PreExecutionScriptProgramImpl(program.txSignatureComponent, tokens.toList,program.script,program.originalScript,
               program.altStack,program.flags)
-
           case program : ExecutionInProgressScriptProgram =>
             ExecutionInProgressScriptProgramImpl(program.txSignatureComponent,tokens.toList,program.script,program.originalScript,
               program.altStack,program.flags,program.lastCodeSeparator)
-
           case program : ExecutedScriptProgram =>
             throw new RuntimeException("Cannot update stack for program that has been fully executed")
         }
@@ -224,7 +222,7 @@ object ScriptProgram {
           ExecutionInProgressScriptProgramImpl(program.txSignatureComponent, program.stack, program.script, tokens.toList,
             program.altStack, program.flags, program.lastCodeSeparator)
         case program : ExecutedScriptProgram =>
-          throw new RuntimeException("Cannot update the alt stack for a program that has been fully executed")
+          throw new RuntimeException("Cannot update the original script for a program that has been fully executed")
       }
 
     }

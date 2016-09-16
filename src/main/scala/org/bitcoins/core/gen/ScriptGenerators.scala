@@ -277,7 +277,7 @@ trait ScriptGenerators extends BitcoinSLogger {
     case _ : P2PKHScriptPubKey | _ : P2PKScriptPubKey =>
       val (cltvScriptSig, _, _) = cltvHelper(lockTime, sequence, cltv, privKeys, None)
       (cltvScriptSig, cltv, privKeys)
-    case _ => throw new IllegalArgumentException("We only want to generate P2PK, P2PKH, and MultiSig ScriptSignatures.")
+    case _ => throw new IllegalArgumentException("We only want to generate P2PK, P2PKH, and MultiSig ScriptSignatures. Got: " + scriptSig)
   }
 
   private def cltvHelper (lockTime : UInt32, sequence : UInt32, cltv: CLTVScriptPubKey, privateKeys : Seq[ECPrivateKey], requiredSigs : Option[Int]) : (CLTVScriptSignature, CLTVScriptPubKey, Seq[ECPrivateKey]) = {
@@ -315,7 +315,7 @@ trait ScriptGenerators extends BitcoinSLogger {
         case _ : P2PKHScriptPubKey | _ : P2PKScriptPubKey =>
           val (csvScriptSig, _, _) = csvHelper(sequence, csv, privKeys, None)
           (csvScriptSig, csv, privKeys)
-      case _ => throw new IllegalArgumentException("We only want to generate P2PK, P2PKH, and MultiSig ScriptSignatures.")
+      case _ => throw new IllegalArgumentException("We only want to generate P2PK, P2PKH, and MultiSig ScriptSignatures.  Got: " + scriptSig)
   }
 
   private def csvHelper (sequence : UInt32, csv: CSVScriptPubKey, privateKeys : Seq[ECPrivateKey], requiredSigs : Option[Int]) : (CSVScriptSignature, CSVScriptPubKey, Seq[ECPrivateKey]) = {
@@ -353,14 +353,6 @@ trait ScriptGenerators extends BitcoinSLogger {
     scriptSig.flatMap(g => g)
   }
 
-
-  private def randomSignedScriptSig : Gen[(ScriptSignature, ScriptPubKey, Seq[ECPrivateKey])] = {
-    val randomNum = (scala.util.Random.nextInt() % 4).abs
-    if (randomNum == 0) packageToSequenceOfPrivateKeys(signedP2PKHScriptSignature)
-    else if (randomNum == 1) packageToSequenceOfPrivateKeys(signedP2PKScriptSignature)
-    else if (randomNum == 2) signedMultiSignatureScriptSignature
-    else signedP2SHScriptSignature
-  }
   /**
     * Simply converts one private key in the generator to a sequence of private keys
     * @param gen

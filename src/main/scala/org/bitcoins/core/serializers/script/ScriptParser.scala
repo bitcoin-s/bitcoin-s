@@ -335,6 +335,12 @@ trait ScriptParser extends Factory[List[ScriptToken]] with BitcoinSLogger {
       ScriptNumberUtil.toLong(strRemoveHex)
     } else str.toLong
   }
+
+  def correctScriptNumberRepresentation(num : ScriptNumber) : Option[ScriptOperation] = {
+    val str = num.underlying.toInt.toString
+    val op  = Try(ScriptOperation.fromString(str))
+    op.get
+  }
 }
 
 object ScriptParser extends ScriptParser

@@ -6,9 +6,10 @@ import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.script.constant._
 import org.bitcoins.core.script.crypto.{OP_CHECKMULTISIG, OP_CHECKMULTISIGVERIFY, OP_CHECKSIG, OP_CHECKSIGVERIFY}
 import org.bitcoins.core.script.flag.{ScriptFlag, ScriptFlagUtil}
-import org.bitcoins.core.script.{ScriptProgram, ScriptSettings}
+import org.bitcoins.core.script.{ScriptOperation, ScriptProgram, ScriptSettings}
 
 import scala.annotation.tailrec
+import scala.util.Try
 
 /**
  * Created by chris on 3/2/16.
@@ -182,6 +183,7 @@ trait BitcoinScriptUtil {
 
   /**
     * Calculates the push operation for the given [[ScriptToken]]
+    *
     * @param scriptToken
     * @return
     */
@@ -215,7 +217,8 @@ trait BitcoinScriptUtil {
    * Whenever a script constant is interpreted to a number BIP62 could enforce that number to be encoded
    * in the smallest encoding possible
    * https://github.com/bitcoin/bitcoin/blob/a6a860796a44a2805a58391a009ba22752f64e32/src/script/script.h#L220-L237
-   * @param constant
+    *
+    * @param constant
    * @return
    */
   def isShortestEncoding(constant : ScriptConstant) : Boolean = isShortestEncoding(constant.bytes)
@@ -224,7 +227,8 @@ trait BitcoinScriptUtil {
    * Whenever a script constant is interpreted to a number BIP62 could enforce that number to be encoded
    * in the smallest encoding possible
    * https://github.com/bitcoin/bitcoin/blob/a6a860796a44a2805a58391a009ba22752f64e32/src/script/script.h#L220-L237
-   * @param bytes
+    *
+    * @param bytes
    * @return
    */
   def isShortestEncoding(bytes : Seq[Byte]) : Boolean = {
@@ -247,14 +251,16 @@ trait BitcoinScriptUtil {
    * Whenever a script constant is interpreted to a number BIP62 could enforce that number to be encoded
    * in the smallest encoding possible
    * https://github.com/bitcoin/bitcoin/blob/a6a860796a44a2805a58391a009ba22752f64e32/src/script/script.h#L220-L237
-   * @param hex
+    *
+    * @param hex
    * @return
    */
   def isShortestEncoding(hex : String) : Boolean = isShortestEncoding(BitcoinSUtil.decodeHex(hex))
   /**
    * Checks the public key encoding according to bitcoin core's function
    * https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L202
-   * @param key the key whose encoding we are checking
+    *
+    * @param key the key whose encoding we are checking
    * @param program the program whose flags which dictate the rules for the public keys encoding
    * @return if the key is encoded correctly against the rules give in the flags parameter
    */
@@ -263,7 +269,8 @@ trait BitcoinScriptUtil {
   /**
    * Checks the public key encoding according to bitcoin core's function
    * https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L202
-   * @param key the key whose encoding we are checking
+    *
+    * @param key the key whose encoding we are checking
    * @param flags the flags which dictate the rules for the public keys encoding
    * @return if the key is encoded correctly against the rules givein the flags parameter
    */
@@ -276,7 +283,8 @@ trait BitcoinScriptUtil {
   /**
    * Returns true if the key is compressed or uncompressed, false otherwise
    * https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L66
-   * @param key the public key that is being checked
+    *
+    * @param key the public key that is being checked
    * @return true if the key is compressed/uncompressed otherwise false
    */
   def isCompressedOrUncompressedPubKey(key : ECPublicKey) : Boolean = {
