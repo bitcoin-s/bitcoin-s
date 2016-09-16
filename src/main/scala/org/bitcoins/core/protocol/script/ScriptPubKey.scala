@@ -376,9 +376,13 @@ object CLTVScriptPubKey extends Factory[CLTVScriptPubKey] {
     CLTVScriptPubKey(asm)
   }
 
-  def isCLTVScriptPubKey(asm : Seq[ScriptToken]) : Boolean = asm.slice(0,4) match {
-    case List(lockTimeBytesToPush : BytesToPushOntoStack, lockTime : ScriptConstant, OP_CHECKLOCKTIMEVERIFY, OP_DROP) => true
-    case _ => false
+  def isCLTVScriptPubKey(asm : Seq[ScriptToken]) : Boolean = {
+    val tailTokens = asm.slice(4, asm.length)
+    if (P2SHScriptPubKey.isP2SHScriptPubKey(tailTokens) || tailTokens.contains(OP_CHECKLOCKTIMEVERIFY)) return false
+    asm.slice(0,4) match {
+      case List(lockTimeBytesToPush : BytesToPushOntoStack, lockTime : ScriptConstant, OP_CHECKLOCKTIMEVERIFY, OP_DROP) => true
+      case _ => false
+    }
   }
 }
 
@@ -429,10 +433,15 @@ object CSVScriptPubKey extends Factory[CSVScriptPubKey] {
     CSVScriptPubKey(asm)
   }
 
-  def isCSVScriptPubKey(asm : Seq[ScriptToken]) : Boolean = asm.slice(0,4) match {
-    case List(lockTimeBytesToPush : BytesToPushOntoStack, lockTime : ScriptConstant, OP_CHECKSEQUENCEVERIFY, OP_DROP) => true
-    case _ => false
+  def isCSVScriptPubKey(asm : Seq[ScriptToken]) : Boolean = {
+    val tailTokens = asm.slice(4, asm.length)
+    if (P2SHScriptPubKey.isP2SHScriptPubKey(tailTokens) || tailTokens.contains(OP_CHECKSEQUENCEVERIFY)) return false
+    asm.slice(0,4) match {
+      case List(lockTimeBytesToPush : BytesToPushOntoStack, lockTime : ScriptConstant, OP_CHECKSEQUENCEVERIFY, OP_DROP) => true
+      case _ => false
+    }
   }
+
 }
 
 sealed trait NonStandardScriptPubKey extends ScriptPubKey
