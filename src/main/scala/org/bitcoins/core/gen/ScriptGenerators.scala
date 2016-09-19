@@ -400,6 +400,10 @@ trait ScriptGenerators extends BitcoinSLogger {
     scriptSig.flatMap(g => g)
   }
 
+  /**
+    * Generates a random [[ScriptSignature]], the [[ScriptPubKey]] it is spending, and the [[ECPrivateKey]] needed to spend it.
+    * @return
+    */
   def randomScriptSig : Gen[(ScriptSignature, ScriptPubKey, Seq[ECPrivateKey])] = {
     val randomNum = (scala.util.Random.nextInt() % 6).abs
     if (randomNum == 0) packageToSequenceOfPrivateKeys(signedP2PKHScriptSignature)
@@ -413,10 +417,9 @@ trait ScriptGenerators extends BitcoinSLogger {
   /**
     * Simply converts one private key in the generator to a sequence of private keys
     *
-    * @param gen
     * @return
     */
-  def packageToSequenceOfPrivateKeys(gen: Gen[(ScriptSignature, ScriptPubKey, ECPrivateKey)]): Gen[(ScriptSignature, ScriptPubKey, Seq[ECPrivateKey])] = for {
+  private def packageToSequenceOfPrivateKeys(gen: Gen[(ScriptSignature, ScriptPubKey, ECPrivateKey)]): Gen[(ScriptSignature, ScriptPubKey, Seq[ECPrivateKey])] = for {
     (scriptSig, scriptPubKey, privateKey) <- gen
   } yield (scriptSig, scriptPubKey, Seq(privateKey))
 }
