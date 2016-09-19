@@ -420,8 +420,8 @@ object CLTVScriptSignature extends Factory[CLTVScriptSignature] {
     case cltvScriptPubKey : CLTVScriptPubKey => apply(cltvScriptPubKey.scriptPubKeyAfterCLTV, sigs, pubKeys)
     case csvScriptPubKey : CSVScriptPubKey => apply(csvScriptPubKey.scriptPubKeyAfterCSV, sigs, pubKeys)
     case EmptyScriptPubKey => CLTVScriptSignature(EmptyScriptSignature)
-    case _ : NonStandardScriptPubKey | _ : P2SHScriptPubKey => throw new IllegalArgumentException("A NonStandardScriptSignature or P2SHScriptSignature cannot be" +
-      "the underlying scriptSig in a CLTVScriptSignature. Got: " + this)
+    case x @ (_ : NonStandardScriptPubKey | _ : P2SHScriptPubKey) => throw new IllegalArgumentException("A NonStandardScriptSignature or P2SHScriptSignature cannot be" +
+      "the underlying scriptSig in a CLTVScriptSignature. Got: " + x)
   }
 
 }
@@ -461,8 +461,8 @@ object CSVScriptSignature extends Factory[CSVScriptSignature] {
     case cltvScriptPubKey : CLTVScriptPubKey => apply(cltvScriptPubKey.scriptPubKeyAfterCLTV, sigs, pubKeys)
     case csvScriptPubKey : CSVScriptPubKey => apply(csvScriptPubKey.scriptPubKeyAfterCSV, sigs, pubKeys)
     case EmptyScriptPubKey => CSVScriptSignature(EmptyScriptSignature)
-    case _ : NonStandardScriptPubKey | _ : P2SHScriptPubKey => throw new IllegalArgumentException("A NonStandardScriptSignature or P2SHScriptSignature cannot be" +
-      "the underlying scriptSig in a CSVScriptSignature. Got: " + this)
+    case x @ (_ : NonStandardScriptPubKey | _ : P2SHScriptPubKey) => throw new IllegalArgumentException("A NonStandardScriptSignature or P2SHScriptSignature cannot be" +
+      "the underlying scriptSig in a CSVScriptSignature. Got: " + x)
   }
 }
 

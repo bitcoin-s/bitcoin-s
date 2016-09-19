@@ -494,7 +494,7 @@ object NonStandardScriptPubKey extends Factory[NonStandardScriptPubKey] {
 }
 
 /**
- * Represents the empty script pub key
+ * Represents the empty ScriptPubKey
  */
 case object EmptyScriptPubKey extends ScriptPubKey {
   def hex = ""
