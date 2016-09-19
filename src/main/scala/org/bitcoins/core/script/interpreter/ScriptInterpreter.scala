@@ -60,10 +60,6 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
       scriptPubKey match {
         case p2shScriptPubKey : P2SHScriptPubKey if (ScriptFlagUtil.p2shEnabled(program.flags)) =>
           executeP2shScript(scriptSigExecutedProgram, programBeingExecuted, p2shScriptPubKey)
-/*        case csv : CSVScriptPubKey if csv.scriptPubKeyAfterCSV.isInstanceOf[P2SHScriptPubKey] && ScriptFlagUtil.p2shEnabled(program.flags) =>
-          executeP2shScript(scriptSigExecutedProgram, programBeingExecuted, P2SHScriptPubKey(csv.scriptPubKeyAfterCSV.hex))
-        case cltv : CLTVScriptPubKey if cltv.scriptPubKeyAfterCLTV.isInstanceOf[P2SHScriptPubKey] && ScriptFlagUtil.p2shEnabled(program.flags) =>
-          executeP2shScript(scriptSigExecutedProgram, programBeingExecuted, P2SHScriptPubKey(cltv.scriptPubKeyAfterCLTV.hex))*/
         case _ : MultiSignatureScriptPubKey | _ : P2SHScriptPubKey | _ : P2PKHScriptPubKey |
           _ : P2PKScriptPubKey | _ : CLTVScriptPubKey | _ : CSVScriptPubKey | _ : NonStandardScriptPubKey | EmptyScriptPubKey =>
           logger.info("Stack state after scriptSig execution: " + scriptSigExecutedProgram.stack)
