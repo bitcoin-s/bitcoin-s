@@ -38,13 +38,11 @@ class ScriptPubKeyTest extends FlatSpec with MustMatchers {
   val pubKey = ECPrivateKey().publicKey
   val p2pkh = P2PKHScriptPubKey(pubKey)
 
-  it must "determine the correct underlying scriptPubKey inside a CLTVScriptPubKey" in {
+  it must "determine the correct underlying scriptPubKey, and locktime inside a CLTVScriptPubKey" in {
     CLTVScriptPubKey(scriptNum17, p2pkh).scriptPubKeyAfterCLTV must be (p2pkh)
     CLTVScriptPubKey(scriptNum5, p2pkh).scriptPubKeyAfterCLTV must be (p2pkh)
     CLTVScriptPubKey(negativeOne, p2pkh).scriptPubKeyAfterCLTV must be (p2pkh)
-  }
 
-  it must "determine the correct locktime for the CLTVScriptPubKey" in {
     CLTVScriptPubKey(scriptNum17, p2pkh).locktime must be (scriptNum17)
     CLTVScriptPubKey(scriptNum5, p2pkh).locktime must be (scriptNum5)
   }
@@ -56,14 +54,13 @@ class ScriptPubKeyTest extends FlatSpec with MustMatchers {
     csv.asm must be (expectedCSVAsm)
   }
 
-  it must "determine the correct underlying scriptPubKey inside a CLTVScriptPubKey" in {
+  it must "determine the correct underlying scriptPubKey, and locktime inside a CSVScriptPubKey" in {
     CSVScriptPubKey(scriptNum17, p2pkh).scriptPubKeyAfterCSV must be (p2pkh)
     CSVScriptPubKey(scriptNum5, p2pkh).scriptPubKeyAfterCSV must be (p2pkh)
     CSVScriptPubKey(negativeOne, p2pkh).scriptPubKeyAfterCSV must be (p2pkh)
-  }
 
-  it must "determine the correct locktime for the CLTVScriptPubKey" in {
     CSVScriptPubKey(scriptNum17, p2pkh).locktime must be (scriptNum17)
     CSVScriptPubKey(scriptNum5, p2pkh).locktime must be (scriptNum5)
   }
+
 }

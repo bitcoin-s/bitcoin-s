@@ -309,10 +309,9 @@ trait BitcoinScriptUtil {
     return true
   }
 
-  def minimalScriptNumberRepresentation(num : ScriptNumber) : Option[ScriptOperation] = {
-    val str = num.underlying.toInt.toString
-    val op  = Try(ScriptOperation.fromString(str))
-    op.get
+  def minimalScriptNumberRepresentation(num : ScriptNumber) : ScriptNumber = {
+    val op = ScriptNumberOperation.fromNumber(num.toInt)
+    if (op.isDefined) op.get else num
   }
 }
 
