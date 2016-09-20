@@ -338,15 +338,28 @@ sealed trait CLTVScriptPubKey extends ScriptPubKey {
     * Determines the nested ScriptPubKey inside the CLTVScriptPubKey
     * @return
     */
-  def scriptPubKeyAfterCLTV : ScriptPubKey = ScriptPubKey(asm.slice(4, asm.length))
+  def scriptPubKeyAfterCLTV : ScriptPubKey = {
+    val bool : Boolean = asm.head.isInstanceOf[ScriptNumberOperation]
+    bool match {
+      case true => ScriptPubKey(asm.slice(3, asm.length))
+      case false => ScriptPubKey(asm.slice(4, asm.length))
+    }
+  }
 
   /**
     * The absolute CLTV-LockTime value (i.e. the output will remain unspendable until this timestamp or block height)
     * @return
     */
   def locktime : ScriptNumber = {
-    val hex = BitcoinSUtil.flipEndianess(asm(1).hex)
-    ScriptNumber(hex)
+    val bool = asm.head.isInstanceOf[ScriptNumberOperation]
+    bool match {
+      case true =>
+        val op = ScriptNumberOperation(asm.head.hex)
+        ScriptNumber(op.get.underlying)
+      case false =>
+        val hex = BitcoinSUtil.flipEndianess(asm(1).hex)
+        ScriptNumber(hex)
+    }
   }
 }
 
@@ -366,7 +379,7 @@ object CLTVScriptPubKey extends Factory[CLTVScriptPubKey] {
   def apply (asm: Seq[ScriptToken]) : CLTVScriptPubKey = fromAsm(asm)
 
   def apply(locktime : ScriptNumber, scriptPubKey : ScriptPubKey) : CLTVScriptPubKey = {
-    val scriptOp = BitcoinScriptUtil.correctScriptNumberRepresentation(locktime)
+    val scriptOp = BitcoinScriptUtil.minimalScriptNumberRepresentation(locktime)
 
     val scriptNum : Seq[ScriptToken] = if (scriptOp.isDefined) {
       Seq(scriptOp.get)
@@ -411,16 +424,30 @@ sealed trait CSVScriptPubKey extends ScriptPubKey {
     * Determines the nested ScriptPubKey inside the CSVScriptPubKey
     * @return
     */
-  def scriptPubKeyAfterCSV : ScriptPubKey = ScriptPubKey(asm.slice(4, asm.length))
+  def scriptPubKeyAfterCSV : ScriptPubKey = {
+    val bool : Boolean = asm.head.isInstanceOf[ScriptNumberOperation]
+    bool match {
+      case true => ScriptPubKey(asm.slice(3, asm.length))
+      case false => ScriptPubKey(asm.slice(4, asm.length))
+    }
+  }
 
   /**
     * The relative CSV-LockTime value (i.e. the amount of time the output should remain unspendable)
     * @return
     */
   def locktime : ScriptNumber = {
-    val hex = BitcoinSUtil.flipEndianess(asm(1).hex)
-    ScriptNumber(hex)
+    val bool = asm.head.isInstanceOf[ScriptNumberOperation]
+    bool match {
+      case true =>
+        val op = ScriptNumberOperation(asm.head.hex)
+        ScriptNumber(op.get.underlying)
+      case false =>
+        val hex = BitcoinSUtil.flipEndianess(asm(1).hex)
+        ScriptNumber(hex)
+    }
   }
+
 }
 
 object CSVScriptPubKey extends Factory[CSVScriptPubKey] {
@@ -440,7 +467,7 @@ object CSVScriptPubKey extends Factory[CSVScriptPubKey] {
   def apply(asm : Seq[ScriptToken]) : CSVScriptPubKey = fromAsm(asm)
 
   def apply(relativeLockTime : ScriptNumber, scriptPubKey : ScriptPubKey) : CSVScriptPubKey = {
-    val scriptOp = BitcoinScriptUtil.correctScriptNumberRepresentation(relativeLockTime)
+    val scriptOp = BitcoinScriptUtil.minimalScriptNumberRepresentation(relativeLockTime)
 
     val scriptNum : Seq[ScriptToken] = if (scriptOp.isDefined) {
       Seq(scriptOp.get)
@@ -526,12 +553,4 @@ object ScriptPubKey extends Factory[ScriptPubKey] with BitcoinSLogger {
   def fromBytes(bytes : Seq[Byte]) : ScriptPubKey = RawScriptPubKeyParser.read(bytes)
 
   def apply(asm : Seq[ScriptToken]) : ScriptPubKey = fromAsm(asm)
-
-  private def isScriptNumberCorrectAsm(num : ScriptNumber) : Boolean = {
-    val str = num.underlying.toInt.toString
-    val op  = Try(ScriptOperation.fromString(str))
-    op.get.isDefined
-  }
-
-
 }
