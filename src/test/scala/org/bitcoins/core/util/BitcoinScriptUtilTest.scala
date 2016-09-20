@@ -190,11 +190,12 @@ class BitcoinScriptUtilTest extends FlatSpec with MustMatchers {
     val scriptNumZero = ScriptNumber(0)
     val scriptNum16 = ScriptNumber(16)
     val scriptNum17 = ScriptNumber(17)
-    BitcoinScriptUtil.minimalScriptNumberRepresentation(scriptNum100) must be (None)
-    BitcoinScriptUtil.minimalScriptNumberRepresentation(scriptNum10) must be (Some(OP_10))
-    BitcoinScriptUtil.minimalScriptNumberRepresentation(scriptNumZero) must be (Some(OP_0))
-    BitcoinScriptUtil.minimalScriptNumberRepresentation(scriptNum16) must be (Some(OP_16))
-    BitcoinScriptUtil.minimalScriptNumberRepresentation(scriptNum17) must be (None)
-    BitcoinScriptUtil.minimalScriptNumberRepresentation(ScriptNumber(-1)) must be (None)
+    BitcoinScriptUtil.minimalScriptNumberRepresentation(scriptNum100) must be (scriptNum100)
+    BitcoinScriptUtil.minimalScriptNumberRepresentation(scriptNum10) must be (OP_10)
+    BitcoinScriptUtil.minimalScriptNumberRepresentation(scriptNumZero) must be (OP_0)
+    BitcoinScriptUtil.minimalScriptNumberRepresentation(scriptNum16) must be (OP_16)
+    BitcoinScriptUtil.minimalScriptNumberRepresentation(scriptNum17) must be (scriptNum17)
+    BitcoinScriptUtil.minimalScriptNumberRepresentation(ScriptNumber(-1)) must be (OP_1NEGATE)
+    BitcoinScriptUtil.minimalScriptNumberRepresentation(ScriptNumber(-2)) must be (ScriptNumber(-2))
   }
 }

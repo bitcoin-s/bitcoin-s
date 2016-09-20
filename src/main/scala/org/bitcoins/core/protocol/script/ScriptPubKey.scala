@@ -336,6 +336,7 @@ object P2PKScriptPubKey extends Factory[P2PKScriptPubKey] {
 sealed trait CLTVScriptPubKey extends ScriptPubKey {
   /**
     * Determines the nested ScriptPubKey inside the CLTVScriptPubKey
+    *
     * @return
     */
   def scriptPubKeyAfterCLTV : ScriptPubKey = {
@@ -348,17 +349,15 @@ sealed trait CLTVScriptPubKey extends ScriptPubKey {
 
   /**
     * The absolute CLTV-LockTime value (i.e. the output will remain unspendable until this timestamp or block height)
+    *
     * @return
     */
   def locktime : ScriptNumber = {
-    val bool = asm.head.isInstanceOf[ScriptNumberOperation]
-    bool match {
-      case true =>
-        val op = ScriptNumberOperation(asm.head.hex)
-        ScriptNumber(op.get.underlying)
-      case false =>
-        val hex = BitcoinSUtil.flipEndianess(asm(1).hex)
-        ScriptNumber(hex)
+    asm.head match {
+      case scriptNumOp: ScriptNumberOperation => ScriptNumber(scriptNumOp.underlying)
+      case pushBytes : BytesToPushOntoStack => ScriptNumber(asm(1).hex)
+      case x @ (_ : ScriptConstant | _ : ScriptOperation) => throw new IllegalArgumentException("In a CLTVScriptPubKey, " +
+        "the first asm must be either a ScriptNumberOperation (i.e. OP_5), or the BytesToPushOntoStack for the proceeding ScriptConstant.")
     }
   }
 }
@@ -381,8 +380,8 @@ object CLTVScriptPubKey extends Factory[CLTVScriptPubKey] {
   def apply(locktime : ScriptNumber, scriptPubKey : ScriptPubKey) : CLTVScriptPubKey = {
     val scriptOp = BitcoinScriptUtil.minimalScriptNumberRepresentation(locktime)
 
-    val scriptNum : Seq[ScriptToken] = if (scriptOp.isDefined) {
-      Seq(scriptOp.get)
+    val scriptNum : Seq[ScriptToken] = if (scriptOp.isInstanceOf[ScriptNumberOperation]) {
+      Seq(scriptOp)
     } else {
       val pushOpsLockTime= BitcoinScriptUtil.calculatePushOp(locktime.bytes)
       pushOpsLockTime ++ Seq(ScriptConstant(locktime.bytes))
@@ -422,6 +421,7 @@ object CLTVScriptPubKey extends Factory[CLTVScriptPubKey] {
 sealed trait CSVScriptPubKey extends ScriptPubKey {
   /**
     * Determines the nested ScriptPubKey inside the CSVScriptPubKey
+    *
     * @return
     */
   def scriptPubKeyAfterCSV : ScriptPubKey = {
@@ -434,17 +434,15 @@ sealed trait CSVScriptPubKey extends ScriptPubKey {
 
   /**
     * The relative CSV-LockTime value (i.e. the amount of time the output should remain unspendable)
+    *
     * @return
     */
   def locktime : ScriptNumber = {
-    val bool = asm.head.isInstanceOf[ScriptNumberOperation]
-    bool match {
-      case true =>
-        val op = ScriptNumberOperation(asm.head.hex)
-        ScriptNumber(op.get.underlying)
-      case false =>
-        val hex = BitcoinSUtil.flipEndianess(asm(1).hex)
-        ScriptNumber(hex)
+    asm.head match {
+      case scriptNumOp: ScriptNumberOperation => ScriptNumber(scriptNumOp.underlying)
+      case pushBytes : BytesToPushOntoStack => ScriptNumber(asm(1).hex)
+      case x @ (_ : ScriptConstant | _ : ScriptOperation) => throw new IllegalArgumentException("In a CSVScriptPubKey, " +
+        "the first asm must be either a ScriptNumberOperation (i.e. OP_5), or the BytesToPushOntoStack for the proceeding ScriptConstant.")
     }
   }
 
@@ -469,8 +467,8 @@ object CSVScriptPubKey extends Factory[CSVScriptPubKey] {
   def apply(relativeLockTime : ScriptNumber, scriptPubKey : ScriptPubKey) : CSVScriptPubKey = {
     val scriptOp = BitcoinScriptUtil.minimalScriptNumberRepresentation(relativeLockTime)
 
-    val scriptNum : Seq[ScriptToken] = if (scriptOp.isDefined) {
-      Seq(scriptOp.get)
+    val scriptNum : Seq[ScriptToken] = if (scriptOp.isInstanceOf[ScriptNumberOperation]) {
+      Seq(scriptOp)
     } else {
       val pushOpsLockTime= BitcoinScriptUtil.calculatePushOp(relativeLockTime.bytes)
       pushOpsLockTime ++ Seq(ScriptConstant(relativeLockTime.bytes))

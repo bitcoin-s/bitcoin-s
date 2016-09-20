@@ -521,8 +521,7 @@ object ScriptSignature extends Factory[ScriptSignature] with BitcoinSLogger {
     case s : NonStandardScriptPubKey => NonStandardScriptSignature.fromAsm(tokens)
     case s : CLTVScriptPubKey => fromScriptPubKey(tokens, s.scriptPubKeyAfterCLTV)
     case s : CSVScriptPubKey => fromScriptPubKey(tokens, s.scriptPubKeyAfterCSV)
-    case EmptyScriptPubKey if (tokens.size == 0) => EmptyScriptSignature
-    case EmptyScriptPubKey => NonStandardScriptSignature.fromAsm(tokens)
+    case EmptyScriptPubKey => if (tokens.isEmpty) EmptyScriptSignature else NonStandardScriptSignature.fromAsm(tokens)
   }
 
   def apply(tokens : Seq[ScriptToken], scriptPubKey : ScriptPubKey) : ScriptSignature = fromScriptPubKey(tokens, scriptPubKey)
