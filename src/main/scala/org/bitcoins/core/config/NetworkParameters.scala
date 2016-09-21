@@ -24,6 +24,9 @@ trait NetworkParameters {
     * @return
     */
   def magicBytes : Seq[Byte]
+
+  /** In bitcoin, the network recaculates the difficulty for the network every 2016 blocks */
+  def difficultyChangeThreshold = 2016
 }
 
 trait MainNet extends NetworkParameters {
