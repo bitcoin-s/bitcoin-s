@@ -38,8 +38,23 @@ trait BlockchainElementsGenerator {
     merkleRootHash <- CryptoGenerators.doubleSha256Digest
     time <- NumberGenerator.uInt32s
     nonce <- NumberGenerator.uInt32s
-  } yield BlockHeader(version, previousBlockHash,merkleRootHash , time,nBits,nonce)
+  } yield BlockHeader(version, previousBlockHash,merkleRootHash,time,nBits,nonce)
 
+  /** Generates a chain of valid headers of the size specified by num,
+    * 'valid' means their nBits are the same and each header properly
+    * references the previous block header's hash */
+  def validHeaderChain(num: Long): Gen[Seq[BlockHeader]] = {
+    val firstHeader = blockHeader.sample.get
+    @tailrec
+    def loop(remainingHeaders: Long, accum: Seq[BlockHeader]): Seq[BlockHeader] = {
+      if (remainingHeaders == 0) accum.reverse
+      else {
+        val nextHeader = blockHeader(accum.head.hash,accum.head.nBits).sample.get
+        loop(remainingHeaders-1, nextHeader +: accum)
+      }
+    }
+    loop(num-1, Seq(firstHeader))
+  }
 }
 
 object BlockchainElementsGenerator extends BlockchainElementsGenerator
