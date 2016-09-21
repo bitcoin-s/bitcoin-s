@@ -61,7 +61,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
         case p2shScriptPubKey : P2SHScriptPubKey if (ScriptFlagUtil.p2shEnabled(program.flags)) =>
           executeP2shScript(scriptSigExecutedProgram, programBeingExecuted, p2shScriptPubKey)
         case _ : MultiSignatureScriptPubKey | _ : P2SHScriptPubKey | _ : P2PKHScriptPubKey |
-          _ : P2PKScriptPubKey | _ : NonStandardScriptPubKey | EmptyScriptPubKey =>
+          _ : P2PKScriptPubKey | _ : CLTVScriptPubKey | _ : CSVScriptPubKey | _ : NonStandardScriptPubKey | EmptyScriptPubKey =>
           logger.info("Stack state after scriptSig execution: " + scriptSigExecutedProgram.stack)
           if (!scriptSigExecutedProgram.error.isDefined) {
             logger.debug("We do not check a redeemScript against a non p2sh scriptSig")
@@ -342,7 +342,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
                 logger.error("We cannot execute a NOP when the ScriptVerifyDiscourageUpgradableNOPs is set")
                 loop(ScriptProgram(p, ScriptErrorDiscourageUpgradableNOPs),calcOpCount(opCount,OP_CHECKSEQUENCEVERIFY))
               }
-              //in this case, just reat OP_CSV just like a NOP and remove it from the stack
+              //in this case, just read OP_CSV just like a NOP and remove it from the stack
               else loop(ScriptProgram(p, p.script.tail, ScriptProgram.Script),calcOpCount(opCount,OP_CHECKSEQUENCEVERIFY))
             //no more script operations to run, return whether the program is valid and the final state of the program
             case Nil => loop(ScriptProgram.toExecutedProgram(p),opCount)
