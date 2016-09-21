@@ -1,11 +1,11 @@
 package org.bitcoins.core.protocol.transaction
 
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.serializers.transaction.RawTransactionInputParser
-import org.bitcoins.core.protocol.{CompactSizeUInt, NetworkElement}
 import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptSignature}
+import org.bitcoins.core.protocol.{CompactSizeUInt, NetworkElement}
 import org.bitcoins.core.script.constant.ScriptToken
-import org.bitcoins.core.util.{BitcoinSUtil, Factory}
+import org.bitcoins.core.serializers.transaction.RawTransactionInputParser
+import org.bitcoins.core.util.Factory
 
 /**
  * Created by chris on 12/26/15.

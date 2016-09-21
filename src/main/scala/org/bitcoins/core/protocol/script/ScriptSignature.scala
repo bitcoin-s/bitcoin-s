@@ -1,12 +1,10 @@
 package org.bitcoins.core.protocol.script
 
-import org.bitcoins.core.crypto.{ECDigitalSignature, ECPublicKey, EmptyDigitalSignature}
-import org.bitcoins.core.number.Int32
+import org.bitcoins.core.crypto.{ECDigitalSignature, ECPublicKey}
 import org.bitcoins.core.protocol.NetworkElement
 import org.bitcoins.core.script.constant._
-import org.bitcoins.core.script.crypto.{HashType, SIGHASH_ALL}
 import org.bitcoins.core.serializers.script.{RawScriptSignatureParser, ScriptParser}
-import org.bitcoins.core.util.{BitcoinSLogger, BitcoinScriptUtil, Factory}
+import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil, BitcoinScriptUtil, Factory}
 
 import scala.util.{Failure, Success, Try}
 
@@ -37,22 +35,9 @@ sealed trait ScriptSignature extends NetworkElement with BitcoinSLogger {
     */
   def signatures : Seq[ECDigitalSignature]
 
-
-  /**
-    * Derives the hash type for a given digitalSignature
-    *
-    * @param digitalSignature
-    * @return
-    */
-  def hashType(digitalSignature: ECDigitalSignature) : HashType = {
-    digitalSignature match {
-      case EmptyDigitalSignature => SIGHASH_ALL(Int32.one)
-      case sig : ECDigitalSignature => HashType(Seq(digitalSignature.bytes.last))
-    }
-  }
 }
 
-trait NonStandardScriptSignature extends ScriptSignature {
+sealed trait NonStandardScriptSignature extends ScriptSignature {
   def signatures : Seq[ECDigitalSignature] = Seq()
 }
 
@@ -71,15 +56,13 @@ object NonStandardScriptSignature extends Factory[NonStandardScriptSignature] {
   }
 }
 
-
-
 /**
  * P2PKH script signatures have only one public key
  * https://bitcoin.org/en/developer-guide#pay-to-public-key-hash-p2pkh
  * P2PKH scriptSigs follow this format
  * <sig> <pubkey>
  */
-trait P2PKHScriptSignature extends ScriptSignature {
+sealed trait P2PKHScriptSignature extends ScriptSignature {
 
   /**
     * P2PKH scriptSigs only have one signature
@@ -94,13 +77,6 @@ trait P2PKHScriptSignature extends ScriptSignature {
     * @return
     */
   def publicKey : ECPublicKey = ECPublicKey(asm.last.bytes)
-
-  /**
-    * Returns the hash type for the p2pkh script signature
-    *
-    * @return
-    */
-  def hashType : HashType = HashType(Seq(signature.bytes.last))
 
   override def signatures : Seq[ECDigitalSignature] = {
     Seq(ECDigitalSignature(asm(1).hex))
@@ -140,6 +116,7 @@ object P2PKHScriptSignature extends Factory[P2PKHScriptSignature] {
 
   /**
     * Determines if the given asm matches a [[P2PKHScriptSignature]]
+    *
     * @param asm
     * @return
     */
@@ -156,7 +133,7 @@ object P2PKHScriptSignature extends Factory[P2PKHScriptSignature] {
  * P2SH scriptSigs have the following format
  * <sig> [sig] [sig...] <redeemScript>
  */
-trait P2SHScriptSignature extends ScriptSignature {
+sealed trait P2SHScriptSignature extends ScriptSignature {
 
   /**
     * The redeemScript represents the conditions that must be satisfied to spend the output
@@ -193,7 +170,7 @@ trait P2SHScriptSignature extends ScriptSignature {
     */
   def signatures : Seq[ECDigitalSignature] = {
     val nonRedeemScript = splitAtRedeemScript(asm)._1
-    val sigs = nonRedeemScript.filter(_.isInstanceOf[ScriptConstant]).filterNot(_.isInstanceOf[ScriptNumberOperation])
+    val sigs = nonRedeemScript.filter(_.isInstanceOf[ScriptConstant]).filterNot(_.isInstanceOf[ScriptNumberOperation]).filterNot(_.hex.length < 100)
     sigs.map(s => ECDigitalSignature(s.hex))
   }
 
@@ -235,11 +212,12 @@ object P2SHScriptSignature extends Factory[P2SHScriptSignature] with BitcoinSLog
 
   /**
     * Tests if the given asm tokens are a [[P2SHScriptSignature]]
+    *
     * @param asm
     * @return
     */
   def isP2SHScriptSig(asm: Seq[ScriptToken]): Boolean = asm match {
-    case _ if (asm.size > 1 && isRedeemScript(asm.last)) => true
+    case _ if asm.size > 1 && isRedeemScript(asm.last) => true
     case _ => false
   }
 
@@ -260,6 +238,8 @@ object P2SHScriptSignature extends Factory[P2SHScriptSignature] with BitcoinSLog
           case x : MultiSignatureScriptPubKey => true
           case x : P2SHScriptPubKey => true
           case x : P2PKScriptPubKey => true
+          case x : CLTVScriptPubKey => true
+          case x : CSVScriptPubKey => true
           case x : NonStandardScriptPubKey => false
           case EmptyScriptPubKey => false
         }
@@ -286,7 +266,7 @@ object P2SHScriptSignature extends Factory[P2SHScriptSignature] with BitcoinSLog
  * Multisig script sigs have the following format
  * OP_0 <A sig> [B sig] [C sig...]
  */
-trait MultiSignatureScriptSignature extends ScriptSignature {
+sealed trait MultiSignatureScriptSignature extends ScriptSignature {
 
   /**
     * The digital signatures inside of the scriptSig
@@ -352,14 +332,7 @@ object MultiSignatureScriptSignature extends Factory[MultiSignatureScriptSignatu
  * https://bitcoin.org/en/developer-guide#pubkey
  * Signature script: <sig>
  */
-trait P2PKScriptSignature extends ScriptSignature {
-
-  /**
-    * Returns the hash type for the signature inside of the p2pk script signature
-    *
-    * @return
-    */
-  def hashType : HashType = HashType(Seq(signature.bytes.last))
+sealed trait P2PKScriptSignature extends ScriptSignature {
 
   /**
     * PubKey scriptSignatures only have one signature
@@ -401,6 +374,7 @@ object P2PKScriptSignature extends Factory[P2PKScriptSignature] {
 
   /**
     * P2PK scriptSigs always have the pattern [pushop, digitalSignature]
+    *
     * @param asm
     * @return
     */
@@ -409,6 +383,89 @@ object P2PKScriptSignature extends Factory[P2PKScriptSignature] {
     case _ => false
   }
 }
+
+sealed trait CLTVScriptSignature extends ScriptSignature {
+  def scriptSig : ScriptSignature = ScriptSignature(hex)
+
+  override def signatures : Seq[ECDigitalSignature] = scriptSig.signatures
+
+  override def hex = scriptSig.hex
+}
+
+object CLTVScriptSignature extends Factory[CLTVScriptSignature] {
+  private case class CLTVScriptSignatureImpl(override val hex : String) extends CLTVScriptSignature
+
+  override def fromBytes(bytes : Seq[Byte]) : CLTVScriptSignature = {
+    val hex = BitcoinSUtil.encodeHex(bytes)
+    fromHex(hex)
+  }
+
+  override def fromHex(hex : String) : CLTVScriptSignature = {
+    CLTVScriptSignatureImpl(hex)
+  }
+
+  def apply(scriptSig : ScriptSignature) : CLTVScriptSignature = {
+    fromHex(scriptSig.hex)
+  }
+
+  /**
+    * Creates a CLTVScriptSignature out the [[ScriptPubKey]] we are satisfying, a sequence of [[ECDigitalSignature]], and a sequence
+    * of [[ECPublicKey]] needed to satisfy the scriptPubKey. If a [[P2SHScriptPubKey]] is provided, a redeemScript must also be provided.
+    * @return
+    */
+  def apply(scriptPubKey: ScriptPubKey, sigs : Seq[ECDigitalSignature], pubKeys : Seq[ECPublicKey]) : CLTVScriptSignature = scriptPubKey match {
+    case p2pkScriptPubKey : P2PKScriptPubKey => CLTVScriptSignature(P2PKScriptSignature(sigs.head))
+    case p2pkhScriptPubKey : P2PKHScriptPubKey => CLTVScriptSignature(P2PKHScriptSignature(sigs.head, pubKeys.head))
+    case multiSigScriptPubKey : MultiSignatureScriptPubKey => CLTVScriptSignature(MultiSignatureScriptSignature(sigs))
+    case cltvScriptPubKey : CLTVScriptPubKey => apply(cltvScriptPubKey.scriptPubKeyAfterCLTV, sigs, pubKeys)
+    case csvScriptPubKey : CSVScriptPubKey => apply(csvScriptPubKey.scriptPubKeyAfterCSV, sigs, pubKeys)
+    case EmptyScriptPubKey => CLTVScriptSignature(EmptyScriptSignature)
+    case x @ (_ : NonStandardScriptPubKey | _ : P2SHScriptPubKey) => throw new IllegalArgumentException("A NonStandardScriptSignature or P2SHScriptSignature cannot be" +
+      "the underlying scriptSig in a CLTVScriptSignature. Got: " + x)
+  }
+
+}
+
+sealed trait CSVScriptSignature extends ScriptSignature {
+  def scriptSig : ScriptSignature = ScriptSignature(hex)
+
+  override def signatures : Seq[ECDigitalSignature] = scriptSig.signatures
+
+  override def hex = scriptSig.hex
+}
+
+object CSVScriptSignature extends Factory[CSVScriptSignature] {
+  private case class CSVScriptSignatureImpl(override val hex : String) extends CSVScriptSignature
+
+  override def fromBytes(bytes : Seq[Byte]) : CSVScriptSignature = {
+    val hex = BitcoinSUtil.encodeHex(bytes)
+    fromHex(hex)
+  }
+
+  override def fromHex(hex : String) : CSVScriptSignature = {
+    CSVScriptSignatureImpl(hex)
+  }
+
+  def apply(scriptSig : ScriptSignature) : CSVScriptSignature = {
+    fromHex(scriptSig.hex)
+  }
+  /**
+    * Creates a CSVScriptSignature out the [[ScriptPubKey]] we are satisfying, a sequence of [[ECDigitalSignature]], and a sequence
+    * of [[ECPublicKey]] needed to satisfy the scriptPubKey. If a [[P2SHScriptPubKey]] is provided, a redeemScript must also be provided.
+    * @return
+    */
+  def apply(scriptPubKey: ScriptPubKey, sigs : Seq[ECDigitalSignature], pubKeys : Seq[ECPublicKey]) : CSVScriptSignature = scriptPubKey match {
+    case p2pkScriptPubKey : P2PKScriptPubKey => CSVScriptSignature(P2PKScriptSignature(sigs.head))
+    case p2pkhScriptPubKey : P2PKHScriptPubKey => CSVScriptSignature(P2PKHScriptSignature(sigs.head, pubKeys.head))
+    case multiSigScriptPubKey : MultiSignatureScriptPubKey => CSVScriptSignature(MultiSignatureScriptSignature(sigs))
+    case cltvScriptPubKey : CLTVScriptPubKey => apply(cltvScriptPubKey.scriptPubKeyAfterCLTV, sigs, pubKeys)
+    case csvScriptPubKey : CSVScriptPubKey => apply(csvScriptPubKey.scriptPubKeyAfterCSV, sigs, pubKeys)
+    case EmptyScriptPubKey => CSVScriptSignature(EmptyScriptSignature)
+    case x @ (_ : NonStandardScriptPubKey | _ : P2SHScriptPubKey) => throw new IllegalArgumentException("A NonStandardScriptSignature or P2SHScriptSignature cannot be" +
+      "the underlying scriptSig in a CSVScriptSignature. Got: " + x)
+  }
+}
+
 
 /**
  * Represents the empty script signature
@@ -462,8 +519,9 @@ object ScriptSignature extends Factory[ScriptSignature] with BitcoinSLogger {
     case s : P2PKScriptPubKey => P2PKScriptSignature.fromAsm(tokens)
     case s : MultiSignatureScriptPubKey => MultiSignatureScriptSignature.fromAsm(tokens)
     case s : NonStandardScriptPubKey => NonStandardScriptSignature.fromAsm(tokens)
-    case EmptyScriptPubKey if (tokens.size == 0) => EmptyScriptSignature
-    case EmptyScriptPubKey => NonStandardScriptSignature.fromAsm(tokens)
+    case s : CLTVScriptPubKey => fromScriptPubKey(tokens, s.scriptPubKeyAfterCLTV)
+    case s : CSVScriptPubKey => fromScriptPubKey(tokens, s.scriptPubKeyAfterCSV)
+    case EmptyScriptPubKey => if (tokens.isEmpty) EmptyScriptSignature else NonStandardScriptSignature.fromAsm(tokens)
   }
 
   def apply(tokens : Seq[ScriptToken], scriptPubKey : ScriptPubKey) : ScriptSignature = fromScriptPubKey(tokens, scriptPubKey)

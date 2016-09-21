@@ -9,7 +9,7 @@ import org.scalacheck.{Prop, Properties}
 class MultiSignatureScriptPubKeySpec extends Properties("MultiSignatureScriptPubKeySpec") {
 
   property("Serialization symmetry") =
-    Prop.forAll(ScriptGenerators.multiSigScriptPubKey) { multiSigScriptPubKey =>
+    Prop.forAll(ScriptGenerators.multiSigScriptPubKey) { case (multiSigScriptPubKey, _) =>
       MultiSignatureScriptPubKey(multiSigScriptPubKey.hex) == multiSigScriptPubKey
 
     }
