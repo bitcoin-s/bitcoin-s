@@ -1,12 +1,12 @@
 package org.bitcoins.core.serializers
 
-import org.bitcoins.core.util.BitcoinSUtil
+import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil}
 
 /**
  * Created by chris on 1/11/16.
  * A common trait for reading/writing bitcoin objects to/from bytes/hex
  */
-trait RawBitcoinSerializer[T] extends RawBitcoinSerializerHelper {
+trait RawBitcoinSerializer[T] extends RawBitcoinSerializerHelper with BitcoinSLogger {
 
   /**
    * Reads a hexadecimal value and transforms it into the native

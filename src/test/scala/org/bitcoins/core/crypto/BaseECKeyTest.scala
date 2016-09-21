@@ -35,4 +35,10 @@ class BaseECKeyTest extends FlatSpec with MustMatchers {
     key2.publicKey.verify("180cb41c7c600be951b5d3d0a7334acc7506173875834f7a6c4c786a28fcbb19", signature) must be (true)
   }
 
+  it must "create a DER encoded signature" in {
+    val key = ECPrivateKey.freshPrivateKey
+    val signature = key.sign("180cb41c7c600be951b5d3d0a7334acc7506173875834f7a6c4c786a28fcbb19")
+    signature.isDEREncoded must be (true)
+  }
+
 }

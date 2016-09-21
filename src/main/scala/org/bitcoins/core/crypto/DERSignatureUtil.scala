@@ -13,6 +13,7 @@ trait DERSignatureUtil extends BitcoinSLogger {
   /**
    * Checks if this signature is encoded to DER correctly
    * https://crypto.stackexchange.com/questions/1795/how-can-i-convert-a-der-ecdsa-signature-to-asn-1
+   * NOTE: This will fail if this signature contains the hash type appended to the end of it
    * @return boolean representing if the signature is a valid
    */
   def isDEREncoded(signature : ECDigitalSignature) : Boolean = isDEREncoded(signature.bytes)
@@ -20,22 +21,22 @@ trait DERSignatureUtil extends BitcoinSLogger {
   /**
    * Checks if the bytes are encoded to DER correctly
    * https://crypto.stackexchange.com/questions/1795/how-can-i-convert-a-der-ecdsa-signature-to-asn-1
+   * This will fail if this signature contains the hash type appended to the end of it
    * @return boolean representing if the signature is a valid
    */
   def isDEREncoded(bytes : Seq[Byte]) : Boolean = {
     //signature is trivially valid if the signature is empty
-
-    if (!bytes.isEmpty && bytes.size < 9) false
-    else if (!bytes.isEmpty) {
+    if (bytes.nonEmpty && bytes.size < 9) false
+    else if (bytes.nonEmpty) {
       //first byte must be 0x30
       val firstByteIs0x30 = bytes.head == 0x30
       logger.debug("firstByteIs0x30: " + firstByteIs0x30)
       //second byte must indicate the length of the remaining byte array
       val signatureSize = bytes(1).toLong
       logger.debug("Encoded Sisgnature Size: " + signatureSize)
-      logger.debug("Actual Signature Size: " + bytes.slice(3,bytes.size).size)
+      logger.debug("Actual Signature Size: " + bytes.slice(2,bytes.size).size)
       //checks to see if the signature length is the same as the signatureSize val
-      val signatureLengthIsCorrect = signatureSize == bytes.slice(3,bytes.size).size
+      val signatureLengthIsCorrect = signatureSize == bytes.slice(2,bytes.size).size
       logger.debug("Signature length is correct: " + signatureLengthIsCorrect)
       //third byte must be 0x02
       val thirdByteIs0x02 = bytes(2) == 0x02
@@ -114,14 +115,15 @@ trait DERSignatureUtil extends BitcoinSLogger {
 
   /**
    * This functions implements the strict der encoding rules that were created in BIP66
-   * https://github.com/bitcoin/bips/blob/master/bip-0066.mediawiki
+   * [[https://github.com/bitcoin/bips/blob/master/bip-0066.mediawiki]]
+   * [[https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L98]]
    * @param signature the signature to check if they are strictly der encoded
    * @return boolean indicating whether the signature was der encoded or not
    */
-  def isStrictDEREncoding(signature : ECDigitalSignature) : Boolean = {
+  def isValidSignatureEncoding(signature : ECDigitalSignature) : Boolean = {
     signature match {
       case EmptyDigitalSignature => true
-      case signature : ECDigitalSignature => isStrictDEREncoding(signature.bytes)
+      case signature : ECDigitalSignature => isValidSignatureEncoding(signature.bytes)
     }
   }
 
@@ -129,10 +131,11 @@ trait DERSignatureUtil extends BitcoinSLogger {
   /**
    * This functions implements the strict der encoding rules that were created in BIP66
    * https://github.com/bitcoin/bips/blob/master/bip-0066.mediawiki
+   * [[https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L98]]
    * @param bytes the bytes to check if they are strictly der encoded
    * @return boolean indicating whether the bytes were der encoded or not
    */
-  def isStrictDEREncoding(bytes : Seq[Byte]) : Boolean = {
+  def isValidSignatureEncoding(bytes : Seq[Byte]) : Boolean = {
     // Format: 0x30 [total-length] 0x02 [R-length] [R] 0x02 [S-length] [S] [sighash]
     // * total-length: 1-byte length descriptor of everything that follows,
     //   excluding the sighash byte.
@@ -150,9 +153,9 @@ trait DERSignatureUtil extends BitcoinSLogger {
     if (bytes.size == 0) return true
 
     //check if the bytes are ATLEAST der encoded
-    val isDerEncoded = isDEREncoded(bytes)
+/*    val isDerEncoded = isDEREncoded(bytes)
     if (!isDerEncoded) return false
-    logger.debug("Signature is at minimum DER encoded")
+    logger.debug("Signature is at minimum DER encoded")*/
 
     if (bytes.size < 9) return false
     logger.debug("signature is the minimum size for strict der encoding")
@@ -222,26 +225,34 @@ trait DERSignatureUtil extends BitcoinSLogger {
   /**
    * Requires the S value in signatures to be the low version of the S value
    * https://github.com/bitcoin/bips/blob/master/bip-0062.mediawiki#low-s-values-in-signatures
- *
    * @param signature
    * @return if the S value is the low version
    */
-  def isLowDerSignature(signature : ECDigitalSignature) : Boolean = isLowDerSignature(signature.bytes)
+  def isLowS(signature : ECDigitalSignature) : Boolean = isLowS(signature.bytes)
 
   /**
    * Requires the S value in signatures to be the low version of the S value
    * https://github.com/bitcoin/bips/blob/master/bip-0062.mediawiki#low-s-values-in-signatures
- *
    * @param signature
    * @return if the S value is the low version
    */
-  def isLowDerSignature(signature : Seq[Byte]) : Boolean = {
-    if (!isDEREncoded(signature)) false
-    else {
+  def isLowS(signature : Seq[Byte]) : Boolean = {
+    val result = Try {
       val (r,s) = decodeSignature(signature)
-      val upperBound = BigInt("7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0",16)
-      s >= 0x1 && s <= upperBound
+      s.bigInteger.compareTo(CryptoParams.halfCurveOrder) <= 0
     }
+    result match {
+      case Success(bool) => bool
+      case Failure(_) => false
+    }
+  }
+
+  /** Checks if the given digital signature uses a low s value, if it does not it converts it to a low s value and returns it */
+  def lowS(signature: ECDigitalSignature): ECDigitalSignature = {
+    val sigLowS = if (isLowS(signature)) signature
+    else ECDigitalSignature(signature.r,CryptoParams.curve.getN().subtract(signature.s.bigInteger))
+    require(DERSignatureUtil.isLowS(sigLowS))
+    sigLowS
   }
 }
 
