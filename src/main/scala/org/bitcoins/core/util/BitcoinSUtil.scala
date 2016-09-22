@@ -60,18 +60,18 @@ trait BitcoinSUtil {
   }
 
   /**
-   * Flips the endianess of the give hex string
+   * Flips the endianness of the give hex string
    * @param hex
    * @return
    */
-  def flipEndianess(hex : String) : String = flipEndianess(decodeHex(hex))
+  def flipEndianness(hex : String) : String = flipEndianness(decodeHex(hex))
 
   /**
-   * Flips the endianess of the given sequence of bytes
+   * Flips the endianness of the given sequence of bytes
    * @param bytes
    * @return
    */
-  def flipEndianess(bytes : Seq[Byte]) : String = encodeHex(bytes.reverse)
+  def flipEndianness(bytes : Seq[Byte]) : String = encodeHex(bytes.reverse)
 
 
   /**
