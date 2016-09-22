@@ -77,7 +77,7 @@ trait ScriptNumberUtil {
   def longToHex(long : Long) : String = {
     if (long > -1) {
       val bytes = toByteSeq(long)
-      BitcoinSUtil.flipEndianess(BitcoinSUtil.encodeHex(bytes))
+      BitcoinSUtil.flipEndianness(BitcoinSUtil.encodeHex(bytes))
     } else {
       val bytes = toByteSeq(long.abs)
       //add sign bit
