@@ -51,7 +51,7 @@ trait RawTransactionInputParser extends RawBitcoinSerializer[Seq[TransactionInpu
     val outPoint = RawTransactionOutPointParser.write(input.previousOutput)
     val varInt = input.scriptSigCompactSizeUInt.hex
     val scriptSig = RawScriptSignatureParser.write(input.scriptSignature)
-    val sequence = addPadding(8,BitcoinSUtil.flipEndianess(input.sequence.hex))
+    val sequence = addPadding(8,BitcoinSUtil.flipEndianness(input.sequence.hex))
     outPoint + varInt + scriptSig + sequence
   }
 
@@ -80,8 +80,8 @@ trait RawTransactionInputParser extends RawBitcoinSerializer[Seq[TransactionInpu
     val lastInputByte = endOfScriptSigBytes + sequenceBytesSize
     val sequenceBytes = bytes.slice(endOfScriptSigBytes,lastInputByte)
     val sequenceNumberHex : String = BitcoinSUtil.encodeHex(sequenceBytes)
-    val sequenceNumberFlippedEndianess = BitcoinSUtil.flipEndianess(sequenceNumberHex)
-    val sequenceNumber : UInt32 = UInt32(sequenceNumberFlippedEndianess)
+    val sequenceNumberFlippedEndianness = BitcoinSUtil.flipEndianness(sequenceNumberHex)
+    val sequenceNumber : UInt32 = UInt32(sequenceNumberFlippedEndianness)
     val txInput = TransactionInput(outPoint,scriptSig,sequenceNumber)
     (txInput, bytes.slice(lastInputByte, bytes.length))
   }

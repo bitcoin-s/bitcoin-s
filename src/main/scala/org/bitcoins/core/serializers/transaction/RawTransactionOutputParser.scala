@@ -67,7 +67,7 @@ trait RawTransactionOutputParser extends RawBitcoinSerializer[Seq[TransactionOut
   def write(output : TransactionOutput) : String = {
     val satoshis = CurrencyUnits.toSatoshis(output.value)
     val compactSizeUIntHex = output.scriptPubKeyCompactSizeUInt.hex
-    val satoshisHexWithoutPadding : String = BitcoinSUtil.flipEndianess(satoshis.hex)
+    val satoshisHexWithoutPadding : String = BitcoinSUtil.flipEndianness(satoshis.hex)
     val satoshisHex = addPadding(16,satoshisHexWithoutPadding)
     logger.debug("compactSizeUIntHex: " + compactSizeUIntHex)
     logger.debug("satoshis: " + satoshisHex)

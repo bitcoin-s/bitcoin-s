@@ -90,7 +90,7 @@ trait ConstantInterpreter extends BitcoinSLogger {
     logger.debug("new script: " + newScript)
     logger.debug("Bytes to push onto stack: " + bytesToPushOntoStack)
     val constant : ScriptToken = if (bytesToPushOntoStack.size == 1) bytesToPushOntoStack.head
-    else ScriptConstant(BitcoinSUtil.flipEndianess(bytesToPushOntoStack.flatMap(_.bytes)))
+    else ScriptConstant(BitcoinSUtil.flipEndianness(bytesToPushOntoStack.flatMap(_.bytes)))
 
     logger.debug("Constant to be pushed onto stack: " + constant)
     //check to see if we have the exact amount of bytes needed to be pushed onto the stack
@@ -161,8 +161,8 @@ trait ConstantInterpreter extends BitcoinSLogger {
     case scriptNumber: BytesToPushOntoStack => scriptNumber.opCode
     case scriptNumber: ScriptNumber => scriptNumber.underlying
     case scriptConstant : ScriptConstant =>
-      val constantFlippedEndianess = BitcoinSUtil.flipEndianess(scriptConstant.hex)
-      java.lang.Long.parseLong(constantFlippedEndianess,16)
+      val constantFlippedEndianness = BitcoinSUtil.flipEndianness(scriptConstant.hex)
+      java.lang.Long.parseLong(constantFlippedEndianness,16)
     case _ => throw new IllegalArgumentException("Token must be BytesToPushOntoStack to push a number of bytes onto the stack")
   }
 }
