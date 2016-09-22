@@ -25,7 +25,7 @@ trait RawTransactionOutPointParser extends RawBitcoinSerializer[TransactionOutPo
   }
 
   def write(outPoint : TransactionOutPoint) : String = {
-    val indexHexWithoutPadding : String = BitcoinSUtil.flipEndianess(outPoint.vout.hex)
+    val indexHexWithoutPadding : String = BitcoinSUtil.flipEndianness(outPoint.vout.hex)
     //UInt32s cannot hold negative numbers, but sometimes the Bitcoin Protocol requires the vout to be -1, which is serialized
     //as "0xFFFFFFFF".
     //https://github.com/bitcoin/bitcoin/blob/d612837814020ae832499d18e6ee5eb919a87907/src/primitives/transaction.h

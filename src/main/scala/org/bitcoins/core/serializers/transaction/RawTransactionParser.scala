@@ -36,11 +36,11 @@ trait RawTransactionParser extends RawBitcoinSerializer[Transaction] with Bitcoi
   def write(tx : Transaction) : String = {
     //add leading zero if the version byte doesn't r.hexre two hex numbers
     val txVersionHex = tx.version.hex
-    val version = BitcoinSUtil.flipEndianess(txVersionHex)
+    val version = BitcoinSUtil.flipEndianness(txVersionHex)
     val inputs : String = RawTransactionInputParser.write(tx.inputs)
     val outputs : String = RawTransactionOutputParser.write(tx.outputs)
     val lockTimeWithoutPadding : String = tx.lockTime.hex
-    val lockTime = addPadding(8,BitcoinSUtil.flipEndianess(lockTimeWithoutPadding))
+    val lockTime = addPadding(8,BitcoinSUtil.flipEndianness(lockTimeWithoutPadding))
     version + inputs + outputs + lockTime
   }
 }

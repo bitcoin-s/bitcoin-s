@@ -77,11 +77,11 @@ trait ScriptParser extends Factory[List[ScriptToken]] with BitcoinSLogger {
           if (strippedQuotes.size == 0) {
             loop(t, OP_0.bytes.toList ++ accum)
           } else {
-            val bytes : Seq[Byte] = BitcoinSUtil.decodeHex(BitcoinSUtil.flipEndianess(strippedQuotes.getBytes.toList))
+            val bytes : Seq[Byte] = BitcoinSUtil.decodeHex(BitcoinSUtil.flipEndianness(strippedQuotes.getBytes.toList))
 
             val bytesToPushOntoStack : List[ScriptToken] = (bytes.size > 75) match {
               case true =>
-                val scriptNumber = ScriptNumber(BitcoinSUtil.flipEndianess(ScriptNumberUtil.longToHex(bytes.size)))
+                val scriptNumber = ScriptNumber(BitcoinSUtil.flipEndianness(ScriptNumberUtil.longToHex(bytes.size)))
                 bytes.size match {
                   case size if size < Byte.MaxValue =>
                     List(scriptNumber,OP_PUSHDATA1)
@@ -110,7 +110,7 @@ trait ScriptParser extends Factory[List[ScriptToken]] with BitcoinSLogger {
           loop(t,op.bytes.toList ++ accum)
         case h :: t if (tryParsingLong(h)) =>
           logger.debug("Found a decimal number")
-          val hexLong = BitcoinSUtil.flipEndianess(ScriptNumberUtil.longToHex(h.toLong))
+          val hexLong = BitcoinSUtil.flipEndianness(ScriptNumberUtil.longToHex(h.toLong))
           val bytesToPushOntoStack = BytesToPushOntoStack(hexLong.size / 2)
           //convert the string to int, then convert to hex
           loop(t, BitcoinSUtil.decodeHex(hexLong).toList ++ bytesToPushOntoStack.bytes.toList ++ accum)
@@ -119,7 +119,7 @@ trait ScriptParser extends Factory[List[ScriptToken]] with BitcoinSLogger {
           logger.debug("Generic h :: t")
           //find the size of the string in bytes
           val bytesToPushOntoStack = BytesToPushOntoStack(h.size / 2)
-          loop(t, BitcoinSUtil.decodeHex(BitcoinSUtil.flipEndianess(h)).toList ++ bytesToPushOntoStack.bytes.toList ++ accum)
+          loop(t, BitcoinSUtil.decodeHex(BitcoinSUtil.flipEndianness(h)).toList ++ bytesToPushOntoStack.bytes.toList ++ accum)
         case Nil => accum
       }
     }
@@ -276,7 +276,7 @@ trait ScriptParser extends Factory[List[ScriptToken]] with BitcoinSLogger {
       //next numBytes is the size of the script constant
       val scriptConstantHex = tail.slice(0,numBytes)
       logger.debug("Script constant hex: " + scriptConstantHex)
-      val bytesForPushOp = Integer.parseInt(BitcoinSUtil.flipEndianess(scriptConstantHex),16)
+      val bytesForPushOp = Integer.parseInt(BitcoinSUtil.flipEndianness(scriptConstantHex),16)
       val bytesToPushOntoStack = ScriptConstant(scriptConstantHex)
       logger.debug("BytesToPushOntoStack: " + bytesToPushOntoStack)
       val scriptConstantBytes = tail.slice(numBytes,bytesForPushOp + numBytes)
