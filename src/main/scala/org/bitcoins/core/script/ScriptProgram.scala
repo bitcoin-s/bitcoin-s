@@ -1,14 +1,13 @@
 package org.bitcoins.core.script
 
 
-import org.bitcoins.core.crypto.{TransactionSignatureComponent}
+import org.bitcoins.core.crypto.TransactionSignatureComponent
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.script.{ScriptSignature, ScriptPubKey}
+import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.script.constant._
-import org.bitcoins.core.script.result._
 import org.bitcoins.core.script.flag.ScriptFlag
-import org.bitcoins.core.util.Factory
+import org.bitcoins.core.script.result._
 
 /**
   * Created by chris on 2/3/16.
@@ -17,21 +16,21 @@ sealed trait ScriptProgram {
 
 
   /**
-   * This contains all relevant information for hashing and checking a signature for a bitcoin transaction
+   * This contains all relevant information for hashing and checking a [[org.bitcoins.core.protocol.script.ScriptSignature]] for a [[Transaction]].
     *
     * @return
    */
   def txSignatureComponent : TransactionSignatureComponent
 
   /**
-   * The current state of the stack for execution of the program
+   * The current state of the stack for execution of the [[ScriptProgram]].
     *
     * @return
    */
   def stack : List[ScriptToken]
 
   /**
-   * The script operations that need to still be executed
+   * The script operations that need to still be executed.
     *
     * @return
    */
@@ -39,23 +38,23 @@ sealed trait ScriptProgram {
 
 
   /**
-   * The original script that was given t
+   * The original script that was given.
     *
     * @return
    */
   def originalScript : List[ScriptToken]
 
   /**
-   * The alternative stack is used in some Script op codes
+   * The alternative stack is used in some Script op codes.
     *
     * @return
    */
   def altStack : List[ScriptToken]
 
   /**
-   * Flags that are run with the script
-   * these flags indicate special conditions that a script needs to be run with
-   * see: https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.h#L31
+   * [[ScriptFlag]] that are run with the script.
+   * These flags indicate special conditions that a script needs to be run with.
+   * https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.h#L31
  *
    * @return
    */
@@ -63,7 +62,6 @@ sealed trait ScriptProgram {
 
   /**
     * Returns true if the stack top is true
- *
     * @return
     */
   def stackTopIsTrue = !stackTopIsFalse
@@ -71,7 +69,6 @@ sealed trait ScriptProgram {
 
   /**
     * Returns true if the stack top is false
- *
     * @return
     */
   def stackTopIsFalse : Boolean = {
@@ -87,13 +84,12 @@ sealed trait ScriptProgram {
 
 
 /**
- * This represents a ScriptProgram before any script operations have been executed in the interpreter
+ * This represents a [[ScriptProgram]] before any script operations have been executed in the [[org.bitcoins.core.script.interpreter.ScriptInterpreter]].
  */
 sealed trait PreExecutionScriptProgram extends ScriptProgram
 sealed trait ExecutionInProgressScriptProgram extends ScriptProgram {
   /**
-   * The index of the last OP_CODESEPARATOR
- *
+   * The index of the last [[org.bitcoins.core.script.crypto.OP_CODESEPARATOR]]
    * @return
    */
   def lastCodeSeparator : Option[Int]
@@ -102,57 +98,35 @@ sealed trait ExecutionInProgressScriptProgram extends ScriptProgram {
 
 sealed trait ExecutedScriptProgram extends ScriptProgram {
   /**
-   * Indicates if the program has encountered a ScriptError in its execution
- *
+   * Indicates if the [[ScriptProgram]] has encountered a [[ScriptError]] in its execution.
    * @return
    */
   def error : Option[ScriptError]
-
 }
 
 /**
- * Factory companion object for ScriptProgram
+ * Factory companion object for [[ScriptProgram]]
  */
 object ScriptProgram {
   /**
-   * Implentation type for a script program that has not been executed at all
- *
-   * @param txSignatureComponent
-   * @param stack
-   * @param script
-   * @param originalScript
-   * @param altStack
-   * @param flags
+   * Implementation type for a [[PreExecutionScriptProgram]] - a [[ScriptProgram]] that has not yet begun being
+    * evaluated  by the [[org.bitcoins.core.script.interpreter.ScriptInterpreter]].
    */
   private sealed case class PreExecutionScriptProgramImpl(txSignatureComponent : TransactionSignatureComponent,
     stack : List[ScriptToken],script : List[ScriptToken], originalScript : List[ScriptToken], altStack : List[ScriptToken],
     flags : Seq[ScriptFlag]) extends PreExecutionScriptProgram
 
   /**
-   * Implementation type for a script program that is currently being executed by the script interpreter
- *
-   * @param txSignatureComponent
-   * @param stack
-   * @param script
-   * @param originalScript
-   * @param altStack
-   * @param flags
-   * @param lastCodeSeparator
+   * Implementation type for a [[ExecutionInProgressScriptProgram]] - a [[ScriptProgram]] that is currently being
+    * evaluated by the [[org.bitcoins.core.script.interpreter.ScriptInterpreter]].
    */
   private sealed case class ExecutionInProgressScriptProgramImpl(txSignatureComponent : TransactionSignatureComponent,
     stack : List[ScriptToken],script : List[ScriptToken], originalScript : List[ScriptToken], altStack : List[ScriptToken],
     flags : Seq[ScriptFlag], lastCodeSeparator : Option[Int]) extends ExecutionInProgressScriptProgram
 
   /**
-   * The implementation type for a script program that is finished being executed by the script interpreter
- *
-   * @param txSignatureComponent
-   * @param stack
-   * @param script
-   * @param originalScript
-   * @param altStack
-   * @param flags
-   * @param error
+   * The implementation type for a [[ExecutedScriptProgram]] - a [[ScriptProgram]] that has been evaluated completely
+    * by the [[org.bitcoins.core.script.interpreter.ScriptInterpreter]].
    */
   private sealed case class ExecutedScriptProgramImpl(txSignatureComponent : TransactionSignatureComponent,
     stack : List[ScriptToken],script : List[ScriptToken], originalScript : List[ScriptToken], altStack : List[ScriptToken],
@@ -168,10 +142,9 @@ object ScriptProgram {
 
 
   /**
-   * Sets an error on the script program
- *
+   * Sets a [[ScriptError]] on a given [[ScriptProgram]].
    * @param oldProgram the program who has hit an invalid state
-   * @param error the error that thet program hit while being executed in the script interpreter
+   * @param error the error that the program hit while being executed in the script interpreter
    * @return the ExecutedScriptProgram with the given error set inside of the trait
    */
   def factory(oldProgram : ScriptProgram, error : ScriptError) : ExecutedScriptProgram = oldProgram match {
@@ -187,10 +160,7 @@ object ScriptProgram {
 
 
   /**
-    * Updates the program script verify flags
- *
-    * @param oldProgram
-    * @param flags
+    * Updates the [[ScriptFlag]] on a given [[ScriptProgram]].
     * @return
     */
   def factory(oldProgram : ScriptProgram, flags : Seq[ScriptFlag]) : ScriptProgram = oldProgram match {
@@ -206,11 +176,7 @@ object ScriptProgram {
 
 
   /**
-    * Changes the tokens in either the Stack or the Script depending in the indicator
- *
-    * @param oldProgram
-    * @param tokens
-    * @param indicator
+    * Updates the [[ScriptProgram]] with a sequence of [[ScriptToken]]s depending on the [[UpdateIndicator]].
     * @return
     */
   def factory(oldProgram : ScriptProgram, tokens : Seq[ScriptToken], indicator : UpdateIndicator) : ScriptProgram = {
@@ -220,11 +186,9 @@ object ScriptProgram {
           case program : PreExecutionScriptProgram =>
             PreExecutionScriptProgramImpl(program.txSignatureComponent, tokens.toList,program.script,program.originalScript,
               program.altStack,program.flags)
-
           case program : ExecutionInProgressScriptProgram =>
             ExecutionInProgressScriptProgramImpl(program.txSignatureComponent,tokens.toList,program.script,program.originalScript,
               program.altStack,program.flags,program.lastCodeSeparator)
-
           case program : ExecutedScriptProgram =>
             throw new RuntimeException("Cannot update stack for program that has been fully executed")
         }
@@ -258,18 +222,14 @@ object ScriptProgram {
           ExecutionInProgressScriptProgramImpl(program.txSignatureComponent, program.stack, program.script, tokens.toList,
             program.altStack, program.flags, program.lastCodeSeparator)
         case program : ExecutedScriptProgram =>
-          throw new RuntimeException("Cannot update the alt stack for a program that has been fully executed")
+          throw new RuntimeException("Cannot update the original script for a program that has been fully executed")
       }
 
     }
   }
 
   /**
-    * Changes the stack tokens and script tokens in a ScriptProgram
- *
-    * @param oldProgram
-    * @param stackTokens
-    * @param scriptTokens
+    * Changes the [[ScriptToken]] assembly-construction of the script or stack inside a [[ScriptProgram]].
     * @return
     */
   def factory(oldProgram : ScriptProgram, stackTokens : Seq[ScriptToken], scriptTokens : Seq[ScriptToken]) : ScriptProgram = {
@@ -280,10 +240,7 @@ object ScriptProgram {
 
 
   /**
-    * Updates the last OP_CODESEPARATOR index
- *
-    * @param oldProgram
-    * @param lastCodeSeparator
+    * Updates the last [[org.bitcoins.core.script.crypto.OP_CODESEPARATOR]] index.
     * @return
     */
   def factory(oldProgram : ExecutionInProgressScriptProgram, lastCodeSeparator : Int) : ExecutionInProgressScriptProgram = {
@@ -293,12 +250,7 @@ object ScriptProgram {
   }
 
   /**
-    * Updates the tokens in either the stack or script and the last OP_CODESEPARATOR index
- *
-    * @param oldProgram
-    * @param tokens
-    * @param indicator
-    * @param lastCodeSeparator
+    * Updates the [[ScriptToken]]s in either the stack or script and the last [[org.bitcoins.core.script.crypto.OP_CODESEPARATOR]] index
     * @return
     */
   def factory(oldProgram : ExecutionInProgressScriptProgram, tokens : Seq[ScriptToken], indicator: UpdateIndicator,
@@ -313,12 +265,7 @@ object ScriptProgram {
   }
 
   /**
-    * Updates the stack, script, alt stack of the given oldProgram
- *
-    * @param oldProgram
-    * @param stack
-    * @param script
-    * @param altStack
+    * Updates the [[Stack]], [[Script]], [[AltStack]] of the given [[ScriptProgram]].
     * @return
     */
   def factory(oldProgram : ScriptProgram, stack : Seq[ScriptToken], script : Seq[ScriptToken], altStack : Seq[ScriptToken]) : ScriptProgram = {
@@ -329,10 +276,8 @@ object ScriptProgram {
   }
 
   /**
-    * Creates a new script program that can be used to verify if a transaction at the given inputIndex
-    * spends a given scriptPubKey correctly. Assumes that the script to be executed is the
-    * scriptSignature at the given input index
- *
+    * Creates a new [[ScriptProgram]] that can be used to verify if a [[Transaction]] at the given inputIndex
+    * spends a given [[ScriptPubKey]] correctly. Assumes that the [[Script]] to be executed is the ???
     * @param transaction the transaction that is being checked
     * @param scriptPubKey the scriptPubKey for which the input is spending
     * @param inputIndex the input's index inside of transaction which we are spending
@@ -346,8 +291,8 @@ object ScriptProgram {
   }
 
   /**
-    * Creates a new script program that can be used to verify if a transaction at the given inputIndex
-    * spends a given scriptPubKey correctly
+    * Creates a new [[ScriptProgram]] that can be used to verify if a [[Transaction]] at the given inputIndex
+    * spends a given [[ScriptPubKey]] correctly.
     *
     * @param transaction the transaction that is being checked
     * @param scriptPubKey the scriptPubKey for which the input is spending
@@ -364,16 +309,15 @@ object ScriptProgram {
 
 
   /**
-    * The intention for this factory function is to allow us to create a program that already has a stack state. This
-    * is useful for after execution of a scriptSig, copying the stack into this program with the scriptPubKey read to
-    * run inside the script variable
- *
+    * The intention for this factory function is to allow us to create a [[ScriptProgram]] that already has a stack state. This
+    * is useful for after execution of a scriptSig, copying the stack into this program with the [[ScriptPubKey]] to
+    * run inside the script.
     * @param transaction the transaction being checked
     * @param scriptPubKey the scriptPubKey which the input is spending
     * @param inputIndex the input's index inside of the transaction we are spending
     * @param stack the current stack state of the program
     * @param script the script that we need to execute
-    * @param flags the flags which we are enforcing inside of the script interpeter
+    * @param flags the flags which we are enforcing inside of the script interpreter
     */
   def factory(transaction: Transaction, scriptPubKey : ScriptPubKey, inputIndex : UInt32, stack : Seq[ScriptToken],
               script : Seq[ScriptToken], flags : Seq[ScriptFlag]) : ScriptProgram = {
@@ -383,10 +327,9 @@ object ScriptProgram {
 
 
   /**
-    * The intention for this factory function is to allow us to create a program that already has a stack state. This
+    * The intention for this factory function is to allow us to create a [[ScriptProgram]] that already has a stack state. This
     * is useful for after execution of a scriptSig, copying the stack into this program with the scriptPubKey read to
     * run inside the script variable
- *
     * @param txSignatureComponent the relevant transaction information for execution of a script program
     * @param stack the current stack state of the program
     * @param script the script that we need to execute
@@ -433,8 +376,7 @@ object ScriptProgram {
   }
 
   /**
-   * Changes a program that is being executed inside o
- *
+   * Changes a [[ScriptProgram]] that is a [[ExecutionInProgressScriptProgram]] and changes it to an [[ExecutedScriptProgram]].
    * @param executionInProgressScriptProgram
    * @return
    */
@@ -445,8 +387,7 @@ object ScriptProgram {
   }
 
   /**
-   * Takes a script program that is pre execution and changes it to an execution in progress script program
- *
+   * Changes a [[ScriptProgram]] that is a [[PreExecutionScriptProgram]] and changes it to an [[ExecutionInProgressScriptProgram]].
    * @param preExecutionScriptProgram
    * @return
    */
@@ -455,8 +396,7 @@ object ScriptProgram {
   }
 
   /**
-   * Changes a pre execution script program to a execution in progress script program with the given stack state
- *
+   * Changes a [[ScriptProgram]] that is a [[PreExecutionScriptProgram]] and changes it to an [[ExecutionInProgressScriptProgram]] given the stack state.
    * @param preExecutionScriptProgram
    * @param stack
    * @return

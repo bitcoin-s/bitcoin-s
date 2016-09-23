@@ -12,9 +12,9 @@ class BitcoinSUtilSpec extends Properties("BitcoinSUtilSpec") with BitcoinSLogge
       BitcoinSUtil.encodeHex(BitcoinSUtil.decodeHex(hex)) == hex
     }
 
-  property("Flipping endianess symmetry") =
+  property("Flipping endianness symmetry") =
     Prop.forAll(StringGenerators.hexString) { hex : String =>
-      BitcoinSUtil.flipEndianess(BitcoinSUtil.flipEndianess(hex)) == hex
+      BitcoinSUtil.flipEndianness(BitcoinSUtil.flipEndianness(hex)) == hex
     }
 
   property("Convert a byte to a bit vector, convert it back to the original byte") =

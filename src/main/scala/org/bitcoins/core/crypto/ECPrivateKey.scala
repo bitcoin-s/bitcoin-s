@@ -75,15 +75,15 @@ object ECPrivateKey extends Factory[ECPrivateKey] with BitcoinSLogger {
       //means we need to pad the private key with 0 bytes so we have 32 bytes
       val paddingNeeded = 32 - bytes.size
       val padding = for { _ <- 0 until paddingNeeded} yield 0.toByte
-      ECPrivateKey.fromBytes(padding ++ bytes,isCompressed)
+      ECPrivateKey.fromBytes(padding ++ bytes, isCompressed)
     }
     //this is for the case when java serialies a BigInteger to 33 bytes to hold the signed num representation
-    else if (bytes.size == 33) ECPrivateKey.fromBytes(bytes.slice(1,33),isCompressed)
+    else if (bytes.size == 33) ECPrivateKey.fromBytes(bytes.slice(1,33), isCompressed)
     else throw new IllegalArgumentException("Private keys cannot be greater than 33 bytes in size, got: " +
       BitcoinSUtil.encodeHex(bytes) + " which is of size: " + bytes.size)
   }
 
-  def fromHex(hex: String, isCompressed: Boolean): ECPrivateKey = fromBytes(BitcoinSUtil.decodeHex(hex),isCompressed)
+  def fromHex(hex: String, isCompressed: Boolean): ECPrivateKey = fromBytes(BitcoinSUtil.decodeHex(hex), isCompressed)
   /**
     * This function creates a fresh private key to use
     *
