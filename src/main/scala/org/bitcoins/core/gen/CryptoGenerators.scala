@@ -1,6 +1,6 @@
 package org.bitcoins.core.gen
 
-import org.bitcoins.core.crypto.{DoubleSha256Digest, ECDigitalSignature, ECPrivateKey, ECPublicKey}
+import org.bitcoins.core.crypto._
 import org.bitcoins.core.script.ScriptSettings
 import org.bitcoins.core.util.CryptoUtil
 import org.scalacheck.Gen
@@ -79,6 +79,12 @@ trait CryptoGenerators {
     */
   def doubleSha256DigestSeq(num : Int): Gen[Seq[DoubleSha256Digest]] = Gen.listOfN(num,doubleSha256Digest)
 
+
+  /** Generates a random [[org.bitcoins.core.crypto.Sha256Hash160Digest]] */
+  def sha256Hash160Digest: Gen[Sha256Hash160Digest] = for {
+    pubKey <- publicKey
+    hash = CryptoUtil.sha256Hash160(pubKey.bytes)
+  } yield hash
 
 }
 
