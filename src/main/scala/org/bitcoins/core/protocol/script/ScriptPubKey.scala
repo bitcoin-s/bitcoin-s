@@ -33,7 +33,10 @@ sealed trait ScriptPubKey extends NetworkElement with BitcoinSLogger {
  * https://bitcoin.org/en/developer-guide#pay-to-public-key-hash-p2pkh
  * Format: OP_DUP OP_HASH160 <PubKeyHash> OP_EQUALVERIFY OP_CHECKSIG
  */
-trait P2PKHScriptPubKey extends ScriptPubKey
+trait P2PKHScriptPubKey extends ScriptPubKey {
+  /** The pubkeyhash of the this scriptPubKey */
+  def pubKeyHash: Sha256Hash160Digest = Sha256Hash160Digest(asm(3).bytes)
+}
 
 
 object P2PKHScriptPubKey extends Factory[P2PKHScriptPubKey] {
@@ -45,8 +48,12 @@ object P2PKHScriptPubKey extends Factory[P2PKHScriptPubKey] {
     P2PKHScriptPubKey.fromAsm(asm)
   }
 
-  def apply(pubKey : ECPublicKey) = {
+  def apply(pubKey : ECPublicKey): P2PKHScriptPubKey = {
     val hash = CryptoUtil.sha256Hash160(pubKey.bytes)
+    P2PKHScriptPubKey(hash)
+  }
+
+  def apply(hash: Sha256Hash160Digest): P2PKHScriptPubKey = {
     val pushOps = BitcoinScriptUtil.calculatePushOp(hash.bytes)
     val asm = Seq(OP_DUP, OP_HASH160) ++ pushOps ++ Seq(ScriptConstant(hash.bytes), OP_EQUALVERIFY, OP_CHECKSIG)
     P2PKHScriptPubKey.fromAsm(asm)
