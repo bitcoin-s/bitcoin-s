@@ -50,6 +50,10 @@ object P2PKHScriptPubKey extends Factory[P2PKHScriptPubKey] {
 
   def apply(pubKey : ECPublicKey) : P2PKHScriptPubKey = {
     val hash = CryptoUtil.sha256Hash160(pubKey.bytes)
+    P2PKHScriptPubKey(hash)
+  }
+
+  def apply(hash: Sha256Hash160Digest): P2PKHScriptPubKey = {
     val pushOps = BitcoinScriptUtil.calculatePushOp(hash.bytes)
     val asm = Seq(OP_DUP, OP_HASH160) ++ pushOps ++ Seq(ScriptConstant(hash.bytes), OP_EQUALVERIFY, OP_CHECKSIG)
     P2PKHScriptPubKey(asm)
