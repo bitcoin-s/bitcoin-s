@@ -63,20 +63,20 @@ class ChainParamsTest extends FlatSpec with MustMatchers with BitcoinSLogger {
     genesisTransaction.inputs must be (Seq(expectedGenesisInput))
     genesisTransaction.outputs must be (Seq(expectedGenesisOutput))
 
-    genesisTransaction.txId.hex must be (BitcoinSUtil.flipEndianess("4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b"))
+    genesisTransaction.txId.hex must be (BitcoinSUtil.flipEndianness("4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b"))
   }
 
 
   it must "generate the correct merkle root for the testnet genesis block" in {
-    TestNetChainParams.genesisBlock.blockHeader.merkleRootHash.hex must be (BitcoinSUtil.flipEndianess("4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b"))
+    TestNetChainParams.genesisBlock.blockHeader.merkleRootHash.hex must be (BitcoinSUtil.flipEndianness("4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b"))
   }
 
   it must "generate the correct block hash for the testnet genesis block" in {
-    TestNetChainParams.genesisBlock.blockHeader.hash.hex must be (BitcoinSUtil.flipEndianess("000000000933ea01ad0ee984209779baaec3ced90fa3f408719526f8d77f4943"))
+    TestNetChainParams.genesisBlock.blockHeader.hash.hex must be (BitcoinSUtil.flipEndianness("000000000933ea01ad0ee984209779baaec3ced90fa3f408719526f8d77f4943"))
   }
 
   it must "generate the correct merkle root for the regtest genesis block" in {
-    RegTestNetChainParams.genesisBlock.blockHeader.merkleRootHash.hex must be (BitcoinSUtil.flipEndianess("4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b"))
+    RegTestNetChainParams.genesisBlock.blockHeader.merkleRootHash.hex must be (BitcoinSUtil.flipEndianness("4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b"))
   }
 
   it must "generate the correct block header hex for the regtest genesis block" in {
@@ -90,7 +90,7 @@ class ChainParamsTest extends FlatSpec with MustMatchers with BitcoinSLogger {
   }
   it must "generate the correct blockheader hash for the genesis block on regtest" in {
     logger.debug("Regtest genesis block: " + RegTestNetChainParams.genesisBlock)
-    RegTestNetChainParams.genesisBlock.blockHeader.hash.hex must be (BitcoinSUtil.flipEndianess("0f9188f13cb7b2c71f2a335e3a4fc328bf5beb436012afca590b1a11466e2206"))
+    RegTestNetChainParams.genesisBlock.blockHeader.hash.hex must be (BitcoinSUtil.flipEndianness("0f9188f13cb7b2c71f2a335e3a4fc328bf5beb436012afca590b1a11466e2206"))
   }
 
   it must "have the correct base58 prefix for MainNet" in {

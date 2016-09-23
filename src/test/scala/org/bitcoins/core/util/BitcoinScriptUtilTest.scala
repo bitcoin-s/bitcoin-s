@@ -1,7 +1,7 @@
 package org.bitcoins.core.util
 
 import org.bitcoins.core.crypto.ECPublicKey
-import org.bitcoins.core.script.bitwise.OP_EQUALVERIFY
+import org.bitcoins.core.script.bitwise.{OP_OR, OP_EQUALVERIFY}
 import org.bitcoins.core.script.constant._
 import org.bitcoins.core.script.crypto._
 import org.bitcoins.core.script.locktime.OP_CHECKLOCKTIMEVERIFY
@@ -182,5 +182,20 @@ class BitcoinScriptUtilTest extends FlatSpec with MustMatchers {
     val key = ECPublicKey("00")
     val program = TestUtil.testProgram
     BitcoinScriptUtil.checkPubKeyEncoding(key,program) must be (false)
+  }
+
+  it must "determine if script number is correctly minimally-encoded" in {
+    val scriptNum100 = ScriptNumber(100)
+    val scriptNum10 = ScriptNumber(10)
+    val scriptNumZero = ScriptNumber(0)
+    val scriptNum16 = ScriptNumber(16)
+    val scriptNum17 = ScriptNumber(17)
+    BitcoinScriptUtil.minimalScriptNumberRepresentation(scriptNum100) must be (scriptNum100)
+    BitcoinScriptUtil.minimalScriptNumberRepresentation(scriptNum10) must be (OP_10)
+    BitcoinScriptUtil.minimalScriptNumberRepresentation(scriptNumZero) must be (OP_0)
+    BitcoinScriptUtil.minimalScriptNumberRepresentation(scriptNum16) must be (OP_16)
+    BitcoinScriptUtil.minimalScriptNumberRepresentation(scriptNum17) must be (scriptNum17)
+    BitcoinScriptUtil.minimalScriptNumberRepresentation(ScriptNumber(-1)) must be (OP_1NEGATE)
+    BitcoinScriptUtil.minimalScriptNumberRepresentation(ScriptNumber(-2)) must be (ScriptNumber(-2))
   }
 }

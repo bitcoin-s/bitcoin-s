@@ -24,12 +24,12 @@ class RawBlockHeaderSerializerTest extends FlatSpec with MustMatchers{
   val hex = version + prevBlockHash + merkleRoot + timeStamp + nBits + nonce
   "BlockHeader" must "parse genesis block header" in {
     val blockHeader = RawBlockHeaderSerializer.read(hex)
-    blockHeader.version must be (UInt32(BitcoinSUtil.flipEndianess(version)))
+    blockHeader.version must be (UInt32(BitcoinSUtil.flipEndianness(version)))
     blockHeader.previousBlockHash must be (DoubleSha256Digest(prevBlockHash))
     blockHeader.merkleRootHash must be (DoubleSha256Digest(merkleRoot))
-    blockHeader.time must be (UInt32(BitcoinSUtil.flipEndianess(timeStamp)))
-    blockHeader.nBits must be (UInt32(BitcoinSUtil.flipEndianess(nBits)))
-    blockHeader.nonce must be (UInt32(BitcoinSUtil.flipEndianess(nonce)))
+    blockHeader.time must be (UInt32(BitcoinSUtil.flipEndianness(timeStamp)))
+    blockHeader.nBits must be (UInt32(BitcoinSUtil.flipEndianness(nBits)))
+    blockHeader.nonce must be (UInt32(BitcoinSUtil.flipEndianness(nonce)))
   }
 
   it must "properly hash genesis block header to return genesis block hash" in {

@@ -1,16 +1,12 @@
 package org.bitcoins.core.crypto
 
-import org.bitcoins.core.currency.CurrencyUnits
-import org.bitcoins.core.number.{Int32, UInt32}
-import org.bitcoins.core.serializers.RawBitcoinSerializerHelper
-import org.bitcoins.core.serializers.transaction.RawTransactionOutputParser
+import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.constant.ScriptToken
 import org.bitcoins.core.script.crypto._
-import org.bitcoins.core.script.stack.OP_DUP
-import org.bitcoins.core.util.{BitcoinSLogger, BitcoinScriptUtil, BitcoinSUtil, CryptoUtil}
-import org.slf4j.LoggerFactory
+import org.bitcoins.core.serializers.RawBitcoinSerializerHelper
+import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil, CryptoUtil}
 
 /**
  * Created by chris on 2/16/16.
@@ -138,7 +134,7 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
     * @param spendingTransaction the transaction we are hashing
     * @param inputIndex the inputIndex we are hashing for signing
     * @param script the script which we are spending
-    * @param hashType the hash type we are serializign this tx for
+    * @param hashType the hash type we are serializing this tx for
     * @return
     */
   def hashForSignature(spendingTransaction : Transaction, inputIndex : UInt32, script : Seq[ScriptToken], hashType : HashType) : DoubleSha256Digest = {

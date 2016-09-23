@@ -1,11 +1,16 @@
 package org.bitcoins.core.script.interpreter
 
 
-import org.bitcoins.core.protocol.script.ScriptPubKey
+import org.bitcoins.core.crypto.{TransactionSignatureComponent, ECPrivateKey}
+import org.bitcoins.core.gen.TransactionGenerators
+import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.policy.Policy
+import org.bitcoins.core.protocol.script.{P2SHScriptSignature, CLTVScriptSignature, CLTVScriptPubKey, ScriptPubKey}
 import org.bitcoins.core.script.ScriptProgram
 import org.bitcoins.core.script.flag.ScriptFlagFactory
 import org.bitcoins.core.script.interpreter.testprotocol.CoreTestCaseProtocol._
 import org.bitcoins.core.script.interpreter.testprotocol.{CoreTestCase, CoreTestCaseProtocol}
+import org.bitcoins.core.script.result.ScriptErrorUnsatisfiedLocktime
 import org.bitcoins.core.util._
 import org.scalatest.{FlatSpec, MustMatchers}
 import spray.json._
@@ -55,5 +60,4 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterp
       }
     }
   }
-
 }

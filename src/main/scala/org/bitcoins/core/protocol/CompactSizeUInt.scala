@@ -27,10 +27,10 @@ trait CompactSizeUInt {
   def size: Long
 
   def hex = size match {
-    case 1 => BitcoinSUtil.flipEndianess(num.hex.slice(14,16))
-    case 3 => "fd" + BitcoinSUtil.flipEndianess(num.hex.slice(12,16))
-    case 5 => "fe" + BitcoinSUtil.flipEndianess(num.hex.slice(8,16))
-    case _ => "ff" + BitcoinSUtil.flipEndianess(num.hex)
+    case 1 => BitcoinSUtil.flipEndianness(num.hex.slice(14,16))
+    case 3 => "fd" + BitcoinSUtil.flipEndianness(num.hex.slice(12,16))
+    case 5 => "fe" + BitcoinSUtil.flipEndianness(num.hex.slice(8,16))
+    case _ => "ff" + BitcoinSUtil.flipEndianness(num.hex)
   }
 }
 
