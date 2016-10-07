@@ -1,13 +1,17 @@
 package org.bitcoins.core.protocol.transaction
 
+import org.bitcoins.core.crypto.{ECPrivateKey, ECPublicKey, TransactionSignatureComponent, TransactionSignatureCreator}
 import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.policy.Policy
+import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction.testprotocol.CoreTransactionTestCase
 import org.bitcoins.core.protocol.transaction.testprotocol.CoreTransactionTestCaseProtocol._
 import org.bitcoins.core.script.ScriptProgram
+import org.bitcoins.core.script.crypto.SIGHASH_ALL
 import org.bitcoins.core.script.interpreter.ScriptInterpreter
 import org.bitcoins.core.script.result.ScriptOk
 import org.bitcoins.core.serializers.transaction.RawTransactionParser
-import org.bitcoins.core.util.{BitcoinSLogger, TestUtil, BitcoinSUtil}
+import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil, TestUtil}
 import org.scalatest.{FlatSpec, MustMatchers}
 import spray.json._
 
@@ -53,7 +57,7 @@ class TransactionTest extends FlatSpec with MustMatchers with BitcoinSLogger {
     tx.hex must be (rawTx)
     (Transaction(tx.hex) == tx) must be (true)
   }
-  
+
 
   it must "read all of the tx_valid.json's contents and return ScriptOk" in {
 
