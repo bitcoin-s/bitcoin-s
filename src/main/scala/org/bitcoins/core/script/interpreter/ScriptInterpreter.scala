@@ -57,26 +57,29 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
       ScriptProgram(programBeingExecuted,ScriptErrorSigPushOnly)
     } else {
       val scriptSigExecutedProgram = loop(program,0)
-      scriptPubKey match {
-        case p2shScriptPubKey : P2SHScriptPubKey if (ScriptFlagUtil.p2shEnabled(program.flags)) =>
-          executeP2shScript(scriptSigExecutedProgram, programBeingExecuted, p2shScriptPubKey)
-        case _ : MultiSignatureScriptPubKey | _ : P2SHScriptPubKey | _ : P2PKHScriptPubKey |
-          _ : P2PKScriptPubKey | _ : CLTVScriptPubKey | _ : CSVScriptPubKey | _ : NonStandardScriptPubKey | EmptyScriptPubKey =>
-          logger.info("Stack state after scriptSig execution: " + scriptSigExecutedProgram.stack)
-          if (!scriptSigExecutedProgram.error.isDefined) {
-            logger.debug("We do not check a redeemScript against a non p2sh scriptSig")
-            //now run the scriptPubKey script through the interpreter with the scriptSig as the stack arguments
-            val scriptPubKeyProgram = ScriptProgram(scriptSigExecutedProgram.txSignatureComponent,
-              scriptSigExecutedProgram.stack,scriptSigExecutedProgram.txSignatureComponent.scriptPubKey.asm)
-            require(scriptPubKeyProgram.script == scriptSigExecutedProgram.txSignatureComponent.scriptPubKey.asm)
-            val scriptPubKeyExecutedProgram : ExecutedScriptProgram = loop(scriptPubKeyProgram,0)
 
-            logger.info("Stack state after scriptPubKey execution: " + scriptPubKeyExecutedProgram.stack)
+      if (ScriptFlagUtil.p2shEnabled(program.flags) && scriptPubKey.isInstanceOf[P2SHScriptPubKey]) {
+        executeP2shScript(scriptSigExecutedProgram, programBeingExecuted, scriptPubKey.asInstanceOf[P2SHScriptPubKey])
+      } else {
+        scriptPubKey match {
+          case _ : MultiSignatureScriptPubKey | _ : P2SHScriptPubKey | _ : P2PKHScriptPubKey |
+               _ : P2PKScriptPubKey | _ : CLTVScriptPubKey | _ : CSVScriptPubKey | _ : NonStandardScriptPubKey | EmptyScriptPubKey =>
+            logger.info("Stack state after scriptSig execution: " + scriptSigExecutedProgram.stack)
+            if (!scriptSigExecutedProgram.error.isDefined) {
+              logger.debug("We do not check a redeemScript against a non p2sh scriptSig")
+              //now run the scriptPubKey script through the interpreter with the scriptSig as the stack arguments
+              val scriptPubKeyProgram = ScriptProgram(scriptSigExecutedProgram.txSignatureComponent,
+                scriptSigExecutedProgram.stack,scriptSigExecutedProgram.txSignatureComponent.scriptPubKey.asm)
+              require(scriptPubKeyProgram.script == scriptSigExecutedProgram.txSignatureComponent.scriptPubKey.asm)
+              val scriptPubKeyExecutedProgram : ExecutedScriptProgram = loop(scriptPubKeyProgram,0)
 
-            //if the program is valid, return if the stack top is true
-            //else the program is false since something illegal happened during script evaluation
-            scriptPubKeyExecutedProgram
-          } else scriptSigExecutedProgram
+              logger.info("Stack state after scriptPubKey execution: " + scriptPubKeyExecutedProgram.stack)
+
+              //if the program is valid, return if the stack top is true
+              //else the program is false since something illegal happened during script evaluation
+              scriptPubKeyExecutedProgram
+            } else scriptSigExecutedProgram
+        }
       }
     }
     logger.debug("Executed Script Program: " + executedProgram)
@@ -362,7 +365,6 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
     */
   def checkTransaction(transaction : Transaction) : Boolean = {
     val inputOutputsNotZero = !(transaction.inputs.isEmpty || transaction.outputs.isEmpty)
-    //TODO: replace 1000000 with a value that represents the max block size
     val txNotLargerThanBlock = transaction.bytes.size < Consensus.maxBlockSize
     val outputsSpendValidAmountsOfMoney = !transaction.outputs.exists(o =>
       o.value < CurrencyUnits.zero || o.value > Consensus.maxMoney)
