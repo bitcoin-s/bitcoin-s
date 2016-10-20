@@ -44,7 +44,11 @@ trait BlockchainElementsGenerator {
     * 'valid' means their nBits are the same and each header properly
     * references the previous block header's hash */
   def validHeaderChain(num: Long): Gen[Seq[BlockHeader]] = {
-    val firstHeader = blockHeader.sample.get
+    val startHeader = blockHeader.sample.get
+    validHeaderChain(num,startHeader)
+  }
+
+  def validHeaderChain(num: Long, startHeader: BlockHeader): Gen[Seq[BlockHeader]] = {
     @tailrec
     def loop(remainingHeaders: Long, accum: Seq[BlockHeader]): Seq[BlockHeader] = {
       if (remainingHeaders == 0) accum.reverse
@@ -53,7 +57,7 @@ trait BlockchainElementsGenerator {
         loop(remainingHeaders-1, nextHeader +: accum)
       }
     }
-    loop(num-1, Seq(firstHeader))
+    loop(num-1, Seq(startHeader))
   }
 }
 
