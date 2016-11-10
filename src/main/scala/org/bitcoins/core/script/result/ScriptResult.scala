@@ -200,36 +200,36 @@ case object ScriptErrorDiscourageUpgradeableWitnessProgram extends ScriptError {
 
 //SCRIPT_ERR_WITNESS_PROGRAM_WRONG_LENGTH
 
-case object ScriptErrorWitnessProgramWrongLength extends ScriptResult {
+case object ScriptErrorWitnessProgramWrongLength extends ScriptError {
   override def description = "WITNESS_PROGRAM_WRONG_LENGTH"
 }
 
 //SCRIPT_ERR_WITNESS_PROGRAM_WITNESS_EMPTY
-case object ScriptErrorWitnessProgramWitnessEmpty extends ScriptResult {
+case object ScriptErrorWitnessProgramWitnessEmpty extends ScriptError {
   override def description = "WITNESS_PROGRAM_WITNESS_EMPTY"
 }
 
 //SCRIPT_ERR_WITNESS_PROGRAM_MISMATCH
-case object ScriptErrorWitnessProgramMisMatch extends ScriptResult {
+case object ScriptErrorWitnessProgramMisMatch extends ScriptError {
   override def description = "WITNESS_PROGRAM_MISMATCH"
 }
 
 //SCRIPT_ERR_WITNESS_MALLEATED
-case object ScriptErrorWitnessMalleated extends ScriptResult {
+case object ScriptErrorWitnessMalleated extends ScriptError {
   override def description = "WITNESS_MALLEATED"
 }
 //SCRIPT_ERR_WITNESS_MALLEATED_P2SH
-case object ScriptErrorWitnessMalleatedP2SH extends ScriptResult {
+case object ScriptErrorWitnessMalleatedP2SH extends ScriptError {
   override def description = "WITNESS_MALLEATED_P2SH"
 }
 
 //SCRIPT_ERR_WITNESS_UNEXPECTED
-case object ScriptErrorWitnessUnexpected extends ScriptResult {
+case object ScriptErrorWitnessUnexpected extends ScriptError {
   override def description = "WITNESS_UNEXPECTED"
 }
 
 //SCRIPT_ERR_WITNESS_PUBKEYTYPE
-case object ScriptErrorWitnessPubKeyType extends ScriptResult {
+case object ScriptErrorWitnessPubKeyType extends ScriptError {
   override def description = "WITNESS_PUBKEYTYPE"
 }
 

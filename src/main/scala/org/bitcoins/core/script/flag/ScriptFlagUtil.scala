@@ -93,6 +93,8 @@ trait ScriptFlagUtil {
     */
   def requireNullDummy(flags : Seq[ScriptFlag]) : Boolean = flags.contains(ScriptVerifyNullDummy)
 
+  /** Checks to see if we have segwit enabled */
+  def segWitEnabled(flags: Seq[ScriptFlag]): Boolean = flags.contains(ScriptVerifyWitness)
 }
 
 

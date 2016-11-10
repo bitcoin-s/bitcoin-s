@@ -28,6 +28,7 @@ object CoreTestCaseProtocol extends DefaultJsonProtocol with BitcoinSLogger {
         //["Equivalency of different numeric encodings"]
         None
       } else if (elements.size == 4) {
+        //means we are missing a comment
         val scriptPubKeyBytes : Seq[Byte] = parseScriptPubKey(elements(1))
         val scriptPubKey = ScriptPubKey(scriptPubKeyBytes)
         val scriptSignatureBytes : Seq[Byte] = parseScriptSignature(elements.head)
@@ -37,6 +38,9 @@ object CoreTestCaseProtocol extends DefaultJsonProtocol with BitcoinSLogger {
         val expectedResult = ScriptResult(elements(3).convertTo[String])
         Some(CoreTestCaseImpl(scriptSignature,scriptPubKey,flags,
           expectedResult,"", elements.toString))
+      } else if (elements.size == 5 && elements.head.isInstanceOf[JsArray]) {
+        //means we have a witness as the first item in our array
+        val witness =
       } else if (elements.size == 5) {
         val scriptPubKeyBytes : Seq[Byte] = parseScriptPubKey(elements(1))
         val scriptPubKey = ScriptPubKey(scriptPubKeyBytes)

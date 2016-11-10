@@ -1,6 +1,6 @@
-
 package org.bitcoins.core.script.interpreter
 
+import org.bitcoins.core.script.constant.ScriptToken
 import org.bitcoins.core.consensus.Consensus
 import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits}
 import org.bitcoins.core.protocol.script._
@@ -38,15 +38,14 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
   /**
    * Runs an entire script though our script programming language and
    * returns true or false depending on if the script was valid
- *
    * @param program the program to be interpreted
    * @return
    */
   def run(program : PreExecutionScriptProgram) : ScriptResult = {
-
     val scriptSig = program.txSignatureComponent.scriptSignature
     val scriptPubKey = program.txSignatureComponent.scriptPubKey
     val programBeingExecuted = ScriptProgram.toExecutionInProgress(program)
+
     val executedProgram : ExecutedScriptProgram = if (ScriptFlagUtil.requirePushOnly(program.flags)
       && !BitcoinScriptUtil.isPushOnly(program.script)) {
       logger.error("We can only have push operations inside of the script sig when the SIGPUSHONLY flag is set")
@@ -57,27 +56,22 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
       ScriptProgram(programBeingExecuted,ScriptErrorSigPushOnly)
     } else {
       val scriptSigExecutedProgram = loop(program,0)
-      scriptPubKey match {
-        case p2shScriptPubKey : P2SHScriptPubKey if (ScriptFlagUtil.p2shEnabled(program.flags)) =>
-          executeP2shScript(scriptSigExecutedProgram, programBeingExecuted, p2shScriptPubKey)
-        case _ : MultiSignatureScriptPubKey | _ : P2SHScriptPubKey | _ : P2PKHScriptPubKey |
-          _ : P2PKScriptPubKey | _ : CLTVScriptPubKey | _ : CSVScriptPubKey | _ : NonStandardScriptPubKey | EmptyScriptPubKey =>
-          logger.info("Stack state after scriptSig execution: " + scriptSigExecutedProgram.stack)
-          if (!scriptSigExecutedProgram.error.isDefined) {
-            logger.debug("We do not check a redeemScript against a non p2sh scriptSig")
-            //now run the scriptPubKey script through the interpreter with the scriptSig as the stack arguments
-            val scriptPubKeyProgram = ScriptProgram(scriptSigExecutedProgram.txSignatureComponent,
-              scriptSigExecutedProgram.stack,scriptSigExecutedProgram.txSignatureComponent.scriptPubKey.asm)
-            require(scriptPubKeyProgram.script == scriptSigExecutedProgram.txSignatureComponent.scriptPubKey.asm)
-            val scriptPubKeyExecutedProgram : ExecutedScriptProgram = loop(scriptPubKeyProgram,0)
+      logger.debug("We do not check a redeemScript against a non p2sh scriptSig")
+      //now run the scriptPubKey script through the interpreter with the scriptSig as the stack arguments
+      val scriptPubKeyProgram = ScriptProgram(scriptSigExecutedProgram.txSignatureComponent,
+        scriptSigExecutedProgram.stack,scriptSigExecutedProgram.txSignatureComponent.scriptPubKey.asm)
+      require(scriptPubKeyProgram.script == scriptSigExecutedProgram.txSignatureComponent.scriptPubKey.asm)
+      val scriptPubKeyExecutedProgram : ExecutedScriptProgram = loop(scriptPubKeyProgram,0)
+      val witnessProgram: Option[(WitnessVersion,ScriptWitness)] = scriptPubKey.isWitnessProgram
+      if (scriptPubKeyExecutedProgram.error.isDefined) {
+        scriptPubKeyExecutedProgram
+      } else if (ScriptFlagUtil.segWitEnabled(program.flags) && witnessProgram.isDefined) {
+        executeSegWitScript(scriptSigExecutedProgram,witnessProgram.get._1, witnessProgram.get._2)
+      } else if (scriptPubKey.isInstanceOf[P2SHScriptPubKey] && ScriptFlagUtil.p2shEnabled(program.flags)) {
+        executeP2shScript(scriptPubKeyExecutedProgram,program, scriptPubKey.asInstanceOf[P2SHScriptPubKey])
+      } else scriptPubKeyExecutedProgram
 
-            logger.info("Stack state after scriptPubKey execution: " + scriptPubKeyExecutedProgram.stack)
 
-            //if the program is valid, return if the stack top is true
-            //else the program is false since something illegal happened during script evaluation
-            scriptPubKeyExecutedProgram
-          } else scriptSigExecutedProgram
-      }
     }
     logger.debug("Executed Script Program: " + executedProgram)
     if (executedProgram.error.isDefined) executedProgram.error.get
@@ -97,31 +91,28 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
     * p2sh scriptPubKey must be run to make sure the serialized redeem script hashes to the value found in the p2sh
     * scriptPubKey, then finally the serialized redeemScript is decoded and run with the arguments in the p2sh script signature
     * a p2sh script returns true if both of those intermediate steps evaluate to true
-    * @param scriptSigExecutedProgram the program with the script signature pushed onto the stack
+    * @param scriptPubKeyExecutedProgram the program with the script signature pushed onto the stack
     * @param originalProgram the original program, used for setting errors & checking that the original script signature contains push only tokens
     * @param p2shScriptPubKey the p2sh scriptPubKey that contains the value the redeemScript must hash to
     * @return the executed program
     */
-  private def executeP2shScript(scriptSigExecutedProgram : ExecutedScriptProgram, originalProgram : ScriptProgram, p2shScriptPubKey : P2SHScriptPubKey) : ExecutedScriptProgram = {
-    val originalScriptSigAsm : Seq[ScriptToken] = scriptSigExecutedProgram.txSignatureComponent.scriptSignature.asm
+  private def executeP2shScript(scriptPubKeyExecutedProgram : ExecutedScriptProgram, originalProgram : ScriptProgram, p2shScriptPubKey : P2SHScriptPubKey) : ExecutedScriptProgram = {
+    val originalScriptSigAsm : Seq[ScriptToken] = scriptPubKeyExecutedProgram.txSignatureComponent.scriptSignature.asm
     //need to check if the scriptSig is push only as required by bitcoin core
-    //https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L1268
+    //https://github.com/bitcoin/bitcoin/blob/528472111b4965b1a99c4bcf08ac5ec93d87f10f/src/script/interpreter.cpp#L1419
     if (!BitcoinScriptUtil.isPushOnly(originalScriptSigAsm)) {
       ScriptProgram(originalProgram,ScriptErrorSigPushOnly)
-    } else if (scriptSigExecutedProgram.error.isDefined) {
-      scriptSigExecutedProgram
+    } else if (scriptPubKeyExecutedProgram.error.isDefined) {
+      scriptPubKeyExecutedProgram
     } else {
-      val hashCheckProgram = ScriptProgram(originalProgram, scriptSigExecutedProgram.stack, p2shScriptPubKey.asm)
-      val hashesMatchProgram = loop(hashCheckProgram,0)
-      hashesMatchProgram.stackTopIsTrue match {
+      scriptPubKeyExecutedProgram.stackTopIsTrue match {
         case true =>
           logger.info("Hashes matched between the p2shScriptSignature & the p2shScriptPubKey")
           //we need to run the deserialized redeemScript & the scriptSignature without the serialized redeemScript
-          val stack = scriptSigExecutedProgram.stack
-
+          val stack = scriptPubKeyExecutedProgram.stack
           logger.debug("P2sh stack: " + stack)
           val redeemScript = ScriptPubKey(stack.head.bytes)
-          val p2shRedeemScriptProgram = ScriptProgram(scriptSigExecutedProgram.txSignatureComponent,stack.tail,
+          val p2shRedeemScriptProgram = ScriptProgram(scriptPubKeyExecutedProgram.txSignatureComponent,stack.tail,
             redeemScript.asm)
           if (ScriptFlagUtil.requirePushOnly(p2shRedeemScriptProgram.flags) && !BitcoinScriptUtil.isPushOnly(redeemScript.asm)) {
             logger.error("p2sh redeem script must be push only operations whe SIGPUSHONLY flag is set")
@@ -129,11 +120,32 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
           } else loop(p2shRedeemScriptProgram,0)
         case false =>
           logger.warn("P2SH scriptPubKey hash did not match the hash for the serialized redeemScript")
-          hashesMatchProgram
+          scriptPubKeyExecutedProgram
       }
     }
   }
 
+  /** Runs a segwit script through our interpreter, mimics this functionality in bitcoin core:
+    * [[https://github.com/bitcoin/bitcoin/blob/528472111b4965b1a99c4bcf08ac5ec93d87f10f/src/script/interpreter.cpp#L1441-L1452]]
+    * @param scriptSigExecutedProgram the program with the scriptSig executed
+    * @param witnessVersion
+    * @param scriptWitness
+    * @return
+    */
+  private def executeSegWitScript(scriptSigExecutedProgram: ExecutedScriptProgram, witnessVersion: WitnessVersion,
+                                  scriptWitness: ScriptWitness): ExecutedScriptProgram = {
+    val scriptSig = scriptSigExecutedProgram.txSignatureComponent.scriptSignature
+    if (scriptSig.bytes.nonEmpty) {
+      ScriptProgram(scriptSigExecutedProgram, ScriptErrorWitnessMalleated)
+    } else {
+      verifyWitnessProgram(witnessVersion,scriptWitness,scriptSigExecutedProgram)
+    }
+  }
+
+
+  private def verifyWitnessProgram(witnessVersion: WitnessVersion, scriptWitness: ScriptWitness, program: ScriptProgram): ExecutedScriptProgram = {
+    ???
+  }
   /**
     * The execution loop for a script
     * @param program the program whose script needs to be evaluated
@@ -385,27 +397,15 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
   }
 
 
-  /**
-    * Determines if the given currency unit is within the valid range for the system
- *
-    * @param currencyUnit
-    * @return
-    */
+  /** Determines if the given currency unit is within the valid range for the system */
   def validMoneyRange(currencyUnit : CurrencyUnit) : Boolean = {
     currencyUnit >= CurrencyUnits.zero && currencyUnit <= Consensus.maxMoney
   }
 
-  /**
-    * Calculates the new op count after the execution of the given [[ScriptToken]]
-    * @param oldOpCount
-    * @param token
-    * @return
-    */
+  /**  Calculates the new op count after the execution of the given [[ScriptToken]] */
   private def calcOpCount(oldOpCount: Int, token: ScriptToken):Int = BitcoinScriptUtil.countsTowardsScriptOpLimit(token) match {
     case true => oldOpCount + 1
     case false => oldOpCount
   }
-
 }
-
 object ScriptInterpreter extends ScriptInterpreter

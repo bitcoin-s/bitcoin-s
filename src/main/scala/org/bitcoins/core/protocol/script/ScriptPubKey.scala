@@ -34,7 +34,7 @@ sealed trait ScriptPubKey extends NetworkElement with BitcoinSLogger {
     * [[https://github.com/bitcoin/bitcoin/blob/449f9b8debcceb61a92043bc7031528a53627c47/src/script/script.cpL215-L229]]
     * Returns None if it is not a witness program, else returns the script and script version
     * */
-  def isWitnessProgram: Option[(Long, Seq[ScriptToken])] = {
+  def isWitnessProgram: Option[(WitnessVersion, ScriptWitness)] = {
     val firstOp = asm.headOption
     val validFirstOps = Seq(OP_0,OP_1, OP_2,OP_3,OP_4,OP_5,OP_6,OP_7,OP_8,
       OP_9,OP_10,OP_11,OP_12,OP_13,OP_14,OP_15,OP_16)
@@ -42,11 +42,10 @@ sealed trait ScriptPubKey extends NetworkElement with BitcoinSLogger {
     if (bytes.size < 4 || bytes.size > 42) None
     else if (!validFirstOps.contains(firstOp.getOrElse(OP_1NEGATE))) None
     else if (asm(1).toLong + 2 == bytes.size) {
-      val version = firstOp.get.toLong
-      val program = asm.slice(1,asm.size)
-      Some((version,program))
-    }
-    else None
+      val version = WitnessVersion(firstOp.get.toLong)
+      val witness = ScriptWitness(asm.slice(1,asm.size))
+      Some((version,witness))
+    } else None
   }
 }
 
