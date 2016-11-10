@@ -1,6 +1,7 @@
 package org.bitcoins.core.protocol.script
 
 import org.bitcoins.core.crypto.{ECPublicKey, Sha256Hash160Digest}
+import org.bitcoins.core.number.Int64
 import org.bitcoins.core.protocol._
 import org.bitcoins.core.script.{ScriptOperation, ScriptSettings}
 import org.bitcoins.core.script.bitwise.{OP_EQUAL, OP_EQUALVERIFY}
@@ -27,6 +28,26 @@ sealed trait ScriptPubKey extends NetworkElement with BitcoinSLogger {
    */
   lazy val asm : Seq[ScriptToken] = ScriptParser.fromBytes(bytes)
 
+  /** Mimics the function to determine if a [[ScriptPubKey]] contains a witness
+    * A witness program is any valid [[ScriptPubKey]] that consists of a 1 byte push op and then a data push
+    * between 2 and 40 bytes
+    * [[https://github.com/bitcoin/bitcoin/blob/449f9b8debcceb61a92043bc7031528a53627c47/src/script/script.cpL215-L229]]
+    * Returns None if it is not a witness program, else returns the script and script version
+    * */
+  def isWitnessProgram: Option[(Long, Seq[ScriptToken])] = {
+    val firstOp = asm.headOption
+    val validFirstOps = Seq(OP_0,OP_1, OP_2,OP_3,OP_4,OP_5,OP_6,OP_7,OP_8,
+      OP_9,OP_10,OP_11,OP_12,OP_13,OP_14,OP_15,OP_16)
+
+    if (bytes.size < 4 || bytes.size > 42) None
+    else if (!validFirstOps.contains(firstOp.getOrElse(OP_1NEGATE))) None
+    else if (asm(1).toLong + 2 == bytes.size) {
+      val version = firstOp.get.toLong
+      val program = asm.slice(1,asm.size)
+      Some((version,program))
+    }
+    else None
+  }
 }
 
 /**

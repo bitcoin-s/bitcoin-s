@@ -46,7 +46,6 @@ sealed trait Transaction extends NetworkElement {
 
   /**
     * Determines if this transaction is a coinbase transaction
- *
     * @return
     */
   def isCoinbase : Boolean = inputs.size match {
@@ -61,13 +60,13 @@ sealed trait Transaction extends NetworkElement {
 case object EmptyTransaction extends Transaction {
   override def txId = DoubleSha256Digest(BitcoinSUtil.decodeHex("0000000000000000000000000000000000000000000000000000000000000000"))
   override def version = TransactionConstants.version
-  override def inputs = Seq()
-  override def outputs = Seq()
+  override def inputs = Nil
+  override def outputs = Nil
   override def lockTime = TransactionConstants.lockTime
 }
 
-
 object Transaction extends Factory[Transaction] {
+
 
   private sealed case class TransactionImpl(version : UInt32, inputs : Seq[TransactionInput],
     outputs : Seq[TransactionOutput], lockTime : UInt32) extends Transaction

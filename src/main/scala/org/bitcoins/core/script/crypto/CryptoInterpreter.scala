@@ -11,6 +11,8 @@ import org.bitcoins.core.script.constant._
 import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil, BitcoinScriptUtil, CryptoUtil}
 import org.slf4j.LoggerFactory
 
+import scala.annotation.tailrec
+
 
 /**
  * Created by chris on 1/6/16.
@@ -194,7 +196,8 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
     * @param program
     * @return
     */
-  def opCheckMultiSig(program : ScriptProgram) : ScriptProgram = {
+  @tailrec
+  final def opCheckMultiSig(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.isDefined && program.script.head == OP_CHECKMULTISIG, "Script top must be OP_CHECKMULTISIG")
 
     program match {
