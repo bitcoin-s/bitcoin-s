@@ -294,12 +294,7 @@ trait ControlOperationsInterpreter extends BitcoinSLogger {
   }
 
 
-  /**
-   * Checks if an OP_IF/OP_NOTIF script token has a matching OP_ENDIF
- *
-   * @param script
-   * @return
-   */
+  /** Checks if an [[OP_IF]]/[[OP_NOTIF]] script token has a matching [[OP_ENDIF]] */
   def checkMatchingOpIfOpNotIfOpEndIf(script : List[ScriptToken]) : Boolean = {
     @tailrec
     def loop(script : List[ScriptToken], counter : Int) : Boolean = script match {
