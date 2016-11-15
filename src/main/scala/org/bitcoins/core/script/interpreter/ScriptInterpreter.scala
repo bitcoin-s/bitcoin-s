@@ -174,20 +174,14 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
       }
     } else {
       program match {
-        case p : PreExecutionScriptProgram =>
-          //this is for the check of a maximum of 201 script ops in a non executed OP_IF branch
+        case p : PreExecutionScriptProgram => loop(ScriptProgram.toExecutionInProgress(p,Some(p.stack)),opCount)
+        case p : ExecutedScriptProgram =>
           val countedOps = program.originalScript.map(BitcoinScriptUtil.countsTowardsScriptOpLimit(_)).count(_ == true)
           logger.info("Counted ops: " + countedOps)
-          if (countedOps > maxScriptOps) {
-            val executionInProgress = ScriptProgram.toExecutionInProgress(p)
-            loop(ScriptProgram(executionInProgress,ScriptErrorOpCount),opCount)
-          } else loop(ScriptProgram.toExecutionInProgress(p,Some(p.stack)),opCount)
-        case p : ExecutedScriptProgram =>
-          //reset opCount variable to zero since we may need to count the ops
-          //in the scriptPubKey - we don't want the op count of the scriptSig
-          //to count towards the scriptPubKey op count
-          logger.info("Final op count: " + opCount)
-          p
+          if (countedOps > maxScriptOps && p.error.isEmpty) {
+            loop(ScriptProgram(p,ScriptErrorOpCount),opCount)
+          } else p
+
         case p : ExecutionInProgressScriptProgram =>
           p.script match {
             //if at any time we see that the program is not valid
