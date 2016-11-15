@@ -134,7 +134,7 @@ object ScriptProgram {
   case object Script extends UpdateIndicator
   case object AltStack extends UpdateIndicator
   case object OriginalScript extends UpdateIndicator
-  
+
 
   /**
     * Sets a [[ScriptError]] on a given [[ScriptProgram]].
@@ -216,6 +216,8 @@ object ScriptProgram {
   def apply(oldProgram : ScriptProgram, stackTokens : Seq[ScriptToken], scriptTokens : Seq[ScriptToken]) : ScriptProgram = {
     val updatedStack = ScriptProgram(oldProgram,stackTokens,Stack)
     val updatedScript = ScriptProgram(updatedStack,scriptTokens,Script)
+    require(updatedStack.stack == stackTokens)
+    require(updatedScript.script == scriptTokens)
     updatedScript
   }
   /**
@@ -281,16 +283,34 @@ object ScriptProgram {
     ScriptProgram(program,stack,script)
   }
 
+
+
   def apply(txSignatureComponent : TransactionSignatureComponent, stack : Seq[ScriptToken],
             script : Seq[ScriptToken]) : ScriptProgram = {
     ScriptProgram(txSignatureComponent.transaction, txSignatureComponent.scriptPubKey, txSignatureComponent.inputIndex,
-      stack,script,txSignatureComponent.flags, txSignatureComponent.witness)
+      stack, script, txSignatureComponent.flags, txSignatureComponent.witness)
   }
 
 
   def apply(txSignatureComponent: TransactionSignatureComponent): PreExecutionScriptProgram = {
     ScriptProgram(txSignatureComponent.transaction, txSignatureComponent.scriptPubKey,
       txSignatureComponent.inputIndex,txSignatureComponent.flags, txSignatureComponent.witness)
+  }
+
+  /** Creates a fresh [[PreExecutionScriptProgram]] */
+  def apply(transaction: Transaction, scriptPubKey: ScriptPubKey, inputIndex: UInt32, stack: Seq[ScriptToken],
+            script: Seq[ScriptToken], originalScript: Seq[ScriptToken], altStack: Seq[ScriptToken],
+            flags: Seq[ScriptFlag], witness: Option[ScriptWitness]): PreExecutionScriptProgram = {
+    val txSigComponent = TransactionSignatureComponent(transaction,inputIndex,scriptPubKey,flags, witness)
+    PreExecutionScriptProgramImpl(txSigComponent,stack.toList,script.toList,originalScript.toList,altStack.toList,flags)
+  }
+
+  /** Creates a fresh instance of [[PreExecutionScriptProgram]] */
+  def apply(txSigComponent: TransactionSignatureComponent, stack: Seq[ScriptToken], script: Seq[ScriptToken],
+            originalScript: Seq[ScriptToken], altStack: Seq[ScriptToken], flags: Seq[ScriptFlag],
+            witness: Option[ScriptWitness]): PreExecutionScriptProgram = {
+    ScriptProgram(txSigComponent.transaction, txSigComponent.scriptPubKey, txSigComponent.inputIndex, stack,
+      script,originalScript, altStack,flags,witness)
   }
 
   /**

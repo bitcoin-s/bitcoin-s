@@ -55,8 +55,9 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
       ScriptProgram(program,ScriptErrorSigPushOnly)
     } else {
       val scriptSigExecutedProgram = loop(program,0)
-      val scriptPubKeyProgram = ScriptProgram(scriptSigExecutedProgram.txSignatureComponent,
-        scriptSigExecutedProgram.stack,scriptPubKey.asm)
+      val txSigComponent = scriptSigExecutedProgram.txSignatureComponent
+      val scriptPubKeyProgram = ScriptProgram(txSigComponent, scriptSigExecutedProgram.stack, txSigComponent.scriptPubKey.asm,
+        txSigComponent.scriptPubKey.asm, Nil, txSigComponent.flags, txSigComponent.witness)
       val scriptPubKeyExecutedProgram : ExecutedScriptProgram = loop(scriptPubKeyProgram,0)
       val witnessProgram: Option[(WitnessVersion,ScriptPubKey)] = scriptPubKey.isWitnessProgram
       if (scriptSigExecutedProgram.error.isDefined) {
