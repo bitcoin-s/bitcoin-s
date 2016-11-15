@@ -11,12 +11,12 @@ sealed trait WitnessVersion {
   /** Rebuilds the full script from the given witness and [[ScriptPubKey]]
     * Either returns the stack and the [[ScriptPubKey]] it needs to be executed against or
     * the [[ScriptError]] that was encountered while rebuilding the witness*/
-  def rebuild(scriptWitness: ScriptWitness): Either[(Seq[ScriptToken], ScriptPubKey),ScriptError]
+  def rebuild(scriptWitness: ScriptWitness, witnessProgram: ScriptPubKey): Either[(Seq[ScriptToken], ScriptPubKey),ScriptError]
 }
 
 case object WitnessVersion0 extends WitnessVersion {
 
-  override def rebuild(scriptWitness: ScriptWitness): Either[(Seq[ScriptToken], ScriptPubKey),ScriptError] = {
+  override def rebuild(scriptWitness: ScriptWitness, witnessProgram: ScriptPubKey): Either[(Seq[ScriptToken], ScriptPubKey),ScriptError] = {
     val scriptBytes = scriptWitness.stack.map(_.bytes).flatten
 
     scriptBytes.size match {
@@ -45,7 +45,7 @@ case object WitnessVersion0 extends WitnessVersion {
 /** The witness version that represents all witnesses that have not been allocated yet */
 
 case object UnassignedWitness extends WitnessVersion {
-  override def rebuild(scriptWitness: ScriptWitness): Either[(Seq[ScriptToken], ScriptPubKey),ScriptError] =
+  override def rebuild(scriptWitness: ScriptWitness, witnessProgram: ScriptPubKey): Either[(Seq[ScriptToken], ScriptPubKey),ScriptError] =
     Right(ScriptErrorDiscourageUpgradeableWitnessProgram)
 }
 

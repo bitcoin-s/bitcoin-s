@@ -50,7 +50,8 @@ class ScriptProgramFactoryTest extends FlatSpec with MustMatchers {
   it must "update the script program to the given stack and script" in {
     val stack = List(OP_0)
     val script = List(OP_1)
-    val program = ScriptProgram(TestUtil.transaction, TestUtil.scriptPubKey, UInt32.zero, stack,script, ScriptFlagFactory.empty)
+    val program = ScriptProgram(TestUtil.transaction, TestUtil.scriptPubKey, UInt32.zero,
+      stack,script, ScriptFlagFactory.empty, None)
     program.stack must be (stack)
     program.script must be (script)
   }
