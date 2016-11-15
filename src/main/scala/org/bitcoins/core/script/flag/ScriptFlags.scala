@@ -143,7 +143,7 @@ case object ScriptVerifyWitness extends ScriptFlag {
 }
 
 // Making v1-v16 witness program non-standard
-case object ScriptVerifyDiscourageUpgradableWitnessProgres extends ScriptFlag {
+case object ScriptVerifyDiscourageUpgradableWitnessProgram extends ScriptFlag {
   override def flag = 1 << 12
   override def name = "SCRIPT_VERIFY_DISCOURAGE_UPGRADABLE_WITNESS_PROGRAM"
 }

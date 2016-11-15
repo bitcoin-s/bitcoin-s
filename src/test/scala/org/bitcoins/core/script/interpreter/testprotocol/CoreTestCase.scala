@@ -1,7 +1,7 @@
 package org.bitcoins.core.script.interpreter.testprotocol
 
 import org.bitcoins.core.currency.CurrencyUnit
-import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptSignature}
+import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptSignature, ScriptWitness}
 import org.bitcoins.core.script.constant.ScriptToken
 import org.bitcoins.core.script.result.ScriptResult
 
@@ -18,9 +18,9 @@ trait CoreTestCase {
   def expectedResult : ScriptResult
   def comments : String
   def raw : String
-  def witness: Option[(Seq[ScriptToken], CurrencyUnit)]
+  def witness: Option[(ScriptWitness, CurrencyUnit)]
 }
 
 case class CoreTestCaseImpl(scriptSig : ScriptSignature,
   scriptPubKey: ScriptPubKey, flags : String, expectedResult : ScriptResult,
-  comments : String, raw : String, witness: Option[(Seq[ScriptToken], CurrencyUnit)]) extends CoreTestCase
+  comments : String, raw : String, witness: Option[(ScriptWitness, CurrencyUnit)]) extends CoreTestCase
