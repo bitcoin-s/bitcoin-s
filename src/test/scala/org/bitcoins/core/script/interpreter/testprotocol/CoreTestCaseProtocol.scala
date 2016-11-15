@@ -75,7 +75,7 @@ object CoreTestCaseProtocol extends DefaultJsonProtocol with BitcoinSLogger {
         val scriptPubKey = ScriptPubKey(scriptPubKeyBytes)
         val scriptSignatureBytes : Seq[Byte] = parseScriptSignature(elements(1))
         val scriptSignature : ScriptSignature = ScriptSignature(scriptSignatureBytes)
-        val flags = elements(2).convertTo[String]
+        val flags = elements(3).convertTo[String]
         logger.info("Result: " + elements(4).convertTo[String])
         val expectedResult = ScriptResult(elements(4).convertTo[String])
         val comments = elements(5).convertTo[String]

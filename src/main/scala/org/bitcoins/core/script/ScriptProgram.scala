@@ -3,7 +3,7 @@ package org.bitcoins.core.script
 
 import org.bitcoins.core.crypto.TransactionSignatureComponent
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.script.ScriptPubKey
+import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptWitness}
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.script.constant._
 import org.bitcoins.core.script.flag.ScriptFlag
@@ -55,7 +55,7 @@ sealed trait ScriptProgram {
    * [[ScriptFlag]] that are run with the script.
    * These flags indicate special conditions that a script needs to be run with.
    * https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.h#L31
- *
+  *
    * @return
    */
   def flags : Seq[ScriptFlag]
@@ -65,7 +65,6 @@ sealed trait ScriptProgram {
     * @return
     */
   def stackTopIsTrue = !stackTopIsFalse
-
 
   /**
     * Returns true if the stack top is false
@@ -78,7 +77,6 @@ sealed trait ScriptProgram {
     else if (!stack.headOption.isDefined) true
     else false
   }
-
 
 }
 
@@ -97,10 +95,7 @@ sealed trait ExecutionInProgressScriptProgram extends ScriptProgram {
 }
 
 sealed trait ExecutedScriptProgram extends ScriptProgram {
-  /**
-   * Indicates if the [[ScriptProgram]] has encountered a [[ScriptError]] in its execution.
-   * @return
-   */
+  /** Indicates if the [[ScriptProgram]] has encountered a [[ScriptError]] in its execution.*/
   def error : Option[ScriptError]
 }
 
@@ -139,15 +134,15 @@ object ScriptProgram {
   case object Script extends UpdateIndicator
   case object AltStack extends UpdateIndicator
   case object OriginalScript extends UpdateIndicator
-
+  
 
   /**
-   * Sets a [[ScriptError]] on a given [[ScriptProgram]].
-   * @param oldProgram the program who has hit an invalid state
-   * @param error the error that the program hit while being executed in the script interpreter
-   * @return the ExecutedScriptProgram with the given error set inside of the trait
-   */
-  def factory(oldProgram : ScriptProgram, error : ScriptError) : ExecutedScriptProgram = oldProgram match {
+    * Sets a [[ScriptError]] on a given [[ScriptProgram]].
+    * @param oldProgram the program who has hit an invalid state
+    * @param error the error that the program hit while being executed in the script interpreter
+    * @return the ExecutedScriptProgram with the given error set inside of the trait
+    */
+  def apply(oldProgram : ScriptProgram, error : ScriptError) : ExecutedScriptProgram = oldProgram match {
     case program : PreExecutionScriptProgram =>
       throw new RuntimeException("We cannot set an error on the script program before it is executed")
     case program : ExecutionInProgressScriptProgram =>
@@ -158,15 +153,10 @@ object ScriptProgram {
         program.altStack,  program.flags, Some(error))
   }
 
-
-  /**
-    * Updates the [[ScriptFlag]] on a given [[ScriptProgram]].
-    * @return
-    */
-  def factory(oldProgram : ScriptProgram, flags : Seq[ScriptFlag]) : ScriptProgram = oldProgram match {
+  def apply(oldProgram : ScriptProgram, flags : Seq[ScriptFlag]) : ScriptProgram = oldProgram match {
     case program : PreExecutionScriptProgram =>
       PreExecutionScriptProgramImpl(program.txSignatureComponent,program.stack,program.script,program.originalScript,
-      program.altStack,flags)
+        program.altStack,flags)
     case program : ExecutionInProgressScriptProgram =>
       ExecutionInProgressScriptProgramImpl(program.txSignatureComponent, program.stack,program.script,program.originalScript,
         program.altStack, flags, program.lastCodeSeparator)
@@ -174,12 +164,7 @@ object ScriptProgram {
       throw new RuntimeException("Cannot update the script flags on a program that has been executed")
   }
 
-
-  /**
-    * Updates the [[ScriptProgram]] with a sequence of [[ScriptToken]]s depending on the [[UpdateIndicator]].
-    * @return
-    */
-  def factory(oldProgram : ScriptProgram, tokens : Seq[ScriptToken], indicator : UpdateIndicator) : ScriptProgram = {
+  def apply(oldProgram : ScriptProgram, tokens : Seq[ScriptToken], indicator : UpdateIndicator) : ScriptProgram = {
     indicator match {
       case Stack =>
         oldProgram match {
@@ -228,33 +213,28 @@ object ScriptProgram {
     }
   }
 
-  /**
-    * Changes the [[ScriptToken]] assembly-construction of the script or stack inside a [[ScriptProgram]].
-    * @return
-    */
-  def factory(oldProgram : ScriptProgram, stackTokens : Seq[ScriptToken], scriptTokens : Seq[ScriptToken]) : ScriptProgram = {
-    val updatedStack = apply(oldProgram,stackTokens,Stack)
-    val updatedScript = apply(updatedStack,scriptTokens,Script)
+  def apply(oldProgram : ScriptProgram, stackTokens : Seq[ScriptToken], scriptTokens : Seq[ScriptToken]) : ScriptProgram = {
+    val updatedStack = ScriptProgram(oldProgram,stackTokens,Stack)
+    val updatedScript = ScriptProgram(updatedStack,scriptTokens,Script)
     updatedScript
   }
-
-
   /**
     * Updates the last [[org.bitcoins.core.script.crypto.OP_CODESEPARATOR]] index.
     * @return
     */
-  def factory(oldProgram : ExecutionInProgressScriptProgram, lastCodeSeparator : Int) : ExecutionInProgressScriptProgram = {
+  def apply(oldProgram : ExecutionInProgressScriptProgram, lastCodeSeparator : Int) : ExecutionInProgressScriptProgram = {
     ExecutionInProgressScriptProgramImpl(oldProgram.txSignatureComponent,
       oldProgram.stack, oldProgram.script, oldProgram.originalScript,
       oldProgram.altStack, oldProgram.flags,Some(lastCodeSeparator))
   }
 
+
   /**
     * Updates the [[ScriptToken]]s in either the stack or script and the last [[org.bitcoins.core.script.crypto.OP_CODESEPARATOR]] index
     * @return
     */
-  def factory(oldProgram : ExecutionInProgressScriptProgram, tokens : Seq[ScriptToken], indicator: UpdateIndicator,
-              lastCodeSeparator : Int) : ExecutionInProgressScriptProgram = {
+  def apply(oldProgram : ExecutionInProgressScriptProgram, tokens : Seq[ScriptToken], indicator: UpdateIndicator,
+            lastCodeSeparator : Int) : ExecutionInProgressScriptProgram = {
     val updatedIndicator = apply(oldProgram, tokens, indicator)
     updatedIndicator match {
       case e : ExecutionInProgressScriptProgram =>
@@ -264,11 +244,9 @@ object ScriptProgram {
     }
   }
 
-  /**
-    * Updates the [[Stack]], [[Script]], [[AltStack]] of the given [[ScriptProgram]].
-    * @return
-    */
-  def factory(oldProgram : ScriptProgram, stack : Seq[ScriptToken], script : Seq[ScriptToken], altStack : Seq[ScriptToken]) : ScriptProgram = {
+  /** Updates the [[Stack]], [[Script]], [[AltStack]] of the given [[ScriptProgram]]. */
+  def apply(oldProgram : ScriptProgram, stack : Seq[ScriptToken], script : Seq[ScriptToken], altStack : Seq[ScriptToken],
+            updateIndicator: UpdateIndicator) : ScriptProgram = {
     val updatedProgramStack = apply(oldProgram,stack, Stack)
     val updatedProgramScript = apply(updatedProgramStack, script, Script)
     val updatedProgramAltStack = apply(updatedProgramScript, altStack, AltStack)
@@ -282,97 +260,37 @@ object ScriptProgram {
     * @param scriptPubKey the scriptPubKey for which the input is spending
     * @param inputIndex the input's index inside of transaction which we are spending
     * @param flags the flags which we are enforcing inside of the script interpreter
+    * @param witness the witness used to evaluate the input
     * @return the script program representing all of this information
     */
-  def factory(transaction: Transaction, scriptPubKey : ScriptPubKey, inputIndex : UInt32,
-              flags : Seq[ScriptFlag]) : PreExecutionScriptProgram = {
-    val script = transaction.inputs(inputIndex.toInt).scriptSignature.asm
-    apply(transaction,scriptPubKey,inputIndex,script.toList,flags)
-  }
-
-  /**
-    * Creates a new [[ScriptProgram]] that can be used to verify if a [[Transaction]] at the given inputIndex
-    * spends a given [[ScriptPubKey]] correctly.
-    *
-    * @param transaction the transaction that is being checked
-    * @param scriptPubKey the scriptPubKey for which the input is spending
-    * @param inputIndex the input's index inside of transaction which we are spending
-    * @param script the script that we are currently executing
-    * @param flags the flags which we are enforcing inside of the script interpreter
-    * @return the script program representing all of this information
-    */
-  def factory(transaction: Transaction, scriptPubKey : ScriptPubKey, inputIndex : UInt32, script : Seq[ScriptToken],
-              flags : Seq[ScriptFlag]) : PreExecutionScriptProgram = {
-    val txSignatureComponent = TransactionSignatureComponent(transaction,inputIndex,scriptPubKey,flags)
-    PreExecutionScriptProgramImpl(txSignatureComponent,List(),script.toList,script.toList,List(),flags)
-  }
-
-
-  /**
-    * The intention for this factory function is to allow us to create a [[ScriptProgram]] that already has a stack state. This
-    * is useful for after execution of a scriptSig, copying the stack into this program with the [[ScriptPubKey]] to
-    * run inside the script.
-    * @param transaction the transaction being checked
-    * @param scriptPubKey the scriptPubKey which the input is spending
-    * @param inputIndex the input's index inside of the transaction we are spending
-    * @param stack the current stack state of the program
-    * @param script the script that we need to execute
-    * @param flags the flags which we are enforcing inside of the script interpreter
-    */
-  def factory(transaction: Transaction, scriptPubKey : ScriptPubKey, inputIndex : UInt32, stack : Seq[ScriptToken],
-              script : Seq[ScriptToken], flags : Seq[ScriptFlag]) : ScriptProgram = {
-    val program = factory(transaction,scriptPubKey,inputIndex,script,flags)
-    apply(program,stack,Stack)
-  }
-
-
-  /**
-    * The intention for this factory function is to allow us to create a [[ScriptProgram]] that already has a stack state. This
-    * is useful for after execution of a scriptSig, copying the stack into this program with the scriptPubKey read to
-    * run inside the script variable
-    * @param txSignatureComponent the relevant transaction information for execution of a script program
-    * @param stack the current stack state of the program
-    * @param script the script that we need to execute
-    * @return
-    */
-  def factory(txSignatureComponent : TransactionSignatureComponent, stack : Seq[ScriptToken], script : Seq[ScriptToken]) : ScriptProgram = {
-    apply(txSignatureComponent.transaction,txSignatureComponent.scriptPubKey,txSignatureComponent.inputIndex,
-      stack,script,txSignatureComponent.flags)
-  }
-
-  def apply(oldProgram : ScriptProgram, error : ScriptError) : ExecutedScriptProgram = factory(oldProgram, error)
-
-  def apply(oldProgram : ScriptProgram, flags : Seq[ScriptFlag]) : ScriptProgram = factory(oldProgram, flags)
-
-  def apply(oldProgram : ScriptProgram, tokens : Seq[ScriptToken], indicator : UpdateIndicator) : ScriptProgram =
-    factory(oldProgram, tokens, indicator)
-
-  def apply(oldProgram : ScriptProgram, stackTokens : Seq[ScriptToken], scriptTokens : Seq[ScriptToken]) : ScriptProgram =
-    factory(oldProgram, stackTokens, scriptTokens)
-
-  def apply(oldProgram : ExecutionInProgressScriptProgram, lastCodeSeparator : Int) : ExecutionInProgressScriptProgram = factory(oldProgram, lastCodeSeparator)
-
-  def apply(oldProgram : ExecutionInProgressScriptProgram, tokens : Seq[ScriptToken], indicator: UpdateIndicator, lastCodeSeparator : Int) : ExecutionInProgressScriptProgram =
-    factory(oldProgram, tokens, indicator, lastCodeSeparator)
-
-  def apply(oldProgram : ScriptProgram, stack : Seq[ScriptToken], script : Seq[ScriptToken], altStack : Seq[ScriptToken],
-            updateIndicator: UpdateIndicator) : ScriptProgram = factory(oldProgram, stack, script, altStack)
-
   def apply(transaction: Transaction, scriptPubKey : ScriptPubKey, inputIndex : UInt32,
-            flags : Seq[ScriptFlag]) : PreExecutionScriptProgram = factory(transaction, scriptPubKey, inputIndex, flags)
+            flags : Seq[ScriptFlag], witness: Option[ScriptWitness]) : PreExecutionScriptProgram = {
+    val script = transaction.inputs(inputIndex.toInt).scriptSignature.asm
+    apply(transaction,scriptPubKey,inputIndex,script.toList,flags, witness)
+  }
 
   def apply(transaction: Transaction, scriptPubKey : ScriptPubKey, inputIndex : UInt32, script : Seq[ScriptToken],
-            flags : Seq[ScriptFlag]) : PreExecutionScriptProgram = factory(transaction, scriptPubKey, inputIndex, script, flags)
+            flags : Seq[ScriptFlag], witness: Option[ScriptWitness]) : PreExecutionScriptProgram = {
+    val txSignatureComponent = TransactionSignatureComponent(transaction,inputIndex,scriptPubKey,flags,witness)
+    PreExecutionScriptProgramImpl(txSignatureComponent,Nil,script.toList,script.toList,Nil,flags)
+  }
 
   def apply(transaction: Transaction, scriptPubKey : ScriptPubKey, inputIndex : UInt32, stack : Seq[ScriptToken],
-            script : Seq[ScriptToken], flags : Seq[ScriptFlag]) : ScriptProgram = factory(transaction, scriptPubKey, inputIndex, stack, script, flags)
+            script : Seq[ScriptToken], flags : Seq[ScriptFlag], witness: Option[ScriptWitness]) : ScriptProgram = {
+    val program = ScriptProgram(transaction,scriptPubKey,inputIndex,flags,witness)
+    ScriptProgram(program,stack,script)
+  }
 
-  def apply(txSignatureComponent : TransactionSignatureComponent, stack : Seq[ScriptToken], script : Seq[ScriptToken]) : ScriptProgram =
-    factory(txSignatureComponent, stack, script)
+  def apply(txSignatureComponent : TransactionSignatureComponent, stack : Seq[ScriptToken],
+            script : Seq[ScriptToken]) : ScriptProgram = {
+    ScriptProgram(txSignatureComponent.transaction, txSignatureComponent.scriptPubKey, txSignatureComponent.inputIndex,
+      stack,script,txSignatureComponent.flags, txSignatureComponent.witness)
+  }
 
 
   def apply(txSignatureComponent: TransactionSignatureComponent): PreExecutionScriptProgram = {
-    ScriptProgram(txSignatureComponent.transaction, txSignatureComponent.scriptPubKey, txSignatureComponent.inputIndex,txSignatureComponent.flags)
+    ScriptProgram(txSignatureComponent.transaction, txSignatureComponent.scriptPubKey,
+      txSignatureComponent.inputIndex,txSignatureComponent.flags, txSignatureComponent.witness)
   }
 
   /**
@@ -401,18 +319,15 @@ object ScriptProgram {
    * @param stack
    * @return
    */
-  def toExecutionInProgress(preExecutionScriptProgram: PreExecutionScriptProgram, stack : Option[List[ScriptToken]]) : ExecutionInProgressScriptProgram = {
+  def toExecutionInProgress(preExecutionScriptProgram: PreExecutionScriptProgram, stack : Option[Seq[ScriptToken]]) : ExecutionInProgressScriptProgram = {
     stack match {
-      case Some(stackTokens) => ExecutionInProgressScriptProgramImpl(preExecutionScriptProgram.txSignatureComponent,stackTokens,preExecutionScriptProgram.script,
+      case Some(stackTokens) => ExecutionInProgressScriptProgramImpl(preExecutionScriptProgram.txSignatureComponent,stackTokens.toList,preExecutionScriptProgram.script,
     preExecutionScriptProgram.originalScript,preExecutionScriptProgram.altStack,preExecutionScriptProgram.flags, None)
       case None =>
         ExecutionInProgressScriptProgramImpl(preExecutionScriptProgram.txSignatureComponent,preExecutionScriptProgram.stack,preExecutionScriptProgram.script,
           preExecutionScriptProgram.originalScript,preExecutionScriptProgram.altStack,preExecutionScriptProgram.flags, None)
     }
   }
-
-
-
 
 }
 

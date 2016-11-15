@@ -139,31 +139,31 @@ case object ScriptVerifyCheckSequenceVerify extends ScriptFlag {
 // Support segregated witness
 case object ScriptVerifyWitness extends ScriptFlag {
   override def flag = 1 << 11
-  override def name = "SCRIPT_VERIFY_WITNESS"
+  override def name = "WITNESS"
 }
 
 // Making v1-v16 witness program non-standard
 case object ScriptVerifyDiscourageUpgradableWitnessProgram extends ScriptFlag {
   override def flag = 1 << 12
-  override def name = "SCRIPT_VERIFY_DISCOURAGE_UPGRADABLE_WITNESS_PROGRAM"
+  override def name = "DISCOURAGE_UPGRADABLE_WITNESS_PROGRAM"
 }
 
 // Segwit script only: Require the argument of OP_IF/NOTIF to be exactly 0x01 or empty vector
 case object ScriptVerifyMinimalIf extends ScriptFlag {
   override def flag = 1 << 13
-  override def name = "SCRIPT_VERIFY_MINIMALIF"
+  override def name = "MINIMALIF"
 }
 
 // Signature(s) must be empty vector if an CHECK(MULTI)SIG operation failed
 case object ScriptVerifyNullFail extends ScriptFlag {
   override def flag = 1 << 14
-  override def name = "SCRIPT_VERIFY_NULLFAIL"
+  override def name = "NULLFAIL"
 }
 
 // Public keys in segregated witness scripts must be compressed
 case object ScriptVerifyWitnessPubKeyType extends ScriptFlag {
   override def flag = 1 << 15
-  override def name = "SCRIPT_VERIFY_WITNESS_PUBKEYTYPE"
+  override def name = "WITNESS_PUBKEYTYPE"
 }
 
 

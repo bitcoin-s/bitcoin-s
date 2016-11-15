@@ -156,7 +156,7 @@ class CryptoInterpreterTest extends FlatSpec with MustMatchers with CryptoInterp
 
     val script = List(OP_CHECKMULTISIG)
 
-    val baseProgram = ScriptProgram(spendingTx,creditingTx.outputs(0).scriptPubKey,UInt32.zero,ScriptFlagFactory.empty)
+    val baseProgram = ScriptProgram(spendingTx,creditingTx.outputs(0).scriptPubKey,UInt32.zero,ScriptFlagFactory.empty, None)
 
     val program = ScriptProgram(baseProgram,stack,script)
     val newProgram = opCheckMultiSig(program)
@@ -173,7 +173,8 @@ class CryptoInterpreterTest extends FlatSpec with MustMatchers with CryptoInterp
     val input = TransactionInput(EmptyTransactionOutPoint, scriptSig, TransactionConstants.sequence)
     val tx = Transaction(TestUtil.transaction,UpdateTransactionInputs(Seq(input)))
 
-    val baseProgram = ScriptProgram.toExecutionInProgress(ScriptProgram(tx,TestUtil.scriptPubKey,UInt32.zero,flags))
+    val baseProgram = ScriptProgram.toExecutionInProgress(ScriptProgram(tx,TestUtil.scriptPubKey,
+      UInt32.zero,flags, None))
     val stack = Seq(OP_0,OP_0,OP_1)
     val script = Seq(OP_CHECKMULTISIG)
     val program = ScriptProgram(baseProgram,stack,script)

@@ -79,7 +79,8 @@ trait TransactionGenerators extends  BitcoinSLogger {
   } yield {
     val (creditingTx,outputIndex) = buildCreditingTransaction(scriptPubKey)
     val (signedTx,inputIndex) = buildSpendingTransaction(creditingTx,signedScriptSig,outputIndex)
-    val signedTxSignatureComponent = TransactionSignatureComponent(signedTx,inputIndex,scriptPubKey,Policy.standardScriptVerifyFlags)
+    val signedTxSignatureComponent = TransactionSignatureComponent(signedTx,inputIndex,
+      scriptPubKey,Policy.standardScriptVerifyFlags, None)
     (signedTxSignatureComponent,privateKey)
   }
 
@@ -92,7 +93,8 @@ trait TransactionGenerators extends  BitcoinSLogger {
   } yield {
     val (creditingTx,outputIndex) = buildCreditingTransaction(scriptPubKey)
     val (signedTx,inputIndex) = buildSpendingTransaction(creditingTx,signedScriptSig,outputIndex)
-    val signedTxSignatureComponent = TransactionSignatureComponent(signedTx,inputIndex,scriptPubKey,Policy.standardScriptVerifyFlags)
+    val signedTxSignatureComponent = TransactionSignatureComponent(signedTx,inputIndex,
+      scriptPubKey,Policy.standardScriptVerifyFlags, None)
     (signedTxSignatureComponent,privateKey)
   }
 
@@ -107,7 +109,8 @@ trait TransactionGenerators extends  BitcoinSLogger {
   } yield {
     val (creditingTx,outputIndex) = buildCreditingTransaction(scriptPubKey)
     val (signedTx,inputIndex) = buildSpendingTransaction(creditingTx,signedScriptSig,outputIndex)
-    val signedTxSignatureComponent = TransactionSignatureComponent(signedTx,inputIndex,scriptPubKey,Policy.standardScriptVerifyFlags)
+    val signedTxSignatureComponent = TransactionSignatureComponent(signedTx,inputIndex,
+      scriptPubKey,Policy.standardScriptVerifyFlags, None)
     (signedTxSignatureComponent, privateKeys)
   }
 
@@ -121,7 +124,8 @@ trait TransactionGenerators extends  BitcoinSLogger {
   } yield {
     val (creditingTx,outputIndex) = buildCreditingTransaction(signedScriptSig.redeemScript)
     val (signedTx,inputIndex) = buildSpendingTransaction(creditingTx,signedScriptSig,outputIndex)
-    val signedTxSignatureComponent = TransactionSignatureComponent(signedTx,inputIndex,scriptPubKey,Policy.standardScriptVerifyFlags)
+    val signedTxSignatureComponent = TransactionSignatureComponent(signedTx,inputIndex,
+      scriptPubKey,Policy.standardScriptVerifyFlags, None)
     (signedTxSignatureComponent, privateKeys)
   }
 
@@ -182,8 +186,10 @@ trait TransactionGenerators extends  BitcoinSLogger {
   private def csvTxHelper(signedScriptSig : CSVScriptSignature, csv : CSVScriptPubKey, privKeys : Seq[ECPrivateKey], csvNum : ScriptNumber, sequence : UInt32) : (TransactionSignatureComponent, Seq[ECPrivateKey], ScriptNumber, UInt32) = {
     val (creditingTx, outputIndex) = buildCreditingTransaction(UInt32(2),csv)
     //Transaction version must not be less than 2 for a CSV transaction
-    val (signedSpendingTx, inputIndex) = buildSpendingTransaction(UInt32(2), creditingTx, signedScriptSig, outputIndex, UInt32.zero, sequence)
-    val txSigComponent = TransactionSignatureComponent(signedSpendingTx, inputIndex, csv, Policy.standardScriptVerifyFlags)
+    val (signedSpendingTx, inputIndex) = buildSpendingTransaction(UInt32(2), creditingTx,
+      signedScriptSig, outputIndex, UInt32.zero, sequence)
+    val txSigComponent = TransactionSignatureComponent(signedSpendingTx, inputIndex,
+      csv, Policy.standardScriptVerifyFlags, None)
     (txSigComponent, privKeys, csvNum, sequence)
   }
 
@@ -263,7 +269,8 @@ trait TransactionGenerators extends  BitcoinSLogger {
     (creditingTx, outputIndex) = buildCreditingTransaction(cltvScriptPubkey)
     (spendingTx, inputIndex) = buildSpendingTransaction(TransactionConstants.version,creditingTx, signedScriptSig, outputIndex, txLockTime, sequence)
 
-    txSigComponent = TransactionSignatureComponent(spendingTx, inputIndex, cltvScriptPubkey, Policy.standardScriptVerifyFlags)
+    txSigComponent = TransactionSignatureComponent(spendingTx, inputIndex, cltvScriptPubkey,
+      Policy.standardScriptVerifyFlags, None)
   } yield (txSigComponent, privateKeys, cltvLockTime)).suchThat(cltvLockTimesOfSameType)
 
   /**

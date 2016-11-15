@@ -58,13 +58,13 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
       val scriptPubKeyProgram = ScriptProgram(scriptSigExecutedProgram.txSignatureComponent,
         scriptSigExecutedProgram.stack,scriptPubKey.asm)
       val scriptPubKeyExecutedProgram : ExecutedScriptProgram = loop(scriptPubKeyProgram,0)
-      val witnessProgram: Option[(WitnessVersion,ScriptWitness)] = scriptPubKey.isWitnessProgram
+      val witnessProgram: Option[(WitnessVersion,ScriptPubKey)] = scriptPubKey.isWitnessProgram
       if (scriptSigExecutedProgram.error.isDefined) {
         scriptSigExecutedProgram
       } else if (scriptPubKeyExecutedProgram.error.isDefined) {
         scriptPubKeyExecutedProgram
       } else if (ScriptFlagUtil.segWitEnabled(program.flags) && witnessProgram.isDefined) {
-        executeSegWitScript(scriptSigExecutedProgram, witnessProgram.get._1, witnessProgram.get._2)
+        executeSegWitScript(scriptPubKeyExecutedProgram)
       } else if (scriptPubKey.isInstanceOf[P2SHScriptPubKey] && ScriptFlagUtil.p2shEnabled(program.flags)) {
         executeP2shScript(scriptSigExecutedProgram, program, scriptPubKey.asInstanceOf[P2SHScriptPubKey])
       } else scriptPubKeyExecutedProgram
@@ -124,24 +124,23 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
 
   /** Runs a segwit script through our interpreter, mimics this functionality in bitcoin core:
     * [[https://github.com/bitcoin/bitcoin/blob/528472111b4965b1a99c4bcf08ac5ec93d87f10f/src/script/interpreter.cpp#L1441-L1452]]
-    * @param scriptSigExecutedProgram the program with the scriptSig executed
-    * @param witnessVersion
-    * @param scriptWitness
+    * @param scriptPubKeyExecutedProgram the program with the scriptSig executed
     * @return
     */
-  private def executeSegWitScript(scriptSigExecutedProgram: ExecutedScriptProgram, witnessVersion: WitnessVersion,
-                                  scriptWitness: ScriptWitness): ExecutedScriptProgram = {
-    val scriptSig = scriptSigExecutedProgram.txSignatureComponent.scriptSignature
-    if (scriptSig.bytes.nonEmpty) ScriptProgram(scriptSigExecutedProgram,ScriptErrorWitnessMalleated)
-    else verifyWitnessProgram(witnessVersion,scriptWitness,scriptSigExecutedProgram)
-
+  private def executeSegWitScript(scriptPubKeyExecutedProgram: ExecutedScriptProgram): ExecutedScriptProgram = {
+    val scriptPubKey = scriptPubKeyExecutedProgram.txSignatureComponent.scriptPubKey
+    val Some((witnessVersion,witnessProgram)) = scriptPubKey.isWitnessProgram
+    val scriptSig = scriptPubKeyExecutedProgram.txSignatureComponent.scriptSignature
+    val witness = scriptPubKeyExecutedProgram.txSignatureComponent.witness.get
+    if (scriptSig.bytes.nonEmpty) ScriptProgram(scriptPubKeyExecutedProgram,ScriptErrorWitnessMalleated)
+    else verifyWitnessProgram(witnessVersion, witness, witnessProgram, scriptPubKeyExecutedProgram)
   }
 
 
-  private def verifyWitnessProgram(witnessVersion: WitnessVersion, scriptWitness: ScriptWitness,
+  private def verifyWitnessProgram(witnessVersion: WitnessVersion, scriptWitness: ScriptWitness, witnessProgram: ScriptPubKey,
                                    program: ScriptProgram): ExecutedScriptProgram = witnessVersion match {
     case WitnessVersion0 =>
-      val either: Either[(Seq[ScriptToken], ScriptPubKey),ScriptError] = witnessVersion.rebuild(scriptWitness)
+      val either: Either[(Seq[ScriptToken], ScriptPubKey),ScriptError] = witnessVersion.rebuild(scriptWitness, witnessProgram)
       either match {
         case Left((stack,scriptPubKey)) =>
           val newProgram = ScriptProgram(program.txSignatureComponent,stack,scriptPubKey.asm)
@@ -149,7 +148,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
         case Right(err) => ScriptProgram(program,err)
       }
     case UnassignedWitness =>
-      ScriptProgram(program,UnassignedWitness.rebuild(scriptWitness).right.get)
+      ScriptProgram(program,UnassignedWitness.rebuild(scriptWitness, witnessProgram).right.get)
   }
   /**
     * The execution loop for a script

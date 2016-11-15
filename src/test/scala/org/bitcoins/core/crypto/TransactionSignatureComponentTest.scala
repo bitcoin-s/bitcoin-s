@@ -9,7 +9,8 @@ import org.scalatest.{FlatSpec, MustMatchers}
  * Created by chris on 4/7/16.
  */
 class TransactionSignatureComponentTest extends FlatSpec with MustMatchers {
-  val component = TransactionSignatureComponent(TestUtil.transaction, UInt32.zero, TestUtil.scriptPubKey, Policy.standardScriptVerifyFlags)
+  val component = TransactionSignatureComponent(TestUtil.transaction, UInt32.zero, TestUtil.scriptPubKey,
+    Policy.standardScriptVerifyFlags, None)
 
   "TransactionSignatureComponentFactory" must "create a tx signature component" in {
     component.transaction must be (TestUtil.transaction)

@@ -15,7 +15,9 @@ trait ScriptFlagFactory {
   private def flags = Seq(ScriptVerifyNone, ScriptVerifyP2SH, ScriptVerifyStrictEnc,
     ScriptVerifyDerSig, ScriptVerifyLowS, ScriptVerifySigPushOnly, ScriptVerifyMinimalData,
     ScriptVerifyNullDummy, ScriptVerifyDiscourageUpgradableNOPs, ScriptVerifyCleanStack,
-    ScriptVerifyCheckLocktimeVerify, ScriptVerifyCheckSequenceVerify)
+    ScriptVerifyCheckLocktimeVerify, ScriptVerifyCheckSequenceVerify,ScriptVerifyWitness,
+    ScriptVerifyDiscourageUpgradableWitnessProgram, ScriptVerifyMinimalIf,ScriptVerifyNullFail,
+    ScriptVerifyWitnessPubKeyType)
 
   /**
    * Takes in a string and tries to match it with a script flag
@@ -34,7 +36,7 @@ trait ScriptFlagFactory {
    * @return the sequence of script flags
    */
   def fromList(list : Seq[String]) : Seq[ScriptFlag] = {
-    list.map(fromString(_)).flatten
+    list.flatMap(fromString(_))
   }
 
   /**
@@ -50,7 +52,7 @@ trait ScriptFlagFactory {
    * Empty script flag
    * @return
    */
-  def empty : Seq[ScriptFlag] = Seq()
+  def empty : Seq[ScriptFlag] = Nil
 }
 
 object ScriptFlagFactory extends ScriptFlagFactory
