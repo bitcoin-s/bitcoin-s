@@ -37,41 +37,37 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
 
   /**
    * Runs an entire script though our script programming language and
-   * returns true or false depending on if the script was valid
+   * returns a [[ScriptResult]] indicating if the script was valid, or if not what error it encountered
    * @param program the program to be interpreted
    * @return
    */
-  def run(program : PreExecutionScriptProgram) : ScriptResult = {
+  def run(program : ScriptProgram) : ScriptResult = {
     val scriptSig = program.txSignatureComponent.scriptSignature
     val scriptPubKey = program.txSignatureComponent.scriptPubKey
-    val programBeingExecuted = ScriptProgram.toExecutionInProgress(program)
 
     val executedProgram : ExecutedScriptProgram = if (ScriptFlagUtil.requirePushOnly(program.flags)
       && !BitcoinScriptUtil.isPushOnly(program.script)) {
       logger.error("We can only have push operations inside of the script sig when the SIGPUSHONLY flag is set")
-      ScriptProgram(programBeingExecuted,ScriptErrorSigPushOnly)
+      ScriptProgram(program,ScriptErrorSigPushOnly)
     } else if (scriptSig.isInstanceOf[P2SHScriptSignature] && ScriptFlagUtil.p2shEnabled(program.flags) &&
       !BitcoinScriptUtil.isPushOnly(scriptSig.asm)) {
       logger.error("P2SH scriptSigs are required to be push only by definition - see BIP16")
-      ScriptProgram(programBeingExecuted,ScriptErrorSigPushOnly)
+      ScriptProgram(program,ScriptErrorSigPushOnly)
     } else {
       val scriptSigExecutedProgram = loop(program,0)
-      logger.debug("We do not check a redeemScript against a non p2sh scriptSig")
-      //now run the scriptPubKey script through the interpreter with the scriptSig as the stack arguments
       val scriptPubKeyProgram = ScriptProgram(scriptSigExecutedProgram.txSignatureComponent,
-        scriptSigExecutedProgram.stack,scriptSigExecutedProgram.txSignatureComponent.scriptPubKey.asm)
-      require(scriptPubKeyProgram.script == scriptSigExecutedProgram.txSignatureComponent.scriptPubKey.asm)
+        scriptSigExecutedProgram.stack,scriptPubKey.asm)
       val scriptPubKeyExecutedProgram : ExecutedScriptProgram = loop(scriptPubKeyProgram,0)
       val witnessProgram: Option[(WitnessVersion,ScriptWitness)] = scriptPubKey.isWitnessProgram
-      if (scriptPubKeyExecutedProgram.error.isDefined) {
+      if (scriptSigExecutedProgram.error.isDefined) {
+        scriptSigExecutedProgram
+      } else if (scriptPubKeyExecutedProgram.error.isDefined) {
         scriptPubKeyExecutedProgram
       } else if (ScriptFlagUtil.segWitEnabled(program.flags) && witnessProgram.isDefined) {
-        executeSegWitScript(scriptSigExecutedProgram,witnessProgram.get._1, witnessProgram.get._2)
+        executeSegWitScript(scriptSigExecutedProgram, witnessProgram.get._1, witnessProgram.get._2)
       } else if (scriptPubKey.isInstanceOf[P2SHScriptPubKey] && ScriptFlagUtil.p2shEnabled(program.flags)) {
-        executeP2shScript(scriptPubKeyExecutedProgram,program, scriptPubKey.asInstanceOf[P2SHScriptPubKey])
+        executeP2shScript(scriptSigExecutedProgram, program, scriptPubKey.asInstanceOf[P2SHScriptPubKey])
       } else scriptPubKeyExecutedProgram
-
-
     }
     logger.debug("Executed Script Program: " + executedProgram)
     if (executedProgram.error.isDefined) executedProgram.error.get
@@ -112,6 +108,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
           val stack = scriptPubKeyExecutedProgram.stack
           logger.debug("P2sh stack: " + stack)
           val redeemScript = ScriptPubKey(stack.head.bytes)
+          logger.debug("Redeem script asm: " + redeemScript.asm)
           val p2shRedeemScriptProgram = ScriptProgram(scriptPubKeyExecutedProgram.txSignatureComponent,stack.tail,
             redeemScript.asm)
           if (ScriptFlagUtil.requirePushOnly(p2shRedeemScriptProgram.flags) && !BitcoinScriptUtil.isPushOnly(redeemScript.asm)) {
@@ -135,16 +132,24 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
   private def executeSegWitScript(scriptSigExecutedProgram: ExecutedScriptProgram, witnessVersion: WitnessVersion,
                                   scriptWitness: ScriptWitness): ExecutedScriptProgram = {
     val scriptSig = scriptSigExecutedProgram.txSignatureComponent.scriptSignature
-    if (scriptSig.bytes.nonEmpty) {
-      ScriptProgram(scriptSigExecutedProgram, ScriptErrorWitnessMalleated)
-    } else {
-      verifyWitnessProgram(witnessVersion,scriptWitness,scriptSigExecutedProgram)
-    }
+    if (scriptSig.bytes.nonEmpty) ScriptProgram(scriptSigExecutedProgram,ScriptErrorWitnessMalleated)
+    else verifyWitnessProgram(witnessVersion,scriptWitness,scriptSigExecutedProgram)
+
   }
 
 
-  private def verifyWitnessProgram(witnessVersion: WitnessVersion, scriptWitness: ScriptWitness, program: ScriptProgram): ExecutedScriptProgram = {
-    ???
+  private def verifyWitnessProgram(witnessVersion: WitnessVersion, scriptWitness: ScriptWitness,
+                                   program: ScriptProgram): ExecutedScriptProgram = witnessVersion match {
+    case WitnessVersion0 =>
+      val either: Either[(Seq[ScriptToken], ScriptPubKey),ScriptError] = witnessVersion.rebuild(scriptWitness)
+      either match {
+        case Left((stack,scriptPubKey)) =>
+          val newProgram = ScriptProgram(program.txSignatureComponent,stack,scriptPubKey.asm)
+          loop(newProgram,0)
+        case Right(err) => ScriptProgram(program,err)
+      }
+    case UnassignedWitness =>
+      ScriptProgram(program,UnassignedWitness.rebuild(scriptWitness).right.get)
   }
   /**
     * The execution loop for a script
@@ -155,7 +160,6 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
   private def loop(program : ScriptProgram, opCount: Int) : ExecutedScriptProgram = {
     logger.debug("Stack: " + program.stack)
     logger.debug("Script: " + program.script)
-
     if (opCount > maxScriptOps && !program.isInstanceOf[ExecutedScriptProgram]) {
       logger.error("We have reached the maximum amount of script operations allowed")
       logger.error("Here are the remaining operations in the script: " + program.script)
@@ -170,7 +174,14 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
       }
     } else {
       program match {
-        case p : PreExecutionScriptProgram => loop(ScriptProgram.toExecutionInProgress(p,Some(p.stack)),opCount)
+        case p : PreExecutionScriptProgram =>
+          //this is for the check of a maximum of 201 script ops in a non executed OP_IF branch
+          val countedOps = program.originalScript.map(BitcoinScriptUtil.countsTowardsScriptOpLimit(_)).count(_ == true)
+          logger.info("Counted ops: " + countedOps)
+          if (countedOps > maxScriptOps) {
+            val executionInProgress = ScriptProgram.toExecutionInProgress(p)
+            loop(ScriptProgram(executionInProgress,ScriptErrorOpCount),opCount)
+          } else loop(ScriptProgram.toExecutionInProgress(p,Some(p.stack)),opCount)
         case p : ExecutedScriptProgram =>
           //reset opCount variable to zero since we may need to count the ops
           //in the scriptPubKey - we don't want the op count of the scriptSig
@@ -178,25 +189,22 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
           logger.info("Final op count: " + opCount)
           p
         case p : ExecutionInProgressScriptProgram =>
-          //increment the op count
-/*          if (p.script.headOption.isDefined &&
-            BitcoinScriptUtil.countsTowardsScriptOpLimit(p.script.head)) opCount = opCount + 1*/
           p.script match {
             //if at any time we see that the program is not valid
             //cease script execution
-            case _ if !p.script.intersect(Seq(OP_VERIF, OP_VERNOTIF)).isEmpty =>
+            case _ if p.script.intersect(Seq(OP_VERIF, OP_VERNOTIF)).nonEmpty =>
               logger.error("Script is invalid even when a OP_VERIF or OP_VERNOTIF occurs in an unexecuted OP_IF branch")
               loop(ScriptProgram(p, ScriptErrorBadOpCode),opCount)
             //disabled splice operation
-            case _ if !p.script.intersect(Seq(OP_CAT, OP_SUBSTR, OP_LEFT, OP_RIGHT)).isEmpty =>
+            case _ if p.script.intersect(Seq(OP_CAT, OP_SUBSTR, OP_LEFT, OP_RIGHT)).nonEmpty =>
               logger.error("Script is invalid because it contains a disabled splice operation")
               loop(ScriptProgram(p, ScriptErrorDisabledOpCode),opCount)
             //disabled bitwise operations
-            case _ if !p.script.intersect(Seq(OP_INVERT, OP_AND, OP_OR, OP_XOR)).isEmpty =>
+            case _ if p.script.intersect(Seq(OP_INVERT, OP_AND, OP_OR, OP_XOR)).nonEmpty =>
               logger.error("Script is invalid because it contains a disabled bitwise operation")
               loop(ScriptProgram(p, ScriptErrorDisabledOpCode),opCount)
             //disabled arithmetic operations
-            case _ if !p.script.intersect(Seq(OP_MUL, OP_2MUL, OP_DIV, OP_2DIV, OP_MOD, OP_LSHIFT, OP_RSHIFT)).isEmpty =>
+            case _ if p.script.intersect(Seq(OP_MUL, OP_2MUL, OP_DIV, OP_2DIV, OP_MOD, OP_LSHIFT, OP_RSHIFT)).nonEmpty =>
               logger.error("Script is invalid because it contains a disabled arithmetic operation")
               loop(ScriptProgram(p, ScriptErrorDisabledOpCode),opCount)
             //program cannot contain a push operation > 520 bytes

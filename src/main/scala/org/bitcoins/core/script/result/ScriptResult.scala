@@ -188,6 +188,10 @@ case object ScriptErrorCount extends ScriptError {
   override def description : String = "ERROR_COUNT"
 }
 
+//SCRIPT_ERR_MINIMALIF
+case object ScriptErrorMinimalIf extends ScriptError {
+  override def description = "MINIMALIF"
+}
 //SCRIPT_ERR_SIG_NULLFAIL
 case object ScriptErrorSigNullFail extends ScriptError {
   override def description = "NULLFAIL"
@@ -246,7 +250,7 @@ object ScriptResult {
     ScriptErrorInvalidAltStackOperation, ScriptErrorUnbalancedConditional, ScriptErrorNegativeLockTime,
     ScriptErrorUnsatisfiedLocktime, ScriptErrorSigHashType, ScriptErrorSigDer, ScriptErrorMinimalData, ScriptErrorSigPushOnly,
     ScriptErrorSigHighS, ScriptErrorSigNullDummy,ScriptErrorPubKeyType, ScriptErrorCleanStack, ScriptErrorDiscourageUpgradableNOPs,
-    ScriptErrorCount, ScriptErrorSigNullFail,ScriptErrorDiscourageUpgradeableWitnessProgram, ScriptErrorWitnessProgramWrongLength,
+    ScriptErrorCount, ScriptErrorMinimalIf, ScriptErrorSigNullFail,ScriptErrorDiscourageUpgradeableWitnessProgram, ScriptErrorWitnessProgramWrongLength,
     ScriptErrorWitnessProgramWitnessEmpty,ScriptErrorWitnessProgramMisMatch, ScriptErrorWitnessMalleated,
     ScriptErrorWitnessMalleatedP2SH,ScriptErrorWitnessUnexpected, ScriptErrorWitnessPubKeyType )
   def apply(str : String) : ScriptResult = results.filter(_.description == str).head

@@ -18,7 +18,6 @@ trait BitcoinScriptUtil {
 
   /**
    * Takes in a sequence of script tokens and converts them to their hexadecimal value
- *
    * @param asm
    * @return
    */
@@ -30,7 +29,6 @@ trait BitcoinScriptUtil {
 
   /**
    * Converts a sequence of script tokens to them to their byte values
- *
    * @param asm
    * @return
    */
@@ -39,7 +37,6 @@ trait BitcoinScriptUtil {
   /**
    * Filters out push operations in our sequence of script tokens
    * this removes OP_PUSHDATA1, OP_PUSHDATA2, OP_PUSHDATA4 and all ByteToPushOntoStack tokens
- *
    * @param asm
    * @return
    */
@@ -54,7 +51,6 @@ trait BitcoinScriptUtil {
    * Returns true if the given script token counts towards our max script operations in a script
    * See https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L269-L271
    * which is how bitcoin core handles this
- *
    * @param token
    * @return
    */
@@ -64,10 +60,12 @@ trait BitcoinScriptUtil {
   }
 
 
+
+
+
   /**
    * Counts the amount of sigops in a script
    * https://github.com/bitcoin/bitcoin/blob/master/src/script/script.cpp#L156-L202
- *
    * @param script the script whose sigops are being counted
    * @return the number of signature operations in the script
    */
@@ -92,7 +90,6 @@ trait BitcoinScriptUtil {
    * This can only be called when an OP_CHECKMULTISIG operation is about to be executed
    * on the stack
    * For instance if this was a 2/3 multisignature script, it would return the number 3
- *
    * @param program
    * @return
    */
@@ -110,7 +107,6 @@ trait BitcoinScriptUtil {
   /**
    * Returns the number of required signatures on the stack, for instance if this was a
    * 2/3 multisignature script, it would return the number 2
- *
    * @param program
    * @return
    */
@@ -132,7 +128,6 @@ trait BitcoinScriptUtil {
    * Determines if a script contains only script operations
    * This is equivalent to
    * https://github.com/bitcoin/bitcoin/blob/master/src/script/script.cpp#L213
- *
    * @param script
    * @return
    */
@@ -153,7 +148,6 @@ trait BitcoinScriptUtil {
    * Determines if the token being pushed onto the stack is being pushed by the SMALLEST push operation possible
    * This is equivalent to
    * https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L209
- *
    * @param pushOp the operation that is pushing the data onto the stack
    * @param token the token that is being pushed onto the stack by the pushOp
    * @return
