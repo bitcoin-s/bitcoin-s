@@ -97,7 +97,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
     //need to check if the scriptSig is push only as required by bitcoin core
     //https://github.com/bitcoin/bitcoin/blob/528472111b4965b1a99c4bcf08ac5ec93d87f10f/src/script/interpreter.cpp#L1419
     if (!BitcoinScriptUtil.isPushOnly(originalScriptSigAsm)) {
-      ScriptProgram(originalProgram,ScriptErrorSigPushOnly)
+      ScriptProgram(scriptPubKeyExecutedProgram,ScriptErrorSigPushOnly)
     } else if (scriptPubKeyExecutedProgram.error.isDefined) {
       scriptPubKeyExecutedProgram
     } else {
