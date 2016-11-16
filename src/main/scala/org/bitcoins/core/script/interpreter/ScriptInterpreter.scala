@@ -38,7 +38,8 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
   /**
    * Runs an entire script though our script programming language and
    * returns a [[ScriptResult]] indicating if the script was valid, or if not what error it encountered
-   * @param program the program to be interpreted
+    *
+    * @param program the program to be interpreted
    * @return
    */
   def run(program : ScriptProgram) : ScriptResult = {
@@ -59,16 +60,23 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
       val scriptPubKeyProgram = ScriptProgram(txSigComponent, scriptSigExecutedProgram.stack, txSigComponent.scriptPubKey.asm,
         txSigComponent.scriptPubKey.asm, Nil, txSigComponent.flags, txSigComponent.witness)
       val scriptPubKeyExecutedProgram : ExecutedScriptProgram = loop(scriptPubKeyProgram,0)
-      val witnessProgram: Option[(WitnessVersion,ScriptPubKey)] = scriptPubKey.isWitnessProgram
       if (scriptSigExecutedProgram.error.isDefined) {
         scriptSigExecutedProgram
-      } else if (scriptPubKeyExecutedProgram.error.isDefined) {
+      } else if (scriptPubKeyExecutedProgram.error.isDefined || scriptPubKeyExecutedProgram.stackTopIsFalse) {
         scriptPubKeyExecutedProgram
-      } else if (ScriptFlagUtil.segWitEnabled(program.flags) && witnessProgram.isDefined) {
-        executeSegWitScript(scriptPubKeyExecutedProgram)
-      } else if (scriptPubKey.isInstanceOf[P2SHScriptPubKey] && ScriptFlagUtil.p2shEnabled(program.flags)) {
-        executeP2shScript(scriptSigExecutedProgram, program, scriptPubKey.asInstanceOf[P2SHScriptPubKey])
-      } else scriptPubKeyExecutedProgram
+      } else {
+        scriptPubKey match {
+          case witness : WitnessScriptPubKey =>
+            if (ScriptFlagUtil.segWitEnabled(program.flags)) executeSegWitScript(scriptPubKeyExecutedProgram,witness)
+            else scriptPubKeyExecutedProgram
+          case p2sh : P2SHScriptPubKey =>
+            if (ScriptFlagUtil.p2shEnabled(program.flags)) executeP2shScript(scriptSigExecutedProgram, program, p2sh)
+            else scriptPubKeyExecutedProgram
+          case _ @ (_ : P2PKHScriptPubKey | _: P2PKScriptPubKey | _: MultiSignatureScriptPubKey | _: CSVScriptPubKey |
+              _ : CLTVScriptPubKey | _ : NonStandardScriptPubKey | EmptyScriptPubKey) =>
+            scriptPubKeyExecutedProgram
+        }
+      }
     }
     logger.debug("Executed Script Program: " + executedProgram)
     if (executedProgram.error.isDefined) executedProgram.error.get
@@ -88,6 +96,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
     * p2sh scriptPubKey must be run to make sure the serialized redeem script hashes to the value found in the p2sh
     * scriptPubKey, then finally the serialized redeemScript is decoded and run with the arguments in the p2sh script signature
     * a p2sh script returns true if both of those intermediate steps evaluate to true
+    *
     * @param scriptPubKeyExecutedProgram the program with the script signature pushed onto the stack
     * @param originalProgram the original program, used for setting errors & checking that the original script signature contains push only tokens
     * @param p2shScriptPubKey the p2sh scriptPubKey that contains the value the redeemScript must hash to
@@ -125,27 +134,30 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
 
   /** Runs a segwit script through our interpreter, mimics this functionality in bitcoin core:
     * [[https://github.com/bitcoin/bitcoin/blob/528472111b4965b1a99c4bcf08ac5ec93d87f10f/src/script/interpreter.cpp#L1441-L1452]]
-    * @param scriptPubKeyExecutedProgram the program with the scriptSig executed
+    * @param scriptPubKeyExecutedProgram the program with the [[ScriptPubKey]] executed
     * @return
     */
-  private def executeSegWitScript(scriptPubKeyExecutedProgram: ExecutedScriptProgram): ExecutedScriptProgram = {
-    val scriptPubKey = scriptPubKeyExecutedProgram.txSignatureComponent.scriptPubKey
-    val Some((witnessVersion,witnessProgram)) = scriptPubKey.isWitnessProgram
+  private def executeSegWitScript(scriptPubKeyExecutedProgram: ExecutedScriptProgram, witnessScriptPubKey: WitnessScriptPubKey): ExecutedScriptProgram = {
     val scriptSig = scriptPubKeyExecutedProgram.txSignatureComponent.scriptSignature
+    val (witnessVersion,witnessProgram) = (witnessScriptPubKey.witnessVersion, witnessScriptPubKey.witnessProgram)
     val witness = scriptPubKeyExecutedProgram.txSignatureComponent.witness.get
     if (scriptSig.bytes.nonEmpty) ScriptProgram(scriptPubKeyExecutedProgram,ScriptErrorWitnessMalleated)
     else verifyWitnessProgram(witnessVersion, witness, witnessProgram, scriptPubKeyExecutedProgram)
   }
 
 
-  private def verifyWitnessProgram(witnessVersion: WitnessVersion, scriptWitness: ScriptWitness, witnessProgram: ScriptPubKey,
+  private def verifyWitnessProgram(witnessVersion: WitnessVersion, scriptWitness: ScriptWitness, witnessProgram: Seq[ScriptToken],
                                    program: ScriptProgram): ExecutedScriptProgram = witnessVersion match {
     case WitnessVersion0 =>
       val either: Either[(Seq[ScriptToken], ScriptPubKey),ScriptError] = witnessVersion.rebuild(scriptWitness, witnessProgram)
       either match {
         case Left((stack,scriptPubKey)) =>
           val newProgram = ScriptProgram(program.txSignatureComponent,stack,scriptPubKey.asm)
-          loop(newProgram,0)
+          val evaluated = loop(newProgram,0)
+          logger.info("Stack after evaluating witness: " + evaluated.stack)
+          if (evaluated.stack.size != 1) ScriptProgram(evaluated,ScriptErrorEvalFalse)
+          else if (evaluated.stackTopIsFalse) ScriptProgram(evaluated,ScriptErrorEvalFalse)
+          else evaluated
         case Right(err) => ScriptProgram(program,err)
       }
     case UnassignedWitness =>
@@ -153,6 +165,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
   }
   /**
     * The execution loop for a script
+    *
     * @param program the program whose script needs to be evaluated
     * @return program the final state of the program after being evaluated by the interpreter
     */
