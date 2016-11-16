@@ -14,7 +14,6 @@ trait RawScriptSignatureParser extends RawBitcoinSerializer[ScriptSignature] wit
 
   def read(bytes : List[Byte]) : ScriptSignature = {
     val scriptTokens : List[ScriptToken] = ScriptParser.fromBytes(bytes)
-    logger.info("Script tokens inside of RawScriptSig: " + scriptTokens)
     ScriptSignature.fromAsm(scriptTokens)
   }
 

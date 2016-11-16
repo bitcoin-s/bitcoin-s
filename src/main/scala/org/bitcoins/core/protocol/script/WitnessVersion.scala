@@ -1,25 +1,25 @@
 package org.bitcoins.core.protocol.script
 
-import org.bitcoins.core.crypto.ECPublicKey
+import org.bitcoins.core.crypto.{ECPublicKey, Sha256Digest, Sha256Hash160Digest}
 import org.bitcoins.core.script.constant.ScriptToken
-import org.bitcoins.core.script.result.{ScriptError, ScriptErrorDiscourageUpgradeableWitnessProgram, ScriptErrorWitnessProgramMisMatch, ScriptErrorWitnessProgramWrongLength}
+import org.bitcoins.core.script.result._
+import org.bitcoins.core.util.{BitcoinSLogger, CryptoUtil}
 
 /**
   * Created by chris on 11/10/16.
   */
-sealed trait WitnessVersion {
+sealed trait WitnessVersion extends BitcoinSLogger {
   /** Rebuilds the full script from the given witness and [[ScriptPubKey]]
     * Either returns the stack and the [[ScriptPubKey]] it needs to be executed against or
     * the [[ScriptError]] that was encountered while rebuilding the witness*/
-  def rebuild(scriptWitness: ScriptWitness, witnessProgram: ScriptPubKey): Either[(Seq[ScriptToken], ScriptPubKey),ScriptError]
+  def rebuild(scriptWitness: ScriptWitness, witnessProgram: Seq[ScriptToken]): Either[(Seq[ScriptToken], ScriptPubKey),ScriptError]
 }
 
 case object WitnessVersion0 extends WitnessVersion {
 
-  override def rebuild(scriptWitness: ScriptWitness, witnessProgram: ScriptPubKey): Either[(Seq[ScriptToken], ScriptPubKey),ScriptError] = {
-    val scriptBytes = scriptWitness.stack.map(_.bytes).flatten
-
-    scriptBytes.size match {
+  override def rebuild(scriptWitness: ScriptWitness, witnessProgram: Seq[ScriptToken]): Either[(Seq[ScriptToken], ScriptPubKey),ScriptError] = {
+    val programBytes = witnessProgram.flatMap(_.bytes)
+    programBytes.size match {
       case 20 =>
         //p2wpkh
         if (scriptWitness.stack.size != 2) Right(ScriptErrorWitnessProgramMisMatch)
@@ -29,13 +29,24 @@ case object WitnessVersion0 extends WitnessVersion {
         }
       case 32 =>
         //p2wsh
-        if (scriptWitness.stack.size == 0) Right(ScriptErrorWitnessProgramWrongLength)
+        if (scriptWitness.stack.isEmpty) Right(ScriptErrorWitnessProgramWitnessEmpty)
         else {
-          val scriptPubKey = ScriptPubKey(scriptWitness.stack.last.bytes)
-          val stack = scriptWitness.stack.slice(0,scriptWitness.stack.size - 1)
-          Left(stack,scriptPubKey)
+          //need to check if the hashes match
+          val scriptPubKey = ScriptPubKey(scriptWitness.stack.head.bytes)
+          logger.debug("Script pub key for p2wsh: " + scriptPubKey.asm)
+          val stackHash = CryptoUtil.sha256(scriptPubKey.bytes)
+          logger.debug("Stack hash: " + stackHash)
+          logger.debug("Witness program: " + witnessProgram)
+          if (stackHash != Sha256Digest(witnessProgram.head.bytes)) Right(ScriptErrorWitnessProgramMisMatch)
+          else {
+            val stack = scriptWitness.stack.tail
+            Left(stack, scriptPubKey)
+          }
         }
       case _ =>
+        logger.error("Invalid witness program length for witness version 0, got: " + programBytes.size)
+        logger.error("Witness: " + scriptWitness)
+        logger.error("Witness program: " + witnessProgram)
         //witness version 0 programs need to be 20 bytes or 32 bytes in size
         Right(ScriptErrorWitnessProgramWrongLength)
     }
@@ -43,9 +54,8 @@ case object WitnessVersion0 extends WitnessVersion {
 }
 
 /** The witness version that represents all witnesses that have not been allocated yet */
-
 case object UnassignedWitness extends WitnessVersion {
-  override def rebuild(scriptWitness: ScriptWitness, witnessProgram: ScriptPubKey): Either[(Seq[ScriptToken], ScriptPubKey),ScriptError] =
+  override def rebuild(scriptWitness: ScriptWitness, witnessProgram: Seq[ScriptToken]): Either[(Seq[ScriptToken], ScriptPubKey),ScriptError] =
     Right(ScriptErrorDiscourageUpgradeableWitnessProgram)
 }
 

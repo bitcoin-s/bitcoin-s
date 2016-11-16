@@ -26,15 +26,12 @@ class ScriptPubKeyTest extends FlatSpec with MustMatchers {
 
   it must "determine if we have a witness program inside of the scriptPubKey" in {
     val pubKeyHash = CryptoUtil.sha256Hash160(CryptoGenerators.publicKey.sample.get.bytes)
-    val witnessAsm = BytesToPushOntoStack(20) +: Seq(ScriptConstant(pubKeyHash.bytes))
-    val asm = Seq(OP_0) ++ witnessAsm
-    val scriptPubKey = ScriptPubKey.fromAsm(asm)
-    val isWitnessOpt = scriptPubKey.isWitnessProgram
-    isWitnessOpt.isDefined must be (true)
-    isWitnessOpt.get._1 must be (0)
-    isWitnessOpt.get._2 must be (witnessAsm)
+    val witnessProgram = Seq(ScriptConstant(pubKeyHash.bytes))
+    val asm = OP_0 +: BytesToPushOntoStack(20) +: witnessProgram
+    val witnessScriptPubKey = WitnessScriptPubKey(asm)
+    witnessScriptPubKey.isDefined must be (true)
+    witnessScriptPubKey.get.witnessVersion must be (WitnessVersion0)
+    witnessScriptPubKey.get.witnessProgram must be (witnessProgram)
   }
-
-
 }
 

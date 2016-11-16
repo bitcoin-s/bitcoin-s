@@ -64,18 +64,10 @@ object NonStandardScriptSignature extends Factory[NonStandardScriptSignature] {
  */
 sealed trait P2PKHScriptSignature extends ScriptSignature {
 
-  /**
-    * P2PKH scriptSigs only have one signature
-    *
-    * @return
-    */
+  /** P2PKH scriptSigs only have one signature */
   def signature : ECDigitalSignature = signatures.head
 
-  /**
-    * Gives us the public key inside of a p2pkh script signature
-    *
-    * @return
-    */
+  /** Gives us the public key inside of a p2pkh script signature */
   def publicKey : ECPublicKey = ECPublicKey(asm.last.bytes)
 
   override def signatures : Seq[ECDigitalSignature] = {
@@ -221,12 +213,7 @@ object P2SHScriptSignature extends Factory[P2SHScriptSignature] with BitcoinSLog
     case _ => false
   }
 
-  /**
-    * Detects if the given script token is a redeem script
-    *
-    * @param token
-    * @return
-    */
+  /** Detects if the given script token is a redeem script */
   def isRedeemScript(token : ScriptToken) : Boolean = {
     logger.debug("Checking if last token is redeem script")
     val redeemScriptTry : Try[ScriptPubKey] = parseRedeemScript(token)
@@ -240,6 +227,7 @@ object P2SHScriptSignature extends Factory[P2SHScriptSignature] with BitcoinSLog
           case x : P2PKScriptPubKey => true
           case x : CLTVScriptPubKey => true
           case x : CSVScriptPubKey => true
+          case x : WitnessScriptPubKeyV0 => true
           case x : NonStandardScriptPubKey => false
           case EmptyScriptPubKey => false
         }
@@ -420,6 +408,7 @@ object CLTVScriptSignature extends Factory[CLTVScriptSignature] {
     case cltvScriptPubKey : CLTVScriptPubKey => apply(cltvScriptPubKey.scriptPubKeyAfterCLTV, sigs, pubKeys)
     case csvScriptPubKey : CSVScriptPubKey => apply(csvScriptPubKey.scriptPubKeyAfterCSV, sigs, pubKeys)
     case EmptyScriptPubKey => CLTVScriptSignature(EmptyScriptSignature)
+    case _ : WitnessScriptPubKeyV0 => CLTVScriptSignature(EmptyScriptSignature)
     case x @ (_ : NonStandardScriptPubKey | _ : P2SHScriptPubKey) => throw new IllegalArgumentException("A NonStandardScriptSignature or P2SHScriptSignature cannot be" +
       "the underlying scriptSig in a CLTVScriptSignature. Got: " + x)
   }
@@ -458,9 +447,10 @@ object CSVScriptSignature extends Factory[CSVScriptSignature] {
     case p2pkScriptPubKey : P2PKScriptPubKey => CSVScriptSignature(P2PKScriptSignature(sigs.head))
     case p2pkhScriptPubKey : P2PKHScriptPubKey => CSVScriptSignature(P2PKHScriptSignature(sigs.head, pubKeys.head))
     case multiSigScriptPubKey : MultiSignatureScriptPubKey => CSVScriptSignature(MultiSignatureScriptSignature(sigs))
-    case cltvScriptPubKey : CLTVScriptPubKey => apply(cltvScriptPubKey.scriptPubKeyAfterCLTV, sigs, pubKeys)
-    case csvScriptPubKey : CSVScriptPubKey => apply(csvScriptPubKey.scriptPubKeyAfterCSV, sigs, pubKeys)
+    case cltvScriptPubKey : CLTVScriptPubKey => CSVScriptSignature(cltvScriptPubKey.scriptPubKeyAfterCLTV, sigs, pubKeys)
+    case csvScriptPubKey : CSVScriptPubKey => CSVScriptSignature(csvScriptPubKey.scriptPubKeyAfterCSV, sigs, pubKeys)
     case EmptyScriptPubKey => CSVScriptSignature(EmptyScriptSignature)
+    case _: WitnessScriptPubKeyV0 => CSVScriptSignature(EmptyScriptSignature)
     case x @ (_ : NonStandardScriptPubKey | _ : P2SHScriptPubKey) => throw new IllegalArgumentException("A NonStandardScriptSignature or P2SHScriptSignature cannot be" +
       "the underlying scriptSig in a CSVScriptSignature. Got: " + x)
   }
@@ -471,7 +461,7 @@ object CSVScriptSignature extends Factory[CSVScriptSignature] {
  * Represents the empty script signature
  */
 case object EmptyScriptSignature extends ScriptSignature {
-  def signatures = List()
+  def signatures = Nil
   def hex = ""
 }
 
@@ -508,7 +498,6 @@ object ScriptSignature extends Factory[ScriptSignature] with BitcoinSLogger {
 
   /**
     * Creates a script signature from the given tokens and scriptPubKey
-    *
     * @param tokens the script signature's tokens
     * @param scriptPubKey the scriptPubKey which the script signature is trying to spend
     * @return
@@ -521,6 +510,7 @@ object ScriptSignature extends Factory[ScriptSignature] with BitcoinSLogger {
     case s : NonStandardScriptPubKey => NonStandardScriptSignature.fromAsm(tokens)
     case s : CLTVScriptPubKey => fromScriptPubKey(tokens, s.scriptPubKeyAfterCLTV)
     case s : CSVScriptPubKey => fromScriptPubKey(tokens, s.scriptPubKeyAfterCSV)
+    case _ : WitnessScriptPubKeyV0 => EmptyScriptSignature
     case EmptyScriptPubKey => if (tokens.isEmpty) EmptyScriptSignature else NonStandardScriptSignature.fromAsm(tokens)
   }
 
