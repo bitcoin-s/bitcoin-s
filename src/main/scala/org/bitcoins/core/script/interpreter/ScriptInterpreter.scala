@@ -38,22 +38,19 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
   /**
    * Runs an entire script though our script programming language and
    * returns a [[ScriptResult]] indicating if the script was valid, or if not what error it encountered
-    *
-    * @param program the program to be interpreted
-   * @return
    */
-  def run(program : ScriptProgram) : ScriptResult = {
+  def run(program : PreExecutionScriptProgram) : ScriptResult = {
     val scriptSig = program.txSignatureComponent.scriptSignature
     val scriptPubKey = program.txSignatureComponent.scriptPubKey
 
     val executedProgram : ExecutedScriptProgram = if (ScriptFlagUtil.requirePushOnly(program.flags)
       && !BitcoinScriptUtil.isPushOnly(program.script)) {
       logger.error("We can only have push operations inside of the script sig when the SIGPUSHONLY flag is set")
-      ScriptProgram(program,ScriptErrorSigPushOnly)
+      ScriptProgram(ScriptProgram.toExecutionInProgress(program),ScriptErrorSigPushOnly)
     } else if (scriptSig.isInstanceOf[P2SHScriptSignature] && ScriptFlagUtil.p2shEnabled(program.flags) &&
       !BitcoinScriptUtil.isPushOnly(scriptSig.asm)) {
       logger.error("P2SH scriptSigs are required to be push only by definition - see BIP16")
-      ScriptProgram(program,ScriptErrorSigPushOnly)
+      ScriptProgram(ScriptProgram.toExecutionInProgress(program),ScriptErrorSigPushOnly)
     } else {
       val scriptSigExecutedProgram = loop(program,0)
       val txSigComponent = scriptSigExecutedProgram.txSignatureComponent

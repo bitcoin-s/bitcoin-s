@@ -74,10 +74,7 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
    * The entire transaction's outputs, inputs, and script (from the most
    * recently-executed OP_CODESEPARATOR to the end) are hashed.
    * The signature used by OP_CHECKSIG must be a valid signature for this hash and public key.
-   * If it is, 1 is returned, 0 otherwise.
-   * https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L818
-   * @param program
-   * @return
+   * [[https://github.com/bitcoin/bitcoin/blob/528472111b4965b1a99c4bcf08ac5ec93d87f10f/src/script/interpreter.cpp#L880]]
    */
   def opCheckSig(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.isDefined && program.script.head == OP_CHECKSIG, "Script top must be OP_CHECKSIG")
@@ -110,28 +107,37 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
             val result = TransactionSignatureChecker.checkSignature(executionInProgressScriptProgram.txSignatureComponent,
               removedOpCodeSeparatorsScript, pubKey, signature, program.flags)
             logger.debug("signature verification isValid: " + result)
+
+
             result match {
               case SignatureValidationSuccess => ScriptProgram(program,
                 OP_TRUE :: restOfStack,program.script.tail)
-              case SignatureValidationFailureNotStrictDerEncoding =>
-                logger.info("Signature validation failed: " + SignatureValidationFailureNotStrictDerEncoding)
-                ScriptProgram(program, ScriptErrorSigDer)
-              case SignatureValidationFailureIncorrectSignatures =>
-                logger.info("Signature validation failed: " + SignatureValidationFailureIncorrectSignatures)
-                ScriptProgram(program, OP_FALSE :: restOfStack,program.script.tail)
-              case SignatureValidationFailureSignatureCount =>
-                logger.info("Signature validation failed: " + SignatureValidationFailureSignatureCount)
-                ScriptProgram(program, OP_FALSE :: restOfStack,program.script.tail)
-              case SignatureValidationFailurePubKeyEncoding =>
-                logger.info("Signature validation failed: " + SignatureValidationFailurePubKeyEncoding)
-                //means that a public key was not encoded correctly
-                ScriptProgram(program,ScriptErrorPubKeyType)
-              case ScriptValidationFailureHighSValue =>
-                logger.info("Signature validation failed: " + ScriptValidationFailureHighSValue)
-                ScriptProgram(program,ScriptErrorSigHighS)
-              case ScriptValidationFailureHashType =>
-                logger.info("Signature validation failed: " + ScriptValidationFailureHashType)
-                ScriptProgram(program,ScriptErrorSigHashType)
+              case err : SignatureValidationError =>
+                if (ScriptFlagUtil.requireScriptVerifyNullFail(program.flags) && signature.bytes.nonEmpty) {
+                  ScriptProgram(executionInProgressScriptProgram,ScriptErrorSigNullFail)
+                } else {
+                  err match {
+                    case SignatureValidationFailureNotStrictDerEncoding =>
+                      logger.info("Signature validation failed: " + SignatureValidationFailureNotStrictDerEncoding)
+                      ScriptProgram(program, ScriptErrorSigDer)
+                    case SignatureValidationFailureIncorrectSignatures =>
+                      logger.info("Signature validation failed: " + SignatureValidationFailureIncorrectSignatures)
+                      ScriptProgram(program, OP_FALSE :: restOfStack,program.script.tail)
+                    case SignatureValidationFailureSignatureCount =>
+                      logger.info("Signature validation failed: " + SignatureValidationFailureSignatureCount)
+                      ScriptProgram(program, OP_FALSE :: restOfStack,program.script.tail)
+                    case SignatureValidationFailurePubKeyEncoding =>
+                      logger.info("Signature validation failed: " + SignatureValidationFailurePubKeyEncoding)
+                      //means that a public key was not encoded correctly
+                      ScriptProgram(program,ScriptErrorPubKeyType)
+                    case ScriptValidationFailureHighSValue =>
+                      logger.info("Signature validation failed: " + ScriptValidationFailureHighSValue)
+                      ScriptProgram(program,ScriptErrorSigHighS)
+                    case ScriptValidationFailureHashType =>
+                      logger.info("Signature validation failed: " + ScriptValidationFailureHashType)
+                      ScriptProgram(program,ScriptErrorSigHashType)
+                  }
+                }
             }
           }
         }
