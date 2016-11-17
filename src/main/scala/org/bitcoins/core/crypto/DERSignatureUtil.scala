@@ -152,11 +152,6 @@ trait DERSignatureUtil extends BitcoinSLogger {
     //empty signature is given to us, aka 0 bytes.
     if (bytes.size == 0) return true
 
-    //check if the bytes are ATLEAST der encoded
-/*    val isDerEncoded = isDEREncoded(bytes)
-    if (!isDerEncoded) return false
-    logger.debug("Signature is at minimum DER encoded")*/
-
     if (bytes.size < 9) return false
     logger.debug("signature is the minimum size for strict der encoding")
     if (bytes.size > 73) return false

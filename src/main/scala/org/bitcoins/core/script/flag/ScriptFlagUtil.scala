@@ -97,6 +97,8 @@ trait ScriptFlagUtil {
   def segWitEnabled(flags: Seq[ScriptFlag]): Boolean = flags.contains(ScriptVerifyWitness)
 
   def discourageUpgradableWitnessProgram(flags: Seq[ScriptFlag]): Boolean = flags.contains(ScriptVerifyDiscourageUpgradableWitnessProgram)
+
+  def requireScriptVerifyNullFail(flags: Seq[ScriptFlag]): Boolean = flags.contains(ScriptVerifyNullFail)
 }
 
 
