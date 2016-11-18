@@ -1,7 +1,8 @@
 package org.bitcoins.core.script
 
 
-import org.bitcoins.core.crypto.TransactionSignatureComponent
+import org.bitcoins.core.crypto.{BaseTransactionSignatureComponent, TransactionSignatureComponent, WitnessV0TransactionSignatureComponent}
+import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptWitness, SignatureVersion}
 import org.bitcoins.core.protocol.transaction.Transaction
@@ -17,58 +18,45 @@ sealed trait ScriptProgram {
 
   /**
    * This contains all relevant information for hashing and checking a [[org.bitcoins.core.protocol.script.ScriptSignature]] for a [[Transaction]].
-    *
-    * @return
    */
   def txSignatureComponent : TransactionSignatureComponent
 
   /**
    * The current state of the stack for execution of the [[ScriptProgram]].
-    *
-    * @return
    */
   def stack : List[ScriptToken]
 
   /**
    * The script operations that need to still be executed.
-    *
-    * @return
    */
   def script : List[ScriptToken]
 
 
   /**
    * The original script that was given.
-    *
-    * @return
    */
   def originalScript : List[ScriptToken]
 
   /**
    * The alternative stack is used in some Script op codes.
-    *
-    * @return
    */
   def altStack : List[ScriptToken]
 
   /**
    * [[ScriptFlag]] that are run with the script.
    * These flags indicate special conditions that a script needs to be run with.
-   * https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.h#L31
-  *
+   * [[https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.h#L31]]
    * @return
    */
   def flags : Seq[ScriptFlag]
 
   /**
     * Returns true if the stack top is true
-    * @return
     */
   def stackTopIsTrue = !stackTopIsFalse
 
   /**
     * Returns true if the stack top is false
-    * @return
     */
   def stackTopIsFalse : Boolean = {
     if (stack.headOption.isDefined &&
@@ -88,7 +76,6 @@ sealed trait PreExecutionScriptProgram extends ScriptProgram
 sealed trait ExecutionInProgressScriptProgram extends ScriptProgram {
   /**
    * The index of the last [[org.bitcoins.core.script.crypto.OP_CODESEPARATOR]]
-   * @return
    */
   def lastCodeSeparator : Option[Int]
 
@@ -263,56 +250,88 @@ object ScriptProgram {
     * @param inputIndex the input's index inside of transaction which we are spending
     * @param flags the flags which we are enforcing inside of the script interpreter
     * @param witness the witness used to evaluate the input
+    * @param amount the amount of [[CurrencyUnit]] we are spending in this input
     * @return the script program representing all of this information
     */
   def apply(transaction: Transaction, scriptPubKey : ScriptPubKey, inputIndex : UInt32,
-            flags : Seq[ScriptFlag], witness: Option[ScriptWitness], signatureVersion: SignatureVersion) : PreExecutionScriptProgram = {
+            flags : Seq[ScriptFlag], witness: ScriptWitness,
+            amount: CurrencyUnit) : PreExecutionScriptProgram = {
     val script = transaction.inputs(inputIndex.toInt).scriptSignature.asm
-    ScriptProgram(transaction,scriptPubKey,inputIndex,script.toList,flags, witness, signatureVersion)
+    ScriptProgram(transaction,scriptPubKey,inputIndex,script.toList,flags, witness, amount)
+  }
+
+  def apply(transaction: Transaction, scriptPubKey : ScriptPubKey, inputIndex : UInt32,
+            stack : Seq[ScriptToken], script: Seq[ScriptToken], flags : Seq[ScriptFlag]): ScriptProgram = {
+    val p = ScriptProgram(transaction,scriptPubKey,inputIndex,flags)
+    ScriptProgram(p,stack,script)
   }
 
   def apply(transaction: Transaction, scriptPubKey : ScriptPubKey, inputIndex : UInt32, script : Seq[ScriptToken],
-            flags : Seq[ScriptFlag], witness: Option[ScriptWitness], signatureVersion: SignatureVersion) : PreExecutionScriptProgram = {
-    val txSignatureComponent = TransactionSignatureComponent(transaction,inputIndex,scriptPubKey,flags,witness, signatureVersion)
+            flags : Seq[ScriptFlag], witness: ScriptWitness, amount: CurrencyUnit) : PreExecutionScriptProgram = {
+    val txSignatureComponent = TransactionSignatureComponent(transaction,inputIndex,scriptPubKey,flags,
+      witness, amount)
     PreExecutionScriptProgramImpl(txSignatureComponent,Nil,script.toList,script.toList,Nil,flags)
   }
 
   def apply(transaction: Transaction, scriptPubKey : ScriptPubKey, inputIndex : UInt32, stack : Seq[ScriptToken],
-            script : Seq[ScriptToken], flags : Seq[ScriptFlag], witness: Option[ScriptWitness], signatureVersion: SignatureVersion) : ScriptProgram = {
-    val program = ScriptProgram(transaction,scriptPubKey,inputIndex,flags,witness,signatureVersion)
+            script : Seq[ScriptToken], flags : Seq[ScriptFlag], witness: ScriptWitness,
+            amount: CurrencyUnit) : ScriptProgram = {
+    val program = ScriptProgram(transaction,scriptPubKey,inputIndex,flags,witness, amount)
     ScriptProgram(program,stack,script)
   }
 
 
 
   def apply(txSignatureComponent : TransactionSignatureComponent, stack : Seq[ScriptToken],
-            script : Seq[ScriptToken]) : ScriptProgram = {
-    ScriptProgram(txSignatureComponent.transaction, txSignatureComponent.scriptPubKey, txSignatureComponent.inputIndex,
-      stack, script, txSignatureComponent.flags, txSignatureComponent.witness, txSignatureComponent.sigVersion)
+            script : Seq[ScriptToken]) : ScriptProgram = txSignatureComponent match {
+    case b: BaseTransactionSignatureComponent =>
+      ScriptProgram(b.transaction, b.scriptPubKey, b.inputIndex, stack, script, b.flags)
+    case w: WitnessV0TransactionSignatureComponent =>
+      ScriptProgram(w.transaction, w.scriptPubKey, w.inputIndex,
+        stack, script, w.flags, w.witness, w.amount)
+  }
+
+  def apply(txSignatureComponent: TransactionSignatureComponent, stack: Seq[ScriptToken], script: Seq[ScriptToken],
+            originalScript: Seq[ScriptToken]): ScriptProgram = txSignatureComponent match {
+    case b : BaseTransactionSignatureComponent =>
+      ExecutionInProgressScriptProgramImpl(b,stack.toList,
+        script.toList,originalScript.toList,Nil,b.flags,None)
+    case w: WitnessV0TransactionSignatureComponent =>
+      ScriptProgram(w,stack,script,originalScript,Nil,w.flags,w.witness,w.amount)
   }
 
 
-  def apply(txSignatureComponent: TransactionSignatureComponent): PreExecutionScriptProgram = {
-    ScriptProgram(txSignatureComponent.transaction, txSignatureComponent.scriptPubKey,
-      txSignatureComponent.inputIndex,txSignatureComponent.flags, txSignatureComponent.witness,
-      txSignatureComponent.sigVersion)
+  def apply(txSignatureComponent: TransactionSignatureComponent): PreExecutionScriptProgram = txSignatureComponent match {
+    case b : BaseTransactionSignatureComponent =>
+      ScriptProgram(b.transaction, b.scriptPubKey,
+        b.inputIndex, b.flags)
+    case w : WitnessV0TransactionSignatureComponent =>
+      ScriptProgram(w.transaction, w.scriptPubKey,
+        w.inputIndex, w.flags, w.witness, w.amount)
   }
 
   /** Creates a fresh [[PreExecutionScriptProgram]] */
   def apply(transaction: Transaction, scriptPubKey: ScriptPubKey, inputIndex: UInt32, stack: Seq[ScriptToken],
             script: Seq[ScriptToken], originalScript: Seq[ScriptToken], altStack: Seq[ScriptToken],
-            flags: Seq[ScriptFlag], witness: Option[ScriptWitness], sigVersion: SignatureVersion): PreExecutionScriptProgram = {
-    val txSigComponent = TransactionSignatureComponent(transaction,inputIndex,
-      scriptPubKey,flags, witness, sigVersion)
-    PreExecutionScriptProgramImpl(txSigComponent,stack.toList,script.toList,originalScript.toList,altStack.toList,flags)
+            flags: Seq[ScriptFlag], witness: ScriptWitness, sigVersion: SignatureVersion,
+            amount: CurrencyUnit): PreExecutionScriptProgram = {
+    val t = TransactionSignatureComponent(transaction,inputIndex,
+      scriptPubKey,flags, witness, amount)
+    PreExecutionScriptProgramImpl(t,stack.toList,script.toList,originalScript.toList,altStack.toList,flags)
   }
 
   /** Creates a fresh instance of [[PreExecutionScriptProgram]] */
   def apply(txSigComponent: TransactionSignatureComponent, stack: Seq[ScriptToken], script: Seq[ScriptToken],
             originalScript: Seq[ScriptToken], altStack: Seq[ScriptToken], flags: Seq[ScriptFlag],
-            witness: Option[ScriptWitness]): PreExecutionScriptProgram = {
+            witness: ScriptWitness, amount: CurrencyUnit): PreExecutionScriptProgram = {
     ScriptProgram(txSigComponent.transaction, txSigComponent.scriptPubKey, txSigComponent.inputIndex, stack,
-      script,originalScript, altStack,flags,witness, txSigComponent.sigVersion)
+      script,originalScript, altStack,flags, witness, txSigComponent.sigVersion, amount)
+  }
+
+  /** Creates a fresh instance of [[org.bitcoins.core.script.PreExecutionScriptProgram]] */
+  def apply(transaction: Transaction, scriptPubKey: ScriptPubKey, inputIndex: UInt32,  flags: Seq[ScriptFlag]): PreExecutionScriptProgram = {
+    val t = TransactionSignatureComponent(transaction,inputIndex,scriptPubKey, flags)
+    ScriptProgram(t)
   }
 
   /**
@@ -337,9 +356,6 @@ object ScriptProgram {
 
   /**
    * Changes a [[ScriptProgram]] that is a [[PreExecutionScriptProgram]] and changes it to an [[ExecutionInProgressScriptProgram]] given the stack state.
-   * @param preExecutionScriptProgram
-   * @param stack
-   * @return
    */
   def toExecutionInProgress(preExecutionScriptProgram: PreExecutionScriptProgram, stack : Option[Seq[ScriptToken]]) : ExecutionInProgressScriptProgram = {
     stack match {

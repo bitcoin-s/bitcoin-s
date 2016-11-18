@@ -25,7 +25,7 @@ class TransactionSignatureCreatorTest extends FlatSpec with MustMatchers with Bi
     val transaction = Transaction(rawTx)
     val scriptPubKey = ScriptPubKey("76a914d7b4717a934386601ac3f980d01b48c83b8a0b4b88ac")
     val txSignatureComponent = TransactionSignatureComponent(transaction, UInt32.one,
-      scriptPubKey, Policy.standardScriptVerifyFlags, None, SigVersionBase)
+      scriptPubKey, Policy.standardScriptVerifyFlags)
     val privateKey = ECPrivateKey.fromWIFToPrivateKey("cTPg4Zc5Jis2EZXy3NXShgbn487GWBTapbU63BerLDZM3w2hQSjC")
     val txSignature = TransactionSignatureCreator.createSig(txSignatureComponent, privateKey, SIGHASH_ALL.defaultValue)
     txSignature.r must be (expectedSig.r)
@@ -41,7 +41,7 @@ class TransactionSignatureCreatorTest extends FlatSpec with MustMatchers with Bi
     val transaction = Transaction(rawTx)
     val scriptPubKey = ScriptPubKey("76a914cd0385f813ec73f8fc340b7069daf566878a0d6b88ac")
     val txSignatureComponent = TransactionSignatureComponent(transaction, UInt32.zero, scriptPubKey,
-      Policy.standardScriptVerifyFlags, None, SigVersionBase)
+      Policy.standardScriptVerifyFlags)
     val privateKey = ECPrivateKey.fromWIFToPrivateKey("cTTh7jNtZhg3vHTjvYK8zcHkLfsMAS8iqL7pfZ6eVAVHHF8fN1qy")
     val txSignature = TransactionSignatureCreator.createSig(txSignatureComponent, privateKey, SIGHASH_ALL.defaultValue)
     txSignature.r must be (expectedSig.r)
@@ -58,7 +58,7 @@ class TransactionSignatureCreatorTest extends FlatSpec with MustMatchers with Bi
     val scriptSig = P2PKScriptSignature(EmptyDigitalSignature)
     val (spendingTx,inputIndex) = TransactionTestUtil.buildSpendingTransaction(creditingTx,scriptSig,outputIndex)
     val txSignatureComponent = TransactionSignatureComponent(spendingTx,inputIndex,scriptPubKey,
-      Policy.standardScriptVerifyFlags, None, SigVersionBase)
+      Policy.standardScriptVerifyFlags)
     val txSignature = TransactionSignatureCreator.createSig(txSignatureComponent,privateKey,SIGHASH_ALL.defaultValue)
 
     //add the signature to the scriptSig instead of having an empty scriptSig
@@ -66,7 +66,7 @@ class TransactionSignatureCreatorTest extends FlatSpec with MustMatchers with Bi
     val (signedTx,_) = TransactionTestUtil.buildSpendingTransaction(creditingTx,signedScriptSig,outputIndex)
 
     //run it through the interpreter
-    val program = ScriptProgram(signedTx,scriptPubKey,inputIndex, Policy.standardScriptVerifyFlags, None, SigVersionBase)
+    val program = ScriptProgram(signedTx,scriptPubKey,inputIndex, Policy.standardScriptVerifyFlags)
 
     val result = ScriptInterpreter.run(program)
 
@@ -82,7 +82,7 @@ class TransactionSignatureCreatorTest extends FlatSpec with MustMatchers with Bi
     val scriptSig = P2PKHScriptSignature(EmptyDigitalSignature,publicKey)
     val (spendingTx,inputIndex) = TransactionTestUtil.buildSpendingTransaction(creditingTx,scriptSig,outputIndex)
     val txSignatureComponent = TransactionSignatureComponent(spendingTx,inputIndex,scriptPubKey,
-      Policy.standardScriptVerifyFlags, None, SigVersionBase)
+      Policy.standardScriptVerifyFlags)
     val txSignature = TransactionSignatureCreator.createSig(txSignatureComponent,privateKey, SIGHASH_ALL.defaultValue)
 
     //add the signature to the scriptSig instead of having an empty scriptSig
@@ -90,7 +90,7 @@ class TransactionSignatureCreatorTest extends FlatSpec with MustMatchers with Bi
     val (signedTx,_) = TransactionTestUtil.buildSpendingTransaction(creditingTx,signedScriptSig,outputIndex)
 
     //run it through the interpreter
-    val program = ScriptProgram(signedTx,scriptPubKey,inputIndex, Policy.standardScriptVerifyFlags, None, SigVersionBase)
+    val program = ScriptProgram(signedTx,scriptPubKey,inputIndex, Policy.standardScriptVerifyFlags)
 
     val result = ScriptInterpreter.run(program)
 
@@ -106,7 +106,7 @@ class TransactionSignatureCreatorTest extends FlatSpec with MustMatchers with Bi
     val scriptSig = MultiSignatureScriptSignature(Seq(EmptyDigitalSignature))
     val (spendingTx,inputIndex) = TransactionTestUtil.buildSpendingTransaction(creditingTx,scriptSig,outputIndex)
     val txSignatureComponent = TransactionSignatureComponent(spendingTx,inputIndex,scriptPubKey,
-      Policy.standardScriptVerifyFlags, None, SigVersionBase)
+      Policy.standardScriptVerifyFlags)
     val txSignature = TransactionSignatureCreator.createSig(txSignatureComponent,privateKey, SIGHASH_ALL.defaultValue)
 
     //add the signature to the scriptSig instead of having an empty scriptSig
@@ -114,7 +114,7 @@ class TransactionSignatureCreatorTest extends FlatSpec with MustMatchers with Bi
     val (signedTx,_) = TransactionTestUtil.buildSpendingTransaction(creditingTx,signedScriptSig,outputIndex)
 
     //run it through the interpreter
-    val program = ScriptProgram(signedTx,scriptPubKey,inputIndex, Policy.standardScriptVerifyFlags, None, SigVersionBase)
+    val program = ScriptProgram(signedTx,scriptPubKey,inputIndex, Policy.standardScriptVerifyFlags)
 
     val result = ScriptInterpreter.run(program)
 
@@ -132,7 +132,7 @@ class TransactionSignatureCreatorTest extends FlatSpec with MustMatchers with Bi
 
     val (spendingTx,inputIndex) = TransactionTestUtil.buildSpendingTransaction(creditingTx,scriptSig,outputIndex)
     val txSignatureComponent = TransactionSignatureComponent(spendingTx,inputIndex,redeemScript,
-      Policy.standardScriptVerifyFlags, None, SigVersionBase)
+      Policy.standardScriptVerifyFlags)
     val txSignature = TransactionSignatureCreator.createSig(txSignatureComponent, privateKey, SIGHASH_ALL.defaultValue)
 
     val signedScriptSig = MultiSignatureScriptSignature(Seq(txSignature))
@@ -140,7 +140,7 @@ class TransactionSignatureCreatorTest extends FlatSpec with MustMatchers with Bi
     val (signedTx,_) = TransactionTestUtil.buildSpendingTransaction(creditingTx,p2shScriptSig,outputIndex)
 
     //run it through the interpreter
-    val program = ScriptProgram(signedTx,scriptPubKey,inputIndex, Policy.standardScriptVerifyFlags, None, SigVersionBase)
+    val program = ScriptProgram(signedTx,scriptPubKey,inputIndex, Policy.standardScriptVerifyFlags)
     val result = ScriptInterpreter.run(program)
     result must be (ScriptOk)
   }

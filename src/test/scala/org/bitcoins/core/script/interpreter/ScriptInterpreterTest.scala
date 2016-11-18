@@ -2,6 +2,7 @@ package org.bitcoins.core.script.interpreter
 
 
 import org.bitcoins.core.crypto.{ECPrivateKey, TransactionSignatureComponent}
+import org.bitcoins.core.currency.CurrencyUnits
 import org.bitcoins.core.gen.TransactionGenerators
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.policy.Policy
@@ -59,10 +60,12 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterp
       val scriptPubKey = ScriptPubKey.fromAsm(testCase.scriptPubKey.asm)
       val flags = ScriptFlagFactory.fromList(testCase.flags)
       val witness = testCase.witness
-      val sigVersion = if (witness.isDefined) SigVersionWitnessV0 else SigVersionBase
       logger.info("Flags after parsing: " + flags)
       logger.info("Witness after parsing: " + witness)
-      val program = ScriptProgram(tx,scriptPubKey,inputIndex,flags, witness.map(_._1), sigVersion)
+      val program = witness match  {
+        case Some((w, amount)) => ScriptProgram(tx, scriptPubKey, inputIndex,flags,w,amount)
+        case None => ScriptProgram(tx, scriptPubKey, inputIndex, flags)
+      }
       withClue(testCase.raw) {
         ScriptInterpreter.run(program) must equal (testCase.expectedResult)
       }

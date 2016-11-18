@@ -52,7 +52,7 @@ class ScriptProgramFactoryTest extends FlatSpec with MustMatchers {
     val stack = List(OP_0)
     val script = List(OP_1)
     val program = ScriptProgram(TestUtil.transaction, TestUtil.scriptPubKey, UInt32.zero,
-      stack,script, ScriptFlagFactory.empty, None, SigVersionBase)
+      stack,script, ScriptFlagFactory.empty)
     program.stack must be (stack)
     program.script must be (script)
   }
