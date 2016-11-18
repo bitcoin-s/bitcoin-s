@@ -1,10 +1,11 @@
 package org.bitcoins.core.script
 
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.script.constant.{OP_1, OP_0}
+import org.bitcoins.core.protocol.script.SigVersionBase
+import org.bitcoins.core.script.constant.{OP_0, OP_1}
 import org.bitcoins.core.script.flag.ScriptFlagFactory
 import org.bitcoins.core.util.TestUtil
-import org.scalatest.{MustMatchers, FlatSpec}
+import org.scalatest.{FlatSpec, MustMatchers}
 
 /**
  * Created by chris on 3/31/16.
@@ -51,7 +52,7 @@ class ScriptProgramFactoryTest extends FlatSpec with MustMatchers {
     val stack = List(OP_0)
     val script = List(OP_1)
     val program = ScriptProgram(TestUtil.transaction, TestUtil.scriptPubKey, UInt32.zero,
-      stack,script, ScriptFlagFactory.empty, None)
+      stack,script, ScriptFlagFactory.empty, None, SigVersionBase)
     program.stack must be (stack)
     program.script must be (script)
   }

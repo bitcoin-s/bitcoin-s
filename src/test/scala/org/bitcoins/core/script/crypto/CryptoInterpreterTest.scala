@@ -1,7 +1,7 @@
 package org.bitcoins.core.script.crypto
 
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptSignature}
+import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptSignature, SigVersionBase}
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script._
 import org.bitcoins.core.script.constant._
@@ -156,7 +156,8 @@ class CryptoInterpreterTest extends FlatSpec with MustMatchers with CryptoInterp
 
     val script = List(OP_CHECKMULTISIG)
 
-    val baseProgram = ScriptProgram(spendingTx,creditingTx.outputs(0).scriptPubKey,UInt32.zero,ScriptFlagFactory.empty, None)
+    val baseProgram = ScriptProgram(spendingTx,creditingTx.outputs(0).scriptPubKey,UInt32.zero,
+      ScriptFlagFactory.empty, None, SigVersionBase)
 
     val program = ScriptProgram(baseProgram,stack,script)
     val newProgram = opCheckMultiSig(program)
@@ -174,7 +175,7 @@ class CryptoInterpreterTest extends FlatSpec with MustMatchers with CryptoInterp
     val tx = Transaction(TestUtil.transaction,UpdateTransactionInputs(Seq(input)))
 
     val baseProgram = ScriptProgram.toExecutionInProgress(ScriptProgram(tx,TestUtil.scriptPubKey,
-      UInt32.zero,flags, None))
+      UInt32.zero,flags, None, SigVersionBase))
     val stack = Seq(OP_0,OP_0,OP_1)
     val script = Seq(OP_CHECKMULTISIG)
     val program = ScriptProgram(baseProgram,stack,script)

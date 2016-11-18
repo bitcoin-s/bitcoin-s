@@ -1,13 +1,14 @@
 package org.bitcoins.core.protocol.transaction
 
 import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.protocol.script.SigVersionBase
 import org.bitcoins.core.protocol.transaction.testprotocol.CoreTransactionTestCase
 import org.bitcoins.core.protocol.transaction.testprotocol.CoreTransactionTestCaseProtocol._
 import org.bitcoins.core.script.ScriptProgram
 import org.bitcoins.core.script.interpreter.ScriptInterpreter
 import org.bitcoins.core.script.result.ScriptOk
 import org.bitcoins.core.serializers.transaction.RawTransactionParser
-import org.bitcoins.core.util.{BitcoinSLogger, TestUtil, BitcoinSUtil}
+import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil, TestUtil}
 import org.scalatest.{FlatSpec, MustMatchers}
 import spray.json._
 
@@ -90,7 +91,7 @@ class TransactionTest extends FlatSpec with MustMatchers with BitcoinSLogger {
       require(outPoint.txId == input.previousOutput.txId,
         "OutPoint txId not the same as input prevout txid\noutPoint.txId: " + outPoint.txId + "\n" +
           "input prevout txid: " + input.previousOutput.txId)
-      val program = ScriptProgram(tx,scriptPubKey,UInt32(inputIndex),testCase.flags, None)
+      val program = ScriptProgram(tx,scriptPubKey,UInt32(inputIndex),testCase.flags, None, SigVersionBase)
       withClue(testCase.raw) {
         ScriptInterpreter.run(program) must equal (ScriptOk)
       }
@@ -131,7 +132,7 @@ class TransactionTest extends FlatSpec with MustMatchers with BitcoinSLogger {
         logger.info("" + testCase.scriptPubKeys)
         val isValidTx = ScriptInterpreter.checkTransaction(tx)
         if (isValidTx) {
-          val program = ScriptProgram(tx,scriptPubKey,UInt32(inputIndex),testCase.flags,None)
+          val program = ScriptProgram(tx,scriptPubKey,UInt32(inputIndex),testCase.flags,None, SigVersionBase)
           ScriptInterpreter.run(program) == ScriptOk
         } else {
           logger.error("Transaction does not pass CheckTransaction()")
