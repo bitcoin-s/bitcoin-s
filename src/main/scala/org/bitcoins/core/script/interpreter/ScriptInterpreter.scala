@@ -164,7 +164,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
           else if (evaluated.stackTopIsFalse) ScriptProgram(evaluated,ScriptErrorEvalFalse)
           else evaluated
         case Right(err) =>
-          val program = ScriptProgram(witnessTxSigComponent)
+          val program = ScriptProgram.toExecutionInProgress(ScriptProgram(witnessTxSigComponent))
           ScriptProgram(program,err)
       }
     case UnassignedWitness =>

@@ -330,8 +330,9 @@ object ScriptProgram {
 
   /** Creates a fresh instance of [[org.bitcoins.core.script.PreExecutionScriptProgram]] */
   def apply(transaction: Transaction, scriptPubKey: ScriptPubKey, inputIndex: UInt32,  flags: Seq[ScriptFlag]): PreExecutionScriptProgram = {
-    val t = TransactionSignatureComponent(transaction,inputIndex,scriptPubKey, flags)
-    ScriptProgram(t)
+    val t = TransactionSignatureComponent(transaction,inputIndex,scriptPubKey,flags)
+    val script = t.scriptSignature.asm
+    PreExecutionScriptProgramImpl(t,Nil,script.toList,script.toList,Nil,t.flags)
   }
 
   /**
