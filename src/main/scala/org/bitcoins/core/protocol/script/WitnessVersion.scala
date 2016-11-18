@@ -32,13 +32,15 @@ case object WitnessVersion0 extends WitnessVersion {
         if (scriptWitness.stack.isEmpty) Right(ScriptErrorWitnessProgramWitnessEmpty)
         else {
           //need to check if the hashes match
-          val scriptPubKey = ScriptPubKey(scriptWitness.stack.head.bytes)
-          logger.debug("Script pub key for p2wsh: " + scriptPubKey.asm)
-          val stackHash = CryptoUtil.sha256(scriptPubKey.bytes)
+          val stackTop = scriptWitness.stack.head
+          val stackHash = CryptoUtil.sha256(stackTop.bytes)
+          logger.debug("Stack top: " + stackTop.hex)
           logger.debug("Stack hash: " + stackHash)
           logger.debug("Witness program: " + witnessProgram)
           if (stackHash != Sha256Digest(witnessProgram.head.bytes)) Right(ScriptErrorWitnessProgramMisMatch)
           else {
+            val scriptPubKey = ScriptPubKey(stackTop.bytes)
+            logger.debug("Script pub key for p2wsh: " + scriptPubKey.asm)
             val stack = scriptWitness.stack.tail
             Left(stack, scriptPubKey)
           }

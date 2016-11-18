@@ -1,7 +1,7 @@
 package org.bitcoins.core.crypto
 
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptWitness}
+import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptWitness, SignatureVersion}
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.script.flag.ScriptFlag
 
@@ -29,6 +29,9 @@ trait TransactionSignatureComponent {
 
   /** The witness that should be used to evaluate the script inside of this program */
   def witness: Option[ScriptWitness]
+
+  /** The digest algorithm used to serialized/hash a transaction for signature creation/verification */
+  def sigVersion: SignatureVersion
 }
 
 
@@ -36,11 +39,11 @@ object TransactionSignatureComponent {
 
   private sealed case class TransactionSignatureComponentImpl(transaction : Transaction, inputIndex : UInt32,
                                                               scriptPubKey : ScriptPubKey, flags : Seq[ScriptFlag],
-                                                              witness : Option[ScriptWitness]) extends TransactionSignatureComponent
+                                                              witness : Option[ScriptWitness], sigVersion: SignatureVersion) extends TransactionSignatureComponent
 
   def apply(transaction : Transaction, inputIndex : UInt32, scriptPubKey : ScriptPubKey,
-            flags : Seq[ScriptFlag], witness : Option[ScriptWitness]) : TransactionSignatureComponent = {
-    TransactionSignatureComponentImpl(transaction,inputIndex, scriptPubKey, flags, witness)
+            flags : Seq[ScriptFlag], witness : Option[ScriptWitness], sigVersion: SignatureVersion) : TransactionSignatureComponent = {
+    TransactionSignatureComponentImpl(transaction,inputIndex, scriptPubKey, flags, witness, sigVersion)
   }
 
   /**
@@ -52,7 +55,8 @@ object TransactionSignatureComponent {
     */
   def apply(oldTxSignatureComponent : TransactionSignatureComponent, scriptPubKey : ScriptPubKey) : TransactionSignatureComponent = {
     TransactionSignatureComponent(oldTxSignatureComponent.transaction,
-      oldTxSignatureComponent.inputIndex,scriptPubKey, oldTxSignatureComponent.flags, oldTxSignatureComponent.witness)
+      oldTxSignatureComponent.inputIndex,scriptPubKey, oldTxSignatureComponent.flags,
+      oldTxSignatureComponent.witness, oldTxSignatureComponent.sigVersion)
   }
 
 }

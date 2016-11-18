@@ -1,11 +1,11 @@
 package org.bitcoins.core.script.interpreter
 
 
-import org.bitcoins.core.crypto.{TransactionSignatureComponent, ECPrivateKey}
+import org.bitcoins.core.crypto.{ECPrivateKey, TransactionSignatureComponent}
 import org.bitcoins.core.gen.TransactionGenerators
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.policy.Policy
-import org.bitcoins.core.protocol.script.{P2SHScriptSignature, CLTVScriptSignature, CLTVScriptPubKey, ScriptPubKey}
+import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.script.ScriptProgram
 import org.bitcoins.core.script.flag.ScriptFlagFactory
 import org.bitcoins.core.script.interpreter.testprotocol.CoreTestCaseProtocol._
@@ -27,17 +27,22 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterp
 
 
     //use this to represent a single test case from script_valid.json
-/*    val lines =
+    val lines =
         """
           | [ [
-  "0x09 0x300602010102010101",
-  "0x21 0x038282263212c609d9ea2a6e3e172de238d8c39cabd5ac1ca10646e23fd5f51508 CHECKSIG NOT",
-  "DERSIG,NULLFAIL",
-  "NULLFAIL",
-  "BIP66 example 4, with DERSIG and NULLFAIL, non-null DER-compliant signature"
+  [
+   "304402200d461c140cfdfcf36b94961db57ae8c18d1cb80e9d95a9e47ac22470c1bf125502201c8dc1cbfef6a3ef90acbbb992ca22fe9466ee6f9d4898eda277a7ac3ab4b25101",
+   "410479be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8ac",
+   0.00000001
+  ],
+  "",
+  "0 0x20 0xb95237b48faaa69eb078e1170be3b5cbb3fddf16d0a991e14ad274f7b33a4f64",
+  "P2SH,WITNESS",
+  "OK",
+  "Basic P2WSH"
  ]]
-   """.stripMargin*/
-    val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n" finally source.close()
+   """.stripMargin
+    //val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n" finally source.close()
     val json = lines.parseJson
     val testCasesOpt : Seq[Option[CoreTestCase]] = json.convertTo[Seq[Option[CoreTestCase]]]
     val testCases : Seq[CoreTestCase] = testCasesOpt.flatten
@@ -54,9 +59,10 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterp
       val scriptPubKey = ScriptPubKey.fromAsm(testCase.scriptPubKey.asm)
       val flags = ScriptFlagFactory.fromList(testCase.flags)
       val witness = testCase.witness
+      val sigVersion = if (witness.isDefined) SigVersionWitnessV0 else SigVersionBase
       logger.info("Flags after parsing: " + flags)
       logger.info("Witness after parsing: " + witness)
-      val program = ScriptProgram(tx,scriptPubKey,inputIndex,flags, witness.map(_._1))
+      val program = ScriptProgram(tx,scriptPubKey,inputIndex,flags, witness.map(_._1), sigVersion)
       withClue(testCase.raw) {
         ScriptInterpreter.run(program) must equal (testCase.expectedResult)
       }
