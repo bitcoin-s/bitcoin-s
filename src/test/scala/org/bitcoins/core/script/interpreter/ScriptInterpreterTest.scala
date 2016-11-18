@@ -28,7 +28,7 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterp
 
 
     //use this to represent a single test case from script_valid.json
-    val lines =
+/*    val lines =
         """
           | [ [
   [
@@ -42,8 +42,8 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterp
   "OK",
   "Basic P2WSH"
  ]]
-   """.stripMargin
-    //val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n" finally source.close()
+   """.stripMargin*/
+    val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n" finally source.close()
     val json = lines.parseJson
     val testCasesOpt : Seq[Option[CoreTestCase]] = json.convertTo[Seq[Option[CoreTestCase]]]
     val testCases : Seq[CoreTestCase] = testCasesOpt.flatten
@@ -62,7 +62,7 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterp
       val witness = testCase.witness
       logger.info("Flags after parsing: " + flags)
       logger.info("Witness after parsing: " + witness)
-      val program = witness match  {
+      val program = witness match {
         case Some((w, amount)) => ScriptProgram(tx, scriptPubKey, inputIndex,flags,w,amount)
         case None => ScriptProgram(tx, scriptPubKey, inputIndex, flags)
       }
