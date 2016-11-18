@@ -91,7 +91,7 @@ class TransactionTest extends FlatSpec with MustMatchers with BitcoinSLogger {
       require(outPoint.txId == input.previousOutput.txId,
         "OutPoint txId not the same as input prevout txid\noutPoint.txId: " + outPoint.txId + "\n" +
           "input prevout txid: " + input.previousOutput.txId)
-      val program = ScriptProgram(tx,scriptPubKey,UInt32(inputIndex),testCase.flags, None, SigVersionBase)
+      val program = ScriptProgram(tx,scriptPubKey,UInt32(inputIndex),testCase.flags)
       withClue(testCase.raw) {
         ScriptInterpreter.run(program) must equal (ScriptOk)
       }
@@ -132,7 +132,7 @@ class TransactionTest extends FlatSpec with MustMatchers with BitcoinSLogger {
         logger.info("" + testCase.scriptPubKeys)
         val isValidTx = ScriptInterpreter.checkTransaction(tx)
         if (isValidTx) {
-          val program = ScriptProgram(tx,scriptPubKey,UInt32(inputIndex),testCase.flags,None, SigVersionBase)
+          val program = ScriptProgram(tx,scriptPubKey,UInt32(inputIndex),testCase.flags)
           ScriptInterpreter.run(program) == ScriptOk
         } else {
           logger.error("Transaction does not pass CheckTransaction()")
@@ -141,7 +141,7 @@ class TransactionTest extends FlatSpec with MustMatchers with BitcoinSLogger {
       }
       withClue(testCase.raw) {
         //only one input is required to be false to make the transaction invalid
-        txInputValidity.contains(false) must be (true)
+        txInputValidity.exists(_ == false) must be (false)
       }
     }
   }

@@ -1,6 +1,7 @@
 package org.bitcoins.core.gen
 
 import org.bitcoins.core.crypto.{TransactionSignatureCreator, _}
+import org.bitcoins.core.currency.CurrencyUnits
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script._
@@ -202,7 +203,7 @@ trait ScriptGenerators extends BitcoinSLogger {
     val scriptSig = P2PKScriptSignature(EmptyDigitalSignature)
     val (spendingTx, inputIndex) = TransactionGenerators.buildSpendingTransaction(creditingTx, scriptSig, outputIndex)
     val txSignatureComponent = TransactionSignatureComponent(spendingTx, inputIndex, scriptPubKey,
-      Policy.standardScriptVerifyFlags, None, SigVersionBase)
+      Policy.standardScriptVerifyFlags)
     val txSignature = TransactionSignatureCreator.createSig(txSignatureComponent, privateKey, SIGHASH_ALL.defaultValue)
 
     //add the signature to the scriptSig instead of having an empty scriptSig
@@ -225,7 +226,7 @@ trait ScriptGenerators extends BitcoinSLogger {
     val scriptSig = P2PKHScriptSignature(EmptyDigitalSignature,publicKey)
     val (spendingTx,inputIndex) = TransactionGenerators.buildSpendingTransaction(creditingTx,scriptSig,outputIndex)
     val txSignatureComponent = TransactionSignatureComponent(spendingTx,inputIndex,scriptPubKey,
-      Policy.standardScriptVerifyFlags, None, SigVersionBase)
+      Policy.standardScriptVerifyFlags)
     val txSignature = TransactionSignatureCreator.createSig(txSignatureComponent,privateKey, SIGHASH_ALL.defaultValue)
 
     //add the signature to the scriptSig instead of having an empty scriptSig
@@ -256,7 +257,7 @@ trait ScriptGenerators extends BitcoinSLogger {
     val scriptSig = MultiSignatureScriptSignature(emptyDigitalSignatures)
     val (spendingTx,inputIndex) = TransactionGenerators.buildSpendingTransaction(creditingTx,scriptSig,outputIndex)
     val txSignatureComponent = TransactionSignatureComponent(spendingTx,inputIndex,
-      scriptPubKey,Policy.standardScriptVerifyFlags, None, SigVersionBase)
+      scriptPubKey,Policy.standardScriptVerifyFlags)
 
     val txSignatures = for {
       i <- 0 until requiredSigs
@@ -351,7 +352,7 @@ trait ScriptGenerators extends BitcoinSLogger {
       TransactionGenerators.buildSpendingTransaction(UInt32(1), creditingTx, EmptyScriptSignature, outputIndex, lockTime, sequence)
     }
     val txSignatureComponent = TransactionSignatureComponent(unsignedSpendingTx, inputIndex,
-      cltv, Policy.standardScriptVerifyFlags, None, SigVersionBase)
+      cltv, Policy.standardScriptVerifyFlags)
     val txSignatures : Seq[ECDigitalSignature] = {
       if (requiredSigs.isDefined) {
         for {
@@ -375,7 +376,7 @@ trait ScriptGenerators extends BitcoinSLogger {
     }
 
     val txSignatureComponent = TransactionSignatureComponent(unsignedSpendingTx, inputIndex,
-      csv, Policy.standardScriptVerifyFlags, None, SigVersionBase)
+      csv, Policy.standardScriptVerifyFlags)
     val txSignatures : Seq[ECDigitalSignature] = {
       if (requiredSigs.isDefined) {
         for {

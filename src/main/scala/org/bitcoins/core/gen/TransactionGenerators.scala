@@ -80,7 +80,7 @@ trait TransactionGenerators extends  BitcoinSLogger {
     val (creditingTx,outputIndex) = buildCreditingTransaction(scriptPubKey)
     val (signedTx,inputIndex) = buildSpendingTransaction(creditingTx,signedScriptSig,outputIndex)
     val signedTxSignatureComponent = TransactionSignatureComponent(signedTx,inputIndex,
-      scriptPubKey,Policy.standardScriptVerifyFlags, None, SigVersionBase)
+      scriptPubKey,Policy.standardScriptVerifyFlags)
     (signedTxSignatureComponent,privateKey)
   }
 
@@ -94,7 +94,7 @@ trait TransactionGenerators extends  BitcoinSLogger {
     val (creditingTx,outputIndex) = buildCreditingTransaction(scriptPubKey)
     val (signedTx,inputIndex) = buildSpendingTransaction(creditingTx,signedScriptSig,outputIndex)
     val signedTxSignatureComponent = TransactionSignatureComponent(signedTx,inputIndex,
-      scriptPubKey,Policy.standardScriptVerifyFlags, None, SigVersionBase)
+      scriptPubKey,Policy.standardScriptVerifyFlags)
     (signedTxSignatureComponent,privateKey)
   }
 
@@ -110,7 +110,7 @@ trait TransactionGenerators extends  BitcoinSLogger {
     val (creditingTx,outputIndex) = buildCreditingTransaction(scriptPubKey)
     val (signedTx,inputIndex) = buildSpendingTransaction(creditingTx,signedScriptSig,outputIndex)
     val signedTxSignatureComponent = TransactionSignatureComponent(signedTx,inputIndex,
-      scriptPubKey,Policy.standardScriptVerifyFlags, None, SigVersionBase)
+      scriptPubKey,Policy.standardScriptVerifyFlags)
     (signedTxSignatureComponent, privateKeys)
   }
 
@@ -125,7 +125,7 @@ trait TransactionGenerators extends  BitcoinSLogger {
     val (creditingTx,outputIndex) = buildCreditingTransaction(signedScriptSig.redeemScript)
     val (signedTx,inputIndex) = buildSpendingTransaction(creditingTx,signedScriptSig,outputIndex)
     val signedTxSignatureComponent = TransactionSignatureComponent(signedTx,inputIndex,
-      scriptPubKey,Policy.standardScriptVerifyFlags, None, SigVersionBase)
+      scriptPubKey,Policy.standardScriptVerifyFlags)
     (signedTxSignatureComponent, privateKeys)
   }
 
@@ -157,8 +157,6 @@ trait TransactionGenerators extends  BitcoinSLogger {
   /**
     *  Creates a [[ECPrivateKey]], then creates a [[CLTVScriptPubKey]] from that private key
     *  Finally creates a [[Transaction]] that can successfully spend the [[CLTVScriptPubKey]]
-    *
-    * @return
     */
   def spendableCLTVTransaction : Gen[(TransactionSignatureComponent, Seq[ECPrivateKey], ScriptNumber)] = for {
     txLockTime <- NumberGenerator.uInt32s
@@ -170,8 +168,6 @@ trait TransactionGenerators extends  BitcoinSLogger {
   /**
     *  Creates a [[ECPrivateKey]], then creates a [[CSVScriptPubKey]] from that private key
     *  Finally creates a [[Transaction]] that can successfully spend the [[CSVScriptPubKey]]
-    *
-    * @return
     */
   def spendableCSVTransaction : Gen[(TransactionSignatureComponent, Seq[ECPrivateKey], ScriptNumber, UInt32)] = for {
     (csvScriptNum, sequence) <- spendableCSVValues
@@ -189,7 +185,7 @@ trait TransactionGenerators extends  BitcoinSLogger {
     val (signedSpendingTx, inputIndex) = buildSpendingTransaction(UInt32(2), creditingTx,
       signedScriptSig, outputIndex, UInt32.zero, sequence)
     val txSigComponent = TransactionSignatureComponent(signedSpendingTx, inputIndex,
-      csv, Policy.standardScriptVerifyFlags, None, SigVersionBase)
+      csv, Policy.standardScriptVerifyFlags)
     (txSigComponent, privKeys, csvNum, sequence)
   }
 
@@ -270,7 +266,7 @@ trait TransactionGenerators extends  BitcoinSLogger {
     (spendingTx, inputIndex) = buildSpendingTransaction(TransactionConstants.version,creditingTx, signedScriptSig, outputIndex, txLockTime, sequence)
 
     txSigComponent = TransactionSignatureComponent(spendingTx, inputIndex, cltvScriptPubkey,
-      Policy.standardScriptVerifyFlags, None, SigVersionBase)
+      Policy.standardScriptVerifyFlags)
   } yield (txSigComponent, privateKeys, cltvLockTime)).suchThat(cltvLockTimesOfSameType)
 
   /**

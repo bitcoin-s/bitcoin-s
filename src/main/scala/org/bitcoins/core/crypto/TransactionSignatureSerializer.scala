@@ -1,5 +1,6 @@
 package org.bitcoins.core.crypto
 
+import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
@@ -21,18 +22,13 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
   /**
    * Bitcoin Core's bug is that SignatureHash was supposed to return a hash and on this codepath it
    * actually returns the constant "1" to indicate an error
-   * @return
    */
   private def errorHash : DoubleSha256Digest = DoubleSha256Digest(BitcoinSUtil.decodeHex("0100000000000000000000000000000000000000000000000000000000000000"))
 
   /**
    * Serializes a transaction to be signed by an ECKey
-   * follows the bitcoinj implementation which can be found here
-   * hashing is done in the hashForSignature function
-   * @param inputIndex
-   * @param script
-   * @param hashType
-   * @return
+   * follows the bitcoinj implementation
+   * hashing is done in the [[hashForSignature]] function
    */
   def serializeForSignature(spendingTransaction : Transaction, inputIndex : UInt32, script : Seq[ScriptToken], hashType : HashType) : Seq[Byte] = {
     logger.debug("Serializing for signature")
@@ -137,7 +133,8 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
     * @param hashType the hash type we are serializing this tx for
     * @return
     */
-  def hashForSignature(spendingTransaction : Transaction, inputIndex : UInt32, script : Seq[ScriptToken], hashType : HashType) : DoubleSha256Digest = {
+  def hashForSignature(spendingTransaction : Transaction, inputIndex : UInt32, script : Seq[ScriptToken],
+                       hashType : HashType) : DoubleSha256Digest = {
     //these first two checks are in accordance with behavior in bitcoin core
     //https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L1112-L1123
     if (inputIndex >= UInt32(spendingTransaction.inputs.size)) {
