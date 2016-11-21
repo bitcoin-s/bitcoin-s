@@ -7,7 +7,7 @@ import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.script.ScriptSettings
 import org.bitcoins.core.script.constant.ScriptNumber
-import org.bitcoins.core.script.crypto.SIGHASH_ALL
+import org.bitcoins.core.script.crypto.{HashType, SIGHASH_ALL}
 import org.bitcoins.core.util.BitcoinSLogger
 import org.scalacheck.Gen
 
@@ -204,7 +204,7 @@ trait ScriptGenerators extends BitcoinSLogger {
     val (spendingTx, inputIndex) = TransactionGenerators.buildSpendingTransaction(creditingTx, scriptSig, outputIndex)
     val txSignatureComponent = TransactionSignatureComponent(spendingTx, inputIndex, scriptPubKey,
       Policy.standardScriptVerifyFlags)
-    val txSignature = TransactionSignatureCreator.createSig(txSignatureComponent, privateKey, SIGHASH_ALL.defaultValue)
+    val txSignature = TransactionSignatureCreator.createSig(txSignatureComponent, privateKey, HashType.sigHashAll)
 
     //add the signature to the scriptSig instead of having an empty scriptSig
     val signedScriptSig = P2PKScriptSignature(txSignature)
@@ -227,7 +227,7 @@ trait ScriptGenerators extends BitcoinSLogger {
     val (spendingTx,inputIndex) = TransactionGenerators.buildSpendingTransaction(creditingTx,scriptSig,outputIndex)
     val txSignatureComponent = TransactionSignatureComponent(spendingTx,inputIndex,scriptPubKey,
       Policy.standardScriptVerifyFlags)
-    val txSignature = TransactionSignatureCreator.createSig(txSignatureComponent,privateKey, SIGHASH_ALL.defaultValue)
+    val txSignature = TransactionSignatureCreator.createSig(txSignatureComponent,privateKey, HashType.sigHashAll)
 
     //add the signature to the scriptSig instead of having an empty scriptSig
     val signedScriptSig = P2PKHScriptSignature(txSignature,publicKey)
@@ -261,7 +261,7 @@ trait ScriptGenerators extends BitcoinSLogger {
 
     val txSignatures = for {
       i <- 0 until requiredSigs
-    } yield TransactionSignatureCreator.createSig(txSignatureComponent,privateKeys(i), SIGHASH_ALL.defaultValue)
+    } yield TransactionSignatureCreator.createSig(txSignatureComponent,privateKeys(i), HashType.sigHashAll)
 
     //add the signature to the scriptSig instead of having an empty scriptSig
     val signedScriptSig = MultiSignatureScriptSignature(txSignatures)
@@ -357,8 +357,8 @@ trait ScriptGenerators extends BitcoinSLogger {
       if (requiredSigs.isDefined) {
         for {
           i <- 0 until requiredSigs.get
-        } yield TransactionSignatureCreator.createSig(txSignatureComponent,privateKeys(i), SIGHASH_ALL.defaultValue)
-      } else Seq(TransactionSignatureCreator.createSig(txSignatureComponent, privateKeys.head, SIGHASH_ALL.defaultValue))
+        } yield TransactionSignatureCreator.createSig(txSignatureComponent,privateKeys(i), HashType.sigHashAll)
+      } else Seq(TransactionSignatureCreator.createSig(txSignatureComponent, privateKeys.head, HashType.sigHashAll))
     }
     val signedScriptSig : CLTVScriptSignature = CLTVScriptSignature(cltv, txSignatures, pubKeys)
     (signedScriptSig, cltv, privateKeys)
@@ -381,8 +381,8 @@ trait ScriptGenerators extends BitcoinSLogger {
       if (requiredSigs.isDefined) {
         for {
           i <- 0 until requiredSigs.get
-        } yield TransactionSignatureCreator.createSig(txSignatureComponent,privateKeys(i), SIGHASH_ALL.defaultValue)
-      } else Seq(TransactionSignatureCreator.createSig(txSignatureComponent, privateKeys.head, SIGHASH_ALL.defaultValue))
+        } yield TransactionSignatureCreator.createSig(txSignatureComponent,privateKeys(i), HashType.sigHashAll)
+      } else Seq(TransactionSignatureCreator.createSig(txSignatureComponent, privateKeys.head, HashType.sigHashAll))
     }
     val signedScriptSig : CSVScriptSignature = CSVScriptSignature(csv, txSignatures, pubKeys)
     (signedScriptSig, csv, privateKeys)
