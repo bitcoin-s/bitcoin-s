@@ -44,7 +44,7 @@ object CoreTestCaseProtocol extends DefaultJsonProtocol with BitcoinSLogger {
         //means we have a witness as the first item in our array
         val witnessArray = elements.head.asInstanceOf[JsArray]
         val amount = Satoshis(Int64((witnessArray.elements.last.convertTo[Double] * 100000000L).toLong))
-        val stack = witnessArray.elements.slice(0,witnessArray.elements.size - 1).map(c => ScriptConstant(c.convertTo[String]))
+        val stack = witnessArray.elements.slice(0,witnessArray.elements.size - 1).map(c => BitcoinSUtil.decodeHex(c.convertTo[String]))
         val witness = ScriptWitness(stack.reverse)
         val scriptPubKeyBytes : Seq[Byte] = parseScriptPubKey(elements(2))
         val scriptPubKey = ScriptPubKey(scriptPubKeyBytes)
@@ -69,7 +69,7 @@ object CoreTestCaseProtocol extends DefaultJsonProtocol with BitcoinSLogger {
       } else if (elements.size == 6 && elements.head.isInstanceOf[JsArray]) {
         val witnessArray = elements.head.asInstanceOf[JsArray]
         val amount = Satoshis(Int64((witnessArray.elements.last.convertTo[Double] * 100000000L).toLong))
-        val stack = witnessArray.elements.slice(0,witnessArray.elements.size - 1).map(c => ScriptConstant(c.convertTo[String]))
+        val stack = witnessArray.elements.slice(0,witnessArray.elements.size - 1).map(c => BitcoinSUtil.decodeHex(c.convertTo[String]))
         val witness = ScriptWitness(stack.reverse)
         val scriptPubKeyBytes : Seq[Byte] = parseScriptPubKey(elements(2))
         val scriptPubKey = ScriptPubKey(scriptPubKeyBytes)

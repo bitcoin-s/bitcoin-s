@@ -1,25 +1,29 @@
 package org.bitcoins.core.protocol.script
 
 import org.bitcoins.core.crypto.{ECDigitalSignature, ECPublicKey}
+import org.bitcoins.core.protocol.NetworkElement
 import org.bitcoins.core.script.constant.{ScriptConstant, ScriptToken}
 
 /**
   * Created by chris on 11/10/16.
+  * The witness used to evaluate a [[ScriptPubKey]] inside of Bitcoin
+  * [[https://github.com/bitcoin/bitcoin/blob/57b34599b2deb179ff1bd97ffeab91ec9f904d85/src/script/script.h#L648-L660]]
   */
 sealed trait ScriptWitness {
 
   /** The [[ScriptToken]]s that are placed on to the stack when evaluating a witness program */
-  def stack : Seq[ScriptToken]
+  def stack : Seq[Seq[Byte]]
+
 }
 
 object ScriptWitness {
-  private case class ScriptWitnessImpl(stack: Seq[ScriptToken]) extends ScriptWitness
+  private case class ScriptWitnessImpl(stack: Seq[Seq[Byte]]) extends ScriptWitness
 
-  def apply(stack: Seq[ScriptToken]): ScriptWitness = ScriptWitnessImpl(stack)
+  def apply(stack: Seq[Seq[Byte]]): ScriptWitness = ScriptWitnessImpl(stack)
 
   def apply(signature: ECDigitalSignature, publicKey: ECPublicKey): ScriptWitness = {
-    val sigConstant = ScriptConstant(signature.bytes)
-    val pubKeyConstant = ScriptConstant(publicKey.bytes)
+    val sigConstant = signature.bytes
+    val pubKeyConstant = publicKey.bytes
     ScriptWitness(Seq(sigConstant, pubKeyConstant))
   }
 }

@@ -32,6 +32,8 @@ trait CompactSizeUInt {
     case 5 => "fe" + BitcoinSUtil.flipEndianness(num.hex.slice(8,16))
     case _ => "ff" + BitcoinSUtil.flipEndianness(num.hex)
   }
+
+  def bytes: Seq[Byte] = BitcoinSUtil.decodeHex(hex)
 }
 
 object CompactSizeUInt extends Factory[CompactSizeUInt] {

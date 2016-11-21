@@ -1,9 +1,9 @@
 package org.bitcoins.core.protocol.script
 
 import org.bitcoins.core.crypto.{ECPublicKey, Sha256Digest, Sha256Hash160Digest}
-import org.bitcoins.core.script.constant.ScriptToken
+import org.bitcoins.core.script.constant.{ScriptConstant, ScriptToken}
 import org.bitcoins.core.script.result._
-import org.bitcoins.core.util.{BitcoinSLogger, CryptoUtil}
+import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil, CryptoUtil}
 
 /**
   * Created by chris on 11/10/16.
@@ -24,8 +24,8 @@ case object WitnessVersion0 extends WitnessVersion {
         //p2wpkh
         if (scriptWitness.stack.size != 2) Right(ScriptErrorWitnessProgramMisMatch)
         else {
-          val key = ECPublicKey(scriptWitness.stack.last.bytes)
-          Left((scriptWitness.stack, P2PKHScriptPubKey(key)))
+          val key = ECPublicKey(scriptWitness.stack.last)
+          Left((scriptWitness.stack.map(ScriptConstant(_)), P2PKHScriptPubKey(key)))
         }
       case 32 =>
         //p2wsh
@@ -33,15 +33,15 @@ case object WitnessVersion0 extends WitnessVersion {
         else {
           //need to check if the hashes match
           val stackTop = scriptWitness.stack.head
-          val stackHash = CryptoUtil.sha256(stackTop.bytes)
-          logger.debug("Stack top: " + stackTop.hex)
+          val stackHash = CryptoUtil.sha256(stackTop)
+          logger.debug("Stack top: " + BitcoinSUtil.encodeHex(stackTop))
           logger.debug("Stack hash: " + stackHash)
           logger.debug("Witness program: " + witnessProgram)
           if (stackHash != Sha256Digest(witnessProgram.head.bytes)) Right(ScriptErrorWitnessProgramMisMatch)
           else {
-            val scriptPubKey = ScriptPubKey(stackTop.bytes)
+            val scriptPubKey = ScriptPubKey(stackTop)
             logger.debug("Script pub key for p2wsh: " + scriptPubKey.asm)
-            val stack = scriptWitness.stack.tail
+            val stack = scriptWitness.stack.tail.map(ScriptConstant(_))
             Left(stack, scriptPubKey)
           }
         }
