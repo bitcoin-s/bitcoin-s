@@ -5,7 +5,7 @@ import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.ScriptProgram
-import org.bitcoins.core.script.crypto.SIGHASH_ALL
+import org.bitcoins.core.script.crypto.{HashType, SIGHASH_ALL}
 import org.bitcoins.core.script.interpreter.ScriptInterpreter
 import org.bitcoins.core.script.result.ScriptOk
 import org.bitcoins.core.util.{BitcoinSLogger, TransactionTestUtil}
@@ -27,7 +27,7 @@ class TransactionSignatureCreatorTest extends FlatSpec with MustMatchers with Bi
     val txSignatureComponent = TransactionSignatureComponent(transaction, UInt32.one,
       scriptPubKey, Policy.standardScriptVerifyFlags)
     val privateKey = ECPrivateKey.fromWIFToPrivateKey("cTPg4Zc5Jis2EZXy3NXShgbn487GWBTapbU63BerLDZM3w2hQSjC")
-    val txSignature = TransactionSignatureCreator.createSig(txSignatureComponent, privateKey, SIGHASH_ALL.defaultValue)
+    val txSignature = TransactionSignatureCreator.createSig(txSignatureComponent, privateKey, HashType.sigHashAll)
     txSignature.r must be (expectedSig.r)
     txSignature.s must be (expectedSig.s)
     txSignature.hex must be (expectedSig.hex)
@@ -43,7 +43,7 @@ class TransactionSignatureCreatorTest extends FlatSpec with MustMatchers with Bi
     val txSignatureComponent = TransactionSignatureComponent(transaction, UInt32.zero, scriptPubKey,
       Policy.standardScriptVerifyFlags)
     val privateKey = ECPrivateKey.fromWIFToPrivateKey("cTTh7jNtZhg3vHTjvYK8zcHkLfsMAS8iqL7pfZ6eVAVHHF8fN1qy")
-    val txSignature = TransactionSignatureCreator.createSig(txSignatureComponent, privateKey, SIGHASH_ALL.defaultValue)
+    val txSignature = TransactionSignatureCreator.createSig(txSignatureComponent, privateKey, HashType.sigHashAll)
     txSignature.r must be (expectedSig.r)
     txSignature.s must be (expectedSig.s)
     txSignature.hex must be (expectedSig.hex)
@@ -59,7 +59,7 @@ class TransactionSignatureCreatorTest extends FlatSpec with MustMatchers with Bi
     val (spendingTx,inputIndex) = TransactionTestUtil.buildSpendingTransaction(creditingTx,scriptSig,outputIndex)
     val txSignatureComponent = TransactionSignatureComponent(spendingTx,inputIndex,scriptPubKey,
       Policy.standardScriptVerifyFlags)
-    val txSignature = TransactionSignatureCreator.createSig(txSignatureComponent,privateKey,SIGHASH_ALL.defaultValue)
+    val txSignature = TransactionSignatureCreator.createSig(txSignatureComponent,privateKey,HashType.sigHashAll)
 
     //add the signature to the scriptSig instead of having an empty scriptSig
     val signedScriptSig = P2PKScriptSignature(txSignature)
@@ -83,7 +83,7 @@ class TransactionSignatureCreatorTest extends FlatSpec with MustMatchers with Bi
     val (spendingTx,inputIndex) = TransactionTestUtil.buildSpendingTransaction(creditingTx,scriptSig,outputIndex)
     val txSignatureComponent = TransactionSignatureComponent(spendingTx,inputIndex,scriptPubKey,
       Policy.standardScriptVerifyFlags)
-    val txSignature = TransactionSignatureCreator.createSig(txSignatureComponent,privateKey, SIGHASH_ALL.defaultValue)
+    val txSignature = TransactionSignatureCreator.createSig(txSignatureComponent,privateKey, HashType.sigHashAll)
 
     //add the signature to the scriptSig instead of having an empty scriptSig
     val signedScriptSig = P2PKHScriptSignature(txSignature,publicKey)
@@ -107,7 +107,7 @@ class TransactionSignatureCreatorTest extends FlatSpec with MustMatchers with Bi
     val (spendingTx,inputIndex) = TransactionTestUtil.buildSpendingTransaction(creditingTx,scriptSig,outputIndex)
     val txSignatureComponent = TransactionSignatureComponent(spendingTx,inputIndex,scriptPubKey,
       Policy.standardScriptVerifyFlags)
-    val txSignature = TransactionSignatureCreator.createSig(txSignatureComponent,privateKey, SIGHASH_ALL.defaultValue)
+    val txSignature = TransactionSignatureCreator.createSig(txSignatureComponent,privateKey, HashType.sigHashAll)
 
     //add the signature to the scriptSig instead of having an empty scriptSig
     val signedScriptSig = MultiSignatureScriptSignature(Seq(txSignature))
@@ -133,7 +133,7 @@ class TransactionSignatureCreatorTest extends FlatSpec with MustMatchers with Bi
     val (spendingTx,inputIndex) = TransactionTestUtil.buildSpendingTransaction(creditingTx,scriptSig,outputIndex)
     val txSignatureComponent = TransactionSignatureComponent(spendingTx,inputIndex,redeemScript,
       Policy.standardScriptVerifyFlags)
-    val txSignature = TransactionSignatureCreator.createSig(txSignatureComponent, privateKey, SIGHASH_ALL.defaultValue)
+    val txSignature = TransactionSignatureCreator.createSig(txSignatureComponent, privateKey, HashType.sigHashAll)
 
     val signedScriptSig = MultiSignatureScriptSignature(Seq(txSignature))
     val p2shScriptSig = P2SHScriptSignature(signedScriptSig,redeemScript)
