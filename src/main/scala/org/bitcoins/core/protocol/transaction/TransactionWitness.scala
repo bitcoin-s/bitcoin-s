@@ -15,6 +15,12 @@ sealed trait TransactionWitness extends NetworkElement {
   override def hex = RawTransactionWitnessParser.write(this)
 }
 
+/** Used to represent a transaction witness pre segwit, see BIP141 for details */
+case object EmptyWitness extends TransactionWitness {
+  override def hex = "00"
+  override def witnesses = Nil
+}
+
 object TransactionWitness {
   private case class TransactionWitnessImpl(witnesses: Seq[TransactionInputWitness]) extends TransactionWitness
 
