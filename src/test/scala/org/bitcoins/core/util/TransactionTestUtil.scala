@@ -59,7 +59,8 @@ trait TransactionTestUtil extends BitcoinSLogger {
    * @param outputIndex
    * @return the built spending transaction and the input index for the script signature
    */
-  def buildSpendingTransaction(creditingTx : Transaction,scriptSignature : ScriptSignature, outputIndex : UInt32) : (Transaction,UInt32) = {
+  def buildSpendingTransaction(creditingTx : Transaction,scriptSignature : ScriptSignature, outputIndex : UInt32,
+                               witness: Option[ScriptWitness] = None) : (Transaction,UInt32) = {
 /*
     CMutableTransaction txSpend;
     txSpend.nVersion = 1;

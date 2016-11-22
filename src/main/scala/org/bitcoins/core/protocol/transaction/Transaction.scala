@@ -2,8 +2,8 @@ package org.bitcoins.core.protocol.transaction
 
 import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.{CompactSizeUInt, NetworkElement}
-import org.bitcoins.core.serializers.transaction.RawTransactionParser
+import org.bitcoins.core.protocol.NetworkElement
+import org.bitcoins.core.serializers.transaction.{RawBaseTransactionParser, RawWitnessTransactionParser}
 import org.bitcoins.core.util.{BitcoinSUtil, CryptoUtil, Factory}
 
 /**
@@ -42,7 +42,6 @@ sealed trait Transaction extends NetworkElement {
     */
   def lockTime : UInt32
 
-  override def hex = RawTransactionParser.write(this)
 
   /**
     * Determines if this transaction is a coinbase transaction
@@ -57,7 +56,13 @@ sealed trait Transaction extends NetworkElement {
   }
 }
 
-case object EmptyTransaction extends Transaction {
+
+sealed trait BaseTransaction extends Transaction {
+  override def hex = RawBaseTransactionParser.write(this)
+}
+
+
+case object EmptyTransaction extends BaseTransaction {
   override def txId = DoubleSha256Digest(BitcoinSUtil.decodeHex("0000000000000000000000000000000000000000000000000000000000000000"))
   override def version = TransactionConstants.version
   override def inputs = Nil
@@ -65,55 +70,45 @@ case object EmptyTransaction extends Transaction {
   override def lockTime = TransactionConstants.lockTime
 }
 
+sealed trait WitnessTransaction extends Transaction {
+  /** The witness used to evaluate [[org.bitcoins.core.protocol.script.ScriptSignature]]/[[org.bitcoins.core.protocol.script.ScriptPubKey]]s inside of a segwit tx
+    * [[https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki]]
+    */
+  def witness: TransactionWitness
+
+  override def hex = RawWitnessTransactionParser.write(this)
+
+}
+
 object Transaction extends Factory[Transaction] {
 
-
-  private sealed case class TransactionImpl(version : UInt32, inputs : Seq[TransactionInput],
-    outputs : Seq[TransactionOutput], lockTime : UInt32) extends Transaction
-  /**
-    * Updates a transaction outputs
-    * @param updatedOutputs
-    * @return
-    */
+  /** Updates a transaction outputs */
   def factory(oldTx : Transaction, updatedOutputs : UpdateTransactionOutputs) : Transaction = {
-    TransactionImpl(oldTx.version,oldTx.inputs,updatedOutputs.outputs,oldTx.lockTime)
+    Transaction(oldTx.version,oldTx.inputs,updatedOutputs.outputs,oldTx.lockTime)
   }
 
-  /**
-    * Updates a transaction's inputs
-    * @param updatedInputs
-    * @return
-    */
+  /** Updates a transaction's input */
   def factory(oldTx : Transaction,updatedInputs : UpdateTransactionInputs) : Transaction = {
-    TransactionImpl(oldTx.version,updatedInputs.inputs,oldTx.outputs,oldTx.lockTime)
+    Transaction(oldTx.version,updatedInputs.inputs,oldTx.outputs,oldTx.lockTime)
   }
 
-  /**
-    * Factory function that modifies a transactions locktime
-    * @param oldTx
-    * @param lockTime
-    * @return
-    */
+  /** Factory function that modifies a transactions locktime */
   def factory(oldTx : Transaction, lockTime : UInt32) : Transaction = {
-    TransactionImpl(oldTx.version,oldTx.inputs,oldTx.outputs,lockTime)
+    Transaction(oldTx.version,oldTx.inputs,oldTx.outputs,lockTime)
   }
 
 
-  /**
-    * Removes the inputs of the transactions
-    * @return
-    */
-  def emptyInputs(oldTx : Transaction) : Transaction = TransactionImpl(oldTx.version,Seq(),oldTx.outputs,oldTx.lockTime)
+  /** Removes the inputs of the transactions */
+  def emptyInputs(oldTx : Transaction) : Transaction = Transaction(oldTx.version,Nil,oldTx.outputs,oldTx.lockTime)
 
-  /**
-    * Removes the outputs of the transactions
-    * @return
-    */
-  def emptyOutputs(oldTx : Transaction) : Transaction = TransactionImpl(oldTx.version,oldTx.inputs,Seq(),oldTx.lockTime)
+  /** Removes the outputs of the transactions */
+  def emptyOutputs(oldTx : Transaction) : Transaction = Transaction(oldTx.version,oldTx.inputs,Nil,oldTx.lockTime)
 
   def factory(bytes : Array[Byte]) : Transaction = fromBytes(bytes.toSeq)
 
-  def fromBytes(bytes : Seq[Byte]) : Transaction = RawTransactionParser.read(bytes)
+  def fromBytes(bytes : Seq[Byte]) : Transaction = {
+    RawBaseTransactionParser.read(bytes)
+  }
 
   def apply(bytes : Array[Byte]) : Transaction = factory(bytes)
   def apply(oldTx : Transaction, lockTime : UInt32)  : Transaction = factory(oldTx,lockTime)
@@ -122,6 +117,29 @@ object Transaction extends Factory[Transaction] {
 
   def apply(version : UInt32, inputs : Seq[TransactionInput],
             outputs : Seq[TransactionOutput], lockTime : UInt32) : Transaction = {
-    TransactionImpl(version,inputs,outputs,lockTime)
+    BaseTransaction(version,inputs,outputs,lockTime)
   }
+}
+
+object BaseTransaction extends Factory[BaseTransaction] {
+  private case class BaseTransactionImpl(version : UInt32, inputs : Seq[TransactionInput],
+                                         outputs : Seq[TransactionOutput], lockTime : UInt32) extends BaseTransaction
+
+  override def fromBytes(bytes: Seq[Byte]):  BaseTransaction = RawBaseTransactionParser.read(bytes)
+
+
+  def apply(version : UInt32, inputs : Seq[TransactionInput],
+            outputs : Seq[TransactionOutput], lockTime : UInt32) : BaseTransaction = BaseTransactionImpl(version,inputs,outputs,lockTime)
+}
+
+
+object WitnessTransaction extends Factory[WitnessTransaction] {
+  private case class WitnessTransactionImpl(version: UInt32, inputs: Seq[TransactionInput],
+                                            outputs: Seq[TransactionOutput], lockTime: UInt32, witness: TransactionWitness) extends WitnessTransaction
+
+  def apply(version: UInt32, inputs: Seq[TransactionInput], outputs: Seq[TransactionOutput], lockTime: UInt32,
+            witness: TransactionWitness): WitnessTransaction = WitnessTransactionImpl(version,inputs,outputs,lockTime,witness)
+
+  override def fromBytes(bytes: Seq[Byte]): WitnessTransaction = RawWitnessTransactionParser.read(bytes)
+
 }

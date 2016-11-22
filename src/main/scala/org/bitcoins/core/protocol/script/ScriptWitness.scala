@@ -1,8 +1,7 @@
 package org.bitcoins.core.protocol.script
 
 import org.bitcoins.core.crypto.{ECDigitalSignature, ECPublicKey}
-import org.bitcoins.core.protocol.NetworkElement
-import org.bitcoins.core.script.constant.{ScriptConstant, ScriptToken}
+import org.bitcoins.core.script.constant.ScriptToken
 
 /**
   * Created by chris on 11/10/16.
