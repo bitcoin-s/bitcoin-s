@@ -6,6 +6,8 @@ import org.bitcoins.core.protocol.NetworkElement
 import org.bitcoins.core.serializers.transaction.{RawBaseTransactionParser, RawWitnessTransactionParser}
 import org.bitcoins.core.util.{BitcoinSUtil, CryptoUtil, Factory}
 
+import scala.util.{Failure, Success, Try}
+
 /**
  * Created by chris on 7/14/15.
  */
@@ -13,33 +15,19 @@ sealed trait Transaction extends NetworkElement {
   /**
     * The sha256(sha256(tx)) of this transaction
     * Note that this is the big endian encoding of the hash NOT the little endian encoding displayed on block explorers
-    *
-    * @return
     */
   def txId : DoubleSha256Digest = CryptoUtil.doubleSHA256(bytes)
 
-  /**
-    * The version number for this transaction
-    * @return
-    */
+  /** The version number for this transaction */
   def version : UInt32
 
-  /**
-    * The inputs for this transaction
-    * @return
-    */
+  /** The inputs for this transaction */
   def inputs  : Seq[TransactionInput]
 
-  /**
-    * The outputs for this transaction
-    * @return
-    */
+  /** The outputs for this transaction */
   def outputs : Seq[TransactionOutput]
 
-  /**
-    * The locktime for this transaction
-    * @return
-    */
+  /** The locktime for this transaction */
   def lockTime : UInt32
 
 
@@ -76,6 +64,10 @@ sealed trait WitnessTransaction extends Transaction {
     */
   def witness: TransactionWitness
 
+  def marker: Char
+
+  def flag: Char
+
   override def hex = RawWitnessTransactionParser.write(this)
 
 }
@@ -107,7 +99,11 @@ object Transaction extends Factory[Transaction] {
   def factory(bytes : Array[Byte]) : Transaction = fromBytes(bytes.toSeq)
 
   def fromBytes(bytes : Seq[Byte]) : Transaction = {
-    RawBaseTransactionParser.read(bytes)
+    val wtxTry = Try(RawWitnessTransactionParser.read(bytes))
+    wtxTry match {
+      case Success(wtx) => wtx
+      case Failure(_) => RawBaseTransactionParser.read(bytes)
+    }
   }
 
   def apply(bytes : Array[Byte]) : Transaction = factory(bytes)
@@ -134,11 +130,17 @@ object BaseTransaction extends Factory[BaseTransaction] {
 
 
 object WitnessTransaction extends Factory[WitnessTransaction] {
-  private case class WitnessTransactionImpl(version: UInt32, inputs: Seq[TransactionInput],
-                                            outputs: Seq[TransactionOutput], lockTime: UInt32, witness: TransactionWitness) extends WitnessTransaction
+  private case class WitnessTransactionImpl(version: UInt32, marker: Char, flag: Char, inputs: Seq[TransactionInput],
+                                            outputs: Seq[TransactionOutput], lockTime: UInt32,
+                                            witness: TransactionWitness) extends WitnessTransaction {
+    //https://github.com/bitcoin/bips/blob/master/bip-0144.mediawiki#serialization
+    require(marker == '0', "According to BIP144 the marker field must be the character '0', got: " + marker)
+    require(flag != '0', "According to BIP144 the flag field must NOT be the character '0', got:" + flag)
+  }
 
-  def apply(version: UInt32, inputs: Seq[TransactionInput], outputs: Seq[TransactionOutput], lockTime: UInt32,
-            witness: TransactionWitness): WitnessTransaction = WitnessTransactionImpl(version,inputs,outputs,lockTime,witness)
+  def apply(version: UInt32, marker: Char, flag: Char, inputs: Seq[TransactionInput], outputs: Seq[TransactionOutput],
+            lockTime: UInt32, witness: TransactionWitness): WitnessTransaction =
+    WitnessTransactionImpl(version,marker, flag, inputs,outputs,lockTime,witness)
 
   override def fromBytes(bytes: Seq[Byte]): WitnessTransaction = RawWitnessTransactionParser.read(bytes)
 

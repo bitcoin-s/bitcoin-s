@@ -13,11 +13,13 @@ trait RawWitnessTransactionParser extends RawBitcoinSerializer[WitnessTransactio
   def read(bytes: List[Byte]): WitnessTransaction = {
     val versionBytes = bytes.take(4)
     val version = UInt32(versionBytes.reverse)
-    val txInputBytes = bytes.slice(4,bytes.size)
+    val marker = bytes(5).toChar
+    val flag = bytes(6).toChar
+    val txInputBytes = bytes.slice(7,bytes.size)
     val inputs = RawTransactionInputParser.read(txInputBytes)
     val inputsSize = inputs.map(_.size).sum
 
-    val outputsStartIndex = inputsSize + 5
+    val outputsStartIndex = inputsSize + 8
     val outputsBytes = bytes.slice(outputsStartIndex, bytes.size)
     val outputs = RawTransactionOutputParser.read(outputsBytes)
     val witnessStartIndex = outputsStartIndex + outputs.map(_.size).sum + 1
@@ -28,7 +30,7 @@ trait RawWitnessTransactionParser extends RawBitcoinSerializer[WitnessTransactio
 
     val lockTime = UInt32(lockTimeBytes.reverse)
 
-    WitnessTransaction(version,inputs,outputs,lockTime,witness)
+    WitnessTransaction(version,marker,flag,inputs,outputs,lockTime,witness)
   }
 
   def write(tx: WitnessTransaction): String = {
