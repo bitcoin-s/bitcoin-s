@@ -1,7 +1,7 @@
 package org.bitcoins.core.util
 
 import org.bitcoins.core.crypto.{ECPrivateKey, ECPublicKey}
-import org.bitcoins.core.currency.CurrencyUnits
+import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
@@ -36,7 +36,7 @@ trait TransactionTestUtil extends BitcoinSLogger {
    * @param scriptPubKey
    * @return the transaction and the output index of the scriptPubKey
    */
-  def buildCreditingTransaction(scriptPubKey : ScriptPubKey) : (Transaction,UInt32) = {
+  def buildCreditingTransaction(scriptPubKey : ScriptPubKey, amount: Option[CurrencyUnit] = None) : (Transaction,UInt32) = {
     //this needs to be all zeros according to these 3 lines in bitcoin core
     //https://github.com/bitcoin/bitcoin/blob/605c17844ea32b6d237db6d83871164dc7d59dab/src/test/script_tests.cpp#L64
     //https://github.com/bitcoin/bitcoin/blob/80d1f2e48364f05b2cdf44239b3a1faa0277e58e/src/primitives/transaction.h#L32
@@ -46,7 +46,7 @@ trait TransactionTestUtil extends BitcoinSLogger {
     val outpoint = EmptyTransactionOutPoint
     val scriptSignature = ScriptSignature("0000")
     val input = TransactionInput(outpoint,scriptSignature,TransactionConstants.sequence)
-    val output = TransactionOutput(CurrencyUnits.zero,scriptPubKey)
+    val output = TransactionOutput(amount.getOrElse(CurrencyUnits.zero),scriptPubKey)
 
     val tx = Transaction(TransactionConstants.version,Seq(input),Seq(output),TransactionConstants.lockTime)
     (tx,UInt32.zero)
@@ -60,24 +60,38 @@ trait TransactionTestUtil extends BitcoinSLogger {
    * @return the built spending transaction and the input index for the script signature
    */
   def buildSpendingTransaction(creditingTx : Transaction,scriptSignature : ScriptSignature, outputIndex : UInt32,
-                               witness: Option[ScriptWitness] = None) : (Transaction,UInt32) = {
+                               witness: Option[(ScriptWitness,CurrencyUnit)] = None) : (Transaction,UInt32) = {
 /*
     CMutableTransaction txSpend;
     txSpend.nVersion = 1;
     txSpend.nLockTime = 0;
     txSpend.vin.resize(1);
     txSpend.vout.resize(1);
+    txSpend.wit.vtxinwit.resize(1);
+    txSpend.wit.vtxinwit[0].scriptWitness = scriptWitness;
     txSpend.vin[0].prevout.hash = txCredit.GetHash();
     txSpend.vin[0].prevout.n = 0;
     txSpend.vin[0].scriptSig = scriptSig;
-    txSpend.vin[0].nSequence = std::numeric_limits<unsigned int>::max();
+    txSpend.vin[0].nSequence = CTxIn::SEQUENCE_FINAL;
     txSpend.vout[0].scriptPubKey = CScript();
-    txSpend.vout[0].nValue = 0;*/
+    txSpend.vout[0].nValue = txCredit.vout[0].nValue;
+    */
 
     val outpoint = TransactionOutPoint(creditingTx.txId,outputIndex)
     val input = TransactionInput(outpoint,scriptSignature,TransactionConstants.sequence)
-    val output = TransactionOutput(CurrencyUnits.zero,EmptyScriptPubKey)
-    val tx = Transaction(TransactionConstants.version,Seq(input),Seq(output),TransactionConstants.lockTime)
+
+    val tx = witness match {
+      case Some((scriptWitness,amount)) =>
+        val txInputWitness = TransactionInputWitness(scriptWitness)
+        val txWitness = TransactionWitness(Seq(txInputWitness))
+        val output = TransactionOutput(amount,EmptyScriptPubKey)
+        WitnessTransaction(TransactionConstants.version,'0','1', Seq(input), Seq(output),
+          TransactionConstants.lockTime, txWitness)
+      case None =>
+        val output = TransactionOutput(CurrencyUnits.zero,EmptyScriptPubKey)
+        Transaction(TransactionConstants.version,Seq(input),Seq(output),TransactionConstants.lockTime)
+    }
+
 /*    val expectedHex = "01000000019ce5586f04dd407719ab7e2ed3583583b9022f29652702cfac5ed082013461fe000000004847304402200a5c6163f07b8d3b013c4d1d6dba25e780b39658d79ba37af7057a3b7f15ffa102201fd9b4eaa9943f734928b99a83592c2e7bf342ea2680f6a2bb705167966b742001ffffffff0100000000000000000000000000"
     require(tx.hex == expectedHex,"\nExpected hex: " + expectedHex + "\nActual hex:   " +  tx.hex)*/
     (tx,UInt32.zero)

@@ -45,7 +45,7 @@ object CoreTestCaseProtocol extends DefaultJsonProtocol with BitcoinSLogger {
         val witnessArray = elements.head.asInstanceOf[JsArray]
         val amount = Satoshis(Int64((witnessArray.elements.last.convertTo[Double] * 100000000L).toLong))
         val stack = witnessArray.elements.slice(0,witnessArray.elements.size - 1).map(c => BitcoinSUtil.decodeHex(c.convertTo[String]))
-        val witness = ScriptWitness(stack.reverse)
+        val witness = ScriptWitness(stack)
         val scriptPubKeyBytes : Seq[Byte] = parseScriptPubKey(elements(2))
         val scriptPubKey = ScriptPubKey(scriptPubKeyBytes)
         val scriptSignatureBytes : Seq[Byte] = parseScriptSignature(elements(1))
@@ -70,7 +70,7 @@ object CoreTestCaseProtocol extends DefaultJsonProtocol with BitcoinSLogger {
         val witnessArray = elements.head.asInstanceOf[JsArray]
         val amount = Satoshis(Int64((witnessArray.elements.last.convertTo[Double] * 100000000L).toLong))
         val stack = witnessArray.elements.slice(0,witnessArray.elements.size - 1).map(c => BitcoinSUtil.decodeHex(c.convertTo[String]))
-        val witness = ScriptWitness(stack.reverse)
+        val witness = ScriptWitness(stack)
         val scriptPubKeyBytes : Seq[Byte] = parseScriptPubKey(elements(2))
         val scriptPubKey = ScriptPubKey(scriptPubKeyBytes)
         val scriptSignatureBytes : Seq[Byte] = parseScriptSignature(elements(1))

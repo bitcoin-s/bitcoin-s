@@ -37,17 +37,18 @@ trait RawTransactionInputWitnessParser extends RawBitcoinSerializer[TransactionI
 
   override def write(txInputWitness: TransactionInputWitness): String = {
     @tailrec
-    def loop(remainingStack: Seq[Seq[Byte]], accum: Seq[String]): String = {
-      if (remainingStack.isEmpty) accum.reverse.mkString
+    def loop(remainingStack: Seq[Seq[Byte]], accum: Seq[String]): Seq[String] = {
+      if (remainingStack.isEmpty) accum.reverse
       else {
         val compactSizeUInt: CompactSizeUInt = CompactSizeUInt.calculateCompactSizeUInt(remainingStack.head)
         val serialization: Seq[Byte] = compactSizeUInt.bytes ++ remainingStack.head
         loop(remainingStack.tail, BitcoinSUtil.encodeHex(serialization) +: accum)
       }
     }
-    val stackItems: String = loop(txInputWitness.witness.stack,Nil)
-    val size = CompactSizeUInt.calculateCompactSizeUInt(stackItems)
-    size.hex + stackItems
+    val stackItems: Seq[String] = loop(txInputWitness.witness.stack,Nil)
+    val size = CompactSizeUInt(UInt64(stackItems.size))
+    val stackHex = stackItems.mkString
+    size.hex + stackHex
   }
 }
 

@@ -36,12 +36,13 @@ trait RawWitnessTransactionParser extends RawBitcoinSerializer[WitnessTransactio
   def write(tx: WitnessTransaction): String = {
     val txVersionHex = tx.version.hex
     val version = BitcoinSUtil.flipEndianness(txVersionHex)
+
     val inputs : String = RawTransactionInputParser.write(tx.inputs)
     val outputs : String = RawTransactionOutputParser.write(tx.outputs)
     val witness = tx.witness.hex
     val lockTimeWithoutPadding : String = tx.lockTime.hex
     val lockTime = addPadding(8,BitcoinSUtil.flipEndianness(lockTimeWithoutPadding))
-    version + inputs + outputs + witness + lockTime
+    version + "0" + tx.marker + "0" + tx.flag + inputs + outputs + witness + lockTime
   }
 }
 
