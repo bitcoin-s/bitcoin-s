@@ -45,7 +45,7 @@ trait RawTransactionInputWitnessParser extends RawBitcoinSerializer[TransactionI
         loop(remainingStack.tail, BitcoinSUtil.encodeHex(serialization) +: accum)
       }
     }
-    val stackItems: Seq[String] = loop(txInputWitness.witness.stack,Nil)
+    val stackItems: Seq[String] = loop(txInputWitness.witness.stack.reverse,Nil)
     val size = CompactSizeUInt(UInt64(stackItems.size))
     val stackHex = stackItems.mkString
     size.hex + stackHex
