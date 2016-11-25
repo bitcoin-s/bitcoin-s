@@ -58,12 +58,7 @@ trait RawTransactionOutputParser extends RawBitcoinSerializer[Seq[TransactionOut
   }
 
 
-  /**
-   * Writes a single transaction output
- *
-   * @param output
-   * @return
-   */
+  /** Writes a single transaction output */
   def write(output : TransactionOutput) : String = {
     val satoshis = CurrencyUnits.toSatoshis(output.value)
     val compactSizeUIntHex = output.scriptPubKeyCompactSizeUInt.hex

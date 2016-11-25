@@ -166,11 +166,13 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
       Some(CryptoUtil.doubleSHA256(bytes).bytes)
     } else None
 
+    logger.debug("outPointHash: " + outPointHash.map(BitcoinSUtil.encodeHex(_)))
     val sequenceHash: Option[Seq[Byte]] = if (isNotAnyoneCanPay && isNotSigHashNone && isNotSigHashSingle) {
       val bytes = spendingTx.inputs.flatMap(_.sequence.bytes)
       Some(CryptoUtil.doubleSHA256(bytes).bytes)
     } else None
 
+    logger.debug("sequenceHash: " + sequenceHash.map(BitcoinSUtil.encodeHex(_)))
     val outputHash: Option[Seq[Byte]] = if (isNotSigHashSingle && isNotSigHashNone) {
       val bytes = spendingTx.outputs.flatMap(_.bytes)
       Some(CryptoUtil.doubleSHA256(bytes).bytes)
@@ -180,7 +182,10 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
       Some(bytes)
     } else None
 
-    val serializationForSig: Seq[Byte] = spendingTx.version.bytes ++ outPointHash.getOrElse(Nil) ++ sequenceHash.getOrElse(Nil) ++
+    logger.debug("outputHash: " + outPointHash.map(BitcoinSUtil.encodeHex(_)))
+
+    val fe: Seq[Byte] => Seq[Byte] = { bytes: Seq[Byte] => BitcoinSUtil.decodeHex(BitcoinSUtil.flipEndianness(bytes)) }
+    val serializationForSig: Seq[Byte] = fe(spendingTx.version.bytes) ++ outPointHash.getOrElse(Nil) ++ sequenceHash.getOrElse(Nil) ++
       spendingTx.inputs(inputIndexInt).previousOutput.txId.bytes ++
       script.flatMap(_.bytes) ++ amount.bytes ++ outputHash.getOrElse(Nil) ++ spendingTx.lockTime.bytes ++
       Seq(hashType.byte)
@@ -247,12 +252,7 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
     sigHashNoneTx
   }
 
-  /**
-   * Executes the SIGHASH_SINGLE procedure on a spending transaction for the input specified by inputIndex
-   * @param spendingTransaction
-   * @param inputIndex
-   * @return
-   */
+  /** Executes the SIGHASH_SINGLE procedure on a spending transaction for the input specified by inputIndex */
   private def sigHashSingle(spendingTransaction : Transaction, inputIndex : UInt32) : Transaction = {
     //following this implementation from bitcoinj
     //https://github.com/bitcoinj/bitcoinj/blob/09a2ca64d2134b0dcbb27b1a6eb17dda6087f448/core/src/main/java/org/bitcoinj/core/Transaction.java#L964

@@ -1,5 +1,7 @@
 package org.bitcoins.core.serializers.transaction
 
+import org.bitcoins.core.number.UInt64
+import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.protocol.transaction.{TransactionInputWitness, TransactionWitness}
 import org.bitcoins.core.serializers.RawBitcoinSerializer
 
