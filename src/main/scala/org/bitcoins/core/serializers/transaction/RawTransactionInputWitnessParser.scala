@@ -16,21 +16,28 @@ import scala.annotation.tailrec
 trait RawTransactionInputWitnessParser extends RawBitcoinSerializer[TransactionInputWitness] {
 
   override def read(bytes: List[Byte]): TransactionInputWitness = {
+    logger.info("Bytes for witness: " + BitcoinSUtil.encodeHex(bytes))
     //first byte is the number of stack items
     val stackSize = CompactSizeUInt.parseCompactSizeUInt(bytes)
+    logger.info("Stack size: " + stackSize)
     val (_,stackBytes) = bytes.splitAt(stackSize.size.toInt)
+    logger.info("Stack bytes: " + BitcoinSUtil.encodeHex(stackBytes))
     @tailrec
     def loop(remainingBytes: Seq[Byte], accum: Seq[Seq[Byte]], remainingStackItems: UInt64): Seq[Seq[Byte]] = {
       if (remainingStackItems <= UInt64.zero) accum.reverse
       else {
         val elementSize = CompactSizeUInt.parseCompactSizeUInt(remainingBytes)
-        val (_,stackElement) = remainingBytes.splitAt(elementSize.size.toInt)
-        val (_,newRemainingBytes) = remainingBytes.splitAt(elementSize.size.toInt + stackElement.size)
+        val (_,stackElementBytes) = remainingBytes.splitAt(elementSize.size.toInt)
+        val stackElement = stackElementBytes.take(elementSize.num.toInt)
+        logger.info("Parsed stack element: " + BitcoinSUtil.encodeHex(stackElement))
+        val (_,newRemainingBytes) = stackElementBytes.splitAt(stackElement.size)
+        logger.info("New remaining bytes: " + BitcoinSUtil.encodeHex(newRemainingBytes))
         loop(newRemainingBytes, stackElement +: accum, remainingStackItems - UInt64.one)
       }
     }
     val stack = loop(stackBytes,Nil,stackSize.num)
     val witness = ScriptWitness(stack)
+    logger.info("Parsed witness: " + witness)
     TransactionInputWitness(witness)
   }
 

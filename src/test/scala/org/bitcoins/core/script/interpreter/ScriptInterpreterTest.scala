@@ -68,9 +68,9 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterp
         case None => ScriptProgram(tx, scriptPubKey, inputIndex, flags)
       }
       tx.hex must be ("0100000000010190491d88b9f0dc24d271f0f67179bce5914afe1ac0f83f6cd205f8b807436d6f0000000000ffffffff010100000000000000000247304402200d461c140cfdfcf36b94961db57ae8c18d1cb80e9d95a9e47ac22470c1bf125502201c8dc1cbfef6a3ef90acbbb992ca22fe9466ee6f9d4898eda277a7ac3ab4b2510143410479be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8ac00000000")
-/*      withClue(testCase.raw) {
+      withClue(testCase.raw) {
         ScriptInterpreter.run(program) must equal (testCase.expectedResult)
-      }*/
+      }
     }
   }
 }

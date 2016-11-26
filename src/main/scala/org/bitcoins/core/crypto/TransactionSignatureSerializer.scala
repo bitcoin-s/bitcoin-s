@@ -187,7 +187,7 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
     val fe: Seq[Byte] => Seq[Byte] = { bytes: Seq[Byte] => BitcoinSUtil.decodeHex(BitcoinSUtil.flipEndianness(bytes)) }
     val serializationForSig: Seq[Byte] = fe(spendingTx.version.bytes) ++ outPointHash.getOrElse(Nil) ++ sequenceHash.getOrElse(Nil) ++
       spendingTx.inputs(inputIndexInt).previousOutput.txId.bytes ++
-      script.flatMap(_.bytes) ++ amount.bytes ++ outputHash.getOrElse(Nil) ++ spendingTx.lockTime.bytes ++
+      script.flatMap(_.bytes) ++ amount.bytes ++ outputHash.getOrElse(Nil) ++ fe(spendingTx.lockTime.bytes) ++
       Seq(hashType.byte)
     logger.info("Serialization for signature for WitnessV0Sig: " + BitcoinSUtil.encodeHex(serializationForSig))
     serializationForSig

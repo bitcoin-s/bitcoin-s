@@ -64,10 +64,6 @@ sealed trait WitnessTransaction extends Transaction {
     */
   def witness: TransactionWitness
 
-  def marker: Char
-
-  def flag: Char
-
   override def hex = RawWitnessTransactionParser.write(this)
 
 }
@@ -130,17 +126,13 @@ object BaseTransaction extends Factory[BaseTransaction] {
 
 
 object WitnessTransaction extends Factory[WitnessTransaction] {
-  private case class WitnessTransactionImpl(version: UInt32, marker: Char, flag: Char, inputs: Seq[TransactionInput],
+  private case class WitnessTransactionImpl(version: UInt32,inputs: Seq[TransactionInput],
                                             outputs: Seq[TransactionOutput], lockTime: UInt32,
-                                            witness: TransactionWitness) extends WitnessTransaction {
-    //https://github.com/bitcoin/bips/blob/master/bip-0144.mediawiki#serialization
-    require(marker == '0', "According to BIP144 the marker field must be the character '0', got: " + marker)
-    require(flag != '0', "According to BIP144 the flag field must NOT be the character '0', got:" + flag)
-  }
+                                            witness: TransactionWitness) extends WitnessTransaction
 
-  def apply(version: UInt32, marker: Char, flag: Char, inputs: Seq[TransactionInput], outputs: Seq[TransactionOutput],
+  def apply(version: UInt32, inputs: Seq[TransactionInput], outputs: Seq[TransactionOutput],
             lockTime: UInt32, witness: TransactionWitness): WitnessTransaction =
-    WitnessTransactionImpl(version,marker, flag, inputs,outputs,lockTime,witness)
+    WitnessTransactionImpl(version,inputs,outputs,lockTime,witness)
 
   override def fromBytes(bytes: Seq[Byte]): WitnessTransaction = RawWitnessTransactionParser.read(bytes)
 
