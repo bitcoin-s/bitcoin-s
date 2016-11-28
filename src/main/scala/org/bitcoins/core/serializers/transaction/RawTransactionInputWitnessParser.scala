@@ -16,28 +16,29 @@ import scala.annotation.tailrec
 trait RawTransactionInputWitnessParser extends RawBitcoinSerializer[TransactionInputWitness] {
 
   override def read(bytes: List[Byte]): TransactionInputWitness = {
-    logger.info("Bytes for witness: " + BitcoinSUtil.encodeHex(bytes))
+    logger.debug("Bytes for witness: " + BitcoinSUtil.encodeHex(bytes))
     //first byte is the number of stack items
     val stackSize = CompactSizeUInt.parseCompactSizeUInt(bytes)
-    logger.info("Stack size: " + stackSize)
+    logger.debug("Stack size: " + stackSize)
     val (_,stackBytes) = bytes.splitAt(stackSize.size.toInt)
-    logger.info("Stack bytes: " + BitcoinSUtil.encodeHex(stackBytes))
+    logger.debug("Stack bytes: " + BitcoinSUtil.encodeHex(stackBytes))
     @tailrec
     def loop(remainingBytes: Seq[Byte], accum: Seq[Seq[Byte]], remainingStackItems: UInt64): Seq[Seq[Byte]] = {
-      if (remainingStackItems <= UInt64.zero) accum.reverse
+      if (remainingStackItems <= UInt64.zero) accum
       else {
         val elementSize = CompactSizeUInt.parseCompactSizeUInt(remainingBytes)
         val (_,stackElementBytes) = remainingBytes.splitAt(elementSize.size.toInt)
         val stackElement = stackElementBytes.take(elementSize.num.toInt)
-        logger.info("Parsed stack element: " + BitcoinSUtil.encodeHex(stackElement))
+        logger.debug("Parsed stack element: " + BitcoinSUtil.encodeHex(stackElement))
         val (_,newRemainingBytes) = stackElementBytes.splitAt(stackElement.size)
-        logger.info("New remaining bytes: " + BitcoinSUtil.encodeHex(newRemainingBytes))
+        logger.debug("New remaining bytes: " + BitcoinSUtil.encodeHex(newRemainingBytes))
         loop(newRemainingBytes, stackElement +: accum, remainingStackItems - UInt64.one)
       }
     }
+    //note there is no 'reversing' the accum, in bitcoin-s we assume the stop of the stack is the 'head' element in the sequence
     val stack = loop(stackBytes,Nil,stackSize.num)
     val witness = ScriptWitness(stack)
-    logger.info("Parsed witness: " + witness)
+    logger.debug("Parsed witness: " + witness)
     TransactionInputWitness(witness)
   }
 
