@@ -16,31 +16,19 @@ import org.scalacheck.Gen
   */
 trait TransactionGenerators extends  BitcoinSLogger {
 
-  /**
-    * Responsible for generating [[org.bitcoins.core.protocol.transaction.TransactionOutPoint]]
-    *
-    * @return
-    */
+  /** Responsible for generating [[org.bitcoins.core.protocol.transaction.TransactionOutPoint]] */
   def outPoints : Gen[TransactionOutPoint] = for {
     txId <- CryptoGenerators.doubleSha256Digest
     vout <- NumberGenerator.uInt32s
   } yield TransactionOutPoint(txId, vout)
 
-  /**
-    * Generates a random [[org.bitcoins.core.protocol.transaction.TransactionOutput]]
-    *
-    * @return
-    */
+  /** Generates a random [[org.bitcoins.core.protocol.transaction.TransactionOutput]] */
   def outputs : Gen[TransactionOutput] = for {
     satoshis <- CurrencyUnitGenerator.satoshis
     (scriptPubKey, _) <- ScriptGenerators.scriptPubKey
   } yield TransactionOutput(satoshis, scriptPubKey)
 
-  /**
-    * Generates a random [[org.bitcoins.core.protocol.transaction.TransactionInput]]
-    *
-    * @return
-    */
+  /** Generates a random [[org.bitcoins.core.protocol.transaction.TransactionInput]] */
   def inputs : Gen[TransactionInput] = for {
     outPoint <- outPoints
     scriptSig <- ScriptGenerators.scriptSignature
@@ -69,6 +57,16 @@ trait TransactionGenerators extends  BitcoinSLogger {
     lockTime <- NumberGenerator.uInt32s
   } yield Transaction(version, inputs, outputs, lockTime)
 
+  /** Generates a random [[WitnessTransaction]] */
+  def witnessTransaction: Gen[WitnessTransaction] = for {
+    version <- NumberGenerator.uInt32s
+    randomInputNum <- Gen.choose(1,10)
+    inputs <- Gen.listOfN(randomInputNum, inputs)
+    randomOutputNum <- Gen.choose(1,10)
+    outputs <- Gen.listOfN(randomOutputNum, outputs)
+    lockTime <- NumberGenerator.uInt32s
+    witness <- WitnessGenerators.transactionWitness(inputs.size)
+  } yield WitnessTransaction(version,inputs,outputs,lockTime, witness)
 
   /**
     * Creates a [[ECPrivateKey]], then creates a [[P2PKScriptPubKey]] from that private key
@@ -272,8 +270,6 @@ trait TransactionGenerators extends  BitcoinSLogger {
   /**
     * Determines if the transaction's lockTime value and CLTV script lockTime value are of the same type
     * (i.e. determines whether both are a timestamp or block height)
-    *
-    * @return
     */
   private def cltvLockTimesOfSameType(generatorComponent : (TransactionSignatureComponent, Seq[ECPrivateKey],  ScriptNumber)) : Boolean = {
     val (txSigComponent, keys, num) = generatorComponent
@@ -292,8 +288,6 @@ trait TransactionGenerators extends  BitcoinSLogger {
   /**
     * Determines if the transaction input's sequence value and CSV script sequence value are of the same type
     * (i.e. determines whether both are a timestamp or block-height)
-    *
-    * @return
     */
   private def csvLockTimesOfSameType(sequenceNumbers : (ScriptNumber, UInt32)) : Boolean = {
     val (scriptNum, txSequence) = sequenceNumbers
@@ -317,9 +311,7 @@ trait TransactionGenerators extends  BitcoinSLogger {
 
   /**
     * Generates a pair of CSV values: a transaction input sequence, and a CSV script sequence value, such that the txInput
-    * sequence mask is always greater than the script sequence mask (i.e. generates values for a validly constructed and spendable CSV transaction).
-    *
-    * @return
+    * sequence mask is always greater than the script sequence mask (i.e. generates values for a validly constructed and spendable CSV transaction)
     */
   private def spendableCSVValues : Gen[(ScriptNumber, UInt32)] = (for {
     sequence <- NumberGenerator.uInt32s
@@ -329,8 +321,6 @@ trait TransactionGenerators extends  BitcoinSLogger {
   /**
     * Generates a pair of CSV values: a transaction input sequence, and a CSV script sequence value, such that the txInput
     * sequence mask is always less than the script sequence mask (i.e. generates values for a validly constructed and NOT spendable CSV transaction).
-    *
-    * @return
     */
   private def unspendableCSVValues : Gen[(ScriptNumber, UInt32)] = ( for {
     sequence <- NumberGenerator.uInt32s

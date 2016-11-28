@@ -3,7 +3,7 @@ package org.bitcoins.core.gen
 import java.util
 
 import org.bitcoins.core.protocol.script.ScriptWitness
-import org.bitcoins.core.protocol.transaction.TransactionInputWitness
+import org.bitcoins.core.protocol.transaction.{TransactionInputWitness, TransactionWitness}
 import org.scalacheck.Gen
 
 import scala.collection.JavaConversions._
@@ -32,6 +32,19 @@ trait WitnessGenerators {
   def transactionInputWitness: Gen[TransactionInputWitness] = for {
     script <- scriptWitness
   } yield TransactionInputWitness(script)
+
+
+  /** Generates a random [[TransactionWitness]] */
+  def transactionWitness: Gen[TransactionWitness] = for {
+    i <- Gen.choose(0, 10)
+    witness <- transactionWitness(i)
+  } yield witness
+
+  /** Generates a [[TransactionWitness]] with the specificied number of witnesses */
+  def transactionWitness(numWitnesses: Int): Gen[TransactionWitness] = for {
+  inputWitnesses <- Gen.listOfN(numWitnesses,transactionInputWitness)
+  } yield TransactionWitness(inputWitnesses)
+
 }
 
 object WitnessGenerators extends WitnessGenerators
