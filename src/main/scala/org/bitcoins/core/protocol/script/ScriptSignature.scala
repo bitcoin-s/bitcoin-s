@@ -17,8 +17,6 @@ sealed trait ScriptSignature extends NetworkElement with BitcoinSLogger {
     * Representation of a scriptSignature in a parsed assembly format
     * this data structure can be run through the script interpreter to
     * see if a script evaluates to true
-    *
-    * @return
     */
   lazy val asm : Seq[ScriptToken] = ScriptParser.fromHex(hex)
 
@@ -30,8 +28,6 @@ sealed trait ScriptSignature extends NetworkElement with BitcoinSLogger {
     * p2pk script signatures only have one sigs
     * p2sh script signatures can have m sigs
     * multisignature scripts can have m sigs
-    *
-    * @return
     */
   def signatures : Seq[ECDigitalSignature]
 
@@ -92,12 +88,7 @@ object P2PKHScriptSignature extends Factory[P2PKHScriptSignature] {
 
   /**
     * Builds a script signature from a digital signature and a public key
-    * this is a pay to public key hash script sig
-    *
-    * @param signature
-    * @param pubKey
-    * @return
-    */
+    * this is a pay to public key hash script sig */
   def apply(signature : ECDigitalSignature, pubKey : ECPublicKey) : P2PKHScriptSignature = {
     val signatureBytesToPushOntoStack = BitcoinScriptUtil.calculatePushOp(signature.bytes)
     val pubKeyBytesToPushOntoStack = BitcoinScriptUtil.calculatePushOp(pubKey.bytes)
@@ -106,12 +97,7 @@ object P2PKHScriptSignature extends Factory[P2PKHScriptSignature] {
     fromAsm(asm)
   }
 
-  /**
-    * Determines if the given asm matches a [[P2PKHScriptSignature]]
-    *
-    * @param asm
-    * @return
-    */
+  /** Determines if the given asm matches a [[P2PKHScriptSignature]] */
   def isP2PKHScriptSig(asm: Seq[ScriptToken]): Boolean = asm match {
     case List(w : BytesToPushOntoStack, x : ScriptConstant, y : BytesToPushOntoStack,
       z : ScriptConstant) => true
@@ -127,27 +113,15 @@ object P2PKHScriptSignature extends Factory[P2PKHScriptSignature] {
  */
 sealed trait P2SHScriptSignature extends ScriptSignature {
 
-  /**
-    * The redeemScript represents the conditions that must be satisfied to spend the output
-    *
-    * @return
-    */
+  /** The redeemScript represents the conditions that must be satisfied to spend the output */
   def redeemScript : ScriptPubKey = ScriptPubKey(asm.last.bytes)
 
 
-  /**
-    * Returns the script signature of this p2shScriptSig with no serialized redeemScript
-    *
-    * @return
-    */
+  /** Returns the script signature of this p2shScriptSig with no serialized redeemScript */
   def scriptSignatureNoRedeemScript = ScriptSignature.fromAsm(splitAtRedeemScript(asm)._1)
 
 
-  /**
-    * Returns the public keys for the p2sh scriptSignature
-    *
-    * @return
-    */
+  /** Returns the public keys for the p2sh scriptSignature */
   def publicKeys : Seq[ECPublicKey] = {
     val pubKeys : Seq[ScriptToken] = redeemScript.asm.filter(_.isInstanceOf[ScriptConstant])
       .filterNot(_.isInstanceOf[ScriptNumberOperation])
@@ -155,11 +129,7 @@ sealed trait P2SHScriptSignature extends ScriptSignature {
   }
 
 
-  /**
-    * The digital signatures inside of the scriptSig
-    *
-    * @return
-    */
+  /** The digital signatures inside of the scriptSig */
   def signatures : Seq[ECDigitalSignature] = {
     val nonRedeemScript = splitAtRedeemScript(asm)._1
     val sigs = nonRedeemScript.filter(_.isInstanceOf[ScriptConstant]).filterNot(_.isInstanceOf[ScriptNumberOperation]).filterNot(_.hex.length < 100)
@@ -170,11 +140,7 @@ sealed trait P2SHScriptSignature extends ScriptSignature {
   /**
     * Splits the given asm into two parts
     * the first part is the digital signatures
-    * the second part is the redeem script
-    *
-    * @param asm
-    * @return
-    */
+    * the second part is the redeem script */
   def splitAtRedeemScript(asm : Seq[ScriptToken]) : (Seq[ScriptToken],Seq[ScriptToken]) = {
     //call .tail twice to remove the serialized redeemScript & it's bytesToPushOntoStack constant
     (asm.reverse.tail.tail.reverse, Seq(asm.last))
@@ -202,12 +168,7 @@ object P2SHScriptSignature extends Factory[P2SHScriptSignature] with BitcoinSLog
     P2SHScriptSignatureImpl(hex)
   }
 
-  /**
-    * Tests if the given asm tokens are a [[P2SHScriptSignature]]
-    *
-    * @param asm
-    * @return
-    */
+  /** Tests if the given asm tokens are a [[P2SHScriptSignature]] */
   def isP2SHScriptSig(asm: Seq[ScriptToken]): Boolean = asm match {
     case _ if asm.size > 1 && isRedeemScript(asm.last) => true
     case _ => false
@@ -236,12 +197,7 @@ object P2SHScriptSignature extends Factory[P2SHScriptSignature] with BitcoinSLog
   }
 
 
-  /**
-    * Parses a redeem script from the given script token
-    *
-    * @param scriptToken
-    * @return
-    */
+  /** Parses a redeem script from the given script token */
   def parseRedeemScript(scriptToken : ScriptToken) : Try[ScriptPubKey] = {
     val redeemScript : Try[ScriptPubKey] = Try(ScriptPubKey(scriptToken.bytes))
     redeemScript
@@ -322,18 +278,10 @@ object MultiSignatureScriptSignature extends Factory[MultiSignatureScriptSignatu
  */
 sealed trait P2PKScriptSignature extends ScriptSignature {
 
-  /**
-    * PubKey scriptSignatures only have one signature
-    *
-    * @return
-    */
+  /** PubKey scriptSignatures only have one signature */
   def signature : ECDigitalSignature = signatures.head
 
-  /**
-    * The digital signatures inside of the scriptSig
-    *
-    * @return
-    */
+  /** The digital signatures inside of the scriptSig */
   def signatures : Seq[ECDigitalSignature] = {
     Seq(ECDigitalSignature(BitcoinScriptUtil.filterPushOps(asm).head.hex))
   }
@@ -360,12 +308,7 @@ object P2PKScriptSignature extends Factory[P2PKScriptSignature] {
     P2PKScriptSignature.fromAsm(asm)
   }
 
-  /**
-    * P2PK scriptSigs always have the pattern [pushop, digitalSignature]
-    *
-    * @param asm
-    * @return
-    */
+  /** P2PK scriptSigs always have the pattern [pushop, digitalSignature] */
   def isP2PKScriptSignature(asm: Seq[ScriptToken]): Boolean = asm match {
     case List(w : BytesToPushOntoStack, x : ScriptConstant) => true
     case _ => false
@@ -468,21 +411,12 @@ case object EmptyScriptSignature extends ScriptSignature {
 object ScriptSignature extends Factory[ScriptSignature] with BitcoinSLogger {
 
 
-  /**
-    * Returns an empty script signature
-    *
-    * @return
-    */
+  /** Returns an empty script signature */
   def empty : ScriptSignature = EmptyScriptSignature
 
   def fromBytes(bytes : Seq[Byte]) : ScriptSignature = RawScriptSignatureParser.read(bytes)
 
-  /**
-    * Creates a scriptSignature from the list of script tokens
-    *
-    * @param tokens
-    * @return
-    */
+  /** Creates a scriptSignature from the list of script tokens */
   def fromAsm(tokens : Seq[ScriptToken]) : ScriptSignature = tokens match {
     case Nil => EmptyScriptSignature
     case _  if (tokens.size > 1 && P2SHScriptSignature.isRedeemScript(tokens.last)) =>

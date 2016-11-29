@@ -157,7 +157,9 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
       val either: Either[(Seq[ScriptToken], ScriptPubKey),ScriptError] = witnessVersion.rebuild(scriptWitness, witnessProgram)
       either match {
         case Left((stack,scriptPubKey)) =>
-          val newProgram = ScriptProgram(witnessTxSigComponent,stack,scriptPubKey.asm)
+          val w = witnessTxSigComponent
+          val newProgram = ScriptProgram(w.transaction,scriptPubKey,w.inputIndex,stack,scriptPubKey.asm, scriptPubKey.asm,Nil,
+            w.flags,w.witness,w.sigVersion,w.amount)
           val evaluated = loop(newProgram,0)
           logger.info("Stack after evaluating witness: " + evaluated.stack)
           if (evaluated.stack.size != 1) ScriptProgram(evaluated,ScriptErrorEvalFalse)

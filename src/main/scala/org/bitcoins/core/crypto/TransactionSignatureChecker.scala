@@ -80,9 +80,16 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
       }
       val hashTypeByte = if (signature.bytes.nonEmpty) signature.bytes.last else 0x00.toByte
       val hashType = HashType(Seq(0.toByte, 0.toByte, 0.toByte, hashTypeByte))
-      val hashForSignature = TransactionSignatureSerializer.hashForSignature(txSignatureComponent.transaction,
-        txSignatureComponent.inputIndex,
-        sigsRemovedScript, hashType)
+
+      val hashForSignature = txSignatureComponent match {
+        case b : BaseTransactionSignatureComponent =>
+          TransactionSignatureSerializer.hashForSignature(txSignatureComponent.transaction,
+            txSignatureComponent.inputIndex,
+            sigsRemovedScript, hashType)
+        case w : WitnessV0TransactionSignatureComponent =>
+          TransactionSignatureSerializer.hashForSignature(w.transaction,w.inputIndex,sigsRemovedScript, hashType, w.amount)
+      }
+
       logger.info("Hash for signature: " + BitcoinSUtil.encodeHex(hashForSignature.bytes))
       val isValid = pubKey.verify(hashForSignature,signature)
       if (isValid) SignatureValidationSuccess else SignatureValidationFailureIncorrectSignatures
@@ -93,7 +100,6 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
    * This is a helper function to check digital signatures against public keys
    * if the signature does not match this public key, check it against the next
    * public key in the sequence
- *
    * @param txSignatureComponent the tx signature component that contains all relevant transaction information
    * @param script the script state this is needed in case there is an OP_CODESEPARATOR inside the script
    * @param sigs the signatures that are being checked for validity

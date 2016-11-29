@@ -3,7 +3,7 @@ package org.bitcoins.core.crypto
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script._
-import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.core.protocol.transaction.{Transaction, WitnessTransaction}
 import org.bitcoins.core.script.flag.ScriptFlag
 
 /**
@@ -43,6 +43,9 @@ sealed trait BaseTransactionSignatureComponent extends TransactionSignatureCompo
   * [[https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki]]
   */
 sealed trait WitnessV0TransactionSignatureComponent extends TransactionSignatureComponent {
+
+  override def transaction: WitnessTransaction
+
   def witness: ScriptWitness
 
   /** The amount of [[CurrencyUnit]] this input is spending */
@@ -60,11 +63,11 @@ object TransactionSignatureComponent {
   private case class BaseTransactionSignatureComponentImpl(transaction : Transaction, inputIndex : UInt32,
                                                        scriptPubKey : ScriptPubKey, flags : Seq[ScriptFlag]) extends BaseTransactionSignatureComponent
 
-  private case class WitnessV0TransactionSignatureComponentImpl(transaction : Transaction, inputIndex : UInt32,
+  private case class WitnessV0TransactionSignatureComponentImpl(transaction : WitnessTransaction, inputIndex : UInt32,
                                                                 scriptPubKey : ScriptPubKey, flags : Seq[ScriptFlag],
                                                                 witness: ScriptWitness, amount: CurrencyUnit) extends WitnessV0TransactionSignatureComponent
 
-  def apply(transaction : Transaction, inputIndex : UInt32, scriptPubKey : ScriptPubKey,
+  def apply(transaction : WitnessTransaction, inputIndex : UInt32, scriptPubKey : ScriptPubKey,
             flags : Seq[ScriptFlag], witness : ScriptWitness,
             amount: CurrencyUnit) : WitnessV0TransactionSignatureComponent = {
     WitnessV0TransactionSignatureComponentImpl(transaction,inputIndex, scriptPubKey, flags, witness, amount)
