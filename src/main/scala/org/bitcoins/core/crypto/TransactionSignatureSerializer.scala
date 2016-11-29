@@ -156,7 +156,7 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
 
 
 
-  def serializeForSignature(spendingTx: Transaction, inputIndex: UInt32, script: Seq[ScriptToken], hashType: HashType,
+  def serializeForSignature(spendingTx: WitnessTransaction, inputIndex: UInt32, script: Seq[ScriptToken], hashType: HashType,
                             amount: CurrencyUnit): Seq[Byte] = {
     val isNotAnyoneCanPay = !HashType.isAnyoneCanPay(hashType)
     val isNotSigHashSingle = !(hashType.isInstanceOf[SIGHASH_SINGLE])
@@ -202,7 +202,7 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
     * [[https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki]]
     * NOTE: This covers the amount of [[CurrencyUnit]] we are spending in the output
     * */
-  def hashForSignature(spendingTx: Transaction, inputIndex: UInt32, script: Seq[ScriptToken], hashType: HashType,
+  def hashForSignature(spendingTx: WitnessTransaction, inputIndex: UInt32, script: Seq[ScriptToken], hashType: HashType,
                        amount: CurrencyUnit): DoubleSha256Digest = {
 
     val serialization = serializeForSignature(spendingTx,inputIndex,script,hashType,amount)
@@ -216,10 +216,14 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
     */
   def hashForSignature(txSignatureComponent: TransactionSignatureComponent, hashType: HashType): DoubleSha256Digest = txSignatureComponent match {
     case b: BaseTransactionSignatureComponent =>
-      hashForSignature(b.transaction,b.inputIndex,
+      val hash = hashForSignature(b.transaction,b.inputIndex,
       b.scriptPubKey.asm,hashType)
+      logger.info("btx signature hash: " + hash)
+      hash
     case w : WitnessV0TransactionSignatureComponent =>
-      hashForSignature(w.transaction,w.inputIndex,w.scriptPubKey.asm, hashType, w.amount)
+      val hash = hashForSignature(w.transaction,w.inputIndex,w.scriptPubKey.asm, hashType, w.amount)
+      logger.info("wtx signature hash: " + hash)
+      hash
   }
 
 
