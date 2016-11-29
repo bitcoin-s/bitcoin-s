@@ -7,6 +7,7 @@ import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.constant.ScriptToken
 import org.bitcoins.core.script.crypto._
 import org.bitcoins.core.serializers.RawBitcoinSerializerHelper
+import org.bitcoins.core.serializers.transaction.RawTransactionOutputParser
 import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil, CryptoUtil}
 
 /**
@@ -162,7 +163,7 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
     val isNotSigHashNone = !(hashType.isInstanceOf[SIGHASH_NONE])
     val inputIndexInt = inputIndex.toInt
     val outPointHash: Option[Seq[Byte]] = if (isNotAnyoneCanPay) {
-      val bytes: Seq[Byte] = spendingTx.inputs.flatMap(_.previousOutput.txId.bytes)
+      val bytes: Seq[Byte] = spendingTx.inputs.flatMap(_.previousOutput.bytes)
       Some(CryptoUtil.doubleSHA256(bytes).bytes)
     } else None
 
@@ -174,21 +175,25 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
 
     logger.debug("sequenceHash: " + sequenceHash.map(BitcoinSUtil.encodeHex(_)))
     val outputHash: Option[Seq[Byte]] = if (isNotSigHashSingle && isNotSigHashNone) {
-      val bytes = spendingTx.outputs.flatMap(_.bytes)
+      logger.debug("Not SIGHASH_SINGLE & Not SIGHASH_NONE")
+      //val bytes = spendingTx.outputs.flatMap(_.bytes)
+      val bytes = spendingTx.outputs.flatMap(o => BitcoinSUtil.decodeHex(RawTransactionOutputParser.write(o)))
       Some(CryptoUtil.doubleSHA256(bytes).bytes)
     } else if (hashType.isInstanceOf[SIGHASH_SINGLE] && inputIndex < UInt32(spendingTx.outputs.size)) {
+      logger.debug("SIGHASH_SINGLE and input index < outputs size")
       val output = spendingTx.outputs(inputIndexInt)
       val bytes = CryptoUtil.doubleSHA256(output.bytes).bytes
       Some(bytes)
     } else None
 
-    logger.debug("outputHash: " + outPointHash.map(BitcoinSUtil.encodeHex(_)))
-
+    logger.debug("outputHash: " + outputHash.map(BitcoinSUtil.encodeHex(_)))
+    logger.debug("Script: " + script)
     val fe: Seq[Byte] => Seq[Byte] = { bytes: Seq[Byte] => BitcoinSUtil.decodeHex(BitcoinSUtil.flipEndianness(bytes)) }
     val serializationForSig: Seq[Byte] = fe(spendingTx.version.bytes) ++ outPointHash.getOrElse(Nil) ++ sequenceHash.getOrElse(Nil) ++
-      spendingTx.inputs(inputIndexInt).previousOutput.txId.bytes ++
-      script.flatMap(_.bytes) ++ amount.bytes ++ outputHash.getOrElse(Nil) ++ fe(spendingTx.lockTime.bytes) ++
-      Seq(hashType.byte)
+      spendingTx.inputs(inputIndexInt).previousOutput.bytes ++
+      script.flatMap(_.bytes) ++ fe(amount.bytes) ++ fe(spendingTx.inputs(inputIndexInt).sequence.bytes) ++
+      outputHash.getOrElse(Nil) ++ fe(spendingTx.lockTime.bytes) ++
+      hashType.num.bytes.reverse
     logger.info("Serialization for signature for WitnessV0Sig: " + BitcoinSUtil.encodeHex(serializationForSig))
     serializationForSig
   }
