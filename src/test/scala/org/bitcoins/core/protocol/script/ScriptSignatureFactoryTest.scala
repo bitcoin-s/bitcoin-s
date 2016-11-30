@@ -49,8 +49,4 @@ class ScriptSignatureFactoryTest extends FlatSpec with MustMatchers {
     }
     result must be (true)
   }
-
-
-
-
 }

@@ -20,6 +20,7 @@ trait CompactSizeUInt {
    * @return
    */
   def num: UInt64
+
   /**
    * The length of the VarInt in bytes
    * @return

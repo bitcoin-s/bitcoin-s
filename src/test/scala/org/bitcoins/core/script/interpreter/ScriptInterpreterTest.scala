@@ -29,7 +29,7 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterp
 
 
     //use this to represent a single test case from script_valid.json
-    val lines =
+/*    val lines =
         """
           | [ [
   [
@@ -43,8 +43,8 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterp
   "OK",
   "Basic P2WSH"
  ]]
-   """.stripMargin
-    //val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n" finally source.close()
+   """.stripMargin*/
+    val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n" finally source.close()
     val json = lines.parseJson
     val testCasesOpt : Seq[Option[CoreTestCase]] = json.convertTo[Seq[Option[CoreTestCase]]]
     val testCases : Seq[CoreTestCase] = testCasesOpt.flatten
@@ -68,7 +68,7 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterp
         case Some((w, amount)) => ScriptProgram(tx.asInstanceOf[WitnessTransaction], scriptPubKey, inputIndex, flags, w, amount)
         case None => ScriptProgram(tx, scriptPubKey, inputIndex, flags)
       }
-      tx.hex must be ("0100000000010190491d88b9f0dc24d271f0f67179bce5914afe1ac0f83f6cd205f8b807436d6f0000000000ffffffff010100000000000000000247304402200d461c140cfdfcf36b94961db57ae8c18d1cb80e9d95a9e47ac22470c1bf125502201c8dc1cbfef6a3ef90acbbb992ca22fe9466ee6f9d4898eda277a7ac3ab4b2510143410479be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8ac00000000")
+      //tx.hex must be ("0100000000010190491d88b9f0dc24d271f0f67179bce5914afe1ac0f83f6cd205f8b807436d6f0000000000ffffffff010100000000000000000247304402200d461c140cfdfcf36b94961db57ae8c18d1cb80e9d95a9e47ac22470c1bf125502201c8dc1cbfef6a3ef90acbbb992ca22fe9466ee6f9d4898eda277a7ac3ab4b2510143410479be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8ac00000000")
 
       withClue(testCase.raw) {
         ScriptInterpreter.run(program) must equal (testCase.expectedResult)
