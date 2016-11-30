@@ -1,7 +1,7 @@
 package org.bitcoins.core.protocol.script
 
 import org.bitcoins.core.crypto.{ECDigitalSignature, ECPublicKey}
-import org.bitcoins.core.protocol.NetworkElement
+import org.bitcoins.core.protocol.{CompactSizeUInt, NetworkElement}
 import org.bitcoins.core.script.constant._
 import org.bitcoins.core.serializers.script.{RawScriptSignatureParser, ScriptParser}
 import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil, BitcoinScriptUtil, Factory}
@@ -13,12 +13,19 @@ import scala.util.{Failure, Success, Try}
   *
   */
 sealed trait ScriptSignature extends NetworkElement with BitcoinSLogger {
+
+
+  def compactSizeUInt = CompactSizeUInt.parseCompactSizeUInt(bytes)
+
   /**
     * Representation of a scriptSignature in a parsed assembly format
     * this data structure can be run through the script interpreter to
     * see if a script evaluates to true
+    *
+    * Note: The first byte(s) inside the byte array is the [[CompactSizeUInt]]
+    * used to represent the size of the script serialization
     */
-  lazy val asm : Seq[ScriptToken] = ScriptParser.fromHex(hex)
+  lazy val asm : Seq[ScriptToken] = ScriptParser.fromBytes(bytes.splitAt(compactSizeUInt.size.toInt)._2)
 
 
 
@@ -47,8 +54,9 @@ object NonStandardScriptSignature extends Factory[NonStandardScriptSignature] {
   }
 
   def fromAsm(asm : Seq[ScriptToken]): NonStandardScriptSignature = {
-    val hex = asm.map(_.hex).mkString
-    NonStandardScriptSignatureImpl(hex)
+    val asmHex = asm.map(_.hex).mkString
+    val compactSizeUInt = CompactSizeUInt.calculateCompactSizeUInt(asmHex)
+    NonStandardScriptSignatureImpl(compactSizeUInt.hex + asmHex)
   }
 }
 
@@ -82,8 +90,9 @@ object P2PKHScriptSignature extends Factory[P2PKHScriptSignature] {
 
   def fromAsm(asm: Seq[ScriptToken]): P2PKHScriptSignature = {
     require(isP2PKHScriptSig(asm), "Given asm was not a P2PKHScriptSignature, got: " + asm)
-    val hex = asm.map(_.hex).mkString
-    P2PKHScriptSignatureImpl(hex)
+    val asmHex = asm.map(_.hex).mkString
+    val compactSizeUInt = CompactSizeUInt.calculateCompactSizeUInt(asmHex)
+    P2PKHScriptSignatureImpl(compactSizeUInt.hex + asmHex)
   }
 
   /**
@@ -164,8 +173,9 @@ object P2SHScriptSignature extends Factory[P2SHScriptSignature] with BitcoinSLog
 
   def fromAsm(asm: Seq[ScriptToken]): P2SHScriptSignature = {
     require(isP2SHScriptSig(asm), "Given asm tokens are not a p2sh scriptSig, got: " + asm)
-    val hex = asm.map(_.hex).mkString
-    P2SHScriptSignatureImpl(hex)
+    val asmHex = asm.map(_.hex).mkString
+    val compactSizeUInt = CompactSizeUInt.calculateCompactSizeUInt(asmHex)
+    P2SHScriptSignatureImpl(compactSizeUInt.hex + asmHex)
   }
 
   /** Tests if the given asm tokens are a [[P2SHScriptSignature]] */
@@ -199,7 +209,8 @@ object P2SHScriptSignature extends Factory[P2SHScriptSignature] with BitcoinSLog
 
   /** Parses a redeem script from the given script token */
   def parseRedeemScript(scriptToken : ScriptToken) : Try[ScriptPubKey] = {
-    val redeemScript : Try[ScriptPubKey] = Try(ScriptPubKey(scriptToken.bytes))
+    val asm = ScriptParser.fromBytes(scriptToken.bytes)
+    val redeemScript : Try[ScriptPubKey] = Try(ScriptPubKey(asm))
     redeemScript
   }
 }
@@ -246,8 +257,9 @@ object MultiSignatureScriptSignature extends Factory[MultiSignatureScriptSignatu
 
   def fromAsm(asm: Seq[ScriptToken]): MultiSignatureScriptSignature = {
     require(isMultiSignatureScriptSignature(asm), "The given asm tokens were not a multisignature script sig: " + asm)
-    val hex = asm.map(_.hex).mkString
-    MultiSignatureScriptSignatureImpl(hex)
+    val asmHex = asm.map(_.hex).mkString
+    val compactSizeUInt = CompactSizeUInt.calculateCompactSizeUInt(asmHex)
+    MultiSignatureScriptSignatureImpl(compactSizeUInt.hex + asmHex)
   }
 
   /**
@@ -299,8 +311,9 @@ object P2PKScriptSignature extends Factory[P2PKScriptSignature] {
 
   def fromAsm(asm: Seq[ScriptToken]): P2PKScriptSignature = {
     require(isP2PKScriptSignature(asm), "The given asm tokens were not a p2pk scriptSig, got: " + asm)
-    val hex = asm.map(_.hex).mkString
-    P2PKScriptSignatureImpl(hex)
+    val asmHex = asm.map(_.hex).mkString
+    val compactSizeUInt = CompactSizeUInt.calculateCompactSizeUInt(asmHex)
+    P2PKScriptSignatureImpl(compactSizeUInt.hex + asmHex)
   }
 
   override def fromBytes(bytes: Seq[Byte]): P2PKScriptSignature = {

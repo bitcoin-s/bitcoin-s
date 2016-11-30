@@ -19,12 +19,17 @@ import scala.util.{Failure, Success, Try}
  */
 sealed trait ScriptPubKey extends NetworkElement with BitcoinSLogger {
 
+  /** The size of the script, this is used for network serialization */
+  def compactSizeUInt : CompactSizeUInt = CompactSizeUInt.parseCompactSizeUInt(bytes)
+
   /**
-   * Representation of a scriptSignature in a parsed assembly format
-   * this data structure can be run through the script interpreter to
-   * see if a script evaluates to true
-   */
-  lazy val asm : Seq[ScriptToken] = ScriptParser.fromBytes(bytes)
+    * Representation of a scriptPubKey in a parsed assembly format
+    * this data structure can be run through the script interpreter to
+    * see if a script evaluates to true
+    * Note: The first byte(s) inside the byte array is the [[CompactSizeUInt]]
+    * used to represent the size of the script serialization
+    */
+  lazy val asm : Seq[ScriptToken] = ScriptParser.fromBytes(bytes.splitAt(compactSizeUInt.size.toInt)._2)
 
 
 }
@@ -61,8 +66,11 @@ object P2PKHScriptPubKey extends Factory[P2PKHScriptPubKey] {
 
   def fromAsm(asm: Seq[ScriptToken]): P2PKHScriptPubKey = {
     require(isP2PKHScriptPubKey(asm), "Given asm was not a p2pkh scriptPubKey, got: " + asm)
-    val hex = asm.map(_.hex).mkString
-    P2PKHScriptPubKeyImpl(hex)
+
+    val asmHex = asm.map(_.hex).mkString
+    val compactSizeUInt = CompactSizeUInt.calculateCompactSizeUInt(asmHex)
+
+    P2PKHScriptPubKeyImpl(compactSizeUInt.hex + asmHex)
   }
 
   def apply(asm :Seq[ScriptToken]) : P2PKHScriptPubKey = fromAsm(asm)
@@ -73,6 +81,7 @@ object P2PKHScriptPubKey extends Factory[P2PKHScriptPubKey] {
     case _ => false
   }
 }
+
 /**
  * Represents a multisignature script public key
  * https://bitcoin.org/en/developer-guide#multisig
@@ -124,8 +133,8 @@ object MultiSignatureScriptPubKey extends Factory[MultiSignatureScriptPubKey] {
   private case class MultiSignatureScriptPubKeyImpl(hex : String) extends MultiSignatureScriptPubKey
 
   override def fromBytes(bytes : Seq[Byte]): MultiSignatureScriptPubKey = {
-    val asm = ScriptParser.fromBytes(bytes)
-    MultiSignatureScriptPubKey(asm)
+    val s = RawScriptPubKeyParser.read(bytes)
+    MultiSignatureScriptPubKey(s.asm)
   }
 
   def apply(requiredSigs : Int, pubKeys : Seq[ECPublicKey]): MultiSignatureScriptPubKey = {
@@ -159,8 +168,9 @@ object MultiSignatureScriptPubKey extends Factory[MultiSignatureScriptPubKey] {
 
   def fromAsm(asm: Seq[ScriptToken]): MultiSignatureScriptPubKey = {
     require(isMultiSignatureScriptPubKey(asm), "Given asm was not a MultSignatureScriptPubKey, got: " + asm)
-    val hex = asm.map(_.hex).mkString
-    MultiSignatureScriptPubKeyImpl(hex)
+    val asmHex = asm.map(_.hex).mkString
+    val compactSizeUInt = CompactSizeUInt.calculateCompactSizeUInt(asmHex)
+    MultiSignatureScriptPubKeyImpl(compactSizeUInt.hex + asmHex)
   }
 
   def apply(asm :Seq[ScriptToken]) : MultiSignatureScriptPubKey = fromAsm(asm)
@@ -245,8 +255,9 @@ object P2SHScriptPubKey extends Factory[P2SHScriptPubKey] with BitcoinSLogger {
 
   def fromAsm(asm: Seq[ScriptToken]): P2SHScriptPubKey = {
     require(isP2SHScriptPubKey(asm), "Given asm was not a p2sh scriptPubkey, got: " + asm)
-    val hex = asm.map(_.hex).mkString
-    P2SHScriptPubKeyImpl(hex)
+    val asmHex = asm.map(_.hex).mkString
+    val compactSizeUInt = CompactSizeUInt.calculateCompactSizeUInt(asmHex)
+    P2SHScriptPubKeyImpl(compactSizeUInt.hex + asmHex)
   }
 
   def apply(asm :Seq[ScriptToken]) : P2SHScriptPubKey = fromAsm(asm)
@@ -278,8 +289,9 @@ object P2PKScriptPubKey extends Factory[P2PKScriptPubKey] {
 
   def fromAsm(asm: Seq[ScriptToken]): P2PKScriptPubKey = {
     require(isP2PKScriptPubKey(asm), "Given asm was not a p2pk scriptPubKey, got: " + asm)
-    val hex = asm.map(_.hex).mkString
-    P2PKScriptPubKeyImpl(hex)
+    val asmHex = asm.map(_.hex).mkString
+    val compactSizeUInt = CompactSizeUInt.calculateCompactSizeUInt(asmHex)
+    P2PKScriptPubKeyImpl(compactSizeUInt.hex + asmHex)
   }
 
   def apply(asm :Seq[ScriptToken]) : P2PKScriptPubKey = fromAsm(asm)
@@ -329,8 +341,9 @@ object CLTVScriptPubKey extends Factory[CLTVScriptPubKey] {
   }
   def fromAsm (asm : Seq[ScriptToken]) : CLTVScriptPubKey = {
     require(isCLTVScriptPubKey(asm), "Given asm was not a CLTVScriptPubKey, got: " + asm)
-    val hex = asm.map(_.hex).mkString
-    CLTVScriptPubKeyImpl(hex)
+    val asmHex = asm.map(_.hex).mkString
+    val compactSizeUInt = CompactSizeUInt.calculateCompactSizeUInt(asmHex)
+    CLTVScriptPubKeyImpl(compactSizeUInt.hex + asmHex)
   }
 
   def apply (asm: Seq[ScriptToken]) : CLTVScriptPubKey = fromAsm(asm)
@@ -409,8 +422,9 @@ object CSVScriptPubKey extends Factory[CSVScriptPubKey] {
 
   def fromAsm (asm : Seq[ScriptToken]) : CSVScriptPubKey = {
     require(isCSVScriptPubKey(asm), "Given asm was not a CSVScriptPubKey, got: " + asm)
-    val hex = asm.map(_.hex).mkString
-    CSVScriptPubKeyImpl(hex)
+    val asmHex = asm.map(_.hex).mkString
+    val compactSizeUInt = CompactSizeUInt.calculateCompactSizeUInt(asmHex)
+    CSVScriptPubKeyImpl(compactSizeUInt.hex + asmHex)
   }
 
   def apply(asm : Seq[ScriptToken]) : CSVScriptPubKey = fromAsm(asm)
@@ -462,8 +476,9 @@ object NonStandardScriptPubKey extends Factory[NonStandardScriptPubKey] {
   }
 
   def fromAsm(asm: Seq[ScriptToken]): NonStandardScriptPubKey = {
-    val hex = asm.map(_.hex).mkString
-    NonStandardScriptPubKeyImpl(hex)
+    val asmHex = asm.map(_.hex).mkString
+    val compactSizeUInt = CompactSizeUInt.calculateCompactSizeUInt(asmHex)
+    NonStandardScriptPubKeyImpl(compactSizeUInt.hex + asmHex)
   }
 
   def apply(asm : Seq[ScriptToken]) : NonStandardScriptPubKey = fromAsm(asm)
@@ -480,7 +495,7 @@ case object EmptyScriptPubKey extends ScriptPubKey {
   * Factory companion object used to create ScriptPubKey objects
   */
 object ScriptPubKey extends Factory[ScriptPubKey] with BitcoinSLogger {
-  def empty : ScriptPubKey = fromAsm(List())
+  def empty : ScriptPubKey = fromAsm(Nil)
 
   /**
     * Creates a scriptPubKey from its asm representation
@@ -536,8 +551,9 @@ object WitnessScriptPubKeyV0 {
 
   def apply(asm: Seq[ScriptToken]): WitnessScriptPubKeyV0 = {
     require(isWitnessScriptPubKeyV0(asm), "Given asm was not a WitnessScriptPubKeyV0, got: " + asm)
-    val hex = asm.map(_.hex).mkString
-    WitnessScriptPubKeyV0Impl(hex)
+    val asmHex = asm.map(_.hex).mkString
+    val compactSizeUInt = CompactSizeUInt.calculateCompactSizeUInt(asmHex)
+    WitnessScriptPubKeyV0Impl(compactSizeUInt.hex + asmHex)
   }
 
   /** Mimics the function to determine if a [[ScriptPubKey]] contains a witness

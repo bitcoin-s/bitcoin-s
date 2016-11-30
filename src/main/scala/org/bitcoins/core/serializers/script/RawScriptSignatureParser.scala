@@ -1,9 +1,10 @@
 package org.bitcoins.core.serializers.script
 
+import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.serializers.RawBitcoinSerializer
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.script.constant.{ScriptConstant, ScriptToken}
-import org.bitcoins.core.script.crypto.{OP_CHECKMULTISIGVERIFY, OP_CHECKMULTISIG}
+import org.bitcoins.core.script.crypto.{OP_CHECKMULTISIG, OP_CHECKMULTISIGVERIFY}
 import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil}
 import org.slf4j.LoggerFactory
 
@@ -13,8 +14,12 @@ import org.slf4j.LoggerFactory
 trait RawScriptSignatureParser extends RawBitcoinSerializer[ScriptSignature] with BitcoinSLogger  {
 
   def read(bytes : List[Byte]) : ScriptSignature = {
-    val scriptTokens : List[ScriptToken] = ScriptParser.fromBytes(bytes)
-    ScriptSignature.fromAsm(scriptTokens)
+    if (bytes.isEmpty) EmptyScriptSignature
+    else {
+      val compactSizeUInt = CompactSizeUInt.parseCompactSizeUInt(bytes)
+      val scriptTokens : List[ScriptToken] = ScriptParser.fromBytes(bytes.splitAt(compactSizeUInt.size.toInt)._2)
+      ScriptSignature.fromAsm(scriptTokens)
+    }
   }
 
   def write(scriptSig : ScriptSignature) : String = scriptSig.hex

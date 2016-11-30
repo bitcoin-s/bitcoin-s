@@ -15,26 +15,16 @@ import scala.util.{Failure, Success, Try}
 trait ScriptParser extends Factory[List[ScriptToken]] with BitcoinSLogger {
 
 
-  /**
-   * Parses a list of bytes into a list of script tokens
- *
-   * @param bytes
-   * @return
-   */
+  /** Parses a list of bytes into a list of script tokens */
   def fromBytes(bytes : Seq[Byte]) : List[ScriptToken] = {
     val scriptTokens : List[ScriptToken] = parse(bytes)
     scriptTokens
   }
 
 
-  /**
-   * Parses an asm output script of a transaction
+  /** Parses an asm output script of a transaction
    * example: "OP_DUP OP_HASH160 e2e7c1ab3f807151e832dd1accb3d4f5d7d19b4b OP_EQUALVERIFY OP_CHECKSIG"
-   * example: ["0", "IF 0x50 ENDIF 1", "P2SH,STRICTENC", "0x50 is reserved (ok if not executed)"] (from script_valid.json)
- *
-   * @param str
-   * @return
-   */
+   * example: ["0", "IF 0x50 ENDIF 1", "P2SH,STRICTENC", "0x50 is reserved (ok if not executed)"] (from script_valid.json) */
   def fromString(str : String) : List[ScriptToken] = {
 
     if (str.size > 1 && str.substring(0,2) == "0x" && str.split(" ").size == 1) {
@@ -48,19 +38,10 @@ trait ScriptParser extends Factory[List[ScriptToken]] with BitcoinSLogger {
     }
   }
 
-
-
-
-
-
   /**
    * Parses a string to a sequence of script tokens
    * example: "OP_DUP OP_HASH160 e2e7c1ab3f807151e832dd1accb3d4f5d7d19b4b OP_EQUALVERIFY OP_CHECKSIG"
-   * example: ["0", "IF 0x50 ENDIF 1", "P2SH,STRICTENC", "0x50 is reserved (ok if not executed)"] (from script_valid.json)
- *
-   * @param str
-   * @return
-   */
+   * example: ["0", "IF 0x50 ENDIF 1", "P2SH,STRICTENC", "0x50 is reserved (ok if not executed)"] (from script_valid.json) */
   private def parse(str : String) : List[ScriptToken] = {
     logger.debug("Parsing string: " + str + " into a list of script tokens")
 
@@ -151,11 +132,7 @@ trait ScriptParser extends Factory[List[ScriptToken]] with BitcoinSLogger {
 
   /**
    * Parses a byte array into a the asm operations for a script
-   * will throw an exception if it fails to parse a op code
- *
-   * @param bytes
-   * @return
-   */
+   * will throw an exception if it fails to parse a op code */
   private def parse(bytes : List[Byte]) : List[ScriptToken] = {
     @tailrec
     def loop(bytes : List[Byte], accum : List[ScriptToken]) : List[ScriptToken] = {
@@ -174,12 +151,7 @@ trait ScriptParser extends Factory[List[ScriptToken]] with BitcoinSLogger {
 
   private def parse(bytes : Seq[Byte]) : List[ScriptToken] = parse(bytes.toList)
 
-  /**
-   * Parses a redeem script from the given script token
- *
-   * @param scriptToken
-   * @return
-   */
+  /** Parses a redeem script from the given script token */
   def parseRedeemScript(scriptToken : ScriptToken) : Try[List[ScriptToken]] = {
     val redeemScript : Try[List[ScriptToken]] = Try(parse(scriptToken.bytes))
     redeemScript
@@ -188,13 +160,7 @@ trait ScriptParser extends Factory[List[ScriptToken]] with BitcoinSLogger {
 
   /**
    * Slices the amount of bytes specified in the bytesToPushOntoStack parameter and then creates a script constant
-   * from those bytes. Returns the script constant and the byte array without the script constant
- *
-   * @param bytesToPushOntoStack
-   * @param data
-   * @tparam T
-   * @return
-   */
+   * from those bytes. Returns the script constant and the byte array without the script constant */
   private def sliceConstant[T](bytesToPushOntoStack: BytesToPushOntoStack, data : List[T]) : (List[T], List[T]) = {
     val finalIndex = bytesToPushOntoStack.opCode
     val dataConstant = data.slice(0,finalIndex)
@@ -206,11 +172,7 @@ trait ScriptParser extends Factory[List[ScriptToken]] with BitcoinSLogger {
    * Parses the bytes in string format, an example input would look like this
    * "0x09 0x00000000 0x00000000 0x10"
    * see https://github.com/bitcoin/bitcoin/blob/master/src/test/data/script_valid.json#L21-L25
-   * for examples of this
- *
-   * @param s
-   * @return
-   */
+   * for examples of this */
   def parseBytesFromString(s: String) : List[ScriptConstant] = {
     //logger.debug("Parsing bytes from string " + s)
     val scriptConstants : List[ScriptConstant] = (raw"\b0x([0-9a-f]+)\b".r
@@ -236,13 +198,7 @@ trait ScriptParser extends Factory[List[ScriptToken]] with BitcoinSLogger {
    * If the operation is a bytesToPushOntoStack, it pushes the number of bytes onto the stack
    * specified by the bytesToPushOntoStack
    * i.e. If the operation was BytesToPushOntoStackImpl(5), it would slice 5 bytes off of the tail and
-   * places them into a ScriptConstant and add them to the accumulator.
- *
-   * @param op
-   * @param accum
-   * @param tail
-   * @return
-   */
+   * places them into a ScriptConstant and add them to the accumulator. */
   private def parseOperationByte(op : ScriptOperation, accum : List[ScriptToken], tail : List[Byte]) : ParsingHelper[Byte] = {
     op match {
       case bytesToPushOntoStack : BytesToPushOntoStack =>
@@ -264,7 +220,6 @@ trait ScriptParser extends Factory[List[ScriptToken]] with BitcoinSLogger {
   /**
    * Parses OP_PUSHDATA operations correctly. Slices the appropriate amount of bytes off of the tail and pushes
    * them onto the accumulator.
- *
    * @param op the script operation that is being parsed, this should be OP_PUSHDATA1, OP_PUSHDATA2, OP_PUSHDATA4 or else it throws an exception
    * @param accum the parsed script tokens so far
    * @param tail the bytes to be parsed still
@@ -317,17 +272,8 @@ trait ScriptParser extends Factory[List[ScriptToken]] with BitcoinSLogger {
       scriptConstant :: bytesToPushOntoStack :: op :: accum)
   }
 
-  /** Checks if a string can be cast to an int
- *
-   * @param str
-   * @return
-   */
-  private def tryParsingLong(str : String) = try {
-      parseLong(str)
-      true
-    } catch {
-    case _ : Throwable => false
-  }
+  /** Checks if a string can be cast to an int */
+  private def tryParsingLong(str : String): Boolean = Try(parseLong(str)).isSuccess
 
   private def parseLong(str : String) = {
     if (str.substring(0,2) == "0x") {

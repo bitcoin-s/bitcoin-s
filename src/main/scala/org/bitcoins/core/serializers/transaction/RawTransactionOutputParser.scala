@@ -48,13 +48,11 @@ trait RawTransactionOutputParser extends RawBitcoinSerializer[Seq[TransactionOut
   /** Writes a single transaction output */
   def write(output : TransactionOutput) : String = {
     val satoshis = CurrencyUnits.toSatoshis(output.value)
-    val compactSizeUIntHex = output.scriptPubKeyCompactSizeUInt.hex
     val satoshisHexWithoutPadding : String = BitcoinSUtil.flipEndianness(satoshis.hex)
     val satoshisHex = addPadding(16,satoshisHexWithoutPadding)
-    logger.debug("compactSizeUIntHex: " + compactSizeUIntHex)
     logger.debug("satoshis: " + satoshisHex)
-    if (compactSizeUIntHex == "00") satoshisHex + compactSizeUIntHex
-    else satoshisHex + compactSizeUIntHex + output.scriptPubKey.hex
+/*    if (compactSizeUIntHex == "00") satoshisHex + compactSizeUIntHex
+    else */ satoshisHex + output.scriptPubKey.hex
   }
 
   /** Reads a single output from the given bytes, note this is different than [[org.bitcoins.core.serializers.transaction.RawTransactionOutputParser.read]]

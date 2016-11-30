@@ -17,7 +17,7 @@ import scala.io.Source
  */
 class ScriptSignatureTest extends FlatSpec with MustMatchers with BitcoinSLogger {
 
-/*  "ScriptSignature" must "find the digital signature for the transaction inside of a p2pkh script signature" in {
+  "ScriptSignature" must "find the digital signature for the transaction inside of a p2pkh script signature" in {
     val scriptSig = ScriptSignature(TestUtil.rawScriptSig)
     scriptSig.signatures.head.hex must be ("3045022100ad8e961fe3c22b2647d92b078f4c0cf81b3106ea5bf8b900ab8646aa4430216f022071d4edc2b5588be20ac4c2d07edd8ed069e10b2402d3dce2d3b835ccd075f28301")
   }
@@ -58,7 +58,7 @@ class ScriptSignatureTest extends FlatSpec with MustMatchers with BitcoinSLogger
 
   it must "find the digital signature and hash type for a SIGHASH_SINGLE" in {
     TestUtil.p2shInputScriptSigHashSingle.signatures.head.hex must be ("3045022100dfcfafcea73d83e1c54d444a19fb30d17317f922c19e2ff92dcda65ad09cba24022001e7a805c5672c49b222c5f2f1e67bb01f87215fb69df184e7c16f66c1f87c2903")
-    HashType(TestUtil.p2shInputScriptSigHashSingle.signatures.head.bytes.last) must be (SIGHASH_SINGLE)
+    HashType(TestUtil.p2shInputScriptSigHashSingle.signatures.head.bytes.last) must be (HashType.sigHashSingle)
   }
 
   it must "find the hash type for the weird occurrence of hash type being 0 on the blockchain" in {
@@ -91,7 +91,7 @@ class ScriptSignatureTest extends FlatSpec with MustMatchers with BitcoinSLogger
     val scriptSig = ScriptSignature(TestUtil.p2pkScriptSig.hex)
     scriptSig.isInstanceOf[P2PKScriptSignature] must be (true)
     scriptSig.hex must be (TestUtil.p2pkScriptSig.hex)
-  }*/
+  }
 
   it must "read sighash.json and return result" in {
     import org.bitcoins.core.protocol.script.testprotocol.SignatureHashTestCaseProtocol._
