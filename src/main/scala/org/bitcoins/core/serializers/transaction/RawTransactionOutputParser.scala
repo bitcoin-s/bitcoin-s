@@ -21,6 +21,7 @@ trait RawTransactionOutputParser extends RawBitcoinSerializer[Seq[TransactionOut
     * indicating how many outputs we need to read
     */
   override def read(bytes : List[Byte]) : Seq[TransactionOutput] = {
+
     //TODO: Possible bug here, this needs to be parsed as a CompactSizeUInt I think
     val numOutputs = bytes.head.toInt
     @tailrec
@@ -63,14 +64,7 @@ trait RawTransactionOutputParser extends RawBitcoinSerializer[Seq[TransactionOut
     logger.debug("Satoshi hex: " + satoshisHex)
     val satoshis = parseSatoshis(satoshisHex)
     //it doesn't include itself towards the size, thats why it is incremented by one
-    val firstScriptPubKeyByte = 8
-    val scriptCompactSizeUIntSize : Int = CompactSizeUInt.parseCompactSizeUIntSize(bytes(firstScriptPubKeyByte)).toInt
-    logger.debug("VarInt hex: " + BitcoinSUtil.encodeHex(bytes.slice(firstScriptPubKeyByte,firstScriptPubKeyByte + scriptCompactSizeUIntSize)))
-    val scriptSigCompactSizeUInt : CompactSizeUInt =
-      CompactSizeUInt.parseCompactSizeUInt(bytes.slice(firstScriptPubKeyByte,firstScriptPubKeyByte + scriptCompactSizeUIntSize))
-
-    val scriptPubKeyBytes = bytes.slice(firstScriptPubKeyByte + scriptCompactSizeUIntSize,
-      firstScriptPubKeyByte + scriptCompactSizeUIntSize + scriptSigCompactSizeUInt.num.toInt)
+    val scriptPubKeyBytes = bytes.slice(8, bytes.size)
     val scriptPubKey = RawScriptPubKeyParser.read(scriptPubKeyBytes)
     val parsedOutput = TransactionOutput(satoshis,scriptPubKey)
     logger.debug("Parsed output: " + parsedOutput)

@@ -11,7 +11,7 @@ import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil}
 trait NetworkElement extends BitcoinSLogger {
 
   /**
-   * The size of the TransactionElement in bytes.
+   * The size of the NetworkElement in bytes.
    * @return
    */
   def size : Int = bytes.size

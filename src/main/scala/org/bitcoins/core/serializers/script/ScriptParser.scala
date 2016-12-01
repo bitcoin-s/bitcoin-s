@@ -1,9 +1,10 @@
 package org.bitcoins.core.serializers.script
 
+import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.script._
 import org.bitcoins.core.script.constant._
-import org.bitcoins.core.script.crypto.{OP_CHECKMULTISIGVERIFY, OP_CHECKMULTISIG}
-import org.bitcoins.core.util.{BitcoinSLogger, Factory, BitcoinSUtil}
+import org.bitcoins.core.script.crypto.{OP_CHECKMULTISIG, OP_CHECKMULTISIGVERIFY}
+import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil, Factory, NumberUtil}
 import org.slf4j.LoggerFactory
 
 import scala.annotation.tailrec
@@ -230,8 +231,11 @@ trait ScriptParser extends Factory[List[ScriptToken]] with BitcoinSLogger {
     def parseOpPushDataHelper(numBytes : Int) : ParsingHelper[Byte] = {
       //next numBytes is the size of the script constant
       val scriptConstantHex = tail.slice(0,numBytes)
-      logger.debug("Script constant hex: " + scriptConstantHex)
-      val bytesForPushOp = Integer.parseInt(BitcoinSUtil.flipEndianness(scriptConstantHex),16)
+      logger.debug("Script constant hex: " + BitcoinSUtil.encodeHex(scriptConstantHex))
+      val uInt32Push = UInt32(BitcoinSUtil.flipEndianness(scriptConstantHex))
+      //need this for the case where we have an OP_PUSHDATA4 with a number larger than a int32 can hold
+      //TODO: Review this more, see this transaction's scriptSig as an example: b30d3148927f620f5b1228ba941c211fdabdae75d0ba0b688a58accbf018f3cc
+      val bytesForPushOp = Try(uInt32Push.toInt).getOrElse(Int.MaxValue)
       val bytesToPushOntoStack = ScriptConstant(scriptConstantHex)
       logger.debug("BytesToPushOntoStack: " + bytesToPushOntoStack)
       val scriptConstantBytes = tail.slice(numBytes,bytesForPushOp + numBytes)
@@ -241,6 +245,7 @@ trait ScriptParser extends Factory[List[ScriptToken]] with BitcoinSLogger {
       buildParsingHelper(op,bytesToPushOntoStack,scriptConstant,restOfBytes,accum)
     }
 
+    logger.debug("Push op: " + op)
     op match {
       case OP_PUSHDATA1 =>
         parseOpPushDataHelper(1)

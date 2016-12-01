@@ -49,7 +49,7 @@ object P2PKHScriptPubKey extends Factory[P2PKHScriptPubKey] {
   private case class P2PKHScriptPubKeyImpl(hex : String) extends P2PKHScriptPubKey
 
   override def fromBytes(bytes : Seq[Byte]): P2PKHScriptPubKey = {
-    val asm = ScriptParser.fromBytes(bytes)
+    val asm = RawScriptPubKeyParser.read(bytes).asm
     P2PKHScriptPubKey(asm)
   }
 
@@ -128,7 +128,7 @@ sealed trait MultiSignatureScriptPubKey extends ScriptPubKey {
   }
 }
 
-object MultiSignatureScriptPubKey extends Factory[MultiSignatureScriptPubKey] {
+object MultiSignatureScriptPubKey extends Factory[MultiSignatureScriptPubKey] with BitcoinSLogger {
 
   private case class MultiSignatureScriptPubKeyImpl(hex : String) extends MultiSignatureScriptPubKey
 
@@ -163,6 +163,7 @@ object MultiSignatureScriptPubKey extends Factory[MultiSignatureScriptPubKey] {
       constant = ScriptConstant(pubKey.bytes)
     } yield pushOps ++ Seq(constant)
     val asm: Seq[ScriptToken] = required ++ pubKeysWithPushOps.flatten ++ possible ++ Seq(OP_CHECKMULTISIG)
+    logger.info("Created asm: " + asm)
     MultiSignatureScriptPubKey(asm)
   }
 
@@ -170,7 +171,8 @@ object MultiSignatureScriptPubKey extends Factory[MultiSignatureScriptPubKey] {
     require(isMultiSignatureScriptPubKey(asm), "Given asm was not a MultSignatureScriptPubKey, got: " + asm)
     val asmHex = asm.map(_.hex).mkString
     val compactSizeUInt = CompactSizeUInt.calculateCompactSizeUInt(asmHex)
-    MultiSignatureScriptPubKeyImpl(compactSizeUInt.hex + asmHex)
+    val m = MultiSignatureScriptPubKeyImpl(compactSizeUInt.hex + asmHex)
+    m
   }
 
   def apply(asm :Seq[ScriptToken]) : MultiSignatureScriptPubKey = fromAsm(asm)
@@ -236,7 +238,7 @@ object P2SHScriptPubKey extends Factory[P2SHScriptPubKey] with BitcoinSLogger {
   private case class P2SHScriptPubKeyImpl(hex : String) extends P2SHScriptPubKey
 
   override def fromBytes(bytes : Seq[Byte]): P2SHScriptPubKey = {
-    val asm = ScriptParser.fromBytes(bytes)
+    val asm = RawScriptPubKeyParser.read(bytes).asm
     P2SHScriptPubKey(asm)
   }
 
@@ -277,7 +279,7 @@ object P2PKScriptPubKey extends Factory[P2PKScriptPubKey] {
   private case class P2PKScriptPubKeyImpl(hex : String) extends P2PKScriptPubKey
 
   override def fromBytes(bytes : Seq[Byte]) = {
-    val asm = ScriptParser.fromBytes(bytes)
+    val asm = RawScriptPubKeyParser.read(bytes).asm
     P2PKScriptPubKey(asm)
   }
 
@@ -336,7 +338,7 @@ object CLTVScriptPubKey extends Factory[CLTVScriptPubKey] {
   private case class CLTVScriptPubKeyImpl(hex : String) extends CLTVScriptPubKey
 
   override def fromBytes (bytes : Seq[Byte]) : CLTVScriptPubKey = {
-    val asm = ScriptParser.fromBytes(bytes)
+    val asm = RawScriptPubKeyParser.read(bytes).asm
     CLTVScriptPubKey(asm)
   }
   def fromAsm (asm : Seq[ScriptToken]) : CLTVScriptPubKey = {
@@ -416,7 +418,7 @@ object CSVScriptPubKey extends Factory[CSVScriptPubKey] {
   private case class CSVScriptPubKeyImpl(hex : String) extends CSVScriptPubKey
 
   override def fromBytes(bytes : Seq[Byte]) : CSVScriptPubKey = {
-    val asm = ScriptParser.fromBytes(bytes)
+    val asm = RawScriptPubKeyParser.read(bytes).asm
     CSVScriptPubKey(asm)
   }
 
@@ -471,7 +473,7 @@ object NonStandardScriptPubKey extends Factory[NonStandardScriptPubKey] {
   private case class NonStandardScriptPubKeyImpl(hex : String) extends NonStandardScriptPubKey
 
   override def fromBytes(bytes: Seq[Byte]): NonStandardScriptPubKey = {
-    val asm = ScriptParser.fromBytes(bytes)
+    val asm = RawScriptPubKeyParser.read(bytes).asm
     NonStandardScriptPubKey(asm)
   }
 
