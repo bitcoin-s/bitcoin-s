@@ -41,7 +41,7 @@ sealed trait ScriptSignature extends NetworkElement with BitcoinSLogger {
 }
 
 sealed trait NonStandardScriptSignature extends ScriptSignature {
-  def signatures : Seq[ECDigitalSignature] = Seq()
+  def signatures : Seq[ECDigitalSignature] = Nil
 }
 
 object NonStandardScriptSignature extends Factory[NonStandardScriptSignature] {
@@ -190,7 +190,7 @@ object P2SHScriptSignature extends Factory[P2SHScriptSignature] with BitcoinSLog
     val redeemScriptTry : Try[ScriptPubKey] = parseRedeemScript(token)
     redeemScriptTry match {
       case Success(redeemScript) =>
-        logger.debug("Possible redeemScript: " + redeemScript)
+        logger.debug("Possible redeemScript: " + redeemScript.asm)
         redeemScript match {
           case x : P2PKHScriptPubKey => true
           case x : MultiSignatureScriptPubKey => true
@@ -210,6 +210,7 @@ object P2SHScriptSignature extends Factory[P2SHScriptSignature] with BitcoinSLog
   /** Parses a redeem script from the given script token */
   def parseRedeemScript(scriptToken : ScriptToken) : Try[ScriptPubKey] = {
     val asm = ScriptParser.fromBytes(scriptToken.bytes)
+    logger.debug("Asm for redeem script: " + asm)
     val redeemScript : Try[ScriptPubKey] = Try(ScriptPubKey(asm))
     redeemScript
   }
@@ -223,11 +224,7 @@ object P2SHScriptSignature extends Factory[P2SHScriptSignature] with BitcoinSLog
  */
 sealed trait MultiSignatureScriptSignature extends ScriptSignature {
 
-  /**
-    * The digital signatures inside of the scriptSig
-    *
-    * @return
-    */
+  /** The digital signatures inside of the scriptSig */
   def signatures : Seq[ECDigitalSignature] = {
     asm.tail.filter(_.isInstanceOf[ScriptConstant])
       .map(sig => ECDigitalSignature(sig.hex))

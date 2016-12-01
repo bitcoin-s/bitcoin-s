@@ -34,10 +34,7 @@ class ScriptPubKeyFactoryTest extends FlatSpec with MustMatchers {
   }
 
   it must "create a multisignature scriptPubKey from a script using OP_CHECKMULTISIGVERIFY" in {
-    val multiSigRawScriptPubKeyHex = "5221025878e270211662a27181cf" +
-      "4d6ad4d2cf0e69a98a3815c086f587c7e9388d87182103fc85980e3fac1f3d" +
-      "8a5c3223c3ef5bffc1bd42d2cc42add8c3899cc66e7f1906210215b5bd0508" +
-      "69166a70a7341b4f216e268b7c6c7504576dcea2cce7d11cc9a35f53af"
+    val multiSigRawScriptPubKeyHex = "695221025878e270211662a27181cf4d6ad4d2cf0e69a98a3815c086f587c7e9388d87182103fc85980e3fac1f3d8a5c3223c3ef5bffc1bd42d2cc42add8c3899cc66e7f1906210215b5bd050869166a70a7341b4f216e268b7c6c7504576dcea2cce7d11cc9a35f53af"
     val scriptPubKey = ScriptPubKey(multiSigRawScriptPubKeyHex)
     val isMultiSigScriptPubKey : Boolean = scriptPubKey match {
       case s : MultiSignatureScriptPubKey => true

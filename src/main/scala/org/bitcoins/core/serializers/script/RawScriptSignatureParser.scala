@@ -17,15 +17,13 @@ trait RawScriptSignatureParser extends RawBitcoinSerializer[ScriptSignature] wit
     if (bytes.isEmpty) EmptyScriptSignature
     else {
       val compactSizeUInt = CompactSizeUInt.parseCompactSizeUInt(bytes)
-      val scriptTokens : List[ScriptToken] = ScriptParser.fromBytes(bytes.splitAt(compactSizeUInt.size.toInt)._2)
+      val scriptSigBytes = bytes.slice(compactSizeUInt.size.toInt, compactSizeUInt.num.toInt + compactSizeUInt.size.toInt)
+      val scriptTokens : List[ScriptToken] = ScriptParser.fromBytes(scriptSigBytes)
       ScriptSignature.fromAsm(scriptTokens)
     }
   }
 
   def write(scriptSig : ScriptSignature) : String = scriptSig.hex
-
-
-
 }
 
 object RawScriptSignatureParser extends RawScriptSignatureParser

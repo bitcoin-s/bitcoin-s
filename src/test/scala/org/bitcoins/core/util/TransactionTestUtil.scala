@@ -20,14 +20,11 @@ trait TransactionTestUtil extends BitcoinSLogger {
   /**
    * First input of this raw tx is a spending a multisignature output
    * the first input is signed for this tx
-   * @return
    */
   def rawSignedMultiSignatureTx = "0100000001d324b34c80c2e611b23c92ed1be31729b2856ae439d54b237a296d618425e912010000009300483045022100f5d203c0b36027ce61cd72ecd09b9629de029cd5cb34155c459f55999d7a08df02206db673c84556c202e5a5a354eca2bb6effeffff2fa040d34ecdbe642dc2219c001483045022100f0e0c53f1ebddb97407e801d90e5131f40dcab071168322454237b49f3bf74ca022069e2545cf9e2e7dc2c708be403f356c3d436fd498b68ef5f0c9138299547f14701ffffffff0140420f00000000001976a914edc96705498831b16782d439fa93164bc5c8db6f88ac00000000"
   /**
    * First input of this raw tx is a spending a multisignature output
-   * the first input is signed for this tx
-   * @return
-   */
+   * the first input is signed for this tx */
   def signedMultiSignatureTx = Transaction(rawSignedMultiSignatureTx)
 
   /**
@@ -120,15 +117,12 @@ trait TransactionTestUtil extends BitcoinSLogger {
   def signedMultiSignatureTransaction : (Transaction, Int, ScriptPubKey, Seq[ECPublicKey]) = {
     val key1 = ECPrivateKey.fromWIFToPrivateKey("cVLwRLTvz3BxDAWkvS3yzT9pUcTCup7kQnfT2smRjvmmm1wAP6QT")
     val key2 = ECPrivateKey.fromWIFToPrivateKey("cTine92s8GLpVqvebi8rYce3FrUYq78ZGQffBYCS1HmDPJdSTxUo")
-    def key3 = ECPrivateKey.fromWIFToPrivateKey("cVHwXSPRZmL9adctwBwmn4oTZdZMbaCsR5XF6VznqMgcvt1FDDxg")
+    val key3 = ECPrivateKey.fromWIFToPrivateKey("cVHwXSPRZmL9adctwBwmn4oTZdZMbaCsR5XF6VznqMgcvt1FDDxg")
     (signedMultiSignatureTx,0,multiSignatureScriptPubKey, Seq(key1.publicKey,key2.publicKey,key3.publicKey))
   }
 
 
-  /**
-   * Returns a p2sh transaction with its corresponding crediting output
-   * @return
-   */
+  /** Returns a p2sh transaction with its corresponding crediting output */
   def p2shTransactionWithSpendingInputAndCreditingOutput : (Transaction, TransactionInput, UInt32, TransactionOutput) = {
     val creditingTx = TestUtil.p2sh2Of2CreditingTx
     val spendingTx = TestUtil.p2sh2Of2Tx

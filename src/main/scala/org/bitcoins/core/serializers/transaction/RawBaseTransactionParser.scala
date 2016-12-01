@@ -22,6 +22,7 @@ trait RawBaseTransactionParser extends RawBitcoinSerializer[BaseTransaction] wit
 
     val outputsStartIndex = inputsSize + 5
     val outputsBytes = bytes.slice(outputsStartIndex, bytes.size)
+    logger.debug("outputBytes: " + BitcoinSUtil.encodeHex(outputsBytes))
     val outputs = RawTransactionOutputParser.read(outputsBytes)
     val lockTimeStartIndex = outputsStartIndex + outputs.map(_.size).sum + 1
 
