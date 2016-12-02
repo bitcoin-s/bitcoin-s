@@ -4,6 +4,7 @@ import org.bitcoins.core.script.constant.ScriptToken
 import org.bitcoins.core.consensus.Consensus
 import org.bitcoins.core.crypto.{BaseTransactionSignatureComponent, WitnessV0TransactionSignatureComponent}
 import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits}
+import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction.{EmptyTransactionOutPoint, Transaction}
 import org.bitcoins.core.script._
@@ -115,7 +116,9 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
           //we need to run the deserialized redeemScript & the scriptSignature without the serialized redeemScript
           val stack = scriptPubKeyExecutedProgram.stack
           logger.debug("P2sh stack: " + stack)
-          val redeemScript = ScriptPubKey(stack.head.bytes)
+          val redeemScriptBytes = stack.head.bytes
+          val c = CompactSizeUInt.calculateCompactSizeUInt(redeemScriptBytes)
+          val redeemScript = ScriptPubKey(c.bytes ++ redeemScriptBytes)
           logger.debug("Redeem script asm: " + redeemScript.asm)
           val p2shRedeemScriptProgram = ScriptProgram(scriptPubKeyExecutedProgram.txSignatureComponent,stack.tail,
             redeemScript.asm)
@@ -411,8 +414,8 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
     val noDuplicateInputs = prevOutputTxIds.distinct.size == prevOutputTxIds.size
 
     val isValidScriptSigForCoinbaseTx = transaction.isCoinbase match {
-      case true => transaction.inputs.head.scriptSignature.size >= 2 &&
-        transaction.inputs.head.scriptSignature.size <= 100
+      case true => transaction.inputs.head.scriptSignature.asmBytes.size >= 2 &&
+        transaction.inputs.head.scriptSignature.asmBytes.size <= 100
       case false =>
         //since this is not a coinbase tx we cannot have any empty previous outs inside of inputs
         !transaction.inputs.exists(_.previousOutput == EmptyTransactionOutPoint)
