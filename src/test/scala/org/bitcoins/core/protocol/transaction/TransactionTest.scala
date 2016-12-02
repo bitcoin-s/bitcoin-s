@@ -70,7 +70,7 @@ class TransactionTest extends FlatSpec with MustMatchers with BitcoinSLogger {
           | "010000000200010000000000000000000000000000000000000000000000000000000000000000000049483045022100d180fd2eb9140aeb4210c9204d3f358766eb53842b2a9473db687fa24b12a3cc022079781799cd4f038b85135bbe49ec2b57f306b2bb17101b17f71f000fcab2b6fb01ffffffff0002000000000000000000000000000000000000000000000000000000000000000000004847304402205f7530653eea9b38699e476320ab135b74771e1c48b81a5d041e2ca84b9be7a802200ac8d1f40fb026674fe5a5edd3dea715c27baa9baca51ed45ea750ac9dc0a55e81ffffffff010100000000000000015100000000", "P2SH"]
           |
           |]
-        """.stripMargin*/
+        """.stripMargin */
     val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n" finally source.close()
     val json = lines.parseJson
     val testCasesOpt : Seq[Option[CoreTransactionTestCase]] = json.convertTo[Seq[Option[CoreTransactionTestCase]]]
@@ -97,6 +97,7 @@ class TransactionTest extends FlatSpec with MustMatchers with BitcoinSLogger {
     }
   }
 
+
   it must "read all of the tx_invalid.json's contents and return a ScriptError" in {
 
 
@@ -107,8 +108,8 @@ class TransactionTest extends FlatSpec with MustMatchers with BitcoinSLogger {
 /*    val lines =
         """
           |[
-[[["0000000000000000000000000000000000000000000000000000000000000000", -1, "1"]],
-"01000000010000000000000000000000000000000000000000000000000000000000000000ffffffff0151ffffffff010000000000000000015100000000", "P2SH"]
+          |[[["6ca7ec7b1847f6bdbd737176050e6a08d66ccd55bb94ad24f4018024107a5827", 0, "0x41 0x043b640e983c9690a14c039a2037ecc3467b27a0dcd58f19d76c7bc118d09fec45adc5370a1c5bf8067ca9f5557a4cf885fdb0fe0dcc9c3a7137226106fbc779a5 CHECKSIG VERIFY 1"]],
+          |"010000000127587a10248001f424ad94bb55cd6cd6086a0e05767173bdbdf647187beca76c000000004948304502201b822ad10d6adc1a341ae8835be3f70a25201bbff31f59cbb9c5353a5f0eca18022100ea7b2f7074e9aa9cf70aa8d0ffee13e6b45dddabf1ab961bda378bcdb778fa4701ffffffff0100f2052a010000001976a914fc50c5907d86fed474ba5ce8b12a66e0a4c139d888ac00000000", "P2SH"]
           |]
         """.stripMargin*/
     val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n" finally source.close()
@@ -140,7 +141,7 @@ class TransactionTest extends FlatSpec with MustMatchers with BitcoinSLogger {
       }
       withClue(testCase.raw) {
         //only one input is required to be false to make the transaction invalid
-        txInputValidity.exists(_ == false) must be (false)
+        txInputValidity.exists(_ == false) must be (true)
       }
     }
   }

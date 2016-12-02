@@ -5,7 +5,7 @@ import org.bitcoins.core.crypto.{BaseTransactionSignatureComponent, TransactionS
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptWitness, SignatureVersion}
-import org.bitcoins.core.protocol.transaction.{Transaction, WitnessTransaction}
+import org.bitcoins.core.protocol.transaction.{BaseTransaction, Transaction, WitnessTransaction}
 import org.bitcoins.core.script.constant._
 import org.bitcoins.core.script.flag.ScriptFlag
 import org.bitcoins.core.script.result._
@@ -326,6 +326,14 @@ object ScriptProgram {
             witness: ScriptWitness, amount: CurrencyUnit): PreExecutionScriptProgram = {
       ScriptProgram(txSigComponent.transaction, txSigComponent.scriptPubKey, txSigComponent.inputIndex, stack,
         script,originalScript, altStack,flags, witness, txSigComponent.sigVersion, amount)
+  }
+
+
+  def apply(transaction: BaseTransaction, scriptPubKey: ScriptPubKey, inputIndex: UInt32, stack: Seq[ScriptToken],
+            script: Seq[ScriptToken], originalScript: Seq[ScriptToken], altStack: Seq[ScriptToken],
+            flags: Seq[ScriptFlag]): PreExecutionScriptProgram = {
+    val t = TransactionSignatureComponent(transaction,inputIndex,scriptPubKey,flags)
+    PreExecutionScriptProgramImpl(t,stack.toList,script.toList,originalScript.toList,altStack.toList,flags)
   }
 
   /** Creates a fresh instance of [[org.bitcoins.core.script.PreExecutionScriptProgram]] */

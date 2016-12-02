@@ -27,6 +27,8 @@ sealed trait ScriptSignature extends NetworkElement with BitcoinSLogger {
     */
   lazy val asm : Seq[ScriptToken] = ScriptParser.fromBytes(bytes.splitAt(compactSizeUInt.size.toInt)._2)
 
+  /** Byte vector for script program WITHOUT the [[CompactSizeUInt]], this is the raw byte vector that can be run */
+  lazy val asmBytes = asm.flatMap(_.bytes)
 
 
   /**

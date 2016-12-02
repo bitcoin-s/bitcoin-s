@@ -3,6 +3,7 @@ package org.bitcoins.core.script.interpreter.testprotocol
 
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.number.Int64
+import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.serializers.script.ScriptParser
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.script.constant.{ScriptConstant, ScriptOperation, ScriptToken}
@@ -96,7 +97,9 @@ object CoreTestCaseProtocol extends DefaultJsonProtocol with BitcoinSLogger {
      */
     private def parseScriptSignature(element : JsValue) : Seq[Byte] = {
       val asm = ScriptParser.fromString(element.convertTo[String])
-      BitcoinScriptUtil.asmToBytes(asm)
+      val bytes = BitcoinScriptUtil.asmToBytes(asm)
+      val compactSizeUInt = CompactSizeUInt.calculateCompactSizeUInt(bytes)
+      compactSizeUInt.bytes ++ bytes
     }
 
 
@@ -112,7 +115,9 @@ object CoreTestCaseProtocol extends DefaultJsonProtocol with BitcoinSLogger {
      */
     private def parseScriptPubKey(element : JsValue) : Seq[Byte] = {
       val asm = ScriptParser.fromString(element.convertTo[String])
-      BitcoinScriptUtil.asmToBytes(asm)
+      val bytes = BitcoinScriptUtil.asmToBytes(asm)
+      val compactSizeUInt = CompactSizeUInt.calculateCompactSizeUInt(bytes)
+      compactSizeUInt.bytes ++ bytes
     }
 
     override def write(coreTestCase : Option[CoreTestCase]) : JsValue = ???
