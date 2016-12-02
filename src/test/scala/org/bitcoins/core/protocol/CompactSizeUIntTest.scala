@@ -81,12 +81,17 @@ class CompactSizeUIntTest extends FlatSpec with MustMatchers  {
   }
 
   it must "parse the variable length integer of the empty script" in {
-    CompactSizeUInt.parseCompactSizeUInt(ScriptSignature.empty) must be (CompactSizeUInt(UInt64.zero,1))
+    CompactSizeUInt.parseCompactSizeUInt(ScriptSignature.empty) must be (CompactSizeUInt(UInt64.one,1))
   }
 
   it must "parse variable length integer of script sig at least 0xffff bytes in length, and greater than 0xffffffff" in {
-    CompactSizeUInt.parseCompactSizeUInt(ScriptSignature(TestUtil.rawP2shInputScriptLargeSignature * 50)) must be (CompactSizeUInt(UInt64(30300), 3))
-    CompactSizeUInt.parseCompactSizeUInt(ScriptSignature(TestUtil.rawP2shInputScriptLargeSignature * 120)) must be (CompactSizeUInt(UInt64(72720), 5))
+    val c = CompactSizeUInt.calculateCompactSizeUInt(_: String)
+    val s1NoCmpct = TestUtil.rawP2shInputScriptLargeSignature * 50
+    val s2NoCmpct = TestUtil.rawP2shInputScriptLargeSignature * 120
+    val s1 = c(s1NoCmpct).hex + s1NoCmpct
+    val s2 = c(s2NoCmpct).hex + s2NoCmpct
+    CompactSizeUInt.parseCompactSizeUInt(ScriptSignature(s1)) must be (CompactSizeUInt(UInt64(30453), 3))
+    CompactSizeUInt.parseCompactSizeUInt(ScriptSignature(s2)) must be (CompactSizeUInt(UInt64(73085), 5))
   }
 
   it must "parse 32 bit number and 64 bit number as compactsizeuints" in {

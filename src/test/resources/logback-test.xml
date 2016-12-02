@@ -16,7 +16,7 @@
 
 
 
-    <root level="DEBUG">
+    <root level="ERROR">
         <appender-ref ref="STDOUT" />
     </root>
 

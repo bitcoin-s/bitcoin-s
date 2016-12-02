@@ -16,7 +16,7 @@ sealed trait TransactionOutput extends NetworkElement {
   def scriptPubKey : ScriptPubKey
 
   //https://bitcoin.org/en/developer-reference#txout
-  override def size = scriptPubKey.compactSizeUInt.num.toInt + 8
+  override def size = scriptPubKey.size + 8
 
   override def hex = RawTransactionOutputParser.write(Seq(this))
 }

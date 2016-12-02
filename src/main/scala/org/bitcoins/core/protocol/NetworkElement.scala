@@ -10,21 +10,12 @@ import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil}
   */
 trait NetworkElement extends BitcoinSLogger {
 
-  /**
-   * The size of the NetworkElement in bytes.
-   * @return
-   */
+  /** The size of the NetworkElement in bytes. */
   def size : Int = bytes.size
 
-  /**
-   * The hexadecimal representation of the transaction element
-   * @return
-   */
+  /** The hexadecimal representation of the NetworkElement */
   def hex : String
 
-  /**
-   * The byte representation of the transaction element
-   * @return
-   */
+  /** The byte representation of the NetworkElement */
   def bytes : Seq[Byte] = BitcoinSUtil.decodeHex(hex)
 }

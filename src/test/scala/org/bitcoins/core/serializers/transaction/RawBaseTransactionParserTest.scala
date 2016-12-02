@@ -54,7 +54,7 @@ class RawBaseTransactionParserTest extends FlatSpec with MustMatchers {
   it must "parse a transaction with one input and two outputs" in {
     val tx = RawBaseTransactionParser.read(TestUtil.parentSimpleRawTransaction)
     tx.inputs.size must be (1)
-    tx.inputs.head.scriptSignature.hex must be ("4730440220048e15422cf62349dc586ffb8c749d40280781edd5064ff27a5910ff5cf225a802206a82685dbc2cf195d158c29309939d5a3cd41a889db6f766f3809fff35722305012103dcfc9882c1b3ae4e03fb6cac08bdb39e284e81d70c7aa8b27612457b2774509b")
+    tx.inputs.head.scriptSignature.hex must be ("6a4730440220048e15422cf62349dc586ffb8c749d40280781edd5064ff27a5910ff5cf225a802206a82685dbc2cf195d158c29309939d5a3cd41a889db6f766f3809fff35722305012103dcfc9882c1b3ae4e03fb6cac08bdb39e284e81d70c7aa8b27612457b2774509b")
     tx.inputs.head.previousOutput.vout must be (UInt32.one)
     tx.inputs.head.previousOutput.txId.hex must be (BitcoinSUtil.flipEndianness("65bd23d3fb0ac9d3ee0195aae8d033d6689dacf71907902b27a7ad6f6441a7cd"))
     tx.inputs.head.sequence must be (TransactionConstants.sequence)

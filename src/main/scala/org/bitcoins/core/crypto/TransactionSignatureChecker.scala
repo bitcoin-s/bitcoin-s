@@ -167,10 +167,7 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
     } else script
   }
 
-  /**
-    * Removes the list of [[ECDigitalSignature]] from the list of [[ScriptToken]]
-    * @return
-    */
+  /** Removes the list of [[ECDigitalSignature]] from the list of [[ScriptToken]] */
   def removeSignaturesFromScript(sigs : Seq[ECDigitalSignature], script : Seq[ScriptToken]) : Seq[ScriptToken] = {
     @tailrec
     def loop(remainingSigs : Seq[ECDigitalSignature], scriptTokens : Seq[ScriptToken]) : Seq[ScriptToken] = {

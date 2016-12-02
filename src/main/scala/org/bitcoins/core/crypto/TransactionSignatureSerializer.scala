@@ -39,10 +39,11 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
     // EC math so we'll do it anyway.
     val inputSigsRemoved = for {
       input <- spendingTransaction.inputs
-    } yield TransactionInput(input,ScriptSignature.empty)
+      s = input.scriptSignature
+    } yield TransactionInput(input,NonStandardScriptSignature(s.compactSizeUInt.hex))
 
     inputSigsRemoved.map(input =>
-      require(input.scriptSignature.bytes.size == 0,"Input byte size was " + input.scriptSignature.bytes))
+      require(input.scriptSignature.asm.isEmpty,"Input asm was not empty " + input.scriptSignature.asm))
 
     // This step has no purpose beyond being synchronized with Bitcoin Core's bugs. OP_CODESEPARATOR
     // is a legacy holdover from a previous, broken design of executing scripts that shipped in Bitcoin 0.1.

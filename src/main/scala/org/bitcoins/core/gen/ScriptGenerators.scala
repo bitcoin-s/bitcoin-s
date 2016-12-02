@@ -40,12 +40,11 @@ trait ScriptGenerators extends BitcoinSLogger {
   }
 
   def emptyScriptSignature = p2pkhScriptSignature.map(_ => EmptyScriptSignature)
+
   /**
     * Generates a [[org.bitcoins.core.protocol.script.P2SHScriptSignature]]
     * WARNING: the redeem script and the script signature DO NOT evaluate to true
     * if executed by [[org.bitcoins.core.script.interpreter.ScriptInterpreter]]
-    *
-    * @return
     */
   def p2shScriptSignature : Gen[P2SHScriptSignature] = for {
     (scriptPubKey, _) <- pickRandomNonP2SHScriptPubKey
@@ -139,11 +138,7 @@ trait ScriptGenerators extends BitcoinSLogger {
     else multiSigScriptPubKey
   }
 
-  /**
-    * Generates an arbitrary [[ScriptPubKey]]
-    *
-    * @return
-    */
+  /** Generates an arbitrary [[ScriptPubKey]] */
   def scriptPubKey : Gen[(ScriptPubKey, Seq[ECPrivateKey])] = {
     val randomNum = (scala.util.Random.nextInt() % 7).abs
     if (randomNum == 0) p2pkScriptPubKey
@@ -155,11 +150,7 @@ trait ScriptGenerators extends BitcoinSLogger {
     else p2shScriptPubKey
   }
 
-  /**
-    * Generates an arbitrary [[ScriptSignature]]
-    *
-    * @return
-    */
+  /** Generates an arbitrary [[ScriptSignature]] */
   def scriptSignature : Gen[ScriptSignature] = {
     val randomNum = (scala.util.Random.nextInt() % 5).abs
     if (randomNum == 0) p2pkScriptSignature
@@ -172,9 +163,6 @@ trait ScriptGenerators extends BitcoinSLogger {
   /**
     * Generates a [[ScriptSignature]] corresponding to the type of [[ScriptPubKey]] given.
     * Note: Does NOT generate a correct/valid signature
-    *
-    * @param scriptPubKey
-    * @return
     */
   private def pickCorrespondingScriptSignature(scriptPubKey : ScriptPubKey): Gen[ScriptSignature] = scriptPubKey match {
     case p2pk : P2PKScriptPubKey => p2pkScriptSignature
@@ -341,10 +329,7 @@ trait ScriptGenerators extends BitcoinSLogger {
     scriptSig.flatMap(sig => sig)
   }
 
-  /**
-    * Helper function to generate signed CLTVScriptSignatures with appropriate number of signatures.
-    * @return
-    */
+  /** Helper function to generate signed CLTVScriptSignatures with appropriate number of signatures. */
   private def cltvHelper (lockTime : UInt32, sequence : UInt32, cltv: CLTVScriptPubKey, privateKeys : Seq[ECPrivateKey], requiredSigs : Option[Int]) : (CLTVScriptSignature, CLTVScriptPubKey, Seq[ECPrivateKey]) = {
     val pubKeys = privateKeys.map(_.publicKey)
     val (creditingTx, outputIndex) = TransactionGenerators.buildCreditingTransaction(cltv)
@@ -364,10 +349,7 @@ trait ScriptGenerators extends BitcoinSLogger {
     (signedScriptSig, cltv, privateKeys)
   }
 
-  /**
-    * Helper function to generate signed CSVScriptSignatures with appropriate number of signatures.
-    * @return
-    */
+  /** Helper function to generate signed CSVScriptSignatures with appropriate number of signatures. */
   private def csvHelper (sequence : UInt32, csv: CSVScriptPubKey, privateKeys : Seq[ECPrivateKey], requiredSigs : Option[Int]) : (CSVScriptSignature, CSVScriptPubKey, Seq[ECPrivateKey]) = {
     val pubKeys = privateKeys.map(_.publicKey)
     val (creditingTx, outputIndex) = TransactionGenerators.buildCreditingTransaction(UInt32(2),csv)
@@ -406,10 +388,7 @@ trait ScriptGenerators extends BitcoinSLogger {
     scriptSig.flatMap(g => g)
   }
 
-  /**
-    * Generates a random [[ScriptSignature]], the [[ScriptPubKey]] it is spending, and the [[ECPrivateKey]] needed to spend it.
-    * @return
-    */
+  /** Generates a random [[ScriptSignature]], the [[ScriptPubKey]] it is spending, and the [[ECPrivateKey]] needed to spend it. */
   def randomScriptSig : Gen[(ScriptSignature, ScriptPubKey, Seq[ECPrivateKey])] = {
     val randomNum = (scala.util.Random.nextInt() % 6).abs
     if (randomNum == 0) packageToSequenceOfPrivateKeys(signedP2PKHScriptSignature)
@@ -420,11 +399,7 @@ trait ScriptGenerators extends BitcoinSLogger {
     else signedP2SHScriptSignature
   }
 
-  /**
-    * Simply converts one private key in the generator to a sequence of private keys
-    *
-    * @return
-    */
+  /** Simply converts one private key in the generator to a sequence of private keys */
   private def packageToSequenceOfPrivateKeys(gen: Gen[(ScriptSignature, ScriptPubKey, ECPrivateKey)]): Gen[(ScriptSignature, ScriptPubKey, Seq[ECPrivateKey])] = for {
     (scriptSig, scriptPubKey, privateKey) <- gen
   } yield (scriptSig, scriptPubKey, Seq(privateKey))
