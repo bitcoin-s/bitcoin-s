@@ -19,11 +19,11 @@ class BitcoinScriptUtilTest extends FlatSpec with MustMatchers {
   val expectedHex = TestUtil.rawP2PKHScriptPubKey
   "BitcoinScriptUtil" must "give us the correct hexadecimal value of an asm script" in {
 
-    BitcoinScriptUtil.asmToHex(asm) must be (expectedHex)
+    BitcoinScriptUtil.asmToHex(asm) must be (asm.flatMap(_.hex).mkString)
   }
 
   it must "give us the correct byte representation of an asm script" in {
-    BitcoinScriptUtil.asmToBytes(asm) must be (BitcoinSUtil.decodeHex(expectedHex))
+    BitcoinScriptUtil.asmToBytes(asm) must be (asm.flatMap(_.bytes))
   }
 
   it must "filter out all of the push operations in a scriptSig" in {

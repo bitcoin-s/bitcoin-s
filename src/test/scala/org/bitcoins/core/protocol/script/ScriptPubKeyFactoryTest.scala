@@ -17,9 +17,9 @@ class ScriptPubKeyFactoryTest extends FlatSpec with MustMatchers {
     scriptPubKeyFromBytes must be (scriptPubKeyFromHex)
   }
   
-  it must "create a scriptPubKey from an empty string" in {
-    val scriptPubKey = ScriptPubKey("")
-    scriptPubKey.hex must be ("")
+  it must "create a scriptPubKey from an empty scriptpubkey's hex format" in {
+    val scriptPubKey = ScriptPubKey("00")
+    scriptPubKey.hex must be ("00")
   }
 
   it must "create a p2pk scriptPubKey from its hexadecimal representation" in {

@@ -49,7 +49,7 @@ object NonStandardScriptSignature extends Factory[NonStandardScriptSignature] {
 
   override def fromBytes(bytes: Seq[Byte]): NonStandardScriptSignature = {
     //make sure we can parse the bytes
-    val asm = ScriptParser.fromBytes(bytes)
+    val asm = RawScriptSignatureParser.read(bytes).asm
     NonStandardScriptSignature.fromAsm(asm)
   }
 
@@ -84,7 +84,7 @@ object P2PKHScriptSignature extends Factory[P2PKHScriptSignature] {
   private case class P2PKHScriptSignatureImpl(hex : String) extends P2PKHScriptSignature
 
   override def fromBytes(bytes : Seq[Byte]): P2PKHScriptSignature = {
-    val asm = ScriptParser.fromBytes(bytes)
+    val asm = RawScriptSignatureParser.read(bytes).asm
     P2PKHScriptSignature.fromAsm(asm)
   }
 
@@ -123,7 +123,7 @@ object P2PKHScriptSignature extends Factory[P2PKHScriptSignature] {
 sealed trait P2SHScriptSignature extends ScriptSignature {
 
   /** The redeemScript represents the conditions that must be satisfied to spend the output */
-  def redeemScript : ScriptPubKey = ScriptPubKey(asm.last.bytes)
+  def redeemScript : ScriptPubKey = ScriptPubKey(ScriptParser.fromBytes(asm.last.bytes))
 
 
   /** Returns the script signature of this p2shScriptSig with no serialized redeemScript */
@@ -160,15 +160,18 @@ object P2SHScriptSignature extends Factory[P2SHScriptSignature] with BitcoinSLog
   private case class P2SHScriptSignatureImpl(hex : String) extends P2SHScriptSignature
 
   override def fromBytes(bytes : Seq[Byte]): P2SHScriptSignature = {
-    val asm = ScriptParser.fromBytes(bytes)
+    val asm = RawScriptSignatureParser.read(bytes).asm
     P2SHScriptSignature.fromAsm(asm)
   }
 
   def apply(scriptSig : ScriptSignature, redeemScript : ScriptPubKey): P2SHScriptSignature = {
+    //note: we don't just call redeemScript.bytes because that contains the CompactSizeUInt bytes
+    val asmBytes = redeemScript.asm.flatMap(_.bytes)
     //we need to calculate the size of the redeemScript and add the corresponding push op
-    val pushOps = BitcoinScriptUtil.calculatePushOp(ScriptConstant(redeemScript.bytes))
-    val bytes = scriptSig.bytes ++ pushOps.flatMap(_.bytes) ++ redeemScript.bytes
-    fromBytes(bytes)
+    val serializedRedeemScript = ScriptConstant(asmBytes)
+    val pushOps = BitcoinScriptUtil.calculatePushOp(serializedRedeemScript)
+    val asm: Seq[ScriptToken] = scriptSig.asm ++ pushOps ++ Seq(serializedRedeemScript)
+    fromAsm(asm)
   }
 
   def fromAsm(asm: Seq[ScriptToken]): P2SHScriptSignature = {
@@ -236,7 +239,7 @@ object MultiSignatureScriptSignature extends Factory[MultiSignatureScriptSignatu
   private case class MultiSignatureScriptSignatureImpl(hex : String) extends MultiSignatureScriptSignature
 
   override def fromBytes(bytes : Seq[Byte]): MultiSignatureScriptSignature = {
-    val asm = ScriptParser.fromBytes(bytes)
+    val asm = RawScriptSignatureParser.read(bytes).asm
     MultiSignatureScriptSignature.fromAsm(asm)
   }
 
@@ -314,7 +317,7 @@ object P2PKScriptSignature extends Factory[P2PKScriptSignature] {
   }
 
   override def fromBytes(bytes: Seq[Byte]): P2PKScriptSignature = {
-    val asm = ScriptParser.fromBytes(bytes)
+    val asm = RawScriptSignatureParser.read(bytes).asm
     P2PKScriptSignature.fromAsm(asm)
   }
 
@@ -410,12 +413,10 @@ object CSVScriptSignature extends Factory[CSVScriptSignature] {
 }
 
 
-/**
- * Represents the empty script signature
- */
+/** Represents the empty script signature */
 case object EmptyScriptSignature extends ScriptSignature {
   def signatures = Nil
-  def hex = ""
+  def hex = "00"
 }
 
 object ScriptSignature extends Factory[ScriptSignature] with BitcoinSLogger {

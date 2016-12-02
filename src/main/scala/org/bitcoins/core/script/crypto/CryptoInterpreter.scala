@@ -283,6 +283,7 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
 
               //remove the extra op for OP_CHECKMULTISIG from the stack
               val restOfStack = stackWithoutPubKeysAndSignatures.tail
+
               isValidSignatures match {
                 case SignatureValidationSuccess =>
                   //means that all of the signatures were correctly encoded and

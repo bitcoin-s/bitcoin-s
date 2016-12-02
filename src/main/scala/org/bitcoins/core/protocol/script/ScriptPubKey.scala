@@ -243,7 +243,7 @@ object P2SHScriptPubKey extends Factory[P2SHScriptPubKey] with BitcoinSLogger {
   }
 
   def apply(scriptPubKey: ScriptPubKey) : P2SHScriptPubKey = {
-    val hash = CryptoUtil.sha256Hash160(scriptPubKey.bytes)
+    val hash = CryptoUtil.sha256Hash160(scriptPubKey.asm.flatMap(_.bytes))
     val pushOps = BitcoinScriptUtil.calculatePushOp(hash.bytes)
     val asm = Seq(OP_HASH160) ++ pushOps ++ Seq(ScriptConstant(hash.bytes), OP_EQUAL)
     P2SHScriptPubKey(asm)
@@ -486,27 +486,18 @@ object NonStandardScriptPubKey extends Factory[NonStandardScriptPubKey] {
   def apply(asm : Seq[ScriptToken]) : NonStandardScriptPubKey = fromAsm(asm)
 }
 
-/**
- * Represents the empty ScriptPubKey
- */
+/** Represents the empty ScriptPubKey */
 case object EmptyScriptPubKey extends ScriptPubKey {
-  def hex = ""
+  def hex = "00"
 }
 
-/**
-  * Factory companion object used to create ScriptPubKey objects
-  */
+/** Factory companion object used to create ScriptPubKey objects */
 object ScriptPubKey extends Factory[ScriptPubKey] with BitcoinSLogger {
   def empty : ScriptPubKey = fromAsm(Nil)
 
-  /**
-    * Creates a scriptPubKey from its asm representation
-    *
-    * @param asm
-    * @return
-    */
+  /** Creates a scriptPubKey from its asm representation */
   def fromAsm(asm : Seq[ScriptToken]) : ScriptPubKey = asm match {
-    case Seq() => EmptyScriptPubKey
+    case Nil => EmptyScriptPubKey
     case _ if P2PKHScriptPubKey.isP2PKHScriptPubKey(asm) => P2PKHScriptPubKey(asm)
     case _ if P2SHScriptPubKey.isP2SHScriptPubKey(asm) => P2SHScriptPubKey(asm)
     case _ if P2PKScriptPubKey.isP2PKScriptPubKey(asm) => P2PKScriptPubKey(asm)

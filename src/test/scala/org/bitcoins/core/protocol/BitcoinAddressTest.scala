@@ -55,7 +55,7 @@ class BitcoinAddressTest extends FlatSpec with MustMatchers {
 
   it must "encode a scriptPubKey to an address" in {
     //redeemScript from https://en.bitcoin.it/wiki/Pay_to_script_hash
-    val hex = "5141042f90074d7a5bf30c72cf3a8dfd1381bdbd30407010e878f3a11269d5f74a58788505cdca22ea6eab7cfb40dc0e07aba200424ab0d79122a653ad0c7ec9896bdf51ae"
+    val hex = "455141042f90074d7a5bf30c72cf3a8dfd1381bdbd30407010e878f3a11269d5f74a58788505cdca22ea6eab7cfb40dc0e07aba200424ab0d79122a653ad0c7ec9896bdf51ae"
     val scriptPubKey = ScriptPubKey(hex)
     val addr = P2SHAddress.encodeScriptPubKeyToAddress(scriptPubKey,MainNet)
     addr must be (BitcoinAddress("3P14159f73E4gFr7JterCCQh9QjiTjiZrG"))
