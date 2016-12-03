@@ -454,13 +454,13 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers with
     spendingTx.hex must be (hex)
 
     val inputIndex = UInt32.zero
-    val witnessRedeemScript = ScriptPubKey("410479be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8ac")
+    val witnessRedeemScript = ScriptPubKey("43410479be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8ac")
 
     val amount = Satoshis(Int64(1))
     val witnessStack = Seq("304402200d461c140cfdfcf36b94961db57ae8c18d1cb80e9d95a9e47ac22470c1bf125502201c8dc1cbfef6a3ef90acbbb992ca22fe9466ee6f9d4898eda277a7ac3ab4b25101",
       "410479be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8ac")
     val witness = ScriptWitness(witnessStack.map(BitcoinSUtil.decodeHex(_)))
-    val serializedForSig = TransactionSignatureSerializer.serializeForSignature(spendingTx,inputIndex,witnessRedeemScript.asm,
+    val serializedForSig = TransactionSignatureSerializer.serializeForSignature(spendingTx,inputIndex, witnessRedeemScript.asm,
       HashType.sigHashAll,amount)
 
     BitcoinSUtil.encodeHex(serializedForSig) must be (expected)
