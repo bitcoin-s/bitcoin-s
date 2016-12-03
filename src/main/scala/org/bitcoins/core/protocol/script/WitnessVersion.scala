@@ -25,8 +25,8 @@ case object WitnessVersion0 extends WitnessVersion {
         //p2wpkh
         if (scriptWitness.stack.size != 2) Right(ScriptErrorWitnessProgramMisMatch)
         else {
-          val key = ECPublicKey(scriptWitness.stack.last)
-          Left((scriptWitness.stack.map(ScriptConstant(_)), P2PKHScriptPubKey(key)))
+          val hash = Sha256Hash160Digest(programBytes)
+          Left((scriptWitness.stack.map(ScriptConstant(_)), P2PKHScriptPubKey(hash)))
         }
       case 32 =>
         logger.info("Script witness stack: " + scriptWitness.stack)
