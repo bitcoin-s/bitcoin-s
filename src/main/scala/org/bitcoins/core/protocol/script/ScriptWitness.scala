@@ -14,7 +14,7 @@ sealed trait ScriptWitness {
   /** The [[ScriptToken]]s that are placed on to the stack when evaluating a witness program */
   def stack : Seq[Seq[Byte]]
 
-  override def toString = stack.map(BitcoinSUtil.encodeHex(_)).mkString
+  override def toString = stack.map(BitcoinSUtil.encodeHex(_)).toString
 }
 
 object ScriptWitness{

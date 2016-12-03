@@ -109,7 +109,6 @@ object CoreTestCaseProtocol extends DefaultJsonProtocol with BitcoinSLogger {
      * "2 EQUALVERIFY 1 EQUAL"
      * "'Az' EQUAL"
      * look at scirpt_valid.json file for more example formats
- *
      * @param element
      * @return
      */

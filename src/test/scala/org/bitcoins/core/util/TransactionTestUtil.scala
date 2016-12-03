@@ -41,7 +41,7 @@ trait TransactionTestUtil extends BitcoinSLogger {
 
     
     val outpoint = EmptyTransactionOutPoint
-    val scriptSignature = ScriptSignature("0000")
+    val scriptSignature = ScriptSignature("020000")
     val input = TransactionInput(outpoint,scriptSignature,TransactionConstants.sequence)
     val output = TransactionOutput(amount.getOrElse(CurrencyUnits.zero),scriptPubKey)
 

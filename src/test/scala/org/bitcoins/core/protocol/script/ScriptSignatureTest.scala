@@ -108,7 +108,7 @@ class ScriptSignatureTest extends FlatSpec with MustMatchers with BitcoinSLogger
 */
 
     val source = Source.fromURL(this.getClass.getResource("/sighash.json"))
-    val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n" finally source.close()
+    val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim).mkString("\n") finally source.close()
     val testCases : Seq[SignatureHashTestCase] = lines.parseJson.convertTo[Seq[SignatureHashTestCase]]
 
     for {

@@ -147,7 +147,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
         val scriptSig = scriptPubKeyExecutedProgram.txSignatureComponent.scriptSignature
         val (witnessVersion,witnessProgram) = (witnessScriptPubKey.witnessVersion, witnessScriptPubKey.witnessProgram)
         val witness = w.witness
-        if (scriptSig.bytes.nonEmpty) ScriptProgram(scriptPubKeyExecutedProgram,ScriptErrorWitnessMalleated)
+        if (scriptSig.asm.nonEmpty) ScriptProgram(scriptPubKeyExecutedProgram,ScriptErrorWitnessMalleated)
         else verifyWitnessProgram(witnessVersion, witness, witnessProgram, w)
     }
 
