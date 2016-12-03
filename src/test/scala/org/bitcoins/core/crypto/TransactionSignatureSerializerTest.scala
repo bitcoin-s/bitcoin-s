@@ -8,6 +8,7 @@ import org.bitcoinj.params.TestNet3Params
 import org.bitcoinj.script.{ScriptBuilder, ScriptChunk, ScriptOpCodes}
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.number.{Int32, Int64, UInt32}
+import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.serializers.script.ScriptParser
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
@@ -44,7 +45,7 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers with
     BitcoinSUtil.encodeHex(sigBytes) must be (bitcoinjSerialization)
   }
 
-   it must "hash a tranasction with SIGHASH_ALL correctly" in {
+   it must "hash a tranasction with SIGHASH_ALL correfctly" in {
 
      val spendingTx = Transaction(BitcoinJTestUtil.multiSigTransaction.bitcoinSerialize())
      spendingTx.hex must be (BitcoinSUtil.encodeHex(BitcoinJTestUtil.multiSigTransaction.bitcoinSerialize()))
@@ -217,7 +218,6 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers with
 
      hashedTxForSig.hex must be (bitcoinjTxHashForSig)
    }
-
 
    it must "serialize a simple transaction with one p2pkh input for signing" in {
      val (spendingTx,spendingInput, inputIndex, creditingOutput) =
