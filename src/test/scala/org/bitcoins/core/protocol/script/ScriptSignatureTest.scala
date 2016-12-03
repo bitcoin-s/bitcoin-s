@@ -4,6 +4,7 @@ package org.bitcoins.core.protocol.script
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.number.Int32
 import org.bitcoins.core.protocol.script.testprotocol.SignatureHashTestCase
+import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.script.crypto.{HashType, SIGHASH_ALL, SIGHASH_SINGLE}
 import org.bitcoins.core.serializers.script.RawScriptSignatureParser
 import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil, TestUtil}
@@ -96,13 +97,15 @@ class ScriptSignatureTest extends FlatSpec with MustMatchers with BitcoinSLogger
   it must "read sighash.json and return result" in {
     import org.bitcoins.core.protocol.script.testprotocol.SignatureHashTestCaseProtocol._
     //["raw_transaction, script, input_index, hashType, signature_hash (result)"],
-/*    val lines =
+/*
+    val lines =
       """
         | [
-        | ["4ddaa680026ec4d8060640304b86823f1ac760c260cef81d85bd847952863d629a3002b54b0200000008526365636a656aab65457861fc6c24bdc760c8b2e906b6656edaf9ed22b5f50e1fb29ec076ceadd9e8ebcb6b000000000152ffffffff033ff04f00000000000551526a00657a1d900300000000002153af040000000003006a6300000000", "ab526a53acabab", 0, 1055317633, "7f21b62267ed52462e371a917eb3542569a4049b9dfca2de3c75872b39510b26"]
+        | 	["a0aa3126041621a6dea5b800141aa696daf28408959dfb2df96095db9fa425ad3f427f2f6103000000015360290e9c6063fa26912c2e7fb6a0ad80f1c5fea1771d42f12976092e7a85a4229fdb6e890000000001abc109f6e47688ac0e4682988785744602b8c87228fcef0695085edf19088af1a9db126e93000000000665516aac536affffffff8fe53e0806e12dfd05d67ac68f4768fdbe23fc48ace22a5aa8ba04c96d58e2750300000009ac51abac63ab5153650524aa680455ce7b000000000000499e50030000000008636a00ac526563ac5051ee030000000003abacabd2b6fe000000000003516563910fb6b5", "65", 0, -1391424484, "48d6a1bd2cd9eec54eb866fc71209418a950402b5d7e52363bfb75c98e141175"]
         | ]
         |
-      """.stripMargin*/
+      """.stripMargin
+*/
 
     val source = Source.fromURL(this.getClass.getResource("/sighash.json"))
     val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n" finally source.close()
@@ -111,20 +114,22 @@ class ScriptSignatureTest extends FlatSpec with MustMatchers with BitcoinSLogger
     for {
       testCase <- testCases
     } yield {
+      Transaction(testCase.transaction.hex) must be (testCase.transaction)
       logger.info("Test case: " + testCase)
       logger.info("Hash type num: " + testCase.hashTypeNum)
       logger.info("Hash type: " + testCase.hashType)
       val hashForSig = TransactionSignatureSerializer.hashForSignature(testCase.transaction, testCase.inputIndex, testCase.script.asm, testCase.hashType)
       //the hash is returned with opposite endianness
+      logger.info("Expected hash: " + testCase.hash.hex)
       val flipHash = BitcoinSUtil.flipEndianness(testCase.hash.hex)
       hashForSig must be (DoubleSha256Digest(flipHash))
     }
   }
 
-/*  it must "create a cltvScriptSig with the correct underlying scriptSig" in {
-    val cltvScriptPubKey = CLTVScriptPubKey("04e71bbe57b17576a914da88dc82530f0a4d1327dcfe75cc60c44277532c88ac")
+  it must "create a cltvScriptSig with the correct underlying scriptSig" in {
+    val cltvScriptPubKey = CLTVScriptPubKey("2004e71bbe57b17576a914da88dc82530f0a4d1327dcfe75cc60c44277532c88ac")
     val pubKey = ECPublicKey("039ba48e162b1f47246f4ce9dc40f197fab7bde11da1b2fe9ac21113959e9f381b")
     val sig = ECDigitalSignature("3045022100d71cfe32fa4545c5a0fd665b3701eb458a1bacbba868a05fa703fd1fa4b4f5c502204ee706334f976d0bee9b0f0ff919c1dfe9ba027993bf3e39fc03416ba4255b2401")
-    CLTVScriptSignature(cltvScriptPubKey, Seq(sig), Seq(pubKey)).scriptSig.isInstanceOf[P2PKHScriptSignature]
-  }*/
+    CLTVScriptSignature(cltvScriptPubKey, Seq(sig), Seq(pubKey)).scriptSig.isInstanceOf[P2PKHScriptSignature] must be (true)
+  }
 }

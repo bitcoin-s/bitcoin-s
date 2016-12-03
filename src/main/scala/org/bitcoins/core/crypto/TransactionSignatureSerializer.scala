@@ -2,6 +2,7 @@ package org.bitcoins.core.crypto
 
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.constant.ScriptToken
@@ -189,12 +190,12 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
 
     logger.debug("outputHash: " + outputHash.map(BitcoinSUtil.encodeHex(_)))
     logger.debug("Script: " + script)
+    val scriptBytes = script.flatMap(_.bytes)
     val fe: Seq[Byte] => Seq[Byte] = { bytes: Seq[Byte] => BitcoinSUtil.decodeHex(BitcoinSUtil.flipEndianness(bytes)) }
     val serializationForSig: Seq[Byte] = fe(spendingTx.version.bytes) ++ outPointHash.getOrElse(Nil) ++ sequenceHash.getOrElse(Nil) ++
-      spendingTx.inputs(inputIndexInt).previousOutput.bytes ++
-      script.flatMap(_.bytes) ++ fe(amount.bytes) ++ fe(spendingTx.inputs(inputIndexInt).sequence.bytes) ++
-      outputHash.getOrElse(Nil) ++ fe(spendingTx.lockTime.bytes) ++
-      hashType.num.bytes.reverse
+      spendingTx.inputs(inputIndexInt).previousOutput.bytes ++ CompactSizeUInt.calculateCompactSizeUInt(scriptBytes).bytes ++
+      scriptBytes ++ fe(amount.bytes) ++ fe(spendingTx.inputs(inputIndexInt).sequence.bytes) ++
+      outputHash.getOrElse(Nil) ++ fe(spendingTx.lockTime.bytes) ++ hashType.num.bytes.reverse
     logger.info("Serialization for signature for WitnessV0Sig: " + BitcoinSUtil.encodeHex(serializationForSig))
     serializationForSig
   }
