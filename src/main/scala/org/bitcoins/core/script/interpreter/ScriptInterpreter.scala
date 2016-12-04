@@ -119,13 +119,20 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
           val redeemScriptBytes = stack.head.bytes
           val c = CompactSizeUInt.calculateCompactSizeUInt(redeemScriptBytes)
           val redeemScript = ScriptPubKey(c.bytes ++ redeemScriptBytes)
-          logger.debug("Redeem script asm: " + redeemScript.asm)
-          val p2shRedeemScriptProgram = ScriptProgram(scriptPubKeyExecutedProgram.txSignatureComponent,stack.tail,
-            redeemScript.asm)
-          if (ScriptFlagUtil.requirePushOnly(p2shRedeemScriptProgram.flags) && !BitcoinScriptUtil.isPushOnly(redeemScript.asm)) {
-            logger.error("p2sh redeem script must be push only operations whe SIGPUSHONLY flag is set")
-            ScriptProgram(p2shRedeemScriptProgram,ScriptErrorSigPushOnly)
-          } else loop(p2shRedeemScriptProgram,0)
+          redeemScript match {
+            case w : WitnessScriptPubKey =>
+              logger.debug("redeem script was witness script pubkey")
+              executeSegWitScript(scriptPubKeyExecutedProgram,w)
+            case s @ (_ : P2SHScriptPubKey | _ : P2PKHScriptPubKey | _ : P2PKScriptPubKey | _ : MultiSignatureScriptPubKey |
+              _: CLTVScriptPubKey | _ : CSVScriptPubKey | _: NonStandardScriptPubKey | EmptyScriptPubKey) =>
+              logger.debug("Redeem script asm: " + s.asm)
+              val p2shRedeemScriptProgram = ScriptProgram(scriptPubKeyExecutedProgram.txSignatureComponent,stack.tail,
+                s.asm)
+              if (ScriptFlagUtil.requirePushOnly(p2shRedeemScriptProgram.flags) && !BitcoinScriptUtil.isPushOnly(s.asm)) {
+                logger.error("p2sh redeem script must be push only operations whe SIGPUSHONLY flag is set")
+                ScriptProgram(p2shRedeemScriptProgram,ScriptErrorSigPushOnly)
+              } else loop(p2shRedeemScriptProgram,0)
+          }
         case false =>
           logger.warn("P2SH scriptPubKey hash did not match the hash for the serialized redeemScript")
           scriptPubKeyExecutedProgram
@@ -147,7 +154,11 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
         val scriptSig = scriptPubKeyExecutedProgram.txSignatureComponent.scriptSignature
         val (witnessVersion,witnessProgram) = (witnessScriptPubKey.witnessVersion, witnessScriptPubKey.witnessProgram)
         val witness = w.witness
-        if (scriptSig.asm.nonEmpty) ScriptProgram(scriptPubKeyExecutedProgram,ScriptErrorWitnessMalleated)
+        if (w.scriptPubKey.isInstanceOf[P2SHScriptPubKey])  {
+          //P2SH(P2WSH) in BIP141
+          verifyWitnessProgram(witnessVersion,witness,witnessProgram,w)
+        }
+        else if (scriptSig.asm.nonEmpty) ScriptProgram(scriptPubKeyExecutedProgram,ScriptErrorWitnessMalleated)
         else verifyWitnessProgram(witnessVersion, witness, witnessProgram, w)
     }
 
