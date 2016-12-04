@@ -199,12 +199,20 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
           logger.info("Redeem script: " + s.redeemScript)
           s.redeemScript match {
             case w : WitnessScriptPubKey =>
-              //if the redeem script is a witenss script pubkey, the true redeem script is the first item inside the witness
-              val redeemScriptBytes = wtxSigComponent.witness.stack.head
-              val compact = CompactSizeUInt.calculateCompactSizeUInt(redeemScriptBytes)
-              val witnessRedeemScript = ScriptPubKey(compact.bytes ++ redeemScriptBytes)
-              val sigsRemoved = removeSignaturesFromScript(s.signatures,witnessRedeemScript.asm)
-              sigsRemoved
+              if (w.bytes.size == 23) {
+                //P2SH(P2WPKH)
+                val sigsRemoved = removeSignaturesFromScript(s.signatures,wtxSigComponent.scriptPubKey.asm)
+                sigsRemoved
+              } else {
+                //P2SH(P2WSH)
+                //if the redeem script is a witenss script pubkey, the true redeem script is the first item inside the witness
+                val redeemScriptBytes = wtxSigComponent.witness.stack.head
+                val compact = CompactSizeUInt.calculateCompactSizeUInt(redeemScriptBytes)
+                val witnessRedeemScript = ScriptPubKey(compact.bytes ++ redeemScriptBytes)
+                val sigsRemoved = removeSignaturesFromScript(s.signatures,witnessRedeemScript.asm)
+                sigsRemoved
+              }
+
             case x @ (_ : P2SHScriptPubKey | _ : P2PKHScriptPubKey | _ : P2PKScriptPubKey | _ : MultiSignatureScriptPubKey |
                       _ : NonStandardScriptPubKey | _ : CLTVScriptPubKey | _ : CSVScriptPubKey | EmptyScriptPubKey) =>
               val sigsRemoved = removeSignaturesFromScript(s.signatures, s.redeemScript.asm)
