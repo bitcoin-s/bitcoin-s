@@ -176,7 +176,8 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
             w.flags,w.witness,w.sigVersion,w.amount)
           val evaluated = loop(newProgram,0)
           logger.info("Stack after evaluating witness: " + evaluated.stack)
-          if (evaluated.stack.size != 1) ScriptProgram(evaluated,ScriptErrorEvalFalse)
+          if (evaluated.error.isDefined) evaluated
+          else if (evaluated.stack.size != 1) ScriptProgram(evaluated,ScriptErrorEvalFalse)
           else if (evaluated.stackTopIsFalse) ScriptProgram(evaluated,ScriptErrorEvalFalse)
           else evaluated
         case Right(err) =>

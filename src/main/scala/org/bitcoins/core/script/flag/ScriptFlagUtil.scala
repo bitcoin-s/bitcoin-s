@@ -99,6 +99,8 @@ trait ScriptFlagUtil {
   def discourageUpgradableWitnessProgram(flags: Seq[ScriptFlag]): Boolean = flags.contains(ScriptVerifyDiscourageUpgradableWitnessProgram)
 
   def requireScriptVerifyNullFail(flags: Seq[ScriptFlag]): Boolean = flags.contains(ScriptVerifyNullFail)
+
+  def requireScriptVerifyWitnessPubKeyType(flags: Seq[ScriptFlag]): Boolean = flags.contains(ScriptVerifyWitnessPubKeyType)
 }
 
 

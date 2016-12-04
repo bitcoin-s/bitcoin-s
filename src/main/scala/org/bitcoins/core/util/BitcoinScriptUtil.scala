@@ -6,6 +6,7 @@ import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.script.constant._
 import org.bitcoins.core.script.crypto.{OP_CHECKMULTISIG, OP_CHECKMULTISIGVERIFY, OP_CHECKSIG, OP_CHECKSIGVERIFY}
 import org.bitcoins.core.script.flag.{ScriptFlag, ScriptFlagUtil}
+import org.bitcoins.core.script.result.{ScriptError, ScriptErrorPubKeyType, ScriptErrorWitnessPubKeyType}
 import org.bitcoins.core.script.{ScriptOperation, ScriptProgram, ScriptSettings}
 
 import scala.annotation.tailrec
@@ -291,11 +292,8 @@ trait BitcoinScriptUtil {
         //  Non-canonical public key: invalid length for uncompressed key
         return false
       }
-    } else if (key.bytes.head == 0x02 || key.bytes.head == 0x03) {
-      if (key.bytes.size != 33) {
-        //  Non-canonical public key: invalid length for compressed key
-        return false
-      }
+    } else if (isCompressedPubKey(key)) {
+      return true
     } else {
       //  Non-canonical public key: neither compressed nor uncompressed
       return false
@@ -303,9 +301,30 @@ trait BitcoinScriptUtil {
     return true
   }
 
+  /** Checks if the given public key is a compressed public key */
+  def isCompressedPubKey(key: ECPublicKey): Boolean = {
+    (key.bytes.size == 33) && (key.bytes.head == 0x02 || key.bytes.head == 0x03)
+  }
+
   def minimalScriptNumberRepresentation(num : ScriptNumber) : ScriptNumber = {
     val op = ScriptNumberOperation.fromNumber(num.toInt)
     if (op.isDefined) op.get else num
+  }
+
+  /**
+    * Determines if the given pubkey is valid in accordance to the given [[ScriptFlag]]s
+    * Mimics this function inside of Bitcoin Core
+    * [[https://github.com/bitcoin/bitcoin/blob/528472111b4965b1a99c4bcf08ac5ec93d87f10f/src/script/interpreter.cpp#L214-L223]]
+    */
+  def isValidPubKeyEncoding(pubKey: ECPublicKey, flags: Seq[ScriptFlag]): Option[ScriptError] = {
+    if (ScriptFlagUtil.requireStrictEncoding(flags) &&
+      !BitcoinScriptUtil.isCompressedOrUncompressedPubKey(pubKey)) {
+      Some(ScriptErrorPubKeyType)
+    }
+    else if (ScriptFlagUtil.requireScriptVerifyWitnessPubKeyType(flags) &&
+      !BitcoinScriptUtil.isCompressedPubKey(pubKey)) {
+      Some(ScriptErrorWitnessPubKeyType)
+    } else None
   }
 }
 

@@ -1,15 +1,12 @@
 package org.bitcoins.core.script.crypto
 
 import org.bitcoins.core.crypto.{SignatureValidationFailureIncorrectSignatures, _}
-import org.bitcoins.core.protocol.script._
-import org.bitcoins.core.protocol.transaction.Transaction
-import org.bitcoins.core.script.control.{ControlOperationsInterpreter, OP_VERIFY}
-import org.bitcoins.core.script.result._
-import org.bitcoins.core.script.flag.{ScriptFlagUtil, ScriptVerifyDerSig, ScriptVerifyNullDummy}
 import org.bitcoins.core.script._
 import org.bitcoins.core.script.constant._
-import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil, BitcoinScriptUtil, CryptoUtil}
-import org.slf4j.LoggerFactory
+import org.bitcoins.core.script.control.{ControlOperationsInterpreter, OP_VERIFY}
+import org.bitcoins.core.script.flag.{ScriptFlag, ScriptFlagUtil}
+import org.bitcoins.core.script.result._
+import org.bitcoins.core.util.{BitcoinSLogger, BitcoinScriptUtil, CryptoUtil}
 
 import scala.annotation.tailrec
 
@@ -99,6 +96,11 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
             logger.error("Since the ScriptVerifyDerSig flag is set the signature being checked must be a strict dersig signature as per BIP 66\n" +
               "Sig: " + signature.hex)
             ScriptProgram(executionInProgressScriptProgram,ScriptErrorSigDer)
+          } else if (BitcoinScriptUtil.isValidPubKeyEncoding(pubKey,executionInProgressScriptProgram.flags).isDefined) {
+            logger.error("Pubkey had an invalid encoding")
+            val err = BitcoinScriptUtil.isValidPubKeyEncoding(pubKey,executionInProgressScriptProgram.flags).get
+            logger.error("PubKey error: " + err)
+            ScriptProgram(executionInProgressScriptProgram,err)
           } else {
             val restOfStack = executionInProgressScriptProgram.stack.tail.tail
             logger.debug("Program before removing OP_CODESEPARATOR: " + program.originalScript)
@@ -136,6 +138,8 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
                     case ScriptValidationFailureHashType =>
                       logger.info("Signature validation failed: " + ScriptValidationFailureHashType)
                       ScriptProgram(program,ScriptErrorSigHashType)
+                    case ScriptValidationFailureWitnessPubKeyType =>
+                      ScriptProgram(program,ScriptErrorWitnessPubKeyType)
                   }
                 }
             }
@@ -310,6 +314,8 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
                   ScriptProgram(program, ScriptErrorSigHighS)
                 case ScriptValidationFailureHashType =>
                   ScriptProgram(executionInProgressScriptProgram, ScriptErrorSigHashType)
+                case ScriptValidationFailureWitnessPubKeyType =>
+                  ScriptProgram(executionInProgressScriptProgram,ScriptErrorWitnessPubKeyType)
               }
             }
           }

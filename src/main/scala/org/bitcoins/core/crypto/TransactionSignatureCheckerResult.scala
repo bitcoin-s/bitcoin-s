@@ -47,7 +47,7 @@ case object SignatureValidationFailureSignatureCount extends SignatureValidation
 
 /**
  * This indicates that the public key was not encoded correctly according to this function
- * [[https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L202]]
+ * [[https://github.com/bitcoin/bitcoin/blob/528472111b4965b1a99c4bcf08ac5ec93d87f10f/src/script/interpreter.cpp#L214-L223]]
  */
 case object SignatureValidationFailurePubKeyEncoding extends SignatureValidationError
 /**
@@ -60,3 +60,7 @@ case object ScriptValidationFailureHighSValue extends SignatureValidationError
  * Fails the script if the hash type is not defined on a digital signature
  */
 case object ScriptValidationFailureHashType extends SignatureValidationError
+
+/** Fails the script if the given public key was not compressed and the [[org.bitcoins.core.script.flag.ScriptVerifyWitnessPubKeyType]]
+  * flag was set  */
+case object ScriptValidationFailureWitnessPubKeyType extends SignatureValidationError

@@ -29,7 +29,7 @@ case object WitnessVersion0 extends WitnessVersion {
           Left((scriptWitness.stack.map(ScriptConstant(_)), P2PKHScriptPubKey(hash)))
         }
       case 32 =>
-        logger.info("Script witness stack: " + scriptWitness.stack)
+        logger.info("Script witness stack: " + scriptWitness)
         //p2wsh
         if (scriptWitness.stack.isEmpty) Right(ScriptErrorWitnessProgramWitnessEmpty)
         else {
