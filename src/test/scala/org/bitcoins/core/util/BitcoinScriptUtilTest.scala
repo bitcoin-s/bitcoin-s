@@ -1,11 +1,13 @@
 package org.bitcoins.core.util
 
-import org.bitcoins.core.crypto.ECPublicKey
-import org.bitcoins.core.script.bitwise.{OP_OR, OP_EQUALVERIFY}
+import org.bitcoins.core.crypto.{ECPrivateKey, ECPublicKey}
+import org.bitcoins.core.script.bitwise.{OP_EQUALVERIFY, OP_OR}
 import org.bitcoins.core.script.constant._
 import org.bitcoins.core.script.crypto._
+import org.bitcoins.core.script.flag.ScriptVerifyWitnessPubKeyType
 import org.bitcoins.core.script.locktime.OP_CHECKLOCKTIMEVERIFY
 import org.bitcoins.core.script.reserved.{OP_NOP, OP_RESERVED}
+import org.bitcoins.core.script.result.ScriptErrorWitnessPubKeyType
 import org.bitcoins.core.script.stack.OP_DUP
 import org.scalatest.{FlatSpec, MustMatchers}
 
@@ -198,4 +200,18 @@ class BitcoinScriptUtilTest extends FlatSpec with MustMatchers {
     BitcoinScriptUtil.minimalScriptNumberRepresentation(ScriptNumber(-1)) must be (OP_1NEGATE)
     BitcoinScriptUtil.minimalScriptNumberRepresentation(ScriptNumber(-2)) must be (ScriptNumber(-2))
   }
+
+
+  it must "determine if a segwit pubkey is compressed" in {
+    val key = ECPrivateKey(false)
+    val pubKey = key.publicKey
+    val flags = Seq(ScriptVerifyWitnessPubKeyType)
+    BitcoinScriptUtil.isValidPubKeyEncoding(pubKey,flags) must be (Some(ScriptErrorWitnessPubKeyType))
+
+    val key2 = ECPrivateKey(true)
+    val pubKey2 = key2.publicKey
+    BitcoinScriptUtil.isValidPubKeyEncoding(pubKey2,flags) must be (None)
+  }
+
+
 }

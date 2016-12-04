@@ -31,17 +31,17 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterp
     //use this to represent a single test case from script_valid.json
 /*    val lines =
         """
-          | [[
+          | [ [
           |  [
-          |   "30440220069ea3581afaf8187f63feee1fd2bd1f9c0dc71ea7d6e8a8b07ee2ebcf824bf402201a4fdef4c532eae59223be1eda6a397fc835142d4ddc6c74f4aa85b766a5c16f01",
-          |   "41048282263212c609d9ea2a6e3e172de238d8c39cabd5ac1ca10646e23fd5f5150811f8a8098557dfe45e8256e830b60ace62d613ac2f7b17bed31b6eaff6e26cafac",
-          |   0.00000000
+          |   "3044022066e02c19a513049d49349cf5311a1b012b7c4fae023795a18ab1d91c23496c22022025e216342c8e07ce8ef51e8daee88f84306a9de66236cab230bb63067ded1ad301",
+          |   "410479be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8ac",
+          |   0.00000001
           |  ],
-          |  "0x22 0x0020ac8ebd9e52c17619a381fa4f71aebb696087c6ef17c960fd0587addad99c0610",
-          |  "HASH160 0x14 0x61039a003883787c0d6ebc66d97fdabe8e31449d EQUAL",
+          |  "0x22 0x0020b95237b48faaa69eb078e1170be3b5cbb3fddf16d0a991e14ad274f7b33a4f64",
+          |  "HASH160 0x14 0xf386c2ba255cc56d20cfa6ea8b062f8b59945518 EQUAL",
           |  "P2SH,WITNESS",
-          |  "EVAL_FALSE",
-          |  "Basic P2SH(P2WSH) with the wrong key"
+          |  "OK",
+          |  "Basic P2SH(P2WSH)"
           | ]]
    """.stripMargin*/
     val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n" finally source.close()
@@ -74,5 +74,7 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterp
         ScriptInterpreter.run(program) must equal (testCase.expectedResult)
       }
     }
+
+    //"01000000529eb5e7c5f1f2816e901cd5d18f9864e91b315c578b351caf3f0cf595d5547e3bb13029ce7b1f559ef5e747fcac439f1455a2ec7c5f09b72290795e7066504401eeb685e31e8e0f0277d48c715a912bda8df2a15762b9e5fbed45c964078c0f00000000220020b95237b48faaa69eb078e1170be3b5cbb3fddf16d0a991e14ad274f7b33a4f640100000000000000ffffffffe5d196bfb21caca9dbd654cafb3b4dc0c4882c8927d2eb300d9539dd0b9342280000000001000000" must be ("01000000529eb5e7c5f1f2816e901cd5d18f9864e91b315c578b351caf3f0cf595d5547e3bb13029ce7b1f559ef5e747fcac439f1455a2ec7c5f09b72290795e7066504401eeb685e31e8e0f0277d48c715a912bda8df2a15762b9e5fbed45c964078c0f0000000043410479be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8ac0100000000000000ffffffffe5d196bfb21caca9dbd654cafb3b4dc0c4882c8927d2eb300d9539dd0b9342280000000001000000")
   }
 }
