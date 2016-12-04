@@ -31,17 +31,17 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterp
     //use this to represent a single test case from script_valid.json
 /*    val lines =
         """
-          | [ [
+          | [[
           |  [
-          |   "304402201e7216e5ccb3b61d46946ec6cc7e8c4e0117d13ac2fd4b152197e4805191c74202203e9903e33e84d9ee1dd13fb057afb7ccfb47006c23f6a067185efbc9dd780fc501",
-          |   "0479be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8",
-          |   0.00000001
+          |   "30440220069ea3581afaf8187f63feee1fd2bd1f9c0dc71ea7d6e8a8b07ee2ebcf824bf402201a4fdef4c532eae59223be1eda6a397fc835142d4ddc6c74f4aa85b766a5c16f01",
+          |   "41048282263212c609d9ea2a6e3e172de238d8c39cabd5ac1ca10646e23fd5f5150811f8a8098557dfe45e8256e830b60ace62d613ac2f7b17bed31b6eaff6e26cafac",
+          |   0.00000000
           |  ],
-          |  "",
-          |  "0 0x14 0x91b24bf9f5288532960ac687abb035127b1d28a5",
+          |  "0x22 0x0020ac8ebd9e52c17619a381fa4f71aebb696087c6ef17c960fd0587addad99c0610",
+          |  "HASH160 0x14 0x61039a003883787c0d6ebc66d97fdabe8e31449d EQUAL",
           |  "P2SH,WITNESS",
-          |  "OK",
-          |  "Basic P2WPKH"
+          |  "EVAL_FALSE",
+          |  "Basic P2SH(P2WSH) with the wrong key"
           | ]]
    """.stripMargin*/
     val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n" finally source.close()
