@@ -31,17 +31,17 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterp
     //use this to represent a single test case from script_valid.json
 /*    val lines =
         """
-          | [ [
+          | [[
           |  [
-          |   "304402200929d11561cd958460371200f82e9cae64c727a495715a31828e27a7ad57b36d0220361732ced04a6f97351ecca21a56d0b8cd4932c1da1f8f569a2b68e5e48aed7801",
+          |   "304402205ae57ae0534c05ca9981c8a6cdf353b505eaacb7375f96681a2d1a4ba6f02f84022056248e68643b7d8ce7c7d128c9f1f348bcab8be15d094ad5cadd24251a28df8001",
           |   "0479be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8",
-          |   0.00000001
+          |   0.00000000
           |  ],
-          |  "0x16 0x001491b24bf9f5288532960ac687abb035127b1d28a5",
-          |  "HASH160 0x14 0x17743beb429c55c942d2ec703b98c4d57c2df5c6 EQUAL",
-          |  "P2SH,WITNESS",
-          |  "OK",
-          |  "Basic P2SH(P2WPKH)"
+          |  "",
+          |  "1 0x14 0x91b24bf9f5288532960ac687abb035127b1d28a5",
+          |  "DISCOURAGE_UPGRADABLE_WITNESS_PROGRAM,P2SH,WITNESS",
+          |  "DISCOURAGE_UPGRADABLE_WITNESS_PROGRAM",
+          |  "P2WPKH with future witness version"
           | ]]
    """.stripMargin*/
     val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n" finally source.close()
