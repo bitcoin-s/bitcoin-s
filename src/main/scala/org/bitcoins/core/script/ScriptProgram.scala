@@ -21,25 +21,16 @@ sealed trait ScriptProgram {
    */
   def txSignatureComponent : TransactionSignatureComponent
 
-  /**
-   * The current state of the stack for execution of the [[ScriptProgram]].
-   */
+  /** The current state of the stack for execution of the [[ScriptProgram]]. */
   def stack : List[ScriptToken]
 
-  /**
-   * The script operations that need to still be executed.
-   */
+  /** The script operations that need to still be executed. */
   def script : List[ScriptToken]
 
-
-  /**
-   * The original script that was given.
-   */
+  /** The original script that was given. */
   def originalScript : List[ScriptToken]
 
-  /**
-   * The alternative stack is used in some Script op codes.
-   */
+  /** The alternative stack is used in some Script op codes. */
   def altStack : List[ScriptToken]
 
   /**
@@ -50,14 +41,10 @@ sealed trait ScriptProgram {
    */
   def flags : Seq[ScriptFlag]
 
-  /**
-    * Returns true if the stack top is true
-    */
+  /** Returns true if the stack top is true */
   def stackTopIsTrue = !stackTopIsFalse
 
-  /**
-    * Returns true if the stack top is false
-    */
+  /** Returns true if the stack top is false */
   def stackTopIsFalse : Boolean = {
     if (stack.headOption.isDefined &&
       (stack.head.hex == OP_FALSE.hex || stack.head.hex == ScriptNumber.negativeZero.hex ||
@@ -74,9 +61,8 @@ sealed trait ScriptProgram {
  */
 sealed trait PreExecutionScriptProgram extends ScriptProgram
 sealed trait ExecutionInProgressScriptProgram extends ScriptProgram {
-  /**
-   * The index of the last [[org.bitcoins.core.script.crypto.OP_CODESEPARATOR]]
-   */
+
+  /** The index of the last [[org.bitcoins.core.script.crypto.OP_CODESEPARATOR]] */
   def lastCodeSeparator : Option[Int]
 
 }
@@ -91,25 +77,25 @@ sealed trait ExecutedScriptProgram extends ScriptProgram {
  */
 object ScriptProgram {
   /**
-   * Implementation type for a [[PreExecutionScriptProgram]] - a [[ScriptProgram]] that has not yet begun being
+    * Implementation type for a [[PreExecutionScriptProgram]] - a [[ScriptProgram]] that has not yet begun being
     * evaluated  by the [[org.bitcoins.core.script.interpreter.ScriptInterpreter]].
-   */
+    */
   private sealed case class PreExecutionScriptProgramImpl(txSignatureComponent : TransactionSignatureComponent,
     stack : List[ScriptToken],script : List[ScriptToken], originalScript : List[ScriptToken], altStack : List[ScriptToken],
     flags : Seq[ScriptFlag]) extends PreExecutionScriptProgram
 
   /**
-   * Implementation type for a [[ExecutionInProgressScriptProgram]] - a [[ScriptProgram]] that is currently being
+    * Implementation type for a [[ExecutionInProgressScriptProgram]] - a [[ScriptProgram]] that is currently being
     * evaluated by the [[org.bitcoins.core.script.interpreter.ScriptInterpreter]].
-   */
+    */
   private sealed case class ExecutionInProgressScriptProgramImpl(txSignatureComponent : TransactionSignatureComponent,
     stack : List[ScriptToken],script : List[ScriptToken], originalScript : List[ScriptToken], altStack : List[ScriptToken],
     flags : Seq[ScriptFlag], lastCodeSeparator : Option[Int]) extends ExecutionInProgressScriptProgram
 
   /**
-   * The implementation type for a [[ExecutedScriptProgram]] - a [[ScriptProgram]] that has been evaluated completely
+    * The implementation type for a [[ExecutedScriptProgram]] - a [[ScriptProgram]] that has been evaluated completely
     * by the [[org.bitcoins.core.script.interpreter.ScriptInterpreter]].
-   */
+    */
   private sealed case class ExecutedScriptProgramImpl(txSignatureComponent : TransactionSignatureComponent,
     stack : List[ScriptToken],script : List[ScriptToken], originalScript : List[ScriptToken], altStack : List[ScriptToken],
     flags : Seq[ScriptFlag],  error : Option[ScriptError]) extends ExecutedScriptProgram

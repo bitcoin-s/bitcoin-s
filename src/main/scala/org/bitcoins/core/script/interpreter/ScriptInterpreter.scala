@@ -141,9 +141,8 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
                 //treat the segwit scriptpubkey as any other redeem script
                 run(scriptPubKeyExecutedProgram,stack,w)
               }
-
             case s @ (_ : P2SHScriptPubKey | _ : P2PKHScriptPubKey | _ : P2PKScriptPubKey | _ : MultiSignatureScriptPubKey |
-              _: CLTVScriptPubKey | _ : CSVScriptPubKey | _: NonStandardScriptPubKey | EmptyScriptPubKey) =>
+              _ : CLTVScriptPubKey | _ : CSVScriptPubKey | _: NonStandardScriptPubKey | EmptyScriptPubKey) =>
               run(scriptPubKeyExecutedProgram,stack,s)
           }
         case false =>
@@ -163,7 +162,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
     scriptPubKeyExecutedProgram.txSignatureComponent match {
       case b : BaseTransactionSignatureComponent =>
         logger.error("Cannot verify witness program with a BaseTransactionSignatureComponent")
-        scriptPubKeyExecutedProgram
+        ScriptProgram(scriptPubKeyExecutedProgram,ScriptErrorWitnessProgramWitnessEmpty)
       case w : WitnessV0TransactionSignatureComponent =>
         val scriptSig = scriptPubKeyExecutedProgram.txSignatureComponent.scriptSignature
         val (witnessVersion,witnessProgram) = (witnessScriptPubKey.witnessVersion, witnessScriptPubKey.witnessProgram)
