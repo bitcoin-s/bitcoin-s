@@ -81,6 +81,11 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
     }
     logger.debug("Executed Script Program: " + executedProgram)
     if (executedProgram.error.isDefined) executedProgram.error.get
+    else if (checkUnexpectedWitness(program)) {
+      //note: the 'program' value we pass above is intetional, we need to check the original program
+      //as the 'executedProgram' may have had the scriptPubKey value changed to the rebuilt ScriptPubKey of the witness program
+      ScriptErrorWitnessUnexpected
+    }
     else if (executedProgram.stackTopIsTrue && flags.contains(ScriptVerifyCleanStack)) {
       //require that the stack after execution has exactly one element on it
       executedProgram.stack.size == 1 match {
@@ -473,6 +478,32 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
   private def calcOpCount(oldOpCount: Int, token: ScriptToken):Int = BitcoinScriptUtil.countsTowardsScriptOpLimit(token) match {
     case true => oldOpCount + 1
     case false => oldOpCount
+  }
+
+  /** Checks if the transaction contained a witness that we did not use
+    * [[https://github.com/bitcoin/bitcoin/blob/528472111b4965b1a99c4bcf08ac5ec93d87f10f/src/script/interpreter.cpp#L1515-L1523]]
+    * Return true if witness was NOT used, return false if witness was used
+    * */
+  private def checkUnexpectedWitness(program: ScriptProgram): Boolean =  {
+    val txSigComponent = program.txSignatureComponent
+    txSigComponent match {
+      case b : BaseTransactionSignatureComponent =>
+        //base transactions never have witnesses
+        false
+      case w : WitnessV0TransactionSignatureComponent =>
+        val witnessedUsed = w.scriptPubKey match {
+          case _ : WitnessScriptPubKey => true
+          case _ : P2SHScriptPubKey => txSigComponent.scriptSignature match {
+            case p2shScriptSig: P2SHScriptSignature =>
+              p2shScriptSig.redeemScript.isInstanceOf[WitnessScriptPubKey]
+            case _ @ (_ : CLTVScriptSignature | _ : CSVScriptSignature| _ : MultiSignatureScriptSignature| _ : NonStandardScriptSignature |
+                      _ : P2PKScriptSignature| _ : P2PKHScriptSignature | EmptyScriptSignature) => false
+          }
+          case _ @ (_ : CLTVScriptPubKey | _ : CSVScriptPubKey | _ : MultiSignatureScriptPubKey | _ : NonStandardScriptPubKey |
+            _ : P2PKScriptPubKey | _ : P2PKHScriptPubKey | EmptyScriptPubKey) => false
+        }
+        !witnessedUsed
+    }
   }
 }
 object ScriptInterpreter extends ScriptInterpreter

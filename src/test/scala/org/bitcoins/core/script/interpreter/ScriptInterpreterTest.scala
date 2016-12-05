@@ -33,15 +33,14 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterp
         """
           | [[
           |  [
-          |   "304402204209e49457c2358f80d0256bc24535b8754c14d08840fc4be762d6f5a0aed80b02202eaf7d8fc8d62f60c67adcd99295528d0e491ae93c195cec5a67e7a09532a88001",
-          |   "048282263212c609d9ea2a6e3e172de238d8c39cabd5ac1ca10646e23fd5f5150811f8a8098557dfe45e8256e830b60ace62d613ac2f7b17bed31b6eaff6e26caf",
+          |   "",
           |   0.00000000
           |  ],
-          |  "11 0x16 0x00147cf9c846cd4882efec4bf07e44ebdad495c94f4b",
-          |  "HASH160 0x14 0x4e0c2aed91315303fc6a1dc4c7bc21c88f75402e EQUAL",
+          |  "0x47 0x304402200a5c6163f07b8d3b013c4d1d6dba25e780b39658d79ba37af7057a3b7f15ffa102201fd9b4eaa9943f734928b99a83592c2e7bf342ea2680f6a2bb705167966b742001",
+          |  "0x41 0x0479be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8 CHECKSIG",
           |  "P2SH,WITNESS",
-          |  "WITNESS_MALLEATED_P2SH",
-          |  "P2SH(P2WPKH) with superfluous push in scriptSig"
+          |  "WITNESS_UNEXPECTED",
+          |  "P2PK with witness"
           | ]]
    """.stripMargin*/
     val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n" finally source.close()
