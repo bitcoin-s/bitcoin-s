@@ -131,7 +131,7 @@ object ScriptProgram {
     */
   def apply(oldProgram : ScriptProgram, error : ScriptError) : ExecutedScriptProgram = oldProgram match {
     case program : PreExecutionScriptProgram =>
-      throw new RuntimeException("We cannot set an error on the script program before it is executed")
+      ScriptProgram(ScriptProgram.toExecutionInProgress(program),error)
     case program : ExecutionInProgressScriptProgram =>
       ExecutedScriptProgramImpl(program.txSignatureComponent, program.stack, program.script,program.originalScript,
         program.altStack,  program.flags, Some(error))

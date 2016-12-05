@@ -182,7 +182,7 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
           //signature would still be in the hashed script, and the normal signature would fail."
           logger.info("Replacing redeemScript in txSignature component")
           logger.info("Redeem script: " + s.redeemScript)
-          val sigsRemoved = removeSignatureFromScript(signature,s.redeemScript.asm)
+          val sigsRemoved = removeSignaturesFromScript(s.signatures,s.redeemScript.asm)
           sigsRemoved
         case x @ (_ : P2PKHScriptSignature | _ : P2PKScriptSignature | _ : NonStandardScriptSignature
                   | _ : MultiSignatureScriptSignature | _ : CLTVScriptSignature | _ : CSVScriptSignature | EmptyScriptSignature) =>
@@ -215,7 +215,7 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
 
             case x @ (_ : P2SHScriptPubKey | _ : P2PKHScriptPubKey | _ : P2PKScriptPubKey | _ : MultiSignatureScriptPubKey |
                       _ : NonStandardScriptPubKey | _ : CLTVScriptPubKey | _ : CSVScriptPubKey | EmptyScriptPubKey) =>
-              val sigsRemoved = removeSignaturesFromScript(s.signatures, s.redeemScript.asm)
+              val sigsRemoved = removeSignaturesFromScript(s.signatures, x.asm)
               sigsRemoved
           }
         case _ : P2PKHScriptSignature | _ : P2PKScriptSignature | _ : NonStandardScriptSignature

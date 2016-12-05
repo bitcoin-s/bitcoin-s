@@ -53,7 +53,7 @@ class TransactionTest extends FlatSpec with MustMatchers with BitcoinSLogger {
     tx.hex must be (rawTx)
     (Transaction(tx.hex) == tx) must be (true)
   }
-  
+
 
   it must "read all of the tx_valid.json's contents and return ScriptOk" in {
 
@@ -100,10 +100,7 @@ class TransactionTest extends FlatSpec with MustMatchers with BitcoinSLogger {
 
   it must "read all of the tx_invalid.json's contents and return a ScriptError" in {
 
-
     val source = Source.fromURL(getClass.getResource("/tx_invalid.json"))
-
-
     //use this to represent a single test case from script_valid.json
 /*    val lines =
         """
