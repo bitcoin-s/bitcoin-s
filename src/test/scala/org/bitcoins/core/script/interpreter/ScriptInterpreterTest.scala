@@ -31,12 +31,17 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterp
     //use this to represent a single test case from script_valid.json
 /*    val lines =
         """
-          | [ [
-          |  "",
-          |  "0 0x20 0xb95237b48faaa69eb078e1170be3b5cbb3fddf16d0a991e14ad274f7b33a4f64",
+          | [[
+          |  [
+          |   "304402204209e49457c2358f80d0256bc24535b8754c14d08840fc4be762d6f5a0aed80b02202eaf7d8fc8d62f60c67adcd99295528d0e491ae93c195cec5a67e7a09532a88001",
+          |   "048282263212c609d9ea2a6e3e172de238d8c39cabd5ac1ca10646e23fd5f5150811f8a8098557dfe45e8256e830b60ace62d613ac2f7b17bed31b6eaff6e26caf",
+          |   0.00000000
+          |  ],
+          |  "11 0x16 0x00147cf9c846cd4882efec4bf07e44ebdad495c94f4b",
+          |  "HASH160 0x14 0x4e0c2aed91315303fc6a1dc4c7bc21c88f75402e EQUAL",
           |  "P2SH,WITNESS",
-          |  "WITNESS_PROGRAM_WITNESS_EMPTY",
-          |  "P2WSH with empty witness"
+          |  "WITNESS_MALLEATED_P2SH",
+          |  "P2SH(P2WPKH) with superfluous push in scriptSig"
           | ]]
    """.stripMargin*/
     val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n" finally source.close()
