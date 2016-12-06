@@ -101,6 +101,10 @@ trait ScriptFlagUtil {
   def requireScriptVerifyNullFail(flags: Seq[ScriptFlag]): Boolean = flags.contains(ScriptVerifyNullFail)
 
   def requireScriptVerifyWitnessPubKeyType(flags: Seq[ScriptFlag]): Boolean = flags.contains(ScriptVerifyWitnessPubKeyType)
+
+  /** Requires that the argument to OP_IF/OP_NOTIF be minimally encoded
+    * See: https://lists.linuxfoundation.org/pipermail/bitcoin-dev/2016-August/013014.html */
+  def minimalIfEnabled(flags: Seq[ScriptFlag]): Boolean = flags.contains(ScriptVerifyMinimalIf)
 }
 
 

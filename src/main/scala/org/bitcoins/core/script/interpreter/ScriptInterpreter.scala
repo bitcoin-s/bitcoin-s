@@ -368,7 +368,6 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
                   val newOpCount = calcOpCount(opCount,OP_CHECKMULTISIG) + BitcoinScriptUtil.numPossibleSignaturesOnStack(program).toInt
                   loop(newProgram,newOpCount)
               }
-
             case OP_CHECKMULTISIGVERIFY :: t =>
               opCheckMultiSigVerify(p) match {
                 case newProgram : ExecutedScriptProgram =>
