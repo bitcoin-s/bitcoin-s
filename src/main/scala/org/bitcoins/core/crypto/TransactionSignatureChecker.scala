@@ -80,8 +80,7 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
    * This is a helper function to check digital signatures against public keys
    * if the signature does not match this public key, check it against the next
    * public key in the sequence
-    *
-    * @param txSignatureComponent the tx signature component that contains all relevant transaction information
+   * @param txSignatureComponent the tx signature component that contains all relevant transaction information
    * @param script the script state this is needed in case there is an OP_CODESEPARATOR inside the script
    * @param sigs the signatures that are being checked for validity
    * @param pubKeys the public keys which are needed to verify that the signatures are correct
@@ -92,19 +91,19 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
   final def multiSignatureEvaluator(txSignatureComponent : TransactionSignatureComponent, script : Seq[ScriptToken],
                      sigs : List[ECDigitalSignature], pubKeys : List[ECPublicKey], flags : Seq[ScriptFlag],
                      requiredSigs : Long) : TransactionSignatureCheckerResult = {
-    logger.info("Signatures inside of helper: " + sigs)
-    logger.info("Public keys inside of helper: " + pubKeys)
+    logger.debug("Signatures inside of helper: " + sigs)
+    logger.debug("Public keys inside of helper: " + pubKeys)
     if (sigs.size > pubKeys.size) {
       //this is how bitcoin core treats this. If there are ever any more
       //signatures than public keys remaining we immediately return
       //false https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L955-L959
-      logger.info("We have more sigs than we have public keys remaining")
+      logger.warn("We have more sigs than we have public keys remaining")
       SignatureValidationFailureIncorrectSignatures
     }
     else if (requiredSigs > sigs.size) {
       //for the case when we do not have enough sigs left to check to meet the required signature threshold
       //https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L914-915
-      logger.info("We do not have enough sigs to meet the threshold of requireSigs in the multiSignatureScriptPubKey")
+      logger.warn("We do not have enough sigs to meet the threshold of requireSigs in the multiSignatureScriptPubKey")
       SignatureValidationFailureSignatureCount
     }
     else if (sigs.nonEmpty && pubKeys.nonEmpty) {
