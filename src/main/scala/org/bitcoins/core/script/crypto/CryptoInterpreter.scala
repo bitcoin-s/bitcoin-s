@@ -182,7 +182,7 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
     val flags = program.flags
     program match {
       case preExecutionScriptProgram : PreExecutionScriptProgram =>
-        opCheckMultiSig(preExecutionScriptProgram)
+        opCheckMultiSig(ScriptProgram.toExecutionInProgress(preExecutionScriptProgram))
       case executedScriptProgram : ExecutedScriptProgram =>
         executedScriptProgram
       case executionInProgressScriptProgram : ExecutionInProgressScriptProgram =>

@@ -112,6 +112,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
 
     /** Helper function to actually run a p2sh script */
     def run(p: ExecutedScriptProgram, stack : Seq[ScriptToken], s: ScriptPubKey): ExecutedScriptProgram = {
+      logger.error("Running p2sh script: " + stack)
       val p2shRedeemScriptProgram = ScriptProgram(p.txSignatureComponent,stack.tail,
         s.asm)
       if (ScriptFlagUtil.requirePushOnly(p2shRedeemScriptProgram.flags) && !BitcoinScriptUtil.isPushOnly(s.asm)) {
@@ -139,6 +140,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
           val redeemScript = ScriptPubKey(c.bytes ++ redeemScriptBytes)
           redeemScript match {
             case w : WitnessScriptPubKey =>
+              logger.error("Witness scriptPubKey")
               val pushOp = BitcoinScriptUtil.calculatePushOp(redeemScriptBytes)
               val expectedScriptBytes = pushOp.flatMap(_.bytes) ++ redeemScriptBytes
               val flags = scriptPubKeyExecutedProgram.flags
@@ -146,7 +148,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
               if (segwitEnabled && (scriptSig.asmBytes == expectedScriptBytes)) {
                 // The scriptSig must be _exactly_ a single push of the redeemScript. Otherwise we
                 // reintroduce malleability.
-                logger.debug("redeem script was witness script pubkey, segwit was enabled, scriptSig was single push of redeemScript")
+                logger.error("redeem script was witness script pubkey, segwit was enabled, scriptSig was single push of redeemScript")
                 executeSegWitScript(scriptPubKeyExecutedProgram,w)
               } else if (segwitEnabled && (scriptSig.asmBytes != expectedScriptBytes)) {
                 logger.error("Segwit was enabled, but p2sh redeem script was malleated")
@@ -154,7 +156,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
                 logger.error("expected scriptsig bytes: " + BitcoinSUtil.encodeHex(expectedScriptBytes))
                 ScriptProgram(scriptPubKeyExecutedProgram, ScriptErrorWitnessMalleatedP2SH)
               } else {
-                logger.debug("redeem script was witness script pubkey, segwit was NOT enabled")
+                logger.error("redeem script was witness script pubkey, segwit was NOT enabled")
                 //treat the segwit scriptpubkey as any other redeem script
                 run(scriptPubKeyExecutedProgram,stack,w)
               }
