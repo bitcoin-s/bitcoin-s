@@ -2,8 +2,10 @@ package org.bitcoins.core.gen
 
 import java.util
 
-import org.bitcoins.core.protocol.script.ScriptWitness
-import org.bitcoins.core.protocol.transaction.{TransactionInputWitness, TransactionWitness}
+import org.bitcoins.core.crypto.{TransactionSignatureComponent, TransactionSignatureCreator, WitnessV0TransactionSignatureComponent}
+import org.bitcoins.core.policy.Policy
+import org.bitcoins.core.protocol.script.{EmptyScriptSignature, ScriptWitness, WitnessScriptPubKeyV0}
+import org.bitcoins.core.protocol.transaction.{TransactionConstants, TransactionInputWitness, TransactionWitness}
 import org.scalacheck.Gen
 
 import scala.collection.JavaConversions._
@@ -44,6 +46,17 @@ trait WitnessGenerators {
   def transactionWitness(numWitnesses: Int): Gen[TransactionWitness] = for {
   inputWitnesses <- Gen.listOfN(numWitnesses,transactionInputWitness)
   } yield TransactionWitness(inputWitnesses)
+
+/*  def signedTransactionWitness: Gen[TransactionWitness] = for {
+    privKey <- CryptoGenerators.privateKey
+    witnessScriptPubKey <- WitnessScriptPubKeyV0(privKey.publicKey)
+    amount <- CurrencyUnitGenerator.satoshis
+    (creditingTx,outputIndex) <- TransactionGenerators.buildCreditingTransaction(TransactionConstants.version,witnessScriptPubKey,amount)
+    (spendingTx,inputIndex) <- TransactionGenerators.buildSpendingTransaction(creditingTx,EmptyScriptSignature,outputIndex)
+    createSig <- TransactionSignatureCreator.createSig()
+    wTxSigComponent = WitnessV0TransactionSignatureComponent(spendingTx,inputIndex,witnessScriptPubKey,
+      Policy.standardScriptVerifyFlags,amount)
+  } yield ???*/
 
 }
 

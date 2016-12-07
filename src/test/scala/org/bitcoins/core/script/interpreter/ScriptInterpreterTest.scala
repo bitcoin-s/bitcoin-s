@@ -55,7 +55,7 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterp
       logger.info("Witness after parsing: " + witness)
       val program = witness match {
         case Some((w, amount)) => ScriptProgram(tx.asInstanceOf[WitnessTransaction], scriptPubKey,
-          inputIndex, flags, w, amount)
+          inputIndex, flags, amount)
         case None => ScriptProgram(tx, scriptPubKey, inputIndex, flags)
       }
       withClue(testCase.raw) {

@@ -1,7 +1,7 @@
 package org.bitcoins.core.gen
 
-import org.bitcoins.core.crypto.{ECPrivateKey, TransactionSignatureComponent}
-import org.bitcoins.core.currency.CurrencyUnits
+import org.bitcoins.core.crypto.{ECPrivateKey, TransactionSignatureComponent, WitnessV0TransactionSignatureComponent}
+import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits}
 import org.bitcoins.core.number.{Int64, UInt32}
 import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script._
@@ -45,17 +45,18 @@ trait TransactionGenerators extends  BitcoinSLogger {
     * Generates an arbitrary [[org.bitcoins.core.protocol.transaction.Transaction]]
     * This transaction's [[TransactionInput]]s will not evaluate to true
     * inside of the [[org.bitcoins.core.script.interpreter.ScriptInterpreter]]
-    *
-    * @return
     */
-  def transactions : Gen[Transaction] = for {
+  def transactions : Gen[Transaction] = Gen.oneOf(baseTransaction,witnessTransaction)
+
+
+  def baseTransaction: Gen[BaseTransaction] = for {
     version <- NumberGenerator.uInt32s
     randomInputNum <- Gen.choose(1,10)
     inputs <- Gen.listOfN(randomInputNum, inputs)
     randomOutputNum <- Gen.choose(1,10)
     outputs <- Gen.listOfN(randomOutputNum, outputs)
     lockTime <- NumberGenerator.uInt32s
-  } yield Transaction(version, inputs, outputs, lockTime)
+  } yield BaseTransaction(version, inputs, outputs, lockTime)
 
   /** Generates a random [[WitnessTransaction]] */
   def witnessTransaction: Gen[WitnessTransaction] = for {
@@ -127,14 +128,11 @@ trait TransactionGenerators extends  BitcoinSLogger {
     (signedTxSignatureComponent, privateKeys)
   }
 
-  /**
-    * Generates a validly constructed CLTV transaction, which has a 50/50 chance of being spendable or unspendable.
-    *
-    * @return
-    */
+
+
+  /** Generates a validly constructed CLTV transaction, which has a 50/50 chance of being spendable or unspendable. */
   def randomCLTVTransaction : Gen[(TransactionSignatureComponent, Seq[ECPrivateKey], ScriptNumber)] = {
-    val randomNum = (scala.util.Random.nextInt() % 2).abs
-    if (randomNum == 0) unspendableCLTVTransaction else spendableCLTVTransaction
+    Gen.oneOf(unspendableCLTVTransaction,spendableCLTVTransaction)
   }
 
   /**
@@ -187,14 +185,14 @@ trait TransactionGenerators extends  BitcoinSLogger {
     (txSigComponent, privKeys, csvNum, sequence)
   }
 
+
+  /** Generates a [[WitnessTransaction]] that has all of it's inputs signed correctly */
+/*  def signedWitnessTransaction: Gen[WitnessV0TransactionSignatureComponent,Seq[ECPrivateKey]] = for {
+
+  } yield*/
+
   /**
     * Builds a spending transaction according to bitcoin core
-    *
-    * @param creditingTx
-    * @param scriptSignature
-    * @param outputIndex
-    * @param locktime
-    * @param sequence
     * @return the built spending transaction and the input index for the script signature
     */
   def buildSpendingTransaction(version : UInt32, creditingTx : Transaction,scriptSignature : ScriptSignature, outputIndex : UInt32, locktime : UInt32, sequence : UInt32) : (Transaction,UInt32) = {
@@ -207,10 +205,6 @@ trait TransactionGenerators extends  BitcoinSLogger {
 
   /**
     * Builds a spending transaction according to bitcoin core with max sequence and a locktime of zero.
-    *
-    * @param creditingTx
-    * @param scriptSignature
-    * @param outputIndex
     * @return the built spending transaction and the input index for the script signature
     */
   def buildSpendingTransaction(creditingTx : Transaction,scriptSignature : ScriptSignature, outputIndex : UInt32) : (Transaction,UInt32) = {
@@ -219,8 +213,6 @@ trait TransactionGenerators extends  BitcoinSLogger {
   /**
     * Mimics this test utility found in bitcoin core
     * https://github.com/bitcoin/bitcoin/blob/605c17844ea32b6d237db6d83871164dc7d59dab/src/test/script_tests.cpp#L57
-    *
-    * @param scriptPubKey
     * @return the transaction and the output index of the scriptPubKey
     */
   def buildCreditingTransaction(scriptPubKey : ScriptPubKey) : (Transaction,UInt32) = {
@@ -234,19 +226,24 @@ trait TransactionGenerators extends  BitcoinSLogger {
   /**
     * Builds a crediting transaction with a transaction version parameter.
     * Example: useful for creating transactions with scripts containing OP_CHECKSEQUENCEVERIFY.
-    *
-    * @param version Transaction version
-    * @param scriptPubKey a [[ScriptPubKey]] to create the output
     * @return
     */
   def buildCreditingTransaction(version : UInt32, scriptPubKey: ScriptPubKey) : (Transaction, UInt32) = {
+    buildCreditingTransaction(version,scriptPubKey,CurrencyUnits.zero)
+  }
+
+  def buildCreditingTransaction(version: UInt32, output: TransactionOutput): (Transaction,UInt32) = {
     val outpoint = EmptyTransactionOutPoint
     val scriptSignature = ScriptSignature("0000")
     val input = TransactionInput(outpoint,scriptSignature,TransactionConstants.sequence)
-    val output = TransactionOutput(CurrencyUnits.zero,scriptPubKey)
     val tx = Transaction(version,Seq(input),Seq(output),TransactionConstants.lockTime)
     (tx,UInt32.zero)
   }
+
+  def buildCreditingTransaction(version: UInt32, scriptPubKey: ScriptPubKey, amount: CurrencyUnit): (Transaction,UInt32) = {
+    buildCreditingTransaction(version, TransactionOutput(amount,scriptPubKey))
+  }
+
 
   /**
     * Helper function to create validly constructed CLTVTransactions.

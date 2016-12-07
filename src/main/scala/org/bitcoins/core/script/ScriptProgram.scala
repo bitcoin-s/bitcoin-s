@@ -235,15 +235,14 @@ object ScriptProgram {
     * @param scriptPubKey the scriptPubKey for which the input is spending
     * @param inputIndex the input's index inside of transaction which we are spending
     * @param flags the flags which we are enforcing inside of the script interpreter
-    * @param witness the witness used to evaluate the input
     * @param amount the amount of [[CurrencyUnit]] we are spending in this input
     * @return the script program representing all of this information
     */
   def apply(transaction: WitnessTransaction, scriptPubKey : ScriptPubKey, inputIndex : UInt32,
-            flags : Seq[ScriptFlag], witness: ScriptWitness,
+            flags : Seq[ScriptFlag],
             amount: CurrencyUnit) : PreExecutionScriptProgram = {
     val script = transaction.inputs(inputIndex.toInt).scriptSignature.asm
-    ScriptProgram(transaction,scriptPubKey,inputIndex,script.toList,flags, witness, amount)
+    ScriptProgram(transaction,scriptPubKey,inputIndex,script.toList,flags, amount)
   }
 
   def apply(transaction: Transaction, scriptPubKey : ScriptPubKey, inputIndex : UInt32,
@@ -253,16 +252,15 @@ object ScriptProgram {
   }
 
   def apply(transaction: WitnessTransaction, scriptPubKey : ScriptPubKey, inputIndex : UInt32, script : Seq[ScriptToken],
-            flags : Seq[ScriptFlag], witness: ScriptWitness, amount: CurrencyUnit) : PreExecutionScriptProgram = {
-    val txSignatureComponent = TransactionSignatureComponent(transaction,inputIndex,scriptPubKey,flags,
-      witness, amount)
+            flags : Seq[ScriptFlag], amount: CurrencyUnit) : PreExecutionScriptProgram = {
+    val txSignatureComponent = TransactionSignatureComponent(transaction,inputIndex,scriptPubKey,flags, amount)
     PreExecutionScriptProgramImpl(txSignatureComponent,Nil,script.toList,script.toList,Nil,flags)
   }
 
   def apply(transaction: WitnessTransaction, scriptPubKey : ScriptPubKey, inputIndex : UInt32, stack : Seq[ScriptToken],
             script : Seq[ScriptToken], flags : Seq[ScriptFlag], witness: ScriptWitness,
             amount: CurrencyUnit) : ScriptProgram = {
-    val program = ScriptProgram(transaction,scriptPubKey,inputIndex,flags,witness, amount)
+    val program = ScriptProgram(transaction,scriptPubKey,inputIndex,flags, amount)
     ScriptProgram(program,stack,script)
   }
 
@@ -283,7 +281,7 @@ object ScriptProgram {
       ExecutionInProgressScriptProgramImpl(b,stack.toList,
         script.toList,originalScript.toList,Nil,b.flags,None)
     case w: WitnessV0TransactionSignatureComponent =>
-      ScriptProgram(w,stack,script,originalScript,Nil,w.flags,w.witness,w.amount)
+      ScriptProgram(w,stack,script,originalScript,Nil,w.flags,w.amount)
   }
 
 
@@ -293,25 +291,24 @@ object ScriptProgram {
         b.inputIndex, b.flags)
     case w : WitnessV0TransactionSignatureComponent =>
       ScriptProgram(w.transaction, w.scriptPubKey,
-        w.inputIndex, w.flags, w.witness, w.amount)
+        w.inputIndex, w.flags, w.amount)
   }
 
   /** Creates a fresh [[PreExecutionScriptProgram]] */
   def apply(transaction: WitnessTransaction, scriptPubKey: ScriptPubKey, inputIndex: UInt32, stack: Seq[ScriptToken],
             script: Seq[ScriptToken], originalScript: Seq[ScriptToken], altStack: Seq[ScriptToken],
-            flags: Seq[ScriptFlag], witness: ScriptWitness, sigVersion: SignatureVersion,
+            flags: Seq[ScriptFlag], sigVersion: SignatureVersion,
             amount: CurrencyUnit): PreExecutionScriptProgram = {
     val t = TransactionSignatureComponent(transaction,inputIndex,
-      scriptPubKey,flags, witness, amount)
+      scriptPubKey,flags, amount)
     PreExecutionScriptProgramImpl(t,stack.toList,script.toList,originalScript.toList,altStack.toList,flags)
   }
 
   /** Creates a fresh instance of [[PreExecutionScriptProgram]] */
   def apply(txSigComponent: WitnessV0TransactionSignatureComponent, stack: Seq[ScriptToken], script: Seq[ScriptToken],
-            originalScript: Seq[ScriptToken], altStack: Seq[ScriptToken], flags: Seq[ScriptFlag],
-            witness: ScriptWitness, amount: CurrencyUnit): PreExecutionScriptProgram = {
+            originalScript: Seq[ScriptToken], altStack: Seq[ScriptToken], flags: Seq[ScriptFlag], amount: CurrencyUnit): PreExecutionScriptProgram = {
       ScriptProgram(txSigComponent.transaction, txSigComponent.scriptPubKey, txSigComponent.inputIndex, stack,
-        script,originalScript, altStack,flags, witness, txSigComponent.sigVersion, amount)
+        script,originalScript, altStack,flags, txSigComponent.sigVersion, amount)
   }
 
 
