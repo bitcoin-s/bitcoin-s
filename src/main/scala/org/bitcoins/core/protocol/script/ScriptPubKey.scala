@@ -559,6 +559,13 @@ object WitnessScriptPubKeyV0 {
     WitnessScriptPubKeyV0Impl(compactSizeUInt.hex + asmHex)
   }
 
+  /** Creates a P2WPKH witness script pubkey */
+  def apply(pubKey: ECPublicKey): WitnessScriptPubKeyV0 = {
+    val hash = CryptoUtil.sha256Hash160(pubKey.bytes)
+    val pushOp = BitcoinScriptUtil.calculatePushOp(hash.bytes)
+    WitnessScriptPubKeyV0(Seq(OP_0) ++ pushOp ++ Seq(ScriptConstant(hash.bytes)))
+  }
+
   /** Mimics the function to determine if a [[ScriptPubKey]] contains a witness
     * A witness program is any valid [[ScriptPubKey]] that consists of a 1 byte push op and then a data push
     * between 2 and 40 bytes
@@ -579,7 +586,8 @@ object UnassignedWitnessScriptPubKey {
   private case class UnassignedWitnessScriptPubKeyImpl(hex: String) extends UnassignedWitnessScriptPubKey
 
   def apply(asm: Seq[ScriptToken]): UnassignedWitnessScriptPubKey = {
-    require(WitnessScriptPubKey.isWitnessScriptPubKey(asm), "Given asm was not a valid witness script pubkey: " + asm)
+    require(WitnessScriptPubKey.isWitnessScriptPubKey(asm) && !WitnessScriptPubKeyV0.isWitnessScriptPubKeyV0(asm),
+      "Given asm was not a valid witness script pubkey: " + asm)
     val asmHex = asm.map(_.hex).mkString
     val compactSizeUInt = CompactSizeUInt.calculateCompactSizeUInt(asmHex)
     UnassignedWitnessScriptPubKeyImpl(compactSizeUInt.hex ++ asmHex)
