@@ -3,7 +3,7 @@ package org.bitcoins.core.crypto
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script._
-import org.bitcoins.core.protocol.transaction.{Transaction, WitnessTransaction}
+import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutput, WitnessTransaction}
 import org.bitcoins.core.script.flag.ScriptFlag
 
 /**
@@ -46,7 +46,7 @@ sealed trait WitnessV0TransactionSignatureComponent extends TransactionSignature
 
   override def transaction: WitnessTransaction
 
-  def witness: ScriptWitness
+  def witness: ScriptWitness = transaction.witness.witnesses(inputIndex.toInt).witness
 
   /** The amount of [[CurrencyUnit]] this input is spending */
   def amount: CurrencyUnit
@@ -63,14 +63,10 @@ object TransactionSignatureComponent {
   private case class BaseTransactionSignatureComponentImpl(transaction : Transaction, inputIndex : UInt32,
                                                        scriptPubKey : ScriptPubKey, flags : Seq[ScriptFlag]) extends BaseTransactionSignatureComponent
 
-  private case class WitnessV0TransactionSignatureComponentImpl(transaction : WitnessTransaction, inputIndex : UInt32,
-                                                                scriptPubKey : ScriptPubKey, flags : Seq[ScriptFlag],
-                                                                witness: ScriptWitness, amount: CurrencyUnit) extends WitnessV0TransactionSignatureComponent
 
   def apply(transaction : WitnessTransaction, inputIndex : UInt32, scriptPubKey : ScriptPubKey,
-            flags : Seq[ScriptFlag], witness : ScriptWitness,
-            amount: CurrencyUnit) : WitnessV0TransactionSignatureComponent = {
-    WitnessV0TransactionSignatureComponentImpl(transaction,inputIndex, scriptPubKey, flags, witness, amount)
+            flags : Seq[ScriptFlag], amount: CurrencyUnit) : WitnessV0TransactionSignatureComponent = {
+    WitnessV0TransactionSignatureComponent(transaction,inputIndex,scriptPubKey,flags,amount)
   }
 
   def apply(transaction : Transaction, inputIndex : UInt32,
@@ -78,19 +74,32 @@ object TransactionSignatureComponent {
     BaseTransactionSignatureComponentImpl(transaction,inputIndex,scriptPubKey,flags)
   }
 
-  /**
-    * This factory method is used for changing the scriptPubKey inside of a txSignatureComponent
-    *
-    * @param oldTxSignatureComponent
-    * @param scriptPubKey
-    * @return
-    */
+  /** This factory method is used for changing the scriptPubKey inside of a txSignatureComponent */
   def apply(oldTxSignatureComponent : TransactionSignatureComponent, scriptPubKey : ScriptPubKey) : TransactionSignatureComponent = oldTxSignatureComponent match {
     case base: BaseTransactionSignatureComponent =>
     TransactionSignatureComponent(base.transaction,
       base.inputIndex,scriptPubKey, base.flags)
     case w: WitnessV0TransactionSignatureComponent =>
-      TransactionSignatureComponent(w.transaction,w.inputIndex,w.scriptPubKey,w.flags,w.witness,w.amount)
+      TransactionSignatureComponent(w.transaction,w.inputIndex,scriptPubKey,w.flags,w.amount)
   }
 
+}
+
+object WitnessV0TransactionSignatureComponent {
+  private case class WitnessV0TransactionSignatureComponentImpl(transaction : WitnessTransaction, inputIndex : UInt32,
+                                                                scriptPubKey : ScriptPubKey, flags : Seq[ScriptFlag],
+                                                                amount: CurrencyUnit) extends WitnessV0TransactionSignatureComponent
+
+
+  def apply(transaction : WitnessTransaction, inputIndex : UInt32, scriptPubKey : ScriptPubKey,
+            flags : Seq[ScriptFlag], amount: CurrencyUnit) : WitnessV0TransactionSignatureComponent = {
+    WitnessV0TransactionSignatureComponentImpl(transaction,inputIndex, scriptPubKey, flags, amount)
+  }
+
+  /** Note: The output passed here is the output we are spending,
+    * we use the [[CurrencyUnit]] and [[ScriptPubKey]] in that output for signing */
+  def apply(transaction : WitnessTransaction, inputIndex : UInt32, output : TransactionOutput,
+            flags : Seq[ScriptFlag]): WitnessV0TransactionSignatureComponent = {
+    WitnessV0TransactionSignatureComponent(transaction,inputIndex,output.scriptPubKey,flags,output.value)
+  }
 }

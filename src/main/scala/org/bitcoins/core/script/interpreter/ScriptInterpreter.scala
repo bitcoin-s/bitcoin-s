@@ -205,7 +205,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
         case Left((stack,scriptPubKey)) =>
           val w = witnessTxSigComponent
           val newProgram = ScriptProgram(w.transaction,scriptPubKey,w.inputIndex,stack,scriptPubKey.asm, scriptPubKey.asm,Nil,
-            w.flags,w.witness,w.sigVersion,w.amount)
+            w.flags,w.sigVersion,w.amount)
           val evaluated = loop(newProgram,0)
           logger.info("Stack after evaluating witness: " + evaluated.stack)
           if (evaluated.error.isDefined) evaluated
