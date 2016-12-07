@@ -204,6 +204,7 @@ object P2SHScriptSignature extends Factory[P2SHScriptSignature] with BitcoinSLog
           case x : CLTVScriptPubKey => true
           case x : CSVScriptPubKey => true
           case x : WitnessScriptPubKeyV0 => true
+          case x : UnassignedWitnessScriptPubKey => false
           case x : NonStandardScriptPubKey => false
           case EmptyScriptPubKey => false
         }
@@ -366,7 +367,9 @@ object CLTVScriptSignature extends Factory[CLTVScriptSignature] {
     case cltvScriptPubKey : CLTVScriptPubKey => apply(cltvScriptPubKey.scriptPubKeyAfterCLTV, sigs, pubKeys)
     case csvScriptPubKey : CSVScriptPubKey => apply(csvScriptPubKey.scriptPubKeyAfterCSV, sigs, pubKeys)
     case EmptyScriptPubKey => CLTVScriptSignature(EmptyScriptSignature)
-    case _ : WitnessScriptPubKeyV0 => CLTVScriptSignature(EmptyScriptSignature)
+    case _ @ (_: WitnessScriptPubKeyV0 | _ : UnassignedWitnessScriptPubKey) =>
+      //bare segwit always has an empty script sig, see BIP141
+      CLTVScriptSignature(EmptyScriptSignature)
     case x @ (_ : NonStandardScriptPubKey | _ : P2SHScriptPubKey) => throw new IllegalArgumentException("A NonStandardScriptSignature or P2SHScriptSignature cannot be" +
       "the underlying scriptSig in a CLTVScriptSignature. Got: " + x)
   }
@@ -408,8 +411,11 @@ object CSVScriptSignature extends Factory[CSVScriptSignature] {
     case cltvScriptPubKey : CLTVScriptPubKey => CSVScriptSignature(cltvScriptPubKey.scriptPubKeyAfterCLTV, sigs, pubKeys)
     case csvScriptPubKey : CSVScriptPubKey => CSVScriptSignature(csvScriptPubKey.scriptPubKeyAfterCSV, sigs, pubKeys)
     case EmptyScriptPubKey => CSVScriptSignature(EmptyScriptSignature)
-    case _: WitnessScriptPubKeyV0 => CSVScriptSignature(EmptyScriptSignature)
-    case x @ (_ : NonStandardScriptPubKey | _ : P2SHScriptPubKey) => throw new IllegalArgumentException("A NonStandardScriptSignature or P2SHScriptSignature cannot be" +
+    case _ @ (_: WitnessScriptPubKeyV0 | _ : UnassignedWitnessScriptPubKey) =>
+      //bare segwit always has an empty script sig, see BIP141
+      CSVScriptSignature(EmptyScriptSignature)
+    case x @ (_ : NonStandardScriptPubKey | _ : P2SHScriptPubKey) =>
+      throw new IllegalArgumentException("A NonStandardScriptPubKey/P2SHScriptPubKey cannot be" +
       "the underlying scriptSig in a CSVScriptSignature. Got: " + x)
   }
 }
@@ -457,7 +463,7 @@ object ScriptSignature extends Factory[ScriptSignature] with BitcoinSLogger {
     case s : NonStandardScriptPubKey => NonStandardScriptSignature.fromAsm(tokens)
     case s : CLTVScriptPubKey => fromScriptPubKey(tokens, s.scriptPubKeyAfterCLTV)
     case s : CSVScriptPubKey => fromScriptPubKey(tokens, s.scriptPubKeyAfterCSV)
-    case _ : WitnessScriptPubKeyV0 => EmptyScriptSignature
+    case _ @ (_: WitnessScriptPubKeyV0 | _: UnassignedWitnessScriptPubKey)  => EmptyScriptSignature
     case EmptyScriptPubKey => if (tokens.isEmpty) EmptyScriptSignature else NonStandardScriptSignature.fromAsm(tokens)
   }
 
