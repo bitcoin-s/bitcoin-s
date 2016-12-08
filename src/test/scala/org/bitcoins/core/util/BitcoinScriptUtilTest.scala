@@ -213,5 +213,12 @@ class BitcoinScriptUtilTest extends FlatSpec with MustMatchers {
     BitcoinScriptUtil.isValidPubKeyEncoding(pubKey2,flags) must be (None)
   }
 
+  it must "remove the signatures from a p2sh scriptSig" in {
+    val p2shScriptSig = TestUtil.p2sh2Of3ScriptSig
+    val signatures = p2shScriptSig.signatures
+    val asmWithoutSigs = BitcoinScriptUtil.removeSignaturesFromScript(signatures,p2shScriptSig.asm)
+    val sigExists = signatures.map(sig => asmWithoutSigs.exists(_ == ScriptConstant(sig.hex)))
+    sigExists.exists(_ == true) must be (false)
+  }
 
 }

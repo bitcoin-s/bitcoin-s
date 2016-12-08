@@ -84,7 +84,7 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
           } else {
             val restOfStack = executionInProgressScriptProgram.stack.tail.tail
             logger.debug("Program before removing OP_CODESEPARATOR: " + program.originalScript)
-            val removedOpCodeSeparatorsScript = removeOpCodeSeparator(executionInProgressScriptProgram)
+            val removedOpCodeSeparatorsScript = BitcoinScriptUtil.removeOpCodeSeparator(executionInProgressScriptProgram)
             logger.debug("Program after removing OP_CODESEPARATOR: " + removedOpCodeSeparatorsScript)
             val result = TransactionSignatureChecker.checkSignature(executionInProgressScriptProgram.txSignatureComponent,
               removedOpCodeSeparatorsScript, pubKey, signature, flags)
@@ -249,7 +249,7 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
               ScriptProgram(executionInProgressScriptProgram,ScriptErrorSigNullDummy)
             } else {
               //remove the last OP_CODESEPARATOR
-              val removedOpCodeSeparatorsScript = removeOpCodeSeparator(executionInProgressScriptProgram)
+              val removedOpCodeSeparatorsScript = BitcoinScriptUtil.removeOpCodeSeparator(executionInProgressScriptProgram)
               val isValidSignatures: TransactionSignatureCheckerResult =
                 TransactionSignatureChecker.multiSignatureEvaluator(executionInProgressScriptProgram.txSignatureComponent,
                   removedOpCodeSeparatorsScript, signatures,
@@ -336,19 +336,6 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
       logger.error("We must have the stack top defined to execute a hash function")
       ScriptProgram(program,ScriptErrorInvalidStackOperation)
     }
-  }
-
-
-  /**
-    * Removes the OP_CODESEPARATOR in the original script according to
-    * the last code separator index in the script
-    * @param program
-    * @return
-    */
-  def removeOpCodeSeparator(program : ExecutionInProgressScriptProgram) : Seq[ScriptToken] = {
-    if (program.lastCodeSeparator.isDefined) {
-      program.originalScript.slice(program.lastCodeSeparator.get+1, program.originalScript.size)
-    } else program.originalScript
   }
 
 }

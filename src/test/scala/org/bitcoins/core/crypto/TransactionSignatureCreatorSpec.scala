@@ -13,7 +13,7 @@ import org.scalacheck.{Prop, Properties}
   * Created by chris on 7/25/16.
   */
 class TransactionSignatureCreatorSpec extends Properties("TransactionSignatureCreatorSpec") with BitcoinSLogger {
-  property("Must generate a valid signature for a p2pk transaction") =
+/*  property("Must generate a valid signature for a p2pk transaction") =
     Prop.forAll(TransactionGenerators.signedP2PKTransaction) {
       case (txSignatureComponent: TransactionSignatureComponent, _) =>
         //run it through the interpreter
@@ -93,5 +93,12 @@ class TransactionSignatureCreatorSpec extends Properties("TransactionSignatureCr
         val result = ScriptInterpreter.run(program)
         Seq(ScriptErrorUnsatisfiedLocktime, ScriptErrorPushSize).contains(result)
 
+    }*/
+
+  property("generate a valid signature for a witness transaction") =
+    Prop.forAllNoShrink(TransactionGenerators.signedWitnessTransaction) { case (wtxSigComponent, privKeys) =>
+        val program = ScriptProgram(wtxSigComponent)
+        val result = ScriptInterpreter.run(program)
+        result == ScriptOk
     }
 }

@@ -9,7 +9,7 @@ import org.bitcoins.core.script.constant.ScriptToken
 import org.bitcoins.core.script.crypto._
 import org.bitcoins.core.serializers.RawBitcoinSerializerHelper
 import org.bitcoins.core.serializers.transaction.RawTransactionOutputParser
-import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil, CryptoUtil}
+import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil, BitcoinScriptUtil, CryptoUtil}
 
 /**
  * Created by chris on 2/16/16.
@@ -192,6 +192,7 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
     logger.debug("Script: " + script)
     val scriptBytes = script.flatMap(_.bytes)
     val fe: Seq[Byte] => Seq[Byte] = { bytes: Seq[Byte] => BitcoinSUtil.decodeHex(BitcoinSUtil.flipEndianness(bytes)) }
+
     val serializationForSig: Seq[Byte] = fe(spendingTx.version.bytes) ++ outPointHash.getOrElse(Nil) ++ sequenceHash.getOrElse(Nil) ++
       spendingTx.inputs(inputIndexInt).previousOutput.bytes ++ CompactSizeUInt.calculateCompactSizeUInt(scriptBytes).bytes ++
       scriptBytes ++ fe(amount.bytes) ++ fe(spendingTx.inputs(inputIndexInt).sequence.bytes) ++
@@ -212,20 +213,18 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
   }
   /**
     * Wrapper function for hashForSignature
-    * @param txSignatureComponent this contains the transaction and inputIndex for hashForSignature
+    * @param txSigComponent this contains the transaction and inputIndex for hashForSignature
     * @param hashType
     * @return
     */
-  def hashForSignature(txSignatureComponent: TransactionSignatureComponent, hashType: HashType): DoubleSha256Digest = txSignatureComponent match {
-    case b: BaseTransactionSignatureComponent =>
-      val hash = hashForSignature(b.transaction,b.inputIndex,
-      b.scriptPubKey.asm,hashType)
-      logger.info("btx signature hash: " + hash)
-      hash
-    case w : WitnessV0TransactionSignatureComponent =>
-      val hash = hashForSignature(w.transaction,w.inputIndex,w.scriptPubKey.asm, hashType, w.amount)
-      logger.info("wtx signature hash: " + hash)
-      hash
+  def hashForSignature(txSigComponent: TransactionSignatureComponent, hashType: HashType): DoubleSha256Digest = {
+    val script = BitcoinScriptUtil.calculateScriptForSigning(txSigComponent,txSigComponent.scriptPubKey.asm)
+    txSigComponent match {
+      case t : BaseTransactionSignatureComponent =>
+        hashForSignature(t.transaction,t.inputIndex,script,hashType)
+      case t : WitnessV0TransactionSignatureComponent =>
+        hashForSignature(t.transaction,t.inputIndex, script, hashType,t.amount)
+    }
   }
 
 
@@ -236,13 +235,11 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
    * @param inputIndex
    * @return
    */
-  private def setSequenceNumbersZero(inputs : Seq[TransactionInput], inputIndex : UInt32) : Seq[TransactionInput] =  {
-    for {
-      (input,index) <- inputs.zipWithIndex
-    } yield {
-      if (UInt32(index) == inputIndex) input
-      else TransactionInput(input,UInt32.zero)
-    }
+  private def setSequenceNumbersZero(inputs : Seq[TransactionInput], inputIndex : UInt32) : Seq[TransactionInput] = for {
+    (input,index) <- inputs.zipWithIndex
+  } yield {
+    if (UInt32(index) == inputIndex) input
+    else TransactionInput(input,UInt32.zero)
   }
 
   /**
