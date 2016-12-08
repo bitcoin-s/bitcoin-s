@@ -187,15 +187,16 @@ trait TransactionGenerators extends  BitcoinSLogger {
 
 
   /** Generates a [[WitnessTransaction]] that has all of it's inputs signed correctly */
-/*  def signedWitnessTransaction: Gen[WitnessV0TransactionSignatureComponent,Seq[ECPrivateKey]] = for {
-
-  } yield*/
+  def signedWitnessTransaction: Gen[(WitnessV0TransactionSignatureComponent,Seq[ECPrivateKey])] = for {
+    (_,wtxSigComponent, privKeys) <- WitnessGenerators.signedTransactionWitness
+  } yield (wtxSigComponent,privKeys)
 
   /**
     * Builds a spending transaction according to bitcoin core
     * @return the built spending transaction and the input index for the script signature
     */
-  def buildSpendingTransaction(version : UInt32, creditingTx : Transaction,scriptSignature : ScriptSignature, outputIndex : UInt32, locktime : UInt32, sequence : UInt32) : (Transaction,UInt32) = {
+  def buildSpendingTransaction(version : UInt32, creditingTx : Transaction,scriptSignature : ScriptSignature,
+                               outputIndex : UInt32, locktime : UInt32, sequence : UInt32) : (Transaction,UInt32) = {
     val outpoint = TransactionOutPoint(creditingTx.txId,outputIndex)
     val input = TransactionInput(outpoint,scriptSignature, sequence)
     val output = TransactionOutput(CurrencyUnits.zero,EmptyScriptPubKey)
@@ -208,8 +209,26 @@ trait TransactionGenerators extends  BitcoinSLogger {
     * @return the built spending transaction and the input index for the script signature
     */
   def buildSpendingTransaction(creditingTx : Transaction,scriptSignature : ScriptSignature, outputIndex : UInt32) : (Transaction,UInt32) = {
-    buildSpendingTransaction(TransactionConstants.version, creditingTx, scriptSignature, outputIndex, TransactionConstants.lockTime, TransactionConstants.sequence)
+    buildSpendingTransaction(TransactionConstants.version, creditingTx, scriptSignature, outputIndex,
+      TransactionConstants.lockTime, TransactionConstants.sequence)
   }
+
+  /** Builds a spending [[WitnessTransaction]] with the given parameters */
+  def buildSpendingTransaction(creditingTx: Transaction, scriptSignature: ScriptSignature, outputIndex: UInt32,
+                               locktime: UInt32, sequence: UInt32, witness: TransactionWitness): (WitnessTransaction, UInt32) = {
+    val outpoint = TransactionOutPoint(creditingTx.txId,outputIndex)
+    val input = TransactionInput(outpoint,scriptSignature,sequence)
+    val output = TransactionOutput(CurrencyUnits.zero,EmptyScriptPubKey)
+    (WitnessTransaction(TransactionConstants.version,Seq(input), Seq(output),locktime,witness), UInt32.zero)
+  }
+
+  def buildSpendingTransaction(creditingTx: Transaction, scriptSignature: ScriptSignature, outputIndex: UInt32,
+                               witness: TransactionWitness): (WitnessTransaction, UInt32) = {
+    val locktime = TransactionConstants.lockTime
+    val sequence = TransactionConstants.sequence
+    buildSpendingTransaction(creditingTx,scriptSignature,outputIndex,locktime,sequence,witness)
+  }
+
   /**
     * Mimics this test utility found in bitcoin core
     * https://github.com/bitcoin/bitcoin/blob/605c17844ea32b6d237db6d83871164dc7d59dab/src/test/script_tests.cpp#L57
