@@ -13,9 +13,9 @@ import org.scalacheck.{Prop, Properties}
   * Created by chris on 7/25/16.
   */
 class TransactionSignatureCreatorSpec extends Properties("TransactionSignatureCreatorSpec") with BitcoinSLogger {
-/*  property("Must generate a valid signature for a p2pk transaction") =
+  property("Must generate a valid signature for a p2pk transaction") =
     Prop.forAll(TransactionGenerators.signedP2PKTransaction) {
-      case (txSignatureComponent: TransactionSignatureComponent, _) =>
+      case (txSignatureComponent: TransactionSignatureComponent, _, _) =>
         //run it through the interpreter
         val program: PreExecutionScriptProgram = ScriptProgram(txSignatureComponent)
         val result = ScriptInterpreter.run(program)
@@ -24,7 +24,7 @@ class TransactionSignatureCreatorSpec extends Properties("TransactionSignatureCr
 
   property("generate a valid signature for a p2pkh transaction") =
     Prop.forAll(TransactionGenerators.signedP2PKHTransaction) {
-      case (txSignatureComponent: TransactionSignatureComponent, _) =>
+      case (txSignatureComponent: TransactionSignatureComponent, _, _) =>
         //run it through the interpreter
         val program = ScriptProgram(txSignatureComponent)
         val result = ScriptInterpreter.run(program)
@@ -33,18 +33,16 @@ class TransactionSignatureCreatorSpec extends Properties("TransactionSignatureCr
 
   property("generate valid signatures for a multisignature transaction") =
     Prop.forAllNoShrink(TransactionGenerators.signedMultiSigTransaction) {
-      case (txSignatureComponent: TransactionSignatureComponent, _)  =>
+      case (txSignatureComponent: TransactionSignatureComponent, _, _ )  =>
         //run it through the interpreter
         val program = ScriptProgram(txSignatureComponent)
-
         val result = ScriptInterpreter.run(program)
-
         result == ScriptOk
   }
 
   property("generate a valid signature for a p2sh transaction") =
     Prop.forAll(TransactionGenerators.signedP2SHTransaction) {
-      case (txSignatureComponent: TransactionSignatureComponent, _) =>
+      case (txSignatureComponent: TransactionSignatureComponent, _, _) =>
         //run it through the interpreter
         val program = ScriptProgram(txSignatureComponent)
         val result = ScriptInterpreter.run(program)
@@ -93,12 +91,20 @@ class TransactionSignatureCreatorSpec extends Properties("TransactionSignatureCr
         val result = ScriptInterpreter.run(program)
         Seq(ScriptErrorUnsatisfiedLocktime, ScriptErrorPushSize).contains(result)
 
-    }*/
+    }
 
-  property("generate a valid signature for a witness transaction") =
-    Prop.forAllNoShrink(TransactionGenerators.signedWitnessTransaction) { case (wtxSigComponent, privKeys) =>
+  property("generate a valid signature for a p2wpkh witness transaction") =
+    Prop.forAllNoShrink(TransactionGenerators.signedP2WPKHTransaction) { case (wtxSigComponent, privKeys) =>
         val program = ScriptProgram(wtxSigComponent)
         val result = ScriptInterpreter.run(program)
         result == ScriptOk
     }
+
+  property("generate a valid signature for a p2wsh(p2pk) witness transaction") =
+    Prop.forAllNoShrink(TransactionGenerators.signedP2WSHP2PKHTransaction) { case (wtxSigComponent, privKeys) =>
+      val program = ScriptProgram(wtxSigComponent)
+      val result = ScriptInterpreter.run(program)
+      result == ScriptOk
+    }
+
 }
