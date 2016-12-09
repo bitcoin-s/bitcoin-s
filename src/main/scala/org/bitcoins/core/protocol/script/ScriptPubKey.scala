@@ -1,6 +1,6 @@
 package org.bitcoins.core.protocol.script
 
-import org.bitcoins.core.crypto.{ECPublicKey, Sha256Hash160Digest}
+import org.bitcoins.core.crypto.{ECPublicKey, HashDigest, Sha256Hash160Digest}
 import org.bitcoins.core.number.Int64
 import org.bitcoins.core.protocol._
 import org.bitcoins.core.protocol.script.WitnessScriptPubKeyV0.WitnessScriptPubKeyV0Impl
@@ -32,6 +32,10 @@ sealed trait ScriptPubKey extends NetworkElement with BitcoinSLogger {
     */
   lazy val asm : Seq[ScriptToken] = ScriptParser.fromBytes(bytes.splitAt(compactSizeUInt.size.toInt)._2)
 
+  /** The byte representation of [[asm]], this does NOT have the bytes
+    * for the [[org.bitcoins.core.protocol.CompactSizeUInt]] in the [[org.bitcoins.core.protocol.script.ScriptPubKey]]
+    */
+  lazy val asmBytes: Seq[Byte] = asm.flatMap(_.bytes)
 
 }
 
@@ -560,8 +564,15 @@ object WitnessScriptPubKeyV0 {
   }
 
   /** Creates a P2WPKH witness script pubkey */
-  def apply(pubKey: ECPublicKey): WitnessScriptPubKeyV0 = {
-    val hash = CryptoUtil.sha256Hash160(pubKey.bytes)
+  def apply(pubKey: ECPublicKey): WitnessScriptPubKeyV0 = build(pubKey.bytes, CryptoUtil.sha256Hash160 _)
+
+  /** Creates a raw P2WSH script pubkey from the given [[ScriptPubKey]] */
+  def apply(scriptPubKey: ScriptPubKey): WitnessScriptPubKey = build(scriptPubKey.asmBytes, CryptoUtil.sha256 _)
+
+  /** Helper function to build [[WitnessScriptPubKey]], applies given hash function to the bytes,
+    * then places it inside of [[WitnessScriptPubKey]] */
+  private def build(bytes: Seq[Byte], hashFunc: Seq[Byte] => HashDigest): WitnessScriptPubKeyV0 = {
+    val hash = hashFunc(bytes)
     val pushOp = BitcoinScriptUtil.calculatePushOp(hash.bytes)
     WitnessScriptPubKeyV0(Seq(OP_0) ++ pushOp ++ Seq(ScriptConstant(hash.bytes)))
   }
@@ -593,3 +604,15 @@ object UnassignedWitnessScriptPubKey {
     UnassignedWitnessScriptPubKeyImpl(compactSizeUInt.hex ++ asmHex)
   }
 }
+
+
+/**
+def buildScriptPubKey[T](asm: Seq[ScriptToken], constructor: String => T, invariant: Seq[ScriptToken] => Boolean, errorMsg: String) = {
+    if (invariant(asm)) {
+      val asmHex = asm.map(_.hex).mkString
+      val compactSizeUInt = CompactSizeUInt.calculateCompactSizeUInt(asmHex)
+      constructor(compactSizeUInt.hex + asmHex)
+    } else throw new IllegalArgumentException(errorMsg)
+  }
+
+  */
