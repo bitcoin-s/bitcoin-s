@@ -1,6 +1,10 @@
 package org.bitcoins.core.protocol.script
 
 import org.bitcoins.core.crypto.{ECDigitalSignature, ECPublicKey}
+import org.bitcoins.core.protocol.script.MultiSignatureScriptSignature.MultiSignatureScriptSignatureImpl
+import org.bitcoins.core.protocol.script.NonStandardScriptSignature.NonStandardScriptSignatureImpl
+import org.bitcoins.core.protocol.script.P2PKHScriptSignature.P2PKHScriptSignatureImpl
+import org.bitcoins.core.protocol.script.P2SHScriptSignature.P2SHScriptSignatureImpl
 import org.bitcoins.core.protocol.{CompactSizeUInt, NetworkElement}
 import org.bitcoins.core.script.constant._
 import org.bitcoins.core.serializers.script.{RawScriptSignatureParser, ScriptParser}
@@ -46,7 +50,7 @@ sealed trait NonStandardScriptSignature extends ScriptSignature {
   def signatures : Seq[ECDigitalSignature] = Nil
 }
 
-object NonStandardScriptSignature extends Factory[NonStandardScriptSignature] {
+object NonStandardScriptSignature extends ScriptFactory[NonStandardScriptSignature] {
   private case class NonStandardScriptSignatureImpl(hex : String) extends NonStandardScriptSignature
 
   override def fromBytes(bytes: Seq[Byte]): NonStandardScriptSignature = {
@@ -56,9 +60,7 @@ object NonStandardScriptSignature extends Factory[NonStandardScriptSignature] {
   }
 
   def fromAsm(asm : Seq[ScriptToken]): NonStandardScriptSignature = {
-    val asmHex = asm.map(_.hex).mkString
-    val compactSizeUInt = CompactSizeUInt.calculateCompactSizeUInt(asmHex)
-    NonStandardScriptSignatureImpl(compactSizeUInt.hex + asmHex)
+    buildScript(asm, NonStandardScriptSignatureImpl(_),{ _ => true}, "")
   }
 }
 
@@ -82,7 +84,7 @@ sealed trait P2PKHScriptSignature extends ScriptSignature {
 
 }
 
-object P2PKHScriptSignature extends Factory[P2PKHScriptSignature] {
+object P2PKHScriptSignature extends ScriptFactory[P2PKHScriptSignature] {
   private case class P2PKHScriptSignatureImpl(hex : String) extends P2PKHScriptSignature
 
   override def fromBytes(bytes : Seq[Byte]): P2PKHScriptSignature = {
@@ -91,10 +93,7 @@ object P2PKHScriptSignature extends Factory[P2PKHScriptSignature] {
   }
 
   def fromAsm(asm: Seq[ScriptToken]): P2PKHScriptSignature = {
-    require(isP2PKHScriptSig(asm), "Given asm was not a P2PKHScriptSignature, got: " + asm)
-    val asmHex = asm.map(_.hex).mkString
-    val compactSizeUInt = CompactSizeUInt.calculateCompactSizeUInt(asmHex)
-    P2PKHScriptSignatureImpl(compactSizeUInt.hex + asmHex)
+    buildScript(asm, P2PKHScriptSignatureImpl(_),isP2PKHScriptSig(_), "Given asm was not a P2PKHScriptSignature, got: " + asm)
   }
 
   /**
@@ -158,7 +157,7 @@ sealed trait P2SHScriptSignature extends ScriptSignature {
   }
 }
 
-object P2SHScriptSignature extends Factory[P2SHScriptSignature] with BitcoinSLogger {
+object P2SHScriptSignature extends ScriptFactory[P2SHScriptSignature]  {
   private case class P2SHScriptSignatureImpl(hex : String) extends P2SHScriptSignature
 
   override def fromBytes(bytes : Seq[Byte]): P2SHScriptSignature = {
@@ -177,10 +176,7 @@ object P2SHScriptSignature extends Factory[P2SHScriptSignature] with BitcoinSLog
   }
 
   def fromAsm(asm: Seq[ScriptToken]): P2SHScriptSignature = {
-    require(isP2SHScriptSig(asm), "Given asm tokens are not a p2sh scriptSig, got: " + asm)
-    val asmHex = asm.map(_.hex).mkString
-    val compactSizeUInt = CompactSizeUInt.calculateCompactSizeUInt(asmHex)
-    P2SHScriptSignatureImpl(compactSizeUInt.hex + asmHex)
+    buildScript(asm, P2SHScriptSignatureImpl(_),isP2SHScriptSig(_), "Given asm tokens are not a p2sh scriptSig, got: " + asm)
   }
 
   /** Tests if the given asm tokens are a [[P2SHScriptSignature]] */
@@ -237,7 +233,7 @@ sealed trait MultiSignatureScriptSignature extends ScriptSignature {
   }
 }
 
-object MultiSignatureScriptSignature extends Factory[MultiSignatureScriptSignature] {
+object MultiSignatureScriptSignature extends ScriptFactory[MultiSignatureScriptSignature] {
 
   private case class MultiSignatureScriptSignatureImpl(hex : String) extends MultiSignatureScriptSignature
 
@@ -259,10 +255,8 @@ object MultiSignatureScriptSignature extends Factory[MultiSignatureScriptSignatu
   }
 
   def fromAsm(asm: Seq[ScriptToken]): MultiSignatureScriptSignature = {
-    require(isMultiSignatureScriptSignature(asm), "The given asm tokens were not a multisignature script sig: " + asm)
-    val asmHex = asm.map(_.hex).mkString
-    val compactSizeUInt = CompactSizeUInt.calculateCompactSizeUInt(asmHex)
-    MultiSignatureScriptSignatureImpl(compactSizeUInt.hex + asmHex)
+    buildScript(asm, MultiSignatureScriptSignatureImpl(_),isMultiSignatureScriptSignature(_),
+      "The given asm tokens were not a multisignature script sig: " + asm)
   }
 
   /**
@@ -302,7 +296,7 @@ sealed trait P2PKScriptSignature extends ScriptSignature {
   }
 }
 
-object P2PKScriptSignature extends Factory[P2PKScriptSignature] {
+object P2PKScriptSignature extends ScriptFactory[P2PKScriptSignature] {
   private case class P2PKScriptSignatureImpl(hex : String) extends P2PKScriptSignature
 
   def apply(signature: ECDigitalSignature): P2PKScriptSignature = {
@@ -313,10 +307,8 @@ object P2PKScriptSignature extends Factory[P2PKScriptSignature] {
   }
 
   def fromAsm(asm: Seq[ScriptToken]): P2PKScriptSignature = {
-    require(isP2PKScriptSignature(asm), "The given asm tokens were not a p2pk scriptSig, got: " + asm)
-    val asmHex = asm.map(_.hex).mkString
-    val compactSizeUInt = CompactSizeUInt.calculateCompactSizeUInt(asmHex)
-    P2PKScriptSignatureImpl(compactSizeUInt.hex + asmHex)
+    buildScript(asm, P2PKScriptSignatureImpl(_),isP2PKScriptSignature(_),
+      "The given asm tokens were not a p2pk script sig: " + asm)
   }
 
   override def fromBytes(bytes: Seq[Byte]): P2PKScriptSignature = {
@@ -367,7 +359,7 @@ object CLTVScriptSignature extends Factory[CLTVScriptSignature] {
     case cltvScriptPubKey : CLTVScriptPubKey => apply(cltvScriptPubKey.scriptPubKeyAfterCLTV, sigs, pubKeys)
     case csvScriptPubKey : CSVScriptPubKey => apply(csvScriptPubKey.scriptPubKeyAfterCSV, sigs, pubKeys)
     case EmptyScriptPubKey => CLTVScriptSignature(EmptyScriptSignature)
-    case _ @ (_: WitnessScriptPubKeyV0 | _ : UnassignedWitnessScriptPubKey) =>
+    case _: WitnessScriptPubKeyV0 | _ : UnassignedWitnessScriptPubKey =>
       //bare segwit always has an empty script sig, see BIP141
       CLTVScriptSignature(EmptyScriptSignature)
     case x @ (_ : NonStandardScriptPubKey | _ : P2SHScriptPubKey) => throw new IllegalArgumentException("A NonStandardScriptSignature or P2SHScriptSignature cannot be" +
