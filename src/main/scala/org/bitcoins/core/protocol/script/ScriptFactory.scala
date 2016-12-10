@@ -19,5 +19,5 @@ trait ScriptFactory[T] extends Factory[T] {
 
   /** Creates a T from the given [[ScriptToken]]s */
   def fromAsm(asm: Seq[ScriptToken]): T
-  
+
 }
