@@ -97,6 +97,8 @@ sealed trait MultiSignatureScriptPubKey extends ScriptPubKey {
     val numSigsRequired = asmWithoutPushOps(opCheckMultiSigIndex - maxSigs.toInt - 2)
     numSigsRequired match {
       case x : ScriptNumber => x.underlying
+      case c : ScriptConstant if ScriptNumber(c.hex).underlying <= ScriptSettings.maxPublicKeysPerMultiSig =>
+        ScriptNumber(c.hex).underlying
       case _ => throw new RuntimeException("The first element of the multisignature pubkey must be a script number operation\n" +
         "operation: " + numSigsRequired +
         "\nscriptPubKey: " + this)
@@ -111,7 +113,9 @@ sealed trait MultiSignatureScriptPubKey extends ScriptPubKey {
     } else {
       asm(checkMultiSigIndex - 1) match {
         case x : ScriptNumber => x.underlying
-        case _ => throw new RuntimeException("The element preceding a OP_CHECKMULTISIG operation in a  multisignature pubkey must be a script number operation, got: " + this)
+        case c : ScriptConstant if ScriptNumber(c.hex).underlying <= ScriptSettings.maxPublicKeysPerMultiSig =>
+          ScriptNumber(c.hex).underlying
+        case x => throw new RuntimeException("The element preceding a OP_CHECKMULTISIG operation in a  multisignature pubkey must be a script number operation, got: " + x)
       }
     }
   }
