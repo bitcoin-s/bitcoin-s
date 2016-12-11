@@ -32,6 +32,7 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
    * Filters out push operations in our sequence of script tokens
    * this removes OP_PUSHDATA1, OP_PUSHDATA2, OP_PUSHDATA4 and all ByteToPushOntoStack tokens */
   def filterPushOps(asm : Seq[ScriptToken]) : Seq[ScriptToken] = {
+    //TODO: This does not remove the following script number after a OP_PUSHDATA
     asm.filterNot(op => op.isInstanceOf[BytesToPushOntoStack]
       || op == OP_PUSHDATA1
       || op == OP_PUSHDATA2

@@ -208,6 +208,9 @@ trait TransactionGenerators extends  BitcoinSLogger {
     (_,wtxSigComponent, privKeys) <- WitnessGenerators.signedP2WSHP2PKHTransactionWitness
   } yield (wtxSigComponent,privKeys)
 
+  def signedP2WSHMultiSigTransaction: Gen[(WitnessV0TransactionSignatureComponent, Seq[ECPrivateKey])] = for {
+    (_,wtxSigComponent, privKeys) <- WitnessGenerators.signedP2WSHMultiSigTransactionWitness
+  } yield (wtxSigComponent,privKeys)
   /**
     * Builds a spending transaction according to bitcoin core
     * @return the built spending transaction and the input index for the script signature

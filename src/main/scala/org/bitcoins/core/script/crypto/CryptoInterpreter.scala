@@ -244,7 +244,7 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
               //https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L966
               ScriptProgram(executionInProgressScriptProgram,ScriptErrorInvalidStackOperation)
             } else if (ScriptFlagUtil.requireNullDummy(flags) &&
-              !(Seq(Some(OP_0), Some(ScriptNumber.zero)).contains(stackWithoutPubKeysAndSignatures.headOption))) {
+              (stackWithoutPubKeysAndSignatures.headOption.isDefined && stackWithoutPubKeysAndSignatures.head.bytes.nonEmpty)) {
               logger.error("Script flag null dummy was set however the first element in the script signature was not an OP_0, stackWithoutPubKeysAndSignatures: " + stackWithoutPubKeysAndSignatures)
               ScriptProgram(executionInProgressScriptProgram,ScriptErrorSigNullDummy)
             } else {

@@ -228,7 +228,7 @@ trait ScriptGenerators extends BitcoinSLogger {
 
   /**
     * Generates a signed [[MultiSignatureScriptSignature]] that spends the [[MultiSignatureScriptPubKey]] correctly
-    *
+    *ti
     * @return the signed [[MultiSignatureScriptSignature]], the [[MultiSignatureScriptPubKey]] it spends and the
     *         sequence of [[ECPrivateKey]] used to sign the scriptSig
     */
