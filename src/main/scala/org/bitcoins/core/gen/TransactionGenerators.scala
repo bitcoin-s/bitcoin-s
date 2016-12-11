@@ -199,8 +199,13 @@ trait TransactionGenerators extends  BitcoinSLogger {
   } yield (wtxSigComponent,privKeys)
 
   /** Generates a [[WitnessTransaction]] that has an input spends a raw P2WSH [[WitnessScriptPubKey]] */
-  def signedP2WSHP2PKHTransaction: Gen[(WitnessV0TransactionSignatureComponent, Seq[ECPrivateKey])] = for {
+  def signedP2WSHP2PKTransaction: Gen[(WitnessV0TransactionSignatureComponent, Seq[ECPrivateKey])] = for {
     (_,wtxSigComponent, privKeys) <- WitnessGenerators.signedP2WSHP2PKTransactionWitness
+  } yield (wtxSigComponent,privKeys)
+
+  /** Generates a [[WitnessTransaction]] that has an input spends a raw P2WSH [[WitnessScriptPubKey]] */
+  def signedP2WSHP2PKHTransaction: Gen[(WitnessV0TransactionSignatureComponent, Seq[ECPrivateKey])] = for {
+    (_,wtxSigComponent, privKeys) <- WitnessGenerators.signedP2WSHP2PKHTransactionWitness
   } yield (wtxSigComponent,privKeys)
 
   /**
