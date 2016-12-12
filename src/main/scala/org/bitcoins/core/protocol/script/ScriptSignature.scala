@@ -124,11 +124,17 @@ object P2PKHScriptSignature extends ScriptFactory[P2PKHScriptSignature] {
 sealed trait P2SHScriptSignature extends ScriptSignature {
 
   /** The redeemScript represents the conditions that must be satisfied to spend the output */
-  def redeemScript : ScriptPubKey = ScriptPubKey(ScriptParser.fromBytes(asm.last.bytes))
+  def redeemScript : ScriptPubKey = {
+    if (WitnessScriptPubKey.isWitnessScriptPubKey(asm)) WitnessScriptPubKey(asm).get
+    else ScriptPubKey(ScriptParser.fromBytes(asm.last.bytes))
+  }
 
 
   /** Returns the script signature of this p2shScriptSig with no serialized redeemScript */
-  def scriptSignatureNoRedeemScript = ScriptSignature.fromAsm(splitAtRedeemScript(asm)._1)
+  def scriptSignatureNoRedeemScript: ScriptSignature = {
+    if (WitnessScriptPubKey.isWitnessScriptPubKey(asm)) EmptyScriptSignature
+    else ScriptSignature.fromAsm(ScriptParser.fromBytes(asm.last.bytes))
+  }
 
 
   /** Returns the public keys for the p2sh scriptSignature */
@@ -152,8 +158,7 @@ sealed trait P2SHScriptSignature extends ScriptSignature {
     * the first part is the digital signatures
     * the second part is the redeem script */
   def splitAtRedeemScript(asm : Seq[ScriptToken]) : (Seq[ScriptToken],Seq[ScriptToken]) = {
-    //call .tail twice to remove the serialized redeemScript & it's bytesToPushOntoStack constant
-    (asm.reverse.tail.tail.reverse, Seq(asm.last))
+    (scriptSignatureNoRedeemScript.asm, redeemScript.asm)
   }
 }
 
@@ -175,6 +180,10 @@ object P2SHScriptSignature extends ScriptFactory[P2SHScriptSignature]  {
     fromAsm(asm)
   }
 
+  def apply(witnessScriptPubKey: WitnessScriptPubKey): P2SHScriptSignature = {
+    fromAsm(witnessScriptPubKey.asm)
+  }
+
   def fromAsm(asm: Seq[ScriptToken]): P2SHScriptSignature = {
     buildScript(asm, P2SHScriptSignatureImpl(_),isP2SHScriptSig(_), "Given asm tokens are not a p2sh scriptSig, got: " + asm)
   }
@@ -182,6 +191,7 @@ object P2SHScriptSignature extends ScriptFactory[P2SHScriptSignature]  {
   /** Tests if the given asm tokens are a [[P2SHScriptSignature]] */
   def isP2SHScriptSig(asm: Seq[ScriptToken]): Boolean = asm match {
     case _ if asm.size > 1 && isRedeemScript(asm.last) => true
+    case _ if WitnessScriptPubKey.isWitnessScriptPubKey(asm) => true
     case _ => false
   }
 
