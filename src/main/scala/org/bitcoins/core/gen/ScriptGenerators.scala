@@ -373,6 +373,13 @@ trait ScriptGenerators extends BitcoinSLogger {
     (signedScriptSig, csv, privateKeys)
   }
 
+/*
+  def signedP2SHP2WPKHScriptSignature: Gen[(P2SHScriptSignature, P2SHScriptPubKey, Seq[ECPrivateKey], CurrencyUnit)] = for {
+    (witness,wtxSigComponent, privKeys) <- WitnessGenerators.signedP2WPKHTransactionWitness
+    p2shScriptPubKey = P2SHScriptPubKey(txSigComponent.scriptPubKey)
+    p2shScriptSig = P2SHScriptSignature()
+  } yield (p2shScriptSig,p2shScriptPubKey,privKeys,wtxSigComponent.amount)*/
+
   /**
     * This function chooses a random signed [[ScriptSignature]] that is NOT a [[P2SHScriptSignature]], [[CSVScriptSignature]],
     * [[CLTVScriptSignature]], or any witness type
