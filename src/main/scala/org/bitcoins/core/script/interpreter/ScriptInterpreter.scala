@@ -156,12 +156,13 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
                 logger.error("expected scriptsig bytes: " + BitcoinSUtil.encodeHex(expectedScriptBytes))
                 ScriptProgram(scriptPubKeyExecutedProgram, ScriptErrorWitnessMalleatedP2SH)
               } else {
-                logger.error("redeem script was witness script pubkey, segwit was NOT enabled")
+                logger.warn("redeem script was witness script pubkey, segwit was NOT enabled")
                 //treat the segwit scriptpubkey as any other redeem script
                 run(scriptPubKeyExecutedProgram,stack,w)
               }
             case s @ (_ : P2SHScriptPubKey | _ : P2PKHScriptPubKey | _ : P2PKScriptPubKey | _ : MultiSignatureScriptPubKey |
               _ : CLTVScriptPubKey | _ : CSVScriptPubKey | _: NonStandardScriptPubKey | EmptyScriptPubKey) =>
+              logger.debug("redeemScript: " + s.asm)
               run(scriptPubKeyExecutedProgram,stack,s)
           }
         case false =>

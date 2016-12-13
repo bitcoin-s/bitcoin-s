@@ -8,7 +8,7 @@ import org.bitcoins.core.protocol.script.P2SHScriptSignature.P2SHScriptSignature
 import org.bitcoins.core.protocol.{CompactSizeUInt, NetworkElement}
 import org.bitcoins.core.script.constant._
 import org.bitcoins.core.serializers.script.{RawScriptSignatureParser, ScriptParser}
-import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil, BitcoinScriptUtil, Factory}
+import org.bitcoins.core.util._
 
 import scala.util.{Failure, Success, Try}
 
@@ -133,7 +133,13 @@ sealed trait P2SHScriptSignature extends ScriptSignature {
   /** Returns the script signature of this p2shScriptSig with no serialized redeemScript */
   def scriptSignatureNoRedeemScript: ScriptSignature = {
     if (WitnessScriptPubKey.isWitnessScriptPubKey(asm)) EmptyScriptSignature
-    else ScriptSignature.fromAsm(ScriptParser.fromBytes(asm.last.bytes))
+    else {
+      val asmWithoutRedeemScriptAndPushOp = asm(asm.size - 2) match {
+        case b : BytesToPushOntoStack => asm.dropRight(2)
+        case _ => asm.dropRight(3)
+      }
+      ScriptSignature.fromAsm(asmWithoutRedeemScriptAndPushOp)
+    }
   }
 
 
@@ -171,18 +177,17 @@ object P2SHScriptSignature extends ScriptFactory[P2SHScriptSignature]  {
   }
 
   def apply(scriptSig : ScriptSignature, redeemScript : ScriptPubKey): P2SHScriptSignature = {
-    //note: we don't just call redeemScript.bytes because that contains the CompactSizeUInt bytes
-    val asmBytes = redeemScript.asm.flatMap(_.bytes)
     //we need to calculate the size of the redeemScript and add the corresponding push op
-    val serializedRedeemScript = ScriptConstant(asmBytes)
+    val serializedRedeemScript = ScriptConstant(redeemScript.asmBytes)
     val pushOps = BitcoinScriptUtil.calculatePushOp(serializedRedeemScript)
     val asm: Seq[ScriptToken] = scriptSig.asm ++ pushOps ++ Seq(serializedRedeemScript)
     fromAsm(asm)
   }
 
   def apply(witnessScriptPubKey: WitnessScriptPubKey): P2SHScriptSignature = {
-    fromAsm(witnessScriptPubKey.asm)
+    P2SHScriptSignature(EmptyScriptSignature,witnessScriptPubKey)
   }
+
 
   def fromAsm(asm: Seq[ScriptToken]): P2SHScriptSignature = {
     buildScript(asm, P2SHScriptSignatureImpl(_),isP2SHScriptSig(_), "Given asm tokens are not a p2sh scriptSig, got: " + asm)

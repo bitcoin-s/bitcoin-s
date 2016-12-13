@@ -242,7 +242,11 @@ object P2SHScriptPubKey extends ScriptFactory[P2SHScriptPubKey] with BitcoinSLog
   }
 
   def apply(scriptPubKey: ScriptPubKey) : P2SHScriptPubKey = {
-    val hash = CryptoUtil.sha256Hash160(scriptPubKey.asm.flatMap(_.bytes))
+    val hash = CryptoUtil.sha256Hash160(scriptPubKey.asmBytes)
+    P2SHScriptPubKey(hash)
+  }
+
+  def apply(hash: Sha256Hash160Digest): P2SHScriptPubKey = {
     val pushOps = BitcoinScriptUtil.calculatePushOp(hash.bytes)
     val asm = Seq(OP_HASH160) ++ pushOps ++ Seq(ScriptConstant(hash.bytes), OP_EQUAL)
     P2SHScriptPubKey(asm)
