@@ -144,5 +144,4 @@ class TransactionSignatureCreatorTest extends FlatSpec with MustMatchers with Bi
     result must be (ScriptOk)
   }
 
-
 }

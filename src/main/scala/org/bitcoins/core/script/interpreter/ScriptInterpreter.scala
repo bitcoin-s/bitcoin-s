@@ -140,7 +140,6 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
           val redeemScript = ScriptPubKey(c.bytes ++ redeemScriptBytes)
           redeemScript match {
             case w : WitnessScriptPubKey =>
-              logger.error("Witness scriptPubKey")
               val pushOp = BitcoinScriptUtil.calculatePushOp(redeemScriptBytes)
               val expectedScriptBytes = pushOp.flatMap(_.bytes) ++ redeemScriptBytes
               val flags = scriptPubKeyExecutedProgram.flags
@@ -148,7 +147,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
               if (segwitEnabled && (scriptSig.asmBytes == expectedScriptBytes)) {
                 // The scriptSig must be _exactly_ a single push of the redeemScript. Otherwise we
                 // reintroduce malleability.
-                logger.error("redeem script was witness script pubkey, segwit was enabled, scriptSig was single push of redeemScript")
+                logger.info("redeem script was witness script pubkey, segwit was enabled, scriptSig was single push of redeemScript")
                 executeSegWitScript(scriptPubKeyExecutedProgram,w)
               } else if (segwitEnabled && (scriptSig.asmBytes != expectedScriptBytes)) {
                 logger.error("Segwit was enabled, but p2sh redeem script was malleated")
