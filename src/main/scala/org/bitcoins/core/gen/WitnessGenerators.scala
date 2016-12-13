@@ -6,7 +6,7 @@ import org.bitcoins.core.crypto.{TransactionSignatureComponent, _}
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script.{MultiSignatureScriptSignature, _}
-import org.bitcoins.core.protocol.transaction.{TransactionConstants, TransactionInputWitness, TransactionWitness, WitnessTransaction}
+import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.constant.{BytesToPushOntoStack, ScriptNumber}
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.util.{BitcoinSLogger, BitcoinScriptUtil}
@@ -63,8 +63,8 @@ trait WitnessGenerators extends BitcoinSLogger {
     createdSig = TransactionSignatureCreator.createSig(unsignedWtxSigComponent,privKey,HashType.sigHashAll)
     scriptWitness = ScriptWitness(Seq(privKey.publicKey.bytes, createdSig.bytes))
     (signedSpendingTx,signedWitness) = createSignedTx(scriptWitness, unsignedWtxSigComponent.transaction)
-    signedWtxSigComponent = WitnessV0TransactionSignatureComponent(signedSpendingTx,unsignedWtxSigComponent.inputIndex,
-      witScriptPubKey,unsignedWtxSigComponent.flags,amount)
+    signedWtxSigComponent = WitnessV0TransactionSignatureComponent(signedSpendingTx, unsignedWtxSigComponent.inputIndex,
+      witScriptPubKey, unsignedWtxSigComponent.flags, amount)
   } yield (signedWitness,signedWtxSigComponent,Seq(privKey))
 
 
@@ -110,6 +110,12 @@ trait WitnessGenerators extends BitcoinSLogger {
       witScriptPubKey,unsignedWTxSigComponent.flags,amount)
   } yield (witness,signedWtxSigComponent,privKeys)
 
+  /** Generates a random signed [[TransactionWitness]] with the corresponding [[WitnessV0TransactionSignatureComponent]]
+    * and [[ECPrivateKey]]s */
+  def signedP2WSHTransactionWitness: Gen[(TransactionWitness, WitnessV0TransactionSignatureComponent, Seq[ECPrivateKey])] = {
+    Gen.oneOf(signedP2WSHP2PKTransactionWitness, signedP2WSHP2PKHTransactionWitness,
+      signedP2WSHMultiSigTransactionWitness)
+  }
 
   /** Takes a signed [[ScriptWitness]] and an unsignedTx and adds the witness to the unsigned [[WitnessTransaction]] */
   private def createSignedTx(witness: ScriptWitness, unsignedSpendingTx: WitnessTransaction): (WitnessTransaction,TransactionWitness) = {

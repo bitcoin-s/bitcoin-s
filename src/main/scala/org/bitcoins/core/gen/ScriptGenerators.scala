@@ -377,7 +377,7 @@ trait ScriptGenerators extends BitcoinSLogger {
     (witness, wtxSigComponent, privKeys) <- WitnessGenerators.signedP2WPKHTransactionWitness
     p2shScriptPubKey = P2SHScriptPubKey(wtxSigComponent.scriptPubKey)
     p2shScriptSig = P2SHScriptSignature(wtxSigComponent.scriptPubKey.asInstanceOf[WitnessScriptPubKey])
-  } yield (p2shScriptSig,p2shScriptPubKey,privKeys, witness, wtxSigComponent.amount)
+  } yield (p2shScriptSig, p2shScriptPubKey, privKeys, witness, wtxSigComponent.amount)
 
   /**
     * This function chooses a random signed [[ScriptSignature]] that is NOT a [[P2SHScriptSignature]], [[CSVScriptSignature]],

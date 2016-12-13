@@ -212,13 +212,26 @@ trait TransactionGenerators extends BitcoinSLogger {
     (_,wtxSigComponent, privKeys) <- WitnessGenerators.signedP2WSHMultiSigTransactionWitness
   } yield (wtxSigComponent,privKeys)
 
+  /** Creates a signed P2SH(P2WPKH) transaction */
   def signedP2SHP2WPKHTransaction: Gen[(WitnessV0TransactionSignatureComponent, Seq[ECPrivateKey])] = for {
     (signedScriptSig, scriptPubKey, privKeys, witness, amount) <- ScriptGenerators.signedP2SHP2WPKHScriptSignature
     (creditingTx,outputIndex) = buildCreditingTransaction(signedScriptSig.redeemScript, amount)
-    (signedTx,inputIndex) = buildSpendingTransaction(creditingTx,signedScriptSig,outputIndex,witness)
+    (signedTx,inputIndex) = buildSpendingTransaction(creditingTx,signedScriptSig, outputIndex, witness)
     signedTxSignatureComponent = WitnessV0TransactionSignatureComponent(signedTx,inputIndex,
       scriptPubKey, Policy.standardScriptVerifyFlags,amount)
   } yield (signedTxSignatureComponent, privKeys)
+
+  /** Creates a signed P2SH(P2WSH) transaction */
+  def signedP2SHP2WSHTransaction: Gen[(WitnessV0TransactionSignatureComponent, Seq[ECPrivateKey])] = for {
+    (witness,wtxSigComponent, privKeys) <- WitnessGenerators.signedP2WSHTransactionWitness
+    p2shScriptPubKey = P2SHScriptPubKey(wtxSigComponent.scriptPubKey)
+    p2shScriptSig = P2SHScriptSignature(wtxSigComponent.scriptPubKey.asInstanceOf[WitnessScriptPubKey])
+    (creditingTx,outputIndex) = buildCreditingTransaction(p2shScriptSig.redeemScript, wtxSigComponent.amount)
+    (signedTx,inputIndex) = buildSpendingTransaction(creditingTx,p2shScriptSig,outputIndex,witness)
+    signedTxSignatureComponent = WitnessV0TransactionSignatureComponent(signedTx,inputIndex,
+      p2shScriptPubKey, Policy.standardScriptVerifyFlags, wtxSigComponent.amount)
+  } yield (signedTxSignatureComponent,privKeys)
+
   /**
     * Builds a spending transaction according to bitcoin core
     * @return the built spending transaction and the input index for the script signature
