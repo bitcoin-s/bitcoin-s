@@ -5,7 +5,7 @@ import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script._
-import org.bitcoins.core.protocol.transaction.TransactionConstants
+import org.bitcoins.core.protocol.transaction.{TransactionConstants, TransactionWitness}
 import org.bitcoins.core.script.ScriptSettings
 import org.bitcoins.core.script.constant.{OP_16, ScriptNumber}
 import org.bitcoins.core.script.crypto.{HashType, SIGHASH_ALL}
@@ -373,12 +373,11 @@ trait ScriptGenerators extends BitcoinSLogger {
     (signedScriptSig, csv, privateKeys)
   }
 
-/*
-  def signedP2SHP2WPKHScriptSignature: Gen[(P2SHScriptSignature, P2SHScriptPubKey, Seq[ECPrivateKey], CurrencyUnit)] = for {
-    (witness,wtxSigComponent, privKeys) <- WitnessGenerators.signedP2WPKHTransactionWitness
-    p2shScriptPubKey = P2SHScriptPubKey(txSigComponent.scriptPubKey)
-    p2shScriptSig = P2SHScriptSignature()
-  } yield (p2shScriptSig,p2shScriptPubKey,privKeys,wtxSigComponent.amount)*/
+  def signedP2SHP2WPKHScriptSignature: Gen[(P2SHScriptSignature, P2SHScriptPubKey, Seq[ECPrivateKey], TransactionWitness, CurrencyUnit)] = for {
+    (witness, wtxSigComponent, privKeys) <- WitnessGenerators.signedP2WPKHTransactionWitness
+    p2shScriptPubKey = P2SHScriptPubKey(wtxSigComponent.scriptPubKey)
+    p2shScriptSig = P2SHScriptSignature(wtxSigComponent.scriptPubKey.asInstanceOf[WitnessScriptPubKey])
+  } yield (p2shScriptSig,p2shScriptPubKey,privKeys, witness, wtxSigComponent.amount)
 
   /**
     * This function chooses a random signed [[ScriptSignature]] that is NOT a [[P2SHScriptSignature]], [[CSVScriptSignature]],

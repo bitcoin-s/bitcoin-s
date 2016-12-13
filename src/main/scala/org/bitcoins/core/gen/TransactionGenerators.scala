@@ -14,7 +14,7 @@ import org.scalacheck.Gen
 /**
   * Created by chris on 6/21/16.
   */
-trait TransactionGenerators extends  BitcoinSLogger {
+trait TransactionGenerators extends BitcoinSLogger {
 
   /** Responsible for generating [[org.bitcoins.core.protocol.transaction.TransactionOutPoint]] */
   def outPoints : Gen[TransactionOutPoint] = for {
@@ -211,6 +211,14 @@ trait TransactionGenerators extends  BitcoinSLogger {
   def signedP2WSHMultiSigTransaction: Gen[(WitnessV0TransactionSignatureComponent, Seq[ECPrivateKey])] = for {
     (_,wtxSigComponent, privKeys) <- WitnessGenerators.signedP2WSHMultiSigTransactionWitness
   } yield (wtxSigComponent,privKeys)
+
+  def signedP2SHP2WPKHTransaction: Gen[(WitnessV0TransactionSignatureComponent, Seq[ECPrivateKey])] = for {
+    (signedScriptSig, scriptPubKey, privKeys, witness, amount) <- ScriptGenerators.signedP2SHP2WPKHScriptSignature
+    (creditingTx,outputIndex) = buildCreditingTransaction(signedScriptSig.redeemScript, amount)
+    (signedTx,inputIndex) = buildSpendingTransaction(creditingTx,signedScriptSig,outputIndex,witness)
+    signedTxSignatureComponent = WitnessV0TransactionSignatureComponent(signedTx,inputIndex,
+      scriptPubKey, Policy.standardScriptVerifyFlags,amount)
+  } yield (signedTxSignatureComponent, privKeys)
   /**
     * Builds a spending transaction according to bitcoin core
     * @return the built spending transaction and the input index for the script signature

@@ -122,4 +122,12 @@ class TransactionSignatureCreatorSpec extends Properties("TransactionSignatureCr
       result == ScriptOk
     }
 
+  property("generate a valid signature from a p2sh(p2wpkh) witness transaction") =
+    Prop.forAllNoShrink(TransactionGenerators.signedP2SHP2WPKHTransaction) { case (wtxSigComponent, privKeys) =>
+      val program = ScriptProgram(wtxSigComponent)
+      val result = ScriptInterpreter.run(program)
+      if (result != ScriptOk) logger.warn("Result: " + result)
+      result == ScriptOk
+    }
+
 }
