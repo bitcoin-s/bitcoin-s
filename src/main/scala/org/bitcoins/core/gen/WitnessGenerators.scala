@@ -4,6 +4,7 @@ import java.util
 
 import org.bitcoins.core.crypto.{TransactionSignatureComponent, _}
 import org.bitcoins.core.currency.CurrencyUnit
+import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script.{MultiSignatureScriptSignature, _}
 import org.bitcoins.core.protocol.transaction._
@@ -59,13 +60,11 @@ trait WitnessGenerators extends BitcoinSLogger {
     //hashType <- CryptoGenerators.hashType
     witScriptPubKey = WitnessScriptPubKeyV0(privKey.publicKey)
     unsignedScriptWitness = ScriptWitness(Seq(privKey.publicKey.bytes, Nil))
-    unsignedWtxSigComponent = createUnsignedWtxSigComponent(witScriptPubKey,amount,unsignedScriptWitness)
-    createdSig = TransactionSignatureCreator.createSig(unsignedWtxSigComponent,privKey,HashType.sigHashAll)
+    unsignedWTxSigComponent = createUnsignedWtxSigComponent(witScriptPubKey,amount,unsignedScriptWitness)
+    createdSig = TransactionSignatureCreator.createSig(unsignedWTxSigComponent,privKey,HashType.sigHashAll)
     scriptWitness = ScriptWitness(Seq(privKey.publicKey.bytes, createdSig.bytes))
-    (signedSpendingTx,signedWitness) = createSignedTx(scriptWitness, unsignedWtxSigComponent.transaction)
-    signedWtxSigComponent = WitnessV0TransactionSignatureComponent(signedSpendingTx, unsignedWtxSigComponent.inputIndex,
-      witScriptPubKey, unsignedWtxSigComponent.flags, amount)
-  } yield (signedWitness,signedWtxSigComponent,Seq(privKey))
+    (witness,signedWtxSigComponent) = createSignedWTxComponent(scriptWitness,unsignedWTxSigComponent)
+  } yield (witness,signedWtxSigComponent,Seq(privKey))
 
 
   def signedP2WSHP2PKTransactionWitness: Gen[(TransactionWitness, WitnessV0TransactionSignatureComponent, Seq[ECPrivateKey])] = for {
@@ -73,13 +72,11 @@ trait WitnessGenerators extends BitcoinSLogger {
     amount <- CurrencyUnitGenerator.satoshis
     witScriptPubKey = WitnessScriptPubKeyV0(scriptPubKey)
     unsignedScriptWitness = ScriptWitness(Seq(scriptPubKey.asmBytes))
-    unsignedWtxSigComponent = createUnsignedWtxSigComponent(witScriptPubKey,amount,unsignedScriptWitness)
-    createdSig = TransactionSignatureCreator.createSig(unsignedWtxSigComponent,privKeys,HashType.sigHashAll)
+    unsignedWTxSigComponent = createUnsignedWtxSigComponent(witScriptPubKey,amount,unsignedScriptWitness)
+    createdSig = TransactionSignatureCreator.createSig(unsignedWTxSigComponent,privKeys,HashType.sigHashAll)
     signedScriptWitness = ScriptWitness(scriptPubKey.asmBytes +: Seq(createdSig.bytes))
-    (signedSpendingTx,signedWitness) = createSignedTx(signedScriptWitness, unsignedWtxSigComponent.transaction)
-    signedWtxSigComponent = WitnessV0TransactionSignatureComponent(signedSpendingTx,unsignedWtxSigComponent.inputIndex,
-      witScriptPubKey,unsignedWtxSigComponent.flags,amount)
-  } yield (signedWitness,signedWtxSigComponent,Seq(privKeys))
+    (witness,signedWtxSigComponent) = createSignedWTxComponent(signedScriptWitness,unsignedWTxSigComponent)
+  } yield (witness,signedWtxSigComponent,Seq(privKeys))
 
 
   def signedP2WSHP2PKHTransactionWitness: Gen[(TransactionWitness, WitnessV0TransactionSignatureComponent, Seq[ECPrivateKey])]  = for {
@@ -87,12 +84,10 @@ trait WitnessGenerators extends BitcoinSLogger {
     amount <- CurrencyUnitGenerator.satoshis
     witScriptPubKey = WitnessScriptPubKeyV0(scriptPubKey)
     unsignedScriptWitness = ScriptWitness(Seq(scriptPubKey.asmBytes))
-    unsignedWtxSigComponent = createUnsignedWtxSigComponent(witScriptPubKey,amount,unsignedScriptWitness)
-    createdSig = TransactionSignatureCreator.createSig(unsignedWtxSigComponent,privKeys,HashType.sigHashAll)
+    unsignedWTxSigComponent = createUnsignedWtxSigComponent(witScriptPubKey,amount,unsignedScriptWitness)
+    createdSig = TransactionSignatureCreator.createSig(unsignedWTxSigComponent,privKeys,HashType.sigHashAll)
     signedScriptWitness = ScriptWitness(scriptPubKey.asmBytes +: Seq(privKeys.publicKey.bytes, createdSig.bytes))
-    (signedSpendingTx,witness) = createSignedTx(signedScriptWitness, unsignedWtxSigComponent.transaction)
-    signedWtxSigComponent = WitnessV0TransactionSignatureComponent(signedSpendingTx,unsignedWtxSigComponent.inputIndex,
-      witScriptPubKey,unsignedWtxSigComponent.flags,amount)
+    (witness,signedWtxSigComponent) = createSignedWTxComponent(signedScriptWitness,unsignedWTxSigComponent)
   } yield (witness,signedWtxSigComponent,Seq(privKeys))
 
 
@@ -105,9 +100,7 @@ trait WitnessGenerators extends BitcoinSLogger {
     signedScriptSig = multiSigScriptSigGenHelper(privKeys,scriptPubKey.requiredSigs.toInt,scriptPubKey,unsignedWTxSigComponent)
     signedScriptSigPushOpsRemoved = BitcoinScriptUtil.filterPushOps(signedScriptSig.asm).tail.reverse
     signedScriptWitness = ScriptWitness(scriptPubKey.asm.flatMap(_.bytes) +: (signedScriptSigPushOpsRemoved.map(_.bytes) ++ Seq(Nil)))
-    (signedSpendingTx,witness) = createSignedTx(signedScriptWitness,unsignedWTxSigComponent.transaction)
-    signedWtxSigComponent = WitnessV0TransactionSignatureComponent(signedSpendingTx,unsignedWTxSigComponent.inputIndex,
-      witScriptPubKey,unsignedWTxSigComponent.flags,amount)
+    (witness,signedWtxSigComponent) = createSignedWTxComponent(signedScriptWitness,unsignedWTxSigComponent)
   } yield (witness,signedWtxSigComponent,privKeys)
 
   /** Generates a random signed [[TransactionWitness]] with the corresponding [[WitnessV0TransactionSignatureComponent]]
@@ -118,12 +111,15 @@ trait WitnessGenerators extends BitcoinSLogger {
   }
 
   /** Takes a signed [[ScriptWitness]] and an unsignedTx and adds the witness to the unsigned [[WitnessTransaction]] */
-  private def createSignedTx(witness: ScriptWitness, unsignedSpendingTx: WitnessTransaction): (WitnessTransaction,TransactionWitness) = {
+  private def createSignedWTxComponent(witness: ScriptWitness, unsignedWTxComponent: WitnessV0TransactionSignatureComponent): (TransactionWitness,WitnessV0TransactionSignatureComponent) = {
     val signedInputWitness = TransactionInputWitness(witness)
     val signedTxWitness = TransactionWitness(Seq(signedInputWitness))
+    val unsignedSpendingTx = unsignedWTxComponent.transaction
     val signedSpendingTx = WitnessTransaction(unsignedSpendingTx.version,unsignedSpendingTx.inputs,unsignedSpendingTx.outputs,
       unsignedSpendingTx.lockTime, signedTxWitness)
-    (signedSpendingTx,signedTxWitness)
+    val signedWtxSigComponent = WitnessV0TransactionSignatureComponent(signedSpendingTx,unsignedWTxComponent.inputIndex,
+      unsignedWTxComponent.scriptPubKey,unsignedWTxComponent.flags,unsignedWTxComponent.amount)
+    (signedTxWitness, signedWtxSigComponent)
   }
 
   /** Creates a unsigned [[WitnessV0TransactionSignatureComponent]] from the given parameters */

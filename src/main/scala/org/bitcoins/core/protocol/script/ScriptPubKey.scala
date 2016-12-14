@@ -538,16 +538,19 @@ sealed trait WitnessScriptPubKeyV0 extends WitnessScriptPubKey {
   override def witnessProgram: Seq[ScriptToken] = asm.tail.tail
 }
 
-object WitnessScriptPubKeyV0 {
+object WitnessScriptPubKeyV0 extends ScriptFactory[WitnessScriptPubKeyV0] {
   private case class WitnessScriptPubKeyV0Impl(hex: String) extends WitnessScriptPubKeyV0
 
-
-  def apply(asm: Seq[ScriptToken]): WitnessScriptPubKeyV0 = {
-    require(isWitnessScriptPubKeyV0(asm), "Given asm was not a WitnessScriptPubKeyV0, got: " + asm)
-    val asmHex = asm.map(_.hex).mkString
-    val compactSizeUInt = CompactSizeUInt.calculateCompactSizeUInt(asmHex)
-    WitnessScriptPubKeyV0Impl(compactSizeUInt.hex + asmHex)
+  override def fromBytes(bytes: Seq[Byte]): WitnessScriptPubKeyV0 = {
+    val asm = RawScriptPubKeyParser.read(bytes).asm
+    WitnessScriptPubKeyV0(asm)
   }
+
+  def fromAsm(asm: Seq[ScriptToken]): WitnessScriptPubKeyV0 = {
+    buildScript(asm,WitnessScriptPubKeyV0Impl(_),isWitnessScriptPubKeyV0(_), "Given asm was not a WitnessScriptPubKeyV0, got: " + asm )
+  }
+
+  def apply(asm: Seq[ScriptToken]): WitnessScriptPubKeyV0 = fromAsm(asm)
 
   /** Creates a P2WPKH witness script pubkey */
   def apply(pubKey: ECPublicKey): WitnessScriptPubKeyV0 = build(pubKey.bytes, CryptoUtil.sha256Hash160 _)
@@ -579,14 +582,17 @@ sealed trait UnassignedWitnessScriptPubKey extends WitnessScriptPubKey {
   override def witnessProgram: Seq[ScriptToken] = asm.tail.tail
 }
 
-object UnassignedWitnessScriptPubKey {
+object UnassignedWitnessScriptPubKey extends ScriptFactory[UnassignedWitnessScriptPubKey] {
   private case class UnassignedWitnessScriptPubKeyImpl(hex: String) extends UnassignedWitnessScriptPubKey
 
-  def apply(asm: Seq[ScriptToken]): UnassignedWitnessScriptPubKey = {
-    require(WitnessScriptPubKey.isWitnessScriptPubKey(asm) && !WitnessScriptPubKeyV0.isWitnessScriptPubKeyV0(asm),
-      "Given asm was not a valid witness script pubkey: " + asm)
-    val asmHex = asm.map(_.hex).mkString
-    val compactSizeUInt = CompactSizeUInt.calculateCompactSizeUInt(asmHex)
-    UnassignedWitnessScriptPubKeyImpl(compactSizeUInt.hex ++ asmHex)
+  override def fromBytes(bytes: Seq[Byte]): UnassignedWitnessScriptPubKey = {
+    val asm = RawScriptPubKeyParser.read(bytes).asm
+    UnassignedWitnessScriptPubKey(asm)
   }
+
+  override def fromAsm(asm: Seq[ScriptToken]): UnassignedWitnessScriptPubKey = {
+    buildScript(asm, UnassignedWitnessScriptPubKeyImpl(_), WitnessScriptPubKey.isWitnessScriptPubKey(_),
+      "Given asm was not a valid witness script pubkey: " + asm)
+  }
+  def apply(asm: Seq[ScriptToken]): UnassignedWitnessScriptPubKey = fromAsm(asm)
 }

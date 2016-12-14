@@ -36,13 +36,14 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
     logger.debug("Serializing for signature")
     logger.debug("Script: " + script)
     // Clear input scripts in preparation for signing. If we're signing a fresh
-    // transaction that step isn't very helpful, but it doesn't add much cost relative to the actual
-    // EC math so we'll do it anyway.
+    // CScript's inside the Bitcoin Core codebase retain their compactSizeUInt
+    // while clearing out all of the actual asm operations in the CScript
     val inputSigsRemoved = for {
       input <- spendingTransaction.inputs
       s = input.scriptSignature
     } yield TransactionInput(input,NonStandardScriptSignature(s.compactSizeUInt.hex))
 
+    //make sure all scriptSigs have empty asm
     inputSigsRemoved.map(input =>
       require(input.scriptSignature.asm.isEmpty,"Input asm was not empty " + input.scriptSignature.asm))
 
@@ -157,7 +158,10 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
   }
 
 
-
+  /** Implements the new serialization algorithm defined in BIP141
+    * [[https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki]]
+    * [[https://github.com/bitcoin/bitcoin/blob/f8528134fc188abc5c7175a19680206964a8fade/src/script/interpreter.cpp#L1113]]
+    */
   def serializeForSignature(spendingTx: WitnessTransaction, inputIndex: UInt32, script: Seq[ScriptToken], hashType: HashType,
                             amount: CurrencyUnit): Seq[Byte] = {
     val isNotAnyoneCanPay = !HashType.isAnyoneCanPay(hashType)
@@ -191,7 +195,8 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
     logger.debug("outputHash: " + outputHash.map(BitcoinSUtil.encodeHex(_)))
     logger.debug("Script: " + script)
     val scriptBytes = script.flatMap(_.bytes)
-    val fe: Seq[Byte] => Seq[Byte] = { bytes: Seq[Byte] => BitcoinSUtil.decodeHex(BitcoinSUtil.flipEndianness(bytes)) }
+    //helper function to flip endianness
+    val fe: Seq[Byte] => Seq[Byte] = {bytes: Seq[Byte] => BitcoinSUtil.decodeHex(BitcoinSUtil.flipEndianness(bytes)) }
 
     val serializationForSig: Seq[Byte] = fe(spendingTx.version.bytes) ++ outPointHash.getOrElse(Nil) ++ sequenceHash.getOrElse(Nil) ++
       spendingTx.inputs(inputIndexInt).previousOutput.bytes ++ CompactSizeUInt.calculateCompactSizeUInt(scriptBytes).bytes ++

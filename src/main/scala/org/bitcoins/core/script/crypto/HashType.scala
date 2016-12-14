@@ -60,9 +60,9 @@ object HashType extends Factory[HashType] {
 
   /** Checks if the given hash type has the ANYONECANPAY bit set */
   def isAnyoneCanPay(hashType: HashType): Boolean = hashType match {
-    case x @ (_ : SIGHASH_ANYONECANPAY | _: SIGHASH_ALL_ANYONECANPAY | _: SIGHASH_SINGLE_ANYONECANPAY |
-              _: SIGHASH_NONE_ANYONECANPAY) => true
-    case x @ ( _ : SIGHASH_ALL | _: SIGHASH_SINGLE | _: SIGHASH_NONE) => false
+    case _ : SIGHASH_ANYONECANPAY | _: SIGHASH_ALL_ANYONECANPAY | _: SIGHASH_SINGLE_ANYONECANPAY |
+              _: SIGHASH_NONE_ANYONECANPAY => true
+    case _ : SIGHASH_ALL | _: SIGHASH_SINGLE | _: SIGHASH_NONE => false
   }
 
   lazy val hashTypes = Seq(sigHashAll, sigHashNone, sigHashSingle, sigHashAnyoneCanPay,

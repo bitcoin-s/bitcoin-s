@@ -9,6 +9,7 @@ import org.bitcoins.core.util.Factory
   */
 trait ScriptFactory[T] extends Factory[T] {
 
+  /** Builds a script from the given asm with the given constructor if the invariant holds true, else throws an error */
   def buildScript(asm: Seq[ScriptToken], constructor: String => T, invariant: Seq[ScriptToken] => Boolean, errorMsg: String): T = {
     if (invariant(asm)) {
       val asmHex = asm.map(_.hex).mkString

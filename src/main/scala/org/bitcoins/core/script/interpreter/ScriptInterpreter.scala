@@ -81,7 +81,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
     }
     logger.debug("Executed Script Program: " + executedProgram)
     if (executedProgram.error.isDefined) executedProgram.error.get
-    else if (checkUnexpectedWitness(program)) {
+    else if (hasUnexpectedWitness(program)) {
       //note: the 'program' value we pass above is intetional, we need to check the original program
       //as the 'executedProgram' may have had the scriptPubKey value changed to the rebuilt ScriptPubKey of the witness program
       ScriptErrorWitnessUnexpected
@@ -186,17 +186,16 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
         val scriptSig = scriptPubKeyExecutedProgram.txSignatureComponent.scriptSignature
         val (witnessVersion,witnessProgram) = (witnessScriptPubKey.witnessVersion, witnessScriptPubKey.witnessProgram)
         val witness = w.witness
-        if (w.scriptPubKey.isInstanceOf[P2SHScriptPubKey])  {
-          //P2SH(P2WSH) in BIP141
-          verifyWitnessProgram(witnessVersion,witness,witnessProgram,w)
-        }
-        else if (scriptSig.asm.nonEmpty) ScriptProgram(scriptPubKeyExecutedProgram,ScriptErrorWitnessMalleated)
+        //scriptsig must be empty if we have raw p2wsh
+        //if script pubkey is a P2SHScriptPubKey then we have P2SH(P2WSH)
+        if (scriptSig.asm.nonEmpty && !w.scriptPubKey.isInstanceOf[P2SHScriptPubKey]) ScriptProgram(scriptPubKeyExecutedProgram,ScriptErrorWitnessMalleated)
         else verifyWitnessProgram(witnessVersion, witness, witnessProgram, w)
     }
 
   }
 
-
+  /** Verifies a segregated witness program by running it through the interpreter
+    * [[https://github.com/bitcoin/bitcoin/blob/f8528134fc188abc5c7175a19680206964a8fade/src/script/interpreter.cpp#L1302]]*/
   private def verifyWitnessProgram(witnessVersion: WitnessVersion, scriptWitness: ScriptWitness, witnessProgram: Seq[ScriptToken],
                                    witnessTxSigComponent: WitnessV0TransactionSignatureComponent): ExecutedScriptProgram = witnessVersion match {
     case WitnessVersion0 =>
@@ -209,8 +208,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
           val evaluated = loop(newProgram,0)
           logger.info("Stack after evaluating witness: " + evaluated.stack)
           if (evaluated.error.isDefined) evaluated
-          else if (evaluated.stack.size != 1) ScriptProgram(evaluated,ScriptErrorEvalFalse)
-          else if (evaluated.stackTopIsFalse) ScriptProgram(evaluated,ScriptErrorEvalFalse)
+          else if (evaluated.stack.size != 1 || evaluated.stackTopIsFalse) ScriptProgram(evaluated,ScriptErrorEvalFalse)
           else evaluated
         case Right(err) =>
           val program = ScriptProgram.toExecutionInProgress(ScriptProgram(witnessTxSigComponent))
@@ -485,7 +483,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
     * [[https://github.com/bitcoin/bitcoin/blob/528472111b4965b1a99c4bcf08ac5ec93d87f10f/src/script/interpreter.cpp#L1515-L1523]]
     * Return true if witness was NOT used, return false if witness was used
     * */
-  private def checkUnexpectedWitness(program: ScriptProgram): Boolean =  {
+  private def hasUnexpectedWitness(program: ScriptProgram): Boolean =  {
     val txSigComponent = program.txSignatureComponent
     txSigComponent match {
       case b : BaseTransactionSignatureComponent =>
@@ -497,11 +495,11 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
           case _ : P2SHScriptPubKey => txSigComponent.scriptSignature match {
             case p2shScriptSig: P2SHScriptSignature =>
               p2shScriptSig.redeemScript.isInstanceOf[WitnessScriptPubKey]
-            case _ @ (_ : CLTVScriptSignature | _ : CSVScriptSignature| _ : MultiSignatureScriptSignature| _ : NonStandardScriptSignature |
-                      _ : P2PKScriptSignature| _ : P2PKHScriptSignature | EmptyScriptSignature) => false
+            case _ : CLTVScriptSignature | _ : CSVScriptSignature| _ : MultiSignatureScriptSignature| _ : NonStandardScriptSignature |
+                      _ : P2PKScriptSignature| _ : P2PKHScriptSignature | EmptyScriptSignature => false
           }
-          case _ @ (_ : CLTVScriptPubKey | _ : CSVScriptPubKey | _ : MultiSignatureScriptPubKey | _ : NonStandardScriptPubKey |
-            _ : P2PKScriptPubKey | _ : P2PKHScriptPubKey | EmptyScriptPubKey) => false
+          case _ : CLTVScriptPubKey | _ : CSVScriptPubKey | _ : MultiSignatureScriptPubKey | _ : NonStandardScriptPubKey |
+            _ : P2PKScriptPubKey | _ : P2PKHScriptPubKey | EmptyScriptPubKey => false
         }
         !witnessedUsed
     }
