@@ -93,6 +93,18 @@ trait ScriptFlagUtil {
     */
   def requireNullDummy(flags : Seq[ScriptFlag]) : Boolean = flags.contains(ScriptVerifyNullDummy)
 
+  /** Checks to see if we have segwit enabled */
+  def segWitEnabled(flags: Seq[ScriptFlag]): Boolean = flags.contains(ScriptVerifyWitness)
+
+  def discourageUpgradableWitnessProgram(flags: Seq[ScriptFlag]): Boolean = flags.contains(ScriptVerifyDiscourageUpgradableWitnessProgram)
+
+  def requireScriptVerifyNullFail(flags: Seq[ScriptFlag]): Boolean = flags.contains(ScriptVerifyNullFail)
+
+  def requireScriptVerifyWitnessPubKeyType(flags: Seq[ScriptFlag]): Boolean = flags.contains(ScriptVerifyWitnessPubKeyType)
+
+  /** Requires that the argument to OP_IF/OP_NOTIF be minimally encoded
+    * See: https://lists.linuxfoundation.org/pipermail/bitcoin-dev/2016-August/013014.html */
+  def minimalIfEnabled(flags: Seq[ScriptFlag]): Boolean = flags.contains(ScriptVerifyMinimalIf)
 }
 
 

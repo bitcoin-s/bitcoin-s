@@ -25,9 +25,6 @@ trait LockTimeInterpreter extends BitcoinSLogger {
    * or vice versa; or
    * 4. the input's nSequence field is equal to 0xffffffff.
    * The precise semantics are described in BIP 0065
- *
-   * @param program
-   * @return
    */
   @tailrec
   final def opCheckLockTimeVerify(program : ScriptProgram) : ScriptProgram = {
@@ -81,9 +78,6 @@ trait LockTimeInterpreter extends BitcoinSLogger {
     * Otherwise, script execution will continue as if a NOP had been executed.
     * See BIP112 for more information
     * https://github.com/bitcoin/bips/blob/master/bip-0112.mediawiki
- *
-    * @param program
-    * @return
     */
   @tailrec
   final def opCheckSequenceVerify(program : ScriptProgram) : ScriptProgram = {

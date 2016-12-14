@@ -1,8 +1,5 @@
 package org.bitcoins.core.protocol.transaction
 
-import org.bitcoins.core.serializers.transaction.{RawTransactionParser, RawTransactionInputParser}
-import org.bitcoins.core.util.Factory
-
 /**
  * Created by chris on 2/21/16.
  */
