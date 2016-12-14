@@ -1,12 +1,15 @@
 package org.bitcoins.core.crypto
 
+import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.constant.ScriptToken
 import org.bitcoins.core.script.crypto._
 import org.bitcoins.core.serializers.RawBitcoinSerializerHelper
-import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil, CryptoUtil}
+import org.bitcoins.core.serializers.transaction.RawTransactionOutputParser
+import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil, BitcoinScriptUtil, CryptoUtil}
 
 /**
  * Created by chris on 2/16/16.
@@ -21,31 +24,28 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
   /**
    * Bitcoin Core's bug is that SignatureHash was supposed to return a hash and on this codepath it
    * actually returns the constant "1" to indicate an error
-   * @return
    */
   private def errorHash : DoubleSha256Digest = DoubleSha256Digest(BitcoinSUtil.decodeHex("0100000000000000000000000000000000000000000000000000000000000000"))
 
   /**
    * Serializes a transaction to be signed by an ECKey
-   * follows the bitcoinj implementation which can be found here
-   * hashing is done in the hashForSignature function
-   * @param inputIndex
-   * @param script
-   * @param hashType
-   * @return
+   * follows the bitcoinj implementation
+   * hashing is done in the [[hashForSignature]] function
    */
   def serializeForSignature(spendingTransaction : Transaction, inputIndex : UInt32, script : Seq[ScriptToken], hashType : HashType) : Seq[Byte] = {
     logger.debug("Serializing for signature")
     logger.debug("Script: " + script)
     // Clear input scripts in preparation for signing. If we're signing a fresh
-    // transaction that step isn't very helpful, but it doesn't add much cost relative to the actual
-    // EC math so we'll do it anyway.
+    // CScript's inside the Bitcoin Core codebase retain their compactSizeUInt
+    // while clearing out all of the actual asm operations in the CScript
     val inputSigsRemoved = for {
       input <- spendingTransaction.inputs
-    } yield TransactionInput(input,ScriptSignature.empty)
+      s = input.scriptSignature
+    } yield TransactionInput(input,NonStandardScriptSignature(s.compactSizeUInt.hex))
 
+    //make sure all scriptSigs have empty asm
     inputSigsRemoved.map(input =>
-      require(input.scriptSignature.bytes.size == 0,"Input byte size was " + input.scriptSignature.bytes))
+      require(input.scriptSignature.asm.isEmpty,"Input asm was not empty " + input.scriptSignature.asm))
 
     // This step has no purpose beyond being synchronized with Bitcoin Core's bugs. OP_CODESEPARATOR
     // is a legacy holdover from a previous, broken design of executing scripts that shipped in Bitcoin 0.1.
@@ -80,11 +80,11 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
     val sigHashBytes = hashType.num.bytes.reverse
     //check the hash type
     hashType match {
-      case _ : SIGHASH_NONE =>
+      case _: SIGHASH_NONE =>
         val sigHashNoneTx : Transaction = sigHashNone(txWithInputSigsRemoved,inputIndex)
         sigHashNoneTx.bytes ++ sigHashBytes
 
-      case _ : SIGHASH_SINGLE =>
+      case _: SIGHASH_SINGLE =>
         if (inputIndex >= UInt32(spendingTransaction.outputs.size)) {
           // comment copied from bitcoinj
           // The input index is beyond the number of outputs, it's a buggy signature made by a broken
@@ -101,30 +101,32 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
           sigHashSingleTx.bytes ++ sigHashBytes
         }
 
-      case _ : SIGHASH_ALL =>
+      case _: SIGHASH_ALL =>
         val sigHashAllTx : Transaction = sigHashAll(txWithInputSigsRemoved,inputIndex)
         sigHashAllTx.bytes ++ sigHashBytes
 
-      case _ : SIGHASH_ANYONECANPAY =>
+      case _: SIGHASH_ANYONECANPAY =>
         val txWithInputsRemoved = sigHashAnyoneCanPay(txWithInputSigsRemoved,inputWithConnectedScript)
         txWithInputsRemoved.bytes ++ sigHashBytes
 
-      case _ : SIGHASH_ALL_ANYONECANPAY =>
+      case _: SIGHASH_ALL_ANYONECANPAY =>
         val sigHashAllTx = sigHashAll(txWithInputSigsRemoved,inputIndex)
         val sigHashAllAnyoneCanPayTx = sigHashAnyoneCanPay(sigHashAllTx,inputWithConnectedScript)
         sigHashAllAnyoneCanPayTx.bytes ++ sigHashBytes
 
-      case _ : SIGHASH_NONE_ANYONECANPAY =>
+      case _: SIGHASH_NONE_ANYONECANPAY =>
         val sigHashNoneTx = sigHashNone(txWithInputSigsRemoved,inputIndex)
         val sigHashNoneAnyoneCanPay = sigHashAnyoneCanPay(sigHashNoneTx,inputWithConnectedScript)
         sigHashNoneAnyoneCanPay.bytes ++ sigHashBytes
 
-      case _ : SIGHASH_SINGLE_ANYONECANPAY =>
+      case _: SIGHASH_SINGLE_ANYONECANPAY =>
         val sigHashSingleTx = sigHashSingle(txWithInputSigsRemoved,inputIndex)
         val sigHashSingleAnyoneCanPay = sigHashAnyoneCanPay(sigHashSingleTx,inputWithConnectedScript)
         sigHashSingleAnyoneCanPay.bytes  ++ sigHashBytes
     }
   }
+
+
 
 
   /**
@@ -137,7 +139,8 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
     * @param hashType the hash type we are serializing this tx for
     * @return
     */
-  def hashForSignature(spendingTransaction : Transaction, inputIndex : UInt32, script : Seq[ScriptToken], hashType : HashType) : DoubleSha256Digest = {
+  def hashForSignature(spendingTransaction : Transaction, inputIndex : UInt32, script : Seq[ScriptToken],
+                       hashType : HashType) : DoubleSha256Digest = {
     //these first two checks are in accordance with behavior in bitcoin core
     //https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L1112-L1123
     if (inputIndex >= UInt32(spendingTransaction.inputs.size)) {
@@ -154,15 +157,79 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
     }
   }
 
+
+  /** Implements the new serialization algorithm defined in BIP141
+    * [[https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki]]
+    * [[https://github.com/bitcoin/bitcoin/blob/f8528134fc188abc5c7175a19680206964a8fade/src/script/interpreter.cpp#L1113]]
+    */
+  def serializeForSignature(spendingTx: WitnessTransaction, inputIndex: UInt32, script: Seq[ScriptToken], hashType: HashType,
+                            amount: CurrencyUnit): Seq[Byte] = {
+    val isNotAnyoneCanPay = !HashType.isAnyoneCanPay(hashType)
+    val isNotSigHashSingle = !(hashType.isInstanceOf[SIGHASH_SINGLE])
+    val isNotSigHashNone = !(hashType.isInstanceOf[SIGHASH_NONE])
+    val inputIndexInt = inputIndex.toInt
+    val outPointHash: Option[Seq[Byte]] = if (isNotAnyoneCanPay) {
+      val bytes: Seq[Byte] = spendingTx.inputs.flatMap(_.previousOutput.bytes)
+      Some(CryptoUtil.doubleSHA256(bytes).bytes)
+    } else None
+
+    logger.debug("outPointHash: " + outPointHash.map(BitcoinSUtil.encodeHex(_)))
+    val sequenceHash: Option[Seq[Byte]] = if (isNotAnyoneCanPay && isNotSigHashNone && isNotSigHashSingle) {
+      val bytes = spendingTx.inputs.flatMap(_.sequence.bytes)
+      Some(CryptoUtil.doubleSHA256(bytes).bytes)
+    } else None
+
+    logger.debug("sequenceHash: " + sequenceHash.map(BitcoinSUtil.encodeHex(_)))
+    val outputHash: Option[Seq[Byte]] = if (isNotSigHashSingle && isNotSigHashNone) {
+      logger.debug("Not SIGHASH_SINGLE & Not SIGHASH_NONE")
+      //val bytes = spendingTx.outputs.flatMap(_.bytes)
+      val bytes = spendingTx.outputs.flatMap(o => BitcoinSUtil.decodeHex(RawTransactionOutputParser.write(o)))
+      Some(CryptoUtil.doubleSHA256(bytes).bytes)
+    } else if (hashType.isInstanceOf[SIGHASH_SINGLE] && inputIndex < UInt32(spendingTx.outputs.size)) {
+      logger.debug("SIGHASH_SINGLE and input index < outputs size")
+      val output = spendingTx.outputs(inputIndexInt)
+      val bytes = CryptoUtil.doubleSHA256(output.bytes).bytes
+      Some(bytes)
+    } else None
+
+    logger.debug("outputHash: " + outputHash.map(BitcoinSUtil.encodeHex(_)))
+    logger.debug("Script: " + script)
+    val scriptBytes = script.flatMap(_.bytes)
+    //helper function to flip endianness
+    val fe: Seq[Byte] => Seq[Byte] = {bytes: Seq[Byte] => BitcoinSUtil.decodeHex(BitcoinSUtil.flipEndianness(bytes)) }
+
+    val serializationForSig: Seq[Byte] = fe(spendingTx.version.bytes) ++ outPointHash.getOrElse(Nil) ++ sequenceHash.getOrElse(Nil) ++
+      spendingTx.inputs(inputIndexInt).previousOutput.bytes ++ CompactSizeUInt.calculateCompactSizeUInt(scriptBytes).bytes ++
+      scriptBytes ++ fe(amount.bytes) ++ fe(spendingTx.inputs(inputIndexInt).sequence.bytes) ++
+      outputHash.getOrElse(Nil) ++ fe(spendingTx.lockTime.bytes) ++ hashType.num.bytes.reverse
+    logger.info("Serialization for signature for WitnessV0Sig: " + BitcoinSUtil.encodeHex(serializationForSig))
+    serializationForSig
+  }
+
+  /** Hashing function for a [[SigVersionWitnessV0]] as specified by BIP143
+    * [[https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki]]
+    * NOTE: This covers the amount of [[CurrencyUnit]] we are spending in the output
+    * */
+  def hashForSignature(spendingTx: WitnessTransaction, inputIndex: UInt32, script: Seq[ScriptToken], hashType: HashType,
+                       amount: CurrencyUnit): DoubleSha256Digest = {
+
+    val serialization = serializeForSignature(spendingTx,inputIndex,script,hashType,amount)
+    CryptoUtil.doubleSHA256(serialization)
+  }
   /**
     * Wrapper function for hashForSignature
-    * @param txSignatureComponent this contains the transaction and inputIndex for hashForSignature
+    * @param txSigComponent this contains the transaction and inputIndex for hashForSignature
     * @param hashType
     * @return
     */
-  def hashForSignature(txSignatureComponent: TransactionSignatureComponent, hashType: HashType): DoubleSha256Digest = {
-    hashForSignature(txSignatureComponent.transaction,txSignatureComponent.inputIndex,
-      txSignatureComponent.scriptPubKey.asm,hashType)
+  def hashForSignature(txSigComponent: TransactionSignatureComponent, hashType: HashType): DoubleSha256Digest = {
+    val script = BitcoinScriptUtil.calculateScriptForSigning(txSigComponent,txSigComponent.scriptPubKey.asm)
+    txSigComponent match {
+      case t : BaseTransactionSignatureComponent =>
+        hashForSignature(t.transaction,t.inputIndex,script,hashType)
+      case t : WitnessV0TransactionSignatureComponent =>
+        hashForSignature(t.transaction,t.inputIndex, script, hashType,t.amount)
+    }
   }
 
 
@@ -173,13 +240,11 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
    * @param inputIndex
    * @return
    */
-  private def setSequenceNumbersZero(inputs : Seq[TransactionInput], inputIndex : UInt32) : Seq[TransactionInput] =  {
-    for {
-      (input,index) <- inputs.zipWithIndex
-    } yield {
-      if (UInt32(index) == inputIndex) input
-      else TransactionInput(input,UInt32.zero)
-    }
+  private def setSequenceNumbersZero(inputs : Seq[TransactionInput], inputIndex : UInt32) : Seq[TransactionInput] = for {
+    (input,index) <- inputs.zipWithIndex
+  } yield {
+    if (UInt32(index) == inputIndex) input
+    else TransactionInput(input,UInt32.zero)
   }
 
   /**
@@ -200,12 +265,7 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
     sigHashNoneTx
   }
 
-  /**
-   * Executes the SIGHASH_SINGLE procedure on a spending transaction for the input specified by inputIndex
-   * @param spendingTransaction
-   * @param inputIndex
-   * @return
-   */
+  /** Executes the SIGHASH_SINGLE procedure on a spending transaction for the input specified by inputIndex */
   private def sigHashSingle(spendingTransaction : Transaction, inputIndex : UInt32) : Transaction = {
     //following this implementation from bitcoinj
     //https://github.com/bitcoinj/bitcoinj/blob/09a2ca64d2134b0dcbb27b1a6eb17dda6087f448/core/src/main/java/org/bitcoinj/core/Transaction.java#L964

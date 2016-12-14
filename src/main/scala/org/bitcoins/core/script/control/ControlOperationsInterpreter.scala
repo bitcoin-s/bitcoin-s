@@ -1,8 +1,10 @@
 package org.bitcoins.core.script.control
 
+import org.bitcoins.core.protocol.script.SigVersionWitnessV0
 import org.bitcoins.core.script.result._
-import org.bitcoins.core.script.{ScriptProgram}
+import org.bitcoins.core.script.ScriptProgram
 import org.bitcoins.core.script.constant._
+import org.bitcoins.core.script.flag.ScriptFlagUtil
 import org.bitcoins.core.util._
 import org.slf4j.LoggerFactory
 
@@ -15,15 +17,14 @@ trait ControlOperationsInterpreter extends BitcoinSLogger {
 
 
 
-  /**
-   * If the top stack value is not 0, the statements are executed. The top stack value is removed.
- *
-   * @param program
-   * @return
-   */
+  /** If the top stack value is not 0, the statements are executed. The top stack value is removed. */
   def opIf(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.isDefined && program.script.head == OP_IF, "Script top was not OP_IF")
+    val sigVersion = program.txSignatureComponent.sigVersion
+    val flags = program.flags
+    val minimalIfEnabled = ScriptFlagUtil.minimalIfEnabled(flags)
     val binaryTree = parseBinaryTree(program.script)
+    val stackTop = program.stack.headOption
     logger.debug("Parsed binary tree: " + binaryTree)
     if (!checkMatchingOpIfOpNotIfOpEndIf(program.originalScript)) {
       logger.error("We do not have a matching OP_ENDIF for every OP_IF we have")
@@ -31,6 +32,13 @@ trait ControlOperationsInterpreter extends BitcoinSLogger {
     } else if (program.stack.isEmpty) {
       logger.error("We do not have any stack elements for our OP_IF")
       ScriptProgram(program,ScriptErrorUnbalancedConditional)
+    } else if (sigVersion == SigVersionWitnessV0 && minimalIfEnabled
+      && (stackTop.get.bytes.size > 1 ||
+      (stackTop.get.bytes.size == 1 && stackTop.get.bytes.head != 1))) {
+      //see: https://github.com/bitcoin/bitcoin/blob/528472111b4965b1a99c4bcf08ac5ec93d87f10f/src/script/interpreter.cpp#L447-L452
+      //https://lists.linuxfoundation.org/pipermail/bitcoin-dev/2016-August/013014.html
+      logger.error("OP_IF argument was not minimally encoded, got: " + stackTop)
+      ScriptProgram(program, ScriptErrorMinimalIf)
     } else if (program.stackTopIsTrue) {
       logger.debug("OP_IF stack top was true")
       logger.debug("Stack top: " + program.stack)
@@ -40,7 +48,7 @@ trait ControlOperationsInterpreter extends BitcoinSLogger {
       val newScript = newTreeWithoutOpElse.toList
       logger.debug("New script after removing OP_ELSE branch " + newScript)
       ScriptProgram(program, program.stack.tail,newScript.tail)
-    } else {
+    }  else {
       logger.debug("OP_IF stack top was false")
       //remove the OP_IF
       val scriptWithoutOpIf : BinaryTree[ScriptToken] = removeFirstOpIf(binaryTree)
@@ -50,15 +58,15 @@ trait ControlOperationsInterpreter extends BitcoinSLogger {
   }
 
 
-  /**
-   * If the top stack value is 0, the statements are executed. The top stack value is removed.
- *
-   * @param program
-   * @return
-   */
+  /** If the top stack value is 0, the statements are executed. The top stack value is removed. */
   def opNotIf(program : ScriptProgram) : ScriptProgram = {
+    //TODO: Try and reduce this down to using OP_IF by inverting the stack top
     require(program.script.headOption.isDefined && program.script.head == OP_NOTIF, "Script top was not OP_NOTIF")
     val binaryTree = parseBinaryTree(program.script)
+    val sigVersion = program.txSignatureComponent.sigVersion
+    val flags = program.flags
+    val minimalIfEnabled = ScriptFlagUtil.minimalIfEnabled(flags)
+    val stackTop = program.stack.headOption
     logger.debug("Parsed binary tree: " + binaryTree)
 
     if (!checkMatchingOpIfOpNotIfOpEndIf(program.originalScript)) {
@@ -67,6 +75,13 @@ trait ControlOperationsInterpreter extends BitcoinSLogger {
     } else if (program.stack.isEmpty) {
       logger.error("We do not have any stack elements for our OP_NOTIF")
       ScriptProgram(program,ScriptErrorUnbalancedConditional)
+    } else if (sigVersion == SigVersionWitnessV0 && minimalIfEnabled
+      && (stackTop.get.bytes.size > 1 ||
+      (stackTop.get.bytes.size == 1 && stackTop.get.bytes.head != 1))) {
+      //see: https://github.com/bitcoin/bitcoin/blob/528472111b4965b1a99c4bcf08ac5ec93d87f10f/src/script/interpreter.cpp#L447-L452
+      //https://lists.linuxfoundation.org/pipermail/bitcoin-dev/2016-August/013014.html
+      logger.error("OP_NOTIF argument was not minimally encoded, got: " + stackTop)
+      ScriptProgram(program, ScriptErrorMinimalIf)
     } else if (program.stackTopIsTrue) {
       //remove the OP_NOTIF
       val scriptWithoutOpIf : BinaryTree[ScriptToken] = removeFirstOpIf(binaryTree)
@@ -80,12 +95,7 @@ trait ControlOperationsInterpreter extends BitcoinSLogger {
     }
   }
 
-  /**
-   * Evaluates the OP_ELSE operator
- *
-   * @param program
-   * @return
-   */
+  /** Evaluates the OP_ELSE operator */
   def opElse(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.isDefined && program.script.head == OP_ELSE, "First script opt must be OP_ELSE")
 
@@ -116,12 +126,7 @@ trait ControlOperationsInterpreter extends BitcoinSLogger {
   }
 
 
-  /**
-   * Evaluates an OP_ENDIF operator
- *
-   * @param program
-   * @return
-   */
+  /** Evaluates an OP_ENDIF operator */
   def opEndIf(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.isDefined && program.script.head == OP_ENDIF, "Script top must be OP_ENDIF")
     if (!checkMatchingOpIfOpNotIfOpEndIf(program.originalScript)) {
@@ -138,7 +143,6 @@ trait ControlOperationsInterpreter extends BitcoinSLogger {
    * with a scriptPubKey consisting of OP_RETURN followed by exactly one pushdata op. Such outputs are provably unspendable,
    * reducing their cost to the network. Currently it is usually considered non-standard (though valid) for a transaction to
    * have more than one OP_RETURN output or an OP_RETURN output with more than one pushdata op.
- *
    * @param program
    * @return
    */
@@ -148,12 +152,7 @@ trait ControlOperationsInterpreter extends BitcoinSLogger {
   }
 
 
-  /**
-   * Marks transaction as invalid if top stack value is not true.
- *
-   * @param program
-   * @return
-   */
+  /** Marks transaction as invalid if top stack value is not true. */
   def opVerify(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.isDefined && program.script.head == OP_VERIFY, "Script top must be OP_VERIFY")
     program.stack.size > 0 match {
@@ -169,23 +168,13 @@ trait ControlOperationsInterpreter extends BitcoinSLogger {
   }
 
 
-  /**
-   * Parses a list of script tokens into its corresponding binary tree
- *
-   * @param script
-   * @return
-   */
+  /** Parses a list of script tokens into its corresponding binary tree */
   def parseBinaryTree(script : List[ScriptToken]) : BinaryTree[ScriptToken] = {
     val bTree = loop(script,Empty)
     bTree
   }
 
-  /**
-   * The loop that parses a list of script tokens into a binary tree
- *
-   * @param script
-   * @return
-   */
+  /** The loop that parses a list of script tokens into a binary tree */
   @tailrec
   private def loop(script : List[ScriptToken], tree : BinaryTree[ScriptToken]) : BinaryTree[ScriptToken] = {
 /*    logger.debug("Script : " + script)
@@ -217,7 +206,6 @@ trait ControlOperationsInterpreter extends BitcoinSLogger {
 
   /**
    * Inserts a sub tree into the parse tree of Script.
- *
    * @param tree the parse tree of the control flow of the Script program
    * @param subTree the parse tree that needs to be inserted into the control flow of the program
    * @return the full parse tree combined
@@ -250,12 +238,7 @@ trait ControlOperationsInterpreter extends BitcoinSLogger {
   }
 
 
-  /**
-   * Parses an OP_IF script token
- *
-   * @param script
-   * @return
-   */
+  /** Parses an OP_IF script token */
   private def parseOpIf(script : List[ScriptToken]) : (List[ScriptToken],BinaryTree[ScriptToken]) = script match {
     case OP_IF :: t  => (t, Node(OP_IF,Empty,Empty))
     case h :: t => throw new IllegalArgumentException("Cannot parse " + h + " as an OP_IF")
@@ -263,24 +246,14 @@ trait ControlOperationsInterpreter extends BitcoinSLogger {
   }
 
 
-  /**
-   * Parses an OP_NOTIF script token
- *
-   * @param script
-   * @return
-   */
+  /** Parses an OP_NOTIF script token */
   private def parseOpNotIf(script : List[ScriptToken]) : (List[ScriptToken],BinaryTree[ScriptToken]) = script match {
     case OP_NOTIF :: t =>  (t, Node(OP_NOTIF,Empty,Empty))
     case h :: t => throw new IllegalArgumentException("Cannot parse " + h + " as an OP_NOTIF")
     case Nil => (script,Empty)
   }
 
-  /**
-   * Parses and OP_ELSE expression
- *
-   * @param script
-   * @return
-   */
+  /** Parses and OP_ELSE expression */
   private def parseOpElse(script : List[ScriptToken]) : (List[ScriptToken],BinaryTree[ScriptToken]) = script match {
     case OP_ELSE :: t => (t,Node(OP_ELSE,Empty,Empty))
     case h :: t => throw new RuntimeException("Cannot parse " + h + " as an OP_ELSE")
@@ -294,12 +267,7 @@ trait ControlOperationsInterpreter extends BitcoinSLogger {
   }
 
 
-  /**
-   * Checks if an OP_IF/OP_NOTIF script token has a matching OP_ENDIF
- *
-   * @param script
-   * @return
-   */
+  /** Checks if an [[OP_IF]]/[[OP_NOTIF]] script token has a matching [[OP_ENDIF]] */
   def checkMatchingOpIfOpNotIfOpEndIf(script : List[ScriptToken]) : Boolean = {
     @tailrec
     def loop(script : List[ScriptToken], counter : Int) : Boolean = script match {
@@ -315,12 +283,7 @@ trait ControlOperationsInterpreter extends BitcoinSLogger {
 
 
 
-  /**
-   * Returns the first index of an OP_ENDIF
- *
-   * @param script
-   * @return
-   */
+  /** Returns the first index of an OP_ENDIF */
   def findFirstOpEndIf(script : List[ScriptToken]) : Option[Int] = {
     val index = script.indexOf(OP_ENDIF)
     index match {
@@ -330,24 +293,14 @@ trait ControlOperationsInterpreter extends BitcoinSLogger {
   }
 
 
-  /**
-   * Finds the last OP_ENDIF in the given script
- *
-   * @param script
-   * @return
-   */
+  /** Finds the last OP_ENDIF in the given script */
   def findLastOpEndIf(script : List[ScriptToken]) : Option[Int] = {
     val lastOpEndIf = findFirstOpEndIf(script.reverse)
     if (lastOpEndIf.isDefined) Some(script.size - lastOpEndIf.get - 1)
     else None
   }
 
-  /**
-   * Returns the first index of an OP_ENDIF
- *
-   * @param script
-   * @return
-   */
+  /** Returns the first index of an OP_ENDIF */
   def findFirstOpElse(script : List[ScriptToken]) : Option[Int] = {
     val index = script.indexOf(OP_ELSE)
     index match {
@@ -356,12 +309,7 @@ trait ControlOperationsInterpreter extends BitcoinSLogger {
     }
   }
 
-  /**
-   * Removes the first OP_ELSE expression encountered in the script
- *
-   * @param script
-   * @return
-   */
+  /** Removes the first OP_ELSE expression encountered in the script */
   def removeFirstOpElse(script : List[ScriptToken]) : List[ScriptToken] = {
     if (script.contains(OP_ELSE)) {
       val firstOpElseIndex = findFirstOpElse(script)
@@ -377,12 +325,7 @@ trait ControlOperationsInterpreter extends BitcoinSLogger {
   }
 
 
-  /**
-   * Removes the first OP_ELSE {expression} in a binary tree
- *
-   * @param tree
-   * @return
-   */
+  /** Removes the first OP_ELSE {expression} in a binary tree */
   def removeFirstOpElse(tree : BinaryTree[ScriptToken]) : BinaryTree[ScriptToken] = {
     tree match {
       case Empty => Empty
@@ -413,12 +356,7 @@ trait ControlOperationsInterpreter extends BitcoinSLogger {
 
   }
 
-  /**
-   * Removes the first OP_IF { expression } encountered in the script
- *
-   * @param script
-   * @return
-   */
+  /** Removes the first OP_IF { expression } encountered in the script */
   def removeFirstOpIf(script : List[ScriptToken]) : List[ScriptToken] = {
     val firstOpIfIndex = script.indexOf(OP_IF)
     val matchingOpEndIfIndex = findMatchingOpEndIf(script)
@@ -437,24 +375,14 @@ trait ControlOperationsInterpreter extends BitcoinSLogger {
 
   }
 
-  /**
-   * Removes the first occurrence of OP_IF or OP_NOTIF in the binary tree
- *
-   * @param tree
-   * @return
-   */
+  /** Removes the first occurrence of OP_IF or OP_NOTIF in the binary tree */
   def removeFirstOpIf(tree : BinaryTree[ScriptToken]) : BinaryTree[ScriptToken] = {
     require(tree.value.isDefined && (tree.value.get == OP_IF || tree.value.get == OP_NOTIF) , "Top of the tree must be OP_IF or OP_NOTIF to remove the OP_IF or OP_NOTIF")
     if (tree.right.isDefined && tree.right.get.value == Some(OP_ELSE)) tree.right.getOrElse(Empty)
     else tree.findFirstDFS[ScriptToken](OP_ENDIF)().getOrElse(Empty)
   }
 
-  /**
-   * Finds the indexes of our OP_ELSE (if it exists) and our OP_ENDIF
- *
-   * @param script
-   * @return
-   */
+  /** Finds the indexes of our OP_ELSE (if it exists) and our OP_ENDIF */
   def findFirstIndexesOpElseOpEndIf(script : List[ScriptToken]) : (Option[Int],Option[Int]) = {
     val indexOpElse = findFirstOpElse(script)
     val indexOpEndIf = findFirstOpEndIf(script)
@@ -462,12 +390,7 @@ trait ControlOperationsInterpreter extends BitcoinSLogger {
   }
 
 
-   /**
-   * Returns the index of the matching OP_ENDIF for the OP_IF statement
- *
-   * @param script
-   * @return
-   */
+   /** Returns the index of the matching OP_ENDIF for the OP_IF statement */
   def findMatchingOpEndIf(script : List[ScriptToken]) : Int = {
     val matchingOpEndIfIndex = findLastOpEndIf(script)
     require(matchingOpEndIfIndex.isDefined, "Every OP_IF must have a matching OP_ENDIF: " + script)

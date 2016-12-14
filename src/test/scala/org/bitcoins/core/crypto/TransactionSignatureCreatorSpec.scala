@@ -36,9 +36,7 @@ class TransactionSignatureCreatorSpec extends Properties("TransactionSignatureCr
       case (txSignatureComponent: TransactionSignatureComponent, _)  =>
         //run it through the interpreter
         val program = ScriptProgram(txSignatureComponent)
-
         val result = ScriptInterpreter.run(program)
-
         result == ScriptOk
   }
 
@@ -93,5 +91,50 @@ class TransactionSignatureCreatorSpec extends Properties("TransactionSignatureCr
         val result = ScriptInterpreter.run(program)
         Seq(ScriptErrorUnsatisfiedLocktime, ScriptErrorPushSize).contains(result)
 
+    }
+
+  property("generate a valid signature for a p2wpkh witness transaction") =
+    Prop.forAllNoShrink(TransactionGenerators.signedP2WPKHTransaction) { case (wtxSigComponent, privKeys) =>
+        val program = ScriptProgram(wtxSigComponent)
+        val result = ScriptInterpreter.run(program)
+        result == ScriptOk
+    }
+
+  property("generate a valid signature for a p2wsh(p2pk) witness transaction") =
+    Prop.forAllNoShrink(TransactionGenerators.signedP2WSHP2PKTransaction) { case (wtxSigComponent, privKeys) =>
+      val program = ScriptProgram(wtxSigComponent)
+      val result = ScriptInterpreter.run(program)
+      result == ScriptOk
+    }
+
+  property("generate a valid signature for a p2wsh(p2pkh) witness transaction") =
+    Prop.forAllNoShrink(TransactionGenerators.signedP2WSHP2PKHTransaction) { case (wtxSigComponent, privKeys) =>
+      val program = ScriptProgram(wtxSigComponent)
+      val result = ScriptInterpreter.run(program)
+      result == ScriptOk
+    }
+
+  property("generate a valid signature for a p2wsh(multisig) witness transaction") =
+    Prop.forAllNoShrink(TransactionGenerators.signedP2WSHMultiSigTransaction) { case (wtxSigComponent, privKeys) =>
+      val program = ScriptProgram(wtxSigComponent)
+      val result = ScriptInterpreter.run(program)
+      if (result != ScriptOk) logger.warn("Result: " + result)
+      result == ScriptOk
+    }
+
+  property("generate a valid signature from a p2sh(p2wpkh) witness transaction") =
+    Prop.forAllNoShrink(TransactionGenerators.signedP2SHP2WPKHTransaction) { case (wtxSigComponent, privKeys) =>
+      val program = ScriptProgram(wtxSigComponent)
+      val result = ScriptInterpreter.run(program)
+      if (result != ScriptOk) logger.warn("Result: " + result)
+      result == ScriptOk
+    }
+
+  property("generate a valid signature from a p2sh(p2wsh) witness tranasction") =
+    Prop.forAllNoShrink(TransactionGenerators.signedP2SHP2WSHTransaction) { case (wtxSigComponent, privKeys) =>
+      val program = ScriptProgram(wtxSigComponent)
+      val result = ScriptInterpreter.run(program)
+      if (result != ScriptOk) logger.warn("Result: " + result)
+      result == ScriptOk
     }
 }
