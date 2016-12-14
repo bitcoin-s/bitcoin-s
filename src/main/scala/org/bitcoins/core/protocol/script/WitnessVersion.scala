@@ -8,6 +8,8 @@ import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil, CryptoUtil}
 
 /**
   * Created by chris on 11/10/16.
+  * The version of the [[WitnessScriptPubKey]], this indicates how a [[ScriptWitness]] is rebuilt
+  * [[https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki#witness-program]]
   */
 sealed trait WitnessVersion extends BitcoinSLogger {
   /** Rebuilds the full script from the given witness and [[ScriptPubKey]]
@@ -18,6 +20,7 @@ sealed trait WitnessVersion extends BitcoinSLogger {
 
 case object WitnessVersion0 extends WitnessVersion {
 
+  /** Rebuilds a witness version 0 program, see BIP141 */
   override def rebuild(scriptWitness: ScriptWitness, witnessProgram: Seq[ScriptToken]): Either[(Seq[ScriptToken], ScriptPubKey),ScriptError] = {
     val programBytes = witnessProgram.flatMap(_.bytes)
     programBytes.size match {

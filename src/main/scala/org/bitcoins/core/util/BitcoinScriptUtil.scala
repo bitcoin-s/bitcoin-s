@@ -323,8 +323,8 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
           logger.info("Redeem script: " + s.redeemScript)
           val sigsRemoved = removeSignaturesFromScript(s.signatures,s.redeemScript.asm)
           sigsRemoved
-        case x @ (_ : P2PKHScriptSignature | _ : P2PKScriptSignature | _ : NonStandardScriptSignature
-                  | _ : MultiSignatureScriptSignature | _ : CLTVScriptSignature | _ : CSVScriptSignature | EmptyScriptSignature) =>
+        case _ : P2PKHScriptSignature | _ : P2PKScriptSignature | _ : NonStandardScriptSignature
+                  | _ : MultiSignatureScriptSignature | _ : CLTVScriptSignature | _ : CSVScriptSignature | EmptyScriptSignature =>
           script
       }
     case wtxSigComponent : WitnessV0TransactionSignatureComponent =>
@@ -340,10 +340,9 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
               //rebuild scriptPubKey asm
               val scriptEither: Either[(Seq[ScriptToken], ScriptPubKey), ScriptError] = w.witnessVersion.rebuild(wtxSigComponent.witness,w.witnessProgram)
               parseScriptEither(scriptEither)
-
-            case x @ (_ : P2SHScriptPubKey | _ : P2PKHScriptPubKey | _ : P2PKScriptPubKey | _ : MultiSignatureScriptPubKey |
-                      _ : NonStandardScriptPubKey | _ : CLTVScriptPubKey | _ : CSVScriptPubKey | EmptyScriptPubKey) =>
-              val sigsRemoved = removeSignaturesFromScript(s.signatures, x.asm)
+            case _ : P2SHScriptPubKey | _ : P2PKHScriptPubKey | _ : P2PKScriptPubKey | _ : MultiSignatureScriptPubKey |
+                      _ : NonStandardScriptPubKey | _ : CLTVScriptPubKey | _ : CSVScriptPubKey | EmptyScriptPubKey =>
+              val sigsRemoved = removeSignaturesFromScript(s.signatures, s.redeemScript.asm)
               sigsRemoved
           }
         case EmptyScriptSignature =>
@@ -351,17 +350,16 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
           wtxSigComponent.scriptPubKey match {
             case w : WitnessScriptPubKeyV0 =>
               //for bare P2WPKH
-              logger.info("wtxSigComponent.witness: " + wtxSigComponent.witness)
-              logger.info("w.witnessProgram: " + w.witnessProgram)
+              logger.debug("wtxSigComponent.witness: " + wtxSigComponent.witness)
+              logger.debug("w.witnessProgram: " + w.witnessProgram)
               val scriptEither = w.witnessVersion.rebuild(wtxSigComponent.witness,w.witnessProgram)
-              logger.info("scriptEither: " + scriptEither)
+              logger.debug("scriptEither: " + scriptEither)
               val s = parseScriptEither(scriptEither)
-              logger.info("P2WPKH: " + s)
+              logger.debug("P2WPKH: " + s)
               s
             case _ : P2SHScriptPubKey | _ : P2PKHScriptPubKey | _ : P2PKScriptPubKey | _ : MultiSignatureScriptPubKey |
                  _ : NonStandardScriptPubKey | _ : CLTVScriptPubKey | _ : CSVScriptPubKey |
                  _: UnassignedWitnessScriptPubKey | EmptyScriptPubKey =>
-              logger.info("Empty script signature, returning original script: " + script)
               script
           }
         case _ : P2PKHScriptSignature | _ : P2PKScriptSignature | _ : NonStandardScriptSignature
@@ -413,7 +411,7 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
 
   def parseScriptEither(scriptEither: Either[(Seq[ScriptToken], ScriptPubKey), ScriptError]): Seq[ScriptToken] = scriptEither match {
     case Left((_,scriptPubKey)) =>
-      logger.info("Script pubkey asm inside calculateForSigning: " + scriptPubKey.asm)
+      logger.debug("Script pubkey asm inside calculateForSigning: " + scriptPubKey.asm)
       scriptPubKey.asm
     case Right(_) => Nil //error
   }
