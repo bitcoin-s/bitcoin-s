@@ -90,15 +90,15 @@ object P2PKHScriptPubKey extends ScriptFactory[P2PKHScriptPubKey] {
 sealed trait MultiSignatureScriptPubKey extends ScriptPubKey {
 
   /** Returns the amount of required signatures for this multisignature script pubkey output */
-  def requiredSigs : Long = {
+  def requiredSigs : Int = {
     val asmWithoutPushOps = asm.filterNot(_.isInstanceOf[BytesToPushOntoStack])
     val opCheckMultiSigIndex = if (asm.indexOf(OP_CHECKMULTISIG) != -1) asmWithoutPushOps.indexOf(OP_CHECKMULTISIG) else asmWithoutPushOps.indexOf(OP_CHECKMULTISIGVERIFY)
     //magic number 2 represents the maxSig operation and the OP_CHECKMULTISIG operation at the end of the asm
     val numSigsRequired = asmWithoutPushOps(opCheckMultiSigIndex - maxSigs.toInt - 2)
     numSigsRequired match {
-      case x : ScriptNumber => x.underlying
+      case x : ScriptNumber => x.underlying.toInt
       case c : ScriptConstant if ScriptNumber(c.hex).underlying <= ScriptSettings.maxPublicKeysPerMultiSig =>
-        ScriptNumber(c.hex).underlying
+        ScriptNumber(c.hex).underlying.toInt
       case _ => throw new RuntimeException("The first element of the multisignature pubkey must be a script number operation\n" +
         "operation: " + numSigsRequired +
         "\nscriptPubKey: " + this)
@@ -106,15 +106,15 @@ sealed trait MultiSignatureScriptPubKey extends ScriptPubKey {
   }
 
   /** The maximum amount of signatures for this multisignature script pubkey output */
-  def maxSigs : Long = {
+  def maxSigs : Int = {
     if (checkMultiSigIndex == -1 || checkMultiSigIndex == 0) {
       //means that we do not have a max signature requirement
-      0.toLong
+      0
     } else {
       asm(checkMultiSigIndex - 1) match {
-        case x : ScriptNumber => x.underlying
+        case x : ScriptNumber => x.underlying.toInt
         case c : ScriptConstant if ScriptNumber(c.hex).underlying <= ScriptSettings.maxPublicKeysPerMultiSig =>
-          ScriptNumber(c.hex).underlying
+          ScriptNumber(c.hex).underlying.toInt
         case x => throw new RuntimeException("The element preceding a OP_CHECKMULTISIG operation in a  multisignature pubkey must be a script number operation, got: " + x)
       }
     }
@@ -128,7 +128,7 @@ sealed trait MultiSignatureScriptPubKey extends ScriptPubKey {
 
   /** Returns the public keys encoded into the scriptPubKey */
   def publicKeys : Seq[ECPublicKey] = {
-    asm.filter(_.isInstanceOf[ScriptConstant]).slice(1, maxSigs.toInt + 1).map(key => ECPublicKey(key.hex))
+    asm.filter(_.isInstanceOf[ScriptConstant]).slice(1, maxSigs + 1).map(key => ECPublicKey(key.hex))
   }
 }
 
