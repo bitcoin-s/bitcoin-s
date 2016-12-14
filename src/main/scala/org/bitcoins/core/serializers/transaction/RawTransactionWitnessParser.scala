@@ -33,6 +33,8 @@ trait RawTransactionWitnessParser {
     val hex = witness.witnesses.map(_.hex).mkString
     hex
   }
+
+
 }
 
 object RawTransactionWitnessParser extends RawTransactionWitnessParser
