@@ -46,7 +46,7 @@ sealed trait WitnessV0TransactionSignatureComponent extends TransactionSignature
 
   override def transaction: WitnessTransaction
 
-  def witness: ScriptWitness = transaction.witness.witnesses(inputIndex.toInt).witness
+  def witness: ScriptWitness = transaction.witness.witnesses(inputIndex.toInt)
 
   /** The amount of [[CurrencyUnit]] this input is spending */
   def amount: CurrencyUnit

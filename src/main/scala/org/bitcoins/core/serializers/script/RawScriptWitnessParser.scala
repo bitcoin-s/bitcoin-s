@@ -1,21 +1,19 @@
-package org.bitcoins.core.serializers.transaction
+package org.bitcoins.core.serializers.script
 
 import org.bitcoins.core.number.UInt64
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.protocol.script.ScriptWitness
-import org.bitcoins.core.protocol.transaction.TransactionInputWitness
-import org.bitcoins.core.script.constant.{ScriptConstant, ScriptToken}
 import org.bitcoins.core.serializers.RawBitcoinSerializer
 import org.bitcoins.core.util.BitcoinSUtil
 
 import scala.annotation.tailrec
 
 /**
-  * Created by chris on 11/21/16.
+  * Created by chris on 12/14/16.
   */
-trait RawTransactionInputWitnessParser extends RawBitcoinSerializer[TransactionInputWitness] {
+trait RawScriptWitnessParser extends RawBitcoinSerializer[ScriptWitness] {
 
-  override def read(bytes: List[Byte]): TransactionInputWitness = {
+  def read(bytes: List[Byte]): ScriptWitness = {
     logger.debug("Bytes for witness: " + BitcoinSUtil.encodeHex(bytes))
     //first byte is the number of stack items
     val stackSize = CompactSizeUInt.parseCompactSizeUInt(bytes)
@@ -38,12 +36,10 @@ trait RawTransactionInputWitnessParser extends RawBitcoinSerializer[TransactionI
     //note there is no 'reversing' the accum, in bitcoin-s we assume the stop of the stack is the 'head' element in the sequence
     val stack = loop(stackBytes,Nil,stackSize.num)
     val witness = ScriptWitness(stack)
-    logger.debug("Parsed witness: " + witness)
-    TransactionInputWitness(witness)
+    witness
   }
 
-
-  override def write(txInputWitness: TransactionInputWitness): String = {
+  def write(scriptWitness: ScriptWitness): String = {
     @tailrec
     def loop(remainingStack: Seq[Seq[Byte]], accum: Seq[String]): Seq[String] = {
       if (remainingStack.isEmpty) accum.reverse
@@ -53,11 +49,11 @@ trait RawTransactionInputWitnessParser extends RawBitcoinSerializer[TransactionI
         loop(remainingStack.tail, BitcoinSUtil.encodeHex(serialization) +: accum)
       }
     }
-    val stackItems: Seq[String] = loop(txInputWitness.witness.stack.reverse,Nil)
+    val stackItems: Seq[String] = loop(scriptWitness.stack.reverse,Nil)
     val size = CompactSizeUInt(UInt64(stackItems.size))
     val stackHex = stackItems.mkString
     size.hex + stackHex
   }
 }
 
-object RawTransactionInputWitnessParser extends RawTransactionInputWitnessParser
+object RawScriptWitnessParser extends RawScriptWitnessParser

@@ -79,22 +79,13 @@ trait TransactionTestUtil extends BitcoinSLogger {
 
     val tx = witness match {
       case Some((scriptWitness,amount)) =>
-        val txInputWitness = TransactionInputWitness(scriptWitness)
-        val txWitness = TransactionWitness(Seq(txInputWitness))
+        val txWitness = TransactionWitness(Seq(scriptWitness))
         val output = TransactionOutput(amount,EmptyScriptPubKey)
         WitnessTransaction(TransactionConstants.version,Seq(input), Seq(output),
           TransactionConstants.lockTime, txWitness)
       case None =>
-/*        creditingTx.outputs(outputIndex.toInt).scriptPubKey match {
-          case _ : WitnessScriptPubKey =>
-            val output = TransactionOutput(CurrencyUnits.zero, EmptyScriptPubKey)
-            val txWitness = TransactionWitness(Nil)
-            //if it is a raw p2wpkh we need the tx to be a witnessTransaction w/ empty script witness/amount
-            WitnessTransaction(TransactionConstants.version, Seq(input), Seq(output), TransactionConstants.lockTime,txWitness)
-          case _ : ScriptPubKey =>*/
-            val output = TransactionOutput(CurrencyUnits.zero,EmptyScriptPubKey)
-            Transaction(TransactionConstants.version,Seq(input),Seq(output),TransactionConstants.lockTime)
-        //}
+        val output = TransactionOutput(CurrencyUnits.zero,EmptyScriptPubKey)
+        Transaction(TransactionConstants.version,Seq(input),Seq(output),TransactionConstants.lockTime)
 
     }
 
