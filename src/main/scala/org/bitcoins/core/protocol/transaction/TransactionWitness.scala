@@ -1,6 +1,7 @@
 package org.bitcoins.core.protocol.transaction
 
 import org.bitcoins.core.protocol.NetworkElement
+import org.bitcoins.core.protocol.script.ScriptWitness
 import org.bitcoins.core.serializers.transaction.RawTransactionWitnessParser
 import org.bitcoins.core.util.{BitcoinSUtil, Factory}
 
@@ -10,7 +11,7 @@ import org.bitcoins.core.util.{BitcoinSUtil, Factory}
   * [[https://github.com/bitcoin/bitcoin/blob/b4e4ba475a5679e09f279aaf2a83dcf93c632bdb/src/primitives/transaction.h#L232-L268]]
   */
 sealed trait TransactionWitness extends NetworkElement {
-  def witnesses: Seq[TransactionInputWitness]
+  def witnesses: Seq[ScriptWitness]
 
   override def hex = RawTransactionWitnessParser.write(this)
 }
@@ -22,9 +23,9 @@ case object EmptyWitness extends TransactionWitness {
 }
 
 object TransactionWitness {
-  private case class TransactionWitnessImpl(witnesses: Seq[TransactionInputWitness]) extends TransactionWitness
+  private case class TransactionWitnessImpl(witnesses: Seq[ScriptWitness]) extends TransactionWitness
 
-  def apply(witnesses: Seq[TransactionInputWitness]): TransactionWitness = TransactionWitnessImpl(witnesses)
+  def apply(witnesses: Seq[ScriptWitness]): TransactionWitness = TransactionWitnessImpl(witnesses)
 
   def fromBytes(bytes: Seq[Byte], numInputs: Int): TransactionWitness = RawTransactionWitnessParser.read(bytes,numInputs)
 

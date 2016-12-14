@@ -34,23 +34,15 @@ trait WitnessGenerators extends BitcoinSLogger {
     stack.map(s => ScriptWitness(s))
   }
 
-
-  /** Generates a random [[TransactionInputWitness]] */
-  def transactionInputWitness: Gen[TransactionInputWitness] = for {
-    script <- scriptWitness
-  } yield TransactionInputWitness(script)
-
-
-  /** Generates a random [[TransactionWitness]] */
-  def transactionWitness: Gen[TransactionWitness] = for {
-    i <- Gen.choose(0, 10)
-    witness <- transactionWitness(i)
-  } yield witness
-
   /** Generates a [[TransactionWitness]] with the specificied number of witnesses */
   def transactionWitness(numWitnesses: Int): Gen[TransactionWitness] = for {
-  inputWitnesses <- Gen.listOfN(numWitnesses,transactionInputWitness)
+  inputWitnesses <- Gen.listOfN(numWitnesses,scriptWitness)
   } yield TransactionWitness(inputWitnesses)
+
+  def transactionWitness: Gen[TransactionWitness] = for {
+    num <- Gen.choose(1,10)
+    wit <- transactionWitness(num)
+  } yield wit
 
   /** Generates a validly signed [[TransactionWitness]] */
   def signedP2WPKHTransactionWitness: Gen[(TransactionWitness, WitnessV0TransactionSignatureComponent, Seq[ECPrivateKey])] = for {
@@ -112,8 +104,7 @@ trait WitnessGenerators extends BitcoinSLogger {
 
   /** Takes a signed [[ScriptWitness]] and an unsignedTx and adds the witness to the unsigned [[WitnessTransaction]] */
   private def createSignedWTxComponent(witness: ScriptWitness, unsignedWTxComponent: WitnessV0TransactionSignatureComponent): (TransactionWitness,WitnessV0TransactionSignatureComponent) = {
-    val signedInputWitness = TransactionInputWitness(witness)
-    val signedTxWitness = TransactionWitness(Seq(signedInputWitness))
+    val signedTxWitness = TransactionWitness(Seq(witness))
     val unsignedSpendingTx = unsignedWTxComponent.transaction
     val signedSpendingTx = WitnessTransaction(unsignedSpendingTx.version,unsignedSpendingTx.inputs,unsignedSpendingTx.outputs,
       unsignedSpendingTx.lockTime, signedTxWitness)
@@ -125,8 +116,7 @@ trait WitnessGenerators extends BitcoinSLogger {
   /** Creates a unsigned [[WitnessV0TransactionSignatureComponent]] from the given parameters */
   private def createUnsignedWtxSigComponent(witScriptPubKey: WitnessScriptPubKey, amount: CurrencyUnit,
                                     unsignedScriptWitness: ScriptWitness): WitnessV0TransactionSignatureComponent = {
-    val inputWitness = TransactionInputWitness(unsignedScriptWitness)
-    val witness = TransactionWitness(Seq(inputWitness))
+    val witness = TransactionWitness(Seq(unsignedScriptWitness))
     val flags = Policy.standardScriptVerifyFlags
     val (creditingTx,outputIndex) = TransactionGenerators.buildCreditingTransaction(witScriptPubKey,amount)
     val (unsignedSpendingTx,inputIndex) = TransactionGenerators.buildSpendingTransaction(creditingTx,EmptyScriptSignature,outputIndex,witness)

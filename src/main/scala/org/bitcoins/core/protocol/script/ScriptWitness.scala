@@ -1,7 +1,9 @@
 package org.bitcoins.core.protocol.script
 
 import org.bitcoins.core.crypto.{ECDigitalSignature, ECPublicKey}
+import org.bitcoins.core.protocol.NetworkElement
 import org.bitcoins.core.script.constant.ScriptToken
+import org.bitcoins.core.serializers.script.RawScriptWitnessParser
 import org.bitcoins.core.util.{BitcoinSUtil, Factory}
 
 /**
@@ -9,20 +11,26 @@ import org.bitcoins.core.util.{BitcoinSUtil, Factory}
   * The witness used to evaluate a [[ScriptPubKey]] inside of Bitcoin
   * [[https://github.com/bitcoin/bitcoin/blob/57b34599b2deb179ff1bd97ffeab91ec9f904d85/src/script/script.h#L648-L660]]
   */
-sealed trait ScriptWitness {
+sealed trait ScriptWitness extends NetworkElement {
 
   /** The byte vectors that are placed on to the stack when evaluating a witness program */
   def stack : Seq[Seq[Byte]]
 
   override def toString = stack.map(BitcoinSUtil.encodeHex(_)).toString
+
+  override def hex = RawScriptWitnessParser.write(this)
 }
 
-object ScriptWitness{
+object ScriptWitness extends Factory[ScriptWitness] {
   private case class ScriptWitnessImpl(stack: Seq[Seq[Byte]]) extends ScriptWitness
 
   def apply(stack: Seq[Seq[Byte]]): ScriptWitness = ScriptWitnessImpl(stack)
 
+  override def fromBytes(bytes: Seq[Byte]): ScriptWitness = RawScriptWitnessParser.read(bytes)
+
+/*
   def fromHex(stack: Seq[Seq[String]]): ScriptWitness = ScriptWitness(stack.flatMap(_.map(BitcoinSUtil.decodeHex(_))))
+*/
 
   def apply(signature: ECDigitalSignature, publicKey: ECPublicKey): ScriptWitness = {
     val sigConstant = signature.bytes

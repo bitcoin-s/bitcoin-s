@@ -1,9 +1,7 @@
 package org.bitcoins.core.serializers.transaction
 
-import org.bitcoins.core.number.UInt64
-import org.bitcoins.core.protocol.CompactSizeUInt
-import org.bitcoins.core.protocol.transaction.{TransactionInputWitness, TransactionWitness}
-import org.bitcoins.core.serializers.RawBitcoinSerializer
+import org.bitcoins.core.protocol.script.ScriptWitness
+import org.bitcoins.core.protocol.transaction.TransactionWitness
 
 import scala.annotation.tailrec
 
@@ -20,9 +18,9 @@ trait RawTransactionWitnessParser {
     */
   def read(bytes: Seq[Byte], numInputs: Int): TransactionWitness = {
     @tailrec
-    def loop(remainingBytes: Seq[Byte], remainingInputs: Int, accum: Seq[TransactionInputWitness]): Seq[TransactionInputWitness] = {
+    def loop(remainingBytes: Seq[Byte], remainingInputs: Int, accum: Seq[ScriptWitness]): Seq[ScriptWitness] = {
       if (remainingInputs != 0) {
-        val w = TransactionInputWitness(remainingBytes)
+        val w = ScriptWitness(remainingBytes)
         val (_,newRemainingBytes) = remainingBytes.splitAt(w.bytes.size)
         loop(newRemainingBytes,remainingInputs - 1, w +: accum)
       } else accum.reverse
