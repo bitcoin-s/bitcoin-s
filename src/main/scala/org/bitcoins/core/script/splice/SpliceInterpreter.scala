@@ -12,15 +12,9 @@ import org.bitcoins.core.util.BitcoinSLogger
  */
 trait SpliceInterpreter extends BitcoinSLogger {
 
-  /**
-   * Pushes the string length of the top element of the stack (without popping it).
- *
-   * @param program
-   * @return
-   */
+  /** Pushes the string length of the top element of the stack (without popping it). */
   def opSize(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.isDefined && program.script.head == OP_SIZE, "Script top must be OP_SIZE")
-
     program.stack.size > 0 match {
       case true =>
         if (program.stack.head == OP_0) {
@@ -36,8 +30,5 @@ trait SpliceInterpreter extends BitcoinSLogger {
         logger.error("Must have at least 1 element on the stack for OP_SIZE")
         ScriptProgram(program,ScriptErrorInvalidStackOperation)
     }
-
-
   }
-
 }

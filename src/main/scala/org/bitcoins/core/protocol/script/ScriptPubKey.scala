@@ -569,7 +569,7 @@ object WitnessScriptPubKeyV0 extends ScriptFactory[WitnessScriptPubKeyV0] {
   /** Mimics the function to determine if a [[ScriptPubKey]] contains a witness
     * A witness program is any valid [[ScriptPubKey]] that consists of a 1 byte push op and then a data push
     * between 2 and 40 bytes
-    * [[https://github.com/bitcoin/bitcoin/blob/449f9b8debcceb61a92043bc7031528a53627c47/src/script/script.cpL215-L229]]
+    * [[https://github.com/bitcoin/bitcoin/blob/449f9b8debcceb61a92043bc7031528a53627c47/src/script/script.cpp#L215-L229]]
     * Returns None if it is not a witness program, else returns the script and script version
     * */
   def isWitnessScriptPubKeyV0(asm: Seq[ScriptToken]): Boolean = {
