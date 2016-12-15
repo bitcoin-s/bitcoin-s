@@ -18,31 +18,31 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
 
   /** The input is hashed twice: first with SHA-256 and then with RIPEMD-160. */
   def opHash160(program : ScriptProgram) : ScriptProgram = {
-    require(program.script.nonEmpty && program.script.head == OP_HASH160, "Script operation must be OP_HASH160")
+    require(program.script.headOption.contains(OP_HASH160), "Script operation must be OP_HASH160")
     executeHashFunction(program, CryptoUtil.sha256Hash160(_ : Seq[Byte]))
   }
 
   /** The input is hashed using RIPEMD-160. */
   def opRipeMd160(program : ScriptProgram) : ScriptProgram = {
-    require(program.script.nonEmpty && program.script.head == OP_RIPEMD160, "Script operation must be OP_RIPEMD160")
+    require(program.script.headOption.contains(OP_RIPEMD160), "Script operation must be OP_RIPEMD160")
     executeHashFunction(program, CryptoUtil.ripeMd160(_ : Seq[Byte]))
   }
 
   /** The input is hashed using SHA-256. */
   def opSha256(program : ScriptProgram) : ScriptProgram = {
-    require(program.script.nonEmpty && program.script.head == OP_SHA256, "Script operation must be OP_SHA256")
+    require(program.script.headOption.contains(OP_SHA256), "Script operation must be OP_SHA256")
     executeHashFunction(program, CryptoUtil.sha256(_ : Seq[Byte]))
   }
 
   /** The input is hashed two times with SHA-256. */
   def opHash256(program : ScriptProgram) : ScriptProgram = {
-    require(program.script.nonEmpty && program.script.head == OP_HASH256, "Script operation must be OP_HASH256")
+    require(program.script.headOption.contains(OP_HASH256), "Script operation must be OP_HASH256")
     executeHashFunction(program, CryptoUtil.doubleSHA256(_ : Seq[Byte]))
   }
 
   /** The input is hashed using SHA-1. */
   def opSha1(program : ScriptProgram) : ScriptProgram = {
-    require(program.script.nonEmpty && program.script.head == OP_SHA1, "Script top must be OP_SHA1")
+    require(program.script.headOption.contains(OP_SHA1), "Script top must be OP_SHA1")
     executeHashFunction(program, CryptoUtil.sha1(_ : Seq[Byte]))
   }
 
@@ -53,7 +53,7 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
    * [[https://github.com/bitcoin/bitcoin/blob/528472111b4965b1a99c4bcf08ac5ec93d87f10f/src/script/interpreter.cpp#L880]]
    */
   def opCheckSig(program : ScriptProgram) : ScriptProgram = {
-    require(program.script.nonEmpty && program.script.head == OP_CHECKSIG, "Script top must be OP_CHECKSIG")
+    require(program.script.headOption.contains(OP_CHECKSIG), "Script top must be OP_CHECKSIG")
     program match {
       case preExecutionScriptProgram : PreExecutionScriptProgram =>
         opCheckSig(ScriptProgram.toExecutionInProgress(preExecutionScriptProgram))
@@ -128,7 +128,7 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
 
   /** Runs [[OP_CHECKSIG]] with an [[OP_VERIFY]] afterwards. */
   def opCheckSigVerify(program : ScriptProgram) : ScriptProgram = {
-    require(program.script.nonEmpty && program.script.head == OP_CHECKSIGVERIFY,
+    require(program.script.headOption.contains(OP_CHECKSIGVERIFY),
       "Script top must be OP_CHECKSIGVERIFY")
     if (program.stack.size < 2) {
       logger.error("Stack must contain at least 3 items for OP_CHECKSIGVERIFY")
@@ -149,7 +149,7 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
   /** All of the signature checking words will only match signatures to the data
    * after the most recently-executed [[OP_CODESEPARATOR]]. */
   def opCodeSeparator(program : ScriptProgram) : ScriptProgram = {
-    require(program.script.nonEmpty && program.script.head == OP_CODESEPARATOR, "Script top must be OP_CODESEPARATOR")
+    require(program.script.headOption.contains(OP_CODESEPARATOR), "Script top must be OP_CODESEPARATOR")
     val e = program match {
       case e : PreExecutionScriptProgram =>
         opCodeSeparator(ScriptProgram.toExecutionInProgress(e))
@@ -175,7 +175,7 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
     */
   @tailrec
   final def opCheckMultiSig(program : ScriptProgram) : ScriptProgram = {
-    require(program.script.nonEmpty && program.script.head == OP_CHECKMULTISIG, "Script top must be OP_CHECKMULTISIG")
+    require(program.script.headOption.contains(OP_CHECKMULTISIG), "Script top must be OP_CHECKMULTISIG")
     val flags = program.flags
     program match {
       case preExecutionScriptProgram : PreExecutionScriptProgram =>
@@ -297,7 +297,7 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
 
   /** Runs [[OP_CHECKMULTISIG]] with an [[OP_VERIFY]] afterwards */
   def opCheckMultiSigVerify(program : ScriptProgram) : ScriptProgram = {
-    require(program.script.nonEmpty && program.script.head == OP_CHECKMULTISIGVERIFY, "Script top must be OP_CHECKMULTISIGVERIFY")
+    require(program.script.headOption.contains(OP_CHECKMULTISIGVERIFY), "Script top must be OP_CHECKMULTISIGVERIFY")
     if (program.stack.size < 3) {
       logger.error("Stack must contain at least 3 items for OP_CHECKMULTISIGVERIFY")
       ScriptProgram(program,ScriptErrorInvalidStackOperation)

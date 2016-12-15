@@ -14,19 +14,19 @@ trait ConstantInterpreter extends BitcoinSLogger {
 
   /** The next byte contains the number of bytes to be pushed onto the stack. */
   def opPushData1(program : ScriptProgram) : ScriptProgram = {
-    require(program.script.nonEmpty && program.script.head == OP_PUSHDATA1, "Top of script stack must be OP_PUSHDATA1")
+    require(program.script.headOption.contains(OP_PUSHDATA1), "Top of script stack must be OP_PUSHDATA1")
     opPushData(program)
   }
 
   /** The next two bytes contain the number of bytes to be pushed onto the stack. */
   def opPushData2(program : ScriptProgram) : ScriptProgram = {
-    require(program.script.nonEmpty && program.script.head == OP_PUSHDATA2, "Top of script stack must be OP_PUSHDATA2")
+    require(program.script.headOption.contains(OP_PUSHDATA2), "Top of script stack must be OP_PUSHDATA2")
     opPushData(program)
   }
 
   /** The next four bytes contain the number of bytes to be pushed onto the stack. */
   def opPushData4(program : ScriptProgram) : ScriptProgram = {
-    require(program.script.nonEmpty && program.script.head == OP_PUSHDATA4, "Top of script stack must be OP_PUSHDATA4")
+    require(program.script.headOption.contains(OP_PUSHDATA4), "Top of script stack must be OP_PUSHDATA4")
     opPushData(program)
   }
 

@@ -17,7 +17,7 @@ trait ControlOperationsInterpreter extends BitcoinSLogger {
 
   /** If the top stack value is not 0, the statements are executed. The top stack value is removed. */
   def opIf(program : ScriptProgram) : ScriptProgram = {
-    require(program.script.nonEmpty && program.script.head == OP_IF, "Script top was not OP_IF")
+    require(program.script.headOption.contains(OP_IF), "Script top was not OP_IF")
     val sigVersion = program.txSignatureComponent.sigVersion
     val flags = program.flags
     val minimalIfEnabled = ScriptFlagUtil.minimalIfEnabled(flags)
@@ -57,7 +57,7 @@ trait ControlOperationsInterpreter extends BitcoinSLogger {
   /** If the top stack value is 0, the statements are executed. The top stack value is removed. */
   def opNotIf(program : ScriptProgram) : ScriptProgram = {
     //TODO: Try and reduce this down to using OP_IF by inverting the stack top
-    require(program.script.nonEmpty && program.script.head == OP_NOTIF, "Script top was not OP_NOTIF")
+    require(program.script.headOption.contains(OP_NOTIF), "Script top was not OP_NOTIF")
     val binaryTree = parseBinaryTree(program.script)
     val sigVersion = program.txSignatureComponent.sigVersion
     val flags = program.flags
@@ -92,7 +92,7 @@ trait ControlOperationsInterpreter extends BitcoinSLogger {
 
   /** Evaluates the [[OP_ELSE]] operator. */
   def opElse(program : ScriptProgram) : ScriptProgram = {
-    require(program.script.nonEmpty && program.script.head == OP_ELSE, "First script opt must be OP_ELSE")
+    require(program.script.headOption.contains(OP_ELSE), "First script opt must be OP_ELSE")
     if (!program.script.tail.contains(OP_ENDIF)) {
       logger.error("OP_ELSE does not have a OP_ENDIF")
       ScriptProgram(program,ScriptErrorUnbalancedConditional)
@@ -119,7 +119,7 @@ trait ControlOperationsInterpreter extends BitcoinSLogger {
 
   /** Evaluates an [[OP_ENDIF]] operator. */
   def opEndIf(program : ScriptProgram) : ScriptProgram = {
-    require(program.script.nonEmpty && program.script.head == OP_ENDIF, "Script top must be OP_ENDIF")
+    require(program.script.headOption.contains(OP_ENDIF), "Script top must be OP_ENDIF")
     if (!checkMatchingOpIfOpNotIfOpEndIf(program.originalScript)) {
       //means we do not have a matching OP_IF for our OP_ENDIF
       logger.error("We do not have a matching OP_IF/OP_NOTIF for every OP_ENDIF we have")
@@ -132,13 +132,13 @@ trait ControlOperationsInterpreter extends BitcoinSLogger {
    * reducing their cost to the network. Currently it is usually considered non-standard (though valid) for a transaction to
    * have more than one OP_RETURN output or an OP_RETURN output with more than one pushdata op. */
   def opReturn(program : ScriptProgram) : ScriptProgram = {
-    require(program.script.nonEmpty && program.script.head == OP_RETURN)
+    require(program.script.headOption.contains(OP_RETURN))
     ScriptProgram(program,ScriptErrorOpReturn)
   }
 
   /** Marks [[org.bitcoins.core.protocol.transaction.Transaction]] as invalid if top stack value is not true. */
   def opVerify(program : ScriptProgram) : ScriptProgram = {
-    require(program.script.nonEmpty && program.script.head == OP_VERIFY, "Script top must be OP_VERIFY")
+    require(program.script.headOption.contains(OP_VERIFY), "Script top must be OP_VERIFY")
     program.stack.nonEmpty match {
       case true =>
         logger.debug("Stack for OP_VERIFY: " + program.stack)

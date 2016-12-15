@@ -28,7 +28,7 @@ trait LockTimeInterpreter extends BitcoinSLogger {
    */
   @tailrec
   final def opCheckLockTimeVerify(program : ScriptProgram) : ScriptProgram = {
-    require(program.script.headOption.isDefined && program.script.head == OP_CHECKLOCKTIMEVERIFY,
+    require(program.script.headOption.contains(OP_CHECKLOCKTIMEVERIFY),
       "Script top must be OP_CHECKLOCKTIMEVERIFY")
     val input = program.txSignatureComponent.transaction.inputs(program.txSignatureComponent.inputIndex.toInt)
     val transaction = program.txSignatureComponent.transaction
