@@ -19,7 +19,7 @@ trait StackInterpreter extends BitcoinSLogger {
   /** Duplicates the element on top of the stack
    * expects the first element in script to be the OP_DUP operation. */
   def opDup(program : ScriptProgram) : ScriptProgram = {
-    require(program.script.nonEmpty && program.script.head == OP_DUP, "Top of the script stack must be OP_DUP")
+    require(program.script.headOption.contains(OP_DUP), "Top of the script stack must be OP_DUP")
     program.stack match {
       case h :: t => ScriptProgram(program, h :: program.stack, program.script.tail)
       case Nil =>
@@ -30,7 +30,7 @@ trait StackInterpreter extends BitcoinSLogger {
 
   /** If the top stack value is not 0, duplicate it. */
   def opIfDup(program : ScriptProgram) : ScriptProgram = {
-    require(program.script.nonEmpty && program.script.head == OP_IFDUP, "Top of the script stack must be OP_DUP")
+    require(program.script.headOption.contains(OP_IFDUP), "Top of the script stack must be OP_DUP")
     if (program.stack.nonEmpty) {
       if (program.stack.head == ScriptNumber.zero) return ScriptProgram(program, program.stack, program.script.tail)
       ScriptProgram(program, program.stack.head :: program.stack, program.script.tail)
@@ -42,7 +42,7 @@ trait StackInterpreter extends BitcoinSLogger {
 
   /** Puts the number of stack items onto the stack. */
   def opDepth(program : ScriptProgram) : ScriptProgram = {
-    require(program.script.nonEmpty && program.script.head == OP_DEPTH, "Top of script stack must be OP_DEPTH")
+    require(program.script.headOption.contains(OP_DEPTH), "Top of script stack must be OP_DEPTH")
     require(program.script.nonEmpty, "OP_DEPTH requires at least two elements on the script stack")
     val stackSize = program.stack.size
     val numberToPush : ScriptNumber = ScriptNumber(stackSize)
@@ -51,7 +51,7 @@ trait StackInterpreter extends BitcoinSLogger {
 
   /** Puts the input onto the top of the alt stack. Removes it from the main stack. */
   def opToAltStack(program : ScriptProgram) : ScriptProgram = {
-    require(program.script.nonEmpty && program.script.head == OP_TOALTSTACK, "Top of script stack must be OP_TOALTSTACK")
+    require(program.script.headOption.contains(OP_TOALTSTACK), "Top of script stack must be OP_TOALTSTACK")
     if (program.stack.nonEmpty) {
       ScriptProgram(program, program.stack.tail,
         program.script.tail, program.stack.head :: program.altStack, ScriptProgram.AltStack)
@@ -63,7 +63,7 @@ trait StackInterpreter extends BitcoinSLogger {
 
   /** Puts the input onto the top of the main stack. Removes it from the alt stack. */
   def opFromAltStack(program : ScriptProgram) : ScriptProgram = {
-    require(program.script.nonEmpty && program.script.head == OP_FROMALTSTACK, "Top of script stack must be OP_FROMALTSTACK")
+    require(program.script.headOption.contains(OP_FROMALTSTACK), "Top of script stack must be OP_FROMALTSTACK")
     if (program.altStack.nonEmpty) {
       ScriptProgram(program, program.altStack.head :: program.stack,
         program.script.tail, program.altStack.tail, ScriptProgram.AltStack)
@@ -75,7 +75,7 @@ trait StackInterpreter extends BitcoinSLogger {
 
   /** Removes the top stack item. */
   def opDrop(program : ScriptProgram) : ScriptProgram = {
-    require(program.script.nonEmpty && program.script.head == OP_DROP, "Top of script stack must be OP_DROP")
+    require(program.script.headOption.contains(OP_DROP), "Top of script stack must be OP_DROP")
     if (program.stack.nonEmpty) {
       ScriptProgram(program, program.stack.tail, program.script.tail)
     } else {
@@ -87,7 +87,7 @@ trait StackInterpreter extends BitcoinSLogger {
 
   /** Removes the second-to-top stack item. */
   def opNip(program : ScriptProgram) : ScriptProgram = {
-    require(program.script.nonEmpty && program.script.head == OP_NIP, "Top of script stack must be OP_NIP")
+    require(program.script.headOption.contains(OP_NIP), "Top of script stack must be OP_NIP")
     program.stack match {
       case h :: _ :: t => ScriptProgram(program, h :: t, program.script.tail)
       case h :: t  =>
@@ -102,7 +102,7 @@ trait StackInterpreter extends BitcoinSLogger {
 
   /** Copies the second-to-top stack item to the top. */
   def opOver(program : ScriptProgram) : ScriptProgram = {
-    require(program.script.nonEmpty && program.script.head == OP_OVER, "Top of script stack must be OP_OVER")
+    require(program.script.headOption.contains(OP_OVER), "Top of script stack must be OP_OVER")
     program.stack match {
       case _ :: h1 :: _ => ScriptProgram(program, h1 :: program.stack, program.script.tail)
       case h :: t => logger.error("Stack must have at least two items on it for OP_OVER")
@@ -115,8 +115,7 @@ trait StackInterpreter extends BitcoinSLogger {
 
   /** The item n back in the stack is copied to the top. */
   def opPick(program : ScriptProgram) : ScriptProgram = {
-    require(program.script.nonEmpty && program.script.head == OP_PICK, "Top of script stack must be OP_PICK")
-    require(program.stack.nonEmpty,"Stack must have at least two items on it for OP_PICK")
+    require(program.script.headOption.contains(OP_PICK), "Top of script stack must be OP_PICK")
     executeOpWithStackTopAsNumberArg(program, { number : ScriptNumber =>
       logger.info("Script number for OP_PICK: " + number)
       //check if n is within the bound of the script
@@ -132,10 +131,9 @@ trait StackInterpreter extends BitcoinSLogger {
 
   /** The item n back in the stack is moved to the top. */
   def opRoll(program : ScriptProgram) : ScriptProgram = {
-    require(program.script.nonEmpty && program.script.head == OP_ROLL, "Top of script stack must be OP_ROLL")
-    require(program.stack.nonEmpty,"Stack must have at least one items on it for OP_ROLL")
+    require(program.script.headOption.contains(OP_ROLL), "Top of script stack must be OP_ROLL")
     executeOpWithStackTopAsNumberArg(program, (number : ScriptNumber) =>
-      if (number.underlying >= 0 && number.underlying  < program.stack.tail.size) {
+      if (number.underlying >= 0 && number.underlying < program.stack.tail.size) {
         val newStackTop = program.stack.tail(number.toInt)
         //removes the old instance of the stack top, appends the new index to the head
         val newStack = newStackTop :: program.stack.tail.diff(List(newStackTop))
@@ -150,7 +148,7 @@ trait StackInterpreter extends BitcoinSLogger {
   /** The top three items on the stack are rotated to the left.
    * Ex: x1 x2 x3 -> x2 x3 x1 */
   def opRot(program : ScriptProgram) : ScriptProgram = {
-    require(program.script.nonEmpty && program.script.head == OP_ROT, "Top of script stack must be OP_ROT")
+    require(program.script.headOption.contains(OP_ROT), "Top of script stack must be OP_ROT")
     program.stack match {
       case h :: h1 :: h2 :: t =>
         val newStack = h2 :: h :: h1 :: t
@@ -164,7 +162,7 @@ trait StackInterpreter extends BitcoinSLogger {
   /** The fifth and sixth items back are moved to the top of the stack.
    * Ex. x1 x2 x3 x4 x5 x6 -> x3 x4 x5 x6 x1 x2 */
   def op2Rot(program : ScriptProgram) : ScriptProgram = {
-    require(program.script.nonEmpty && program.script.head == OP_2ROT, "Top of script stack must be OP_2ROT")
+    require(program.script.headOption.contains(OP_2ROT), "Top of script stack must be OP_2ROT")
     program.stack match {
       case h :: h1 :: h2 :: h3 :: h4 :: h5 :: t =>
         val newStack = h4 :: h5 :: h :: h1 :: h2 :: h3 ::  t
@@ -177,7 +175,7 @@ trait StackInterpreter extends BitcoinSLogger {
 
   /** Removes the top two stack items. */
   def op2Drop(program : ScriptProgram) : ScriptProgram = {
-    require(program.script.nonEmpty && program.script.head == OP_2DROP, "Top of script stack must be OP_2DROP")
+    require(program.script.headOption.contains(OP_2DROP), "Top of script stack must be OP_2DROP")
     if (program.stack.size > 1) {
       ScriptProgram(program, program.stack.tail.tail, program.script.tail)
     } else {
@@ -189,7 +187,7 @@ trait StackInterpreter extends BitcoinSLogger {
 
   /** The top two items on the stack are swapped. */
   def opSwap(program : ScriptProgram) : ScriptProgram = {
-    require(program.script.nonEmpty && program.script.head == OP_SWAP, "Top of script stack must be OP_SWAP")
+    require(program.script.headOption.contains(OP_SWAP), "Top of script stack must be OP_SWAP")
     if (program.stack.size > 1) {
       val newStack = program.stack.tail.head :: program.stack.head :: program.stack.tail.tail
       ScriptProgram(program, newStack, program.script.tail)
@@ -202,7 +200,7 @@ trait StackInterpreter extends BitcoinSLogger {
 
   /** The item at the top of the stack is copied and inserted before the second-to-top item. */
   def opTuck(program : ScriptProgram) : ScriptProgram = {
-    require(program.script.nonEmpty && program.script.head == OP_TUCK, "Top of script stack must be OP_TUCK")
+    require(program.script.headOption.contains(OP_TUCK), "Top of script stack must be OP_TUCK")
     program.stack match {
       case h :: h1 :: t =>
         val newStack = h  :: h1 :: h:: t
@@ -216,7 +214,7 @@ trait StackInterpreter extends BitcoinSLogger {
 
   /** Duplicates the top two stack items. */
   def op2Dup(program : ScriptProgram) : ScriptProgram = {
-    require(program.script.nonEmpty && program.script.head == OP_2DUP, "Top of script stack must be OP_2DUP")
+    require(program.script.headOption.contains(OP_2DUP), "Top of script stack must be OP_2DUP")
     program.stack match {
       case h :: h1 :: t =>
         val newStack = h :: h1 :: h :: h1 :: t
@@ -229,7 +227,7 @@ trait StackInterpreter extends BitcoinSLogger {
 
   /** Duplicates the top three stack items. */
   def op3Dup(program : ScriptProgram) : ScriptProgram = {
-    require(program.script.nonEmpty && program.script.head == OP_3DUP, "Top of script stack must be OP_3DUP")
+    require(program.script.headOption.contains(OP_3DUP), "Top of script stack must be OP_3DUP")
     program.stack match {
       case h :: h1 :: h2 :: t =>
         val newStack = h :: h1 :: h2 :: h :: h1 :: h2 :: t
@@ -242,7 +240,7 @@ trait StackInterpreter extends BitcoinSLogger {
 
   /** Copies the pair of items two spaces back in the stack to the front. */
   def op2Over(program : ScriptProgram) : ScriptProgram = {
-    require(program.script.nonEmpty && program.script.head == OP_2OVER, "Top of script stack must be OP_2OVER")
+    require(program.script.headOption.contains(OP_2OVER), "Top of script stack must be OP_2OVER")
     program.stack match {
       case h :: h1 :: h2 :: h3 :: t =>
         val newStack = h2 :: h3 :: h :: h1 :: h2 :: h3 :: t
@@ -255,7 +253,7 @@ trait StackInterpreter extends BitcoinSLogger {
 
   /** Swaps the top two pairs of items. */
   def op2Swap(program : ScriptProgram) : ScriptProgram = {
-    require(program.script.nonEmpty && program.script.head == OP_2SWAP, "Top of script stack must be OP_2SWAP")
+    require(program.script.headOption.contains(OP_2SWAP), "Top of script stack must be OP_2SWAP")
     program.stack match {
       case h :: h1 :: h2 :: h3 :: t  =>
         val newStack = h2 :: h3 :: h :: h1 :: t

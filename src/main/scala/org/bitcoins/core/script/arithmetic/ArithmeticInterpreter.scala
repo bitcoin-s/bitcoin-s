@@ -16,31 +16,31 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
 
   /** a is added to b. */
   def opAdd(program : ScriptProgram) : ScriptProgram = {
-    require(program.script.nonEmpty && program.script.head == OP_ADD, "Script top must be OP_ADD")
+    require(program.script.headOption.contains(OP_ADD), "Script top must be OP_ADD")
     performBinaryArithmeticOperation(program, (x,y) => x + y)
   }
 
   /** Increments the stack top by 1. */
   def op1Add(program : ScriptProgram) : ScriptProgram = {
-    require(program.script.nonEmpty && program.script.head == OP_1ADD, "Script top must be OP_1ADD")
+    require(program.script.headOption.contains(OP_1ADD), "Script top must be OP_1ADD")
     performUnaryArithmeticOperation(program, x => x + ScriptNumber.one)
   }
 
   /** Decrements the stack top by 1. */
   def op1Sub(program : ScriptProgram) : ScriptProgram = {
-    require(program.script.nonEmpty && program.script.head == OP_1SUB, "Script top must be OP_1SUB")
+    require(program.script.headOption.contains(OP_1SUB), "Script top must be OP_1SUB")
     performUnaryArithmeticOperation(program, x => x - ScriptNumber.one )
   }
 
   /** b is subtracted from a. */
   def opSub(program : ScriptProgram) : ScriptProgram = {
-    require(program.script.nonEmpty && program.script.head == OP_SUB, "Script top must be OP_SUB")
+    require(program.script.headOption.contains(OP_SUB), "Script top must be OP_SUB")
     performBinaryArithmeticOperation(program, (x,y) => y - x)
   }
 
   /** Takes the absolute value of the stack top. */
   def opAbs(program : ScriptProgram) : ScriptProgram = {
-    require(program.script.nonEmpty && program.script.head == OP_ABS, "Script top must be OP_ABS")
+    require(program.script.headOption.contains(OP_ABS), "Script top must be OP_ABS")
     performUnaryArithmeticOperation(program, x => x match {
       case ScriptNumber.zero => ScriptNumber.zero
       case _ : ScriptNumber => ScriptNumber(x.underlying.abs)
@@ -49,25 +49,25 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
 
   /** Negates the stack top. */
   def opNegate(program : ScriptProgram) : ScriptProgram = {
-    require(program.script.nonEmpty && program.script.head == OP_NEGATE, "Script top must be OP_NEGATE")
+    require(program.script.headOption.contains(OP_NEGATE), "Script top must be OP_NEGATE")
     performUnaryArithmeticOperation(program, x => x -)
   }
 
   /** If the input is 0 or 1, it is flipped. Otherwise the output will be 0. */
   def opNot(program : ScriptProgram) : ScriptProgram = {
-    require(program.script.nonEmpty && program.script.head == OP_NOT, "Script top must be OP_NOT")
+    require(program.script.headOption.contains(OP_NOT), "Script top must be OP_NOT")
     performUnaryArithmeticOperation(program, x => if (program.stackTopIsFalse) OP_TRUE else OP_FALSE)
   }
 
   /** Returns 0 if the input is 0. 1 otherwise. */
   def op0NotEqual(program : ScriptProgram) : ScriptProgram = {
-    require(program.script.nonEmpty && program.script.head == OP_0NOTEQUAL, "Script top must be OP_0NOTEQUAL")
+    require(program.script.headOption.contains(OP_0NOTEQUAL), "Script top must be OP_0NOTEQUAL")
     performUnaryArithmeticOperation(program, x => if(x.underlying == 0) OP_FALSE else OP_TRUE)
   }
 
   /** If both a and b are not 0, the output is 1. Otherwise 0. */
   def opBoolAnd(program : ScriptProgram) : ScriptProgram = {
-    require(program.script.nonEmpty && program.script.head == OP_BOOLAND, "Script top must be OP_BOOLAND")
+    require(program.script.headOption.contains(OP_BOOLAND), "Script top must be OP_BOOLAND")
     performBinaryBooleanOperation(program,(x,y) => {
       val xIsFalse = (x == ScriptNumber.zero || x == OP_0)
       val yIsFalse = (y == ScriptNumber.zero || y == OP_0)
@@ -77,7 +77,7 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
 
   /** If a or b is not 0, the output is 1. Otherwise 0. */
   def opBoolOr(program : ScriptProgram) : ScriptProgram = {
-    require(program.script.nonEmpty && program.script.head == OP_BOOLOR, "Script top must be OP_BOOLOR")
+    require(program.script.headOption.contains(OP_BOOLOR), "Script top must be OP_BOOLOR")
     performBinaryBooleanOperation(program, (x,y) => {
       if (x == y && (x == ScriptNumber.zero || x == OP_0)) false else true
     })
@@ -85,13 +85,13 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
 
   /** Returns 1 if the numbers are equal, 0 otherwise. */
   def opNumEqual(program : ScriptProgram) : ScriptProgram = {
-    require(program.script.nonEmpty && program.script.head == OP_NUMEQUAL, "Script top must be OP_NUMEQUAL")
+    require(program.script.headOption.contains(OP_NUMEQUAL), "Script top must be OP_NUMEQUAL")
     performBinaryBooleanOperation(program,(x,y) => x.numEqual(y))
   }
 
   /** Same as [[OP_NUMEQUAL]], but runs [[OP_VERIFY]] afterward. */
   def opNumEqualVerify(program : ScriptProgram) : ScriptProgram = {
-    require(program.script.nonEmpty && program.script.head == OP_NUMEQUALVERIFY,
+    require(program.script.headOption.contains(OP_NUMEQUALVERIFY),
       "Script top must be OP_NUMEQUALVERIFY")
     if (program.stack.size < 2) {
       logger.error("OP_NUMEQUALVERIFY requires two stack elements")
@@ -112,7 +112,7 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
 
   /** Returns 1 if the numbers are not equal, 0 otherwise. */
   def opNumNotEqual(program : ScriptProgram) : ScriptProgram = {
-    require(program.script.nonEmpty && program.script.head == OP_NUMNOTEQUAL,
+    require(program.script.headOption.contains(OP_NUMNOTEQUAL),
       "Script top must be OP_NUMNOTEQUAL")
     performBinaryBooleanOperation(program, (x,y) => {
       x.underlying != y.underlying
@@ -121,35 +121,35 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
 
   /** Returns 1 if a is less than b, 0 otherwise. */
   def opLessThan(program : ScriptProgram) : ScriptProgram = {
-    require(program.script.nonEmpty && program.script.head == OP_LESSTHAN,
+    require(program.script.headOption.contains(OP_LESSTHAN),
       "Script top must be OP_LESSTHAN")
     performBinaryBooleanOperation(program, (x,y) => y < x)
   }
 
   /** Returns 1 if a is greater than b, 0 otherwise. */
   def opGreaterThan(program : ScriptProgram) : ScriptProgram = {
-    require(program.script.nonEmpty && program.script.head == OP_GREATERTHAN,
+    require(program.script.headOption.contains(OP_GREATERTHAN),
       "Script top must be OP_GREATERTHAN")
     performBinaryBooleanOperation(program, (x,y) => y > x)
   }
 
   /** Returns 1 if a is less than or equal to b, 0 otherwise. */
   def opLessThanOrEqual(program : ScriptProgram) : ScriptProgram = {
-    require(program.script.nonEmpty && program.script.head == OP_LESSTHANOREQUAL,
+    require(program.script.headOption.contains(OP_LESSTHANOREQUAL),
       "Script top must be OP_LESSTHANOREQUAL")
     performBinaryBooleanOperation(program, (x,y) => y <= x)
   }
 
   /** Returns 1 if a is greater than or equal to b, 0 otherwise. */
   def opGreaterThanOrEqual(program : ScriptProgram) : ScriptProgram = {
-    require(program.script.nonEmpty && program.script.head == OP_GREATERTHANOREQUAL,
+    require(program.script.headOption.contains(OP_GREATERTHANOREQUAL),
       "Script top must be OP_GREATERTHANOREQUAL")
     performBinaryBooleanOperation(program, (x,y) => y >= x)
   }
 
   /** Returns the smaller of a and b. */
   def opMin(program : ScriptProgram) : ScriptProgram = {
-    require(program.script.nonEmpty && program.script.head == OP_MIN,
+    require(program.script.headOption.contains(OP_MIN),
       "Script top must be OP_MIN")
     if (program.stack.size < 2) {
       logger.error("OP_MAX requires at least two stack elements")
@@ -161,7 +161,7 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
 
   /** Returns the larger of a and b. */
   def opMax(program : ScriptProgram) : ScriptProgram = {
-    require(program.script.nonEmpty && program.script.head == OP_MAX,
+    require(program.script.headOption.contains(OP_MAX),
       "Script top must be OP_MAX")
     if (program.stack.size < 2) {
       logger.error("OP_MAX requires at least two stack elements")
@@ -173,7 +173,7 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
 
   /** Returns 1 if x is within the specified range (left-inclusive), 0 otherwise. */
   def opWithin(program : ScriptProgram) : ScriptProgram = {
-    require(program.script.nonEmpty && program.script.head == OP_WITHIN,
+    require(program.script.headOption.contains(OP_WITHIN),
       "Script top must be OP_WITHIN")
     if (program.stack.size < 3) {
       logger.error("OP_WITHIN requires at least 3 elements on the stack")
