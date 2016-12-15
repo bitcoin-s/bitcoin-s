@@ -199,27 +199,47 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
   /** Verifies a segregated witness program by running it through the interpreter
     * [[https://github.com/bitcoin/bitcoin/blob/f8528134fc188abc5c7175a19680206964a8fade/src/script/interpreter.cpp#L1302]]*/
   private def verifyWitnessProgram(witnessVersion: WitnessVersion, scriptWitness: ScriptWitness, witnessProgram: Seq[ScriptToken],
-                                   witnessTxSigComponent: WitnessV0TransactionSignatureComponent): ExecutedScriptProgram = witnessVersion match {
-    case WitnessVersion0 =>
-      val either: Either[(Seq[ScriptToken], ScriptPubKey),ScriptError] = witnessVersion.rebuild(scriptWitness, witnessProgram)
-      either match {
-        case Left((stack,scriptPubKey)) =>
-          val w = witnessTxSigComponent
-          val newProgram = ScriptProgram(w.transaction,scriptPubKey,w.inputIndex,stack,scriptPubKey.asm, scriptPubKey.asm,Nil,
-            w.flags,w.sigVersion,w.amount)
-          val evaluated = loop(newProgram,0)
-          logger.info("Stack after evaluating witness: " + evaluated.stack)
-          if (evaluated.error.isDefined) evaluated
-          else if (evaluated.stack.size != 1 || evaluated.stackTopIsFalse) ScriptProgram(evaluated,ScriptErrorEvalFalse)
-          else evaluated
-        case Right(err) =>
-          val program = ScriptProgram.toExecutionInProgress(ScriptProgram(witnessTxSigComponent))
-          ScriptProgram(program,err)
-      }
-    case UnassignedWitness =>
-      logger.warn("Unassigned witness inside of witness script pubkey")
-      val program = ScriptProgram(witnessTxSigComponent)
-      ScriptProgram(program,UnassignedWitness.rebuild(scriptWitness, witnessProgram).right.get)
+                                   witnessTxSigComponent: WitnessV0TransactionSignatureComponent): ExecutedScriptProgram = {
+
+    /** Helper function to run the post segwit execution checks */
+    def postSegWitProgramChecks(evaluated: ExecutedScriptProgram): ExecutedScriptProgram = {
+      logger.info("Stack after evaluating witness: " + evaluated.stack)
+      if (evaluated.error.isDefined) evaluated
+      else if (evaluated.stack.size != 1 || evaluated.stackTopIsFalse) ScriptProgram(evaluated,ScriptErrorEvalFalse)
+      else evaluated
+    }
+
+    witnessVersion match {
+      case WitnessVersion0 =>
+        val either: Either[(Seq[ScriptToken], ScriptPubKey),ScriptError] = witnessVersion.rebuild(scriptWitness, witnessProgram)
+        either match {
+          case Left((stack,scriptPubKey)) =>
+            val w = witnessTxSigComponent
+            val newProgram = ScriptProgram(w.transaction,scriptPubKey,w.inputIndex,stack,scriptPubKey.asm, scriptPubKey.asm,Nil,
+              w.flags,w.sigVersion,w.amount)
+            val evaluated = loop(newProgram,0)
+            postSegWitProgramChecks(evaluated)
+          case Right(err) =>
+            val program = ScriptProgram(witnessTxSigComponent)
+            ScriptProgram(program,err)
+        }
+      case UnassignedWitness =>
+        logger.warn("Unassigned witness inside of witness script pubkey")
+        val w = witnessTxSigComponent
+        val flags = w.flags
+        val discourageUpgradableWitnessVersion = ScriptFlagUtil.discourageUpgradableWitnessProgram(flags)
+        val program = ScriptProgram(w.transaction,w.scriptPubKey,w.inputIndex,Nil,Nil, w.scriptPubKey.asm,Nil,
+          w.flags,w.sigVersion,w.amount)
+        if (discourageUpgradableWitnessVersion) {
+          ScriptProgram(program,UnassignedWitness.rebuild(scriptWitness, witnessProgram).right.get)
+        } else {
+          //if we are not discouraging upgradable ops, we just trivially return the program with an OP_TRUE on the stack
+          //see: https://github.com/bitcoin/bitcoin/blob/b83264d9c7a8ddb79f64bd9540caddc8632ef31f/src/script/interpreter.cpp#L1386-L1389
+          val evaluated = loop(ScriptProgram(program,Seq(OP_TRUE),ScriptProgram.Stack),0)
+          evaluated
+        }
+
+    }
   }
 
   /**
