@@ -15,11 +15,7 @@ trait NumberUtil extends BitcoinSLogger {
 
   private def parseLong(bytes : Seq[Byte]) : Long = parseLong(bytes.toList)
 
-  /**
-    * Takes 2^^num
-    * @param exponent the exponent
-    * @return
-    */
+  /** Takes 2^^num. */
   def pow2(exponent : Int) : BigInt = {
     require(exponent < 64, "We cannot have anything larger than 2^64 - 1 in a long, you tried to do 2^" + exponent)
     BigInt(1) << exponent
@@ -45,24 +41,16 @@ trait NumberUtil extends BitcoinSLogger {
     setBits.foldLeft(BigInt(0)){_ + _}
   }
 
-  /**
-    * Takes a hex string and parses it to a [[BigInt]]
-    * @param hex
-    * @return
-    */
+  /** Takes a hex string and parses it to a [[BigInt]]. */
   def toBigInt(hex : String) : BigInt = toBigInt(BitcoinSUtil.decodeHex(hex))
 
-  /**
-    * Converts a sequence of bytes to twos complement signed number
-    * @param bytes
-    * @return
-    */
+  /** Converts a sequence of bytes to twos complement signed number. */
   def toBigInt(bytes : Seq[Byte]) : BigInt = {
     //BigInt interprets the number as an unsigned number then applies the given
     //sign in front of that number, therefore if we have a negative number we need to invert it
     //since twos complement is an inverted number representation for negative numbers
     //see https://en.wikipedia.org/wiki/Two%27s_complement
-    if (bytes.length == 0) BigInt(0)
+    if (bytes.isEmpty) BigInt(0)
     //check if sign bit is set
     else if ((0x80.toByte & bytes.head) !=0) {
       val invertedBytes = bytes.tail.map(b => (b ^ 0xff.toByte).toByte)
@@ -76,32 +64,16 @@ trait NumberUtil extends BitcoinSLogger {
     }
   }
 
-  /**
-    * Converts a sequence of bytes to a [[Int]]
-    * @param bytes
-    * @return
-    */
+  /** Converts a sequence of [[Byte]] to a [[Int]]. */
   def toInt(bytes : Seq[Byte]) : Int = toBigInt(bytes).toInt
 
-  /**
-    * Converts a hex string to a [[Int]]
-    * @param hex
-    * @return
-    */
+  /** Converts a hex string to a [[Int]]. */
   def toInt(hex : String) : Int = toInt(BitcoinSUtil.decodeHex(hex))
 
-  /**
-    * Converts a sequence of bytes to a [[Long]]
-    * @param bytes
-    * @return
-    */
+  /** Converts a sequence of [[Byte]] to a [[Long]]. */
   def toLong(bytes : Seq[Byte]) : Long = toBigInt(bytes).toLong
 
-  /**
-    * Converts a hex string to a [[Long]]
-    * @param hex
-    * @return
-    */
+  /** Converts a hex string to a [[Long]]. */
   def toLong(hex : String): Long = toLong(BitcoinSUtil.decodeHex(hex))
 
 }
