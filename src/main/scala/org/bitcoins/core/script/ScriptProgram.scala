@@ -193,10 +193,7 @@ object ScriptProgram {
     require(updatedScript.script == scriptTokens)
     updatedScript
   }
-  /**
-    * Updates the last [[org.bitcoins.core.script.crypto.OP_CODESEPARATOR]] index.
-    * @return
-    */
+  /** Updates the last [[org.bitcoins.core.script.crypto.OP_CODESEPARATOR]] index. */
   def apply(oldProgram : ExecutionInProgressScriptProgram, lastCodeSeparator : Int) : ExecutionInProgressScriptProgram = {
     ExecutionInProgressScriptProgramImpl(oldProgram.txSignatureComponent,
       oldProgram.stack, oldProgram.script, oldProgram.originalScript,
@@ -204,10 +201,7 @@ object ScriptProgram {
   }
 
 
-  /**
-    * Updates the [[ScriptToken]]s in either the stack or script and the last [[org.bitcoins.core.script.crypto.OP_CODESEPARATOR]] index
-    * @return
-    */
+  /** Updates the [[ScriptToken]]s in either the stack or script and the last [[org.bitcoins.core.script.crypto.OP_CODESEPARATOR]] index */
   def apply(oldProgram : ExecutionInProgressScriptProgram, tokens : Seq[ScriptToken], indicator: UpdateIndicator,
             lastCodeSeparator : Int) : ExecutionInProgressScriptProgram = {
     val updatedIndicator = ScriptProgram(oldProgram, tokens, indicator)
@@ -326,29 +320,19 @@ object ScriptProgram {
     PreExecutionScriptProgramImpl(t,Nil,script.toList,script.toList,Nil,t.flags)
   }
 
-  /**
-   * Changes a [[ScriptProgram]] that is a [[ExecutionInProgressScriptProgram]] and changes it to an [[ExecutedScriptProgram]].
-   * @param executionInProgressScriptProgram
-   * @return
-   */
+  /** Changes a [[ScriptProgram]] that is a [[ExecutionInProgressScriptProgram]] and changes it to an [[ExecutedScriptProgram]].*/
   def toExecutedProgram(executionInProgressScriptProgram: ExecutionInProgressScriptProgram) : ExecutedScriptProgram = {
     ExecutedScriptProgramImpl(executionInProgressScriptProgram.txSignatureComponent, executionInProgressScriptProgram.stack,
       executionInProgressScriptProgram.script,executionInProgressScriptProgram.originalScript,executionInProgressScriptProgram.altStack,
       executionInProgressScriptProgram.flags,None)
   }
 
-  /**
-   * Changes a [[ScriptProgram]] that is a [[PreExecutionScriptProgram]] and changes it to an [[ExecutionInProgressScriptProgram]].
-   * @param preExecutionScriptProgram
-   * @return
-   */
+  /** Changes a [[ScriptProgram]] that is a [[PreExecutionScriptProgram]] and changes it to an [[ExecutionInProgressScriptProgram]].*/
   def toExecutionInProgress(preExecutionScriptProgram: PreExecutionScriptProgram) : ExecutionInProgressScriptProgram = {
     toExecutionInProgress(preExecutionScriptProgram,None)
   }
 
-  /**
-   * Changes a [[ScriptProgram]] that is a [[PreExecutionScriptProgram]] and changes it to an [[ExecutionInProgressScriptProgram]] given the stack state.
-   */
+  /** Changes a [[ScriptProgram]] that is a [[PreExecutionScriptProgram]] and changes it to an [[ExecutionInProgressScriptProgram]] given the stack state. */
   def toExecutionInProgress(preExecutionScriptProgram: PreExecutionScriptProgram, stack : Option[Seq[ScriptToken]]) : ExecutionInProgressScriptProgram = {
     stack match {
       case Some(stackTokens) => ExecutionInProgressScriptProgramImpl(preExecutionScriptProgram.txSignatureComponent,stackTokens.toList,preExecutionScriptProgram.script,
