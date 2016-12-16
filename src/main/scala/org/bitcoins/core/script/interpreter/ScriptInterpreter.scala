@@ -30,7 +30,6 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
   with BitwiseInterpreter with ConstantInterpreter with ArithmeticInterpreter with SpliceInterpreter
   with LockTimeInterpreter with BitcoinSLogger {
 
-
   /**
    * Currently bitcoin core limits the maximum number of non-push operations per script
    * to 201
@@ -82,20 +81,17 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
     logger.debug("Executed Script Program: " + executedProgram)
     if (executedProgram.error.isDefined) executedProgram.error.get
     else if (hasUnexpectedWitness(program)) {
-      //note: the 'program' value we pass above is intetional, we need to check the original program
+      //note: the 'program' value we pass above is intentional, we need to check the original program
       //as the 'executedProgram' may have had the scriptPubKey value changed to the rebuilt ScriptPubKey of the witness program
       ScriptErrorWitnessUnexpected
     }
     else if (executedProgram.stackTopIsTrue && flags.contains(ScriptVerifyCleanStack)) {
       //require that the stack after execution has exactly one element on it
-      executedProgram.stack.size == 1 match {
-        case true => ScriptOk
-        case false => ScriptErrorCleanStack
-      }
+      if (executedProgram.stack.size == 1) ScriptOk
+      else ScriptErrorCleanStack
     } else if (executedProgram.stackTopIsTrue) ScriptOk
     else ScriptErrorEvalFalse
   }
-
 
   /**
     * P2SH scripts are unique in their evaluation, first the scriptSignature must be added to the stack, next the
@@ -191,7 +187,6 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
         if (scriptSig.asm.nonEmpty && !w.scriptPubKey.isInstanceOf[P2SHScriptPubKey]) ScriptProgram(scriptPubKeyExecutedProgram,ScriptErrorWitnessMalleated)
         else verifyWitnessProgram(witnessVersion, witness, witnessProgram, w)
     }
-
   }
 
   /** Verifies a segregated witness program by running it through the interpreter
@@ -435,17 +430,10 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
     }
   }
 
-
-  /**
-    * Checks the validity of a transaction in accordance to bitcoin core's CheckTransaction function
-    * https://github.com/bitcoin/bitcoin/blob/f7a21dae5dbf71d5bc00485215e84e6f2b309d0a/src/main.cpp#L939
- *
-    * @param transaction
-    * @return
-    */
+  /** Checks the validity of a transaction in accordance to bitcoin core's CheckTransaction function
+    * https://github.com/bitcoin/bitcoin/blob/f7a21dae5dbf71d5bc00485215e84e6f2b309d0a/src/main.cpp#L939. */
   def checkTransaction(transaction : Transaction) : Boolean = {
     val inputOutputsNotZero = !(transaction.inputs.isEmpty || transaction.outputs.isEmpty)
-    //TODO: replace 1000000 with a value that represents the max block size
     val txNotLargerThanBlock = transaction.bytes.size < Consensus.maxBlockSize
     val outputsSpendValidAmountsOfMoney = !transaction.outputs.exists(o =>
       o.value < CurrencyUnits.zero || o.value > Consensus.maxMoney)
@@ -467,7 +455,6 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
       allOutputsValidMoneyRange && noDuplicateInputs && isValidScriptSigForCoinbaseTx
   }
 
-
   /** Determines if the given currency unit is within the valid range for the system */
   def validMoneyRange(currencyUnit : CurrencyUnit) : Boolean = {
     currencyUnit >= CurrencyUnits.zero && currencyUnit <= Consensus.maxMoney
@@ -481,8 +468,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
 
   /** Checks if the transaction contained a witness that we did not use
     * [[https://github.com/bitcoin/bitcoin/blob/528472111b4965b1a99c4bcf08ac5ec93d87f10f/src/script/interpreter.cpp#L1515-L1523]]
-    * Return true if witness was NOT used, return false if witness was used
-    * */
+    * Return true if witness was NOT used, return false if witness was used. */
   private def hasUnexpectedWitness(program: ScriptProgram): Boolean =  {
     val txSigComponent = program.txSignatureComponent
     txSigComponent match {

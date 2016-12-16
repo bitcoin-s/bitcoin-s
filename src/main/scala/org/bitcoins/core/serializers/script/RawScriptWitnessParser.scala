@@ -33,7 +33,7 @@ trait RawScriptWitnessParser extends RawBitcoinSerializer[ScriptWitness] {
         loop(newRemainingBytes, stackElement +: accum, remainingStackItems - UInt64.one)
       }
     }
-    //note there is no 'reversing' the accum, in bitcoin-s we assume the stop of the stack is the 'head' element in the sequence
+    //note there is no 'reversing' the accum, in bitcoin-s we assume the top of the stack is the 'head' element in the sequence
     val stack = loop(stackBytes,Nil,stackSize.num)
     val witness = ScriptWitness(stack)
     witness
