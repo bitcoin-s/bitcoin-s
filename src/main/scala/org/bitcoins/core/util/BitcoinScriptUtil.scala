@@ -26,7 +26,6 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
     hex
   }
 
-
   /** Converts a sequence of script tokens to them to their byte values */
   def asmToBytes(asm : Seq[ScriptToken]) : Seq[Byte] = BitcoinSUtil.decodeHex(asmToHex(asm))
 
@@ -50,10 +49,6 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
     case _ : ScriptToken => false
   }
 
-
-
-
-
   /**
    * Counts the amount of sigops in a script
    * https://github.com/bitcoin/bitcoin/blob/master/src/script/script.cpp#L156-L202
@@ -74,7 +69,6 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
     }.sum
     checkSigCount + multiSigCount
   }
-
 
   /**
    * Parses the number of signatures on the stack
@@ -110,11 +104,10 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
     mRequiredSignatures
   }
 
-
   /**
    * Determines if a script contains only script operations
    * This is equivalent to
-   * https://github.com/bitcoin/bitcoin/blob/master/src/script/script.cpp#L213
+   * [[https://github.com/bitcoin/bitcoin/blob/master/src/script/script.cpp#L213]]
    */
   def isPushOnly(script : Seq[ScriptToken]) : Boolean = {
     @tailrec
@@ -128,11 +121,10 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
     !loop(script, List()).exists(_ == false)
   }
 
-
   /**
    * Determines if the token being pushed onto the stack is being pushed by the SMALLEST push operation possible
    * This is equivalent to
-   * https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L209
+   * [[https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L209]]
    * @param pushOp the operation that is pushing the data onto the stack
    * @param token the token that is being pushed onto the stack by the pushOp
    * @return
@@ -183,21 +175,14 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
     else throw new IllegalArgumentException("ScriptToken is to large for pushops, size: " + scriptTokenSize)
   }
 
-
   def calculatePushOp(bytes: Seq[Byte]): Seq[ScriptToken] = calculatePushOp(ScriptConstant(bytes))
 
-
   /**
-   * Whenever a script constant is interpreted to a number BIP62 could enforce that number to be encoded
+   * Whenever a [[ScriptConstant]] is interpreted to a number BIP62 could enforce that number to be encoded
    * in the smallest encoding possible
-   * https://github.com/bitcoin/bitcoin/blob/a6a860796a44a2805a58391a009ba22752f64e32/src/script/script.h#L220-L237 */
+   * [[https://github.com/bitcoin/bitcoin/blob/a6a860796a44a2805a58391a009ba22752f64e32/src/script/script.h#L220-L237]] */
   def isShortestEncoding(constant : ScriptConstant) : Boolean = isShortestEncoding(constant.bytes)
 
-  /**
-   * Whenever a script constant is interpreted to a number BIP62 could enforce that number to be encoded
-   * in the smallest encoding possible
-   * https://github.com/bitcoin/bitcoin/blob/a6a860796a44a2805a58391a009ba22752f64e32/src/script/script.h#L220-L237
-   */
   def isShortestEncoding(bytes : Seq[Byte]) : Boolean = {
     // If the most-significant-byte - excluding the sign bit - is zero
     // then we're not minimal. Note how this test also rejects the
@@ -221,29 +206,17 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
    */
   def isShortestEncoding(hex : String) : Boolean = isShortestEncoding(BitcoinSUtil.decodeHex(hex))
   /**
-   * Checks the public key encoding according to bitcoin core's function
-   * https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L202
-   * @param key the key whose encoding we are checking
-   * @param program the program whose flags which dictate the rules for the public keys encoding
-   * @return if the key is encoded correctly against the rules give in the flags parameter
-   */
+   * Checks the [[ECPublicKey]] encoding according to bitcoin core's function:
+   * [[https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L202]]. */
   def checkPubKeyEncoding(key : ECPublicKey, program : ScriptProgram) : Boolean = checkPubKeyEncoding(key,program.flags)
 
-  /**
-   * Checks the public key encoding according to bitcoin core's function
-   * https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L202
-   * @param key the key whose encoding we are checking
-   * @param flags the flags which dictate the rules for the public keys encoding
-   * @return if the key is encoded correctly against the rules givein the flags parameter
-   */
   def checkPubKeyEncoding(key : ECPublicKey, flags : Seq[ScriptFlag]) : Boolean = {
     if (ScriptFlagUtil.requireStrictEncoding(flags) &&
       !isCompressedOrUncompressedPubKey(key)) false else true
   }
 
 
-  /**
-   * Returns true if the key is compressed or uncompressed, false otherwise
+  /** Returns true if the key is compressed or uncompressed, false otherwise
    * https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L66
    * @param key the public key that is being checked
    * @return true if the key is compressed/uncompressed otherwise false
@@ -264,7 +237,7 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
       //  Non-canonical public key: neither compressed nor uncompressed
       return false
     }
-    return true
+    true
   }
 
   /** Checks if the given public key is a compressed public key */
@@ -293,7 +266,6 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
     } else None
   }
 
-
   /** Prepares the script we spending to be serialized for our transaction signature serialization algorithm
     * We need to check if the scriptSignature has a redeemScript
     * In that case, we need to pass the redeemScript to the TransactionSignatureChecker
@@ -306,8 +278,6 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
     val scriptWithSigRemoved = calculateScriptForSigning(txSignatureComponent, script)
     removeSignatureFromScript(signature,scriptWithSigRemoved)
   }
-
-
 
   def calculateScriptForSigning(txSignatureComponent: TransactionSignatureComponent, script: Seq[ScriptToken]): Seq[ScriptToken] = txSignatureComponent match {
     case base: BaseTransactionSignatureComponent =>
@@ -370,9 +340,7 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
       }
   }
 
-  /**
-    * Removes the given [[ECDigitalSignature]] from the list of [[ScriptToken]] if it exists
-    */
+  /** Removes the given [[ECDigitalSignature]] from the list of [[ScriptToken]] if it exists. */
   def removeSignatureFromScript(signature : ECDigitalSignature, script : Seq[ScriptToken]) : Seq[ScriptToken] = {
     if (script.contains(ScriptConstant(signature.hex))) {
       //replicates this line in bitcoin core
@@ -398,18 +366,13 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
     loop(sigs,script)
   }
 
-  /**
-    * Removes the OP_CODESEPARATOR in the original script according to
-    * the last code separator index in the script
-    * @param program
-    * @return
-    */
+  /** Removes the [[org.bitcoins.core.script.crypto.OP_CODESEPARATOR]] in the original script according to
+    * the last code separator index in the script. */
   def removeOpCodeSeparator(program : ExecutionInProgressScriptProgram) : Seq[ScriptToken] = {
     if (program.lastCodeSeparator.isDefined) {
       program.originalScript.slice(program.lastCodeSeparator.get+1, program.originalScript.size)
     } else program.originalScript
   }
-
 
   def parseScriptEither(scriptEither: Either[(Seq[ScriptToken], ScriptPubKey), ScriptError]): Seq[ScriptToken] = scriptEither match {
     case Left((_,scriptPubKey)) =>
@@ -434,6 +397,5 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
          | _: CLTVScriptPubKey | _: CSVScriptPubKey | EmptyScriptPubKey => SigVersionBase
   }
 }
-
 
 object BitcoinScriptUtil extends BitcoinScriptUtil
