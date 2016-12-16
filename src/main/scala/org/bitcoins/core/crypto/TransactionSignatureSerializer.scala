@@ -162,7 +162,7 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
     * [[https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki]]
     * [[https://github.com/bitcoin/bitcoin/blob/f8528134fc188abc5c7175a19680206964a8fade/src/script/interpreter.cpp#L1113]]
     */
-  def serializeForSignature(spendingTx: WitnessTransaction, inputIndex: UInt32, script: Seq[ScriptToken], hashType: HashType,
+  def serializeForSignature(spendingTx: Transaction, inputIndex: UInt32, script: Seq[ScriptToken], hashType: HashType,
                             amount: CurrencyUnit, signatureVersion: SignatureVersion): Seq[Byte] = signatureVersion match {
     case SigVersionBase =>
       serializeForSignature(spendingTx,inputIndex,script,hashType)
@@ -216,7 +216,7 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
     * [[https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki]]
     * NOTE: This covers the amount of [[CurrencyUnit]] we are spending in the output
     * */
-  def hashForSignature(spendingTx: WitnessTransaction, inputIndex: UInt32, script: Seq[ScriptToken], hashType: HashType,
+  def hashForSignature(spendingTx: Transaction, inputIndex: UInt32, script: Seq[ScriptToken], hashType: HashType,
                        amount: CurrencyUnit, sigVersion: SignatureVersion): DoubleSha256Digest = {
 
     val serialization = serializeForSignature(spendingTx,inputIndex,script,hashType,amount,sigVersion)

@@ -4,7 +4,7 @@ import org.bitcoins.core.crypto._
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.protocol.script.{CLTVScriptPubKey, CSVScriptPubKey, EmptyScriptPubKey, _}
-import org.bitcoins.core.protocol.transaction.WitnessTransaction
+import org.bitcoins.core.protocol.transaction.{Transaction, WitnessTransaction}
 import org.bitcoins.core.script.ScriptProgram.PreExecutionScriptProgramImpl
 import org.bitcoins.core.script.constant._
 import org.bitcoins.core.script.crypto.{OP_CHECKMULTISIG, OP_CHECKMULTISIGVERIFY, OP_CHECKSIG, OP_CHECKSIGVERIFY}
@@ -382,14 +382,14 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
   }
 
   /** Given a tx, scriptPubKey and the input index we are checking the tx, it derives the appropriate [[SignatureVersion]] to use */
-  def parseSigVersion(wtx: WitnessTransaction, scriptPubKey: ScriptPubKey, inputIndex: UInt32): SignatureVersion  = scriptPubKey match {
+  def parseSigVersion(tx: Transaction, scriptPubKey: ScriptPubKey, inputIndex: UInt32): SignatureVersion  = scriptPubKey match {
     case _ : WitnessScriptPubKeyV0 | _: UnassignedWitnessScriptPubKey =>
       SigVersionWitnessV0
     case _: P2SHScriptPubKey =>
-      val scriptSig = wtx.inputs(inputIndex.toInt).scriptSignature
+      val scriptSig = tx.inputs(inputIndex.toInt).scriptSignature
       scriptSig match {
         case s : P2SHScriptSignature =>
-          parseSigVersion(wtx,s.redeemScript,inputIndex)
+          parseSigVersion(tx,s.redeemScript,inputIndex)
         case _ : P2PKScriptSignature | _: P2PKHScriptSignature | _:MultiSignatureScriptSignature | _: NonStandardScriptSignature
           | _: CLTVScriptSignature | _: CSVScriptSignature | EmptyScriptSignature => SigVersionBase
       }

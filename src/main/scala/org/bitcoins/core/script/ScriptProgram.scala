@@ -233,7 +233,7 @@ object ScriptProgram {
     * @param amount the amount of [[CurrencyUnit]] we are spending in this input
     * @return the script program representing all of this information
     */
-  def apply(transaction: WitnessTransaction, scriptPubKey : ScriptPubKey, inputIndex : UInt32,
+  def apply(transaction: Transaction, scriptPubKey : ScriptPubKey, inputIndex : UInt32,
             flags : Seq[ScriptFlag],
             amount: CurrencyUnit) : PreExecutionScriptProgram = {
     val script = transaction.inputs(inputIndex.toInt).scriptSignature.asm
@@ -246,13 +246,13 @@ object ScriptProgram {
     ScriptProgram(p,stack,script)
   }
 
-  def apply(transaction: WitnessTransaction, scriptPubKey : ScriptPubKey, inputIndex : UInt32, script : Seq[ScriptToken],
+  def apply(transaction: Transaction, scriptPubKey : ScriptPubKey, inputIndex : UInt32, script : Seq[ScriptToken],
             flags : Seq[ScriptFlag], amount: CurrencyUnit) : PreExecutionScriptProgram = {
     val sigVersion = BitcoinScriptUtil.parseSigVersion(transaction,scriptPubKey,inputIndex)
     ScriptProgram(transaction,scriptPubKey,inputIndex,Nil,script,script,Nil,flags,sigVersion,amount)
   }
 
-  def apply(transaction: WitnessTransaction, scriptPubKey : ScriptPubKey, inputIndex : UInt32, stack : Seq[ScriptToken],
+  def apply(transaction: Transaction, scriptPubKey : ScriptPubKey, inputIndex : UInt32, stack : Seq[ScriptToken],
             script : Seq[ScriptToken], flags : Seq[ScriptFlag], witness: ScriptWitness,
             amount: CurrencyUnit) : ScriptProgram = {
     val program = ScriptProgram(transaction,scriptPubKey,inputIndex,flags, amount)
@@ -290,7 +290,7 @@ object ScriptProgram {
   }
 
   /** Creates a fresh [[PreExecutionScriptProgram]] */
-  def apply(transaction: WitnessTransaction, scriptPubKey: ScriptPubKey, inputIndex: UInt32, stack: Seq[ScriptToken],
+  def apply(transaction: Transaction, scriptPubKey: ScriptPubKey, inputIndex: UInt32, stack: Seq[ScriptToken],
             script: Seq[ScriptToken], originalScript: Seq[ScriptToken], altStack: Seq[ScriptToken],
             flags: Seq[ScriptFlag], sigVersion: SignatureVersion,
             amount: CurrencyUnit): PreExecutionScriptProgram = {

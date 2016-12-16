@@ -14,9 +14,9 @@ trait RawWitnessTransactionParser extends RawBitcoinSerializer[WitnessTransactio
     val versionBytes = bytes.take(4)
     val version = UInt32(versionBytes.reverse)
     val marker = bytes(4).toChar
-    require(marker.toInt == 0, "Incorrect marker for witness transaction")
+    require(marker.toInt == 0, "Incorrect marker for witness transaction, got: " + marker)
     val flag = bytes(5).toChar
-    require(flag.toInt != 0,"Incorrect flag for witness transaction")
+    require(flag.toInt != 0,"Incorrect flag for witness transaction, got: " + flag)
     val txInputBytes = bytes.slice(6,bytes.size)
     val inputs = RawTransactionInputParser.read(txInputBytes)
     val inputsSize = inputs.map(_.size).sum
