@@ -208,7 +208,7 @@ trait TransactionGenerators extends BitcoinSLogger {
     (creditingTx,outputIndex) = buildCreditingTransaction(signedScriptSig.redeemScript, amount)
     (signedTx,inputIndex) = buildSpendingTransaction(creditingTx,signedScriptSig, outputIndex, witness)
     signedTxSignatureComponent = WitnessV0TransactionSignatureComponent(signedTx,inputIndex,
-      scriptPubKey, Policy.standardScriptVerifyFlags,amount)
+      scriptPubKey, Policy.standardScriptVerifyFlags,amount, SigVersionWitnessV0)
   } yield (signedTxSignatureComponent, privKeys)
 
   /** Creates a signed P2SH(P2WSH) transaction */
@@ -219,7 +219,7 @@ trait TransactionGenerators extends BitcoinSLogger {
     (creditingTx,outputIndex) = buildCreditingTransaction(p2shScriptSig.redeemScript, wtxSigComponent.amount)
     (signedTx,inputIndex) = buildSpendingTransaction(creditingTx,p2shScriptSig,outputIndex,witness)
     signedTxSignatureComponent = WitnessV0TransactionSignatureComponent(signedTx,inputIndex,
-      p2shScriptPubKey, Policy.standardScriptVerifyFlags, wtxSigComponent.amount)
+      p2shScriptPubKey, Policy.standardScriptVerifyFlags, wtxSigComponent.amount, SigVersionWitnessV0)
   } yield (signedTxSignatureComponent,privKeys)
 
   /**

@@ -51,10 +51,6 @@ sealed trait WitnessV0TransactionSignatureComponent extends TransactionSignature
   /** The amount of [[CurrencyUnit]] this input is spending */
   def amount: CurrencyUnit
 
-  /** The digest algorithm used to serialized/hash a transaction for signature creation/verification */
-  override def sigVersion: SignatureVersion = SigVersionWitnessV0
-
-
 }
 
 
@@ -65,8 +61,14 @@ object TransactionSignatureComponent {
 
 
   def apply(transaction : WitnessTransaction, inputIndex : UInt32, scriptPubKey : ScriptPubKey,
-            flags : Seq[ScriptFlag], amount: CurrencyUnit) : WitnessV0TransactionSignatureComponent = {
-    WitnessV0TransactionSignatureComponent(transaction,inputIndex,scriptPubKey,flags,amount)
+            flags : Seq[ScriptFlag], amount: CurrencyUnit, signatureVersion: SignatureVersion) : TransactionSignatureComponent = {
+    signatureVersion match {
+      case SigVersionBase =>
+        TransactionSignatureComponent(transaction,inputIndex,scriptPubKey,flags)
+      case SigVersionWitnessV0 =>
+        WitnessV0TransactionSignatureComponent(transaction,inputIndex,scriptPubKey,flags,amount,signatureVersion)
+    }
+
   }
 
   def apply(transaction : Transaction, inputIndex : UInt32,
@@ -80,7 +82,7 @@ object TransactionSignatureComponent {
     TransactionSignatureComponent(base.transaction,
       base.inputIndex,scriptPubKey, base.flags)
     case w: WitnessV0TransactionSignatureComponent =>
-      TransactionSignatureComponent(w.transaction,w.inputIndex,scriptPubKey,w.flags,w.amount)
+      TransactionSignatureComponent(w.transaction,w.inputIndex,scriptPubKey,w.flags,w.amount,w.sigVersion)
   }
 
 }
@@ -88,18 +90,18 @@ object TransactionSignatureComponent {
 object WitnessV0TransactionSignatureComponent {
   private case class WitnessV0TransactionSignatureComponentImpl(transaction : WitnessTransaction, inputIndex : UInt32,
                                                                 scriptPubKey : ScriptPubKey, flags : Seq[ScriptFlag],
-                                                                amount: CurrencyUnit) extends WitnessV0TransactionSignatureComponent
+                                                                amount: CurrencyUnit, sigVersion: SignatureVersion) extends WitnessV0TransactionSignatureComponent
 
 
   def apply(transaction : WitnessTransaction, inputIndex : UInt32, scriptPubKey : ScriptPubKey,
-            flags : Seq[ScriptFlag], amount: CurrencyUnit) : WitnessV0TransactionSignatureComponent = {
-    WitnessV0TransactionSignatureComponentImpl(transaction,inputIndex, scriptPubKey, flags, amount)
+            flags : Seq[ScriptFlag], amount: CurrencyUnit, sigVersion: SignatureVersion) : WitnessV0TransactionSignatureComponent = {
+    WitnessV0TransactionSignatureComponentImpl(transaction,inputIndex, scriptPubKey, flags, amount,sigVersion)
   }
 
   /** Note: The output passed here is the output we are spending,
     * we use the [[CurrencyUnit]] and [[ScriptPubKey]] in that output for signing */
   def apply(transaction : WitnessTransaction, inputIndex : UInt32, output : TransactionOutput,
-            flags : Seq[ScriptFlag]): WitnessV0TransactionSignatureComponent = {
-    WitnessV0TransactionSignatureComponent(transaction,inputIndex,output.scriptPubKey,flags,output.value)
+            flags : Seq[ScriptFlag], sigVersion: SignatureVersion): WitnessV0TransactionSignatureComponent = {
+    WitnessV0TransactionSignatureComponent(transaction,inputIndex,output.scriptPubKey,flags,output.value, sigVersion)
   }
 }

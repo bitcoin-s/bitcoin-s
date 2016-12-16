@@ -163,58 +163,63 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
     * [[https://github.com/bitcoin/bitcoin/blob/f8528134fc188abc5c7175a19680206964a8fade/src/script/interpreter.cpp#L1113]]
     */
   def serializeForSignature(spendingTx: WitnessTransaction, inputIndex: UInt32, script: Seq[ScriptToken], hashType: HashType,
-                            amount: CurrencyUnit): Seq[Byte] = {
-    val isNotAnyoneCanPay = !HashType.isAnyoneCanPay(hashType)
-    val isNotSigHashSingle = !(HashType.isSIGHASH_SINGLE(hashType.num))
-    val isNotSigHashNone = !(HashType.isSIGHASH_NONE(hashType.num))
-    val inputIndexInt = inputIndex.toInt
-    val emptyHash = DoubleSha256Digest("0000000000000000000000000000000000000000000000000000000000000000")
+                            amount: CurrencyUnit, signatureVersion: SignatureVersion): Seq[Byte] = signatureVersion match {
+    case SigVersionBase =>
+      serializeForSignature(spendingTx,inputIndex,script,hashType)
+    case SigVersionWitnessV0 =>
+      val isNotAnyoneCanPay = !HashType.isAnyoneCanPay(hashType)
+      val isNotSigHashSingle = !(HashType.isSIGHASH_SINGLE(hashType.num))
+      val isNotSigHashNone = !(HashType.isSIGHASH_NONE(hashType.num))
+      val inputIndexInt = inputIndex.toInt
+      val emptyHash = DoubleSha256Digest("0000000000000000000000000000000000000000000000000000000000000000")
 
-    val outPointHash: Seq[Byte] = if (isNotAnyoneCanPay) {
-      val bytes: Seq[Byte] = spendingTx.inputs.flatMap(_.previousOutput.bytes)
-      CryptoUtil.doubleSHA256(bytes).bytes
-    } else emptyHash.bytes
+      val outPointHash: Seq[Byte] = if (isNotAnyoneCanPay) {
+        val bytes: Seq[Byte] = spendingTx.inputs.flatMap(_.previousOutput.bytes)
+        CryptoUtil.doubleSHA256(bytes).bytes
+      } else emptyHash.bytes
 
-    logger.debug("outPointHash: " + outPointHash.map(BitcoinSUtil.encodeHex(_)))
-    val sequenceHash: Seq[Byte] = if (isNotAnyoneCanPay && isNotSigHashNone && isNotSigHashSingle) {
-      val bytes = spendingTx.inputs.flatMap(_.sequence.bytes)
-      CryptoUtil.doubleSHA256(bytes).bytes
-    } else emptyHash.bytes
+      logger.debug("outPointHash: " + outPointHash.map(BitcoinSUtil.encodeHex(_)))
+      val sequenceHash: Seq[Byte] = if (isNotAnyoneCanPay && isNotSigHashNone && isNotSigHashSingle) {
+        val bytes = spendingTx.inputs.flatMap(_.sequence.bytes)
+        CryptoUtil.doubleSHA256(bytes).bytes
+      } else emptyHash.bytes
 
-    logger.debug("sequenceHash: " + sequenceHash.map(BitcoinSUtil.encodeHex(_)))
-    val outputHash: Seq[Byte] = if (isNotSigHashSingle && isNotSigHashNone) {
-      logger.debug("Not SIGHASH_SINGLE & Not SIGHASH_NONE")
-      val bytes = spendingTx.outputs.flatMap(o => BitcoinSUtil.decodeHex(RawTransactionOutputParser.write(o)))
-      CryptoUtil.doubleSHA256(bytes).bytes
-    } else if (HashType.isSIGHASH_SINGLE(hashType.num) && inputIndex < UInt32(spendingTx.outputs.size)) {
-      logger.debug("SIGHASH_SINGLE and input index < outputs size")
-      val output = spendingTx.outputs(inputIndexInt)
-      val bytes = CryptoUtil.doubleSHA256(RawTransactionOutputParser.write(output)).bytes
-      bytes
-    } else emptyHash.bytes
+      logger.debug("sequenceHash: " + sequenceHash.map(BitcoinSUtil.encodeHex(_)))
+      val outputHash: Seq[Byte] = if (isNotSigHashSingle && isNotSigHashNone) {
+        logger.debug("Not SIGHASH_SINGLE & Not SIGHASH_NONE")
+        val bytes = spendingTx.outputs.flatMap(o => BitcoinSUtil.decodeHex(RawTransactionOutputParser.write(o)))
+        CryptoUtil.doubleSHA256(bytes).bytes
+      } else if (HashType.isSIGHASH_SINGLE(hashType.num) && inputIndex < UInt32(spendingTx.outputs.size)) {
+        logger.debug("SIGHASH_SINGLE and input index < outputs size")
+        val output = spendingTx.outputs(inputIndexInt)
+        val bytes = CryptoUtil.doubleSHA256(RawTransactionOutputParser.write(output)).bytes
+        bytes
+      } else emptyHash.bytes
 
-    logger.debug("outputHash: " + outputHash.map(BitcoinSUtil.encodeHex(_)))
-    logger.debug("Script: " + script)
-    val scriptBytes = script.flatMap(_.bytes)
-    //helper function to flip endianness
-    val fe: Seq[Byte] => Seq[Byte] = {bytes: Seq[Byte] => BitcoinSUtil.decodeHex(BitcoinSUtil.flipEndianness(bytes)) }
+      logger.debug("outputHash: " + outputHash.map(BitcoinSUtil.encodeHex(_)))
+      logger.debug("Script: " + script)
+      val scriptBytes = script.flatMap(_.bytes)
+      //helper function to flip endianness
+      val fe: Seq[Byte] => Seq[Byte] = {bytes: Seq[Byte] => BitcoinSUtil.decodeHex(BitcoinSUtil.flipEndianness(bytes)) }
 
-    val serializationForSig: Seq[Byte] = fe(spendingTx.version.bytes) ++ outPointHash ++ sequenceHash ++
-      spendingTx.inputs(inputIndexInt).previousOutput.bytes ++ CompactSizeUInt.calculateCompactSizeUInt(scriptBytes).bytes ++
-      scriptBytes ++ fe(amount.bytes) ++ fe(spendingTx.inputs(inputIndexInt).sequence.bytes) ++
-      outputHash ++ fe(spendingTx.lockTime.bytes) ++ hashType.num.bytes.reverse
-    logger.info("Serialization for signature for WitnessV0Sig: " + BitcoinSUtil.encodeHex(serializationForSig))
-    serializationForSig
+      val serializationForSig: Seq[Byte] = fe(spendingTx.version.bytes) ++ outPointHash ++ sequenceHash ++
+        spendingTx.inputs(inputIndexInt).previousOutput.bytes ++ CompactSizeUInt.calculateCompactSizeUInt(scriptBytes).bytes ++
+        scriptBytes ++ fe(amount.bytes) ++ fe(spendingTx.inputs(inputIndexInt).sequence.bytes) ++
+        outputHash ++ fe(spendingTx.lockTime.bytes) ++ hashType.num.bytes.reverse
+      logger.info("Serialization for signature for WitnessV0Sig: " + BitcoinSUtil.encodeHex(serializationForSig))
+      serializationForSig
   }
+
+
 
   /** Hashing function for a [[SigVersionWitnessV0]] as specified by BIP143
     * [[https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki]]
     * NOTE: This covers the amount of [[CurrencyUnit]] we are spending in the output
     * */
   def hashForSignature(spendingTx: WitnessTransaction, inputIndex: UInt32, script: Seq[ScriptToken], hashType: HashType,
-                       amount: CurrencyUnit): DoubleSha256Digest = {
+                       amount: CurrencyUnit, sigVersion: SignatureVersion): DoubleSha256Digest = {
 
-    val serialization = serializeForSignature(spendingTx,inputIndex,script,hashType,amount)
+    val serialization = serializeForSignature(spendingTx,inputIndex,script,hashType,amount,sigVersion)
     CryptoUtil.doubleSHA256(serialization)
   }
   /**
@@ -229,7 +234,7 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
       case t : BaseTransactionSignatureComponent =>
         hashForSignature(t.transaction,t.inputIndex,script,hashType)
       case t : WitnessV0TransactionSignatureComponent =>
-        hashForSignature(t.transaction,t.inputIndex, script, hashType,t.amount)
+        hashForSignature(t.transaction,t.inputIndex, script, hashType,t.amount,t.sigVersion)
     }
   }
 
