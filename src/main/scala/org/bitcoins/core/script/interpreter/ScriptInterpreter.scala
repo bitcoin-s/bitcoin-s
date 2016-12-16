@@ -6,7 +6,7 @@ import org.bitcoins.core.crypto.{BaseTransactionSignatureComponent, WitnessV0Tra
 import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits}
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.protocol.script._
-import org.bitcoins.core.protocol.transaction.{EmptyTransactionOutPoint, Transaction}
+import org.bitcoins.core.protocol.transaction.{BaseTransaction, EmptyTransactionOutPoint, Transaction, WitnessTransaction}
 import org.bitcoins.core.script._
 import org.bitcoins.core.script.arithmetic._
 import org.bitcoins.core.script.bitwise._
@@ -83,8 +83,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
     else if (hasUnexpectedWitness(program)) {
       //note: the 'program' value we pass above is intentional, we need to check the original program
       //as the 'executedProgram' may have had the scriptPubKey value changed to the rebuilt ScriptPubKey of the witness program
-      val t = program.txSignatureComponent.asInstanceOf[WitnessV0TransactionSignatureComponent]
-      logger.error("Found unexpected witness that was not used by the ScriptProgram: " + t.witness)
+
       ScriptErrorWitnessUnexpected
     }
     else if (executedProgram.stackTopIsTrue && flags.contains(ScriptVerifyCleanStack)) {
@@ -493,10 +492,14 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
     * Return true if witness was NOT used, return false if witness was used. */
   private def hasUnexpectedWitness(program: ScriptProgram): Boolean =  {
     val txSigComponent = program.txSignatureComponent
-    txSigComponent match {
+    logger.info("TxSigComponent: " + txSigComponent)
+    val unexpectedWitenss = txSigComponent match {
       case b : BaseTransactionSignatureComponent =>
-        //base transactions never have witnesses
-        false
+        b.transaction match {
+          case wtx : WitnessTransaction =>
+            wtx.witness.witnesses(txSigComponent.inputIndex.toInt).stack.nonEmpty
+          case _ : BaseTransaction => false
+        }
       case w : WitnessV0TransactionSignatureComponent =>
         val witnessedUsed = w.scriptPubKey match {
           case _ : WitnessScriptPubKey => true
@@ -504,7 +507,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
             case p2shScriptSig: P2SHScriptSignature =>
               p2shScriptSig.redeemScript.isInstanceOf[WitnessScriptPubKey]
             case _ : CLTVScriptSignature | _ : CSVScriptSignature | _ : MultiSignatureScriptSignature | _ : NonStandardScriptSignature |
-                      _ : P2PKScriptSignature | _ : P2PKHScriptSignature | EmptyScriptSignature =>
+             _ : P2PKScriptSignature | _ : P2PKHScriptSignature | EmptyScriptSignature =>
               w.witness.stack.isEmpty
           }
           case _ : CLTVScriptPubKey | _ : CSVScriptPubKey | _ : MultiSignatureScriptPubKey | _ : NonStandardScriptPubKey |
@@ -513,6 +516,9 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
         }
         !witnessedUsed
     }
+
+    if (unexpectedWitenss) logger.error("Found unexpected witness that was not used by the ScriptProgram: " + program)
+    unexpectedWitenss
   }
 }
 object ScriptInterpreter extends ScriptInterpreter
