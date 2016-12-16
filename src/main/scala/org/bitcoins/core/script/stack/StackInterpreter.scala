@@ -43,7 +43,6 @@ trait StackInterpreter extends BitcoinSLogger {
   /** Puts the number of stack items onto the stack. */
   def opDepth(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.contains(OP_DEPTH), "Top of script stack must be OP_DEPTH")
-    require(program.script.nonEmpty, "OP_DEPTH requires at least two elements on the script stack")
     val stackSize = program.stack.size
     val numberToPush : ScriptNumber = ScriptNumber(stackSize)
     ScriptProgram(program, numberToPush :: program.stack, program.script.tail)
@@ -119,7 +118,8 @@ trait StackInterpreter extends BitcoinSLogger {
     executeOpWithStackTopAsNumberArg(program, { number : ScriptNumber =>
       logger.info("Script number for OP_PICK: " + number)
       //check if n is within the bound of the script
-      if (number.underlying >= 0 && number.underlying < program.stack.tail.size) {
+      if (program.stack.size < 2) ScriptProgram(program, ScriptErrorInvalidStackOperation)
+      else if (number.underlying >= 0 && number.underlying < program.stack.tail.size) {
         val newStackTop = program.stack.tail(number.toInt)
         ScriptProgram(program, newStackTop :: program.stack.tail, program.script.tail)
       } else {
@@ -133,7 +133,8 @@ trait StackInterpreter extends BitcoinSLogger {
   def opRoll(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.contains(OP_ROLL), "Top of script stack must be OP_ROLL")
     executeOpWithStackTopAsNumberArg(program, (number : ScriptNumber) =>
-      if (number.underlying >= 0 && number.underlying < program.stack.tail.size) {
+      if (program.stack.size < 2) ScriptProgram(program, ScriptErrorInvalidStackOperation)
+      else if (number.underlying >= 0 && number.underlying < program.stack.tail.size) {
         val newStackTop = program.stack.tail(number.toInt)
         //removes the old instance of the stack top, appends the new index to the head
         val newStack = newStackTop :: program.stack.tail.diff(List(newStackTop))
