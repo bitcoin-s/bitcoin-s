@@ -4,11 +4,12 @@ package org.bitcoins.core.script
 import org.bitcoins.core.crypto.{BaseTransactionSignatureComponent, TransactionSignatureComponent, WitnessV0TransactionSignatureComponent}
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptWitness, SignatureVersion}
+import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction.{BaseTransaction, Transaction, WitnessTransaction}
 import org.bitcoins.core.script.constant._
 import org.bitcoins.core.script.flag.ScriptFlag
 import org.bitcoins.core.script.result._
+import org.bitcoins.core.util.BitcoinScriptUtil
 
 /**
   * Created by chris on 2/3/16.
@@ -253,8 +254,8 @@ object ScriptProgram {
 
   def apply(transaction: WitnessTransaction, scriptPubKey : ScriptPubKey, inputIndex : UInt32, script : Seq[ScriptToken],
             flags : Seq[ScriptFlag], amount: CurrencyUnit) : PreExecutionScriptProgram = {
-    val txSignatureComponent = TransactionSignatureComponent(transaction,inputIndex,scriptPubKey,flags, amount)
-    PreExecutionScriptProgramImpl(txSignatureComponent,Nil,script.toList,script.toList,Nil,flags)
+    val sigVersion = BitcoinScriptUtil.parseSigVersion(transaction,scriptPubKey,inputIndex)
+    ScriptProgram(transaction,scriptPubKey,inputIndex,Nil,script,script,Nil,flags,sigVersion,amount)
   }
 
   def apply(transaction: WitnessTransaction, scriptPubKey : ScriptPubKey, inputIndex : UInt32, stack : Seq[ScriptToken],
@@ -300,7 +301,7 @@ object ScriptProgram {
             flags: Seq[ScriptFlag], sigVersion: SignatureVersion,
             amount: CurrencyUnit): PreExecutionScriptProgram = {
     val t = TransactionSignatureComponent(transaction,inputIndex,
-      scriptPubKey,flags, amount)
+      scriptPubKey,flags, amount,sigVersion)
     PreExecutionScriptProgramImpl(t,stack.toList,script.toList,originalScript.toList,altStack.toList,flags)
   }
 
