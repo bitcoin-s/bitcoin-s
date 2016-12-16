@@ -34,7 +34,7 @@ trait WitnessGenerators extends BitcoinSLogger {
     stack.map(s => ScriptWitness(s))
   }
 
-  /** Generates a [[TransactionWitness]] with the specificied number of witnesses */
+  /** Generates a [[TransactionWitness]] with the specified number of witnesses */
   def transactionWitness(numWitnesses: Int): Gen[TransactionWitness] = for {
   inputWitnesses <- Gen.listOfN(numWitnesses,scriptWitness)
   } yield TransactionWitness(inputWitnesses)

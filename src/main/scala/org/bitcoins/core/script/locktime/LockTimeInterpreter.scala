@@ -28,7 +28,7 @@ trait LockTimeInterpreter extends BitcoinSLogger {
    */
   @tailrec
   final def opCheckLockTimeVerify(program : ScriptProgram) : ScriptProgram = {
-    require(program.script.headOption.isDefined && program.script.head == OP_CHECKLOCKTIMEVERIFY,
+    require(program.script.headOption.contains(OP_CHECKLOCKTIMEVERIFY),
       "Script top must be OP_CHECKLOCKTIMEVERIFY")
     val input = program.txSignatureComponent.transaction.inputs(program.txSignatureComponent.inputIndex.toInt)
     val transaction = program.txSignatureComponent.transaction
@@ -184,14 +184,8 @@ trait LockTimeInterpreter extends BitcoinSLogger {
     true
   }
 
-  /**
-    * Mimics this function inside of bitcoin core for checking the locktime of a transaction
-    * https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L1160
- *
-    * @param program
-    * @param locktime
-    * @return
-    */
+  /** Mimics this function inside of bitcoin core for checking the locktime of a transaction
+    * https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L1160. */
   private def checkLockTime(program : ScriptProgram, locktime : ScriptNumber) : Boolean = {
     // There are two kinds of nLockTime: lock-by-blockheight
     // and lock-by-blocktime, distinguished by whether
@@ -226,11 +220,7 @@ trait LockTimeInterpreter extends BitcoinSLogger {
     } else true
   }
 
-  /**
-    * The script number on the stack has the disable flag (1 << 31) unset
-    * @param s
-    * @return
-    */
+  /** The [[ScriptNumber]] on the stack has the disable flag (1 << 31) unset. */
   def isLockTimeBitOff(s : ScriptNumber) : Boolean = (s.underlying & TransactionConstants.locktimeDisabledFlag.underlying) == 0
 
   def isLockTimeBitOff(num : Int64) : Boolean = isLockTimeBitOff(ScriptNumber(num.hex))

@@ -23,13 +23,8 @@ trait BinaryTree[+T] {
     case Empty      => None
   }
 
-
-
-  /**
-   * Creates a sequence with only the leaf values
-   * evaluates as depth first from left to right
-   * @return
-   */
+  /** Creates a sequence with only the leaf values
+   * evaluates as depth first from left to right. */
   def toSeqLeafValues : Seq[T] = {
     @tailrec
     def loop(tree : BinaryTree[T],accum : List[T], remainder : List[BinaryTree[T]]) : Seq[T] = tree match {
@@ -40,15 +35,7 @@ trait BinaryTree[+T] {
     loop(this,List(),List()).reverse
   }
 
-
-  /**
-   * A function to find the first occurrence of a predicate inside a binary tree
-   * @param t
-   * @param tree the default tree is the current instance of the binary tree that the function is being called on
-   * @param f the default predicate is equality i.e. if 1 == 1
-   * @tparam T
-   * @return
-   */
+  /** A function to find the first occurrence of a predicate inside a [[BinaryTree]]. */
   def findFirstDFS[T](t : T)(f : T => Boolean = (x : T) => x == t)(implicit tree : BinaryTree[T] = this) : Option[BinaryTree[T]] = {
     @tailrec
     def loop(subTree : BinaryTree[T], remainder : List[BinaryTree[T]]) : Option[BinaryTree[T]] = {
@@ -63,42 +50,22 @@ trait BinaryTree[+T] {
     loop(tree,List())
   }
 
+  /** Checks if the [[BinaryTree]] contains a certain element. */
+  def contains[T](t : T)(f : T => Boolean = (x : T) => x == t)(implicit tree : BinaryTree[T] = this) : Boolean = findFirstDFS(t)(f)(tree).isDefined
 
-  /**
-   * Checks if the binary tree contains a certain element
-   * @param t
-   * @param tree
-   * @param f
-   * @tparam T
-   * @return
-   */
-  def contains[T](t : T)(f : T => Boolean = (x : T) => x == t)(implicit tree : BinaryTree[T] = this) = findFirstDFS(t)(f)(tree).isDefined
+  def count[T](t : T)(implicit tree : BinaryTree[T] = this) : Int = toSeq.count(_ == t)
 
 
-  def count[T](t : T)(implicit tree : BinaryTree[T] = this) = toSeq.count(_ == t)
-
-
-  /**
-   * Inserts a element into one of the two branches in a binary tree
-   * if it cannot insert it because the branches are not empty
-   * it throws a runtime exception
-   * @param tree
-   * @tparam T
-   * @return
-   */
+  /** Inserts an element into one of the two branches in a [[BinaryTree]].
+   * If it cannot insert it because the branches are not empty,
+   * it throws a [[RuntimeException]]. */
   def insert[T](t : T)(implicit tree : BinaryTree[T] = this) : BinaryTree[T] = {
     insert(Leaf(t))(tree)
   }
 
-  /**
-   * Inserts a tree into one of the two branches in a binary tree
-   * if it cannot insert it because the branches are not empty
-   * it throws a runtime exception
-   * @param subTree
-   * @param parentTree
-   * @tparam T
-   * @return
-   */
+  /** Inserts a tree into one of the two branches in a [[BinaryTree]]
+   * If it cannot insert it because the branches are not empty,
+   * it throws a [[RuntimeException]]. */
   def insert[T](subTree : BinaryTree[T])(implicit parentTree : BinaryTree[T]) : BinaryTree[T] = parentTree match {
     case n : Node[T] =>
       if (n.l == Empty) Node[T](n.v,subTree,n.r)
@@ -108,15 +75,7 @@ trait BinaryTree[+T] {
     case Empty => subTree
   }
 
-
-
-  /**
-   * Removes the subTree from the parentTree
-   * @param subTree - the tree to be removed
-   * @param parentTree - the tree of which the @subTree is being removed from
-   * @tparam T
-   * @return
-   */
+  /** Removes the subTree from the parentTree. */
   def remove[T](subTree : BinaryTree[T])(parentTree : BinaryTree[T] = this) : BinaryTree[T] = {
     //TODO: Optimize into a tail recursive function
     parentTree match {
@@ -128,14 +87,7 @@ trait BinaryTree[+T] {
     }
   }
 
-  /**
-   * Replaces all instances of the original tree with the replacement tree
-   * @param originalTree - the tree that needs to be replaced
-   * @param replacementTree - the tree that is being put into the original tree
-   * @param parentTree - the tree that is being searched for instances to replace
-   * @tparam T
-   * @return
-   */
+  /** Replaces all instances of the original tree with the replacement tree. */
   def replace[T](originalTree : BinaryTree[T], replacementTree : BinaryTree[T])(implicit parentTree : BinaryTree[T] = this) : BinaryTree[T] = {
     //TODO: Optimize this into a tail recursive function
     parentTree match {
@@ -147,7 +99,6 @@ trait BinaryTree[+T] {
           replace(originalTree,replacementTree)(n.r))
     }
   }
-
 
   def toSeq : Seq[T] = {
     @tailrec
