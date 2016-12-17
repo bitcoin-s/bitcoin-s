@@ -221,4 +221,6 @@ class BitcoinScriptUtilTest extends FlatSpec with MustMatchers {
     sigExists.exists(_ == true) must be (false)
   }
 
+  it must "determine the correct signature version for "
+
 }
