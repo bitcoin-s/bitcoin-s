@@ -19,7 +19,6 @@ import scala.io.Source
 class TransactionTest extends FlatSpec with MustMatchers with BitcoinSLogger {
 
 
-/*
   "Transaction" must "derive the correct txid from the transaction contents" in {
 
     //https://btc.blockr.io/api/v1/tx/raw/cddda897b0e9322937ee1f4fd5d6147d60f04a0f4d3b461e4f87066ac3918f2a
@@ -54,7 +53,6 @@ class TransactionTest extends FlatSpec with MustMatchers with BitcoinSLogger {
     tx.hex must be (rawTx)
     (Transaction(tx.hex) == tx) must be (true)
   }
-*/
 
 
   it must "read all of the tx_valid.json's contents and return ScriptOk" in {
@@ -66,9 +64,9 @@ class TransactionTest extends FlatSpec with MustMatchers with BitcoinSLogger {
         //use this to represent a single test case from script_valid.json
 /*    val lines =
         """
-          |[  [[["0000000000000000000000000000000000000000000000000000000000000100", 0, "0x60 0x14 0x4c9c3dfac4207d5d8cb89df5722cb3d712385e3f", 1000]],
-          |    "010000000100010000000000000000000000000000000000000000000000000000000000000000000000ffffffff01e803000000000000015100000000", "P2SH,WITNESS"]
-          |]
+          |[[[["f18783ace138abac5d3a7a5cf08e88fe6912f267ef936452e0c27d090621c169", 7500, "0x00 0x20 0x9e1be07558ea5cc8e02ed1d80c0911048afad949affa36d5c3951e3159dbea19", 200000]],
+          |    "0100000000010169c12106097dc2e0526493ef67f21269fe888ef05c7a3a5dacab38e1ac8387f14c1d000000ffffffff01010000000000000000034830450220487fb382c4974de3f7d834c1b617fe15860828c7f96454490edd6d891556dcc9022100baf95feb48f845d5bfc9882eb6aeefa1bc3790e39f59eaa46ff7f15ae626c53e012102a9781d66b61fb5a7ef00ac5ad5bc6ffc78be7b44a566e3c87870e1079368df4c4aad4830450220487fb382c4974de3f7d834c1b617fe15860828c7f96454490edd6d891556dcc9022100baf95feb48f845d5bfc9882eb6aeefa1bc3790e39f59eaa46ff7f15ae626c53e0100000000", "P2SH,WITNESS"]
+          |  ]
         """.stripMargin*/
     val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n" finally source.close()
     val json = lines.parseJson
@@ -102,7 +100,7 @@ class TransactionTest extends FlatSpec with MustMatchers with BitcoinSLogger {
   }
 
 
-/*  it must "read all of the tx_invalid.json's contents and return a ScriptError" in {
+  it must "read all of the tx_invalid.json's contents and return a ScriptError" in {
 
     val source = Source.fromURL(getClass.getResource("/tx_invalid.json"))
     //use this to represent a single test case from script_valid.json
@@ -119,33 +117,30 @@ class TransactionTest extends FlatSpec with MustMatchers with BitcoinSLogger {
     val testCases : Seq[CoreTransactionTestCase] = testCasesOpt.flatten
     for {
       testCase <- testCases
+      (outPoint,scriptPubKey,amountOpt) <- testCase.creditingTxsInfo
+      tx = testCase.spendingTx
+      (input,inputIndex) = findInput(tx,outPoint).getOrElse((EmptyTransactionInput,0))
     } yield {
-      val txInputValidity : Seq[Boolean] = for {
-        (outPoint,scriptPubKey) <- testCase.creditingTxsInfo
-        tx = testCase.spendingTx
-        (input,inputIndex) = findInput(tx,outPoint).getOrElse((EmptyTransactionInput,0))
-      } yield {
-        logger.info("Raw test case: " + testCase.raw)
-        logger.info("ScriptPubKey: " + scriptPubKey)
-        logger.info("OutPoint: " + outPoint)
-        logger.info("Flags after parsing: " + testCase.flags)
-        logger.info("spending tx: " + testCase.spendingTx)
-        logger.info("" + testCase.scriptPubKeys)
-        val isValidTx = ScriptInterpreter.checkTransaction(tx)
-        if (isValidTx) {
-          val program = ScriptProgram(tx,scriptPubKey,UInt32(inputIndex),testCase.flags)
-          ScriptInterpreter.run(program) == ScriptOk
-        } else {
-          logger.error("Transaction does not pass CheckTransaction()")
-          isValidTx
-        }
+      logger.info("Raw test case: " + testCase.raw)
+      logger.info("Parsed ScriptSig: " + tx.inputs(inputIndex).scriptSignature)
+      logger.info("Sequence number: " + tx.inputs(inputIndex).sequence)
+      logger.info("ScriptPubKey: " + scriptPubKey)
+      logger.info("OutPoint: " + outPoint)
+      logger.info("Flags after parsing: " + testCase.flags)
+      logger.info("Satoshis: " + amountOpt)
+      require(outPoint.txId == input.previousOutput.txId,
+        "OutPoint txId not the same as input prevout txid\noutPoint.txId: " + outPoint.txId + "\n" +
+          "input prevout txid: " + input.previousOutput.txId)
+      val program = amountOpt match {
+        case Some(amount) => ScriptProgram(tx, scriptPubKey, UInt32(inputIndex), testCase.flags, amount)
+        case None => ScriptProgram(tx, scriptPubKey, UInt32(inputIndex), testCase.flags)
       }
-      withClue(testCase.raw) {
-        //only one input is required to be false to make the transaction invalid
-        txInputValidity.exists(_ == false) must be (true)
+
+      withClue(testCase.raw + " input index: " + inputIndex) {
+        ScriptInterpreter.run(program) must equal(ScriptOk)
       }
     }
-  }*/
+  }
 
   private def findInput(tx : Transaction, outPoint : TransactionOutPoint) : Option[(TransactionInput,Int)] = {
     tx.inputs.zipWithIndex.find{case (input,index) => input.previousOutput == outPoint}

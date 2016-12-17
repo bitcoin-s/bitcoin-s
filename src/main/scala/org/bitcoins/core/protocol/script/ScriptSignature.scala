@@ -190,7 +190,7 @@ object P2SHScriptSignature extends ScriptFactory[P2SHScriptSignature]  {
 
 
   def fromAsm(asm: Seq[ScriptToken]): P2SHScriptSignature = {
-    buildScript(asm, P2SHScriptSignatureImpl(_),isP2SHScriptSig(_), "Given asm tokens are not a p2sh scriptSig, got: " + asm)
+    buildScript(asm, P2SHScriptSignatureImpl(_),{ _ => true}, "Given asm tokens are not a p2sh scriptSig, got: " + asm)
   }
 
   /** Tests if the given asm tokens are a [[P2SHScriptSignature]] */
