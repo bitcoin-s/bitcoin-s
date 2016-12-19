@@ -1,5 +1,6 @@
 package org.bitcoins.core.script.crypto
 
+import org.bitcoins.core.crypto.ECDigitalSignature
 import org.bitcoins.core.number.Int32
 import org.bitcoins.core.util.Factory
 
@@ -68,6 +69,8 @@ object HashType extends Factory[HashType] {
   lazy val hashTypes = Seq(sigHashAll, sigHashNone, sigHashSingle, sigHashAnyoneCanPay,
     sigHashNoneAnyoneCanPay, sigHashAllAnyoneCanPay, sigHashSingleAnyoneCanPay)
 
+  lazy val hashTypeBytes: Seq[Byte] = Seq(sigHashAllByte, sigHashSingleByte, sigHashNoneByte, sigHashAnyoneCanPayByte,
+    sigHashNoneAnyoneCanPayByte, sigHashSingleAnyoneCanPayByte, sigHashAllAnyoneCanPayByte)
   def apply(num : Int32) : HashType = fromNumber(num)
 
   def apply(int : Int) : HashType = HashType(Int32(int))
@@ -105,7 +108,6 @@ object HashType extends Factory[HashType] {
 
   val sigHashSingle: SIGHASH_SINGLE = SIGHASH_SINGLE(Int32(sigHashSingleByte))
 
-
   val sigHashAllAnyoneCanPayByte = (HashType.sigHashAllByte | HashType.sigHashAnyoneCanPayByte).toByte
 
   val sigHashAllAnyoneCanPayNum = (Int32(sigHashAllByte) | sigHashAnyoneCanPayNum)
@@ -123,6 +125,15 @@ object HashType extends Factory[HashType] {
   val sigHashSingleAnyoneCanPayNum = (Int32(sigHashSingleByte) | sigHashAnyoneCanPayNum)
 
   val sigHashSingleAnyoneCanPay = SIGHASH_SINGLE_ANYONECANPAY(sigHashSingleAnyoneCanPayNum)
+
+  /**
+    * Checks if the given digital signature has a valid hash type
+    * Mimics this functionality inside of Bitcoin Core
+    * https://github.com/bitcoin/bitcoin/blob/b83264d9c7a8ddb79f64bd9540caddc8632ef31f/src/script/interpreter.cpp#L186
+    */
+  def isDefinedHashtypeSignature(sig: ECDigitalSignature): Boolean = {
+    sig.bytes.nonEmpty && hashTypeBytes.contains(sig.bytes.last)
+  }
 }
 
 /**

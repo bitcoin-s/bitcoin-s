@@ -187,6 +187,7 @@ trait ScriptGenerators extends BitcoinSLogger {
     */
   def signedP2PKScriptSignature: Gen[(P2PKScriptSignature,P2PKScriptPubKey,ECPrivateKey)] = for {
     privateKey <- CryptoGenerators.privateKey
+    hashType <- CryptoGenerators.hashType
     publicKey = privateKey.publicKey
     scriptPubKey = P2PKScriptPubKey(publicKey)
     (creditingTx, outputIndex) = TransactionGenerators.buildCreditingTransaction(scriptPubKey)
@@ -194,7 +195,7 @@ trait ScriptGenerators extends BitcoinSLogger {
     (spendingTx, inputIndex) = TransactionGenerators.buildSpendingTransaction(creditingTx, scriptSig, outputIndex)
     txSignatureComponent = TransactionSignatureComponent(spendingTx, inputIndex, scriptPubKey,
       Policy.standardScriptVerifyFlags)
-    txSignature = TransactionSignatureCreator.createSig(txSignatureComponent, privateKey, HashType.sigHashAll)
+    txSignature = TransactionSignatureCreator.createSig(txSignatureComponent, privateKey, hashType)
     //add the signature to the scriptSig instead of having an empty scriptSig
     signedScriptSig = P2PKScriptSignature(txSignature)
   } yield (signedScriptSig,scriptPubKey,privateKey)
@@ -208,6 +209,7 @@ trait ScriptGenerators extends BitcoinSLogger {
     */
   def signedP2PKHScriptSignature: Gen[(P2PKHScriptSignature, P2PKHScriptPubKey, ECPrivateKey)] = for {
     privateKey <- CryptoGenerators.privateKey
+    hashType <- CryptoGenerators.hashType
     publicKey = privateKey.publicKey
     scriptPubKey = P2PKHScriptPubKey(publicKey)
     (creditingTx,outputIndex) = TransactionGenerators.buildCreditingTransaction(scriptPubKey)
@@ -215,7 +217,7 @@ trait ScriptGenerators extends BitcoinSLogger {
     (spendingTx,inputIndex) = TransactionGenerators.buildSpendingTransaction(creditingTx,scriptSig,outputIndex)
     txSignatureComponent = TransactionSignatureComponent(spendingTx,inputIndex,scriptPubKey,
       Policy.standardScriptVerifyFlags)
-    txSignature = TransactionSignatureCreator.createSig(txSignatureComponent,privateKey, HashType.sigHashAll)
+    txSignature = TransactionSignatureCreator.createSig(txSignatureComponent,privateKey, hashType)
     //add the signature to the scriptSig instead of having an empty scriptSig
     signedScriptSig = P2PKHScriptSignature(txSignature,publicKey)
   } yield (signedScriptSig, scriptPubKey, privateKey)
@@ -228,13 +230,14 @@ trait ScriptGenerators extends BitcoinSLogger {
     */
   def signedMultiSignatureScriptSignature: Gen[(MultiSignatureScriptSignature, MultiSignatureScriptPubKey, Seq[ECPrivateKey])] = for {
     (privateKeys, requiredSigs) <- CryptoGenerators.privateKeySeqWithRequiredSigs
+    hashType <- CryptoGenerators.hashType
     publicKeys = privateKeys.map(_.publicKey)
     multiSigScriptPubKey = MultiSignatureScriptPubKey(requiredSigs,publicKeys)
-  } yield multiSigScriptSigGenHelper(privateKeys, requiredSigs, multiSigScriptPubKey)
+  } yield multiSigScriptSigGenHelper(privateKeys, requiredSigs, multiSigScriptPubKey, hashType)
 
   /** Helps generate a signed [[MultiSignatureScriptSignature]] */
   private def multiSigScriptSigGenHelper(privateKeys : Seq[ECPrivateKey], requiredSigs : Int,
-                                         scriptPubKey : MultiSignatureScriptPubKey) : (MultiSignatureScriptSignature, MultiSignatureScriptPubKey, Seq[ECPrivateKey]) = {
+                                         scriptPubKey : MultiSignatureScriptPubKey, hashType: HashType) : (MultiSignatureScriptSignature, MultiSignatureScriptPubKey, Seq[ECPrivateKey]) = {
     val (creditingTx,outputIndex) = TransactionGenerators.buildCreditingTransaction(scriptPubKey)
     val emptyDigitalSignatures = privateKeys.map(_ => EmptyDigitalSignature)
     val scriptSig = MultiSignatureScriptSignature(emptyDigitalSignatures)
@@ -244,7 +247,7 @@ trait ScriptGenerators extends BitcoinSLogger {
 
     val txSignatures = for {
       i <- 0 until requiredSigs
-    } yield TransactionSignatureCreator.createSig(txSignatureComponent, privateKeys(i), HashType.sigHashAll)
+    } yield TransactionSignatureCreator.createSig(txSignatureComponent, privateKeys(i), hashType)
 
     //add the signature to the scriptSig instead of having an empty scriptSig
     val signedScriptSig = MultiSignatureScriptSignature(txSignatures)
