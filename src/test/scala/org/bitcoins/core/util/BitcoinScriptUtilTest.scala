@@ -220,7 +220,4 @@ class BitcoinScriptUtilTest extends FlatSpec with MustMatchers {
     val sigExists = signatures.map(sig => asmWithoutSigs.exists(_ == ScriptConstant(sig.hex)))
     sigExists.exists(_ == true) must be (false)
   }
-
-  it must "determine the correct signature version for "
-
 }
