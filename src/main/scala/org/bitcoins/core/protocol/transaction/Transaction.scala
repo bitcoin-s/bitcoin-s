@@ -31,10 +31,7 @@ sealed trait Transaction extends NetworkElement {
   def lockTime : UInt32
 
 
-  /**
-    * Determines if this transaction is a coinbase transaction
-    * @return
-    */
+  /** Determines if this transaction is a coinbase transaction. */
   def isCoinbase : Boolean = inputs.size match {
     case 1 => inputs.head match {
       case coinbase : CoinbaseInput => true

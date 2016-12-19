@@ -79,6 +79,7 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
     val txWithInputSigsRemoved = Transaction(spendingTransaction,UpdateTransactionInputs(updatedInputs))
     val sigHashBytes = hashType.num.bytes.reverse
     //check the hash type
+    //TODO: could probably be optimized w/ HO function
     hashType match {
       case _: SIGHASH_NONE =>
         val sigHashNoneTx : Transaction = sigHashNone(txWithInputSigsRemoved,inputIndex)
@@ -126,9 +127,6 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
     }
   }
 
-
-
-
   /**
     * Serializes then hashes a transaction for signing
     * this is an implementation of it's bitcoinj equivalent found here
@@ -156,7 +154,6 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
       CryptoUtil.doubleSHA256(serializedTxForSignature)
     }
   }
-
 
   /** Implements the new serialization algorithm defined in BIP141
     * [[https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki]]
@@ -216,30 +213,18 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
     val serialization = serializeForSignature(spendingTx,inputIndex,script,hashType,amount)
     CryptoUtil.doubleSHA256(serialization)
   }
-  /**
-    * Wrapper function for hashForSignature
-    * @param txSigComponent this contains the transaction and inputIndex for hashForSignature
-    * @param hashType
-    * @return
-    */
+  /** Wrapper function for hashForSignature. */
   def hashForSignature(txSigComponent: TransactionSignatureComponent, hashType: HashType): DoubleSha256Digest = {
     val script = BitcoinScriptUtil.calculateScriptForSigning(txSigComponent,txSigComponent.scriptPubKey.asm)
     txSigComponent match {
       case t : BaseTransactionSignatureComponent =>
         hashForSignature(t.transaction,t.inputIndex,script,hashType)
-      case t : WitnessV0TransactionSignatureComponent =>
-        hashForSignature(t.transaction,t.inputIndex, script, hashType,t.amount)
+      case w : WitnessV0TransactionSignatureComponent =>
+        hashForSignature(w.transaction,w.inputIndex, script, hashType,w.amount)
     }
   }
 
-
-
-  /**
-   * Sets the input's sequence number to zero EXCEPT for the input at inputIndex
-   * @param inputs
-   * @param inputIndex
-   * @return
-   */
+  /** Sets the input's sequence number to zero EXCEPT for the input at inputIndex. */
   private def setSequenceNumbersZero(inputs : Seq[TransactionInput], inputIndex : UInt32) : Seq[TransactionInput] = for {
     (input,index) <- inputs.zipWithIndex
   } yield {
@@ -247,12 +232,7 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
     else TransactionInput(input,UInt32.zero)
   }
 
-  /**
-   * Executes the SIGHASH_NONE procedure on a spending transaction for the input specified by inputIndex
-   * @param spendingTransaction
-   * @param inputIndex
-   * @return
-   */
+  /** Executes the [[SIGHASH_NONE]] procedure on a spending transaction for the input specified by inputIndex. */
   private def sigHashNone(spendingTransaction : Transaction, inputIndex : UInt32) : Transaction = {
     //following this implementation from bitcoinj
     //https://github.com/bitcoinj/bitcoinj/blob/09a2ca64d2134b0dcbb27b1a6eb17dda6087f448/core/src/main/java/org/bitcoinj/core/Transaction.java#L957
@@ -265,7 +245,7 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
     sigHashNoneTx
   }
 
-  /** Executes the SIGHASH_SINGLE procedure on a spending transaction for the input specified by inputIndex */
+  /** Executes the [[SIGHASH_SINGLE]] procedure on a spending transaction for the input specified by inputIndex */
   private def sigHashSingle(spendingTransaction : Transaction, inputIndex : UInt32) : Transaction = {
     //following this implementation from bitcoinj
     //https://github.com/bitcoinj/bitcoinj/blob/09a2ca64d2134b0dcbb27b1a6eb17dda6087f448/core/src/main/java/org/bitcoinj/core/Transaction.java#L964
@@ -287,38 +267,23 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
     //create blank inputs with sequence numbers set to zero EXCEPT
     //the input at the inputIndex
     val updatedInputs : Seq[TransactionInput] = setSequenceNumbersZero(spendingTxOutputsEmptied.inputs,inputIndex)
-
     val sigHashSingleTx = Transaction(spendingTxOutputsEmptied,UpdateTransactionInputs(updatedInputs))
     sigHashSingleTx
   }
 
-  /**
-   * Executes the SIGHASH_ALL procedure on a spending transaction at inputIndex
-   * @param spendingTransaction
-   * @param inputIndex
-   * @return
-   */
+  /** Executes the [[SIGHASH_ALL]] procedure on a spending transaction at inputIndex. */
   private def sigHashAll(spendingTransaction : Transaction, inputIndex : UInt32) : Transaction = {
     spendingTransaction
   }
 
-  /**
-   * Executes the SIGHASH_ANYONECANPAY procedure on a spending transaction at inputIndex
-   * @param spendingTransaction
-   * @param input
-   * @return
-   */
+  /** Executes the [[SIGHASH_ANYONECANPAY]] procedure on a spending transaction at inputIndex. */
   private def sigHashAnyoneCanPay(spendingTransaction : Transaction, input : TransactionInput) : Transaction = {
     val txWithEmptyInputs = Transaction.emptyInputs(spendingTransaction)
     val txWithInputsRemoved = Transaction(txWithEmptyInputs,UpdateTransactionInputs(Seq(input)))
     txWithInputsRemoved
   }
 
-  /**
-    * Removes OP_CODESEPARATOR operations then returns the script
-    * format
-    * @return
-    */
+  /** Removes [[OP_CODESEPARATOR]] operations then returns the script. */
   def removeOpCodeSeparators(script : Seq[ScriptToken]) : Seq[ScriptToken] = {
     logger.info("Tokens: " + script)
     if (script.contains(OP_CODESEPARATOR)) {
