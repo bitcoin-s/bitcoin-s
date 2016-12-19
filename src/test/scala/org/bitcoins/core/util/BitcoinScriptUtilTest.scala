@@ -220,4 +220,15 @@ class BitcoinScriptUtilTest extends FlatSpec with MustMatchers {
     val sigExists = signatures.map(sig => asmWithoutSigs.exists(_ == ScriptConstant(sig.hex)))
     sigExists.exists(_ == true) must be (false)
   }
+
+  it must "cast a script token to a boolean value" in {
+    BitcoinScriptUtil.castToBool(ScriptConstant("")) must be (false)
+    BitcoinScriptUtil.castToBool(ScriptConstant(Seq(0x80.toByte))) must be (false)
+    BitcoinScriptUtil.castToBool(ScriptConstant("000000")) must be (false)
+    BitcoinScriptUtil.castToBool(ScriptConstant("00000080")) must be (false)
+
+    BitcoinScriptUtil.castToBool(ScriptConstant("01")) must be (true)
+    BitcoinScriptUtil.castToBool(ScriptConstant("80000000")) must be (true)
+    BitcoinScriptUtil.castToBool(ScriptConstant("00008000")) must be (true)
+  }
 }

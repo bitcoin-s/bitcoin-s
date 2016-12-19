@@ -43,16 +43,10 @@ sealed trait ScriptProgram {
   def flags : Seq[ScriptFlag]
 
   /** Returns true if the stack top is true */
-  def stackTopIsTrue = !stackTopIsFalse
+  def stackTopIsTrue = stack.headOption.isDefined && BitcoinScriptUtil.castToBool(stack.head)
 
   /** Returns true if the stack top is false */
-  def stackTopIsFalse : Boolean = {
-    if (stack.headOption.isDefined &&
-      (stack.head.hex == OP_FALSE.hex || stack.head.hex == ScriptNumber.negativeZero.hex ||
-        stack.head.hex == ScriptNumber.zero.hex)) true
-    else if (!stack.headOption.isDefined) true
-    else false
-  }
+  def stackTopIsFalse : Boolean = !stackTopIsTrue
 
 }
 
