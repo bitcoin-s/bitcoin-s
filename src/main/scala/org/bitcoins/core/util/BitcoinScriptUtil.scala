@@ -286,7 +286,7 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
           //Finally CHECKMULTISIG removes all signatures prior to hashing the script containing those signatures.
           //In conjunction with the SIGHASH_SINGLE bug this lets us test whether or not FindAndDelete() is actually
           // present in scriptPubKey/redeemScript evaluation by including a signature of the digest 0x01
-          // We can compute in advance for our pubkey, embed it it in the scriptPubKey, and then also
+          // We can compute in advance for our pubkey, embed it in the scriptPubKey, and then also
           // using a normal SIGHASH_ALL signature. If FindAndDelete() wasn't run, the 'bugged'
           //signature would still be in the hashed script, and the normal signature would fail."
           logger.info("Replacing redeemScript in txSignature component")

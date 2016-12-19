@@ -53,7 +53,6 @@ object TestUtil {
     ScriptConstant("512102b022902a0fdd71e831c37e4136c2754a59887be0618fb75336d7ab67e2982ff551ae")
   )
 
-
   val p2shOutputScript = "17a914eda8ae08b5c9f973f49543e90a7c292367b3337c87"
   val p2shOutputScriptNotParsedAsm = "OP_HASH160 eda8ae08b5c9f973f49543e90a7c292367b3337c OP_EQUAL"
   val p2shOutputScriptAsm = List(OP_HASH160,  BytesToPushOntoStack(20), ScriptConstant("eda8ae08b5c9f973f49543e90a7c292367b3337c"), OP_EQUAL)
@@ -61,8 +60,6 @@ object TestUtil {
   //https://btc.blockr.io/api/v1/tx/raw/791fe035d312dcf9196b48649a5c9a027198f623c0a5f5bd4cc311b8864dd0cf
   val rawP2shInputScriptSigHashSingle = "fdfd0000483045022100dfcfafcea73d83e1c54d444a19fb30d17317f922c19e2ff92dcda65ad09cba24022001e7a805c5672c49b222c5f2f1e67bb01f87215fb69df184e7c16f66c1f87c290347304402204a657ab8358a2edb8fd5ed8a45f846989a43655d2e8f80566b385b8f5a70dab402207362f870ce40f942437d43b6b99343419b14fb18fa69bee801d696a39b3410b8034c695221023927b5cd7facefa7b85d02f73d1e1632b3aaf8dd15d4f9f359e37e39f05611962103d2c0e82979b8aba4591fe39cffbf255b3b9c67b3d24f94de79c5013420c67b802103ec010970aae2e3d75eef0b44eaa31d7a0d13392513cd0614ff1c136b3b1020df53ae"
   def p2shInputScriptSigHashSingle = ScriptSignature(rawP2shInputScriptSigHashSingle)
-
-
 
   //p2sh script for a 2 of 2
   //https://tbtc.blockr.io/api/v1/tx/raw/2f18c646a2b2ee8ee1f295bb5a0f5cc51c5e820a123a14b0c0e170f9777518bb
@@ -99,7 +96,6 @@ object TestUtil {
     "df80e3e6eba7dcd4650281d3c13f140dafbb823a7227a78eb6ee9f6cedd04001340000006b483045022100cf317c320d078c5b884c44e7488825dab5bcdf3f88c66314ac925770cd8773a7022033fde60d33cc2842ea73fce5d9cf4f8da6fadf414a75b7085efdcd300407f438012102605c23537b27b80157c770cd23e066cd11db3800d3066a38b9b592fc08ae9c70ffffffff" +
     "02c02b00000000000017a914b0b06365c482eb4eabe6e0630029fb8328ea098487e81c0000000000001976a914938da2b50fd6d8acdfa20e30df0e7d8092f0bc7588ac00000000"
   def transaction = Transaction(rawTransaction)
-
 
   //txid cad1082e674a7bd3bc9ab1bc7804ba8a57523607c876b8eb2cbe645f2b1803d6
   val rawTxInput = "01" +
@@ -151,14 +147,11 @@ object TestUtil {
 
   def testProgramExecutionInProgress = ScriptProgram.toExecutionInProgress(testProgramPreExecution)
 
-
-
   val rawP2PKScriptSig = "4847304402200a5c6163f07b8d3b013c4d1d6dba25e780b39658d79ba37af7057a3b7f15ffa102201fd9b4eaa9943f734928b99a83592c2e7bf342ea2680f6a2bb705167966b742001"
   def p2pkScriptSig = ScriptSignature(rawP2PKScriptSig)
 
   val rawP2PKScriptPubKey = "43410479be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8ac"
   def p2pkScriptPubKey = ScriptPubKey(rawP2PKScriptPubKey)
-
 
   /**
    * This is a script sig that doesn't have a signature strictly der encoded
