@@ -45,9 +45,9 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
       logger.error("Signature did not have a low s value")
       ScriptValidationFailureHighSValue
     } else if (ScriptFlagUtil.requireStrictEncoding(flags) && signature.bytes.nonEmpty &&
-      !HashType.hashTypes.contains(HashType(signature.bytes.last))) {
-      logger.error("signature: " + signature.bytes)
-      logger.error("Hash type was not defined on the signature")
+      !HashType.isDefinedHashtypeSignature(signature)) {
+      logger.error("signature: " + signature.hex)
+      logger.error("Hash type was not defined on the signature, got: " + signature.bytes.last)
       ScriptValidationFailureHashType
     } else if (pubKeyEncodedCorrectly.isDefined) {
       val err = pubKeyEncodedCorrectly.get
