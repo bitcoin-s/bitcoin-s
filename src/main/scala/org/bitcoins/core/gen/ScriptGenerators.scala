@@ -385,7 +385,7 @@ trait ScriptGenerators extends BitcoinSLogger {
       signedMultiSignatureScriptSignature)
   }
 
-  /** Generates a random [[ScriptSignature]], the [[ScriptPubKey]]/[[CurrencyUnit]] it is spending, and the [[ECPrivateKey]] needed to spend it. */
+  /** Generates a random [[ScriptSignature]], the [[ScriptPubKey]] it is spending, and the [[ECPrivateKey]] needed to spend it. */
   def randomScriptSig : Gen[(ScriptSignature, ScriptPubKey, Seq[ECPrivateKey])] = {
     val wit = signedP2SHP2WPKHScriptSignature.map(x => (x._1,x._2,x._3))
     Gen.oneOf(packageToSequenceOfPrivateKeys(signedP2PKHScriptSignature),
