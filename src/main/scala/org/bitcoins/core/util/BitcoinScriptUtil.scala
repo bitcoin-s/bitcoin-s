@@ -365,6 +365,19 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
     case _: P2PKScriptPubKey | _: P2PKHScriptPubKey | _: MultiSignatureScriptPubKey  | _: NonStandardScriptPubKey
          | _: CLTVScriptPubKey | _: CSVScriptPubKey | EmptyScriptPubKey => SigVersionBase
   }
+
+
+  /** Casts the given script token to a boolean value
+    * Mimics this function inside of Bitcoin Core
+    * [[https://github.com/bitcoin/bitcoin/blob/8c1dbc5e9ddbafb77e60e8c4e6eb275a3a76ac12/src/script/interpreter.cpp#L38]]
+    * All bytes in the byte vector must be zero, unless it is the last byte, which can be 0 or 0x80 (negative zero)
+    * */
+  def castToBool(token: ScriptToken): Boolean = {
+    token.bytes.zipWithIndex.exists {
+      case (b,index) =>
+        b.toByte != 0 && !(b.toByte == 0x80.toByte && index == token.bytes.size - 1)
+    }
+  }
 }
 
 object BitcoinScriptUtil extends BitcoinScriptUtil
