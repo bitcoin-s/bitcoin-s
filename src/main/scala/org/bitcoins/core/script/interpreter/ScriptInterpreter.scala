@@ -36,6 +36,9 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
    */
   private lazy val maxScriptOps = 201
 
+  /** We cannot push an element larger than 520 bytes onto the stack */
+  private lazy val maxPushSize = 520
+
   /**
    * Runs an entire script though our script programming language and
    * returns a [[ScriptResult]] indicating if the script was valid, or if not what error it encountered
@@ -183,9 +186,11 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
         val scriptSig = scriptPubKeyExecutedProgram.txSignatureComponent.scriptSignature
         val (witnessVersion,witnessProgram) = (witnessScriptPubKey.witnessVersion, witnessScriptPubKey.witnessProgram)
         val witness = w.witness
+
         //scriptsig must be empty if we have raw p2wsh
         //if script pubkey is a P2SHScriptPubKey then we have P2SH(P2WSH)
         if (scriptSig.asm.nonEmpty && !w.scriptPubKey.isInstanceOf[P2SHScriptPubKey]) ScriptProgram(scriptPubKeyExecutedProgram,ScriptErrorWitnessMalleated)
+        else if (witness.stack.exists(_.size > maxPushSize)) ScriptProgram(scriptPubKeyExecutedProgram, ScriptErrorPushSize)
         else verifyWitnessProgram(witnessVersion, witness, witnessProgram, w)
     }
   }
@@ -288,7 +293,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
               logger.error("Script is invalid because it contains a disabled arithmetic operation")
               loop(ScriptProgram(p, ScriptErrorDisabledOpCode),opCount)
             //program cannot contain a push operation > 520 bytes
-            case _ if (p.script.exists(token => token.bytes.size > 520)) =>
+            case _ if (p.script.exists(token => token.bytes.size > maxPushSize)) =>
               logger.error("We have a script constant that is larger than 520 bytes, this is illegal: " + p.script)
               loop(ScriptProgram(p, ScriptErrorPushSize),opCount)
             //program stack size cannot be greater than 1000 elements
