@@ -190,6 +190,11 @@ object P2SHScriptSignature extends ScriptFactory[P2SHScriptSignature]  {
 
 
   def fromAsm(asm: Seq[ScriptToken]): P2SHScriptSignature = {
+    //everything can be a P2SHScriptSignature, thus passing the trivially true function
+    //the most important thing to note is we cannot have a P2SHScriptSignature unless
+    //we have a P2SHScriptPubKey
+    //previously P2SHScriptSignature's redeem script had to be standard scriptPubKey's, this
+    //was removed in 0.11 or 0.12 of Bitcoin Core
     buildScript(asm, P2SHScriptSignatureImpl(_),{ _ => true}, "Given asm tokens are not a p2sh scriptSig, got: " + asm)
   }
 
