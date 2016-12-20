@@ -8,33 +8,16 @@ import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil}
  */
 trait RawBitcoinSerializer[T] extends RawBitcoinSerializerHelper with BitcoinSLogger {
 
-  /**
-   * Reads a hexadecimal value and transforms it into the native
-   * scala type T
-   * @param hex
-   * @return
-   */
+  /** Reads a hexadecimal value and transforms it into the native scala type T. */
   def read(hex : String) : T = read(BitcoinSUtil.decodeHex(hex))
 
-  /**
-   * Reads in bytes and transforms it into the appropriate scala type T
-   * @param bytes
-   * @return
-   */
+  /** Reads in bytes and transforms it into the appropriate scala type T. */
   def read(bytes : List[Byte]) : T
 
-  /**
-   * Reads in bytes and transforms it into the appropriate scala type T
-   * @param bytes
-   * @return
-   */
+  /** Reads in bytes and transforms it into the appropriate scala type T. */
   def read(bytes : Seq[Byte]) : T = read(bytes.toList)
 
-  /**
-   * Takes a type T and writes it into the appropriate hexadecimal serialization for type T
-   * @param t
-   * @return
-   */
+  /** Takes a type T and writes it into the appropriate hexadecimal serialization for type T. */
   def write(t : T) : String
 
 }

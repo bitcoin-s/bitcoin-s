@@ -27,7 +27,6 @@ sealed trait ECPrivateKey extends BaseECKey {
     ECPublicKey(pubKeyBytes)
   }
 
-
   /**
     * Derives the public key ECPoint from the private key
     * https://github.com/bitcoinj/bitcoinj/blob/master/core/src/main/java/org/bitcoinj/core/ECKey.java#L452
@@ -84,19 +83,13 @@ object ECPrivateKey extends Factory[ECPrivateKey] with BitcoinSLogger {
   }
 
   def fromHex(hex: String, isCompressed: Boolean): ECPrivateKey = fromBytes(BitcoinSUtil.decodeHex(hex), isCompressed)
-  /**
-    * This function creates a fresh private key to use
-    *
-    * @return
-    */
+
+  /** Generates a fresh [[ECPrivateKey]] that has not been used before. */
   def apply() : ECPrivateKey = ECPrivateKey(true)
 
   def apply(isCompressed: Boolean) = freshPrivateKey(isCompressed)
-  /**
-    * This function creates a fresh private key to use
-    *
-    * @return
-    */
+
+  /** Generates a fresh [[ECPrivateKey]] that has not been used before. */
   def freshPrivateKey : ECPrivateKey = freshPrivateKey(true)
 
   def freshPrivateKey(isCompressed: Boolean): ECPrivateKey = {

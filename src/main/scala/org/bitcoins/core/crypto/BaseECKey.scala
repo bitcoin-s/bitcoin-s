@@ -50,22 +50,13 @@ trait BaseECKey extends BitcoinSLogger {
   def sign(hash: HashDigest): ECDigitalSignature = sign(hash,this)
 
   def sign(hash: HashDigest, signingKey: BaseECKey): ECDigitalSignature = sign(hash.bytes,signingKey)
-
 }
 
 object BaseECKey extends Factory[BaseECKey] {
 
-  /**
-    * Creates a private key from a hex string
-    * @param hex
-    * @return
-    */
+  /** Creates a [[ECPrivateKey]] from a hex string. */
   override def fromHex(hex : String) : BaseECKey = ECPrivateKey(hex)
 
-  /**
-    * Creates a private key from a byte array
-    * @param bytes
-    * @return
-    */
+  /** Creates a [[ECPrivateKey]] from a sequence of bytes. */
   override def fromBytes(bytes : Seq[Byte]) : BaseECKey = ECPrivateKey(bytes)
 }
