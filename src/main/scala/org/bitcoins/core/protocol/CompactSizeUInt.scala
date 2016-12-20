@@ -15,15 +15,10 @@ import org.bitcoins.core.util.{BitcoinSUtil, Factory}
   */
 trait CompactSizeUInt {
 
-  /**
-   * The number parsed from VarInt
-   * @return
-   */
+  /** The number parsed from VarInt. */
   def num: UInt64
-  /**
-   * The length of the VarInt in bytes
-   * @return
-   */
+
+  /** The length of the VarInt in bytes. */
   def size: Long
 
   def hex = size match {
@@ -32,6 +27,8 @@ trait CompactSizeUInt {
     case 5 => "fe" + BitcoinSUtil.flipEndianness(num.hex.slice(8,16))
     case _ => "ff" + BitcoinSUtil.flipEndianness(num.hex)
   }
+
+  def bytes: Seq[Byte] = BitcoinSUtil.decodeHex(hex)
 }
 
 object CompactSizeUInt extends Factory[CompactSizeUInt] {
@@ -58,13 +55,9 @@ object CompactSizeUInt extends Factory[CompactSizeUInt] {
     else if (num.underlying <= UInt32.max.underlying) 5
     else 9
   }
-  /**
-    * This function is responsible for calculating what the compact size unsigned integer is for a
+  /** This function is responsible for calculating what the compact size unsigned integer is for a
     * sequence of bytes
-    * https://bitcoin.org/en/developer-reference#compactsize-unsigned-integers
-    * @param bytes
-    * @return
-    */
+    * https://bitcoin.org/en/developer-reference#compactsize-unsigned-integers. */
   def calculateCompactSizeUInt(bytes : Seq[Byte]) : CompactSizeUInt = {
     //means we can represent the number with a single byte
     if (bytes.size <= 252) CompactSizeUInt(UInt64(bytes.size),1)
@@ -75,29 +68,17 @@ object CompactSizeUInt extends Factory[CompactSizeUInt] {
     else CompactSizeUInt(UInt64(bytes.size),9)
   }
 
-  /**
-    * Responsible for calculating what the compact size uint is for this hex string
-    * @param hex
-    * @return
-    */
+  /** Responsible for calculating what the [[CompactSizeUInt]] is for this hex string. */
   def calculateCompactSizeUInt(hex : String) : CompactSizeUInt = calculateCompactSizeUInt(BitcoinSUtil.decodeHex(hex))
 
-  /**
-    * Parses a VarInt from a string of hex characters
-    * https://bitcoin.org/en/developer-reference#compactsize-unsigned-integers
-    * @param hex
-    * @return
-    */
+  /** Parses a VarInt from a string of hex characters
+    * https://bitcoin.org/en/developer-reference#compactsize-unsigned-integers. */
   def parseCompactSizeUInt(hex : String) : CompactSizeUInt = parseCompactSizeUInt(BitcoinSUtil.decodeHex(hex))
 
-  /**
-    * Parses a CompactSizeUInt from a sequence of bytes
-    * https://bitcoin.org/en/developer-reference#compactsize-unsigned-integers
-    * @param bytes
-    * @return
-    */
+  /** Parses a [[CompactSizeUInt]] from a sequence of bytes
+    * https://bitcoin.org/en/developer-reference#compactsize-unsigned-integers. */
   def parseCompactSizeUInt(bytes : Seq[Byte]) : CompactSizeUInt = {
-    require(bytes.size > 0, "Cannot parse a VarInt if the byte array is size 0")
+    require(bytes.nonEmpty, "Cannot parse a VarInt if the byte array is size 0")
     //8 bit number
     if (UInt64(Seq(bytes.head)).underlying < 253)
       CompactSizeUInt(UInt64(Seq(bytes.head)),1)
@@ -109,12 +90,8 @@ object CompactSizeUInt extends Factory[CompactSizeUInt] {
     else CompactSizeUInt(UInt64(bytes.slice(1,9).reverse),9)
   }
 
-  /**
-    * Returns the size of a VarInt in the number of bytes
-    * https://en.bitcoin.it/wiki/Protocol_documentation#Variable_length_integer
-    * @param byte
-    * @return
-    */
+  /** Returns the size of a VarInt in the number of bytes
+    * https://en.bitcoin.it/wiki/Protocol_documentation#Variable_length_integer. */
   def parseCompactSizeUIntSize(byte : Byte) : Long = {
     //8 bit number
     if (parseLong(byte) < 253) 1
@@ -126,13 +103,8 @@ object CompactSizeUInt extends Factory[CompactSizeUInt] {
     else 9
   }
 
-
-  /**
-    * Parses the compact size uint from a script signature
-    * https://bitcoin.org/en/developer-reference#compactsize-unsigned-integers
-    * @param script
-    * @return
-    */
+  /** Parses the [[CompactSizeUInt]] from a [[ScriptSignature]].
+    * https://bitcoin.org/en/developer-reference#compactsize-unsigned-integers. */
   def parseCompactSizeUInt(script : ScriptSignature) : CompactSizeUInt = {
     if (script.bytes.size <=252 ) {
       CompactSizeUInt(UInt64(script.bytes.size),1)
@@ -142,22 +114,6 @@ object CompactSizeUInt extends Factory[CompactSizeUInt] {
       CompactSizeUInt(UInt64(script.bytes.size),5)
     }
     else CompactSizeUInt(UInt64(script.bytes.size),9)
-  }
-
-  /**
-    * Parses a compact size uint from a script pubkey
-    * https://bitcoin.org/en/developer-reference#compactsize-unsigned-integers
-    * @param scriptPubKey
-    * @return
-    */
-  def parseCompactSizeUInt(scriptPubKey : ScriptPubKey) : CompactSizeUInt = {
-    if (scriptPubKey.bytes.size <=252 ) {
-      CompactSizeUInt(UInt64(scriptPubKey.bytes.size),1)
-    } else if (scriptPubKey.bytes.size <= 0xffff) {
-      CompactSizeUInt(UInt64(scriptPubKey.bytes.size),3)
-    } else if (scriptPubKey.bytes.size <= 0xffffffffL) {
-      CompactSizeUInt(UInt64(scriptPubKey.bytes.size),5)
-    } else CompactSizeUInt(UInt64(scriptPubKey.bytes.size),9)
   }
 
   private def parseLong(hex : String) : Long = java.lang.Long.parseLong(hex,16)

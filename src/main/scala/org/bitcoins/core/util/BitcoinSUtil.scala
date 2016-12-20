@@ -15,12 +15,8 @@ trait BitcoinSUtil {
 
   def encodeHex(byte : Byte) : String = encodeHex(Seq(byte))
 
-  /**
-    * Encodes a long number to a hex string, pads it with an extra '0' char
-    * if the hex string is an odd amount of characters
-    * @param long
-    * @return
-    */
+  /** Encodes a long number to a hex string, pads it with an extra '0' char
+    * if the hex string is an odd amount of characters. */
   def encodeHex(long : Long) : String = {
     val hex = long.toHexString.length % 2 match {
       case 1 => "0" + long.toHexString
@@ -39,52 +35,31 @@ trait BitcoinSUtil {
 
   def encodeHex(bigInt : BigInt) : String = BitcoinSUtil.encodeHex(bigInt.toByteArray)
 
-  /**
-   * Tests if a given string is a hexadecimal string
-   * @param str
-   * @return
-   */
-  def isHex(str : String) = {
+  /** Tests if a given string is a hexadecimal string. */
+  def isHex(str : String) : Boolean = {
     //check valid characters & hex strings have to have an even number of chars
-    str.matches("^[0-9a-f]+$") && (str.size % 2 == 0)
+    str.matches("^[0-9a-f]+$") && (str.length % 2 == 0)
   }
 
-  /**
-    * Converts a two character hex string to its byte representation
-    * @param hex
-    * @return
-    */
+  /** Converts a two character hex string to its byte representation. */
   def hexToByte(hex : String): Byte = {
-    require(hex.size == 2)
+    require(hex.length == 2)
     BitcoinSUtil.decodeHex(hex).head
   }
 
-  /**
-   * Flips the endianness of the give hex string
-   * @param hex
-   * @return
-   */
+  /** Flips the endianness of the give hex string. */
   def flipEndianness(hex : String) : String = flipEndianness(decodeHex(hex))
 
-  /**
-   * Flips the endianness of the given sequence of bytes
-   * @param bytes
-   * @return
-   */
+  /** Flips the endianness of the given sequence of bytes. */
   def flipEndianness(bytes : Seq[Byte]) : String = encodeHex(bytes.reverse)
 
 
-  /**
-    * Adds the amount padding bytes needed to fix the size of the hex string
+  /** Adds the amount padding bytes needed to fix the size of the hex string
     * for instance, ints are required to be 4 bytes. If the number is just 1
     * it will only take 1 byte. We need to pad the byte with an extra 3 bytes so the result is
-    * 00000001 instead of just 1
-    * @param charactersNeeded
-    * @param hex
-    * @return
-    */
+    * 00000001 instead of just 1. */
   private def addPadding(charactersNeeded : Int, hex : String) : String = {
-    val paddingNeeded = charactersNeeded - hex.size
+    val paddingNeeded = charactersNeeded - hex.length
     val padding = for { i <- 0 until paddingNeeded} yield "0"
     val paddedHex = padding.mkString + hex
     paddedHex

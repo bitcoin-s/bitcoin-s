@@ -1,8 +1,6 @@
 package org.bitcoins.core.util
 
-import org.bitcoins.core.config.{MainNet, NetworkParameters, TestNet3}
-import org.bitcoins.core.crypto.{ECPrivateKey, Sha256Hash160Digest}
-import org.bitcoins.core.protocol.{BitcoinAddress, P2PKHAddress, P2SHAddress, Address}
+import org.bitcoins.core.crypto.ECPrivateKey
 import org.bitcoins.core.protocol.blockchain._
 
 import scala.annotation.tailrec
@@ -17,12 +15,7 @@ trait Base58 extends BitcoinSLogger {
   val base58Characters = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
   val base58Pairs = base58Characters.zipWithIndex.toMap
 
-  /**
-    * Verifies a given base58 string against its checksum (last 4 decoded bytes)
-    *
-    * @param input base58 string
-    * @return
-    */
+  /** Verifies a given [[Base58Type]] string against its checksum (last 4 decoded bytes). */
   def decodeCheck(input: String) : Try[Seq[Byte]] = {
     val decoded : Seq[Byte] = decode(input)
     if (decoded.length < 4) Failure(new IllegalArgumentException("Invalid input"))
@@ -36,13 +29,7 @@ trait Base58 extends BitcoinSLogger {
     }
   }
 
-  /**
-    * Takes in sequence of bytes and returns base58 bitcoin string
-    *
-    * @param bytes sequence of bytes to be encoded into base58
-    * @return
-    */
-  //TODO: Create Base58 Type
+  /** Encodes a sequence of bytes to a [[Base58Type]] string. */
   def encode(bytes : Seq[Byte]) : String = {
     val ones : String = bytes.takeWhile(_ == 0).map(_ => '1').mkString
     @tailrec
@@ -63,20 +50,17 @@ trait Base58 extends BitcoinSLogger {
     }
   }
 
+  /** Encodes a hex string to its [[Base58Type]] representation. */
   def encode(hex : String) : String = {
     val bytes = BitcoinSUtil.decodeHex(hex)
     encode(bytes)
   }
 
+  /** Encodes a [[Byte]] to its [[Base58Type]] representation. */
   def encode(byte : Byte) : String = encode(Seq(byte))
 
-  /**
-    * Takes in base58 string and returns sequence of bytes
-    * https://github.com/ACINQ/bitcoin-lib/blob/master/src/main/scala/fr/acinq/bitcoin/Base58.scala
-    *
-    * @param input Base58 string to be decoded into a sequence of bytes
-    * @return
-    */
+  /** Takes in [[Base58Type]] string and returns sequence of [[Byte]]s
+    * https://github.com/ACINQ/bitcoin-lib/blob/master/src/main/scala/fr/acinq/bitcoin/Base58.scala. */
   def decode(input: String) : Seq[Byte] = {
     val zeroes = input.takeWhile(_ == '1').map(_ => 0:Byte).toArray
     val trim  = input.dropWhile(_ == '1').toList
@@ -85,37 +69,22 @@ trait Base58 extends BitcoinSLogger {
     if (trim.isEmpty) zeroes else zeroes ++ decoded.toByteArray.dropWhile(_ == 0)
   }
 
-  /**
-    * Determines if a string is a valid Base58-encoded string.
-    *
-    * @param base58
-    * @return
-    */
+  /** Determines if a string is a valid [[Base58Type]] string. */
   def isValid(base58 : String) : Boolean = validityChecks(base58) match {
     case Success(bool) => bool
     case Failure(exception) => false
   }
 
-  /**
-    * Checks a private key that begins with a symbol corresponding that private key to a compressed public key ('K', 'L', 'c').
-    * In a Base58-encoded private key corresponding to a compressed public key, the 5th-to-last byte should be 0x01.
-    *
-    * @param base58
-    * @return
-    */
+  /** Checks a private key that begins with a symbol corresponding that private key to a compressed public key ('K', 'L', 'c').
+    * In a Base58-encoded private key corresponding to a compressed public key, the 5th-to-last byte should be 0x01. */
   private def checkCompressedPubKeyValidity(base58 : String) : Boolean = {
     val decoded = Base58.decode(base58)
     val compressedByte = decoded(decoded.length - 5)
     compressedByte == 0x01.toByte
   }
 
-  /**
-    * Checks if the string begins with an Address prefix byte/character.
-    * ('1', '3', 'm', 'n', '2')
-    *
-    * @param byte first byte in the sequence
-    * @return
-    */
+  /** Checks if the string begins with an Address prefix byte/character.
+    * ('1', '3', 'm', 'n', '2')  */
   private def isValidAddressPreFixByte(byte : Byte) : Boolean = {
     val validAddressPreFixBytes: Seq[Byte] =
       MainNetChainParams.base58Prefixes(PubKeyAddress) ++ MainNetChainParams.base58Prefixes(ScriptAddress) ++
@@ -123,28 +92,18 @@ trait Base58 extends BitcoinSLogger {
     validAddressPreFixBytes.contains(byte)
   }
 
-  /**
-    * Checks if the string begins with a private key prefix byte/character.
-    * ('5', '9', 'c')
-    *
-    * @param byte first byte in the sequence
-    * @return
-    */
+  /** Checks if the string begins with a private key prefix byte/character.
+    * ('5', '9', 'c') */
   private def isValidSecretKeyPreFixByte(byte : Byte) : Boolean = {
     val validSecretKeyPreFixBytes : Seq[Byte] =
       MainNetChainParams.base58Prefixes(SecretKey) ++ TestNetChainParams.base58Prefixes(SecretKey)
     validSecretKeyPreFixBytes.contains(byte)
   }
 
-  /**
-    * Checks the validity of a Base58 encoded string. A Base58 encoded string must not contain ('0', 'O', 'l', 'I').
+  /** Checks the validity of a [[Base58Type]] string. A [[Base58Type]] string must not contain ('0', 'O', 'l', 'I').
     * If the string is an address: it must have a valid address prefix byte and  must be between 26-35 characters in length.
     * If the string is a private key: it must have a valid private key prefix byte and must have a byte size of 32.
-    * If the string is a private key corresponding to a compressed public key, the 5th-to-last byte must be 0x01.
-    *
-    * @param base58
-    * @return
-    */
+    * If the string is a private key corresponding to a compressed public key, the 5th-to-last byte must be 0x01. */
   private def validityChecks(base58: String) : Try[Boolean] = Try {
     val decoded = decode(base58)
     val firstByte = decoded.head

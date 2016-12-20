@@ -1,6 +1,6 @@
 package org.bitcoins.core.protocol
 
-import org.bitcoins.core.util.BitcoinSUtil
+import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil}
 
 
 /**
@@ -8,23 +8,14 @@ import org.bitcoins.core.util.BitcoinSUtil
   * This represents a element that can be serialized to
   * be sent over the network
   */
-trait NetworkElement {
+trait NetworkElement extends BitcoinSLogger {
 
-  /**
-   * The size of the TransactionElement in bytes.
-   * @return
-   */
+  /** The size of the NetworkElement in bytes. */
   def size : Int = bytes.size
 
-  /**
-   * The hexadecimal representation of the transaction element
-   * @return
-   */
+  /** The hexadecimal representation of the NetworkElement */
   def hex : String
 
-  /**
-   * The byte representation of the transaction element
-   * @return
-   */
+  /** The byte representation of the NetworkElement */
   def bytes : Seq[Byte] = BitcoinSUtil.decodeHex(hex)
 }

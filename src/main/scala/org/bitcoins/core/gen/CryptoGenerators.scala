@@ -2,6 +2,7 @@ package org.bitcoins.core.gen
 
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.script.ScriptSettings
+import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.util.CryptoUtil
 import org.scalacheck.Gen
 
@@ -85,6 +86,11 @@ trait CryptoGenerators {
     pubKey <- publicKey
     hash = CryptoUtil.sha256Hash160(pubKey.bytes)
   } yield hash
+
+  /** Generates a random [[HashType]] */
+  def hashType: Gen[HashType] = Gen.oneOf(HashType.sigHashAll, HashType.sigHashNone, HashType.sigHashSingle,
+    HashType.sigHashAnyoneCanPay, HashType.sigHashSingleAnyoneCanPay, HashType.sigHashNoneAnyoneCanPay,
+    HashType.sigHashAllAnyoneCanPay)
 
 }
 
