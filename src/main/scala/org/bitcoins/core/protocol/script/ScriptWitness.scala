@@ -21,16 +21,18 @@ sealed trait ScriptWitness extends NetworkElement {
   override def hex = RawScriptWitnessParser.write(this)
 }
 
+case object EmptyScriptWitness extends ScriptWitness {
+  override def stack = Nil
+
+  override def hex = "00"
+}
+
 object ScriptWitness extends Factory[ScriptWitness] {
   private case class ScriptWitnessImpl(stack: Seq[Seq[Byte]]) extends ScriptWitness
 
   def apply(stack: Seq[Seq[Byte]]): ScriptWitness = ScriptWitnessImpl(stack)
 
   override def fromBytes(bytes: Seq[Byte]): ScriptWitness = RawScriptWitnessParser.read(bytes)
-
-/*
-  def fromHex(stack: Seq[Seq[String]]): ScriptWitness = ScriptWitness(stack.flatMap(_.map(BitcoinSUtil.decodeHex(_))))
-*/
 
   def apply(signature: ECDigitalSignature, publicKey: ECPublicKey): ScriptWitness = {
     val sigConstant = signature.bytes

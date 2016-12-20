@@ -6,7 +6,7 @@ import org.bitcoins.core.crypto.{BaseTransactionSignatureComponent, WitnessV0Tra
 import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits}
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.protocol.script._
-import org.bitcoins.core.protocol.transaction.{EmptyTransactionOutPoint, Transaction}
+import org.bitcoins.core.protocol.transaction.{BaseTransaction, EmptyTransactionOutPoint, Transaction, WitnessTransaction}
 import org.bitcoins.core.script._
 import org.bitcoins.core.script.arithmetic._
 import org.bitcoins.core.script.bitwise._
@@ -35,6 +35,9 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
    * to 201
    */
   private lazy val maxScriptOps = 201
+
+  /** We cannot push an element larger than 520 bytes onto the stack */
+  private lazy val maxPushSize = 520
 
   /**
    * Runs an entire script though our script programming language and
@@ -83,6 +86,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
     else if (hasUnexpectedWitness(program)) {
       //note: the 'program' value we pass above is intentional, we need to check the original program
       //as the 'executedProgram' may have had the scriptPubKey value changed to the rebuilt ScriptPubKey of the witness program
+
       ScriptErrorWitnessUnexpected
     }
     else if (executedProgram.stackTopIsTrue && flags.contains(ScriptVerifyCleanStack)) {
@@ -108,7 +112,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
 
     /** Helper function to actually run a p2sh script */
     def run(p: ExecutedScriptProgram, stack : Seq[ScriptToken], s: ScriptPubKey): ExecutedScriptProgram = {
-      logger.error("Running p2sh script: " + stack)
+      logger.debug("Running p2sh script: " + stack)
       val p2shRedeemScriptProgram = ScriptProgram(p.txSignatureComponent,stack.tail,
         s.asm)
       if (ScriptFlagUtil.requirePushOnly(p2shRedeemScriptProgram.flags) && !BitcoinScriptUtil.isPushOnly(s.asm)) {
@@ -182,9 +186,11 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
         val scriptSig = scriptPubKeyExecutedProgram.txSignatureComponent.scriptSignature
         val (witnessVersion,witnessProgram) = (witnessScriptPubKey.witnessVersion, witnessScriptPubKey.witnessProgram)
         val witness = w.witness
+
         //scriptsig must be empty if we have raw p2wsh
         //if script pubkey is a P2SHScriptPubKey then we have P2SH(P2WSH)
         if (scriptSig.asm.nonEmpty && !w.scriptPubKey.isInstanceOf[P2SHScriptPubKey]) ScriptProgram(scriptPubKeyExecutedProgram,ScriptErrorWitnessMalleated)
+        else if (witness.stack.exists(_.size > maxPushSize)) ScriptProgram(scriptPubKeyExecutedProgram, ScriptErrorPushSize)
         else verifyWitnessProgram(witnessVersion, witness, witnessProgram, w)
     }
   }
@@ -192,27 +198,47 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
   /** Verifies a segregated witness program by running it through the interpreter
     * [[https://github.com/bitcoin/bitcoin/blob/f8528134fc188abc5c7175a19680206964a8fade/src/script/interpreter.cpp#L1302]]*/
   private def verifyWitnessProgram(witnessVersion: WitnessVersion, scriptWitness: ScriptWitness, witnessProgram: Seq[ScriptToken],
-                                   witnessTxSigComponent: WitnessV0TransactionSignatureComponent): ExecutedScriptProgram = witnessVersion match {
-    case WitnessVersion0 =>
-      val either: Either[(Seq[ScriptToken], ScriptPubKey),ScriptError] = witnessVersion.rebuild(scriptWitness, witnessProgram)
-      either match {
-        case Left((stack,scriptPubKey)) =>
-          val w = witnessTxSigComponent
-          val newProgram = ScriptProgram(w.transaction,scriptPubKey,w.inputIndex,stack,scriptPubKey.asm, scriptPubKey.asm,Nil,
-            w.flags,w.sigVersion,w.amount)
-          val evaluated = loop(newProgram,0)
-          logger.info("Stack after evaluating witness: " + evaluated.stack)
-          if (evaluated.error.isDefined) evaluated
-          else if (evaluated.stack.size != 1 || evaluated.stackTopIsFalse) ScriptProgram(evaluated,ScriptErrorEvalFalse)
-          else evaluated
-        case Right(err) =>
-          val program = ScriptProgram.toExecutionInProgress(ScriptProgram(witnessTxSigComponent))
-          ScriptProgram(program,err)
-      }
-    case UnassignedWitness =>
-      logger.warn("Unassigned witness inside of witness script pubkey")
-      val program = ScriptProgram(witnessTxSigComponent)
-      ScriptProgram(program,UnassignedWitness.rebuild(scriptWitness, witnessProgram).right.get)
+                                   witnessTxSigComponent: WitnessV0TransactionSignatureComponent): ExecutedScriptProgram = {
+
+    /** Helper function to run the post segwit execution checks */
+    def postSegWitProgramChecks(evaluated: ExecutedScriptProgram): ExecutedScriptProgram = {
+      logger.debug("Stack after evaluating witness: " + evaluated.stack)
+      if (evaluated.error.isDefined) evaluated
+      else if (evaluated.stack.size != 1 || evaluated.stackTopIsFalse) ScriptProgram(evaluated,ScriptErrorEvalFalse)
+      else evaluated
+    }
+
+    witnessVersion match {
+      case WitnessVersion0 =>
+        val either: Either[(Seq[ScriptToken], ScriptPubKey),ScriptError] = witnessVersion.rebuild(scriptWitness, witnessProgram)
+        either match {
+          case Left((stack,scriptPubKey)) =>
+            val w = witnessTxSigComponent
+            val newProgram = ScriptProgram(w.transaction,scriptPubKey,w.inputIndex,stack,scriptPubKey.asm, scriptPubKey.asm,Nil,
+              w.flags,w.sigVersion,w.amount)
+            val evaluated = loop(newProgram,0)
+            postSegWitProgramChecks(evaluated)
+          case Right(err) =>
+            val program = ScriptProgram(witnessTxSigComponent)
+            ScriptProgram(program,err)
+        }
+      case UnassignedWitness =>
+        logger.warn("Unassigned witness inside of witness script pubkey")
+        val w = witnessTxSigComponent
+        val flags = w.flags
+        val discourageUpgradableWitnessVersion = ScriptFlagUtil.discourageUpgradableWitnessProgram(flags)
+        val program = ScriptProgram(w.transaction,w.scriptPubKey,w.inputIndex,Nil,Nil, w.scriptPubKey.asm,Nil,
+          w.flags,w.sigVersion,w.amount)
+        if (discourageUpgradableWitnessVersion) {
+          ScriptProgram(program,UnassignedWitness.rebuild(scriptWitness, witnessProgram).right.get)
+        } else {
+          //if we are not discouraging upgradable ops, we just trivially return the program with an OP_TRUE on the stack
+          //see: https://github.com/bitcoin/bitcoin/blob/b83264d9c7a8ddb79f64bd9540caddc8632ef31f/src/script/interpreter.cpp#L1386-L1389
+          val evaluated = loop(ScriptProgram(program,Seq(OP_TRUE),ScriptProgram.Stack),0)
+          evaluated
+        }
+
+    }
   }
 
   /**
@@ -267,7 +293,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
               logger.error("Script is invalid because it contains a disabled arithmetic operation")
               loop(ScriptProgram(p, ScriptErrorDisabledOpCode),opCount)
             //program cannot contain a push operation > 520 bytes
-            case _ if (p.script.exists(token => token.bytes.size > 520)) =>
+            case _ if (p.script.exists(token => token.bytes.size > maxPushSize)) =>
               logger.error("We have a script constant that is larger than 520 bytes, this is illegal: " + p.script)
               loop(ScriptProgram(p, ScriptErrorPushSize),opCount)
             //program stack size cannot be greater than 1000 elements
@@ -471,24 +497,33 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
     * Return true if witness was NOT used, return false if witness was used. */
   private def hasUnexpectedWitness(program: ScriptProgram): Boolean =  {
     val txSigComponent = program.txSignatureComponent
-    txSigComponent match {
+    logger.debug("TxSigComponent: " + txSigComponent)
+    val unexpectedWitness = txSigComponent match {
       case b : BaseTransactionSignatureComponent =>
-        //base transactions never have witnesses
-        false
+        b.transaction match {
+          case wtx : WitnessTransaction =>
+            wtx.witness.witnesses(txSigComponent.inputIndex.toInt).stack.nonEmpty
+          case _ : BaseTransaction => false
+        }
       case w : WitnessV0TransactionSignatureComponent =>
         val witnessedUsed = w.scriptPubKey match {
           case _ : WitnessScriptPubKey => true
           case _ : P2SHScriptPubKey => txSigComponent.scriptSignature match {
             case p2shScriptSig: P2SHScriptSignature =>
               p2shScriptSig.redeemScript.isInstanceOf[WitnessScriptPubKey]
-            case _ : CLTVScriptSignature | _ : CSVScriptSignature| _ : MultiSignatureScriptSignature| _ : NonStandardScriptSignature |
-                      _ : P2PKScriptSignature| _ : P2PKHScriptSignature | EmptyScriptSignature => false
+            case _ : CLTVScriptSignature | _ : CSVScriptSignature | _ : MultiSignatureScriptSignature | _ : NonStandardScriptSignature |
+             _ : P2PKScriptSignature | _ : P2PKHScriptSignature | EmptyScriptSignature =>
+              w.witness.stack.isEmpty
           }
           case _ : CLTVScriptPubKey | _ : CSVScriptPubKey | _ : MultiSignatureScriptPubKey | _ : NonStandardScriptPubKey |
-            _ : P2PKScriptPubKey | _ : P2PKHScriptPubKey | EmptyScriptPubKey => false
+            _ : P2PKScriptPubKey | _ : P2PKHScriptPubKey | EmptyScriptPubKey =>
+            w.witness.stack.isEmpty
         }
         !witnessedUsed
     }
+
+    if (unexpectedWitness) logger.error("Found unexpected witness that was not used by the ScriptProgram: " + program)
+    unexpectedWitness
   }
 }
 object ScriptInterpreter extends ScriptInterpreter

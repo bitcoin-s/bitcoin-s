@@ -4,6 +4,8 @@ import org.bitcoins.core.crypto._
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.protocol.script.{CLTVScriptPubKey, CSVScriptPubKey, EmptyScriptPubKey, _}
+import org.bitcoins.core.protocol.transaction.{Transaction, WitnessTransaction}
+import org.bitcoins.core.script.ScriptProgram.PreExecutionScriptProgramImpl
 import org.bitcoins.core.script.constant._
 import org.bitcoins.core.script.crypto.{OP_CHECKMULTISIG, OP_CHECKMULTISIGVERIFY, OP_CHECKSIG, OP_CHECKSIGVERIFY}
 import org.bitcoins.core.script.flag.{ScriptFlag, ScriptFlagUtil}
@@ -272,70 +274,37 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
     * instead of passing the [[WitnessScriptPubKey]] inside of the [[P2SHScriptSignature]]'s redeem script.
     * */
   def calculateScriptForChecking(txSignatureComponent: TransactionSignatureComponent,
-                                 signature: ECDigitalSignature,script: Seq[ScriptToken]): Seq[ScriptToken] = {
-    val scriptWithSigRemoved = calculateScriptForSigning(txSignatureComponent, script)
-    removeSignatureFromScript(signature,scriptWithSigRemoved)
+                                 signature: ECDigitalSignature, script: Seq[ScriptToken]): Seq[ScriptToken] = {
+    val scriptForChecking = calculateScriptForSigning(txSignatureComponent, script)
+    logger.debug("sig for removal: " + signature)
+    logger.debug("script: " + script)
+    logger.debug("scriptWithSigRemoved: " + scriptForChecking)
+    txSignatureComponent.sigVersion match {
+      case SigVersionBase => removeSignatureFromScript(signature,scriptForChecking)
+      case SigVersionWitnessV0 =>
+        //BIP143 removes requirement for calling FindAndDelete
+        //https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki#no-findanddelete
+        scriptForChecking
+    }
   }
 
-  def calculateScriptForSigning(txSignatureComponent: TransactionSignatureComponent, script: Seq[ScriptToken]): Seq[ScriptToken] = txSignatureComponent match {
-    case base: BaseTransactionSignatureComponent =>
-      txSignatureComponent.scriptSignature match {
-        case s : P2SHScriptSignature =>
-          //needs to be here for removing all sigs from OP_CHECKMULTISIG
-          //https://github.com/bitcoin/bitcoin/blob/master/src/test/data/tx_valid.json#L177
-          //Finally CHECKMULTISIG removes all signatures prior to hashing the script containing those signatures.
-          //In conjunction with the SIGHASH_SINGLE bug this lets us test whether or not FindAndDelete() is actually
-          // present in scriptPubKey/redeemScript evaluation by including a signature of the digest 0x01
-          // We can compute in advance for our pubkey, embed it in the scriptPubKey, and then also
-          // using a normal SIGHASH_ALL signature. If FindAndDelete() wasn't run, the 'bugged'
-          //signature would still be in the hashed script, and the normal signature would fail."
-          logger.info("Replacing redeemScript in txSignature component")
-          logger.info("Redeem script: " + s.redeemScript)
-          val sigsRemoved = removeSignaturesFromScript(s.signatures,s.redeemScript.asm)
-          sigsRemoved
-        case _ : P2PKHScriptSignature | _ : P2PKScriptSignature | _ : NonStandardScriptSignature
-                  | _ : MultiSignatureScriptSignature | _ : CLTVScriptSignature | _ : CSVScriptSignature | EmptyScriptSignature =>
+  def calculateScriptForSigning(txSignatureComponent: TransactionSignatureComponent, script: Seq[ScriptToken]): Seq[ScriptToken] = txSignatureComponent.scriptPubKey match {
+    case p2shScriptPubKey: P2SHScriptPubKey =>
+      val p2shScriptSig = P2SHScriptSignature(txSignatureComponent.scriptSignature.bytes)
+      val sigsRemoved = removeSignaturesFromScript(p2shScriptSig.signatures,p2shScriptSig.redeemScript.asm)
+      sigsRemoved
+    case w: WitnessScriptPubKey =>
+      txSignatureComponent match {
+        case wtxSigComponent: WitnessV0TransactionSignatureComponent =>
+          val scriptEither: Either[(Seq[ScriptToken], ScriptPubKey), ScriptError] = w.witnessVersion.rebuild(wtxSigComponent.witness,w.witnessProgram)
+          parseScriptEither(scriptEither)
+        case base : BaseTransactionSignatureComponent =>
+          //shouldn't have BaseTransactionSignatureComponent with a witness scriptPubKey
           script
       }
-    case wtxSigComponent : WitnessV0TransactionSignatureComponent =>
-      txSignatureComponent.scriptSignature match {
-        case s : P2SHScriptSignature =>
-          // this is for the case of P2SH(P2WSH) or P2SH(P2WPKH)
-          // in the case of P2SH(P2WPKH) we need to sign the P2WPKH asm
-          // in the case of P2SH(P2WSH) we need to sign the redeem script inside of the
-          // witness, NOT the witnessScriptPubKey redeemScript inside of the P2SHScriptSignature
-          logger.debug("Redeem script: " + s.redeemScript)
-          s.redeemScript match {
-            case w : WitnessScriptPubKey =>
-              //rebuild scriptPubKey asm
-              val scriptEither: Either[(Seq[ScriptToken], ScriptPubKey), ScriptError] = w.witnessVersion.rebuild(wtxSigComponent.witness,w.witnessProgram)
-              parseScriptEither(scriptEither)
-            case _ : P2SHScriptPubKey | _ : P2PKHScriptPubKey | _ : P2PKScriptPubKey | _ : MultiSignatureScriptPubKey |
-                      _ : NonStandardScriptPubKey | _ : CLTVScriptPubKey | _ : CSVScriptPubKey | EmptyScriptPubKey =>
-              val sigsRemoved = removeSignaturesFromScript(s.signatures, s.redeemScript.asm)
-              sigsRemoved
-          }
-        case EmptyScriptSignature =>
-          logger.info("wtxSigComponent.scriptPubKey: " + wtxSigComponent.scriptPubKey)
-          wtxSigComponent.scriptPubKey match {
-            case w : WitnessScriptPubKeyV0 =>
-              //for bare P2WPKH
-              logger.debug("wtxSigComponent.witness: " + wtxSigComponent.witness)
-              logger.debug("w.witnessProgram: " + w.witnessProgram)
-              val scriptEither = w.witnessVersion.rebuild(wtxSigComponent.witness,w.witnessProgram)
-              logger.debug("scriptEither: " + scriptEither)
-              val s = parseScriptEither(scriptEither)
-              logger.debug("P2WPKH: " + s)
-              s
-            case _ : P2SHScriptPubKey | _ : P2PKHScriptPubKey | _ : P2PKScriptPubKey | _ : MultiSignatureScriptPubKey |
-                 _ : NonStandardScriptPubKey | _ : CLTVScriptPubKey | _ : CSVScriptPubKey |
-                 _: UnassignedWitnessScriptPubKey | EmptyScriptPubKey =>
-              script
-          }
-        case _ : P2PKHScriptSignature | _ : P2PKScriptSignature | _ : NonStandardScriptSignature
-             | _ : MultiSignatureScriptSignature | _ : CLTVScriptSignature | _ : CSVScriptSignature  =>
-          script
-      }
+    case  _ : P2PKHScriptPubKey | _ : P2PKScriptPubKey | _ : MultiSignatureScriptPubKey |
+         _ : NonStandardScriptPubKey | _ : CLTVScriptPubKey | _ : CSVScriptPubKey | EmptyScriptPubKey =>
+      script
   }
 
   /** Removes the given [[ECDigitalSignature]] from the list of [[ScriptToken]] if it exists. */
@@ -346,7 +315,9 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
       val sigIndex = script.indexOf(ScriptConstant(signature.hex))
       logger.debug("SigIndex: " + sigIndex)
       //remove sig and it's corresponding BytesToPushOntoStack
-      script.slice(0,sigIndex-1) ++ script.slice(sigIndex+1,script.size)
+      val sigRemoved = script.slice(0,sigIndex-1) ++ script.slice(sigIndex+1,script.size)
+      logger.debug("sigRemoved: " + sigRemoved)
+      sigRemoved
     } else script
   }
 
@@ -372,11 +343,43 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
     } else program.originalScript
   }
 
-  def parseScriptEither(scriptEither: Either[(Seq[ScriptToken], ScriptPubKey), ScriptError]): Seq[ScriptToken] = scriptEither match {
+  private def parseScriptEither(scriptEither: Either[(Seq[ScriptToken], ScriptPubKey), ScriptError]): Seq[ScriptToken] = scriptEither match {
     case Left((_,scriptPubKey)) =>
       logger.debug("Script pubkey asm inside calculateForSigning: " + scriptPubKey.asm)
       scriptPubKey.asm
     case Right(_) => Nil //error
+  }
+
+  /** Given a tx, scriptPubKey and the input index we are checking the tx, it derives the appropriate [[SignatureVersion]] to use */
+  @tailrec
+  final def parseSigVersion(tx: Transaction, scriptPubKey: ScriptPubKey, inputIndex: UInt32): SignatureVersion  = scriptPubKey match {
+    case _ : WitnessScriptPubKeyV0 | _: UnassignedWitnessScriptPubKey =>
+      SigVersionWitnessV0
+    case _: P2SHScriptPubKey =>
+      val scriptSig = tx.inputs(inputIndex.toInt).scriptSignature
+      scriptSig match {
+        case s : P2SHScriptSignature =>
+          parseSigVersion(tx,s.redeemScript,inputIndex)
+        case _ : P2PKScriptSignature | _: P2PKHScriptSignature | _:MultiSignatureScriptSignature | _: NonStandardScriptSignature
+          | _: CLTVScriptSignature | _: CSVScriptSignature | EmptyScriptSignature => SigVersionBase
+      }
+    case _: P2PKScriptPubKey | _: P2PKHScriptPubKey | _: MultiSignatureScriptPubKey  | _: NonStandardScriptPubKey
+         | _: CLTVScriptPubKey | _: CSVScriptPubKey | EmptyScriptPubKey => SigVersionBase
+  }
+
+
+  /** Casts the given script token to a boolean value
+    * Mimics this function inside of Bitcoin Core
+    * [[https://github.com/bitcoin/bitcoin/blob/8c1dbc5e9ddbafb77e60e8c4e6eb275a3a76ac12/src/script/interpreter.cpp#L38]]
+    * All bytes in the byte vector must be zero, unless it is the last byte, which can be 0 or 0x80 (negative zero)
+    * */
+  def castToBool(token: ScriptToken): Boolean = {
+    token.bytes.zipWithIndex.exists {
+      case (b,index) =>
+        val byteNotZero = b.toByte != 0
+        val lastByteNotNegativeZero = !(index == token.bytes.size - 1 && b.toByte == 0x80.toByte)
+        byteNotZero && lastByteNotNegativeZero
+    }
   }
 }
 
