@@ -70,7 +70,6 @@ class CompactSizeUIntTest extends FlatSpec with MustMatchers  {
     CompactSizeUInt.parseCompactSizeUInt(str3) must be (CompactSizeUInt(UInt64(4294967295L),9))
   }
 
-
   it must "parse a variable length integer the same from a tx input and a script sig" in {
     CompactSizeUInt.parseCompactSizeUInt(TestUtil.txInput.head.scriptSignature.bytes) must be (TestUtil.txInput.head.scriptSignature.compactSizeUInt)
   }
@@ -94,9 +93,13 @@ class CompactSizeUIntTest extends FlatSpec with MustMatchers  {
     CompactSizeUInt.parseCompactSizeUInt(ScriptSignature(s2)) must be (CompactSizeUInt(UInt64(73085), 5))
   }
 
-  it must "parse 32 bit number and 64 bit number as compactsizeuints" in {
+  it must "parse 8 bit, 16 bit, 32 bit number and 64 bit number as compactsizeuints" in {
+    val bit8 = 1.toByte
+    val bit16 = 253.toByte
     val bit32 = 254.toByte
     val bit64 = 255.toByte
+    CompactSizeUInt.parseCompactSizeUIntSize(bit8) must be (1)
+    CompactSizeUInt.parseCompactSizeUIntSize(bit16) must be (3)
     CompactSizeUInt.parseCompactSizeUIntSize(bit32) must be (5)
     CompactSizeUInt.parseCompactSizeUIntSize(bit64) must be (9)
   }
@@ -107,5 +110,4 @@ class CompactSizeUIntTest extends FlatSpec with MustMatchers  {
       CompactSizeUInt.parseCompactSizeUInt(emptyBytes)
     }
   }
-
 }
