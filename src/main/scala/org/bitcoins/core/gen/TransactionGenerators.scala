@@ -8,7 +8,7 @@ import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction.{TransactionInput, TransactionOutPoint, TransactionOutput, _}
 import org.bitcoins.core.script.constant.ScriptNumber
 import org.bitcoins.core.script.interpreter.ScriptInterpreter
-import org.bitcoins.core.util.BitcoinSLogger
+import org.bitcoins.core.util.{BitcoinSLogger, BitcoinScriptUtil}
 import org.scalacheck.Gen
 
 /**
@@ -207,8 +207,9 @@ trait TransactionGenerators extends BitcoinSLogger {
     (signedScriptSig, scriptPubKey, privKeys, witness, amount) <- ScriptGenerators.signedP2SHP2WPKHScriptSignature
     (creditingTx,outputIndex) = buildCreditingTransaction(signedScriptSig.redeemScript, amount)
     (signedTx,inputIndex) = buildSpendingTransaction(creditingTx,signedScriptSig, outputIndex, witness)
+    sigVersion = BitcoinScriptUtil.parseSigVersion(signedTx,scriptPubKey,inputIndex)
     signedTxSignatureComponent = WitnessV0TransactionSignatureComponent(signedTx,inputIndex,
-      scriptPubKey, Policy.standardScriptVerifyFlags,amount)
+      scriptPubKey, Policy.standardScriptVerifyFlags,amount, sigVersion)
   } yield (signedTxSignatureComponent, privKeys)
 
   /** Creates a signed P2SH(P2WSH) transaction */
@@ -218,8 +219,9 @@ trait TransactionGenerators extends BitcoinSLogger {
     p2shScriptSig = P2SHScriptSignature(wtxSigComponent.scriptPubKey.asInstanceOf[WitnessScriptPubKey])
     (creditingTx,outputIndex) = buildCreditingTransaction(p2shScriptSig.redeemScript, wtxSigComponent.amount)
     (signedTx,inputIndex) = buildSpendingTransaction(creditingTx,p2shScriptSig,outputIndex,witness)
+    sigVersion = BitcoinScriptUtil.parseSigVersion(signedTx,p2shScriptPubKey,inputIndex)
     signedTxSignatureComponent = WitnessV0TransactionSignatureComponent(signedTx,inputIndex,
-      p2shScriptPubKey, Policy.standardScriptVerifyFlags, wtxSigComponent.amount)
+      p2shScriptPubKey, Policy.standardScriptVerifyFlags, wtxSigComponent.amount, sigVersion)
   } yield (signedTxSignatureComponent,privKeys)
 
   /**

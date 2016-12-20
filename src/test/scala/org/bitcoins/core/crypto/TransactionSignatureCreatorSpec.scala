@@ -119,7 +119,7 @@ class TransactionSignatureCreatorSpec extends Properties("TransactionSignatureCr
       val program = ScriptProgram(wtxSigComponent)
       val result = ScriptInterpreter.run(program)
       if (result != ScriptOk) logger.warn("Result: " + result)
-      result == ScriptOk
+      Seq(ScriptErrorPushSize, ScriptOk).contains(result)
     }
 
   property("generate a valid signature from a p2sh(p2wpkh) witness transaction") =
@@ -135,6 +135,6 @@ class TransactionSignatureCreatorSpec extends Properties("TransactionSignatureCr
       val program = ScriptProgram(wtxSigComponent)
       val result = ScriptInterpreter.run(program)
       if (result != ScriptOk) logger.warn("Result: " + result)
-      result == ScriptOk
+      Seq(ScriptErrorPushSize, ScriptOk).contains(result)
     }
 }

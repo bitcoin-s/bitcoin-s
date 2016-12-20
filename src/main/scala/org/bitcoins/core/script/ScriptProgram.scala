@@ -4,11 +4,12 @@ package org.bitcoins.core.script
 import org.bitcoins.core.crypto.{BaseTransactionSignatureComponent, TransactionSignatureComponent, WitnessV0TransactionSignatureComponent}
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptWitness, SignatureVersion}
+import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction.{BaseTransaction, Transaction, WitnessTransaction}
 import org.bitcoins.core.script.constant._
 import org.bitcoins.core.script.flag.ScriptFlag
 import org.bitcoins.core.script.result._
+import org.bitcoins.core.util.BitcoinScriptUtil
 
 /**
   * Created by chris on 2/3/16.
@@ -42,16 +43,10 @@ sealed trait ScriptProgram {
   def flags : Seq[ScriptFlag]
 
   /** Returns true if the stack top is true */
-  def stackTopIsTrue = !stackTopIsFalse
+  def stackTopIsTrue = stack.headOption.isDefined && BitcoinScriptUtil.castToBool(stack.head)
 
   /** Returns true if the stack top is false */
-  def stackTopIsFalse : Boolean = {
-    if (stack.headOption.isDefined &&
-      (stack.head.hex == OP_FALSE.hex || stack.head.hex == ScriptNumber.negativeZero.hex ||
-        stack.head.hex == ScriptNumber.zero.hex)) true
-    else if (!stack.headOption.isDefined) true
-    else false
-  }
+  def stackTopIsFalse : Boolean = !stackTopIsTrue
 
 }
 
@@ -232,7 +227,7 @@ object ScriptProgram {
     * @param amount the amount of [[CurrencyUnit]] we are spending in this input
     * @return the script program representing all of this information
     */
-  def apply(transaction: WitnessTransaction, scriptPubKey : ScriptPubKey, inputIndex : UInt32,
+  def apply(transaction: Transaction, scriptPubKey : ScriptPubKey, inputIndex : UInt32,
             flags : Seq[ScriptFlag],
             amount: CurrencyUnit) : PreExecutionScriptProgram = {
     val script = transaction.inputs(inputIndex.toInt).scriptSignature.asm
@@ -245,13 +240,13 @@ object ScriptProgram {
     ScriptProgram(p,stack,script)
   }
 
-  def apply(transaction: WitnessTransaction, scriptPubKey : ScriptPubKey, inputIndex : UInt32, script : Seq[ScriptToken],
+  def apply(transaction: Transaction, scriptPubKey : ScriptPubKey, inputIndex : UInt32, script : Seq[ScriptToken],
             flags : Seq[ScriptFlag], amount: CurrencyUnit) : PreExecutionScriptProgram = {
-    val txSignatureComponent = TransactionSignatureComponent(transaction,inputIndex,scriptPubKey,flags, amount)
-    PreExecutionScriptProgramImpl(txSignatureComponent,Nil,script.toList,script.toList,Nil,flags)
+    val sigVersion = BitcoinScriptUtil.parseSigVersion(transaction,scriptPubKey,inputIndex)
+    ScriptProgram(transaction,scriptPubKey,inputIndex,Nil,script,script,Nil,flags,sigVersion,amount)
   }
 
-  def apply(transaction: WitnessTransaction, scriptPubKey : ScriptPubKey, inputIndex : UInt32, stack : Seq[ScriptToken],
+  def apply(transaction: Transaction, scriptPubKey : ScriptPubKey, inputIndex : UInt32, stack : Seq[ScriptToken],
             script : Seq[ScriptToken], flags : Seq[ScriptFlag], witness: ScriptWitness,
             amount: CurrencyUnit) : ScriptProgram = {
     val program = ScriptProgram(transaction,scriptPubKey,inputIndex,flags, amount)
@@ -289,12 +284,12 @@ object ScriptProgram {
   }
 
   /** Creates a fresh [[PreExecutionScriptProgram]] */
-  def apply(transaction: WitnessTransaction, scriptPubKey: ScriptPubKey, inputIndex: UInt32, stack: Seq[ScriptToken],
+  def apply(transaction: Transaction, scriptPubKey: ScriptPubKey, inputIndex: UInt32, stack: Seq[ScriptToken],
             script: Seq[ScriptToken], originalScript: Seq[ScriptToken], altStack: Seq[ScriptToken],
             flags: Seq[ScriptFlag], sigVersion: SignatureVersion,
             amount: CurrencyUnit): PreExecutionScriptProgram = {
     val t = TransactionSignatureComponent(transaction,inputIndex,
-      scriptPubKey,flags, amount)
+      scriptPubKey,flags, amount,sigVersion)
     PreExecutionScriptProgramImpl(t,stack.toList,script.toList,originalScript.toList,altStack.toList,flags)
   }
 

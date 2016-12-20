@@ -109,7 +109,7 @@ trait WitnessGenerators extends BitcoinSLogger {
     val signedSpendingTx = WitnessTransaction(unsignedSpendingTx.version,unsignedSpendingTx.inputs,unsignedSpendingTx.outputs,
       unsignedSpendingTx.lockTime, signedTxWitness)
     val signedWtxSigComponent = WitnessV0TransactionSignatureComponent(signedSpendingTx,unsignedWTxComponent.inputIndex,
-      unsignedWTxComponent.scriptPubKey,unsignedWTxComponent.flags,unsignedWTxComponent.amount)
+      unsignedWTxComponent.scriptPubKey,unsignedWTxComponent.flags,unsignedWTxComponent.amount, unsignedWTxComponent.sigVersion)
     (signedTxWitness, signedWtxSigComponent)
   }
 
@@ -120,7 +120,9 @@ trait WitnessGenerators extends BitcoinSLogger {
     val flags = Policy.standardScriptVerifyFlags
     val (creditingTx,outputIndex) = TransactionGenerators.buildCreditingTransaction(witScriptPubKey,amount)
     val (unsignedSpendingTx,inputIndex) = TransactionGenerators.buildSpendingTransaction(creditingTx,EmptyScriptSignature,outputIndex,witness)
-    val unsignedWtxSigComponent = WitnessV0TransactionSignatureComponent(unsignedSpendingTx,inputIndex,witScriptPubKey,flags,amount)
+    val sigVersion = BitcoinScriptUtil.parseSigVersion(unsignedSpendingTx,witScriptPubKey,inputIndex)
+    val unsignedWtxSigComponent = WitnessV0TransactionSignatureComponent(unsignedSpendingTx,inputIndex,witScriptPubKey,flags,
+      amount, sigVersion)
     unsignedWtxSigComponent
   }
 
