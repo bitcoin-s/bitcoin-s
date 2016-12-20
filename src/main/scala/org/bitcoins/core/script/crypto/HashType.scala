@@ -32,25 +32,13 @@ object HashType extends Factory[HashType] {
         require(isONLY_ANYONE_CANPAY(num))
         SIGHASH_ANYONECANPAY(num)
       }
-    }
-    else {
-      SIGHASH_ALL(num)
-    }
+    } else SIGHASH_ALL(num)
   }
 
-  /**
-    * Returns a hashtype's default byte value
-    * @param hashType
-    * @return
-    */
-  def byte (hashType : HashType) : Byte = hashType match {
-    case _ : SIGHASH_ALL => SIGHASH_ALL.defaultValue.num.underlying.toByte
-    case _ : SIGHASH_NONE => SIGHASH_NONE.defaultValue.num.underlying.toByte
-    case _ : SIGHASH_SINGLE => SIGHASH_SINGLE.defaultValue.num.underlying.toByte
-    case _ : SIGHASH_ANYONECANPAY => SIGHASH_ANYONECANPAY.defaultValue.num.underlying.toByte
-    case _ : SIGHASH_ALL_ANYONECANPAY => SIGHASH_ALL_ANYONECANPAY.defaultValue.num.underlying.toByte
-    case _ : SIGHASH_NONE_ANYONECANPAY => SIGHASH_NONE_ANYONECANPAY.defaultValue.num.underlying.toByte
-    case _ : SIGHASH_SINGLE_ANYONECANPAY => SIGHASH_SINGLE_ANYONECANPAY.defaultValue.num.underlying.toByte
+  /** Returns a hashtype's default byte value */
+  def byte(hashType : HashType) : Byte = hashType match {
+    case _ : SIGHASH_ALL => sigHashAllByte
+    case h : HashType => h.byte
   }
 
   def isSIGHASH_ALL_ONE(num : Int32) : Boolean = (num & Int32(0x1f)) == Int32(1)
@@ -66,107 +54,116 @@ object HashType extends Factory[HashType] {
     else false
   }
   def isONLY_ANYONE_CANPAY(num : Int32) : Boolean = {
-    !(HashType.isSIGHASH_ALL_ANYONECANPAY(num) || HashType.isSIGHASH_NONE_ANYONECANPAY(num) || HashType.isSIGHASH_SINGLE_ANYONECANPAY(num))
+    !(HashType.isSIGHASH_ALL_ANYONECANPAY(num) || HashType.isSIGHASH_NONE_ANYONECANPAY(num) ||
+      HashType.isSIGHASH_SINGLE_ANYONECANPAY(num))
   }
 
-  val hashTypes = Seq(SIGHASH_ALL.defaultValue, SIGHASH_NONE, SIGHASH_SINGLE, SIGHASH_ANYONECANPAY,
-    SIGHASH_NONE_ANYONECANPAY, SIGHASH_ALL_ANYONECANPAY, SIGHASH_SINGLE_ANYONECANPAY)
+  /** Checks if the given hash type has the ANYONECANPAY bit set */
+  def isAnyoneCanPay(hashType: HashType): Boolean = hashType match {
+    case _ : SIGHASH_ANYONECANPAY | _: SIGHASH_ALL_ANYONECANPAY | _: SIGHASH_SINGLE_ANYONECANPAY |
+              _: SIGHASH_NONE_ANYONECANPAY => true
+    case _ : SIGHASH_ALL | _: SIGHASH_SINGLE | _: SIGHASH_NONE => false
+  }
+
+  lazy val hashTypes = Seq(sigHashAll, sigHashNone, sigHashSingle, sigHashAnyoneCanPay,
+    sigHashNoneAnyoneCanPay, sigHashAllAnyoneCanPay, sigHashSingleAnyoneCanPay)
 
   def apply(num : Int32) : HashType = fromNumber(num)
-  def apply(int : Int) : HashType = {
-    val num : Int32 = Int32(int)
-    fromNumber(num)
-  }
-  def apply (byte : Byte) : HashType = fromByte(byte)
+
+  def apply(int : Int) : HashType = HashType(Int32(int))
+
+  def apply(byte : Byte) : HashType = fromByte(byte)
+
+  /** The default byte used to represent [[SIGHASH_ALL]] */
+  val sigHashAllByte = 1.toByte
+
+  /** The default [[SIGHASH_ALL]] value */
+  val sigHashAll = SIGHASH_ALL(sigHashAllByte)
+
+  /** The default num for [[SIGHASH_ANYONECANPAY]]
+    * We need this for serialization of [[HashType]]
+    * flags inside of [[org.bitcoins.core.crypto.TransactionSignatureSerializer]]
+    *
+    * Have to be careful using this value, since native scala numbers are signed
+    * We need this because this serializes to 0x00000080 instead of 0xffffff80
+    * If we try to use Int32(sigHashAnyoneCanPayByte) we will get the latter serialization
+    * because all native scala numbers are signed
+    * */
+  val sigHashAnyoneCanPayNum = Int32(0x80)
+
+  val sigHashAnyoneCanPayByte = 0x80.toByte
+
+  val sigHashAnyoneCanPay: SIGHASH_ANYONECANPAY = SIGHASH_ANYONECANPAY(sigHashAnyoneCanPayNum)
+
+  /** The default byte for [[SIGHASH_NONE]] */
+  val sigHashNoneByte: Byte = 2.toByte
+
+  val sigHashNone: SIGHASH_NONE = SIGHASH_NONE(Int32(sigHashNoneByte))
+
+  /** The default byte for [[SIGHASH_SINGLE]] */
+  val sigHashSingleByte: Byte = 3.toByte
+
+  val sigHashSingle: SIGHASH_SINGLE = SIGHASH_SINGLE(Int32(sigHashSingleByte))
+
+
+  val sigHashAllAnyoneCanPayByte = (HashType.sigHashAllByte | HashType.sigHashAnyoneCanPayByte).toByte
+
+  val sigHashAllAnyoneCanPayNum = (Int32(sigHashAllByte) | sigHashAnyoneCanPayNum)
+
+  val sigHashAllAnyoneCanPay = SIGHASH_ALL_ANYONECANPAY(sigHashAllAnyoneCanPayNum)
+
+  val sigHashNoneAnyoneCanPayByte = (HashType.sigHashNoneByte | HashType.sigHashAnyoneCanPayByte).toByte
+
+  val sigHashNoneAnyoneCanPayNum = (Int32(sigHashNoneByte) | sigHashAnyoneCanPayNum)
+
+  val sigHashNoneAnyoneCanPay = SIGHASH_NONE_ANYONECANPAY(sigHashNoneAnyoneCanPayNum)
+
+  val sigHashSingleAnyoneCanPayByte = (HashType.sigHashSingleByte | HashType.sigHashAnyoneCanPayByte).toByte
+
+  val sigHashSingleAnyoneCanPayNum = (Int32(sigHashSingleByte) | sigHashAnyoneCanPayNum)
+
+  val sigHashSingleAnyoneCanPay = SIGHASH_SINGLE_ANYONECANPAY(sigHashSingleAnyoneCanPayNum)
 }
 
 /**
   * defaultValue is the underlying value of the HashType. The last byte of a signature determines the HashType.
   * https://en.bitcoin.it/wiki/OP_CHECKSIG
   */
-
- object SIGHASH_ALL extends Factory[SIGHASH_ALL] {
-  private case class SIGHASH_ALLImpl(num: Int32, byte : Byte = 0x01.toByte) extends SIGHASH_ALL {
-    require(HashType.isSIGHASH_ALL(num), "SIGHASH_ALL acts as a 'catch-all' for undefined hashtypes, and has a default " +
-      "value of one. Your input was: " + num + ", which is of hashType: " + HashType(num))
-  }
-  def byte : Byte = HashType.byte(defaultValue)
-  def defaultValue : SIGHASH_ALL = SIGHASH_ALL(Int32.one)
-  def apply(num : Int32) : SIGHASH_ALL = SIGHASH_ALLImpl(num)
-  override def fromBytes (bytes : Seq[Byte]) : SIGHASH_ALL = SIGHASH_ALL(Int32(bytes))
+case class SIGHASH_ALL(override val num: Int32) extends HashType {
+  require(HashType.isSIGHASH_ALL(num), "SIGHASH_ALL acts as a 'catch-all' for undefined hashtypes, and has a default " +
+    "value of one. Your input was: " + num + ", which is of hashType: " + HashType(num))
+  override def byte = HashType.sigHashAllByte
+}
+object SIGHASH_ALL {
+  def apply(byte: Byte): SIGHASH_ALL = SIGHASH_ALL(Int32(byte))
 }
 
- object SIGHASH_NONE extends Factory[SIGHASH_NONE] {
-  private case class SIGHASH_NONEImpl(num : Int32, byte : Byte = 0x02.toByte) extends SIGHASH_NONE {
-    require(HashType.isSIGHASH_NONE(num), "The bitwise AND of 'num & 0x1f' must be 2 for a hashtype of SIGHASH_NONE. " +
-      "Your input was: " + num + ", which is of hashType: " + HashType(num))
-  }
-  def byte : Byte = HashType.byte(defaultValue)
-  def defaultValue : SIGHASH_NONE = SIGHASH_NONE(Int32(2))
-  def apply(num : Int32) : SIGHASH_NONE = SIGHASH_NONEImpl(num)
-  override def fromBytes (bytes : Seq[Byte]) : SIGHASH_NONE = SIGHASH_NONE(Int32(bytes))
+case class SIGHASH_NONE(override val num: Int32) extends HashType {
+  require(HashType.isSIGHASH_NONE(num), "The given number is not a SIGHASH_NONE number: " + num)
+  override def byte : Byte = HashType.sigHashNoneByte
 }
 
-object SIGHASH_SINGLE extends Factory[SIGHASH_SINGLE] {
-  private case class SIGHASH_SINGLEImpl(num : Int32, byte : Byte = 0x03.toByte) extends SIGHASH_SINGLE {
-    require(HashType.isSIGHASH_SINGLE(num), "The bitwise AND of 'num & 0x1f' must be 3 for a hashtype of SIGHASH_SINGLE." +
-      " Your input was: " + num + ", which is of hashType: " + HashType(num))
-  }
-  def byte : Byte = HashType.byte(defaultValue)
-  def defaultValue : SIGHASH_SINGLE = SIGHASH_SINGLE(Int32(3))
-  def apply(num : Int32) : SIGHASH_SINGLE = SIGHASH_SINGLEImpl(num)
-  override def fromBytes (bytes : Seq[Byte]) : SIGHASH_SINGLE = SIGHASH_SINGLE(Int32(bytes))
+case class SIGHASH_SINGLE(override val num: Int32) extends HashType {
+  require(HashType.isSIGHASH_SINGLE(num), "The given number is not a SIGHASH_SINGLE number: " + num)
+  override def byte: Byte = HashType.sigHashSingleByte
 }
 
-object SIGHASH_ANYONECANPAY extends Factory[SIGHASH_ANYONECANPAY] {
-  private case class SIGHASH_ANYONECANPAYImpl(num : Int32, byte : Byte = 0x80.toByte) extends SIGHASH_ANYONECANPAY {
-    require(HashType.isSIGHASH_ANYONECANPAY(num) && HashType.isONLY_ANYONE_CANPAY(num), "The bitwise AND of 'num & 0x80' must be 0x80 (or 128) for a hashtype of " +
-      "SIGHASH_ANYONECANPAY. Your input was: " + num + ", which is of hashType: " + HashType(num))
-  }
-  def byte : Byte = HashType.byte(defaultValue)
-  def defaultValue : SIGHASH_ANYONECANPAY = SIGHASH_ANYONECANPAY(Int32(0x80))
-  def apply(num : Int32) : SIGHASH_ANYONECANPAY = SIGHASH_ANYONECANPAYImpl(num)
-  override def fromBytes (bytes : Seq[Byte]) : SIGHASH_ANYONECANPAY = SIGHASH_ANYONECANPAY(Int32(bytes))
+case class SIGHASH_ANYONECANPAY(override val num: Int32) extends HashType {
+  require(HashType.isSIGHASH_ANYONECANPAY(num), "The given number was not a SIGHASH_ANYONECANPAY number: " + num)
+  override def byte: Byte = HashType.sigHashAnyoneCanPayByte
 }
 
-object SIGHASH_ALL_ANYONECANPAY extends Factory[SIGHASH_ALL_ANYONECANPAY] {
-  private case class SIGHASH_ALL_ANYONECANPAYImpl(num : Int32, byte : Byte = 0x81.toByte) extends SIGHASH_ALL_ANYONECANPAY {
-    require(HashType.isSIGHASH_ALL_ANYONECANPAY(num), "SIGHASH_ALL_ANYONECANPAY must be of both hashTypes: SIGHASH_ALL, and " +
-      "SIGHASH_ANYONECANPAY. Your input was: " + num + ", which is of hashType: " + HashType(num))
-  }
-  def byte : Byte = HashType.byte(defaultValue)
-  def defaultValue : SIGHASH_ALL_ANYONECANPAY = SIGHASH_ALL_ANYONECANPAY(SIGHASH_ANYONECANPAY.defaultValue.num | SIGHASH_ALL.defaultValue.num)
-  def apply(num : Int32) : SIGHASH_ALL_ANYONECANPAY = SIGHASH_ALL_ANYONECANPAYImpl(num)
-  override def fromBytes (bytes : Seq[Byte]) : SIGHASH_ALL_ANYONECANPAY = SIGHASH_ALL_ANYONECANPAY(Int32(bytes))
+case class SIGHASH_ALL_ANYONECANPAY(override val num: Int32) extends HashType {
+  require(HashType.isSIGHASH_ALL_ANYONECANPAY(num), "The given number was not a SIGHASH_ALL_ANYONECANPAY number: " + num)
+  override def byte : Byte = HashType.sigHashAllAnyoneCanPayByte
 }
 
-object SIGHASH_NONE_ANYONECANPAY extends Factory[SIGHASH_NONE_ANYONECANPAY] {
-  private case class SIGHASH_NONE_ANYONECANPAYImpl(num : Int32, byte : Byte = 0x82.toByte) extends SIGHASH_NONE_ANYONECANPAY {
-    require(HashType.isSIGHASH_NONE_ANYONECANPAY(num), "SIGHASH_NONE_ANYONECANPAY must be of both hashTypes: SIGHASH_NONE, and " +
-      "SIGHASH_ANYONECANPAY. Your input was: " + num + ", which is of hashType: " + HashType(num))
-  }
-  def byte : Byte = HashType.byte(defaultValue)
-  def defaultValue : SIGHASH_NONE_ANYONECANPAY = SIGHASH_NONE_ANYONECANPAY(SIGHASH_ANYONECANPAY.defaultValue.num | SIGHASH_NONE.defaultValue.num)
-  def apply(num : Int32) : SIGHASH_NONE_ANYONECANPAY = SIGHASH_NONE_ANYONECANPAYImpl(num)
-  override def fromBytes (bytes : Seq[Byte]) : SIGHASH_NONE_ANYONECANPAY = SIGHASH_NONE_ANYONECANPAY(Int32(bytes))
+case class SIGHASH_NONE_ANYONECANPAY(override val num: Int32) extends HashType {
+  require(HashType.isSIGHASH_NONE_ANYONECANPAY(num), "The given number was not a SIGHASH_NONE_ANYONECANPAY number: " + num)
+  override def byte : Byte = HashType.sigHashNoneAnyoneCanPayByte
 }
 
-object SIGHASH_SINGLE_ANYONECANPAY extends Factory[SIGHASH_SINGLE_ANYONECANPAY] {
-  private case class SIGHASH_SINGLE_ANYONECANPAYImpl(num : Int32, byte : Byte = 0x83.toByte) extends SIGHASH_SINGLE_ANYONECANPAY {
-    require(HashType.isSIGHASH_SINGLE_ANYONECANPAY(num), "SIGHASH_SINGLE_ANYONECANPAY must be of both hashTypes: SIGHASH_SINGLE, " +
-      "and SIGHASH_ANYONECANPAY. Your input was: " + num + ", which is of hashType: " + HashType(num))
-  }
-  def byte : Byte = HashType.byte(defaultValue)
-  def defaultValue : SIGHASH_SINGLE_ANYONECANPAY = SIGHASH_SINGLE_ANYONECANPAY(SIGHASH_ANYONECANPAY.defaultValue.num | SIGHASH_SINGLE.defaultValue.num)
-  def apply(num : Int32) : SIGHASH_SINGLE_ANYONECANPAY = SIGHASH_SINGLE_ANYONECANPAYImpl(num)
-  override def fromBytes (bytes : Seq[Byte]) : SIGHASH_SINGLE_ANYONECANPAY = SIGHASH_SINGLE_ANYONECANPAY(Int32(bytes))
+case class SIGHASH_SINGLE_ANYONECANPAY(override val num: Int32) extends HashType {
+  require(HashType.isSIGHASH_SINGLE_ANYONECANPAY(num), "The given number was not a SIGHASH_SINGLE_ANYONECANPAY number: " + num)
+  override def byte : Byte = HashType.sigHashSingleAnyoneCanPayByte
 }
-
-
-sealed trait SIGHASH_ALL extends HashType
-sealed trait SIGHASH_NONE extends HashType
-sealed trait SIGHASH_SINGLE extends HashType
-sealed trait SIGHASH_ANYONECANPAY extends HashType
-sealed trait SIGHASH_ALL_ANYONECANPAY extends HashType
-sealed trait SIGHASH_NONE_ANYONECANPAY extends HashType
-sealed trait SIGHASH_SINGLE_ANYONECANPAY extends HashType

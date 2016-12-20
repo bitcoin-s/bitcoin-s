@@ -15,8 +15,6 @@ class TransactionInputTest extends FlatSpec with MustMatchers {
   "TransactionInput" must "define an empty transaction input" in {
     EmptyTransactionInput.previousOutput must be (EmptyTransactionOutPoint)
     EmptyTransactionInput.scriptSignature must be (EmptyScriptSignature)
-    EmptyTransactionInput.scriptSigCompactSizeUInt.num must be (UInt64.zero)
-    EmptyTransactionInput.scriptSigCompactSizeUInt.size must be (1)
     EmptyTransactionInput.sequence must be (TransactionConstants.sequence)
   }
 

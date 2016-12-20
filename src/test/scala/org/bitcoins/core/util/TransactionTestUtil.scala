@@ -1,7 +1,7 @@
 package org.bitcoins.core.util
 
 import org.bitcoins.core.crypto.{ECPrivateKey, ECPublicKey}
-import org.bitcoins.core.currency.CurrencyUnits
+import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
@@ -20,14 +20,11 @@ trait TransactionTestUtil extends BitcoinSLogger {
   /**
    * First input of this raw tx is a spending a multisignature output
    * the first input is signed for this tx
-   * @return
    */
   def rawSignedMultiSignatureTx = "0100000001d324b34c80c2e611b23c92ed1be31729b2856ae439d54b237a296d618425e912010000009300483045022100f5d203c0b36027ce61cd72ecd09b9629de029cd5cb34155c459f55999d7a08df02206db673c84556c202e5a5a354eca2bb6effeffff2fa040d34ecdbe642dc2219c001483045022100f0e0c53f1ebddb97407e801d90e5131f40dcab071168322454237b49f3bf74ca022069e2545cf9e2e7dc2c708be403f356c3d436fd498b68ef5f0c9138299547f14701ffffffff0140420f00000000001976a914edc96705498831b16782d439fa93164bc5c8db6f88ac00000000"
   /**
    * First input of this raw tx is a spending a multisignature output
-   * the first input is signed for this tx
-   * @return
-   */
+   * the first input is signed for this tx */
   def signedMultiSignatureTx = Transaction(rawSignedMultiSignatureTx)
 
   /**
@@ -36,7 +33,7 @@ trait TransactionTestUtil extends BitcoinSLogger {
    * @param scriptPubKey
    * @return the transaction and the output index of the scriptPubKey
    */
-  def buildCreditingTransaction(scriptPubKey : ScriptPubKey) : (Transaction,UInt32) = {
+  def buildCreditingTransaction(scriptPubKey : ScriptPubKey, amount: Option[CurrencyUnit] = None) : (Transaction,UInt32) = {
     //this needs to be all zeros according to these 3 lines in bitcoin core
     //https://github.com/bitcoin/bitcoin/blob/605c17844ea32b6d237db6d83871164dc7d59dab/src/test/script_tests.cpp#L64
     //https://github.com/bitcoin/bitcoin/blob/80d1f2e48364f05b2cdf44239b3a1faa0277e58e/src/primitives/transaction.h#L32
@@ -44,9 +41,9 @@ trait TransactionTestUtil extends BitcoinSLogger {
 
     
     val outpoint = EmptyTransactionOutPoint
-    val scriptSignature = ScriptSignature("0000")
+    val scriptSignature = ScriptSignature("020000")
     val input = TransactionInput(outpoint,scriptSignature,TransactionConstants.sequence)
-    val output = TransactionOutput(CurrencyUnits.zero,scriptPubKey)
+    val output = TransactionOutput(amount.getOrElse(CurrencyUnits.zero),scriptPubKey)
 
     val tx = Transaction(TransactionConstants.version,Seq(input),Seq(output),TransactionConstants.lockTime)
     (tx,UInt32.zero)
@@ -59,24 +56,39 @@ trait TransactionTestUtil extends BitcoinSLogger {
    * @param outputIndex
    * @return the built spending transaction and the input index for the script signature
    */
-  def buildSpendingTransaction(creditingTx : Transaction,scriptSignature : ScriptSignature, outputIndex : UInt32) : (Transaction,UInt32) = {
+  def buildSpendingTransaction(creditingTx : Transaction,scriptSignature : ScriptSignature, outputIndex : UInt32,
+                               witness: Option[(ScriptWitness,CurrencyUnit)] = None) : (Transaction,UInt32) = {
 /*
     CMutableTransaction txSpend;
     txSpend.nVersion = 1;
     txSpend.nLockTime = 0;
     txSpend.vin.resize(1);
     txSpend.vout.resize(1);
+    txSpend.wit.vtxinwit.resize(1);
+    txSpend.wit.vtxinwit[0].scriptWitness = scriptWitness;
     txSpend.vin[0].prevout.hash = txCredit.GetHash();
     txSpend.vin[0].prevout.n = 0;
     txSpend.vin[0].scriptSig = scriptSig;
-    txSpend.vin[0].nSequence = std::numeric_limits<unsigned int>::max();
+    txSpend.vin[0].nSequence = CTxIn::SEQUENCE_FINAL;
     txSpend.vout[0].scriptPubKey = CScript();
-    txSpend.vout[0].nValue = 0;*/
+    txSpend.vout[0].nValue = txCredit.vout[0].nValue;
+    */
 
     val outpoint = TransactionOutPoint(creditingTx.txId,outputIndex)
     val input = TransactionInput(outpoint,scriptSignature,TransactionConstants.sequence)
-    val output = TransactionOutput(CurrencyUnits.zero,EmptyScriptPubKey)
-    val tx = Transaction(TransactionConstants.version,Seq(input),Seq(output),TransactionConstants.lockTime)
+
+    val tx = witness match {
+      case Some((scriptWitness,amount)) =>
+        val txWitness = TransactionWitness(Seq(scriptWitness))
+        val output = TransactionOutput(amount,EmptyScriptPubKey)
+        WitnessTransaction(TransactionConstants.version,Seq(input), Seq(output),
+          TransactionConstants.lockTime, txWitness)
+      case None =>
+        val output = TransactionOutput(CurrencyUnits.zero,EmptyScriptPubKey)
+        Transaction(TransactionConstants.version,Seq(input),Seq(output),TransactionConstants.lockTime)
+
+    }
+
 /*    val expectedHex = "01000000019ce5586f04dd407719ab7e2ed3583583b9022f29652702cfac5ed082013461fe000000004847304402200a5c6163f07b8d3b013c4d1d6dba25e780b39658d79ba37af7057a3b7f15ffa102201fd9b4eaa9943f734928b99a83592c2e7bf342ea2680f6a2bb705167966b742001ffffffff0100000000000000000000000000"
     require(tx.hex == expectedHex,"\nExpected hex: " + expectedHex + "\nActual hex:   " +  tx.hex)*/
     (tx,UInt32.zero)
@@ -105,15 +117,12 @@ trait TransactionTestUtil extends BitcoinSLogger {
   def signedMultiSignatureTransaction : (Transaction, Int, ScriptPubKey, Seq[ECPublicKey]) = {
     val key1 = ECPrivateKey.fromWIFToPrivateKey("cVLwRLTvz3BxDAWkvS3yzT9pUcTCup7kQnfT2smRjvmmm1wAP6QT")
     val key2 = ECPrivateKey.fromWIFToPrivateKey("cTine92s8GLpVqvebi8rYce3FrUYq78ZGQffBYCS1HmDPJdSTxUo")
-    def key3 = ECPrivateKey.fromWIFToPrivateKey("cVHwXSPRZmL9adctwBwmn4oTZdZMbaCsR5XF6VznqMgcvt1FDDxg")
+    val key3 = ECPrivateKey.fromWIFToPrivateKey("cVHwXSPRZmL9adctwBwmn4oTZdZMbaCsR5XF6VznqMgcvt1FDDxg")
     (signedMultiSignatureTx,0,multiSignatureScriptPubKey, Seq(key1.publicKey,key2.publicKey,key3.publicKey))
   }
 
 
-  /**
-   * Returns a p2sh transaction with its corresponding crediting output
-   * @return
-   */
+  /** Returns a p2sh transaction with its corresponding crediting output */
   def p2shTransactionWithSpendingInputAndCreditingOutput : (Transaction, TransactionInput, UInt32, TransactionOutput) = {
     val creditingTx = TestUtil.p2sh2Of2CreditingTx
     val spendingTx = TestUtil.p2sh2Of2Tx
