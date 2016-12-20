@@ -12,14 +12,14 @@ class TransactionSpec extends Properties("TransactionSpec") with BitcoinSLogger 
   property("Serialization symmetry") =
     Prop.forAll(TransactionGenerators.transactions) { tx =>
       val result = Transaction(tx.hex) == tx
-      if (!result) logger.error("Incorrect hex: " + tx.hex)
+      if (!result) logger.error("Incorrect tx hex: " + tx.hex)
       result
     }
 
   property("Serialization symmetry for witness transactions") =
     Prop.forAll(TransactionGenerators.witnessTransaction) { wtx: WitnessTransaction =>
       val result = WitnessTransaction(wtx.hex) == wtx
-      if (!result) logger.error("Incorrect hex: " + wtx.hex)
+      if (!result) logger.error("Incorrect wtx hex: " + wtx.hex)
       result
     }
 }
