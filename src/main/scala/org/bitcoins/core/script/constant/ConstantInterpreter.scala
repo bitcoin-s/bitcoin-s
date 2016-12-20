@@ -105,11 +105,9 @@ trait ConstantInterpreter extends BitcoinSLogger {
     } else {
       //for the case where we have to push 0 bytes onto the stack, which is technically the empty byte vector
       program.script(1) match {
-        case OP_0 | BytesToPushOntoStack.zero | ScriptNumber.zero
-             | ScriptNumber.negativeZero if (ScriptFlagUtil.requireMinimalData(program.flags)) =>
-          ScriptProgram(program,ScriptErrorMinimalData)
         case OP_0 | BytesToPushOntoStack.zero | ScriptNumber.zero | ScriptNumber.negativeZero =>
-          ScriptProgram(program, ScriptNumber.zero :: program.stack, program.script.tail.tail)
+          if (ScriptFlagUtil.requireMinimalData(program.flags)) ScriptProgram(program,ScriptErrorMinimalData)
+          else ScriptProgram(program, ScriptNumber.zero :: program.stack, program.script.tail.tail)
         case _ : ScriptToken =>
           pushScriptNumberBytesToStack(ScriptProgram(program, program.script, ScriptProgram.Script))
       }
