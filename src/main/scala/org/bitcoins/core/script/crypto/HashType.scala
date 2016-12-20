@@ -132,7 +132,6 @@ object HashType extends Factory[HashType] {
 case class SIGHASH_ALL(override val num: Int32) extends HashType {
   require(HashType.isSIGHASH_ALL(num), "SIGHASH_ALL acts as a 'catch-all' for undefined hashtypes, and has a default " +
     "value of one. Your input was: " + num + ", which is of hashType: " + HashType(num))
-
   override def byte = HashType.sigHashAllByte
 }
 object SIGHASH_ALL {

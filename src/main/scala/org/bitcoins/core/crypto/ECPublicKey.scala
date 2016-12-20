@@ -12,10 +12,7 @@ import scala.util.{Failure, Success, Try}
  * Created by chris on 2/16/16.
  */
 trait ECPublicKey extends BaseECKey with BitcoinSLogger {
-  /**
-   * The elliptic curve used by bitcoin
-   * @return
-   */
+  /** The elliptic curve used by bitcoin. */
   private def curve = CryptoParams.curve
 
   /**
@@ -23,21 +20,9 @@ trait ECPublicKey extends BaseECKey with BitcoinSLogger {
    */
   private def publicKeyParams = new ECPublicKeyParameters(curve.getCurve.decodePoint(bytes.toArray), curve)
 
-
-  /**
-    * Verifies that the given hash is signed by the private key corresponding to the public key
-    * @param hash the hash that needs to be verified
-    * @param signature the signature created by the private key corresponding to this publick ey
-    * @return a boolean indicating if the signature is valid or not
-    */
   def verify(hash : HashDigest, signature : ECDigitalSignature) : Boolean = verify(hash.bytes,signature)
 
-  /**
-   * Verifies if a given piece of data is signed by the private key corresponding public key
-   * @param data
-   * @param signature
-   * @return
-   */
+  /** Verifies if a given piece of data is signed by the [[ECPrivateKey]]'s corresponding [[ECPublicKey]]. */
   def verify(data : Seq[Byte], signature : ECDigitalSignature) : Boolean = {
     logger.debug("PubKey for verifying: " + BitcoinSUtil.encodeHex(bytes))
     logger.debug("Data to verify: " + BitcoinSUtil.encodeHex(data))
@@ -62,14 +47,6 @@ trait ECPublicKey extends BaseECKey with BitcoinSLogger {
     result
   }
 
-
-  /**
-   * Verifies that the given hexadecimal string is signed by the private key corresponding to this public key
- *
-   * @param hex the original piece of data that was signed by the private key
-   * @param signature the signature to be verified
-   * @return
-   */
   def verify(hex : String, signature : ECDigitalSignature) : Boolean = verify(BitcoinSUtil.decodeHex(hex),signature)
 
   override def toString = "ECPublicKey(" + hex + ")"
@@ -81,16 +58,9 @@ object ECPublicKey extends Factory[ECPublicKey] {
 
   override def fromBytes(bytes : Seq[Byte]) : ECPublicKey = ECPublicKeyImpl(bytes)
 
-  /**
-    * Generates a fresh public key that has not been used before
-    * @return
-    */
   def apply() = freshPublicKey
 
-  /**
-    * Generates a fresh public key that has not been used before
-    * @return
-    */
+  /** Generates a fresh [[ECPublicKey]] that has not been used before. */
   def freshPublicKey = ECPrivateKey.freshPrivateKey.publicKey
 }
 

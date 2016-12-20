@@ -10,7 +10,7 @@ import org.bitcoins.core.util.BitcoinSUtil
   */
 trait RawWitnessTransactionParser extends RawBitcoinSerializer[WitnessTransaction] {
 
-  def read(bytes: List[Byte]): WitnessTransaction = {
+  def read(bytes: List[Byte]) : WitnessTransaction = {
     val versionBytes = bytes.take(4)
     val version = UInt32(versionBytes.reverse)
     val marker = bytes(4).toChar
@@ -36,7 +36,7 @@ trait RawWitnessTransactionParser extends RawBitcoinSerializer[WitnessTransactio
     WitnessTransaction(version,inputs,outputs,lockTime,witness)
   }
 
-  def write(tx: WitnessTransaction): String = {
+  def write(tx: WitnessTransaction) : String = {
     val txVersionHex = tx.version.hex
     val version = BitcoinSUtil.flipEndianness(txVersionHex)
 
