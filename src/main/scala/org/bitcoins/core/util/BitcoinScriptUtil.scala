@@ -276,9 +276,9 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
   def calculateScriptForChecking(txSignatureComponent: TransactionSignatureComponent,
                                  signature: ECDigitalSignature, script: Seq[ScriptToken]): Seq[ScriptToken] = {
     val scriptForChecking = calculateScriptForSigning(txSignatureComponent, script)
-    logger.info("sig for removal: " + signature)
-    logger.info("script: " + script)
-    logger.info("scriptWithSigRemoved: " + scriptForChecking)
+    logger.debug("sig for removal: " + signature)
+    logger.debug("script: " + script)
+    logger.debug("scriptWithSigRemoved: " + scriptForChecking)
     txSignatureComponent.sigVersion match {
       case SigVersionBase => removeSignatureFromScript(signature,scriptForChecking)
       case SigVersionWitnessV0 =>
@@ -351,7 +351,8 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
   }
 
   /** Given a tx, scriptPubKey and the input index we are checking the tx, it derives the appropriate [[SignatureVersion]] to use */
-  def parseSigVersion(tx: Transaction, scriptPubKey: ScriptPubKey, inputIndex: UInt32): SignatureVersion  = scriptPubKey match {
+  @tailrec
+  final def parseSigVersion(tx: Transaction, scriptPubKey: ScriptPubKey, inputIndex: UInt32): SignatureVersion  = scriptPubKey match {
     case _ : WitnessScriptPubKeyV0 | _: UnassignedWitnessScriptPubKey =>
       SigVersionWitnessV0
     case _: P2SHScriptPubKey =>
@@ -375,7 +376,9 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
   def castToBool(token: ScriptToken): Boolean = {
     token.bytes.zipWithIndex.exists {
       case (b,index) =>
-        b.toByte != 0 && !(b.toByte == 0x80.toByte && index == token.bytes.size - 1)
+        val byteNotZero = b.toByte != 0
+        val lastByteNotNegativeZero = !(index == token.bytes.size - 1 && b.toByte == 0x80.toByte)
+        byteNotZero && lastByteNotNegativeZero
     }
   }
 }
