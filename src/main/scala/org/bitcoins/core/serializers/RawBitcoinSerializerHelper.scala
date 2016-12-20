@@ -5,15 +5,10 @@ package org.bitcoins.core.serializers
  */
 trait RawBitcoinSerializerHelper {
 
-  /**
-   * Adds the amount padding bytes needed to fix the size of the hex string
+  /** Adds the amount padding bytes needed to fix the size of the hex string
    * for instance, vouts are required to be 4 bytes. If the number is just 1
    * it will only take 1 byte. We need to pad the byte with an extra 3 bytes so the result is
-   * 01000000 instead of just 01
-   * @param charactersNeeded
-   * @param hex
-   * @return
-   */
+   * 01000000 instead of just 01. */
   def addPadding(charactersNeeded : Int, hex : String) : String = {
     val paddingNeeded = charactersNeeded - hex.size
     val padding = for { i <- 0 until paddingNeeded} yield "0"
@@ -21,12 +16,8 @@ trait RawBitcoinSerializerHelper {
     paddedHex
   }
 
-  /**
-   * Adds a preceding zero to a hex string.
-   * Example: if '1' was passed in, it would return the hex string '01'
-   * @param hex
-   * @return
-   */
+  /** Adds a preceding zero to a hex string.
+   * Example: if '1' was passed in, it would return the hex string '01'.*/
   def addPrecedingZero(hex : String) = {
     if (hex.size == 1) "0" + hex else hex
   }

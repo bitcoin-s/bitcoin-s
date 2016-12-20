@@ -112,7 +112,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
 
     /** Helper function to actually run a p2sh script */
     def run(p: ExecutedScriptProgram, stack : Seq[ScriptToken], s: ScriptPubKey): ExecutedScriptProgram = {
-      logger.info("Running p2sh script: " + stack)
+      logger.debug("Running p2sh script: " + stack)
       val p2shRedeemScriptProgram = ScriptProgram(p.txSignatureComponent,stack.tail,
         s.asm)
       if (ScriptFlagUtil.requirePushOnly(p2shRedeemScriptProgram.flags) && !BitcoinScriptUtil.isPushOnly(s.asm)) {
@@ -202,7 +202,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
 
     /** Helper function to run the post segwit execution checks */
     def postSegWitProgramChecks(evaluated: ExecutedScriptProgram): ExecutedScriptProgram = {
-      logger.info("Stack after evaluating witness: " + evaluated.stack)
+      logger.debug("Stack after evaluating witness: " + evaluated.stack)
       if (evaluated.error.isDefined) evaluated
       else if (evaluated.stack.size != 1 || evaluated.stackTopIsFalse) ScriptProgram(evaluated,ScriptErrorEvalFalse)
       else evaluated
@@ -497,8 +497,8 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
     * Return true if witness was NOT used, return false if witness was used. */
   private def hasUnexpectedWitness(program: ScriptProgram): Boolean =  {
     val txSigComponent = program.txSignatureComponent
-    logger.info("TxSigComponent: " + txSigComponent)
-    val unexpectedWitenss = txSigComponent match {
+    logger.debug("TxSigComponent: " + txSigComponent)
+    val unexpectedWitness = txSigComponent match {
       case b : BaseTransactionSignatureComponent =>
         b.transaction match {
           case wtx : WitnessTransaction =>
@@ -522,8 +522,8 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
         !witnessedUsed
     }
 
-    if (unexpectedWitenss) logger.error("Found unexpected witness that was not used by the ScriptProgram: " + program)
-    unexpectedWitenss
+    if (unexpectedWitness) logger.error("Found unexpected witness that was not used by the ScriptProgram: " + program)
+    unexpectedWitness
   }
 }
 object ScriptInterpreter extends ScriptInterpreter
