@@ -13,7 +13,7 @@ object BitcoinSCoreBuild extends Build {
     ("org.bitcoinj" % "bitcoinj-core" % "0.13.3" % "test").exclude("org.slf4j", "slf4j-api"),
     "com.madgag.spongycastle" % "core" % "1.51.0.0",
     "org.slf4j" % "slf4j-api" % slf4jV /*% "provided"*/,
-    "io.spray" %%  "spray-json" % "1.3.0" withSources() withJavadoc(),
+    "io.spray" %% "spray-json" % "1.3.2" % "test",  
     "ch.qos.logback" % "logback-classic" % logbackV,
     "org.scalacheck" %% "scalacheck" % "1.13.0" withSources() withJavadoc()
   )
