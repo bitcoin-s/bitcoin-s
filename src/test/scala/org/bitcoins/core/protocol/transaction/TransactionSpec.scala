@@ -10,7 +10,6 @@ import org.scalacheck.{Prop, Properties}
 class TransactionSpec extends Properties("TransactionSpec") with BitcoinSLogger {
 
   property("Serialization symmetry") =
-    
     Prop.forAll(TransactionGenerators.transactions) { tx =>
       val result = Transaction(tx.hex) == tx
       if (!result) logger.error("Incorrect tx hex: " + tx.hex)
@@ -22,5 +21,10 @@ class TransactionSpec extends Properties("TransactionSpec") with BitcoinSLogger 
       val result = WitnessTransaction(wtx.hex) == wtx
       if (!result) logger.error("Incorrect wtx hex: " + wtx.hex)
       result
+    }
+
+  property("wtxid and txid are not the same for witness transactions") =
+    Prop.forAll(TransactionGenerators.witnessTransaction) { wtx: WitnessTransaction =>
+      wtx.wTxId != wtx.txId
     }
 }
