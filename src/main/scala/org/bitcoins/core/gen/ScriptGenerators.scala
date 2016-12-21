@@ -187,6 +187,7 @@ trait ScriptGenerators extends BitcoinSLogger {
     */
   def signedP2PKScriptSignature: Gen[(P2PKScriptSignature,P2PKScriptPubKey,ECPrivateKey)] = for {
     privateKey <- CryptoGenerators.privateKey
+    hashType <- CryptoGenerators.hashType
     publicKey = privateKey.publicKey
     scriptPubKey = P2PKScriptPubKey(publicKey)
     (creditingTx, outputIndex) = TransactionGenerators.buildCreditingTransaction(scriptPubKey)
@@ -194,7 +195,7 @@ trait ScriptGenerators extends BitcoinSLogger {
     (spendingTx, inputIndex) = TransactionGenerators.buildSpendingTransaction(creditingTx, scriptSig, outputIndex)
     txSignatureComponent = TransactionSignatureComponent(spendingTx, inputIndex, scriptPubKey,
       Policy.standardScriptVerifyFlags)
-    txSignature = TransactionSignatureCreator.createSig(txSignatureComponent, privateKey, HashType.sigHashAll)
+    txSignature = TransactionSignatureCreator.createSig(txSignatureComponent, privateKey, hashType)
     //add the signature to the scriptSig instead of having an empty scriptSig
     signedScriptSig = P2PKScriptSignature(txSignature)
   } yield (signedScriptSig,scriptPubKey,privateKey)
@@ -208,6 +209,7 @@ trait ScriptGenerators extends BitcoinSLogger {
     */
   def signedP2PKHScriptSignature: Gen[(P2PKHScriptSignature, P2PKHScriptPubKey, ECPrivateKey)] = for {
     privateKey <- CryptoGenerators.privateKey
+    hashType <- CryptoGenerators.hashType
     publicKey = privateKey.publicKey
     scriptPubKey = P2PKHScriptPubKey(publicKey)
     (creditingTx,outputIndex) = TransactionGenerators.buildCreditingTransaction(scriptPubKey)
@@ -215,7 +217,7 @@ trait ScriptGenerators extends BitcoinSLogger {
     (spendingTx,inputIndex) = TransactionGenerators.buildSpendingTransaction(creditingTx,scriptSig,outputIndex)
     txSignatureComponent = TransactionSignatureComponent(spendingTx,inputIndex,scriptPubKey,
       Policy.standardScriptVerifyFlags)
-    txSignature = TransactionSignatureCreator.createSig(txSignatureComponent,privateKey, HashType.sigHashAll)
+    txSignature = TransactionSignatureCreator.createSig(txSignatureComponent,privateKey, hashType)
     //add the signature to the scriptSig instead of having an empty scriptSig
     signedScriptSig = P2PKHScriptSignature(txSignature,publicKey)
   } yield (signedScriptSig, scriptPubKey, privateKey)
@@ -228,13 +230,14 @@ trait ScriptGenerators extends BitcoinSLogger {
     */
   def signedMultiSignatureScriptSignature: Gen[(MultiSignatureScriptSignature, MultiSignatureScriptPubKey, Seq[ECPrivateKey])] = for {
     (privateKeys, requiredSigs) <- CryptoGenerators.privateKeySeqWithRequiredSigs
+    hashType <- CryptoGenerators.hashType
     publicKeys = privateKeys.map(_.publicKey)
     multiSigScriptPubKey = MultiSignatureScriptPubKey(requiredSigs,publicKeys)
-  } yield multiSigScriptSigGenHelper(privateKeys, requiredSigs, multiSigScriptPubKey)
+  } yield multiSigScriptSigGenHelper(privateKeys, requiredSigs, multiSigScriptPubKey, hashType)
 
   /** Helps generate a signed [[MultiSignatureScriptSignature]] */
   private def multiSigScriptSigGenHelper(privateKeys : Seq[ECPrivateKey], requiredSigs : Int,
-                                         scriptPubKey : MultiSignatureScriptPubKey) : (MultiSignatureScriptSignature, MultiSignatureScriptPubKey, Seq[ECPrivateKey]) = {
+                                         scriptPubKey : MultiSignatureScriptPubKey, hashType: HashType) : (MultiSignatureScriptSignature, MultiSignatureScriptPubKey, Seq[ECPrivateKey]) = {
     val (creditingTx,outputIndex) = TransactionGenerators.buildCreditingTransaction(scriptPubKey)
     val emptyDigitalSignatures = privateKeys.map(_ => EmptyDigitalSignature)
     val scriptSig = MultiSignatureScriptSignature(emptyDigitalSignatures)
@@ -244,7 +247,7 @@ trait ScriptGenerators extends BitcoinSLogger {
 
     val txSignatures = for {
       i <- 0 until requiredSigs
-    } yield TransactionSignatureCreator.createSig(txSignatureComponent, privateKeys(i), HashType.sigHashAll)
+    } yield TransactionSignatureCreator.createSig(txSignatureComponent, privateKeys(i), hashType)
 
     //add the signature to the scriptSig instead of having an empty scriptSig
     val signedScriptSig = MultiSignatureScriptSignature(txSignatures)
@@ -271,20 +274,21 @@ trait ScriptGenerators extends BitcoinSLogger {
     */
   def signedCLTVScriptSignature(cltvLockTime : ScriptNumber, lockTime : UInt32, sequence : UInt32) : Gen[(CLTVScriptSignature,
     CLTVScriptPubKey, Seq[ECPrivateKey])] = for {
-    (scriptSig, scriptPubKey, privKeys) <- chooseSignedScriptSig
+    (scriptPubKey, privKeys) <- pickRandomNonCLTVNonCSVNonP2SHScriptPubKey
+    hashType <- CryptoGenerators.hashType
     cltv = CLTVScriptPubKey(cltvLockTime, scriptPubKey)
   } yield scriptPubKey match {
       case m : MultiSignatureScriptPubKey =>
         val requiredSigs = m.requiredSigs
-        val (cltvScriptSig, _, _) = cltvHelper(lockTime, sequence, cltv, privKeys, Some(requiredSigs))
+        val (cltvScriptSig, _, _) = cltvHelper(lockTime, sequence, cltv, privKeys, Some(requiredSigs), hashType)
         (cltvScriptSig, cltv, privKeys)
       case _ : P2PKHScriptPubKey | _ : P2PKScriptPubKey =>
-        val (cltvScriptSig, _, _) = cltvHelper(lockTime, sequence, cltv, privKeys, None)
+        val (cltvScriptSig, _, _) = cltvHelper(lockTime, sequence, cltv, privKeys, None, hashType)
         (cltvScriptSig, cltv, privKeys)
       case _: UnassignedWitnessScriptPubKey | _: WitnessScriptPubKeyV0 =>
         throw new IllegalArgumentException("Cannot created a witness scriptPubKey for a CSVScriptSig since we do not have a witness")
       case _ : P2SHScriptPubKey | _ : CLTVScriptPubKey | _ : CSVScriptPubKey | _ : NonStandardScriptPubKey | EmptyScriptPubKey => throw new IllegalArgumentException("We only " +
-        "want to generate P2PK, P2PKH, and MultiSig ScriptSignatures when creating a CSVScriptSignature. Got scriptSig: " + scriptSig)
+        "want to generate P2PK, P2PKH, and MultiSig ScriptSignatures when creating a CSVScriptSignature")
   }
 
   /**
@@ -295,20 +299,21 @@ trait ScriptGenerators extends BitcoinSLogger {
     */
   def signedCSVScriptSignature(csvScriptNum : ScriptNumber, sequence : UInt32) : Gen[(CSVScriptSignature,
     CSVScriptPubKey, Seq[ECPrivateKey])] = for {
-    (scriptSig, scriptPubKey, privKeys) <- chooseSignedScriptSig
+    (scriptPubKey, privKeys) <- pickRandomNonCLTVNonCSVNonP2SHScriptPubKey
+    hashType <- CryptoGenerators.hashType
     csv = CSVScriptPubKey(csvScriptNum, scriptPubKey)
   } yield scriptPubKey match {
       case m : MultiSignatureScriptPubKey =>
         val requiredSigs = m.requiredSigs
-        val (csvScriptSig, _, _) = csvHelper(sequence, csv, privKeys, Some(requiredSigs))
+        val (csvScriptSig, _, _) = csvHelper(sequence, csv, privKeys, Some(requiredSigs), hashType)
         (csvScriptSig, csv, privKeys)
       case _ : P2PKHScriptPubKey | _ : P2PKScriptPubKey =>
-        val (csvScriptSig, _, _) = csvHelper(sequence, csv, privKeys, None)
+        val (csvScriptSig, _, _) = csvHelper(sequence, csv, privKeys, None, hashType)
         (csvScriptSig, csv, privKeys)
       case _: UnassignedWitnessScriptPubKey | _: WitnessScriptPubKeyV0 =>
         throw new IllegalArgumentException("Cannot created a witness scriptPubKey for a CSVScriptSig since we do not have a witness")
       case _ : P2SHScriptPubKey | _ : CLTVScriptPubKey | _ : CSVScriptPubKey | _ : NonStandardScriptPubKey | EmptyScriptPubKey => throw new IllegalArgumentException("We only " +
-        "want to generate P2PK, P2PKH, and MultiSig ScriptSignatures when creating a CLTVScriptSignature.  Got scriptSig: " + scriptSig)
+        "want to generate P2PK, P2PKH, and MultiSig ScriptSignatures when creating a CLTVScriptSignature.")
   }
 
   def signedCSVScriptSignature : Gen[(CSVScriptSignature, CSVScriptPubKey, Seq[ECPrivateKey])] = for {
@@ -326,7 +331,8 @@ trait ScriptGenerators extends BitcoinSLogger {
   } yield scriptSig
 
   /** Helper function to generate signed CLTVScriptSignatures with appropriate number of signatures. */
-  private def cltvHelper(lockTime : UInt32, sequence : UInt32, cltv: CLTVScriptPubKey, privateKeys : Seq[ECPrivateKey], requiredSigs : Option[Int]) : (CLTVScriptSignature, CLTVScriptPubKey, Seq[ECPrivateKey]) = {
+  private def cltvHelper(lockTime : UInt32, sequence : UInt32, cltv: CLTVScriptPubKey, privateKeys : Seq[ECPrivateKey],
+                         requiredSigs : Option[Int], hashType: HashType) : (CLTVScriptSignature, CLTVScriptPubKey, Seq[ECPrivateKey]) = {
     val pubKeys = privateKeys.map(_.publicKey)
     val (creditingTx, outputIndex) = TransactionGenerators.buildCreditingTransaction(cltv)
     val (unsignedSpendingTx, inputIndex) = TransactionGenerators.buildSpendingTransaction(TransactionConstants.version, creditingTx,
@@ -336,14 +342,14 @@ trait ScriptGenerators extends BitcoinSLogger {
       cltv, Policy.standardScriptVerifyFlags)
     val txSignatures : Seq[ECDigitalSignature] = for {
       i <- 0 until requiredSigs.getOrElse(1)
-    } yield TransactionSignatureCreator.createSig(txSignatureComponent,privateKeys(i), HashType.sigHashAll)
+    } yield TransactionSignatureCreator.createSig(txSignatureComponent,privateKeys(i), hashType)
 
     val signedScriptSig : CLTVScriptSignature = CLTVScriptSignature(cltv, txSignatures, pubKeys)
     (signedScriptSig, cltv, privateKeys)
   }
 
   /** Helper function to generate signed CSVScriptSignatures with appropriate number of signatures. */
-  private def csvHelper(sequence : UInt32, csv: CSVScriptPubKey, privateKeys : Seq[ECPrivateKey], requiredSigs : Option[Int]) : (CSVScriptSignature, CSVScriptPubKey, Seq[ECPrivateKey]) = {
+  private def csvHelper(sequence : UInt32, csv: CSVScriptPubKey, privateKeys : Seq[ECPrivateKey], requiredSigs : Option[Int], hashType: HashType) : (CSVScriptSignature, CSVScriptPubKey, Seq[ECPrivateKey]) = {
     val pubKeys = privateKeys.map(_.publicKey)
     val (creditingTx, outputIndex) = TransactionGenerators.buildCreditingTransaction(UInt32(2),csv)
     val (unsignedSpendingTx, inputIndex) = {
@@ -354,7 +360,7 @@ trait ScriptGenerators extends BitcoinSLogger {
       csv, Policy.standardScriptVerifyFlags)
     val txSignatures : Seq[ECDigitalSignature] = for {
       i <- 0 until requiredSigs.getOrElse(1)
-    } yield TransactionSignatureCreator.createSig(txSignatureComponent,privateKeys(i), HashType.sigHashAll)
+    } yield TransactionSignatureCreator.createSig(txSignatureComponent,privateKeys(i), hashType)
 
     val signedScriptSig : CSVScriptSignature = CSVScriptSignature(csv, txSignatures, pubKeys)
     (signedScriptSig, csv, privateKeys)
@@ -379,7 +385,7 @@ trait ScriptGenerators extends BitcoinSLogger {
       signedMultiSignatureScriptSignature)
   }
 
-  /** Generates a random [[ScriptSignature]], the [[ScriptPubKey]]/[[CurrencyUnit]] it is spending, and the [[ECPrivateKey]] needed to spend it. */
+  /** Generates a random [[ScriptSignature]], the [[ScriptPubKey]] it is spending, and the [[ECPrivateKey]] needed to spend it. */
   def randomScriptSig : Gen[(ScriptSignature, ScriptPubKey, Seq[ECPrivateKey])] = {
     val wit = signedP2SHP2WPKHScriptSignature.map(x => (x._1,x._2,x._3))
     Gen.oneOf(packageToSequenceOfPrivateKeys(signedP2PKHScriptSignature),
