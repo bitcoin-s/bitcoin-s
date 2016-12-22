@@ -168,7 +168,7 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
       val isNotSigHashSingle = !(HashType.isSIGHASH_SINGLE(hashType.num))
       val isNotSigHashNone = !(HashType.isSIGHASH_NONE(hashType.num))
       val inputIndexInt = inputIndex.toInt
-      val emptyHash = DoubleSha256Digest("0000000000000000000000000000000000000000000000000000000000000000")
+      val emptyHash = CryptoUtil.emptyDoubleSha256Hash
 
       val outPointHash: Seq[Byte] = if (isNotAnyoneCanPay) {
         val bytes: Seq[Byte] = spendingTx.inputs.flatMap(_.previousOutput.bytes)
