@@ -1,15 +1,12 @@
 package org.bitcoins.core.script.constant
 
-import org.bitcoins.core.script.crypto.OP_CHECKMULTISIGVERIFY
-import org.bitcoins.core.script.interpreter.ScriptInterpreter
-import org.bitcoins.core.script.{ScriptOperation, ScriptProgram}
+import org.bitcoins.core.script.ScriptProgram
 import org.bitcoins.core.script.bitwise.OP_EQUAL
-import org.bitcoins.core.script.flag.{ScriptVerifyMinimalData, ScriptFlag}
-import org.bitcoins.core.script.result.{ScriptErrorMinimalData, ScriptErrorBadOpCode}
+import org.bitcoins.core.script.crypto.OP_CHECKMULTISIGVERIFY
+import org.bitcoins.core.script.flag.{ScriptFlag, ScriptVerifyMinimalData}
+import org.bitcoins.core.script.result.{ScriptErrorBadOpCode, ScriptErrorMinimalData}
 import org.bitcoins.core.util.{ScriptProgramTestUtil, TestUtil}
 import org.scalatest.{FlatSpec, MustMatchers}
-
-import scala.util.Try
 
 /**
  * Created by chris on 1/24/16.
