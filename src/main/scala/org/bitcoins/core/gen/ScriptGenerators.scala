@@ -174,9 +174,9 @@ trait ScriptGenerators extends BitcoinSLogger {
     case cltv : CLTVScriptPubKey => cltvScriptSignature
     case csv : CSVScriptPubKey => csvScriptSignature
     case _ : WitnessScriptPubKeyV0 | _ : UnassignedWitnessScriptPubKey => emptyScriptSignature
-    case x @ (_: P2SHScriptPubKey | _: NonStandardScriptPubKey) =>
+    case x @ (_: P2SHScriptPubKey | _: NonStandardScriptPubKey | _ : WitnessCommitment) =>
       throw new IllegalArgumentException("Cannot pick for p2sh script pubkey, " +
-        "non standard script pubkey, got: " + x)
+        "non standard script pubkey or witness commitment got: " + x)
   }
 
   /**
@@ -287,7 +287,8 @@ trait ScriptGenerators extends BitcoinSLogger {
         (cltvScriptSig, cltv, privKeys)
       case _: UnassignedWitnessScriptPubKey | _: WitnessScriptPubKeyV0 =>
         throw new IllegalArgumentException("Cannot created a witness scriptPubKey for a CSVScriptSig since we do not have a witness")
-      case _ : P2SHScriptPubKey | _ : CLTVScriptPubKey | _ : CSVScriptPubKey | _ : NonStandardScriptPubKey | EmptyScriptPubKey => throw new IllegalArgumentException("We only " +
+      case _ : P2SHScriptPubKey | _ : CLTVScriptPubKey | _ : CSVScriptPubKey | _ : NonStandardScriptPubKey
+           | _ : WitnessCommitment | EmptyScriptPubKey => throw new IllegalArgumentException("We only " +
         "want to generate P2PK, P2PKH, and MultiSig ScriptSignatures when creating a CSVScriptSignature")
   }
 
@@ -312,7 +313,8 @@ trait ScriptGenerators extends BitcoinSLogger {
         (csvScriptSig, csv, privKeys)
       case _: UnassignedWitnessScriptPubKey | _: WitnessScriptPubKeyV0 =>
         throw new IllegalArgumentException("Cannot created a witness scriptPubKey for a CSVScriptSig since we do not have a witness")
-      case _ : P2SHScriptPubKey | _ : CLTVScriptPubKey | _ : CSVScriptPubKey | _ : NonStandardScriptPubKey | EmptyScriptPubKey => throw new IllegalArgumentException("We only " +
+      case _ : P2SHScriptPubKey | _ : CLTVScriptPubKey | _ : CSVScriptPubKey | _ : NonStandardScriptPubKey
+           | _ : WitnessCommitment | EmptyScriptPubKey => throw new IllegalArgumentException("We only " +
         "want to generate P2PK, P2PKH, and MultiSig ScriptSignatures when creating a CLTVScriptSignature.")
   }
 
