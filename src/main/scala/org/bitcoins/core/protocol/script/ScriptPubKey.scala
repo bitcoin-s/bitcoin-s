@@ -1,12 +1,13 @@
 package org.bitcoins.core.protocol.script
 
-import org.bitcoins.core.crypto.{ECPublicKey, HashDigest, Sha256Hash160Digest}
-import org.bitcoins.core.number.Int64
+import org.bitcoins.core.crypto.{DoubleSha256Digest, ECPublicKey, HashDigest, Sha256Hash160Digest}
 import org.bitcoins.core.protocol._
-import org.bitcoins.core.protocol.script.WitnessScriptPubKeyV0.WitnessScriptPubKeyV0Impl
-import org.bitcoins.core.script.{ScriptOperation, ScriptSettings}
+import org.bitcoins.core.protocol.transaction.WitnessTransaction
+import org.bitcoins.core.protocol.blockchain.Block
+import org.bitcoins.core.script.ScriptSettings
 import org.bitcoins.core.script.bitwise.{OP_EQUAL, OP_EQUALVERIFY}
-import org.bitcoins.core.script.constant._
+import org.bitcoins.core.script.constant.{BytesToPushOntoStack, _}
+import org.bitcoins.core.script.control.OP_RETURN
 import org.bitcoins.core.script.crypto.{OP_CHECKMULTISIG, OP_CHECKMULTISIGVERIFY, OP_CHECKSIG, OP_HASH160}
 import org.bitcoins.core.script.locktime.{OP_CHECKLOCKTIMEVERIFY, OP_CHECKSEQUENCEVERIFY}
 import org.bitcoins.core.script.stack.{OP_DROP, OP_DUP}
@@ -495,6 +496,7 @@ object ScriptPubKey extends Factory[ScriptPubKey] with BitcoinSLogger {
     case _ if CLTVScriptPubKey.isCLTVScriptPubKey(asm) => CLTVScriptPubKey(asm)
     case _ if CSVScriptPubKey.isCSVScriptPubKey(asm) => CSVScriptPubKey(asm)
     case _ if WitnessScriptPubKey.isWitnessScriptPubKey(asm) => WitnessScriptPubKey(asm).get
+    case _ if WitnessCommitment.isWitnessCommitment(asm) => WitnessCommitment(asm)
     case _ => NonStandardScriptPubKey(asm)
   }
 
@@ -595,4 +597,41 @@ object UnassignedWitnessScriptPubKey extends ScriptFactory[UnassignedWitnessScri
       "Given asm was not a valid witness script pubkey: " + asm)
   }
   def apply(asm: Seq[ScriptToken]): UnassignedWitnessScriptPubKey = fromAsm(asm)
+}
+
+/** This trait represents the witness commitment found in the coinbase transaction
+  * This is needed to commit to the wtxids of all of the witness transactions, since the merkle tree
+  * does not commit to the witnesses for all [[org.bitcoins.core.protocol.transaction.WitnessTransaction]]
+  * See BIP141 for more info
+  * [[https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki#commitment-structure]]
+  */
+sealed trait WitnessCommitment extends ScriptPubKey {
+  /** The commitment to the [[WitnessTransaction]]s in the [[Block]] */
+  def witnessRootHash: DoubleSha256Digest = DoubleSha256Digest(asm(2).bytes.splitAt(4)._2)
+}
+
+object WitnessCommitment extends ScriptFactory[WitnessCommitment] {
+  private case class WitnessCommitmentImpl(hex : String) extends WitnessCommitment
+
+  def apply(asm: Seq[ScriptToken]): WitnessCommitment = fromAsm(asm)
+
+  override def fromBytes(bytes: Seq[Byte]): WitnessCommitment = {
+    val asm = RawScriptPubKeyParser.read(bytes).asm
+    fromAsm(asm)
+  }
+
+  override def fromAsm(asm: Seq[ScriptToken]): WitnessCommitment = {
+    buildScript(asm, WitnessCommitmentImpl(_), isWitnessCommitment(_), "Given asm was not a valid witness commitment, got: " + asm)
+  }
+
+  /** This determines if the given asm has the correct witness structure according to BIP141
+    * [[https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki#commitment-structure]] */
+  def isWitnessCommitment(asm: Seq[ScriptToken]): Boolean = {
+    if (asm.size < 3) false
+    else {
+      val Seq(opReturn, pushOp, constant) = asm.take(3)
+      opReturn == OP_RETURN && pushOp == BytesToPushOntoStack(36) &&
+      constant.hex.take(8) == "aa21a9ed" && asm.flatMap(_.bytes).size >= 38
+    }
+  }
 }

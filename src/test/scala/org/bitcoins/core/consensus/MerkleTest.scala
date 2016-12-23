@@ -110,7 +110,6 @@ class MerkleTest extends FlatSpec with MustMatchers {
     val witnessReservedValue = coinbase.witness.witnesses.head
     val expectedWitnessCommitment = DoubleSha256Digest("309cfb38d1015c266667d5b7888c83def872a531b8ac277fe8df623c32b562b5")
     val witnessMerkleRoot = Merkle.computeBlockWitnessMerkleRoot(block)
-    println("Witness reserve value: " + witnessReservedValue.stack.head)
     val actualWitnessCommitment = CryptoUtil.doubleSHA256(witnessMerkleRoot.bytes ++ witnessReservedValue.stack.head)
     actualWitnessCommitment must be (expectedWitnessCommitment)
   }
