@@ -303,7 +303,7 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
           script
       }
     case  _ : P2PKHScriptPubKey | _ : P2PKScriptPubKey | _ : MultiSignatureScriptPubKey |
-         _ : NonStandardScriptPubKey | _ : CLTVScriptPubKey | _ : CSVScriptPubKey | EmptyScriptPubKey =>
+         _ : NonStandardScriptPubKey | _ : CLTVScriptPubKey | _ : CSVScriptPubKey | _ : WitnessCommitment | EmptyScriptPubKey =>
       script
   }
 
@@ -364,7 +364,7 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
           | _: CLTVScriptSignature | _: CSVScriptSignature | EmptyScriptSignature => SigVersionBase
       }
     case _: P2PKScriptPubKey | _: P2PKHScriptPubKey | _: MultiSignatureScriptPubKey  | _: NonStandardScriptPubKey
-         | _: CLTVScriptPubKey | _: CSVScriptPubKey | EmptyScriptPubKey => SigVersionBase
+         | _: CLTVScriptPubKey | _: CSVScriptPubKey | _ : WitnessCommitment | EmptyScriptPubKey => SigVersionBase
   }
 
 

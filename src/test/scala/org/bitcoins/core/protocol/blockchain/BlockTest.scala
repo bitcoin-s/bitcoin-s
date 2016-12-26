@@ -1,6 +1,7 @@
 package org.bitcoins.core.protocol.blockchain
 
 import org.bitcoins.core.protocol.CompactSizeUInt
+import org.bitcoins.core.serializers.script.RawScriptSignatureParser
 import org.bitcoins.core.util.BitcoinSLogger
 import org.scalatest.{FlatSpec, MustMatchers}
 
@@ -17,5 +18,4 @@ class BlockTest extends FlatSpec with MustMatchers with BitcoinSLogger {
     val block = Block(hex)
     block.hex must be (hex)
   }
-
 }

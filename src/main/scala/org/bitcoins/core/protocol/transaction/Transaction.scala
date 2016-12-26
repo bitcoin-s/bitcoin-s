@@ -56,10 +56,21 @@ case object EmptyTransaction extends BaseTransaction {
 }
 
 sealed trait WitnessTransaction extends Transaction {
+  /** The txId for the witness transaction from satoshi's original serialization */
+  override def txId: DoubleSha256Digest = {
+    val btx = BaseTransaction(version,inputs,outputs,lockTime)
+    btx.txId
+  }
+
   /** The witness used to evaluate [[org.bitcoins.core.protocol.script.ScriptSignature]]/[[org.bitcoins.core.protocol.script.ScriptPubKey]]s inside of a segwit tx
     * [[https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki]]
     */
   def witness: TransactionWitness
+
+  /** The witness transaction id as defined by BIP141
+    * [[https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki#transaction-id]]
+    * */
+  def wTxId: DoubleSha256Digest = CryptoUtil.doubleSHA256(bytes)
 
   override def hex = RawWitnessTransactionParser.write(this)
 

@@ -222,6 +222,7 @@ object P2SHScriptSignature extends ScriptFactory[P2SHScriptSignature]  {
           case x : WitnessScriptPubKeyV0 => true
           case x : UnassignedWitnessScriptPubKey => false
           case x : NonStandardScriptPubKey => false
+          case x : WitnessCommitment => false
           case EmptyScriptPubKey => false
         }
       case Failure(_) => false
@@ -382,8 +383,9 @@ object CLTVScriptSignature extends Factory[CLTVScriptSignature] {
     case _: WitnessScriptPubKeyV0 | _ : UnassignedWitnessScriptPubKey =>
       //bare segwit always has an empty script sig, see BIP141
       CLTVScriptSignature(EmptyScriptSignature)
-    case x @ (_ : NonStandardScriptPubKey | _ : P2SHScriptPubKey) => throw new IllegalArgumentException("A NonStandardScriptSignature or P2SHScriptSignature cannot be" +
-      "the underlying scriptSig in a CLTVScriptSignature. Got: " + x)
+    case x @ (_ : NonStandardScriptPubKey | _ : P2SHScriptPubKey | _ : WitnessCommitment) =>
+      throw new IllegalArgumentException("A NonStandardScriptSignature or P2SHScriptSignature or WitnessCommitment cannot be" +
+        "the underlying scriptSig in a CLTVScriptSignature. Got: " + x)
   }
 
 }
@@ -423,11 +425,11 @@ object CSVScriptSignature extends Factory[CSVScriptSignature] {
     case cltvScriptPubKey : CLTVScriptPubKey => CSVScriptSignature(cltvScriptPubKey.scriptPubKeyAfterCLTV, sigs, pubKeys)
     case csvScriptPubKey : CSVScriptPubKey => CSVScriptSignature(csvScriptPubKey.scriptPubKeyAfterCSV, sigs, pubKeys)
     case EmptyScriptPubKey => CSVScriptSignature(EmptyScriptSignature)
-    case _ @ (_: WitnessScriptPubKeyV0 | _ : UnassignedWitnessScriptPubKey) =>
+    case _: WitnessScriptPubKeyV0 | _ : UnassignedWitnessScriptPubKey =>
       //bare segwit always has an empty script sig, see BIP141
       CSVScriptSignature(EmptyScriptSignature)
-    case x @ (_ : NonStandardScriptPubKey | _ : P2SHScriptPubKey) =>
-      throw new IllegalArgumentException("A NonStandardScriptPubKey/P2SHScriptPubKey cannot be" +
+    case x @ (_ : NonStandardScriptPubKey | _ : P2SHScriptPubKey | _: WitnessCommitment) =>
+      throw new IllegalArgumentException("A NonStandardScriptPubKey/P2SHScriptPubKey/WitnessCommitment cannot be" +
       "the underlying scriptSig in a CSVScriptSignature. Got: " + x)
   }
 }
@@ -475,8 +477,9 @@ object ScriptSignature extends Factory[ScriptSignature] with BitcoinSLogger {
     case s : NonStandardScriptPubKey => NonStandardScriptSignature.fromAsm(tokens)
     case s : CLTVScriptPubKey => fromScriptPubKey(tokens, s.scriptPubKeyAfterCLTV)
     case s : CSVScriptPubKey => fromScriptPubKey(tokens, s.scriptPubKeyAfterCSV)
-    case _ @ (_: WitnessScriptPubKeyV0 | _: UnassignedWitnessScriptPubKey)  => EmptyScriptSignature
+    case _: WitnessScriptPubKeyV0 | _: UnassignedWitnessScriptPubKey  => EmptyScriptSignature
     case EmptyScriptPubKey => if (tokens.isEmpty) EmptyScriptSignature else NonStandardScriptSignature.fromAsm(tokens)
+    case _ : WitnessCommitment => throw new IllegalArgumentException("Cannot spend witness commitment scriptPubKey")
   }
 
   def apply(tokens : Seq[ScriptToken], scriptPubKey : ScriptPubKey) : ScriptSignature = fromScriptPubKey(tokens, scriptPubKey)

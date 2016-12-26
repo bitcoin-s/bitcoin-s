@@ -72,11 +72,11 @@ object CompactSizeUInt extends Factory[CompactSizeUInt] {
   def calculateCompactSizeUInt(hex : String) : CompactSizeUInt = calculateCompactSizeUInt(BitcoinSUtil.decodeHex(hex))
 
   /** Parses a VarInt from a string of hex characters
-    * https://bitcoin.org/en/developer-reference#compactsize-unsigned-integers. */
+    * [[https://bitcoin.org/en/developer-reference#compactsize-unsigned-integers]] */
   def parseCompactSizeUInt(hex : String) : CompactSizeUInt = parseCompactSizeUInt(BitcoinSUtil.decodeHex(hex))
 
   /** Parses a [[CompactSizeUInt]] from a sequence of bytes
-    * https://bitcoin.org/en/developer-reference#compactsize-unsigned-integers. */
+    * [[https://bitcoin.org/en/developer-reference#compactsize-unsigned-integers]] */
   def parseCompactSizeUInt(bytes : Seq[Byte]) : CompactSizeUInt = {
     require(bytes.nonEmpty, "Cannot parse a VarInt if the byte array is size 0")
     //8 bit number
