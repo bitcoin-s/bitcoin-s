@@ -2,7 +2,7 @@ package org.bitcoins.core.consensus
 
 import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.protocol.blockchain.Block
-import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.core.protocol.transaction.{BaseTransaction, Transaction, WitnessTransaction}
 import org.bitcoins.core.util._
 
 import scala.annotation.tailrec
@@ -11,7 +11,7 @@ import scala.annotation.tailrec
   * Created by chris on 5/24/16.
   * This trait contains all functionality related to computing merkle trees
   * Mimics this functionality inside of bitcoin core
-  * https://github.com/bitcoin/bitcoin/blob/master/src/consensus/merkle.cpp
+  * [[https://github.com/bitcoin/bitcoin/blob/master/src/consensus/merkle.cpp]]
   */
 trait Merkle extends BitcoinSLogger {
 
@@ -71,6 +71,28 @@ trait Merkle extends BitcoinSLogger {
     val bytes = tree1.value.get.bytes ++ tree2.value.get.bytes
     val hash = CryptoUtil.doubleSHA256(bytes)
     Node(hash,tree1,tree2)
+  }
+
+  /** Computes the commitment of the block to the wtxids
+    * See the definition of a block commitment in BIP141
+    * [[https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki#commitment-structure]]
+    * [[https://github.com/bitcoin/bitcoin/blob/7490ae8b699d2955b665cf849d86ff5bb5245c28/src/consensus/merkle.cpp#L168]]
+    */
+  def computeBlockWitnessMerkleTree(block: Block): MerkleTree = {
+    val coinbaseWTxId = CryptoUtil.emptyDoubleSha256Hash
+    val hashes = block.transactions.tail.map {
+      case wtx: WitnessTransaction => wtx.wTxId
+      case btx: BaseTransaction => btx.txId
+    }
+    build(coinbaseWTxId +: hashes)
+  }
+
+  /** Computes the merkle root for the committment inside of a coinbase txs scriptPubKey
+    * See BIP141
+    * [[https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki#commitment-structure]]
+    * */
+  def computeBlockWitnessMerkleRoot(block: Block): DoubleSha256Digest = {
+    computeBlockWitnessMerkleTree(block).value.get
   }
 }
 

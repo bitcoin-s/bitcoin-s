@@ -60,6 +60,8 @@ trait CryptoUtil {
     messageDigest.doFinal(out, 0)
     RipeMd160Digest(out.toList)
   }
+
+  val emptyDoubleSha256Hash = DoubleSha256Digest("0000000000000000000000000000000000000000000000000000000000000000")
 }
 
 object CryptoUtil extends CryptoUtil
