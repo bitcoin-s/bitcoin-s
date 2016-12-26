@@ -630,9 +630,10 @@ object WitnessCommitment extends ScriptFactory[WitnessCommitment] {
     if (asm.size < 3) false
     else {
       val minCommitmentSize = 38
+      val commitmentHeader = "aa21a9ed"
       val Seq(opReturn, pushOp, constant) = asm.take(3)
       opReturn == OP_RETURN && pushOp == BytesToPushOntoStack(36) &&
-      constant.hex.take(8) == "aa21a9ed" && asm.flatMap(_.bytes).size >= minCommitmentSize
+      constant.hex.take(8) == commitmentHeader && asm.flatMap(_.bytes).size >= minCommitmentSize
     }
   }
 }
