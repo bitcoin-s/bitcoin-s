@@ -67,60 +67,44 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
           val pubKey = ECPublicKey(executionInProgressScriptProgram.stack.head.bytes)
           val signature = ECDigitalSignature(executionInProgressScriptProgram.stack.tail.head.bytes)
           val flags = executionInProgressScriptProgram.flags
-          if (ScriptFlagUtil.requiresStrictDerEncoding(flags) &&
-            !DERSignatureUtil.isValidSignatureEncoding(signature)) {
-            //this means all of the signatures must encoded according to BIP66 strict dersig
-            //https://github.com/bitcoin/bips/blob/master/bip-0066.mediawiki
-            //script verification fails since the sig is not strictly der encoded
-            logger.error("Since the ScriptVerifyDerSig flag is set the signature being checked must be a strict dersig signature as per BIP 66\n" +
-              "Sig: " + signature.hex)
-            ScriptProgram(executionInProgressScriptProgram,ScriptErrorSigDer)
-          } else if (BitcoinScriptUtil.isValidPubKeyEncoding(pubKey,flags).isDefined) {
-            logger.error("Pubkey had an invalid encoding")
-            val err = BitcoinScriptUtil.isValidPubKeyEncoding(pubKey,flags).get
-            logger.error("PubKey error: " + err)
-            ScriptProgram(executionInProgressScriptProgram,err)
-          } else {
-            val restOfStack = executionInProgressScriptProgram.stack.tail.tail
-            logger.debug("Program before removing OP_CODESEPARATOR: " + program.originalScript)
-            val removedOpCodeSeparatorsScript = BitcoinScriptUtil.removeOpCodeSeparator(executionInProgressScriptProgram)
-            logger.debug("Program after removing OP_CODESEPARATOR: " + removedOpCodeSeparatorsScript)
-            val result = TransactionSignatureChecker.checkSignature(executionInProgressScriptProgram.txSignatureComponent,
-              removedOpCodeSeparatorsScript, pubKey, signature, flags)
-            logger.debug("signature verification isValid: " + result)
-
-            result match {
-              case SignatureValidationSuccess => ScriptProgram(program,
-                OP_TRUE :: restOfStack, program.script.tail)
-              case err : SignatureValidationError =>
-                if (ScriptFlagUtil.requireScriptVerifyNullFail(flags) && signature.bytes.nonEmpty) {
-                  ScriptProgram(executionInProgressScriptProgram, ScriptErrorSigNullFail)
-                } else {
-                  err match {
-                    case SignatureValidationFailureNotStrictDerEncoding =>
-                      logger.info("Signature validation failed: " + SignatureValidationFailureNotStrictDerEncoding)
-                      ScriptProgram(program, ScriptErrorSigDer)
-                    case SignatureValidationFailureIncorrectSignatures =>
-                      logger.info("Signature validation failed: " + SignatureValidationFailureIncorrectSignatures)
-                      ScriptProgram(program, OP_FALSE :: restOfStack,program.script.tail)
-                    case SignatureValidationFailureSignatureCount =>
-                      logger.info("Signature validation failed: " + SignatureValidationFailureSignatureCount)
-                      ScriptProgram(program, OP_FALSE :: restOfStack,program.script.tail)
-                    case SignatureValidationFailurePubKeyEncoding =>
-                      logger.info("Signature validation failed: " + SignatureValidationFailurePubKeyEncoding)
-                      //means that a public key was not encoded correctly
-                      ScriptProgram(program,ScriptErrorPubKeyType)
-                    case ScriptValidationFailureHighSValue =>
-                      logger.info("Signature validation failed: " + ScriptValidationFailureHighSValue)
-                      ScriptProgram(program,ScriptErrorSigHighS)
-                    case ScriptValidationFailureHashType =>
-                      logger.info("Signature validation failed: " + ScriptValidationFailureHashType)
-                      ScriptProgram(program,ScriptErrorSigHashType)
-                    case ScriptValidationFailureWitnessPubKeyType =>
-                      ScriptProgram(program,ScriptErrorWitnessPubKeyType)
-                  }
+          val restOfStack = executionInProgressScriptProgram.stack.tail.tail
+          logger.debug("Program before removing OP_CODESEPARATOR: " + program.originalScript)
+          val removedOpCodeSeparatorsScript = BitcoinScriptUtil.removeOpCodeSeparator(executionInProgressScriptProgram)
+          logger.debug("Program after removing OP_CODESEPARATOR: " + removedOpCodeSeparatorsScript)
+          val result = TransactionSignatureChecker.checkSignature(executionInProgressScriptProgram.txSignatureComponent,
+            removedOpCodeSeparatorsScript, pubKey, signature, flags)
+          logger.debug("signature verification isValid: " + result)
+          result match {
+            case SignatureValidationSuccess => ScriptProgram(program,
+              OP_TRUE :: restOfStack, program.script.tail)
+            case err : SignatureValidationError =>
+              if (ScriptFlagUtil.requireScriptVerifyNullFail(flags) && signature.bytes.nonEmpty) {
+                ScriptProgram(executionInProgressScriptProgram, ScriptErrorSigNullFail)
+              } else {
+                err match {
+                  case SignatureValidationFailureNotStrictDerEncoding =>
+                    logger.info("Signature validation failed: " + SignatureValidationFailureNotStrictDerEncoding)
+                    ScriptProgram(program, ScriptErrorSigDer)
+                  case SignatureValidationFailureIncorrectSignatures =>
+                    logger.info("Signature validation failed: " + SignatureValidationFailureIncorrectSignatures)
+                    ScriptProgram(program, OP_FALSE :: restOfStack,program.script.tail)
+                  case SignatureValidationFailureSignatureCount =>
+                    logger.info("Signature validation failed: " + SignatureValidationFailureSignatureCount)
+                    ScriptProgram(program, OP_FALSE :: restOfStack,program.script.tail)
+                  case SignatureValidationFailurePubKeyEncoding =>
+                    logger.info("Signature validation failed: " + SignatureValidationFailurePubKeyEncoding)
+                    //means that a public key was not encoded correctly
+                    ScriptProgram(program,ScriptErrorPubKeyType)
+                  case ScriptValidationFailureHighSValue =>
+                    logger.info("Signature validation failed: " + ScriptValidationFailureHighSValue)
+                    ScriptProgram(program,ScriptErrorSigHighS)
+                  case ScriptValidationFailureHashType =>
+                    logger.info("Signature validation failed: " + ScriptValidationFailureHashType)
+                    ScriptProgram(program,ScriptErrorSigHashType)
+                  case ScriptValidationFailureWitnessPubKeyType =>
+                    ScriptProgram(program,ScriptErrorWitnessPubKeyType)
                 }
-            }
+              }
           }
         }
     }
@@ -252,7 +236,7 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
                   removedOpCodeSeparatorsScript, signatures,
                   pubKeys, flags, mRequiredSignatures.underlying)
 
-              //remove the extra op for OP_CHECKMULTISIG from the stack
+              //remove the extra OP_0 (null dummy) for OP_CHECKMULTISIG from the stack
               val restOfStack = stackWithoutPubKeysAndSignatures.tail
 
               isValidSignatures match {
