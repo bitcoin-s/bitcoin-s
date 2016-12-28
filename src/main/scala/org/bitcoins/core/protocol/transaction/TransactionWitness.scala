@@ -3,7 +3,7 @@ package org.bitcoins.core.protocol.transaction
 import org.bitcoins.core.protocol.NetworkElement
 import org.bitcoins.core.protocol.script.ScriptWitness
 import org.bitcoins.core.serializers.transaction.RawTransactionWitnessParser
-import org.bitcoins.core.util.{BitcoinSUtil, Factory}
+import org.bitcoins.core.util.BitcoinSUtil
 
 /**
   * Created by chris on 11/21/16.

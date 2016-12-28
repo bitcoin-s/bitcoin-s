@@ -1,6 +1,5 @@
 package org.bitcoins.core.script.interpreter
 
-import org.bitcoins.core.script.constant.ScriptToken
 import org.bitcoins.core.consensus.Consensus
 import org.bitcoins.core.crypto.{BaseTransactionSignatureComponent, WitnessV0TransactionSignatureComponent}
 import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits}
@@ -10,7 +9,7 @@ import org.bitcoins.core.protocol.transaction.{BaseTransaction, EmptyTransaction
 import org.bitcoins.core.script._
 import org.bitcoins.core.script.arithmetic._
 import org.bitcoins.core.script.bitwise._
-import org.bitcoins.core.script.constant._
+import org.bitcoins.core.script.constant.{ScriptToken, _}
 import org.bitcoins.core.script.control._
 import org.bitcoins.core.script.crypto._
 import org.bitcoins.core.script.flag._
