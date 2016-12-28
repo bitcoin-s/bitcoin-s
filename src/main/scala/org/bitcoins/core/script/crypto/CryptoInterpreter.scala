@@ -77,34 +77,30 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
           result match {
             case SignatureValidationSuccess => ScriptProgram(program,
               OP_TRUE :: restOfStack, program.script.tail)
-            case err : SignatureValidationError =>
-              if (ScriptFlagUtil.requireScriptVerifyNullFail(flags) && signature.bytes.nonEmpty) {
-                ScriptProgram(executionInProgressScriptProgram, ScriptErrorSigNullFail)
-              } else {
-                err match {
-                  case SignatureValidationFailureNotStrictDerEncoding =>
-                    logger.info("Signature validation failed: " + SignatureValidationFailureNotStrictDerEncoding)
-                    ScriptProgram(program, ScriptErrorSigDer)
-                  case SignatureValidationFailureIncorrectSignatures =>
-                    logger.info("Signature validation failed: " + SignatureValidationFailureIncorrectSignatures)
-                    ScriptProgram(program, OP_FALSE :: restOfStack,program.script.tail)
-                  case SignatureValidationFailureSignatureCount =>
-                    logger.info("Signature validation failed: " + SignatureValidationFailureSignatureCount)
-                    ScriptProgram(program, OP_FALSE :: restOfStack,program.script.tail)
-                  case SignatureValidationFailurePubKeyEncoding =>
-                    logger.info("Signature validation failed: " + SignatureValidationFailurePubKeyEncoding)
-                    //means that a public key was not encoded correctly
-                    ScriptProgram(program,ScriptErrorPubKeyType)
-                  case ScriptValidationFailureHighSValue =>
-                    logger.info("Signature validation failed: " + ScriptValidationFailureHighSValue)
-                    ScriptProgram(program,ScriptErrorSigHighS)
-                  case ScriptValidationFailureHashType =>
-                    logger.info("Signature validation failed: " + ScriptValidationFailureHashType)
-                    ScriptProgram(program,ScriptErrorSigHashType)
-                  case ScriptValidationFailureWitnessPubKeyType =>
-                    ScriptProgram(program,ScriptErrorWitnessPubKeyType)
-                }
-              }
+            case SignatureValidationFailureNotStrictDerEncoding =>
+              logger.info("Signature validation failed: " + SignatureValidationFailureNotStrictDerEncoding)
+              ScriptProgram(program, ScriptErrorSigDer)
+            case SignatureValidationFailureIncorrectSignatures =>
+              logger.info("Signature validation failed: " + SignatureValidationFailureIncorrectSignatures)
+              ScriptProgram(program, OP_FALSE :: restOfStack,program.script.tail)
+            case SignatureValidationFailureSignatureCount =>
+              logger.info("Signature validation failed: " + SignatureValidationFailureSignatureCount)
+              ScriptProgram(program, OP_FALSE :: restOfStack,program.script.tail)
+            case SignatureValidationFailurePubKeyEncoding =>
+              logger.info("Signature validation failed: " + SignatureValidationFailurePubKeyEncoding)
+              //means that a public key was not encoded correctly
+              ScriptProgram(program,ScriptErrorPubKeyType)
+            case ScriptValidationFailureHighSValue =>
+              logger.info("Signature validation failed: " + ScriptValidationFailureHighSValue)
+              ScriptProgram(program,ScriptErrorSigHighS)
+            case ScriptValidationFailureHashType =>
+              logger.info("Signature validation failed: " + ScriptValidationFailureHashType)
+              ScriptProgram(program,ScriptErrorSigHashType)
+            case ScriptValidationFailureWitnessPubKeyType =>
+              ScriptProgram(program,ScriptErrorWitnessPubKeyType)
+            case SignatureValidationErrorNullFail =>
+              ScriptProgram(executionInProgressScriptProgram,ScriptErrorSigNullFail)
+
           }
         }
     }
@@ -252,14 +248,9 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
                   //https://github.com/bitcoin/bips/blob/master/bip-0066.mediawiki#specification
                   ScriptProgram(executionInProgressScriptProgram, ScriptErrorSigDer)
                 case SignatureValidationFailureIncorrectSignatures =>
-                  val nullFailEnabled = ScriptFlagUtil.requireScriptVerifyNullFail(flags)
-                  if (nullFailEnabled && signatures.exists(_.bytes.nonEmpty)) {
-                    ScriptProgram(executionInProgressScriptProgram,ScriptErrorSigNullFail) }
-                  else {
-                    //this means that signature verification failed, however all signatures were encoded correctly
-                    //just push a ScriptFalse onto the stack
-                    ScriptProgram(executionInProgressScriptProgram, OP_FALSE :: restOfStack, program.script.tail)
-                  }
+                  //this means that signature verification failed, however all signatures were encoded correctly
+                  //just push a OP_FALSE onto the stack
+                  ScriptProgram(executionInProgressScriptProgram, OP_FALSE :: restOfStack, program.script.tail)
                 case SignatureValidationFailureSignatureCount =>
                   //means that we did not have enough signatures for OP_CHECKMULTISIG
                   ScriptProgram(executionInProgressScriptProgram, ScriptErrorInvalidStackOperation)
@@ -272,6 +263,9 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
                   ScriptProgram(executionInProgressScriptProgram, ScriptErrorSigHashType)
                 case ScriptValidationFailureWitnessPubKeyType =>
                   ScriptProgram(executionInProgressScriptProgram,ScriptErrorWitnessPubKeyType)
+                case SignatureValidationErrorNullFail =>
+
+                  ScriptProgram(executionInProgressScriptProgram,ScriptErrorSigNullFail)
               }
             }
           }
