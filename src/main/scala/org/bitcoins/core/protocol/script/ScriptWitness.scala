@@ -2,7 +2,6 @@ package org.bitcoins.core.protocol.script
 
 import org.bitcoins.core.crypto.{ECDigitalSignature, ECPublicKey}
 import org.bitcoins.core.protocol.NetworkElement
-import org.bitcoins.core.script.constant.ScriptToken
 import org.bitcoins.core.serializers.script.RawScriptWitnessParser
 import org.bitcoins.core.util.{BitcoinSUtil, Factory}
 
@@ -16,7 +15,7 @@ sealed trait ScriptWitness extends NetworkElement {
   /** The byte vectors that are placed on to the stack when evaluating a witness program */
   def stack : Seq[Seq[Byte]]
 
-  override def toString = stack.map(BitcoinSUtil.encodeHex(_)).toString
+  override def toString = "ScriptWitness(" + stack.map(BitcoinSUtil.encodeHex(_)).toString + ")"
 
   override def hex = RawScriptWitnessParser.write(this)
 }
