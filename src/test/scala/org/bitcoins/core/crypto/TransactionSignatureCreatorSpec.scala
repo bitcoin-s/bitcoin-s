@@ -38,6 +38,7 @@ class TransactionSignatureCreatorSpec extends Properties("TransactionSignatureCr
         //run it through the interpreter
         val program = ScriptProgram(txSignatureComponent)
         val result = ScriptInterpreter.run(program)
+        logger.info("result: " + result)
         result == ScriptOk
   }
 
