@@ -54,16 +54,16 @@ case object SignatureValidationFailurePubKeyEncoding extends SignatureValidation
  * This indicates that the digital signature did not have a Low S value as per BIP62
  * [[https://github.com/bitcoin/bips/blob/master/bip-0062.mediawiki#Low_S_values_in_signatures]]
  */
-case object ScriptValidationFailureHighSValue extends SignatureValidationError
+case object SignatureValidationFailureHighSValue extends SignatureValidationError
 
 /**
  * Fails the script if the hash type is not defined on a digital signature
  */
-case object ScriptValidationFailureHashType extends SignatureValidationError
+case object SignatureValidationFailureHashType extends SignatureValidationError
 
 /** Fails the script if the given public key was not compressed and the [[org.bitcoins.core.script.flag.ScriptVerifyWitnessPubKeyType]]
   * flag was set  */
-case object ScriptValidationFailureWitnessPubKeyType extends SignatureValidationError
+case object SignatureValidationFailureWitnessPubKeyType extends SignatureValidationError
 
 /**
   * Fails the script if a an invalid signature is not an empty byte vector
