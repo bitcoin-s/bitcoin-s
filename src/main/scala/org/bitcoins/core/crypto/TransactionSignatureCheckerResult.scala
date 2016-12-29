@@ -30,40 +30,40 @@ sealed trait SignatureValidationError extends TransactionSignatureCheckerResult 
  * Signature validation failed because a signature was not encoded
  * per the BIP66 rules [[https://github.com/bitcoin/bips/blob/master/bip-0066.mediawiki#specification]]
  */
-case object SignatureValidationFailureNotStrictDerEncoding extends SignatureValidationError
+case object SignatureValidationErrorNotStrictDerEncoding extends SignatureValidationError
 
 /**
  * Signature validation failed because there were not enough correct signatures for the transaction
  * we were given
  */
-case object SignatureValidationFailureIncorrectSignatures extends SignatureValidationError
+case object SignatureValidationErrorIncorrectSignatures extends SignatureValidationError
 
 /**
  * This indicates that the signature validation failed because we have more signatures left to check
  * than public keys remaining to check them against
  * see [[https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L914-915]]
  */
-case object SignatureValidationFailureSignatureCount extends SignatureValidationError
+case object SignatureValidationErrorSignatureCount extends SignatureValidationError
 
 /**
  * This indicates that the public key was not encoded correctly according to this function
  * [[https://github.com/bitcoin/bitcoin/blob/528472111b4965b1a99c4bcf08ac5ec93d87f10f/src/script/interpreter.cpp#L214-L223]]
  */
-case object SignatureValidationFailurePubKeyEncoding extends SignatureValidationError
+case object SignatureValidationErrorPubKeyEncoding extends SignatureValidationError
 /**
  * This indicates that the digital signature did not have a Low S value as per BIP62
  * [[https://github.com/bitcoin/bips/blob/master/bip-0062.mediawiki#Low_S_values_in_signatures]]
  */
-case object SignatureValidationFailureHighSValue extends SignatureValidationError
+case object SignatureValidationErrorHighSValue extends SignatureValidationError
 
 /**
  * Fails the script if the hash type is not defined on a digital signature
  */
-case object SignatureValidationFailureHashType extends SignatureValidationError
+case object SignatureValidationErrorHashType extends SignatureValidationError
 
 /** Fails the script if the given public key was not compressed and the [[org.bitcoins.core.script.flag.ScriptVerifyWitnessPubKeyType]]
   * flag was set  */
-case object SignatureValidationFailureWitnessPubKeyType extends SignatureValidationError
+case object SignatureValidationErrorWitnessPubKeyType extends SignatureValidationError
 
 /**
   * Fails the script if a an invalid signature is not an empty byte vector

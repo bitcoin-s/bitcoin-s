@@ -40,18 +40,18 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
     val pubKeyEncodedCorrectly = BitcoinScriptUtil.isValidPubKeyEncoding(pubKey,flags)
     if (ScriptFlagUtil.requiresStrictDerEncoding(flags) && !DERSignatureUtil.isValidSignatureEncoding(signature)) {
       logger.error("Signature was not stricly encoded der: " + signature.hex)
-      SignatureValidationFailureNotStrictDerEncoding
+      SignatureValidationErrorNotStrictDerEncoding
     } else if (ScriptFlagUtil.requireLowSValue(flags) && !DERSignatureUtil.isLowS(signature)) {
       logger.error("Signature did not have a low s value")
-      SignatureValidationFailureHighSValue
+      SignatureValidationErrorHighSValue
     } else if (ScriptFlagUtil.requireStrictEncoding(flags) && signature.bytes.nonEmpty &&
       !HashType.isDefinedHashtypeSignature(signature)) {
       logger.error("signature: " + signature.hex)
       logger.error("Hash type was not defined on the signature, got: " + signature.bytes.last)
-      SignatureValidationFailureHashType
+      SignatureValidationErrorHashType
     } else if (pubKeyEncodedCorrectly.isDefined) {
       val err = pubKeyEncodedCorrectly.get
-      val result = if (err == ScriptErrorWitnessPubKeyType) SignatureValidationFailureWitnessPubKeyType else SignatureValidationFailurePubKeyEncoding
+      val result = if (err == ScriptErrorWitnessPubKeyType) SignatureValidationErrorWitnessPubKeyType else SignatureValidationErrorPubKeyEncoding
       logger.error("The public key given for signature checking was not encoded correctly, err: " + result)
       result
     } else {
@@ -71,7 +71,7 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
       logger.debug("Hash for signature: " + BitcoinSUtil.encodeHex(hashForSignature.bytes))
       val isValid = pubKey.verify(hashForSignature,signature)
       if (isValid) SignatureValidationSuccess
-      else nullFailCheck(Seq(signature),SignatureValidationFailureIncorrectSignatures, flags)
+      else nullFailCheck(Seq(signature),SignatureValidationErrorIncorrectSignatures, flags)
     }
   }
 
@@ -97,13 +97,13 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
       //signatures than public keys remaining we immediately return
       //false https://github.com/bitcoin/bitcoin/blob/8c1dbc5e9ddbafb77e60e8c4e6eb275a3a76ac12/src/script/interpreter.cpp#L943-L945
       logger.warn("We have more sigs than we have public keys remaining")
-      nullFailCheck(sigs,SignatureValidationFailureIncorrectSignatures,flags)
+      nullFailCheck(sigs,SignatureValidationErrorIncorrectSignatures,flags)
     }
     else if (requiredSigs > sigs.size) {
       //for the case when we do not have enough sigs left to check to meet the required signature threshold
       //https://github.com/bitcoin/bitcoin/blob/8c1dbc5e9ddbafb77e60e8c4e6eb275a3a76ac12/src/script/interpreter.cpp#L990-L991
       logger.warn("We do not have enough sigs to meet the threshold of requireSigs in the multiSignatureScriptPubKey")
-      nullFailCheck(sigs,SignatureValidationFailureSignatureCount,flags)
+      nullFailCheck(sigs,SignatureValidationErrorSignatureCount,flags)
     }
     else if (sigs.nonEmpty && pubKeys.nonEmpty) {
       val sig = sigs.head
@@ -112,21 +112,21 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
       result match {
         case SignatureValidationSuccess =>
           multiSignatureEvaluator(txSignatureComponent, script, sigs.tail,pubKeys.tail,flags, requiredSigs - 1)
-        case SignatureValidationFailureIncorrectSignatures | SignatureValidationErrorNullFail =>
+        case SignatureValidationErrorIncorrectSignatures | SignatureValidationErrorNullFail =>
           //notice we pattern match on 'SignatureValidationErrorNullFail' here, this is because
           //'checkSignature' may return that result, but we need to continue evaluating the signatures
           //in the multisig script, we don't check for nullfail until evaluation the OP_CHECKMULTSIG is completely done
           multiSignatureEvaluator(txSignatureComponent, script, sigs, pubKeys.tail,flags, requiredSigs)
-        case x @ (SignatureValidationFailureNotStrictDerEncoding | SignatureValidationFailureSignatureCount |
-                  SignatureValidationFailurePubKeyEncoding | SignatureValidationFailureHighSValue |
-                  SignatureValidationFailureHashType | SignatureValidationFailureWitnessPubKeyType) =>
+        case x @ (SignatureValidationErrorNotStrictDerEncoding | SignatureValidationErrorSignatureCount |
+                  SignatureValidationErrorPubKeyEncoding | SignatureValidationErrorHighSValue |
+                  SignatureValidationErrorHashType | SignatureValidationErrorWitnessPubKeyType) =>
           nullFailCheck(sigs,x,flags)
       }
     } else if (sigs.isEmpty) {
       //means that we have checked all of the sigs against the public keys
       //validation succeeds
       SignatureValidationSuccess
-    } else nullFailCheck(sigs,SignatureValidationFailureIncorrectSignatures,flags)
+    } else nullFailCheck(sigs,SignatureValidationErrorIncorrectSignatures,flags)
 
 
   }
