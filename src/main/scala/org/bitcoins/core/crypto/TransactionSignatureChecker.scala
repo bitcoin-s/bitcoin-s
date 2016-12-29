@@ -68,9 +68,10 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
           TransactionSignatureSerializer.hashForSignature(w.transaction,w.inputIndex,sigsRemovedScript, hashType, w.amount,w.sigVersion)
       }
 
-      logger.info("Hash for signature: " + BitcoinSUtil.encodeHex(hashForSignature.bytes))
+      logger.debug("Hash for signature: " + BitcoinSUtil.encodeHex(hashForSignature.bytes))
       val isValid = pubKey.verify(hashForSignature,signature)
-      if (isValid) SignatureValidationSuccess else SignatureValidationFailureIncorrectSignatures
+      if (isValid) SignatureValidationSuccess
+      else nullFailCheck(Seq(signature),SignatureValidationFailureIncorrectSignatures, flags)
     }
   }
 
@@ -94,15 +95,15 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
     if (sigs.size > pubKeys.size) {
       //this is how bitcoin core treats this. If there are ever any more
       //signatures than public keys remaining we immediately return
-      //false https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L955-L959
+      //false https://github.com/bitcoin/bitcoin/blob/8c1dbc5e9ddbafb77e60e8c4e6eb275a3a76ac12/src/script/interpreter.cpp#L943-L945
       logger.warn("We have more sigs than we have public keys remaining")
-      SignatureValidationFailureIncorrectSignatures
+      nullFailCheck(sigs,SignatureValidationFailureIncorrectSignatures,flags)
     }
     else if (requiredSigs > sigs.size) {
       //for the case when we do not have enough sigs left to check to meet the required signature threshold
-      //https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L914-915
+      //https://github.com/bitcoin/bitcoin/blob/8c1dbc5e9ddbafb77e60e8c4e6eb275a3a76ac12/src/script/interpreter.cpp#L990-L991
       logger.warn("We do not have enough sigs to meet the threshold of requireSigs in the multiSignatureScriptPubKey")
-      SignatureValidationFailureSignatureCount
+      nullFailCheck(sigs,SignatureValidationFailureSignatureCount,flags)
     }
     else if (sigs.nonEmpty && pubKeys.nonEmpty) {
       val sig = sigs.head
@@ -111,18 +112,34 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
       result match {
         case SignatureValidationSuccess =>
           multiSignatureEvaluator(txSignatureComponent, script, sigs.tail,pubKeys.tail,flags, requiredSigs - 1)
-        case SignatureValidationFailureIncorrectSignatures =>
+        case SignatureValidationFailureIncorrectSignatures | SignatureValidationErrorNullFail =>
+          //notice we pattern match on 'SignatureValidationErrorNullFail' here, this is because
+          //'checkSignature' may return that result, but we need to continue evaluating the signatures
+          //in the multisig script, we don't check for nullfail until evaluation the OP_CHECKMULTSIG is completely done
           multiSignatureEvaluator(txSignatureComponent, script, sigs, pubKeys.tail,flags, requiredSigs)
         case x @ (SignatureValidationFailureNotStrictDerEncoding | SignatureValidationFailureSignatureCount |
                   SignatureValidationFailurePubKeyEncoding | ScriptValidationFailureHighSValue |
                   ScriptValidationFailureHashType | ScriptValidationFailureWitnessPubKeyType) =>
-          x
+          nullFailCheck(sigs,x,flags)
       }
     } else if (sigs.isEmpty) {
       //means that we have checked all of the sigs against the public keys
       //validation succeeds
       SignatureValidationSuccess
-    } else SignatureValidationFailureIncorrectSignatures
+    } else nullFailCheck(sigs,SignatureValidationFailureIncorrectSignatures,flags)
+
+
+  }
+  /** If the NULLFAIL flag is set as defined in BIP146, it checks to make sure all failed signatures were an empty byte vector
+    * [[https://github.com/bitcoin/bips/blob/master/bip-0146.mediawiki#NULLFAIL]]
+    * */
+  private def nullFailCheck(sigs: Seq[ECDigitalSignature], result: TransactionSignatureCheckerResult,flags: Seq[ScriptFlag]): TransactionSignatureCheckerResult = {
+    logger.info("Result before nullfail check:" + result)
+    val nullFailEnabled = ScriptFlagUtil.requireScriptVerifyNullFail(flags)
+    if (nullFailEnabled && !result.isValid) {
+      //we need to check that all signatures were empty byte vectors, else this fails because of BIP146 and nullfail
+      if (sigs.exists(_.bytes.nonEmpty)) SignatureValidationErrorNullFail else result
+    } else result
   }
 }
 
