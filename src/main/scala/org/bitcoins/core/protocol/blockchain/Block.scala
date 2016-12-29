@@ -1,7 +1,7 @@
 package org.bitcoins.core.protocol.blockchain
 
 import org.bitcoins.core.number.UInt64
-import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.core.protocol.transaction.{BaseTransaction, Transaction, WitnessTransaction}
 import org.bitcoins.core.protocol.{CompactSizeUInt, NetworkElement}
 import org.bitcoins.core.serializers.blockchain.RawBlockSerializer
 import org.bitcoins.core.util.{BitcoinSLogger, Factory}
@@ -28,6 +28,18 @@ sealed abstract class Block extends NetworkElement {
 
   override def bytes = RawBlockSerializer.write(this)
 
+  /** This is the new computation to determine the maximum size of a block as per BIP141
+    * [[https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki#block-size]]
+    * The weight of a block is determined as follows:
+    *
+    * Base size is the block size in bytes with the original transaction serialization without any witness-related data
+    *
+    * Total size is the block size in bytes with transactions serialized as described in BIP144, including base data and witness data.
+    *
+    * Block weight is defined as Base size * 3 + Total size
+    * [[https://github.com/bitcoin/bitcoin/blob/7490ae8b699d2955b665cf849d86ff5bb5245c28/src/primitives/block.cpp#L35]]
+    */
+  def blockWeight: Long = transactions.map(_.weight).sum
 }
 
 
