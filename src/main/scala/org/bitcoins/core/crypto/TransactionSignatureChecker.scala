@@ -43,15 +43,15 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
       SignatureValidationFailureNotStrictDerEncoding
     } else if (ScriptFlagUtil.requireLowSValue(flags) && !DERSignatureUtil.isLowS(signature)) {
       logger.error("Signature did not have a low s value")
-      ScriptValidationFailureHighSValue
+      SignatureValidationFailureHighSValue
     } else if (ScriptFlagUtil.requireStrictEncoding(flags) && signature.bytes.nonEmpty &&
       !HashType.isDefinedHashtypeSignature(signature)) {
       logger.error("signature: " + signature.hex)
       logger.error("Hash type was not defined on the signature, got: " + signature.bytes.last)
-      ScriptValidationFailureHashType
+      SignatureValidationFailureHashType
     } else if (pubKeyEncodedCorrectly.isDefined) {
       val err = pubKeyEncodedCorrectly.get
-      val result = if (err == ScriptErrorWitnessPubKeyType) ScriptValidationFailureWitnessPubKeyType else SignatureValidationFailurePubKeyEncoding
+      val result = if (err == ScriptErrorWitnessPubKeyType) SignatureValidationFailureWitnessPubKeyType else SignatureValidationFailurePubKeyEncoding
       logger.error("The public key given for signature checking was not encoded correctly, err: " + result)
       result
     } else {
@@ -118,8 +118,8 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
           //in the multisig script, we don't check for nullfail until evaluation the OP_CHECKMULTSIG is completely done
           multiSignatureEvaluator(txSignatureComponent, script, sigs, pubKeys.tail,flags, requiredSigs)
         case x @ (SignatureValidationFailureNotStrictDerEncoding | SignatureValidationFailureSignatureCount |
-                  SignatureValidationFailurePubKeyEncoding | ScriptValidationFailureHighSValue |
-                  ScriptValidationFailureHashType | ScriptValidationFailureWitnessPubKeyType) =>
+                  SignatureValidationFailurePubKeyEncoding | SignatureValidationFailureHighSValue |
+                  SignatureValidationFailureHashType | SignatureValidationFailureWitnessPubKeyType) =>
           nullFailCheck(sigs,x,flags)
       }
     } else if (sigs.isEmpty) {

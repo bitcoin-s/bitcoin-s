@@ -1,6 +1,6 @@
 package org.bitcoins.core.script.crypto
 
-import org.bitcoins.core.crypto.{SignatureValidationFailureIncorrectSignatures, _}
+import org.bitcoins.core.crypto.{SignatureValidationFailureHashType, SignatureValidationFailureHighSValue, SignatureValidationFailureIncorrectSignatures, _}
 import org.bitcoins.core.script._
 import org.bitcoins.core.script.constant._
 import org.bitcoins.core.script.control.{ControlOperationsInterpreter, OP_VERIFY}
@@ -90,13 +90,13 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
               logger.info("Signature validation failed: " + SignatureValidationFailurePubKeyEncoding)
               //means that a public key was not encoded correctly
               ScriptProgram(program,ScriptErrorPubKeyType)
-            case ScriptValidationFailureHighSValue =>
-              logger.info("Signature validation failed: " + ScriptValidationFailureHighSValue)
+            case SignatureValidationFailureHighSValue =>
+              logger.info("Signature validation failed: " + SignatureValidationFailureHighSValue)
               ScriptProgram(program,ScriptErrorSigHighS)
-            case ScriptValidationFailureHashType =>
-              logger.info("Signature validation failed: " + ScriptValidationFailureHashType)
+            case SignatureValidationFailureHashType =>
+              logger.info("Signature validation failed: " + SignatureValidationFailureHashType)
               ScriptProgram(program,ScriptErrorSigHashType)
-            case ScriptValidationFailureWitnessPubKeyType =>
+            case SignatureValidationFailureWitnessPubKeyType =>
               ScriptProgram(program,ScriptErrorWitnessPubKeyType)
             case SignatureValidationErrorNullFail =>
               ScriptProgram(executionInProgressScriptProgram,ScriptErrorSigNullFail)
@@ -257,14 +257,13 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
                 case SignatureValidationFailurePubKeyEncoding =>
                   //means that a public key was not encoded correctly
                   ScriptProgram(executionInProgressScriptProgram, ScriptErrorPubKeyType)
-                case ScriptValidationFailureHighSValue =>
+                case SignatureValidationFailureHighSValue =>
                   ScriptProgram(program, ScriptErrorSigHighS)
-                case ScriptValidationFailureHashType =>
+                case SignatureValidationFailureHashType =>
                   ScriptProgram(executionInProgressScriptProgram, ScriptErrorSigHashType)
-                case ScriptValidationFailureWitnessPubKeyType =>
+                case SignatureValidationFailureWitnessPubKeyType =>
                   ScriptProgram(executionInProgressScriptProgram,ScriptErrorWitnessPubKeyType)
                 case SignatureValidationErrorNullFail =>
-
                   ScriptProgram(executionInProgressScriptProgram,ScriptErrorSigNullFail)
               }
             }
