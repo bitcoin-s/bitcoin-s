@@ -1,6 +1,5 @@
 package org.bitcoins.core.script.interpreter
 
-import org.bitcoins.core.script.constant.ScriptToken
 import org.bitcoins.core.consensus.Consensus
 import org.bitcoins.core.crypto.{BaseTransactionSignatureComponent, WitnessV0TransactionSignatureComponent}
 import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits}
@@ -10,7 +9,7 @@ import org.bitcoins.core.protocol.transaction.{BaseTransaction, EmptyTransaction
 import org.bitcoins.core.script._
 import org.bitcoins.core.script.arithmetic._
 import org.bitcoins.core.script.bitwise._
-import org.bitcoins.core.script.constant._
+import org.bitcoins.core.script.constant.{ScriptToken, _}
 import org.bitcoins.core.script.control._
 import org.bitcoins.core.script.crypto._
 import org.bitcoins.core.script.flag._
@@ -75,8 +74,8 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
           case p2sh : P2SHScriptPubKey =>
             if (p2shEnabled) executeP2shScript(scriptSigExecutedProgram, program, p2sh)
             else scriptPubKeyExecutedProgram
-          case _ @ (_ : P2PKHScriptPubKey | _: P2PKScriptPubKey | _: MultiSignatureScriptPubKey | _: CSVScriptPubKey |
-              _ : CLTVScriptPubKey | _ : NonStandardScriptPubKey | EmptyScriptPubKey) =>
+          case _ : P2PKHScriptPubKey | _: P2PKScriptPubKey | _: MultiSignatureScriptPubKey | _: CSVScriptPubKey |
+              _ : CLTVScriptPubKey | _ : NonStandardScriptPubKey | _ : WitnessCommitment | EmptyScriptPubKey =>
             scriptPubKeyExecutedProgram
         }
       }
@@ -160,7 +159,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
                 run(scriptPubKeyExecutedProgram,stack,w)
               }
             case s @ (_ : P2SHScriptPubKey | _ : P2PKHScriptPubKey | _ : P2PKScriptPubKey | _ : MultiSignatureScriptPubKey |
-              _ : CLTVScriptPubKey | _ : CSVScriptPubKey | _: NonStandardScriptPubKey | EmptyScriptPubKey) =>
+              _ : CLTVScriptPubKey | _ : CSVScriptPubKey | _: NonStandardScriptPubKey | _ : WitnessCommitment | EmptyScriptPubKey) =>
               logger.debug("redeemScript: " + s.asm)
               run(scriptPubKeyExecutedProgram,stack,s)
           }
@@ -516,7 +515,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
               w.witness.stack.isEmpty
           }
           case _ : CLTVScriptPubKey | _ : CSVScriptPubKey | _ : MultiSignatureScriptPubKey | _ : NonStandardScriptPubKey |
-            _ : P2PKScriptPubKey | _ : P2PKHScriptPubKey | EmptyScriptPubKey =>
+            _ : P2PKScriptPubKey | _ : P2PKHScriptPubKey | _ : WitnessCommitment | EmptyScriptPubKey =>
             w.witness.stack.isEmpty
         }
         !witnessedUsed
