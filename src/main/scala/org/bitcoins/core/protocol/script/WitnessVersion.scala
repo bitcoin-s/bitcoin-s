@@ -2,7 +2,7 @@ package org.bitcoins.core.protocol.script
 
 import org.bitcoins.core.crypto.{ECPublicKey, Sha256Digest, Sha256Hash160Digest}
 import org.bitcoins.core.protocol.CompactSizeUInt
-import org.bitcoins.core.script.constant.{ScriptConstant, ScriptToken}
+import org.bitcoins.core.script.constant._
 import org.bitcoins.core.script.result._
 import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil, CryptoUtil}
 
@@ -68,8 +68,17 @@ case object UnassignedWitness extends WitnessVersion {
 }
 
 object WitnessVersion {
-  def apply(num: Long): WitnessVersion = num match {
-    case 0 => WitnessVersion0
-    case _ => UnassignedWitness
+
+  def apply(scriptNumberOp: ScriptNumberOperation): WitnessVersion = scriptNumberOp match {
+    case OP_0 | OP_FALSE => WitnessVersion0
+    case OP_1 | OP_TRUE | OP_2 | OP_3 | OP_4 | OP_5 | OP_6 | OP_7 | OP_8
+      | OP_9 | OP_10 | OP_11 | OP_12 | OP_13 | OP_14 | OP_15 | OP_16  => UnassignedWitness
+    case OP_1NEGATE => throw new IllegalArgumentException("OP_1NEGATE is not a valid witness version")
+  }
+
+  def apply(token: ScriptToken): WitnessVersion = token match {
+    case scriptNumberOp : ScriptNumberOperation => WitnessVersion(scriptNumberOp)
+    case _ : ScriptConstant | _ : ScriptNumber | _ : ScriptOperation =>
+      throw new IllegalArgumentException("We can only have witness version that is a script number operation, i.e OP_0 through OP_16")
   }
 }

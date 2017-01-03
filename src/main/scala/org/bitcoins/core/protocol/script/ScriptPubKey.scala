@@ -508,13 +508,13 @@ object ScriptPubKey extends Factory[ScriptPubKey] with BitcoinSLogger {
 /** This type represents a [[ScriptPubKey]] to evaluate a [[ScriptWitness]] */
 sealed trait WitnessScriptPubKey extends ScriptPubKey {
   def witnessProgram: Seq[ScriptToken]
-  def witnessVersion = WitnessVersion(asm.head.toLong)
+  def witnessVersion = WitnessVersion(asm.head)
 }
 
 object WitnessScriptPubKey {
 
   /** Witness scripts must begin with one of these operations, see BIP141 */
-  val validFirstOps = Seq(OP_0,OP_1,OP_2,OP_3,OP_4,OP_5,OP_6, OP_7, OP_8,
+  private val validFirstOps = Seq(OP_0,OP_1,OP_2,OP_3,OP_4,OP_5,OP_6, OP_7, OP_8,
     OP_9, OP_10, OP_11, OP_12, OP_13, OP_14, OP_15, OP_16)
 
   def apply(asm: Seq[ScriptToken]): Option[WitnessScriptPubKey] = fromAsm(asm)
@@ -525,6 +525,10 @@ object WitnessScriptPubKey {
     case _ => None
   }
 
+  /** Checks if the given asm is a valid [[org.bitcoins.core.protocol.script.WitnessScriptPubKey]]
+    * Mimics this function inside of Bitcoin Core
+    * [[https://github.com/bitcoin/bitcoin/blob/14d01309bed59afb08651f2b701ff90371b15b20/src/script/script.cpp#L223-L237]]
+    */
   def isWitnessScriptPubKey(asm: Seq[ScriptToken]): Boolean = {
     val bytes = asm.flatMap(_.bytes)
     val firstOp = asm.headOption

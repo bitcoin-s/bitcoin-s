@@ -20,16 +20,13 @@ trait Policy {
    */
   def mandatoryScriptVerifyFlags  : Seq[ScriptFlag] = Seq(ScriptVerifyP2SH)
 
-  /**
-   * The default script verify flags used to validate the blockchain
-   * and bitcoin transactions
-   * @return
-   */
+  /** The default script verify flags used to validate the blockchain
+   * and bitcoin transactions */
   def standardScriptVerifyFlags : Seq[ScriptFlag] = mandatoryScriptVerifyFlags ++ Seq(ScriptVerifyDerSig, ScriptVerifyStrictEnc,
     ScriptVerifyMinimalData, ScriptVerifyNullDummy, ScriptVerifyDiscourageUpgradableNOPs,
     ScriptVerifyCleanStack, ScriptVerifyCheckLocktimeVerify, ScriptVerifyCheckSequenceVerify,
     ScriptVerifyLowS, ScriptVerifyWitness, ScriptVerifyMinimalIf, ScriptVerifyNullFail,
-    ScriptVerifyNullDummy, ScriptVerifyWitnessPubKeyType)
+    ScriptVerifyNullDummy, ScriptVerifyWitnessPubKeyType, ScriptVerifyDiscourageUpgradableWitnessProgram)
 
 }
 

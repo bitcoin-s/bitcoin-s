@@ -22,8 +22,7 @@ trait RawTransactionOutputParser extends RawBitcoinSerializer[Seq[TransactionOut
     */
   override def read(bytes : List[Byte]) : Seq[TransactionOutput] = {
 
-    //TODO: Possible bug here, this needs to be parsed as a CompactSizeUInt I think
-    val numOutputs = bytes.head.toInt
+    val numOutputs = CompactSizeUInt.parseCompactSizeUInt(bytes)
     @tailrec
     def loop(bytes : List[Byte], accum : List[TransactionOutput], outputsLeftToParse : Int) : List[TransactionOutput] = {
       if (outputsLeftToParse > 0) {
@@ -34,7 +33,8 @@ trait RawTransactionOutputParser extends RawBitcoinSerializer[Seq[TransactionOut
         loop(bytesToBeParsed, newAccum, outputsLeft)
       } else accum
     }
-    loop(bytes.tail,Nil,numOutputs).reverse
+    val (_,outputBytes) = bytes.splitAt(numOutputs.size.toInt)
+    loop(outputBytes,Nil,numOutputs.num.toInt).reverse
   }
 
   override def write(outputs : Seq[TransactionOutput]) : String = {

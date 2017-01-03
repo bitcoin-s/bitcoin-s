@@ -188,7 +188,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
 
         //scriptsig must be empty if we have raw p2wsh
         //if script pubkey is a P2SHScriptPubKey then we have P2SH(P2WSH)
-        if (scriptSig.asm.nonEmpty && !w.scriptPubKey.isInstanceOf[P2SHScriptPubKey]) ScriptProgram(scriptPubKeyExecutedProgram,ScriptErrorWitnessMalleated)
+        if (scriptSig != EmptyScriptSignature && !w.scriptPubKey.isInstanceOf[P2SHScriptPubKey]) ScriptProgram(scriptPubKeyExecutedProgram,ScriptErrorWitnessMalleated)
         else if (witness.stack.exists(_.size > maxPushSize)) ScriptProgram(scriptPubKeyExecutedProgram, ScriptErrorPushSize)
         else verifyWitnessProgram(witnessVersion, witness, witnessProgram, w)
     }

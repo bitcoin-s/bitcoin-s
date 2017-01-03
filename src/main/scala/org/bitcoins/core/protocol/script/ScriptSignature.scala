@@ -1,6 +1,6 @@
 package org.bitcoins.core.protocol.script
 
-import org.bitcoins.core.crypto.{ECDigitalSignature, ECPublicKey}
+import org.bitcoins.core.crypto.{DERSignatureUtil, ECDigitalSignature, ECPublicKey}
 import org.bitcoins.core.protocol.script.MultiSignatureScriptSignature.MultiSignatureScriptSignatureImpl
 import org.bitcoins.core.protocol.script.NonStandardScriptSignature.NonStandardScriptSignatureImpl
 import org.bitcoins.core.protocol.script.P2PKHScriptSignature.P2PKHScriptSignatureImpl
@@ -110,7 +110,11 @@ object P2PKHScriptSignature extends ScriptFactory[P2PKHScriptSignature] {
   /** Determines if the given asm matches a [[P2PKHScriptSignature]] */
   def isP2PKHScriptSig(asm: Seq[ScriptToken]): Boolean = asm match {
     case List(w : BytesToPushOntoStack, x : ScriptConstant, y : BytesToPushOntoStack,
-      z : ScriptConstant) => true
+      z : ScriptConstant) =>
+      //this checks to make sure we do not have a redeem script as the 'z' constant
+      //for instance, we can have a p2sh scriptsignature that has a redeem script for a p2pkhScriptSig
+      //and it will have the same format as the pattern match before
+      !P2SHScriptSignature.isRedeemScript(z)
     case _ => false
   }
 }
@@ -125,13 +129,15 @@ sealed trait P2SHScriptSignature extends ScriptSignature {
 
   /** The redeemScript represents the conditions that must be satisfied to spend the output */
   def redeemScript : ScriptPubKey = {
-    if (WitnessScriptPubKey.isWitnessScriptPubKey(asm)) WitnessScriptPubKey(asm).get
-    else ScriptPubKey(ScriptParser.fromBytes(asm.last.bytes))
+    //for P2SH(P2WSH) the entire scriptSig asm is technically the redeem script
+    //see BIP141
+    WitnessScriptPubKey(asm).getOrElse(ScriptPubKey(ScriptParser.fromBytes(asm.last.bytes)))
   }
 
 
   /** Returns the script signature of this p2shScriptSig with no serialized redeemScript */
   def scriptSignatureNoRedeemScript: ScriptSignature = {
+    //witness scriptPubKeys always have EmptyScriptSigs
     if (WitnessScriptPubKey.isWitnessScriptPubKey(asm)) EmptyScriptSignature
     else {
       val asmWithoutRedeemScriptAndPushOp = asm(asm.size - 2) match {
@@ -220,7 +226,7 @@ object P2SHScriptSignature extends ScriptFactory[P2SHScriptSignature]  {
           case x : CLTVScriptPubKey => true
           case x : CSVScriptPubKey => true
           case x : WitnessScriptPubKeyV0 => true
-          case x : UnassignedWitnessScriptPubKey => false
+          case x : UnassignedWitnessScriptPubKey => true
           case x : NonStandardScriptPubKey => false
           case x : WitnessCommitment => false
           case EmptyScriptPubKey => false
@@ -456,9 +462,8 @@ object ScriptSignature extends Factory[ScriptSignature] with BitcoinSLogger {
       P2SHScriptSignature.fromAsm(tokens)
     case _ if (MultiSignatureScriptSignature.isMultiSignatureScriptSignature(tokens)) =>
       MultiSignatureScriptSignature.fromAsm(tokens)
-    case List(w : BytesToPushOntoStack, x : ScriptConstant, y : BytesToPushOntoStack,
-    z : ScriptConstant) => P2PKHScriptSignature.fromAsm(tokens)
-    case List(w : BytesToPushOntoStack, x : ScriptConstant) => P2PKScriptSignature.fromAsm(tokens)
+    case _ if P2PKHScriptSignature.isP2PKHScriptSig(tokens) => P2PKHScriptSignature.fromAsm(tokens)
+    case _ if P2PKScriptSignature.isP2PKScriptSignature(tokens) => P2PKScriptSignature.fromAsm(tokens)
     case _ => NonStandardScriptSignature.fromAsm(tokens)
   }
 
