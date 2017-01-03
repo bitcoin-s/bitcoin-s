@@ -617,6 +617,7 @@ sealed trait WitnessCommitment extends ScriptPubKey {
 object WitnessCommitment extends ScriptFactory[WitnessCommitment] {
   private case class WitnessCommitmentImpl(hex : String) extends WitnessCommitment
 
+  private val commitmentHeader = "aa21a9ed"
   def apply(asm: Seq[ScriptToken]): WitnessCommitment = fromAsm(asm)
 
   override def fromBytes(bytes: Seq[Byte]): WitnessCommitment = {
@@ -628,13 +629,16 @@ object WitnessCommitment extends ScriptFactory[WitnessCommitment] {
     buildScript(asm, WitnessCommitmentImpl(_), isWitnessCommitment(_), "Given asm was not a valid witness commitment, got: " + asm)
   }
 
+  def apply(hash: DoubleSha256Digest): WitnessCommitment = {
+    WitnessCommitment(Seq(OP_RETURN, BytesToPushOntoStack(36), ScriptConstant(commitmentHeader + hash.hex)))
+  }
   /** This determines if the given asm has the correct witness structure according to BIP141
     * [[https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki#commitment-structure]] */
   def isWitnessCommitment(asm: Seq[ScriptToken]): Boolean = {
     if (asm.size < 3) false
     else {
       val minCommitmentSize = 38
-      val commitmentHeader = "aa21a9ed"
+
       val Seq(opReturn, pushOp, constant) = asm.take(3)
       opReturn == OP_RETURN && pushOp == BytesToPushOntoStack(36) &&
       constant.hex.take(8) == commitmentHeader && asm.flatMap(_.bytes).size >= minCommitmentSize
