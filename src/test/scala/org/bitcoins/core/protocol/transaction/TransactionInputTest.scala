@@ -1,7 +1,8 @@
 package org.bitcoins.core.protocol.transaction
 
-import org.bitcoins.core.number.UInt64
-import org.bitcoins.core.protocol.script.EmptyScriptSignature
+import org.bitcoins.core.crypto.DoubleSha256Digest
+import org.bitcoins.core.number.{UInt32, UInt64}
+import org.bitcoins.core.protocol.script.{EmptyScriptSignature, P2SHScriptSignature}
 import org.bitcoins.core.serializers.transaction.RawTransactionInputParser
 import org.bitcoins.core.util.TestUtil
 import org.scalatest.{FlatSpec, MustMatchers}
@@ -22,7 +23,7 @@ class TransactionInputTest extends FlatSpec with MustMatchers {
   it must "write a transaction output to hex accurately" in {
     val input = TransactionInput(TestUtil.rawTxInput)
 
-    TransactionInput.fromHex(TestUtil.rawTxInput).hex must be (TestUtil.rawTxInput)
+    input.hex must be (TestUtil.rawTxInput)
   }
 
   it must "read a transaction input with an empty script signature" in {
@@ -38,5 +39,6 @@ class TransactionInputTest extends FlatSpec with MustMatchers {
     input.hex must be (rawInput)
     (TransactionInput(input.hex) == input) must be (true)
   }
+
 }
 

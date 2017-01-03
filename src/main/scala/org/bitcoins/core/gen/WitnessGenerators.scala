@@ -1,14 +1,10 @@
 package org.bitcoins.core.gen
 
-import java.util
-
-import org.bitcoins.core.crypto.{TransactionSignatureComponent, _}
+import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency.CurrencyUnit
-import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.policy.Policy
-import org.bitcoins.core.protocol.script.{MultiSignatureScriptSignature, _}
+import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
-import org.bitcoins.core.script.constant.{BytesToPushOntoStack, ScriptNumber}
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.util.{BitcoinSLogger, BitcoinScriptUtil}
 import org.scalacheck.Gen
@@ -22,8 +18,8 @@ trait WitnessGenerators extends BitcoinSLogger {
 
   /** Generates a random [[org.bitcoins.core.protocol.script.ScriptWitness]] */
   def scriptWitness: Gen[ScriptWitness] = {
-    //just randomly pick a number between 0 and 10 to determine how many stack elements for the generator
     val stackElements = 10
+    //empty script witness is included here because we can have 0 items on the stack
     val stackNested: Gen[Seq[Gen[Seq[Byte]]]] = for {
       numItems <- Gen.choose(0, stackElements)
       _ <- 0 until numItems

@@ -4,7 +4,7 @@ import org.bitcoins.core.crypto.{TransactionSignatureCreator, _}
 import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.policy.Policy
-import org.bitcoins.core.protocol.script._
+import org.bitcoins.core.protocol.script.{P2SHScriptPubKey, _}
 import org.bitcoins.core.protocol.transaction.{TransactionConstants, TransactionWitness}
 import org.bitcoins.core.script.ScriptSettings
 import org.bitcoins.core.script.constant.{OP_16, ScriptNumber}
@@ -136,16 +136,23 @@ trait ScriptGenerators extends BitcoinSLogger {
     unassignedAsm = OP_16 +: witV0.asm.tail
   } yield (UnassignedWitnessScriptPubKey(unassignedAsm),privKeys)
 
+  /** Generates an arbitrary [[org.bitcoins.core.protocol.script.WitnessScriptPubKey]] */
+  def witnessScriptPubKey: Gen[(WitnessScriptPubKey, Seq[ECPrivateKey])] = Gen.oneOf(witnessScriptPubKeyV0,unassignedWitnessScriptPubKey)
+
   def pickRandomNonP2SHScriptPubKey: Gen[(ScriptPubKey, Seq[ECPrivateKey])] = {
     Gen.oneOf(p2pkScriptPubKey.map(privKeyToSeq(_)), p2pkhScriptPubKey.map(privKeyToSeq(_)),
       cltvScriptPubKey.suchThat(!_._1.scriptPubKeyAfterCLTV.isInstanceOf[CSVScriptPubKey]),
       csvScriptPubKey.suchThat(!_._1.scriptPubKeyAfterCSV.isInstanceOf[CLTVScriptPubKey]),
-      multiSigScriptPubKey
+      multiSigScriptPubKey, witnessScriptPubKeyV0, unassignedWitnessScriptPubKey
     )
   }
 
+  /** This is used for creating time locked scriptPubKeys, we cannot nest CSV/CLTV/P2SH/Witness
+    * ScriptPubKeys inside of timelock scriptPubKeys */
   def pickRandomNonCLTVNonCSVNonP2SHScriptPubKey : Gen[(ScriptPubKey, Seq[ECPrivateKey])] = {
-    Gen.oneOf(p2pkScriptPubKey.map(privKeyToSeq(_)), p2pkhScriptPubKey.map(privKeyToSeq(_)),multiSigScriptPubKey)
+    Gen.oneOf(p2pkScriptPubKey.map(privKeyToSeq(_)),
+      p2pkhScriptPubKey.map(privKeyToSeq(_)),
+      multiSigScriptPubKey)
   }
 
   /** Generates an arbitrary [[ScriptPubKey]] */
@@ -374,6 +381,12 @@ trait ScriptGenerators extends BitcoinSLogger {
     p2shScriptSig = P2SHScriptSignature(wtxSigComponent.scriptPubKey.asInstanceOf[WitnessScriptPubKey])
   } yield (p2shScriptSig, p2shScriptPubKey, privKeys, witness, wtxSigComponent.amount)
 
+  def signedP2SHP2WSHScriptSignature: Gen[(P2SHScriptSignature, P2SHScriptPubKey, Seq[ECPrivateKey], TransactionWitness, CurrencyUnit)] = for {
+    (witness,wtxSigComponent,privKeys) <- WitnessGenerators.signedP2WSHTransactionWitness
+    p2shScriptPubKey = P2SHScriptPubKey(wtxSigComponent.scriptPubKey)
+    p2shScriptSig = P2SHScriptSignature(wtxSigComponent.scriptPubKey.asInstanceOf[WitnessScriptPubKey])
+  } yield (p2shScriptSig, p2shScriptPubKey, privKeys, witness, wtxSigComponent.amount)
+
   /**
     * This function chooses a random signed [[ScriptSignature]] that is NOT a [[P2SHScriptSignature]], [[CSVScriptSignature]],
     * [[CLTVScriptSignature]], or any witness type
@@ -389,11 +402,12 @@ trait ScriptGenerators extends BitcoinSLogger {
 
   /** Generates a random [[ScriptSignature]], the [[ScriptPubKey]] it is spending, and the [[ECPrivateKey]] needed to spend it. */
   def randomScriptSig : Gen[(ScriptSignature, ScriptPubKey, Seq[ECPrivateKey])] = {
-    val wit = signedP2SHP2WPKHScriptSignature.map(x => (x._1,x._2,x._3))
+    val witP2SHP2WPKH = signedP2SHP2WPKHScriptSignature.map(x => (x._1,x._2,x._3))
+    val witP2SHP2WSH = signedP2SHP2WSHScriptSignature.map(x => (x._1,x._2,x._3))
     Gen.oneOf(packageToSequenceOfPrivateKeys(signedP2PKHScriptSignature),
       packageToSequenceOfPrivateKeys(signedP2PKScriptSignature),
       signedMultiSignatureScriptSignature, signedCLTVScriptSignature,
-      signedCSVScriptSignature,signedP2SHScriptSignature,wit)
+      signedCSVScriptSignature,signedP2SHScriptSignature,witP2SHP2WPKH,witP2SHP2WSH)
   }
 
   /** Simply converts one private key in the generator to a sequence of private keys */

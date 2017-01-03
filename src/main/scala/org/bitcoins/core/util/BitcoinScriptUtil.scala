@@ -355,14 +355,10 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
   final def parseSigVersion(tx: Transaction, scriptPubKey: ScriptPubKey, inputIndex: UInt32): SignatureVersion  = scriptPubKey match {
     case _ : WitnessScriptPubKeyV0 | _: UnassignedWitnessScriptPubKey =>
       SigVersionWitnessV0
-    case _: P2SHScriptPubKey =>
-      val scriptSig = tx.inputs(inputIndex.toInt).scriptSignature
-      scriptSig match {
-        case s : P2SHScriptSignature =>
-          parseSigVersion(tx,s.redeemScript,inputIndex)
-        case _ : P2PKScriptSignature | _: P2PKHScriptSignature | _:MultiSignatureScriptSignature | _: NonStandardScriptSignature
-          | _: CLTVScriptSignature | _: CSVScriptSignature | EmptyScriptSignature => SigVersionBase
-      }
+    case _ : P2SHScriptPubKey =>
+      //every p2sh scriptPubKey HAS to have a p2shScriptSig since we no longer have require scripts to be standard
+      val s = P2SHScriptSignature(tx.inputs(inputIndex.toInt).scriptSignature.bytes)
+      parseSigVersion(tx,s.redeemScript,inputIndex)
     case _: P2PKScriptPubKey | _: P2PKHScriptPubKey | _: MultiSignatureScriptPubKey  | _: NonStandardScriptPubKey
          | _: CLTVScriptPubKey | _: CSVScriptPubKey | _ : WitnessCommitment | EmptyScriptPubKey => SigVersionBase
   }
