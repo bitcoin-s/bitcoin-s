@@ -45,7 +45,6 @@ trait RawTransactionOutputParser extends RawBitcoinSerializer[Seq[TransactionOut
     numOutputs.hex + serializedOutputs.mkString
   }
 
-
   /** Writes a single transaction output */
   def write(output : TransactionOutput) : String = {
     val satoshis = CurrencyUnits.toSatoshis(output.value)
@@ -72,10 +71,7 @@ trait RawTransactionOutputParser extends RawBitcoinSerializer[Seq[TransactionOut
   }
 
   /**
-    * Parses the amount of satoshis a hex string represetns
-    * @param hex the hex string that is being parsed to satoshis
-    * @return the value of the hex string in satoshis
-    */
+    * Parses the amount of [[Satoshis]] a hex string represents. */
   private def parseSatoshis(hex : String) : Satoshis = RawSatoshisSerializer.read(hex)
 }
 

@@ -136,9 +136,9 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
   private def nullFailCheck(sigs: Seq[ECDigitalSignature], result: TransactionSignatureCheckerResult,flags: Seq[ScriptFlag]): TransactionSignatureCheckerResult = {
     logger.info("Result before nullfail check:" + result)
     val nullFailEnabled = ScriptFlagUtil.requireScriptVerifyNullFail(flags)
-    if (nullFailEnabled && !result.isValid) {
+    if (nullFailEnabled && !result.isValid && sigs.exists(_.bytes.nonEmpty)) {
       //we need to check that all signatures were empty byte vectors, else this fails because of BIP146 and nullfail
-      if (sigs.exists(_.bytes.nonEmpty)) SignatureValidationErrorNullFail else result
+      SignatureValidationErrorNullFail
     } else result
   }
 }
