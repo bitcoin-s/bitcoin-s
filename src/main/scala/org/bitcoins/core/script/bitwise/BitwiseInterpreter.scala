@@ -43,11 +43,10 @@ trait BitwiseInterpreter extends ControlOperationsInterpreter  {
       val simpleScript = OP_EQUAL :: OP_VERIFY :: program.script.tail
       val newProgram: ScriptProgram = opEqual(ScriptProgram(program, program.stack, simpleScript))
       opVerify(newProgram) match {
-        case p: ExecutedScriptProgram if (p.error.isDefined) =>
-          //need to switch the error set on this to ScriptErrorEqualVerify instead of ScriptErrorVerify
-          ScriptProgram(p, ScriptErrorEqualVerify)
         case p: PreExecutionScriptProgram => p
-        case p: ExecutedScriptProgram => p
+        case p: ExecutedScriptProgram =>
+          if (p.error.isDefined) ScriptProgram(p, ScriptErrorEqualVerify)
+          else p
         case p: ExecutionInProgressScriptProgram => p
       }
     } else{

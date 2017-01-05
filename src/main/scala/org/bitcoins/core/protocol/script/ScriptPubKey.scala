@@ -575,8 +575,8 @@ object WitnessScriptPubKeyV0 extends ScriptFactory[WitnessScriptPubKeyV0] {
   /** Mimics the function to determine if a [[ScriptPubKey]] contains a witness
     * A witness program is any valid [[ScriptPubKey]] that consists of a 1 byte push op and then a data push
     * between 2 and 40 bytes
+    * Verison 0 witness program need to have an OP_0 as the first operation
     * [[https://github.com/bitcoin/bitcoin/blob/449f9b8debcceb61a92043bc7031528a53627c47/src/script/script.cpp#L215-L229]]
-    * Returns None if it is not a witness program, else returns the script and script version
     * */
   def isWitnessScriptPubKeyV0(asm: Seq[ScriptToken]): Boolean = {
     WitnessScriptPubKey.isWitnessScriptPubKey(asm) && asm.headOption == Some(OP_0)
@@ -617,7 +617,9 @@ sealed trait WitnessCommitment extends ScriptPubKey {
 object WitnessCommitment extends ScriptFactory[WitnessCommitment] {
   private case class WitnessCommitmentImpl(hex : String) extends WitnessCommitment
 
+  /** Every witness commitment must start with this header, see BIP141 for details */
   private val commitmentHeader = "aa21a9ed"
+
   def apply(asm: Seq[ScriptToken]): WitnessCommitment = fromAsm(asm)
 
   override def fromBytes(bytes: Seq[Byte]): WitnessCommitment = {
@@ -638,7 +640,6 @@ object WitnessCommitment extends ScriptFactory[WitnessCommitment] {
     if (asm.size < 3) false
     else {
       val minCommitmentSize = 38
-
       val Seq(opReturn, pushOp, constant) = asm.take(3)
       opReturn == OP_RETURN && pushOp == BytesToPushOntoStack(36) &&
       constant.hex.take(8) == commitmentHeader && asm.flatMap(_.bytes).size >= minCommitmentSize

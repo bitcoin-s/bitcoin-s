@@ -507,13 +507,9 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
       case w : WitnessV0TransactionSignatureComponent =>
         val witnessedUsed = w.scriptPubKey match {
           case _ : WitnessScriptPubKey => true
-          case _ : P2SHScriptPubKey => txSigComponent.scriptSignature match {
-            case p2shScriptSig: P2SHScriptSignature =>
-              p2shScriptSig.redeemScript.isInstanceOf[WitnessScriptPubKey]
-            case _ : CLTVScriptSignature | _ : CSVScriptSignature | _ : MultiSignatureScriptSignature | _ : NonStandardScriptSignature |
-             _ : P2PKScriptSignature | _ : P2PKHScriptSignature | EmptyScriptSignature =>
-              w.witness.stack.isEmpty
-          }
+          case _ : P2SHScriptPubKey =>
+            val p2shScriptSig = P2SHScriptSignature(txSigComponent.scriptSignature.bytes)
+            p2shScriptSig.redeemScript.isInstanceOf[WitnessScriptPubKey]
           case _ : CLTVScriptPubKey | _ : CSVScriptPubKey | _ : MultiSignatureScriptPubKey | _ : NonStandardScriptPubKey |
             _ : P2PKScriptPubKey | _ : P2PKHScriptPubKey | _ : WitnessCommitment | EmptyScriptPubKey =>
             w.witness.stack.isEmpty
