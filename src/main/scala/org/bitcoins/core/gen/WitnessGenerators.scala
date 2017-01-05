@@ -87,7 +87,7 @@ trait WitnessGenerators extends BitcoinSLogger {
     witScriptPubKey = WitnessScriptPubKeyV0(scriptPubKey)
     unsignedScriptWitness = ScriptWitness(Seq(scriptPubKey.asmBytes))
     unsignedWTxSigComponent = createUnsignedWtxSigComponent(witScriptPubKey,amount,unsignedScriptWitness)
-    signedScriptSig = multiSigScriptSigGenHelper(privKeys, scriptPubKey.requiredSigs, scriptPubKey, unsignedWTxSigComponent, hashType)
+    signedScriptSig = multiSigScriptSigGenHelper(privKeys, scriptPubKey, unsignedWTxSigComponent, hashType)
     signedScriptSigPushOpsRemoved = BitcoinScriptUtil.filterPushOps(signedScriptSig.asm).tail.reverse
     signedScriptWitness = ScriptWitness(scriptPubKey.asm.flatMap(_.bytes) +: (signedScriptSigPushOpsRemoved.map(_.bytes) ++ Seq(Nil)))
     (witness,signedWtxSigComponent) = createSignedWTxComponent(signedScriptWitness,unsignedWTxSigComponent)
@@ -126,10 +126,11 @@ trait WitnessGenerators extends BitcoinSLogger {
 
 
   /** Helps generate a signed [[MultiSignatureScriptSignature]] */
-  private def multiSigScriptSigGenHelper(privateKeys : Seq[ECPrivateKey], requiredSigs : Int,
+  private def multiSigScriptSigGenHelper(privateKeys : Seq[ECPrivateKey],
                                          scriptPubKey : MultiSignatureScriptPubKey,
                                          unsignedWtxSigComponent: WitnessV0TransactionSignatureComponent,
                                          hashType: HashType) : MultiSignatureScriptSignature = {
+    val requiredSigs = scriptPubKey.requiredSigs
     val txSignatures = for {
       i <- 0 until requiredSigs
     } yield TransactionSignatureCreator.createSig(unsignedWtxSigComponent,privateKeys(i), hashType)

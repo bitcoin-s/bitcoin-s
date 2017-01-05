@@ -35,7 +35,7 @@ trait BitcoinjConversions {
     require(BitcoinSUtil.encodeHex(bitcoinjScript.getProgram) == BitcoinSUtil.encodeHex(scriptPubKey.asm.flatMap(_.bytes)),
       "ScriptPubKey must be the same as the given bitcoinj script\n" +
         BitcoinSUtil.encodeHex(bitcoinjScript.getProgram) + "\n" +
-        BitcoinSUtil.encodeHex(scriptPubKey.asm.flatMap(_.bytes)))
+        BitcoinSUtil.encodeHex(scriptPubKey.asmBytes))
     scriptPubKey
   }
 

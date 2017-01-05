@@ -288,7 +288,7 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers with
       val bitcoinjTx = BitcoinjConversions.transaction(spendingTx)
       val hashType = HashType(spendingInput.scriptSignature.signatures.head.bytes.last)
       val bitcoinjHashForSig : Seq[Byte] = BitcoinJSignatureSerialization.serializeForSignature(
-        bitcoinjTx, inputIndex.toInt, creditingOutput.scriptPubKey.asm.flatMap(_.bytes).toArray, spendingInput.scriptSignature.signatures.head.bytes.last
+        bitcoinjTx, inputIndex.toInt, creditingOutput.scriptPubKey.asmBytes.toArray, spendingInput.scriptSignature.signatures.head.bytes.last
       )
       val hashedTxForSig : String = BitcoinSUtil.encodeHex(
         TransactionSignatureSerializer.serializeForSignature(spendingTx,inputIndex,creditingOutput.scriptPubKey.asm,hashType
@@ -309,7 +309,7 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers with
      val bitcoinjTx = BitcoinjConversions.transaction(spendingTx)
      val hashType = HashType(spendingInput.scriptSignature.signatures.head.bytes.last)
      val bitcoinjHashForSig : Seq[Byte] = BitcoinJSignatureSerialization.hashForSignature(
-       bitcoinjTx, inputIndex.toInt, creditingOutput.scriptPubKey.asm.flatMap(_.bytes).toArray, spendingInput.scriptSignature.signatures.head.bytes.last
+       bitcoinjTx, inputIndex.toInt, creditingOutput.scriptPubKey.asmBytes.toArray, spendingInput.scriptSignature.signatures.head.bytes.last
      )
      val hashedTxForSig =
        TransactionSignatureSerializer.hashForSignature(spendingTx,inputIndex,creditingOutput.scriptPubKey.asm, hashType)
@@ -334,7 +334,7 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers with
 
     val bitcoinjTx = BitcoinjConversions.transaction(spendingTx)
     val bitcoinjHashForSig : Seq[Byte] = BitcoinJSignatureSerialization.hashForSignature(
-      bitcoinjTx, inputIndex.toInt, scriptPubKey.asm.flatMap(_.bytes).toArray, HashType.sigHashAllByte
+      bitcoinjTx, inputIndex.toInt, scriptPubKey.asmBytes.toArray, HashType.sigHashAllByte
     )
 
     val hashedTxForSig =

@@ -111,6 +111,7 @@ object P2PKHScriptSignature extends ScriptFactory[P2PKHScriptSignature] {
   def isP2PKHScriptSig(asm: Seq[ScriptToken]): Boolean = asm match {
     case List(w : BytesToPushOntoStack, x : ScriptConstant, y : BytesToPushOntoStack,
       z : ScriptConstant) =>
+      //TODO: We need to change this to use CPubKey::IsFullyValid() when we integrate libsecp256k1
       //this checks to make sure we do not have a redeem script as the 'z' constant
       //for instance, we can have a p2sh scriptsignature that has a redeem script for a p2pkhScriptSig
       //and it will have the same format as the pattern match before

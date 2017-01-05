@@ -48,7 +48,7 @@ sealed trait BaseTransaction extends Transaction {
 
 
 case object EmptyTransaction extends BaseTransaction {
-  override def txId = DoubleSha256Digest(BitcoinSUtil.decodeHex("0000000000000000000000000000000000000000000000000000000000000000"))
+  override def txId = CryptoUtil.emptyDoubleSha256Hash
   override def version = TransactionConstants.version
   override def inputs = Nil
   override def outputs = Nil

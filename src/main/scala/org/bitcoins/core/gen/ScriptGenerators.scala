@@ -244,11 +244,12 @@ trait ScriptGenerators extends BitcoinSLogger {
     hashType <- CryptoGenerators.hashType
     publicKeys = privateKeys.map(_.publicKey)
     multiSigScriptPubKey = MultiSignatureScriptPubKey(requiredSigs,publicKeys)
-  } yield multiSigScriptSigGenHelper(privateKeys, requiredSigs, multiSigScriptPubKey, hashType)
+  } yield multiSigScriptSigGenHelper(privateKeys, multiSigScriptPubKey, hashType)
 
   /** Helps generate a signed [[MultiSignatureScriptSignature]] */
-  private def multiSigScriptSigGenHelper(privateKeys : Seq[ECPrivateKey], requiredSigs : Int,
+  private def multiSigScriptSigGenHelper(privateKeys : Seq[ECPrivateKey],
                                          scriptPubKey : MultiSignatureScriptPubKey, hashType: HashType) : (MultiSignatureScriptSignature, MultiSignatureScriptPubKey, Seq[ECPrivateKey]) = {
+    val requiredSigs = scriptPubKey.requiredSigs
     val (creditingTx,outputIndex) = TransactionGenerators.buildCreditingTransaction(scriptPubKey)
     val emptyDigitalSignatures = privateKeys.map(_ => EmptyDigitalSignature)
     val scriptSig = MultiSignatureScriptSignature(emptyDigitalSignatures)
