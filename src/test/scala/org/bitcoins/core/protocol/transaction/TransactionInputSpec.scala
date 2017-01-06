@@ -12,6 +12,5 @@ class TransactionInputSpec extends Properties("TranactionInputSpec") with Bitcoi
   property("Serialization symmetry") =
     Prop.forAll(TransactionGenerators.inputs) { input =>
       TransactionInput(input.hex) == input
-
     }
 }

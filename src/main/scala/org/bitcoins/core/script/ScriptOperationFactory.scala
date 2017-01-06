@@ -19,20 +19,11 @@ import org.slf4j.LoggerFactory
  */
 trait ScriptOperationFactory[T <: ScriptOperation] extends BitcoinSLogger {
 
-  /**
-   * All of the script operations for a particular T
-    *
-    * @tparam T
-   * @return
-   */
+  /** All of the [[ScriptOperation]]s for a particular T. */
   def operations : Seq[T]
 
   /**
-   * Finds a script operation from a given string
-    *
-    * @param str
-   * @return
-   */
+   * Finds a [[ScriptOperation]] from a given string */
   def fromString(str : String) : Option[T] = {
     val result : Option[T] = operations.find(_.toString == str)
     if (result.isEmpty) {
@@ -42,30 +33,18 @@ trait ScriptOperationFactory[T <: ScriptOperation] extends BitcoinSLogger {
   }
 
   /**
-   * Finds a script operation from its hexadecimal representation
-    *
-    * @param hex
-   * @return
-   */
+   * Finds a [[ScriptOperation]] from its hexadecimal representation. */
   def fromHex(hex : String) : Option[T] = operations.find(_.hex == hex.toLowerCase)
 
   /**
    * Removes the 'OP_' prefix from a given operation.
    * Example: OP_EQUALVERIFY would be transformed into EQUALVERIFY
-    *
-    * @param str
-   * @return
    */
   private def removeOP_Prefix(str : String) : String = {
     str.replace("OP_","")
   }
 
-  /**
-   * Finds a script operation from a given byte
-    *
-    * @param byte
-   * @return
-   */
+  /** Finds a [[ScriptOperation]] from a given [[Byte]]. */
   def fromByte(byte : Byte) : Option[T] = {
     val hex = BitcoinSUtil.encodeHex(byte)
     fromHex(hex)

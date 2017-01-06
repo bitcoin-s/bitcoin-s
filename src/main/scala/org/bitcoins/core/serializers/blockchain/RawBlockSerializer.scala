@@ -1,11 +1,9 @@
 package org.bitcoins.core.serializers.blockchain
 
 import org.bitcoins.core.protocol.CompactSizeUInt
-import org.bitcoins.core.protocol.blockchain.{BlockHeader, Block}
+import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader}
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.serializers.RawBitcoinSerializer
-import org.bitcoins.core.serializers.transaction.RawTransactionParser
-import org.bitcoins.core.util.BitcoinSUtil
 
 import scala.annotation.tailrec
 
@@ -49,7 +47,7 @@ trait RawBlockSerializer extends RawBitcoinSerializer[Block] {
       if (remainingTxs <= 0) {
         (accum.reverse, remainingBytes)
       } else {
-        val transaction = RawTransactionParser.read(remainingBytes)
+        val transaction = Transaction(remainingBytes)
         val newRemainingBytes = remainingBytes.slice(transaction.size, remainingBytes.size)
         loop(remainingTxs - 1, newRemainingBytes, transaction :: accum)
       }

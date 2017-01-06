@@ -1,8 +1,8 @@
 package org.bitcoins.core.protocol.transaction
 
 import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.protocol.NetworkElement
 import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptSignature}
-import org.bitcoins.core.protocol.{CompactSizeUInt, NetworkElement}
 import org.bitcoins.core.script.constant.ScriptToken
 import org.bitcoins.core.serializers.transaction.RawTransactionInputParser
 import org.bitcoins.core.util.Factory
@@ -19,11 +19,8 @@ sealed trait TransactionInput extends NetworkElement {
 
   def sequence : UInt32
 
-  def scriptSigCompactSizeUInt : CompactSizeUInt = CompactSizeUInt.calculateCompactSizeUInt(scriptSignature.bytes)
-
   //https://bitcoin.org/en/developer-reference#txin
-  override def size = previousOutput.size + scriptSignature.size +
-    scriptSigCompactSizeUInt.size.toInt + 4
+  override def size = previousOutput.size + scriptSignature.size + 4
 
   def hex = RawTransactionInputParser.write(Seq(this))
 }
@@ -32,7 +29,6 @@ case object EmptyTransactionInput extends TransactionInput {
   override def previousOutput = TransactionInput.empty.previousOutput
   override def scriptSignature = TransactionInput.empty.scriptSignature
   override def sequence = TransactionInput.empty.sequence
-  override def scriptSigCompactSizeUInt = TransactionInput.empty.scriptSigCompactSizeUInt
 }
 
 /**
@@ -65,14 +61,7 @@ object TransactionInput extends Factory[TransactionInput] {
     TransactionInputImpl(oldInput.previousOutput, oldInput.scriptSignature,sequenceNumber)
   }
 
-  /**
-    * Creates a transaction input from a given output and the output's transaction
-    *
-    * @param oldInput
-    * @param output
-    * @param outputsTransaction
-    * @return
-    */
+  /** Creates a transaction input from a given output and the output's transaction */
   private def factory(oldInput : TransactionInput,output : TransactionOutput, outputsTransaction : Transaction) : TransactionInput = {
     val outPoint = TransactionOutPoint(output,outputsTransaction)
     factory(oldInput,outPoint)
@@ -118,7 +107,6 @@ object TransactionInput extends Factory[TransactionInput] {
 
   /**
     * Creates a coinbase input - coinbase inputs always have an empty outpoint
-    *
     * @param scriptSignature this can contain anything, miners use this to signify support for various protocol BIPs
     * @return the coinbase input
     */

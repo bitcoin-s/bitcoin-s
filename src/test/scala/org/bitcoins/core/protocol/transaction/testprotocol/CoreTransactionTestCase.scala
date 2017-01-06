@@ -1,5 +1,6 @@
 package org.bitcoins.core.protocol.transaction.testprotocol
 
+import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint}
 import org.bitcoins.core.script.flag.ScriptFlag
@@ -16,15 +17,16 @@ trait CoreTransactionTestCase {
 
   def scriptPubKeys : Seq[ScriptPubKey] = creditingTxsInfo.map(_._2)
 
-  def creditingTxsInfo : Seq[(TransactionOutPoint, ScriptPubKey)]
+  def creditingTxsInfo : Seq[(TransactionOutPoint, ScriptPubKey, Option[CurrencyUnit])]
 
   def spendingTx : Transaction
 
   def flags : Seq[ScriptFlag]
 
   def raw : String
+
 }
 
 
-case class CoreTransactionTestCaseImpl(creditingTxsInfo : Seq[(TransactionOutPoint,ScriptPubKey)],
+case class CoreTransactionTestCaseImpl(creditingTxsInfo : Seq[(TransactionOutPoint,ScriptPubKey, Option[CurrencyUnit])],
   spendingTx : Transaction, flags  : Seq[ScriptFlag], raw : String) extends CoreTransactionTestCase
