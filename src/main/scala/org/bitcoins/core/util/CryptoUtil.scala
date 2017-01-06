@@ -6,17 +6,12 @@ import org.bitcoins.core.crypto._
 import org.spongycastle.crypto.digests.RIPEMD160Digest
 
 /**
- * Created by chris on 1/14/16.
- * Utility cryptographic functions
- */
+  * Created by chris on 1/14/16.
+  * Utility cryptographic functions
+  */
 trait CryptoUtil {
 
-  /**
-   * Does the following computation
-   * RIPEMD160(SHA256(hex))
-   * @param hex
-   * @return
-   */
+  /** Does the following computation: RIPEMD160(SHA256(hex)).*/
   def sha256Hash160(hex : String) : Sha256Hash160Digest = sha256Hash160(BitcoinSUtil.decodeHex(hex))
 
 
@@ -25,75 +20,37 @@ trait CryptoUtil {
     Sha256Hash160Digest(hash)
   }
 
-  /**
-   * Performs sha256(sha256(hex))
-   * @param hex
-   * @return
-   */
+  /** Performs sha256(sha256(hex)). */
   def doubleSHA256(hex : String) : DoubleSha256Digest = doubleSHA256(BitcoinSUtil.decodeHex(hex))
 
-
-  /**
-   * Performs sha256(sha256(bytes))
-   * @param bytes
-   * @return
-   */
+  /** Performs sha256(sha256(bytes)). */
   def doubleSHA256(bytes : Seq[Byte]) : DoubleSha256Digest = {
     val hash : Seq[Byte] = sha256(sha256(bytes).bytes).bytes
     DoubleSha256Digest(hash)
   }
 
-  /**
-   * Takes sha256(hex)
-   * @param hex
-   * @return
-   */
+  /** Takes sha256(hex). */
   def sha256(hex : String) : Sha256Digest = sha256(BitcoinSUtil.decodeHex(hex))
 
-  /**
-   * Takes sha256(bytes)
-   * @param bytes
-   * @return
-   */
+  /** Takes sha256(bytes). */
   def sha256(bytes : Seq[Byte]) : Sha256Digest = {
     val hash = MessageDigest.getInstance("SHA-256").digest(bytes.toArray).toList
     Sha256Digest(hash)
   }
 
-
-  /**
-   * Performs SHA1(bytes)
-   * @param bytes
-   * @return
-   */
+  /** Performs SHA1(bytes). */
   def sha1(bytes : Seq[Byte]) : Sha1Digest = {
     val hash = MessageDigest.getInstance("SHA-1").digest(bytes.toArray).toList
     Sha1Digest(hash)
   }
 
-
-
-  /**
-   * Performs SHA1(hex)
-   * @param hex
-   * @return
-   */
+  /** Performs SHA1(hex). */
   def sha1(hex : String) : Sha1Digest = sha1(BitcoinSUtil.decodeHex(hex))
 
-
-  /**
-   * Performs RIPEMD160(hex)
-   * @param hex
-   * @return
-   */
+  /** Performs RIPEMD160(hex). */
   def ripeMd160(hex : String) : RipeMd160Digest = ripeMd160(BitcoinSUtil.decodeHex(hex))
 
-
-  /**
-   * Performs RIPEMD160(bytes)
-   * @param bytes
-   * @return
-   */
+  /** Performs RIPEMD160(bytes). */
   def ripeMd160(bytes : Seq[Byte]) : RipeMd160Digest = {
     //from this tutorial http://rosettacode.org/wiki/RIPEMD-160#Scala
     val messageDigest = new RIPEMD160Digest
@@ -104,7 +61,7 @@ trait CryptoUtil {
     RipeMd160Digest(out.toList)
   }
 
-
+  val emptyDoubleSha256Hash = DoubleSha256Digest("0000000000000000000000000000000000000000000000000000000000000000")
 }
 
 object CryptoUtil extends CryptoUtil

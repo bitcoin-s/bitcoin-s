@@ -24,7 +24,7 @@ object BytesToPushOntoStack extends ScriptOperationFactory[BytesToPushOntoStack]
   }
 
   override def operations : Seq[BytesToPushOntoStack] =
-    (for { i <- 0 to 75 } yield BytesToPushOntoStackImpl(i)).toList
+    (for { i <- 0 to 75 } yield BytesToPushOntoStackImpl(i))
 
   def fromNumber(num : Int) : BytesToPushOntoStack = {
     if (num > 75) throw new IllegalArgumentException("We cannot have a BytesToPushOntoStack for greater than 75 bytes")

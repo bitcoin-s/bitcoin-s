@@ -10,29 +10,20 @@ import org.bitcoins.core.util.{BitcoinSLogger, Factory}
   * Created by chris on 5/19/16.
   * Represents a block in our blockchain
   * Bitcoin Core implementation:
-  * https://github.com/bitcoin/bitcoin/blob/master/src/primitives/block.h#L73
+  * [[https://github.com/bitcoin/bitcoin/blob/master/src/primitives/block.h#L73]]
   * Bitcoin Developer Reference link:
-  * https://bitcoin.org/en/developer-reference#serialized-blocks
+  * [[https://bitcoin.org/en/developer-reference#serialized-blocks]]
   */
-sealed trait Block extends NetworkElement with BitcoinSLogger {
+sealed trait Block extends NetworkElement {
 
-  /**
-    * The block header for this block
-    * @return
-    */
+  /** The block header for this block */
   def blockHeader : BlockHeader
 
-  /**
-    * The total number of transactions in this block,
-    * including the coinbase transaction.
-    * @return
-    */
+  /** The total number of transactions in this block,
+    * including the coinbase transaction. */
   def txCount : CompactSizeUInt
 
-  /**
-    * The transactions contained in this block
-    * @return
-    */
+  /** The transactions contained in this block */
   def transactions : Seq[Transaction]
 
   override def hex = RawBlockSerializer.write(this)

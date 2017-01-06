@@ -9,24 +9,24 @@ import org.scalatest.{FlatSpec, MustMatchers}
 class HashTypeTest extends FlatSpec with MustMatchers {
 
   "HashType" must "combine hash types with SIGHASH_ANYONECANPAY" in {
-    SIGHASH_ALL_ANYONECANPAY.defaultValue.num must be (Int32(0x81))
-    SIGHASH_NONE_ANYONECANPAY.defaultValue.num must be (Int32(0x82))
-    SIGHASH_SINGLE_ANYONECANPAY.defaultValue.num must be (Int32(0x83))
+    HashType.sigHashAllAnyoneCanPay.num must be (Int32(0x81))
+    HashType.sigHashNoneAnyoneCanPay.num must be (Int32(0x82))
+    HashType.sigHashSingleAnyoneCanPay.num must be (Int32(0x83))
   }
 
   it must "find a hash type by its hex value" in {
-    HashType("00000001") must be (SIGHASH_ALL.defaultValue)
-    HashType("00000002") must be (SIGHASH_NONE.defaultValue)
-    HashType("00000003") must be (SIGHASH_SINGLE.defaultValue)
-    HashType("00000080") must be (SIGHASH_ANYONECANPAY.defaultValue)
+    HashType("00000001") must be (HashType.sigHashAll)
+    HashType("00000002") must be (HashType.sigHashNone)
+    HashType("00000003") must be (HashType.sigHashSingle)
+    HashType("00000080") must be (HashType.sigHashAnyoneCanPay)
   }
 
   it must "find a hash type by its byte value" in {
     HashType(0.toByte) must be (SIGHASH_ALL(Int32.zero))
     HashType(1.toByte) must be (SIGHASH_ALL(Int32.one))
-    HashType(2.toByte) must be (SIGHASH_NONE.defaultValue)
-    HashType(3.toByte) must be (SIGHASH_SINGLE.defaultValue)
-    HashType(0x80) must be (SIGHASH_ANYONECANPAY.defaultValue)
+    HashType(2.toByte) must be (HashType.sigHashNone)
+    HashType(3.toByte) must be (HashType.sigHashSingle)
+    HashType(0x80) must be (HashType.sigHashAnyoneCanPay)
 
   }
 
@@ -37,8 +37,8 @@ class HashTypeTest extends FlatSpec with MustMatchers {
   it must "find hashType for number 1190874345" in {
     //1190874345 & 0x80 = 0x80
     val num = Int32(1190874345)
-    HashType(num) must be (SIGHASH_ANYONECANPAY(num))
-    HashType(num.bytes) must be (SIGHASH_ANYONECANPAY(num.bytes))
+    HashType(num).isInstanceOf[SIGHASH_ANYONECANPAY] must be (true)
+    HashType(num.bytes).isInstanceOf[SIGHASH_ANYONECANPAY] must be (true)
   }
 
   it must "determine if a given number is of hashType SIGHASH_ALL" in {
@@ -46,53 +46,35 @@ class HashTypeTest extends FlatSpec with MustMatchers {
     HashType.isSIGHASH_ALL(Int32.one) must be (true)
     HashType.isSIGHASH_ALL(Int32(5)) must be (true)
 
-    HashType.isSIGHASH_ALL(SIGHASH_NONE.defaultValue.num) must be (false)
-    HashType.isSIGHASH_ALL(SIGHASH_SINGLE.defaultValue.num) must be (false)
+    HashType.isSIGHASH_ALL(HashType.sigHashNone.num) must be (false)
+    HashType.isSIGHASH_ALL(HashType.sigHashSingle.num) must be (false)
   }
 
   it must "return the correct byte for a given hashtype" in {
-    SIGHASH_ALL.byte must be (0x01.toByte)
-    SIGHASH_NONE.byte must be (0x02.toByte)
-    SIGHASH_SINGLE.byte must be (0x03.toByte)
-    SIGHASH_ANYONECANPAY.byte must be (0x80.toByte)
-    SIGHASH_ALL_ANYONECANPAY.byte must be (0x81.toByte)
-    SIGHASH_NONE_ANYONECANPAY.byte must be (0x82.toByte)
-    SIGHASH_SINGLE_ANYONECANPAY.byte must be (0x83.toByte)
+    SIGHASH_ALL(HashType.sigHashAllByte).byte must be (0x01.toByte)
+    HashType.sigHashNone.byte must be (0x02.toByte)
+    HashType.sigHashSingle.byte must be (0x03.toByte)
+    HashType.sigHashAnyoneCanPay.byte must be (0x80.toByte)
+    HashType.sigHashAllAnyoneCanPay.byte must be (0x81.toByte)
+    HashType.sigHashNoneAnyoneCanPay.byte must be (0x82.toByte)
+    HashType.sigHashSingleAnyoneCanPay.byte must be (0x83.toByte)
   }
 
   it must "intercept require statements for each hashType with illegal inputs" in {
     intercept[IllegalArgumentException]{
       SIGHASH_ALL(Int32(2))
     }
-    intercept[IllegalArgumentException]{
-      SIGHASH_NONE(Int32(5))
-    }
-    intercept[IllegalArgumentException]{
-      SIGHASH_SINGLE(Int32(10))
-    }
-    intercept[IllegalArgumentException]{
-      SIGHASH_ANYONECANPAY(Int32(50))
-    }
-    intercept[IllegalArgumentException]{
-      SIGHASH_ALL_ANYONECANPAY(Int32(0x80))
-    }
-    intercept[IllegalArgumentException]{
-      SIGHASH_NONE_ANYONECANPAY(Int32(0x80))
-    }
-    intercept[IllegalArgumentException]{
-      SIGHASH_SINGLE_ANYONECANPAY(Int32(0x80))
-    }
   }
 
   it must "find each specific hashType from byte sequence of default value" in {
     //tests each hashtypes overriding fromBytes function
-    SIGHASH_ALL(SIGHASH_ALL.defaultValue.num.bytes).isInstanceOf[SIGHASH_ALL] must be (true)
-    SIGHASH_NONE(SIGHASH_NONE.defaultValue.num.bytes).isInstanceOf[SIGHASH_NONE] must be (true)
-    SIGHASH_SINGLE(SIGHASH_SINGLE.defaultValue.num.bytes).isInstanceOf[SIGHASH_SINGLE] must be (true)
-    SIGHASH_ANYONECANPAY(SIGHASH_ANYONECANPAY.defaultValue.num.bytes).isInstanceOf[SIGHASH_ANYONECANPAY] must be (true)
-    SIGHASH_ALL_ANYONECANPAY(SIGHASH_ALL_ANYONECANPAY.defaultValue.num.bytes).isInstanceOf[SIGHASH_ALL_ANYONECANPAY] must be (true)
-    SIGHASH_NONE_ANYONECANPAY(SIGHASH_NONE_ANYONECANPAY.defaultValue.num.bytes).isInstanceOf[SIGHASH_NONE_ANYONECANPAY] must be (true)
-    SIGHASH_SINGLE_ANYONECANPAY(SIGHASH_SINGLE_ANYONECANPAY.defaultValue.num.bytes).isInstanceOf[SIGHASH_SINGLE_ANYONECANPAY] must be (true)
+    HashType(HashType.sigHashAll.num.bytes) must be (HashType.sigHashAll)
+    HashType(HashType.sigHashNone.num.bytes) must be (HashType.sigHashNone)
+    HashType(HashType.sigHashSingle.num.bytes) must be (HashType.sigHashSingle)
+    HashType(HashType.sigHashAnyoneCanPay.num.bytes) must be (HashType.sigHashAnyoneCanPay)
+    HashType(HashType.sigHashAllAnyoneCanPay.num.bytes) must be (HashType.sigHashAllAnyoneCanPay)
+    HashType(HashType.sigHashNoneAnyoneCanPay.num.bytes) must be (HashType.sigHashNoneAnyoneCanPay)
+    HashType(HashType.sigHashSingleAnyoneCanPay.num.bytes) must be (HashType.sigHashSingleAnyoneCanPay)
   }
 
   it must "find a hashtype with only an integer" in {

@@ -5,6 +5,7 @@ import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.script.crypto.HashType
+import org.bitcoins.core.serializers.script.ScriptParser
 import spray.json._
 
 /**
@@ -19,7 +20,8 @@ object SignatureHashTestCaseProtocol extends DefaultJsonProtocol {
       }
       val elements : Vector[JsValue] = jsArray.elements
       val transaction : Transaction = Transaction(elements.head.convertTo[String])
-      val script : ScriptPubKey = ScriptPubKey(elements.apply(1).convertTo[String])
+      val asm = ScriptParser.fromHex(elements.apply(1).convertTo[String])
+      val script : ScriptPubKey = ScriptPubKey(asm)
       val inputIndex : UInt32 = UInt32(elements(2).convertTo[Int])
       val hashTypeNum : Int32 = Int32(elements(3).convertTo[Int])
       val hashType : HashType = HashType(hashTypeNum)

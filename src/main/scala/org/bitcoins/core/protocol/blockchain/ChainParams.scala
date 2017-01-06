@@ -23,52 +23,32 @@ import org.bitcoins.core.util.BitcoinSUtil
   */
 sealed trait ChainParams {
 
-  /**
-    * Return the BIP70 network string (main, test or regtest)
-    *
-    * @return
-    */
+  /** Return the BIP70 network string ([[MainNetChainParams]], [[TestNetChainParams]] or [[RegTestNetChainParams]].) */
   def networkId : String
 
-  /**
-    * The genesis block in the blockchain
-    *
-    * @return
-    */
+  /** The Genesis [[Block]] in the blockchain. */
   def genesisBlock : Block
 
-  /**
-    * Filter transactions that do not match well-defined patterns
-    * inside of Policy
-    *
-    * @return
-    */
+  /** Filter transactions that do not match well-defined patterns
+    * inside of [[org.bitcoins.core.policy.Policy]]. */
   def requireStandardTransaction : Boolean
 
-  /**
-    * Takes in a Base58Type and returns its base58 prefix
-    *
-    * @param base58
-    * @return
-    */
+  /** Takes in a [[Base58Type]] and returns its base58 prefix. */
   def base58Prefix(base58 : Base58Type) : Seq[Byte] = base58Prefixes(base58)
 
-  /**
-    * The mapping from a Base58Type to a String
-    *
-    * @return
-    */
+  /** The mapping from a [[Base58Type]]to a String.
+    * Base58 prefixes for various keys/hashes on the network.
+    * See: [[https://en.bitcoin.it/wiki/List_of_address_prefixes]]. */
   def base58Prefixes : Map[Base58Type,Seq[Byte]]
 
-  /**
-    * Creates the genesis block for this blockchain
-    * Mimics this function in bitcoin core
-    * https://github.com/bitcoin/bitcoin/blob/master/src/chainparams.cpp#L51
+  /** Creates the Genesis [[Block]] for this blockchain.
+    * Mimics this function in bitcoin core:
+    * [[https://github.com/bitcoin/bitcoin/blob/master/src/chainparams.cpp#L51]]
     * @param time the time when the miner started hashing the block header
     * @param nonce the nonce to mine the block
     * @param nBits An encoded version of the target threshold this block’s header hash must be less than or equal to.
     * @param version the block version
-    * @param amount the block reward for the gensis block (50 BTC in Bitcoin)
+    * @param amount the block reward for the genesis block (50 BTC in Bitcoin)
     * @return the newly minted genesis block
     */
   def createGenesisBlock(time : UInt32, nonce : UInt32, nBits : UInt32, version : UInt32, amount : CurrencyUnit) : Block = {
@@ -90,7 +70,6 @@ sealed trait ChainParams {
     */
   def createGenesisBlock(timestamp : String, scriptPubKey : ScriptPubKey, time : UInt32, nonce : UInt32, nBits : UInt32,
                          version : UInt32, amount : CurrencyUnit) : Block = {
-
     val timestampHex = timestamp.toCharArray.map(_.toByte)
     //see https://bitcoin.stackexchange.com/questions/13122/scriptsig-coinbase-structure-of-the-genesis-block
     //for a full breakdown of the genesis block & its script signature
@@ -107,23 +86,15 @@ sealed trait ChainParams {
   }
 }
 
-
-/**
-  * This is the main network parameters
-  */
+/** The Main Network parameters. */
 object MainNetChainParams extends ChainParams {
 
   override def networkId = "main"
 
-  override def genesisBlock = createGenesisBlock(UInt32(1231006505), UInt32(2083236893), UInt32(0x1d00ffff), UInt32.one, Satoshis(Int64(5000000000L)))
+  override def genesisBlock : Block = createGenesisBlock(UInt32(1231006505), UInt32(2083236893), UInt32(0x1d00ffff), UInt32.one, Satoshis(Int64(5000000000L)))
 
-  override def requireStandardTransaction = true
+  override def requireStandardTransaction : Boolean = true
 
-  /**
-    * Base58 prefixes for various keys/hashes on the network
-    * See: https://en.bitcoin.it/wiki/List_of_address_prefixes
-    * @return
-    */
   override def base58Prefixes : Map[Base58Type,Seq[Byte]] = Map(
     PubKeyAddress -> BitcoinSUtil.decodeHex("00"),
     ScriptAddress -> BitcoinSUtil.decodeHex("05"),
@@ -138,15 +109,10 @@ object TestNetChainParams extends ChainParams {
 
   override def networkId = "test"
 
-  override def genesisBlock = createGenesisBlock(UInt32(1296688602), UInt32(414098458), UInt32(0x1d00ffff), UInt32.one, Satoshis(Int64(5000000000L)))
+  override def genesisBlock : Block = createGenesisBlock(UInt32(1296688602), UInt32(414098458), UInt32(0x1d00ffff), UInt32.one, Satoshis(Int64(5000000000L)))
 
-  override def requireStandardTransaction = true
+  override def requireStandardTransaction : Boolean = true
 
-  /**
-    * Base58 prefixes for various keys/hashes on the network
-    * See: https://en.bitcoin.it/wiki/List_of_address_prefixes
-    * @return
-    */
   override def base58Prefixes : Map[Base58Type,Seq[Byte]] = Map(
     PubKeyAddress -> BitcoinSUtil.decodeHex("6f"),
     ScriptAddress -> BitcoinSUtil.decodeHex("c4"),
@@ -160,14 +126,8 @@ object TestNetChainParams extends ChainParams {
 
 object RegTestNetChainParams extends ChainParams {
   override def networkId = "regtest"
-  override def genesisBlock = createGenesisBlock(UInt32(1296688602), UInt32(2), UInt32(0x207fffff), UInt32.one, Satoshis(Int64(5000000000L)))
-  override def requireStandardTransaction = TestNetChainParams.requireStandardTransaction
-
-  /**
-    * Base58 prefixes for various keys/hashes on the network
-    * See: https://en.bitcoin.it/wiki/List_of_address_prefixes
-    * @return
-    */
+  override def genesisBlock : Block = createGenesisBlock(UInt32(1296688602), UInt32(2), UInt32(0x207fffff), UInt32.one, Satoshis(Int64(5000000000L)))
+  override def requireStandardTransaction : Boolean = TestNetChainParams.requireStandardTransaction
   override def base58Prefixes : Map[Base58Type, Seq[Byte]] = TestNetChainParams.base58Prefixes
 }
 

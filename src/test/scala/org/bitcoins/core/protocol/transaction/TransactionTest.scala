@@ -1,17 +1,13 @@
 package org.bitcoins.core.protocol.transaction
 
-import org.bitcoins.core.crypto.{ECPrivateKey, ECPublicKey, TransactionSignatureComponent, TransactionSignatureCreator}
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.policy.Policy
-import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction.testprotocol.CoreTransactionTestCase
 import org.bitcoins.core.protocol.transaction.testprotocol.CoreTransactionTestCaseProtocol._
 import org.bitcoins.core.script.ScriptProgram
-import org.bitcoins.core.script.crypto.SIGHASH_ALL
 import org.bitcoins.core.script.interpreter.ScriptInterpreter
 import org.bitcoins.core.script.result.ScriptOk
-import org.bitcoins.core.serializers.transaction.RawTransactionParser
-import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil, TestUtil}
+import org.bitcoins.core.serializers.transaction.RawBaseTransactionParser
+import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil, CryptoUtil, TestUtil}
 import org.scalatest.{FlatSpec, MustMatchers}
 import spray.json._
 
@@ -22,11 +18,10 @@ import scala.io.Source
  */
 class TransactionTest extends FlatSpec with MustMatchers with BitcoinSLogger {
 
-
   "Transaction" must "derive the correct txid from the transaction contents" in {
 
     //https://btc.blockr.io/api/v1/tx/raw/cddda897b0e9322937ee1f4fd5d6147d60f04a0f4d3b461e4f87066ac3918f2a
-    val tx = RawTransactionParser.read("01000000020df1e23002ddf909aec026b1cf0c3b6b7943c042f22e25dbd0441855e6b39ee900000000fdfd00004730440220028c02f14654a0cc12c7e3229adb09d5d35bebb6ba1057e39adb1b2706607b0d0220564fab12c6da3d5acef332406027a7ff1cbba980175ffd880e1ba1bf40598f6b014830450221009362f8d67b60773745e983d07ba10efbe566127e244b724385b2ca2e47292dda022033def393954c320653843555ddbe7679b35cc1cacfe1dad923977de8cd6cc6d7014c695221025e9adcc3d65c11346c8a6069d6ebf5b51b348d1d6dc4b95e67480c34dc0bc75c21030585b3c80f4964bf0820086feda57c8e49fa1eab925db7c04c985467973df96521037753a5e3e9c4717d3f81706b38a6fb82b5fb89d29e580d7b98a37fea8cdefcad53aeffffffffd11533b0f283fca193e361a91ca7ddfc66592e20fd6eaf5dc0f1ef5fed05818000000000fdfe0000483045022100b4062edd75b5b3117f28ba937ed737b10378f762d7d374afabf667180dedcc62022005d44c793a9d787197e12d5049da5e77a09046014219b31e9c6b89948f648f1701483045022100b3b0c0273fc2c531083701f723e03ea3d9111e4bbca33bdf5b175cec82dcab0802206650462db37f9b4fe78da250a3b339ab11e11d84ace8f1b7394a1f6db0960ba4014c695221025e9adcc3d65c11346c8a6069d6ebf5b51b348d1d6dc4b95e67480c34dc0bc75c21030585b3c80f4964bf0820086feda57c8e49fa1eab925db7c04c985467973df96521037753a5e3e9c4717d3f81706b38a6fb82b5fb89d29e580d7b98a37fea8cdefcad53aeffffffff02500f1e00000000001976a9147ecaa33ef3cd6169517e43188ad3c034db091f5e88ac204e0000000000001976a914321908115d8a138942f98b0b53f86c9a1848501a88ac00000000")
+    val tx = RawBaseTransactionParser.read("01000000020df1e23002ddf909aec026b1cf0c3b6b7943c042f22e25dbd0441855e6b39ee900000000fdfd00004730440220028c02f14654a0cc12c7e3229adb09d5d35bebb6ba1057e39adb1b2706607b0d0220564fab12c6da3d5acef332406027a7ff1cbba980175ffd880e1ba1bf40598f6b014830450221009362f8d67b60773745e983d07ba10efbe566127e244b724385b2ca2e47292dda022033def393954c320653843555ddbe7679b35cc1cacfe1dad923977de8cd6cc6d7014c695221025e9adcc3d65c11346c8a6069d6ebf5b51b348d1d6dc4b95e67480c34dc0bc75c21030585b3c80f4964bf0820086feda57c8e49fa1eab925db7c04c985467973df96521037753a5e3e9c4717d3f81706b38a6fb82b5fb89d29e580d7b98a37fea8cdefcad53aeffffffffd11533b0f283fca193e361a91ca7ddfc66592e20fd6eaf5dc0f1ef5fed05818000000000fdfe0000483045022100b4062edd75b5b3117f28ba937ed737b10378f762d7d374afabf667180dedcc62022005d44c793a9d787197e12d5049da5e77a09046014219b31e9c6b89948f648f1701483045022100b3b0c0273fc2c531083701f723e03ea3d9111e4bbca33bdf5b175cec82dcab0802206650462db37f9b4fe78da250a3b339ab11e11d84ace8f1b7394a1f6db0960ba4014c695221025e9adcc3d65c11346c8a6069d6ebf5b51b348d1d6dc4b95e67480c34dc0bc75c21030585b3c80f4964bf0820086feda57c8e49fa1eab925db7c04c985467973df96521037753a5e3e9c4717d3f81706b38a6fb82b5fb89d29e580d7b98a37fea8cdefcad53aeffffffff02500f1e00000000001976a9147ecaa33ef3cd6169517e43188ad3c034db091f5e88ac204e0000000000001976a914321908115d8a138942f98b0b53f86c9a1848501a88ac00000000")
 
     tx.txId.hex must be (BitcoinSUtil.flipEndianness("cddda897b0e9322937ee1f4fd5d6147d60f04a0f4d3b461e4f87066ac3918f2a"))
   }
@@ -58,22 +53,25 @@ class TransactionTest extends FlatSpec with MustMatchers with BitcoinSLogger {
     (Transaction(tx.hex) == tx) must be (true)
   }
 
+  it must "calculate the correct txid and wtxid for a witness transaction" in {
+    //from http://tapi.qbit.ninja/tx/d869f854e1f8788bcff294cc83b280942a8c728de71eb709a2c29d10bfe21b7c
+    val hex = "0100000000010115e180dc28a2327e687facc33f10f2a20da717e5548406f7ae8b4c811072f8560100000000ffffffff0100b4f505000000001976a9141d7cd6c75c2e86f4cbf98eaed221b30bd9a0b92888ac02483045022100df7b7e5cda14ddf91290e02ea10786e03eb11ee36ec02dd862fe9a326bbcb7fd02203f5b4496b667e6e281cc654a2da9e4f08660c620a1051337fa8965f727eb19190121038262a6c6cec93c2d3ecd6c6072efea86d02ff8e3328bbd0242b20af3425990ac00000000"
+    val wtx = WitnessTransaction(hex)
+    wtx.txId.hex must be (BitcoinSUtil.flipEndianness("d869f854e1f8788bcff294cc83b280942a8c728de71eb709a2c29d10bfe21b7c"))
+    wtx.wTxId must be (CryptoUtil.doubleSHA256(hex))
+  }
+
 
   it must "read all of the tx_valid.json's contents and return ScriptOk" in {
-
-
     val source = Source.fromURL(getClass.getResource("/tx_valid.json"))
 
 
         //use this to represent a single test case from script_valid.json
 /*    val lines =
         """
-          |[
-          |[[["0000000000000000000000000000000000000000000000000000000000000100", 0, "0x21 0x035e7f0d4d0841bcd56c39337ed086b1a633ee770c1ffdd94ac552a95ac2ce0efc CHECKSIG"],
-          |  ["0000000000000000000000000000000000000000000000000000000000000200", 0, "0x21 0x035e7f0d4d0841bcd56c39337ed086b1a633ee770c1ffdd94ac552a95ac2ce0efc CHECKSIG"]],
-          | "010000000200010000000000000000000000000000000000000000000000000000000000000000000049483045022100d180fd2eb9140aeb4210c9204d3f358766eb53842b2a9473db687fa24b12a3cc022079781799cd4f038b85135bbe49ec2b57f306b2bb17101b17f71f000fcab2b6fb01ffffffff0002000000000000000000000000000000000000000000000000000000000000000000004847304402205f7530653eea9b38699e476320ab135b74771e1c48b81a5d041e2ca84b9be7a802200ac8d1f40fb026674fe5a5edd3dea715c27baa9baca51ed45ea750ac9dc0a55e81ffffffff010100000000000000015100000000", "P2SH"]
-          |
-          |]
+          |[[[["f18783ace138abac5d3a7a5cf08e88fe6912f267ef936452e0c27d090621c169", 7500, "0x00 0x20 0x9e1be07558ea5cc8e02ed1d80c0911048afad949affa36d5c3951e3159dbea19", 200000]],
+          |    "0100000000010169c12106097dc2e0526493ef67f21269fe888ef05c7a3a5dacab38e1ac8387f14c1d000000ffffffff01010000000000000000034830450220487fb382c4974de3f7d834c1b617fe15860828c7f96454490edd6d891556dcc9022100baf95feb48f845d5bfc9882eb6aeefa1bc3790e39f59eaa46ff7f15ae626c53e012102a9781d66b61fb5a7ef00ac5ad5bc6ffc78be7b44a566e3c87870e1079368df4c4aad4830450220487fb382c4974de3f7d834c1b617fe15860828c7f96454490edd6d891556dcc9022100baf95feb48f845d5bfc9882eb6aeefa1bc3790e39f59eaa46ff7f15ae626c53e0100000000", "P2SH,WITNESS"]
+          |  ]
         """.stripMargin*/
     val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n" finally source.close()
     val json = lines.parseJson
@@ -81,7 +79,7 @@ class TransactionTest extends FlatSpec with MustMatchers with BitcoinSLogger {
     val testCases : Seq[CoreTransactionTestCase] = testCasesOpt.flatten
     for {
       testCase <- testCases
-      (outPoint,scriptPubKey) <- testCase.creditingTxsInfo
+      (outPoint,scriptPubKey,amountOpt) <- testCase.creditingTxsInfo
       tx = testCase.spendingTx
       (input,inputIndex) = findInput(tx,outPoint).getOrElse((EmptyTransactionInput,0))
     } yield {
@@ -91,28 +89,32 @@ class TransactionTest extends FlatSpec with MustMatchers with BitcoinSLogger {
       logger.info("ScriptPubKey: " + scriptPubKey)
       logger.info("OutPoint: " + outPoint)
       logger.info("Flags after parsing: " + testCase.flags)
+      logger.info("Satoshis: " + amountOpt)
       require(outPoint.txId == input.previousOutput.txId,
         "OutPoint txId not the same as input prevout txid\noutPoint.txId: " + outPoint.txId + "\n" +
           "input prevout txid: " + input.previousOutput.txId)
-      val program = ScriptProgram(tx,scriptPubKey,UInt32(inputIndex),testCase.flags)
-      withClue(testCase.raw) {
+      val program = amountOpt match {
+        case Some(amount) => ScriptProgram(tx,scriptPubKey,UInt32(inputIndex),testCase.flags,amount)
+        case None => ScriptProgram(tx,scriptPubKey,UInt32(inputIndex),testCase.flags)
+      }
+
+      withClue(testCase.raw + " input index: " + inputIndex) {
         ScriptInterpreter.run(program) must equal (ScriptOk)
       }
     }
   }
 
+
+
+
   it must "read all of the tx_invalid.json's contents and return a ScriptError" in {
 
-
     val source = Source.fromURL(getClass.getResource("/tx_invalid.json"))
-
-
     //use this to represent a single test case from script_valid.json
 /*    val lines =
         """
-          |[
-[[["0000000000000000000000000000000000000000000000000000000000000000", -1, "1"]],
-"01000000010000000000000000000000000000000000000000000000000000000000000000ffffffff0151ffffffff010000000000000000015100000000", "P2SH"]
+          |[  [[["0000000000000000000000000000000000000000000000000000000000000100", 0, "0x60 0x02 0x0000", 2000]],
+          |    "0100000000010100010000000000000000000000000000000000000000000000000000000000000000000000ffffffff010000000000000000015101010100000000", "P2SH,WITNESS"]
           |]
         """.stripMargin*/
     val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n" finally source.close()
@@ -123,7 +125,7 @@ class TransactionTest extends FlatSpec with MustMatchers with BitcoinSLogger {
       testCase <- testCases
     } yield {
       val txInputValidity : Seq[Boolean] = for {
-        (outPoint,scriptPubKey) <- testCase.creditingTxsInfo
+        (outPoint,scriptPubKey,amountOpt) <- testCase.creditingTxsInfo
         tx = testCase.spendingTx
         (input,inputIndex) = findInput(tx,outPoint).getOrElse((EmptyTransactionInput,0))
       } yield {
@@ -135,7 +137,10 @@ class TransactionTest extends FlatSpec with MustMatchers with BitcoinSLogger {
         logger.info("" + testCase.scriptPubKeys)
         val isValidTx = ScriptInterpreter.checkTransaction(tx)
         if (isValidTx) {
-          val program = ScriptProgram(tx,scriptPubKey,UInt32(inputIndex),testCase.flags)
+          val program = amountOpt match {
+            case Some(amount) => ScriptProgram(tx,scriptPubKey,UInt32(inputIndex),testCase.flags,amount)
+            case None => ScriptProgram(tx,scriptPubKey,UInt32(inputIndex),testCase.flags)
+          }
           ScriptInterpreter.run(program) == ScriptOk
         } else {
           logger.error("Transaction does not pass CheckTransaction()")
@@ -150,7 +155,6 @@ class TransactionTest extends FlatSpec with MustMatchers with BitcoinSLogger {
   }
 
   private def findInput(tx : Transaction, outPoint : TransactionOutPoint) : Option[(TransactionInput,Int)] = {
-    logger.debug("tx.hex: " + tx.hex)
     tx.inputs.zipWithIndex.find{case (input,index) => input.previousOutput == outPoint}
   }
 }
