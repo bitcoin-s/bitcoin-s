@@ -41,7 +41,7 @@ trait RawWitnessTransactionParser extends RawBitcoinSerializer[WitnessTransactio
   }
 
   /** Writes a [[WitnessTransaction]] to a hex string
-    * This is unqique from [[RawBaseTransactionParser]] in the fact that it adds a 'marker' and 'flag' to indicate
+    * This is unique from [[RawBaseTransactionParser]] in the fact that it adds a 'marker' and 'flag' to indicate
     * that this tx is a [[WitnessTransaction]] and has extra witness data attached to it
     * See BIP144 for more info
     * [[https://github.com/bitcoin/bips/blob/master/bip-0144.mediawiki]]
@@ -56,8 +56,8 @@ trait RawWitnessTransactionParser extends RawBitcoinSerializer[WitnessTransactio
     val witness = tx.witness.hex
     val lockTimeWithoutPadding : String = tx.lockTime.hex
     val lockTime = addPadding(8,BitcoinSUtil.flipEndianness(lockTimeWithoutPadding))
-    //notice we use the old serializatoin format if all witnesses are empty
-    //https://github.com/bitcoin/bitcoin/blob/e8cfe1ee2d01c493b758a67ad14707dca15792ea/src/primitives/transaction.h#L276-L281
+    //notice we use the old serialization format if all witnesses are empty
+    //[[https://github.com/bitcoin/bitcoin/blob/e8cfe1ee2d01c493b758a67ad14707dca15792ea/src/primitives/transaction.h#L276-L281]]
     if (tx.witness.witnesses.exists(_ != EmptyScriptWitness)) {
       val witConstant = "0001"
       version + witConstant + inputs + outputs + witness + lockTime

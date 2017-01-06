@@ -77,7 +77,7 @@ trait LockTimeInterpreter extends BitcoinSLogger {
     *       the top stack item is greater than the transaction sequence (when masked according to the BIP68);
     * Otherwise, script execution will continue as if a NOP had been executed.
     * See BIP112 for more information
-    * https://github.com/bitcoin/bips/blob/master/bip-0112.mediawiki
+    * [[https://github.com/bitcoin/bips/blob/master/bip-0112.mediawiki]]
     */
   @tailrec
   final def opCheckSequenceVerify(program : ScriptProgram) : ScriptProgram = {
@@ -118,8 +118,8 @@ trait LockTimeInterpreter extends BitcoinSLogger {
 
   /**
     * Mimics this function inside of bitcoin core
-    * https://github.com/bitcoin/bitcoin/blob/e26b62093ae21e89ed7d36a24a6b863f38ec631d/src/script/interpreter.cpp#L1196
-    * https://github.com/bitcoin/bips/blob/master/bip-0068.mediawiki#specification
+    * [[https://github.com/bitcoin/bitcoin/blob/e26b62093ae21e89ed7d36a24a6b863f38ec631d/src/script/interpreter.cpp#L1196]]
+    * [[https://github.com/bitcoin/bips/blob/master/bip-0068.mediawiki#specification]]
     * @param program the program whose transaction input's sequence is being compared
     * @param nSequence the script number on the stack top to compare to the input's sequence number
     * @return if the given script number is valid or not
@@ -185,7 +185,7 @@ trait LockTimeInterpreter extends BitcoinSLogger {
   }
 
   /** Mimics this function inside of bitcoin core for checking the locktime of a transaction
-    * https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L1160. */
+    * [[https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L1160]]. */
   private def checkLockTime(program : ScriptProgram, locktime : ScriptNumber) : Boolean = {
     // There are two kinds of nLockTime: lock-by-blockheight
     // and lock-by-blocktime, distinguished by whether

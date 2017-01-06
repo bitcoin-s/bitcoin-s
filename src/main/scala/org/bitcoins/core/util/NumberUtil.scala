@@ -49,7 +49,7 @@ trait NumberUtil extends BitcoinSLogger {
     //BigInt interprets the number as an unsigned number then applies the given
     //sign in front of that number, therefore if we have a negative number we need to invert it
     //since twos complement is an inverted number representation for negative numbers
-    //see https://en.wikipedia.org/wiki/Two%27s_complement
+    //see [[https://en.wikipedia.org/wiki/Two%27s_complement]]
     if (bytes.isEmpty) BigInt(0)
     //check if sign bit is set
     else if ((0x80.toByte & bytes.head) !=0) {
