@@ -15,9 +15,9 @@ import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil, BitcoinScriptUtil, 
  * Created by chris on 2/16/16.
  * Wrapper that serializes like Transaction, but with the modifications
  * required for the signature hash done
- * https://github.com/bitcoin/bitcoin/blob/93c85d458ac3e2c496c1a053e1f5925f55e29100/src/script/interpreter.cpp#L1016-L1105
+ * [[https://github.com/bitcoin/bitcoin/blob/93c85d458ac3e2c496c1a053e1f5925f55e29100/src/script/interpreter.cpp#L1016-L1105]]
  * bitcoinj version of this
- * https://github.com/bitcoinj/bitcoinj/blob/master/core/src/main/java/org/bitcoinj/core/Transaction.java#L924-L1008
+ * [[https://github.com/bitcoinj/bitcoinj/blob/master/core/src/main/java/org/bitcoinj/core/Transaction.java#L924-L1008]]
  */
 trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with BitcoinSLogger {
 
@@ -130,7 +130,7 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
   /**
     * Serializes then hashes a transaction for signing
     * this is an implementation of it's bitcoinj equivalent found here
-    * https://github.com/bitcoinj/bitcoinj/blob/master/core/src/main/java/org/bitcoinj/core/Transaction.java#L924
+    * [[https://github.com/bitcoinj/bitcoinj/blob/master/core/src/main/java/org/bitcoinj/core/Transaction.java#L924]]
     * @param spendingTransaction the transaction we are hashing
     * @param inputIndex the inputIndex we are hashing for signing
     * @param script the script which we are spending
@@ -140,7 +140,7 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
   def hashForSignature(spendingTransaction : Transaction, inputIndex : UInt32, script : Seq[ScriptToken],
                        hashType : HashType) : DoubleSha256Digest = {
     //these first two checks are in accordance with behavior in bitcoin core
-    //https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L1112-L1123
+    //[[https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L1112-L1123]]
     if (inputIndex >= UInt32(spendingTransaction.inputs.size)) {
       logger.warn("Our inputIndex is out of the range of the inputs in the spending transaction")
       errorHash
@@ -155,8 +155,8 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
     }
   }
 
-  /** Implements the new serialization algorithm defined in BIP141
-    * [[https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki]]
+  /** Implements the new serialization algorithm defined in BIP143
+    * [[https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki]]
     * [[https://github.com/bitcoin/bitcoin/blob/f8528134fc188abc5c7175a19680206964a8fade/src/script/interpreter.cpp#L1113]]
     */
   def serializeForSignature(spendingTx: Transaction, inputIndex: UInt32, script: Seq[ScriptToken], hashType: HashType,
@@ -241,7 +241,7 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
   /** Executes the [[SIGHASH_NONE]] procedure on a spending transaction for the input specified by inputIndex. */
   private def sigHashNone(spendingTransaction : Transaction, inputIndex : UInt32) : Transaction = {
     //following this implementation from bitcoinj
-    //https://github.com/bitcoinj/bitcoinj/blob/09a2ca64d2134b0dcbb27b1a6eb17dda6087f448/core/src/main/java/org/bitcoinj/core/Transaction.java#L957
+    //[[https://github.com/bitcoinj/bitcoinj/blob/09a2ca64d2134b0dcbb27b1a6eb17dda6087f448/core/src/main/java/org/bitcoinj/core/Transaction.java#L957]]
     //means that no outputs are signed at all
     val txWithNoOutputs = Transaction.emptyOutputs(spendingTransaction)
     //set the sequence number of all inputs to 0 EXCEPT the input at inputIndex
@@ -254,7 +254,7 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
   /** Executes the [[SIGHASH_SINGLE]] procedure on a spending transaction for the input specified by inputIndex */
   private def sigHashSingle(spendingTransaction : Transaction, inputIndex : UInt32) : Transaction = {
     //following this implementation from bitcoinj
-    //https://github.com/bitcoinj/bitcoinj/blob/09a2ca64d2134b0dcbb27b1a6eb17dda6087f448/core/src/main/java/org/bitcoinj/core/Transaction.java#L964
+    //[[https://github.com/bitcoinj/bitcoinj/blob/09a2ca64d2134b0dcbb27b1a6eb17dda6087f448/core/src/main/java/org/bitcoinj/core/Transaction.java#L964]]
     // In SIGHASH_SINGLE the outputs after the matching input index are deleted, and the outputs before
     // that position are "nulled out". Unintuitively, the value in a "null" transaction is set to -1.
     val updatedOutputsOpt : Seq[Option[TransactionOutput]] = for {

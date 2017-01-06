@@ -52,7 +52,7 @@ trait ScriptParser extends Factory[List[ScriptToken]] with BitcoinSLogger {
       logger.debug("Accum: " + accum)*/
       operations match {
         //for parsing strings like 'Az', need to remove single quotes
-        //example: https://github.com/bitcoin/bitcoin/blob/master/src/test/data/script_valid.json#L24
+        //example: [[https://github.com/bitcoin/bitcoin/blob/master/src/test/data/script_valid.json#L24]]
         case h :: t if (h.size > 0 && h.head == ''' && h.last == ''') =>
           logger.debug("Found a string constant")
           val strippedQuotes = h.replace("'","")
@@ -123,7 +123,7 @@ trait ScriptParser extends Factory[List[ScriptToken]] with BitcoinSLogger {
       //this handles weird cases for parsing with various formats in bitcoin core.
       //take a look at https://github.com/bitcoin/bitcoin/blob/605c17844ea32b6d237db6d83871164dc7d59dab/src/core_read.cpp#L53-L88
       //for the offical parsing algorithm, for examples of weird formats look inside of
-      //https://github.com/bitcoin/bitcoin/blob/master/src/test/data/script_valid.json
+      //[[https://github.com/bitcoin/bitcoin/blob/master/src/test/data/script_valid.json]]
       val parsedBytesFromString = loop(str.split(" ").toList, List()).reverse
       logger.info("Parsed bytes from the given string: " + BitcoinSUtil.encodeHex(parsedBytesFromString))
       parse(parsedBytesFromString)
@@ -172,7 +172,7 @@ trait ScriptParser extends Factory[List[ScriptToken]] with BitcoinSLogger {
   /**
    * Parses the bytes in string format, an example input would look like this
    * "0x09 0x00000000 0x00000000 0x10"
-   * see https://github.com/bitcoin/bitcoin/blob/master/src/test/data/script_valid.json#L21-L25
+   * see [[https://github.com/bitcoin/bitcoin/blob/master/src/test/data/script_valid.json#L21-L25]]
    * for examples of this */
   def parseBytesFromString(s: String) : List[ScriptConstant] = {
     //logger.debug("Parsing bytes from string " + s)
