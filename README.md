@@ -13,23 +13,25 @@ This repostitory includes the following functionality:
     - Passes all tests found in Bitcoin Core's regression test suite called [script_test.json](https://github.com/bitcoin/bitcoin/blob/master/src/test/data/script_tests.json)
     - Passes all tests inside of Bitcoin Core's transaction regression test suite [tx_valid.json](https://github.com/bitcoin/bitcoin/blob/master/src/test/data/tx_valid.json) / [tx_invalid.json](https://github.com/bitcoin/bitcoin/blob/master/src/test/data/tx_invalid.json) / 
     [sighash.json](https://github.com/bitcoin/bitcoin/blob/master/src/test/data/sighash.json)
-    - Currently up to date through OP_CHECKSEQUENCEVERIFY
+    - Currently up to date through segregated witness
   - 90% test coverage throughout the codebase to ensure high quality code. 
   - Functions documented with Scaladocs for user friendliness 
 
 # Design Principles
   - Immutable data structures everywhere
-  - Using Algebraic Data Types to allow the compiler to check for exhaustiveness on match statements
+  - Algebraic Data Types to allow the compiler to check for exhaustiveness on match statements
   - Favoring readability over terseness
 
 # TODO
-  - Segwit support
+  - [Libsecp256k1](https://github.com/bitcoin-core/secp256k1/tree/master/src/java/org/bitcoin) support
+  - Simplified payment channel support
+  - [BIP32](https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki) HD keys
   - Java support
   - Android support
 
 # Examples
 
-Here is an example scala console session with bitcoin-core-s
+Here is an example scala console session with bitcoins-core
 
 ```scala
 chris@chris:~/dev/bitcoins-core-chris$ sbt console
