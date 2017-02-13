@@ -11,7 +11,7 @@ class TransactionSpec extends Properties("TransactionSpec") {
   private def logger = BitcoinSLogger.logger
 
   property("Serialization symmetry") =
-    Prop.forAll(TransactionGenerators.transactions) { tx =>
+    Prop.forAll(TransactionGenerators.transaction) { tx =>
       val result = Transaction(tx.hex) == tx
       if (!result) logger.error("Incorrect tx hex: " + tx.hex)
       result
