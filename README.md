@@ -1,11 +1,19 @@
-[![Build Status](https://travis-ci.org/bitcoin-s/bitcoin-s-core.svg?branch=master)](https://travis-ci.org/bitcoin-s/bitcoin-s-core) [![Coverage Status](https://coveralls.io/repos/github/bitcoin-s/bitcoin-s-core/badge.svg?branch=master)](https://coveralls.io/github/bitcoin-s/bitcoin-s-core?branch=master)
+[![Build Status](https://travis-ci.org/bitcoin-s/bitcoin-s-core.svg?branch=master)](https://travis-ci.org/bitcoin-s/bitcoin-s-core) [![Coverage Status](https://coveralls.io/repos/github/bitcoin-s/bitcoin-s-core/badge.svg?beranch=master)](https://coveralls.io/github/bitcoin-s/bitcoin-s-core?branch=master)
 
-# Bitcoin-S-Core
+# Bitcoin-S-Sidechains
 
-This is the core functionality of bitcoin-s. 
+This is a base implementation for a sidechain in Scala. 
 
-[Quick Build Guide](BUILD_README.md)
+# What are sidechains? 
+Sidechains are a blockchain that is pegged to another blockchain. An example of this could be a sidechain designed to facilitate sports betting that is pegged to the bitcoin blockchain. For more information on the design of sidechains please see the [whitepaper](https://blockstream.com/wp-content/uploads/2014/10/sidechains.pdf). 
 
+# Goal
+This implementation of a sidechain is designed to be a base implementation for which other sidechains (and their features) can be built off of. For the most part, it is going to mirror the [elements project](https://github.com/ElementsProject/elements). This project aims to provide a solid base implementation on the JVM. 
+# TODO: 
+  - Implement REORGPROOFVERIFY & WITHDRAWPROOFVERIFY
+  - [Implement disabled op codes in Bitcoin (OP_OR, OP_AND, OP_XOR...)](https://www.elementsproject.org/elements/opcodes/)
+  - [Signed blocks](https://www.elementsproject.org/elements/signed-blocks/)
+  - [Deterministic Pegs](https://www.elementsproject.org/elements/deterministic-pegs/)
 This repostitory includes the following functionality:
   - Native Scala objects for various protocol types (Transaction, TransactionInput, ScriptSignatures...)
   - Serializers and deserializers for bitcoin data structures mentioned above
@@ -22,14 +30,9 @@ This repostitory includes the following functionality:
   - Using Algebraic Data Types to allow the compiler to check for exhaustiveness on match statements
   - Favoring readability over terseness
 
-# TODO
-  - Segwit support
-  - Java support
-  - Android support
+# Examples from Bitcoin-S-Core
 
-# Examples
-
-Here is an example scala console session with bitcoin-core-s
+Bitcoin-S-Sidechains is a fork of Bitcoin-S-Core. Here are examples of how Bitcoin-S-Core works and how to run the test cases. 
 
 ```scala
 chris@chris:~/dev/bitcoins-core-chris$ sbt console
@@ -124,5 +127,3 @@ chris@chris:~/dev/bitcoins-core$ sbt
 [info] All tests passed.
 >
 ```
-
-

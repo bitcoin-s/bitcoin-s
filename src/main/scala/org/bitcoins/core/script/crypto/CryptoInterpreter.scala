@@ -233,6 +233,44 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
   }
 
   /**
+    * This function is used to evaluate a SPV proof that the user sent
+    * sidechain coins to an SPV locked output
+    *
+    * From the sidechains whitepaper:
+    * When a user wants to transfer coins from the sidechain back to the parent chain, they do the same
+    * thing as the original transfer: send the coins on the sidechain to an SPV-locked output, produce a
+    * sufficient SPV proof that this was done, and use the proof to unlock a number of previously-locked
+    * outputs with equal denomination on the parent chain
+    *
+    * Implementation in elements:
+    * https://github.com/ElementsProject/elements/blob/alpha/src/script/interpreter.cpp#L1308
+    * @param program
+    * @return
+    */
+  def opWithdrawProofVerify(program : ScriptProgram) : ScriptProgram = ???
+
+
+  /**
+    * This function is used to evaluate an SPV proof that the output specified in this script is part of the
+    * longest chain on the blockchain the sidechain is pegged with.
+    * From the sidechains whitepaper:
+    * When transferring coins into the sidechain a user wait for the contest period to expire.
+    * This is a duration in which a newly-transferred
+    * coin may not be spent on the sidechain. The purpose of a contest period is to prevent double-
+    * spending by transferring previously-locked coins during a reorganisation. If at any point
+    * during this delay, a new proof is published containing a chain with more aggregate work
+    * which does not include the block in which the lock output was created, the conversion is
+    * retroactively invalidated. We call this a reorganisation proof.
+    *
+    * Implementation in elements:
+    * https://github.com/ElementsProject/elements/blob/alpha/src/script/interpreter.cpp#L1584
+    * @param program
+    * @return
+    */
+  def opReorgProofVerify(program : ScriptProgram) : ScriptProgram = ???
+
+
+  /**
    * This is a higher order function designed to execute a hash function on the stack top of the program
    * For instance, we could pass in CryptoUtil.sha256 function as the 'hashFunction' argument, which would then
    * apply sha256 to the stack top

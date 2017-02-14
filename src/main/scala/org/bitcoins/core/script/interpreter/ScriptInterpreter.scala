@@ -397,6 +397,8 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
                   val newOpCount = calcOpCount(opCount,OP_CHECKMULTISIGVERIFY) + BitcoinScriptUtil.numPossibleSignaturesOnStack(program).toInt
                   loop(newProgram,newOpCount)
               }
+            case OP_WITHDRAWPROOFVERIFY :: t => loop(opWithdrawProofVerify(p), calcOpCount(opCount, OP_WITHDRAWPROOFVERIFY))
+            case OP_REORGPROOFVERIFY :: t => loop(opReorgProofVerify(p),calcOpCount(opCount, OP_REORGPROOFVERIFY))
             //reserved operations
             case OP_NOP :: t =>
               //script discourage upgradeable flag does not apply to a OP_NOP
