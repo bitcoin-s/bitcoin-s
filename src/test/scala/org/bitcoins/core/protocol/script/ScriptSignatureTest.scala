@@ -71,22 +71,22 @@ class ScriptSignatureTest extends FlatSpec with MustMatchers {
     EmptyScriptSignature.signatures must be (Seq())
   }
 
-  it must "use the p2pkh companion object to create a p2pkh scriptSig" in {
-    P2PKHScriptSignatureImpl(TestUtil.p2pkScriptSig.hex).hex must be (TestUtil.p2pkScriptSig.hex)
+  it must "create a p2pkh scriptSig" in {
+    val scriptSig = ScriptSignature(TestUtil.p2pkhScriptSig.hex)
+    scriptSig.isInstanceOf[P2PKHScriptSignature] must be (true)
+    scriptSig.hex must be (TestUtil.p2pkhScriptSig.hex)
   }
 
-  it must "use the p2sh companion object to create a p2sh scriptSig" in {
-    P2SHScriptSignatureImpl(TestUtil.p2sh2Of3ScriptSig.hex).hex must be (TestUtil.p2sh2Of3ScriptSig.hex)
+  it must "create a p2sh scriptSig" in {
+    val scriptSig = ScriptSignature(TestUtil.p2sh2Of3ScriptSig.hex)
+    scriptSig.isInstanceOf[P2SHScriptSignature] must be (true)
+    scriptSig.hex must be (TestUtil.p2sh2Of3ScriptSig.hex)
   }
 
-  it must "use the p2pk companion object to create a p2pk scriptSig" in {
-    P2PKScriptSignatureImpl(TestUtil.p2pkScriptSig.hex).hex must be (TestUtil.p2pkScriptSig.hex)
+  it must "create a p2pk scriptSig" in {
+    val scriptSig = ScriptSignature(TestUtil.p2pkScriptSig.hex)
+    scriptSig.isInstanceOf[P2PKScriptSignature] must be (true)
+    scriptSig.hex must be (TestUtil.p2pkScriptSig.hex)
   }
-
-  it must "use the nonstandard scriptSig companion object to create a nonstandard scriptSig" in {
-    NonStandardScriptSignatureImpl(TestUtil.p2pkScriptSig.hex).hex must be (TestUtil.p2pkScriptSig.hex)
-  }
-
-
 
 }

@@ -27,9 +27,17 @@ trait ECPublicKey extends BaseECKey with BitcoinSLogger {
    */
   private def publicKeyParams = new ECPublicKeyParameters(curve.getCurve.decodePoint(bytes.toArray), curve)
 
+
+  /**
+    * Verifies that the given hash is signed by the private key corresponding to the public key
+    * @param hash the hash that needs to be verified
+    * @param signature the signature created by the private key corresponding to this publick ey
+    * @return a boolean indicating if the signature is valid or not
+    */
+  def verify(hash : HashDigest, signature : ECDigitalSignature) : Boolean = verify(hash.bytes,signature)
+
   /**
    * Verifies if a given piece of data is signed by the private key corresponding public key
- *
    * @param data
    * @param signature
    * @return

@@ -74,7 +74,7 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
       val hashForSignature = TransactionSignatureSerializer.hashForSignature(txSignatureComponent.transaction,
         txSignatureComponent.inputIndex,
         sigsRemovedScript, hashType)
-      logger.info("Hash for signature: " + BitcoinSUtil.encodeHex(hashForSignature))
+      logger.info("Hash for signature: " + BitcoinSUtil.encodeHex(hashForSignature.bytes))
       val isValid = pubKey.verify(hashForSignature,signature)
       if (isValid) SignatureValidationSuccess else SignatureValidationFailureIncorrectSignatures
     }

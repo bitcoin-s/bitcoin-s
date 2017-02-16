@@ -10,14 +10,14 @@ import org.bitcoins.core.script.result.ScriptResult
  * files.
  */
 trait CoreTestCase {
-  def scriptSig : ScriptSignatureCoreTestCase
-  def scriptPubKey : ScriptPubKeyCoreTestCase
+  def scriptSig : ScriptSignature
+  def scriptPubKey : ScriptPubKey
   def flags : String
   def expectedResult : ScriptResult
   def comments : String
   def raw : String
 }
 
-case class CoreTestCaseImpl(scriptSig : ScriptSignatureCoreTestCase,
-  scriptPubKey: ScriptPubKeyCoreTestCase, flags : String, expectedResult : ScriptResult,
+case class CoreTestCaseImpl(scriptSig : ScriptSignature,
+  scriptPubKey: ScriptPubKey, flags : String, expectedResult : ScriptResult,
   comments : String, raw : String) extends CoreTestCase
