@@ -48,7 +48,8 @@ class ECPublicKeyTest extends FlatSpec with MustMatchers {
     val bitcoinsPrivKey = ECPrivateKey.freshPrivateKey
     val bitcoinsSignature = bitcoinsPrivKey.sign(Sha256Hash.ZERO_HASH.getBytes)
     val bitcoinjPublicKey = org.bitcoinj.core.ECKey.fromPublicOnly(bitcoinsPrivKey.publicKey.bytes.toArray)
-    bitcoinjPublicKey.verify(Sha256Hash.ZERO_HASH.getBytes, bitcoinsSignature.bytes.toArray) must be (true)
+    bitcoinjPublicKey.verify(Sha256Hash.ZERO_HASH.getBytes,
+      bitcoinsSignature.bytes.toArray) must be (true)
   }
 
 }
