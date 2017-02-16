@@ -9,3 +9,4 @@ trait ECKey {
 }
 
 case class ECKeyImpl(privateKey : Option[ECPrivateKey], publicKey : ECPublicKey) extends ECKey
+
