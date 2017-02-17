@@ -44,7 +44,7 @@ sealed trait ScriptNumber extends ScriptConstant {
   def underlying : Long
 
   def + (that : ScriptNumber) : ScriptNumber = ScriptNumber(underlying + that.underlying)
-  def - = ScriptNumber(-underlying)
+  def unary_- = ScriptNumber(-underlying)
   def - (that : ScriptNumber) : ScriptNumber = ScriptNumber(underlying - that.underlying)
   def * (that : ScriptNumber) : ScriptNumber = ScriptNumber(underlying * that.underlying)
 
