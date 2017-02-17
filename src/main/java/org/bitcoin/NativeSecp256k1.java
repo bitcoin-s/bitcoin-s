@@ -53,7 +53,7 @@ public class NativeSecp256k1 {
      */
     public static boolean verify(byte[] data, byte[] signature, byte[] pub) throws AssertFailException{
         checkInvariant(data.length == 32 && signature.length <= 520 && pub.length <= 520);
-
+        checkInvariant(Secp256k1Context.isEnabled());
         ByteBuffer byteBuff = nativeECDSABuffer.get();
         if (byteBuff == null || byteBuff.capacity() < 520) {
             byteBuff = ByteBuffer.allocateDirect(520);
@@ -69,7 +69,8 @@ public class NativeSecp256k1 {
 
         r.lock();
         try {
-            return secp256k1_ecdsa_verify(byteBuff, Secp256k1Context.getContext(), signature.length, pub.length) == 1;
+            return secp256k1_ecdsa_verify(byteBuff, Secp256k1Context.getContext(),
+                    signature.length, pub.length) == 1;
         } finally {
             r.unlock();
         }
