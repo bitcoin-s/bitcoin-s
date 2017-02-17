@@ -1,17 +1,10 @@
 package org.bitcoins.core.crypto
 
-import org.bitcoins.core.config.TestNet3
-import org.bitcoins.core.number.Int32
-import org.bitcoins.core.protocol.CompactSizeUInt
-import org.bitcoins.core.protocol.script._
-import org.bitcoins.core.protocol.transaction.{Transaction, TransactionInput}
-import org.bitcoins.core.script.ScriptProgram
-import org.bitcoins.core.script.constant.{ScriptConstant, ScriptToken}
+import org.bitcoins.core.script.constant.ScriptToken
 import org.bitcoins.core.script.crypto._
-import org.bitcoins.core.script.flag.{ScriptFlag, ScriptFlagUtil, ScriptVerifyDerSig}
+import org.bitcoins.core.script.flag.{ScriptFlag, ScriptFlagUtil}
 import org.bitcoins.core.script.result.ScriptErrorWitnessPubKeyType
 import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil, BitcoinScriptUtil}
-import org.slf4j.LoggerFactory
 
 import scala.annotation.tailrec
 
@@ -69,7 +62,8 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
       }
 
       logger.debug("Hash for signature: " + BitcoinSUtil.encodeHex(hashForSignature.bytes))
-      val isValid = pubKey.verify(hashForSignature,signature)
+      val sigWithoutHashType = stripHashType(signature)
+      val isValid = pubKey.verify(hashForSignature,sigWithoutHashType)
       if (isValid) SignatureValidationSuccess
       else nullFailCheck(Seq(signature),SignatureValidationErrorIncorrectSignatures, flags)
     }
@@ -130,6 +124,7 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
 
 
   }
+
   /** If the NULLFAIL flag is set as defined in BIP146, it checks to make sure all failed signatures were an empty byte vector
     * [[https://github.com/bitcoin/bips/blob/master/bip-0146.mediawiki#NULLFAIL]]
     * */
@@ -140,6 +135,11 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
       //we need to check that all signatures were empty byte vectors, else this fails because of BIP146 and nullfail
       SignatureValidationErrorNullFail
     } else result
+  }
+
+  /** Removes the hash type from the [[org.bitcoins.core.crypto.ECDigitalSignature]] */
+  private def stripHashType(sig: ECDigitalSignature): ECDigitalSignature = {
+    ECDigitalSignature(sig.bytes.slice(0,sig.bytes.length-1))
   }
 }
 
