@@ -86,7 +86,9 @@ public class NativeSecp256k1 {
      * @param sig byte array of signature
      */
     public static byte[] sign(byte[] data, byte[] sec) throws AssertFailException{
-        checkInvariant(data.length == 32 && sec.length <= 32);
+        checkInvariant(data != null);
+        checkInvariant(data.length == 32);
+        checkInvariant(sec.length <= 32);
 
         ByteBuffer byteBuff = nativeECDSABuffer.get();
         if (byteBuff == null || byteBuff.capacity() < 32 + 32) {
