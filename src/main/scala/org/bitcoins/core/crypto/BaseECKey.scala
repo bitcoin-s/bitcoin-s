@@ -2,6 +2,7 @@ package org.bitcoins.core.crypto
 
 import java.math.BigInteger
 
+import org.bitcoin.NativeSecp256k1
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.util._
 import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil}
@@ -25,6 +26,33 @@ trait BaseECKey extends BitcoinSLogger {
    * @return the digital signature
    */
   def sign(dataToSign : Seq[Byte], signingKey : BaseECKey) : ECDigitalSignature = {
+/*    require(dataToSign.length == 32)
+    val bigInt = new BigInteger(1,signingKey.bytes.toArray)
+    val b = bigInt.toByteArray
+    val bytes: Array[Byte] = if (b.length != 32) {
+      if (b.length <= 32) {
+        b
+      } else {
+        val extra = b.length - 32
+        b.slice(extra,b.length)
+      }
+    } else b
+    val signature = NativeSecp256k1.sign(dataToSign.toArray, bytes)
+    ECDigitalSignature(signature)*/
+    oldSign(dataToSign,signingKey)
+  }
+
+  def sign(hex : String, signingKey : BaseECKey) : ECDigitalSignature = sign(BitcoinSUtil.decodeHex(hex),signingKey)
+
+  def sign(hex : String) : ECDigitalSignature = sign(hex,this)
+
+  def sign(bytes : Seq[Byte]) : ECDigitalSignature = sign(bytes,this)
+
+  def sign(hash: HashDigest): ECDigitalSignature = sign(hash,this)
+
+  def sign(hash: HashDigest, signingKey: BaseECKey): ECDigitalSignature = sign(hash.bytes,signingKey)
+
+  private def oldSign(dataToSign: Seq[Byte], signingKey: BaseECKey): ECDigitalSignature = {
     val signer: ECDSASigner = new ECDSASigner(new HMacDSAKCalculator(new SHA256Digest()))
     val privKey: ECPrivateKeyParameters = new ECPrivateKeyParameters(
       new BigInteger(1,signingKey.bytes.toArray), CryptoParams.curve)
@@ -40,16 +68,6 @@ trait BaseECKey extends BitcoinSLogger {
     require(signatureLowS.isDEREncoded, "We must create DER encoded signatures when signing a piece of data, got: " + signatureLowS)
     signatureLowS
   }
-
-  def sign(hex : String, signingKey : BaseECKey) : ECDigitalSignature = sign(BitcoinSUtil.decodeHex(hex),signingKey)
-
-  def sign(hex : String) : ECDigitalSignature = sign(hex,this)
-
-  def sign(bytes : Seq[Byte]) : ECDigitalSignature = sign(bytes,this)
-
-  def sign(hash: HashDigest): ECDigitalSignature = sign(hash,this)
-
-  def sign(hash: HashDigest, signingKey: BaseECKey): ECDigitalSignature = sign(hash.bytes,signingKey)
 }
 
 object BaseECKey extends Factory[BaseECKey] {

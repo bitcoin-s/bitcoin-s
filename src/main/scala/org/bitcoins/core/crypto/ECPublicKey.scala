@@ -27,12 +27,37 @@ trait ECPublicKey extends BaseECKey with BitcoinSLogger {
     logger.debug("PubKey for verifying: " + BitcoinSUtil.encodeHex(bytes))
     logger.debug("Data to verify: " + BitcoinSUtil.encodeHex(data))
     logger.debug("Signature to check against data: " + signature.hex)
-    NativeSecp256k1.verify(data.toArray, signature.bytes.toArray, bytes.toArray)
+    val result = NativeSecp256k1.verify(data.toArray, signature.bytes.toArray, bytes.toArray)
+    if (!result) {
+      //if signature verification fails with libsecp256k1 we need to use our old
+      //verification function from spongy castle, this is needed because early blockchain
+      //transactions can have weird non strict der encoded digital signatures
+      //bitcoin core implements this functionality here:
+      //https://github.com/bitcoin/bitcoin/blob/master/src/pubkey.cpp#L16-L165
+      //TODO: Implement functionality in Bitcoin Core linked above
+      oldVerify(data,signature)
+    } else result
   }
 
   def verify(hex : String, signature : ECDigitalSignature) : Boolean = verify(BitcoinSUtil.decodeHex(hex),signature)
 
   override def toString = "ECPublicKey(" + hex + ")"
+
+  private def oldVerify(data: Seq[Byte], signature: ECDigitalSignature): Boolean = {
+    val resultTry = Try {
+      val signer = new ECDSASigner
+      signer.init(false, publicKeyParams)
+      signature match {
+        case EmptyDigitalSignature => signer.verifySignature(data.toArray, java.math.BigInteger.valueOf(0), java.math.BigInteger.valueOf(0))
+        case sig: ECDigitalSignature =>
+          logger.debug("Public key bytes: " + BitcoinSUtil.encodeHex(bytes))
+          val rBigInteger: BigInteger = new BigInteger(signature.r.toString())
+          val sBigInteger: BigInteger = new BigInteger(signature.s.toString())
+          signer.verifySignature(data.toArray, rBigInteger, sBigInteger)
+      }
+    }
+    resultTry.getOrElse(false)
+  }
 }
 
 object ECPublicKey extends Factory[ECPublicKey] {

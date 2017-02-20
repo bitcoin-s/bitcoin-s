@@ -113,8 +113,7 @@ object ECPrivateKey extends Factory[ECPrivateKey] with BitcoinSLogger {
     */
   def fromWIFToPrivateKey(WIF : String) : ECPrivateKey = {
     val isCompressed = ECPrivateKey.isCompressed(WIF)
-    val trimmedBytes = trimFunction(WIF)
-    val privateKeyBytes = trimmedBytes
+    val privateKeyBytes = trimFunction(WIF)
     ECPrivateKey.fromBytes(privateKeyBytes,isCompressed)
   }
 

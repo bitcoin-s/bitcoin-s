@@ -16,6 +16,5 @@ class ECDigitalSignatureSpec extends Properties("ECDigitalSignatureSpec") {
   property("must have a low s") =
     Prop.forAll(CryptoGenerators.digitalSignatures) { signature =>
       DERSignatureUtil.isLowS(signature)
-
     }
 }
