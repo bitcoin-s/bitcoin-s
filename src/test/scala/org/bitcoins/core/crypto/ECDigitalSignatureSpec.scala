@@ -17,4 +17,11 @@ class ECDigitalSignatureSpec extends Properties("ECDigitalSignatureSpec") {
     Prop.forAll(CryptoGenerators.digitalSignatures) { signature =>
       DERSignatureUtil.isLowS(signature)
     }
+
+  property("must create and verify a digital signature") =
+    Prop.forAll(CryptoGenerators.doubleSha256Digest, CryptoGenerators.privateKey) {
+      case (hash,key) =>
+        val sig = key.sign(hash)
+        key.publicKey.verify(hash,sig)
+    }
 }

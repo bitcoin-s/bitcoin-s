@@ -25,33 +25,17 @@ trait BaseECKey extends BitcoinSLogger {
    * @param signingKey the key to sign the bytes with
    * @return the digital signature
    */
-  def sign(dataToSign : Seq[Byte], signingKey : BaseECKey) : ECDigitalSignature = {
-/*    require(dataToSign.length == 32)
-    val bigInt = new BigInteger(1,signingKey.bytes.toArray)
-    val b = bigInt.toByteArray
-    val bytes: Array[Byte] = if (b.length != 32) {
-      if (b.length <= 32) {
-        b
-      } else {
-        val extra = b.length - 32
-        b.slice(extra,b.length)
-      }
-    } else b
-    val signature = NativeSecp256k1.sign(dataToSign.toArray, bytes)
-    ECDigitalSignature(signature)*/
-    oldSign(dataToSign,signingKey)
+  private def sign(dataToSign : Seq[Byte], signingKey : BaseECKey): ECDigitalSignature = {
+    require(dataToSign.length == 32 && signingKey.bytes.length <= 32)
+    val signature = NativeSecp256k1.sign(dataToSign.toArray, signingKey.bytes.toArray)
+    ECDigitalSignature(signature)
   }
 
-  def sign(hex : String, signingKey : BaseECKey) : ECDigitalSignature = sign(BitcoinSUtil.decodeHex(hex),signingKey)
+  def sign(hash: DoubleSha256Digest, signingKey: BaseECKey): ECDigitalSignature = sign(hash.bytes,signingKey)
 
-  def sign(hex : String) : ECDigitalSignature = sign(hex,this)
+  def sign(hash: DoubleSha256Digest): ECDigitalSignature = sign(hash,this)
 
-  def sign(bytes : Seq[Byte]) : ECDigitalSignature = sign(bytes,this)
-
-  def sign(hash: HashDigest): ECDigitalSignature = sign(hash,this)
-
-  def sign(hash: HashDigest, signingKey: BaseECKey): ECDigitalSignature = sign(hash.bytes,signingKey)
-
+  @deprecated("Deprecated in favor of signing algorithm inside of secp256k1", "2/20/2017")
   private def oldSign(dataToSign: Seq[Byte], signingKey: BaseECKey): ECDigitalSignature = {
     val signer: ECDSASigner = new ECDSASigner(new HMacDSAKCalculator(new SHA256Digest()))
     val privKey: ECPrivateKeyParameters = new ECPrivateKeyParameters(

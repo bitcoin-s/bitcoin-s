@@ -43,6 +43,7 @@ trait ECPublicKey extends BaseECKey with BitcoinSLogger {
 
   override def toString = "ECPublicKey(" + hex + ")"
 
+  @deprecated("Deprecated in favor of using verify functionality inside of secp256k1", "2/20/2017")
   private def oldVerify(data: Seq[Byte], signature: ECDigitalSignature): Boolean = {
     val resultTry = Try {
       val signer = new ECDSASigner
