@@ -50,7 +50,7 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
   /** Negates the stack top. */
   def opNegate(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.contains(OP_NEGATE), "Script top must be OP_NEGATE")
-    performUnaryArithmeticOperation(program, x => x -)
+    performUnaryArithmeticOperation(program, x => -x)
   }
 
   /** If the input is 0 or 1, it is flipped. Otherwise the output will be 0. */
