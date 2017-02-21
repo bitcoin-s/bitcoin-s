@@ -10,5 +10,6 @@ install:
   - ./autogen.sh
   - ./configure
   - sudo make install
+  - cd ../
 script: "sbt clean coverage test"
 after_success: "sbt coverageReport coveralls"
