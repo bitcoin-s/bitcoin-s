@@ -24,12 +24,7 @@ sealed trait ECPrivateKey extends BaseECKey {
 
   /** Derives the public for a the private key */
   def publicKey : ECPublicKey = {
-    val pubKeyBytes : Seq[Byte] = if (isCompressed) {
-      NativeSecp256k1.computePubkey(bytes.toArray)
-    } else {
-      //TODO: Use secp256k1 compute function, need to expose generating compressed pubkeys in libsecp256k1 java api
-      publicKeyPoint.getEncoded(isCompressed)
-    }
+    val pubKeyBytes : Seq[Byte] = NativeSecp256k1.computePubkey(bytes.toArray, isCompressed)
     ECPublicKey(pubKeyBytes)
   }
 
