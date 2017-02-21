@@ -8,7 +8,7 @@ addons:
 install:
   - cd secp256k1
   - ./autogen.sh
-  - ./configure
+  - ./configure --enable-jni --enable-experimental --enable-module-ecdh
   - sudo make install
   - cd ../
 script: "sbt clean coverage test"
