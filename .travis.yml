@@ -9,7 +9,8 @@ install:
   - cd secp256k1
   - ./autogen.sh
   - ./configure --enable-jni --enable-experimental --enable-module-ecdh
-  - sudo make install
+  - make
+  - sudo cp .libs/libsecp256k1.so /usr/lib
   - cd ../
 script: "sbt clean coverage test"
 after_success: "sbt coverageReport coveralls"
