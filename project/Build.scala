@@ -16,7 +16,7 @@ object BitcoinSCoreBuild extends Build {
     "io.spray" %% "spray-json" % "1.3.2" % "test",  
     "ch.qos.logback" % "logback-classic" % logbackV,
     "org.scalacheck" %% "scalacheck" % "1.13.0" withSources() withJavadoc(),
-    "com.google.guava" % "guava" % "21.0",
+    "com.google.guava" % "guava" % "18.0",
     "com.novocode" % "junit-interface" % "0.10" % "test"
   )
   
