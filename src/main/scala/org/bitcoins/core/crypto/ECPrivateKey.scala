@@ -3,6 +3,7 @@ package org.bitcoins.core.crypto
 import java.math.BigInteger
 import java.security.SecureRandom
 
+import org.bitcoin.NativeSecp256k1
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.protocol.blockchain.{MainNetChainParams, SecretKey, TestNetChainParams}
 import org.bitcoins.core.util._
@@ -23,6 +24,8 @@ sealed trait ECPrivateKey extends BaseECKey {
 
   /** Derives the public for a the private key */
   def publicKey : ECPublicKey = {
+    //TODO: Use secp256k1 compute function, need to expose generating compressed pubkeys in libsecp256k1 java api
+    //val pubKeyBytes: Seq[Byte] = NativeSecp256k1.computePubkey(bytes.toArray)
     val pubKeyBytes : Seq[Byte] = publicKeyPoint.getEncoded(isCompressed)
     ECPublicKey(pubKeyBytes)
   }
