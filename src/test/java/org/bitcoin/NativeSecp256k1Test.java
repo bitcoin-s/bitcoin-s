@@ -74,7 +74,7 @@ public class NativeSecp256k1Test {
     public void testPubKeyCreatePos() throws AssertFailException{
         byte[] sec = BaseEncoding.base16().lowerCase().decode("67E56582298859DDAE725F972992A07C6C4FB9F62A8FFF58CE3CA926A1063530".toLowerCase());
 
-        byte[] resultArr = NativeSecp256k1.computePubkey( sec);
+        byte[] resultArr = NativeSecp256k1.computePubkey( sec, true);
         String pubkeyString = javax.xml.bind.DatatypeConverter.printHexBinary(resultArr);
         assertEquals( pubkeyString , "02C591A8FF19AC9C4E4E5793673B83123437E975285E7B442F4EE2654DFFCA5E2D" , "testPubKeyCreatePos");
     }
@@ -86,7 +86,7 @@ public class NativeSecp256k1Test {
     public void testPubKeyCreateNeg() throws AssertFailException{
         byte[] sec = BaseEncoding.base16().lowerCase().decode("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF".toLowerCase());
 
-        byte[] resultArr = NativeSecp256k1.computePubkey( sec);
+        byte[] resultArr = NativeSecp256k1.computePubkey( sec, true);
         String pubkeyString = javax.xml.bind.DatatypeConverter.printHexBinary(resultArr);
         assertEquals( pubkeyString, "" , "testPubKeyCreateNeg");
     }
