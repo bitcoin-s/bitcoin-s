@@ -2,6 +2,9 @@ language: scala
 sudo: required
 scala:
   - 2.11.7
+addons:
+  apt:
+    packages: libgmp-dev
 install:
   - cd secp256k1
   - ./autogen.sh
