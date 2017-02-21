@@ -137,11 +137,11 @@ SECP256K1_API jobjectArray JNICALL Java_org_bitcoin_NativeSecp256k1_secp256k1_1e
 
   int ret = secp256k1_ec_pubkey_create(ctx, &pubkey, secKey);
 
-  unsigned char outputSer[65];
-  size_t outputLen = 65;
+  unsigned char outputSer[33];
+  size_t outputLen = 33;
 
   if( ret ) {
-    int ret2 = secp256k1_ec_pubkey_serialize(ctx,outputSer, &outputLen, &pubkey,SECP256K1_EC_UNCOMPRESSED );(void)ret2;
+    int ret2 = secp256k1_ec_pubkey_serialize(ctx,outputSer, &outputLen, &pubkey,SECP256K1_EC_COMPRESSED );(void)ret2;
   }
 
   intsarray[0] = outputLen;
@@ -246,8 +246,8 @@ SECP256K1_API jobjectArray JNICALL Java_org_bitcoin_NativeSecp256k1_secp256k1_1p
   jobjectArray retArray;
   jbyteArray pubArray, intsByteArray;
   unsigned char intsarray[2];
-  unsigned char outputSer[65];
-  size_t outputLen = 65;
+  unsigned char outputSer[33];
+  size_t outputLen = 33;
 
   secp256k1_pubkey pubkey;
   int ret = secp256k1_ec_pubkey_parse(ctx, &pubkey, pkey, publen);
@@ -257,7 +257,7 @@ SECP256K1_API jobjectArray JNICALL Java_org_bitcoin_NativeSecp256k1_secp256k1_1p
   }
 
   if( ret ) {
-    int ret2 = secp256k1_ec_pubkey_serialize(ctx,outputSer, &outputLen, &pubkey,SECP256K1_EC_UNCOMPRESSED );(void)ret2;
+    int ret2 = secp256k1_ec_pubkey_serialize(ctx,outputSer, &outputLen, &pubkey,SECP256K1_EC_COMPRESSED );(void)ret2;
   }
 
   intsarray[0] = outputLen;
@@ -290,8 +290,8 @@ SECP256K1_API jobjectArray JNICALL Java_org_bitcoin_NativeSecp256k1_secp256k1_1p
   jobjectArray retArray;
   jbyteArray pubArray, intsByteArray;
   unsigned char intsarray[2];
-  unsigned char outputSer[65];
-  size_t outputLen = 65;
+  unsigned char outputSer[33];
+  size_t outputLen = 33;
 
   secp256k1_pubkey pubkey;
   int ret = secp256k1_ec_pubkey_parse(ctx, &pubkey, pkey, publen);
@@ -301,7 +301,7 @@ SECP256K1_API jobjectArray JNICALL Java_org_bitcoin_NativeSecp256k1_secp256k1_1p
   }
 
   if( ret ) {
-    int ret2 = secp256k1_ec_pubkey_serialize(ctx,outputSer, &outputLen, &pubkey,SECP256K1_EC_UNCOMPRESSED );(void)ret2;
+    int ret2 = secp256k1_ec_pubkey_serialize(ctx,outputSer, &outputLen, &pubkey,SECP256K1_EC_COMPRESSED );(void)ret2;
   }
 
   intsarray[0] = outputLen;

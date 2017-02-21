@@ -76,7 +76,7 @@ public class NativeSecp256k1Test {
 
         byte[] resultArr = NativeSecp256k1.computePubkey( sec);
         String pubkeyString = javax.xml.bind.DatatypeConverter.printHexBinary(resultArr);
-        assertEquals( pubkeyString , "04C591A8FF19AC9C4E4E5793673B83123437E975285E7B442F4EE2654DFFCA5E2D2103ED494718C697AC9AEBCFD19612E224DB46661011863ED2FC54E71861E2A6" , "testPubKeyCreatePos");
+        assertEquals( pubkeyString , "02C591A8FF19AC9C4E4E5793673B83123437E975285E7B442F4EE2654DFFCA5E2D" , "testPubKeyCreatePos");
     }
 
     /**
@@ -154,7 +154,7 @@ public class NativeSecp256k1Test {
 
         byte[] resultArr = NativeSecp256k1.pubKeyTweakAdd( pub , data );
         String sigString = javax.xml.bind.DatatypeConverter.printHexBinary(resultArr);
-        assertEquals( sigString , "0411C6790F4B663CCE607BAAE08C43557EDC1A4D11D88DFCB3D841D0C6A941AF525A268E2A863C148555C48FB5FBA368E88718A46E205FABC3DBA2CCFFAB0796EF" , "testPrivKeyAdd_2");
+        assertEquals( sigString , "0311C6790F4B663CCE607BAAE08C43557EDC1A4D11D88DFCB3D841D0C6A941AF52" , "testPrivKeyAdd_2");
     }
 
     /**
@@ -167,7 +167,7 @@ public class NativeSecp256k1Test {
 
         byte[] resultArr = NativeSecp256k1.pubKeyTweakMul( pub , data );
         String sigString = javax.xml.bind.DatatypeConverter.printHexBinary(resultArr);
-        assertEquals( sigString , "04E0FE6FE55EBCA626B98A807F6CAF654139E14E5E3698F01A9A658E21DC1D2791EC060D4F412A794D5370F672BC94B722640B5F76914151CFCA6E712CA48CC589" , "testPrivKeyMul_2");
+        assertEquals( sigString , "03E0FE6FE55EBCA626B98A807F6CAF654139E14E5E3698F01A9A658E21DC1D2791" , "testPrivKeyMul_2");
     }
 
     /**
