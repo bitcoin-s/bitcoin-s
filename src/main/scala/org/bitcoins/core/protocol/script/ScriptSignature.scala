@@ -1,10 +1,6 @@
 package org.bitcoins.core.protocol.script
 
-import org.bitcoins.core.crypto.{DERSignatureUtil, ECDigitalSignature, ECPublicKey}
-import org.bitcoins.core.protocol.script.MultiSignatureScriptSignature.MultiSignatureScriptSignatureImpl
-import org.bitcoins.core.protocol.script.NonStandardScriptSignature.NonStandardScriptSignatureImpl
-import org.bitcoins.core.protocol.script.P2PKHScriptSignature.P2PKHScriptSignatureImpl
-import org.bitcoins.core.protocol.script.P2SHScriptSignature.P2SHScriptSignatureImpl
+import org.bitcoins.core.crypto.{ECDigitalSignature, ECPublicKey}
 import org.bitcoins.core.protocol.{CompactSizeUInt, NetworkElement}
 import org.bitcoins.core.script.constant._
 import org.bitcoins.core.serializers.script.{RawScriptSignatureParser, ScriptParser}
@@ -111,10 +107,6 @@ object P2PKHScriptSignature extends ScriptFactory[P2PKHScriptSignature] {
   def isP2PKHScriptSig(asm: Seq[ScriptToken]): Boolean = asm match {
     case List(w : BytesToPushOntoStack, x : ScriptConstant, y : BytesToPushOntoStack,
       z : ScriptConstant) =>
-      //TODO: We need to change this to use CPubKey::IsFullyValid() when we integrate libsecp256k1
-      //this checks to make sure we do not have a redeem script as the 'z' constant
-      //for instance, we can have a p2sh scriptsignature that has a redeem script for a p2pkhScriptSig
-      //and it will have the same format as the pattern match before
       !P2SHScriptSignature.isRedeemScript(z)
     case _ => false
   }
