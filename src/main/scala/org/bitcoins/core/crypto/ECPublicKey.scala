@@ -13,7 +13,7 @@ import scala.util.{Failure, Success, Try}
 /**
  * Created by chris on 2/16/16.
  */
-trait ECPublicKey extends BaseECKey with BitcoinSLogger {
+sealed trait ECPublicKey extends BaseECKey with BitcoinSLogger {
 
 
   def verify(hash : HashDigest, signature : ECDigitalSignature) : Boolean = verify(hash.bytes, signature)
@@ -72,20 +72,7 @@ object ECPublicKey extends Factory[ECPublicKey] {
 
   /** Generates a fresh [[ECPublicKey]] that has not been used before. */
   def freshPublicKey = ECPrivateKey.freshPrivateKey.publicKey
-
-  /** Checks to see if a [[ECPublicKey]] is fully valid
-    * Replicates this functionality inside of Bitcoin Core
-    * [[https://github.com/bitcoin/bitcoin/blob/27765b6403cece54320374b37afb01a0cfe571c3/src/pubkey.cpp#L207-L212]]
-    * @param bytes
-    * @return
-    */
-  def isFullyValid(bytes: Seq[Byte]): Boolean = {
-    //TODO: Implement this with secp256k1
-    //think I need to add this functionality to the secp256k1 java api
-    //since the bitcoin core implementation uses 'secp256k1_ec_pubkey_parse'
-    //which is not currently exposed
-    ???
-  }
+  
 }
 
 
