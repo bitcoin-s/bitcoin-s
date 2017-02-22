@@ -219,6 +219,7 @@ object P2SHScriptSignature extends ScriptFactory[P2SHScriptSignature]  {
     redeemScriptTry match {
       case Success(redeemScript) =>
         logger.debug("Possible redeemScript: " + redeemScript.asm)
+        logger.debug("Redeem script: " + redeemScript)
         redeemScript match {
           case x : P2PKHScriptPubKey => true
           case x : MultiSignatureScriptPubKey => true
