@@ -14,11 +14,7 @@ import scala.util.{Failure, Success, Try}
  * Created by chris on 2/16/16.
  */
 trait ECPublicKey extends BaseECKey with BitcoinSLogger {
-  /** The elliptic curve used by bitcoin. */
-  private def curve = CryptoParams.curve
 
-  /** This represents this public key in the bouncy castle library */
-  private def publicKeyParams = new ECPublicKeyParameters(curve.getCurve.decodePoint(bytes.toArray), curve)
 
   def verify(hash : HashDigest, signature : ECDigitalSignature) : Boolean = verify(hash.bytes, signature)
 
@@ -45,6 +41,11 @@ trait ECPublicKey extends BaseECKey with BitcoinSLogger {
 
   @deprecated("Deprecated in favor of using verify functionality inside of secp256k1", "2/20/2017")
   private def oldVerify(data: Seq[Byte], signature: ECDigitalSignature): Boolean = {
+    /** The elliptic curve used by bitcoin. */
+    def curve = CryptoParams.curve
+    /** This represents this public key in the bouncy castle library */
+    def publicKeyParams = new ECPublicKeyParameters(curve.getCurve.decodePoint(bytes.toArray), curve)
+
     val resultTry = Try {
       val signer = new ECDSASigner
       signer.init(false, publicKeyParams)

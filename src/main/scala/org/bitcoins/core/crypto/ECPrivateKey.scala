@@ -29,20 +29,6 @@ sealed trait ECPrivateKey extends BaseECKey {
   }
 
   /**
-    * Derives the public key ECPoint from the private key
-    * https://github.com/bitcoinj/bitcoinj/blob/master/core/src/main/java/org/bitcoinj/core/ECKey.java#L452
-    *
-    * @return the public key's ECPoint
-    */
-  private def publicKeyPoint : ECPoint = {
-    val privKeyBigInteger = new BigInteger(1,bytes.toArray)
-    val privKey = if (privKeyBigInteger.bitLength > CryptoParams.curve.getN.bitLength()) {
-      privKeyBigInteger.mod(CryptoParams.curve.getN())
-    } else privKeyBigInteger
-    new FixedPointCombMultiplier().multiply(CryptoParams.curve.getG, privKey)
-  }
-
-  /**
     * Converts a [[ECPrivateKey]] to WIF
     * https://en.bitcoin.it/wiki/Wallet_import_format
     * @return
