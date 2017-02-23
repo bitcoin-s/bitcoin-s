@@ -1,12 +1,11 @@
 package org.bitcoins.core.script.control
 
 import org.bitcoins.core.protocol.script.SigVersionWitnessV0
-import org.bitcoins.core.script.result._
 import org.bitcoins.core.script.ScriptProgram
 import org.bitcoins.core.script.constant._
 import org.bitcoins.core.script.flag.ScriptFlagUtil
+import org.bitcoins.core.script.result._
 import org.bitcoins.core.util._
-import org.slf4j.LoggerFactory
 
 import scala.annotation.tailrec
 
