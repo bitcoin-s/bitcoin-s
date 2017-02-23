@@ -10,6 +10,7 @@ import org.bitcoins.core.script.constant.{BytesToPushOntoStack, _}
 import org.bitcoins.core.script.control.OP_RETURN
 import org.bitcoins.core.script.crypto.{OP_CHECKMULTISIG, OP_CHECKMULTISIGVERIFY, OP_CHECKSIG, OP_HASH160}
 import org.bitcoins.core.script.locktime.{OP_CHECKLOCKTIMEVERIFY, OP_CHECKSEQUENCEVERIFY}
+import org.bitcoins.core.script.reserved.UndefinedOP_NOP
 import org.bitcoins.core.script.stack.{OP_DROP, OP_DUP}
 import org.bitcoins.core.serializers.script.{RawScriptPubKeyParser, ScriptParser}
 import org.bitcoins.core.util._
@@ -366,17 +367,32 @@ object CLTVScriptPubKey extends ScriptFactory[CLTVScriptPubKey] {
       val tailTokens = asm.slice(4, asm.length)
       if (P2SHScriptPubKey.isP2SHScriptPubKey(tailTokens) || tailTokens.contains(OP_CHECKLOCKTIMEVERIFY)) return false
       asm.slice(0,4) match {
-        case List(lockTimeBytesToPush : BytesToPushOntoStack, lockTime : ScriptConstant, OP_CHECKLOCKTIMEVERIFY, OP_DROP) => true
+        case List(lockTimeBytesToPush : BytesToPushOntoStack, lockTime : ScriptConstant, OP_CHECKLOCKTIMEVERIFY, OP_DROP) =>
+          validScriptAfterLockTime(tailTokens)
         case _ => false
       }
     } else {
       val tailTokens = asm.slice(3, asm.length)
       if (P2SHScriptPubKey.isP2SHScriptPubKey(tailTokens) || tailTokens.contains(OP_CHECKLOCKTIMEVERIFY)) return false
       asm.slice(0,3) match {
-        case List(scriptNumOp : ScriptNumberOperation, OP_CHECKLOCKTIMEVERIFY, OP_DROP) => true
+        case List(scriptNumOp : ScriptNumberOperation, OP_CHECKLOCKTIMEVERIFY, OP_DROP) =>
+          validScriptAfterLockTime(tailTokens)
         case _ => false
       }
     }
+  }
+
+  /** We need this check because sometimes we can get very lucky in having a non valid
+    * lock time script that has the first 4 bytes as a valid locktime script
+    * and then the bytes after the first 4 bytes gets lucky and is parsed by our [[ScriptParser]]
+    * A good way to see if this is _actually_ a valid script is by checking if we have any
+    * [[UndefinedOP_NOP]] in the script, which means we definitely don't have a valid locktime script
+    * See this example of what happened before we added this check:
+    *
+    * [[https://travis-ci.org/bitcoin-s/bitcoin-s-core/builds/201652191#L2526]]
+    */
+  def validScriptAfterLockTime(asm: Seq[ScriptToken]): Boolean = {
+    !asm.exists(_.isInstanceOf[UndefinedOP_NOP])
   }
 }
 
@@ -444,14 +460,16 @@ object CSVScriptPubKey extends ScriptFactory[CSVScriptPubKey] {
       val tailTokens = asm.slice(4, asm.length)
       if (P2SHScriptPubKey.isP2SHScriptPubKey(tailTokens) || tailTokens.contains(OP_CHECKSEQUENCEVERIFY)) return false
       asm.slice(0,4) match {
-        case List(lockTimeBytesToPush : BytesToPushOntoStack, lockTime : ScriptConstant, OP_CHECKSEQUENCEVERIFY, OP_DROP) => true
+        case List(lockTimeBytesToPush : BytesToPushOntoStack, lockTime : ScriptConstant, OP_CHECKSEQUENCEVERIFY, OP_DROP) =>
+          CLTVScriptPubKey.validScriptAfterLockTime(tailTokens)
         case _ => false
       }
     } else {
       val tailTokens = asm.slice(3, asm.length)
       if (P2SHScriptPubKey.isP2SHScriptPubKey(tailTokens) || tailTokens.contains(OP_CHECKSEQUENCEVERIFY)) return false
       asm.slice(0,3) match {
-        case List(numberOp : ScriptNumberOperation, OP_CHECKSEQUENCEVERIFY, OP_DROP) => true
+        case List(numberOp : ScriptNumberOperation, OP_CHECKSEQUENCEVERIFY, OP_DROP) =>
+          CLTVScriptPubKey.validScriptAfterLockTime(tailTokens)
         case _ => false
       }
     }
