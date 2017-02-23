@@ -2,12 +2,11 @@ package org.bitcoins.core.serializers.transaction
 
 import org.bitcoins.core.currency.{CurrencyUnits, Satoshis}
 import org.bitcoins.core.number.UInt64
-import org.bitcoins.core.serializers.{RawBitcoinSerializer, RawSatoshisSerializer}
-import org.bitcoins.core.serializers.script.{RawScriptPubKeyParser, ScriptParser}
 import org.bitcoins.core.protocol.CompactSizeUInt
-import org.bitcoins.core.protocol.transaction.{TransactionOutput, TransactionOutputImpl}
+import org.bitcoins.core.protocol.transaction.TransactionOutput
+import org.bitcoins.core.serializers.script.{RawScriptPubKeyParser, ScriptParser}
+import org.bitcoins.core.serializers.{RawBitcoinSerializer, RawSatoshisSerializer}
 import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil}
-import org.slf4j.LoggerFactory
 
 import scala.annotation.tailrec
 

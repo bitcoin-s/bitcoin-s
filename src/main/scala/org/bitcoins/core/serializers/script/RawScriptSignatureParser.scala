@@ -1,12 +1,10 @@
 package org.bitcoins.core.serializers.script
 
 import org.bitcoins.core.protocol.CompactSizeUInt
-import org.bitcoins.core.serializers.RawBitcoinSerializer
 import org.bitcoins.core.protocol.script._
-import org.bitcoins.core.script.constant.{ScriptConstant, ScriptToken}
-import org.bitcoins.core.script.crypto.{OP_CHECKMULTISIG, OP_CHECKMULTISIGVERIFY}
-import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil}
-import org.slf4j.LoggerFactory
+import org.bitcoins.core.script.constant.ScriptToken
+import org.bitcoins.core.serializers.RawBitcoinSerializer
+import org.bitcoins.core.util.BitcoinSLogger
 
 import scala.util.Try
 
