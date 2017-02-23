@@ -72,7 +72,7 @@ object ECPublicKey extends Factory[ECPublicKey] {
 
   /** Generates a fresh [[ECPublicKey]] that has not been used before. */
   def freshPublicKey = ECPrivateKey.freshPrivateKey.publicKey
-  
+
 }
 
 

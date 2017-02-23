@@ -6,11 +6,11 @@ addons:
   apt:
     packages: libgmp-dev
 install:
-  - cd secp256k1
+  - mkdir lib && cd secp256k1
   - ./autogen.sh
   - ./configure --enable-jni --enable-experimental --enable-module-ecdh
   - make
-  - sudo cp .libs/libsecp256k1.so /usr/lib
   - cd ../
+  - cp secp256k1/.libs/libsecp256k1.so lib
 script: "sbt clean coverage test"
 after_success: "sbt coverageReport coveralls"
