@@ -3,12 +3,10 @@ package org.bitcoins.core.serializers.script
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.script._
 import org.bitcoins.core.script.constant._
-import org.bitcoins.core.script.crypto.{OP_CHECKMULTISIG, OP_CHECKMULTISIGVERIFY}
-import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil, Factory, NumberUtil}
-import org.slf4j.LoggerFactory
+import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil, Factory}
 
 import scala.annotation.tailrec
-import scala.util.{Failure, Success, Try}
+import scala.util.Try
 
 /**
  * Created by chris on 1/7/16.
