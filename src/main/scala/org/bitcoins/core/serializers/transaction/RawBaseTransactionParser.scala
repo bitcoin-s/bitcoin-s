@@ -1,10 +1,9 @@
 package org.bitcoins.core.serializers.transaction
 
 import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.protocol.transaction.BaseTransaction
 import org.bitcoins.core.serializers.RawBitcoinSerializer
-import org.bitcoins.core.protocol.transaction.{BaseTransaction, Transaction}
-import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil, CryptoUtil}
-import org.slf4j.LoggerFactory
+import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil}
 
 /**
  * Created by chris on 1/14/16.
