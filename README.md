@@ -23,7 +23,6 @@ This repostitory includes the following functionality:
   - Favoring readability over terseness
 
 # TODO
-  - [Libsecp256k1](https://github.com/bitcoin-core/secp256k1/tree/master/src/java/org/bitcoin) support
   - Simplified payment channel support
   - [BIP32](https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki) HD keys
   - Java support
