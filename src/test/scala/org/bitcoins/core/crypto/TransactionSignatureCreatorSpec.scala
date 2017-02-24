@@ -31,7 +31,6 @@ class TransactionSignatureCreatorSpec extends Properties("TransactionSignatureCr
         val result = ScriptInterpreter.run(program)
         result == ScriptOk
     }
-
   property("generate valid signatures for a multisignature transaction") =
     Prop.forAllNoShrink(TransactionGenerators.signedMultiSigTransaction) {
       case (txSignatureComponent: TransactionSignatureComponent, _)  =>

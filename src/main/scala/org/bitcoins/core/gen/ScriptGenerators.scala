@@ -25,18 +25,18 @@ trait ScriptGenerators extends BitcoinSLogger {
 
   def p2pkhScriptSignature : Gen[P2PKHScriptSignature] = for {
     privKey <- CryptoGenerators.privateKey
-    hexString <- StringGenerators.hexString
-    signature = privKey.sign(hexString)
+    hash <- CryptoGenerators.doubleSha256Digest
+    signature = privKey.sign(hash)
   } yield P2PKHScriptSignature(signature,privKey.publicKey)
 
   def multiSignatureScriptSignature : Gen[MultiSignatureScriptSignature] = {
     val signatures : Gen[Seq[ECDigitalSignature]] = for {
       numKeys <- Gen.choose(1, ScriptSettings.maxPublicKeysPerMultiSig)
-      hexString <- StringGenerators.hexString
+      hash <- CryptoGenerators.doubleSha256Digest
     } yield for {
       _ <- 0 until numKeys
       privKey = ECPrivateKey()
-    } yield privKey.sign(hexString)
+    } yield privKey.sign(hash)
     signatures.map(sigs => MultiSignatureScriptSignature(sigs))
   }
 
@@ -57,21 +57,19 @@ trait ScriptGenerators extends BitcoinSLogger {
     num <- NumberGenerator.scriptNumbers
     (cltv, privKeys, num) <- cltvScriptPubKey(num)
     pubKeys = privKeys.map(_.publicKey)
-    randomHex <- StringGenerators.hexString
-    sigs = privKeys.map(key => key.sign(randomHex))
-  } yield {
-    CLTVScriptSignature(cltv, sigs, pubKeys)
-  }
+    hash <- CryptoGenerators.doubleSha256Digest
+    sigs = privKeys.map(key => key.sign(hash))
+  } yield CLTVScriptSignature(cltv, sigs, pubKeys)
+
 
   def csvScriptSignature : Gen[CSVScriptSignature] = for {
     num <- NumberGenerator.scriptNumbers
     (csv, privKeys, num) <- csvScriptPubKey(num)
     pubKeys = privKeys.map(_.publicKey)
-    randomHex <- StringGenerators.hexString
-    sigs = privKeys.map(key => key.sign(randomHex))
-  } yield {
-    CSVScriptSignature(csv, sigs, pubKeys)
-  }
+    hash <- CryptoGenerators.doubleSha256Digest
+    sigs = privKeys.map(key => key.sign(hash))
+  } yield CSVScriptSignature(csv, sigs, pubKeys)
+
 
   def p2pkScriptPubKey : Gen[(P2PKScriptPubKey, ECPrivateKey)] = for {
     privKey <- CryptoGenerators.privateKey

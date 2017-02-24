@@ -23,6 +23,7 @@ trait TransactionSignatureCreator extends BitcoinSLogger {
     val sig = ECDigitalSignature(signature.bytes ++ Seq(hashType.byte))
     logger.debug("TxSigCreator sig: " + sig)
     require(sig.isStrictEncoded, "We did not create a signature that is strictly encoded, got: " + sig)
+    require(DERSignatureUtil.isLowS(sig), "Sig does not have a low s value")
     sig
   }
 }
