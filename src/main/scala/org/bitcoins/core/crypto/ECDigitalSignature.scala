@@ -17,8 +17,7 @@ sealed trait ECDigitalSignature extends BitcoinSLogger {
   /**
    * Checks if this signature is encoded to DER correctly
    * https://crypto.stackexchange.com/questions/1795/how-can-i-convert-a-der-ecdsa-signature-to-asn-1
-    *
-    * @return boolean representing if the signature is a valid
+   * @return boolean representing if the signature is a valid
    */
   def isDEREncoded : Boolean = DERSignatureUtil.isDEREncoded(this)
 
@@ -27,32 +26,26 @@ sealed trait ECDigitalSignature extends BitcoinSLogger {
     * [[https://github.com/bitcoin/bips/blob/master/bip-0066.mediawiki]]
     * */
   def isStrictEncoded: Boolean = DERSignatureUtil.isValidSignatureEncoding(this)
+
   /**
    * Decodes the digital signature into it's r and s points
    * throws an exception if the given sequence of bytes is not a DER encoded signature
-    *
-    * @return the (r,s) values for the elliptic curve digital signature
+   * @return the (r,s) values for the elliptic curve digital signature
    */
   def decodeSignature : (BigInt,BigInt) = DERSignatureUtil.decodeSignature(this)
 
 
-  /**
-   * Represents the r value found in a elliptic curve digital signature
-   */
+  /** Represents the r value found in a elliptic curve digital signature */
   def r = decodeSignature._1
 
 
-  /**
-   * Represents the s value found in a elliptic curve digital signature
-    *
-    * @return
-   */
+  /** Represents the s value found in a elliptic curve digital signature */
   def s = decodeSignature._2
 
 }
 
 case object EmptyDigitalSignature extends ECDigitalSignature {
-  def bytes = Seq()
+  def bytes = Nil
   override def r = java.math.BigInteger.valueOf(0)
   override def s = r
 }
@@ -90,13 +83,5 @@ object ECDigitalSignature extends Factory[ECDigitalSignature] {
     val bytes : Seq[Byte] = Seq(0x30.toByte, totalSize.toByte, 0x2.toByte, r.toByteArray.size.toByte) ++
       r.toByteArray.toSeq ++ Seq(0x2.toByte, s.toByteArray.size.toByte) ++ s.toByteArray.toSeq
     fromBytes(bytes)
-  }
-
-
-  /** Checks if the given digital signature uses a low s value,
-    * if it does not it converts it to a low s value and returns it */
-  private def lowS(signature: ECDigitalSignature): ECDigitalSignature = {
-    if (signature.s.bigInteger.compareTo(CryptoParams.halfCurveOrder) <= 0) signature
-    else ECDigitalSignature(signature.r,CryptoParams.curve.getN().subtract(signature.s.bigInteger))
   }
 }
