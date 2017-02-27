@@ -10,7 +10,6 @@ import org.scalatest.{FlatSpec, MustMatchers}
   * Created by chris on 8/9/16.
   */
 class PartialMerkleTreeTests extends FlatSpec with MustMatchers {
-
   "PartialMerkleTree" must "from a list of txs and a bit indicating if the tx matched the filter" in {
     //https://github.com/bitcoin/bitcoin/blob/master/src/test/bloom_tests.cpp#L185
     val block = Block("0100000090f0a9f110702f808219ebea1173056042a714bad51b916cb68000000000000052752895" +
@@ -160,5 +159,34 @@ class PartialMerkleTreeTests extends FlatSpec with MustMatchers {
     partialMerkleTree.bits must be (Seq(true,false,false,false,false,false,false,false))
   }
 
+  it must "correctly compute a merkle tree that has an odd amount of txids on the merkle tree" in {
+    //this test is meant to prevent these failures on travis ci
+    //https://travis-ci.org/bitcoin-s/bitcoin-s-core/builds/205812075#L2774
+    val hashes: Seq[DoubleSha256Digest] = List(
+      DoubleSha256Digest("1563b82f187da1067f5000dabe3a4f4ae8650e207aa163e1d25ded8175e2bae1"),
+      DoubleSha256Digest("151cfc67334a38be8abdb5752f2346f8989c33336275d385b5c61af3edfa0a51"),
+      DoubleSha256Digest("f3309f2f4697a95be63e61eae9946b9f9e143909faafeec6fdda01284f5192f8"),
+      DoubleSha256Digest("0b38edce452a4ea17b5d76346c9e81ad03e9ecaa887d9a76edeb4da807ce8439"),
+      DoubleSha256Digest("ae2caf79fc55e3e887ddb39bcd7f8436f0423e1e8f1f37872ee84779ebdf28c1"),
+      DoubleSha256Digest("4c5db2bdd85cef0a37fe4e675b0c342c9b92df90fabe19c5258aa164bdcfddbc"),
+      DoubleSha256Digest("ec35eda50230cef0b04be44a070b3fcdbf1766f512cd0432f26a34df6249002a"),
+      DoubleSha256Digest("aee82970ace34438dc1d0f3655c62b60c5a28d5754a7d9903706f841fe760dcf"),
+      DoubleSha256Digest("584a8cd477057c6ddd3f17be8d47e02210e26a48ef77f3a35bd46903d29b47f8"),
+      DoubleSha256Digest("0b55b03bde4e82068f869f4f7f9560fb987f14c15b45b19eff352957ea7a5101"),
+      DoubleSha256Digest("f185de9349b800e635ec1dfa06fe0be3ae7cd694f2dbaeeff2d39c58dbebcfd2"),
+      DoubleSha256Digest("023175e3a4f7fa993b45a9ca3604b17835866e6af1aff740fa28bae82b8bc71e"),
+      DoubleSha256Digest("be6ce29d3dd0f7f777f188b94a5ae514bd763a5a0ff81055fea090596d3acc0b"),
+      DoubleSha256Digest("7f1f476304d88a844ff5f5ae2dc0b17e704aa560619fba3753744ca03dea029b"),
+      DoubleSha256Digest("9d6453d3573dfadbf93532953ef3e63f4731fc9543705af9988bb8038f060e30"),
+      DoubleSha256Digest("9d19dd76defcb7bf991ad62e3a468423ddca09ff3181b8f03d57dbc4e25a1596"),
+      DoubleSha256Digest("5df6e0e2761359d30a8275058e299fcc0381534545f55cf43e41983f5d4c9456"),
+      DoubleSha256Digest("5df6e0e2761359d30a8275058e299fcc0381534545f55cf43e41983f5d4c9456"))
+    val numTransactions = UInt32(20)
+    val bits = List(true, true, true, true, true, true, true, false, true, true, false, true,
+      true, true, false, true, true, true, true, false, true, true, true, true, true, true, true,
+      false, true, true, true, true, false, true, true, true, true, false, false, false)
+    val tree = PartialMerkleTree(numTransactions,hashes,bits)
+    tree.extractMatches.contains(DoubleSha256Digest("5df6e0e2761359d30a8275058e299fcc0381534545f55cf43e41983f5d4c9456")) must be (true)
+  }
 
 }

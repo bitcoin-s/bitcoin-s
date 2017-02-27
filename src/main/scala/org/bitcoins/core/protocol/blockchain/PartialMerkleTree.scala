@@ -18,7 +18,7 @@ import scala.math._
   *
   * Encoding procedure:
   * [[https://bitcoin.org/en/developer-reference#creating-a-merkleblock-message]]
-  * [[https://github.com/bitcoin/bitcoin/blob/master/src/merkleblock.cpp#L80]]
+  * [[https://github.com/bitcoin/bitcoin/blob/b7b48c8bbdf7a90861610b035d8b0a247ef78c45/src/merkleblock.cpp#L78]]
   * Traverse the tree in depth first order, storing a bit for each traversal.
   * This bit signifies if the node is a parent of at least one
   * matched leaf txid (or a matched leaf txid) itself.
@@ -28,14 +28,11 @@ import scala.math._
   *
   * Decoding procedure:
   * [[https://bitcoin.org/en/developer-reference#parsing-a-merkleblock-message]]
-  * [[https://github.com/bitcoin/bitcoin/blob/master/src/merkleblock.cpp#L98]]
+  * [[https://github.com/bitcoin/bitcoin/blob/b7b48c8bbdf7a90861610b035d8b0a247ef78c45/src/merkleblock.cpp#L96]]
   * The same depth first decoding procedure is performed, but we consume the
   * bits and hashes that we used during encoding
-  *
-  *
-  *
   */
-trait PartialMerkleTree extends BitcoinSLogger {
+sealed trait PartialMerkleTree extends BitcoinSLogger {
 
   /** The total number of transactions in this block */
   def transactionCount: UInt32
@@ -87,7 +84,6 @@ trait PartialMerkleTree extends BitcoinSLogger {
     val (matches,remainingBits) = loop(tree,bits,0,0,Nil)
     require(PartialMerkleTree.usedAllBits(bits,remainingBits), "We should not have any remaining matches " +
       "except for those that pad our byte after building our partial merkle tree, got: " + remainingBits)
-
     matches.reverse
   }
 
@@ -138,7 +134,7 @@ object PartialMerkleTree extends BitcoinSLogger {
 
     /**
       * This loops through our merkle tree building [[bits]] so we can instruct another node how to create the partial merkle tree
-      * [[https://github.com/bitcoin/bitcoin/blob/master/src/merkleblock.cpp#L80]]
+      * [[https://github.com/bitcoin/bitcoin/blob/b7b48c8bbdf7a90861610b035d8b0a247ef78c45/src/merkleblock.cpp#L78]]
       * @param bits the accumulator for bits indicating how to reconsctruct the partial merkle tree
       * @param hashes the relevant hashes used with bits to reconstruct the merkle tree
       * @param height the transaction index we are currently looking at -- if it was matched in our bloom filter we need the entire merkle branch
@@ -175,7 +171,7 @@ object PartialMerkleTree extends BitcoinSLogger {
   /** Checks if a node at given the given height and position matches a transaction in the sequence */
   def matchesTx(maxHeight: Int, height: Int, pos: Int, matchedTx: Seq[(Boolean,DoubleSha256Digest)]): Boolean = {
     //mimics this functionality inside of bitcoin core
-    //https://github.com/bitcoin/bitcoin/blob/master/src/merkleblock.cpp#L83-L84
+    //https://github.com/bitcoin/bitcoin/blob/b7b48c8bbdf7a90861610b035d8b0a247ef78c45/src/merkleblock.cpp#L78
     val inverseHeight = maxHeight - height
     @tailrec
     def loop(p: Int): Boolean = {
@@ -236,7 +232,7 @@ object PartialMerkleTree extends BitcoinSLogger {
 
   /** Builds a partial merkle tree the information inside of a [[org.bitcoins.spvnode.messages.MerkleBlockMessage]]
     * [[https://bitcoin.org/en/developer-reference#parsing-a-merkleblock-message]]
-    * [[https://github.com/bitcoin/bitcoin/blob/master/src/merkleblock.cpp#L98]]
+    * [[https://github.com/bitcoin/bitcoin/blob/b7b48c8bbdf7a90861610b035d8b0a247ef78c45/src/merkleblock.cpp#L96]]
     * @param numTransaction
     * @param hashes
     * @param bits
@@ -258,14 +254,23 @@ object PartialMerkleTree extends BitcoinSLogger {
       } else {
         //means we have a non txid node
         if (remainingMatches.head) {
-          val (leftNode,leftRemainingHashes,leftRemainingBits) = loop(remainingHashes,remainingMatches.tail,height+1, 2 * pos)
-          logger.debug("Right node pos: " + ((pos * 2) + 1) + " Tree width: " + calcTreeWidth(numTransaction, height+1) + " height: " + height)
+          val nextHeight = height+1
+          val leftNodePos = pos * 2
+          val rightNodePos = (pos * 2) + 1
+          val (leftNode,leftRemainingHashes,leftRemainingBits) = loop(remainingHashes,remainingMatches.tail,nextHeight, leftNodePos)
+          logger.debug("Right node pos: " + rightNodePos + " Tree width: " + calcTreeWidth(numTransaction, nextHeight)
+            + " height: " + height)
           val (rightNode,rightRemainingHashes, rightRemainingBits) =
             if (existsRightSubTree(pos,numTransaction,maxHeight,height)) {
               val (rightNode,rightRemainingHashes, rightRemainingBits) =
-                loop(leftRemainingHashes,leftRemainingBits,height+1, (2 * pos) + 1)
-
-              require(leftNode.value.get != rightNode.value.get, "Cannot have the same hashes in two child nodes, got: " + leftNode + ", tree: " + this)
+                loop(leftRemainingHashes,leftRemainingBits,nextHeight, rightNodePos)
+              //https://github.com/bitcoin/bitcoin/blob/b7b48c8bbdf7a90861610b035d8b0a247ef78c45/src/merkleblock.cpp#L121-L125
+              if (nextHeight != maxHeight) {
+                //we cannot the same two hashes as child nodes UNLESS we are the max height in the binary tree
+                require(leftNode.value.get != rightNode.value.get, "Cannot have the same hashes in two child nodes, got: " + leftNode +
+                  ", \nleftRemainingHashes: " + leftRemainingHashes + " \nrightRemainingHashes: " + rightRemainingHashes +
+                  "\nnumTransactions: " + numTransaction + "\nhashes: " + hashes + "\nbits: " + bits)
+              }
               (rightNode,rightRemainingHashes, rightRemainingBits)
             } else (leftNode, leftRemainingHashes, leftRemainingBits)
           val nodeHash = CryptoUtil.doubleSHA256(leftNode.value.get.bytes ++ rightNode.value.get.bytes)
@@ -283,7 +288,7 @@ object PartialMerkleTree extends BitcoinSLogger {
     //we must not have any matches remaining, unless the remaining bits were use to pad our byte vector to 8 bits
     //for instance, we could have had 5 bits to indicate how to build the merkle tree, but we need to pad it with 3 bits
     //to give us a full byte to serialize and send over the network
-    //https://github.com/bitcoin/bitcoin/blob/master/src/merkleblock.cpp#L177
+    //https://github.com/bitcoin/bitcoin/blob/b7b48c8bbdf7a90861610b035d8b0a247ef78c45/src/merkleblock.cpp#L174-L175
     require(usedAllBits(bits,remainingBits), "We should not have any remaining matches except for those that pad our byte after building our partial merkle tree, got: " + remainingBits)
     tree
   }
@@ -308,8 +313,8 @@ object PartialMerkleTree extends BitcoinSLogger {
 
   /** Enforces the invariant inside of bitcoin core saying we must use all bits
     * in a byte array when reconstruction a partial merkle tree
-    * [[https://github.com/bitcoin/bitcoin/blob/master/src/merkleblock.cpp#L177]]
-    * */
+    * [[https://github.com/bitcoin/bitcoin/blob/b7b48c8bbdf7a90861610b035d8b0a247ef78c45/src/merkleblock.cpp#L174-L175]]
+    */
   private def usedAllBits(bits: Seq[Boolean], remainingBits: Seq[Boolean]): Boolean = {
     val bitsUsed = bits.size - remainingBits.size
     ((bitsUsed+7) / 8) ==((bits.size + 7) / 8)
