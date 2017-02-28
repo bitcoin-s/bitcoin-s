@@ -55,17 +55,20 @@ class TransactionSignatureCreatorTest extends FlatSpec with MustMatchers with Bi
     val scriptPubKey = P2PKScriptPubKey(publicKey)
     val (creditingTx,outputIndex) = TransactionTestUtil.buildCreditingTransaction(scriptPubKey)
     val scriptSig = P2PKScriptSignature(EmptyDigitalSignature)
-    val (spendingTx,inputIndex) = TransactionTestUtil.buildSpendingTransaction(creditingTx,scriptSig,outputIndex)
+    val (spendingTx,inputIndex) = TransactionTestUtil.buildSpendingTransaction(creditingTx,
+      scriptSig,outputIndex)
     val txSignatureComponent = TransactionSignatureComponent(spendingTx,inputIndex,scriptPubKey,
       Policy.standardScriptVerifyFlags)
-    val txSignature = TransactionSignatureCreator.createSig(txSignatureComponent,privateKey,HashType.sigHashAll)
+    val txSignature = TransactionSignatureCreator.createSig(txSignatureComponent,
+      privateKey, HashType.sigHashAll)
 
     //add the signature to the scriptSig instead of having an empty scriptSig
     val signedScriptSig = P2PKScriptSignature(txSignature)
-    val (signedTx,_) = TransactionTestUtil.buildSpendingTransaction(creditingTx,signedScriptSig,outputIndex)
+    val (signedTx,_) = TransactionTestUtil.buildSpendingTransaction(creditingTx,signedScriptSig,
+      outputIndex)
 
     //run it through the interpreter
-    val program = ScriptProgram(signedTx,scriptPubKey,inputIndex, Policy.standardScriptVerifyFlags)
+    val program = ScriptProgram(signedTx, scriptPubKey, inputIndex, Policy.standardScriptVerifyFlags)
 
     val result = ScriptInterpreter.run(program)
 

@@ -3,6 +3,7 @@ package org.bitcoins.core.crypto
 import java.math.BigInteger
 import java.security.SecureRandom
 
+import org.bitcoin.NativeSecp256k1
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.protocol.blockchain.{MainNetChainParams, SecretKey, TestNetChainParams}
 import org.bitcoins.core.util._
@@ -23,22 +24,8 @@ sealed trait ECPrivateKey extends BaseECKey {
 
   /** Derives the public for a the private key */
   def publicKey : ECPublicKey = {
-    val pubKeyBytes : Seq[Byte] = publicKeyPoint.getEncoded(isCompressed)
+    val pubKeyBytes : Seq[Byte] = NativeSecp256k1.computePubkey(bytes.toArray, isCompressed)
     ECPublicKey(pubKeyBytes)
-  }
-
-  /**
-    * Derives the public key ECPoint from the private key
-    * https://github.com/bitcoinj/bitcoinj/blob/master/core/src/main/java/org/bitcoinj/core/ECKey.java#L452
-    *
-    * @return the public key's ECPoint
-    */
-  private def publicKeyPoint : ECPoint = {
-    val privKeyBigInteger = new BigInteger(1,bytes.toArray)
-    val privKey = if (privKeyBigInteger.bitLength > CryptoParams.curve.getN.bitLength()) {
-      privKeyBigInteger.mod(CryptoParams.curve.getN())
-    } else privKeyBigInteger
-    new FixedPointCombMultiplier().multiply(CryptoParams.curve.getG, privKey)
   }
 
   /**
@@ -113,8 +100,7 @@ object ECPrivateKey extends Factory[ECPrivateKey] with BitcoinSLogger {
     */
   def fromWIFToPrivateKey(WIF : String) : ECPrivateKey = {
     val isCompressed = ECPrivateKey.isCompressed(WIF)
-    val trimmedBytes = trimFunction(WIF)
-    val privateKeyBytes = trimmedBytes
+    val privateKeyBytes = trimFunction(WIF)
     ECPrivateKey.fromBytes(privateKeyBytes,isCompressed)
   }
 

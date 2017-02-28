@@ -398,6 +398,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
                   loop(newProgram,newOpCount)
               }
             case OP_WITHDRAWPROOFVERIFY :: t => loop(opWithdrawProofVerify(p), calcOpCount(opCount, OP_WITHDRAWPROOFVERIFY))
+
             case OP_REORGPROOFVERIFY :: t => loop(opReorgProofVerify(p),calcOpCount(opCount, OP_REORGPROOFVERIFY))
             //reserved operations
             case OP_NOP :: t =>

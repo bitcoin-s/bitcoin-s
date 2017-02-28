@@ -247,7 +247,21 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
     * @param program
     * @return
     */
-  def opWithdrawProofVerify(program : ScriptProgram) : ScriptProgram = ???
+  def opWithdrawProofVerify(program : ScriptProgram) : ScriptProgram = {
+    // comment from bitcoin core
+    // In the make-withdraw case, reads the following from the stack:
+    // 1. genesis block hash of the chain the withdraw is coming from
+    // 2. the index within the locking tx's outputs we are claiming
+    // 3. the locking tx itself (WithdrawProofReadStackItem)
+    // 4. the merkle block structure which contains the block in which
+    //    the locking transaction is present (WithdrawProofReadStackItem)
+    // 5. The contract which we are expected to send coins to
+    //
+    // In the combine-outputs case, reads the following from the stack:
+    // 1. genesis block hash of the chain the withdraw is coming from
+    ???
+
+  }
 
 
   /**
