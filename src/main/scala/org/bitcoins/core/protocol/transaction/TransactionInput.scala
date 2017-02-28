@@ -1,26 +1,26 @@
 package org.bitcoins.core.protocol.transaction
 
-import org.bitcoins.core.serializers.transaction.RawTransactionInputParser
-import org.bitcoins.core.protocol.CompactSizeUInt
+import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.protocol.NetworkElement
 import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptSignature}
 import org.bitcoins.core.script.constant.ScriptToken
-import org.bitcoins.core.util.{BitcoinSUtil, Factory}
+import org.bitcoins.core.serializers.transaction.RawTransactionInputParser
+import org.bitcoins.core.util.Factory
 
 /**
  * Created by chris on 12/26/15.
   * Algebraic data type that represents a transaction input
  */
-sealed trait TransactionInput extends TransactionElement {
+sealed trait TransactionInput extends NetworkElement {
 
   def previousOutput : TransactionOutPoint
+
   def scriptSignature : ScriptSignature
-  def sequence : Long
 
+  def sequence : UInt32
 
-  def scriptSigCompactSizeUInt : CompactSizeUInt = BitcoinSUtil.parseCompactSizeUInt(scriptSignature)
   //https://bitcoin.org/en/developer-reference#txin
-  override def size = previousOutput.size + scriptSignature.size +
-    scriptSigCompactSizeUInt.size.toInt + 4
+  override def size = previousOutput.size + scriptSignature.size + 4
 
   def hex = RawTransactionInputParser.write(Seq(this))
 }
@@ -29,7 +29,6 @@ case object EmptyTransactionInput extends TransactionInput {
   override def previousOutput = TransactionInput.empty.previousOutput
   override def scriptSignature = TransactionInput.empty.scriptSignature
   override def sequence = TransactionInput.empty.sequence
-  override def scriptSigCompactSizeUInt = TransactionInput.empty.scriptSigCompactSizeUInt
 }
 
 /**
@@ -38,6 +37,7 @@ case object EmptyTransactionInput extends TransactionInput {
   */
 sealed trait CoinbaseInput extends TransactionInput {
   override def previousOutput = EmptyTransactionOutPoint
+  override def sequence = TransactionConstants.sequence
 }
 
 
@@ -47,28 +47,21 @@ object TransactionInput extends Factory[TransactionInput] {
     apply(oldInput.previousOutput,scriptSig,oldInput.sequence)
   }
   private sealed case class TransactionInputImpl(previousOutput : TransactionOutPoint,
-                                         scriptSignature : ScriptSignature, sequence : Long) extends TransactionInput
+                                         scriptSignature : ScriptSignature, sequence : UInt32) extends TransactionInput
 
   private sealed case class CoinbaseInputImpl(
-    scriptSignature : ScriptSignature, sequence : Long) extends CoinbaseInput
+    scriptSignature : ScriptSignature) extends CoinbaseInput
 
   private def factory(oldInput : TransactionInput, scriptPubKey: ScriptPubKey) : TransactionInput = {
     val scriptSig = ScriptSignature(scriptPubKey.hex)
     factory(oldInput,scriptSig)
   }
 
-  private def factory(oldInput : TransactionInput,sequenceNumber : Long) : TransactionInput = {
+  private def factory(oldInput : TransactionInput,sequenceNumber : UInt32) : TransactionInput = {
     TransactionInputImpl(oldInput.previousOutput, oldInput.scriptSignature,sequenceNumber)
   }
 
-  /**
-    * Creates a transaction input from a given output and the output's transaction
- *
-    * @param oldInput
-    * @param output
-    * @param outputsTransaction
-    * @return
-    */
+  /** Creates a transaction input from a given output and the output's transaction */
   private def factory(oldInput : TransactionInput,output : TransactionOutput, outputsTransaction : Transaction) : TransactionInput = {
     val outPoint = TransactionOutPoint(output,outputsTransaction)
     factory(oldInput,outPoint)
@@ -79,9 +72,9 @@ object TransactionInput extends Factory[TransactionInput] {
   }
 
 
-  private def factory(outPoint : TransactionOutPoint, scriptSignature : ScriptSignature, sequenceNumber : Long) : TransactionInput = {
+  private def factory(outPoint : TransactionOutPoint, scriptSignature : ScriptSignature, sequenceNumber : UInt32) : TransactionInput = {
     outPoint match {
-      case EmptyTransactionOutPoint => CoinbaseInputImpl(scriptSignature,sequenceNumber)
+      case EmptyTransactionOutPoint => CoinbaseInputImpl(scriptSignature)
       case _ : TransactionOutPoint => TransactionInputImpl(outPoint, scriptSignature, sequenceNumber)
     }
   }
@@ -104,13 +97,20 @@ object TransactionInput extends Factory[TransactionInput] {
 
   def apply(oldInput : TransactionInput, scriptPubKey: ScriptPubKey) : TransactionInput = factory(oldInput, scriptPubKey)
 
-  def apply(oldInput : TransactionInput,sequenceNumber : Long) : TransactionInput = factory(oldInput, sequenceNumber)
+  def apply(oldInput : TransactionInput,sequenceNumber : UInt32) : TransactionInput = factory(oldInput, sequenceNumber)
 
   def apply(oldInput : TransactionInput,output : TransactionOutput, outputsTransaction : Transaction) : TransactionInput = factory(oldInput,output,outputsTransaction)
 
   def apply(oldInput : TransactionInput, outPoint: TransactionOutPoint) : TransactionInput = factory(oldInput,outPoint)
 
-  def apply(outPoint : TransactionOutPoint, scriptSignature : ScriptSignature, sequenceNumber : Long) : TransactionInput = factory(outPoint,scriptSignature,sequenceNumber)
+  def apply(outPoint : TransactionOutPoint, scriptSignature : ScriptSignature, sequenceNumber : UInt32) : TransactionInput = factory(outPoint,scriptSignature,sequenceNumber)
 
-  def apply(bytes : Seq[Byte]) : TransactionInput = fromBytes(bytes)
+  /**
+    * Creates a coinbase input - coinbase inputs always have an empty outpoint
+    * @param scriptSignature this can contain anything, miners use this to signify support for various protocol BIPs
+    * @return the coinbase input
+    */
+  def apply(scriptSignature: ScriptSignature) : CoinbaseInput = {
+    CoinbaseInputImpl(scriptSignature)
+  }
 }

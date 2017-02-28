@@ -1,11 +1,13 @@
 package org.bitcoins.core.util
 
-import org.bitcoins.core.crypto.ECFactory
-import org.bitcoins.core.script.bitwise.OP_EQUALVERIFY
+import org.bitcoins.core.crypto.{ECPrivateKey, ECPublicKey}
+import org.bitcoins.core.script.bitwise.{OP_EQUALVERIFY, OP_OR}
 import org.bitcoins.core.script.constant._
 import org.bitcoins.core.script.crypto._
+import org.bitcoins.core.script.flag.ScriptVerifyWitnessPubKeyType
 import org.bitcoins.core.script.locktime.OP_CHECKLOCKTIMEVERIFY
 import org.bitcoins.core.script.reserved.{OP_NOP, OP_RESERVED}
+import org.bitcoins.core.script.result.ScriptErrorWitnessPubKeyType
 import org.bitcoins.core.script.stack.OP_DUP
 import org.scalatest.{FlatSpec, MustMatchers}
 
@@ -19,11 +21,11 @@ class BitcoinScriptUtilTest extends FlatSpec with MustMatchers {
   val expectedHex = TestUtil.rawP2PKHScriptPubKey
   "BitcoinScriptUtil" must "give us the correct hexadecimal value of an asm script" in {
 
-    BitcoinScriptUtil.asmToHex(asm) must be (expectedHex)
+    BitcoinScriptUtil.asmToHex(asm) must be (asm.flatMap(_.hex).mkString)
   }
 
   it must "give us the correct byte representation of an asm script" in {
-    BitcoinScriptUtil.asmToBytes(asm) must be (BitcoinSUtil.decodeHex(expectedHex))
+    BitcoinScriptUtil.asmToBytes(asm) must be (asm.flatMap(_.bytes))
   }
 
   it must "filter out all of the push operations in a scriptSig" in {
@@ -97,6 +99,10 @@ class BitcoinScriptUtilTest extends FlatSpec with MustMatchers {
     BitcoinScriptUtil.isPushOnly(Seq(OP_NOP, OP_0,OP_0,OP_0)) must be (false)
   }
 
+  it must "determine that a script is not push only if it contains a ScriptConstant" in {
+    BitcoinScriptUtil.isPushOnly(Seq(OP_NOP, BytesToPushOntoStack(1), ScriptConstant("51"))) must be (false)
+  }
+
   it must "determine that the script is not push only if it contains an script number operation" in {
     BitcoinScriptUtil.isMinimalPush(BytesToPushOntoStack(1),OP_1) must be (false)
   }
@@ -156,6 +162,7 @@ class BitcoinScriptUtilTest extends FlatSpec with MustMatchers {
     BitcoinScriptUtil.isShortestEncoding(ScriptConstant("00")) must be (false)
     BitcoinScriptUtil.isShortestEncoding(ScriptConstant("0000")) must be (false)
 
+    BitcoinScriptUtil.isShortestEncoding(ScriptConstant("0100")) must be (false)
     BitcoinScriptUtil.isShortestEncoding(ScriptConstant("80")) must be (false)
     BitcoinScriptUtil.isShortestEncoding(ScriptConstant("0080")) must be (false)
 
@@ -174,8 +181,54 @@ class BitcoinScriptUtilTest extends FlatSpec with MustMatchers {
 
   it must "check a public key's encoding" in {
     //pubkeys must be compressed or uncompressed or else that are not validly encoded
-    val key = ECFactory.publicKey("00")
+    val key = ECPublicKey("00")
     val program = TestUtil.testProgram
     BitcoinScriptUtil.checkPubKeyEncoding(key,program) must be (false)
+  }
+
+  it must "determine if script number is correctly minimally-encoded" in {
+    val scriptNum100 = ScriptNumber(100)
+    val scriptNum10 = ScriptNumber(10)
+    val scriptNumZero = ScriptNumber(0)
+    val scriptNum16 = ScriptNumber(16)
+    val scriptNum17 = ScriptNumber(17)
+    BitcoinScriptUtil.minimalScriptNumberRepresentation(scriptNum100) must be (scriptNum100)
+    BitcoinScriptUtil.minimalScriptNumberRepresentation(scriptNum10) must be (OP_10)
+    BitcoinScriptUtil.minimalScriptNumberRepresentation(scriptNumZero) must be (OP_0)
+    BitcoinScriptUtil.minimalScriptNumberRepresentation(scriptNum16) must be (OP_16)
+    BitcoinScriptUtil.minimalScriptNumberRepresentation(scriptNum17) must be (scriptNum17)
+    BitcoinScriptUtil.minimalScriptNumberRepresentation(ScriptNumber(-1)) must be (OP_1NEGATE)
+    BitcoinScriptUtil.minimalScriptNumberRepresentation(ScriptNumber(-2)) must be (ScriptNumber(-2))
+  }
+
+
+  it must "determine if a segwit pubkey is compressed" in {
+    val key = ECPrivateKey(false)
+    val pubKey = key.publicKey
+    val flags = Seq(ScriptVerifyWitnessPubKeyType)
+    BitcoinScriptUtil.isValidPubKeyEncoding(pubKey,flags) must be (Some(ScriptErrorWitnessPubKeyType))
+
+    val key2 = ECPrivateKey(true)
+    val pubKey2 = key2.publicKey
+    BitcoinScriptUtil.isValidPubKeyEncoding(pubKey2,flags) must be (None)
+  }
+
+  it must "remove the signatures from a p2sh scriptSig" in {
+    val p2shScriptSig = TestUtil.p2sh2Of3ScriptSig
+    val signatures = p2shScriptSig.signatures
+    val asmWithoutSigs = BitcoinScriptUtil.removeSignaturesFromScript(signatures,p2shScriptSig.asm)
+    val sigExists = signatures.map(sig => asmWithoutSigs.exists(_ == ScriptConstant(sig.hex)))
+    sigExists.exists(_ == true) must be (false)
+  }
+
+  it must "cast a script token to a boolean value" in {
+    BitcoinScriptUtil.castToBool(ScriptConstant("")) must be (false)
+    BitcoinScriptUtil.castToBool(ScriptConstant(Seq(0x80.toByte))) must be (false)
+    BitcoinScriptUtil.castToBool(ScriptConstant("000000")) must be (false)
+    BitcoinScriptUtil.castToBool(ScriptConstant("00000080")) must be (false)
+
+    BitcoinScriptUtil.castToBool(ScriptConstant("01")) must be (true)
+    BitcoinScriptUtil.castToBool(ScriptConstant("80000000")) must be (true)
+    BitcoinScriptUtil.castToBool(ScriptConstant("00008000")) must be (true)
   }
 }

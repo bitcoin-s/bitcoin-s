@@ -1,6 +1,6 @@
 package org.bitcoins.core.protocol.script
 
-import org.bitcoins.core.crypto.ECFactory
+import org.bitcoins.core.crypto.{ECPublicKey}
 import org.bitcoins.core.util.TestUtil
 import org.scalatest.{FlatSpec, MustMatchers}
 
@@ -15,6 +15,6 @@ class P2PKScriptPubKeyTest extends FlatSpec with MustMatchers {
       case _ => throw new RuntimeException("should have been p2pk script pub key")
     }
 
-    p2pkScriptPubKey.publicKey must be (ECFactory.publicKey("0479be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8"))
+    p2pkScriptPubKey.publicKey must be (ECPublicKey("0479be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8"))
   }
 }

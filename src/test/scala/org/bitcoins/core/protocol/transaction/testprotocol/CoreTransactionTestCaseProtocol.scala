@@ -1,11 +1,14 @@
 package org.bitcoins.core.protocol.transaction.testprotocol
 
-import org.bitcoins.core.serializers.script.ScriptParser
+import org.bitcoins.core.crypto.DoubleSha256Digest
+import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
+import org.bitcoins.core.number.{Int64, UInt32}
 import org.bitcoins.core.protocol.script.ScriptPubKey
-import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint}
+import org.bitcoins.core.protocol.transaction.{EmptyTransactionOutPoint, Transaction, TransactionOutPoint}
 import org.bitcoins.core.script.constant.ScriptToken
 import org.bitcoins.core.script.flag.{ScriptFlag, ScriptFlagFactory}
-import org.bitcoins.core.util.BitcoinSLogger
+import org.bitcoins.core.serializers.script.ScriptParser
+import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil}
 import spray.json.{DefaultJsonProtocol, JsArray, JsValue, RootJsonFormat}
 
 /**
@@ -24,8 +27,8 @@ object CoreTransactionTestCaseProtocol extends DefaultJsonProtocol with BitcoinS
 
       if (elements.size < 3) None
       else {
-        val creditingTxsInfo : Seq[(TransactionOutPoint, ScriptPubKey)]= elements.head match {
-          case array : JsArray => parseOutPointsAndScriptPubKeys(array)
+        val creditingTxsInfo : Seq[(TransactionOutPoint, ScriptPubKey, Option[CurrencyUnit])]= elements.head match {
+          case array : JsArray => parseOutPointsScriptPubKeysAmount(array)
           case _ : JsValue => throw new RuntimeException("Needs to be a js array")
         }
         val spendingTx : Transaction = Transaction(elements(1).convertTo[String])
@@ -42,23 +45,29 @@ object CoreTransactionTestCaseProtocol extends DefaultJsonProtocol with BitcoinS
 
   /**
     * These are in the following format
-    * [[prevout hash, prevout index, prevout scriptPubKey], [input 2], ...]
- *
-    * @param array
-    * @return
+    * [[prevout hash, prevout index, prevout scriptPubKey, amount], [input 2], ...]
     */
-  def parseOutPointsAndScriptPubKeys(array : JsArray) : Seq[(TransactionOutPoint,ScriptPubKey)] = {
+  def parseOutPointsScriptPubKeysAmount(array : JsArray): Seq[(TransactionOutPoint,ScriptPubKey, Option[CurrencyUnit])] = {
     val result = array.elements.map {
       case array : JsArray =>
-        val prevoutHash = array.elements.head.convertTo[String]
-        val prevoutIndex = array.elements(1).convertTo[Int]
+        val prevoutHashHex = BitcoinSUtil.flipEndianness(array.elements.head.convertTo[String])
+        val prevoutHash = DoubleSha256Digest(prevoutHashHex)
+
+        val prevoutIndex = array.elements(1).convertTo[Long] match {
+          case -1 => UInt32("ffffffff")
+          case index if index >= UInt32.min.underlying && index <= UInt32.max.underlying => UInt32(index)
+        }
+
+        val amount = if (array.elements.size == 4) Some(Satoshis(Int64(array.elements(3).convertTo[Long]))) else None
+
+        //val prevoutIndex = UInt32(array.elements(1).convertTo[Int])
         val outPoint = TransactionOutPoint(prevoutHash,prevoutIndex)
         val scriptTokens : Seq[ScriptToken] = ScriptParser.fromString(array.elements(2).convertTo[String])
+        logger.info("ASM: " + scriptTokens)
         val scriptPubKey = ScriptPubKey.fromAsm(scriptTokens)
-        (outPoint,scriptPubKey)
+        (outPoint,scriptPubKey, amount)
       case _ : JsValue => throw new RuntimeException("All tx outpoint/scriptpubkey info must be array elements")
     }
-
     result
   }
 }

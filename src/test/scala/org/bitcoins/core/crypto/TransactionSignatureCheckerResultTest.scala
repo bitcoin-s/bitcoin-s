@@ -8,8 +8,8 @@ import org.scalatest.{FlatSpec, MustMatchers}
 class TransactionSignatureCheckerResultTest extends FlatSpec with MustMatchers  {
 
   "TransactionSignatureCheckerResult" must "have isValid set correctly for the different outcomes of TransactionSignatureCheckerResult" in {
-    SignatureValidationFailureIncorrectSignatures.isValid must be (false)
-    SignatureValidationFailureNotStrictDerEncoding.isValid must be (false)
+    SignatureValidationErrorIncorrectSignatures.isValid must be (false)
+    SignatureValidationErrorNotStrictDerEncoding.isValid must be (false)
     SignatureValidationSuccess.isValid must be (true)
   }
 }

@@ -7,50 +7,34 @@ package org.bitcoins.core.script.flag
  */
 trait ScriptFlagFactory {
 
-  /**
-   * All the script flags found inside of bitcoin core
-   * https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.h#L31
-   * @return
-   */
+  /** All the [[ScriptFlag]]s found inside of bitcoin core
+   * https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.h#L31. */
   private def flags = Seq(ScriptVerifyNone, ScriptVerifyP2SH, ScriptVerifyStrictEnc,
     ScriptVerifyDerSig, ScriptVerifyLowS, ScriptVerifySigPushOnly, ScriptVerifyMinimalData,
     ScriptVerifyNullDummy, ScriptVerifyDiscourageUpgradableNOPs, ScriptVerifyCleanStack,
-    ScriptVerifyCheckLocktimeVerify, ScriptVerifyCheckSequenceVerify)
+    ScriptVerifyCheckLocktimeVerify, ScriptVerifyCheckSequenceVerify,ScriptVerifyWitness,
+    ScriptVerifyDiscourageUpgradableWitnessProgram, ScriptVerifyMinimalIf,ScriptVerifyNullFail,
+    ScriptVerifyWitnessPubKeyType)
 
-  /**
-   * Takes in a string and tries to match it with a script flag
-   * @param str the string to try and match with a script flag
-   * @return the script flag if one is found else none
-   */
+  /** Takes in a string and tries to match it with a [[ScriptFlag]]. */
   def fromString(str : String) : Option[ScriptFlag] = {
     flags.find(_.name == str)
   }
 
 
-  /**
-   * Parses the given list into script flags
-   * the strings that do not match a script flag are discarded
-   * @param list the list of strings to parse into script flags
-   * @return the sequence of script flags
-   */
+  /** Parses the given list into[[ScriptFlag]]s
+   * the strings that do not match a [[ScriptFlag]] are discarded. */
   def fromList(list : Seq[String]) : Seq[ScriptFlag] = {
-    list.map(fromString(_)).flatten
+    list.flatMap(fromString(_))
   }
 
-  /**
-   * Parses a list of script flags that is separated by commas
-   * @param str a string in the format flag1,flag2,...,flagN
-   * @return the sequence of script flags
-   */
+  /** Parses a list of [[ScriptFlag]]s that is separated by commas. */
   def fromList(str : String) : Seq[ScriptFlag] = {
     fromList(str.split(","))
   }
 
-  /**
-   * Empty script flag
-   * @return
-   */
-  def empty : Seq[ScriptFlag] = Seq()
+  /** Empty script flag. */
+  def empty : Seq[ScriptFlag] = Nil
 }
 
 object ScriptFlagFactory extends ScriptFlagFactory

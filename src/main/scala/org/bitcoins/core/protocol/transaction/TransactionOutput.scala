@@ -1,23 +1,22 @@
 package org.bitcoins.core.protocol.transaction
 
+import org.bitcoins.core.protocol.{CompactSizeUInt, NetworkElement}
 import org.bitcoins.core.currency.{CurrencyUnits, CurrencyUnit, Satoshis}
 import org.bitcoins.core.serializers.transaction.RawTransactionOutputParser
-import org.bitcoins.core.protocol.CompactSizeUInt
 
 import org.bitcoins.core.protocol.script.{ScriptPubKey}
 import org.bitcoins.core.util.{Factory, BitcoinSUtil}
 
-
 /**
  * Created by chris on 12/26/15.
  */
-sealed trait TransactionOutput extends TransactionElement {
+sealed trait TransactionOutput extends NetworkElement {
 
   def value : CurrencyUnit
   def scriptPubKey : ScriptPubKey
-  def scriptPubKeyCompactSizeUInt : CompactSizeUInt = BitcoinSUtil.parseCompactSizeUInt(scriptPubKey)
+
   //https://bitcoin.org/en/developer-reference#txout
-  override def size = scriptPubKey.size + scriptPubKeyCompactSizeUInt.size.toInt + 8
+  override def size = scriptPubKey.size + 8
 
   override def hex = RawTransactionOutputParser.write(Seq(this))
 }
@@ -44,7 +43,9 @@ object TransactionOutput extends Factory[TransactionOutput] {
   def fromBytes(bytes : Seq[Byte]) : TransactionOutput = RawTransactionOutputParser.read(bytes).head
 
   def apply(oldOutput : TransactionOutput, newCurrencyUnit: CurrencyUnit) : TransactionOutput = factory(oldOutput,newCurrencyUnit)
+
   def apply(oldOutput : TransactionOutput, newScriptPubKey : ScriptPubKey) : TransactionOutput = factory(oldOutput, newScriptPubKey)
+
   def apply(currencyUnit: CurrencyUnit, scriptPubKey: ScriptPubKey) : TransactionOutput = factory(currencyUnit, scriptPubKey)
-  def apply(bytes : Seq[Byte]) : TransactionOutput = fromBytes(bytes)
+
 }

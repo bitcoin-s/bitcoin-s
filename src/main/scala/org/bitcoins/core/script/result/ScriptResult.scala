@@ -7,8 +7,8 @@ sealed trait ScriptResult {
 }
 
 /**
- * Created by chris on 4/18/16.
- */
+  * [[https://github.com/bitcoin/bitcoin/blob/master/src/test/script_tests.cpp#L61]]
+  */
 sealed trait ScriptError extends ScriptResult
 
 //SCRIPT_ERR_OK = 0,
@@ -177,7 +177,6 @@ case object ScriptErrorCleanStack extends ScriptError {
   override def description : String = "CLEANSTACK"
 }
 
-
 /* softfork safeness */
 //SCRIPT_ERR_DISCOURAGE_UPGRADABLE_NOPS,
 case object ScriptErrorDiscourageUpgradableNOPs extends ScriptError {
@@ -187,6 +186,55 @@ case object ScriptErrorDiscourageUpgradableNOPs extends ScriptError {
 //SCRIPT_ERR_ERROR_COUNT
 case object ScriptErrorCount extends ScriptError {
   override def description : String = "ERROR_COUNT"
+}
+
+//SCRIPT_ERR_MINIMALIF
+case object ScriptErrorMinimalIf extends ScriptError {
+  override def description = "MINIMALIF"
+}
+//SCRIPT_ERR_SIG_NULLFAIL
+case object ScriptErrorSigNullFail extends ScriptError {
+  override def description = "NULLFAIL"
+}
+
+//SCRIPT_ERR_DISCOURAGE_UPGRADABLE_WITNESS_PROGRAM
+case object ScriptErrorDiscourageUpgradeableWitnessProgram extends ScriptError {
+  override def description = "DISCOURAGE_UPGRADABLE_WITNESS_PROGRAM"
+}
+
+//SCRIPT_ERR_WITNESS_PROGRAM_WRONG_LENGTH
+
+case object ScriptErrorWitnessProgramWrongLength extends ScriptError {
+  override def description = "WITNESS_PROGRAM_WRONG_LENGTH"
+}
+
+//SCRIPT_ERR_WITNESS_PROGRAM_WITNESS_EMPTY
+case object ScriptErrorWitnessProgramWitnessEmpty extends ScriptError {
+  override def description = "WITNESS_PROGRAM_WITNESS_EMPTY"
+}
+
+//SCRIPT_ERR_WITNESS_PROGRAM_MISMATCH
+case object ScriptErrorWitnessProgramMisMatch extends ScriptError {
+  override def description = "WITNESS_PROGRAM_MISMATCH"
+}
+
+//SCRIPT_ERR_WITNESS_MALLEATED
+case object ScriptErrorWitnessMalleated extends ScriptError {
+  override def description = "WITNESS_MALLEATED"
+}
+//SCRIPT_ERR_WITNESS_MALLEATED_P2SH
+case object ScriptErrorWitnessMalleatedP2SH extends ScriptError {
+  override def description = "WITNESS_MALLEATED_P2SH"
+}
+
+//SCRIPT_ERR_WITNESS_UNEXPECTED
+case object ScriptErrorWitnessUnexpected extends ScriptError {
+  override def description = "WITNESS_UNEXPECTED"
+}
+
+//SCRIPT_ERR_WITNESS_PUBKEYTYPE
+case object ScriptErrorWitnessPubKeyType extends ScriptError {
+  override def description = "WITNESS_PUBKEYTYPE"
 }
 
 
@@ -202,6 +250,8 @@ object ScriptResult {
     ScriptErrorInvalidAltStackOperation, ScriptErrorUnbalancedConditional, ScriptErrorNegativeLockTime,
     ScriptErrorUnsatisfiedLocktime, ScriptErrorSigHashType, ScriptErrorSigDer, ScriptErrorMinimalData, ScriptErrorSigPushOnly,
     ScriptErrorSigHighS, ScriptErrorSigNullDummy,ScriptErrorPubKeyType, ScriptErrorCleanStack, ScriptErrorDiscourageUpgradableNOPs,
-    ScriptErrorCount)
+    ScriptErrorCount, ScriptErrorMinimalIf, ScriptErrorSigNullFail,ScriptErrorDiscourageUpgradeableWitnessProgram, ScriptErrorWitnessProgramWrongLength,
+    ScriptErrorWitnessProgramWitnessEmpty,ScriptErrorWitnessProgramMisMatch, ScriptErrorWitnessMalleated,
+    ScriptErrorWitnessMalleatedP2SH,ScriptErrorWitnessUnexpected, ScriptErrorWitnessPubKeyType )
   def apply(str : String) : ScriptResult = results.filter(_.description == str).head
 }
