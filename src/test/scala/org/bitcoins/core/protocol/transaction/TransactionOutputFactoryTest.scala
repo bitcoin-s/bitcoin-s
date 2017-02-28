@@ -1,8 +1,8 @@
 package org.bitcoins.core.protocol.transaction
 
-import org.bitcoins.core.currency.CurrencyUnits
+import org.bitcoins.core.currency.{CurrencyUnits, Satoshis}
 import org.bitcoins.core.util.TestUtil
-import org.scalatest.{MustMatchers, FlatSpec}
+import org.scalatest.{FlatSpec, MustMatchers}
 
 /**
  * Created by chris on 3/30/16.
@@ -16,8 +16,8 @@ class TransactionOutputFactoryTest extends FlatSpec with MustMatchers {
   }
 
   it must "modify the currency unit for a tx output" in {
-    val newTxOutput = TransactionOutput(EmptyTransactionOutput,CurrencyUnits.oneSatoshi)
-    newTxOutput.value must be (CurrencyUnits.oneSatoshi)
+    val newTxOutput = TransactionOutput(EmptyTransactionOutput,Satoshis.one)
+    newTxOutput.value must be (Satoshis.one)
   }
 
   it must "modify the scriptPubKey for a tx output" in {

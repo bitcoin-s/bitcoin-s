@@ -1,7 +1,10 @@
 package org.bitcoins.core.script.locktime
 
 
+import org.bitcoins.core.currency.CurrencyUnits
+import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.policy.Policy
+import org.bitcoins.core.protocol.script.SigVersionBase
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionConstants, TransactionInput, UpdateTransactionInputs}
 import org.bitcoins.core.script.result._
 import org.bitcoins.core.script.{ExecutedScriptProgram, ExecutionInProgressScriptProgram, PreExecutionScriptProgram, ScriptProgram}
@@ -33,9 +36,9 @@ class LockTimeInterpreterTest extends FlatSpec with MustMatchers with LockTimeIn
   it must "mark the transaction as invalid if the stack top is negative" in {
     val stack = Seq(ScriptNumber(-1))
     val script = Seq(OP_CHECKLOCKTIMEVERIFY)
-    val txInputAdjustedSequenceNumber = TransactionInput(TestUtil.transaction.inputs(0),0)
+    val txInputAdjustedSequenceNumber = TransactionInput(TestUtil.transaction.inputs(0),UInt32.zero)
     val txAdjustedSequenceNumber = Transaction(TestUtil.transaction,UpdateTransactionInputs(Seq(txInputAdjustedSequenceNumber)))
-    val adjustedLockTimeTx = Transaction(txAdjustedSequenceNumber,0)
+    val adjustedLockTimeTx = Transaction(txAdjustedSequenceNumber,UInt32.zero)
     val baseProgram = ScriptProgram(adjustedLockTimeTx,TestUtil.testProgram.txSignatureComponent.scriptPubKey,
       TestUtil.testProgram.txSignatureComponent.inputIndex,TestUtil.testProgram.flags)
     val program = ScriptProgramTestUtil.toPreExecutionScriptProgram(ScriptProgram(baseProgram,stack,script))
@@ -46,9 +49,9 @@ class LockTimeInterpreterTest extends FlatSpec with MustMatchers with LockTimeIn
   it must "mark the transaction as invalid if the locktime on the tx is < 500000000 && stack top is >= 500000000" in {
     val stack = Seq(ScriptNumber(500000000))
     val script = Seq(OP_CHECKLOCKTIMEVERIFY)
-    val txInputAdjustedSequenceNumber = TransactionInput(TestUtil.transaction.inputs(0),0)
+    val txInputAdjustedSequenceNumber = TransactionInput(TestUtil.transaction.inputs(0),UInt32.zero)
     val txAdjustedSequenceNumber = Transaction(TestUtil.transaction,UpdateTransactionInputs(Seq(txInputAdjustedSequenceNumber)))
-    val adjustedLockTimeTx = Transaction(txAdjustedSequenceNumber,0)
+    val adjustedLockTimeTx = Transaction(txAdjustedSequenceNumber,UInt32.zero)
     val baseProgram = ScriptProgram(adjustedLockTimeTx,TestUtil.testProgram.txSignatureComponent.scriptPubKey,
       TestUtil.testProgram.txSignatureComponent.inputIndex,TestUtil.testProgram.flags)
     val program = ScriptProgramTestUtil.toPreExecutionScriptProgram(ScriptProgram(baseProgram,stack,script))
@@ -59,9 +62,9 @@ class LockTimeInterpreterTest extends FlatSpec with MustMatchers with LockTimeIn
   it must "mark the transaction as invalid if the locktime on the tx is >= 500000000 && stack top is < 500000000" in {
     val stack = Seq(ScriptNumber(499999999))
     val script = Seq(OP_CHECKLOCKTIMEVERIFY)
-    val txInputAdjustedSequenceNumber = TransactionInput(TestUtil.transaction.inputs(0),0)
+    val txInputAdjustedSequenceNumber = TransactionInput(TestUtil.transaction.inputs(0),UInt32.zero)
     val txAdjustedSequenceNumber = Transaction(TestUtil.transaction,UpdateTransactionInputs(Seq(txInputAdjustedSequenceNumber)))
-    val adjustedLockTimeTx = Transaction(txAdjustedSequenceNumber,500000000)
+    val adjustedLockTimeTx = Transaction(txAdjustedSequenceNumber,UInt32(500000000))
     val baseProgram = ScriptProgram(adjustedLockTimeTx,TestUtil.testProgram.txSignatureComponent.scriptPubKey,
       TestUtil.testProgram.txSignatureComponent.inputIndex,TestUtil.testProgram.flags)
     val program = ScriptProgramTestUtil.toPreExecutionScriptProgram(ScriptProgram(baseProgram,stack,script))
@@ -73,11 +76,12 @@ class LockTimeInterpreterTest extends FlatSpec with MustMatchers with LockTimeIn
   it must "mark the transaction as invalid if the stack top item is greater than the tx locktime" in {
     val stack = Seq(ScriptNumber(499999999))
     val script = Seq(OP_CHECKLOCKTIMEVERIFY)
-    val txInputAdjustedSequenceNumber = TransactionInput(TestUtil.transaction.inputs(0),0)
+    val txInputAdjustedSequenceNumber = TransactionInput(TestUtil.transaction.inputs(0),UInt32.zero)
     val txAdjustedSequenceNumber = Transaction(TestUtil.transaction,
       UpdateTransactionInputs(Seq(txInputAdjustedSequenceNumber)))
-    val adjustedLockTimeTx = Transaction(txAdjustedSequenceNumber,0)
-    val baseProgram = ScriptProgram.toExecutionInProgress(ScriptProgram(adjustedLockTimeTx,TestUtil.testProgram.txSignatureComponent.scriptPubKey,
+    val adjustedLockTimeTx = Transaction(txAdjustedSequenceNumber,UInt32.zero)
+    val baseProgram = ScriptProgram.toExecutionInProgress(ScriptProgram(adjustedLockTimeTx,
+      TestUtil.testProgram.txSignatureComponent.scriptPubKey,
       TestUtil.testProgram.txSignatureComponent.inputIndex,TestUtil.testProgram.flags))
     val program = ScriptProgram(baseProgram,stack,script)
     val newProgram = opCheckLockTimeVerify(program)
@@ -90,11 +94,12 @@ class LockTimeInterpreterTest extends FlatSpec with MustMatchers with LockTimeIn
   it must "mark the transaction as valid if the locktime on the tx is < 500000000 && stack top is < 500000000" in {
     val stack = Seq(ScriptNumber(0))
     val script = Seq(OP_CHECKLOCKTIMEVERIFY)
-    val txInputAdjustedSequenceNumber = TransactionInput(TestUtil.transaction.inputs(0),0)
+    val txInputAdjustedSequenceNumber = TransactionInput(TestUtil.transaction.inputs(0),UInt32.zero)
     val txAdjustedSequenceNumber = Transaction(TestUtil.transaction,
       UpdateTransactionInputs(Seq(txInputAdjustedSequenceNumber)))
-    val adjustedLockTimeTx = Transaction(txAdjustedSequenceNumber,0)
-    val baseProgram = ScriptProgram.toExecutionInProgress(ScriptProgram(adjustedLockTimeTx,TestUtil.testProgram.txSignatureComponent.scriptPubKey,
+    val adjustedLockTimeTx = Transaction(txAdjustedSequenceNumber,UInt32.zero)
+    val baseProgram = ScriptProgram.toExecutionInProgress(ScriptProgram(adjustedLockTimeTx,
+      TestUtil.testProgram.txSignatureComponent.scriptPubKey,
       TestUtil.testProgram.txSignatureComponent.inputIndex,TestUtil.testProgram.flags))
     val program = ScriptProgram(baseProgram,stack,script)
     val newProgram = opCheckLockTimeVerify(program)
@@ -106,11 +111,13 @@ class LockTimeInterpreterTest extends FlatSpec with MustMatchers with LockTimeIn
   it must "mark the transaction as valid if the locktime on the tx is >= 500000000 && stack top is >= 500000000" in {
     val stack = Seq(ScriptNumber(500000000))
     val script = Seq(OP_CHECKLOCKTIMEVERIFY)
-    val txInputAdjustedSequenceNumber = TransactionInput(TestUtil.transaction.inputs(0),0)
+    val txInputAdjustedSequenceNumber = TransactionInput(TestUtil.transaction.inputs(0),UInt32.zero)
     val txAdjustedSequenceNumber = Transaction(TestUtil.transaction,UpdateTransactionInputs(Seq(txInputAdjustedSequenceNumber)))
-    val adjustedLockTimeTx = Transaction(txAdjustedSequenceNumber,500000000)
-    val baseProgram : PreExecutionScriptProgram = ScriptProgram(adjustedLockTimeTx,TestUtil.testProgram.txSignatureComponent.scriptPubKey,
-      TestUtil.testProgram.txSignatureComponent.inputIndex,TestUtil.testProgram.flags)
+    val adjustedLockTimeTx = Transaction(txAdjustedSequenceNumber,UInt32(500000000))
+    val baseProgram : PreExecutionScriptProgram = ScriptProgram(adjustedLockTimeTx,
+      TestUtil.testProgram.txSignatureComponent.scriptPubKey,
+      TestUtil.testProgram.txSignatureComponent.inputIndex,TestUtil.testProgram.flags
+    )
     val program = ScriptProgram(baseProgram,stack,script)
     val newProgram = opCheckLockTimeVerify(program)
     //if an error is hit, the newProgram will be an instance of ExecutedScriptProgram
@@ -136,7 +143,7 @@ class LockTimeInterpreterTest extends FlatSpec with MustMatchers with LockTimeIn
     newProgram.asInstanceOf[ExecutedScriptProgram].error must be (Some(ScriptErrorNegativeLockTime))
   }
 
-  it must "mark the script as invalid if we are requiring minimal encoding of numbers and the stack top is not minimal" in {
+  it must "mark the script as invalid for OP_CHECKSEQUENCEVERIFY if we are requiring minimal encoding of numbers and the stack top is not minimal" in {
     val stack = List(ScriptNumber("0100"))
     val script = List(OP_CHECKSEQUENCEVERIFY)
     val program = ScriptProgram(TestUtil.testProgramExecutionInProgress,stack,script)
@@ -146,7 +153,7 @@ class LockTimeInterpreterTest extends FlatSpec with MustMatchers with LockTimeIn
   }
 
   it must "treat OP_CHECKSEQUENCEVERIFY as a NOP if the locktime disabled flag is set in the sequence number" in {
-    val stack = List(ScriptNumber(TransactionConstants.locktimeDisabledFlag))
+    val stack = List(ScriptNumber(TransactionConstants.locktimeDisabledFlag.underlying))
     val script = List(OP_CHECKSEQUENCEVERIFY)
     val program = ScriptProgram(TestUtil.testProgramExecutionInProgress,stack,script)
     val newProgram = opCheckSequenceVerify(program)

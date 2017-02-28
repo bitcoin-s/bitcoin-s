@@ -12,7 +12,4 @@ class PolicyTest extends FlatSpec with MustMatchers {
     Policy.mandatoryScriptVerifyFlags must be (Seq(ScriptVerifyP2SH))
   }
 
-  it must "determine what the non mandatory script verify flags are" in {
-    Policy.standardNotMandatoryScriptVerifyFlags must be (Seq(ScriptVerifyDerSig, ScriptVerifyStrictEnc, ScriptVerifyMinimalData, ScriptVerifyNullDummy, ScriptVerifyDiscourageUpgradableNOPs, ScriptVerifyCleanStack, ScriptVerifyCheckLocktimeVerify, ScriptVerifyCheckSequenceVerify, ScriptVerifyLowS))
-  }
 }

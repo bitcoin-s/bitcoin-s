@@ -1,7 +1,16 @@
 language: scala
 sudo: required
-scala: 
+scala:
   - 2.11.7
-
+addons:
+  apt:
+    packages: libgmp-dev
+install:
+  - mkdir lib && cd secp256k1
+  - ./autogen.sh
+  - ./configure --enable-jni --enable-experimental --enable-module-ecdh
+  - make
+  - cd ../
+  - cp secp256k1/.libs/libsecp256k1.so lib
 script: "sbt clean coverage test"
 after_success: "sbt coverageReport coveralls"

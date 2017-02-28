@@ -1,13 +1,13 @@
 package org.bitcoins.core.script.crypto
 
-import org.bitcoins.core.crypto.TransactionSignatureSerializer
-import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptSignature}
+import org.bitcoins.core.currency.CurrencyUnits
+import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.protocol.script.{P2SHScriptSignature, ScriptPubKey, ScriptSignature, SigVersionBase}
 import org.bitcoins.core.protocol.transaction._
-import org.bitcoins.core.script.result._
 import org.bitcoins.core.script._
-import org.bitcoins.core.script.arithmetic.OP_NOT
-import org.bitcoins.core.script.flag.{ScriptFlagFactory, ScriptVerifyDerSig, ScriptVerifyNullDummy}
 import org.bitcoins.core.script.constant._
+import org.bitcoins.core.script.flag.{ScriptFlagFactory, ScriptVerifyDerSig, ScriptVerifyNullDummy}
+import org.bitcoins.core.script.result._
 import org.bitcoins.core.util.{BitcoinSLogger, ScriptProgramTestUtil, TestUtil, TransactionTestUtil}
 import org.scalatest.{FlatSpec, MustMatchers}
 
@@ -16,6 +16,7 @@ import org.scalatest.{FlatSpec, MustMatchers}
  */
 class CryptoInterpreterTest extends FlatSpec with MustMatchers with CryptoInterpreter with BitcoinSLogger {
   val stack = List(ScriptConstant("02218AD6CDC632E7AE7D04472374311CEBBBBF0AB540D2D08C3400BB844C654231".toLowerCase))
+
   "CryptoInterpreter" must "evaluate OP_HASH160 correctly when it is on top of the script stack" in {
 
     val script = List(OP_HASH160)
@@ -128,46 +129,13 @@ class CryptoInterpreterTest extends FlatSpec with MustMatchers with CryptoInterp
     val script = List(OP_CHECKMULTISIG)
     val program = ScriptProgram(TestUtil.testProgram, stack,script)
     val programNoFlags = ScriptProgram(program, ScriptFlagFactory.empty)
+    logger.warn("Running OP_CHECKMULTISIG program")
     val newProgram = opCheckMultiSig(programNoFlags)
+    logger.warn("Ran OP_CHECKMULTISIG program")
     newProgram.stack must be (List(OP_TRUE))
     newProgram.script.isEmpty must be (true)
     newProgram.isInstanceOf[ExecutedScriptProgram] must be (false)
   }
-
-
-
-  it must "evaluate an OP_CHECKMULTISIG for a p2sh transaction" in {
-    val rawScriptSig = "0047304402205b7d2c2f177ae76cfbbf14d589c113b0b35db753d305d5562dd0b61cbf366cfb02202e56f93c4f08a27f986cd424ffc48a462c3202c4902104d4d0ff98ed28f4bf80014730440220563e5b3b1fc11662a84bc5ea2a32cc3819703254060ba30d639a1aaf2d5068ad0220601c1f47ddc76d93284dd9ed68f7c9974c4a0ea7cbe8a247d6bc3878567a5fca014c6952210279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f8179821038282263212c609d9ea2a6e3e172de238d8c39cabd5ac1ca10646e23fd5f515082103363d90d447b00c9c99ceac05b6262ee053441c7e55552ffe526bad8f83ff464053ae"
-    val p2shScriptSig = ScriptSignature(rawScriptSig)
-
-    val rawScriptPubKey = "a914c9e4a896d149702d0d1695434feddd52e24ad78d87"
-    val p2shScriptPubKey = ScriptPubKey(rawScriptPubKey)
-
-    val (creditingTx,outputIndex) = TransactionTestUtil.buildCreditingTransaction(p2shScriptPubKey)
-    val (spendingTx,inputIndex) = TransactionTestUtil.buildSpendingTransaction(creditingTx,p2shScriptSig,outputIndex)
-
-    val stack = List(ScriptNumber(3),
-      ScriptConstant("03363d90d447b00c9c99ceac05b6262ee053441c7e55552ffe526bad8f83ff4640"),
-      ScriptConstant("038282263212c609d9ea2a6e3e172de238d8c39cabd5ac1ca10646e23fd5f51508"),
-      ScriptConstant("0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"),
-      ScriptNumber(2),
-      ScriptConstant("30440220563e5b3b1fc11662a84bc5ea2a32cc3819703254060ba30d639a1aaf2d5068ad0220601c1f47ddc76d93284dd9ed68f7c9974c4a0ea7cbe8a247d6bc3878567a5fca01"),
-      ScriptConstant("304402205b7d2c2f177ae76cfbbf14d589c113b0b35db753d305d5562dd0b61cbf366cfb02202e56f93c4f08a27f986cd424ffc48a462c3202c4902104d4d0ff98ed28f4bf8001"),
-      OP_0)
-
-    val script = List(OP_CHECKMULTISIG)
-
-    val baseProgram = ScriptProgram(spendingTx,creditingTx.outputs(0).scriptPubKey,0,ScriptFlagFactory.empty)
-
-    val program = ScriptProgram(baseProgram,stack,script)
-    val newProgram = opCheckMultiSig(program)
-
-    newProgram.stackTopIsTrue must be (true)
-    newProgram.stack.size must be (1)
-
-    newProgram.script.isEmpty must be (true)
-  }
-
 
   it must "mark a transaction invalid when the NULLDUMMY flag is set for a OP_CHECKMULTISIG operation & the scriptSig does not begin with OP_0" in {
     val flags = Seq(ScriptVerifyNullDummy)
@@ -175,7 +143,8 @@ class CryptoInterpreterTest extends FlatSpec with MustMatchers with CryptoInterp
     val input = TransactionInput(EmptyTransactionOutPoint, scriptSig, TransactionConstants.sequence)
     val tx = Transaction(TestUtil.transaction,UpdateTransactionInputs(Seq(input)))
 
-    val baseProgram = ScriptProgram.toExecutionInProgress(ScriptProgram(tx,TestUtil.scriptPubKey,0,flags))
+    val baseProgram = ScriptProgram.toExecutionInProgress(ScriptProgram(tx,TestUtil.scriptPubKey,
+      UInt32.zero,flags))
     val stack = Seq(OP_0,OP_0,OP_1)
     val script = Seq(OP_CHECKMULTISIG)
     val program = ScriptProgram(baseProgram,stack,script)

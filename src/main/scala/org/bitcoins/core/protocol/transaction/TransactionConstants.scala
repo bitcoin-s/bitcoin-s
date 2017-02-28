@@ -1,15 +1,15 @@
 package org.bitcoins.core.protocol.transaction
 
-import org.bitcoins.core.script.constant.ScriptNumber
+import org.bitcoins.core.number.UInt32
 
 /**
   * Created by chris on 2/12/16.
  */
 trait TransactionConstants {
 
-  lazy val version = 1
-  lazy val lockTime = 0
-  lazy val sequence = 4294967295L
+  lazy val version = UInt32.one
+  lazy val lockTime = UInt32.zero
+  lazy val sequence = UInt32(4294967295L)
 
   /**
     * If bit (1 << 31) of the sequence number is set,
@@ -18,20 +18,20 @@ trait TransactionConstants {
  *
     * @return the mask that ben used with a bitwise and to indicate if the sequence number has any meaning
     */
-  def locktimeDisabledFlag = 1L << 31
+  def locktimeDisabledFlag = UInt32(1L << 31)
 
   /**
     * If a transaction's input's sequence number encodes a relative lock-time, this mask is
     * applied to extract that lock-time from the sequence field.
     */
-  def sequenceLockTimeMask = 0x0000ffff
+  def sequenceLockTimeMask = UInt32(0x0000ffff)
 
   /**
     * If the transaction input sequence number encodes a relative lock-time and this flag
     * is set, the relative lock-time has units of 512 seconds,
     * otherwise it specifies blocks with a granularity of 1.
     */
-  def sequenceLockTimeTypeFlag = (1L << 22)
+  def sequenceLockTimeTypeFlag = UInt32(1L << 22)
 
 
   /**
@@ -40,7 +40,7 @@ trait TransactionConstants {
  *
     * @return
     */
-  def locktimeThreshold = 500000000
+  def locktimeThreshold = UInt32(500000000)
 }
 
 object TransactionConstants extends TransactionConstants

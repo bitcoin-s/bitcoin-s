@@ -1,86 +1,94 @@
 package org.bitcoins.core.util
 
-import org.bitcoinj.core.{Base58, Utils}
-import org.bitcoins.core.currency.{CurrencyUnits, CurrencyUnit}
-
-import scala.collection.mutable.ArrayBuffer
 import scala.math.BigInt
 
 /**
  * Created by chris on 2/26/16.
  */
-trait BitcoinSUtil extends NumberUtil {
+trait BitcoinSUtil {
 
-  def hexToBigInt(hex : String) : BigInt = BigInt(hex, 16)
-
-  def decodeHex(hex : String) : List[Byte] = Utils.HEX.decode(hex.trim).toList
-
-  def encodeHex(bytes : Array[Byte]) : String = Utils.HEX.encode(bytes)
-
-  def encodeHex(bytes : List[Byte]) : String = encodeHex(bytes.toSeq)
-
-  def encodeHex(bytes : Seq[Byte]) : String = encodeHex(bytes.toArray)
-
-  def encodeHex(unit : CurrencyUnit) : String = {
-    val satoshis = CurrencyUnits.toSatoshis(unit)
-    if (satoshis == CurrencyUnits.negativeSatoshi) {
-      "ffffffffffffffff"
-    } else {
-      //TODO: this is ugly, clean this up. Shouldn't have to use .toLong
-      flipHalfByte(encodeHex(BigInt(satoshis.value.toLong).toByteArray).reverse)
-    }
-
+  def decodeHex(hex : String) : Seq[Byte] = {
+    hex.replaceAll("[^0-9A-Fa-f]", "").sliding(2, 2).toArray.map(Integer.parseInt(_, 16).toByte).toList
   }
+
+  def encodeHex(bytes : Seq[Byte]) : String = bytes.map("%02x".format(_)).mkString
 
   def encodeHex(byte : Byte) : String = encodeHex(Seq(byte))
 
-  /**
-   * Tests if a given string is a hexadecimal string
- *
-   * @param str
-   * @return
-   */
-  def isHex(str : String) = {
-    try {
-      decodeHex(str.trim)
-      true
-    } catch {
-      case _ : Throwable => false
+  /** Encodes a long number to a hex string, pads it with an extra '0' char
+    * if the hex string is an odd amount of characters. */
+  def encodeHex(long : Long) : String = {
+    val hex = long.toHexString.length % 2 match {
+      case 1 => "0" + long.toHexString
+      case _ : Int => long.toHexString
     }
+    addPadding(16,hex)
   }
 
-  def hexToLong(hex : String) : Long = toLong(hex)
+  def encodeHex(int : Int) : String = {
+    val hex = int.toHexString.length % 2 match {
+      case 1 => "0" + int.toHexString
+      case _ : Int => int.toHexString
+    }
+    addPadding(8,hex)
+  }
 
-  def hexToInt(hex : String) : Int = toLong(hex).toInt
+  def encodeHex(bigInt : BigInt) : String = BitcoinSUtil.encodeHex(bigInt.toByteArray)
 
-  def decodeBase58(base58 : String) : Seq[Byte] = Base58.decode(base58).toList
+  /** Tests if a given string is a hexadecimal string. */
+  def isHex(str : String) : Boolean = {
+    //check valid characters & hex strings have to have an even number of chars
+    str.matches("^[0-9a-f]+$") && (str.length % 2 == 0)
+  }
 
-  def encodeBase58(bytes : Seq[Byte]) : String = Base58.encode(bytes.toArray)
+  /** Converts a two character hex string to its byte representation. */
+  def hexToByte(hex : String): Byte = {
+    require(hex.length == 2)
+    BitcoinSUtil.decodeHex(hex).head
+  }
 
-  /**
-   * Flips the endianess of the give hex string
- *
-   * @param hex
-   * @return
-   */
-  def flipEndianess(hex : String) : String = encodeHex(decodeHex(hex).reverse)
+  /** Flips the endianness of the give hex string. */
+  def flipEndianness(hex : String) : String = flipEndianness(decodeHex(hex))
 
-  /**
-   * Flips the endianess of the given sequence of bytes
- *
-   * @param bytes
-   * @return
-   */
-  def flipEndianess(bytes : Seq[Byte]) : String = flipEndianess(BitcoinSUtil.encodeHex(bytes))
-  /**
-   * Flips the hex chars in a hex strings
-   * Example: abcd would become badc
-   * https://stackoverflow.com/questions/34799611/easiest-way-to-flip-the-endianness-of-a-byte-in-scala/34802270#34802270
- *
-   * @param hex
-   * @return
-   */
-  def flipHalfByte(hex : String) = hex.grouped(2).map(_.reverse).mkString
+  /** Flips the endianness of the given sequence of bytes. */
+  def flipEndianness(bytes : Seq[Byte]) : String = encodeHex(bytes.reverse)
+
+
+  /** Adds the amount padding bytes needed to fix the size of the hex string
+    * for instance, ints are required to be 4 bytes. If the number is just 1
+    * it will only take 1 byte. We need to pad the byte with an extra 3 bytes so the result is
+    * 00000001 instead of just 1. */
+  private def addPadding(charactersNeeded : Int, hex : String) : String = {
+    val paddingNeeded = charactersNeeded - hex.length
+    val padding = for { i <- 0 until paddingNeeded} yield "0"
+    val paddedHex = padding.mkString + hex
+    paddedHex
+  }
+
+  /** Converts a sequence of bytes to a sequence of bit vectors */
+  def bytesToBitVectors(bytes: Seq[Byte]): Seq[Seq[Boolean]] = bytes.map(byteToBitVector)
+
+  /** Converts a byte to a bit vector representing that byte */
+  def byteToBitVector(byte: Byte): Seq[Boolean] = {
+    (0 to 7).map(index => isBitSet(byte,7 - index))
+  }
+
+  /** Checks if the bit at the given index is set */
+  def isBitSet(byte: Byte, index: Int): Boolean = ((byte >> index) & 1) == 1
+
+  /** Converts a bit vector to a single byte -- the resulting byte is big endian */
+  def bitVectorToByte(bits: Seq[Boolean]): Byte = {
+    require(bits.size <= 8, "Cannot convert a bit vector to a byte when the size of the bit vector is larger than 8, got: " + bits)
+    val b = bits.reverse
+    val result: Seq[Int] = b.zipWithIndex.map { case (b, index) =>
+      if (b) NumberUtil.pow2(index).toInt else 0
+    }
+    result.sum.toByte
+  }
+
+  /** Converts a sequence of bit vectors to a sequence of bytes */
+  def bitVectorsToBytes(bits: Seq[Seq[Boolean]]): Seq[Byte] = bits.map(bitVectorToByte)
+
 }
 
 object BitcoinSUtil extends BitcoinSUtil

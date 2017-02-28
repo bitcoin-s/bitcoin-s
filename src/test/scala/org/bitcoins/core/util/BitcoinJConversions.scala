@@ -7,6 +7,7 @@ import org.bitcoinj.core.{ECKey, Sha256Hash}
 import org.bitcoinj.params.TestNet3Params
 import org.bitcoins.core.config.TestNet3
 import org.bitcoins.core.crypto.ECPublicKey
+import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.protocol.script.{ScriptPubKey, UpdateScriptPubKeyAsm}
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutput}
 import org.bitcoins.core.script.ScriptOperationFactory
@@ -28,11 +29,13 @@ trait BitcoinjConversions {
    * @return
    */
   def toScriptPubKey(bitcoinjScript : org.bitcoinj.script.Script) : ScriptPubKey = {
-    val scriptPubKey = ScriptPubKey(bitcoinjScript.getProgram)
-    require(BitcoinSUtil.encodeHex(bitcoinjScript.getProgram) == scriptPubKey.hex,
+    val p = bitcoinjScript.getProgram
+    val compactSizeUInt = CompactSizeUInt.calculateCompactSizeUInt(p)
+    val scriptPubKey = ScriptPubKey(compactSizeUInt.bytes ++ p)
+    require(BitcoinSUtil.encodeHex(bitcoinjScript.getProgram) == BitcoinSUtil.encodeHex(scriptPubKey.asm.flatMap(_.bytes)),
       "ScriptPubKey must be the same as the given bitcoinj script\n" +
         BitcoinSUtil.encodeHex(bitcoinjScript.getProgram) + "\n" +
-        scriptPubKey.hex)
+        BitcoinSUtil.encodeHex(scriptPubKey.asmBytes))
     scriptPubKey
   }
 
@@ -115,7 +118,7 @@ trait BitcoinjConversions {
 
       }
 
-      if ((sigHashType & SIGHASH_ANYONECANPAY.byte) == SIGHASH_ANYONECANPAY.byte) {
+      if ((sigHashType & 0x80.toByte) == 0x80.toByte) {
         // SIGHASH_ANYONECANPAY means the signature in the input is not broken by changes/additions/removals
         // of other inputs. For example, this is useful for building assurance contracts.
         tx.clearInputs()

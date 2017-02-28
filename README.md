@@ -12,30 +12,43 @@ Sidechains are a blockchain that is pegged to another blockchain. An example of 
 
 # Goal
 This implementation of a sidechain is designed to be a base implementation for which other sidechains (and their features) can be built off of. For the most part, it is going to mirror the [elements project](https://github.com/ElementsProject/elements). This project aims to provide a solid base implementation on the JVM. 
+
 # TODO: 
   - Implement verification of SPV proofs inside of the mainchain branch
   - Implement REORGPROOFVERIFY & WITHDRAWPROOFVERIFY
   - [Implement disabled op codes in Bitcoin (OP_OR, OP_AND, OP_XOR...)](https://www.elementsproject.org/elements/opcodes/)
   - [Signed blocks](https://www.elementsproject.org/elements/signed-blocks/)
   - [Deterministic Pegs](https://www.elementsproject.org/elements/deterministic-pegs/)
+
+# Examples from Bitcoin-S-Core
+
+Bitcoin-S-Sidechains is a fork of Bitcoin-S-Core. Here are examples of how Bitcoin-S-Core works and how to run the test cases. 
+
+[Quick Build Guide](BUILD_README.md)
+
 This repostitory includes the following functionality:
   - Native Scala objects for various protocol types (Transaction, TransactionInput, ScriptSignatures...)
   - Serializers and deserializers for bitcoin data structures mentioned above
   - An implementation of Bitcoin's Script programming language 
     - Passes all tests found in Bitcoin Core's regression test suite called [script_test.json](https://github.com/bitcoin/bitcoin/blob/master/src/test/data/script_tests.json)
-    - Passes all tests inside of Bitcoin Core's transaction regression test suite [tx_valid.json](https://github.com/bitcoin/bitcoin/blob/master/src/test/data/tx_valid.json) / [tx_invalid.json](https://github.com/bitcoin/bitcoin/blob/master/src/test/data/tx_invalid.json)
-    - Currently up to date through OP_CHECKSEQUENCEVERIFY
+    - Passes all tests inside of Bitcoin Core's transaction regression test suite [tx_valid.json](https://github.com/bitcoin/bitcoin/blob/master/src/test/data/tx_valid.json) / [tx_invalid.json](https://github.com/bitcoin/bitcoin/blob/master/src/test/data/tx_invalid.json) / 
+    [sighash.json](https://github.com/bitcoin/bitcoin/blob/master/src/test/data/sighash.json)
+    - Currently up to date through segregated witness
   - 90% test coverage throughout the codebase to ensure high quality code. 
   - Functions documented with Scaladocs for user friendliness 
 
 # Design Principles
   - Immutable data structures everywhere
-  - Using Algebraic Data Types to allow the compiler to check for exhaustiveness on match statements
+  - Algebraic Data Types to allow the compiler to check for exhaustiveness on match statements
   - Favoring readability over terseness
 
 # Examples from Bitcoin-S-Core
 
 Bitcoin-S-Sidechains is a fork of Bitcoin-S-Core. Here are examples of how Bitcoin-S-Core works and how to run the test cases. 
+
+# Examples
+
+Here is an example scala console session with bitcoins-core
 
 ```scala
 chris@chris:~/dev/bitcoins-core-chris$ sbt console
@@ -130,5 +143,3 @@ chris@chris:~/dev/bitcoins-core$ sbt
 [info] All tests passed.
 >
 ```
-
-
