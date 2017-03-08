@@ -127,12 +127,22 @@ class ConstantInterpreterTest extends FlatSpec with MustMatchers with ConstantIn
     }
   }
 
-  it must "return ScriptErrorMinimalData if program contains ScriptVerifyMinimalData flag and 2nd item in script is" +
-    " zero" in {
+  it must "return ScriptErrorMinimalData if program contains ScriptVerifyMinimalData flag and 2nd item in script is zero" in {
     val stack = List()
     val script = List(OP_PUSHDATA4,ScriptNumber.zero)
     val program = ScriptProgram(ScriptProgram(TestUtil.testProgram, stack,script),Seq[ScriptFlag](ScriptVerifyMinimalData))
     val newProgram = ScriptProgramTestUtil.toExecutedScriptProgram(opPushData4(program))
     newProgram.error must be (Some(ScriptErrorMinimalData))
+  }
+
+  it must "push a constant onto the stack that is using OP_PUSHDATA1 where the pushop can be interpreted as a script number operation" in {
+    val constant = ScriptConstant("01000000010000000000000000000000000000000000000000000000000000000000000000" +
+      "ffffffff00ffffffff014a7afa8f7d52fd9e17a914b167f19394cd656c34f843ac2387e602007fd15b8700000000")
+    val stack = Nil
+    val script = List(OP_PUSHDATA1, OP_3, constant)
+    val program = ScriptProgram(TestUtil.testProgram, stack,script)
+    val newProgram = opPushData1(program)
+    newProgram.stack must be (Seq(constant))
+
   }
 }
