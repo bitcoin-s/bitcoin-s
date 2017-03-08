@@ -157,7 +157,8 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
     //push ops following an OP_PUSHDATA operation are interpreted as unsigned numbers
     val scriptTokenSize = UInt32(scriptToken.bytes.size)
     val bytes = scriptTokenSize.bytes
-    if (scriptTokenSize <= UInt32(75)) Seq(BytesToPushOntoStack(scriptToken.bytes.size))
+    if (scriptToken.isInstanceOf[ScriptNumberOperation]) Nil
+    else if (scriptTokenSize <= UInt32(75)) Seq(BytesToPushOntoStack(scriptToken.bytes.size))
     else if (scriptTokenSize <= UInt32(OP_PUSHDATA1.max)) {
       //we need the push op to be only 1 byte in size
       val pushConstant = ScriptConstant(BitcoinSUtil.flipEndianness(bytes.slice(bytes.length-1,bytes.length)))
