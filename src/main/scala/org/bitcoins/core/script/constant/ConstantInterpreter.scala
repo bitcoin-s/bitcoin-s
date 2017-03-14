@@ -37,7 +37,6 @@ trait ConstantInterpreter extends BitcoinSLogger {
         bytesNeededForPushOp(program.script(1))
       case _ : ScriptToken => bytesNeededForPushOp(program.script.head)
     }
-
     /** Parses the script tokens that need to be pushed onto our stack. */
     @tailrec
     def takeUntilBytesNeeded(scriptTokens : List[ScriptToken], accum : List[ScriptToken]) : (List[ScriptToken],List[ScriptToken]) = {
@@ -56,8 +55,8 @@ trait ConstantInterpreter extends BitcoinSLogger {
     }
 
     val (newScript,bytesToPushOntoStack) = program.script.head match {
-      case OP_PUSHDATA1 | OP_PUSHDATA2 | OP_PUSHDATA4 => takeUntilBytesNeeded(program.script.tail.tail, List())
-      case _: ScriptToken => takeUntilBytesNeeded(program.script.tail, List())
+      case OP_PUSHDATA1 | OP_PUSHDATA2 | OP_PUSHDATA4 => takeUntilBytesNeeded(program.script.tail.tail, Nil)
+      case _: ScriptToken => takeUntilBytesNeeded(program.script.tail, Nil)
     }
     logger.debug("new script: " + newScript)
     logger.debug("Bytes to push onto stack: " + bytesToPushOntoStack)
@@ -73,13 +72,16 @@ trait ConstantInterpreter extends BitcoinSLogger {
       logger.error("We can push this constant onto the stack with OP_0 - OP_16 instead of using a script constant")
       ScriptProgram(program,ScriptErrorMinimalData)
     } else if (bytesNeeded != bytesToPushOntoStack.map(_.bytes.size).sum) {
+      logger.error("Incorrect amount of bytes being pushed onto the stack")
+      logger.error("Bytes needed: " + bytesNeeded)
+      logger.error("Number of byte received: " + bytesToPushOntoStack.map(_.bytes.size).sum)
       ScriptProgram(program,ScriptErrorBadOpCode)
     }
     else if (ScriptFlagUtil.requireMinimalData(program.flags) && !BitcoinScriptUtil.isMinimalPush(program.script.head,constant)) {
-        logger.debug("Pushing operation: " + program.script.head)
-        logger.debug("Constant parsed: " + constant)
-        logger.debug("Constant size: " + constant.bytes.size)
-        ScriptProgram(program,ScriptErrorMinimalData)
+      logger.debug("Pushing operation: " + program.script.head)
+      logger.debug("Constant parsed: " + constant)
+      logger.debug("Constant size: " + constant.bytes.size)
+      ScriptProgram(program,ScriptErrorMinimalData)
     } else ScriptProgram.apply(program, constant :: program.stack, newScript)
   }
 
@@ -90,7 +92,7 @@ trait ConstantInterpreter extends BitcoinSLogger {
     //constant telling OP_PUSHDATA how many bytes need to go onto the stack
     //for instance OP_PUSHDATA1 OP_0
     val scriptNumOp = program.script(1).bytes match {
-      case h :: t => ScriptNumberOperation(h)
+      case h :: t => ScriptNumberOperation.fromNumber(h.toInt)
       case Nil => None
     }
     if (ScriptFlagUtil.requireMinimalData(program.flags) && program.script(1).bytes.size == 1 &&
@@ -117,6 +119,7 @@ trait ConstantInterpreter extends BitcoinSLogger {
   /** Parses the bytes needed for a push op (for instance OP_PUSHDATA1). */
   private def bytesNeededForPushOp(token : ScriptToken) : Long = token match {
     case scriptNumber: BytesToPushOntoStack => scriptNumber.opCode
+    case scriptNumOp: ScriptNumberOperation => scriptNumOp.opCode
     case scriptNumber: ScriptNumber => scriptNumber.underlying
     case scriptConstant : ScriptConstant =>
       val constantFlippedEndianness = BitcoinSUtil.flipEndianness(scriptConstant.hex)
