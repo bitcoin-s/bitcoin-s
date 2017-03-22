@@ -25,6 +25,7 @@ sealed trait ECPrivateKey extends BaseECKey {
   /** Derives the public for a the private key */
   def publicKey : ECPublicKey = {
     val pubKeyBytes : Seq[Byte] = NativeSecp256k1.computePubkey(bytes.toArray, isCompressed)
+    require(NativeSecp256k1.isValidPubKey(pubKeyBytes.toArray), "secp256k1 failed to generate a valid public key, got: " + BitcoinSUtil.encodeHex(pubKeyBytes))
     ECPublicKey(pubKeyBytes)
   }
 
@@ -49,7 +50,7 @@ sealed trait ECPrivateKey extends BaseECKey {
 object ECPrivateKey extends Factory[ECPrivateKey] with BitcoinSLogger {
 
   private case class ECPrivateKeyImpl(bytes : Seq[Byte], isCompressed: Boolean) extends ECPrivateKey {
-    require(bytes.size == 32, "Keys are required to be 32 bytes in size as per bitcoin core, got: " + bytes.size + " hex: " + BitcoinSUtil.encodeHex(bytes))
+    require(NativeSecp256k1.secKeyVerify(bytes.toArray), "Invalid key according to secp256k1, hex: " + BitcoinSUtil.encodeHex(bytes))
   }
 
   override def fromBytes(bytes : Seq[Byte]) : ECPrivateKey = fromBytes(bytes,true)
