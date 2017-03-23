@@ -62,7 +62,10 @@ sealed trait ECPublicKey extends BaseECKey with BitcoinSLogger {
   }
 
   /** Checks if the [[ECPublicKey]] is compressed */
-  def isCompressed = bytes.size == 33
+  def isCompressed: Boolean = bytes.size == 33
+
+  /** Checks if the [[ECPublicKey]] is valid according to secp256k1 */
+  def isFullyValid = ECPublicKey.isFullyValid(bytes)
 }
 
 object ECPublicKey extends Factory[ECPublicKey] {
