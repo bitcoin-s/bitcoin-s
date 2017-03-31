@@ -210,12 +210,9 @@ object P2SHScriptSignature extends ScriptFactory[P2SHScriptSignature]  {
 
   /** Detects if the given script token is a redeem script */
   def isRedeemScript(token : ScriptToken) : Boolean = {
-    logger.debug("Checking if last token is redeem script")
     val redeemScriptTry : Try[ScriptPubKey] = parseRedeemScript(token)
     redeemScriptTry match {
       case Success(redeemScript) =>
-        logger.debug("Possible redeemScript: " + redeemScript.asm)
-        logger.debug("Redeem script: " + redeemScript)
         redeemScript match {
           case x : P2PKHScriptPubKey => true
           case x : MultiSignatureScriptPubKey => true
@@ -299,8 +296,6 @@ object MultiSignatureScriptSignature extends ScriptFactory[MultiSignatureScriptS
       val restOfScriptIsPushOpsOrScriptConstants = asm.tail.map(
         token => token.isInstanceOf[ScriptConstant] || StackPushOperationFactory.isPushOperation(token)
       ).exists(_ == false)
-      logger.debug("First number is script op: " + firstTokenIsScriptNumberOperation)
-      logger.debug("tail is true: " +restOfScriptIsPushOpsOrScriptConstants )
       firstTokenIsScriptNumberOperation && !restOfScriptIsPushOpsOrScriptConstants
   }
 }
@@ -423,11 +418,13 @@ object CSVScriptSignature extends Factory[CSVScriptSignature] {
     * @return
     */
   def apply(scriptPubKey: ScriptPubKey, sigs : Seq[ECDigitalSignature], pubKeys : Seq[ECPublicKey]) : CSVScriptSignature = scriptPubKey match {
-    case p2pkScriptPubKey : P2PKScriptPubKey => CSVScriptSignature(P2PKScriptSignature(sigs.head))
-    case p2pkhScriptPubKey : P2PKHScriptPubKey => CSVScriptSignature(P2PKHScriptSignature(sigs.head, pubKeys.head))
-    case multiSigScriptPubKey : MultiSignatureScriptPubKey => CSVScriptSignature(MultiSignatureScriptSignature(sigs))
+    case _: P2PKScriptPubKey => CSVScriptSignature(P2PKScriptSignature(sigs.head))
+    case _: P2PKHScriptPubKey => CSVScriptSignature(P2PKHScriptSignature(sigs.head, pubKeys.head))
+    case _: MultiSignatureScriptPubKey => CSVScriptSignature(MultiSignatureScriptSignature(sigs))
     case cltvScriptPubKey : CLTVScriptPubKey => CSVScriptSignature(cltvScriptPubKey.scriptPubKeyAfterCLTV, sigs, pubKeys)
     case csvScriptPubKey : CSVScriptPubKey => CSVScriptSignature(csvScriptPubKey.scriptPubKeyAfterCSV, sigs, pubKeys)
+    case csvEscrowTimeout: CSVEscrowTimeoutScriptPubKey =>
+      CSVScriptSignature(csvEscrowTimeout.timeout.scriptPubKeyAfterCSV,sigs,pubKeys)
     case EmptyScriptPubKey => CSVScriptSignature(EmptyScriptSignature)
     case _: WitnessScriptPubKeyV0 | _ : UnassignedWitnessScriptPubKey =>
       //bare segwit always has an empty script sig, see BIP141
@@ -480,6 +477,10 @@ object ScriptSignature extends Factory[ScriptSignature] with BitcoinSLogger {
     case _: NonStandardScriptPubKey => Try(NonStandardScriptSignature.fromAsm(tokens))
     case s : CLTVScriptPubKey => fromScriptPubKey(tokens, s.scriptPubKeyAfterCLTV)
     case s : CSVScriptPubKey => fromScriptPubKey(tokens, s.scriptPubKeyAfterCSV)
+    case escrowWithTimeout : CSVEscrowTimeoutScriptPubKey =>
+      val isMultiSig = BitcoinScriptUtil.castToBool(tokens.head)
+      if (isMultiSig) Try(MultiSignatureScriptSignature.fromAsm(tokens.tail))
+      else Try(CSVEscrowTimeoutScriptSignature.fromAsm(tokens,escrowWithTimeout))
     case _: WitnessScriptPubKeyV0 | _: UnassignedWitnessScriptPubKey  => Success(EmptyScriptSignature)
     case EmptyScriptPubKey =>
       if (tokens.isEmpty) Success(EmptyScriptSignature) else Try(NonStandardScriptSignature.fromAsm(tokens))
@@ -491,3 +492,73 @@ object ScriptSignature extends Factory[ScriptSignature] with BitcoinSLogger {
   }
 }
 
+/** [[ScriptSignature]] that spends a [[CSVEscrowTimeoutScriptPubKey]], the underlying script signature can be
+  * a [[MultiSignatureScriptSignature]] or a [[CSVScriptSignature]] as those are te two underlying scripts
+  * of a [[CSVEscrowTimeoutScriptPubKey]]
+  *
+  * If the last element of the [[asm]] evaluates to true, it is a scriptsig that attempts to spend the escrow
+  * if the last element of the [[asm]] evaluates to false, it is a scriptsig that attempts to spend the timeout
+  * */
+sealed trait CSVEscrowTimeoutScriptSignature extends ScriptSignature {
+  def scriptSig: ScriptSignature = ScriptSignature(hex)
+  override def signatures = scriptSig.signatures
+  override def toString = "CSVEscrowWithTimeoutScriptSignature(" + scriptSig + ")"
+
+  /** Checks if the given asm fulfills the timeout or escrow of the [[CSVEscrowTimeoutScriptPubKey]] */
+  def isEscrow: Boolean = BitcoinScriptUtil.castToBool(asm.last)
+
+  def isTimeout: Boolean = !isEscrow
+}
+
+
+object CSVEscrowTimeoutScriptSignature extends Factory[CSVEscrowTimeoutScriptSignature] {
+  private case class CSVEscrowTimeoutScriptSignatureImpl(hex: String) extends CSVEscrowTimeoutScriptSignature
+
+  override def fromBytes(bytes: Seq[Byte]): CSVEscrowTimeoutScriptSignature = {
+    CSVEscrowTimeoutScriptSignatureImpl(BitcoinSUtil.encodeHex(bytes))
+  }
+
+  def fromAsm(asm: Seq[ScriptToken], scriptPubKey: CSVEscrowTimeoutScriptPubKey): CSVEscrowTimeoutScriptSignature = {
+    require(isValidCSVEscrowTimeoutScriptSig(asm,scriptPubKey), "Given asm was not a CSVEscrowWithTimeoutScriptSignature, got: " + asm)
+    val asmHex = asm.map(_.hex).mkString
+    val c = CompactSizeUInt.calculateCompactSizeUInt(asmHex)
+    val fullHex = c.hex + asmHex
+    fromHex(fullHex)
+  }
+
+  def fromAsm(asm: Seq[ScriptToken]): CSVEscrowTimeoutScriptSignature = {
+    require(asm.nonEmpty)
+    val nestedScriptSig = if (BitcoinScriptUtil.castToBool(asm.head)) {
+      require(MultiSignatureScriptSignature.isMultiSignatureScriptSignature(asm.tail), "Need multisigScriptSig, got: " + asm.tail)
+      MultiSignatureScriptSignature.fromAsm(asm.tail)
+    } else {
+      CSVScriptSignature(ScriptSignature.fromAsm(asm.tail))
+    }
+    val bytes = asm.head.bytes ++ nestedScriptSig.asmBytes
+    val c = CompactSizeUInt.calculateCompactSizeUInt(bytes)
+    val fullBytes = c.bytes ++ bytes
+    fromBytes(fullBytes)
+  }
+
+  def isValidCSVEscrowTimeoutScriptSig(asm: Seq[ScriptToken],
+                                                       scriptPubKey: CSVEscrowTimeoutScriptPubKey): Boolean = {
+    if (MultiSignatureScriptSignature.isMultiSignatureScriptSignature(asm.tail)) {
+      true
+    } else {
+      val locktimeScript = scriptPubKey.timeout.scriptPubKeyAfterCSV
+      Try(ScriptSignature(asm,locktimeScript)).isSuccess
+    }
+  }
+
+  def apply(scriptSig: ScriptSignature): CSVEscrowTimeoutScriptSignature = fromBytes(scriptSig.bytes)
+
+  def apply(multiSigScriptSig: MultiSignatureScriptSignature): CSVEscrowTimeoutScriptSignature = {
+    val asm = multiSigScriptSig.asm ++ Seq(OP_1)
+    fromAsm(asm)
+  }
+
+  def apply(csv: CSVScriptSignature): CSVEscrowTimeoutScriptSignature = {
+    val asm = csv.asm ++ Seq(OP_0)
+    fromAsm(asm)
+  }
+}

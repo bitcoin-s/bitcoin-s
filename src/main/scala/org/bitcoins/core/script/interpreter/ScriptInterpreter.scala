@@ -76,8 +76,10 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
           case p2sh : P2SHScriptPubKey =>
             if (p2shEnabled) executeP2shScript(scriptSigExecutedProgram, program, p2sh)
             else scriptPubKeyExecutedProgram
-          case _ : P2PKHScriptPubKey | _: P2PKScriptPubKey | _: MultiSignatureScriptPubKey | _: CSVScriptPubKey |
-              _ : CLTVScriptPubKey | _ : NonStandardScriptPubKey | _ : WitnessCommitment | EmptyScriptPubKey =>
+          case _: P2PKHScriptPubKey | _: P2PKScriptPubKey | _: MultiSignatureScriptPubKey | _: CSVScriptPubKey
+               | _: CLTVScriptPubKey | _: NonStandardScriptPubKey | _: WitnessCommitment
+               | _: CSVEscrowTimeoutScriptPubKey |  EmptyScriptPubKey =>
+            logger.info("")
             scriptPubKeyExecutedProgram
         }
       }
@@ -161,8 +163,9 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
                 //treat the segwit scriptpubkey as any other redeem script
                 run(scriptPubKeyExecutedProgram,stack,w)
               }
-            case s @ (_ : P2SHScriptPubKey | _ : P2PKHScriptPubKey | _ : P2PKScriptPubKey | _ : MultiSignatureScriptPubKey |
-              _ : CLTVScriptPubKey | _ : CSVScriptPubKey | _: NonStandardScriptPubKey | _ : WitnessCommitment | EmptyScriptPubKey) =>
+            case s @ (_ : P2SHScriptPubKey | _ : P2PKHScriptPubKey | _ : P2PKScriptPubKey | _ : MultiSignatureScriptPubKey
+                      | _ : CLTVScriptPubKey | _ : CSVScriptPubKey | _: NonStandardScriptPubKey | _ : WitnessCommitment
+                      | _: CSVEscrowTimeoutScriptPubKey | EmptyScriptPubKey) =>
               logger.debug("redeemScript: " + s.asm)
               run(scriptPubKeyExecutedProgram,stack,s)
           }
@@ -515,8 +518,9 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
           case _ : P2SHScriptPubKey =>
             val p2shScriptSig = P2SHScriptSignature(txSigComponent.scriptSignature.bytes)
             p2shScriptSig.redeemScript.isInstanceOf[WitnessScriptPubKey]
-          case _ : CLTVScriptPubKey | _ : CSVScriptPubKey | _ : MultiSignatureScriptPubKey | _ : NonStandardScriptPubKey |
-            _ : P2PKScriptPubKey | _ : P2PKHScriptPubKey | _ : WitnessCommitment | EmptyScriptPubKey =>
+          case _: CLTVScriptPubKey | _: CSVScriptPubKey | _: MultiSignatureScriptPubKey | _: NonStandardScriptPubKey
+               | _: P2PKScriptPubKey | _: P2PKHScriptPubKey | _: WitnessCommitment
+               | _: CSVEscrowTimeoutScriptPubKey | EmptyScriptPubKey =>
             w.witness.stack.isEmpty
         }
         !witnessedUsed

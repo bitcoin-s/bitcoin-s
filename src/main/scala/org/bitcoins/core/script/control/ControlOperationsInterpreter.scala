@@ -43,7 +43,8 @@ trait ControlOperationsInterpreter extends BitcoinSLogger {
       //remove OP_ELSE from binary tree
       val newTreeWithoutOpElse = removeFirstOpElse(binaryTree)
       val newScript = newTreeWithoutOpElse.toList
-      logger.debug("New script after removing OP_ELSE branch " + newScript)
+      logger.debug("New script after removing OP_ELSE branch " + newScript.tail)
+      logger.debug("New stack after removing OP_ELSE branch: " + program.stack.tail)
       ScriptProgram(program, program.stack.tail,newScript.tail)
     }  else {
       logger.debug("OP_IF stack top was false")
