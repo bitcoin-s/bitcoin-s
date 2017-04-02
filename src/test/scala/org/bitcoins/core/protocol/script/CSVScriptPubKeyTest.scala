@@ -33,9 +33,9 @@ class CSVScriptPubKeyTest extends FlatSpec with MustMatchers {
     val pubKey = ECPrivateKey().publicKey
     val p2pkh = P2PKHScriptPubKey(pubKey)
 
-    CSVScriptPubKey(scriptNum17, p2pkh).scriptPubKeyAfterCSV must be(p2pkh)
-    CSVScriptPubKey(scriptNum5, p2pkh).scriptPubKeyAfterCSV must be(p2pkh)
-    CSVScriptPubKey(negativeOne, p2pkh).scriptPubKeyAfterCSV must be(p2pkh)
+    CSVScriptPubKey(scriptNum17, p2pkh).nestedScriptPubKey must be(p2pkh)
+    CSVScriptPubKey(scriptNum5, p2pkh).nestedScriptPubKey must be(p2pkh)
+    CSVScriptPubKey(negativeOne, p2pkh).nestedScriptPubKey must be(p2pkh)
 
     CSVScriptPubKey(scriptNum17, p2pkh).locktime must be(scriptNum17)
     CSVScriptPubKey(scriptNum5, p2pkh).locktime must be(scriptNum5)
