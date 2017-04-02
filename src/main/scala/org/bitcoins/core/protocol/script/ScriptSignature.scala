@@ -528,13 +528,14 @@ object CSVEscrowTimeoutScriptSignature extends Factory[CSVEscrowTimeoutScriptSig
 
   def fromAsm(asm: Seq[ScriptToken]): CSVEscrowTimeoutScriptSignature = {
     require(asm.nonEmpty)
-    val nestedScriptSig = if (BitcoinScriptUtil.castToBool(asm.head)) {
-      require(MultiSignatureScriptSignature.isMultiSignatureScriptSignature(asm.tail), "Need multisigScriptSig, got: " + asm.tail)
-      MultiSignatureScriptSignature.fromAsm(asm.tail)
+    val nested = asm.take(asm.length - 1)
+    val nestedScriptSig = if (BitcoinScriptUtil.castToBool(asm.last)) {
+      require(MultiSignatureScriptSignature.isMultiSignatureScriptSignature(nested), "Need multisigScriptSig, got: " + nested)
+      MultiSignatureScriptSignature.fromAsm(nested)
     } else {
-      CSVScriptSignature(ScriptSignature.fromAsm(asm.tail))
+      CSVScriptSignature(ScriptSignature.fromAsm(nested))
     }
-    val bytes = asm.head.bytes ++ nestedScriptSig.asmBytes
+    val bytes = nestedScriptSig.asmBytes ++ asm.last.bytes
     val c = CompactSizeUInt.calculateCompactSizeUInt(bytes)
     val fullBytes = c.bytes ++ bytes
     fromBytes(fullBytes)
@@ -542,11 +543,13 @@ object CSVEscrowTimeoutScriptSignature extends Factory[CSVEscrowTimeoutScriptSig
 
   def isValidCSVEscrowTimeoutScriptSig(asm: Seq[ScriptToken],
                                                        scriptPubKey: CSVEscrowTimeoutScriptPubKey): Boolean = {
-    if (MultiSignatureScriptSignature.isMultiSignatureScriptSignature(asm.tail)) {
-      true
+    val nested = asm.take(asm.length - 1)
+    val isMultiSig = BitcoinScriptUtil.castToBool(asm.last)
+    if (isMultiSig) {
+      MultiSignatureScriptSignature.isMultiSignatureScriptSignature(nested)
     } else {
       val locktimeScript = scriptPubKey.timeout.scriptPubKeyAfterCSV
-      Try(ScriptSignature(asm,locktimeScript)).isSuccess
+      Try(ScriptSignature(nested,locktimeScript)).isSuccess
     }
   }
 

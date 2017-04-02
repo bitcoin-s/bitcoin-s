@@ -138,11 +138,11 @@ class TransactionSignatureCreatorSpec extends Properties("TransactionSignatureCr
       if (result != ScriptOk) logger.warn("Result: " + result)
       Seq(ScriptErrorPushSize, ScriptOk).contains(result)
     }
-
   property("generate a valid signature for a csv escrow timeout transaction") =
-    Prop.forAll(TransactionGenerators.spendableCSVMultiSigEscrowTimeoutTransaction) { txSigComponent: TransactionSignatureComponent =>
+    Prop.forAll(TransactionGenerators.spendableCSVEscrowTimeoutTransaction) { txSigComponent: TransactionSignatureComponent =>
       val program = ScriptProgram(txSigComponent)
       val result = ScriptInterpreter.run(program)
       result == ScriptOk
     }
+  
 }

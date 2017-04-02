@@ -363,9 +363,19 @@ trait ScriptGenerators extends BitcoinSLogger {
       Some(multiSigScriptPubKey.requiredSigs),hashType,true)
   } yield (scriptSig,csvEscrowTimeout,multiSigPrivKeys)
 
+  def spendableTimeoutCSVEscrowTimeoutScriptSig(scriptNum: ScriptNumber, sequence: UInt32): Gen[(CSVEscrowTimeoutScriptSignature, CSVEscrowTimeoutScriptPubKey, Seq[ECPrivateKey])] = for {
+    (_,csv,csvPrivKeys) <- signedCSVScriptSignature(scriptNum, sequence)
+    (_, multiSigScriptPubKey,_) <- signedMultiSignatureScriptSignature
+    hashType <- CryptoGenerators.hashType
+    csvEscrowTimeout = CSVEscrowTimeoutScriptPubKey(multiSigScriptPubKey,csv)
+    requireSigs = if (csv.scriptPubKeyAfterCSV.isInstanceOf[MultiSignatureScriptPubKey]) {
+      val m = csv.scriptPubKeyAfterCSV.asInstanceOf[MultiSignatureScriptPubKey]
+      Some(m.requiredSigs)
+    } else None
+    scriptSig = csvEscrowTimeoutHelper(sequence,csvEscrowTimeout,csvPrivKeys,requireSigs,hashType,false)
+  } yield (scriptSig,csvEscrowTimeout,csvPrivKeys)
 
-
-  def signedCSVEscrowTimeoutScriptSig: Gen[(CSVEscrowTimeoutScriptSignature, CSVEscrowTimeoutScriptPubKey, Seq[ECPrivateKey])] = for {
+  /*def spendableCSVEscrowTimeoutScriptSig: Gen[(CSVEscrowTimeoutScriptSignature, CSVEscrowTimeoutScriptPubKey, Seq[ECPrivateKey])] = for {
     (_,csvScriptPubkey,csvPrivKeys) <- signedCSVScriptSignature
     (_, multiSigScriptPubKey,multiSigPrivKeys) <- signedMultiSignatureScriptSignature
     sequence <- NumberGenerator.uInt32s
@@ -394,7 +404,7 @@ trait ScriptGenerators extends BitcoinSLogger {
           "want to generate P2PK, P2PKH, and MultiSig ScriptSignatures when creating a CLTVScriptSignature.")
       }
     }
-  }
+  } */
 
   /** Helper function to generate signed CLTVScriptSignatures with appropriate number of signatures. */
   private def cltvHelper(lockTime : UInt32, sequence : UInt32, cltv: CLTVScriptPubKey, privateKeys : Seq[ECPrivateKey],
