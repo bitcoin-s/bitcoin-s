@@ -363,7 +363,6 @@ object CLTVScriptSignature extends Factory[CLTVScriptSignature] {
   def apply(scriptSig : ScriptSignature) : CLTVScriptSignature = {
     fromHex(scriptSig.hex)
   }
-
 }
 
 sealed trait CSVScriptSignature extends LockTimeScriptSignature
