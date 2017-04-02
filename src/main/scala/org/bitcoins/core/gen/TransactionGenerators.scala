@@ -182,30 +182,42 @@ trait TransactionGenerators extends BitcoinSLogger {
     (txSigComponent, privKeys, csvNum, sequence)
   }
 
-  /** Generates a [[Transaction]] that has a valid [[CSVEscrowTimeoutScriptSignature]] that specifically spends the
-    * [[CSVEscrowTimeoutScriptPubKey]] using the multisig escrow branch  */
-  def spendableMultiSigCSVEscrowTimeoutTransaction: Gen[TransactionSignatureComponent] = for {
+  /** Generates a [[Transaction]] that has a valid [[EscrowTimeoutScriptSignature]] that specifically spends the
+    * [[EscrowTimeoutScriptPubKey]] using the multisig escrow branch  */
+  def spendableMultiSigEscrowTimeoutTransaction: Gen[TransactionSignatureComponent] = for {
     sequence <- NumberGenerator.uInt32s
-    (scriptSig, scriptPubKey,privKeys) <- ScriptGenerators.signedMultiSigCSVEscrowTimeoutScriptSig(sequence)
+    (scriptSig, scriptPubKey,privKeys) <- ScriptGenerators.signedMultiSigEscrowTimeoutScriptSig(sequence)
     (creditingTx,outputIndex) = buildCreditingTransaction(UInt32(2),scriptPubKey)
     (spendingTx, inputIndex) = buildSpendingTransaction(UInt32(2),creditingTx,scriptSig,outputIndex,UInt32.zero,sequence)
     txSigComponent = TransactionSignatureComponent(spendingTx,inputIndex,scriptPubKey,Policy.standardScriptVerifyFlags)
   } yield txSigComponent
 
-  /** Generates a [[Transaction]] that has a valid [[CSVEscrowTimeoutScriptSignature]] that specfically spends the
-    * [[CSVEscrowTimeoutScriptPubKey]] using the timeout branch */
-  def spendableTimeoutCSVEscrowTimeoutTransaction: Gen[TransactionSignatureComponent] = for {
+  /** Generates a [[Transaction]] that has a valid [[EscrowTimeoutScriptSignature]] that specfically spends the
+    * [[EscrowTimeoutScriptPubKey]] using the timeout branch */
+  def spendableTimeoutEscrowTimeoutTransaction: Gen[TransactionSignatureComponent] = for {
     (csvScriptNum,sequence) <- spendableCSVValues
-    (scriptSig, scriptPubKey,privKeys) <- ScriptGenerators.spendableTimeoutCSVEscrowTimeoutScriptSig(csvScriptNum,sequence)
+    (scriptSig, scriptPubKey,privKeys) <- ScriptGenerators.spendableTimeoutEscrowTimeoutScriptSig(csvScriptNum,sequence)
     (creditingTx,outputIndex) = buildCreditingTransaction(UInt32(2),scriptPubKey)
     (spendingTx, inputIndex) = buildSpendingTransaction(UInt32(2),creditingTx,scriptSig,outputIndex,UInt32.zero,sequence)
     txSigComponent = TransactionSignatureComponent(spendingTx,inputIndex,scriptPubKey,Policy.standardScriptVerifyFlags)
   } yield txSigComponent
 
-  /** Generates a [[Transaction]] that has a valid [[CSVEscrowTimeoutScriptSignature]] */
-  def spendableCSVEscrowTimeoutTransaction: Gen[TransactionSignatureComponent] = Gen.oneOf(spendableMultiSigCSVEscrowTimeoutTransaction,
-    spendableTimeoutCSVEscrowTimeoutTransaction)
+  /** Generates a [[Transaction]] that has a valid [[EscrowTimeoutScriptSignature]] */
+  def spendableEscrowTimeoutTransaction: Gen[TransactionSignatureComponent] = Gen.oneOf(spendableMultiSigEscrowTimeoutTransaction,
+    spendableTimeoutEscrowTimeoutTransaction)
 
+  /** Generates a CSVEscrowTimeoutTransaction that should evaluate to false when run through the [[ScriptInterpreter]] */
+  def unspendableEscrowTimeoutTransaction: Gen[TransactionSignatureComponent] = for {
+    (csvScriptNum, sequence) <- unspendableCSVValues
+    (scriptSig, scriptPubKey,privKeys) <- ScriptGenerators.spendableTimeoutEscrowTimeoutScriptSig(csvScriptNum,sequence)
+    (creditingTx,outputIndex) = buildCreditingTransaction(UInt32(2),scriptPubKey)
+    (spendingTx, inputIndex) = buildSpendingTransaction(UInt32(2),creditingTx,scriptSig,outputIndex,UInt32.zero,sequence)
+    txSigComponent = TransactionSignatureComponent(spendingTx,inputIndex,scriptPubKey,Policy.standardScriptVerifyFlags)
+  } yield txSigComponent
+
+  /** Generates a escrow timeout transaction, not guaranteed to be spendable */
+  def csvEscrowTimeoutTransaction: Gen[TransactionSignatureComponent] = Gen.oneOf(spendableEscrowTimeoutTransaction,
+    unspendableEscrowTimeoutTransaction)
   /** Generates a [[WitnessTransaction]] that has all of it's inputs signed correctly */
   def signedP2WPKHTransaction: Gen[(WitnessTxSigComponent,Seq[ECPrivateKey])] = for {
     (_,wtxSigComponent, privKeys) <- WitnessGenerators.signedP2WPKHTransactionWitness

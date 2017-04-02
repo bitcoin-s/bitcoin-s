@@ -78,8 +78,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
             else scriptPubKeyExecutedProgram
           case _: P2PKHScriptPubKey | _: P2PKScriptPubKey | _: MultiSignatureScriptPubKey | _: CSVScriptPubKey
                | _: CLTVScriptPubKey | _: NonStandardScriptPubKey | _: WitnessCommitment
-               | _: CSVEscrowTimeoutScriptPubKey |  EmptyScriptPubKey =>
-            logger.info("")
+               | _: EscrowTimeoutScriptPubKey |  EmptyScriptPubKey =>
             scriptPubKeyExecutedProgram
         }
       }
@@ -165,7 +164,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
               }
             case s @ (_ : P2SHScriptPubKey | _ : P2PKHScriptPubKey | _ : P2PKScriptPubKey | _ : MultiSignatureScriptPubKey
                       | _ : CLTVScriptPubKey | _ : CSVScriptPubKey | _: NonStandardScriptPubKey | _ : WitnessCommitment
-                      | _: CSVEscrowTimeoutScriptPubKey | EmptyScriptPubKey) =>
+                      | _: EscrowTimeoutScriptPubKey | EmptyScriptPubKey) =>
               logger.debug("redeemScript: " + s.asm)
               run(scriptPubKeyExecutedProgram,stack,s)
           }
@@ -520,7 +519,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
             p2shScriptSig.redeemScript.isInstanceOf[WitnessScriptPubKey]
           case _: CLTVScriptPubKey | _: CSVScriptPubKey | _: MultiSignatureScriptPubKey | _: NonStandardScriptPubKey
                | _: P2PKScriptPubKey | _: P2PKHScriptPubKey | _: WitnessCommitment
-               | _: CSVEscrowTimeoutScriptPubKey | EmptyScriptPubKey =>
+               | _: EscrowTimeoutScriptPubKey | EmptyScriptPubKey =>
             w.witness.stack.isEmpty
         }
         !witnessedUsed
