@@ -339,16 +339,17 @@ object P2PKScriptSignature extends ScriptFactory[P2PKScriptSignature] {
   }
 }
 
-sealed trait CLTVScriptSignature extends ScriptSignature {
+/** Parent type for all lock time script signatures, these spend [[LockTimeScriptPubKey]] */
+sealed trait LockTimeScriptSignature extends ScriptSignature {
   def scriptSig : ScriptSignature = ScriptSignature(hex)
 
   override def signatures : Seq[ECDigitalSignature] = scriptSig.signatures
-
-  override def hex = scriptSig.hex
 }
 
+sealed trait CLTVScriptSignature extends LockTimeScriptSignature
+
 object CLTVScriptSignature extends Factory[CLTVScriptSignature] {
-  private case class CLTVScriptSignatureImpl(override val hex : String) extends CLTVScriptSignature
+  private case class CLTVScriptSignatureImpl(hex : String) extends CLTVScriptSignature
 
   override def fromBytes(bytes : Seq[Byte]) : CLTVScriptSignature = {
     val hex = BitcoinSUtil.encodeHex(bytes)
@@ -369,9 +370,9 @@ object CLTVScriptSignature extends Factory[CLTVScriptSignature] {
     * @return
     */
   def apply(scriptPubKey: ScriptPubKey, sigs : Seq[ECDigitalSignature], pubKeys : Seq[ECPublicKey]) : CLTVScriptSignature = scriptPubKey match {
-    case p2pkScriptPubKey : P2PKScriptPubKey => CLTVScriptSignature(P2PKScriptSignature(sigs.head))
-    case p2pkhScriptPubKey : P2PKHScriptPubKey => CLTVScriptSignature(P2PKHScriptSignature(sigs.head, pubKeys.head))
-    case multiSigScriptPubKey : MultiSignatureScriptPubKey => CLTVScriptSignature(MultiSignatureScriptSignature(sigs))
+    case _: P2PKScriptPubKey => CLTVScriptSignature(P2PKScriptSignature(sigs.head))
+    case _: P2PKHScriptPubKey => CLTVScriptSignature(P2PKHScriptSignature(sigs.head, pubKeys.head))
+    case _: MultiSignatureScriptPubKey => CLTVScriptSignature(MultiSignatureScriptSignature(sigs))
     case cltvScriptPubKey : CLTVScriptPubKey => apply(cltvScriptPubKey.nestedScriptPubKey, sigs, pubKeys)
     case csvScriptPubKey : CSVScriptPubKey => apply(csvScriptPubKey.nestedScriptPubKey, sigs, pubKeys)
     case EmptyScriptPubKey => CLTVScriptSignature(EmptyScriptSignature)
@@ -385,16 +386,10 @@ object CLTVScriptSignature extends Factory[CLTVScriptSignature] {
 
 }
 
-sealed trait CSVScriptSignature extends ScriptSignature {
-  def scriptSig : ScriptSignature = ScriptSignature(hex)
-
-  override def signatures : Seq[ECDigitalSignature] = scriptSig.signatures
-
-  override def hex = scriptSig.hex
-}
+sealed trait CSVScriptSignature extends LockTimeScriptSignature
 
 object CSVScriptSignature extends Factory[CSVScriptSignature] {
-  private case class CSVScriptSignatureImpl(override val hex : String) extends CSVScriptSignature
+  private case class CSVScriptSignatureImpl(hex : String) extends CSVScriptSignature
 
   override def fromBytes(bytes : Seq[Byte]) : CSVScriptSignature = {
     val hex = BitcoinSUtil.encodeHex(bytes)
