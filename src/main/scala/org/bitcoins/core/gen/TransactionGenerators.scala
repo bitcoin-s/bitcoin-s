@@ -121,7 +121,7 @@ trait TransactionGenerators extends BitcoinSLogger {
 
 
   /** Generates a validly constructed CLTV transaction, which has a 50/50 chance of being spendable or unspendable. */
-  def randomCLTVTransaction : Gen[(TxSigComponent, Seq[ECPrivateKey], ScriptNumber)] = {
+  def randomCLTVTransaction : Gen[(TxSigComponent, Seq[ECPrivateKey])] = {
     Gen.oneOf(unspendableCLTVTransaction,spendableCLTVTransaction)
   }
 
@@ -132,91 +132,78 @@ trait TransactionGenerators extends BitcoinSLogger {
     *
     * @return
     */
-  def unspendableCLTVTransaction : Gen[(TxSigComponent, Seq[ECPrivateKey], ScriptNumber)] =  for {
-    txLockTime <- NumberGenerator.uInt32s
-    //Generate script Numbers that are greater than txLockTime values. the suchThat condition is for thoroughness as
-    //a random generated ScriptNumber will almost certainly be a greater value than a random generated UInt32.
-    cltvLockTime <- NumberGenerator.uInt32s.suchThat(num => num > txLockTime).map(x => ScriptNumber(x.underlying))
-    unspendable <- cltvTransactionHelper(txLockTime, cltvLockTime)
+  def unspendableCLTVTransaction : Gen[(TxSigComponent, Seq[ECPrivateKey])] =  for {
+    (cltvLockTime,txLockTime) <- unspendableCLTVValues
+    sequence <- NumberGenerator.uInt32s.suchThat(n => n < UInt32.max)
+    (scriptSig,scriptPubKey,privKeys) <- ScriptGenerators.signedCLTVScriptSignature(cltvLockTime,txLockTime,sequence)
+    unspendable = lockTimeTxHelper(scriptSig,scriptPubKey,privKeys,sequence,Some(txLockTime))
   } yield unspendable
 
   /**
     *  Creates a [[ECPrivateKey]], then creates a [[CLTVScriptPubKey]] from that private key
     *  Finally creates a [[Transaction]] that can successfully spend the [[CLTVScriptPubKey]]
     */
-  def spendableCLTVTransaction : Gen[(TxSigComponent, Seq[ECPrivateKey], ScriptNumber)] = for {
-    txLockTime <- NumberGenerator.uInt32s
-    //Generate UInt32 values that are less than txLockTime values. UInt32 values are then mapped to ScriptNumbers
-    cltvLockTime <- NumberGenerator.uInt32s.suchThat(num => num < txLockTime).map(x => ScriptNumber(x.underlying))
-    spendable <- cltvTransactionHelper(txLockTime, cltvLockTime)
+  def spendableCLTVTransaction : Gen[(TxSigComponent, Seq[ECPrivateKey])] = for {
+    (cltvLockTime,txLockTime) <- spendableCLTVValues
+    sequence <- NumberGenerator.uInt32s.suchThat(n => n < UInt32.max)
+    (scriptSig,scriptPubKey,privKeys) <- ScriptGenerators.signedCLTVScriptSignature(cltvLockTime,txLockTime,sequence)
+    spendable = lockTimeTxHelper(scriptSig,scriptPubKey,privKeys,sequence,Some(txLockTime))
   } yield spendable
 
   /**
     *  Creates a [[ECPrivateKey]], then creates a [[CSVScriptPubKey]] from that private key
     *  Finally creates a [[Transaction]] that can successfully spend the [[CSVScriptPubKey]]
     */
-  def spendableCSVTransaction : Gen[(TxSigComponent, Seq[ECPrivateKey], ScriptNumber, UInt32)] = for {
+  def spendableCSVTransaction : Gen[(TxSigComponent, Seq[ECPrivateKey])] = for {
     (csvScriptNum, sequence) <- spendableCSVValues
     tx <- csvTransaction(csvScriptNum,sequence)
   } yield tx
 
   /** Creates a CSV transaction that's timelock has not been met */
-  def unspendableCSVTransaction : Gen[(TxSigComponent, Seq[ECPrivateKey], ScriptNumber, UInt32)] = for {
+  def unspendableCSVTransaction : Gen[(TxSigComponent, Seq[ECPrivateKey])] = for {
     (csvScriptNum, sequence) <- unspendableCSVValues
     tx <- csvTransaction(csvScriptNum, sequence)
   } yield tx
 
-  def csvTransaction(csvScriptNum: ScriptNumber, sequence: UInt32): Gen[(TxSigComponent, Seq[ECPrivateKey], ScriptNumber, UInt32)] = for {
+  def csvTransaction(csvScriptNum: ScriptNumber, sequence: UInt32): Gen[(TxSigComponent, Seq[ECPrivateKey])] = for {
     (signedScriptSig, csvScriptPubKey, privateKeys) <- ScriptGenerators.signedCSVScriptSignature(csvScriptNum, sequence)
-  } yield csvTxHelper(signedScriptSig, csvScriptPubKey, privateKeys, csvScriptNum, sequence)
-
-  private def csvTxHelper(signedScriptSig : CSVScriptSignature, csv : CSVScriptPubKey,
-                          privKeys : Seq[ECPrivateKey], csvNum : ScriptNumber,
-                          sequence : UInt32) : (TxSigComponent, Seq[ECPrivateKey], ScriptNumber, UInt32) = {
-    val (creditingTx, outputIndex) = buildCreditingTransaction(UInt32(2), csv)
-    //Transaction version must not be less than 2 for a CSV transaction
-    val (signedSpendingTx, inputIndex) = buildSpendingTransaction(UInt32(2), creditingTx,
-      signedScriptSig, outputIndex, UInt32.zero, sequence)
-    val txSigComponent = TxSigComponent(signedSpendingTx, inputIndex,
-      csv, Policy.standardScriptVerifyFlags)
-    (txSigComponent, privKeys, csvNum, sequence)
-  }
+  } yield lockTimeTxHelper(signedScriptSig, csvScriptPubKey, privateKeys, sequence,None)
 
   /** Generates a [[Transaction]] that has a valid [[EscrowTimeoutScriptSignature]] that specifically spends the
     * [[EscrowTimeoutScriptPubKey]] using the multisig escrow branch  */
-  def spendableMultiSigEscrowTimeoutTransaction: Gen[TransactionSignatureComponent] = for {
+  def spendableMultiSigEscrowTimeoutTransaction: Gen[TxSigComponent] = for {
     sequence <- NumberGenerator.uInt32s
     (scriptSig, scriptPubKey,privKeys) <- ScriptGenerators.signedMultiSigEscrowTimeoutScriptSig(sequence)
     (creditingTx,outputIndex) = buildCreditingTransaction(UInt32(2),scriptPubKey)
     (spendingTx, inputIndex) = buildSpendingTransaction(UInt32(2),creditingTx,scriptSig,outputIndex,UInt32.zero,sequence)
-    txSigComponent = TransactionSignatureComponent(spendingTx,inputIndex,scriptPubKey,Policy.standardScriptVerifyFlags)
+    txSigComponent = TxSigComponent(spendingTx,inputIndex,scriptPubKey,Policy.standardScriptVerifyFlags)
   } yield txSigComponent
 
   /** Generates a [[Transaction]] that has a valid [[EscrowTimeoutScriptSignature]] that specfically spends the
     * [[EscrowTimeoutScriptPubKey]] using the timeout branch */
-  def spendableTimeoutEscrowTimeoutTransaction: Gen[TransactionSignatureComponent] = for {
+  def spendableTimeoutEscrowTimeoutTransaction: Gen[TxSigComponent] = for {
     (csvScriptNum,sequence) <- spendableCSVValues
     (scriptSig, scriptPubKey,privKeys) <- ScriptGenerators.spendableTimeoutEscrowTimeoutScriptSig(csvScriptNum,sequence)
     (creditingTx,outputIndex) = buildCreditingTransaction(UInt32(2),scriptPubKey)
     (spendingTx, inputIndex) = buildSpendingTransaction(UInt32(2),creditingTx,scriptSig,outputIndex,UInt32.zero,sequence)
-    txSigComponent = TransactionSignatureComponent(spendingTx,inputIndex,scriptPubKey,Policy.standardScriptVerifyFlags)
+    txSigComponent = TxSigComponent(spendingTx,inputIndex,scriptPubKey,Policy.standardScriptVerifyFlags)
   } yield txSigComponent
 
   /** Generates a [[Transaction]] that has a valid [[EscrowTimeoutScriptSignature]] */
-  def spendableEscrowTimeoutTransaction: Gen[TransactionSignatureComponent] = Gen.oneOf(spendableMultiSigEscrowTimeoutTransaction,
+  def spendableEscrowTimeoutTransaction: Gen[TxSigComponent] = Gen.oneOf(spendableMultiSigEscrowTimeoutTransaction,
     spendableTimeoutEscrowTimeoutTransaction)
 
   /** Generates a CSVEscrowTimeoutTransaction that should evaluate to false when run through the [[ScriptInterpreter]] */
-  def unspendableEscrowTimeoutTransaction: Gen[TransactionSignatureComponent] = for {
+  def unspendableEscrowTimeoutTransaction: Gen[TxSigComponent] = for {
     (csvScriptNum, sequence) <- unspendableCSVValues
     (scriptSig, scriptPubKey,privKeys) <- ScriptGenerators.spendableTimeoutEscrowTimeoutScriptSig(csvScriptNum,sequence)
     (creditingTx,outputIndex) = buildCreditingTransaction(UInt32(2),scriptPubKey)
     (spendingTx, inputIndex) = buildSpendingTransaction(UInt32(2),creditingTx,scriptSig,outputIndex,UInt32.zero,sequence)
-    txSigComponent = TransactionSignatureComponent(spendingTx,inputIndex,scriptPubKey,Policy.standardScriptVerifyFlags)
+    txSigComponent = TxSigComponent(spendingTx,inputIndex,scriptPubKey,Policy.standardScriptVerifyFlags)
   } yield txSigComponent
 
   /** Generates a escrow timeout transaction, not guaranteed to be spendable */
-  def csvEscrowTimeoutTransaction: Gen[TransactionSignatureComponent] = Gen.oneOf(spendableEscrowTimeoutTransaction,
+  def csvEscrowTimeoutTransaction: Gen[TxSigComponent] = Gen.oneOf(spendableEscrowTimeoutTransaction,
     unspendableEscrowTimeoutTransaction)
   /** Generates a [[WitnessTransaction]] that has all of it's inputs signed correctly */
   def signedP2WPKHTransaction: Gen[(WitnessTxSigComponent,Seq[ECPrivateKey])] = for {
@@ -333,41 +320,29 @@ trait TransactionGenerators extends BitcoinSLogger {
     buildCreditingTransaction(version, TransactionOutput(amount,scriptPubKey))
   }
 
-
-  /**
-    * Helper function to create validly constructed CLTVTransactions.
-    * If txLockTime > cltvLocktime => spendable
-    * if cltvLockTime < txLockTime => unspendable
-    *
-    * @param txLockTime Transaction's lockTime value
-    * @param cltvLockTime Script's CLTV lockTime value
-    * @return
-    */
-  private def cltvTransactionHelper(txLockTime : UInt32, cltvLockTime : ScriptNumber) : Gen[(TransactionSignatureComponent, Seq[ECPrivateKey], ScriptNumber)] = (for {
-    sequence <- NumberGenerator.uInt32s.suchThat(num => num != UInt32.max)
-    (signedScriptSig, cltvScriptPubkey, privateKeys) <- ScriptGenerators.signedCLTVScriptSignature(cltvLockTime, txLockTime, sequence)
-    (creditingTx, outputIndex) = buildCreditingTransaction(cltvScriptPubkey)
-    (spendingTx, inputIndex) = buildSpendingTransaction(TransactionConstants.version,creditingTx, signedScriptSig, outputIndex, txLockTime, sequence)
-    txSigComponent = TxSigComponent(spendingTx, inputIndex, cltvScriptPubkey,
-      Policy.standardScriptVerifyFlags)
-  } yield (txSigComponent, privateKeys, cltvLockTime)).suchThat(cltvLockTimesOfSameType)
+  private def lockTimeTxHelper(signedScriptSig : LockTimeScriptSignature, lock : LockTimeScriptPubKey,
+                               privKeys : Seq[ECPrivateKey], sequence : UInt32, lockTime: Option[UInt32]) : (TxSigComponent, Seq[ECPrivateKey]) = {
+    val (creditingTx, outputIndex) = buildCreditingTransaction(UInt32(2), lock)
+    //Transaction version must not be less than 2 for a CSV transaction
+    val (signedSpendingTx, inputIndex) = buildSpendingTransaction(UInt32(2), creditingTx,
+      signedScriptSig, outputIndex, lockTime.getOrElse(TransactionConstants.lockTime), sequence)
+    val txSigComponent = TxSigComponent(signedSpendingTx, inputIndex,
+      lock, Policy.standardScriptVerifyFlags)
+    (txSigComponent, privKeys)
+  }
 
   /**
     * Determines if the transaction's lockTime value and CLTV script lockTime value are of the same type
     * (i.e. determines whether both are a timestamp or block height)
     */
-  private def cltvLockTimesOfSameType(generatorComponent : (TxSigComponent, Seq[ECPrivateKey],  ScriptNumber)) : Boolean = {
-    val (txSigComponent, keys, num) = generatorComponent
-    val tx = txSigComponent.transaction
-    num.underlying match {
+  private def cltvLockTimesOfSameType(num: ScriptNumber, lockTime: UInt32) : Boolean = num.underlying match {
       case negative if negative < 0 => false
       case positive if positive >= 0 =>
         if (!(
-          (tx.lockTime < TransactionConstants.locktimeThreshold && num.underlying < TransactionConstants.locktimeThreshold.underlying) ||
-            (tx.lockTime >= TransactionConstants.locktimeThreshold && num.underlying >= TransactionConstants.locktimeThreshold.underlying)
+          (lockTime < TransactionConstants.locktimeThreshold && num.underlying < TransactionConstants.locktimeThreshold.underlying) ||
+            (lockTime >= TransactionConstants.locktimeThreshold && num.underlying >= TransactionConstants.locktimeThreshold.underlying)
           )) return false
         true
-    }
   }
 
   /**
@@ -411,6 +386,20 @@ trait TransactionGenerators extends BitcoinSLogger {
     sequence <- NumberGenerator.uInt32s
     csvScriptNum <- NumberGenerator.uInt32s.map(x => ScriptNumber(x.underlying)).suchThat(x => ScriptInterpreter.isLockTimeBitOff(x))
   } yield (csvScriptNum, sequence)).suchThat(x => !csvLockTimesOfSameType(x))
+
+  /** generates a [[ScriptNumber]] and [[UInt32]] locktime for a transaction such that the tx will be spendable */
+  private def spendableCLTVValues: Gen[(ScriptNumber,UInt32)] = for {
+    txLockTime <- NumberGenerator.uInt32s
+    cltvLockTime <- NumberGenerator.uInt32s.suchThat(num => cltvLockTimesOfSameType(ScriptNumber(num.underlying),txLockTime) &&
+      num < txLockTime).map(x => ScriptNumber(x.underlying))
+  } yield (cltvLockTime,txLockTime)
+
+  /** Generates a [[ScriptNumber]] and [[UInt32]] locktime for a transaction such that the tx will be unspendable */
+  private def unspendableCLTVValues: Gen[(ScriptNumber,UInt32)] = for {
+    txLockTime <- NumberGenerator.uInt32s
+    cltvLockTime <- NumberGenerator.uInt32s.suchThat(num => num >= txLockTime || !cltvLockTimesOfSameType(ScriptNumber(num.underlying),txLockTime)).map(x => ScriptNumber(x.underlying))
+  } yield (cltvLockTime,txLockTime)
+
 }
 
 object TransactionGenerators extends TransactionGenerators
