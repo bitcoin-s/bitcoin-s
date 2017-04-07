@@ -364,26 +364,6 @@ object CLTVScriptSignature extends Factory[CLTVScriptSignature] {
     fromHex(scriptSig.hex)
   }
 
-  /**
-    * Creates a CLTVScriptSignature out the [[ScriptPubKey]] we are satisfying, a sequence of [[ECDigitalSignature]], and a sequence
-    * of [[ECPublicKey]] needed to satisfy the scriptPubKey. If a [[P2SHScriptPubKey]] is provided, a redeemScript must also be provided.
-    * @return
-    */
-  def apply(scriptPubKey: ScriptPubKey, sigs : Seq[ECDigitalSignature], pubKeys : Seq[ECPublicKey]) : CLTVScriptSignature = scriptPubKey match {
-    case _: P2PKScriptPubKey => CLTVScriptSignature(P2PKScriptSignature(sigs.head))
-    case _: P2PKHScriptPubKey => CLTVScriptSignature(P2PKHScriptSignature(sigs.head, pubKeys.head))
-    case _: MultiSignatureScriptPubKey => CLTVScriptSignature(MultiSignatureScriptSignature(sigs))
-    case cltvScriptPubKey : CLTVScriptPubKey => apply(cltvScriptPubKey.nestedScriptPubKey, sigs, pubKeys)
-    case csvScriptPubKey : CSVScriptPubKey => apply(csvScriptPubKey.nestedScriptPubKey, sigs, pubKeys)
-    case EmptyScriptPubKey => CLTVScriptSignature(EmptyScriptSignature)
-    case _: WitnessScriptPubKeyV0 | _ : UnassignedWitnessScriptPubKey =>
-      //bare segwit always has an empty script sig, see BIP141
-      CLTVScriptSignature(EmptyScriptSignature)
-    case x @ (_ : NonStandardScriptPubKey | _ : P2SHScriptPubKey | _ : WitnessCommitment) =>
-      throw new IllegalArgumentException("A NonStandardScriptSignature or P2SHScriptSignature or WitnessCommitment cannot be" +
-        "the underlying scriptSig in a CLTVScriptSignature. Got: " + x)
-  }
-
 }
 
 sealed trait CSVScriptSignature extends LockTimeScriptSignature
@@ -402,27 +382,6 @@ object CSVScriptSignature extends Factory[CSVScriptSignature] {
 
   def apply(scriptSig : ScriptSignature) : CSVScriptSignature = {
     fromHex(scriptSig.hex)
-  }
-  /**
-    * Creates a CSVScriptSignature out the [[ScriptPubKey]] we are satisfying, a sequence of [[ECDigitalSignature]], and a sequence
-    * of [[ECPublicKey]] needed to satisfy the scriptPubKey. If a [[P2SHScriptPubKey]] is provided, a redeemScript must also be provided.
-    * @return
-    */
-  def apply(scriptPubKey: ScriptPubKey, sigs : Seq[ECDigitalSignature], pubKeys : Seq[ECPublicKey]) : CSVScriptSignature = scriptPubKey match {
-    case _: P2PKScriptPubKey => CSVScriptSignature(P2PKScriptSignature(sigs.head))
-    case _: P2PKHScriptPubKey => CSVScriptSignature(P2PKHScriptSignature(sigs.head, pubKeys.head))
-    case _: MultiSignatureScriptPubKey => CSVScriptSignature(MultiSignatureScriptSignature(sigs))
-    case cltvScriptPubKey : CLTVScriptPubKey => CSVScriptSignature(cltvScriptPubKey.nestedScriptPubKey, sigs, pubKeys)
-    case csvScriptPubKey : CSVScriptPubKey => CSVScriptSignature(csvScriptPubKey.nestedScriptPubKey, sigs, pubKeys)
-    case csvEscrowTimeout: EscrowTimeoutScriptPubKey =>
-      CSVScriptSignature(csvEscrowTimeout.timeout.nestedScriptPubKey,sigs,pubKeys)
-    case EmptyScriptPubKey => CSVScriptSignature(EmptyScriptSignature)
-    case _: WitnessScriptPubKeyV0 | _ : UnassignedWitnessScriptPubKey =>
-      //bare segwit always has an empty script sig, see BIP141
-      CSVScriptSignature(EmptyScriptSignature)
-    case x @ (_ : NonStandardScriptPubKey | _ : P2SHScriptPubKey | _: WitnessCommitment) =>
-      throw new IllegalArgumentException("A NonStandardScriptPubKey/P2SHScriptPubKey/WitnessCommitment cannot be" +
-      "the underlying scriptSig in a CSVScriptSignature. Got: " + x)
   }
 }
 
@@ -493,7 +452,7 @@ object ScriptSignature extends Factory[ScriptSignature] with BitcoinSLogger {
 sealed trait EscrowTimeoutScriptSignature extends ScriptSignature {
   def scriptSig: ScriptSignature = ScriptSignature(hex)
   override def signatures = scriptSig.signatures
-  override def toString = "CSVEscrowWithTimeoutScriptSignature(" + scriptSig + ")"
+  override def toString = "EscrowWithTimeoutScriptSignature(" + scriptSig + ")"
 
   /** Checks if the given asm fulfills the timeout or escrow of the [[EscrowTimeoutScriptPubKey]] */
   def isEscrow: Boolean = BitcoinScriptUtil.castToBool(asm.last)
@@ -510,7 +469,7 @@ object EscrowTimeoutScriptSignature extends Factory[EscrowTimeoutScriptSignature
   }
 
   def fromAsm(asm: Seq[ScriptToken], scriptPubKey: EscrowTimeoutScriptPubKey): EscrowTimeoutScriptSignature = {
-    require(isValidEscrowTimeoutScriptSig(asm,scriptPubKey), "Given asm was not a CSVEscrowWithTimeoutScriptSignature, got: " + asm)
+    require(isValidEscrowTimeoutScriptSig(asm,scriptPubKey), "Given asm was not a EscrowWithTimeoutScriptSignature, got: " + asm)
     val asmHex = asm.map(_.hex).mkString
     val c = CompactSizeUInt.calculateCompactSizeUInt(asmHex)
     val fullHex = c.hex + asmHex
@@ -544,15 +503,25 @@ object EscrowTimeoutScriptSignature extends Factory[EscrowTimeoutScriptSignature
     }
   }
 
-  def apply(scriptSig: ScriptSignature): EscrowTimeoutScriptSignature = fromBytes(scriptSig.bytes)
+  def apply(scriptSig: ScriptSignature): Try[EscrowTimeoutScriptSignature] = scriptSig match {
+    case m: MultiSignatureScriptSignature => Success(fromMultiSig(m))
+    case lock: LockTimeScriptSignature => Success(fromLockTime(lock))
+    case x @ (_: P2PKScriptSignature | _: P2PKHScriptSignature | _: P2SHScriptSignature | _:NonStandardScriptSignature
+      | _: EscrowTimeoutScriptSignature | EmptyScriptSignature) => Failure(new IllegalArgumentException("Cannot create a EscrowTimeoutScriptSignature out of " + x))
 
-  def apply(multiSigScriptSig: MultiSignatureScriptSignature): EscrowTimeoutScriptSignature = {
+  }
+
+  /** Creates a [[org.bitcoins.core.protocol.script.EscrowTimeoutScriptSignature]] that spends the escrow
+    * branch of a [[EscrowTimeoutScriptPubKey]] */
+  def fromMultiSig(multiSigScriptSig: MultiSignatureScriptSignature): EscrowTimeoutScriptSignature = {
     val asm = multiSigScriptSig.asm ++ Seq(OP_1)
     fromAsm(asm)
   }
 
-  def apply(csv: CSVScriptSignature): EscrowTimeoutScriptSignature = {
-    val asm = csv.asm ++ Seq(OP_0)
+  /** Creates a [[org.bitcoins.core.protocol.script.EscrowTimeoutScriptSignature]] that spends the locktime branch
+    * of the [[EscrowTimeoutScriptPubKey]] */
+  def fromLockTime(l: LockTimeScriptSignature): EscrowTimeoutScriptSignature = {
+    val asm = l.asm ++ Seq(OP_0)
     fromAsm(asm)
   }
 }

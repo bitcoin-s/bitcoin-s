@@ -56,21 +56,14 @@ trait ScriptGenerators extends BitcoinSLogger {
   } yield p2shScriptSig
 
   def cltvScriptSignature : Gen[CLTVScriptSignature] = for {
-    num <- NumberGenerator.scriptNumbers
-    (cltv, privKeys, num) <- cltvScriptPubKey(num)
-    pubKeys = privKeys.map(_.publicKey)
-    hash <- CryptoGenerators.doubleSha256Digest
-    sigs = privKeys.map(key => key.sign(hash))
-  } yield CLTVScriptSignature(cltv, sigs, pubKeys)
+    scriptSig <- scriptSignature.suchThat(s => !s.isInstanceOf[CLTVScriptSignature])
+    cltv = CLTVScriptSignature(scriptSig)
+  } yield cltv
 
 
   def csvScriptSignature : Gen[CSVScriptSignature] = for {
-    num <- NumberGenerator.scriptNumbers
-    (csv, privKeys, num) <- csvScriptPubKey(num)
-    pubKeys = privKeys.map(_.publicKey)
-    hash <- CryptoGenerators.doubleSha256Digest
-    sigs = privKeys.map(key => key.sign(hash))
-  } yield CSVScriptSignature(csv, sigs, pubKeys)
+    scriptSig <- scriptSignature.suchThat(s => !s.isInstanceOf[CSVScriptSignature])
+  } yield CSVScriptSignature(scriptSig)
 
 
   def p2pkScriptPubKey : Gen[(P2PKScriptPubKey, ECPrivateKey)] = for {
@@ -180,6 +173,7 @@ trait ScriptGenerators extends BitcoinSLogger {
 
   /** Generates an arbitrary [[ScriptSignature]] */
   def scriptSignature : Gen[ScriptSignature] = {
+    //TODO: Look at this, do we need to add other scriptSig types???
     Gen.oneOf(p2pkScriptSignature,p2pkhScriptSignature,multiSignatureScriptSignature,
       emptyScriptSignature,p2shScriptSignature)
   }
@@ -312,7 +306,7 @@ trait ScriptGenerators extends BitcoinSLogger {
       case _: UnassignedWitnessScriptPubKey | _: WitnessScriptPubKeyV0 =>
         throw new IllegalArgumentException("Cannot created a witness scriptPubKey for a CSVScriptSig since we do not have a witness")
       case _ : P2SHScriptPubKey | _ : CLTVScriptPubKey | _ : CSVScriptPubKey | _ : NonStandardScriptPubKey
-           | _ : WitnessCommitment | EmptyScriptPubKey => throw new IllegalArgumentException("We only " +
+           | _ : WitnessCommitment | _: EscrowTimeoutScriptPubKey | EmptyScriptPubKey => throw new IllegalArgumentException("We only " +
         "want to generate P2PK, P2PKH, and MultiSig ScriptSignatures when creating a CSVScriptSignature")
   }
 
@@ -337,8 +331,8 @@ trait ScriptGenerators extends BitcoinSLogger {
         (csvScriptSig.asInstanceOf[CSVScriptSignature], csv, privKeys)
       case _: UnassignedWitnessScriptPubKey | _: WitnessScriptPubKeyV0 =>
         throw new IllegalArgumentException("Cannot created a witness scriptPubKey for a CSVScriptSig since we do not have a witness")
-      case _ : P2SHScriptPubKey | _ : CLTVScriptPubKey | _ : CSVScriptPubKey | _ : NonStandardScriptPubKey
-           | _ : WitnessCommitment | EmptyScriptPubKey => throw new IllegalArgumentException("We only " +
+      case _: P2SHScriptPubKey | _: CLTVScriptPubKey | _: CSVScriptPubKey | _: NonStandardScriptPubKey
+           | _: WitnessCommitment | _: EscrowTimeoutScriptPubKey | EmptyScriptPubKey => throw new IllegalArgumentException("We only " +
         "want to generate P2PK, P2PKH, and MultiSig ScriptSignatures when creating a CLTVScriptSignature.")
   }
 
@@ -399,8 +393,12 @@ trait ScriptGenerators extends BitcoinSLogger {
     } yield TransactionSignatureCreator.createSig(txSignatureComponent,privateKeys(i), hashType)
 
     lock match {
-      case csv: CSVScriptPubKey => CSVScriptSignature(csv, txSignatures, pubKeys)
-      case cltv: CLTVScriptPubKey => CLTVScriptSignature(cltv,txSignatures,pubKeys)
+      case csv: CSVScriptPubKey =>
+        val nestedScriptSig = lockTimeHelperScriptSig(csv,txSignatures,pubKeys)
+        CSVScriptSignature(nestedScriptSig)
+      case cltv: CLTVScriptPubKey =>
+        val nestedScriptSig = lockTimeHelperScriptSig(cltv,txSignatures,pubKeys)
+        CLTVScriptSignature(nestedScriptSig)
     }
   }
 
@@ -417,9 +415,10 @@ trait ScriptGenerators extends BitcoinSLogger {
       i <- 0 until requiredSigs.getOrElse(1)
     } yield TransactionSignatureCreator.createSig(txSignatureComponent,privateKeys(i), hashType)
     if (isMultiSig) {
-      EscrowTimeoutScriptSignature(MultiSignatureScriptSignature(txSignatures))
+      EscrowTimeoutScriptSignature.fromMultiSig(MultiSignatureScriptSignature(txSignatures))
     } else {
-      EscrowTimeoutScriptSignature(CSVScriptSignature(csvEscrowTimeout,txSignatures,pubKeys))
+      val nestedScriptSig = lockTimeHelperScriptSig(csvEscrowTimeout.timeout,txSignatures,pubKeys)
+      EscrowTimeoutScriptSignature(nestedScriptSig).get
     }
   }
   def signedP2SHP2WPKHScriptSignature: Gen[(P2SHScriptSignature, P2SHScriptPubKey, Seq[ECPrivateKey], TransactionWitness, CurrencyUnit)] = for {
@@ -466,6 +465,31 @@ trait ScriptGenerators extends BitcoinSLogger {
   private def privKeyToSeq(tuple :(ScriptPubKey, ECPrivateKey)): (ScriptPubKey, Seq[ECPrivateKey]) = {
     val (s,key) = tuple
     (s,Seq(key))
+  }
+
+
+  private def lockTimeHelperScriptSig(lock: LockTimeScriptPubKey, sigs: Seq[ECDigitalSignature],
+                                      keys: Seq[ECPublicKey]): LockTimeScriptSignature = {
+
+    val nestedScriptSig = lock.nestedScriptPubKey match {
+      case p2pk: P2PKScriptPubKey => P2PKScriptSignature(sigs.head)
+      case p2pkh: P2PKHScriptPubKey => P2PKHScriptSignature(sigs.head,keys.head)
+      case multisig: MultiSignatureScriptPubKey => MultiSignatureScriptSignature(sigs)
+      case EmptyScriptPubKey => CSVScriptSignature(EmptyScriptSignature)
+      case _: WitnessScriptPubKeyV0 | _ : UnassignedWitnessScriptPubKey =>
+        //bare segwit always has an empty script sig, see BIP141
+        CSVScriptSignature(EmptyScriptSignature)
+      case _: LockTimeScriptPubKey | _: EscrowTimeoutScriptPubKey =>
+        throw new IllegalArgumentException("Cannot have a nested locktimeScriptPubKey inside a lockTimeScriptPubKey")
+      case x @ (_: NonStandardScriptPubKey | _: P2SHScriptPubKey | _: WitnessCommitment) =>
+        throw new IllegalArgumentException("A NonStandardScriptPubKey/P2SHScriptPubKey/WitnessCommitment cannot be" +
+          "the underlying scriptSig in a CSVScriptSignature. Got: " + x)
+    }
+
+    lock match {
+      case _: CLTVScriptPubKey => CLTVScriptSignature(nestedScriptSig)
+      case _: CSVScriptPubKey => CSVScriptSignature(nestedScriptSig)
+    }
   }
 }
 

@@ -373,10 +373,17 @@ trait TransactionGenerators extends BitcoinSLogger {
     * Generates a pair of CSV values: a transaction input sequence, and a CSV script sequence value, such that the txInput
     * sequence mask is always greater than the script sequence mask (i.e. generates values for a validly constructed and spendable CSV transaction)
     */
-  private def spendableCSVValues : Gen[(ScriptNumber, UInt32)] = (for {
+  private def spendableCSVValues : Gen[(ScriptNumber, UInt32)] = for {
     sequence <- NumberGenerator.uInt32s
-    csvScriptNum <- NumberGenerator.uInt32s.map(x => ScriptNumber(x.underlying))
-  } yield (csvScriptNum, sequence)).suchThat(csvLockTimesOfSameType)
+    csvScriptNum <- csvLockTimeBitOff.suchThat(x => ScriptInterpreter.isLockTimeBitOff(ScriptNumber(x.underlying)) &&
+      csvLockTimesOfSameType((ScriptNumber(x.underlying),sequence))).map(n => ScriptNumber(n.underlying))
+  } yield (csvScriptNum, sequence)
+
+  /** Generates a [[UInt32]] s.t. the locktime enabled flag is set */
+  private def csvLockTimeBitOff: Gen[UInt32] = NumberGenerator.uInt32s.map { n =>
+    //makes sure the 1 << 31 is TURNED OFF
+    n & UInt32(0x3FFFFFFF)
+  }
 
   /**
     * Generates a pair of CSV values: a transaction input sequence, and a CSV script sequence value, such that the txInput
