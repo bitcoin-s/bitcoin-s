@@ -11,7 +11,7 @@ import scala.util.Try
 /**
  * Created by chris on 1/7/16.
  */
-trait ScriptParser extends Factory[List[ScriptToken]] with BitcoinSLogger {
+trait ScriptParser extends Factory[List[ScriptToken]] {
 
 
   /** Parses a list of bytes into a list of script tokens */

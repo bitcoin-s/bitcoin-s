@@ -4,7 +4,7 @@ import org.bitcoins.core.crypto._
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.protocol.script.{CLTVScriptPubKey, CSVScriptPubKey, EmptyScriptPubKey, _}
-import org.bitcoins.core.protocol.transaction.{Transaction, WitnessTransaction}
+import org.bitcoins.core.protocol.transaction.{BaseTransaction, Transaction, WitnessTransaction}
 import org.bitcoins.core.script.ScriptProgram.PreExecutionScriptProgramImpl
 import org.bitcoins.core.script.constant._
 import org.bitcoins.core.script.crypto.{OP_CHECKMULTISIG, OP_CHECKMULTISIGVERIFY, OP_CHECKSIG, OP_CHECKSIGVERIFY}
@@ -355,7 +355,14 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
   @tailrec
   final def parseSigVersion(tx: Transaction, scriptPubKey: ScriptPubKey, inputIndex: UInt32): SignatureVersion  = scriptPubKey match {
     case _ : WitnessScriptPubKeyV0 | _: UnassignedWitnessScriptPubKey =>
-      SigVersionWitnessV0
+      tx match {
+        case wtx: WitnessTransaction =>
+          if (wtx.witness.witnesses.isEmpty) {
+            //if witness is empty still use old tx signature digest algo, see BIP144
+            SigVersionBase
+          } else SigVersionWitnessV0
+        case _: BaseTransaction => SigVersionBase
+      }
     case _ : P2SHScriptPubKey =>
       //every p2sh scriptPubKey HAS to have a p2shScriptSig since we no longer have require scripts to be standard
       val s = P2SHScriptSignature(tx.inputs(inputIndex.toInt).scriptSignature.bytes)

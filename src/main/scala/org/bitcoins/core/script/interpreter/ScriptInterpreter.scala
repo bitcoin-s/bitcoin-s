@@ -1,7 +1,7 @@
 package org.bitcoins.core.script.interpreter
 
 import org.bitcoins.core.consensus.Consensus
-import org.bitcoins.core.crypto.{BaseTransactionSignatureComponent, WitnessV0TransactionSignatureComponent}
+import org.bitcoins.core.crypto.{BaseTransactionSignatureComponent, TransactionSignatureComponent, WitnessV0TransactionSignatureComponent}
 import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits}
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.protocol.script._
@@ -179,8 +179,14 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
   private def executeSegWitScript(scriptPubKeyExecutedProgram: ExecutedScriptProgram, witnessScriptPubKey: WitnessScriptPubKey): ExecutedScriptProgram = {
     scriptPubKeyExecutedProgram.txSignatureComponent match {
       case b : BaseTransactionSignatureComponent =>
-        logger.error("Cannot verify witness program with a BaseTransactionSignatureComponent")
-        ScriptProgram(scriptPubKeyExecutedProgram,ScriptErrorWitnessProgramWitnessEmpty)
+/*        logger.error("Cannot verify witness program with a BaseTransactionSignatureComponent")
+        ScriptProgram(scriptPubKeyExecutedProgram,ScriptErrorWitnessProgramWitnessEmpty)*/
+        val scriptSig = scriptPubKeyExecutedProgram.txSignatureComponent.scriptSignature
+        val (witnessVersion,witnessProgram) = (witnessScriptPubKey.witnessVersion, witnessScriptPubKey.witnessProgram)
+        val witness = EmptyScriptWitness
+
+        if (scriptSig != EmptyScriptSignature && !b.scriptPubKey.isInstanceOf[P2SHScriptPubKey]) ScriptProgram(scriptPubKeyExecutedProgram,ScriptErrorWitnessMalleated)
+        else verifyWitnessProgram(witnessVersion, witness, witnessProgram, b)
       case w : WitnessV0TransactionSignatureComponent =>
         val scriptSig = scriptPubKeyExecutedProgram.txSignatureComponent.scriptSignature
         val (witnessVersion,witnessProgram) = (witnessScriptPubKey.witnessVersion, witnessScriptPubKey.witnessProgram)
@@ -197,7 +203,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
   /** Verifies a segregated witness program by running it through the interpreter
     * [[https://github.com/bitcoin/bitcoin/blob/f8528134fc188abc5c7175a19680206964a8fade/src/script/interpreter.cpp#L1302]]*/
   private def verifyWitnessProgram(witnessVersion: WitnessVersion, scriptWitness: ScriptWitness, witnessProgram: Seq[ScriptToken],
-                                   witnessTxSigComponent: WitnessV0TransactionSignatureComponent): ExecutedScriptProgram = {
+                                   txSigComponent: TransactionSignatureComponent): ExecutedScriptProgram = {
 
     /** Helper function to run the post segwit execution checks */
     def postSegWitProgramChecks(evaluated: ExecutedScriptProgram): ExecutedScriptProgram = {
@@ -212,22 +218,31 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
         val either: Either[(Seq[ScriptToken], ScriptPubKey),ScriptError] = witnessVersion.rebuild(scriptWitness, witnessProgram)
         either match {
           case Left((stack,scriptPubKey)) =>
-            val w = witnessTxSigComponent
-            val newProgram = ScriptProgram(w.transaction,scriptPubKey,w.inputIndex,stack,scriptPubKey.asm, scriptPubKey.asm,Nil,
-              w.flags,w.sigVersion,w.amount)
-            val evaluated = loop(newProgram,0)
-            postSegWitProgramChecks(evaluated)
+            txSigComponent match {
+              case w: WitnessV0TransactionSignatureComponent =>
+                val newProgram = ScriptProgram(w.transaction,scriptPubKey,w.inputIndex,stack,scriptPubKey.asm, scriptPubKey.asm,Nil,
+                  w.flags,w.sigVersion,w.amount)
+                val evaluated = loop(newProgram,0)
+                postSegWitProgramChecks(evaluated)
+              case b: BaseTransactionSignatureComponent =>
+                val newProgram = ScriptProgram(b.transaction,scriptPubKey,b.inputIndex,stack,scriptPubKey.asm,b.flags)
+                val evaluated = loop(newProgram,0)
+                postSegWitProgramChecks(evaluated)
+            }
           case Right(err) =>
-            val program = ScriptProgram(witnessTxSigComponent)
+            val program = ScriptProgram(txSigComponent)
             ScriptProgram(program,err)
         }
       case UnassignedWitness =>
         logger.warn("Unassigned witness inside of witness script pubkey")
-        val w = witnessTxSigComponent
-        val flags = w.flags
+        val flags = txSigComponent.flags
         val discourageUpgradableWitnessVersion = ScriptFlagUtil.discourageUpgradableWitnessProgram(flags)
-        val program = ScriptProgram(w.transaction,w.scriptPubKey,w.inputIndex,Nil,Nil, w.scriptPubKey.asm,Nil,
-          w.flags,w.sigVersion,w.amount)
+        val program = txSigComponent match {
+          case w: WitnessV0TransactionSignatureComponent => ScriptProgram(w.transaction,w.scriptPubKey,w.inputIndex,Nil,Nil, w.scriptPubKey.asm,Nil,
+            w.flags,w.sigVersion,w.amount)
+          case b: BaseTransactionSignatureComponent =>
+            ScriptProgram(b.transaction,b.scriptPubKey,b.inputIndex,Nil,Nil,b.flags)
+        }
         if (discourageUpgradableWitnessVersion) {
           ScriptProgram(program,UnassignedWitness.rebuild(scriptWitness, witnessProgram).right.get)
         } else {
