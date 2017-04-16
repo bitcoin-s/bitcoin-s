@@ -15,8 +15,6 @@ import org.bitcoins.core.util.{BitcoinSLogger, BitcoinScriptUtil}
   * Created by chris on 2/3/16.
  */
 sealed trait ScriptProgram {
-
-
   /**
    * This contains all relevant information for hashing and checking a [[org.bitcoins.core.protocol.script.ScriptSignature]] for a [[Transaction]].
    */
@@ -47,7 +45,6 @@ sealed trait ScriptProgram {
 
   /** Returns true if the stack top is false */
   def stackTopIsFalse : Boolean = !stackTopIsTrue
-
 }
 
 
@@ -75,7 +72,7 @@ object ScriptProgram extends BitcoinSLogger {
     * Implementation type for a [[PreExecutionScriptProgram]] - a [[ScriptProgram]] that has not yet begun being
     * evaluated  by the [[org.bitcoins.core.script.interpreter.ScriptInterpreter]].
     */
-  private sealed case class PreExecutionScriptProgramImpl(txSignatureComponent : TxSigComponent,
+  private case class PreExecutionScriptProgramImpl(txSignatureComponent : TxSigComponent,
     stack : List[ScriptToken],script : List[ScriptToken], originalScript : List[ScriptToken], altStack : List[ScriptToken],
     flags : Seq[ScriptFlag]) extends PreExecutionScriptProgram
 
@@ -83,7 +80,7 @@ object ScriptProgram extends BitcoinSLogger {
     * Implementation type for a [[ExecutionInProgressScriptProgram]] - a [[ScriptProgram]] that is currently being
     * evaluated by the [[org.bitcoins.core.script.interpreter.ScriptInterpreter]].
     */
-  private sealed case class ExecutionInProgressScriptProgramImpl(txSignatureComponent : TxSigComponent,
+  private case class ExecutionInProgressScriptProgramImpl(txSignatureComponent : TxSigComponent,
     stack : List[ScriptToken],script : List[ScriptToken], originalScript : List[ScriptToken], altStack : List[ScriptToken],
     flags : Seq[ScriptFlag], lastCodeSeparator : Option[Int]) extends ExecutionInProgressScriptProgram
 
@@ -91,7 +88,7 @@ object ScriptProgram extends BitcoinSLogger {
     * The implementation type for a [[ExecutedScriptProgram]] - a [[ScriptProgram]] that has been evaluated completely
     * by the [[org.bitcoins.core.script.interpreter.ScriptInterpreter]].
     */
-  private sealed case class ExecutedScriptProgramImpl(txSignatureComponent : TxSigComponent,
+  private case class ExecutedScriptProgramImpl(txSignatureComponent : TxSigComponent,
     stack : List[ScriptToken],script : List[ScriptToken], originalScript : List[ScriptToken], altStack : List[ScriptToken],
     flags : Seq[ScriptFlag],  error : Option[ScriptError]) extends ExecutedScriptProgram
 
@@ -259,7 +256,7 @@ object ScriptProgram extends BitcoinSLogger {
 
   def apply(t: TxSigComponent, stack: Seq[ScriptToken], script: Seq[ScriptToken], originalScript: Seq[ScriptToken],
             altStack: Seq[ScriptToken]): PreExecutionScriptProgram = {
-    PreExecutionScriptProgramImpl(t,stack.toList,script.toList,originalScript.toList,altStack.toList,t.flags)
+    ScriptProgram(t,stack.toList,script.toList,originalScript.toList,altStack.toList,t.flags)
   }
 
   def apply(transaction: WitnessTransaction, scriptPubKey : WitnessScriptPubKey, inputIndex : UInt32, stack : Seq[ScriptToken],
@@ -277,13 +274,8 @@ object ScriptProgram extends BitcoinSLogger {
   }
 
   def apply(txSignatureComponent: TxSigComponent, stack: Seq[ScriptToken], script: Seq[ScriptToken],
-            originalScript: Seq[ScriptToken]): ScriptProgram = txSignatureComponent match {
-    case b : BaseTxSigComponent =>
-      ScriptProgram(b,stack.toList, script.toList,originalScript.toList,Nil)
-    case w: WitnessTxSigComponent =>
-      ScriptProgram(w,stack,script,originalScript,Nil)
-    case r: WitnessTxSigComponentRebuilt =>
-      ScriptProgram(r,stack,script,originalScript,Nil)
+            originalScript: Seq[ScriptToken]): ScriptProgram = {
+    ScriptProgram(txSignatureComponent,stack.toList, script.toList,originalScript.toList,Nil)
   }
 
   def apply(t: TxSigComponent, stack: Seq[ScriptToken], script: Seq[ScriptToken]): ScriptProgram = {
@@ -291,34 +283,21 @@ object ScriptProgram extends BitcoinSLogger {
     ScriptProgram(t,stack,script,original)
   }
 
-/*
-  def apply(txSignatureComponent: TxSigComponent): PreExecutionScriptProgram = txSignatureComponent match {
-    case b : BaseTxSigComponent =>
-      ScriptProgram(b.transaction, b.scriptPubKey,
-        b.inputIndex, b.flags)
-    case w : WitnessTxSigComponent =>
-      ScriptProgram(w.transaction, w.scriptPubKey,
-        w.inputIndex, w.flags, w.amount)
-  }
-*/
-
   /** Creates a fresh [[PreExecutionScriptProgram]] */
   def apply(transaction: WitnessTransaction, scriptPubKey: WitnessScriptPubKey, inputIndex: UInt32, stack: Seq[ScriptToken],
             script: Seq[ScriptToken], originalScript: Seq[ScriptToken], altStack: Seq[ScriptToken],
-            flags: Seq[ScriptFlag], sigVersion: SignatureVersion,
-            amount: CurrencyUnit): PreExecutionScriptProgram = {
+            flags: Seq[ScriptFlag], amount: CurrencyUnit): PreExecutionScriptProgram = {
     val t = WitnessTxSigComponent(transaction,inputIndex,
       scriptPubKey,flags, amount)
-    PreExecutionScriptProgramImpl(t,stack.toList,script.toList,originalScript.toList,altStack.toList,flags)
+    ScriptProgram(t,stack.toList,script.toList,originalScript.toList,altStack.toList,flags)
   }
 
   def apply(transaction: WitnessTransaction, scriptPubKey: P2SHScriptPubKey, inputIndex: UInt32, stack: Seq[ScriptToken],
             script: Seq[ScriptToken], originalScript: Seq[ScriptToken], altStack: Seq[ScriptToken],
-            flags: Seq[ScriptFlag], sigVersion: SignatureVersion,
-            amount: CurrencyUnit): PreExecutionScriptProgram = {
+            flags: Seq[ScriptFlag], amount: CurrencyUnit): PreExecutionScriptProgram = {
     val t = WitnessTxSigComponent(transaction,inputIndex,
       scriptPubKey,flags, amount)
-    PreExecutionScriptProgramImpl(t,stack.toList,script.toList,originalScript.toList,altStack.toList,flags)
+    ScriptProgram(t,stack.toList,script.toList,originalScript.toList,altStack.toList,flags)
   }
 
 
@@ -326,6 +305,11 @@ object ScriptProgram extends BitcoinSLogger {
             script: Seq[ScriptToken], originalScript: Seq[ScriptToken], altStack: Seq[ScriptToken],
             flags: Seq[ScriptFlag]): PreExecutionScriptProgram = {
     val t = TxSigComponent(transaction,inputIndex,scriptPubKey,flags)
+    ScriptProgram(t,stack.toList,script.toList,originalScript.toList,altStack.toList,flags)
+  }
+
+  def apply(t: TxSigComponent, stack: Seq[ScriptToken], script: Seq[ScriptToken], originalScript: Seq[ScriptToken],
+            altStack: Seq[ScriptToken], flags: Seq[ScriptFlag]): PreExecutionScriptProgram = {
     PreExecutionScriptProgramImpl(t,stack.toList,script.toList,originalScript.toList,altStack.toList,flags)
   }
 
@@ -337,7 +321,7 @@ object ScriptProgram extends BitcoinSLogger {
 
   def apply(txSigComponent: TxSigComponent): PreExecutionScriptProgram = {
     val script = txSigComponent.scriptSignature.asm
-    PreExecutionScriptProgramImpl(txSigComponent,Nil,script.toList,script.toList,Nil,txSigComponent.flags)
+    ScriptProgram(txSigComponent,Nil,script.toList,script.toList,Nil,txSigComponent.flags)
   }
 
   /** Changes a [[ScriptProgram]] that is a [[ExecutionInProgressScriptProgram]] and changes it to an [[ExecutedScriptProgram]].*/
