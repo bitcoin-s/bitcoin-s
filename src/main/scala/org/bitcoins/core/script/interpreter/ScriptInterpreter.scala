@@ -21,7 +21,7 @@ import org.bitcoins.core.script.stack._
 import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil, BitcoinScriptUtil}
 
 import scala.annotation.tailrec
-import scala.util.{Success, Try}
+import scala.util.{Failure, Success, Try}
 
 /**
  * Created by chris on 1/6/16.
@@ -70,7 +70,8 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
       } else {
         scriptPubKey match {
           case witness : WitnessScriptPubKey =>
-            if (segwitEnabled) executeSegWitScript(scriptPubKeyExecutedProgram,witness)
+            //TODO: remove .get here
+            if (segwitEnabled) executeSegWitScript(scriptPubKeyExecutedProgram,witness).get
             else scriptPubKeyExecutedProgram
           case p2sh : P2SHScriptPubKey =>
             if (p2shEnabled) executeP2shScript(scriptSigExecutedProgram, program, p2sh)
@@ -148,7 +149,8 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
                 // The scriptSig must be _exactly_ a single push of the redeemScript. Otherwise we
                 // reintroduce malleability.
                 logger.info("redeem script was witness script pubkey, segwit was enabled, scriptSig was single push of redeemScript")
-                executeSegWitScript(scriptPubKeyExecutedProgram,w)
+                //TODO: remove .get here
+                executeSegWitScript(scriptPubKeyExecutedProgram,w).get
               } else if (segwitEnabled && (scriptSig.asmBytes != expectedScriptBytes)) {
                 logger.error("Segwit was enabled, but p2sh redeem script was malleated")
                 logger.error("ScriptSig bytes: " + scriptSig.hex)
@@ -177,19 +179,19 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
     * @param scriptPubKeyExecutedProgram the program with the [[ScriptPubKey]] executed
     * @return
     */
-  private def executeSegWitScript(scriptPubKeyExecutedProgram: ExecutedScriptProgram, witnessScriptPubKey: WitnessScriptPubKey): ExecutedScriptProgram = {
+  private def executeSegWitScript(scriptPubKeyExecutedProgram: ExecutedScriptProgram, witnessScriptPubKey: WitnessScriptPubKey): Try[ExecutedScriptProgram] = {
     scriptPubKeyExecutedProgram.txSignatureComponent match {
       case b: BaseTxSigComponent =>
         val scriptSig = scriptPubKeyExecutedProgram.txSignatureComponent.scriptSignature
-        if (scriptSig != EmptyScriptSignature && !b.scriptPubKey.isInstanceOf[P2SHScriptPubKey]) ScriptProgram(scriptPubKeyExecutedProgram,ScriptErrorWitnessMalleated)
-        else {
+        if (scriptSig != EmptyScriptSignature && !b.scriptPubKey.isInstanceOf[P2SHScriptPubKey]) {
+          Success(ScriptProgram(scriptPubKeyExecutedProgram,ScriptErrorWitnessMalleated))
+        } else {
           witnessScriptPubKey.witnessVersion match {
             case WitnessVersion0 =>
               logger.error("Cannot verify witness program with a BaseTxSigComponent")
-              ScriptProgram(scriptPubKeyExecutedProgram,ScriptErrorWitnessProgramWitnessEmpty)
+              Success(ScriptProgram(scriptPubKeyExecutedProgram,ScriptErrorWitnessProgramWitnessEmpty))
             case UnassignedWitness =>
-              //TODO: get rid of .get here
-              evaluateUnassignedWitness(b).get
+              evaluateUnassignedWitness(b)
           }
         }
       case w: WitnessTxSigComponent =>
@@ -198,14 +200,17 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
         val witness = w.witness
         //scriptsig must be empty if we have raw p2wsh
         //if script pubkey is a P2SHScriptPubKey then we have P2SH(P2WSH)
-        if (scriptSig != EmptyScriptSignature && !w.scriptPubKey.isInstanceOf[P2SHScriptPubKey]) ScriptProgram(scriptPubKeyExecutedProgram,ScriptErrorWitnessMalleated)
-        else if (witness.stack.exists(_.size > maxPushSize)) ScriptProgram(scriptPubKeyExecutedProgram, ScriptErrorPushSize)
-        else {
-          //TODO: get rid of .get here
-          verifyWitnessProgram(witnessVersion, witness, witnessProgram, w).get
+        if (scriptSig != EmptyScriptSignature && !w.scriptPubKey.isInstanceOf[P2SHScriptPubKey]) {
+          Success(ScriptProgram(scriptPubKeyExecutedProgram,ScriptErrorWitnessMalleated))
         }
-      case r: WitnessTxSigComponentRebuilt =>
-        throw new IllegalArgumentException("Cannot have a rebuild witness tx sig component here, the witness tx sigcomponent is rebuilt in verifyWitnessProgram")
+        else if (witness.stack.exists(_.size > maxPushSize)) {
+          Success(ScriptProgram(scriptPubKeyExecutedProgram, ScriptErrorPushSize))
+        }
+        else {
+          verifyWitnessProgram(witnessVersion, witness, witnessProgram, w)
+        }
+      case _: WitnessTxSigComponentRebuilt =>
+        Failure(new IllegalArgumentException("Cannot have a rebuild witness tx sig component here, the witness tx sigcomponent is rebuilt in verifyWitnessProgram"))
     }
   }
 
