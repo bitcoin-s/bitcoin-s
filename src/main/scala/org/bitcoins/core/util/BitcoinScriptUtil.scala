@@ -296,7 +296,7 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
       sigsRemoved
     case w: WitnessScriptPubKey =>
       txSignatureComponent match {
-        case wtxSigComponent: WitnessV0TransactionSignatureComponent =>
+        case wtxSigComponent: WitnessTxSigComponent =>
           val scriptEither: Either[(Seq[ScriptToken], ScriptPubKey), ScriptError] = w.witnessVersion.rebuild(wtxSigComponent.witness,w.witnessProgram)
           parseScriptEither(scriptEither)
         case base : BaseTransactionSignatureComponent =>

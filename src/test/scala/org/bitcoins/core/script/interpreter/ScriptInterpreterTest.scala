@@ -31,7 +31,19 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterp
     //use this to represent a single test case from script_valid.json
 /*    val lines =
         """
-          | [ ["0 0x09 0x300602010102010101 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0", "0x01 0x14 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0x01 0x14 CHECKMULTISIG NOT", "DERSIG,NULLFAIL", "NULLFAIL", "BIP66-compliant but not NULLFAIL-compliant"]]
+          | [
+          | [
+          |  [
+          |   "",
+          |   0.00000000
+          |  ],
+          |  "0x47 0x304402200a5c6163f07b8d3b013c4d1d6dba25e780b39658d79ba37af7057a3b7f15ffa102201fd9b4eaa9943f734928b99a83592c2e7bf342ea2680f6a2bb705167966b742001",
+          |  "0x41 0x0479be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8 CHECKSIG",
+          |  "P2SH,WITNESS",
+          |  "WITNESS_UNEXPECTED",
+          |  "P2PK with witness"
+          | ]
+          | ]
    """.stripMargin*/
     val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n" finally source.close()
     val json = lines.parseJson
@@ -54,8 +66,18 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterp
       logger.info("Flags after parsing: " + flags)
       logger.info("Witness after parsing: " + witness)
       val program = witness match {
-        case Some((w, amount)) => ScriptProgram(tx.asInstanceOf[WitnessTransaction], scriptPubKey,
-          inputIndex, flags, amount)
+        case Some((w, amount)) => scriptPubKey match {
+          case p2sh: P2SHScriptPubKey =>
+            ScriptProgram(tx.asInstanceOf[WitnessTransaction], p2sh,
+              inputIndex, flags, amount)
+          case wit: WitnessScriptPubKey =>
+            ScriptProgram(tx.asInstanceOf[WitnessTransaction], wit,
+              inputIndex, flags, amount)
+          case x @(_: P2PKScriptPubKey | _: P2PKHScriptPubKey | _: MultiSignatureScriptPubKey | _: CLTVScriptPubKey | _: CSVScriptPubKey
+                    | _: CLTVScriptPubKey | _: NonStandardScriptPubKey | _: WitnessCommitment | EmptyScriptPubKey) =>
+            val t = TransactionSignatureComponent(tx,inputIndex,x,flags)
+            ScriptProgram(t)
+        }
         case None => ScriptProgram(tx, scriptPubKey, inputIndex, flags)
       }
       withClue(testCase.raw) {

@@ -57,8 +57,12 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
           TransactionSignatureSerializer.hashForSignature(txSignatureComponent.transaction,
             txSignatureComponent.inputIndex,
             sigsRemovedScript, hashType)
-        case w : WitnessV0TransactionSignatureComponent =>
-          TransactionSignatureSerializer.hashForSignature(w.transaction,w.inputIndex,sigsRemovedScript, hashType, w.amount,w.sigVersion)
+        case w : WitnessTxSigComponent =>
+          TransactionSignatureSerializer.hashForSignature(w.transaction,w.inputIndex,sigsRemovedScript, hashType,
+            w.amount,w.sigVersion)
+        case r: WitnessTxSigComponentRebuilt =>
+          TransactionSignatureSerializer.hashForSignature(r.transaction,r.inputIndex,sigsRemovedScript, hashType,
+            r.amount,r.sigVersion)
       }
 
       logger.debug("Hash for signature: " + BitcoinSUtil.encodeHex(hashForSignature.bytes))

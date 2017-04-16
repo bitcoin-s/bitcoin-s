@@ -1,6 +1,8 @@
 package org.bitcoins.core.protocol.transaction
 
+import org.bitcoins.core.crypto.TransactionSignatureComponent
 import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction.testprotocol.CoreTransactionTestCase
 import org.bitcoins.core.protocol.transaction.testprotocol.CoreTransactionTestCaseProtocol._
 import org.bitcoins.core.script.ScriptProgram
@@ -62,6 +64,7 @@ class TransactionTest extends FlatSpec with MustMatchers with BitcoinSLogger {
   }
 
 
+
   it must "read all of the tx_valid.json's contents and return ScriptOk" in {
     val source = Source.fromURL(getClass.getResource("/tx_valid.json"))
 
@@ -70,7 +73,8 @@ class TransactionTest extends FlatSpec with MustMatchers with BitcoinSLogger {
 /*    val lines =
         """
           |[  [[["0000000000000000000000000000000000000000000000000000000000000100", 0, "0x60 0x14 0x4c9c3dfac4207d5d8cb89df5722cb3d712385e3f", 1000]],
-          |    "010000000100010000000000000000000000000000000000000000000000000000000000000000000000ffffffff01e803000000000000015100000000", "P2SH,WITNESS"]]
+          |    "010000000100010000000000000000000000000000000000000000000000000000000000000000000000ffffffff01e803000000000000015100000000", "P2SH,WITNESS"]
+          |]
         """.stripMargin*/
     val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n" finally source.close()
     val json = lines.parseJson
@@ -93,7 +97,28 @@ class TransactionTest extends FlatSpec with MustMatchers with BitcoinSLogger {
         "OutPoint txId not the same as input prevout txid\noutPoint.txId: " + outPoint.txId + "\n" +
           "input prevout txid: " + input.previousOutput.txId)
       val program = amountOpt match {
-        case Some(amount) => ScriptProgram(tx,scriptPubKey,UInt32(inputIndex),testCase.flags,amount)
+        case Some(amount) => scriptPubKey match {
+          case p2sh: P2SHScriptPubKey =>
+            tx match {
+              case btx: BaseTransaction =>
+                ScriptProgram(btx, p2sh,
+                  UInt32(inputIndex), testCase.flags)
+              case wtx: WitnessTransaction =>
+                ScriptProgram(wtx, p2sh,
+                  UInt32(inputIndex), testCase.flags, amount)
+            }
+          case wit: WitnessScriptPubKey =>
+            tx match {
+              case btx: BaseTransaction =>
+                ScriptProgram(btx,wit,UInt32(inputIndex),testCase.flags)
+              case wtx: WitnessTransaction =>
+                ScriptProgram(wtx,wit,UInt32(inputIndex),testCase.flags,amount)
+            }
+          case x @ (_: P2PKScriptPubKey | _: P2PKHScriptPubKey | _: MultiSignatureScriptPubKey | _: CLTVScriptPubKey | _: CSVScriptPubKey
+                    | _: CLTVScriptPubKey | _: NonStandardScriptPubKey | _: WitnessCommitment | EmptyScriptPubKey) =>
+            val t = TransactionSignatureComponent(tx,UInt32(inputIndex),x,testCase.flags)
+            ScriptProgram(t)
+        }
         case None => ScriptProgram(tx,scriptPubKey,UInt32(inputIndex),testCase.flags)
       }
 
@@ -104,16 +129,14 @@ class TransactionTest extends FlatSpec with MustMatchers with BitcoinSLogger {
   }
 
 
-
-
   it must "read all of the tx_invalid.json's contents and return a ScriptError" in {
 
     val source = Source.fromURL(getClass.getResource("/tx_invalid.json"))
     //use this to represent a single test case from script_valid.json
 /*    val lines =
         """
-          |[  [[["0000000000000000000000000000000000000000000000000000000000000100", 0, "0x60 0x02 0x0000", 2000]],
-          |    "0100000000010100010000000000000000000000000000000000000000000000000000000000000000000000ffffffff010000000000000000015101010100000000", "P2SH,WITNESS"]
+          |[  [[["0000000000000000000000000000000000000000000000000000000000000100", 0, "0x60 0x02 0x0001", 2000]],
+          |    "01000000010001000000000000000000000000000000000000000000000000000000000000000000000151ffffffff010000000000000000015100000000", "P2SH,WITNESS"]
           |]
         """.stripMargin*/
     val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n" finally source.close()
@@ -137,7 +160,28 @@ class TransactionTest extends FlatSpec with MustMatchers with BitcoinSLogger {
         val isValidTx = ScriptInterpreter.checkTransaction(tx)
         if (isValidTx) {
           val program = amountOpt match {
-            case Some(amount) => ScriptProgram(tx,scriptPubKey,UInt32(inputIndex),testCase.flags,amount)
+            case Some(amount) => scriptPubKey match {
+              case p2sh: P2SHScriptPubKey =>
+                tx match {
+                  case btx: BaseTransaction =>
+                    ScriptProgram(btx, p2sh,
+                      UInt32(inputIndex), testCase.flags)
+                  case wtx: WitnessTransaction =>
+                    ScriptProgram(wtx, p2sh,
+                      UInt32(inputIndex), testCase.flags, amount)
+                }
+              case wit: WitnessScriptPubKey =>
+                tx match {
+                  case btx: BaseTransaction =>
+                    ScriptProgram(btx,wit,UInt32(inputIndex),testCase.flags)
+                  case wtx: WitnessTransaction =>
+                    ScriptProgram(wtx,wit,UInt32(inputIndex),testCase.flags,amount)
+                }
+              case x @ (_: P2PKScriptPubKey | _: P2PKHScriptPubKey | _: MultiSignatureScriptPubKey | _: CLTVScriptPubKey | _: CSVScriptPubKey
+                        | _: CLTVScriptPubKey | _: NonStandardScriptPubKey | _: WitnessCommitment | EmptyScriptPubKey) =>
+                val t = TransactionSignatureComponent(tx,UInt32(inputIndex),x,testCase.flags)
+                ScriptProgram(t)
+            }
             case None => ScriptProgram(tx,scriptPubKey,UInt32(inputIndex),testCase.flags)
           }
           ScriptInterpreter.run(program) == ScriptOk
