@@ -179,20 +179,20 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
     */
   private def executeSegWitScript(scriptPubKeyExecutedProgram: ExecutedScriptProgram, witnessScriptPubKey: WitnessScriptPubKey): ExecutedScriptProgram = {
     scriptPubKeyExecutedProgram.txSignatureComponent match {
-      case b: BaseTransactionSignatureComponent =>
+      case b: BaseTxSigComponent =>
         val scriptSig = scriptPubKeyExecutedProgram.txSignatureComponent.scriptSignature
         if (scriptSig != EmptyScriptSignature && !b.scriptPubKey.isInstanceOf[P2SHScriptPubKey]) ScriptProgram(scriptPubKeyExecutedProgram,ScriptErrorWitnessMalleated)
         else {
           witnessScriptPubKey.witnessVersion match {
             case WitnessVersion0 =>
-              logger.error("Cannot verify witness program with a BaseTransactionSignatureComponent")
+              logger.error("Cannot verify witness program with a BaseTxSigComponent")
               ScriptProgram(scriptPubKeyExecutedProgram,ScriptErrorWitnessProgramWitnessEmpty)
             case UnassignedWitness =>
               //TODO: get rid of .get here
               evaluateUnassignedWitness(b).get
           }
         }
-      case w : WitnessTxSigComponent =>
+      case w: WitnessTxSigComponent =>
         val scriptSig = scriptPubKeyExecutedProgram.txSignatureComponent.scriptSignature
         val (witnessVersion,witnessProgram) = (witnessScriptPubKey.witnessVersion, witnessScriptPubKey.witnessProgram)
         val witness = w.witness
@@ -204,6 +204,8 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
           //TODO: get rid of .get here
           verifyWitnessProgram(witnessVersion, witness, witnessProgram, w).get
         }
+      case r: WitnessTxSigComponentRebuilt =>
+        throw new IllegalArgumentException("Cannot have a rebuild witness tx sig component here, the witness tx sigcomponent is rebuilt in verifyWitnessProgram")
     }
   }
 
@@ -496,7 +498,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
     val txSigComponent = program.txSignatureComponent
     logger.debug("TxSigComponent: " + txSigComponent)
     val unexpectedWitness = txSigComponent match {
-      case b : BaseTransactionSignatureComponent =>
+      case b : BaseTxSigComponent =>
         b.transaction match {
           case wtx : WitnessTransaction =>
             wtx.witness.witnesses(txSigComponent.inputIndex.toInt).stack.nonEmpty
@@ -513,6 +515,12 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
             w.witness.stack.isEmpty
         }
         !witnessedUsed
+      case r: WitnessTxSigComponentRebuilt =>
+        r.transaction match {
+          case wtx: WitnessTransaction =>
+            wtx.witness.witnesses(txSigComponent.inputIndex.toInt).stack.nonEmpty
+          case _: BaseTransaction => false
+        }
     }
 
     if (unexpectedWitness) logger.error("Found unexpected witness that was not used by the ScriptProgram: " + program)
@@ -533,7 +541,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
   }
 
   /** Logic to evaluate a witnesss version that has not been assigned yet */
-  private def evaluateUnassignedWitness(txSigComponent: TransactionSignatureComponent): Try[ExecutedScriptProgram] = {
+  private def evaluateUnassignedWitness(txSigComponent: TxSigComponent): Try[ExecutedScriptProgram] = {
     logger.warn("Unassigned witness inside of witness script pubkey")
     val flags = txSigComponent.flags
     val discourageUpgradableWitnessVersion = ScriptFlagUtil.discourageUpgradableWitnessProgram(flags)

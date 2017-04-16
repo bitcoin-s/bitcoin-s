@@ -1,6 +1,6 @@
 package org.bitcoins.core.protocol.transaction
 
-import org.bitcoins.core.crypto.TransactionSignatureComponent
+import org.bitcoins.core.crypto.TxSigComponent
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction.testprotocol.CoreTransactionTestCase
@@ -116,7 +116,7 @@ class TransactionTest extends FlatSpec with MustMatchers with BitcoinSLogger {
             }
           case x @ (_: P2PKScriptPubKey | _: P2PKHScriptPubKey | _: MultiSignatureScriptPubKey | _: CLTVScriptPubKey | _: CSVScriptPubKey
                     | _: CLTVScriptPubKey | _: NonStandardScriptPubKey | _: WitnessCommitment | EmptyScriptPubKey) =>
-            val t = TransactionSignatureComponent(tx,UInt32(inputIndex),x,testCase.flags)
+            val t = TxSigComponent(tx,UInt32(inputIndex),x,testCase.flags)
             ScriptProgram(t)
         }
         case None => ScriptProgram(tx,scriptPubKey,UInt32(inputIndex),testCase.flags)
@@ -179,7 +179,7 @@ class TransactionTest extends FlatSpec with MustMatchers with BitcoinSLogger {
                 }
               case x @ (_: P2PKScriptPubKey | _: P2PKHScriptPubKey | _: MultiSignatureScriptPubKey | _: CLTVScriptPubKey | _: CSVScriptPubKey
                         | _: CLTVScriptPubKey | _: NonStandardScriptPubKey | _: WitnessCommitment | EmptyScriptPubKey) =>
-                val t = TransactionSignatureComponent(tx,UInt32(inputIndex),x,testCase.flags)
+                val t = TxSigComponent(tx,UInt32(inputIndex),x,testCase.flags)
                 ScriptProgram(t)
             }
             case None => ScriptProgram(tx,scriptPubKey,UInt32(inputIndex),testCase.flags)

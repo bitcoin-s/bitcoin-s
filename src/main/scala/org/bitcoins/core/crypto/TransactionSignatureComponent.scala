@@ -13,7 +13,7 @@ import scala.util.{Failure, Success, Try}
  * Represents a transaction whose input is being checked against the spending conditions of the
  * scriptPubKey
  */
-sealed trait TransactionSignatureComponent {
+sealed trait TxSigComponent {
 
   /** The transaction being checked for the validity of signatures */
   def transaction : Transaction
@@ -34,15 +34,15 @@ sealed trait TransactionSignatureComponent {
   def sigVersion: SignatureVersion
 }
 
-/** The [[TransactionSignatureComponent]] used to evaluate the the original Satoshi transaction digest algorithm */
-sealed trait BaseTransactionSignatureComponent extends TransactionSignatureComponent {
+/** The [[TxSigComponent]] used to evaluate the the original Satoshi transaction digest algorithm */
+sealed trait BaseTxSigComponent extends TxSigComponent {
   override def sigVersion = SigVersionBase
 }
 
-/** The [[TransactionSignatureComponent]] used to represent all the components necessarily for BIP143
+/** The [[TxSigComponent]] used to represent all the components necessarily for BIP143
   * [[https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki]]
   */
-sealed trait WitnessTxSigComponent extends TransactionSignatureComponent {
+sealed trait WitnessTxSigComponent extends TxSigComponent {
 
   override def transaction: WitnessTransaction
 
@@ -87,7 +87,7 @@ sealed trait WitnessTxSigComponentP2SH extends WitnessTxSigComponent {
   override def sigVersion = SigVersionWitnessV0
 }
 
-sealed trait WitnessTxSigComponentRebuilt extends TransactionSignatureComponent {
+sealed trait WitnessTxSigComponentRebuilt extends TxSigComponent {
   override def scriptPubKey: ScriptPubKey
 
   def witnessScriptPubKey: WitnessScriptPubKey
@@ -98,15 +98,15 @@ sealed trait WitnessTxSigComponentRebuilt extends TransactionSignatureComponent 
 
   def amount: CurrencyUnit
 }
-object TransactionSignatureComponent {
+object TxSigComponent {
 
-  private case class BaseTransactionSignatureComponentImpl(transaction : Transaction, inputIndex : UInt32,
-                                                       scriptPubKey : ScriptPubKey, flags : Seq[ScriptFlag]) extends BaseTransactionSignatureComponent
+  private case class BaseTxSigComponentImpl(transaction : Transaction, inputIndex : UInt32,
+                                                       scriptPubKey : ScriptPubKey, flags : Seq[ScriptFlag]) extends BaseTxSigComponent
 
 
   def apply(transaction : Transaction, inputIndex : UInt32,
-            scriptPubKey : ScriptPubKey, flags : Seq[ScriptFlag]): BaseTransactionSignatureComponent = {
-    BaseTransactionSignatureComponentImpl(transaction,inputIndex,scriptPubKey,flags)
+            scriptPubKey : ScriptPubKey, flags : Seq[ScriptFlag]): BaseTxSigComponent = {
+    BaseTxSigComponentImpl(transaction,inputIndex,scriptPubKey,flags)
   }
 
 }
