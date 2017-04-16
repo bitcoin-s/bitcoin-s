@@ -46,6 +46,7 @@ case object WitnessVersion0 extends WitnessVersion {
           else {
             val compactSizeUInt = CompactSizeUInt.calculateCompactSizeUInt(stackTop)
             val scriptPubKey = ScriptPubKey(compactSizeUInt.bytes ++ stackTop)
+            logger.debug("scriptPubKey: " + scriptPubKey)
             logger.debug("Script pub key for p2wsh: " + scriptPubKey.asm)
             val stack = scriptWitness.stack.tail.map(ScriptConstant(_))
             Left(stack, scriptPubKey)
