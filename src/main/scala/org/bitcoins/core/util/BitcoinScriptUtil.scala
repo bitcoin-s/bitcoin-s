@@ -274,7 +274,7 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
     * In the case we have a P2SH(P2WSH) we need to pass the witness's redeem script to the [[TransactionSignatureChecker]]
     * instead of passing the [[WitnessScriptPubKey]] inside of the [[P2SHScriptSignature]]'s redeem script.
     * */
-  def calculateScriptForChecking(txSignatureComponent: TransactionSignatureComponent,
+  def calculateScriptForChecking(txSignatureComponent: TxSigComponent,
                                  signature: ECDigitalSignature, script: Seq[ScriptToken]): Seq[ScriptToken] = {
     val scriptForChecking = calculateScriptForSigning(txSignatureComponent, script)
     logger.debug("sig for removal: " + signature)
@@ -289,7 +289,7 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
     }
   }
 
-  def calculateScriptForSigning(txSignatureComponent: TransactionSignatureComponent, script: Seq[ScriptToken]): Seq[ScriptToken] = txSignatureComponent.scriptPubKey match {
+  def calculateScriptForSigning(txSignatureComponent: TxSigComponent, script: Seq[ScriptToken]): Seq[ScriptToken] = txSignatureComponent.scriptPubKey match {
     case p2shScriptPubKey: P2SHScriptPubKey =>
       val p2shScriptSig = P2SHScriptSignature(txSignatureComponent.scriptSignature.bytes)
       val sigsRemoved = removeSignaturesFromScript(p2shScriptSig.signatures,p2shScriptSig.redeemScript.asm)
@@ -299,8 +299,11 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
         case wtxSigComponent: WitnessTxSigComponent =>
           val scriptEither: Either[(Seq[ScriptToken], ScriptPubKey), ScriptError] = w.witnessVersion.rebuild(wtxSigComponent.witness,w.witnessProgram)
           parseScriptEither(scriptEither)
-        case base : BaseTransactionSignatureComponent =>
-          //shouldn't have BaseTransactionSignatureComponent with a witness scriptPubKey
+        case rWTxSigComponent: WitnessTxSigComponentRebuilt =>
+          rWTxSigComponent.scriptPubKey.asm
+        case base : BaseTxSigComponent =>
+          //shouldn't have BaseTxSigComponent
+          //with a witness scriptPubKey
           script
       }
     case  _ : P2PKHScriptPubKey | _ : P2PKScriptPubKey | _ : MultiSignatureScriptPubKey |

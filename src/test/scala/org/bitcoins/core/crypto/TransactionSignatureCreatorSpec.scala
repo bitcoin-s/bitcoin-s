@@ -16,7 +16,7 @@ class TransactionSignatureCreatorSpec extends Properties("TransactionSignatureCr
 
   property("Must generate a valid signature for a p2pk transaction") =
     Prop.forAll(TransactionGenerators.signedP2PKTransaction) {
-      case (txSignatureComponent: TransactionSignatureComponent, _) =>
+      case (txSignatureComponent: TxSigComponent, _) =>
         //run it through the interpreter
         val program: PreExecutionScriptProgram = ScriptProgram(txSignatureComponent)
         val result = ScriptInterpreter.run(program)
@@ -25,7 +25,7 @@ class TransactionSignatureCreatorSpec extends Properties("TransactionSignatureCr
 
   property("generate a valid signature for a p2pkh transaction") =
     Prop.forAll(TransactionGenerators.signedP2PKHTransaction) {
-      case (txSignatureComponent: TransactionSignatureComponent, _) =>
+      case (txSignatureComponent: TxSigComponent, _) =>
         //run it through the interpreter
         val program = ScriptProgram(txSignatureComponent)
         val result = ScriptInterpreter.run(program)
@@ -33,7 +33,7 @@ class TransactionSignatureCreatorSpec extends Properties("TransactionSignatureCr
     }
   property("generate valid signatures for a multisignature transaction") =
     Prop.forAllNoShrink(TransactionGenerators.signedMultiSigTransaction) {
-      case (txSignatureComponent: TransactionSignatureComponent, _)  =>
+      case (txSignatureComponent: TxSigComponent, _)  =>
         //run it through the interpreter
         val program = ScriptProgram(txSignatureComponent)
         val result = ScriptInterpreter.run(program)
@@ -43,7 +43,7 @@ class TransactionSignatureCreatorSpec extends Properties("TransactionSignatureCr
 
   property("generate a valid signature for a p2sh transaction") =
     Prop.forAll(TransactionGenerators.signedP2SHTransaction) {
-      case (txSignatureComponent: TransactionSignatureComponent, _) =>
+      case (txSignatureComponent: TxSigComponent, _) =>
         //run it through the interpreter
         val program = ScriptProgram(txSignatureComponent)
         val result = ScriptInterpreter.run(program)
@@ -53,7 +53,7 @@ class TransactionSignatureCreatorSpec extends Properties("TransactionSignatureCr
 
   property("generate a valid signature for a valid and spendable cltv transaction") =
     Prop.forAllNoShrink(TransactionGenerators.spendableCLTVTransaction :| "cltv_spendable") {
-      case (txSignatureComponent: TransactionSignatureComponent, _, scriptNumber) =>
+      case (txSignatureComponent: TxSigComponent, _, scriptNumber) =>
         //run it through the interpreter
         require(txSignatureComponent.transaction.lockTime.underlying >= scriptNumber.underlying, "TxLocktime must be satisfied so it should be greater than or equal to  " +
           "the cltv value. Got TxLockTime : " + txSignatureComponent.transaction.lockTime.underlying + " , and cltv Value: " +
@@ -65,7 +65,7 @@ class TransactionSignatureCreatorSpec extends Properties("TransactionSignatureCr
 
   property("fail to verify a transaction with a locktime that has not yet been met") =
     Prop.forAllNoShrink(TransactionGenerators.unspendableCLTVTransaction :| "cltv_unspendable") {
-      case (txSignatureComponent: TransactionSignatureComponent, _, scriptNumber) =>
+      case (txSignatureComponent: TxSigComponent, _, scriptNumber) =>
         //run it through the interpreter
         require(txSignatureComponent.transaction.lockTime.underlying < scriptNumber.underlying, "TxLocktime must not be satisfied so it should be less than " +
           "the cltv value. Got TxLockTime : " + txSignatureComponent.transaction.lockTime.underlying + " , and cltv Value: " +
@@ -77,7 +77,7 @@ class TransactionSignatureCreatorSpec extends Properties("TransactionSignatureCr
 
   property("generate a valid signature for a valid and spendable csv transaction") =
     Prop.forAllNoShrink(TransactionGenerators.spendableCSVTransaction :| "spendable csv") {
-      case (txSignatureComponent: TransactionSignatureComponent, keys, scriptNumber, sequence) =>
+      case (txSignatureComponent: TxSigComponent, keys, scriptNumber, sequence) =>
         //run it through the interpreter
         val program = ScriptProgram(txSignatureComponent)
         val result = ScriptInterpreter.run(program)
@@ -86,7 +86,7 @@ class TransactionSignatureCreatorSpec extends Properties("TransactionSignatureCr
 
   property("fail to verify a transaction with a relative locktime that has not been satisfied yet") =
     Prop.forAllNoShrink(TransactionGenerators.unspendableCSVTransaction :| "unspendable csv") {
-      case (txSignatureComponent: TransactionSignatureComponent, keys, scriptNumber, sequence) =>
+      case (txSignatureComponent: TxSigComponent, keys, scriptNumber, sequence) =>
         //run it through the interpreter
         val program = ScriptProgram(txSignatureComponent)
         val result = ScriptInterpreter.run(program)

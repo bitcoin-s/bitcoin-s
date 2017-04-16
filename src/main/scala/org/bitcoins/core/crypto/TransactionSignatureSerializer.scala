@@ -220,13 +220,15 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
     CryptoUtil.doubleSHA256(serialization)
   }
   /** Wrapper function for hashForSignature. */
-  def hashForSignature(txSigComponent: TransactionSignatureComponent, hashType: HashType): DoubleSha256Digest = {
+  def hashForSignature(txSigComponent: TxSigComponent, hashType: HashType): DoubleSha256Digest = {
     val script = BitcoinScriptUtil.calculateScriptForSigning(txSigComponent,txSigComponent.scriptPubKey.asm)
     txSigComponent match {
-      case t : BaseTransactionSignatureComponent =>
+      case t: BaseTxSigComponent =>
         hashForSignature(t.transaction,t.inputIndex,script,hashType)
-      case w : WitnessTxSigComponent =>
+      case w: WitnessTxSigComponent =>
         hashForSignature(w.transaction,w.inputIndex, script, hashType,w.amount, w.sigVersion)
+      case r: WitnessTxSigComponentRebuilt =>
+        hashForSignature(r.transaction,r.inputIndex,script,hashType,r.amount,r.sigVersion)
     }
   }
 
