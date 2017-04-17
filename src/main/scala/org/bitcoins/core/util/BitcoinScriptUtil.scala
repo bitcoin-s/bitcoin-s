@@ -354,27 +354,6 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
     case Right(_) => Nil //error
   }
 
-  /** Given a tx, scriptPubKey and the input index we are checking the tx, it derives the appropriate [[SignatureVersion]] to use */
-  @tailrec
-  final def parseSigVersion(tx: Transaction, scriptPubKey: ScriptPubKey, inputIndex: UInt32): SignatureVersion  = scriptPubKey match {
-    case _ : WitnessScriptPubKeyV0 | _: UnassignedWitnessScriptPubKey =>
-      tx match {
-        case wtx: WitnessTransaction =>
-          if (wtx.witness.witnesses.isEmpty) {
-            //if witness is empty still use old tx signature digest algo, see BIP144
-            SigVersionBase
-          } else SigVersionWitnessV0
-        case _: BaseTransaction => SigVersionBase
-      }
-    case _ : P2SHScriptPubKey =>
-      //every p2sh scriptPubKey HAS to have a p2shScriptSig since we no longer have require scripts to be standard
-      val s = P2SHScriptSignature(tx.inputs(inputIndex.toInt).scriptSignature.bytes)
-      parseSigVersion(tx,s.redeemScript,inputIndex)
-    case _: P2PKScriptPubKey | _: P2PKHScriptPubKey | _: MultiSignatureScriptPubKey  | _: NonStandardScriptPubKey
-         | _: CLTVScriptPubKey | _: CSVScriptPubKey | _ : WitnessCommitment | EmptyScriptPubKey => SigVersionBase
-  }
-
-
   /** Casts the given script token to a boolean value
     * Mimics this function inside of Bitcoin Core
     * [[https://github.com/bitcoin/bitcoin/blob/8c1dbc5e9ddbafb77e60e8c4e6eb275a3a76ac12/src/script/interpreter.cpp#L38]]
