@@ -1,10 +1,8 @@
 package org.bitcoins.core.crypto
 
 import org.bitcoins.core.gen.TransactionGenerators
-import org.bitcoins.core.number.Int64
-import org.bitcoins.core.protocol.script.{CLTVScriptPubKey, P2SHScriptPubKey}
 import org.bitcoins.core.script.interpreter.ScriptInterpreter
-import org.bitcoins.core.script.result.{ScriptErrorUnsatisfiedLocktime, ScriptErrorPushSize, ScriptOk}
+import org.bitcoins.core.script.result._
 import org.bitcoins.core.script.{PreExecutionScriptProgram, ScriptProgram}
 import org.bitcoins.core.util.BitcoinSLogger
 import org.scalacheck.{Prop, Properties}
@@ -131,18 +129,18 @@ class TransactionSignatureCreatorSpec extends Properties("TransactionSignatureCr
     }
 
   property("generate a valid signature for a escrow timeout transaction") =
-    Prop.forAll(TransactionGenerators.spendableTimeoutEscrowTimeoutTransaction) { txSigComponent: TxSigComponent =>
+    Prop.forAll(TransactionGenerators.spendableEscrowTimeoutTransaction) { txSigComponent: TxSigComponent =>
       val program = ScriptProgram(txSigComponent)
       val result = ScriptInterpreter.run(program)
       result == ScriptOk
     }
 
 
-  property("fail to evaluate a csv escrow timeout transaction due to invalid csv timeout values") = {
-    Prop.forAll(TransactionGenerators.unspendableEscrowTimeoutTransaction) { txSigComponent: TxSigComponent =>
+  property("fail to evaluate a csv escrow timeout transaction") = {
+    Prop.forAll(TransactionGenerators.unspendableMultiSigEscrowTimeoutTransaction) { txSigComponent: TxSigComponent =>
       val program = ScriptProgram(txSigComponent)
       val result = ScriptInterpreter.run(program)
-      result == ScriptErrorUnsatisfiedLocktime
+      result != ScriptOk
     }
   }
 

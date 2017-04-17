@@ -163,6 +163,8 @@ trait ScriptGenerators extends BitcoinSLogger {
       multiSigScriptPubKey)
   }
 
+  def lockTimeScriptPubKey: Gen[(LockTimeScriptPubKey, Seq[ECPrivateKey])] = Gen.oneOf(cltvScriptPubKey, csvScriptPubKey)
+
   /** Generates an arbitrary [[ScriptPubKey]] */
   def scriptPubKey : Gen[(ScriptPubKey, Seq[ECPrivateKey])] = {
     Gen.oneOf(p2pkScriptPubKey.map(privKeyToSeq(_)),p2pkhScriptPubKey.map(privKeyToSeq(_)),
@@ -365,7 +367,7 @@ trait ScriptGenerators extends BitcoinSLogger {
   } yield (scriptSig,csvEscrowTimeout,multiSigPrivKeys)
 
   /** Generates a [[EscrowTimeoutScriptPubKey]] and [[EscrowTimeoutScriptSignature]] where the scriptsig spends the timeout branch */
-  def spendableTimeoutEscrowTimeoutScriptSig(scriptNum: ScriptNumber, sequence: UInt32): Gen[(EscrowTimeoutScriptSignature, EscrowTimeoutScriptPubKey, Seq[ECPrivateKey])] = for {
+  def timeoutEscrowTimeoutScriptSig(scriptNum: ScriptNumber, sequence: UInt32): Gen[(EscrowTimeoutScriptSignature, EscrowTimeoutScriptPubKey, Seq[ECPrivateKey])] = for {
     (_,csv,csvPrivKeys) <- signedCSVScriptSignature(scriptNum, sequence)
     (_, multiSigScriptPubKey,_) <- signedMultiSignatureScriptSignature
     hashType <- CryptoGenerators.hashType

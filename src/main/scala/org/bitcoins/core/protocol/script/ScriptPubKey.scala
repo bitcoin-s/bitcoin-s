@@ -709,7 +709,7 @@ object EscrowTimeoutScriptPubKey extends ScriptFactory[EscrowTimeoutScriptPubKey
       val escrowAsm = asm.slice(1,opElseIndex)
       val escrow = Try(MultiSignatureScriptPubKey(escrowAsm))
       val timeoutAsm = asm.slice(opElseIndex+1, asm.length-1)
-      val timeout = Try(CSVScriptPubKey(timeoutAsm))
+      val timeout = Try(LockTimeScriptPubKey.fromAsm(timeoutAsm))
       escrow.isSuccess && timeout.isSuccess
     } else false
   }

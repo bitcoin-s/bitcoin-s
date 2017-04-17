@@ -30,13 +30,13 @@ object PaymentChannel {
 
   def apply(anchorTx : DepositTransaction,
             currentSpendingTx : CurrentTransaction,
-            refundTx : RefundTransaction) = PaymentChannelImpl(anchorTx, currentSpendingTx, refundTx, currentState = ???)
+            refundTx : RefundTransaction): PaymentChannel = PaymentChannelImpl(anchorTx, currentSpendingTx, refundTx, currentState = ???)
 
   def updateSpendingTx(channel: PaymentChannel,
-                       currentSpendingTx : CurrentTransaction) = PaymentChannelImpl(channel.anchorTx, currentSpendingTx, channel.refundTx, currentState = ???)
+                       currentSpendingTx : CurrentTransaction): PaymentChannel = PaymentChannelImpl(channel.anchorTx, currentSpendingTx, channel.refundTx, currentState = ???)
 
   def apply(channel : PaymentChannel,
-            currentSpendingTx : CurrentTransaction) = updateSpendingTx(channel, currentSpendingTx)
+            currentSpendingTx : CurrentTransaction): PaymentChannel = updateSpendingTx(channel, currentSpendingTx)
 
   def createUnsignedAnchorTx(payorPubKey : ECPublicKey, payeePubKey : ECPublicKey, amount : CurrencyUnit) : PaymentChannelTransaction = {
     val p2shScriptPubKey : P2SHScriptPubKey = {
