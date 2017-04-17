@@ -451,18 +451,12 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers with
     val spendingTx: WitnessTransaction = WitnessTransaction(hex)
     spendingTx.isInstanceOf[WitnessTransaction] must be (true)
     spendingTx.hex must be (hex)
-
-    val witScriptPubKeyString = "0 0x20 0xb95237b48faaa69eb078e1170be3b5cbb3fddf16d0a991e14ad274f7b33a4f64"
-    val witnessScriptPubKey = ScriptPubKey(ScriptParser.fromString(witScriptPubKeyString))
     val inputIndex = UInt32.zero
     val witnessRedeemScript = ScriptPubKey("43410479be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8ac")
 
     val amount = Satoshis(Int64(1))
-    val sigVersion = BitcoinScriptUtil.parseSigVersion(spendingTx,witnessScriptPubKey,inputIndex)
-    logger.error("scriptPubKey: " + scriptPubKey)
-    logger.error("sigVersion: " + sigVersion)
     val serializedForSig = TransactionSignatureSerializer.serializeForSignature(spendingTx,inputIndex, witnessRedeemScript.asm,
-      HashType.sigHashAll,amount,sigVersion)
+      HashType.sigHashAll,amount,SigVersionWitnessV0)
 
     BitcoinSUtil.encodeHex(serializedForSig) must be (expected)
   }
@@ -474,12 +468,9 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers with
     val scriptWitness = wtx.witness.witnesses(inputIndex.toInt)
     val witScriptPubKey = WitnessScriptPubKeyV0("1600144c9c3dfac4207d5d8cb89df5722cb3d712385e3f")
     val (_,scriptPubKey) = witScriptPubKey.witnessVersion.rebuild(scriptWitness,witScriptPubKey.witnessProgram).left.get
-    val sigVersion = BitcoinScriptUtil.parseSigVersion(wtx,witScriptPubKey,inputIndex)
-    logger.error("scriptPubKey: " + scriptPubKey)
-    logger.error("sigVersion: " + sigVersion)
     val amount = Satoshis(Int64(2000))
     val serializedForSig = TransactionSignatureSerializer.serializeForSignature(wtx,inputIndex,scriptPubKey.asm,
-      HashType.sigHashSingleAnyoneCanPay, amount,sigVersion)
+      HashType.sigHashSingleAnyoneCanPay, amount,SigVersionWitnessV0)
 
     BitcoinSUtil.encodeHex(serializedForSig) must be ("01000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000010000001976a9144c9c3dfac4207d5d8cb89df5722cb3d712385e3f88acd007000000000000ffffffff2d793f9722ac8cbea9b2e0a2929cda4007b8312c6ec3b997088439e48e7aa64e0000000083000000")
   }

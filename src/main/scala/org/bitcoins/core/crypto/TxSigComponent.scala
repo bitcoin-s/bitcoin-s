@@ -52,16 +52,18 @@ sealed trait WitnessTxSigComponent extends TxSigComponent {
   def amount: CurrencyUnit
 
   def witnessVersion: WitnessVersion
-}
-
-sealed trait WitnessTxSigComponentRaw extends WitnessTxSigComponent {
-  override def scriptPubKey: WitnessScriptPubKey
-
-  override def witnessVersion: WitnessVersion = scriptPubKey.witnessVersion
 
   override def sigVersion = SigVersionWitnessV0
 }
 
+/** This represents checking the [[WitnessTransaction] against a P2WPKH or P2WSH ScriptPubKey */
+sealed trait WitnessTxSigComponentRaw extends WitnessTxSigComponent {
+  override def scriptPubKey: WitnessScriptPubKey
+
+  override def witnessVersion: WitnessVersion = scriptPubKey.witnessVersion
+}
+
+/** This represents checking the [[WitnessTransaction]] against a P2SH(P2WSH) or P2SH(P2WPKH) scriptPubKey */
 sealed trait WitnessTxSigComponentP2SH extends WitnessTxSigComponent {
   override def scriptPubKey: P2SHScriptPubKey
 
@@ -84,12 +86,18 @@ sealed trait WitnessTxSigComponentP2SH extends WitnessTxSigComponent {
     case Failure(err) => throw err
   }
 
-  override def sigVersion = SigVersionWitnessV0
+
 }
 
+/** This represents a 'rebuilt' [[ScriptPubKey]] that was constructed from [[WitnessScriptPubKey]]
+  * After the [[ScriptPubKey]] is rebuilt, we need to use that rebuilt scriptpubkey to evaluate the [[ScriptSignature]]
+  * See BIP141 for more info on rebuilding P2WSH and P2WPKH scriptpubkeys
+  * [[https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki#witness-program]]
+  */
 sealed trait WitnessTxSigComponentRebuilt extends TxSigComponent {
   override def scriptPubKey: ScriptPubKey
 
+  /** The [[WitnessScriptPubKey]] we used to rebuild the scriptPubKey above */
   def witnessScriptPubKey: WitnessScriptPubKey
 
   override def sigVersion = SigVersionWitnessV0
@@ -98,11 +106,11 @@ sealed trait WitnessTxSigComponentRebuilt extends TxSigComponent {
 
   def amount: CurrencyUnit
 }
+
 object TxSigComponent {
 
   private case class BaseTxSigComponentImpl(transaction : Transaction, inputIndex : UInt32,
                                                        scriptPubKey : ScriptPubKey, flags : Seq[ScriptFlag]) extends BaseTxSigComponent
-
 
   def apply(transaction : Transaction, inputIndex : UInt32,
             scriptPubKey : ScriptPubKey, flags : Seq[ScriptFlag]): BaseTxSigComponent = {
