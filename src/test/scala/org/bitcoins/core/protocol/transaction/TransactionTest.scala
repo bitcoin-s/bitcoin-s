@@ -20,6 +20,7 @@ import scala.io.Source
  */
 class TransactionTest extends FlatSpec with MustMatchers with BitcoinSLogger {
 
+
   "Transaction" must "derive the correct txid from the transaction contents" in {
 
     //https://btc.blockr.io/api/v1/tx/raw/cddda897b0e9322937ee1f4fd5d6147d60f04a0f4d3b461e4f87066ac3918f2a
@@ -65,17 +66,19 @@ class TransactionTest extends FlatSpec with MustMatchers with BitcoinSLogger {
 
 
 
+
   it must "read all of the tx_valid.json's contents and return ScriptOk" in {
     val source = Source.fromURL(getClass.getResource("/tx_valid.json"))
 
 
         //use this to represent a single test case from script_valid.json
-/*    val lines =
+    /*val lines =
         """
           |[  [[["0000000000000000000000000000000000000000000000000000000000000100", 0, "0x60 0x14 0x4c9c3dfac4207d5d8cb89df5722cb3d712385e3f", 1000]],
           |    "010000000100010000000000000000000000000000000000000000000000000000000000000000000000ffffffff01e803000000000000015100000000", "P2SH,WITNESS"]
           |]
         """.stripMargin*/
+
     val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n" finally source.close()
     val json = lines.parseJson
     val testCasesOpt : Seq[Option[CoreTransactionTestCase]] = json.convertTo[Seq[Option[CoreTransactionTestCase]]]
@@ -121,7 +124,6 @@ class TransactionTest extends FlatSpec with MustMatchers with BitcoinSLogger {
         }
         case None => ScriptProgram(tx,scriptPubKey,UInt32(inputIndex),testCase.flags)
       }
-
       withClue(testCase.raw + " input index: " + inputIndex) {
         ScriptInterpreter.run(program) must equal (ScriptOk)
       }
