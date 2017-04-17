@@ -4,7 +4,7 @@ import org.bitcoins.core.crypto._
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.protocol.script.{CLTVScriptPubKey, CSVScriptPubKey, EmptyScriptPubKey, _}
-import org.bitcoins.core.protocol.transaction.{Transaction, WitnessTransaction}
+import org.bitcoins.core.protocol.transaction.{BaseTransaction, Transaction, WitnessTransaction}
 import org.bitcoins.core.script.ScriptProgram.PreExecutionScriptProgramImpl
 import org.bitcoins.core.script.constant._
 import org.bitcoins.core.script.crypto.{OP_CHECKMULTISIG, OP_CHECKMULTISIGVERIFY, OP_CHECKSIG, OP_CHECKSIGVERIFY}
@@ -274,7 +274,7 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
     * In the case we have a P2SH(P2WSH) we need to pass the witness's redeem script to the [[TransactionSignatureChecker]]
     * instead of passing the [[WitnessScriptPubKey]] inside of the [[P2SHScriptSignature]]'s redeem script.
     * */
-  def calculateScriptForChecking(txSignatureComponent: TransactionSignatureComponent,
+  def calculateScriptForChecking(txSignatureComponent: TxSigComponent,
                                  signature: ECDigitalSignature, script: Seq[ScriptToken]): Seq[ScriptToken] = {
     val scriptForChecking = calculateScriptForSigning(txSignatureComponent, script)
     logger.debug("sig for removal: " + signature)
@@ -289,18 +289,21 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
     }
   }
 
-  def calculateScriptForSigning(txSignatureComponent: TransactionSignatureComponent, script: Seq[ScriptToken]): Seq[ScriptToken] = txSignatureComponent.scriptPubKey match {
+  def calculateScriptForSigning(txSignatureComponent: TxSigComponent, script: Seq[ScriptToken]): Seq[ScriptToken] = txSignatureComponent.scriptPubKey match {
     case p2shScriptPubKey: P2SHScriptPubKey =>
       val p2shScriptSig = P2SHScriptSignature(txSignatureComponent.scriptSignature.bytes)
       val sigsRemoved = removeSignaturesFromScript(p2shScriptSig.signatures,p2shScriptSig.redeemScript.asm)
       sigsRemoved
     case w: WitnessScriptPubKey =>
       txSignatureComponent match {
-        case wtxSigComponent: WitnessV0TransactionSignatureComponent =>
+        case wtxSigComponent: WitnessTxSigComponent =>
           val scriptEither: Either[(Seq[ScriptToken], ScriptPubKey), ScriptError] = w.witnessVersion.rebuild(wtxSigComponent.witness,w.witnessProgram)
           parseScriptEither(scriptEither)
-        case base : BaseTransactionSignatureComponent =>
-          //shouldn't have BaseTransactionSignatureComponent with a witness scriptPubKey
+        case rWTxSigComponent: WitnessTxSigComponentRebuilt =>
+          rWTxSigComponent.scriptPubKey.asm
+        case base : BaseTxSigComponent =>
+          //shouldn't have BaseTxSigComponent
+          //with a witness scriptPubKey
           script
       }
     case  _ : P2PKHScriptPubKey | _ : P2PKScriptPubKey | _ : MultiSignatureScriptPubKey |
@@ -350,20 +353,6 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
       scriptPubKey.asm
     case Right(_) => Nil //error
   }
-
-  /** Given a tx, scriptPubKey and the input index we are checking the tx, it derives the appropriate [[SignatureVersion]] to use */
-  @tailrec
-  final def parseSigVersion(tx: Transaction, scriptPubKey: ScriptPubKey, inputIndex: UInt32): SignatureVersion  = scriptPubKey match {
-    case _ : WitnessScriptPubKeyV0 | _: UnassignedWitnessScriptPubKey =>
-      SigVersionWitnessV0
-    case _ : P2SHScriptPubKey =>
-      //every p2sh scriptPubKey HAS to have a p2shScriptSig since we no longer have require scripts to be standard
-      val s = P2SHScriptSignature(tx.inputs(inputIndex.toInt).scriptSignature.bytes)
-      parseSigVersion(tx,s.redeemScript,inputIndex)
-    case _: P2PKScriptPubKey | _: P2PKHScriptPubKey | _: MultiSignatureScriptPubKey  | _: NonStandardScriptPubKey
-         | _: CLTVScriptPubKey | _: CSVScriptPubKey | _ : WitnessCommitment | EmptyScriptPubKey => SigVersionBase
-  }
-
 
   /** Casts the given script token to a boolean value
     * Mimics this function inside of Bitcoin Core
