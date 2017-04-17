@@ -54,10 +54,10 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
     // OP_CODESEPARATOR instruction having no purpose as it was only meant to be used internally, not actually
     // ever put into scripts. Deleting OP_CODESEPARATOR is a step that should never be required but if we don't
     // do it, we could split off the main chain.
-    logger.info("Before Bitcoin-S Script to be connected: " + script)
+    logger.debug("Before Bitcoin-S Script to be connected: " + script)
     val scriptWithOpCodeSeparatorsRemoved : Seq[ScriptToken] = removeOpCodeSeparators(script)
 
-    logger.info("After Bitcoin-S Script to be connected: " + scriptWithOpCodeSeparatorsRemoved)
+    logger.debug("After Bitcoin-S Script to be connected: " + scriptWithOpCodeSeparatorsRemoved)
 
     val inputToSign = inputSigsRemoved(inputIndex.toInt)
 
@@ -220,13 +220,15 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
     CryptoUtil.doubleSHA256(serialization)
   }
   /** Wrapper function for hashForSignature. */
-  def hashForSignature(txSigComponent: TransactionSignatureComponent, hashType: HashType): DoubleSha256Digest = {
+  def hashForSignature(txSigComponent: TxSigComponent, hashType: HashType): DoubleSha256Digest = {
     val script = BitcoinScriptUtil.calculateScriptForSigning(txSigComponent,txSigComponent.scriptPubKey.asm)
     txSigComponent match {
-      case t : BaseTransactionSignatureComponent =>
+      case t: BaseTxSigComponent =>
         hashForSignature(t.transaction,t.inputIndex,script,hashType)
-      case w : WitnessV0TransactionSignatureComponent =>
+      case w: WitnessTxSigComponent =>
         hashForSignature(w.transaction,w.inputIndex, script, hashType,w.amount, w.sigVersion)
+      case r: WitnessTxSigComponentRebuilt =>
+        hashForSignature(r.transaction,r.inputIndex,script,hashType,r.amount,r.sigVersion)
     }
   }
 
@@ -291,7 +293,7 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
 
   /** Removes [[OP_CODESEPARATOR]] operations then returns the script. */
   def removeOpCodeSeparators(script : Seq[ScriptToken]) : Seq[ScriptToken] = {
-    logger.info("Tokens: " + script)
+    logger.debug("Tokens: " + script)
     if (script.contains(OP_CODESEPARATOR)) {
       //TODO: This needs to be tested
       val scriptWithoutOpCodeSeparators : Seq[ScriptToken] = script.filterNot(_ == OP_CODESEPARATOR)

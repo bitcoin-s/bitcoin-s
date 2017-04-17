@@ -1,6 +1,6 @@
 package org.bitcoins.core.gen
 
-import org.bitcoins.core.crypto.{ECPrivateKey, TransactionSignatureComponent, WitnessV0TransactionSignatureComponent}
+import org.bitcoins.core.crypto.{ECPrivateKey, TxSigComponent, WitnessTxSigComponent}
 import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits}
 import org.bitcoins.core.number.{Int64, UInt32}
 import org.bitcoins.core.policy.Policy
@@ -73,11 +73,11 @@ trait TransactionGenerators extends BitcoinSLogger {
     * Creates a [[ECPrivateKey]], then creates a [[P2PKScriptPubKey]] from that private key
     * Finally creates a  [[Transaction]] that spends the [[P2PKScriptPubKey]] correctly
     */
-  def signedP2PKTransaction: Gen[(TransactionSignatureComponent, ECPrivateKey)] = for {
+  def signedP2PKTransaction: Gen[(TxSigComponent, ECPrivateKey)] = for {
     (signedScriptSig, scriptPubKey, privateKey) <- ScriptGenerators.signedP2PKScriptSignature
     (creditingTx,outputIndex) = buildCreditingTransaction(scriptPubKey)
     (signedTx,inputIndex) = buildSpendingTransaction(creditingTx,signedScriptSig,outputIndex)
-    signedTxSignatureComponent = TransactionSignatureComponent(signedTx,inputIndex,
+    signedTxSignatureComponent = TxSigComponent(signedTx,inputIndex,
       scriptPubKey,Policy.standardScriptVerifyFlags)
   } yield (signedTxSignatureComponent,privateKey)
 
@@ -85,11 +85,11 @@ trait TransactionGenerators extends BitcoinSLogger {
     * Creates a [[ECPrivateKey]], then creates a [[P2PKHScriptPubKey]] from that private key
     * Finally creates a  [[Transaction]] that spends the [[P2PKHScriptPubKey]] correctly
     */
-  def signedP2PKHTransaction: Gen[(TransactionSignatureComponent, ECPrivateKey)] = for {
+  def signedP2PKHTransaction: Gen[(TxSigComponent, ECPrivateKey)] = for {
     (signedScriptSig, scriptPubKey, privateKey) <- ScriptGenerators.signedP2PKHScriptSignature
     (creditingTx,outputIndex) = buildCreditingTransaction(scriptPubKey)
     (signedTx,inputIndex) = buildSpendingTransaction(creditingTx,signedScriptSig,outputIndex)
-    signedTxSignatureComponent = TransactionSignatureComponent(signedTx,inputIndex,
+    signedTxSignatureComponent = TxSigComponent(signedTx,inputIndex,
       scriptPubKey,Policy.standardScriptVerifyFlags)
   } yield (signedTxSignatureComponent,privateKey)
 
@@ -98,11 +98,11 @@ trait TransactionGenerators extends BitcoinSLogger {
     * Creates a sequence of [[ECPrivateKey]], then creates a [[MultiSignatureScriptPubKey]] from those private keys,
     * Finally creates a [[Transaction]] that spends the [[MultiSignatureScriptPubKey]] correctly
     */
-  def signedMultiSigTransaction: Gen[(TransactionSignatureComponent, Seq[ECPrivateKey])] = for {
+  def signedMultiSigTransaction: Gen[(TxSigComponent, Seq[ECPrivateKey])] = for {
     (signedScriptSig, scriptPubKey, privateKey) <- ScriptGenerators.signedMultiSignatureScriptSignature
     (creditingTx,outputIndex) = buildCreditingTransaction(scriptPubKey)
     (signedTx,inputIndex) = buildSpendingTransaction(creditingTx,signedScriptSig,outputIndex)
-    signedTxSignatureComponent = TransactionSignatureComponent(signedTx,inputIndex,
+    signedTxSignatureComponent = TxSigComponent(signedTx,inputIndex,
       scriptPubKey,Policy.standardScriptVerifyFlags)
   } yield (signedTxSignatureComponent,privateKey)
 
@@ -110,18 +110,18 @@ trait TransactionGenerators extends BitcoinSLogger {
   /**
     * Creates a transaction which contains a [[P2SHScriptSignature]] that correctly spends a [[P2SHScriptPubKey]]
     */
-  def signedP2SHTransaction: Gen[(TransactionSignatureComponent, Seq[ECPrivateKey])] = for {
+  def signedP2SHTransaction: Gen[(TxSigComponent, Seq[ECPrivateKey])] = for {
     (signedScriptSig, scriptPubKey, privateKey) <- ScriptGenerators.signedP2SHScriptSignature
     (creditingTx,outputIndex) = buildCreditingTransaction(signedScriptSig.redeemScript)
     (signedTx,inputIndex) = buildSpendingTransaction(creditingTx,signedScriptSig,outputIndex)
-    signedTxSignatureComponent = TransactionSignatureComponent(signedTx,inputIndex,
+    signedTxSignatureComponent = TxSigComponent(signedTx,inputIndex,
       scriptPubKey,Policy.standardScriptVerifyFlags)
   } yield (signedTxSignatureComponent,privateKey)
 
 
 
   /** Generates a validly constructed CLTV transaction, which has a 50/50 chance of being spendable or unspendable. */
-  def randomCLTVTransaction : Gen[(TransactionSignatureComponent, Seq[ECPrivateKey], ScriptNumber)] = {
+  def randomCLTVTransaction : Gen[(TxSigComponent, Seq[ECPrivateKey], ScriptNumber)] = {
     Gen.oneOf(unspendableCLTVTransaction,spendableCLTVTransaction)
   }
 
@@ -132,7 +132,7 @@ trait TransactionGenerators extends BitcoinSLogger {
     *
     * @return
     */
-  def unspendableCLTVTransaction : Gen[(TransactionSignatureComponent, Seq[ECPrivateKey], ScriptNumber)] =  for {
+  def unspendableCLTVTransaction : Gen[(TxSigComponent, Seq[ECPrivateKey], ScriptNumber)] =  for {
     txLockTime <- NumberGenerator.uInt32s
     //Generate script Numbers that are greater than txLockTime values. the suchThat condition is for thoroughness as
     //a random generated ScriptNumber will almost certainly be a greater value than a random generated UInt32.
@@ -144,7 +144,7 @@ trait TransactionGenerators extends BitcoinSLogger {
     *  Creates a [[ECPrivateKey]], then creates a [[CLTVScriptPubKey]] from that private key
     *  Finally creates a [[Transaction]] that can successfully spend the [[CLTVScriptPubKey]]
     */
-  def spendableCLTVTransaction : Gen[(TransactionSignatureComponent, Seq[ECPrivateKey], ScriptNumber)] = for {
+  def spendableCLTVTransaction : Gen[(TxSigComponent, Seq[ECPrivateKey], ScriptNumber)] = for {
     txLockTime <- NumberGenerator.uInt32s
     //Generate UInt32 values that are less than txLockTime values. UInt32 values are then mapped to ScriptNumbers
     cltvLockTime <- NumberGenerator.uInt32s.suchThat(num => num < txLockTime).map(x => ScriptNumber(x.underlying))
@@ -155,73 +155,71 @@ trait TransactionGenerators extends BitcoinSLogger {
     *  Creates a [[ECPrivateKey]], then creates a [[CSVScriptPubKey]] from that private key
     *  Finally creates a [[Transaction]] that can successfully spend the [[CSVScriptPubKey]]
     */
-  def spendableCSVTransaction : Gen[(TransactionSignatureComponent, Seq[ECPrivateKey], ScriptNumber, UInt32)] = for {
+  def spendableCSVTransaction : Gen[(TxSigComponent, Seq[ECPrivateKey], ScriptNumber, UInt32)] = for {
     (csvScriptNum, sequence) <- spendableCSVValues
     tx <- csvTransaction(csvScriptNum,sequence)
   } yield tx
 
   /** Creates a CSV transaction that's timelock has not been met */
-  def unspendableCSVTransaction : Gen[(TransactionSignatureComponent, Seq[ECPrivateKey], ScriptNumber, UInt32)] = for {
+  def unspendableCSVTransaction : Gen[(TxSigComponent, Seq[ECPrivateKey], ScriptNumber, UInt32)] = for {
     (csvScriptNum, sequence) <- unspendableCSVValues
     tx <- csvTransaction(csvScriptNum, sequence)
   } yield tx
 
-  def csvTransaction(csvScriptNum: ScriptNumber, sequence: UInt32): Gen[(TransactionSignatureComponent, Seq[ECPrivateKey], ScriptNumber, UInt32)] = for {
+  def csvTransaction(csvScriptNum: ScriptNumber, sequence: UInt32): Gen[(TxSigComponent, Seq[ECPrivateKey], ScriptNumber, UInt32)] = for {
     (signedScriptSig, csvScriptPubKey, privateKeys) <- ScriptGenerators.signedCSVScriptSignature(csvScriptNum, sequence)
   } yield csvTxHelper(signedScriptSig, csvScriptPubKey, privateKeys, csvScriptNum, sequence)
 
   private def csvTxHelper(signedScriptSig : CSVScriptSignature, csv : CSVScriptPubKey,
                           privKeys : Seq[ECPrivateKey], csvNum : ScriptNumber,
-                          sequence : UInt32) : (TransactionSignatureComponent, Seq[ECPrivateKey], ScriptNumber, UInt32) = {
+                          sequence : UInt32) : (TxSigComponent, Seq[ECPrivateKey], ScriptNumber, UInt32) = {
     val (creditingTx, outputIndex) = buildCreditingTransaction(UInt32(2), csv)
     //Transaction version must not be less than 2 for a CSV transaction
     val (signedSpendingTx, inputIndex) = buildSpendingTransaction(UInt32(2), creditingTx,
       signedScriptSig, outputIndex, UInt32.zero, sequence)
-    val txSigComponent = TransactionSignatureComponent(signedSpendingTx, inputIndex,
+    val txSigComponent = TxSigComponent(signedSpendingTx, inputIndex,
       csv, Policy.standardScriptVerifyFlags)
     (txSigComponent, privKeys, csvNum, sequence)
   }
 
 
   /** Generates a [[WitnessTransaction]] that has all of it's inputs signed correctly */
-  def signedP2WPKHTransaction: Gen[(WitnessV0TransactionSignatureComponent,Seq[ECPrivateKey])] = for {
+  def signedP2WPKHTransaction: Gen[(WitnessTxSigComponent,Seq[ECPrivateKey])] = for {
     (_,wtxSigComponent, privKeys) <- WitnessGenerators.signedP2WPKHTransactionWitness
   } yield (wtxSigComponent,privKeys)
 
   /** Generates a [[WitnessTransaction]] that has an input spends a raw P2WSH [[WitnessScriptPubKey]] */
-  def signedP2WSHP2PKTransaction: Gen[(WitnessV0TransactionSignatureComponent, Seq[ECPrivateKey])] = for {
+  def signedP2WSHP2PKTransaction: Gen[(WitnessTxSigComponent, Seq[ECPrivateKey])] = for {
     (_,wtxSigComponent, privKeys) <- WitnessGenerators.signedP2WSHP2PKTransactionWitness
   } yield (wtxSigComponent,privKeys)
 
   /** Generates a [[WitnessTransaction]] that has an input spends a raw P2WSH [[WitnessScriptPubKey]] */
-  def signedP2WSHP2PKHTransaction: Gen[(WitnessV0TransactionSignatureComponent, Seq[ECPrivateKey])] = for {
+  def signedP2WSHP2PKHTransaction: Gen[(WitnessTxSigComponent, Seq[ECPrivateKey])] = for {
     (_,wtxSigComponent, privKeys) <- WitnessGenerators.signedP2WSHP2PKHTransactionWitness
   } yield (wtxSigComponent,privKeys)
 
-  def signedP2WSHMultiSigTransaction: Gen[(WitnessV0TransactionSignatureComponent, Seq[ECPrivateKey])] = for {
+  def signedP2WSHMultiSigTransaction: Gen[(WitnessTxSigComponent, Seq[ECPrivateKey])] = for {
     (_,wtxSigComponent, privKeys) <- WitnessGenerators.signedP2WSHMultiSigTransactionWitness
   } yield (wtxSigComponent,privKeys)
 
   /** Creates a signed P2SH(P2WPKH) transaction */
-  def signedP2SHP2WPKHTransaction: Gen[(WitnessV0TransactionSignatureComponent, Seq[ECPrivateKey])] = for {
+  def signedP2SHP2WPKHTransaction: Gen[(WitnessTxSigComponent, Seq[ECPrivateKey])] = for {
     (signedScriptSig, scriptPubKey, privKeys, witness, amount) <- ScriptGenerators.signedP2SHP2WPKHScriptSignature
     (creditingTx,outputIndex) = buildCreditingTransaction(signedScriptSig.redeemScript, amount)
     (signedTx,inputIndex) = buildSpendingTransaction(creditingTx,signedScriptSig, outputIndex, witness)
-    sigVersion = BitcoinScriptUtil.parseSigVersion(signedTx,scriptPubKey,inputIndex)
-    signedTxSignatureComponent = WitnessV0TransactionSignatureComponent(signedTx,inputIndex,
-      scriptPubKey, Policy.standardScriptVerifyFlags,amount, sigVersion)
+    signedTxSignatureComponent = WitnessTxSigComponent(signedTx,inputIndex,
+      scriptPubKey, Policy.standardScriptVerifyFlags,amount)
   } yield (signedTxSignatureComponent, privKeys)
 
   /** Creates a signed P2SH(P2WSH) transaction */
-  def signedP2SHP2WSHTransaction: Gen[(WitnessV0TransactionSignatureComponent, Seq[ECPrivateKey])] = for {
+  def signedP2SHP2WSHTransaction: Gen[(WitnessTxSigComponent, Seq[ECPrivateKey])] = for {
     (witness,wtxSigComponent, privKeys) <- WitnessGenerators.signedP2WSHTransactionWitness
     p2shScriptPubKey = P2SHScriptPubKey(wtxSigComponent.scriptPubKey)
     p2shScriptSig = P2SHScriptSignature(wtxSigComponent.scriptPubKey.asInstanceOf[WitnessScriptPubKey])
     (creditingTx,outputIndex) = buildCreditingTransaction(p2shScriptSig.redeemScript, wtxSigComponent.amount)
     (signedTx,inputIndex) = buildSpendingTransaction(creditingTx,p2shScriptSig,outputIndex,witness)
-    sigVersion = BitcoinScriptUtil.parseSigVersion(signedTx,p2shScriptPubKey,inputIndex)
-    signedTxSignatureComponent = WitnessV0TransactionSignatureComponent(signedTx,inputIndex,
-      p2shScriptPubKey, Policy.standardScriptVerifyFlags, wtxSigComponent.amount, sigVersion)
+    signedTxSignatureComponent = WitnessTxSigComponent(signedTx,inputIndex,
+      p2shScriptPubKey, Policy.standardScriptVerifyFlags, wtxSigComponent.amount)
   } yield (signedTxSignatureComponent,privKeys)
 
   /**
@@ -310,12 +308,12 @@ trait TransactionGenerators extends BitcoinSLogger {
     * @param cltvLockTime Script's CLTV lockTime value
     * @return
     */
-  private def cltvTransactionHelper (txLockTime : UInt32, cltvLockTime : ScriptNumber) : Gen[(TransactionSignatureComponent, Seq[ECPrivateKey], ScriptNumber)] = (for {
+  private def cltvTransactionHelper (txLockTime : UInt32, cltvLockTime : ScriptNumber) : Gen[(TxSigComponent, Seq[ECPrivateKey], ScriptNumber)] = (for {
     sequence <- NumberGenerator.uInt32s.suchThat(num => num != UInt32.max)
     (signedScriptSig, cltvScriptPubkey, privateKeys) <- ScriptGenerators.signedCLTVScriptSignature(cltvLockTime, txLockTime, sequence)
     (creditingTx, outputIndex) = buildCreditingTransaction(cltvScriptPubkey)
     (spendingTx, inputIndex) = buildSpendingTransaction(TransactionConstants.version,creditingTx, signedScriptSig, outputIndex, txLockTime, sequence)
-    txSigComponent = TransactionSignatureComponent(spendingTx, inputIndex, cltvScriptPubkey,
+    txSigComponent = TxSigComponent(spendingTx, inputIndex, cltvScriptPubkey,
       Policy.standardScriptVerifyFlags)
   } yield (txSigComponent, privateKeys, cltvLockTime)).suchThat(cltvLockTimesOfSameType)
 
@@ -323,7 +321,7 @@ trait TransactionGenerators extends BitcoinSLogger {
     * Determines if the transaction's lockTime value and CLTV script lockTime value are of the same type
     * (i.e. determines whether both are a timestamp or block height)
     */
-  private def cltvLockTimesOfSameType(generatorComponent : (TransactionSignatureComponent, Seq[ECPrivateKey],  ScriptNumber)) : Boolean = {
+  private def cltvLockTimesOfSameType(generatorComponent : (TxSigComponent, Seq[ECPrivateKey],  ScriptNumber)) : Boolean = {
     val (txSigComponent, keys, num) = generatorComponent
     val tx = txSigComponent.transaction
     num.underlying match {

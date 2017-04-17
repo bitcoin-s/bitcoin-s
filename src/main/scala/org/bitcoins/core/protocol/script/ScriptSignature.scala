@@ -12,7 +12,7 @@ import scala.util.{Failure, Success, Try}
   * Created by chris on 12/26/15.
   *
   */
-sealed trait ScriptSignature extends NetworkElement with BitcoinSLogger {
+sealed trait ScriptSignature extends NetworkElement {
 
 
   def compactSizeUInt = CompactSizeUInt.parseCompactSizeUInt(bytes)
