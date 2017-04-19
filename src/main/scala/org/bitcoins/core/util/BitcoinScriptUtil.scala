@@ -367,6 +367,24 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
         byteNotZero && lastByteNotNegativeZero
     }
   }
+
+
+  /** Since witnesses are not run through the interpreter, replace OP_0/OP_1 with ScriptNumber.zero/ScriptNumber.one */
+  def minimalIfOp(asm: Seq[ScriptToken]): Seq[ScriptToken] = {
+    if (asm.last == OP_0) {
+      asm.dropRight(1) ++ Seq(ScriptNumber.zero)
+    } else if (asm.last == OP_1) {
+      asm.dropRight(1) ++ Seq(ScriptNumber.one)
+    } else throw new IllegalArgumentException("EscrowTimeoutScriptSig must end with OP_0 or OP_1")
+
+  }
+
+  /** Replaces the OP_0 dummy for OP_CHECKMULTISIG with ScriptNumber.zero */
+  def minimalDummy(asm: Seq[ScriptToken]): Seq[ScriptToken] = {
+    if (asm.head == OP_0) ScriptNumber.zero +: asm.tail
+    else asm
+  }
+
 }
 
 object BitcoinScriptUtil extends BitcoinScriptUtil

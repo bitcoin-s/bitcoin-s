@@ -14,13 +14,11 @@ import org.scalacheck.{Prop, Properties}
   */
 class PaymentChannelsSpec extends Properties("PaymentChannelProperties") {
 
-/*  property("spend a anchor transaction with the first spendingTx in a payment channel") =
-    Prop.forAll(ChannelGenerators.freshPaymentChannelInProgress) { case (inProgress,_,_) =>
-        val txSigComponent = TxSigComponent(inProgress.currentSpendingTx,UInt32.zero,
-          inProgress.lock,Policy.standardScriptVerifyFlags)
-        val p = ScriptProgram(txSigComponent)
+  property("spend a anchor transaction with the first spendingTx in a payment channel") =
+    Prop.forAll(ChannelGenerators.freshPaymentChannelInProgress) { case (inProgress,_) =>
+        val p = ScriptProgram(inProgress.current)
         val result = ScriptInterpreter.run(p)
         result == ScriptOk
-    }*/
+    }
 
 }

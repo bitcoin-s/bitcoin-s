@@ -4,8 +4,9 @@ import org.bitcoins.core.channels.{AnchorTransaction, PaymentChannelAwaitingAnch
 import org.bitcoins.core.crypto.ECPrivateKey
 import org.bitcoins.core.currency.CurrencyUnits
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.script.{EscrowTimeoutScriptPubKey, WitnessScriptPubKeyV0}
+import org.bitcoins.core.protocol.script.{EscrowTimeoutScriptPubKey, ScriptWitness, WitnessScriptPubKeyV0}
 import org.bitcoins.core.protocol.transaction.{TransactionConstants, TransactionOutput}
+import org.bitcoins.core.util.BitcoinScriptUtil
 import org.scalacheck.Gen
 
 /**
@@ -25,20 +26,27 @@ trait ChannelGenerators {
     confs <- Gen.posNum[Long]
   } yield (PaymentChannelAwaitingAnchorTx(aTx,redeemScript,confs),privKeys)
 
-/*  def freshPaymentChannelInProgress: Gen[(PaymentChannelInProgress, Seq[ECPrivateKey])] = for {
+  def freshPaymentChannelInProgress: Gen[(PaymentChannelInProgress, Seq[ECPrivateKey])] = for {
     (awaiting,privKeys) <- paymentChannelAwaitingAnchorTx
     sequence <- NumberGenerator.uInt32s
+    hashType <- CryptoGenerators.hashType
     (s1,_) <- ScriptGenerators.scriptPubKey
     (s2,_) <- ScriptGenerators.scriptPubKey
     o1 = TransactionOutput(awaiting.anchorTx.tx.outputs.head.value,s1)
     o2 = TransactionOutput(CurrencyUnits.zero,s2)
     outputs = Seq(o1,o2)
-    (scriptSig,_,_) <- ScriptGenerators.signedMultiSigEscrowTimeoutScriptSig(awaiting.lock,privKeys,
-      sequence,outputs,awaiting.amount)
-    (spendingTx, inputIndex) = TransactionGenerators.buildSpendingWitnessTransaction(UInt32(2),awaiting.anchorTx.tx,scriptSig,
-      UInt32(awaiting.outputIndex),TransactionConstants.lockTime,sequence,outputs)
-    inProgress = PaymentChannelInProgress(awaiting.anchorTx,spendingTx,Nil)
-  } yield (inProgress,privKeys)*/
+    unsignedScriptWitness = ScriptWitness(Seq(awaiting.lock.asmBytes))
+    unsignedWTxSigComponent = WitnessGenerators.createUnsignedWtxSigComponent(awaiting.scriptPubKey,
+      awaiting.amount,unsignedScriptWitness,None,outputs)
+    signedScriptSig = WitnessGenerators.csvEscrowTimeoutGenHelper(privKeys,awaiting.lock,unsignedWTxSigComponent,hashType)
+    //need to remove the OP_0 or OP_1 and replace it with ScriptNumber.zero / Script
+    // Number.one since witnesses are *not* run through the interpreter
+    s = BitcoinScriptUtil.minimalDummy(BitcoinScriptUtil.minimalIfOp(signedScriptSig.asm))
+    signedScriptSigPushOpsRemoved = BitcoinScriptUtil.filterPushOps(s).reverse
+    signedScriptWitness = ScriptWitness(awaiting.lock.asm.flatMap(_.bytes) +: (signedScriptSigPushOpsRemoved.map(_.bytes)))
+    (_,signedWtxSigComponent) = WitnessGenerators.createSignedWTxComponent(signedScriptWitness,unsignedWTxSigComponent)
+    inProgress = PaymentChannelInProgress(awaiting.anchorTx,awaiting.lock,signedWtxSigComponent,Nil)
+  } yield (inProgress,privKeys)
 
 }
 

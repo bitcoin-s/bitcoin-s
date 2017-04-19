@@ -330,11 +330,18 @@ trait TransactionGenerators extends BitcoinSLogger {
 
   def buildSpendingTransaction(version: UInt32, creditingTx: Transaction, scriptSignature: ScriptSignature, outputIndex: UInt32,
                                locktime: UInt32, sequence: UInt32, witness: TransactionWitness): (WitnessTransaction, UInt32) = {
+
+    val outputs = Seq(TransactionOutput(CurrencyUnits.zero,EmptyScriptPubKey))
+    buildSpendingTransaction(version,creditingTx,scriptSignature,outputIndex,locktime,sequence,witness,outputs)
+  }
+
+  def buildSpendingTransaction(version: UInt32, creditingTx: Transaction, scriptSignature: ScriptSignature, outputIndex: UInt32,
+                               locktime: UInt32, sequence: UInt32, witness: TransactionWitness, outputs: Seq[TransactionOutput]): (WitnessTransaction, UInt32) = {
     val outpoint = TransactionOutPoint(creditingTx.txId,outputIndex)
     val input = TransactionInput(outpoint,scriptSignature,sequence)
-    val output = TransactionOutput(CurrencyUnits.zero,EmptyScriptPubKey)
-    (WitnessTransaction(version,Seq(input), Seq(output),locktime,witness), UInt32.zero)
+    (WitnessTransaction(version,Seq(input), outputs,locktime,witness), UInt32.zero)
   }
+
   def buildSpendingTransaction(creditingTx: Transaction, scriptSignature: ScriptSignature, outputIndex: UInt32,
                                witness: TransactionWitness): (WitnessTransaction, UInt32) = {
     buildSpendingTransaction(TransactionConstants.version,creditingTx,scriptSignature,outputIndex,witness)

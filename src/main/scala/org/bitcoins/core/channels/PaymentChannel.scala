@@ -1,6 +1,6 @@
 package org.bitcoins.core.channels
 
-import org.bitcoins.core.crypto.ECPublicKey
+import org.bitcoins.core.crypto.{ECPublicKey, WitnessTxSigComponent}
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script._
@@ -15,9 +15,12 @@ sealed trait PaymentChannel {
 
   def outputIndex: Int = {
     val locks = anchorTx.tx.outputs.zipWithIndex.filter {
-      case (o, idx) => o.scriptPubKey.isInstanceOf[EscrowTimeoutScriptPubKey]
+      case (o, idx) => o.scriptPubKey.isInstanceOf[WitnessScriptPubKey]
     }
     require(locks.length == 1, "We can only have one locking output on a anchor tx, got: " + locks)
+    val expectedLock = WitnessScriptPubKeyV0(lock)
+    val actualLock = locks.head._1.scriptPubKey
+    require(actualLock == expectedLock, "Incorrect witness scriptPubkey for lock, got: " + actualLock + " expected: " + expectedLock)
     locks.head._2
   }
 
@@ -35,9 +38,9 @@ sealed trait PaymentChannelAwaitingAnchorTx extends PaymentChannel {
 }
 
 sealed trait PaymentChannelInProgress extends PaymentChannel {
-  def currentSpendingTx: WitnessTransaction
+  def current: WitnessTxSigComponent
 
-  def oldSpendingTxs: Seq[WitnessTransaction]
+  def old: Seq[WitnessTxSigComponent]
 
 }
 
@@ -64,16 +67,16 @@ object PaymentChannelAwaitingAnchorTx {
 
 object PaymentChannelInProgress {
   private case class PaymentChannelInProgressImpl(anchorTx: AnchorTransaction, lock: EscrowTimeoutScriptPubKey,
-                                                  currentSpendingTx: WitnessTransaction,
-                                                  oldSpendingTxs: Seq[WitnessTransaction]) extends PaymentChannelInProgress
+                                                  current: WitnessTxSigComponent,
+                                                  old: Seq[WitnessTxSigComponent]) extends PaymentChannelInProgress
 
-  def apply(anchorTx: AnchorTransaction, lock: EscrowTimeoutScriptPubKey, currentSpendingTx: WitnessTransaction): PaymentChannelInProgress = {
-    PaymentChannelInProgress(anchorTx,lock,currentSpendingTx,Nil)
+  def apply(anchorTx: AnchorTransaction, lock: EscrowTimeoutScriptPubKey, current: WitnessTxSigComponent): PaymentChannelInProgress = {
+    PaymentChannelInProgress(anchorTx,lock,current,Nil)
   }
 
-  def apply(anchorTx: AnchorTransaction, lock: EscrowTimeoutScriptPubKey, currentSpendingTx: WitnessTransaction,
-            oldSpendingTxs: Seq[WitnessTransaction]): PaymentChannelInProgress = {
-    PaymentChannelInProgressImpl(anchorTx,lock,currentSpendingTx,oldSpendingTxs)
+  def apply(anchorTx: AnchorTransaction, lock: EscrowTimeoutScriptPubKey, current: WitnessTxSigComponent,
+            old: Seq[WitnessTxSigComponent]): PaymentChannelInProgress = {
+    PaymentChannelInProgressImpl(anchorTx,lock,current,old)
   }
 }
 
