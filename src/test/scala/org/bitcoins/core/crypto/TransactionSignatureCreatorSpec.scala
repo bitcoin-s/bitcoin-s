@@ -144,4 +144,11 @@ class TransactionSignatureCreatorSpec extends Properties("TransactionSignatureCr
     }
   }
 
+  property("generate a valid signature for a P2WSH(EscrowTimeout) tx") = {
+    Prop.forAllNoShrink(TransactionGenerators.signedP2WSHEscrowTimeoutTransaction) { case (txSigComponent, _) =>
+      val program = ScriptProgram(txSigComponent)
+      val result = ScriptInterpreter.run(program)
+      result == ScriptOk
+    }
+  }
 }
