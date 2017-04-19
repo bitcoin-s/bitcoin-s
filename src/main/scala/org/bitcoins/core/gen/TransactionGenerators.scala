@@ -251,15 +251,23 @@ trait TransactionGenerators extends BitcoinSLogger {
     (_,wtxSigComponent, privKeys) <- WitnessGenerators.signedP2WSHMultiSigTransactionWitness
   } yield (wtxSigComponent,privKeys)
 
-  def signedP2WSHEscrowTimeoutTransaction: Gen[(WitnessTxSigComponent, Seq[ECPrivateKey])] = for {
-    (_,wtxSigComponent,privKeys) <- WitnessGenerators.signedP2WSHEscrowTimeoutWitness
+  def signedP2WSHMultiSigEscrowTimeoutTransaction: Gen[(WitnessTxSigComponent, Seq[ECPrivateKey])] = for {
+    (_,wtxSigComponent,privKeys) <- WitnessGenerators.signedP2WSHMultiSigEscrowTimeoutWitness
   } yield (wtxSigComponent,privKeys)
+
+  def spendableP2WSHTimeoutEscrowTimeoutTransaction: Gen[(WitnessTxSigComponent, Seq[ECPrivateKey])] = for {
+    (_,wtxSigComponent,privKeys) <- WitnessGenerators.spendableP2WSHTimeoutEscrowTimeoutWitness
+  } yield (wtxSigComponent,privKeys)
+
+  def signedP2WSHEscrowTimeoutTransaction: Gen[(WitnessTxSigComponent, Seq[ECPrivateKey])] = {
+    Gen.oneOf(signedP2WSHMultiSigEscrowTimeoutTransaction,spendableP2WSHTimeoutEscrowTimeoutTransaction)
+  }
 
   /** Creates a signed P2SH(P2WPKH) transaction */
   def signedP2SHP2WPKHTransaction: Gen[(WitnessTxSigComponent, Seq[ECPrivateKey])] = for {
     (signedScriptSig, scriptPubKey, privKeys, witness, amount) <- ScriptGenerators.signedP2SHP2WPKHScriptSignature
     (creditingTx,outputIndex) = buildCreditingTransaction(signedScriptSig.redeemScript, amount)
-    (signedTx,inputIndex) = buildSpendingTransaction(creditingTx,signedScriptSig, outputIndex, witness)
+    (signedTx,inputIndex) = buildSpendingTransaction(UInt32(2),creditingTx,signedScriptSig, outputIndex, witness)
     signedTxSignatureComponent = WitnessTxSigComponent(signedTx,inputIndex,
       scriptPubKey, Policy.standardScriptVerifyFlags,amount)
   } yield (signedTxSignatureComponent, privKeys)
@@ -274,7 +282,9 @@ trait TransactionGenerators extends BitcoinSLogger {
     p2shScriptPubKey = P2SHScriptPubKey(wtxSigComponent.scriptPubKey)
     p2shScriptSig = P2SHScriptSignature(wtxSigComponent.scriptPubKey.asInstanceOf[WitnessScriptPubKey])
     (creditingTx,outputIndex) = buildCreditingTransaction(p2shScriptSig.redeemScript, wtxSigComponent.amount)
-    (signedTx,inputIndex) = buildSpendingTransaction(creditingTx,p2shScriptSig,outputIndex,witness)
+    sequence = wtxSigComponent.transaction.inputs(wtxSigComponent.inputIndex.toInt).sequence
+    locktime = wtxSigComponent.transaction.lockTime
+    (signedTx,inputIndex) = buildSpendingTransaction(UInt32(2),creditingTx,p2shScriptSig,outputIndex,locktime,sequence,witness)
     signedTxSignatureComponent = WitnessTxSigComponent(signedTx,inputIndex,
       p2shScriptPubKey, Policy.standardScriptVerifyFlags, wtxSigComponent.amount)
   } yield (signedTxSignatureComponent,privKeys)
@@ -315,17 +325,26 @@ trait TransactionGenerators extends BitcoinSLogger {
   /** Builds a spending [[WitnessTransaction]] with the given parameters */
   def buildSpendingTransaction(creditingTx: Transaction, scriptSignature: ScriptSignature, outputIndex: UInt32,
                                locktime: UInt32, sequence: UInt32, witness: TransactionWitness): (WitnessTransaction, UInt32) = {
+    buildSpendingTransaction(TransactionConstants.version,creditingTx,scriptSignature,outputIndex,locktime,sequence,witness)
+  }
+
+  def buildSpendingTransaction(version: UInt32, creditingTx: Transaction, scriptSignature: ScriptSignature, outputIndex: UInt32,
+                               locktime: UInt32, sequence: UInt32, witness: TransactionWitness): (WitnessTransaction, UInt32) = {
     val outpoint = TransactionOutPoint(creditingTx.txId,outputIndex)
     val input = TransactionInput(outpoint,scriptSignature,sequence)
     val output = TransactionOutput(CurrencyUnits.zero,EmptyScriptPubKey)
-    (WitnessTransaction(TransactionConstants.version,Seq(input), Seq(output),locktime,witness), UInt32.zero)
+    (WitnessTransaction(version,Seq(input), Seq(output),locktime,witness), UInt32.zero)
+  }
+  def buildSpendingTransaction(creditingTx: Transaction, scriptSignature: ScriptSignature, outputIndex: UInt32,
+                               witness: TransactionWitness): (WitnessTransaction, UInt32) = {
+    buildSpendingTransaction(TransactionConstants.version,creditingTx,scriptSignature,outputIndex,witness)
   }
 
-  def buildSpendingTransaction(creditingTx: Transaction, scriptSignature: ScriptSignature, outputIndex: UInt32,
+  def buildSpendingTransaction(version: UInt32, creditingTx: Transaction, scriptSignature: ScriptSignature, outputIndex: UInt32,
                                witness: TransactionWitness): (WitnessTransaction, UInt32) = {
     val locktime = TransactionConstants.lockTime
     val sequence = TransactionConstants.sequence
-    buildSpendingTransaction(creditingTx,scriptSignature,outputIndex,locktime,sequence,witness)
+    buildSpendingTransaction(version,creditingTx,scriptSignature,outputIndex,locktime,sequence,witness)
   }
 
   /**
@@ -419,7 +438,7 @@ trait TransactionGenerators extends BitcoinSLogger {
     * Generates a pair of CSV values: a transaction input sequence, and a CSV script sequence value, such that the txInput
     * sequence mask is always greater than the script sequence mask (i.e. generates values for a validly constructed and spendable CSV transaction)
     */
-  private def spendableCSVValues : Gen[(ScriptNumber, UInt32)] = for {
+  def spendableCSVValues : Gen[(ScriptNumber, UInt32)] = for {
     sequence <- NumberGenerator.uInt32s
     csvScriptNum <- csvLockTimeBitOff.suchThat(x => ScriptInterpreter.isLockTimeBitOff(ScriptNumber(x.underlying)) &&
       csvLockTimesOfSameType((ScriptNumber(x.underlying),sequence))).map(n => ScriptNumber(n.underlying))
@@ -435,7 +454,7 @@ trait TransactionGenerators extends BitcoinSLogger {
     * Generates a pair of CSV values: a transaction input sequence, and a CSV script sequence value, such that the txInput
     * sequence mask is always less than the script sequence mask (i.e. generates values for a validly constructed and NOT spendable CSV transaction).
     */
-  private def unspendableCSVValues : Gen[(ScriptNumber, UInt32)] = ( for {
+  def unspendableCSVValues : Gen[(ScriptNumber, UInt32)] = ( for {
     sequence <- NumberGenerator.uInt32s
     csvScriptNum <- NumberGenerator.uInt32s.map(x => ScriptNumber(x.underlying)).suchThat(x => ScriptInterpreter.isLockTimeBitOff(x))
   } yield (csvScriptNum, sequence)).suchThat(x => !csvLockTimesOfSameType(x))

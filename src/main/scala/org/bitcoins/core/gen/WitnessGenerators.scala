@@ -103,9 +103,9 @@ trait WitnessGenerators extends BitcoinSLogger {
       signedP2WSHMultiSigTransactionWitness,signedP2WSHEscrowTimeoutWitness)
   }
 
-  def signedP2WSHEscrowTimeoutWitness: Gen[(TransactionWitness, WitnessTxSigComponent, Seq[ECPrivateKey])] = for {
+  def signedP2WSHMultiSigEscrowTimeoutWitness: Gen[(TransactionWitness, WitnessTxSigComponent, Seq[ECPrivateKey])] = for {
     //this is here to make sure the script size stays less than 520 bytes, which is the max push op size in ScriptInterpreter
-    (scriptPubKey, privKeys) <- ScriptGenerators.escrowTimeoutScriptPubKey.suchThat(_._1.escrow.maxSigs < 10)
+    (scriptPubKey, privKeys) <- ScriptGenerators.escrowTimeoutScriptPubKey
     amount <- CurrencyUnitGenerator.satoshis
     hashType <- CryptoGenerators.hashType
     witScriptPubKey = WitnessScriptPubKeyV0(scriptPubKey)
@@ -118,6 +118,27 @@ trait WitnessGenerators extends BitcoinSLogger {
     signedScriptWitness = ScriptWitness(scriptPubKey.asm.flatMap(_.bytes) +: (signedScriptSigPushOpsRemoved.map(_.bytes)))
     (witness,signedWtxSigComponent) = createSignedWTxComponent(signedScriptWitness,unsignedWTxSigComponent)
   } yield (witness,signedWtxSigComponent,privKeys)
+
+  def spendableP2WSHTimeoutEscrowTimeoutWitness: Gen[(TransactionWitness, WitnessTxSigComponent, Seq[ECPrivateKey])] = for {
+    (p2pkh,privKey) <- ScriptGenerators.p2pkhScriptPubKey
+    (scriptNum, sequence) <- TransactionGenerators.spendableCSVValues
+    csv = CSVScriptPubKey(scriptNum,p2pkh)
+    (m,_) <- ScriptGenerators.smallMultiSigScriptPubKey
+    scriptPubKey = EscrowTimeoutScriptPubKey(m,csv)
+    amount <- CurrencyUnitGenerator.satoshis
+    hashType <- CryptoGenerators.hashType
+    witScriptPubKey = WitnessScriptPubKeyV0(scriptPubKey)
+    unsignedScriptWitness = ScriptWitness(Seq(scriptPubKey.asmBytes))
+    unsignedWTxSigComponent = createUnsignedWtxSigComponent(witScriptPubKey, amount, unsignedScriptWitness,Some(sequence))
+    createdSig = TransactionSignatureCreator.createSig(unsignedWTxSigComponent,privKey,hashType)
+    signedScriptWitness = ScriptWitness(scriptPubKey.asm.flatMap(_.bytes) +: Seq(ScriptNumber.zero.bytes, privKey.publicKey.bytes,
+      createdSig.bytes))
+    (witness,signedWtxSigComponent) = createSignedWTxComponent(signedScriptWitness,unsignedWTxSigComponent)
+  } yield (witness, signedWtxSigComponent, Seq(privKey))
+
+  def signedP2WSHEscrowTimeoutWitness: Gen[(TransactionWitness, WitnessTxSigComponent, Seq[ECPrivateKey])] = {
+    Gen.oneOf(signedP2WSHMultiSigEscrowTimeoutWitness, spendableP2WSHTimeoutEscrowTimeoutWitness)
+  }
 
   /** Since witnesses are not run through the interpreter, replace OP_0/OP_1 with ScriptNumber.zero/ScriptNumber.one */
   private def minimalIfOp(e: EscrowTimeoutScriptSignature): Seq[ScriptToken] = {
@@ -159,8 +180,9 @@ trait WitnessGenerators extends BitcoinSLogger {
     val witness = TransactionWitness(Seq(unsignedScriptWitness))
     val flags = Policy.standardScriptVerifyFlags
     val (creditingTx,outputIndex) = TransactionGenerators.buildCreditingTransaction(witScriptPubKey,amount)
-    val (unsignedSpendingTx,inputIndex) = TransactionGenerators.buildSpendingTransaction(creditingTx,EmptyScriptSignature,
-      outputIndex, TransactionConstants.lockTime, sequence.getOrElse(TransactionConstants.sequence), witness)
+    val (unsignedSpendingTx,inputIndex) = TransactionGenerators.buildSpendingTransaction(UInt32(2),creditingTx,
+      EmptyScriptSignature, outputIndex, TransactionConstants.lockTime,
+      sequence.getOrElse(TransactionConstants.sequence), witness)
     val unsignedWtxSigComponent = WitnessTxSigComponent(unsignedSpendingTx,inputIndex,witScriptPubKey,flags, amount)
     unsignedWtxSigComponent
   }

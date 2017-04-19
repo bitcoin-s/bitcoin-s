@@ -90,28 +90,12 @@ class TransactionSignatureCreatorSpec extends Properties("TransactionSignatureCr
         result == ScriptOk
     }
 
-  property("generate a valid signature for a p2wsh(p2pk) witness transaction") =
-    Prop.forAllNoShrink(TransactionGenerators.signedP2WSHP2PKTransaction) { case (wtxSigComponent, privKeys) =>
+  property("generate a valid signature for a p2wsh(old scriptPubkey tx) witness transaction") =
+    Prop.forAllNoShrink(TransactionGenerators.signedP2WSHTransaction) { case (wtxSigComponent, privKeys) =>
       val program = ScriptProgram(wtxSigComponent)
       val result = ScriptInterpreter.run(program)
-      result == ScriptOk
-    }
-
-  property("generate a valid signature for a p2wsh(p2pkh) witness transaction") =
-    Prop.forAllNoShrink(TransactionGenerators.signedP2WSHP2PKHTransaction) { case (wtxSigComponent, privKeys) =>
-      val program = ScriptProgram(wtxSigComponent)
-      val result = ScriptInterpreter.run(program)
-      result == ScriptOk
-    }
-
-  property("generate a valid signature for a p2wsh(multisig) witness transaction") =
-    Prop.forAllNoShrink(TransactionGenerators.signedP2WSHMultiSigTransaction) { case (wtxSigComponent, privKeys) =>
-      val program = ScriptProgram(wtxSigComponent)
-      val result = ScriptInterpreter.run(program)
-      if (result != ScriptOk) logger.warn("Result: " + result)
       Seq(ScriptErrorPushSize, ScriptOk).contains(result)
     }
-
   property("generate a valid signature from a p2sh(p2wpkh) witness transaction") =
     Prop.forAllNoShrink(TransactionGenerators.signedP2SHP2WPKHTransaction) { case (wtxSigComponent, privKeys) =>
       val program = ScriptProgram(wtxSigComponent)
@@ -135,9 +119,8 @@ class TransactionSignatureCreatorSpec extends Properties("TransactionSignatureCr
       result == ScriptOk
     }
 
-
   property("fail to evaluate a csv escrow timeout transaction") = {
-    Prop.forAll(TransactionGenerators.unspendableMultiSigEscrowTimeoutTransaction) { txSigComponent: TxSigComponent =>
+    Prop.forAll(TransactionGenerators.unspendableEscrowTimeoutTransaction) { txSigComponent: TxSigComponent =>
       val program = ScriptProgram(txSigComponent)
       val result = ScriptInterpreter.run(program)
       result != ScriptOk
