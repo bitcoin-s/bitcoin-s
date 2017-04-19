@@ -3,7 +3,7 @@ package org.bitcoins.core.channels
 import org.bitcoins.core.crypto.ECPublicKey
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.script.{MultiSignatureScriptPubKey, ScriptPubKey, P2SHScriptPubKey}
+import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 
 /**
@@ -11,58 +11,72 @@ import org.bitcoins.core.protocol.transaction._
   */
 sealed trait PaymentChannel {
   /** Commitment transaction initializing the payment channel depositing funds into it. */
-  def anchorTx : DepositTransaction
+  def anchorTx: AnchorTransaction
 
-  /** The current transaction representing the most recent activity within the payment channel. */
-  def currentSpendingTx : CurrentTransaction
-
-  /** The "backup" transaction that will return funds to the creator of the channel (A) if the counterparty (B)
-    *  fails to cooperate. */
-  def refundTx : RefundTransaction
-
-}
-
-object PaymentChannel {
-  private case class PaymentChannelImpl(anchorTx : DepositTransaction,
-                                        currentSpendingTx : CurrentTransaction,
-                                        refundTx : RefundTransaction,
-                                        currentState : PaymentChannelState) extends PaymentChannel
-
-  def apply(anchorTx : DepositTransaction,
-            currentSpendingTx : CurrentTransaction,
-            refundTx : RefundTransaction): PaymentChannel = PaymentChannelImpl(anchorTx, currentSpendingTx, refundTx, currentState = ???)
-
-  def updateSpendingTx(channel: PaymentChannel,
-                       currentSpendingTx : CurrentTransaction): PaymentChannel = PaymentChannelImpl(channel.anchorTx, currentSpendingTx, channel.refundTx, currentState = ???)
-
-  def apply(channel : PaymentChannel,
-            currentSpendingTx : CurrentTransaction): PaymentChannel = updateSpendingTx(channel, currentSpendingTx)
-
-  def createUnsignedAnchorTx(payorPubKey : ECPublicKey, payeePubKey : ECPublicKey, amount : CurrencyUnit) : PaymentChannelTransaction = {
-    val p2shScriptPubKey : P2SHScriptPubKey = {
-      val multiSigPubKey = MultiSignatureScriptPubKey(2, Seq(payorPubKey, payeePubKey))
-      P2SHScriptPubKey(multiSigPubKey)
+  def outputIndex: Int = {
+    val locks = anchorTx.tx.outputs.zipWithIndex.filter {
+      case (o, idx) => o.scriptPubKey.isInstanceOf[EscrowTimeoutScriptPubKey]
     }
-    val unsignedOutput = TransactionOutput(amount, p2shScriptPubKey)
-    val tx = Transaction(TransactionConstants.version, Seq(EmptyTransactionInput), Seq(unsignedOutput), TransactionConstants.lockTime)
-    DepositTransaction(tx)
+    require(locks.length == 1, "We can only have one locking output on a anchor tx, got: " + locks)
+    locks.head._2
   }
 
+  def lock: EscrowTimeoutScriptPubKey
+
+  def scriptPubKey: WitnessScriptPubKey = lockingOutput.scriptPubKey.asInstanceOf[WitnessScriptPubKey]
+
+  def lockingOutput: TransactionOutput = anchorTx.tx.outputs(outputIndex)
+
+  def amount: CurrencyUnit = lockingOutput.value
+}
+
+sealed trait PaymentChannelAwaitingAnchorTx extends PaymentChannel {
+  def confirmations: Long
+}
+
+sealed trait PaymentChannelInProgress extends PaymentChannel {
+  def currentSpendingTx: WitnessTransaction
+
+  def oldSpendingTxs: Seq[WitnessTransaction]
 
 }
 
+sealed trait PaymentChannelClosed extends PaymentChannel {
+  def finalTx: WitnessTransaction
+
+  def oldSpendingTxs: Seq[WitnessTransaction]
+}
+
+object PaymentChannelAwaitingAnchorTx {
+  private case class PaymentChannelAwaitAnchorTxImpl(anchorTx: AnchorTransaction, lock: EscrowTimeoutScriptPubKey, confirmations: Long) extends PaymentChannelAwaitingAnchorTx
+
+  def apply(anchorTx: AnchorTransaction, lock: EscrowTimeoutScriptPubKey): PaymentChannelAwaitingAnchorTx = {
+    PaymentChannelAwaitingAnchorTx(anchorTx,lock,0)
+  }
+
+  def apply(anchorTx: AnchorTransaction, lock: EscrowTimeoutScriptPubKey, confirmations: Long): PaymentChannelAwaitingAnchorTx = {
+    val expectedWitScriptPubKey = WitnessScriptPubKeyV0(lock)
+    require(anchorTx.tx.outputs.exists(_.scriptPubKey == expectedWitScriptPubKey),
+      "One output on the Anchor Transaction has to have a P2WSH(EscrowTimeoutScriptPubKey)")
+    PaymentChannelAwaitAnchorTxImpl(anchorTx,lock,confirmations)
+  }
+}
+
+object PaymentChannelInProgress {
+  private case class PaymentChannelInProgressImpl(anchorTx: AnchorTransaction, lock: EscrowTimeoutScriptPubKey,
+                                                  currentSpendingTx: WitnessTransaction,
+                                                  oldSpendingTxs: Seq[WitnessTransaction]) extends PaymentChannelInProgress
+
+  def apply(anchorTx: AnchorTransaction, lock: EscrowTimeoutScriptPubKey, currentSpendingTx: WitnessTransaction): PaymentChannelInProgress = {
+    PaymentChannelInProgress(anchorTx,lock,currentSpendingTx,Nil)
+  }
+
+  def apply(anchorTx: AnchorTransaction, lock: EscrowTimeoutScriptPubKey, currentSpendingTx: WitnessTransaction,
+            oldSpendingTxs: Seq[WitnessTransaction]): PaymentChannelInProgress = {
+    PaymentChannelInProgressImpl(anchorTx,lock,currentSpendingTx,oldSpendingTxs)
+  }
+}
+
+
 sealed trait PaymentChannelTransaction
-case class RefundTransaction(tx : Transaction) extends PaymentChannelTransaction
-case class DepositTransaction(tx : Transaction) extends PaymentChannelTransaction
-
-//Maybe extend this to RefundTransaction as it is just an updated version of the refundTransaction.
-//We still need to keep the original RefundTransaction however, so definitely separate/not the same thing.
-case class CurrentTransaction(tx : Transaction) extends PaymentChannelTransaction
-
-sealed trait PaymentChannelState
-
-case object Initiate extends PaymentChannelState
-case object Ready extends PaymentChannelState
-case object Closed extends PaymentChannelState
-case object AwaitingDeposit extends PaymentChannelState
-case object ExecuteRefund extends PaymentChannelState
+case class AnchorTransaction(tx : Transaction) extends PaymentChannelTransaction
