@@ -179,7 +179,7 @@ trait WitnessGenerators extends BitcoinSLogger {
     val (creditingTx,outputIndex) = TransactionGenerators.buildCreditingTransaction(witScriptPubKey,amount)
     val (unsignedSpendingTx,inputIndex) = TransactionGenerators.buildSpendingTransaction(UInt32(2),creditingTx,
       EmptyScriptSignature, outputIndex, TransactionConstants.lockTime,
-      sequence.getOrElse(TransactionConstants.sequence), witness)
+      sequence.getOrElse(TransactionConstants.sequence), witness,outputs)
     val unsignedWtxSigComponent = WitnessTxSigComponent(unsignedSpendingTx,inputIndex,witScriptPubKey,flags, amount)
     unsignedWtxSigComponent
   }
