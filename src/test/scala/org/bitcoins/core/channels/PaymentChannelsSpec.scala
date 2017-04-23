@@ -1,7 +1,7 @@
 package org.bitcoins.core.channels
 
 import org.bitcoins.core.crypto.{ECPrivateKey, TxSigComponent, WitnessTxSigComponent}
-import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
+import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits, Satoshis}
 import org.bitcoins.core.gen.ChannelGenerators
 import org.bitcoins.core.number.{Int64, UInt32}
 import org.bitcoins.core.policy.Policy
@@ -14,46 +14,53 @@ import org.bitcoins.core.util.BitcoinSLogger
 import org.scalacheck.{Gen, Prop, Properties}
 
 import scala.annotation.tailrec
+import scala.util.Try
 
 /**
   * Created by chris on 4/18/17.
   */
 class PaymentChannelsSpec extends Properties("PaymentChannelProperties") with BitcoinSLogger {
 
-  property("spend a anchor transaction with the first spendingTx in a payment channel") =
+  property("spend a anchor transaction with the first spendingTx in a payment channel") = {
     Prop.forAll(ChannelGenerators.freshPaymentChannelInProgress) { case (inProgress,_) =>
-        val p = ScriptProgram(inProgress.current)
-        val result = ScriptInterpreter.run(p)
-        result == ScriptOk
+      val p = ScriptProgram(inProgress.current)
+      val result = ScriptInterpreter.run(p)
+      result == ScriptOk
     }
+  }
 
-  property("spend a current transaction where it is not the first payment in the channel") =
-    Prop.forAll(ChannelGenerators.paymentChannelInProgress) { case (inProgress,_) =>
-        val p = ScriptProgram(inProgress.current)
-        val result = ScriptInterpreter.run(p)
-        result == ScriptOk && inProgress.old.nonEmpty
-    }
-
-
-  property("increment a payment channel, then close it") =
+  property("fail to increment a payment channel when the values are larger than the locked output") = {
     Prop.forAll(ChannelGenerators.freshPaymentChannelInProgress) { case (inProgress,privKeys) =>
-        val num = Gen.choose(1,20).sample.get
-        val amount = Satoshis(Int64(1))
-        val closed = simulate(num,inProgress,amount,privKeys)
-        verifyPaymentChannel(closed,amount)
+      val inc = inProgress.increment(inProgress.lockedAmount + CurrencyUnits.one, privKeys,HashType.sigHashAll)
+      inc.isFailure
     }
+  }
+
+  property("increment a payment channel, then close it") = {
+    Prop.forAll(ChannelGenerators.freshPaymentChannelInProgress) { case (inProgress,privKeys) =>
+      val num = Gen.choose(1,20).sample.get
+      val amount = Satoshis(Int64(1))
+      val closedTry = simulate(num,inProgress,amount,privKeys)
+      val result = closedTry.map(closed => verifyPaymentChannel(closed,amount))
+      if (result.isFailure) {
+        throw result.failed.get
+      } else result.get
+    }
+  }
 
 
-  private def simulate(runs: Int, inProgress: PaymentChannelInProgress, amount: CurrencyUnit, privKeys: Seq[ECPrivateKey]): PaymentChannelClosed = {
+
+  private def simulate(runs: Int, inProgress: PaymentChannelInProgress, amount: CurrencyUnit,
+                       privKeys: Seq[ECPrivateKey]): Try[PaymentChannelClosed] = {
     @tailrec
-    def loop(old: PaymentChannelInProgress, remaining: Int): PaymentChannelInProgress = {
-      if (remaining == 0) old
+    def loop(old: Try[PaymentChannelInProgress], remaining: Int): Try[PaymentChannelInProgress] = {
+      if (old.isFailure || remaining == 0) old
       else {
-        val inc = old.increment(amount,privKeys,HashType.sigHashAll)
+        val inc = old.flatMap(_.increment(amount,privKeys,HashType.sigHashAll))
         loop(inc,remaining - 1)
       }
     }
-    loop(inProgress,runs).close
+    loop(Try(inProgress),runs).map(_.close)
   }
 
   def verifyPaymentChannel(p: PaymentChannelClosed, amount: CurrencyUnit): Boolean = {

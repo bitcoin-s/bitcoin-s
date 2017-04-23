@@ -1,13 +1,16 @@
 package org.bitcoins.core.channels
 
 import org.bitcoins.core.crypto.{ECPrivateKey, ECPublicKey, WitnessTxSigComponent}
-import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
+import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits, Satoshis}
 import org.bitcoins.core.gen.WitnessGenerators
 import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.util.BitcoinScriptUtil
+
+import scala.util.Try
 
 /**
   * Created by tom on 2/9/17.
@@ -39,6 +42,27 @@ sealed trait PaymentChannel {
 
 sealed trait PaymentChannelAwaitingAnchorTx extends PaymentChannel {
   def confirmations: Long
+
+  /** Creates a [[PaymentChannelInProgress]] from this PaymentChannelAwaitingAnchorTx, starts with 0 satoshis being paid to the server */
+  def createInProgress(clientScriptPubKey: ScriptPubKey, serverScriptPubKey: ScriptPubKey, privKeys: Seq[ECPrivateKey], hashType: HashType): Try[PaymentChannelInProgress] = Try {
+    require(confirmations >= Policy.confirmations, "Need " + Policy.confirmations + "on the anchor tx before we can create a payment channel " +
+      "in progress, got " + confirmations + " confirmations")
+    val o1 = TransactionOutput(anchorTx.tx.outputs.head.value,clientScriptPubKey)
+    val o2 = TransactionOutput(CurrencyUnits.zero,serverScriptPubKey)
+    val outputs = Seq(o1,o2)
+    val unsignedScriptWitness = ScriptWitness(Seq(lock.asmBytes))
+    val unsignedWTxSigComponent = WitnessGenerators.createUnsignedWtxSigComponent(scriptPubKey,
+      lockedAmount,unsignedScriptWitness,None,outputs)
+    val signedScriptSig = WitnessGenerators.csvEscrowTimeoutGenHelper(privKeys,lock,unsignedWTxSigComponent,hashType)
+    //need to remove the OP_0 or OP_1 and replace it with ScriptNumber.zero / Script
+    // Number.one since witnesses are *not* run through the interpreter
+    val s = BitcoinScriptUtil.minimalDummy(BitcoinScriptUtil.minimalIfOp(signedScriptSig.asm))
+    val signedScriptSigPushOpsRemoved = BitcoinScriptUtil.filterPushOps(s).reverse
+    val signedScriptWitness = ScriptWitness(lock.asm.flatMap(_.bytes) +: (signedScriptSigPushOpsRemoved.map(_.bytes)))
+    val (_,signedWtxSigComponent) = WitnessGenerators.createSignedWTxComponent(signedScriptWitness,unsignedWTxSigComponent)
+    val inProgress = PaymentChannelInProgress(anchorTx,lock,signedWtxSigComponent,Nil,serverScriptPubKey)
+    inProgress
+  }
 }
 
 sealed trait PaymentChannelInProgress extends PaymentChannel {
@@ -46,20 +70,24 @@ sealed trait PaymentChannelInProgress extends PaymentChannel {
 
   def old: Seq[WitnessTxSigComponent]
 
-  /** This is the [[ScriptPubKey where]] the payment for services from the server will be sent */
+  /** This is the [[ScriptPubKey]] the payment for services from the server will be sent */
   def serverScriptPubKey: ScriptPubKey
-
 
   /** Closes this payment channel */
   def close: PaymentChannelClosed = PaymentChannelClosed(this)
 
   /** Increments a payment to the server in a [[PaymentChannelInProgress]] */
-  def increment(amount: CurrencyUnit, privKeys: Seq[ECPrivateKey], hashType: HashType): PaymentChannelInProgress = {
+  def increment(amount: CurrencyUnit, privKeys: Seq[ECPrivateKey], hashType: HashType): Try[PaymentChannelInProgress] = {
     val outputs = current.transaction.outputs
     val (client,server) = (outputs.head,outputs(1))
     val newClient = TransactionOutput(client, client.value - amount)
     val newServer = TransactionOutput(server, server.value + amount)
-    updateChannel(Seq(newClient,newServer),privKeys,hashType)
+    checkAmounts(newClient,newServer).map(_ => updateChannel(Seq(newClient,newServer),privKeys,hashType))
+  }
+
+  private def checkAmounts(clientOutput: TransactionOutput, serverOutput: TransactionOutput): Try[Unit] = Try {
+    require(clientOutput.value >= CurrencyUnits.zero, "Client doesn't have enough money to pay server")
+    require((clientOutput.value + serverOutput.value) <= lockedAmount, "Client and server payment amounts are greater than the locked amount in the payment channel")
   }
 
   /** Updates the payment channel with the given parameters */
@@ -87,17 +115,19 @@ sealed trait PaymentChannelClosed extends PaymentChannel {
 object PaymentChannelAwaitingAnchorTx {
   private case class PaymentChannelAwaitAnchorTxImpl(anchorTx: AnchorTransaction, lock: EscrowTimeoutScriptPubKey,
                                                      confirmations: Long) extends PaymentChannelAwaitingAnchorTx {
-    val expectedWitScriptPubKey = WitnessScriptPubKeyV0(lock)
+    private val expectedWitScriptPubKey = WitnessScriptPubKeyV0(lock)
     require(anchorTx.tx.outputs.exists(_.scriptPubKey == expectedWitScriptPubKey),
       "One output on the Anchor Transaction has to have a P2WSH(EscrowTimeoutScriptPubKey)")
+    require(lockedAmount >= Policy.minPaymentChannelAmount, "We need to lock at least " + Policy.minPaymentChannelAmount +
+      " in the payment channel, got: " + lockedAmount)
   }
 
-  def apply(anchorTx: AnchorTransaction, lock: EscrowTimeoutScriptPubKey): PaymentChannelAwaitingAnchorTx = {
+  def apply(anchorTx: AnchorTransaction, lock: EscrowTimeoutScriptPubKey): Try[PaymentChannelAwaitingAnchorTx] = {
     PaymentChannelAwaitingAnchorTx(anchorTx,lock,0)
   }
 
-  def apply(anchorTx: AnchorTransaction, lock: EscrowTimeoutScriptPubKey, confirmations: Long): PaymentChannelAwaitingAnchorTx = {
-    PaymentChannelAwaitAnchorTxImpl(anchorTx,lock,confirmations)
+  def apply(anchorTx: AnchorTransaction, lock: EscrowTimeoutScriptPubKey, confirmations: Long): Try[PaymentChannelAwaitingAnchorTx] = {
+    Try(PaymentChannelAwaitAnchorTxImpl(anchorTx,lock,confirmations))
   }
 }
 
