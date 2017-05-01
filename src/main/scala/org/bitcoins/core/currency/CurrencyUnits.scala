@@ -63,7 +63,10 @@ object Satoshis extends Factory[Satoshis] with BaseNumbers[Satoshis] {
 object CurrencyUnits {
   def zero : CurrencyUnit = Satoshis.zero
   def negativeSatoshi = Satoshis(Int64(-1))
+  /** The number you need to multiply BTC by to get it's satoshis */
+  def btcToSatoshiScalar = 100000000
 
+  def oneBTC: CurrencyUnit = Satoshis(Int64(btcToSatoshiScalar))
   def toSatoshis(unit : CurrencyUnit): Satoshis = unit match {
     case x : Satoshis => x
   }
