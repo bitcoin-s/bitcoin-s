@@ -9,11 +9,9 @@ trait NetworkParameters {
   def p2shNetworkByte : Byte
   def privateKey : Byte
   def port : Int
-  /**
-    * The seeds used to bootstrap the network
-    *
-    * @return
-    */
+  def rpcPort: Int
+  def name: String
+  /** The seeds used to bootstrap the network */
   def dnsSeeds : Seq[String]
 
   /**
@@ -21,7 +19,6 @@ trait NetworkParameters {
     * The characters are rarely used upper ASCII, not valid as UTF-8, and produce
     * a large 32-bit integer with any alignment.
     * https://github.com/bitcoin/bitcoin/blob/master/src/chainparams.cpp#L108
-    * @return
     */
   def magicBytes : Seq[Byte]
 
@@ -34,6 +31,9 @@ trait MainNet extends NetworkParameters {
   override def p2shNetworkByte = 0x05
   override def privateKey = 0x80.toByte
   override def port = 8333
+  override def rpcPort = 8332
+  //mainnet doesn't need to be specified like testnet or regtest
+  override def name = ""
   override def dnsSeeds = Seq("seed.bitcoin.sipa.be","dnsseed.bluematt.me","dnsseed.bitcoin.dashjr.org",
     "seed.bitcoinstats.com","bitseed.xf2.org","seed.bitcoin.jonasschnelli.ch")
 
@@ -47,6 +47,8 @@ trait TestNet3 extends NetworkParameters {
   override def p2shNetworkByte = 0xC4.toByte
   override def privateKey = 0xEF.toByte
   override def port = 18333
+  override def rpcPort = 18332
+  override def name = "testnet"
   override def dnsSeeds = Seq("testnet-seed.bitcoin.petertodd.org",
     "testnet-seed.bluematt.me","testnet-seed.bitcoin.schildbach.de")
   override def magicBytes = Seq(0x0b.toByte, 0x11.toByte, 0x09.toByte, 0x07.toByte)
@@ -59,7 +61,9 @@ trait RegTest extends NetworkParameters {
   override def p2shNetworkByte = TestNet3.p2shNetworkByte
   override def privateKey = TestNet3.privateKey
   override def port = 18444
-  override def dnsSeeds = Seq()
+  override def rpcPort = TestNet3.rpcPort
+  override def name = "regtest"
+  override def dnsSeeds = Nil
   override def magicBytes = Seq(0xfa.toByte, 0xbf.toByte, 0xb5.toByte, 0xda.toByte)
 }
 
