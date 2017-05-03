@@ -1,6 +1,7 @@
 package org.bitcoins.core.currency
 
 import org.bitcoins.core.gen.CurrencyUnitGenerator
+import org.bitcoins.core.util.BitcoinSLogger
 import org.scalacheck.{Prop, Properties}
 
 import scala.util.Try
@@ -8,7 +9,7 @@ import scala.util.Try
 /**
   * Created by chris on 6/23/16.
   */
-class CurrencyUnitSpec extends Properties("CurrencyUnitSpec") {
+class CurrencyUnitSpec extends Properties("CurrencyUnitSpec") with BitcoinSLogger {
 
   property("Symmetrical serialization for satoshis") =
     Prop.forAll(CurrencyUnitGenerator.satoshis) { satoshis =>
@@ -75,6 +76,20 @@ class CurrencyUnitSpec extends Properties("CurrencyUnitSpec") {
       (num1 == num2) || (num1 != num2)
     }
 
+  property("convert satoshis to bitcoin and then back to satoshis") = {
+    Prop.forAll(CurrencyUnitGenerator.satoshis) { satoshis: Satoshis =>
+      val b = Bitcoins(satoshis)
+      b.satoshis == satoshis
+    }
+  }
+
+  property("be able to add two unique currency unit types") = {
+    Prop.forAll(CurrencyUnitGenerator.satoshis, CurrencyUnitGenerator.bitcoins) { (num1: Satoshis, num2: Bitcoins) =>
+      val expected = Bitcoins(Satoshis(num1.underlying + num2.satoshis.underlying))
+      val actual: CurrencyUnit = num1 + num2
+      actual == expected
+    }
+  }
 }
 
 
