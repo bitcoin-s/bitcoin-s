@@ -82,6 +82,14 @@ class CurrencyUnitSpec extends Properties("CurrencyUnitSpec") with BitcoinSLogge
       b.satoshis == satoshis
     }
   }
+
+  property("be able to add two unique currency unit types") = {
+    Prop.forAll(CurrencyUnitGenerator.satoshis, CurrencyUnitGenerator.bitcoins) { (num1: Satoshis, num2: Bitcoins) =>
+      val expected = Bitcoins(Satoshis(num1.underlying + num2.satoshis.underlying))
+      val actual: CurrencyUnit = num1 + num2
+      actual == expected
+    }
+  }
 }
 
 
