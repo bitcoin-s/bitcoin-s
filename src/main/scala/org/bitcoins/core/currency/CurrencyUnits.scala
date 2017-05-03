@@ -31,6 +31,7 @@ sealed trait CurrencyUnit extends NetworkElement with BitcoinSLogger {
 
   def !=(c : CurrencyUnit) : Boolean = !(this == c)
 
+  def ==(c: CurrencyUnit): Boolean = satoshis == c.satoshis
 
   def +(c : CurrencyUnit) : CurrencyUnit = {
     Satoshis(satoshis.underlying + c.satoshis.underlying)
@@ -53,15 +54,17 @@ sealed trait Satoshis extends CurrencyUnit {
   override type A = Int64
   override def hex = RawSatoshisSerializer.write(this)
   override def satoshis: Satoshis = this
+
+  def ==(satoshis: Satoshis): Boolean = underlying == satoshis.underlying
 }
 
 object Satoshis extends Factory[Satoshis] with BaseNumbers[Satoshis] {
   private case class SatoshisImpl(underlying : Int64) extends Satoshis
 
-  def min = Satoshis(Int64.min)
-  def max = Satoshis(Int64.max)
-  def zero = Satoshis(Int64.zero)
-  def one = Satoshis(Int64.one)
+  val min = Satoshis(Int64.min)
+  val max = Satoshis(Int64.max)
+  val zero = Satoshis(Int64.zero)
+  val one = Satoshis(Int64.one)
 
   override def fromBytes(bytes : Seq[Byte]): Satoshis = RawSatoshisSerializer.read(bytes)
 
@@ -88,7 +91,7 @@ object Bitcoins extends BaseNumbers[Bitcoins] {
 
   def apply(satoshis: Satoshis): Bitcoins = {
     val b = satoshis.underlying.underlying * CurrencyUnits.satoshisToBTCScalar
-    BitcoinsImpl(b)
+    Bitcoins(b)
   }
 }
 
