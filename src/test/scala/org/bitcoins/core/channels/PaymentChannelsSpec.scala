@@ -31,36 +31,21 @@ class PaymentChannelsSpec extends Properties("PaymentChannelProperties") with Bi
 
   property("fail to increment a payment channel when the values are larger than the locked output") = {
     Prop.forAll(ChannelGenerators.freshPaymentChannelInProgress) { case (inProgress,privKeys) =>
-      val inc = inProgress.increment(inProgress.lockedAmount + CurrencyUnits.one, privKeys,HashType.sigHashAll)
+      val inc = inProgress.clientSign(inProgress.lockedAmount + Satoshis.one, privKeys.head,HashType.sigHashAll)
       inc.isFailure
     }
   }
 
   property("increment a payment channel, then close it") = {
-    Prop.forAll(ChannelGenerators.freshPaymentChannelInProgress) { case (inProgress,privKeys) =>
+    Prop.forAllNoShrink(ChannelGenerators.freshPaymentChannelInProgress) { case (inProgress,privKeys) =>
       val num = Gen.choose(1,20).sample.get
       val amount = Satoshis(Int64(1))
-      val closedTry = simulate(num,inProgress,amount,privKeys)
+      val closedTry = ChannelGenerators.simulate(num,inProgress,amount,privKeys.head,privKeys(1)).map(_.close)
       val result = closedTry.map(closed => verifyPaymentChannel(closed,amount))
       if (result.isFailure) {
         throw result.failed.get
       } else result.get
     }
-  }
-
-
-
-  private def simulate(runs: Int, inProgress: PaymentChannelInProgress, amount: CurrencyUnit,
-                       privKeys: Seq[ECPrivateKey]): Try[PaymentChannelClosed] = {
-    @tailrec
-    def loop(old: Try[PaymentChannelInProgress], remaining: Int): Try[PaymentChannelInProgress] = {
-      if (old.isFailure || remaining == 0) old
-      else {
-        val inc = old.flatMap(_.increment(amount,privKeys,HashType.sigHashAll))
-        loop(inc,remaining - 1)
-      }
-    }
-    loop(Try(inProgress),runs).map(_.close)
   }
 
   def verifyPaymentChannel(p: PaymentChannelClosed, amount: CurrencyUnit): Boolean = {
@@ -70,7 +55,9 @@ class PaymentChannelsSpec extends Properties("PaymentChannelProperties") with Bi
       else {
         val current = remaining.head
         val p = ScriptProgram(current)
-        val isValidTx = ScriptInterpreter.run(p) == ScriptOk
+        val interpreterResult = ScriptInterpreter.run(p)
+        val isValidTx = interpreterResult == ScriptOk
+        if (!isValidTx) logger.error("Invalid tx when verifying payment channel, got error: " + interpreterResult)
         val Seq(lastClientOutput, lastServerOutput) = last.transaction.outputs.take(2)
         val Seq(currentClientOutput, currentServerOutput) = current.transaction.outputs.take(2)
         val expectedClientOutput = TransactionOutput(lastClientOutput,lastClientOutput.value - amount)
@@ -80,7 +67,6 @@ class PaymentChannelsSpec extends Properties("PaymentChannelProperties") with Bi
           currentServerOutput == expectedServerOutput)
         if (result) loop(current,remaining.tail)
         else false
-
       }
     }
     val inOrder = p.old.reverse

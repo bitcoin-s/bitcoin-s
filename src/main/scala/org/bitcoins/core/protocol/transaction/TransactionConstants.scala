@@ -8,6 +8,7 @@ import org.bitcoins.core.number.UInt32
 trait TransactionConstants {
 
   lazy val version = UInt32.one
+  lazy val validLockVersion = UInt32(2)
   lazy val lockTime = UInt32.zero
   lazy val sequence = UInt32(4294967295L)
 

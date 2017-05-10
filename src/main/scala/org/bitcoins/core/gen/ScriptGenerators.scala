@@ -143,7 +143,7 @@ trait ScriptGenerators extends BitcoinSLogger {
   } yield (WitnessCommitment(hash),Nil)
 
   def escrowTimeoutScriptPubKey: Gen[(EscrowTimeoutScriptPubKey, Seq[ECPrivateKey])] = for {
-    (escrow,k1) <- ScriptGenerators.smallMultiSigScriptPubKey
+    (escrow,k1) <- ScriptGenerators.smallMultiSigScriptPubKey.suchThat(_._1.requiredSigs > 1)
     //We use a p2pkh scriptPubkey here to minimize the script size of EscrowTimeoutScriptPubKey
     //otherwise we surpass the 520 byte push op limit
     (p2pkh,_) <- ScriptGenerators.p2pkhScriptPubKey
@@ -151,6 +151,17 @@ trait ScriptGenerators extends BitcoinSLogger {
     timeout = CSVScriptPubKey(scriptNum,p2pkh)
   } yield (EscrowTimeoutScriptPubKey(escrow,timeout), k1)
 
+  def escrowTimeoutScriptPubKey2Of2: Gen[(EscrowTimeoutScriptPubKey, Seq[ECPrivateKey])] = for {
+    privKey1 <- CryptoGenerators.privateKey
+    privKey2 <- CryptoGenerators.privateKey
+    privKeys = Seq(privKey1, privKey2)
+    escrow = MultiSignatureScriptPubKey(2,privKeys.map(_.publicKey))
+    //We use a p2pkh scriptPubkey here to minimize the script size of EscrowTimeoutScriptPubKey
+    //otherwise we surpass the 520 byte push op limit
+    (p2pkh,_) <- ScriptGenerators.p2pkhScriptPubKey
+    scriptNum <- NumberGenerator.scriptNumbers
+    timeout = CSVScriptPubKey(scriptNum,p2pkh)
+  } yield (EscrowTimeoutScriptPubKey(escrow,timeout), privKeys)
 
   def escrowTimeoutScriptSig: Gen[EscrowTimeoutScriptSignature] = for {
     scriptSig <- Gen.oneOf(csvScriptSignature, multiSignatureScriptSignature)
