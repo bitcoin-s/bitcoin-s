@@ -10,7 +10,7 @@ import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.constant.{OP_0, OP_1, ScriptNumber, ScriptToken}
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.util.{BitcoinSLogger, BitcoinScriptUtil}
-import org.bitcoins.core.wallet.WTxSigComponentHelper
+import org.bitcoins.core.wallet.{EscrowTimeoutHelper, WTxSigComponentHelper}
 import org.scalacheck.Gen
 
 import scala.collection.JavaConversions._
@@ -117,12 +117,8 @@ trait WitnessGenerators extends BitcoinSLogger {
     unsignedWTxSigComponent = WTxSigComponentHelper.createUnsignedWTxSigComponent(witScriptPubKey, amount,
       unsignedScriptWitness,None)
     signedScriptSig = csvEscrowTimeoutGenHelper(privKeys,scriptPubKey,unsignedWTxSigComponent,hashType)
-    //need to remove the OP_0 or OP_1 and replace it with ScriptNumber.zero / ScriptNumber.one since witnesses are *not* run through the interpreter
-    s = BitcoinScriptUtil.minimalDummy(BitcoinScriptUtil.minimalIfOp(signedScriptSig.asm))
-    signedScriptSigPushOpsRemoved = BitcoinScriptUtil.filterPushOps(s).reverse
-    signedScriptWitness = ScriptWitness(scriptPubKey.asm.flatMap(_.bytes) +: (signedScriptSigPushOpsRemoved.map(_.bytes)))
-    (witness,signedWtxSigComponent) = WTxSigComponentHelper.createSignedWTxComponent(signedScriptWitness,unsignedWTxSigComponent)
-  } yield (witness,signedWtxSigComponent,privKeys)
+    (witness,signedWTxSigComponent) = EscrowTimeoutHelper.buildEscrowTimeoutScriptWitness(signedScriptSig,scriptPubKey,unsignedWTxSigComponent)
+  } yield (witness,signedWTxSigComponent,privKeys)
 
   def spendableP2WSHTimeoutEscrowTimeoutWitness: Gen[(TransactionWitness, WitnessTxSigComponent, Seq[ECPrivateKey])] = for {
     (p2pkh,privKey) <- ScriptGenerators.p2pkhScriptPubKey
@@ -166,7 +162,9 @@ trait WitnessGenerators extends BitcoinSLogger {
   def csvEscrowTimeoutGenHelper(privateKeys: Seq[ECPrivateKey], scriptPubKey: EscrowTimeoutScriptPubKey,
                                         unsignedWtxSigComponent: WitnessTxSigComponent,
                                         hashType: HashType): EscrowTimeoutScriptSignature = {
-    if (privateKeys.size == 1)  {
+    if (scriptPubKey.escrow.requiredSigs == 0) {
+      EscrowTimeoutScriptSignature.fromMultiSig(MultiSignatureScriptSignature(Nil))
+    } else if (privateKeys.size == 1)  {
       val signature = csvEscrowTimeoutGenSignature(privateKeys.head, scriptPubKey, unsignedWtxSigComponent,hashType)
       EscrowTimeoutScriptSignature.fromMultiSig(MultiSignatureScriptSignature(Seq(signature)))
     } else {
@@ -178,6 +176,7 @@ trait WitnessGenerators extends BitcoinSLogger {
 
   def csvEscrowTimeoutGenSignature(privKey: ECPrivateKey, scriptPubKey: EscrowTimeoutScriptPubKey,
     unsignedWtxSigComponent: WitnessTxSigComponent, hashType: HashType): ECDigitalSignature = {
+
     val signature = TransactionSignatureCreator.createSig(unsignedWtxSigComponent,privKey,hashType)
     signature
   }

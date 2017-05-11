@@ -38,6 +38,16 @@ sealed trait EscrowTimeoutHelper extends BitcoinSLogger {
     signedWTxSigComponent._2
   }
 
+  def buildEscrowTimeoutScriptWitness(signedScriptSig: EscrowTimeoutScriptSignature,
+                                      scriptPubKey: EscrowTimeoutScriptPubKey,
+                                      unsignedWTxSigComponent: WitnessTxSigComponent): (TransactionWitness,WitnessTxSigComponent) = {
+    //need to remove the OP_0 or OP_1 and replace it with ScriptNumber.zero / ScriptNumber.one since witnesses are *not* run through the interpreter
+    val s = BitcoinScriptUtil.minimalDummy(BitcoinScriptUtil.minimalIfOp(signedScriptSig.asm))
+    val signedScriptSigPushOpsRemoved = BitcoinScriptUtil.filterPushOps(s).reverse
+    val signedScriptWitness = ScriptWitness(scriptPubKey.asm.flatMap(_.bytes) +: (signedScriptSigPushOpsRemoved.map(_.bytes)))
+    val (witness,signedWtxSigComponent) = WTxSigComponentHelper.createSignedWTxComponent(signedScriptWitness,unsignedWTxSigComponent)
+    (witness, signedWtxSigComponent)
+  }
 
 }
 

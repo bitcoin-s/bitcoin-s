@@ -10,6 +10,7 @@ import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.crypto.HashType
+import org.bitcoins.core.script.flag.ScriptFlag
 import org.bitcoins.core.util.{BitcoinSLogger, BitcoinScriptUtil}
 import org.bitcoins.core.wallet.EscrowTimeoutHelper
 import org.bitcoins.core.wallet.WTxSigComponentHelper
@@ -62,6 +63,18 @@ sealed trait PaymentChannelAwaitingAnchorTx extends PaymentChannel {
     val inProgress = PaymentChannelInProgressClientSigned(anchorTx,lock,partiallySignedWTxSigComponent,Nil,serverScriptPubKey)
     inProgress
   }
+
+  /** Useful for the server to create a [[org.bitcoins.core.channels.PaymentChannelInProgressClientSigned]]
+    * after we receive a partially signed transaction from the client
+    */
+  def createClientSigned(partiallySigned: WitnessTransaction, inputIndex: UInt32,
+                         serverScriptPubKey: ScriptPubKey, amount: CurrencyUnit,
+                         flags: Seq[ScriptFlag]): PaymentChannelInProgressClientSigned = {
+    val wtxSigComponent = WitnessTxSigComponent(partiallySigned,inputIndex, scriptPubKey,
+      flags,amount)
+    PaymentChannelInProgressClientSigned(anchorTx,lock,wtxSigComponent,Nil,serverScriptPubKey)
+  }
+
 }
 
 sealed trait PaymentChannelInProgress extends PaymentChannel {

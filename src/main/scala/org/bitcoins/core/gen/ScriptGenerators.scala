@@ -143,7 +143,7 @@ trait ScriptGenerators extends BitcoinSLogger {
   } yield (WitnessCommitment(hash),Nil)
 
   def escrowTimeoutScriptPubKey: Gen[(EscrowTimeoutScriptPubKey, Seq[ECPrivateKey])] = for {
-    (escrow,k1) <- ScriptGenerators.smallMultiSigScriptPubKey.suchThat(_._1.requiredSigs > 1)
+    (escrow,k1) <- ScriptGenerators.smallMultiSigScriptPubKey
     //We use a p2pkh scriptPubkey here to minimize the script size of EscrowTimeoutScriptPubKey
     //otherwise we surpass the 520 byte push op limit
     (p2pkh,_) <- ScriptGenerators.p2pkhScriptPubKey
