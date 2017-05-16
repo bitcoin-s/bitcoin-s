@@ -51,8 +51,8 @@ sealed trait PaymentChannelAwaitingAnchorTx extends PaymentChannel {
   /** Creates a [[PaymentChannelInProgress]] from this PaymentChannelAwaitingAnchorTx, starts with 0 satoshis being paid to the server */
   def clientSign(clientScriptPubKey: ScriptPubKey, serverScriptPubKey: ScriptPubKey, amount: CurrencyUnit,
                        privKey: ECPrivateKey, hashType: HashType): Try[PaymentChannelInProgressClientSigned] = Try {
-    require(confirmations >= Policy.confirmations, "Need " + Policy.confirmations + "on the anchor tx before we can create a payment channel " +
-      "in progress, got " + confirmations + " confirmations")
+    require(confirmations >= Policy.confirmations, "Need " + Policy.confirmations + " confirmations on the anchor tx before " +
+      "we can create a payment channel in progress, got " + confirmations + " confirmations")
     val o1 = TransactionOutput(anchorTx.tx.outputs.head.value - amount,clientScriptPubKey)
     val o2 = TransactionOutput(amount,serverScriptPubKey)
     val outputs = Seq(o1,o2)
@@ -130,7 +130,7 @@ sealed trait PaymentChannelInProgressClientSigned extends PaymentChannelInProgre
   /** The new payment channel transaction that has the clients digital signature but does not have the servers digital signature yet */
   def partiallySignedTx: WitnessTransaction = current.transaction
 
-  def serverSign(privKey: ECPrivateKey): Try[PaymentChannelInProgress] = {
+  def serverSign(privKey: ECPrivateKey, hashType: HashType): Try[PaymentChannelInProgress] = {
     val input : Try[(TransactionInput, Int)] = Try {
       partiallySignedTx.inputs.zipWithIndex.find { case (i, index) =>
         i.previousOutput.txId == anchorTx.tx.txId
@@ -156,7 +156,7 @@ sealed trait PaymentChannelInProgressClientSigned extends PaymentChannelInProgre
     }
 
     val sig: Try[ECDigitalSignature] = unsignedWtxSigComponent.map { case (w,lock) =>
-      WitnessGenerators.csvEscrowTimeoutGenSignature(privKey, lock, w, HashType.sigHashAll)
+      WitnessGenerators.csvEscrowTimeoutGenSignature(privKey, lock, w, hashType)
     }
 
     val fullySignedWitness: Try[ScriptWitness] = partialWitness.flatMap { pw =>

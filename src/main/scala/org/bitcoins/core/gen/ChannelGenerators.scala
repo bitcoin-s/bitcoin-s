@@ -37,8 +37,8 @@ trait ChannelGenerators extends BitcoinSLogger {
     (s1,_) <- ScriptGenerators.scriptPubKey
     (s2,_) <- ScriptGenerators.scriptPubKey
     amount = Satoshis.one
-    clientSigned = awaiting.clientSign(s1,s2,amount,privKeys.head,HashType.sigHashAll).get
-    fullySigned = clientSigned.serverSign(privKeys(1))
+    clientSigned = awaiting.clientSign(s1,s2,amount,privKeys.head,HashType.sigHashSingle).get
+    fullySigned = clientSigned.serverSign(privKeys(1), HashType.sigHashSingle)
   } yield (fullySigned.get,privKeys)
 
 
@@ -56,8 +56,8 @@ trait ChannelGenerators extends BitcoinSLogger {
     def loop(old: Try[PaymentChannelInProgress], remaining: Int): Try[PaymentChannelInProgress] = {
       if (old.isFailure || remaining == 0) old
       else {
-        val clientSigned = old.flatMap(_.clientSign(amount,clientKey,HashType.sigHashAll))
-        val serverSigned = clientSigned.flatMap(c => c.serverSign(serverKey))
+        val clientSigned = old.flatMap(_.clientSign(amount,clientKey,HashType.sigHashSingle))
+        val serverSigned = clientSigned.flatMap(c => c.serverSign(serverKey,HashType.sigHashSingle))
         loop(serverSigned,remaining - 1)
       }
     }
