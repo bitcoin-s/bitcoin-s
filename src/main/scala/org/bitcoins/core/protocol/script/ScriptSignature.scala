@@ -425,8 +425,8 @@ object ScriptSignature extends Factory[ScriptSignature] with BitcoinSLogger {
     case _: P2PKScriptPubKey => Try(P2PKScriptSignature.fromAsm(tokens))
     case _: MultiSignatureScriptPubKey => Try(MultiSignatureScriptSignature.fromAsm(tokens))
     case _: NonStandardScriptPubKey => Try(NonStandardScriptSignature.fromAsm(tokens))
-    case s : CLTVScriptPubKey => fromScriptPubKey(tokens, s.scriptPubKeyAfterCLTV)
-    case s : CSVScriptPubKey => fromScriptPubKey(tokens, s.scriptPubKeyAfterCSV)
+    case s: CLTVScriptPubKey => fromScriptPubKey(tokens, s.nestedScriptPubKey)
+    case s: CSVScriptPubKey => fromScriptPubKey(tokens, s.nestedScriptPubKey)
     case escrowWithTimeout : EscrowTimeoutScriptPubKey =>
       val isMultSig = BitcoinScriptUtil.castToBool(tokens.head)
       if (isMultSig) Try(MultiSignatureScriptSignature.fromAsm(tokens.tail))
