@@ -129,15 +129,15 @@ sealed trait P2SHScriptSignature extends ScriptSignature {
 
 
   /** Returns the script signature of this p2shScriptSig with no serialized redeemScript */
-  def scriptSignatureNoRedeemScript: ScriptSignature = {
+  def scriptSignatureNoRedeemScript: Try[ScriptSignature] = {
     //witness scriptPubKeys always have EmptyScriptSigs
-    if (WitnessScriptPubKey.isWitnessScriptPubKey(asm)) EmptyScriptSignature
+    if (WitnessScriptPubKey.isWitnessScriptPubKey(asm)) Success(EmptyScriptSignature)
     else {
       val asmWithoutRedeemScriptAndPushOp = asm(asm.size - 2) match {
         case b : BytesToPushOntoStack => asm.dropRight(2)
         case _ => asm.dropRight(3)
       }
-      ScriptSignature.fromAsm(asmWithoutRedeemScriptAndPushOp)
+      ScriptSignature.fromScriptPubKey(asmWithoutRedeemScriptAndPushOp,redeemScript)
     }
   }
 
@@ -151,10 +151,11 @@ sealed trait P2SHScriptSignature extends ScriptSignature {
 
 
   /** The digital signatures inside of the scriptSig */
-  def signatures : Seq[ECDigitalSignature] = {
-    val nonRedeemScript = splitAtRedeemScript(asm)._1
-    val sigs = nonRedeemScript.filter(_.isInstanceOf[ScriptConstant]).filterNot(_.isInstanceOf[ScriptNumberOperation]).filterNot(_.hex.length < 100)
-    sigs.map(s => ECDigitalSignature(s.hex))
+  def signatures : Seq[ECDigitalSignature] = scriptSignatureNoRedeemScript match {
+    case Failure(_) => Nil
+    case Success(nonRedeemScript) =>
+      val sigs = nonRedeemScript.asm.filter(_.isInstanceOf[ScriptConstant]).filterNot(_.isInstanceOf[ScriptNumberOperation]).filterNot(_.hex.length < 100)
+      sigs.map(s => ECDigitalSignature(s.hex))
   }
 
 
@@ -162,8 +163,10 @@ sealed trait P2SHScriptSignature extends ScriptSignature {
     * Splits the given asm into two parts
     * the first part is the digital signatures
     * the second part is the redeem script */
-  def splitAtRedeemScript(asm : Seq[ScriptToken]) : (Seq[ScriptToken],Seq[ScriptToken]) = {
-    (scriptSignatureNoRedeemScript.asm, redeemScript.asm)
+  def splitAtRedeemScript(asm : Seq[ScriptToken]) : Try[(Seq[ScriptToken],Seq[ScriptToken])] = {
+    scriptSignatureNoRedeemScript.map { scriptSig =>
+      (scriptSig.asm, redeemScript.asm)
+    }
   }
 }
 
@@ -468,19 +471,22 @@ object ScriptSignature extends Factory[ScriptSignature] with BitcoinSLogger {
     * @param scriptPubKey the scriptPubKey which the script signature is trying to spend
     * @return
     */
-  def fromScriptPubKey(tokens : Seq[ScriptToken], scriptPubKey : ScriptPubKey) : ScriptSignature = scriptPubKey match {
-    case s : P2SHScriptPubKey => P2SHScriptSignature.fromAsm(tokens)
-    case s : P2PKHScriptPubKey => P2PKHScriptSignature.fromAsm(tokens)
-    case s : P2PKScriptPubKey => P2PKScriptSignature.fromAsm(tokens)
-    case s : MultiSignatureScriptPubKey => MultiSignatureScriptSignature.fromAsm(tokens)
-    case s : NonStandardScriptPubKey => NonStandardScriptSignature.fromAsm(tokens)
+  def fromScriptPubKey(tokens : Seq[ScriptToken], scriptPubKey : ScriptPubKey): Try[ScriptSignature] = scriptPubKey match {
+    case _: P2SHScriptPubKey => Try(P2SHScriptSignature.fromAsm(tokens))
+    case _: P2PKHScriptPubKey => Try(P2PKHScriptSignature.fromAsm(tokens))
+    case _: P2PKScriptPubKey => Try(P2PKScriptSignature.fromAsm(tokens))
+    case _: MultiSignatureScriptPubKey => Try(MultiSignatureScriptSignature.fromAsm(tokens))
+    case _: NonStandardScriptPubKey => Try(NonStandardScriptSignature.fromAsm(tokens))
     case s : CLTVScriptPubKey => fromScriptPubKey(tokens, s.scriptPubKeyAfterCLTV)
     case s : CSVScriptPubKey => fromScriptPubKey(tokens, s.scriptPubKeyAfterCSV)
-    case _: WitnessScriptPubKeyV0 | _: UnassignedWitnessScriptPubKey  => EmptyScriptSignature
-    case EmptyScriptPubKey => if (tokens.isEmpty) EmptyScriptSignature else NonStandardScriptSignature.fromAsm(tokens)
-    case _ : WitnessCommitment => throw new IllegalArgumentException("Cannot spend witness commitment scriptPubKey")
+    case _: WitnessScriptPubKeyV0 | _: UnassignedWitnessScriptPubKey  => Success(EmptyScriptSignature)
+    case EmptyScriptPubKey =>
+      if (tokens.isEmpty) Success(EmptyScriptSignature) else Try(NonStandardScriptSignature.fromAsm(tokens))
+    case _ : WitnessCommitment => Failure(new IllegalArgumentException("Cannot spend witness commitment scriptPubKey"))
   }
 
-  def apply(tokens : Seq[ScriptToken], scriptPubKey : ScriptPubKey) : ScriptSignature = fromScriptPubKey(tokens, scriptPubKey)
+  def apply(tokens : Seq[ScriptToken], scriptPubKey : ScriptPubKey): Try[ScriptSignature] = {
+    fromScriptPubKey(tokens, scriptPubKey)
+  }
 }
 
