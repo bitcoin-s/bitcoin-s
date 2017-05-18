@@ -3,7 +3,7 @@ package org.bitcoins.core.crypto
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script._
-import org.bitcoins.core.protocol.transaction.{Transaction, WitnessTransaction}
+import org.bitcoins.core.protocol.transaction.{Transaction, TransactionInput, WitnessTransaction}
 import org.bitcoins.core.script.flag.ScriptFlag
 
 import scala.util.{Failure, Success, Try}
@@ -21,8 +21,10 @@ sealed trait TxSigComponent {
   /** The index of the input whose script signature is being checked */
   def inputIndex : UInt32
 
+  def input: TransactionInput = transaction.inputs(inputIndex.toInt)
+
   /** The script signature being checked */
-  def scriptSignature = transaction.inputs(inputIndex.toInt).scriptSignature
+  def scriptSignature: ScriptSignature = input.scriptSignature
 
   /** The scriptPubKey for which the input is being checked against */
   def scriptPubKey : ScriptPubKey
