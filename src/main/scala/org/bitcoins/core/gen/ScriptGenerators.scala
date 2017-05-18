@@ -1,7 +1,7 @@
 package org.bitcoins.core.gen
 
 import org.bitcoins.core.crypto.{TransactionSignatureCreator, _}
-import org.bitcoins.core.currency.CurrencyUnit
+import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script.{P2SHScriptPubKey, _}

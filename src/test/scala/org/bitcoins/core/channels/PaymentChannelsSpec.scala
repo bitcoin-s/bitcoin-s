@@ -1,6 +1,6 @@
 package org.bitcoins.core.channels
 
-import org.bitcoins.core.crypto.{ECPrivateKey, TxSigComponent, WitnessTxSigComponent}
+import org.bitcoins.core.crypto.{BaseTxSigComponent, ECPrivateKey, TxSigComponent, WitnessTxSigComponent}
 import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits, Satoshis}
 import org.bitcoins.core.gen.ChannelGenerators
 import org.bitcoins.core.number.{Int64, UInt32}
@@ -22,7 +22,7 @@ import scala.util.Try
 class PaymentChannelsSpec extends Properties("PaymentChannelProperties") with BitcoinSLogger {
 
   property("spend a anchor transaction with the first spendingTx in a payment channel") = {
-    Prop.forAll(ChannelGenerators.freshPaymentChannelInProgress) { case (inProgress,_) =>
+    Prop.forAllNoShrink(ChannelGenerators.freshPaymentChannelInProgress) { case (inProgress,_) =>
       val p = ScriptProgram(inProgress.current)
       val result = ScriptInterpreter.run(p)
       result == ScriptOk
@@ -50,7 +50,7 @@ class PaymentChannelsSpec extends Properties("PaymentChannelProperties") with Bi
 
   def verifyPaymentChannel(p: PaymentChannelClosed, amount: CurrencyUnit): Boolean = {
     @tailrec
-    def loop(last: WitnessTxSigComponent, remaining: Seq[WitnessTxSigComponent]): Boolean = {
+    def loop(last: BaseTxSigComponent, remaining: Seq[BaseTxSigComponent]): Boolean = {
       if (remaining.isEmpty) true
       else {
         val current = remaining.head

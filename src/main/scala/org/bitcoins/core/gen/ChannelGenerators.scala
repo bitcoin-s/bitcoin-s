@@ -23,8 +23,8 @@ trait ChannelGenerators extends BitcoinSLogger {
   def anchorTx: Gen[(AnchorTransaction, EscrowTimeoutScriptPubKey, Seq[ECPrivateKey])] = for {
     (redeemScript,privKeys) <- ScriptGenerators.escrowTimeoutScriptPubKey2Of2
     amount <- CurrencyUnitGenerator.satoshis.suchThat(_ >= Policy.minPaymentChannelAmount)
-    wit = WitnessScriptPubKeyV0(redeemScript)
-    (aTx,_) = TransactionGenerators.buildCreditingTransaction(TransactionConstants.validLockVersion,wit,amount)
+    p2sh = P2SHScriptPubKey(redeemScript)
+    (aTx,_) = TransactionGenerators.buildCreditingTransaction(TransactionConstants.validLockVersion,p2sh,amount)
   } yield (AnchorTransaction(aTx),redeemScript,privKeys)
 
   def paymentChannelAwaitingAnchorTx: Gen[(PaymentChannelAwaitingAnchorTx, Seq[ECPrivateKey])] = for {

@@ -1,7 +1,7 @@
 package org.bitcoins.core.channels
 
 import org.bitcoins.core.channels.PaymentChannelInProgress.PaymentChannelInProgressImpl
-import org.bitcoins.core.crypto.{ECDigitalSignature, ECPrivateKey, ECPublicKey, WitnessTxSigComponent}
+import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits, Satoshis}
 import org.bitcoins.core.gen.WitnessGenerators
 import org.bitcoins.core.number.UInt32
@@ -26,10 +26,10 @@ sealed trait PaymentChannel extends BitcoinSLogger {
 
   def outputIndex: Int = {
     val locks = anchorTx.tx.outputs.zipWithIndex.filter {
-      case (o, idx) => o.scriptPubKey.isInstanceOf[WitnessScriptPubKey]
+      case (o, idx) => o.scriptPubKey.isInstanceOf[P2SHScriptPubKey]
     }
     require(locks.length == 1, "We can only have one locking output on a anchor tx, got: " + locks)
-    val expectedLock = WitnessScriptPubKeyV0(lock)
+    val expectedLock = P2SHScriptPubKey(lock)
     val actualLock = locks.head._1.scriptPubKey
     require(actualLock == expectedLock, "Incorrect witness scriptPubkey for lock, got: " + actualLock + " expected: " + expectedLock)
     locks.head._2
@@ -37,7 +37,7 @@ sealed trait PaymentChannel extends BitcoinSLogger {
 
   def lock: EscrowTimeoutScriptPubKey
 
-  def scriptPubKey: WitnessScriptPubKey = lockingOutput.scriptPubKey.asInstanceOf[WitnessScriptPubKey]
+  def scriptPubKey: P2SHScriptPubKey = lockingOutput.scriptPubKey.asInstanceOf[P2SHScriptPubKey]
 
   def lockingOutput: TransactionOutput = anchorTx.tx.outputs(outputIndex)
 
@@ -59,7 +59,7 @@ sealed trait PaymentChannelAwaitingAnchorTx extends PaymentChannel {
     val outPoint = TransactionOutPoint(anchorTx.tx.txId, UInt32(outputIndex))
     val inputs = Seq(TransactionInput(outPoint,EmptyScriptSignature,TransactionConstants.sequence))
     val partiallySignedWTxSigComponent = EscrowTimeoutHelper.clientSign(inputs,outputs,UInt32.zero,privKey,
-      lock,scriptPubKey, lockedAmount, hashType)
+      lock,scriptPubKey, hashType)
     val inProgress = PaymentChannelInProgressClientSigned(anchorTx,lock,partiallySignedWTxSigComponent,Nil,serverScriptPubKey)
     inProgress
   }
@@ -67,20 +67,19 @@ sealed trait PaymentChannelAwaitingAnchorTx extends PaymentChannel {
   /** Useful for the server to create a [[org.bitcoins.core.channels.PaymentChannelInProgressClientSigned]]
     * after we receive a partially signed transaction from the client
     */
-  def createClientSigned(partiallySigned: WitnessTransaction, inputIndex: UInt32,
-                         serverScriptPubKey: ScriptPubKey, amount: CurrencyUnit,
+  def createClientSigned(partiallySigned: Transaction, inputIndex: UInt32,
+                         serverScriptPubKey: ScriptPubKey,
                          flags: Seq[ScriptFlag]): PaymentChannelInProgressClientSigned = {
-    val wtxSigComponent = WitnessTxSigComponent(partiallySigned,inputIndex, scriptPubKey,
-      flags,amount)
-    PaymentChannelInProgressClientSigned(anchorTx,lock,wtxSigComponent,Nil,serverScriptPubKey)
+    val txSigComponent = TxSigComponent(partiallySigned,inputIndex, scriptPubKey,flags)
+    PaymentChannelInProgressClientSigned(anchorTx,lock,txSigComponent,Nil,serverScriptPubKey)
   }
 
 }
 
 sealed trait PaymentChannelInProgress extends PaymentChannel {
-  def current: WitnessTxSigComponent
+  def current: BaseTxSigComponent
 
-  def old: Seq[WitnessTxSigComponent]
+  def old: Seq[BaseTxSigComponent]
 
   /** This is the [[ScriptPubKey]] the payment for services from the server will be sent */
   def serverScriptPubKey: ScriptPubKey
@@ -109,7 +108,7 @@ sealed trait PaymentChannelInProgress extends PaymentChannel {
   private def updateChannel(inputs: Seq[TransactionInput], outputs: Seq[TransactionOutput], privKey: ECPrivateKey,
                             inputIndex: UInt32, hashType: HashType): PaymentChannelInProgressClientSigned = {
     val partiallySignedWTxSigComponent = EscrowTimeoutHelper.clientSign(inputs,outputs,inputIndex,privKey,lock,
-      scriptPubKey, lockedAmount, hashType)
+      scriptPubKey, hashType)
     val inProgress = PaymentChannelInProgressClientSigned(anchorTx,lock,partiallySignedWTxSigComponent, current +: old,
       serverScriptPubKey)
     inProgress
@@ -118,17 +117,17 @@ sealed trait PaymentChannelInProgress extends PaymentChannel {
   /** Useful for the server to create a [[org.bitcoins.core.channels.PaymentChannelInProgressClientSigned]]
     * after we receive a partially signed transaction from the client
     */
-  def createClientSigned(partiallySigned: WitnessTransaction): PaymentChannelInProgressClientSigned = {
-    val wtxSigComponent = WitnessTxSigComponent(partiallySigned,current.inputIndex, scriptPubKey,
-      current.flags,current.amount)
-    PaymentChannelInProgressClientSigned(anchorTx,lock,wtxSigComponent, current +: old,serverScriptPubKey)
+  def createClientSigned(partiallySigned: BaseTransaction): PaymentChannelInProgressClientSigned = {
+    val txSigComponent = TxSigComponent(partiallySigned,current.inputIndex, scriptPubKey,
+      current.flags)
+    PaymentChannelInProgressClientSigned(anchorTx,lock,txSigComponent, current +: old,serverScriptPubKey)
   }
 }
 
 /** A payment channel that has been signed by the client, but not signed by the server yet */
 sealed trait PaymentChannelInProgressClientSigned extends PaymentChannelInProgress {
   /** The new payment channel transaction that has the clients digital signature but does not have the servers digital signature yet */
-  def partiallySignedTx: WitnessTransaction = current.transaction
+  def partiallySignedTx: Transaction = current.transaction
 
   def serverSign(privKey: ECPrivateKey, hashType: HashType): Try[PaymentChannelInProgress] = {
     val input : Try[(TransactionInput, Int)] = Try {
@@ -137,67 +136,42 @@ sealed trait PaymentChannelInProgressClientSigned extends PaymentChannelInProgre
       }.get
     }
 
-    val output: Try[(TransactionOutput,Int, EscrowTimeoutScriptPubKey)] = input.map { case (input,index) =>
+    val output: Try[(TransactionOutput,EscrowTimeoutScriptPubKey)] = input.map { case (input,index) =>
       val output = anchorTx.tx.outputs(input.previousOutput.vout.toInt)
-      val asmBytes = partiallySignedTx.witness.witnesses(index).stack.head
-      val cmpct = CompactSizeUInt.calculateCompactSizeUInt(asmBytes)
-      val lock = EscrowTimeoutScriptPubKey(cmpct.bytes ++ asmBytes)
-      (output,input.previousOutput.vout.toInt, lock)
+      val p2shScriptSig = input.scriptSignature.asInstanceOf[P2SHScriptSignature]
+      val lock = p2shScriptSig.redeemScript.asInstanceOf[EscrowTimeoutScriptPubKey]
+      (output,lock)
     }
-    val partialWitness: Try[ScriptWitness] = input.map { case (_,index) =>
-      partiallySignedTx.witness.witnesses(index)
-    }
-    val unsignedWtxSigComponent: Try[(WitnessTxSigComponent, EscrowTimeoutScriptPubKey)] = output.flatMap { case (o,outputIndex,lock) =>
+
+    val unsignedBTxSigComponent: Try[(BaseTxSigComponent, P2SHScriptPubKey)] = output.flatMap { case (o,lock) =>
       input.map { case (_,inputIndex) =>
-        (WitnessTxSigComponent(partiallySignedTx,UInt32(inputIndex),
-          anchorTx.tx.outputs(outputIndex).scriptPubKey.asInstanceOf[WitnessScriptPubKey],
-          Policy.standardScriptVerifyFlags,o.value),lock)
+        (TxSigComponent(partiallySignedTx,UInt32(inputIndex),
+          lock, Policy.standardScriptVerifyFlags),o.scriptPubKey.asInstanceOf[P2SHScriptPubKey])
       }
     }
 
-    val sig: Try[ECDigitalSignature] = unsignedWtxSigComponent.map { case (w,lock) =>
-      WitnessGenerators.csvEscrowTimeoutGenSignature(privKey, lock, w, hashType)
+    val signedTxSigComponent: Try[BaseTxSigComponent] = unsignedBTxSigComponent.flatMap { case (w,lock) =>
+      EscrowTimeoutHelper.serverSign(privKey, lock, w, hashType)
     }
 
-    val fullySignedWitness: Try[ScriptWitness] = partialWitness.flatMap { pw =>
-      sig.map { s =>
-        val redeem = pw.stack.head
-        //.dropRight is to remove the OP_0 null dummy
-        //.tail.tail is to remove the OP_TRUE for OP_IF and the redeemScript
-        val oldSigs: Seq[ECDigitalSignature] = pw.stack.tail.tail.map(ECDigitalSignature(_)).dropRight(1)
-        val sigs: Seq[ECDigitalSignature] = oldSigs ++ Seq(s)
-        val multiSigScriptSig = MultiSignatureScriptSignature(sigs)
-        val escrow = EscrowTimeoutScriptSignature.fromMultiSig(multiSigScriptSig)
-        val minimal = BitcoinScriptUtil.minimalDummy(BitcoinScriptUtil.minimalIfOp(escrow.asm))
-        val signedScriptSigPushOpsRemoved = BitcoinScriptUtil.filterPushOps(minimal).reverse
-        val signedScriptWitness = ScriptWitness(redeem +: (signedScriptSigPushOpsRemoved.map(_.bytes)))
-        signedScriptWitness
-      }
-    }
-
-    val signedWtx: Try[WitnessTxSigComponent] = fullySignedWitness.flatMap { signedWit =>
-      unsignedWtxSigComponent.map { case (u,_) =>
-        WTxSigComponentHelper.createSignedWTxComponent(signedWit,u)._2
-      }
-    }
-    signedWtx.map { wtx =>
-      PaymentChannelInProgress(anchorTx,lock,wtx, old,serverScriptPubKey)
+    signedTxSigComponent.map { s =>
+      PaymentChannelInProgress(anchorTx,lock,s, old,serverScriptPubKey)
     }
   }
 }
 
 sealed trait PaymentChannelClosed extends PaymentChannel {
-  def finalTx: WitnessTxSigComponent
+  def finalTx: BaseTxSigComponent
 
-  def old: Seq[WitnessTxSigComponent]
+  def old: Seq[BaseTxSigComponent]
 }
 
 object PaymentChannelAwaitingAnchorTx {
   private case class PaymentChannelAwaitAnchorTxImpl(anchorTx: AnchorTransaction, lock: EscrowTimeoutScriptPubKey,
                                                      confirmations: Long) extends PaymentChannelAwaitingAnchorTx {
-    private val expectedWitScriptPubKey = WitnessScriptPubKeyV0(lock)
-    require(anchorTx.tx.outputs.exists(_.scriptPubKey == expectedWitScriptPubKey),
-      "One output on the Anchor Transaction has to have a P2WSH(EscrowTimeoutScriptPubKey)")
+    private val expectedScriptPubKey = P2SHScriptPubKey(lock)
+    require(anchorTx.tx.outputs.exists(_.scriptPubKey == expectedScriptPubKey),
+      "One output on the Anchor Transaction has to have a P2SH(EscrowTimeoutScriptPubKey)")
     require(lockedAmount >= Policy.minPaymentChannelAmount, "We need to lock at least " + Policy.minPaymentChannelAmount +
       " in the payment channel, got: " + lockedAmount)
   }
@@ -213,38 +187,38 @@ object PaymentChannelAwaitingAnchorTx {
 
 object PaymentChannelInProgress {
   private case class PaymentChannelInProgressImpl(anchorTx: AnchorTransaction, lock: EscrowTimeoutScriptPubKey,
-                                                  current: WitnessTxSigComponent, old: Seq[WitnessTxSigComponent],
+                                                  current: BaseTxSigComponent, old: Seq[BaseTxSigComponent],
                                                   serverScriptPubKey: ScriptPubKey) extends PaymentChannelInProgress {
     require(current.transaction.outputs.exists(_.scriptPubKey == serverScriptPubKey),
       "One of the scriptPubKeys in the current transaction must pay the server")
   }
 
-  def apply(anchorTx: AnchorTransaction, lock: EscrowTimeoutScriptPubKey, current: WitnessTxSigComponent,
+  def apply(anchorTx: AnchorTransaction, lock: EscrowTimeoutScriptPubKey, current: BaseTxSigComponent,
             serverScriptPubKey: ScriptPubKey): PaymentChannelInProgress = {
     PaymentChannelInProgress(anchorTx,lock,current,Nil,serverScriptPubKey)
   }
 
-  def apply(anchorTx: AnchorTransaction, lock: EscrowTimeoutScriptPubKey, current: WitnessTxSigComponent,
-            old: Seq[WitnessTxSigComponent], serverScriptPubKey: ScriptPubKey): PaymentChannelInProgress = {
+  def apply(anchorTx: AnchorTransaction, lock: EscrowTimeoutScriptPubKey, current: BaseTxSigComponent,
+            old: Seq[BaseTxSigComponent], serverScriptPubKey: ScriptPubKey): PaymentChannelInProgress = {
     PaymentChannelInProgressImpl(anchorTx,lock,current,old,serverScriptPubKey)
   }
 }
 
 object PaymentChannelInProgressClientSigned {
   private case class PaymentChannelInProgressClientSignedImpl(anchorTx: AnchorTransaction, lock: EscrowTimeoutScriptPubKey,
-                                                  current: WitnessTxSigComponent, old: Seq[WitnessTxSigComponent],
+                                                  current: BaseTxSigComponent, old: Seq[BaseTxSigComponent],
                                                   serverScriptPubKey: ScriptPubKey) extends PaymentChannelInProgressClientSigned {
     require(current.transaction.outputs.exists(_.scriptPubKey == serverScriptPubKey),
       "One of the scriptPubKeys in the current transaction must pay the server")
   }
 
-  def apply(anchorTx: AnchorTransaction, lock: EscrowTimeoutScriptPubKey, current: WitnessTxSigComponent,
+  def apply(anchorTx: AnchorTransaction, lock: EscrowTimeoutScriptPubKey, current: BaseTxSigComponent,
             serverScriptPubKey: ScriptPubKey): PaymentChannelInProgressClientSigned = {
     PaymentChannelInProgressClientSigned(anchorTx,lock,current,Nil,serverScriptPubKey)
   }
 
-  def apply(anchorTx: AnchorTransaction, lock: EscrowTimeoutScriptPubKey, current: WitnessTxSigComponent,
-            old: Seq[WitnessTxSigComponent], serverScriptPubKey: ScriptPubKey): PaymentChannelInProgressClientSigned = {
+  def apply(anchorTx: AnchorTransaction, lock: EscrowTimeoutScriptPubKey, current: BaseTxSigComponent,
+            old: Seq[BaseTxSigComponent], serverScriptPubKey: ScriptPubKey): PaymentChannelInProgressClientSigned = {
     PaymentChannelInProgressClientSignedImpl(anchorTx,lock,current,old,serverScriptPubKey)
   }
 
@@ -252,10 +226,10 @@ object PaymentChannelInProgressClientSigned {
 
 object PaymentChannelClosed {
   private case class PaymentChannelClosedImpl(anchorTx: AnchorTransaction, lock: EscrowTimeoutScriptPubKey,
-                                              finalTx: WitnessTxSigComponent, old: Seq[WitnessTxSigComponent], serverScriptPubKey: ScriptPubKey) extends PaymentChannelClosed
+                                              finalTx: BaseTxSigComponent, old: Seq[BaseTxSigComponent], serverScriptPubKey: ScriptPubKey) extends PaymentChannelClosed
 
-  def apply(anchorTx: AnchorTransaction, lock: EscrowTimeoutScriptPubKey, finalTx: WitnessTxSigComponent,
-            old: Seq[WitnessTxSigComponent], serverScriptPubKey: ScriptPubKey): PaymentChannelClosed = {
+  def apply(anchorTx: AnchorTransaction, lock: EscrowTimeoutScriptPubKey, finalTx: BaseTxSigComponent,
+            old: Seq[BaseTxSigComponent], serverScriptPubKey: ScriptPubKey): PaymentChannelClosed = {
     PaymentChannelClosedImpl(anchorTx,lock,finalTx,old,serverScriptPubKey)
   }
 
