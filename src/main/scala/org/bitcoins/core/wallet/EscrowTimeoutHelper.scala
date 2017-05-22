@@ -31,9 +31,9 @@ sealed trait EscrowTimeoutHelper extends BitcoinSLogger {
     val multiSigScriptSig = MultiSignatureScriptSignature(sigs)
     val escrow = EscrowTimeoutScriptSignature.fromMultiSig(multiSigScriptSig)
     val p2shScriptSig = P2SHScriptSignature(escrow, lock)
-    val oldInput = inputs.head
+    val oldInput = inputs(inputIndex.toInt)
     val signedInput = TransactionInput(oldInput.previousOutput, p2shScriptSig, oldInput.sequence)
-    val newInputs = signedInput +: inputs.tail
+    val newInputs = inputs.updated(inputIndex.toInt, signedInput)
     val signedTx = Transaction(TransactionConstants.validLockVersion, newInputs, outputs, TransactionConstants.lockTime)
 
     val signedBTxComponent = TxSigComponent(signedTx, unsignedBTxSigComponent.inputIndex,

@@ -35,10 +35,9 @@ trait ChannelGenerators extends BitcoinSLogger {
     (awaiting,privKeys) <- paymentChannelAwaitingAnchorTx
     //hashType <- CryptoGenerators.hashType
     (s1,_) <- ScriptGenerators.scriptPubKey
-    (s2,_) <- ScriptGenerators.scriptPubKey
     amount = Satoshis.one
-    clientSigned = awaiting.clientSign(s1,s2,amount,privKeys.head,HashType.sigHashSingle).get
-    fullySigned = clientSigned.serverSign(privKeys(1), HashType.sigHashSingle)
+    clientSigned = awaiting.clientSign(s1,amount,privKeys.head).get
+    fullySigned = clientSigned.serverSign(privKeys(1))
   } yield (fullySigned.get,privKeys)
 
 
@@ -49,6 +48,17 @@ trait ChannelGenerators extends BitcoinSLogger {
     inProgress = simulate(runs,old,amount,privKeys.head,privKeys(1))
   } yield (inProgress.get, privKeys)
 
+  /** Generator for a payment channel that opened, simulated, then closed */
+  def paymentChannelClosed: Gen[(PaymentChannelClosed, Seq[ECPrivateKey])] = for {
+    (inProgress, privKeys) <- paymentChannelInProgress
+    (serverScriptPubKey,_) <- ScriptGenerators.scriptPubKey
+    (clientKey,serverKey) = (privKeys.head, privKeys(1))
+    amount = Satoshis.one
+    fee = amount
+    clientSigned = inProgress.clientSign(amount,clientKey)
+    closed = clientSigned.flatMap(_.close(serverScriptPubKey,serverKey,fee))
+  } yield (closed.get,privKeys)
+
 
   def simulate(runs: Int, inProgress: PaymentChannelInProgress, amount: CurrencyUnit,
                        clientKey: ECPrivateKey, serverKey: ECPrivateKey): Try[PaymentChannelInProgress] = {
@@ -56,12 +66,13 @@ trait ChannelGenerators extends BitcoinSLogger {
     def loop(old: Try[PaymentChannelInProgress], remaining: Int): Try[PaymentChannelInProgress] = {
       if (old.isFailure || remaining == 0) old
       else {
-        val clientSigned = old.flatMap(_.clientSign(amount,clientKey,HashType.sigHashSingle))
-        val serverSigned = clientSigned.flatMap(c => c.serverSign(serverKey,HashType.sigHashSingle))
+        val clientSigned = old.flatMap(_.clientSign(amount,clientKey))
+        val serverSigned = clientSigned.flatMap(c => c.serverSign(serverKey))
         loop(serverSigned,remaining - 1)
       }
     }
     loop(Try(inProgress),runs)
+
   }
 }
 
