@@ -87,7 +87,7 @@ sealed trait PaymentChannelInProgress extends PaymentChannel {
   private def clientOutputIndex: Int = 0
 
   /** The output that pays change back to the client */
-  def clientOutput = current.transaction.outputs(outputIndex)
+  def clientOutput: TransactionOutput = current.transaction.outputs(clientOutputIndex)
 
   /** Increments a payment to the server in a [[PaymentChannelInProgress]] */
   def clientSign(amount: CurrencyUnit, privKey: ECPrivateKey): Try[PaymentChannelInProgressClientSigned] = {

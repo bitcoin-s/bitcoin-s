@@ -52,7 +52,7 @@ sealed trait EscrowTimeoutHelper extends BitcoinSLogger {
     (witness, signedWtxSigComponent)
   }
 
-  def serverSign(serverKey: ECPrivateKey, p2sh: P2SHScriptPubKey,
+  def serverSign(serverKey: ECPrivateKey, p2shScriptPubKey: P2SHScriptPubKey,
                  clientSigned: BaseTxSigComponent, hashType: HashType): Try[BaseTxSigComponent] = {
     val signature = TransactionSignatureCreator.createSig(clientSigned, serverKey, hashType)
     val p2sh = clientSigned.scriptSignature.asInstanceOf[P2SHScriptSignature]
@@ -61,11 +61,12 @@ sealed trait EscrowTimeoutHelper extends BitcoinSLogger {
     val allSigs = oldSig.map(o => Seq(o, signature))
     val multiSig = allSigs.map(all => MultiSignatureScriptSignature(all))
     val escrow = multiSig.map(m => EscrowTimeoutScriptSignature.fromMultiSig(m))
-    val input = escrow.map(e => TransactionInput(clientSigned.input, e))
+    val signedP2SH = escrow.map(e => P2SHScriptSignature(e,p2sh.redeemScript))
+    val input = signedP2SH.map(p => TransactionInput(clientSigned.input, p))
     val old = clientSigned.transaction
     val newInputs = input.map(i => clientSigned.transaction.inputs.updated(clientSigned.inputIndex.toInt,i))
     val signedTx = newInputs.map(inputs => Transaction(old.version,inputs,old.outputs,old.lockTime))
-    signedTx.map(tx => TxSigComponent(tx,clientSigned.inputIndex, clientSigned.scriptPubKey, clientSigned.flags))
+    signedTx.map(tx => TxSigComponent(tx,clientSigned.inputIndex, p2shScriptPubKey, clientSigned.flags))
   }
 
 
