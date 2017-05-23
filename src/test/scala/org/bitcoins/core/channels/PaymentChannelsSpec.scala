@@ -40,7 +40,7 @@ class PaymentChannelsSpec extends Properties("PaymentChannelProperties") with Bi
     Prop.forAllNoShrink(ChannelGenerators.freshPaymentChannelInProgress) { case (inProgress,privKeys) =>
       val num = Gen.choose(1,20).sample.get
       val serverScriptPubKey = ScriptGenerators.p2pkhScriptPubKey.sample.get._1
-      val amount = Satoshis.one
+      val amount = Policy.dustThreshold
       val fee = Satoshis(Int64(100))
       val (clientKey,serverKey) = (privKeys.head, privKeys(1))
       val simulated = ChannelGenerators.simulate(num,inProgress,amount,clientKey,serverKey)

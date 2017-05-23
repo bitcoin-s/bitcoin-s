@@ -33,8 +33,14 @@ trait Policy {
   /** The number of confirmations for a payment to be considered as accepted */
   def confirmations: Long = 6
 
-  def minPaymentChannelAmount: CurrencyUnit = Satoshis(Int64(10000))
+  /** Minimum amount of [[org.bitcoins.core.currency.CurrencyUnit]]
+    * lock in a [[org.bitcoins.core.channels.PaymentChannel]]
+    * Currently set to 1 mBTC
+    * */
+  def minPaymentChannelAmount: CurrencyUnit = Satoshis(Int64(1000000))
 
+  /** The minimum amount of satoshis we can spend to an output */
+  def dustThreshold: CurrencyUnit = Satoshis(Int64(1000))
 }
 
 object Policy extends Policy

@@ -165,6 +165,9 @@ sealed trait PaymentChannelInProgressClientSigned extends PaymentChannelInProgre
   def close(serverScriptPubKey: ScriptPubKey, serverPrivKey: ECPrivateKey, fee: CurrencyUnit): Try[PaymentChannelClosed] = {
     val c = clientOutput
     val serverAmount = lockedAmount - c.value - fee
+
+    require(serverAmount >= Policy.dustThreshold, "Server amount does not meet dust threshold")
+
     val serverOutput = TransactionOutput(serverAmount,serverScriptPubKey)
     val outputs = Seq(c,serverOutput)
     val oldTx = current.transaction

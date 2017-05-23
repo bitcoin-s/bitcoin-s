@@ -35,7 +35,7 @@ trait ChannelGenerators extends BitcoinSLogger {
     (awaiting,privKeys) <- paymentChannelAwaitingAnchorTx
     //hashType <- CryptoGenerators.hashType
     (s1,_) <- ScriptGenerators.scriptPubKey
-    amount = Satoshis.one
+    amount = Policy.dustThreshold
     clientSigned = awaiting.clientSign(s1,amount,privKeys.head).get
     fullySigned = clientSigned.serverSign(privKeys(1))
   } yield (fullySigned.get,privKeys)
@@ -44,7 +44,7 @@ trait ChannelGenerators extends BitcoinSLogger {
   def paymentChannelInProgress: Gen[(PaymentChannelInProgress, Seq[ECPrivateKey])] = for {
     (old,privKeys) <- freshPaymentChannelInProgress
     runs <- Gen.choose(1,10)
-    amount = Satoshis.one
+    amount = Policy.dustThreshold
     inProgress = simulate(runs,old,amount,privKeys.head,privKeys(1))
   } yield (inProgress.get, privKeys)
 
@@ -53,7 +53,7 @@ trait ChannelGenerators extends BitcoinSLogger {
     (inProgress, privKeys) <- paymentChannelInProgress
     (serverScriptPubKey,_) <- ScriptGenerators.scriptPubKey
     (clientKey,serverKey) = (privKeys.head, privKeys(1))
-    amount = Satoshis.one
+    amount = Policy.dustThreshold
     fee = amount
     clientSigned = inProgress.clientSign(amount,clientKey)
     closed = clientSigned.flatMap(_.close(serverScriptPubKey,serverKey,fee))
