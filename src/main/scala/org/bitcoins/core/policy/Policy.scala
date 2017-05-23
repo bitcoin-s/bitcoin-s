@@ -41,6 +41,9 @@ trait Policy {
 
   /** The minimum amount of satoshis we can spend to an output */
   def dustThreshold: CurrencyUnit = Satoshis(Int64(1000))
+
+  /** A default fee to use per byte on the bitcoin network */
+  def defaultFee: CurrencyUnit = Satoshis(Int64(50))
 }
 
 object Policy extends Policy
