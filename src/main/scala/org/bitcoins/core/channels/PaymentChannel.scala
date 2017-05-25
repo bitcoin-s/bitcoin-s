@@ -55,7 +55,7 @@ sealed trait PaymentChannelAwaitingAnchorTx extends PaymentChannel {
                        privKey: ECPrivateKey): Try[PaymentChannelInProgressClientSigned] = Try {
     require(confirmations >= Policy.confirmations, "Need " + Policy.confirmations + " confirmations on the anchor tx before " +
       "we can create a payment channel in progress, got " + confirmations + " confirmations")
-    val o1 = TransactionOutput(anchorTx.tx.outputs.head.value - amount, clientScriptPubKey)
+    val o1 = TransactionOutput(lockedAmount - amount, clientScriptPubKey)
     val outputs = Seq(o1)
     val outPoint = TransactionOutPoint(anchorTx.tx.txId, UInt32(outputIndex))
     val i1 = TransactionInput(outPoint,EmptyScriptSignature,TransactionConstants.sequence)
