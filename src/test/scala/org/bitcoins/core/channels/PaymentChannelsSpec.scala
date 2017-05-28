@@ -55,7 +55,7 @@ class PaymentChannelsSpec extends Properties("PaymentChannelProperties") with Bi
 
   def verifyPaymentChannel(p: PaymentChannelClosed, amount: CurrencyUnit, fee: CurrencyUnit): Boolean = {
     @tailrec
-    def loop(last: BaseTxSigComponent, remaining: Seq[BaseTxSigComponent]): Boolean = {
+    def loop(last: TxSigComponent, remaining: Seq[TxSigComponent]): Boolean = {
       if (remaining.isEmpty) true
       else {
         val current = remaining.head
@@ -69,7 +69,8 @@ class PaymentChannelsSpec extends Properties("PaymentChannelProperties") with Bi
         val serverOutputIsValid = if (remaining.size == 1) {
           //check server output
           val serverOutput = current.transaction.outputs(1)
-          val expectedServerAmount = (amount * Satoshis(Int64(p.old.size + 1))) - fee
+          // + Policy.minPaymentChannelAmount is for the first payment to the server
+          val expectedServerAmount = ((amount * Satoshis(Int64(p.old.size))) - fee) + Policy.minPaymentChannelAmount
           expectedServerAmount == serverOutput.value
         } else {
           true

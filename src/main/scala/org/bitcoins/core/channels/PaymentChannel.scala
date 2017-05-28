@@ -55,6 +55,7 @@ sealed trait PaymentChannelAwaitingAnchorTx extends PaymentChannel {
                        privKey: ECPrivateKey): Try[PaymentChannelInProgressClientSigned] = Try {
     require(confirmations >= Policy.confirmations, "Need " + Policy.confirmations + " confirmations on the anchor tx before " +
       "we can create a payment channel in progress, got " + confirmations + " confirmations")
+    require(amount >= Policy.minPaymentChannelAmount, "First payment channel payment amount must be: " + Policy.minPaymentChannelAmount + " got: " + amount)
     val o1 = TransactionOutput(lockedAmount - amount, clientScriptPubKey)
     val outputs = Seq(o1)
     val outPoint = TransactionOutPoint(anchorTx.tx.txId, UInt32(outputIndex))
@@ -131,6 +132,7 @@ sealed trait PaymentChannelInProgressClientSigned extends PaymentChannelInProgre
   /** The new payment channel transaction that has the clients digital signature but does not have the servers digital signature yet */
   def partiallySignedTx: Transaction = current.transaction
 
+  /** Signs the payment channel transaction with the server's [[ECPrivateKey]] */
   def serverSign(privKey: ECPrivateKey): Try[PaymentChannelInProgress] = {
     val input : Try[(TransactionInput, Int)] = Try {
       partiallySignedTx.inputs.zipWithIndex.find { case (i, index) =>
@@ -166,7 +168,7 @@ sealed trait PaymentChannelInProgressClientSigned extends PaymentChannelInProgre
     val c = clientOutput
     val serverAmount = lockedAmount - c.value - fee
 
-    require(serverAmount >= Policy.dustThreshold, "Server amount does not meet dust threshold")
+    val invariant = Try(require(serverAmount >= Policy.dustThreshold, "Server amount does not meet dust threshold"))
 
     val serverOutput = TransactionOutput(serverAmount,serverScriptPubKey)
     val outputs = Seq(c,serverOutput)
@@ -175,13 +177,14 @@ sealed trait PaymentChannelInProgressClientSigned extends PaymentChannelInProgre
     val btxSigComponent = TxSigComponent(updatedTx,current.inputIndex,
       current.scriptPubKey,current.flags)
     val updatedInProgressClientSigned = PaymentChannelInProgressClientSigned(anchorTx,lock,btxSigComponent,old)
-    val serverSigned = updatedInProgressClientSigned.serverSign(serverPrivKey)
+    val serverSigned = invariant.flatMap(_ => updatedInProgressClientSigned.serverSign(serverPrivKey))
     serverSigned.map(s => PaymentChannelClosed(s,serverScriptPubKey))
   }
 }
 
 sealed trait PaymentChannelClosed extends PaymentChannel {
-  def finalTx: BaseTxSigComponent
+  /** This is the [[TxSigComponent]] that will be broadcast to the blockchain */
+  def finalTx: TxSigComponent
 
   def old: Seq[BaseTxSigComponent]
 }
@@ -240,7 +243,10 @@ object PaymentChannelInProgressClientSigned {
 
 object PaymentChannelClosed {
   private case class PaymentChannelClosedImpl(anchorTx: AnchorTransaction, lock: EscrowTimeoutScriptPubKey,
-                                              finalTx: BaseTxSigComponent, old: Seq[BaseTxSigComponent], serverScriptPubKey: ScriptPubKey) extends PaymentChannelClosed
+                                              finalTx: BaseTxSigComponent, old: Seq[BaseTxSigComponent], serverScriptPubKey: ScriptPubKey) extends PaymentChannelClosed {
+    require(finalTx.transaction.outputs.length > 1, "The final transaction on a PaymentChannelClosed must have two or more outputs, " +
+      "one paying the client, and the other paying the server. Got: " + finalTx.transaction.outputs)
+  }
 
   def apply(anchorTx: AnchorTransaction, lock: EscrowTimeoutScriptPubKey, finalTx: BaseTxSigComponent,
             old: Seq[BaseTxSigComponent], serverScriptPubKey: ScriptPubKey): PaymentChannelClosed = {

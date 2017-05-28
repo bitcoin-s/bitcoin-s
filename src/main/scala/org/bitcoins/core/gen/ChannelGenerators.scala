@@ -33,9 +33,8 @@ trait ChannelGenerators extends BitcoinSLogger {
 
   def freshPaymentChannelInProgress: Gen[(PaymentChannelInProgress, Seq[ECPrivateKey])] = for {
     (awaiting,privKeys) <- paymentChannelAwaitingAnchorTx
-    //hashType <- CryptoGenerators.hashType
     (s1,_) <- ScriptGenerators.scriptPubKey
-    amount = Policy.dustThreshold
+    amount = Policy.minPaymentChannelAmount
     clientSigned = awaiting.clientSign(s1,amount,privKeys.head).get
     fullySigned = clientSigned.serverSign(privKeys(1))
   } yield (fullySigned.get,privKeys)
