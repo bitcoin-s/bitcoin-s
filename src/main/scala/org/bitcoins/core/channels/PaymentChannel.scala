@@ -20,6 +20,7 @@ sealed trait PaymentChannel extends BitcoinSLogger {
   /** Commitment transaction initializing the payment channel depositing funds into it. */
   def anchorTx: AnchorTransaction
 
+  /** The index of the output that is the [[EscrowTimeoutScriptPubKey]] in the [[anchorTx]] */
   def outputIndex: Int = {
     val locks = anchorTx.tx.outputs.zipWithIndex.filter {
       case (o, idx) => o.scriptPubKey.isInstanceOf[P2SHScriptPubKey]
@@ -30,13 +31,15 @@ sealed trait PaymentChannel extends BitcoinSLogger {
     require(actualLock == expectedLock, "Incorrect witness scriptPubkey for lock, got: " + actualLock + " expected: " + expectedLock)
     locks.head._2
   }
-
+  /** The [[EscrowTimeoutScriptPubKey]] that needs to be satisfied to spend from the [[anchorTx]] */
   def lock: EscrowTimeoutScriptPubKey
 
   def scriptPubKey: P2SHScriptPubKey = lockingOutput.scriptPubKey.asInstanceOf[P2SHScriptPubKey]
 
+  /** The output that we are spending from in the [[PaymentChannel]] */
   def lockingOutput: TransactionOutput = anchorTx.tx.outputs(outputIndex)
 
+  /** The total value that is locked up in the [[PaymentChannel]] */
   def lockedAmount: CurrencyUnit = lockingOutput.value
 
 }
@@ -78,10 +81,14 @@ sealed trait PaymentChannelAwaitingAnchorTx extends PaymentChannel {
   }
 
 }
-
+/** Represents the state of a PaymentChannel transferring money from the client to the server */
 sealed trait PaymentChannelInProgress extends PaymentChannel {
+  /** The most recent [[TxSigComponent]] in the payment channel */
   def current: BaseTxSigComponent
 
+  /** The previous states of the payment channel.
+    * The first item in the Seq is the most recent [[TxSigComponent]] in the [[PaymentChannel]]
+    */
   def old: Seq[BaseTxSigComponent]
 
   /** The output index that pays change to the client on the spending transaction */
@@ -134,29 +141,11 @@ sealed trait PaymentChannelInProgressClientSigned extends PaymentChannelInProgre
 
   /** Signs the payment channel transaction with the server's [[ECPrivateKey]] */
   def serverSign(privKey: ECPrivateKey): Try[PaymentChannelInProgress] = {
-    val input : Try[(TransactionInput, Int)] = Try {
-      partiallySignedTx.inputs.zipWithIndex.find { case (i, index) =>
-        i.previousOutput.txId == anchorTx.tx.txId
-      }.get
-    }
+    val unsignedBTxSigComponent: BaseTxSigComponent = TxSigComponent(partiallySignedTx,
+      current.inputIndex, lock, Policy.standardScriptVerifyFlags)
 
-    val output: Try[(TransactionOutput,EscrowTimeoutScriptPubKey)] = input.map { case (i,index) =>
-      val output = anchorTx.tx.outputs(i.previousOutput.vout.toInt)
-      val p2shScriptSig = i.scriptSignature.asInstanceOf[P2SHScriptSignature]
-      val lock = p2shScriptSig.redeemScript.asInstanceOf[EscrowTimeoutScriptPubKey]
-      (output,lock)
-    }
-
-    val unsignedBTxSigComponent: Try[(BaseTxSigComponent, P2SHScriptPubKey)] = output.flatMap { case (o,lock) =>
-      input.map { case (_,inputIndex) =>
-        (TxSigComponent(partiallySignedTx,UInt32(inputIndex),
-          lock, Policy.standardScriptVerifyFlags),o.scriptPubKey.asInstanceOf[P2SHScriptPubKey])
-      }
-    }
-
-    val signedTxSigComponent: Try[BaseTxSigComponent] = unsignedBTxSigComponent.flatMap { case (w,lock) =>
-      EscrowTimeoutHelper.serverSign(privKey, lock, w, HashType.sigHashAll)
-    }
+    val signedTxSigComponent: Try[BaseTxSigComponent] = EscrowTimeoutHelper.serverSign(privKey, scriptPubKey,
+      unsignedBTxSigComponent, HashType.sigHashAll)
 
     signedTxSigComponent.map { s =>
       PaymentChannelInProgress(anchorTx,lock,s, old)
