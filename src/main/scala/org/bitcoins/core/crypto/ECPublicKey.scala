@@ -62,7 +62,10 @@ sealed trait ECPublicKey extends BaseECKey with BitcoinSLogger {
   }
 
   /** Checks if the [[ECPublicKey]] is compressed */
-  def isCompressed = bytes.size == 33
+  def isCompressed: Boolean = bytes.size == 33
+
+  /** Checks if the [[ECPublicKey]] is valid according to secp256k1 */
+  def isFullyValid = ECPublicKey.isFullyValid(bytes)
 }
 
 object ECPublicKey extends Factory[ECPublicKey] {
@@ -83,6 +86,13 @@ object ECPublicKey extends Factory[ECPublicKey] {
 
   /** Generates a fresh [[ECPublicKey]] that has not been used before. */
   def freshPublicKey = ECPrivateKey.freshPrivateKey.publicKey
+
+
+  /** Checks if the public key is valid according to secp256k1
+    * Mimics this function in bitcoin core
+    * [[https://github.com/bitcoin/bitcoin/blob/27765b6403cece54320374b37afb01a0cfe571c3/src/pubkey.cpp#L207-L212]]
+    */
+  def isFullyValid(bytes: Seq[Byte]): Boolean = Try(NativeSecp256k1.isValidPubKey(bytes.toArray)).isSuccess
 
 }
 

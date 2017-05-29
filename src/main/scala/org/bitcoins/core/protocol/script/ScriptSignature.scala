@@ -107,7 +107,8 @@ object P2PKHScriptSignature extends ScriptFactory[P2PKHScriptSignature] {
   def isP2PKHScriptSig(asm: Seq[ScriptToken]): Boolean = asm match {
     case List(w : BytesToPushOntoStack, x : ScriptConstant, y : BytesToPushOntoStack,
       z : ScriptConstant) =>
-      !P2SHScriptSignature.isRedeemScript(z)
+      if (ECPublicKey.isFullyValid(z.bytes)) true
+      else !P2SHScriptSignature.isRedeemScript(z)
     case _ => false
   }
 }
