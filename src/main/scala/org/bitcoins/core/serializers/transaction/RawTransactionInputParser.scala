@@ -61,7 +61,7 @@ trait RawTransactionInputParser extends RawBitcoinSerializer[Seq[TransactionInpu
 
     val scriptSigBytes = bytes.slice(outPointBytesSize,bytes.size)
     logger.debug("Scriptsig bytes: " + BitcoinSUtil.encodeHex(scriptSigBytes))
-    val scriptSig : ScriptSignature = RawScriptSignatureParser.read(scriptSigBytes)
+    val scriptSig: ScriptSignature = RawScriptSignatureParser.read(scriptSigBytes)
     logger.debug("Script sig parsed bytes: " + BitcoinSUtil.encodeHex(scriptSig.bytes))
     val sequenceBytesSize = 4
     val endOfScriptSigBytes = outPointBytesSize + scriptSig.bytes.size

@@ -175,9 +175,9 @@ trait TransactionGenerators extends BitcoinSLogger {
     sequence <- NumberGenerator.uInt32s
     amount <- CurrencyUnitGenerator.satoshis
     (scriptSig, scriptPubKey,privKeys) <- ScriptGenerators.signedMultiSigEscrowTimeoutScriptSig(sequence,outputs,amount)
-    (creditingTx,outputIndex) = buildCreditingTransaction(UInt32(2),scriptPubKey,amount)
-    (spendingTx, inputIndex) = buildSpendingTransaction(UInt32(2),creditingTx,scriptSig,outputIndex,
-      TransactionConstants.lockTime,sequence,outputs)
+    (creditingTx,outputIndex) = buildCreditingTransaction(TransactionConstants.validLockVersion,scriptPubKey,amount)
+    (spendingTx, inputIndex) = buildSpendingTransaction(TransactionConstants.validLockVersion,creditingTx,scriptSig,
+      outputIndex, TransactionConstants.lockTime,sequence,outputs)
     txSigComponent = TxSigComponent(spendingTx,inputIndex,scriptPubKey,Policy.standardScriptVerifyFlags)
   } yield txSigComponent
 
@@ -186,8 +186,9 @@ trait TransactionGenerators extends BitcoinSLogger {
   def spendableTimeoutEscrowTimeoutTransaction(outputs: Seq[TransactionOutput]): Gen[TxSigComponent] = for {
     (csvScriptNum,sequence) <- spendableCSVValues
     (scriptSig, scriptPubKey,privKeys) <- ScriptGenerators.timeoutEscrowTimeoutScriptSig(csvScriptNum,sequence,outputs)
-    (creditingTx,outputIndex) = buildCreditingTransaction(UInt32(2),scriptPubKey)
-    (spendingTx, inputIndex) = buildSpendingTransaction(UInt32(2),creditingTx,scriptSig,outputIndex,UInt32.zero,sequence,outputs)
+    (creditingTx,outputIndex) = buildCreditingTransaction(TransactionConstants.validLockVersion,scriptPubKey)
+    (spendingTx, inputIndex) = buildSpendingTransaction(TransactionConstants.validLockVersion,creditingTx,
+      scriptSig,outputIndex,UInt32.zero,sequence,outputs)
     txSigComponent = TxSigComponent(spendingTx,inputIndex,scriptPubKey,Policy.standardScriptVerifyFlags)
   } yield txSigComponent
 
@@ -206,8 +207,8 @@ trait TransactionGenerators extends BitcoinSLogger {
   def unspendableTimeoutEscrowTimeoutTransaction: Gen[TxSigComponent] = for {
     (csvScriptNum, sequence) <- unspendableCSVValues
     (scriptSig, scriptPubKey,privKeys) <- ScriptGenerators.timeoutEscrowTimeoutScriptSig(csvScriptNum,sequence,Nil)
-    (creditingTx,outputIndex) = buildCreditingTransaction(UInt32(2),scriptPubKey)
-    (spendingTx, inputIndex) = buildSpendingTransaction(UInt32(2),creditingTx,scriptSig,outputIndex,
+    (creditingTx,outputIndex) = buildCreditingTransaction(TransactionConstants.validLockVersion,scriptPubKey)
+    (spendingTx, inputIndex) = buildSpendingTransaction(TransactionConstants.validLockVersion,creditingTx,scriptSig,outputIndex,
       TransactionConstants.lockTime,sequence)
     txSigComponent = TxSigComponent(spendingTx,inputIndex,scriptPubKey,Policy.standardScriptVerifyFlags)
   } yield txSigComponent
@@ -218,9 +219,10 @@ trait TransactionGenerators extends BitcoinSLogger {
     (lock,_) <- ScriptGenerators.lockTimeScriptPubKey
     escrow = EscrowTimeoutScriptPubKey(multiSigScriptPubKey,lock)
     multiSigScriptSig <- ScriptGenerators.multiSignatureScriptSignature
-    (creditingTx,outputIndex) = buildCreditingTransaction(UInt32(2),escrow)
+    (creditingTx,outputIndex) = buildCreditingTransaction(TransactionConstants.validLockVersion,escrow)
     escrowScriptSig = EscrowTimeoutScriptSignature.fromMultiSig(multiSigScriptSig)
-    (spendingTx, inputIndex) = buildSpendingTransaction(UInt32(2),creditingTx,escrowScriptSig,outputIndex,TransactionConstants.lockTime,sequence)
+    (spendingTx, inputIndex) = buildSpendingTransaction(TransactionConstants.validLockVersion,creditingTx,
+      escrowScriptSig,outputIndex,TransactionConstants.lockTime,sequence)
     txSigComponent = TxSigComponent(spendingTx,inputIndex,escrow,Policy.standardScriptVerifyFlags)
   } yield txSigComponent
 

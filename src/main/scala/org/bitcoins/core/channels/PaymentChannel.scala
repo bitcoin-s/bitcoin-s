@@ -45,6 +45,7 @@ sealed trait PaymentChannel extends BitcoinSLogger {
 }
 
 sealed trait PaymentChannelAwaitingAnchorTx extends PaymentChannel {
+  /** The number of confirmations on the anchor transaction */
   def confirmations: Long
 
   /** Creates a [[PaymentChannelInProgress]] from this PaymentChannelAwaitingAnchorTx,
@@ -188,6 +189,9 @@ object PaymentChannelAwaitingAnchorTx {
       " in the payment channel, got: " + lockedAmount)
   }
 
+  /** Initializes a payment channel with the given anchor transaction and [[EscrowTimeoutScriptPubKey]]
+    * Assumes that the anchor transaction has zero confirmations
+    */
   def apply(anchorTx: AnchorTransaction, lock: EscrowTimeoutScriptPubKey): Try[PaymentChannelAwaitingAnchorTx] = {
     PaymentChannelAwaitingAnchorTx(anchorTx,lock,0)
   }
@@ -201,6 +205,7 @@ object PaymentChannelInProgress {
   private case class PaymentChannelInProgressImpl(anchorTx: AnchorTransaction, lock: EscrowTimeoutScriptPubKey,
                                                   current: BaseTxSigComponent,
                                                   old: Seq[BaseTxSigComponent]) extends PaymentChannelInProgress
+
 
   def apply(anchorTx: AnchorTransaction, lock: EscrowTimeoutScriptPubKey,
             current: BaseTxSigComponent): PaymentChannelInProgress = {

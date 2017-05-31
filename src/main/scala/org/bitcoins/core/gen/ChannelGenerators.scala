@@ -18,8 +18,9 @@ import scala.util.Try
 /**
   * Created by chris on 4/18/17.
   */
-trait ChannelGenerators extends BitcoinSLogger {
+sealed trait ChannelGenerators extends BitcoinSLogger {
 
+  /** Creates an [[AnchorTransaction]], [[EscrowTimeoutScriptPubKey]] and the [[ECPrivateKey]] need to spend from the SPK */
   def anchorTx: Gen[(AnchorTransaction, EscrowTimeoutScriptPubKey, Seq[ECPrivateKey])] = for {
     (redeemScript,privKeys) <- ScriptGenerators.escrowTimeoutScriptPubKey2Of2
     amount <- CurrencyUnitGenerator.satoshis.suchThat(_ >= Policy.minPaymentChannelAmount)
@@ -27,10 +28,14 @@ trait ChannelGenerators extends BitcoinSLogger {
     (aTx,_) = TransactionGenerators.buildCreditingTransaction(TransactionConstants.validLockVersion,p2sh,amount)
   } yield (AnchorTransaction(aTx),redeemScript,privKeys)
 
+  /** Creates a [[PaymentChannelAwaitingAnchorTx]] and
+    * the private keys needed to spend from the locked output.
+    * This generator assumes that the anchor tx has sufficient confirmations */
   def paymentChannelAwaitingAnchorTx: Gen[(PaymentChannelAwaitingAnchorTx, Seq[ECPrivateKey])] = for {
     (aTx,redeemScript,privKeys) <- anchorTx
   } yield (PaymentChannelAwaitingAnchorTx(aTx,redeemScript,Policy.confirmations).get,privKeys)
 
+  /** A [[PaymentChannelInProgress]] that has paid the server exactly one time */
   def freshPaymentChannelInProgress: Gen[(PaymentChannelInProgress, Seq[ECPrivateKey])] = for {
     (awaiting,privKeys) <- paymentChannelAwaitingAnchorTx
     (s1,_) <- ScriptGenerators.scriptPubKey
@@ -40,6 +45,7 @@ trait ChannelGenerators extends BitcoinSLogger {
   } yield (fullySigned.get,privKeys)
 
 
+  /** A [[PaymentChannelInProgress]] that has paid the server between 1 and 10 times */
   def paymentChannelInProgress: Gen[(PaymentChannelInProgress, Seq[ECPrivateKey])] = for {
     (old,privKeys) <- freshPaymentChannelInProgress
     runs <- Gen.choose(1,10)
@@ -58,7 +64,14 @@ trait ChannelGenerators extends BitcoinSLogger {
     closed = clientSigned.flatMap(_.close(serverScriptPubKey,serverKey,fee))
   } yield (closed.get,privKeys)
 
-
+  /** Simulates the execution of a [[PaymentChannel]]
+    * @param runs the number of times the client pays the server
+    * @param inProgress the [[PaymentChannelInProgress]] to simulate
+    * @param amount the amount we pay to the server every time
+    * @param clientKey key the client uses to sign the payment channel output
+    * @param serverKey key the server uses to sign the payment channel output
+    * @return
+    */
   def simulate(runs: Int, inProgress: PaymentChannelInProgress, amount: CurrencyUnit,
                        clientKey: ECPrivateKey, serverKey: ECPrivateKey): Try[PaymentChannelInProgress] = {
     @tailrec
@@ -71,8 +84,8 @@ trait ChannelGenerators extends BitcoinSLogger {
       }
     }
     loop(Try(inProgress),runs)
-
   }
+
 }
 
 object ChannelGenerators extends ChannelGenerators
