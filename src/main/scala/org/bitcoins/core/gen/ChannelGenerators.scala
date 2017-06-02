@@ -23,39 +23,39 @@ sealed trait ChannelGenerators extends BitcoinSLogger {
   /** Creates an [[AnchorTransaction]], [[EscrowTimeoutScriptPubKey]] and the [[ECPrivateKey]] need to spend from the SPK */
   def anchorTx: Gen[(AnchorTransaction, EscrowTimeoutScriptPubKey, Seq[ECPrivateKey])] = for {
     (redeemScript,privKeys) <- ScriptGenerators.escrowTimeoutScriptPubKey2Of2
-    amount <- CurrencyUnitGenerator.satoshis.suchThat(_ >= Policy.minPaymentChannelAmount)
+    amount <- CurrencyUnitGenerator.satoshis.suchThat(_ >= Policy.minChannelAmount)
     p2sh = P2SHScriptPubKey(redeemScript)
     (aTx,_) = TransactionGenerators.buildCreditingTransaction(TransactionConstants.validLockVersion,p2sh,amount)
   } yield (AnchorTransaction(aTx),redeemScript,privKeys)
 
-  /** Creates a [[PaymentChannelAwaitingAnchorTx]] and
+  /** Creates a [[ChannelAwaitingAnchorTx]] and
     * the private keys needed to spend from the locked output.
     * This generator assumes that the anchor tx has sufficient confirmations */
-  def paymentChannelAwaitingAnchorTx: Gen[(PaymentChannelAwaitingAnchorTx, Seq[ECPrivateKey])] = for {
+  def channelAwaitingAnchorTx: Gen[(ChannelAwaitingAnchorTx, Seq[ECPrivateKey])] = for {
     (aTx,redeemScript,privKeys) <- anchorTx
-  } yield (PaymentChannelAwaitingAnchorTx(aTx,redeemScript,Policy.confirmations).get,privKeys)
+  } yield (ChannelAwaitingAnchorTx(aTx,redeemScript,Policy.confirmations).get,privKeys)
 
-  /** A [[PaymentChannelInProgress]] that has paid the server exactly one time */
-  def freshPaymentChannelInProgress: Gen[(PaymentChannelInProgress, Seq[ECPrivateKey])] = for {
-    (awaiting,privKeys) <- paymentChannelAwaitingAnchorTx
+  /** A [[ChannelInProgress]] that has paid the server exactly one time */
+  def freshChannelInProgress: Gen[(ChannelInProgress, Seq[ECPrivateKey])] = for {
+    (awaiting,privKeys) <- channelAwaitingAnchorTx
     (s1,_) <- ScriptGenerators.scriptPubKey
-    amount = Policy.minPaymentChannelAmount
+    amount = Policy.minChannelAmount
     clientSigned = awaiting.clientSign(s1,amount,privKeys.head).get
     fullySigned = clientSigned.serverSign(privKeys(1))
   } yield (fullySigned.get,privKeys)
 
 
-  /** A [[PaymentChannelInProgress]] that has paid the server between 1 and 10 times */
-  def paymentChannelInProgress: Gen[(PaymentChannelInProgress, Seq[ECPrivateKey])] = for {
-    (old,privKeys) <- freshPaymentChannelInProgress
+  /** A [[ChannelInProgress]] that has paid the server between 1 and 10 times */
+  def channelInProgress: Gen[(ChannelInProgress, Seq[ECPrivateKey])] = for {
+    (old,privKeys) <- freshChannelInProgress
     runs <- Gen.choose(1,10)
     amount = Policy.dustThreshold
     inProgress = simulate(runs,old,amount,privKeys.head,privKeys(1))
   } yield (inProgress.get, privKeys)
 
   /** Generator for a payment channel that opened, simulated, then closed */
-  def paymentChannelClosed: Gen[(PaymentChannelClosed, Seq[ECPrivateKey])] = for {
-    (inProgress, privKeys) <- paymentChannelInProgress
+  def channelClosed: Gen[(ChannelClosed, Seq[ECPrivateKey])] = for {
+    (inProgress, privKeys) <- channelInProgress
     (serverScriptPubKey,_) <- ScriptGenerators.scriptPubKey
     (clientKey,serverKey) = (privKeys.head, privKeys(1))
     amount = Policy.dustThreshold
@@ -64,18 +64,18 @@ sealed trait ChannelGenerators extends BitcoinSLogger {
     closed = clientSigned.flatMap(_.close(serverScriptPubKey,serverKey,fee))
   } yield (closed.get,privKeys)
 
-  /** Simulates the execution of a [[PaymentChannel]]
+  /** Simulates the execution of a [[Channel]]
     * @param runs the number of times the client pays the server
-    * @param inProgress the [[PaymentChannelInProgress]] to simulate
+    * @param inProgress the [[ChannelInProgress]] to simulate
     * @param amount the amount we pay to the server every time
     * @param clientKey key the client uses to sign the payment channel output
     * @param serverKey key the server uses to sign the payment channel output
     * @return
     */
-  def simulate(runs: Int, inProgress: PaymentChannelInProgress, amount: CurrencyUnit,
-                       clientKey: ECPrivateKey, serverKey: ECPrivateKey): Try[PaymentChannelInProgress] = {
+  def simulate(runs: Int, inProgress: ChannelInProgress, amount: CurrencyUnit,
+                       clientKey: ECPrivateKey, serverKey: ECPrivateKey): Try[ChannelInProgress] = {
     @tailrec
-    def loop(old: Try[PaymentChannelInProgress], remaining: Int): Try[PaymentChannelInProgress] = {
+    def loop(old: Try[ChannelInProgress], remaining: Int): Try[ChannelInProgress] = {
       if (old.isFailure || remaining == 0) old
       else {
         val clientSigned = old.flatMap(_.clientSign(amount,clientKey))

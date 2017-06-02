@@ -1,6 +1,6 @@
 package org.bitcoins.core.policy
 
-import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
+import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits, Satoshis}
 import org.bitcoins.core.number.Int64
 import org.bitcoins.core.script.flag._
 
@@ -34,10 +34,10 @@ trait Policy {
   def confirmations: Long = 6
 
   /** Minimum amount of [[org.bitcoins.core.currency.CurrencyUnit]]
-    * lock in a [[org.bitcoins.core.channels.PaymentChannel]]
+    * lock in a [[org.bitcoins.core.channels.Channel]]
     * Currently set to 1 mBTC
     * */
-  def minPaymentChannelAmount: CurrencyUnit = Satoshis(Int64(1000000))
+  def minChannelAmount: CurrencyUnit = CurrencyUnits.oneMBTC
 
   /** The minimum amount of satoshis we can spend to an output */
   def dustThreshold: CurrencyUnit = Satoshis(Int64(1000))

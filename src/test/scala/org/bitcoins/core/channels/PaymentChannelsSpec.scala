@@ -19,10 +19,10 @@ import scala.util.Try
 /**
   * Created by chris on 4/18/17.
   */
-class PaymentChannelsSpec extends Properties("PaymentChannelProperties") with BitcoinSLogger {
+class ChannelsSpec extends Properties("ChannelProperties") with BitcoinSLogger {
 
   property("spend a anchor transaction with the first spendingTx in a payment channel") = {
-    Prop.forAllNoShrink(ChannelGenerators.freshPaymentChannelInProgress) { case (inProgress,_) =>
+    Prop.forAllNoShrink(ChannelGenerators.freshChannelInProgress) { case (inProgress,_) =>
       val p = ScriptProgram(inProgress.current)
       val result = ScriptInterpreter.run(p)
       result == ScriptOk
@@ -30,14 +30,14 @@ class PaymentChannelsSpec extends Properties("PaymentChannelProperties") with Bi
   }
 
   property("fail to increment a payment channel when the values are larger than the locked output") = {
-    Prop.forAllNoShrink(ChannelGenerators.freshPaymentChannelInProgress) { case (inProgress,privKeys) =>
+    Prop.forAllNoShrink(ChannelGenerators.freshChannelInProgress) { case (inProgress,privKeys) =>
       val inc = inProgress.clientSign(inProgress.lockedAmount + Satoshis.one, privKeys.head)
       inc.isFailure
     }
   }
 
   property("increment a payment channel, then close it") = {
-    Prop.forAllNoShrink(ChannelGenerators.freshPaymentChannelInProgress) { case (inProgress,privKeys) =>
+    Prop.forAllNoShrink(ChannelGenerators.freshChannelInProgress) { case (inProgress,privKeys) =>
       val num = Gen.choose(1,20).sample.get
       val serverScriptPubKey = ScriptGenerators.p2pkhScriptPubKey.sample.get._1
       val amount = Policy.dustThreshold
@@ -46,14 +46,14 @@ class PaymentChannelsSpec extends Properties("PaymentChannelProperties") with Bi
       val simulated = ChannelGenerators.simulate(num,inProgress,amount,clientKey,serverKey)
       val clientSigned = simulated.flatMap(_.clientSign(amount,clientKey))
       val closedTry = clientSigned.flatMap(_.close(serverScriptPubKey,serverKey,fee))
-      val result = closedTry.map(closed => verifyPaymentChannel(closed,amount,fee))
+      val result = closedTry.map(closed => verifyChannel(closed,amount,fee))
       if (result.isFailure) {
         throw result.failed.get
       } else result.get
     }
   }
 
-  def verifyPaymentChannel(p: PaymentChannelClosed, amount: CurrencyUnit, fee: CurrencyUnit): Boolean = {
+  def verifyChannel(p: ChannelClosed, amount: CurrencyUnit, fee: CurrencyUnit): Boolean = {
     @tailrec
     def loop(last: TxSigComponent, remaining: Seq[TxSigComponent]): Boolean = {
       if (remaining.isEmpty) true
@@ -69,8 +69,8 @@ class PaymentChannelsSpec extends Properties("PaymentChannelProperties") with Bi
         val serverOutputIsValid = if (remaining.size == 1) {
           //check server output
           val serverOutput = current.transaction.outputs(1)
-          // + Policy.minPaymentChannelAmount is for the first payment to the server
-          val expectedServerAmount = ((amount * Satoshis(Int64(p.old.size))) - fee) + Policy.minPaymentChannelAmount
+          // + Policy.minChannelAmount is for the first payment to the server
+          val expectedServerAmount = ((amount * Satoshis(Int64(p.old.size))) - fee) + Policy.minChannelAmount
           expectedServerAmount == serverOutput.value
         } else {
           true
