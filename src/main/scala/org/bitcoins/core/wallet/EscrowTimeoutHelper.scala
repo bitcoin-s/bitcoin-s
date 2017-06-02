@@ -17,8 +17,8 @@ import scala.util.Try
   */
 sealed trait EscrowTimeoutHelper extends BitcoinSLogger {
 
-  /** Signs a [[org.bitcoins.core.protocol.transaction.WitnessTransaction]] with the given private key
-    * This means the WitnessTransaction is partially signed, we need to send the transaction to
+  /** Signs a [[org.bitcoins.core.protocol.transaction.Transaction]] with the given private key
+    * This will result in a Transaction that is partially signed, we need to send the transaction to
     * the server to be fully signed
     * */
   def clientSign(inputs: Seq[TransactionInput], outputs: Seq[TransactionOutput], inputIndex: UInt32, privKey: ECPrivateKey,
@@ -41,6 +41,8 @@ sealed trait EscrowTimeoutHelper extends BitcoinSLogger {
     signedBTxComponent
   }
 
+  /** Helper function to build a [[org.bitcoins.core.protocol.transaction.TransactionWitness]]
+    * for an [[EscrowTimeoutScriptPubKey]] */
   def buildEscrowTimeoutScriptWitness(signedScriptSig: EscrowTimeoutScriptSignature,
                                       scriptPubKey: EscrowTimeoutScriptPubKey,
                                       unsignedWTxSigComponent: WitnessTxSigComponent): (TransactionWitness, WitnessTxSigComponent) = {
@@ -52,6 +54,7 @@ sealed trait EscrowTimeoutHelper extends BitcoinSLogger {
     (witness, signedWtxSigComponent)
   }
 
+  /** Signs the partially signed [[org.bitcoins.core.crypto.BaseTxSigComponent]] with the server's private key */
   def serverSign(serverKey: ECPrivateKey, p2shScriptPubKey: P2SHScriptPubKey,
                  clientSigned: BaseTxSigComponent, hashType: HashType): Try[BaseTxSigComponent] = {
     val signature = TransactionSignatureCreator.createSig(clientSigned, serverKey, hashType)
@@ -68,9 +71,6 @@ sealed trait EscrowTimeoutHelper extends BitcoinSLogger {
     val signedTx = newInputs.map(inputs => Transaction(old.version,inputs,old.outputs,old.lockTime))
     signedTx.map(tx => TxSigComponent(tx,clientSigned.inputIndex, p2shScriptPubKey, clientSigned.flags))
   }
-
-
-
 }
 
 object EscrowTimeoutHelper extends EscrowTimeoutHelper

@@ -1,6 +1,7 @@
 package org.bitcoins.core.channels
 
-import org.bitcoins.core.currency.Satoshis
+import org.bitcoins.core.crypto.ECPrivateKey
+import org.bitcoins.core.currency.{CurrencyUnits, Satoshis}
 import org.bitcoins.core.gen.ScriptGenerators
 import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script.P2SHScriptPubKey
@@ -16,11 +17,11 @@ class ChannelTest extends FlatSpec with MustMatchers {
     val lock = ScriptGenerators.escrowTimeoutScriptPubKey2Of2.sample.get._1
     val p2sh = P2SHScriptPubKey(lock)
     val amount = Policy.minPaymentChannelAmount - Satoshis.one
-    val output = TransactionOutput(amount,p2sh)
+    val output = TransactionOutput(amount, p2sh)
     val tx = Transaction(TransactionConstants.version, Nil, Seq(output), TransactionConstants.lockTime)
     val aTx = AnchorTransaction(tx)
-    val chan = PaymentChannelAwaitingAnchorTx(aTx,lock)
-    chan.isFailure must be (true)
+    val chan = PaymentChannelAwaitingAnchorTx(aTx, lock)
+    chan.isFailure must be(true)
   }
 
   it must "fail to create a payment channel if one of the outputs scriptPubKey's is not P2SH(lock)" in {
@@ -28,24 +29,53 @@ class ChannelTest extends FlatSpec with MustMatchers {
     val randomScript = ScriptGenerators.scriptPubKey.sample.get._1
     val p2sh = P2SHScriptPubKey(randomScript)
     val amount = Policy.minPaymentChannelAmount
-    val output = TransactionOutput(amount,p2sh)
+    val output = TransactionOutput(amount, p2sh)
     val tx = Transaction(TransactionConstants.version, Nil, Seq(output), TransactionConstants.lockTime)
     val aTx = AnchorTransaction(tx)
-    val chan = PaymentChannelAwaitingAnchorTx(aTx,lock)
-    chan.isFailure must be (true)
+    val chan = PaymentChannelAwaitingAnchorTx(aTx, lock)
+    chan.isFailure must be(true)
+
+    //it must also fail if we do not have a p2sh output at all
+    val output2 = TransactionOutput(amount, randomScript)
+    val tx2 = Transaction(TransactionConstants.version, Nil, Seq(output2), TransactionConstants.lockTime)
+    val aTx2 = AnchorTransaction(tx2)
+    val chan2 = PaymentChannelAwaitingAnchorTx(aTx2, lock)
+    chan2.isFailure must be(true)
   }
 
   it must "fail to clientSign ChannelAwaitingAnchorTx if we do not have enough confs" in {
     val clientSPK = ScriptGenerators.scriptPubKey.sample.get._1
-    val (lock,keys) = ScriptGenerators.escrowTimeoutScriptPubKey2Of2.sample.get
+    val (lock, keys) = ScriptGenerators.escrowTimeoutScriptPubKey2Of2.sample.get
     val p2sh = P2SHScriptPubKey(lock)
     val amount = Policy.minPaymentChannelAmount
-    val output = TransactionOutput(amount,p2sh)
+    val output = TransactionOutput(amount, p2sh)
     val tx = Transaction(TransactionConstants.version, Nil, Seq(output), TransactionConstants.lockTime)
     val aTx = AnchorTransaction(tx)
-    val chan = PaymentChannelAwaitingAnchorTx(aTx,lock)
-    val clientSigned = chan.get.clientSign(clientSPK,amount,keys.head)
-    clientSigned.isFailure must be (true)
+    val chan = PaymentChannelAwaitingAnchorTx(aTx, lock)
+    val clientSigned = chan.get.clientSign(clientSPK, amount, keys.head)
+    clientSigned.isFailure must be(true)
   }
 
+  it must "fail to client sign a payment channel in progress if the value is more than the locked amount" in {
+    val (inProgress,keys) = validInProgress
+    val i = inProgress.clientSign(inProgress.lockedAmount, keys.head)
+    i.isFailure must be (true)
+  }
+
+
+
+  private def validInProgress: (PaymentChannelInProgress, Seq[ECPrivateKey]) = {
+    val clientSPK = ScriptGenerators.scriptPubKey.sample.get._1
+    val (lock,keys) = ScriptGenerators.escrowTimeoutScriptPubKey2Of2.sample.get
+    val p2sh = P2SHScriptPubKey(lock)
+    val amount = CurrencyUnits.oneBTC
+    val output = TransactionOutput(amount, p2sh)
+    val tx = Transaction(TransactionConstants.version, Nil, Seq(output), TransactionConstants.lockTime)
+    val aTx = AnchorTransaction(tx)
+    val chan = PaymentChannelAwaitingAnchorTx(aTx, lock, Policy.confirmations)
+    val paymentAmount = Policy.minPaymentChannelAmount
+    val clientSign = chan.flatMap(_.clientSign(clientSPK,paymentAmount,keys.head))
+    val i = clientSign.flatMap(_.serverSign(keys(1)))
+    (i.get,keys)
+  }
 }
