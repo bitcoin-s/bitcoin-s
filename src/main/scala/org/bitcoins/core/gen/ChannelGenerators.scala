@@ -20,13 +20,13 @@ import scala.util.Try
   */
 sealed trait ChannelGenerators extends BitcoinSLogger {
 
-  /** Creates an [[AnchorTransaction]], [[EscrowTimeoutScriptPubKey]] and the [[ECPrivateKey]] need to spend from the SPK */
-  def anchorTx: Gen[(AnchorTransaction, EscrowTimeoutScriptPubKey, Seq[ECPrivateKey])] = for {
+  /** Creates an [[Transaction]], [[EscrowTimeoutScriptPubKey]] and the [[ECPrivateKey]] need to spend from the SPK */
+  def anchorTx: Gen[(Transaction, EscrowTimeoutScriptPubKey, Seq[ECPrivateKey])] = for {
     (redeemScript,privKeys) <- ScriptGenerators.escrowTimeoutScriptPubKey2Of2
     amount <- CurrencyUnitGenerator.satoshis.suchThat(_ >= Policy.minChannelAmount)
     p2sh = P2SHScriptPubKey(redeemScript)
     (aTx,_) = TransactionGenerators.buildCreditingTransaction(TransactionConstants.validLockVersion,p2sh,amount)
-  } yield (AnchorTransaction(aTx),redeemScript,privKeys)
+  } yield (aTx,redeemScript,privKeys)
 
   /** Creates a [[ChannelAwaitingAnchorTx]] and
     * the private keys needed to spend from the locked output.

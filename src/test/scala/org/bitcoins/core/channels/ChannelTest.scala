@@ -19,8 +19,7 @@ class ChannelTest extends FlatSpec with MustMatchers {
     val amount = Policy.minChannelAmount - Satoshis.one
     val output = TransactionOutput(amount, p2sh)
     val tx = Transaction(TransactionConstants.version, Nil, Seq(output), TransactionConstants.lockTime)
-    val aTx = AnchorTransaction(tx)
-    val chan = ChannelAwaitingAnchorTx(aTx, lock)
+    val chan = ChannelAwaitingAnchorTx(tx, lock)
     chan.isFailure must be(true)
   }
 
@@ -31,15 +30,13 @@ class ChannelTest extends FlatSpec with MustMatchers {
     val amount = Policy.minChannelAmount
     val output = TransactionOutput(amount, p2sh)
     val tx = Transaction(TransactionConstants.version, Nil, Seq(output), TransactionConstants.lockTime)
-    val aTx = AnchorTransaction(tx)
-    val chan = ChannelAwaitingAnchorTx(aTx, lock)
+    val chan = ChannelAwaitingAnchorTx(tx, lock)
     chan.isFailure must be(true)
 
     //it must also fail if we do not have a p2sh output at all
     val output2 = TransactionOutput(amount, randomScript)
     val tx2 = Transaction(TransactionConstants.version, Nil, Seq(output2), TransactionConstants.lockTime)
-    val aTx2 = AnchorTransaction(tx2)
-    val chan2 = ChannelAwaitingAnchorTx(aTx2, lock)
+    val chan2 = ChannelAwaitingAnchorTx(tx2, lock)
     chan2.isFailure must be(true)
   }
 
@@ -50,8 +47,7 @@ class ChannelTest extends FlatSpec with MustMatchers {
     val amount = Policy.minChannelAmount
     val output = TransactionOutput(amount, p2sh)
     val tx = Transaction(TransactionConstants.version, Nil, Seq(output), TransactionConstants.lockTime)
-    val aTx = AnchorTransaction(tx)
-    val chan = ChannelAwaitingAnchorTx(aTx, lock)
+    val chan = ChannelAwaitingAnchorTx(tx, lock)
     val clientSigned = chan.get.clientSign(clientSPK, amount, keys.head)
     clientSigned.isFailure must be(true)
   }
@@ -60,6 +56,35 @@ class ChannelTest extends FlatSpec with MustMatchers {
     val (inProgress,keys) = validInProgress
     val i = inProgress.clientSign(inProgress.lockedAmount, keys.head)
     i.isFailure must be (true)
+  }
+
+  it must "be valid for the server to receive all of the money when a payment channel closes" in {
+    val clientSPK = ScriptGenerators.scriptPubKey.sample.get._1
+    val serverSPK = ScriptGenerators.scriptPubKey.sample.get._1
+    val (lock,keys) = ScriptGenerators.escrowTimeoutScriptPubKey2Of2.sample.get
+    val p2sh = P2SHScriptPubKey(lock)
+    val amount = CurrencyUnits.oneBTC
+    val output = TransactionOutput(amount, p2sh)
+    val tx = Transaction(TransactionConstants.version, Nil, Seq(output), TransactionConstants.lockTime)
+    val chan = ChannelAwaitingAnchorTx(tx, lock, Policy.confirmations)
+    val inProgress = chan.flatMap(_.clientSign(clientSPK,amount,keys.head))
+    val closed = inProgress.flatMap(_.close(serverSPK,keys(1),CurrencyUnits.zero))
+    closed.isSuccess must be (true)
+  }
+
+  it must "fail to close the payment channel if the payment channel's fee is larger than the locked amount" in {
+    val clientSPK = ScriptGenerators.scriptPubKey.sample.get._1
+    val serverSPK = ScriptGenerators.scriptPubKey.sample.get._1
+    val (lock,keys) = ScriptGenerators.escrowTimeoutScriptPubKey2Of2.sample.get
+    val p2sh = P2SHScriptPubKey(lock)
+    val amount = CurrencyUnits.oneBTC
+    val output = TransactionOutput(amount, p2sh)
+    val tx = Transaction(TransactionConstants.version, Nil, Seq(output), TransactionConstants.lockTime)
+    val chan = ChannelAwaitingAnchorTx(tx, lock, Policy.confirmations)
+    val inProgress = chan.flatMap(_.clientSign(clientSPK,amount,keys.head))
+    //Note the fee here, we try and spend too much money
+    val closed = inProgress.flatMap(_.close(serverSPK,keys(1), CurrencyUnits.oneBTC + Satoshis.one))
+    closed.isFailure must be (true)
   }
 
 
@@ -71,8 +96,7 @@ class ChannelTest extends FlatSpec with MustMatchers {
     val amount = CurrencyUnits.oneBTC
     val output = TransactionOutput(amount, p2sh)
     val tx = Transaction(TransactionConstants.version, Nil, Seq(output), TransactionConstants.lockTime)
-    val aTx = AnchorTransaction(tx)
-    val chan = ChannelAwaitingAnchorTx(aTx, lock, Policy.confirmations)
+    val chan = ChannelAwaitingAnchorTx(tx, lock, Policy.confirmations)
     val paymentAmount = Policy.minChannelAmount
     val clientSign = chan.flatMap(_.clientSign(clientSPK,paymentAmount,keys.head))
     val i = clientSign.flatMap(_.serverSign(keys(1)))
