@@ -1,5 +1,7 @@
 package org.bitcoins.core.policy
 
+import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits, Satoshis}
+import org.bitcoins.core.number.Int64
 import org.bitcoins.core.script.flag._
 
 /**
@@ -18,7 +20,7 @@ trait Policy {
    * Failing one of these tests may trigger a DoS ban - see CheckInputs() for
    * details.
    */
-  def mandatoryScriptVerifyFlags  : Seq[ScriptFlag] = Seq(ScriptVerifyP2SH)
+  def mandatoryScriptVerifyFlags: Seq[ScriptFlag] = Seq(ScriptVerifyP2SH)
 
   /** The default script verify flags used to validate the blockchain
    * and bitcoin transactions */
@@ -28,6 +30,20 @@ trait Policy {
     ScriptVerifyLowS, ScriptVerifyWitness, ScriptVerifyMinimalIf, ScriptVerifyNullFail,
     ScriptVerifyNullDummy, ScriptVerifyWitnessPubKeyType, ScriptVerifyDiscourageUpgradableWitnessProgram)
 
+  /** The number of confirmations for a payment to be considered as accepted */
+  def confirmations: Long = 6
+
+  /** Minimum amount of [[org.bitcoins.core.currency.CurrencyUnit]]
+    * lock in a [[org.bitcoins.core.channels.Channel]]
+    * Currently set to 1 mBTC
+    * */
+  def minChannelAmount: CurrencyUnit = CurrencyUnits.oneMBTC
+
+  /** The minimum amount of satoshis we can spend to an output */
+  def dustThreshold: CurrencyUnit = Satoshis(Int64(1000))
+
+  /** A default fee to use per byte on the bitcoin network */
+  def defaultFee: CurrencyUnit = Satoshis(Int64(50))
 }
 
 object Policy extends Policy

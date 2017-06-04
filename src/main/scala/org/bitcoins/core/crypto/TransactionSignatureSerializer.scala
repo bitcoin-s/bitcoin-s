@@ -293,7 +293,6 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
 
   /** Removes [[OP_CODESEPARATOR]] operations then returns the script. */
   def removeOpCodeSeparators(script : Seq[ScriptToken]) : Seq[ScriptToken] = {
-    logger.debug("Tokens: " + script)
     if (script.contains(OP_CODESEPARATOR)) {
       //TODO: This needs to be tested
       val scriptWithoutOpCodeSeparators : Seq[ScriptToken] = script.filterNot(_ == OP_CODESEPARATOR)

@@ -97,12 +97,14 @@ object Bitcoins extends BaseNumbers[Bitcoins] {
 
 
 object CurrencyUnits {
-  def zero: CurrencyUnit = Satoshis.zero
-  def negativeSatoshi = Satoshis(Int64(-1))
+
   /** The number you need to multiply BTC by to get it's satoshis */
-  def btcToSatoshiScalar: Long = 100000000
-  def satoshisToBTCScalar: BigDecimal = BigDecimal(1.0) / btcToSatoshiScalar
-  def oneBTC: CurrencyUnit = Satoshis(Int64(btcToSatoshiScalar))
+  val btcToSatoshiScalar: Long = 100000000
+  val satoshisToBTCScalar: BigDecimal = BigDecimal(1.0) / btcToSatoshiScalar
+  val oneBTC: CurrencyUnit = Satoshis(Int64(btcToSatoshiScalar))
+  val oneMBTC: CurrencyUnit = Satoshis(Int64(btcToSatoshiScalar / 1000))
+  val zero: CurrencyUnit = Satoshis.zero
+  val negativeSatoshi = Satoshis(Int64(-1))
 
   def toSatoshis(unit : CurrencyUnit): Satoshis = unit match {
     case b: Bitcoins => b.satoshis

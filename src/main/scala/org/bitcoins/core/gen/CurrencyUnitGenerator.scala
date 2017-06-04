@@ -1,6 +1,6 @@
 package org.bitcoins.core.gen
 
-import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit, Satoshis}
+import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit, CurrencyUnits, Satoshis}
 import org.scalacheck.Gen
 
 /**
@@ -17,6 +17,8 @@ trait CurrencyUnitGenerator {
   } yield Bitcoins(sat)
 
   def currencyUnit: Gen[CurrencyUnit] = Gen.oneOf(satoshis,bitcoins)
+
+  def positiveSatoshis: Gen[Satoshis] = satoshis.suchThat(_ >= CurrencyUnits.zero)
 
 }
 

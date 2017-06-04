@@ -47,6 +47,13 @@ trait CryptoGenerators {
     keysAndRequiredSigs <- privateKeySeqWithRequiredSigs(num)
   } yield keysAndRequiredSigs
 
+  /** A generator with 7 or less private keys -- useful for creating smaller scripts */
+  def smallPrivateKeySeqWithRequiredSigs: Gen[(Seq[ECPrivateKey], Int)] = for {
+    num <- Gen.choose(0,7)
+    keysAndRequiredSigs <- privateKeySeqWithRequiredSigs(num)
+  } yield keysAndRequiredSigs
+
+
   /**
     * Generates a random public key
     * @return
