@@ -306,9 +306,9 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
           //with a witness scriptPubKey
           script
       }
-    case  _ : P2PKHScriptPubKey | _ : P2PKScriptPubKey | _ : MultiSignatureScriptPubKey |
-         _ : NonStandardScriptPubKey | _ : CLTVScriptPubKey | _ : CSVScriptPubKey | _ : WitnessCommitment | EmptyScriptPubKey =>
-      script
+    case _: P2PKHScriptPubKey | _: P2PKScriptPubKey | _: MultiSignatureScriptPubKey
+         | _: NonStandardScriptPubKey | _: CLTVScriptPubKey | _: CSVScriptPubKey
+         | _: WitnessCommitment | _: EscrowTimeoutScriptPubKey | EmptyScriptPubKey => script
   }
 
   /** Removes the given [[ECDigitalSignature]] from the list of [[ScriptToken]] if it exists. */
@@ -354,7 +354,7 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
     case Right(_) => Nil //error
   }
 
-  /** Casts the given script token to a boolean value
+ /** Casts the given script token to a boolean value
     * Mimics this function inside of Bitcoin Core
     * [[https://github.com/bitcoin/bitcoin/blob/8c1dbc5e9ddbafb77e60e8c4e6eb275a3a76ac12/src/script/interpreter.cpp#L38]]
     * All bytes in the byte vector must be zero, unless it is the last byte, which can be 0 or 0x80 (negative zero)
@@ -367,6 +367,24 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
         byteNotZero && lastByteNotNegativeZero
     }
   }
+
+
+  /** Since witnesses are not run through the interpreter, replace OP_0/OP_1 with ScriptNumber.zero/ScriptNumber.one */
+  def minimalIfOp(asm: Seq[ScriptToken]): Seq[ScriptToken] = {
+    if (asm.last == OP_0) {
+      asm.dropRight(1) ++ Seq(ScriptNumber.zero)
+    } else if (asm.last == OP_1) {
+      asm.dropRight(1) ++ Seq(ScriptNumber.one)
+    } else throw new IllegalArgumentException("EscrowTimeoutScriptSig must end with OP_0 or OP_1")
+
+  }
+
+  /** Replaces the OP_0 dummy for OP_CHECKMULTISIG with ScriptNumber.zero */
+  def minimalDummy(asm: Seq[ScriptToken]): Seq[ScriptToken] = {
+    if (asm.head == OP_0) ScriptNumber.zero +: asm.tail
+    else asm
+  }
+
 }
 
 object BitcoinScriptUtil extends BitcoinScriptUtil

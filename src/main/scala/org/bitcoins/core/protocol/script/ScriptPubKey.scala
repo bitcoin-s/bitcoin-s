@@ -7,7 +7,7 @@ import org.bitcoins.core.protocol.blockchain.Block
 import org.bitcoins.core.script.ScriptSettings
 import org.bitcoins.core.script.bitwise.{OP_EQUAL, OP_EQUALVERIFY}
 import org.bitcoins.core.script.constant.{BytesToPushOntoStack, _}
-import org.bitcoins.core.script.control.OP_RETURN
+import org.bitcoins.core.script.control.{OP_ELSE, OP_ENDIF, OP_IF, OP_RETURN}
 import org.bitcoins.core.script.crypto.{OP_CHECKMULTISIG, OP_CHECKMULTISIGVERIFY, OP_CHECKSIG, OP_HASH160}
 import org.bitcoins.core.script.locktime.{OP_CHECKLOCKTIMEVERIFY, OP_CHECKSEQUENCEVERIFY}
 import org.bitcoins.core.script.reserved.UndefinedOP_NOP
@@ -305,16 +305,9 @@ object P2PKScriptPubKey extends ScriptFactory[P2PKScriptPubKey] {
 
 }
 
-/**
-  * Represents a scriptPubKey that contains OP_CHECKLOCKTIMEVERIFY.
-  * Adds an absolute/defined locktime condition to any scriptPubKey.
-  * [[https://github.com/bitcoin/bips/blob/master/bip-0065.mediawiki]]
-  * Format: <locktime> OP_CLTV OP_DROP <scriptPubKey>
-  */
-sealed trait CLTVScriptPubKey extends ScriptPubKey {
-
-  /** Determines the nested ScriptPubKey inside the CLTVScriptPubKey */
-  def scriptPubKeyAfterCLTV : ScriptPubKey = {
+sealed trait LockTimeScriptPubKey extends ScriptPubKey {
+  /** Determines the nested ScriptPubKey inside the LockTimeScriptPubKey */
+  def nestedScriptPubKey : ScriptPubKey = {
     val bool : Boolean = asm.head.isInstanceOf[ScriptNumberOperation]
     bool match {
       case true => ScriptPubKey(asm.slice(3, asm.length))
@@ -322,16 +315,42 @@ sealed trait CLTVScriptPubKey extends ScriptPubKey {
     }
   }
 
-  /** The absolute CLTV-LockTime value (i.e. the output will remain unspendable until this timestamp or block height */
+  /** The relative locktime value (i.e. the amount of time the output should remain unspendable) */
   def locktime : ScriptNumber = {
     asm.head match {
       case scriptNumOp: ScriptNumberOperation => ScriptNumber(scriptNumOp.underlying)
-      case pushBytes : BytesToPushOntoStack => ScriptNumber(asm(1).hex)
-      case x @ (_ : ScriptConstant | _ : ScriptOperation) => throw new IllegalArgumentException("In a CLTVScriptPubKey, " +
+      case _: BytesToPushOntoStack => ScriptNumber(asm(1).hex)
+      case x @ (_ : ScriptConstant | _ : ScriptOperation) => throw new IllegalArgumentException("In a LockTimeScriptPubKey, " +
         "the first asm must be either a ScriptNumberOperation (i.e. OP_5), or the BytesToPushOntoStack for the proceeding ScriptConstant.")
     }
   }
 }
+
+object LockTimeScriptPubKey extends ScriptFactory[LockTimeScriptPubKey] {
+
+  override def fromBytes(bytes: Seq[Byte]): LockTimeScriptPubKey = {
+    val asm = RawScriptPubKeyParser.read(bytes).asm
+    fromAsm(asm)
+  }
+  def fromAsm(asm: Seq[ScriptToken]): LockTimeScriptPubKey = {
+    require(isValidLockTimeScriptPubKey(asm))
+    if (asm.contains(OP_CHECKLOCKTIMEVERIFY)) CLTVScriptPubKey(asm)
+    else if (asm.contains(OP_CHECKSEQUENCEVERIFY)) CSVScriptPubKey(asm)
+    else throw new IllegalArgumentException("Given asm was not a LockTimeScriptPubKey, got: " + asm)
+  }
+
+  def isValidLockTimeScriptPubKey(asm: Seq[ScriptToken]): Boolean = {
+    CLTVScriptPubKey.isCLTVScriptPubKey(asm) || CSVScriptPubKey.isCSVScriptPubKey(asm)
+  }
+}
+
+/**
+  * Represents a scriptPubKey that contains OP_CHECKLOCKTIMEVERIFY.
+  * Adds an absolute/defined locktime condition to any scriptPubKey.
+  * [[https://github.com/bitcoin/bips/blob/master/bip-0065.mediawiki]]
+  * Format: <locktime> OP_CLTV OP_DROP <scriptPubKey>
+  */
+sealed trait CLTVScriptPubKey extends LockTimeScriptPubKey
 
 object CLTVScriptPubKey extends ScriptFactory[CLTVScriptPubKey] {
   private case class CLTVScriptPubKeyImpl(hex : String) extends CLTVScriptPubKey
@@ -402,28 +421,7 @@ object CLTVScriptPubKey extends ScriptFactory[CLTVScriptPubKey] {
   * https://github.com/bitcoin/bips/blob/master/bip-0112.mediawiki
   * Format: <locktime> OP_CSV OP_DROP <scriptPubKey>
   */
-sealed trait CSVScriptPubKey extends ScriptPubKey {
-
-  /** Determines the nested ScriptPubKey inside the CSVScriptPubKey */
-  def scriptPubKeyAfterCSV : ScriptPubKey = {
-    val bool : Boolean = asm.head.isInstanceOf[ScriptNumberOperation]
-    bool match {
-      case true => ScriptPubKey(asm.slice(3, asm.length))
-      case false => ScriptPubKey(asm.slice(4, asm.length))
-    }
-  }
-
-  /** The relative CSV-LockTime value (i.e. the amount of time the output should remain unspendable) */
-  def locktime : ScriptNumber = {
-    asm.head match {
-      case scriptNumOp: ScriptNumberOperation => ScriptNumber(scriptNumOp.underlying)
-      case pushBytes : BytesToPushOntoStack => ScriptNumber(asm(1).hex)
-      case x @ (_ : ScriptConstant | _ : ScriptOperation) => throw new IllegalArgumentException("In a CSVScriptPubKey, " +
-        "the first asm must be either a ScriptNumberOperation (i.e. OP_5), or the BytesToPushOntoStack for the proceeding ScriptConstant.")
-    }
-  }
-
-}
+sealed trait CSVScriptPubKey extends LockTimeScriptPubKey
 
 object CSVScriptPubKey extends ScriptFactory[CSVScriptPubKey] {
   private case class CSVScriptPubKeyImpl(hex : String) extends CSVScriptPubKey
@@ -515,6 +513,7 @@ object ScriptPubKey extends Factory[ScriptPubKey] with BitcoinSLogger {
     case _ if CSVScriptPubKey.isCSVScriptPubKey(asm) => CSVScriptPubKey(asm)
     case _ if WitnessScriptPubKey.isWitnessScriptPubKey(asm) => WitnessScriptPubKey(asm).get
     case _ if WitnessCommitment.isWitnessCommitment(asm) => WitnessCommitment(asm)
+    case _ if EscrowTimeoutScriptPubKey.isValidEscrowTimeout(asm) => EscrowTimeoutScriptPubKey.fromAsm(asm)
     case _ => NonStandardScriptPubKey(asm)
   }
 
@@ -662,5 +661,60 @@ object WitnessCommitment extends ScriptFactory[WitnessCommitment] {
       opReturn == OP_RETURN && pushOp == BytesToPushOntoStack(36) &&
       constant.hex.take(8) == commitmentHeader && asm.flatMap(_.bytes).size >= minCommitmentSize
     }
+  }
+}
+
+
+/** Represents a [[ScriptPubKey]] that either times out allowing Alice to spend from the scriptpubkey
+  * or allows a federation to spend from the escrow
+  * [[https://github.com/bitcoin/bips/blob/master/bip-0112.mediawiki#contracts-with-expiration-deadlines]]
+  * Format: OP_IF <multsig scriptpubkey> OP_ELSE <locktime scriptPubKey> OP_ENDIF
+  */
+sealed trait EscrowTimeoutScriptPubKey extends ScriptPubKey {
+  /** The [[MultiSignatureScriptPubKey]] that can be used to spend funds */
+  def escrow: MultiSignatureScriptPubKey = {
+    val escrowAsm = asm.slice(1,opElseIndex)
+    MultiSignatureScriptPubKey(escrowAsm)
+  }
+
+  /** The [[CSVScriptPubKey]] that you can spend funds from after a certain timeout */
+  def timeout: LockTimeScriptPubKey = {
+    val timeoutAsm = asm.slice(opElseIndex+1, asm.length-1)
+    LockTimeScriptPubKey.fromAsm(timeoutAsm)
+  }
+
+  private def opElseIndex: Int = {
+    val idx = asm.indexOf(OP_ELSE)
+    require(idx != -1, "CSVEscrowWithTimeout has to contain OP_ELSE asm token")
+    idx
+  }
+}
+
+object EscrowTimeoutScriptPubKey extends ScriptFactory[EscrowTimeoutScriptPubKey] {
+  private case class EscrowTimeoutScriptPubKeyImpl(hex: String) extends EscrowTimeoutScriptPubKey
+
+  override def fromBytes(bytes: Seq[Byte]): EscrowTimeoutScriptPubKey = {
+    val asm = RawScriptPubKeyParser.read(bytes).asm
+    fromAsm(asm)
+  }
+
+  override def fromAsm(asm: Seq[ScriptToken]): EscrowTimeoutScriptPubKey = {
+    buildScript(asm, EscrowTimeoutScriptPubKeyImpl(_), isValidEscrowTimeout(_), "Given asm was not a valid CSVEscrowTimeout, got: " + asm)
+  }
+
+  def isValidEscrowTimeout(asm: Seq[ScriptToken]): Boolean = {
+    val opElseIndex = asm.indexOf(OP_ELSE)
+    val correctControlStructure = asm.headOption.contains(OP_IF) && asm.last == OP_ENDIF && opElseIndex != -1
+    if (correctControlStructure) {
+      val escrowAsm = asm.slice(1,opElseIndex)
+      val escrow = Try(MultiSignatureScriptPubKey(escrowAsm))
+      val timeoutAsm = asm.slice(opElseIndex+1, asm.length-1)
+      val timeout = Try(LockTimeScriptPubKey.fromAsm(timeoutAsm))
+      escrow.isSuccess && timeout.isSuccess
+    } else false
+  }
+
+  def apply(escrow: MultiSignatureScriptPubKey, timeout: LockTimeScriptPubKey): EscrowTimeoutScriptPubKey = {
+    fromAsm(Seq(OP_IF) ++ escrow.asm ++ Seq(OP_ELSE) ++ timeout.asm ++ Seq(OP_ENDIF))
   }
 }
