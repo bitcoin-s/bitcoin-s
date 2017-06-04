@@ -22,9 +22,8 @@ sealed trait Channel extends BitcoinSLogger {
   /** The index of the output that is the [[EscrowTimeoutScriptPubKey]] in the [[anchorTx]] */
   def outputIndex: Int = {
     val expectedLock = P2SHScriptPubKey(lock)
-    val outputOpt = anchorTx.outputs.zipWithIndex.find {
-      case (o, _) =>
-        o.scriptPubKey == expectedLock
+    val outputOpt = anchorTx.outputs.zipWithIndex.find { case (o, _) =>
+      o.scriptPubKey == expectedLock
     }
     require(outputOpt.isDefined, "We do not have the correct locking output on our anchor transasction")
     outputOpt.get._2
@@ -71,7 +70,8 @@ sealed trait ChannelAwaitingAnchorTx extends Channel {
   }
 
   /** Useful for the server to create a [[org.bitcoins.core.channels.ChannelInProgressClientSigned]]
-    * after we receive a partially signed transaction from the client
+    * after we receive a partially signed transaction from the client.
+    * If None is returned, that means we did not find an output that has the clientSPK
     */
   def createClientSigned(partiallySigned: Transaction, clientSPK: ScriptPubKey): Option[ChannelInProgressClientSigned] = {
     val inputOpt = partiallySigned.inputs.zipWithIndex.find(_._1.previousOutput.txId == anchorTx.txId)
@@ -120,7 +120,8 @@ sealed trait ChannelInProgress extends Channel {
     }
     result match {
       case Some(t) => t
-      case None => Failure(throw new IllegalArgumentException("Client output was not defined on the spending transaction"))
+      case None => Failure(throw new IllegalArgumentException("Client output was not defined on the spending transaction, " +
+        "this probably means the client has spent all of it's money to the server"))
     }
   }
 
@@ -217,7 +218,8 @@ sealed trait ChannelInProgressClientSigned extends Channel {
     require(serverOutput.value >= Policy.minChannelAmount, "Server amount does not meet Policy.minChannelAmount, got: " + serverOutput.value)
     clientOutput.map(o => require(o.value >= Policy.dustThreshold, "Client output amount must be dust threshold, got: " + o.value))
     val fullAmount = clientOutput.map(_.value).getOrElse(CurrencyUnits.zero) + serverOutput.value + fee
-    require(fullAmount == lockedAmount, "Losing satoshis some when closing the channel")
+    //the reason for - Policy.dustThreshold is for the case where we just remove the client's output because it is less than the dust threshold
+    require(fullAmount >= (lockedAmount - Policy.dustThreshold), "Losing satoshis some when closing the channel")
   }
 }
 

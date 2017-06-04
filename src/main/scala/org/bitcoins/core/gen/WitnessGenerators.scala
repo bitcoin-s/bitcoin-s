@@ -108,7 +108,6 @@ trait WitnessGenerators extends BitcoinSLogger {
   }
 
   def signedP2WSHMultiSigEscrowTimeoutWitness: Gen[(TransactionWitness, WitnessTxSigComponent, Seq[ECPrivateKey])] = for {
-    //this is here to make sure the script size stays less than 520 bytes, which is the max push op size in ScriptInterpreter
     (scriptPubKey, privKeys) <- ScriptGenerators.escrowTimeoutScriptPubKey
     amount <- CurrencyUnitGenerator.satoshis
     hashType <- CryptoGenerators.hashType

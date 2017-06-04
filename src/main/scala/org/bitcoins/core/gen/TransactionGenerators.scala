@@ -193,7 +193,7 @@ trait TransactionGenerators extends BitcoinSLogger {
   } yield txSigComponent
 
   /** Generates a [[Transaction]] that has a valid [[EscrowTimeoutScriptSignature]] */
-  def spendableEscrowTimeoutTransaction(outputs: Seq[TransactionOutput]): Gen[TxSigComponent] = {
+  def spendableEscrowTimeoutTransaction(outputs: Seq[TransactionOutput] = Nil): Gen[TxSigComponent] = {
     Gen.oneOf(spendableMultiSigEscrowTimeoutTransaction(outputs),
       spendableTimeoutEscrowTimeoutTransaction(outputs))
   }
@@ -393,9 +393,9 @@ trait TransactionGenerators extends BitcoinSLogger {
 
   private def lockTimeTxHelper(signedScriptSig : LockTimeScriptSignature, lock : LockTimeScriptPubKey,
                                privKeys : Seq[ECPrivateKey], sequence : UInt32, lockTime: Option[UInt32]) : (TxSigComponent, Seq[ECPrivateKey]) = {
-    val (creditingTx, outputIndex) = buildCreditingTransaction(UInt32(2), lock)
+    val (creditingTx, outputIndex) = buildCreditingTransaction(TransactionConstants.validLockVersion, lock)
     //Transaction version must not be less than 2 for a CSV transaction
-    val (signedSpendingTx, inputIndex) = buildSpendingTransaction(UInt32(2), creditingTx,
+    val (signedSpendingTx, inputIndex) = buildSpendingTransaction(TransactionConstants.validLockVersion, creditingTx,
       signedScriptSig, outputIndex, lockTime.getOrElse(TransactionConstants.lockTime), sequence)
     val txSigComponent = TxSigComponent(signedSpendingTx, inputIndex,
       lock, Policy.standardScriptVerifyFlags)
