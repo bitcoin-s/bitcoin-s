@@ -6,12 +6,13 @@ import org.bitcoins.core.gen.ScriptGenerators
 import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script.P2SHScriptPubKey
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionConstants, TransactionOutput}
+import org.bitcoins.core.util.BitcoinSLogger
 import org.scalatest.{FlatSpec, MustMatchers}
 
 /**
   * Created by chris on 5/31/17.
   */
-class ChannelTest extends FlatSpec with MustMatchers {
+class ChannelTest extends FlatSpec with MustMatchers with BitcoinSLogger {
 
   "ChannelTest" must "fail to create payment channel if we do not have the minimum amoutn required for initial deposit" in {
     val lock = ScriptGenerators.escrowTimeoutScriptPubKey2Of2.sample.get._1
