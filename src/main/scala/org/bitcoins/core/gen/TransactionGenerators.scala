@@ -265,7 +265,8 @@ trait TransactionGenerators extends BitcoinSLogger {
   def signedP2SHP2WPKHTransaction: Gen[(WitnessTxSigComponent, Seq[ECPrivateKey])] = for {
     (signedScriptSig, scriptPubKey, privKeys, witness, amount) <- ScriptGenerators.signedP2SHP2WPKHScriptSignature
     (creditingTx,outputIndex) = buildCreditingTransaction(signedScriptSig.redeemScript, amount)
-    (signedTx,inputIndex) = buildSpendingTransaction(UInt32(2),creditingTx,signedScriptSig, outputIndex, witness)
+    (signedTx,inputIndex) = buildSpendingTransaction(TransactionConstants.validLockVersion,creditingTx,
+      signedScriptSig, outputIndex, witness)
     signedTxSignatureComponent = WitnessTxSigComponent(signedTx,inputIndex,
       scriptPubKey, Policy.standardScriptVerifyFlags,amount)
   } yield (signedTxSignatureComponent, privKeys)

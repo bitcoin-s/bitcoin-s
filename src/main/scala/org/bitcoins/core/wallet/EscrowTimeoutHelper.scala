@@ -23,7 +23,7 @@ sealed trait EscrowTimeoutHelper extends BitcoinSLogger {
     * */
   def clientSign(inputs: Seq[TransactionInput], outputs: Seq[TransactionOutput], inputIndex: UInt32, privKey: ECPrivateKey,
                  lock: EscrowTimeoutScriptPubKey, p2shScriptPubKey: P2SHScriptPubKey,
-                 hashType: HashType): BaseTxSigComponent = {
+                 hashType: HashType): TxSigComponent = {
     val btx = BaseTransaction(TransactionConstants.validLockVersion, inputs, outputs, TransactionConstants.lockTime)
     val unsignedBTxSigComponent = TxSigComponent(btx, inputIndex, lock, Policy.standardScriptVerifyFlags)
     val signature = TransactionSignatureCreator.createSig(unsignedBTxSigComponent, privKey, hashType)
@@ -56,7 +56,7 @@ sealed trait EscrowTimeoutHelper extends BitcoinSLogger {
 
   /** Signs the partially signed [[org.bitcoins.core.crypto.BaseTxSigComponent]] with the server's private key */
   def serverSign(serverKey: ECPrivateKey, p2shScriptPubKey: P2SHScriptPubKey,
-                 clientSigned: BaseTxSigComponent, hashType: HashType): Try[BaseTxSigComponent] = {
+                 clientSigned: BaseTxSigComponent, hashType: HashType): Try[TxSigComponent] = {
     val signature = TransactionSignatureCreator.createSig(clientSigned, serverKey, hashType)
     val p2sh = clientSigned.scriptSignature.asInstanceOf[P2SHScriptSignature]
     val escrowTimeoutScriptSig = p2sh.scriptSignatureNoRedeemScript.map(_.asInstanceOf[EscrowTimeoutScriptSignature])
