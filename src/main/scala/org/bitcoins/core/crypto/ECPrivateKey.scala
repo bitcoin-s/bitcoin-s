@@ -4,7 +4,7 @@ import java.math.BigInteger
 import java.security.SecureRandom
 
 import org.bitcoin.NativeSecp256k1
-import org.bitcoins.core.config.NetworkParameters
+import org.bitcoins.core.config.{MainNet, NetworkParameters, TestNet3}
 import org.bitcoins.core.protocol.blockchain.{MainNetChainParams, SecretKey, TestNetChainParams}
 import org.bitcoins.core.util._
 import org.spongycastle.crypto.AsymmetricCipherKeyPair
@@ -13,7 +13,7 @@ import org.spongycastle.crypto.params.{ECKeyGenerationParameters, ECPrivateKeyPa
 import org.spongycastle.math.ec.{ECPoint, FixedPointCombMultiplier}
 
 import scala.annotation.tailrec
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Success, Try}
 
 /**
  * Created by chris on 2/16/16.
@@ -99,7 +99,7 @@ object ECPrivateKey extends Factory[ECPrivateKey] with BitcoinSLogger {
     * @param WIF Wallet Import Format. Encoded in Base58
     * @return
     */
-  def fromWIFToPrivateKey(WIF : String) : ECPrivateKey = {
+  def fromWIFToPrivateKey(WIF : String): ECPrivateKey = {
     val isCompressed = ECPrivateKey.isCompressed(WIF)
     val privateKeyBytes = trimFunction(WIF)
     ECPrivateKey.fromBytes(privateKeyBytes,isCompressed)
@@ -113,7 +113,7 @@ object ECPrivateKey extends Factory[ECPrivateKey] with BitcoinSLogger {
     * @param bytes private key in bytes
     * @return
     */
-  def isCompressed(bytes : Seq[Byte]) : Boolean = {
+  def isCompressed(bytes : Seq[Byte]): Boolean = {
     val validCompressedBytes: Seq[Byte] =
       MainNetChainParams.base58Prefix(SecretKey) ++ TestNetChainParams.base58Prefixes(SecretKey)
     val validCompressedBytesInHex: Seq[String] = validCompressedBytes.map(byte => BitcoinSUtil.encodeHex(byte))
@@ -134,7 +134,7 @@ object ECPrivateKey extends Factory[ECPrivateKey] with BitcoinSLogger {
     * @param WIF Wallet Import Format. Encoded in Base58
     * @return
     */
-  private def trimFunction(WIF : String) : Seq[Byte] = {
+  private def trimFunction(WIF : String): Seq[Byte] = {
     val bytesChecked = Base58.decodeCheck(WIF)
 
     //see https://en.bitcoin.it/wiki/List_of_address_prefixes
@@ -152,6 +152,19 @@ object ECPrivateKey extends Factory[ECPrivateKey] with BitcoinSLogger {
 
   /** The Base58 prefixes that represent uncompressed private keys */
   def uncompressedKeyPrefixes = Seq(Some('5'),Some('9'))
+
+  /** Returns the [[NetworkParameters]] from a serialized WIF key */
+  def parseNetworkFromWIF(wif: String): Try[NetworkParameters] = {
+    val decoded = Base58.decodeCheck(wif)
+    decoded.map { bytes =>
+      val b = bytes.head
+      if (b == TestNetChainParams.base58Prefixes(SecretKey).head) {
+        TestNet3
+      } else if (b == MainNetChainParams.base58Prefixes(SecretKey).head) {
+        MainNet
+      } else throw new IllegalArgumentException("Cannot match wif private key with a network, prefix was: " + BitcoinSUtil.encodeHex(b))
+    }
+  }
 }
 
 
