@@ -44,6 +44,9 @@ trait Policy {
 
   /** A default fee to use per byte on the bitcoin network */
   def defaultFee: CurrencyUnit = Satoshis(Int64(50))
+
+  /** Max fee for a transaction is set to 10 mBTC right now */
+  def maxFee: CurrencyUnit = Satoshis(Int64(10)) * CurrencyUnits.oneMBTC
 }
 
 object Policy extends Policy
