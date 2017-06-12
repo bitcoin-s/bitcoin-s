@@ -215,11 +215,23 @@ sealed trait ChannelInProgressClientSigned extends Channel {
   private def checkCloseOutputs(outputs: Seq[TransactionOutput], fee: CurrencyUnit, serverSPK: ScriptPubKey):Try[Unit] = Try {
     val serverOutput = outputs.find(_.scriptPubKey == serverSPK).get
     val clientOutput = outputs.find(_.scriptPubKey == clientSPK)
-    require(serverOutput.value >= Policy.minChannelAmount, "Server amount does not meet Policy.minChannelAmount, got: " + serverOutput.value)
-    clientOutput.map(o => require(o.value >= Policy.dustThreshold, "Client output amount must be dust threshold, got: " + o.value))
+    val currencyUnits = outputs.map(_.value)
+    val fullOutputValue = currencyUnits.fold(CurrencyUnits.zero)(_ + _)
+
+    //fee checks
+    require((lockedAmount - fullOutputValue) == fee, "Incorrect fee given to us, actual fee: " + (lockedAmount - fullOutputValue) + " expected fee: " + fee)
+    require(fee <= Policy.maxFee, "Fee is too large" )
+
+    //individual output checks
+    require(serverOutput.value >= (Policy.minChannelAmount - fee), "Server amount does not meet Policy.minChannelAmount - fee, got: " + serverOutput.value)
+    if (clientOutput.isDefined) {
+      require(clientOutput.get.value >= Policy.dustThreshold, "Client output amount must be dust threshold, got: " + clientOutput.get.value)
+    }
+    //full amount checks
     val fullAmount = clientOutput.map(_.value).getOrElse(CurrencyUnits.zero) + serverOutput.value + fee
     //the reason for - Policy.dustThreshold is for the case where we just remove the client's output because it is less than the dust threshold
     require(fullAmount >= (lockedAmount - Policy.dustThreshold), "Losing satoshis some when closing the channel")
+    require(fullOutputValue >= CurrencyUnits.zero, "Combined output value was less than zero, got: " + fullOutputValue)
   }
 }
 

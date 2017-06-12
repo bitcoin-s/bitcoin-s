@@ -3,8 +3,9 @@ import org.bitcoins.core.config._
 import org.bitcoins.core.config.{MainNet, RegTest, TestNet3}
 import org.bitcoins.core.crypto.{ECPublicKey, Sha256Hash160Digest}
 import org.bitcoins.core.protocol.transaction.TransactionOutput
-import org.bitcoins.core.protocol.script.{P2SHScriptPubKey, ScriptPubKey}
+import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.util.{Base58, CryptoUtil, Factory}
+
 import scala.util.{Failure, Success, Try}
 
 sealed trait Address {
@@ -17,6 +18,9 @@ sealed trait Address {
 
   /** Every address is derived from a [[Sha256Hash160Digest]] in a [[TransactionOutput]] */
   def hash: Sha256Hash160Digest
+
+  /** The [[ScriptPubKey]] the address represents */
+  def scriptPubKey: ScriptPubKey
 }
 
 sealed trait BitcoinAddress extends Address
@@ -29,6 +33,8 @@ sealed trait P2PKHAddress extends BitcoinAddress {
     val checksum = CryptoUtil.doubleSHA256(bytes).bytes.take(4)
     Base58.encode(bytes ++ checksum)
   }
+
+  override def scriptPubKey: P2PKHScriptPubKey = P2PKHScriptPubKey(hash)
 
 }
 
@@ -52,6 +58,10 @@ object P2PKHAddress {
   def apply(pubKey: ECPublicKey, networkParameters: NetworkParameters): P2PKHAddress = {
     val hash = CryptoUtil.sha256Hash160(pubKey.bytes)
     P2PKHAddress(hash,networkParameters)
+  }
+
+  def apply(spk: P2PKHScriptPubKey, networkParameters: NetworkParameters): P2PKHAddress = {
+    P2PKHAddress(spk.pubKeyHash,networkParameters)
   }
 
   /**
@@ -89,6 +99,8 @@ sealed trait P2SHAddress extends BitcoinAddress {
     val checksum = CryptoUtil.doubleSHA256(bytes).bytes.take(4)
     Base58.encode(bytes ++ checksum)
   }
+
+  override def scriptPubKey = P2SHScriptPubKey(hash)
 }
 
 /**
@@ -207,4 +219,17 @@ object Address extends Factory[Address] {
   override def fromHex(hex : String) : Address = throw new RuntimeException("We cannot create a bitcoin address from hex - bitcoin addresses are base 58 encoded")
 
   override def apply(str : String) : Address = factory(str)
+
+  def fromScriptPubKey(spk: ScriptPubKey, network: NetworkParameters): Try[BitcoinAddress] = spk match {
+    case p2pkh: P2PKHScriptPubKey => Success(P2PKHAddress(p2pkh,network))
+    case p2sh: P2SHScriptPubKey => Success(P2SHAddress(p2sh,network))
+    case x @ (_: P2PKScriptPubKey | _: MultiSignatureScriptPubKey | _: LockTimeScriptPubKey
+              | _: EscrowTimeoutScriptPubKey | _: NonStandardScriptPubKey | _: WitnessScriptPubKeyV0
+              | _: WitnessCommitment |  _: UnassignedWitnessScriptPubKey | EmptyScriptPubKey) =>
+      Failure(new IllegalArgumentException("Cannot create a address for the scriptPubKey: " + x))
+  }
+
+  def apply(spk: ScriptPubKey, networkParameters: NetworkParameters): Try[BitcoinAddress] = {
+    fromScriptPubKey(spk,networkParameters)
+  }
 }
