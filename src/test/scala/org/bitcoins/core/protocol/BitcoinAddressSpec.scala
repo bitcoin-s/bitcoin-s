@@ -1,7 +1,7 @@
 package org.bitcoins.core.protocol
 
 import org.bitcoins.core.config.TestNet3
-import org.bitcoins.core.gen.{CryptoGenerators, ScriptGenerators}
+import org.bitcoins.core.gen.{AddressGenerator, CryptoGenerators, ScriptGenerators}
 import org.bitcoins.core.protocol.script.P2SHScriptPubKey
 import org.bitcoins.core.util.CryptoUtil
 import org.scalacheck.{Prop, Properties}
@@ -36,4 +36,12 @@ class BitcoinAddressSpec extends Properties("BitcoinAddressSpec") {
       val addr = P2PKHAddress(pubKey,TestNet3)
       P2PKHAddress.isP2PKHAddress(addr)
     }
+
+  property("serialization symmetry between script and address") = {
+    Prop.forAll(AddressGenerator.address) { addr =>
+      val spk = addr.scriptPubKey
+      val network = addr.networkParameters
+      Address.fromScriptPubKey(spk,network).get == addr
+    }
+  }
 }

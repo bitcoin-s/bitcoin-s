@@ -118,7 +118,7 @@ class TransactionSignatureCreatorSpec extends Properties("TransactionSignatureCr
       result == ScriptOk
     }
 
-  property("fail to evaluate a csv escrow timeout transaction") = {
+  property("fail to evaluate a locktime escrow timeout transaction") = {
     Prop.forAll(TransactionGenerators.unspendableEscrowTimeoutTransaction) { txSigComponent: TxSigComponent =>
       val program = ScriptProgram(txSigComponent)
       val result = ScriptInterpreter.run(program)
