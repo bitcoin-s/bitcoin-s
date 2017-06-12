@@ -228,4 +228,8 @@ object Address extends Factory[Address] {
               | _: WitnessCommitment |  _: UnassignedWitnessScriptPubKey | EmptyScriptPubKey) =>
       Failure(new IllegalArgumentException("Cannot create a address for the scriptPubKey: " + x))
   }
+
+  def apply(spk: ScriptPubKey, networkParameters: NetworkParameters): Try[BitcoinAddress] = {
+    fromScriptPubKey(spk,networkParameters)
+  }
 }
