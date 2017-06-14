@@ -72,6 +72,12 @@ sealed trait EscrowTimeoutHelper extends BitcoinSLogger {
     signedTx.map(tx => TxSigComponent(tx,clientSigned.inputIndex, p2shScriptPubKey, clientSigned.flags))
   }
 
+  /** Closes the given [[EscrowTimeoutScriptPubKey]] with it's timeout branch.
+    * Assumes we are spending the given [[TransactionOutPoint]]
+    *
+    * It is important to note that we assume the nestedScriptPubKey inside of the EscrowTimeoutScriptPubKey
+    * is a [[P2PKHScriptPubKey]] that can be spent by the given [[ECPrivateKey]]
+    * */
   def closeWithTimeout(privKey: ECPrivateKey, escrowTimeoutSPK: EscrowTimeoutScriptPubKey, outPoint: TransactionOutPoint,
     outputs: Seq[TransactionOutput], hashType: HashType,
     version: UInt32, sequence: UInt32, lockTime: UInt32): TxSigComponent = {
