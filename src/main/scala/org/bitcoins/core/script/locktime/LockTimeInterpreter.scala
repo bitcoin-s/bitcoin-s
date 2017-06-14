@@ -131,7 +131,7 @@ trait LockTimeInterpreter extends BitcoinSLogger {
 
     // Relative lock times are supported by comparing the passed
     // in operand to the sequence number of the input.
-    val txToSequence : Int64 = Int64(transaction.inputs(inputIndex).sequence.underlying)
+    val txToSequence : UInt32 = transaction.inputs(inputIndex).sequence
 
     // Fail if the transaction's version number is not set high
     // enough to trigger BIP 68 rules.
@@ -144,17 +144,15 @@ trait LockTimeInterpreter extends BitcoinSLogger {
     // consensus constrained. Testing that the transaction's sequence
     // number do not have this bit set prevents using this property
     // to get around a CHECKSEQUENCEVERIFY check.
-    if (!isLockTimeBitOff(txToSequence)) return false
+    if (!isLockTimeBitOff(Int64(txToSequence.underlying))) return false
 
-    val nLockTimeMask : UInt32 = TransactionConstants.sequenceLockTimeTypeFlag | TransactionConstants.sequenceLockTimeMask
-    val txToSequenceMasked : Int64 = Int64(txToSequence.underlying & nLockTimeMask.underlying)
-    val nSequenceMasked : ScriptNumber = nSequence & Int64(nLockTimeMask.underlying)
+    val (nSequenceMasked,txToSequenceMasked) = (maskScriptNumber(nSequence),maskSequenceNumber(txToSequence))
 
-    logger.info("tx sequence number: " + transaction.inputs(inputIndex).sequence)
-    logger.info("txToSequenceMasked: " + txToSequenceMasked)
-    logger.info("nSequence: " + nSequence)
-    logger.info("nSequenceMasked: " + nSequenceMasked)
-    logger.info("Sequence locktime flag: " + TransactionConstants.sequenceLockTimeTypeFlag)
+    logger.debug("tx sequence number: " + transaction.inputs(inputIndex).sequence)
+    logger.debug("txToSequenceMasked: " + txToSequenceMasked)
+    logger.debug("nSequence: " + nSequence)
+    logger.debug("nSequenceMasked: " + nSequenceMasked)
+    logger.debug("Sequence locktime flag: " + TransactionConstants.sequenceLockTimeTypeFlag)
 
     // There are two kinds of nSequence: lock-by-blockheight
     // and lock-by-blocktime, distinguished by whether
@@ -163,12 +161,7 @@ trait LockTimeInterpreter extends BitcoinSLogger {
     // We want to compare apples to apples, so fail the script
     // unless the type of nSequenceMasked being tested is the same as
     // the nSequenceMasked in the transaction.
-    if (!(
-      (txToSequenceMasked < Int64(TransactionConstants.sequenceLockTimeTypeFlag.underlying) &&
-        nSequenceMasked < Int64(TransactionConstants.sequenceLockTimeTypeFlag.underlying)) ||
-        (txToSequenceMasked >= Int64(TransactionConstants.sequenceLockTimeTypeFlag.underlying) &&
-          nSequenceMasked >= Int64(TransactionConstants.sequenceLockTimeTypeFlag.underlying))
-      )) {
+    if (!(isCSVLockByBlockHeight(nSequence,txToSequence) || isCSVLockByRelativeLockTime(nSequence,txToSequence))) {
       logger.error("The txSequence and nSequence (OP_CSV value) are not of the same type (timestamp/block-height).")
       return false
     }
@@ -183,6 +176,43 @@ trait LockTimeInterpreter extends BitcoinSLogger {
 
     true
   }
+
+  /** Checks if the given [[ScriptNumber]] and [[UInt32]] are valid values for locking a OP_CSV by block height */
+  def isCSVLockByBlockHeight(scriptNumber: ScriptNumber, sequence: UInt32): Boolean = {
+    isCSVLockByBlockHeight(scriptNumber) && isCSVLockByBlockHeight(sequence)
+  }
+
+  def isCSVLockByBlockHeight(sequence: UInt32): Boolean = !isCSVLockByRelativeLockTime(sequence)
+
+
+  def isCSVLockByBlockHeight(scriptNumber: ScriptNumber): Boolean = !isCSVLockByRelativeLockTime(scriptNumber)
+
+  def isCSVLockByRelativeLockTime(number: ScriptNumber, sequence: UInt32): Boolean = {
+    isCSVLockByRelativeLockTime(number) && isCSVLockByRelativeLockTime(sequence)
+  }
+
+  def isCSVLockByRelativeLockTime(scriptNumber: ScriptNumber): Boolean = {
+    (TransactionConstants.sequenceLockTimeTypeFlag.underlying &
+      scriptNumber.underlying) == TransactionConstants.sequenceLockTimeTypeFlag.underlying
+  }
+
+  def isCSVLockByRelativeLockTime(sequence: UInt32): Boolean  = {
+    val result = (TransactionConstants.sequenceLockTimeTypeFlag &
+      sequence) == TransactionConstants.sequenceLockTimeTypeFlag
+    result
+  }
+
+  /** Masks the given [[ScriptNumber]] according to BIP112 */
+  def maskScriptNumber(scriptNumber: ScriptNumber): ScriptNumber = {
+    val nSequenceMasked : ScriptNumber = scriptNumber & Int64(TransactionConstants.fullSequenceLockTimeMask.underlying)
+    nSequenceMasked
+  }
+
+  def maskSequenceNumber(sequence: UInt32): Int64 = {
+    val txToSequenceMasked : Int64 = Int64(sequence.underlying & TransactionConstants.fullSequenceLockTimeMask.underlying)
+    txToSequenceMasked
+  }
+
 
   /** Mimics this function inside of bitcoin core for checking the locktime of a transaction
     * [[https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L1160]]. */
@@ -225,3 +255,5 @@ trait LockTimeInterpreter extends BitcoinSLogger {
 
   def isLockTimeBitOff(num : Int64) : Boolean = isLockTimeBitOff(ScriptNumber(num.hex))
 }
+
+object LockTimeInterpreter extends LockTimeInterpreter

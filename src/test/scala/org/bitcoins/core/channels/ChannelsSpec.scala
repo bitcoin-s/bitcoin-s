@@ -53,6 +53,15 @@ class ChannelsSpec extends Properties("ChannelProperties") with BitcoinSLogger {
     }
   }
 
+  property("close a payment channel with the timeout branch") = {
+    Prop.forAllNoShrink(ChannelGenerators.freshChannelInProgress, ScriptGenerators.p2pkhScriptPubKey) { case ((inProgress, privKeys),(refundSPK,_)) =>
+      val txSigComponent = inProgress.closeWithTimeout(refundSPK,privKeys(2),Satoshis.one)
+      val program = ScriptProgram(txSigComponent)
+      val result = ScriptInterpreter.run(program)
+      result == ScriptOk
+    }
+  }
+
   def verifyChannel(p: ChannelClosed, amount: CurrencyUnit, fee: CurrencyUnit): Boolean = {
     @tailrec
     def loop(last: TxSigComponent, remaining: Seq[TxSigComponent]): Boolean = {
