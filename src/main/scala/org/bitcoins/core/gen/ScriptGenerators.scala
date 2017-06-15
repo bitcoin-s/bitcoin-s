@@ -5,13 +5,14 @@ import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script.{P2SHScriptPubKey, _}
-import org.bitcoins.core.protocol.transaction.{TransactionConstants, TransactionOutput, TransactionWitness}
+import org.bitcoins.core.protocol.transaction.{TransactionConstants, TransactionOutPoint, TransactionOutput, TransactionWitness}
 import org.bitcoins.core.script.ScriptSettings
 import org.bitcoins.core.script.constant.{OP_16, ScriptNumber}
 import org.bitcoins.core.script.crypto.{HashType, SIGHASH_ALL}
 import org.bitcoins.core.script.constant._
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.util.BitcoinSLogger
+import org.bitcoins.core.wallet.P2PKHHelper
 import org.scalacheck.Gen
 
 /**
@@ -153,12 +154,13 @@ trait ScriptGenerators extends BitcoinSLogger {
   def escrowTimeoutScriptPubKey2Of2: Gen[(EscrowTimeoutScriptPubKey, Seq[ECPrivateKey])] = for {
     privKey1 <- CryptoGenerators.privateKey
     privKey2 <- CryptoGenerators.privateKey
-    privKeys = Seq(privKey1, privKey2)
-    escrow = MultiSignatureScriptPubKey(2,privKeys.map(_.publicKey))
+    escrowPrivKeys = Seq(privKey1, privKey2)
+    escrow = MultiSignatureScriptPubKey(2,escrowPrivKeys.map(_.publicKey))
     //We use a p2pkh scriptPubkey here to minimize the script size of EscrowTimeoutScriptPubKey
     //otherwise we surpass the 520 byte push op limit
-    (p2pkh,_) <- ScriptGenerators.p2pkhScriptPubKey
-    scriptNum <- NumberGenerator.scriptNumbers
+    (p2pkh,p2pkhPrivKey) <- ScriptGenerators.p2pkhScriptPubKey
+    privKeys = escrowPrivKeys ++ Seq(p2pkhPrivKey)
+    (scriptNum,_) <- TransactionGenerators.spendableCSVValues
     timeout = CSVScriptPubKey(scriptNum,p2pkh)
   } yield (EscrowTimeoutScriptPubKey(escrow,timeout), privKeys)
 
@@ -263,13 +265,10 @@ trait ScriptGenerators extends BitcoinSLogger {
     publicKey = privateKey.publicKey
     scriptPubKey = P2PKHScriptPubKey(publicKey)
     (creditingTx,outputIndex) = TransactionGenerators.buildCreditingTransaction(scriptPubKey)
-    scriptSig = P2PKHScriptSignature(EmptyDigitalSignature,publicKey)
-    (spendingTx,inputIndex) = TransactionGenerators.buildSpendingTransaction(creditingTx,scriptSig,outputIndex)
-    txSignatureComponent = TxSigComponent(spendingTx,inputIndex,scriptPubKey,
-      Policy.standardScriptVerifyFlags)
-    txSignature = TransactionSignatureCreator.createSig(txSignatureComponent,privateKey, hashType)
-    //add the signature to the scriptSig instead of having an empty scriptSig
-    signedScriptSig = P2PKHScriptSignature(txSignature,publicKey)
+    outpoint = TransactionOutPoint(creditingTx.txId,outputIndex)
+    outputs = TransactionGenerators.dummyOutputs
+    txSigComponent = P2PKHHelper.sign(privateKey,scriptPubKey,outpoint, outputs, HashType.sigHashAll)
+    signedScriptSig = txSigComponent.scriptSignature.asInstanceOf[P2PKHScriptSignature]
   } yield (signedScriptSig, scriptPubKey, privateKey)
 
   /**

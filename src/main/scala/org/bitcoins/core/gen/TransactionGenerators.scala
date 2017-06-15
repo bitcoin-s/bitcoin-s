@@ -8,6 +8,7 @@ import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction.{TransactionInput, TransactionOutPoint, TransactionOutput, _}
 import org.bitcoins.core.script.constant.ScriptNumber
 import org.bitcoins.core.script.interpreter.ScriptInterpreter
+import org.bitcoins.core.script.locktime.LockTimeInterpreter
 import org.bitcoins.core.util.{BitcoinSLogger, BitcoinScriptUtil}
 import org.scalacheck.Gen
 
@@ -330,9 +331,11 @@ trait TransactionGenerators extends BitcoinSLogger {
   def buildSpendingTransaction(version: UInt32, creditingTx: Transaction, scriptSignature: ScriptSignature, outputIndex: UInt32,
                                locktime: UInt32, sequence: UInt32, witness: TransactionWitness): (WitnessTransaction, UInt32) = {
 
-    val outputs = Seq(TransactionOutput(CurrencyUnits.zero,EmptyScriptPubKey))
+    val outputs = dummyOutputs
     buildSpendingTransaction(version,creditingTx,scriptSignature,outputIndex,locktime,sequence,witness,outputs)
   }
+
+  def dummyOutputs: Seq[TransactionOutput] = Seq(TransactionOutput(CurrencyUnits.zero,EmptyScriptPubKey))
 
   def buildSpendingTransaction(version: UInt32, creditingTx: Transaction, scriptSignature: ScriptSignature, outputIndex: UInt32,
                                locktime: UInt32, sequence: UInt32, witness: TransactionWitness, outputs: Seq[TransactionOutput]): (WitnessTransaction, UInt32) = {
@@ -421,39 +424,69 @@ trait TransactionGenerators extends BitcoinSLogger {
     * (i.e. determines whether both are a timestamp or block-height)
     */
   private def csvLockTimesOfSameType(sequenceNumbers : (ScriptNumber, UInt32)) : Boolean = {
-    val (scriptNum, txSequence) = sequenceNumbers
-    val nLockTimeMask : UInt32 = TransactionConstants.sequenceLockTimeTypeFlag | TransactionConstants.sequenceLockTimeMask
-    val txToSequenceMasked : Int64 = Int64(txSequence.underlying & nLockTimeMask.underlying)
-    val nSequenceMasked : ScriptNumber = scriptNum & Int64(nLockTimeMask.underlying)
-
-    if (!ScriptInterpreter.isLockTimeBitOff(Int64(txSequence.underlying))) return false
-
-    if (!(
-      (txToSequenceMasked < Int64(TransactionConstants.sequenceLockTimeTypeFlag.underlying) &&
-        nSequenceMasked < Int64(TransactionConstants.sequenceLockTimeTypeFlag.underlying)) ||
-        (txToSequenceMasked >= Int64(TransactionConstants.sequenceLockTimeTypeFlag.underlying) &&
-          nSequenceMasked >= Int64(TransactionConstants.sequenceLockTimeTypeFlag.underlying))
-      )) return false
-
-    if (nSequenceMasked > Int64(txToSequenceMasked.underlying)) return false
-
-    true
+    LockTimeInterpreter.isCSVLockByRelativeLockTime(sequenceNumbers._1, sequenceNumbers._2) ||
+      LockTimeInterpreter.isCSVLockByBlockHeight(sequenceNumbers._1, sequenceNumbers._2)
   }
 
   /**
     * Generates a pair of CSV values: a transaction input sequence, and a CSV script sequence value, such that the txInput
     * sequence mask is always greater than the script sequence mask (i.e. generates values for a validly constructed and spendable CSV transaction)
     */
-  def spendableCSVValues : Gen[(ScriptNumber, UInt32)] = for {
-    sequence <- NumberGenerator.uInt32s
-    csvScriptNum <- csvLockTimeBitOff.suchThat(x => ScriptInterpreter.isLockTimeBitOff(ScriptNumber(x.underlying)) &&
-      csvLockTimesOfSameType((ScriptNumber(x.underlying),sequence))).map(n => ScriptNumber(n.underlying))
-  } yield (csvScriptNum, sequence)
+  def spendableCSVValues : Gen[(ScriptNumber, UInt32)] = Gen.oneOf(validScriptNumberAndSequenceForBlockHeight,
+      validScriptNumberAndSequenceForRelativeLockTime)
 
-  /** Generates a [[UInt32]] s.t. the locktime enabled flag is set */
-  private def csvLockTimeBitOff: Gen[UInt32] = NumberGenerator.uInt32s.map { n =>
-    //makes sure the 1 << 31 is TURNED OFF, need this to generate spendable CSV values without discarding a bunch of test cases
-    n & UInt32(0x3FFFFFFF)
+  /** To indicate that we should evaulate a OP_CSV operation based on
+    * blockheight we need 1 << 22 bit turned off. See BIP68 for more details */
+  private def lockByBlockHeightBitSet = UInt32("ffbfffff")
+
+  /** Generates a [[UInt32]] s.t. the block height bit is set according to BIP68 */
+  private def sequenceForBlockHeight: Gen[UInt32] = validCSVSequence.map { n =>
+    val result: UInt32 = n & lockByBlockHeightBitSet
+    require(LockTimeInterpreter.isCSVLockByBlockHeight(result), "Block height locktime bit was not set: " + result)
+    result
+  }
+
+  /** Generates a [[ScriptNumber]] and [[UInt32]] s.t. the pair can be spent by an OP_CSV operation */
+  private def validScriptNumberAndSequenceForBlockHeight: Gen[(ScriptNumber,UInt32)] = {
+    sequenceForBlockHeight.flatMap { s =>
+      val seqMasked = TransactionConstants.sequenceLockTimeMask
+      val validScriptNums = s & seqMasked
+      Gen.choose(0L, validScriptNums.underlying).map { sn =>
+        val scriptNum = ScriptNumber(sn & lockByBlockHeightBitSet.underlying)
+        require(LockTimeInterpreter.isCSVLockByBlockHeight(scriptNum))
+        require(LockTimeInterpreter.isCSVLockByBlockHeight(s))
+        (scriptNum,s)
+      }
+    }
+  }
+
+  /** Generates a [[UInt32]] with the locktime bit set according to BIP68 */
+  private def sequenceForRelativeLockTime: Gen[UInt32] = validCSVSequence.map { n =>
+    val result = n | TransactionConstants.sequenceLockTimeTypeFlag
+    require(LockTimeInterpreter.isCSVLockByRelativeLockTime(result), "Relative locktime bit was not set: " + result)
+    result
+  }
+
+  /** Generates a valid [[ScriptNumber]] and [[UInt32]] s.t. the pair will evaluate to true by a OP_CSV operation */
+  private def validScriptNumberAndSequenceForRelativeLockTime: Gen[(ScriptNumber,UInt32)] = {
+    sequenceForRelativeLockTime.flatMap { s =>
+      val seqMasked = TransactionConstants.sequenceLockTimeMask
+      val validScriptNums = s & seqMasked
+      Gen.choose(0L, validScriptNums.underlying).map { sn =>
+        val scriptNum = ScriptNumber(sn | TransactionConstants.sequenceLockTimeTypeFlag.underlying)
+        require(LockTimeInterpreter.isCSVLockByRelativeLockTime(scriptNum))
+        require(LockTimeInterpreter.isCSVLockByRelativeLockTime(s))
+        (scriptNum,s)
+      }
+    }
+  }
+  /** Generates a [[UInt32]] s.t. the locktime enabled flag is set. See BIP68 for more info */
+  private def validCSVSequence: Gen[UInt32] = NumberGenerator.uInt32s.map { n =>
+    //makes sure the 1 << 31 is TURNED OFF,
+    //need this to generate spendable CSV values without discarding a bunch of test cases
+    val result = n & UInt32(0x7FFFFFFF)
+    require(LockTimeInterpreter.isLockTimeBitOff(ScriptNumber(result.underlying)))
+    result
   }
 
   /**

@@ -71,6 +71,31 @@ sealed trait EscrowTimeoutHelper extends BitcoinSLogger {
     val signedTx = newInputs.map(inputs => Transaction(old.version,inputs,old.outputs,old.lockTime))
     signedTx.map(tx => TxSigComponent(tx,clientSigned.inputIndex, p2shScriptPubKey, clientSigned.flags))
   }
+
+  /** Closes the given [[EscrowTimeoutScriptPubKey]] with it's timeout branch.
+    * Assumes we are spending the given [[TransactionOutPoint]]
+    *
+    * It is important to note that we assume the nestedScriptPubKey inside of the EscrowTimeoutScriptPubKey
+    * is a [[P2PKHScriptPubKey]] that can be spent by the given [[ECPrivateKey]]
+    * */
+  def closeWithTimeout(privKey: ECPrivateKey, escrowTimeoutSPK: EscrowTimeoutScriptPubKey, outPoint: TransactionOutPoint,
+    outputs: Seq[TransactionOutput], hashType: HashType,
+    version: UInt32, sequence: UInt32, lockTime: UInt32): Try[TxSigComponent] = Try {
+    require(escrowTimeoutSPK.timeout.nestedScriptPubKey.isInstanceOf[P2PKHScriptPubKey], "We currently require the nested SPK in the timeout branch to be a P2PKHScriptPubKey, got: " + escrowTimeoutSPK.timeout.nestedScriptPubKey)
+    val signedP2PKHTxSigComponent = P2PKHHelper.sign(privKey,escrowTimeoutSPK,outPoint,outputs,hashType,version,sequence,lockTime)
+    val signedP2PKHTx = signedP2PKHTxSigComponent.transaction
+    val signedScriptSig = signedP2PKHTxSigComponent.scriptSignature
+    val lockTimeScriptSig = escrowTimeoutSPK.timeout match {
+      case _: CSVScriptPubKey => CSVScriptSignature(signedScriptSig)
+      case _: CLTVScriptPubKey => CLTVScriptSignature(signedScriptSig)
+    }
+    val escrowTimeoutScriptSig = EscrowTimeoutScriptSignature.fromLockTime(lockTimeScriptSig)
+    val fullInput = TransactionInput(signedP2PKHTxSigComponent.input.previousOutput,escrowTimeoutScriptSig,
+      signedP2PKHTxSigComponent.input.sequence)
+    val inputs = signedP2PKHTx.inputs.updated(signedP2PKHTxSigComponent.inputIndex.toInt,fullInput)
+    val tx = Transaction(signedP2PKHTx.version,inputs,signedP2PKHTx.outputs, signedP2PKHTx.lockTime)
+    TxSigComponent(tx,signedP2PKHTxSigComponent.inputIndex, signedP2PKHTxSigComponent.scriptPubKey, signedP2PKHTxSigComponent.flags)
+  }
 }
 
 object EscrowTimeoutHelper extends EscrowTimeoutHelper

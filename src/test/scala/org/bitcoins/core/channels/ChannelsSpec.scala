@@ -5,6 +5,7 @@ import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits, Satoshis}
 import org.bitcoins.core.gen.{ChannelGenerators, ScriptGenerators}
 import org.bitcoins.core.number.{Int64, UInt32}
 import org.bitcoins.core.policy.Policy
+import org.bitcoins.core.protocol.script.EmptyScriptPubKey
 import org.bitcoins.core.protocol.transaction.TransactionOutput
 import org.bitcoins.core.script.ScriptProgram
 import org.bitcoins.core.script.crypto.HashType
@@ -50,6 +51,24 @@ class ChannelsSpec extends Properties("ChannelProperties") with BitcoinSLogger {
       if (result.isFailure) {
         throw result.failed.get
       } else result.get
+    }
+  }
+
+  property("close a payment channel awaiting anchor tx with the timeout branch") = {
+    Prop.forAllNoShrink(ChannelGenerators.channelAwaitingAnchorTxNotConfirmed) { case (awaiting, privKeys) =>
+      val channelClosedWithTimeout = awaiting.closeWithTimeout(EmptyScriptPubKey,privKeys(2), Satoshis.one)
+      val program = channelClosedWithTimeout.map(c => ScriptProgram(c.finalTx))
+      val result = program.map(p => ScriptInterpreter.run(p))
+      result.get == ScriptOk
+    }
+  }
+
+  property("close a payment channel in progress with the timeout branch") = {
+    Prop.forAllNoShrink(ChannelGenerators.freshChannelInProgress) { case (inProgress, privKeys) =>
+      val channelClosedWithTimeout = inProgress.closeWithTimeout(privKeys(2),Satoshis.one)
+      val program = channelClosedWithTimeout.map(c => ScriptProgram(c.finalTx))
+      val result = program.map(p => ScriptInterpreter.run(p))
+      result.get == ScriptOk
     }
   }
 
