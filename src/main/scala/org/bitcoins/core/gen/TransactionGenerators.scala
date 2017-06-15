@@ -432,14 +432,16 @@ trait TransactionGenerators extends BitcoinSLogger {
     * Generates a pair of CSV values: a transaction input sequence, and a CSV script sequence value, such that the txInput
     * sequence mask is always greater than the script sequence mask (i.e. generates values for a validly constructed and spendable CSV transaction)
     */
-  def spendableCSVValues : Gen[(ScriptNumber, UInt32)] = for {
-    (scriptNumber,sequence) <- Gen.oneOf(validScriptNumberAndSequenceForBlockHeight,
+  def spendableCSVValues : Gen[(ScriptNumber, UInt32)] = Gen.oneOf(validScriptNumberAndSequenceForBlockHeight,
       validScriptNumberAndSequenceForRelativeLockTime)
-  } yield (scriptNumber, sequence)
+
+  /** To indicate that we should evaulate a OP_CSV operation based on
+    * blockheight we need 1 << 22 bit turned off. See BIP68 for more details */
+  private def lockByBlockHeightBitSet = UInt32("ffbfffff")
 
   /** Generates a [[UInt32]] s.t. the block height bit is set according to BIP68 */
   private def sequenceForBlockHeight: Gen[UInt32] = validCSVSequence.map { n =>
-    val result: UInt32 = n & UInt32("ffbfffff")
+    val result: UInt32 = n & lockByBlockHeightBitSet
     require(LockTimeInterpreter.isCSVLockByBlockHeight(result), "Block height locktime bit was not set: " + result)
     result
   }
@@ -449,8 +451,8 @@ trait TransactionGenerators extends BitcoinSLogger {
     sequenceForBlockHeight.flatMap { s =>
       val seqMasked = TransactionConstants.sequenceLockTimeMask
       val validScriptNums = s & seqMasked
-      Gen.choose(0L, validScriptNums.underlying - 1).map { sn =>
-        val scriptNum = ScriptNumber(sn & UInt32("ffbfffff").underlying)
+      Gen.choose(0L, validScriptNums.underlying).map { sn =>
+        val scriptNum = ScriptNumber(sn & lockByBlockHeightBitSet.underlying)
         require(LockTimeInterpreter.isCSVLockByBlockHeight(scriptNum))
         require(LockTimeInterpreter.isCSVLockByBlockHeight(s))
         (scriptNum,s)
@@ -470,7 +472,7 @@ trait TransactionGenerators extends BitcoinSLogger {
     sequenceForRelativeLockTime.flatMap { s =>
       val seqMasked = TransactionConstants.sequenceLockTimeMask
       val validScriptNums = s & seqMasked
-      Gen.choose(0L, validScriptNums.underlying - 1).map { sn =>
+      Gen.choose(0L, validScriptNums.underlying).map { sn =>
         val scriptNum = ScriptNumber(sn | TransactionConstants.sequenceLockTimeTypeFlag.underlying)
         require(LockTimeInterpreter.isCSVLockByRelativeLockTime(scriptNum))
         require(LockTimeInterpreter.isCSVLockByRelativeLockTime(s))

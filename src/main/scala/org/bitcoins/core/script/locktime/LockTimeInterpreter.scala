@@ -177,7 +177,8 @@ trait LockTimeInterpreter extends BitcoinSLogger {
     true
   }
 
-  /** Checks if the given [[ScriptNumber]] and [[UInt32]] are valid values for locking a OP_CSV by block height */
+  /** Checks if the given [[ScriptNumber]] and [[UInt32]] are valid values for spending
+    * a OP_CSV value by block height */
   def isCSVLockByBlockHeight(scriptNumber: ScriptNumber, sequence: UInt32): Boolean = {
     isCSVLockByBlockHeight(scriptNumber) && isCSVLockByBlockHeight(sequence)
   }
@@ -187,6 +188,8 @@ trait LockTimeInterpreter extends BitcoinSLogger {
 
   def isCSVLockByBlockHeight(scriptNumber: ScriptNumber): Boolean = !isCSVLockByRelativeLockTime(scriptNumber)
 
+  /** Checks if the given [[ScriptNumber]] and [[UInt32]] are valid values
+    * for spending an OP_CSV value by time based relative lock time */
   def isCSVLockByRelativeLockTime(number: ScriptNumber, sequence: UInt32): Boolean = {
     isCSVLockByRelativeLockTime(number) && isCSVLockByRelativeLockTime(sequence)
   }

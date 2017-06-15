@@ -80,7 +80,8 @@ sealed trait EscrowTimeoutHelper extends BitcoinSLogger {
     * */
   def closeWithTimeout(privKey: ECPrivateKey, escrowTimeoutSPK: EscrowTimeoutScriptPubKey, outPoint: TransactionOutPoint,
     outputs: Seq[TransactionOutput], hashType: HashType,
-    version: UInt32, sequence: UInt32, lockTime: UInt32): TxSigComponent = {
+    version: UInt32, sequence: UInt32, lockTime: UInt32): Try[TxSigComponent] = Try {
+    require(escrowTimeoutSPK.timeout.nestedScriptPubKey.isInstanceOf[P2PKHScriptPubKey], "We currently require the nested SPK in the timeout branch to be a P2PKHScriptPubKey, got: " + escrowTimeoutSPK.timeout.nestedScriptPubKey)
     val signedP2PKHTxSigComponent = P2PKHHelper.sign(privKey,escrowTimeoutSPK,outPoint,outputs,hashType,version,sequence,lockTime)
     val signedP2PKHTx = signedP2PKHTxSigComponent.transaction
     val signedScriptSig = signedP2PKHTxSigComponent.scriptSignature

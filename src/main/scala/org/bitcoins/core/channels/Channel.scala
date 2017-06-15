@@ -87,15 +87,15 @@ sealed trait ChannelAwaitingAnchorTx extends Channel {
     * Note that this does not require any confirmations on the anchor tx,
     * this is because the Client is essentially refunding himself the money
     */
-  def closeWithTimeout(refundSPK: ScriptPubKey, clientKey: ECPrivateKey, fee: CurrencyUnit): ChannelClosedWithTimeout = {
+  def closeWithTimeout(refundSPK: ScriptPubKey, clientKey: ECPrivateKey, fee: CurrencyUnit): Try[ChannelClosedWithTimeout] = {
     val timeout = lock.timeout
     val scriptNum = timeout.locktime
-    val sequence = UInt32(scriptNum.toLong + 1)
+    val sequence = UInt32(scriptNum.toLong)
     val outputs = Seq(TransactionOutput(lockedAmount - fee, refundSPK))
     val outPoint = TransactionOutPoint(anchorTx.txId,UInt32(outputIndex))
     val signedTxSigComponent = EscrowTimeoutHelper.closeWithTimeout(clientKey,lock,outPoint,outputs,HashType.sigHashAll,
       TransactionConstants.validLockVersion, sequence,TransactionConstants.lockTime)
-    ChannelClosedWithTimeout(anchorTx,lock,signedTxSigComponent,Nil,refundSPK)
+    signedTxSigComponent.map(t => ChannelClosedWithTimeout(anchorTx,lock,t,Nil,refundSPK))
   }
 
 }
@@ -171,15 +171,15 @@ sealed trait ChannelInProgress extends Channel {
   /** Attempts to close the [[Channel]] because the [[EscrowTimeoutScriptPubKey]]
     * has timed out
     */
-  def closeWithTimeout(clientKey: ECPrivateKey, fee: CurrencyUnit): ChannelClosedWithTimeout = {
+  def closeWithTimeout(clientKey: ECPrivateKey, fee: CurrencyUnit): Try[ChannelClosedWithTimeout] = {
     val timeout = lock.timeout
     val scriptNum = timeout.locktime
-    val sequence = UInt32(scriptNum.toLong + 1)
+    val sequence = UInt32(scriptNum.toLong)
     val outputs = Seq(TransactionOutput(lockedAmount - fee, clientSPK))
     val outPoint = TransactionOutPoint(anchorTx.txId,UInt32(outputIndex))
     val signedTxSigComponent = EscrowTimeoutHelper.closeWithTimeout(clientKey,lock,outPoint,outputs,HashType.sigHashAll,
       TransactionConstants.validLockVersion, sequence,TransactionConstants.lockTime)
-    ChannelClosedWithTimeout(this,signedTxSigComponent)
+    signedTxSigComponent.map(t => ChannelClosedWithTimeout(this,t))
   }
 }
 
