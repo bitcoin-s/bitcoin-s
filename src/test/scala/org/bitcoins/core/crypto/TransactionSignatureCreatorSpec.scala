@@ -72,6 +72,7 @@ class TransactionSignatureCreatorSpec extends Properties("TransactionSignatureCr
         val result = ScriptInterpreter.run(program)
         Seq(ScriptOk, ScriptErrorPushSize).contains(result)
     }
+  
   property("fail to verify a transaction with a relative locktime that has not been satisfied yet") =
     Prop.forAllNoShrink(TransactionGenerators.unspendableCSVTransaction :| "unspendable csv") {
       case (txSignatureComponent: TxSigComponent, _) =>
