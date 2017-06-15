@@ -28,6 +28,10 @@ sealed trait ChannelGenerators extends BitcoinSLogger {
     (aTx,_) = TransactionGenerators.buildCreditingTransaction(TransactionConstants.validLockVersion,p2sh,amount)
   } yield (aTx,redeemScript,privKeys)
 
+  def channelAwaitingAnchorTxNotConfirmed: Gen[(ChannelAwaitingAnchorTx, Seq[ECPrivateKey])] = for {
+    (aTx,redeemScript,privKeys) <- anchorTx
+  } yield (ChannelAwaitingAnchorTx(aTx,redeemScript,0).get,privKeys)
+
   /** Creates a [[ChannelAwaitingAnchorTx]] and
     * the private keys needed to spend from the locked output.
     * This generator assumes that the anchor tx has sufficient confirmations */

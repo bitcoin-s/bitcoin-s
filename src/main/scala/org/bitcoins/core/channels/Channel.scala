@@ -83,12 +83,18 @@ sealed trait ChannelAwaitingAnchorTx extends Channel {
   }
 
   /** Attempts to close the [[Channel]] because the [[org.bitcoins.core.protocol.script.EscrowTimeoutScriptPubKey]]
-    * has timed out
+    * has timed out.
+    * Note that this does not require any confirmations on the anchor tx,
+    * this is because the Client is essentially refunding himself the money
     */
   def closeWithTimeout(refundSPK: ScriptPubKey, clientKey: ECPrivateKey, fee: CurrencyUnit): ChannelClosedWithTimeout = {
+    val timeout = lock.timeout
+    val scriptNum = timeout.locktime
+    val sequence = UInt32(scriptNum.toLong + 1)
     val outputs = Seq(TransactionOutput(lockedAmount - fee, refundSPK))
     val outPoint = TransactionOutPoint(anchorTx.txId,UInt32(outputIndex))
-    val signedTxSigComponent = P2PKHHelper.sign(clientKey,lock,outPoint,outputs,HashType.sigHashAll)
+    val signedTxSigComponent = EscrowTimeoutHelper.closeWithTimeout(clientKey,lock,outPoint,outputs,HashType.sigHashAll,
+      TransactionConstants.validLockVersion, sequence,TransactionConstants.lockTime)
     ChannelClosedWithTimeout(anchorTx,lock,signedTxSigComponent,Nil,refundSPK)
   }
 
@@ -165,12 +171,11 @@ sealed trait ChannelInProgress extends Channel {
   /** Attempts to close the [[Channel]] because the [[EscrowTimeoutScriptPubKey]]
     * has timed out
     */
-  def closeWithTimeout(refundSPK: ScriptPubKey, clientKey: ECPrivateKey,
-                       fee: CurrencyUnit): ChannelClosedWithTimeout = {
+  def closeWithTimeout(clientKey: ECPrivateKey, fee: CurrencyUnit): ChannelClosedWithTimeout = {
     val timeout = lock.timeout
     val scriptNum = timeout.locktime
     val sequence = UInt32(scriptNum.toLong + 1)
-    val outputs = Seq(TransactionOutput(lockedAmount - fee, refundSPK))
+    val outputs = Seq(TransactionOutput(lockedAmount - fee, clientSPK))
     val outPoint = TransactionOutPoint(anchorTx.txId,UInt32(outputIndex))
     val signedTxSigComponent = EscrowTimeoutHelper.closeWithTimeout(clientKey,lock,outPoint,outputs,HashType.sigHashAll,
       TransactionConstants.validLockVersion, sequence,TransactionConstants.lockTime)
@@ -370,7 +375,10 @@ object ChannelClosedWithEscrow {
 object ChannelClosedWithTimeout {
   private case class ChannelClosedWithTimeoutImpl(anchorTx: Transaction, lock: EscrowTimeoutScriptPubKey,
                                                   finalTx: TxSigComponent, old: Seq[TxSigComponent],
-                                                  clientSPK: ScriptPubKey) extends ChannelClosedWithTimeout
+                                                  clientSPK: ScriptPubKey) extends ChannelClosedWithTimeout {
+    require(finalTx.transaction.outputs.exists(_.scriptPubKey == clientSPK),
+      "Client SPK was not defined on a output. This is SPK that is suppose to refund the client it's money")
+  }
 
   def apply(anchorTx: Transaction, lock: EscrowTimeoutScriptPubKey,
             finalTx: TxSigComponent, old: Seq[TxSigComponent],

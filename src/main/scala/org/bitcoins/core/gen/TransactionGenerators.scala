@@ -444,7 +444,7 @@ trait TransactionGenerators extends BitcoinSLogger {
     result
   }
 
-  /** Genereates a [[ScriptNumber]] and [[UInt32]] s.t. the pair can be spent by an OP_CSV operation */
+  /** Generates a [[ScriptNumber]] and [[UInt32]] s.t. the pair can be spent by an OP_CSV operation */
   private def validScriptNumberAndSequenceForBlockHeight: Gen[(ScriptNumber,UInt32)] = {
     sequenceForBlockHeight.flatMap { s =>
       val seqMasked = TransactionConstants.sequenceLockTimeMask
@@ -465,7 +465,7 @@ trait TransactionGenerators extends BitcoinSLogger {
     result
   }
 
-  /** Generates a valid [[ScriptNumber]] and [[UInt32]] s.t. the pair can be spent by a OP_CSV operation */
+  /** Generates a valid [[ScriptNumber]] and [[UInt32]] s.t. the pair will evaluate to true by a OP_CSV operation */
   private def validScriptNumberAndSequenceForRelativeLockTime: Gen[(ScriptNumber,UInt32)] = {
     sequenceForRelativeLockTime.flatMap { s =>
       val seqMasked = TransactionConstants.sequenceLockTimeMask
@@ -478,11 +478,10 @@ trait TransactionGenerators extends BitcoinSLogger {
       }
     }
   }
-  /** Generates a [[UInt32]] s.t. the locktime enabled flag is set */
+  /** Generates a [[UInt32]] s.t. the locktime enabled flag is set. See BIP68 for more info */
   private def validCSVSequence: Gen[UInt32] = NumberGenerator.uInt32s.map { n =>
-    //makes sure the 1 << 31 is TURNED OFF, need this to generate spendable CSV values without discarding a bunch of test cases
-    //only the last 2 bytes have consensus meaning according to BIP68
-    //https://github.com/bitcoin/bips/blob/master/bip-0068.mediawiki#specification
+    //makes sure the 1 << 31 is TURNED OFF,
+    //need this to generate spendable CSV values without discarding a bunch of test cases
     val result = n & UInt32(0x7FFFFFFF)
     require(LockTimeInterpreter.isLockTimeBitOff(ScriptNumber(result.underlying)))
     result

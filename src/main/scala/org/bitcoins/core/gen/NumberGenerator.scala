@@ -53,13 +53,6 @@ trait NumberGenerator {
 
   def positiveScriptNumbers: Gen[ScriptNumber] = Gen.choose(0L,Int64.max.underlying).map(ScriptNumber(_))
 
-  /** Generates a positive [[ScriptNumber]] that takes a maximum of 5 bytes of space.
-    * This is useful for generating a valid script number for OP_CHECKSEQUENCEVERIFY
-    * [[https://github.com/bitcoin/bips/blob/master/bip-0112.mediawiki#specification]]
-    * @return
-    */
-  def postiveScriptNumbers5Bytes: Gen[ScriptNumber] = Gen.choose(0, Int32.max.underlying).map(ScriptNumber(_))
-
   def compactSizeUInts : Gen[CompactSizeUInt] = uInt64s.map(CompactSizeUInt(_))
 
   /** Generates an arbitrary [[Byte]] in Scala */

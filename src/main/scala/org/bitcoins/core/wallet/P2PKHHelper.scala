@@ -29,7 +29,7 @@ sealed trait P2PKHHelper {
     val unsignedInput = buildP2PKHInput(EmptyDigitalSignature,publicKey,outPoint,sequence)
     val unsignedInputs = Seq(unsignedInput)
     val unsignedTx = Transaction(version,unsignedInputs,outputs,lockTime)
-    val inputIndex = UInt32.zero
+    val inputIndex = UInt32(unsignedInputs.indexOf(unsignedInput))
     val txSigComponent = TxSigComponent(unsignedTx,inputIndex,spk,
       Policy.standardScriptVerifyFlags)
     val signature = TransactionSignatureCreator.createSig(txSigComponent,privKey,hashType)
