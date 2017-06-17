@@ -201,7 +201,7 @@ sealed trait ChannelInProgressClientSigned extends Channel with BaseInProgress {
     val unsignedTxSigComponent = TxSigComponent(partiallySignedTx,
       current.inputIndex, lock, Policy.standardScriptVerifyFlags)
 
-    val signedTxSigComponent: Try[TxSigComponent] = EscrowTimeoutHelper.serverSign(serverKey, scriptPubKey,
+    val signedTxSigComponent: Try[TxSigComponent] = EscrowTimeoutHelper.serverSign(serverKey,
       unsignedTxSigComponent, HashType.sigHashAll)
 
     signedTxSigComponent.map { s =>
@@ -375,10 +375,5 @@ object ChannelClosedWithTimeout {
             clientSPK: ScriptPubKey): ChannelClosedWithTimeout = {
     ChannelClosedWithTimeoutImpl(anchorTx,lock,finalTx,old,clientSPK)
   }
-
-}
-
-
-trait ChannelInProgressHelper { this : ChannelInProgress =>
 
 }

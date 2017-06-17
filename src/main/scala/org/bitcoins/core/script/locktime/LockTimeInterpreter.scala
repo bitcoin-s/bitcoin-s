@@ -170,7 +170,7 @@ trait LockTimeInterpreter extends BitcoinSLogger {
     // comparison is a simple numeric one.
     if (nSequenceMasked > Int64(txToSequenceMasked.underlying)) {
       logger.error("OP_CSV fails because relative locktime in transaction has not been met yet. " +
-        "(OP_CSV value was greater than the txInput's sequence)")
+        "(OP_CSV value was greater than the txInput's sequence) script number: " + nSequenceMasked + " tx sequence no: " + txToSequenceMasked)
       return false
     }
 
