@@ -26,7 +26,7 @@ class ChannelTest extends FlatSpec with MustMatchers with BitcoinSLogger {
 
   it must "fail to create a payment channel if one of the outputs scriptPubKey's is not P2SH(lock)" in {
     val lock = ScriptGenerators.escrowTimeoutScriptPubKey2Of2.sample.get._1
-    val randomScript = ScriptGenerators.scriptPubKey.sample.get._1
+    val randomScript = ScriptGenerators.p2pkhScriptPubKey.sample.get._1
     val p2sh = P2SHScriptPubKey(randomScript)
     val amount = Policy.minChannelAmount
     val output = TransactionOutput(amount, p2sh)
@@ -42,7 +42,7 @@ class ChannelTest extends FlatSpec with MustMatchers with BitcoinSLogger {
   }
 
   it must "fail to clientSign ChannelAwaitingAnchorTx if we do not have enough confs" in {
-    val clientSPK = ScriptGenerators.scriptPubKey.sample.get._1
+    val clientSPK = ScriptGenerators.p2pkhScriptPubKey.sample.get._1
     val (lock, keys) = ScriptGenerators.escrowTimeoutScriptPubKey2Of2.sample.get
     val p2sh = P2SHScriptPubKey(lock)
     val amount = Policy.minChannelAmount
@@ -60,8 +60,8 @@ class ChannelTest extends FlatSpec with MustMatchers with BitcoinSLogger {
   }
 
   it must "be valid for the server to receive all of the money when a payment channel closes" in {
-    val clientSPK = ScriptGenerators.scriptPubKey.sample.get._1
-    val serverSPK = ScriptGenerators.scriptPubKey.sample.get._1
+    val clientSPK = ScriptGenerators.p2pkhScriptPubKey.sample.get._1
+    val serverSPK = ScriptGenerators.p2pkhScriptPubKey.sample.get._1
     val (lock,keys) = ScriptGenerators.escrowTimeoutScriptPubKey2Of2.sample.get
     val p2sh = P2SHScriptPubKey(lock)
     val amount = CurrencyUnits.oneBTC
@@ -74,8 +74,8 @@ class ChannelTest extends FlatSpec with MustMatchers with BitcoinSLogger {
   }
 
   it must "fail to close the payment channel if the payment channel's fee is larger than the locked amount" in {
-    val clientSPK = ScriptGenerators.scriptPubKey.sample.get._1
-    val serverSPK = ScriptGenerators.scriptPubKey.sample.get._1
+    val clientSPK = ScriptGenerators.p2pkhScriptPubKey.sample.get._1
+    val serverSPK = ScriptGenerators.p2pkhScriptPubKey.sample.get._1
     val (lock,keys) = ScriptGenerators.escrowTimeoutScriptPubKey2Of2.sample.get
     val p2sh = P2SHScriptPubKey(lock)
     val amount = CurrencyUnits.oneBTC
@@ -91,7 +91,7 @@ class ChannelTest extends FlatSpec with MustMatchers with BitcoinSLogger {
 
 
   private def validInProgress: (ChannelInProgress, Seq[ECPrivateKey]) = {
-    val clientSPK = ScriptGenerators.scriptPubKey.sample.get._1
+    val clientSPK = ScriptGenerators.p2pkhScriptPubKey.sample.get._1
     val (lock,keys) = ScriptGenerators.escrowTimeoutScriptPubKey2Of2.sample.get
     val p2sh = P2SHScriptPubKey(lock)
     val amount = CurrencyUnits.oneBTC
