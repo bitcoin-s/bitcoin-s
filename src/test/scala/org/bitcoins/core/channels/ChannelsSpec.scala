@@ -64,7 +64,7 @@ class ChannelsSpec extends Properties("ChannelProperties") with BitcoinSLogger {
   }
 
   property("close a payment channel in progress with the timeout branch") = {
-    Prop.forAllNoShrink(ChannelGenerators.freshChannelInProgress) { case (inProgress, privKeys) =>
+    Prop.forAllNoShrink(ChannelGenerators.baseInProgress) { case (inProgress, privKeys) =>
       val channelClosedWithTimeout = inProgress.closeWithTimeout(privKeys(2),Satoshis.one)
       val program = channelClosedWithTimeout.map(c => ScriptProgram(c.finalTx))
       val result = program.map(p => ScriptInterpreter.run(p))

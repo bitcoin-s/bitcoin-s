@@ -12,9 +12,7 @@ import org.scalacheck.Gen
 trait CryptoGenerators {
 
 
-  def privateKey : Gen[ECPrivateKey] = for {
-    i <- Gen.choose(1,2)
-  } yield ECPrivateKey()
+  def privateKey : Gen[ECPrivateKey] = Gen.const(ECPrivateKey())
 
   /**
     * Generate a sequence of private keys

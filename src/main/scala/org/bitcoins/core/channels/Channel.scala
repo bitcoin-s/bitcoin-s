@@ -99,8 +99,10 @@ sealed trait ChannelAwaitingAnchorTx extends Channel {
   }
 
 }
-/** Represents the state of a Channel transferring money from the client to the server */
-sealed trait ChannelInProgress extends Channel {
+
+/** This trait represents shared information between [[ChannelInProgress]] and [[ChannelInProgressClientSigned]] */
+sealed trait BaseInProgress { this: Channel =>
+
   /** The most recent [[TxSigComponent]] in the payment channel */
   def current: TxSigComponent
 
@@ -113,7 +115,7 @@ sealed trait ChannelInProgress extends Channel {
   def clientSPK: ScriptPubKey
 
   /** The output index that pays change to the client on the spending transaction */
-  private def clientOutputIndex: Option[Int] = {
+  def clientOutputIndex: Option[Int] = {
     val outputOpt = current.transaction.outputs.zipWithIndex.find {
       case (o, _) => o.scriptPubKey == clientSPK
     }
@@ -122,6 +124,25 @@ sealed trait ChannelInProgress extends Channel {
 
   /** The output that pays change back to the client */
   def clientOutput: Option[TransactionOutput] = clientOutputIndex.map(idx => current.transaction.outputs(idx))
+
+  /** Attempts to close the [[Channel]] because the [[EscrowTimeoutScriptPubKey]]
+    * has timed out
+    */
+  def closeWithTimeout(clientKey: ECPrivateKey, fee: CurrencyUnit): Try[ChannelClosedWithTimeout] = {
+    val timeout = lock.timeout
+    val scriptNum = timeout.locktime
+    val sequence = UInt32(scriptNum.toLong)
+    val outputs = Seq(TransactionOutput(lockedAmount - fee, clientSPK))
+    val outPoint = TransactionOutPoint(anchorTx.txId,UInt32(outputIndex))
+    val signedTxSigComponent = EscrowTimeoutHelper.closeWithTimeout(clientKey,lock,outPoint,outputs,HashType.sigHashAll,
+      TransactionConstants.validLockVersion, sequence,TransactionConstants.lockTime)
+    signedTxSigComponent.map(t => ChannelClosedWithTimeout(anchorTx,lock,t,current +: old,clientSPK))
+  }
+
+
+}
+/** Represents the state of a Channel transferring money from the client to the server */
+sealed trait ChannelInProgress extends Channel with BaseInProgress {
 
   /** Increments a payment to the server in a [[ChannelInProgress]] */
   def clientSign(amount: CurrencyUnit, clientKey: ECPrivateKey): Try[ChannelInProgressClientSigned] = {
@@ -168,51 +189,19 @@ sealed trait ChannelInProgress extends Channel {
     ChannelInProgressClientSigned(anchorTx,lock, clientSPK,txSigComponent, current +: old)
   }
 
-  /** Attempts to close the [[Channel]] because the [[EscrowTimeoutScriptPubKey]]
-    * has timed out
-    */
-  def closeWithTimeout(clientKey: ECPrivateKey, fee: CurrencyUnit): Try[ChannelClosedWithTimeout] = {
-    val timeout = lock.timeout
-    val scriptNum = timeout.locktime
-    val sequence = UInt32(scriptNum.toLong)
-    val outputs = Seq(TransactionOutput(lockedAmount - fee, clientSPK))
-    val outPoint = TransactionOutPoint(anchorTx.txId,UInt32(outputIndex))
-    val signedTxSigComponent = EscrowTimeoutHelper.closeWithTimeout(clientKey,lock,outPoint,outputs,HashType.sigHashAll,
-      TransactionConstants.validLockVersion, sequence,TransactionConstants.lockTime)
-    signedTxSigComponent.map(t => ChannelClosedWithTimeout(this,t))
-  }
 }
 
 /** A payment channel that has been signed by the client, but not signed by the server yet */
-sealed trait ChannelInProgressClientSigned extends Channel {
-  /** The [[org.bitcoins.core.crypto.BaseTxSigComponent]] that was partially signed by the client */
-  def partiallySigned: TxSigComponent
-
-  def old: Seq[TxSigComponent]
-
-  /** The [[ScriptPubKey]] that pays the client it's refund */
-  def clientSPK: ScriptPubKey
-
-  /** The output index that pays change to the client on the spending transaction */
-  private def clientOutputIndex: Option[Int] = {
-    val outputOpt = partiallySigned.transaction.outputs.zipWithIndex.find {
-      case (o, _) => o.scriptPubKey == clientSPK
-    }
-    outputOpt.map(_._2)
-  }
-
-  /** The output that pays change back to the client */
-  def clientOutput: Option[TransactionOutput] = clientOutputIndex.map(idx => partiallySigned.transaction.outputs(idx))
-
+sealed trait ChannelInProgressClientSigned extends Channel with BaseInProgress {
   /** The new payment channel transaction that has the clients digital signature but does not have the servers digital signature yet */
-  private def partiallySignedTx: Transaction = partiallySigned.transaction
+  private def partiallySignedTx: Transaction = current.transaction
 
   /** Signs the payment channel transaction with the server's [[ECPrivateKey]] */
   def serverSign(serverKey: ECPrivateKey): Try[ChannelInProgress] = {
     val unsignedTxSigComponent = TxSigComponent(partiallySignedTx,
-      partiallySigned.inputIndex, lock, Policy.standardScriptVerifyFlags)
+      current.inputIndex, lock, Policy.standardScriptVerifyFlags)
 
-    val signedTxSigComponent: Try[TxSigComponent] = EscrowTimeoutHelper.serverSign(serverKey, scriptPubKey,
+    val signedTxSigComponent: Try[TxSigComponent] = EscrowTimeoutHelper.serverSign(serverKey,
       unsignedTxSigComponent, HashType.sigHashAll)
 
     signedTxSigComponent.map { s =>
@@ -236,15 +225,16 @@ sealed trait ChannelInProgressClientSigned extends Channel {
     val invariant = checkCloseOutputs(outputs,fee, serverSPK)
     val oldTx = partiallySignedTx
     val updatedTx = Transaction(oldTx.version,oldTx.inputs,outputs,oldTx.lockTime)
-    val txSigComponent = TxSigComponent(updatedTx,partiallySigned.inputIndex,
-      partiallySigned.scriptPubKey,partiallySigned.flags)
+    val txSigComponent = TxSigComponent(updatedTx,current.inputIndex,
+      current.scriptPubKey,current.flags)
     val updatedInProgressClientSigned = ChannelInProgressClientSigned(anchorTx,lock,clientSPK,txSigComponent,old)
     val serverSigned = invariant.flatMap(_ => updatedInProgressClientSigned.serverSign(serverKey))
     serverSigned.map(s => ChannelClosedWithEscrow(s,serverSPK))
   }
 
   /** Sanity checks for the amounts when closing a payment channel */
-  private def checkCloseOutputs(outputs: Seq[TransactionOutput], fee: CurrencyUnit, serverSPK: ScriptPubKey):Try[Unit] = Try {
+  private def checkCloseOutputs(outputs: Seq[TransactionOutput], fee: CurrencyUnit,
+                                serverSPK: ScriptPubKey):Try[Unit] = Try {
     val serverOutput = outputs.find(_.scriptPubKey == serverSPK).get
     val clientOutput = outputs.find(_.scriptPubKey == clientSPK)
     val currencyUnits = outputs.map(_.value)
@@ -340,7 +330,7 @@ object ChannelInProgress {
 
 object ChannelInProgressClientSigned {
   private case class ChannelInProgressClientSignedImpl(anchorTx: Transaction, lock: EscrowTimeoutScriptPubKey,
-                                                              clientSPK: ScriptPubKey, partiallySigned: TxSigComponent,
+                                                              clientSPK: ScriptPubKey, current: TxSigComponent,
                                                               old: Seq[TxSigComponent]) extends ChannelInProgressClientSigned
 
   def apply(anchorTx: Transaction, lock: EscrowTimeoutScriptPubKey, clientSPK: ScriptPubKey,
@@ -386,7 +376,4 @@ object ChannelClosedWithTimeout {
     ChannelClosedWithTimeoutImpl(anchorTx,lock,finalTx,old,clientSPK)
   }
 
-  def apply(i: ChannelInProgress, finalTx: TxSigComponent): ChannelClosedWithTimeout = {
-    ChannelClosedWithTimeout(i.anchorTx,i.lock,finalTx,i.current +: i.old,i.clientSPK)
-  }
 }

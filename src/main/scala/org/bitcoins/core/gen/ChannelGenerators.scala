@@ -57,6 +57,14 @@ sealed trait ChannelGenerators extends BitcoinSLogger {
     inProgress = simulate(runs,old,amount,privKeys.head,privKeys(1))
   } yield (inProgress.get, privKeys)
 
+  /** Creates a Channel that has been signed by the client */
+  def channelInProgressClientSigned: Gen[(ChannelInProgressClientSigned, Seq[ECPrivateKey])] = for {
+    (old,privKeys) <- freshChannelInProgress
+    clientSigned = old.clientSign(Policy.dustThreshold,privKeys.head).get
+  } yield (clientSigned,privKeys)
+
+  def baseInProgress: Gen[(BaseInProgress, Seq[ECPrivateKey])] = Gen.oneOf(channelInProgress, channelInProgressClientSigned)
+
   /** Generator for a payment channel that opened, simulated, then closed */
   def channelClosed: Gen[(ChannelClosed, Seq[ECPrivateKey])] = for {
     (inProgress, privKeys) <- channelInProgress

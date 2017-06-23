@@ -55,8 +55,8 @@ sealed trait EscrowTimeoutHelper extends BitcoinSLogger {
   }
 
   /** Signs the partially signed [[org.bitcoins.core.crypto.BaseTxSigComponent]] with the server's private key */
-  def serverSign(serverKey: ECPrivateKey, p2shScriptPubKey: P2SHScriptPubKey,
-                 clientSigned: BaseTxSigComponent, hashType: HashType): Try[TxSigComponent] = {
+  def serverSign(serverKey: ECPrivateKey,clientSigned: BaseTxSigComponent, hashType: HashType): Try[TxSigComponent] = {
+    val p2shScriptPubKey = P2SHScriptPubKey(clientSigned.scriptPubKey)
     val signature = TransactionSignatureCreator.createSig(clientSigned, serverKey, hashType)
     val p2sh = clientSigned.scriptSignature.asInstanceOf[P2SHScriptSignature]
     val escrowTimeoutScriptSig = p2sh.scriptSignatureNoRedeemScript.map(_.asInstanceOf[EscrowTimeoutScriptSignature])
@@ -82,6 +82,7 @@ sealed trait EscrowTimeoutHelper extends BitcoinSLogger {
     outputs: Seq[TransactionOutput], hashType: HashType,
     version: UInt32, sequence: UInt32, lockTime: UInt32): Try[TxSigComponent] = Try {
     require(escrowTimeoutSPK.timeout.nestedScriptPubKey.isInstanceOf[P2PKHScriptPubKey], "We currently require the nested SPK in the timeout branch to be a P2PKHScriptPubKey, got: " + escrowTimeoutSPK.timeout.nestedScriptPubKey)
+    val p2sh = P2SHScriptPubKey(escrowTimeoutSPK)
     val signedP2PKHTxSigComponent = P2PKHHelper.sign(privKey,escrowTimeoutSPK,outPoint,outputs,hashType,version,sequence,lockTime)
     val signedP2PKHTx = signedP2PKHTxSigComponent.transaction
     val signedScriptSig = signedP2PKHTxSigComponent.scriptSignature
@@ -90,11 +91,12 @@ sealed trait EscrowTimeoutHelper extends BitcoinSLogger {
       case _: CLTVScriptPubKey => CLTVScriptSignature(signedScriptSig)
     }
     val escrowTimeoutScriptSig = EscrowTimeoutScriptSignature.fromLockTime(lockTimeScriptSig)
-    val fullInput = TransactionInput(signedP2PKHTxSigComponent.input.previousOutput,escrowTimeoutScriptSig,
+    val p2shScriptSig = P2SHScriptSignature(escrowTimeoutScriptSig,escrowTimeoutSPK)
+    val fullInput = TransactionInput(signedP2PKHTxSigComponent.input.previousOutput,p2shScriptSig,
       signedP2PKHTxSigComponent.input.sequence)
     val inputs = signedP2PKHTx.inputs.updated(signedP2PKHTxSigComponent.inputIndex.toInt,fullInput)
     val tx = Transaction(signedP2PKHTx.version,inputs,signedP2PKHTx.outputs, signedP2PKHTx.lockTime)
-    TxSigComponent(tx,signedP2PKHTxSigComponent.inputIndex, signedP2PKHTxSigComponent.scriptPubKey, signedP2PKHTxSigComponent.flags)
+    TxSigComponent(tx,signedP2PKHTxSigComponent.inputIndex, p2sh, signedP2PKHTxSigComponent.flags)
   }
 }
 
