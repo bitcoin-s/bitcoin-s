@@ -3,6 +3,7 @@ package org.bitcoins.core.channels
 import org.bitcoins.core.crypto.ECPrivateKey
 import org.bitcoins.core.currency.{CurrencyUnits, Satoshis}
 import org.bitcoins.core.gen.ScriptGenerators
+import org.bitcoins.core.number.Int64
 import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script.P2SHScriptPubKey
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionConstants, TransactionOutput}
@@ -55,7 +56,7 @@ class ChannelTest extends FlatSpec with MustMatchers with BitcoinSLogger {
 
   it must "fail to client sign a payment channel in progress if the value is more than the locked amount" in {
     val (inProgress,keys) = validInProgress
-    val i = inProgress.clientSign(inProgress.lockedAmount, keys.head)
+    val i = inProgress.clientSign(inProgress.lockedAmount + Satoshis.one, keys.head)
     i.isFailure must be (true)
   }
 
@@ -71,7 +72,25 @@ class ChannelTest extends FlatSpec with MustMatchers with BitcoinSLogger {
     val inProgress = chan.flatMap(_.clientSign(clientSPK,amount,keys.head))
     val closed = inProgress.flatMap(_.close(serverSPK,keys(1),CurrencyUnits.zero))
     closed.isSuccess must be (true)
+    closed.get.serverAmount must be (amount)
   }
+
+  it must "be valid for the server to receive all of the money when a payment channel closes in two updates" in {
+    val clientSPK = ScriptGenerators.p2pkhScriptPubKey.sample.get._1
+    val serverSPK = ScriptGenerators.p2pkhScriptPubKey.sample.get._1
+    val (lock,keys) = ScriptGenerators.escrowTimeoutScriptPubKey2Of2.sample.get
+    val p2sh = P2SHScriptPubKey(lock)
+    val amount = CurrencyUnits.oneBTC * Satoshis(Int64(2))
+    val output = TransactionOutput(amount, p2sh)
+    val tx = Transaction(TransactionConstants.version, Nil, Seq(output), TransactionConstants.lockTime)
+    val chan = ChannelAwaitingAnchorTx(tx, lock, Policy.confirmations)
+    val inProgress = chan.flatMap(_.clientSign(clientSPK,CurrencyUnits.oneBTC,keys.head))
+    val serverSign = inProgress.flatMap(_.serverSign(keys(1)))
+    val inProgress2 = serverSign.flatMap(_.clientSign(CurrencyUnits.oneBTC,keys.head))
+    val closed = inProgress2.flatMap(_.close(serverSPK,keys(1),CurrencyUnits.zero))
+    closed.get.serverAmount must be (amount)
+  }
+
 
   it must "fail to close the payment channel if the payment channel's fee is larger than the locked amount" in {
     val clientSPK = ScriptGenerators.p2pkhScriptPubKey.sample.get._1
@@ -87,6 +106,7 @@ class ChannelTest extends FlatSpec with MustMatchers with BitcoinSLogger {
     val closed = inProgress.flatMap(_.close(serverSPK,keys(1), CurrencyUnits.oneBTC + Satoshis.one))
     closed.isFailure must be (true)
   }
+
 
 
 

@@ -12,7 +12,7 @@ import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.core.wallet.{EscrowTimeoutHelper, P2PKHHelper}
 
 import scala.concurrent.Future
-import scala.util.{Failure, Try}
+import scala.util.{Failure, Success, Try}
 
 /**
   * Created by tom on 2/9/17.
@@ -150,11 +150,29 @@ sealed trait ChannelInProgress extends Channel with BaseInProgress {
     val inputs = current.transaction.inputs
     val inputIndex = current.inputIndex
     val client = clientOutput
-    val newClient = client.map(c => TransactionOutput(c, c.value - amount))
-    val newOutputs = clientOutputIndex.flatMap(idx => newClient.map(c => outputs.updated(idx,c)))
-    val result: Option[Try[ChannelInProgressClientSigned]] = newOutputs.flatMap { os =>
-      newClient.map { clientOutput =>
-        checkAmount(clientOutput).map(_ => updateChannel(inputs, os, clientKey, inputIndex))
+    val newClient: Option[TransactionOutput] = client.flatMap { c =>
+      val newClientAmount = c.value - amount
+      if (newClientAmount <= Policy.dustThreshold && newClientAmount >= CurrencyUnits.zero) {
+        //if we have <= Policy.dustThreshold in the client output, don't add it
+        None
+      } else {
+        //this may result in a negative newClientAmount which is fine here, it will cause a failure on 'checkAmount'
+        Some(TransactionOutput(c, newClientAmount))
+      }
+    }
+    val newOutputs: Option[Seq[TransactionOutput]] = clientOutputIndex.map { idx =>
+      newClient match {
+        case Some(c) => outputs.updated(idx, c)
+        case None =>
+          //since we do not have a new client output to update because there is no funds for the client
+          //we must remove the old client output from the tx
+          outputs.patch(idx,Nil,1)
+      }
+    }
+    val result: Option[Try[ChannelInProgressClientSigned]] = newOutputs.map { os =>
+      newClient match {
+        case Some(o) => checkAmount(o).map(_ => updateChannel(inputs, os, clientKey, inputIndex))
+        case None => Success(updateChannel(inputs,os,clientKey,inputIndex))
       }
     }
     result match {
@@ -166,7 +184,7 @@ sealed trait ChannelInProgress extends Channel with BaseInProgress {
 
   /** Check that the amounts for the client output are valid */
   private def checkAmount(output: TransactionOutput): Try[Unit] = Try {
-    require(output.value >= Policy.dustThreshold, "Client doesn't have enough money to pay server")
+    require(output.value >= Policy.dustThreshold, "Client doesn't have enough money to pay server, money left: " + output.value)
     require(output.value <= lockedAmount, "Client output cannot have more money than the total locked amount")
   }
 
