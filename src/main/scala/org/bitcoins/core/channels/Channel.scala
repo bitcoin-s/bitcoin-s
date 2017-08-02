@@ -4,15 +4,13 @@ import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.policy.Policy
-import org.bitcoins.core.protocol.P2PKHAddress
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.util.BitcoinSLogger
-import org.bitcoins.core.wallet.{EscrowTimeoutHelper, P2PKHHelper}
+import org.bitcoins.core.wallet.EscrowTimeoutHelper
 
-import scala.concurrent.Future
-import scala.util.{Failure, Try}
+import scala.util.{Failure, Success, Try}
 
 /**
   * Created by tom on 2/9/17.
@@ -150,23 +148,30 @@ sealed trait ChannelInProgress extends Channel with BaseInProgress {
     val inputs = current.transaction.inputs
     val inputIndex = current.inputIndex
     val client = clientOutput
-    val newClient = client.map(c => TransactionOutput(c, c.value - amount))
-    val newOutputs = clientOutputIndex.flatMap(idx => newClient.map(c => outputs.updated(idx,c)))
-    val result: Option[Try[ChannelInProgressClientSigned]] = newOutputs.flatMap { os =>
-      newClient.map { clientOutput =>
-        checkAmount(clientOutput).map(_ => updateChannel(inputs, os, clientKey, inputIndex))
+    val newClient: Option[TransactionOutput] = client.flatMap { c =>
+      val newClientAmount = c.value - amount
+      if (newClientAmount <= Policy.dustThreshold && newClientAmount >= CurrencyUnits.zero) None
+      else Some(TransactionOutput(c, newClientAmount))
+    }
+    val newOutputs: Seq[TransactionOutput] = clientOutputIndex match {
+      case Some(idx) => newClient match {
+        case Some(c) => outputs.updated(idx, c)
+        case None =>
+          //remove old client output
+          outputs.patch(idx,Nil,1)
       }
+      case None => outputs
     }
-    result match {
-      case Some(t) => t
-      case None => Failure(throw new IllegalArgumentException("Client output was not defined on the spending transaction, " +
-        "this probably means the client has spent all of it's money to the server"))
+    val result: Try[ChannelInProgressClientSigned] = newClient match {
+      case Some(o) => checkAmount(o).map(_ => updateChannel(inputs, newOutputs, clientKey, inputIndex))
+      case None => Success(updateChannel(inputs,newOutputs,clientKey,inputIndex))
     }
+    result
   }
 
   /** Check that the amounts for the client output are valid */
   private def checkAmount(output: TransactionOutput): Try[Unit] = Try {
-    require(output.value >= Policy.dustThreshold, "Client doesn't have enough money to pay server")
+    require(output.value >= Policy.dustThreshold, "Client doesn't have enough money to pay server, money left: " + output.value)
     require(output.value <= lockedAmount, "Client output cannot have more money than the total locked amount")
   }
 
