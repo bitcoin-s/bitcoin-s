@@ -56,7 +56,7 @@ class ChannelTest extends FlatSpec with MustMatchers with BitcoinSLogger {
 
   it must "fail to client sign a payment channel in progress if the value is more than the locked amount" in {
     val (inProgress,keys) = validInProgress
-    val i = inProgress.clientSign(inProgress.lockedAmount + Satoshis.one, keys.head)
+    val i = inProgress.clientSign(inProgress.lockedAmount, keys.head)
     i.isFailure must be (true)
   }
 
@@ -106,9 +106,6 @@ class ChannelTest extends FlatSpec with MustMatchers with BitcoinSLogger {
     val closed = inProgress.flatMap(_.close(serverSPK,keys(1), CurrencyUnits.oneBTC + Satoshis.one))
     closed.isFailure must be (true)
   }
-
-
-
 
   private def validInProgress: (ChannelInProgress, Seq[ECPrivateKey]) = {
     val clientSPK = ScriptGenerators.p2pkhScriptPubKey.sample.get._1

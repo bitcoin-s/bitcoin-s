@@ -4,14 +4,12 @@ import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.policy.Policy
-import org.bitcoins.core.protocol.P2PKHAddress
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.util.BitcoinSLogger
-import org.bitcoins.core.wallet.{EscrowTimeoutHelper, P2PKHHelper}
+import org.bitcoins.core.wallet.EscrowTimeoutHelper
 
-import scala.concurrent.Future
 import scala.util.{Failure, Success, Try}
 
 /**
@@ -152,34 +150,23 @@ sealed trait ChannelInProgress extends Channel with BaseInProgress {
     val client = clientOutput
     val newClient: Option[TransactionOutput] = client.flatMap { c =>
       val newClientAmount = c.value - amount
-      if (newClientAmount <= Policy.dustThreshold && newClientAmount >= CurrencyUnits.zero) {
-        //if we have <= Policy.dustThreshold in the client output, don't add it
-        None
-      } else {
-        //this may result in a negative newClientAmount which is fine here, it will cause a failure on 'checkAmount'
-        Some(TransactionOutput(c, newClientAmount))
-      }
+      if (newClientAmount <= Policy.dustThreshold && newClientAmount >= CurrencyUnits.zero) None
+      else Some(TransactionOutput(c, newClientAmount))
     }
-    val newOutputs: Option[Seq[TransactionOutput]] = clientOutputIndex.map { idx =>
-      newClient match {
+    val newOutputs: Seq[TransactionOutput] = clientOutputIndex match {
+      case Some(idx) => newClient match {
         case Some(c) => outputs.updated(idx, c)
         case None =>
-          //since we do not have a new client output to update because there is no funds for the client
-          //we must remove the old client output from the tx
+          //remove old client output
           outputs.patch(idx,Nil,1)
       }
+      case None => outputs
     }
-    val result: Option[Try[ChannelInProgressClientSigned]] = newOutputs.map { os =>
-      newClient match {
-        case Some(o) => checkAmount(o).map(_ => updateChannel(inputs, os, clientKey, inputIndex))
-        case None => Success(updateChannel(inputs,os,clientKey,inputIndex))
-      }
+    val result: Try[ChannelInProgressClientSigned] = newClient match {
+      case Some(o) => checkAmount(o).map(_ => updateChannel(inputs, newOutputs, clientKey, inputIndex))
+      case None => Success(updateChannel(inputs,newOutputs,clientKey,inputIndex))
     }
-    result match {
-      case Some(t) => t
-      case None => Failure(throw new IllegalArgumentException("Client output was not defined on the spending transaction, " +
-        "this probably means the client has spent all of it's money to the server"))
-    }
+    result
   }
 
   /** Check that the amounts for the client output are valid */
