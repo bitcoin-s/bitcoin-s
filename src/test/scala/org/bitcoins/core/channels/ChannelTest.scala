@@ -72,7 +72,7 @@ class ChannelTest extends FlatSpec with MustMatchers with BitcoinSLogger {
     val inProgress = chan.flatMap(_.clientSign(clientSPK,amount,keys.head))
     val closed = inProgress.flatMap(_.close(serverSPK,keys(1),CurrencyUnits.zero))
     closed.isSuccess must be (true)
-    closed.get.serverAmount must be (amount)
+    closed.get.serverAmount.get must be (amount)
   }
 
   it must "be valid for the server to receive all of the money when a payment channel closes in two updates" in {
@@ -88,7 +88,7 @@ class ChannelTest extends FlatSpec with MustMatchers with BitcoinSLogger {
     val serverSign = inProgress.flatMap(_.serverSign(keys(1)))
     val inProgress2 = serverSign.flatMap(_.clientSign(CurrencyUnits.oneBTC,keys.head))
     val closed = inProgress2.flatMap(_.close(serverSPK,keys(1),CurrencyUnits.zero))
-    closed.get.serverAmount must be (amount)
+    closed.get.serverAmount.get must be (amount)
   }
 
 

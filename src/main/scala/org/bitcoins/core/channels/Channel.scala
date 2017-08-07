@@ -73,11 +73,11 @@ sealed trait ChannelAwaitingAnchorTx extends Channel {
     * after we receive a partially signed transaction from the client.
     * If None is returned, that means we did not find an output that has the clientSPK
     */
-  def createClientSigned(partiallySigned: Transaction, clientSPK: ScriptPubKey): Option[ChannelInProgressClientSigned] = {
+  def createClientSigned(partiallySigned: Transaction, changeClientSPK: ScriptPubKey): Option[ChannelInProgressClientSigned] = {
     val inputOpt = partiallySigned.inputs.zipWithIndex.find(_._1.previousOutput.txId == anchorTx.txId)
     val inputIndex = inputOpt.map(i => UInt32(i._2))
     val txSigComponent = inputIndex.map(i => TxSigComponent(partiallySigned, i, scriptPubKey,Policy.standardScriptVerifyFlags))
-    txSigComponent.map(t => ChannelInProgressClientSigned(anchorTx,lock,clientSPK,t,Nil))
+    txSigComponent.map(t => ChannelInProgressClientSigned(anchorTx,lock,changeClientSPK,t,Nil))
   }
 
   /** Attempts to close the [[Channel]] because the [[org.bitcoins.core.protocol.script.EscrowTimeoutScriptPubKey]]
@@ -122,6 +122,14 @@ sealed trait BaseInProgress { this: Channel =>
 
   /** The output that pays change back to the client */
   def clientOutput: Option[TransactionOutput] = clientOutputIndex.map(idx => current.transaction.outputs(idx))
+
+  /** The amount that will be refunded to the client */
+  def clientAmount: Option[CurrencyUnit] = clientOutput.map(_.value)
+
+  /** The amount the server will be paid, note this amount will not be the exact amount paid
+    * to the server because the network's transaction fee is deducted from the server output
+    */
+  def serverAmount: Option[CurrencyUnit] = clientAmount.map(a => lockedAmount - a)
 
   /** Attempts to close the [[Channel]] because the [[EscrowTimeoutScriptPubKey]]
     * has timed out
@@ -262,21 +270,7 @@ sealed trait ChannelInProgressClientSigned extends Channel with BaseInProgress {
   }
 }
 
-sealed trait ChannelClosed extends Channel {
-  /** This is the [[TxSigComponent]] that will be broadcast to the blockchain */
-  def finalTx: TxSigComponent
-
-  def old: Seq[TxSigComponent]
-
-  /** The [[ScriptPubKey]] that pays the client it's refund */
-  def clientSPK: ScriptPubKey
-
-  /** The client's refund output */
-  def clientOutput: Option[TransactionOutput] = finalTx.transaction.outputs.find(_.scriptPubKey == clientSPK)
-
-  /** The amount the client is being refunded */
-  def clientValue: Option[CurrencyUnit] = clientOutput.map(_.value)
-}
+sealed trait ChannelClosed extends Channel with BaseInProgress
 
 sealed trait ChannelClosedWithTimeout extends ChannelClosed
 
@@ -287,11 +281,13 @@ sealed trait ChannelClosedWithEscrow extends ChannelClosed {
   /** The output that pays the server */
   def serverOutput: TransactionOutput = {
     //Invariant in ChannelClosedImpl states this has to exist
-    finalTx.transaction.outputs.find(_.scriptPubKey == serverSPK).get
+    current.transaction.outputs.find(_.scriptPubKey == serverSPK).get
   }
-
   /** The amount the server is being paid */
-  def serverAmount: CurrencyUnit = serverOutput.value
+  override def serverAmount: Option[CurrencyUnit] = {
+    //TODO: Comeback and look to see if there is a better way todo this
+    Some(serverOutput.value)
+  }
 }
 
 object ChannelAwaitingAnchorTx {
@@ -352,9 +348,9 @@ object ChannelInProgressClientSigned {
 
 object ChannelClosedWithEscrow {
   private case class ChannelClosedWithEscrowImpl(anchorTx: Transaction, lock: EscrowTimeoutScriptPubKey,
-                                       finalTx: TxSigComponent, old: Seq[TxSigComponent],
+                                                 current: TxSigComponent, old: Seq[TxSigComponent],
                                        clientSPK: ScriptPubKey, serverSPK: ScriptPubKey) extends ChannelClosedWithEscrow {
-    require(finalTx.transaction.outputs.exists(_.scriptPubKey == serverSPK), "The final transaction must have a SPK that pays the server")
+    require(current.transaction.outputs.exists(_.scriptPubKey == serverSPK), "The final transaction must have a SPK that pays the server")
   }
 
   def apply(anchorTx: Transaction, lock: EscrowTimeoutScriptPubKey, finalTx: TxSigComponent,
@@ -369,9 +365,9 @@ object ChannelClosedWithEscrow {
 
 object ChannelClosedWithTimeout {
   private case class ChannelClosedWithTimeoutImpl(anchorTx: Transaction, lock: EscrowTimeoutScriptPubKey,
-                                                  finalTx: TxSigComponent, old: Seq[TxSigComponent],
+                                                  current: TxSigComponent, old: Seq[TxSigComponent],
                                                   clientSPK: ScriptPubKey) extends ChannelClosedWithTimeout {
-    require(finalTx.transaction.outputs.exists(_.scriptPubKey == clientSPK),
+    require(current.transaction.outputs.exists(_.scriptPubKey == clientSPK),
       "Client SPK was not defined on a output. This is SPK that is suppose to refund the client it's money")
   }
 
