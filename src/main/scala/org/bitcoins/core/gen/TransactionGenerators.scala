@@ -1,15 +1,15 @@
 package org.bitcoins.core.gen
 
-import org.bitcoins.core.crypto.{ECPrivateKey, TxSigComponent, WitnessTxSigComponent}
+import org.bitcoins.core.crypto.{ECPrivateKey, TxSigComponent, WitnessTxSigComponent, WitnessTxSigComponentRaw}
 import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits}
-import org.bitcoins.core.number.{Int64, UInt32}
+import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction.{TransactionInput, TransactionOutPoint, TransactionOutput, _}
 import org.bitcoins.core.script.constant.ScriptNumber
 import org.bitcoins.core.script.interpreter.ScriptInterpreter
 import org.bitcoins.core.script.locktime.LockTimeInterpreter
-import org.bitcoins.core.util.{BitcoinSLogger, BitcoinScriptUtil}
+import org.bitcoins.core.util.BitcoinSLogger
 import org.scalacheck.Gen
 
 /**
@@ -237,28 +237,28 @@ trait TransactionGenerators extends BitcoinSLogger {
   } yield (wtxSigComponent,privKeys)
 
   /** Generates a [[WitnessTransaction]] that has an input spends a raw P2WSH [[WitnessScriptPubKey]] */
-  def signedP2WSHP2PKTransaction: Gen[(WitnessTxSigComponent, Seq[ECPrivateKey])] = for {
+  def signedP2WSHP2PKTransaction: Gen[(WitnessTxSigComponentRaw, Seq[ECPrivateKey])] = for {
     (_,wtxSigComponent, privKeys) <- WitnessGenerators.signedP2WSHP2PKTransactionWitness
   } yield (wtxSigComponent,privKeys)
 
   /** Generates a [[WitnessTransaction]] that has an input spends a raw P2WSH [[WitnessScriptPubKey]] */
-  def signedP2WSHP2PKHTransaction: Gen[(WitnessTxSigComponent, Seq[ECPrivateKey])] = for {
+  def signedP2WSHP2PKHTransaction: Gen[(WitnessTxSigComponentRaw, Seq[ECPrivateKey])] = for {
     (_,wtxSigComponent, privKeys) <- WitnessGenerators.signedP2WSHP2PKHTransactionWitness
   } yield (wtxSigComponent,privKeys)
 
-  def signedP2WSHMultiSigTransaction: Gen[(WitnessTxSigComponent, Seq[ECPrivateKey])] = for {
+  def signedP2WSHMultiSigTransaction: Gen[(WitnessTxSigComponentRaw, Seq[ECPrivateKey])] = for {
     (_,wtxSigComponent, privKeys) <- WitnessGenerators.signedP2WSHMultiSigTransactionWitness
   } yield (wtxSigComponent,privKeys)
 
-  def signedP2WSHMultiSigEscrowTimeoutTransaction: Gen[(WitnessTxSigComponent, Seq[ECPrivateKey])] = for {
+  def signedP2WSHMultiSigEscrowTimeoutTransaction: Gen[(WitnessTxSigComponentRaw, Seq[ECPrivateKey])] = for {
     (_,wtxSigComponent,privKeys) <- WitnessGenerators.signedP2WSHMultiSigEscrowTimeoutWitness
   } yield (wtxSigComponent,privKeys)
 
-  def spendableP2WSHTimeoutEscrowTimeoutTransaction: Gen[(WitnessTxSigComponent, Seq[ECPrivateKey])] = for {
+  def spendableP2WSHTimeoutEscrowTimeoutTransaction: Gen[(WitnessTxSigComponentRaw, Seq[ECPrivateKey])] = for {
     (_,wtxSigComponent,privKeys) <- WitnessGenerators.spendableP2WSHTimeoutEscrowTimeoutWitness
   } yield (wtxSigComponent,privKeys)
 
-  def signedP2WSHEscrowTimeoutTransaction: Gen[(WitnessTxSigComponent, Seq[ECPrivateKey])] = {
+  def signedP2WSHEscrowTimeoutTransaction: Gen[(WitnessTxSigComponentRaw, Seq[ECPrivateKey])] = {
     Gen.oneOf(signedP2WSHMultiSigEscrowTimeoutTransaction,spendableP2WSHTimeoutEscrowTimeoutTransaction)
   }
 
@@ -272,7 +272,7 @@ trait TransactionGenerators extends BitcoinSLogger {
       scriptPubKey, Policy.standardScriptVerifyFlags,amount)
   } yield (signedTxSignatureComponent, privKeys)
 
-  def signedP2WSHTransaction: Gen[(WitnessTxSigComponent,Seq[ECPrivateKey])] = {
+  def signedP2WSHTransaction: Gen[(WitnessTxSigComponentRaw,Seq[ECPrivateKey])] = {
     Gen.oneOf(signedP2WSHP2PKTransaction, signedP2WSHP2PKHTransaction, signedP2WSHMultiSigTransaction,
       signedP2WSHEscrowTimeoutTransaction)
   }
@@ -284,7 +284,7 @@ trait TransactionGenerators extends BitcoinSLogger {
     (creditingTx,outputIndex) = buildCreditingTransaction(p2shScriptSig.redeemScript, wtxSigComponent.amount)
     sequence = wtxSigComponent.transaction.inputs(wtxSigComponent.inputIndex.toInt).sequence
     locktime = wtxSigComponent.transaction.lockTime
-    (signedTx,inputIndex) = buildSpendingTransaction(UInt32(2),creditingTx,p2shScriptSig,outputIndex,locktime,sequence,witness)
+    (signedTx,inputIndex) = buildSpendingTransaction(TransactionConstants.validLockVersion,creditingTx,p2shScriptSig,outputIndex,locktime,sequence,witness)
     signedTxSignatureComponent = WitnessTxSigComponent(signedTx,inputIndex,
       p2shScriptPubKey, Policy.standardScriptVerifyFlags, wtxSigComponent.amount)
   } yield (signedTxSignatureComponent,privKeys)

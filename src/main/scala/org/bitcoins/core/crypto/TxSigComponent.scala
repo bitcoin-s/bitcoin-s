@@ -58,7 +58,7 @@ sealed trait WitnessTxSigComponent extends TxSigComponent {
   override def sigVersion = SigVersionWitnessV0
 }
 
-/** This represents checking the [[WitnessTransaction] against a P2WPKH or P2WSH ScriptPubKey */
+/** This represents checking the [[WitnessTransaction]] against a P2WPKH or P2WSH ScriptPubKey */
 sealed trait WitnessTxSigComponentRaw extends WitnessTxSigComponent {
   override def scriptPubKey: WitnessScriptPubKey
 
@@ -71,7 +71,7 @@ sealed trait WitnessTxSigComponentP2SH extends WitnessTxSigComponent {
 
   override def scriptSignature: P2SHScriptSignature = {
     val s = transaction.inputs(inputIndex.toInt).scriptSignature
-    require(s.isInstanceOf[P2SHScriptSignature], "Must have P2SHScriptSignature for P2SH(P2WSH())")
+    require(s.isInstanceOf[P2SHScriptSignature], "Must have P2SHScriptSignature for P2SH(P2WSH()), got: " + s)
     s.asInstanceOf[P2SHScriptSignature]
   }
 
@@ -137,7 +137,7 @@ object WitnessTxSigComponent {
 
 object WitnessTxSigComponentRaw {
   private case class WitnessTxSigComponentRawImpl(transaction: WitnessTransaction,inputIndex: UInt32,
-                                              scriptPubKey: WitnessScriptPubKey, flags: Seq[ScriptFlag],
+                                                  scriptPubKey: WitnessScriptPubKey, flags: Seq[ScriptFlag],
                                                   amount: CurrencyUnit) extends WitnessTxSigComponentRaw
 
   def apply(transaction: WitnessTransaction,inputIndex: UInt32,

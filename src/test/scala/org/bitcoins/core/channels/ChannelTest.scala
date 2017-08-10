@@ -5,10 +5,12 @@ import org.bitcoins.core.currency.{CurrencyUnits, Satoshis}
 import org.bitcoins.core.gen.ScriptGenerators
 import org.bitcoins.core.number.Int64
 import org.bitcoins.core.policy.Policy
-import org.bitcoins.core.protocol.script.P2SHScriptPubKey
-import org.bitcoins.core.protocol.transaction.{Transaction, TransactionConstants, TransactionOutput}
+import org.bitcoins.core.protocol.script.{P2SHScriptPubKey, WitnessScriptPubKeyV0}
+import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.util.BitcoinSLogger
 import org.scalatest.{FlatSpec, MustMatchers}
+
+import scala.util.Try
 
 /**
   * Created by chris on 5/31/17.
@@ -42,13 +44,14 @@ class ChannelTest extends FlatSpec with MustMatchers with BitcoinSLogger {
     chan2.isFailure must be(true)
   }
 
-  it must "fail to clientSign ChannelAwaitingAnchorTx if we do not have enough confs" in {
+  it must "fail to client sign ChannelAwaitingAnchorTx if we do not have enough confs" in {
     val clientSPK = ScriptGenerators.p2pkhScriptPubKey.sample.get._1
     val (lock, keys) = ScriptGenerators.escrowTimeoutScriptPubKey2Of2.sample.get
-    val p2sh = P2SHScriptPubKey(lock)
+    val p2sh = P2SHScriptPubKey(WitnessScriptPubKeyV0(lock))
     val amount = Policy.minChannelAmount
     val output = TransactionOutput(amount, p2sh)
-    val tx = Transaction(TransactionConstants.version, Nil, Seq(output), TransactionConstants.lockTime)
+    val tc = TransactionConstants
+    val tx = Transaction(tc.version, Nil, Seq(output), tc.lockTime)
     val chan = ChannelAwaitingAnchorTx(tx, lock)
     val clientSigned = chan.get.clientSign(clientSPK, amount, keys.head)
     clientSigned.isFailure must be(true)
@@ -64,7 +67,7 @@ class ChannelTest extends FlatSpec with MustMatchers with BitcoinSLogger {
     val clientSPK = ScriptGenerators.p2pkhScriptPubKey.sample.get._1
     val serverSPK = ScriptGenerators.p2pkhScriptPubKey.sample.get._1
     val (lock,keys) = ScriptGenerators.escrowTimeoutScriptPubKey2Of2.sample.get
-    val p2sh = P2SHScriptPubKey(lock)
+    val p2sh = P2SHScriptPubKey(WitnessScriptPubKeyV0(lock))
     val amount = CurrencyUnits.oneBTC
     val output = TransactionOutput(amount, p2sh)
     val tx = Transaction(TransactionConstants.version, Nil, Seq(output), TransactionConstants.lockTime)
@@ -79,15 +82,15 @@ class ChannelTest extends FlatSpec with MustMatchers with BitcoinSLogger {
     val clientSPK = ScriptGenerators.p2pkhScriptPubKey.sample.get._1
     val serverSPK = ScriptGenerators.p2pkhScriptPubKey.sample.get._1
     val (lock,keys) = ScriptGenerators.escrowTimeoutScriptPubKey2Of2.sample.get
-    val p2sh = P2SHScriptPubKey(lock)
+    val p2sh = P2SHScriptPubKey(WitnessScriptPubKeyV0(lock))
     val amount = CurrencyUnits.oneBTC * Satoshis(Int64(2))
     val output = TransactionOutput(amount, p2sh)
     val tx = Transaction(TransactionConstants.version, Nil, Seq(output), TransactionConstants.lockTime)
     val chan = ChannelAwaitingAnchorTx(tx, lock, Policy.confirmations)
-    val inProgress = chan.flatMap(_.clientSign(clientSPK,CurrencyUnits.oneBTC,keys.head))
-    val serverSign = inProgress.flatMap(_.serverSign(keys(1)))
-    val inProgress2 = serverSign.flatMap(_.clientSign(CurrencyUnits.oneBTC,keys.head))
-    val closed = inProgress2.flatMap(_.close(serverSPK,keys(1),CurrencyUnits.zero))
+    val inProgress: Try[ChannelInProgressClientSigned] = chan.flatMap(_.clientSign(clientSPK,CurrencyUnits.oneBTC,keys.head))
+    val serverSign: Try[ChannelInProgress] = inProgress.flatMap(_.serverSign(keys(1)))
+    val inProgress2: Try[ChannelInProgressClientSigned] = serverSign.flatMap(_.clientSign(CurrencyUnits.oneBTC,keys.head))
+    val closed: Try[ChannelClosedWithEscrow] = inProgress2.flatMap(_.close(serverSPK,keys(1),CurrencyUnits.zero))
     closed.get.serverAmount.get must be (amount)
   }
 
@@ -96,7 +99,7 @@ class ChannelTest extends FlatSpec with MustMatchers with BitcoinSLogger {
     val clientSPK = ScriptGenerators.p2pkhScriptPubKey.sample.get._1
     val serverSPK = ScriptGenerators.p2pkhScriptPubKey.sample.get._1
     val (lock,keys) = ScriptGenerators.escrowTimeoutScriptPubKey2Of2.sample.get
-    val p2sh = P2SHScriptPubKey(lock)
+    val p2sh = P2SHScriptPubKey(WitnessScriptPubKeyV0(lock))
     val amount = CurrencyUnits.oneBTC
     val output = TransactionOutput(amount, p2sh)
     val tx = Transaction(TransactionConstants.version, Nil, Seq(output), TransactionConstants.lockTime)
@@ -110,10 +113,12 @@ class ChannelTest extends FlatSpec with MustMatchers with BitcoinSLogger {
   private def validInProgress: (ChannelInProgress, Seq[ECPrivateKey]) = {
     val clientSPK = ScriptGenerators.p2pkhScriptPubKey.sample.get._1
     val (lock,keys) = ScriptGenerators.escrowTimeoutScriptPubKey2Of2.sample.get
-    val p2sh = P2SHScriptPubKey(lock)
+    val witSPK = WitnessScriptPubKeyV0(lock)
+    val p2sh = P2SHScriptPubKey(witSPK)
     val amount = CurrencyUnits.oneBTC
     val output = TransactionOutput(amount, p2sh)
-    val tx = Transaction(TransactionConstants.version, Nil, Seq(output), TransactionConstants.lockTime)
+    val tc = TransactionConstants
+    val tx = BaseTransaction(tc.version, Nil, Seq(output), tc.lockTime)
     val chan = ChannelAwaitingAnchorTx(tx, lock, Policy.confirmations)
     val paymentAmount = Policy.minChannelAmount
     val clientSign = chan.flatMap(_.clientSign(clientSPK,paymentAmount,keys.head))

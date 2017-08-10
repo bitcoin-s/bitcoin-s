@@ -290,7 +290,7 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
   }
 
   def calculateScriptForSigning(txSignatureComponent: TxSigComponent, script: Seq[ScriptToken]): Seq[ScriptToken] = txSignatureComponent.scriptPubKey match {
-    case p2shScriptPubKey: P2SHScriptPubKey =>
+    case _: P2SHScriptPubKey =>
       val p2shScriptSig = P2SHScriptSignature(txSignatureComponent.scriptSignature.bytes)
       val sigsRemoved = removeSignaturesFromScript(p2shScriptSig.signatures,p2shScriptSig.redeemScript.asm)
       sigsRemoved
@@ -301,7 +301,7 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
           parseScriptEither(scriptEither)
         case rWTxSigComponent: WitnessTxSigComponentRebuilt =>
           rWTxSigComponent.scriptPubKey.asm
-        case base : BaseTxSigComponent =>
+        case _: BaseTxSigComponent =>
           //shouldn't have BaseTxSigComponent
           //with a witness scriptPubKey
           script

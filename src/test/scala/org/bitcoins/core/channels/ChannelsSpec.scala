@@ -57,6 +57,7 @@ class ChannelsSpec extends Properties("ChannelProperties") with BitcoinSLogger {
   property("close a payment channel awaiting anchor tx with the timeout branch") = {
     Prop.forAllNoShrink(ChannelGenerators.channelAwaitingAnchorTxNotConfirmed) { case (awaiting, privKeys) =>
       val channelClosedWithTimeout = awaiting.closeWithTimeout(EmptyScriptPubKey,privKeys(2), Satoshis.one)
+      logger.info("closed.inputs: " + channelClosedWithTimeout.map(_.current.transaction.inputs))
       val program = channelClosedWithTimeout.map(c => ScriptProgram(c.current))
       val result = program.map(p => ScriptInterpreter.run(p))
       result.get == ScriptOk
