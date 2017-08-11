@@ -32,6 +32,9 @@ sealed trait Channel extends BitcoinSLogger {
   /** The [[EscrowTimeoutScriptPubKey]] that needs to be satisfied to spend from the [[anchorTx]] */
   def lock: EscrowTimeoutScriptPubKey
 
+  /** [[WitnessScriptPubKeyV0]] used as the redeem script in the [[P2SHScriptPubKey]] */
+  def witSPK = WitnessScriptPubKeyV0(lock)
+
   def scriptPubKey: P2SHScriptPubKey = lockingOutput.scriptPubKey.asInstanceOf[P2SHScriptPubKey]
 
   /** The output that we are spending from in the [[Channel]] */
@@ -61,15 +64,12 @@ sealed trait ChannelAwaitingAnchorTx extends Channel {
     val o1 = TransactionOutput(lockedAmount - amount, clientChangeSPK)
     val outputs = Seq(o1)
     val outPoint = TransactionOutPoint(anchorTx.txId, UInt32(outputIndex))
-    val witSPK = WitnessScriptPubKeyV0(lock)
-    //TODO: Look at this, if we don't hit this we hit an except requiring the scriptSig to be a P2SHScriptSignature
-    val p2shScriptSig = P2SHScriptSignature(EmptyScriptSignature,witSPK)
+    val p2shScriptSig = P2SHScriptSignature(witSPK)
     val i1 = TransactionInput(outPoint,p2shScriptSig,TransactionConstants.sequence)
     val inputs = Seq(i1)
     val inputIndex = UInt32(inputs.indexOf(i1))
     val partiallySigned = EscrowTimeoutHelper.clientSign(inputs,outputs,inputIndex,privKey,
       lock,TransactionOutput(lockedAmount,scriptPubKey), HashType.sigHashSingleAnyoneCanPay)
-    require(partiallySigned.transaction.outputs.exists(_.scriptPubKey == clientChangeSPK))
     val inProgress = ChannelInProgressClientSigned(anchorTx,lock,clientChangeSPK,partiallySigned,Nil)
     inProgress
   }
@@ -99,14 +99,13 @@ sealed trait ChannelAwaitingAnchorTx extends Channel {
     val outputs = Seq(TransactionOutput(lockedAmount - fee, clientChangeSPK))
     val outPoint = TransactionOutPoint(anchorTx.txId,UInt32(outputIndex))
     val tc = TransactionConstants
-    val witSPK = WitnessScriptPubKeyV0(lock)
     val scriptSig = P2SHScriptSignature(witSPK)
     val input = TransactionInput(outPoint,scriptSig,sequence)
     val inputs = Seq(input)
     val inputIndex = UInt32(inputs.indexOf(input))
     val creditingOutput = lockingOutput
     val signed: Try[WitnessTxSigComponent] = EscrowTimeoutHelper.closeWithTimeout(inputs,outputs, inputIndex, clientKey,
-      lock,creditingOutput,HashType.sigHashAll,tc.validLockVersion,sequence,tc.lockTime)
+      lock,creditingOutput,HashType.sigHashSingleAnyoneCanPay,tc.validLockVersion,sequence,tc.lockTime)
     signed.map(t => ChannelClosedWithTimeout(anchorTx,lock,t,Nil,clientChangeSPK))
   }
 
@@ -155,14 +154,13 @@ sealed trait BaseInProgress { this: Channel =>
     val outputs = Seq(TransactionOutput(lockedAmount - fee, clientChangeSPK))
     val outPoint = TransactionOutPoint(anchorTx.txId,UInt32(outputIndex))
     val tc = TransactionConstants
-    val witSPK = WitnessScriptPubKeyV0(lock)
     val scriptSig = P2SHScriptSignature(witSPK)
     val input = TransactionInput(outPoint,scriptSig,sequence)
     val inputs = Seq(input)
-    val inputIndex = UInt32.zero
+    val inputIndex = UInt32(inputs.indexOf(input))
     val creditingOutput = lockingOutput
     val signed: Try[WitnessTxSigComponent] = EscrowTimeoutHelper.closeWithTimeout(inputs,outputs, inputIndex, clientKey,
-      lock,creditingOutput,HashType.sigHashAll,tc.validLockVersion,sequence,tc.lockTime)
+      lock,creditingOutput,HashType.sigHashSingleAnyoneCanPay,tc.validLockVersion,sequence,tc.lockTime)
     signed.map(t => ChannelClosedWithTimeout(anchorTx,lock,t,Nil,clientChangeSPK))
   }
 
@@ -199,7 +197,7 @@ sealed trait ChannelInProgress extends Channel with BaseInProgress {
     invariant.flatMap(_ => newOutputs.map(os => updateChannel(inputs,os,clientKey,inputIndex)))
   }
 
-  /** Check that the amounts for the client output are valid */
+  /** Check that the amounts for the given outputs are valid */
   private def checkAmounts(outputs: Seq[TransactionOutput]): Try[Unit] = {
     @tailrec
     def loop(remaining: Seq[TransactionOutput]): Try[Unit] = {
@@ -249,7 +247,7 @@ sealed trait ChannelInProgressClientSigned extends Channel with BaseInProgress {
       current.inputIndex, scriptPubKey, Policy.standardScriptVerifyFlags,lockedAmount)
 
     val signedTxSigComponent: Try[WitnessTxSigComponent] = EscrowTimeoutHelper.serverSign(serverKey,
-      unsignedTxSigComponent, HashType.sigHashAll)
+      unsignedTxSigComponent, HashType.sigHashAllAnyoneCanPay)
 
     signedTxSigComponent.map { s =>
       ChannelInProgress(anchorTx,lock, clientChangeSPK, s, old)
@@ -319,7 +317,6 @@ sealed trait ChannelClosedWithEscrow extends ChannelClosed {
   }
   /** The amount the server is being paid */
   override def serverAmount: Option[CurrencyUnit] = {
-    //TODO: Comeback and look to see if there is a better way todo this
     Some(serverOutput.value)
   }
 }
