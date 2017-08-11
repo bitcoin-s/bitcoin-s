@@ -175,26 +175,20 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
         CryptoUtil.doubleSHA256(bytes).bytes
       } else emptyHash.bytes
 
-      logger.debug("outPointHash: " + outPointHash.map(BitcoinSUtil.encodeHex(_)))
       val sequenceHash: Seq[Byte] = if (isNotAnyoneCanPay && isNotSigHashNone && isNotSigHashSingle) {
         val bytes = spendingTx.inputs.flatMap(_.sequence.bytes)
         CryptoUtil.doubleSHA256(bytes).bytes
       } else emptyHash.bytes
 
-      logger.debug("sequenceHash: " + sequenceHash.map(BitcoinSUtil.encodeHex(_)))
       val outputHash: Seq[Byte] = if (isNotSigHashSingle && isNotSigHashNone) {
-        logger.debug("Not SIGHASH_SINGLE & Not SIGHASH_NONE")
         val bytes = spendingTx.outputs.flatMap(o => BitcoinSUtil.decodeHex(RawTransactionOutputParser.write(o)))
         CryptoUtil.doubleSHA256(bytes).bytes
       } else if (HashType.isSIGHASH_SINGLE(hashType.num) && inputIndex < UInt32(spendingTx.outputs.size)) {
-        logger.debug("SIGHASH_SINGLE and input index < outputs size")
         val output = spendingTx.outputs(inputIndexInt)
         val bytes = CryptoUtil.doubleSHA256(RawTransactionOutputParser.write(output)).bytes
         bytes
       } else emptyHash.bytes
 
-      logger.debug("outputHash: " + outputHash.map(BitcoinSUtil.encodeHex(_)))
-      logger.debug("Script: " + script)
       val scriptBytes = script.flatMap(_.bytes)
       //helper function to flip endianness
       val fe: Seq[Byte] => Seq[Byte] = {bytes: Seq[Byte] => BitcoinSUtil.decodeHex(BitcoinSUtil.flipEndianness(bytes)) }
@@ -203,7 +197,7 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper with Bit
         spendingTx.inputs(inputIndexInt).previousOutput.bytes ++ CompactSizeUInt.calculateCompactSizeUInt(scriptBytes).bytes ++
         scriptBytes ++ fe(amount.bytes) ++ fe(spendingTx.inputs(inputIndexInt).sequence.bytes) ++
         outputHash ++ fe(spendingTx.lockTime.bytes) ++ hashType.num.bytes.reverse
-      logger.info("Serialization for signature for WitnessV0Sig: " + BitcoinSUtil.encodeHex(serializationForSig))
+      logger.debug("Serialization for signature for WitnessV0Sig: " + BitcoinSUtil.encodeHex(serializationForSig))
       serializationForSig
   }
 

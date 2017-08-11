@@ -30,6 +30,8 @@ trait Policy {
     ScriptVerifyLowS, ScriptVerifyWitness, ScriptVerifyMinimalIf, ScriptVerifyNullFail,
     ScriptVerifyNullDummy, ScriptVerifyWitnessPubKeyType, ScriptVerifyDiscourageUpgradableWitnessProgram)
 
+  def standardFlags = standardScriptVerifyFlags
+
   /** The number of confirmations for a payment to be considered as accepted */
   def confirmations: Long = 6
 
