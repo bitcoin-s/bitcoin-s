@@ -1,13 +1,9 @@
 package org.bitcoins.core.gen
 
 import org.bitcoins.core.crypto._
-import org.bitcoins.core.currency.CurrencyUnit
-import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.policy.Policy
-import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
-import org.bitcoins.core.script.constant.{OP_0, OP_1, ScriptNumber, ScriptToken}
+import org.bitcoins.core.script.constant.ScriptNumber
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.util.{BitcoinSLogger, BitcoinScriptUtil}
 import org.bitcoins.core.wallet.{EscrowTimeoutHelper, WTxSigComponentHelper}
@@ -51,7 +47,7 @@ trait WitnessGenerators extends BitcoinSLogger {
     hashType <- CryptoGenerators.hashType
     witScriptPubKey = WitnessScriptPubKeyV0(privKey.publicKey)
     unsignedScriptWitness = ScriptWitness(Seq(privKey.publicKey.bytes, Nil))
-    unsignedWTxSigComponent = WTxSigComponentHelper.createUnsignedWTxSigComponent(witScriptPubKey,amount,
+    unsignedWTxSigComponent = WTxSigComponentHelper.createUnsignedRawWTxSigComponent(witScriptPubKey,amount,
       unsignedScriptWitness,None)
     createdSig = TransactionSignatureCreator.createSig(unsignedWTxSigComponent,privKey, hashType)
     scriptWitness = ScriptWitness(Seq(privKey.publicKey.bytes, createdSig.bytes))
@@ -59,67 +55,79 @@ trait WitnessGenerators extends BitcoinSLogger {
   } yield (witness,signedWtxSigComponent,Seq(privKey))
 
 
-  def signedP2WSHP2PKTransactionWitness: Gen[(TransactionWitness, WitnessTxSigComponent, Seq[ECPrivateKey])] = for {
+  def signedP2WSHP2PKTransactionWitness: Gen[(TransactionWitness, WitnessTxSigComponentRaw, Seq[ECPrivateKey])] = for {
     (scriptPubKey, privKeys) <- ScriptGenerators.p2pkScriptPubKey
     amount <- CurrencyUnitGenerator.satoshis
     hashType <- CryptoGenerators.hashType
     witScriptPubKey = WitnessScriptPubKeyV0(scriptPubKey)
     unsignedScriptWitness = ScriptWitness(Seq(scriptPubKey.asmBytes))
-    unsignedWTxSigComponent = WTxSigComponentHelper.createUnsignedWTxSigComponent(witScriptPubKey,amount,
+    u = WTxSigComponentHelper.createUnsignedRawWTxSigComponent(witScriptPubKey,amount,
       unsignedScriptWitness,None)
-    createdSig = TransactionSignatureCreator.createSig(unsignedWTxSigComponent,privKeys,hashType)
+    createdSig = TransactionSignatureCreator.createSig(u,privKeys,hashType)
     signedScriptWitness = ScriptWitness(scriptPubKey.asmBytes +: Seq(createdSig.bytes))
-    (witness,signedWtxSigComponent) = WTxSigComponentHelper.createSignedWTxComponent(signedScriptWitness,unsignedWTxSigComponent)
-  } yield (witness,signedWtxSigComponent,Seq(privKeys))
+    oldTx = u.transaction
+    txWitness = TransactionWitness(oldTx.witness.witnesses.updated(u.inputIndex.toInt,signedScriptWitness))
+    wtx = WitnessTransaction(oldTx.version,oldTx.inputs,oldTx.outputs,oldTx.lockTime,txWitness)
+    signedWtxSigComponent = WitnessTxSigComponentRaw(wtx,u.inputIndex,witScriptPubKey,u.flags,u.amount)
+  } yield (txWitness,signedWtxSigComponent,Seq(privKeys))
 
 
-  def signedP2WSHP2PKHTransactionWitness: Gen[(TransactionWitness, WitnessTxSigComponent, Seq[ECPrivateKey])]  = for {
+  def signedP2WSHP2PKHTransactionWitness: Gen[(TransactionWitness, WitnessTxSigComponentRaw, Seq[ECPrivateKey])]  = for {
     (scriptPubKey, privKeys) <- ScriptGenerators.p2pkhScriptPubKey
     amount <- CurrencyUnitGenerator.satoshis
     hashType <- CryptoGenerators.hashType
     witScriptPubKey = WitnessScriptPubKeyV0(scriptPubKey)
     unsignedScriptWitness = ScriptWitness(Seq(scriptPubKey.asmBytes))
-    unsignedWTxSigComponent = WTxSigComponentHelper.createUnsignedWTxSigComponent(witScriptPubKey,amount,unsignedScriptWitness,None)
-    createdSig = TransactionSignatureCreator.createSig(unsignedWTxSigComponent,privKeys,hashType)
+    u = WTxSigComponentHelper.createUnsignedRawWTxSigComponent(witScriptPubKey,amount,unsignedScriptWitness,None)
+    createdSig = TransactionSignatureCreator.createSig(u,privKeys,hashType)
     signedScriptWitness = ScriptWitness(scriptPubKey.asmBytes +: Seq(privKeys.publicKey.bytes, createdSig.bytes))
-    (witness,signedWtxSigComponent) = WTxSigComponentHelper.createSignedWTxComponent(signedScriptWitness,unsignedWTxSigComponent)
-  } yield (witness,signedWtxSigComponent,Seq(privKeys))
+    oldTx = u.transaction
+    txWitness = TransactionWitness(oldTx.witness.witnesses.updated(u.inputIndex.toInt,signedScriptWitness))
+    wtx = WitnessTransaction(oldTx.version,oldTx.inputs,oldTx.outputs,oldTx.lockTime,txWitness)
+    signedWtxSigComponent = WitnessTxSigComponentRaw(wtx,u.inputIndex,witScriptPubKey,u.flags,u.amount)
+  } yield (txWitness,signedWtxSigComponent,Seq(privKeys))
 
 
-  def signedP2WSHMultiSigTransactionWitness: Gen[(TransactionWitness, WitnessTxSigComponent, Seq[ECPrivateKey])] = for {
+  def signedP2WSHMultiSigTransactionWitness: Gen[(TransactionWitness, WitnessTxSigComponentRaw, Seq[ECPrivateKey])] = for {
     (scriptPubKey, privKeys) <- ScriptGenerators.multiSigScriptPubKey
     amount <- CurrencyUnitGenerator.satoshis
     hashType <- CryptoGenerators.hashType
     witScriptPubKey = WitnessScriptPubKeyV0(scriptPubKey)
     unsignedScriptWitness = ScriptWitness(Seq(scriptPubKey.asmBytes))
-    unsignedWTxSigComponent = WTxSigComponentHelper.createUnsignedWTxSigComponent(witScriptPubKey,amount,
+    u = WTxSigComponentHelper.createUnsignedRawWTxSigComponent(witScriptPubKey,amount,
       unsignedScriptWitness,None)
-    signedScriptSig = multiSigScriptSigGenHelper(privKeys, scriptPubKey, unsignedWTxSigComponent, hashType)
+    signedScriptSig = multiSigScriptSigGenHelper(privKeys, scriptPubKey, u, hashType)
     signedScriptSigPushOpsRemoved = BitcoinScriptUtil.filterPushOps(signedScriptSig.asm).tail.reverse
     signedScriptWitness = ScriptWitness(scriptPubKey.asm.flatMap(_.bytes) +: (signedScriptSigPushOpsRemoved.map(_.bytes) ++ Seq(Nil)))
-    (witness,signedWtxSigComponent) = WTxSigComponentHelper.createSignedWTxComponent(signedScriptWitness,unsignedWTxSigComponent)
-  } yield (witness,signedWtxSigComponent,privKeys)
+    oldTx = u.transaction
+    txWitness = TransactionWitness(oldTx.witness.witnesses.updated(u.inputIndex.toInt,signedScriptWitness))
+    wtx = WitnessTransaction(oldTx.version,oldTx.inputs,oldTx.outputs,oldTx.lockTime,txWitness)
+    signedWtxSigComponent = WitnessTxSigComponentRaw(wtx,u.inputIndex,witScriptPubKey,u.flags,u.amount)
+  } yield (txWitness,signedWtxSigComponent,privKeys)
 
   /** Generates a random signed [[TransactionWitness]] with the corresponding [[WitnessTxSigComponent]]
     * and [[ECPrivateKey]]s */
-  def signedP2WSHTransactionWitness: Gen[(TransactionWitness, WitnessTxSigComponent, Seq[ECPrivateKey])] = {
+  def signedP2WSHTransactionWitness: Gen[(TransactionWitness, WitnessTxSigComponentRaw, Seq[ECPrivateKey])] = {
     Gen.oneOf(signedP2WSHP2PKTransactionWitness, signedP2WSHP2PKHTransactionWitness,
       signedP2WSHMultiSigTransactionWitness,signedP2WSHEscrowTimeoutWitness)
   }
 
-  def signedP2WSHMultiSigEscrowTimeoutWitness: Gen[(TransactionWitness, WitnessTxSigComponent, Seq[ECPrivateKey])] = for {
+  def signedP2WSHMultiSigEscrowTimeoutWitness: Gen[(TransactionWitness, WitnessTxSigComponentRaw, Seq[ECPrivateKey])] = for {
     (scriptPubKey, privKeys) <- ScriptGenerators.escrowTimeoutScriptPubKey
     amount <- CurrencyUnitGenerator.satoshis
     hashType <- CryptoGenerators.hashType
     witScriptPubKey = WitnessScriptPubKeyV0(scriptPubKey)
     unsignedScriptWitness = ScriptWitness(Seq(scriptPubKey.asmBytes))
-    unsignedWTxSigComponent = WTxSigComponentHelper.createUnsignedWTxSigComponent(witScriptPubKey, amount,
+    u = WTxSigComponentHelper.createUnsignedRawWTxSigComponent(witScriptPubKey, amount,
       unsignedScriptWitness,None)
-    signedScriptSig = csvEscrowTimeoutGenHelper(privKeys,scriptPubKey,unsignedWTxSigComponent,hashType)
-    (witness,signedWTxSigComponent) = EscrowTimeoutHelper.buildEscrowTimeoutScriptWitness(signedScriptSig,scriptPubKey,unsignedWTxSigComponent)
+    signedScriptSig = csvEscrowTimeoutGenHelper(privKeys,scriptPubKey,u,hashType)
+    witness = EscrowTimeoutHelper.buildEscrowTimeoutScriptWitness(signedScriptSig,scriptPubKey,u)
+    oldTx = u.transaction
+    wTx = WitnessTransaction(oldTx.version,oldTx.inputs,oldTx.outputs,oldTx.lockTime,witness)
+    signedWTxSigComponent = WitnessTxSigComponentRaw(wTx,u.inputIndex,witScriptPubKey,u.flags,u.amount)
   } yield (witness,signedWTxSigComponent,privKeys)
 
-  def spendableP2WSHTimeoutEscrowTimeoutWitness: Gen[(TransactionWitness, WitnessTxSigComponent, Seq[ECPrivateKey])] = for {
+  def spendableP2WSHTimeoutEscrowTimeoutWitness: Gen[(TransactionWitness, WitnessTxSigComponentRaw, Seq[ECPrivateKey])] = for {
     (p2pkh,privKey) <- ScriptGenerators.p2pkhScriptPubKey
     (scriptNum, sequence) <- TransactionGenerators.spendableCSVValues
     csv = CSVScriptPubKey(scriptNum,p2pkh)
@@ -129,16 +137,18 @@ trait WitnessGenerators extends BitcoinSLogger {
     hashType <- CryptoGenerators.hashType
     witScriptPubKey = WitnessScriptPubKeyV0(scriptPubKey)
     unsignedScriptWitness = ScriptWitness(Seq(scriptPubKey.asmBytes))
-    unsignedWTxSigComponent = WTxSigComponentHelper.createUnsignedWTxSigComponent(witScriptPubKey,
+    u = WTxSigComponentHelper.createUnsignedRawWTxSigComponent(witScriptPubKey,
       amount, unsignedScriptWitness,Some(sequence))
-    createdSig = TransactionSignatureCreator.createSig(unsignedWTxSigComponent,privKey,hashType)
+    createdSig = TransactionSignatureCreator.createSig(u,privKey,hashType)
     signedScriptWitness = ScriptWitness(scriptPubKey.asm.flatMap(_.bytes) +: Seq(ScriptNumber.zero.bytes, privKey.publicKey.bytes,
       createdSig.bytes))
-    (witness,signedWtxSigComponent) = WTxSigComponentHelper.createSignedWTxComponent(signedScriptWitness,
-      unsignedWTxSigComponent)
-  } yield (witness, signedWtxSigComponent, Seq(privKey))
+    oldTx = u.transaction
+    txWitness = TransactionWitness(oldTx.witness.witnesses.updated(u.inputIndex.toInt,signedScriptWitness))
+    wtx = WitnessTransaction(oldTx.version,oldTx.inputs,oldTx.outputs,oldTx.lockTime,txWitness)
+    signedWtxSigComponent = WitnessTxSigComponentRaw(wtx,u.inputIndex,witScriptPubKey,u.flags,u.amount)
+  } yield (txWitness,signedWtxSigComponent,Seq(privKey))
 
-  def signedP2WSHEscrowTimeoutWitness: Gen[(TransactionWitness, WitnessTxSigComponent, Seq[ECPrivateKey])] = {
+  def signedP2WSHEscrowTimeoutWitness: Gen[(TransactionWitness, WitnessTxSigComponentRaw, Seq[ECPrivateKey])] = {
     Gen.oneOf(signedP2WSHMultiSigEscrowTimeoutWitness, spendableP2WSHTimeoutEscrowTimeoutWitness)
   }
 

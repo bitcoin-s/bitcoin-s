@@ -134,11 +134,14 @@ sealed trait P2SHScriptSignature extends ScriptSignature {
     //witness scriptPubKeys always have EmptyScriptSigs
     if (WitnessScriptPubKey.isWitnessScriptPubKey(asm)) Success(EmptyScriptSignature)
     else {
-      val asmWithoutRedeemScriptAndPushOp = asm(asm.size - 2) match {
-        case b : BytesToPushOntoStack => asm.dropRight(2)
-        case _ => asm.dropRight(3)
+      val asmWithoutRedeemScriptAndPushOp: Try[Seq[ScriptToken]] = Try {
+        asm(asm.size - 2) match {
+          case b: BytesToPushOntoStack => asm.dropRight(2)
+          case _ => asm.dropRight(3)
+        }
       }
-      ScriptSignature.fromScriptPubKey(asmWithoutRedeemScriptAndPushOp,redeemScript)
+      val script = asmWithoutRedeemScriptAndPushOp.getOrElse(EmptyScriptSignature.asm)
+      ScriptSignature.fromScriptPubKey(script,redeemScript)
     }
   }
 

@@ -6,7 +6,7 @@ import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.protocol.transaction.TransactionOutput
 import org.bitcoins.core.serializers.script.{RawScriptPubKeyParser, ScriptParser}
 import org.bitcoins.core.serializers.{RawBitcoinSerializer, RawSatoshisSerializer}
-import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil}
+import org.bitcoins.core.util.BitcoinSUtil
 
 import scala.annotation.tailrec
 
@@ -49,9 +49,7 @@ trait RawTransactionOutputParser extends RawBitcoinSerializer[Seq[TransactionOut
     val satoshis = CurrencyUnits.toSatoshis(output.value)
     val satoshisHexWithoutPadding : String = BitcoinSUtil.flipEndianness(satoshis.hex)
     val satoshisHex = addPadding(16,satoshisHexWithoutPadding)
-    logger.debug("satoshis: " + satoshisHex)
-/*    if (compactSizeUIntHex == "00") satoshisHex + compactSizeUIntHex
-    else */ satoshisHex + output.scriptPubKey.hex
+    satoshisHex + output.scriptPubKey.hex
   }
 
   /** Reads a single output from the given bytes, note this is different than [[org.bitcoins.core.serializers.transaction.RawTransactionOutputParser.read]]
@@ -59,13 +57,11 @@ trait RawTransactionOutputParser extends RawBitcoinSerializer[Seq[TransactionOut
     */
   def readSingleOutput(bytes: Seq[Byte]): TransactionOutput = {
     val satoshisHex = BitcoinSUtil.encodeHex(bytes.take(8).reverse)
-    logger.debug("Satoshi hex: " + satoshisHex)
     val satoshis = parseSatoshis(satoshisHex)
     //it doesn't include itself towards the size, thats why it is incremented by one
     val scriptPubKeyBytes = bytes.slice(8, bytes.size)
     val scriptPubKey = RawScriptPubKeyParser.read(scriptPubKeyBytes)
     val parsedOutput = TransactionOutput(satoshis,scriptPubKey)
-    logger.debug("Parsed output: " + parsedOutput)
     parsedOutput
   }
 
