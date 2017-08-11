@@ -513,8 +513,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
         }
       case _: WitnessTxSigComponentRaw => false
       case w: WitnessTxSigComponentP2SH =>
-        val p2shScriptSig = P2SHScriptSignature(w.scriptSignature.bytes)
-        !p2shScriptSig.redeemScript.isInstanceOf[WitnessScriptPubKey]
+        !w.scriptSignature.redeemScript.isInstanceOf[WitnessScriptPubKey]
       case r: WitnessTxSigComponentRebuilt =>
         r.transaction match {
           case wtx: WitnessTransaction =>

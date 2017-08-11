@@ -22,7 +22,7 @@ sealed trait Channel extends BitcoinSLogger {
 
   /** The index of the output that is the [[EscrowTimeoutScriptPubKey]] in the [[anchorTx]] */
   def outputIndex: Int = {
-    val expectedLock = P2SHScriptPubKey(WitnessScriptPubKeyV0(lock))
+    val expectedLock = P2SHScriptPubKey(witSPK)
     val outputOpt = anchorTx.outputs.zipWithIndex.find { case (o, _) =>
       o.scriptPubKey == expectedLock
     }
@@ -69,7 +69,7 @@ sealed trait ChannelAwaitingAnchorTx extends Channel {
     val inputs = Seq(i1)
     val inputIndex = UInt32(inputs.indexOf(i1))
     val partiallySigned = EscrowTimeoutHelper.clientSign(inputs,outputs,inputIndex,privKey,
-      lock,TransactionOutput(lockedAmount,scriptPubKey), HashType.sigHashSingleAnyoneCanPay)
+      lock,lockingOutput, HashType.sigHashSingleAnyoneCanPay)
     val inProgress = ChannelInProgressClientSigned(anchorTx,lock,clientChangeSPK,partiallySigned,Nil)
     inProgress
   }
@@ -78,13 +78,13 @@ sealed trait ChannelAwaitingAnchorTx extends Channel {
     * after we receive a partially signed transaction from the client.
     * If None is returned, that means we did not find an output that has the clientSPK
     */
-  def createClientSigned(partiallySigned: WitnessTransaction, changeClientSPK: ScriptPubKey): Option[ChannelInProgressClientSigned] = {
+  def createClientSigned(partiallySigned: WitnessTransaction, clientChangeSPK: ScriptPubKey): Option[ChannelInProgressClientSigned] = {
     val inputOpt = partiallySigned.inputs.zipWithIndex.find(_._1.previousOutput.txId == anchorTx.txId)
     val inputIndex = inputOpt.map(i => UInt32(i._2))
     val txSigComponent = inputIndex.map { i =>
       WitnessTxSigComponent(partiallySigned, i, scriptPubKey, Policy.standardScriptVerifyFlags, lockedAmount)
     }
-    txSigComponent.map(t => ChannelInProgressClientSigned(anchorTx,lock,changeClientSPK,t,Nil))
+    txSigComponent.map(t => ChannelInProgressClientSigned(anchorTx,lock,clientChangeSPK,t,Nil))
   }
 
   /** Attempts to close the [[Channel]] because the [[org.bitcoins.core.protocol.script.EscrowTimeoutScriptPubKey]]
@@ -93,20 +93,7 @@ sealed trait ChannelAwaitingAnchorTx extends Channel {
     * this is because the Client is essentially refunding himself the money
     */
   def closeWithTimeout(clientChangeSPK: ScriptPubKey, clientKey: ECPrivateKey, fee: CurrencyUnit): Try[ChannelClosedWithTimeout] = {
-    val timeout = lock.timeout
-    val scriptNum = timeout.locktime
-    val sequence = UInt32(scriptNum.toLong)
-    val outputs = Seq(TransactionOutput(lockedAmount - fee, clientChangeSPK))
-    val outPoint = TransactionOutPoint(anchorTx.txId,UInt32(outputIndex))
-    val tc = TransactionConstants
-    val scriptSig = P2SHScriptSignature(witSPK)
-    val input = TransactionInput(outPoint,scriptSig,sequence)
-    val inputs = Seq(input)
-    val inputIndex = UInt32(inputs.indexOf(input))
-    val creditingOutput = lockingOutput
-    val signed: Try[WitnessTxSigComponent] = EscrowTimeoutHelper.closeWithTimeout(inputs,outputs, inputIndex, clientKey,
-      lock,creditingOutput,HashType.sigHashSingleAnyoneCanPay,tc.validLockVersion,sequence,tc.lockTime)
-    signed.map(t => ChannelClosedWithTimeout(anchorTx,lock,t,Nil,clientChangeSPK))
+    ChannelClosedWithTimeout.closeWithTimeout(this,clientChangeSPK,clientKey,fee)
   }
 
 }
@@ -148,24 +135,10 @@ sealed trait BaseInProgress { this: Channel =>
     * has timed out
     */
   def closeWithTimeout(clientKey: ECPrivateKey, fee: CurrencyUnit): Try[ChannelClosedWithTimeout] = {
-    val timeout = lock.timeout
-    val scriptNum = timeout.locktime
-    val sequence = UInt32(scriptNum.toLong)
-    val outputs = Seq(TransactionOutput(lockedAmount - fee, clientChangeSPK))
-    val outPoint = TransactionOutPoint(anchorTx.txId,UInt32(outputIndex))
-    val tc = TransactionConstants
-    val scriptSig = P2SHScriptSignature(witSPK)
-    val input = TransactionInput(outPoint,scriptSig,sequence)
-    val inputs = Seq(input)
-    val inputIndex = UInt32(inputs.indexOf(input))
-    val creditingOutput = lockingOutput
-    val signed: Try[WitnessTxSigComponent] = EscrowTimeoutHelper.closeWithTimeout(inputs,outputs, inputIndex, clientKey,
-      lock,creditingOutput,HashType.sigHashSingleAnyoneCanPay,tc.validLockVersion,sequence,tc.lockTime)
-    signed.map(t => ChannelClosedWithTimeout(anchorTx,lock,t,Nil,clientChangeSPK))
+    ChannelClosedWithTimeout.closeWithTimeout(this,clientChangeSPK,clientKey,fee)
   }
-
-
 }
+
 /** Represents the state of a Channel transferring money from the client to the server */
 sealed trait ChannelInProgress extends Channel with BaseInProgress {
 
@@ -408,4 +381,24 @@ object ChannelClosedWithTimeout {
     ChannelClosedWithTimeoutImpl(anchorTx,lock,current,old,clientSPK)
   }
 
+  /** Attempts to close the [[Channel]] because the [[org.bitcoins.core.protocol.script.EscrowTimeoutScriptPubKey]]
+    * has timed out.
+    * Note that this does not require any confirmations on the anchor tx,
+    * this is because the Client is essentially refunding himself the money
+    */
+  def closeWithTimeout(chan: Channel, clientChangeSPK: ScriptPubKey, clientKey: ECPrivateKey, fee: CurrencyUnit): Try[ChannelClosedWithTimeout] = {
+    val timeout = chan.lock.timeout
+    val scriptNum = timeout.locktime
+    val sequence = UInt32(scriptNum.toLong)
+    val outputs = Seq(TransactionOutput(chan.lockedAmount - fee, clientChangeSPK))
+    val outPoint = TransactionOutPoint(chan.anchorTx.txId,UInt32(chan.outputIndex))
+    val tc = TransactionConstants
+    val scriptSig = P2SHScriptSignature(chan.witSPK)
+    val input = TransactionInput(outPoint,scriptSig,sequence)
+    val inputs = Seq(input)
+    val inputIndex = UInt32(inputs.indexOf(input))
+    val signed: Try[WitnessTxSigComponent] = EscrowTimeoutHelper.closeWithTimeout(inputs,outputs, inputIndex, clientKey,
+      chan.lock,chan.lockingOutput,HashType.sigHashSingleAnyoneCanPay,tc.validLockVersion,sequence,tc.lockTime)
+    signed.map(t => ChannelClosedWithTimeout(chan.anchorTx,chan.lock,t,Nil,clientChangeSPK))
+  }
 }

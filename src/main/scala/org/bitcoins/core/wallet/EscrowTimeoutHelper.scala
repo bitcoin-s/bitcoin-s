@@ -17,7 +17,7 @@ import scala.util.Try
   */
 sealed abstract class EscrowTimeoutHelper extends BitcoinSLogger {
 
-  /** Signs a [[org.bitcoins.core.protocol.transaction.Transaction]] with the given private key
+  /** Signs a [[org.bitcoins.core.protocol.transaction.WitnessTransaction]] with the given private key
     * This will result in a Transaction that is partially signed, we need to send the transaction to
     * the server to be fully signed
     * */
