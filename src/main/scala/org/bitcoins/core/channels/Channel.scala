@@ -253,6 +253,7 @@ sealed trait ChannelInProgressClientSigned extends Channel with BaseInProgress {
   /** Sanity checks for the amounts when closing a payment channel */
   private def checkCloseOutputs(outputs: Seq[TransactionOutput], fee: CurrencyUnit,
                                 serverSPK: ScriptPubKey):Try[Unit] = Try {
+    logger.debug("Outputs for checking during closing of channel: " + outputs)
     val serverOutput = outputs.find(_.scriptPubKey == serverSPK).get
     val clientOutput = outputs.find(_.scriptPubKey == clientChangeSPK)
     val currencyUnits = outputs.map(_.value)
@@ -268,9 +269,9 @@ sealed trait ChannelInProgressClientSigned extends Channel with BaseInProgress {
       require(clientOutput.get.value >= Policy.dustThreshold, "Client output amount must be dust threshold, got: " + clientOutput.get.value)
     }
     //full amount checks
-    val fullAmount = clientOutput.map(_.value).getOrElse(CurrencyUnits.zero) + serverOutput.value + fee
+    val fullAmount = fullOutputValue + fee
     //the reason for - Policy.dustThreshold is for the case where we just remove the client's output because it is less than the dust threshold
-    require(fullAmount >= (lockedAmount - Policy.dustThreshold), "Losing satoshis some when closing the channel")
+    require(fullAmount >= (lockedAmount - Policy.dustThreshold), "Losing satoshis some when closing the channel, fullAmount: " + fullAmount + " lockedAmount: " + lockedAmount)
     require(fullOutputValue >= CurrencyUnits.zero, "Combined output value was less than zero, got: " + fullOutputValue)
   }
 }

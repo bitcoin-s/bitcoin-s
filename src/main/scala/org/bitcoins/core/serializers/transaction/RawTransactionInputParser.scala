@@ -54,25 +54,19 @@ trait RawTransactionInputParser extends RawBitcoinSerializer[Seq[TransactionInpu
 
   /** Parses a single [[TransactionInput]] from a sequence of bytes */
   private def parseTransactionInput(bytes : Seq[Byte]): (TransactionInput,Seq[Byte]) = {
-    logger.debug("Bytes to parse for input: " + BitcoinSUtil.encodeHex(bytes))
     val outPointBytesSize = 36
     val outPointBytes = bytes.take(outPointBytesSize)
     val outPoint = TransactionOutPoint(outPointBytes)
-
     val scriptSigBytes = bytes.slice(outPointBytesSize,bytes.size)
-    logger.debug("Scriptsig bytes: " + BitcoinSUtil.encodeHex(scriptSigBytes))
     val scriptSig: ScriptSignature = RawScriptSignatureParser.read(scriptSigBytes)
-    logger.debug("Script sig parsed bytes: " + BitcoinSUtil.encodeHex(scriptSig.bytes))
     val sequenceBytesSize = 4
     val endOfScriptSigBytes = outPointBytesSize + scriptSig.bytes.size
     val lastInputByte = endOfScriptSigBytes + sequenceBytesSize
     val sequenceBytes = bytes.slice(endOfScriptSigBytes,lastInputByte)
     val sequenceNumberHex : String = BitcoinSUtil.encodeHex(sequenceBytes)
     val sequenceNumberFlippedEndianness = BitcoinSUtil.flipEndianness(sequenceNumberHex)
-    logger.debug("Sequence number hex: " + sequenceNumberFlippedEndianness)
     val sequenceNumber : UInt32 = UInt32(sequenceNumberFlippedEndianness)
     val txInput = TransactionInput(outPoint,scriptSig,sequenceNumber)
-    logger.debug("Parsed input: " + txInput)
     (txInput, bytes.slice(lastInputByte, bytes.length))
   }
 }
