@@ -14,7 +14,8 @@ import org.scalatest.{FlatSpec, MustMatchers}
 /**
   * Created by chris on 7/21/16.
   */
-class TransactionSignatureCreatorTest extends FlatSpec with MustMatchers with BitcoinSLogger {
+class TransactionSignatureCreatorTest extends FlatSpec with MustMatchers {
+  private def logger = BitcoinSLogger.logger
 
   "TransactionSignatureCreator" must "create a signature for a scriptSignature in a transaction" in {
     //this is a signed tx, but since TransactionSignatureSerializer removes scriptSigs, it will work for testing this

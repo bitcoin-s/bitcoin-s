@@ -13,9 +13,9 @@ import scala.annotation.tailrec
 /**
  * Created by chris on 2/8/16.
  */
-trait LockTimeInterpreter extends BitcoinSLogger {
+trait LockTimeInterpreter {
 
-
+  private def logger = BitcoinSLogger.logger
   /**
    * Marks transaction as invalid if the top stack item is greater than the transaction's nLockTime field,
    * otherwise script evaluation continues as though an OP_NOP was executed. Transaction is also invalid if

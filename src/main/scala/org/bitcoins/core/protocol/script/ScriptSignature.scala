@@ -394,7 +394,7 @@ case object EmptyScriptSignature extends ScriptSignature {
   def hex = "00"
 }
 
-object ScriptSignature extends Factory[ScriptSignature] with BitcoinSLogger {
+object ScriptSignature extends Factory[ScriptSignature] {
 
 
   /** Returns an empty script signature */

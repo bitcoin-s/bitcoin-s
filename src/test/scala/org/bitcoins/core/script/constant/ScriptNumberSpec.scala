@@ -7,7 +7,7 @@ import org.scalacheck.{Prop, Properties}
 /**
   * Created by tom on 7/5/16.
   */
-class ScriptNumberSpec extends Properties("ScriptNumberSpec") with BitcoinSLogger {
+class ScriptNumberSpec extends Properties("ScriptNumberSpec") {
   property("Additive identity") =
     Prop.forAll(NumberGenerator.scriptNumbers) { num : ScriptNumber =>
       num + ScriptNumber.zero == num

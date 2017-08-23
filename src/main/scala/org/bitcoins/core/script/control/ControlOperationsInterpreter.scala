@@ -12,8 +12,8 @@ import scala.annotation.tailrec
 /**
  * Created by chris on 1/6/16.
  */
-trait ControlOperationsInterpreter extends BitcoinSLogger {
-
+trait ControlOperationsInterpreter {
+  private def logger = BitcoinSLogger.logger
   /** If the top stack value is not 0, the statements are executed. The top stack value is removed. */
   def opIf(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.contains(OP_IF), "Script top was not OP_IF")

@@ -16,7 +16,8 @@ import scala.io.Source
 /**
  * Created by chris on 2/17/16.
  */
-class ScriptSignatureTest extends FlatSpec with MustMatchers with BitcoinSLogger {
+class ScriptSignatureTest extends FlatSpec with MustMatchers {
+  private def logger = BitcoinSLogger.logger
 
   "ScriptSignature" must "find the digital signature for the transaction inside of a p2pkh script signature" in {
     val scriptSig = ScriptSignature(TestUtil.rawScriptSig)

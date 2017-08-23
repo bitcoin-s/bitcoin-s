@@ -1,12 +1,15 @@
 package org.bitcoins.core.util
 
 import org.slf4j.LoggerFactory
+import org.slf4j.Logger
 
 /**
  * Created by chris on 3/11/16.
  */
-trait BitcoinSLogger {
+abstract class BitcoinSLogger {
 
-  def logger = LoggerFactory.getLogger(this.getClass().toString)
+  def logger: Logger = LoggerFactory.getLogger(this.getClass().toString)
 
 }
+
+object BitcoinSLogger extends BitcoinSLogger

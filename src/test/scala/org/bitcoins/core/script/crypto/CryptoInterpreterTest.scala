@@ -14,7 +14,8 @@ import org.scalatest.{FlatSpec, MustMatchers}
 /**
  * Created by chris on 1/6/16.
  */
-class CryptoInterpreterTest extends FlatSpec with MustMatchers with CryptoInterpreter with BitcoinSLogger {
+class CryptoInterpreterTest extends FlatSpec with MustMatchers with CryptoInterpreter {
+  private def logger = BitcoinSLogger.logger
   val stack = List(ScriptConstant("02218AD6CDC632E7AE7D04472374311CEBBBBF0AB540D2D08C3400BB844C654231".toLowerCase))
 
   "CryptoInterpreter" must "evaluate OP_HASH160 correctly when it is on top of the script stack" in {

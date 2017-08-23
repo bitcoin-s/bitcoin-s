@@ -12,7 +12,7 @@ import scala.io.Source
 /**
   * Created by tom on 5/17/16.
   */
-class Base58Test extends FlatSpec with MustMatchers with BitcoinSLogger {
+class Base58Test extends FlatSpec with MustMatchers {
   "Base58" must "encode byte value of 0 to character of 1" in {
     Base58.encode(0.toByte) must be ("1")
   }
@@ -96,7 +96,6 @@ class Base58Test extends FlatSpec with MustMatchers with BitcoinSLogger {
         Base58.isValid(testCase.addressOrWIFPrivKey.left.get.value) must be (true)
       }
       else {
-        logger.info(testCase.addressOrWIFPrivKey.right.get + " should be true, but showed as " + Base58.isValid(testCase.addressOrWIFPrivKey.right.get))
         Base58.isValid(testCase.addressOrWIFPrivKey.right.get) must be (true)
       }
     }

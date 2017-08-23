@@ -7,7 +7,7 @@ import org.bitcoins.core.serializers.{RawBitcoinSerializerHelper, RawSatoshisSer
 import org.bitcoins.core.util.{BitcoinSLogger, Factory}
 
 
-sealed trait CurrencyUnit extends NetworkElement with BitcoinSLogger {
+sealed trait CurrencyUnit extends NetworkElement {
   type A
   def underlying : A
 

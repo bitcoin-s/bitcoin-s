@@ -20,7 +20,8 @@ import scala.util.Try
 /**
   * Created by chris on 4/18/17.
   */
-class ChannelsSpec extends Properties("ChannelProperties") with BitcoinSLogger {
+class ChannelsSpec extends Properties("ChannelProperties") {
+  private def logger = BitcoinSLogger.logger
 
   property("spend a anchor transaction with the first spendingTx in a payment channel") = {
     Prop.forAllNoShrink(ChannelGenerators.freshChannelInProgress) { case (inProgress,_) =>

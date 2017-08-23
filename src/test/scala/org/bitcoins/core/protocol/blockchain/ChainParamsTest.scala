@@ -10,7 +10,8 @@ import org.scalatest.{FlatSpec, MustMatchers}
 /**
   * Created by chris on 5/24/16.
   */
-class ChainParamsTest extends FlatSpec with MustMatchers with BitcoinSLogger {
+class ChainParamsTest extends FlatSpec with MustMatchers {
+  private def logger = BitcoinSLogger.logger
 
   val genesisBlock = MainNetChainParams.genesisBlock
   val genesisTransaction = genesisBlock.transactions.head
