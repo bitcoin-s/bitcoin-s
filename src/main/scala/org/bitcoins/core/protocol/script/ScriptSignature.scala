@@ -49,12 +49,6 @@ sealed trait NonStandardScriptSignature extends ScriptSignature {
 object NonStandardScriptSignature extends ScriptFactory[NonStandardScriptSignature] {
   private case class NonStandardScriptSignatureImpl(hex : String) extends NonStandardScriptSignature
 
-  override def fromBytes(bytes: Seq[Byte]): NonStandardScriptSignature = {
-    //make sure we can parse the bytes
-    val asm = RawScriptSignatureParser.read(bytes).asm
-    NonStandardScriptSignature.fromAsm(asm)
-  }
-
   def fromAsm(asm : Seq[ScriptToken]): NonStandardScriptSignature = {
     buildScript(asm, NonStandardScriptSignatureImpl(_),{ _ => true}, "")
   }
@@ -82,11 +76,6 @@ sealed trait P2PKHScriptSignature extends ScriptSignature {
 
 object P2PKHScriptSignature extends ScriptFactory[P2PKHScriptSignature] {
   private case class P2PKHScriptSignatureImpl(hex : String) extends P2PKHScriptSignature
-
-  override def fromBytes(bytes : Seq[Byte]): P2PKHScriptSignature = {
-    val asm = RawScriptSignatureParser.read(bytes).asm
-    P2PKHScriptSignature.fromAsm(asm)
-  }
 
   def fromAsm(asm: Seq[ScriptToken]): P2PKHScriptSignature = {
     buildScript(asm, P2PKHScriptSignatureImpl(_),isP2PKHScriptSig(_), "Given asm was not a P2PKHScriptSignature, got: " + asm)
@@ -177,11 +166,6 @@ sealed trait P2SHScriptSignature extends ScriptSignature {
 object P2SHScriptSignature extends ScriptFactory[P2SHScriptSignature]  {
   private case class P2SHScriptSignatureImpl(hex : String) extends P2SHScriptSignature
 
-  override def fromBytes(bytes : Seq[Byte]): P2SHScriptSignature = {
-    val asm = RawScriptSignatureParser.read(bytes).asm
-    P2SHScriptSignature.fromAsm(asm)
-  }
-
   def apply(scriptSig : ScriptSignature, redeemScript : ScriptPubKey): P2SHScriptSignature = {
     //we need to calculate the size of the redeemScript and add the corresponding push op
     val serializedRedeemScript = ScriptConstant(redeemScript.asmBytes)
@@ -258,11 +242,6 @@ object MultiSignatureScriptSignature extends ScriptFactory[MultiSignatureScriptS
 
   private case class MultiSignatureScriptSignatureImpl(hex : String) extends MultiSignatureScriptSignature
 
-  override def fromBytes(bytes : Seq[Byte]): MultiSignatureScriptSignature = {
-    val asm = RawScriptSignatureParser.read(bytes).asm
-    MultiSignatureScriptSignature.fromAsm(asm)
-  }
-
   def apply(signatures : Seq[ECDigitalSignature]): MultiSignatureScriptSignature = {
     val sigsPushOpsPairs : Seq[Seq[ScriptToken]] = for {
       sig <- signatures
@@ -328,11 +307,6 @@ object P2PKScriptSignature extends ScriptFactory[P2PKScriptSignature] {
   def fromAsm(asm: Seq[ScriptToken]): P2PKScriptSignature = {
     buildScript(asm, P2PKScriptSignatureImpl(_),isP2PKScriptSignature(_),
       "The given asm tokens were not a p2pk script sig: " + asm)
-  }
-
-  override def fromBytes(bytes: Seq[Byte]): P2PKScriptSignature = {
-    val asm = RawScriptSignatureParser.read(bytes).asm
-    P2PKScriptSignature.fromAsm(asm)
   }
 
   /** P2PK scriptSigs always have the pattern [pushop, digitalSignature] */
