@@ -27,7 +27,8 @@ import scala.collection.JavaConversions._
 /**
  * Created by chris on 2/19/16.
  */
-class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers with BitcoinSLogger {
+class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers {
+  private def logger = BitcoinSLogger.logger
   val scriptPubKey = BitcoinjConversions.toScriptPubKey(BitcoinJTestUtil.multiSigScript)
 
   "TransactionSignatureSerializer" must "serialize a transaction for SIGHASH_ALL correctly" in {

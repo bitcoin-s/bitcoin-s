@@ -12,7 +12,7 @@ import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil, NumberUtil}
  * https://bitcoin.org/en/developer-reference#outpoint
  *
  */
-trait RawTransactionOutPointParser extends RawBitcoinSerializer[TransactionOutPoint] with BitcoinSLogger {
+trait RawTransactionOutPointParser extends RawBitcoinSerializer[TransactionOutPoint] {
 
 
   override def read(bytes : List[Byte]) : TransactionOutPoint = {

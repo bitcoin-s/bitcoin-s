@@ -14,14 +14,14 @@ import org.scalatest.{FlatSpec, MustMatchers}
  * Created by chris on 1/11/16.
  * https://bitcoin.org/en/developer-reference#txout
  */
-class RawTransactionOutputParserTest extends FlatSpec with MustMatchers with RawTransactionOutputParser {
+class RawTransactionOutputParserTest extends FlatSpec with MustMatchers {
 
   //txid cad1082e674a7bd3bc9ab1bc7804ba8a57523607c876b8eb2cbe645f2b1803d6
   val rawTxOutput = "02204e00000000000017a914eda8ae08b5c9f973f49543e90a7c292367b3337c87" +
     "197d2d000000000017a914be2319b9060429692ebeffaa3be38497dc5380c887"
   "RawTransactionOutputTest" must "read a serialized tx output" in {
 
-    val txOutput : Seq[TransactionOutput] = read(rawTxOutput)
+    val txOutput : Seq[TransactionOutput] = RawTransactionOutputParser.read(rawTxOutput)
     val firstOutput = txOutput.head
     val secondOutput = txOutput(1)
     firstOutput.value must be (Satoshis(Int64(20000)))
@@ -31,13 +31,13 @@ class RawTransactionOutputParserTest extends FlatSpec with MustMatchers with Raw
   }
 
   it must "seralialize a transaction output" in {
-    val txOutput = read(rawTxOutput)
-    write(txOutput) must be (rawTxOutput)
+    val txOutput = RawTransactionOutputParser.read(rawTxOutput)
+    RawTransactionOutputParser.write(txOutput) must be (rawTxOutput)
   }
 
   it must "serialize a single transaction output not in a sequence" in {
-    val txOutputs = read(rawTxOutput)
-    write(txOutputs.head) must be ("204e00000000000017a914eda8ae08b5c9f973f49543e90a7c292367b3337c87")
+    val txOutputs = RawTransactionOutputParser.read(rawTxOutput)
+    RawTransactionOutputParser.write(txOutputs.head) must be ("204e00000000000017a914eda8ae08b5c9f973f49543e90a7c292367b3337c87")
   }
 
 

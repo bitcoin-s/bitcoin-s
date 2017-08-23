@@ -14,7 +14,7 @@ import scala.annotation.tailrec
  * Created by chris on 1/11/16.
  * https://bitcoin.org/en/developer-reference#txout
  */
-trait RawTransactionOutputParser extends RawBitcoinSerializer[Seq[TransactionOutput]] with ScriptParser {
+trait RawTransactionOutputParser extends RawBitcoinSerializer[Seq[TransactionOutput]] {
 
   /** Reads a sequence of outputs, expects first element in the byte array to be a [[org.bitcoins.core.protocol.CompactSizeUInt]]
     * indicating how many outputs we need to read

@@ -12,7 +12,7 @@ import scala.util.{Failure, Success, Try}
 /**
   * A number can either be a signed or an unsigned number
   */
-sealed trait Number extends NetworkElement with BitcoinSLogger {
+sealed trait Number extends NetworkElement {
   type A
   def underlying : A
   def toInt : Int
@@ -319,7 +319,7 @@ trait BaseNumbers[T] {
   def max : T
 }
 
-object UInt32 extends Factory[UInt32] with BitcoinSLogger with BaseNumbers[UInt32] {
+object UInt32 extends Factory[UInt32] with BaseNumbers[UInt32] {
   private case class UInt32Impl(underlying : Long) extends UInt32 {
     require(underlying >= 0, "We cannot have a negative number in an unsigned number, got: " + underlying)
     require(underlying  <= 4294967295L, "We cannot have a number larger than 2^32 -1 in UInt32, got: " + underlying)
@@ -345,7 +345,7 @@ object UInt32 extends Factory[UInt32] with BitcoinSLogger with BaseNumbers[UInt3
 
 
 
-object UInt64 extends Factory[UInt64] with BitcoinSLogger with BaseNumbers[UInt64] {
+object UInt64 extends Factory[UInt64] with BaseNumbers[UInt64] {
   private case class UInt64Impl(underlying : BigInt) extends UInt64 {
     require(underlying >= 0, "We cannot have a negative number in an unsigned number: " + underlying)
     require(underlying <= BigInt("18446744073709551615"), "We cannot have a number larger than 2^64 -1 in UInt64, got: " + underlying)

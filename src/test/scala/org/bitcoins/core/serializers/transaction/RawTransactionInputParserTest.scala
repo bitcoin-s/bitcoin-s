@@ -11,7 +11,7 @@ import org.scalatest.{FlatSpec, MustMatchers}
 /**
  * Created by chris on 1/13/16.
  */
-class RawTransactionInputParserTest extends FlatSpec with MustMatchers with RawTransactionInputParser with BitcoinSLogger {
+class RawTransactionInputParserTest extends FlatSpec with MustMatchers {
 
   //txid cad1082e674a7bd3bc9ab1bc7804ba8a57523607c876b8eb2cbe645f2b1803d6
   val rawTxInput = "01" + "85d6b0da2edf96b282030d3f4f79d14cc8c882cfef1b3064170c850660317de100000000" + "6f0047304402207df6dd8dad22d49c3c83d8031733c32a53719278eb7985d3b35b375d776f84f102207054f9209a1e87d55feafc90aa04c33008e5bae9191da22aeaa16efde96f41f00125512102b022902a0fdd71e831c37e4136c2754a59887be0618fb75336d7ab67e2982ff551ae" + "ffffffff"
@@ -20,7 +20,7 @@ class RawTransactionInputParserTest extends FlatSpec with MustMatchers with RawT
     "df80e3e6eba7dcd4650281d3c13f140dafbb823a7227a78eb6ee9f6cedd04001340000006b483045022100cf317c320d078c5b884c44e7488825dab5bcdf3f88c66314ac925770cd8773a7022033fde60d33cc2842ea73fce5d9cf4f8da6fadf414a75b7085efdcd300407f438012102605c23537b27b80157c770cd23e066cd11db3800d3066a38b9b592fc08ae9c70ffffffff"
 
   "RawTransactionInputParser" must "parse a raw serialized transaction input" in {
-    val txInputs : Seq[TransactionInput] = read(rawTxInput)
+    val txInputs : Seq[TransactionInput] = RawTransactionInputParser.read(rawTxInput)
     txInputs.head.previousOutput.vout must be (UInt32.zero)
     txInputs.head.previousOutput.txId.hex must be (BitcoinSUtil.flipEndianness("e17d316006850c1764301befcf82c8c84cd1794f3f0d0382b296df2edab0d685"))
     txInputs.head.scriptSignature.hex must be (TestUtil.rawP2shInputScript)

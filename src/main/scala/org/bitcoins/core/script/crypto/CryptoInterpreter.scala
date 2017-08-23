@@ -1,11 +1,11 @@
 package org.bitcoins.core.script.crypto
 
 import org.bitcoins.core.crypto._
-import org.bitcoins.core.script.{ScriptProgram, _}
 import org.bitcoins.core.script.constant._
 import org.bitcoins.core.script.control.{ControlOperationsInterpreter, OP_VERIFY}
 import org.bitcoins.core.script.flag.ScriptFlagUtil
 import org.bitcoins.core.script.result._
+import org.bitcoins.core.script.{ScriptProgram, _}
 import org.bitcoins.core.util.{BitcoinSLogger, BitcoinScriptUtil, CryptoUtil}
 
 import scala.annotation.tailrec
@@ -14,7 +14,9 @@ import scala.annotation.tailrec
 /**
  * Created by chris on 1/6/16.
  */
-trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger {
+trait CryptoInterpreter extends ControlOperationsInterpreter {
+
+  private def logger = BitcoinSLogger.logger
 
   /** The input is hashed twice: first with SHA-256 and then with RIPEMD-160. */
   def opHash160(program : ScriptProgram) : ScriptProgram = {

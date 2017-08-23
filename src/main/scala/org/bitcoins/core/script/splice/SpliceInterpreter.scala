@@ -1,17 +1,16 @@
 package org.bitcoins.core.script.splice
 
-import org.bitcoins.core.script.{ScriptOperationFactory, ScriptProgram}
+import org.bitcoins.core.script.ScriptProgram
 import org.bitcoins.core.script.constant._
-import Math._
-
 import org.bitcoins.core.script.result.ScriptErrorInvalidStackOperation
 import org.bitcoins.core.util.BitcoinSLogger
 
 /**
  * Created by chris on 2/4/16.
  */
-trait SpliceInterpreter extends BitcoinSLogger {
+trait SpliceInterpreter {
 
+  private def logger = BitcoinSLogger.logger
   /** Pushes the string length of the top element of the stack (without popping it). */
   def opSize(program: ScriptProgram): ScriptProgram = {
     require(program.script.headOption.contains(OP_SIZE), "Script top must be OP_SIZE")

@@ -9,7 +9,7 @@ import scala.util.Try
 /**
   * Created by chris on 6/21/16.
   */
-class Int32Spec extends Properties("Int32Spec") with BitcoinSLogger {
+class Int32Spec extends Properties("Int32Spec") {
 
   property("Serialization symmetry") =
     Prop.forAll(NumberGenerator.int32s) { int32: Int32 =>
