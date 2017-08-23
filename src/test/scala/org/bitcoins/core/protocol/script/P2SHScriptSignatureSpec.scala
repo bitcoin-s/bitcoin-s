@@ -7,7 +7,7 @@ import org.scalacheck.{Prop, Properties}
 /**
   * Created by chris on 6/24/16.
   */
-class P2SHScriptSignatureSpec extends Properties("P2SHScriptSignatureSpec") with BitcoinSLogger {
+class P2SHScriptSignatureSpec extends Properties("P2SHScriptSignatureSpec") {
 
 
   property("Symmetrical serialization") =

@@ -7,7 +7,8 @@ import org.scalatest.{FlatSpec, MustMatchers}
 /**
  * Created by chris on 3/7/16.
  */
-class ECPrivateKeyTest extends FlatSpec with MustMatchers with BitcoinSLogger {
+class ECPrivateKeyTest extends FlatSpec with MustMatchers {
+  private def logger = BitcoinSLogger.logger
 
   "ECPrivateKey" must "have the same byte representation as a bitcoinj private key" in {
     val bitcoinjPrivateKey = CryptoTestUtil.bitcoinjPrivateKey.getPrivateKeyAsHex

@@ -20,7 +20,7 @@ import scala.util.{Failure, Success, Try}
 /**
  * Created by chris on 12/26/15.
  */
-sealed trait ScriptPubKey extends NetworkElement with BitcoinSLogger {
+sealed trait ScriptPubKey extends NetworkElement {
 
   /** The size of the script, this is used for network serialization */
   def compactSizeUInt : CompactSizeUInt = CompactSizeUInt.parseCompactSizeUInt(bytes)
@@ -134,7 +134,7 @@ sealed trait MultiSignatureScriptPubKey extends ScriptPubKey {
   }
 }
 
-object MultiSignatureScriptPubKey extends ScriptFactory[MultiSignatureScriptPubKey] with BitcoinSLogger {
+object MultiSignatureScriptPubKey extends ScriptFactory[MultiSignatureScriptPubKey] {
 
   private case class MultiSignatureScriptPubKeyImpl(hex : String) extends MultiSignatureScriptPubKey
 
@@ -234,7 +234,7 @@ sealed trait P2SHScriptPubKey extends ScriptPubKey {
   def scriptHash : Sha256Hash160Digest = Sha256Hash160Digest(asm(asm.length - 2).bytes)
 }
 
-object P2SHScriptPubKey extends ScriptFactory[P2SHScriptPubKey] with BitcoinSLogger {
+object P2SHScriptPubKey extends ScriptFactory[P2SHScriptPubKey] {
 
   private case class P2SHScriptPubKeyImpl(hex : String) extends P2SHScriptPubKey
 
@@ -499,7 +499,7 @@ case object EmptyScriptPubKey extends ScriptPubKey {
 }
 
 /** Factory companion object used to create ScriptPubKey objects */
-object ScriptPubKey extends Factory[ScriptPubKey] with BitcoinSLogger {
+object ScriptPubKey extends Factory[ScriptPubKey] {
   def empty : ScriptPubKey = fromAsm(Nil)
 
   /** Creates a scriptPubKey from its asm representation */

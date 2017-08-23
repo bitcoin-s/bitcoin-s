@@ -9,7 +9,8 @@ import org.scalatest.{FlatSpec, MustMatchers}
 /**
  * Created by chris on 3/8/16.
  */
-class P2SHScriptSignatureTest extends FlatSpec with MustMatchers with BitcoinSLogger {
+class P2SHScriptSignatureTest extends FlatSpec with MustMatchers {
+  private def logger = BitcoinSLogger.logger
 
   "P2SHScriptSignature" must "find the public keys embedded inside of the redeemScript" in {
     val rawP2SHScriptSig = TestUtil.rawP2shInputScript2Of2

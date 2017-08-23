@@ -5,12 +5,13 @@ import org.bitcoins.core.script.constant._
 import org.bitcoins.core.script.control.{ControlOperationsInterpreter, OP_VERIFY}
 import org.bitcoins.core.script.result._
 import org.bitcoins.core.script.{ExecutedScriptProgram, ExecutionInProgressScriptProgram, PreExecutionScriptProgram, ScriptProgram}
+import org.bitcoins.core.util.BitcoinSLogger
 
 /**
  * Created by chris on 1/6/16.
  */
 trait BitwiseInterpreter extends ControlOperationsInterpreter  {
-
+  private def logger = BitcoinSLogger.logger
   /** Returns 1 if the inputs are exactly equal, 0 otherwise. */
   def opEqual(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.contains(OP_EQUAL), "Script operation must be OP_EQUAL")
