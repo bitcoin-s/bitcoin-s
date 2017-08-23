@@ -1,11 +1,11 @@
 package org.bitcoins.core.script.arithmetic
 
-import org.bitcoins.core.script.control.{ControlOperationsInterpreter, OP_VERIFY}
-import org.bitcoins.core.script.result._
-import org.bitcoins.core.script.flag.ScriptFlagUtil
-import org.bitcoins.core.script.{ExecutedScriptProgram, PreExecutionScriptProgram, ExecutionInProgressScriptProgram, ScriptProgram}
 import org.bitcoins.core.script.constant._
-import org.bitcoins.core.util.{BitcoinScriptUtil, BitcoinSUtil}
+import org.bitcoins.core.script.control.{ControlOperationsInterpreter, OP_VERIFY}
+import org.bitcoins.core.script.flag.ScriptFlagUtil
+import org.bitcoins.core.script.result._
+import org.bitcoins.core.script.{ExecutedScriptProgram, ExecutionInProgressScriptProgram, PreExecutionScriptProgram, ScriptProgram}
+import org.bitcoins.core.util.{BitcoinSLogger, BitcoinScriptUtil}
 
 import scala.annotation.tailrec
 
@@ -13,7 +13,7 @@ import scala.annotation.tailrec
  * Created by chris on 1/25/16.
  */
 trait ArithmeticInterpreter extends ControlOperationsInterpreter {
-
+  private def logger = BitcoinSLogger.logger
   /** a is added to b. */
   def opAdd(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.contains(OP_ADD), "Script top must be OP_ADD")

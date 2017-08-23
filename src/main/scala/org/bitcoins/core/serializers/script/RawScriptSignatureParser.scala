@@ -11,7 +11,7 @@ import scala.util.Try
 /**
  * Created by chris on 1/12/16.
  */
-trait RawScriptSignatureParser extends RawBitcoinSerializer[ScriptSignature] with BitcoinSLogger  {
+trait RawScriptSignatureParser extends RawBitcoinSerializer[ScriptSignature] {
 
   def read(bytes : List[Byte]) : ScriptSignature = {
     if (bytes.isEmpty) EmptyScriptSignature

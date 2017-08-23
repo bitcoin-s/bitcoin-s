@@ -20,7 +20,7 @@ import org.bitcoins.core.util.{BitcoinSUtil, CryptoUtil, BitcoinSLogger, Factory
   * Bitcoin Core implementation:
   * https://github.com/bitcoin/bitcoin/blob/master/src/primitives/block.h#L20
   */
-sealed trait BlockHeader extends NetworkElement with BitcoinSLogger {
+sealed trait BlockHeader extends NetworkElement {
 
   /**
     * The block version number indicates which set of block validation rules to follow.

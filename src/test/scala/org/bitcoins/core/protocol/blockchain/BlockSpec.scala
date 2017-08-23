@@ -7,7 +7,8 @@ import org.scalacheck.{Prop, Properties}
 /**
   * Created by tom on 7/6/16.
   */
-class BlockSpec extends Properties("BlockSpec") with BitcoinSLogger {
+class BlockSpec extends Properties("BlockSpec") {
+  private def logger = BitcoinSLogger.logger
 
   property("Serialization symmetry") =
   Prop.forAll(BlockchainElementsGenerator.block) { block =>

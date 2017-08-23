@@ -47,7 +47,7 @@ sealed trait ECPrivateKey extends BaseECKey {
   override def toString = "ECPrivateKey(" + hex + "," + isCompressed +")"
 }
 
-object ECPrivateKey extends Factory[ECPrivateKey] with BitcoinSLogger {
+object ECPrivateKey extends Factory[ECPrivateKey] {
 
   private case class ECPrivateKeyImpl(bytes : Seq[Byte], isCompressed: Boolean) extends ECPrivateKey {
     require(NativeSecp256k1.secKeyVerify(bytes.toArray), "Invalid key according to secp256k1, hex: " + BitcoinSUtil.encodeHex(bytes))

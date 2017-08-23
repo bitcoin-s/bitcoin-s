@@ -9,7 +9,7 @@ import scala.util.Try
 /**
   * Created by chris on 6/23/16.
   */
-class CurrencyUnitSpec extends Properties("CurrencyUnitSpec") with BitcoinSLogger {
+class CurrencyUnitSpec extends Properties("CurrencyUnitSpec") {
 
   property("Symmetrical serialization for satoshis") =
     Prop.forAll(CurrencyUnitGenerator.satoshis) { satoshis =>

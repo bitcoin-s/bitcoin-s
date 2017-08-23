@@ -15,7 +15,7 @@ trait ConfigParams {
 case class ConfigParamsImpl(addrTypeOrIsCompressed : Either[String, Boolean], isPrivKey : Boolean,
                             isTestNet : Boolean) extends ConfigParams
 
-object ConfigParamsProtocol extends DefaultJsonProtocol with BitcoinSLogger {
+object ConfigParamsProtocol extends DefaultJsonProtocol {
   val addrTypeKey = "addrType"
   val isCompressedKey = "isCompressed"
   val isPrivKeyKey = "isPrivkey"

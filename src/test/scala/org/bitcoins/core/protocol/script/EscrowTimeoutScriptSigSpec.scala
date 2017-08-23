@@ -7,7 +7,7 @@ import org.scalacheck.{Prop, Properties}
 /**
   * Created by chris on 3/28/17.
   */
-class EscrowTimeoutScriptSigSpec extends Properties("EscrowWithTimeoutScriptSigSpec") with BitcoinSLogger  {
+class EscrowTimeoutScriptSigSpec extends Properties("EscrowWithTimeoutScriptSigSpec") {
 
   property("serialization symmetry") =
     Prop.forAll(ScriptGenerators.escrowTimeoutScriptSig) { scriptSig =>

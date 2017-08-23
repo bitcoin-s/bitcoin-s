@@ -4,13 +4,12 @@ import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.number.{UInt32, UInt64}
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.protocol.transaction.Transaction
-import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil}
 import org.scalatest.{FlatSpec, MustMatchers}
 
 /**
   * Created by tom on 6/3/16.
   */
-class RawBlockSerializerTest extends FlatSpec with MustMatchers with BitcoinSLogger {
+class RawBlockSerializerTest extends FlatSpec with MustMatchers {
   //genesis block
   //https://en.bitcoin.it/wiki/Genesis_block
   //https://webbtc.com/block/000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f

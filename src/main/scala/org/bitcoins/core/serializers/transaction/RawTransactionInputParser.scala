@@ -14,7 +14,7 @@ import scala.annotation.tailrec
  * Created by chris on 1/13/16.
  * https://bitcoin.org/en/developer-reference#txin
  */
-trait RawTransactionInputParser extends RawBitcoinSerializer[Seq[TransactionInput]] with BitcoinSLogger {
+trait RawTransactionInputParser extends RawBitcoinSerializer[Seq[TransactionInput]] {
 
 
   override def read(bytes : List[Byte]) : Seq[TransactionInput] = {

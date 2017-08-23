@@ -13,8 +13,7 @@ import scala.util.{Failure, Success, Try}
 /**
  * Created by chris on 2/16/16.
  */
-sealed trait ECPublicKey extends BaseECKey with BitcoinSLogger {
-
+sealed trait ECPublicKey extends BaseECKey {
 
   def verify(hash : HashDigest, signature : ECDigitalSignature) : Boolean = verify(hash.bytes, signature)
 

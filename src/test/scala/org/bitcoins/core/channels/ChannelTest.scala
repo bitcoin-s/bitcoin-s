@@ -15,7 +15,8 @@ import scala.util.Try
 /**
   * Created by chris on 5/31/17.
   */
-class ChannelTest extends FlatSpec with MustMatchers with BitcoinSLogger {
+class ChannelTest extends FlatSpec with MustMatchers {
+  private def logger = BitcoinSLogger.logger
 
   "ChannelTest" must "fail to create payment channel if we do not have the minimum amoutn required for initial deposit" in {
     val lock = ScriptGenerators.escrowTimeoutScriptPubKey2Of2.sample.get._1

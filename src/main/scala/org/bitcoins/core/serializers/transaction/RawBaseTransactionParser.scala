@@ -10,7 +10,7 @@ import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil}
  * For deserializing and re-serializing a bitcoin transaction
  * https://bitcoin.org/en/developer-reference#raw-transaction-format
  */
-trait RawBaseTransactionParser extends RawBitcoinSerializer[BaseTransaction] with BitcoinSLogger {
+trait RawBaseTransactionParser extends RawBitcoinSerializer[BaseTransaction] {
 
   def read(bytes : List[Byte]): BaseTransaction = {
     val versionBytes = bytes.take(4)

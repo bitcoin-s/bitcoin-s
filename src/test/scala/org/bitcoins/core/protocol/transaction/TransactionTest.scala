@@ -18,8 +18,8 @@ import scala.io.Source
 /**
  * Created by chris on 7/14/15.
  */
-class TransactionTest extends FlatSpec with MustMatchers with BitcoinSLogger {
-
+class TransactionTest extends FlatSpec with MustMatchers {
+  private def logger = BitcoinSLogger.logger
 
   "Transaction" must "derive the correct txid from the transaction contents" in {
 

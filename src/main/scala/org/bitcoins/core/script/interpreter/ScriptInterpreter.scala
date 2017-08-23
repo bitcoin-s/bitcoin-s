@@ -28,8 +28,9 @@ import scala.util.{Failure, Success, Try}
  */
 trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with ControlOperationsInterpreter
   with BitwiseInterpreter with ConstantInterpreter with ArithmeticInterpreter with SpliceInterpreter
-  with LockTimeInterpreter with BitcoinSLogger {
+  with LockTimeInterpreter {
 
+  private def logger = BitcoinSLogger.logger
   /**
    * Currently bitcoin core limits the maximum number of non-push operations per script
    * to 201
