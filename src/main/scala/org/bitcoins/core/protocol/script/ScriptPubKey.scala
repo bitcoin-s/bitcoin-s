@@ -52,13 +52,7 @@ sealed trait P2PKHScriptPubKey extends ScriptPubKey {
 
 
 object P2PKHScriptPubKey extends ScriptFactory[P2PKHScriptPubKey] {
-
   private case class P2PKHScriptPubKeyImpl(hex : String) extends P2PKHScriptPubKey
-
-  override def fromBytes(bytes : Seq[Byte]): P2PKHScriptPubKey = {
-    val asm = RawScriptPubKeyParser.read(bytes).asm
-    P2PKHScriptPubKey(asm)
-  }
 
   def apply(pubKey : ECPublicKey) : P2PKHScriptPubKey = {
     val hash = CryptoUtil.sha256Hash160(pubKey.bytes)
@@ -137,11 +131,6 @@ sealed trait MultiSignatureScriptPubKey extends ScriptPubKey {
 object MultiSignatureScriptPubKey extends ScriptFactory[MultiSignatureScriptPubKey] {
 
   private case class MultiSignatureScriptPubKeyImpl(hex : String) extends MultiSignatureScriptPubKey
-
-  override def fromBytes(bytes : Seq[Byte]): MultiSignatureScriptPubKey = {
-    val s = RawScriptPubKeyParser.read(bytes)
-    MultiSignatureScriptPubKey(s.asm)
-  }
 
   def apply(requiredSigs : Int, pubKeys : Seq[ECPublicKey]): MultiSignatureScriptPubKey = {
     require(requiredSigs <= ScriptSettings.maxPublicKeysPerMultiSig, "We cannot have more required signatures than: " +
@@ -235,13 +224,7 @@ sealed trait P2SHScriptPubKey extends ScriptPubKey {
 }
 
 object P2SHScriptPubKey extends ScriptFactory[P2SHScriptPubKey] {
-
   private case class P2SHScriptPubKeyImpl(hex : String) extends P2SHScriptPubKey
-
-  override def fromBytes(bytes : Seq[Byte]): P2SHScriptPubKey = {
-    val asm = RawScriptPubKeyParser.read(bytes).asm
-    P2SHScriptPubKey(asm)
-  }
 
   def apply(scriptPubKey: ScriptPubKey) : P2SHScriptPubKey = {
     val hash = CryptoUtil.sha256Hash160(scriptPubKey.asmBytes)
@@ -279,11 +262,6 @@ sealed trait P2PKScriptPubKey extends ScriptPubKey {
 object P2PKScriptPubKey extends ScriptFactory[P2PKScriptPubKey] {
 
   private case class P2PKScriptPubKeyImpl(hex : String) extends P2PKScriptPubKey
-
-  override def fromBytes(bytes : Seq[Byte]) = {
-    val asm = RawScriptPubKeyParser.read(bytes).asm
-    P2PKScriptPubKey(asm)
-  }
 
   def apply(pubKey : ECPublicKey): P2PKScriptPubKey = {
     val pushOps = BitcoinScriptUtil.calculatePushOp(pubKey.bytes)
@@ -328,10 +306,6 @@ sealed trait LockTimeScriptPubKey extends ScriptPubKey {
 
 object LockTimeScriptPubKey extends ScriptFactory[LockTimeScriptPubKey] {
 
-  override def fromBytes(bytes: Seq[Byte]): LockTimeScriptPubKey = {
-    val asm = RawScriptPubKeyParser.read(bytes).asm
-    fromAsm(asm)
-  }
   def fromAsm(asm: Seq[ScriptToken]): LockTimeScriptPubKey = {
     require(isValidLockTimeScriptPubKey(asm))
     if (asm.contains(OP_CHECKLOCKTIMEVERIFY)) CLTVScriptPubKey(asm)
@@ -355,10 +329,6 @@ sealed trait CLTVScriptPubKey extends LockTimeScriptPubKey
 object CLTVScriptPubKey extends ScriptFactory[CLTVScriptPubKey] {
   private case class CLTVScriptPubKeyImpl(hex : String) extends CLTVScriptPubKey
 
-  override def fromBytes (bytes : Seq[Byte]) : CLTVScriptPubKey = {
-    val asm = RawScriptPubKeyParser.read(bytes).asm
-    CLTVScriptPubKey(asm)
-  }
   def fromAsm(asm : Seq[ScriptToken]) : CLTVScriptPubKey = {
     buildScript(asm,CLTVScriptPubKeyImpl(_),isCLTVScriptPubKey(_),"Given asm was not a CLTVScriptPubKey, got: " + asm)
   }
@@ -426,11 +396,6 @@ sealed trait CSVScriptPubKey extends LockTimeScriptPubKey
 object CSVScriptPubKey extends ScriptFactory[CSVScriptPubKey] {
   private case class CSVScriptPubKeyImpl(hex : String) extends CSVScriptPubKey
 
-  override def fromBytes(bytes : Seq[Byte]) : CSVScriptPubKey = {
-    val asm = RawScriptPubKeyParser.read(bytes).asm
-    CSVScriptPubKey(asm)
-  }
-
   def fromAsm (asm : Seq[ScriptToken]) : CSVScriptPubKey = {
     buildScript(asm, CSVScriptPubKeyImpl(_), isCSVScriptPubKey(_),  "Given asm was not a CSVScriptPubKey, got: " + asm)
   }
@@ -479,11 +444,6 @@ sealed trait NonStandardScriptPubKey extends ScriptPubKey
 
 object NonStandardScriptPubKey extends ScriptFactory[NonStandardScriptPubKey] {
   private case class NonStandardScriptPubKeyImpl(hex : String) extends NonStandardScriptPubKey
-
-  override def fromBytes(bytes: Seq[Byte]): NonStandardScriptPubKey = {
-    val asm = RawScriptPubKeyParser.read(bytes).asm
-    NonStandardScriptPubKey(asm)
-  }
 
   def fromAsm(asm: Seq[ScriptToken]): NonStandardScriptPubKey = {
     //everything can be a NonStandardScriptPubkey, thus the trivially true function
@@ -564,11 +524,6 @@ sealed trait WitnessScriptPubKeyV0 extends WitnessScriptPubKey {
 object WitnessScriptPubKeyV0 extends ScriptFactory[WitnessScriptPubKeyV0] {
   private case class WitnessScriptPubKeyV0Impl(hex: String) extends WitnessScriptPubKeyV0
 
-  override def fromBytes(bytes: Seq[Byte]): WitnessScriptPubKeyV0 = {
-    val asm = RawScriptPubKeyParser.read(bytes).asm
-    WitnessScriptPubKeyV0(asm)
-  }
-
   def fromAsm(asm: Seq[ScriptToken]): WitnessScriptPubKeyV0 = {
     buildScript(asm,WitnessScriptPubKeyV0Impl(_),isWitnessScriptPubKeyV0(_), "Given asm was not a WitnessScriptPubKeyV0, got: " + asm )
   }
@@ -608,11 +563,6 @@ sealed trait UnassignedWitnessScriptPubKey extends WitnessScriptPubKey {
 object UnassignedWitnessScriptPubKey extends ScriptFactory[UnassignedWitnessScriptPubKey] {
   private case class UnassignedWitnessScriptPubKeyImpl(hex: String) extends UnassignedWitnessScriptPubKey
 
-  override def fromBytes(bytes: Seq[Byte]): UnassignedWitnessScriptPubKey = {
-    val asm = RawScriptPubKeyParser.read(bytes).asm
-    UnassignedWitnessScriptPubKey(asm)
-  }
-
   override def fromAsm(asm: Seq[ScriptToken]): UnassignedWitnessScriptPubKey = {
     buildScript(asm, UnassignedWitnessScriptPubKeyImpl(_), WitnessScriptPubKey.isWitnessScriptPubKey(_),
       "Given asm was not a valid witness script pubkey: " + asm)
@@ -638,11 +588,6 @@ object WitnessCommitment extends ScriptFactory[WitnessCommitment] {
   private val commitmentHeader = "aa21a9ed"
 
   def apply(asm: Seq[ScriptToken]): WitnessCommitment = fromAsm(asm)
-
-  override def fromBytes(bytes: Seq[Byte]): WitnessCommitment = {
-    val asm = RawScriptPubKeyParser.read(bytes).asm
-    fromAsm(asm)
-  }
 
   override def fromAsm(asm: Seq[ScriptToken]): WitnessCommitment = {
     buildScript(asm, WitnessCommitmentImpl(_), isWitnessCommitment(_), "Given asm was not a valid witness commitment, got: " + asm)
@@ -693,13 +638,9 @@ sealed trait EscrowTimeoutScriptPubKey extends ScriptPubKey {
 object EscrowTimeoutScriptPubKey extends ScriptFactory[EscrowTimeoutScriptPubKey] {
   private case class EscrowTimeoutScriptPubKeyImpl(hex: String) extends EscrowTimeoutScriptPubKey
 
-  override def fromBytes(bytes: Seq[Byte]): EscrowTimeoutScriptPubKey = {
-    val asm = RawScriptPubKeyParser.read(bytes).asm
-    fromAsm(asm)
-  }
-
   override def fromAsm(asm: Seq[ScriptToken]): EscrowTimeoutScriptPubKey = {
-    buildScript(asm, EscrowTimeoutScriptPubKeyImpl(_), isValidEscrowTimeout(_), "Given asm was not a valid CSVEscrowTimeout, got: " + asm)
+    buildScript(asm, EscrowTimeoutScriptPubKeyImpl(_), isValidEscrowTimeout(_),
+      "Given asm was not a valid CSVEscrowTimeout, got: " + asm)
   }
 
   def isValidEscrowTimeout(asm: Seq[ScriptToken]): Boolean = {
@@ -718,3 +659,5 @@ object EscrowTimeoutScriptPubKey extends ScriptFactory[EscrowTimeoutScriptPubKey
     fromAsm(Seq(OP_IF) ++ escrow.asm ++ Seq(OP_ELSE) ++ timeout.asm ++ Seq(OP_ENDIF))
   }
 }
+
+
