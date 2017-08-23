@@ -2,6 +2,7 @@ package org.bitcoins.core.protocol.script
 
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.script.constant.ScriptToken
+import org.bitcoins.core.serializers.script.ScriptParser
 import org.bitcoins.core.util.Factory
 
 /**
@@ -20,5 +21,12 @@ trait ScriptFactory[T] extends Factory[T] {
 
   /** Creates a T from the given [[ScriptToken]]s */
   def fromAsm(asm: Seq[ScriptToken]): T
+
+  def fromBytes(bytes: Seq[Byte]): T = {
+    val cpmct = CompactSizeUInt.parseCompactSizeUInt(bytes)
+    val (_,noCmpctUInt) = bytes.splitAt(cpmct.bytes.size)
+    val asm = ScriptParser.fromBytes(noCmpctUInt)
+    fromAsm(asm)
+  }
 
 }
