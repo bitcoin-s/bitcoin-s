@@ -100,7 +100,7 @@ trait BinaryTree[+T] {
     }
   }
 
-  def toSeq : Seq[T] = {
+  def toSeq: Seq[T] = {
     @tailrec
     def loop(tree : BinaryTree[T], accum : List[T], remainder : List[BinaryTree[T]]) : List[T] = tree match {
       case Leaf(x) => if (remainder.isEmpty) accum ++ List(x) else loop(remainder.head,accum ++ List(x),remainder.tail)
@@ -108,10 +108,10 @@ trait BinaryTree[+T] {
       case Node(v,l,r) =>
         loop(l,accum ++ List(v), r :: remainder)
     }
-    loop(this,List(),List())
+    loop(this,Nil,Nil)
   }
 
-  def toList : List[T] = toSeq.toList
+  def toList: List[T] = toSeq.toList
 }
 
 case class Node[T](v: T, l: BinaryTree[T], r: BinaryTree[T]) extends BinaryTree[T]
