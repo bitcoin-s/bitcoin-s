@@ -157,31 +157,82 @@ trait ControlOperationsInterpreter {
   }
 
   /** The loop that parses a list of [[ScriptToken]]s into a [[BinaryTree]]. */
-  @tailrec
-  private def loop(script : List[ScriptToken], tree : BinaryTree[ScriptToken]) : BinaryTree[ScriptToken] = {
-/*    logger.debug("Script : " + script)
-    logger.debug("Tree: " + tree)*/
+  private def loop(script : List[ScriptToken], tree : BinaryTree[ScriptToken]): BinaryTree[ScriptToken] = {
+/*    logger.debug("Script : " + script) */
+    logger.debug("Tree: " + tree)
+    logger.debug("script: " + (if (script.nonEmpty) script else Nil))
     script match {
-      case OP_IF :: t =>
-        val (newTail, parsedTree) = parseOpIf(script)
-        val newTree = insertSubTree(tree,parsedTree)
-        loop(newTail, newTree)
-      case OP_NOTIF :: t =>
-        val (newTail, parsedTree) = parseOpNotIf(script)
-        val newTree = insertSubTree(tree,parsedTree)
-        loop(newTail, newTree)
-      case OP_ELSE :: t =>
-        val (newTail, parsedTree) = parseOpElse(script)
-        val newTree = insertSubTree(tree,parsedTree)
-        loop(newTail, newTree)
       case OP_ENDIF :: t =>
-        val (newTail, parsedTree) = parseOpEndIf(script)
-        val newTree = insertSubTree(tree,parsedTree)
-        loop(newTail, newTree)
+        require(t.isEmpty, "Must not have any tail after parsing an OP_ENDIF, got: "+ t)
+        require(tree.value.isDefined && Seq(OP_IF,OP_NOTIF,OP_ELSE).contains(tree.value.get),
+          "Can only insert an OP_ENDIF on a tree root of OP_IF/NOTIF/ELSE, got: " + tree.value)
+        require(tree.right == Some(Empty), "Must have an empty right branch when inserting an OP_ENDIF onto our btree, got: " + tree.right)
+        Node(tree.value.get,tree.left.getOrElse(Empty),Leaf(OP_ENDIF))
+      case h :: t if (h == OP_IF || h == OP_NOTIF) =>
+        require(tree.left.getOrElse(Empty) == Empty, "Must have an empty left branch of the parent tree to insert an OP_IF, got: " + tree.left)
+        //find last OP_ENDIF in t
+        val endifs = t.zipWithIndex.filter(_._1 == OP_ENDIF)
+        if (endifs.size % 2 == 0) {
+          logger.debug("Even amount of OP_ENDIFs")
+          val nested = endifs.head
+          val nestedEndIfIndex = nested._2
+          logger.debug("nestedEndIfIndex: " + nestedEndIfIndex)
+          val nestedIf = t.take(nestedEndIfIndex)
+          logger.debug("nestedIf: " + nestedIf)
+          val opIfTree = loop(nestedIf,Node(h,Empty,Empty))
+          //add the last OP_ENDIF
+          val withENDIF = Node(tree.value.get, insertSubTree(opIfTree,Leaf(OP_ENDIF)),Empty)
+          logger.debug("withENDIF: " + withENDIF)
+          val remaining = t.splitAt(nestedEndIfIndex + 1)._2
+          logger.debug("remaining: " + remaining)
+          logger.debug("Parent tree: " + tree)
+          val remainingTree = loop(remaining,withENDIF)
+          //need to insert remainingTree in the OP_IF tree correctly, not sure if this is right
+          val fullTree = Node(withENDIF.value.get, withENDIF.left.getOrElse(Empty),
+            insertSubTree(withENDIF.right.getOrElse(Empty),remainingTree.right.getOrElse(Empty)))
+          logger.debug("Done with even amounts OP_ENDIFs")
+          fullTree
+        } else {
+          //if we have an odd amount of endifs it means we need to parse the first OP_IF
+          logger.debug("odd amounts of OP_ENDIFs")
+          val nested = endifs.last
+          val nestedEndIfIndex = nested._2
+          logger.debug("nestedEndIfIndex: " + nestedEndIfIndex)
+          val nestedIf = t.take(nestedEndIfIndex)
+          logger.debug("nestedIf: " + nestedIf)
+          val opIfTree = loop(nestedIf,Node(h,Empty,Empty))
+          //add the last OP_ENDIF
+          val withENDIF = insertSubTree(opIfTree,Leaf(OP_ENDIF))
+          val remaining = t.splitAt(nestedEndIfIndex + 1)._2
+          logger.debug("remaining: " + remaining)
+          val remainingTree = loop(remaining,Empty)
+          //need to insert remainingTree in the OP_IF tree correctly, not sure if this is right
+          val fullIf = Node(withENDIF.value.get, withENDIF.left.getOrElse(Empty),
+            insertSubTree(withENDIF.right.getOrElse(Empty),remainingTree))
+          val fullTree = tree match {
+            case Empty => fullIf
+            case l: Leaf[ScriptToken] => Node(l.v,fullIf,Empty)
+            case n: Node[ScriptToken] =>
+              require(n.l == Empty, "We can only insert an OP_IF on a left branch, it was not empty: " + n.l)
+              Node(n.v,fullIf,n.r)
+
+          }
+          logger.debug("Done with odd amounts of OP_ENDIFS")
+          fullTree
+        }
+      case h :: t if h == OP_ELSE =>
+        require(tree.value.isDefined && Seq(OP_IF, OP_NOTIF, OP_ELSE).contains(tree.value.get),
+          "Parent of OP_ELSE has to be an OP_IF/NOTIF/ELSE, got: " + tree.value)
+        require(tree.right.getOrElse(Empty) == Empty,"Right branch of tree should be Empty for an OP_ELSE, got: " + tree.right.get)
+        val subTree = loop(t,Node(OP_ELSE,Empty,Empty))
+
+        Node(tree.value.get,tree.left.getOrElse(Empty), subTree)
       case (x: ScriptConstant) :: t => loop(t, insertSubTree(tree, Leaf(x)))
       case (x: BytesToPushOntoStack) :: t => loop(t, insertSubTree(tree, Leaf(x)))
       case h :: t => loop(t,insertSubTree(tree,Leaf(h)))
-      case Nil => tree
+      case Nil =>
+        logger.debug("Done parsing tree, got: "  + tree)
+        tree
     }
   }
 
@@ -191,58 +242,19 @@ trait ControlOperationsInterpreter {
    * @param subTree the parse tree that needs to be inserted into the control flow of the program
    * @return the full parse tree combined
    */
-  private def insertSubTree(tree : BinaryTree[ScriptToken],subTree : BinaryTree[ScriptToken]) : BinaryTree[ScriptToken] = {
-    //TODO: Optimize this to a tailrec function
-    //logger.debug("Inserting subTree: " + subTree + " into tree: " + tree)
-      tree match {
-        case Empty => subTree
-        case leaf : Leaf[ScriptToken] => Node(leaf.v, subTree, Empty)
-        case node : Node[ScriptToken] =>
-          if (subTree.value.isDefined && subTree.value.get == OP_ELSE) {
-            //need to insert the OP_ELSE within the proper OP_IF
-            //get count of OP_IFs and OP_ENDIFS inside of the tree
-            val opIfCount = node.l.count[ScriptToken](OP_IF)
-            val opNotIfCount = node.l.count[ScriptToken](OP_NOTIF)
-            val opEndIfCount = node.l.count[ScriptToken](OP_ENDIF)
-            //means that the subtree is not balanced, need to insert the OP_ELSE inside
-            //the left subtree
-            if (opIfCount + opNotIfCount != opEndIfCount) Node(node.v,insertSubTree(tree.left.get,subTree),node.r)
-            else Node(node.v,node.l,insertSubTree(tree.right.getOrElse(Empty),subTree))
-          } else if (node.r.value.isDefined && node.r.value.get == OP_ELSE) {
-            //since there is an OP_ELSE defined to right
-            //we need to insert all script tokens on that node
-            Node(node.v,node.l,insertSubTree(node.r,subTree))
-          }
-          else Node(node.v, insertSubTree(node.l, subTree), node.r)
+  private def insertSubTree(tree: BinaryTree[ScriptToken],
+                            subTree: BinaryTree[ScriptToken]): BinaryTree[ScriptToken] = tree match {
+    case Empty => subTree
+    case leaf: Leaf[ScriptToken] =>
+      Node(leaf.v,subTree,Empty)
+    case node : Node[ScriptToken] if (node.v == OP_IF || node.v == OP_ELSE) =>
+      if (subTree.value.isDefined && Seq(OP_ELSE,OP_ENDIF).contains(subTree.value.get)) {
+        Node(node.v,node.l,insertSubTree(node.r,subTree))
+      } else {
+        Node(node.v,insertSubTree(node.l,subTree),node.r)
       }
-  }
-
-  /** Parses an [[OP_IF]] [[ScriptToken]]. */
-  private def parseOpIf(script : List[ScriptToken]) : (List[ScriptToken],BinaryTree[ScriptToken]) = script match {
-    case OP_IF :: t  => (t, Node(OP_IF,Empty,Empty))
-    case h :: t => throw new IllegalArgumentException("Cannot parse " + h + " as an OP_IF")
-    case Nil => (script,Empty)
-  }
-
-  /** Parses an [[OP_NOTIF]] [[ScriptToken]]. */
-  private def parseOpNotIf(script : List[ScriptToken]) : (List[ScriptToken],BinaryTree[ScriptToken]) = script match {
-    case OP_NOTIF :: t =>  (t, Node(OP_NOTIF,Empty,Empty))
-    case h :: t => throw new IllegalArgumentException("Cannot parse " + h + " as an OP_NOTIF")
-    case Nil => (script,Empty)
-  }
-
-  /** Parses an [[OP_ELSE]] [[ScriptToken]]. */
-  private def parseOpElse(script : List[ScriptToken]) : (List[ScriptToken],BinaryTree[ScriptToken]) = script match {
-    case OP_ELSE :: t => (t,Node(OP_ELSE,Empty,Empty))
-    case h :: t => throw new RuntimeException("Cannot parse " + h + " as an OP_ELSE")
-    case Nil => (script,Empty)
-  }
-
-  /** Parses an [[OP_ENDIF]] [[ScriptToken]]. */
-  private def parseOpEndIf(script : List[ScriptToken]) : (List[ScriptToken],BinaryTree[ScriptToken]) = script match {
-    case OP_ENDIF :: t => (t,Leaf(OP_ENDIF))
-    case h :: t => throw new IllegalArgumentException("Cannot parse " + h + " as an OP_ENDIF")
-    case Nil => (script,Empty)
+    case node: Node[ScriptToken] =>
+      Node(node.v,insertSubTree(node.l,subTree), node.r)
   }
 
   /** Checks if an [[OP_IF]]/[[OP_NOTIF]] [[ScriptToken]] has a matching [[OP_ENDIF]] */

@@ -5,8 +5,11 @@ import org.bitcoins.core.script.ScriptProgram
 import org.bitcoins.core.script.arithmetic.OP_ADD
 import org.bitcoins.core.script.bitwise.OP_EQUAL
 import org.bitcoins.core.script.constant._
+import org.bitcoins.core.script.crypto.OP_CHECKSIG
+import org.bitcoins.core.script.locktime.OP_CHECKSEQUENCEVERIFY
 import org.bitcoins.core.script.reserved.{OP_RESERVED, OP_VER}
 import org.bitcoins.core.script.result.{ScriptErrorInvalidStackOperation, ScriptErrorOpReturn}
+import org.bitcoins.core.script.stack.OP_DROP
 import org.bitcoins.core.util._
 import org.scalatest.{FlatSpec, MustMatchers}
 
@@ -14,7 +17,8 @@ import org.scalatest.{FlatSpec, MustMatchers}
  * Created by chris on 1/6/16.
  */
 class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers with ControlOperationsInterpreter {
-
+  private def logger = BitcoinSLogger.logger
+/*
   "ControlOperationsInterpreter" must "have OP_VERIFY evaluate to true with '1' on the stack" in {
     val stack = List(OP_TRUE)
     val script = List(OP_VERIFY)
@@ -123,6 +127,7 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers with C
       OP_ELSE, OP_1, OP_IF, OP_1, OP_ELSE, OP_RETURN, OP_ELSE, OP_1, OP_ENDIF, OP_ELSE, OP_RETURN, OP_ENDIF, OP_ADD, OP_2, OP_EQUAL)
     findMatchingOpEndIf(script) must be (20)
   }
+*/
 
   it must "parse a script as a binary tree then convert it back to the original list" in {
 
@@ -139,16 +144,19 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers with C
     val script3 = List(OP_IF, OP_1, OP_ELSE, OP_0, OP_ENDIF)
     val bTree3 = parseBinaryTree(script3)
     bTree3.toSeq must be (script3)
-
+    val subTree1 = Node(OP_IF,Leaf(OP_0),Node(OP_ELSE,Leaf(OP_1),Leaf(OP_ENDIF)))
+    val subTree2 = Node(OP_ELSE,Node(OP_IF, Node(OP_2,Empty,Empty),Node(OP_ELSE,Node(OP_3,Empty,Empty), Leaf(OP_ENDIF))),Leaf(OP_ENDIF))
+    val expected: BinaryTree[ScriptToken] = Node(OP_IF,subTree1,subTree2)
     val script4 = List(OP_IF, OP_IF, OP_0, OP_ELSE, OP_1, OP_ENDIF, OP_ELSE, OP_IF, OP_2, OP_ELSE, OP_3, OP_ENDIF, OP_ENDIF)
     val bTree4 = parseBinaryTree(script4)
-
+    bTree4.left.get must be (subTree1)
+    bTree4.right.get must be (subTree2)
+    logger.debug("bTree4: " + bTree4)
     bTree4.toSeq must be (script4)
-
     val script5 = List(OP_IF, OP_1,OP_ELSE, OP_2, OP_ELSE, OP_3, OP_ENDIF)
     parseBinaryTree(script5).toSeq must be (script5)
   }
-
+/*
   it must "parse a script into a binary tree and have the OP_IF expression on the left branch and the OP_ELSE expression on the right branch"in {
     val script = List(OP_IF,OP_0,OP_ELSE,OP_1,OP_ENDIF)
     val bTree = parseBinaryTree(script)
@@ -497,6 +505,23 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers with C
     val asm = List(OP_IF,OP_0,OP_ELSE,OP_1,OP_ENDIF)
     removeFirstOpIf(asm) must be (Seq(OP_ELSE,OP_1,OP_ENDIF))
   }
+
+  it must "remove the else statement but leave the OP_CHECKSIG after the OP_ENDIF in a RefundHTLC" in {
+    val tree = Node(OP_IF,Node(BytesToPushOntoStack(33),
+      Leaf(ScriptConstant("02a46b47ef58133c1539f30c12fce4ab01def25afc19c234f9da84f0bf1b2005c9")),Empty),
+      Node(OP_ELSE,
+        Node(BytesToPushOntoStack(8),
+          Node(ScriptConstant("fbeff03aa652d349"),
+            Node(OP_CHECKSEQUENCEVERIFY,
+              Node(OP_DROP,
+                Node(BytesToPushOntoStack(33),
+                  Node(ScriptConstant("02d4b71bbbfac82806402d91004c80915b3fef98251a29bba1f5011119d80bb33e"),
+                    Node(OP_ENDIF, Leaf(OP_CHECKSIG),Empty),Empty),Empty),Empty),Empty),Empty), Empty), Empty))
+
+    val result = removeFirstOpElse(tree)
+    result.toList must be (List(OP_IF, BytesToPushOntoStack(33),
+      ScriptConstant("02a46b47ef58133c1539f30c12fce4ab01def25afc19c234f9da84f0bf1b2005c9"), OP_ENDIF, OP_CHECKSIG))
+  }*/
 
 }
 
