@@ -153,6 +153,7 @@ trait ControlOperationsInterpreter {
   /** Parses a list of [[ScriptToken]]s into its corresponding [[BinaryTree]] */
   def parseBinaryTree(script : List[ScriptToken]) : BinaryTree[ScriptToken] = {
     val bTree = loop(script,Empty)
+    logger.debug("parsed btree: " + bTree)
     bTree
   }
 
@@ -167,57 +168,62 @@ trait ControlOperationsInterpreter {
         require(tree.value.isDefined && Seq(OP_IF,OP_NOTIF,OP_ELSE).contains(tree.value.get),
           "Can only insert an OP_ENDIF on a tree root of OP_IF/NOTIF/ELSE, got: " + tree.value)
         require(tree.right == Some(Empty), "Must have an empty right branch when inserting an OP_ENDIF onto our btree, got: " + tree.right)
-        Node(tree.value.get,tree.left.getOrElse(Empty),Leaf(OP_ENDIF))
+        //base case, doesn't matter what we return since call insertSubTree(tree,Leaf(OP_ENDIF))
+        Empty
       case h :: t if (h == OP_IF || h == OP_NOTIF) =>
-        require(tree.left.getOrElse(Empty) == Empty, "Must have an empty left branch of the parent tree to insert an OP_IF, got: " + tree.left)
         //find last OP_ENDIF in t
         val endifs = t.zipWithIndex.filter(_._1 == OP_ENDIF)
-        if (endifs.size % 2 == 0) {
+        logger.debug("endifs: " + endifs)
+        val endif = if (endifs.size == 0) {
+          (OP_ENDIF,t.size)
+        } else if (endifs.size % 2 == 0) {
+          //this means we need to take the first ENDIF, since we are nested inside of a parent OP_IF
           logger.debug("Even amount of OP_ENDIFs")
-          val nested = endifs.head
-          val nestedEndIfIndex = nested._2
-          logger.debug("nestedEndIfIndex: " + nestedEndIfIndex)
-          val nestedIf = t.take(nestedEndIfIndex)
-          logger.debug("nestedIf: " + nestedIf)
-          val opIfTree = loop(nestedIf,Node(h,Empty,Empty))
-          //add the last OP_ENDIF
-          val withENDIF = Node(tree.value.get, insertSubTree(opIfTree,Leaf(OP_ENDIF)),Empty)
-          logger.debug("withENDIF: " + withENDIF)
-          val remaining = t.splitAt(nestedEndIfIndex + 1)._2
-          logger.debug("remaining: " + remaining)
-          logger.debug("Parent tree: " + tree)
+          endifs.head
+        } else {
+          //this means we need to take the last endif since we are not nested inside a parent OP_IF
+          logger.debug("Odd amoutns of OP_ENDIFs")
+          endifs.last
+        }
+        val nestedEndIfIndex = endif._2
+        logger.debug("nestedEndIfIndex: " + nestedEndIfIndex)
+        val nestedIf = t.take(nestedEndIfIndex)
+        logger.debug("nestedIf: " + nestedIf)
+        val opIfTree = loop(nestedIf,Leaf(h))
+        logger.debug("opIfTree: " + opIfTree)
+        val remaining = t.splitAt(nestedEndIfIndex + 1)._2
+
+        if (endifs.size % 2 == 0) {
+          //this means we need to take the first ENDIF, since we are nested inside of a parent OP_IF
+          logger.debug("Even amount of OP_ENDIFs")
+          val withENDIF = insertSubTree(tree,insertSubTree(opIfTree,Leaf(OP_ENDIF)))
+          //we need to pass in the opIfTree here because there are remaining elements nested inside the OP_IF tree
           val remainingTree = loop(remaining,withENDIF)
-          //need to insert remainingTree in the OP_IF tree correctly, not sure if this is right
-          val fullTree = Node(withENDIF.value.get, withENDIF.left.getOrElse(Empty),
-            insertSubTree(withENDIF.right.getOrElse(Empty),remainingTree.right.getOrElse(Empty)))
+          val fullTree = insertSubTree(withENDIF.right.getOrElse(Empty),remainingTree)
           logger.debug("Done with even amounts OP_ENDIFs")
+          logger.debug("fullTree: " + fullTree)
           fullTree
         } else {
-          //if we have an odd amount of endifs it means we need to parse the first OP_IF
+          //this means we need to take the last endif since we are not nested inside a parent OP_IF
           logger.debug("odd amounts of OP_ENDIFs")
-          val nested = endifs.last
-          val nestedEndIfIndex = nested._2
-          logger.debug("nestedEndIfIndex: " + nestedEndIfIndex)
-          val nestedIf = t.take(nestedEndIfIndex)
-          logger.debug("nestedIf: " + nestedIf)
-          val opIfTree = loop(nestedIf,Node(h,Empty,Empty))
-          //add the last OP_ENDIF
-          val withENDIF = insertSubTree(opIfTree,Leaf(OP_ENDIF))
-          val remaining = t.splitAt(nestedEndIfIndex + 1)._2
-          logger.debug("remaining: " + remaining)
-          val remainingTree = loop(remaining,Empty)
+
+          val subTree = loop(remaining,Empty)
+          val withENDIF = insertSubTree(insertSubTree(opIfTree,subTree),Leaf(OP_ENDIF))
+
           //need to insert remainingTree in the OP_IF tree correctly, not sure if this is right
-          val fullIf = Node(withENDIF.value.get, withENDIF.left.getOrElse(Empty),
-            insertSubTree(withENDIF.right.getOrElse(Empty),remainingTree))
+          val fullIf = withENDIF
+          //now insert into the parent tree
           val fullTree = tree match {
             case Empty => fullIf
-            case l: Leaf[ScriptToken] => Node(l.v,fullIf,Empty)
+            case l: Leaf[ScriptToken] =>
+              if (fullIf == Empty) l
+              else Node(l.v,fullIf,Empty)
             case n: Node[ScriptToken] =>
               require(n.l == Empty, "We can only insert an OP_IF on a left branch, it was not empty: " + n.l)
               Node(n.v,fullIf,n.r)
-
           }
           logger.debug("Done with odd amounts of OP_ENDIFS")
+          logger.debug("fullTree: " + fullTree)
           fullTree
         }
       case h :: t if h == OP_ELSE =>
@@ -246,7 +252,8 @@ trait ControlOperationsInterpreter {
                             subTree: BinaryTree[ScriptToken]): BinaryTree[ScriptToken] = tree match {
     case Empty => subTree
     case leaf: Leaf[ScriptToken] =>
-      Node(leaf.v,subTree,Empty)
+      if (subTree == Empty) leaf
+      else Node(leaf.v,subTree,Empty)
     case node : Node[ScriptToken] if (node.v == OP_IF || node.v == OP_ELSE) =>
       if (subTree.value.isDefined && Seq(OP_ELSE,OP_ENDIF).contains(subTree.value.get)) {
         Node(node.v,node.l,insertSubTree(node.r,subTree))
