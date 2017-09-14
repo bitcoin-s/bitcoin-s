@@ -18,7 +18,6 @@ import org.scalatest.{FlatSpec, MustMatchers}
  */
 class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers with ControlOperationsInterpreter {
   private def logger = BitcoinSLogger.logger
-/*
   "ControlOperationsInterpreter" must "have OP_VERIFY evaluate to true with '1' on the stack" in {
     val stack = List(OP_TRUE)
     val script = List(OP_VERIFY)
@@ -127,7 +126,6 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers with C
       OP_ELSE, OP_1, OP_IF, OP_1, OP_ELSE, OP_RETURN, OP_ELSE, OP_1, OP_ENDIF, OP_ELSE, OP_RETURN, OP_ENDIF, OP_ADD, OP_2, OP_EQUAL)
     findMatchingOpEndIf(script) must be (20)
   }
-*/
 
   it must "parse a script as a binary tree then convert it back to the original list" in {
 
@@ -144,8 +142,9 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers with C
     val script3 = List(OP_IF, OP_1, OP_ELSE, OP_0, OP_ENDIF)
     val bTree3 = parseBinaryTree(script3)
     bTree3.toSeq must be (script3)
+
     val subTree1 = Node(OP_IF,Leaf(OP_0),Node(OP_ELSE,Leaf(OP_1),Leaf(OP_ENDIF)))
-    val subTree2 = Node(OP_ELSE,Node(OP_IF, Node(OP_2,Empty,Empty),Node(OP_ELSE,Node(OP_3,Empty,Empty), Leaf(OP_ENDIF))),Leaf(OP_ENDIF))
+    val subTree2 = Node(OP_ELSE,Node(OP_IF, Leaf(OP_2),Node(OP_ELSE,Leaf(OP_3), Leaf(OP_ENDIF))),Leaf(OP_ENDIF))
     val expected: BinaryTree[ScriptToken] = Node(OP_IF,subTree1,subTree2)
     val script4 = List(OP_IF, OP_IF, OP_0, OP_ELSE, OP_1, OP_ENDIF, OP_ELSE, OP_IF, OP_2, OP_ELSE, OP_3, OP_ENDIF, OP_ENDIF)
     val bTree4 = parseBinaryTree(script4)
@@ -153,10 +152,11 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers with C
     bTree4.right.get must be (subTree2)
     logger.debug("bTree4: " + bTree4)
     bTree4.toSeq must be (script4)
+
     val script5 = List(OP_IF, OP_1,OP_ELSE, OP_2, OP_ELSE, OP_3, OP_ENDIF)
     parseBinaryTree(script5).toSeq must be (script5)
   }
-/*
+
   it must "parse a script into a binary tree and have the OP_IF expression on the left branch and the OP_ELSE expression on the right branch"in {
     val script = List(OP_IF,OP_0,OP_ELSE,OP_1,OP_ENDIF)
     val bTree = parseBinaryTree(script)
@@ -172,7 +172,7 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers with C
     bTree.right.get.left.get.value must be (Some(OP_1))
 
     bTree.right.get.right.isDefined must be (true)
-    bTree.right.get.left.get.left.get.value must be (Some(OP_ENDIF))
+    bTree.right.get.right.get.value must be (Some(OP_ENDIF))
   }
 
   it must "parse nested OP_ELSE statements into the same branch" in {
@@ -196,7 +196,7 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers with C
     bTree.right.get.right.get.left.get.value must be (Some(OP_3))
 
     bTree.right.get.right.get.right.isDefined must be (true)
-    bTree.right.get.right.get.left.get.left.get.value must be (Some(OP_ENDIF))
+    bTree.right.get.right.get.right.get.value must be (Some(OP_ENDIF))
 
     bTree.toSeq must be (script)
 
@@ -211,29 +211,40 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers with C
     bTree.left.get.value must be (Some(OP_IF))
     bTree.left.get.right.get.value must be (Some(OP_ELSE))
     bTree.left.get.right.get.left.get.value must be (Some(OP_1))
-    bTree.left.get.right.get.left.get.left.get.value must be (Some(OP_ENDIF))
+    bTree.left.get.right.get.right.get.value must be (Some(OP_ENDIF))
 
     bTree.right.get.value must be (Some(OP_ELSE))
     bTree.right.get.left.get.value must be (Some(OP_IF))
     bTree.right.get.left.get.left.get.value must be (Some(OP_2))
     bTree.right.get.left.get.right.get.value must be (Some(OP_ELSE))
     bTree.right.get.left.get.right.get.left.get.value must be (Some(OP_3))
-    bTree.right.get.left.get.right.get.left.get.left.get.value must be (Some(OP_ENDIF))
+    bTree.right.get.left.get.right.get.right.get.value must be (Some(OP_ENDIF))
 
   }
+
 
   it must "parse a binary tree from a script where constants are nested inside of OP_IF OP_ELSE branches" in {
-    //"0" "IF 1 IF RETURN ELSE RETURN ELSE RETURN ENDIF ELSE 1 IF 1 ELSE RETURN ELSE 1 ENDIF ELSE RETURN ENDIF ADD 2 EQUAL"
-    val script = List(OP_IF, OP_1,OP_IF,OP_RETURN,OP_ELSE,OP_RETURN,OP_ELSE,OP_RETURN, OP_ENDIF,
-      OP_ELSE, OP_1, OP_IF, OP_1, OP_ELSE, OP_RETURN, OP_ELSE, OP_1, OP_ENDIF, OP_ELSE, OP_RETURN, OP_ENDIF,
-      OP_ADD, OP_2, OP_EQUAL)
+    val script = List(OP_IF, OP_0, OP_IF, OP_1, OP_ENDIF, OP_ELSE, OP_2, OP_ENDIF)
     val bTree = parseBinaryTree(script)
+    bTree.left.get.value.get must be (OP_0)
+    bTree.left.get.left.get.value.get must be (OP_IF)
     bTree.toSeq must be (script)
-    bTree.right.get.right.get.left.get.left.get.left.get.value must be (Some(OP_ADD))
-    bTree.right.get.right.get.left.get.left.get.left.get.left.get.value must be (Some(OP_2))
-    bTree.right.get.right.get.left.get.left.get.left.get.left.get.left.get.value must be (Some(OP_EQUAL))
-  }
 
+    val script1 = List(OP_IF, OP_1, OP_ELSE, OP_2, OP_IF, OP_3, OP_ENDIF, OP_ENDIF)
+    val bTree1 = parseBinaryTree(script1)
+    bTree1.toSeq must be (script1)
+
+    //"0" "IF 1 IF RETURN ELSE RETURN ELSE RETURN ENDIF ELSE 1 IF 1 ELSE RETURN ELSE 1 ENDIF ELSE RETURN ENDIF ADD 2 EQUAL"
+    val script2 = List(OP_IF, OP_0,OP_IF,OP_1,OP_ELSE,OP_2,OP_ELSE,OP_3, OP_ENDIF,
+      OP_ELSE, OP_4, OP_IF, OP_5, OP_ELSE, OP_6, OP_ELSE, OP_7, OP_ENDIF, OP_ELSE, OP_8, OP_ENDIF,
+      OP_ADD, OP_4, OP_EQUAL)
+    val bTree2 = parseBinaryTree(script2)
+    bTree2.toSeq must be (script2)
+    bTree2.right.get.right.get.left.get.left.get.left.get.value must be (Some(OP_ADD))
+    bTree2.right.get.right.get.left.get.left.get.left.get.left.get.value must be (Some(OP_2))
+    bTree2.right.get.right.get.left.get.left.get.left.get.left.get.left.get.value must be (Some(OP_EQUAL))
+  }
+/*
   it must "parse a binary tree where there are nested OP_ELSES in the outer most OP_ELSE" in {
     //https://gist.github.com/Christewart/a5253cf708903323ddc6
     val script = List(OP_IF,OP_1, OP_IF,OP_RETURN, OP_ELSE, OP_RETURN, OP_ELSE, OP_RETURN,OP_ENDIF,
