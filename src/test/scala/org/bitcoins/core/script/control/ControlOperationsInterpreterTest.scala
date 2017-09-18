@@ -143,6 +143,22 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers with C
     val bTree3 = parseBinaryTree(script3)
     bTree3.toSeq must be (script3)
 
+    val script5 = List(OP_IF, OP_1,OP_ELSE, OP_2, OP_ELSE, OP_3, OP_ENDIF)
+    parseBinaryTree(script5).toSeq must be (script5)
+
+    val script6 = List(OP_IF, OP_IF, OP_1, OP_ENDIF, OP_ELSE, OP_2, OP_ENDIF)
+    val tree6 = parseBinaryTree(script6)
+    tree6.left.get must be (Node(OP_IF, Leaf(OP_1), Leaf(OP_ENDIF)))
+    tree6.right.get must be (Node(OP_ELSE,Leaf(OP_2), Leaf(OP_ENDIF)))
+    parseBinaryTree(script6).toSeq must be (script6)
+
+    val script7 = List(OP_IF,OP_1,OP_ELSE, OP_IF, OP_2, OP_ENDIF, OP_ENDIF)
+    val tree7 = parseBinaryTree(script7)
+    val expectedTree7 = Node(OP_IF, Leaf(OP_1), Node(OP_ELSE, Node(OP_IF, Leaf(OP_2), Leaf(OP_ENDIF)), Leaf(OP_ENDIF)))
+    tree7 must be (expectedTree7)
+    tree7.left must be (expectedTree7.left)
+    tree7.right must be (expectedTree7.right)
+
     val subTree1 = Node(OP_IF,Leaf(OP_0),Node(OP_ELSE,Leaf(OP_1),Leaf(OP_ENDIF)))
     val subTree2 = Node(OP_ELSE,Node(OP_IF, Leaf(OP_2),Node(OP_ELSE,Leaf(OP_3), Leaf(OP_ENDIF))),Leaf(OP_ENDIF))
     val expected: BinaryTree[ScriptToken] = Node(OP_IF,subTree1,subTree2)
@@ -153,8 +169,6 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers with C
     logger.debug("bTree4: " + bTree4)
     bTree4.toSeq must be (script4)
 
-    val script5 = List(OP_IF, OP_1,OP_ELSE, OP_2, OP_ELSE, OP_3, OP_ENDIF)
-    parseBinaryTree(script5).toSeq must be (script5)
   }
 
   it must "parse a script into a binary tree and have the OP_IF expression on the left branch and the OP_ELSE expression on the right branch"in {
