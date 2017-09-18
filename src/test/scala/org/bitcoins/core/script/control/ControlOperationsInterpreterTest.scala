@@ -248,15 +248,25 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers with C
     val bTree1 = parseBinaryTree(script1)
     bTree1.toSeq must be (script1)
 
-    //"0" "IF 1 IF RETURN ELSE RETURN ELSE RETURN ENDIF ELSE 1 IF 1 ELSE RETURN ELSE 1 ENDIF ELSE RETURN ENDIF ADD 2 EQUAL"
-    val script2 = List(OP_IF, OP_0,OP_IF,OP_1,OP_ELSE,OP_2,OP_ELSE,OP_3, OP_ENDIF,
-      OP_ELSE, OP_4, OP_IF, OP_5, OP_ELSE, OP_6, OP_ELSE, OP_7, OP_ENDIF, OP_ELSE, OP_8, OP_ENDIF,
-      OP_ADD, OP_4, OP_EQUAL)
+    val script2 = List(OP_IF, OP_0, OP_ELSE, OP_1, OP_ELSE, OP_2, OP_ELSE, OP_3, OP_ENDIF)
     val bTree2 = parseBinaryTree(script2)
+    bTree2.left.get must be (Leaf(OP_0))
+    bTree2.right.get must be (Node(OP_ELSE,Leaf(OP_1),Node(OP_ELSE, Leaf(OP_2), Node(OP_ELSE, Leaf(OP_3), Leaf(OP_ENDIF)))))
     bTree2.toSeq must be (script2)
-    bTree2.right.get.right.get.left.get.left.get.left.get.value must be (Some(OP_ADD))
-    bTree2.right.get.right.get.left.get.left.get.left.get.left.get.value must be (Some(OP_2))
-    bTree2.right.get.right.get.left.get.left.get.left.get.left.get.left.get.value must be (Some(OP_EQUAL))
+
+    //"0" "IF 1 IF RETURN ELSE RETURN ELSE RETURN ENDIF ELSE 1 IF 1 ELSE RETURN ELSE 1 ENDIF ELSE RETURN ENDIF ADD 2 EQUAL"
+    val script3 = List(
+      OP_IF, OP_0,
+        OP_IF,OP_1,OP_ELSE,OP_2,OP_ELSE,OP_3, OP_ENDIF,
+      OP_ELSE, OP_4,
+        OP_IF, OP_5, OP_ELSE, OP_6, OP_ELSE, OP_7, OP_ENDIF,
+      OP_ELSE, OP_8, OP_ENDIF,
+      OP_ADD, OP_4, OP_EQUAL)
+    val bTree3 = parseBinaryTree(script3)
+    bTree3.toSeq must be (script3)
+    bTree3.right.get.right.get.left.get.left.get.left.get.value must be (Some(OP_ADD))
+    bTree3.right.get.right.get.left.get.left.get.left.get.left.get.value must be (Some(OP_2))
+    bTree3.right.get.right.get.left.get.left.get.left.get.left.get.left.get.value must be (Some(OP_EQUAL))
   }
 /*
   it must "parse a binary tree where there are nested OP_ELSES in the outer most OP_ELSE" in {

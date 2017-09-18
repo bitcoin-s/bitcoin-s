@@ -198,16 +198,12 @@ trait ControlOperationsInterpreter {
         val remaining = t.splitAt(nestedEndIfIndex)._2
         logger.debug("remaining: " + remaining)
         if (endifs.size % 2 == 0) {
-
-
           //this means we need to take the first ENDIF, since we are nested inside of a parent OP_IF
           logger.debug("Even amount of OP_ENDIFs")
-          val withENDIF = insertSubTree(tree,opIfTree)
-          logger.debug("withENDIF: " + withENDIF)
+          val subTree = insertSubTree(tree,opIfTree)
+          logger.debug("subTree: " + subTree)
           //we need to pass in the opIfTree here because there are remaining elements nested inside the OP_IF tree
-          val remainingTree = loop(remaining,withENDIF)
-          logger.debug("remainingTree: " + remainingTree)
-          val fullTree = remainingTree
+          val fullTree = loop(remaining,subTree)
           logger.debug("Done with even amounts OP_ENDIFs")
           logger.debug("fullTree: " + fullTree)
           fullTree
@@ -217,19 +213,16 @@ trait ControlOperationsInterpreter {
 
           val subTree = loop(remaining,opIfTree)
           logger.debug("subTree: " + subTree)
-          val withENDIF = subTree
-          logger.debug("withENDIF: " + withENDIF)
           //need to insert remainingTree in the OP_IF tree correctly, not sure if this is right
-          val fullIf = withENDIF
           //now insert into the parent tree
           val fullTree = tree match {
-            case Empty => fullIf
+            case Empty => subTree
             case l: Leaf[ScriptToken] =>
-              if (fullIf == Empty) l
-              else Node(l.v,fullIf,Empty)
+              if (subTree == Empty) l
+              else Node(l.v,subTree,Empty)
             case n: Node[ScriptToken] =>
-              require(n.l == Empty, "We can only insert an OP_IF on a left branch, it was not empty: " + n.l)
-              Node(n.v,fullIf,n.r)
+              //require(n.l == Empty, "We can only insert an OP_IF on a left branch, it was not empty: " + n.l)
+              Node(n.v,insertSubTree(n.l,subTree),n.r)
           }
           logger.debug("Done with odd amounts of OP_ENDIFS")
           logger.debug("fullTree: " + fullTree)
@@ -246,7 +239,8 @@ trait ControlOperationsInterpreter {
         } else if (endifs.size % 2 == 0) {
           //this means we need to take the first ENDIF, since we are nested inside of a parent OP_IF
           logger.debug("Even amount of OP_ENDIFs")
-          endifs.head
+          val x = endifs.head
+          (x._1,x._2 + 1)
         } else {
           //this means we need to take the last endif since we are not nested inside a parent OP_IF
           logger.debug("Odd amoutns of OP_ENDIFs")
