@@ -166,11 +166,11 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers with C
     val bTree4 = parseBinaryTree(script4)
     bTree4.left.get must be (subTree1)
     bTree4.right.get must be (subTree2)
+    bTree4 must be (expected)
     logger.debug("bTree4: " + bTree4)
     bTree4.toSeq must be (script4)
 
   }
-
   it must "parse a script into a binary tree and have the OP_IF expression on the left branch and the OP_ELSE expression on the right branch"in {
     val script = List(OP_IF,OP_0,OP_ELSE,OP_1,OP_ENDIF)
     val bTree = parseBinaryTree(script)
@@ -254,19 +254,42 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers with C
     bTree2.right.get must be (Node(OP_ELSE,Leaf(OP_1),Node(OP_ELSE, Leaf(OP_2), Node(OP_ELSE, Leaf(OP_3), Leaf(OP_ENDIF)))))
     bTree2.toSeq must be (script2)
 
-    //"0" "IF 1 IF RETURN ELSE RETURN ELSE RETURN ENDIF ELSE 1 IF 1 ELSE RETURN ELSE 1 ENDIF ELSE RETURN ENDIF ADD 2 EQUAL"
     val script3 = List(
       OP_IF, OP_0,
-        OP_IF,OP_1,OP_ELSE,OP_2,OP_ELSE,OP_3, OP_ENDIF,
+      OP_ELSE,
+        OP_IF, OP_1, OP_ENDIF,
+      OP_ELSE, OP_2, OP_ENDIF
+    )
+    val bTree3 = parseBinaryTree(script3)
+    bTree3.toSeq must be (script3)
+    //"0" "IF 1 IF RETURN ELSE RETURN ELSE RETURN ENDIF ELSE 1 IF 1 ELSE RETURN ELSE 1 ENDIF ELSE RETURN ENDIF ADD 2 EQUAL"
+/*    val script4 = List(
+      OP_IF, OP_0,
+        OP_IF, OP_1, OP_ELSE, OP_2, OP_ELSE, OP_3, OP_ENDIF,
       OP_ELSE, OP_4,
         OP_IF, OP_5, OP_ELSE, OP_6, OP_ELSE, OP_7, OP_ENDIF,
       OP_ELSE, OP_8, OP_ENDIF,
-      OP_ADD, OP_4, OP_EQUAL)
-    val bTree3 = parseBinaryTree(script3)
-    bTree3.toSeq must be (script3)
+      OP_ADD, OP_9, OP_EQUAL)
+
+    val subTree40 = Node(OP_IF, Leaf(OP_1), Node(OP_ELSE, Leaf(OP_2), Node(OP_ELSE, Leaf(OP_3), Leaf(OP_ENDIF))))
+    val subTree41 = Node(OP_0, subTree40, Empty)
+
+    val subTree42 = Node(OP_IF, Leaf(OP_5), Node(OP_ELSE, Leaf(OP_6), Node(OP_ELSE, Leaf(OP_7), Leaf(OP_ENDIF))))
+
+    val subTree43 = Node(OP_ADD, Node(OP_9, Leaf(OP_EQUAL),Empty),Empty)
+    val subTree44 = Node(OP_ELSE, Leaf(OP_8), Node(OP_ENDIF, subTree43, Empty))
+    val subTree45 = Node(OP_ELSE, Node(OP_4, subTree42, Empty), subTree44)
+
+    val expectedBTree3 = Node(OP_IF,subTree41, subTree45)
+    val bTree3 = parseBinaryTree(script4)
+    bTree3.left.get must be (subTree41)
+    bTree3.right.get.left.get must be (subTree45.l)
+    bTree3.right.get.right.get must be (subTree45.r)
+    bTree3 must be (expectedBTree3)
+    bTree3.toSeq must be (script4)
     bTree3.right.get.right.get.left.get.left.get.left.get.value must be (Some(OP_ADD))
     bTree3.right.get.right.get.left.get.left.get.left.get.left.get.value must be (Some(OP_2))
-    bTree3.right.get.right.get.left.get.left.get.left.get.left.get.left.get.value must be (Some(OP_EQUAL))
+    bTree3.right.get.right.get.left.get.left.get.left.get.left.get.left.get.value must be (Some(OP_EQUAL)) */
   }
 /*
   it must "parse a binary tree where there are nested OP_ELSES in the outer most OP_ELSE" in {
