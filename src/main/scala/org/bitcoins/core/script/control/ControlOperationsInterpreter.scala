@@ -164,7 +164,7 @@ trait ControlOperationsInterpreter {
     logger.debug("script: " + (if (script.nonEmpty) script else Nil))
     script match {
       case OP_ENDIF :: t =>
-        //require(t.isEmpty, "Must not have any tail after parsing an OP_ENDIF, got: "+ t)
+        require(t.isEmpty, "Must not have any tail after parsing an OP_ENDIF, got: "+ t)
         require(tree.value.isDefined && Seq(OP_IF,OP_NOTIF,OP_ELSE).contains(tree.value.get),
           "Can only insert an OP_ENDIF on a tree root of OP_IF/NOTIF/ELSE, got: " + tree.value)
         //require(tree.right == Some(Empty), "Must have an empty right branch when inserting an OP_ENDIF onto our btree, got: " + tree.right)
@@ -194,7 +194,7 @@ trait ControlOperationsInterpreter {
         logger.debug("nestedIf: " + nestedIf)
         val opIfTree = loop(nestedIf,Leaf(h))
         logger.debug("opIfTree: " + opIfTree)
-        logger.debug("event amount of OP_ENDIFs")
+
         val remaining = t.splitAt(nestedEndIfIndex)._2
         logger.debug("remaining: " + remaining)
         if (endifs.size % 2 == 0) {
@@ -232,31 +232,9 @@ trait ControlOperationsInterpreter {
         require(tree.value.isDefined && Seq(OP_IF, OP_NOTIF, OP_ELSE).contains(tree.value.get),
           "Parent of OP_ELSE has to be an OP_IF/NOTIF/ELSE, got: " + tree.value)
         require(tree.right.getOrElse(Empty) == Empty,"Right branch of tree should be Empty for an OP_ELSE, got: " + tree.right.get)
-        val endifs = t.zipWithIndex.filter(_._1 == OP_ENDIF)
-        logger.debug("endifs: " + endifs)
-        val endif = if (endifs.size == 0) {
-          (OP_ENDIF,t.size)
-        } else if (endifs.size % 2 == 0) {
-          //this means we need to take the first ENDIF, since we are nested inside of a parent OP_IF
-          logger.debug("Even amount of OP_ENDIFs")
-          val x = endifs.head
-          (x._1,x._2 + 1)
-        } else {
-          //this means we need to take the last endif since we are not nested inside a parent OP_IF
-          logger.debug("Odd amoutns of OP_ENDIFs")
-          endifs.last
-        }
-        val nestedEndIfIndex = endif._2 + 1
-        logger.debug("nestedEndIfIndex: " + nestedEndIfIndex)
-        val nestedIf = t.take(nestedEndIfIndex)
-        logger.debug("nested else : " + nestedIf)
-        val opIfTree = loop(nestedIf,Leaf(h))
-        logger.debug("opIfTree else: " + opIfTree)
-        val remaining = t.splitAt(nestedEndIfIndex)._2
-        logger.debug("remaining else: " + remaining)
-        val subTree = loop(nestedIf,Node(OP_ELSE,Empty,Empty))
+        val subTree = loop(t,Node(OP_ELSE,Empty,Empty))
         logger.debug("subTree else: " + subTree)
-        val opElseTree = loop(remaining,Node(tree.value.get,tree.left.getOrElse(Empty), subTree))
+        val opElseTree = Node(tree.value.get, tree.left.getOrElse(Empty),subTree)
         logger.debug("opElseTree: " + opElseTree)
         opElseTree
       case (x: ScriptConstant) :: t => loop(t, insertSubTree(tree, Leaf(x)))
