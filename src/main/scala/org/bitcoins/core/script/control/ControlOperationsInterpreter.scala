@@ -152,29 +152,48 @@ trait ControlOperationsInterpreter {
 
   /** Parses a list of [[ScriptToken]]s into its corresponding [[BinaryTree]] */
   def parseBinaryTree(script : List[ScriptToken]) : BinaryTree[ScriptToken] = {
-    val bTree = loop(script,Empty)
-    logger.debug("parsed btree: " + bTree)
-    bTree
+    @tailrec
+    def l(remaining: List[ScriptToken], parentTree: BinaryTree[ScriptToken]): (BinaryTree[ScriptToken], List[ScriptToken]) = {
+      if (remaining.isEmpty) (parentTree,Nil)
+      else {
+        logger.debug("remaining: " + remaining + " parentTree: " + parentTree)
+        if (parentTree.right.isDefined && parentTree.right.get.value == Some(OP_ELSE)) {
+          //for the case of OP_IF OP_1 OP_ELSE OP_2 OP_ELSE OP_3 ... OP_ELSE OP_N OP_ENDIF
+          val (elseTree,newRemaining) = loop(remaining,parentTree.right.get)
+          val n = Node(parentTree.value.get, parentTree.left.getOrElse(Empty), elseTree)
+          logger.debug("n: " + n)
+          l(newRemaining,n)
+        } else {
+          val (tree, newRemaining) = loop(remaining,parentTree)
+          l(newRemaining,tree)
+        }
+
+
+      }
+    }
+    val (t, remaining) = l(script,Empty)
+    require(remaining.isEmpty, "Should not have any script tokens after parsing a binary tree, got: " + remaining)
+    t
   }
 
   /** The loop that parses a list of [[ScriptToken]]s into a [[BinaryTree]]. */
-  private def loop(script : List[ScriptToken], tree : BinaryTree[ScriptToken]): BinaryTree[ScriptToken] = {
+  private def loop(script : List[ScriptToken], tree : BinaryTree[ScriptToken]): (BinaryTree[ScriptToken], List[ScriptToken]) = {
 /*    logger.debug("Script : " + script) */
     logger.debug("Tree: " + tree)
     logger.debug("script: " + (if (script.nonEmpty) script else Nil))
     script match {
       case OP_ENDIF :: t =>
-        require(t.isEmpty, "Must not have any tail after parsing an OP_ENDIF, got: "+ t)
+        //require(t.isEmpty, "Must not have any tail after parsing an OP_ENDIF, got: "+ t)
         require(tree.value.isDefined && Seq(OP_IF,OP_NOTIF,OP_ELSE).contains(tree.value.get),
           "Can only insert an OP_ENDIF on a tree root of OP_IF/NOTIF/ELSE, got: " + tree.value)
         //require(tree.right == Some(Empty), "Must have an empty right branch when inserting an OP_ENDIF onto our btree, got: " + tree.right)
         //base case, doesn't matter what we return since call insertSubTree(tree,Leaf(OP_ENDIF))
         val ifTree = insertSubTree(tree,Leaf(OP_ENDIF))
         logger.debug("ifTree: " + ifTree + " t: " + t)
-        ifTree
+        (ifTree,t)
       case h :: t if (h == OP_IF || h == OP_NOTIF) =>
         //find last OP_ENDIF in t
-        val endifs = t.zipWithIndex.filter(_._1 == OP_ENDIF)
+/*        val endifs = t.zipWithIndex.filter(_._1 == OP_ENDIF)
         logger.debug("endifs: " + endifs)
         val endif = if (endifs.size == 0) {
           (OP_ENDIF,t.size)
@@ -227,22 +246,27 @@ trait ControlOperationsInterpreter {
           logger.debug("Done with odd amounts of OP_ENDIFS")
           logger.debug("fullTree: " + fullTree)
           fullTree
-        }
+        }*/
+
+        val (ifTree,remaining) = loop(t, Leaf(h))
+        val fullTree = insertSubTree(tree,ifTree)
+        logger.debug("fullTree: " + ifTree)
+        (fullTree,remaining)
       case h :: t if h == OP_ELSE =>
         require(tree.value.isDefined && Seq(OP_IF, OP_NOTIF, OP_ELSE).contains(tree.value.get),
           "Parent of OP_ELSE has to be an OP_IF/NOTIF/ELSE, got: " + tree.value)
         require(tree.right.getOrElse(Empty) == Empty,"Right branch of tree should be Empty for an OP_ELSE, got: " + tree.right.get)
-        val subTree = loop(t,Node(OP_ELSE,Empty,Empty))
+        val (subTree,remaining) = loop(t,Node(OP_ELSE,Empty,Empty))
         logger.debug("subTree else: " + subTree)
         val opElseTree = Node(tree.value.get, tree.left.getOrElse(Empty),subTree)
         logger.debug("opElseTree: " + opElseTree)
-        opElseTree
+        (opElseTree,remaining)
       case (x: ScriptConstant) :: t => loop(t, insertSubTree(tree, Leaf(x)))
       case (x: BytesToPushOntoStack) :: t => loop(t, insertSubTree(tree, Leaf(x)))
       case h :: t => loop(t,insertSubTree(tree,Leaf(h)))
       case Nil =>
         logger.debug("Done parsing tree, got: "  + tree)
-        tree
+        (tree,Nil)
     }
   }
 

@@ -18,7 +18,7 @@ import org.scalatest.{FlatSpec, MustMatchers}
  */
 class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers with ControlOperationsInterpreter {
   private def logger = BitcoinSLogger.logger
-  "ControlOperationsInterpreter" must "have OP_VERIFY evaluate to true with '1' on the stack" in {
+  /*"ControlOperationsInterpreter" must "have OP_VERIFY evaluate to true with '1' on the stack" in {
     val stack = List(OP_TRUE)
     val script = List(OP_VERIFY)
     val program = ScriptProgram(TestUtil.testProgram, stack,script)
@@ -125,7 +125,7 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers with C
     val script = List(OP_IF, OP_1, OP_IF, OP_RETURN, OP_ELSE, OP_RETURN, OP_ELSE, OP_RETURN, OP_ENDIF,
       OP_ELSE, OP_1, OP_IF, OP_1, OP_ELSE, OP_RETURN, OP_ELSE, OP_1, OP_ENDIF, OP_ELSE, OP_RETURN, OP_ENDIF, OP_ADD, OP_2, OP_EQUAL)
     findMatchingOpEndIf(script) must be (20)
-  }
+  } */
 
   it must "parse a script as a binary tree then convert it back to the original list" in {
 
@@ -280,16 +280,16 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers with C
     val subTree44 = Node(OP_ELSE, Leaf(OP_8), Node(OP_ENDIF, subTree43, Empty))
     val subTree45 = Node(OP_ELSE, Node(OP_4, subTree42, Empty), subTree44)
 
-    val expectedBTree3 = Node(OP_IF,subTree41, subTree45)
-    val bTree3 = parseBinaryTree(script4)
-    bTree3.left.get must be (subTree41)
-    bTree3.right.get.left.get must be (subTree45.l)
-    bTree3.right.get.right.get must be (subTree45.r)
-    bTree3 must be (expectedBTree3)
-    bTree3.toSeq must be (script4)
-    bTree3.right.get.right.get.left.get.left.get.left.get.value must be (Some(OP_ADD))
-    bTree3.right.get.right.get.left.get.left.get.left.get.left.get.value must be (Some(OP_2))
-    bTree3.right.get.right.get.left.get.left.get.left.get.left.get.left.get.value must be (Some(OP_EQUAL)) */
+    val expectedBTree4 = Node(OP_IF,subTree41, subTree45)
+    val bTree4 = parseBinaryTree(script4)
+    bTree4.left.get must be (subTree41)
+    bTree4.right.get.left.get must be (subTree45.l)
+    bTree4.right.get.right.get must be (subTree45.r)
+    bTree4 must be (expectedBTree4)
+    bTree4.toSeq must be (script4)
+    bTree4.right.get.right.get.left.get.left.get.left.get.value must be (Some(OP_ADD))
+    bTree4.right.get.right.get.left.get.left.get.left.get.left.get.value must be (Some(OP_2))
+    bTree4.right.get.right.get.left.get.left.get.left.get.left.get.left.get.value must be (Some(OP_EQUAL))*/
   }
 /*
   it must "parse a binary tree where there are nested OP_ELSES in the outer most OP_ELSE" in {
