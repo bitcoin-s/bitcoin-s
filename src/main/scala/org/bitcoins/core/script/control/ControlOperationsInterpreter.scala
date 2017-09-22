@@ -102,16 +102,7 @@ trait ControlOperationsInterpreter {
         case Empty => Empty
         case leaf : Leaf[ScriptToken] => leaf
         case node : Node[ScriptToken] =>
-          if (node.r.value == Some(OP_ELSE)) {
-            val replacementTree = node.r.left.getOrElse(Empty).findFirstDFS[ScriptToken](OP_ENDIF)().getOrElse(Empty)
-            val replacementNode = replacementTree match {
-              case Empty => Empty
-              case leaf : Leaf[ScriptToken] => Node(leaf.v, Empty, node.r.right.getOrElse(Empty))
-              case node1 : Node[ScriptToken] => Node(node1.v,node1.l,node.r.right.getOrElse(Empty))
-            }
-            Node(node.v,node.l,replacementNode)
-          }
-          else node
+          removeFirstOpElse(node)
       }
       ScriptProgram(program, program.stack,treeWithNextOpElseRemoved.toList.tail)
     }
@@ -171,8 +162,6 @@ trait ControlOperationsInterpreter {
           val (tree, newRemaining) = loop(remaining,parentTree)
           l(newRemaining,tree)
         }
-
-
       }
     }
     val (t, remaining) = l(script,Empty)
@@ -189,8 +178,8 @@ trait ControlOperationsInterpreter {
     script match {
       case OP_ENDIF :: t =>
         //require(t.isEmpty, "Must not have any tail after parsing an OP_ENDIF, got: "+ t)
-        require(tree.value.isDefined && Seq(OP_IF,OP_NOTIF,OP_ELSE).contains(tree.value.get),
-          "Can only insert an OP_ENDIF on a tree root of OP_IF/NOTIF/ELSE, got: " + tree.value)
+/*        require(tree.value.isDefined && Seq(OP_IF,OP_NOTIF,OP_ELSE).contains(tree.value.get),
+          "Can only insert an OP_ENDIF on a tree root of OP_IF/NOTIF/ELSE, got: " + tree.value)*/
         //require(tree.right == Some(Empty), "Must have an empty right branch when inserting an OP_ENDIF onto our btree, got: " + tree.right)
         //base case, doesn't matter what we return since call insertSubTree(tree,Leaf(OP_ENDIF))
         val ifTree = insertSubTree(tree,Leaf(OP_ENDIF))
@@ -290,7 +279,7 @@ trait ControlOperationsInterpreter {
       if (subTree == Empty) leaf
       else if (subTree == Leaf(OP_ENDIF)) Node(leaf.v,Empty,subTree)
       else Node(leaf.v,subTree,Empty)
-    case node : Node[ScriptToken] if (node.v == OP_IF || node.v == OP_NOTIF || node.v == OP_ELSE) =>
+    case node : Node[ScriptToken] if (node.v == OP_IF || node.v == OP_NOTIF || node.v == OP_ELSE || node.v == OP_ENDIF) =>
       if (subTree.value.isDefined && Seq(OP_ELSE,OP_ENDIF).contains(subTree.value.get)) {
         Node(node.v,node.l,insertSubTree(node.r,subTree))
       } else if (node.r != Empty && Seq(OP_ELSE,OP_ENDIF).contains(node.r.value.get)) {
