@@ -144,27 +144,27 @@ trait ControlOperationsInterpreter {
   /** Parses a list of [[ScriptToken]]s into its corresponding [[BinaryTree]] */
   def parseBinaryTree(script : List[ScriptToken]): BinaryTree[ScriptToken] = {
     //@tailrec
-    def l(remaining: List[ScriptToken], parentTree: BinaryTree[ScriptToken]): (BinaryTree[ScriptToken], List[ScriptToken]) = {
+    def loop(remaining: List[ScriptToken], parentTree: BinaryTree[ScriptToken]): (BinaryTree[ScriptToken], List[ScriptToken]) = {
       if (remaining.isEmpty) (parentTree,Nil)
       else {
         if (parentTree.right.isDefined && parentTree.right.get.value == Some(OP_ELSE)) {
           //for the case of OP_IF OP_1 OP_ELSE OP_2 OP_ELSE OP_3 ... OP_ELSE OP_N OP_ENDIF
-          val (elseTree,newRemaining) = l(remaining, parentTree.right.getOrElse(Empty))
+          val (elseTree,newRemaining) = loop(remaining, parentTree.right.getOrElse(Empty))
           val n = Node(parentTree.value.get, parentTree.left.getOrElse(Empty), elseTree)
           (n,newRemaining)
         } else {
-          val (tree, newRemaining) = loop(remaining,parentTree)
-          l(newRemaining,tree)
+          val (tree, newRemaining) = parse(remaining,parentTree)
+          loop(newRemaining,tree)
         }
       }
     }
-    val (t, remaining) = l(script,Empty)
+    val (t, remaining) = loop(script,Empty)
     require(remaining.isEmpty, "Should not have any script tokens after parsing a binary tree, got: " + remaining)
     t
   }
 
   /** The loop that parses a list of [[ScriptToken]]s into a [[BinaryTree]]. */
-  private def loop(script : List[ScriptToken], tree : BinaryTree[ScriptToken]): (BinaryTree[ScriptToken], List[ScriptToken]) = {
+  private def parse(script : List[ScriptToken], tree : BinaryTree[ScriptToken]): (BinaryTree[ScriptToken], List[ScriptToken]) = {
     logger.debug("Tree: " + tree)
     logger.debug("script: " + (if (script.nonEmpty) script else Nil))
     script match {
@@ -173,18 +173,18 @@ trait ControlOperationsInterpreter {
         val ifTree = insertSubTree(tree,Leaf(OP_ENDIF))
         (ifTree,t)
       case h :: t if (h == OP_IF || h == OP_NOTIF) =>
-        val (ifTree,remaining) = loop(t, Leaf(h))
+        val (ifTree,remaining) = parse(t, Leaf(h))
         val fullTree = insertSubTree(tree,ifTree)
         (fullTree,remaining)
       case h :: t if h == OP_ELSE =>
-        val (subTree,remaining) = loop(t,Node(OP_ELSE,Empty,Empty))
+        val (subTree,remaining) = parse(t,Node(OP_ELSE,Empty,Empty))
         val opElseTree = tree match {
           case Empty => subTree
           case l: Leaf[ScriptToken] => Node(l.v,Empty,subTree)
           case n: Node[ScriptToken] => Node(n.v,n.l,insertSubTree(n.r,subTree))
         }
         (opElseTree,remaining)
-      case h :: t => loop(t,insertSubTree(tree,Leaf(h)))
+      case h :: t => parse(t,insertSubTree(tree,Leaf(h)))
       case Nil =>
         logger.debug("Done parsing tree, got: "  + tree)
         (tree,Nil)
