@@ -18,7 +18,7 @@ import org.scalatest.{FlatSpec, MustMatchers}
  */
 class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers with ControlOperationsInterpreter {
   private def logger = BitcoinSLogger.logger
-  /*"ControlOperationsInterpreter" must "have OP_VERIFY evaluate to true with '1' on the stack" in {
+  "ControlOperationsInterpreter" must "have OP_VERIFY evaluate to true with '1' on the stack" in {
     val stack = List(OP_TRUE)
     val script = List(OP_VERIFY)
     val program = ScriptProgram(TestUtil.testProgram, stack,script)
@@ -125,7 +125,7 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers with C
     val script = List(OP_IF, OP_1, OP_IF, OP_RETURN, OP_ELSE, OP_RETURN, OP_ELSE, OP_RETURN, OP_ENDIF,
       OP_ELSE, OP_1, OP_IF, OP_1, OP_ELSE, OP_RETURN, OP_ELSE, OP_1, OP_ENDIF, OP_ELSE, OP_RETURN, OP_ENDIF, OP_ADD, OP_2, OP_EQUAL)
     findMatchingOpEndIf(script) must be (20)
-  } */
+  }
 
   it must "parse a script as a binary tree then convert it back to the original list" in {
 
@@ -169,6 +169,10 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers with C
     bTree4 must be (expected)
     logger.debug("bTree4: " + bTree4)
     bTree4.toSeq must be (script4)
+
+    val script8 = List(OP_IF, OP_0, OP_ENDIF, OP_2)
+    val tree8 = parseBinaryTree(script8)
+    tree8.toSeq must be (script8)
 
   }
   it must "parse a script into a binary tree and have the OP_IF expression on the left branch and the OP_ELSE expression on the right branch"in {
@@ -263,7 +267,7 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers with C
     val bTree3 = parseBinaryTree(script3)
     bTree3.toSeq must be (script3)
     //"0" "IF 1 IF RETURN ELSE RETURN ELSE RETURN ENDIF ELSE 1 IF 1 ELSE RETURN ELSE 1 ENDIF ELSE RETURN ENDIF ADD 2 EQUAL"
-/*    val script4 = List(
+    val script4 = List(
       OP_IF, OP_0,
         OP_IF, OP_1, OP_ELSE, OP_2, OP_ELSE, OP_3, OP_ENDIF,
       OP_ELSE, OP_4,
@@ -287,9 +291,9 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers with C
     bTree4.right.get.right.get must be (subTree45.r)
     bTree4 must be (expectedBTree4)
     bTree4.toSeq must be (script4)
-    bTree4.right.get.right.get.left.get.left.get.left.get.value must be (Some(OP_ADD))
-    bTree4.right.get.right.get.left.get.left.get.left.get.left.get.value must be (Some(OP_2))
-    bTree4.right.get.right.get.left.get.left.get.left.get.left.get.left.get.value must be (Some(OP_EQUAL))*/
+    bTree4.right.get.right.get.right.get.left.get.value must be (Some(OP_ADD))
+    bTree4.right.get.right.get.right.get.left.get.left.get.value must be (Some(OP_9))
+    bTree4.right.get.right.get.right.get.left.get.left.get.left.get.value must be (Some(OP_EQUAL))
   }
 /*
   it must "parse a binary tree where there are nested OP_ELSES in the outer most OP_ELSE" in {

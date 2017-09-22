@@ -152,17 +152,21 @@ trait ControlOperationsInterpreter {
 
   /** Parses a list of [[ScriptToken]]s into its corresponding [[BinaryTree]] */
   def parseBinaryTree(script : List[ScriptToken]) : BinaryTree[ScriptToken] = {
-    @tailrec
+    //@tailrec
     def l(remaining: List[ScriptToken], parentTree: BinaryTree[ScriptToken]): (BinaryTree[ScriptToken], List[ScriptToken]) = {
       if (remaining.isEmpty) (parentTree,Nil)
       else {
         logger.debug("remaining: " + remaining + " parentTree: " + parentTree)
         if (parentTree.right.isDefined && parentTree.right.get.value == Some(OP_ELSE)) {
           //for the case of OP_IF OP_1 OP_ELSE OP_2 OP_ELSE OP_3 ... OP_ELSE OP_N OP_ENDIF
-          val (elseTree,newRemaining) = loop(remaining,parentTree.right.get)
+/*          val (elseTree,newRemaining) = loop(remaining,parentTree.right.get)
           val n = Node(parentTree.value.get, parentTree.left.getOrElse(Empty), elseTree)
           logger.debug("n: " + n)
-          l(newRemaining,n)
+          l(newRemaining,n)*/
+
+          val (elseTree,newRemaining) = l(remaining, parentTree.right.getOrElse(Empty))
+          val n = Node(parentTree.value.get, parentTree.left.getOrElse(Empty), elseTree)
+          (n,newRemaining)
         } else {
           val (tree, newRemaining) = loop(remaining,parentTree)
           l(newRemaining,tree)
@@ -261,8 +265,6 @@ trait ControlOperationsInterpreter {
         val opElseTree = Node(tree.value.get, tree.left.getOrElse(Empty),subTree)
         logger.debug("opElseTree: " + opElseTree)
         (opElseTree,remaining)
-      case (x: ScriptConstant) :: t => loop(t, insertSubTree(tree, Leaf(x)))
-      case (x: BytesToPushOntoStack) :: t => loop(t, insertSubTree(tree, Leaf(x)))
       case h :: t => loop(t,insertSubTree(tree,Leaf(h)))
       case Nil =>
         logger.debug("Done parsing tree, got: "  + tree)
@@ -284,6 +286,8 @@ trait ControlOperationsInterpreter {
       else Node(leaf.v,subTree,Empty)
     case node : Node[ScriptToken] if (node.v == OP_IF || node.v == OP_ELSE) =>
       if (subTree.value.isDefined && Seq(OP_ELSE,OP_ENDIF).contains(subTree.value.get)) {
+        Node(node.v,node.l,insertSubTree(node.r,subTree))
+      } else if (node.r != Empty && Seq(OP_ELSE,OP_ENDIF).contains(node.r.value.get)) {
         Node(node.v,node.l,insertSubTree(node.r,subTree))
       } else {
         Node(node.v,insertSubTree(node.l,subTree),node.r)
