@@ -499,6 +499,7 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers with C
   }
 
 
+
   it must "mechanically evaluate this entire script correctly" in {
     val stack = List(ScriptNumber.one)
     val script = List(OP_NOTIF, OP_0,
@@ -542,49 +543,32 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers with C
     newProgram5.script must be (List(OP_ADD, OP_2, OP_EQUAL))
 
   }
-  /*
-          it must "mark a transaction as invalid if it is trying to spend an OP_RETURN output" in {
-            val stack = Seq()
-            val script = Seq(OP_RETURN)
-            val program = ScriptProgram(TestUtil.testProgramExecutionInProgress,stack,script)
-            val newProgram = ScriptProgramTestUtil.toExecutedScriptProgram(opReturn(program))
-
-            newProgram.error must be (Some(ScriptErrorOpReturn))
-          }
 
 
-          it must "remove nothing when trying to remove an OP_ELSE if the tree is empty" in {
-            removeFirstOpElse(Empty) must be (Empty)
-          }
+  it must "mark a transaction as invalid if it is trying to spend an OP_RETURN output" in {
+    val stack = Seq()
+    val script = Seq(OP_RETURN)
+    val program = ScriptProgram(TestUtil.testProgramExecutionInProgress,stack,script)
+    val newProgram = ScriptProgramTestUtil.toExecutedScriptProgram(opReturn(program))
 
-          it must "remove an OP_ELSE from the left branch from a binary tree if an OP_IF DNE on the left branch" in {
-            val tree = Node(OP_0,Node(OP_ELSE,Empty,Empty),Empty)
+    newProgram.error must be (Some(ScriptErrorOpReturn))
+  }
 
-            removeFirstOpElse(tree) must be (Node(OP_0,Empty,Empty))
-          }
 
-          it must "remove the first OP_IF expression a sequence" in {
-            val asm = List(OP_IF,OP_0,OP_ELSE,OP_1,OP_ENDIF)
-            removeFirstOpIf(asm) must be (Seq(OP_ELSE,OP_1,OP_ENDIF))
-          }
+  it must "remove nothing when trying to remove an OP_ELSE if the tree is empty" in {
+    removeFirstOpElse(Empty) must be (Empty)
+  }
 
-          it must "remove the else statement but leave the OP_CHECKSIG after the OP_ENDIF in a RefundHTLC" in {
-            val tree = Node(OP_IF,Node(BytesToPushOntoStack(33),
-              Leaf(ScriptConstant("02a46b47ef58133c1539f30c12fce4ab01def25afc19c234f9da84f0bf1b2005c9")),Empty),
-              Node(OP_ELSE,
-                Node(BytesToPushOntoStack(8),
-                  Node(ScriptConstant("fbeff03aa652d349"),
-                    Node(OP_CHECKSEQUENCEVERIFY,
-                      Node(OP_DROP,
-                        Node(BytesToPushOntoStack(33),
-                          Node(ScriptConstant("02d4b71bbbfac82806402d91004c80915b3fef98251a29bba1f5011119d80bb33e"),
-                            Node(OP_ENDIF, Leaf(OP_CHECKSIG),Empty),Empty),Empty),Empty),Empty),Empty), Empty), Empty))
+  it must "remove an OP_ELSE from the left branch from a binary tree if an OP_IF DNE on the left branch" in {
+    val tree = Node(OP_0,Empty,Node(OP_ELSE,Empty,Empty))
 
-            val result = removeFirstOpElse(tree)
-            result.toList must be (List(OP_IF, BytesToPushOntoStack(33),
-              ScriptConstant("02a46b47ef58133c1539f30c12fce4ab01def25afc19c234f9da84f0bf1b2005c9"), OP_ENDIF, OP_CHECKSIG))
-          }*/
+    removeFirstOpElse(tree) must be (Node(OP_0,Empty,Empty))
+  }
 
+  it must "remove the first OP_IF expression a sequence" in {
+    val asm = List(OP_IF,OP_0,OP_ELSE,OP_1,OP_ENDIF)
+    removeFirstOpIf(asm) must be (Seq(OP_ELSE,OP_1,OP_ENDIF))
+  }
 }
 
 
