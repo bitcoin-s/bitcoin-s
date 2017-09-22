@@ -177,6 +177,7 @@ trait ControlOperationsInterpreter {
     }
     val (t, remaining) = l(script,Empty)
     require(remaining.isEmpty, "Should not have any script tokens after parsing a binary tree, got: " + remaining)
+    logger.debug("fullTree: " + t)
     t
   }
 
@@ -257,12 +258,16 @@ trait ControlOperationsInterpreter {
         logger.debug("fullTree: " + ifTree)
         (fullTree,remaining)
       case h :: t if h == OP_ELSE =>
-        require(tree.value.isDefined && Seq(OP_IF, OP_NOTIF, OP_ELSE).contains(tree.value.get),
+/*        require(tree.value.isDefined && Seq(OP_IF, OP_NOTIF, OP_ELSE).contains(tree.value.get),
           "Parent of OP_ELSE has to be an OP_IF/NOTIF/ELSE, got: " + tree.value)
-        require(tree.right.getOrElse(Empty) == Empty,"Right branch of tree should be Empty for an OP_ELSE, got: " + tree.right.get)
+        require(tree.right.getOrElse(Empty) == Empty,"Right branch of tree should be Empty for an OP_ELSE, got: " + tree.right.get)*/
         val (subTree,remaining) = loop(t,Node(OP_ELSE,Empty,Empty))
         logger.debug("subTree else: " + subTree)
-        val opElseTree = Node(tree.value.get, tree.left.getOrElse(Empty),subTree)
+        val opElseTree = tree match {
+          case Empty => subTree
+          case l: Leaf[ScriptToken] => Node(l.v,Empty,subTree)
+          case n: Node[ScriptToken] => Node(n.v,n.l,insertSubTree(n.r,subTree))
+        }
         logger.debug("opElseTree: " + opElseTree)
         (opElseTree,remaining)
       case h :: t => loop(t,insertSubTree(tree,Leaf(h)))
@@ -283,8 +288,9 @@ trait ControlOperationsInterpreter {
     case Empty => subTree
     case leaf: Leaf[ScriptToken] =>
       if (subTree == Empty) leaf
+      else if (subTree == Leaf(OP_ENDIF)) Node(leaf.v,Empty,subTree)
       else Node(leaf.v,subTree,Empty)
-    case node : Node[ScriptToken] if (node.v == OP_IF || node.v == OP_ELSE) =>
+    case node : Node[ScriptToken] if (node.v == OP_IF || node.v == OP_NOTIF || node.v == OP_ELSE) =>
       if (subTree.value.isDefined && Seq(OP_ELSE,OP_ENDIF).contains(subTree.value.get)) {
         Node(node.v,node.l,insertSubTree(node.r,subTree))
       } else if (node.r != Empty && Seq(OP_ELSE,OP_ENDIF).contains(node.r.value.get)) {
@@ -351,34 +357,25 @@ trait ControlOperationsInterpreter {
   }
 
   /** Removes the first [[OP_ELSE]] in a [[BinaryTree]]. */
+
   def removeFirstOpElse(tree : BinaryTree[ScriptToken]) : BinaryTree[ScriptToken] = {
+    //@tailrec
+    def loop(child: BinaryTree[ScriptToken], parent: Node[ScriptToken]): BinaryTree[ScriptToken] = child match {
+      case Empty => Empty
+      case l: Leaf[ScriptToken] => Node(parent.v,Empty,l)
+      case Node(OP_ELSE,_,r) => Node(parent.v,parent.l,r)
+      case n: Node[ScriptToken] =>
+        logger.debug("n: " + n)
+        Node(n.v,n.l,loop(n.r,n))
+    }
+    logger.debug("tree: " + tree)
     tree match {
       case Empty => Empty
-      case leaf : Leaf[ScriptToken] => leaf
-      case node : Node[ScriptToken] =>
-        logger.debug("Node: " + node)
-        //need to traverse the tree to see if there is an OP_ENDIF on the left hand side
-        val leftBranchContainsOpElse = node.l.contains[ScriptToken](OP_ELSE)()
-        val leftBranchContainsOpIf = node.l.contains[ScriptToken](OP_IF)()
-        logger.debug("leftBranchContainsOpElse " + leftBranchContainsOpElse)
-        logger.debug("leftBranchContainsOpIf " + leftBranchContainsOpIf)
-        if (leftBranchContainsOpElse && !leftBranchContainsOpIf) {
-          //if the left branch contains an OP_ELSE but no OP_IF
-          //then we need to delete the OP_ELSE in the left branch
-          val subTree: Option[BinaryTree[ScriptToken]] = node.l.findFirstDFS[ScriptToken](OP_ELSE)()
-          logger.debug("Sub tree: " + subTree)
-          //need to remove the subtree for the OP_ELSE
-          //need to insert the right branch of the subtree into the original place of the OP_ELSE
-          if (subTree.isDefined) tree.replace(subTree.get, subTree.get.right.getOrElse(Empty))
-          else tree
-        } else if (node.r.value == Some(OP_ELSE) && node.r.left.isDefined && node.r.left.get.value == Some(OP_ENDIF)) {
-          logger.debug("============================**********************************")
-          Node(node.v,node.l,node.r.left.getOrElse(Empty))
-        } else if (node.r.value == Some(OP_ELSE)) {
-          Node(node.v,node.l,node.r.right.getOrElse(Empty))
-        } else tree
+      case l: Leaf[ScriptToken] => l
+      case n: Node[ScriptToken] => loop(n.r, n)
     }
   }
+
 
   /** Removes the first [[OP_IF]] encountered in the script. */
   def removeFirstOpIf(script : List[ScriptToken]) : List[ScriptToken] = {
