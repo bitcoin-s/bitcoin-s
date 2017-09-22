@@ -142,19 +142,13 @@ trait ControlOperationsInterpreter {
   }
 
   /** Parses a list of [[ScriptToken]]s into its corresponding [[BinaryTree]] */
-  def parseBinaryTree(script : List[ScriptToken]) : BinaryTree[ScriptToken] = {
+  def parseBinaryTree(script : List[ScriptToken]): BinaryTree[ScriptToken] = {
     //@tailrec
     def l(remaining: List[ScriptToken], parentTree: BinaryTree[ScriptToken]): (BinaryTree[ScriptToken], List[ScriptToken]) = {
       if (remaining.isEmpty) (parentTree,Nil)
       else {
-        logger.debug("remaining: " + remaining + " parentTree: " + parentTree)
         if (parentTree.right.isDefined && parentTree.right.get.value == Some(OP_ELSE)) {
           //for the case of OP_IF OP_1 OP_ELSE OP_2 OP_ELSE OP_3 ... OP_ELSE OP_N OP_ENDIF
-/*          val (elseTree,newRemaining) = loop(remaining,parentTree.right.get)
-          val n = Node(parentTree.value.get, parentTree.left.getOrElse(Empty), elseTree)
-          logger.debug("n: " + n)
-          l(newRemaining,n)*/
-
           val (elseTree,newRemaining) = l(remaining, parentTree.right.getOrElse(Empty))
           val n = Node(parentTree.value.get, parentTree.left.getOrElse(Empty), elseTree)
           (n,newRemaining)
@@ -166,98 +160,29 @@ trait ControlOperationsInterpreter {
     }
     val (t, remaining) = l(script,Empty)
     require(remaining.isEmpty, "Should not have any script tokens after parsing a binary tree, got: " + remaining)
-    logger.debug("fullTree: " + t)
     t
   }
 
   /** The loop that parses a list of [[ScriptToken]]s into a [[BinaryTree]]. */
   private def loop(script : List[ScriptToken], tree : BinaryTree[ScriptToken]): (BinaryTree[ScriptToken], List[ScriptToken]) = {
-/*    logger.debug("Script : " + script) */
     logger.debug("Tree: " + tree)
     logger.debug("script: " + (if (script.nonEmpty) script else Nil))
     script match {
       case OP_ENDIF :: t =>
         //require(t.isEmpty, "Must not have any tail after parsing an OP_ENDIF, got: "+ t)
-/*        require(tree.value.isDefined && Seq(OP_IF,OP_NOTIF,OP_ELSE).contains(tree.value.get),
-          "Can only insert an OP_ENDIF on a tree root of OP_IF/NOTIF/ELSE, got: " + tree.value)*/
-        //require(tree.right == Some(Empty), "Must have an empty right branch when inserting an OP_ENDIF onto our btree, got: " + tree.right)
-        //base case, doesn't matter what we return since call insertSubTree(tree,Leaf(OP_ENDIF))
         val ifTree = insertSubTree(tree,Leaf(OP_ENDIF))
-        logger.debug("ifTree: " + ifTree + " t: " + t)
         (ifTree,t)
       case h :: t if (h == OP_IF || h == OP_NOTIF) =>
-        //find last OP_ENDIF in t
-/*        val endifs = t.zipWithIndex.filter(_._1 == OP_ENDIF)
-        logger.debug("endifs: " + endifs)
-        val endif = if (endifs.size == 0) {
-          (OP_ENDIF,t.size)
-        } else if (endifs.size % 2 == 0) {
-          //this means we need to take the first ENDIF, since we are nested inside of a parent OP_IF
-          logger.debug("Even amount of OP_ENDIFs")
-          val x = endifs.head
-          (x._1,x._2 + 1)
-        } else {
-          //this means we need to take the last endif since we are not nested inside a parent OP_IF
-          logger.debug("Odd amoutns of OP_ENDIFs")
-          endifs.last
-        }
-        val nestedEndIfIndex = endif._2
-        logger.debug("nestedEndIfIndex: " + nestedEndIfIndex)
-        val nestedIf = t.take(nestedEndIfIndex)
-        logger.debug("nestedIf: " + nestedIf)
-        val opIfTree = loop(nestedIf,Leaf(h))
-        logger.debug("opIfTree: " + opIfTree)
-
-        val remaining = t.splitAt(nestedEndIfIndex)._2
-        logger.debug("remaining: " + remaining)
-        if (endifs.size % 2 == 0) {
-          //this means we need to take the first ENDIF, since we are nested inside of a parent OP_IF
-          logger.debug("Even amount of OP_ENDIFs")
-          val subTree = insertSubTree(tree,opIfTree)
-          logger.debug("subTree: " + subTree)
-          //we need to pass in the opIfTree here because there are remaining elements nested inside the OP_IF tree
-          val fullTree = loop(remaining,subTree)
-          logger.debug("Done with even amounts OP_ENDIFs")
-          logger.debug("fullTree: " + fullTree)
-          fullTree
-        } else {
-          //this means we need to take the last endif since we are not nested inside a parent OP_IF
-          logger.debug("odd amounts of OP_ENDIFs")
-
-          val subTree = loop(remaining,opIfTree)
-          logger.debug("subTree: " + subTree)
-          //need to insert remainingTree in the OP_IF tree correctly, not sure if this is right
-          //now insert into the parent tree
-          val fullTree = tree match {
-            case Empty => subTree
-            case l: Leaf[ScriptToken] =>
-              if (subTree == Empty) l
-              else Node(l.v,subTree,Empty)
-            case n: Node[ScriptToken] =>
-              //require(n.l == Empty, "We can only insert an OP_IF on a left branch, it was not empty: " + n.l)
-              Node(n.v,insertSubTree(n.l,subTree),n.r)
-          }
-          logger.debug("Done with odd amounts of OP_ENDIFS")
-          logger.debug("fullTree: " + fullTree)
-          fullTree
-        }*/
-
         val (ifTree,remaining) = loop(t, Leaf(h))
         val fullTree = insertSubTree(tree,ifTree)
-        logger.debug("fullTree: " + ifTree)
         (fullTree,remaining)
       case h :: t if h == OP_ELSE =>
-/*        require(tree.value.isDefined && Seq(OP_IF, OP_NOTIF, OP_ELSE).contains(tree.value.get),
-          "Parent of OP_ELSE has to be an OP_IF/NOTIF/ELSE, got: " + tree.value)
-        require(tree.right.getOrElse(Empty) == Empty,"Right branch of tree should be Empty for an OP_ELSE, got: " + tree.right.get)*/
         val (subTree,remaining) = loop(t,Node(OP_ELSE,Empty,Empty))
-        logger.debug("subTree else: " + subTree)
         val opElseTree = tree match {
           case Empty => subTree
           case l: Leaf[ScriptToken] => Node(l.v,Empty,subTree)
           case n: Node[ScriptToken] => Node(n.v,n.l,insertSubTree(n.r,subTree))
         }
-        logger.debug("opElseTree: " + opElseTree)
         (opElseTree,remaining)
       case h :: t => loop(t,insertSubTree(tree,Leaf(h)))
       case Nil =>
@@ -299,7 +224,7 @@ trait ControlOperationsInterpreter {
       case OP_ENDIF :: t => loop(t,counter-1)
       case OP_IF :: t => loop(t, counter + 1)
       case OP_NOTIF :: t => loop(t, counter + 1)
-      case (token : ScriptToken) :: t => loop(t, counter)
+      case (_: ScriptToken) :: t => loop(t, counter)
       case Nil => counter == 0
     }
     loop(script,0)
@@ -332,36 +257,25 @@ trait ControlOperationsInterpreter {
 
   /** Removes the first [[OP_ELSE]] expression encountered in the script. */
   def removeFirstOpElse(script : List[ScriptToken]) : List[ScriptToken] = {
-    if (script.contains(OP_ELSE)) {
-      val firstOpElseIndex = findFirstOpElse(script)
-      val scriptWithoutFirstOpElse = script.zipWithIndex.filter(_._2 != firstOpElseIndex.get).map(_._1)
-      val nextOpElseIndex = findFirstOpElse(scriptWithoutFirstOpElse)
-      if(nextOpElseIndex.isDefined) {
-        script.slice(0,firstOpElseIndex.get) ++ script.slice(nextOpElseIndex.get + 1, script.size)
-      } else {
-        val firstOpEndIfIndex = findFirstOpEndIf(script)
-        script.slice(0,firstOpElseIndex.get) ++ script.slice(firstOpEndIfIndex.get, script.size)
-      }
-    } else script
+    removeFirstOpElse(parseBinaryTree(script)).toList
   }
 
   /** Removes the first [[OP_ELSE]] in a [[BinaryTree]]. */
-
   def removeFirstOpElse(tree : BinaryTree[ScriptToken]) : BinaryTree[ScriptToken] = {
     //@tailrec
     def loop(child: BinaryTree[ScriptToken], parent: Node[ScriptToken]): BinaryTree[ScriptToken] = child match {
       case Empty => Empty
-      case l: Leaf[ScriptToken] => Node(parent.v,Empty,l)
-      case Node(OP_ELSE,_,r) => Node(parent.v,parent.l,r)
+      case l: Leaf[ScriptToken] => l
+      case Node(OP_ELSE,_,r) => r
       case n: Node[ScriptToken] =>
-        logger.debug("n: " + n)
         Node(n.v,n.l,loop(n.r,n))
     }
-    logger.debug("tree: " + tree)
     tree match {
       case Empty => Empty
       case l: Leaf[ScriptToken] => l
-      case n: Node[ScriptToken] => loop(n.r, n)
+      case n: Node[ScriptToken] =>
+        val result = Node(n.v,n.l,loop(n.r, n))
+        result
     }
   }
 
