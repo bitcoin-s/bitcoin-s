@@ -12,7 +12,7 @@ import scala.annotation.tailrec
 /**
  * Created by chris on 1/25/16.
  */
-trait ArithmeticInterpreter extends ControlOperationsInterpreter {
+sealed abstract class ArithmeticInterpreter {
   private def logger = BitcoinSLogger.logger
   /** a is added to b. */
   def opAdd(program : ScriptProgram) : ScriptProgram = {
@@ -102,7 +102,7 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
       numEqualResult match {
         case _ : ExecutionInProgressScriptProgram =>
           val verifyProgram = ScriptProgram(numEqualResult, numEqualResult.stack, OP_VERIFY :: numEqualResult.script)
-          val verifyResult = opVerify(verifyProgram)
+          val verifyResult = ControlOperationsInterpreter.opVerify(verifyProgram)
           verifyResult
         case _ : PreExecutionScriptProgram | _ : ExecutedScriptProgram =>
           numEqualResult
@@ -361,3 +361,5 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
     }
   }
 }
+
+object ArithmeticInterpreter extends ArithmeticInterpreter
