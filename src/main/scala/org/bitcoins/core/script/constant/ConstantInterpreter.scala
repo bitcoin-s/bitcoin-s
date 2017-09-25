@@ -10,7 +10,7 @@ import scala.annotation.tailrec
 /**
  * Created by chris on 1/24/16.
  */
-trait ConstantInterpreter {
+sealed abstract class ConstantInterpreter {
   private def logger = BitcoinSLogger.logger
 
   /** The next byte contains the number of bytes to be pushed onto the stack. */
@@ -128,3 +128,5 @@ trait ConstantInterpreter {
     case _ => throw new IllegalArgumentException("Token must be BytesToPushOntoStack to push a number of bytes onto the stack")
   }
 }
+
+object ConstantInterpreter extends ConstantInterpreter

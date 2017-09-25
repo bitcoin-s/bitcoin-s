@@ -10,7 +10,7 @@ import org.bitcoins.core.util.BitcoinSLogger
 /**
  * Created by chris on 1/6/16.
  */
-trait BitwiseInterpreter extends ControlOperationsInterpreter  {
+sealed abstract class BitwiseInterpreter {
   private def logger = BitcoinSLogger.logger
   /** Returns 1 if the inputs are exactly equal, 0 otherwise. */
   def opEqual(program : ScriptProgram) : ScriptProgram = {
@@ -43,7 +43,7 @@ trait BitwiseInterpreter extends ControlOperationsInterpreter  {
       //first replace OP_EQUALVERIFY with OP_EQUAL and OP_VERIFY
       val simpleScript = OP_EQUAL :: OP_VERIFY :: program.script.tail
       val newProgram: ScriptProgram = opEqual(ScriptProgram(program, program.stack, simpleScript))
-      opVerify(newProgram) match {
+      ControlOperationsInterpreter.opVerify(newProgram) match {
         case p: PreExecutionScriptProgram => p
         case p: ExecutedScriptProgram =>
           if (p.error.isDefined) ScriptProgram(p, ScriptErrorEqualVerify)
@@ -56,3 +56,5 @@ trait BitwiseInterpreter extends ControlOperationsInterpreter  {
     }
   }
 }
+
+object BitwiseInterpreter extends BitwiseInterpreter

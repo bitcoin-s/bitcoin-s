@@ -14,7 +14,7 @@ import scala.util.{Failure, Success, Try}
  * Stack operations implemented in the script programming language
  * https://en.bitcoin.it/wiki/Script#Stack
  */
-trait StackInterpreter {
+sealed abstract class StackInterpreter {
   private def logger = BitcoinSLogger.logger
 
   /** Duplicates the element on top of the stack
@@ -286,5 +286,6 @@ trait StackInterpreter {
         }
     }
   }
-
 }
+
+object StackInterpreter extends StackInterpreter

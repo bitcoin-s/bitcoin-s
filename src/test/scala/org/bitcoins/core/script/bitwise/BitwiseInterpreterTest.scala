@@ -10,14 +10,14 @@ import org.scalatest.{FlatSpec, MustMatchers}
 /**
  * Created by chris on 1/6/16.
  */
-class BitwiseInterpreterTest extends FlatSpec with MustMatchers with BitwiseInterpreter {
+class BitwiseInterpreterTest extends FlatSpec with MustMatchers {
   private val pubKeyHash = ScriptConstant("5238C71458E464D9FF90299ABCA4A1D7B9CB76AB".toLowerCase)
-
+  val BI = BitwiseInterpreter
   "BitwiseInterpreter" must "evaluate OP_EQUAL" in {
     val stack = List(pubKeyHash, pubKeyHash)
     val script = List(OP_EQUAL)
     val program = ScriptProgram(TestUtil.testProgram, stack,script)
-    val newProgram = opEqual(program)
+    val newProgram = BI.opEqual(program)
     newProgram.stack.head must be (OP_TRUE)
   }
 
@@ -26,20 +26,20 @@ class BitwiseInterpreterTest extends FlatSpec with MustMatchers with BitwiseInte
     val stack = List(OP_1, OP_TRUE)
     val script = List(OP_EQUAL)
     val program = ScriptProgram(TestUtil.testProgram, stack, script)
-    val newProgram = opEqual(program)
+    val newProgram = BI.opEqual(program)
     newProgram.stack.head must be (OP_TRUE)
   }
 
   it must "throw an exception for OP_EQUAL when we don't have enough items on the stack" in {
     intercept[IllegalArgumentException] {
-      opEqual(ScriptProgram(TestUtil.testProgram, List(),List()))
+      BI.opEqual(ScriptProgram(TestUtil.testProgram, List(),List()))
     }
   }
 
 
   it must "throw an exception for OP_EQUAL when we don't have enough items on the script stack" in {
     intercept[IllegalArgumentException] {
-      opEqual(ScriptProgram(TestUtil.testProgram, List(),List()))
+      BI.opEqual(ScriptProgram(TestUtil.testProgram, List(),List()))
     }
   }
 
@@ -47,7 +47,7 @@ class BitwiseInterpreterTest extends FlatSpec with MustMatchers with BitwiseInte
     val stack = List(pubKeyHash, pubKeyHash)
     val script = List(OP_EQUALVERIFY)
     val program = ScriptProgram(TestUtil.testProgramExecutionInProgress, stack,script)
-    val result = opEqualVerify(program)
+    val result = BI.opEqualVerify(program)
     //if verification fails it will transform the script to a ExecutedProgram with an error set
     result.isInstanceOf[ExecutedScriptProgram] must be (false)
   }
@@ -57,7 +57,7 @@ class BitwiseInterpreterTest extends FlatSpec with MustMatchers with BitwiseInte
     val stack = List(pubKeyHash,uniquePubKey)
     val script = List(OP_EQUALVERIFY)
     val program = ScriptProgram(TestUtil.testProgramExecutionInProgress, stack,script)
-    val result = opEqualVerify(program)
+    val result = BI.opEqualVerify(program)
     result.stackTopIsTrue must be (false)
   }
 
@@ -66,19 +66,19 @@ class BitwiseInterpreterTest extends FlatSpec with MustMatchers with BitwiseInte
     val stack = List(ScriptNumber(2), ScriptConstant("02"))
     val script = List(OP_EQUAL)
     val program = ScriptProgram(TestUtil.testProgram, stack,script)
-    opEqual(program).stack.head must be (OP_TRUE)
+    BI.opEqual(program).stack.head must be (OP_TRUE)
 
     val stack1 = List( ScriptConstant("02"),ScriptNumber(2))
     val script1 = List(OP_EQUAL)
     val program1 = ScriptProgram(TestUtil.testProgram, stack1,script1)
-    opEqual(program1).stack.head must be (OP_TRUE)
+    BI.opEqual(program1).stack.head must be (OP_TRUE)
   }
 
   it must "evaluate an OP_0 and ScriptNumberImpl(0) to equal" in {
     val stack = List(OP_0, ScriptNumber.zero)
     val script = List(OP_EQUAL)
     val program = ScriptProgram(TestUtil.testProgram, stack,script)
-    opEqual(program).stack.head must be (OP_TRUE)
+    BI.opEqual(program).stack.head must be (OP_TRUE)
   }
 
 
@@ -86,7 +86,7 @@ class BitwiseInterpreterTest extends FlatSpec with MustMatchers with BitwiseInte
     val stack = List(OP_0)
     val script = List(OP_EQUALVERIFY)
     val program = ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script)
-    val newProgram = opEqualVerify(program)
+    val newProgram = BI.opEqualVerify(program)
     newProgram.isInstanceOf[ExecutedScriptProgram] must be (true)
     newProgram.asInstanceOf[ExecutedScriptProgram].error must be (Some(ScriptErrorInvalidStackOperation))
   }

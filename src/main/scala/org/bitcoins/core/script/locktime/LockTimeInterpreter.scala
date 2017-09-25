@@ -13,7 +13,7 @@ import scala.annotation.tailrec
 /**
  * Created by chris on 2/8/16.
  */
-trait LockTimeInterpreter {
+sealed abstract class LockTimeInterpreter {
 
   private def logger = BitcoinSLogger.logger
   /**

@@ -14,7 +14,7 @@ import scala.annotation.tailrec
 /**
  * Created by chris on 1/6/16.
  */
-trait CryptoInterpreter extends ControlOperationsInterpreter {
+sealed abstract class CryptoInterpreter {
 
   private def logger = BitcoinSLogger.logger
 
@@ -95,7 +95,7 @@ trait CryptoInterpreter extends ControlOperationsInterpreter {
       programFromOpCheckSig match {
         case _ : PreExecutionScriptProgram | _ : ExecutedScriptProgram =>
           programFromOpCheckSig
-        case _ : ExecutionInProgressScriptProgram => opVerify(programFromOpCheckSig)
+        case _ : ExecutionInProgressScriptProgram => ControlOperationsInterpreter.opVerify(programFromOpCheckSig)
       }
     }
   }
@@ -229,7 +229,7 @@ trait CryptoInterpreter extends ControlOperationsInterpreter {
       programFromOpCheckMultiSig match {
         case _ : PreExecutionScriptProgram | _ : ExecutedScriptProgram =>
           programFromOpCheckMultiSig
-        case _ : ExecutionInProgressScriptProgram => opVerify(programFromOpCheckMultiSig)
+        case _ : ExecutionInProgressScriptProgram => ControlOperationsInterpreter.opVerify(programFromOpCheckMultiSig)
       }
     }
   }
@@ -286,3 +286,5 @@ trait CryptoInterpreter extends ControlOperationsInterpreter {
       ScriptProgram(program,ScriptErrorSigNullFail)
   }
 }
+
+object CryptoInterpreter extends CryptoInterpreter

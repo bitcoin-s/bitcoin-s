@@ -26,9 +26,7 @@ import scala.util.{Failure, Success, Try}
 /**
  * Created by chris on 1/6/16.
  */
-trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with ControlOperationsInterpreter
-  with BitwiseInterpreter with ConstantInterpreter with ArithmeticInterpreter with SpliceInterpreter
-  with LockTimeInterpreter {
+sealed abstract class ScriptInterpreter {
 
   private def logger = BitcoinSLogger.logger
   /**
@@ -309,86 +307,86 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
               loop(ScriptProgram(p, ScriptErrorStackSize),opCount)
 
             //stack operations
-            case OP_DUP :: t => loop(opDup(p),calcOpCount(opCount,OP_DUP))
-            case OP_DEPTH :: t => loop(opDepth(p),calcOpCount(opCount,OP_DEPTH))
-            case OP_TOALTSTACK :: t => loop(opToAltStack(p),calcOpCount(opCount,OP_TOALTSTACK))
-            case OP_FROMALTSTACK :: t => loop(opFromAltStack(p),calcOpCount(opCount,OP_FROMALTSTACK))
-            case OP_DROP :: t => loop(opDrop(p),calcOpCount(opCount,OP_DROP))
-            case OP_IFDUP :: t => loop(opIfDup(p),calcOpCount(opCount,OP_IFDUP))
-            case OP_NIP :: t => loop(opNip(p),calcOpCount(opCount,OP_NIP))
-            case OP_OVER :: t => loop(opOver(p),calcOpCount(opCount,OP_OVER))
-            case OP_PICK :: t => loop(opPick(p),calcOpCount(opCount,OP_PICK))
-            case OP_ROLL :: t => loop(opRoll(p),calcOpCount(opCount,OP_ROLL))
-            case OP_ROT :: t => loop(opRot(p),calcOpCount(opCount,OP_ROT))
-            case OP_2ROT :: t => loop(op2Rot(p),calcOpCount(opCount,OP_2ROT))
-            case OP_2DROP :: t => loop(op2Drop(p),calcOpCount(opCount,OP_2DROP))
-            case OP_SWAP :: t => loop(opSwap(p),calcOpCount(opCount,OP_SWAP))
-            case OP_TUCK :: t => loop(opTuck(p),calcOpCount(opCount,OP_TUCK))
-            case OP_2DUP :: t => loop(op2Dup(p),calcOpCount(opCount,OP_2DUP))
-            case OP_3DUP :: t => loop(op3Dup(p),calcOpCount(opCount,OP_3DUP))
-            case OP_2OVER :: t => loop(op2Over(p),calcOpCount(opCount,OP_2OVER))
-            case OP_2SWAP :: t => loop(op2Swap(p),calcOpCount(opCount,OP_2SWAP))
+            case OP_DUP :: t => loop(StackInterpreter.opDup(p),calcOpCount(opCount,OP_DUP))
+            case OP_DEPTH :: t => loop(StackInterpreter.opDepth(p),calcOpCount(opCount,OP_DEPTH))
+            case OP_TOALTSTACK :: t => loop(StackInterpreter.opToAltStack(p),calcOpCount(opCount,OP_TOALTSTACK))
+            case OP_FROMALTSTACK :: t => loop(StackInterpreter.opFromAltStack(p),calcOpCount(opCount,OP_FROMALTSTACK))
+            case OP_DROP :: t => loop(StackInterpreter.opDrop(p),calcOpCount(opCount,OP_DROP))
+            case OP_IFDUP :: t => loop(StackInterpreter.opIfDup(p),calcOpCount(opCount,OP_IFDUP))
+            case OP_NIP :: t => loop(StackInterpreter.opNip(p),calcOpCount(opCount,OP_NIP))
+            case OP_OVER :: t => loop(StackInterpreter.opOver(p),calcOpCount(opCount,OP_OVER))
+            case OP_PICK :: t => loop(StackInterpreter.opPick(p),calcOpCount(opCount,OP_PICK))
+            case OP_ROLL :: t => loop(StackInterpreter.opRoll(p),calcOpCount(opCount,OP_ROLL))
+            case OP_ROT :: t => loop(StackInterpreter.opRot(p),calcOpCount(opCount,OP_ROT))
+            case OP_2ROT :: t => loop(StackInterpreter.op2Rot(p),calcOpCount(opCount,OP_2ROT))
+            case OP_2DROP :: t => loop(StackInterpreter.op2Drop(p),calcOpCount(opCount,OP_2DROP))
+            case OP_SWAP :: t => loop(StackInterpreter.opSwap(p),calcOpCount(opCount,OP_SWAP))
+            case OP_TUCK :: t => loop(StackInterpreter.opTuck(p),calcOpCount(opCount,OP_TUCK))
+            case OP_2DUP :: t => loop(StackInterpreter.op2Dup(p),calcOpCount(opCount,OP_2DUP))
+            case OP_3DUP :: t => loop(StackInterpreter.op3Dup(p),calcOpCount(opCount,OP_3DUP))
+            case OP_2OVER :: t => loop(StackInterpreter.op2Over(p),calcOpCount(opCount,OP_2OVER))
+            case OP_2SWAP :: t => loop(StackInterpreter.op2Swap(p),calcOpCount(opCount,OP_2SWAP))
 
             //arithmetic operations
-            case OP_ADD :: t => loop(opAdd(p),calcOpCount(opCount,OP_ADD))
-            case OP_1ADD :: t => loop(op1Add(p),calcOpCount(opCount,OP_1ADD))
-            case OP_1SUB :: t => loop(op1Sub(p),calcOpCount(opCount,OP_1SUB))
-            case OP_SUB :: t => loop(opSub(p),calcOpCount(opCount,OP_SUB))
-            case OP_ABS :: t => loop(opAbs(p),calcOpCount(opCount,OP_ABS))
-            case OP_NEGATE :: t => loop(opNegate(p),calcOpCount(opCount,OP_NEGATE))
-            case OP_NOT :: t => loop(opNot(p),calcOpCount(opCount,OP_NOT))
-            case OP_0NOTEQUAL :: t => loop(op0NotEqual(p),calcOpCount(opCount,OP_0NOTEQUAL))
-            case OP_BOOLAND :: t => loop(opBoolAnd(p),calcOpCount(opCount,OP_BOOLAND))
-            case OP_BOOLOR :: t => loop(opBoolOr(p),calcOpCount(opCount,OP_BOOLOR))
-            case OP_NUMEQUAL :: t => loop(opNumEqual(p),calcOpCount(opCount,OP_NUMEQUAL))
-            case OP_NUMEQUALVERIFY :: t => loop(opNumEqualVerify(p),calcOpCount(opCount,OP_NUMEQUALVERIFY))
-            case OP_NUMNOTEQUAL :: t => loop(opNumNotEqual(p),calcOpCount(opCount,OP_NUMNOTEQUAL))
-            case OP_LESSTHAN :: t => loop(opLessThan(p),calcOpCount(opCount,OP_LESSTHAN))
-            case OP_GREATERTHAN :: t => loop(opGreaterThan(p),calcOpCount(opCount,OP_GREATERTHAN))
-            case OP_LESSTHANOREQUAL :: t => loop(opLessThanOrEqual(p),calcOpCount(opCount,OP_LESSTHANOREQUAL))
-            case OP_GREATERTHANOREQUAL :: t => loop(opGreaterThanOrEqual(p),calcOpCount(opCount,OP_GREATERTHANOREQUAL))
-            case OP_MIN :: t => loop(opMin(p),calcOpCount(opCount,OP_MIN))
-            case OP_MAX :: t => loop(opMax(p),calcOpCount(opCount,OP_MAX))
-            case OP_WITHIN :: t => loop(opWithin(p),calcOpCount(opCount,OP_WITHIN))
+            case OP_ADD :: t => loop(ArithmeticInterpreter.opAdd(p),calcOpCount(opCount,OP_ADD))
+            case OP_1ADD :: t => loop(ArithmeticInterpreter.op1Add(p),calcOpCount(opCount,OP_1ADD))
+            case OP_1SUB :: t => loop(ArithmeticInterpreter.op1Sub(p),calcOpCount(opCount,OP_1SUB))
+            case OP_SUB :: t => loop(ArithmeticInterpreter.opSub(p),calcOpCount(opCount,OP_SUB))
+            case OP_ABS :: t => loop(ArithmeticInterpreter.opAbs(p),calcOpCount(opCount,OP_ABS))
+            case OP_NEGATE :: t => loop(ArithmeticInterpreter.opNegate(p),calcOpCount(opCount,OP_NEGATE))
+            case OP_NOT :: t => loop(ArithmeticInterpreter.opNot(p),calcOpCount(opCount,OP_NOT))
+            case OP_0NOTEQUAL :: t => loop(ArithmeticInterpreter.op0NotEqual(p),calcOpCount(opCount,OP_0NOTEQUAL))
+            case OP_BOOLAND :: t => loop(ArithmeticInterpreter.opBoolAnd(p),calcOpCount(opCount,OP_BOOLAND))
+            case OP_BOOLOR :: t => loop(ArithmeticInterpreter.opBoolOr(p),calcOpCount(opCount,OP_BOOLOR))
+            case OP_NUMEQUAL :: t => loop(ArithmeticInterpreter.opNumEqual(p),calcOpCount(opCount,OP_NUMEQUAL))
+            case OP_NUMEQUALVERIFY :: t => loop(ArithmeticInterpreter.opNumEqualVerify(p),calcOpCount(opCount,OP_NUMEQUALVERIFY))
+            case OP_NUMNOTEQUAL :: t => loop(ArithmeticInterpreter.opNumNotEqual(p),calcOpCount(opCount,OP_NUMNOTEQUAL))
+            case OP_LESSTHAN :: t => loop(ArithmeticInterpreter.opLessThan(p),calcOpCount(opCount,OP_LESSTHAN))
+            case OP_GREATERTHAN :: t => loop(ArithmeticInterpreter.opGreaterThan(p),calcOpCount(opCount,OP_GREATERTHAN))
+            case OP_LESSTHANOREQUAL :: t => loop(ArithmeticInterpreter.opLessThanOrEqual(p),calcOpCount(opCount,OP_LESSTHANOREQUAL))
+            case OP_GREATERTHANOREQUAL :: t => loop(ArithmeticInterpreter.opGreaterThanOrEqual(p),calcOpCount(opCount,OP_GREATERTHANOREQUAL))
+            case OP_MIN :: t => loop(ArithmeticInterpreter.opMin(p),calcOpCount(opCount,OP_MIN))
+            case OP_MAX :: t => loop(ArithmeticInterpreter.opMax(p),calcOpCount(opCount,OP_MAX))
+            case OP_WITHIN :: t => loop(ArithmeticInterpreter.opWithin(p),calcOpCount(opCount,OP_WITHIN))
 
             //bitwise operations
-            case OP_EQUAL :: t => loop(opEqual(p),calcOpCount(opCount,OP_EQUAL))
+            case OP_EQUAL :: t => loop(BitwiseInterpreter.opEqual(p),calcOpCount(opCount,OP_EQUAL))
 
-            case OP_EQUALVERIFY :: t => loop(opEqualVerify(p),calcOpCount(opCount,OP_EQUALVERIFY))
+            case OP_EQUALVERIFY :: t => loop(BitwiseInterpreter.opEqualVerify(p),calcOpCount(opCount,OP_EQUALVERIFY))
 
             case OP_0 :: t => loop(ScriptProgram(p, ScriptNumber.zero :: p.stack, t),calcOpCount(opCount,OP_0))
             case (scriptNumberOp : ScriptNumberOperation) :: t =>
               loop(ScriptProgram(p, ScriptNumber(scriptNumberOp.underlying) :: p.stack, t),calcOpCount(opCount,scriptNumberOp))
             case (bytesToPushOntoStack: BytesToPushOntoStack) :: t =>
-              loop(pushScriptNumberBytesToStack(p),calcOpCount(opCount,bytesToPushOntoStack))
+              loop(ConstantInterpreter.pushScriptNumberBytesToStack(p),calcOpCount(opCount,bytesToPushOntoStack))
             case (scriptNumber: ScriptNumber) :: t =>
               loop(ScriptProgram(p, scriptNumber :: p.stack, t),calcOpCount(opCount,scriptNumber))
-            case OP_PUSHDATA1 :: t => loop(opPushData1(p),calcOpCount(opCount,OP_PUSHDATA1))
-            case OP_PUSHDATA2 :: t => loop(opPushData2(p),calcOpCount(opCount,OP_PUSHDATA2))
-            case OP_PUSHDATA4 :: t => loop(opPushData4(p),calcOpCount(opCount,OP_PUSHDATA4))
+            case OP_PUSHDATA1 :: t => loop(ConstantInterpreter.opPushData1(p),calcOpCount(opCount,OP_PUSHDATA1))
+            case OP_PUSHDATA2 :: t => loop(ConstantInterpreter.opPushData2(p),calcOpCount(opCount,OP_PUSHDATA2))
+            case OP_PUSHDATA4 :: t => loop(ConstantInterpreter.opPushData4(p),calcOpCount(opCount,OP_PUSHDATA4))
 
             case (x : ScriptConstant) :: t => loop(ScriptProgram(p, x :: p.stack, t),calcOpCount(opCount,x))
 
             //control operations
-            case OP_IF :: t => loop(opIf(p),calcOpCount(opCount,OP_IF))
-            case OP_NOTIF :: t => loop(opNotIf(p),calcOpCount(opCount,OP_NOTIF))
-            case OP_ELSE :: t => loop(opElse(p),calcOpCount(opCount,OP_ELSE))
-            case OP_ENDIF :: t => loop(opEndIf(p),calcOpCount(opCount,OP_ENDIF))
-            case OP_RETURN :: t => loop(opReturn(p),calcOpCount(opCount,OP_RETURN))
+            case OP_IF :: t => loop(ControlOperationsInterpreter.opIf(p),calcOpCount(opCount,OP_IF))
+            case OP_NOTIF :: t => loop(ControlOperationsInterpreter.opNotIf(p),calcOpCount(opCount,OP_NOTIF))
+            case OP_ELSE :: t => loop(ControlOperationsInterpreter.opElse(p),calcOpCount(opCount,OP_ELSE))
+            case OP_ENDIF :: t => loop(ControlOperationsInterpreter.opEndIf(p),calcOpCount(opCount,OP_ENDIF))
+            case OP_RETURN :: t => loop(ControlOperationsInterpreter.opReturn(p),calcOpCount(opCount,OP_RETURN))
 
-            case OP_VERIFY :: t => loop(opVerify(p),calcOpCount(opCount,OP_VERIFY))
+            case OP_VERIFY :: t => loop(ControlOperationsInterpreter.opVerify(p),calcOpCount(opCount,OP_VERIFY))
 
             //crypto operations
-            case OP_HASH160 :: t => loop(opHash160(p),calcOpCount(opCount,OP_HASH160))
-            case OP_CHECKSIG :: t => loop(opCheckSig(p),calcOpCount(opCount,OP_CHECKSIG))
-            case OP_CHECKSIGVERIFY :: t => loop(opCheckSigVerify(p),calcOpCount(opCount,OP_CHECKSIGVERIFY))
-            case OP_SHA1 :: t => loop(opSha1(p),calcOpCount(opCount,OP_SHA1))
-            case OP_RIPEMD160 :: t => loop(opRipeMd160(p),calcOpCount(opCount,OP_RIPEMD160))
-            case OP_SHA256 :: t => loop(opSha256(p),calcOpCount(opCount,OP_SHA256))
-            case OP_HASH256 :: t => loop(opHash256(p),calcOpCount(opCount,OP_HASH256))
-            case OP_CODESEPARATOR :: t => loop(opCodeSeparator(p),calcOpCount(opCount,OP_CODESEPARATOR))
+            case OP_HASH160 :: t => loop(CryptoInterpreter.opHash160(p),calcOpCount(opCount,OP_HASH160))
+            case OP_CHECKSIG :: t => loop(CryptoInterpreter.opCheckSig(p),calcOpCount(opCount,OP_CHECKSIG))
+            case OP_CHECKSIGVERIFY :: t => loop(CryptoInterpreter.opCheckSigVerify(p),calcOpCount(opCount,OP_CHECKSIGVERIFY))
+            case OP_SHA1 :: t => loop(CryptoInterpreter.opSha1(p),calcOpCount(opCount,OP_SHA1))
+            case OP_RIPEMD160 :: t => loop(CryptoInterpreter.opRipeMd160(p),calcOpCount(opCount,OP_RIPEMD160))
+            case OP_SHA256 :: t => loop(CryptoInterpreter.opSha256(p),calcOpCount(opCount,OP_SHA256))
+            case OP_HASH256 :: t => loop(CryptoInterpreter.opHash256(p),calcOpCount(opCount,OP_HASH256))
+            case OP_CODESEPARATOR :: t => loop(CryptoInterpreter.opCodeSeparator(p), calcOpCount(opCount,OP_CODESEPARATOR))
             case OP_CHECKMULTISIG :: t =>
-              opCheckMultiSig(p) match {
+              CryptoInterpreter.opCheckMultiSig(p) match {
                 case newProgram : ExecutedScriptProgram =>
                   //script was marked invalid for other reasons, don't need to update the opcount
                   loop(newProgram,opCount)
@@ -397,7 +395,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
                   loop(newProgram,newOpCount)
               }
             case OP_CHECKMULTISIGVERIFY :: t =>
-              opCheckMultiSigVerify(p) match {
+              CryptoInterpreter.opCheckMultiSigVerify(p) match {
                 case newProgram : ExecutedScriptProgram =>
                   //script was marked invalid for other reasons, don't need to update the opcount
                   loop(newProgram,opCount)
@@ -432,12 +430,14 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
               logger.error("Undefined operation found which automatically fails the script: " + reservedOperation)
               loop(ScriptProgram(p,ScriptErrorBadOpCode),calcOpCount(opCount,reservedOperation))
             //splice operations
-            case OP_SIZE :: t => loop(opSize(p),calcOpCount(opCount,OP_SIZE))
+            case OP_SIZE :: t => loop(SpliceInterpreter.opSize(p),calcOpCount(opCount,OP_SIZE))
 
             //locktime operations
             case OP_CHECKLOCKTIMEVERIFY :: t =>
               //check if CLTV is enforced yet
-              if (ScriptFlagUtil.checkLockTimeVerifyEnabled(p.flags)) loop(opCheckLockTimeVerify(p),calcOpCount(opCount,OP_CHECKLOCKTIMEVERIFY))
+              if (ScriptFlagUtil.checkLockTimeVerifyEnabled(p.flags)) {
+                loop(LockTimeInterpreter.opCheckLockTimeVerify(p),calcOpCount(opCount,OP_CHECKLOCKTIMEVERIFY))
+              }
               //if not, check to see if we should discourage p
               else if (ScriptFlagUtil.discourageUpgradableNOPs(p.flags)) {
                 logger.error("We cannot execute a NOP when the ScriptVerifyDiscourageUpgradableNOPs is set")
@@ -447,7 +447,9 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
               else loop(ScriptProgram(p, p.script.tail, ScriptProgram.Script),calcOpCount(opCount,OP_CHECKLOCKTIMEVERIFY))
             case OP_CHECKSEQUENCEVERIFY :: t =>
               //check if CLTV is enforced yet
-              if (ScriptFlagUtil.checkSequenceVerifyEnabled(p.flags)) loop(opCheckSequenceVerify(p),calcOpCount(opCount,OP_CHECKSEQUENCEVERIFY))
+              if (ScriptFlagUtil.checkSequenceVerifyEnabled(p.flags)) {
+                loop(LockTimeInterpreter.opCheckSequenceVerify(p),calcOpCount(opCount,OP_CHECKSEQUENCEVERIFY))
+              }
               //if not, check to see if we should discourage p
               else if (ScriptFlagUtil.discourageUpgradableNOPs(p.flags)) {
                 logger.error("We cannot execute a NOP when the ScriptVerifyDiscourageUpgradableNOPs is set")
