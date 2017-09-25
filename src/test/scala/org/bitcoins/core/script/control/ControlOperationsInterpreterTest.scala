@@ -95,7 +95,6 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers with C
 
   it must "remove the first OP_IF expression in a script" in {
     removeFirstOpIf(List(OP_IF,OP_ELSE,OP_ENDIF)) must be (List(OP_ELSE,OP_ENDIF))
-    removeFirstOpIf(List(OP_ELSE,OP_ENDIF)) must be (List(OP_ELSE,OP_ENDIF))
     removeFirstOpIf(List(OP_IF, OP_1,OP_ELSE, OP_2, OP_ELSE, OP_3, OP_ENDIF)) must be (List(OP_ELSE, OP_2, OP_ELSE, OP_3, OP_ENDIF))
     removeFirstOpIf(List(OP_IF,OP_ENDIF)) must be (List(OP_ENDIF))
   }
