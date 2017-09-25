@@ -12,7 +12,7 @@ import scala.annotation.tailrec
 /**
  * Created by chris on 1/6/16.
  */
-trait ControlOperationsInterpreter {
+sealed abstract class ControlOperationsInterpreter {
   private def logger = BitcoinSLogger.logger
   /** If the top stack value is not 0, the statements are executed. The top stack value is removed. */
   def opIf(program : ScriptProgram) : ScriptProgram = {
@@ -294,3 +294,5 @@ trait ControlOperationsInterpreter {
     matchingOpEndIfIndex.get
   }
 }
+
+object ControlOperationsInterpreter extends ControlOperationsInterpreter
