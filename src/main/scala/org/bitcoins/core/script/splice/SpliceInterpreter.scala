@@ -8,7 +8,7 @@ import org.bitcoins.core.util.BitcoinSLogger
 /**
  * Created by chris on 2/4/16.
  */
-trait SpliceInterpreter {
+sealed abstract class SpliceInterpreter {
 
   private def logger = BitcoinSLogger.logger
   /** Pushes the string length of the top element of the stack (without popping it). */
@@ -30,3 +30,5 @@ trait SpliceInterpreter {
     }
   }
 }
+
+object SpliceInterpreter extends SpliceInterpreter
