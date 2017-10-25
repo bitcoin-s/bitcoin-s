@@ -4,7 +4,7 @@ package org.bitcoins.core.config
 /**
  * Created by chris on 7/27/15.
   */
-trait NetworkParameters {
+sealed abstract class NetworkParameters {
   def p2pkhNetworkByte : Byte
   def p2shNetworkByte : Byte
   def privateKey : Byte

@@ -2,18 +2,19 @@ package org.bitcoins.core.protocol
 import org.bitcoins.core.config._
 import org.bitcoins.core.config.{MainNet, RegTest, TestNet3}
 import org.bitcoins.core.crypto.{ECPublicKey, Sha256Hash160Digest}
+import org.bitcoins.core.number.{UInt32, UInt8}
 import org.bitcoins.core.protocol.transaction.TransactionOutput
 import org.bitcoins.core.protocol.script._
-import org.bitcoins.core.util.{Base58, CryptoUtil, Factory}
+import org.bitcoins.core.util._
 
 import scala.util.{Failure, Success, Try}
 
-sealed trait Address {
+sealed abstract class Address {
 
   /** The network that this address is valid for */
   def networkParameters: NetworkParameters
 
-  /** The base58 string representation of this address */
+  /** The string representation of this address */
   def value : String
 
   /** Every address is derived from a [[Sha256Hash160Digest]] in a [[TransactionOutput]] */
@@ -23,9 +24,9 @@ sealed trait Address {
   def scriptPubKey: ScriptPubKey
 }
 
-sealed trait BitcoinAddress extends Address
+sealed abstract class BitcoinAddress extends Address
 
-sealed trait P2PKHAddress extends BitcoinAddress {
+sealed abstract class P2PKHAddress extends BitcoinAddress {
   /** The base58 string representation of this address */
   override def value : String = {
     val versionByte = networkParameters.p2pkhNetworkByte
@@ -91,7 +92,7 @@ object P2PKHAddress {
 
 }
 
-sealed trait P2SHAddress extends BitcoinAddress {
+sealed abstract class P2SHAddress extends BitcoinAddress {
   /** The base58 string representation of this address */
   override def value : String = {
     val versionByte = networkParameters.p2shNetworkByte
@@ -103,6 +104,135 @@ sealed trait P2SHAddress extends BitcoinAddress {
   override def scriptPubKey = P2SHScriptPubKey(hash)
 }
 
+/**
+  * https://github.com/bitcoin/bips/blob/master/bip-0173.mediawiki
+  */
+sealed abstract class Bech32Address extends BitcoinAddress {
+
+  private def logger = BitcoinSLogger.logger
+
+  def hrp: HumanReadablePart
+
+  def data: Seq[UInt8]
+
+  override def networkParameters = hrp.network
+
+  override def value: String = {
+    val checksum = Bech32Address.createChecksum(hrp,data)
+    val all = data ++ checksum
+    val encoding = Bech32Address.encodeToString(all)
+    hrp.toString + "1" + encoding
+  }
+
+  override def scriptPubKey: ScriptPubKey = ???
+
+  override def hash: Sha256Hash160Digest = ???
+
+}
+
+object Bech32Address {
+  private case class Bech32AddressImpl(hrp: HumanReadablePart, data: Seq[UInt8]) extends Bech32Address
+
+  def isValid(bytes: Seq[Byte]): Boolean = ???
+
+  def apply(witSPK: WitnessScriptPubKey,
+            networkParameters: NetworkParameters): Try[Bech32Address] = {
+    //we don't encode the wit version or pushop for program into base5
+    val prog = UInt8.toUInt8s(witSPK.asmBytes.tail.tail)
+    val encoded = Bech32Address.encode(prog)
+    val hrp = networkParameters match {
+      case _: MainNet => bc
+      case _: TestNet3 | _: RegTest => tb
+    }
+    //add witversion
+    encoded.map(e => Bech32Address(hrp,Seq(UInt8.zero) ++ e))
+  }
+
+
+  def apply(hrp: HumanReadablePart, data: Seq[UInt8]): Bech32Address = {
+    Bech32AddressImpl(hrp,data)
+  }
+
+  /** Returns a base 5 checksum as specified by BIP173 */
+  def createChecksum(hrp: HumanReadablePart, bytes: Seq[UInt8]): Seq[UInt8] = {
+    val values: Seq[UInt8] = hrpExpand(hrp) ++ bytes
+    val z = UInt8.zero
+    val polymod: Long = polyMod(values ++ Seq(z,z,z,z,z,z)) ^ 1
+    //[(polymod >> 5 * (5 - i)) & 31 for i in range(6)]
+    val result: Seq[UInt8] = 0.until(6).map { i =>
+      val u = UInt8(i.toShort)
+      val five = UInt8(5.toShort)
+      //((polymod >> five * (five - u)) & UInt8(31.toShort))
+      UInt8(((polymod >> 5 * (5 - i)) & 31).toShort)
+    }
+    result
+  }
+
+  def hrpExpand(hrp: HumanReadablePart): Seq[UInt8] = {
+    val x: Seq[Byte] = hrp.bytes.map { b: Byte =>
+      (b >> 5).toByte
+    }
+    val withZero: Seq[Byte] = x ++ Seq(0.toByte)
+
+    val y: Seq[Byte] = hrp.bytes.map { char =>
+      (char & 0x1f).toByte
+    }
+    val result = UInt8.toUInt8s(withZero ++ y)
+    result
+  }
+
+  private def generators: Seq[Long] = Seq(UInt32("3b6a57b2").toLong,
+    UInt32("26508e6d").toLong, UInt32("1ea119fa").toLong,
+    UInt32("3d4233dd").toLong, UInt32("2a1462b3").toLong)
+
+  def polyMod(bytes: Seq[UInt8]): Long = {
+    var chk: Long = 1
+    bytes.map { v =>
+      val b = chk >> 25
+      //chk = (chk & 0x1ffffff) << 5 ^ v
+      chk = (chk & 0x1ffffff) << 5 ^ v.underlying
+      0.until(5).map { i: Int =>
+        //chk ^= GEN[i] if ((b >> i) & 1) else 0
+        if (((b >> i) & 1) == 1) {
+          chk = chk ^ generators(i)
+        }
+      }
+    }
+    chk
+  }
+
+  def verifyChecksum(hrp: HumanReadablePart, data: Seq[UInt8]): Boolean = {
+    polyMod(hrpExpand(hrp) ++ data) == 1
+  }
+
+  private val u32Five = UInt32(5)
+  private val u32Eight = UInt32(8)
+  /** Converts a byte array from base 8 to base 5 */
+  def encode(bytes: Seq[UInt8]): Try[Seq[UInt8]] = {
+    NumberUtil.convertBits(bytes,u32Eight,u32Five,true)
+  }
+  /** Decodes a byte array from base 5 to base 8 */
+  def decode(b: Seq[UInt8]): Try[Seq[UInt8]] = {
+    NumberUtil.convertBits(b,u32Five,u32Eight,false)
+  }
+
+  /** Takes a base32 byte array and encodes it to a string */
+  def encodeToString(b: Seq[UInt8]): String = {
+    b.map(b => charset(b.underlying)).mkString
+  }
+  /** Decodes a base32 string to a base 32 byte array */
+  def decodeFromString(string: String): Try[Seq[Byte]] = {
+    val invariant = Try(require(string.exists(charset.contains(_)), "String contained a non base32 character"))
+    ???
+  }
+
+
+  /** https://github.com/bitcoin/bips/blob/master/bip-0173.mediawiki#bech32 */
+  def charset: Seq[Char] = Seq('q', 'p', 'z', 'r', 'y', '9', 'x', '8',
+    'g', 'f', '2', 't', 'v', 'd', 'w', '0',
+    's', '3', 'j', 'n', '5', '4', 'k', 'h',
+    'c', 'e', '6', 'm', 'u', 'a', '7', 'l')
+}
 /**
   * [[P2SHAddress]] companion object
   */
