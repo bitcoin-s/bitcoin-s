@@ -79,8 +79,8 @@ trait NumberUtil extends BitcoinSLogger {
   /** Converts a hex string to a [[Long]]. */
   def toLong(hex : String): Long = toLong(BitcoinSUtil.decodeHex(hex))
 
-  /** Converts a sequence bytes 'from' base to 'to' base */
-  def convertBits(data: Seq[UInt8], from: UInt32, to: UInt32, pad: Boolean): Try[Seq[UInt8]] = {
+  /** Converts a sequence uint8 'from' base to 'to' base */
+  def convertUInt8s(data: Seq[UInt8], from: UInt32, to: UInt32, pad: Boolean): Try[Seq[UInt8]] = {
     var acc: UInt32 = UInt32.zero
     var bits: UInt32 = UInt32.zero
     var ret: Seq[UInt8] = Nil
@@ -113,6 +113,10 @@ trait NumberUtil extends BitcoinSLogger {
       }
       Success(ret)
     }
+  }
+
+  def convertBytes(data: Seq[Byte], from: UInt32, to: UInt32, pad: Boolean): Try[Seq[UInt8]] = {
+    convertUInt8s(UInt8.toUInt8s(data),from,to,pad)
   }
 }
 

@@ -68,6 +68,8 @@ object CompactSizeUInt extends Factory[CompactSizeUInt] {
     else CompactSizeUInt(UInt64(bytes.size),9)
   }
 
+  def calc(bytes: Seq[Byte]): CompactSizeUInt = calculateCompactSizeUInt(bytes)
+
   /** Responsible for calculating what the [[CompactSizeUInt]] is for this hex string. */
   def calculateCompactSizeUInt(hex : String) : CompactSizeUInt = calculateCompactSizeUInt(BitcoinSUtil.decodeHex(hex))
 
@@ -89,6 +91,8 @@ object CompactSizeUInt extends Factory[CompactSizeUInt] {
     //64 bit number
     else CompactSizeUInt(UInt64(bytes.slice(1,9).reverse),9)
   }
+
+  def parse(bytes: Seq[Byte]): CompactSizeUInt = parseCompactSizeUInt(bytes)
 
   /** Returns the size of a VarInt in the number of bytes
     * https://en.bitcoin.it/wiki/Protocol_documentation#Variable_length_integer. */
