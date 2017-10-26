@@ -1,9 +1,9 @@
 package org.bitcoins.core.protocol
 
-import org.bitcoins.core.config.TestNet3
+import org.bitcoins.core.config.{MainNet, TestNet3}
 import org.bitcoins.core.crypto.ECPublicKey
 import org.bitcoins.core.number.UInt8
-import org.bitcoins.core.protocol.script.WitnessScriptPubKeyV0
+import org.bitcoins.core.protocol.script.{P2PKHScriptPubKey, P2PKScriptPubKey, WitnessScriptPubKeyV0}
 import org.scalatest.{FlatSpec, MustMatchers}
 
 import scala.util.Success
@@ -41,12 +41,19 @@ class Bech32Test extends FlatSpec with MustMatchers  {
     //https://github.com/bitcoin/bips/blob/master/bip-0173.mediawiki#examples
     val key = ECPublicKey("0279BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798".toLowerCase)
     val p2wpkh = WitnessScriptPubKeyV0(key)
-    val expected = Seq(117, 30, 118, 232, 25, 145, 150, 212, 84, 148, 28, 69, 209, 179, 163, 35, 241, 67, 59, 214).map(_.toByte)
-    val bytes = p2wpkh.asmBytes.tail.tail
-    bytes.size must be (expected.size)
-    bytes must be (expected)
     val addr = Bech32Address(p2wpkh,TestNet3)
     addr.map(_.value) must be (Success("tb1qw508d6qejxtdg4y5r3zarvary0c5xw7kxpjzsx"))
+
+    val p2wpkhMain = Bech32Address(p2wpkh,MainNet)
+    p2wpkhMain.map(_.value) must be (Success("bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4"))
+
+    val p2pk = P2PKScriptPubKey(key)
+    val p2wsh = WitnessScriptPubKeyV0(p2pk)
+    val addr1 = Bech32Address(p2wsh,TestNet3)
+    addr1.map(_.value) must be (Success("tb1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3q0sl5k7"))
+
+    val p2wshMain = Bech32Address(p2wsh,MainNet)
+    p2wshMain.map(_.value) must be (Success("bc1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3qccfmv3"))
   }
 
   it must "encode 0 byte correctly" in {
