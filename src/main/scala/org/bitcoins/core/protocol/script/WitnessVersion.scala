@@ -16,6 +16,8 @@ sealed trait WitnessVersion extends BitcoinSLogger {
     * Either returns the stack and the [[ScriptPubKey]] it needs to be executed against or
     * the [[ScriptError]] that was encountered while rebuilding the witness*/
   def rebuild(scriptWitness: ScriptWitness, witnessProgram: Seq[ScriptToken]): Either[(Seq[ScriptToken], ScriptPubKey),ScriptError]
+
+  def version: ScriptNumberOperation
 }
 
 case object WitnessVersion0 extends WitnessVersion {
@@ -60,15 +62,21 @@ case object WitnessVersion0 extends WitnessVersion {
         Right(ScriptErrorWitnessProgramWrongLength)
     }
   }
+
+  override def version = OP_0
 }
 
 /** The witness version that represents all witnesses that have not been allocated yet */
 case object UnassignedWitness extends WitnessVersion {
   override def rebuild(scriptWitness: ScriptWitness, witnessProgram: Seq[ScriptToken]): Either[(Seq[ScriptToken], ScriptPubKey),ScriptError] =
     Right(ScriptErrorDiscourageUpgradeableWitnessProgram)
+
+  override def version = OP_16
 }
 
 object WitnessVersion {
+
+  private val versions = Seq(WitnessVersion0, UnassignedWitness)
 
   def apply(scriptNumberOp: ScriptNumberOperation): WitnessVersion = scriptNumberOp match {
     case OP_0 | OP_FALSE => WitnessVersion0
@@ -82,4 +90,10 @@ object WitnessVersion {
     case _ : ScriptConstant | _ : ScriptNumber | _ : ScriptOperation =>
       throw new IllegalArgumentException("We can only have witness version that is a script number operation, i.e OP_0 through OP_16")
   }
+
+  def apply(int: Int): WitnessVersion = int match {
+    case 0 => WitnessVersion0
+    case _ => UnassignedWitness
+  }
+
 }

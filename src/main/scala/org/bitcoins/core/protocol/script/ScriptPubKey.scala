@@ -491,7 +491,7 @@ sealed trait WitnessScriptPubKey extends ScriptPubKey {
 object WitnessScriptPubKey {
 
   /** Witness scripts must begin with one of these operations, see BIP141 */
-  private val validFirstOps = Seq(OP_0,OP_1,OP_2,OP_3,OP_4,OP_5,OP_6, OP_7, OP_8,
+  private val validFirstOps: Seq[ScriptNumberOperation] = Seq(OP_0,OP_1,OP_2,OP_3,OP_4,OP_5,OP_6, OP_7, OP_8,
     OP_9, OP_10, OP_11, OP_12, OP_13, OP_14, OP_15, OP_16)
 
   def apply(asm: Seq[ScriptToken]): Option[WitnessScriptPubKey] = fromAsm(asm)

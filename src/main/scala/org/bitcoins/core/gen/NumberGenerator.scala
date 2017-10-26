@@ -1,6 +1,6 @@
 package org.bitcoins.core.gen
 
-import org.bitcoins.core.number.{Int32, Int64, UInt32, UInt64}
+import org.bitcoins.core.number._
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.script.constant.ScriptNumber
 import org.bitcoins.core.util.NumberUtil
@@ -21,7 +21,9 @@ trait NumberGenerator {
   /** Creates a number generator that generates negative long numbers */
   def negativeLongs: Gen[Long] = Gen.choose(Long.MinValue,-1)
 
+  def uInt8: Gen[UInt8] = Gen.choose(0,255).map(n => UInt8(n.toShort))
 
+  def uInt8s: Gen[Seq[UInt8]] = Gen.listOf(uInt8)
   /**
     * Generates a number in the range 0 <= x <= 2 ^^32 - 1
     * then wraps it in a UInt32 */

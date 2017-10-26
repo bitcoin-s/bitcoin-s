@@ -44,16 +44,29 @@ class Bech32Test extends FlatSpec with MustMatchers  {
     val addr = Bech32Address(p2wpkh,TestNet3)
     addr.map(_.value) must be (Success("tb1qw508d6qejxtdg4y5r3zarvary0c5xw7kxpjzsx"))
 
+    //decode
+    val decoded = addr.flatMap(a => Bech32Address.fromString(a.value))
+    decoded must be (Success(p2wpkh))
+
     val p2wpkhMain = Bech32Address(p2wpkh,MainNet)
     p2wpkhMain.map(_.value) must be (Success("bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4"))
+
+    val mp2wpkhDecoded = p2wpkhMain.flatMap(a => Bech32Address.fromString(a.value))
+    mp2wpkhDecoded must be (Success(p2wpkh))
 
     val p2pk = P2PKScriptPubKey(key)
     val p2wsh = WitnessScriptPubKeyV0(p2pk)
     val addr1 = Bech32Address(p2wsh,TestNet3)
     addr1.map(_.value) must be (Success("tb1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3q0sl5k7"))
 
+    //decode
+    val decoded1 = addr1.flatMap(a => Bech32Address.fromString(a.value))
+    decoded1 must be (Success(p2wsh))
+
     val p2wshMain = Bech32Address(p2wsh,MainNet)
     p2wshMain.map(_.value) must be (Success("bc1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3qccfmv3"))
+    val mp2wshDecoded = p2wshMain.flatMap(a => Bech32Address.fromString(a.value))
+    mp2wshDecoded must be (Success(p2wsh))
   }
 
   it must "encode 0 byte correctly" in {

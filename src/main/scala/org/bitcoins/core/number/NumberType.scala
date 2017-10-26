@@ -430,6 +430,8 @@ object UInt8 extends Factory[UInt8] with BaseNumbers[UInt8] {
 
   def apply(short: Short): UInt8 = UInt8Impl(short)
 
+  def apply(byte: Byte): UInt8 = toUInt8(byte)
+
   def isValid(short: Short): Boolean = short >= 0  && short < 256
 
   override def fromBytes(bytes: Seq[Byte]): UInt8 = {
@@ -443,8 +445,12 @@ object UInt8 extends Factory[UInt8] with BaseNumbers[UInt8] {
     if ((byte & 0x80) == 0x80) {
       val r = (byte & 0x7f) + NumberUtil.pow2(7)
       UInt8(r.toShort)
-    } else UInt8(byte)
+    } else UInt8Impl(byte)
   }
+
+  def toByte(uInt8: UInt8): Byte = uInt8.underlying.toByte
+
+  def toBytes(us: Seq[UInt8]): Seq[Byte] = us.map(toByte(_))
 
   def toUInt8s(bytes: Seq[Byte]): Seq[UInt8] = bytes.map(toUInt8(_))
 }
