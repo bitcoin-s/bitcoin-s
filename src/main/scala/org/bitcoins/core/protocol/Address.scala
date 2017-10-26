@@ -1,7 +1,7 @@
 package org.bitcoins.core.protocol
 import org.bitcoins.core.config._
 import org.bitcoins.core.config.{MainNet, RegTest, TestNet3}
-import org.bitcoins.core.crypto.{ECPublicKey, Sha256Hash160Digest}
+import org.bitcoins.core.crypto.{ECPublicKey, HashDigest, Sha256Digest, Sha256Hash160Digest}
 import org.bitcoins.core.number.{UInt32, UInt8}
 import org.bitcoins.core.protocol.transaction.TransactionOutput
 import org.bitcoins.core.protocol.script._
@@ -21,7 +21,7 @@ sealed abstract class Address {
   def value : String
 
   /** Every address is derived from a [[Sha256Hash160Digest]] in a [[TransactionOutput]] */
-  def hash: Sha256Hash160Digest
+  def hash: HashDigest
 
   /** The [[ScriptPubKey]] the address represents */
   def scriptPubKey: ScriptPubKey
@@ -37,6 +37,8 @@ sealed abstract class P2PKHAddress extends BitcoinAddress {
     val checksum = CryptoUtil.doubleSHA256(bytes).bytes.take(4)
     Base58.encode(bytes ++ checksum)
   }
+
+  override def hash: Sha256Hash160Digest
 
   override def scriptPubKey: P2PKHScriptPubKey = P2PKHScriptPubKey(hash)
 
@@ -105,6 +107,8 @@ sealed abstract class P2SHAddress extends BitcoinAddress {
   }
 
   override def scriptPubKey = P2SHScriptPubKey(hash)
+
+  override def hash: Sha256Hash160Digest
 }
 
 /**
@@ -127,9 +131,11 @@ sealed abstract class Bech32Address extends BitcoinAddress {
     hrp.toString + "1" + encoding
   }
 
-  override def scriptPubKey: ScriptPubKey = ???
+  override def scriptPubKey: WitnessScriptPubKey = {
+    Bech32Address.fromString(value).get
+  }
 
-  override def hash: Sha256Hash160Digest = ???
+  override def hash: Sha256Digest = Sha256Digest(scriptPubKey.witnessProgram.flatMap(_.bytes))
 
 }
 
@@ -229,7 +235,7 @@ object Bech32Address {
     b.map(b => charset(b.underlying)).mkString
   }
   /** Decodes bech32 string to a spk */
-  def fromString(str: String): Try[ScriptPubKey] = {
+  def fromString(str: String): Try[WitnessScriptPubKey] = {
     if (str.size > 90 || str.size < 8) {
       Failure(new IllegalArgumentException("bech32 payloads must be betwee 8 and 90 chars, got: " + str.size))
     } else if (str(2) != separator) {
@@ -437,8 +443,9 @@ object Address extends Factory[Address] {
   def fromScriptPubKey(spk: ScriptPubKey, network: NetworkParameters): Try[BitcoinAddress] = spk match {
     case p2pkh: P2PKHScriptPubKey => Success(P2PKHAddress(p2pkh,network))
     case p2sh: P2SHScriptPubKey => Success(P2SHAddress(p2sh,network))
+    case witSPK: WitnessScriptPubKeyV0 => Bech32Address(witSPK,network)
     case x @ (_: P2PKScriptPubKey | _: MultiSignatureScriptPubKey | _: LockTimeScriptPubKey
-              | _: EscrowTimeoutScriptPubKey | _: NonStandardScriptPubKey | _: WitnessScriptPubKeyV0
+              | _: EscrowTimeoutScriptPubKey | _: NonStandardScriptPubKey
               | _: WitnessCommitment |  _: UnassignedWitnessScriptPubKey | EmptyScriptPubKey) =>
       Failure(new IllegalArgumentException("Cannot create a address for the scriptPubKey: " + x))
   }
