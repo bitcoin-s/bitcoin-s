@@ -132,7 +132,8 @@ trait ScriptGenerators extends BitcoinSLogger {
     */
   def unassignedWitnessScriptPubKey: Gen[(UnassignedWitnessScriptPubKey, Seq[ECPrivateKey])] = for {
     (witV0,privKeys) <- witnessScriptPubKeyV0
-    unassignedAsm = OP_16 +: witV0.asm.tail
+    version <- Gen.oneOf(WitnessScriptPubKey.unassignedWitVersions)
+    unassignedAsm = version +: witV0.asm.tail
   } yield (UnassignedWitnessScriptPubKey(unassignedAsm),privKeys)
 
   /** Generates an arbitrary [[org.bitcoins.core.protocol.script.WitnessScriptPubKey]] */

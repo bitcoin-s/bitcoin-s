@@ -21,7 +21,8 @@ sealed trait AddressGenerator {
   } yield addr
 
   def bech32Address: Gen[Bech32Address] = for {
-    (witSPK,_) <- ScriptGenerators.witnessScriptPubKey
+    //TODO: Change this generator from witSPKV0 -> witSPK after I ask about generating addresses for unassigned witSPKs
+    (witSPK,_) <- ScriptGenerators.witnessScriptPubKeyV0
     network <- ChainParamsGenerator.networkParams
     addr = Bech32Address(witSPK,network)
   } yield addr.get
