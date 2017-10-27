@@ -128,7 +128,7 @@ sealed abstract class Bech32Address extends BitcoinAddress {
     val checksum = Bech32Address.createChecksum(hrp,data)
     val all = data ++ checksum
     val encoding = Bech32Address.encodeToString(all)
-    hrp.toString + "1" + encoding
+    hrp.toString + Bech32Address.separator + encoding
   }
 
   override def scriptPubKey: WitnessScriptPubKey = {
@@ -142,9 +142,10 @@ sealed abstract class Bech32Address extends BitcoinAddress {
 object Bech32Address {
   private case class Bech32AddressImpl(hrp: HumanReadablePart, data: Seq[UInt8]) extends Bech32Address
 
-  private val logger = BitcoinSLogger.logger
+  /** Separator used to separate the hrp & data parts of a bech32 addr */
+  val separator = '1'
 
-  def isValid(bytes: Seq[Byte]): Boolean = ???
+  private val logger = BitcoinSLogger.logger
 
   def apply(witSPK: WitnessScriptPubKey,
             networkParameters: NetworkParameters): Try[Bech32Address] = {
@@ -155,8 +156,8 @@ object Bech32Address {
       case _: MainNet => bc
       case _: TestNet3 | _: RegTest => tb
     }
-    //add witversion
-    encoded.map(e => Bech32Address(hrp,Seq(UInt8.zero) ++ e))
+    val witVersion = witSPK.witnessVersion.version.underlying.toShort
+    encoded.map(e => Bech32Address(hrp,Seq(UInt8(witVersion)) ++ e))
   }
 
 
@@ -220,7 +221,7 @@ object Bech32Address {
   private val u32Five = UInt32(5)
   private val u32Eight = UInt32(8)
   /** The separator between the hrp and payload of bech 32 */
-  private val separator = '1'
+
   /** Converts a byte array from base 8 to base 5 */
   def encode(bytes: Seq[UInt8]): Try[Seq[UInt8]] = {
     NumberUtil.convertUInt8s(bytes,u32Eight,u32Five,true)
