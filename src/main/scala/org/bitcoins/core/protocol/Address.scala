@@ -444,7 +444,7 @@ object Address extends Factory[Address] {
   def fromScriptPubKey(spk: ScriptPubKey, network: NetworkParameters): Try[BitcoinAddress] = spk match {
     case p2pkh: P2PKHScriptPubKey => Success(P2PKHAddress(p2pkh,network))
     case p2sh: P2SHScriptPubKey => Success(P2SHAddress(p2sh,network))
-    case witSPK: WitnessScriptPubKeyV0 => Bech32Address(witSPK,network)
+    case witSPK: WitnessScriptPubKey => Bech32Address(witSPK,network)
     case x @ (_: P2PKScriptPubKey | _: MultiSignatureScriptPubKey | _: LockTimeScriptPubKey
               | _: EscrowTimeoutScriptPubKey | _: NonStandardScriptPubKey
               | _: WitnessCommitment |  _: UnassignedWitnessScriptPubKey | EmptyScriptPubKey) =>

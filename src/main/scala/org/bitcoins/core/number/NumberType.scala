@@ -93,7 +93,7 @@ sealed abstract class UInt8 extends UnsignedNumber with NumberOperations[UInt8] 
     val r = underlying << i
     checkResult(r)
   }
-  override def hex = BitcoinSUtil.encodeHex(underlying).slice(12,16)
+  override def hex = BitcoinSUtil.encodeHex(underlying).slice(2,4)
 
   override def toInt: Int = {
     require(underlying <= Int.MaxValue, "Overflow error when casting " + this + " to an integer.")
@@ -168,8 +168,8 @@ sealed trait UInt32 extends UnsignedNumber with NumberOperations[UInt32] {
       //since we are going to shift left we can lose precision by converting .toInt
       //TODO: There is a bug here wrt comparing shiftNoSignBit & (1 << 31) will always evaluate to false
       val int = underlying.toInt
-      val shiftNoSignBit = (int << l) & (Int.MaxValue >> 1)
-      val shift = if ((shiftNoSignBit & (1 << 31)) == (1 << 31)) {
+      val shiftNoSignBit = (int << l) & 0xffffffffL
+      val shift = if (((shiftNoSignBit & (1 << 31)) == (1 << 31))) {
         shiftNoSignBit + (1 << 31)
       } else shiftNoSignBit
       val r = Try(UInt32(shift))
