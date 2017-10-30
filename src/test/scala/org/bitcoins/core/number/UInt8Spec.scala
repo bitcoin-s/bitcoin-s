@@ -10,4 +10,10 @@ class UInt8Spec extends Properties("UInt8Spec") {
         UInt8(UInt8.toByte(u8)) == u8
     }
   }
+
+  property("serialization symmetry") = {
+    Prop.forAll(NumberGenerator.uInt8) { u8 =>
+      UInt8(u8.hex) == u8
+    }
+  }
 }
