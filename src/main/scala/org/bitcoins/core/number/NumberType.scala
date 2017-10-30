@@ -90,22 +90,14 @@ sealed abstract class UInt8 extends UnsignedNumber with NumberOperations[UInt8] 
 
   def <<(u: UInt8): UInt8 = this.<<(u.underlying)
   def << (i: Int): UInt8 = {
-    val r = underlying << i
+    val r = (underlying << i) & 0xffL
     checkResult(r)
   }
   override def hex = BitcoinSUtil.encodeHex(underlying).slice(2,4)
 
-  override def toInt: Int = {
-    require(underlying <= Int.MaxValue, "Overflow error when casting " + this + " to an integer.")
-    require(underlying >= 0, "Unsigned integer should not be cast to a number less than 0" + this)
-    underlying.toInt
-  }
+  override def toInt: Int = toLong.toInt
 
-  def toLong: Long = {
-    require(underlying <= Long.MaxValue, "Overflow error when casting " + this + " to an integer.")
-    require(underlying >= 0, "Unsigned integer should not be cast to a number less than 0" + this)
-    underlying.toLong
-  }
+  def toLong: Long = underlying
 
   /**
     * Checks the result of the arithmetic operation to see if an error occurred
@@ -113,8 +105,8 @@ sealed abstract class UInt8 extends UnsignedNumber with NumberOperations[UInt8] 
     * @param result the try type wrapping the result of the arithmetic operation
     * @return the result of the unsigned number operation
     */
-  private def checkResult(result : Int): UInt8 = {
-    if (result > Short.MaxValue || result < 0) throw new IllegalArgumentException("Result of operation was out of bounds for a UInt8: " + result)
+  private def checkResult(result : Long): UInt8 = {
+    if (result > UInt8.max.underlying || result < UInt8.min.underlying) throw new IllegalArgumentException("Result of operation was out of bounds for a UInt8: " + result)
     else UInt8(result.toShort)
   }
 }
@@ -166,7 +158,6 @@ sealed trait UInt32 extends UnsignedNumber with NumberOperations[UInt32] {
     if (l == 0) this
     else {
       //since we are going to shift left we can lose precision by converting .toInt
-      //TODO: There is a bug here wrt comparing shiftNoSignBit & (1 << 31) will always evaluate to false
       val int = underlying.toInt
       val shiftNoSignBit = (int << l) & 0xffffffffL
       val shift = if (((shiftNoSignBit & (1 << 31)) == (1 << 31))) {

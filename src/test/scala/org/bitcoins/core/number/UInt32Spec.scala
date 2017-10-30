@@ -107,4 +107,11 @@ class UInt32Spec extends Properties("UInt32") {
         r.isFailure
       }
     }
+
+  property(">>") =
+    Prop.forAll(NumberGenerator.uInt32s, Gen.choose(0,100)) { case (u32,shift) =>
+      val r = u32 >> shift
+      val expected = u32.underlying >> shift
+      r == UInt32(expected)
+    }
 }
