@@ -13,7 +13,7 @@ class Bech32Spec extends Properties("Bech32Spec") {
   property("serialization symmetry") = {
     Prop.forAll(ScriptGenerators.witnessScriptPubKeyV0,ChainParamsGenerator.networkParams) { case ((witSPK,_),network) =>
         val addr = Bech32Address(witSPK,network)
-        val spk = addr.flatMap(a => Bech32Address.fromString(a.value))
+        val spk = addr.flatMap(a => Bech32Address.fromStringToWitSPK(a.value))
         spk == Success(witSPK)
     }
   }

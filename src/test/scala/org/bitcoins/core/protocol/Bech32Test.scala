@@ -3,14 +3,14 @@ package org.bitcoins.core.protocol
 import org.bitcoins.core.config.{MainNet, TestNet3}
 import org.bitcoins.core.crypto.ECPublicKey
 import org.bitcoins.core.number.UInt8
-import org.bitcoins.core.protocol.script.{P2PKHScriptPubKey, P2PKScriptPubKey, WitnessScriptPubKeyV0}
+import org.bitcoins.core.protocol.script.{P2PKHScriptPubKey, P2PKScriptPubKey, WitnessScriptPubKey, WitnessScriptPubKeyV0}
 import org.scalatest.{FlatSpec, MustMatchers}
 
-import scala.util.Success
+import scala.util.{Success, Try}
 
 class Bech32Test extends FlatSpec with MustMatchers  {
 
-/*  "Bech32" must "validly encode the test vectors from bitcoin core correctly" in {
+  "Bech32" must "validly encode the test vectors from bitcoin core correctly" in {
     val valid = Seq("A12UEL5L",
       "a12uel5l",
       "an83characterlonghumanreadablepartthatcontainsthenumber1andtheexcludedcharactersbio1tt5tgs",
@@ -19,6 +19,8 @@ class Bech32Test extends FlatSpec with MustMatchers  {
       "split1checkupstagehandshakeupstreamerranterredcaperred2y9e3w",
       "?1ezyfcl"
     )
+    val results: Seq[Try[(HumanReadablePart,Seq[Byte])]] = valid.map(Bech32Address.fromString(_))
+    results.exists(_.isFailure) must be (false)
   }
 
   it must "mark invalid test vectors as invalid from bitcoin core" in {
@@ -34,8 +36,9 @@ class Bech32Test extends FlatSpec with MustMatchers  {
     "A1G7SGD8",
     "10a06t8",
     "1qzzfhee")
-
-  }*/
+    val results: Seq[Try[(HumanReadablePart,Seq[Byte])]] = invalid.map(Bech32Address.fromString(_))
+    results.exists(_.isSuccess) must be (false)
+  }
 
   it must "follow the example in BIP173" in {
     //https://github.com/bitcoin/bips/blob/master/bip-0173.mediawiki#examples
@@ -45,13 +48,13 @@ class Bech32Test extends FlatSpec with MustMatchers  {
     addr.map(_.value) must be (Success("tb1qw508d6qejxtdg4y5r3zarvary0c5xw7kxpjzsx"))
 
     //decode
-    val decoded = addr.flatMap(a => Bech32Address.fromString(a.value))
+    val decoded = addr.flatMap(a => Bech32Address.fromStringToWitSPK(a.value))
     decoded must be (Success(p2wpkh))
 
     val p2wpkhMain = Bech32Address(p2wpkh,MainNet)
     p2wpkhMain.map(_.value) must be (Success("bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4"))
 
-    val mp2wpkhDecoded = p2wpkhMain.flatMap(a => Bech32Address.fromString(a.value))
+    val mp2wpkhDecoded = p2wpkhMain.flatMap(a => Bech32Address.fromStringToWitSPK(a.value))
     mp2wpkhDecoded must be (Success(p2wpkh))
 
     val p2pk = P2PKScriptPubKey(key)
@@ -60,12 +63,12 @@ class Bech32Test extends FlatSpec with MustMatchers  {
     addr1.map(_.value) must be (Success("tb1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3q0sl5k7"))
 
     //decode
-    val decoded1 = addr1.flatMap(a => Bech32Address.fromString(a.value))
+    val decoded1 = addr1.flatMap(a => Bech32Address.fromStringToWitSPK(a.value))
     decoded1 must be (Success(p2wsh))
 
     val p2wshMain = Bech32Address(p2wsh,MainNet)
     p2wshMain.map(_.value) must be (Success("bc1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3qccfmv3"))
-    val mp2wshDecoded = p2wshMain.flatMap(a => Bech32Address.fromString(a.value))
+    val mp2wshDecoded = p2wshMain.flatMap(a => Bech32Address.fromStringToWitSPK(a.value))
     mp2wshDecoded must be (Success(p2wsh))
   }
 
@@ -104,12 +107,5 @@ class Bech32Test extends FlatSpec with MustMatchers  {
 
     val encoded6 = Bech32Address.encode(Seq(255,255,255,255,255,255).map(i => UInt8(i.toShort)))
     encoded6 must be (Success(Seq(31, 31, 31, 31, 31, 31, 31, 31, 31, 28).map(i => UInt8(i.toShort))))
-  }
-
-
-  it must "encode base 5 to base 8" in {
-    val z = UInt8.zero
-    val encoded = "qq"
-    Bech32Address.decode(Seq(z,z)) must be (Success(Seq(z)))
   }
 }
