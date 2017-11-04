@@ -44,59 +44,6 @@ sealed abstract class P2PKHAddress extends BitcoinAddress {
 
 }
 
-object P2PKHAddress {
-  private case class P2PKHAddressImpl(hash: Sha256Hash160Digest,
-                                      networkParameters: NetworkParameters) extends P2PKHAddress {
-    require(isP2PKHAddress(value), "Bitcoin address was invalid " + value)
-  }
-
-  /**
-    * Encodes a pubkey hash to a base 58 address on the corresponding network
-    *
-    * @param hash the result of Sha256(RipeMD160(pubkey))
-    * @param network the network on which this address is being generated for
-    * @return
-    */
-  def encodePubKeyHashToAddress(hash: Sha256Hash160Digest, network: NetworkParameters): P2PKHAddress = P2PKHAddressImpl(hash,network)
-
-  def apply(hash: Sha256Hash160Digest, networkParameters: NetworkParameters): P2PKHAddress = encodePubKeyHashToAddress(hash,networkParameters)
-
-  def apply(pubKey: ECPublicKey, networkParameters: NetworkParameters): P2PKHAddress = {
-    val hash = CryptoUtil.sha256Hash160(pubKey.bytes)
-    P2PKHAddress(hash,networkParameters)
-  }
-
-  def apply(spk: P2PKHScriptPubKey, networkParameters: NetworkParameters): P2PKHAddress = {
-    P2PKHAddress(spk.pubKeyHash,networkParameters)
-  }
-
-  /**
-    * Checks if an address is a valid p2pkh address
-    *
-    * @param address
-    * @return
-    */
-  def isP2PKHAddress(address : String) : Boolean = {
-    val decodeCheckP2PKH : Try[Seq[Byte]] = Base58.decodeCheck(address)
-    decodeCheckP2PKH match {
-      case Success(bytes) =>
-        val firstByte = bytes.head
-        (firstByte == MainNet.p2pkhNetworkByte || firstByte == TestNet3.p2pkhNetworkByte ||
-          firstByte == RegTest.p2pkhNetworkByte) && bytes.size == 21
-      case Failure(exception) => false
-    }
-  }
-
-  /**
-    * Checks if an address is a valid p2pkh address
-    *
-    * @param address
-    * @return
-    */
-  def isP2PKHAddress(address : BitcoinAddress) : Boolean = isP2PKHAddress(address.value)
-
-}
-
 sealed abstract class P2SHAddress extends BitcoinAddress {
   /** The base58 string representation of this address */
   override def value : String = {
@@ -220,7 +167,6 @@ object Bech32Address {
 
   private val u32Five = UInt32(5)
   private val u32Eight = UInt32(8)
-  /** The separator between the hrp and payload of bech 32 */
 
   /** Converts a byte array from base 8 to base 5 */
   def encode(bytes: Seq[UInt8]): Try[Seq[UInt8]] = {
@@ -251,13 +197,13 @@ object Bech32Address {
   def encodeToString(b: Seq[UInt8]): String = {
     b.map(b => charset(b.underlying)).mkString
   }
-  /** Decodes bech32 string to a spk */
+  /** Decodes bech32 string to the [[HumanReadablePart]] & data part */
   def fromString(str: String): Try[(HumanReadablePart,Seq[Byte])] = {
     val sepIndexes = str.zipWithIndex.filter(_._1 == separator)
     if (str.size > 90 || str.size < 8) {
       Failure(new IllegalArgumentException("bech32 payloads must be betwee 8 and 90 chars, got: " + str.size))
     } else if (sepIndexes.isEmpty) {
-      Failure(new IllegalArgumentException("Bech32 address did not have the correct separator, got: " + str(2)))
+      Failure(new IllegalArgumentException("Bech32 address did not have the correct separator"))
     } else {
       val sepIndex = sepIndexes.last._2
       val (hrp,data) = (str.take(sepIndex), str.splitAt(sepIndex + 1)._2)
@@ -282,38 +228,34 @@ object Bech32Address {
     }
   }
 
+  /** Checks if the possible human readable part follows BIP173 rules */
   private def checkHrpValidity(hrp: String): Try[HumanReadablePart] = {
-    var (isLower,isUpper) = (false,false)
     @tailrec
-    def loop(remaining: List[Char], accum: Seq[UInt8]): Try[Seq[UInt8]] = remaining match {
+    def loop(remaining: List[Char], accum: Seq[UInt8], isLower: Boolean, isUpper: Boolean): Try[Seq[UInt8]] = remaining match {
       case h :: t =>
         if (h < 33 || h > 126) {
           Failure(new IllegalArgumentException("Invalid character range for hrp, got: " + hrp))
+        } else if (isLower && isUpper) {
+          Failure(new IllegalArgumentException("HRP had mixed case, got: " + hrp))
         } else {
-          if (h.isLower) {
-            isLower = true
-          } else if (h.isUpper) {
-            isUpper = true
-          }
-          loop(t,UInt8(h.toByte) +: accum)
+          loop(t,UInt8(h.toByte) +: accum, h.isLower || isLower, h.isUpper || isUpper)
         }
       case Nil =>
-        Success(accum.reverse)
+        if (isLower && isUpper) {
+          Failure(new IllegalArgumentException("HRP had mixed case, got: " + hrp))
+        } else {
+          Success(accum.reverse)
+        }
     }
 
-    loop(hrp.toCharArray.toList,Nil).flatMap { _ =>
-      if (isLower && isUpper) {
-        Failure(new IllegalArgumentException("HRP had mixed case, got: " + hrp))
-      } else {
-        Success(HumanReadablePart(hrp.toLowerCase))
-      }
+    loop(hrp.toCharArray.toList,Nil,false,false).flatMap { _ =>
+      Success(HumanReadablePart(hrp.toLowerCase))
     }
   }
 
   /** Takes in the porition of a bech32 address and decodes it to a byte array
     * It also checks the validity of the data portion according to:
-    *
-    * */
+    */
   def checkDataValidity(data: String): Try[Seq[Byte]] = {
     @tailrec
     def loop(remaining: List[Char], accum: Seq[Byte], hasUpper: Boolean, hasLower: Boolean): Try[Seq[Byte]] = remaining match {
@@ -341,35 +283,53 @@ object Bech32Address {
     's', '3', 'j', 'n', '5', '4', 'k', 'h',
     'c', 'e', '6', 'm', 'u', 'a', '7', 'l')
 }
-/**
-  * [[P2SHAddress]] companion object
-  */
+
+object P2PKHAddress {
+  private case class P2PKHAddressImpl(hash: Sha256Hash160Digest,
+                                      networkParameters: NetworkParameters) extends P2PKHAddress {
+    require(isP2PKHAddress(value), "Bitcoin address was invalid " + value)
+  }
+
+  def apply(hash: Sha256Hash160Digest, network: NetworkParameters): P2PKHAddress = P2PKHAddressImpl(hash,network)
+
+  def apply(pubKey: ECPublicKey, networkParameters: NetworkParameters): P2PKHAddress = {
+    val hash = CryptoUtil.sha256Hash160(pubKey.bytes)
+    P2PKHAddress(hash,networkParameters)
+  }
+
+  def apply(spk: P2PKHScriptPubKey, networkParameters: NetworkParameters): P2PKHAddress = {
+    P2PKHAddress(spk.pubKeyHash,networkParameters)
+  }
+
+  /** Checks if an address is a valid p2pkh address */
+  def isP2PKHAddress(address : String) : Boolean = {
+    val decodeCheckP2PKH : Try[Seq[Byte]] = Base58.decodeCheck(address)
+    decodeCheckP2PKH match {
+      case Success(bytes) =>
+        val firstByte = bytes.head
+        (firstByte == MainNet.p2pkhNetworkByte || firstByte == TestNet3.p2pkhNetworkByte ||
+          firstByte == RegTest.p2pkhNetworkByte) && bytes.size == 21
+      case Failure(exception) => false
+    }
+  }
+
+  /** Checks if an address is a valid p2pkh address */
+  def isP2PKHAddress(address : BitcoinAddress) : Boolean = isP2PKHAddress(address.value)
+
+}
+
 object P2SHAddress {
   private case class P2SHAddressImpl(hash: Sha256Hash160Digest,
                                      networkParameters: NetworkParameters) extends P2SHAddress {
     require(isP2SHAddress(value), "Bitcoin address was invalid " + value)
   }
 
-  /**
-    * Takes in an arbitrary [[ScriptPubKey]] and [[NetworkParameters]] and creates a [[P2SHAddress]]
-    *
-    * @param scriptPubKey the script which will need to provided as the redeem script
-    * @param network the network which this address is valid for
-    * @return the [[P2SHAddress]]
-    */
-  def encodeScriptPubKeyToAddress(scriptPubKey: ScriptPubKey, network: NetworkParameters): P2SHAddress = {
+  /** Creates a [[P2SHScriptPubKey]] from the given [[ScriptPubKey]],
+    * then creates an address from that [[P2SHScriptPubKey]] */
+  def apply(scriptPubKey: ScriptPubKey,network: NetworkParameters): P2SHAddress = {
     val p2shScriptPubKey = P2SHScriptPubKey(scriptPubKey)
     P2SHAddress(p2shScriptPubKey,network)
   }
-
-
-  /**
-    * Creates a [[P2SHScriptPubKey]] from the given [[ScriptPubKey]], then creates an address from that [[P2SHScriptPubKey]]
-    * @param scriptPubKey
-    * @param network
-    * @return
-    */
-  def apply(scriptPubKey: ScriptPubKey,network: NetworkParameters): P2SHAddress = encodeScriptPubKeyToAddress(scriptPubKey,network)
 
 
   def apply(p2shScriptPubKey: P2SHScriptPubKey, network: NetworkParameters): P2SHAddress = P2SHAddress(p2shScriptPubKey.scriptHash,network)
@@ -377,11 +337,7 @@ object P2SHAddress {
 
   def apply(hash: Sha256Hash160Digest, network: NetworkParameters): P2SHAddress = P2SHAddressImpl(hash, network)
 
-  /**
-    * Checks if a address is a valid p2sh address
-    * @param address
-    * @return
-    */
+  /** Checks if a address is a valid p2sh address */
   def isP2SHAddress(address : String) : Boolean = {
     val decodeCheckP2SH : Try[Seq[Byte]] = Base58.decodeCheck(address)
     decodeCheckP2SH match {
@@ -390,16 +346,11 @@ object P2SHAddress {
         ((firstByte == MainNet.p2shNetworkByte || firstByte == TestNet3.p2shNetworkByte ||
           RegTest.p2shNetworkByte == firstByte)
           && bytes.size == 21)
-      case Failure(exception) => false
+      case Failure(_) => false
     }
   }
 
-  /**
-    * Checks if a address is a valid p2sh address
-    *
-    * @param address
-    * @return
-    */
+  /** Checks if a address is a valid p2sh address */
   def isP2SHAddress(address : BitcoinAddress) : Boolean = isP2SHAddress(address.value)
 
 }
@@ -437,26 +388,18 @@ object BitcoinAddress {
   }
 }
 
-object Address extends Factory[Address] {
-  /**
-    * Factory method for creating addresses
-    * Takes in a string to check if it is an address
-    * if it is it creates the address
-    * if not it throws a runtime exception
-    *
-    * @param str
-    * @return
-    */
-  def factory(str : String) : Address = {
-    if (BitcoinAddress.validate(str)) BitcoinAddress(str)
-    else throw new RuntimeException("The address that you passed in is invalid")
+object Address {
+
+  def fromBytes(bytes : Seq[Byte]) : Try[Address] = {
+    val encoded = Base58.encode(bytes)
+    Try(BitcoinAddress(encoded))
   }
 
-  def fromBytes(bytes : Seq[Byte]) : Address = factory(Base58.encode(bytes))
+  def fromHex(hex : String) : Try[Address] = fromBytes(BitcoinSUtil.decodeHex(hex))
 
-  override def fromHex(hex : String) : Address = throw new RuntimeException("We cannot create a bitcoin address from hex - bitcoin addresses are base 58 encoded")
+  def apply(bytes: Seq[Byte]): Try[Address] = fromBytes(bytes)
 
-  override def apply(str : String) : Address = factory(str)
+  def apply(str : String) : Try[Address] = Try(BitcoinAddress(str))
 
   def fromScriptPubKey(spk: ScriptPubKey, network: NetworkParameters): Try[BitcoinAddress] = spk match {
     case p2pkh: P2PKHScriptPubKey => Success(P2PKHAddress(p2pkh,network))
