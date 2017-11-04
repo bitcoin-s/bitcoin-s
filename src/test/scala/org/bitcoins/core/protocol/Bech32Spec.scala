@@ -36,7 +36,8 @@ class Bech32Spec extends Properties("Bech32Spec") {
       val old = addr.value
       val replaced = switchCaseRandChar(old)
       //should fail because we we switched the case of a random char
-      Bech32Address.fromString(replaced).isFailure
+      val actual = Bech32Address.fromString(replaced)
+      actual.isFailure
     }
   }
 
