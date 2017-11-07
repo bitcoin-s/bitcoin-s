@@ -84,6 +84,8 @@ sealed abstract class Bech32Address extends BitcoinAddress {
 
   override def hash: Sha256Digest = Sha256Digest(scriptPubKey.witnessProgram.flatMap(_.bytes))
 
+  override def toString = "Bech32Address(" + value + ")"
+
 }
 
 object Bech32Address {
@@ -177,6 +179,7 @@ object Bech32Address {
     NumberUtil.convertUInt8s(b,u32Five,u32Eight,false)
   }
 
+  /** Tries to convert the given string a to a [[org.bitcoins.core.protocol.script.WitnessScriptPubKey]] */
   def fromStringToWitSPK(string: String): Try[WitnessScriptPubKey] = {
     val decoded = fromString(string)
     decoded.flatMap { case (_,bytes) =>
@@ -186,10 +189,15 @@ object Bech32Address {
       val witVersion = WitnessVersion(v)
       progBytes.flatMap { prog =>
         val pushOp = BitcoinScriptUtil.calculatePushOp(prog)
-        WitnessScriptPubKey(Seq(witVersion.version) ++ pushOp ++ Seq(ScriptConstant(prog))) match {
-          case Some(spk) => Success(spk)
-          case None => Failure(new IllegalArgumentException("Failed to decode bech32 into a witSPK"))
+        witVersion match {
+          case Some(v) =>
+            WitnessScriptPubKey(Seq(v.version) ++ pushOp ++ Seq(ScriptConstant(prog))) match {
+              case Some(spk) => Success(spk)
+              case None => Failure(new IllegalArgumentException("Failed to decode bech32 into a witSPK"))
+            }
+          case None => Failure(new IllegalArgumentException("Witness version was not valid, got: " + v))
         }
+
       }
     }
   }

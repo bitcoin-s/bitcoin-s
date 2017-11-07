@@ -191,7 +191,7 @@ sealed abstract class ScriptInterpreter {
             case WitnessVersion0 =>
               logger.error("Cannot verify witness program with a BaseTxSigComponent")
               Success(ScriptProgram(scriptPubKeyExecutedProgram,ScriptErrorWitnessProgramWitnessEmpty))
-            case UnassignedWitness =>
+            case UnassignedWitness(_) =>
               evaluateUnassignedWitness(b)
           }
         }
@@ -241,7 +241,7 @@ sealed abstract class ScriptInterpreter {
             val program = ScriptProgram(wTxSigComponent,Nil,Nil,Nil)
             Success(ScriptProgram(program,err))
         }
-      case UnassignedWitness =>
+      case UnassignedWitness(_) =>
         evaluateUnassignedWitness(wTxSigComponent)
     }
   }
