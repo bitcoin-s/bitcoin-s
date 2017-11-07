@@ -11,7 +11,8 @@ class Bech32Spec extends Properties("Bech32Spec") {
   private val logger = BitcoinSLogger.logger
 
   property("serialization symmetry") = {
-    Prop.forAll(ScriptGenerators.witnessScriptPubKeyV0,ChainParamsGenerator.networkParams) { case ((witSPK,_),network) =>
+    Prop.forAll(ScriptGenerators.witnessScriptPubKey,ChainParamsGenerator.networkParams) {
+      case ((witSPK,_),network) =>
         val addr = Bech32Address(witSPK,network)
         val spk = addr.flatMap(a => Bech32Address.fromStringToWitSPK(a.value))
         spk == Success(witSPK)
