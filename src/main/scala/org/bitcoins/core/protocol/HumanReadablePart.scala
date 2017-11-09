@@ -28,8 +28,7 @@ case class UndefinedHRP(bytes: Seq[Byte]) extends HumanReadablePart {
 }
 
 object HumanReadablePart {
-  //TODO: try and force a pattern match here so we can check case exhaustiveness
-  //i.e if we add a new HumanReadablepart, we get a compiler warning if we didn't add the new case
+
   def apply(str: String) = str match {
     case "bc" => bc
     case "tb" => tb

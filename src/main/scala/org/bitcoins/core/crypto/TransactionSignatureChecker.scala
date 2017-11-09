@@ -29,7 +29,7 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
     */
   def checkSignature(txSignatureComponent : TxSigComponent, script : Seq[ScriptToken],
                      pubKey: ECPublicKey, signature : ECDigitalSignature, flags : Seq[ScriptFlag]) : TransactionSignatureCheckerResult = {
-    logger.info("Signature: " + signature)
+    logger.debug("Signature: " + signature)
     val pubKeyEncodedCorrectly = BitcoinScriptUtil.isValidPubKeyEncoding(pubKey,flags)
     if (ScriptFlagUtil.requiresStrictDerEncoding(flags) && !DERSignatureUtil.isValidSignatureEncoding(signature)) {
       logger.error("Signature was not stricly encoded der: " + signature.hex)
