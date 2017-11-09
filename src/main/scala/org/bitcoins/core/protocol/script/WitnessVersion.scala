@@ -68,6 +68,7 @@ case object WitnessVersion0 extends WitnessVersion {
 
 /** The witness version that represents all witnesses that have not been allocated yet */
 case class UnassignedWitness(version: ScriptNumberOperation) extends WitnessVersion {
+  require(WitnessScriptPubKey.unassignedWitVersions.contains(version), "Cannot created an unassigend witness version from one that is assigned already, got: " + version)
   override def rebuild(scriptWitness: ScriptWitness, witnessProgram: Seq[ScriptToken]): Either[(Seq[ScriptToken], ScriptPubKey),ScriptError] =
     Right(ScriptErrorDiscourageUpgradeableWitnessProgram)
 }

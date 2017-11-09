@@ -20,7 +20,7 @@ sealed abstract class Address {
   /** The string representation of this address */
   def value : String
 
-  /** Every address is derived from a [[Sha256Hash160Digest]] in a [[TransactionOutput]] */
+  /** Every address is derived from a [[HashDigest]] in a [[TransactionOutput]] */
   def hash: HashDigest
 
   /** The [[ScriptPubKey]] the address represents */
@@ -89,7 +89,9 @@ sealed abstract class Bech32Address extends BitcoinAddress {
 }
 
 object Bech32Address {
-  private case class Bech32AddressImpl(hrp: HumanReadablePart, data: Seq[UInt8]) extends Bech32Address
+  private case class Bech32AddressImpl(hrp: HumanReadablePart, data: Seq[UInt8]) extends Bech32Address {
+    verifyChecksum(hrp,UInt8.toBytes(data))
+  }
 
   /** Separator used to separate the hrp & data parts of a bech32 addr */
   val separator = '1'
@@ -164,6 +166,10 @@ object Bech32Address {
 
   def verifyChecksum(hrp: HumanReadablePart, data: Seq[Byte]): Boolean = {
     val u8s = UInt8.toUInt8s(data)
+    verifyCheckSum(hrp,u8s)
+  }
+
+  def verifyCheckSum(hrp: HumanReadablePart, u8s: Seq[UInt8]): Boolean = {
     polyMod(hrpExpand(hrp) ++ u8s) == 1
   }
 
@@ -261,8 +267,8 @@ object Bech32Address {
     }
   }
 
-  /** Takes in the porition of a bech32 address and decodes it to a byte array
-    * It also checks the validity of the data portion according to:
+  /** Takes in the data portion of a bech32 address and decodes it to a byte array
+    * It also checks the validity of the data portion according to BIP173
     */
   def checkDataValidity(data: String): Try[Seq[Byte]] = {
     @tailrec
