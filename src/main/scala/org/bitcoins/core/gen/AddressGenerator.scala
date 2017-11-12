@@ -1,6 +1,6 @@
 package org.bitcoins.core.gen
 
-import org.bitcoins.core.protocol.{BitcoinAddress, P2PKHAddress, P2SHAddress}
+import org.bitcoins.core.protocol.{Bech32Address, BitcoinAddress, P2PKHAddress, P2SHAddress}
 import org.scalacheck.Gen
 
 /**
@@ -20,7 +20,13 @@ sealed trait AddressGenerator {
     addr = P2SHAddress(hash,network)
   } yield addr
 
-  def address: Gen[BitcoinAddress] = Gen.oneOf(p2pkhAddress,p2shAddress)
+  def bech32Address: Gen[Bech32Address] = for {
+    (witSPK,_) <- ScriptGenerators.witnessScriptPubKey
+    network <- ChainParamsGenerator.networkParams
+    addr = Bech32Address(witSPK,network)
+  } yield addr.get
+
+  def address: Gen[BitcoinAddress] = Gen.oneOf(p2pkhAddress,p2shAddress,bech32Address)
 }
 
 object AddressGenerator extends AddressGenerator

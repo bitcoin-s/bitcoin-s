@@ -10,7 +10,7 @@ import scala.util.Try
   * Created by chris on 6/16/16.
   */
 class UInt32Spec extends Properties("UInt32") {
-
+  private val logger = BitcoinSLogger.logger
 
   property("serialization symmetry") = {
     Prop.forAll(NumberGenerator.uInt32s) { uInt32 : UInt32 =>
@@ -95,5 +95,23 @@ class UInt32Spec extends Properties("UInt32") {
   property("&") =
     Prop.forAll(NumberGenerator.uInt32s, NumberGenerator.uInt32s) { (num1: UInt32, num2: UInt32) =>
       UInt32(num1.underlying & num2.underlying) == (num1 & num2)
+    }
+
+  property("<<") =
+    Prop.forAllNoShrink(NumberGenerator.uInt32s, Gen.choose(0,32)) { case (u32, shift) =>
+      val r = Try(u32 << shift)
+      val expected = (u32.underlying << shift) & 0xffffffffL
+      if (expected <= UInt32.max.underlying) {
+        r.get == UInt32(expected)
+      } else {
+        r.isFailure
+      }
+    }
+
+  property(">>") =
+    Prop.forAll(NumberGenerator.uInt32s, Gen.choose(0,100)) { case (u32,shift) =>
+      val r = u32 >> shift
+      val expected = u32.underlying >> shift
+      r == UInt32(expected)
     }
 }
