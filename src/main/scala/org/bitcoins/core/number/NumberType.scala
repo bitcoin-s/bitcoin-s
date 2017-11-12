@@ -1,8 +1,7 @@
 package org.bitcoins.core.number
 
-import org.bitcoins.core.number.UInt64.UInt64Impl
 import org.bitcoins.core.protocol.NetworkElement
-import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil, Factory, NumberUtil}
+import org.bitcoins.core.util.{BitcoinSUtil, Factory, NumberUtil}
 
 import scala.util.{Failure, Success, Try}
 
@@ -436,7 +435,7 @@ object UInt8 extends Factory[UInt8] with BaseNumbers[UInt8] {
     if ((byte & 0x80) == 0x80) {
       val r = (byte & 0x7f) + NumberUtil.pow2(7)
       UInt8(r.toShort)
-    } else UInt8Impl(byte)
+    } else UInt8(byte.toShort)
   }
 
   def toByte(uInt8: UInt8): Byte = uInt8.underlying.toByte
