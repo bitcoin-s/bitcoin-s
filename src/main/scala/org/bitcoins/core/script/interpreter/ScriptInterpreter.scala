@@ -148,7 +148,7 @@ sealed abstract class ScriptInterpreter {
               if (segwitEnabled && (scriptSig.asmBytes == expectedScriptBytes)) {
                 // The scriptSig must be _exactly_ a single push of the redeemScript. Otherwise we
                 // reintroduce malleability.
-                logger.info("redeem script was witness script pubkey, segwit was enabled, scriptSig was single push of redeemScript")
+                logger.debug("redeem script was witness script pubkey, segwit was enabled, scriptSig was single push of redeemScript")
                 //TODO: remove .get here
                 executeSegWitScript(scriptPubKeyExecutedProgram,w).get
               } else if (segwitEnabled && (scriptSig.asmBytes != expectedScriptBytes)) {
@@ -191,7 +191,7 @@ sealed abstract class ScriptInterpreter {
             case WitnessVersion0 =>
               logger.error("Cannot verify witness program with a BaseTxSigComponent")
               Success(ScriptProgram(scriptPubKeyExecutedProgram,ScriptErrorWitnessProgramWitnessEmpty))
-            case UnassignedWitness =>
+            case UnassignedWitness(_) =>
               evaluateUnassignedWitness(b)
           }
         }
@@ -241,7 +241,7 @@ sealed abstract class ScriptInterpreter {
             val program = ScriptProgram(wTxSigComponent,Nil,Nil,Nil)
             Success(ScriptProgram(program,err))
         }
-      case UnassignedWitness =>
+      case UnassignedWitness(_) =>
         evaluateUnassignedWitness(wTxSigComponent)
     }
   }
@@ -273,7 +273,7 @@ sealed abstract class ScriptInterpreter {
         case p : PreExecutionScriptProgram => loop(ScriptProgram.toExecutionInProgress(p,Some(p.stack)),opCount)
         case p : ExecutedScriptProgram =>
           val countedOps = program.originalScript.map(BitcoinScriptUtil.countsTowardsScriptOpLimit(_)).count(_ == true)
-          logger.info("Counted ops: " + countedOps)
+          logger.debug("Counted ops: " + countedOps)
           if (countedOps > maxScriptOps && p.error.isEmpty) {
             loop(ScriptProgram(p,ScriptErrorOpCount),opCount)
           } else p

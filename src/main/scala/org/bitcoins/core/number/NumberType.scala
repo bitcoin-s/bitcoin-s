@@ -1,7 +1,7 @@
 package org.bitcoins.core.number
 
 import org.bitcoins.core.protocol.NetworkElement
-import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil, Factory, NumberUtil}
+import org.bitcoins.core.util.{BitcoinSUtil, Factory, NumberUtil}
 
 import scala.util.{Failure, Success, Try}
 
@@ -45,6 +45,70 @@ sealed trait NumberOperations[T <: Number] {
   def <= (num : T): Boolean
 }
 
+sealed abstract class UInt8 extends UnsignedNumber with NumberOperations[UInt8] {
+  override type A = Short
+
+  override def + (num : UInt8): UInt8 = {
+    val sum = underlying + num.underlying
+    checkResult(sum)
+  }
+
+  override def - (num : UInt8): UInt8 =  {
+    val difference = underlying - num.underlying
+    checkResult(difference)
+  }
+
+  override def * (num : UInt8): UInt8 =  {
+    val product = underlying * num.underlying
+    checkResult(product)
+  }
+
+  override def > (num : UInt8): Boolean = underlying > num.underlying
+
+  override def >= (num : UInt8): Boolean = underlying >= num.underlying
+
+  override def < (num : UInt8): Boolean = underlying < num.underlying
+
+  override def <= (num : UInt8): Boolean = underlying <= num.underlying
+
+  def | (num : UInt8) : UInt8 = {
+    val bitwiseOr = underlying | num.underlying
+    checkResult(bitwiseOr)
+  }
+
+  def & (num : UInt8) : UInt8 = {
+    val bitwiseAnd = underlying & num.underlying
+    checkResult(bitwiseAnd)
+  }
+
+  def >> (u: UInt8): UInt8 = this.>>(u.underlying)
+  def >> (i : Int): UInt8 = {
+    val r = underlying >> i
+    checkResult(r)
+  }
+
+  def <<(u: UInt8): UInt8 = this.<<(u.underlying)
+  def << (i: Int): UInt8 = {
+    val r = (underlying << i) & 0xffL
+    checkResult(r)
+  }
+  override def hex = BitcoinSUtil.encodeHex(underlying).slice(2,4)
+
+  override def toInt: Int = toLong.toInt
+
+  def toLong: Long = underlying
+
+  /**
+    * Checks the result of the arithmetic operation to see if an error occurred
+    * if an error does occur throw it, else return the [[UInt32]]
+    * @param result the try type wrapping the result of the arithmetic operation
+    * @return the result of the unsigned number operation
+    */
+  private def checkResult(result : Long): UInt8 = {
+    if (result > UInt8.max.underlying || result < UInt8.min.underlying) throw new IllegalArgumentException("Result of operation was out of bounds for a UInt8: " + result)
+    else UInt8(result.toShort)
+  }
+}
 
 /**
   * Represents a uint32_t in C
@@ -82,14 +146,39 @@ sealed trait UInt32 extends UnsignedNumber with NumberOperations[UInt32] {
 
   def & (num : UInt32) : UInt32 = UInt32(underlying & num.underlying)
 
+  def >> (u: UInt32): UInt32 = this.>>(u.underlying)
+  def >> (l: Long): UInt32 = {
+    val r = Try(UInt32(underlying >> l))
+    checkResult(r)
+  }
 
+  def <<(u: UInt32): UInt32 = this.<<(u.underlying)
+  def << (l: Long): UInt32 = {
+    if (l == 0) this
+    else {
+      //since we are going to shift left we can lose precision by converting .toInt
+      val int = underlying.toInt
+      val shiftNoSignBit = (int << l) & 0xffffffffL
+      val shift = if (((shiftNoSignBit & (1 << 31)) == (1 << 31))) {
+        shiftNoSignBit + (1 << 31)
+      } else shiftNoSignBit
+      val r = Try(UInt32(shift))
+      checkResult(r)
+    }
+  }
 
   override def hex = BitcoinSUtil.encodeHex(underlying).slice(8,16)
 
-  override def toInt = {
+  override def toInt: Int = {
     require(underlying <= Int.MaxValue, "Overflow error when casting " + this + " to an integer.")
     require(underlying >= 0, "Unsigned integer should not be cast to a number less than 0" + this)
     underlying.toInt
+  }
+
+  def toLong: Long = {
+    require(underlying <= Long.MaxValue, "Overflow error when casting " + this + " to an integer.")
+    require(underlying >= 0, "Unsigned integer should not be cast to a number less than 0" + this)
+    underlying.toLong
   }
 
   /**
@@ -319,6 +408,43 @@ trait BaseNumbers[T] {
   def max : T
 }
 
+object UInt8 extends Factory[UInt8] with BaseNumbers[UInt8] {
+  private case class UInt8Impl(underlying: Short) extends UInt8 {
+    require(isValid(underlying), "Invalid range for a UInt8, got: " + underlying)
+  }
+  lazy val zero = UInt8(0.toShort)
+  lazy val one = UInt8(1.toShort)
+
+  lazy val min = zero
+  lazy val max = UInt8(255.toShort)
+
+  def apply(short: Short): UInt8 = UInt8Impl(short)
+
+  def apply(byte: Byte): UInt8 = toUInt8(byte)
+
+  def isValid(short: Short): Boolean = short >= 0  && short < 256
+
+  override def fromBytes(bytes: Seq[Byte]): UInt8 = {
+    val individualByteValues = for {
+      (byte,index) <- bytes.reverse.zipWithIndex
+    } yield NumberUtil.calculateUnsignedNumberFromByte(index, byte)
+    UInt8(individualByteValues.sum.toShort)
+  }
+
+  def toUInt8(byte: Byte): UInt8 = {
+    if ((byte & 0x80) == 0x80) {
+      val r = (byte & 0x7f) + NumberUtil.pow2(7)
+      UInt8(r.toShort)
+    } else UInt8(byte.toShort)
+  }
+
+  def toByte(uInt8: UInt8): Byte = uInt8.underlying.toByte
+
+  def toBytes(us: Seq[UInt8]): Seq[Byte] = us.map(toByte(_))
+
+  def toUInt8s(bytes: Seq[Byte]): Seq[UInt8] = bytes.map(toUInt8(_))
+}
+
 object UInt32 extends Factory[UInt32] with BaseNumbers[UInt32] {
   private case class UInt32Impl(underlying : Long) extends UInt32 {
     require(underlying >= 0, "We cannot have a negative number in an unsigned number, got: " + underlying)
@@ -339,7 +465,7 @@ object UInt32 extends Factory[UInt32] with BaseNumbers[UInt32] {
     UInt32Impl(individualByteValues.sum.toLong)
   }
 
-  def apply(long : Long) : UInt32 = UInt32Impl(long)
+  def apply(long : Long): UInt32 = UInt32Impl(long)
 
 }
 

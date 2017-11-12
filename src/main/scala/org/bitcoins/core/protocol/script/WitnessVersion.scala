@@ -6,6 +6,8 @@ import org.bitcoins.core.script.constant._
 import org.bitcoins.core.script.result._
 import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil, CryptoUtil}
 
+import scala.util.Try
+
 /**
   * Created by chris on 11/10/16.
   * The version of the [[WitnessScriptPubKey]], this indicates how a [[ScriptWitness]] is rebuilt
@@ -16,6 +18,8 @@ sealed trait WitnessVersion extends BitcoinSLogger {
     * Either returns the stack and the [[ScriptPubKey]] it needs to be executed against or
     * the [[ScriptError]] that was encountered while rebuilding the witness*/
   def rebuild(scriptWitness: ScriptWitness, witnessProgram: Seq[ScriptToken]): Either[(Seq[ScriptToken], ScriptPubKey),ScriptError]
+
+  def version: ScriptNumberOperation
 }
 
 case object WitnessVersion0 extends WitnessVersion {
@@ -32,22 +36,20 @@ case object WitnessVersion0 extends WitnessVersion {
           Left((scriptWitness.stack.map(ScriptConstant(_)), P2PKHScriptPubKey(hash)))
         }
       case 32 =>
-        logger.info("Script witness stack: " + scriptWitness)
         //p2wsh
         if (scriptWitness.stack.isEmpty) Right(ScriptErrorWitnessProgramWitnessEmpty)
         else {
           //need to check if the hashes match
           val stackTop = scriptWitness.stack.head
           val stackHash = CryptoUtil.sha256(stackTop)
-          logger.debug("Stack top: " + BitcoinSUtil.encodeHex(stackTop))
-          logger.debug("Stack hash: " + stackHash)
-          logger.debug("Witness program: " + witnessProgram)
-          if (stackHash != Sha256Digest(witnessProgram.head.bytes)) Right(ScriptErrorWitnessProgramMisMatch)
+          if (stackHash != Sha256Digest(witnessProgram.head.bytes)) {
+            logger.debug("Witness hashes did not match Stack hash: " + stackHash)
+            logger.debug("Witness program: " + witnessProgram)
+            Right(ScriptErrorWitnessProgramMisMatch)
+          }
           else {
             val compactSizeUInt = CompactSizeUInt.calculateCompactSizeUInt(stackTop)
             val scriptPubKey = ScriptPubKey(compactSizeUInt.bytes ++ stackTop)
-            logger.debug("scriptPubKey: " + scriptPubKey)
-            logger.debug("Script pub key for p2wsh: " + scriptPubKey.asm)
             val stack = scriptWitness.stack.tail.map(ScriptConstant(_))
             Left(stack, scriptPubKey)
           }
@@ -60,20 +62,25 @@ case object WitnessVersion0 extends WitnessVersion {
         Right(ScriptErrorWitnessProgramWrongLength)
     }
   }
+
+  override def version = OP_0
 }
 
 /** The witness version that represents all witnesses that have not been allocated yet */
-case object UnassignedWitness extends WitnessVersion {
+case class UnassignedWitness(version: ScriptNumberOperation) extends WitnessVersion {
+  require(WitnessScriptPubKey.unassignedWitVersions.contains(version), "Cannot created an unassigend witness version from one that is assigned already, got: " + version)
   override def rebuild(scriptWitness: ScriptWitness, witnessProgram: Seq[ScriptToken]): Either[(Seq[ScriptToken], ScriptPubKey),ScriptError] =
     Right(ScriptErrorDiscourageUpgradeableWitnessProgram)
 }
 
 object WitnessVersion {
 
+  private val versions = Seq(WitnessVersion0, UnassignedWitness)
+
   def apply(scriptNumberOp: ScriptNumberOperation): WitnessVersion = scriptNumberOp match {
     case OP_0 | OP_FALSE => WitnessVersion0
-    case OP_1 | OP_TRUE | OP_2 | OP_3 | OP_4 | OP_5 | OP_6 | OP_7 | OP_8
-      | OP_9 | OP_10 | OP_11 | OP_12 | OP_13 | OP_14 | OP_15 | OP_16  => UnassignedWitness
+    case x @ (OP_1 | OP_TRUE | OP_2 | OP_3 | OP_4 | OP_5 | OP_6 | OP_7 | OP_8
+      | OP_9 | OP_10 | OP_11 | OP_12 | OP_13 | OP_14 | OP_15 | OP_16)  => UnassignedWitness(x)
     case OP_1NEGATE => throw new IllegalArgumentException("OP_1NEGATE is not a valid witness version")
   }
 
@@ -82,4 +89,7 @@ object WitnessVersion {
     case _ : ScriptConstant | _ : ScriptNumber | _ : ScriptOperation =>
       throw new IllegalArgumentException("We can only have witness version that is a script number operation, i.e OP_0 through OP_16")
   }
+
+  def apply(int: Int): Option[WitnessVersion] = ScriptNumberOperation.fromNumber(int).map(WitnessVersion(_))
+
 }
