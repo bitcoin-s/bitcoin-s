@@ -19,5 +19,5 @@ trait NetworkElement {
   /** The byte representation of the NetworkElement */
   def bytes : Seq[Byte] = BitcoinSUtil.decodeHex(hex)
 
-  def logger: BitcoinSLogger = BitcoinSLogger
+  def logger = BitcoinSLogger.logger
 }
