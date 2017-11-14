@@ -97,6 +97,18 @@ trait CryptoGenerators {
     HashType.sigHashAnyoneCanPay, HashType.sigHashSingleAnyoneCanPay, HashType.sigHashNoneAnyoneCanPay,
     HashType.sigHashAllAnyoneCanPay)
 
+  def extVersion: Gen[ExtKeyVersion] = Gen.oneOf(MainNetPriv, MainNetPub, TestNet3Priv, TestNet3Pub)
+
+  /** Generates an [[org.bitcoins.core.crypto.ExtPrivateKey]] */
+  def extPrivateKey: Gen[ExtPrivateKey] = for {
+    version <- Gen.oneOf(MainNetPriv, TestNet3Priv)
+    ext = ExtPrivateKey(version)
+  } yield ext
+
+  def extPublicKey: Gen[ExtPublicKey] = extPrivateKey.map(_.extPublicKey)
+
+  def extKey: Gen[ExtKey] = Gen.oneOf(extPrivateKey,extPublicKey)
+
 }
 
 object CryptoGenerators extends CryptoGenerators

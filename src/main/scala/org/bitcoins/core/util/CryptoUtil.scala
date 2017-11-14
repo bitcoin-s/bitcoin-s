@@ -3,7 +3,9 @@ package org.bitcoins.core.util
 import java.security.MessageDigest
 
 import org.bitcoins.core.crypto._
-import org.spongycastle.crypto.digests.RIPEMD160Digest
+import org.spongycastle.crypto.digests.{RIPEMD160Digest, SHA512Digest}
+import org.spongycastle.crypto.macs.HMac
+import org.spongycastle.crypto.params.KeyParameter
 
 /**
   * Created by chris on 1/14/16.
@@ -62,6 +64,15 @@ trait CryptoUtil {
   }
 
   val emptyDoubleSha256Hash = DoubleSha256Digest("0000000000000000000000000000000000000000000000000000000000000000")
+
+  def hmac512(key: Seq[Byte], data: Seq[Byte]): Seq[Byte] = {
+    val hmac512 = new HMac(new SHA512Digest())
+    hmac512.init(new KeyParameter(key.toArray))
+    hmac512.update(data.toArray,0,data.size)
+    val output = new Array[Byte](64)
+    hmac512.doFinal(output,0)
+    output
+  }
 }
 
 object CryptoUtil extends CryptoUtil
