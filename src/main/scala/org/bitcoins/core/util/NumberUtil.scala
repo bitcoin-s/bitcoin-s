@@ -1,5 +1,7 @@
 package org.bitcoins.core.util
 
+import java.math.BigInteger
+
 import org.bitcoins.core.number.{UInt32, UInt8}
 
 import scala.math.BigInt
@@ -23,25 +25,10 @@ trait NumberUtil extends BitcoinSLogger {
     require(exponent < 64, "We cannot have anything larger than 2^64 - 1 in a long, you tried to do 2^" + exponent)
     BigInt(1) << exponent
   }
-
-  /**
-    * Calculates the unsigned number for a byte
-    * @param byteIndex this is used to tell what position this byte is out of a 4 byte integer
-    *                     For instance, if byte was equal to 0x0001 and we were trying to calculate the unsigned int for
-    *                     the following byte value Seq(0xf000, 0x0f00, 0x0001, 0x0000) we would have byteIndex 1
-    * @param byte the byte which we need to calculate the unsigned integer for
-    * @return the unsigned integer corresponding to the given byteIndex and byte
-    */
-  def calculateUnsignedNumberFromByte(byteIndex : Int, byte : Byte): BigInt = {
-    val setBits : Seq[BigInt] = for {
-      i <- 0 until 8
-      bitIndex = i + (byteIndex * 8)
-    } yield {
-      //check if index i is set in the byte, if so we need to calculate 2 ^ bitIndex
-      if ((pow2(i) & byte) != 0) pow2(bitIndex)
-      else BigInt(0)
-    }
-    setBits.foldLeft(BigInt(0)){_ + _}
+  
+  /** Converts a sequence of bytes to a **big endian** unsigned integer */
+  def toUnsignedInt(bytes: Seq[Byte]): BigInt = {
+    BigInt(new BigInteger(1,bytes.toArray))
   }
 
   /** Takes a hex string and parses it to a [[BigInt]]. */

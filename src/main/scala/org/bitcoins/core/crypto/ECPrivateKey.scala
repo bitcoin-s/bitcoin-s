@@ -10,7 +10,6 @@ import org.bitcoins.core.util._
 import org.spongycastle.crypto.AsymmetricCipherKeyPair
 import org.spongycastle.crypto.generators.ECKeyPairGenerator
 import org.spongycastle.crypto.params.{ECKeyGenerationParameters, ECPrivateKeyParameters}
-import org.spongycastle.math.ec.{ECPoint, FixedPointCombMultiplier}
 
 import scala.annotation.tailrec
 import scala.util.{Failure, Success, Try}
