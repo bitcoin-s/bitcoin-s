@@ -9,26 +9,25 @@ import scala.util.{Failure, Success, Try}
   * Created by chris on 6/4/16.
   */
 
-/**
-  * A number can either be a signed or an unsigned number
-  */
-sealed trait Number extends NetworkElement {
+/** A number can either be a signed or an unsigned number */
+sealed abstract class Number extends NetworkElement {
   type A
   def underlying : A
-  def toInt : Int
+  def toInt : Int = toLong.toInt
+  def toLong: Long
 }
 
 /**
   * Represents a signed number in our number system
   * Instances of this are [[Int32]] or [[Int64]]
   */
-sealed trait SignedNumber extends Number
+sealed abstract class SignedNumber extends Number
 
 /**
   * Represents an unsigned number in our number system
   * Instances of this are [[UInt32]] or [[UInt64]]
   */
-sealed trait UnsignedNumber extends Number
+sealed abstract class UnsignedNumber extends Number
 
 /**
   * This trait represents all numeric operations we have for [[Number]]
@@ -113,7 +112,7 @@ sealed abstract class UInt8 extends UnsignedNumber with NumberOperations[UInt8] 
 /**
   * Represents a uint32_t in C
   */
-sealed trait UInt32 extends UnsignedNumber with NumberOperations[UInt32] {
+sealed abstract class UInt32 extends UnsignedNumber with NumberOperations[UInt32] {
   override type A = Long
 
   override def + (num : UInt32): UInt32 = {
@@ -169,13 +168,7 @@ sealed trait UInt32 extends UnsignedNumber with NumberOperations[UInt32] {
 
   override def hex = BitcoinSUtil.encodeHex(underlying).slice(8,16)
 
-  override def toInt: Int = {
-    require(underlying <= Int.MaxValue, "Overflow error when casting " + this + " to an integer.")
-    require(underlying >= 0, "Unsigned integer should not be cast to a number less than 0" + this)
-    underlying.toInt
-  }
-
-  def toLong: Long = {
+  override def toLong: Long = {
     require(underlying <= Long.MaxValue, "Overflow error when casting " + this + " to an integer.")
     require(underlying >= 0, "Unsigned integer should not be cast to a number less than 0" + this)
     underlying.toLong
@@ -196,7 +189,7 @@ sealed trait UInt32 extends UnsignedNumber with NumberOperations[UInt32] {
 /**
   * Represents a uint64_t in C
   */
-sealed trait UInt64 extends UnsignedNumber with NumberOperations[UInt64] {
+sealed abstract class UInt64 extends UnsignedNumber with NumberOperations[UInt64] {
   override type A = BigInt
   override def hex = encodeHex(underlying)
 
@@ -231,10 +224,10 @@ sealed trait UInt64 extends UnsignedNumber with NumberOperations[UInt64] {
   def & (num : UInt64) : UInt64 = UInt64(underlying & num.underlying)
 
 
-  override def toInt = {
-    require(underlying <= Int.MaxValue, "Overflow error when casting " + this + " to an integer.")
+  override def toLong = {
+    require(underlying <= Long.MaxValue, "Overflow error when casting " + this + " to an integer.")
     require(underlying >= 0, "Unsigned integer should not be cast to a number less than 0" + this)
-    underlying.toInt
+    underlying.longValue()
   }
 
   /**
@@ -271,7 +264,7 @@ sealed trait UInt64 extends UnsignedNumber with NumberOperations[UInt64] {
 /**
   * Represents a int32_t in C
   */
-sealed trait Int32 extends SignedNumber with NumberOperations[Int32] {
+sealed abstract class Int32 extends SignedNumber with NumberOperations[Int32] {
   override type A = Int
   override def + (num : Int32) = {
     val sum = underlying + num.underlying
@@ -303,9 +296,9 @@ sealed trait Int32 extends SignedNumber with NumberOperations[Int32] {
 
   def & (num : Int32) : Int32 = Int32(underlying & num.underlying)
 
-  override def toInt = {
-    require(underlying <= Int.MaxValue, "Overflow error when casting " + this + " to an integer.")
-    require(underlying >= Int.MinValue, "Overflow error when casting " + this + " to an integer.")
+  override def toLong = {
+    require(underlying <= Long.MaxValue, "Overflow error when casting " + this + " to an integer.")
+    require(underlying >= Long.MinValue, "Overflow error when casting " + this + " to an integer.")
     underlying
   }
 
@@ -327,7 +320,7 @@ sealed trait Int32 extends SignedNumber with NumberOperations[Int32] {
 /**
   * Represents a int64_t in C
   */
-sealed trait Int64 extends SignedNumber with NumberOperations[Int64] {
+sealed abstract class Int64 extends SignedNumber with NumberOperations[Int64] {
   override type A = Long
   override def + (num : Int64) = {
     val sum = underlying + num.underlying
@@ -359,10 +352,10 @@ sealed trait Int64 extends SignedNumber with NumberOperations[Int64] {
 
   def & (num : Int64) : Int64 = Int64(underlying & num.underlying)
 
-  override def toInt = {
-    require(underlying <= Int.MaxValue, "Overflow error when casting " + this + " to an integer.")
-    require(underlying >= Int.MinValue, "Overflow error when casting " + this  + " to an integer.")
-    underlying.toInt
+  override def toLong = {
+    require(underlying <= Long.MaxValue, "Overflow error when casting " + this + " to an integer.")
+    require(underlying >= Long.MinValue, "Overflow error when casting " + this  + " to an integer.")
+    underlying
   }
 
 
@@ -425,17 +418,15 @@ object UInt8 extends Factory[UInt8] with BaseNumbers[UInt8] {
   def isValid(short: Short): Boolean = short >= 0  && short < 256
 
   override def fromBytes(bytes: Seq[Byte]): UInt8 = {
-    val individualByteValues = for {
-      (byte,index) <- bytes.reverse.zipWithIndex
-    } yield NumberUtil.calculateUnsignedNumberFromByte(index, byte)
-    UInt8(individualByteValues.sum.toShort)
+    require(bytes.size == 1,"Can only create a uint8 from a byte array of size one, got: " + bytes)
+    val res = NumberUtil.toUnsignedInt(bytes)
+    if (res > BigInt(max.underlying) || res < BigInt(min.underlying)) {
+      throw new IllegalArgumentException("Out of boudns for a UInt8, got: " + res)
+    } else UInt8(res.toShort)
   }
 
   def toUInt8(byte: Byte): UInt8 = {
-    if ((byte & 0x80) == 0x80) {
-      val r = (byte & 0x7f) + NumberUtil.pow2(7)
-      UInt8(r.toShort)
-    } else UInt8(byte.toShort)
+    fromBytes(Seq(byte))
   }
 
   def toByte(uInt8: UInt8): Byte = uInt8.underlying.toByte
@@ -448,7 +439,7 @@ object UInt8 extends Factory[UInt8] with BaseNumbers[UInt8] {
 object UInt32 extends Factory[UInt32] with BaseNumbers[UInt32] {
   private case class UInt32Impl(underlying : Long) extends UInt32 {
     require(underlying >= 0, "We cannot have a negative number in an unsigned number, got: " + underlying)
-    require(underlying  <= 4294967295L, "We cannot have a number larger than 2^32 -1 in UInt32, got: " + underlying)
+    require(underlying <= 4294967295L, "We cannot have a number larger than 2^32 -1 in UInt32, got: " + underlying)
   }
 
   lazy val zero = UInt32(0)
@@ -457,19 +448,17 @@ object UInt32 extends Factory[UInt32] with BaseNumbers[UInt32] {
   lazy val min = zero
   lazy val max = UInt32(4294967295L)
 
-  override def fromBytes(bytes : Seq[Byte]): UInt32 = {
-
-    val individualByteValues = for {
-      (byte,index) <- bytes.reverse.zipWithIndex
-    } yield NumberUtil.calculateUnsignedNumberFromByte(index, byte)
-    UInt32Impl(individualByteValues.sum.toLong)
+  override def fromBytes(bytes: Seq[Byte]): UInt32 = {
+    require(bytes.size <= 4)
+    val res = NumberUtil.toUnsignedInt(bytes)
+    if (res > BigInt(max.underlying) || res < BigInt(min.underlying)) {
+      throw new IllegalArgumentException("Out of bounds for a UInt32, got: " + res)
+    } else UInt32(res.toLong)
   }
 
   def apply(long : Long): UInt32 = UInt32Impl(long)
 
 }
-
-
 
 object UInt64 extends Factory[UInt64] with BaseNumbers[UInt64] {
   private case class UInt64Impl(underlying : BigInt) extends UInt64 {
@@ -481,29 +470,31 @@ object UInt64 extends Factory[UInt64] with BaseNumbers[UInt64] {
   lazy val one = UInt64(BigInt(1))
 
   lazy val min = zero
-  lazy val max = fromBytes(Seq(0xff.toByte, 0xff.toByte, 0xff.toByte, 0xff.toByte,
-    0xff.toByte, 0xff.toByte, 0xff.toByte, 0xff.toByte))
+  lazy val max = UInt64(BigInt("18446744073709551615"))
 
-  override def fromBytes(bytes : Seq[Byte]): UInt64 = {
-    val individualByteValues : Seq[BigInt] = for {
-      (byte,index) <- bytes.reverse.zipWithIndex
-    } yield NumberUtil.calculateUnsignedNumberFromByte(index, byte)
-    UInt64Impl(individualByteValues.sum)
+  override def fromBytes(bytes: Seq[Byte]): UInt64 = {
+    require(bytes.size <= 8)
+    val res: BigInt = NumberUtil.toUnsignedInt(bytes)
+    if (res > max.underlying || res < min.underlying) {
+      throw new IllegalArgumentException("Out of bounds for a UInt64, got: " + res)
+    } else UInt64(res)
   }
 
   def apply(num : BigInt): UInt64 = UInt64Impl(num)
 
 }
 
-
 object Int32 extends Factory[Int32] with BaseNumbers[Int32] {
-  private case class Int32Impl(underlying : Int) extends Int32
+  private case class Int32Impl(underlying : Int) extends Int32 {
+    require(underlying >= -2147483648, "Number was too small for a int32, got: " + underlying)
+    require(underlying <= 2147483647, "Number was too large for a int32, got: " + underlying)
+  }
 
   lazy val zero = Int32(0)
   lazy val one = Int32(1)
 
-  lazy val min = fromBytes(Seq(0x80.toByte, 0.toByte, 0.toByte, 0.toByte))
-  lazy val max = fromBytes(Seq(0x7f.toByte, 0xff.toByte, 0xff.toByte, 0xff.toByte))
+  lazy val min = Int32(-2147483648)
+  lazy val max = Int32(2147483647)
 
   override def fromBytes(bytes : Seq[Byte]): Int32 =  {
     require(bytes.size <= 4, "We cannot have an Int32 be larger than 4 bytes")
@@ -513,16 +504,17 @@ object Int32 extends Factory[Int32] with BaseNumbers[Int32] {
   def apply(int : Int): Int32 = Int32Impl(int)
 }
 
-
 object Int64 extends Factory[Int64] with BaseNumbers[Int64] {
-  private case class Int64Impl(underlying : Long) extends Int64
+  private case class Int64Impl(underlying : Long) extends Int64 {
+    require(underlying >= -9223372036854775808L, "Number was too small for a int64, got: " + underlying)
+    require(underlying <= 9223372036854775807L, "Number was too small for a int64, got: " + underlying)
+  }
 
   lazy val zero = Int64(0)
   lazy val one = Int64(1)
 
-  lazy val min = fromBytes(Seq(0x80.toByte,0.toByte, 0.toByte, 0.toByte,0.toByte, 0.toByte, 0.toByte, 0.toByte))
-  lazy val max = fromBytes(Seq(0x7f.toByte, 0xff.toByte, 0xff.toByte, 0xff.toByte,
-    0xff.toByte, 0xff.toByte, 0xff.toByte, 0xff.toByte))
+  lazy val min = Int64(-9223372036854775808L)
+  lazy val max = Int64(9223372036854775807L)
 
   override def fromBytes(bytes : Seq[Byte]): Int64 = {
     require(bytes.size <= 8, "We cannot have an Int64 be larger than 8 bytes")
