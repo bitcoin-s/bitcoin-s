@@ -72,5 +72,4 @@ class UInt32Test extends FlatSpec with MustMatchers {
     UInt32.max.underlying must be (4294967295L)
     UInt32.max.hex must be ("ffffffff")
   }
-
 }
