@@ -30,8 +30,8 @@ class UInt32Spec extends Properties("UInt32") {
 
   property("add two uint32s and get the mathematical sum of the two numbers") =
     Prop.forAll(NumberGenerator.uInt32s,NumberGenerator.uInt32s) { (num1: UInt32, num2: UInt32) =>
-      val result = BigInt(num1.underlying) + num2.underlying
-      if (result <= UInt32.max.underlying) num1 + num2 == UInt32(result.toLong)
+      val result = num1.toLong + num2.toLong
+      if (result <= UInt32.max.toLong) num1 + num2 == UInt32(result.toLong)
       else Try(num1 + num2).isFailure
   }
 
@@ -42,7 +42,7 @@ class UInt32Spec extends Properties("UInt32") {
 
   property("subtract a uint32 from another uint32 and get the correct result") =
     Prop.forAll(NumberGenerator.uInt32s, NumberGenerator.uInt32s) { (num1: UInt32, num2 : UInt32) =>
-      val result = num1.underlying - num2.underlying
+      val result = num1.toLong - num2.toLong
       if (result >= 0) num1 - num2 == UInt32(result)
       else Try(num1 - num2).isFailure
 
@@ -60,48 +60,49 @@ class UInt32Spec extends Properties("UInt32") {
 
   property("multiply two UInt32s") =
     Prop.forAll(NumberGenerator.uInt32s, NumberGenerator.uInt32s) { (num1 : UInt32, num2: UInt32) =>
-      val bigInt1 = BigInt(num1.underlying)
-      val bigInt2 = BigInt(num2.underlying)
-      if (bigInt1 * bigInt2 <= UInt32.max.underlying) {
-        num1 * num2 == UInt32(num1.underlying * num2.underlying)
+      val bigInt1 = num1.toBigInt
+      val bigInt2 = num2.toBigInt
+      if (bigInt1 * bigInt2 <= UInt32.max.toLong) {
+        num1 * num2 ==
+          UInt32(num1.toLong * num2.toLong)
       } else Try(num1 * num2).isFailure
     }
 
   property("< & >=") =
     Prop.forAll(NumberGenerator.uInt32s, NumberGenerator.uInt32s) { (num1 : UInt32, num2 : UInt32) =>
-      if (num1.underlying < num2.underlying) num1 < num2
+      if (num1.toLong < num2.toLong) num1 < num2
       else num1 >= num2
     }
 
   property("<= & >") = {
     Prop.forAll(NumberGenerator.uInt32s, NumberGenerator.uInt32s) { (num1: UInt32, num2: UInt32) =>
-      if (num1.underlying <= num2.underlying) num1 <= num2
+      if (num1.toLong <= num2.toLong) num1 <= num2
       else num1 > num2
     }
   }
 
   property("== & !=") = {
     Prop.forAll(NumberGenerator.uInt32s, NumberGenerator.uInt32s) { (num1 : UInt32, num2 : UInt32) =>
-      if (num1.underlying == num2.underlying) num1 == num2
+      if (num1.toLong == num2.toLong) num1 == num2
       else num1 != num2
     }
   }
 
   property("|") =
     Prop.forAll(NumberGenerator.uInt32s, NumberGenerator.uInt32s) { (num1 : UInt32, num2 : UInt32) =>
-      UInt32(num1.underlying | num2.underlying) == (num1 | num2)
+      UInt32(num1.toLong | num2.toLong) == (num1 | num2)
     }
 
   property("&") =
     Prop.forAll(NumberGenerator.uInt32s, NumberGenerator.uInt32s) { (num1: UInt32, num2: UInt32) =>
-      UInt32(num1.underlying & num2.underlying) == (num1 & num2)
+      UInt32(num1.toLong & num2.toLong) == (num1 & num2)
     }
 
   property("<<") =
     Prop.forAllNoShrink(NumberGenerator.uInt32s, Gen.choose(0,32)) { case (u32, shift) =>
       val r = Try(u32 << shift)
-      val expected = (u32.underlying << shift) & 0xffffffffL
-      if (expected <= UInt32.max.underlying) {
+      val expected = (u32.toLong << shift) & 0xffffffffL
+      if (r.isSuccess && expected <= UInt32.max.toLong) {
         r.get == UInt32(expected)
       } else {
         r.isFailure
@@ -111,7 +112,7 @@ class UInt32Spec extends Properties("UInt32") {
   property(">>") =
     Prop.forAll(NumberGenerator.uInt32s, Gen.choose(0,100)) { case (u32,shift) =>
       val r = u32 >> shift
-      val expected = u32.underlying >> shift
+      val expected = if (shift >= 64) 0 else u32.toLong >> shift
       r == UInt32(expected)
     }
 }

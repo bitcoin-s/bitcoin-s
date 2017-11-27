@@ -81,7 +81,7 @@ class Bech32Test extends FlatSpec with MustMatchers  {
   it must "create the correct checksum for a 0 byte address" in {
     val checksum = Bech32Address.createChecksum(bc,Seq(UInt8.zero))
     checksum must be (Seq(5, 2, 1, 8, 3, 28).map(i => UInt8(i.toShort)))
-    checksum.map(ch => Bech32Address.charset(ch.underlying)).mkString must be ("9zpgru")
+    checksum.map(ch => Bech32Address.charset(ch.toInt)).mkString must be ("9zpgru")
   }
 
   it must "encode base 8 to base 5" in {

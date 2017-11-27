@@ -1,7 +1,7 @@
 package org.bitcoins.core.currency
 
 import org.bitcoins.core.gen.CurrencyUnitGenerator
-import org.bitcoins.core.util.BitcoinSLogger
+import org.bitcoins.core.number.Int64
 import org.scalacheck.{Prop, Properties}
 
 import scala.util.Try
@@ -23,9 +23,9 @@ class CurrencyUnitSpec extends Properties("CurrencyUnitSpec") {
 
   property("add two satoshis") =
     Prop.forAll(CurrencyUnitGenerator.satoshis, CurrencyUnitGenerator.satoshis) { (num1 : Satoshis, num2 : Satoshis) =>
-      val result = num1.underlying + num2.underlying
-      if (result >= Satoshis.min.underlying &&
-        result <= Satoshis.max.underlying) num1 + num2 == Satoshis(result)
+      val result: Try[Int64] = Try(Int64(num1.toBigInt + num2.toBigInt))
+      if (result.isSuccess && result.get >= Int64(Satoshis.min.toLong) &&
+        result.get <= Int64(Satoshis.max.toLong)) num1 + num2 == Satoshis(result.get)
       else Try(num1 + num2).isFailure
     }
 
@@ -36,9 +36,9 @@ class CurrencyUnitSpec extends Properties("CurrencyUnitSpec") {
 
   property("Subtract two satoshi values") =
     Prop.forAll(CurrencyUnitGenerator.satoshis, CurrencyUnitGenerator.satoshis) { (num1 : Satoshis, num2 : Satoshis) =>
-      val result = num1.underlying - num2.underlying
-      if (result >= Satoshis.min.underlying &&
-        result <= Satoshis.max.underlying) num1 - num2 == Satoshis(result)
+      val result: Try[Int64] = Try(Int64(num1.toBigInt - num2.toBigInt))
+      if (result.isSuccess && result.get >= Int64(Satoshis.min.toLong) &&
+        result.get <= Int64(Satoshis.max.toLong)) num1 - num2 == Satoshis(result.get)
       else Try(num1 - num2).isFailure
     }
 
@@ -55,9 +55,9 @@ class CurrencyUnitSpec extends Properties("CurrencyUnitSpec") {
 
   property("Multiply two satoshi values") =
     Prop.forAll(CurrencyUnitGenerator.satoshis, CurrencyUnitGenerator.satoshis) { (num1 : Satoshis, num2 : Satoshis) =>
-      val result = num1.underlying * num2.underlying
-      if (result >= Satoshis.min.underlying &&
-        result <= Satoshis.max.underlying) num1 * num2 == Satoshis(result)
+      val result:Try[Int64] = Try(Int64(num1.toBigInt * num2.toBigInt))
+      if (result.isSuccess && result.get >= Int64(Satoshis.min.toLong) &&
+        result.get <= Int64(Satoshis.max.toLong)) num1 * num2 == Satoshis(result.get)
       else Try(num1 * num2).isFailure
     }
 
@@ -85,9 +85,11 @@ class CurrencyUnitSpec extends Properties("CurrencyUnitSpec") {
 
   property("be able to add two unique currency unit types") = {
     Prop.forAll(CurrencyUnitGenerator.satoshis, CurrencyUnitGenerator.bitcoins) { (num1: Satoshis, num2: Bitcoins) =>
-      val expected = Bitcoins(Satoshis(num1.underlying + num2.satoshis.underlying))
-      val actual: CurrencyUnit = num1 + num2
-      actual == expected
+      val result = Try(Satoshis(Int64(num1.toBigInt + num2.satoshis.toBigInt)))
+      val expected = result.map(Bitcoins(_))
+      val actual: Try[CurrencyUnit] = Try(num1 + num2)
+      if (actual.isSuccess && expected.isSuccess) actual.get == expected.get
+      else actual.isFailure && expected.isFailure
     }
   }
 }

@@ -23,7 +23,7 @@ class ScriptNumberFactoryTest extends FlatSpec with MustMatchers {
   it must "create a negative number from hex" in {
     val hex = "008080"
     val number = -32768
-    ScriptNumber(hex).underlying must be (number)
+    ScriptNumber(hex).toLong must be (number)
   }
 
   it must "create a negative number from hex and have the same underlying hex representation" in {

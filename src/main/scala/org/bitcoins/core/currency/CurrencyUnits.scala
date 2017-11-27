@@ -7,9 +7,9 @@ import org.bitcoins.core.serializers.{RawBitcoinSerializerHelper, RawSatoshisSer
 import org.bitcoins.core.util.{BitcoinSLogger, Factory}
 
 
-sealed trait CurrencyUnit extends NetworkElement {
+sealed abstract class CurrencyUnit extends NetworkElement {
   type A
-  def underlying : A
+  protected def underlying : A
 
   def satoshis: Satoshis
 
@@ -50,11 +50,13 @@ sealed trait CurrencyUnit extends NetworkElement {
   }
 }
 
-sealed trait Satoshis extends CurrencyUnit {
+sealed abstract class Satoshis extends CurrencyUnit {
   override type A = Int64
   override def hex = RawSatoshisSerializer.write(this)
   override def satoshis: Satoshis = this
 
+  def toLong = underlying.toLong
+  def toBigInt: BigInt = BigInt(toLong)
   def ==(satoshis: Satoshis): Boolean = underlying == satoshis.underlying
 }
 
@@ -71,7 +73,7 @@ object Satoshis extends Factory[Satoshis] with BaseNumbers[Satoshis] {
   def apply(int64: Int64): Satoshis = SatoshisImpl(int64)
 }
 
-sealed trait Bitcoins extends CurrencyUnit {
+sealed abstract class Bitcoins extends CurrencyUnit {
   override type A = BigDecimal
   override def satoshis: Satoshis = {
     val sat = underlying * CurrencyUnits.btcToSatoshiScalar
@@ -90,7 +92,7 @@ object Bitcoins extends BaseNumbers[Bitcoins] {
   def apply(underlying: BigDecimal): Bitcoins = BitcoinsImpl(underlying)
 
   def apply(satoshis: Satoshis): Bitcoins = {
-    val b = satoshis.underlying.underlying * CurrencyUnits.satoshisToBTCScalar
+    val b: BigDecimal = satoshis.toLong * CurrencyUnits.satoshisToBTCScalar
     Bitcoins(b)
   }
 }

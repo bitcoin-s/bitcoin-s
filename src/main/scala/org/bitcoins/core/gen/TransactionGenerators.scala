@@ -409,12 +409,14 @@ trait TransactionGenerators extends BitcoinSLogger {
     * Determines if the transaction's lockTime value and CLTV script lockTime value are of the same type
     * (i.e. determines whether both are a timestamp or block height)
     */
-  private def cltvLockTimesOfSameType(num: ScriptNumber, lockTime: UInt32) : Boolean = num.underlying match {
+  private def cltvLockTimesOfSameType(num: ScriptNumber, lockTime: UInt32) : Boolean = num.toLong match {
       case negative if negative < 0 => false
       case positive if positive >= 0 =>
         if (!(
-          (lockTime < TransactionConstants.locktimeThreshold && num.underlying < TransactionConstants.locktimeThreshold.underlying) ||
-            (lockTime >= TransactionConstants.locktimeThreshold && num.underlying >= TransactionConstants.locktimeThreshold.underlying)
+          (lockTime < TransactionConstants.locktimeThreshold &&
+            num.toLong < TransactionConstants.locktimeThreshold.toLong) ||
+            (lockTime >= TransactionConstants.locktimeThreshold &&
+              num.toLong >= TransactionConstants.locktimeThreshold.toLong)
           )) return false
         true
   }
@@ -437,7 +439,7 @@ trait TransactionGenerators extends BitcoinSLogger {
 
   /** To indicate that we should evaulate a OP_CSV operation based on
     * blockheight we need 1 << 22 bit turned off. See BIP68 for more details */
-  private def lockByBlockHeightBitSet = UInt32("ffbfffff")
+  private def lockByBlockHeightBitSet: UInt32 = UInt32("ffbfffff")
 
   /** Generates a [[UInt32]] s.t. the block height bit is set according to BIP68 */
   private def sequenceForBlockHeight: Gen[UInt32] = validCSVSequence.map { n =>
@@ -451,8 +453,8 @@ trait TransactionGenerators extends BitcoinSLogger {
     sequenceForBlockHeight.flatMap { s =>
       val seqMasked = TransactionConstants.sequenceLockTimeMask
       val validScriptNums = s & seqMasked
-      Gen.choose(0L, validScriptNums.underlying).map { sn =>
-        val scriptNum = ScriptNumber(sn & lockByBlockHeightBitSet.underlying)
+      Gen.choose(0L, validScriptNums.toLong).map { sn =>
+        val scriptNum = ScriptNumber(sn & lockByBlockHeightBitSet.toLong)
         require(LockTimeInterpreter.isCSVLockByBlockHeight(scriptNum))
         require(LockTimeInterpreter.isCSVLockByBlockHeight(s))
         (scriptNum,s)
@@ -472,8 +474,8 @@ trait TransactionGenerators extends BitcoinSLogger {
     sequenceForRelativeLockTime.flatMap { s =>
       val seqMasked = TransactionConstants.sequenceLockTimeMask
       val validScriptNums = s & seqMasked
-      Gen.choose(0L, validScriptNums.underlying).map { sn =>
-        val scriptNum = ScriptNumber(sn | TransactionConstants.sequenceLockTimeTypeFlag.underlying)
+      Gen.choose(0L, validScriptNums.toLong).map { sn =>
+        val scriptNum = ScriptNumber(sn | TransactionConstants.sequenceLockTimeTypeFlag.toLong)
         require(LockTimeInterpreter.isCSVLockByRelativeLockTime(scriptNum))
         require(LockTimeInterpreter.isCSVLockByRelativeLockTime(s))
         (scriptNum,s)
@@ -485,7 +487,7 @@ trait TransactionGenerators extends BitcoinSLogger {
     //makes sure the 1 << 31 is TURNED OFF,
     //need this to generate spendable CSV values without discarding a bunch of test cases
     val result = n & UInt32(0x7FFFFFFF)
-    require(LockTimeInterpreter.isLockTimeBitOff(ScriptNumber(result.underlying)))
+    require(LockTimeInterpreter.isLockTimeBitOff(ScriptNumber(result.toLong)))
     result
   }
 
@@ -495,20 +497,23 @@ trait TransactionGenerators extends BitcoinSLogger {
     */
   def unspendableCSVValues : Gen[(ScriptNumber, UInt32)] = ( for {
     sequence <- NumberGenerator.uInt32s
-    csvScriptNum <- NumberGenerator.uInt32s.map(x => ScriptNumber(x.underlying)).suchThat(x => LockTimeInterpreter.isLockTimeBitOff(x))
+    csvScriptNum <- NumberGenerator.uInt32s.map(x =>
+      ScriptNumber(x.toLong)).suchThat(x => LockTimeInterpreter.isLockTimeBitOff(x))
   } yield (csvScriptNum, sequence)).suchThat(x => !csvLockTimesOfSameType(x))
 
   /** generates a [[ScriptNumber]] and [[UInt32]] locktime for a transaction such that the tx will be spendable */
   private def spendableCLTVValues: Gen[(ScriptNumber,UInt32)] = for {
     txLockTime <- NumberGenerator.uInt32s
-    cltvLockTime <- NumberGenerator.uInt32s.suchThat(num => cltvLockTimesOfSameType(ScriptNumber(num.underlying),txLockTime) &&
-      num < txLockTime).map(x => ScriptNumber(x.underlying))
+    cltvLockTime <- NumberGenerator.uInt32s.suchThat(num =>
+      cltvLockTimesOfSameType(ScriptNumber(num.toLong),txLockTime) &&
+      num < txLockTime).map(x => ScriptNumber(x.toLong))
   } yield (cltvLockTime,txLockTime)
 
   /** Generates a [[ScriptNumber]] and [[UInt32]] locktime for a transaction such that the tx will be unspendable */
   private def unspendableCLTVValues: Gen[(ScriptNumber,UInt32)] = for {
     txLockTime <- NumberGenerator.uInt32s
-    cltvLockTime <- NumberGenerator.uInt32s.suchThat(num => num >= txLockTime || !cltvLockTimesOfSameType(ScriptNumber(num.underlying),txLockTime)).map(x => ScriptNumber(x.underlying))
+    cltvLockTime <- NumberGenerator.uInt32s.suchThat(num => num >= txLockTime ||
+      !cltvLockTimesOfSameType(ScriptNumber(num.toLong),txLockTime)).map(x => ScriptNumber(x.toLong))
   } yield (cltvLockTime,txLockTime)
 
 }
