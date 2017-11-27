@@ -21,8 +21,8 @@ class Int64Spec extends Properties("Int64Spec") {
     }
   property("Add two arbitrary int64s") =
     Prop.forAll(NumberGenerator.int64s, NumberGenerator.int64s) { (num1 : Int64, num2 : Int64) =>
-      val result = num1.underlying + num2.underlying
-      if (result >= Int64.min.underlying  && result <= Int64.max.underlying) num1 + num2 == Int64(result)
+      val result = num1.toBigInt + num2.toBigInt
+      if (result >= Int64.min.toLong  && result <= Int64.max.toLong) num1 + num2 == Int64(result)
       else Try(num1 + num2).isFailure
     }
 
@@ -34,8 +34,8 @@ class Int64Spec extends Properties("Int64Spec") {
 
   property("Subtract two arbitrary int64s") =
     Prop.forAll(NumberGenerator.int64s, NumberGenerator.int64s) { (num1 : Int64, num2 : Int64) =>
-      val result = num1.underlying - num2.underlying
-      if (result >= Int64.min.underlying  && result <= Int64.max.underlying) num1 - num2 == Int64(result)
+      val result = num1.toBigInt - num2.toBigInt
+      if (result >= Int64.min.toLong  && result <= Int64.max.toLong) num1 - num2 == Int64(result)
       else Try(num1 - num2).isFailure
     }
 
@@ -52,44 +52,44 @@ class Int64Spec extends Properties("Int64Spec") {
 
   property("Multiply two arbitrary int64s") =
     Prop.forAll(NumberGenerator.int64s, NumberGenerator.int64s) { (num1 : Int64, num2 : Int64) =>
-      val result = num1.underlying * num2.underlying
-      if (result >= Int64.min.underlying && result <= Int64.max.underlying) num1 * num2 == Int64(result)
+      val result = num1.toBigInt * num2.toBigInt
+      if (result >= Int64.min.toLong && result <= Int64.max.toLong) num1 * num2 == Int64(result)
       else Try(num1 * num2).isFailure
     }
 
   property("<= & >") =
     Prop.forAll(NumberGenerator.int64s, NumberGenerator.int64s) { (num1 : Int64, num2 : Int64) =>
-      if (num1.underlying <= num2.underlying) num1 <= num2
+      if (num1.toLong <= num2.toLong) num1 <= num2
       else num1 > num2
 
     }
 
   property("< & =>") =
     Prop.forAll(NumberGenerator.int64s, NumberGenerator.int64s) { (num1 : Int64, num2 : Int64) =>
-      if (num1.underlying < num2.underlying) num1 < num2
+      if (num1.toLong < num2.toLong) num1 < num2
       else num1 >= num2
 
     }
 
   property("== & !=") =
     Prop.forAll(NumberGenerator.int64s, NumberGenerator.int64s) { (num1 : Int64, num2 : Int64) =>
-      if (num1.underlying == num2.underlying) num1 == num2
+      if (num1.toLong == num2.toLong) num1 == num2
       else num1 != num2
     }
 
   property("|") =
     Prop.forAll(NumberGenerator.int64s, NumberGenerator.int64s) { (num1: Int64, num2: Int64) =>
-      Int64(num1.underlying | num2.underlying) == (num1 | num2)
+      Int64(num1.toLong | num2.toLong) == (num1 | num2)
     }
 
   property("&") =
     Prop.forAll(NumberGenerator.int64s, NumberGenerator.int64s) { (num1: Int64, num2: Int64) =>
-      Int64(num1.underlying & num2.underlying) == (num1 & num2)
+      Int64(num1.toLong & num2.toLong) == (num1 & num2)
     }
 
   property("negation") = {
     Prop.forAll(NumberGenerator.int64s) { int64 =>
-      -int64 == Int64(-int64.underlying)
+      -int64 == Int64(-int64.toLong)
     }
   }
 

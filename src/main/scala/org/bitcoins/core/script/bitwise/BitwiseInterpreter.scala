@@ -22,13 +22,13 @@ sealed abstract class BitwiseInterpreter {
       val h1 = program.stack.tail.head
       val result = (h,h1) match {
         case (OP_0,ScriptNumber.zero) | (ScriptNumber.zero, OP_0) =>
-          OP_0.underlying == ScriptNumber.zero.underlying
+          OP_0.underlying == ScriptNumber.zero.toLong
         case (OP_FALSE,ScriptNumber.zero) | (ScriptNumber.zero, OP_FALSE) =>
-          OP_FALSE.underlying == ScriptNumber.zero.underlying
+          OP_FALSE.underlying == ScriptNumber.zero.toLong
         case (OP_TRUE,ScriptNumber.one) | (ScriptNumber.one, OP_TRUE) =>
-          OP_TRUE.underlying == ScriptNumber.one.underlying
+          OP_TRUE.underlying == ScriptNumber.one.toLong
         case (OP_1, ScriptNumber.one) | (ScriptNumber.one, OP_1) =>
-          OP_1.underlying == ScriptNumber.one.underlying
+          OP_1.underlying == ScriptNumber.one.toLong
         case _ => h.bytes == h1.bytes
       }
       val scriptBoolean  = if (result) OP_TRUE else OP_FALSE

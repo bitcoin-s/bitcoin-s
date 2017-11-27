@@ -23,8 +23,8 @@ class UInt8Spec extends Properties("UInt8Spec") {
   property("<<") = {
     Prop.forAllNoShrink(NumberGenerator.uInt8, Gen.choose(0,8)) { case (u8: UInt8, shift: Int) =>
       val r = Try(u8 << shift)
-      val expected = (u8.underlying << shift) & 0xffL
-      if (expected <= UInt8.max.underlying) {
+      val expected = (u8.toLong << shift) & 0xffL
+      if (expected <= UInt8.max.toLong) {
         r.get == UInt8(expected.toShort)
       } else {
         r.isFailure
@@ -35,8 +35,12 @@ class UInt8Spec extends Properties("UInt8Spec") {
   property(">>") = {
     Prop.forAllNoShrink(NumberGenerator.uInt8,Gen.choose(0,100)) { case (u8: UInt8, shift: Int) =>
       val r = (u8 >> shift)
-      val expected = u8.underlying >> shift
-      r == UInt8(expected.toShort)
+      val expected = if (shift > 31) UInt8.zero else UInt8((u8.toLong >> shift).toShort)
+      if (r != expected) {
+        logger.warn("expected: " + expected)
+        logger.warn("r: " + r)
+      }
+      r == expected
 
     }
   }

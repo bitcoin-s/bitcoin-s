@@ -92,9 +92,9 @@ sealed trait MultiSignatureScriptPubKey extends ScriptPubKey {
     //magic number 2 represents the maxSig operation and the OP_CHECKMULTISIG operation at the end of the asm
     val numSigsRequired = asmWithoutPushOps(opCheckMultiSigIndex - maxSigs.toInt - 2)
     numSigsRequired match {
-      case x : ScriptNumber => x.underlying.toInt
-      case c : ScriptConstant if ScriptNumber(c.hex).underlying <= ScriptSettings.maxPublicKeysPerMultiSig =>
-        ScriptNumber(c.hex).underlying.toInt
+      case x : ScriptNumber => x.toInt
+      case c : ScriptConstant if ScriptNumber(c.hex).toLong <= ScriptSettings.maxPublicKeysPerMultiSig =>
+        ScriptNumber(c.hex).toInt
       case _ => throw new RuntimeException("The first element of the multisignature pubkey must be a script number operation\n" +
         "operation: " + numSigsRequired +
         "\nscriptPubKey: " + this)
@@ -108,9 +108,9 @@ sealed trait MultiSignatureScriptPubKey extends ScriptPubKey {
       0
     } else {
       asm(checkMultiSigIndex - 1) match {
-        case x : ScriptNumber => x.underlying.toInt
-        case c : ScriptConstant if ScriptNumber(c.hex).underlying <= ScriptSettings.maxPublicKeysPerMultiSig =>
-          ScriptNumber(c.hex).underlying.toInt
+        case x : ScriptNumber => x.toInt
+        case c : ScriptConstant if ScriptNumber(c.hex).toLong <= ScriptSettings.maxPublicKeysPerMultiSig =>
+          ScriptNumber(c.hex).toInt
         case x => throw new RuntimeException("The element preceding a OP_CHECKMULTISIG operation in a  multisignature pubkey must be a script number operation, got: " + x)
       }
     }
@@ -296,7 +296,7 @@ sealed trait LockTimeScriptPubKey extends ScriptPubKey {
   /** The relative locktime value (i.e. the amount of time the output should remain unspendable) */
   def locktime : ScriptNumber = {
     asm.head match {
-      case scriptNumOp: ScriptNumberOperation => ScriptNumber(scriptNumOp.underlying)
+      case scriptNumOp: ScriptNumberOperation => ScriptNumber(scriptNumOp.toLong)
       case _: BytesToPushOntoStack => ScriptNumber(asm(1).hex)
       case x @ (_ : ScriptConstant | _ : ScriptOperation) => throw new IllegalArgumentException("In a LockTimeScriptPubKey, " +
         "the first asm must be either a ScriptNumberOperation (i.e. OP_5), or the BytesToPushOntoStack for the proceeding ScriptConstant.")

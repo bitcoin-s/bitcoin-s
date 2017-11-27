@@ -356,7 +356,7 @@ sealed abstract class ScriptInterpreter {
 
             case OP_0 :: t => loop(ScriptProgram(p, ScriptNumber.zero :: p.stack, t),calcOpCount(opCount,OP_0))
             case (scriptNumberOp : ScriptNumberOperation) :: t =>
-              loop(ScriptProgram(p, ScriptNumber(scriptNumberOp.underlying) :: p.stack, t),calcOpCount(opCount,scriptNumberOp))
+              loop(ScriptProgram(p, ScriptNumber(scriptNumberOp.toLong) :: p.stack, t),calcOpCount(opCount,scriptNumberOp))
             case (bytesToPushOntoStack: BytesToPushOntoStack) :: t =>
               loop(ConstantInterpreter.pushScriptNumberBytesToStack(p),calcOpCount(opCount,bytesToPushOntoStack))
             case (scriptNumber: ScriptNumber) :: t =>

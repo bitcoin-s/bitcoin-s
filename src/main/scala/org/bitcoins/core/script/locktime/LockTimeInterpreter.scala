@@ -144,7 +144,7 @@ sealed abstract class LockTimeInterpreter {
     // consensus constrained. Testing that the transaction's sequence
     // number do not have this bit set prevents using this property
     // to get around a CHECKSEQUENCEVERIFY check.
-    if (!isLockTimeBitOff(Int64(txToSequence.underlying))) return false
+    if (!isLockTimeBitOff(Int64(txToSequence.toLong))) return false
 
     val (nSequenceMasked,txToSequenceMasked) = (maskScriptNumber(nSequence),maskSequenceNumber(txToSequence))
 
@@ -168,7 +168,7 @@ sealed abstract class LockTimeInterpreter {
 
     // Now that we know we're comparing apples-to-apples, the
     // comparison is a simple numeric one.
-    if (nSequenceMasked > Int64(txToSequenceMasked.underlying)) {
+    if (nSequenceMasked > Int64(txToSequenceMasked.toLong)) {
       logger.error("OP_CSV fails because relative locktime in transaction has not been met yet. " +
         "(OP_CSV value was greater than the txInput's sequence) script number: " + nSequenceMasked + " tx sequence no: " + txToSequenceMasked)
       return false
@@ -195,8 +195,8 @@ sealed abstract class LockTimeInterpreter {
   }
 
   def isCSVLockByRelativeLockTime(scriptNumber: ScriptNumber): Boolean = {
-    (TransactionConstants.sequenceLockTimeTypeFlag.underlying &
-      scriptNumber.underlying) == TransactionConstants.sequenceLockTimeTypeFlag.underlying
+    (TransactionConstants.sequenceLockTimeTypeFlag.toLong &
+      scriptNumber.toLong) == TransactionConstants.sequenceLockTimeTypeFlag.toLong
   }
 
   def isCSVLockByRelativeLockTime(sequence: UInt32): Boolean  = {
@@ -207,12 +207,12 @@ sealed abstract class LockTimeInterpreter {
 
   /** Masks the given [[ScriptNumber]] according to BIP112 */
   def maskScriptNumber(scriptNumber: ScriptNumber): ScriptNumber = {
-    val nSequenceMasked : ScriptNumber = scriptNumber & Int64(TransactionConstants.fullSequenceLockTimeMask.underlying)
+    val nSequenceMasked : ScriptNumber = scriptNumber & Int64(TransactionConstants.fullSequenceLockTimeMask.toLong)
     nSequenceMasked
   }
 
   def maskSequenceNumber(sequence: UInt32): Int64 = {
-    val txToSequenceMasked : Int64 = Int64(sequence.underlying & TransactionConstants.fullSequenceLockTimeMask.underlying)
+    val txToSequenceMasked : Int64 = Int64((sequence & TransactionConstants.fullSequenceLockTimeMask).toLong)
     txToSequenceMasked
   }
 
@@ -230,13 +230,15 @@ sealed abstract class LockTimeInterpreter {
     val transaction = program.txSignatureComponent.transaction
     val input = transaction.inputs(program.txSignatureComponent.inputIndex.toInt)
     if (!(
-      (transaction.lockTime < TransactionConstants.locktimeThreshold && locktime.underlying < TransactionConstants.locktimeThreshold.underlying) ||
-        (transaction.lockTime >= TransactionConstants.locktimeThreshold && locktime.underlying >= TransactionConstants.locktimeThreshold.underlying)
+      (transaction.lockTime < TransactionConstants.locktimeThreshold &&
+        locktime.toLong < TransactionConstants.locktimeThreshold.toLong) ||
+        (transaction.lockTime >= TransactionConstants.locktimeThreshold &&
+          locktime.toLong >= TransactionConstants.locktimeThreshold.toLong)
       )) return false
 
     // Now that we know we're comparing apples-to-apples, the
     // comparison is a simple numeric one.
-    if (locktime > Int64(transaction.lockTime.underlying)) return false
+    if (locktime > Int64(transaction.lockTime.toLong)) return false
 
     // Finally the nLockTime feature can be disabled and thus
     // CHECKLOCKTIMEVERIFY bypassed if every txin has been
@@ -254,7 +256,7 @@ sealed abstract class LockTimeInterpreter {
   }
 
   /** The [[ScriptNumber]] on the stack has the disable flag (1 << 31) unset. */
-  def isLockTimeBitOff(s : ScriptNumber) : Boolean = (s.underlying & TransactionConstants.locktimeDisabledFlag.underlying) == 0
+  def isLockTimeBitOff(s : ScriptNumber) : Boolean = (s.toLong & TransactionConstants.locktimeDisabledFlag.toLong) == 0
 
   def isLockTimeBitOff(num : Int64) : Boolean = isLockTimeBitOff(ScriptNumber(num.hex))
 }

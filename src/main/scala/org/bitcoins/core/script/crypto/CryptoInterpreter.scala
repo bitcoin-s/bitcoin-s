@@ -204,7 +204,7 @@ sealed abstract class CryptoInterpreter {
               val isValidSignatures: TransactionSignatureCheckerResult =
                 TransactionSignatureChecker.multiSignatureEvaluator(executionInProgressScriptProgram.txSignatureComponent,
                   removedOpCodeSeparatorsScript, signatures,
-                  pubKeys, flags, mRequiredSignatures.underlying)
+                  pubKeys, flags, mRequiredSignatures.toLong)
 
               //remove the extra OP_0 (null dummy) for OP_CHECKMULTISIG from the stack
               val restOfStack = stackWithoutPubKeysAndSignatures.tail
