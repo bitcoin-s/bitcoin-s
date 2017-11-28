@@ -9,237 +9,110 @@ import scala.util.{Failure, Success, Try}
   * Created by chris on 6/4/16.
   */
 
-/** A number can either be a signed or an unsigned number */
-sealed abstract class Number extends NetworkElement {
-  type A
-  def underlying : A
-  def toInt : Int = toLong.toInt
-  def toLong: Long
+/** This abstract class is meant to represent a signed and unsigned number in C
+  * This is useful for dealing with codebases/protocols that rely on C's
+  * unsigned integer types
+  * */
+sealed abstract class Number[T <: Number[T]] extends NetworkElement {
+  type A = BigInt
+  /** The underlying scala number used to to hold the number */
+  protected def underlying : A
+
+  def toInt : Int = toBigInt.bigInteger.intValueExact()
+  def toLong: Long = toBigInt.bigInteger.longValueExact()
+  def toBigInt: BigInt = underlying
+
+  /** This is used to determine the valid amount of bytes in a number
+    * for instance a UInt8 has an andMask of 0xff
+    * a UInt32 has an andMask of 0xffffffff
+    */
+  def andMask: BigInt
+  /** Factory function to create the underlying T, for instance a UInt32 */
+  def apply: A => T
+  def + (num: T): T = apply(checkResult(underlying + num.underlying))
+  def - (num: T): T = apply(checkResult(underlying - num.underlying))
+  def * (num: T): T = apply(checkResult(underlying * num.underlying))
+  def > (num: T): Boolean = underlying > num.underlying
+  def >= (num: T): Boolean = underlying >= num.underlying
+  def < (num: T): Boolean = underlying < num.underlying
+  def <= (num: T): Boolean = underlying <= num.underlying
+
+  def << (num: Int): T = this.<<(apply(num))
+  def >> (num: Int): T = this.>>(apply(num))
+
+  def <<(num: T): T = {
+    checkIfInt(num).map { _ =>
+      apply((underlying << num.toInt) & andMask)
+    }.get
+  }
+
+  def >>(num: T): T = {
+    //this check is for weird behavior with the jvm and shift rights
+    //https://stackoverflow.com/questions/47519140/bitwise-shift-right-with-long-not-equaling-zero/47519728#47519728
+    if (num.toLong > 63) apply(0)
+    else {
+      checkIfInt(num).map { _ =>
+        apply(underlying >> num.toInt)
+      }.get
+    }
+  }
+
+  def | (num: T): T = apply(checkResult(underlying | num.underlying))
+  def & (num: T): T = apply(checkResult(underlying & num.underlying))
+  def unary_- : T = apply(-underlying)
+  private def checkResult(result: BigInt): A = {
+    require((result & andMask) == result, "Result was out of bounds, got: " + result)
+    result
+  }
+
+  /** Checks if the given nubmer is within range of a Int */
+  private def checkIfInt(num: T): Try[Unit] = {
+    if (num.toBigInt >= Int.MaxValue || num.toBigInt <= Int.MinValue) {
+      Failure(new IllegalArgumentException("Num was not in range of int, got: " + num))
+    } else {
+      Success(Unit)
+    }
+  }
 }
 
 /**
   * Represents a signed number in our number system
   * Instances of this are [[Int32]] or [[Int64]]
   */
-sealed abstract class SignedNumber extends Number
+sealed abstract class SignedNumber[T <: Number[T]] extends Number[T]
 
 /**
   * Represents an unsigned number in our number system
   * Instances of this are [[UInt32]] or [[UInt64]]
   */
-sealed abstract class UnsignedNumber extends Number
+sealed abstract class UnsignedNumber[T <: Number[T]] extends Number[T]
 
-/**
-  * This trait represents all numeric operations we have for [[Number]]
-  * @tparam T the type our numeric operations return
-  *           currently either an [[UnsignedNumber]] or [[SignedNumber]]
-  */
-sealed trait NumberOperations[T <: Number] {
-  def + (num : T): T
-  def - (num : T): T
-  def * (num : T): T
-  def > (num : T): Boolean
-  def >= (num : T): Boolean
-  def < (num : T): Boolean
-  def <= (num : T): Boolean
-}
 
-sealed abstract class UInt8 extends UnsignedNumber with NumberOperations[UInt8] {
-  override type A = Short
+sealed abstract class UInt8 extends UnsignedNumber[UInt8] {
+  override def apply: A => UInt8 = UInt8(_)
 
-  override def + (num : UInt8): UInt8 = {
-    val sum = underlying + num.underlying
-    checkResult(sum)
-  }
+  override def hex = BitcoinSUtil.encodeHex(toInt.toShort).slice(2,4)
 
-  override def - (num : UInt8): UInt8 =  {
-    val difference = underlying - num.underlying
-    checkResult(difference)
-  }
-
-  override def * (num : UInt8): UInt8 =  {
-    val product = underlying * num.underlying
-    checkResult(product)
-  }
-
-  override def > (num : UInt8): Boolean = underlying > num.underlying
-
-  override def >= (num : UInt8): Boolean = underlying >= num.underlying
-
-  override def < (num : UInt8): Boolean = underlying < num.underlying
-
-  override def <= (num : UInt8): Boolean = underlying <= num.underlying
-
-  def | (num : UInt8) : UInt8 = {
-    val bitwiseOr = underlying | num.underlying
-    checkResult(bitwiseOr)
-  }
-
-  def & (num : UInt8) : UInt8 = {
-    val bitwiseAnd = underlying & num.underlying
-    checkResult(bitwiseAnd)
-  }
-
-  def >> (u: UInt8): UInt8 = this.>>(u.underlying)
-  def >> (i : Int): UInt8 = {
-    val r = underlying >> i
-    checkResult(r)
-  }
-
-  def <<(u: UInt8): UInt8 = this.<<(u.underlying)
-  def << (i: Int): UInt8 = {
-    val r = (underlying << i) & 0xffL
-    checkResult(r)
-  }
-  override def hex = BitcoinSUtil.encodeHex(underlying).slice(2,4)
-
-  override def toInt: Int = toLong.toInt
-
-  def toLong: Long = underlying
-
-  /**
-    * Checks the result of the arithmetic operation to see if an error occurred
-    * if an error does occur throw it, else return the [[UInt32]]
-    * @param result the try type wrapping the result of the arithmetic operation
-    * @return the result of the unsigned number operation
-    */
-  private def checkResult(result : Long): UInt8 = {
-    if (result > UInt8.max.underlying || result < UInt8.min.underlying) throw new IllegalArgumentException("Result of operation was out of bounds for a UInt8: " + result)
-    else UInt8(result.toShort)
-  }
+  override def andMask = 0xff
 }
 
 /**
   * Represents a uint32_t in C
   */
-sealed abstract class UInt32 extends UnsignedNumber with NumberOperations[UInt32] {
-  override type A = Long
+sealed abstract class UInt32 extends UnsignedNumber[UInt32] {
+  override def apply: A => UInt32 = UInt32(_)
+  override def hex = BitcoinSUtil.encodeHex(toLong).slice(8,16)
 
-  override def + (num : UInt32): UInt32 = {
-    val sum = underlying + num.underlying
-    val result = Try(UInt32(sum))
-    checkResult(result)
-  }
-
-  override def - (num : UInt32): UInt32 =  {
-    val difference = underlying - num.underlying
-    val result = Try(UInt32(difference))
-    checkResult(result)
-  }
-
-  override def * (num : UInt32): UInt32 =  {
-    val product = underlying * num.underlying
-    val result = Try(UInt32(product))
-    checkResult(result)
-  }
-
-  override def > (num : UInt32): Boolean = underlying > num.underlying
-
-  override def >= (num : UInt32): Boolean = underlying >= num.underlying
-
-  override def < (num : UInt32): Boolean = underlying < num.underlying
-
-  override def <= (num : UInt32): Boolean = underlying <= num.underlying
-
-  def | (num : UInt32) : UInt32 = UInt32(underlying | num.underlying)
-
-  def & (num : UInt32) : UInt32 = UInt32(underlying & num.underlying)
-
-  def >> (u: UInt32): UInt32 = this.>>(u.underlying)
-  def >> (l: Long): UInt32 = {
-    val r = Try(UInt32(underlying >> l))
-    checkResult(r)
-  }
-
-  def <<(u: UInt32): UInt32 = this.<<(u.underlying)
-  def << (l: Long): UInt32 = {
-    if (l == 0) this
-    else {
-      //since we are going to shift left we can lose precision by converting .toInt
-      val int = underlying.toInt
-      val shiftNoSignBit = (int << l) & 0xffffffffL
-      val shift = if (((shiftNoSignBit & (1 << 31)) == (1 << 31))) {
-        shiftNoSignBit + (1 << 31)
-      } else shiftNoSignBit
-      val r = Try(UInt32(shift))
-      checkResult(r)
-    }
-  }
-
-  override def hex = BitcoinSUtil.encodeHex(underlying).slice(8,16)
-
-  override def toLong: Long = {
-    require(underlying <= Long.MaxValue, "Overflow error when casting " + this + " to an integer.")
-    require(underlying >= 0, "Unsigned integer should not be cast to a number less than 0" + this)
-    underlying.toLong
-  }
-
-  /**
-    * Checks the result of the arithmetic operation to see if an error occurred
-    * if an error does occur throw it, else return the [[UInt32]]
-    * @param result the try type wrapping the result of the arithmetic operation
-    * @return the result of the unsigned number operation
-    */
-  private def checkResult(result : Try[UInt32]): UInt32 = result match {
-    case Success(number) => number
-    case Failure(exception) => throw exception
-  }
+  override def andMask = 0xffffffffL
 }
 
 /**
   * Represents a uint64_t in C
   */
-sealed abstract class UInt64 extends UnsignedNumber with NumberOperations[UInt64] {
-  override type A = BigInt
+sealed abstract class UInt64 extends UnsignedNumber[UInt64] {
   override def hex = encodeHex(underlying)
-
-  override def + (num : UInt64): UInt64 = {
-    val sum = underlying + num.underlying
-    val result = Try(UInt64(sum))
-    checkResult(result)
-  }
-
-  override def - (num : UInt64): UInt64 = {
-    val difference = underlying - num.underlying
-    val result = Try(UInt64(difference))
-    checkResult(result)
-  }
-
-  override def * (num : UInt64): UInt64 = {
-    val product = underlying * num.underlying
-    val result = Try(UInt64(product))
-    checkResult(result)
-  }
-
-  override def > (num : UInt64): Boolean = underlying > num.underlying
-
-  override def >= (num : UInt64): Boolean = underlying >= num.underlying
-
-  override def < (num : UInt64): Boolean = underlying < num.underlying
-
-  override def <= (num : UInt64): Boolean = underlying <= num.underlying
-
-  def | (num : UInt64) : UInt64 = UInt64(underlying | num.underlying)
-
-  def & (num : UInt64) : UInt64 = UInt64(underlying & num.underlying)
-
-
-  override def toLong = {
-    require(underlying <= Long.MaxValue, "Overflow error when casting " + this + " to an integer.")
-    require(underlying >= 0, "Unsigned integer should not be cast to a number less than 0" + this)
-    underlying.longValue()
-  }
-
-  /**
-    * Checks the result of the arithmetic operation to see if an error occurred
-    * if an error does occur throw it, else return the [[UInt64]]
-    * @param result the try type wrapping the result of the arithmetic operation
-    * @return the result of the unsigned number operation
-    */
-  private def checkResult(result : Try[UInt64]): UInt64 = result match {
-    case Success(number) => number
-    case Failure(exception) => throw exception
-  }
+  override def apply: A => UInt64 = UInt64(_)
+  override def andMask = 0xffffffffffffffffL
 
   /**
     * The converts a [[BigInt]] to a 8 byte hex representation
@@ -257,137 +130,25 @@ sealed abstract class UInt64 extends UnsignedNumber with NumberOperations[UInt64
       val padding = for { _ <- 0 until 16 - hex.length} yield "0"
       padding.mkString ++ hex
     }
-
   }
 }
 
 /**
   * Represents a int32_t in C
   */
-sealed abstract class Int32 extends SignedNumber with NumberOperations[Int32] {
-  override type A = Int
-  override def + (num : Int32) = {
-    val sum = underlying + num.underlying
-    val result = Try(Int32(sum))
-    checkResult(result)
-  }
-  override def - (num : Int32) = {
-    val difference = underlying - num.underlying
-    val result = Try(Int32(difference))
-    checkResult(result)
-  }
-
-  override def *(num : Int32) = {
-    val product = underlying * num.underlying
-    val result = Try(Int32(product))
-    checkResult(result)
-  }
-
-  override def > (num : Int32): Boolean = underlying > num.underlying
-
-  override def >= (num : Int32): Boolean = underlying >= num.underlying
-
-  override def < (num : Int32): Boolean = underlying < num.underlying
-
-  override def <= (num : Int32): Boolean = underlying <= num.underlying
-
-  def unary_- : Int32 = Int32(-underlying)
-  def | (num : Int32) : Int32 = Int32(underlying | num.underlying)
-
-  def & (num : Int32) : Int32 = Int32(underlying & num.underlying)
-
-  override def toLong = {
-    require(underlying <= Long.MaxValue, "Overflow error when casting " + this + " to an integer.")
-    require(underlying >= Long.MinValue, "Overflow error when casting " + this + " to an integer.")
-    underlying
-  }
-
-  /**
-    * Checks the result of the arithmetic operation to see if an error occurred
-    * if an error does occur throw it, else return the [[Int32]]
-    * @param result the try type wrapping the result of the arithmetic operation
-    * @return the result of the unsigned number operation
-    */
-  private def checkResult(result : Try[Int32]): Int32 = result match {
-    case Success(number) => number
-    case Failure(exception) => throw exception
-  }
-
-  override def hex = BitcoinSUtil.encodeHex(underlying)
-
+sealed abstract class Int32 extends SignedNumber[Int32] {
+  override def apply: A => Int32 = Int32(_)
+  override def andMask = 0xffffffff
+  override def hex = BitcoinSUtil.encodeHex(toInt)
 }
 
 /**
   * Represents a int64_t in C
   */
-sealed abstract class Int64 extends SignedNumber with NumberOperations[Int64] {
-  override type A = Long
-  override def + (num : Int64) = {
-    val sum = underlying + num.underlying
-    val result = Try(Int64(sum))
-    checkResult(result)
-  }
-  override def - (num : Int64) = {
-    val difference = underlying - num.underlying
-    val result = Try(Int64(difference))
-    checkResult(result)
-  }
-  override def * (num : Int64) = {
-    val product = underlying * num.underlying
-    val result = Try(Int64(product))
-    checkResult(result)
-  }
-
-  override def > (num : Int64): Boolean = underlying > num.underlying
-
-  override def >= (num : Int64): Boolean = underlying >= num.underlying
-
-  override def < (num : Int64): Boolean = underlying < num.underlying
-
-  override def <= (num : Int64): Boolean = underlying <= num.underlying
-
-  def unary_- : Int64 = Int64(-underlying)
-
-  def | (num : Int64) : Int64 = Int64(underlying | num.underlying)
-
-  def & (num : Int64) : Int64 = Int64(underlying & num.underlying)
-
-  override def toLong = {
-    require(underlying <= Long.MaxValue, "Overflow error when casting " + this + " to an integer.")
-    require(underlying >= Long.MinValue, "Overflow error when casting " + this  + " to an integer.")
-    underlying
-  }
-
-
-  /**
-    * Checks the result of the arithmetic operation to see if an error occurred
-    * if an error does occur throw it, else return the [[Int64]]
-    * @param result the try type wrapping the result of the arithmetic operation
-    * @return the result of the unsigned number operation
-    */
-  private def checkResult(result : Try[Int64]): Int64 = result match {
-    case Success(number) => number
-    case Failure(exception) => throw exception
-  }
-
-  override def hex = BitcoinSUtil.encodeHex(underlying)
-}
-
-
-object SignedNumber extends Factory[SignedNumber] {
-  override def fromBytes(bytes : Seq[Byte]): SignedNumber = {
-    if (bytes.size <= 4) Int32(bytes)
-    else Int64(bytes)
-  }
-}
-
-
-
-object UnsignedNumber extends Factory[UnsignedNumber] {
-  override def fromBytes(bytes : Seq[Byte]): UnsignedNumber = {
-    if (bytes.size <= 4) UInt32(bytes)
-    else UInt64(bytes)
-  }
+sealed abstract class Int64 extends SignedNumber[Int64] {
+  override def apply: A => Int64 = Int64(_)
+  override def andMask = 0xffffffffffffffffL
+  override def hex = BitcoinSUtil.encodeHex(toLong)
 }
 
 /**
@@ -402,7 +163,7 @@ trait BaseNumbers[T] {
 }
 
 object UInt8 extends Factory[UInt8] with BaseNumbers[UInt8] {
-  private case class UInt8Impl(underlying: Short) extends UInt8 {
+  private case class UInt8Impl(underlying: BigInt) extends UInt8 {
     require(isValid(underlying), "Invalid range for a UInt8, got: " + underlying)
   }
   lazy val zero = UInt8(0.toShort)
@@ -411,18 +172,18 @@ object UInt8 extends Factory[UInt8] with BaseNumbers[UInt8] {
   lazy val min = zero
   lazy val max = UInt8(255.toShort)
 
-  def apply(short: Short): UInt8 = UInt8Impl(short)
+  def apply(short: Short): UInt8 = UInt8(BigInt(short))
 
   def apply(byte: Byte): UInt8 = toUInt8(byte)
 
-  def isValid(short: Short): Boolean = short >= 0  && short < 256
+  def apply(bigint: BigInt): UInt8 = UInt8Impl(bigint)
+
+  def isValid(bigInt: BigInt): Boolean = bigInt >= 0  && bigInt < 256
 
   override def fromBytes(bytes: Seq[Byte]): UInt8 = {
     require(bytes.size == 1,"Can only create a uint8 from a byte array of size one, got: " + bytes)
     val res = NumberUtil.toUnsignedInt(bytes)
-    if (res > BigInt(max.underlying) || res < BigInt(min.underlying)) {
-      throw new IllegalArgumentException("Out of boudns for a UInt8, got: " + res)
-    } else UInt8(res.toShort)
+    checkBounds(res)
   }
 
   def toUInt8(byte: Byte): UInt8 = {
@@ -434,10 +195,16 @@ object UInt8 extends Factory[UInt8] with BaseNumbers[UInt8] {
   def toBytes(us: Seq[UInt8]): Seq[Byte] = us.map(toByte(_))
 
   def toUInt8s(bytes: Seq[Byte]): Seq[UInt8] = bytes.map(toUInt8(_))
+
+  def checkBounds(res: BigInt): UInt8 = {
+    if (res > max.underlying || res < min.underlying) {
+      throw new IllegalArgumentException("Out of boudns for a UInt8, got: " + res)
+    } else UInt8(res.toShort)
+  }
 }
 
 object UInt32 extends Factory[UInt32] with BaseNumbers[UInt32] {
-  private case class UInt32Impl(underlying : Long) extends UInt32 {
+  private case class UInt32Impl(underlying : BigInt) extends UInt32 {
     require(underlying >= 0, "We cannot have a negative number in an unsigned number, got: " + underlying)
     require(underlying <= 4294967295L, "We cannot have a number larger than 2^32 -1 in UInt32, got: " + underlying)
   }
@@ -451,12 +218,18 @@ object UInt32 extends Factory[UInt32] with BaseNumbers[UInt32] {
   override def fromBytes(bytes: Seq[Byte]): UInt32 = {
     require(bytes.size <= 4)
     val res = NumberUtil.toUnsignedInt(bytes)
-    if (res > BigInt(max.underlying) || res < BigInt(min.underlying)) {
-      throw new IllegalArgumentException("Out of bounds for a UInt32, got: " + res)
-    } else UInt32(res.toLong)
+    checkBounds(res)
   }
 
-  def apply(long : Long): UInt32 = UInt32Impl(long)
+  def apply(long : Long): UInt32 = UInt32(BigInt(long))
+
+  def apply(bigInt: BigInt): UInt32 =  UInt32Impl(bigInt)
+
+  def checkBounds(res: BigInt): UInt32 = {
+    if (res > max.underlying || res < min.underlying) {
+      throw new IllegalArgumentException("Out of boudns for a UInt8, got: " + res)
+    } else UInt32(res)
+  }
 
 }
 
@@ -485,7 +258,7 @@ object UInt64 extends Factory[UInt64] with BaseNumbers[UInt64] {
 }
 
 object Int32 extends Factory[Int32] with BaseNumbers[Int32] {
-  private case class Int32Impl(underlying : Int) extends Int32 {
+  private case class Int32Impl(underlying : BigInt) extends Int32 {
     require(underlying >= -2147483648, "Number was too small for a int32, got: " + underlying)
     require(underlying <= 2147483647, "Number was too large for a int32, got: " + underlying)
   }
@@ -501,13 +274,15 @@ object Int32 extends Factory[Int32] with BaseNumbers[Int32] {
     Int32(BigInt(bytes.toArray).toInt)
   }
 
-  def apply(int : Int): Int32 = Int32Impl(int)
+  def apply(int : Int): Int32 = Int32(BigInt(int))
+
+  def apply(bigInt: BigInt): Int32 = Int32Impl(bigInt)
 }
 
 object Int64 extends Factory[Int64] with BaseNumbers[Int64] {
-  private case class Int64Impl(underlying : Long) extends Int64 {
+  private case class Int64Impl(underlying : BigInt) extends Int64 {
     require(underlying >= -9223372036854775808L, "Number was too small for a int64, got: " + underlying)
-    require(underlying <= 9223372036854775807L, "Number was too small for a int64, got: " + underlying)
+    require(underlying <= 9223372036854775807L, "Number was too big for a int64, got: " + underlying)
   }
 
   lazy val zero = Int64(0)
@@ -521,5 +296,7 @@ object Int64 extends Factory[Int64] with BaseNumbers[Int64] {
     Int64(BigInt(bytes.toArray).toLong)
   }
 
-  def apply(long : Long): Int64 = Int64Impl(long)
+  def apply(long : Long): Int64 = Int64(BigInt(long))
+
+  def apply(bigInt: BigInt): Int64 = Int64Impl(bigInt)
 }

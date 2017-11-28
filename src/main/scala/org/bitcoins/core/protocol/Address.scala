@@ -107,7 +107,7 @@ object Bech32Address {
       case _: MainNet => bc
       case _: TestNet3 | _: RegTest => tb
     }
-    val witVersion = witSPK.witnessVersion.version.underlying.toShort
+    val witVersion = witSPK.witnessVersion.version.toLong.toShort
     encoded.map(e => Bech32Address(hrp,Seq(UInt8(witVersion)) ++ e))
   }
 
@@ -153,7 +153,7 @@ object Bech32Address {
     bytes.map { v =>
       val b = chk >> 25
       //chk = (chk & 0x1ffffff) << 5 ^ v
-      chk = (chk & 0x1ffffff) << 5 ^ v.underlying
+      chk = (chk & 0x1ffffff) << 5 ^ v.toLong
       0.until(5).map { i: Int =>
         //chk ^= GEN[i] if ((b >> i) & 1) else 0
         if (((b >> i) & 1) == 1) {
@@ -209,7 +209,7 @@ object Bech32Address {
   }
   /** Takes a base32 byte array and encodes it to a string */
   def encodeToString(b: Seq[UInt8]): String = {
-    b.map(b => charset(b.underlying)).mkString
+    b.map(b => charset(b.toInt)).mkString
   }
   /** Decodes bech32 string to the [[HumanReadablePart]] & data part */
   def fromString(str: String): Try[(HumanReadablePart,Seq[Byte])] = {

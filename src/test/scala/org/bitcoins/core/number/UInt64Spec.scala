@@ -20,27 +20,27 @@ class UInt64Spec extends Properties("UInt64Spec") {
 
   property("additive identity") =
     Prop.forAll(NumberGenerator.uInt64s) { uInt64 : UInt64 =>
-      if (uInt64.underlying <= UInt64.max.underlying) uInt64 + UInt64.zero == UInt64(uInt64.underlying)
+      if (uInt64.toBigInt <= UInt64.max.toBigInt) uInt64 + UInt64.zero == UInt64(uInt64.toBigInt)
       else uInt64 + UInt64.zero == uInt64
     }
 
   property("add two arbitrary uInt64s") =
     Prop.forAll(NumberGenerator.uInt64s, NumberGenerator.uInt64s) { (num1 : UInt64, num2 : UInt64) =>
-      val result : BigInt = num1.underlying + num2.underlying
-      if (result <= UInt64.max.underlying) num1 + num2 == UInt64(result)
+      val result : BigInt = num1.toBigInt + num2.toBigInt
+      if (result <= UInt64.max.toBigInt) num1 + num2 == UInt64(result)
       else Try(num1 + num2).isFailure
     }
 
   property("subtractive identity") =
     Prop.forAll(NumberGenerator.uInt64s) { uInt64 : UInt64 =>
-      if (uInt64.underlying <= UInt64.max.underlying) uInt64 - UInt64.zero == UInt64(uInt64.underlying)
+      if (uInt64.toBigInt <= UInt64.max.toBigInt) uInt64 - UInt64.zero == UInt64(uInt64.toBigInt)
       else  uInt64 - UInt64.zero == uInt64
     }
 
 
   property("subtract a uint64 from a uint64") =
     Prop.forAll(NumberGenerator.uInt64s, NumberGenerator.uInt64s) { (num1 : UInt64, num2 : UInt64) =>
-      val result = num1.underlying - num2.underlying
+      val result = num1.toBigInt - num2.toBigInt
       if (result < 0)  Try(num1 - num2).isFailure
       else num1 - num2 == UInt64(result)
     }
@@ -58,37 +58,37 @@ class UInt64Spec extends Properties("UInt64Spec") {
 
   property("multiply two uInt64s") =
     Prop.forAll(NumberGenerator.uInt64s, NumberGenerator.uInt64s) { (num1 : UInt64, num2 : UInt64) =>
-      val result = num1.underlying * num2.underlying
-      if (result <= UInt64.max.underlying) num1 * num2 == UInt64(result)
+      val result = num1.toBigInt * num2.toBigInt
+      if (result <= UInt64.max.toBigInt) num1 * num2 == UInt64(result)
       else Try(num1 * num2).isFailure
     }
 
   property("< & >= for uInt64s") =
     Prop.forAll(NumberGenerator.uInt64s, NumberGenerator.uInt64s) { (num1: UInt64, num2: UInt64) =>
-      if (num1.underlying < num2.underlying) num1 < num2
+      if (num1.toBigInt < num2.toBigInt) num1 < num2
       else num1 >= num2
     }
 
 
   property("<= & > with two uInt64s") =
     Prop.forAll(NumberGenerator.uInt64s, NumberGenerator.uInt64s) { (num1: UInt64, num2: UInt64) =>
-      if (num1.underlying <= num2.underlying) num1 <= num2
+      if (num1.toBigInt <= num2.toBigInt) num1 <= num2
       else num1 > num2
     }
 
   property("== & != for two UInt64s") =
     Prop.forAll(NumberGenerator.uInt64s, NumberGenerator.uInt64s) { (num1 : UInt64, num2 : UInt64) =>
-      if (num1.underlying == num2.underlying) num1 == num2
+      if (num1.toBigInt == num2.toBigInt) num1 == num2
       else num1 != num2
     }
 
   property("|") =
     Prop.forAll(NumberGenerator.uInt64s, NumberGenerator.uInt64s) { (num1: UInt64, num2: UInt64) =>
-      UInt64(num1.underlying | num2.underlying) == (num1 | num2)
+      UInt64(num1.toBigInt | num2.toBigInt) == (num1 | num2)
     }
 
   property("&") =
     Prop.forAll(NumberGenerator.uInt64s, NumberGenerator.uInt64s) { (num1: UInt64, num2: UInt64) =>
-      UInt64(num1.underlying & num2.underlying) == (num1 & num2)
+      UInt64(num1.toBigInt & num2.toBigInt) == (num1 & num2)
     }
 }

@@ -47,13 +47,13 @@ trait NumberGenerator {
   } yield UInt64(bigInt)
 
 
-  def int32s : Gen[Int32] = Gen.choose(Int32.min.underlying,Int32.max.underlying).map(Int32(_))
+  def int32s : Gen[Int32] = Gen.choose(Int32.min.toLong,Int32.max.toLong).map(Int32(_))
 
-  def int64s : Gen[Int64] = Gen.choose(Int64.min.underlying, Int64.max.underlying).map(Int64(_))
+  def int64s : Gen[Int64] = Gen.choose(Int64.min.toLong, Int64.max.toLong).map(Int64(_))
 
-  def scriptNumbers: Gen[ScriptNumber] = Gen.choose(Int64.min.underlying, Int64.max.underlying).map(ScriptNumber(_))
+  def scriptNumbers: Gen[ScriptNumber] = Gen.choose(Int64.min.toLong, Int64.max.toLong).map(ScriptNumber(_))
 
-  def positiveScriptNumbers: Gen[ScriptNumber] = Gen.choose(0L,Int64.max.underlying).map(ScriptNumber(_))
+  def positiveScriptNumbers: Gen[ScriptNumber] = Gen.choose(0L,Int64.max.toLong).map(ScriptNumber(_))
 
   def compactSizeUInts : Gen[CompactSizeUInt] = uInt64s.map(CompactSizeUInt(_))
 

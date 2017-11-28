@@ -22,30 +22,30 @@ class ScriptNumberSpec extends Properties("ScriptNumberSpec") {
     }
   property("< >=") =
     Prop.forAll(NumberGenerator.scriptNumbers, NumberGenerator.scriptNumbers) { (num1 : ScriptNumber, num2 : ScriptNumber) =>
-      if (num1.underlying < num2.underlying) num1 < num2
+      if (num1.toLong < num2.toLong) num1 < num2
       else num1 >= num2
     }
   property("> <=") =
     Prop.forAll(NumberGenerator.scriptNumbers, NumberGenerator.scriptNumbers) { (num1 : ScriptNumber, num2 : ScriptNumber) =>
-      if (num1.underlying > num2.underlying) num1 > num2
+      if (num1.toLong > num2.toLong) num1 > num2
       else num1 <= num2
     }
   property("== & !=") =
     Prop.forAll(NumberGenerator.scriptNumbers, NumberGenerator.scriptNumbers) { (num1 : ScriptNumber, num2 : ScriptNumber) =>
-      if (num1.underlying == num2.underlying) num1 == num2
+      if (num1.toLong == num2.toLong) num1 == num2
       else num1 != num2
     }
   property("add two script numbers") =
     Prop.forAll(NumberGenerator.scriptNumbers, NumberGenerator.scriptNumbers) { (num1 : ScriptNumber, num2: ScriptNumber) =>
-      num1 + num2 == ScriptNumber(num1.underlying + num2.underlying)
+      num1 + num2 == ScriptNumber(num1.toLong + num2.toLong)
     }
   property("subtract a script number from another script number") =
     Prop.forAll(NumberGenerator.scriptNumbers, NumberGenerator.scriptNumbers) { (num1 : ScriptNumber, num2: ScriptNumber) =>
-      num1 - num2 == ScriptNumber(num1.underlying - num2.underlying)
+      num1 - num2 == ScriptNumber(num1.toLong - num2.toLong)
     }
   property("multiply two script numbers") =
     Prop.forAll(NumberGenerator.scriptNumbers, NumberGenerator.scriptNumbers) { (num1 : ScriptNumber, num2: ScriptNumber) =>
-      num1 * num2 == ScriptNumber(num1.underlying * num2.underlying)
+      num1 * num2 == ScriptNumber(num1.toLong * num2.toLong)
     }
   property("multiply a script number by zero should return zero") =
     Prop.forAll(NumberGenerator.scriptNumbers) { (num1 : ScriptNumber) =>

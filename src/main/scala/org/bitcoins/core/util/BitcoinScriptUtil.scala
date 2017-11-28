@@ -61,7 +61,7 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
     val multiSigCount : Long = script.zipWithIndex.map { case (token, index) =>
       if (multiSigOps.contains(token) && index != 0) {
         script(index-1) match {
-          case scriptNum : ScriptNumber => scriptNum.underlying
+          case scriptNum : ScriptNumber => scriptNum.toLong
           case scriptConstant : ScriptConstant => ScriptNumberUtil.toLong(scriptConstant.hex)
           case _ : ScriptToken => ScriptSettings.maxPublicKeysPerMultiSig
         }
@@ -247,7 +247,7 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
   }
 
   def minimalScriptNumberRepresentation(num : ScriptNumber) : ScriptNumber = {
-    val op = ScriptNumberOperation.fromNumber(num.toInt)
+    val op = ScriptNumberOperation.fromNumber(num.toLong)
     if (op.isDefined) op.get else num
   }
 
