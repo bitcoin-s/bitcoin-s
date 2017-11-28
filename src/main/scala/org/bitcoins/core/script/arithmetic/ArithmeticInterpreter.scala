@@ -43,7 +43,7 @@ sealed abstract class ArithmeticInterpreter {
     require(program.script.headOption.contains(OP_ABS), "Script top must be OP_ABS")
     performUnaryArithmeticOperation(program, x => x match {
       case ScriptNumber.zero => ScriptNumber.zero
-      case _ : ScriptNumber => ScriptNumber(x.underlying.abs)
+      case _ : ScriptNumber => ScriptNumber(x.toLong.abs)
     })
   }
 
@@ -62,7 +62,7 @@ sealed abstract class ArithmeticInterpreter {
   /** Returns 0 if the input is 0. 1 otherwise. */
   def op0NotEqual(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.contains(OP_0NOTEQUAL), "Script top must be OP_0NOTEQUAL")
-    performUnaryArithmeticOperation(program, x => if(x.underlying == 0) OP_FALSE else OP_TRUE)
+    performUnaryArithmeticOperation(program, x => if(x.toLong == 0) OP_FALSE else OP_TRUE)
   }
 
   /** If both a and b are not 0, the output is 1. Otherwise 0. */
@@ -115,7 +115,7 @@ sealed abstract class ArithmeticInterpreter {
     require(program.script.headOption.contains(OP_NUMNOTEQUAL),
       "Script top must be OP_NUMNOTEQUAL")
     performBinaryBooleanOperation(program, (x,y) => {
-      x.underlying != y.underlying
+      x.toLong != y.toLong
     })
   }
 

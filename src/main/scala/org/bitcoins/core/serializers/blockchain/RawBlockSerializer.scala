@@ -52,7 +52,7 @@ trait RawBlockSerializer extends RawBitcoinSerializer[Block] {
         loop(remainingTxs - 1, newRemainingBytes, transaction :: accum)
       }
     }
-    loop(txCount.num.underlying, bytes, List())
+    loop(txCount.num.toLong, bytes, List())
   }
 
 }

@@ -77,14 +77,14 @@ trait NumberUtil extends BitcoinSLogger {
       Failure(new IllegalArgumentException("Can't have convert bits 'from' or 'to' parameter greater than 8"))
     } else {
       data.map { h =>
-        if ((h >> UInt8(from.underlying.toShort)) != UInt8.zero) {
+        if ((h >> UInt8(from.toLong.toShort)) != UInt8.zero) {
           Failure(new IllegalArgumentException("Invalid input for bech32: " + h))
         } else {
-          acc = (acc << from) | UInt32(h.underlying)
+          acc = (acc << from) | UInt32(h.toLong)
           bits = bits + from
           while (bits >= to) {
             bits = bits - to
-            val r: Seq[UInt8] = Seq(UInt8((((acc >> bits) & maxv).underlying.toShort)))
+            val r: Seq[UInt8] = Seq(UInt8((((acc >> bits) & maxv).toInt.toShort)))
             ret = ret ++ r
           }
         }
@@ -92,7 +92,7 @@ trait NumberUtil extends BitcoinSLogger {
 
       if (pad) {
         if (bits > UInt32.zero) {
-          val r: Long = (acc.underlying << (to.underlying - bits.underlying)) & maxv.underlying
+          val r: Long = ((acc << (to - bits) & maxv)).toLong
           ret = ret ++ Seq(UInt8(r.toShort))
         }
       } else if (bits >= from || ((acc << (to - bits)) & maxv) != UInt8.zero) {

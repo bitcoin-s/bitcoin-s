@@ -33,15 +33,15 @@ trait ScriptOperation extends ScriptToken {
 }
 
 /** A constant in the Script language for instance as String or a number. */
-sealed trait ScriptConstant extends ScriptToken {
+sealed abstract class ScriptConstant extends ScriptToken {
   /** Returns if the [[ScriptConstant]] is encoded in the shortest possible way. */
   def isShortestEncoding : Boolean = BitcoinScriptUtil.isShortestEncoding(this)
 }
 
 /** Represents a [[ScriptNumber]] in the Script language. */
-sealed trait ScriptNumber extends ScriptConstant {
+sealed abstract class ScriptNumber extends ScriptConstant {
   /** The underlying number of the [[ScriptNumber]]. */
-  def underlying : Long
+  protected def underlying : Long
 
   def + (that : ScriptNumber) : ScriptNumber = ScriptNumber(underlying + that.underlying)
   def unary_- = ScriptNumber(-underlying)
@@ -53,14 +53,14 @@ sealed trait ScriptNumber extends ScriptConstant {
   def > (that : ScriptNumber) : Boolean = underlying > that.underlying
   def >= (that : ScriptNumber) : Boolean = underlying >= that.underlying
 
-  def < (that : Int64) : Boolean = underlying < that.underlying
-  def <= (that : Int64) : Boolean = underlying <= that.underlying
-  def > (that : Int64) : Boolean = underlying > that.underlying
-  def >= (that : Int64) : Boolean = underlying >= that.underlying
+  def < (that : Int64) : Boolean = underlying < that.toLong
+  def <= (that : Int64) : Boolean = underlying <= that.toLong
+  def > (that : Int64) : Boolean = underlying > that.toLong
+  def >= (that : Int64) : Boolean = underlying >= that.toLong
 
 
   def & (that : ScriptNumber) : ScriptNumber = ScriptNumber(underlying & that.underlying)
-  def & (that : Int64) : ScriptNumber = ScriptNumber(underlying & that.underlying)
+  def & (that : Int64) : ScriptNumber = ScriptNumber(underlying & that.toLong)
 
   def | (that : ScriptNumber) : ScriptNumber = ScriptNumber(underlying | that.underlying)
 
@@ -69,12 +69,13 @@ sealed trait ScriptNumber extends ScriptConstant {
    * but (ScriptNumber(0x01) == (ScriptNumber(0x00000000001))) == false. */
   def numEqual(that : ScriptNumber) : Boolean = underlying == that.underlying
 
-  override def toLong = underlying match {
-    case 0 => 0L
-    case _ : Long => super.toLong
-  }
+  override def toLong = underlying
 
-   def toInt = underlying.toInt
+  def toInt = {
+    val l = toLong
+    require(l <= Int.MaxValue && l >= Int.MinValue)
+    l.toInt
+  }
 }
 
 object ScriptNumber extends Factory[ScriptNumber] {
@@ -125,7 +126,7 @@ object ScriptNumber extends Factory[ScriptNumber] {
     def apply(underlying : Long) : ScriptNumber = ScriptNumberImpl(underlying, ScriptNumberUtil.longToHex(underlying))
     def apply(hex : String) : ScriptNumber = ScriptNumberImpl(ScriptNumberUtil.toLong(hex), hex)
     def apply(bytes : Seq[Byte]) : ScriptNumber = ScriptNumberImpl(ScriptNumberUtil.toLong(bytes))
-    def apply(int64: Int64) : ScriptNumber = ScriptNumberImpl(int64.underlying)
+    def apply(int64: Int64) : ScriptNumber = ScriptNumberImpl(int64.toLong)
   }
 }
 
@@ -155,7 +156,7 @@ case object OP_PUSHDATA4 extends ScriptOperation {
 
 /** Represents a [[ScriptNumberOperation]] where the the number in the operation is pushed onto the stack
  * i.e. OP_0 would be push 0 onto the stack, OP_1 would be push 1 onto the stack. */
-sealed trait ScriptNumberOperation extends ScriptNumber with ScriptOperation {
+sealed abstract class ScriptNumberOperation extends ScriptNumber with ScriptOperation {
   override def hex = opCode.toHexString
 }
 
@@ -286,7 +287,7 @@ object ScriptNumberOperation extends ScriptOperationFactory[ScriptNumberOperatio
   def operations = Seq(OP_0,OP_1, OP_1NEGATE, OP_2,OP_3,OP_4,OP_5,OP_6,OP_7,OP_8,OP_9,OP_10,OP_11,OP_12,OP_13,OP_14,OP_15,OP_16)
 
   /** Finds the [[ScriptNumberOperation]] based on the given integer. */
-  def fromNumber(underlying : Int) : Option[ScriptNumberOperation] = operations.find(_.underlying == underlying)
+  def fromNumber(underlying : Long) : Option[ScriptNumberOperation] = operations.find(_.underlying == underlying)
 
 }
 

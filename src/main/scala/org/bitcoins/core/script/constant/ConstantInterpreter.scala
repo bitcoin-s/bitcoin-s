@@ -121,7 +121,7 @@ sealed abstract class ConstantInterpreter {
   private def bytesNeededForPushOp(token : ScriptToken) : Long = token match {
     case scriptNumber: BytesToPushOntoStack => scriptNumber.opCode
     case scriptNumOp: ScriptNumberOperation => scriptNumOp.opCode
-    case scriptNumber: ScriptNumber => scriptNumber.underlying
+    case scriptNumber: ScriptNumber => scriptNumber.toLong
     case scriptConstant : ScriptConstant =>
       val constantFlippedEndianness = BitcoinSUtil.flipEndianness(scriptConstant.hex)
       java.lang.Long.parseLong(constantFlippedEndianness,16)

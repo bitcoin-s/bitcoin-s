@@ -120,7 +120,7 @@ sealed abstract class StackInterpreter {
       logger.info("Script number for OP_PICK: " + number)
       //check if n is within the bound of the script
       if (program.stack.size < 2) ScriptProgram(program, ScriptErrorInvalidStackOperation)
-      else if (number.underlying >= 0 && number.underlying < program.stack.tail.size) {
+      else if (number.toLong >= 0 && number.toLong < program.stack.tail.size) {
         val newStackTop = program.stack.tail(number.toInt)
         ScriptProgram(program, newStackTop :: program.stack.tail, program.script.tail)
       } else {
@@ -135,7 +135,7 @@ sealed abstract class StackInterpreter {
     require(program.script.headOption.contains(OP_ROLL), "Top of script stack must be OP_ROLL")
     executeOpWithStackTopAsNumberArg(program, (number : ScriptNumber) =>
       if (program.stack.size < 2) ScriptProgram(program, ScriptErrorInvalidStackOperation)
-      else if (number.underlying >= 0 && number.underlying < program.stack.tail.size) {
+      else if (number.toLong >= 0 && number.toLong < program.stack.tail.size) {
         val newStackTop = program.stack.tail(number.toInt)
         //removes the old instance of the stack top, appends the new index to the head
         val newStack = newStackTop :: program.stack.tail.diff(List(newStackTop))
