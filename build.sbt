@@ -1,6 +1,6 @@
 //test in assembly := {}
 
-testOptions in Test += Tests.Argument(TestFrameworks.ScalaCheck, "-verbosity", "3")
+//testOptions in Test += Tests.Argument(TestFrameworks.ScalaCheck, "-verbosity", "3")
 
 coverageExcludedPackages := ".*gen"
 
