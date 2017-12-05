@@ -1,8 +1,8 @@
-[![Build Status](https://travis-ci.org/bitcoin-s/bitcoin-s-core.svg?branch=master)](https://travis-ci.org/bitcoin-s/bitcoin-s-core) [![Coverage Status](https://coveralls.io/repos/github/bitcoin-s/bitcoin-s-core/badge.svg?branch=master)](https://coveralls.io/github/bitcoin-s/bitcoin-s-core?branch=master)
+[![Build Status](https://travis-ci.org/bitcoin-s/bitcoin-s-core.svg?branch=master)](https://travis-ci.org/bitcoin-s/bitcoin-s-core) [![Coverage Status](https://coveralls.io/repos/github/bitcoin-s/bitcoin-s-core/badge.svg?branch=master)](https://coveralls.io/github/bitcoin-s/bitcoin-s-core?branch=master) [![IRC Network](https://img.shields.io/badge/irc-%23bitcoin--scala-blue.svg "IRC Freenode")](https://webchat.freenode.net/?channels=bitcoin-scala)
 
 # Bitcoin-S-Core
 
-This is the core functionality of bitcoin-s. Please join us in #bitcoin-scala on freenode for help/collaboration.
+This is the core functionality of bitcoin-s.
 
 [Quick Build Guide](BUILD_README.md)
 
@@ -19,6 +19,7 @@ This repostitory includes the following functionality:
   - A robust set of [generators](https://github.com/bitcoin-s/bitcoin-s-core/tree/master/src/main/scala/org/bitcoins/core/gen), which are used in property based testing
     - These are extremely useful for testing bitcoin applications
     - Here is an example of a specification for our [ECPrivateKey](https://github.com/bitcoin-s/bitcoin-s-core/blob/master/src/test/scala/org/bitcoins/core/crypto/ECPrivateKeySpec.scala)
+  - [Number types](https://github.com/bitcoin-s/bitcoin-s-core/blob/master/src/main/scala/org/bitcoins/core/number/NumberType.scala#L16) to represent C's unsigned numbers ([`UInt8`](https://github.com/bitcoin-s/bitcoin-s-core/blob/1c7a7b9f46679a753248d9f55246c272bb3d63b9/src/main/scala/org/bitcoins/core/number/NumberType.scala#L91), [`UInt32`](https://github.com/bitcoin-s/bitcoin-s-core/blob/1c7a7b9f46679a753248d9f55246c272bb3d63b9/src/main/scala/org/bitcoins/core/number/NumberType.scala#L102) etc) which are used in the bitcoin protocol
   - 90% test coverage throughout the codebase to ensure high quality code. 
   - Functions documented with Scaladocs for user friendliness
 
@@ -27,8 +28,35 @@ This repostitory includes the following functionality:
   - Algebraic Data Types to allow the compiler to check for exhaustiveness on match statements
   - Using [property based testing](http://www.scalatest.org/user_guide/property_based_testing) to test robustness of code 
 
+# Property based testing
+This library aims to achieve high level of correctness via property based testing. At the simplest level, you can think of property based testing as specifying a invariant that must always hold true. [Here](https://github.com/bitcoin-s/bitcoin-s-core/blob/89fbf35d78046b7ed21fd93fec05bb57cba023bb/src/test/scala/org/bitcoins/core/protocol/transaction/TransactionSpec.scala#L13-L17) is an example of a property in the bitcoin-s-core test suite
+
+```scala
+  property("Serialization symmetry") =
+    Prop.forAll(TransactionGenerators.transactions) { tx =>
+      Transaction(tx.hex) == tx
+  }
+```
+
+What this property says is that for every transaction we can generate with [`TransactionGenerators.transactions`](https://github.com/bitcoin-s/bitcoin-s-core/blob/1c7a7b9f46679a753248d9f55246c272bb3d63b9/src/main/scala/org/bitcoins/core/gen/TransactionGenerators.scala#L50) we *must* be able to serialize it to hex format, then deserialize it back to a transaction and get the original `tx` back. 
+
+A more complex example of property based testing is checking that a [multi signature transaction was signed correctly](https://github.com/bitcoin-s/bitcoin-s-core/blob/89fbf35d78046b7ed21fd93fec05bb57cba023bb/src/test/scala/org/bitcoins/core/crypto/TransactionSignatureCreatorSpec.scala#L33-L40). First we generate a *supposedly* validly signed multisig transaction with [`TransactionGenerators.signedMultiSigTransaction`](https://github.com/bitcoin-s/bitcoin-s-core/blob/1c7a7b9f46679a753248d9f55246c272bb3d63b9/src/main/scala/org/bitcoins/core/gen/TransactionGenerators.scala#L102-L108). These transactions have varying m of n requirements. An interesting corner case if when you have 0 of n signatures. Which means no signature is required. Property based testing is really good at fleshing out these corner cases. We check to see if this transaction is valid by running it through our [`ScriptInterpreter`](https://github.com/bitcoin-s/bitcoin-s-core/blob/89fbf35d78046b7ed21fd93fec05bb57cba023bb/src/main/scala/org/bitcoins/core/script/interpreter/ScriptInterpreter.scala#L29). If we have built our functionality correctly the ScriptInterpreter should always return [`ScriptOk`](https://github.com/bitcoin-s/bitcoin-s-core/blob/89fbf35d78046b7ed21fd93fec05bb57cba023bb/src/main/scala/org/bitcoins/core/script/result/ScriptResult.scala#L15) indicating the script was valid.
+```scala
+  property("generate valid signatures for a multisignature transaction") =
+    Prop.forAllNoShrink(TransactionGenerators.signedMultiSigTransaction) {
+      case (txSignatureComponent: TxSigComponent, _)  =>
+        //run it through the interpreter
+        val program = ScriptProgram(txSignatureComponent)
+        val result = ScriptInterpreter.run(program)
+        result == ScriptOk
+  }
+  ```
+
 # TODO
-  - [BIP32](https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki) HD keys
+  - Simple [`TransactionBuilder`](https://github.com/MetacoSA/NBitcoin/blob/56bfd1cbca535424b160d8a40688a79de4800630/NBitcoin/TransactionBuilder.cs#L172) similar nbitcoin 
+  - Hardware wallet support (trezor, ledger etc)
+  - Lightning network scriptpubkey types (some work done [here](https://github.com/Christewart/bitcoin-s-core/commits/lightning_contracts))
+  - sbt respository
   - Java support
   - Android support
 
@@ -59,25 +87,39 @@ $ sbt assembly
 
 # Examples
 
+Every bitcoin protocol data structure (and some other data structures) extends [`NetworkElement`](https://github.com/bitcoin-s/bitcoin-s-core/blob/master/src/main/scala/org/bitcoins/core/protocol/NetworkElement.scala). NetworkElement provides easier methods to convert the data structure to hex or a byte representation. When paired with our [`Factory`](https://github.com/bitcoin-s/bitcoin-s-core/blob/master/src/main/scala/org/bitcoins/core/util/Factory.scala) we can easily serialize and deserialize data structures. Most data structures have companion objects that extends `Factory` to be able to easily create protocol data structures. An example of this is the [`ScriptPubKey`](https://github.com/bitcoin-s/bitcoin-s-core/blob/1c7a7b9f46679a753248d9f55246c272bb3d63b9/src/main/scala/org/bitcoins/core/protocol/script/ScriptPubKey.scala#L462) companion object. You can use this companion object to create a SPK from hex or a byte array.
+
 Here is an example scala console session with bitcoins-core
 
 ```scala
-chris@chris:~/dev/bitcoins-core-chris$ sbt console
+$ sbt console
+[info] Loading global plugins from /home/chris/.sbt/0.13/plugins
+[info] Loading project definition from /home/chris/dev/bitcoin-s-core/project
+[info] Set current project to bitcoin-s-core (in build file:/home/chris/dev/bitcoin-s-core/)
+[info] Starting scala interpreter...
+[info] 
+Welcome to Scala version 2.11.7 (Java HotSpot(TM) 64-Bit Server VM, Java 1.8.0_151).
+Type in expressions to have them evaluated.
+Type :help for more information.
 
 scala> import org.bitcoins.core.protocol.transaction._
-import org.bitcoins.protocol.transaction._
+import org.bitcoins.core.protocol.transaction._
 
-scala> import org.bitcoins.core.protocol.script._
-import org.bitcoins.protocol.script._
+scala> val hexTx = "0100000001ccf318f0cbac588a680bbad075aebdda1f211c94ba28125b0f627f9248310db3000000006b4830450221008337ce3ce0c6ac0ab72509f8$9c1d52701817a2362d6357457b63e3bdedc0c0602202908963b9cf1a095ab3b34b95ce2bc0d67fb0f19be1cc5f7b3de0b3a325629bf01210241d746ca08da0a668735c3e01c1$a02045f2f399c5937079b6434b5a31dfe353ffffffff0210335d05000000001976a914b1d7591b69e9def0feb13254bace942923c7922d88ac48030000000000001976a9145e$90c865c2f6f7a9710a474154ab1423abb5b9288ac00000000"
+hexTx: String = 0100000001ccf318f0cbac588a680bbad075aebdda1f211c94ba28125b0f627f9248310db3000000006b4830450221008337ce3ce0c6ac0ab72509f889c1$52701817a2362d6357457b63e3bdedc0c0602202908963b9cf1a095ab3b34b95ce2bc0d67fb0f19be1cc5f7b3de0b3a325629bf01210241d746ca08da0a668735c3e01c1fa02$45f2f399c5937079b6434b5a31dfe353ffffffff0210335d05000000001976a914b1d7591b69e9def0feb13254bace942923c7922d88ac48030000000000001976a9145e690c$65c2f6f7a9710a474154ab1423abb5b9288ac00000000
 
-scala> val simpleRawTransaction = "0100000001ccf318f0cbac588a680bbad075aebdda1f211c94ba28125b0f627f9248310db3000000006b4830450221008337ce3ce0c6ac0ab72509f889c1d52701817a2362d6357457b63e3bdedc0c0602202908963b9cf1a095ab3b34b95ce2bc0d67fb0f19be1cc5f7b3de0b3a325629bf01210241d746ca08da0a668735c3e01c1fa02045f2f399c5937079b6434b5a31dfe353ffffffff0210335d05000000001976a914b1d7591b69e9def0feb13254bace942923c7922d88ac48030000000000001976a9145e690c865c2f6f7a9710a474154ab1423abb5b9288ac00000000"
-simpleRawTransaction: String = 0100000001ccf318f0cbac588a680bbad075aebdda1f211c94ba28125b0f627f9248310db3000000006b4830450221008337ce3ce0c6ac0ab72509f889c1d52701817a2362d6357457b63e3bdedc0c0602202908963b9cf1a095ab3b34b95ce2bc0d67fb0f19be1cc5f7b3de0b3a325629bf01210241d746ca08da0a668735c3e01c1fa02045f2f399c5937079b6434b5a31dfe353ffffffff0210335d05000000001976a914b1d7591b69e9def0feb13254bace942923c7922d88ac48030000000000001976a9145e690c865c2f6f7a9710a474154ab1423abb5b9288ac00000000
+scala> val tx = Transaction(hexTx)
+SLF4J: Failed to load class "org.slf4j.impl.StaticLoggerBinder".
+SLF4J: Defaulting to no-operation (NOP) logger implementation
+SLF4J: See http://www.slf4j.org/codes.html#StaticLoggerBinder for further details.
+tx: org.bitcoins.core.protocol.transaction.Transaction = BaseTransactionImpl(UInt32Impl(1),List(TransactionInputImpl(TransactionOutPointImpl$DoubleSha256DigestImpl(ccf318f0cbac588a680bbad075aebdda1f211c94ba28125b0f627f9248310db3),UInt32Impl(0)),P2PKHScriptSignatureImpl(6b483045022$008337ce3ce0c6ac0ab72509f889c1d52701817a2362d6357457b63e3bdedc0c0602202908963b9cf1a095ab3b34b95ce2bc0d67fb0f19be1cc5f7b3de0b3a325629bf012102$1d746ca08da0a668735c3e01c1fa02045f2f399c5937079b6434b5a31dfe353),UInt32Impl(4294967295))),List(TransactionOutputImpl(SatoshisImpl(Int64Impl($9994000)),P2PKHScriptPubKeyImpl(1976a914b1d7591b69e9def0feb13254bace942923c7922d88ac)), TransactionOutputImpl(SatoshisImpl(Int64Impl(840)),P$PKHScriptPubKeyImpl(1976a9145e690c865c2f6f7a9710a474154ab1423abb5b9288ac))),UInt32Impl(0))
 
-scala> val tx = Transaction(simpleRawTransaction)
-tx: org.bitcoins.core.protocol.transaction.Transaction = TransactionImpl(1,List(TransactionInputImpl(TransactionOutPointImpl(b30d3148927f620f5b1228ba941c211fdabdae75d0ba0b688a58accbf018f3cc,0),P2PKHScriptSignatureImpl(4830450221008337ce3ce0c6ac0ab72509f889c1d52701817a2362d6357457b63e3bdedc0c0602202908963b9cf1a095ab3b34b95ce2bc0d67fb0f19be1cc5f7b3de0b3a325629bf01210241d746ca08da0a668735c3e01c1fa02045f2f399c5937079b6434b5a31dfe353,List(BytesToPushOntoStackImpl(72), ScriptConstantImpl(30450221008337ce3ce0c6ac0ab72509f889c1d52701817a2362d6357457b63e3bdedc0c0602202908963b9cf1a095ab3b34b95ce2bc0d67fb0f19be1cc5f7b3de0b3a325629bf01), BytesToPushOntoStackImpl(33), ScriptConstantImpl(0241d746ca08da0a668735c3e01c1fa02045f2f399c5937079b6434b5a31dfe353))),4294967295)),List(TransactionOutputImpl(89994000 ...
+scala> val hexAgain = tx.hex
+hexAgain: String = 0100000001ccf318f0cbac588a680bbad075aebdda1f211c94ba28125b0f627f9248310db3000000006b4830450221008337ce3ce0c6ac0ab72509f88$c1d52701817a2362d6357457b63e3bdedc0c0602202908963b9cf1a095ab3b34b95ce2bc0d67fb0f19be1cc5f7b3de0b3a325629bf01210241d746ca08da0a668735c3e01c1f$02045f2f399c5937079b6434b5a31dfe353ffffffff0210335d05000000001976a914b1d7591b69e9def0feb13254bace942923c7922d88ac48030000000000001976a9145e6$0c865c2f6f7a9710a474154ab1423abb5b9288ac00000000
+
 ```
 
-This gives us an example of a bitcoin transaction that is encoded in hex format that is deserialized to a native Scala object called a Transaction.
+This gives us an example of a bitcoin transaction that is encoded in hex format that is deserialized to a native Scala object called a [`Transaction`](https://github.com/bitcoin-s/bitcoin-s-core/blob/6358eb83067909771f989d615b422759222d060a/src/main/scala/org/bitcoins/core/protocol/transaction/Transaction.scala#L14-L42). You could also serialize the transaction to bytes using `tx.bytes` instead of `tx.hex`. These methods are available on every data structure that extends NetworkElement, like [`ECPrivateKey`](https://github.com/bitcoin-s/bitcoin-s-core/blob/6358eb83067909771f989d615b422759222d060a/src/main/scala/org/bitcoins/core/crypto/ECKey.scala#L23-L67), [`ScriptPubKey`](https://github.com/bitcoin-s/bitcoin-s-core/blob/6358eb83067909771f989d615b422759222d060a/src/main/scala/org/bitcoins/core/protocol/script/ScriptPubKey.scala#L23), [`ScriptWitness`](https://github.com/bitcoin-s/bitcoin-s-core/blob/6358eb83067909771f989d615b422759222d060a/src/main/scala/org/bitcoins/core/protocol/script/ScriptWitness.scala#L13), and [`Block`](https://github.com/bitcoin-s/bitcoin-s-core/blob/6358eb83067909771f989d615b422759222d060a/src/main/scala/org/bitcoins/core/protocol/blockchain/Block.scala#L17). 
 
 Transactions are run through the interpreter to check the validity of the Transaction. These are packaged up into an object called ScriptProgram, which contains the following:
   - The transaction that is being checked
@@ -160,4 +202,10 @@ chris@chris:~/dev/bitcoins-core$ sbt
 >
 ```
 
+# Interacting with bitcoind
 
+Please see our other project [`bitcoin-s-rpc-client`](https://github.com/bitcoin-s/bitcoin-s-rpc-client)
+
+# Stand alone SPV Node
+
+Please see our other project [`bitcoin-s-spv-node`](https://github.com/bitcoin-s/bitcoin-s-spv-node)
