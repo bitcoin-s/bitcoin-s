@@ -11,7 +11,7 @@ import scala.util.Try
 /**
  * Created by chris on 1/7/16.
  */
-trait ScriptParser extends Factory[List[ScriptToken]] {
+sealed abstract class ScriptParser extends Factory[List[ScriptToken]] {
 
 
   /** Parses a list of bytes into a list of script tokens */
@@ -123,7 +123,6 @@ trait ScriptParser extends Factory[List[ScriptToken]] {
       //for the offical parsing algorithm, for examples of weird formats look inside of
       //[[https://github.com/bitcoin/bitcoin/blob/master/src/test/data/script_valid.json]]
       val parsedBytesFromString = loop(str.split(" ").toList, List()).reverse
-      logger.info("Parsed bytes from the given string: " + BitcoinSUtil.encodeHex(parsedBytesFromString))
       parse(parsedBytesFromString)
     }
   }

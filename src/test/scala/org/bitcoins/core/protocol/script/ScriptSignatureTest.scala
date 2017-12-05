@@ -116,12 +116,7 @@ class ScriptSignatureTest extends FlatSpec with MustMatchers {
       testCase <- testCases
     } yield {
       Transaction(testCase.transaction.hex) must be (testCase.transaction)
-      logger.info("Test case: " + testCase)
-      logger.info("Hash type num: " + testCase.hashTypeNum)
-      logger.info("Hash type: " + testCase.hashType)
       val hashForSig = TransactionSignatureSerializer.hashForSignature(testCase.transaction, testCase.inputIndex, testCase.script.asm, testCase.hashType)
-      //the hash is returned with opposite endianness
-      logger.info("Expected hash: " + testCase.hash.hex)
       val flipHash = BitcoinSUtil.flipEndianness(testCase.hash.hex)
       hashForSig must be (DoubleSha256Digest(flipHash))
     }
