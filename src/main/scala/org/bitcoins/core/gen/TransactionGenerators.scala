@@ -18,20 +18,20 @@ import org.scalacheck.Gen
 trait TransactionGenerators extends BitcoinSLogger {
 
   /** Responsible for generating [[org.bitcoins.core.protocol.transaction.TransactionOutPoint]] */
-  def outPoints : Gen[TransactionOutPoint] = for {
+  def outPoint : Gen[TransactionOutPoint] = for {
     txId <- CryptoGenerators.doubleSha256Digest
     vout <- NumberGenerator.uInt32s
   } yield TransactionOutPoint(txId, vout)
 
   /** Generates a random [[org.bitcoins.core.protocol.transaction.TransactionOutput]] */
-  def outputs : Gen[TransactionOutput] = for {
+  def output : Gen[TransactionOutput] = for {
     satoshis <- CurrencyUnitGenerator.satoshis
     (scriptPubKey, _) <- ScriptGenerators.scriptPubKey
   } yield TransactionOutput(satoshis, scriptPubKey)
 
   /** Generates a random [[org.bitcoins.core.protocol.transaction.TransactionInput]] */
-  def inputs : Gen[TransactionInput] = for {
-    outPoint <- outPoints
+  def input : Gen[TransactionInput] = for {
+    outPoint <- outPoint
     scriptSig <- ScriptGenerators.scriptSignature
     sequenceNumber <- NumberGenerator.uInt32s
     randomNum <- Gen.choose(0,10)
@@ -47,15 +47,15 @@ trait TransactionGenerators extends BitcoinSLogger {
     * This transaction's [[TransactionInput]]s will not evaluate to true
     * inside of the [[org.bitcoins.core.script.interpreter.ScriptInterpreter]]
     */
-  def transactions : Gen[Transaction] = Gen.oneOf(baseTransaction,witnessTransaction)
+  def transaction : Gen[Transaction] = Gen.oneOf(baseTransaction,witnessTransaction)
 
 
   def baseTransaction: Gen[BaseTransaction] = for {
     version <- NumberGenerator.uInt32s
     randomInputNum <- Gen.choose(1,10)
-    inputs <- Gen.listOfN(randomInputNum, inputs)
+    inputs <- Gen.listOfN(randomInputNum, input)
     randomOutputNum <- Gen.choose(1,10)
-    outputs <- Gen.listOfN(randomOutputNum, outputs)
+    outputs <- Gen.listOfN(randomOutputNum, output)
     lockTime <- NumberGenerator.uInt32s
   } yield BaseTransaction(version, inputs, outputs, lockTime)
 
@@ -63,9 +63,9 @@ trait TransactionGenerators extends BitcoinSLogger {
   def witnessTransaction: Gen[WitnessTransaction] = for {
     version <- NumberGenerator.uInt32s
     randomInputNum <- Gen.choose(1,10)
-    inputs <- Gen.listOfN(randomInputNum, inputs)
+    inputs <- Gen.listOfN(randomInputNum, input)
     randomOutputNum <- Gen.choose(1,10)
-    outputs <- Gen.listOfN(randomOutputNum, outputs)
+    outputs <- Gen.listOfN(randomOutputNum, output)
     lockTime <- NumberGenerator.uInt32s
     witness <- WitnessGenerators.transactionWitness(inputs.size)
   } yield WitnessTransaction(version,inputs,outputs,lockTime, witness)

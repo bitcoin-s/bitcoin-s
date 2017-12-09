@@ -13,9 +13,7 @@ import org.scalatest.{FlatSpec, MustMatchers}
 /**
  * Created by chris on 1/7/16.
  */
-class ScriptParserTest extends FlatSpec with MustMatchers with BitcoinSUtil {
-
-
+class ScriptParserTest extends FlatSpec with MustMatchers {
 
   "ScriptParser" must "parse 0x00 to a OP_0" in {
     ScriptParser.fromBytes(List(0.toByte)) must be (List(OP_0))
@@ -49,22 +47,22 @@ class ScriptParserTest extends FlatSpec with MustMatchers with BitcoinSUtil {
   }
 
   it must "parse a p2pkh output script from a byte array to script tokens" in {
-    val bytes : Seq[Byte] = decodeHex(TestUtil.p2pkhOutputScript).tail
+    val bytes : Seq[Byte] = BitcoinSUtil.decodeHex(TestUtil.p2pkhOutputScript).tail
     ScriptParser.fromBytes(bytes) must be (TestUtil.p2pkhOutputScriptAsm)
   }
 
    it must "parse a p2pkh input script from a byte array to script tokens" in {
-     val bytes = decodeHex(TestUtil.p2pkhInputScript).tail
+     val bytes = BitcoinSUtil.decodeHex(TestUtil.p2pkhInputScript).tail
      ScriptParser.fromBytes(bytes) must be (TestUtil.p2pkhInputScriptAsm)
    }
 
    it must "parse a p2sh input script from a byte array into script tokens" in {
-     val bytes = decodeHex(TestUtil.rawP2shInputScript).tail
+     val bytes = BitcoinSUtil.decodeHex(TestUtil.rawP2shInputScript).tail
      ScriptParser.fromBytes(bytes) must be (TestUtil.p2shInputScriptAsm)
    }
 
    it must "parse a p2sh outputscript from a byte array into script tokens" in {
-     val bytes = decodeHex(TestUtil.p2shOutputScript).tail
+     val bytes = BitcoinSUtil.decodeHex(TestUtil.p2shOutputScript).tail
      ScriptParser.fromBytes(bytes) must be (TestUtil.p2shOutputScriptAsm)
    }
 

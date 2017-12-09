@@ -1,8 +1,10 @@
 package org.bitcoins.core.gen
 
+import org.bitcoins.core.consensus.Merkle
 import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader}
+import org.bitcoins.core.protocol.transaction.Transaction
 import org.scalacheck.Gen
 
 import scala.annotation.tailrec
@@ -11,13 +13,19 @@ import scala.annotation.tailrec
   * Created by tom on 7/6/16.
   */
 trait BlockchainElementsGenerator {
+
+  /** Generates a block that contains the given txs, plus some more randomly generated ones */
+  def block(txs: Seq[Transaction]): Gen[Block] = for {
+    randomNum <- Gen.choose(1,10)
+    neededTxs = if ((randomNum - txs.size) >= 0) randomNum else 0
+    genTxs <- Gen.listOfN(neededTxs, TransactionGenerators.transaction)
+    allTxs = genTxs ++ txs
+    header <- blockHeader(allTxs)
+  } yield Block(header,allTxs)
+
   /** Generates a random [[Block]], note that we limit this
     * to 10 transactions currently */
-  def block : Gen[Block] = for {
-    header <- blockHeader
-    randomNum <- Gen.choose(1,10)
-    txs <- Gen.listOfN(randomNum, TransactionGenerators.transactions)
-  } yield Block(header, txs)
+  def block : Gen[Block] = block(Nil)
 
 
   /** Generates a random [[BlockHeader]] */
@@ -34,11 +42,25 @@ trait BlockchainElementsGenerator {
 
   /** Generates a random [[BlockHeader]] where you can specify the previousBlockHash and nBits */
   def blockHeader(previousBlockHash: DoubleSha256Digest, nBits: UInt32): Gen[BlockHeader] = for {
+    numTxs <- Gen.choose(1,10)
+    txs <- Gen.listOfN(numTxs, TransactionGenerators.transaction)
+    header<- blockHeader(previousBlockHash,nBits,txs)
+  } yield header
+
+  /** Generates a [[BlockHeader]]] that has the fields set to the given values */
+  def blockHeader(previousBlockHash: DoubleSha256Digest, nBits: UInt32, txs: Seq[Transaction]): Gen[BlockHeader] = for {
     version <- NumberGenerator.uInt32s
-    merkleRootHash <- CryptoGenerators.doubleSha256Digest
+    merkleRootHash = Merkle.computeMerkleRoot(txs)
     time <- NumberGenerator.uInt32s
     nonce <- NumberGenerator.uInt32s
   } yield BlockHeader(version, previousBlockHash,merkleRootHash,time,nBits,nonce)
+
+  /** Generates a [[BlockHeader]] that has a merkle root hash corresponding to the given txs */
+  def blockHeader(txs: Seq[Transaction]): Gen[BlockHeader] = for {
+    previousBlockHash <- CryptoGenerators.doubleSha256Digest
+    nBits <- NumberGenerator.uInt32s
+    header <- blockHeader(previousBlockHash,nBits,txs)
+  } yield header
 
   /** Generates a chain of valid headers of the size specified by num,
     * 'valid' means their nBits are the same and each header properly

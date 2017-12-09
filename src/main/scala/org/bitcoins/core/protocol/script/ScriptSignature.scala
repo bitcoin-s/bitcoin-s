@@ -217,7 +217,6 @@ object P2SHScriptSignature extends ScriptFactory[P2SHScriptSignature]  {
   /** Parses a redeem script from the given script token */
   def parseRedeemScript(scriptToken : ScriptToken) : Try[ScriptPubKey] = {
     val asm = ScriptParser.fromBytes(scriptToken.bytes)
-    logger.debug("Asm for redeem script: " + asm)
     val redeemScript : Try[ScriptPubKey] = Try(ScriptPubKey(asm))
     redeemScript
   }
