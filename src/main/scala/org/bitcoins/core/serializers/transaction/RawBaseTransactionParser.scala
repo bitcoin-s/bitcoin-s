@@ -1,46 +1,36 @@
 package org.bitcoins.core.serializers.transaction
 
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.transaction.BaseTransaction
-import org.bitcoins.core.serializers.RawBitcoinSerializer
-import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil}
+import org.bitcoins.core.protocol.transaction.{BaseTransaction, TransactionInput, TransactionOutput}
+import org.bitcoins.core.serializers.{RawBitcoinSerializer, RawSerializerHelper}
 
 /**
  * Created by chris on 1/14/16.
  * For deserializing and re-serializing a bitcoin transaction
  * https://bitcoin.org/en/developer-reference#raw-transaction-format
  */
-trait RawBaseTransactionParser extends RawBitcoinSerializer[BaseTransaction] {
+sealed abstract class RawBaseTransactionParser extends RawBitcoinSerializer[BaseTransaction] {
 
+  val helper = RawSerializerHelper
   def read(bytes : List[Byte]): BaseTransaction = {
     val versionBytes = bytes.take(4)
     val version = UInt32(versionBytes.reverse)
     val txInputBytes = bytes.slice(4,bytes.size)
-    val inputs = RawTransactionInputParser.read(txInputBytes)
-    val inputsSize = inputs.map(_.size).sum
-
-    val outputsStartIndex = inputsSize + 5
-    val outputsBytes = bytes.slice(outputsStartIndex, bytes.size)
-    logger.debug("outputBytes: " + BitcoinSUtil.encodeHex(outputsBytes))
-    val outputs = RawTransactionOutputParser.read(outputsBytes)
-    val lockTimeStartIndex = outputsStartIndex + outputs.map(_.size).sum + 1
-
-    val lockTimeBytes = bytes.slice(lockTimeStartIndex, lockTimeStartIndex + 4)
-
-    val lockTime = UInt32(lockTimeBytes.reverse)
-
+    val (inputs,outputBytes) = helper.parseCmpctSizeUIntSeq(txInputBytes,RawTransactionInputParser.read(_))
+    val (outputs,lockTimeBytes) = helper.parseCmpctSizeUIntSeq(outputBytes,
+      RawTransactionOutputParser.read(_))
+    val lockTime = UInt32(lockTimeBytes.take(4).reverse)
     BaseTransaction(version,inputs,outputs,lockTime)
   }
 
-  def write(tx : BaseTransaction) : String = {
-    //add leading zero if the version byte doesn't r.hexre two hex numbers
-    val txVersionHex = tx.version.hex
-    val version = BitcoinSUtil.flipEndianness(txVersionHex)
-    val inputs : String = RawTransactionInputParser.write(tx.inputs)
-    val outputs : String = RawTransactionOutputParser.write(tx.outputs)
-    val lockTimeWithoutPadding : String = tx.lockTime.hex
-    val lockTime = addPadding(8,BitcoinSUtil.flipEndianness(lockTimeWithoutPadding))
-    version + inputs + outputs + lockTime
+  def write(tx : BaseTransaction): Seq[Byte] = {
+    val version = tx.version.bytes.reverse
+    val inputs: Seq[Byte] = helper.writeCmpctSizeUInt[TransactionInput](tx.inputs,
+      RawTransactionInputParser.write(_))
+    val outputs: Seq[Byte] = helper.writeCmpctSizeUInt[TransactionOutput](tx.outputs,
+      RawTransactionOutputParser.write(_))
+    val lockTime = tx.lockTime.bytes.reverse
+    version ++ inputs ++ outputs ++ lockTime
   }
 }
 

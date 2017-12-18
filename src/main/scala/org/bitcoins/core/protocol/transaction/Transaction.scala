@@ -11,7 +11,7 @@ import scala.util.{Failure, Success, Try}
 /**
  * Created by chris on 7/14/15.
  */
-sealed trait Transaction extends NetworkElement {
+sealed abstract class Transaction extends NetworkElement {
   /**
     * The sha256(sha256(tx)) of this transaction
     * Note that this is the big endian encoding of the hash NOT the little endian encoding displayed on block explorers
@@ -42,8 +42,8 @@ sealed trait Transaction extends NetworkElement {
 }
 
 
-sealed trait BaseTransaction extends Transaction {
-  override def hex = RawBaseTransactionParser.write(this)
+sealed abstract class BaseTransaction extends Transaction {
+  override def bytes = RawBaseTransactionParser.write(this)
 }
 
 
@@ -55,7 +55,7 @@ case object EmptyTransaction extends BaseTransaction {
   override def lockTime = TransactionConstants.lockTime
 }
 
-sealed trait WitnessTransaction extends Transaction {
+sealed abstract class WitnessTransaction extends Transaction {
   /** The txId for the witness transaction from satoshi's original serialization */
   override def txId: DoubleSha256Digest = {
     val btx = BaseTransaction(version,inputs,outputs,lockTime)
@@ -72,7 +72,7 @@ sealed trait WitnessTransaction extends Transaction {
     * */
   def wTxId: DoubleSha256Digest = CryptoUtil.doubleSHA256(bytes)
 
-  override def hex = RawWitnessTransactionParser.write(this)
+  override def bytes = RawWitnessTransactionParser.write(this)
 
 }
 
@@ -105,8 +105,11 @@ object Transaction extends Factory[Transaction] {
   def fromBytes(bytes : Seq[Byte]) : Transaction = {
     val wtxTry = Try(RawWitnessTransactionParser.read(bytes))
     wtxTry match {
-      case Success(wtx) => wtx
-      case Failure(_) => RawBaseTransactionParser.read(bytes)
+      case Success(wtx) =>
+        wtx
+      case Failure(f) =>
+        val btx = RawBaseTransactionParser.read(bytes)
+        btx
     }
   }
 

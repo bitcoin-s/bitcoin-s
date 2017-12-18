@@ -4,6 +4,7 @@ import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.number.{UInt32, UInt64}
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.core.util.BitcoinSUtil
 import org.scalatest.{FlatSpec, MustMatchers}
 
 /**
@@ -30,7 +31,7 @@ class RawBlockSerializerTest extends FlatSpec with MustMatchers {
   val txSeq = List(tx1)
   val uInt = CompactSizeUInt(UInt64.one, 1)
   val hex = header + uInt.hex + rawTx1
-
+  val encode = BitcoinSUtil.encodeHex(_: Seq[Byte])
   "RawBlockSerializer" must "parse genesis block" in {
     val block = RawBlockSerializer.read(hex)
     block.txCount.num must be (UInt64(txSeq.size))
@@ -43,7 +44,7 @@ class RawBlockSerializerTest extends FlatSpec with MustMatchers {
 
   it must "write genesis block" in {
     val block = RawBlockSerializer.read(hex)
-    RawBlockSerializer.write(block) must be(hex)
+    encode(RawBlockSerializer.write(block)) must be(hex)
   }
 
   it must "parse/write a block other than genesis" in {
@@ -74,7 +75,7 @@ class RawBlockSerializerTest extends FlatSpec with MustMatchers {
     block.txCount must be (uInt)
     block.txCount.num must be (UInt64(1))
 
-    RawBlockSerializer.write(block) must be (hex)
+    encode(RawBlockSerializer.write(block)) must be (hex)
   }
 
   it must "parse block with more than 1 transaction" in {

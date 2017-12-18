@@ -316,8 +316,6 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers {
        TransactionSignatureSerializer.hashForSignature(spendingTx,inputIndex,creditingOutput.scriptPubKey.asm, hashType)
      hashedTxForSig.hex must be (BitcoinSUtil.encodeHex(bitcoinjHashForSig))
     }
-
-
   }
 
 

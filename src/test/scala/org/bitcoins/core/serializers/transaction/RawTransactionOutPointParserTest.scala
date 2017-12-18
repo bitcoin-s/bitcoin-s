@@ -11,6 +11,7 @@ class RawTransactionOutPointParserTest extends FlatSpec with MustMatchers  {
   //txid cad1082e674a7bd3bc9ab1bc7804ba8a57523607c876b8eb2cbe645f2b1803d6
   val rawOutPoint = "85d6b0da2edf96b282030d3f4f79d14cc8c882cfef1b3064170c850660317de100000000"
   val rawOutPointLargeVout = "df80e3e6eba7dcd4650281d3c13f140dafbb823a7227a78eb6ee9f6cedd0400134000000"
+  val encode = BitcoinSUtil.encodeHex(_: Seq[Byte])
   "RawTransactionOutPointParser" must "read a raw outpoint into a native scala TransactionOutPoint" in {
     val outPoint = RawTransactionOutPointParser.read(rawOutPoint)
     outPoint.txId.hex must be (BitcoinSUtil.flipEndianness("e17d316006850c1764301befcf82c8c84cd1794f3f0d0382b296df2edab0d685"))
@@ -25,13 +26,13 @@ class RawTransactionOutPointParserTest extends FlatSpec with MustMatchers  {
   it must "write a TransactionOutPoint to a serialized format" in {
     val outPoint = RawTransactionOutPointParser.read(rawOutPoint)
     val actualSerialization = RawTransactionOutPointParser.write(outPoint)
-    actualSerialization must be (rawOutPoint)
+    encode(actualSerialization) must be (rawOutPoint)
   }
 
   it must "write a outpoint that has a large vout" in {
     val outPoint = RawTransactionOutPointParser.read(rawOutPointLargeVout)
     val serializedOutpoint = RawTransactionOutPointParser.write(outPoint)
-    serializedOutpoint must be (rawOutPointLargeVout)
+    encode(serializedOutpoint) must be (rawOutPointLargeVout)
   }
 
   it must "write this outpoint with vout index 1" in {
@@ -41,7 +42,7 @@ class RawTransactionOutPointParserTest extends FlatSpec with MustMatchers  {
     val outPoint = RawTransactionOutPointParser.read(rawOutPoint)
     outPoint.txId.hex must be (BitcoinSUtil.flipEndianness("70309e35d67db5f2397669eac4f86f9d93704247706f4f3f1bb56f03bdad37fc"))
     val serializedOutPoint = RawTransactionOutPointParser.write(outPoint)
-    serializedOutPoint must be (rawOutPoint)
+    encode(serializedOutPoint) must be (rawOutPoint)
   }
 
   it must "determine the correct size of a transaction outpoint" in {

@@ -17,7 +17,7 @@ import scala.io.Source
  * Created by chris on 2/17/16.
  */
 class ScriptSignatureTest extends FlatSpec with MustMatchers {
-  private def logger = BitcoinSLogger.logger
+  private val logger = BitcoinSLogger.logger
 
   "ScriptSignature" must "find the digital signature for the transaction inside of a p2pkh script signature" in {
     val scriptSig = ScriptSignature(TestUtil.rawScriptSig)
@@ -115,6 +115,7 @@ class ScriptSignatureTest extends FlatSpec with MustMatchers {
     for {
       testCase <- testCases
     } yield {
+      logger.info("testCase: " + testCase)
       Transaction(testCase.transaction.hex) must be (testCase.transaction)
       val hashForSig = TransactionSignatureSerializer.hashForSignature(testCase.transaction, testCase.inputIndex, testCase.script.asm, testCase.hashType)
       val flipHash = BitcoinSUtil.flipEndianness(testCase.hash.hex)

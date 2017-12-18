@@ -8,7 +8,7 @@ import org.scalacheck.{Prop, Properties}
   * Created by chris on 6/24/16.
   */
 class TransactionSpec extends Properties("TransactionSpec") {
-  private def logger = BitcoinSLogger.logger
+  private val logger = BitcoinSLogger.logger
 
   property("Serialization symmetry") =
     Prop.forAll(TransactionGenerators.transaction) { tx =>
@@ -17,25 +17,15 @@ class TransactionSpec extends Properties("TransactionSpec") {
       result
     }
 
-  property("Serialization symmetry for witness transactions") =
-    Prop.forAll(TransactionGenerators.witnessTransaction) { wtx: WitnessTransaction =>
-      val result = WitnessTransaction(wtx.hex) == wtx
-      if (!result) logger.error("Incorrect wtx hex: " + wtx.hex)
-      result
-    }
-
-  property("wtxid and txid are not the same for witness transactions") =
-    Prop.forAll(TransactionGenerators.witnessTransaction) { wtx: WitnessTransaction =>
-      wtx.wTxId != wtx.txId
-    }
-
   property("txid of a base transaction must be SHA256(SHA256(hex)) of a btx") =
     Prop.forAll(TransactionGenerators.baseTransaction) { btx: BaseTransaction =>
       btx.txId == CryptoUtil.doubleSHA256(btx.hex)
     }
 
-  property("wtxid must be the same as the SHA256(SHA256(hex)) of a wtx") =
+  property("wtxid must be the same as the SHA256(SHA256(hex)) of a wtx && " +
+    "wtxid and txid are not the same for witness transactions") =
     Prop.forAll(TransactionGenerators.witnessTransaction) { wtx : WitnessTransaction =>
-      wtx.wTxId == CryptoUtil.doubleSHA256(wtx.hex)
+      wtx.wTxId == CryptoUtil.doubleSHA256(wtx.hex) &&
+        wtx.wTxId != wtx.txId
     }
 }

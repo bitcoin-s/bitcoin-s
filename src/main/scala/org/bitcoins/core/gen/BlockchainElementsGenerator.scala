@@ -12,8 +12,7 @@ import scala.annotation.tailrec
 /**
   * Created by tom on 7/6/16.
   */
-trait BlockchainElementsGenerator {
-
+sealed abstract class BlockchainElementsGenerator {
   /** Generates a block that contains the given txs, plus some more randomly generated ones */
   def block(txs: Seq[Transaction]): Gen[Block] = for {
     randomNum <- Gen.choose(1,10)
@@ -22,11 +21,12 @@ trait BlockchainElementsGenerator {
     allTxs = genTxs ++ txs
     header <- blockHeader(allTxs)
   } yield Block(header,allTxs)
-
   /** Generates a random [[Block]], note that we limit this
     * to 10 transactions currently */
-  def block : Gen[Block] = block(Nil)
-
+  def block : Gen[Block] = for {
+    header <- blockHeader
+    txs <- TransactionGenerators.smallTransactions
+  } yield Block(header, txs)
 
   /** Generates a random [[BlockHeader]] */
   def blockHeader : Gen[BlockHeader] = for {

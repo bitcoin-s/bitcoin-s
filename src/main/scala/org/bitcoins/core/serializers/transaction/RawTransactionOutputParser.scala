@@ -1,63 +1,29 @@
 package org.bitcoins.core.serializers.transaction
 
 import org.bitcoins.core.currency.{CurrencyUnits, Satoshis}
-import org.bitcoins.core.number.UInt64
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.protocol.transaction.TransactionOutput
-import org.bitcoins.core.serializers.script.{RawScriptPubKeyParser, ScriptParser}
+import org.bitcoins.core.serializers.script.RawScriptPubKeyParser
 import org.bitcoins.core.serializers.{RawBitcoinSerializer, RawSatoshisSerializer}
-import org.bitcoins.core.util.BitcoinSUtil
-
-import scala.annotation.tailrec
 
 /**
  * Created by chris on 1/11/16.
  * https://bitcoin.org/en/developer-reference#txout
  */
-trait RawTransactionOutputParser extends RawBitcoinSerializer[Seq[TransactionOutput]] {
-
-  /** Reads a sequence of outputs, expects first element in the byte array to be a [[org.bitcoins.core.protocol.CompactSizeUInt]]
-    * indicating how many outputs we need to read
-    */
-  override def read(bytes : List[Byte]) : Seq[TransactionOutput] = {
-
-    val numOutputs = CompactSizeUInt.parseCompactSizeUInt(bytes)
-    @tailrec
-    def loop(bytes : List[Byte], accum : List[TransactionOutput], outputsLeftToParse : Int) : List[TransactionOutput] = {
-      if (outputsLeftToParse > 0) {
-        val parsedOutput = readSingleOutput(bytes)
-        val newAccum =  parsedOutput :: accum
-        val bytesToBeParsed = bytes.slice(parsedOutput.size, bytes.size)
-        val outputsLeft = outputsLeftToParse-1
-        loop(bytesToBeParsed, newAccum, outputsLeft)
-      } else accum
-    }
-    val (_,outputBytes) = bytes.splitAt(numOutputs.size.toInt)
-    loop(outputBytes,Nil,numOutputs.num.toInt).reverse
-  }
-
-  override def write(outputs : Seq[TransactionOutput]) : String = {
-    val numOutputs = CompactSizeUInt(UInt64(outputs.length))
-    val serializedOutputs : Seq[String] = for {
-      output <- outputs
-    } yield write(output)
-    numOutputs.hex + serializedOutputs.mkString
-  }
+sealed abstract class RawTransactionOutputParser extends RawBitcoinSerializer[TransactionOutput] {
 
   /** Writes a single transaction output */
-  def write(output : TransactionOutput) : String = {
-    val satoshis = CurrencyUnits.toSatoshis(output.value)
-    val satoshisHexWithoutPadding : String = BitcoinSUtil.flipEndianness(satoshis.hex)
-    val satoshisHex = addPadding(16,satoshisHexWithoutPadding)
-    satoshisHex + output.scriptPubKey.hex
+  override def write(output : TransactionOutput) : Seq[Byte] = {
+    val satoshis: Satoshis = CurrencyUnits.toSatoshis(output.value)
+    satoshis.bytes ++ output.scriptPubKey.bytes
   }
 
   /** Reads a single output from the given bytes, note this is different than [[org.bitcoins.core.serializers.transaction.RawTransactionOutputParser.read]]
     * because it does NOT expect a [[CompactSizeUInt]] to be the first element in the byte array indicating how many outputs we have
     */
-  def readSingleOutput(bytes: Seq[Byte]): TransactionOutput = {
-    val satoshisHex = BitcoinSUtil.encodeHex(bytes.take(8).reverse)
-    val satoshis = parseSatoshis(satoshisHex)
+  override def read(bytes: List[Byte]): TransactionOutput = {
+    val satoshisBytes = bytes.take(8)
+    val satoshis = RawSatoshisSerializer.read(satoshisBytes)
     //it doesn't include itself towards the size, thats why it is incremented by one
     val scriptPubKeyBytes = bytes.slice(8, bytes.size)
     val scriptPubKey = RawScriptPubKeyParser.read(scriptPubKeyBytes)
@@ -65,9 +31,6 @@ trait RawTransactionOutputParser extends RawBitcoinSerializer[Seq[TransactionOut
     parsedOutput
   }
 
-  /**
-    * Parses the amount of [[Satoshis]] a hex string represents. */
-  private def parseSatoshis(hex : String) : Satoshis = RawSatoshisSerializer.read(hex)
 }
 
 

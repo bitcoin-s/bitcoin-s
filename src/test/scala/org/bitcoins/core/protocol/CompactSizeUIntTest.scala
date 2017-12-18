@@ -71,12 +71,7 @@ class CompactSizeUIntTest extends FlatSpec with MustMatchers  {
   }
 
   it must "parse a variable length integer the same from a tx input and a script sig" in {
-    CompactSizeUInt.parseCompactSizeUInt(TestUtil.txInput.head.scriptSignature.bytes) must be (TestUtil.txInput.head.scriptSignature.compactSizeUInt)
-  }
-
-  it must "parse multiple variable length integers correctly for a multi input tx" in {
-    CompactSizeUInt.parseCompactSizeUInt(TestUtil.txInputs.head.scriptSignature.bytes) must be (TestUtil.txInputs.head.scriptSignature.compactSizeUInt)
-    CompactSizeUInt.parseCompactSizeUInt(TestUtil.txInputs(1).scriptSignature.bytes) must be (TestUtil.txInputs(1).scriptSignature.compactSizeUInt)
+    CompactSizeUInt.parseCompactSizeUInt(TestUtil.txInput.scriptSignature.bytes) must be (TestUtil.txInput.scriptSignature.compactSizeUInt)
   }
 
   it must "parse the variable length integer of the empty script" in {

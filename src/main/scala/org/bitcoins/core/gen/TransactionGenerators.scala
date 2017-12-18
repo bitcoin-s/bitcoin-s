@@ -29,6 +29,11 @@ trait TransactionGenerators extends BitcoinSLogger {
     (scriptPubKey, _) <- ScriptGenerators.scriptPubKey
   } yield TransactionOutput(satoshis, scriptPubKey)
 
+  def outputs = Gen.listOf(output)
+
+  /** Generates a small list of [[TransactionOutput]] */
+  def smallOutputs: Gen[Seq[TransactionOutput]] = Gen.choose(0,5).flatMap(i => Gen.listOfN(i,output))
+
   /** Generates a random [[org.bitcoins.core.protocol.transaction.TransactionInput]] */
   def input : Gen[TransactionInput] = for {
     outPoint <- outPoint
@@ -42,33 +47,42 @@ trait TransactionGenerators extends BitcoinSLogger {
     } else TransactionInput(outPoint,scriptSig,sequenceNumber)
   }
 
+  def inputs = Gen.listOf(input)
+
+  /** Generates a small list of [[TransactionInput]] */
+  def smallInputs: Gen[Seq[TransactionInput]] = Gen.choose(0,5).flatMap(i => Gen.listOfN(i, input))
+
+  /** Generates a small non empty list of [[TransactionInput]] */
+  def smallInputsNonEmpty: Gen[Seq[TransactionInput]] = Gen.choose(1,5).flatMap(i => Gen.listOfN(i,input))
   /**
     * Generates an arbitrary [[org.bitcoins.core.protocol.transaction.Transaction]]
     * This transaction's [[TransactionInput]]s will not evaluate to true
     * inside of the [[org.bitcoins.core.script.interpreter.ScriptInterpreter]]
     */
-  def transaction : Gen[Transaction] = Gen.oneOf(baseTransaction,witnessTransaction)
+  def transactions: Gen[Seq[Transaction]] = Gen.listOf(transaction)
 
+  /** Generates a small list of [[Transaction]] */
+  def smallTransactions: Gen[Seq[Transaction]] = Gen.choose(0,10).flatMap(i => Gen.listOfN(i,transaction))
+
+  def transaction: Gen[Transaction] = Gen.oneOf(baseTransaction,witnessTransaction)
 
   def baseTransaction: Gen[BaseTransaction] = for {
     version <- NumberGenerator.uInt32s
-    randomInputNum <- Gen.choose(1,10)
-    inputs <- Gen.listOfN(randomInputNum, input)
-    randomOutputNum <- Gen.choose(1,10)
-    outputs <- Gen.listOfN(randomOutputNum, output)
+    is <- smallInputs
+    os <- smallOutputs
     lockTime <- NumberGenerator.uInt32s
-  } yield BaseTransaction(version, inputs, outputs, lockTime)
+  } yield BaseTransaction(version, is, os, lockTime)
 
   /** Generates a random [[WitnessTransaction]] */
   def witnessTransaction: Gen[WitnessTransaction] = for {
     version <- NumberGenerator.uInt32s
-    randomInputNum <- Gen.choose(1,10)
-    inputs <- Gen.listOfN(randomInputNum, input)
-    randomOutputNum <- Gen.choose(1,10)
-    outputs <- Gen.listOfN(randomOutputNum, output)
+    //we cannot have zero witnesses on a WitnessTx
+    //https://github.com/bitcoin/bitcoin/blob/e8cfe1ee2d01c493b758a67ad14707dca15792ea/src/primitives/transaction.h#L276-L281
+    is <- smallInputsNonEmpty
+    os <- smallOutputs
     lockTime <- NumberGenerator.uInt32s
-    witness <- WitnessGenerators.transactionWitness(inputs.size)
-  } yield WitnessTransaction(version,inputs,outputs,lockTime, witness)
+    witness <- WitnessGenerators.transactionWitness(is.size)
+  } yield WitnessTransaction(version,is,os,lockTime, witness)
 
   /**
     * Creates a [[ECPrivateKey]], then creates a [[P2PKScriptPubKey]] from that private key

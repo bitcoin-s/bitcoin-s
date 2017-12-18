@@ -9,7 +9,8 @@ import org.scalacheck.{Prop, Properties}
 class TransactionInputSpec extends Properties("TranactionInputSpec") {
 
   property("Serialization symmetry") =
-    Prop.forAll(TransactionGenerators.input) { input =>
-      TransactionInput(input.hex) == input
+    Prop.forAllNoShrink(TransactionGenerators.input) { input =>
+      val result = TransactionInput(input.hex) == input
+      result
     }
 }

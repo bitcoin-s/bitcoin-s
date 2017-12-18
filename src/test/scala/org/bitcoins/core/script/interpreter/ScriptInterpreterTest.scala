@@ -31,7 +31,18 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers {
     //use this to represent a single test case from script_valid.json
 /*    val lines =
         """
-          | [ ["", "0 0 0 1 CHECKMULTISIG VERIFY DEPTH 0 EQUAL", "P2SH,STRICTENC", "OK", "Zero sigs means no sigs are checked"]]
+          | [[
+          |    [
+          |        "304402200d461c140cfdfcf36b94961db57ae8c18d1cb80e9d95a9e47ac22470c1bf125502201c8dc1cbfef6a3ef90acbbb992ca22fe9466ee6f9d4898eda277a7ac3ab4b25101",
+          |        "410479be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8ac",
+          |        0.00000001
+          |    ],
+          |    "",
+          |    "0 0x20 0xb95237b48faaa69eb078e1170be3b5cbb3fddf16d0a991e14ad274f7b33a4f64",
+          |    "P2SH,WITNESS",
+          |    "OK",
+          |    "Basic P2WSH"
+          |]]
    """.stripMargin*/
     val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n" finally source.close()
     val json = lines.parseJson
