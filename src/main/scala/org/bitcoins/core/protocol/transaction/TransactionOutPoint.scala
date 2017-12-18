@@ -10,24 +10,16 @@ import org.bitcoins.core.util.{BitcoinSUtil, Factory}
  *
  */
 sealed trait TransactionOutPoint extends NetworkElement {
-  /**
-    * The transaction id for the crediting transaction for this input
- *
-    * @return
-    */
+  /** The transaction id for the crediting transaction for this input */
   def txId : DoubleSha256Digest
 
-  /**
-    * The output index in the parent transaction for the output we are spending
- *
-    * @return
-    */
+  /** The output index in the parent transaction for the output we are spending */
   def vout : UInt32
 
   //https://bitcoin.org/en/developer-reference#outpoint
   override def size = 36
 
-  override def hex = RawTransactionOutPointParser.write(this)
+  override def bytes = RawTransactionOutPointParser.write(this)
 }
 
 /**

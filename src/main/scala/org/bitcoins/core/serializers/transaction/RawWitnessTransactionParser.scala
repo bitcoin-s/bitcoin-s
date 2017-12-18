@@ -2,14 +2,14 @@ package org.bitcoins.core.serializers.transaction
 
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script.EmptyScriptWitness
-import org.bitcoins.core.protocol.transaction.{BaseTransaction, TransactionWitness, WitnessTransaction}
-import org.bitcoins.core.serializers.RawBitcoinSerializer
+import org.bitcoins.core.protocol.transaction._
+import org.bitcoins.core.serializers.{RawBitcoinSerializer, RawSerializerHelper}
 import org.bitcoins.core.util.BitcoinSUtil
 
 /**
   * Created by chris on 11/21/16.
   */
-trait RawWitnessTransactionParser extends RawBitcoinSerializer[WitnessTransaction] {
+sealed abstract class RawWitnessTransactionParser extends RawBitcoinSerializer[WitnessTransaction] {
 
   /** This read function is unique to [[org.bitcoins.core.serializers.transaction.RawBaseTransactionParser]]
     * in the fact that it reads a 'marker' and 'flag' byte to indicate that this tx is a [[WitnessTransaction]]
@@ -26,17 +26,11 @@ trait RawWitnessTransactionParser extends RawBitcoinSerializer[WitnessTransactio
     val flag = bytes(5)
     require(flag.toInt != 0,"Incorrect flag for witness transaction, this must NOT be 0 according to BIP141, got: " + flag)
     val txInputBytes = bytes.slice(6,bytes.size)
-    val inputs = RawTransactionInputParser.read(txInputBytes)
-    val inputsSize = inputs.map(_.size).sum
-    val outputsStartIndex = inputsSize + 7
-    val outputsBytes = bytes.slice(outputsStartIndex, bytes.size)
-    val outputs = RawTransactionOutputParser.read(outputsBytes)
-    val witnessStartIndex = outputsStartIndex + outputs.map(_.size).sum + 1
-    val witnessBytes = bytes.slice(witnessStartIndex,bytes.size)
+    val (inputs,outputBytes) = RawSerializerHelper.parseCmpctSizeUIntSeq(txInputBytes,RawTransactionInputParser.read(_))
+    val (outputs,witnessBytes) = RawSerializerHelper.parseCmpctSizeUIntSeq(outputBytes,RawTransactionOutputParser.read(_))
     val witness = TransactionWitness(witnessBytes, inputs.size)
-    val lockTimeStartIndex = witnessStartIndex + witness.bytes.size
-    val lockTimeBytes = bytes.slice(lockTimeStartIndex, lockTimeStartIndex + 4)
-    val lockTime = UInt32(lockTimeBytes.reverse)
+    val lockTimeBytes = witnessBytes.splitAt(witness.size)._2
+    val lockTime = UInt32(lockTimeBytes.take(4).reverse)
     WitnessTransaction(version,inputs,outputs,lockTime,witness)
   }
 
@@ -48,20 +42,20 @@ trait RawWitnessTransactionParser extends RawBitcoinSerializer[WitnessTransactio
     * Functionality inside of Bitcoin Core:
     * [[https://github.com/bitcoin/bitcoin/blob/e8cfe1ee2d01c493b758a67ad14707dca15792ea/src/primitives/transaction.h#L282-L287s]]
     * */
-  def write(tx: WitnessTransaction) : String = {
-    val txVersionHex = tx.version.hex
-    val version = BitcoinSUtil.flipEndianness(txVersionHex)
-    val inputs : String = RawTransactionInputParser.write(tx.inputs)
-    val outputs : String = RawTransactionOutputParser.write(tx.outputs)
-    val witness = tx.witness.hex
-    val lockTimeWithoutPadding : String = tx.lockTime.hex
-    val lockTime = addPadding(8,BitcoinSUtil.flipEndianness(lockTimeWithoutPadding))
+  def write(tx: WitnessTransaction): Seq[Byte] = {
+    val version = tx.version.bytes.reverse
+    val inputs = RawSerializerHelper.writeCmpctSizeUInt[TransactionInput](tx.inputs,
+      RawTransactionInputParser.write(_))
+    val outputs = RawSerializerHelper.writeCmpctSizeUInt[TransactionOutput](tx.outputs,
+      RawTransactionOutputParser.write(_))
+    val witness = tx.witness.bytes
+    val lockTime = tx.lockTime.bytes.reverse
     //notice we use the old serialization format if all witnesses are empty
     //[[https://github.com/bitcoin/bitcoin/blob/e8cfe1ee2d01c493b758a67ad14707dca15792ea/src/primitives/transaction.h#L276-L281]]
     if (tx.witness.witnesses.exists(_ != EmptyScriptWitness)) {
-      val witConstant = "0001"
-      version + witConstant + inputs + outputs + witness + lockTime
-    } else BaseTransaction(tx.version,tx.inputs,tx.outputs,tx.lockTime).hex
+      val witConstant = Seq(0.toByte,1.toByte)
+      version ++ witConstant ++ inputs ++ outputs ++ witness ++ lockTime
+    } else BaseTransaction(tx.version,tx.inputs,tx.outputs,tx.lockTime).bytes
   }
 }
 

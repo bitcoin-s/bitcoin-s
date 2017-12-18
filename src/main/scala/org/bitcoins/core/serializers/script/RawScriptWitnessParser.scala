@@ -39,20 +39,19 @@ trait RawScriptWitnessParser extends RawBitcoinSerializer[ScriptWitness] {
     witness
   }
 
-  def write(scriptWitness: ScriptWitness): String = {
+  def write(scriptWitness: ScriptWitness): Seq[Byte] = {
     @tailrec
-    def loop(remainingStack: Seq[Seq[Byte]], accum: Seq[String]): Seq[String] = {
+    def loop(remainingStack: Seq[Seq[Byte]], accum: Seq[Seq[Byte]]): Seq[Seq[Byte]] = {
       if (remainingStack.isEmpty) accum.reverse
       else {
-        val compactSizeUInt: CompactSizeUInt = CompactSizeUInt.calculateCompactSizeUInt(remainingStack.head)
+        val compactSizeUInt: CompactSizeUInt = CompactSizeUInt.calc(remainingStack.head)
         val serialization: Seq[Byte] = compactSizeUInt.bytes ++ remainingStack.head
-        loop(remainingStack.tail, BitcoinSUtil.encodeHex(serialization) +: accum)
+        loop(remainingStack.tail, serialization +: accum)
       }
     }
-    val stackItems: Seq[String] = loop(scriptWitness.stack.reverse,Nil)
+    val stackItems: Seq[Seq[Byte]] = loop(scriptWitness.stack.reverse,Nil)
     val size = CompactSizeUInt(UInt64(stackItems.size))
-    val stackHex = stackItems.mkString
-    size.hex + stackHex
+    (size.bytes +: stackItems).flatten
   }
 }
 

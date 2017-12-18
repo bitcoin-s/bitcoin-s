@@ -25,7 +25,7 @@ trait RawScriptPubKeyParser extends RawBitcoinSerializer[ScriptPubKey] {
     }
   }
 
-  override def write(scriptPubKey : ScriptPubKey) : String = scriptPubKey.hex
+  override def write(scriptPubKey : ScriptPubKey): Seq[Byte] = scriptPubKey.bytes
 }
 
 object RawScriptPubKeyParser extends RawScriptPubKeyParser

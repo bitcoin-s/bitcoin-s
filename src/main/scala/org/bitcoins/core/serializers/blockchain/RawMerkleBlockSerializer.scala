@@ -14,7 +14,7 @@ import scala.annotation.tailrec
   * Created by chris on 8/15/16.
   * [[https://bitcoin.org/en/developer-reference#merkleblock]]
   */
-trait RawMerkleBlockSerializer extends RawBitcoinSerializer[MerkleBlock] {
+sealed abstract class RawMerkleBlockSerializer extends RawBitcoinSerializer[MerkleBlock] {
 
   def read(bytes: List[Byte]): MerkleBlock = {
     val blockHeader = RawBlockHeaderSerializer.read(bytes.take(80))
@@ -26,23 +26,21 @@ trait RawMerkleBlockSerializer extends RawBitcoinSerializer[MerkleBlock] {
     val bytesAfterHashCountParsing = bytesAfterBlockHeaderParsing.slice(txHashStartIndex,bytesAfterBlockHeaderParsing.size)
 
     val (hashes, bytesAfterTxHashParsing) = parseTransactionHashes(bytesAfterHashCountParsing,hashCount)
-    logger.debug("Bytes after tx hash parsing: " + BitcoinSUtil.encodeHex(bytesAfterTxHashParsing))
     val flagCount = CompactSizeUInt.parseCompactSizeUInt(bytesAfterTxHashParsing)
     val flags = bytesAfterTxHashParsing.slice(flagCount.size.toInt, bytesAfterTxHashParsing.size)
-    logger.debug("Flags after parsing: " + BitcoinSUtil.encodeHex(flags))
     val matches = BitcoinSUtil.bytesToBitVectors(flags).flatMap(_.reverse)
     MerkleBlock(blockHeader,transactionCount,hashes,matches)
   }
 
-  def write(merkleBlock: MerkleBlock): String = {
+  def write(merkleBlock: MerkleBlock): Seq[Byte] = {
     val partialMerkleTree = merkleBlock.partialMerkleTree
     val bitVectors = parseToBytes(partialMerkleTree.bits)
-    val byteVectors = BitcoinSUtil.bitVectorsToBytes(bitVectors)
+    val byteVectors: Seq[Byte] = BitcoinSUtil.bitVectorsToBytes(bitVectors)
     val flagCount = CompactSizeUInt(UInt64(Math.ceil(partialMerkleTree.bits.size.toDouble / 8).toInt))
-    merkleBlock.blockHeader.hex +
-      BitcoinSUtil.flipEndianness(merkleBlock.transactionCount.hex) +
-      CompactSizeUInt(UInt64(merkleBlock.hashes.size)).hex + merkleBlock.hashes.map(_.hex).mkString +
-      flagCount.hex + BitcoinSUtil.encodeHex(byteVectors)
+    merkleBlock.blockHeader.bytes ++
+      merkleBlock.transactionCount.bytes.reverse ++
+      CompactSizeUInt(UInt64(merkleBlock.hashes.size)).bytes ++
+      merkleBlock.hashes.flatMap(_.bytes) ++ flagCount.bytes ++ byteVectors
   }
 
 
@@ -59,7 +57,7 @@ trait RawMerkleBlockSerializer extends RawBitcoinSerializer[MerkleBlock] {
       if (remainingHashes <= 0) (accum.reverse,remainingBytes)
       else loop(remainingHashes-1, remainingBytes.slice(32,remainingBytes.size), DoubleSha256Digest(remainingBytes.take(32)) :: accum)
     }
-    loop(hashCount.num.toInt, bytes, List())
+    loop(hashCount.num.toInt, bytes, Nil)
   }
 
 
@@ -78,7 +76,7 @@ trait RawMerkleBlockSerializer extends RawBitcoinSerializer[MerkleBlock] {
           loop(t, newBits +: accum.tail)
       }
     }
-    loop(bits,Seq(Seq()))
+    loop(bits,Seq(Nil))
   }
 }
 

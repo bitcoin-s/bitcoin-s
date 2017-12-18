@@ -11,7 +11,7 @@ import scala.annotation.tailrec
   * [[https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki#specification]]
   * [[https://github.com/bitcoin/bitcoin/blob/b4e4ba475a5679e09f279aaf2a83dcf93c632bdb/src/primitives/transaction.h#L232-L268]]
   */
-trait RawTransactionWitnessParser {
+sealed abstract class RawTransactionWitnessParser {
 
   /** We can only tell how many [[org.bitcoins.core.protocol.transaction.TransactionInputWitness]]
     * we have if we have the number of inputs the transaction creates
@@ -29,10 +29,7 @@ trait RawTransactionWitnessParser {
     TransactionWitness(witnesses)
   }
 
-  def write(witness: TransactionWitness): String = {
-    val hex = witness.witnesses.map(_.hex).mkString
-    hex
-  }
+  def write(witness: TransactionWitness): Seq[Byte] = witness.witnesses.flatMap(_.bytes)
 }
 
 object RawTransactionWitnessParser extends RawTransactionWitnessParser

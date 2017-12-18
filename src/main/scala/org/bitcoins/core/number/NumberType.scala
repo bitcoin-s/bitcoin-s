@@ -73,6 +73,8 @@ sealed abstract class Number[T <: Number[T]] extends NetworkElement {
       Success(Unit)
     }
   }
+
+  override def bytes = BitcoinSUtil.decodeHex(hex)
 }
 
 /**
@@ -216,7 +218,7 @@ object UInt32 extends Factory[UInt32] with BaseNumbers[UInt32] {
   lazy val max = UInt32(4294967295L)
 
   override def fromBytes(bytes: Seq[Byte]): UInt32 = {
-    require(bytes.size <= 4)
+    require(bytes.size <= 4, "UInt32 byte array was too large, got: " + BitcoinSUtil.encodeHex(bytes))
     val res = NumberUtil.toUnsignedInt(bytes)
     checkBounds(res)
   }
