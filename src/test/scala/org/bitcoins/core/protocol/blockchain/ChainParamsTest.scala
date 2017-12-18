@@ -42,7 +42,7 @@ class ChainParamsTest extends FlatSpec with MustMatchers {
   it must "generate the input correctly for the genesis transaction's input" in {
     val input = genesisBlock.transactions.head.inputs.head
     input must be (expectedGenesisInput)
-    input.hex must be ("010000000000000000000000000000000000000000000000000000000000000000FFFFFFFF".toLowerCase
+    input.hex must be ("0000000000000000000000000000000000000000000000000000000000000000FFFFFFFF".toLowerCase
       + expectedGenesisScriptSig.hex + "FFFFFFFF".toLowerCase )
   }
 
@@ -55,7 +55,7 @@ class ChainParamsTest extends FlatSpec with MustMatchers {
     val output = genesisTransaction.outputs.head
     output.value must be (Satoshis(Int64(5000000000L)))
     output.scriptPubKey.hex must be (expectedGenesisScriptPubKey.hex)
-    output.hex must be ("0100F2052A01000000".toLowerCase + expectedGenesisScriptPubKey.hex)
+    output.hex must be ("00F2052A01000000".toLowerCase + expectedGenesisScriptPubKey.hex)
   }
 
   it must "generate the correct txid for the genesis transaction" in {

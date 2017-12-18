@@ -230,7 +230,7 @@ sealed abstract class BloomFilter extends NetworkElement {
     loop(bytes,this)
   }
 
-  override def hex = RawBloomFilterSerializer.write(this)
+  override def bytes = RawBloomFilterSerializer.write(this)
 }
 
 

@@ -21,11 +21,6 @@ import scala.util.{Failure, Success, Try}
   * Created by chris on 2/16/16.
   */
 sealed abstract class BaseECKey extends NetworkElement {
-
-  def hex : String = BitcoinSUtil.encodeHex(bytes)
-
-  def bytes : Seq[Byte]
-
   /**
     * Signs a given sequence of bytes with the signingKey
     * @param dataToSign the bytes to be signed

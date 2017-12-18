@@ -1,10 +1,10 @@
 package org.bitcoins.core.currency
 
 import org.bitcoins.core.consensus.Consensus
-import org.bitcoins.core.number.{BaseNumbers, Int32, Int64, SignedNumber}
+import org.bitcoins.core.number.{BaseNumbers, Int64}
 import org.bitcoins.core.protocol.NetworkElement
-import org.bitcoins.core.serializers.{RawBitcoinSerializerHelper, RawSatoshisSerializer}
-import org.bitcoins.core.util.{BitcoinSLogger, Factory}
+import org.bitcoins.core.serializers.RawSatoshisSerializer
+import org.bitcoins.core.util.Factory
 
 
 sealed abstract class CurrencyUnit extends NetworkElement {
@@ -48,11 +48,12 @@ sealed abstract class CurrencyUnit extends NetworkElement {
   def unary_- : CurrencyUnit = {
     Satoshis(- satoshis.underlying)
   }
+  override def bytes = satoshis.bytes
 }
 
 sealed abstract class Satoshis extends CurrencyUnit {
   override type A = Int64
-  override def hex = RawSatoshisSerializer.write(this)
+  override def bytes = RawSatoshisSerializer.write(this)
   override def satoshis: Satoshis = this
 
   def toLong = underlying.toLong
@@ -87,6 +88,7 @@ object Bitcoins extends BaseNumbers[Bitcoins] {
   val max = Bitcoins(Consensus.maxMoney.satoshis)
   val zero = Bitcoins(Satoshis.zero)
   val one = Bitcoins(1)
+
   private case class BitcoinsImpl(underlying: BigDecimal) extends Bitcoins
 
   def apply(underlying: BigDecimal): Bitcoins = BitcoinsImpl(underlying)

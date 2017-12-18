@@ -22,7 +22,7 @@ sealed trait TransactionInput extends NetworkElement {
   //https://bitcoin.org/en/developer-reference#txin
   override def size = previousOutput.size + scriptSignature.size + 4
 
-  def hex = RawTransactionInputParser.write(Seq(this))
+  override def bytes = RawTransactionInputParser.write(this)
 }
 
 case object EmptyTransactionInput extends TransactionInput {
@@ -84,9 +84,7 @@ object TransactionInput extends Factory[TransactionInput] {
       ScriptSignature.empty,TransactionConstants.sequence)
   }
 
-  //TODO: This could bomb if the serialized tx input is not in the right format
-  //probably should put more thought into this to make it more robust
-  def fromBytes(bytes : Seq[Byte]) : TransactionInput = RawTransactionInputParser.read(bytes).head
+  def fromBytes(bytes : Seq[Byte]) : TransactionInput = RawTransactionInputParser.read(bytes)
 
   def apply(oldInput : TransactionInput, scriptSig : ScriptSignature) : TransactionInput = factory(oldInput,scriptSig)
 

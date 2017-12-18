@@ -1,13 +1,12 @@
 package org.bitcoins.core.crypto
 
-import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
+import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.constant.ScriptToken
 import org.bitcoins.core.script.crypto._
-import org.bitcoins.core.serializers.RawBitcoinSerializerHelper
 import org.bitcoins.core.serializers.transaction.RawTransactionOutputParser
 import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil, BitcoinScriptUtil, CryptoUtil}
 
@@ -19,9 +18,9 @@ import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil, BitcoinScriptUtil, 
  * bitcoinj version of this
  * [[https://github.com/bitcoinj/bitcoinj/blob/master/core/src/main/java/org/bitcoinj/core/Transaction.java#L924-L1008]]
  */
-trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper {
+sealed abstract class TransactionSignatureSerializer {
 
-  private def logger = BitcoinSLogger.logger
+  private val logger = BitcoinSLogger.logger
 
   /**
    * Bitcoin Core's bug is that SignatureHash was supposed to return a hash and on this codepath it
@@ -183,7 +182,7 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper {
       } else emptyHash.bytes
 
       val outputHash: Seq[Byte] = if (isNotSigHashSingle && isNotSigHashNone) {
-        val bytes = spendingTx.outputs.flatMap(o => BitcoinSUtil.decodeHex(RawTransactionOutputParser.write(o)))
+        val bytes = spendingTx.outputs.flatMap(o => o.bytes)
         CryptoUtil.doubleSHA256(bytes).bytes
       } else if (HashType.isSIGHASH_SINGLE(hashType.num) && inputIndex < UInt32(spendingTx.outputs.size)) {
         val output = spendingTx.outputs(inputIndexInt)
@@ -192,13 +191,12 @@ trait TransactionSignatureSerializer extends RawBitcoinSerializerHelper {
       } else emptyHash.bytes
 
       val scriptBytes = script.flatMap(_.bytes)
-      //helper function to flip endianness
-      val fe: Seq[Byte] => Seq[Byte] = {bytes: Seq[Byte] => BitcoinSUtil.decodeHex(BitcoinSUtil.flipEndianness(bytes)) }
 
-      val serializationForSig: Seq[Byte] = fe(spendingTx.version.bytes) ++ outPointHash ++ sequenceHash ++
-        spendingTx.inputs(inputIndexInt).previousOutput.bytes ++ CompactSizeUInt.calculateCompactSizeUInt(scriptBytes).bytes ++
-        scriptBytes ++ fe(amount.bytes) ++ fe(spendingTx.inputs(inputIndexInt).sequence.bytes) ++
-        outputHash ++ fe(spendingTx.lockTime.bytes) ++ hashType.num.bytes.reverse
+      val i = spendingTx.inputs(inputIndexInt)
+      val serializationForSig: Seq[Byte] = spendingTx.version.bytes.reverse ++ outPointHash ++ sequenceHash ++
+        i.previousOutput.bytes ++ CompactSizeUInt.calc(scriptBytes).bytes ++
+        scriptBytes ++ amount.bytes ++ i.sequence.bytes.reverse ++
+        outputHash ++ spendingTx.lockTime.bytes.reverse ++ hashType.num.bytes.reverse
       logger.debug("Serialization for signature for WitnessV0Sig: " + BitcoinSUtil.encodeHex(serializationForSig))
       serializationForSig
   }

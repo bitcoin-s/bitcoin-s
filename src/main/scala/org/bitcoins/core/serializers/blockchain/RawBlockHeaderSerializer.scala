@@ -4,26 +4,18 @@ import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.serializers.RawBitcoinSerializer
-import org.bitcoins.core.util.{CryptoUtil, BitcoinSUtil}
 
 /**
   * Created by chris on 5/19/16.
   * Serializes block headers
   * https://bitcoin.org/en/developer-reference#block-headers
   */
-trait RawBlockHeaderSerializer extends RawBitcoinSerializer[BlockHeader] {
+sealed abstract class RawBlockHeaderSerializer extends RawBitcoinSerializer[BlockHeader] {
 
-  /**
-    * Converts a list of bytes into a block header
-    *
-    * @param bytes the bytes to parsed into a block header
-    * @return the block header
-    */
+  /** Converts a list of bytes into a block header */
   def read(bytes : List[Byte]) : BlockHeader = {
     //version first 4 bytes
-    val versionBytes = bytes.slice(0,4)
-    val versionHex = BitcoinSUtil.encodeHex(versionBytes.reverse)
-    val version = UInt32(versionHex)
+    val version = UInt32(bytes.take(4).reverse)
     //previous header hash next 32 bytes
     val prevBlockHashBytes = bytes.slice(4, 36)
     val prevBlockHash : DoubleSha256Digest = DoubleSha256Digest(prevBlockHashBytes)
@@ -32,40 +24,28 @@ trait RawBlockHeaderSerializer extends RawBitcoinSerializer[BlockHeader] {
     val merkleRoot : DoubleSha256Digest = DoubleSha256Digest(merkleRootBytes)
     //time 4 bytes
     val timeBytes = bytes.slice(68,72)
-    val timeHex = BitcoinSUtil.encodeHex(timeBytes.reverse)
-    val time = UInt32(timeHex)
+    val time = UInt32(timeBytes.reverse)
     //nbits 4 bytes
     val nBitsBytes = bytes.slice(72,76)
-    val nBitsHex = BitcoinSUtil.encodeHex(nBitsBytes.reverse)
-    val nBits = UInt32(nBitsHex)
+    val nBits = UInt32(nBitsBytes.reverse)
     //nonce 4 bytes
     val nonceBytes = bytes.slice(76,80)
-    val nonceHex = BitcoinSUtil.encodeHex(nonceBytes.reverse)
-    val nonce = UInt32(nonceHex)
+    val nonce = UInt32(nonceBytes.reverse)
     BlockHeader(version,prevBlockHash, merkleRoot, time, nBits, nonce)
   }
 
-  /**
-    * Serializes the BlockHeader to a hexadecimal string
-    *
-    * @param blockHeader the block header to be serialized
-    * @return the hexadecimal string representing the block header
-    */
-  def write(blockHeader: BlockHeader) : String = {
-    //TODO: By happenstance, flipEndianness function adds a leading '0' if we have hex number less than 10.
-    //We need to explicitly handle this case in our write function in the future.
-    val headerVersion = BitcoinSUtil.flipEndianness(blockHeader.version.hex)
-    val versionSubPadding = addPrecedingZero(headerVersion)
-    val version = addPadding(8,versionSubPadding)
+  /** Serializes the BlockHeader to a byte array */
+  def write(blockHeader: BlockHeader): Seq[Byte]  = {
+    val version = blockHeader.version.bytes.reverse
 
-    val prevHash = blockHeader.previousBlockHash.hex
-    val merkleRoot = blockHeader.merkleRootHash.hex
+    val prevHash = blockHeader.previousBlockHash.bytes
+    val merkleRoot = blockHeader.merkleRootHash.bytes
 
-    val time = addPadding(8,BitcoinSUtil.flipEndianness(blockHeader.time.hex))
-    val nBits = addPadding(8,BitcoinSUtil.flipEndianness(blockHeader.nBits.hex))
-    val nonce = addPadding(8,BitcoinSUtil.flipEndianness(blockHeader.nonce.hex))
+    val time = blockHeader.time.bytes.reverse
+    val nBits = blockHeader.nBits.bytes.reverse
+    val nonce = blockHeader.nonce.bytes.reverse
 
-    version + prevHash + merkleRoot + time + nBits + nonce
+    version ++ prevHash ++ merkleRoot ++ time ++ nBits ++ nonce
   }
 
 }

@@ -12,10 +12,10 @@ import scala.util.{Failure, Success, Try}
   * Created by chris on 12/26/15.
   *
   */
-sealed trait ScriptSignature extends NetworkElement {
+sealed abstract class ScriptSignature extends NetworkElement {
 
 
-  def compactSizeUInt = CompactSizeUInt.parseCompactSizeUInt(bytes)
+  def compactSizeUInt = CompactSizeUInt.parse(bytes)
 
   /**
     * Representation of a scriptSignature in a parsed assembly format
@@ -44,10 +44,13 @@ sealed trait ScriptSignature extends NetworkElement {
 
 sealed trait NonStandardScriptSignature extends ScriptSignature {
   def signatures : Seq[ECDigitalSignature] = Nil
+  override def toString = "NonStandardScriptSignature(" + hex + ")"
 }
 
 object NonStandardScriptSignature extends ScriptFactory[NonStandardScriptSignature] {
-  private case class NonStandardScriptSignatureImpl(hex : String) extends NonStandardScriptSignature
+  private case class NonStandardScriptSignatureImpl(bytes: Seq[Byte]) extends NonStandardScriptSignature {
+
+  }
 
   def fromAsm(asm : Seq[ScriptToken]): NonStandardScriptSignature = {
     buildScript(asm, NonStandardScriptSignatureImpl(_),{ _ => true}, "")
@@ -72,10 +75,12 @@ sealed trait P2PKHScriptSignature extends ScriptSignature {
     Seq(ECDigitalSignature(asm(1).hex))
   }
 
+  override def toString = "P2PKHScriptSignature(" + hex + ")"
+
 }
 
 object P2PKHScriptSignature extends ScriptFactory[P2PKHScriptSignature] {
-  private case class P2PKHScriptSignatureImpl(hex : String) extends P2PKHScriptSignature
+  private case class P2PKHScriptSignatureImpl(bytes: Seq[Byte]) extends P2PKHScriptSignature
 
   def fromAsm(asm: Seq[ScriptToken]): P2PKHScriptSignature = {
     buildScript(asm, P2PKHScriptSignatureImpl(_),isP2PKHScriptSig(_), "Given asm was not a P2PKHScriptSignature, got: " + asm)
@@ -161,10 +166,12 @@ sealed trait P2SHScriptSignature extends ScriptSignature {
       (scriptSig.asm, redeemScript.asm)
     }
   }
+
+  override def toString = "P2SHScriptSignature(" + hex + ")"
 }
 
 object P2SHScriptSignature extends ScriptFactory[P2SHScriptSignature]  {
-  private case class P2SHScriptSignatureImpl(hex : String) extends P2SHScriptSignature
+  private case class P2SHScriptSignatureImpl(bytes: Seq[Byte]) extends P2SHScriptSignature
 
   def apply(scriptSig : ScriptSignature, redeemScript : ScriptPubKey): P2SHScriptSignature = {
     //we need to calculate the size of the redeemScript and add the corresponding push op
@@ -235,11 +242,13 @@ sealed trait MultiSignatureScriptSignature extends ScriptSignature {
     asm.tail.filter(_.isInstanceOf[ScriptConstant])
       .map(sig => ECDigitalSignature(sig.hex))
   }
+
+  override def toString = "MultiSignatureScriptSignature(" + hex + ")"
 }
 
 object MultiSignatureScriptSignature extends ScriptFactory[MultiSignatureScriptSignature] {
 
-  private case class MultiSignatureScriptSignatureImpl(hex : String) extends MultiSignatureScriptSignature
+  private case class MultiSignatureScriptSignatureImpl(bytes: Seq[Byte]) extends MultiSignatureScriptSignature
 
   def apply(signatures : Seq[ECDigitalSignature]): MultiSignatureScriptSignature = {
     val sigsPushOpsPairs : Seq[Seq[ScriptToken]] = for {
@@ -291,10 +300,12 @@ sealed trait P2PKScriptSignature extends ScriptSignature {
   def signatures : Seq[ECDigitalSignature] = {
     Seq(ECDigitalSignature(BitcoinScriptUtil.filterPushOps(asm).head.hex))
   }
+
+  override def toString = "P2PKScriptSignature(" + hex + ")"
 }
 
 object P2PKScriptSignature extends ScriptFactory[P2PKScriptSignature] {
-  private case class P2PKScriptSignatureImpl(hex : String) extends P2PKScriptSignature
+  private case class P2PKScriptSignatureImpl(bytes: Seq[Byte]) extends P2PKScriptSignature
 
   def apply(signature: ECDigitalSignature): P2PKScriptSignature = {
     val pushOps = BitcoinScriptUtil.calculatePushOp(signature.bytes)
@@ -322,18 +333,19 @@ sealed trait LockTimeScriptSignature extends ScriptSignature {
   override def signatures : Seq[ECDigitalSignature] = scriptSig.signatures
 }
 
-sealed trait CLTVScriptSignature extends LockTimeScriptSignature
+sealed trait CLTVScriptSignature extends LockTimeScriptSignature {
+  override def toString = "CLTVScriptSignature(" + hex + ")"
+}
 
 object CLTVScriptSignature extends Factory[CLTVScriptSignature] {
-  private case class CLTVScriptSignatureImpl(hex : String) extends CLTVScriptSignature
+  private case class CLTVScriptSignatureImpl(bytes: Seq[Byte]) extends CLTVScriptSignature
 
   override def fromBytes(bytes : Seq[Byte]) : CLTVScriptSignature = {
-    val hex = BitcoinSUtil.encodeHex(bytes)
-    fromHex(hex)
+    CLTVScriptSignatureImpl(bytes)
   }
 
   override def fromHex(hex : String) : CLTVScriptSignature = {
-    CLTVScriptSignatureImpl(hex)
+    CLTVScriptSignature(BitcoinSUtil.decodeHex(hex))
   }
 
   def apply(scriptSig : ScriptSignature) : CLTVScriptSignature = {
@@ -341,18 +353,19 @@ object CLTVScriptSignature extends Factory[CLTVScriptSignature] {
   }
 }
 
-sealed trait CSVScriptSignature extends LockTimeScriptSignature
+sealed trait CSVScriptSignature extends LockTimeScriptSignature {
+  override def toString = "CSVScriptSignature(" + hex + ")"
+}
 
 object CSVScriptSignature extends Factory[CSVScriptSignature] {
-  private case class CSVScriptSignatureImpl(hex : String) extends CSVScriptSignature
+  private case class CSVScriptSignatureImpl(bytes: Seq[Byte]) extends CSVScriptSignature
 
   override def fromBytes(bytes : Seq[Byte]) : CSVScriptSignature = {
-    val hex = BitcoinSUtil.encodeHex(bytes)
-    fromHex(hex)
+    CSVScriptSignatureImpl(bytes)
   }
 
   override def fromHex(hex : String) : CSVScriptSignature = {
-    CSVScriptSignatureImpl(hex)
+    CSVScriptSignature(BitcoinSUtil.decodeHex(hex))
   }
 
   def apply(scriptSig : ScriptSignature) : CSVScriptSignature = {
@@ -364,7 +377,7 @@ object CSVScriptSignature extends Factory[CSVScriptSignature] {
 /** Represents the empty script signature */
 case object EmptyScriptSignature extends ScriptSignature {
   def signatures = Nil
-  def hex = "00"
+  def bytes = Seq(0.toByte)
 }
 
 object ScriptSignature extends Factory[ScriptSignature] {
@@ -432,20 +445,22 @@ object ScriptSignature extends Factory[ScriptSignature] {
 sealed trait EscrowTimeoutScriptSignature extends ScriptSignature {
   def scriptSig: ScriptSignature = ScriptSignature(bytes.take(bytes.length - 1))
   override def signatures = scriptSig.signatures
-  override def toString = "EscrowTimeoutScriptSignature(" + hex + ")"
 
   /** Checks if the given asm fulfills the timeout or escrow of the [[EscrowTimeoutScriptPubKey]] */
   def isEscrow: Boolean = BitcoinScriptUtil.castToBool(asm.last)
 
   def isTimeout: Boolean = !isEscrow
+
+  override def toString = "EscrowTimeoutScriptSignature(" + hex + ")"
 }
 
 
 object EscrowTimeoutScriptSignature extends Factory[EscrowTimeoutScriptSignature] {
-  private case class EscrowTimeoutScriptSignatureImpl(hex: String) extends EscrowTimeoutScriptSignature
+  private case class EscrowTimeoutScriptSignatureImpl(bytes: Seq[Byte]) extends EscrowTimeoutScriptSignature
 
   override def fromBytes(bytes: Seq[Byte]): EscrowTimeoutScriptSignature = {
-    EscrowTimeoutScriptSignatureImpl(BitcoinSUtil.encodeHex(bytes))
+    //TODO: Come back and look at this, there is no invariant check here to see if the EscrowTiemoutScriptSig is valid
+    EscrowTimeoutScriptSignatureImpl(bytes)
   }
 
   def fromAsm(asm: Seq[ScriptToken], scriptPubKey: EscrowTimeoutScriptPubKey): EscrowTimeoutScriptSignature = {
