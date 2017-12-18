@@ -30,7 +30,7 @@ sealed abstract class MerkleBlock extends NetworkElement {
   /** The [[PartialMerkleTree]] for this merkle block */
   def partialMerkleTree: PartialMerkleTree
 
-  def hex = RawMerkleBlockSerializer.write(this)
+  def bytes = RawMerkleBlockSerializer.write(this)
 }
 
 

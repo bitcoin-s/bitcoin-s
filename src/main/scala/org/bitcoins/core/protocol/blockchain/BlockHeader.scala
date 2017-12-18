@@ -80,14 +80,10 @@ sealed trait BlockHeader extends NetworkElement {
     */
   def nonce : UInt32
 
-  /**
-    * Returns the block's hash
-    *
-    * @return
-    */
+  /** Returns the block's hash */
   def hash : DoubleSha256Digest = CryptoUtil.doubleSHA256(bytes)
 
-  override def hex : String = RawBlockHeaderSerializer.write(this)
+  override def bytes: Seq[Byte] = RawBlockHeaderSerializer.write(this)
 
 }
 

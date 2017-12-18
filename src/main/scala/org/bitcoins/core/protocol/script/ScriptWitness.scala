@@ -17,13 +17,13 @@ sealed trait ScriptWitness extends NetworkElement {
 
   override def toString = "ScriptWitness(" + stack.map(BitcoinSUtil.encodeHex(_)).toString + ")"
 
-  override def hex = RawScriptWitnessParser.write(this)
+  override def bytes = RawScriptWitnessParser.write(this)
 }
 
 case object EmptyScriptWitness extends ScriptWitness {
   override def stack = Nil
 
-  override def hex = "00"
+  override def bytes = Seq(0.toByte)
 }
 
 object ScriptWitness extends Factory[ScriptWitness] {

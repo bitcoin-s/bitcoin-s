@@ -19,7 +19,7 @@ import scala.io.Source
  * Created by chris on 7/14/15.
  */
 class TransactionTest extends FlatSpec with MustMatchers {
-  private def logger = BitcoinSLogger.logger
+  private val logger = BitcoinSLogger.logger
 
   "Transaction" must "derive the correct txid from the transaction contents" in {
 
@@ -64,8 +64,17 @@ class TransactionTest extends FlatSpec with MustMatchers {
     wtx.wTxId must be (CryptoUtil.doubleSHA256(hex))
   }
 
-
-
+  it must "parse a witness coinbase tx correctly" in {
+    //txid is b3974ba615f60f48b4c558a4080810fa5064cfcb88e59b843e7fd552b3f4b3d1 on testnet
+    val hex = "010000000001010000000000000000000000000000000000000000000000000000000000000000ffffffff2003e02e10130e6d696e65642062792062636f696e585bd0620000000006d50200ffffffff03cddf17000000000017a9146859969825bb2787f803a3d0eeb632998ce4f50187848c3b090000000017a9146859969825bb2787f803a3d0eeb632998ce4f501870000000000000000356a24aa21a9ed309cfb38d1015c266667d5b7888c83def872a531b8ac277fe8df623c32b562b50e6d696e65642062792062636f696e0120000000000000000000000000000000000000000000000000000000000000000000000000"
+    val tx = Transaction(hex)
+    val wtx = tx.asInstanceOf[WitnessTransaction]
+    wtx.inputs.size must be (1)
+    wtx.outputs.size must be (3)
+    val witCommitment = wtx.outputs.last
+    witCommitment.scriptPubKey.isInstanceOf[WitnessCommitment] must be (true)
+    wtx.hex must be (hex)
+  }
 
   it must "read all of the tx_valid.json's contents and return ScriptOk" in {
     val source = Source.fromURL(getClass.getResource("/tx_valid.json"))

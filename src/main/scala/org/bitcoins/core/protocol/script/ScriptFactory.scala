@@ -11,11 +11,12 @@ import org.bitcoins.core.util.Factory
 trait ScriptFactory[T] extends Factory[T] {
 
   /** Builds a script from the given asm with the given constructor if the invariant holds true, else throws an error */
-  def buildScript(asm: Seq[ScriptToken], constructor: String => T, invariant: Seq[ScriptToken] => Boolean, errorMsg: String): T = {
+  def buildScript(asm: Seq[ScriptToken], constructor: Seq[Byte] => T,
+                  invariant: Seq[ScriptToken] => Boolean, errorMsg: String): T = {
     if (invariant(asm)) {
-      val asmHex = asm.map(_.hex).mkString
-      val compactSizeUInt = CompactSizeUInt.calculateCompactSizeUInt(asmHex)
-      constructor(compactSizeUInt.hex + asmHex)
+      val asmBytes = asm.flatMap(_.bytes)
+      val compactSizeUInt = CompactSizeUInt.calc(asmBytes)
+      constructor(compactSizeUInt.bytes ++ asmBytes)
     } else throw new IllegalArgumentException(errorMsg)
   }
 

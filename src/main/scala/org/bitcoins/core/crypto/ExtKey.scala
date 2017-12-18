@@ -43,13 +43,13 @@ sealed abstract class ExtKey extends NetworkElement {
     Try(UInt32(idx)).flatMap(deriveChildPubKey(_))
   }
 
-  override def hex: String = key match {
+  override def bytes: Seq[Byte] = key match {
     case priv: ECPrivateKey =>
-      version.hex + depth.hex + BitcoinSUtil.encodeHex(fingerprint) +
-        childNum.hex + chainCode.hex + "00" + priv.hex
+      version.bytes ++ depth.bytes ++ fingerprint ++
+        childNum.bytes ++ chainCode.bytes ++ Seq(0.toByte) ++ priv.bytes
     case pub: ECPublicKey =>
-      version.hex + depth.hex + BitcoinSUtil.encodeHex(fingerprint) +
-        childNum.hex + chainCode.hex + pub.hex
+      version.bytes ++ depth.bytes ++ fingerprint ++
+        childNum.bytes ++ chainCode.bytes ++ pub.bytes
   }
 
   override def toString: String = {

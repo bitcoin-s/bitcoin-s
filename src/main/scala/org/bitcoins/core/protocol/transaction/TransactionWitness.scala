@@ -10,15 +10,15 @@ import org.bitcoins.core.util.BitcoinSUtil
   * The witness data for [[org.bitcoins.core.protocol.script.ScriptSignature]] in this transaction
   * [[https://github.com/bitcoin/bitcoin/blob/b4e4ba475a5679e09f279aaf2a83dcf93c632bdb/src/primitives/transaction.h#L232-L268]]
   */
-sealed trait TransactionWitness extends NetworkElement {
+sealed abstract class TransactionWitness extends NetworkElement {
   def witnesses: Seq[ScriptWitness]
 
-  override def hex = RawTransactionWitnessParser.write(this)
+  override def bytes = RawTransactionWitnessParser.write(this)
 }
 
 /** Used to represent a transaction witness pre segwit, see BIP141 for details */
 case object EmptyWitness extends TransactionWitness {
-  override def hex = "00"
+  override def bytes = Seq(0.toByte)
   override def witnesses = Nil
 }
 

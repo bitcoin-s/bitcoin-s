@@ -14,7 +14,7 @@ import org.bitcoins.core.util.{BitcoinSLogger, Factory}
   * Bitcoin Developer Reference link:
   * [[https://bitcoin.org/en/developer-reference#serialized-blocks]]
   */
-sealed trait Block extends NetworkElement {
+sealed abstract class Block extends NetworkElement {
 
   /** The block header for this block */
   def blockHeader : BlockHeader
@@ -26,7 +26,7 @@ sealed trait Block extends NetworkElement {
   /** The transactions contained in this block */
   def transactions : Seq[Transaction]
 
-  override def hex = RawBlockSerializer.write(this)
+  override def bytes = RawBlockSerializer.write(this)
 
 }
 
