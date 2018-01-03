@@ -145,7 +145,8 @@ sealed abstract class TransactionSignatureSerializer {
     if (inputIndex >= UInt32(spendingTransaction.inputs.size)) {
       logger.warn("Our inputIndex is out of the range of the inputs in the spending transaction")
       errorHash
-    } else if(hashType.isInstanceOf[SIGHASH_SINGLE] && inputIndex >= UInt32(spendingTransaction.outputs.size)) {
+    } else if((hashType.isInstanceOf[SIGHASH_SINGLE] || hashType.isInstanceOf[SIGHASH_SINGLE_ANYONECANPAY]) &&
+      inputIndex >= UInt32(spendingTransaction.outputs.size)) {
       logger.warn("When we have a SIGHASH_SINGLE we cannot have more inputs than outputs")
       errorHash
     } else {
