@@ -49,6 +49,8 @@ sealed abstract class CurrencyUnit extends NetworkElement {
     Satoshis(- satoshis.underlying)
   }
   override def bytes = satoshis.bytes
+
+  def toBigDecimal: BigDecimal
 }
 
 sealed abstract class Satoshis extends CurrencyUnit {
@@ -57,7 +59,11 @@ sealed abstract class Satoshis extends CurrencyUnit {
   override def satoshis: Satoshis = this
 
   def toLong = underlying.toLong
+
   def toBigInt: BigInt = BigInt(toLong)
+
+  override def toBigDecimal = BigDecimal(toBigInt)
+
   def ==(satoshis: Satoshis): Boolean = underlying == satoshis.underlying
 }
 
@@ -80,6 +86,8 @@ sealed abstract class Bitcoins extends CurrencyUnit {
     val sat = underlying * CurrencyUnits.btcToSatoshiScalar
     Satoshis(Int64(sat.toLongExact))
   }
+
+  override def toBigDecimal: BigDecimal = underlying
   override def hex = satoshis.hex
 }
 
