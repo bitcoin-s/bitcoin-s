@@ -28,6 +28,20 @@ This repostitory includes the following functionality:
   - Algebraic Data Types to allow the compiler to check for exhaustiveness on match statements
   - Using [property based testing](http://www.scalatest.org/user_guide/property_based_testing) to test robustness of code 
 
+# Setting up libsecp256k1
+
+lisecp256k1 needs to be built with the java interface enabled. Use the following commands to build secp256k1 with jni enabled. [Here is the official documentation for doing this in secp256k1](https://github.com/bitcoin-core/secp256k1/blob/master/src/java/org/bitcoin/NativeSecp256k1.java#L35)
+```
+$ cd secp256k1
+$ sh autogen.sh && ./configure --enable-jni --enable-experimental --enable-module-ecdh && make
+$ sudo make install #optional, this installs the lib on your system
+```
+
+Now you should be able to run secp256k1 with something like this. Or you can just copy `libsecp256k1.so` to your system library path. 
+```
+$ sbt -Djava.library.path=/usr/local/lib test
+```
+
 # Property based testing
 This library aims to achieve high level of correctness via property based testing. At the simplest level, you can think of property based testing as specifying a invariant that must always hold true. [Here](https://github.com/bitcoin-s/bitcoin-s-core/blob/89fbf35d78046b7ed21fd93fec05bb57cba023bb/src/test/scala/org/bitcoins/core/protocol/transaction/TransactionSpec.scala#L13-L17) is an example of a property in the bitcoin-s-core test suite
 
