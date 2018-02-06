@@ -277,7 +277,7 @@ trait ScriptGenerators extends BitcoinSLogger {
     (creditingTx,outputIndex) = TransactionGenerators.buildCreditingTransaction(scriptPubKey)
     outpoint = TransactionOutPoint(creditingTx.txId,outputIndex)
     outputs = TransactionGenerators.dummyOutputs
-    txSigComponent = P2PKHHelper.sign(privateKey,scriptPubKey,outpoint, outputs, HashType.sigHashAll)
+    txSigComponent = P2PKHHelper.sign(privateKey,scriptPubKey,outpoint, Nil, outputs, HashType.sigHashAll)
     signedScriptSig = txSigComponent.scriptSignature.asInstanceOf[P2PKHScriptSignature]
   } yield (signedScriptSig, scriptPubKey, privateKey)
 
