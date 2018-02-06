@@ -4,9 +4,8 @@ import java.math.BigInteger
 import java.security.SecureRandom
 
 import org.bitcoin.NativeSecp256k1
-import org.bitcoins.core.config.{MainNet, NetworkParameters, TestNet3}
+import org.bitcoins.core.config.{NetworkParameters, Networks}
 import org.bitcoins.core.protocol.NetworkElement
-import org.bitcoins.core.protocol.blockchain.{MainNetChainParams, SecretKey, TestNetChainParams}
 import org.bitcoins.core.util.{BitcoinSUtil, _}
 import org.spongycastle.crypto.AsymmetricCipherKeyPair
 import org.spongycastle.crypto.digests.SHA256Digest
@@ -155,8 +154,7 @@ object ECPrivateKey extends Factory[ECPrivateKey] {
     * @return
     */
   def isCompressed(bytes : Seq[Byte]): Boolean = {
-    val validCompressedBytes: Seq[Byte] =
-      MainNetChainParams.base58Prefix(SecretKey) ++ TestNetChainParams.base58Prefixes(SecretKey)
+    val validCompressedBytes: Seq[Byte] = Networks.secretKeyBytes
     val validCompressedBytesInHex: Seq[String] = validCompressedBytes.map(byte => BitcoinSUtil.encodeHex(byte))
     val firstByteHex = BitcoinSUtil.encodeHex(bytes.head)
     if (validCompressedBytesInHex.contains(firstByteHex)) bytes(bytes.length - 5) == 0x01.toByte
@@ -199,11 +197,7 @@ object ECPrivateKey extends Factory[ECPrivateKey] {
     val decoded = Base58.decodeCheck(wif)
     decoded.map { bytes =>
       val b = bytes.head
-      if (b == TestNetChainParams.base58Prefixes(SecretKey).head) {
-        TestNet3
-      } else if (b == MainNetChainParams.base58Prefixes(SecretKey).head) {
-        MainNet
-      } else throw new IllegalArgumentException("Cannot match wif private key with a network, prefix was: " + BitcoinSUtil.encodeHex(b))
+      Networks.byteToNetwork(b)
     }
   }
 }
