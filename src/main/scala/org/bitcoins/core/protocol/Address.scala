@@ -321,8 +321,7 @@ object P2PKHAddress {
     decodeCheckP2PKH match {
       case Success(bytes) =>
         val firstByte = bytes.head
-        (firstByte == MainNet.p2pkhNetworkByte || firstByte == TestNet3.p2pkhNetworkByte ||
-          firstByte == RegTest.p2pkhNetworkByte) && bytes.size == 21
+        Networks.p2pkhNetworkBytes.contains(firstByte) && bytes.size == 21
       case Failure(exception) => false
     }
   }
@@ -357,9 +356,7 @@ object P2SHAddress {
     decodeCheckP2SH match {
       case Success(bytes) =>
         val firstByte = bytes.head
-        ((firstByte == MainNet.p2shNetworkByte || firstByte == TestNet3.p2shNetworkByte ||
-          RegTest.p2shNetworkByte == firstByte)
-          && bytes.size == 21)
+        Networks.p2shNetworkBytes.contains(firstByte) && bytes.size == 21
       case Failure(_) => false
     }
   }
