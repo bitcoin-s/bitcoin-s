@@ -1,15 +1,16 @@
 package org.bitcoins.core.protocol.blockchain
 
+import java.nio.charset.StandardCharsets
+
 import org.bitcoins.core.consensus.Merkle
 import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
-import org.bitcoins.core.number.{Int64, UInt32, UInt64}
-import org.bitcoins.core.protocol.CompactSizeUInt
+import org.bitcoins.core.number.{Int64, UInt32}
 import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptSignature}
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionConstants, TransactionInput, TransactionOutput}
 import org.bitcoins.core.script.constant.{BytesToPushOntoStack, ScriptConstant, ScriptNumber}
 import org.bitcoins.core.script.crypto.OP_CHECKSIG
-import org.bitcoins.core.util.BitcoinSUtil
+import org.bitcoins.core.util.{BitcoinSUtil, BitcoinScriptUtil}
 
 /**
   * Created by chris on 5/22/16.
@@ -21,7 +22,7 @@ import org.bitcoins.core.util.BitcoinSUtil
   * Mimics this C++ interface
   * https://github.com/bitcoin/bitcoin/blob/master/src/chainparams.h#L42
   */
-sealed trait ChainParams {
+sealed abstract class ChainParams {
 
   /** Return the BIP70 network string ([[MainNetChainParams]], [[TestNetChainParams]] or [[RegTestNetChainParams]].) */
   def networkId : String
@@ -31,7 +32,7 @@ sealed trait ChainParams {
 
   /** Filter transactions that do not match well-defined patterns
     * inside of [[org.bitcoins.core.policy.Policy]]. */
-  def requireStandardTransaction : Boolean
+  def requireStandardTransaction : Boolean = true
 
   /** Takes in a [[Base58Type]] and returns its base58 prefix. */
   def base58Prefix(base58 : Base58Type) : Seq[Byte] = base58Prefixes(base58)
@@ -70,72 +71,72 @@ sealed trait ChainParams {
     */
   def createGenesisBlock(timestamp : String, scriptPubKey : ScriptPubKey, time : UInt32, nonce : UInt32, nBits : UInt32,
                          version : UInt32, amount : CurrencyUnit) : Block = {
-    val timestampHex = timestamp.toCharArray.map(_.toByte)
+    val timestampBytes = timestamp.getBytes(StandardCharsets.UTF_8)
     //see https://bitcoin.stackexchange.com/questions/13122/scriptsig-coinbase-structure-of-the-genesis-block
     //for a full breakdown of the genesis block & its script signature
+    val const = ScriptConstant(timestampBytes)
     val scriptSignature = ScriptSignature.fromAsm(Seq(BytesToPushOntoStack(4), ScriptNumber(486604799),
-      BytesToPushOntoStack(1), ScriptNumber(4), BytesToPushOntoStack(69), ScriptConstant(timestampHex)))
+      BytesToPushOntoStack(1), ScriptNumber(4)) ++ BitcoinScriptUtil.calculatePushOp(const) ++ Seq(const))
     val input = TransactionInput(scriptSignature)
     val output = TransactionOutput(amount,scriptPubKey)
     val tx = Transaction(TransactionConstants.version,Seq(input), Seq(output), TransactionConstants.lockTime)
     val prevBlockHash = DoubleSha256Digest("0000000000000000000000000000000000000000000000000000000000000000")
     val merkleRootHash = Merkle.computeMerkleRoot(Seq(tx))
     val genesisBlockHeader = BlockHeader(version,prevBlockHash,merkleRootHash,time,nBits,nonce)
-    val genesisBlock = Block(genesisBlockHeader,CompactSizeUInt(UInt64.one,1),Seq(tx))
+    val genesisBlock = Block(genesisBlockHeader,Seq(tx))
     genesisBlock
   }
 }
 
+sealed abstract class BitcoinChainParams extends ChainParams
 /** The Main Network parameters. */
-object MainNetChainParams extends ChainParams {
+object MainNetChainParams extends BitcoinChainParams {
 
   override def networkId = "main"
 
   override def genesisBlock : Block = createGenesisBlock(UInt32(1231006505), UInt32(2083236893), UInt32(0x1d00ffff), UInt32.one, Satoshis(Int64(5000000000L)))
 
-  override def requireStandardTransaction : Boolean = true
-
   override def base58Prefixes : Map[Base58Type,Seq[Byte]] = Map(
-    PubKeyAddress -> BitcoinSUtil.decodeHex("00"),
-    ScriptAddress -> BitcoinSUtil.decodeHex("05"),
-    SecretKey -> BitcoinSUtil.decodeHex("80"),
-    ExtPublicKey -> Seq(BitcoinSUtil.hexToByte("04"), BitcoinSUtil.hexToByte("88"),
+    Base58Type.PubKeyAddress -> BitcoinSUtil.decodeHex("00"),
+    Base58Type.ScriptAddress -> BitcoinSUtil.decodeHex("05"),
+    Base58Type.SecretKey -> BitcoinSUtil.decodeHex("80"),
+    Base58Type.ExtPublicKey -> Seq(BitcoinSUtil.hexToByte("04"), BitcoinSUtil.hexToByte("88"),
       BitcoinSUtil.hexToByte("b2"), BitcoinSUtil.hexToByte("1e")),
-    ExtSecretKey -> Seq(BitcoinSUtil.hexToByte("04"), BitcoinSUtil.hexToByte("88"),
+    Base58Type.ExtSecretKey -> Seq(BitcoinSUtil.hexToByte("04"), BitcoinSUtil.hexToByte("88"),
       BitcoinSUtil.hexToByte("ad"), BitcoinSUtil.hexToByte("e4")))
 }
 
-object TestNetChainParams extends ChainParams {
+object TestNetChainParams extends BitcoinChainParams {
 
   override def networkId = "test"
 
   override def genesisBlock : Block = createGenesisBlock(UInt32(1296688602), UInt32(414098458), UInt32(0x1d00ffff), UInt32.one, Satoshis(Int64(5000000000L)))
 
-  override def requireStandardTransaction : Boolean = true
-
   override def base58Prefixes : Map[Base58Type,Seq[Byte]] = Map(
-    PubKeyAddress -> BitcoinSUtil.decodeHex("6f"),
-    ScriptAddress -> BitcoinSUtil.decodeHex("c4"),
-    SecretKey -> BitcoinSUtil.decodeHex("ef"),
-    ExtPublicKey -> Seq(BitcoinSUtil.hexToByte("04"), BitcoinSUtil.hexToByte("35"),
+    Base58Type.PubKeyAddress -> BitcoinSUtil.decodeHex("6f"),
+    Base58Type.ScriptAddress -> BitcoinSUtil.decodeHex("c4"),
+    Base58Type.SecretKey -> BitcoinSUtil.decodeHex("ef"),
+    Base58Type.ExtPublicKey -> Seq(BitcoinSUtil.hexToByte("04"), BitcoinSUtil.hexToByte("35"),
       BitcoinSUtil.hexToByte("87"), BitcoinSUtil.hexToByte("cf")),
-    ExtSecretKey -> Seq(BitcoinSUtil.hexToByte("04"), BitcoinSUtil.hexToByte("35"),
+    Base58Type.ExtSecretKey -> Seq(BitcoinSUtil.hexToByte("04"), BitcoinSUtil.hexToByte("35"),
       BitcoinSUtil.hexToByte("83"), BitcoinSUtil.hexToByte("94")))
 }
 
 
-object RegTestNetChainParams extends ChainParams {
+object RegTestNetChainParams extends BitcoinChainParams {
   override def networkId = "regtest"
   override def genesisBlock : Block = createGenesisBlock(UInt32(1296688602), UInt32(2), UInt32(0x207fffff), UInt32.one, Satoshis(Int64(5000000000L)))
-  override def requireStandardTransaction : Boolean = TestNetChainParams.requireStandardTransaction
   override def base58Prefixes : Map[Base58Type, Seq[Byte]] = TestNetChainParams.base58Prefixes
 }
 
 
 
-sealed trait Base58Type
-case object PubKeyAddress extends Base58Type
-case object ScriptAddress extends Base58Type
-case object SecretKey extends Base58Type
-case object ExtPublicKey extends Base58Type
-case object ExtSecretKey extends Base58Type
+
+sealed abstract class Base58Type
+object Base58Type {
+  case object PubKeyAddress extends Base58Type
+  case object ScriptAddress extends Base58Type
+  case object SecretKey extends Base58Type
+  case object ExtPublicKey extends Base58Type
+  case object ExtSecretKey extends Base58Type
+}
