@@ -21,17 +21,26 @@ sealed abstract class P2PKHHelper {
     sign(privKey,spk,outPoint,outputs,hashType,TransactionConstants.version,TransactionConstants.sequence,
 =======
            inputs: Seq[TransactionInput], outputs: Seq[TransactionOutput], hashType: HashType): TxSigComponent = {
+<<<<<<< f89a1c5c8c93469dc9411525bf16199691717978
     sign(privKey,spk,outPoint,inputs,outputs,hashType,TransactionConstants.version,TransactionConstants.sequence,
 >>>>>>> Successfully spending a p2pkh spk with TxBuilder
+=======
+    val inputIndex = UInt32(inputs.zipWithIndex.find(_._1.previousOutput == outPoint).get._2)
+    sign(privKey,spk,inputIndex,inputs,outputs,hashType,TransactionConstants.version,TransactionConstants.sequence,
+>>>>>>> successfully spending n p2pkh outputs in a single transaction
       TransactionConstants.lockTime)
   }
 
   /** This sign function gives you full customizability of what version/locktime/sequence number are used on the tx */
+<<<<<<< f89a1c5c8c93469dc9411525bf16199691717978
   def sign(privKey: ECPrivateKey, spk: ScriptPubKey, outPoint: TransactionOutPoint,
 <<<<<<< 75680f0582f0239b2da29aeb4405f23d3176333b
            outputs: Seq[TransactionOutput], hashType: HashType,
            version: UInt32, sequence: UInt32, lockTime: UInt32): BaseTxSigComponent = {
 =======
+=======
+  def sign(privKey: ECPrivateKey, spk: ScriptPubKey, inputIndex: UInt32,
+>>>>>>> successfully spending n p2pkh outputs in a single transaction
            inputs: Seq[TransactionInput], outputs: Seq[TransactionOutput], hashType: HashType,
            version: UInt32, sequence: UInt32, lockTime: UInt32): TxSigComponent = {
 >>>>>>> Successfully spending a p2pkh spk with TxBuilder
@@ -42,8 +51,12 @@ sealed abstract class P2PKHHelper {
     val inputIndex = UInt32(unsignedInputs.indexOf(unsignedInput))
     val baseTxSigComponent = BaseTxSigComponent(unsignedTx,inputIndex,spk,
       Policy.standardScriptVerifyFlags)
+<<<<<<< f89a1c5c8c93469dc9411525bf16199691717978
     val signature = TransactionSignatureCreator.createSig(baseTxSigComponent,privKey,hashType)
 
+=======
+    val signature = TransactionSignatureCreator.createSig(txSigComponent,privKey,hashType)
+>>>>>>> successfully spending n p2pkh outputs in a single transaction
     val signedInput = buildP2PKHInput(signature,publicKey,outPoint,sequence)
     val signedInputs = Seq(signedInput)
     val signedTx = BaseTransaction(unsignedTx.version,signedInputs, unsignedTx.outputs, unsignedTx.lockTime)

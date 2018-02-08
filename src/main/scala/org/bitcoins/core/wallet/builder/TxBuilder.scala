@@ -3,9 +3,10 @@ package org.bitcoins.core.wallet.builder
 import org.bitcoins.core.crypto.ECPrivateKey
 import org.bitcoins.core.currency.CurrencyUnits
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.script.ScriptPubKey
+import org.bitcoins.core.protocol.script.{EmptyScriptSignature, ScriptPubKey}
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.crypto.HashType
+import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.core.wallet.P2PKHHelper
 
 import scala.annotation.tailrec
@@ -15,6 +16,7 @@ import scala.util.{Success, Try}
   * unspent transaction outputs.
   */
 sealed abstract class TxBuilder {
+  private val logger = BitcoinSLogger.logger
   type OutputInfo = (TransactionOutPoint, TransactionOutput, Seq[ECPrivateKey])
 
   def destinations: Seq[TransactionOutput]
@@ -56,7 +58,7 @@ sealed abstract class TxBuilder {
              txInProgress: Transaction): Either[Transaction,TxBuilderError] = remaining match {
       case Nil => Left(txInProgress)
       case info :: t =>
-        val partiallySigned = sign(info,txInProgress, HashType.sigHashAll)
+        val partiallySigned = sign(info, txInProgress, HashType.sigHashAll)
         partiallySigned match {
           case Left(tx) => loop(t,tx)
           case Right(err) => Right(err)
@@ -65,7 +67,11 @@ sealed abstract class TxBuilder {
     val utxos: List[OutputInfo] = creditingUtxos.map { c : (TransactionOutPoint, (TransactionOutput, Seq[ECPrivateKey])) =>
       (c._1, c._2._1, c._2._2)
     }.toList
-    val signedTx = loop(utxos, EmptyTransaction)
+    val outpoints = utxos.map(_._1)
+    val tc = TransactionConstants
+    val inputs = outpoints.map(o => TransactionInput(o,EmptyScriptSignature,tc.sequence))
+    val unsigned = Transaction(tc.version,inputs,destinations,tc.lockTime)
+    val signedTx = loop(utxos, unsigned)
     signedTx match {
       case l: Left[Transaction,TxBuilderError] =>
         if (!invariants(l.a)) {
@@ -86,7 +92,8 @@ sealed abstract class TxBuilder {
       case p2pkh: ScriptPubKey =>
         if (keys.size != 1) Right(TxBuilderError.TooManyKeys)
         else {
-          val txComponent = P2PKHHelper.sign(keys.head,p2pkh,outpoint,tx.inputs,tx.outputs,hashType,tx.version,sequence,tx.lockTime)
+          val inputIndex = UInt32(tx.inputs.zipWithIndex.find(_._1.previousOutput == outpoint).get._2)
+          val txComponent = P2PKHHelper.sign(keys.head,p2pkh,inputIndex,tx.inputs,tx.outputs,hashType,tx.version,sequence,tx.lockTime)
           Left(txComponent.transaction)
         }
     }

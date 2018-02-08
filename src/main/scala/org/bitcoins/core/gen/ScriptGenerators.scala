@@ -5,7 +5,7 @@ import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script.{P2SHScriptPubKey, _}
-import org.bitcoins.core.protocol.transaction.{TransactionConstants, TransactionOutPoint, TransactionOutput, TransactionWitness}
+import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.ScriptSettings
 import org.bitcoins.core.script.constant.{OP_16, ScriptNumber}
 import org.bitcoins.core.script.crypto.{HashType, SIGHASH_ALL}
@@ -277,7 +277,8 @@ trait ScriptGenerators extends BitcoinSLogger {
     (creditingTx,outputIndex) = TransactionGenerators.buildCreditingTransaction(scriptPubKey)
     outpoint = TransactionOutPoint(creditingTx.txId,outputIndex)
     outputs = TransactionGenerators.dummyOutputs
-    txSigComponent = P2PKHHelper.sign(privateKey,scriptPubKey,outpoint, Nil, outputs, HashType.sigHashAll)
+    unsignedInputs = Seq(TransactionInput(outpoint,EmptyScriptSignature,TransactionConstants.sequence))
+    txSigComponent = P2PKHHelper.sign(privateKey,scriptPubKey,outpoint, unsignedInputs, outputs, HashType.sigHashAll)
     signedScriptSig = txSigComponent.scriptSignature.asInstanceOf[P2PKHScriptSignature]
   } yield (signedScriptSig, scriptPubKey, privateKey)
 
