@@ -3,14 +3,14 @@ package org.bitcoins.core.wallet.builder
 import org.bitcoins.core.crypto.ECPrivateKey
 import org.bitcoins.core.currency.CurrencyUnits
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.script.{EmptyScriptSignature, ScriptPubKey}
+import org.bitcoins.core.protocol.script.{EmptyScriptSignature, P2PKHScriptPubKey}
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.util.BitcoinSLogger
-import org.bitcoins.core.wallet.P2PKHHelper
+import org.bitcoins.core.wallet.signer.P2PKHSigner
 
 import scala.annotation.tailrec
-import scala.util.{Success, Try}
+import scala.util.Try
 
 /** High level class to create a signed transaction that spends a set of
   * unspent transaction outputs.
@@ -84,17 +84,18 @@ sealed abstract class TxBuilder {
   }
 
   /** Creates a newly signed input and adds it to the given tx */
-  private def sign(info: OutputInfo, tx: Transaction, hashType: HashType, sequence: UInt32 = TransactionConstants.sequence): Either[Transaction, TxBuilderError] = {
+  private def sign(info: OutputInfo, unsignedTx: Transaction, hashType: HashType,
+                   sequence: UInt32 = TransactionConstants.sequence): Either[Transaction, TxBuilderError] = {
     val outpoint = info._1
     val output = info._2
     val keys = info._3
     output.scriptPubKey match {
-      case p2pkh: ScriptPubKey =>
+      case p2pkh: P2PKHScriptPubKey =>
         if (keys.size != 1) Right(TxBuilderError.TooManyKeys)
         else {
-          val inputIndex = UInt32(tx.inputs.zipWithIndex.find(_._1.previousOutput == outpoint).get._2)
-          val txComponent = P2PKHHelper.sign(keys.head,p2pkh,inputIndex,tx.inputs,tx.outputs,hashType,tx.version,sequence,tx.lockTime)
-          Left(txComponent.transaction)
+          val inputIndex = UInt32(unsignedTx.inputs.zipWithIndex.find(_._1.previousOutput == outpoint).get._2)
+          val txSigComponent = P2PKHSigner.sign(keys,output,unsignedTx,inputIndex,hashType)
+          txSigComponent.left.map(_.transaction)
         }
     }
   }

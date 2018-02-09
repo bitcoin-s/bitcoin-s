@@ -7,20 +7,18 @@ import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script.{P2SHScriptPubKey, _}
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.ScriptSettings
-import org.bitcoins.core.script.constant.{OP_16, ScriptNumber}
-import org.bitcoins.core.script.crypto.{HashType, SIGHASH_ALL}
-import org.bitcoins.core.script.constant._
+import org.bitcoins.core.script.constant.{ScriptNumber, _}
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.util.BitcoinSLogger
-import org.bitcoins.core.wallet.P2PKHHelper
+import org.bitcoins.core.wallet.signer.P2PKHSigner
 import org.scalacheck.Gen
 
 /**
   * Created by chris on 6/22/16.
   */
 //TODO: Need to provide generators for [[NonStandardScriptSignature]] and [[NonStandardScriptPubKey]]
-trait ScriptGenerators extends BitcoinSLogger {
-
+sealed abstract class ScriptGenerators extends BitcoinSLogger {
+  private val tc = TransactionConstants
 
   def p2pkScriptSignature : Gen[P2PKScriptSignature] = for {
     digitalSignature <- CryptoGenerators.digitalSignature
@@ -275,10 +273,8 @@ trait ScriptGenerators extends BitcoinSLogger {
     publicKey = privateKey.publicKey
     scriptPubKey = P2PKHScriptPubKey(publicKey)
     (creditingTx,outputIndex) = TransactionGenerators.buildCreditingTransaction(scriptPubKey)
-    outpoint = TransactionOutPoint(creditingTx.txId,outputIndex)
-    outputs = TransactionGenerators.dummyOutputs
-    unsignedInputs = Seq(TransactionInput(outpoint,EmptyScriptSignature,TransactionConstants.sequence))
-    txSigComponent = P2PKHHelper.sign(privateKey,scriptPubKey,outpoint, unsignedInputs, outputs, HashType.sigHashAll)
+    (unsignedTx,inputIndex) = TransactionGenerators.buildSpendingTransaction(creditingTx,EmptyScriptSignature,outputIndex)
+    txSigComponent = P2PKHSigner.sign(Seq(privateKey), creditingTx.outputs(outputIndex.toInt), unsignedTx, inputIndex, HashType.sigHashAll).left.get
     signedScriptSig = txSigComponent.scriptSignature.asInstanceOf[P2PKHScriptSignature]
   } yield (signedScriptSig, scriptPubKey, privateKey)
 
