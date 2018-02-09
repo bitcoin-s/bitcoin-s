@@ -18,4 +18,14 @@ object TxBuilderError {
     */
   case object TooManyKeys extends TxBuilderError
 
+  /** Means that you are using the wrong [[org.bitcoins.core.wallet.signer.Signer]] to
+    * sign the given [[org.bitcoins.core.protocol.script.ScriptPubKey]]
+    */
+  case object WrongSigner extends TxBuilderError
+
+  /** Can occurr when we are trying to sign a [[org.bitcoins.core.protocol.script.P2SHScriptPubKey]] but
+    * we do not have a redeem script for that p2sh spk.
+    */
+  case object NoRedeemScript extends TxBuilderError
+
 }
