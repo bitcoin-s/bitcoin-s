@@ -2,6 +2,8 @@
 
 testOptions in Test += Tests.Argument(TestFrameworks.ScalaCheck, "-verbosity", "2")
 
+//testOptions in Test += Tests.Argument("-oF")
+
 coverageExcludedPackages := ".*gen"
 
 coverageMinimum := 90
@@ -16,6 +18,5 @@ mergeStrategy in assembly <<= (mergeStrategy in assembly) { (old) => {
 
 assemblyOption in assembly := (assemblyOption in assembly).value.copy(includeScala = false)
 
-testOptions in Test += Tests.Argument("-oF")
 
 scalacOptions ++= Seq("-Xmax-classfile-name", "140")

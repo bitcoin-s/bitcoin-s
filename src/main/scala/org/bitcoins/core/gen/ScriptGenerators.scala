@@ -10,7 +10,7 @@ import org.bitcoins.core.script.ScriptSettings
 import org.bitcoins.core.script.constant.{ScriptNumber, _}
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.util.BitcoinSLogger
-import org.bitcoins.core.wallet.signer.P2PKHSigner
+import org.bitcoins.core.wallet.signer.{MultiSigSigner, P2PKHSigner, P2PKSigner}
 import org.scalacheck.Gen
 
 /**
@@ -253,11 +253,9 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
     (creditingTx, outputIndex) = TransactionGenerators.buildCreditingTransaction(scriptPubKey)
     scriptSig = P2PKScriptSignature(EmptyDigitalSignature)
     (spendingTx, inputIndex) = TransactionGenerators.buildSpendingTransaction(creditingTx, scriptSig, outputIndex)
-    txSignatureComponent = BaseTxSigComponent(spendingTx, inputIndex, scriptPubKey,
-      Policy.standardScriptVerifyFlags)
-    txSignature = TransactionSignatureCreator.createSig(txSignatureComponent, privateKey, hashType)
+    txSigComponent = P2PKSigner.sign(Seq(privateKey), creditingTx.outputs(outputIndex.toInt), spendingTx, inputIndex, hashType).left.get
     //add the signature to the scriptSig instead of having an empty scriptSig
-    signedScriptSig = P2PKScriptSignature(txSignature)
+    signedScriptSig = txSigComponent.scriptSignature.asInstanceOf[P2PKScriptSignature]
   } yield (signedScriptSig,scriptPubKey,privateKey)
 
 
@@ -274,7 +272,7 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
     scriptPubKey = P2PKHScriptPubKey(publicKey)
     (creditingTx,outputIndex) = TransactionGenerators.buildCreditingTransaction(scriptPubKey)
     (unsignedTx,inputIndex) = TransactionGenerators.buildSpendingTransaction(creditingTx,EmptyScriptSignature,outputIndex)
-    txSigComponent = P2PKHSigner.sign(Seq(privateKey), creditingTx.outputs(outputIndex.toInt), unsignedTx, inputIndex, HashType.sigHashAll).left.get
+    txSigComponent = P2PKHSigner.sign(Seq(privateKey), creditingTx.outputs(outputIndex.toInt), unsignedTx, inputIndex, hashType).left.get
     signedScriptSig = txSigComponent.scriptSignature.asInstanceOf[P2PKHScriptSignature]
   } yield (signedScriptSig, scriptPubKey, privateKey)
 
@@ -289,27 +287,14 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
     hashType <- CryptoGenerators.hashType
     publicKeys = privateKeys.map(_.publicKey)
     multiSigScriptPubKey = MultiSignatureScriptPubKey(requiredSigs,publicKeys)
-  } yield multiSigScriptSigGenHelper(privateKeys, multiSigScriptPubKey, hashType)
+    emptyDigitalSignatures = privateKeys.map(_ => EmptyDigitalSignature)
+    scriptSig = MultiSignatureScriptSignature(emptyDigitalSignatures)
+    (creditingTx,outputIndex) = TransactionGenerators.buildCreditingTransaction(multiSigScriptPubKey)
+    (spendingTx,inputIndex) = TransactionGenerators.buildSpendingTransaction(creditingTx,scriptSig,outputIndex)
+    txSigComponent = MultiSigSigner.sign(privateKeys, creditingTx.outputs(outputIndex.toInt), spendingTx,inputIndex,hashType).left.get
+    signedScriptSig = txSigComponent.scriptSignature.asInstanceOf[MultiSignatureScriptSignature]
+  } yield (signedScriptSig,multiSigScriptPubKey,privateKeys)
 
-  /** Helps generate a signed [[MultiSignatureScriptSignature]] */
-  private def multiSigScriptSigGenHelper(privateKeys : Seq[ECPrivateKey],
-                                         scriptPubKey : MultiSignatureScriptPubKey, hashType: HashType) : (MultiSignatureScriptSignature, MultiSignatureScriptPubKey, Seq[ECPrivateKey]) = {
-    val requiredSigs = scriptPubKey.requiredSigs
-    val (creditingTx,outputIndex) = TransactionGenerators.buildCreditingTransaction(scriptPubKey)
-    val emptyDigitalSignatures = privateKeys.map(_ => EmptyDigitalSignature)
-    val scriptSig = MultiSignatureScriptSignature(emptyDigitalSignatures)
-    val (spendingTx,inputIndex) = TransactionGenerators.buildSpendingTransaction(creditingTx,scriptSig,outputIndex)
-    val txSignatureComponent = BaseTxSigComponent(spendingTx,inputIndex,
-      scriptPubKey,Policy.standardScriptVerifyFlags)
-
-    val txSignatures = for {
-      i <- 0 until requiredSigs
-    } yield TransactionSignatureCreator.createSig(txSignatureComponent, privateKeys(i), hashType)
-
-    //add the signature to the scriptSig instead of having an empty scriptSig
-    val signedScriptSig = MultiSignatureScriptSignature(txSignatures)
-    (signedScriptSig, scriptPubKey, privateKeys)
-  }
 
   /**
     * Generates a signed [[P2SHScriptSignature]] that spends from a [[P2SHScriptPubKey]] correctly
@@ -485,7 +470,7 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
   def signedP2SHP2WSHScriptSignature: Gen[(P2SHScriptSignature, P2SHScriptPubKey, Seq[ECPrivateKey], TransactionWitness, CurrencyUnit)] = for {
     (witness,wtxSigComponent,privKeys) <- WitnessGenerators.signedP2WSHTransactionWitness
     p2shScriptPubKey = P2SHScriptPubKey(wtxSigComponent.scriptPubKey)
-    p2shScriptSig = P2SHScriptSignature(wtxSigComponent.scriptPubKey.asInstanceOf[WitnessScriptPubKey])
+    p2shScriptSig = P2SHScriptSignature(wtxSigComponent.scriptPubKey)
   } yield (p2shScriptSig, p2shScriptPubKey, privKeys, witness, wtxSigComponent.amount)
 
   /**

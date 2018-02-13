@@ -28,4 +28,15 @@ object TxBuilderError {
     */
   case object NoRedeemScript extends TxBuilderError
 
+  /** Can occurr when we are trying to sign a [[org.bitcoins.core.protocol.script.WitnessScriptPubKey]]
+    * but we do not have a [[org.bitcoins.core.protocol.script.ScriptWitness]] for that witness spk
+    */
+  case object NoWitness extends TxBuilderError
+
+  /** We do not know how to sign [[org.bitcoins.core.protocol.script.NonStandardScriptPubKey]] types */
+  case object NonStandardSPK extends TxBuilderError
+
+  /** We expected a [[org.bitcoins.core.protocol.script.WitnessScriptPubKeyV0]], but got a non witness spk type */
+  case object NonWitnessSPK extends TxBuilderError
+
 }
