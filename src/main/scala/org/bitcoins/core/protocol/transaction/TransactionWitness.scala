@@ -25,7 +25,21 @@ case object EmptyWitness extends TransactionWitness {
 object TransactionWitness {
   private case class TransactionWitnessImpl(witnesses: Seq[ScriptWitness]) extends TransactionWitness
 
-  def apply(witnesses: Seq[ScriptWitness]): TransactionWitness = TransactionWitnessImpl(witnesses)
+  def apply(witnesses: Seq[ScriptWitness]): TransactionWitness = {
+    if (witnesses.exists(_ != EmptyScriptWitness)) {
+      TransactionWitnessImpl(witnesses)
+    } else {
+      EmptyWitness
+    }
+  }
+
+  def fromWitOpt(witnesses: Seq[Option[ScriptWitness]]): TransactionWitness = {
+    val w = witnesses.map {
+      case Some(wit) => wit
+      case None => EmptyScriptWitness
+    }
+    TransactionWitness(w)
+  }
 
   /** Creates a [[TransactionWitness]] from a Seq[Option[ScriptWitness]].
     * This constructor is for convinience if a certain input does not spend a [[org.bitcoins.core.protocol.script.WitnessScriptPubKey]]
