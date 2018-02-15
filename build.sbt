@@ -16,6 +16,6 @@ mergeStrategy in assembly <<= (mergeStrategy in assembly) { (old) => {
 
 assemblyOption in assembly := (assemblyOption in assembly).value.copy(includeScala = false)
 
-//testOptions in Test += Tests.Argument("-oF")
+testOptions in Test += Tests.Argument("-oF")
 
 scalacOptions ++= Seq("-Xmax-classfile-name", "140")

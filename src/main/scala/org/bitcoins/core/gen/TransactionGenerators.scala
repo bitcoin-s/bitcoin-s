@@ -83,9 +83,8 @@ trait TransactionGenerators extends BitcoinSLogger {
     lockTime <- NumberGenerator.uInt32s
     //we have to have atleast one NON `EmptyScriptWitness` for a tx to be a valid WitnessTransaction, otherwise we
     //revert to using the `BaseTransaction` serialization format
-     //notice we use the old serialization format if all witnesses are empty
+    //notice we use the old serialization format if all witnesses are empty
     //[[https://github.com/bitcoin/bitcoin/blob/e8cfe1ee2d01c493b758a67ad14707dca15792ea/src/primitives/transaction.h#L276-L281]]
-    //
     witness <- WitnessGenerators.transactionWitness(is.size).suchThat(_.witnesses.exists(_ != EmptyScriptWitness))
   } yield WitnessTransaction(version,is,os,lockTime, witness)
 

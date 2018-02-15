@@ -20,7 +20,7 @@ class TransactionSpec extends Properties("TransactionSpec") {
       result
     }
 
-  property("txid of a base transaction must be SHA256(SHA256(hex)) of a btx") =
+/*  property("txid of a base transaction must be SHA256(SHA256(hex)) of a btx") =
     Prop.forAll(TransactionGenerators.baseTransaction) { btx: BaseTransaction =>
       btx.txId == CryptoUtil.doubleSHA256(btx.hex)
     }
@@ -30,5 +30,5 @@ class TransactionSpec extends Properties("TransactionSpec") {
     Prop.forAll(TransactionGenerators.witnessTransaction) { wtx : WitnessTransaction =>
       wtx.wTxId == CryptoUtil.doubleSHA256(wtx.hex) &&
         wtx.wTxId != wtx.txId
-    }
+    }*/
 }
