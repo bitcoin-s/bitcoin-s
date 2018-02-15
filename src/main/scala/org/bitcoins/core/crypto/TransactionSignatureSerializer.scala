@@ -77,7 +77,7 @@ sealed abstract class TransactionSignatureSerializer {
         else input
       }
 
-    val txWithInputSigsRemoved = Transaction(spendingTransaction,UpdateTransactionInputs(updatedInputs))
+    val txWithInputSigsRemoved = BaseTransaction(spendingTransaction.version,updatedInputs, spendingTransaction.outputs, spendingTransaction.lockTime)
     val sigHashBytes = hashType.num.bytes.reverse
     //check the hash type
     //TODO: could probably be optimized w/ HO function
@@ -240,10 +240,9 @@ sealed abstract class TransactionSignatureSerializer {
     //following this implementation from bitcoinj
     //[[https://github.com/bitcoinj/bitcoinj/blob/09a2ca64d2134b0dcbb27b1a6eb17dda6087f448/core/src/main/java/org/bitcoinj/core/Transaction.java#L957]]
     //means that no outputs are signed at all
-    val txWithNoOutputs = Transaction.emptyOutputs(spendingTransaction)
     //set the sequence number of all inputs to 0 EXCEPT the input at inputIndex
     val updatedInputs :  Seq[TransactionInput] = setSequenceNumbersZero(spendingTransaction.inputs,inputIndex)
-    val sigHashNoneTx = Transaction(txWithNoOutputs,UpdateTransactionInputs(updatedInputs))
+    val sigHashNoneTx = BaseTransaction(spendingTransaction.version,updatedInputs,Nil,spendingTransaction.lockTime)
     //append hash type byte onto the end of the tx bytes
     sigHashNoneTx
   }
@@ -266,11 +265,10 @@ sealed abstract class TransactionSignatureSerializer {
     }
     val updatedOutputs : Seq[TransactionOutput] = updatedOutputsOpt.flatten
 
-    val spendingTxOutputsEmptied = Transaction(spendingTransaction,UpdateTransactionOutputs(updatedOutputs))
     //create blank inputs with sequence numbers set to zero EXCEPT
     //the input at the inputIndex
-    val updatedInputs : Seq[TransactionInput] = setSequenceNumbersZero(spendingTxOutputsEmptied.inputs,inputIndex)
-    val sigHashSingleTx = Transaction(spendingTxOutputsEmptied,UpdateTransactionInputs(updatedInputs))
+    val updatedInputs : Seq[TransactionInput] = setSequenceNumbersZero(spendingTransaction.inputs,inputIndex)
+    val sigHashSingleTx = BaseTransaction(spendingTransaction.version, updatedInputs, updatedOutputs, spendingTransaction.lockTime)
     sigHashSingleTx
   }
 
@@ -281,9 +279,7 @@ sealed abstract class TransactionSignatureSerializer {
 
   /** Executes the [[SIGHASH_ANYONECANPAY]] procedure on a spending transaction at inputIndex. */
   private def sigHashAnyoneCanPay(spendingTransaction : Transaction, input : TransactionInput) : Transaction = {
-    val txWithEmptyInputs = Transaction.emptyInputs(spendingTransaction)
-    val txWithInputsRemoved = Transaction(txWithEmptyInputs,UpdateTransactionInputs(Seq(input)))
-    txWithInputsRemoved
+    BaseTransaction(spendingTransaction.version,Seq(input), spendingTransaction.outputs, spendingTransaction.lockTime)
   }
 
   /** Removes [[OP_CODESEPARATOR]] operations then returns the script. */

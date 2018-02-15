@@ -2,6 +2,7 @@ package org.bitcoins.core.serializers.transaction
 
 import org.bitcoins.core.protocol.script.ScriptWitness
 import org.bitcoins.core.protocol.transaction.TransactionWitness
+import org.bitcoins.core.serializers.script.RawScriptWitnessParser
 
 import scala.annotation.tailrec
 
@@ -13,19 +14,20 @@ import scala.annotation.tailrec
   */
 sealed abstract class RawTransactionWitnessParser {
 
-  /** We can only tell how many [[org.bitcoins.core.protocol.transaction.TransactionInputWitness]]
+  /** We can only tell how many [[ScriptWitness]]
     * we have if we have the number of inputs the transaction creates
     */
   def read(bytes: Seq[Byte], numInputs: Int): TransactionWitness = {
     @tailrec
     def loop(remainingBytes: Seq[Byte], remainingInputs: Int, accum: Seq[ScriptWitness]): Seq[ScriptWitness] = {
       if (remainingInputs != 0) {
-        val w = ScriptWitness(remainingBytes)
+        val w = RawScriptWitnessParser.read(remainingBytes)
         val (_,newRemainingBytes) = remainingBytes.splitAt(w.bytes.size)
         loop(newRemainingBytes,remainingInputs - 1, w +: accum)
       } else accum.reverse
     }
     val witnesses = loop(bytes,numInputs,Nil)
+    require(witnesses.size == numInputs)
     TransactionWitness(witnesses)
   }
 

@@ -2,7 +2,7 @@ package org.bitcoins.core.script.locktime
 
 
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.transaction.{Transaction, TransactionConstants, TransactionInput, UpdateTransactionInputs}
+import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.constant.{OP_0, ScriptNumber}
 import org.bitcoins.core.script.result._
 import org.bitcoins.core.script.{ExecutedScriptProgram, PreExecutionScriptProgram, ScriptProgram}
@@ -34,8 +34,9 @@ class LockTimeInterpreterTest extends FlatSpec with MustMatchers {
     val stack = Seq(ScriptNumber(-1))
     val script = Seq(OP_CHECKLOCKTIMEVERIFY)
     val txInputAdjustedSequenceNumber = TransactionInput(TestUtil.transaction.inputs(0),UInt32.zero)
-    val txAdjustedSequenceNumber = Transaction(TestUtil.transaction,UpdateTransactionInputs(Seq(txInputAdjustedSequenceNumber)))
-    val adjustedLockTimeTx = Transaction(txAdjustedSequenceNumber,UInt32.zero)
+    val emptyTx = EmptyTransaction
+    val txAdjustedSequenceNumber = BaseTransaction(emptyTx.version,Seq(txInputAdjustedSequenceNumber), emptyTx.outputs, emptyTx.lockTime)
+    val adjustedLockTimeTx = BaseTransaction(txAdjustedSequenceNumber.version,txAdjustedSequenceNumber.inputs,txAdjustedSequenceNumber.outputs,UInt32.zero)
     val baseProgram = ScriptProgram(adjustedLockTimeTx,TestUtil.testProgram.txSignatureComponent.scriptPubKey,
       TestUtil.testProgram.txSignatureComponent.inputIndex,TestUtil.testProgram.flags)
     val program = ScriptProgramTestUtil.toPreExecutionScriptProgram(ScriptProgram(baseProgram,stack,script))
@@ -47,8 +48,9 @@ class LockTimeInterpreterTest extends FlatSpec with MustMatchers {
     val stack = Seq(ScriptNumber(500000000))
     val script = Seq(OP_CHECKLOCKTIMEVERIFY)
     val txInputAdjustedSequenceNumber = TransactionInput(TestUtil.transaction.inputs(0),UInt32.zero)
-    val txAdjustedSequenceNumber = Transaction(TestUtil.transaction,UpdateTransactionInputs(Seq(txInputAdjustedSequenceNumber)))
-    val adjustedLockTimeTx = Transaction(txAdjustedSequenceNumber,UInt32.zero)
+    val emptyTx = EmptyTransaction
+    val txAdjustedSequenceNumber = BaseTransaction(emptyTx.version,Seq(txInputAdjustedSequenceNumber), emptyTx.outputs, emptyTx.lockTime)
+    val adjustedLockTimeTx = BaseTransaction(txAdjustedSequenceNumber.version,txAdjustedSequenceNumber.inputs,txAdjustedSequenceNumber.outputs,UInt32.zero)
     val baseProgram = ScriptProgram(adjustedLockTimeTx,TestUtil.testProgram.txSignatureComponent.scriptPubKey,
       TestUtil.testProgram.txSignatureComponent.inputIndex,TestUtil.testProgram.flags)
     val program = ScriptProgramTestUtil.toPreExecutionScriptProgram(ScriptProgram(baseProgram,stack,script))
@@ -60,8 +62,9 @@ class LockTimeInterpreterTest extends FlatSpec with MustMatchers {
     val stack = Seq(ScriptNumber(499999999))
     val script = Seq(OP_CHECKLOCKTIMEVERIFY)
     val txInputAdjustedSequenceNumber = TransactionInput(TestUtil.transaction.inputs(0),UInt32.zero)
-    val txAdjustedSequenceNumber = Transaction(TestUtil.transaction,UpdateTransactionInputs(Seq(txInputAdjustedSequenceNumber)))
-    val adjustedLockTimeTx = Transaction(txAdjustedSequenceNumber,UInt32(500000000))
+    val emptyTx = EmptyTransaction
+    val txAdjustedSequenceNumber = BaseTransaction(emptyTx.version,Seq(txInputAdjustedSequenceNumber), emptyTx.outputs, emptyTx.lockTime)
+    val adjustedLockTimeTx = BaseTransaction(txAdjustedSequenceNumber.version,txAdjustedSequenceNumber.inputs,txAdjustedSequenceNumber.outputs,UInt32.zero)
     val baseProgram = ScriptProgram(adjustedLockTimeTx,TestUtil.testProgram.txSignatureComponent.scriptPubKey,
       TestUtil.testProgram.txSignatureComponent.inputIndex,TestUtil.testProgram.flags)
     val program = ScriptProgramTestUtil.toPreExecutionScriptProgram(ScriptProgram(baseProgram,stack,script))
@@ -74,9 +77,9 @@ class LockTimeInterpreterTest extends FlatSpec with MustMatchers {
     val stack = Seq(ScriptNumber(499999999))
     val script = Seq(OP_CHECKLOCKTIMEVERIFY)
     val txInputAdjustedSequenceNumber = TransactionInput(TestUtil.transaction.inputs(0),UInt32.zero)
-    val txAdjustedSequenceNumber = Transaction(TestUtil.transaction,
-      UpdateTransactionInputs(Seq(txInputAdjustedSequenceNumber)))
-    val adjustedLockTimeTx = Transaction(txAdjustedSequenceNumber,UInt32.zero)
+    val emptyTx = EmptyTransaction
+    val txAdjustedSequenceNumber = BaseTransaction(emptyTx.version,Seq(txInputAdjustedSequenceNumber), emptyTx.outputs, emptyTx.lockTime)
+    val adjustedLockTimeTx = BaseTransaction(txAdjustedSequenceNumber.version,txAdjustedSequenceNumber.inputs,txAdjustedSequenceNumber.outputs,UInt32.zero)
     val baseProgram = ScriptProgram.toExecutionInProgress(ScriptProgram(adjustedLockTimeTx,
       TestUtil.testProgram.txSignatureComponent.scriptPubKey,
       TestUtil.testProgram.txSignatureComponent.inputIndex,TestUtil.testProgram.flags))
@@ -92,9 +95,11 @@ class LockTimeInterpreterTest extends FlatSpec with MustMatchers {
     val stack = Seq(ScriptNumber(0))
     val script = Seq(OP_CHECKLOCKTIMEVERIFY)
     val txInputAdjustedSequenceNumber = TransactionInput(TestUtil.transaction.inputs(0),UInt32.zero)
-    val txAdjustedSequenceNumber = Transaction(TestUtil.transaction,
-      UpdateTransactionInputs(Seq(txInputAdjustedSequenceNumber)))
-    val adjustedLockTimeTx = Transaction(txAdjustedSequenceNumber,UInt32.zero)
+    val emptyTx = EmptyTransaction
+    val txAdjustedSequenceNumber = BaseTransaction(emptyTx.version,Seq(txInputAdjustedSequenceNumber),
+      emptyTx.outputs, emptyTx.lockTime)
+    val adjustedLockTimeTx = BaseTransaction(txAdjustedSequenceNumber.version,txAdjustedSequenceNumber.inputs,
+      txAdjustedSequenceNumber.outputs,UInt32.zero)
     val baseProgram = ScriptProgram.toExecutionInProgress(ScriptProgram(adjustedLockTimeTx,
       TestUtil.testProgram.txSignatureComponent.scriptPubKey,
       TestUtil.testProgram.txSignatureComponent.inputIndex,TestUtil.testProgram.flags))
@@ -109,8 +114,11 @@ class LockTimeInterpreterTest extends FlatSpec with MustMatchers {
     val stack = Seq(ScriptNumber(500000000))
     val script = Seq(OP_CHECKLOCKTIMEVERIFY)
     val txInputAdjustedSequenceNumber = TransactionInput(TestUtil.transaction.inputs(0),UInt32.zero)
-    val txAdjustedSequenceNumber = Transaction(TestUtil.transaction,UpdateTransactionInputs(Seq(txInputAdjustedSequenceNumber)))
-    val adjustedLockTimeTx = Transaction(txAdjustedSequenceNumber,UInt32(500000000))
+    val emptyTx = EmptyTransaction
+    val txAdjustedSequenceNumber = BaseTransaction(emptyTx.version, Seq(txInputAdjustedSequenceNumber),
+      emptyTx.outputs, emptyTx.lockTime)
+    val adjustedLockTimeTx = BaseTransaction(txAdjustedSequenceNumber.version, txAdjustedSequenceNumber.inputs,
+      txAdjustedSequenceNumber.outputs,UInt32(500000000))
     val baseProgram : PreExecutionScriptProgram = ScriptProgram(adjustedLockTimeTx,
       TestUtil.testProgram.txSignatureComponent.scriptPubKey,
       TestUtil.testProgram.txSignatureComponent.inputIndex,TestUtil.testProgram.flags

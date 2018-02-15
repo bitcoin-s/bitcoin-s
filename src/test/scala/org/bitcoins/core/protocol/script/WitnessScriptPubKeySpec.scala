@@ -10,12 +10,22 @@ class WitnessScriptPubKeySpec extends Properties("WitnessScriptPubKeySpec") {
 
   property("witnessScriptPubKeyV0 serialization symmetry") =
     Prop.forAll(ScriptGenerators.witnessScriptPubKeyV0) { case (witScriptPubKeyV0, _) =>
-        WitnessScriptPubKeyV0(witScriptPubKeyV0.hex) == witScriptPubKeyV0
+        witScriptPubKeyV0 match {
+          case p2wpkh: P2WPKHWitnessSPKV0 =>
+            P2WPKHWitnessSPKV0(p2wpkh.hex) == witScriptPubKeyV0
+          case p2wsh: P2WSHWitnessSPKV0 =>
+            P2WSHWitnessSPKV0(p2wsh.hex) == witScriptPubKeyV0
+        }
     }
 
   property("witnessScriptPubKeyV0 fromAsm symmetry") =
     Prop.forAll(ScriptGenerators.witnessScriptPubKeyV0) { case (witScriptPubKeyV0,_) =>
-        WitnessScriptPubKeyV0.fromAsm(witScriptPubKeyV0.asm) == witScriptPubKeyV0
+      witScriptPubKeyV0 match {
+        case p2wpkh: P2WPKHWitnessSPKV0 =>
+          P2WPKHWitnessSPKV0.fromAsm(p2wpkh.asm) == witScriptPubKeyV0
+        case p2wsh: P2WSHWitnessSPKV0 =>
+          P2WSHWitnessSPKV0.fromAsm(p2wsh.asm) == witScriptPubKeyV0
+      }
     }
 
   property("unassignedWitnessScriptPubKey serialization symmetry") =

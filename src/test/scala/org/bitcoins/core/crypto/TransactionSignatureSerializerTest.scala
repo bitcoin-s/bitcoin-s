@@ -460,12 +460,12 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers {
     BitcoinSUtil.encodeHex(serializedForSig) must be (expected)
   }
 
-  it must "serialize a p2wsh with SIGHASH_SINGLE|SIGHASH_ANYONECANPAY" in {
+  it must "serialize a p2wpkh with SIGHASH_SINGLE|SIGHASH_ANYONECANPAY" in {
     val rawTx = "0100000000010400010000000000000000000000000000000000000000000000000000000000000200000000ffffffff00010000000000000000000000000000000000000000000000000000000000000100000000ffffffff00010000000000000000000000000000000000000000000000000000000000000000000000ffffffff00010000000000000000000000000000000000000000000000000000000000000300000000ffffffff05540b0000000000000151d0070000000000000151840300000000000001513c0f00000000000001512c010000000000000151000248304502210092f4777a0f17bf5aeb8ae768dec5f2c14feabf9d1fe2c89c78dfed0f13fdb86902206da90a86042e252bcd1e80a168c719e4a1ddcc3cebea24b9812c5453c79107e9832103596d3451025c19dbbdeb932d6bf8bfb4ad499b95b6f88db8899efac102e5fc71000000000000"
     val inputIndex = UInt32(1)
     val wtx = WitnessTransaction(rawTx)
     val scriptWitness = wtx.witness.witnesses(inputIndex.toInt)
-    val witScriptPubKey = WitnessScriptPubKeyV0("1600144c9c3dfac4207d5d8cb89df5722cb3d712385e3f")
+    val witScriptPubKey = P2WPKHWitnessSPKV0("1600144c9c3dfac4207d5d8cb89df5722cb3d712385e3f")
     val (_,scriptPubKey) = witScriptPubKey.witnessVersion.rebuild(scriptWitness,witScriptPubKey.witnessProgram).left.get
     val amount = Satoshis(Int64(2000))
     val serializedForSig = TransactionSignatureSerializer.serializeForSignature(wtx,inputIndex,scriptPubKey.asm,
