@@ -157,13 +157,13 @@ sealed abstract class P2WPKHSigner extends BitcoinSigner {
         Right(TxBuilderError.TooManyKeys)
       } else {
         val privKey = privKeys.head
-        val unsignedScriptWit = ScriptWitness(EmptyDigitalSignature,privKey.publicKey)
+        val unsignedScriptWit = P2WPKHWitnessV0(privKey.publicKey)
         val unsignedTxWitness = TransactionWitness(wtx.witness.witnesses.updated(inputIndex.toInt, unsignedScriptWit))
         val unsignedWtx = WitnessTransaction(wtx.version, wtx.inputs, wtx.outputs, wtx.lockTime, unsignedTxWitness)
         val witSPK = output.scriptPubKey.asInstanceOf[WitnessScriptPubKeyV0]
         val wtxComp = WitnessTxSigComponentRaw(unsignedWtx,inputIndex,witSPK,Policy.standardFlags,output.value)
         val signature = TransactionSignatureCreator.createSig(wtxComp,privKeys.head,hashType)
-        val scriptWitness = ScriptWitness(signature,privKey.publicKey)
+        val scriptWitness = P2WPKHWitnessV0(privKey.publicKey,signature)
         val signedTxWitness = TransactionWitness(unsignedWtx.witness.witnesses.updated(inputIndex.toInt,scriptWitness))
         val signedTx = WitnessTransaction(unsignedWtx.version, unsignedWtx.inputs, unsignedWtx.outputs,
           unsignedWtx.lockTime, signedTxWitness)

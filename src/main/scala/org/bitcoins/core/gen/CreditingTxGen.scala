@@ -1,7 +1,7 @@
 package org.bitcoins.core.gen
 
 import org.bitcoins.core.crypto.{ECPrivateKey, EmptyDigitalSignature}
-import org.bitcoins.core.protocol.script.{P2SHScriptPubKey, ScriptPubKey, ScriptWitness}
+import org.bitcoins.core.protocol.script.{P2SHScriptPubKey, P2WPKHWitnessV0, ScriptPubKey, ScriptWitness}
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionConstants, TransactionOutput}
 import org.scalacheck.Gen
 
@@ -64,8 +64,8 @@ sealed abstract class CreditingTxGen {
     (tx,o._2,o._3,Some(redeemScript), o._5)
   }
 
-  def p2wpkhOutput: Gen[CreditingTxInfo] = ScriptGenerators.witnessScriptPubKeyV0.flatMap { witSPK =>
-    val scriptWit = ScriptWitness(EmptyDigitalSignature,witSPK._2.head.publicKey)
+  def p2wpkhOutput: Gen[CreditingTxInfo] = ScriptGenerators.p2wpkhSPKV0.flatMap { witSPK =>
+    val scriptWit = P2WPKHWitnessV0(witSPK._2.head.publicKey)
     build(witSPK._1,witSPK._2,None,Some(scriptWit))
   }
 
