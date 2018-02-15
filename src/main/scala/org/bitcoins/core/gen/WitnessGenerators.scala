@@ -1,6 +1,8 @@
 package org.bitcoins.core.gen
 
 import org.bitcoins.core.crypto._
+import org.bitcoins.core.number.UInt64
+import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.crypto.HashType
