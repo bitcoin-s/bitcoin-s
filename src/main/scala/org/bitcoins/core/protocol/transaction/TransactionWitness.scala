@@ -32,15 +32,6 @@ object TransactionWitness {
       EmptyWitness
     }
   }
-
-  def fromWitOpt(witnesses: Seq[Option[ScriptWitness]]): TransactionWitness = {
-    val w = witnesses.map {
-      case Some(wit) => wit
-      case None => EmptyScriptWitness
-    }
-    TransactionWitness(w)
-  }
-
   /** Creates a [[TransactionWitness]] from a Seq[Option[ScriptWitness]].
     * This constructor is for convinience if a certain input does not spend a [[org.bitcoins.core.protocol.script.WitnessScriptPubKey]]
     * It simply transforms the `None` types to [[EmptyScriptWitness]] and then calls the normal TransactionWitness constructor
