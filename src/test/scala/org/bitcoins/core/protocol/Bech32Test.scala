@@ -3,7 +3,7 @@ package org.bitcoins.core.protocol
 import org.bitcoins.core.config.{MainNet, TestNet3}
 import org.bitcoins.core.crypto.ECPublicKey
 import org.bitcoins.core.number.UInt8
-import org.bitcoins.core.protocol.script.{P2PKHScriptPubKey, P2PKScriptPubKey, WitnessScriptPubKey, WitnessScriptPubKeyV0}
+import org.bitcoins.core.protocol.script._
 import org.scalatest.{FlatSpec, MustMatchers}
 
 import scala.util.{Success, Try}
@@ -43,7 +43,7 @@ class Bech32Test extends FlatSpec with MustMatchers  {
   it must "follow the example in BIP173" in {
     //https://github.com/bitcoin/bips/blob/master/bip-0173.mediawiki#examples
     val key = ECPublicKey("0279BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798".toLowerCase)
-    val p2wpkh = WitnessScriptPubKeyV0(key)
+    val p2wpkh = P2WPKHWitnessSPKV0(key)
     val addr = Bech32Address(p2wpkh,TestNet3)
     addr.map(_.value) must be (Success("tb1qw508d6qejxtdg4y5r3zarvary0c5xw7kxpjzsx"))
 
@@ -58,7 +58,7 @@ class Bech32Test extends FlatSpec with MustMatchers  {
     mp2wpkhDecoded must be (Success(p2wpkh))
 
     val p2pk = P2PKScriptPubKey(key)
-    val p2wsh = WitnessScriptPubKeyV0(p2pk)
+    val p2wsh = P2WSHWitnessSPKV0(p2pk)
     val addr1 = Bech32Address(p2wsh,TestNet3)
     addr1.map(_.value) must be (Success("tb1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3q0sl5k7"))
 

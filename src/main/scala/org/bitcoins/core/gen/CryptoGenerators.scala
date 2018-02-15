@@ -64,7 +64,7 @@ trait CryptoGenerators {
     * Generates a random digital signature
     * @return
     */
-  def digitalSignatures : Gen[ECDigitalSignature] = for {
+  def digitalSignature : Gen[ECDigitalSignature] = for {
     privKey <- privateKey
     hash <- CryptoGenerators.doubleSha256Digest
   } yield privKey.sign(hash)

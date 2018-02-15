@@ -139,7 +139,8 @@ class CryptoInterpreterTest extends FlatSpec with MustMatchers {
     val flags = Seq(ScriptVerifyNullDummy)
     val scriptSig = ScriptSignature.fromAsm(Seq(OP_1))
     val input = TransactionInput(EmptyTransactionOutPoint, scriptSig, TransactionConstants.sequence)
-    val tx = Transaction(TestUtil.transaction,UpdateTransactionInputs(Seq(input)))
+    val empty = EmptyTransaction
+    val tx = BaseTransaction(empty.version, Seq(input), empty.outputs, empty.lockTime)
 
     val baseProgram = ScriptProgram.toExecutionInProgress(ScriptProgram(tx,TestUtil.scriptPubKey,
       UInt32.zero,flags))

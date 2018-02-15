@@ -81,7 +81,12 @@ trait TransactionGenerators extends BitcoinSLogger {
     is <- smallInputsNonEmpty
     os <- smallOutputs
     lockTime <- NumberGenerator.uInt32s
-    witness <- WitnessGenerators.transactionWitness(is.size)
+    //we have to have atleast one NON `EmptyScriptWitness` for a tx to be a valid WitnessTransaction, otherwise we
+    //revert to using the `BaseTransaction` serialization format
+     //notice we use the old serialization format if all witnesses are empty
+    //[[https://github.com/bitcoin/bitcoin/blob/e8cfe1ee2d01c493b758a67ad14707dca15792ea/src/primitives/transaction.h#L276-L281]]
+    //
+    witness <- WitnessGenerators.transactionWitness(is.size).suchThat(_.witnesses.exists(_ != EmptyScriptWitness))
   } yield WitnessTransaction(version,is,os,lockTime, witness)
 
   /**
@@ -288,7 +293,8 @@ trait TransactionGenerators extends BitcoinSLogger {
 
   def signedP2WSHTransaction: Gen[(WitnessTxSigComponentRaw,Seq[ECPrivateKey])] = {
     Gen.oneOf(signedP2WSHP2PKTransaction, signedP2WSHP2PKHTransaction, signedP2WSHMultiSigTransaction,
-      signedP2WSHEscrowTimeoutTransaction)
+      signedP2WSHEscrowTimeoutTransaction
+    )
   }
   /** Creates a signed P2SH(P2WSH) transaction */
   def signedP2SHP2WSHTransaction: Gen[(WitnessTxSigComponent, Seq[ECPrivateKey])] = for {
@@ -323,7 +329,7 @@ trait TransactionGenerators extends BitcoinSLogger {
     }
     val outpoint = TransactionOutPoint(creditingTx.txId,outputIndex)
     val input = TransactionInput(outpoint,scriptSignature, sequence)
-    val tx = Transaction(version,Seq(input),os,locktime)
+    val tx = BaseTransaction(version,Seq(input),os,locktime)
     (tx,UInt32.zero)
   }
 
@@ -400,7 +406,7 @@ trait TransactionGenerators extends BitcoinSLogger {
     val outpoint = EmptyTransactionOutPoint
     val scriptSignature = ScriptSignature("0000")
     val input = TransactionInput(outpoint,scriptSignature,TransactionConstants.sequence)
-    val tx = Transaction(version,Seq(input),Seq(output),TransactionConstants.lockTime)
+    val tx = BaseTransaction(version,Seq(input),Seq(output),TransactionConstants.lockTime)
     (tx,UInt32.zero)
   }
 

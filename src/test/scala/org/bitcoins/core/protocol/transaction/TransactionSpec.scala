@@ -13,7 +13,10 @@ class TransactionSpec extends Properties("TransactionSpec") {
   property("Serialization symmetry") =
     Prop.forAll(TransactionGenerators.transaction) { tx =>
       val result = Transaction(tx.hex) == tx
-      if (!result) logger.error("Incorrect tx hex: " + tx.hex)
+      if (!result) {
+        logger.error(s"tx: $tx")
+        logger.error("Incorrect tx hex: " + tx.hex)
+      }
       result
     }
 

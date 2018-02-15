@@ -14,7 +14,7 @@ import org.bitcoins.core.protocol.transaction._
 sealed trait WTxSigComponentHelper {
   /** Takes a signed [[ScriptWitness]] and an unsignedTx and adds the witness to the unsigned [[WitnessTransaction]] */
   def createSignedWTxComponent(witness: ScriptWitness, unsignedWTxComponent: WitnessTxSigComponent): (TransactionWitness,WitnessTxSigComponent) = {
-    val signedTxWitness = TransactionWitness(Seq(witness))
+    val signedTxWitness = TransactionWitness.fromWitOpt(Seq(Some(witness)))
     val unsignedSpendingTx = unsignedWTxComponent.transaction
     val signedSpendingTx = WitnessTransaction(unsignedSpendingTx.version,unsignedSpendingTx.inputs,unsignedSpendingTx.outputs,
       unsignedSpendingTx.lockTime, signedTxWitness)
@@ -35,7 +35,7 @@ sealed trait WTxSigComponentHelper {
                                     unsignedScriptWitness: ScriptWitness, sequence: Option[UInt32]): WitnessTxSigComponentRaw = {
     val tc = TransactionConstants
     val flags = Policy.standardScriptVerifyFlags
-    val witness = TransactionWitness(Seq(unsignedScriptWitness))
+    val witness = TransactionWitness.fromWitOpt(Seq(Some(unsignedScriptWitness)))
     val (creditingTx,outputIndex) = TransactionGenerators.buildCreditingTransaction(witScriptPubKey,amount)
     val (unsignedSpendingTx,inputIndex) = TransactionGenerators.buildSpendingTransaction(tc.validLockVersion,creditingTx,
       EmptyScriptSignature, outputIndex, tc.lockTime,
@@ -48,7 +48,7 @@ sealed trait WTxSigComponentHelper {
                                         unsignedScriptWitness: ScriptWitness, sequence: Option[UInt32],
                                         outputs: Seq[TransactionOutput],
                                         inputs: Seq[TransactionInput]): WitnessTxSigComponentP2SH = {
-    val witness = TransactionWitness(Seq(unsignedScriptWitness))
+    val witness = TransactionWitness.fromWitOpt(Seq(Some(unsignedScriptWitness)))
     val flags = Policy.standardScriptVerifyFlags
     val tc = TransactionConstants
     val p2sh = P2SHScriptPubKey(witSPK)

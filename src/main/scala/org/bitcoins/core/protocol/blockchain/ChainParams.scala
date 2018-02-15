@@ -6,7 +6,7 @@ import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.number.{Int64, UInt32, UInt64}
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptSignature}
-import org.bitcoins.core.protocol.transaction.{Transaction, TransactionConstants, TransactionInput, TransactionOutput}
+import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.constant.{BytesToPushOntoStack, ScriptConstant, ScriptNumber}
 import org.bitcoins.core.script.crypto.OP_CHECKSIG
 import org.bitcoins.core.util.BitcoinSUtil
@@ -77,7 +77,7 @@ sealed trait ChainParams {
       BytesToPushOntoStack(1), ScriptNumber(4), BytesToPushOntoStack(69), ScriptConstant(timestampHex)))
     val input = TransactionInput(scriptSignature)
     val output = TransactionOutput(amount,scriptPubKey)
-    val tx = Transaction(TransactionConstants.version,Seq(input), Seq(output), TransactionConstants.lockTime)
+    val tx = BaseTransaction(TransactionConstants.version,Seq(input), Seq(output), TransactionConstants.lockTime)
     val prevBlockHash = DoubleSha256Digest("0000000000000000000000000000000000000000000000000000000000000000")
     val merkleRootHash = Merkle.computeMerkleRoot(Seq(tx))
     val genesisBlockHeader = BlockHeader(version,prevBlockHash,merkleRootHash,time,nBits,nonce)
