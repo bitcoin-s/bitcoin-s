@@ -5,7 +5,7 @@ import org.bitcoins.core.currency.{CurrencyUnits, Satoshis}
 import org.bitcoins.core.gen.ScriptGenerators
 import org.bitcoins.core.number.Int64
 import org.bitcoins.core.policy.Policy
-import org.bitcoins.core.protocol.script.{P2SHScriptPubKey, WitnessScriptPubKeyV0}
+import org.bitcoins.core.protocol.script.{P2SHScriptPubKey, P2WSHWitnessSPKV0, WitnessScriptPubKeyV0}
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.util.BitcoinSLogger
 import org.scalatest.{FlatSpec, MustMatchers}
@@ -23,7 +23,7 @@ class ChannelTest extends FlatSpec with MustMatchers {
     val p2sh = P2SHScriptPubKey(lock)
     val amount = Policy.minChannelAmount - Satoshis.one
     val output = TransactionOutput(amount, p2sh)
-    val tx = Transaction(TransactionConstants.version, Nil, Seq(output), TransactionConstants.lockTime)
+    val tx = BaseTransaction(TransactionConstants.version, Nil, Seq(output), TransactionConstants.lockTime)
     val chan = ChannelAwaitingAnchorTx(tx, lock)
     chan.isFailure must be(true)
   }
@@ -34,13 +34,13 @@ class ChannelTest extends FlatSpec with MustMatchers {
     val p2sh = P2SHScriptPubKey(randomScript)
     val amount = Policy.minChannelAmount
     val output = TransactionOutput(amount, p2sh)
-    val tx = Transaction(TransactionConstants.version, Nil, Seq(output), TransactionConstants.lockTime)
+    val tx = BaseTransaction(TransactionConstants.version, Nil, Seq(output), TransactionConstants.lockTime)
     val chan = ChannelAwaitingAnchorTx(tx, lock)
     chan.isFailure must be(true)
 
     //it must also fail if we do not have a p2sh output at all
     val output2 = TransactionOutput(amount, randomScript)
-    val tx2 = Transaction(TransactionConstants.version, Nil, Seq(output2), TransactionConstants.lockTime)
+    val tx2 = BaseTransaction(TransactionConstants.version, Nil, Seq(output2), TransactionConstants.lockTime)
     val chan2 = ChannelAwaitingAnchorTx(tx2, lock)
     chan2.isFailure must be(true)
   }
@@ -48,11 +48,11 @@ class ChannelTest extends FlatSpec with MustMatchers {
   it must "fail to client sign ChannelAwaitingAnchorTx if we do not have enough confs" in {
     val clientSPK = ScriptGenerators.p2pkhScriptPubKey.sample.get._1
     val (lock, keys) = ScriptGenerators.escrowTimeoutScriptPubKey2Of2.sample.get
-    val p2sh = P2SHScriptPubKey(WitnessScriptPubKeyV0(lock))
+    val p2sh = P2SHScriptPubKey(P2WSHWitnessSPKV0(lock))
     val amount = Policy.minChannelAmount
     val output = TransactionOutput(amount, p2sh)
     val tc = TransactionConstants
-    val tx = Transaction(tc.version, Nil, Seq(output), tc.lockTime)
+    val tx = BaseTransaction(tc.version, Nil, Seq(output), tc.lockTime)
     val chan = ChannelAwaitingAnchorTx(tx, lock)
     val clientSigned = chan.get.clientSign(clientSPK, amount, keys.head)
     clientSigned.isFailure must be(true)
@@ -68,10 +68,10 @@ class ChannelTest extends FlatSpec with MustMatchers {
     val clientSPK = ScriptGenerators.p2pkhScriptPubKey.sample.get._1
     val serverSPK = ScriptGenerators.p2pkhScriptPubKey.sample.get._1
     val (lock,keys) = ScriptGenerators.escrowTimeoutScriptPubKey2Of2.sample.get
-    val p2sh = P2SHScriptPubKey(WitnessScriptPubKeyV0(lock))
+    val p2sh = P2SHScriptPubKey(P2WSHWitnessSPKV0(lock))
     val amount = CurrencyUnits.oneBTC
     val output = TransactionOutput(amount, p2sh)
-    val tx = Transaction(TransactionConstants.version, Nil, Seq(output), TransactionConstants.lockTime)
+    val tx = BaseTransaction(TransactionConstants.version, Nil, Seq(output), TransactionConstants.lockTime)
     val chan = ChannelAwaitingAnchorTx(tx, lock, Policy.confirmations)
     val inProgress = chan.flatMap(_.clientSign(clientSPK,amount,keys.head))
     val closed = inProgress.flatMap(_.close(serverSPK,keys(1),CurrencyUnits.zero))
@@ -83,10 +83,10 @@ class ChannelTest extends FlatSpec with MustMatchers {
     val clientSPK = ScriptGenerators.p2pkhScriptPubKey.sample.get._1
     val serverSPK = ScriptGenerators.p2pkhScriptPubKey.sample.get._1
     val (lock,keys) = ScriptGenerators.escrowTimeoutScriptPubKey2Of2.sample.get
-    val p2sh = P2SHScriptPubKey(WitnessScriptPubKeyV0(lock))
+    val p2sh = P2SHScriptPubKey(P2WSHWitnessSPKV0(lock))
     val amount = CurrencyUnits.oneBTC * Satoshis(Int64(2))
     val output = TransactionOutput(amount, p2sh)
-    val tx = Transaction(TransactionConstants.version, Nil, Seq(output), TransactionConstants.lockTime)
+    val tx = BaseTransaction(TransactionConstants.version, Nil, Seq(output), TransactionConstants.lockTime)
     val chan = ChannelAwaitingAnchorTx(tx, lock, Policy.confirmations)
     val inProgress: Try[ChannelInProgressClientSigned] = chan.flatMap(_.clientSign(clientSPK,CurrencyUnits.oneBTC,keys.head))
     val serverSign: Try[ChannelInProgress] = inProgress.flatMap(_.serverSign(keys(1)))
@@ -100,10 +100,10 @@ class ChannelTest extends FlatSpec with MustMatchers {
     val clientSPK = ScriptGenerators.p2pkhScriptPubKey.sample.get._1
     val serverSPK = ScriptGenerators.p2pkhScriptPubKey.sample.get._1
     val (lock,keys) = ScriptGenerators.escrowTimeoutScriptPubKey2Of2.sample.get
-    val p2sh = P2SHScriptPubKey(WitnessScriptPubKeyV0(lock))
+    val p2sh = P2SHScriptPubKey(P2WSHWitnessSPKV0(lock))
     val amount = CurrencyUnits.oneBTC
     val output = TransactionOutput(amount, p2sh)
-    val tx = Transaction(TransactionConstants.version, Nil, Seq(output), TransactionConstants.lockTime)
+    val tx = BaseTransaction(TransactionConstants.version, Nil, Seq(output), TransactionConstants.lockTime)
     val chan = ChannelAwaitingAnchorTx(tx, lock, Policy.confirmations)
     val inProgress = chan.flatMap(_.clientSign(clientSPK,amount,keys.head))
     //Note the fee here, we try and spend too much money
@@ -114,7 +114,7 @@ class ChannelTest extends FlatSpec with MustMatchers {
   private def validInProgress: (ChannelInProgress, Seq[ECPrivateKey]) = {
     val clientSPK = ScriptGenerators.p2pkhScriptPubKey.sample.get._1
     val (lock,keys) = ScriptGenerators.escrowTimeoutScriptPubKey2Of2.sample.get
-    val witSPK = WitnessScriptPubKeyV0(lock)
+    val witSPK = P2WSHWitnessSPKV0(lock)
     val p2sh = P2SHScriptPubKey(witSPK)
     val amount = CurrencyUnits.oneBTC
     val output = TransactionOutput(amount, p2sh)

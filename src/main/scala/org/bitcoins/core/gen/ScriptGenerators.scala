@@ -23,7 +23,7 @@ trait ScriptGenerators extends BitcoinSLogger {
 
 
   def p2pkScriptSignature : Gen[P2PKScriptSignature] = for {
-    digitalSignature <- CryptoGenerators.digitalSignatures
+    digitalSignature <- CryptoGenerators.digitalSignature
   } yield P2PKScriptSignature(digitalSignature)
 
   def p2pkhScriptSignature : Gen[P2PKHScriptSignature] = for {
@@ -123,21 +123,30 @@ trait ScriptGenerators extends BitcoinSLogger {
   def emptyScriptPubKey : Gen [(ScriptPubKey, Seq[ECPrivateKey])] = (EmptyScriptPubKey, Nil)
 
   /** Creates a basic version 0 P2WPKH scriptpubkey */
-  def witnessScriptPubKeyV0: Gen[(WitnessScriptPubKeyV0,Seq[ECPrivateKey])] = for {
+  def p2wpkhSPKV0: Gen[(P2WPKHWitnessSPKV0,Seq[ECPrivateKey])] = for {
     privKey <- CryptoGenerators.privateKey
-  } yield (WitnessScriptPubKeyV0(privKey.publicKey), Seq(privKey))
+  } yield (P2WPKHWitnessSPKV0(privKey.publicKey), Seq(privKey))
+
+  def p2wshSPKV0: Gen[(P2WSHWitnessSPKV0, Seq[ECPrivateKey])] = randomNonP2SHScriptPubKey.map { spk =>
+    (P2WSHWitnessSPKV0(spk._1), spk._2)
+  }
+
+  def witnessScriptPubKeyV0: Gen[(WitnessScriptPubKeyV0, Seq[ECPrivateKey])] = Gen.oneOf(
+    p2wpkhSPKV0, p2wshSPKV0
+  )
 
   /** Creates an [[UnassignedWitnessScriptPubKey]],
     * currently this is any witness script pubkey besides [[org.bitcoins.core.protocol.script.WitnessScriptPubKeyV0]
     */
   def unassignedWitnessScriptPubKey: Gen[(UnassignedWitnessScriptPubKey, Seq[ECPrivateKey])] = for {
-    (witV0,privKeys) <- witnessScriptPubKeyV0
+    (witV0,privKeys) <- p2wpkhSPKV0
     version <- Gen.oneOf(WitnessScriptPubKey.unassignedWitVersions)
     unassignedAsm = version +: witV0.asm.tail
   } yield (UnassignedWitnessScriptPubKey(unassignedAsm),privKeys)
 
   /** Generates an arbitrary [[org.bitcoins.core.protocol.script.WitnessScriptPubKey]] */
-  def witnessScriptPubKey: Gen[(WitnessScriptPubKey, Seq[ECPrivateKey])] = Gen.oneOf(witnessScriptPubKeyV0,unassignedWitnessScriptPubKey)
+  def witnessScriptPubKey: Gen[(WitnessScriptPubKey, Seq[ECPrivateKey])] = Gen.oneOf(p2wpkhSPKV0,
+    p2wshSPKV0, unassignedWitnessScriptPubKey)
 
   def witnessCommitment: Gen[(WitnessCommitment, Seq[ECPrivateKey])] = for {
     hash <- CryptoGenerators.doubleSha256Digest
@@ -175,7 +184,7 @@ trait ScriptGenerators extends BitcoinSLogger {
     Gen.oneOf(p2pkScriptPubKey.map(privKeyToSeq(_)), p2pkhScriptPubKey.map(privKeyToSeq(_)),
       cltvScriptPubKey.suchThat(!_._1.nestedScriptPubKey.isInstanceOf[CSVScriptPubKey]),
       csvScriptPubKey.suchThat(!_._1.nestedScriptPubKey.isInstanceOf[CLTVScriptPubKey]),
-      multiSigScriptPubKey, witnessScriptPubKeyV0, unassignedWitnessScriptPubKey, escrowTimeoutScriptPubKey
+      multiSigScriptPubKey, p2wpkhSPKV0, unassignedWitnessScriptPubKey, escrowTimeoutScriptPubKey
     )
   }
 
@@ -200,7 +209,7 @@ trait ScriptGenerators extends BitcoinSLogger {
   def scriptPubKey : Gen[(ScriptPubKey, Seq[ECPrivateKey])] = {
     Gen.oneOf(p2pkScriptPubKey.map(privKeyToSeq(_)),p2pkhScriptPubKey.map(privKeyToSeq(_)),
       multiSigScriptPubKey,emptyScriptPubKey,
-      cltvScriptPubKey,csvScriptPubKey,witnessScriptPubKeyV0,unassignedWitnessScriptPubKey,
+      cltvScriptPubKey,csvScriptPubKey,p2wpkhSPKV0, p2wshSPKV0, unassignedWitnessScriptPubKey,
       p2shScriptPubKey, witnessCommitment, escrowTimeoutScriptPubKey)
   }
 

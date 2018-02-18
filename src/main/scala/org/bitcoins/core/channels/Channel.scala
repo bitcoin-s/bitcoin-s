@@ -33,7 +33,7 @@ sealed trait Channel extends BitcoinSLogger {
   def lock: EscrowTimeoutScriptPubKey
 
   /** [[WitnessScriptPubKeyV0]] used as the redeem script in the [[P2SHScriptPubKey]] */
-  def witSPK = WitnessScriptPubKeyV0(lock)
+  def witSPK = P2WSHWitnessSPKV0(lock)
 
   def scriptPubKey: P2SHScriptPubKey = lockingOutput.scriptPubKey.asInstanceOf[P2SHScriptPubKey]
 
@@ -298,7 +298,7 @@ sealed trait ChannelClosedWithEscrow extends ChannelClosed {
 object ChannelAwaitingAnchorTx {
   private case class ChannelAwaitAnchorTxImpl(anchorTx: Transaction, lock: EscrowTimeoutScriptPubKey,
                                                      confirmations: Long) extends ChannelAwaitingAnchorTx {
-    private val expectedScriptPubKey = P2SHScriptPubKey(WitnessScriptPubKeyV0(lock))
+    private val expectedScriptPubKey = P2SHScriptPubKey(P2WSHWitnessSPKV0(lock))
     require(anchorTx.outputs.exists(_.scriptPubKey == expectedScriptPubKey),
       "One output on the Anchor Transaction has to have a P2SH(P2WSH(EscrowTimeoutScriptPubKey))")
     require(lockedAmount >= Policy.minChannelAmount, "We need to lock at least " + Policy.minChannelAmount +

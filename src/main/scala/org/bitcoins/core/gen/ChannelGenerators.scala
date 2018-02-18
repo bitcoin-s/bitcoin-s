@@ -24,7 +24,7 @@ sealed trait ChannelGenerators extends BitcoinSLogger {
   def anchorTx: Gen[(Transaction, EscrowTimeoutScriptPubKey, Seq[ECPrivateKey])] = for {
     (redeemScript,privKeys) <- ScriptGenerators.escrowTimeoutScriptPubKey2Of2
     amount <- CurrencyUnitGenerator.satoshis.suchThat(_ >= Policy.minChannelAmount)
-    p2sh = P2SHScriptPubKey(WitnessScriptPubKeyV0(redeemScript))
+    p2sh = P2SHScriptPubKey(P2WSHWitnessSPKV0(redeemScript))
     (aTx,_) = TransactionGenerators.buildCreditingTransaction(TransactionConstants.validLockVersion,p2sh,amount)
   } yield (aTx,redeemScript,privKeys)
 

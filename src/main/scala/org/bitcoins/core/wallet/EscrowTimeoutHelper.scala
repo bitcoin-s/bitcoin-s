@@ -26,9 +26,9 @@ sealed abstract class EscrowTimeoutHelper extends BitcoinSLogger {
                  hashType: HashType): WitnessTxSigComponentP2SH = {
     val (p2sh,amount) = (creditingOutput.scriptPubKey.asInstanceOf[P2SHScriptPubKey],creditingOutput.value)
     val tc = TransactionConstants
-    val uScriptWitness = ScriptWitness(Seq(lock.asmBytes))
+    val uScriptWitness = P2WSHWitnessV0(lock)
     val wtx = WitnessTransaction(tc.validLockVersion, inputs, outputs, tc.lockTime, TransactionWitness(Seq(uScriptWitness)))
-    val witSPK = WitnessScriptPubKeyV0(lock)
+    val witSPK = P2WSHWitnessSPKV0(lock)
     val u = WitnessTxSigComponentRaw(wtx,inputIndex,witSPK,Policy.standardFlags,amount)
     val signature = TransactionSignatureCreator.createSig(u, privKey, hashType)
     val sigs = Seq(signature)
@@ -45,9 +45,7 @@ sealed abstract class EscrowTimeoutHelper extends BitcoinSLogger {
                                       lock: EscrowTimeoutScriptPubKey,
                                       unsigned: WitnessTxSigComponentRaw): TransactionWitness = {
     //need to remove the OP_0 or OP_1 and replace it with ScriptNumber.zero / ScriptNumber.one since witnesses are *not* run through the interpreter
-    val s = BitcoinScriptUtil.minimalDummy(BitcoinScriptUtil.minimalIfOp(signedScriptSig.asm))
-    val signedScriptSigPushOpsRemoved = BitcoinScriptUtil.filterPushOps(s).reverse
-    val signedScriptWitness = ScriptWitness(lock.asmBytes +: (signedScriptSigPushOpsRemoved.map(_.bytes)))
+    val signedScriptWitness = P2WSHWitnessV0(lock, signedScriptSig)
     val updatedWitnesses = unsigned.transaction.witness.witnesses.updated(unsigned.inputIndex.toInt,signedScriptWitness)
     val txWitness: TransactionWitness = TransactionWitness(updatedWitnesses)
     txWitness
@@ -57,7 +55,7 @@ sealed abstract class EscrowTimeoutHelper extends BitcoinSLogger {
   def serverSign(privKey: ECPrivateKey, clientSigned: WitnessTxSigComponentP2SH, hashType: HashType): Try[WitnessTxSigComponentP2SH] = {
     val lockScript = clientSigned.witness.stack.head
     val lock = Try(EscrowTimeoutScriptPubKey(CompactSizeUInt.calculateCompactSizeUInt(lockScript).bytes ++ lockScript))
-    val witSPK = lock.map(WitnessScriptPubKeyV0(_))
+    val witSPK = lock.map(P2WSHWitnessSPKV0(_))
     val stack = clientSigned.witness.stack
     val clientSignature = ECDigitalSignature(stack(stack.size-2))
     val raw = witSPK.map(w => WitnessTxSigComponentRaw(clientSigned.transaction,clientSigned.inputIndex,
@@ -94,22 +92,28 @@ sealed abstract class EscrowTimeoutHelper extends BitcoinSLogger {
   def closeWithTimeout(inputs: Seq[TransactionInput], outputs: Seq[TransactionOutput], inputIndex: UInt32, privKey: ECPrivateKey,
                        lock: EscrowTimeoutScriptPubKey, creditingOutput: TransactionOutput,
                        hashType: HashType,
-                       version: UInt32, sequence: UInt32, lockTime: UInt32): Try[WitnessTxSigComponentP2SH] = Try {
-    require(lock.timeout.nestedScriptPubKey.isInstanceOf[P2PKHScriptPubKey],
-      "We currently require the nested SPK in the timeout branch to be a P2PKHScriptPubKey, got: " + lock.timeout.nestedScriptPubKey)
-    val witSPK = WitnessScriptPubKeyV0(lock)
+                       version: UInt32, sequence: UInt32, lockTime: UInt32): Try[WitnessTxSigComponentP2SH] = {
+    val invariant: Try[Unit] = Try(require(lock.timeout.nestedScriptPubKey.isInstanceOf[P2PKHScriptPubKey],
+      "We currently require the nested SPK in the timeout branch to be a P2PKHScriptPubKey, got: " + lock.timeout.nestedScriptPubKey))
+    val witSPK = P2WSHWitnessSPKV0(lock)
     val p2sh = P2SHScriptPubKey(witSPK)
     val amount = creditingOutput.value
     val tc = TransactionConstants
-    val uScriptWitness = ScriptWitness(Seq(lock.asmBytes))
+    val uScriptWitness = P2WSHWitnessV0(lock)
     val uTxWitness = TransactionWitness(Seq(uScriptWitness))
     val uwtx = WitnessTransaction(tc.validLockVersion,inputs,outputs,tc.validLockVersion,uTxWitness)
     val u = WitnessTxSigComponentRaw(uwtx,inputIndex,witSPK,Policy.standardFlags, amount)
     val signature = TransactionSignatureCreator.createSig(u,privKey,hashType)
-    val scriptWitness = ScriptWitness(lock.asmBytes +: Seq(ScriptNumber.zero.bytes,privKey.publicKey.bytes, signature.bytes))
-    val witness = TransactionWitness(u.transaction.witness.witnesses.updated(u.inputIndex.toInt,scriptWitness))
-    val wtx = WitnessTransaction(uwtx.version, uwtx.inputs, uwtx.outputs, uwtx.lockTime, witness)
-    WitnessTxSigComponentP2SH(wtx,u.inputIndex,p2sh,u.flags,u.amount)
+    val scriptSig = CSVScriptSignature(P2PKHScriptSignature(signature,privKey.publicKey))
+    val escrowScriptSig: Try[EscrowTimeoutScriptSignature] = EscrowTimeoutScriptSignature(scriptSig)
+    invariant.flatMap { _ =>
+      escrowScriptSig.map { e =>
+        val scriptWitness = P2WSHWitnessV0(lock,e)
+        val witness = TransactionWitness(u.transaction.witness.witnesses.updated(u.inputIndex.toInt,scriptWitness))
+        val wtx = WitnessTransaction(uwtx.version, uwtx.inputs, uwtx.outputs, uwtx.lockTime, witness)
+        WitnessTxSigComponentP2SH(wtx,u.inputIndex,p2sh,u.flags,u.amount)
+      }
+    }
   }
 }
 

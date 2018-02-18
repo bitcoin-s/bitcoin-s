@@ -9,12 +9,12 @@ import org.scalacheck.{Prop, Properties}
 class ECDigitalSignatureSpec extends Properties("ECDigitalSignatureSpec") {
 
   property("must be der encoded") =
-    Prop.forAll(CryptoGenerators.digitalSignatures) { signature =>
+    Prop.forAll(CryptoGenerators.digitalSignature) { signature =>
       signature.isDEREncoded
     }
 
   property("must have a low s") =
-    Prop.forAll(CryptoGenerators.digitalSignatures) { signature =>
+    Prop.forAll(CryptoGenerators.digitalSignature) { signature =>
       DERSignatureUtil.isLowS(signature)
     }
 

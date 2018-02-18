@@ -1,7 +1,7 @@
 package org.bitcoins.core.protocol.transaction
 
 import org.bitcoins.core.protocol.NetworkElement
-import org.bitcoins.core.protocol.script.ScriptWitness
+import org.bitcoins.core.protocol.script.{EmptyScriptWitness, ScriptWitness}
 import org.bitcoins.core.serializers.transaction.RawTransactionWitnessParser
 import org.bitcoins.core.util.BitcoinSUtil
 
@@ -27,6 +27,19 @@ object TransactionWitness {
 
   def apply(witnesses: Seq[ScriptWitness]): TransactionWitness = TransactionWitnessImpl(witnesses)
 
+  /** Creates a [[TransactionWitness]] from a Seq[Option[ScriptWitness]].
+    * This constructor is for convinience if a certain input does not spend a [[org.bitcoins.core.protocol.script.WitnessScriptPubKey]]
+    * It simply transforms the `None` types to [[EmptyScriptWitness]] and then calls the normal TransactionWitness constructor
+    * @param witnesses
+    * @return
+    */
+  def fromWitOpt(witnesses: Seq[Option[ScriptWitness]]): TransactionWitness = {
+    val replaced: Seq[ScriptWitness] = witnesses.map {
+      case Some(wit) => wit
+      case None => EmptyScriptWitness
+    }
+    TransactionWitness(replaced)
+  }
   def fromBytes(bytes: Seq[Byte], numInputs: Int): TransactionWitness = RawTransactionWitnessParser.read(bytes,numInputs)
 
   def apply(bytes: Seq[Byte], numInputs: Int): TransactionWitness = fromBytes(bytes,numInputs)
