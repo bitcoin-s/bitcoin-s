@@ -45,7 +45,7 @@ trait TransactionTestUtil extends BitcoinSLogger {
     val input = TransactionInput(outpoint,scriptSignature,TransactionConstants.sequence)
     val output = TransactionOutput(amount.getOrElse(CurrencyUnits.zero),scriptPubKey)
 
-    val tx = Transaction(TransactionConstants.version,Seq(input),Seq(output),TransactionConstants.lockTime)
+    val tx = BaseTransaction(TransactionConstants.version,Seq(input),Seq(output),TransactionConstants.lockTime)
     (tx,UInt32.zero)
   }
 
@@ -85,7 +85,7 @@ trait TransactionTestUtil extends BitcoinSLogger {
           TransactionConstants.lockTime, txWitness)
       case None =>
         val output = TransactionOutput(CurrencyUnits.zero,EmptyScriptPubKey)
-        Transaction(TransactionConstants.version,Seq(input),Seq(output),TransactionConstants.lockTime)
+        BaseTransaction(TransactionConstants.version,Seq(input),Seq(output),TransactionConstants.lockTime)
 
     }
 
@@ -179,9 +179,7 @@ trait TransactionTestUtil extends BitcoinSLogger {
    * the scriptSignature to be whatever we need it to be
    * @return
    */
-  def testTransaction : Transaction = {
-    Transaction(EmptyTransaction,UpdateTransactionInputs(Seq(EmptyTransactionInput)))
-  }
+  def testTransaction : Transaction = BaseTransaction(EmptyTransaction.version,Seq(EmptyTransactionInput),Nil,EmptyTransaction.lockTime)
 }
 
 object TransactionTestUtil extends TransactionTestUtil

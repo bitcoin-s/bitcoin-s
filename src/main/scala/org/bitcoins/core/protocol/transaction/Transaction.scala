@@ -78,30 +78,6 @@ sealed abstract class WitnessTransaction extends Transaction {
 
 object Transaction extends Factory[Transaction] {
 
-  /** Updates a transaction outputs */
-  def factory(oldTx : Transaction, updatedOutputs : UpdateTransactionOutputs) : Transaction = {
-    Transaction(oldTx.version,oldTx.inputs,updatedOutputs.outputs,oldTx.lockTime)
-  }
-
-  /** Updates a transaction's input */
-  def factory(oldTx : Transaction,updatedInputs : UpdateTransactionInputs) : Transaction = {
-    Transaction(oldTx.version,updatedInputs.inputs,oldTx.outputs,oldTx.lockTime)
-  }
-
-  /** Factory function that modifies a transactions locktime */
-  def factory(oldTx : Transaction, lockTime : UInt32) : Transaction = {
-    Transaction(oldTx.version,oldTx.inputs,oldTx.outputs,lockTime)
-  }
-
-
-  /** Removes the inputs of the transactions */
-  def emptyInputs(oldTx : Transaction) : Transaction = Transaction(oldTx.version,Nil,oldTx.outputs,oldTx.lockTime)
-
-  /** Removes the outputs of the transactions */
-  def emptyOutputs(oldTx : Transaction) : Transaction = Transaction(oldTx.version,oldTx.inputs,Nil,oldTx.lockTime)
-
-  def factory(bytes : Array[Byte]) : Transaction = fromBytes(bytes.toSeq)
-
   def fromBytes(bytes : Seq[Byte]) : Transaction = {
     val wtxTry = Try(RawWitnessTransactionParser.read(bytes))
     wtxTry match {
@@ -112,12 +88,30 @@ object Transaction extends Factory[Transaction] {
         btx
     }
   }
+  @deprecated("", "2018/02/16")
+  def apply(oldTx : Transaction, lockTime : UInt32): Transaction = oldTx match {
+    case btx: BaseTransaction =>
+      BaseTransaction(btx.version,btx.inputs,btx.outputs,lockTime)
+    case wtx: WitnessTransaction =>
+      WitnessTransaction(wtx.version,wtx.inputs,wtx.outputs,lockTime,wtx.witness)
+  }
 
-  def apply(bytes : Array[Byte]) : Transaction = factory(bytes)
-  def apply(oldTx : Transaction, lockTime : UInt32)  : Transaction = factory(oldTx,lockTime)
-  def apply(oldTx : Transaction, updatedInputs : UpdateTransactionInputs) : Transaction = factory(oldTx, updatedInputs)
-  def apply(oldTx : Transaction, updatedOutputs : UpdateTransactionOutputs) : Transaction = factory(oldTx, updatedOutputs)
+  @deprecated("", "2018/02/16")
+  def apply(oldTx : Transaction, updatedInputs : UpdateTransactionInputs): Transaction = oldTx match {
+    case btx: BaseTransaction =>
+      BaseTransaction(btx.version,updatedInputs.inputs,btx.outputs,btx.lockTime)
+    case wtx: WitnessTransaction =>
+      WitnessTransaction(wtx.version,updatedInputs.inputs,wtx.outputs,wtx.lockTime,wtx.witness)
+  }
+  @deprecated("", "2018/02/16")
+  def apply(oldTx : Transaction, updatedOutputs : UpdateTransactionOutputs) : Transaction = oldTx match {
+    case btx: BaseTransaction =>
+      BaseTransaction(btx.version,btx.inputs,updatedOutputs.outputs,btx.lockTime)
+    case wtx: WitnessTransaction =>
+      WitnessTransaction(wtx.version,wtx.inputs,updatedOutputs.outputs,wtx.lockTime,wtx.witness)
+  }
 
+  @deprecated("Dangerous was you can lose TransactionWitness, use BaseTransaction", "2018/02/16")
   def apply(version : UInt32, inputs : Seq[TransactionInput],
             outputs : Seq[TransactionOutput], lockTime : UInt32) : Transaction = {
     BaseTransaction(version,inputs,outputs,lockTime)
