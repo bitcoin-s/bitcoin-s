@@ -39,4 +39,7 @@ object TxBuilderError {
   /** We expected a [[org.bitcoins.core.protocol.script.WitnessScriptPubKeyV0]], but got a non witness spk type */
   case object NonWitnessSPK extends TxBuilderError
 
+  /** We cannot have a [[org.bitcoins.core.protocol.script.WitnessScriptPubKey]] nested inside of another [[org.bitcoins.core.protocol.script.WitnessScriptPubKey]] */
+  case object NestedWitnessSPK extends TxBuilderError
+
 }
