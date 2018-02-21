@@ -1,9 +1,9 @@
 package org.bitcoins.core.wallet.builder
 
+/** Represents an error that can be returned by the [[org.bitcoins.core.wallet.builder.TxBuilder]]
+  * if it failed to sign a set of utxos
+  */
 sealed abstract class TxBuilderError
-
-
-
 
 object TxBuilderError {
   /** This error indicates that the transaction failed to pass the invariants the user wanted to hold
@@ -33,13 +33,21 @@ object TxBuilderError {
     */
   case object NoWitness extends TxBuilderError
 
-  /** We do not know how to sign [[org.bitcoins.core.protocol.script.NonStandardScriptPubKey]] types */
-  case object NonStandardSPK extends TxBuilderError
-
   /** We expected a [[org.bitcoins.core.protocol.script.WitnessScriptPubKeyV0]], but got a non witness spk type */
   case object NonWitnessSPK extends TxBuilderError
 
   /** We cannot have a [[org.bitcoins.core.protocol.script.WitnessScriptPubKey]] nested inside of another [[org.bitcoins.core.protocol.script.WitnessScriptPubKey]] */
   case object NestedWitnessSPK extends TxBuilderError
+
+  /** We cannot have a [[org.bitcoins.core.protocol.script.P2SHScriptPubKey]] nested inside of another spk   */
+  case object NestedP2SHSPK extends TxBuilderError
+
+  /** We cannot have a [[org.bitcoins.core.protocol.script.P2WSHWitnessSPKV0]] nested inside of another spk */
+  case object NestedP2WSHSPK extends TxBuilderError
+
+  /** Means that there is no signer defined for the given [[org.bitcoins.core.protocol.script.ScriptPubKey]] type.
+    * An example of a spk with no signer that is defined is [[org.bitcoins.core.protocol.script.WitnessCommitment]]
+    */
+  case object NoSigner extends TxBuilderError
 
 }

@@ -1,16 +1,15 @@
 package org.bitcoins.core.wallet.builder
 
-import org.bitcoins.core.crypto.{ECPrivateKey, EmptyDigitalSignature, TransactionSignatureCreator, TxSigComponent}
+import org.bitcoins.core.crypto.{ECPrivateKey, TxSigComponent}
 import org.bitcoins.core.currency.CurrencyUnits
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
-import org.bitcoins.core.script.constant.ScriptToken
+import org.bitcoins.core.script.constant.ScriptNumber
 import org.bitcoins.core.script.crypto.HashType
-import org.bitcoins.core.script.result.ScriptError
+import org.bitcoins.core.script.locktime.LockTimeInterpreter
 import org.bitcoins.core.util.BitcoinSLogger
-import org.bitcoins.core.wallet.WTxSigComponentHelper
-import org.bitcoins.core.wallet.signer.{MultiSigSigner, P2PKHSigner, P2PKSigner, P2WPKHSigner}
+import org.bitcoins.core.wallet.signer._
 
 import scala.annotation.tailrec
 import scala.util.Try
@@ -76,10 +75,23 @@ sealed abstract class TxBuilder {
     val scriptWitOpt = utxos.map(_._5)
     val unsignedTxWit = TransactionWitness.fromWitOpt(scriptWitOpt)
     val tc = TransactionConstants
-    val inputs = outpoints.map(o => TransactionInput(o,EmptyScriptSignature,tc.sequence))
+    val lockTime = calcLockTime(utxos)
+    val inputs = utxos.map { case (outpoint, output, _,_,_)=>
+      output.scriptPubKey match {
+        case csv: CSVScriptPubKey =>
+          val sequence = solveSequenceForCSV(csv.locktime)
+          TransactionInput(outpoint, EmptyScriptSignature, sequence)
+        case _: CLTVScriptPubKey =>
+          TransactionInput(outpoint, EmptyScriptSignature, UInt32.zero)
+        case _: P2PKScriptPubKey | _: P2PKHScriptPubKey | _: MultiSignatureScriptPubKey | _: P2SHScriptPubKey
+             | _: P2WPKHWitnessSPKV0 | _: P2WSHWitnessSPKV0 | _: NonStandardScriptPubKey | _: WitnessCommitment
+             | EmptyScriptPubKey | _: UnassignedWitnessScriptPubKey => TransactionInput(outpoint,EmptyScriptSignature, tc.sequence)
+      }
+
+    }
     val unsigned = unsignedTxWit match {
-      case EmptyWitness => BaseTransaction(tc.version,inputs,destinations,tc.lockTime)
-      case wit: TransactionWitness => WitnessTransaction(tc.version,inputs,destinations,tc.lockTime,wit)
+      case EmptyWitness => BaseTransaction(tc.validLockVersion,inputs,destinations,lockTime)
+      case wit: TransactionWitness => WitnessTransaction(tc.validLockVersion,inputs,destinations,lockTime,wit)
     }
     val signedTx = loop(utxos, unsigned)
     signedTx match {
@@ -107,6 +119,20 @@ sealed abstract class TxBuilder {
         P2PKSigner.sign(keys,output,unsignedTx,inputIndex,hashType).left.map(_.transaction)
       case _: P2PKHScriptPubKey => P2PKHSigner.sign(keys,output,unsignedTx,inputIndex,hashType).left.map(_.transaction)
       case _: MultiSignatureScriptPubKey => MultiSigSigner.sign(keys,output,unsignedTx,inputIndex,hashType).left.map(_.transaction)
+      case lock: LockTimeScriptPubKey =>
+        lock.nestedScriptPubKey match {
+          case _: P2PKScriptPubKey => P2PKSigner.sign(keys,output,unsignedTx,inputIndex,hashType).left.map(_.transaction)
+          case _: P2PKHScriptPubKey => P2PKHSigner.sign(keys,output,unsignedTx,inputIndex,hashType).left.map(_.transaction)
+          case _: MultiSignatureScriptPubKey => MultiSigSigner.sign(keys,output,unsignedTx,inputIndex,hashType).left.map(_.transaction)
+          case _: P2WPKHWitnessSPKV0 => P2WPKHSigner.sign(keys,output,unsignedTx,inputIndex,hashType).left.map(_.transaction)
+          case _: P2SHScriptPubKey => Right(TxBuilderError.NestedP2SHSPK)
+          case _: P2WSHWitnessSPKV0 => Right(TxBuilderError.NestedP2WSHSPK)
+          case _: CSVScriptPubKey | _: CLTVScriptPubKey =>
+            //TODO: Comeback to this later and see if we should have signer for nested locktime spks
+            Right(TxBuilderError.NoSigner)
+          case _: NonStandardScriptPubKey | _: WitnessCommitment
+               | EmptyScriptPubKey | _: UnassignedWitnessScriptPubKey => Right(TxBuilderError.NoSigner)
+        }
       case _: P2SHScriptPubKey =>
         redeemScriptOpt match {
           case Some(redeemScript) =>
@@ -131,11 +157,9 @@ sealed abstract class TxBuilder {
                 case wtx: WitnessTransaction =>
                   WitnessTransaction(wtx.version,signedInputs,wtx.outputs,wtx.lockTime,wtx.witness)
               }
-
             }
           case None => Right(TxBuilderError.NoRedeemScript)
         }
-      case _: NonStandardScriptPubKey => Right(TxBuilderError.NonStandardSPK)
       case _: WitnessScriptPubKeyV0 =>
         //if we don't have a WitnessTransaction we need to convert our unsignedTx to a WitnessTransaction
         val unsignedWTx: WitnessTransaction = unsignedTx match {
@@ -158,13 +182,75 @@ sealed abstract class TxBuilder {
                   case _: P2PKHScriptPubKey => P2PKHSigner.sign(keys,output,unsignedWTx,inputIndex,hashType)
                   case _: MultiSignatureScriptPubKey  => MultiSigSigner.sign(keys,output,unsignedWTx,inputIndex,hashType)
                   case _: P2WPKHWitnessSPKV0 | _: P2WSHWitnessSPKV0 => Right(TxBuilderError.NestedWitnessSPK)
+                  case _: P2SHScriptPubKey => Right(TxBuilderError.NestedP2SHSPK)
+                  case (_: NonStandardScriptPubKey | _: WitnessCommitment | EmptyScriptPubKey
+                        | _: UnassignedWitnessScriptPubKey) =>
+                    Right(TxBuilderError.NoSigner)
                 }
               case EmptyScriptWitness => Right(TxBuilderError.NoWitness)
             }
           case None => Right(TxBuilderError.NoWitness)
         }
         result.left.map(_.transaction)
+
+      case _: NonStandardScriptPubKey | _: WitnessCommitment
+           | EmptyScriptPubKey | _: UnassignedWitnessScriptPubKey => Right(TxBuilderError.NoSigner)
     }
+  }
+
+/*  private def matchSigner(spk: ScriptPubKey): Option[Signer] = spk match {
+    case _: P2PKScriptPubKey => Some(P2PKSigner)
+    case _: P2PKHScriptPubKey => Some(P2PKHSigner)
+    case _: MultiSignatureScriptPubKey => Some(MultiSigSigner)
+    case _: P2SHScriptPubKey => None
+    case _: CSVScriptPubKey | _: CLTVScriptPubKey => None
+    case _: P2WPKHWitnessSPKV0 => Some(P2WPKHSigner)
+    case _: WitnessCommitment | EmptyScriptPubKey
+         | _: UnassignedWitnessScriptPubKey | _: NonStandardScriptPubKey => None
+  }*/
+
+  /** Returns a valid sequence number for the given [[ScriptNumber]]
+    * A transaction needs a valid sequence number to spend a OP_CHECKSEQUENCEVERIFY script.
+    * See BIP68/112 for more information
+    * [[https://github.com/bitcoin/bips/blob/master/bip-0068.mediawiki]]
+    * [[https://github.com/bitcoin/bips/blob/master/bip-0112.mediawiki]]
+    * */
+  private def solveSequenceForCSV(scriptNum: ScriptNumber): UInt32 = LockTimeInterpreter.isCSVLockByBlockHeight(scriptNum) match {
+    case true =>
+      //means that we need to have had scriptNum blocks bassed since this tx was included a block to be able to spend this output
+      val blocksPassed = scriptNum.toLong & TransactionConstants.sequenceLockTimeMask.toLong
+      val sequence = UInt32(blocksPassed)
+      sequence
+    case false =>
+      //means that we need to have had 512 * n seconds passed since the tx was included in a block passed
+      val n = scriptNum.toLong
+      val sequence = UInt32(n & TransactionConstants.sequenceLockTimeMask.toLong)
+      //set sequence number to indicate this is relative locktime
+      sequence | TransactionConstants.sequenceLockTimeTypeFlag
+  }
+
+  /** Returns a valid locktime for a transaction that is a valid for the given [[ScriptNumber]]
+    *
+    */
+  private def solveLockTimeForCLTV(scriptNum: ScriptNumber): UInt32 = UInt32(scriptNum.toLong)
+
+  private def calcLockTime(utxos: Seq[OutputInfo]): UInt32 = {
+    @tailrec
+    def loop(remaining: Seq[OutputInfo], currentLockTime: UInt32): UInt32 = remaining match {
+      case Nil => currentLockTime
+      case (_,output,_,_,_) :: t => output.scriptPubKey match {
+        case cltv: CLTVScriptPubKey =>
+          val l = UInt32(cltv.locktime.toLong)
+          if (currentLockTime < l) loop(t,l)
+          else loop(t,currentLockTime)
+        case _: P2PKScriptPubKey | _: P2PKHScriptPubKey | _: MultiSignatureScriptPubKey | _: P2SHScriptPubKey
+             | _: P2WPKHWitnessSPKV0 | _: P2WSHWitnessSPKV0 | _: NonStandardScriptPubKey | _: WitnessCommitment
+             | EmptyScriptPubKey | _: UnassignedWitnessScriptPubKey | _: CSVScriptPubKey  =>
+          loop(t,currentLockTime)
+
+      }
+    }
+    loop(utxos,TransactionConstants.lockTime)
   }
 }
 
@@ -177,7 +263,8 @@ object TxBuilder {
   }
 
   def apply(destinations: Seq[TransactionOutput], creditingTxs: Seq[Transaction],
-            outPointsSpendingInfo: Map[TransactionOutPoint, (Seq[ECPrivateKey], Option[ScriptPubKey], Option[ScriptWitness])]): Try[TxBuilder] = {
+            outPointsSpendingInfo: Map[TransactionOutPoint, (Seq[ECPrivateKey], Option[ScriptPubKey], Option[ScriptWitness])],
+            version: UInt32, locktime: UInt32): Try[TxBuilder] = {
     Try(TransactionBuilderImpl(destinations,creditingTxs,outPointsSpendingInfo))
   }
 }

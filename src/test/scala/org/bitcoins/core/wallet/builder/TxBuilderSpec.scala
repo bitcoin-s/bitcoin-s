@@ -17,11 +17,12 @@ import scala.annotation.tailrec
 class TxBuilderSpec extends Properties("TxBuilderSpec") {
   type CreditingTxInfo = (Transaction, Int, Seq[ECPrivateKey], Option[ScriptPubKey], Option[ScriptWitness])
   private val logger = BitcoinSLogger.logger
+  private val tc = TransactionConstants
   property("sign a mix of spks in a tx and then have it verified") = {
     Prop.forAllNoShrink(CreditingTxGen.outputs, TransactionGenerators.smallOutputs) {
       case (creditingTxsInfo,destinations) =>
         val outpointsWithKeys = buildCreditingTxInfo(creditingTxsInfo)
-        val builder = TxBuilder(destinations, creditingTxsInfo.map(_._1),outpointsWithKeys)
+        val builder = TxBuilder(destinations, creditingTxsInfo.map(_._1),outpointsWithKeys, tc.validLockVersion, tc.lockTime)
         val result = builder.get.sign({_ => true})
         result match {
           case Left(tx) =>

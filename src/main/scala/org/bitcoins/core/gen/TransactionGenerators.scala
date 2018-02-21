@@ -453,8 +453,10 @@ trait TransactionGenerators extends BitcoinSLogger {
     * Generates a pair of CSV values: a transaction input sequence, and a CSV script sequence value, such that the txInput
     * sequence mask is always greater than the script sequence mask (i.e. generates values for a validly constructed and spendable CSV transaction)
     */
-  def spendableCSVValues : Gen[(ScriptNumber, UInt32)] = Gen.oneOf(validScriptNumberAndSequenceForBlockHeight,
+  def spendableCSVValues : Gen[(ScriptNumber, UInt32)] = {
+    Gen.oneOf(validScriptNumberAndSequenceForBlockHeight,
       validScriptNumberAndSequenceForRelativeLockTime)
+  }
 
   /** To indicate that we should evaulate a OP_CSV operation based on
     * blockheight we need 1 << 22 bit turned off. See BIP68 for more details */
@@ -521,15 +523,16 @@ trait TransactionGenerators extends BitcoinSLogger {
   } yield (csvScriptNum, sequence)).suchThat(x => !csvLockTimesOfSameType(x))
 
   /** generates a [[ScriptNumber]] and [[UInt32]] locktime for a transaction such that the tx will be spendable */
-  private def spendableCLTVValues: Gen[(ScriptNumber,UInt32)] = for {
+  def spendableCLTVValues: Gen[(ScriptNumber,UInt32)] = for {
     txLockTime <- NumberGenerator.uInt32s
     cltvLockTime <- NumberGenerator.uInt32s.suchThat(num =>
       cltvLockTimesOfSameType(ScriptNumber(num.toLong),txLockTime) &&
-      num < txLockTime).map(x => ScriptNumber(x.toLong))
+      //TODO: LOOK AT THIS COMPARISON
+        num < txLockTime).map(x => ScriptNumber(x.toLong))
   } yield (cltvLockTime,txLockTime)
 
   /** Generates a [[ScriptNumber]] and [[UInt32]] locktime for a transaction such that the tx will be unspendable */
-  private def unspendableCLTVValues: Gen[(ScriptNumber,UInt32)] = for {
+  def unspendableCLTVValues: Gen[(ScriptNumber,UInt32)] = for {
     txLockTime <- NumberGenerator.uInt32s
     cltvLockTime <- NumberGenerator.uInt32s.suchThat(num => num >= txLockTime ||
       !cltvLockTimesOfSameType(ScriptNumber(num.toLong),txLockTime)).map(x => ScriptNumber(x.toLong))
