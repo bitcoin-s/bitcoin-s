@@ -1,10 +1,8 @@
 package org.bitcoins.core.gen
 
 import org.bitcoins.core.crypto.ECPrivateKey
-import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
-import org.bitcoins.core.script.constant.ScriptNumber
 import org.scalacheck.Gen
 
 sealed abstract class CreditingTxGen {
@@ -18,14 +16,16 @@ sealed abstract class CreditingTxGen {
     Gen.listOfN(n, TransactionGenerators.output)
   }
 
-  def nonP2SHOutput: Gen[CreditingTxInfo] = {
+  def rawOutput: Gen[CreditingTxInfo] = {
+    Gen.oneOf(p2pkOutput, p2pkhOutput, multiSigOutput, cltvOutput, csvOutput)
+  }
+
+  def basicOutput: Gen[CreditingTxInfo] = {
     Gen.oneOf(p2pkOutput,
       p2pkhOutput, multiSigOutput)
   }
 
-  def nonP2WSHOutput: Gen[CreditingTxInfo] = {
-    Gen.oneOf(p2pkOutput, p2pkhOutput, multiSigOutput)
-  }
+  def nonP2WSHOutput: Gen[CreditingTxInfo] = rawOutput
 
   def output: Gen[CreditingTxInfo] = Gen.oneOf(p2pkOutput,
     p2pkhOutput, multiSigOutput, p2shOutput,
@@ -33,11 +33,7 @@ sealed abstract class CreditingTxGen {
     p2wpkhOutput, p2wshOutput)
 
   def outputs: Gen[Seq[CreditingTxInfo]] = {
-    Gen.choose(min,5).flatMap(n => Gen.listOfN(n,output))/*.suchThat {
-      _.count { case (tx,idx,_,_,_) =>
-        tx.outputs(idx).scriptPubKey.isInstanceOf[CLTVScriptPubKey]
-      } <= 1
-    })*/
+    Gen.choose(min,5).flatMap(n => Gen.listOfN(n,output))
   }
 
   /** Generates a crediting tx with a p2pk spk at the returned index */
@@ -68,7 +64,7 @@ sealed abstract class CreditingTxGen {
     Gen.choose(min,max).flatMap(n => Gen.listOfN(n,multiSigOutput))
   }
 
-  def p2shOutput: Gen[CreditingTxInfo] = nonP2SHOutput.map { o =>
+  def p2shOutput: Gen[CreditingTxInfo] = rawOutput.map { o =>
     val oldTx = o._1
     val oldOutput = oldTx.outputs(o._2)
     val redeemScript = oldTx.outputs(o._2).scriptPubKey
@@ -88,7 +84,7 @@ sealed abstract class CreditingTxGen {
   }
 
   def cltvOutput: Gen[CreditingTxInfo] = TransactionGenerators.spendableCLTVValues.flatMap { case (scriptNum,_) =>
-    nonP2SHOutput.map { o =>
+    basicOutput.map { o =>
       val oldTx = o._1
       val oldOutput = oldTx.outputs(o._2)
       val csvSPK = CLTVScriptPubKey(scriptNum,oldOutput.scriptPubKey)
@@ -106,7 +102,7 @@ sealed abstract class CreditingTxGen {
   def cltvOutputs: Gen[Seq[CreditingTxInfo]] = Gen.choose(min,max).flatMap(n => Gen.listOfN(n,cltvOutput))
 
   def csvOutput: Gen[CreditingTxInfo] = TransactionGenerators.spendableCSVValues.flatMap { case (scriptNum, _) =>
-    nonP2SHOutput.map { o =>
+    basicOutput.map { o =>
       val oldTx = o._1
       val oldOutput = oldTx.outputs(o._2)
       val csvSPK = CSVScriptPubKey(scriptNum,oldOutput.scriptPubKey)

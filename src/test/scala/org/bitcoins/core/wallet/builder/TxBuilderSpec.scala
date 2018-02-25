@@ -8,7 +8,7 @@ import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.ScriptProgram
 import org.bitcoins.core.script.interpreter.ScriptInterpreter
-import org.bitcoins.core.script.result.{ScriptOk, ScriptResult}
+import org.bitcoins.core.script.result.{ScriptErrorPushSize, ScriptOk, ScriptResult}
 import org.bitcoins.core.util.BitcoinSLogger
 import org.scalacheck.{Prop, Properties}
 
@@ -30,7 +30,7 @@ class TxBuilderSpec extends Properties("TxBuilderSpec") {
             verifyScript(tx,noRedeem)
           case Right(err) =>
             logger.error("error with p2pkh txoutputgen: " + err)
-            false
+            err == ScriptErrorPushSize
         }
     }
   }

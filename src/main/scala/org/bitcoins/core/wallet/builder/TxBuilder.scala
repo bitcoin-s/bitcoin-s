@@ -72,23 +72,14 @@ sealed abstract class TxBuilder {
       (c._1, c._2._1, c._2._2, c._2._3, c._2._4)
     }.toList
     val outpoints = utxos.map(_._1)
+    logger.warn("outpoints before: " + outpoints)
     val scriptWitOpt = utxos.map(_._5)
     val unsignedTxWit = TransactionWitness.fromWitOpt(scriptWitOpt)
     val tc = TransactionConstants
     val lockTime = calcLockTime(utxos)
-    val inputs = utxos.map { case (outpoint, output, _,_,_)=>
-      output.scriptPubKey match {
-        case csv: CSVScriptPubKey =>
-          val sequence = solveSequenceForCSV(csv.locktime)
-          TransactionInput(outpoint, EmptyScriptSignature, sequence)
-        case _: CLTVScriptPubKey =>
-          TransactionInput(outpoint, EmptyScriptSignature, UInt32.zero)
-        case _: P2PKScriptPubKey | _: P2PKHScriptPubKey | _: MultiSignatureScriptPubKey | _: P2SHScriptPubKey
-             | _: P2WPKHWitnessSPKV0 | _: P2WSHWitnessSPKV0 | _: NonStandardScriptPubKey | _: WitnessCommitment
-             | EmptyScriptPubKey | _: UnassignedWitnessScriptPubKey => TransactionInput(outpoint,EmptyScriptSignature, tc.sequence)
-      }
-
-    }
+    val inputs = calcSequenceForInputs(utxos)
+    require(inputs.map(_.previousOutput) == outpoints)
+    logger.info(s"inputs: $inputs")
     val unsigned = unsignedTxWit match {
       case EmptyWitness => BaseTransaction(tc.validLockVersion,inputs,destinations,lockTime)
       case wit: TransactionWitness => WitnessTransaction(tc.validLockVersion,inputs,destinations,lockTime,wit)
@@ -106,14 +97,14 @@ sealed abstract class TxBuilder {
   }
 
   /** Creates a newly signed input and adds it to the given tx */
-  private def sign(info: OutputInfo, unsignedTx: Transaction, hashType: HashType,
-                   sequence: UInt32 = TransactionConstants.sequence): Either[Transaction, TxBuilderError] = {
+  private def sign(info: OutputInfo, unsignedTx: Transaction, hashType: HashType): Either[Transaction, TxBuilderError] = {
     val outpoint = info._1
     val output = info._2
     val keys = info._3
     val redeemScriptOpt = info._4
     val scriptWitnessOpt = info._5
     val inputIndex = UInt32(unsignedTx.inputs.zipWithIndex.find(_._1.previousOutput == outpoint).get._2)
+    val oldInput = unsignedTx.inputs(inputIndex.toInt)
     output.scriptPubKey match {
       case _: P2PKScriptPubKey =>
         P2PKSigner.sign(keys,output,unsignedTx,inputIndex,hashType).left.map(_.transaction)
@@ -136,7 +127,7 @@ sealed abstract class TxBuilder {
       case _: P2SHScriptPubKey =>
         redeemScriptOpt match {
           case Some(redeemScript) =>
-            val input = TransactionInput(outpoint,EmptyScriptSignature,sequence)
+            val input = TransactionInput(outpoint,EmptyScriptSignature,oldInput.sequence)
             val updatedTx = unsignedTx match {
               case btx: BaseTransaction =>
                 BaseTransaction(btx.version,unsignedTx.inputs.updated(inputIndex.toInt,input),btx.outputs,btx.lockTime)
@@ -145,7 +136,7 @@ sealed abstract class TxBuilder {
             }
             val updatedOutput = TransactionOutput(output.value,redeemScript)
             val signedTxEither: Either[Transaction, TxBuilderError] = sign((outpoint,updatedOutput,keys,None,
-              scriptWitnessOpt),updatedTx,hashType,sequence)
+              scriptWitnessOpt),updatedTx,hashType)
             signedTxEither.left.map { signedTx =>
               val i = signedTx.inputs(inputIndex.toInt)
               val p2sh = P2SHScriptSignature(i.scriptSignature,redeemScript)
@@ -183,6 +174,20 @@ sealed abstract class TxBuilder {
                   case _: MultiSignatureScriptPubKey  => MultiSigSigner.sign(keys,output,unsignedWTx,inputIndex,hashType)
                   case _: P2WPKHWitnessSPKV0 | _: P2WSHWitnessSPKV0 => Right(TxBuilderError.NestedWitnessSPK)
                   case _: P2SHScriptPubKey => Right(TxBuilderError.NestedP2SHSPK)
+                  case lock: LockTimeScriptPubKey =>
+                    lock.nestedScriptPubKey match {
+                      case _: P2PKScriptPubKey => P2PKSigner.sign(keys,output,unsignedTx,inputIndex,hashType)
+                      case _: P2PKHScriptPubKey => P2PKHSigner.sign(keys,output,unsignedTx,inputIndex,hashType)
+                      case _: MultiSignatureScriptPubKey => MultiSigSigner.sign(keys,output,unsignedTx,inputIndex,hashType)
+                      case _: P2WPKHWitnessSPKV0 => P2WPKHSigner.sign(keys,output,unsignedTx,inputIndex,hashType)
+                      case _: P2SHScriptPubKey => Right(TxBuilderError.NestedP2SHSPK)
+                      case _: P2WSHWitnessSPKV0 => Right(TxBuilderError.NestedP2WSHSPK)
+                      case _: CSVScriptPubKey | _: CLTVScriptPubKey =>
+                        //TODO: Comeback to this later and see if we should have signer for nested locktime spks
+                        Right(TxBuilderError.NoSigner)
+                      case _: NonStandardScriptPubKey | _: WitnessCommitment
+                           | EmptyScriptPubKey | _: UnassignedWitnessScriptPubKey => Right(TxBuilderError.NoSigner)
+                    }
                   case (_: NonStandardScriptPubKey | _: WitnessCommitment | EmptyScriptPubKey
                         | _: UnassignedWitnessScriptPubKey) =>
                     Right(TxBuilderError.NoSigner)
@@ -238,19 +243,81 @@ sealed abstract class TxBuilder {
     @tailrec
     def loop(remaining: Seq[OutputInfo], currentLockTime: UInt32): UInt32 = remaining match {
       case Nil => currentLockTime
-      case (_,output,_,_,_) :: t => output.scriptPubKey match {
+      case (outpoint,output,keys,redeemScriptOpt,scriptWitOpt) :: t => output.scriptPubKey match {
         case cltv: CLTVScriptPubKey =>
           val l = UInt32(cltv.locktime.toLong)
           if (currentLockTime < l) loop(t,l)
           else loop(t,currentLockTime)
+        case _: P2SHScriptPubKey | _: P2WSHWitnessSPKV0 =>
+          if (redeemScriptOpt.isDefined) {
+            //recursively call with redeem script as output script
+            val o = TransactionOutput(output.value,redeemScriptOpt.get)
+            val i = (outpoint,o, keys, None,scriptWitOpt)
+            loop(i +: t, currentLockTime)
+          } else if (scriptWitOpt.isDefined) {
+            scriptWitOpt.get match {
+              case EmptyScriptWitness => loop(t,currentLockTime)
+              case _: P2WPKHWitnessV0 => loop(t,currentLockTime)
+              case p2wsh: P2WSHWitnessV0 =>
+                //recursively call with the witness redeem script as the script
+                val o = TransactionOutput(output.value, p2wsh.redeemScript)
+                val i = (outpoint,o,keys,redeemScriptOpt,None)
+                loop(i +: t, currentLockTime)
+            }
+          } else {
+            loop(t,currentLockTime)
+          }
         case _: P2PKScriptPubKey | _: P2PKHScriptPubKey | _: MultiSignatureScriptPubKey | _: P2SHScriptPubKey
              | _: P2WPKHWitnessSPKV0 | _: P2WSHWitnessSPKV0 | _: NonStandardScriptPubKey | _: WitnessCommitment
              | EmptyScriptPubKey | _: UnassignedWitnessScriptPubKey | _: CSVScriptPubKey  =>
           loop(t,currentLockTime)
-
       }
     }
     loop(utxos,TransactionConstants.lockTime)
+  }
+
+  private def calcSequenceForInputs(utxos: Seq[OutputInfo]): Seq[TransactionInput] = {
+    @tailrec
+    def loop(remaining: Seq[OutputInfo], accum: Seq[TransactionInput]): Seq[TransactionInput] = remaining match {
+      case Nil => accum.reverse
+      case (outpoint,output,keys,redeemScriptOpt,scriptWitOpt) :: t =>
+        output.scriptPubKey match {
+          case csv: CSVScriptPubKey =>
+            val sequence = solveSequenceForCSV(csv.locktime)
+            val i = TransactionInput(outpoint,EmptyScriptSignature,sequence)
+            loop(t,i +: accum)
+          case _: CLTVScriptPubKey =>
+            val sequence = UInt32.zero
+            val i = TransactionInput(outpoint,EmptyScriptSignature,sequence)
+            loop(t,i +: accum)
+          case _: P2SHScriptPubKey | _: P2WSHWitnessSPKV0 =>
+            if (redeemScriptOpt.isDefined) {
+              //recursively call with the redeem script in the output
+              val o = TransactionOutput(output.value,redeemScriptOpt.get)
+              val i = (outpoint,o,keys,None,scriptWitOpt)
+              loop(i +: t, accum)
+            } else if (scriptWitOpt.isDefined) {
+              scriptWitOpt.get match {
+                case EmptyScriptWitness => loop(t,accum)
+                case _: P2WPKHWitnessV0 => loop(t,accum)
+                case p2wsh: P2WSHWitnessV0 =>
+                  val o = TransactionOutput(output.value,p2wsh.redeemScript)
+                  val i = (outpoint,o,keys,redeemScriptOpt,None)
+                  loop(i +: t, accum)
+              }
+            } else loop(t,accum)
+          case _: P2PKScriptPubKey | _: P2PKHScriptPubKey | _: MultiSignatureScriptPubKey
+               | _: P2WPKHWitnessSPKV0 | _: NonStandardScriptPubKey | _: WitnessCommitment
+               | EmptyScriptPubKey | _: UnassignedWitnessScriptPubKey  =>
+            val input = TransactionInput(outpoint,EmptyScriptSignature,TransactionConstants.sequence)
+            loop(t, input +: accum)
+
+        }
+    }
+    val inputs = loop(utxos,Nil)
+    val outpoints = inputs.map(_.previousOutput)
+    logger.warn("outpoints: " + outpoints)
+    inputs
   }
 }
 
