@@ -194,16 +194,44 @@ sealed abstract class MultiSigSigner extends BitcoinSigner {
             btx.outputs, btx.lockTime, EmptyWitness)
           case wtx: WitnessTransaction => wtx
         }
-        val redeemScript = wtx.witness.witnesses(inputIndex.toInt).asInstanceOf[P2WSHWitnessV0].redeemScript
-        val multiSigSPK = redeemScript.asInstanceOf[MultiSignatureScriptPubKey]
-        val requiredSigs = multiSigSPK.requiredSigs
+        val witness = wtx.witness.witnesses(inputIndex.toInt)
+        val multiSigSPK: Either[(MultiSignatureScriptPubKey,ScriptPubKey), TxBuilderError] = witness match {
+          case _: P2WPKHWitnessV0 => Right(TxBuilderError.WrongSigner)
+          case p2wsh: P2WSHWitnessV0 =>
+            p2wsh.redeemScript match {
+              case lock: LockTimeScriptPubKey =>
+                lock.nestedScriptPubKey match {
+                  case m: MultiSignatureScriptPubKey => Left((m,lock))
+                  case _: P2PKScriptPubKey | _: P2PKHScriptPubKey | _: P2SHScriptPubKey | _: P2WPKHWitnessV0
+                    | _: P2WSHWitnessSPKV0 | _: WitnessCommitment | _: EscrowTimeoutScriptPubKey | _: CSVScriptPubKey
+                    | _: CLTVScriptPubKey | _: NonStandardScriptPubKey | EmptyScriptPubKey =>
+                    Right(TxBuilderError.WrongSigner)
+                }
+              case m: MultiSignatureScriptPubKey => Left((m,m))
+              case _: P2PKScriptPubKey | _: P2PKHScriptPubKey | _: P2SHScriptPubKey | _: P2WPKHWitnessV0
+                   | _: P2WSHWitnessSPKV0 | _: WitnessCommitment | _: EscrowTimeoutScriptPubKey
+                   | _: NonStandardScriptPubKey | EmptyScriptPubKey =>
+                Right(TxBuilderError.WrongSigner)
+            }
+        }
+        val requiredSigs = multiSigSPK.left.map(_._1.requiredSigs)
         val sigComponent = WitnessTxSigComponentRaw(wtx, inputIndex, p2wshSPK, flags, amount)
-        val signatures = 0.until(requiredSigs).map(i => TransactionSignatureCreator.createSig(sigComponent, privKeys(i), hashType))
-        val multiSigScriptSig = MultiSignatureScriptSignature(signatures)
-        val scriptWit = P2WSHWitnessV0(redeemScript, multiSigScriptSig)
-        val signedWitness = TransactionWitness(wtx.witness.witnesses.updated(inputIndex.toInt, scriptWit))
-        val signedWTx = WitnessTransaction(wtx.version, wtx.inputs, wtx.outputs, wtx.lockTime, signedWitness)
-        Left(WitnessTxSigComponentRaw(signedWTx, inputIndex, p2wshSPK, flags, amount))
+        val signatures = requiredSigs.left.map { r =>
+          0.until(r).map(i => TransactionSignatureCreator.createSig(sigComponent, privKeys(i), hashType))
+        }
+        val multiSigScriptSig = signatures.left.map(s => MultiSignatureScriptSignature(s))
+        val scriptWit = multiSigSPK.left.flatMap { case (m,redeem) =>
+          multiSigScriptSig.left.map { scriptSig =>
+            P2WSHWitnessV0(redeem, scriptSig)
+          }
+        }
+        val signedWitness = scriptWit.left.map(wit => TransactionWitness(wtx.witness.witnesses.updated(inputIndex.toInt, wit)))
+        val signedWTx: Either[WitnessTransaction,TxBuilderError] = signedWitness.left.map { txWit =>
+          WitnessTransaction(wtx.version, wtx.inputs, wtx.outputs, wtx.lockTime, txWit)
+        }
+        signedWTx.left.map { wtx =>
+          WitnessTxSigComponentRaw(wtx,inputIndex,p2wshSPK,Policy.standardFlags,amount)
+        }
       case multiSigSPK: MultiSignatureScriptPubKey =>
         val requiredSigs = multiSigSPK.requiredSigs
         val sigComponent = TxSigComponent(unsignedTx, inputIndex, multiSigSPK, flags)
