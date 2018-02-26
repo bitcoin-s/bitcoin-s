@@ -24,8 +24,6 @@ import scala.util.Try
   */
 sealed abstract class TxBuilder {
   private val logger = BitcoinSLogger.logger
-  type OutputInfo = (TransactionOutPoint, TransactionOutput, Seq[ECPrivateKey], Option[ScriptPubKey], Option[ScriptWitness], HashType)
-  type OutPointMap = Map[TransactionOutPoint, (TransactionOutput, Seq[ECPrivateKey], Option[ScriptPubKey], Option[ScriptWitness], HashType)]
 
   /** The outputs which we are spending bitcoins to */
   def destinations: Seq[TransactionOutput]
@@ -40,7 +38,7 @@ sealed abstract class TxBuilder {
   def spentAmount: CurrencyUnit = destinationAmounts.fold(CurrencyUnits.zero)(_ + _)
 
   /** The total amount of satoshis that are able to be spent by this transaction */
-  def creditingAmount: CurrencyUnit = outPointsSpendingInfo.values.map(_._1.value).foldLeft(CurrencyUnits.zero)(_ + _)
+  def creditingAmount: CurrencyUnit = utxoMap.values.map(_._1.value).foldLeft(CurrencyUnits.zero)(_ + _)
 
   /** The fee in this transaction */
   def fee: CurrencyUnit = creditingAmount - spentAmount
@@ -57,19 +55,19 @@ sealed abstract class TxBuilder {
     *
     * If we are spending a [[P2WPKHWitnessSPKV0]] we do not need a redeem script, but we need a [[ScriptWitness]]
     */
-  def outPointsSpendingInfo: OutPointMap
+  def utxoMap: TxBuilder.UTXOMap
 
   /** All of the keys that need to be used to spend this transaction */
-  def privKeys: Seq[ECPrivateKey] = outPointsSpendingInfo.values.flatMap(_._2).toSeq
+  def privKeys: Seq[ECPrivateKey] = utxoMap.values.flatMap(_._2).toSeq
 
   /** The outpoints that we are using in this transaction */
-  def outPoints: Seq[TransactionOutPoint] = outPointsSpendingInfo.keys.toSeq
+  def outPoints: Seq[TransactionOutPoint] = utxoMap.keys.toSeq
 
   /** The redeem scripts that are needed in this transaction */
-  def redeemScriptOpt: Seq[Option[ScriptPubKey]] = outPointsSpendingInfo.values.map(_._3).toSeq
+  def redeemScriptOpt: Seq[Option[ScriptPubKey]] = utxoMap.values.map(_._3).toSeq
 
   /** The script witnesses that are needed in this transaction */
-  def scriptWitOpt: Seq[Option[ScriptWitness]] = outPointsSpendingInfo.values.map(_._4).toSeq
+  def scriptWitOpt: Seq[Option[ScriptWitness]] = utxoMap.values.map(_._4).toSeq
 
   /**
     * Signs the given transaction and then returns a signed tx that spends
@@ -83,7 +81,7 @@ sealed abstract class TxBuilder {
     */
   def sign(invariants: Transaction => Boolean): Either[Transaction, TxBuilderError] = {
     @tailrec
-    def loop(remaining: List[OutputInfo],
+    def loop(remaining: List[TxBuilder.UTXOTuple],
              txInProgress: Transaction): Either[Transaction,TxBuilderError] = remaining match {
       case Nil => Left(txInProgress)
       case info :: t =>
@@ -93,7 +91,7 @@ sealed abstract class TxBuilder {
           case Right(err) => Right(err)
         }
     }
-    val utxos: List[OutputInfo] = outPointsSpendingInfo.map { c =>
+    val utxos: List[TxBuilder.UTXOTuple] = utxoMap.map { c =>
       (c._1, c._2._1, c._2._2, c._2._3, c._2._4, c._2._5)
     }.toList
     val unsignedTxWit = TransactionWitness.fromWitOpt(scriptWitOpt)
@@ -117,17 +115,17 @@ sealed abstract class TxBuilder {
   }
 
   /** This function creates a newly signed input, and then adds it to the unsigned transaction
-    * @param info - the information needed to validly spend the given output
+    * @param utxo - the information needed to validly spend the given output
     * @param unsignedTx - the transaction that we are spending this output in
     * @return either the transaction with the signed input added, or a [[TxBuilderError]]
     */
-  private def sign(info: OutputInfo, unsignedTx: Transaction): Either[Transaction, TxBuilderError] = {
-    val outpoint = info._1
-    val output = info._2
-    val keys = info._3
-    val redeemScriptOpt = info._4
-    val scriptWitnessOpt = info._5
-    val hashType = info._6
+  private def sign(utxo: TxBuilder.UTXOTuple, unsignedTx: Transaction): Either[Transaction, TxBuilderError] = {
+    val outpoint = utxo._1
+    val output = utxo._2
+    val keys = utxo._3
+    val redeemScriptOpt = utxo._4
+    val scriptWitnessOpt = utxo._5
+    val hashType = utxo._6
     val inputIndex = UInt32(unsignedTx.inputs.zipWithIndex.find(_._1.previousOutput == outpoint).get._2)
     val oldInput = unsignedTx.inputs(inputIndex.toInt)
     output.scriptPubKey match {
@@ -265,9 +263,9 @@ sealed abstract class TxBuilder {
     * locktime set to the same value (or higher) than the output it is spending.
     * See BIP65 for more info
     */
-  private def calcLockTime(utxos: Seq[OutputInfo]): UInt32 = {
+  private def calcLockTime(utxos: Seq[TxBuilder.UTXOTuple]): UInt32 = {
     @tailrec
-    def loop(remaining: Seq[OutputInfo], currentLockTime: UInt32): UInt32 = remaining match {
+    def loop(remaining: Seq[TxBuilder.UTXOTuple], currentLockTime: UInt32): UInt32 = remaining match {
       case Nil => currentLockTime
       case (outpoint,output,keys,redeemScriptOpt,scriptWitOpt, hashType) :: t => output.scriptPubKey match {
         case cltv: CLTVScriptPubKey =>
@@ -308,9 +306,9 @@ sealed abstract class TxBuilder {
     * to make them spendable.
     * See BIP68/112 and BIP65 for more info
     */
-  private def calcSequenceForInputs(utxos: Seq[OutputInfo]): Seq[TransactionInput] = {
+  private def calcSequenceForInputs(utxos: Seq[TxBuilder.UTXOTuple]): Seq[TransactionInput] = {
     @tailrec
-    def loop(remaining: Seq[OutputInfo], accum: Seq[TransactionInput]): Seq[TransactionInput] = remaining match {
+    def loop(remaining: Seq[TxBuilder.UTXOTuple], accum: Seq[TransactionInput]): Seq[TransactionInput] = remaining match {
       case Nil => accum.reverse
       case (outpoint,output,keys,redeemScriptOpt,scriptWitOpt, hashType) :: t =>
         output.scriptPubKey match {
@@ -352,16 +350,17 @@ sealed abstract class TxBuilder {
 
 
 object TxBuilder {
+  type UTXOTuple = (TransactionOutPoint, TransactionOutput, Seq[ECPrivateKey], Option[ScriptPubKey], Option[ScriptWitness], HashType)
+  type UTXOMap = Map[TransactionOutPoint, (TransactionOutput, Seq[ECPrivateKey], Option[ScriptPubKey], Option[ScriptWitness], HashType)]
+
   private case class TransactionBuilderImpl(destinations: Seq[TransactionOutput],
                                             creditingTxs: Seq[Transaction],
-                                            outPointsSpendingInfo: Map[TransactionOutPoint,
-                                              (TransactionOutput, Seq[ECPrivateKey], Option[ScriptPubKey], Option[ScriptWitness], HashType)]) extends TxBuilder {
+                                            utxoMap: UTXOMap) extends TxBuilder {
     require(outPoints.exists(o => creditingTxs.exists(_.txId == o.txId)))
   }
 
   def apply(destinations: Seq[TransactionOutput], creditingTxs: Seq[Transaction],
-            outPointsSpendingInfo: Map[TransactionOutPoint, (TransactionOutput, Seq[ECPrivateKey], Option[ScriptPubKey],
-              Option[ScriptWitness], HashType)]): Try[TxBuilder] = {
+            outPointsSpendingInfo: UTXOMap): Try[TxBuilder] = {
     Try(TransactionBuilderImpl(destinations,creditingTxs,outPointsSpendingInfo))
   }
 }

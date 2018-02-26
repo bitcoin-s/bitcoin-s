@@ -7,7 +7,6 @@ import org.bitcoins.core.script.crypto.HashType
 import org.scalacheck.Gen
 
 sealed abstract class CreditingTxGen {
-  type CreditingTxInfo = (Transaction, Int, Seq[ECPrivateKey], Option[ScriptPubKey], Option[ScriptWitness], HashType)
   /** Minimum amount of outputs to generate */
   private val min = 1
   /** Maximum amount of outputs to generate */
@@ -17,55 +16,55 @@ sealed abstract class CreditingTxGen {
     Gen.listOfN(n, TransactionGenerators.output)
   }
 
-  def rawOutput: Gen[CreditingTxInfo] = {
+  def rawOutput: Gen[CreditingTxGen.CreditingTxInfo] = {
     Gen.oneOf(p2pkOutput, p2pkhOutput, multiSigOutput, cltvOutput, csvOutput)
   }
 
-  def basicOutput: Gen[CreditingTxInfo] = {
+  def basicOutput: Gen[CreditingTxGen.CreditingTxInfo] = {
     Gen.oneOf(p2pkOutput,
       p2pkhOutput, multiSigOutput)
   }
 
-  def nonP2WSHOutput: Gen[CreditingTxInfo] = rawOutput
+  def nonP2WSHOutput: Gen[CreditingTxGen.CreditingTxInfo] = rawOutput
 
-  def output: Gen[CreditingTxInfo] = Gen.oneOf(p2pkOutput,
+  def output: Gen[CreditingTxGen.CreditingTxInfo] = Gen.oneOf(p2pkOutput,
     p2pkhOutput, multiSigOutput, p2shOutput,
     csvOutput, cltvOutput,
     p2wpkhOutput, p2wshOutput)
 
-  def outputs: Gen[Seq[CreditingTxInfo]] = {
+  def outputs: Gen[Seq[CreditingTxGen.CreditingTxInfo]] = {
     Gen.choose(min,5).flatMap(n => Gen.listOfN(n,output))
   }
 
   /** Generates a crediting tx with a p2pk spk at the returned index */
-  def p2pkOutput: Gen[CreditingTxInfo] = ScriptGenerators.p2pkScriptPubKey.flatMap { p2pk =>
+  def p2pkOutput: Gen[CreditingTxGen.CreditingTxInfo] = ScriptGenerators.p2pkScriptPubKey.flatMap { p2pk =>
     build(p2pk._1,Seq(p2pk._2), None, None)
   }
   /** Generates multiple crediting txs with p2pk spks at the returned index */
-  def p2pkOutputs: Gen[Seq[CreditingTxInfo]] = {
+  def p2pkOutputs: Gen[Seq[CreditingTxGen.CreditingTxInfo]] = {
     Gen.choose(min,max).flatMap(n => Gen.listOfN(n,p2pkOutput))
   }
 
   /** Generates a transaction that has a p2pkh output at the returned index. This
     * output can be spent by the returned ECPrivateKey */
-  def p2pkhOutput: Gen[CreditingTxInfo] = ScriptGenerators.p2pkhScriptPubKey.flatMap { p2pkh =>
+  def p2pkhOutput: Gen[CreditingTxGen.CreditingTxInfo] = ScriptGenerators.p2pkhScriptPubKey.flatMap { p2pkh =>
     build(p2pkh._1,Seq(p2pkh._2), None, None)
   }
 
   /** Generates a sequence of p2pkh outputs at the returned index */
-  def p2pkhOutputs: Gen[Seq[CreditingTxInfo]] = {
+  def p2pkhOutputs: Gen[Seq[CreditingTxGen.CreditingTxInfo]] = {
     Gen.choose(min,max).flatMap(n => Gen.listOfN(n,p2pkhOutput))
   }
 
-  def multiSigOutput: Gen[CreditingTxInfo] = ScriptGenerators.multiSigScriptPubKey.flatMap { multisig =>
+  def multiSigOutput: Gen[CreditingTxGen.CreditingTxInfo] = ScriptGenerators.multiSigScriptPubKey.flatMap { multisig =>
     build(multisig._1, multisig._2, None, None)
   }
 
-  def multiSigOutputs: Gen[Seq[CreditingTxInfo]] = {
+  def multiSigOutputs: Gen[Seq[CreditingTxGen.CreditingTxInfo]] = {
     Gen.choose(min,max).flatMap(n => Gen.listOfN(n,multiSigOutput))
   }
 
-  def p2shOutput: Gen[CreditingTxInfo] = rawOutput.flatMap { o =>
+  def p2shOutput: Gen[CreditingTxGen.CreditingTxInfo] = rawOutput.flatMap { o =>
     CryptoGenerators.hashType.map { hashType =>
       val oldTx = o._1
       val oldOutput = oldTx.outputs(o._2)
@@ -82,11 +81,11 @@ sealed abstract class CreditingTxGen {
     }
   }
 
-  def p2shOutputs: Gen[Seq[CreditingTxInfo]] = {
+  def p2shOutputs: Gen[Seq[CreditingTxGen.CreditingTxInfo]] = {
     Gen.choose(min,max).flatMap(n => Gen.listOfN(n,p2shOutput))
   }
 
-  def cltvOutput: Gen[CreditingTxInfo] = TransactionGenerators.spendableCLTVValues.flatMap { case (scriptNum,_) =>
+  def cltvOutput: Gen[CreditingTxGen.CreditingTxInfo] = TransactionGenerators.spendableCLTVValues.flatMap { case (scriptNum,_) =>
     basicOutput.flatMap { o =>
       CryptoGenerators.hashType.map { hashType =>
         val oldTx = o._1
@@ -104,9 +103,9 @@ sealed abstract class CreditingTxGen {
     }
   }
 
-  def cltvOutputs: Gen[Seq[CreditingTxInfo]] = Gen.choose(min,max).flatMap(n => Gen.listOfN(n,cltvOutput))
+  def cltvOutputs: Gen[Seq[CreditingTxGen.CreditingTxInfo]] = Gen.choose(min,max).flatMap(n => Gen.listOfN(n,cltvOutput))
 
-  def csvOutput: Gen[CreditingTxInfo] = TransactionGenerators.spendableCSVValues.flatMap { case (scriptNum, _) =>
+  def csvOutput: Gen[CreditingTxGen.CreditingTxInfo] = TransactionGenerators.spendableCSVValues.flatMap { case (scriptNum, _) =>
     basicOutput.flatMap { o =>
       CryptoGenerators.hashType.map { hashType =>
         val oldTx = o._1
@@ -124,26 +123,26 @@ sealed abstract class CreditingTxGen {
     }
   }
 
-  def csvOutputs: Gen[Seq[CreditingTxInfo]] = Gen.choose(min,max).flatMap(n => Gen.listOfN(n,csvOutput))
+  def csvOutputs: Gen[Seq[CreditingTxGen.CreditingTxInfo]] = Gen.choose(min,max).flatMap(n => Gen.listOfN(n,csvOutput))
 
-  def p2wpkhOutput: Gen[CreditingTxInfo] = ScriptGenerators.p2wpkhSPKV0.flatMap { witSPK =>
+  def p2wpkhOutput: Gen[CreditingTxGen.CreditingTxInfo] = ScriptGenerators.p2wpkhSPKV0.flatMap { witSPK =>
     val scriptWit = P2WPKHWitnessV0(witSPK._2.head.publicKey)
     build(witSPK._1,witSPK._2,None,Some(scriptWit))
   }
 
-  def p2wpkhOutputs: Gen[Seq[CreditingTxInfo]] = Gen.choose(min,max).flatMap(n => Gen.listOfN(n,p2wpkhOutput))
+  def p2wpkhOutputs: Gen[Seq[CreditingTxGen.CreditingTxInfo]] = Gen.choose(min,max).flatMap(n => Gen.listOfN(n,p2wpkhOutput))
 
-  def p2wshOutput: Gen[CreditingTxInfo] = nonP2WSHOutput.flatMap { case (tx,outputIndex,privKeys,redeemScriptOpt,scriptWitOpt, _) =>
+  def p2wshOutput: Gen[CreditingTxGen.CreditingTxInfo] = nonP2WSHOutput.flatMap { case (tx,outputIndex,privKeys,redeemScriptOpt,scriptWitOpt, _) =>
     val spk = tx.outputs(outputIndex).scriptPubKey
     val scriptWit = P2WSHWitnessV0(spk)
     val witSPK = P2WSHWitnessSPKV0(spk)
     build(witSPK,privKeys,None,Some(scriptWit))
   }
 
-  def p2wshOutputs: Gen[Seq[CreditingTxInfo]] = Gen.choose(min,max).flatMap(n => Gen.listOfN(n,p2wshOutput))
+  def p2wshOutputs: Gen[Seq[CreditingTxGen.CreditingTxInfo]] = Gen.choose(min,max).flatMap(n => Gen.listOfN(n,p2wshOutput))
 
   private def build(spk: ScriptPubKey, privKeys: Seq[ECPrivateKey],
-                    redeemScript: Option[ScriptPubKey], scriptWitness: Option[ScriptWitness]): Gen[CreditingTxInfo] = nonEmptyOutputs.flatMap { outputs =>
+                    redeemScript: Option[ScriptPubKey], scriptWitness: Option[ScriptWitness]): Gen[CreditingTxGen.CreditingTxInfo] = nonEmptyOutputs.flatMap { outputs =>
     CryptoGenerators.hashType.flatMap { hashType =>
       Gen.choose(0, outputs.size - 1).map { idx =>
         val old = outputs(idx)
@@ -157,4 +156,6 @@ sealed abstract class CreditingTxGen {
   }
 }
 
-object CreditingTxGen extends CreditingTxGen
+object CreditingTxGen extends CreditingTxGen {
+  type CreditingTxInfo = (Transaction, Int, Seq[ECPrivateKey], Option[ScriptPubKey], Option[ScriptWitness], HashType)
+}
