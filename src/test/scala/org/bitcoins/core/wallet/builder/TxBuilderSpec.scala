@@ -7,6 +7,7 @@ import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.ScriptProgram
+import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.script.interpreter.ScriptInterpreter
 import org.bitcoins.core.script.result.{ScriptErrorPushSize, ScriptOk, ScriptResult}
 import org.bitcoins.core.util.BitcoinSLogger
@@ -15,14 +16,16 @@ import org.scalacheck.{Prop, Properties}
 import scala.annotation.tailrec
 
 class TxBuilderSpec extends Properties("TxBuilderSpec") {
-  type CreditingTxInfo = (Transaction, Int, Seq[ECPrivateKey], Option[ScriptPubKey], Option[ScriptWitness])
+  type CreditingTxInfo = (Transaction, Int, Seq[ECPrivateKey], Option[ScriptPubKey], Option[ScriptWitness], HashType)
+  type OutPointMap = Map[TransactionOutPoint, (TransactionOutput, Seq[ECPrivateKey], Option[ScriptPubKey], Option[ScriptWitness], HashType)]
+
   private val logger = BitcoinSLogger.logger
   private val tc = TransactionConstants
   property("sign a mix of spks in a tx and then have it verified") = {
     Prop.forAllNoShrink(CreditingTxGen.outputs, TransactionGenerators.smallOutputs) {
       case (creditingTxsInfo,destinations) =>
         val outpointsWithKeys = buildCreditingTxInfo(creditingTxsInfo)
-        val builder = TxBuilder(destinations, creditingTxsInfo.map(_._1),outpointsWithKeys, tc.validLockVersion, tc.lockTime)
+        val builder = TxBuilder(destinations, creditingTxsInfo.map(_._1),outpointsWithKeys)
         val result = builder.get.sign({_ => true})
         result match {
           case Left(tx) =>
@@ -54,14 +57,16 @@ class TxBuilderSpec extends Properties("TxBuilderSpec") {
 */
 
 
-  private def buildCreditingTxInfo(info: Seq[CreditingTxInfo]): Map[TransactionOutPoint, (Seq[ECPrivateKey], Option[ScriptPubKey], Option[ScriptWitness])] = {
+  private def buildCreditingTxInfo(info: Seq[CreditingTxInfo]): OutPointMap = {
     @tailrec
     def loop(rem: Seq[CreditingTxInfo],
-             accum: Map[TransactionOutPoint, (Seq[ECPrivateKey], Option[ScriptPubKey], Option[ScriptWitness])]): Map[TransactionOutPoint, (Seq[ECPrivateKey], Option[ScriptPubKey], Option[ScriptWitness])] = rem match {
+             accum: OutPointMap): OutPointMap = rem match {
       case Nil => accum
       case h :: t =>
-        val o = TransactionOutPoint(h._1.txId,UInt32(h._2))
-        val outPointsSpendingInfo = (h._3, h._4, h._5)
+        val tx = h._1
+        val o = TransactionOutPoint(tx.txId,UInt32(h._2))
+        val output = h._1.outputs(h._2)
+        val outPointsSpendingInfo = (output, h._3, h._4, h._5, h._6)
         loop(t,accum.updated(o,outPointsSpendingInfo))
     }
     loop(info,Map.empty)

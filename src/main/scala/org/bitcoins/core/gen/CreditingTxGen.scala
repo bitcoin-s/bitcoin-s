@@ -3,10 +3,11 @@ package org.bitcoins.core.gen
 import org.bitcoins.core.crypto.ECPrivateKey
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
+import org.bitcoins.core.script.crypto.HashType
 import org.scalacheck.Gen
 
 sealed abstract class CreditingTxGen {
-  type CreditingTxInfo = (Transaction, Int, Seq[ECPrivateKey], Option[ScriptPubKey], Option[ScriptWitness])
+  type CreditingTxInfo = (Transaction, Int, Seq[ECPrivateKey], Option[ScriptPubKey], Option[ScriptWitness], HashType)
   /** Minimum amount of outputs to generate */
   private val min = 1
   /** Maximum amount of outputs to generate */
@@ -64,19 +65,21 @@ sealed abstract class CreditingTxGen {
     Gen.choose(min,max).flatMap(n => Gen.listOfN(n,multiSigOutput))
   }
 
-  def p2shOutput: Gen[CreditingTxInfo] = rawOutput.map { o =>
-    val oldTx = o._1
-    val oldOutput = oldTx.outputs(o._2)
-    val redeemScript = oldTx.outputs(o._2).scriptPubKey
-    val p2sh = P2SHScriptPubKey(redeemScript)
-    val updatedOutput = TransactionOutput(oldOutput.value,p2sh)
-    val tx = oldTx match {
-      case btx: BaseTransaction => BaseTransaction(btx.version, btx.inputs,
-        btx.outputs.updated(o._2,updatedOutput), btx.lockTime)
-      case wtx: WitnessTransaction => WitnessTransaction(wtx.version, wtx.inputs,
-        wtx.outputs.updated(o._2, updatedOutput), wtx.lockTime, wtx.witness)
+  def p2shOutput: Gen[CreditingTxInfo] = rawOutput.flatMap { o =>
+    CryptoGenerators.hashType.map { hashType =>
+      val oldTx = o._1
+      val oldOutput = oldTx.outputs(o._2)
+      val redeemScript = oldTx.outputs(o._2).scriptPubKey
+      val p2sh = P2SHScriptPubKey(redeemScript)
+      val updatedOutput = TransactionOutput(oldOutput.value,p2sh)
+      val tx = oldTx match {
+        case btx: BaseTransaction => BaseTransaction(btx.version, btx.inputs,
+          btx.outputs.updated(o._2,updatedOutput), btx.lockTime)
+        case wtx: WitnessTransaction => WitnessTransaction(wtx.version, wtx.inputs,
+          wtx.outputs.updated(o._2, updatedOutput), wtx.lockTime, wtx.witness)
+      }
+      (tx,o._2,o._3,Some(redeemScript), o._5, hashType)
     }
-    (tx,o._2,o._3,Some(redeemScript), o._5)
   }
 
   def p2shOutputs: Gen[Seq[CreditingTxInfo]] = {
@@ -84,36 +87,40 @@ sealed abstract class CreditingTxGen {
   }
 
   def cltvOutput: Gen[CreditingTxInfo] = TransactionGenerators.spendableCLTVValues.flatMap { case (scriptNum,_) =>
-    basicOutput.map { o =>
-      val oldTx = o._1
-      val oldOutput = oldTx.outputs(o._2)
-      val csvSPK = CLTVScriptPubKey(scriptNum,oldOutput.scriptPubKey)
-      val updatedOutput = TransactionOutput(oldOutput.value,csvSPK)
-      val tx = oldTx match {
-        case btx: BaseTransaction => BaseTransaction(btx.version, btx.inputs,
-          btx.outputs.updated(o._2,updatedOutput), btx.lockTime)
-        case wtx: WitnessTransaction => WitnessTransaction(wtx.version, wtx.inputs,
-          wtx.outputs.updated(o._2, updatedOutput), wtx.lockTime, wtx.witness)
+    basicOutput.flatMap { o =>
+      CryptoGenerators.hashType.map { hashType =>
+        val oldTx = o._1
+        val oldOutput = oldTx.outputs(o._2)
+        val csvSPK = CLTVScriptPubKey(scriptNum,oldOutput.scriptPubKey)
+        val updatedOutput = TransactionOutput(oldOutput.value,csvSPK)
+        val tx = oldTx match {
+          case btx: BaseTransaction => BaseTransaction(btx.version, btx.inputs,
+            btx.outputs.updated(o._2,updatedOutput), btx.lockTime)
+          case wtx: WitnessTransaction => WitnessTransaction(wtx.version, wtx.inputs,
+            wtx.outputs.updated(o._2, updatedOutput), wtx.lockTime, wtx.witness)
+        }
+        (tx,o._2,o._3,o._4, o._5, hashType)
       }
-      (tx,o._2,o._3,o._4, o._5)
     }
   }
 
   def cltvOutputs: Gen[Seq[CreditingTxInfo]] = Gen.choose(min,max).flatMap(n => Gen.listOfN(n,cltvOutput))
 
   def csvOutput: Gen[CreditingTxInfo] = TransactionGenerators.spendableCSVValues.flatMap { case (scriptNum, _) =>
-    basicOutput.map { o =>
-      val oldTx = o._1
-      val oldOutput = oldTx.outputs(o._2)
-      val csvSPK = CSVScriptPubKey(scriptNum,oldOutput.scriptPubKey)
-      val updatedOutput = TransactionOutput(oldOutput.value,csvSPK)
-      val tx = oldTx match {
-        case btx: BaseTransaction => BaseTransaction(btx.version, btx.inputs,
-          btx.outputs.updated(o._2,updatedOutput), btx.lockTime)
-        case wtx: WitnessTransaction => WitnessTransaction(wtx.version, wtx.inputs,
-          wtx.outputs.updated(o._2, updatedOutput), wtx.lockTime, wtx.witness)
+    basicOutput.flatMap { o =>
+      CryptoGenerators.hashType.map { hashType =>
+        val oldTx = o._1
+        val oldOutput = oldTx.outputs(o._2)
+        val csvSPK = CSVScriptPubKey(scriptNum,oldOutput.scriptPubKey)
+        val updatedOutput = TransactionOutput(oldOutput.value,csvSPK)
+        val tx = oldTx match {
+          case btx: BaseTransaction => BaseTransaction(btx.version, btx.inputs,
+            btx.outputs.updated(o._2,updatedOutput), btx.lockTime)
+          case wtx: WitnessTransaction => WitnessTransaction(wtx.version, wtx.inputs,
+            wtx.outputs.updated(o._2, updatedOutput), wtx.lockTime, wtx.witness)
+        }
+        (tx,o._2,o._3,o._4, o._5, hashType)
       }
-      (tx,o._2,o._3,o._4, o._5)
     }
   }
 
@@ -126,7 +133,7 @@ sealed abstract class CreditingTxGen {
 
   def p2wpkhOutputs: Gen[Seq[CreditingTxInfo]] = Gen.choose(min,max).flatMap(n => Gen.listOfN(n,p2wpkhOutput))
 
-  def p2wshOutput: Gen[CreditingTxInfo] = nonP2WSHOutput.flatMap { case (tx,outputIndex,privKeys,redeemScriptOpt,scriptWitOpt) =>
+  def p2wshOutput: Gen[CreditingTxInfo] = nonP2WSHOutput.flatMap { case (tx,outputIndex,privKeys,redeemScriptOpt,scriptWitOpt, _) =>
     val spk = tx.outputs(outputIndex).scriptPubKey
     val scriptWit = P2WSHWitnessV0(spk)
     val witSPK = P2WSHWitnessSPKV0(spk)
@@ -137,13 +144,15 @@ sealed abstract class CreditingTxGen {
 
   private def build(spk: ScriptPubKey, privKeys: Seq[ECPrivateKey],
                     redeemScript: Option[ScriptPubKey], scriptWitness: Option[ScriptWitness]): Gen[CreditingTxInfo] = nonEmptyOutputs.flatMap { outputs =>
-    Gen.choose(0, outputs.size - 1).map { idx =>
-      val old = outputs(idx)
-      val updated = outputs.updated(idx, TransactionOutput(old.value, spk))
-      val tc = TransactionConstants
-      val btx = BaseTransaction(tc.version, Nil, updated, tc.lockTime)
-      val data = (btx, idx, privKeys, redeemScript, scriptWitness)
-      data
+    CryptoGenerators.hashType.flatMap { hashType =>
+      Gen.choose(0, outputs.size - 1).map { idx =>
+        val old = outputs(idx)
+        val updated = outputs.updated(idx, TransactionOutput(old.value, spk))
+        val tc = TransactionConstants
+        val btx = BaseTransaction(tc.version, Nil, updated, tc.lockTime)
+        val data = (btx, idx, privKeys, redeemScript, scriptWitness,hashType)
+        data
+      }
     }
   }
 }
