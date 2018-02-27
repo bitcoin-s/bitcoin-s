@@ -39,18 +39,7 @@ sealed abstract class Block extends NetworkElement {
     * Block weight is defined as Base size * 3 + Total size
     * [[https://github.com/bitcoin/bitcoin/blob/7490ae8b699d2955b665cf849d86ff5bb5245c28/src/primitives/block.cpp#L35]]
     */
-  def blockWeight: Long = {
-    val (baseSize,totalSize) = transactions.map {
-      case btx: BaseTransaction => (btx.size,btx.size)
-      case wtx: WitnessTransaction =>
-        val btx = BaseTransaction(wtx.version,wtx.inputs,wtx.outputs,wtx.lockTime)
-        (btx.size,wtx.size)
-    }.fold((0,0)) {
-      case ((baseAccum,totalAccum),(base,total)) => (baseAccum + base, totalAccum + total)
-    }
-    val weight = baseSize * 3 + totalSize
-    weight
-  }
+  def blockWeight: Long = transactions.map(_.weight).sum
 }
 
 
