@@ -8,14 +8,16 @@ import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil}
   * This represents a element that can be serialized to
   * be sent over the network
   */
-trait NetworkElement extends BitcoinSLogger {
+abstract class NetworkElement {
 
   /** The size of the NetworkElement in bytes. */
   def size : Int = bytes.size
 
   /** The hexadecimal representation of the NetworkElement */
-  def hex : String
+  def hex : String = BitcoinSUtil.encodeHex(bytes)
 
   /** The byte representation of the NetworkElement */
-  def bytes : Seq[Byte] = BitcoinSUtil.decodeHex(hex)
+  def bytes : Seq[Byte]
+
+  lazy val logger = BitcoinSLogger.logger
 }

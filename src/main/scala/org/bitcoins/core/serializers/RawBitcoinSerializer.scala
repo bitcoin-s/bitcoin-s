@@ -1,12 +1,13 @@
 package org.bitcoins.core.serializers
 
 import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil}
+import org.slf4j.Logger
 
 /**
  * Created by chris on 1/11/16.
  * A common trait for reading/writing bitcoin objects to/from bytes/hex
  */
-trait RawBitcoinSerializer[T] extends RawBitcoinSerializerHelper with BitcoinSLogger {
+abstract class RawBitcoinSerializer[T] {
 
   /** Reads a hexadecimal value and transforms it into the native scala type T. */
   def read(hex : String) : T = read(BitcoinSUtil.decodeHex(hex))
@@ -18,6 +19,8 @@ trait RawBitcoinSerializer[T] extends RawBitcoinSerializerHelper with BitcoinSLo
   def read(bytes : Seq[Byte]) : T = read(bytes.toList)
 
   /** Takes a type T and writes it into the appropriate hexadecimal serialization for type T. */
-  def write(t : T) : String
+  def write(t : T) : Seq[Byte]
+
+  def logger: Logger = BitcoinSLogger.logger
 
 }

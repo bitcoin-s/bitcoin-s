@@ -3,21 +3,21 @@ package org.bitcoins.core.serializers.script
 import org.bitcoins.core.protocol.script.ScriptSignature
 import org.bitcoins.core.script.constant._
 import org.bitcoins.core.script.crypto.OP_CHECKMULTISIG
-import org.bitcoins.core.util.{BitcoinSLogger, TestUtil}
+import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil, TestUtil}
 import org.scalatest.{FlatSpec, MustMatchers}
 
 /**
  * Created by chris on 1/12/16.
  */
-class RawScriptSignatureParserTest extends FlatSpec with MustMatchers with RawScriptSignatureParser with BitcoinSLogger {
+class RawScriptSignatureParserTest extends FlatSpec with MustMatchers {
 
   //from bitcoin developer examples
   //https://bitcoin.org/en/developer-reference#raw-transaction-format
   val rawScriptSig = "4a494830450221008949f0cb400094ad2b5eb399d59d01c14d73d8fe6e96df1a7150deb388ab8935022079656090d7f6bac4c9a94e0aad311a4268e082a725f8aeae0573fb12ff866a5f01"
-
+  val encode = BitcoinSUtil.encodeHex(_: Seq[Byte])
   "RawScriptSignatureParser" must "write a raw script sig" in {
-    val scriptSig = read(rawScriptSig)
-    write(scriptSig) must be (rawScriptSig)
+    val scriptSig = RawScriptSignatureParser.read(rawScriptSig)
+    encode(RawScriptSignatureParser.write(scriptSig)) must be (rawScriptSig)
   }
 
   it must "read then write a raw script sig" in {
@@ -25,7 +25,7 @@ class RawScriptSignatureParserTest extends FlatSpec with MustMatchers with RawSc
     //https://tbtc.blockr.io/api/v1/tx/raw/bdc221db675c06dbee2ae75d33e31cad4e2555efea10c337ff32c8cdf97f8e74
     val rawScriptSig = TestUtil.rawScriptSig
     val scriptSig = RawScriptSignatureParser.read(rawScriptSig)
-    RawScriptSignatureParser.write(scriptSig) must be (rawScriptSig)
+    encode(RawScriptSignatureParser.write(scriptSig)) must be (rawScriptSig)
   }
 
   it must "convert a raw script sig into the correct asm operations" in {
@@ -81,7 +81,7 @@ class RawScriptSignatureParserTest extends FlatSpec with MustMatchers with RawSc
     scriptSig.asm(3).hex must be (expectedAsm(3).hex)
     scriptSig.hex must be (rawScriptSig)
 
-    write(scriptSig) must be (rawScriptSig)
+    encode(RawScriptSignatureParser.write(scriptSig)) must be (rawScriptSig)
 
   }
 

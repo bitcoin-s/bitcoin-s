@@ -1,6 +1,8 @@
 package org.bitcoins.core.protocol.transaction
 
+import org.bitcoins.core.crypto.TxSigComponent
 import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction.testprotocol.CoreTransactionTestCase
 import org.bitcoins.core.protocol.transaction.testprotocol.CoreTransactionTestCaseProtocol._
 import org.bitcoins.core.script.ScriptProgram
@@ -16,7 +18,8 @@ import scala.io.Source
 /**
  * Created by chris on 7/14/15.
  */
-class TransactionTest extends FlatSpec with MustMatchers with BitcoinSLogger {
+class TransactionTest extends FlatSpec with MustMatchers {
+  private val logger = BitcoinSLogger.logger
 
   "Transaction" must "derive the correct txid from the transaction contents" in {
 
@@ -61,6 +64,17 @@ class TransactionTest extends FlatSpec with MustMatchers with BitcoinSLogger {
     wtx.wTxId must be (CryptoUtil.doubleSHA256(hex))
   }
 
+  it must "parse a witness coinbase tx correctly" in {
+    //txid is b3974ba615f60f48b4c558a4080810fa5064cfcb88e59b843e7fd552b3f4b3d1 on testnet
+    val hex = "010000000001010000000000000000000000000000000000000000000000000000000000000000ffffffff2003e02e10130e6d696e65642062792062636f696e585bd0620000000006d50200ffffffff03cddf17000000000017a9146859969825bb2787f803a3d0eeb632998ce4f50187848c3b090000000017a9146859969825bb2787f803a3d0eeb632998ce4f501870000000000000000356a24aa21a9ed309cfb38d1015c266667d5b7888c83def872a531b8ac277fe8df623c32b562b50e6d696e65642062792062636f696e0120000000000000000000000000000000000000000000000000000000000000000000000000"
+    val tx = Transaction(hex)
+    val wtx = tx.asInstanceOf[WitnessTransaction]
+    wtx.inputs.size must be (1)
+    wtx.outputs.size must be (3)
+    val witCommitment = wtx.outputs.last
+    witCommitment.scriptPubKey.isInstanceOf[WitnessCommitment] must be (true)
+    wtx.hex must be (hex)
+  }
 
   it must "read all of the tx_valid.json's contents and return ScriptOk" in {
     val source = Source.fromURL(getClass.getResource("/tx_valid.json"))
@@ -69,10 +83,21 @@ class TransactionTest extends FlatSpec with MustMatchers with BitcoinSLogger {
         //use this to represent a single test case from script_valid.json
 /*    val lines =
         """
-          |[[[["f18783ace138abac5d3a7a5cf08e88fe6912f267ef936452e0c27d090621c169", 7500, "0x00 0x20 0x9e1be07558ea5cc8e02ed1d80c0911048afad949affa36d5c3951e3159dbea19", 200000]],
-          |    "0100000000010169c12106097dc2e0526493ef67f21269fe888ef05c7a3a5dacab38e1ac8387f14c1d000000ffffffff01010000000000000000034830450220487fb382c4974de3f7d834c1b617fe15860828c7f96454490edd6d891556dcc9022100baf95feb48f845d5bfc9882eb6aeefa1bc3790e39f59eaa46ff7f15ae626c53e012102a9781d66b61fb5a7ef00ac5ad5bc6ffc78be7b44a566e3c87870e1079368df4c4aad4830450220487fb382c4974de3f7d834c1b617fe15860828c7f96454490edd6d891556dcc9022100baf95feb48f845d5bfc9882eb6aeefa1bc3790e39f59eaa46ff7f15ae626c53e0100000000", "P2SH,WITNESS"]
-          |  ]
-        """.stripMargin*/
+          |[[[["0000000000000000000000000000000000000000000000000000000000000100", 0, "0x00 0x14 0x4c9c3dfac4207d5d8cb89df5722cb3d712385e3f", 1000],
+          |["0000000000000000000000000000000000000000000000000000000000000100", 1, "0x00 0x14 0x4c9c3dfac4207d5d8cb89df5722cb3d712385e3f", 1001],
+          |["0000000000000000000000000000000000000000000000000000000000000100", 2, "DUP HASH160 0x14 0x4c9c3dfac4207d5d8cb89df5722cb3d712385e3f EQUALVERIFY CHECKSIG", 1002],
+          |["0000000000000000000000000000000000000000000000000000000000000100", 3, "DUP HASH160 0x14 0x4c9c3dfac4207d5d8cb89df5722cb3d712385e3f EQUALVERIFY CHECKSIG", 1003],
+          |["0000000000000000000000000000000000000000000000000000000000000100", 4, "DUP HASH160 0x14 0x4c9c3dfac4207d5d8cb89df5722cb3d712385e3f EQUALVERIFY CHECKSIG", 1004],
+          |["0000000000000000000000000000000000000000000000000000000000000100", 5, "DUP HASH160 0x14 0x4c9c3dfac4207d5d8cb89df5722cb3d712385e3f EQUALVERIFY CHECKSIG", 1005],
+          |["0000000000000000000000000000000000000000000000000000000000000100", 6, "DUP HASH160 0x14 0x4c9c3dfac4207d5d8cb89df5722cb3d712385e3f EQUALVERIFY CHECKSIG", 1006],
+          |["0000000000000000000000000000000000000000000000000000000000000100", 7, "0x00 0x14 0x4c9c3dfac4207d5d8cb89df5722cb3d712385e3f", 1007],
+          |["0000000000000000000000000000000000000000000000000000000000000100", 8, "0x00 0x14 0x4c9c3dfac4207d5d8cb89df5722cb3d712385e3f", 1008],
+          |["0000000000000000000000000000000000000000000000000000000000000100", 9, "0x00 0x14 0x4c9c3dfac4207d5d8cb89df5722cb3d712385e3f", 1009],
+          |["0000000000000000000000000000000000000000000000000000000000000100", 10, "0x00 0x14 0x4c9c3dfac4207d5d8cb89df5722cb3d712385e3f", 1010],
+          |["0000000000000000000000000000000000000000000000000000000000000100", 11, "DUP HASH160 0x14 0x4c9c3dfac4207d5d8cb89df5722cb3d712385e3f EQUALVERIFY CHECKSIG", 1011]],
+          |"0100000000010c00010000000000000000000000000000000000000000000000000000000000000000000000ffffffff00010000000000000000000000000000000000000000000000000000000000000100000000ffffffff0001000000000000000000000000000000000000000000000000000000000000020000006a473044022026c2e65b33fcd03b2a3b0f25030f0244bd23cc45ae4dec0f48ae62255b1998a00220463aa3982b718d593a6b9e0044513fd67a5009c2fdccc59992cffc2b167889f4012103596d3451025c19dbbdeb932d6bf8bfb4ad499b95b6f88db8899efac102e5fc71ffffffff0001000000000000000000000000000000000000000000000000000000000000030000006a4730440220008bd8382911218dcb4c9f2e75bf5c5c3635f2f2df49b36994fde85b0be21a1a02205a539ef10fb4c778b522c1be852352ea06c67ab74200977c722b0bc68972575a012103596d3451025c19dbbdeb932d6bf8bfb4ad499b95b6f88db8899efac102e5fc71ffffffff0001000000000000000000000000000000000000000000000000000000000000040000006b483045022100d9436c32ff065127d71e1a20e319e4fe0a103ba0272743dbd8580be4659ab5d302203fd62571ee1fe790b182d078ecfd092a509eac112bea558d122974ef9cc012c7012103596d3451025c19dbbdeb932d6bf8bfb4ad499b95b6f88db8899efac102e5fc71ffffffff0001000000000000000000000000000000000000000000000000000000000000050000006a47304402200e2c149b114ec546015c13b2b464bbcb0cdc5872e6775787527af6cbc4830b6c02207e9396c6979fb15a9a2b96ca08a633866eaf20dc0ff3c03e512c1d5a1654f148012103596d3451025c19dbbdeb932d6bf8bfb4ad499b95b6f88db8899efac102e5fc71ffffffff0001000000000000000000000000000000000000000000000000000000000000060000006b483045022100b20e70d897dc15420bccb5e0d3e208d27bdd676af109abbd3f88dbdb7721e6d6022005836e663173fbdfe069f54cde3c2decd3d0ea84378092a5d9d85ec8642e8a41012103596d3451025c19dbbdeb932d6bf8bfb4ad499b95b6f88db8899efac102e5fc71ffffffff00010000000000000000000000000000000000000000000000000000000000000700000000ffffffff00010000000000000000000000000000000000000000000000000000000000000800000000ffffffff00010000000000000000000000000000000000000000000000000000000000000900000000ffffffff00010000000000000000000000000000000000000000000000000000000000000a00000000ffffffff00010000000000000000000000000000000000000000000000000000000000000b0000006a47304402206639c6e05e3b9d2675a7f3876286bdf7584fe2bbd15e0ce52dd4e02c0092cdc60220757d60b0a61fc95ada79d23746744c72bac1545a75ff6c2c7cdb6ae04e7e9592012103596d3451025c19dbbdeb932d6bf8bfb4ad499b95b6f88db8899efac102e5fc71ffffffff0ce8030000000000000151e9030000000000000151ea030000000000000151eb030000000000000151ec030000000000000151ed030000000000000151ee030000000000000151ef030000000000000151f0030000000000000151f1030000000000000151f2030000000000000151f30300000000000001510248304502210082219a54f61bf126bfc3fa068c6e33831222d1d7138c6faa9d33ca87fd4202d6022063f9902519624254d7c2c8ea7ba2d66ae975e4e229ae38043973ec707d5d4a83012103596d3451025c19dbbdeb932d6bf8bfb4ad499b95b6f88db8899efac102e5fc7102473044022017fb58502475848c1b09f162cb1688d0920ff7f142bed0ef904da2ccc88b168f02201798afa61850c65e77889cbcd648a5703b487895517c88f85cdd18b021ee246a012103596d3451025c19dbbdeb932d6bf8bfb4ad499b95b6f88db8899efac102e5fc7100000000000247304402202830b7926e488da75782c81a54cd281720890d1af064629ebf2e31bf9f5435f30220089afaa8b455bbeb7d9b9c3fe1ed37d07685ade8455c76472cda424d93e4074a012103596d3451025c19dbbdeb932d6bf8bfb4ad499b95b6f88db8899efac102e5fc7102473044022026326fcdae9207b596c2b05921dbac11d81040c4d40378513670f19d9f4af893022034ecd7a282c0163b89aaa62c22ec202cef4736c58cd251649bad0d8139bcbf55012103596d3451025c19dbbdeb932d6bf8bfb4ad499b95b6f88db8899efac102e5fc71024730440220214978daeb2f38cd426ee6e2f44131a33d6b191af1c216247f1dd7d74c16d84a02205fdc05529b0bc0c430b4d5987264d9d075351c4f4484c16e91662e90a72aab24012103596d3451025c19dbbdeb932d6bf8bfb4ad499b95b6f88db8899efac102e5fc710247304402204a6e9f199dc9672cf2ff8094aaa784363be1eb62b679f7ff2df361124f1dca3302205eeb11f70fab5355c9c8ad1a0700ea355d315e334822fa182227e9815308ee8f012103596d3451025c19dbbdeb932d6bf8bfb4ad499b95b6f88db8899efac102e5fc710000000000", "P2SH,WITNESS"]]
+          |""".stripMargin*/
+
     val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n" finally source.close()
     val json = lines.parseJson
     val testCasesOpt : Seq[Option[CoreTransactionTestCase]] = json.convertTo[Seq[Option[CoreTransactionTestCase]]]
@@ -94,18 +119,35 @@ class TransactionTest extends FlatSpec with MustMatchers with BitcoinSLogger {
         "OutPoint txId not the same as input prevout txid\noutPoint.txId: " + outPoint.txId + "\n" +
           "input prevout txid: " + input.previousOutput.txId)
       val program = amountOpt match {
-        case Some(amount) => ScriptProgram(tx,scriptPubKey,UInt32(inputIndex),testCase.flags,amount)
+        case Some(amount) => scriptPubKey match {
+          case p2sh: P2SHScriptPubKey =>
+            tx match {
+              case btx: BaseTransaction =>
+                ScriptProgram(btx, p2sh,
+                  UInt32(inputIndex), testCase.flags)
+              case wtx: WitnessTransaction =>
+                ScriptProgram(wtx, p2sh,
+                  UInt32(inputIndex), testCase.flags, amount)
+            }
+          case wit: WitnessScriptPubKey =>
+            tx match {
+              case btx: BaseTransaction =>
+                ScriptProgram(btx,wit,UInt32(inputIndex),testCase.flags)
+              case wtx: WitnessTransaction =>
+                ScriptProgram(wtx,wit,UInt32(inputIndex),testCase.flags,amount)
+            }
+          case x @ (_: P2PKScriptPubKey | _: P2PKHScriptPubKey | _: MultiSignatureScriptPubKey | _: CLTVScriptPubKey | _: CSVScriptPubKey
+                    | _: CLTVScriptPubKey | _: EscrowTimeoutScriptPubKey | _: NonStandardScriptPubKey | _: WitnessCommitment | EmptyScriptPubKey) =>
+            val t = TxSigComponent(tx,UInt32(inputIndex),x,testCase.flags)
+            ScriptProgram(t)
+        }
         case None => ScriptProgram(tx,scriptPubKey,UInt32(inputIndex),testCase.flags)
       }
-
       withClue(testCase.raw + " input index: " + inputIndex) {
         ScriptInterpreter.run(program) must equal (ScriptOk)
       }
     }
   }
-
-
-
 
   it must "read all of the tx_invalid.json's contents and return a ScriptError" in {
 
@@ -113,8 +155,8 @@ class TransactionTest extends FlatSpec with MustMatchers with BitcoinSLogger {
     //use this to represent a single test case from script_valid.json
 /*    val lines =
         """
-          |[  [[["0000000000000000000000000000000000000000000000000000000000000100", 0, "0x60 0x02 0x0000", 2000]],
-          |    "0100000000010100010000000000000000000000000000000000000000000000000000000000000000000000ffffffff010000000000000000015101010100000000", "P2SH,WITNESS"]
+          |[  [[["0000000000000000000000000000000000000000000000000000000000000100", 0, "0x60 0x02 0x0001", 2000]],
+          |    "01000000010001000000000000000000000000000000000000000000000000000000000000000000000151ffffffff010000000000000000015100000000", "P2SH,WITNESS"]
           |]
         """.stripMargin*/
     val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n" finally source.close()
@@ -138,7 +180,28 @@ class TransactionTest extends FlatSpec with MustMatchers with BitcoinSLogger {
         val isValidTx = ScriptInterpreter.checkTransaction(tx)
         if (isValidTx) {
           val program = amountOpt match {
-            case Some(amount) => ScriptProgram(tx,scriptPubKey,UInt32(inputIndex),testCase.flags,amount)
+            case Some(amount) => scriptPubKey match {
+              case p2sh: P2SHScriptPubKey =>
+                tx match {
+                  case btx: BaseTransaction =>
+                    ScriptProgram(btx, p2sh,
+                      UInt32(inputIndex), testCase.flags)
+                  case wtx: WitnessTransaction =>
+                    ScriptProgram(wtx, p2sh,
+                      UInt32(inputIndex), testCase.flags, amount)
+                }
+              case wit: WitnessScriptPubKey =>
+                tx match {
+                  case btx: BaseTransaction =>
+                    ScriptProgram(btx,wit,UInt32(inputIndex),testCase.flags)
+                  case wtx: WitnessTransaction =>
+                    ScriptProgram(wtx,wit,UInt32(inputIndex),testCase.flags,amount)
+                }
+              case x @ (_: P2PKScriptPubKey | _: P2PKHScriptPubKey | _: MultiSignatureScriptPubKey | _: CLTVScriptPubKey | _: CSVScriptPubKey
+                        | _: CLTVScriptPubKey | _: EscrowTimeoutScriptPubKey | _: NonStandardScriptPubKey | _: WitnessCommitment | EmptyScriptPubKey) =>
+                val t = TxSigComponent(tx,UInt32(inputIndex),x,testCase.flags)
+                ScriptProgram(t)
+            }
             case None => ScriptProgram(tx,scriptPubKey,UInt32(inputIndex),testCase.flags)
           }
           ScriptInterpreter.run(program) == ScriptOk

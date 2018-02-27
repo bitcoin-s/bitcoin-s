@@ -14,7 +14,8 @@ import spray.json.{DefaultJsonProtocol, JsArray, JsValue, RootJsonFormat}
 /**
   * Created by chris on 5/4/16.
   */
-object CoreTransactionTestCaseProtocol extends DefaultJsonProtocol with BitcoinSLogger {
+object CoreTransactionTestCaseProtocol extends DefaultJsonProtocol {
+  private def logger = BitcoinSLogger.logger
 
   implicit object CoreTransactionTestCaseProtocol extends RootJsonFormat[Option[CoreTransactionTestCase]] {
 
@@ -55,7 +56,7 @@ object CoreTransactionTestCaseProtocol extends DefaultJsonProtocol with BitcoinS
 
         val prevoutIndex = array.elements(1).convertTo[Long] match {
           case -1 => UInt32("ffffffff")
-          case index if index >= UInt32.min.underlying && index <= UInt32.max.underlying => UInt32(index)
+          case index if index >= UInt32.min.toLong && index <= UInt32.max.toLong => UInt32(index)
         }
 
         val amount = if (array.elements.size == 4) Some(Satoshis(Int64(array.elements(3).convertTo[Long]))) else None

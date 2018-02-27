@@ -1,7 +1,7 @@
 package org.bitcoins.core.protocol
 
 import org.bitcoins.core.config.TestNet3
-import org.bitcoins.core.gen.{CryptoGenerators, ScriptGenerators}
+import org.bitcoins.core.gen.{AddressGenerator, CryptoGenerators, ScriptGenerators}
 import org.bitcoins.core.protocol.script.P2SHScriptPubKey
 import org.bitcoins.core.util.CryptoUtil
 import org.scalacheck.{Prop, Properties}
@@ -12,7 +12,7 @@ import org.scalacheck.{Prop, Properties}
 class BitcoinAddressSpec extends Properties("BitcoinAddressSpec") {
 
   property("get the same p2sh address no matter what factory function we use") =
-    Prop.forAll(ScriptGenerators.pickRandomNonP2SHScriptPubKey) { case (scriptPubKey,_) =>
+    Prop.forAll(ScriptGenerators.randomNonP2SHScriptPubKey) { case (scriptPubKey,_) =>
       //we should get the same address no matter which factory function we use
       val p2shScriptPubKey = P2SHScriptPubKey(scriptPubKey)
       P2SHAddress(scriptPubKey, TestNet3) == P2SHAddress(p2shScriptPubKey,TestNet3)
@@ -20,7 +20,7 @@ class BitcoinAddressSpec extends Properties("BitcoinAddressSpec") {
     }
 
   property("All p2sh addresses created from factory functions must be valid") =
-    Prop.forAll(ScriptGenerators.pickRandomNonP2SHScriptPubKey) {  case (scriptPubKey,_)  =>
+    Prop.forAll(ScriptGenerators.randomNonP2SHScriptPubKey) {  case (scriptPubKey,_)  =>
       //we should get the same address no matter which factory function we use
       val addr = P2SHAddress(scriptPubKey, TestNet3)
       P2SHAddress.isP2SHAddress(addr)
@@ -36,4 +36,12 @@ class BitcoinAddressSpec extends Properties("BitcoinAddressSpec") {
       val addr = P2PKHAddress(pubKey,TestNet3)
       P2PKHAddress.isP2PKHAddress(addr)
     }
+
+  property("serialization symmetry between script and address") = {
+    Prop.forAll(AddressGenerator.address) { addr =>
+      val spk = addr.scriptPubKey
+      val network = addr.networkParameters
+      Address.fromScriptPubKey(spk,network).get == addr
+    }
+  }
 }

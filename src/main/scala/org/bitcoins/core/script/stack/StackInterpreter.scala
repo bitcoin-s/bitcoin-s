@@ -14,7 +14,8 @@ import scala.util.{Failure, Success, Try}
  * Stack operations implemented in the script programming language
  * https://en.bitcoin.it/wiki/Script#Stack
  */
-trait StackInterpreter extends BitcoinSLogger {
+sealed abstract class StackInterpreter {
+  private def logger = BitcoinSLogger.logger
 
   /** Duplicates the element on top of the stack
    * expects the first element in script to be the OP_DUP operation. */
@@ -119,7 +120,7 @@ trait StackInterpreter extends BitcoinSLogger {
       logger.info("Script number for OP_PICK: " + number)
       //check if n is within the bound of the script
       if (program.stack.size < 2) ScriptProgram(program, ScriptErrorInvalidStackOperation)
-      else if (number.underlying >= 0 && number.underlying < program.stack.tail.size) {
+      else if (number.toLong >= 0 && number.toLong < program.stack.tail.size) {
         val newStackTop = program.stack.tail(number.toInt)
         ScriptProgram(program, newStackTop :: program.stack.tail, program.script.tail)
       } else {
@@ -134,7 +135,7 @@ trait StackInterpreter extends BitcoinSLogger {
     require(program.script.headOption.contains(OP_ROLL), "Top of script stack must be OP_ROLL")
     executeOpWithStackTopAsNumberArg(program, (number : ScriptNumber) =>
       if (program.stack.size < 2) ScriptProgram(program, ScriptErrorInvalidStackOperation)
-      else if (number.underlying >= 0 && number.underlying < program.stack.tail.size) {
+      else if (number.toLong >= 0 && number.toLong < program.stack.tail.size) {
         val newStackTop = program.stack.tail(number.toInt)
         //removes the old instance of the stack top, appends the new index to the head
         val newStack = newStackTop :: program.stack.tail.diff(List(newStackTop))
@@ -285,5 +286,6 @@ trait StackInterpreter extends BitcoinSLogger {
         }
     }
   }
-
 }
+
+object StackInterpreter extends StackInterpreter

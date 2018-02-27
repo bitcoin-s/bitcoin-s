@@ -14,14 +14,15 @@ import org.scalatest.{FlatSpec, MustMatchers}
 /**
  * Created by chris on 1/6/16.
  */
-class CryptoInterpreterTest extends FlatSpec with MustMatchers with CryptoInterpreter with BitcoinSLogger {
+class CryptoInterpreterTest extends FlatSpec with MustMatchers {
+  private def logger = BitcoinSLogger.logger
   val stack = List(ScriptConstant("02218AD6CDC632E7AE7D04472374311CEBBBBF0AB540D2D08C3400BB844C654231".toLowerCase))
-
+  val CI = CryptoInterpreter
   "CryptoInterpreter" must "evaluate OP_HASH160 correctly when it is on top of the script stack" in {
 
     val script = List(OP_HASH160)
     val program = ScriptProgram(TestUtil.testProgram, stack,script)
-    val newProgram = opHash160(program)
+    val newProgram = CI.opHash160(program)
 
     newProgram.stack.head must be (ScriptConstant("5238C71458E464D9FF90299ABCA4A1D7B9CB76AB".toLowerCase))
     newProgram.script.size must be (0)
@@ -31,7 +32,7 @@ class CryptoInterpreterTest extends FlatSpec with MustMatchers with CryptoInterp
     val stack = List()
     val script = List(OP_HASH160)
     val program = ScriptProgram(TestUtil.testProgramExecutionInProgress, stack,script)
-    val executedProgram : ExecutedScriptProgram = ScriptProgramTestUtil.toExecutedScriptProgram(opHash160(program))
+    val executedProgram : ExecutedScriptProgram = ScriptProgramTestUtil.toExecutedScriptProgram(CI.opHash160(program))
     executedProgram.error must be (Some(ScriptErrorInvalidStackOperation))
 
   }
@@ -40,7 +41,7 @@ class CryptoInterpreterTest extends FlatSpec with MustMatchers with CryptoInterp
     intercept[IllegalArgumentException] {
       val script = List()
       val program = ScriptProgram(TestUtil.testProgram, stack,script)
-      opHash160(program)
+      CI.opHash160(program)
     }
   }
 
@@ -48,7 +49,7 @@ class CryptoInterpreterTest extends FlatSpec with MustMatchers with CryptoInterp
     val stack = List(ScriptConstant(""))
     val script = List(OP_RIPEMD160)
     val program = ScriptProgram(TestUtil.testProgram, stack,script)
-    val newProgram = opRipeMd160(program)
+    val newProgram = CI.opRipeMd160(program)
     newProgram.stack must be (List(ScriptConstant("9c1185a5c5e9fc54612808977ee8f548b2258d31")))
     newProgram.script.isEmpty must be (true)
   }
@@ -57,7 +58,7 @@ class CryptoInterpreterTest extends FlatSpec with MustMatchers with CryptoInterp
     val stack = List(ScriptConstant("ab"))
     val script = List(OP_SHA1)
     val program = ScriptProgram(TestUtil.testProgram, stack,script)
-    val newProgram = opSha1(program)
+    val newProgram = CI.opSha1(program)
     newProgram.stack.head must be (ScriptConstant("fe83f217d464f6fdfa5b2b1f87fe3a1a47371196"))
     newProgram.script.isEmpty must be (true)
   }
@@ -66,7 +67,7 @@ class CryptoInterpreterTest extends FlatSpec with MustMatchers with CryptoInterp
     val stack = List(ScriptConstant(""))
     val script = List(OP_SHA256)
     val program = ScriptProgram(TestUtil.testProgram, stack,script)
-    val newProgram = opSha256(program)
+    val newProgram = CI.opSha256(program)
     newProgram.stack must be (List(ScriptConstant("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855")))
     newProgram.script.isEmpty must be (true)
   }
@@ -75,7 +76,7 @@ class CryptoInterpreterTest extends FlatSpec with MustMatchers with CryptoInterp
     val stack = List(ScriptConstant(""))
     val script = List(OP_HASH256)
     val program = ScriptProgram(TestUtil.testProgram, stack,script)
-    val newProgram = opHash256(program)
+    val newProgram = CI.opHash256(program)
     newProgram.stack must be (List(ScriptConstant("5df6e0e2761359d30a8275058e299fcc0381534545f55cf43e41983f5d4c9456")))
     newProgram.script.isEmpty must be (true)
   }
@@ -85,7 +86,7 @@ class CryptoInterpreterTest extends FlatSpec with MustMatchers with CryptoInterp
     val script = List(OP_CHECKMULTISIG)
     val program = ScriptProgram(TestUtil.testProgram, stack,script)
     val programNoFlags = ScriptProgram(program, ScriptFlagFactory.empty)
-    val newProgram = opCheckMultiSig(programNoFlags)
+    val newProgram = CI.opCheckMultiSig(programNoFlags)
     newProgram.stack must be (List(OP_TRUE))
     newProgram.script.isEmpty must be (true)
   }
@@ -95,7 +96,7 @@ class CryptoInterpreterTest extends FlatSpec with MustMatchers with CryptoInterp
     val script = List(OP_CHECKMULTISIG,OP_16,OP_16,OP_16,OP_16)
     val program = ScriptProgram(TestUtil.testProgram, stack,script)
     val programNoFlags = ScriptProgram(program, ScriptFlagFactory.empty)
-    val newProgram = opCheckMultiSig(programNoFlags)
+    val newProgram = CI.opCheckMultiSig(programNoFlags)
     newProgram.stack must be (List(OP_TRUE, OP_16,OP_16,OP_16))
     newProgram.script must be (List(OP_16,OP_16,OP_16,OP_16))
   }
@@ -105,8 +106,7 @@ class CryptoInterpreterTest extends FlatSpec with MustMatchers with CryptoInterp
     val script = List(OP_CHECKMULTISIGVERIFY)
     val program = ScriptProgram(TestUtil.testProgramExecutionInProgress, stack,script)
     val programNoFlags = ScriptProgram(program, ScriptFlagFactory.empty)
-    val newProgram = opCheckMultiSigVerify(programNoFlags)
-    println(newProgram.script)
+    val newProgram = CI.opCheckMultiSigVerify(programNoFlags)
     newProgram.script.isEmpty must be (true)
     newProgram.stack.isEmpty must be (true)
     newProgram.isInstanceOf[ExecutedScriptProgram] must be (false)
@@ -117,7 +117,7 @@ class CryptoInterpreterTest extends FlatSpec with MustMatchers with CryptoInterp
     val script = List(OP_CHECKMULTISIGVERIFY,OP_16,OP_16,OP_16,OP_16)
     val program = ScriptProgram(TestUtil.testProgramExecutionInProgress, stack,script)
     val programNoFlags = ScriptProgram(program, ScriptFlagFactory.empty)
-    val newProgram = opCheckMultiSigVerify(programNoFlags)
+    val newProgram = CI.opCheckMultiSigVerify(programNoFlags)
     newProgram.stack must be (List(OP_16,OP_16,OP_16))
     newProgram.script must be (List(OP_16,OP_16,OP_16,OP_16))
     newProgram.isInstanceOf[ExecutedScriptProgram] must be (false)
@@ -129,9 +129,7 @@ class CryptoInterpreterTest extends FlatSpec with MustMatchers with CryptoInterp
     val script = List(OP_CHECKMULTISIG)
     val program = ScriptProgram(TestUtil.testProgram, stack,script)
     val programNoFlags = ScriptProgram(program, ScriptFlagFactory.empty)
-    logger.warn("Running OP_CHECKMULTISIG program")
-    val newProgram = opCheckMultiSig(programNoFlags)
-    logger.warn("Ran OP_CHECKMULTISIG program")
+    val newProgram = CI.opCheckMultiSig(programNoFlags)
     newProgram.stack must be (List(OP_TRUE))
     newProgram.script.isEmpty must be (true)
     newProgram.isInstanceOf[ExecutedScriptProgram] must be (false)
@@ -141,14 +139,15 @@ class CryptoInterpreterTest extends FlatSpec with MustMatchers with CryptoInterp
     val flags = Seq(ScriptVerifyNullDummy)
     val scriptSig = ScriptSignature.fromAsm(Seq(OP_1))
     val input = TransactionInput(EmptyTransactionOutPoint, scriptSig, TransactionConstants.sequence)
-    val tx = Transaction(TestUtil.transaction,UpdateTransactionInputs(Seq(input)))
+    val empty = EmptyTransaction
+    val tx = BaseTransaction(empty.version, Seq(input), empty.outputs, empty.lockTime)
 
     val baseProgram = ScriptProgram.toExecutionInProgress(ScriptProgram(tx,TestUtil.scriptPubKey,
       UInt32.zero,flags))
     val stack = Seq(OP_0,OP_0,OP_1)
     val script = Seq(OP_CHECKMULTISIG)
     val program = ScriptProgram(baseProgram,stack,script)
-    val executedProgram = opCheckMultiSig(program)
+    val executedProgram = CI.opCheckMultiSig(program)
     val newProgram = ScriptProgramTestUtil.toExecutedScriptProgram(executedProgram)
     newProgram.error must be (Some(ScriptErrorSigNullDummy))
 
@@ -161,7 +160,7 @@ class CryptoInterpreterTest extends FlatSpec with MustMatchers with CryptoInterp
     val script = Seq(OP_CHECKSIG)
     val program = ScriptProgram(TestUtil.testProgramExecutionInProgress,stack,script)
     val programWithFlags = ScriptProgram(program,flags)
-    val newProgram = ScriptProgramTestUtil.toExecutedScriptProgram(opCheckSig(programWithFlags))
+    val newProgram = ScriptProgramTestUtil.toExecutedScriptProgram(CI.opCheckSig(programWithFlags))
     newProgram.error must be (Some(ScriptErrorSigDer))
 
   }
@@ -170,7 +169,7 @@ class CryptoInterpreterTest extends FlatSpec with MustMatchers with CryptoInterp
     val stack = List()
     val script = Seq(OP_CODESEPARATOR)
     val program = ScriptProgram(ScriptProgram(TestUtil.testProgramExecutionInProgress,stack,script),script,ScriptProgram.OriginalScript)
-    val newProgram = ScriptProgramTestUtil.toExecutionInProgressScriptProgram(opCodeSeparator(program))
+    val newProgram = ScriptProgramTestUtil.toExecutionInProgressScriptProgram(CI.opCodeSeparator(program))
     newProgram.lastCodeSeparator must be (Some(0))
   }
 

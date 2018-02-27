@@ -1,7 +1,7 @@
 package org.bitcoins.core.script.interpreter
 
 
-import org.bitcoins.core.crypto.{ECPrivateKey, TransactionSignatureComponent, TransactionSignatureSerializer}
+import org.bitcoins.core.crypto.{ECPrivateKey, TxSigComponent, TransactionSignatureSerializer}
 import org.bitcoins.core.currency.CurrencyUnits
 import org.bitcoins.core.gen.TransactionGenerators
 import org.bitcoins.core.number.UInt32
@@ -21,8 +21,8 @@ import scala.io.Source
 /**
  * Created by chris on 1/6/16.
  */
-class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterpreter with BitcoinSLogger {
-
+class ScriptInterpreterTest extends FlatSpec with MustMatchers {
+  private def logger = BitcoinSLogger.logger
   "ScriptInterpreter" must "evaluate all the scripts from the bitcoin core script_tests.json" in {
 
     val source = Source.fromURL(getClass.getResource("/script_tests.json"))
@@ -31,7 +31,18 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterp
     //use this to represent a single test case from script_valid.json
 /*    val lines =
         """
-          | [ ["0 0x09 0x300602010102010101 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0", "0x01 0x14 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0x01 0x14 CHECKMULTISIG NOT", "DERSIG,NULLFAIL", "NULLFAIL", "BIP66-compliant but not NULLFAIL-compliant"]]
+          | [[
+          |    [
+          |        "304402200d461c140cfdfcf36b94961db57ae8c18d1cb80e9d95a9e47ac22470c1bf125502201c8dc1cbfef6a3ef90acbbb992ca22fe9466ee6f9d4898eda277a7ac3ab4b25101",
+          |        "410479be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8ac",
+          |        0.00000001
+          |    ],
+          |    "",
+          |    "0 0x20 0xb95237b48faaa69eb078e1170be3b5cbb3fddf16d0a991e14ad274f7b33a4f64",
+          |    "P2SH,WITNESS",
+          |    "OK",
+          |    "Basic P2WSH"
+          |]]
    """.stripMargin*/
     val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n" finally source.close()
     val json = lines.parseJson
@@ -54,8 +65,16 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers with ScriptInterp
       logger.info("Flags after parsing: " + flags)
       logger.info("Witness after parsing: " + witness)
       val program = witness match {
-        case Some((w, amount)) => ScriptProgram(tx.asInstanceOf[WitnessTransaction], scriptPubKey,
-          inputIndex, flags, amount)
+        case Some((w, amount)) => scriptPubKey match {
+          case p2sh: P2SHScriptPubKey =>
+            ScriptProgram(tx.asInstanceOf[WitnessTransaction], p2sh, inputIndex, flags, amount)
+          case wit: WitnessScriptPubKey =>
+            ScriptProgram(tx.asInstanceOf[WitnessTransaction], wit, inputIndex, flags, amount)
+          case x @ (_: P2PKScriptPubKey | _: P2PKHScriptPubKey | _: MultiSignatureScriptPubKey | _: CLTVScriptPubKey | _: CSVScriptPubKey
+                    | _: CLTVScriptPubKey | _: EscrowTimeoutScriptPubKey | _: NonStandardScriptPubKey | _: WitnessCommitment | EmptyScriptPubKey) =>
+            val t = TxSigComponent(tx,inputIndex,x,flags)
+            ScriptProgram(t)
+        }
         case None => ScriptProgram(tx, scriptPubKey, inputIndex, flags)
       }
       withClue(testCase.raw) {

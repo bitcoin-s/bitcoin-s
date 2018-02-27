@@ -11,8 +11,8 @@ import org.scalatest.{FlatSpec, MustMatchers}
 /**
  * Created by chris on 1/24/16.
  */
-class ConstantInterpreterTest extends FlatSpec with MustMatchers with ConstantInterpreter {
-
+class ConstantInterpreterTest extends FlatSpec with MustMatchers {
+  val CI = ConstantInterpreter
   "ConstantInterpreter" must "interpret OP_PUSHDATA1 correctly" in {
     val byteConstantSize = 76
     val byteConstant = for { x <- 0 until byteConstantSize} yield 0x0.toByte
@@ -20,7 +20,7 @@ class ConstantInterpreterTest extends FlatSpec with MustMatchers with ConstantIn
     val stack = List()
     val script = List(OP_PUSHDATA1,ScriptNumber(byteConstantSize), scriptConstant,OP_7,OP_EQUAL)
     val program = ScriptProgram(TestUtil.testProgramExecutionInProgress, stack,script)
-    val newProgram = opPushData1(program)
+    val newProgram = CI.opPushData1(program)
     newProgram.stack must be (List(scriptConstant))
     newProgram.script must be (List(OP_7,OP_EQUAL))
   }
@@ -32,7 +32,7 @@ class ConstantInterpreterTest extends FlatSpec with MustMatchers with ConstantIn
     val stack = List()
     val script = List(OP_PUSHDATA2, ScriptNumber(256), scriptConstant, OP_8, OP_EQUAL)
     val program = ScriptProgram(TestUtil.testProgramExecutionInProgress, stack,script)
-    val newProgram = opPushData2(program)
+    val newProgram = CI.opPushData2(program)
     newProgram.stack must be (List(scriptConstant))
     newProgram.script must be (List(OP_8,OP_EQUAL))
   }
@@ -44,7 +44,7 @@ class ConstantInterpreterTest extends FlatSpec with MustMatchers with ConstantIn
     val stack = List()
     val script = List(OP_PUSHDATA4, ScriptNumber(byteConstantSize), scriptConstant, OP_9, OP_EQUAL)
     val program = ScriptProgram(TestUtil.testProgramExecutionInProgress, stack,script)
-    val newProgram = opPushData4(program)
+    val newProgram = CI.opPushData4(program)
     newProgram.stack must be (List(scriptConstant))
     newProgram.script must be (List(OP_9, OP_EQUAL))
   }
@@ -54,7 +54,7 @@ class ConstantInterpreterTest extends FlatSpec with MustMatchers with ConstantIn
     val stack = List()
     val script = List(BytesToPushOntoStack(2), ScriptNumber.one, OP_0)
     val program = ScriptProgram(TestUtil.testProgram, stack,script)
-    val newProgram = pushScriptNumberBytesToStack(program)
+    val newProgram = CI.pushScriptNumberBytesToStack(program)
     newProgram.script.isEmpty must be (true)
     newProgram.stack must be (List(ScriptConstant("0100")))
   }
@@ -63,20 +63,20 @@ class ConstantInterpreterTest extends FlatSpec with MustMatchers with ConstantIn
     val stack = List()
     val script = List(OP_PUSHDATA1,BytesToPushOntoStack(0))
     val program = ScriptProgram(ScriptProgram(TestUtil.testProgram, stack,script),Seq[ScriptFlag]())
-    val newProgram  = opPushData1(program)
+    val newProgram  = CI.opPushData1(program)
     newProgram.stackTopIsFalse must be (true)
     newProgram.stack must be (List(ScriptNumber.zero))
 
     val stack1 = List()
     val script1 = List(OP_PUSHDATA2,BytesToPushOntoStack(0))
     val program1 = ScriptProgram(ScriptProgram(TestUtil.testProgram, stack1,script1),Seq[ScriptFlag]())
-    val newProgram1  = opPushData2(program1)
+    val newProgram1  = CI.opPushData2(program1)
     newProgram1.stack must be (List(ScriptNumber.zero))
 
     val stack2 = List()
     val script2 = List(OP_PUSHDATA4,BytesToPushOntoStack(0))
     val program2 = ScriptProgram(ScriptProgram(TestUtil.testProgram, stack2,script2),Seq[ScriptFlag]())
-    val newProgram2 = opPushData4(program2)
+    val newProgram2 = CI.opPushData4(program2)
     newProgram2.stack must be (List(ScriptNumber.zero))
   }
 
@@ -85,7 +85,7 @@ class ConstantInterpreterTest extends FlatSpec with MustMatchers with ConstantIn
     val script = List(OP_PUSHDATA1,BytesToPushOntoStack(1))
     val program = ScriptProgram(ScriptProgram(TestUtil.testProgramExecutionInProgress, stack,script),Seq[ScriptFlag]())
 
-    val newProgram  = ScriptProgramTestUtil.toExecutedScriptProgram(opPushData1(program))
+    val newProgram  = ScriptProgramTestUtil.toExecutedScriptProgram(CI.opPushData1(program))
     newProgram.error must be (Some(ScriptErrorBadOpCode))
   }
 
@@ -104,15 +104,15 @@ class ConstantInterpreterTest extends FlatSpec with MustMatchers with ConstantIn
 
     //purposely call incorrect functions to mismatch opCodes
     intercept[IllegalArgumentException] {
-      opPushData1(program2)
+      CI.opPushData1(program2)
     }
 
     intercept[IllegalArgumentException] {
-      opPushData2(program4)
+      CI.opPushData2(program4)
     }
 
     intercept[IllegalArgumentException] {
-      opPushData4(program1)
+      CI.opPushData4(program1)
     }
   }
 
@@ -123,16 +123,26 @@ class ConstantInterpreterTest extends FlatSpec with MustMatchers with ConstantIn
     val program = ScriptProgram(TestUtil.testProgram, stack,script)
 
     intercept[IllegalArgumentException] {
-      pushScriptNumberBytesToStack(program)
+      CI.pushScriptNumberBytesToStack(program)
     }
   }
 
-  it must "return ScriptErrorMinimalData if program contains ScriptVerifyMinimalData flag and 2nd item in script is" +
-    " zero" in {
+  it must "return ScriptErrorMinimalData if program contains ScriptVerifyMinimalData flag and 2nd item in script is zero" in {
     val stack = List()
     val script = List(OP_PUSHDATA4,ScriptNumber.zero)
     val program = ScriptProgram(ScriptProgram(TestUtil.testProgram, stack,script),Seq[ScriptFlag](ScriptVerifyMinimalData))
-    val newProgram = ScriptProgramTestUtil.toExecutedScriptProgram(opPushData4(program))
+    val newProgram = ScriptProgramTestUtil.toExecutedScriptProgram(CI.opPushData4(program))
     newProgram.error must be (Some(ScriptErrorMinimalData))
+  }
+
+  it must "push a constant onto the stack that is using OP_PUSHDATA1 where the pushop can be interpreted as a script number operation" in {
+    val constant = ScriptConstant("01000000010000000000000000000000000000000000000000000000000000000000000000" +
+      "ffffffff00ffffffff014a7afa8f7d52fd9e17a914b167f19394cd656c34f843ac2387e602007fd15b8700000000")
+    val stack = Nil
+    val script = List(OP_PUSHDATA1, OP_3, constant)
+    val program = ScriptProgram(TestUtil.testProgram, stack,script)
+    val newProgram = CI.opPushData1(program)
+    newProgram.stack must be (Seq(constant))
+
   }
 }

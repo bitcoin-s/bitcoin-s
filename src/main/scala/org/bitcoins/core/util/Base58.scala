@@ -10,11 +10,11 @@ import scala.util.{Failure, Success, Try}
   * Created by chris on 5/16/16.
   * source of values: https://en.bitcoin.it/wiki/Base58Check_encoding
   */
-trait Base58 extends BitcoinSLogger {
-
+sealed abstract class Base58 {
+  import Base58Type._
   val base58Characters = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
   val base58Pairs = base58Characters.zipWithIndex.toMap
-
+  private val logger = BitcoinSLogger.logger
   /** Verifies a given [[Base58Type]] string against its checksum (last 4 decoded bytes). */
   def decodeCheck(input: String) : Try[Seq[Byte]] = {
     val decoded : Seq[Byte] = decode(input)

@@ -1,19 +1,19 @@
 package org.bitcoins.core.script.arithmetic
 
-import org.bitcoins.core.script.control.{ControlOperationsInterpreter, OP_VERIFY}
-import org.bitcoins.core.script.result._
-import org.bitcoins.core.script.flag.ScriptFlagUtil
-import org.bitcoins.core.script.{ExecutedScriptProgram, PreExecutionScriptProgram, ExecutionInProgressScriptProgram, ScriptProgram}
 import org.bitcoins.core.script.constant._
-import org.bitcoins.core.util.{BitcoinScriptUtil, BitcoinSUtil}
+import org.bitcoins.core.script.control.{ControlOperationsInterpreter, OP_VERIFY}
+import org.bitcoins.core.script.flag.ScriptFlagUtil
+import org.bitcoins.core.script.result._
+import org.bitcoins.core.script.{ExecutedScriptProgram, ExecutionInProgressScriptProgram, PreExecutionScriptProgram, ScriptProgram}
+import org.bitcoins.core.util.{BitcoinSLogger, BitcoinScriptUtil}
 
 import scala.annotation.tailrec
 
 /**
  * Created by chris on 1/25/16.
  */
-trait ArithmeticInterpreter extends ControlOperationsInterpreter {
-
+sealed abstract class ArithmeticInterpreter {
+  private def logger = BitcoinSLogger.logger
   /** a is added to b. */
   def opAdd(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.contains(OP_ADD), "Script top must be OP_ADD")
@@ -43,14 +43,14 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
     require(program.script.headOption.contains(OP_ABS), "Script top must be OP_ABS")
     performUnaryArithmeticOperation(program, x => x match {
       case ScriptNumber.zero => ScriptNumber.zero
-      case _ : ScriptNumber => ScriptNumber(x.underlying.abs)
+      case _ : ScriptNumber => ScriptNumber(x.toLong.abs)
     })
   }
 
   /** Negates the stack top. */
   def opNegate(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.contains(OP_NEGATE), "Script top must be OP_NEGATE")
-    performUnaryArithmeticOperation(program, x => x -)
+    performUnaryArithmeticOperation(program, x => -x)
   }
 
   /** If the input is 0 or 1, it is flipped. Otherwise the output will be 0. */
@@ -62,7 +62,7 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
   /** Returns 0 if the input is 0. 1 otherwise. */
   def op0NotEqual(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.contains(OP_0NOTEQUAL), "Script top must be OP_0NOTEQUAL")
-    performUnaryArithmeticOperation(program, x => if(x.underlying == 0) OP_FALSE else OP_TRUE)
+    performUnaryArithmeticOperation(program, x => if(x.toLong == 0) OP_FALSE else OP_TRUE)
   }
 
   /** If both a and b are not 0, the output is 1. Otherwise 0. */
@@ -102,7 +102,7 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
       numEqualResult match {
         case _ : ExecutionInProgressScriptProgram =>
           val verifyProgram = ScriptProgram(numEqualResult, numEqualResult.stack, OP_VERIFY :: numEqualResult.script)
-          val verifyResult = opVerify(verifyProgram)
+          val verifyResult = ControlOperationsInterpreter.opVerify(verifyProgram)
           verifyResult
         case _ : PreExecutionScriptProgram | _ : ExecutedScriptProgram =>
           numEqualResult
@@ -115,7 +115,7 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
     require(program.script.headOption.contains(OP_NUMNOTEQUAL),
       "Script top must be OP_NUMNOTEQUAL")
     performBinaryBooleanOperation(program, (x,y) => {
-      x.underlying != y.underlying
+      x.toLong != y.toLong
     })
   }
 
@@ -361,3 +361,5 @@ trait ArithmeticInterpreter extends ControlOperationsInterpreter {
     }
   }
 }
+
+object ArithmeticInterpreter extends ArithmeticInterpreter

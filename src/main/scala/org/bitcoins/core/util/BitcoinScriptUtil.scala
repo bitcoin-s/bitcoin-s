@@ -4,7 +4,7 @@ import org.bitcoins.core.crypto._
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.protocol.script.{CLTVScriptPubKey, CSVScriptPubKey, EmptyScriptPubKey, _}
-import org.bitcoins.core.protocol.transaction.{Transaction, WitnessTransaction}
+import org.bitcoins.core.protocol.transaction.{BaseTransaction, Transaction, WitnessTransaction}
 import org.bitcoins.core.script.ScriptProgram.PreExecutionScriptProgramImpl
 import org.bitcoins.core.script.constant._
 import org.bitcoins.core.script.crypto.{OP_CHECKMULTISIG, OP_CHECKMULTISIGVERIFY, OP_CHECKSIG, OP_CHECKSIGVERIFY}
@@ -61,7 +61,7 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
     val multiSigCount : Long = script.zipWithIndex.map { case (token, index) =>
       if (multiSigOps.contains(token) && index != 0) {
         script(index-1) match {
-          case scriptNum : ScriptNumber => scriptNum.underlying
+          case scriptNum : ScriptNumber => scriptNum.toLong
           case scriptConstant : ScriptConstant => ScriptNumberUtil.toLong(scriptConstant.hex)
           case _ : ScriptToken => ScriptSettings.maxPublicKeysPerMultiSig
         }
@@ -157,7 +157,8 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
     //push ops following an OP_PUSHDATA operation are interpreted as unsigned numbers
     val scriptTokenSize = UInt32(scriptToken.bytes.size)
     val bytes = scriptTokenSize.bytes
-    if (scriptTokenSize <= UInt32(75)) Seq(BytesToPushOntoStack(scriptToken.bytes.size))
+    if (scriptToken.isInstanceOf[ScriptNumberOperation]) Nil
+    else if (scriptTokenSize <= UInt32(75)) Seq(BytesToPushOntoStack(scriptToken.bytes.size))
     else if (scriptTokenSize <= UInt32(OP_PUSHDATA1.max)) {
       //we need the push op to be only 1 byte in size
       val pushConstant = ScriptConstant(BitcoinSUtil.flipEndianness(bytes.slice(bytes.length-1,bytes.length)))
@@ -246,7 +247,7 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
   }
 
   def minimalScriptNumberRepresentation(num : ScriptNumber) : ScriptNumber = {
-    val op = ScriptNumberOperation.fromNumber(num.toInt)
+    val op = ScriptNumberOperation.fromNumber(num.toLong)
     if (op.isDefined) op.get else num
   }
 
@@ -273,7 +274,7 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
     * In the case we have a P2SH(P2WSH) we need to pass the witness's redeem script to the [[TransactionSignatureChecker]]
     * instead of passing the [[WitnessScriptPubKey]] inside of the [[P2SHScriptSignature]]'s redeem script.
     * */
-  def calculateScriptForChecking(txSignatureComponent: TransactionSignatureComponent,
+  def calculateScriptForChecking(txSignatureComponent: TxSigComponent,
                                  signature: ECDigitalSignature, script: Seq[ScriptToken]): Seq[ScriptToken] = {
     val scriptForChecking = calculateScriptForSigning(txSignatureComponent, script)
     logger.debug("sig for removal: " + signature)
@@ -288,23 +289,26 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
     }
   }
 
-  def calculateScriptForSigning(txSignatureComponent: TransactionSignatureComponent, script: Seq[ScriptToken]): Seq[ScriptToken] = txSignatureComponent.scriptPubKey match {
-    case p2shScriptPubKey: P2SHScriptPubKey =>
+  def calculateScriptForSigning(txSignatureComponent: TxSigComponent, script: Seq[ScriptToken]): Seq[ScriptToken] = txSignatureComponent.scriptPubKey match {
+    case _: P2SHScriptPubKey =>
       val p2shScriptSig = P2SHScriptSignature(txSignatureComponent.scriptSignature.bytes)
       val sigsRemoved = removeSignaturesFromScript(p2shScriptSig.signatures,p2shScriptSig.redeemScript.asm)
       sigsRemoved
     case w: WitnessScriptPubKey =>
       txSignatureComponent match {
-        case wtxSigComponent: WitnessV0TransactionSignatureComponent =>
+        case wtxSigComponent: WitnessTxSigComponent =>
           val scriptEither: Either[(Seq[ScriptToken], ScriptPubKey), ScriptError] = w.witnessVersion.rebuild(wtxSigComponent.witness,w.witnessProgram)
           parseScriptEither(scriptEither)
-        case base : BaseTransactionSignatureComponent =>
-          //shouldn't have BaseTransactionSignatureComponent with a witness scriptPubKey
+        case rWTxSigComponent: WitnessTxSigComponentRebuilt =>
+          rWTxSigComponent.scriptPubKey.asm
+        case _: BaseTxSigComponent =>
+          //shouldn't have BaseTxSigComponent
+          //with a witness scriptPubKey
           script
       }
-    case  _ : P2PKHScriptPubKey | _ : P2PKScriptPubKey | _ : MultiSignatureScriptPubKey |
-         _ : NonStandardScriptPubKey | _ : CLTVScriptPubKey | _ : CSVScriptPubKey | _ : WitnessCommitment | EmptyScriptPubKey =>
-      script
+    case _: P2PKHScriptPubKey | _: P2PKScriptPubKey | _: MultiSignatureScriptPubKey
+         | _: NonStandardScriptPubKey | _: CLTVScriptPubKey | _: CSVScriptPubKey
+         | _: WitnessCommitment | _: EscrowTimeoutScriptPubKey | EmptyScriptPubKey => script
   }
 
   /** Removes the given [[ECDigitalSignature]] from the list of [[ScriptToken]] if it exists. */
@@ -350,21 +354,7 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
     case Right(_) => Nil //error
   }
 
-  /** Given a tx, scriptPubKey and the input index we are checking the tx, it derives the appropriate [[SignatureVersion]] to use */
-  @tailrec
-  final def parseSigVersion(tx: Transaction, scriptPubKey: ScriptPubKey, inputIndex: UInt32): SignatureVersion  = scriptPubKey match {
-    case _ : WitnessScriptPubKeyV0 | _: UnassignedWitnessScriptPubKey =>
-      SigVersionWitnessV0
-    case _ : P2SHScriptPubKey =>
-      //every p2sh scriptPubKey HAS to have a p2shScriptSig since we no longer have require scripts to be standard
-      val s = P2SHScriptSignature(tx.inputs(inputIndex.toInt).scriptSignature.bytes)
-      parseSigVersion(tx,s.redeemScript,inputIndex)
-    case _: P2PKScriptPubKey | _: P2PKHScriptPubKey | _: MultiSignatureScriptPubKey  | _: NonStandardScriptPubKey
-         | _: CLTVScriptPubKey | _: CSVScriptPubKey | _ : WitnessCommitment | EmptyScriptPubKey => SigVersionBase
-  }
-
-
-  /** Casts the given script token to a boolean value
+ /** Casts the given script token to a boolean value
     * Mimics this function inside of Bitcoin Core
     * [[https://github.com/bitcoin/bitcoin/blob/8c1dbc5e9ddbafb77e60e8c4e6eb275a3a76ac12/src/script/interpreter.cpp#L38]]
     * All bytes in the byte vector must be zero, unless it is the last byte, which can be 0 or 0x80 (negative zero)
@@ -377,6 +367,25 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
         byteNotZero && lastByteNotNegativeZero
     }
   }
+
+
+  /** Since witnesses are not run through the interpreter, replace OP_0/OP_1 with ScriptNumber.zero/ScriptNumber.one */
+  def minimalIfOp(asm: Seq[ScriptToken]): Seq[ScriptToken] = {
+    if (asm == Nil) asm
+    else if (asm.last == OP_0) {
+      asm.dropRight(1) ++ Seq(ScriptNumber.zero)
+    } else if (asm.last == OP_1) {
+      asm.dropRight(1) ++ Seq(ScriptNumber.one)
+    } else asm
+
+  }
+
+  /** Replaces the OP_0 dummy for OP_CHECKMULTISIG with ScriptNumber.zero */
+  def minimalDummy(asm: Seq[ScriptToken]): Seq[ScriptToken] = {
+    if (asm.headOption == Some(OP_0)) ScriptNumber.zero +: asm.tail
+    else asm
+  }
+
 }
 
 object BitcoinScriptUtil extends BitcoinScriptUtil

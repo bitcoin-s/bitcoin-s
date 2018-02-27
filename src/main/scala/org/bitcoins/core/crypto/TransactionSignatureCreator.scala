@@ -16,13 +16,14 @@ trait TransactionSignatureCreator extends BitcoinSLogger {
     * @param hashType the procedure to use for hashing to transaction
     * @return
     */
-  def createSig(txSignatureComponent: TransactionSignatureComponent, privateKey: ECPrivateKey, hashType: HashType): ECDigitalSignature = {
+  def createSig(txSignatureComponent: TxSigComponent, privateKey: ECPrivateKey, hashType: HashType): ECDigitalSignature = {
     val hash = TransactionSignatureSerializer.hashForSignature(txSignatureComponent, hashType)
     val signature = privateKey.sign(hash)
     //append 1 byte hash type onto the end
     val sig = ECDigitalSignature(signature.bytes ++ Seq(hashType.byte))
     logger.debug("TxSigCreator sig: " + sig)
     require(sig.isStrictEncoded, "We did not create a signature that is strictly encoded, got: " + sig)
+    require(DERSignatureUtil.isLowS(sig), "Sig does not have a low s value")
     sig
   }
 }

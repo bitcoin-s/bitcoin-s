@@ -1,17 +1,10 @@
 package org.bitcoins.core.crypto
 
-import org.bitcoins.core.config.TestNet3
-import org.bitcoins.core.number.Int32
-import org.bitcoins.core.protocol.CompactSizeUInt
-import org.bitcoins.core.protocol.script._
-import org.bitcoins.core.protocol.transaction.{Transaction, TransactionInput}
-import org.bitcoins.core.script.ScriptProgram
-import org.bitcoins.core.script.constant.{ScriptConstant, ScriptToken}
+import org.bitcoins.core.script.constant.ScriptToken
 import org.bitcoins.core.script.crypto._
-import org.bitcoins.core.script.flag.{ScriptFlag, ScriptFlagUtil, ScriptVerifyDerSig}
+import org.bitcoins.core.script.flag.{ScriptFlag, ScriptFlagUtil}
 import org.bitcoins.core.script.result.ScriptErrorWitnessPubKeyType
 import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil, BitcoinScriptUtil}
-import org.slf4j.LoggerFactory
 
 import scala.annotation.tailrec
 
@@ -34,9 +27,9 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
     * @param flags the script flags used to check validity of the signature
     * @return a boolean indicating if the signature is valid or not
     */
-  def checkSignature(txSignatureComponent : TransactionSignatureComponent, script : Seq[ScriptToken],
+  def checkSignature(txSignatureComponent : TxSigComponent, script : Seq[ScriptToken],
                      pubKey: ECPublicKey, signature : ECDigitalSignature, flags : Seq[ScriptFlag]) : TransactionSignatureCheckerResult = {
-    logger.info("Signature: " + signature)
+    logger.debug("Signature: " + signature)
     val pubKeyEncodedCorrectly = BitcoinScriptUtil.isValidPubKeyEncoding(pubKey,flags)
     if (ScriptFlagUtil.requiresStrictDerEncoding(flags) && !DERSignatureUtil.isValidSignatureEncoding(signature)) {
       logger.error("Signature was not stricly encoded der: " + signature.hex)
@@ -60,16 +53,21 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
       val hashType = HashType(Seq(0.toByte, 0.toByte, 0.toByte, hashTypeByte))
 
       val hashForSignature = txSignatureComponent match {
-        case b : BaseTransactionSignatureComponent =>
+        case b : BaseTxSigComponent =>
           TransactionSignatureSerializer.hashForSignature(txSignatureComponent.transaction,
             txSignatureComponent.inputIndex,
             sigsRemovedScript, hashType)
-        case w : WitnessV0TransactionSignatureComponent =>
-          TransactionSignatureSerializer.hashForSignature(w.transaction,w.inputIndex,sigsRemovedScript, hashType, w.amount,w.sigVersion)
+        case w : WitnessTxSigComponent =>
+          TransactionSignatureSerializer.hashForSignature(w.transaction,w.inputIndex,sigsRemovedScript, hashType,
+            w.amount,w.sigVersion)
+        case r: WitnessTxSigComponentRebuilt =>
+          TransactionSignatureSerializer.hashForSignature(r.transaction,r.inputIndex,sigsRemovedScript, hashType,
+            r.amount,r.sigVersion)
       }
 
       logger.debug("Hash for signature: " + BitcoinSUtil.encodeHex(hashForSignature.bytes))
-      val isValid = pubKey.verify(hashForSignature,signature)
+      val sigWithoutHashType = stripHashType(signature)
+      val isValid = pubKey.verify(hashForSignature,sigWithoutHashType)
       if (isValid) SignatureValidationSuccess
       else nullFailCheck(Seq(signature),SignatureValidationErrorIncorrectSignatures, flags)
     }
@@ -87,7 +85,7 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
    * @return a boolean indicating if all of the signatures are valid against the given public keys
    */
   @tailrec
-  final def multiSignatureEvaluator(txSignatureComponent : TransactionSignatureComponent, script : Seq[ScriptToken],
+  final def multiSignatureEvaluator(txSignatureComponent : TxSigComponent, script : Seq[ScriptToken],
                      sigs : List[ECDigitalSignature], pubKeys : List[ECPublicKey], flags : Seq[ScriptFlag],
                      requiredSigs : Long) : TransactionSignatureCheckerResult = {
     logger.debug("Signatures inside of helper: " + sigs)
@@ -130,6 +128,7 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
 
 
   }
+
   /** If the NULLFAIL flag is set as defined in BIP146, it checks to make sure all failed signatures were an empty byte vector
     * [[https://github.com/bitcoin/bips/blob/master/bip-0146.mediawiki#NULLFAIL]]
     * */
@@ -140,6 +139,11 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
       //we need to check that all signatures were empty byte vectors, else this fails because of BIP146 and nullfail
       SignatureValidationErrorNullFail
     } else result
+  }
+
+  /** Removes the hash type from the [[org.bitcoins.core.crypto.ECDigitalSignature]] */
+  private def stripHashType(sig: ECDigitalSignature): ECDigitalSignature = {
+    ECDigitalSignature(sig.bytes.slice(0,sig.bytes.length-1))
   }
 }
 

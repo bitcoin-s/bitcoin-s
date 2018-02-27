@@ -10,7 +10,8 @@ import org.scalatest.{FlatSpec, MustMatchers}
 /**
   * Created by chris on 5/24/16.
   */
-class ChainParamsTest extends FlatSpec with MustMatchers with BitcoinSLogger {
+class ChainParamsTest extends FlatSpec with MustMatchers {
+  private def logger = BitcoinSLogger.logger
 
   val genesisBlock = MainNetChainParams.genesisBlock
   val genesisTransaction = genesisBlock.transactions.head
@@ -41,7 +42,7 @@ class ChainParamsTest extends FlatSpec with MustMatchers with BitcoinSLogger {
   it must "generate the input correctly for the genesis transaction's input" in {
     val input = genesisBlock.transactions.head.inputs.head
     input must be (expectedGenesisInput)
-    input.hex must be ("010000000000000000000000000000000000000000000000000000000000000000FFFFFFFF".toLowerCase
+    input.hex must be ("0000000000000000000000000000000000000000000000000000000000000000FFFFFFFF".toLowerCase
       + expectedGenesisScriptSig.hex + "FFFFFFFF".toLowerCase )
   }
 
@@ -54,7 +55,7 @@ class ChainParamsTest extends FlatSpec with MustMatchers with BitcoinSLogger {
     val output = genesisTransaction.outputs.head
     output.value must be (Satoshis(Int64(5000000000L)))
     output.scriptPubKey.hex must be (expectedGenesisScriptPubKey.hex)
-    output.hex must be ("0100F2052A01000000".toLowerCase + expectedGenesisScriptPubKey.hex)
+    output.hex must be ("00F2052A01000000".toLowerCase + expectedGenesisScriptPubKey.hex)
   }
 
   it must "generate the correct txid for the genesis transaction" in {
@@ -94,6 +95,7 @@ class ChainParamsTest extends FlatSpec with MustMatchers with BitcoinSLogger {
   }
 
   it must "have the correct base58 prefix for MainNet" in {
+    import Base58Type._
     //correct answers taken from https://en.bitcoin.it/wiki/List_of_address_prefixes
     BitcoinSUtil.encodeHex(MainNetChainParams.base58Prefixes(PubKeyAddress)) must be ("00")
     BitcoinSUtil.encodeHex(MainNetChainParams.base58Prefixes(ScriptAddress)) must be ("05")
@@ -103,6 +105,7 @@ class ChainParamsTest extends FlatSpec with MustMatchers with BitcoinSLogger {
   }
 
   it must "have the correct base58 prefix for TestNet" in {
+    import Base58Type._
     BitcoinSUtil.encodeHex(TestNetChainParams.base58Prefixes(PubKeyAddress)) must be ("6f")
     BitcoinSUtil.encodeHex(TestNetChainParams.base58Prefixes(ScriptAddress)) must be ("c4")
     BitcoinSUtil.encodeHex(TestNetChainParams.base58Prefixes(SecretKey)) must be ("ef")
@@ -111,6 +114,7 @@ class ChainParamsTest extends FlatSpec with MustMatchers with BitcoinSLogger {
   }
 
   it must "have the correct base58 prefix for RegTest" in {
+    import Base58Type._
     BitcoinSUtil.encodeHex(RegTestNetChainParams.base58Prefixes(PubKeyAddress)) must be ("6f")
     BitcoinSUtil.encodeHex(RegTestNetChainParams.base58Prefixes(ScriptAddress)) must be ("c4")
     BitcoinSUtil.encodeHex(RegTestNetChainParams.base58Prefixes(SecretKey)) must be ("ef")

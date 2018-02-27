@@ -16,7 +16,8 @@ import scala.io.Source
 /**
  * Created by chris on 2/17/16.
  */
-class ScriptSignatureTest extends FlatSpec with MustMatchers with BitcoinSLogger {
+class ScriptSignatureTest extends FlatSpec with MustMatchers {
+  private val logger = BitcoinSLogger.logger
 
   "ScriptSignature" must "find the digital signature for the transaction inside of a p2pkh script signature" in {
     val scriptSig = ScriptSignature(TestUtil.rawScriptSig)
@@ -114,22 +115,12 @@ class ScriptSignatureTest extends FlatSpec with MustMatchers with BitcoinSLogger
     for {
       testCase <- testCases
     } yield {
+      logger.info("testCase: " + testCase)
       Transaction(testCase.transaction.hex) must be (testCase.transaction)
-      logger.info("Test case: " + testCase)
-      logger.info("Hash type num: " + testCase.hashTypeNum)
-      logger.info("Hash type: " + testCase.hashType)
       val hashForSig = TransactionSignatureSerializer.hashForSignature(testCase.transaction, testCase.inputIndex, testCase.script.asm, testCase.hashType)
-      //the hash is returned with opposite endianness
-      logger.info("Expected hash: " + testCase.hash.hex)
       val flipHash = BitcoinSUtil.flipEndianness(testCase.hash.hex)
       hashForSig must be (DoubleSha256Digest(flipHash))
     }
   }
 
-  it must "create a cltvScriptSig with the correct underlying scriptSig" in {
-    val cltvScriptPubKey = CLTVScriptPubKey("2004e71bbe57b17576a914da88dc82530f0a4d1327dcfe75cc60c44277532c88ac")
-    val pubKey = ECPublicKey("039ba48e162b1f47246f4ce9dc40f197fab7bde11da1b2fe9ac21113959e9f381b")
-    val sig = ECDigitalSignature("3045022100d71cfe32fa4545c5a0fd665b3701eb458a1bacbba868a05fa703fd1fa4b4f5c502204ee706334f976d0bee9b0f0ff919c1dfe9ba027993bf3e39fc03416ba4255b2401")
-    CLTVScriptSignature(cltvScriptPubKey, Seq(sig), Seq(pubKey)).scriptSig.isInstanceOf[P2PKHScriptSignature] must be (true)
-  }
 }

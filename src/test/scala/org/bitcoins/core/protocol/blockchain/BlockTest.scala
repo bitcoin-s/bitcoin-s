@@ -8,7 +8,7 @@ import org.scalatest.{FlatSpec, MustMatchers}
 /**
   * Created by chris on 7/15/16.
   */
-class BlockTest extends FlatSpec with MustMatchers with BitcoinSLogger {
+class BlockTest extends FlatSpec with MustMatchers {
 
 
   "Block" must "deserialize and serialize a block with two txs" in {

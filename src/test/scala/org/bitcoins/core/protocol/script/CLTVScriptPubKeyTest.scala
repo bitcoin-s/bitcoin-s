@@ -33,9 +33,9 @@ class CLTVScriptPubKeyTest extends FlatSpec with MustMatchers {
     val pubKey = ECPrivateKey().publicKey
     val p2pkh = P2PKHScriptPubKey(pubKey)
 
-    CLTVScriptPubKey(scriptNum17, p2pkh).scriptPubKeyAfterCLTV must be (p2pkh)
-    CLTVScriptPubKey(scriptNum5, p2pkh).scriptPubKeyAfterCLTV must be (p2pkh)
-    CLTVScriptPubKey(negativeOne, p2pkh).scriptPubKeyAfterCLTV must be (p2pkh)
+    CLTVScriptPubKey(scriptNum17, p2pkh).nestedScriptPubKey must be (p2pkh)
+    CLTVScriptPubKey(scriptNum5, p2pkh).nestedScriptPubKey must be (p2pkh)
+    CLTVScriptPubKey(negativeOne, p2pkh).nestedScriptPubKey must be (p2pkh)
 
     CLTVScriptPubKey(scriptNum17, p2pkh).locktime must be (scriptNum17)
     CLTVScriptPubKey(scriptNum5, p2pkh).locktime must be (scriptNum5)

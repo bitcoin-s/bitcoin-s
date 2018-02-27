@@ -12,9 +12,7 @@ import org.scalacheck.Gen
 trait CryptoGenerators {
 
 
-  def privateKey : Gen[ECPrivateKey] = for {
-    i <- Gen.choose(1,2)
-  } yield ECPrivateKey()
+  def privateKey : Gen[ECPrivateKey] = Gen.const(ECPrivateKey())
 
   /**
     * Generate a sequence of private keys
@@ -47,6 +45,13 @@ trait CryptoGenerators {
     keysAndRequiredSigs <- privateKeySeqWithRequiredSigs(num)
   } yield keysAndRequiredSigs
 
+  /** A generator with 7 or less private keys -- useful for creating smaller scripts */
+  def smallPrivateKeySeqWithRequiredSigs: Gen[(Seq[ECPrivateKey], Int)] = for {
+    num <- Gen.choose(0,7)
+    keysAndRequiredSigs <- privateKeySeqWithRequiredSigs(num)
+  } yield keysAndRequiredSigs
+
+
   /**
     * Generates a random public key
     * @return
@@ -59,10 +64,10 @@ trait CryptoGenerators {
     * Generates a random digital signature
     * @return
     */
-  def digitalSignatures : Gen[ECDigitalSignature] = for {
+  def digitalSignature : Gen[ECDigitalSignature] = for {
     privKey <- privateKey
-    hexString <- StringGenerators.hexString
-  } yield privKey.sign(hexString)
+    hash <- CryptoGenerators.doubleSha256Digest
+  } yield privKey.sign(hash)
 
   /**
     * Generates a random [[DoubleSha256Digest]]
@@ -91,6 +96,18 @@ trait CryptoGenerators {
   def hashType: Gen[HashType] = Gen.oneOf(HashType.sigHashAll, HashType.sigHashNone, HashType.sigHashSingle,
     HashType.sigHashAnyoneCanPay, HashType.sigHashSingleAnyoneCanPay, HashType.sigHashNoneAnyoneCanPay,
     HashType.sigHashAllAnyoneCanPay)
+
+  def extVersion: Gen[ExtKeyVersion] = Gen.oneOf(MainNetPriv, MainNetPub, TestNet3Priv, TestNet3Pub)
+
+  /** Generates an [[org.bitcoins.core.crypto.ExtPrivateKey]] */
+  def extPrivateKey: Gen[ExtPrivateKey] = for {
+    version <- Gen.oneOf(MainNetPriv, TestNet3Priv)
+    ext = ExtPrivateKey(version)
+  } yield ext
+
+  def extPublicKey: Gen[ExtPublicKey] = extPrivateKey.map(_.extPublicKey)
+
+  def extKey: Gen[ExtKey] = Gen.oneOf(extPrivateKey,extPublicKey)
 
 }
 

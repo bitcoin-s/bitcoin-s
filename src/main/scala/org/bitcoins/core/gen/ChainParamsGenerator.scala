@@ -1,0 +1,14 @@
+package org.bitcoins.core.gen
+
+import org.bitcoins.core.config.{MainNet, NetworkParameters, RegTest, TestNet3}
+import org.scalacheck.Gen
+
+/**
+  * Created by chris on 6/6/17.
+  */
+sealed trait ChainParamsGenerator {
+
+  def networkParams: Gen[NetworkParameters] = Gen.oneOf(MainNet, TestNet3, RegTest)
+}
+
+object ChainParamsGenerator extends ChainParamsGenerator

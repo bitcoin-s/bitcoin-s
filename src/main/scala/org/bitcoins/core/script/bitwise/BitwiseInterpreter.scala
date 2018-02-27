@@ -5,12 +5,13 @@ import org.bitcoins.core.script.constant._
 import org.bitcoins.core.script.control.{ControlOperationsInterpreter, OP_VERIFY}
 import org.bitcoins.core.script.result._
 import org.bitcoins.core.script.{ExecutedScriptProgram, ExecutionInProgressScriptProgram, PreExecutionScriptProgram, ScriptProgram}
+import org.bitcoins.core.util.BitcoinSLogger
 
 /**
  * Created by chris on 1/6/16.
  */
-trait BitwiseInterpreter extends ControlOperationsInterpreter  {
-
+sealed abstract class BitwiseInterpreter {
+  private def logger = BitcoinSLogger.logger
   /** Returns 1 if the inputs are exactly equal, 0 otherwise. */
   def opEqual(program : ScriptProgram) : ScriptProgram = {
     require(program.script.headOption.contains(OP_EQUAL), "Script operation must be OP_EQUAL")
@@ -21,13 +22,13 @@ trait BitwiseInterpreter extends ControlOperationsInterpreter  {
       val h1 = program.stack.tail.head
       val result = (h,h1) match {
         case (OP_0,ScriptNumber.zero) | (ScriptNumber.zero, OP_0) =>
-          OP_0.underlying == ScriptNumber.zero.underlying
+          OP_0.underlying == ScriptNumber.zero.toLong
         case (OP_FALSE,ScriptNumber.zero) | (ScriptNumber.zero, OP_FALSE) =>
-          OP_FALSE.underlying == ScriptNumber.zero.underlying
+          OP_FALSE.underlying == ScriptNumber.zero.toLong
         case (OP_TRUE,ScriptNumber.one) | (ScriptNumber.one, OP_TRUE) =>
-          OP_TRUE.underlying == ScriptNumber.one.underlying
+          OP_TRUE.underlying == ScriptNumber.one.toLong
         case (OP_1, ScriptNumber.one) | (ScriptNumber.one, OP_1) =>
-          OP_1.underlying == ScriptNumber.one.underlying
+          OP_1.underlying == ScriptNumber.one.toLong
         case _ => h.bytes == h1.bytes
       }
       val scriptBoolean  = if (result) OP_TRUE else OP_FALSE
@@ -42,7 +43,7 @@ trait BitwiseInterpreter extends ControlOperationsInterpreter  {
       //first replace OP_EQUALVERIFY with OP_EQUAL and OP_VERIFY
       val simpleScript = OP_EQUAL :: OP_VERIFY :: program.script.tail
       val newProgram: ScriptProgram = opEqual(ScriptProgram(program, program.stack, simpleScript))
-      opVerify(newProgram) match {
+      ControlOperationsInterpreter.opVerify(newProgram) match {
         case p: PreExecutionScriptProgram => p
         case p: ExecutedScriptProgram =>
           if (p.error.isDefined) ScriptProgram(p, ScriptErrorEqualVerify)
@@ -55,3 +56,5 @@ trait BitwiseInterpreter extends ControlOperationsInterpreter  {
     }
   }
 }
+
+object BitwiseInterpreter extends BitwiseInterpreter

@@ -1,11 +1,11 @@
 package org.bitcoins.core.script.crypto
 
 import org.bitcoins.core.crypto._
-import org.bitcoins.core.script.{ScriptProgram, _}
 import org.bitcoins.core.script.constant._
 import org.bitcoins.core.script.control.{ControlOperationsInterpreter, OP_VERIFY}
 import org.bitcoins.core.script.flag.ScriptFlagUtil
 import org.bitcoins.core.script.result._
+import org.bitcoins.core.script.{ScriptProgram, _}
 import org.bitcoins.core.util.{BitcoinSLogger, BitcoinScriptUtil, CryptoUtil}
 
 import scala.annotation.tailrec
@@ -14,7 +14,9 @@ import scala.annotation.tailrec
 /**
  * Created by chris on 1/6/16.
  */
-trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger {
+sealed abstract class CryptoInterpreter {
+
+  private def logger = BitcoinSLogger.logger
 
   /** The input is hashed twice: first with SHA-256 and then with RIPEMD-160. */
   def opHash160(program : ScriptProgram) : ScriptProgram = {
@@ -93,7 +95,7 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
       programFromOpCheckSig match {
         case _ : PreExecutionScriptProgram | _ : ExecutedScriptProgram =>
           programFromOpCheckSig
-        case _ : ExecutionInProgressScriptProgram => opVerify(programFromOpCheckSig)
+        case _ : ExecutionInProgressScriptProgram => ControlOperationsInterpreter.opVerify(programFromOpCheckSig)
       }
     }
   }
@@ -202,7 +204,7 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
               val isValidSignatures: TransactionSignatureCheckerResult =
                 TransactionSignatureChecker.multiSignatureEvaluator(executionInProgressScriptProgram.txSignatureComponent,
                   removedOpCodeSeparatorsScript, signatures,
-                  pubKeys, flags, mRequiredSignatures.underlying)
+                  pubKeys, flags, mRequiredSignatures.toLong)
 
               //remove the extra OP_0 (null dummy) for OP_CHECKMULTISIG from the stack
               val restOfStack = stackWithoutPubKeysAndSignatures.tail
@@ -227,7 +229,7 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
       programFromOpCheckMultiSig match {
         case _ : PreExecutionScriptProgram | _ : ExecutedScriptProgram =>
           programFromOpCheckMultiSig
-        case _ : ExecutionInProgressScriptProgram => opVerify(programFromOpCheckMultiSig)
+        case _ : ExecutionInProgressScriptProgram => ControlOperationsInterpreter.opVerify(programFromOpCheckMultiSig)
       }
     }
   }
@@ -284,3 +286,5 @@ trait CryptoInterpreter extends ControlOperationsInterpreter with BitcoinSLogger
       ScriptProgram(program,ScriptErrorSigNullFail)
   }
 }
+
+object CryptoInterpreter extends CryptoInterpreter

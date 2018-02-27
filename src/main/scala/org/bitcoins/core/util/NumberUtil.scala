@@ -1,6 +1,11 @@
 package org.bitcoins.core.util
 
+import java.math.BigInteger
+
+import org.bitcoins.core.number.{UInt32, UInt8}
+
 import scala.math.BigInt
+import scala.util.{Failure, Success, Try}
 
 /**
  * Created by chris on 2/8/16.
@@ -20,25 +25,10 @@ trait NumberUtil extends BitcoinSLogger {
     require(exponent < 64, "We cannot have anything larger than 2^64 - 1 in a long, you tried to do 2^" + exponent)
     BigInt(1) << exponent
   }
-
-  /**
-    * Calculates the unsigned number for a byte
-    * @param byteIndex this is used to tell what position this byte is out of a 4 byte integer
-    *                     For instance, if byte was equal to 0x0001 and we were trying to calculate the unsigned int for
-    *                     the following byte value Seq(0xf000, 0x0f00, 0x0001, 0x0000) we would have byteIndex 1
-    * @param byte the byte which we need to calculate the unsigned integer for
-    * @return the unsigned integer corresponding to the given byteIndex and byte
-    */
-  def calculateUnsignedNumberFromByte(byteIndex : Int, byte : Byte): BigInt = {
-    val setBits : Seq[BigInt] = for {
-      i <- 0 until 8
-      bitIndex = i + (byteIndex * 8)
-    } yield {
-      //check if index i is set in the byte, if so we need to calculate 2 ^ bitIndex
-      if ((pow2(i) & byte) != 0) pow2(bitIndex)
-      else BigInt(0)
-    }
-    setBits.foldLeft(BigInt(0)){_ + _}
+  
+  /** Converts a sequence of bytes to a **big endian** unsigned integer */
+  def toUnsignedInt(bytes: Seq[Byte]): BigInt = {
+    BigInt(new BigInteger(1,bytes.toArray))
   }
 
   /** Takes a hex string and parses it to a [[BigInt]]. */
@@ -76,6 +66,45 @@ trait NumberUtil extends BitcoinSLogger {
   /** Converts a hex string to a [[Long]]. */
   def toLong(hex : String): Long = toLong(BitcoinSUtil.decodeHex(hex))
 
+  /** Converts a sequence uint8 'from' base to 'to' base */
+  def convertUInt8s(data: Seq[UInt8], from: UInt32, to: UInt32, pad: Boolean): Try[Seq[UInt8]] = {
+    var acc: UInt32 = UInt32.zero
+    var bits: UInt32 = UInt32.zero
+    var ret: Seq[UInt8] = Nil
+    val maxv: UInt32 = (UInt32.one << to) - UInt32.one
+    val eight = UInt32(8)
+    if (from > eight || to > eight) {
+      Failure(new IllegalArgumentException("Can't have convert bits 'from' or 'to' parameter greater than 8"))
+    } else {
+      data.map { h =>
+        if ((h >> UInt8(from.toLong.toShort)) != UInt8.zero) {
+          Failure(new IllegalArgumentException("Invalid input for bech32: " + h))
+        } else {
+          acc = (acc << from) | UInt32(h.toLong)
+          bits = bits + from
+          while (bits >= to) {
+            bits = bits - to
+            val r: Seq[UInt8] = Seq(UInt8((((acc >> bits) & maxv).toInt.toShort)))
+            ret = ret ++ r
+          }
+        }
+      }
+
+      if (pad) {
+        if (bits > UInt32.zero) {
+          val r: Long = ((acc << (to - bits) & maxv)).toLong
+          ret = ret ++ Seq(UInt8(r.toShort))
+        }
+      } else if (bits >= from || ((acc << (to - bits)) & maxv) != UInt8.zero) {
+        Failure(new IllegalArgumentException("Invalid padding in encoding"))
+      }
+      Success(ret)
+    }
+  }
+
+  def convertBytes(data: Seq[Byte], from: UInt32, to: UInt32, pad: Boolean): Try[Seq[UInt8]] = {
+    convertUInt8s(UInt8.toUInt8s(data),from,to,pad)
+  }
 }
 
 object NumberUtil extends NumberUtil

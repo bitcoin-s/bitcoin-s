@@ -33,6 +33,14 @@ trait BitcoinSUtil {
     addPadding(8,hex)
   }
 
+  def encodeHex(short: Short): String = {
+    val hex = short.toHexString.length % 2 match {
+      case 1 => "0" + short.toHexString
+      case _ : Int => short.toHexString
+    }
+    addPadding(4,hex)
+  }
+
   def encodeHex(bigInt : BigInt) : String = BitcoinSUtil.encodeHex(bigInt.toByteArray)
 
   /** Tests if a given string is a hexadecimal string. */

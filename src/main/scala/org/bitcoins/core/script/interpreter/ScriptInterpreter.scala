@@ -1,7 +1,7 @@
 package org.bitcoins.core.script.interpreter
 
 import org.bitcoins.core.consensus.Consensus
-import org.bitcoins.core.crypto.{BaseTransactionSignatureComponent, WitnessV0TransactionSignatureComponent}
+import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits}
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.protocol.script._
@@ -21,14 +21,14 @@ import org.bitcoins.core.script.stack._
 import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil, BitcoinScriptUtil}
 
 import scala.annotation.tailrec
+import scala.util.{Failure, Success, Try}
 
 /**
  * Created by chris on 1/6/16.
  */
-trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with ControlOperationsInterpreter
-  with BitwiseInterpreter with ConstantInterpreter with ArithmeticInterpreter with SpliceInterpreter
-  with LockTimeInterpreter with BitcoinSLogger {
+sealed abstract class ScriptInterpreter {
 
+  private def logger = BitcoinSLogger.logger
   /**
    * Currently bitcoin core limits the maximum number of non-push operations per script
    * to 201
@@ -69,13 +69,15 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
       } else {
         scriptPubKey match {
           case witness : WitnessScriptPubKey =>
-            if (segwitEnabled) executeSegWitScript(scriptPubKeyExecutedProgram,witness)
+            //TODO: remove .get here
+            if (segwitEnabled) executeSegWitScript(scriptPubKeyExecutedProgram,witness).get
             else scriptPubKeyExecutedProgram
           case p2sh : P2SHScriptPubKey =>
             if (p2shEnabled) executeP2shScript(scriptSigExecutedProgram, program, p2sh)
             else scriptPubKeyExecutedProgram
-          case _ : P2PKHScriptPubKey | _: P2PKScriptPubKey | _: MultiSignatureScriptPubKey | _: CSVScriptPubKey |
-              _ : CLTVScriptPubKey | _ : NonStandardScriptPubKey | _ : WitnessCommitment | EmptyScriptPubKey =>
+          case _: P2PKHScriptPubKey | _: P2PKScriptPubKey | _: MultiSignatureScriptPubKey | _: CSVScriptPubKey
+               | _: CLTVScriptPubKey | _: NonStandardScriptPubKey | _: WitnessCommitment
+               | _: EscrowTimeoutScriptPubKey |  EmptyScriptPubKey =>
             scriptPubKeyExecutedProgram
         }
       }
@@ -146,8 +148,9 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
               if (segwitEnabled && (scriptSig.asmBytes == expectedScriptBytes)) {
                 // The scriptSig must be _exactly_ a single push of the redeemScript. Otherwise we
                 // reintroduce malleability.
-                logger.info("redeem script was witness script pubkey, segwit was enabled, scriptSig was single push of redeemScript")
-                executeSegWitScript(scriptPubKeyExecutedProgram,w)
+                logger.debug("redeem script was witness script pubkey, segwit was enabled, scriptSig was single push of redeemScript")
+                //TODO: remove .get here
+                executeSegWitScript(scriptPubKeyExecutedProgram,w).get
               } else if (segwitEnabled && (scriptSig.asmBytes != expectedScriptBytes)) {
                 logger.error("Segwit was enabled, but p2sh redeem script was malleated")
                 logger.error("ScriptSig bytes: " + scriptSig.hex)
@@ -158,8 +161,9 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
                 //treat the segwit scriptpubkey as any other redeem script
                 run(scriptPubKeyExecutedProgram,stack,w)
               }
-            case s @ (_ : P2SHScriptPubKey | _ : P2PKHScriptPubKey | _ : P2PKScriptPubKey | _ : MultiSignatureScriptPubKey |
-              _ : CLTVScriptPubKey | _ : CSVScriptPubKey | _: NonStandardScriptPubKey | _ : WitnessCommitment | EmptyScriptPubKey) =>
+            case s @ (_ : P2SHScriptPubKey | _ : P2PKHScriptPubKey | _ : P2PKScriptPubKey | _ : MultiSignatureScriptPubKey
+                      | _ : CLTVScriptPubKey | _ : CSVScriptPubKey | _: NonStandardScriptPubKey | _ : WitnessCommitment
+                      | _: EscrowTimeoutScriptPubKey | EmptyScriptPubKey) =>
               logger.debug("redeemScript: " + s.asm)
               run(scriptPubKeyExecutedProgram,stack,s)
           }
@@ -176,28 +180,45 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
     * @param scriptPubKeyExecutedProgram the program with the [[ScriptPubKey]] executed
     * @return
     */
-  private def executeSegWitScript(scriptPubKeyExecutedProgram: ExecutedScriptProgram, witnessScriptPubKey: WitnessScriptPubKey): ExecutedScriptProgram = {
+  private def executeSegWitScript(scriptPubKeyExecutedProgram: ExecutedScriptProgram, witnessScriptPubKey: WitnessScriptPubKey): Try[ExecutedScriptProgram] = {
     scriptPubKeyExecutedProgram.txSignatureComponent match {
-      case b : BaseTransactionSignatureComponent =>
-        logger.error("Cannot verify witness program with a BaseTransactionSignatureComponent")
-        ScriptProgram(scriptPubKeyExecutedProgram,ScriptErrorWitnessProgramWitnessEmpty)
-      case w : WitnessV0TransactionSignatureComponent =>
+      case b: BaseTxSigComponent =>
+        val scriptSig = scriptPubKeyExecutedProgram.txSignatureComponent.scriptSignature
+        if (scriptSig != EmptyScriptSignature && !b.scriptPubKey.isInstanceOf[P2SHScriptPubKey]) {
+          Success(ScriptProgram(scriptPubKeyExecutedProgram,ScriptErrorWitnessMalleated))
+        } else {
+          witnessScriptPubKey.witnessVersion match {
+            case WitnessVersion0 =>
+              logger.error("Cannot verify witness program with a BaseTxSigComponent")
+              Success(ScriptProgram(scriptPubKeyExecutedProgram,ScriptErrorWitnessProgramWitnessEmpty))
+            case UnassignedWitness(_) =>
+              evaluateUnassignedWitness(b)
+          }
+        }
+      case w: WitnessTxSigComponent =>
         val scriptSig = scriptPubKeyExecutedProgram.txSignatureComponent.scriptSignature
         val (witnessVersion,witnessProgram) = (witnessScriptPubKey.witnessVersion, witnessScriptPubKey.witnessProgram)
         val witness = w.witness
-
         //scriptsig must be empty if we have raw p2wsh
         //if script pubkey is a P2SHScriptPubKey then we have P2SH(P2WSH)
-        if (scriptSig != EmptyScriptSignature && !w.scriptPubKey.isInstanceOf[P2SHScriptPubKey]) ScriptProgram(scriptPubKeyExecutedProgram,ScriptErrorWitnessMalleated)
-        else if (witness.stack.exists(_.size > maxPushSize)) ScriptProgram(scriptPubKeyExecutedProgram, ScriptErrorPushSize)
-        else verifyWitnessProgram(witnessVersion, witness, witnessProgram, w)
+        if (scriptSig != EmptyScriptSignature && !w.scriptPubKey.isInstanceOf[P2SHScriptPubKey]) {
+          Success(ScriptProgram(scriptPubKeyExecutedProgram,ScriptErrorWitnessMalleated))
+        }
+        else if (witness.stack.exists(_.size > maxPushSize)) {
+          Success(ScriptProgram(scriptPubKeyExecutedProgram, ScriptErrorPushSize))
+        }
+        else {
+          verifyWitnessProgram(witnessVersion, witness, witnessProgram, w)
+        }
+      case _: WitnessTxSigComponentRebuilt =>
+        Failure(new IllegalArgumentException("Cannot have a rebuild witness tx sig component here, the witness tx sigcomponent is rebuilt in verifyWitnessProgram"))
     }
   }
 
   /** Verifies a segregated witness program by running it through the interpreter
     * [[https://github.com/bitcoin/bitcoin/blob/f8528134fc188abc5c7175a19680206964a8fade/src/script/interpreter.cpp#L1302]]*/
   private def verifyWitnessProgram(witnessVersion: WitnessVersion, scriptWitness: ScriptWitness, witnessProgram: Seq[ScriptToken],
-                                   witnessTxSigComponent: WitnessV0TransactionSignatureComponent): ExecutedScriptProgram = {
+                                   wTxSigComponent: WitnessTxSigComponent): Try[ExecutedScriptProgram] = {
 
     /** Helper function to run the post segwit execution checks */
     def postSegWitProgramChecks(evaluated: ExecutedScriptProgram): ExecutedScriptProgram = {
@@ -212,31 +233,16 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
         val either: Either[(Seq[ScriptToken], ScriptPubKey),ScriptError] = witnessVersion.rebuild(scriptWitness, witnessProgram)
         either match {
           case Left((stack,scriptPubKey)) =>
-            val w = witnessTxSigComponent
-            val newProgram = ScriptProgram(w.transaction,scriptPubKey,w.inputIndex,stack,scriptPubKey.asm, scriptPubKey.asm,Nil,
-              w.flags,w.sigVersion,w.amount)
-            val evaluated = loop(newProgram,0)
-            postSegWitProgramChecks(evaluated)
+            val newWTxSigComponent = rebuildWTxSigComponent(wTxSigComponent,scriptPubKey)
+            val newProgram = newWTxSigComponent.map(comp => ScriptProgram(comp,stack,scriptPubKey.asm, scriptPubKey.asm,Nil))
+            val evaluated = newProgram.map(p => loop(p,0))
+            evaluated.map(e => postSegWitProgramChecks(e))
           case Right(err) =>
-            val program = ScriptProgram(witnessTxSigComponent)
-            ScriptProgram(program,err)
+            val program = ScriptProgram(wTxSigComponent,Nil,Nil,Nil)
+            Success(ScriptProgram(program,err))
         }
-      case UnassignedWitness =>
-        logger.warn("Unassigned witness inside of witness script pubkey")
-        val w = witnessTxSigComponent
-        val flags = w.flags
-        val discourageUpgradableWitnessVersion = ScriptFlagUtil.discourageUpgradableWitnessProgram(flags)
-        val program = ScriptProgram(w.transaction,w.scriptPubKey,w.inputIndex,Nil,Nil, w.scriptPubKey.asm,Nil,
-          w.flags,w.sigVersion,w.amount)
-        if (discourageUpgradableWitnessVersion) {
-          ScriptProgram(program,UnassignedWitness.rebuild(scriptWitness, witnessProgram).right.get)
-        } else {
-          //if we are not discouraging upgradable ops, we just trivially return the program with an OP_TRUE on the stack
-          //see: https://github.com/bitcoin/bitcoin/blob/b83264d9c7a8ddb79f64bd9540caddc8632ef31f/src/script/interpreter.cpp#L1386-L1389
-          val evaluated = loop(ScriptProgram(program,Seq(OP_TRUE),ScriptProgram.Stack),0)
-          evaluated
-        }
-
+      case UnassignedWitness(_) =>
+        evaluateUnassignedWitness(wTxSigComponent)
     }
   }
 
@@ -267,7 +273,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
         case p : PreExecutionScriptProgram => loop(ScriptProgram.toExecutionInProgress(p,Some(p.stack)),opCount)
         case p : ExecutedScriptProgram =>
           val countedOps = program.originalScript.map(BitcoinScriptUtil.countsTowardsScriptOpLimit(_)).count(_ == true)
-          logger.info("Counted ops: " + countedOps)
+          logger.debug("Counted ops: " + countedOps)
           if (countedOps > maxScriptOps && p.error.isEmpty) {
             loop(ScriptProgram(p,ScriptErrorOpCount),opCount)
           } else p
@@ -301,86 +307,86 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
               loop(ScriptProgram(p, ScriptErrorStackSize),opCount)
 
             //stack operations
-            case OP_DUP :: t => loop(opDup(p),calcOpCount(opCount,OP_DUP))
-            case OP_DEPTH :: t => loop(opDepth(p),calcOpCount(opCount,OP_DEPTH))
-            case OP_TOALTSTACK :: t => loop(opToAltStack(p),calcOpCount(opCount,OP_TOALTSTACK))
-            case OP_FROMALTSTACK :: t => loop(opFromAltStack(p),calcOpCount(opCount,OP_FROMALTSTACK))
-            case OP_DROP :: t => loop(opDrop(p),calcOpCount(opCount,OP_DROP))
-            case OP_IFDUP :: t => loop(opIfDup(p),calcOpCount(opCount,OP_IFDUP))
-            case OP_NIP :: t => loop(opNip(p),calcOpCount(opCount,OP_NIP))
-            case OP_OVER :: t => loop(opOver(p),calcOpCount(opCount,OP_OVER))
-            case OP_PICK :: t => loop(opPick(p),calcOpCount(opCount,OP_PICK))
-            case OP_ROLL :: t => loop(opRoll(p),calcOpCount(opCount,OP_ROLL))
-            case OP_ROT :: t => loop(opRot(p),calcOpCount(opCount,OP_ROT))
-            case OP_2ROT :: t => loop(op2Rot(p),calcOpCount(opCount,OP_2ROT))
-            case OP_2DROP :: t => loop(op2Drop(p),calcOpCount(opCount,OP_2DROP))
-            case OP_SWAP :: t => loop(opSwap(p),calcOpCount(opCount,OP_SWAP))
-            case OP_TUCK :: t => loop(opTuck(p),calcOpCount(opCount,OP_TUCK))
-            case OP_2DUP :: t => loop(op2Dup(p),calcOpCount(opCount,OP_2DUP))
-            case OP_3DUP :: t => loop(op3Dup(p),calcOpCount(opCount,OP_3DUP))
-            case OP_2OVER :: t => loop(op2Over(p),calcOpCount(opCount,OP_2OVER))
-            case OP_2SWAP :: t => loop(op2Swap(p),calcOpCount(opCount,OP_2SWAP))
+            case OP_DUP :: t => loop(StackInterpreter.opDup(p),calcOpCount(opCount,OP_DUP))
+            case OP_DEPTH :: t => loop(StackInterpreter.opDepth(p),calcOpCount(opCount,OP_DEPTH))
+            case OP_TOALTSTACK :: t => loop(StackInterpreter.opToAltStack(p),calcOpCount(opCount,OP_TOALTSTACK))
+            case OP_FROMALTSTACK :: t => loop(StackInterpreter.opFromAltStack(p),calcOpCount(opCount,OP_FROMALTSTACK))
+            case OP_DROP :: t => loop(StackInterpreter.opDrop(p),calcOpCount(opCount,OP_DROP))
+            case OP_IFDUP :: t => loop(StackInterpreter.opIfDup(p),calcOpCount(opCount,OP_IFDUP))
+            case OP_NIP :: t => loop(StackInterpreter.opNip(p),calcOpCount(opCount,OP_NIP))
+            case OP_OVER :: t => loop(StackInterpreter.opOver(p),calcOpCount(opCount,OP_OVER))
+            case OP_PICK :: t => loop(StackInterpreter.opPick(p),calcOpCount(opCount,OP_PICK))
+            case OP_ROLL :: t => loop(StackInterpreter.opRoll(p),calcOpCount(opCount,OP_ROLL))
+            case OP_ROT :: t => loop(StackInterpreter.opRot(p),calcOpCount(opCount,OP_ROT))
+            case OP_2ROT :: t => loop(StackInterpreter.op2Rot(p),calcOpCount(opCount,OP_2ROT))
+            case OP_2DROP :: t => loop(StackInterpreter.op2Drop(p),calcOpCount(opCount,OP_2DROP))
+            case OP_SWAP :: t => loop(StackInterpreter.opSwap(p),calcOpCount(opCount,OP_SWAP))
+            case OP_TUCK :: t => loop(StackInterpreter.opTuck(p),calcOpCount(opCount,OP_TUCK))
+            case OP_2DUP :: t => loop(StackInterpreter.op2Dup(p),calcOpCount(opCount,OP_2DUP))
+            case OP_3DUP :: t => loop(StackInterpreter.op3Dup(p),calcOpCount(opCount,OP_3DUP))
+            case OP_2OVER :: t => loop(StackInterpreter.op2Over(p),calcOpCount(opCount,OP_2OVER))
+            case OP_2SWAP :: t => loop(StackInterpreter.op2Swap(p),calcOpCount(opCount,OP_2SWAP))
 
             //arithmetic operations
-            case OP_ADD :: t => loop(opAdd(p),calcOpCount(opCount,OP_ADD))
-            case OP_1ADD :: t => loop(op1Add(p),calcOpCount(opCount,OP_1ADD))
-            case OP_1SUB :: t => loop(op1Sub(p),calcOpCount(opCount,OP_1SUB))
-            case OP_SUB :: t => loop(opSub(p),calcOpCount(opCount,OP_SUB))
-            case OP_ABS :: t => loop(opAbs(p),calcOpCount(opCount,OP_ABS))
-            case OP_NEGATE :: t => loop(opNegate(p),calcOpCount(opCount,OP_NEGATE))
-            case OP_NOT :: t => loop(opNot(p),calcOpCount(opCount,OP_NOT))
-            case OP_0NOTEQUAL :: t => loop(op0NotEqual(p),calcOpCount(opCount,OP_0NOTEQUAL))
-            case OP_BOOLAND :: t => loop(opBoolAnd(p),calcOpCount(opCount,OP_BOOLAND))
-            case OP_BOOLOR :: t => loop(opBoolOr(p),calcOpCount(opCount,OP_BOOLOR))
-            case OP_NUMEQUAL :: t => loop(opNumEqual(p),calcOpCount(opCount,OP_NUMEQUAL))
-            case OP_NUMEQUALVERIFY :: t => loop(opNumEqualVerify(p),calcOpCount(opCount,OP_NUMEQUALVERIFY))
-            case OP_NUMNOTEQUAL :: t => loop(opNumNotEqual(p),calcOpCount(opCount,OP_NUMNOTEQUAL))
-            case OP_LESSTHAN :: t => loop(opLessThan(p),calcOpCount(opCount,OP_LESSTHAN))
-            case OP_GREATERTHAN :: t => loop(opGreaterThan(p),calcOpCount(opCount,OP_GREATERTHAN))
-            case OP_LESSTHANOREQUAL :: t => loop(opLessThanOrEqual(p),calcOpCount(opCount,OP_LESSTHANOREQUAL))
-            case OP_GREATERTHANOREQUAL :: t => loop(opGreaterThanOrEqual(p),calcOpCount(opCount,OP_GREATERTHANOREQUAL))
-            case OP_MIN :: t => loop(opMin(p),calcOpCount(opCount,OP_MIN))
-            case OP_MAX :: t => loop(opMax(p),calcOpCount(opCount,OP_MAX))
-            case OP_WITHIN :: t => loop(opWithin(p),calcOpCount(opCount,OP_WITHIN))
+            case OP_ADD :: t => loop(ArithmeticInterpreter.opAdd(p),calcOpCount(opCount,OP_ADD))
+            case OP_1ADD :: t => loop(ArithmeticInterpreter.op1Add(p),calcOpCount(opCount,OP_1ADD))
+            case OP_1SUB :: t => loop(ArithmeticInterpreter.op1Sub(p),calcOpCount(opCount,OP_1SUB))
+            case OP_SUB :: t => loop(ArithmeticInterpreter.opSub(p),calcOpCount(opCount,OP_SUB))
+            case OP_ABS :: t => loop(ArithmeticInterpreter.opAbs(p),calcOpCount(opCount,OP_ABS))
+            case OP_NEGATE :: t => loop(ArithmeticInterpreter.opNegate(p),calcOpCount(opCount,OP_NEGATE))
+            case OP_NOT :: t => loop(ArithmeticInterpreter.opNot(p),calcOpCount(opCount,OP_NOT))
+            case OP_0NOTEQUAL :: t => loop(ArithmeticInterpreter.op0NotEqual(p),calcOpCount(opCount,OP_0NOTEQUAL))
+            case OP_BOOLAND :: t => loop(ArithmeticInterpreter.opBoolAnd(p),calcOpCount(opCount,OP_BOOLAND))
+            case OP_BOOLOR :: t => loop(ArithmeticInterpreter.opBoolOr(p),calcOpCount(opCount,OP_BOOLOR))
+            case OP_NUMEQUAL :: t => loop(ArithmeticInterpreter.opNumEqual(p),calcOpCount(opCount,OP_NUMEQUAL))
+            case OP_NUMEQUALVERIFY :: t => loop(ArithmeticInterpreter.opNumEqualVerify(p),calcOpCount(opCount,OP_NUMEQUALVERIFY))
+            case OP_NUMNOTEQUAL :: t => loop(ArithmeticInterpreter.opNumNotEqual(p),calcOpCount(opCount,OP_NUMNOTEQUAL))
+            case OP_LESSTHAN :: t => loop(ArithmeticInterpreter.opLessThan(p),calcOpCount(opCount,OP_LESSTHAN))
+            case OP_GREATERTHAN :: t => loop(ArithmeticInterpreter.opGreaterThan(p),calcOpCount(opCount,OP_GREATERTHAN))
+            case OP_LESSTHANOREQUAL :: t => loop(ArithmeticInterpreter.opLessThanOrEqual(p),calcOpCount(opCount,OP_LESSTHANOREQUAL))
+            case OP_GREATERTHANOREQUAL :: t => loop(ArithmeticInterpreter.opGreaterThanOrEqual(p),calcOpCount(opCount,OP_GREATERTHANOREQUAL))
+            case OP_MIN :: t => loop(ArithmeticInterpreter.opMin(p),calcOpCount(opCount,OP_MIN))
+            case OP_MAX :: t => loop(ArithmeticInterpreter.opMax(p),calcOpCount(opCount,OP_MAX))
+            case OP_WITHIN :: t => loop(ArithmeticInterpreter.opWithin(p),calcOpCount(opCount,OP_WITHIN))
 
             //bitwise operations
-            case OP_EQUAL :: t => loop(opEqual(p),calcOpCount(opCount,OP_EQUAL))
+            case OP_EQUAL :: t => loop(BitwiseInterpreter.opEqual(p),calcOpCount(opCount,OP_EQUAL))
 
-            case OP_EQUALVERIFY :: t => loop(opEqualVerify(p),calcOpCount(opCount,OP_EQUALVERIFY))
+            case OP_EQUALVERIFY :: t => loop(BitwiseInterpreter.opEqualVerify(p),calcOpCount(opCount,OP_EQUALVERIFY))
 
             case OP_0 :: t => loop(ScriptProgram(p, ScriptNumber.zero :: p.stack, t),calcOpCount(opCount,OP_0))
             case (scriptNumberOp : ScriptNumberOperation) :: t =>
-              loop(ScriptProgram(p, ScriptNumber(scriptNumberOp.underlying) :: p.stack, t),calcOpCount(opCount,scriptNumberOp))
+              loop(ScriptProgram(p, ScriptNumber(scriptNumberOp.toLong) :: p.stack, t),calcOpCount(opCount,scriptNumberOp))
             case (bytesToPushOntoStack: BytesToPushOntoStack) :: t =>
-              loop(pushScriptNumberBytesToStack(p),calcOpCount(opCount,bytesToPushOntoStack))
+              loop(ConstantInterpreter.pushScriptNumberBytesToStack(p),calcOpCount(opCount,bytesToPushOntoStack))
             case (scriptNumber: ScriptNumber) :: t =>
               loop(ScriptProgram(p, scriptNumber :: p.stack, t),calcOpCount(opCount,scriptNumber))
-            case OP_PUSHDATA1 :: t => loop(opPushData1(p),calcOpCount(opCount,OP_PUSHDATA1))
-            case OP_PUSHDATA2 :: t => loop(opPushData2(p),calcOpCount(opCount,OP_PUSHDATA2))
-            case OP_PUSHDATA4 :: t => loop(opPushData4(p),calcOpCount(opCount,OP_PUSHDATA4))
+            case OP_PUSHDATA1 :: t => loop(ConstantInterpreter.opPushData1(p),calcOpCount(opCount,OP_PUSHDATA1))
+            case OP_PUSHDATA2 :: t => loop(ConstantInterpreter.opPushData2(p),calcOpCount(opCount,OP_PUSHDATA2))
+            case OP_PUSHDATA4 :: t => loop(ConstantInterpreter.opPushData4(p),calcOpCount(opCount,OP_PUSHDATA4))
 
             case (x : ScriptConstant) :: t => loop(ScriptProgram(p, x :: p.stack, t),calcOpCount(opCount,x))
 
             //control operations
-            case OP_IF :: t => loop(opIf(p),calcOpCount(opCount,OP_IF))
-            case OP_NOTIF :: t => loop(opNotIf(p),calcOpCount(opCount,OP_NOTIF))
-            case OP_ELSE :: t => loop(opElse(p),calcOpCount(opCount,OP_ELSE))
-            case OP_ENDIF :: t => loop(opEndIf(p),calcOpCount(opCount,OP_ENDIF))
-            case OP_RETURN :: t => loop(opReturn(p),calcOpCount(opCount,OP_RETURN))
+            case OP_IF :: t => loop(ControlOperationsInterpreter.opIf(p),calcOpCount(opCount,OP_IF))
+            case OP_NOTIF :: t => loop(ControlOperationsInterpreter.opNotIf(p),calcOpCount(opCount,OP_NOTIF))
+            case OP_ELSE :: t => loop(ControlOperationsInterpreter.opElse(p),calcOpCount(opCount,OP_ELSE))
+            case OP_ENDIF :: t => loop(ControlOperationsInterpreter.opEndIf(p),calcOpCount(opCount,OP_ENDIF))
+            case OP_RETURN :: t => loop(ControlOperationsInterpreter.opReturn(p),calcOpCount(opCount,OP_RETURN))
 
-            case OP_VERIFY :: t => loop(opVerify(p),calcOpCount(opCount,OP_VERIFY))
+            case OP_VERIFY :: t => loop(ControlOperationsInterpreter.opVerify(p),calcOpCount(opCount,OP_VERIFY))
 
             //crypto operations
-            case OP_HASH160 :: t => loop(opHash160(p),calcOpCount(opCount,OP_HASH160))
-            case OP_CHECKSIG :: t => loop(opCheckSig(p),calcOpCount(opCount,OP_CHECKSIG))
-            case OP_CHECKSIGVERIFY :: t => loop(opCheckSigVerify(p),calcOpCount(opCount,OP_CHECKSIGVERIFY))
-            case OP_SHA1 :: t => loop(opSha1(p),calcOpCount(opCount,OP_SHA1))
-            case OP_RIPEMD160 :: t => loop(opRipeMd160(p),calcOpCount(opCount,OP_RIPEMD160))
-            case OP_SHA256 :: t => loop(opSha256(p),calcOpCount(opCount,OP_SHA256))
-            case OP_HASH256 :: t => loop(opHash256(p),calcOpCount(opCount,OP_HASH256))
-            case OP_CODESEPARATOR :: t => loop(opCodeSeparator(p),calcOpCount(opCount,OP_CODESEPARATOR))
+            case OP_HASH160 :: t => loop(CryptoInterpreter.opHash160(p),calcOpCount(opCount,OP_HASH160))
+            case OP_CHECKSIG :: t => loop(CryptoInterpreter.opCheckSig(p),calcOpCount(opCount,OP_CHECKSIG))
+            case OP_CHECKSIGVERIFY :: t => loop(CryptoInterpreter.opCheckSigVerify(p),calcOpCount(opCount,OP_CHECKSIGVERIFY))
+            case OP_SHA1 :: t => loop(CryptoInterpreter.opSha1(p),calcOpCount(opCount,OP_SHA1))
+            case OP_RIPEMD160 :: t => loop(CryptoInterpreter.opRipeMd160(p),calcOpCount(opCount,OP_RIPEMD160))
+            case OP_SHA256 :: t => loop(CryptoInterpreter.opSha256(p),calcOpCount(opCount,OP_SHA256))
+            case OP_HASH256 :: t => loop(CryptoInterpreter.opHash256(p),calcOpCount(opCount,OP_HASH256))
+            case OP_CODESEPARATOR :: t => loop(CryptoInterpreter.opCodeSeparator(p), calcOpCount(opCount,OP_CODESEPARATOR))
             case OP_CHECKMULTISIG :: t =>
-              opCheckMultiSig(p) match {
+              CryptoInterpreter.opCheckMultiSig(p) match {
                 case newProgram : ExecutedScriptProgram =>
                   //script was marked invalid for other reasons, don't need to update the opcount
                   loop(newProgram,opCount)
@@ -389,7 +395,7 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
                   loop(newProgram,newOpCount)
               }
             case OP_CHECKMULTISIGVERIFY :: t =>
-              opCheckMultiSigVerify(p) match {
+              CryptoInterpreter.opCheckMultiSigVerify(p) match {
                 case newProgram : ExecutedScriptProgram =>
                   //script was marked invalid for other reasons, don't need to update the opcount
                   loop(newProgram,opCount)
@@ -424,12 +430,14 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
               logger.error("Undefined operation found which automatically fails the script: " + reservedOperation)
               loop(ScriptProgram(p,ScriptErrorBadOpCode),calcOpCount(opCount,reservedOperation))
             //splice operations
-            case OP_SIZE :: t => loop(opSize(p),calcOpCount(opCount,OP_SIZE))
+            case OP_SIZE :: t => loop(SpliceInterpreter.opSize(p),calcOpCount(opCount,OP_SIZE))
 
             //locktime operations
             case OP_CHECKLOCKTIMEVERIFY :: t =>
               //check if CLTV is enforced yet
-              if (ScriptFlagUtil.checkLockTimeVerifyEnabled(p.flags)) loop(opCheckLockTimeVerify(p),calcOpCount(opCount,OP_CHECKLOCKTIMEVERIFY))
+              if (ScriptFlagUtil.checkLockTimeVerifyEnabled(p.flags)) {
+                loop(LockTimeInterpreter.opCheckLockTimeVerify(p),calcOpCount(opCount,OP_CHECKLOCKTIMEVERIFY))
+              }
               //if not, check to see if we should discourage p
               else if (ScriptFlagUtil.discourageUpgradableNOPs(p.flags)) {
                 logger.error("We cannot execute a NOP when the ScriptVerifyDiscourageUpgradableNOPs is set")
@@ -439,7 +447,9 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
               else loop(ScriptProgram(p, p.script.tail, ScriptProgram.Script),calcOpCount(opCount,OP_CHECKLOCKTIMEVERIFY))
             case OP_CHECKSEQUENCEVERIFY :: t =>
               //check if CLTV is enforced yet
-              if (ScriptFlagUtil.checkSequenceVerifyEnabled(p.flags)) loop(opCheckSequenceVerify(p),calcOpCount(opCount,OP_CHECKSEQUENCEVERIFY))
+              if (ScriptFlagUtil.checkSequenceVerifyEnabled(p.flags)) {
+                loop(LockTimeInterpreter.opCheckSequenceVerify(p),calcOpCount(opCount,OP_CHECKSEQUENCEVERIFY))
+              }
               //if not, check to see if we should discourage p
               else if (ScriptFlagUtil.discourageUpgradableNOPs(p.flags)) {
                 logger.error("We cannot execute a NOP when the ScriptVerifyDiscourageUpgradableNOPs is set")
@@ -498,27 +508,54 @@ trait ScriptInterpreter extends CryptoInterpreter with StackInterpreter with Con
     val txSigComponent = program.txSignatureComponent
     logger.debug("TxSigComponent: " + txSigComponent)
     val unexpectedWitness = txSigComponent match {
-      case b : BaseTransactionSignatureComponent =>
+      case b : BaseTxSigComponent =>
         b.transaction match {
           case wtx : WitnessTransaction =>
             wtx.witness.witnesses(txSigComponent.inputIndex.toInt).stack.nonEmpty
           case _ : BaseTransaction => false
         }
-      case w : WitnessV0TransactionSignatureComponent =>
-        val witnessedUsed = w.scriptPubKey match {
-          case _ : WitnessScriptPubKey => true
-          case _ : P2SHScriptPubKey =>
-            val p2shScriptSig = P2SHScriptSignature(txSigComponent.scriptSignature.bytes)
-            p2shScriptSig.redeemScript.isInstanceOf[WitnessScriptPubKey]
-          case _ : CLTVScriptPubKey | _ : CSVScriptPubKey | _ : MultiSignatureScriptPubKey | _ : NonStandardScriptPubKey |
-            _ : P2PKScriptPubKey | _ : P2PKHScriptPubKey | _ : WitnessCommitment | EmptyScriptPubKey =>
-            w.witness.stack.isEmpty
+      case _: WitnessTxSigComponentRaw => false
+      case w: WitnessTxSigComponentP2SH =>
+        !w.scriptSignature.redeemScript.isInstanceOf[WitnessScriptPubKey]
+      case r: WitnessTxSigComponentRebuilt =>
+        r.transaction match {
+          case wtx: WitnessTransaction =>
+            wtx.witness.witnesses(txSigComponent.inputIndex.toInt).stack.nonEmpty
+          case _: BaseTransaction => false
         }
-        !witnessedUsed
     }
 
     if (unexpectedWitness) logger.error("Found unexpected witness that was not used by the ScriptProgram: " + program)
     unexpectedWitness
+  }
+
+  /** Helper function used to rebuild a [[WitnessTxSigComponentRebuilt]]
+    * this converts a [[WitnessScriptPubKey]] into it's corresponding [[ScriptPubKey]] */
+  private def rebuildWTxSigComponent(old: WitnessTxSigComponent, rebuildScriptPubKey: ScriptPubKey): Try[WitnessTxSigComponentRebuilt] = old match {
+    case wTxSigComponentRaw: WitnessTxSigComponentRaw =>
+      Success(WitnessTxSigComponentRebuilt(old.transaction,old.inputIndex,
+        rebuildScriptPubKey, wTxSigComponentRaw.scriptPubKey, old.flags,old.amount))
+    case wTxSigComponentP2SH: WitnessTxSigComponentP2SH =>
+      wTxSigComponentP2SH.witnessScriptPubKey.map { wit: WitnessScriptPubKey =>
+        WitnessTxSigComponentRebuilt(old.transaction,old.inputIndex,
+          rebuildScriptPubKey, wit, old.flags,old.amount)
+      }
+  }
+
+  /** Logic to evaluate a witnesss version that has not been assigned yet */
+  private def evaluateUnassignedWitness(txSigComponent: TxSigComponent): Try[ExecutedScriptProgram] = {
+    logger.warn("Unassigned witness inside of witness script pubkey")
+    val flags = txSigComponent.flags
+    val discourageUpgradableWitnessVersion = ScriptFlagUtil.discourageUpgradableWitnessProgram(flags)
+    val program = ScriptProgram(txSigComponent,Nil,Nil, txSigComponent.scriptPubKey.asm, Nil)
+    if (discourageUpgradableWitnessVersion) {
+      Success(ScriptProgram(program,ScriptErrorDiscourageUpgradeableWitnessProgram))
+    } else {
+      //if we are not discouraging upgradable ops, we just trivially return the program with an OP_TRUE on the stack
+      //see: https://github.com/bitcoin/bitcoin/blob/b83264d9c7a8ddb79f64bd9540caddc8632ef31f/src/script/interpreter.cpp#L1386-L1389
+      val evaluated = loop(ScriptProgram(program,Seq(OP_TRUE),ScriptProgram.Stack),0)
+      Success(evaluated)
+    }
   }
 }
 object ScriptInterpreter extends ScriptInterpreter
