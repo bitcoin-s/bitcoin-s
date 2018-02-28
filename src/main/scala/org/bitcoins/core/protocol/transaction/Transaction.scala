@@ -30,6 +30,32 @@ sealed abstract class Transaction extends NetworkElement {
   /** The locktime for this transaction */
   def lockTime : UInt32
 
+  /** This is used to indicate how 'expensive' the transction is on the blockchain.
+    * This use to be a simple calculation before segwit (BIP141). Each byte in the transaction
+    * counted as 4 'weight' units. Now with segwit, the [[TransactionWitness]] is counted as 1 weight unit per byte,
+    * while other parts of the transaction (outputs, inputs, locktime etc) count as 4 weight units.
+    * As we add more witness versions, this may be subject to change
+    * [[https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki#Transaction_size_calculations]]
+    * [[https://github.com/bitcoin/bitcoin/blob/5961b23898ee7c0af2626c46d5d70e80136578d3/src/consensus/validation.h#L96]]
+    * */
+  def weight: Long
+
+  /**
+    * The transaction's virtual size
+    * [[https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki#Transaction_size_calculations]]
+    */
+  def vsize: Long = Math.ceil(weight / 4).toLong
+
+  /**
+    * Base transaction size is the size of the transaction serialised with the witness data stripped
+    * [[https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki#Transaction_size_calculations]]
+    */
+  def baseSize: Long = this match {
+    case btx: BaseTransaction => btx.size
+    case wtx: WitnessTransaction => BaseTransaction(wtx.version,wtx.inputs,wtx.outputs,wtx.lockTime).baseSize
+  }
+
+  def totalSize: Long = bytes.size
 
   /** Determines if this transaction is a coinbase transaction. */
   def isCoinbase : Boolean = inputs.size match {
@@ -41,9 +67,9 @@ sealed abstract class Transaction extends NetworkElement {
   }
 }
 
-
 sealed abstract class BaseTransaction extends Transaction {
   override def bytes = RawBaseTransactionParser.write(this)
+  override def weight = bytes.size * 4
 }
 
 
@@ -72,6 +98,14 @@ sealed abstract class WitnessTransaction extends Transaction {
     * */
   def wTxId: DoubleSha256Digest = CryptoUtil.doubleSHA256(bytes)
 
+  /** Weight calculation in bitcoin for witness txs
+    * [[https://github.com/bitcoin/bitcoin/blob/5961b23898ee7c0af2626c46d5d70e80136578d3/src/consensus/validation.h#L96]]
+    * @return
+    */
+  override def weight: Long = {
+    val base = BaseTransaction(version,inputs,outputs,lockTime)
+    base.totalSize * 3 + totalSize
+  }
   override def bytes = RawWitnessTransactionParser.write(this)
 
 }
