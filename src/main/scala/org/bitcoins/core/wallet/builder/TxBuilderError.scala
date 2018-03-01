@@ -50,4 +50,41 @@ object TxBuilderError {
     */
   case object NoSigner extends TxBuilderError
 
+  /** Means that you specified a fee that was too large for the change output you provided.
+    * This may happen if you have a transaction with a lot of inputs, or the change output you provided
+    * is a output that contains a very small amount of bitcoin.
+    * */
+  case object FeeToLarge extends TxBuilderError
+
+  /** Means that the [[TxBuilder.destinations]] outputs you specified when creating the [[TxBuilder]] are NOT
+    * all included in the final signed tx
+    */
+  case object MissingDestinationOutput extends TxBuilderError
+
+  /** Means that you provided a outpoint in the [[TxBuilder.utxoMap]] that does not
+    * exist inside of [[TxBuilder.creditingTxs]]. You cannot spend an outpoint that was not
+    * passed into the txbuilder originally
+    */
+  case object MissingCreditingTx extends TxBuilderError
+
+  /** Means that the signed version of this transaction has MORE outputs than what was specified
+    * when building the [[TxBuilder]]. [[TxBuilder.destinations]] && [[TxBuilder.changeOutput]] should
+    * be the only outputs in the signedTx
+    */
+  case object ExtraOutputsAdded extends TxBuilderError
+
+  /** Means that the transaction spends outpoints that were not given when creating
+    * the [[TxBuilder]], aka, we should only spend outpoints in [[TxBuilder.outPoints]]
+    */
+  case object ExtraOutPoints extends TxBuilderError
+
+  /** Means that this transaction attempts to print satoshis out of thin air */
+  case object MintsMoney extends TxBuilderError
+
+  /** Means that the fee was not within the given range of error for [[TxBuilder.feeRate]]
+    * This might mean that the transactions pays a much larger fee than what was given as the [[TxBuilder.feeRate]] parameter, or a
+    * much smaller fee
+    */
+  case object BadFee extends TxBuilderError
+
 }
