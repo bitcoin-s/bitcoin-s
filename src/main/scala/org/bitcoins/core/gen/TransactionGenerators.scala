@@ -1,8 +1,8 @@
 package org.bitcoins.core.gen
 
-import org.bitcoins.core.crypto._
-import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits}
-import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.crypto.{ECPrivateKey, TxSigComponent, WitnessTxSigComponent, WitnessTxSigComponentRaw}
+import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits, Satoshis}
+import org.bitcoins.core.number.{Int64, UInt32}
 import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction.{TransactionInput, TransactionOutPoint, TransactionOutput, _}
@@ -11,6 +11,8 @@ import org.bitcoins.core.script.interpreter.ScriptInterpreter
 import org.bitcoins.core.script.locktime.LockTimeInterpreter
 import org.bitcoins.core.util.BitcoinSLogger
 import org.scalacheck.Gen
+
+import scala.annotation.tailrec
 
 /**
   * Created by chris on 6/21/16.
@@ -31,8 +33,37 @@ trait TransactionGenerators extends BitcoinSLogger {
 
   def outputs = Gen.listOf(output)
 
+  /** Outputs that only have a positive amount of satoshis, techinically the bitcoin protocol allows you
+    * to have negative value outputs
+    */
+  def realisticOutput: Gen[TransactionOutput] = CurrencyUnitGenerator.positiveRealistic.flatMap { amt =>
+    ScriptGenerators.scriptPubKey.map(spk => TransactionOutput(amt,spk._1))
+  }
+  def realisticOutputs: Gen[Seq[TransactionOutput]] = Gen.choose(0,5).flatMap(n => Gen.listOfN(n,realisticOutput))
+
   /** Generates a small list of [[TransactionOutput]] */
   def smallOutputs: Gen[Seq[TransactionOutput]] = Gen.choose(0,5).flatMap(i => Gen.listOfN(i,output))
+
+  /** Creates a small sequence of outputs whose total sum is <= totalAmount */
+  def smallOutputs(totalAmount: CurrencyUnit): Gen[Seq[TransactionOutput]] = {
+    val numOutputs = Gen.choose(0,5).sample.get
+    @tailrec
+    def loop(remaining: Int, remainingAmount: CurrencyUnit, accum: Seq[CurrencyUnit]): Seq[CurrencyUnit] = {
+      if (remaining <= 0) {
+        accum
+      } else {
+        val amt = Gen.choose(100,remainingAmount.toBigDecimal.toLongExact).map(n => Satoshis(Int64(n))).sample.get
+        loop(remaining-1,remainingAmount - amt, amt +: accum)
+      }
+    }
+    val amts = loop(numOutputs,totalAmount,Nil)
+    val spks = Gen.listOfN(numOutputs,ScriptGenerators.scriptPubKey.map(_._1))
+    spks.flatMap { s =>
+      s.zip(amts).map { case (spk,amt) =>
+        TransactionOutput(amt,spk)
+      }
+    }
+  }
 
   /** Generates a random [[org.bitcoins.core.protocol.transaction.TransactionInput]] */
   def input : Gen[TransactionInput] = for {

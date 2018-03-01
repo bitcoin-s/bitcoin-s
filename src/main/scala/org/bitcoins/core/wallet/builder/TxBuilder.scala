@@ -1,18 +1,19 @@
 package org.bitcoins.core.wallet.builder
 
 import org.bitcoins.core.crypto.{ECPrivateKey, TxSigComponent}
-import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits}
-import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits, Satoshis}
+import org.bitcoins.core.number.{Int64, UInt32}
+import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.constant.ScriptNumber
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.script.locktime.LockTimeInterpreter
 import org.bitcoins.core.util.BitcoinSLogger
+import org.bitcoins.core.wallet.builder.TxBuilder.UTXOMap
 import org.bitcoins.core.wallet.signer._
 
 import scala.annotation.tailrec
-import scala.util.Try
 
 /** High level class to create a signed transaction that spends a set of
   * unspent transaction outputs.
@@ -24,6 +25,7 @@ import scala.util.Try
   */
 sealed abstract class TxBuilder {
   private val logger = BitcoinSLogger.logger
+  private val tc = TransactionConstants
 
   /** The outputs which we are spending bitcoins to */
   def destinations: Seq[TransactionOutput]
@@ -35,13 +37,13 @@ sealed abstract class TxBuilder {
   def destinationAmounts: Seq[CurrencyUnit] = destinations.map(_.value)
 
   /** The spent amount of bitcoins we are sending in the transaction, this does NOT include the fee */
-  def spentAmount: CurrencyUnit = destinationAmounts.fold(CurrencyUnits.zero)(_ + _)
+  def destinationAmount: CurrencyUnit = destinationAmounts.fold(CurrencyUnits.zero)(_ + _)
 
   /** The total amount of satoshis that are able to be spent by this transaction */
-  def creditingAmount: CurrencyUnit = utxoMap.values.map(_._1.value).foldLeft(CurrencyUnits.zero)(_ + _)
+  def creditingAmount: CurrencyUnit = utxoMap.values.map(_._1.value).fold(CurrencyUnits.zero)(_ + _)
 
-  /** The fee in this transaction */
-  def fee: CurrencyUnit = creditingAmount - spentAmount
+  /** The largest possible fee in this transaction could pay */
+  def largestFee: CurrencyUnit = creditingAmount - destinationAmount
 
   /** The transactions which contain the outputs we are spending. We need various bits of information from
     * these crediting transactions, like there txid, the output amount, and obviously the ouptut [[ScriptPubKey]]
@@ -56,6 +58,15 @@ sealed abstract class TxBuilder {
     * If we are spending a [[P2WPKHWitnessSPKV0]] we do not need a redeem script, but we need a [[ScriptWitness]]
     */
   def utxoMap: TxBuilder.UTXOMap
+
+  /** This represents the rate we should pay, in satoshis/vbyte, for this transaction */
+  def feeRate: Long
+
+  /** This is where all the money that is NOT sent to destination outputs is spent too.
+    * If we don't specify a change output, a large miner fee may be paid as more than likely
+    * the difference between [[creditingAmount]] and [[spentAmount]] is not a market rate miner fee
+    * */
+  def changeSPK: ScriptPubKey
 
   /** All of the keys that need to be used to spend this transaction */
   def privKeys: Seq[ECPrivateKey] = utxoMap.values.flatMap(_._2).toSeq
@@ -79,7 +90,7 @@ sealed abstract class TxBuilder {
     * @param invariants - invariants that should hold true when we are done signing the transaction
     * @return the signed transaction, or a [[TxBuilderError]] indicating what went wrong when signing the tx
     */
-  def sign(invariants: Transaction => Boolean): Either[Transaction, TxBuilderError] = {
+  def sign(invariants: (UTXOMap,Transaction) => Boolean): Either[Transaction, TxBuilderError] = {
     @tailrec
     def loop(remaining: List[TxBuilder.UTXOTuple],
              txInProgress: Transaction): Either[Transaction,TxBuilderError] = remaining match {
@@ -95,20 +106,45 @@ sealed abstract class TxBuilder {
       (c._1, c._2._1, c._2._2, c._2._3, c._2._4, c._2._5)
     }.toList
     val unsignedTxWit = TransactionWitness.fromWitOpt(scriptWitOpt)
-    val tc = TransactionConstants
     val lockTime = calcLockTime(utxos)
     val inputs = calcSequenceForInputs(utxos)
-    val unsigned = unsignedTxWit match {
-      case EmptyWitness => BaseTransaction(tc.validLockVersion,inputs,destinations,lockTime)
-      case wit: TransactionWitness => WitnessTransaction(tc.validLockVersion,inputs,destinations,lockTime,wit)
+    val changeOutput = TransactionOutput(CurrencyUnits.zero,changeSPK)
+    val unsignedTxNoFee = unsignedTxWit match {
+      case EmptyWitness => BaseTransaction(tc.validLockVersion,inputs,destinations ++ Seq(changeOutput),lockTime)
+      case wit: TransactionWitness => WitnessTransaction(tc.validLockVersion,inputs,destinations ++ Seq(changeOutput),lockTime,wit)
     }
-    val signedTx = loop(utxos, unsigned)
-    signedTx match {
+    //NOTE: This signed version of the tx does NOT pay a fee, we are going to use this version to estimate the fee
+    //and then deduct that amount of satoshis from the changeOutput, and then resign the tx.
+    val signedTxNoFee = loop(utxos, unsignedTxNoFee)
+    signedTxNoFee match {
       case l: Left[Transaction,TxBuilderError] =>
-        if (!invariants(l.a)) {
-          Right(TxBuilderError.FailedUserInvariants)
+        val fee = Satoshis(Int64(l.a.vsize * feeRate))
+        val newChangeOutput = TransactionOutput(creditingAmount - destinationAmount - fee, changeSPK)
+        //if the change output is below the dust threshold after calculating the fee, don't add it
+        //to the tx
+        val newOutputs = if (newChangeOutput.value <= Policy.dustThreshold) {
+          logger.warn("REMOVING CHANGE OUTPUT")
+          destinations
         } else {
-          l
+          destinations ++ Seq(newChangeOutput)
+        }
+        val unsignedTx = unsignedTxWit match {
+          case EmptyWitness => BaseTransaction(l.a.version, inputs, newOutputs, l.a.lockTime)
+          case wit: TransactionWitness => WitnessTransaction(l.a.version,inputs, newOutputs, l.a.lockTime, wit)
+        }
+        //re-sign the tx with the appropriate change / fee
+        val signedTx = loop(utxos,unsignedTx)
+        signedTx.left.flatMap { tx =>
+          if (invariants(utxoMap,tx)) {
+            //final sanity checks
+            val err = TxBuilder.sanityChecks(this,tx)
+            if (err.isDefined) {
+              Right(err.get)
+            } else {
+              Left(tx)
+            }
+          }
+          else Right(TxBuilderError.FailedUserInvariants)
         }
       case r: Right[Transaction, TxBuilderError] => r
     }
@@ -350,17 +386,88 @@ sealed abstract class TxBuilder {
 
 
 object TxBuilder {
+  /** This contains all the information needed to create a valid [[TransactionInput]] that spends this utxo */
   type UTXOTuple = (TransactionOutPoint, TransactionOutput, Seq[ECPrivateKey], Option[ScriptPubKey], Option[ScriptWitness], HashType)
   type UTXOMap = Map[TransactionOutPoint, (TransactionOutput, Seq[ECPrivateKey], Option[ScriptPubKey], Option[ScriptWitness], HashType)]
 
   private case class TransactionBuilderImpl(destinations: Seq[TransactionOutput],
                                             creditingTxs: Seq[Transaction],
-                                            utxoMap: UTXOMap) extends TxBuilder {
+                                            utxoMap: UTXOMap,
+                                            feeRate: Long,
+                                            changeSPK: ScriptPubKey) extends TxBuilder {
     require(outPoints.exists(o => creditingTxs.exists(_.txId == o.txId)))
   }
 
+  private val logger = BitcoinSLogger.logger
+
   def apply(destinations: Seq[TransactionOutput], creditingTxs: Seq[Transaction],
-            outPointsSpendingInfo: UTXOMap): Try[TxBuilder] = {
-    Try(TransactionBuilderImpl(destinations,creditingTxs,outPointsSpendingInfo))
+            utxos: UTXOMap, feeRate: Long, changeSPK: ScriptPubKey): Either[TxBuilder,TxBuilderError] = {
+    if (feeRate <= 0) {
+      Right(TxBuilderError.BadFee)
+    } else if (utxos.keys.map(o => creditingTxs.exists(_.txId == o.txId)).exists(_ == false)) {
+      //means that we did not pass in a crediting tx for an outpoint in utxoMap
+      Right(TxBuilderError.MissingCreditingTx)
+    } else {
+      Left(TransactionBuilderImpl(destinations,creditingTxs,utxos, feeRate, changeSPK))
+    }
+  }
+
+  def sanityChecks(txBuilder: TxBuilder, signedTx: Transaction): Option[TxBuilderError] = {
+    val sanityDestination = sanityDestinationChecks(txBuilder,signedTx)
+    if (sanityDestination.isDefined){
+      sanityDestination
+    } else {
+      sanityFeeChecks(txBuilder,signedTx)
+    }
+  }
+
+  def sanityDestinationChecks(txBuilder: TxBuilder, signedTx: Transaction): Option[TxBuilderError] = {
+    //make sure we send coins to the appropriate destinations
+    val missingDestination = txBuilder.destinations.map(o => signedTx.outputs.contains(o)).exists(_ == false)
+    val hasExtraOutputs = if (signedTx.outputs.size == txBuilder.destinations.size) {
+      false
+    } else {
+      //the extra output should be the changeOutput
+      !(signedTx.outputs.size == (txBuilder.destinations.size + 1) &&
+        signedTx.outputs.map(_.scriptPubKey).contains(txBuilder.changeSPK))
+    }
+    val spendingTxOutPoints = signedTx.inputs.map(_.previousOutput)
+    val hasExtraOutPoints = txBuilder.outPoints.map(o => spendingTxOutPoints.contains(o)).exists(_ == false)
+    if (missingDestination) {
+      Some(TxBuilderError.MissingDestinationOutput)
+    } else if (hasExtraOutputs) {
+      Some(TxBuilderError.ExtraOutputsAdded)
+    } else if (hasExtraOutPoints) {
+      Some(TxBuilderError.ExtraOutPoints)
+    } else {
+      None
+    }
+  }
+
+  def sanityFeeChecks(txBuilder: TxBuilder, signedTx: Transaction): Option[TxBuilderError] = {
+    val spentAmount: CurrencyUnit = signedTx.outputs.map(_.value).fold(CurrencyUnits.zero)(_ + _)
+    val creditingAmount = txBuilder.creditingAmount
+    val actualFee = creditingAmount - spentAmount
+    val estimatedFee = Satoshis(Int64(txBuilder.feeRate * signedTx.vsize))
+    if (spentAmount > creditingAmount) {
+      Some(TxBuilderError.MintsMoney)
+    } else if (!validFeeRange(estimatedFee,actualFee, txBuilder.feeRate)) {
+      logger.error("bad fee tx: " + signedTx)
+      Some(TxBuilderError.BadFee)
+    } else {
+      None
+    }
+  }
+
+  private def validFeeRange(estimatedFee: CurrencyUnit, actualFee: CurrencyUnit, feeRate: Long): Boolean = {
+    logger.warn(s"estimatedFee: $estimatedFee")
+    logger.warn(s"actualFee: $actualFee")
+    val acceptableVariance = 15 * feeRate
+    logger.warn(s"acceptableVariance $acceptableVariance")
+    val min = Satoshis(Int64(-acceptableVariance))
+    val max = Satoshis(Int64(acceptableVariance))
+    val difference = estimatedFee - actualFee
+    logger.warn(s"difference: $difference")
+    difference >= min && difference <= max
   }
 }

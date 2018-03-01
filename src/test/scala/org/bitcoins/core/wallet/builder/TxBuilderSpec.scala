@@ -1,6 +1,7 @@
 package org.bitcoins.core.wallet.builder
 
 import org.bitcoins.core.crypto.{ECPrivateKey, TxSigComponent, WitnessTxSigComponentRaw}
+import org.bitcoins.core.currency.CurrencyUnits
 import org.bitcoins.core.gen.{CreditingTxGen, TransactionGenerators}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.policy.Policy
@@ -22,18 +23,23 @@ class TxBuilderSpec extends Properties("TxBuilderSpec") {
   private val logger = BitcoinSLogger.logger
   private val tc = TransactionConstants
   property("sign a mix of spks in a tx and then have it verified") = {
-    Prop.forAllNoShrink(CreditingTxGen.outputs, TransactionGenerators.smallOutputs) {
-      case (creditingTxsInfo,destinations) =>
-        val outpointsWithKeys = buildCreditingTxInfo(creditingTxsInfo)
-        val builder = TxBuilder(destinations, creditingTxsInfo.map(_._1),outpointsWithKeys)
-        val result = builder.get.sign({_ => true})
-        result match {
-          case Left(tx) =>
-            val noRedeem = creditingTxsInfo.map(c => (c._1, c._2, c._3))
-            verifyScript(tx,noRedeem)
-          case Right(err) =>
-            logger.error("error with p2pkh txoutputgen: " + err)
-            err == ScriptErrorPushSize
+    Prop.forAllNoShrink(CreditingTxGen.outputs) {
+      case creditingTxsInfo =>
+        val creditingOutputs = creditingTxsInfo.map(c => c._1.outputs(c._2).value)
+        val totalAmount = creditingOutputs.fold(CurrencyUnits.zero)(_ + _)
+        Prop.forAll(TransactionGenerators.smallOutputs(totalAmount)) { destinations: Seq[TransactionOutput] =>
+          val fee = 1000 //sat/vbyte
+          val outpointsWithKeys = buildCreditingTxInfo(creditingTxsInfo)
+          val builder = TxBuilder(destinations, creditingTxsInfo.map(_._1),outpointsWithKeys,fee,EmptyScriptPubKey)
+          val result = builder.left.flatMap(_.sign({(_,_) => true}))
+          result match {
+            case Left(tx) =>
+              val noRedeem = creditingTxsInfo.map(c => (c._1, c._2, c._3))
+              verifyScript(tx,noRedeem)
+            case Right(err) =>
+              logger.error("error with p2pkh txoutputgen: " + err)
+              err == ScriptErrorPushSize
+          }
         }
     }
   }

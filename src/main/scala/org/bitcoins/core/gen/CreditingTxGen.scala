@@ -12,8 +12,9 @@ sealed abstract class CreditingTxGen {
   /** Maximum amount of outputs to generate */
   private val max = 3
 
+  /** Note this generator does NOT generate outputs with negative values */
   private def nonEmptyOutputs: Gen[Seq[TransactionOutput]] = Gen.choose(1,5).flatMap { n =>
-    Gen.listOfN(n, TransactionGenerators.output)
+    Gen.listOfN(n, TransactionGenerators.realisticOutput)
   }
 
   def rawOutput: Gen[CreditingTxGen.CreditingTxInfo] = {
