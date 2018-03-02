@@ -9,7 +9,7 @@ import org.scalacheck.Gen
 /**
   * Created by chris on 6/22/16.
   */
-trait CryptoGenerators {
+sealed abstract class CryptoGenerators {
 
 
   def privateKey : Gen[ECPrivateKey] = Gen.const(ECPrivateKey())
@@ -38,7 +38,6 @@ trait CryptoGenerators {
   /**
     * Generates a random number of private keys less than the max public keys setting in [[ScriptSettings]]
     * also generates a random 'requiredSigs' number that a transaction needs to be signed with
-    * @return
     */
   def privateKeySeqWithRequiredSigs: Gen[(Seq[ECPrivateKey], Int)] = for {
     num <- Gen.choose(0,ScriptSettings.maxPublicKeysPerMultiSig)
@@ -52,27 +51,18 @@ trait CryptoGenerators {
   } yield keysAndRequiredSigs
 
 
-  /**
-    * Generates a random public key
-    * @return
-    */
+  /** Generates a random public key */
   def publicKey : Gen[ECPublicKey] = for {
     privKey <- privateKey
   } yield privKey.publicKey
 
-  /**
-    * Generates a random digital signature
-    * @return
-    */
+  /** Generates a random digital signature */
   def digitalSignature : Gen[ECDigitalSignature] = for {
     privKey <- privateKey
     hash <- CryptoGenerators.doubleSha256Digest
   } yield privKey.sign(hash)
 
-  /**
-    * Generates a random [[DoubleSha256Digest]]
-    * @return
-    */
+  /** Generates a random [[DoubleSha256Digest]] */
   def doubleSha256Digest : Gen[DoubleSha256Digest] = for {
     hex <- StringGenerators.hexString
     digest = CryptoUtil.doubleSHA256(hex)

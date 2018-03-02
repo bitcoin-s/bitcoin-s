@@ -7,7 +7,7 @@ import org.spongycastle.crypto.params.ECDomainParameters
  * Created by chris on 3/29/16.
  * This trait represents all of the default parameters for our elliptic curve
  */
-trait CryptoParams {
+sealed abstract class CryptoParams {
 
   /** This is the parameters for the elliptic curve bitcoin uses. */
   def params = SECNamedCurves.getByName("secp256k1")

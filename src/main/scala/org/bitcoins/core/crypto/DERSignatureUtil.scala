@@ -8,8 +8,9 @@ import scala.util.{Failure, Success, Try}
 /**
  * Created by chris on 3/23/16.
  */
-trait DERSignatureUtil extends BitcoinSLogger {
+sealed abstract class DERSignatureUtil {
 
+  private val logger = BitcoinSLogger.logger
   /**
    * Checks if this signature is encoded to DER correctly
    * https://crypto.stackexchange.com/questions/1795/how-can-i-convert-a-der-ecdsa-signature-to-asn-1

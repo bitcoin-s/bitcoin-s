@@ -4,7 +4,8 @@ import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil, Factory}
 /**
  * Created by chris on 2/26/16.
  */
-sealed trait ECDigitalSignature extends BitcoinSLogger {
+sealed abstract class ECDigitalSignature {
+  private val logger = BitcoinSLogger.logger
 
   def hex : String = BitcoinSUtil.encodeHex(bytes)
 
