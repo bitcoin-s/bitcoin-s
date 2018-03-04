@@ -10,10 +10,9 @@ import scala.util.{Failure, Success, Try}
 
 /**
  * Created by chris on 4/6/16.
- * Represents a transaction whose input is being checked against the spending conditions of the
- * scriptPubKey
+ * Represents a transaction whose input is being checked against the spending conditions of a [[ScriptPubKey]]
  */
-sealed trait TxSigComponent {
+sealed abstract class TxSigComponent {
 
   /** The transaction being checked for the validity of signatures */
   def transaction : Transaction
@@ -36,15 +35,20 @@ sealed trait TxSigComponent {
   def sigVersion: SignatureVersion
 }
 
-/** The [[TxSigComponent]] used to evaluate the the original Satoshi transaction digest algorithm */
-sealed trait BaseTxSigComponent extends TxSigComponent {
+/** The [[TxSigComponent]] used to evaluate the the original Satoshi transaction digest algorithm.
+  * Basically this is every spk that is not a [[WitnessScriptPubKey]] EXCEPT in the case of a
+  * P2SH(witness script) [[ScriptPubKey]]
+  * */
+sealed abstract class BaseTxSigComponent extends TxSigComponent {
   override def sigVersion = SigVersionBase
 }
 
 /** The [[TxSigComponent]] used to represent all the components necessarily for BIP143
   * [[https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki]]
+  * Examples of these [[ScriptPubKey]]'s are [[P2WPKHWitnessSPKV0]],
+  * [[P2WSHWitnessSPKV0]], and P2SH(witness script)
   */
-sealed trait WitnessTxSigComponent extends TxSigComponent {
+sealed abstract class WitnessTxSigComponent extends TxSigComponent {
 
   override def transaction: WitnessTransaction
 
@@ -58,15 +62,15 @@ sealed trait WitnessTxSigComponent extends TxSigComponent {
   override def sigVersion = SigVersionWitnessV0
 }
 
-/** This represents checking the [[WitnessTransaction]] against a P2WPKH or P2WSH ScriptPubKey */
-sealed trait WitnessTxSigComponentRaw extends WitnessTxSigComponent {
+/** This represents checking the [[WitnessTransaction]] against a [[P2WPKHWitnessSPKV0]] or a [[P2WSHWitnessSPKV0]] */
+sealed abstract class WitnessTxSigComponentRaw extends WitnessTxSigComponent {
   override def scriptPubKey: WitnessScriptPubKey
 
   override def witnessVersion: WitnessVersion = scriptPubKey.witnessVersion
 }
 
 /** This represents checking the [[WitnessTransaction]] against a P2SH(P2WSH) or P2SH(P2WPKH) scriptPubKey */
-sealed trait WitnessTxSigComponentP2SH extends WitnessTxSigComponent {
+sealed abstract class WitnessTxSigComponentP2SH extends WitnessTxSigComponent {
   override def scriptPubKey: P2SHScriptPubKey
 
   override def scriptSignature: P2SHScriptSignature = {
@@ -96,7 +100,7 @@ sealed trait WitnessTxSigComponentP2SH extends WitnessTxSigComponent {
   * See BIP141 for more info on rebuilding P2WSH and P2WPKH scriptpubkeys
   * [[https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki#witness-program]]
   */
-sealed trait WitnessTxSigComponentRebuilt extends TxSigComponent {
+sealed abstract class WitnessTxSigComponentRebuilt extends TxSigComponent {
   override def scriptPubKey: ScriptPubKey
 
   /** The [[WitnessScriptPubKey]] we used to rebuild the scriptPubKey above */
@@ -109,13 +113,13 @@ sealed trait WitnessTxSigComponentRebuilt extends TxSigComponent {
   def amount: CurrencyUnit
 }
 
-object TxSigComponent {
+object BaseTxSigComponent {
 
   private case class BaseTxSigComponentImpl(transaction : Transaction, inputIndex : UInt32,
                                                        scriptPubKey : ScriptPubKey, flags : Seq[ScriptFlag]) extends BaseTxSigComponent
 
   def apply(transaction : Transaction, inputIndex : UInt32,
-            scriptPubKey : ScriptPubKey, flags : Seq[ScriptFlag]): BaseTxSigComponent = {
+            scriptPubKey: ScriptPubKey, flags : Seq[ScriptFlag]): BaseTxSigComponent = {
     BaseTxSigComponentImpl(transaction,inputIndex,scriptPubKey,flags)
   }
 

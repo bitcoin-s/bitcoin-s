@@ -16,7 +16,7 @@ sealed trait P2PKHHelper {
     * This function guesses the defaults for version/locktime/sequence
     */
   def sign(privKey: ECPrivateKey, spk: ScriptPubKey, outPoint: TransactionOutPoint,
-           outputs: Seq[TransactionOutput], hashType: HashType): TxSigComponent = {
+           outputs: Seq[TransactionOutput], hashType: HashType): BaseTxSigComponent = {
     sign(privKey,spk,outPoint,outputs,hashType,TransactionConstants.version,TransactionConstants.sequence,
       TransactionConstants.lockTime)
   }
@@ -24,20 +24,20 @@ sealed trait P2PKHHelper {
   /** This sign function gives you full customizability of what version/locktime/sequence number are used on the tx */
   def sign(privKey: ECPrivateKey, spk: ScriptPubKey, outPoint: TransactionOutPoint,
            outputs: Seq[TransactionOutput], hashType: HashType,
-           version: UInt32, sequence: UInt32, lockTime: UInt32): TxSigComponent = {
+           version: UInt32, sequence: UInt32, lockTime: UInt32): BaseTxSigComponent = {
     val publicKey = privKey.publicKey
     val unsignedInput = buildP2PKHInput(EmptyDigitalSignature,publicKey,outPoint,sequence)
     val unsignedInputs = Seq(unsignedInput)
     val unsignedTx = BaseTransaction(version,unsignedInputs,outputs,lockTime)
     val inputIndex = UInt32(unsignedInputs.indexOf(unsignedInput))
-    val txSigComponent = TxSigComponent(unsignedTx,inputIndex,spk,
+    val baseTxSigComponent = BaseTxSigComponent(unsignedTx,inputIndex,spk,
       Policy.standardScriptVerifyFlags)
-    val signature = TransactionSignatureCreator.createSig(txSigComponent,privKey,hashType)
+    val signature = TransactionSignatureCreator.createSig(baseTxSigComponent,privKey,hashType)
 
     val signedInput = buildP2PKHInput(signature,publicKey,outPoint,sequence)
     val signedInputs = Seq(signedInput)
     val signedTx = BaseTransaction(unsignedTx.version,signedInputs, unsignedTx.outputs, unsignedTx.lockTime)
-    TxSigComponent(signedTx,inputIndex,spk,txSigComponent.flags)
+    BaseTxSigComponent(signedTx,inputIndex,spk,baseTxSigComponent.flags)
   }
 
   private def buildP2PKHInput(signature: ECDigitalSignature, publicKey: ECPublicKey,
