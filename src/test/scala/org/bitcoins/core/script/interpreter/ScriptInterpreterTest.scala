@@ -1,18 +1,13 @@
 package org.bitcoins.core.script.interpreter
 
 
-import org.bitcoins.core.crypto.{ECPrivateKey, TxSigComponent, TransactionSignatureSerializer}
-import org.bitcoins.core.currency.CurrencyUnits
-import org.bitcoins.core.gen.TransactionGenerators
-import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.policy.Policy
+import org.bitcoins.core.crypto.BaseTxSigComponent
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction.WitnessTransaction
 import org.bitcoins.core.script.ScriptProgram
 import org.bitcoins.core.script.flag.ScriptFlagFactory
+import org.bitcoins.core.script.interpreter.testprotocol.CoreTestCase
 import org.bitcoins.core.script.interpreter.testprotocol.CoreTestCaseProtocol._
-import org.bitcoins.core.script.interpreter.testprotocol.{CoreTestCase, CoreTestCaseProtocol}
-import org.bitcoins.core.script.result.ScriptErrorUnsatisfiedLocktime
 import org.bitcoins.core.util._
 import org.scalatest.{FlatSpec, MustMatchers}
 import spray.json._
@@ -72,7 +67,7 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers {
             ScriptProgram(tx.asInstanceOf[WitnessTransaction], wit, inputIndex, flags, amount)
           case x @ (_: P2PKScriptPubKey | _: P2PKHScriptPubKey | _: MultiSignatureScriptPubKey | _: CLTVScriptPubKey | _: CSVScriptPubKey
                     | _: CLTVScriptPubKey | _: EscrowTimeoutScriptPubKey | _: NonStandardScriptPubKey | _: WitnessCommitment | EmptyScriptPubKey) =>
-            val t = TxSigComponent(tx,inputIndex,x,flags)
+            val t = BaseTxSigComponent(tx,inputIndex,x,flags)
             ScriptProgram(t)
         }
         case None => ScriptProgram(tx, scriptPubKey, inputIndex, flags)
