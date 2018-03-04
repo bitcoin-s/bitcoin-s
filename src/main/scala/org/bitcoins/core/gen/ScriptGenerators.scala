@@ -255,7 +255,7 @@ trait ScriptGenerators extends BitcoinSLogger {
     (creditingTx, outputIndex) = TransactionGenerators.buildCreditingTransaction(scriptPubKey)
     scriptSig = P2PKScriptSignature(EmptyDigitalSignature)
     (spendingTx, inputIndex) = TransactionGenerators.buildSpendingTransaction(creditingTx, scriptSig, outputIndex)
-    txSignatureComponent = TxSigComponent(spendingTx, inputIndex, scriptPubKey,
+    txSignatureComponent = BaseTxSigComponent(spendingTx, inputIndex, scriptPubKey,
       Policy.standardScriptVerifyFlags)
     txSignature = TransactionSignatureCreator.createSig(txSignatureComponent, privateKey, hashType)
     //add the signature to the scriptSig instead of having an empty scriptSig
@@ -302,7 +302,7 @@ trait ScriptGenerators extends BitcoinSLogger {
     val emptyDigitalSignatures = privateKeys.map(_ => EmptyDigitalSignature)
     val scriptSig = MultiSignatureScriptSignature(emptyDigitalSignatures)
     val (spendingTx,inputIndex) = TransactionGenerators.buildSpendingTransaction(creditingTx,scriptSig,outputIndex)
-    val txSignatureComponent = TxSigComponent(spendingTx,inputIndex,
+    val txSignatureComponent = BaseTxSigComponent(spendingTx,inputIndex,
       scriptPubKey,Policy.standardScriptVerifyFlags)
 
     val txSignatures = for {
@@ -432,7 +432,7 @@ trait ScriptGenerators extends BitcoinSLogger {
     val (unsignedSpendingTx, inputIndex) = TransactionGenerators.buildSpendingTransaction(UInt32(2), creditingTx,
       EmptyScriptSignature, outputIndex,lockTime.getOrElse(TransactionConstants.lockTime), sequence)
 
-    val txSignatureComponent = TxSigComponent(unsignedSpendingTx, inputIndex,
+    val txSignatureComponent = BaseTxSigComponent(unsignedSpendingTx, inputIndex,
       lock, Policy.standardScriptVerifyFlags)
 
     val txSignatures : Seq[ECDigitalSignature] = for {
@@ -464,7 +464,7 @@ trait ScriptGenerators extends BitcoinSLogger {
           EmptyScriptSignature, outputIndex, UInt32.zero, sequence, outputs)
       }
     }
-    val txSignatureComponent = TxSigComponent(unsignedSpendingTx, inputIndex,
+    val txSignatureComponent = BaseTxSigComponent(unsignedSpendingTx, inputIndex,
       csvEscrowTimeout, Policy.standardScriptVerifyFlags)
 
     val txSignatures : Seq[ECDigitalSignature] = for {

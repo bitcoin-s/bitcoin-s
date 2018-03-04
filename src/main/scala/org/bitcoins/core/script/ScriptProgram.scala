@@ -304,7 +304,7 @@ object ScriptProgram extends BitcoinSLogger {
   def apply(transaction: BaseTransaction, scriptPubKey: ScriptPubKey, inputIndex: UInt32, stack: Seq[ScriptToken],
             script: Seq[ScriptToken], originalScript: Seq[ScriptToken], altStack: Seq[ScriptToken],
             flags: Seq[ScriptFlag]): PreExecutionScriptProgram = {
-    val t = TxSigComponent(transaction,inputIndex,scriptPubKey,flags)
+    val t = BaseTxSigComponent(transaction,inputIndex,scriptPubKey,flags)
     ScriptProgram(t,stack.toList,script.toList,originalScript.toList,altStack.toList,flags)
   }
 
@@ -315,7 +315,7 @@ object ScriptProgram extends BitcoinSLogger {
 
   /** Creates a fresh instance of [[org.bitcoins.core.script.PreExecutionScriptProgram]] */
   def apply(transaction: Transaction, scriptPubKey: ScriptPubKey, inputIndex: UInt32, flags: Seq[ScriptFlag]): PreExecutionScriptProgram = {
-    val t = TxSigComponent(transaction,inputIndex,scriptPubKey,flags)
+    val t = BaseTxSigComponent(transaction,inputIndex,scriptPubKey,flags)
     ScriptProgram(t)
   }
 
