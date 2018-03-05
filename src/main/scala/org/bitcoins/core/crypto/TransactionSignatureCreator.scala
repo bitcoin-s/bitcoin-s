@@ -18,7 +18,7 @@ sealed abstract class TransactionSignatureCreator {
     */
   def createSig(txSignatureComponent: TxSigComponent, privateKey: ECPrivateKey, hashType: HashType): ECDigitalSignature = {
     val sign: Seq[Byte] => ECDigitalSignature = privateKey.sign(_: Seq[Byte])
-    createSig(txSignatureComponent,privateKey.publicKey, sign, hashType)
+    createSig(txSignatureComponent,sign, hashType)
   }
 
   /**
@@ -26,12 +26,11 @@ sealed abstract class TransactionSignatureCreator {
     * At a fundamental level, a hardware wallet expects a Seq[Byte] as input, and returns an [[ECDigitalSignature]]
     * if it is able to sign the Seq[Byte]'s correctly.
     * @param component - the information needed to sign the transaction
-    * @param publicKey - the public key that corresponds to the private key on the hardware device
-    * @param sign - the implementation of the hardware wallet protocol to sign the Seq[Byte]
+    * @param sign - the implementation of the hardware wallet protocol to sign the Seq[Byte] w/ the given public key
     * @param hashType - the hash type to be appended on the digital signature when the hardware wallet is done being signed
     * @return the digital signature returned by the hardware wallet
     */
-  def createSig(component: TxSigComponent, publicKey: ECPublicKey, sign: Seq[Byte] => ECDigitalSignature, hashType: HashType): ECDigitalSignature = {
+  def createSig(component: TxSigComponent, sign: Seq[Byte] => ECDigitalSignature, hashType: HashType): ECDigitalSignature = {
     val hash = TransactionSignatureSerializer.hashForSignature(component, hashType)
     val signature = sign(hash.bytes)
     //append 1 byte hash type onto the end
