@@ -32,9 +32,11 @@ sealed abstract class BaseECKey extends NetworkElement {
     ECDigitalSignature(signature)
   }
 
-  def sign(hash: DoubleSha256Digest, signingKey: BaseECKey): ECDigitalSignature = sign(hash.bytes,signingKey)
+  def sign(dataToSign: Seq[Byte]): ECDigitalSignature = sign(dataToSign,this)
 
-  def sign(hash: DoubleSha256Digest): ECDigitalSignature = sign(hash,this)
+  def sign(hash: HashDigest, signingKey: BaseECKey): ECDigitalSignature = sign(hash.bytes,signingKey)
+
+  def sign(hash: HashDigest): ECDigitalSignature = sign(hash,this)
 
   @deprecated("Deprecated in favor of signing algorithm inside of secp256k1", "2/20/2017")
   private def oldSign(dataToSign: Seq[Byte], signingKey: BaseECKey): ECDigitalSignature = {
