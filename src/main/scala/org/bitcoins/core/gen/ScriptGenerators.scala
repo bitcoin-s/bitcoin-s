@@ -253,7 +253,8 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
     (creditingTx, outputIndex) = TransactionGenerators.buildCreditingTransaction(scriptPubKey)
     scriptSig = P2PKScriptSignature(EmptyDigitalSignature)
     (spendingTx, inputIndex) = TransactionGenerators.buildSpendingTransaction(creditingTx, scriptSig, outputIndex)
-    txSigComponent = P2PKSigner.sign(Seq(privateKey), creditingTx.outputs(outputIndex.toInt), spendingTx, inputIndex, hashType).left.get
+    signer = (privateKey.sign(_: Seq[Byte]),None)
+    txSigComponent = P2PKSigner.sign(Seq(signer), creditingTx.outputs(outputIndex.toInt), spendingTx, inputIndex, hashType).left.get
     //add the signature to the scriptSig instead of having an empty scriptSig
     signedScriptSig = txSigComponent.scriptSignature.asInstanceOf[P2PKScriptSignature]
   } yield (signedScriptSig,scriptPubKey,privateKey)
@@ -272,7 +273,8 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
     scriptPubKey = P2PKHScriptPubKey(publicKey)
     (creditingTx,outputIndex) = TransactionGenerators.buildCreditingTransaction(scriptPubKey)
     (unsignedTx,inputIndex) = TransactionGenerators.buildSpendingTransaction(creditingTx,EmptyScriptSignature,outputIndex)
-    txSigComponent = P2PKHSigner.sign(Seq(privateKey), creditingTx.outputs(outputIndex.toInt), unsignedTx, inputIndex, hashType).left.get
+    signer = (privateKey.sign(_: Seq[Byte]),Some(privateKey.publicKey))
+    txSigComponent = P2PKHSigner.sign(Seq(signer), creditingTx.outputs(outputIndex.toInt), unsignedTx, inputIndex, hashType).left.get
     signedScriptSig = txSigComponent.scriptSignature.asInstanceOf[P2PKHScriptSignature]
   } yield (signedScriptSig, scriptPubKey, privateKey)
 
@@ -291,7 +293,8 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
     scriptSig = MultiSignatureScriptSignature(emptyDigitalSignatures)
     (creditingTx,outputIndex) = TransactionGenerators.buildCreditingTransaction(multiSigScriptPubKey)
     (spendingTx,inputIndex) = TransactionGenerators.buildSpendingTransaction(creditingTx,scriptSig,outputIndex)
-    txSigComponent = MultiSigSigner.sign(privateKeys, creditingTx.outputs(outputIndex.toInt), spendingTx,inputIndex,hashType).left.get
+    signers = privateKeys.map(p => (p.sign(_: Seq[Byte]),None))
+    txSigComponent = MultiSigSigner.sign(signers, creditingTx.outputs(outputIndex.toInt), spendingTx,inputIndex,hashType).left.get
     signedScriptSig = txSigComponent.scriptSignature.asInstanceOf[MultiSignatureScriptSignature]
   } yield (signedScriptSig,multiSigScriptPubKey,privateKeys)
 

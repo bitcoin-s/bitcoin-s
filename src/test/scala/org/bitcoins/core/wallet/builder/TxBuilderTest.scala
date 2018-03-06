@@ -17,7 +17,8 @@ class TxBuilderTest extends FlatSpec with MustMatchers {
     val destinations = Seq(TransactionOutput(Satoshis(Int64(1)),EmptyScriptPubKey))
     val creditingTx = BaseTransaction(tc.validLockVersion,Nil,Seq(creditingOutput),tc.lockTime)
     val outPoint = TransactionOutPoint(creditingTx.txId, UInt32.zero)
-    val utxoMap: TxBuilder.UTXOMap = Map(outPoint -> (creditingOutput,Seq(privKey),None,None,HashType.sigHashAll))
+    val signer = (privKey.sign(_: Seq[Byte]), Some(privKey.publicKey))
+    val utxoMap: TxBuilder.UTXOMap = Map(outPoint -> (creditingOutput,Seq(signer),None,None,HashType.sigHashAll))
     val txBuilder = TxBuilder(destinations,Seq(creditingTx),utxoMap,1,EmptyScriptPubKey)
     val result = txBuilder.left.flatMap(_.sign((_,_) => true))
     result must be (Right(TxBuilderError.MintsMoney))
@@ -28,7 +29,8 @@ class TxBuilderTest extends FlatSpec with MustMatchers {
     val destinations = Seq(TransactionOutput(Satoshis(Int64(1)),EmptyScriptPubKey))
     val creditingTx = BaseTransaction(tc.validLockVersion,Nil,Seq(creditingOutput),tc.lockTime)
     val outPoint = TransactionOutPoint(creditingTx.txId, UInt32.zero)
-    val utxoMap: TxBuilder.UTXOMap = Map(outPoint -> (creditingOutput,Seq(privKey),None,None,HashType.sigHashAll))
+    val signer = (privKey.sign(_: Seq[Byte]), Some(privKey.publicKey))
+    val utxoMap: TxBuilder.UTXOMap = Map(outPoint -> (creditingOutput,Seq(signer),None,None,HashType.sigHashAll))
     val txBuilder = TxBuilder(destinations,Seq(creditingTx),utxoMap,-1,EmptyScriptPubKey)
     txBuilder must be (Right(TxBuilderError.BadFee))
   }
@@ -39,8 +41,9 @@ class TxBuilderTest extends FlatSpec with MustMatchers {
     val creditingTx = BaseTransaction(tc.validLockVersion,Nil,Seq(creditingOutput),tc.lockTime)
     val outPoint = TransactionOutPoint(creditingTx.txId, UInt32.zero)
     val outPoint2 = TransactionOutPoint(CryptoGenerators.doubleSha256Digest.sample.get,UInt32.zero)
-    val utxoMap: TxBuilder.UTXOMap = Map(outPoint -> (creditingOutput,Seq(privKey),None,None,HashType.sigHashAll),
-      outPoint2 -> (creditingOutput,Seq(privKey),None,None,HashType.sigHashAll)
+    val signer = (privKey.sign(_: Seq[Byte]), Some(privKey.publicKey))
+    val utxoMap: TxBuilder.UTXOMap = Map(outPoint -> (creditingOutput,Seq(signer),None,None,HashType.sigHashAll),
+      outPoint2 -> (creditingOutput,Seq(signer),None,None,HashType.sigHashAll)
     )
     val txBuilder = TxBuilder(destinations,Seq(creditingTx),utxoMap,1,EmptyScriptPubKey)
     txBuilder must be (Right(TxBuilderError.MissingCreditingTx))

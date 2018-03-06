@@ -1,6 +1,6 @@
 package org.bitcoins.core.gen
 
-import org.bitcoins.core.crypto.{ECPrivateKey, TxSigComponent, WitnessTxSigComponent, WitnessTxSigComponentRaw}
+import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits, Satoshis}
 import org.bitcoins.core.number.{Int64, UInt32}
 import org.bitcoins.core.policy.Policy

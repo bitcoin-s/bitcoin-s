@@ -1,6 +1,6 @@
 package org.bitcoins.core.wallet.builder
 
-import org.bitcoins.core.crypto.{ECPrivateKey, TxSigComponent}
+import org.bitcoins.core.crypto.TxSigComponent
 import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits, Satoshis}
 import org.bitcoins.core.number.{Int64, UInt32}
 import org.bitcoins.core.policy.Policy
@@ -64,12 +64,12 @@ sealed abstract class TxBuilder {
 
   /** This is where all the money that is NOT sent to destination outputs is spent too.
     * If we don't specify a change output, a large miner fee may be paid as more than likely
-    * the difference between [[creditingAmount]] and [[spentAmount]] is not a market rate miner fee
+    * the difference between [[creditingAmount]] and [[destinationAmount]] is not a market rate miner fee
     * */
   def changeSPK: ScriptPubKey
 
-  /** All of the keys that need to be used to spend this transaction */
-  def privKeys: Seq[ECPrivateKey] = utxoMap.values.flatMap(_._2).toSeq
+  /** All of the [[Signer.Sign]] that need to be used to spend this transaction */
+  def signers: Seq[Signer.Sign] = utxoMap.values.flatMap(_._2).toSeq
 
   /** The outpoints that we are using in this transaction */
   def outPoints: Seq[TransactionOutPoint] = utxoMap.keys.toSeq
@@ -158,7 +158,7 @@ sealed abstract class TxBuilder {
   private def sign(utxo: TxBuilder.UTXOTuple, unsignedTx: Transaction): Either[Transaction, TxBuilderError] = {
     val outpoint = utxo._1
     val output = utxo._2
-    val keys = utxo._3
+    val signers = utxo._3
     val redeemScriptOpt = utxo._4
     val scriptWitnessOpt = utxo._5
     val hashType = utxo._6
@@ -166,15 +166,15 @@ sealed abstract class TxBuilder {
     val oldInput = unsignedTx.inputs(inputIndex.toInt)
     output.scriptPubKey match {
       case _: P2PKScriptPubKey =>
-        P2PKSigner.sign(keys,output,unsignedTx,inputIndex,hashType).left.map(_.transaction)
-      case _: P2PKHScriptPubKey => P2PKHSigner.sign(keys,output,unsignedTx,inputIndex,hashType).left.map(_.transaction)
-      case _: MultiSignatureScriptPubKey => MultiSigSigner.sign(keys,output,unsignedTx,inputIndex,hashType).left.map(_.transaction)
+        P2PKSigner.sign(signers,output,unsignedTx,inputIndex,hashType).left.map(_.transaction)
+      case _: P2PKHScriptPubKey => P2PKHSigner.sign(signers,output,unsignedTx,inputIndex,hashType).left.map(_.transaction)
+      case _: MultiSignatureScriptPubKey => MultiSigSigner.sign(signers,output,unsignedTx,inputIndex,hashType).left.map(_.transaction)
       case lock: LockTimeScriptPubKey =>
         lock.nestedScriptPubKey match {
-          case _: P2PKScriptPubKey => P2PKSigner.sign(keys,output,unsignedTx,inputIndex,hashType).left.map(_.transaction)
-          case _: P2PKHScriptPubKey => P2PKHSigner.sign(keys,output,unsignedTx,inputIndex,hashType).left.map(_.transaction)
-          case _: MultiSignatureScriptPubKey => MultiSigSigner.sign(keys,output,unsignedTx,inputIndex,hashType).left.map(_.transaction)
-          case _: P2WPKHWitnessSPKV0 => P2WPKHSigner.sign(keys,output,unsignedTx,inputIndex,hashType).left.map(_.transaction)
+          case _: P2PKScriptPubKey => P2PKSigner.sign(signers,output,unsignedTx,inputIndex,hashType).left.map(_.transaction)
+          case _: P2PKHScriptPubKey => P2PKHSigner.sign(signers,output,unsignedTx,inputIndex,hashType).left.map(_.transaction)
+          case _: MultiSignatureScriptPubKey => MultiSigSigner.sign(signers,output,unsignedTx,inputIndex,hashType).left.map(_.transaction)
+          case _: P2WPKHWitnessSPKV0 => P2WPKHSigner.sign(signers,output,unsignedTx,inputIndex,hashType).left.map(_.transaction)
           case _: P2SHScriptPubKey => Right(TxBuilderError.NestedP2SHSPK)
           case _: P2WSHWitnessSPKV0 => Right(TxBuilderError.NestedP2WSHSPK)
           case _: CSVScriptPubKey | _: CLTVScriptPubKey =>
@@ -194,7 +194,7 @@ sealed abstract class TxBuilder {
                 WitnessTransaction(wtx.version,unsignedTx.inputs.updated(inputIndex.toInt,input),wtx.outputs,wtx.lockTime,wtx.witness)
             }
             val updatedOutput = TransactionOutput(output.value,redeemScript)
-            val signedTxEither: Either[Transaction, TxBuilderError] = sign((outpoint,updatedOutput,keys,None,
+            val signedTxEither: Either[Transaction, TxBuilderError] = sign((outpoint,updatedOutput,signers,None,
               scriptWitnessOpt, hashType),updatedTx)
             signedTxEither.left.map { signedTx =>
               val i = signedTx.inputs(inputIndex.toInt)
@@ -220,25 +220,25 @@ sealed abstract class TxBuilder {
           case Some(scriptWit) =>
             scriptWit match {
               case _: P2WPKHWitnessV0 =>
-                if (keys.size != 1) {
+                if (signers.size != 1) {
                   Right(TxBuilderError.TooManyKeys)
                 } else {
-                  P2WPKHSigner.sign(keys, output, unsignedWTx, inputIndex, hashType)
+                  P2WPKHSigner.sign(signers, output, unsignedWTx, inputIndex, hashType)
                 }
               case p2wshScriptWit: P2WSHWitnessV0 =>
                 val redeemScript = p2wshScriptWit.redeemScript
                 redeemScript match {
-                  case _: P2PKScriptPubKey => P2PKSigner.sign(keys,output,unsignedWTx,inputIndex,hashType)
-                  case _: P2PKHScriptPubKey => P2PKHSigner.sign(keys,output,unsignedWTx,inputIndex,hashType)
-                  case _: MultiSignatureScriptPubKey  => MultiSigSigner.sign(keys,output,unsignedWTx,inputIndex,hashType)
+                  case _: P2PKScriptPubKey => P2PKSigner.sign(signers,output,unsignedWTx,inputIndex,hashType)
+                  case _: P2PKHScriptPubKey => P2PKHSigner.sign(signers,output,unsignedWTx,inputIndex,hashType)
+                  case _: MultiSignatureScriptPubKey  => MultiSigSigner.sign(signers,output,unsignedWTx,inputIndex,hashType)
                   case _: P2WPKHWitnessSPKV0 | _: P2WSHWitnessSPKV0 => Right(TxBuilderError.NestedWitnessSPK)
                   case _: P2SHScriptPubKey => Right(TxBuilderError.NestedP2SHSPK)
                   case lock: LockTimeScriptPubKey =>
                     lock.nestedScriptPubKey match {
-                      case _: P2PKScriptPubKey => P2PKSigner.sign(keys,output,unsignedTx,inputIndex,hashType)
-                      case _: P2PKHScriptPubKey => P2PKHSigner.sign(keys,output,unsignedTx,inputIndex,hashType)
-                      case _: MultiSignatureScriptPubKey => MultiSigSigner.sign(keys,output,unsignedTx,inputIndex,hashType)
-                      case _: P2WPKHWitnessSPKV0 => P2WPKHSigner.sign(keys,output,unsignedTx,inputIndex,hashType)
+                      case _: P2PKScriptPubKey => P2PKSigner.sign(signers,output,unsignedTx,inputIndex,hashType)
+                      case _: P2PKHScriptPubKey => P2PKHSigner.sign(signers,output,unsignedTx,inputIndex,hashType)
+                      case _: MultiSignatureScriptPubKey => MultiSigSigner.sign(signers,output,unsignedTx,inputIndex,hashType)
+                      case _: P2WPKHWitnessSPKV0 => P2WPKHSigner.sign(signers,output,unsignedTx,inputIndex,hashType)
                       case _: P2SHScriptPubKey => Right(TxBuilderError.NestedP2SHSPK)
                       case _: P2WSHWitnessSPKV0 => Right(TxBuilderError.NestedP2WSHSPK)
                       case _: CSVScriptPubKey | _: CLTVScriptPubKey | _: EscrowTimeoutScriptPubKey =>
@@ -303,7 +303,7 @@ sealed abstract class TxBuilder {
     @tailrec
     def loop(remaining: Seq[TxBuilder.UTXOTuple], currentLockTime: UInt32): UInt32 = remaining match {
       case Nil => currentLockTime
-      case (outpoint,output,keys,redeemScriptOpt,scriptWitOpt, hashType) :: t => output.scriptPubKey match {
+      case (outpoint,output,signers,redeemScriptOpt,scriptWitOpt, hashType) :: t => output.scriptPubKey match {
         case cltv: CLTVScriptPubKey =>
           val l = UInt32(cltv.locktime.toLong)
           if (currentLockTime < l) loop(t,l)
@@ -312,7 +312,7 @@ sealed abstract class TxBuilder {
           if (redeemScriptOpt.isDefined) {
             //recursively call with redeem script as output script
             val o = TransactionOutput(output.value,redeemScriptOpt.get)
-            val i = (outpoint,o, keys, None,scriptWitOpt, hashType)
+            val i = (outpoint, o, signers, None,scriptWitOpt, hashType)
             loop(i +: t, currentLockTime)
           } else if (scriptWitOpt.isDefined) {
             scriptWitOpt.get match {
@@ -321,7 +321,7 @@ sealed abstract class TxBuilder {
               case p2wsh: P2WSHWitnessV0 =>
                 //recursively call with the witness redeem script as the script
                 val o = TransactionOutput(output.value, p2wsh.redeemScript)
-                val i = (outpoint,o,keys,redeemScriptOpt,None, hashType)
+                val i = (outpoint,o,signers,redeemScriptOpt,None, hashType)
                 loop(i +: t, currentLockTime)
             }
           } else {
@@ -346,7 +346,7 @@ sealed abstract class TxBuilder {
     @tailrec
     def loop(remaining: Seq[TxBuilder.UTXOTuple], accum: Seq[TransactionInput]): Seq[TransactionInput] = remaining match {
       case Nil => accum.reverse
-      case (outpoint,output,keys,redeemScriptOpt,scriptWitOpt, hashType) :: t =>
+      case (outpoint,output,signers, redeemScriptOpt,scriptWitOpt, hashType) :: t =>
         output.scriptPubKey match {
           case csv: CSVScriptPubKey =>
             val sequence = solveSequenceForCSV(csv.locktime)
@@ -360,7 +360,7 @@ sealed abstract class TxBuilder {
             if (redeemScriptOpt.isDefined) {
               //recursively call with the redeem script in the output
               val o = TransactionOutput(output.value,redeemScriptOpt.get)
-              val i = (outpoint,o,keys,None,scriptWitOpt, hashType)
+              val i = (outpoint,o,signers, None,scriptWitOpt, hashType)
               loop(i +: t, accum)
             } else if (scriptWitOpt.isDefined) {
               scriptWitOpt.get match {
@@ -368,7 +368,7 @@ sealed abstract class TxBuilder {
                 case _: P2WPKHWitnessV0 => loop(t,accum)
                 case p2wsh: P2WSHWitnessV0 =>
                   val o = TransactionOutput(output.value,p2wsh.redeemScript)
-                  val i = (outpoint,o,keys,redeemScriptOpt,None, hashType)
+                  val i = (outpoint,o,signers,redeemScriptOpt,None, hashType)
                   loop(i +: t, accum)
               }
             } else loop(t,accum)
@@ -387,8 +387,8 @@ sealed abstract class TxBuilder {
 
 object TxBuilder {
   /** This contains all the information needed to create a valid [[TransactionInput]] that spends this utxo */
-  type UTXOTuple = (TransactionOutPoint, TransactionOutput, Seq[ECPrivateKey], Option[ScriptPubKey], Option[ScriptWitness], HashType)
-  type UTXOMap = Map[TransactionOutPoint, (TransactionOutput, Seq[ECPrivateKey], Option[ScriptPubKey], Option[ScriptWitness], HashType)]
+  type UTXOTuple = (TransactionOutPoint, TransactionOutput, Seq[Signer.Sign], Option[ScriptPubKey], Option[ScriptWitness], HashType)
+  type UTXOMap = Map[TransactionOutPoint, (TransactionOutput, Seq[Signer.Sign], Option[ScriptPubKey], Option[ScriptWitness], HashType)]
 
   private case class TransactionBuilderImpl(destinations: Seq[TransactionOutput],
                                             creditingTxs: Seq[Transaction],
@@ -452,7 +452,6 @@ object TxBuilder {
     if (spentAmount > creditingAmount) {
       Some(TxBuilderError.MintsMoney)
     } else if (!validFeeRange(estimatedFee,actualFee, txBuilder.feeRate)) {
-      logger.error("bad fee tx: " + signedTx)
       Some(TxBuilderError.BadFee)
     } else {
       None
@@ -460,8 +459,10 @@ object TxBuilder {
   }
 
   private def validFeeRange(estimatedFee: CurrencyUnit, actualFee: CurrencyUnit, feeRate: Long): Boolean = {
-    logger.warn(s"estimatedFee: $estimatedFee")
-    logger.warn(s"actualFee: $actualFee")
+    //what the number '15' represents is the allowed variance -- in bytes -- between the size of the two
+    //versions of signed tx. I believe the two signed version can vary in size because the digital
+    //signature might have changed in size. It could become larger or smaller depending on the digital
+    //signatures produced
     val acceptableVariance = 15 * feeRate
     logger.warn(s"acceptableVariance $acceptableVariance")
     val min = Satoshis(Int64(-acceptableVariance))
