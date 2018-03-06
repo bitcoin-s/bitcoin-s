@@ -67,6 +67,11 @@ object TxBuilderError {
     */
   case object MissingCreditingTx extends TxBuilderError
 
+  /** Means that the script we are signing for requires a public key, but we did not pass one in
+    * as a parameter inside of [[org.bitcoins.core.wallet.signer.Signer.Sign]]
+    */
+  case object MissingPublicKey extends TxBuilderError
+
   /** Means that the signed version of this transaction has MORE outputs than what was specified
     * when building the [[TxBuilder]]. [[TxBuilder.destinations]] && [[TxBuilder.changeOutput]] should
     * be the only outputs in the signedTx
