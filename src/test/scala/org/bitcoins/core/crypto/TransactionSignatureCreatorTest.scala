@@ -5,16 +5,19 @@ import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.ScriptProgram
-import org.bitcoins.core.script.crypto.{HashType, SIGHASH_ALL}
+import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.script.interpreter.ScriptInterpreter
 import org.bitcoins.core.script.result.ScriptOk
 import org.bitcoins.core.util.{BitcoinSLogger, TransactionTestUtil}
+import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{FlatSpec, MustMatchers}
+
+import scala.concurrent.Future
 
 /**
   * Created by chris on 7/21/16.
   */
-class TransactionSignatureCreatorTest extends FlatSpec with MustMatchers {
+class TransactionSignatureCreatorTest extends FlatSpec with MustMatchers with ScalaFutures {
   private def logger = BitcoinSLogger.logger
 
   "TransactionSignatureCreator" must "create a signature for a scriptSignature in a transaction" in {
@@ -146,6 +149,39 @@ class TransactionSignatureCreatorTest extends FlatSpec with MustMatchers {
     val program = ScriptProgram(signedTx,scriptPubKey,inputIndex, Policy.standardScriptVerifyFlags)
     val result = ScriptInterpreter.run(program)
     result must be (ScriptOk)
+  }
+
+  it must "be able to use a sign function that returns a Future[ECDigitalSignature] and have the sig validate" in {
+    import scala.concurrent.ExecutionContext.Implicits.global
+    val privateKey = ECPrivateKey()
+    val publicKey = privateKey.publicKey
+    val redeemScript = MultiSignatureScriptPubKey(1,Seq(publicKey))
+    val scriptPubKey = P2SHScriptPubKey(redeemScript)
+    val (creditingTx,outputIndex) = TransactionTestUtil.buildCreditingTransaction(scriptPubKey)
+    val scriptSig = MultiSignatureScriptSignature(Seq(EmptyDigitalSignature))
+
+    val (spendingTx,inputIndex) = TransactionTestUtil.buildSpendingTransaction(creditingTx,scriptSig,outputIndex)
+    val txSignatureComponent = BaseTxSigComponent(spendingTx,inputIndex,redeemScript,
+      Policy.standardScriptVerifyFlags)
+    val sign: Seq[Byte] => Future[ECDigitalSignature] = {
+      bytes: Seq[Byte] => Future(privateKey.sign(bytes))
+    }
+    val txSignature = TransactionSignatureCreator.createSig(txSignatureComponent, sign, HashType.sigHashAll)
+
+    val signedScriptSig = txSignature.map(sig => MultiSignatureScriptSignature(Seq(sig)))
+    val p2shScriptSig = signedScriptSig.map(ss => P2SHScriptSignature(ss,redeemScript))
+    val signedTxFuture: Future[(Transaction,UInt32)] = p2shScriptSig.map { ss =>
+      TransactionTestUtil.buildSpendingTransaction(creditingTx, ss, outputIndex)
+    }
+    //run it through the interpreter
+    val program = signedTxFuture.map { case (tx,_) =>
+      ScriptProgram(tx,scriptPubKey,inputIndex, Policy.standardScriptVerifyFlags)
+    }
+
+    val result = program.map(ScriptInterpreter.run(_))
+    whenReady(result) { r =>
+      r must be (ScriptOk)
+    }
   }
 
 }
