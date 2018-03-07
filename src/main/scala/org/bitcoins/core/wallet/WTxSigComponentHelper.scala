@@ -44,22 +44,6 @@ sealed trait WTxSigComponentHelper {
     unsignedWtxSigComponent
   }
 
-  def createUnsignedP2SHWTxSigComponent(witSPK: WitnessScriptPubKey, amount: CurrencyUnit,
-                                        unsignedScriptWitness: ScriptWitness, sequence: Option[UInt32],
-                                        outputs: Seq[TransactionOutput],
-                                        inputs: Seq[TransactionInput]): WitnessTxSigComponentP2SH = {
-    val witness = TransactionWitness.fromWitOpt(Seq(Some(unsignedScriptWitness)))
-    val flags = Policy.standardScriptVerifyFlags
-    val tc = TransactionConstants
-    val p2sh = P2SHScriptPubKey(witSPK)
-    val (creditingTx,outputIndex) = TransactionGenerators.buildCreditingTransaction(witSPK,amount)
-    val p2shScriptSig = P2SHScriptSignature(witSPK)
-    val (unsignedSpendingTx,inputIndex) = TransactionGenerators.buildSpendingTransaction(tc.validLockVersion,creditingTx,
-      p2shScriptSig, outputIndex, tc.lockTime,
-      sequence.getOrElse(tc.sequence), witness,outputs)
-    val unsignedWtxSigComponent = WitnessTxSigComponentP2SH(unsignedSpendingTx,inputIndex,p2sh,flags, amount)
-    unsignedWtxSigComponent
-  }
 }
 
 object WTxSigComponentHelper extends WTxSigComponentHelper
