@@ -6,9 +6,11 @@ import org.bitcoins.core.number.{Int64, UInt32}
 import org.bitcoins.core.protocol.script.EmptyScriptPubKey
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.crypto.HashType
+import org.bitcoins.core.util.BitcoinSLogger
 import org.scalatest.{FlatSpec, MustMatchers}
 
 class TxBuilderTest extends FlatSpec with MustMatchers {
+  private val logger = BitcoinSLogger.logger
   val tc = TransactionConstants
   val (spk,privKey) = ScriptGenerators.p2pkhScriptPubKey.sample.get
   "TxBuilder" must "failed to build a transaction that mints money out of thin air" in {
@@ -32,7 +34,7 @@ class TxBuilderTest extends FlatSpec with MustMatchers {
     val signer = (privKey.sign(_: Seq[Byte]), Some(privKey.publicKey))
     val utxoMap: TxBuilder.UTXOMap = Map(outPoint -> (creditingOutput,Seq(signer),None,None,HashType.sigHashAll))
     val txBuilder = TxBuilder(destinations,Seq(creditingTx),utxoMap,-1,EmptyScriptPubKey)
-    txBuilder must be (Right(TxBuilderError.BadFee))
+    txBuilder must be (Right(TxBuilderError.LowFee))
   }
 
   it must "fail to build a txbuilder when we do not pass in all the crediting txs whose outpoints are specified in utxo map" in {

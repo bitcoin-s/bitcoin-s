@@ -88,9 +88,10 @@ sealed abstract class TxBuilder {
     * or that RBF is enabled on the signed transaction.
     *
     * @param invariants - invariants that should hold true when we are done signing the transaction
+    * @param isRBFEnabled - if we should enable replace-by-fee on this transaction, see BIP125
     * @return the signed transaction, or a [[TxBuilderError]] indicating what went wrong when signing the tx
     */
-  def sign(invariants: (UTXOMap,Transaction) => Boolean): Either[Transaction, TxBuilderError] = {
+  def sign(invariants: (UTXOMap,Transaction) => Boolean, isRBFEnabled: Boolean = false): Either[Transaction, TxBuilderError] = {
     @tailrec
     def loop(remaining: List[TxBuilder.UTXOTuple],
              txInProgress: Transaction): Either[Transaction,TxBuilderError] = remaining match {
@@ -107,7 +108,7 @@ sealed abstract class TxBuilder {
     }.toList
     val unsignedTxWit = TransactionWitness.fromWitOpt(scriptWitOpt)
     val lockTime = calcLockTime(utxos)
-    val inputs = calcSequenceForInputs(utxos)
+    val inputs = calcSequenceForInputs(utxos, isRBFEnabled)
     val changeOutput = TransactionOutput(CurrencyUnits.zero,changeSPK)
     val unsignedTxNoFee = unsignedTxWit match {
       case EmptyWitness => BaseTransaction(tc.validLockVersion,inputs,destinations ++ Seq(changeOutput),lockTime)
@@ -263,17 +264,6 @@ sealed abstract class TxBuilder {
     }
   }
 
-/*  private def matchSigner(spk: ScriptPubKey): Option[Signer] = spk match {
-    case _: P2PKScriptPubKey => Some(P2PKSigner)
-    case _: P2PKHScriptPubKey => Some(P2PKHSigner)
-    case _: MultiSignatureScriptPubKey => Some(MultiSigSigner)
-    case _: P2SHScriptPubKey => None
-    case _: CSVScriptPubKey | _: CLTVScriptPubKey => None
-    case _: P2WPKHWitnessSPKV0 => Some(P2WPKHSigner)
-    case _: WitnessCommitment | EmptyScriptPubKey
-         | _: UnassignedWitnessScriptPubKey | _: NonStandardScriptPubKey => None
-  }*/
-
   /** Returns a valid sequence number for the given [[ScriptNumber]]
     * A transaction needs a valid sequence number to spend a OP_CHECKSEQUENCEVERIFY script.
     * See BIP68/112 for more information
@@ -342,7 +332,7 @@ sealed abstract class TxBuilder {
     * to make them spendable.
     * See BIP68/112 and BIP65 for more info
     */
-  private def calcSequenceForInputs(utxos: Seq[TxBuilder.UTXOTuple]): Seq[TransactionInput] = {
+  private def calcSequenceForInputs(utxos: Seq[TxBuilder.UTXOTuple], isRBFEnabled: Boolean): Seq[TransactionInput] = {
     @tailrec
     def loop(remaining: Seq[TxBuilder.UTXOTuple], accum: Seq[TransactionInput]): Seq[TransactionInput] = remaining match {
       case Nil => accum.reverse
@@ -375,7 +365,8 @@ sealed abstract class TxBuilder {
           case _: P2PKScriptPubKey | _: P2PKHScriptPubKey | _: MultiSignatureScriptPubKey
                | _: P2WPKHWitnessSPKV0 | _: NonStandardScriptPubKey | _: WitnessCommitment
                | EmptyScriptPubKey | _: UnassignedWitnessScriptPubKey | _: EscrowTimeoutScriptPubKey =>
-            val input = TransactionInput(outpoint,EmptyScriptSignature,TransactionConstants.sequence)
+            val sequence = if (isRBFEnabled) UInt32.zero else TransactionConstants.sequence
+            val input = TransactionInput(outpoint,EmptyScriptSignature, sequence)
             loop(t, input +: accum)
         }
     }
@@ -403,7 +394,7 @@ object TxBuilder {
   def apply(destinations: Seq[TransactionOutput], creditingTxs: Seq[Transaction],
             utxos: UTXOMap, feeRate: Long, changeSPK: ScriptPubKey): Either[TxBuilder,TxBuilderError] = {
     if (feeRate <= 0) {
-      Right(TxBuilderError.BadFee)
+      Right(TxBuilderError.LowFee)
     } else if (utxos.keys.map(o => creditingTxs.exists(_.txId == o.txId)).exists(_ == false)) {
       //means that we did not pass in a crediting tx for an outpoint in utxoMap
       Right(TxBuilderError.MissingCreditingTx)
@@ -412,15 +403,17 @@ object TxBuilder {
     }
   }
 
+  /** Runs various sanity checks on the final version of the signed transaction from TxBuilder */
   def sanityChecks(txBuilder: TxBuilder, signedTx: Transaction): Option[TxBuilderError] = {
     val sanityDestination = sanityDestinationChecks(txBuilder,signedTx)
     if (sanityDestination.isDefined){
       sanityDestination
     } else {
-      sanityFeeChecks(txBuilder,signedTx)
+      sanityAmountChecks(txBuilder,signedTx)
     }
   }
 
+  /** Checks that we did not lose a [[TransactionOutput]] in the signing process of this transaction */
   def sanityDestinationChecks(txBuilder: TxBuilder, signedTx: Transaction): Option[TxBuilderError] = {
     //make sure we send coins to the appropriate destinations
     val missingDestination = txBuilder.destinations.map(o => signedTx.outputs.contains(o)).exists(_ == false)
@@ -444,31 +437,42 @@ object TxBuilder {
     }
   }
 
-  def sanityFeeChecks(txBuilder: TxBuilder, signedTx: Transaction): Option[TxBuilderError] = {
+  /** Checks that the [[TxBuilder.creditingAmount]] >= [[TxBuilder.destinationAmount]]
+    * and then does a sanity check on the tx's fee */
+  def sanityAmountChecks(txBuilder: TxBuilder, signedTx: Transaction): Option[TxBuilderError] = {
     val spentAmount: CurrencyUnit = signedTx.outputs.map(_.value).fold(CurrencyUnits.zero)(_ + _)
     val creditingAmount = txBuilder.creditingAmount
     val actualFee = creditingAmount - spentAmount
     val estimatedFee = Satoshis(Int64(txBuilder.feeRate * signedTx.vsize))
     if (spentAmount > creditingAmount) {
       Some(TxBuilderError.MintsMoney)
-    } else if (!validFeeRange(estimatedFee,actualFee, txBuilder.feeRate)) {
-      Some(TxBuilderError.BadFee)
     } else {
-      None
+      val feeResult = validFeeRange(estimatedFee,actualFee,txBuilder.feeRate)
+      feeResult
     }
   }
 
-  private def validFeeRange(estimatedFee: CurrencyUnit, actualFee: CurrencyUnit, feeRate: Long): Boolean = {
+  /** Checks if the fee is within a 'valid' range
+    * @param estimatedFee the estimated amount of fee we should pay
+    * @param actualFee the actual amount of fee the transaction pays
+    * @param feeRate the fee rate in satoshis/vbyte we paid per byte on this tx
+    * @return
+    */
+  private def validFeeRange(estimatedFee: CurrencyUnit, actualFee: CurrencyUnit, feeRate: Long): Option[TxBuilderError] = {
     //what the number '15' represents is the allowed variance -- in bytes -- between the size of the two
     //versions of signed tx. I believe the two signed version can vary in size because the digital
     //signature might have changed in size. It could become larger or smaller depending on the digital
     //signatures produced
     val acceptableVariance = 15 * feeRate
-    logger.warn(s"acceptableVariance $acceptableVariance")
     val min = Satoshis(Int64(-acceptableVariance))
     val max = Satoshis(Int64(acceptableVariance))
     val difference = estimatedFee - actualFee
-    logger.warn(s"difference: $difference")
-    difference >= min && difference <= max
+    if (difference <= min) {
+      Some(TxBuilderError.HighFee)
+    } else if (difference >= max) {
+      Some(TxBuilderError.LowFee)
+    } else {
+      None
+    }
   }
 }

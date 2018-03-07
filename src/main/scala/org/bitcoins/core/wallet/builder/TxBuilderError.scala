@@ -86,10 +86,10 @@ object TxBuilderError {
   /** Means that this transaction attempts to print satoshis out of thin air */
   case object MintsMoney extends TxBuilderError
 
-  /** Means that the fee was not within the given range of error for [[TxBuilder.feeRate]]
-    * This might mean that the transactions pays a much larger fee than what was given as the [[TxBuilder.feeRate]] parameter, or a
-    * much smaller fee
-    */
-  case object BadFee extends TxBuilderError
+  /** Means that the fee was too low for [[TxBuilder.feeRate]] */
+  case object LowFee extends TxBuilderError
+
+  /** Means tha this transaction pays too high of a fee for [[TxBuilder.feeRate]] */
+  case object HighFee extends TxBuilderError
 
 }
