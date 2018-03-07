@@ -19,16 +19,16 @@ sealed abstract class Transaction extends NetworkElement {
   def txId : DoubleSha256Digest = CryptoUtil.doubleSHA256(bytes)
 
   /** The version number for this transaction */
-  def version : UInt32
+  def version: UInt32
 
   /** The inputs for this transaction */
-  def inputs  : Seq[TransactionInput]
+  def inputs: Seq[TransactionInput]
 
   /** The outputs for this transaction */
-  def outputs : Seq[TransactionOutput]
+  def outputs: Seq[TransactionOutput]
 
   /** The locktime for this transaction */
-  def lockTime : UInt32
+  def lockTime: UInt32
 
   /** This is used to indicate how 'expensive' the transction is on the blockchain.
     * This use to be a simple calculation before segwit (BIP141). Each byte in the transaction
@@ -44,7 +44,7 @@ sealed abstract class Transaction extends NetworkElement {
     * The transaction's virtual size
     * [[https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki#Transaction_size_calculations]]
     */
-  def vsize: Long = Math.ceil(weight / 4).toLong
+  def vsize: Long = Math.ceil(weight / 4.0).toLong
 
   /**
     * Base transaction size is the size of the transaction serialised with the witness data stripped
@@ -69,7 +69,7 @@ sealed abstract class Transaction extends NetworkElement {
 
 sealed abstract class BaseTransaction extends Transaction {
   override def bytes = RawBaseTransactionParser.write(this)
-  override def weight = bytes.size * 4
+  override def weight = size * 4
 }
 
 
@@ -104,7 +104,7 @@ sealed abstract class WitnessTransaction extends Transaction {
     */
   override def weight: Long = {
     val base = BaseTransaction(version,inputs,outputs,lockTime)
-    base.totalSize * 3 + totalSize
+    base.size * 3 + size
   }
   override def bytes = RawWitnessTransactionParser.write(this)
 
