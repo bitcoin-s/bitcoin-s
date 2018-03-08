@@ -471,7 +471,7 @@ object TxBuilder {
     val estimatedFee = txBuilder.feeRate * signedTx
     if (spentAmount > creditingAmount) {
       Some(TxBuilderError.MintsMoney)
-    } else if (txBuilder.largestFee > actualFee) {
+    } else if (actualFee > txBuilder.largestFee) {
       Some(TxBuilderError.HighFee)
     } else {
       val feeResult = validFeeRange(estimatedFee,actualFee,txBuilder.feeRate)

@@ -28,7 +28,7 @@ class TxBuilderSpec extends Properties("TxBuilderSpec") {
         val creditingOutputsAmt = creditingOutputs.map(_.value)
         val totalAmount = creditingOutputsAmt.fold(CurrencyUnits.zero)(_ + _)
         Prop.forAll(TransactionGenerators.smallOutputs(totalAmount), ScriptGenerators.scriptPubKey) {
-          case (destinations: Seq[TransactionOutput], changeSPK: ScriptPubKey) =>
+          case (destinations: Seq[TransactionOutput], changeSPK) =>
             val fee = SatoshisPerVirtualByte(Satoshis(Int64(1000)))
             val outpointsWithKeys = buildCreditingTxInfo(creditingTxsInfo)
             val builder = TxBuilder(destinations, creditingTxsInfo.map(_._1), outpointsWithKeys, fee, changeSPK._1)
@@ -39,6 +39,7 @@ class TxBuilderSpec extends Properties("TxBuilderSpec") {
                 verifyScript(tx, noRedeem)
               case Right(err) =>
                 //incompatible locktime case can happen when we have > 1 CLTVSPK that we are trying to spend
+                logger.warn("err: " + err)
                 err == TxBuilderError.IncompatibleLockTimes
             }
         }
