@@ -1,9 +1,9 @@
 package org.bitcoins.core.wallet.builder
 
 import org.bitcoins.core.crypto.{BaseTxSigComponent, ECPrivateKey, TxSigComponent, WitnessTxSigComponentRaw}
-import org.bitcoins.core.currency.CurrencyUnits
+import org.bitcoins.core.currency.{CurrencyUnits, Satoshis}
 import org.bitcoins.core.gen.{CreditingTxGen, TransactionGenerators}
-import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.number.{Int64, UInt32}
 import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
@@ -12,6 +12,7 @@ import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.script.interpreter.ScriptInterpreter
 import org.bitcoins.core.script.result.{ScriptErrorPushSize, ScriptOk, ScriptResult}
 import org.bitcoins.core.util.BitcoinSLogger
+import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.signer.Signer
 import org.scalacheck.{Prop, Properties}
 
@@ -27,8 +28,8 @@ class TxBuilderSpec extends Properties("TxBuilderSpec") {
         val creditingOutputsAmt = creditingOutputs.map(_.value)
         val totalAmount = creditingOutputsAmt.fold(CurrencyUnits.zero)(_ + _)
         Prop.forAll(TransactionGenerators.smallOutputs(totalAmount)) { destinations: Seq[TransactionOutput] =>
-          val fee = 1000 // sat/vbyte
-        val outpointsWithKeys = buildCreditingTxInfo(creditingTxsInfo)
+          val fee = SatoshisPerVirtualByte(Satoshis(Int64(1000)))
+          val outpointsWithKeys = buildCreditingTxInfo(creditingTxsInfo)
           val builder = TxBuilder(destinations, creditingTxsInfo.map(_._1), outpointsWithKeys, fee, EmptyScriptPubKey)
           val result = builder.left.flatMap(_.sign({ (_, _) => true }))
           result match {

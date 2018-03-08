@@ -7,6 +7,7 @@ import org.bitcoins.core.protocol.script.EmptyScriptPubKey
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.util.BitcoinSLogger
+import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.scalatest.{FlatSpec, MustMatchers}
 
 class TxBuilderTest extends FlatSpec with MustMatchers {
@@ -21,7 +22,8 @@ class TxBuilderTest extends FlatSpec with MustMatchers {
     val outPoint = TransactionOutPoint(creditingTx.txId, UInt32.zero)
     val signer = (privKey.sign(_: Seq[Byte]), Some(privKey.publicKey))
     val utxoMap: TxBuilder.UTXOMap = Map(outPoint -> (creditingOutput,Seq(signer),None,None,HashType.sigHashAll))
-    val txBuilder = TxBuilder(destinations,Seq(creditingTx),utxoMap,1,EmptyScriptPubKey)
+    val feeUnit = SatoshisPerVirtualByte(Satoshis.one)
+    val txBuilder = TxBuilder(destinations,Seq(creditingTx),utxoMap,feeUnit,EmptyScriptPubKey)
     val result = txBuilder.left.flatMap(_.sign((_,_) => true))
     result must be (Right(TxBuilderError.MintsMoney))
   }
@@ -33,7 +35,8 @@ class TxBuilderTest extends FlatSpec with MustMatchers {
     val outPoint = TransactionOutPoint(creditingTx.txId, UInt32.zero)
     val signer = (privKey.sign(_: Seq[Byte]), Some(privKey.publicKey))
     val utxoMap: TxBuilder.UTXOMap = Map(outPoint -> (creditingOutput,Seq(signer),None,None,HashType.sigHashAll))
-    val txBuilder = TxBuilder(destinations,Seq(creditingTx),utxoMap,-1,EmptyScriptPubKey)
+    val feeUnit = SatoshisPerVirtualByte(Satoshis(Int64(-1)))
+    val txBuilder = TxBuilder(destinations,Seq(creditingTx),utxoMap,feeUnit,EmptyScriptPubKey)
     txBuilder must be (Right(TxBuilderError.LowFee))
   }
 
@@ -47,7 +50,8 @@ class TxBuilderTest extends FlatSpec with MustMatchers {
     val utxoMap: TxBuilder.UTXOMap = Map(outPoint -> (creditingOutput,Seq(signer),None,None,HashType.sigHashAll),
       outPoint2 -> (creditingOutput,Seq(signer),None,None,HashType.sigHashAll)
     )
-    val txBuilder = TxBuilder(destinations,Seq(creditingTx),utxoMap,1,EmptyScriptPubKey)
+    val feeUnit = SatoshisPerVirtualByte(Satoshis.one)
+    val txBuilder = TxBuilder(destinations,Seq(creditingTx),utxoMap,feeUnit,EmptyScriptPubKey)
     txBuilder must be (Right(TxBuilderError.MissingCreditingTx))
   }
 }

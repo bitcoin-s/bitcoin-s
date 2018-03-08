@@ -11,6 +11,7 @@ import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.script.locktime.LockTimeInterpreter
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.core.wallet.builder.TxBuilder.UTXOMap
+import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.signer._
 
 import scala.annotation.tailrec
@@ -60,7 +61,7 @@ sealed abstract class TxBuilder {
   def utxoMap: TxBuilder.UTXOMap
 
   /** This represents the rate we should pay, in satoshis/vbyte, for this transaction */
-  def feeRate: Long
+  def feeRate: FeeUnit
 
   /** This is where all the money that is NOT sent to destination outputs is spent too.
     * If we don't specify a change output, a large miner fee may be paid as more than likely
@@ -124,7 +125,7 @@ sealed abstract class TxBuilder {
     val signedTxNoFee = unsignedTxNoFee.left.flatMap(utxnf => loop(utxos, utxnf))
     signedTxNoFee match {
       case l: Left[Transaction,TxBuilderError] =>
-        val fee = Satoshis(Int64(l.a.vsize * feeRate))
+        val fee = feeRate.calc(l.a)
         val newChangeOutput = TransactionOutput(creditingAmount - destinationAmount - fee, changeSPK)
         //if the change output is below the dust threshold after calculating the fee, don't add it
         //to the tx
@@ -392,7 +393,7 @@ object TxBuilder {
   private case class TransactionBuilderImpl(destinations: Seq[TransactionOutput],
                                             creditingTxs: Seq[Transaction],
                                             utxoMap: UTXOMap,
-                                            feeRate: Long,
+                                            feeRate: FeeUnit,
                                             changeSPK: ScriptPubKey) extends TxBuilder {
     require(outPoints.exists(o => creditingTxs.exists(_.txId == o.txId)))
   }
@@ -400,8 +401,8 @@ object TxBuilder {
   private val logger = BitcoinSLogger.logger
 
   def apply(destinations: Seq[TransactionOutput], creditingTxs: Seq[Transaction],
-            utxos: UTXOMap, feeRate: Long, changeSPK: ScriptPubKey): Either[TxBuilder,TxBuilderError] = {
-    if (feeRate <= 0) {
+            utxos: UTXOMap, feeRate: FeeUnit, changeSPK: ScriptPubKey): Either[TxBuilder,TxBuilderError] = {
+    if (feeRate.toLong <= 0) {
       Right(TxBuilderError.LowFee)
     } else if (utxos.keys.map(o => creditingTxs.exists(_.txId == o.txId)).exists(_ == false)) {
       //means that we did not pass in a crediting tx for an outpoint in utxoMap
@@ -451,7 +452,7 @@ object TxBuilder {
     val spentAmount: CurrencyUnit = signedTx.outputs.map(_.value).fold(CurrencyUnits.zero)(_ + _)
     val creditingAmount = txBuilder.creditingAmount
     val actualFee = creditingAmount - spentAmount
-    val estimatedFee = Satoshis(Int64(txBuilder.feeRate * signedTx.vsize))
+    val estimatedFee = txBuilder.feeRate * signedTx
     if (spentAmount > creditingAmount) {
       Some(TxBuilderError.MintsMoney)
     } else {
@@ -466,12 +467,12 @@ object TxBuilder {
     * @param feeRate the fee rate in satoshis/vbyte we paid per byte on this tx
     * @return
     */
-  private def validFeeRange(estimatedFee: CurrencyUnit, actualFee: CurrencyUnit, feeRate: Long): Option[TxBuilderError] = {
+  private def validFeeRange(estimatedFee: CurrencyUnit, actualFee: CurrencyUnit, feeRate: FeeUnit): Option[TxBuilderError] = {
     //what the number '15' represents is the allowed variance -- in bytes -- between the size of the two
     //versions of signed tx. I believe the two signed version can vary in size because the digital
     //signature might have changed in size. It could become larger or smaller depending on the digital
     //signatures produced
-    val acceptableVariance = 15 * feeRate
+    val acceptableVariance = 15 * feeRate.toLong
     val min = Satoshis(Int64(-acceptableVariance))
     val max = Satoshis(Int64(acceptableVariance))
     val difference = estimatedFee - actualFee
