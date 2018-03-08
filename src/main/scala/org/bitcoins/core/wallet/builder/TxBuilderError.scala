@@ -92,4 +92,11 @@ object TxBuilderError {
   /** Means tha this transaction pays too high of a fee for [[TxBuilder.feeRate]] */
   case object HighFee extends TxBuilderError
 
+  /** Indicates we are spending multiple [[org.bitcoins.core.protocol.script.CLTVScriptPubKey]],
+    * and that one of those spk's outputs are locked by block height, while the other is locked by
+    * a time stamp. Since there is only one locktime field on a transaction, we cannot satisfy both of these
+    * locktimes simultaneously.
+    */
+  case object IncompatibleLockTimes extends TxBuilderError
+
 }
