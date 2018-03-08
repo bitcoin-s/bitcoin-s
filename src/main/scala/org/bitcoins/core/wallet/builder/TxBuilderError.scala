@@ -12,11 +12,12 @@ object TxBuilderError {
     */
   case object FailedUserInvariants extends TxBuilderError
 
-  /** Means that we gave too many keys for the TxBuilder to use during the signing process for a
-    * utxo. An example of this occurring is if we gave 2 private keys to sign a p2pkh spk.
+  /** Means that we gave too many [[org.bitcoins.core.wallet.signer.Signer.Sign]] for the TxBuilder
+    * to use during the signing process for a utxo.
+    * An example of this occurring is if we gave 2 private keys to sign a p2pkh spk.
     * A p2pkh only requires one private key to sign the utxo.
     */
-  case object TooManyKeys extends TxBuilderError
+  case object TooManySigners extends TxBuilderError
 
   /** Means that you are using the wrong [[org.bitcoins.core.wallet.signer.Signer]] to
     * sign the given [[org.bitcoins.core.protocol.script.ScriptPubKey]]
