@@ -80,6 +80,9 @@ sealed abstract class TxBuilder {
   /** The script witnesses that are needed in this transaction */
   def scriptWitOpt: Seq[Option[ScriptWitness]] = utxoMap.values.map(_._4).toSeq
 
+  /** Overloaded version if sign that skips passing a user invariant */
+  def sign(isRBFEnabled: Boolean): Either[Transaction,TxBuilderError] = sign((_,_) => true, isRBFEnabled)
+
   /**
     * Signs the given transaction and then returns a signed tx that spends
     * all of the given outputs.
@@ -110,13 +113,15 @@ sealed abstract class TxBuilder {
     val lockTime = calcLockTime(utxos)
     val inputs = calcSequenceForInputs(utxos, isRBFEnabled)
     val changeOutput = TransactionOutput(CurrencyUnits.zero,changeSPK)
-    val unsignedTxNoFee = unsignedTxWit match {
-      case EmptyWitness => BaseTransaction(tc.validLockVersion,inputs,destinations ++ Seq(changeOutput),lockTime)
-      case wit: TransactionWitness => WitnessTransaction(tc.validLockVersion,inputs,destinations ++ Seq(changeOutput),lockTime,wit)
+    val unsignedTxNoFee = lockTime.left.map { l =>
+      unsignedTxWit match {
+        case EmptyWitness => BaseTransaction(tc.validLockVersion, inputs, destinations ++ Seq(changeOutput), l)
+        case wit: TransactionWitness => WitnessTransaction(tc.validLockVersion, inputs, destinations ++ Seq(changeOutput), l, wit)
+      }
     }
     //NOTE: This signed version of the tx does NOT pay a fee, we are going to use this version to estimate the fee
     //and then deduct that amount of satoshis from the changeOutput, and then resign the tx.
-    val signedTxNoFee = loop(utxos, unsignedTxNoFee)
+    val signedTxNoFee = unsignedTxNoFee.left.flatMap(utxnf => loop(utxos, utxnf))
     signedTxNoFee match {
       case l: Left[Transaction,TxBuilderError] =>
         val fee = Satoshis(Int64(l.a.vsize * feeRate))
@@ -124,7 +129,7 @@ sealed abstract class TxBuilder {
         //if the change output is below the dust threshold after calculating the fee, don't add it
         //to the tx
         val newOutputs = if (newChangeOutput.value <= Policy.dustThreshold) {
-          logger.warn("REMOVING CHANGE OUTPUT")
+          logger.debug("removing change output as value is below the dustThreshold")
           destinations
         } else {
           destinations ++ Seq(newChangeOutput)
@@ -139,11 +144,8 @@ sealed abstract class TxBuilder {
           if (invariants(utxoMap,tx)) {
             //final sanity checks
             val err = TxBuilder.sanityChecks(this,tx)
-            if (err.isDefined) {
-              Right(err.get)
-            } else {
-              Left(tx)
-            }
+            if (err.isDefined) Right(err.get)
+            else Left(tx)
           }
           else Right(TxBuilderError.FailedUserInvariants)
         }
@@ -178,9 +180,7 @@ sealed abstract class TxBuilder {
           case _: P2WPKHWitnessSPKV0 => P2WPKHSigner.sign(signers,output,unsignedTx,inputIndex,hashType).left.map(_.transaction)
           case _: P2SHScriptPubKey => Right(TxBuilderError.NestedP2SHSPK)
           case _: P2WSHWitnessSPKV0 => Right(TxBuilderError.NestedP2WSHSPK)
-          case _: CSVScriptPubKey | _: CLTVScriptPubKey =>
-            //TODO: Comeback to this later and see if we should have signer for nested locktime spks
-            Right(TxBuilderError.NoSigner)
+          case _: CSVScriptPubKey | _: CLTVScriptPubKey => Right(TxBuilderError.NoSigner)
           case _: NonStandardScriptPubKey | _: WitnessCommitment | _: EscrowTimeoutScriptPubKey
                | EmptyScriptPubKey | _: UnassignedWitnessScriptPubKey => Right(TxBuilderError.NoSigner)
         }
@@ -243,7 +243,6 @@ sealed abstract class TxBuilder {
                       case _: P2SHScriptPubKey => Right(TxBuilderError.NestedP2SHSPK)
                       case _: P2WSHWitnessSPKV0 => Right(TxBuilderError.NestedP2WSHSPK)
                       case _: CSVScriptPubKey | _: CLTVScriptPubKey | _: EscrowTimeoutScriptPubKey =>
-                        //TODO: Comeback to this later and see if we should have signer for nested locktime spks
                         Right(TxBuilderError.NoSigner)
                       case _: NonStandardScriptPubKey | _: WitnessCommitment
                            | EmptyScriptPubKey | _: UnassignedWitnessScriptPubKey
@@ -289,14 +288,19 @@ sealed abstract class TxBuilder {
     * locktime set to the same value (or higher) than the output it is spending.
     * See BIP65 for more info
     */
-  private def calcLockTime(utxos: Seq[TxBuilder.UTXOTuple]): UInt32 = {
+  private def calcLockTime(utxos: Seq[TxBuilder.UTXOTuple]): Either[UInt32,TxBuilderError] = {
     @tailrec
-    def loop(remaining: Seq[TxBuilder.UTXOTuple], currentLockTime: UInt32): UInt32 = remaining match {
-      case Nil => currentLockTime
+    def loop(remaining: Seq[TxBuilder.UTXOTuple], currentLockTime: UInt32): Either[UInt32,TxBuilderError] = remaining match {
+      case Nil => Left(currentLockTime)
       case (outpoint,output,signers,redeemScriptOpt,scriptWitOpt, hashType) :: t => output.scriptPubKey match {
         case cltv: CLTVScriptPubKey =>
           val l = UInt32(cltv.locktime.toLong)
-          if (currentLockTime < l) loop(t,l)
+          if (currentLockTime < l) {
+            val lockTimeThreshold = TransactionConstants.locktimeThreshold
+            if (currentLockTime < lockTimeThreshold && l >= lockTimeThreshold) {
+              Right(TxBuilderError.IncompatibleLockTimes)
+            } else loop(t,l)
+          }
           else loop(t,currentLockTime)
         case _: P2SHScriptPubKey | _: P2WSHWitnessSPKV0 =>
           if (redeemScriptOpt.isDefined) {
@@ -321,6 +325,7 @@ sealed abstract class TxBuilder {
              | _: P2WPKHWitnessSPKV0 | _: P2WSHWitnessSPKV0 | _: NonStandardScriptPubKey | _: WitnessCommitment
              | EmptyScriptPubKey | _: UnassignedWitnessScriptPubKey | _: CSVScriptPubKey
              | _: EscrowTimeoutScriptPubKey =>
+          //non of these scripts affect the locktime of a tx
           loop(t,currentLockTime)
       }
     }
@@ -365,6 +370,9 @@ sealed abstract class TxBuilder {
           case _: P2PKScriptPubKey | _: P2PKHScriptPubKey | _: MultiSignatureScriptPubKey
                | _: P2WPKHWitnessSPKV0 | _: NonStandardScriptPubKey | _: WitnessCommitment
                | EmptyScriptPubKey | _: UnassignedWitnessScriptPubKey | _: EscrowTimeoutScriptPubKey =>
+            //none of these script types affect the sequence number of a tx
+            //the sequence only needs to be adjustd if we have replace by fee (RBF) enabled
+            //see BIP125 for more information
             val sequence = if (isRBFEnabled) UInt32.zero else TransactionConstants.sequence
             val input = TransactionInput(outpoint,EmptyScriptSignature, sequence)
             loop(t, input +: accum)

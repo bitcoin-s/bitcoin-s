@@ -48,6 +48,8 @@ sealed abstract class LockTimeInterpreter {
           ScriptProgram(program,ScriptErrorUnsatisfiedLocktime)
         case s : ScriptNumber if (s < ScriptNumber(500000000) && transaction.lockTime >= UInt32(500000000)) =>
           logger.error("OP_CHECKLOCKTIMEVERIFY marks the tx as invalid if stack top < 500000000 & tx locktime >= 500000000")
+          logger.error("OP_CLTV scripNum: " + s)
+          logger.error("lockTime: " + transaction.lockTime)
           ScriptProgram(program,ScriptErrorUnsatisfiedLocktime)
         case s : ScriptNumber =>
           if (s.bytes.size > 5) {

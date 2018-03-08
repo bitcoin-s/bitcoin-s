@@ -558,7 +558,7 @@ trait TransactionGenerators extends BitcoinSLogger {
     txLockTime <- NumberGenerator.uInt32s
     cltvLockTime <- NumberGenerator.uInt32s.suchThat(num =>
       cltvLockTimesOfSameType(ScriptNumber(num.toLong),txLockTime) &&
-        num <= txLockTime).map(x => ScriptNumber(x.toLong))
+        num < txLockTime).map(x => ScriptNumber(x.toLong))
   } yield (cltvLockTime,txLockTime)
 
   /** Generates a [[ScriptNumber]] and [[UInt32]] locktime for a transaction such that the tx will be unspendable */

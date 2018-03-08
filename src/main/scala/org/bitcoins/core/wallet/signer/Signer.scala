@@ -26,9 +26,22 @@ sealed abstract class Signer {
 }
 
 object Signer {
+  /** This is meant to be an abstraction for a [[org.bitcoins.core.crypto.ECPrivateKey]], sometimes we will not
+    * have direct access to a private key in memory -- for instance if that key is on a hardware device -- so we need to create an
+    * abstraction of the signing process. Fundamentally a private key takes in a Seq[Byte] and returns a [[ECDigitalSignature]]
+    * That is what this abstraction is meant to represent. If you have a [[ECPrivateKey]] in your application, you can get it's
+    * [[Sign]] type by doing this:
+    *
+    * val key = ECPrivateKey()
+    * val sign: Seq[Byte] => ECDigitalSignature = (key.sign(_: Seq[Byte]), key.publicKey)
+    *
+    * If you have a hardware wallet, you will need to implement the protocol to send a message to the hardware device. The
+    * type signature of the function you implement must be Seq[Byte] => ECDigitalSignature
+    */
   type Sign = (Seq[Byte] => ECDigitalSignature, Option[ECPublicKey])
 }
 
+/** Represents all signers for the bitcoin protocol, we could add another network later like litecoin */
 sealed abstract class BitcoinSigner extends Signer
 
 /** Used to sign a [[org.bitcoins.core.protocol.script.P2PKScriptPubKey]] */
@@ -203,7 +216,7 @@ sealed abstract class MultiSigSigner extends BitcoinSigner {
         }
         val witness = wtx.witness.witnesses(inputIndex.toInt)
         val multiSigSPK: Either[(MultiSignatureScriptPubKey,ScriptPubKey), TxBuilderError] = witness match {
-          case _: P2WPKHWitnessV0 => Right(TxBuilderError.WrongSigner)
+          case _: P2WPKHWitnessV0 | EmptyScriptWitness => Right(TxBuilderError.WrongSigner)
           case p2wsh: P2WSHWitnessV0 =>
             p2wsh.redeemScript match {
               case lock: LockTimeScriptPubKey =>
@@ -211,13 +224,15 @@ sealed abstract class MultiSigSigner extends BitcoinSigner {
                   case m: MultiSignatureScriptPubKey => Left((m,lock))
                   case _: P2PKScriptPubKey | _: P2PKHScriptPubKey | _: P2SHScriptPubKey | _: P2WPKHWitnessV0
                     | _: P2WSHWitnessSPKV0 | _: WitnessCommitment | _: EscrowTimeoutScriptPubKey | _: CSVScriptPubKey
-                    | _: CLTVScriptPubKey | _: NonStandardScriptPubKey | EmptyScriptPubKey =>
+                    | _: CLTVScriptPubKey | _: NonStandardScriptPubKey | _: UnassignedWitnessScriptPubKey
+                    | _: P2WPKHWitnessSPKV0 | EmptyScriptPubKey =>
                     Right(TxBuilderError.WrongSigner)
                 }
               case m: MultiSignatureScriptPubKey => Left((m,m))
               case _: P2PKScriptPubKey | _: P2PKHScriptPubKey | _: P2SHScriptPubKey | _: P2WPKHWitnessV0
                    | _: P2WSHWitnessSPKV0 | _: WitnessCommitment | _: EscrowTimeoutScriptPubKey
-                   | _: NonStandardScriptPubKey | EmptyScriptPubKey =>
+                   | _: NonStandardScriptPubKey | _: P2WPKHWitnessSPKV0 | _: UnassignedWitnessScriptPubKey
+                   | EmptyScriptPubKey =>
                 Right(TxBuilderError.WrongSigner)
             }
         }

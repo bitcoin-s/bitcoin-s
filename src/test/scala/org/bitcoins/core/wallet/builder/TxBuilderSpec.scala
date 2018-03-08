@@ -23,43 +23,25 @@ class TxBuilderSpec extends Properties("TxBuilderSpec") {
   property("sign a mix of spks in a tx and then have it verified") = {
     Prop.forAllNoShrink(CreditingTxGen.outputs) {
       case creditingTxsInfo =>
-        val creditingOutputs = creditingTxsInfo.map(c => c._1.outputs(c._2).value)
-        val totalAmount = creditingOutputs.fold(CurrencyUnits.zero)(_ + _)
+        val creditingOutputs = creditingTxsInfo.map(c => c._1.outputs(c._2))
+        val creditingOutputsAmt = creditingOutputs.map(_.value)
+        val totalAmount = creditingOutputsAmt.fold(CurrencyUnits.zero)(_ + _)
         Prop.forAll(TransactionGenerators.smallOutputs(totalAmount)) { destinations: Seq[TransactionOutput] =>
-          val fee = 1000 //sat/vbyte
-          val outpointsWithKeys = buildCreditingTxInfo(creditingTxsInfo)
-          val builder = TxBuilder(destinations, creditingTxsInfo.map(_._1),outpointsWithKeys,fee,EmptyScriptPubKey)
-          val result = builder.left.flatMap(_.sign({(_,_) => true}))
+          val fee = 1000 // sat/vbyte
+        val outpointsWithKeys = buildCreditingTxInfo(creditingTxsInfo)
+          val builder = TxBuilder(destinations, creditingTxsInfo.map(_._1), outpointsWithKeys, fee, EmptyScriptPubKey)
+          val result = builder.left.flatMap(_.sign({ (_, _) => true }))
           result match {
             case Left(tx) =>
               val noRedeem = creditingTxsInfo.map(c => (c._1, c._2))
-              verifyScript(tx,noRedeem)
+              verifyScript(tx, noRedeem)
             case Right(err) =>
-              logger.error("error with p2pkh txoutputgen: " + err)
-              err == ScriptErrorPushSize
+              //incompatible locktime case can happen when we have > 1 CLTVSPK that we are trying to spend
+              err == TxBuilderError.IncompatibleLockTimes
           }
         }
     }
   }
-
-/*
-  property("sign a p2pk tx and then have it verified") = {
-    Prop.forAllNoShrink(CreditingTxGen.p2wpkhOutput, TransactionGenerators.smallOutputs) {
-      case (creditingTxsInfo,destinations) =>
-        val outpointsKeysRedeemScripts = buildCreditingTxInfo(Seq(creditingTxsInfo))
-        val builder = TxBuilder(destinations, Seq(creditingTxsInfo._1),outpointsKeysRedeemScripts)
-        val result = builder.get.sign({_ => true})
-        result match {
-          case Left(tx) =>
-            verifyScript(tx,Seq((creditingTxsInfo._1, creditingTxsInfo._2, creditingTxsInfo._3)))
-          case Right(err) =>
-            logger.info("error with p2pkh txoutputgen: " + err)
-            false
-        }
-    }
-  }
-*/
-
 
   private def buildCreditingTxInfo(info: Seq[TxBuilderSpec.CreditingTxInfo]): TxBuilderSpec.OutPointMap = {
     @tailrec
