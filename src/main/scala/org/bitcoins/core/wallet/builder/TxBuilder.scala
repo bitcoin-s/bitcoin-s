@@ -52,7 +52,7 @@ sealed abstract class TxBuilder {
   def creditingTxs: Seq[Transaction]
 
   /** The list of [[org.bitcoins.core.protocol.transaction.TransactionOutPoint]]s we are attempting to spend
-    * and the keys, redeem scripts, and script witnesses that might be needed to spend this outpoint.
+    * and the signers, redeem scripts, and script witnesses that might be needed to spend this outpoint.
     * This information is dependent on what the [[ScriptPubKey]] type is we are spending. For isntance, if we are spending a
     * regular [[P2PKHScriptPubKey]], we do not need a redeem script or script witness.
     *
@@ -60,7 +60,7 @@ sealed abstract class TxBuilder {
     */
   def utxoMap: TxBuilder.UTXOMap
 
-  /** This represents the rate we should pay, in satoshis/vbyte, for this transaction */
+  /** This represents the rate, in [[FeeUnit]], we should pay for this transaction */
   def feeRate: FeeUnit
 
   /** This is where all the money that is NOT sent to destination outputs is spent too.
@@ -81,8 +81,12 @@ sealed abstract class TxBuilder {
   /** The script witnesses that are needed in this transaction */
   def scriptWitOpt: Seq[Option[ScriptWitness]] = utxoMap.values.map(_._4).toSeq
 
-  /** Overloaded version if sign that skips passing a user invariant */
-  def sign(isRBFEnabled: Boolean): Either[Transaction,TxBuilderError] = sign((_,_) => true, isRBFEnabled)
+  /** Overloaded version of sign that skips passing a user invariant */
+  def sign(isRBFEnabled: Boolean): Either[Transaction,TxBuilderError] = {
+    //trivially true function
+    val f = (_: UTXOMap, _: Transaction) => true
+    sign(f, isRBFEnabled)
+  }
 
   /**
     * Signs the given transaction and then returns a signed tx that spends
@@ -223,7 +227,7 @@ sealed abstract class TxBuilder {
             scriptWit match {
               case _: P2WPKHWitnessV0 =>
                 if (signers.size != 1) {
-                  Right(TxBuilderError.TooManyKeys)
+                  Right(TxBuilderError.TooManySigners)
                 } else {
                   P2WPKHSigner.sign(signers, output, unsignedWTx, inputIndex, hashType)
                 }
@@ -297,8 +301,10 @@ sealed abstract class TxBuilder {
         case cltv: CLTVScriptPubKey =>
           val l = UInt32(cltv.locktime.toLong)
           if (currentLockTime < l) {
-            val lockTimeThreshold = TransactionConstants.locktimeThreshold
+            val lockTimeThreshold = tc.locktimeThreshold
             if (currentLockTime < lockTimeThreshold && l >= lockTimeThreshold) {
+              //means that we spend two different locktime types, one of the outputs spends a
+              //OP_CLTV script by block height, the other spends one by time stamp
               Right(TxBuilderError.IncompatibleLockTimes)
             } else loop(t,l)
           }
@@ -400,6 +406,16 @@ object TxBuilder {
 
   private val logger = BitcoinSLogger.logger
 
+  /**
+    * @param destinations where the money is going in the signed tx
+    * @param creditingTxs the [[Transaction]]'s that are funding this tx
+    * @param utxos extra information needed to spend the outputs in the creditingTxs
+    * @param feeRate the desired fee rate for this tx
+    * @param changeSPK where we should send the change from the creditingTxs
+    * @return either a instance of a [[TxBuilder]],
+    *         from which you can call [[TxBuilder.sign]] to generate a signed tx,
+    *         or a [[TxBuilderError]]
+    */
   def apply(destinations: Seq[TransactionOutput], creditingTxs: Seq[Transaction],
             utxos: UTXOMap, feeRate: FeeUnit, changeSPK: ScriptPubKey): Either[TxBuilder,TxBuilderError] = {
     if (feeRate.toLong <= 0) {
@@ -455,6 +471,8 @@ object TxBuilder {
     val estimatedFee = txBuilder.feeRate * signedTx
     if (spentAmount > creditingAmount) {
       Some(TxBuilderError.MintsMoney)
+    } else if (txBuilder.largestFee > actualFee) {
+      Some(TxBuilderError.HighFee)
     } else {
       val feeResult = validFeeRange(estimatedFee,actualFee,txBuilder.feeRate)
       feeResult
