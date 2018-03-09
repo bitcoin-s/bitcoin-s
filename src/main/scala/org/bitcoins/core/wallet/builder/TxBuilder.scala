@@ -81,6 +81,8 @@ sealed abstract class TxBuilder {
   /** The script witnesses that are needed in this transaction */
   def scriptWitOpt: Seq[Option[ScriptWitness]] = utxoMap.values.map(_._4).toSeq
 
+  def sign: Either[Transaction, TxBuilderError] = sign(Policy.isRBFEnabled)
+
   /** Overloaded version of sign that skips passing a user invariant */
   def sign(isRBFEnabled: Boolean): Either[Transaction,TxBuilderError] = {
     //trivially true function
@@ -189,34 +191,38 @@ sealed abstract class TxBuilder {
           case _: NonStandardScriptPubKey | _: WitnessCommitment | _: EscrowTimeoutScriptPubKey
                | EmptyScriptPubKey | _: UnassignedWitnessScriptPubKey => Right(TxBuilderError.NoSigner)
         }
-      case _: P2SHScriptPubKey =>
+      case p2sh: P2SHScriptPubKey =>
         redeemScriptOpt match {
           case Some(redeemScript) =>
-            val input = TransactionInput(outpoint,EmptyScriptSignature,oldInput.sequence)
-            val updatedTx = unsignedTx match {
-              case btx: BaseTransaction =>
-                BaseTransaction(btx.version,unsignedTx.inputs.updated(inputIndex.toInt,input),btx.outputs,btx.lockTime)
-              case wtx: WitnessTransaction =>
-                WitnessTransaction(wtx.version,unsignedTx.inputs.updated(inputIndex.toInt,input),wtx.outputs,wtx.lockTime,wtx.witness)
-            }
-            val updatedOutput = TransactionOutput(output.value,redeemScript)
-            val signedTxEither: Either[Transaction, TxBuilderError] = sign((outpoint,updatedOutput,signers,None,
-              scriptWitnessOpt, hashType),updatedTx)
-            signedTxEither.left.map { signedTx =>
-              val i = signedTx.inputs(inputIndex.toInt)
-              val p2sh = P2SHScriptSignature(i.scriptSignature,redeemScript)
-              val signedInput = TransactionInput(i.previousOutput,p2sh,i.sequence)
-              val signedInputs = signedTx.inputs.updated(inputIndex.toInt,signedInput)
-              signedTx match {
+            if (p2sh != P2SHScriptPubKey(redeemScript)) {
+              Right(TxBuilderError.WrongRedeemScript)
+            } else {
+              val input = TransactionInput(outpoint,EmptyScriptSignature,oldInput.sequence)
+              val updatedTx = unsignedTx match {
                 case btx: BaseTransaction =>
-                  BaseTransaction(btx.version,signedInputs,btx.outputs,btx.lockTime)
+                  BaseTransaction(btx.version,unsignedTx.inputs.updated(inputIndex.toInt,input),btx.outputs,btx.lockTime)
                 case wtx: WitnessTransaction =>
-                  WitnessTransaction(wtx.version,signedInputs,wtx.outputs,wtx.lockTime,wtx.witness)
+                  WitnessTransaction(wtx.version,unsignedTx.inputs.updated(inputIndex.toInt,input),wtx.outputs,wtx.lockTime,wtx.witness)
+              }
+              val updatedOutput = TransactionOutput(output.value,redeemScript)
+              val signedTxEither: Either[Transaction, TxBuilderError] = sign((outpoint,updatedOutput,signers,None,
+                scriptWitnessOpt, hashType),updatedTx)
+              signedTxEither.left.map { signedTx =>
+                val i = signedTx.inputs(inputIndex.toInt)
+                val p2sh = P2SHScriptSignature(i.scriptSignature,redeemScript)
+                val signedInput = TransactionInput(i.previousOutput,p2sh,i.sequence)
+                val signedInputs = signedTx.inputs.updated(inputIndex.toInt,signedInput)
+                signedTx match {
+                  case btx: BaseTransaction =>
+                    BaseTransaction(btx.version,signedInputs,btx.outputs,btx.lockTime)
+                  case wtx: WitnessTransaction =>
+                    WitnessTransaction(wtx.version,signedInputs,wtx.outputs,wtx.lockTime,wtx.witness)
+                }
               }
             }
           case None => Right(TxBuilderError.NoRedeemScript)
         }
-      case _: WitnessScriptPubKeyV0 =>
+      case witSPK: WitnessScriptPubKeyV0 =>
         //if we don't have a WitnessTransaction we need to convert our unsignedTx to a WitnessTransaction
         val unsignedWTx: WitnessTransaction = unsignedTx match {
           case btx: BaseTransaction => WitnessTransaction(btx.version, btx.inputs, btx.outputs,btx.lockTime, EmptyWitness)
@@ -225,37 +231,43 @@ sealed abstract class TxBuilder {
         val result: Either[TxSigComponent, TxBuilderError] = scriptWitnessOpt match {
           case Some(scriptWit) =>
             scriptWit match {
-              case _: P2WPKHWitnessV0 =>
+              case p2wpkh: P2WPKHWitnessV0 =>
                 if (signers.size != 1) {
                   Right(TxBuilderError.TooManySigners)
+                } else if (P2WPKHWitnessSPKV0(p2wpkh.pubKey) != witSPK) {
+                  Right(TxBuilderError.WrongPublicKey)
                 } else {
                   P2WPKHSigner.sign(signers, output, unsignedWTx, inputIndex, hashType)
                 }
               case p2wshScriptWit: P2WSHWitnessV0 =>
                 val redeemScript = p2wshScriptWit.redeemScript
-                redeemScript match {
-                  case _: P2PKScriptPubKey => P2PKSigner.sign(signers,output,unsignedWTx,inputIndex,hashType)
-                  case _: P2PKHScriptPubKey => P2PKHSigner.sign(signers,output,unsignedWTx,inputIndex,hashType)
-                  case _: MultiSignatureScriptPubKey  => MultiSigSigner.sign(signers,output,unsignedWTx,inputIndex,hashType)
-                  case _: P2WPKHWitnessSPKV0 | _: P2WSHWitnessSPKV0 => Right(TxBuilderError.NestedWitnessSPK)
-                  case _: P2SHScriptPubKey => Right(TxBuilderError.NestedP2SHSPK)
-                  case lock: LockTimeScriptPubKey =>
-                    lock.nestedScriptPubKey match {
-                      case _: P2PKScriptPubKey => P2PKSigner.sign(signers,output,unsignedTx,inputIndex,hashType)
-                      case _: P2PKHScriptPubKey => P2PKHSigner.sign(signers,output,unsignedTx,inputIndex,hashType)
-                      case _: MultiSignatureScriptPubKey => MultiSigSigner.sign(signers,output,unsignedTx,inputIndex,hashType)
-                      case _: P2WPKHWitnessSPKV0 => P2WPKHSigner.sign(signers,output,unsignedTx,inputIndex,hashType)
-                      case _: P2SHScriptPubKey => Right(TxBuilderError.NestedP2SHSPK)
-                      case _: P2WSHWitnessSPKV0 => Right(TxBuilderError.NestedP2WSHSPK)
-                      case _: CSVScriptPubKey | _: CLTVScriptPubKey | _: EscrowTimeoutScriptPubKey =>
-                        Right(TxBuilderError.NoSigner)
-                      case _: NonStandardScriptPubKey | _: WitnessCommitment
-                           | EmptyScriptPubKey | _: UnassignedWitnessScriptPubKey
-                           | _: EscrowTimeoutScriptPubKey => Right(TxBuilderError.NoSigner)
-                    }
-                  case _: NonStandardScriptPubKey | _: WitnessCommitment | EmptyScriptPubKey
-                        | _: UnassignedWitnessScriptPubKey | _: EscrowTimeoutScriptPubKey =>
-                    Right(TxBuilderError.NoSigner)
+                if (witSPK != P2WSHWitnessSPKV0(redeemScript)) {
+                  Right(TxBuilderError.WrongWitness)
+                } else {
+                  redeemScript match {
+                    case _: P2PKScriptPubKey => P2PKSigner.sign(signers,output,unsignedWTx,inputIndex,hashType)
+                    case _: P2PKHScriptPubKey => P2PKHSigner.sign(signers,output,unsignedWTx,inputIndex,hashType)
+                    case _: MultiSignatureScriptPubKey  => MultiSigSigner.sign(signers,output,unsignedWTx,inputIndex,hashType)
+                    case _: P2WPKHWitnessSPKV0 | _: P2WSHWitnessSPKV0 => Right(TxBuilderError.NestedWitnessSPK)
+                    case _: P2SHScriptPubKey => Right(TxBuilderError.NestedP2SHSPK)
+                    case lock: LockTimeScriptPubKey =>
+                      lock.nestedScriptPubKey match {
+                        case _: P2PKScriptPubKey => P2PKSigner.sign(signers,output,unsignedTx,inputIndex,hashType)
+                        case _: P2PKHScriptPubKey => P2PKHSigner.sign(signers,output,unsignedTx,inputIndex,hashType)
+                        case _: MultiSignatureScriptPubKey => MultiSigSigner.sign(signers,output,unsignedTx,inputIndex,hashType)
+                        case _: P2WPKHWitnessSPKV0 => P2WPKHSigner.sign(signers,output,unsignedTx,inputIndex,hashType)
+                        case _: P2SHScriptPubKey => Right(TxBuilderError.NestedP2SHSPK)
+                        case _: P2WSHWitnessSPKV0 => Right(TxBuilderError.NestedP2WSHSPK)
+                        case _: CSVScriptPubKey | _: CLTVScriptPubKey | _: EscrowTimeoutScriptPubKey =>
+                          Right(TxBuilderError.NoSigner)
+                        case _: NonStandardScriptPubKey | _: WitnessCommitment
+                             | EmptyScriptPubKey | _: UnassignedWitnessScriptPubKey
+                             | _: EscrowTimeoutScriptPubKey => Right(TxBuilderError.NoSigner)
+                      }
+                    case _: NonStandardScriptPubKey | _: WitnessCommitment | EmptyScriptPubKey
+                         | _: UnassignedWitnessScriptPubKey | _: EscrowTimeoutScriptPubKey =>
+                      Right(TxBuilderError.NoSigner)
+                  }
                 }
               case EmptyScriptWitness => Right(TxBuilderError.NoWitness)
             }
