@@ -24,6 +24,21 @@ object TxBuilderError {
     */
   case object WrongSigner extends TxBuilderError
 
+  /** Means that the [[org.bitcoins.core.protocol.script.ScriptWitnessV0]] you passed as an argument does
+    * not hash to the commitment inside of [[org.bitcoins.core.protocol.script.P2WSHWitnessSPKV0]]
+    */
+  case object WrongWitness extends TxBuilderError
+
+  /** Means that the redeem script you passed as an argument does not hash to the commitment
+    * inside of the [[org.bitcoins.core.protocol.script.P2SHScriptPubKey]]
+    */
+  case object WrongRedeemScript extends TxBuilderError
+
+  /** Means that you passed the wrong public key for a [[org.bitcoins.core.protocol.script.P2PKHScriptPubKey]] or a
+    * [[org.bitcoins.core.protocol.script.P2WPKHWitnessSPKV0]] that you are trying to spend
+    */
+  case object WrongPublicKey extends TxBuilderError
+
   /** Can occurr when we are trying to sign a [[org.bitcoins.core.protocol.script.P2SHScriptPubKey]] but
     * we do not have a redeem script for that p2sh spk.
     */
