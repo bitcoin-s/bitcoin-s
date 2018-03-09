@@ -485,6 +485,8 @@ object TxBuilder {
       Some(TxBuilderError.MintsMoney)
     } else if (actualFee > txBuilder.largestFee) {
       Some(TxBuilderError.HighFee)
+    } else if (signedTx.outputs.map(_.value).exists(_ < Policy.dustThreshold)) {
+      Some(TxBuilderError.OutputBelowDustThreshold)
     } else {
       val feeResult = validFeeRange(estimatedFee,actualFee,txBuilder.feeRate)
       feeResult

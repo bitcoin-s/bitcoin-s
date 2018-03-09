@@ -115,4 +115,9 @@ object TxBuilderError {
     */
   case object IncompatibleLockTimes extends TxBuilderError
 
+  /** Means we have a output on this transaction below [[org.bitcoins.core.policy.Policy.dustThreshold]] */
+  case object OutputBelowDustThreshold extends TxBuilderError
+
+  case object UnknownError extends TxBuilderError
+
 }
