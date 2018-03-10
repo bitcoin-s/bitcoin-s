@@ -54,7 +54,7 @@ sealed abstract class MainNet extends BitcoinNetwork {
 
 object MainNet extends MainNet
 
-sealed abstract class TestNet3 extends NetworkParameters {
+sealed abstract class TestNet3 extends BitcoinNetwork {
   override def chainParams = TestNetChainParams
   override def port = 18333
   override def rpcPort = 18332
@@ -67,8 +67,8 @@ sealed abstract class TestNet3 extends NetworkParameters {
 
 object TestNet3 extends TestNet3
 
-sealed abstract class RegTest extends NetworkParameters {
-  override def chainParams: ChainParams = RegTestNetChainParams
+sealed abstract class RegTest extends BitcoinNetwork {
+  override def chainParams = RegTestNetChainParams
   override def port = 18444
   override def rpcPort = TestNet3.rpcPort
   override def dnsSeeds = Nil

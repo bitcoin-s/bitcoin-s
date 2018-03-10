@@ -1,5 +1,6 @@
 package org.bitcoins.core.wallet.builder
 
+import org.bitcoins.core.config.TestNet3
 import org.bitcoins.core.currency.{CurrencyUnits, Satoshis}
 import org.bitcoins.core.gen.{CryptoGenerators, ScriptGenerators}
 import org.bitcoins.core.number.{Int64, UInt32}
@@ -10,7 +11,7 @@ import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.scalatest.{FlatSpec, MustMatchers}
 
-class TxBuilderTest extends FlatSpec with MustMatchers {
+class BitcoinTxBuilderTest extends FlatSpec with MustMatchers {
   private val logger = BitcoinSLogger.logger
   val tc = TransactionConstants
   val (spk,privKey) = ScriptGenerators.p2pkhScriptPubKey.sample.get
@@ -23,8 +24,8 @@ class TxBuilderTest extends FlatSpec with MustMatchers {
     val signer = (privKey.sign(_: Seq[Byte]), Some(privKey.publicKey))
     val utxoMap: TxBuilder.UTXOMap = Map(outPoint -> (creditingOutput,Seq(signer),None,None,HashType.sigHashAll))
     val feeUnit = SatoshisPerVirtualByte(Satoshis.one)
-    val txBuilder = TxBuilder(destinations,Seq(creditingTx),utxoMap,feeUnit,EmptyScriptPubKey)
-    val result = txBuilder.left.flatMap(_.sign((_,_) => true))
+    val txBuilder = BitcoinTxBuilder(destinations,Seq(creditingTx),utxoMap,feeUnit,EmptyScriptPubKey, TestNet3)
+    val result = txBuilder.left.flatMap(_.sign)
     result must be (Right(TxBuilderError.MintsMoney))
   }
 
@@ -36,7 +37,7 @@ class TxBuilderTest extends FlatSpec with MustMatchers {
     val signer = (privKey.sign(_: Seq[Byte]), Some(privKey.publicKey))
     val utxoMap: TxBuilder.UTXOMap = Map(outPoint -> (creditingOutput,Seq(signer),None,None,HashType.sigHashAll))
     val feeUnit = SatoshisPerVirtualByte(Satoshis(Int64(-1)))
-    val txBuilder = TxBuilder(destinations,Seq(creditingTx),utxoMap,feeUnit,EmptyScriptPubKey)
+    val txBuilder = BitcoinTxBuilder(destinations,Seq(creditingTx),utxoMap,feeUnit,EmptyScriptPubKey, TestNet3)
     txBuilder must be (Right(TxBuilderError.LowFee))
   }
 
@@ -51,7 +52,7 @@ class TxBuilderTest extends FlatSpec with MustMatchers {
       outPoint2 -> (creditingOutput,Seq(signer),None,None,HashType.sigHashAll)
     )
     val feeUnit = SatoshisPerVirtualByte(Satoshis.one)
-    val txBuilder = TxBuilder(destinations,Seq(creditingTx),utxoMap,feeUnit,EmptyScriptPubKey)
+    val txBuilder = BitcoinTxBuilder(destinations,Seq(creditingTx),utxoMap,feeUnit,EmptyScriptPubKey, TestNet3)
     txBuilder must be (Right(TxBuilderError.MissingCreditingTx))
   }
 }

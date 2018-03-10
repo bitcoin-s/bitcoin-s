@@ -2,7 +2,7 @@ package org.bitcoins.core.wallet.builder
 
 import org.bitcoins.core.crypto.{BaseTxSigComponent, WitnessTxSigComponentRaw}
 import org.bitcoins.core.currency.{CurrencyUnits, Satoshis}
-import org.bitcoins.core.gen.{CreditingTxGen, ScriptGenerators, TransactionGenerators}
+import org.bitcoins.core.gen.{ChainParamsGenerator, CreditingTxGen, ScriptGenerators, TransactionGenerators}
 import org.bitcoins.core.number.{Int64, UInt32}
 import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script._
@@ -18,7 +18,7 @@ import org.scalacheck.{Prop, Properties}
 
 import scala.annotation.tailrec
 
-class TxBuilderSpec extends Properties("TxBuilderSpec") {
+class BitcoinTxBuilderSpec extends Properties("TxBuilderSpec") {
   private val logger = BitcoinSLogger.logger
   private val tc = TransactionConstants
   property("sign a mix of spks in a tx and then have it verified") = {
@@ -27,12 +27,12 @@ class TxBuilderSpec extends Properties("TxBuilderSpec") {
         val creditingOutputs = creditingTxsInfo.map(c => c._1.outputs(c._2))
         val creditingOutputsAmt = creditingOutputs.map(_.value)
         val totalAmount = creditingOutputsAmt.fold(CurrencyUnits.zero)(_ + _)
-        Prop.forAll(TransactionGenerators.smallOutputs(totalAmount), ScriptGenerators.scriptPubKey) {
-          case (destinations: Seq[TransactionOutput], changeSPK) =>
+        Prop.forAll(TransactionGenerators.smallOutputs(totalAmount), ScriptGenerators.scriptPubKey, ChainParamsGenerator.bitcoinNetworkParams) {
+          case (destinations: Seq[TransactionOutput], changeSPK,network) =>
             val fee = SatoshisPerVirtualByte(Satoshis(Int64(1000)))
             val outpointsWithKeys = buildCreditingTxInfo(creditingTxsInfo)
-            val builder = TxBuilder(destinations, creditingTxsInfo.map(_._1), outpointsWithKeys, fee, changeSPK._1)
-            val result = builder.left.flatMap(_.sign(false))
+            val builder = BitcoinTxBuilder(destinations, creditingTxsInfo.map(_._1), outpointsWithKeys, fee, changeSPK._1,network)
+            val result = builder.left.flatMap(_.sign)
             result match {
               case Left(tx) =>
                 val noRedeem = creditingTxsInfo.map(c => (c._1, c._2))

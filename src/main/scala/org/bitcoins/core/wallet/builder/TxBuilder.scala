@@ -1,5 +1,6 @@
 package org.bitcoins.core.wallet.builder
 
+import org.bitcoins.core.config.{BitcoinNetwork, NetworkParameters}
 import org.bitcoins.core.crypto.TxSigComponent
 import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits, Satoshis}
 import org.bitcoins.core.number.{Int64, UInt32}
@@ -69,6 +70,8 @@ sealed abstract class TxBuilder {
     * */
   def changeSPK: ScriptPubKey
 
+  def network: NetworkParameters
+
   /** All of the [[Signer.Sign]] that need to be used to spend this transaction */
   def signers: Seq[Signer.Sign] = utxoMap.values.flatMap(_._2).toSeq
 
@@ -81,10 +84,39 @@ sealed abstract class TxBuilder {
   /** The script witnesses that are needed in this transaction */
   def scriptWitOpt: Seq[Option[ScriptWitness]] = utxoMap.values.map(_._4).toSeq
 
-  def sign: Either[Transaction, TxBuilderError] = sign(Policy.isRBFEnabled)
+  def sign: Either[Transaction, TxBuilderError]
 
   /** Overloaded version of sign that skips passing a user invariant */
-  def sign(isRBFEnabled: Boolean): Either[Transaction,TxBuilderError] = {
+  def sign(isRBFEnabled: Boolean): Either[Transaction,TxBuilderError]
+
+  /**
+    * Signs the given transaction and then returns a signed tx that spends
+    * all of the given outputs.
+    * Checks the given invariants when the signing process is done
+    * An example of some invariants is that the fee on the signed transaction below a certain amount,
+    * or that RBF is enabled on the signed transaction.
+    *
+    * @param invariants - invariants that should hold true when we are done signing the transaction
+    * @param isRBFEnabled - if we should enable replace-by-fee on this transaction, see BIP125
+    * @return the signed transaction, or a [[TxBuilderError]] indicating what went wrong when signing the tx
+    */
+  def sign(invariants: (UTXOMap,Transaction) => Boolean, isRBFEnabled: Boolean = false): Either[Transaction, TxBuilderError]
+
+
+}
+
+/** The [[org.bitcoins.core.wallet.builder.TxBuilder]] for the
+  * bitcoin network(s) [[org.bitcoins.core.config.BitcoinNetwork]] */
+sealed abstract class BitcoinTxBuilder extends TxBuilder {
+  private val logger = BitcoinSLogger.logger
+  private val tc = TransactionConstants
+
+  override def network: BitcoinNetwork
+
+  override def sign: Either[Transaction, TxBuilderError] = sign(Policy.isRBFEnabled)
+
+  /** Overloaded version of sign that skips passing a user invariant */
+  override def sign(isRBFEnabled: Boolean): Either[Transaction,TxBuilderError] = {
     //trivially true function
     val f = (_: UTXOMap, _: Transaction) => true
     sign(f, isRBFEnabled)
@@ -101,7 +133,7 @@ sealed abstract class TxBuilder {
     * @param isRBFEnabled - if we should enable replace-by-fee on this transaction, see BIP125
     * @return the signed transaction, or a [[TxBuilderError]] indicating what went wrong when signing the tx
     */
-  def sign(invariants: (UTXOMap,Transaction) => Boolean, isRBFEnabled: Boolean = false): Either[Transaction, TxBuilderError] = {
+  override def sign(invariants: (UTXOMap,Transaction) => Boolean, isRBFEnabled: Boolean = false): Either[Transaction, TxBuilderError] = {
     @tailrec
     def loop(remaining: List[TxBuilder.UTXOTuple],
              txInProgress: Transaction): Either[Transaction,TxBuilderError] = remaining match {
@@ -150,7 +182,7 @@ sealed abstract class TxBuilder {
         signedTx.left.flatMap { tx =>
           if (invariants(utxoMap,tx)) {
             //final sanity checks
-            val err = TxBuilder.sanityChecks(this,tx)
+            val err = BitcoinTxBuilder.sanityChecks(this,tx)
             if (err.isDefined) Right(err.get)
             else Left(tx)
           }
@@ -402,17 +434,20 @@ sealed abstract class TxBuilder {
   }
 }
 
-
 object TxBuilder {
   /** This contains all the information needed to create a valid [[TransactionInput]] that spends this utxo */
   type UTXOTuple = (TransactionOutPoint, TransactionOutput, Seq[Signer.Sign], Option[ScriptPubKey], Option[ScriptWitness], HashType)
   type UTXOMap = Map[TransactionOutPoint, (TransactionOutput, Seq[Signer.Sign], Option[ScriptPubKey], Option[ScriptWitness], HashType)]
 
-  private case class TransactionBuilderImpl(destinations: Seq[TransactionOutput],
+}
+
+object BitcoinTxBuilder {
+  private case class BitcoinTxBuilderImpl(destinations: Seq[TransactionOutput],
                                             creditingTxs: Seq[Transaction],
                                             utxoMap: UTXOMap,
                                             feeRate: FeeUnit,
-                                            changeSPK: ScriptPubKey) extends TxBuilder {
+                                            changeSPK: ScriptPubKey,
+                                            network: BitcoinNetwork) extends BitcoinTxBuilder {
     require(outPoints.exists(o => creditingTxs.exists(_.txId == o.txId)))
   }
 
@@ -429,14 +464,14 @@ object TxBuilder {
     *         or a [[TxBuilderError]]
     */
   def apply(destinations: Seq[TransactionOutput], creditingTxs: Seq[Transaction],
-            utxos: UTXOMap, feeRate: FeeUnit, changeSPK: ScriptPubKey): Either[TxBuilder,TxBuilderError] = {
+            utxos: UTXOMap, feeRate: FeeUnit, changeSPK: ScriptPubKey, network: BitcoinNetwork): Either[TxBuilder,TxBuilderError] = {
     if (feeRate.toLong <= 0) {
       Right(TxBuilderError.LowFee)
     } else if (utxos.keys.map(o => creditingTxs.exists(_.txId == o.txId)).exists(_ == false)) {
       //means that we did not pass in a crediting tx for an outpoint in utxoMap
       Right(TxBuilderError.MissingCreditingTx)
     } else {
-      Left(TransactionBuilderImpl(destinations,creditingTxs,utxos, feeRate, changeSPK))
+      Left(BitcoinTxBuilderImpl(destinations,creditingTxs,utxos, feeRate, changeSPK, network))
     }
   }
 
