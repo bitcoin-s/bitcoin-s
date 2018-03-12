@@ -20,7 +20,4 @@ abstract class RawBitcoinSerializer[T] {
 
   /** Takes a type T and writes it into the appropriate hexadecimal serialization for type T. */
   def write(t : T) : Seq[Byte]
-
-  def logger: Logger = BitcoinSLogger.logger
-
 }

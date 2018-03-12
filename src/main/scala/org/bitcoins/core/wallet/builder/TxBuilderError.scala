@@ -85,6 +85,7 @@ object TxBuilderError {
     */
   case object MissingPublicKey extends TxBuilderError
 
+  case object MissingOutPoint extends TxBuilderError
   /** Means that the signed version of this transaction has MORE outputs than what was specified
     * when building the [[TxBuilder]]. [[TxBuilder.destinations]] && [[TxBuilder.changeOutput]] should
     * be the only outputs in the signedTx
