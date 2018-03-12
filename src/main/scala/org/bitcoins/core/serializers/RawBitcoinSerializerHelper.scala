@@ -9,22 +9,6 @@ import org.bitcoins.core.util.BitcoinSLogger
  */
 sealed abstract class RawSerializerHelper {
   private val logger = BitcoinSLogger.logger
-  /** Adds the amount padding bytes needed to fix the size of the hex string
-   * for instance, vouts are required to be 4 bytes. If the number is just 1
-   * it will only take 1 byte. We need to pad the byte with an extra 3 bytes so the result is
-   * 01000000 instead of just 01. */
-  def addPadding(charactersNeeded : Int, hex : String) : String = {
-    val paddingNeeded = charactersNeeded - hex.size
-    val padding = for { i <- 0 until paddingNeeded} yield "0"
-    val paddedHex = hex + padding.mkString
-    paddedHex
-  }
-
-  /** Adds a preceding zero to a hex string.
-   * Example: if '1' was passed in, it would return the hex string '01'.*/
-  def addPrecedingZero(hex : String) = {
-    if (hex.size == 1) "0" + hex else hex
-  }
 
   /** Used parse a byte sequence to a Seq[TransactionInput], Seq[TransactionOutput], etc
     * Makes sure that we parse the correct amount of elements

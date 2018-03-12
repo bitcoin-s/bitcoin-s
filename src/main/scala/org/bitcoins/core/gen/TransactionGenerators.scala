@@ -556,18 +556,30 @@ trait TransactionGenerators extends BitcoinSLogger {
   /** generates a [[ScriptNumber]] and [[UInt32]] locktime for a transaction such that the tx will be spendable */
   def spendableCLTVValues: Gen[(ScriptNumber,UInt32)] = for {
     txLockTime <- NumberGenerator.uInt32s
-    cltvLockTime <- NumberGenerator.uInt32s.suchThat(num =>
-      cltvLockTimesOfSameType(ScriptNumber(num.toLong),txLockTime) &&
-        num < txLockTime).map(x => ScriptNumber(x.toLong))
+    cltvLockTime <- sameLockTimeTypeSpendable(txLockTime)
   } yield (cltvLockTime,txLockTime)
 
   /** Generates a [[ScriptNumber]] and [[UInt32]] locktime for a transaction such that the tx will be unspendable */
   def unspendableCLTVValues: Gen[(ScriptNumber,UInt32)] = for {
     txLockTime <- NumberGenerator.uInt32s
-    cltvLockTime <- NumberGenerator.uInt32s.suchThat(num => num >= txLockTime ||
-      !cltvLockTimesOfSameType(ScriptNumber(num.toLong),txLockTime)).map(x => ScriptNumber(x.toLong))
+    cltvLockTime <- sameLockTimeUnspendable(txLockTime)
   } yield (cltvLockTime,txLockTime)
 
+  private def sameLockTimeTypeSpendable(txLockTime: UInt32): Gen[ScriptNumber] = {
+    if (txLockTime < TransactionConstants.locktimeThreshold) {
+      Gen.choose(0,txLockTime.toLong).map(ScriptNumber(_))
+    } else {
+      Gen.choose(TransactionConstants.locktimeThreshold.toLong, txLockTime.toLong).map(ScriptNumber(_))
+    }
+  }
+
+  private def sameLockTimeUnspendable(txLockTime: UInt32): Gen[ScriptNumber] = {
+    if (txLockTime < TransactionConstants.locktimeThreshold) {
+      Gen.choose(txLockTime.toLong+1, TransactionConstants.locktimeThreshold.toLong).map(ScriptNumber(_))
+    } else {
+      Gen.choose(txLockTime.toLong+1, UInt32.max.toLong).map(ScriptNumber(_))
+    }
+  }
 }
 
 object TransactionGenerators extends TransactionGenerators

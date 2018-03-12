@@ -147,6 +147,28 @@ sealed abstract class CreditingTxGen {
 
   def p2wshOutputs: Gen[Seq[CreditingTxGen.CreditingTxInfo]] = Gen.choose(min,max).flatMap(n => Gen.listOfN(n,p2wshOutput))
 
+  /** A nested output is a p2sh/p2wsh wrapped output */
+  def nestedOutput: Gen[CreditingTxGen.CreditingTxInfo] = Gen.oneOf(p2wshOutput, p2shOutput)
+
+  def nestedOutputs: Gen[Seq[CreditingTxGen.CreditingTxInfo]] = Gen.choose(min,max).flatMap(n => Gen.listOfN(n,nestedOutput))
+
+  def random: Gen[CreditingTxGen.CreditingTxInfo] = nonEmptyOutputs.flatMap { outputs =>
+    Gen.choose(0,outputs.size-1).flatMap { outputIndex: Int =>
+      ScriptGenerators.scriptPubKey.flatMap { case (spk,keys) =>
+        WitnessGenerators.scriptWitness.flatMap { wit: ScriptWitness =>
+          CryptoGenerators.hashType.map { hashType: HashType =>
+            val tc = TransactionConstants
+            val signers: Seq[Signer.Sign] = keys.map(k => (k.sign(_: Seq[Byte]), Some(k.publicKey)))
+            val creditingTx = BaseTransaction(tc.validLockVersion, Nil, outputs, tc.lockTime)
+            (creditingTx,outputIndex,signers, Some(spk), Some(wit),hashType)
+          }
+        }
+      }
+    }
+  }
+
+  def randoms: Gen[Seq[CreditingTxGen.CreditingTxInfo]] = Gen.choose(min,max).flatMap(n => Gen.listOfN(n,random))
+
   private def build(spk: ScriptPubKey, signers: Seq[Signer.Sign],
                     redeemScript: Option[ScriptPubKey],
                     scriptWitness: Option[ScriptWitness]): Gen[CreditingTxGen.CreditingTxInfo] = nonEmptyOutputs.flatMap { outputs =>
