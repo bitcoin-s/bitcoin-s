@@ -33,7 +33,8 @@ class LockTimeInterpreterTest extends FlatSpec with MustMatchers {
   it must "mark the transaction as invalid if the stack top is negative" in {
     val stack = Seq(ScriptNumber(-1))
     val script = Seq(OP_CHECKLOCKTIMEVERIFY)
-    val txInputAdjustedSequenceNumber = TransactionInput(TestUtil.transaction.inputs(0),UInt32.zero)
+    val oldInput = TestUtil.transaction.inputs(0)
+    val txInputAdjustedSequenceNumber = TransactionInput(oldInput.previousOutput, oldInput.scriptSignature, UInt32.zero)
     val emptyTx = EmptyTransaction
     val txAdjustedSequenceNumber = BaseTransaction(emptyTx.version,Seq(txInputAdjustedSequenceNumber), emptyTx.outputs, emptyTx.lockTime)
     val adjustedLockTimeTx = BaseTransaction(txAdjustedSequenceNumber.version,txAdjustedSequenceNumber.inputs,txAdjustedSequenceNumber.outputs,UInt32.zero)
@@ -47,7 +48,8 @@ class LockTimeInterpreterTest extends FlatSpec with MustMatchers {
   it must "mark the transaction as invalid if the locktime on the tx is < 500000000 && stack top is >= 500000000" in {
     val stack = Seq(ScriptNumber(500000000))
     val script = Seq(OP_CHECKLOCKTIMEVERIFY)
-    val txInputAdjustedSequenceNumber = TransactionInput(TestUtil.transaction.inputs(0),UInt32.zero)
+    val oldInput = TestUtil.transaction.inputs(0)
+    val txInputAdjustedSequenceNumber = TransactionInput(oldInput.previousOutput, oldInput.scriptSignature, UInt32.zero)
     val emptyTx = EmptyTransaction
     val txAdjustedSequenceNumber = BaseTransaction(emptyTx.version,Seq(txInputAdjustedSequenceNumber), emptyTx.outputs, emptyTx.lockTime)
     val adjustedLockTimeTx = BaseTransaction(txAdjustedSequenceNumber.version,txAdjustedSequenceNumber.inputs,txAdjustedSequenceNumber.outputs,UInt32.zero)
@@ -61,7 +63,8 @@ class LockTimeInterpreterTest extends FlatSpec with MustMatchers {
   it must "mark the transaction as invalid if the locktime on the tx is >= 500000000 && stack top is < 500000000" in {
     val stack = Seq(ScriptNumber(499999999))
     val script = Seq(OP_CHECKLOCKTIMEVERIFY)
-    val txInputAdjustedSequenceNumber = TransactionInput(TestUtil.transaction.inputs(0),UInt32.zero)
+    val oldInput = TestUtil.transaction.inputs(0)
+    val txInputAdjustedSequenceNumber = TransactionInput(oldInput.previousOutput, oldInput.scriptSignature, UInt32.zero)
     val emptyTx = EmptyTransaction
     val txAdjustedSequenceNumber = BaseTransaction(emptyTx.version,Seq(txInputAdjustedSequenceNumber), emptyTx.outputs, emptyTx.lockTime)
     val adjustedLockTimeTx = BaseTransaction(txAdjustedSequenceNumber.version,txAdjustedSequenceNumber.inputs,txAdjustedSequenceNumber.outputs,UInt32.zero)
@@ -76,7 +79,8 @@ class LockTimeInterpreterTest extends FlatSpec with MustMatchers {
   it must "mark the transaction as invalid if the stack top item is greater than the tx locktime" in {
     val stack = Seq(ScriptNumber(499999999))
     val script = Seq(OP_CHECKLOCKTIMEVERIFY)
-    val txInputAdjustedSequenceNumber = TransactionInput(TestUtil.transaction.inputs(0),UInt32.zero)
+    val oldInput = TestUtil.transaction.inputs(0)
+    val txInputAdjustedSequenceNumber = TransactionInput(oldInput.previousOutput, oldInput.scriptSignature, UInt32.zero)
     val emptyTx = EmptyTransaction
     val txAdjustedSequenceNumber = BaseTransaction(emptyTx.version,Seq(txInputAdjustedSequenceNumber), emptyTx.outputs, emptyTx.lockTime)
     val adjustedLockTimeTx = BaseTransaction(txAdjustedSequenceNumber.version,txAdjustedSequenceNumber.inputs,txAdjustedSequenceNumber.outputs,UInt32.zero)
@@ -94,7 +98,8 @@ class LockTimeInterpreterTest extends FlatSpec with MustMatchers {
   it must "mark the transaction as valid if the locktime on the tx is < 500000000 && stack top is < 500000000" in {
     val stack = Seq(ScriptNumber(0))
     val script = Seq(OP_CHECKLOCKTIMEVERIFY)
-    val txInputAdjustedSequenceNumber = TransactionInput(TestUtil.transaction.inputs(0),UInt32.zero)
+    val oldInput = TestUtil.transaction.inputs(0)
+    val txInputAdjustedSequenceNumber = TransactionInput(oldInput.previousOutput, oldInput.scriptSignature, UInt32.zero)
     val emptyTx = EmptyTransaction
     val txAdjustedSequenceNumber = BaseTransaction(emptyTx.version,Seq(txInputAdjustedSequenceNumber),
       emptyTx.outputs, emptyTx.lockTime)
@@ -113,7 +118,8 @@ class LockTimeInterpreterTest extends FlatSpec with MustMatchers {
   it must "mark the transaction as valid if the locktime on the tx is >= 500000000 && stack top is >= 500000000" in {
     val stack = Seq(ScriptNumber(500000000))
     val script = Seq(OP_CHECKLOCKTIMEVERIFY)
-    val txInputAdjustedSequenceNumber = TransactionInput(TestUtil.transaction.inputs(0),UInt32.zero)
+    val oldInput = TestUtil.transaction.inputs(0)
+    val txInputAdjustedSequenceNumber = TransactionInput(oldInput.previousOutput, oldInput.scriptSignature, UInt32.zero)
     val emptyTx = EmptyTransaction
     val txAdjustedSequenceNumber = BaseTransaction(emptyTx.version, Seq(txInputAdjustedSequenceNumber),
       emptyTx.outputs, emptyTx.lockTime)

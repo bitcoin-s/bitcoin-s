@@ -77,7 +77,7 @@ sealed abstract class ChainParams {
     val const = ScriptConstant(timestampBytes)
     val scriptSignature = ScriptSignature.fromAsm(Seq(BytesToPushOntoStack(4), ScriptNumber(486604799),
       BytesToPushOntoStack(1), ScriptNumber(4)) ++ BitcoinScriptUtil.calculatePushOp(const) ++ Seq(const))
-    val input = TransactionInput(scriptSignature)
+    val input = CoinbaseInput(scriptSignature)
     val output = TransactionOutput(amount,scriptPubKey)
     val tx = BaseTransaction(TransactionConstants.version,Seq(input), Seq(output), TransactionConstants.lockTime)
     val prevBlockHash = DoubleSha256Digest("0000000000000000000000000000000000000000000000000000000000000000")
