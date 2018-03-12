@@ -21,9 +21,10 @@ sealed abstract class CreditingTxGen {
     Gen.oneOf(p2pkOutput, p2pkhOutput, multiSigOutput, cltvOutput, csvOutput)
   }
 
+  def rawOutputs: Gen[Seq[CreditingTxGen.CreditingTxInfo]] = Gen.choose(min,max).flatMap(n => Gen.listOfN(n,rawOutput))
+
   def basicOutput: Gen[CreditingTxGen.CreditingTxInfo] = {
-    Gen.oneOf(p2pkOutput,
-      p2pkhOutput, multiSigOutput)
+    Gen.oneOf(p2pkOutput, p2pkhOutput, multiSigOutput)
   }
 
   def nonP2WSHOutput: Gen[CreditingTxGen.CreditingTxInfo] = rawOutput

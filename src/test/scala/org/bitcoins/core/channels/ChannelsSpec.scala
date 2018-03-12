@@ -86,7 +86,7 @@ class ChannelsSpec extends Properties("ChannelProperties") {
         if (!isValidTx) logger.error("Invalid tx when verifying payment channel, got error: " + interpreterResult)
         val lastClientOutput = last.transaction.outputs.head
         val currentClientOutput = current.transaction.outputs.head
-        val expectedClientOutput = TransactionOutput(lastClientOutput,lastClientOutput.value - amount)
+        val expectedClientOutput = TransactionOutput(lastClientOutput.value - amount, lastClientOutput.scriptPubKey)
         val serverOutputIsValid = if (remaining.size == 1) {
           //check server output
           val serverOutput = current.transaction.outputs(1)
