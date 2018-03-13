@@ -40,7 +40,7 @@ sealed abstract class CryptoGenerators {
     * also generates a random 'requiredSigs' number that a transaction needs to be signed with
     */
   def privateKeySeqWithRequiredSigs: Gen[(Seq[ECPrivateKey], Int)] = for {
-    num <- Gen.choose(0,ScriptSettings.maxPublicKeysPerMultiSig)
+    num <- Gen.choose(0,15)
     keysAndRequiredSigs <- privateKeySeqWithRequiredSigs(num)
   } yield keysAndRequiredSigs
 

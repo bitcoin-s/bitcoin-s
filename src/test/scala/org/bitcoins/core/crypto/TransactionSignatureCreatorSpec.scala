@@ -22,14 +22,6 @@ class TransactionSignatureCreatorSpec extends Properties("TransactionSignatureCr
         result == ScriptOk
     }
 
-  property("generate a valid signature for a p2pkh transaction") =
-    Prop.forAll(TransactionGenerators.signedP2PKHTransaction) {
-      case (txSignatureComponent: TxSigComponent, _) =>
-        //run it through the interpreter
-        val program = ScriptProgram(txSignatureComponent)
-        val result = ScriptInterpreter.run(program)
-        result == ScriptOk
-    }
   property("generate valid signatures for a multisignature transaction") =
     Prop.forAllNoShrink(TransactionGenerators.signedMultiSigTransaction) {
       case (txSignatureComponent: TxSigComponent, _)  =>

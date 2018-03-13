@@ -1,8 +1,8 @@
 package org.bitcoins.core.gen
 
 import org.bitcoins.core.crypto._
-import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits}
-import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits, Satoshis}
+import org.bitcoins.core.number.{Int64, UInt32}
 import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction.{TransactionInput, TransactionOutPoint, TransactionOutput, _}
@@ -11,6 +11,8 @@ import org.bitcoins.core.script.interpreter.ScriptInterpreter
 import org.bitcoins.core.script.locktime.LockTimeInterpreter
 import org.bitcoins.core.util.BitcoinSLogger
 import org.scalacheck.Gen
+
+import scala.annotation.tailrec
 
 /**
   * Created by chris on 6/21/16.
@@ -31,8 +33,37 @@ trait TransactionGenerators extends BitcoinSLogger {
 
   def outputs = Gen.listOf(output)
 
+  /** Outputs that only have a positive amount of satoshis, techinically the bitcoin protocol allows you
+    * to have negative value outputs
+    */
+  def realisticOutput: Gen[TransactionOutput] = CurrencyUnitGenerator.positiveRealistic.flatMap { amt =>
+    ScriptGenerators.scriptPubKey.map(spk => TransactionOutput(amt,spk._1))
+  }
+  def realisticOutputs: Gen[Seq[TransactionOutput]] = Gen.choose(0,5).flatMap(n => Gen.listOfN(n,realisticOutput))
+
   /** Generates a small list of [[TransactionOutput]] */
   def smallOutputs: Gen[Seq[TransactionOutput]] = Gen.choose(0,5).flatMap(i => Gen.listOfN(i,output))
+
+  /** Creates a small sequence of outputs whose total sum is <= totalAmount */
+  def smallOutputs(totalAmount: CurrencyUnit): Gen[Seq[TransactionOutput]] = {
+    val numOutputs = Gen.choose(0,5).sample.get
+    @tailrec
+    def loop(remaining: Int, remainingAmount: CurrencyUnit, accum: Seq[CurrencyUnit]): Seq[CurrencyUnit] = {
+      if (remaining <= 0) {
+        accum
+      } else {
+        val amt = Gen.choose(100,remainingAmount.toBigDecimal.toLongExact).map(n => Satoshis(Int64(n))).sample.get
+        loop(remaining-1,remainingAmount - amt, amt +: accum)
+      }
+    }
+    val amts = loop(numOutputs,totalAmount,Nil)
+    val spks = Gen.listOfN(numOutputs,ScriptGenerators.scriptPubKey.map(_._1))
+    spks.flatMap { s =>
+      s.zip(amts).map { case (spk,amt) =>
+        TransactionOutput(amt,spk)
+      }
+    }
+  }
 
   /** Generates a random [[org.bitcoins.core.protocol.transaction.TransactionInput]] */
   def input : Gen[TransactionInput] = for {
@@ -43,7 +74,7 @@ trait TransactionGenerators extends BitcoinSLogger {
   } yield {
     if (randomNum == 0) {
       //gives us a coinbase input
-      TransactionInput(scriptSig)
+      CoinbaseInput(scriptSig)
     } else TransactionInput(outPoint,scriptSig,sequenceNumber)
   }
 
@@ -83,9 +114,8 @@ trait TransactionGenerators extends BitcoinSLogger {
     lockTime <- NumberGenerator.uInt32s
     //we have to have atleast one NON `EmptyScriptWitness` for a tx to be a valid WitnessTransaction, otherwise we
     //revert to using the `BaseTransaction` serialization format
-     //notice we use the old serialization format if all witnesses are empty
+    //notice we use the old serialization format if all witnesses are empty
     //[[https://github.com/bitcoin/bitcoin/blob/e8cfe1ee2d01c493b758a67ad14707dca15792ea/src/primitives/transaction.h#L276-L281]]
-    //
     witness <- WitnessGenerators.transactionWitness(is.size).suchThat(_.witnesses.exists(_ != EmptyScriptWitness))
   } yield WitnessTransaction(version,is,os,lockTime, witness)
 
@@ -454,8 +484,10 @@ trait TransactionGenerators extends BitcoinSLogger {
     * Generates a pair of CSV values: a transaction input sequence, and a CSV script sequence value, such that the txInput
     * sequence mask is always greater than the script sequence mask (i.e. generates values for a validly constructed and spendable CSV transaction)
     */
-  def spendableCSVValues : Gen[(ScriptNumber, UInt32)] = Gen.oneOf(validScriptNumberAndSequenceForBlockHeight,
+  def spendableCSVValues : Gen[(ScriptNumber, UInt32)] = {
+    Gen.oneOf(validScriptNumberAndSequenceForBlockHeight,
       validScriptNumberAndSequenceForRelativeLockTime)
+  }
 
   /** To indicate that we should evaulate a OP_CSV operation based on
     * blockheight we need 1 << 22 bit turned off. See BIP68 for more details */
@@ -522,20 +554,32 @@ trait TransactionGenerators extends BitcoinSLogger {
   } yield (csvScriptNum, sequence)).suchThat(x => !csvLockTimesOfSameType(x))
 
   /** generates a [[ScriptNumber]] and [[UInt32]] locktime for a transaction such that the tx will be spendable */
-  private def spendableCLTVValues: Gen[(ScriptNumber,UInt32)] = for {
+  def spendableCLTVValues: Gen[(ScriptNumber,UInt32)] = for {
     txLockTime <- NumberGenerator.uInt32s
-    cltvLockTime <- NumberGenerator.uInt32s.suchThat(num =>
-      cltvLockTimesOfSameType(ScriptNumber(num.toLong),txLockTime) &&
-      num < txLockTime).map(x => ScriptNumber(x.toLong))
+    cltvLockTime <- sameLockTimeTypeSpendable(txLockTime)
   } yield (cltvLockTime,txLockTime)
 
   /** Generates a [[ScriptNumber]] and [[UInt32]] locktime for a transaction such that the tx will be unspendable */
-  private def unspendableCLTVValues: Gen[(ScriptNumber,UInt32)] = for {
+  def unspendableCLTVValues: Gen[(ScriptNumber,UInt32)] = for {
     txLockTime <- NumberGenerator.uInt32s
-    cltvLockTime <- NumberGenerator.uInt32s.suchThat(num => num >= txLockTime ||
-      !cltvLockTimesOfSameType(ScriptNumber(num.toLong),txLockTime)).map(x => ScriptNumber(x.toLong))
+    cltvLockTime <- sameLockTimeUnspendable(txLockTime)
   } yield (cltvLockTime,txLockTime)
 
+  private def sameLockTimeTypeSpendable(txLockTime: UInt32): Gen[ScriptNumber] = {
+    if (txLockTime < TransactionConstants.locktimeThreshold) {
+      Gen.choose(0,txLockTime.toLong).map(ScriptNumber(_))
+    } else {
+      Gen.choose(TransactionConstants.locktimeThreshold.toLong, txLockTime.toLong).map(ScriptNumber(_))
+    }
+  }
+
+  private def sameLockTimeUnspendable(txLockTime: UInt32): Gen[ScriptNumber] = {
+    if (txLockTime < TransactionConstants.locktimeThreshold) {
+      Gen.choose(txLockTime.toLong+1, TransactionConstants.locktimeThreshold.toLong).map(ScriptNumber(_))
+    } else {
+      Gen.choose(txLockTime.toLong+1, UInt32.max.toLong).map(ScriptNumber(_))
+    }
+  }
 }
 
 object TransactionGenerators extends TransactionGenerators

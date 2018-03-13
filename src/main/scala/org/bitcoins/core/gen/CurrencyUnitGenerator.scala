@@ -1,6 +1,7 @@
 package org.bitcoins.core.gen
 
 import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit, CurrencyUnits, Satoshis}
+import org.bitcoins.core.number.Int64
 import org.scalacheck.Gen
 
 /**
@@ -20,6 +21,12 @@ trait CurrencyUnitGenerator {
 
   def positiveSatoshis: Gen[Satoshis] = satoshis.suchThat(_ >= CurrencyUnits.zero)
 
+  /** Generates a postiive satoshi value that is 'realistic'. This current 'realistic' range
+    * is from 0 to 1,000,000 bitcoin
+    */
+  def positiveRealistic: Gen[Satoshis] = Gen.choose(0,Bitcoins(1000000).satoshis.toLong).map { n =>
+    Satoshis(Int64(n))
+  }
 }
 
 

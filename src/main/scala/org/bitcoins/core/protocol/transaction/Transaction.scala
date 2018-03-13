@@ -122,34 +122,6 @@ object Transaction extends Factory[Transaction] {
         btx
     }
   }
-  @deprecated("", "2018/02/16")
-  def apply(oldTx : Transaction, lockTime : UInt32): Transaction = oldTx match {
-    case btx: BaseTransaction =>
-      BaseTransaction(btx.version,btx.inputs,btx.outputs,lockTime)
-    case wtx: WitnessTransaction =>
-      WitnessTransaction(wtx.version,wtx.inputs,wtx.outputs,lockTime,wtx.witness)
-  }
-
-  @deprecated("", "2018/02/16")
-  def apply(oldTx : Transaction, updatedInputs : UpdateTransactionInputs): Transaction = oldTx match {
-    case btx: BaseTransaction =>
-      BaseTransaction(btx.version,updatedInputs.inputs,btx.outputs,btx.lockTime)
-    case wtx: WitnessTransaction =>
-      WitnessTransaction(wtx.version,updatedInputs.inputs,wtx.outputs,wtx.lockTime,wtx.witness)
-  }
-  @deprecated("", "2018/02/16")
-  def apply(oldTx : Transaction, updatedOutputs : UpdateTransactionOutputs) : Transaction = oldTx match {
-    case btx: BaseTransaction =>
-      BaseTransaction(btx.version,btx.inputs,updatedOutputs.outputs,btx.lockTime)
-    case wtx: WitnessTransaction =>
-      WitnessTransaction(wtx.version,wtx.inputs,updatedOutputs.outputs,wtx.lockTime,wtx.witness)
-  }
-
-  @deprecated("Dangerous was you can lose TransactionWitness, use BaseTransaction", "2018/02/16")
-  def apply(version : UInt32, inputs : Seq[TransactionInput],
-            outputs : Seq[TransactionOutput], lockTime : UInt32) : Transaction = {
-    BaseTransaction(version,inputs,outputs,lockTime)
-  }
 }
 
 object BaseTransaction extends Factory[BaseTransaction] {
