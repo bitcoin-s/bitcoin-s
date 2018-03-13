@@ -3,7 +3,7 @@ package org.bitcoins.core.protocol.blockchain
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.number.Int64
 import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptSignature}
-import org.bitcoins.core.protocol.transaction.{TransactionConstants, TransactionInput, TransactionOutput}
+import org.bitcoins.core.protocol.transaction.{CoinbaseInput, TransactionConstants, TransactionOutput}
 import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil}
 import org.scalatest.{FlatSpec, MustMatchers}
 
@@ -17,7 +17,7 @@ class ChainParamsTest extends FlatSpec with MustMatchers {
   val genesisTransaction = genesisBlock.transactions.head
 
   val expectedGenesisScriptSig = ScriptSignature("4D04FFFF001D0104455468652054696D65732030332F4A616E2F32303039204368616E63656C6C6F72206F6E206272696E6B206F66207365636F6E64206261696C6F757420666F722062616E6B73".toLowerCase())
-  val expectedGenesisInput = TransactionInput(expectedGenesisScriptSig)
+  val expectedGenesisInput = CoinbaseInput(expectedGenesisScriptSig)
   val expectedGenesisScriptPubKey = ScriptPubKey("434104678AFDB0FE5548271967F1A67130B7105CD6A828E03909A67962E0EA1F61DEB649F6BC3F4CEF38C4F35504E51EC112DE5C384DF7BA0B8D578A4C702B6BF11D5FAC".toLowerCase)
   val expectedGenesisOutput = TransactionOutput(Satoshis(Int64(5000000000L)),expectedGenesisScriptPubKey)
   "ChainParams" must "generate correct block hex for genesis block" in {

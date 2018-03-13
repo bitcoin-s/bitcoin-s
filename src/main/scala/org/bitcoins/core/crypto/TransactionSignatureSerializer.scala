@@ -42,7 +42,7 @@ sealed abstract class TransactionSignatureSerializer {
     val inputSigsRemoved = for {
       input <- spendingTransaction.inputs
       s = input.scriptSignature
-    } yield TransactionInput(input,NonStandardScriptSignature(s.compactSizeUInt.hex))
+    } yield TransactionInput(input.previousOutput,NonStandardScriptSignature(s.compactSizeUInt.hex), input.sequence)
 
     //make sure all scriptSigs have empty asm
     inputSigsRemoved.map(input =>
@@ -65,7 +65,8 @@ sealed abstract class TransactionSignatureSerializer {
     // Set the input to the script of its output. Bitcoin Core does this but the step has no obvious purpose as
     // the signature covers the hash of the prevout transaction which obviously includes the output script
     // already. Perhaps it felt safer to him in some way, or is another leftover from how the code was written.
-    val inputWithConnectedScript = TransactionInput(inputToSign,scriptWithOpCodeSeparatorsRemoved)
+    val scriptSig = ScriptSignature.fromAsm(scriptWithOpCodeSeparatorsRemoved)
+    val inputWithConnectedScript = TransactionInput(inputToSign.previousOutput,scriptSig, inputToSign.sequence)
 
     //update the input at index i with inputWithConnectScript
     val updatedInputs = for {
@@ -232,7 +233,7 @@ sealed abstract class TransactionSignatureSerializer {
     (input,index) <- inputs.zipWithIndex
   } yield {
     if (UInt32(index) == inputIndex) input
-    else TransactionInput(input,UInt32.zero)
+    else TransactionInput(input.previousOutput, input.scriptSignature,UInt32.zero)
   }
 
   /** Executes the [[SIGHASH_NONE]] procedure on a spending transaction for the input specified by inputIndex. */

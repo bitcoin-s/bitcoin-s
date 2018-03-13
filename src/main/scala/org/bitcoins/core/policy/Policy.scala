@@ -9,7 +9,7 @@ import org.bitcoins.core.script.flag._
  * Mimics the policy files found in bitcoin core
  * https://github.com/bitcoin/bitcoin/blob/master/src/policy/policy.h
  */
-trait Policy {
+sealed abstract class Policy {
 
   /**
    * Mandatory script verification flags that all new blocks must comply with for
@@ -49,6 +49,8 @@ trait Policy {
 
   /** Max fee for a transaction is set to 10 mBTC right now */
   def maxFee: CurrencyUnit = Satoshis(Int64(10)) * CurrencyUnits.oneMBTC
+
+  def isRBFEnabled: Boolean = true
 }
 
 object Policy extends Policy
