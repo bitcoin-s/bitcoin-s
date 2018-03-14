@@ -7,6 +7,7 @@ import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.constant.ScriptNumber
+import org.bitcoins.core.script.control.OP_RETURN
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.script.locktime.LockTimeInterpreter
 import org.bitcoins.core.util.BitcoinSLogger
@@ -544,7 +545,8 @@ object BitcoinTxBuilder {
       Some(TxBuilderError.MintsMoney)
     } else if (actualFee > txBuilder.largestFee) {
       Some(TxBuilderError.HighFee)
-    } else if (signedTx.outputs.map(_.value).exists(_ < Policy.dustThreshold)) {
+    } else if (signedTx.outputs.filterNot(_.scriptPubKey.asm.contains(OP_RETURN))
+      .map(_.value).exists(_ < Policy.dustThreshold)) {
       Some(TxBuilderError.OutputBelowDustThreshold)
     } else {
       val feeResult = isValidFeeRange(estimatedFee,actualFee,txBuilder.feeRate)
