@@ -21,8 +21,7 @@ import scala.util.Try
   * Created by chris on 4/18/17.
   */
 class ChannelsSpec extends Properties("ChannelProperties") {
-  private def logger = BitcoinSLogger.logger
-
+  private val logger = BitcoinSLogger.logger
   property("spend a anchor transaction with the first spendingTx in a payment channel") = {
     Prop.forAllNoShrink(ChannelGenerators.freshChannelInProgress) { case (inProgress,_) =>
       val p = ScriptProgram(inProgress.current)
@@ -34,7 +33,7 @@ class ChannelsSpec extends Properties("ChannelProperties") {
   property("fail to increment a payment channel when the values are larger than the locked output") = {
     Prop.forAllNoShrink(ChannelGenerators.freshChannelInProgress) { case (inProgress,privKeys) =>
       val inc = inProgress.clientSign(inProgress.lockedAmount + Satoshis.one, privKeys.head)
-      inc.isFailure
+      inc.isRight
     }
   }
 
@@ -46,31 +45,32 @@ class ChannelsSpec extends Properties("ChannelProperties") {
       val fee = Satoshis(Int64(100))
       val (clientKey,serverKey) = (privKeys.head, privKeys(1))
       val simulated = ChannelGenerators.simulate(num,inProgress,amount,clientKey,serverKey)
-      val clientSigned = simulated.flatMap(_.clientSign(amount,clientKey))
-      val closedTry = clientSigned.flatMap(_.close(serverScriptPubKey,serverKey,fee))
-      val result = closedTry.map(closed => verifyChannel(closed,amount,fee))
-      if (result.isFailure) {
-        throw result.failed.get
-      } else result.get
+      val clientSigned = simulated.left.flatMap(_.clientSign(amount,clientKey))
+      val closedTry = clientSigned.left.flatMap(_.close(serverScriptPubKey,serverKey,fee))
+      val result = closedTry.left.map(closed => verifyChannel(closed,amount,fee))
+      if (result.isRight) {
+        logger.warn("TxBuilderError:" +  result.right.get)
+        throw new IllegalArgumentException
+      } else result.left.get
     }
   }
 
   property("close a payment channel awaiting anchor tx with the timeout branch") = {
     Prop.forAllNoShrink(ChannelGenerators.channelAwaitingAnchorTxNotConfirmed) { case (awaiting, privKeys) =>
       val channelClosedWithTimeout = awaiting.closeWithTimeout(EmptyScriptPubKey,privKeys(2), Satoshis.one)
-      logger.info("closed.inputs: " + channelClosedWithTimeout.map(_.current.transaction.inputs))
-      val program = channelClosedWithTimeout.map(c => ScriptProgram(c.current))
-      val result = program.map(p => ScriptInterpreter.run(p))
-      result.get == ScriptOk
+      logger.info("closed.inputs: " + channelClosedWithTimeout.left.map(_.current.transaction.inputs))
+      val program = channelClosedWithTimeout.left.map(c => ScriptProgram(c.current))
+      val result = program.left.map(p => ScriptInterpreter.run(p))
+      result.left.get == ScriptOk
     }
   }
 
   property("close a payment channel in progress with the timeout branch") = {
     Prop.forAllNoShrink(ChannelGenerators.baseInProgress) { case (inProgress, privKeys) =>
       val channelClosedWithTimeout = inProgress.closeWithTimeout(privKeys(2),Satoshis.one)
-      val program = channelClosedWithTimeout.map(c => ScriptProgram(c.current))
-      val result = program.map(p => ScriptInterpreter.run(p))
-      result.get == ScriptOk
+      val program = channelClosedWithTimeout.left.map(c => ScriptProgram(c.current))
+      val result = program.left.map(p => ScriptInterpreter.run(p))
+      result.left.get == ScriptOk
     }
   }
 
