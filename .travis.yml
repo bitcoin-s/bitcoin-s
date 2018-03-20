@@ -1,15 +1,21 @@
 language: scala
 scala:
   - 2.11.7
+os: 
+  - linux
+  - osx
 addons:
   apt:
-    packages: libgmp-dev
+    packages: 
+    - libgmp-dev
+    - oracle-java8-installer
+jdk:
+  - oraclejdk8
 install:
   - mkdir lib && cd secp256k1
   - ./autogen.sh
   - ./configure --enable-jni --enable-experimental --enable-module-ecdh
   - sudo make install
-  - export LD_LIBRARY_PATH="/usr/local/lib"
   - cd ../
-script: "sbt clean coverage test"
+script: "sbt -Djava.library.path=/usr/local/lib clean coverage test"
 after_success: "sbt coverageReport coveralls"
