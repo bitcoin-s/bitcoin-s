@@ -9,7 +9,6 @@ install:
   - ./autogen.sh
   - ./configure --enable-jni --enable-experimental --enable-module-ecdh
   - sudo make install
-  - export LD_LIBRARY_PATH="/usr/local/lib"
   - cd ../
-script: "sbt clean coverage test"
+script: sbt -Djava.library.path=secp256k1/.libs clean coverage test
 after_success: "sbt coverageReport coveralls"
