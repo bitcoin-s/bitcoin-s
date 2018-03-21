@@ -79,7 +79,7 @@ sealed abstract class ECPrivateKey extends BaseECKey {
   def toWIF(network: NetworkParameters): String = {
     val networkByte = network.privateKey
     //append 1 byte to the end of the priv key byte representation if we need a compressed pub key
-    val fullBytes = if (isCompressed) networkByte +: (bytes ++ Seq(1.toByte)) else networkByte +: bytes
+    val fullBytes = if (isCompressed) networkByte ++ (bytes ++ Seq(1.toByte)) else networkByte ++ bytes
     val hash = CryptoUtil.doubleSHA256(fullBytes)
     val checksum = hash.bytes.take(4)
     val encodedPrivKey = fullBytes ++ checksum
@@ -156,8 +156,8 @@ object ECPrivateKey extends Factory[ECPrivateKey] {
     * @return
     */
   def isCompressed(bytes : Seq[Byte]): Boolean = {
-    val validCompressedBytes: Seq[Byte] = Networks.secretKeyBytes
-    val validCompressedBytesInHex: Seq[String] = validCompressedBytes.map(byte => BitcoinSUtil.encodeHex(byte))
+    val validCompressedBytes: Seq[Seq[Byte]] = Networks.secretKeyBytes
+    val validCompressedBytesInHex: Seq[String] = validCompressedBytes.map(b => BitcoinSUtil.encodeHex(b))
     val firstByteHex = BitcoinSUtil.encodeHex(bytes.head)
     if (validCompressedBytesInHex.contains(firstByteHex)) bytes(bytes.length - 5) == 0x01.toByte
     else false
@@ -199,7 +199,7 @@ object ECPrivateKey extends Factory[ECPrivateKey] {
     val decoded = Base58.decodeCheck(wif)
     decoded.map { bytes =>
       val b = bytes.head
-      Networks.byteToNetwork(b)
+      Networks.byteToNetwork(Seq(b))
     }
   }
 }
