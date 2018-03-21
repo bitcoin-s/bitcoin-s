@@ -1,6 +1,5 @@
+import sbt.Keys._
 import sbt._
-import Keys._ 
-import sbtassembly.AssemblyPlugin.autoImport._
 object BitcoinSCoreBuild extends Build {
 
   val appName = "bitcoin-s-core"
@@ -27,7 +26,7 @@ object BitcoinSCoreBuild extends Build {
 
     "io.spray" %% "spray-json" % sprayV  % "test"
   )
-  
+
   val main = Project(appName, file(".")).enablePlugins().settings(
     version := appV,
     scalaVersion := scalaV,
