@@ -17,7 +17,6 @@ object BitcoinSCoreBuild extends Build {
     "org.scalatest" % "scalatest_2.11" % scalaTestV % "test",
     "com.novocode" % "junit-interface" % "0.10" % "test",
     "org.scalacheck" %% "scalacheck" % scalacheckV withSources() withJavadoc(),
-    "com.google.guava" % "guava" % "18.0",
     
     ("org.bitcoinj" % "bitcoinj-core" % "0.14.4" % "test").exclude("org.slf4j", "slf4j-api"),
     "com.madgag.spongycastle" % "core" % spongyCastleV,
