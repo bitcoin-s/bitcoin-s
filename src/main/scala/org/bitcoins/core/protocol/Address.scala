@@ -33,7 +33,7 @@ sealed abstract class P2PKHAddress extends BitcoinAddress {
   /** The base58 string representation of this address */
   override def value : String = {
     val versionByte = networkParameters.p2pkhNetworkByte
-    val bytes = Seq(versionByte) ++ hash.bytes
+    val bytes = versionByte ++ hash.bytes
     val checksum = CryptoUtil.doubleSHA256(bytes).bytes.take(4)
     Base58.encode(bytes ++ checksum)
   }
@@ -48,7 +48,7 @@ sealed abstract class P2SHAddress extends BitcoinAddress {
   /** The base58 string representation of this address */
   override def value : String = {
     val versionByte = networkParameters.p2shNetworkByte
-    val bytes = Seq(versionByte) ++ hash.bytes
+    val bytes = versionByte ++ hash.bytes
     val checksum = CryptoUtil.doubleSHA256(bytes).bytes.take(4)
     Base58.encode(bytes ++ checksum)
   }

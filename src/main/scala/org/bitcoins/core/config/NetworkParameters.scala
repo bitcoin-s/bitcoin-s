@@ -10,9 +10,9 @@ sealed abstract class NetworkParameters {
   /** The parameters of the blockchain we are connecting to */
   def chainParams: ChainParams
 
-  def p2pkhNetworkByte: Byte = chainParams.base58Prefix(Base58Type.PubKeyAddress).head
-  def p2shNetworkByte: Byte = chainParams.base58Prefix(Base58Type.ScriptAddress).head
-  def privateKey: Byte = chainParams.base58Prefix(Base58Type.SecretKey).head
+  def p2pkhNetworkByte: Seq[Byte] = chainParams.base58Prefix(Base58Type.PubKeyAddress)
+  def p2shNetworkByte: Seq[Byte] = chainParams.base58Prefix(Base58Type.ScriptAddress)
+  def privateKey: Seq[Byte] = chainParams.base58Prefix(Base58Type.SecretKey)
 
   def port : Int
   def rpcPort: Int
@@ -85,7 +85,7 @@ object Networks {
   val p2pkhNetworkBytes = knownNetworks.map(_.p2pkhNetworkByte)
   val p2shNetworkBytes = knownNetworks.map(_.p2shNetworkByte)
 
-  def byteToNetwork: Map[Byte, NetworkParameters] = Map(
+  def byteToNetwork: Map[Seq[Byte], NetworkParameters] = Map(
     MainNet.p2shNetworkByte -> MainNet,
     MainNet.p2pkhNetworkByte -> MainNet,
     MainNet.privateKey -> MainNet,
