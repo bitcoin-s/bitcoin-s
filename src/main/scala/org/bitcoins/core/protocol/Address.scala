@@ -33,7 +33,7 @@ sealed abstract class P2PKHAddress extends BitcoinAddress {
   /** The base58 string representation of this address */
   override def value : String = {
     val versionByte = networkParameters.p2pkhNetworkByte
-    val bytes = Seq(versionByte) ++ hash.bytes
+    val bytes = versionByte ++ hash.bytes
     val checksum = CryptoUtil.doubleSHA256(bytes).bytes.take(4)
     Base58.encode(bytes ++ checksum)
   }
@@ -48,7 +48,7 @@ sealed abstract class P2SHAddress extends BitcoinAddress {
   /** The base58 string representation of this address */
   override def value : String = {
     val versionByte = networkParameters.p2shNetworkByte
-    val bytes = Seq(versionByte) ++ hash.bytes
+    val bytes = versionByte ++ hash.bytes
     val checksum = CryptoUtil.doubleSHA256(bytes).bytes.take(4)
     Base58.encode(bytes ++ checksum)
   }
@@ -320,8 +320,7 @@ object P2PKHAddress {
     val decodeCheckP2PKH : Try[Seq[Byte]] = Base58.decodeCheck(address)
     decodeCheckP2PKH match {
       case Success(bytes) =>
-        val firstByte = bytes.head
-        Networks.p2pkhNetworkBytes.contains(firstByte) && bytes.size == 21
+        Networks.p2pkhNetworkBytes.find(bs => bytes.startsWith(bs)).isDefined && bytes.size == 21
       case Failure(exception) => false
     }
   }
@@ -355,8 +354,7 @@ object P2SHAddress {
     val decodeCheckP2SH : Try[Seq[Byte]] = Base58.decodeCheck(address)
     decodeCheckP2SH match {
       case Success(bytes) =>
-        val firstByte = bytes.head
-        Networks.p2shNetworkBytes.contains(firstByte) && bytes.size == 21
+        Networks.p2shNetworkBytes.find(bs => bytes.startsWith(bs)).isDefined && bytes.size == 21
       case Failure(_) => false
     }
   }
@@ -367,6 +365,7 @@ object P2SHAddress {
 }
 
 object BitcoinAddress {
+  private val logger = BitcoinSLogger.logger
   /** Checks if the given base58 bitcoin address is a valid address */
   def validate(bitcoinAddress: String): Boolean = {
     val decodeChecked = Base58.decodeCheck(bitcoinAddress)
@@ -379,12 +378,12 @@ object BitcoinAddress {
     val decodeChecked = Base58.decodeCheck(value)
     decodeChecked match {
       case Success(bytes) =>
-        val network = matchNetwork(bytes.head)
-        if (P2PKHAddress.isP2PKHAddress(value)) {
-          P2PKHAddress(Sha256Hash160Digest(bytes.tail),network)
+        val network: Option[(NetworkParameters, Seq[Byte])] = matchNetwork(bytes)
+        if (network.isDefined && P2PKHAddress.isP2PKHAddress(value)) {
+          P2PKHAddress(Sha256Hash160Digest(network.get._2),network.get._1)
         }
-        else if (P2SHAddress.isP2SHAddress(value)) {
-          P2SHAddress(Sha256Hash160Digest(bytes.tail), network)
+        else if (network.isDefined && P2SHAddress.isP2SHAddress(value)) {
+          P2SHAddress(Sha256Hash160Digest(network.get._2),network.get._1)
         } else throw new IllegalArgumentException("The address was not a p2pkh or p2sh address, got: " + value)
       case Failure(exception) =>
         throw exception
@@ -392,10 +391,19 @@ object BitcoinAddress {
   }
 
   /** Helper function for helping matching an address to a network byte */
-  private def matchNetwork(byte: Byte): NetworkParameters = byte match {
-    case _ if Seq(MainNet.p2pkhNetworkByte,MainNet.p2shNetworkByte).contains(byte) => MainNet
-    case _ if Seq(TestNet3.p2pkhNetworkByte, TestNet3.p2shNetworkByte).contains(byte) => TestNet3
-    case _ if Seq(RegTest.p2pkhNetworkByte,RegTest.p2shNetworkByte).contains(byte) => RegTest
+  private def matchNetwork(bytes: Seq[Byte]): Option[(NetworkParameters, Seq[Byte])] = {
+    val all: Seq[Seq[Byte]] = Networks.p2pkhNetworkBytes ++ Networks.p2shNetworkBytes
+    val hex = all.map(BitcoinSUtil.encodeHex(_))
+    val networkByte = all.find { b =>
+      bytes.startsWith(b)
+    }
+    val payload = networkByte.map(b => bytes.splitAt(b.size)._2)
+    val result: Option[(NetworkParameters, Seq[Byte])] = networkByte.flatMap { nb =>
+      payload.map { p =>
+        (Networks.byteToNetwork(nb), p)
+      }
+    }
+    result
   }
 }
 
