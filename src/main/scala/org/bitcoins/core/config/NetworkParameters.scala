@@ -85,7 +85,7 @@ object Networks {
   val p2pkhNetworkBytes = knownNetworks.map(_.p2pkhNetworkByte)
   val p2shNetworkBytes = knownNetworks.map(_.p2shNetworkByte)
 
-  def byteToNetwork: Map[Seq[Byte], NetworkParameters] = Map(
+  def bytesToNetwork: Map[Seq[Byte], NetworkParameters] = Map(
     MainNet.p2shNetworkByte -> MainNet,
     MainNet.p2pkhNetworkByte -> MainNet,
     MainNet.privateKey -> MainNet,
