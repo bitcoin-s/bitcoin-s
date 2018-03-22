@@ -400,7 +400,7 @@ object BitcoinAddress {
     val payload = networkByte.map(b => bytes.splitAt(b.size)._2)
     val result: Option[(NetworkParameters, Seq[Byte])] = networkByte.flatMap { nb =>
       payload.map { p =>
-        (Networks.byteToNetwork(nb), p)
+        (Networks.bytesToNetwork(nb), p)
       }
     }
     result
