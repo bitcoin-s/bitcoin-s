@@ -320,7 +320,7 @@ object P2PKHAddress {
     val decodeCheckP2PKH : Try[Seq[Byte]] = Base58.decodeCheck(address)
     decodeCheckP2PKH match {
       case Success(bytes) =>
-        Networks.p2pkhNetworkBytes.find(bs => bytes.startsWith(bs)).isDefined && bytes.size == 21
+        Networks.p2pkhNetworkBytes.find(bs => bytes.startsWith(bs)).isDefined
       case Failure(exception) => false
     }
   }
@@ -354,7 +354,7 @@ object P2SHAddress {
     val decodeCheckP2SH : Try[Seq[Byte]] = Base58.decodeCheck(address)
     decodeCheckP2SH match {
       case Success(bytes) =>
-        Networks.p2shNetworkBytes.find(bs => bytes.startsWith(bs)).isDefined && bytes.size == 21
+        Networks.p2shNetworkBytes.find(bs => bytes.startsWith(bs)).isDefined
       case Failure(_) => false
     }
   }
@@ -400,7 +400,7 @@ object BitcoinAddress {
     val payload = networkByte.map(b => bytes.splitAt(b.size)._2)
     val result: Option[(NetworkParameters, Seq[Byte])] = networkByte.flatMap { nb =>
       payload.map { p =>
-        (Networks.byteToNetwork(nb), p)
+        (Networks.bytesToNetwork(nb), p)
       }
     }
     result
