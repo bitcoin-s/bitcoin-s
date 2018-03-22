@@ -197,11 +197,18 @@ object ECPrivateKey extends Factory[ECPrivateKey] {
   /** Returns the [[NetworkParameters]] from a serialized WIF key */
   def parseNetworkFromWIF(wif: String): Try[NetworkParameters] = {
     val decoded = Base58.decodeCheck(wif)
-    decoded.map { bytes =>
-      val b = bytes.head
-      Networks.byteToNetwork(Seq(b))
+    decoded match {
+      case Success(bytes) =>
+        val networkMatch = Networks.secretKeyBytes.find(b => bytes.startsWith(b))
+        if (networkMatch.isDefined) {
+          Success(Networks.bytesToNetwork(networkMatch.get))
+        } else {
+          Failure(new IllegalArgumentException("Failed to match network bytes for WIF"))
+        }
+      case Failure(exn) => Failure(exn)
     }
   }
+
 }
 
 

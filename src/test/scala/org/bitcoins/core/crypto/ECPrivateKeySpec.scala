@@ -1,6 +1,6 @@
 package org.bitcoins.core.crypto
 
-import org.bitcoins.core.config.{MainNet, TestNet3}
+import org.bitcoins.core.config.{MainNet, RegTest, TestNet3}
 import org.bitcoins.core.gen.{ChainParamsGenerator, CryptoGenerators}
 import org.scalacheck.{Prop, Properties}
 
@@ -12,14 +12,11 @@ class ECPrivateKeySpec extends Properties("ECPrivateKeySpec") {
   property("Serialization symmetry for WIF format") =
     Prop.forAll(CryptoGenerators.privateKey, ChainParamsGenerator.networkParams) { (privKey,network) =>
       val wif = privKey.toWIF(network)
-      val isCorrectNetwork = if (network == MainNet) {
-        ECPrivateKey.parseNetworkFromWIF(wif).get == network
-      } else {
-        // we need this hack because RegTest & TestNet3 have the same base58 prefixes
-        ECPrivateKey.parseNetworkFromWIF(wif).get == TestNet3
+      val isCorrectNetwork = network match {
+        case MainNet => ECPrivateKey.parseNetworkFromWIF(wif).get == network
+        case TestNet3 | RegTest => ECPrivateKey.parseNetworkFromWIF(wif).get == TestNet3
       }
       ECPrivateKey.fromWIFToPrivateKey(wif) == privKey && isCorrectNetwork
-
     }
 
   property("Serialization symmetry") =
