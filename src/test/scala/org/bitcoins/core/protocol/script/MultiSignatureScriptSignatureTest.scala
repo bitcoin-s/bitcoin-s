@@ -1,8 +1,7 @@
 package org.bitcoins.core.protocol.script
 
-
-import org.bitcoins.core.util.{BitcoinSLogger, TransactionTestUtil}
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.bitcoins.core.util.{ BitcoinSLogger, TransactionTestUtil }
+import org.scalatest.{ FlatSpec, MustMatchers }
 
 /**
  * Created by chris on 3/8/16.
@@ -10,9 +9,9 @@ import org.scalatest.{FlatSpec, MustMatchers}
 class MultiSignatureScriptSignatureTest extends FlatSpec with MustMatchers {
 
   "MultiSignatureScriptSignature" must "find all of the digital signatures for a multisignature scriptSig" in {
-    val (spendingTx,inputIndex,_,_) = TransactionTestUtil.signedMultiSignatureTransaction
+    val (spendingTx, inputIndex, _, _) = TransactionTestUtil.signedMultiSignatureTransaction
     val scriptSig = spendingTx.inputs(inputIndex).scriptSignature
-    scriptSig.signatures.size must be (2)
+    scriptSig.signatures.size must be(2)
   }
 
 }

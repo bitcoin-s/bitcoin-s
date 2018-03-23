@@ -1,6 +1,6 @@
 package org.bitcoins.core.script.locktime
 
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.scalatest.{ FlatSpec, MustMatchers }
 
 /**
  * Created by chris on 1/6/16.
@@ -8,6 +8,6 @@ import org.scalatest.{FlatSpec, MustMatchers}
 class LocktimeOperationTest extends FlatSpec with MustMatchers {
 
   "LocktimeOperations" must "define OP_CHECKLOCKTIMEVERIFY" in {
-    OP_CHECKLOCKTIMEVERIFY.opCode must be (177)
+    OP_CHECKLOCKTIMEVERIFY.opCode must be(177)
   }
 }

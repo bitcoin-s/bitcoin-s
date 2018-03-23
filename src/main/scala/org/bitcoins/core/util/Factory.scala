@@ -9,16 +9,16 @@ import org.slf4j.Logger
 trait Factory[T] {
 
   /** Creates a T out of a hex string. */
-  def fromHex(hex : String) : T = fromBytes(BitcoinSUtil.decodeHex(hex))
+  def fromHex(hex: String): T = fromBytes(BitcoinSUtil.decodeHex(hex))
 
   /** Creates a T out of a sequence of bytes. */
-  def fromBytes(bytes : Seq[Byte]) : T
+  def fromBytes(bytes: Seq[Byte]): T
 
   /** Creates a T out of a sequence of bytes. */
-  def apply(bytes : Seq[Byte]) : T = fromBytes(bytes)
+  def apply(bytes: Seq[Byte]): T = fromBytes(bytes)
 
   /** Creates a T from a hex string. */
-  def apply(hex : String) : T = fromHex(hex)
+  def apply(hex: String): T = fromHex(hex)
 
   def logger: Logger = BitcoinSLogger.logger
 }

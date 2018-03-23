@@ -8,9 +8,8 @@ import org.bitcoins.core.script.constant.ScriptOperation
  */
 sealed trait SpliceOperation extends ScriptOperation
 
-
 case object OP_CAT extends SpliceOperation {
-  override def opCode =	126
+  override def opCode = 126
 }
 
 case object OP_SUBSTR extends SpliceOperation {

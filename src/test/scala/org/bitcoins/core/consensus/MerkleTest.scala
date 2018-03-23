@@ -1,14 +1,14 @@
 package org.bitcoins.core.consensus
 
 import org.bitcoins.core.crypto.DoubleSha256Digest
-import org.bitcoins.core.protocol.blockchain.{Block, MainNetChainParams}
-import org.bitcoins.core.protocol.transaction.{Transaction, WitnessTransaction}
-import org.bitcoins.core.util.{BitcoinSUtil, CryptoUtil}
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.bitcoins.core.protocol.blockchain.{ Block, MainNetChainParams }
+import org.bitcoins.core.protocol.transaction.{ Transaction, WitnessTransaction }
+import org.bitcoins.core.util.{ BitcoinSUtil, CryptoUtil }
+import org.scalatest.{ FlatSpec, MustMatchers }
 
 /**
-  * Created by chris on 5/24/16.
-  */
+ * Created by chris on 5/24/16.
+ */
 class MerkleTest extends FlatSpec with MustMatchers {
 
   "Merkle" must "compute the merkle root for the genesis block" in {
@@ -24,8 +24,8 @@ class MerkleTest extends FlatSpec with MustMatchers {
     val tx1 = Transaction("0100000001a6b97044d03da79c005b20ea9c0e1a6d9dc12d9f7b91a5911c9030a439eed8f5000000004948304502206e21798a42fae0e854281abd38bacd1aeed3ee3738d9e1446618c4571d1090db022100e2ac980643b0b82c0e88ffdfec6b64e3e6ba35e7ba5fdd7d5d6cc8d25c6b241501ffffffff0100f2052a010000001976a914404371705fa9bd789a2fcd52d2c580b65d35549d88ac00000000")
     require(tx1.txId.hex == BitcoinSUtil.flipEndianness("5a4ebf66822b0b2d56bd9dc64ece0bc38ee7844a23ff1d7320a88c5fdb2ad3e2"))
 
-    val transactions = Seq(coinbaseTx,tx1)
-    Merkle.computeMerkleRoot(transactions).hex must be (BitcoinSUtil.flipEndianness("8fb300e3fdb6f30a4c67233b997f99fdd518b968b9a3fd65857bfe78b2600719"))
+    val transactions = Seq(coinbaseTx, tx1)
+    Merkle.computeMerkleRoot(transactions).hex must be(BitcoinSUtil.flipEndianness("8fb300e3fdb6f30a4c67233b997f99fdd518b968b9a3fd65857bfe78b2600719"))
   }
 
   it must "correctly compute the merkle root for a block with 3 transactions" in {
@@ -38,7 +38,7 @@ class MerkleTest extends FlatSpec with MustMatchers {
     require(tx2.txId.hex == BitcoinSUtil.flipEndianness("d8c9d6a13a7fb8236833b1e93d298f4626deeb78b2f1814aa9a779961c08ce39"))
     val transactions = Seq(coinbaseTx, tx1, tx2)
 
-    Merkle.computeMerkleRoot(transactions).hex must be (BitcoinSUtil.flipEndianness("d277b5d20fab7cdb8140ab953323b585445d4920ad7226623d9c7ed0bc6b9a57"))
+    Merkle.computeMerkleRoot(transactions).hex must be(BitcoinSUtil.flipEndianness("d277b5d20fab7cdb8140ab953323b585445d4920ad7226623d9c7ed0bc6b9a57"))
   }
 
   it must "correctly compute the merkle root for the 100,000 block which has 4 transactions" in {
@@ -49,9 +49,9 @@ class MerkleTest extends FlatSpec with MustMatchers {
     val tx2 = Transaction("0100000001c33ebff2a709f13d9f9a7569ab16a32786af7d7e2de09265e41c61d078294ecf010000008a4730440220032d30df5ee6f57fa46cddb5eb8d0d9fe8de6b342d27942ae90a3231e0ba333e02203deee8060fdc70230a7f5b4ad7d7bc3e628cbe219a886b84269eaeb81e26b4fe014104ae31c31bf91278d99b8377a35bbce5b27d9fff15456839e919453fc7b3f721f0ba403ff96c9deeb680e5fd341c0fc3a7b90da4631ee39560639db462e9cb850fffffffff0240420f00000000001976a914b0dcbf97eabf4404e31d952477ce822dadbe7e1088acc060d211000000001976a9146b1281eec25ab4e1e0793ff4e08ab1abb3409cd988ac00000000")
     val tx3 = Transaction("01000000010b6072b386d4a773235237f64c1126ac3b240c84b917a3909ba1c43ded5f51f4000000008c493046022100bb1ad26df930a51cce110cf44f7a48c3c561fd977500b1ae5d6b6fd13d0b3f4a022100c5b42951acedff14abba2736fd574bdb465f3e6f8da12e2c5303954aca7f78f3014104a7135bfe824c97ecc01ec7d7e336185c81e2aa2c41ab175407c09484ce9694b44953fcb751206564a9c24dd094d42fdbfdd5aad3e063ce6af4cfaaea4ea14fbbffffffff0140420f00000000001976a91439aa3d569e06a1d7926dc4be1193c99bf2eb9ee088ac00000000")
 
-    val transactions = Seq(coinbaseTx, tx1,tx2,tx3)
+    val transactions = Seq(coinbaseTx, tx1, tx2, tx3)
 
-    Merkle.computeMerkleRoot(transactions).hex must be (BitcoinSUtil.flipEndianness("f3e94742aca4b5ef85488dc37c06c3282295ffec960994b2c0d5ac2a25a95766"))
+    Merkle.computeMerkleRoot(transactions).hex must be(BitcoinSUtil.flipEndianness("f3e94742aca4b5ef85488dc37c06c3282295ffec960994b2c0d5ac2a25a95766"))
 
   }
 
@@ -68,8 +68,8 @@ class MerkleTest extends FlatSpec with MustMatchers {
     val tx4 = Transaction("0100000001330c207db453d8bacb7f3ffda8468fbfb18ce14bf13cd3d4bd0d9eddaf46a496000000008c493046022100cf5c76c34de0fc8538f1dc8663edac41c05e4fc42fb2f6188c6a044c6906c83b022100a96aca4ebdae7502c0d2241ac4b72bf6e5a56debcc251cfe7380ecabf64a742e014104e919396bf90935fba5f6d58af2f4e844a65a239ff23b695c982345a36bb7dbc23f4a950fc5092ff8c1a64209ad147a82b446defe9480970fb36990e8cceb6da3ffffffff02404b4c00000000001976a914004c7a02611b21082d41d6520042d038a183c51288acc0862f86080000001976a9143aa3e0f999ac63971bd568ae4336cedeba9682b788ac00000000")
     require(tx4.txId.hex == BitcoinSUtil.flipEndianness("b79606d7377285e1a4f9cb757c9f1a1d36f09c10bc52be49b170c6dd40767669"))
 
-    val transactions = Seq(coinbaseTx,tx1,tx2,tx3,tx4)
-    Merkle.computeMerkleRoot(transactions).hex must be (BitcoinSUtil.flipEndianness("36b38854f9adf76b4646ab2c0f949846408cfab2c045f110d01f84f4122c5add"))
+    val transactions = Seq(coinbaseTx, tx1, tx2, tx3, tx4)
+    Merkle.computeMerkleRoot(transactions).hex must be(BitcoinSUtil.flipEndianness("36b38854f9adf76b4646ab2c0f949846408cfab2c045f110d01f84f4122c5add"))
   }
 
   it must "correctly compute the merkle root for a block with 11 transactions" in {
@@ -97,9 +97,9 @@ class MerkleTest extends FlatSpec with MustMatchers {
     val tx10 = Transaction("010000000409427b1f9d55d558f47fb865796ba455a18fb19d8afe7ac802c2df6bb9c4bdea000000008b483045022100d75a7fb24c3b94ed1be19922286ca62aa618291a09e840efcab5f7ac2d71e91f02204578e6c60e69b60179d45359cb29d26a3b8a8148fc658b0a9e1ab28bdf3939ad014104de68dcf94795f2ea428828430381594ad49126b36ffbaf055bfe7125b8d2abfe36bd3f82808f4317033396efdc3b64804f7820636de87f5229552eed8e40ada7ffffffff9e8357c7dec0c0f3c1ef86e79d454ceeefd4c25556b77b66c46e41f23d9f7470000000008a47304402202856dee4c597a9bb786e7a26099375ca3c937f84c9e465cf875ce20ee21710360220575fb1294cf901f35d636f81bfac37b3b285011359a109928227f72388f3d967014104045fbbbd37f38fcdc1d6ba91ec1270b2c4cae9ecafd6fbd7850729a68a1bbde6844e7430c4a7d2a397c1719abf0b66c94abef34381ed435521847cecd8c67b66ffffffff2b2e8b86a0a7d2c68686d95f69d741689502242e3d198257da3e56723ff4a8bd000000008b483045022100cdd5ddedd3204c5f4d8e3eb43e7b3831f60be40fbd989616314159f26e49754b022048aad835a7b11235b59e24fbe70b162d0f5fadf11e800e432b96e0c526c23d5301410426e046799b2fe0c88d8fe6a6edfb147843abead2cb6c0786fd6f1173946df50502708d2e01e24da7f4bc3f65bd0dd7101eece8dbd3e0adbc2be0e96bf52f7c5bffffffff690b213d81673522ade46cce250f446bb1dd9307911a088017d7a81d9b165a86000000008c493046022100d2d55c279bccf504bba239e75901bbeda5556d651ec7753a1ce43f2d74929e5f022100ee8134caac18f3862a5e3c048829dec9323b33bcd86235b115dc909984891db801410488da06bc75b9ea5539f54d5f22568c239a9c0845bf948f156e05096d4584a023bf0504b737f1de61fb4dcbfa58fed558ffed50322ff8578d4b9e3ce05905797effffffff01c0cf6a00000000001976a914ea2ba5d2ecaf296c163fa0eacb35b9d53d8e6aac88ac00000000")
     require(tx10.txId.hex == BitcoinSUtil.flipEndianness("f7a894ce552d9ecb0deb2d8bdd1ee22d5e641aa4c382685a41e9f28c5269a96e"))
 
-    val transactions = Seq(coinbaseTx,tx1,tx2,tx3,tx4,tx5,tx6,tx7,tx8,tx9,tx10)
+    val transactions = Seq(coinbaseTx, tx1, tx2, tx3, tx4, tx5, tx6, tx7, tx8, tx9, tx10)
 
-    Merkle.computeMerkleRoot(transactions).hex must be (BitcoinSUtil.flipEndianness("2c8230dfb6c7ad0949cbdb7d3c3616cc10770db7e832bbf5c9b261388828c6c4"))
+    Merkle.computeMerkleRoot(transactions).hex must be(BitcoinSUtil.flipEndianness("2c8230dfb6c7ad0949cbdb7d3c3616cc10770db7e832bbf5c9b261388828c6c4"))
   }
 
   it must "calculate the correct merkle root for wtxids in a block" in {
@@ -111,6 +111,6 @@ class MerkleTest extends FlatSpec with MustMatchers {
     val expectedWitnessCommitment = DoubleSha256Digest("309cfb38d1015c266667d5b7888c83def872a531b8ac277fe8df623c32b562b5")
     val witnessMerkleRoot = Merkle.computeBlockWitnessMerkleRoot(block)
     val actualWitnessCommitment = CryptoUtil.doubleSHA256(witnessMerkleRoot.bytes ++ witnessReservedValue.stack.head)
-    actualWitnessCommitment must be (expectedWitnessCommitment)
+    actualWitnessCommitment must be(expectedWitnessCommitment)
   }
 }

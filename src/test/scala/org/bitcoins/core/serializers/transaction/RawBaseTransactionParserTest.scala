@@ -1,9 +1,9 @@
 package org.bitcoins.core.serializers.transaction
 
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.transaction.{Transaction, TransactionConstants}
-import org.bitcoins.core.util.{BitcoinSUtil, TestUtil}
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.bitcoins.core.protocol.transaction.{ Transaction, TransactionConstants }
+import org.bitcoins.core.util.{ BitcoinSUtil, TestUtil }
+import org.scalatest.{ FlatSpec, MustMatchers }
 
 /**
  * Created by chris on 1/14/16.
@@ -11,20 +11,20 @@ import org.scalatest.{FlatSpec, MustMatchers}
 class RawBaseTransactionParserTest extends FlatSpec with MustMatchers {
   val encode = BitcoinSUtil.encodeHex(_: Seq[Byte])
   "RawBaseTransactionParser" must "parse a raw transaction" in {
-    val tx : Transaction = RawBaseTransactionParser.read(TestUtil.rawTransaction)
-    tx.version must be (UInt32.one)
-    tx.inputs.size must be (2)
-    tx.outputs.size must be (2)
-    tx.lockTime must be (UInt32.zero)
-    tx.txId.hex must be (BitcoinSUtil.flipEndianness("44e504f5b7649d215be05ad9f09026dee95201244a3b218013c504a6a49a26ff"))
+    val tx: Transaction = RawBaseTransactionParser.read(TestUtil.rawTransaction)
+    tx.version must be(UInt32.one)
+    tx.inputs.size must be(2)
+    tx.outputs.size must be(2)
+    tx.lockTime must be(UInt32.zero)
+    tx.txId.hex must be(BitcoinSUtil.flipEndianness("44e504f5b7649d215be05ad9f09026dee95201244a3b218013c504a6a49a26ff"))
   }
 
   it must "parse a transaction correctly with a locktime" in {
     //txid bdc221db675c06dbee2ae75d33e31cad4e2555efea10c337ff32c8cdf97f8e74
     val rawTx = "0100000002fc37adbd036fb51b3f4f6f70474270939d6ff8c4ea697639f2b57dd6359e3070010000008b483045022100ad8e961fe3c22b2647d92b078f4c0cf81b3106ea5bf8b900ab8646aa4430216f022071d4edc2b5588be20ac4c2d07edd8ed069e10b2402d3dce2d3b835ccd075f283014104fa79182bbc26c708b5d9f36b8635947d4a834ea356cf612ede08395c295f962e0b1dc2557aba34188640e51a58ed547f2c89c8265cd0c04ff890d8435648746e0000000036219231b3043efdfb9405bbc2610baa73e340dddfe9c2a07b09bd3785ca6330000000008b483045022100cb097f8720d0c4665e8771fff5181b30584fd9e7d437fae21b440c94fe76d56902206f9b539ae26ec9688c54272d6a3309d93f17fb9835f382fff1ebeead84af2763014104fa79182bbc26c708b5d9f36b8635947d4a834ea356cf612ede08395c295f962e0b1dc2557aba34188640e51a58ed547f2c89c8265cd0c04ff890d8435648746effffffff02905f0100000000001976a914a45bc47d00c3d2b0d0ea37cbf74b94cd1986ea7988aca0860100000000001976a914a45bc47d00c3d2b0d0ea37cbf74b94cd1986ea7988ac77d3a655"
-    val tx : Transaction = RawBaseTransactionParser.read(rawTx)
-    tx.txId.hex must be (BitcoinSUtil.flipEndianness("bdc221db675c06dbee2ae75d33e31cad4e2555efea10c337ff32c8cdf97f8e74"))
-    tx.lockTime must be (UInt32(1436996471))
+    val tx: Transaction = RawBaseTransactionParser.read(rawTx)
+    tx.txId.hex must be(BitcoinSUtil.flipEndianness("bdc221db675c06dbee2ae75d33e31cad4e2555efea10c337ff32c8cdf97f8e74"))
+    tx.lockTime must be(UInt32(1436996471))
   }
 
   it must "write a transaction with a locktime" in {
@@ -32,7 +32,7 @@ class RawBaseTransactionParserTest extends FlatSpec with MustMatchers {
     val rawTxWithLockTime = "0100000002fc37adbd036fb51b3f4f6f70474270939d6ff8c4ea697639f2b57dd6359e3070010000008b483045022100ad8e961fe3c22b2647d92b078f4c0cf81b3106ea5bf8b900ab8646aa4430216f022071d4edc2b5588be20ac4c2d07edd8ed069e10b2402d3dce2d3b835ccd075f283014104fa79182bbc26c708b5d9f36b8635947d4a834ea356cf612ede08395c295f962e0b1dc2557aba34188640e51a58ed547f2c89c8265cd0c04ff890d8435648746e0000000036219231b3043efdfb9405bbc2610baa73e340dddfe9c2a07b09bd3785ca6330000000008b483045022100cb097f8720d0c4665e8771fff5181b30584fd9e7d437fae21b440c94fe76d56902206f9b539ae26ec9688c54272d6a3309d93f17fb9835f382fff1ebeead84af2763014104fa79182bbc26c708b5d9f36b8635947d4a834ea356cf612ede08395c295f962e0b1dc2557aba34188640e51a58ed547f2c89c8265cd0c04ff890d8435648746effffffff02905f0100000000001976a914a45bc47d00c3d2b0d0ea37cbf74b94cd1986ea7988aca0860100000000001976a914a45bc47d00c3d2b0d0ea37cbf74b94cd1986ea7988ac77d3a655"
     val tx = RawBaseTransactionParser.read(rawTxWithLockTime)
     val serializedTx = RawBaseTransactionParser.write(tx)
-    encode(serializedTx) must be (rawTxWithLockTime)
+    encode(serializedTx) must be(rawTxWithLockTime)
   }
 
   it must "read and write a raw tx" in {
@@ -41,24 +41,24 @@ class RawBaseTransactionParserTest extends FlatSpec with MustMatchers {
 
     val tx = RawBaseTransactionParser.read(rawTx)
     val serializedTx = RawBaseTransactionParser.write(tx)
-    encode(serializedTx) must be (rawTx)
+    encode(serializedTx) must be(rawTx)
   }
 
   it must "read then write a simple raw transaction with one input and two outputs" in {
     val rawTx = TestUtil.simpleRawTransaction
     val tx = RawBaseTransactionParser.read(rawTx)
     val serializedTx = RawBaseTransactionParser.write(tx)
-    encode(serializedTx) must be (rawTx)
+    encode(serializedTx) must be(rawTx)
   }
 
   it must "parse a transaction with one input and two outputs" in {
     val tx = RawBaseTransactionParser.read(TestUtil.parentSimpleRawTransaction)
-    tx.inputs.size must be (1)
-    tx.inputs.head.scriptSignature.hex must be ("6a4730440220048e15422cf62349dc586ffb8c749d40280781edd5064ff27a5910ff5cf225a802206a82685dbc2cf195d158c29309939d5a3cd41a889db6f766f3809fff35722305012103dcfc9882c1b3ae4e03fb6cac08bdb39e284e81d70c7aa8b27612457b2774509b")
-    tx.inputs.head.previousOutput.vout must be (UInt32.one)
-    tx.inputs.head.previousOutput.txId.hex must be (BitcoinSUtil.flipEndianness("65bd23d3fb0ac9d3ee0195aae8d033d6689dacf71907902b27a7ad6f6441a7cd"))
-    tx.inputs.head.sequence must be (TransactionConstants.sequence)
-    tx.outputs.size must be (2)
+    tx.inputs.size must be(1)
+    tx.inputs.head.scriptSignature.hex must be("6a4730440220048e15422cf62349dc586ffb8c749d40280781edd5064ff27a5910ff5cf225a802206a82685dbc2cf195d158c29309939d5a3cd41a889db6f766f3809fff35722305012103dcfc9882c1b3ae4e03fb6cac08bdb39e284e81d70c7aa8b27612457b2774509b")
+    tx.inputs.head.previousOutput.vout must be(UInt32.one)
+    tx.inputs.head.previousOutput.txId.hex must be(BitcoinSUtil.flipEndianness("65bd23d3fb0ac9d3ee0195aae8d033d6689dacf71907902b27a7ad6f6441a7cd"))
+    tx.inputs.head.sequence must be(TransactionConstants.sequence)
+    tx.outputs.size must be(2)
   }
 
 }

@@ -1,6 +1,5 @@
 package org.bitcoins.core.script.interpreter
 
-
 import org.bitcoins.core.crypto.BaseTxSigComponent
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction.WitnessTransaction
@@ -9,7 +8,7 @@ import org.bitcoins.core.script.flag.ScriptFlagFactory
 import org.bitcoins.core.script.interpreter.testprotocol.CoreTestCase
 import org.bitcoins.core.script.interpreter.testprotocol.CoreTestCaseProtocol._
 import org.bitcoins.core.util._
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.scalatest.{ FlatSpec, MustMatchers }
 import spray.json._
 
 import scala.io.Source
@@ -22,9 +21,8 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers {
 
     val source = Source.fromURL(getClass.getResource("/script_tests.json"))
 
-
     //use this to represent a single test case from script_valid.json
-/*    val lines =
+    /*    val lines =
         """
           | [[
           |    [
@@ -41,12 +39,12 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers {
    """.stripMargin*/
     val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n" finally source.close()
     val json = lines.parseJson
-    val testCasesOpt : Seq[Option[CoreTestCase]] = json.convertTo[Seq[Option[CoreTestCase]]]
-    val testCases : Seq[CoreTestCase] = testCasesOpt.flatten
+    val testCasesOpt: Seq[Option[CoreTestCase]] = json.convertTo[Seq[Option[CoreTestCase]]]
+    val testCases: Seq[CoreTestCase] = testCasesOpt.flatten
     for {
       testCase <- testCases
-      (creditingTx,outputIndex) = TransactionTestUtil.buildCreditingTransaction(testCase.scriptPubKey, testCase.witness.map(_._2))
-      (tx,inputIndex) = TransactionTestUtil.buildSpendingTransaction(creditingTx,testCase.scriptSig,outputIndex, testCase.witness)
+      (creditingTx, outputIndex) = TransactionTestUtil.buildCreditingTransaction(testCase.scriptPubKey, testCase.witness.map(_._2))
+      (tx, inputIndex) = TransactionTestUtil.buildSpendingTransaction(creditingTx, testCase.scriptSig, outputIndex, testCase.witness)
     } yield {
       logger.info("Raw test case: " + testCase.raw)
       logger.info("Parsed ScriptSig: " + testCase.scriptSig)
@@ -66,14 +64,14 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers {
           case wit: WitnessScriptPubKey =>
             ScriptProgram(tx.asInstanceOf[WitnessTransaction], wit, inputIndex, flags, amount)
           case x @ (_: P2PKScriptPubKey | _: P2PKHScriptPubKey | _: MultiSignatureScriptPubKey | _: CLTVScriptPubKey | _: CSVScriptPubKey
-                    | _: CLTVScriptPubKey | _: EscrowTimeoutScriptPubKey | _: NonStandardScriptPubKey | _: WitnessCommitment | EmptyScriptPubKey) =>
-            val t = BaseTxSigComponent(tx,inputIndex,x,flags)
+            | _: CLTVScriptPubKey | _: EscrowTimeoutScriptPubKey | _: NonStandardScriptPubKey | _: WitnessCommitment | EmptyScriptPubKey) =>
+            val t = BaseTxSigComponent(tx, inputIndex, x, flags)
             ScriptProgram(t)
         }
         case None => ScriptProgram(tx, scriptPubKey, inputIndex, flags)
       }
       withClue(testCase.raw) {
-        ScriptInterpreter.run(program) must equal (testCase.expectedResult)
+        ScriptInterpreter.run(program) must equal(testCase.expectedResult)
       }
     }
   }
