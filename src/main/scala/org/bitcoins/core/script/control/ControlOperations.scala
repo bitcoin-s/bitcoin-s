@@ -8,29 +8,30 @@ import org.bitcoins.core.script.constant.ScriptOperation
  */
 sealed trait ControlOperations extends ScriptOperation
 
-
-
 /** If the top stack value is not 0, the statements are executed. The top stack value is removed. */
 case object OP_IF extends ControlOperations {
   override def opCode = 99
 }
-
 
 /** If the top stack value is 0, the statements are executed. The top stack value is removed. */
 case object OP_NOTIF extends ControlOperations {
   override def opCode = 100
 }
 
-/** If the preceding OP_IF or OP_NOTIF or OP_ELSE was not executed then these statements are and
- * if the preceding OP_IF or OP_NOTIF or OP_ELSE was executed then these statements are not. */
+/**
+ * If the preceding OP_IF or OP_NOTIF or OP_ELSE was not executed then these statements are and
+ * if the preceding OP_IF or OP_NOTIF or OP_ELSE was executed then these statements are not.
+ */
 case object OP_ELSE extends ControlOperations {
   override def opCode = 103
 }
 
-/** Ends an if/else block. All blocks must end, or the transaction is invalid.
- * An OP_ENDIF without OP_IF earlier is also invalid. */
+/**
+ * Ends an if/else block. All blocks must end, or the transaction is invalid.
+ * An OP_ENDIF without OP_IF earlier is also invalid.
+ */
 case object OP_ENDIF extends ControlOperations {
- override def opCode = 104
+  override def opCode = 104
 }
 
 /** Marks transaction as invalid if top stack value is not true. */

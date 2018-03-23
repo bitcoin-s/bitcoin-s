@@ -17,7 +17,7 @@ sealed abstract class DERSignatureUtil {
    * NOTE: This will fail if this signature contains the hash type appended to the end of it
    * @return boolean representing if the signature is a valid
    */
-  def isDEREncoded(signature : ECDigitalSignature) : Boolean = isDEREncoded(signature.bytes)
+  def isDEREncoded(signature: ECDigitalSignature): Boolean = isDEREncoded(signature.bytes)
 
   /**
    * Checks if the bytes are encoded to DER correctly
@@ -25,7 +25,7 @@ sealed abstract class DERSignatureUtil {
    * This will fail if this signature contains the hash type appended to the end of it
    * @return boolean representing if the signature is a valid
    */
-  def isDEREncoded(bytes : Seq[Byte]) : Boolean = {
+  def isDEREncoded(bytes: Seq[Byte]): Boolean = {
     //signature is trivially valid if the signature is empty
     if (bytes.nonEmpty && bytes.size < 9) false
     else if (bytes.nonEmpty) {
@@ -34,13 +34,13 @@ sealed abstract class DERSignatureUtil {
       //second byte must indicate the length of the remaining byte array
       val signatureSize = bytes(1).toLong
       //checks to see if the signature length is the same as the signatureSize val
-      val signatureLengthIsCorrect = signatureSize == bytes.slice(2,bytes.size).size
+      val signatureLengthIsCorrect = signatureSize == bytes.slice(2, bytes.size).size
       //third byte must be 0x02
       val thirdByteIs0x02 = bytes(2) == 0x02
       //this is the size of the r value in the signature
       val rSize = bytes(3)
       //r value in the signature
-      val r = bytes.slice(3,rSize+3)
+      val r = bytes.slice(3, rSize + 3)
       //this 0x02 separates the r and s value )in the signature
       val second0x02Exists = bytes(rSize + 4) == 0x02
       //this is the size of the s value in the signature
@@ -52,13 +52,12 @@ sealed abstract class DERSignatureUtil {
     } else true
   }
 
-
   /**
    * Decodes the given digital signature into it's r and s points
    * @param signature
    * @return
    */
-  def decodeSignature(signature : ECDigitalSignature) : (BigInt,BigInt) = decodeSignature(signature.bytes)
+  def decodeSignature(signature: ECDigitalSignature): (BigInt, BigInt) = decodeSignature(signature.bytes)
 
   /**
    * Decodes the given sequence of bytes into it's r and s points
@@ -66,30 +65,30 @@ sealed abstract class DERSignatureUtil {
    * @param bytes
    * @return
    */
-  def decodeSignature(bytes : Seq[Byte]) : (BigInt,BigInt) = {
+  def decodeSignature(bytes: Seq[Byte]): (BigInt, BigInt) = {
     logger.debug("Signature to decode: " + BitcoinSUtil.encodeHex(bytes))
     val asn1InputStream = new ASN1InputStream(bytes.toArray)
     //TODO: this is nasty, is there any way to get rid of all this casting???
     //TODO: Not 100% this is completely right for signatures that are incorrectly DER encoded
     //the behavior right now is to return the defaults in the case the signature is not DER encoded
     //https://stackoverflow.com/questions/2409618/how-do-i-decode-a-der-encoded-string-in-java
-    val seq : DLSequence = Try(asn1InputStream.readObject.asInstanceOf[DLSequence]) match {
+    val seq: DLSequence = Try(asn1InputStream.readObject.asInstanceOf[DLSequence]) match {
       case Success(seq) => seq
       case Failure(err) => new DLSequence()
     }
     val default = new ASN1Integer(0)
-    val r : ASN1Integer = Try(seq.getObjectAt(0).asInstanceOf[ASN1Integer]) match {
+    val r: ASN1Integer = Try(seq.getObjectAt(0).asInstanceOf[ASN1Integer]) match {
       case Success(r) =>
         //this is needed for a bug inside of bouncy castle where zero length values throw an exception
         //we need to treat these like zero
         Try(r.getValue) match {
           case Success(_) => r
           case Failure(_) => default
-      }
+        }
       case Failure(_) => default
     }
     logger.debug("r: " + r)
-    val s : ASN1Integer = Try(seq.getObjectAt(1).asInstanceOf[ASN1Integer]) match {
+    val s: ASN1Integer = Try(seq.getObjectAt(1).asInstanceOf[ASN1Integer]) match {
       case Success(s) =>
         //this is needed for a bug inside of bouncy castle where zero length values throw an exception
         //we need to treat these like zero
@@ -111,13 +110,12 @@ sealed abstract class DERSignatureUtil {
    * @param signature the signature to check if they are strictly der encoded
    * @return boolean indicating whether the signature was der encoded or not
    */
-  def isValidSignatureEncoding(signature : ECDigitalSignature) : Boolean = {
+  def isValidSignatureEncoding(signature: ECDigitalSignature): Boolean = {
     signature match {
-      case EmptyDigitalSignature => true
-      case signature : ECDigitalSignature => isValidSignatureEncoding(signature.bytes)
+      case EmptyDigitalSignature         => true
+      case signature: ECDigitalSignature => isValidSignatureEncoding(signature.bytes)
     }
   }
-
 
   /**
    * This functions implements the strict der encoding rules that were created in BIP66
@@ -126,7 +124,7 @@ sealed abstract class DERSignatureUtil {
    * @param bytes the bytes to check if they are strictly der encoded
    * @return boolean indicating whether the bytes were der encoded or not
    */
-  def isValidSignatureEncoding(bytes : Seq[Byte]) : Boolean = {
+  def isValidSignatureEncoding(bytes: Seq[Byte]): Boolean = {
     // Format: 0x30 [total-length] 0x02 [R-length] [R] 0x02 [S-length] [S] [sighash]
     // * total-length: 1-byte length descriptor of everything that follows,
     //   excluding the sighash byte.
@@ -186,7 +184,7 @@ sealed abstract class DERSignatureUtil {
 
     // Null bytes at the start of R are not allowed, unless R would
     // otherwise be interpreted as a negative number.
-    if (rSize > 1 && (bytes(4) == 0x00) && !((bytes(5) & 0x80) != 0 )) return false
+    if (rSize > 1 && (bytes(4) == 0x00) && !((bytes(5) & 0x80) != 0)) return false
     //logger.debug("There were not any null bytes at the start of R")
     // Check whether the S element is an integer.
     if (bytes(rSize + 4) != 0x02) return false
@@ -207,6 +205,13 @@ sealed abstract class DERSignatureUtil {
     true
   }
 
+  /**
+   * Requires the S value in signatures to be the low version of the S value
+   * https://github.com/bitcoin/bips/blob/master/bip-0062.mediawiki#low-s-values-in-signatures
+   * @param signature
+   * @return if the S value is the low version
+   */
+  def isLowS(signature: ECDigitalSignature): Boolean = isLowS(signature.bytes)
 
   /**
    * Requires the S value in signatures to be the low version of the S value
@@ -214,29 +219,21 @@ sealed abstract class DERSignatureUtil {
    * @param signature
    * @return if the S value is the low version
    */
-  def isLowS(signature : ECDigitalSignature) : Boolean = isLowS(signature.bytes)
-
-  /**
-   * Requires the S value in signatures to be the low version of the S value
-   * https://github.com/bitcoin/bips/blob/master/bip-0062.mediawiki#low-s-values-in-signatures
-   * @param signature
-   * @return if the S value is the low version
-   */
-  def isLowS(signature : Seq[Byte]) : Boolean = {
+  def isLowS(signature: Seq[Byte]): Boolean = {
     val result = Try {
-      val (r,s) = decodeSignature(signature)
+      val (r, s) = decodeSignature(signature)
       s.bigInteger.compareTo(CryptoParams.halfCurveOrder) <= 0
     }
     result match {
       case Success(bool) => bool
-      case Failure(_) => false
+      case Failure(_)    => false
     }
   }
 
   /** Checks if the given digital signature uses a low s value, if it does not it converts it to a low s value and returns it */
   def lowS(signature: ECDigitalSignature): ECDigitalSignature = {
     val sigLowS = if (isLowS(signature)) signature
-    else ECDigitalSignature(signature.r,CryptoParams.curve.getN().subtract(signature.s.bigInteger))
+    else ECDigitalSignature(signature.r, CryptoParams.curve.getN().subtract(signature.s.bigInteger))
     require(DERSignatureUtil.isLowS(sigLowS))
     sigLowS
   }

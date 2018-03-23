@@ -1,6 +1,6 @@
 package org.bitcoins.core.script.interpreter.testprotocol
 
-import org.bitcoins.core.protocol.script.{ScriptSignature, ScriptPubKey}
+import org.bitcoins.core.protocol.script.{ ScriptSignature, ScriptPubKey }
 import org.bitcoins.core.script.constant.ScriptToken
 
 /**
@@ -11,10 +11,10 @@ trait ScriptSignatureCoreTestCase {
    * The parsed asm representation for the core test case
    * this will be different than the asm representation
    * inside of scriptSignature
- *
+   *
    * @return
    */
-  def asm : Seq[ScriptToken]
+  def asm: Seq[ScriptToken]
 
   /**
    * This is the underlying scriptSignature that is parsed from the core test case
@@ -22,11 +22,11 @@ trait ScriptSignatureCoreTestCase {
    * inside of script_valid.json. Normal scriptSignatures have their asm representation
    * parsed from the underlying hex/byte representation every time which won't work
    * for core test cases.
- *
+   *
    * @return
    */
-  def scriptSignature : ScriptSignature
+  def scriptSignature: ScriptSignature
 
 }
 
-case class ScriptSignatureCoreTestCaseImpl(asm : Seq[ScriptToken], scriptSignature : ScriptSignature) extends ScriptSignatureCoreTestCase
+case class ScriptSignatureCoreTestCaseImpl(asm: Seq[ScriptToken], scriptSignature: ScriptSignature) extends ScriptSignatureCoreTestCase

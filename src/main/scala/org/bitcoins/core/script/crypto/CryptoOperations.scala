@@ -37,16 +37,20 @@ case object OP_HASH256 extends CryptoOperation {
   override def opCode = 170
 }
 
-/** All of the signature checking words will only match signatures to
- * the data after the most recently-executed OP_CODESEPARATOR. */
+/**
+ * All of the signature checking words will only match signatures to
+ * the data after the most recently-executed OP_CODESEPARATOR.
+ */
 case object OP_CODESEPARATOR extends CryptoOperation {
   override def opCode = 171
 }
 
-/** The entire transaction's outputs, inputs, and script
+/**
+ * The entire transaction's outputs, inputs, and script
  * (from the most recently-executed OP_CODESEPARATOR to the end) are hashed.
  * The signature used by OP_CHECKSIG must be a valid signature for this hash and public key.
- * If it is, 1 is returned, 0 otherwise. */
+ * If it is, 1 is returned, 0 otherwise.
+ */
 case object OP_CHECKSIG extends CryptoSignatureEvaluation {
   override def opCode = 172
 }
@@ -56,7 +60,8 @@ case object OP_CHECKSIGVERIFY extends CryptoSignatureEvaluation {
   override def opCode = 173
 }
 
-/** Compares the first signature against each public key until it finds an ECDSA match.
+/**
+ * Compares the first signature against each public key until it finds an ECDSA match.
  * Starting with the subsequent public key, it compares the second signature against each remaining public key
  * until it finds an ECDSA match.
  * The process is repeated until all signatures have been checked or not enough public keys remain to produce a successful result.
@@ -64,7 +69,8 @@ case object OP_CHECKSIGVERIFY extends CryptoSignatureEvaluation {
  * Because public keys are not checked again if they fail any signature comparison,
  * signatures must be placed in the scriptSig using the same order as their corresponding public keys
  * were placed in the scriptPubKey or redeemScript. If all signatures are valid, 1 is returned, 0 otherwise.
- * Due to a bug, one extra unused value is removed from the stack. */
+ * Due to a bug, one extra unused value is removed from the stack.
+ */
 case object OP_CHECKMULTISIG extends CryptoSignatureEvaluation {
   override def opCode = 174
 }

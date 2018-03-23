@@ -4,12 +4,12 @@ import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.script._
-import org.bitcoins.core.protocol.transaction.{Transaction, TransactionInput}
-import org.bitcoins.core.script.bitwise.{OP_EQUAL, OP_EQUALVERIFY}
+import org.bitcoins.core.protocol.transaction.{ Transaction, TransactionInput }
+import org.bitcoins.core.script.bitwise.{ OP_EQUAL, OP_EQUALVERIFY }
 import org.bitcoins.core.script.constant._
-import org.bitcoins.core.script.crypto.{OP_CHECKMULTISIG, OP_CHECKSIG, OP_HASH160}
+import org.bitcoins.core.script.crypto.{ OP_CHECKMULTISIG, OP_CHECKSIG, OP_HASH160 }
 import org.bitcoins.core.script.stack.OP_DUP
-import org.bitcoins.core.script.{PreExecutionScriptProgram, ScriptProgram}
+import org.bitcoins.core.script.{ PreExecutionScriptProgram, ScriptProgram }
 import org.bitcoins.core.serializers.script.RawScriptPubKeyParser
 import org.bitcoins.core.serializers.transaction.RawTransactionInputParser
 
@@ -29,15 +29,15 @@ object TestUtil {
   val p2pkhInputScriptNotParsedAsm =
     "3044022016ffdbb7c57634903c5e018fcfc48d59f4e37dc4bc3bbc9ba4e6ee39150bca030220119c2241a931819bc1a75d3596e4029d803d1cd6de123bf8a1a1a2c3665e1fac01" +
       " 02af7dad03e682fcd0427b5c24140c220ac9d8abe286c15f8cf5bf77eed19c3652"
-  val p2pkhInputScriptAsm : List[ScriptToken] = List(BytesToPushOntoStack(71),
+  val p2pkhInputScriptAsm: List[ScriptToken] = List(
+    BytesToPushOntoStack(71),
     ScriptConstant("3044022016ffdbb7c57634903c5e018fcfc48d59f4e37dc4bc3bbc9ba4e6ee39150bca030220119c2241a931819bc1a75d3596e4029d803d1cd6de123bf8a1a1a2c3665e1fac01"),
     BytesToPushOntoStack(33),
     ScriptConstant("02af7dad03e682fcd0427b5c24140c220ac9d8abe286c15f8cf5bf77eed19c3652"))
 
   val p2pkhOutputScript = "1976a914e2e7c1ab3f807151e832dd1accb3d4f5d7d19b4b88ac"
   val p2pkhOutputScriptNotParsedAsm = "OP_DUP OP_HASH160 e2e7c1ab3f807151e832dd1accb3d4f5d7d19b4b OP_EQUALVERIFY OP_CHECKSIG"
-  val p2pkhOutputScriptAsm = List(OP_DUP,OP_HASH160,BytesToPushOntoStack(20), ScriptConstant("e2e7c1ab3f807151e832dd1accb3d4f5d7d19b4b"),OP_EQUALVERIFY, OP_CHECKSIG)
-
+  val p2pkhOutputScriptAsm = List(OP_DUP, OP_HASH160, BytesToPushOntoStack(20), ScriptConstant("e2e7c1ab3f807151e832dd1accb3d4f5d7d19b4b"), OP_EQUALVERIFY, OP_CHECKSIG)
 
   //tx id for p2sh inputs/outputs cad1082e674a7bd3bc9ab1bc7804ba8a57523607c876b8eb2cbe645f2b1803d6
   val p2shInputScriptNotParsedAsm =
@@ -50,12 +50,11 @@ object TestUtil {
     BytesToPushOntoStack(71),
     ScriptConstant("304402207df6dd8dad22d49c3c83d8031733c32a53719278eb7985d3b35b375d776f84f102207054f9209a1e87d55feafc90aa04c33008e5bae9191da22aeaa16efde96f41f001"),
     BytesToPushOntoStack(37),
-    ScriptConstant("512102b022902a0fdd71e831c37e4136c2754a59887be0618fb75336d7ab67e2982ff551ae")
-  )
+    ScriptConstant("512102b022902a0fdd71e831c37e4136c2754a59887be0618fb75336d7ab67e2982ff551ae"))
 
   val p2shOutputScript = "17a914eda8ae08b5c9f973f49543e90a7c292367b3337c87"
   val p2shOutputScriptNotParsedAsm = "OP_HASH160 eda8ae08b5c9f973f49543e90a7c292367b3337c OP_EQUAL"
-  val p2shOutputScriptAsm = List(OP_HASH160,  BytesToPushOntoStack(20), ScriptConstant("eda8ae08b5c9f973f49543e90a7c292367b3337c"), OP_EQUAL)
+  val p2shOutputScriptAsm = List(OP_HASH160, BytesToPushOntoStack(20), ScriptConstant("eda8ae08b5c9f973f49543e90a7c292367b3337c"), OP_EQUAL)
 
   //https://btc.blockr.io/api/v1/tx/raw/791fe035d312dcf9196b48649a5c9a027198f623c0a5f5bd4cc311b8864dd0cf
   val rawP2shInputScriptSigHashSingle = "fdfd0000483045022100dfcfafcea73d83e1c54d444a19fb30d17317f922c19e2ff92dcda65ad09cba24022001e7a805c5672c49b222c5f2f1e67bb01f87215fb69df184e7c16f66c1f87c290347304402204a657ab8358a2edb8fd5ed8a45f846989a43655d2e8f80566b385b8f5a70dab402207362f870ce40f942437d43b6b99343419b14fb18fa69bee801d696a39b3410b8034c695221023927b5cd7facefa7b85d02f73d1e1632b3aaf8dd15d4f9f359e37e39f05611962103d2c0e82979b8aba4591fe39cffbf255b3b9c67b3d24f94de79c5013420c67b802103ec010970aae2e3d75eef0b44eaa31d7a0d13392513cd0614ff1c136b3b1020df53ae"
@@ -84,9 +83,9 @@ object TestUtil {
   def p2shInputScriptLargeSignature = ScriptSignature(rawP2shInputScriptLargeSignature)
 
   def rawP2sh2Of3ScriptSig = "fdfd00004730440220028c02f14654a0cc12c7e3229adb09d5d35bebb6ba1057e39adb1b2706607b0d0220564fab12c6da3d5acef332406027a7ff1cbba980175ffd880e1ba1bf40598f6b014830450221009362f8d67b60773745e983d07ba10efbe566127e244b724385b2ca2e47292dda022033def393954c320653843555ddbe7679b35cc1cacfe1dad923977de8cd6cc6d7014c695221025e9adcc3d65c11346c8a6069d6ebf5b51b348d1d6dc4b95e67480c34dc0bc75c21030585b3c80f4964bf0820086feda57c8e49fa1eab925db7c04c985467973df96521037753a5e3e9c4717d3f81706b38a6fb82b5fb89d29e580d7b98a37fea8cdefcad53ae"
-  def p2sh2Of3ScriptSig : P2SHScriptSignature = ScriptSignature(rawP2sh2Of3ScriptSig) match {
-    case p2sh : P2SHScriptSignature => p2sh
-    case _ : ScriptSignature => throw new RuntimeException
+  def p2sh2Of3ScriptSig: P2SHScriptSignature = ScriptSignature(rawP2sh2Of3ScriptSig) match {
+    case p2sh: P2SHScriptSignature => p2sh
+    case _: ScriptSignature => throw new RuntimeException
   }
 
   //txid on testnet 44e504f5b7649d215be05ad9f09026dee95201244a3b218013c504a6a49a26ff
@@ -132,11 +131,12 @@ object TestUtil {
   //https://tbtc.blockr.io/api/v1/tx/raw/bdc221db675c06dbee2ae75d33e31cad4e2555efea10c337ff32c8cdf97f8e74
   val rawScriptSig = "8b483045022100ad8e961fe3c22b2647d92b078f4c0cf81b3106ea5bf8b900ab8646aa4430216f022071d4edc2b5588be20ac4c2d07edd8ed069e10b2402d3dce2d3b835ccd075f283014104fa79182bbc26c708b5d9f36b8635947d4a834ea356cf612ede08395c295f962e0b1dc2557aba34188640e51a58ed547f2c89c8265cd0c04ff890d8435648746e"
   def scriptSig = ScriptSignature(rawScriptSig)
-  def testProgram : ScriptProgram = ScriptProgram(TransactionTestUtil.testTransaction,
-    EmptyScriptPubKey,UInt32.zero,Policy.standardScriptVerifyFlags)
+  def testProgram: ScriptProgram = ScriptProgram(
+    TransactionTestUtil.testTransaction,
+    EmptyScriptPubKey, UInt32.zero, Policy.standardScriptVerifyFlags)
 
   def testProgramPreExecution = testProgram match {
-    case p : PreExecutionScriptProgram => p
+    case p: PreExecutionScriptProgram => p
     case _ => throw new RuntimeException("this must be a script program that is pre execution")
   }
 
@@ -155,7 +155,8 @@ object TestUtil {
   def rawScriptSigNotStrictDerEncoded = "173014020002107777777777777777777777777777777701"
   def scriptSigNotStrictDerEncoded = ScriptSignature(rawScriptSigNotStrictDerEncoded)
 
-  def p2pkhScriptSigNotStrictDerEncoded  = ScriptSignature.fromAsm(List(BytesToPushOntoStack(71),
+  def p2pkhScriptSigNotStrictDerEncoded = ScriptSignature.fromAsm(List(
+    BytesToPushOntoStack(71),
     ScriptConstant("173014020002107777777777777777777777777777777701"),
     BytesToPushOntoStack(33),
     ScriptConstant("02af7dad03e682fcd0427b5c24140c220ac9d8abe286c15f8cf5bf77eed19c3652")))

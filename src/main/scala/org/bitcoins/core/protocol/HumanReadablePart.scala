@@ -1,10 +1,11 @@
 package org.bitcoins.core.protocol
 
-import org.bitcoins.core.config.{MainNet, NetworkParameters, RegTest, TestNet3}
+import org.bitcoins.core.config.{ MainNet, NetworkParameters, RegTest, TestNet3 }
 
-/** Represents the HumanReadablePart of a Bech32 address
-  * [[https://github.com/bitcoin/bips/blob/master/bip-0173.mediawiki]]
-  * */
+/**
+ * Represents the HumanReadablePart of a Bech32 address
+ * [[https://github.com/bitcoin/bips/blob/master/bip-0173.mediawiki]]
+ */
 sealed abstract class HumanReadablePart {
   def network: Option[NetworkParameters]
   def bytes: Seq[Byte]
@@ -32,11 +33,11 @@ object HumanReadablePart {
   def apply(str: String) = str match {
     case "bc" => bc
     case "tb" => tb
-    case _ => UndefinedHRP(str.map(_.toByte))
+    case _    => UndefinedHRP(str.map(_.toByte))
   }
 
   def apply(network: NetworkParameters): HumanReadablePart = network match {
-    case _: MainNet => bc
+    case _: MainNet               => bc
     case _: TestNet3 | _: RegTest => tb
   }
 }

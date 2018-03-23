@@ -4,8 +4,8 @@ import org.bitcoins.core.config._
 import org.scalacheck.Gen
 
 /**
-  * Created by chris on 6/6/17.
-  */
+ * Created by chris on 6/6/17.
+ */
 sealed abstract class ChainParamsGenerator {
 
   def networkParams: Gen[NetworkParameters] = bitcoinNetworkParams

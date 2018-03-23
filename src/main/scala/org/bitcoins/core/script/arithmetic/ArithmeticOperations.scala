@@ -64,7 +64,7 @@ case object OP_NUMEQUAL extends ArithmeticOperation {
 
 /** Same as OP_NUMEQUAL, but runs OP_VERIFY afterward. */
 case object OP_NUMEQUALVERIFY extends ArithmeticOperation {
-  override def opCode= 157
+  override def opCode = 157
 }
 
 /** Returns 1 if the numbers are not equal, 0 otherwise. */
@@ -103,7 +103,7 @@ case object OP_MAX extends ArithmeticOperation {
 }
 
 /** Returns 1 if x is within the specified range (left-inclusive), 0 otherwise. */
-case object OP_WITHIN  extends ArithmeticOperation {
+case object OP_WITHIN extends ArithmeticOperation {
   override def opCode = 165
 }
 
@@ -135,12 +135,12 @@ case object OP_MOD extends ArithmeticOperation {
 }
 
 /** Shifts a left b bits, preserving sign. disabled. */
-case object  OP_LSHIFT extends ArithmeticOperation {
+case object OP_LSHIFT extends ArithmeticOperation {
   override def opCode = 152
 }
 
 /** Shifts a right b bits, preserving sign. disabled. */
-case object  OP_RSHIFT extends ArithmeticOperation {
+case object OP_RSHIFT extends ArithmeticOperation {
   override def opCode = 153
 }
 
@@ -148,7 +148,6 @@ object ArithmeticOperation extends ScriptOperationFactory[ArithmeticOperation] {
   override def operations = Seq(OP_0NOTEQUAL, OP_1ADD, OP_1SUB, OP_ABS, OP_ADD, OP_BOOLAND, OP_BOOLOR,
     OP_GREATERTHAN, OP_GREATERTHANOREQUAL, OP_LESSTHAN, OP_LESSTHANOREQUAL, OP_MAX, OP_MIN, OP_NEGATE,
     OP_NEGATE, OP_NOT, OP_NUMEQUAL, OP_NUMEQUALVERIFY, OP_NUMNOTEQUAL, OP_SUB, OP_WITHIN,
-    OP_2MUL,OP_2DIV,OP_MUL,OP_DIV, OP_MOD, OP_LSHIFT, OP_RSHIFT)
+    OP_2MUL, OP_2DIV, OP_MUL, OP_DIV, OP_MOD, OP_LSHIFT, OP_RSHIFT)
 }
-
 
