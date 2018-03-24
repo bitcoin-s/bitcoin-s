@@ -1,7 +1,7 @@
 package org.bitcoins.core.crypto
 
-import org.spongycastle.asn1.sec.SECNamedCurves
-import org.spongycastle.crypto.params.ECDomainParameters
+import org.bouncycastle.asn1.sec.SECNamedCurves
+import org.bouncycastle.crypto.params.ECDomainParameters
 
 /**
  * Created by chris on 3/29/16.
