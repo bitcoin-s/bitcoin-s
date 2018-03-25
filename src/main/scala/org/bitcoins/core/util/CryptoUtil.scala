@@ -3,9 +3,9 @@ package org.bitcoins.core.util
 import java.security.MessageDigest
 
 import org.bitcoins.core.crypto._
-import org.spongycastle.crypto.digests.{RIPEMD160Digest, SHA512Digest}
-import org.spongycastle.crypto.macs.HMac
-import org.spongycastle.crypto.params.KeyParameter
+import org.bouncycastle.crypto.digests.{RIPEMD160Digest, SHA512Digest}
+import org.bouncycastle.crypto.macs.HMac
+import org.bouncycastle.crypto.params.KeyParameter
 
 /**
   * Created by chris on 1/14/16.

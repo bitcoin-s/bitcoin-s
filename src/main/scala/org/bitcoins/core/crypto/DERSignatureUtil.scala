@@ -1,7 +1,7 @@
 package org.bitcoins.core.crypto
 
 import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil}
-import org.spongycastle.asn1.{ASN1InputStream, ASN1Integer, DLSequence}
+import org.bouncycastle.asn1.{ASN1InputStream, ASN1Integer, DLSequence}
 
 import scala.util.{Failure, Success, Try}
 
