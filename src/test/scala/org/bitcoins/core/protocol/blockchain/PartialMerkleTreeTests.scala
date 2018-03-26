@@ -1,14 +1,14 @@
 package org.bitcoins.core.protocol.blockchain
 
-import org.bitcoins.core.bloom.{BloomFilter, BloomUpdateAll}
+import org.bitcoins.core.bloom.{ BloomFilter, BloomUpdateAll }
 import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.util.{BitcoinSUtil, Leaf, Node}
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.bitcoins.core.util.{ BitcoinSUtil, Leaf, Node }
+import org.scalatest.{ FlatSpec, MustMatchers }
 
 /**
-  * Created by chris on 8/9/16.
-  */
+ * Created by chris on 8/9/16.
+ */
 class PartialMerkleTreeTests extends FlatSpec with MustMatchers {
   "PartialMerkleTree" must "from a list of txs and a bit indicating if the tx matched the filter" in {
     //https://github.com/bitcoin/bitcoin/blob/master/src/test/bloom_tests.cpp#L185
@@ -51,21 +51,19 @@ class PartialMerkleTreeTests extends FlatSpec with MustMatchers {
     //5310aedf9c8068f1e862ac9186724f7fdedb0aa9819833af4f4016fca6d21fdd
     //201f4587ec86b58297edc2dd32d6fcd998aa794308aac802a8af3be0e081d674
 
-    val filter = BloomFilter(10,0.000001, UInt32.zero, BloomUpdateAll).insert(hash1).insert(hash2)
-    val (merkleBlock,_) = MerkleBlock(block,filter)
+    val filter = BloomFilter(10, 0.000001, UInt32.zero, BloomUpdateAll).insert(hash1).insert(hash2)
+    val (merkleBlock, _) = MerkleBlock(block, filter)
     val partialMerkleTree = merkleBlock.partialMerkleTree
-    partialMerkleTree.bits.slice(0,8) must be (Seq(true,true,false,true,false,true,false,true))
-    partialMerkleTree.bits.slice(8,partialMerkleTree.bits.size) must be (Seq(true,true,true,true,false,false,false,false))
-    partialMerkleTree.hashes must be (Seq(
+    partialMerkleTree.bits.slice(0, 8) must be(Seq(true, true, false, true, false, true, false, true))
+    partialMerkleTree.bits.slice(8, partialMerkleTree.bits.size) must be(Seq(true, true, true, true, false, false, false, false))
+    partialMerkleTree.hashes must be(Seq(
       DoubleSha256Digest("5ef2374cf1cd1c0b8c1b795950c077fc571cca44866c375a1ed17ace665cfaaa"),
       DoubleSha256Digest("d403489f6b1a2f7de72c6e4573e1cc7ac15745518e42a0bf884f58dc48f45533"),
       DoubleSha256Digest("8719e60a59869e70a7a7a5d4ff6ceb979cd5abe60721d4402aaf365719ebd221"),
       DoubleSha256Digest("5310aedf9c8068f1e862ac9186724f7fdedb0aa9819833af4f4016fca6d21fdd"),
-      DoubleSha256Digest("201f4587ec86b58297edc2dd32d6fcd998aa794308aac802a8af3be0e081d674")
-    ))
+      DoubleSha256Digest("201f4587ec86b58297edc2dd32d6fcd998aa794308aac802a8af3be0e081d674")))
 
-
-    partialMerkleTree.extractMatches must be (Seq(hash2,hash1))
+    partialMerkleTree.extractMatches must be(Seq(hash2, hash1))
 
   }
 
@@ -73,51 +71,52 @@ class PartialMerkleTreeTests extends FlatSpec with MustMatchers {
     //these values are related to this test case for merkle block inside of core
     //https://github.com/bitcoin/bitcoin/blob/f17032f703288d43a76cffe8fa89b87ade9e3074/src/test/bloom_tests.cpp#L185
     val maxHeight = 4
-    val matchedTxs = List((false,DoubleSha256Digest("a3f3ac605d5e4727f4ea72e9346a5d586f0231460fd52ad9895bc8240d871def")),
-      (false,DoubleSha256Digest("076d0317ee70ee36cf396a9871ab3bf6f8e6d538d7f8a9062437dcb71c75fcf9")),
-      (false,DoubleSha256Digest("2ee1e12587e497ada70d9bd10d31e83f0a924825b96cb8d04e8936d793fb60db")),
-      (false,DoubleSha256Digest("7ad8b910d0c7ba2369bc7f18bb53d80e1869ba2c32274996cebe1ae264bc0e22")),
-      (false,DoubleSha256Digest("4e3f8ef2e91349a9059cb4f01e54ab2597c1387161d3da89919f7ea6acdbb371")),
-      (false,DoubleSha256Digest("e0c28dbf9f266a8997e1a02ef44af3a1ee48202253d86161d71282d01e5e30fe")),
-      (false,DoubleSha256Digest("8719e60a59869e70a7a7a5d4ff6ceb979cd5abe60721d4402aaf365719ebd221")),
-      (true,DoubleSha256Digest("5310aedf9c8068f1e862ac9186724f7fdedb0aa9819833af4f4016fca6d21fdd")),
-      (true,DoubleSha256Digest("201f4587ec86b58297edc2dd32d6fcd998aa794308aac802a8af3be0e081d674")))
+    val matchedTxs = List(
+      (false, DoubleSha256Digest("a3f3ac605d5e4727f4ea72e9346a5d586f0231460fd52ad9895bc8240d871def")),
+      (false, DoubleSha256Digest("076d0317ee70ee36cf396a9871ab3bf6f8e6d538d7f8a9062437dcb71c75fcf9")),
+      (false, DoubleSha256Digest("2ee1e12587e497ada70d9bd10d31e83f0a924825b96cb8d04e8936d793fb60db")),
+      (false, DoubleSha256Digest("7ad8b910d0c7ba2369bc7f18bb53d80e1869ba2c32274996cebe1ae264bc0e22")),
+      (false, DoubleSha256Digest("4e3f8ef2e91349a9059cb4f01e54ab2597c1387161d3da89919f7ea6acdbb371")),
+      (false, DoubleSha256Digest("e0c28dbf9f266a8997e1a02ef44af3a1ee48202253d86161d71282d01e5e30fe")),
+      (false, DoubleSha256Digest("8719e60a59869e70a7a7a5d4ff6ceb979cd5abe60721d4402aaf365719ebd221")),
+      (true, DoubleSha256Digest("5310aedf9c8068f1e862ac9186724f7fdedb0aa9819833af4f4016fca6d21fdd")),
+      (true, DoubleSha256Digest("201f4587ec86b58297edc2dd32d6fcd998aa794308aac802a8af3be0e081d674")))
 
     // it must trivially match the merkle root
-    PartialMerkleTree.matchesTx(maxHeight,0,0,matchedTxs) must be (true)
+    PartialMerkleTree.matchesTx(maxHeight, 0, 0, matchedTxs) must be(true)
 
     // it must match both of the child nodes to the merkle root
-    PartialMerkleTree.matchesTx(maxHeight,1,0,matchedTxs) must be (true)
-    PartialMerkleTree.matchesTx(maxHeight,1,1,matchedTxs) must be (true)
+    PartialMerkleTree.matchesTx(maxHeight, 1, 0, matchedTxs) must be(true)
+    PartialMerkleTree.matchesTx(maxHeight, 1, 1, matchedTxs) must be(true)
 
     //it must match the 2nd and 3rd grandchild of the merkle root, and must NOT match the 1st and 4th grand child
-    PartialMerkleTree.matchesTx(maxHeight,2,0,matchedTxs) must be (false)
-    PartialMerkleTree.matchesTx(maxHeight,2,1,matchedTxs) must be (true)
+    PartialMerkleTree.matchesTx(maxHeight, 2, 0, matchedTxs) must be(false)
+    PartialMerkleTree.matchesTx(maxHeight, 2, 1, matchedTxs) must be(true)
 
-    PartialMerkleTree.matchesTx(maxHeight,2,2,matchedTxs) must be (true)
-    PartialMerkleTree.matchesTx(maxHeight,2,3,matchedTxs) must be (false)
+    PartialMerkleTree.matchesTx(maxHeight, 2, 2, matchedTxs) must be(true)
+    PartialMerkleTree.matchesTx(maxHeight, 2, 3, matchedTxs) must be(false)
 
     //it must match the match the 4th and 5th great grand child merkle root, an must NOT  match the 1st,2nd,3rd,6th
-    PartialMerkleTree.matchesTx(maxHeight,3,0,matchedTxs) must be (false)
-    PartialMerkleTree.matchesTx(maxHeight,3,1,matchedTxs) must be (false)
-    PartialMerkleTree.matchesTx(maxHeight,3,2,matchedTxs) must be (false)
+    PartialMerkleTree.matchesTx(maxHeight, 3, 0, matchedTxs) must be(false)
+    PartialMerkleTree.matchesTx(maxHeight, 3, 1, matchedTxs) must be(false)
+    PartialMerkleTree.matchesTx(maxHeight, 3, 2, matchedTxs) must be(false)
 
-    PartialMerkleTree.matchesTx(maxHeight,3,3,matchedTxs) must be (true)
-    PartialMerkleTree.matchesTx(maxHeight,3,4,matchedTxs) must be (true)
+    PartialMerkleTree.matchesTx(maxHeight, 3, 3, matchedTxs) must be(true)
+    PartialMerkleTree.matchesTx(maxHeight, 3, 4, matchedTxs) must be(true)
 
-    PartialMerkleTree.matchesTx(maxHeight,3,5,matchedTxs) must be (false)
+    PartialMerkleTree.matchesTx(maxHeight, 3, 5, matchedTxs) must be(false)
 
     //it must match the the correct leaf nodes (great-great-grand-children), which are indexes 7 and 8
-    PartialMerkleTree.matchesTx(maxHeight,4,0,matchedTxs) must be (false)
-    PartialMerkleTree.matchesTx(maxHeight,4,1,matchedTxs) must be (false)
-    PartialMerkleTree.matchesTx(maxHeight,4,2,matchedTxs) must be (false)
-    PartialMerkleTree.matchesTx(maxHeight,4,3,matchedTxs) must be (false)
-    PartialMerkleTree.matchesTx(maxHeight,4,4,matchedTxs) must be (false)
-    PartialMerkleTree.matchesTx(maxHeight,4,5,matchedTxs) must be (false)
-    PartialMerkleTree.matchesTx(maxHeight,4,6,matchedTxs) must be (false)
+    PartialMerkleTree.matchesTx(maxHeight, 4, 0, matchedTxs) must be(false)
+    PartialMerkleTree.matchesTx(maxHeight, 4, 1, matchedTxs) must be(false)
+    PartialMerkleTree.matchesTx(maxHeight, 4, 2, matchedTxs) must be(false)
+    PartialMerkleTree.matchesTx(maxHeight, 4, 3, matchedTxs) must be(false)
+    PartialMerkleTree.matchesTx(maxHeight, 4, 4, matchedTxs) must be(false)
+    PartialMerkleTree.matchesTx(maxHeight, 4, 5, matchedTxs) must be(false)
+    PartialMerkleTree.matchesTx(maxHeight, 4, 6, matchedTxs) must be(false)
 
-    PartialMerkleTree.matchesTx(maxHeight,4,7,matchedTxs) must be (true)
-    PartialMerkleTree.matchesTx(maxHeight,4,8,matchedTxs) must be (true)
+    PartialMerkleTree.matchesTx(maxHeight, 4, 7, matchedTxs) must be(true)
+    PartialMerkleTree.matchesTx(maxHeight, 4, 8, matchedTxs) must be(true)
 
   }
 
@@ -126,37 +125,39 @@ class PartialMerkleTreeTests extends FlatSpec with MustMatchers {
     val matchedTxs = Seq(
       (false, DoubleSha256Digest("a3f3ac605d5e4727f4ea72e9346a5d586f0231460fd52ad9895bc8240d871def")),
       (false, DoubleSha256Digest("076d0317ee70ee36cf396a9871ab3bf6f8e6d538d7f8a9062437dcb71c75fcf9")))
-    PartialMerkleTree.matchesTx(maxHeight,0,0,matchedTxs) must be (false)
+    PartialMerkleTree.matchesTx(maxHeight, 0, 0, matchedTxs) must be(false)
 
-    PartialMerkleTree.matchesTx(maxHeight,1,0,matchedTxs) must be (false)
-    PartialMerkleTree.matchesTx(maxHeight,1,1,matchedTxs) must be (false)
+    PartialMerkleTree.matchesTx(maxHeight, 1, 0, matchedTxs) must be(false)
+    PartialMerkleTree.matchesTx(maxHeight, 1, 1, matchedTxs) must be(false)
   }
 
   it must "build a partial merkle tree with no matches and 1 transaction in the original block" in {
     val txMatches = Seq((false, DoubleSha256Digest("01272b2b1c8c33a1b4e9ab111db41c9ac275e686fbd9c5d482e586d03e9e0552")))
     val partialMerkleTree = PartialMerkleTree(txMatches)
-    partialMerkleTree.bits must be (Seq(false,false,false,false,false,false,false,false))
-    partialMerkleTree.tree must be (Leaf(DoubleSha256Digest("01272b2b1c8c33a1b4e9ab111db41c9ac275e686fbd9c5d482e586d03e9e0552")))
-    partialMerkleTree.transactionCount must be (UInt32(1))
-    partialMerkleTree.extractMatches.isEmpty must be (true)
+    partialMerkleTree.bits must be(Seq(false, false, false, false, false, false, false, false))
+    partialMerkleTree.tree must be(Leaf(DoubleSha256Digest("01272b2b1c8c33a1b4e9ab111db41c9ac275e686fbd9c5d482e586d03e9e0552")))
+    partialMerkleTree.transactionCount must be(UInt32(1))
+    partialMerkleTree.extractMatches.isEmpty must be(true)
   }
 
   it must "build a partial merkle tree with 1 match and 2 transactions inside the original block" in {
-    val txMatches = Seq((false, DoubleSha256Digest("01272b2b1c8c33a1b4e9ab111db41c9ac275e686fbd9c5d482e586d03e9e0552")),
+    val txMatches = Seq(
+      (false, DoubleSha256Digest("01272b2b1c8c33a1b4e9ab111db41c9ac275e686fbd9c5d482e586d03e9e0552")),
       (true, DoubleSha256Digest("076d0317ee70ee36cf396a9871ab3bf6f8e6d538d7f8a9062437dcb71c75fcf9")))
     val partialMerkleTree = PartialMerkleTree(txMatches)
-    partialMerkleTree.bits must be (Seq(true,false,true,false,false,false,false,false))
-    partialMerkleTree.tree must be (Node(DoubleSha256Digest("b130d701e65ac8c65f30dc4b20aabf349036b7c87f11f012f4f3f53f666791e6"),
+    partialMerkleTree.bits must be(Seq(true, false, true, false, false, false, false, false))
+    partialMerkleTree.tree must be(Node(
+      DoubleSha256Digest("b130d701e65ac8c65f30dc4b20aabf349036b7c87f11f012f4f3f53f666791e6"),
       Leaf(DoubleSha256Digest("01272b2b1c8c33a1b4e9ab111db41c9ac275e686fbd9c5d482e586d03e9e0552")),
       Leaf(DoubleSha256Digest("076d0317ee70ee36cf396a9871ab3bf6f8e6d538d7f8a9062437dcb71c75fcf9"))))
-    partialMerkleTree.extractMatches must be (Seq(DoubleSha256Digest("076d0317ee70ee36cf396a9871ab3bf6f8e6d538d7f8a9062437dcb71c75fcf9")))
+    partialMerkleTree.extractMatches must be(Seq(DoubleSha256Digest("076d0317ee70ee36cf396a9871ab3bf6f8e6d538d7f8a9062437dcb71c75fcf9")))
   }
 
   it must "calculate bits correctly for a tree of height 1" in {
-    val matches = List((true,DoubleSha256Digest("caa02f1194fb44dea407a7cf713ddcf30e69f49c297f9275f9236fec42d945b2")))
+    val matches = List((true, DoubleSha256Digest("caa02f1194fb44dea407a7cf713ddcf30e69f49c297f9275f9236fec42d945b2")))
     val partialMerkleTree = PartialMerkleTree(matches)
-    partialMerkleTree.tree must be (Leaf(DoubleSha256Digest("caa02f1194fb44dea407a7cf713ddcf30e69f49c297f9275f9236fec42d945b2")))
-    partialMerkleTree.bits must be (Seq(true,false,false,false,false,false,false,false))
+    partialMerkleTree.tree must be(Leaf(DoubleSha256Digest("caa02f1194fb44dea407a7cf713ddcf30e69f49c297f9275f9236fec42d945b2")))
+    partialMerkleTree.bits must be(Seq(true, false, false, false, false, false, false, false))
   }
 
   it must "correctly compute a merkle tree that has an odd amount of txids on the merkle tree" in {
@@ -185,8 +186,8 @@ class PartialMerkleTreeTests extends FlatSpec with MustMatchers {
     val bits = List(true, true, true, true, true, true, true, false, true, true, false, true,
       true, true, false, true, true, true, true, false, true, true, true, true, true, true, true,
       false, true, true, true, true, false, true, true, true, true, false, false, false)
-    val tree = PartialMerkleTree(numTransactions,hashes,bits)
-    tree.extractMatches.contains(DoubleSha256Digest("5df6e0e2761359d30a8275058e299fcc0381534545f55cf43e41983f5d4c9456")) must be (true)
+    val tree = PartialMerkleTree(numTransactions, hashes, bits)
+    tree.extractMatches.contains(DoubleSha256Digest("5df6e0e2761359d30a8275058e299fcc0381534545f55cf43e41983f5d4c9456")) must be(true)
   }
 
 }

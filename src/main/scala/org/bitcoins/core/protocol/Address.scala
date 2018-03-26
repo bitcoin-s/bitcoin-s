@@ -1,8 +1,8 @@
 package org.bitcoins.core.protocol
 import org.bitcoins.core.config._
-import org.bitcoins.core.config.{MainNet, RegTest, TestNet3}
-import org.bitcoins.core.crypto.{ECPublicKey, HashDigest, Sha256Digest, Sha256Hash160Digest}
-import org.bitcoins.core.number.{UInt32, UInt8}
+import org.bitcoins.core.config.{ MainNet, RegTest, TestNet3 }
+import org.bitcoins.core.crypto.{ ECPublicKey, HashDigest, Sha256Digest, Sha256Hash160Digest }
+import org.bitcoins.core.number.{ UInt32, UInt8 }
 import org.bitcoins.core.protocol.transaction.TransactionOutput
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.script.constant.ScriptConstant
@@ -10,7 +10,7 @@ import org.bitcoins.core.serializers.script.ScriptParser
 import org.bitcoins.core.util._
 
 import scala.annotation.tailrec
-import scala.util.{Failure, Success, Try}
+import scala.util.{ Failure, Success, Try }
 
 sealed abstract class Address {
 
@@ -18,7 +18,7 @@ sealed abstract class Address {
   def networkParameters: NetworkParameters
 
   /** The string representation of this address */
-  def value : String
+  def value: String
 
   /** Every address is derived from a [[HashDigest]] in a [[TransactionOutput]] */
   def hash: HashDigest
@@ -31,7 +31,7 @@ sealed abstract class BitcoinAddress extends Address
 
 sealed abstract class P2PKHAddress extends BitcoinAddress {
   /** The base58 string representation of this address */
-  override def value : String = {
+  override def value: String = {
     val versionByte = networkParameters.p2pkhNetworkByte
     val bytes = versionByte ++ hash.bytes
     val checksum = CryptoUtil.doubleSHA256(bytes).bytes.take(4)
@@ -46,7 +46,7 @@ sealed abstract class P2PKHAddress extends BitcoinAddress {
 
 sealed abstract class P2SHAddress extends BitcoinAddress {
   /** The base58 string representation of this address */
-  override def value : String = {
+  override def value: String = {
     val versionByte = networkParameters.p2shNetworkByte
     val bytes = versionByte ++ hash.bytes
     val checksum = CryptoUtil.doubleSHA256(bytes).bytes.take(4)
@@ -59,8 +59,8 @@ sealed abstract class P2SHAddress extends BitcoinAddress {
 }
 
 /**
-  * https://github.com/bitcoin/bips/blob/master/bip-0173.mediawiki
-  */
+ * https://github.com/bitcoin/bips/blob/master/bip-0173.mediawiki
+ */
 sealed abstract class Bech32Address extends BitcoinAddress {
 
   private def logger = BitcoinSLogger.logger
@@ -72,7 +72,7 @@ sealed abstract class Bech32Address extends BitcoinAddress {
   override def networkParameters = hrp.network.get
 
   override def value: String = {
-    val checksum = Bech32Address.createChecksum(hrp,data)
+    val checksum = Bech32Address.createChecksum(hrp, data)
     val all = data ++ checksum
     val encoding = Bech32Address.encodeToString(all)
     hrp.toString + Bech32Address.separator + encoding
@@ -90,7 +90,7 @@ sealed abstract class Bech32Address extends BitcoinAddress {
 
 object Bech32Address {
   private case class Bech32AddressImpl(hrp: HumanReadablePart, data: Seq[UInt8]) extends Bech32Address {
-    verifyChecksum(hrp,UInt8.toBytes(data))
+    verifyChecksum(hrp, UInt8.toBytes(data))
   }
 
   /** Separator used to separate the hrp & data parts of a bech32 addr */
@@ -98,29 +98,30 @@ object Bech32Address {
 
   private val logger = BitcoinSLogger.logger
 
-  def apply(witSPK: WitnessScriptPubKey,
-            networkParameters: NetworkParameters): Try[Bech32Address] = {
+  def apply(
+    witSPK:            WitnessScriptPubKey,
+    networkParameters: NetworkParameters
+  ): Try[Bech32Address] = {
     //we don't encode the wit version or pushop for program into base5
     val prog = UInt8.toUInt8s(witSPK.asmBytes.tail.tail)
     val encoded = Bech32Address.encode(prog)
     val hrp = networkParameters match {
-      case _: MainNet => bc
+      case _: MainNet               => bc
       case _: TestNet3 | _: RegTest => tb
     }
     val witVersion = witSPK.witnessVersion.version.toLong.toShort
-    encoded.map(e => Bech32Address(hrp,Seq(UInt8(witVersion)) ++ e))
+    encoded.map(e => Bech32Address(hrp, Seq(UInt8(witVersion)) ++ e))
   }
 
-
   def apply(hrp: HumanReadablePart, data: Seq[UInt8]): Bech32Address = {
-    Bech32AddressImpl(hrp,data)
+    Bech32AddressImpl(hrp, data)
   }
 
   /** Returns a base 5 checksum as specified by BIP173 */
   def createChecksum(hrp: HumanReadablePart, bytes: Seq[UInt8]): Seq[UInt8] = {
     val values: Seq[UInt8] = hrpExpand(hrp) ++ bytes
     val z = UInt8.zero
-    val polymod: Long = polyMod(values ++ Seq(z,z,z,z,z,z)) ^ 1
+    val polymod: Long = polyMod(values ++ Seq(z, z, z, z, z, z)) ^ 1
     //[(polymod >> 5 * (5 - i)) & 31 for i in range(6)]
     val result: Seq[UInt8] = 0.until(6).map { i =>
       val u = UInt8(i.toShort)
@@ -144,9 +145,11 @@ object Bech32Address {
     result
   }
 
-  private def generators: Seq[Long] = Seq(UInt32("3b6a57b2").toLong,
+  private def generators: Seq[Long] = Seq(
+    UInt32("3b6a57b2").toLong,
     UInt32("26508e6d").toLong, UInt32("1ea119fa").toLong,
-    UInt32("3d4233dd").toLong, UInt32("2a1462b3").toLong)
+    UInt32("3d4233dd").toLong, UInt32("2a1462b3").toLong
+  )
 
   def polyMod(bytes: Seq[UInt8]): Long = {
     var chk: Long = 1
@@ -166,7 +169,7 @@ object Bech32Address {
 
   def verifyChecksum(hrp: HumanReadablePart, data: Seq[Byte]): Boolean = {
     val u8s = UInt8.toUInt8s(data)
-    verifyCheckSum(hrp,u8s)
+    verifyCheckSum(hrp, u8s)
   }
 
   def verifyCheckSum(hrp: HumanReadablePart, u8s: Seq[UInt8]): Boolean = {
@@ -178,33 +181,34 @@ object Bech32Address {
 
   /** Converts a byte array from base 8 to base 5 */
   def encode(bytes: Seq[UInt8]): Try[Seq[UInt8]] = {
-    NumberUtil.convertUInt8s(bytes,u32Eight,u32Five,true)
+    NumberUtil.convertUInt8s(bytes, u32Eight, u32Five, true)
   }
   /** Decodes a byte array from base 5 to base 8 */
   def decodeToBase8(b: Seq[UInt8]): Try[Seq[UInt8]] = {
-    NumberUtil.convertUInt8s(b,u32Five,u32Eight,false)
+    NumberUtil.convertUInt8s(b, u32Five, u32Eight, false)
   }
 
   /** Tries to convert the given string a to a [[org.bitcoins.core.protocol.script.WitnessScriptPubKey]] */
   def fromStringToWitSPK(string: String): Try[WitnessScriptPubKey] = {
     val decoded = fromString(string)
-    decoded.flatMap { case (_,bytes) =>
-      val (v,prog) = (bytes.head,bytes.tail)
-      val convertedProg = NumberUtil.convertBytes(prog,u32Five,u32Eight,false)
-      val progBytes = convertedProg.map(UInt8.toBytes(_))
-      val witVersion = WitnessVersion(v)
-      progBytes.flatMap { prog =>
-        val pushOp = BitcoinScriptUtil.calculatePushOp(prog)
-        witVersion match {
-          case Some(v) =>
-            WitnessScriptPubKey(Seq(v.version) ++ pushOp ++ Seq(ScriptConstant(prog))) match {
-              case Some(spk) => Success(spk)
-              case None => Failure(new IllegalArgumentException("Failed to decode bech32 into a witSPK"))
-            }
-          case None => Failure(new IllegalArgumentException("Witness version was not valid, got: " + v))
-        }
+    decoded.flatMap {
+      case (_, bytes) =>
+        val (v, prog) = (bytes.head, bytes.tail)
+        val convertedProg = NumberUtil.convertBytes(prog, u32Five, u32Eight, false)
+        val progBytes = convertedProg.map(UInt8.toBytes(_))
+        val witVersion = WitnessVersion(v)
+        progBytes.flatMap { prog =>
+          val pushOp = BitcoinScriptUtil.calculatePushOp(prog)
+          witVersion match {
+            case Some(v) =>
+              WitnessScriptPubKey(Seq(v.version) ++ pushOp ++ Seq(ScriptConstant(prog))) match {
+                case Some(spk) => Success(spk)
+                case None      => Failure(new IllegalArgumentException("Failed to decode bech32 into a witSPK"))
+              }
+            case None => Failure(new IllegalArgumentException("Witness version was not valid, got: " + v))
+          }
 
-      }
+        }
     }
   }
   /** Takes a base32 byte array and encodes it to a string */
@@ -212,7 +216,7 @@ object Bech32Address {
     b.map(b => charset(b.toInt)).mkString
   }
   /** Decodes bech32 string to the [[HumanReadablePart]] & data part */
-  def fromString(str: String): Try[(HumanReadablePart,Seq[Byte])] = {
+  def fromString(str: String): Try[(HumanReadablePart, Seq[Byte])] = {
     val sepIndexes = str.zipWithIndex.filter(_._1 == separator)
     if (str.size > 90 || str.size < 8) {
       Failure(new IllegalArgumentException("bech32 payloads must be betwee 8 and 90 chars, got: " + str.size))
@@ -220,7 +224,7 @@ object Bech32Address {
       Failure(new IllegalArgumentException("Bech32 address did not have the correct separator"))
     } else {
       val sepIndex = sepIndexes.last._2
-      val (hrp,data) = (str.take(sepIndex), str.splitAt(sepIndex + 1)._2)
+      val (hrp, data) = (str.take(sepIndex), str.splitAt(sepIndex + 1)._2)
       if (hrp.size < 1 || data.size < 6) {
         Failure(new IllegalArgumentException("Hrp/data too short"))
       } else {
@@ -228,15 +232,14 @@ object Bech32Address {
         val dataValid = checkDataValidity(data)
         val isChecksumValid: Try[Seq[Byte]] = hrpValid.flatMap { h =>
           dataValid.flatMap { d =>
-            if (verifyChecksum(h,d)) {
+            if (verifyChecksum(h, d)) {
               if (d.size < 6) Success(Nil)
               else Success(d.take(d.size - 6))
-            }
-            else Failure(new IllegalArgumentException("Checksum was invalid on the bech32 address"))
+            } else Failure(new IllegalArgumentException("Checksum was invalid on the bech32 address"))
           }
         }
         isChecksumValid.flatMap { d =>
-          hrpValid.map(h => (h,d))
+          hrpValid.map(h => (h, d))
         }
       }
     }
@@ -252,7 +255,7 @@ object Bech32Address {
         } else if (isLower && isUpper) {
           Failure(new IllegalArgumentException("HRP had mixed case, got: " + hrp))
         } else {
-          loop(t,UInt8(h.toByte) +: accum, h.isLower || isLower, h.isUpper || isUpper)
+          loop(t, UInt8(h.toByte) +: accum, h.isLower || isLower, h.isUpper || isUpper)
         }
       case Nil =>
         if (isLower && isUpper) {
@@ -262,14 +265,15 @@ object Bech32Address {
         }
     }
 
-    loop(hrp.toCharArray.toList,Nil,false,false).flatMap { _ =>
+    loop(hrp.toCharArray.toList, Nil, false, false).flatMap { _ =>
       Success(HumanReadablePart(hrp.toLowerCase))
     }
   }
 
-  /** Takes in the data portion of a bech32 address and decodes it to a byte array
-    * It also checks the validity of the data portion according to BIP173
-    */
+  /**
+   * Takes in the data portion of a bech32 address and decodes it to a byte array
+   * It also checks the validity of the data portion according to BIP173
+   */
   def checkDataValidity(data: String): Try[Seq[Byte]] = {
     @tailrec
     def loop(remaining: List[Char], accum: Seq[Byte], hasUpper: Boolean, hasLower: Boolean): Try[Seq[Byte]] = remaining match {
@@ -283,11 +287,11 @@ object Bech32Address {
           } else {
             val byte = charset.indexOf(h.toLower).toByte
             require(byte >= 0 && byte < 32, "Not in valid range, got: " + byte)
-            loop(t,  byte +: accum, h.isUpper || hasUpper, h.isLower || hasLower)
+            loop(t, byte +: accum, h.isUpper || hasUpper, h.isLower || hasLower)
           }
         }
     }
-    val payload: Try[Seq[Byte]] = loop(data.toCharArray.toList,Nil,false,false)
+    val payload: Try[Seq[Byte]] = loop(data.toCharArray.toList, Nil, false, false)
     payload
   }
 
@@ -299,25 +303,27 @@ object Bech32Address {
 }
 
 object P2PKHAddress {
-  private case class P2PKHAddressImpl(hash: Sha256Hash160Digest,
-                                      networkParameters: NetworkParameters) extends P2PKHAddress {
+  private case class P2PKHAddressImpl(
+    hash:              Sha256Hash160Digest,
+    networkParameters: NetworkParameters
+  ) extends P2PKHAddress {
     require(isP2PKHAddress(value), "Bitcoin address was invalid " + value)
   }
 
-  def apply(hash: Sha256Hash160Digest, network: NetworkParameters): P2PKHAddress = P2PKHAddressImpl(hash,network)
+  def apply(hash: Sha256Hash160Digest, network: NetworkParameters): P2PKHAddress = P2PKHAddressImpl(hash, network)
 
   def apply(pubKey: ECPublicKey, networkParameters: NetworkParameters): P2PKHAddress = {
     val hash = CryptoUtil.sha256Hash160(pubKey.bytes)
-    P2PKHAddress(hash,networkParameters)
+    P2PKHAddress(hash, networkParameters)
   }
 
   def apply(spk: P2PKHScriptPubKey, networkParameters: NetworkParameters): P2PKHAddress = {
-    P2PKHAddress(spk.pubKeyHash,networkParameters)
+    P2PKHAddress(spk.pubKeyHash, networkParameters)
   }
 
   /** Checks if an address is a valid p2pkh address */
-  def isP2PKHAddress(address : String) : Boolean = {
-    val decodeCheckP2PKH : Try[Seq[Byte]] = Base58.decodeCheck(address)
+  def isP2PKHAddress(address: String): Boolean = {
+    val decodeCheckP2PKH: Try[Seq[Byte]] = Base58.decodeCheck(address)
     decodeCheckP2PKH match {
       case Success(bytes) =>
         Networks.p2pkhNetworkBytes.find(bs => bytes.startsWith(bs)).isDefined
@@ -326,32 +332,34 @@ object P2PKHAddress {
   }
 
   /** Checks if an address is a valid p2pkh address */
-  def isP2PKHAddress(address : BitcoinAddress) : Boolean = isP2PKHAddress(address.value)
+  def isP2PKHAddress(address: BitcoinAddress): Boolean = isP2PKHAddress(address.value)
 
 }
 
 object P2SHAddress {
-  private case class P2SHAddressImpl(hash: Sha256Hash160Digest,
-                                     networkParameters: NetworkParameters) extends P2SHAddress {
+  private case class P2SHAddressImpl(
+    hash:              Sha256Hash160Digest,
+    networkParameters: NetworkParameters
+  ) extends P2SHAddress {
     require(isP2SHAddress(value), "Bitcoin address was invalid " + value)
   }
 
-  /** Creates a [[P2SHScriptPubKey]] from the given [[ScriptPubKey]],
-    * then creates an address from that [[P2SHScriptPubKey]] */
-  def apply(scriptPubKey: ScriptPubKey,network: NetworkParameters): P2SHAddress = {
+  /**
+   * Creates a [[P2SHScriptPubKey]] from the given [[ScriptPubKey]],
+   * then creates an address from that [[P2SHScriptPubKey]]
+   */
+  def apply(scriptPubKey: ScriptPubKey, network: NetworkParameters): P2SHAddress = {
     val p2shScriptPubKey = P2SHScriptPubKey(scriptPubKey)
-    P2SHAddress(p2shScriptPubKey,network)
+    P2SHAddress(p2shScriptPubKey, network)
   }
 
-
-  def apply(p2shScriptPubKey: P2SHScriptPubKey, network: NetworkParameters): P2SHAddress = P2SHAddress(p2shScriptPubKey.scriptHash,network)
-
+  def apply(p2shScriptPubKey: P2SHScriptPubKey, network: NetworkParameters): P2SHAddress = P2SHAddress(p2shScriptPubKey.scriptHash, network)
 
   def apply(hash: Sha256Hash160Digest, network: NetworkParameters): P2SHAddress = P2SHAddressImpl(hash, network)
 
   /** Checks if a address is a valid p2sh address */
-  def isP2SHAddress(address : String) : Boolean = {
-    val decodeCheckP2SH : Try[Seq[Byte]] = Base58.decodeCheck(address)
+  def isP2SHAddress(address: String): Boolean = {
+    val decodeCheckP2SH: Try[Seq[Byte]] = Base58.decodeCheck(address)
     decodeCheckP2SH match {
       case Success(bytes) =>
         Networks.p2shNetworkBytes.find(bs => bytes.startsWith(bs)).isDefined
@@ -360,7 +368,7 @@ object P2SHAddress {
   }
 
   /** Checks if a address is a valid p2sh address */
-  def isP2SHAddress(address : BitcoinAddress) : Boolean = isP2SHAddress(address.value)
+  def isP2SHAddress(address: BitcoinAddress): Boolean = isP2SHAddress(address.value)
 
 }
 
@@ -372,7 +380,6 @@ object BitcoinAddress {
     decodeChecked.isSuccess
   }
 
-
   /** Creates a [[BitcoinAddress]] from the given base58 string value */
   def apply(value: String): BitcoinAddress = {
     val decodeChecked = Base58.decodeCheck(value)
@@ -380,10 +387,9 @@ object BitcoinAddress {
       case Success(bytes) =>
         val network: Option[(NetworkParameters, Seq[Byte])] = matchNetwork(bytes)
         if (network.isDefined && P2PKHAddress.isP2PKHAddress(value)) {
-          P2PKHAddress(Sha256Hash160Digest(network.get._2),network.get._1)
-        }
-        else if (network.isDefined && P2SHAddress.isP2SHAddress(value)) {
-          P2SHAddress(Sha256Hash160Digest(network.get._2),network.get._1)
+          P2PKHAddress(Sha256Hash160Digest(network.get._2), network.get._1)
+        } else if (network.isDefined && P2SHAddress.isP2SHAddress(value)) {
+          P2SHAddress(Sha256Hash160Digest(network.get._2), network.get._1)
         } else throw new IllegalArgumentException("The address was not a p2pkh or p2sh address, got: " + value)
       case Failure(exception) =>
         throw exception
@@ -409,28 +415,28 @@ object BitcoinAddress {
 
 object Address {
 
-  def fromBytes(bytes : Seq[Byte]) : Try[Address] = {
+  def fromBytes(bytes: Seq[Byte]): Try[Address] = {
     val encoded = Base58.encode(bytes)
     Try(BitcoinAddress(encoded))
   }
 
-  def fromHex(hex : String) : Try[Address] = fromBytes(BitcoinSUtil.decodeHex(hex))
+  def fromHex(hex: String): Try[Address] = fromBytes(BitcoinSUtil.decodeHex(hex))
 
   def apply(bytes: Seq[Byte]): Try[Address] = fromBytes(bytes)
 
-  def apply(str : String) : Try[Address] = Try(BitcoinAddress(str))
+  def apply(str: String): Try[Address] = Try(BitcoinAddress(str))
 
   def fromScriptPubKey(spk: ScriptPubKey, network: NetworkParameters): Try[BitcoinAddress] = spk match {
-    case p2pkh: P2PKHScriptPubKey => Success(P2PKHAddress(p2pkh,network))
-    case p2sh: P2SHScriptPubKey => Success(P2SHAddress(p2sh,network))
-    case witSPK: WitnessScriptPubKey => Bech32Address(witSPK,network)
+    case p2pkh: P2PKHScriptPubKey    => Success(P2PKHAddress(p2pkh, network))
+    case p2sh: P2SHScriptPubKey      => Success(P2SHAddress(p2sh, network))
+    case witSPK: WitnessScriptPubKey => Bech32Address(witSPK, network)
     case x @ (_: P2PKScriptPubKey | _: MultiSignatureScriptPubKey | _: LockTimeScriptPubKey
-              | _: EscrowTimeoutScriptPubKey | _: NonStandardScriptPubKey
-              | _: WitnessCommitment |  _: UnassignedWitnessScriptPubKey | EmptyScriptPubKey) =>
+      | _: EscrowTimeoutScriptPubKey | _: NonStandardScriptPubKey
+      | _: WitnessCommitment | _: UnassignedWitnessScriptPubKey | EmptyScriptPubKey) =>
       Failure(new IllegalArgumentException("Cannot create a address for the scriptPubKey: " + x))
   }
 
   def apply(spk: ScriptPubKey, networkParameters: NetworkParameters): Try[BitcoinAddress] = {
-    fromScriptPubKey(spk,networkParameters)
+    fromScriptPubKey(spk, networkParameters)
   }
 }

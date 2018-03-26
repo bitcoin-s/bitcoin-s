@@ -6,36 +6,36 @@ import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.serializers.RawBitcoinSerializer
 
 /**
-  * Created by chris on 5/19/16.
-  * Serializes block headers
-  * https://bitcoin.org/en/developer-reference#block-headers
-  */
+ * Created by chris on 5/19/16.
+ * Serializes block headers
+ * https://bitcoin.org/en/developer-reference#block-headers
+ */
 sealed abstract class RawBlockHeaderSerializer extends RawBitcoinSerializer[BlockHeader] {
 
   /** Converts a list of bytes into a block header */
-  def read(bytes : List[Byte]) : BlockHeader = {
+  def read(bytes: List[Byte]): BlockHeader = {
     //version first 4 bytes
     val version = UInt32(bytes.take(4).reverse)
     //previous header hash next 32 bytes
     val prevBlockHashBytes = bytes.slice(4, 36)
-    val prevBlockHash : DoubleSha256Digest = DoubleSha256Digest(prevBlockHashBytes)
+    val prevBlockHash: DoubleSha256Digest = DoubleSha256Digest(prevBlockHashBytes)
     //merkle hash next 32 bytes
     val merkleRootBytes = bytes.slice(36, 68)
-    val merkleRoot : DoubleSha256Digest = DoubleSha256Digest(merkleRootBytes)
+    val merkleRoot: DoubleSha256Digest = DoubleSha256Digest(merkleRootBytes)
     //time 4 bytes
-    val timeBytes = bytes.slice(68,72)
+    val timeBytes = bytes.slice(68, 72)
     val time = UInt32(timeBytes.reverse)
     //nbits 4 bytes
-    val nBitsBytes = bytes.slice(72,76)
+    val nBitsBytes = bytes.slice(72, 76)
     val nBits = UInt32(nBitsBytes.reverse)
     //nonce 4 bytes
-    val nonceBytes = bytes.slice(76,80)
+    val nonceBytes = bytes.slice(76, 80)
     val nonce = UInt32(nonceBytes.reverse)
-    BlockHeader(version,prevBlockHash, merkleRoot, time, nBits, nonce)
+    BlockHeader(version, prevBlockHash, merkleRoot, time, nBits, nonce)
   }
 
   /** Serializes the BlockHeader to a byte array */
-  def write(blockHeader: BlockHeader): Seq[Byte]  = {
+  def write(blockHeader: BlockHeader): Seq[Byte] = {
     val version = blockHeader.version.bytes.reverse
 
     val prevHash = blockHeader.previousBlockHash.bytes

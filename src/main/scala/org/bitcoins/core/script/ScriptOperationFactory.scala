@@ -9,7 +9,7 @@ import org.bitcoins.core.script.locktime.LocktimeOperation
 import org.bitcoins.core.script.reserved.ReservedOperation
 import org.bitcoins.core.script.splice.SpliceOperation
 import org.bitcoins.core.script.stack.StackOperation
-import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil}
+import org.bitcoins.core.util.{ BitcoinSLogger, BitcoinSUtil }
 
 /**
  * Created by chris on 1/8/16.
@@ -19,12 +19,13 @@ import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil}
 trait ScriptOperationFactory[T <: ScriptOperation] extends BitcoinSLogger {
 
   /** All of the [[ScriptOperation]]s for a particular T. */
-  def operations : Seq[T]
+  def operations: Seq[T]
 
   /**
-   * Finds a [[ScriptOperation]] from a given string */
-  def fromString(str : String) : Option[T] = {
-    val result : Option[T] = operations.find(_.toString == str)
+   * Finds a [[ScriptOperation]] from a given string
+   */
+  def fromString(str: String): Option[T] = {
+    val result: Option[T] = operations.find(_.toString == str)
     if (result.isEmpty) {
       //try and remove the 'OP_' prefix on the operations and see if it matches anything.
       operations.find(op => removeOP_Prefix(op.toString) == removeOP_Prefix(str))
@@ -32,34 +33,34 @@ trait ScriptOperationFactory[T <: ScriptOperation] extends BitcoinSLogger {
   }
 
   /**
-   * Finds a [[ScriptOperation]] from its hexadecimal representation. */
-  def fromHex(hex : String) : Option[T] = operations.find(_.hex == hex.toLowerCase)
+   * Finds a [[ScriptOperation]] from its hexadecimal representation.
+   */
+  def fromHex(hex: String): Option[T] = operations.find(_.hex == hex.toLowerCase)
 
   /**
    * Removes the 'OP_' prefix from a given operation.
    * Example: OP_EQUALVERIFY would be transformed into EQUALVERIFY
    */
-  private def removeOP_Prefix(str : String) : String = {
-    str.replace("OP_","")
+  private def removeOP_Prefix(str: String): String = {
+    str.replace("OP_", "")
   }
 
   /** Finds a [[ScriptOperation]] from a given [[Byte]]. */
-  def fromByte(byte : Byte) : Option[T] = {
+  def fromByte(byte: Byte): Option[T] = {
     val hex = BitcoinSUtil.encodeHex(byte)
     fromHex(hex)
   }
 
-  def apply(byte : Byte) : Option[T] = fromByte(byte)
+  def apply(byte: Byte): Option[T] = fromByte(byte)
 
-  def apply(hex : String) : Option[T] = fromHex(hex)
+  def apply(hex: String): Option[T] = fromHex(hex)
 }
-
 
 object ScriptOperation extends ScriptOperationFactory[ScriptOperation] {
 
-  lazy val operations = ScriptNumberOperation.operations ++ Seq(OP_FALSE,OP_PUSHDATA1, OP_PUSHDATA2,OP_PUSHDATA4,OP_TRUE) ++ StackOperation.operations ++ LocktimeOperation.operations ++
+  lazy val operations = ScriptNumberOperation.operations ++ Seq(OP_FALSE, OP_PUSHDATA1, OP_PUSHDATA2, OP_PUSHDATA4, OP_TRUE) ++ StackOperation.operations ++ LocktimeOperation.operations ++
     CryptoOperation.operations ++ ControlOperations.operations ++ BitwiseOperation.operations ++
-    ArithmeticOperation.operations ++  BytesToPushOntoStack.operations ++ SpliceOperation.operations ++
+    ArithmeticOperation.operations ++ BytesToPushOntoStack.operations ++ SpliceOperation.operations ++
     ReservedOperation.operations
 
 }

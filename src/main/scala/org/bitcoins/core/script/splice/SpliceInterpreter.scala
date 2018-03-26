@@ -20,7 +20,7 @@ sealed abstract class SpliceInterpreter {
       } else {
         val scriptNumber = program.stack.head match {
           case ScriptNumber.zero => ScriptNumber.zero
-          case x: ScriptToken => ScriptNumber(x.bytes.size)
+          case x: ScriptToken    => ScriptNumber(x.bytes.size)
         }
         ScriptProgram(program, scriptNumber :: program.stack, program.script.tail)
       }

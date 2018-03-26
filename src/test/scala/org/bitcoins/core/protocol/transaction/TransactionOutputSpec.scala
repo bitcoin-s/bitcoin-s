@@ -1,11 +1,11 @@
 package org.bitcoins.core.protocol.transaction
 
 import org.bitcoins.core.gen.TransactionGenerators
-import org.scalacheck.{Prop, Properties}
+import org.scalacheck.{ Prop, Properties }
 
 /**
-  * Created by chris on 6/24/16.
-  */
+ * Created by chris on 6/24/16.
+ */
 class TransactionOutputSpec extends Properties("TransactionOutputSpec") {
 
   property("Serialization symmetry") =
