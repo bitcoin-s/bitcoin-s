@@ -1,15 +1,15 @@
 package org.bitcoins.core.util
 
-import java.io.{ByteArrayOutputStream, IOException}
+import java.io.{ ByteArrayOutputStream, IOException }
 import java.util
 
-import org.bitcoinj.core.{ECKey, Sha256Hash}
+import org.bitcoinj.core.{ ECKey, Sha256Hash }
 import org.bitcoinj.params.TestNet3Params
 import org.bitcoins.core.config.TestNet3
 import org.bitcoins.core.crypto.ECPublicKey
 import org.bitcoins.core.protocol.CompactSizeUInt
-import org.bitcoins.core.protocol.script.{ScriptPubKey, UpdateScriptPubKeyAsm}
-import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutput}
+import org.bitcoins.core.protocol.script.{ ScriptPubKey, UpdateScriptPubKeyAsm }
+import org.bitcoins.core.protocol.transaction.{ Transaction, TransactionOutput }
 import org.bitcoins.core.script.ScriptOperationFactory
 import org.bitcoins.core.script.constant.ScriptToken
 import org.bitcoins.core.script.crypto.SIGHASH_ANYONECANPAY
@@ -24,15 +24,16 @@ trait BitcoinjConversions {
   private def logger = LoggerFactory.getLogger(this.getClass().toString)
   /**
    * Converts a bitcoinj script to a bitcoin-s ScriptPubKey
- *
+   *
    * @param bitcoinjScript
    * @return
    */
-  def toScriptPubKey(bitcoinjScript : org.bitcoinj.script.Script) : ScriptPubKey = {
+  def toScriptPubKey(bitcoinjScript: org.bitcoinj.script.Script): ScriptPubKey = {
     val p = bitcoinjScript.getProgram
     val compactSizeUInt = CompactSizeUInt.calculateCompactSizeUInt(p)
     val scriptPubKey = ScriptPubKey(compactSizeUInt.bytes ++ p)
-    require(BitcoinSUtil.encodeHex(bitcoinjScript.getProgram) == BitcoinSUtil.encodeHex(scriptPubKey.asm.flatMap(_.bytes)),
+    require(
+      BitcoinSUtil.encodeHex(bitcoinjScript.getProgram) == BitcoinSUtil.encodeHex(scriptPubKey.asm.flatMap(_.bytes)),
       "ScriptPubKey must be the same as the given bitcoinj script\n" +
         BitcoinSUtil.encodeHex(bitcoinjScript.getProgram) + "\n" +
         BitcoinSUtil.encodeHex(scriptPubKey.asmBytes))
@@ -41,18 +42,18 @@ trait BitcoinjConversions {
 
   /**
    * Performs the signature serialization that is implemented inside of bitcoinj
- *
+   *
    * @param tx
    * @param inputIndex
    * @param connectedScript
    * @return
    */
-  def signatureSerialization(tx : org.bitcoinj.core.Transaction, inputIndex : Int, connectedScript : Seq[Byte], sigHashType : Byte) : String = {
+  def signatureSerialization(tx: org.bitcoinj.core.Transaction, inputIndex: Int, connectedScript: Seq[Byte], sigHashType: Byte): String = {
     val params = TestNet3Params.get
     try {
       import org.bitcoinj.core._
       import org.bitcoinj.script._
-      for { i <- 0 until tx.getInputs.size} {
+      for { i <- 0 until tx.getInputs.size } {
         //empty script
         tx.getInput(i).setScriptSig(new ScriptBuilder().build())
       }
@@ -65,7 +66,7 @@ trait BitcoinjConversions {
       // ever put into scripts. Deleting OP_CODESEPARATOR is a step that should never be required but if we don't
       // do it, we could split off the main chain.
 
-      val connectedScript1 : Script  = new Script(org.bitcoinj.script.Script.removeAllInstancesOfOp(
+      val connectedScript1: Script = new Script(org.bitcoinj.script.Script.removeAllInstancesOfOp(
         connectedScript.toArray, ScriptOpCodes.OP_CODESEPARATOR));
 
       // Set the input to the script of its output. Bitcoin Core does this but the step has no obvious purpose as
@@ -79,7 +80,7 @@ trait BitcoinjConversions {
         tx.clearOutputs()
 
         // The signature isn't broken by new versions of the transaction issued by other parties.
-        for  { i <- 0 until tx.getInputs.size } {
+        for { i <- 0 until tx.getInputs.size } {
           if (i != inputIndex)
             tx.getInputs.get(i).setSequenceNumber(0);
         }
@@ -107,8 +108,7 @@ trait BitcoinjConversions {
           tx.addOutput(new org.bitcoinj.core.TransactionOutput(params, tx, Coin.NEGATIVE_SATOSHI, List[Byte]().toArray))
         }
         // The signature isn't broken by new versions of the transaction issued by other parties.
-        for {i <- 0 until tx.getInputs.size }
-        {
+        for { i <- 0 until tx.getInputs.size } {
           if (i != inputIndex)
             tx.getInputs.get(i).setSequenceNumber(0);
         }
@@ -125,53 +125,48 @@ trait BitcoinjConversions {
         tx.addInput(input)
       }
 
-      val bos : ByteArrayOutputStream = new UnsafeByteArrayOutputStream(256)
+      val bos: ByteArrayOutputStream = new UnsafeByteArrayOutputStream(256)
       tx.bitcoinSerialize(bos)
       // We also have to write a hash type (sigHashType is actually an unsigned char)
       Utils.uint32ToByteStreamLE(0x000000ff & sigHashType, bos);
       // Note that this is NOT reversed to ensure it will be signed correctly. If it were to be printed out
       // however then we would expect that it is IS reversed.
-      val hash : Sha256Hash = Sha256Hash.twiceOf(bos.toByteArray())
+      val hash: Sha256Hash = Sha256Hash.twiceOf(bos.toByteArray())
       val txBytes = bos.toByteArray
       bos.close();
 
       return BitcoinSUtil.encodeHex(txBytes)
-    } catch  {
-      case e : IOException => throw new RuntimeException(e);  // Cannot happen.
+    } catch {
+      case e: IOException => throw new RuntimeException(e); // Cannot happen.
     }
   }
 
   /**
    * Helper function to create bitcoinj ECKey
- *
+   *
    * @param bytes
    * @return
    */
-  def publicKey(bytes : Seq[Byte]) : ECKey = ECKey.fromPublicOnly(bytes.toArray)
+  def publicKey(bytes: Seq[Byte]): ECKey = ECKey.fromPublicOnly(bytes.toArray)
 
   /**
    * Helper function to create bitcoinj ECKey
- *
+   *
    * @param key
    * @return
    */
-  def publicKey(key : ECPublicKey) : ECKey = publicKey(key.bytes)
-
+  def publicKey(key: ECPublicKey): ECKey = publicKey(key.bytes)
 
   /**
    * Builds a bitcoinj transaction out of a bitcoin-s transaction
- *
+   *
    * @param tx
    * @return
    */
-  def transaction(tx: org.bitcoins.core.protocol.transaction.Transaction) : org.bitcoinj.core.Transaction = {
-    new org.bitcoinj.core.Transaction(params,BitcoinSUtil.decodeHex(tx.hex).toArray)
+  def transaction(tx: org.bitcoins.core.protocol.transaction.Transaction): org.bitcoinj.core.Transaction = {
+    new org.bitcoinj.core.Transaction(params, BitcoinSUtil.decodeHex(tx.hex).toArray)
   }
 
-
-
-
 }
-
 
 object BitcoinjConversions extends BitcoinjConversions

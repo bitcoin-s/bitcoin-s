@@ -3,8 +3,8 @@ package org.bitcoins.core.serializers.script
 import org.bitcoins.core.protocol.script.ScriptSignature
 import org.bitcoins.core.script.constant._
 import org.bitcoins.core.script.crypto.OP_CHECKMULTISIG
-import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil, TestUtil}
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.bitcoins.core.util.{ BitcoinSLogger, BitcoinSUtil, TestUtil }
+import org.scalatest.{ FlatSpec, MustMatchers }
 
 /**
  * Created by chris on 1/12/16.
@@ -17,7 +17,7 @@ class RawScriptSignatureParserTest extends FlatSpec with MustMatchers {
   val encode = BitcoinSUtil.encodeHex(_: Seq[Byte])
   "RawScriptSignatureParser" must "write a raw script sig" in {
     val scriptSig = RawScriptSignatureParser.read(rawScriptSig)
-    encode(RawScriptSignatureParser.write(scriptSig)) must be (rawScriptSig)
+    encode(RawScriptSignatureParser.write(scriptSig)) must be(rawScriptSig)
   }
 
   it must "read then write a raw script sig" in {
@@ -25,20 +25,20 @@ class RawScriptSignatureParserTest extends FlatSpec with MustMatchers {
     //https://tbtc.blockr.io/api/v1/tx/raw/bdc221db675c06dbee2ae75d33e31cad4e2555efea10c337ff32c8cdf97f8e74
     val rawScriptSig = TestUtil.rawScriptSig
     val scriptSig = RawScriptSignatureParser.read(rawScriptSig)
-    encode(RawScriptSignatureParser.write(scriptSig)) must be (rawScriptSig)
+    encode(RawScriptSignatureParser.write(scriptSig)) must be(rawScriptSig)
   }
 
   it must "convert a raw script sig into the correct asm operations" in {
 
     val scriptSig = RawScriptSignatureParser.read(TestUtil.rawScriptSig)
 
-    scriptSig.asm must be (Seq(BytesToPushOntoStack(72), ScriptConstant("3045022100ad8e961fe3c22b2647d92b078f4c0cf81b3106ea5bf8b900ab8646aa4430216f022071d4edc2b5588be20ac4c2d07edd8ed069e10b2402d3dce2d3b835ccd075f28301"), BytesToPushOntoStack(65), ScriptConstant("04fa79182bbc26c708b5d9f36b8635947d4a834ea356cf612ede08395c295f962e0b1dc2557aba34188640e51a58ed547f2c89c8265cd0c04ff890d8435648746e")))
+    scriptSig.asm must be(Seq(BytesToPushOntoStack(72), ScriptConstant("3045022100ad8e961fe3c22b2647d92b078f4c0cf81b3106ea5bf8b900ab8646aa4430216f022071d4edc2b5588be20ac4c2d07edd8ed069e10b2402d3dce2d3b835ccd075f28301"), BytesToPushOntoStack(65), ScriptConstant("04fa79182bbc26c708b5d9f36b8635947d4a834ea356cf612ede08395c295f962e0b1dc2557aba34188640e51a58ed547f2c89c8265cd0c04ff890d8435648746e")))
 
   }
 
-
-  it must "parse a raw scriptSig for a p2sh address with a lot of signatures" in  {
-    TestUtil.p2shInputScriptLargeSignature.asm must be (Seq(OP_0,
+  it must "parse a raw scriptSig for a p2sh address with a lot of signatures" in {
+    TestUtil.p2shInputScriptLargeSignature.asm must be(Seq(
+      OP_0,
       BytesToPushOntoStack(72),
       ScriptConstant("3045022100a077d4fe9a81411ecb796c254d8b4e0bc73ff86a42288bc3b3ecfa1ef26c00dd02202389bf96cf38c14c3a6ccb8c688339f3fd880b724322862547a8ee3b547a9df901"),
       BytesToPushOntoStack(71),
@@ -50,9 +50,7 @@ class RawScriptSignatureParserTest extends FlatSpec with MustMatchers {
       BytesToPushOntoStack(71),
       ScriptConstant("30440220257b57cb09386d82c4328461f8fe200c2f381d6b635e2a2f4ea40c8d945e9ec102201ec67d58d51a309af4d8896e9147a42944e9f9833a456f733ea5fa6954ed2fed01"),
       OP_PUSHDATA1, ScriptConstant("f1"),
-      ScriptConstant("55210269992fb441ae56968e5b77d46a3e53b69f136444ae65a94041fc937bdb28d93321021df31471281d4478df85bfce08a10aab82601dca949a79950f8ddf7002bd915a2102174c82021492c2c6dfcbfa4187d10d38bed06afb7fdcd72c880179fddd641ea121033f96e43d72c33327b6a4631ccaa6ea07f0b106c88b9dc71c9000bb6044d5e88a210313d8748790f2a86fb524579b46ce3c68fedd58d2a738716249a9f7d5458a15c221030b632eeb079eb83648886122a04c7bf6d98ab5dfb94cf353ee3e9382a4c2fab02102fb54a7fcaa73c307cfd70f3fa66a2e4247a71858ca731396343ad30c7c4009ce57ae")
-    )
-    )
+      ScriptConstant("55210269992fb441ae56968e5b77d46a3e53b69f136444ae65a94041fc937bdb28d93321021df31471281d4478df85bfce08a10aab82601dca949a79950f8ddf7002bd915a2102174c82021492c2c6dfcbfa4187d10d38bed06afb7fdcd72c880179fddd641ea121033f96e43d72c33327b6a4631ccaa6ea07f0b106c88b9dc71c9000bb6044d5e88a210313d8748790f2a86fb524579b46ce3c68fedd58d2a738716249a9f7d5458a15c221030b632eeb079eb83648886122a04c7bf6d98ab5dfb94cf353ee3e9382a4c2fab02102fb54a7fcaa73c307cfd70f3fa66a2e4247a71858ca731396343ad30c7c4009ce57ae")))
 
   }
 
@@ -60,7 +58,7 @@ class RawScriptSignatureParserTest extends FlatSpec with MustMatchers {
     val emptyScriptSig = ScriptSignature.empty
     val parsedScriptSig = RawScriptSignatureParser.read(emptyScriptSig.hex)
 
-    parsedScriptSig.hex must be (emptyScriptSig.hex)
+    parsedScriptSig.hex must be(emptyScriptSig.hex)
   }
 
   it must "parse hex to a p2pkh scriptSig and then write that p2pkh scriptSig to hex" in {
@@ -69,21 +67,21 @@ class RawScriptSignatureParserTest extends FlatSpec with MustMatchers {
 
     val scriptSig = RawScriptSignatureParser.read(rawScriptSig)
 
-    val expectedAsm = List(BytesToPushOntoStack(71),
+    val expectedAsm = List(
+      BytesToPushOntoStack(71),
       ScriptConstant("30440220048e15422cf62349dc586ffb8c749d40280781edd5064ff27a5910ff5cf" +
         "225a802206a82685dbc2cf195d158c29309939d5a3cd41a889db6f766f3809fff3572230501"),
       BytesToPushOntoStack(33),
       ScriptConstant("03dcfc9882c1b3ae4e03fb6cac08bdb39e284e81d70c7aa8b27612457b2774509b"))
 
-    scriptSig.asm.head must be (expectedAsm.head)
-    scriptSig.asm(1) must be (expectedAsm(1))
-    scriptSig.asm(2) must be (expectedAsm(2))
-    scriptSig.asm(3).hex must be (expectedAsm(3).hex)
-    scriptSig.hex must be (rawScriptSig)
+    scriptSig.asm.head must be(expectedAsm.head)
+    scriptSig.asm(1) must be(expectedAsm(1))
+    scriptSig.asm(2) must be(expectedAsm(2))
+    scriptSig.asm(3).hex must be(expectedAsm(3).hex)
+    scriptSig.hex must be(rawScriptSig)
 
-    encode(RawScriptSignatureParser.write(scriptSig)) must be (rawScriptSig)
+    encode(RawScriptSignatureParser.write(scriptSig)) must be(rawScriptSig)
 
   }
-
 
 }

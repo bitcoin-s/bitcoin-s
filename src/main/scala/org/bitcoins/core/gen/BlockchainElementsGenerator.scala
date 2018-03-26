@@ -3,33 +3,35 @@ package org.bitcoins.core.gen
 import org.bitcoins.core.consensus.Merkle
 import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader}
+import org.bitcoins.core.protocol.blockchain.{ Block, BlockHeader }
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.scalacheck.Gen
 
 import scala.annotation.tailrec
 
 /**
-  * Created by tom on 7/6/16.
-  */
+ * Created by tom on 7/6/16.
+ */
 sealed abstract class BlockchainElementsGenerator {
   /** Generates a block that contains the given txs, plus some more randomly generated ones */
   def block(txs: Seq[Transaction]): Gen[Block] = for {
-    randomNum <- Gen.choose(1,10)
+    randomNum <- Gen.choose(1, 10)
     neededTxs = if ((randomNum - txs.size) >= 0) randomNum else 0
     genTxs <- Gen.listOfN(neededTxs, TransactionGenerators.transaction)
     allTxs = genTxs ++ txs
     header <- blockHeader(allTxs)
-  } yield Block(header,allTxs)
-  /** Generates a random [[Block]], note that we limit this
-    * to 10 transactions currently */
-  def block : Gen[Block] = for {
+  } yield Block(header, allTxs)
+  /**
+   * Generates a random [[Block]], note that we limit this
+   * to 10 transactions currently
+   */
+  def block: Gen[Block] = for {
     header <- blockHeader
     txs <- TransactionGenerators.smallTransactions
   } yield Block(header, txs)
 
   /** Generates a random [[BlockHeader]] */
-  def blockHeader : Gen[BlockHeader] = for {
+  def blockHeader: Gen[BlockHeader] = for {
     previousBlockHash <- CryptoGenerators.doubleSha256Digest
     b <- blockHeader(previousBlockHash)
   } yield b
@@ -37,14 +39,14 @@ sealed abstract class BlockchainElementsGenerator {
   /** Generates a random [[BlockHeader]] with the specified previousBlockHash */
   def blockHeader(previousBlockHash: DoubleSha256Digest): Gen[BlockHeader] = for {
     nBits <- NumberGenerator.uInt32s
-    b <- blockHeader(previousBlockHash,nBits)
+    b <- blockHeader(previousBlockHash, nBits)
   } yield b
 
   /** Generates a random [[BlockHeader]] where you can specify the previousBlockHash and nBits */
   def blockHeader(previousBlockHash: DoubleSha256Digest, nBits: UInt32): Gen[BlockHeader] = for {
-    numTxs <- Gen.choose(1,10)
+    numTxs <- Gen.choose(1, 10)
     txs <- Gen.listOfN(numTxs, TransactionGenerators.transaction)
-    header<- blockHeader(previousBlockHash,nBits,txs)
+    header <- blockHeader(previousBlockHash, nBits, txs)
   } yield header
 
   /** Generates a [[BlockHeader]]] that has the fields set to the given values */
@@ -53,21 +55,23 @@ sealed abstract class BlockchainElementsGenerator {
     merkleRootHash = Merkle.computeMerkleRoot(txs)
     time <- NumberGenerator.uInt32s
     nonce <- NumberGenerator.uInt32s
-  } yield BlockHeader(version, previousBlockHash,merkleRootHash,time,nBits,nonce)
+  } yield BlockHeader(version, previousBlockHash, merkleRootHash, time, nBits, nonce)
 
   /** Generates a [[BlockHeader]] that has a merkle root hash corresponding to the given txs */
   def blockHeader(txs: Seq[Transaction]): Gen[BlockHeader] = for {
     previousBlockHash <- CryptoGenerators.doubleSha256Digest
     nBits <- NumberGenerator.uInt32s
-    header <- blockHeader(previousBlockHash,nBits,txs)
+    header <- blockHeader(previousBlockHash, nBits, txs)
   } yield header
 
-  /** Generates a chain of valid headers of the size specified by num,
-    * 'valid' means their nBits are the same and each header properly
-    * references the previous block header's hash */
+  /**
+   * Generates a chain of valid headers of the size specified by num,
+   * 'valid' means their nBits are the same and each header properly
+   * references the previous block header's hash
+   */
   def validHeaderChain(num: Long): Gen[Seq[BlockHeader]] = {
     val startHeader = blockHeader.sample.get
-    validHeaderChain(num,startHeader)
+    validHeaderChain(num, startHeader)
   }
 
   def validHeaderChain(num: Long, startHeader: BlockHeader): Gen[Seq[BlockHeader]] = {
@@ -75,11 +79,11 @@ sealed abstract class BlockchainElementsGenerator {
     def loop(remainingHeaders: Long, accum: Seq[BlockHeader]): Seq[BlockHeader] = {
       if (remainingHeaders == 0) accum.reverse
       else {
-        val nextHeader = blockHeader(accum.head.hash,accum.head.nBits).sample.get
-        loop(remainingHeaders-1, nextHeader +: accum)
+        val nextHeader = blockHeader(accum.head.hash, accum.head.nBits).sample.get
+        loop(remainingHeaders - 1, nextHeader +: accum)
       }
     }
-    loop(num-1, Seq(startHeader))
+    loop(num - 1, Seq(startHeader))
   }
 }
 

@@ -1,8 +1,8 @@
 package org.bitcoins.core.protocol.script
 
-import org.bitcoins.core.gen.{ScriptGenerators, WitnessGenerators}
+import org.bitcoins.core.gen.{ ScriptGenerators, WitnessGenerators }
 import org.bitcoins.core.util.BitcoinSLogger
-import org.scalacheck.{Prop, Properties}
+import org.scalacheck.{ Prop, Properties }
 
 class ScriptWitnessSpec extends Properties("ScriptWitnessSpec") {
   private val logger = BitcoinSLogger.logger
@@ -14,7 +14,8 @@ class ScriptWitnessSpec extends Properties("ScriptWitnessSpec") {
   }
 
   property("pull redeem script out of p2wsh witness") = {
-    Prop.forAll(ScriptGenerators.scriptPubKey) { case (spk,_) =>
+    Prop.forAll(ScriptGenerators.scriptPubKey) {
+      case (spk, _) =>
         P2WSHWitnessV0(spk).redeemScript == spk
     }
   }

@@ -6,8 +6,8 @@ import org.bitcoins.core.serializers.script.ScriptParser
 import org.bitcoins.core.util.Factory
 
 /**
-  * Created by chris on 12/9/16.
-  */
+ * Created by chris on 12/9/16.
+ */
 trait ScriptFactory[T] extends Factory[T] {
 
   /** Builds a script from the given asm with the given constructor if the invariant holds true, else throws an error */
@@ -25,7 +25,7 @@ trait ScriptFactory[T] extends Factory[T] {
 
   def fromBytes(bytes: Seq[Byte]): T = {
     val cpmct = CompactSizeUInt.parseCompactSizeUInt(bytes)
-    val (_,noCmpctUInt) = bytes.splitAt(cpmct.bytes.size)
+    val (_, noCmpctUInt) = bytes.splitAt(cpmct.bytes.size)
     val asm = ScriptParser.fromBytes(noCmpctUInt)
     fromAsm(asm)
   }

@@ -12,7 +12,7 @@ trait ScriptFlagUtil {
    * @param flags
    * @return
    */
-  def requiresStrictDerEncoding(flags : Seq[ScriptFlag]) : Boolean = {
+  def requiresStrictDerEncoding(flags: Seq[ScriptFlag]): Boolean = {
     flags.contains(ScriptVerifyDerSig) || flags.contains(ScriptVerifyStrictEnc)
   }
 
@@ -21,30 +21,30 @@ trait ScriptFlagUtil {
    * @param flags
    * @return
    */
-  def requireStrictEncoding(flags : Seq[ScriptFlag]) : Boolean = flags.contains(ScriptVerifyStrictEnc)
+  def requireStrictEncoding(flags: Seq[ScriptFlag]): Boolean = flags.contains(ScriptVerifyStrictEnc)
 
   /**
    * Checks if the script flag for checklocktimeverify is enabled
    * @param flags
    * @return
    */
-  def checkLockTimeVerifyEnabled(flags : Seq[ScriptFlag]) : Boolean = {
+  def checkLockTimeVerifyEnabled(flags: Seq[ScriptFlag]): Boolean = {
     flags.contains(ScriptVerifyCheckLocktimeVerify)
   }
 
   /**
-    * Checks if the p2sh flag is enabled
-    * @param flags
-    * @return
-    */
-  def p2shEnabled(flags : Seq[ScriptFlag]) : Boolean = flags.contains(ScriptVerifyP2SH)
+   * Checks if the p2sh flag is enabled
+   * @param flags
+   * @return
+   */
+  def p2shEnabled(flags: Seq[ScriptFlag]): Boolean = flags.contains(ScriptVerifyP2SH)
 
   /**
-    * Checks if the script flag for checksequenceverify is enabled
-    * @param flags
-    * @return
-    */
-  def checkSequenceVerifyEnabled(flags : Seq[ScriptFlag]) : Boolean = {
+   * Checks if the script flag for checksequenceverify is enabled
+   * @param flags
+   * @return
+   */
+  def checkSequenceVerifyEnabled(flags: Seq[ScriptFlag]): Boolean = {
     flags.contains(ScriptVerifyCheckSequenceVerify)
   }
 
@@ -55,7 +55,7 @@ trait ScriptFlagUtil {
    * @param flags
    * @return
    */
-  def discourageUpgradableNOPs(flags : Seq[ScriptFlag]) : Boolean = {
+  def discourageUpgradableNOPs(flags: Seq[ScriptFlag]): Boolean = {
     flags.contains(ScriptVerifyDiscourageUpgradableNOPs)
   }
 
@@ -65,8 +65,7 @@ trait ScriptFlagUtil {
    * @param flags
    * @return
    */
-  def requireMinimalData(flags : Seq[ScriptFlag]) : Boolean = flags.contains(ScriptVerifyMinimalData)
-
+  def requireMinimalData(flags: Seq[ScriptFlag]): Boolean = flags.contains(ScriptVerifyMinimalData)
 
   /**
    * Checks to see if the script flag is set to require low s values in digital signatures
@@ -74,24 +73,22 @@ trait ScriptFlagUtil {
    * @param flags
    * @return
    */
-  def requireLowSValue(flags : Seq[ScriptFlag]) : Boolean = flags.contains(ScriptVerifyLowS)
-
+  def requireLowSValue(flags: Seq[ScriptFlag]): Boolean = flags.contains(ScriptVerifyLowS)
 
   /**
    * Checks to see if the script flag is set to require we only have push operations inside of a scriptSig
    * @param flags
    * @return
    */
-  def requirePushOnly(flags : Seq[ScriptFlag]) : Boolean = flags.contains(ScriptVerifySigPushOnly)
-
+  def requirePushOnly(flags: Seq[ScriptFlag]): Boolean = flags.contains(ScriptVerifySigPushOnly)
 
   /**
-    * Checks to see if the script flag is set to require that we need a NULLDUMMY to be OP_0 for
-    * OP_CHECKMULTISIG operations
-    * @param flags
-    * @return
-    */
-  def requireNullDummy(flags : Seq[ScriptFlag]) : Boolean = flags.contains(ScriptVerifyNullDummy)
+   * Checks to see if the script flag is set to require that we need a NULLDUMMY to be OP_0 for
+   * OP_CHECKMULTISIG operations
+   * @param flags
+   * @return
+   */
+  def requireNullDummy(flags: Seq[ScriptFlag]): Boolean = flags.contains(ScriptVerifyNullDummy)
 
   /** Checks to see if we have segwit enabled */
   def segWitEnabled(flags: Seq[ScriptFlag]): Boolean = flags.contains(ScriptVerifyWitness)
@@ -102,10 +99,11 @@ trait ScriptFlagUtil {
 
   def requireScriptVerifyWitnessPubKeyType(flags: Seq[ScriptFlag]): Boolean = flags.contains(ScriptVerifyWitnessPubKeyType)
 
-  /** Requires that the argument to OP_IF/OP_NOTIF be minimally encoded
-    * See: https://lists.linuxfoundation.org/pipermail/bitcoin-dev/2016-August/013014.html */
+  /**
+   * Requires that the argument to OP_IF/OP_NOTIF be minimally encoded
+   * See: https://lists.linuxfoundation.org/pipermail/bitcoin-dev/2016-August/013014.html
+   */
   def minimalIfEnabled(flags: Seq[ScriptFlag]): Boolean = flags.contains(ScriptVerifyMinimalIf)
 }
-
 
 object ScriptFlagUtil extends ScriptFlagUtil

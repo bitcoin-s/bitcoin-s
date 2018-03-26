@@ -13,19 +13,19 @@ case object MainNetPub extends ExtKeyVersion {
 }
 
 case object MainNetPriv extends ExtKeyVersion {
-  override def bytes = Seq(0x04,0x88,0xAD,0xE4).map(_.toByte)
+  override def bytes = Seq(0x04, 0x88, 0xAD, 0xE4).map(_.toByte)
 }
 
 case object TestNet3Pub extends ExtKeyVersion {
-  override def bytes = Seq(0x04,0x35,0x87,0xCF).map(_.toByte)
+  override def bytes = Seq(0x04, 0x35, 0x87, 0xCF).map(_.toByte)
 }
 
 case object TestNet3Priv extends ExtKeyVersion {
-  override def bytes = Seq(0x04,0x35,0x83,0x94).map(_.toByte)
+  override def bytes = Seq(0x04, 0x35, 0x83, 0x94).map(_.toByte)
 }
 
 object ExtKeyVersion {
-  private val all: Seq[ExtKeyVersion] = Seq(MainNetPriv,MainNetPub,TestNet3Pub, TestNet3Priv)
+  private val all: Seq[ExtKeyVersion] = Seq(MainNetPriv, MainNetPub, TestNet3Pub, TestNet3Priv)
 
   def apply(bytes: Seq[Byte]): Option[ExtKeyVersion] = all.find(_.bytes == bytes)
 }

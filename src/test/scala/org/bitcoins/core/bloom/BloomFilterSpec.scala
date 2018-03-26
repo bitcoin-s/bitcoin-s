@@ -1,11 +1,11 @@
 package org.bitcoins.core.bloom
 
 import org.bitcoins.core.gen.BloomFilterGenerator
-import org.scalacheck.{Prop, Properties}
+import org.scalacheck.{ Prop, Properties }
 
 /**
-  * Created by chris on 8/3/16.
-  */
+ * Created by chris on 8/3/16.
+ */
 class BloomFilterSpec extends Properties("BloomFilterSpec") {
 
   property("No false negatives && serialization symmetry") =

@@ -8,7 +8,7 @@ trait ScriptSettings {
   /**
    * A integer representing the maximum number of public keys you can have in a
    * OP_CHECKMULTISIG or OP_CHECKMULTISIGVERIFY operation
-    * https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L903
+   * https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L903
    * @return
    */
   def maxPublicKeysPerMultiSig = 20

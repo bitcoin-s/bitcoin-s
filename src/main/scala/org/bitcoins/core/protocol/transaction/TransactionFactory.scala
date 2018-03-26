@@ -5,5 +5,5 @@ package org.bitcoins.core.protocol.transaction
  */
 
 sealed trait TransactionFactoryHelper
-case class UpdateTransactionOutputs(outputs : Seq[TransactionOutput]) extends TransactionFactoryHelper
-case class UpdateTransactionInputs(inputs : Seq[TransactionInput]) extends TransactionFactoryHelper
+case class UpdateTransactionOutputs(outputs: Seq[TransactionOutput]) extends TransactionFactoryHelper
+case class UpdateTransactionInputs(inputs: Seq[TransactionInput]) extends TransactionFactoryHelper

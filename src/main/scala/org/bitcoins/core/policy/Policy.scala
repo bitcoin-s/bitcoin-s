@@ -1,6 +1,6 @@
 package org.bitcoins.core.policy
 
-import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits, Satoshis}
+import org.bitcoins.core.currency.{ CurrencyUnit, CurrencyUnits, Satoshis }
 import org.bitcoins.core.number.Int64
 import org.bitcoins.core.script.flag._
 
@@ -22,9 +22,11 @@ sealed abstract class Policy {
    */
   def mandatoryScriptVerifyFlags: Seq[ScriptFlag] = Seq(ScriptVerifyP2SH)
 
-  /** The default script verify flags used to validate the blockchain
-   * and bitcoin transactions */
-  def standardScriptVerifyFlags : Seq[ScriptFlag] = mandatoryScriptVerifyFlags ++ Seq(ScriptVerifyDerSig, ScriptVerifyStrictEnc,
+  /**
+   * The default script verify flags used to validate the blockchain
+   * and bitcoin transactions
+   */
+  def standardScriptVerifyFlags: Seq[ScriptFlag] = mandatoryScriptVerifyFlags ++ Seq(ScriptVerifyDerSig, ScriptVerifyStrictEnc,
     ScriptVerifyMinimalData, ScriptVerifyDiscourageUpgradableNOPs,
     ScriptVerifyCleanStack, ScriptVerifyCheckLocktimeVerify, ScriptVerifyCheckSequenceVerify,
     ScriptVerifyLowS, ScriptVerifyWitness, ScriptVerifyMinimalIf, ScriptVerifyNullFail,
@@ -35,10 +37,11 @@ sealed abstract class Policy {
   /** The number of confirmations for a payment to be considered as accepted */
   def confirmations: Long = 6
 
-  /** Minimum amount of [[org.bitcoins.core.currency.CurrencyUnit]]
-    * lock in a [[org.bitcoins.core.channels.Channel]]
-    * Currently set to 1 mBTC
-    * */
+  /**
+   * Minimum amount of [[org.bitcoins.core.currency.CurrencyUnit]]
+   * lock in a [[org.bitcoins.core.channels.Channel]]
+   * Currently set to 1 mBTC
+   */
   def minChannelAmount: CurrencyUnit = CurrencyUnits.oneMBTC
 
   /** The minimum amount of satoshis we can spend to an output */
