@@ -1,9 +1,9 @@
 package org.bitcoins.core.crypto
 
-import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil}
-import org.bouncycastle.asn1.{ASN1InputStream, ASN1Integer, DLSequence}
+import org.bitcoins.core.util.{ BitcoinSLogger, BitcoinSUtil }
+import org.bouncycastle.asn1.{ ASN1InputStream, ASN1Integer, DLSequence }
 
-import scala.util.{Failure, Success, Try}
+import scala.util.{ Failure, Success, Try }
 
 /**
  * Created by chris on 3/23/16.
