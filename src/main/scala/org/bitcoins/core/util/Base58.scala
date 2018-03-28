@@ -73,7 +73,7 @@ sealed abstract class Base58 {
 
   /** Determines if a string is a valid [[Base58Type]] string. */
   def isValid(base58: String): Boolean = validityChecks(base58) match {
-    case Success(bool)      => bool
+    case Success(bool) => bool
     case Failure(exception) => false
   }
 

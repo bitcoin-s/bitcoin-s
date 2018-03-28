@@ -51,7 +51,7 @@ sealed abstract class ControlOperationsInterpreter {
   }
   /** Checks if the stack top is NOT minimially encoded */
   private def isNotMinimalStackTop(stackTopOpt: Option[ScriptToken], sigVersion: SignatureVersion,
-                                   minimalIfEnabled: Boolean): Boolean = {
+    minimalIfEnabled: Boolean): Boolean = {
     //see: https://github.com/bitcoin/bitcoin/blob/528472111b4965b1a99c4bcf08ac5ec93d87f10f/src/script/interpreter.cpp#L447-L452
     //https://lists.linuxfoundation.org/pipermail/bitcoin-dev/2016-August/013014.html
     val isNotMinimal = stackTopOpt.map { stackTop =>
@@ -92,7 +92,7 @@ sealed abstract class ControlOperationsInterpreter {
     } else {
       val tree = parseBinaryTree(program.script)
       val treeWithNextOpElseRemoved = tree match {
-        case Empty                   => Empty
+        case Empty => Empty
         case leaf: Leaf[ScriptToken] => leaf
         case node: Node[ScriptToken] =>
           removeFirstOpElse(node)
@@ -160,8 +160,7 @@ sealed abstract class ControlOperationsInterpreter {
   /** The loop that parses a list of [[ScriptToken]]s into a [[BinaryTree]]. */
   private def parse(
     script: List[ScriptToken],
-    tree:   BinaryTree[ScriptToken]
-  ): (BinaryTree[ScriptToken], List[ScriptToken]) = script match {
+    tree: BinaryTree[ScriptToken]): (BinaryTree[ScriptToken], List[ScriptToken]) = script match {
     case OP_ENDIF :: t =>
       val ifTree = insertSubTree(tree, Leaf(OP_ENDIF))
       (ifTree, t)
@@ -172,7 +171,7 @@ sealed abstract class ControlOperationsInterpreter {
     case h :: t if h == OP_ELSE =>
       val (subTree, remaining) = parse(t, Node(OP_ELSE, Empty, Empty))
       val opElseTree = tree match {
-        case Empty                => subTree
+        case Empty => subTree
         case l: Leaf[ScriptToken] => Node(l.v, Empty, subTree)
         case n: Node[ScriptToken] => Node(n.v, n.l, insertSubTree(n.r, subTree))
       }
@@ -191,9 +190,8 @@ sealed abstract class ControlOperationsInterpreter {
    */
   //@tailrec
   private def insertSubTree(
-    tree:    BinaryTree[ScriptToken],
-    subTree: BinaryTree[ScriptToken]
-  ): BinaryTree[ScriptToken] = tree match {
+    tree: BinaryTree[ScriptToken],
+    subTree: BinaryTree[ScriptToken]): BinaryTree[ScriptToken] = tree match {
     case Empty => subTree
     case leaf: Leaf[ScriptToken] =>
       if (subTree == Empty) leaf
@@ -215,12 +213,12 @@ sealed abstract class ControlOperationsInterpreter {
   def checkMatchingOpIfOpNotIfOpEndIf(script: List[ScriptToken]): Boolean = {
     @tailrec
     def loop(script: List[ScriptToken], counter: Int): Boolean = script match {
-      case _ if (counter < 0)    => false
-      case OP_ENDIF :: t         => loop(t, counter - 1)
-      case OP_IF :: t            => loop(t, counter + 1)
-      case OP_NOTIF :: t         => loop(t, counter + 1)
+      case _ if (counter < 0) => false
+      case OP_ENDIF :: t => loop(t, counter - 1)
+      case OP_IF :: t => loop(t, counter + 1)
+      case OP_NOTIF :: t => loop(t, counter + 1)
       case (_: ScriptToken) :: t => loop(t, counter)
-      case Nil                   => counter == 0
+      case Nil => counter == 0
     }
     loop(script, 0)
   }
@@ -230,7 +228,7 @@ sealed abstract class ControlOperationsInterpreter {
     val index = script.indexOf(OP_ENDIF)
     index match {
       case -1 => None
-      case _  => Some(index)
+      case _ => Some(index)
     }
   }
 
@@ -246,7 +244,7 @@ sealed abstract class ControlOperationsInterpreter {
     val index = script.indexOf(OP_ELSE)
     index match {
       case -1 => None
-      case _  => Some(index)
+      case _ => Some(index)
     }
   }
 
@@ -259,14 +257,14 @@ sealed abstract class ControlOperationsInterpreter {
   def removeFirstOpElse(tree: BinaryTree[ScriptToken]): BinaryTree[ScriptToken] = {
     //@tailrec
     def loop(child: BinaryTree[ScriptToken], parent: Node[ScriptToken]): BinaryTree[ScriptToken] = child match {
-      case Empty                => Empty
+      case Empty => Empty
       case l: Leaf[ScriptToken] => l
-      case Node(OP_ELSE, _, r)  => r
+      case Node(OP_ELSE, _, r) => r
       case n: Node[ScriptToken] =>
         Node(n.v, n.l, loop(n.r, n))
     }
     tree match {
-      case Empty                => Empty
+      case Empty => Empty
       case l: Leaf[ScriptToken] => l
       case n: Node[ScriptToken] =>
         val result = Node(n.v, n.l, loop(n.r, n))

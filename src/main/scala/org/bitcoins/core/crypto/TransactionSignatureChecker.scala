@@ -28,7 +28,7 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
    * @return a boolean indicating if the signature is valid or not
    */
   def checkSignature(txSignatureComponent: TxSigComponent, script: Seq[ScriptToken],
-                     pubKey: ECPublicKey, signature: ECDigitalSignature, flags: Seq[ScriptFlag]): TransactionSignatureCheckerResult = {
+    pubKey: ECPublicKey, signature: ECDigitalSignature, flags: Seq[ScriptFlag]): TransactionSignatureCheckerResult = {
     logger.debug("Signature: " + signature)
     val pubKeyEncodedCorrectly = BitcoinScriptUtil.isValidPubKeyEncoding(pubKey, flags)
     if (ScriptFlagUtil.requiresStrictDerEncoding(flags) && !DERSignatureUtil.isValidSignatureEncoding(signature)) {
@@ -57,8 +57,7 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
           TransactionSignatureSerializer.hashForSignature(
             txSignatureComponent.transaction,
             txSignatureComponent.inputIndex,
-            sigsRemovedScript, hashType
-          )
+            sigsRemovedScript, hashType)
         case w: WitnessTxSigComponent =>
           TransactionSignatureSerializer.hashForSignature(w.transaction, w.inputIndex, sigsRemovedScript, hashType,
             w.amount, w.sigVersion)
@@ -88,8 +87,8 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
    */
   @tailrec
   final def multiSignatureEvaluator(txSignatureComponent: TxSigComponent, script: Seq[ScriptToken],
-                                    sigs: List[ECDigitalSignature], pubKeys: List[ECPublicKey], flags: Seq[ScriptFlag],
-                                    requiredSigs: Long): TransactionSignatureCheckerResult = {
+    sigs: List[ECDigitalSignature], pubKeys: List[ECPublicKey], flags: Seq[ScriptFlag],
+    requiredSigs: Long): TransactionSignatureCheckerResult = {
     logger.debug("Signatures inside of helper: " + sigs)
     logger.debug("Public keys inside of helper: " + pubKeys)
     if (sigs.size > pubKeys.size) {

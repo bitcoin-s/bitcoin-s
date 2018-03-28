@@ -74,8 +74,7 @@ sealed abstract class CryptoInterpreter {
           logger.debug("Program after removing OP_CODESEPARATOR: " + removedOpCodeSeparatorsScript)
           val result = TransactionSignatureChecker.checkSignature(
             executionInProgressScriptProgram.txSignatureComponent,
-            removedOpCodeSeparatorsScript, pubKey, signature, flags
-          )
+            removedOpCodeSeparatorsScript, pubKey, signature, flags)
           handleSignatureValidation(program, result, restOfStack)
         }
     }
@@ -85,8 +84,7 @@ sealed abstract class CryptoInterpreter {
   def opCheckSigVerify(program: ScriptProgram): ScriptProgram = {
     require(
       program.script.headOption.contains(OP_CHECKSIGVERIFY),
-      "Script top must be OP_CHECKSIGVERIFY"
-    )
+      "Script top must be OP_CHECKSIGVERIFY")
     if (program.stack.size < 2) {
       logger.error("Stack must contain at least 3 items for OP_CHECKSIGVERIFY")
       ScriptProgram(program, ScriptErrorInvalidStackOperation)
@@ -173,8 +171,7 @@ sealed abstract class CryptoInterpreter {
             val (pubKeysScriptTokens, stackWithoutPubKeys) =
               (
                 program.stack.tail.slice(0, nPossibleSignatures.toInt),
-                program.stack.tail.slice(nPossibleSignatures.toInt, program.stack.tail.size)
-              )
+                program.stack.tail.slice(nPossibleSignatures.toInt, program.stack.tail.size))
 
             val pubKeys = pubKeysScriptTokens.map(key => ECPublicKey(key.bytes))
             logger.debug("Public keys on the stack: " + pubKeys)
@@ -184,8 +181,7 @@ sealed abstract class CryptoInterpreter {
             //+1 is for the fact that we have the # of sigs + the script token indicating the # of sigs
             val signaturesScriptTokens = program.stack.tail.slice(
               nPossibleSignatures.toInt + 1,
-              nPossibleSignatures.toInt + mRequiredSignatures.toInt + 1
-            )
+              nPossibleSignatures.toInt + mRequiredSignatures.toInt + 1)
             val signatures = signaturesScriptTokens.map(token => ECDigitalSignature(token.bytes))
             logger.debug("Signatures on the stack: " + signatures)
 
@@ -214,8 +210,7 @@ sealed abstract class CryptoInterpreter {
                 TransactionSignatureChecker.multiSignatureEvaluator(
                   executionInProgressScriptProgram.txSignatureComponent,
                   removedOpCodeSeparatorsScript, signatures,
-                  pubKeys, flags, mRequiredSignatures.toLong
-                )
+                  pubKeys, flags, mRequiredSignatures.toLong)
 
               //remove the extra OP_0 (null dummy) for OP_CHECKMULTISIG from the stack
               val restOfStack = stackWithoutPubKeysAndSignatures.tail

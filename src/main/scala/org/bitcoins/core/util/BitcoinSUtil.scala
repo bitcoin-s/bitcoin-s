@@ -21,7 +21,7 @@ trait BitcoinSUtil {
    */
   def encodeHex(long: Long): String = {
     val hex = long.toHexString.length % 2 match {
-      case 1      => "0" + long.toHexString
+      case 1 => "0" + long.toHexString
       case _: Int => long.toHexString
     }
     addPadding(16, hex)
@@ -29,7 +29,7 @@ trait BitcoinSUtil {
 
   def encodeHex(int: Int): String = {
     val hex = int.toHexString.length % 2 match {
-      case 1      => "0" + int.toHexString
+      case 1 => "0" + int.toHexString
       case _: Int => int.toHexString
     }
     addPadding(8, hex)
@@ -37,7 +37,7 @@ trait BitcoinSUtil {
 
   def encodeHex(short: Short): String = {
     val hex = short.toHexString.length % 2 match {
-      case 1      => "0" + short.toHexString
+      case 1 => "0" + short.toHexString
       case _: Int => short.toHexString
     }
     addPadding(4, hex)
