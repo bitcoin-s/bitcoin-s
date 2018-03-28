@@ -3,7 +3,7 @@ package org.bitcoins.core.util
 import java.security.MessageDigest
 
 import org.bitcoins.core.crypto._
-import org.bouncycastle.crypto.digests.{RIPEMD160Digest, SHA512Digest}
+import org.bouncycastle.crypto.digests.{ RIPEMD160Digest, SHA512Digest }
 import org.bouncycastle.crypto.macs.HMac
 import org.bouncycastle.crypto.params.KeyParameter
 

@@ -4,17 +4,17 @@ import java.math.BigInteger
 import java.security.SecureRandom
 
 import org.bitcoin.NativeSecp256k1
-import org.bitcoins.core.config.{NetworkParameters, Networks}
+import org.bitcoins.core.config.{ NetworkParameters, Networks }
 import org.bitcoins.core.protocol.NetworkElement
-import org.bitcoins.core.util.{BitcoinSUtil, _}
+import org.bitcoins.core.util.{ BitcoinSUtil, _ }
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair
 import org.bouncycastle.crypto.digests.SHA256Digest
 import org.bouncycastle.crypto.generators.ECKeyPairGenerator
-import org.bouncycastle.crypto.params.{ECKeyGenerationParameters, ECPrivateKeyParameters, ECPublicKeyParameters}
-import org.bouncycastle.crypto.signers.{ECDSASigner, HMacDSAKCalculator}
+import org.bouncycastle.crypto.params.{ ECKeyGenerationParameters, ECPrivateKeyParameters, ECPublicKeyParameters }
+import org.bouncycastle.crypto.signers.{ ECDSASigner, HMacDSAKCalculator }
 
 import scala.annotation.tailrec
-import scala.util.{Failure, Success, Try}
+import scala.util.{ Failure, Success, Try }
 
 /**
  * Created by chris on 2/16/16.
