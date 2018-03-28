@@ -248,16 +248,14 @@ trait TransactionGenerators extends BitcoinSLogger {
   def spendableEscrowTimeoutTransaction(outputs: Seq[TransactionOutput] = Nil): Gen[BaseTxSigComponent] = {
     Gen.oneOf(
       spendableMultiSigEscrowTimeoutTransaction(outputs),
-      spendableTimeoutEscrowTimeoutTransaction(outputs)
-    )
+      spendableTimeoutEscrowTimeoutTransaction(outputs))
   }
 
   /** Generates a [[Transaction]] that has a valid [[EscrowTimeoutScriptSignature]] */
   def spendableEscrowTimeoutTransaction: Gen[BaseTxSigComponent] = {
     Gen.oneOf(
       spendableMultiSigEscrowTimeoutTransaction(Nil),
-      spendableTimeoutEscrowTimeoutTransaction(Nil)
-    )
+      spendableTimeoutEscrowTimeoutTransaction(Nil))
   }
   /** Generates a CSVEscrowTimeoutTransaction that should evaluate to false when run through the [[ScriptInterpreter]] */
   def unspendableTimeoutEscrowTimeoutTransaction: Gen[BaseTxSigComponent] = for {
@@ -349,13 +347,13 @@ trait TransactionGenerators extends BitcoinSLogger {
    * @return the built spending transaction and the input index for the script signature
    */
   def buildSpendingTransaction(version: UInt32, creditingTx: Transaction, scriptSignature: ScriptSignature,
-                               outputIndex: UInt32, locktime: UInt32, sequence: UInt32): (Transaction, UInt32) = {
+    outputIndex: UInt32, locktime: UInt32, sequence: UInt32): (Transaction, UInt32) = {
     val output = TransactionOutput(CurrencyUnits.zero, EmptyScriptPubKey)
     buildSpendingTransaction(version, creditingTx, scriptSignature, outputIndex, locktime, sequence, Seq(output))
   }
 
   def buildSpendingTransaction(version: UInt32, creditingTx: Transaction, scriptSignature: ScriptSignature,
-                               outputIndex: UInt32, locktime: UInt32, sequence: UInt32, outputs: Seq[TransactionOutput]): (Transaction, UInt32) = {
+    outputIndex: UInt32, locktime: UInt32, sequence: UInt32, outputs: Seq[TransactionOutput]): (Transaction, UInt32) = {
     val os = if (outputs.isEmpty) {
       Seq(TransactionOutput(CurrencyUnits.zero, EmptyScriptPubKey))
     } else {
@@ -378,12 +376,12 @@ trait TransactionGenerators extends BitcoinSLogger {
 
   /** Builds a spending [[WitnessTransaction]] with the given parameters */
   def buildSpendingTransaction(creditingTx: Transaction, scriptSignature: ScriptSignature, outputIndex: UInt32,
-                               locktime: UInt32, sequence: UInt32, witness: TransactionWitness): (WitnessTransaction, UInt32) = {
+    locktime: UInt32, sequence: UInt32, witness: TransactionWitness): (WitnessTransaction, UInt32) = {
     buildSpendingTransaction(TransactionConstants.version, creditingTx, scriptSignature, outputIndex, locktime, sequence, witness)
   }
 
   def buildSpendingTransaction(version: UInt32, creditingTx: Transaction, scriptSignature: ScriptSignature, outputIndex: UInt32,
-                               locktime: UInt32, sequence: UInt32, witness: TransactionWitness): (WitnessTransaction, UInt32) = {
+    locktime: UInt32, sequence: UInt32, witness: TransactionWitness): (WitnessTransaction, UInt32) = {
 
     val outputs = dummyOutputs
     buildSpendingTransaction(version, creditingTx, scriptSignature, outputIndex, locktime, sequence, witness, outputs)
@@ -392,19 +390,19 @@ trait TransactionGenerators extends BitcoinSLogger {
   def dummyOutputs: Seq[TransactionOutput] = Seq(TransactionOutput(CurrencyUnits.zero, EmptyScriptPubKey))
 
   def buildSpendingTransaction(version: UInt32, creditingTx: Transaction, scriptSignature: ScriptSignature, outputIndex: UInt32,
-                               locktime: UInt32, sequence: UInt32, witness: TransactionWitness, outputs: Seq[TransactionOutput]): (WitnessTransaction, UInt32) = {
+    locktime: UInt32, sequence: UInt32, witness: TransactionWitness, outputs: Seq[TransactionOutput]): (WitnessTransaction, UInt32) = {
     val outpoint = TransactionOutPoint(creditingTx.txId, outputIndex)
     val input = TransactionInput(outpoint, scriptSignature, sequence)
     (WitnessTransaction(version, Seq(input), outputs, locktime, witness), UInt32.zero)
   }
 
   def buildSpendingTransaction(creditingTx: Transaction, scriptSignature: ScriptSignature, outputIndex: UInt32,
-                               witness: TransactionWitness): (WitnessTransaction, UInt32) = {
+    witness: TransactionWitness): (WitnessTransaction, UInt32) = {
     buildSpendingTransaction(TransactionConstants.version, creditingTx, scriptSignature, outputIndex, witness)
   }
 
   def buildSpendingTransaction(version: UInt32, creditingTx: Transaction, scriptSignature: ScriptSignature, outputIndex: UInt32,
-                               witness: TransactionWitness): (WitnessTransaction, UInt32) = {
+    witness: TransactionWitness): (WitnessTransaction, UInt32) = {
     val locktime = TransactionConstants.lockTime
     val sequence = TransactionConstants.sequence
     buildSpendingTransaction(version, creditingTx, scriptSignature, outputIndex, locktime, sequence, witness)
@@ -449,7 +447,7 @@ trait TransactionGenerators extends BitcoinSLogger {
   }
 
   private def lockTimeTxHelper(signedScriptSig: LockTimeScriptSignature, lock: LockTimeScriptPubKey,
-                               privKeys: Seq[ECPrivateKey], sequence: UInt32, lockTime: Option[UInt32]): (BaseTxSigComponent, Seq[ECPrivateKey]) = {
+    privKeys: Seq[ECPrivateKey], sequence: UInt32, lockTime: Option[UInt32]): (BaseTxSigComponent, Seq[ECPrivateKey]) = {
     val (creditingTx, outputIndex) = buildCreditingTransaction(TransactionConstants.validLockVersion, lock)
     //Transaction version must not be less than 2 for a CSV transaction
     val (signedSpendingTx, inputIndex) = buildSpendingTransaction(TransactionConstants.validLockVersion, creditingTx,
@@ -470,8 +468,7 @@ trait TransactionGenerators extends BitcoinSLogger {
         (lockTime < TransactionConstants.locktimeThreshold &&
           num.toLong < TransactionConstants.locktimeThreshold.toLong) ||
           (lockTime >= TransactionConstants.locktimeThreshold &&
-            num.toLong >= TransactionConstants.locktimeThreshold.toLong)
-      )) return false
+            num.toLong >= TransactionConstants.locktimeThreshold.toLong))) return false
       true
   }
 
@@ -491,8 +488,7 @@ trait TransactionGenerators extends BitcoinSLogger {
   def spendableCSVValues: Gen[(ScriptNumber, UInt32)] = {
     Gen.oneOf(
       validScriptNumberAndSequenceForBlockHeight,
-      validScriptNumberAndSequenceForRelativeLockTime
-    )
+      validScriptNumberAndSequenceForRelativeLockTime)
   }
 
   /**

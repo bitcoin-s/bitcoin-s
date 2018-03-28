@@ -36,7 +36,7 @@ sealed abstract class P2WPKHWitnessV0 extends ScriptWitness {
   def pubKey: ECPublicKey = ECPublicKey(stack.head)
 
   def signature: ECDigitalSignature = stack(1) match {
-    case Nil              => EmptyDigitalSignature
+    case Nil => EmptyDigitalSignature
     case bytes: Seq[Byte] => ECDigitalSignature(bytes)
   }
 

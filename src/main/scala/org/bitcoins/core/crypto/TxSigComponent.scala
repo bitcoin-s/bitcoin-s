@@ -91,7 +91,7 @@ sealed abstract class WitnessTxSigComponentP2SH extends WitnessTxSigComponent {
   }
 
   override def witnessVersion: WitnessVersion = witnessScriptPubKey match {
-    case Success(w)   => w.witnessVersion
+    case Success(w) => w.witnessVersion
     case Failure(err) => throw err
   }
 
@@ -119,10 +119,10 @@ sealed abstract class WitnessTxSigComponentRebuilt extends TxSigComponent {
 object BaseTxSigComponent {
 
   private case class BaseTxSigComponentImpl(transaction: Transaction, inputIndex: UInt32,
-                                            scriptPubKey: ScriptPubKey, flags: Seq[ScriptFlag]) extends BaseTxSigComponent
+    scriptPubKey: ScriptPubKey, flags: Seq[ScriptFlag]) extends BaseTxSigComponent
 
   def apply(transaction: Transaction, inputIndex: UInt32,
-            scriptPubKey: ScriptPubKey, flags: Seq[ScriptFlag]): BaseTxSigComponent = {
+    scriptPubKey: ScriptPubKey, flags: Seq[ScriptFlag]): BaseTxSigComponent = {
     BaseTxSigComponentImpl(transaction, inputIndex, scriptPubKey, flags)
   }
 
@@ -131,12 +131,12 @@ object BaseTxSigComponent {
 object WitnessTxSigComponent {
 
   def apply(transaction: WitnessTransaction, inputIndex: UInt32, scriptPubKey: WitnessScriptPubKey,
-            flags: Seq[ScriptFlag], amount: CurrencyUnit): WitnessTxSigComponent = {
+    flags: Seq[ScriptFlag], amount: CurrencyUnit): WitnessTxSigComponent = {
     WitnessTxSigComponentRaw(transaction, inputIndex, scriptPubKey, flags, amount)
   }
 
   def apply(transaction: WitnessTransaction, inputIndex: UInt32, scriptPubKey: P2SHScriptPubKey,
-            flags: Seq[ScriptFlag], amount: CurrencyUnit): WitnessTxSigComponent = {
+    flags: Seq[ScriptFlag], amount: CurrencyUnit): WitnessTxSigComponent = {
     WitnessTxSigComponentP2SH(transaction, inputIndex, scriptPubKey, flags, amount)
   }
 
@@ -145,11 +145,11 @@ object WitnessTxSigComponent {
 object WitnessTxSigComponentRaw {
 
   private case class WitnessTxSigComponentRawImpl(transaction: WitnessTransaction, inputIndex: UInt32,
-                                                  scriptPubKey: WitnessScriptPubKey, flags: Seq[ScriptFlag],
-                                                  amount: CurrencyUnit) extends WitnessTxSigComponentRaw
+    scriptPubKey: WitnessScriptPubKey, flags: Seq[ScriptFlag],
+    amount: CurrencyUnit) extends WitnessTxSigComponentRaw
 
   def apply(transaction: WitnessTransaction, inputIndex: UInt32,
-            scriptPubKey: WitnessScriptPubKey, flags: Seq[ScriptFlag], amount: CurrencyUnit): WitnessTxSigComponentRaw = {
+    scriptPubKey: WitnessScriptPubKey, flags: Seq[ScriptFlag], amount: CurrencyUnit): WitnessTxSigComponentRaw = {
     WitnessTxSigComponentRawImpl(transaction, inputIndex, scriptPubKey, flags, amount)
   }
 }
@@ -157,11 +157,11 @@ object WitnessTxSigComponentRaw {
 object WitnessTxSigComponentP2SH {
 
   private case class WitnessTxSigComponentP2SHImpl(transaction: WitnessTransaction, inputIndex: UInt32,
-                                                   scriptPubKey: P2SHScriptPubKey, flags: Seq[ScriptFlag],
-                                                   amount: CurrencyUnit) extends WitnessTxSigComponentP2SH
+    scriptPubKey: P2SHScriptPubKey, flags: Seq[ScriptFlag],
+    amount: CurrencyUnit) extends WitnessTxSigComponentP2SH
 
   def apply(transaction: WitnessTransaction, inputIndex: UInt32, scriptPubKey: P2SHScriptPubKey, flags: Seq[ScriptFlag],
-            amount: CurrencyUnit): WitnessTxSigComponentP2SH = {
+    amount: CurrencyUnit): WitnessTxSigComponentP2SH = {
 
     WitnessTxSigComponentP2SHImpl(transaction, inputIndex, scriptPubKey, flags, amount)
   }
@@ -170,11 +170,11 @@ object WitnessTxSigComponentP2SH {
 object WitnessTxSigComponentRebuilt {
 
   private case class WitnessTxSigComponentRebuiltImpl(transaction: WitnessTransaction, inputIndex: UInt32,
-                                                      scriptPubKey: ScriptPubKey, witnessScriptPubKey: WitnessScriptPubKey,
-                                                      flags: Seq[ScriptFlag], amount: CurrencyUnit) extends WitnessTxSigComponentRebuilt
+    scriptPubKey: ScriptPubKey, witnessScriptPubKey: WitnessScriptPubKey,
+    flags: Seq[ScriptFlag], amount: CurrencyUnit) extends WitnessTxSigComponentRebuilt
 
   def apply(wtx: WitnessTransaction, inputIndex: UInt32, scriptPubKey: ScriptPubKey, witScriptPubKey: WitnessScriptPubKey,
-            flags: Seq[ScriptFlag], amount: CurrencyUnit): WitnessTxSigComponentRebuilt = {
+    flags: Seq[ScriptFlag], amount: CurrencyUnit): WitnessTxSigComponentRebuilt = {
     WitnessTxSigComponentRebuiltImpl(wtx, inputIndex, scriptPubKey, witScriptPubKey, flags, amount)
   }
 }

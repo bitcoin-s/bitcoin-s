@@ -37,7 +37,7 @@ object HashType extends Factory[HashType] {
   /** Returns a hashtype's default byte value */
   def byte(hashType: HashType): Byte = hashType match {
     case _: SIGHASH_ALL => sigHashAllByte
-    case h: HashType    => h.byte
+    case h: HashType => h.byte
   }
 
   def isSIGHASH_ALL_ONE(num: Int32): Boolean = (num & Int32(0x1f)) == Int32(1)

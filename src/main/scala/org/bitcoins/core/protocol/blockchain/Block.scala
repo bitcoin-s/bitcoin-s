@@ -52,8 +52,7 @@ object Block extends Factory[Block] {
 
   private sealed case class BlockImpl(
     blockHeader: BlockHeader,
-    txCount:     CompactSizeUInt, transactions: Seq[Transaction]
-  ) extends Block
+    txCount: CompactSizeUInt, transactions: Seq[Transaction]) extends Block
 
   def apply(blockHeader: BlockHeader, txCount: CompactSizeUInt, transactions: Seq[Transaction]): Block = {
     BlockImpl(blockHeader, txCount, transactions)

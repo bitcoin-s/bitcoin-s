@@ -99,14 +99,13 @@ object Bech32Address {
   private val logger = BitcoinSLogger.logger
 
   def apply(
-    witSPK:            WitnessScriptPubKey,
-    networkParameters: NetworkParameters
-  ): Try[Bech32Address] = {
+    witSPK: WitnessScriptPubKey,
+    networkParameters: NetworkParameters): Try[Bech32Address] = {
     //we don't encode the wit version or pushop for program into base5
     val prog = UInt8.toUInt8s(witSPK.asmBytes.tail.tail)
     val encoded = Bech32Address.encode(prog)
     val hrp = networkParameters match {
-      case _: MainNet               => bc
+      case _: MainNet => bc
       case _: TestNet3 | _: RegTest => tb
     }
     val witVersion = witSPK.witnessVersion.version.toLong.toShort
@@ -148,8 +147,7 @@ object Bech32Address {
   private def generators: Seq[Long] = Seq(
     UInt32("3b6a57b2").toLong,
     UInt32("26508e6d").toLong, UInt32("1ea119fa").toLong,
-    UInt32("3d4233dd").toLong, UInt32("2a1462b3").toLong
-  )
+    UInt32("3d4233dd").toLong, UInt32("2a1462b3").toLong)
 
   def polyMod(bytes: Seq[UInt8]): Long = {
     var chk: Long = 1
@@ -203,7 +201,7 @@ object Bech32Address {
             case Some(v) =>
               WitnessScriptPubKey(Seq(v.version) ++ pushOp ++ Seq(ScriptConstant(prog))) match {
                 case Some(spk) => Success(spk)
-                case None      => Failure(new IllegalArgumentException("Failed to decode bech32 into a witSPK"))
+                case None => Failure(new IllegalArgumentException("Failed to decode bech32 into a witSPK"))
               }
             case None => Failure(new IllegalArgumentException("Witness version was not valid, got: " + v))
           }
@@ -304,9 +302,8 @@ object Bech32Address {
 
 object P2PKHAddress {
   private case class P2PKHAddressImpl(
-    hash:              Sha256Hash160Digest,
-    networkParameters: NetworkParameters
-  ) extends P2PKHAddress {
+    hash: Sha256Hash160Digest,
+    networkParameters: NetworkParameters) extends P2PKHAddress {
     require(isP2PKHAddress(value), "Bitcoin address was invalid " + value)
   }
 
@@ -338,9 +335,8 @@ object P2PKHAddress {
 
 object P2SHAddress {
   private case class P2SHAddressImpl(
-    hash:              Sha256Hash160Digest,
-    networkParameters: NetworkParameters
-  ) extends P2SHAddress {
+    hash: Sha256Hash160Digest,
+    networkParameters: NetworkParameters) extends P2SHAddress {
     require(isP2SHAddress(value), "Bitcoin address was invalid " + value)
   }
 
@@ -427,8 +423,8 @@ object Address {
   def apply(str: String): Try[Address] = Try(BitcoinAddress(str))
 
   def fromScriptPubKey(spk: ScriptPubKey, network: NetworkParameters): Try[BitcoinAddress] = spk match {
-    case p2pkh: P2PKHScriptPubKey    => Success(P2PKHAddress(p2pkh, network))
-    case p2sh: P2SHScriptPubKey      => Success(P2SHAddress(p2sh, network))
+    case p2pkh: P2PKHScriptPubKey => Success(P2PKHAddress(p2pkh, network))
+    case p2sh: P2SHScriptPubKey => Success(P2SHAddress(p2sh, network))
     case witSPK: WitnessScriptPubKey => Bech32Address(witSPK, network)
     case x @ (_: P2PKScriptPubKey | _: MultiSignatureScriptPubKey | _: LockTimeScriptPubKey
       | _: EscrowTimeoutScriptPubKey | _: NonStandardScriptPubKey

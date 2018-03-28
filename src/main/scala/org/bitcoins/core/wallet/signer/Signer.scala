@@ -22,7 +22,7 @@ sealed abstract class Signer {
    * @return
    */
   def sign(signers: Seq[Signer.Sign], output: TransactionOutput, unsignedTx: Transaction,
-           inputIndex: UInt32, hashType: HashType): Either[TxSigComponent, TxBuilderError]
+    inputIndex: UInt32, hashType: HashType): Either[TxSigComponent, TxBuilderError]
 }
 
 object Signer {
@@ -51,7 +51,7 @@ sealed abstract class BitcoinSigner extends Signer
 sealed abstract class P2PKSigner extends BitcoinSigner {
 
   override def sign(signers: Seq[Signer.Sign], output: TransactionOutput, unsignedTx: Transaction,
-                    inputIndex: UInt32, hashType: HashType): Either[TxSigComponent, TxBuilderError] = {
+    inputIndex: UInt32, hashType: HashType): Either[TxSigComponent, TxBuilderError] = {
     val spk = output.scriptPubKey
     if (signers.size != 1) {
       Right(TxBuilderError.TooManySigners)
@@ -68,7 +68,7 @@ sealed abstract class P2PKSigner extends BitcoinSigner {
             case wtx: WitnessTransaction => wtx
           }
           val redeemScript = wtx.witness.witnesses(inputIndex.toInt) match {
-            case x: P2WSHWitnessV0  => Left(x.redeemScript)
+            case x: P2WSHWitnessV0 => Left(x.redeemScript)
             case _: P2WPKHWitnessV0 => Right(TxBuilderError.NoRedeemScript)
             case EmptyScriptWitness => Right(TxBuilderError.NoWitness)
           }
@@ -131,7 +131,7 @@ object P2PKSigner extends P2PKSigner
 sealed abstract class P2PKHSigner extends BitcoinSigner {
 
   override def sign(signers: Seq[Signer.Sign], output: TransactionOutput, unsignedTx: Transaction,
-                    inputIndex: UInt32, hashType: HashType): Either[TxSigComponent, TxBuilderError] = {
+    inputIndex: UInt32, hashType: HashType): Either[TxSigComponent, TxBuilderError] = {
     val spk = output.scriptPubKey
     if (signers.size != 1) {
       Right(TxBuilderError.TooManySigners)
@@ -152,7 +152,7 @@ sealed abstract class P2PKHSigner extends BitcoinSigner {
           }
           val redeemScript = wtx.witness.witnesses(inputIndex.toInt) match {
             case EmptyScriptWitness | _: P2WPKHWitnessV0 => Right(TxBuilderError.WrongWitness)
-            case p2wsh: P2WSHWitnessV0                   => Left(p2wsh.redeemScript)
+            case p2wsh: P2WSHWitnessV0 => Left(p2wsh.redeemScript)
           }
           val sigComponent = WitnessTxSigComponentRaw(wtx, inputIndex, p2wshSPK, flags, amount)
           val signature = TransactionSignatureCreator.createSig(sigComponent, signer, hashType)
@@ -243,7 +243,7 @@ sealed abstract class MultiSigSigner extends BitcoinSigner {
   private val logger = BitcoinSLogger.logger
 
   override def sign(signersWithPubKeys: Seq[Signer.Sign], output: TransactionOutput, unsignedTx: Transaction,
-                    inputIndex: UInt32, hashType: HashType): Either[TxSigComponent, TxBuilderError] = {
+    inputIndex: UInt32, hashType: HashType): Either[TxSigComponent, TxBuilderError] = {
     val spk = output.scriptPubKey
     val signers = signersWithPubKeys.map(_._1)
     val unsignedInput = unsignedTx.inputs(inputIndex.toInt)
@@ -369,7 +369,7 @@ object MultiSigSigner extends MultiSigSigner
 
 sealed abstract class P2WPKHSigner extends BitcoinSigner {
   override def sign(signers: Seq[Signer.Sign], output: TransactionOutput, unsignedTx: Transaction,
-                    inputIndex: UInt32, hashType: HashType): Either[TxSigComponent, TxBuilderError] = unsignedTx match {
+    inputIndex: UInt32, hashType: HashType): Either[TxSigComponent, TxBuilderError] = unsignedTx match {
     case wtx: WitnessTransaction =>
       if (signers.size != 1) {
         Right(TxBuilderError.TooManySigners)

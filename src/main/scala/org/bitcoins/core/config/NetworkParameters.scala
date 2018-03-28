@@ -59,8 +59,7 @@ sealed abstract class TestNet3 extends BitcoinNetwork {
   override def rpcPort = 18332
   override def dnsSeeds = Seq(
     "testnet-seed.bitcoin.petertodd.org",
-    "testnet-seed.bluematt.me", "testnet-seed.bitcoin.schildbach.de"
-  )
+    "testnet-seed.bluematt.me", "testnet-seed.bitcoin.schildbach.de")
   override def magicBytes = Seq(0x0b.toByte, 0x11.toByte, 0x09.toByte, 0x07.toByte)
 
   override def difficultyChangeThreshold: Int = 2016

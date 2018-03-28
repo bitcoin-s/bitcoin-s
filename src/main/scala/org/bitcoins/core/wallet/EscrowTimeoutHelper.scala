@@ -25,17 +25,16 @@ sealed abstract class EscrowTimeoutHelper {
    * the server to be fully signed
    */
   def clientSign(outPoint: TransactionOutPoint, creditingTx: Transaction, destinations: Seq[TransactionOutput],
-                 signer:   Signer.Sign,
-                 lock:     EscrowTimeoutScriptPubKey,
-                 hashType: HashType): Either[WitnessTxSigComponentRaw, TxBuilderError] = {
+    signer: Signer.Sign,
+    lock: EscrowTimeoutScriptPubKey,
+    hashType: HashType): Either[WitnessTxSigComponentRaw, TxBuilderError] = {
     val creditingOutput = creditingTx.outputs(outPoint.vout.toInt)
     if (creditingOutput.scriptPubKey != P2WSHWitnessSPKV0(lock)) {
       Right(TxBuilderError.WrongSigner)
     } else {
       val scriptWit = P2WSHWitnessV0(lock)
       val utxoMap: TxBuilder.UTXOMap = Map(
-        outPoint -> (creditingOutput, Seq(signer), None, Some(scriptWit), hashType)
-      )
+        outPoint -> (creditingOutput, Seq(signer), None, Some(scriptWit), hashType))
       val (p2wsh, amount) = (creditingOutput.scriptPubKey.asInstanceOf[P2WSHWitnessSPKV0], creditingOutput.value)
       val tc = TransactionConstants
       val uScriptWitness = P2WSHWitnessV0(lock)
@@ -60,9 +59,8 @@ sealed abstract class EscrowTimeoutHelper {
    */
   def buildEscrowTimeoutScriptWitness(
     signedScriptSig: EscrowTimeoutScriptSignature,
-    lock:            EscrowTimeoutScriptPubKey,
-    unsigned:        WitnessTxSigComponentRaw
-  ): TransactionWitness = {
+    lock: EscrowTimeoutScriptPubKey,
+    unsigned: WitnessTxSigComponentRaw): TransactionWitness = {
     //need to remove the OP_0 or OP_1 and replace it with ScriptNumber.zero / ScriptNumber.one since witnesses are *not* run through the interpreter
     val signedScriptWitness = P2WSHWitnessV0(lock, signedScriptSig)
     val updatedWitnesses = unsigned.transaction.witness.witnesses.updated(unsigned.inputIndex.toInt, signedScriptWitness)
@@ -117,8 +115,8 @@ sealed abstract class EscrowTimeoutHelper {
    * is a [[P2PKHScriptPubKey]] that can be spent by the given [[ECPrivateKey]]
    */
   def closeWithTimeout(inputs: Seq[TransactionInput], outputs: Seq[TransactionOutput], inputIndex: UInt32, privKey: ECPrivateKey,
-                       lock: EscrowTimeoutScriptPubKey, creditingOutput: TransactionOutput,
-                       hashType: HashType): Either[WitnessTxSigComponentRaw, TxBuilderError] = lock.timeout.nestedScriptPubKey match {
+    lock: EscrowTimeoutScriptPubKey, creditingOutput: TransactionOutput,
+    hashType: HashType): Either[WitnessTxSigComponentRaw, TxBuilderError] = lock.timeout.nestedScriptPubKey match {
     case _: P2PKHScriptPubKey =>
       //for now we require the nested spk is p2pkh, this is an arbitrary limitation for now to make this simple
       val witSPK = P2WSHWitnessSPKV0(lock)

@@ -20,8 +20,7 @@ sealed abstract class RawMerkleBlockSerializer extends RawBitcoinSerializer[Merk
     val bytesAfterBlockHeaderParsing = bytes.slice(blockHeader.bytes.size, bytes.size)
     val transactionCount = UInt32(bytesAfterBlockHeaderParsing.slice(0, 4).reverse)
     val hashCount = CompactSizeUInt.parseCompactSizeUInt(
-      bytesAfterBlockHeaderParsing.slice(4, bytesAfterBlockHeaderParsing.size)
-    )
+      bytesAfterBlockHeaderParsing.slice(4, bytesAfterBlockHeaderParsing.size))
     val txHashStartIndex = (4 + hashCount.size).toInt
     val bytesAfterHashCountParsing = bytesAfterBlockHeaderParsing.slice(txHashStartIndex, bytesAfterBlockHeaderParsing.size)
 
@@ -52,7 +51,7 @@ sealed abstract class RawMerkleBlockSerializer extends RawBitcoinSerializer[Merk
   private def parseTransactionHashes(bytes: Seq[Byte], hashCount: CompactSizeUInt): (Seq[DoubleSha256Digest], Seq[Byte]) = {
     @tailrec
     def loop(remainingHashes: Long, remainingBytes: Seq[Byte],
-             accum: List[DoubleSha256Digest]): (Seq[DoubleSha256Digest], Seq[Byte]) = {
+      accum: List[DoubleSha256Digest]): (Seq[DoubleSha256Digest], Seq[Byte]) = {
       if (remainingHashes <= 0) (accum.reverse, remainingBytes)
       else loop(remainingHashes - 1, remainingBytes.slice(32, remainingBytes.size), DoubleSha256Digest(remainingBytes.take(32)) :: accum)
     }

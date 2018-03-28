@@ -48,12 +48,10 @@ sealed abstract class RawWitnessTransactionParser extends RawBitcoinSerializer[W
     val version = tx.version.bytes.reverse
     val inputs = RawSerializerHelper.writeCmpctSizeUInt[TransactionInput](
       tx.inputs,
-      RawTransactionInputParser.write(_)
-    )
+      RawTransactionInputParser.write(_))
     val outputs = RawSerializerHelper.writeCmpctSizeUInt[TransactionOutput](
       tx.outputs,
-      RawTransactionOutputParser.write(_)
-    )
+      RawTransactionOutputParser.write(_))
     val witness = tx.witness.bytes
     val lockTime = tx.lockTime.bytes.reverse
     //notice we use the old serialization format if all witnesses are empty

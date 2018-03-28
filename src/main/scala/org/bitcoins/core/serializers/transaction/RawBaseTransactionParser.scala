@@ -19,8 +19,7 @@ sealed abstract class RawBaseTransactionParser extends RawBitcoinSerializer[Base
     val (inputs, outputBytes) = helper.parseCmpctSizeUIntSeq(txInputBytes, RawTransactionInputParser.read(_))
     val (outputs, lockTimeBytes) = helper.parseCmpctSizeUIntSeq(
       outputBytes,
-      RawTransactionOutputParser.read(_)
-    )
+      RawTransactionOutputParser.read(_))
     val lockTime = UInt32(lockTimeBytes.take(4).reverse)
     BaseTransaction(version, inputs, outputs, lockTime)
   }
@@ -29,12 +28,10 @@ sealed abstract class RawBaseTransactionParser extends RawBitcoinSerializer[Base
     val version = tx.version.bytes.reverse
     val inputs: Seq[Byte] = helper.writeCmpctSizeUInt[TransactionInput](
       tx.inputs,
-      RawTransactionInputParser.write(_)
-    )
+      RawTransactionInputParser.write(_))
     val outputs: Seq[Byte] = helper.writeCmpctSizeUInt[TransactionOutput](
       tx.outputs,
-      RawTransactionOutputParser.write(_)
-    )
+      RawTransactionOutputParser.write(_))
     val lockTime = tx.lockTime.bytes.reverse
     version ++ inputs ++ outputs ++ lockTime
   }

@@ -49,7 +49,7 @@ sealed abstract class ConstantInterpreter {
         //for the case when a ScriptNumberImpl(x) was parsed as a ByteToPushOntoStackImpl(x)
         val scriptToken = scriptTokens.head match {
           case x: BytesToPushOntoStack => ScriptNumber(x.opCode)
-          case x                       => x
+          case x => x
         }
         takeUntilBytesNeeded(scriptTokens.tail, scriptToken :: accum)
       }
@@ -57,7 +57,7 @@ sealed abstract class ConstantInterpreter {
 
     val (newScript, bytesToPushOntoStack) = program.script.head match {
       case OP_PUSHDATA1 | OP_PUSHDATA2 | OP_PUSHDATA4 => takeUntilBytesNeeded(program.script.tail.tail, Nil)
-      case _: ScriptToken                             => takeUntilBytesNeeded(program.script.tail, Nil)
+      case _: ScriptToken => takeUntilBytesNeeded(program.script.tail, Nil)
     }
     logger.debug("new script: " + newScript)
     logger.debug("Bytes to push onto stack: " + bytesToPushOntoStack)
@@ -95,7 +95,7 @@ sealed abstract class ConstantInterpreter {
     //for instance OP_PUSHDATA1 OP_0
     val scriptNumOp = program.script(1).bytes match {
       case h :: t => ScriptNumberOperation.fromNumber(h.toInt)
-      case Nil    => None
+      case Nil => None
     }
     if (ScriptFlagUtil.requireMinimalData(program.flags) && program.script(1).bytes.size == 1 &&
       scriptNumOp.isDefined) {
@@ -122,7 +122,7 @@ sealed abstract class ConstantInterpreter {
   private def bytesNeededForPushOp(token: ScriptToken): Long = token match {
     case scriptNumber: BytesToPushOntoStack => scriptNumber.opCode
     case scriptNumOp: ScriptNumberOperation => scriptNumOp.opCode
-    case scriptNumber: ScriptNumber         => scriptNumber.toLong
+    case scriptNumber: ScriptNumber => scriptNumber.toLong
     case scriptConstant: ScriptConstant =>
       val constantFlippedEndianness = BitcoinSUtil.flipEndianness(scriptConstant.hex)
       java.lang.Long.parseLong(constantFlippedEndianness, 16)

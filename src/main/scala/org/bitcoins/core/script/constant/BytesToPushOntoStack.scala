@@ -31,7 +31,7 @@ object BytesToPushOntoStack extends ScriptOperationFactory[BytesToPushOntoStack]
       val bytesToPushOntoStackOpt = operations.find(_.opCode == num)
       bytesToPushOntoStackOpt match {
         case Some(bytesToPushOntoStack) => bytesToPushOntoStack
-        case None                       => throw new IllegalArgumentException("We cannot have a BytesToPushOntoStack for greater than 75 bytes")
+        case None => throw new IllegalArgumentException("We cannot have a BytesToPushOntoStack for greater than 75 bytes")
       }
     }
   }

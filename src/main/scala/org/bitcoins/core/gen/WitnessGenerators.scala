@@ -146,8 +146,7 @@ sealed abstract class WitnessGenerators extends BitcoinSLogger {
     unsignedScriptWitness = P2WSHWitnessV0(scriptPubKey)
     u = createUnsignedRawWTxSigComponent(
       witScriptPubKey,
-      amount, unsignedScriptWitness, Some(sequence)
-    )
+      amount, unsignedScriptWitness, Some(sequence))
     createdSig = TransactionSignatureCreator.createSig(u, privKey, hashType)
     scriptSig = CSVScriptSignature(P2PKHScriptSignature(createdSig, privKey.publicKey))
     signedScriptWitness = P2WSHWitnessV0(scriptPubKey, EscrowTimeoutScriptSignature.fromLockTime(scriptSig))
@@ -165,11 +164,10 @@ sealed abstract class WitnessGenerators extends BitcoinSLogger {
 
   /** Helps generate a signed [[MultiSignatureScriptSignature]] */
   private def multiSigScriptSigGenHelper(
-    privateKeys:             Seq[ECPrivateKey],
-    scriptPubKey:            MultiSignatureScriptPubKey,
+    privateKeys: Seq[ECPrivateKey],
+    scriptPubKey: MultiSignatureScriptPubKey,
     unsignedWtxSigComponent: WitnessTxSigComponent,
-    hashType:                HashType
-  ): MultiSignatureScriptSignature = {
+    hashType: HashType): MultiSignatureScriptSignature = {
     val requiredSigs = scriptPubKey.requiredSigs
     val txSignatures = for {
       i <- 0 until requiredSigs
@@ -181,8 +179,8 @@ sealed abstract class WitnessGenerators extends BitcoinSLogger {
   }
 
   def csvEscrowTimeoutGenHelper(privateKeys: Seq[ECPrivateKey], scriptPubKey: EscrowTimeoutScriptPubKey,
-                                unsignedWtxSigComponent: WitnessTxSigComponent,
-                                hashType:                HashType): EscrowTimeoutScriptSignature = {
+    unsignedWtxSigComponent: WitnessTxSigComponent,
+    hashType: HashType): EscrowTimeoutScriptSignature = {
     if (scriptPubKey.escrow.requiredSigs == 0) {
       EscrowTimeoutScriptSignature.fromMultiSig(MultiSignatureScriptSignature(Nil))
     } else if (privateKeys.size == 1) {
@@ -195,7 +193,7 @@ sealed abstract class WitnessGenerators extends BitcoinSLogger {
   }
 
   def csvEscrowTimeoutGenSignature(privKey: ECPrivateKey, scriptPubKey: EscrowTimeoutScriptPubKey,
-                                   unsignedWtxSigComponent: WitnessTxSigComponent, hashType: HashType): ECDigitalSignature = {
+    unsignedWtxSigComponent: WitnessTxSigComponent, hashType: HashType): ECDigitalSignature = {
 
     val signature = TransactionSignatureCreator.createSig(unsignedWtxSigComponent, privKey, hashType)
     signature
@@ -233,7 +231,7 @@ sealed abstract class WitnessGenerators extends BitcoinSLogger {
 
   /** Creates a unsigned [[WitnessTxSigComponent]] from the given parameters */
   def createUnsignedRawWTxSigComponent(witScriptPubKey: WitnessScriptPubKey, amount: CurrencyUnit,
-                                       unsignedScriptWitness: ScriptWitness, sequence: Option[UInt32]): WitnessTxSigComponentRaw = {
+    unsignedScriptWitness: ScriptWitness, sequence: Option[UInt32]): WitnessTxSigComponentRaw = {
     val tc = TransactionConstants
     val flags = Policy.standardScriptVerifyFlags
     val witness = TransactionWitness.fromWitOpt(Seq(Some(unsignedScriptWitness)))

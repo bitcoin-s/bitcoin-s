@@ -112,7 +112,7 @@ sealed abstract class DERSignatureUtil {
    */
   def isValidSignatureEncoding(signature: ECDigitalSignature): Boolean = {
     signature match {
-      case EmptyDigitalSignature         => true
+      case EmptyDigitalSignature => true
       case signature: ECDigitalSignature => isValidSignatureEncoding(signature.bytes)
     }
   }
@@ -226,7 +226,7 @@ sealed abstract class DERSignatureUtil {
     }
     result match {
       case Success(bool) => bool
-      case Failure(_)    => false
+      case Failure(_) => false
     }
   }
 

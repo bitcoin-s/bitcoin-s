@@ -57,9 +57,8 @@ sealed trait PartialMerkleTree extends BitcoinSLogger {
     logger.debug("Starting bits for extraction: " + bits)
     logger.debug("Starting tree: " + tree)
     def loop(
-      subTree:       BinaryTree[DoubleSha256Digest],
-      remainingBits: Seq[Boolean], height: Int, pos: Int, accumMatches: Seq[DoubleSha256Digest]
-    ): (Seq[DoubleSha256Digest], Seq[Boolean]) = {
+      subTree: BinaryTree[DoubleSha256Digest],
+      remainingBits: Seq[Boolean], height: Int, pos: Int, accumMatches: Seq[DoubleSha256Digest]): (Seq[DoubleSha256Digest], Seq[Boolean]) = {
       if (height == maxHeight) extractLeafMatch(accumMatches, remainingBits, subTree)
       else {
         //means we have a nontxid node
@@ -90,7 +89,7 @@ sealed trait PartialMerkleTree extends BitcoinSLogger {
 
   /** Handles a leaf match when we are extracting matches from the partial merkle tree */
   private def extractLeafMatch(accumMatches: Seq[DoubleSha256Digest], remainingBits: Seq[Boolean],
-                               subTree: BinaryTree[DoubleSha256Digest]): (Seq[DoubleSha256Digest], Seq[Boolean]) = {
+    subTree: BinaryTree[DoubleSha256Digest]): (Seq[DoubleSha256Digest], Seq[Boolean]) = {
     if (remainingBits.head) {
       //means we have a txid node that matched the filter
       subTree match {
@@ -111,7 +110,7 @@ object PartialMerkleTree {
   private val logger = BitcoinSLogger.logger
 
   private case class PartialMerkleTreeImpl(tree: BinaryTree[DoubleSha256Digest], transactionCount: UInt32,
-                                           bits: Seq[Boolean], hashes: Seq[DoubleSha256Digest]) extends PartialMerkleTree
+    bits: Seq[Boolean], hashes: Seq[DoubleSha256Digest]) extends PartialMerkleTree
 
   def apply(txMatches: Seq[(Boolean, DoubleSha256Digest)]): PartialMerkleTree = {
     val txIds = txMatches.map(_._2)
@@ -241,8 +240,7 @@ object PartialMerkleTree {
         (
           Leaf(remainingHashes.head),
           remainingHashes.tail,
-          remainingMatches.tail
-        )
+          remainingMatches.tail)
       } else {
         //means we have a non txid node
         if (remainingMatches.head) {

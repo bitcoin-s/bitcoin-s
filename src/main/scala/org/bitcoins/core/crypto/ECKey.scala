@@ -42,8 +42,7 @@ sealed abstract class BaseECKey extends NetworkElement {
   private def oldSign(dataToSign: Seq[Byte], signingKey: BaseECKey): ECDigitalSignature = {
     val signer: ECDSASigner = new ECDSASigner(new HMacDSAKCalculator(new SHA256Digest()))
     val privKey: ECPrivateKeyParameters = new ECPrivateKeyParameters(
-      new BigInteger(1, signingKey.bytes.toArray), CryptoParams.curve
-    )
+      new BigInteger(1, signingKey.bytes.toArray), CryptoParams.curve)
     signer.init(true, privKey)
     val components: Array[BigInteger] = signer.generateSignature(dataToSign.toArray)
     val (r, s) = (components(0), components(1))

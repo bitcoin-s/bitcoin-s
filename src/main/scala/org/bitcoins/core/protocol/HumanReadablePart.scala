@@ -33,11 +33,11 @@ object HumanReadablePart {
   def apply(str: String) = str match {
     case "bc" => bc
     case "tb" => tb
-    case _    => UndefinedHRP(str.map(_.toByte))
+    case _ => UndefinedHRP(str.map(_.toByte))
   }
 
   def apply(network: NetworkParameters): HumanReadablePart = network match {
-    case _: MainNet               => bc
+    case _: MainNet => bc
     case _: TestNet3 | _: RegTest => tb
   }
 }
