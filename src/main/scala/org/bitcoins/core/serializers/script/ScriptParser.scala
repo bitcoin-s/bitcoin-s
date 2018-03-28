@@ -76,7 +76,7 @@ sealed abstract class ScriptParser extends Factory[List[ScriptToken]] {
         case h :: t if (h.size > 1 && h.substring(0, 2) == "0x") =>
           loop(t, BitcoinSUtil.decodeHex(h.substring(2, h.size).toLowerCase).toList.reverse ++ accum)
         //skip the empty string
-        case h :: t if (h == "")  => loop(t, accum)
+        case h :: t if (h == "") => loop(t, accum)
         case h :: t if (h == "0") => loop(t, OP_0.bytes.toList ++ accum)
 
         case h :: t if (ScriptOperation.fromString(h).isDefined) =>
@@ -248,17 +248,15 @@ sealed abstract class ScriptParser extends Factory[List[ScriptToken]] {
    * @return
    */
   private def buildParsingHelper(op: ScriptOperation, bytesToPushOntoStack: ScriptConstant,
-                                 scriptConstant: ScriptConstant, restOfBytes: List[Byte], accum: List[ScriptToken]): ParsingHelper[Byte] = {
+    scriptConstant: ScriptConstant, restOfBytes: List[Byte], accum: List[ScriptToken]): ParsingHelper[Byte] = {
     if (bytesToPushOntoStack.hex == "00") {
       //if we need to push 0 bytes onto the stack we do not add the script constant
       ParsingHelper[Byte](
         restOfBytes,
-        bytesToPushOntoStack :: op :: accum
-      )
+        bytesToPushOntoStack :: op :: accum)
     } else ParsingHelper[Byte](
       restOfBytes,
-      scriptConstant :: bytesToPushOntoStack :: op :: accum
-    )
+      scriptConstant :: bytesToPushOntoStack :: op :: accum)
   }
 
   /** Checks if a string can be cast to an int */

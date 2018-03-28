@@ -91,10 +91,10 @@ sealed trait BlockHeader extends NetworkElement {
 object BlockHeader extends Factory[BlockHeader] {
 
   private sealed case class BlockHeaderImpl(version: UInt32, previousBlockHash: DoubleSha256Digest,
-                                            merkleRootHash: DoubleSha256Digest, time: UInt32, nBits: UInt32, nonce: UInt32) extends BlockHeader
+    merkleRootHash: DoubleSha256Digest, time: UInt32, nBits: UInt32, nonce: UInt32) extends BlockHeader
 
   def apply(version: UInt32, previousBlockHash: DoubleSha256Digest, merkleRootHash: DoubleSha256Digest,
-            time: UInt32, nBits: UInt32, nonce: UInt32): BlockHeader = {
+    time: UInt32, nBits: UInt32, nonce: UInt32): BlockHeader = {
     BlockHeaderImpl(version, previousBlockHash, merkleRootHash, time, nBits, nonce)
   }
 

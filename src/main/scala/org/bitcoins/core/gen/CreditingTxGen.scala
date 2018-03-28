@@ -33,8 +33,7 @@ sealed abstract class CreditingTxGen {
     p2pkOutput,
     p2pkhOutput, multiSigOutput, p2shOutput,
     csvOutput, cltvOutput,
-    p2wpkhOutput, p2wshOutput
-  )
+    p2wpkhOutput, p2wshOutput)
 
   def outputs: Gen[Seq[CreditingTxGen.CreditingTxInfo]] = {
     Gen.choose(min, 5).flatMap(n => Gen.listOfN(n, output))
@@ -178,8 +177,8 @@ sealed abstract class CreditingTxGen {
   def randoms: Gen[Seq[CreditingTxGen.CreditingTxInfo]] = Gen.choose(min, max).flatMap(n => Gen.listOfN(n, random))
 
   private def build(spk: ScriptPubKey, signers: Seq[Signer.Sign],
-                    redeemScript:  Option[ScriptPubKey],
-                    scriptWitness: Option[ScriptWitness]): Gen[CreditingTxGen.CreditingTxInfo] = nonEmptyOutputs.flatMap { outputs =>
+    redeemScript: Option[ScriptPubKey],
+    scriptWitness: Option[ScriptWitness]): Gen[CreditingTxGen.CreditingTxInfo] = nonEmptyOutputs.flatMap { outputs =>
     CryptoGenerators.hashType.flatMap { hashType =>
       Gen.choose(0, outputs.size - 1).map { idx =>
         val old = outputs(idx)

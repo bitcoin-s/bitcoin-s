@@ -64,9 +64,9 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
       case (token, index) =>
         if (multiSigOps.contains(token) && index != 0) {
           script(index - 1) match {
-            case scriptNum: ScriptNumber        => scriptNum.toLong
+            case scriptNum: ScriptNumber => scriptNum.toLong
             case scriptConstant: ScriptConstant => ScriptNumberUtil.toLong(scriptConstant.hex)
-            case _: ScriptToken                 => ScriptSettings.maxPublicKeysPerMultiSig
+            case _: ScriptToken => ScriptSettings.maxPublicKeysPerMultiSig
           }
         } else 0
     }.sum
@@ -82,12 +82,11 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
   def numPossibleSignaturesOnStack(program: ScriptProgram): ScriptNumber = {
     require(
       program.script.headOption == Some(OP_CHECKMULTISIG) || program.script.headOption == Some(OP_CHECKMULTISIGVERIFY),
-      "We can only parse the nubmer of signatures the stack when we are executing a OP_CHECKMULTISIG or OP_CHECKMULTISIGVERIFY op"
-    )
+      "We can only parse the nubmer of signatures the stack when we are executing a OP_CHECKMULTISIG or OP_CHECKMULTISIGVERIFY op")
     val nPossibleSignatures: ScriptNumber = program.stack.head match {
-      case s: ScriptNumber   => s
+      case s: ScriptNumber => s
       case s: ScriptConstant => ScriptNumber(s.bytes)
-      case _: ScriptToken    => throw new RuntimeException("n must be a script number or script constant for OP_CHECKMULTISIG")
+      case _: ScriptToken => throw new RuntimeException("n must be a script number or script constant for OP_CHECKMULTISIG")
     }
     nPossibleSignatures
   }
@@ -99,14 +98,13 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
   def numRequiredSignaturesOnStack(program: ScriptProgram): ScriptNumber = {
     require(
       program.script.headOption == Some(OP_CHECKMULTISIG) || program.script.headOption == Some(OP_CHECKMULTISIGVERIFY),
-      "We can only parse the nubmer of signatures the stack when we are executing a OP_CHECKMULTISIG or OP_CHECKMULTISIGVERIFY op"
-    )
+      "We can only parse the nubmer of signatures the stack when we are executing a OP_CHECKMULTISIG or OP_CHECKMULTISIGVERIFY op")
     val nPossibleSignatures = numPossibleSignaturesOnStack(program)
     val stackWithoutPubKeys = program.stack.tail.slice(nPossibleSignatures.toInt, program.stack.tail.size)
     val mRequiredSignatures: ScriptNumber = stackWithoutPubKeys.head match {
-      case s: ScriptNumber   => s
+      case s: ScriptNumber => s
       case s: ScriptConstant => ScriptNumber(s.bytes)
-      case _: ScriptToken    => throw new RuntimeException("m must be a script number or script constant for OP_CHECKMULTISIG")
+      case _: ScriptToken => throw new RuntimeException("m must be a script number or script constant for OP_CHECKMULTISIG")
     }
     mRequiredSignatures
   }
@@ -121,7 +119,7 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
     def loop(tokens: Seq[ScriptToken], accum: List[Boolean]): Seq[Boolean] = tokens match {
       case h :: t => h match {
         case scriptOp: ScriptOperation => loop(t, (scriptOp.opCode < OP_16.opCode) :: accum)
-        case _: ScriptToken            => loop(t, true :: accum)
+        case _: ScriptToken => loop(t, true :: accum)
       }
       case Nil => accum
     }
@@ -150,8 +148,8 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
       case size if (size == 0) => pushOp == OP_0
       case size if (size == 1 && token.bytes.head == OP_1NEGATE.opCode) =>
         pushOp == OP_1NEGATE
-      case size if (size <= 75)    => token.bytes.size == pushOp.toLong
-      case size if (size <= 255)   => pushOp == OP_PUSHDATA1
+      case size if (size <= 75) => token.bytes.size == pushOp.toLong
+      case size if (size <= 255) => pushOp == OP_PUSHDATA1
       case size if (size <= 65535) => pushOp == OP_PUSHDATA2
       case size =>
         //default case is true because we have to use the largest push op as possible which is OP_PUSHDATA4
@@ -282,8 +280,7 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
    */
   def calculateScriptForChecking(
     txSignatureComponent: TxSigComponent,
-    signature:            ECDigitalSignature, script: Seq[ScriptToken]
-  ): Seq[ScriptToken] = {
+    signature: ECDigitalSignature, script: Seq[ScriptToken]): Seq[ScriptToken] = {
     val scriptForChecking = calculateScriptForSigning(txSignatureComponent, script)
     logger.debug("sig for removal: " + signature)
     logger.debug("script: " + script)

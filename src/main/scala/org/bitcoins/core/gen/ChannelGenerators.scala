@@ -84,7 +84,7 @@ sealed trait ChannelGenerators extends BitcoinSLogger {
    * @return
    */
   def simulate(runs: Int, inProgress: ChannelInProgress, amount: CurrencyUnit,
-               clientKey: ECPrivateKey, serverKey: ECPrivateKey): Either[ChannelInProgress, TxBuilderError] = {
+    clientKey: ECPrivateKey, serverKey: ECPrivateKey): Either[ChannelInProgress, TxBuilderError] = {
     @tailrec
     def loop(old: Either[ChannelInProgress, TxBuilderError], remaining: Int): Either[ChannelInProgress, TxBuilderError] = {
       if (old.isRight || remaining == 0) old

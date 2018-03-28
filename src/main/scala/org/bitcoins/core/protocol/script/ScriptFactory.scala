@@ -12,7 +12,7 @@ trait ScriptFactory[T] extends Factory[T] {
 
   /** Builds a script from the given asm with the given constructor if the invariant holds true, else throws an error */
   def buildScript(asm: Seq[ScriptToken], constructor: Seq[Byte] => T,
-                  invariant: Seq[ScriptToken] => Boolean, errorMsg: String): T = {
+    invariant: Seq[ScriptToken] => Boolean, errorMsg: String): T = {
     if (invariant(asm)) {
       val asmBytes = asm.flatMap(_.bytes)
       val compactSizeUInt = CompactSizeUInt.calc(asmBytes)

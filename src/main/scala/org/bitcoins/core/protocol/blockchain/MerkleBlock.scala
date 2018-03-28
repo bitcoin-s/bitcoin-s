@@ -36,7 +36,7 @@ sealed abstract class MerkleBlock extends NetworkElement {
 object MerkleBlock extends Factory[MerkleBlock] {
 
   private case class MerkleBlockImpl(blockHeader: BlockHeader, transactionCount: UInt32,
-                                     partialMerkleTree: PartialMerkleTree) extends MerkleBlock
+    partialMerkleTree: PartialMerkleTree) extends MerkleBlock
   /**
    * Creates a [[MerkleBlock]] from the given [[Block]] and [[BloomFilter]]
    * This function iterates through each transaction inside our block checking if it is relevant to the given bloom filter
@@ -48,7 +48,7 @@ object MerkleBlock extends Factory[MerkleBlock] {
   def apply(block: Block, filter: BloomFilter): (MerkleBlock, BloomFilter) = {
     @tailrec
     def loop(remainingTxs: Seq[Transaction], accumFilter: BloomFilter,
-             txMatches: Seq[(Boolean, DoubleSha256Digest)]): (Seq[(Boolean, DoubleSha256Digest)], BloomFilter) = {
+      txMatches: Seq[(Boolean, DoubleSha256Digest)]): (Seq[(Boolean, DoubleSha256Digest)], BloomFilter) = {
       if (remainingTxs.isEmpty) (txMatches.reverse, accumFilter)
       else {
         val tx = remainingTxs.head
@@ -85,7 +85,7 @@ object MerkleBlock extends Factory[MerkleBlock] {
   }
 
   def apply(blockHeader: BlockHeader, txCount: UInt32,
-            partialMerkleTree: PartialMerkleTree): MerkleBlock = {
+    partialMerkleTree: PartialMerkleTree): MerkleBlock = {
     MerkleBlockImpl(blockHeader, txCount, partialMerkleTree)
   }
 

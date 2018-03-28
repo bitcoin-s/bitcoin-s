@@ -36,17 +36,16 @@ sealed abstract class CoinbaseInput extends TransactionInput {
 
 object TransactionInput extends Factory[TransactionInput] {
   private case class TransactionInputImpl(
-    previousOutput:  TransactionOutPoint,
-    scriptSignature: ScriptSignature, sequence: UInt32
-  ) extends TransactionInput
+    previousOutput: TransactionOutPoint,
+    scriptSignature: ScriptSignature, sequence: UInt32) extends TransactionInput
   def empty: TransactionInput = EmptyTransactionInput
 
   def fromBytes(bytes: Seq[Byte]): TransactionInput = RawTransactionInputParser.read(bytes)
 
   def apply(outPoint: TransactionOutPoint, scriptSignature: ScriptSignature,
-            sequenceNumber: UInt32): TransactionInput = outPoint match {
+    sequenceNumber: UInt32): TransactionInput = outPoint match {
     case EmptyTransactionOutPoint => CoinbaseInput(scriptSignature)
-    case _: TransactionOutPoint   => TransactionInputImpl(outPoint, scriptSignature, sequenceNumber)
+    case _: TransactionOutPoint => TransactionInputImpl(outPoint, scriptSignature, sequenceNumber)
   }
 
 }

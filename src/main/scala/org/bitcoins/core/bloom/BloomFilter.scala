@@ -188,7 +188,7 @@ sealed abstract class BloomFilter extends NetworkElement {
         val filter = accumFilter.insert(TransactionOutPoint(txId, UInt32(h._2)))
         loop(t, filter)
       case h :: t => loop(t, accumFilter)
-      case Nil    => accumFilter
+      case Nil => accumFilter
     }
     val p2pkOrMultiSigScriptPubKeys: Seq[(ScriptPubKey, Int)] = scriptPubKeysWithIndex.filter {
       case (s, index) => s.isInstanceOf[P2PKScriptPubKey] ||
@@ -243,7 +243,7 @@ sealed abstract class BloomFilter extends NetworkElement {
 object BloomFilter extends Factory[BloomFilter] {
 
   private case class BloomFilterImpl(filterSize: CompactSizeUInt, data: Seq[Byte], hashFuncs: UInt32,
-                                     tweak: UInt32, flags: BloomFlag) extends BloomFilter
+    tweak: UInt32, flags: BloomFlag) extends BloomFilter
   /** Max bloom filter size as per [[https://bitcoin.org/en/developer-reference#filterload]] */
   val maxSize = UInt32(36000)
 
