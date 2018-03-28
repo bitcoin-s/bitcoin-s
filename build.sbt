@@ -27,6 +27,20 @@ lazy val appDependencies = Seq(
   "io.spray" %% "spray-json" % sprayV  % "test"
 )
 
+com.typesafe.sbt.SbtScalariform.ScalariformKeys.preferences := {
+  import scalariform.formatter.preferences._
+  FormattingPreferences()
+    .setPreference(FirstParameterOnNewline, Preserve)
+    .setPreference(FirstArgumentOnNewline, Preserve)
+    .setPreference(AlignParameters, true)
+    .setPreference(AlignArguments, true)
+    .setPreference(AlignSingleLineCaseStatements, true)
+    .setPreference(AlignSingleLineCaseStatements.MaxArrowIndent, 20)
+    .setPreference(DanglingCloseParenthesis, Force)
+    .setPreference(CompactControlReadability, true)
+    .setPreference(SpacesAroundMultiImports, false)
+}
+
 lazy val root = Project(appName, file(".")).enablePlugins().settings(
     commonSettings,
     libraryDependencies ++= appDependencies
