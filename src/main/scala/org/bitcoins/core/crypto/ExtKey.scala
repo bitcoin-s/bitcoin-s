@@ -75,7 +75,7 @@ object ExtKey extends Factory[ExtKey] {
       require(bytes.size == 78, "Not 78 bytes")
       val version: Try[ExtKeyVersion] = ExtKeyVersion(bytes.take(4)) match {
         case Some(v) => Success(v)
-        case None    => Failure(new IllegalArgumentException("Invalid version for ExtKey"))
+        case None => Failure(new IllegalArgumentException("Invalid version for ExtKey"))
       }
       val depth = UInt8(bytes.slice(4, 5))
       val fp = bytes.slice(5, 9)
@@ -126,8 +126,8 @@ sealed abstract class ExtPrivateKey extends ExtKey {
   }
 
   def extPublicKey: ExtPublicKey = version match {
-    case MainNetPriv              => ExtPublicKey(MainNetPub, depth, fingerprint, childNum, chainCode, key.publicKey)
-    case TestNet3Priv             => ExtPublicKey(TestNet3Pub, depth, fingerprint, childNum, chainCode, key.publicKey)
+    case MainNetPriv => ExtPublicKey(MainNetPub, depth, fingerprint, childNum, chainCode, key.publicKey)
+    case TestNet3Priv => ExtPublicKey(TestNet3Pub, depth, fingerprint, childNum, chainCode, key.publicKey)
     case MainNetPub | TestNet3Pub => throw new IllegalArgumentException("Cannot have pubkey version in ExtPrivateKey, got: " + version)
   }
 
@@ -137,8 +137,8 @@ sealed abstract class ExtPrivateKey extends ExtKey {
 }
 object ExtPrivateKey extends Factory[ExtPrivateKey] {
   private case class ExtPrivateKeyImpl(version: ExtKeyVersion, depth: UInt8,
-                                       fingerprint: Seq[Byte], childNum: UInt32,
-                                       chainCode: ChainCode, key: ECPrivateKey) extends ExtPrivateKey {
+    fingerprint: Seq[Byte], childNum: UInt32,
+    chainCode: ChainCode, key: ECPrivateKey) extends ExtPrivateKey {
     require(fingerprint.size == 4, "Fingerprint must be 4 bytes in size, got: " + fingerprint)
   }
 
@@ -147,13 +147,13 @@ object ExtPrivateKey extends Factory[ExtPrivateKey] {
     val base58 = Base58.encode(bytes ++ CryptoUtil.doubleSHA256(bytes).bytes.take(4))
     ExtKey.fromString(base58) match {
       case Success(priv: ExtPrivateKey) => priv
-      case Success(_: ExtPublicKey)     => throw new IllegalArgumentException("Cannot create ext public in ExtPrivateKey")
-      case f: Failure[_]                => throw f.exception
+      case Success(_: ExtPublicKey) => throw new IllegalArgumentException("Cannot create ext public in ExtPrivateKey")
+      case f: Failure[_] => throw f.exception
     }
   }
   def apply(version: ExtKeyVersion, depth: UInt8,
-            fingerprint: Seq[Byte], child: UInt32,
-            chainCode: ChainCode, privateKey: ECPrivateKey): ExtPrivateKey = {
+    fingerprint: Seq[Byte], child: UInt32,
+    chainCode: ChainCode, privateKey: ECPrivateKey): ExtPrivateKey = {
     ExtPrivateKeyImpl(version, depth, fingerprint, child, chainCode, privateKey)
   }
 
@@ -164,7 +164,7 @@ object ExtPrivateKey extends Factory[ExtPrivateKey] {
   def apply(version: ExtKeyVersion, seedOpt: Option[Seq[Byte]] = None): ExtPrivateKey = {
     val seed = seedOpt match {
       case Some(bytes) => bytes
-      case None        => ECPrivateKey().bytes
+      case None => ECPrivateKey().bytes
     }
     val i = CryptoUtil.hmac512("Bitcoin seed".map(_.toByte), seed)
     val (il, ir) = i.splitAt(32)
@@ -189,8 +189,7 @@ sealed abstract class ExtPublicKey extends ExtKey {
       val tweaked = NativeSecp256k1.pubKeyTweakAdd(
         key.bytes.toArray,
         hmac.toArray,
-        priv.isCompressed
-      )
+        priv.isCompressed)
       val childPubKey = ECPublicKey(tweaked)
       val bi = BigInt(new BigInteger(1, priv.bytes.toArray))
       //we do not handle this case since it is impossible
@@ -206,11 +205,11 @@ sealed abstract class ExtPublicKey extends ExtKey {
 
 object ExtPublicKey extends Factory[ExtPublicKey] {
   private case class ExtPublicKeyImpl(version: ExtKeyVersion, depth: UInt8,
-                                      fingerprint: Seq[Byte], childNum: UInt32,
-                                      chainCode: ChainCode, key: ECPublicKey) extends ExtPublicKey
+    fingerprint: Seq[Byte], childNum: UInt32,
+    chainCode: ChainCode, key: ECPublicKey) extends ExtPublicKey
 
   def apply(version: ExtKeyVersion, depth: UInt8,
-            fingerprint: Seq[Byte], child: UInt32, chainCode: ChainCode, publicKey: ECPublicKey): ExtPublicKey = {
+    fingerprint: Seq[Byte], child: UInt32, chainCode: ChainCode, publicKey: ECPublicKey): ExtPublicKey = {
     ExtPublicKeyImpl(version, depth, fingerprint, child, chainCode, publicKey)
   }
 
@@ -221,7 +220,7 @@ object ExtPublicKey extends Factory[ExtPublicKey] {
       case Success(_: ExtPrivateKey) =>
         throw new IllegalArgumentException("Cannot create ext privatkey in ExtPublicKey")
       case Success(pub: ExtPublicKey) => pub
-      case f: Failure[_]              => throw f.exception
+      case f: Failure[_] => throw f.exception
     }
   }
 }

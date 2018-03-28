@@ -129,7 +129,7 @@ sealed trait P2SHScriptSignature extends ScriptSignature {
       val asmWithoutRedeemScriptAndPushOp: Try[Seq[ScriptToken]] = Try {
         asm(asm.size - 2) match {
           case b: BytesToPushOntoStack => asm.dropRight(2)
-          case _                       => asm.dropRight(3)
+          case _ => asm.dropRight(3)
         }
       }
       val script = asmWithoutRedeemScriptAndPushOp.getOrElse(EmptyScriptSignature.asm)
@@ -209,7 +209,7 @@ object P2SHScriptSignature extends ScriptFactory[P2SHScriptSignature] {
             | _: WitnessScriptPubKeyV0 | _: UnassignedWitnessScriptPubKey
             | _: EscrowTimeoutScriptPubKey => true
           case _: NonStandardScriptPubKey | _: WitnessCommitment => false
-          case EmptyScriptPubKey                                 => false
+          case EmptyScriptPubKey => false
         }
       case Failure(_) => false
     }
@@ -274,8 +274,7 @@ object MultiSignatureScriptSignature extends ScriptFactory[MultiSignatureScriptS
     case false =>
       val firstTokenIsScriptNumberOperation = asm.head.isInstanceOf[ScriptNumberOperation]
       val restOfScriptIsPushOpsOrScriptConstants = asm.tail.map(
-        token => token.isInstanceOf[ScriptConstant] || StackPushOperationFactory.isPushOperation(token)
-      ).exists(_ == false)
+        token => token.isInstanceOf[ScriptConstant] || StackPushOperationFactory.isPushOperation(token)).exists(_ == false)
       firstTokenIsScriptNumberOperation && !restOfScriptIsPushOpsOrScriptConstants
   }
 }
@@ -401,13 +400,13 @@ object ScriptSignature extends Factory[ScriptSignature] {
    * @return
    */
   def fromScriptPubKey(tokens: Seq[ScriptToken], scriptPubKey: ScriptPubKey): Try[ScriptSignature] = scriptPubKey match {
-    case _: P2SHScriptPubKey           => Try(P2SHScriptSignature.fromAsm(tokens))
-    case _: P2PKHScriptPubKey          => Try(P2PKHScriptSignature.fromAsm(tokens))
-    case _: P2PKScriptPubKey           => Try(P2PKScriptSignature.fromAsm(tokens))
+    case _: P2SHScriptPubKey => Try(P2SHScriptSignature.fromAsm(tokens))
+    case _: P2PKHScriptPubKey => Try(P2PKHScriptSignature.fromAsm(tokens))
+    case _: P2PKScriptPubKey => Try(P2PKScriptSignature.fromAsm(tokens))
     case _: MultiSignatureScriptPubKey => Try(MultiSignatureScriptSignature.fromAsm(tokens))
-    case _: NonStandardScriptPubKey    => Try(NonStandardScriptSignature.fromAsm(tokens))
-    case s: CLTVScriptPubKey           => fromScriptPubKey(tokens, s.nestedScriptPubKey)
-    case s: CSVScriptPubKey            => fromScriptPubKey(tokens, s.nestedScriptPubKey)
+    case _: NonStandardScriptPubKey => Try(NonStandardScriptSignature.fromAsm(tokens))
+    case s: CLTVScriptPubKey => fromScriptPubKey(tokens, s.nestedScriptPubKey)
+    case s: CSVScriptPubKey => fromScriptPubKey(tokens, s.nestedScriptPubKey)
     case escrowWithTimeout: EscrowTimeoutScriptPubKey =>
       val isMultiSig = BitcoinScriptUtil.castToBool(tokens.last)
       if (isMultiSig) {
@@ -498,7 +497,7 @@ object EscrowTimeoutScriptSignature extends Factory[EscrowTimeoutScriptSignature
 
   def apply(scriptSig: ScriptSignature): Try[EscrowTimeoutScriptSignature] = scriptSig match {
     case m: MultiSignatureScriptSignature => Success(fromMultiSig(m))
-    case lock: LockTimeScriptSignature    => Success(fromLockTime(lock))
+    case lock: LockTimeScriptSignature => Success(fromLockTime(lock))
     case x @ (_: P2PKScriptSignature | _: P2PKHScriptSignature | _: P2SHScriptSignature | _: NonStandardScriptSignature
       | _: EscrowTimeoutScriptSignature | EmptyScriptSignature) => Failure(new IllegalArgumentException("Cannot create a EscrowTimeoutScriptSignature out of " + x))
 

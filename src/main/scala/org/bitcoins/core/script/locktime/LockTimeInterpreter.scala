@@ -29,8 +29,7 @@ sealed abstract class LockTimeInterpreter {
   final def opCheckLockTimeVerify(program: ScriptProgram): ScriptProgram = {
     require(
       program.script.headOption.contains(OP_CHECKLOCKTIMEVERIFY),
-      "Script top must be OP_CHECKLOCKTIMEVERIFY"
-    )
+      "Script top must be OP_CHECKLOCKTIMEVERIFY")
     val input = program.txSignatureComponent.transaction.inputs(program.txSignatureComponent.inputIndex.toInt)
     val transaction = program.txSignatureComponent.transaction
     if (program.stack.size == 0) {
@@ -238,8 +237,7 @@ sealed abstract class LockTimeInterpreter {
       (transaction.lockTime < TransactionConstants.locktimeThreshold &&
         locktime.toLong < TransactionConstants.locktimeThreshold.toLong) ||
         (transaction.lockTime >= TransactionConstants.locktimeThreshold &&
-          locktime.toLong >= TransactionConstants.locktimeThreshold.toLong)
-    )) return false
+          locktime.toLong >= TransactionConstants.locktimeThreshold.toLong))) return false
 
     // Now that we know we're comparing apples-to-apples, the
     // comparison is a simple numeric one.

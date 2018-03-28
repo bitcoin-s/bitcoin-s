@@ -296,7 +296,7 @@ sealed trait LockTimeScriptPubKey extends ScriptPubKey {
   def nestedScriptPubKey: ScriptPubKey = {
     val bool: Boolean = asm.head.isInstanceOf[ScriptNumberOperation]
     bool match {
-      case true  => ScriptPubKey(asm.slice(3, asm.length))
+      case true => ScriptPubKey(asm.slice(3, asm.length))
       case false => ScriptPubKey(asm.slice(4, asm.length))
     }
   }
@@ -305,7 +305,7 @@ sealed trait LockTimeScriptPubKey extends ScriptPubKey {
   def locktime: ScriptNumber = {
     asm.head match {
       case scriptNumOp: ScriptNumberOperation => ScriptNumber(scriptNumOp.toLong)
-      case _: BytesToPushOntoStack            => ScriptNumber(asm(1).hex)
+      case _: BytesToPushOntoStack => ScriptNumber(asm(1).hex)
       case x @ (_: ScriptConstant | _: ScriptOperation) => throw new IllegalArgumentException("In a LockTimeScriptPubKey, " +
         "the first asm must be either a ScriptNumberOperation (i.e. OP_5), or the BytesToPushOntoStack for the proceeding ScriptConstant.")
     }

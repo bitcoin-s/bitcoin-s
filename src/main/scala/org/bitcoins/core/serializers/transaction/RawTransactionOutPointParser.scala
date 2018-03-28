@@ -24,7 +24,7 @@ sealed abstract class RawTransactionOutPointParser extends RawBitcoinSerializer[
     //https://github.com/bitcoin/bitcoin/blob/d612837814020ae832499d18e6ee5eb919a87907/src/primitives/transaction.h
     //http://stackoverflow.com/questions/2711522/what-happens-if-i-assign-a-negative-value-to-an-unsigned-variable
     val idxBytes = outPoint match {
-      case EmptyTransactionOutPoint      => UInt32.max.bytes
+      case EmptyTransactionOutPoint => UInt32.max.bytes
       case outPoint: TransactionOutPoint => outPoint.vout.bytes
     }
     val txIdHex = outPoint.txId.bytes

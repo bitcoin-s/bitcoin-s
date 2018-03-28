@@ -75,7 +75,7 @@ sealed abstract class ChainParams {
    * @return the newly minted genesis block
    */
   def createGenesisBlock(timestamp: String, scriptPubKey: ScriptPubKey, time: UInt32, nonce: UInt32, nBits: UInt32,
-                         version: UInt32, amount: CurrencyUnit): Block = {
+    version: UInt32, amount: CurrencyUnit): Block = {
     val timestampBytes = timestamp.getBytes(StandardCharsets.UTF_8)
     //see https://bitcoin.stackexchange.com/questions/13122/scriptsig-coinbase-structure-of-the-genesis-block
     //for a full breakdown of the genesis block & its script signature
@@ -108,8 +108,7 @@ object MainNetChainParams extends BitcoinChainParams {
     Base58Type.ExtPublicKey -> Seq(BitcoinSUtil.hexToByte("04"), BitcoinSUtil.hexToByte("88"),
       BitcoinSUtil.hexToByte("b2"), BitcoinSUtil.hexToByte("1e")),
     Base58Type.ExtSecretKey -> Seq(BitcoinSUtil.hexToByte("04"), BitcoinSUtil.hexToByte("88"),
-      BitcoinSUtil.hexToByte("ad"), BitcoinSUtil.hexToByte("e4"))
-  )
+      BitcoinSUtil.hexToByte("ad"), BitcoinSUtil.hexToByte("e4")))
 }
 
 object TestNetChainParams extends BitcoinChainParams {
@@ -125,8 +124,7 @@ object TestNetChainParams extends BitcoinChainParams {
     Base58Type.ExtPublicKey -> Seq(BitcoinSUtil.hexToByte("04"), BitcoinSUtil.hexToByte("35"),
       BitcoinSUtil.hexToByte("87"), BitcoinSUtil.hexToByte("cf")),
     Base58Type.ExtSecretKey -> Seq(BitcoinSUtil.hexToByte("04"), BitcoinSUtil.hexToByte("35"),
-      BitcoinSUtil.hexToByte("83"), BitcoinSUtil.hexToByte("94"))
-  )
+      BitcoinSUtil.hexToByte("83"), BitcoinSUtil.hexToByte("94")))
 }
 
 object RegTestNetChainParams extends BitcoinChainParams {

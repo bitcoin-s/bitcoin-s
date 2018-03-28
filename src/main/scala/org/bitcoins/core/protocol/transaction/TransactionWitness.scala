@@ -42,7 +42,7 @@ object TransactionWitness {
   def fromWitOpt(witnesses: Seq[Option[ScriptWitness]]): TransactionWitness = {
     val replaced: Seq[ScriptWitness] = witnesses.map {
       case Some(wit) => wit
-      case None      => EmptyScriptWitness
+      case None => EmptyScriptWitness
     }
     TransactionWitness(replaced)
   }

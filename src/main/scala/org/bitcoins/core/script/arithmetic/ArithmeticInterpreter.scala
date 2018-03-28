@@ -43,7 +43,7 @@ sealed abstract class ArithmeticInterpreter {
     require(program.script.headOption.contains(OP_ABS), "Script top must be OP_ABS")
     performUnaryArithmeticOperation(program, x => x match {
       case ScriptNumber.zero => ScriptNumber.zero
-      case _: ScriptNumber   => ScriptNumber(x.toLong.abs)
+      case _: ScriptNumber => ScriptNumber(x.toLong.abs)
     })
   }
 
@@ -93,8 +93,7 @@ sealed abstract class ArithmeticInterpreter {
   def opNumEqualVerify(program: ScriptProgram): ScriptProgram = {
     require(
       program.script.headOption.contains(OP_NUMEQUALVERIFY),
-      "Script top must be OP_NUMEQUALVERIFY"
-    )
+      "Script top must be OP_NUMEQUALVERIFY")
     if (program.stack.size < 2) {
       logger.error("OP_NUMEQUALVERIFY requires two stack elements")
       ScriptProgram(program, ScriptErrorInvalidStackOperation)
@@ -116,8 +115,7 @@ sealed abstract class ArithmeticInterpreter {
   def opNumNotEqual(program: ScriptProgram): ScriptProgram = {
     require(
       program.script.headOption.contains(OP_NUMNOTEQUAL),
-      "Script top must be OP_NUMNOTEQUAL"
-    )
+      "Script top must be OP_NUMNOTEQUAL")
     performBinaryBooleanOperation(program, (x, y) => {
       x.toLong != y.toLong
     })
@@ -127,8 +125,7 @@ sealed abstract class ArithmeticInterpreter {
   def opLessThan(program: ScriptProgram): ScriptProgram = {
     require(
       program.script.headOption.contains(OP_LESSTHAN),
-      "Script top must be OP_LESSTHAN"
-    )
+      "Script top must be OP_LESSTHAN")
     performBinaryBooleanOperation(program, (x, y) => y < x)
   }
 
@@ -136,8 +133,7 @@ sealed abstract class ArithmeticInterpreter {
   def opGreaterThan(program: ScriptProgram): ScriptProgram = {
     require(
       program.script.headOption.contains(OP_GREATERTHAN),
-      "Script top must be OP_GREATERTHAN"
-    )
+      "Script top must be OP_GREATERTHAN")
     performBinaryBooleanOperation(program, (x, y) => y > x)
   }
 
@@ -145,8 +141,7 @@ sealed abstract class ArithmeticInterpreter {
   def opLessThanOrEqual(program: ScriptProgram): ScriptProgram = {
     require(
       program.script.headOption.contains(OP_LESSTHANOREQUAL),
-      "Script top must be OP_LESSTHANOREQUAL"
-    )
+      "Script top must be OP_LESSTHANOREQUAL")
     performBinaryBooleanOperation(program, (x, y) => y <= x)
   }
 
@@ -154,8 +149,7 @@ sealed abstract class ArithmeticInterpreter {
   def opGreaterThanOrEqual(program: ScriptProgram): ScriptProgram = {
     require(
       program.script.headOption.contains(OP_GREATERTHANOREQUAL),
-      "Script top must be OP_GREATERTHANOREQUAL"
-    )
+      "Script top must be OP_GREATERTHANOREQUAL")
     performBinaryBooleanOperation(program, (x, y) => y >= x)
   }
 
@@ -163,8 +157,7 @@ sealed abstract class ArithmeticInterpreter {
   def opMin(program: ScriptProgram): ScriptProgram = {
     require(
       program.script.headOption.contains(OP_MIN),
-      "Script top must be OP_MIN"
-    )
+      "Script top must be OP_MIN")
     if (program.stack.size < 2) {
       logger.error("OP_MAX requires at least two stack elements")
       ScriptProgram(program, ScriptErrorInvalidStackOperation)
@@ -177,8 +170,7 @@ sealed abstract class ArithmeticInterpreter {
   def opMax(program: ScriptProgram): ScriptProgram = {
     require(
       program.script.headOption.contains(OP_MAX),
-      "Script top must be OP_MAX"
-    )
+      "Script top must be OP_MAX")
     if (program.stack.size < 2) {
       logger.error("OP_MAX requires at least two stack elements")
       ScriptProgram(program, ScriptErrorInvalidStackOperation)
@@ -191,8 +183,7 @@ sealed abstract class ArithmeticInterpreter {
   def opWithin(program: ScriptProgram): ScriptProgram = {
     require(
       program.script.headOption.contains(OP_WITHIN),
-      "Script top must be OP_WITHIN"
-    )
+      "Script top must be OP_WITHIN")
     if (program.stack.size < 3) {
       logger.error("OP_WITHIN requires at least 3 elements on the stack")
       ScriptProgram(program, ScriptErrorInvalidStackOperation)
@@ -354,8 +345,7 @@ sealed abstract class ArithmeticInterpreter {
    */
   private def performComparisonOnTwoStackTopItems(
     program: ScriptProgram,
-    op:      (ScriptNumber, ScriptNumber) => ScriptNumber
-  ): ScriptProgram = {
+    op: (ScriptNumber, ScriptNumber) => ScriptNumber): ScriptProgram = {
     performBinaryArithmeticOperation(program, op)
   }
 

@@ -52,7 +52,7 @@ sealed abstract class Transaction extends NetworkElement {
    * [[https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki#Transaction_size_calculations]]
    */
   def baseSize: Long = this match {
-    case btx: BaseTransaction    => btx.size
+    case btx: BaseTransaction => btx.size
     case wtx: WitnessTransaction => BaseTransaction(wtx.version, wtx.inputs, wtx.outputs, wtx.lockTime).baseSize
   }
 
@@ -62,7 +62,7 @@ sealed abstract class Transaction extends NetworkElement {
   def isCoinbase: Boolean = inputs.size match {
     case 1 => inputs.head match {
       case coinbase: CoinbaseInput => true
-      case _: TransactionInput     => false
+      case _: TransactionInput => false
     }
     case _: Int => false
   }
@@ -129,21 +129,21 @@ object Transaction extends Factory[Transaction] {
 
 object BaseTransaction extends Factory[BaseTransaction] {
   private case class BaseTransactionImpl(version: UInt32, inputs: Seq[TransactionInput],
-                                         outputs: Seq[TransactionOutput], lockTime: UInt32) extends BaseTransaction
+    outputs: Seq[TransactionOutput], lockTime: UInt32) extends BaseTransaction
 
   override def fromBytes(bytes: Seq[Byte]): BaseTransaction = RawBaseTransactionParser.read(bytes)
 
   def apply(version: UInt32, inputs: Seq[TransactionInput],
-            outputs: Seq[TransactionOutput], lockTime: UInt32): BaseTransaction = BaseTransactionImpl(version, inputs, outputs, lockTime)
+    outputs: Seq[TransactionOutput], lockTime: UInt32): BaseTransaction = BaseTransactionImpl(version, inputs, outputs, lockTime)
 }
 
 object WitnessTransaction extends Factory[WitnessTransaction] {
   private case class WitnessTransactionImpl(version: UInt32, inputs: Seq[TransactionInput],
-                                            outputs: Seq[TransactionOutput], lockTime: UInt32,
-                                            witness: TransactionWitness) extends WitnessTransaction
+    outputs: Seq[TransactionOutput], lockTime: UInt32,
+    witness: TransactionWitness) extends WitnessTransaction
 
   def apply(version: UInt32, inputs: Seq[TransactionInput], outputs: Seq[TransactionOutput],
-            lockTime: UInt32, witness: TransactionWitness): WitnessTransaction =
+    lockTime: UInt32, witness: TransactionWitness): WitnessTransaction =
     WitnessTransactionImpl(version, inputs, outputs, lockTime, witness)
 
   override def fromBytes(bytes: Seq[Byte]): WitnessTransaction = RawWitnessTransactionParser.read(bytes)

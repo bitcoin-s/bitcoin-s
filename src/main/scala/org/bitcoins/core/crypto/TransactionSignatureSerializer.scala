@@ -139,7 +139,7 @@ sealed abstract class TransactionSignatureSerializer {
    * @return
    */
   def hashForSignature(spendingTransaction: Transaction, inputIndex: UInt32, script: Seq[ScriptToken],
-                       hashType: HashType): DoubleSha256Digest = {
+    hashType: HashType): DoubleSha256Digest = {
     //these first two checks are in accordance with behavior in bitcoin core
     //[[https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L1112-L1123]]
     if (inputIndex >= UInt32(spendingTransaction.inputs.size)) {
@@ -163,7 +163,7 @@ sealed abstract class TransactionSignatureSerializer {
    * [[https://github.com/bitcoin/bitcoin/blob/f8528134fc188abc5c7175a19680206964a8fade/src/script/interpreter.cpp#L1113]]
    */
   def serializeForSignature(spendingTx: Transaction, inputIndex: UInt32, script: Seq[ScriptToken], hashType: HashType,
-                            amount: CurrencyUnit, signatureVersion: SignatureVersion): Seq[Byte] = signatureVersion match {
+    amount: CurrencyUnit, signatureVersion: SignatureVersion): Seq[Byte] = signatureVersion match {
     case SigVersionBase =>
       serializeForSignature(spendingTx, inputIndex, script, hashType)
     case SigVersionWitnessV0 =>
@@ -209,7 +209,7 @@ sealed abstract class TransactionSignatureSerializer {
    * NOTE: This covers the amount of [[CurrencyUnit]] we are spending in the output
    */
   def hashForSignature(spendingTx: Transaction, inputIndex: UInt32, script: Seq[ScriptToken], hashType: HashType,
-                       amount: CurrencyUnit, sigVersion: SignatureVersion): DoubleSha256Digest = {
+    amount: CurrencyUnit, sigVersion: SignatureVersion): DoubleSha256Digest = {
 
     val serialization = serializeForSignature(spendingTx, inputIndex, script, hashType, amount, sigVersion)
     CryptoUtil.doubleSHA256(serialization)

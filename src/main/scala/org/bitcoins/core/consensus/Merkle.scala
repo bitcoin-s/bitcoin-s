@@ -29,7 +29,7 @@ trait Merkle extends BitcoinSLogger {
    * @return the merkle root for the sequence of transactions
    */
   def computeMerkleRoot(transactions: Seq[Transaction]): DoubleSha256Digest = transactions match {
-    case Nil      => throw new IllegalArgumentException("We cannot have zero transactions in the block. There always should be ATLEAST one - the coinbase tx")
+    case Nil => throw new IllegalArgumentException("We cannot have zero transactions in the block. There always should be ATLEAST one - the coinbase tx")
     case h :: Nil => h.txId
     case h :: t =>
       val leafs = transactions.map(tx => Leaf(tx.txId))
@@ -84,7 +84,7 @@ trait Merkle extends BitcoinSLogger {
     val coinbaseWTxId = CryptoUtil.emptyDoubleSha256Hash
     val hashes = block.transactions.tail.map {
       case wtx: WitnessTransaction => wtx.wTxId
-      case btx: BaseTransaction    => btx.txId
+      case btx: BaseTransaction => btx.txId
     }
     build(coinbaseWTxId +: hashes)
   }
