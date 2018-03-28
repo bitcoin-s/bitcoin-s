@@ -13,37 +13,34 @@ import org.bitcoins.core.script.interpreter.ScriptInterpreter
 import org.bitcoins.core.script.result.{ ScriptOk, ScriptResult }
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
+
 import org.bitcoins.core.wallet.signer.Signer
 import org.bitcoins.core.wallet.utxo.{ BitcoinUTXOSpendingInfo, UTXOSpendingInfo }
 import org.scalacheck.{ Prop, Properties }
 
 import scala.annotation.tailrec
-
+import scala.concurrent.Await
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration.DurationInt
+import scala.util.Try
 class BitcoinTxBuilderSpec extends Properties("TxBuilderSpec") {
   private val logger = BitcoinSLogger.logger
   private val tc = TransactionConstants
-
+  val timeout = 10.seconds
   property("sign a mix of spks in a tx and then have it verified") = {
     Prop.forAllNoShrink(CreditingTxGen.outputs) {
       case creditingTxsInfo =>
         val creditingOutputs = creditingTxsInfo.map(c => c._1.outputs(c._2))
         val creditingOutputsAmt = creditingOutputs.map(_.value)
         val totalAmount = creditingOutputsAmt.fold(CurrencyUnits.zero)(_ + _)
-        Prop.forAll(TransactionGenerators.smallOutputs(totalAmount), ScriptGenerators.scriptPubKey, ChainParamsGenerator.bitcoinNetworkParams) {
+        Prop.forAllNoShrink(TransactionGenerators.smallOutputs(totalAmount), ScriptGenerators.scriptPubKey, ChainParamsGenerator.bitcoinNetworkParams) {
           case (destinations: Seq[TransactionOutput], changeSPK, network) =>
             val fee = SatoshisPerVirtualByte(Satoshis(Int64(1000)))
             val outpointsWithKeys = buildCreditingTxInfo(creditingTxsInfo)
             val builder = BitcoinTxBuilder(destinations, outpointsWithKeys, fee, changeSPK._1, network)
-            val result = builder.left.flatMap(_.sign)
-            result match {
-              case Left(tx) =>
-                val noRedeem = creditingTxsInfo.map(c => (c._1, c._2))
-                verifyScript(tx, noRedeem)
-              case Right(err) =>
-                //incompatible locktime case can happen when we have > 1 CLTVSPK that we are trying to spend
-                logger.warn("err: " + err)
-                err == TxBuilderError.IncompatibleLockTimes
-            }
+            val tx = Await.result(builder.flatMap(_.sign), timeout)
+            val noRedeem: Seq[(Transaction, Int)] = creditingTxsInfo.map(c => (c._1, c._2))
+            verifyScript(tx, noRedeem)
         }
     }
   }
@@ -59,16 +56,9 @@ class BitcoinTxBuilderSpec extends Properties("TxBuilderSpec") {
             val fee = SatoshisPerVirtualByte(Satoshis(Int64(1000)))
             val outpointsWithKeys = buildCreditingTxInfo(creditingTxsInfo)
             val builder = BitcoinTxBuilder(destinations, outpointsWithKeys, fee, changeSPK._1, network)
-            val result = builder.left.flatMap(_.sign)
-            result match {
-              case Left(tx) =>
-                val noRedeem = creditingTxsInfo.map(c => (c._1, c._2))
-                verifyScript(tx, noRedeem)
-              case Right(err) =>
-                //incompatible locktime case can happen when we have > 1 CLTVSPK that we are trying to spend
-                logger.warn("err: " + err)
-                err == TxBuilderError.IncompatibleLockTimes
-            }
+            val tx = Await.result(builder.flatMap(_.sign), timeout)
+            val noRedeem = creditingTxsInfo.map(c => (c._1, c._2))
+            verifyScript(tx, noRedeem)
         }
     }
   }
@@ -84,21 +74,17 @@ class BitcoinTxBuilderSpec extends Properties("TxBuilderSpec") {
             val fee = SatoshisPerVirtualByte(Satoshis(Int64(1000)))
             val outpointsWithKeys = buildCreditingTxInfo(creditingTxsInfo)
             val builder = BitcoinTxBuilder(destinations, outpointsWithKeys, fee, changeSPK._1, network)
-            val result = builder.left.flatMap(_.sign)
-            result match {
-              case Left(tx) =>
-                val noRedeem = creditingTxsInfo.map(c => (c._1, c._2))
-                !verifyScript(tx, noRedeem)
-              case Right(err) => true
-            }
+            val result = Try(Await.result(builder.flatMap(_.sign), timeout))
+            val noRedeem = creditingTxsInfo.map(c => (c._1, c._2))
+            if (result.isFailure) true else !verifyScript(result.get, noRedeem)
         }
     }
   }
 
-  private def buildCreditingTxInfo(info: Seq[TxBuilderSpec.CreditingTxInfo]): BitcoinTxBuilder.UTXOMap = {
+  private def buildCreditingTxInfo(info: Seq[CreditingTxGen.CreditingTxInfo]): BitcoinTxBuilder.UTXOMap = {
     @tailrec
     def loop(
-      rem: Seq[TxBuilderSpec.CreditingTxInfo],
+      rem: Seq[CreditingTxGen.CreditingTxInfo],
       accum: BitcoinTxBuilder.UTXOMap): BitcoinTxBuilder.UTXOMap = rem match {
       case Nil => accum
       case (tx, idx, signers, redeemScriptOpt, scriptWitOpt, hashType) :: t =>
@@ -127,17 +113,10 @@ class BitcoinTxBuilderSpec extends Properties("TxBuilderSpec") {
             | EmptyScriptPubKey) =>
             BaseTxSigComponent(tx, UInt32(idx), x, Policy.standardFlags)
           case p2sh: P2SHScriptPubKey =>
-            //TODO: This is probably going to need to be changed with P2WSH
             BaseTxSigComponent(tx, UInt32(idx), p2sh, Policy.standardFlags)
         }
         ScriptProgram(txSigComponent)
     }
     ScriptInterpreter.runAllVerify(programs)
   }
-}
-
-object TxBuilderSpec {
-  type CreditingTxInfo = (Transaction, Int, Seq[Signer.Sign], Option[ScriptPubKey], Option[ScriptWitness], HashType)
-  type OutPointMap = Map[TransactionOutPoint, (TransactionOutput, Seq[Signer.Sign], Option[ScriptPubKey], Option[ScriptWitness], HashType)]
-
 }

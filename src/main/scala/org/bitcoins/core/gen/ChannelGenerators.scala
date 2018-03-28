@@ -11,12 +11,15 @@ import org.bitcoins.core.wallet.builder.TxBuilderError
 import org.scalacheck.Gen
 
 import scala.annotation.tailrec
+import scala.concurrent.{ Await, Future }
+import scala.concurrent.duration.DurationInt
+import scala.concurrent.ExecutionContext.Implicits.global
 
 /**
  * Created by chris on 4/18/17.
  */
 sealed trait ChannelGenerators extends BitcoinSLogger {
-
+  val timeout = 5.seconds
   /** Creates an [[Transaction]], [[EscrowTimeoutScriptPubKey]] and the [[ECPrivateKey]] need to spend from the SPK */
   def anchorTx: Gen[(Transaction, EscrowTimeoutScriptPubKey, Seq[ECPrivateKey])] = for {
     (redeemScript, privKeys) <- ScriptGenerators.escrowTimeoutScriptPubKey2Of2
@@ -27,7 +30,7 @@ sealed trait ChannelGenerators extends BitcoinSLogger {
 
   def channelAwaitingAnchorTxNotConfirmed: Gen[(ChannelAwaitingAnchorTx, Seq[ECPrivateKey])] = for {
     (aTx, redeemScript, privKeys) <- anchorTx
-  } yield (ChannelAwaitingAnchorTx(aTx, redeemScript, 0).left.get, privKeys)
+  } yield (ChannelAwaitingAnchorTx(aTx, redeemScript, 0).get, privKeys)
 
   /**
    * Creates a [[ChannelAwaitingAnchorTx]] and
@@ -36,29 +39,29 @@ sealed trait ChannelGenerators extends BitcoinSLogger {
    */
   def channelAwaitingAnchorTx: Gen[(ChannelAwaitingAnchorTx, Seq[ECPrivateKey])] = for {
     (aTx, redeemScript, privKeys) <- anchorTx
-  } yield (ChannelAwaitingAnchorTx(aTx, redeemScript, Policy.confirmations).left.get, privKeys)
+  } yield (ChannelAwaitingAnchorTx(aTx, redeemScript, Policy.confirmations).get, privKeys)
 
   /** A [[ChannelInProgress]] that has paid the server exactly one time */
   def freshChannelInProgress: Gen[(ChannelInProgress, Seq[ECPrivateKey])] = for {
     (awaiting, privKeys) <- channelAwaitingAnchorTx
     (s1, _) <- ScriptGenerators.scriptPubKey
     amount = Policy.minChannelAmount
-    clientSigned = awaiting.clientSign(s1, amount, privKeys.head).left.get
-    fullySigned = clientSigned.serverSign(privKeys(1))
-  } yield (fullySigned.left.get, privKeys)
+    clientSigned = Await.result(awaiting.clientSign(s1, amount, privKeys.head), timeout)
+    fullySigned = Await.result(clientSigned.serverSign(privKeys(1)), timeout)
+  } yield (fullySigned, privKeys)
 
   /** A [[ChannelInProgress]] that has paid the server between 1 and 10 times */
   def channelInProgress: Gen[(ChannelInProgress, Seq[ECPrivateKey])] = for {
     (old, privKeys) <- freshChannelInProgress
     runs <- Gen.choose(1, 10)
     amount = Policy.dustThreshold
-    inProgress = simulate(runs, old, amount, privKeys.head, privKeys(1))
-  } yield (inProgress.left.get, privKeys)
+    inProgress = Await.result(simulate(runs, old, amount, privKeys.head, privKeys(1)), timeout)
+  } yield (inProgress, privKeys)
 
   /** Creates a Channel that has been signed by the client */
   def channelInProgressClientSigned: Gen[(ChannelInProgressClientSigned, Seq[ECPrivateKey])] = for {
     (old, privKeys) <- freshChannelInProgress
-    clientSigned = old.clientSign(Policy.dustThreshold, privKeys.head).left.get
+    clientSigned = Await.result(old.clientSign(Policy.dustThreshold, privKeys.head), timeout)
   } yield (clientSigned, privKeys)
 
   def baseInProgress: Gen[(BaseInProgress, Seq[ECPrivateKey])] = Gen.oneOf(channelInProgress, channelInProgressClientSigned)
@@ -71,8 +74,8 @@ sealed trait ChannelGenerators extends BitcoinSLogger {
     amount = Policy.dustThreshold
     fee = amount
     clientSigned = inProgress.clientSign(amount, clientKey)
-    closed = clientSigned.left.flatMap(_.close(serverScriptPubKey, serverKey, fee))
-  } yield (closed.left.get, privKeys)
+    closed = Await.result(clientSigned.flatMap(_.close(serverScriptPubKey, serverKey, fee)), 5.seconds)
+  } yield (closed, privKeys)
 
   /**
    * Simulates the execution of a [[Channel]]
@@ -84,17 +87,16 @@ sealed trait ChannelGenerators extends BitcoinSLogger {
    * @return
    */
   def simulate(runs: Int, inProgress: ChannelInProgress, amount: CurrencyUnit,
-    clientKey: ECPrivateKey, serverKey: ECPrivateKey): Either[ChannelInProgress, TxBuilderError] = {
-    @tailrec
-    def loop(old: Either[ChannelInProgress, TxBuilderError], remaining: Int): Either[ChannelInProgress, TxBuilderError] = {
-      if (old.isRight || remaining == 0) old
+    clientKey: ECPrivateKey, serverKey: ECPrivateKey): Future[ChannelInProgress] = {
+    def loop(oldFuture: Future[ChannelInProgress], remaining: Int): Future[ChannelInProgress] = oldFuture.flatMap { old =>
+      if (remaining == 0) Future.successful(old)
       else {
-        val clientSigned = old.left.flatMap(_.clientSign(amount, clientKey))
-        val serverSigned = clientSigned.left.flatMap(c => c.serverSign(serverKey))
+        val clientSigned = old.clientSign(amount, clientKey)
+        val serverSigned = clientSigned.flatMap(c => c.serverSign(serverKey))
         loop(serverSigned, remaining - 1)
       }
     }
-    loop(Left(inProgress), runs)
+    loop(Future.successful(inProgress), runs)
   }
 
 }

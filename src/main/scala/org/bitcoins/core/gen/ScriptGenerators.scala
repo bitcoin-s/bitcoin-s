@@ -13,12 +13,17 @@ import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.core.wallet.signer.{ MultiSigSigner, P2PKHSigner, P2PKSigner }
 import org.scalacheck.Gen
 
+import scala.concurrent.duration.DurationInt
+import scala.concurrent.{ Await, ExecutionContext }
+import scala.concurrent.ExecutionContext.Implicits.global
+
 /**
  * Created by chris on 6/22/16.
  */
 //TODO: Need to provide generators for [[NonStandardScriptSignature]] and [[NonStandardScriptPubKey]]
 sealed abstract class ScriptGenerators extends BitcoinSLogger {
   private val tc = TransactionConstants
+  val timeout = 5.seconds
 
   def p2pkScriptSignature: Gen[P2PKScriptSignature] = for {
     digitalSignature <- CryptoGenerators.digitalSignature
@@ -254,8 +259,9 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
     (creditingTx, outputIndex) = TransactionGenerators.buildCreditingTransaction(scriptPubKey)
     scriptSig = P2PKScriptSignature(EmptyDigitalSignature)
     (spendingTx, inputIndex) = TransactionGenerators.buildSpendingTransaction(creditingTx, scriptSig, outputIndex)
-    signer = (privateKey.sign(_: Seq[Byte]), None)
-    txSigComponent = P2PKSigner.sign(Seq(signer), creditingTx.outputs(outputIndex.toInt), spendingTx, inputIndex, hashType).left.get
+    signer = Sign(privateKey.signFuture(_: Seq[Byte]), None)
+    txSigComponentFuture = P2PKSigner.sign(Seq(signer), creditingTx.outputs(outputIndex.toInt), spendingTx, inputIndex, hashType)
+    txSigComponent = Await.result(txSigComponentFuture, timeout)
     //add the signature to the scriptSig instead of having an empty scriptSig
     signedScriptSig = txSigComponent.scriptSignature.asInstanceOf[P2PKScriptSignature]
   } yield (signedScriptSig, scriptPubKey, privateKey)
@@ -273,8 +279,8 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
     scriptPubKey = P2PKHScriptPubKey(publicKey)
     (creditingTx, outputIndex) = TransactionGenerators.buildCreditingTransaction(scriptPubKey)
     (unsignedTx, inputIndex) = TransactionGenerators.buildSpendingTransaction(creditingTx, EmptyScriptSignature, outputIndex)
-    signer = (privateKey.sign(_: Seq[Byte]), Some(privateKey.publicKey))
-    txSigComponent = P2PKHSigner.sign(Seq(signer), creditingTx.outputs(outputIndex.toInt), unsignedTx, inputIndex, hashType).left.get
+    txSigComponentFuture = P2PKHSigner.sign(Seq(privateKey), creditingTx.outputs(outputIndex.toInt), unsignedTx, inputIndex, hashType)
+    txSigComponent = Await.result(txSigComponentFuture, timeout)
     signedScriptSig = txSigComponent.scriptSignature.asInstanceOf[P2PKHScriptSignature]
   } yield (signedScriptSig, scriptPubKey, privateKey)
 
@@ -293,8 +299,8 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
     scriptSig = MultiSignatureScriptSignature(emptyDigitalSignatures)
     (creditingTx, outputIndex) = TransactionGenerators.buildCreditingTransaction(multiSigScriptPubKey)
     (spendingTx, inputIndex) = TransactionGenerators.buildSpendingTransaction(creditingTx, scriptSig, outputIndex)
-    signers = privateKeys.map(p => (p.sign(_: Seq[Byte]), None))
-    txSigComponent = MultiSigSigner.sign(signers, creditingTx.outputs(outputIndex.toInt), spendingTx, inputIndex, hashType).left.get
+    txSigComponentFuture = MultiSigSigner.sign(privateKeys, creditingTx.outputs(outputIndex.toInt), spendingTx, inputIndex, hashType)
+    txSigComponent = Await.result(txSigComponentFuture, timeout)
     signedScriptSig = txSigComponent.scriptSignature.asInstanceOf[MultiSignatureScriptSignature]
   } yield (signedScriptSig, multiSigScriptPubKey, privateKeys)
 

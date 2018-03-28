@@ -12,6 +12,7 @@ import org.bitcoins.core.wallet.EscrowTimeoutHelper
 import org.bitcoins.core.wallet.builder.TxBuilderError
 
 import scala.annotation.tailrec
+import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.{ Failure, Success, Try }
 
 /**
@@ -64,17 +65,20 @@ sealed trait ChannelAwaitingAnchorTx extends Channel {
    * and possibly add another input & output that pays a network fee.
    */
   def clientSign(clientChangeSPK: ScriptPubKey, amount: CurrencyUnit,
-    privKey: ECPrivateKey): Either[ChannelInProgressClientSigned, TxBuilderError] = {
-    require(confirmations >= Policy.confirmations, "Need " + Policy.confirmations + " confirmations on the anchor tx before " +
-      "we can create a payment channel in progress, got " + confirmations + " confirmations")
-    require(amount >= Policy.minChannelAmount, "First payment channel payment amount must be: " + Policy.minChannelAmount + " got: " + amount)
+    privKey: ECPrivateKey)(implicit ec: ExecutionContext): Future[ChannelInProgressClientSigned] = {
+    val invariants = Future {
+      require(confirmations >= Policy.confirmations, "Need " + Policy.confirmations + " confirmations on the anchor tx before " +
+        "we can create a payment channel in progress, got " + confirmations + " confirmations")
+      require(amount >= Policy.minChannelAmount, "First payment channel payment amount must be: " + Policy.minChannelAmount + " got: " + amount)
+    }
+
     val o1 = TransactionOutput(lockedAmount - amount, clientChangeSPK)
     val outputs = Seq(o1)
-    val p2shScriptSig = P2SHScriptSignature(witSPK)
-    val i1 = TransactionInput(outPoint, p2shScriptSig, TransactionConstants.sequence)
-    val partiallySigned = EscrowTimeoutHelper.clientSign(outPoint, anchorTx, outputs, (privKey.sign(_: Seq[Byte]), None),
-      lock, HashType.sigHashSingleAnyoneCanPay)
-    val inProgress = partiallySigned.left.map(tx => ChannelInProgressClientSigned(anchorTx, lock, clientChangeSPK, tx, Nil))
+    val partiallySigned = invariants.flatMap { _ =>
+      EscrowTimeoutHelper.clientSign(outPoint, anchorTx, outputs, privKey,
+        lock, HashType.sigHashSingleAnyoneCanPay)
+    }
+    val inProgress = partiallySigned.map(tx => ChannelInProgressClientSigned(anchorTx, lock, clientChangeSPK, tx, Nil))
     inProgress
   }
 
@@ -99,7 +103,7 @@ sealed trait ChannelAwaitingAnchorTx extends Channel {
    * this is because the Client is essentially refunding himself the money
    */
   def closeWithTimeout(clientChangeSPK: ScriptPubKey, clientKey: ECPrivateKey,
-    fee: CurrencyUnit): Either[ChannelClosedWithTimeout, TxBuilderError] = {
+    fee: CurrencyUnit)(implicit ec: ExecutionContext): Future[ChannelClosedWithTimeout] = {
     ChannelClosedWithTimeout.closeWithTimeout(this, clientChangeSPK, clientKey, fee)
   }
 
@@ -144,7 +148,7 @@ sealed trait BaseInProgress { this: Channel =>
    * Attempts to close the [[Channel]] because the [[EscrowTimeoutScriptPubKey]]
    * has timed out
    */
-  def closeWithTimeout(clientKey: ECPrivateKey, fee: CurrencyUnit): Either[ChannelClosedWithTimeout, TxBuilderError] = {
+  def closeWithTimeout(clientKey: ECPrivateKey, fee: CurrencyUnit)(implicit ec: ExecutionContext): Future[ChannelClosedWithTimeout] = {
     ChannelClosedWithTimeout.closeWithTimeout(this, clientChangeSPK, clientKey, fee)
   }
 }
@@ -153,7 +157,7 @@ sealed trait BaseInProgress { this: Channel =>
 sealed trait ChannelInProgress extends Channel with BaseInProgress {
 
   /** Increments a payment to the server in a [[ChannelInProgress]] */
-  def clientSign(amount: CurrencyUnit, clientKey: ECPrivateKey): Either[ChannelInProgressClientSigned, TxBuilderError] = {
+  def clientSign(amount: CurrencyUnit, clientKey: ECPrivateKey)(implicit ec: ExecutionContext): Future[ChannelInProgressClientSigned] = {
     val outputs = current.transaction.outputs
     val inputs = current.transaction.inputs
     val inputIndex = current.inputIndex
@@ -177,30 +181,27 @@ sealed trait ChannelInProgress extends Channel with BaseInProgress {
       case None => Success(outputs)
     }
 
-    val result = newOutputs.map { os =>
+    val result = Future.fromTry(newOutputs).flatMap { os =>
       val check = checkAmounts(os)
       check match {
-        case Some(err) => Right(err)
-        case None => updateChannel(outPoint, anchorTx, os, clientKey)
+        case Success(_) => updateChannel(outPoint, anchorTx, os, clientKey)
+        case Failure(err) => Future.failed(err)
       }
     }
-    result match {
-      case Success(err) => err
-      case Failure(_) => Right(TxBuilderError.MintsMoney)
-    }
+    result
   }
 
   /** Check that the amounts for the given outputs are valid */
-  private def checkAmounts(outputs: Seq[TransactionOutput]): Option[TxBuilderError] = {
+  private def checkAmounts(outputs: Seq[TransactionOutput]): Try[Unit] = {
     @tailrec
-    def loop(remaining: Seq[TransactionOutput]): Option[TxBuilderError] = {
-      if (remaining.isEmpty) None
+    def loop(remaining: Seq[TransactionOutput]): Try[Unit] = {
+      if (remaining.isEmpty) Success(Unit)
       else {
         val output = remaining.head
         if (output.value > lockedAmount) {
-          Some(TxBuilderError.MintsMoney)
+          TxBuilderError.MintsMoney
         } else if (output.value < Policy.dustThreshold) {
-          Some(TxBuilderError.OutputBelowDustThreshold)
+          TxBuilderError.OutputBelowDustThreshold
         } else loop(remaining.tail)
       }
     }
@@ -210,11 +211,10 @@ sealed trait ChannelInProgress extends Channel with BaseInProgress {
   /** Updates the payment channel with the given parameters */
   private def updateChannel(outPoint: TransactionOutPoint, creditingTx: Transaction,
     outputs: Seq[TransactionOutput],
-    clientKey: ECPrivateKey): Either[ChannelInProgressClientSigned, TxBuilderError] = {
-    val sign = (clientKey.sign(_: Seq[Byte]), None)
+    clientKey: ECPrivateKey)(implicit ec: ExecutionContext): Future[ChannelInProgressClientSigned] = {
     val partiallySigned = EscrowTimeoutHelper.clientSign(outPoint, creditingTx, outputs,
-      sign, lock, HashType.sigHashSingleAnyoneCanPay)
-    val inProgress = partiallySigned.left.map(tx =>
+      clientKey, lock, HashType.sigHashSingleAnyoneCanPay)
+    val inProgress = partiallySigned.map(tx =>
       ChannelInProgressClientSigned(anchorTx, lock, clientChangeSPK, tx, current +: old))
     inProgress
   }
@@ -237,22 +237,22 @@ sealed trait ChannelInProgressClientSigned extends Channel with BaseInProgress {
   private def partiallySignedTx: WitnessTransaction = current.transaction
 
   /** Signs the payment channel transaction with the server's [[ECPrivateKey]] */
-  def serverSign(serverKey: ECPrivateKey): Either[ChannelInProgress, TxBuilderError] = {
+  def serverSign(serverKey: ECPrivateKey)(implicit ec: ExecutionContext): Future[ChannelInProgress] = {
     val unsignedTxSigComponent = WitnessTxSigComponentRaw(
-      partiallySignedTx,
-      current.inputIndex, scriptPubKey, Policy.standardScriptVerifyFlags, lockedAmount)
+      partiallySignedTx, current.inputIndex,
+      scriptPubKey, Policy.standardScriptVerifyFlags, lockedAmount)
 
-    val signedTxSigComponent: Either[WitnessTxSigComponentRaw, TxBuilderError] = EscrowTimeoutHelper.serverSign(
+    val signedTxSigComponent: Future[WitnessTxSigComponentRaw] = EscrowTimeoutHelper.serverSign(
       serverKey,
       unsignedTxSigComponent, HashType.sigHashAllAnyoneCanPay)
 
-    signedTxSigComponent.left.map { s =>
+    signedTxSigComponent.map { s =>
       ChannelInProgress(anchorTx, lock, clientChangeSPK, s, old)
     }
   }
 
   /** Closes this payment channel, paying the server's amount to the given [[ScriptPubKey]] */
-  def close(serverSPK: ScriptPubKey, serverKey: ECPrivateKey, fee: CurrencyUnit): Either[ChannelClosedWithEscrow, TxBuilderError] = {
+  def close(serverSPK: ScriptPubKey, serverKey: ECPrivateKey, fee: CurrencyUnit)(implicit ec: ExecutionContext): Future[ChannelClosedWithEscrow] = {
     val c = clientOutput
     val clientAmount = c.map(_.value).getOrElse(CurrencyUnits.zero)
     val serverAmount = lockedAmount - clientAmount - fee
@@ -265,8 +265,8 @@ sealed trait ChannelInProgressClientSigned extends Channel with BaseInProgress {
       Seq(c.get, serverOutput)
     }
     val invariant = checkCloseOutputs(outputs, fee, serverSPK)
-    if (invariant.isDefined) {
-      Right(invariant.get)
+    if (invariant.isFailure) {
+      Future.failed(invariant.failed.get)
     } else {
       val oldTx = partiallySignedTx
       val updatedTx = WitnessTransaction(oldTx.version, oldTx.inputs, outputs, oldTx.lockTime, oldTx.witness)
@@ -274,13 +274,13 @@ sealed trait ChannelInProgressClientSigned extends Channel with BaseInProgress {
         scriptPubKey, current.flags, current.amount)
       val updatedInProgressClientSigned = ChannelInProgressClientSigned(anchorTx, lock, clientChangeSPK, txSigComponent, old)
       val serverSigned = updatedInProgressClientSigned.serverSign(serverKey)
-      serverSigned.left.map(s => ChannelClosedWithEscrow(s, serverSPK))
+      serverSigned.map(s => ChannelClosedWithEscrow(s, serverSPK))
     }
   }
 
   /** Sanity checks for the amounts when closing a payment channel */
   private def checkCloseOutputs(outputs: Seq[TransactionOutput], fee: CurrencyUnit,
-    serverSPK: ScriptPubKey): Option[TxBuilderError] = {
+    serverSPK: ScriptPubKey): Try[Unit] = {
     logger.debug("Outputs for checking during closing of channel: " + outputs)
 
     val serverOutput = outputs.find(_.scriptPubKey == serverSPK).get
@@ -290,18 +290,18 @@ sealed trait ChannelInProgressClientSigned extends Channel with BaseInProgress {
     val fullAmount = fullOutputValue + fee
     if ((lockedAmount - fullOutputValue) != fee) {
       //probably need to come back and check if it is a high or a low fee
-      Some(TxBuilderError.HighFee)
+      TxBuilderError.HighFee
     } else if (fee >= Policy.maxFee) {
-      Some(TxBuilderError.HighFee)
+      TxBuilderError.HighFee
     } else if (serverOutput.value <= (Policy.minChannelAmount - fee)) {
-      Some(TxBuilderError.OutputBelowDustThreshold)
+      TxBuilderError.OutputBelowDustThreshold
     } else if (clientOutput.isDefined && clientOutput.get.value < Policy.dustThreshold) {
-      Some(TxBuilderError.OutputBelowDustThreshold)
+      TxBuilderError.OutputBelowDustThreshold
     } else if (fullAmount < (lockedAmount - Policy.dustThreshold)) {
-      Some(TxBuilderError.FeeToLarge)
+      TxBuilderError.FeeToLarge
     } else if (fullOutputValue <= CurrencyUnits.zero) {
-      Some(TxBuilderError.UnknownError)
-    } else None
+      TxBuilderError.UnknownError
+    } else Success(Unit)
   }
 }
 
@@ -339,18 +339,18 @@ object ChannelAwaitingAnchorTx {
    * Initializes a payment channel with the given anchor transaction and [[EscrowTimeoutScriptPubKey]]
    * Assumes that the anchor transaction has zero confirmations
    */
-  def apply(anchorTx: Transaction, lock: EscrowTimeoutScriptPubKey): Either[ChannelAwaitingAnchorTx, TxBuilderError] = {
+  def apply(anchorTx: Transaction, lock: EscrowTimeoutScriptPubKey): Try[ChannelAwaitingAnchorTx] = {
     ChannelAwaitingAnchorTx(anchorTx, lock, 0)
   }
 
-  def apply(anchorTx: Transaction, lock: EscrowTimeoutScriptPubKey, confirmations: Long): Either[ChannelAwaitingAnchorTx, TxBuilderError] = {
+  def apply(anchorTx: Transaction, lock: EscrowTimeoutScriptPubKey, confirmations: Long): Try[ChannelAwaitingAnchorTx] = {
     val expectedScriptPubKey = P2WSHWitnessSPKV0(lock)
     val output = anchorTx.outputs.find(_.scriptPubKey == expectedScriptPubKey)
     if (output.isEmpty) {
-      Right(TxBuilderError.WrongWitness)
+      TxBuilderError.WrongWitness
     } else if (output.get.value < Policy.minChannelAmount) {
-      Right(TxBuilderError.OutputBelowDustThreshold)
-    } else Left(ChannelAwaitAnchorTxImpl(anchorTx, lock, confirmations))
+      TxBuilderError.OutputBelowDustThreshold
+    } else Success(ChannelAwaitAnchorTxImpl(anchorTx, lock, confirmations))
   }
 }
 
@@ -426,7 +426,7 @@ object ChannelClosedWithTimeout {
    * this is because the Client is essentially refunding himself the money
    */
   def closeWithTimeout(chan: Channel, clientChangeSPK: ScriptPubKey,
-    clientKey: ECPrivateKey, fee: CurrencyUnit): Either[ChannelClosedWithTimeout, TxBuilderError] = {
+    clientKey: ECPrivateKey, fee: CurrencyUnit)(implicit ec: ExecutionContext): Future[ChannelClosedWithTimeout] = {
     val timeout = chan.lock.timeout
     val scriptNum = timeout.locktime
     val sequence = UInt32(scriptNum.toLong)
@@ -435,8 +435,8 @@ object ChannelClosedWithTimeout {
     val input = TransactionInput(outPoint, EmptyScriptSignature, sequence)
     val inputs = Seq(input)
     val inputIndex = UInt32(inputs.indexOf(input))
-    val signed: Either[WitnessTxSigComponent, TxBuilderError] = EscrowTimeoutHelper.closeWithTimeout(inputs, outputs, inputIndex, clientKey,
+    val signed: Future[WitnessTxSigComponent] = EscrowTimeoutHelper.closeWithTimeout(inputs, outputs, inputIndex, clientKey,
       chan.lock, chan.lockingOutput, HashType.sigHashSingleAnyoneCanPay)
-    signed.left.map(t => ChannelClosedWithTimeout(chan.anchorTx, chan.lock, t, Nil, clientChangeSPK))
+    signed.map(t => ChannelClosedWithTimeout(chan.anchorTx, chan.lock, t, Nil, clientChangeSPK))
   }
 }

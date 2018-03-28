@@ -1,27 +1,29 @@
 package org.bitcoins.core.channels
 
-import org.bitcoins.core.crypto.{ BaseTxSigComponent, ECPrivateKey, TxSigComponent, WitnessTxSigComponent }
-import org.bitcoins.core.currency.{ CurrencyUnit, CurrencyUnits, Satoshis }
+import org.bitcoins.core.crypto.TxSigComponent
+import org.bitcoins.core.currency.{ CurrencyUnit, Satoshis }
 import org.bitcoins.core.gen.{ ChannelGenerators, ScriptGenerators }
-import org.bitcoins.core.number.{ Int64, UInt32 }
+import org.bitcoins.core.number.Int64
 import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script.EmptyScriptPubKey
 import org.bitcoins.core.protocol.transaction.TransactionOutput
 import org.bitcoins.core.script.ScriptProgram
-import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.script.interpreter.ScriptInterpreter
 import org.bitcoins.core.script.result.ScriptOk
 import org.bitcoins.core.util.BitcoinSLogger
 import org.scalacheck.{ Gen, Prop, Properties }
 
 import scala.annotation.tailrec
+import scala.concurrent.Await
+import scala.concurrent.duration.DurationInt
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.Try
-
 /**
  * Created by chris on 4/18/17.
  */
 class ChannelsSpec extends Properties("ChannelProperties") {
   private val logger = BitcoinSLogger.logger
+  val timeout = 5.seconds
   property("spend a anchor transaction with the first spendingTx in a payment channel") = {
     Prop.forAllNoShrink(ChannelGenerators.freshChannelInProgress) {
       case (inProgress, _) =>
@@ -34,8 +36,8 @@ class ChannelsSpec extends Properties("ChannelProperties") {
   property("fail to increment a payment channel when the values are larger than the locked output") = {
     Prop.forAllNoShrink(ChannelGenerators.freshChannelInProgress) {
       case (inProgress, privKeys) =>
-        val inc = inProgress.clientSign(inProgress.lockedAmount + Satoshis.one, privKeys.head)
-        inc.isRight
+        val inc = Try(Await.result(inProgress.clientSign(inProgress.lockedAmount + Satoshis.one, privKeys.head), timeout))
+        inc.isFailure
     }
   }
 
@@ -48,13 +50,10 @@ class ChannelsSpec extends Properties("ChannelProperties") {
         val fee = Satoshis(Int64(100))
         val (clientKey, serverKey) = (privKeys.head, privKeys(1))
         val simulated = ChannelGenerators.simulate(num, inProgress, amount, clientKey, serverKey)
-        val clientSigned = simulated.left.flatMap(_.clientSign(amount, clientKey))
-        val closedTry = clientSigned.left.flatMap(_.close(serverScriptPubKey, serverKey, fee))
-        val result = closedTry.left.map(closed => verifyChannel(closed, amount, fee))
-        if (result.isRight) {
-          logger.warn("TxBuilderError:" + result.right.get)
-          throw new IllegalArgumentException
-        } else result.left.get
+        val clientSigned = simulated.flatMap(_.clientSign(amount, clientKey))
+        val closedFuture = clientSigned.flatMap(_.close(serverScriptPubKey, serverKey, fee))
+        val closed = Await.result(closedFuture.map(closed => verifyChannel(closed, amount, fee)), timeout)
+        closed
     }
   }
 
@@ -62,10 +61,10 @@ class ChannelsSpec extends Properties("ChannelProperties") {
     Prop.forAllNoShrink(ChannelGenerators.channelAwaitingAnchorTxNotConfirmed) {
       case (awaiting, privKeys) =>
         val channelClosedWithTimeout = awaiting.closeWithTimeout(EmptyScriptPubKey, privKeys(2), Satoshis.one)
-        logger.info("closed.inputs: " + channelClosedWithTimeout.left.map(_.current.transaction.inputs))
-        val program = channelClosedWithTimeout.left.map(c => ScriptProgram(c.current))
-        val result = program.left.map(p => ScriptInterpreter.run(p))
-        result.left.get == ScriptOk
+        logger.info("closed.inputs: " + channelClosedWithTimeout.map(_.current.transaction.inputs))
+        val program = channelClosedWithTimeout.map(c => ScriptProgram(c.current))
+        val result = Await.result(program.map(p => ScriptInterpreter.run(p)), timeout)
+        result == ScriptOk
     }
   }
 
@@ -73,9 +72,9 @@ class ChannelsSpec extends Properties("ChannelProperties") {
     Prop.forAllNoShrink(ChannelGenerators.baseInProgress) {
       case (inProgress, privKeys) =>
         val channelClosedWithTimeout = inProgress.closeWithTimeout(privKeys(2), Satoshis.one)
-        val program = channelClosedWithTimeout.left.map(c => ScriptProgram(c.current))
-        val result = program.left.map(p => ScriptInterpreter.run(p))
-        result.left.get == ScriptOk
+        val program = channelClosedWithTimeout.map(c => ScriptProgram(c.current))
+        val result = Await.result(program.map(p => ScriptInterpreter.run(p)), timeout)
+        result == ScriptOk
     }
   }
 

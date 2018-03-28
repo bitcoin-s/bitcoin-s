@@ -15,6 +15,8 @@ import org.bitcoins.core.wallet.signer._
 import org.bitcoins.core.wallet.utxo.{ BitcoinUTXOSpendingInfo, UTXOSpendingInfo }
 
 import scala.annotation.tailrec
+import scala.concurrent.{ ExecutionContext, Future }
+import scala.util.{ Failure, Success, Try }
 
 /**
  * High level class to create a signed transaction that spends a set of
@@ -83,8 +85,7 @@ sealed abstract class TxBuilder {
   /** The script witnesses that are needed in this transaction */
   def scriptWitOpt: Seq[Option[ScriptWitness]] = utxos.map(_.scriptWitnessOpt).toSeq
 
-  def sign: Either[Transaction, TxBuilderError]
-
+  def sign(implicit ec: ExecutionContext): Future[Transaction]
 }
 
 /**
@@ -100,16 +101,16 @@ sealed abstract class BitcoinTxBuilder extends TxBuilder {
 
   override def utxoMap: BitcoinTxBuilder.UTXOMap
 
-  override def sign: Either[Transaction, TxBuilderError] = sign(Policy.isRBFEnabled)
+  override def sign(implicit ec: ExecutionContext): Future[Transaction] = sign(Policy.isRBFEnabled)
 
   /** Overloaded version of sign that skips passing a user invariant */
-  def sign(isRBFEnabled: Boolean): Either[Transaction, TxBuilderError] = {
+  def sign(isRBFEnabled: Boolean)(implicit ec: ExecutionContext): Future[Transaction] = {
     //trivially true function
     val f = (_: Seq[BitcoinUTXOSpendingInfo], _: Transaction) => true
     sign(f, isRBFEnabled)
   }
 
-  def sign(invariants: (Seq[BitcoinUTXOSpendingInfo], Transaction) => Boolean): Either[Transaction, TxBuilderError] = {
+  def sign(invariants: (Seq[BitcoinUTXOSpendingInfo], Transaction) => Boolean)(implicit ec: ExecutionContext): Future[Transaction] = {
     sign(invariants, Policy.isRBFEnabled)
   }
 
@@ -124,25 +125,24 @@ sealed abstract class BitcoinTxBuilder extends TxBuilder {
    * @param isRBFEnabled - if we should enable replace-by-fee on this transaction, see BIP125
    * @return the signed transaction, or a [[TxBuilderError]] indicating what went wrong when signing the tx
    */
-  def sign(invariants: (Seq[BitcoinUTXOSpendingInfo], Transaction) => Boolean, isRBFEnabled: Boolean = false): Either[Transaction, TxBuilderError] = {
-    @tailrec
+  def sign(
+    invariants: (Seq[BitcoinUTXOSpendingInfo], Transaction) => Boolean,
+    isRBFEnabled: Boolean = false)(implicit ec: ExecutionContext): Future[Transaction] = {
+    //@tailrec
     def loop(
       remaining: List[BitcoinUTXOSpendingInfo],
-      txInProgress: Transaction): Either[Transaction, TxBuilderError] = remaining match {
-      case Nil => Left(txInProgress)
+      txInProgress: Transaction): Future[Transaction] = remaining match {
+      case Nil => Future.successful(txInProgress)
       case info :: t =>
         val partiallySigned = signAndAddInput(info, txInProgress)
-        partiallySigned match {
-          case Left(tx) => loop(t, tx)
-          case Right(err) => Right(err)
-        }
+        partiallySigned.flatMap(tx => loop(t, tx))
     }
     val utxos = utxoMap.values.toList
     val unsignedTxWit = TransactionWitness.fromWitOpt(scriptWitOpt)
     val lockTime = calcLockTime(utxos)
     val inputs = calcSequenceForInputs(utxos, isRBFEnabled)
     val changeOutput = TransactionOutput(CurrencyUnits.zero, changeSPK)
-    val unsignedTxNoFee = lockTime.left.map { l =>
+    val unsignedTxNoFee = lockTime.map { l =>
       unsignedTxWit match {
         case EmptyWitness => BaseTransaction(tc.validLockVersion, inputs, destinations ++ Seq(changeOutput), l)
         case wit: TransactionWitness => WitnessTransaction(tc.validLockVersion, inputs, destinations ++ Seq(changeOutput), l, wit)
@@ -150,36 +150,37 @@ sealed abstract class BitcoinTxBuilder extends TxBuilder {
     }
     //NOTE: This signed version of the tx does NOT pay a fee, we are going to use this version to estimate the fee
     //and then deduct that amount of satoshis from the changeOutput, and then resign the tx.
-    val signedTxNoFee = unsignedTxNoFee.left.flatMap(utxnf => loop(utxos, utxnf))
-    signedTxNoFee match {
-      case l: Left[Transaction, TxBuilderError] =>
-        val fee = feeRate.calc(l.a)
-        val change = creditingAmount - destinationAmount - fee
-        val newChangeOutput = TransactionOutput(change, changeSPK)
-        //if the change output is below the dust threshold after calculating the fee, don't add it
-        //to the tx
-        val newOutputs = if (newChangeOutput.value <= Policy.dustThreshold) {
-          logger.debug("removing change output as value is below the dustThreshold")
-          destinations
-        } else {
-          destinations ++ Seq(newChangeOutput)
-        }
-        val unsignedTx = unsignedTxWit match {
-          case EmptyWitness => BaseTransaction(l.a.version, inputs, newOutputs, l.a.lockTime)
-          case wit: TransactionWitness => WitnessTransaction(l.a.version, inputs, newOutputs, l.a.lockTime, wit)
-        }
-        //re-sign the tx with the appropriate change / fee
-        val signedTx = loop(utxos, unsignedTx)
-        signedTx.left.flatMap { tx =>
-          if (invariants(utxos, tx)) {
-            //final sanity checks
-            val err = TxBuilder.sanityChecks(this, tx)
-            if (err.isDefined) Right(err.get)
-            else Left(tx)
-          } else Right(TxBuilderError.FailedUserInvariants)
-        }
-      case r: Right[Transaction, TxBuilderError] => r
+    val signedTxNoFee: Future[Transaction] = Future.fromTry(unsignedTxNoFee).flatMap(utxnf => loop(utxos, utxnf))
+    val signedTxWithFee = signedTxNoFee.flatMap { stxnf: Transaction =>
+      val fee = feeRate.calc(stxnf)
+      val change = creditingAmount - destinationAmount - fee
+      val newChangeOutput = TransactionOutput(change, changeSPK)
+      //if the change output is below the dust threshold after calculating the fee, don't add it
+      //to the tx
+      val newOutputs = if (newChangeOutput.value <= Policy.dustThreshold) {
+        logger.debug("removing change output as value is below the dustThreshold")
+        destinations
+      } else {
+        destinations ++ Seq(newChangeOutput)
+      }
+      val unsignedTx = unsignedTxWit match {
+        case EmptyWitness => BaseTransaction(stxnf.version, inputs, newOutputs, stxnf.lockTime)
+        case wit: TransactionWitness => WitnessTransaction(stxnf.version, inputs, newOutputs, stxnf.lockTime, wit)
+      }
+      //re-sign the tx with the appropriate change / fee
+      val signedTx = loop(utxos, unsignedTx)
+      signedTx.flatMap { tx =>
+        val t: Try[Transaction] = if (invariants(utxos, tx)) {
+          //final sanity checks
+          TxBuilder.sanityChecks(this, tx) match {
+            case Success(_) => Success(tx)
+            case Failure(err) => Failure(err)
+          }
+        } else TxBuilderError.FailedUserInvariants
+        Future.fromTry(t)
+      }
     }
+    signedTxWithFee
   }
 
   /**
@@ -188,7 +189,7 @@ sealed abstract class BitcoinTxBuilder extends TxBuilder {
    * @param unsignedTx - the transaction that we are spending this output in
    * @return either the transaction with the signed input added, or a [[TxBuilderError]]
    */
-  private def signAndAddInput(utxo: BitcoinUTXOSpendingInfo, unsignedTx: Transaction): Either[Transaction, TxBuilderError] = {
+  private def signAndAddInput(utxo: BitcoinUTXOSpendingInfo, unsignedTx: Transaction)(implicit ec: ExecutionContext): Future[Transaction] = {
     val outpoint = utxo.outPoint
     val output = utxo.output
     val signers = utxo.signers
@@ -197,31 +198,31 @@ sealed abstract class BitcoinTxBuilder extends TxBuilder {
     val hashType = utxo.hashType
     val idx = unsignedTx.inputs.zipWithIndex.find(_._1.previousOutput == outpoint)
     if (idx.isEmpty) {
-      Right(TxBuilderError.MissingOutPoint)
+      Future.fromTry(TxBuilderError.MissingOutPoint)
     } else {
       val inputIndex = UInt32(idx.get._2)
       val oldInput = unsignedTx.inputs(inputIndex.toInt)
       output.scriptPubKey match {
         case _: P2PKScriptPubKey =>
-          P2PKSigner.sign(signers, output, unsignedTx, inputIndex, hashType).left.map(_.transaction)
-        case _: P2PKHScriptPubKey => P2PKHSigner.sign(signers, output, unsignedTx, inputIndex, hashType).left.map(_.transaction)
-        case _: MultiSignatureScriptPubKey => MultiSigSigner.sign(signers, output, unsignedTx, inputIndex, hashType).left.map(_.transaction)
+          P2PKSigner.sign(signers, output, unsignedTx, inputIndex, hashType).map(_.transaction)
+        case _: P2PKHScriptPubKey => P2PKHSigner.sign(signers, output, unsignedTx, inputIndex, hashType).map(_.transaction)
+        case _: MultiSignatureScriptPubKey => MultiSigSigner.sign(signers, output, unsignedTx, inputIndex, hashType).map(_.transaction)
         case lock: LockTimeScriptPubKey =>
           lock.nestedScriptPubKey match {
-            case _: P2PKScriptPubKey => P2PKSigner.sign(signers, output, unsignedTx, inputIndex, hashType).left.map(_.transaction)
-            case _: P2PKHScriptPubKey => P2PKHSigner.sign(signers, output, unsignedTx, inputIndex, hashType).left.map(_.transaction)
-            case _: MultiSignatureScriptPubKey => MultiSigSigner.sign(signers, output, unsignedTx, inputIndex, hashType).left.map(_.transaction)
-            case _: P2SHScriptPubKey => Right(TxBuilderError.NestedP2SHSPK)
-            case _: P2WSHWitnessSPKV0 | _: P2WPKHWitnessSPKV0 => Right(TxBuilderError.NestedWitnessSPK)
+            case _: P2PKScriptPubKey => P2PKSigner.sign(signers, output, unsignedTx, inputIndex, hashType).map(_.transaction)
+            case _: P2PKHScriptPubKey => P2PKHSigner.sign(signers, output, unsignedTx, inputIndex, hashType).map(_.transaction)
+            case _: MultiSignatureScriptPubKey => MultiSigSigner.sign(signers, output, unsignedTx, inputIndex, hashType).map(_.transaction)
+            case _: P2SHScriptPubKey => Future.fromTry(TxBuilderError.NestedP2SHSPK)
+            case _: P2WSHWitnessSPKV0 | _: P2WPKHWitnessSPKV0 => Future.fromTry(TxBuilderError.NestedWitnessSPK)
             case _: CSVScriptPubKey | _: CLTVScriptPubKey
               | _: NonStandardScriptPubKey | _: WitnessCommitment | _: EscrowTimeoutScriptPubKey
-              | EmptyScriptPubKey | _: UnassignedWitnessScriptPubKey => Right(TxBuilderError.NoSigner)
+              | EmptyScriptPubKey | _: UnassignedWitnessScriptPubKey => Future.fromTry(TxBuilderError.NoSigner)
           }
         case p2sh: P2SHScriptPubKey =>
           redeemScriptOpt match {
             case Some(redeemScript) =>
               if (p2sh != P2SHScriptPubKey(redeemScript)) {
-                Right(TxBuilderError.WrongRedeemScript)
+                Future.fromTry(TxBuilderError.WrongRedeemScript)
               } else {
                 val input = TransactionInput(outpoint, EmptyScriptSignature, oldInput.sequence)
                 val updatedTx = unsignedTx match {
@@ -232,8 +233,8 @@ sealed abstract class BitcoinTxBuilder extends TxBuilder {
                 }
                 val updatedOutput = TransactionOutput(output.value, redeemScript)
                 val updatedUTXOInfo = BitcoinUTXOSpendingInfo(outpoint, updatedOutput, signers, None, scriptWitnessOpt, hashType)
-                val signedTxEither: Either[Transaction, TxBuilderError] = signAndAddInput(updatedUTXOInfo, updatedTx)
-                signedTxEither.left.map { signedTx =>
+                val signedTxEither = signAndAddInput(updatedUTXOInfo, updatedTx)
+                signedTxEither.map { signedTx =>
                   val i = signedTx.inputs(inputIndex.toInt)
                   val p2sh = P2SHScriptSignature(i.scriptSignature, redeemScript)
                   val signedInput = TransactionInput(i.previousOutput, p2sh, i.sequence)
@@ -246,7 +247,7 @@ sealed abstract class BitcoinTxBuilder extends TxBuilder {
                   }
                 }
               }
-            case None => Right(TxBuilderError.NoRedeemScript)
+            case None => Future.fromTry(TxBuilderError.NoRedeemScript)
           }
 
         case _: P2WPKHWitnessSPKV0 =>
@@ -256,7 +257,7 @@ sealed abstract class BitcoinTxBuilder extends TxBuilder {
             case wtx: WitnessTransaction => wtx
           }
           val result = P2WPKHSigner.sign(signers, output, unsignedWTx, inputIndex, hashType)
-          result.left.map(_.transaction)
+          result.map(_.transaction)
         case p2wshSPK: P2WSHWitnessSPKV0 =>
           //if we don't have a WitnessTransaction we need to convert our unsignedTx to a WitnessTransaction
           val unsignedWTx: WitnessTransaction = unsignedTx match {
@@ -266,45 +267,45 @@ sealed abstract class BitcoinTxBuilder extends TxBuilder {
           val p2wshScriptWit = scriptWitnessOpt match {
             case Some(wit) =>
               wit match {
-                case EmptyScriptWitness | _: P2WPKHWitnessV0 => Right(TxBuilderError.WrongWitness)
-                case x: P2WSHWitnessV0 => Left(x)
+                case EmptyScriptWitness | _: P2WPKHWitnessV0 => Future.fromTry(TxBuilderError.WrongWitness)
+                case x: P2WSHWitnessV0 => Future.successful(x)
               }
-            case None => Right(TxBuilderError.NoWitness)
+            case None => Future.fromTry(TxBuilderError.NoWitness)
           }
-          val redeemScriptEither = p2wshScriptWit.left.map(_.redeemScript)
-          val result = redeemScriptEither.left.flatMap { redeemScript =>
+          val redeemScriptEither = p2wshScriptWit.map(_.redeemScript)
+          val result = redeemScriptEither.flatMap { redeemScript =>
             if (P2WSHWitnessSPKV0(redeemScript) != p2wshSPK) {
-              Right(TxBuilderError.WrongWitness)
+              Future.fromTry(TxBuilderError.WrongWitness)
             } else {
               redeemScript match {
                 case _: P2PKScriptPubKey => P2PKSigner.sign(signers, output, unsignedWTx, inputIndex, hashType)
                 case _: P2PKHScriptPubKey => P2PKHSigner.sign(signers, output, unsignedWTx, inputIndex, hashType)
                 case _: MultiSignatureScriptPubKey => MultiSigSigner.sign(signers, output, unsignedWTx, inputIndex, hashType)
-                case _: P2WPKHWitnessSPKV0 | _: P2WSHWitnessSPKV0 => Right(TxBuilderError.NestedWitnessSPK)
-                case _: P2SHScriptPubKey => Right(TxBuilderError.NestedP2SHSPK)
+                case _: P2WPKHWitnessSPKV0 | _: P2WSHWitnessSPKV0 => Future.fromTry(TxBuilderError.NestedWitnessSPK)
+                case _: P2SHScriptPubKey => Future.fromTry(TxBuilderError.NestedP2SHSPK)
                 case lock: LockTimeScriptPubKey =>
                   lock.nestedScriptPubKey match {
                     case _: P2PKScriptPubKey => P2PKSigner.sign(signers, output, unsignedTx, inputIndex, hashType)
                     case _: P2PKHScriptPubKey => P2PKHSigner.sign(signers, output, unsignedTx, inputIndex, hashType)
                     case _: MultiSignatureScriptPubKey => MultiSigSigner.sign(signers, output, unsignedTx, inputIndex, hashType)
                     case _: P2WPKHWitnessSPKV0 => P2WPKHSigner.sign(signers, output, unsignedTx, inputIndex, hashType)
-                    case _: P2SHScriptPubKey => Right(TxBuilderError.NestedP2SHSPK)
-                    case _: P2WSHWitnessSPKV0 => Right(TxBuilderError.NestedWitnessSPK)
+                    case _: P2SHScriptPubKey => Future.fromTry(TxBuilderError.NestedP2SHSPK)
+                    case _: P2WSHWitnessSPKV0 => Future.fromTry(TxBuilderError.NestedWitnessSPK)
                     case _: CSVScriptPubKey | _: CLTVScriptPubKey | _: EscrowTimeoutScriptPubKey
                       | _: NonStandardScriptPubKey | _: WitnessCommitment
                       | EmptyScriptPubKey | _: UnassignedWitnessScriptPubKey
-                      | _: EscrowTimeoutScriptPubKey => Right(TxBuilderError.NoSigner)
+                      | _: EscrowTimeoutScriptPubKey => Future.fromTry(TxBuilderError.NoSigner)
                   }
                 case _: NonStandardScriptPubKey | _: WitnessCommitment | EmptyScriptPubKey
                   | _: UnassignedWitnessScriptPubKey | _: EscrowTimeoutScriptPubKey =>
-                  Right(TxBuilderError.NoSigner)
+                  Future.fromTry(TxBuilderError.NoSigner)
               }
             }
           }
-          result.left.map(_.transaction)
+          result.map(_.transaction)
         case _: NonStandardScriptPubKey | _: WitnessCommitment
           | EmptyScriptPubKey | _: UnassignedWitnessScriptPubKey
-          | _: EscrowTimeoutScriptPubKey => Right(TxBuilderError.NoSigner)
+          | _: EscrowTimeoutScriptPubKey => Future.fromTry(TxBuilderError.NoSigner)
       }
     }
   }
@@ -336,29 +337,26 @@ sealed abstract class BitcoinTxBuilder extends TxBuilder {
    * locktime set to the same value (or higher) than the output it is spending.
    * See BIP65 for more info
    */
-  private def calcLockTime(utxos: Seq[UTXOSpendingInfo]): Either[UInt32, TxBuilderError] = {
+  private def calcLockTime(utxos: Seq[BitcoinUTXOSpendingInfo]): Try[UInt32] = {
     @tailrec
-    def loop(remaining: Seq[UTXOSpendingInfo], currentLockTime: UInt32): Either[UInt32, TxBuilderError] = remaining match {
-      case Nil => Left(currentLockTime)
+    def loop(remaining: Seq[BitcoinUTXOSpendingInfo], currentLockTime: UInt32): Try[UInt32] = remaining match {
+      case Nil => Success(currentLockTime)
       case BitcoinUTXOSpendingInfo(outpoint, output, signers, redeemScriptOpt, scriptWitOpt, hashType) :: t => output.scriptPubKey match {
         case cltv: CLTVScriptPubKey =>
-          val lockTime: Either[UInt32, TxBuilderError] = if (cltv.locktime.toLong > UInt32.max.toLong || cltv.locktime.toLong < 0) {
-            Right(TxBuilderError.IncompatibleLockTimes)
-          } else Left(UInt32(cltv.locktime.toLong))
-          val result: Either[UInt32, TxBuilderError] = lockTime.left.flatMap { l: UInt32 =>
+          val lockTime = if (cltv.locktime.toLong > UInt32.max.toLong || cltv.locktime.toLong < 0) {
+            TxBuilderError.IncompatibleLockTimes
+          } else Success(UInt32(cltv.locktime.toLong))
+          val result = lockTime.flatMap { l: UInt32 =>
             if (currentLockTime < l) {
               val lockTimeThreshold = tc.locktimeThreshold
               if (currentLockTime < lockTimeThreshold && l >= lockTimeThreshold) {
                 //means that we spend two different locktime types, one of the outputs spends a
                 //OP_CLTV script by block height, the other spends one by time stamp
-                Right(TxBuilderError.IncompatibleLockTimes)
-              } else Left(l)
-            } else Left(currentLockTime)
+                TxBuilderError.IncompatibleLockTimes
+              } else Success(l)
+            } else Success(currentLockTime)
           }
-          result match {
-            case Left(l) => loop(t, l)
-            case Right(r) => Right(r)
-          }
+          result
         case _: P2SHScriptPubKey | _: P2WSHWitnessSPKV0 =>
           if (redeemScriptOpt.isDefined) {
             //recursively call with redeem script as output script
@@ -441,11 +439,13 @@ sealed abstract class BitcoinTxBuilder extends TxBuilder {
 }
 
 object TxBuilder {
+  /** This contains all the information needed to create a valid [[TransactionInput]] that spends this utxo */
   type UTXOMap = Map[TransactionOutPoint, UTXOSpendingInfo]
+
   /** Runs various sanity checks on the final version of the signed transaction from TxBuilder */
-  def sanityChecks(txBuilder: TxBuilder, signedTx: Transaction): Option[TxBuilderError] = {
+  def sanityChecks(txBuilder: TxBuilder, signedTx: Transaction): Try[Unit] = {
     val sanityDestination = sanityDestinationChecks(txBuilder, signedTx)
-    if (sanityDestination.isDefined) {
+    if (sanityDestination.isFailure) {
       sanityDestination
     } else {
       sanityAmountChecks(txBuilder, signedTx)
@@ -453,7 +453,7 @@ object TxBuilder {
   }
 
   /** Checks that we did not lose a [[TransactionOutput]] in the signing process of this transaction */
-  def sanityDestinationChecks(txBuilder: TxBuilder, signedTx: Transaction): Option[TxBuilderError] = {
+  def sanityDestinationChecks(txBuilder: TxBuilder, signedTx: Transaction): Try[Unit] = {
     //make sure we send coins to the appropriate destinations
     val isMissingDestination = txBuilder.destinations.map(o => signedTx.outputs.contains(o)).exists(_ == false)
     val hasExtraOutputs = if (signedTx.outputs.size == txBuilder.destinations.size) {
@@ -466,13 +466,13 @@ object TxBuilder {
     val spendingTxOutPoints = signedTx.inputs.map(_.previousOutput)
     val hasExtraOutPoints = txBuilder.outPoints.map(o => spendingTxOutPoints.contains(o)).exists(_ == false)
     if (isMissingDestination) {
-      Some(TxBuilderError.MissingDestinationOutput)
+      TxBuilderError.MissingDestinationOutput
     } else if (hasExtraOutputs) {
-      Some(TxBuilderError.ExtraOutputsAdded)
+      TxBuilderError.ExtraOutputsAdded
     } else if (hasExtraOutPoints) {
-      Some(TxBuilderError.ExtraOutPoints)
+      TxBuilderError.ExtraOutPoints
     } else {
-      None
+      Success(Unit)
     }
   }
 
@@ -480,18 +480,18 @@ object TxBuilder {
    * Checks that the [[TxBuilder.creditingAmount]] >= [[TxBuilder.destinationAmount]]
    * and then does a sanity check on the tx's fee
    */
-  def sanityAmountChecks(txBuilder: TxBuilder, signedTx: Transaction): Option[TxBuilderError] = {
+  def sanityAmountChecks(txBuilder: TxBuilder, signedTx: Transaction): Try[Unit] = {
     val spentAmount: CurrencyUnit = signedTx.outputs.map(_.value).fold(CurrencyUnits.zero)(_ + _)
     val creditingAmount = txBuilder.creditingAmount
     val actualFee = creditingAmount - spentAmount
     val estimatedFee = txBuilder.feeRate * signedTx
     if (spentAmount > creditingAmount) {
-      Some(TxBuilderError.MintsMoney)
+      TxBuilderError.MintsMoney
     } else if (actualFee > txBuilder.largestFee) {
-      Some(TxBuilderError.HighFee)
+      TxBuilderError.HighFee
     } else if (signedTx.outputs.filterNot(_.scriptPubKey.asm.contains(OP_RETURN))
       .map(_.value).exists(_ < Policy.dustThreshold)) {
-      Some(TxBuilderError.OutputBelowDustThreshold)
+      TxBuilderError.OutputBelowDustThreshold
     } else {
       val feeResult = isValidFeeRange(estimatedFee, actualFee, txBuilder.feeRate)
       feeResult
@@ -505,7 +505,7 @@ object TxBuilder {
    * @param feeRate the fee rate in satoshis/vbyte we paid per byte on this tx
    * @return
    */
-  def isValidFeeRange(estimatedFee: CurrencyUnit, actualFee: CurrencyUnit, feeRate: FeeUnit): Option[TxBuilderError] = {
+  def isValidFeeRange(estimatedFee: CurrencyUnit, actualFee: CurrencyUnit, feeRate: FeeUnit): Try[Unit] = {
     //what the number '15' represents is the allowed variance -- in bytes -- between the size of the two
     //versions of signed tx. I believe the two signed version can vary in size because the digital
     //signature might have changed in size. It could become larger or smaller depending on the digital
@@ -515,11 +515,11 @@ object TxBuilder {
     val max = Satoshis(Int64(acceptableVariance))
     val difference = estimatedFee - actualFee
     if (difference <= min) {
-      Some(TxBuilderError.HighFee)
+      TxBuilderError.HighFee
     } else if (difference >= max) {
-      Some(TxBuilderError.LowFee)
+      TxBuilderError.LowFee
     } else {
-      None
+      Success(Unit)
     }
   }
 }
@@ -545,20 +545,19 @@ object BitcoinTxBuilder {
    *         from which you can call [[TxBuilder.sign]] to generate a signed tx,
    *         or a [[TxBuilderError]]
    */
-  def apply(
-    destinations: Seq[TransactionOutput],
-    utxos: BitcoinTxBuilder.UTXOMap, feeRate: FeeUnit, changeSPK: ScriptPubKey, network: BitcoinNetwork): Either[BitcoinTxBuilder, TxBuilderError] = {
+  def apply(destinations: Seq[TransactionOutput],
+    utxos: BitcoinTxBuilder.UTXOMap, feeRate: FeeUnit, changeSPK: ScriptPubKey, network: BitcoinNetwork): Future[BitcoinTxBuilder] = {
     if (feeRate.toLong <= 0) {
-      Right(TxBuilderError.LowFee)
+      Future.fromTry(TxBuilderError.LowFee)
     } else {
-      Left(BitcoinTxBuilderImpl(destinations, utxos, feeRate, changeSPK, network))
+      Future.successful(BitcoinTxBuilderImpl(destinations, utxos, feeRate, changeSPK, network))
     }
   }
 
   def apply(
     destinations: Seq[TransactionOutput],
     utxos: Seq[BitcoinUTXOSpendingInfo], feeRate: FeeUnit, changeSPK: ScriptPubKey,
-    network: BitcoinNetwork): Either[BitcoinTxBuilder, TxBuilderError] = {
+    network: BitcoinNetwork): Future[BitcoinTxBuilder] = {
     @tailrec
     def loop(utxos: Seq[UTXOSpendingInfo], accum: UTXOMap): UTXOMap = utxos match {
       case Nil => accum
