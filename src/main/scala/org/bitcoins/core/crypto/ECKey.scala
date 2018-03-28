@@ -14,12 +14,17 @@ import org.bouncycastle.crypto.params.{ ECKeyGenerationParameters, ECPrivateKeyP
 import org.bouncycastle.crypto.signers.{ ECDSASigner, HMacDSAKCalculator }
 
 import scala.annotation.tailrec
+import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.{ Failure, Success, Try }
 
 /**
  * Created by chris on 2/16/16.
  */
-sealed abstract class BaseECKey extends NetworkElement {
+sealed abstract class BaseECKey extends NetworkElement with Sign {
+
+  override def signFunction: Seq[Byte] => Future[ECDigitalSignature] = { bytes =>
+    Future(sign(bytes))
+  }
   /**
    * Signs a given sequence of bytes with the signingKey
    * @param dataToSign the bytes to be signed
@@ -32,11 +37,15 @@ sealed abstract class BaseECKey extends NetworkElement {
     ECDigitalSignature(signature)
   }
 
-  def sign(dataToSign: Seq[Byte]): ECDigitalSignature = sign(dataToSign, this)
+  override def sign(dataToSign: Seq[Byte]): ECDigitalSignature = sign(dataToSign, this)
 
   def sign(hash: HashDigest, signingKey: BaseECKey): ECDigitalSignature = sign(hash.bytes, signingKey)
 
   def sign(hash: HashDigest): ECDigitalSignature = sign(hash, this)
+
+  def signFuture(hash: HashDigest)(implicit ec: ExecutionContext): Future[ECDigitalSignature] = Future(sign(hash))
+
+  //def signFuture(dataToSign: Seq[Byte])(implicit ec: ExecutionContext): Future[ECDigitalSignature] = Future(sign(dataToSign))
 
   @deprecated("Deprecated in favor of signing algorithm inside of secp256k1", "2/20/2017")
   private def oldSign(dataToSign: Seq[Byte], signingKey: BaseECKey): ECDigitalSignature = {
@@ -55,6 +64,8 @@ sealed abstract class BaseECKey extends NetworkElement {
     require(signatureLowS.isDEREncoded, "We must create DER encoded signatures when signing a piece of data, got: " + signatureLowS)
     signatureLowS
   }
+
+  override implicit val ec = scala.concurrent.ExecutionContext.Implicits.global
 }
 
 /**
@@ -85,6 +96,8 @@ sealed abstract class ECPrivateKey extends BaseECKey {
     val encodedPrivKey = fullBytes ++ checksum
     Base58.encode(encodedPrivKey)
   }
+
+  override def pubKeyOpt: Option[ECPublicKey] = Some(publicKey)
 
   override def toString = "ECPrivateKey(" + hex + "," + isCompressed + ")"
 }
@@ -255,6 +268,8 @@ sealed abstract class ECPublicKey extends BaseECKey {
     }
     resultTry.getOrElse(false)
   }
+
+  override def pubKeyOpt: Option[ECPublicKey] = Some(this)
 
   /** Checks if the [[ECPublicKey]] is compressed */
   def isCompressed: Boolean = bytes.size == 33
