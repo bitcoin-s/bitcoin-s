@@ -474,7 +474,7 @@ case object EmptyScriptPubKey extends ScriptPubKey {
 }
 
 /** Factory companion object used to create ScriptPubKey objects */
-object ScriptPubKey extends Factory[ScriptPubKey] {
+object ScriptPubKey extends ScriptFactory[ScriptPubKey] {
   def empty: ScriptPubKey = fromAsm(Nil)
 
   /** Creates a scriptPubKey from its asm representation */
@@ -491,8 +491,6 @@ object ScriptPubKey extends Factory[ScriptPubKey] {
     case _ if EscrowTimeoutScriptPubKey.isValidEscrowTimeout(asm) => EscrowTimeoutScriptPubKey.fromAsm(asm)
     case _ => NonStandardScriptPubKey(asm)
   }
-
-  def fromBytes(bytes: Seq[Byte]): ScriptPubKey = RawScriptPubKeyParser.read(bytes)
 
   def apply(asm: Seq[ScriptToken]): ScriptPubKey = fromAsm(asm)
 }
