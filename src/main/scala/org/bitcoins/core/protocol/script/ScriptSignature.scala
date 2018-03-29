@@ -372,12 +372,10 @@ case object EmptyScriptSignature extends ScriptSignature {
   def bytes = Seq(0.toByte)
 }
 
-object ScriptSignature extends Factory[ScriptSignature] {
+object ScriptSignature extends ScriptFactory[ScriptSignature] {
 
   /** Returns an empty script signature */
   def empty: ScriptSignature = EmptyScriptSignature
-
-  def fromBytes(bytes: Seq[Byte]): ScriptSignature = RawScriptSignatureParser.read(bytes)
 
   /** Creates a scriptSignature from the list of script tokens */
   def fromAsm(tokens: Seq[ScriptToken]): ScriptSignature = tokens match {
