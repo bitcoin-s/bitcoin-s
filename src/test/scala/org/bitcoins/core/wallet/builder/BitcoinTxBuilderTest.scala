@@ -29,7 +29,7 @@ class BitcoinTxBuilderTest extends FlatSpec with MustMatchers {
     val utxo = BitcoinUTXOSpendingInfo(outPoint, creditingOutput, Seq(signer), None, None, HashType.sigHashAll)
     val utxoMap: BitcoinTxBuilder.UTXOMap = Map(outPoint -> utxo)
     val feeUnit = SatoshisPerVirtualByte(Satoshis.one)
-    val txBuilder = BitcoinTxBuilder(destinations, Seq(creditingTx), utxoMap, feeUnit, EmptyScriptPubKey, TestNet3)
+    val txBuilder = BitcoinTxBuilder(destinations, utxoMap, feeUnit, EmptyScriptPubKey, TestNet3)
     val result = txBuilder.left.flatMap(_.sign)
     result must be(Right(TxBuilderError.MintsMoney))
   }
@@ -43,24 +43,10 @@ class BitcoinTxBuilderTest extends FlatSpec with MustMatchers {
     val utxo = BitcoinUTXOSpendingInfo(outPoint, creditingOutput, Seq(signer), None, None, HashType.sigHashAll)
     val utxoMap: BitcoinTxBuilder.UTXOMap = Map(outPoint -> utxo)
     val feeUnit = SatoshisPerVirtualByte(Satoshis(Int64(-1)))
-    val txBuilder = BitcoinTxBuilder(destinations, Seq(creditingTx), utxoMap, feeUnit, EmptyScriptPubKey, TestNet3)
+    val txBuilder = BitcoinTxBuilder(destinations, utxoMap, feeUnit, EmptyScriptPubKey, TestNet3)
     txBuilder must be(Right(TxBuilderError.LowFee))
   }
-
-  it must "fail to build a txbuilder when we do not pass in all the crediting txs whose outpoints are specified in utxo map" in {
-    val creditingOutput = TransactionOutput(Satoshis(Int64(1)), spk)
-    val destinations = Seq(TransactionOutput(CurrencyUnits.zero, EmptyScriptPubKey))
-    val creditingTx = BaseTransaction(tc.validLockVersion, Nil, Seq(creditingOutput), tc.lockTime)
-    val outPoint = TransactionOutPoint(creditingTx.txId, UInt32.zero)
-    val outPoint2 = TransactionOutPoint(CryptoGenerators.doubleSha256Digest.sample.get, UInt32.zero)
-    val signer = (privKey.sign(_: Seq[Byte]), Some(privKey.publicKey))
-    val utxoMap: BitcoinTxBuilder.UTXOMap = Map(
-      outPoint -> BitcoinUTXOSpendingInfo(outPoint, creditingOutput, Seq(signer), None, None, HashType.sigHashAll),
-      outPoint2 -> BitcoinUTXOSpendingInfo(outPoint2, creditingOutput, Seq(signer), None, None, HashType.sigHashAll))
-    val feeUnit = SatoshisPerVirtualByte(Satoshis.one)
-    val txBuilder = BitcoinTxBuilder(destinations, Seq(creditingTx), utxoMap, feeUnit, EmptyScriptPubKey, TestNet3)
-    txBuilder must be(Right(TxBuilderError.MissingCreditingTx))
-  }
+  
 
   it must "fail a transaction when the user invariants fail" in {
     val creditingOutput = TransactionOutput(CurrencyUnits.zero, spk)
@@ -71,7 +57,7 @@ class BitcoinTxBuilderTest extends FlatSpec with MustMatchers {
     val utxo = BitcoinUTXOSpendingInfo(outPoint, creditingOutput, Seq(signer), None, None, HashType.sigHashAll)
     val utxoMap: BitcoinTxBuilder.UTXOMap = Map(outPoint -> utxo)
     val feeUnit = SatoshisPerVirtualByte(Satoshis(Int64(1)))
-    val txBuilder = BitcoinTxBuilder(destinations, Seq(creditingTx), utxoMap, feeUnit, EmptyScriptPubKey, TestNet3)
+    val txBuilder = BitcoinTxBuilder(destinations, utxoMap, feeUnit, EmptyScriptPubKey, TestNet3)
     //trivially false
     val f = (_: Seq[BitcoinUTXOSpendingInfo], _: Transaction) => false
     val result = txBuilder.left.flatMap(_.sign(f))
@@ -89,8 +75,8 @@ class BitcoinTxBuilderTest extends FlatSpec with MustMatchers {
     val uTXOSpendingInfo = BitcoinUTXOSpendingInfo(outPoint, creditingOutput, Seq(signer), None, None, HashType.sigHashAll)
 
     val feeUnit = SatoshisPerVirtualByte(Satoshis(Int64(1)))
-    val txBuilderMap = BitcoinTxBuilder(destinations, Seq(creditingTx), utxoMap, feeUnit, EmptyScriptPubKey, TestNet3)
-    val txBuilderTuple = BitcoinTxBuilder(destinations, Seq(creditingTx), Seq(uTXOSpendingInfo), feeUnit, EmptyScriptPubKey, TestNet3)
+    val txBuilderMap = BitcoinTxBuilder(destinations, utxoMap, feeUnit, EmptyScriptPubKey, TestNet3)
+    val txBuilderTuple = BitcoinTxBuilder(destinations, Seq(uTXOSpendingInfo), feeUnit, EmptyScriptPubKey, TestNet3)
 
     txBuilderTuple must be(txBuilderMap)
   }
@@ -105,7 +91,7 @@ class BitcoinTxBuilderTest extends FlatSpec with MustMatchers {
     val utxo = BitcoinUTXOSpendingInfo(outPoint, creditingOutput, Seq(signer), Some(EmptyScriptPubKey), None, HashType.sigHashAll)
     val utxoMap: BitcoinTxBuilder.UTXOMap = Map(outPoint -> utxo)
     val feeUnit = SatoshisPerVirtualByte(Satoshis(Int64(1)))
-    val txBuilderNoRedeem = BitcoinTxBuilder(destinations, Seq(creditingTx), utxoMap, feeUnit, EmptyScriptPubKey, TestNet3)
+    val txBuilderNoRedeem = BitcoinTxBuilder(destinations, utxoMap, feeUnit, EmptyScriptPubKey, TestNet3)
     val result = txBuilderNoRedeem.left.flatMap(_.sign)
     result must be(Right(TxBuilderError.WrongRedeemScript))
   }
@@ -122,7 +108,7 @@ class BitcoinTxBuilderTest extends FlatSpec with MustMatchers {
     val utxoMap: BitcoinTxBuilder.UTXOMap = Map(outPoint -> utxo)
 
     val feeUnit = SatoshisPerVirtualByte(Satoshis(Int64(1)))
-    val txBuilderWitness = BitcoinTxBuilder(destinations, Seq(creditingTx), utxoMap, feeUnit, EmptyScriptPubKey, TestNet3)
+    val txBuilderWitness = BitcoinTxBuilder(destinations, utxoMap, feeUnit, EmptyScriptPubKey, TestNet3)
     val result = txBuilderWitness.left.flatMap(_.sign)
     result must be(Right(TxBuilderError.WrongWitness))
   }
@@ -139,7 +125,7 @@ class BitcoinTxBuilderTest extends FlatSpec with MustMatchers {
     val utxoMap: BitcoinTxBuilder.UTXOMap = Map(outPoint -> utxo)
 
     val feeUnit = SatoshisPerVirtualByte(Satoshis(Int64(1)))
-    val txBuilderWitness = BitcoinTxBuilder(destinations, Seq(creditingTx), utxoMap, feeUnit, EmptyScriptPubKey, TestNet3)
+    val txBuilderWitness = BitcoinTxBuilder(destinations, utxoMap, feeUnit, EmptyScriptPubKey, TestNet3)
     val result = txBuilderWitness.left.flatMap(_.sign)
     result must be(Right(TxBuilderError.MissingPublicKey))
   }
@@ -157,7 +143,7 @@ class BitcoinTxBuilderTest extends FlatSpec with MustMatchers {
     val utxoMap: BitcoinTxBuilder.UTXOMap = Map(outPoint -> utxo)
 
     val feeUnit = SatoshisPerVirtualByte(Satoshis(Int64(1)))
-    val txBuilderWitness = BitcoinTxBuilder(destinations, Seq(creditingTx), utxoMap, feeUnit, EmptyScriptPubKey, TestNet3)
+    val txBuilderWitness = BitcoinTxBuilder(destinations, utxoMap, feeUnit, EmptyScriptPubKey, TestNet3)
     val result = txBuilderWitness.left.flatMap(_.sign)
     result must be(Right(TxBuilderError.WrongPublicKey))
   }
@@ -174,7 +160,7 @@ class BitcoinTxBuilderTest extends FlatSpec with MustMatchers {
     val utxoMap: BitcoinTxBuilder.UTXOMap = Map(outPoint -> utxo)
 
     val feeUnit = SatoshisPerVirtualByte(Satoshis(Int64(1)))
-    val txBuilderWitness = BitcoinTxBuilder(destinations, Seq(creditingTx), utxoMap, feeUnit, EmptyScriptPubKey, TestNet3)
+    val txBuilderWitness = BitcoinTxBuilder(destinations, utxoMap, feeUnit, EmptyScriptPubKey, TestNet3)
     val result = txBuilderWitness.left.flatMap(_.sign)
     result must be(Right(TxBuilderError.MissingPublicKey))
   }
@@ -192,7 +178,7 @@ class BitcoinTxBuilderTest extends FlatSpec with MustMatchers {
     val utxoMap: BitcoinTxBuilder.UTXOMap = Map(outPoint -> utxo)
 
     val feeUnit = SatoshisPerVirtualByte(Satoshis(Int64(1)))
-    val txBuilderWitness = BitcoinTxBuilder(destinations, Seq(creditingTx), utxoMap, feeUnit, EmptyScriptPubKey, TestNet3)
+    val txBuilderWitness = BitcoinTxBuilder(destinations, utxoMap, feeUnit, EmptyScriptPubKey, TestNet3)
     val result = txBuilderWitness.left.flatMap(_.sign)
     result must be(Right(TxBuilderError.WrongPublicKey))
   }

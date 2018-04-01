@@ -33,7 +33,7 @@ class BitcoinTxBuilderSpec extends Properties("TxBuilderSpec") {
           case (destinations: Seq[TransactionOutput], changeSPK, network) =>
             val fee = SatoshisPerVirtualByte(Satoshis(Int64(1000)))
             val outpointsWithKeys = buildCreditingTxInfo(creditingTxsInfo)
-            val builder = BitcoinTxBuilder(destinations, creditingTxsInfo.map(_._1), outpointsWithKeys, fee, changeSPK._1, network)
+            val builder = BitcoinTxBuilder(destinations, outpointsWithKeys, fee, changeSPK._1, network)
             val result = builder.left.flatMap(_.sign)
             result match {
               case Left(tx) =>
@@ -58,7 +58,7 @@ class BitcoinTxBuilderSpec extends Properties("TxBuilderSpec") {
           case (destinations: Seq[TransactionOutput], changeSPK, network) =>
             val fee = SatoshisPerVirtualByte(Satoshis(Int64(1000)))
             val outpointsWithKeys = buildCreditingTxInfo(creditingTxsInfo)
-            val builder = BitcoinTxBuilder(destinations, creditingTxsInfo.map(_._1), outpointsWithKeys, fee, changeSPK._1, network)
+            val builder = BitcoinTxBuilder(destinations, outpointsWithKeys, fee, changeSPK._1, network)
             val result = builder.left.flatMap(_.sign)
             result match {
               case Left(tx) =>
@@ -83,7 +83,7 @@ class BitcoinTxBuilderSpec extends Properties("TxBuilderSpec") {
           case (destinations: Seq[TransactionOutput], changeSPK, network) =>
             val fee = SatoshisPerVirtualByte(Satoshis(Int64(1000)))
             val outpointsWithKeys = buildCreditingTxInfo(creditingTxsInfo)
-            val builder = BitcoinTxBuilder(destinations, creditingTxsInfo.map(_._1), outpointsWithKeys, fee, changeSPK._1, network)
+            val builder = BitcoinTxBuilder(destinations, outpointsWithKeys, fee, changeSPK._1, network)
             val result = builder.left.flatMap(_.sign)
             result match {
               case Left(tx) =>
