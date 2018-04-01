@@ -47,12 +47,6 @@ sealed abstract class TxBuilder {
   def largestFee: CurrencyUnit = creditingAmount - destinationAmount
 
   /**
-   * The transactions which contain the outputs we are spending. We need various bits of information from
-   * these crediting transactions, like there txid, the output amount, and obviously the ouptut [[ScriptPubKey]]
-   */
-  def creditingTxs: Seq[Transaction]
-
-  /**
    * The list of [[org.bitcoins.core.protocol.transaction.TransactionOutPoint]]s we are attempting to spend
    * and the signers, redeem scripts, and script witnesses that might be needed to spend this outpoint.
    * This information is dependent on what the [[ScriptPubKey]] type is we are spending. For isntance, if we are spending a
@@ -535,19 +529,15 @@ object BitcoinTxBuilder {
 
   private case class BitcoinTxBuilderImpl(
     destinations: Seq[TransactionOutput],
-    creditingTxs: Seq[Transaction],
     utxoMap: UTXOMap,
     feeRate: FeeUnit,
     changeSPK: ScriptPubKey,
-    network: BitcoinNetwork) extends BitcoinTxBuilder {
-    require(outPoints.exists(o => creditingTxs.exists(_.txId == o.txId)))
-  }
+    network: BitcoinNetwork) extends BitcoinTxBuilder
 
   private val logger = BitcoinSLogger.logger
 
   /**
    * @param destinations where the money is going in the signed tx
-   * @param creditingTxs the [[Transaction]]'s that are funding this tx
    * @param utxos extra information needed to spend the outputs in the creditingTxs
    * @param feeRate the desired fee rate for this tx
    * @param changeSPK where we should send the change from the creditingTxs
@@ -555,19 +545,18 @@ object BitcoinTxBuilder {
    *         from which you can call [[TxBuilder.sign]] to generate a signed tx,
    *         or a [[TxBuilderError]]
    */
-  def apply(destinations: Seq[TransactionOutput], creditingTxs: Seq[Transaction],
+  def apply(
+    destinations: Seq[TransactionOutput],
     utxos: BitcoinTxBuilder.UTXOMap, feeRate: FeeUnit, changeSPK: ScriptPubKey, network: BitcoinNetwork): Either[BitcoinTxBuilder, TxBuilderError] = {
     if (feeRate.toLong <= 0) {
       Right(TxBuilderError.LowFee)
-    } else if (utxos.keys.map(o => creditingTxs.exists(_.txId == o.txId)).exists(_ == false)) {
-      //means that we did not pass in a crediting tx for an outpoint in utxoMap
-      Right(TxBuilderError.MissingCreditingTx)
     } else {
-      Left(BitcoinTxBuilderImpl(destinations, creditingTxs, utxos, feeRate, changeSPK, network))
+      Left(BitcoinTxBuilderImpl(destinations, utxos, feeRate, changeSPK, network))
     }
   }
 
-  def apply(destinations: Seq[TransactionOutput], creditingTxs: Seq[Transaction],
+  def apply(
+    destinations: Seq[TransactionOutput],
     utxos: Seq[BitcoinUTXOSpendingInfo], feeRate: FeeUnit, changeSPK: ScriptPubKey,
     network: BitcoinNetwork): Either[BitcoinTxBuilder, TxBuilderError] = {
     @tailrec
@@ -579,6 +568,6 @@ object BitcoinTxBuilder {
         loop(t, result)
     }
     val map = loop(utxos, Map.empty)
-    BitcoinTxBuilder(destinations, creditingTxs, map, feeRate, changeSPK, network)
+    BitcoinTxBuilder(destinations, map, feeRate, changeSPK, network)
   }
 }
