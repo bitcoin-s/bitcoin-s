@@ -9,6 +9,7 @@ import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.core.wallet.builder.{ TxBuilder, TxBuilderError }
 import org.bitcoins.core.wallet.signer.Signer
+import org.bitcoins.core.wallet.utxo.UTXOSpendingInfo
 
 import scala.util.{ Failure, Success, Try }
 
@@ -32,9 +33,6 @@ sealed abstract class EscrowTimeoutHelper {
     if (creditingOutput.scriptPubKey != P2WSHWitnessSPKV0(lock)) {
       Right(TxBuilderError.WrongSigner)
     } else {
-      val scriptWit = P2WSHWitnessV0(lock)
-      val utxoMap: TxBuilder.UTXOMap = Map(
-        outPoint -> (creditingOutput, Seq(signer), None, Some(scriptWit), hashType))
       val (p2wsh, amount) = (creditingOutput.scriptPubKey.asInstanceOf[P2WSHWitnessSPKV0], creditingOutput.value)
       val tc = TransactionConstants
       val uScriptWitness = P2WSHWitnessV0(lock)

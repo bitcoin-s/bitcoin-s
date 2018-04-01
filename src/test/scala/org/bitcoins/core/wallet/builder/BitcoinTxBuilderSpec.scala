@@ -14,6 +14,7 @@ import org.bitcoins.core.script.result.{ ScriptOk, ScriptResult }
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.signer.Signer
+import org.bitcoins.core.wallet.utxo.{ BitcoinUTXOSpendingInfo, UTXOSpendingInfo }
 import org.scalacheck.{ Prop, Properties }
 
 import scala.annotation.tailrec
@@ -94,16 +95,16 @@ class BitcoinTxBuilderSpec extends Properties("TxBuilderSpec") {
     }
   }
 
-  private def buildCreditingTxInfo(info: Seq[TxBuilderSpec.CreditingTxInfo]): TxBuilderSpec.OutPointMap = {
+  private def buildCreditingTxInfo(info: Seq[TxBuilderSpec.CreditingTxInfo]): BitcoinTxBuilder.UTXOMap = {
     @tailrec
     def loop(
       rem: Seq[TxBuilderSpec.CreditingTxInfo],
-      accum: TxBuilderSpec.OutPointMap): TxBuilderSpec.OutPointMap = rem match {
+      accum: BitcoinTxBuilder.UTXOMap): BitcoinTxBuilder.UTXOMap = rem match {
       case Nil => accum
       case (tx, idx, signers, redeemScriptOpt, scriptWitOpt, hashType) :: t =>
         val o = TransactionOutPoint(tx.txId, UInt32(idx))
         val output = tx.outputs(idx)
-        val outPointsSpendingInfo = (output, signers, redeemScriptOpt, scriptWitOpt, hashType)
+        val outPointsSpendingInfo = BitcoinUTXOSpendingInfo(o, output, signers, redeemScriptOpt, scriptWitOpt, hashType)
         loop(t, accum.updated(o, outPointsSpendingInfo))
     }
     loop(info, Map.empty)
