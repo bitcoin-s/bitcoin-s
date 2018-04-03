@@ -545,7 +545,8 @@ object BitcoinTxBuilder {
    *         from which you can call [[TxBuilder.sign]] to generate a signed tx,
    *         or a [[TxBuilderError]]
    */
-  def apply(destinations: Seq[TransactionOutput],
+  def apply(
+    destinations: Seq[TransactionOutput],
     utxos: BitcoinTxBuilder.UTXOMap, feeRate: FeeUnit, changeSPK: ScriptPubKey, network: BitcoinNetwork): Future[BitcoinTxBuilder] = {
     if (feeRate.toLong <= 0) {
       Future.fromTry(TxBuilderError.LowFee)

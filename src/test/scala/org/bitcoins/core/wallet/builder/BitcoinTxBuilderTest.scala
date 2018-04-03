@@ -113,7 +113,7 @@ class BitcoinTxBuilderTest extends AsyncFlatSpec with MustMatchers {
     val utxoMap: BitcoinTxBuilder.UTXOMap = Map(outPoint -> utxo)
 
     val feeUnit = SatoshisPerVirtualByte(Satoshis(Int64(1)))
-    val txBuilderWitness = BitcoinTxBuilder(destinations,  utxoMap, feeUnit, EmptyScriptPubKey, TestNet3)
+    val txBuilderWitness = BitcoinTxBuilder(destinations, utxoMap, feeUnit, EmptyScriptPubKey, TestNet3)
     val resultFuture = txBuilderWitness.flatMap(_.sign)
     recoverToSucceededIf[IllegalArgumentException] {
       resultFuture
