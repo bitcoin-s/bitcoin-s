@@ -257,15 +257,15 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
 
   /**
    * Determines if the given pubkey is valid in accordance to the given [[ScriptFlag]]s
-   * Mimics this function inside of Bitcoin Core
+   * and [[SignatureVersion]]. Mimics this function inside of Bitcoin Core
    * [[https://github.com/bitcoin/bitcoin/blob/528472111b4965b1a99c4bcf08ac5ec93d87f10f/src/script/interpreter.cpp#L214-L223]]
    */
-  def isValidPubKeyEncoding(pubKey: ECPublicKey, flags: Seq[ScriptFlag]): Option[ScriptError] = {
+  def isValidPubKeyEncoding(pubKey: ECPublicKey, sigVersion: SignatureVersion, flags: Seq[ScriptFlag]): Option[ScriptError] = {
     if (ScriptFlagUtil.requireStrictEncoding(flags) &&
       !BitcoinScriptUtil.isCompressedOrUncompressedPubKey(pubKey)) {
       Some(ScriptErrorPubKeyType)
     } else if (ScriptFlagUtil.requireScriptVerifyWitnessPubKeyType(flags) &&
-      !BitcoinScriptUtil.isCompressedPubKey(pubKey)) {
+      !BitcoinScriptUtil.isCompressedPubKey(pubKey) && sigVersion == SigVersionWitnessV0) {
       Some(ScriptErrorWitnessPubKeyType)
     } else None
   }

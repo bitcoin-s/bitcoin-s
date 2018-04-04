@@ -1,6 +1,8 @@
 package org.bitcoins.core.util
 
+import org.bitcoin.NativeSecp256k1
 import org.bitcoins.core.crypto.{ ECPrivateKey, ECPublicKey }
+import org.bitcoins.core.protocol.script.{ SigVersionBase, SigVersionWitnessV0 }
 import org.bitcoins.core.script.bitwise.{ OP_EQUALVERIFY, OP_OR }
 import org.bitcoins.core.script.constant._
 import org.bitcoins.core.script.crypto._
@@ -203,11 +205,11 @@ class BitcoinScriptUtilTest extends FlatSpec with MustMatchers {
     val key = ECPrivateKey(false)
     val pubKey = key.publicKey
     val flags = Seq(ScriptVerifyWitnessPubKeyType)
-    BitcoinScriptUtil.isValidPubKeyEncoding(pubKey, flags) must be(Some(ScriptErrorWitnessPubKeyType))
+    BitcoinScriptUtil.isValidPubKeyEncoding(pubKey, SigVersionWitnessV0, flags) must be(Some(ScriptErrorWitnessPubKeyType))
 
-    val key2 = ECPrivateKey(true)
+    val key2 = ECPrivateKey(false)
     val pubKey2 = key2.publicKey
-    BitcoinScriptUtil.isValidPubKeyEncoding(pubKey2, flags) must be(None)
+    BitcoinScriptUtil.isValidPubKeyEncoding(pubKey2, SigVersionBase, flags) must be(None)
   }
 
   it must "remove the signatures from a p2sh scriptSig" in {
