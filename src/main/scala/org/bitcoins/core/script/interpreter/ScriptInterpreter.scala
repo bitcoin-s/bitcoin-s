@@ -98,6 +98,27 @@ sealed abstract class ScriptInterpreter {
   }
 
   /**
+   * Runs the given [[org.bitcoins.core.script.PreExecutionScriptProgram]] and
+   * return if that script was valid or not
+   */
+  def runVerify(p: PreExecutionScriptProgram): Boolean = { ScriptInterpreter.run(p) == ScriptOk }
+
+  /**
+   * Every given [[org.bitcoins.core.script.PreExecutionScriptProgram]] and returns
+   * it's [[org.bitcoins.core.script.result.ScriptResult]]
+   */
+  def runAll(programs: Seq[PreExecutionScriptProgram]): Seq[ScriptResult] = {
+    programs.map(p => ScriptInterpreter.run(p))
+  }
+
+  /**
+   * Runs all the given [[org.bitcoins.core.script.ScriptProgram]] and return
+   * if it is valid or not
+   */
+  def runAllVerify(programs: Seq[PreExecutionScriptProgram]): Boolean = {
+    !programs.exists(p => ScriptInterpreter.run(p) != ScriptOk)
+  }
+  /**
    * P2SH scripts are unique in their evaluation, first the scriptSignature must be added to the stack, next the
    * p2sh scriptPubKey must be run to make sure the serialized redeem script hashes to the value found in the p2sh
    * scriptPubKey, then finally the serialized redeemScript is decoded and run with the arguments in the p2sh script signature

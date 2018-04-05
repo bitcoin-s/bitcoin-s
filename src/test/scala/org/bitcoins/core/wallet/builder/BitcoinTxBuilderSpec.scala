@@ -7,7 +7,7 @@ import org.bitcoins.core.number.{ Int64, UInt32 }
 import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
-import org.bitcoins.core.script.ScriptProgram
+import org.bitcoins.core.script.{ PreExecutionScriptProgram, ScriptProgram }
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.script.interpreter.ScriptInterpreter
 import org.bitcoins.core.script.result.{ ScriptOk, ScriptResult }
@@ -111,7 +111,7 @@ class BitcoinTxBuilderSpec extends Properties("TxBuilderSpec") {
   }
 
   def verifyScript(tx: Transaction, creditingTxsInfo: Seq[(Transaction, Int)]): Boolean = {
-    val results: Seq[ScriptResult] = tx.inputs.zipWithIndex.map {
+    val programs: Seq[PreExecutionScriptProgram] = tx.inputs.zipWithIndex.map {
       case (input: TransactionInput, idx: Int) =>
         val outpoint = input.previousOutput
         val creditingTx = creditingTxsInfo.find(_._1.txId == outpoint.txId).get
@@ -130,11 +130,9 @@ class BitcoinTxBuilderSpec extends Properties("TxBuilderSpec") {
             //TODO: This is probably going to need to be changed with P2WSH
             BaseTxSigComponent(tx, UInt32(idx), p2sh, Policy.standardFlags)
         }
-        val program = ScriptProgram(txSigComponent)
-        val result = ScriptInterpreter.run(program)
-        result
+        ScriptProgram(txSigComponent)
     }
-    !results.exists(_ != ScriptOk)
+    ScriptInterpreter.runAllVerify(programs)
   }
 }
 
