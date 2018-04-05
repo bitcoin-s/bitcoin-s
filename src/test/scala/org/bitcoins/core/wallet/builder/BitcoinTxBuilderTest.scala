@@ -46,7 +46,6 @@ class BitcoinTxBuilderTest extends FlatSpec with MustMatchers {
     val txBuilder = BitcoinTxBuilder(destinations, utxoMap, feeUnit, EmptyScriptPubKey, TestNet3)
     txBuilder must be(Right(TxBuilderError.LowFee))
   }
-  
 
   it must "fail a transaction when the user invariants fail" in {
     val creditingOutput = TransactionOutput(CurrencyUnits.zero, spk)
