@@ -190,7 +190,8 @@ object Bech32Address {
   def fromStringToWitSPK(string: String): Try[WitnessScriptPubKey] = {
     val decoded = fromString(string)
     decoded.flatMap {
-      case (_, bytes) =>
+      case bec32Addr =>
+        val bytes = UInt8.toBytes(bec32Addr.data)
         val (v, prog) = (bytes.head, bytes.tail)
         val convertedProg = NumberUtil.convertBytes(prog, u32Five, u32Eight, false)
         val progBytes = convertedProg.map(UInt8.toBytes(_))
@@ -214,7 +215,7 @@ object Bech32Address {
     b.map(b => charset(b.toInt)).mkString
   }
   /** Decodes bech32 string to the [[HumanReadablePart]] & data part */
-  def fromString(str: String): Try[(HumanReadablePart, Seq[Byte])] = {
+  def fromString(str: String): Try[Bech32Address] = {
     val sepIndexes = str.zipWithIndex.filter(_._1 == separator)
     if (str.size > 90 || str.size < 8) {
       Failure(new IllegalArgumentException("bech32 payloads must be betwee 8 and 90 chars, got: " + str.size))
@@ -236,8 +237,9 @@ object Bech32Address {
             } else Failure(new IllegalArgumentException("Checksum was invalid on the bech32 address"))
           }
         }
-        isChecksumValid.flatMap { d =>
-          hrpValid.map(h => (h, d))
+        isChecksumValid.flatMap { d: Seq[Byte] =>
+          val u8s = UInt8.toUInt8s(d)
+          hrpValid.map(h => Bech32Address(h, u8s))
         }
       }
     }
@@ -303,9 +305,7 @@ object Bech32Address {
 object P2PKHAddress {
   private case class P2PKHAddressImpl(
     hash: Sha256Hash160Digest,
-    networkParameters: NetworkParameters) extends P2PKHAddress {
-    require(isP2PKHAddress(value), "Bitcoin address was invalid " + value)
-  }
+    networkParameters: NetworkParameters) extends P2PKHAddress
 
   def apply(hash: Sha256Hash160Digest, network: NetworkParameters): P2PKHAddress = P2PKHAddressImpl(hash, network)
 
@@ -319,12 +319,28 @@ object P2PKHAddress {
   }
 
   /** Checks if an address is a valid p2pkh address */
-  def isP2PKHAddress(address: String): Boolean = {
+  def isP2PKHAddress(address: String): Boolean = Try(fromString(address)).isSuccess
+
+  def fromString(address: String): P2PKHAddress = {
     val decodeCheckP2PKH: Try[Seq[Byte]] = Base58.decodeCheck(address)
     decodeCheckP2PKH match {
       case Success(bytes) =>
-        Networks.p2pkhNetworkBytes.find(bs => bytes.startsWith(bs)).isDefined
-      case Failure(exception) => false
+        val networkBytes: Option[(NetworkParameters, Seq[Byte])] = Networks.knownNetworks.map(n => (n, n.p2pkhNetworkByte))
+          .find {
+            case (_, bs) =>
+              bytes.startsWith(bs)
+          }
+        val result: Option[P2PKHAddress] = networkBytes.map {
+          case (network, p2pkhNetworkBytes) =>
+            val payloadSize = bytes.size - p2pkhNetworkBytes.size
+            require(payloadSize == 20, s"Payload of a P2PKH address must be 20 bytes in size, got $payloadSize")
+            val payload = bytes.slice(p2pkhNetworkBytes.size, bytes.size)
+            P2PKHAddress(Sha256Hash160Digest(payload), network)
+        }
+
+        result.getOrElse(throw new IllegalArgumentException(s"Given address was not a valid P2PKH address, got: $address"))
+      case Failure(exception) =>
+        throw new IllegalArgumentException(s"Given address was not a valid P2PKH address, got: $address")
     }
   }
 
@@ -336,9 +352,7 @@ object P2PKHAddress {
 object P2SHAddress {
   private case class P2SHAddressImpl(
     hash: Sha256Hash160Digest,
-    networkParameters: NetworkParameters) extends P2SHAddress {
-    require(isP2SHAddress(value), "Bitcoin address was invalid " + value)
-  }
+    networkParameters: NetworkParameters) extends P2SHAddress
 
   /**
    * Creates a [[P2SHScriptPubKey]] from the given [[ScriptPubKey]],
@@ -354,15 +368,30 @@ object P2SHAddress {
   def apply(hash: Sha256Hash160Digest, network: NetworkParameters): P2SHAddress = P2SHAddressImpl(hash, network)
 
   /** Checks if a address is a valid p2sh address */
-  def isP2SHAddress(address: String): Boolean = {
-    val decodeCheckP2SH: Try[Seq[Byte]] = Base58.decodeCheck(address)
-    decodeCheckP2SH match {
+  def isP2SHAddress(address: String): Boolean = Try(fromString(address)).isSuccess
+
+  def fromString(address: String): P2SHAddress = {
+    val decodeCheckP2PKH: Try[Seq[Byte]] = Base58.decodeCheck(address)
+    decodeCheckP2PKH match {
       case Success(bytes) =>
-        Networks.p2shNetworkBytes.find(bs => bytes.startsWith(bs)).isDefined
-      case Failure(_) => false
+        val networkBytes: Option[(NetworkParameters, Seq[Byte])] = Networks.knownNetworks.map(n => (n, n.p2shNetworkByte))
+          .find {
+            case (_, bs) =>
+              bytes.startsWith(bs)
+          }
+        val result: Option[P2SHAddress] = networkBytes.map {
+          case (network, p2shNetworkBytes) =>
+            val payloadSize = bytes.size - p2shNetworkBytes.size
+            require(payloadSize == 20, s"Payload of a P2PKH address must be 20 bytes in size, got $payloadSize")
+            val payload = bytes.slice(p2shNetworkBytes.size, bytes.size)
+            P2SHAddress(Sha256Hash160Digest(payload), network)
+        }
+
+        result.getOrElse(throw new IllegalArgumentException(s"Given address was not a valid P2PKH address, got: $address"))
+      case Failure(exception) =>
+        throw new IllegalArgumentException(s"Given address was not a valid P2PKH address, got: $address")
     }
   }
-
   /** Checks if a address is a valid p2sh address */
   def isP2SHAddress(address: BitcoinAddress): Boolean = isP2SHAddress(address.value)
 
@@ -376,19 +405,25 @@ object BitcoinAddress {
     decodeChecked.isSuccess
   }
 
-  /** Creates a [[BitcoinAddress]] from the given base58 string value */
-  def apply(value: String): BitcoinAddress = {
-    val decodeChecked = Base58.decodeCheck(value)
-    decodeChecked match {
-      case Success(bytes) =>
-        val network: Option[(NetworkParameters, Seq[Byte])] = matchNetwork(bytes)
-        if (network.isDefined && P2PKHAddress.isP2PKHAddress(value)) {
-          P2PKHAddress(Sha256Hash160Digest(network.get._2), network.get._1)
-        } else if (network.isDefined && P2SHAddress.isP2SHAddress(value)) {
-          P2SHAddress(Sha256Hash160Digest(network.get._2), network.get._1)
-        } else throw new IllegalArgumentException("The address was not a p2pkh or p2sh address, got: " + value)
-      case Failure(exception) =>
-        throw exception
+  /** Creates a [[BitcoinAddress]] from the given string value */
+  def apply(value: String): BitcoinAddress = fromString(value)
+
+  def fromString(value: String): BitcoinAddress = {
+    val p2pkhTry = Try(P2PKHAddress.fromString(value))
+    if (p2pkhTry.isSuccess) {
+      p2pkhTry.get
+    } else {
+      val p2shTry = Try(P2SHAddress.fromString(value))
+      if (p2shTry.isSuccess) {
+        p2shTry.get
+      } else {
+        val bech32Try = Bech32Address.fromString(value)
+        if (bech32Try.isSuccess) {
+          bech32Try.get
+        } else {
+          throw new IllegalArgumentException(s"Could not decode the given value to a BitcoinAddress, got: $value")
+        }
+      }
     }
   }
 
@@ -420,8 +455,11 @@ object Address {
 
   def apply(bytes: Seq[Byte]): Try[Address] = fromBytes(bytes)
 
-  def apply(str: String): Try[Address] = Try(BitcoinAddress(str))
+  def apply(str: String): Try[Address] = fromString(str)
 
+  def fromString(str: String): Try[Address] = {
+    Try(BitcoinAddress(str))
+  }
   def fromScriptPubKey(spk: ScriptPubKey, network: NetworkParameters): Try[BitcoinAddress] = spk match {
     case p2pkh: P2PKHScriptPubKey => Success(P2PKHAddress(p2pkh, network))
     case p2sh: P2SHScriptPubKey => Success(P2SHAddress(p2sh, network))

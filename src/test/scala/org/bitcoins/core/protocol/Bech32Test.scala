@@ -19,7 +19,7 @@ class Bech32Test extends FlatSpec with MustMatchers {
       "11qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqc8247j",
       "split1checkupstagehandshakeupstreamerranterredcaperred2y9e3w",
       "?1ezyfcl")
-    val results: Seq[Try[(HumanReadablePart, Seq[Byte])]] = valid.map(Bech32Address.fromString(_))
+    val results: Seq[Try[Bech32Address]] = valid.map(Bech32Address.fromString(_))
     results.exists(_.isFailure) must be(false)
   }
 
@@ -37,7 +37,7 @@ class Bech32Test extends FlatSpec with MustMatchers {
       "A1G7SGD8",
       "10a06t8",
       "1qzzfhee")
-    val results: Seq[Try[(HumanReadablePart, Seq[Byte])]] = invalid.map(Bech32Address.fromString(_))
+    val results: Seq[Try[Bech32Address]] = invalid.map(Bech32Address.fromString(_))
     results.exists(_.isSuccess) must be(false)
   }
 
