@@ -218,9 +218,6 @@ sealed abstract class ECPublicKey extends BaseECKey {
 
   /** Verifies if a given piece of data is signed by the [[ECPrivateKey]]'s corresponding [[ECPublicKey]]. */
   def verify(data: Seq[Byte], signature: ECDigitalSignature): Boolean = {
-    logger.debug("PubKey for verifying: " + BitcoinSUtil.encodeHex(bytes))
-    logger.debug("Data to verify: " + BitcoinSUtil.encodeHex(data))
-    logger.debug("Signature to check against data: " + signature.hex)
     val result = NativeSecp256k1.verify(data.toArray, signature.bytes.toArray, bytes.toArray)
     if (!result) {
       //if signature verification fails with libsecp256k1 we need to use our old
@@ -264,6 +261,11 @@ sealed abstract class ECPublicKey extends BaseECKey {
 
   /** Checks if the [[ECPublicKey]] is valid according to secp256k1 */
   def isFullyValid = ECPublicKey.isFullyValid(bytes)
+
+  /** Returns the decompressed version of this [[ECPublicKey]] */
+  def decompressed: ECPublicKey = {
+    if (isCompressed) ECPublicKey.fromBytes(NativeSecp256k1.decompress(bytes.toArray)) else this
+  }
 }
 
 object ECPublicKey extends Factory[ECPublicKey] {
