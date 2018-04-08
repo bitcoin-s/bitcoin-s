@@ -259,8 +259,7 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
     (creditingTx, outputIndex) = TransactionGenerators.buildCreditingTransaction(scriptPubKey)
     scriptSig = P2PKScriptSignature(EmptyDigitalSignature)
     (spendingTx, inputIndex) = TransactionGenerators.buildSpendingTransaction(creditingTx, scriptSig, outputIndex)
-    signer = Sign(privateKey.signFuture(_: Seq[Byte]), None)
-    txSigComponentFuture = P2PKSigner.sign(Seq(signer), creditingTx.outputs(outputIndex.toInt), spendingTx, inputIndex, hashType)
+    txSigComponentFuture = P2PKSigner.sign(Seq(privateKey), creditingTx.outputs(outputIndex.toInt), spendingTx, inputIndex, hashType)
     txSigComponent = Await.result(txSigComponentFuture, timeout)
     //add the signature to the scriptSig instead of having an empty scriptSig
     signedScriptSig = txSigComponent.scriptSignature.asInstanceOf[P2PKScriptSignature]

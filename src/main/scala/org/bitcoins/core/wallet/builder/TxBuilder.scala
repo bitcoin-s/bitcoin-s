@@ -128,7 +128,7 @@ sealed abstract class BitcoinTxBuilder extends TxBuilder {
   def sign(
     invariants: (Seq[BitcoinUTXOSpendingInfo], Transaction) => Boolean,
     isRBFEnabled: Boolean = false)(implicit ec: ExecutionContext): Future[Transaction] = {
-    //@tailrec
+
     def loop(
       remaining: List[BitcoinUTXOSpendingInfo],
       txInProgress: Transaction): Future[Transaction] = remaining match {
