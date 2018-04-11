@@ -27,11 +27,15 @@ sealed abstract class CryptoGenerators {
    * @return
    */
   def privateKeySeqWithRequiredSigs(num: Int): Gen[(Seq[ECPrivateKey], Int)] = {
-    val privateKeys = privateKeySeq(num)
-    for {
-      keys <- privateKeys
-      requiredSigs <- Gen.choose(0, keys.size - 1)
-    } yield (keys, requiredSigs)
+    if (num <= 0) {
+      Gen.const(Nil, 0)
+    } else {
+      val privateKeys = privateKeySeq(num)
+      for {
+        keys <- privateKeys
+        requiredSigs <- Gen.choose(0, keys.size - 1)
+      } yield (keys, requiredSigs)
+    }
   }
 
   /**
