@@ -8,7 +8,7 @@ import org.slf4j.Logger
  */
 abstract class BitcoinSLogger {
 
-  val logger: Logger = LoggerFactory.getLogger(this.getClass().toString)
+  def logger: Logger = LoggerFactory.getLogger(this.getClass().toString)
 
 }
 

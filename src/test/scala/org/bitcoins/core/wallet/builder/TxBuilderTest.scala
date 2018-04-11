@@ -11,8 +11,8 @@ class TxBuilderTest extends FlatSpec with MustMatchers {
     val estimatedFee = Satoshis(Int64(1000))
     val actualFee = Satoshis.one
     val feeRate = SatoshisPerVirtualByte(Satoshis.one)
-    TxBuilder.isValidFeeRange(estimatedFee, actualFee, feeRate) must be(Some(TxBuilderError.LowFee))
+    TxBuilder.isValidFeeRange(estimatedFee, actualFee, feeRate).isFailure must be(true)
 
-    TxBuilder.isValidFeeRange(actualFee, estimatedFee, feeRate) must be(Some(TxBuilderError.HighFee))
+    TxBuilder.isValidFeeRange(actualFee, estimatedFee, feeRate).isFailure must be(true)
   }
 }

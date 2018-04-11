@@ -1,9 +1,9 @@
 package org.bitcoins.core.gen
 
+import org.bitcoins.core.crypto.Sign
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.crypto.HashType
-import org.bitcoins.core.wallet.signer.Signer
 import org.scalacheck.Gen
 
 sealed abstract class CreditingTxGen {
@@ -18,7 +18,7 @@ sealed abstract class CreditingTxGen {
   }
 
   def rawOutput: Gen[CreditingTxGen.CreditingTxInfo] = {
-    Gen.oneOf(p2pkOutput, p2pkhOutput, multiSigOutput, cltvOutput, csvOutput)
+    Gen.oneOf(p2pkOutput, p2pkhOutput, multiSigOutput, /*cltvOutput,*/ csvOutput)
   }
 
   def rawOutputs: Gen[Seq[CreditingTxGen.CreditingTxInfo]] = Gen.choose(min, max).flatMap(n => Gen.listOfN(n, rawOutput))
@@ -32,7 +32,7 @@ sealed abstract class CreditingTxGen {
   def output: Gen[CreditingTxGen.CreditingTxInfo] = Gen.oneOf(
     p2pkOutput,
     p2pkhOutput, multiSigOutput, p2shOutput,
-    csvOutput, cltvOutput,
+    csvOutput, /*cltvOutput,*/
     p2wpkhOutput, p2wshOutput)
 
   def outputs: Gen[Seq[CreditingTxGen.CreditingTxInfo]] = {
@@ -41,8 +41,7 @@ sealed abstract class CreditingTxGen {
 
   /** Generates a crediting tx with a p2pk spk at the returned index */
   def p2pkOutput: Gen[CreditingTxGen.CreditingTxInfo] = ScriptGenerators.p2pkScriptPubKey.flatMap { p2pk =>
-    val signer = (p2pk._2.sign(_: Seq[Byte]), None)
-    build(p2pk._1, Seq(signer), None, None)
+    build(p2pk._1, Seq(p2pk._2), None, None)
   }
   /** Generates multiple crediting txs with p2pk spks at the returned index */
   def p2pkOutputs: Gen[Seq[CreditingTxGen.CreditingTxInfo]] = {
@@ -54,8 +53,7 @@ sealed abstract class CreditingTxGen {
    * output can be spent by the returned ECPrivateKey
    */
   def p2pkhOutput: Gen[CreditingTxGen.CreditingTxInfo] = ScriptGenerators.p2pkhScriptPubKey.flatMap { p2pkh =>
-    val signer = (p2pkh._2.sign(_: Seq[Byte]), Some(p2pkh._2.publicKey))
-    build(p2pkh._1, Seq(signer), None, None)
+    build(p2pkh._1, Seq(p2pkh._2), None, None)
   }
 
   /** Generates a sequence of p2pkh outputs at the returned index */
@@ -64,8 +62,7 @@ sealed abstract class CreditingTxGen {
   }
 
   def multiSigOutput: Gen[CreditingTxGen.CreditingTxInfo] = ScriptGenerators.multiSigScriptPubKey.flatMap { multisig =>
-    val signer = multisig._2.map(p => (p.sign(_: Seq[Byte]), None))
-    build(multisig._1, signer, None, None)
+    build(multisig._1, multisig._2, None, None)
   }
 
   def multiSigOutputs: Gen[Seq[CreditingTxGen.CreditingTxInfo]] = {
@@ -136,9 +133,8 @@ sealed abstract class CreditingTxGen {
   def csvOutputs: Gen[Seq[CreditingTxGen.CreditingTxInfo]] = Gen.choose(min, max).flatMap(n => Gen.listOfN(n, csvOutput))
 
   def p2wpkhOutput: Gen[CreditingTxGen.CreditingTxInfo] = ScriptGenerators.p2wpkhSPKV0.flatMap { witSPK =>
-    val signers = witSPK._2.map(p => (p.sign(_: Seq[Byte]), Some(p.publicKey)))
     val scriptWit = P2WPKHWitnessV0(witSPK._2.head.publicKey)
-    build(witSPK._1, signers, None, Some(scriptWit))
+    build(witSPK._1, witSPK._2, None, Some(scriptWit))
   }
 
   def p2wpkhOutputs: Gen[Seq[CreditingTxGen.CreditingTxInfo]] = Gen.choose(min, max).flatMap(n => Gen.listOfN(n, p2wpkhOutput))
@@ -165,7 +161,7 @@ sealed abstract class CreditingTxGen {
           WitnessGenerators.scriptWitness.flatMap { wit: ScriptWitness =>
             CryptoGenerators.hashType.map { hashType: HashType =>
               val tc = TransactionConstants
-              val signers: Seq[Signer.Sign] = keys.map(k => (k.sign(_: Seq[Byte]), Some(k.publicKey)))
+              val signers: Seq[Sign] = keys
               val creditingTx = BaseTransaction(tc.validLockVersion, Nil, outputs, tc.lockTime)
               (creditingTx, outputIndex, signers, Some(spk), Some(wit), hashType)
             }
@@ -176,7 +172,7 @@ sealed abstract class CreditingTxGen {
 
   def randoms: Gen[Seq[CreditingTxGen.CreditingTxInfo]] = Gen.choose(min, max).flatMap(n => Gen.listOfN(n, random))
 
-  private def build(spk: ScriptPubKey, signers: Seq[Signer.Sign],
+  private def build(spk: ScriptPubKey, signers: Seq[Sign],
     redeemScript: Option[ScriptPubKey],
     scriptWitness: Option[ScriptWitness]): Gen[CreditingTxGen.CreditingTxInfo] = nonEmptyOutputs.flatMap { outputs =>
     CryptoGenerators.hashType.flatMap { hashType =>
@@ -193,5 +189,5 @@ sealed abstract class CreditingTxGen {
 }
 
 object CreditingTxGen extends CreditingTxGen {
-  type CreditingTxInfo = (Transaction, Int, Seq[Signer.Sign], Option[ScriptPubKey], Option[ScriptWitness], HashType)
+  type CreditingTxInfo = (Transaction, Int, Seq[Sign], Option[ScriptPubKey], Option[ScriptWitness], HashType)
 }

@@ -14,12 +14,18 @@ import org.bouncycastle.crypto.params.{ ECKeyGenerationParameters, ECPrivateKeyP
 import org.bouncycastle.crypto.signers.{ ECDSASigner, HMacDSAKCalculator }
 
 import scala.annotation.tailrec
+import scala.concurrent.ExecutionContext.Implicits
+import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.{ Failure, Success, Try }
 
 /**
  * Created by chris on 2/16/16.
  */
-sealed abstract class BaseECKey extends NetworkElement {
+sealed abstract class BaseECKey extends NetworkElement with Sign {
+
+  override def signFunction: Seq[Byte] => Future[ECDigitalSignature] = { bytes =>
+    Future(sign(bytes))
+  }
   /**
    * Signs a given sequence of bytes with the signingKey
    * @param dataToSign the bytes to be signed
@@ -32,11 +38,13 @@ sealed abstract class BaseECKey extends NetworkElement {
     ECDigitalSignature(signature)
   }
 
-  def sign(dataToSign: Seq[Byte]): ECDigitalSignature = sign(dataToSign, this)
+  override def sign(dataToSign: Seq[Byte]): ECDigitalSignature = sign(dataToSign, this)
 
   def sign(hash: HashDigest, signingKey: BaseECKey): ECDigitalSignature = sign(hash.bytes, signingKey)
 
   def sign(hash: HashDigest): ECDigitalSignature = sign(hash, this)
+
+  def signFuture(hash: HashDigest)(implicit ec: ExecutionContext): Future[ECDigitalSignature] = Future(sign(hash))
 
   @deprecated("Deprecated in favor of signing algorithm inside of secp256k1", "2/20/2017")
   private def oldSign(dataToSign: Seq[Byte], signingKey: BaseECKey): ECDigitalSignature = {
@@ -55,6 +63,7 @@ sealed abstract class BaseECKey extends NetworkElement {
     require(signatureLowS.isDEREncoded, "We must create DER encoded signatures when signing a piece of data, got: " + signatureLowS)
     signatureLowS
   }
+
 }
 
 /**
@@ -86,20 +95,27 @@ sealed abstract class ECPrivateKey extends BaseECKey {
     Base58.encode(encodedPrivKey)
   }
 
+  override def pubKeyOpt: Option[ECPublicKey] = Some(publicKey)
+
   override def toString = "ECPrivateKey(" + hex + "," + isCompressed + ")"
 }
 
 object ECPrivateKey extends Factory[ECPrivateKey] {
 
-  private case class ECPrivateKeyImpl(override val bytes: Seq[Byte], isCompressed: Boolean) extends ECPrivateKey {
+  private case class ECPrivateKeyImpl(override val bytes: Seq[Byte], isCompressed: Boolean, ec: ExecutionContext) extends ECPrivateKey {
     require(NativeSecp256k1.secKeyVerify(bytes.toArray), "Invalid key according to secp256k1, hex: " + BitcoinSUtil.encodeHex(bytes))
+  }
+
+  def apply(bytes: Seq[Byte], isCompressed: Boolean)(implicit ec: ExecutionContext): ECPrivateKey = {
+    ECPrivateKeyImpl(bytes, isCompressed, ec)
   }
 
   override def fromBytes(bytes: Seq[Byte]): ECPrivateKey = fromBytes(bytes, true)
 
   @tailrec
   def fromBytes(bytes: Seq[Byte], isCompressed: Boolean): ECPrivateKey = {
-    if (bytes.size == 32) ECPrivateKeyImpl(bytes, isCompressed)
+
+    if (bytes.size == 32) ECPrivateKeyImpl(bytes, isCompressed, Implicits.global)
     else if (bytes.size < 32) {
       //means we need to pad the private key with 0 bytes so we have 32 bytes
       val paddingNeeded = 32 - bytes.size
@@ -256,6 +272,8 @@ sealed abstract class ECPublicKey extends BaseECKey {
     resultTry.getOrElse(false)
   }
 
+  override def pubKeyOpt: Option[ECPublicKey] = Some(this)
+
   /** Checks if the [[ECPublicKey]] is compressed */
   def isCompressed: Boolean = bytes.size == 33
 
@@ -270,7 +288,7 @@ sealed abstract class ECPublicKey extends BaseECKey {
 
 object ECPublicKey extends Factory[ECPublicKey] {
 
-  private case class ECPublicKeyImpl(override val bytes: Seq[Byte]) extends ECPublicKey {
+  private case class ECPublicKeyImpl(override val bytes: Seq[Byte], ec: ExecutionContext) extends ECPublicKey {
     //unfortunately we cannot place ANY invariants here
     //because of old transactions on the blockchain that have weirdly formatted public keys. Look at example in script_tests.json
     //https://github.com/bitcoin/bitcoin/blob/master/src/test/data/script_tests.json#L457
@@ -279,8 +297,9 @@ object ECPublicKey extends Factory[ECPublicKey] {
     //Eventually we would like this to be CPubKey::IsFullyValid() but since we are remaining backwards compatible
     //we cannot do this. If there ever is a hard fork this would be a good thing to add.
   }
-
-  override def fromBytes(bytes: Seq[Byte]): ECPublicKey = ECPublicKeyImpl(bytes)
+  override def fromBytes(bytes: Seq[Byte]): ECPublicKey = {
+    ECPublicKeyImpl(bytes, Implicits.global)
+  }
 
   def apply() = freshPublicKey
 
