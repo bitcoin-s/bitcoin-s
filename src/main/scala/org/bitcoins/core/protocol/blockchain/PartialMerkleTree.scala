@@ -54,8 +54,6 @@ sealed trait PartialMerkleTree extends BitcoinSLogger {
   /** Extracts the txids that were matched inside of the bloom filter used to create this partial merkle tree */
   def extractMatches: Seq[DoubleSha256Digest] = {
     //TODO: This is some really ugly that isn't tail recursive, try to clean this up eventually
-    logger.debug("Starting bits for extraction: " + bits)
-    logger.debug("Starting tree: " + tree)
     def loop(
       subTree: BinaryTree[DoubleSha256Digest],
       remainingBits: Seq[Boolean], height: Int, pos: Int, accumMatches: Seq[DoubleSha256Digest]): (Seq[DoubleSha256Digest], Seq[Boolean]) = {
@@ -127,9 +125,6 @@ object PartialMerkleTree {
    */
   private def build(txMatches: Seq[(Boolean, DoubleSha256Digest)]): (Seq[Boolean], Seq[DoubleSha256Digest]) = {
     val maxHeight = calcMaxHeight(txMatches.size)
-    logger.debug("Tx matches: " + txMatches)
-    logger.debug("Tx matches size: " + txMatches.size)
-    logger.debug("max height: " + maxHeight)
 
     /**
      * This loops through our merkle tree building [[bits]] so we can instruct another node how to create the partial merkle tree
@@ -142,7 +137,6 @@ object PartialMerkleTree {
      */
     def loop(bits: Seq[Boolean], hashes: Seq[DoubleSha256Digest], height: Int, pos: Int): (Seq[Boolean], Seq[DoubleSha256Digest]) = {
       val parentOfMatch = matchesTx(maxHeight, maxHeight - height, pos, txMatches)
-      logger.debug("parent of match: " + parentOfMatch)
       val newBits = parentOfMatch +: bits
       if (height == 0 || !parentOfMatch) {
         //means that we are either at the root of the merkle tree or there is nothing interesting below
@@ -179,7 +173,6 @@ object PartialMerkleTree {
       } else false
     }
     val startingPos = pos << inverseHeight
-    logger.debug("Height: " + inverseHeight + " pos: " + pos + " startingP: " + startingPos)
     loop(startingPos)
   }
 
@@ -267,8 +260,6 @@ object PartialMerkleTree {
         } else (Leaf(remainingHashes.head), remainingHashes.tail, remainingMatches.tail)
       }
     }
-    logger.debug("Original hashes: " + hashes)
-    logger.debug("Original bits: " + bits)
     val (tree, remainingHashes, remainingBits) = loop(hashes, bits, 0, 0)
     //we must have used all the hashes provided to us to reconstruct the partial merkle tree as per BIP37
     require(remainingHashes.size == 0, "We should not have any left over hashes after building our partial merkle tree, got: " + remainingHashes)
