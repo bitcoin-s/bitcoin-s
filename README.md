@@ -30,7 +30,7 @@ This repostitory includes the following functionality:
 
 # Setting up libsecp256k1
 
-lisecp256k1 needs to be built with the java interface enabled. Use the following commands to build secp256k1 with jni enabled. [Here is the official documentation for doing this in secp256k1](https://github.com/bitcoin-core/secp256k1/blob/master/src/java/org/bitcoin/NativeSecp256k1.java#L35)
+libsecp256k1 needs to be built with the java interface enabled. Use the following commands to build secp256k1 with jni enabled. [Here is the official documentation for doing this in secp256k1](https://github.com/bitcoin-core/secp256k1/blob/master/src/java/org/bitcoin/NativeSecp256k1.java#L35)
 ```
 $ cd secp256k1
 $ sh autogen.sh && ./configure --enable-jni --enable-experimental --enable-module-ecdh && make
