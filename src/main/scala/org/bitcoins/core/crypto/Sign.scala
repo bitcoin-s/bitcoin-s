@@ -4,7 +4,7 @@ import scala.concurrent.{ Await, ExecutionContext, Future }
 import scala.concurrent.duration.DurationInt
 
 /**
- * This is meant to be an abstraction for a [[org.bitcoins.core.crypto.ECPrivateKey]], sometimes we will not
+ * This is meant to be an abstraction for a [[org.bitcoins.core.crypto.ECPrivateKey]],f sometimes we will not
  * have direct access to a private key in memory -- for instance if that key is on a hardware device -- so we need to create an
  * abstraction of the signing process. Fundamentally a private key takes in a Seq[Byte] and returns a [[ECDigitalSignature]]
  * That is what this abstraction is meant to represent. If you have a [[ECPrivateKey]] in your application, you can get it's
@@ -26,24 +26,13 @@ trait Sign {
     Await.result(signFuture(bytes), 30.seconds)
   }
 
-  def pubKeyOpt: Option[ECPublicKey]
-
-  implicit val ec: ExecutionContext
+  def publicKey: ECPublicKey
 }
 
 object Sign {
-  private case class SignImpl(signFunction: Seq[Byte] => Future[ECDigitalSignature], pubKeyOpt: Option[ECPublicKey], implicit val ec: ExecutionContext) extends Sign
+  private case class SignImpl(signFunction: Seq[Byte] => Future[ECDigitalSignature], publicKey: ECPublicKey) extends Sign
 
-  def apply(signFunction: Seq[Byte] => Future[ECDigitalSignature], pubKeyOpt: Option[ECPublicKey]): Sign = {
-    val ec = scala.concurrent.ExecutionContext.Implicits.global
-    Sign(signFunction, pubKeyOpt, ec)
-  }
-
-  def apply(signFunction: Seq[Byte] => Future[ECDigitalSignature]): Sign = {
-    Sign(signFunction, None)
-  }
-
-  def apply(signFunction: Seq[Byte] => Future[ECDigitalSignature], pubKeyOpt: Option[ECPublicKey], ec: ExecutionContext): Sign = {
-    SignImpl(signFunction, pubKeyOpt, ec)
+  def apply(signFunction: Seq[Byte] => Future[ECDigitalSignature], pubKey: ECPublicKey): Sign = {
+    SignImpl(signFunction, pubKey)
   }
 }

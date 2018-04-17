@@ -125,11 +125,9 @@ sealed abstract class P2PKHSigner extends BitcoinSigner {
     val spk = output.scriptPubKey
     if (signers.size != 1) {
       Future.fromTry(TxBuilderError.TooManySigners)
-    } else if (signers.head.pubKeyOpt.isEmpty) {
-      Future.fromTry(TxBuilderError.MissingPublicKey)
     } else {
       val sign = signers.head.signFunction
-      val pubKey = signers.head.pubKeyOpt.get
+      val pubKey = signers.head.publicKey
       val unsignedInput = unsignedTx.inputs(inputIndex.toInt)
       val flags = Policy.standardFlags
       val amount = output.value
@@ -380,11 +378,9 @@ sealed abstract class P2WPKHSigner extends BitcoinSigner {
     case wtx: WitnessTransaction =>
       if (signers.size != 1) {
         Future.fromTry(TxBuilderError.TooManySigners)
-      } else if (signers.head.pubKeyOpt.isEmpty) {
-        Future.fromTry(TxBuilderError.MissingPublicKey)
       } else {
         val sign = signers.head.signFunction
-        val pubKey = signers.head.pubKeyOpt.get
+        val pubKey = signers.head.publicKey
         val unsignedScriptWit = P2WPKHWitnessV0(pubKey)
         val unsignedTxWitness = TransactionWitness(wtx.witness.witnesses.updated(inputIndex.toInt, unsignedScriptWit))
         val unsignedWtx = WitnessTransaction(wtx.version, wtx.inputs, wtx.outputs, wtx.lockTime, unsignedTxWitness)
