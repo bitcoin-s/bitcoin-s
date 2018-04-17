@@ -24,6 +24,7 @@ import scala.util.{ Failure, Success, Try }
 sealed abstract class BaseECKey extends NetworkElement with Sign {
 
   override def signFunction: Seq[Byte] => Future[ECDigitalSignature] = { bytes =>
+    import scala.concurrent.ExecutionContext.Implicits.global
     Future(sign(bytes))
   }
   /**
@@ -94,8 +95,6 @@ sealed abstract class ECPrivateKey extends BaseECKey {
     val encodedPrivKey = fullBytes ++ checksum
     Base58.encode(encodedPrivKey)
   }
-
-  override def pubKeyOpt: Option[ECPublicKey] = Some(publicKey)
 
   override def toString = "ECPrivateKey(" + hex + "," + isCompressed + ")"
 }
@@ -271,8 +270,7 @@ sealed abstract class ECPublicKey extends BaseECKey {
     }
     resultTry.getOrElse(false)
   }
-
-  override def pubKeyOpt: Option[ECPublicKey] = Some(this)
+  override def publicKey: ECPublicKey = this
 
   /** Checks if the [[ECPublicKey]] is compressed */
   def isCompressed: Boolean = bytes.size == 33
