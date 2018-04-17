@@ -51,11 +51,9 @@ trait Merkle extends BitcoinSLogger {
       else if (accum.isEmpty) throw new IllegalArgumentException("Should never have sub tree size of zero, this implies there was zero hashes given")
       else build(accum.reverse, Nil)
     case h :: h1 :: t =>
-      logger.debug("Subtrees: " + subTrees)
       val newTree = computeTree(h, h1)
       build(t, newTree +: accum)
     case h :: t =>
-      logger.debug("Subtrees: " + subTrees)
       //means that we have an odd amount of txids, this means we duplicate the last hash in the tree
       val newTree = computeTree(h, h)
       build(t, newTree +: accum)
