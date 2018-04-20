@@ -14,9 +14,20 @@ import scala.util.{ Failure, Success, Try }
 sealed abstract class Transaction extends NetworkElement {
   /**
    * The sha256(sha256(tx)) of this transaction
-   * Note that this is the big endian encoding of the hash NOT the little endian encoding displayed on block explorers
+   * Note that this is the little endian encoding of the hash, NOT the big endian encoding shown in block
+   * explorers. See this link for more info
+   * [[https://bitcoin.stackexchange.com/questions/2063/why-does-the-bitcoin-protocol-use-the-little-endian-notation]]
    */
   def txId: DoubleSha256Digest = CryptoUtil.doubleSHA256(bytes)
+
+  /**
+   * This is the BIG ENDIAN encoding for the txid. This is commonly used for
+   * RPC interfaces and block explorers, this encoding is NOT used at the protocol level
+   * For more info see:
+   * [[https://bitcoin.stackexchange.com/questions/2063/why-does-the-bitcoin-protocol-use-the-little-endian-notation]]
+   * @return
+   */
+  def txIdBE: DoubleSha256Digest = txId.flip
 
   /** The version number for this transaction */
   def version: UInt32
@@ -100,6 +111,8 @@ sealed abstract class WitnessTransaction extends Transaction {
    */
   def wTxId: DoubleSha256Digest = CryptoUtil.doubleSHA256(bytes)
 
+  /** Returns the big endian encoding of the wtxid */
+  def wTxIdBE: DoubleSha256Digest = wTxId.flip
   /**
    * Weight calculation in bitcoin for witness txs
    * [[https://github.com/bitcoin/bitcoin/blob/5961b23898ee7c0af2626c46d5d70e80136578d3/src/consensus/validation.h#L96]]
