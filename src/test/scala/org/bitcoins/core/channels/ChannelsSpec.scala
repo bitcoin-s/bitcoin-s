@@ -61,7 +61,6 @@ class ChannelsSpec extends Properties("ChannelProperties") {
     Prop.forAllNoShrink(ChannelGenerators.channelAwaitingAnchorTxNotConfirmed) {
       case (awaiting, privKeys) =>
         val channelClosedWithTimeout = awaiting.closeWithTimeout(EmptyScriptPubKey, privKeys(2), Satoshis.one)
-        logger.info("closed.inputs: " + channelClosedWithTimeout.map(_.current.transaction.inputs))
         val program = channelClosedWithTimeout.map(c => ScriptProgram(c.current))
         val result = Await.result(program.map(p => ScriptInterpreter.run(p)), timeout)
         result == ScriptOk
