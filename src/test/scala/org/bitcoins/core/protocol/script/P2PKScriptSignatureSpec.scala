@@ -12,8 +12,6 @@ class P2PKScriptSignatureSpec extends Properties("P2PKSpec") {
 
   property("Serialization symmetry") =
     Prop.forAll(ScriptGenerators.p2pkScriptSignature) { p2pkScriptSig =>
-      logger.info("P2PKScriptSig: " + p2pkScriptSig)
-      logger.info("p2pk hex: " + p2pkScriptSig.hex)
       P2PKScriptSignature(p2pkScriptSig.hex) == p2pkScriptSig
     }
 }
