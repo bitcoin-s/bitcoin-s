@@ -60,12 +60,13 @@ sealed trait BlockHeader extends NetworkElement {
 
   def merkleRootHash: DoubleSha256Digest
 
-  /** Returns the merkle root hash in BIG ENDIAN format. This is not compatible with the bitcoin
-    * protocol but it is useful for rpc clients and block explorers
-    * See this link for more info
-    * [[https://bitcoin.stackexchange.com/questions/2063/why-does-the-bitcoin-protocol-use-the-little-endian-notation]]
-    * @return
-    */
+  /**
+   * Returns the merkle root hash in BIG ENDIAN format. This is not compatible with the bitcoin
+   * protocol but it is useful for rpc clients and block explorers
+   * See this link for more info
+   * [[https://bitcoin.stackexchange.com/questions/2063/why-does-the-bitcoin-protocol-use-the-little-endian-notation]]
+   * @return
+   */
   def merkleRootHashBE: DoubleSha256Digest = merkleRootHash.flip
 
   /**
