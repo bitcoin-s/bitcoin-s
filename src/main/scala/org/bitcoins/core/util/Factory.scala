@@ -21,4 +21,7 @@ trait Factory[T] {
   def apply(hex: String): T = fromHex(hex)
 
   def logger: Logger = BitcoinSLogger.logger
+
+  /** Allows a `def foo[C: Factory]()` construction. */
+  implicit def self: Factory[T] = this
 }

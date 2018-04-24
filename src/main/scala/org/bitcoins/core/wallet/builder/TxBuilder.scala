@@ -80,10 +80,10 @@ sealed abstract class TxBuilder {
   def outPoints: Seq[TransactionOutPoint] = utxoMap.keys.toSeq
 
   /** The redeem scripts that are needed in this transaction */
-  def redeemScriptOpt: Seq[Option[ScriptPubKey]] = utxos.map(_.redeemScriptOpt).toSeq
+  def redeemScriptOpt: Seq[Option[ScriptPubKey]] = utxos.map(_.redeemScriptOpt)
 
   /** The script witnesses that are needed in this transaction */
-  def scriptWitOpt: Seq[Option[ScriptWitness]] = utxos.map(_.scriptWitnessOpt).toSeq
+  def scriptWitOpt: Seq[Option[ScriptWitness]] = utxos.map(_.scriptWitnessOpt)
 
   def sign(implicit ec: ExecutionContext): Future[Transaction]
 }
