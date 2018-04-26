@@ -4,7 +4,7 @@ import org.bitcoins.core.consensus.Merkle
 import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.blockchain.{ Block, BlockHeader }
-import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.core.protocol.transaction.{ EmptyTransaction, Transaction }
 import org.scalacheck.Gen
 
 import scala.annotation.tailrec
@@ -44,7 +44,7 @@ sealed abstract class BlockchainElementsGenerator {
 
   /** Generates a random [[BlockHeader]] where you can specify the previousBlockHash and nBits */
   def blockHeader(previousBlockHash: DoubleSha256Digest, nBits: UInt32): Gen[BlockHeader] = for {
-    numTxs <- Gen.choose(1, 10)
+    numTxs <- Gen.choose(1, 5)
     txs <- Gen.listOfN(numTxs, TransactionGenerators.transaction)
     header <- blockHeader(previousBlockHash, nBits, txs)
   } yield header
@@ -70,8 +70,9 @@ sealed abstract class BlockchainElementsGenerator {
    * references the previous block header's hash
    */
   def validHeaderChain(num: Long): Gen[Seq[BlockHeader]] = {
-    val startHeader = blockHeader.sample.get
-    validHeaderChain(num, startHeader)
+    blockHeader.flatMap { startHeader =>
+      validHeaderChain(num, startHeader)
+    }
   }
 
   def validHeaderChain(num: Long, startHeader: BlockHeader): Gen[Seq[BlockHeader]] = {
@@ -79,11 +80,17 @@ sealed abstract class BlockchainElementsGenerator {
     def loop(remainingHeaders: Long, accum: Seq[BlockHeader]): Seq[BlockHeader] = {
       if (remainingHeaders == 0) accum.reverse
       else {
-        val nextHeader = blockHeader(accum.head.hash, accum.head.nBits).sample.get
+        val nextHeader = buildBlockHeader(accum.head.hash, accum.head.nBits)
         loop(remainingHeaders - 1, nextHeader +: accum)
       }
     }
     loop(num - 1, Seq(startHeader))
+  }
+
+  private def buildBlockHeader(prevBlockHash: DoubleSha256Digest, nBits: UInt32): BlockHeader = {
+    //nonce for the unique hash
+    val nonce = NumberGenerator.uInt32s.sample.get
+    BlockHeader(UInt32.one, prevBlockHash, EmptyTransaction.txId, UInt32.one, nBits, nonce)
   }
 }
 
