@@ -30,13 +30,13 @@ class ZMQSubscriber(
   rawBlockListener: Option[Seq[Byte] => Unit]) {
   private val logger = BitcoinSLogger.logger
 
-  private var run = true
+  private var running = true
   private val context = ZMQ.context(1)
 
   private val subscriber = context.socket(ZMQ.SUB)
   private val uri = socket.getHostString + ":" + socket.getPort
 
-  private case object SubscriberRunnable = new Runnable {
+  private case object SubscriberRunnable extends Runnable {
     override def run(): Unit = {
 
       val connected = subscriber.connect(uri)
@@ -61,8 +61,8 @@ class ZMQSubscriber(
         logger.debug("subscribed to raw block stream from zmq")
       }
 
-      while (run) {
-        val zmsg = ZMsg.recvMsg(subscriber, , ZMQ.NOBLOCK)
+      while (running) {
+        val zmsg = ZMsg.recvMsg(subscriber, ZMQ.NOBLOCK)
         if (zmsg != null) {
           val notificationTypeStr = zmsg.pop().getString(ZMQ.CHARSET)
           val body = zmsg.pop().getData
@@ -91,7 +91,7 @@ class ZMQSubscriber(
     //i think this could technically not work, because currently we are blocking
     //on Zmsg.recvMsg in our while loop. If we don't get another message we won't
     //be able toe evaluate the while loop again. Moving forward with this for now.
-    run = false
+    running = false
     subscriber.close()
     context.term()
   }
