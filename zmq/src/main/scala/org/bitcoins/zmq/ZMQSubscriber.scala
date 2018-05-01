@@ -1,14 +1,9 @@
 package org.bitcoins.zmq
 
-import java.net.{ InetSocketAddress, Socket }
+import java.net.InetSocketAddress
 
-import org.bitcoins.core.crypto.{ DoubleSha256Digest, HashDigest }
-import org.bitcoins.core.protocol.blockchain.Block
-import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.util.BitcoinSLogger
 import org.zeromq.{ ZMQ, ZMsg }
-
-import scala.concurrent.{ ExecutionContext, Future }
 
 /**
  * This class is designed to consume a zmq stream from a cryptocurrency's daemon.

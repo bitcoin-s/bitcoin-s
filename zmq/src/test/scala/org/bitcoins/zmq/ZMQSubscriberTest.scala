@@ -2,15 +2,9 @@ package org.bitcoins.zmq
 
 import java.net.InetSocketAddress
 
-import org.bitcoins.core.crypto.DoubleSha256Digest
-import org.bitcoins.core.protocol.blockchain.Block
-import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.core.util.BitcoinSUtil
 import org.scalatest.{ FlatSpec, MustMatchers }
 import org.slf4j.LoggerFactory
-
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration.DurationInt
-import scala.concurrent.{ Await, Future }
 class ZMQSubscriberTest extends FlatSpec with MustMatchers {
   private val logger = LoggerFactory.getLogger(this.getClass().toString)
   "ZMQSubscriber" must "connect to a regtest instance of a daemon and stream txs/blocks from it" in {
@@ -22,38 +16,30 @@ class ZMQSubscriberTest extends FlatSpec with MustMatchers {
 
     val zmqSub = new ZMQSubscriber(socket, None, None, rawTxListener, rawBlockListener)
     //stupid, doesn't test anything, for now. You need to look at log output to verify this is working
-    Await.result(zmqSub.start(), 100.seconds)
+    zmqSub.start()
+    Thread.sleep(100000) // 100 seconds
     zmqSub.stop
   }
 
-  val rawBlockListener: Option[Seq[Byte] => Future[Unit]] = Some {
+  val rawBlockListener: Option[Seq[Byte] => Unit] = Some {
     { bytes: Seq[Byte] =>
-      val block = Future(Block.fromBytes(bytes))
-      block.map { b =>
-        logger.debug(s"received block $b")
-        Future.successful(Unit)
-      }
+      val hex = BitcoinSUtil.encodeHex(bytes)
+      logger.debug(s"received raw block ${hex}")
     }
   }
 
-  val hashBlockListener: Option[Seq[Byte] => Future[Unit]] = Some {
+  val hashBlockListener: Option[Seq[Byte] => Unit] = Some {
     { bytes: Seq[Byte] =>
-      val hash = Future(DoubleSha256Digest.fromBytes(bytes))
-      hash.map { h =>
-        logger.debug(s"received block hash $h")
-        Future.successful(Unit)
-      }
+      val hex = BitcoinSUtil.encodeHex(bytes)
+      logger.debug(s"received raw block hash ${hex}")
 
     }
   }
 
-  val rawTxListener: Option[Seq[Byte] => Future[Unit]] = Some {
+  val rawTxListener: Option[Seq[Byte] => Unit] = Some {
     { bytes: Seq[Byte] =>
-      val txFuture = Future(Transaction.fromBytes(bytes))
-      txFuture.map { tx =>
-        logger.debug(s"received tx ${tx}")
-        Future.successful(Unit)
-      }
+      val hex = BitcoinSUtil.encodeHex(bytes)
+      logger.debug(s"received raw tx ${hex}")
     }
   }
 }
