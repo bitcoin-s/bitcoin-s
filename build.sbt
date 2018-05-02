@@ -1,39 +1,45 @@
-import Deps._
 
-lazy val commonSettings = Seq(
-  organization := "org.bitcoins",
-  version := "0.0.1-SNAPSHOT",
-  scalaVersion := "2.11.7"
-)
+lazy val root = project
+    .in(file("."))
+    .aggregate(
+      secp256k1jni,
+      core,
+      coreGen,
+      coreTest,
+      zmq
+    )
 
+lazy val secp256k1jni = project
+  .in(file("secp256k1jni"))
+  .enablePlugins()
 
-lazy val appName = "bitcoin-s-core"
+lazy val core = project
+  .in(file("core"))
+  .enablePlugins()
+  .dependsOn(
+    secp256k1jni
+  )
 
-lazy val root = Project(appName, file(".")).enablePlugins().settings(
-    commonSettings,
-    libraryDependencies ++= Deps.root 
-)
+lazy val coreGen = project
+  .in(file("core-gen"))
+  .enablePlugins()
+  .dependsOn(
+    core
+  )
 
-lazy val zmq = Project("bitcoin-s-zmq", file("zmq")).enablePlugins().settings(
-  commonSettings,
-  libraryDependencies ++= Deps.zmq
-).dependsOn(root)
+lazy val coreTest = project
+  .in(file("core-test"))
+  .enablePlugins()
+  .dependsOn(
+    core,
+    coreGen % "test->test"
+  )
 
+lazy val zmq = project
+  .in(file("zmq"))
+  .enablePlugins()
+  .dependsOn(
+    core
+  )
 
-//test in assembly := {}
-
-testOptions in Test += Tests.Argument(TestFrameworks.ScalaCheck, "-verbosity", "2")
-
-//testOptions in Test += Tests.Argument("-oF")
-
-//parallelExecution in Test := false
-
-coverageExcludedPackages := ".*gen"
-
-coverageMinimum := 90
-
-coverageFailOnMinimum := true
-
-assemblyOption in assembly := (assemblyOption in assembly).value.copy(includeScala = false)
-
-scalacOptions ++= Seq("-Xmax-classfile-name", "140")
+publishArtifact in root := false
