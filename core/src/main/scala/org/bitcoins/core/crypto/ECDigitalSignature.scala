@@ -44,9 +44,20 @@ sealed abstract class ECDigitalSignature {
 }
 
 case object EmptyDigitalSignature extends ECDigitalSignature {
-  def bytes = Nil
+  override val bytes = Nil
   override def r = java.math.BigInteger.valueOf(0)
   override def s = r
+}
+
+/**
+ * The point of this case object is to help with fee estimation
+ * an average [[ECDigitalSignature]] is 72 bytes in size
+ * Technically this number can vary, 72 bytes is the most
+ * likely though according to
+ * https://en.bitcoin.it/wiki/Elliptic_Curve_Digital_Signature_Algorithm
+ */
+case object DummyECDigitalSignature extends ECDigitalSignature {
+  override val bytes = 0.until(72).map(_ => 0.toByte)
 }
 
 object ECDigitalSignature extends Factory[ECDigitalSignature] {
