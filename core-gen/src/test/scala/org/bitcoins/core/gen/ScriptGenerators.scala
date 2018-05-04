@@ -259,7 +259,7 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
     (creditingTx, outputIndex) = TransactionGenerators.buildCreditingTransaction(scriptPubKey)
     scriptSig = P2PKScriptSignature(EmptyDigitalSignature)
     (spendingTx, inputIndex) = TransactionGenerators.buildSpendingTransaction(creditingTx, scriptSig, outputIndex)
-    txSigComponentFuture = P2PKSigner.sign(Seq(privateKey), creditingTx.outputs(outputIndex.toInt), spendingTx, inputIndex, hashType)
+    txSigComponentFuture = P2PKSigner.sign(Seq(privateKey), creditingTx.outputs(outputIndex.toInt), spendingTx, inputIndex, hashType, false)
     txSigComponent = Await.result(txSigComponentFuture, timeout)
     //add the signature to the scriptSig instead of having an empty scriptSig
     signedScriptSig = txSigComponent.scriptSignature.asInstanceOf[P2PKScriptSignature]
@@ -278,7 +278,7 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
     scriptPubKey = P2PKHScriptPubKey(publicKey)
     (creditingTx, outputIndex) = TransactionGenerators.buildCreditingTransaction(scriptPubKey)
     (unsignedTx, inputIndex) = TransactionGenerators.buildSpendingTransaction(creditingTx, EmptyScriptSignature, outputIndex)
-    txSigComponentFuture = P2PKHSigner.sign(Seq(privateKey), creditingTx.outputs(outputIndex.toInt), unsignedTx, inputIndex, hashType)
+    txSigComponentFuture = P2PKHSigner.sign(Seq(privateKey), creditingTx.outputs(outputIndex.toInt), unsignedTx, inputIndex, hashType, false)
     txSigComponent = Await.result(txSigComponentFuture, timeout)
     signedScriptSig = txSigComponent.scriptSignature.asInstanceOf[P2PKHScriptSignature]
   } yield (signedScriptSig, scriptPubKey, privateKey)
@@ -298,7 +298,7 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
     scriptSig = MultiSignatureScriptSignature(emptyDigitalSignatures)
     (creditingTx, outputIndex) = TransactionGenerators.buildCreditingTransaction(multiSigScriptPubKey)
     (spendingTx, inputIndex) = TransactionGenerators.buildSpendingTransaction(creditingTx, scriptSig, outputIndex)
-    txSigComponentFuture = MultiSigSigner.sign(privateKeys, creditingTx.outputs(outputIndex.toInt), spendingTx, inputIndex, hashType)
+    txSigComponentFuture = MultiSigSigner.sign(privateKeys, creditingTx.outputs(outputIndex.toInt), spendingTx, inputIndex, hashType, false)
     txSigComponent = Await.result(txSigComponentFuture, timeout)
     signedScriptSig = txSigComponent.scriptSignature.asInstanceOf[MultiSignatureScriptSignature]
   } yield (signedScriptSig, multiSigScriptPubKey, privateKeys)
