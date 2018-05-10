@@ -1,6 +1,6 @@
 package org.bitcoins.core.gen
 
-import org.bitcoins.core.protocol.{ Bech32Address, BitcoinAddress, P2PKHAddress, P2SHAddress }
+import org.bitcoins.core.protocol._
 import org.scalacheck.Gen
 
 /**
@@ -26,7 +26,9 @@ sealed trait AddressGenerator {
     addr = Bech32Address(witSPK, network)
   } yield addr.get
 
-  def address: Gen[BitcoinAddress] = Gen.oneOf(p2pkhAddress, p2shAddress, bech32Address)
+  def bitcoinAddress: Gen[BitcoinAddress] = Gen.oneOf(p2pkhAddress, p2shAddress, bech32Address)
+
+  def address: Gen[Address] = Gen.oneOf(p2pkhAddress, p2shAddress, bech32Address)
 }
 
 object AddressGenerator extends AddressGenerator
