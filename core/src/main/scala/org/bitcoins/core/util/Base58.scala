@@ -17,15 +17,17 @@ sealed abstract class Base58 {
   private val logger = BitcoinSLogger.logger
   /** Verifies a given [[Base58Type]] string against its checksum (last 4 decoded bytes). */
   def decodeCheck(input: String): Try[Seq[Byte]] = {
-    val decoded: Seq[Byte] = decode(input)
-    if (decoded.length < 4) Failure(new IllegalArgumentException("Invalid input"))
-    else {
-      val splitSeqs = decoded.splitAt(decoded.length - 4)
-      val data: Seq[Byte] = splitSeqs._1
-      val checksum: Seq[Byte] = splitSeqs._2
-      val actualChecksum: Seq[Byte] = CryptoUtil.doubleSHA256(data).bytes.take(4)
-      if (checksum == actualChecksum) Success(data)
-      else Failure(new IllegalArgumentException("checksums don't validate"))
+    val decodedTry: Try[Seq[Byte]] = Try(decode(input))
+    decodedTry.flatMap { decoded =>
+      if (decoded.length < 4) Failure(new IllegalArgumentException("Invalid input"))
+      else {
+        val splitSeqs = decoded.splitAt(decoded.length - 4)
+        val data: Seq[Byte] = splitSeqs._1
+        val checksum: Seq[Byte] = splitSeqs._2
+        val actualChecksum: Seq[Byte] = CryptoUtil.doubleSHA256(data).bytes.take(4)
+        if (checksum == actualChecksum) Success(data)
+        else Failure(new IllegalArgumentException("checksums don't validate"))
+      }
     }
   }
 

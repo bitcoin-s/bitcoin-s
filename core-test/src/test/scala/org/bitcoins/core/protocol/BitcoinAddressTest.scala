@@ -10,39 +10,33 @@ class BitcoinAddressTest extends FlatSpec with MustMatchers {
 
   "3J98t1WpEZ73CNmQviecrnyiWrnqRhWNLy" must "be a valid bitcoin address" in {
     val address = "3J98t1WpEZ73CNmQviecrnyiWrnqRhWNLy"
-    BitcoinAddress(address).value must be(address)
+    BitcoinAddress(address).get.value must be(address)
 
   }
 
   "3J98t1WpEZ73CNmQviecrnyiWrnqRhWNLy" must "be a valid p2sh address and not a valid p2pkh" in {
     val address = "3J98t1WpEZ73CNmQviecrnyiWrnqRhWNLy"
-    P2SHAddress.isP2SHAddress(address) must be(true)
-    P2PKHAddress.isP2PKHAddress(address) must be(false)
+    P2SHAddress.isValid(address) must be(true)
+    P2PKHAddress.isValid(address) must be(false)
   }
 
   "17WN1kFw8D6w1eHzqvkh49xwjE3iPN925b" must "be a valid p2pkh" in {
     val address = "17WN1kFw8D6w1eHzqvkh49xwjE3iPN925b"
-    P2PKHAddress.isP2PKHAddress(address) must be(true)
-    P2SHAddress.isP2SHAddress(address) must be(false)
+    P2PKHAddress.isValid(address) must be(true)
+    P2SHAddress.isValid(address) must be(false)
   }
 
   "The empty string" must "not be a valid bitcoin address" in {
-    intercept[IllegalArgumentException] {
-      BitcoinAddress("")
-    }
+    BitcoinAddress.fromString("").isFailure must be(true)
   }
   "A string that is 25 characters long" must "not be a valid bitcoin address" in {
     val address = "3J98t1WpEZ73CNmQviecrnyiW"
-    intercept[IllegalArgumentException] {
-      BitcoinAddress(address)
-    }
+    BitcoinAddress.fromString(address).isFailure must be(true)
   }
 
   "A string that is 36 characters long" must "not be a valid bitcoin address" in {
     val address = "3J98t1WpEZ73CNmQviecrnyiWrnqRhWNLyyy"
-    intercept[IllegalArgumentException] {
-      BitcoinAddress(address)
-    }
+    BitcoinAddress.fromString(address).isFailure must be(true)
   }
 
   it must "encode a pubKeyHash to an address" in {
@@ -57,6 +51,6 @@ class BitcoinAddressTest extends FlatSpec with MustMatchers {
     val hex = "455141042f90074d7a5bf30c72cf3a8dfd1381bdbd30407010e878f3a11269d5f74a58788505cdca22ea6eab7cfb40dc0e07aba200424ab0d79122a653ad0c7ec9896bdf51ae"
     val scriptPubKey = ScriptPubKey(hex)
     val addr = P2SHAddress(scriptPubKey, MainNet)
-    addr must be(BitcoinAddress("3P14159f73E4gFr7JterCCQh9QjiTjiZrG"))
+    addr must be(BitcoinAddress("3P14159f73E4gFr7JterCCQh9QjiTjiZrG").get)
   }
 }
