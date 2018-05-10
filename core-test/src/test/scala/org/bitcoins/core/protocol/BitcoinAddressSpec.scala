@@ -25,7 +25,7 @@ class BitcoinAddressSpec extends Properties("BitcoinAddressSpec") {
       case (scriptPubKey, _) =>
         //we should get the same address no matter which factory function we use
         val addr = P2SHAddress(scriptPubKey, TestNet3)
-        P2SHAddress.isP2SHAddress(addr)
+        P2SHAddress.isValid(addr.toString)
     }
 
   property("get the same p2pkh address no matter what factory function we use") =
@@ -36,7 +36,7 @@ class BitcoinAddressSpec extends Properties("BitcoinAddressSpec") {
   property("All p2pkh addresses created from factory functions must be valid") =
     Prop.forAll(CryptoGenerators.publicKey) { pubKey =>
       val addr = P2PKHAddress(pubKey, TestNet3)
-      P2PKHAddress.isP2PKHAddress(addr)
+      P2PKHAddress.isValid(addr.toString)
     }
 
   property("serialization symmetry between script and address") = {
