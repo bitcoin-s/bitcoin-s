@@ -11,12 +11,12 @@ import scala.util.Success
 class AddressFactoryTest extends FlatSpec with MustMatchers {
 
   "AddressFactory" must "create an address from a base58 encoded string" in {
-    Address(TestUtil.bitcoinAddress.value) must be(Success(TestUtil.bitcoinAddress))
+    Address(TestUtil.bitcoinAddress.get.value) must be(TestUtil.bitcoinAddress)
   }
 
   it must "create an address from a sequence of bytes" in {
-    val decoded = Base58.decode(TestUtil.bitcoinAddress.value)
-    Address(decoded) must be(Success(TestUtil.bitcoinAddress))
+    val decoded = Base58.decode(TestUtil.bitcoinAddress.get.value)
+    Address(decoded) must be(TestUtil.bitcoinAddress)
   }
 
   it must "throw an exception if we give a hex string to create a bitcoin address from" in {
