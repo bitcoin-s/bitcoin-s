@@ -5,7 +5,7 @@ import java.nio.charset.StandardCharsets
 import org.bitcoins.core.consensus.Merkle
 import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.currency.{ CurrencyUnit, Satoshis }
-import org.bitcoins.core.number.{ Int64, UInt32 }
+import org.bitcoins.core.number.{ Int32, Int64, UInt32 }
 import org.bitcoins.core.protocol.script.{ ScriptPubKey, ScriptSignature }
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.constant.{ BytesToPushOntoStack, ScriptConstant, ScriptNumber }
@@ -57,7 +57,7 @@ sealed abstract class ChainParams {
    * @param amount the block reward for the genesis block (50 BTC in Bitcoin)
    * @return the newly minted genesis block
    */
-  def createGenesisBlock(time: UInt32, nonce: UInt32, nBits: UInt32, version: UInt32, amount: CurrencyUnit): Block = {
+  def createGenesisBlock(time: UInt32, nonce: UInt32, nBits: UInt32, version: Int32, amount: CurrencyUnit): Block = {
     val timestamp = "The Times 03/Jan/2009 Chancellor on brink of second bailout for banks"
     val asm = Seq(BytesToPushOntoStack(65), ScriptConstant("04678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5f"), OP_CHECKSIG)
     val genesisOutputScript = ScriptPubKey.fromAsm(asm)
@@ -75,7 +75,7 @@ sealed abstract class ChainParams {
    * @return the newly minted genesis block
    */
   def createGenesisBlock(timestamp: String, scriptPubKey: ScriptPubKey, time: UInt32, nonce: UInt32, nBits: UInt32,
-    version: UInt32, amount: CurrencyUnit): Block = {
+    version: Int32, amount: CurrencyUnit): Block = {
     val timestampBytes = timestamp.getBytes(StandardCharsets.UTF_8)
     //see https://bitcoin.stackexchange.com/questions/13122/scriptsig-coinbase-structure-of-the-genesis-block
     //for a full breakdown of the genesis block & its script signature
@@ -99,7 +99,7 @@ object MainNetChainParams extends BitcoinChainParams {
 
   override def networkId = "main"
 
-  override def genesisBlock: Block = createGenesisBlock(UInt32(1231006505), UInt32(2083236893), UInt32(0x1d00ffff), UInt32.one, Satoshis(Int64(5000000000L)))
+  override def genesisBlock: Block = createGenesisBlock(UInt32(1231006505), UInt32(2083236893), UInt32(0x1d00ffff), Int32.one, Satoshis(Int64(5000000000L)))
 
   override def base58Prefixes: Map[Base58Type, Seq[Byte]] = Map(
     Base58Type.PubKeyAddress -> BitcoinSUtil.decodeHex("00"),
@@ -115,7 +115,7 @@ object TestNetChainParams extends BitcoinChainParams {
 
   override def networkId = "test"
 
-  override def genesisBlock: Block = createGenesisBlock(UInt32(1296688602), UInt32(414098458), UInt32(0x1d00ffff), UInt32.one, Satoshis(Int64(5000000000L)))
+  override def genesisBlock: Block = createGenesisBlock(UInt32(1296688602), UInt32(414098458), UInt32(0x1d00ffff), Int32.one, Satoshis(Int64(5000000000L)))
 
   override def base58Prefixes: Map[Base58Type, Seq[Byte]] = Map(
     Base58Type.PubKeyAddress -> BitcoinSUtil.decodeHex("6f"),
@@ -129,7 +129,7 @@ object TestNetChainParams extends BitcoinChainParams {
 
 object RegTestNetChainParams extends BitcoinChainParams {
   override def networkId = "regtest"
-  override def genesisBlock: Block = createGenesisBlock(UInt32(1296688602), UInt32(2), UInt32(0x207fffff), UInt32.one, Satoshis(Int64(5000000000L)))
+  override def genesisBlock: Block = createGenesisBlock(UInt32(1296688602), UInt32(2), UInt32(0x207fffff), Int32.one, Satoshis(Int64(5000000000L)))
   override def base58Prefixes: Map[Base58Type, Seq[Byte]] = TestNetChainParams.base58Prefixes
 }
 

@@ -1,10 +1,10 @@
 package org.bitcoins.core.protocol.blockchain
 
 import org.bitcoins.core.crypto.DoubleSha256Digest
-import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.number.{ Int32, UInt32 }
 import org.bitcoins.core.protocol.NetworkElement
 import org.bitcoins.core.serializers.blockchain.RawBlockHeaderSerializer
-import org.bitcoins.core.util.{ BitcoinSUtil, CryptoUtil, BitcoinSLogger, Factory }
+import org.bitcoins.core.util.{ BitcoinSLogger, BitcoinSUtil, CryptoUtil, Factory }
 
 /**
  * Created by chris on 5/19/16.
@@ -29,7 +29,7 @@ sealed trait BlockHeader extends NetworkElement {
    *
    * @return the version number for this block
    */
-  def version: UInt32
+  def version: Int32
 
   /**
    * A SHA256(SHA256()) hash in internal byte order of the previous block’s header.
@@ -117,10 +117,10 @@ sealed trait BlockHeader extends NetworkElement {
  */
 object BlockHeader extends Factory[BlockHeader] {
 
-  private sealed case class BlockHeaderImpl(version: UInt32, previousBlockHash: DoubleSha256Digest,
+  private sealed case class BlockHeaderImpl(version: Int32, previousBlockHash: DoubleSha256Digest,
     merkleRootHash: DoubleSha256Digest, time: UInt32, nBits: UInt32, nonce: UInt32) extends BlockHeader
 
-  def apply(version: UInt32, previousBlockHash: DoubleSha256Digest, merkleRootHash: DoubleSha256Digest,
+  def apply(version: Int32, previousBlockHash: DoubleSha256Digest, merkleRootHash: DoubleSha256Digest,
     time: UInt32, nBits: UInt32, nonce: UInt32): BlockHeader = {
     BlockHeaderImpl(version, previousBlockHash, merkleRootHash, time, nBits, nonce)
   }

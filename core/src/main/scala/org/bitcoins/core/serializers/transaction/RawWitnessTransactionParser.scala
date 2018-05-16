@@ -1,6 +1,6 @@
 package org.bitcoins.core.serializers.transaction
 
-import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.number.{ Int32, UInt32 }
 import org.bitcoins.core.protocol.script.EmptyScriptWitness
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.serializers.{ RawBitcoinSerializer, RawSerializerHelper }
@@ -21,7 +21,7 @@ sealed abstract class RawWitnessTransactionParser extends RawBitcoinSerializer[W
    */
   def read(bytes: List[Byte]): WitnessTransaction = {
     val versionBytes = bytes.take(4)
-    val version = UInt32(versionBytes.reverse)
+    val version = Int32(versionBytes.reverse)
     val marker = bytes(4)
     require(marker.toInt == 0, "Incorrect marker for witness transaction, the marker MUST be 0 for the marker according to BIP141, got: " + marker)
     val flag = bytes(5)

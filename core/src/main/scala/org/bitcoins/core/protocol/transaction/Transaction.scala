@@ -1,7 +1,7 @@
 package org.bitcoins.core.protocol.transaction
 
 import org.bitcoins.core.crypto.DoubleSha256Digest
-import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.number.{ Int32, UInt32 }
 import org.bitcoins.core.protocol.NetworkElement
 import org.bitcoins.core.serializers.transaction.{ RawBaseTransactionParser, RawWitnessTransactionParser }
 import org.bitcoins.core.util.{ BitcoinSUtil, CryptoUtil, Factory }
@@ -30,7 +30,7 @@ sealed abstract class Transaction extends NetworkElement {
   def txIdBE: DoubleSha256Digest = txId.flip
 
   /** The version number for this transaction */
-  def version: UInt32
+  def version: Int32
 
   /** The inputs for this transaction */
   def inputs: Seq[TransactionInput]
@@ -141,21 +141,21 @@ object Transaction extends Factory[Transaction] {
 }
 
 object BaseTransaction extends Factory[BaseTransaction] {
-  private case class BaseTransactionImpl(version: UInt32, inputs: Seq[TransactionInput],
+  private case class BaseTransactionImpl(version: Int32, inputs: Seq[TransactionInput],
     outputs: Seq[TransactionOutput], lockTime: UInt32) extends BaseTransaction
 
   override def fromBytes(bytes: Seq[Byte]): BaseTransaction = RawBaseTransactionParser.read(bytes)
 
-  def apply(version: UInt32, inputs: Seq[TransactionInput],
+  def apply(version: Int32, inputs: Seq[TransactionInput],
     outputs: Seq[TransactionOutput], lockTime: UInt32): BaseTransaction = BaseTransactionImpl(version, inputs, outputs, lockTime)
 }
 
 object WitnessTransaction extends Factory[WitnessTransaction] {
-  private case class WitnessTransactionImpl(version: UInt32, inputs: Seq[TransactionInput],
+  private case class WitnessTransactionImpl(version: Int32, inputs: Seq[TransactionInput],
     outputs: Seq[TransactionOutput], lockTime: UInt32,
     witness: TransactionWitness) extends WitnessTransaction
 
-  def apply(version: UInt32, inputs: Seq[TransactionInput], outputs: Seq[TransactionOutput],
+  def apply(version: Int32, inputs: Seq[TransactionInput], outputs: Seq[TransactionOutput],
     lockTime: UInt32, witness: TransactionWitness): WitnessTransaction =
     WitnessTransactionImpl(version, inputs, outputs, lockTime, witness)
 

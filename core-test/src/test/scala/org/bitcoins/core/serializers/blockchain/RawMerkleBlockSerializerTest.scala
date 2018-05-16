@@ -1,7 +1,7 @@
 package org.bitcoins.core.serializers.blockchain
 
 import org.bitcoins.core.crypto.DoubleSha256Digest
-import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.number.{ Int32, UInt32 }
 import org.bitcoins.core.protocol.blockchain.{ BlockHeader, MerkleBlock, PartialMerkleTree }
 import org.bitcoins.core.util.{ BitcoinSUtil, Leaf, Node }
 import org.scalatest.{ FlatSpec, MustMatchers }
@@ -14,7 +14,7 @@ class RawMerkleBlockSerializerTest extends FlatSpec with MustMatchers {
   "RawMerkleBlockSerializer" must "serialize a merkle block generated inside of scalacheck" in {
 
     val (merkleBlock, txIds) = (MerkleBlock(BlockHeader(
-      UInt32(49150652),
+      Int32(49150652),
       DoubleSha256Digest("6cf34aac6e3de2bf4b429d114ed4572a7ce4b1c44f2091ae6825ee9774dbae2f"),
       DoubleSha256Digest("4487def8ba376b38c1e4e5910d3c9efd27e740cb9be8d452598cbf2e243fad8a"),
       UInt32(2941790316L), UInt32(1626267458), UInt32(1688549344)), UInt32(1),
@@ -33,7 +33,7 @@ class RawMerkleBlockSerializerTest extends FlatSpec with MustMatchers {
   it must "not have any extra hashes left over when deserializing a previously valid partial merkle tree" in {
     val (merkleBlock, txIds) = (
       MerkleBlock(BlockHeader(
-        UInt32(1626792925),
+        Int32(1626792925),
         DoubleSha256Digest("de2fc5fac498126f27c8adaa17aa86a1ef15d2b0adf5f2d2c056495bec17153f"),
         DoubleSha256Digest("f27404d701b9047cfcaa8d8454d2ecc12f4aa3e900ba8e5945bbb9289d67dd63"),
         UInt32(3098237133L), UInt32(359220269), UInt32(590323230)), UInt32(6),
