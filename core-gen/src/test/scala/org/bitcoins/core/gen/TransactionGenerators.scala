@@ -2,7 +2,7 @@ package org.bitcoins.core.gen
 
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency.{ CurrencyUnit, CurrencyUnits, Satoshis }
-import org.bitcoins.core.number.{ Int64, UInt32 }
+import org.bitcoins.core.number.{ Int32, Int64, UInt32 }
 import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction.{ TransactionInput, TransactionOutPoint, TransactionOutput, _ }
@@ -100,7 +100,7 @@ trait TransactionGenerators extends BitcoinSLogger {
   def transaction: Gen[Transaction] = Gen.oneOf(baseTransaction, witnessTransaction)
 
   def baseTransaction: Gen[BaseTransaction] = for {
-    version <- NumberGenerator.uInt32s
+    version <- NumberGenerator.int32s
     is <- smallInputs
     os <- smallOutputs
     lockTime <- NumberGenerator.uInt32s
@@ -108,7 +108,7 @@ trait TransactionGenerators extends BitcoinSLogger {
 
   /** Generates a random [[WitnessTransaction]] */
   def witnessTransaction: Gen[WitnessTransaction] = for {
-    version <- NumberGenerator.uInt32s
+    version <- NumberGenerator.int32s
     //we cannot have zero witnesses on a WitnessTx
     //https://github.com/bitcoin/bitcoin/blob/e8cfe1ee2d01c493b758a67ad14707dca15792ea/src/primitives/transaction.h#L276-L281
     is <- smallInputsNonEmpty
@@ -346,13 +346,13 @@ trait TransactionGenerators extends BitcoinSLogger {
    * Builds a spending transaction according to bitcoin core
    * @return the built spending transaction and the input index for the script signature
    */
-  def buildSpendingTransaction(version: UInt32, creditingTx: Transaction, scriptSignature: ScriptSignature,
+  def buildSpendingTransaction(version: Int32, creditingTx: Transaction, scriptSignature: ScriptSignature,
     outputIndex: UInt32, locktime: UInt32, sequence: UInt32): (Transaction, UInt32) = {
     val output = TransactionOutput(CurrencyUnits.zero, EmptyScriptPubKey)
     buildSpendingTransaction(version, creditingTx, scriptSignature, outputIndex, locktime, sequence, Seq(output))
   }
 
-  def buildSpendingTransaction(version: UInt32, creditingTx: Transaction, scriptSignature: ScriptSignature,
+  def buildSpendingTransaction(version: Int32, creditingTx: Transaction, scriptSignature: ScriptSignature,
     outputIndex: UInt32, locktime: UInt32, sequence: UInt32, outputs: Seq[TransactionOutput]): (Transaction, UInt32) = {
     val os = if (outputs.isEmpty) {
       Seq(TransactionOutput(CurrencyUnits.zero, EmptyScriptPubKey))
@@ -380,7 +380,7 @@ trait TransactionGenerators extends BitcoinSLogger {
     buildSpendingTransaction(TransactionConstants.version, creditingTx, scriptSignature, outputIndex, locktime, sequence, witness)
   }
 
-  def buildSpendingTransaction(version: UInt32, creditingTx: Transaction, scriptSignature: ScriptSignature, outputIndex: UInt32,
+  def buildSpendingTransaction(version: Int32, creditingTx: Transaction, scriptSignature: ScriptSignature, outputIndex: UInt32,
     locktime: UInt32, sequence: UInt32, witness: TransactionWitness): (WitnessTransaction, UInt32) = {
 
     val outputs = dummyOutputs
@@ -389,7 +389,7 @@ trait TransactionGenerators extends BitcoinSLogger {
 
   def dummyOutputs: Seq[TransactionOutput] = Seq(TransactionOutput(CurrencyUnits.zero, EmptyScriptPubKey))
 
-  def buildSpendingTransaction(version: UInt32, creditingTx: Transaction, scriptSignature: ScriptSignature, outputIndex: UInt32,
+  def buildSpendingTransaction(version: Int32, creditingTx: Transaction, scriptSignature: ScriptSignature, outputIndex: UInt32,
     locktime: UInt32, sequence: UInt32, witness: TransactionWitness, outputs: Seq[TransactionOutput]): (WitnessTransaction, UInt32) = {
     val outpoint = TransactionOutPoint(creditingTx.txId, outputIndex)
     val input = TransactionInput(outpoint, scriptSignature, sequence)
@@ -401,7 +401,7 @@ trait TransactionGenerators extends BitcoinSLogger {
     buildSpendingTransaction(TransactionConstants.version, creditingTx, scriptSignature, outputIndex, witness)
   }
 
-  def buildSpendingTransaction(version: UInt32, creditingTx: Transaction, scriptSignature: ScriptSignature, outputIndex: UInt32,
+  def buildSpendingTransaction(version: Int32, creditingTx: Transaction, scriptSignature: ScriptSignature, outputIndex: UInt32,
     witness: TransactionWitness): (WitnessTransaction, UInt32) = {
     val locktime = TransactionConstants.lockTime
     val sequence = TransactionConstants.sequence
@@ -430,11 +430,11 @@ trait TransactionGenerators extends BitcoinSLogger {
    * Example: useful for creating transactions with scripts containing OP_CHECKSEQUENCEVERIFY.
    * @return
    */
-  def buildCreditingTransaction(version: UInt32, scriptPubKey: ScriptPubKey): (Transaction, UInt32) = {
+  def buildCreditingTransaction(version: Int32, scriptPubKey: ScriptPubKey): (Transaction, UInt32) = {
     buildCreditingTransaction(version, scriptPubKey, CurrencyUnits.zero)
   }
 
-  def buildCreditingTransaction(version: UInt32, output: TransactionOutput): (Transaction, UInt32) = {
+  def buildCreditingTransaction(version: Int32, output: TransactionOutput): (Transaction, UInt32) = {
     val outpoint = EmptyTransactionOutPoint
     val scriptSignature = ScriptSignature("0000")
     val input = TransactionInput(outpoint, scriptSignature, TransactionConstants.sequence)
@@ -442,7 +442,7 @@ trait TransactionGenerators extends BitcoinSLogger {
     (tx, UInt32.zero)
   }
 
-  def buildCreditingTransaction(version: UInt32, scriptPubKey: ScriptPubKey, amount: CurrencyUnit): (Transaction, UInt32) = {
+  def buildCreditingTransaction(version: Int32, scriptPubKey: ScriptPubKey, amount: CurrencyUnit): (Transaction, UInt32) = {
     buildCreditingTransaction(version, TransactionOutput(amount, scriptPubKey))
   }
 

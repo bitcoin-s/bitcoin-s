@@ -2,7 +2,7 @@ package org.bitcoins.core.gen
 
 import org.bitcoins.core.consensus.Merkle
 import org.bitcoins.core.crypto.DoubleSha256Digest
-import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.number.{ Int32, UInt32 }
 import org.bitcoins.core.protocol.blockchain.{ Block, BlockHeader }
 import org.bitcoins.core.protocol.transaction.{ EmptyTransaction, Transaction }
 import org.scalacheck.Gen
@@ -51,7 +51,7 @@ sealed abstract class BlockchainElementsGenerator {
 
   /** Generates a [[BlockHeader]]] that has the fields set to the given values */
   def blockHeader(previousBlockHash: DoubleSha256Digest, nBits: UInt32, txs: Seq[Transaction]): Gen[BlockHeader] = for {
-    version <- NumberGenerator.uInt32s
+    version <- NumberGenerator.int32s
     merkleRootHash = Merkle.computeMerkleRoot(txs)
     time <- NumberGenerator.uInt32s
     nonce <- NumberGenerator.uInt32s
@@ -90,7 +90,7 @@ sealed abstract class BlockchainElementsGenerator {
   private def buildBlockHeader(prevBlockHash: DoubleSha256Digest, nBits: UInt32): BlockHeader = {
     //nonce for the unique hash
     val nonce = NumberGenerator.uInt32s.sample.get
-    BlockHeader(UInt32.one, prevBlockHash, EmptyTransaction.txId, UInt32.one, nBits, nonce)
+    BlockHeader(Int32.one, prevBlockHash, EmptyTransaction.txId, UInt32.one, nBits, nonce)
   }
 }
 

@@ -414,10 +414,11 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
   /** Helper function to generate [[LockTimeScriptSignature]]s */
   private def lockTimeHelper(lockTime: Option[UInt32], sequence: UInt32, lock: LockTimeScriptPubKey, privateKeys: Seq[ECPrivateKey], requiredSigs: Option[Int],
     hashType: HashType): LockTimeScriptSignature = {
+    val tc = TransactionConstants
     val pubKeys = privateKeys.map(_.publicKey)
-    val (creditingTx, outputIndex) = TransactionGenerators.buildCreditingTransaction(UInt32(2), lock)
-    val (unsignedSpendingTx, inputIndex) = TransactionGenerators.buildSpendingTransaction(UInt32(2), creditingTx,
-      EmptyScriptSignature, outputIndex, lockTime.getOrElse(TransactionConstants.lockTime), sequence)
+    val (creditingTx, outputIndex) = TransactionGenerators.buildCreditingTransaction(tc.validLockVersion, lock)
+    val (unsignedSpendingTx, inputIndex) = TransactionGenerators.buildSpendingTransaction(tc.validLockVersion, creditingTx,
+      EmptyScriptSignature, outputIndex, lockTime.getOrElse(tc.lockTime), sequence)
 
     val txSignatureComponent = BaseTxSigComponent(unsignedSpendingTx, inputIndex,
       lock, Policy.standardScriptVerifyFlags)

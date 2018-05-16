@@ -1,7 +1,7 @@
 package org.bitcoins.core.serializers.blockchain
 
 import org.bitcoins.core.crypto.DoubleSha256Digest
-import org.bitcoins.core.number.{ UInt32, UInt64 }
+import org.bitcoins.core.number.{ Int32, UInt32, UInt64 }
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.util.BitcoinSUtil
@@ -106,7 +106,7 @@ class RawBlockSerializerTest extends FlatSpec with MustMatchers {
 
     val block = RawBlockSerializer.read(hex)
     block.blockHeader.hash.hex must be("5f3d49113e7bf838a061a1661c672053deb90891edf3ecfa9e18000000000000")
-    block.blockHeader.version must be(UInt32(536870912))
+    block.blockHeader.version must be(Int32(536870912))
     block.blockHeader.previousBlockHash must be(DoubleSha256Digest(prevBlockHash))
     block.blockHeader.merkleRootHash must be(DoubleSha256Digest(merkleRoot))
     block.blockHeader.time must be(UInt32(1465354640))

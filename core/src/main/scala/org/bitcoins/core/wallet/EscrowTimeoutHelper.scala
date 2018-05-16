@@ -123,7 +123,7 @@ sealed abstract class EscrowTimeoutHelper {
       val tc = TransactionConstants
       val uScriptWitness = P2WSHWitnessV0(lock)
       val uTxWitness = TransactionWitness(Seq(uScriptWitness))
-      val uwtx = WitnessTransaction(tc.validLockVersion, inputs, outputs, tc.validLockVersion, uTxWitness)
+      val uwtx = WitnessTransaction(tc.validLockVersion, inputs, outputs, tc.lockTime, uTxWitness)
       val u = WitnessTxSigComponentRaw(uwtx, inputIndex, witSPK, Policy.standardFlags, amount)
       val signature = TransactionSignatureCreator.createSig(u, privKey, hashType)
       val scriptSig = CSVScriptSignature(P2PKHScriptSignature(signature, privKey.publicKey))

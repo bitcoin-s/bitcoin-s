@@ -1,14 +1,14 @@
 package org.bitcoins.core.protocol.transaction
 
-import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.number.{ Int32, UInt32 }
 
 /**
  * Created by chris on 2/12/16.
  */
 trait TransactionConstants {
 
-  lazy val version = UInt32.one
-  lazy val validLockVersion = UInt32(2)
+  lazy val version = Int32.one
+  lazy val validLockVersion = Int32(2)
   lazy val lockTime = UInt32.zero
   lazy val sequence = UInt32(4294967295L)
 

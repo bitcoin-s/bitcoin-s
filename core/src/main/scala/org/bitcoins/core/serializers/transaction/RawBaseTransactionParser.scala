@@ -1,6 +1,6 @@
 package org.bitcoins.core.serializers.transaction
 
-import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.number.{ Int32, UInt32 }
 import org.bitcoins.core.protocol.transaction.{ BaseTransaction, TransactionInput, TransactionOutput }
 import org.bitcoins.core.serializers.{ RawBitcoinSerializer, RawSerializerHelper }
 
@@ -14,7 +14,7 @@ sealed abstract class RawBaseTransactionParser extends RawBitcoinSerializer[Base
   val helper = RawSerializerHelper
   def read(bytes: List[Byte]): BaseTransaction = {
     val versionBytes = bytes.take(4)
-    val version = UInt32(versionBytes.reverse)
+    val version = Int32(versionBytes.reverse)
     val txInputBytes = bytes.slice(4, bytes.size)
     val (inputs, outputBytes) = helper.parseCmpctSizeUIntSeq(txInputBytes, RawTransactionInputParser.read(_))
     val (outputs, lockTimeBytes) = helper.parseCmpctSizeUIntSeq(
