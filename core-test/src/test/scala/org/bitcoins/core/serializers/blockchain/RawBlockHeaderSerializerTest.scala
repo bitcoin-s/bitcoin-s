@@ -1,7 +1,7 @@
 package org.bitcoins.core.serializers.blockchain
 
 import org.bitcoins.core.crypto.DoubleSha256Digest
-import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.number.{ Int32, UInt32 }
 import org.bitcoins.core.util.BitcoinSUtil
 import org.scalatest.{ FlatSpec, MustMatchers }
 
@@ -24,7 +24,7 @@ class RawBlockHeaderSerializerTest extends FlatSpec with MustMatchers {
   val hex = version + prevBlockHash + merkleRoot + timeStamp + nBits + nonce
   "BlockHeader" must "parse genesis block header" in {
     val blockHeader = RawBlockHeaderSerializer.read(hex)
-    blockHeader.version must be(UInt32(BitcoinSUtil.flipEndianness(version)))
+    blockHeader.version must be(Int32(BitcoinSUtil.flipEndianness(version)))
     blockHeader.previousBlockHash must be(DoubleSha256Digest(prevBlockHash))
     blockHeader.merkleRootHash must be(DoubleSha256Digest(merkleRoot))
     blockHeader.time must be(UInt32(BitcoinSUtil.flipEndianness(timeStamp)))
@@ -55,7 +55,7 @@ class RawBlockHeaderSerializerTest extends FlatSpec with MustMatchers {
     val hex2 = version2 + prevBlockHash2 + merkleRoot2 + timeStamp2 + nBits2 + nonce2
     val hash = "2837af674e81436b09e0c937e94d96fe32e5c872391ba1090000000000000000"
     val blockHeader = RawBlockHeaderSerializer.read(hex2)
-    blockHeader.version must be(UInt32(2))
+    blockHeader.version must be(Int32(2))
     blockHeader.previousBlockHash must be(DoubleSha256Digest(prevBlockHash2))
     blockHeader.merkleRootHash must be(DoubleSha256Digest(merkleRoot2))
     blockHeader.time must be(UInt32(1415239972))
@@ -74,7 +74,7 @@ class RawBlockHeaderSerializerTest extends FlatSpec with MustMatchers {
     val hex = version + prevBlockHash + merkleRoot + timeStamp + nBits + nonce
     val hash = "c5a764eb61db336edb17be9c49dc07dcae0219bc51a2efe681df9f0000000000"
     val blockHeader = RawBlockHeaderSerializer.read(hex)
-    blockHeader.version must be(UInt32(536870912))
+    blockHeader.version must be(Int32(536870912))
     blockHeader.previousBlockHash must be(DoubleSha256Digest(prevBlockHash))
     blockHeader.merkleRootHash must be(DoubleSha256Digest(merkleRoot))
     blockHeader.time must be(UInt32(1465247498))

@@ -94,7 +94,7 @@ sealed abstract class LockTimeInterpreter {
           //see BIP68 for semantic of locktimeDisableFlag
           logger.info("Locktime disable flag was set so OP_CHECKSEQUENCEVERIFY is treated as a NOP")
           ScriptProgram(program, program.script.tail, ScriptProgram.Script)
-        case s: ScriptNumber if (isLockTimeBitOff(s) && program.txSignatureComponent.transaction.version < UInt32(2)) =>
+        case s: ScriptNumber if (isLockTimeBitOff(s) && program.txSignatureComponent.transaction.version < TransactionConstants.validLockVersion) =>
           logger.error("OP_CSV fails if locktime bit is not set and the tx version < 2")
           ScriptProgram(program, ScriptErrorUnsatisfiedLocktime)
         case s: ScriptNumber =>
@@ -135,7 +135,7 @@ sealed abstract class LockTimeInterpreter {
 
     // Fail if the transaction's version number is not set high
     // enough to trigger BIP 68 rules.
-    if (program.txSignatureComponent.transaction.version < UInt32(2)) {
+    if (program.txSignatureComponent.transaction.version < TransactionConstants.validLockVersion) {
       logger.error("OP_CSV fails the script if the transaction's version is less than 2.")
       return false
     }
