@@ -1,6 +1,6 @@
 package org.bitcoins.core.serializers.transaction
 
-import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.number.{ Int32, UInt32 }
 import org.bitcoins.core.protocol.transaction.{ Transaction, TransactionConstants }
 import org.bitcoins.core.util.{ BitcoinSUtil, TestUtil }
 import org.scalatest.{ FlatSpec, MustMatchers }
@@ -12,7 +12,7 @@ class RawBaseTransactionParserTest extends FlatSpec with MustMatchers {
   val encode = BitcoinSUtil.encodeHex(_: Seq[Byte])
   "RawBaseTransactionParser" must "parse a raw transaction" in {
     val tx: Transaction = RawBaseTransactionParser.read(TestUtil.rawTransaction)
-    tx.version must be(UInt32.one)
+    tx.version must be(Int32.one)
     tx.inputs.size must be(2)
     tx.outputs.size must be(2)
     tx.lockTime must be(UInt32.zero)
