@@ -1,11 +1,12 @@
 package org.bitcoins.core.protocol.transaction
 
-import org.bitcoins.core.crypto.{ BaseTxSigComponent, TxSigComponent }
+import org.bitcoins.core.crypto.{ BaseTxSigComponent, TxSigComponent, WitnessTxSigComponentP2SH, WitnessTxSigComponentRaw }
+import org.bitcoins.core.currency.CurrencyUnits
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction.testprotocol.CoreTransactionTestCase
 import org.bitcoins.core.protocol.transaction.testprotocol.CoreTransactionTestCaseProtocol._
-import org.bitcoins.core.script.ScriptProgram
+import org.bitcoins.core.script.{ PreExecutionScriptProgram, ScriptProgram }
 import org.bitcoins.core.script.interpreter.ScriptInterpreter
 import org.bitcoins.core.script.result.ScriptOk
 import org.bitcoins.core.serializers.transaction.RawBaseTransactionParser
@@ -134,31 +135,53 @@ class TransactionTest extends FlatSpec with MustMatchers {
         outPoint.txId == input.previousOutput.txId,
         "OutPoint txId not the same as input prevout txid\noutPoint.txId: " + outPoint.txId + "\n" +
           "input prevout txid: " + input.previousOutput.txId)
-      val program = amountOpt match {
+      val txSigComponent = amountOpt match {
         case Some(amount) => scriptPubKey match {
           case p2sh: P2SHScriptPubKey =>
             tx match {
               case btx: BaseTransaction =>
-                ScriptProgram(btx, p2sh,
-                  UInt32(inputIndex), testCase.flags)
+                BaseTxSigComponent(
+                  transaction = btx,
+                  inputIndex = UInt32(inputIndex),
+                  output = TransactionOutput(amount, p2sh),
+                  flags = testCase.flags)
               case wtx: WitnessTransaction =>
-                ScriptProgram(wtx, p2sh,
-                  UInt32(inputIndex), testCase.flags, amount)
+                WitnessTxSigComponentP2SH(
+                  transaction = wtx,
+                  inputIndex = UInt32(inputIndex),
+                  output = TransactionOutput(amount, p2sh),
+                  flags = testCase.flags)
             }
           case wit: WitnessScriptPubKey =>
             tx match {
               case btx: BaseTransaction =>
-                ScriptProgram(btx, wit, UInt32(inputIndex), testCase.flags)
+                //ScriptProgram(btx, wit, UInt32(inputIndex), testCase.flags)
+                BaseTxSigComponent(
+                  transaction = btx,
+                  inputIndex = UInt32(inputIndex),
+                  output = TransactionOutput(amount, wit),
+                  flags = testCase.flags)
               case wtx: WitnessTransaction =>
-                ScriptProgram(wtx, wit, UInt32(inputIndex), testCase.flags, amount)
+                WitnessTxSigComponentRaw(
+                  transaction = wtx,
+                  inputIndex = UInt32(inputIndex),
+                  output = TransactionOutput(amount, wit),
+                  flags = testCase.flags)
             }
           case x @ (_: P2PKScriptPubKey | _: P2PKHScriptPubKey | _: MultiSignatureScriptPubKey | _: CLTVScriptPubKey | _: CSVScriptPubKey
             | _: CLTVScriptPubKey | _: EscrowTimeoutScriptPubKey | _: NonStandardScriptPubKey | _: WitnessCommitment | EmptyScriptPubKey) =>
-            val t = BaseTxSigComponent(tx, UInt32(inputIndex), x, testCase.flags)
-            ScriptProgram(t)
+            val output = TransactionOutput(amount, x)
+
+            BaseTxSigComponent(tx, UInt32(inputIndex), output, testCase.flags)
         }
-        case None => ScriptProgram(tx, scriptPubKey, UInt32(inputIndex), testCase.flags)
+        case None =>
+          BaseTxSigComponent(
+            transaction = tx,
+            inputIndex = UInt32(inputIndex),
+            output = TransactionOutput(CurrencyUnits.zero, scriptPubKey),
+            flags = testCase.flags)
       }
+      val program = PreExecutionScriptProgram(txSigComponent)
       withClue(testCase.raw + " input index: " + inputIndex) {
         ScriptInterpreter.run(program) must equal(ScriptOk)
       }
@@ -193,31 +216,54 @@ class TransactionTest extends FlatSpec with MustMatchers {
         logger.info("" + testCase.scriptPubKeys)
         val isValidTx = ScriptInterpreter.checkTransaction(tx)
         if (isValidTx) {
-          val program = amountOpt match {
+          val txSigComponent = amountOpt match {
             case Some(amount) => scriptPubKey match {
               case p2sh: P2SHScriptPubKey =>
                 tx match {
                   case btx: BaseTransaction =>
-                    ScriptProgram(btx, p2sh,
-                      UInt32(inputIndex), testCase.flags)
+                    BaseTxSigComponent(
+                      transaction = btx,
+                      inputIndex = UInt32(inputIndex),
+                      output = TransactionOutput(amount, scriptPubKey),
+                      flags = testCase.flags)
                   case wtx: WitnessTransaction =>
-                    ScriptProgram(wtx, p2sh,
-                      UInt32(inputIndex), testCase.flags, amount)
+                    WitnessTxSigComponentP2SH(
+                      transaction = wtx,
+                      inputIndex = UInt32(inputIndex),
+                      output = TransactionOutput(amount, scriptPubKey),
+                      flags = testCase.flags)
                 }
               case wit: WitnessScriptPubKey =>
                 tx match {
                   case btx: BaseTransaction =>
-                    ScriptProgram(btx, wit, UInt32(inputIndex), testCase.flags)
+                    BaseTxSigComponent(
+                      transaction = btx,
+                      inputIndex = UInt32(inputIndex),
+                      output = TransactionOutput(amount, wit),
+                      flags = testCase.flags)
                   case wtx: WitnessTransaction =>
-                    ScriptProgram(wtx, wit, UInt32(inputIndex), testCase.flags, amount)
+                    WitnessTxSigComponentRaw(
+                      transaction = wtx,
+                      inputIndex = UInt32(inputIndex),
+                      output = TransactionOutput(amount, wit),
+                      flags = testCase.flags)
                 }
               case x @ (_: P2PKScriptPubKey | _: P2PKHScriptPubKey | _: MultiSignatureScriptPubKey | _: CLTVScriptPubKey | _: CSVScriptPubKey
                 | _: CLTVScriptPubKey | _: EscrowTimeoutScriptPubKey | _: NonStandardScriptPubKey | _: WitnessCommitment | EmptyScriptPubKey) =>
-                val t = BaseTxSigComponent(tx, UInt32(inputIndex), x, testCase.flags)
-                ScriptProgram(t)
+                BaseTxSigComponent(
+                  transaction = tx,
+                  inputIndex = UInt32(inputIndex),
+                  output = TransactionOutput(amount, x),
+                  flags = testCase.flags)
             }
-            case None => ScriptProgram(tx, scriptPubKey, UInt32(inputIndex), testCase.flags)
+            case None =>
+              BaseTxSigComponent(
+                transaction = tx,
+                inputIndex = UInt32(inputIndex),
+                output = TransactionOutput(CurrencyUnits.zero, scriptPubKey),
+                flags = testCase.flags)
           }
+          val program = PreExecutionScriptProgram(txSigComponent)
           ScriptInterpreter.run(program) == ScriptOk
         } else {
           logger.error("Transaction does not pass CheckTransaction()")

@@ -2,18 +2,14 @@ package org.bitcoins.core.util
 
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.protocol.script.{ CLTVScriptPubKey, CSVScriptPubKey, EmptyScriptPubKey, _ }
-import org.bitcoins.core.protocol.transaction.{ BaseTransaction, Transaction, WitnessTransaction }
-import org.bitcoins.core.script.ScriptProgram.PreExecutionScriptProgramImpl
 import org.bitcoins.core.script.constant._
 import org.bitcoins.core.script.crypto.{ OP_CHECKMULTISIG, OP_CHECKMULTISIGVERIFY, OP_CHECKSIG, OP_CHECKSIGVERIFY }
 import org.bitcoins.core.script.flag.{ ScriptFlag, ScriptFlagUtil }
 import org.bitcoins.core.script.result.{ ScriptError, ScriptErrorPubKeyType, ScriptErrorWitnessPubKeyType }
-import org.bitcoins.core.script.{ ExecutionInProgressScriptProgram, ScriptOperation, ScriptProgram, ScriptSettings }
+import org.bitcoins.core.script.{ ExecutionInProgressScriptProgram, ScriptProgram, ScriptSettings }
 
 import scala.annotation.tailrec
-import scala.util.Try
 
 /**
  * Created by chris on 3/2/16.

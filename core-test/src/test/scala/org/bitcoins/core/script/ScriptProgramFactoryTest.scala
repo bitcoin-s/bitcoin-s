@@ -1,7 +1,10 @@
 package org.bitcoins.core.script
 
+import org.bitcoins.core.crypto.BaseTxSigComponent
+import org.bitcoins.core.currency.CurrencyUnits
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script.SigVersionBase
+import org.bitcoins.core.protocol.transaction.TransactionOutput
 import org.bitcoins.core.script.constant.{ OP_0, OP_1 }
 import org.bitcoins.core.script.flag.ScriptFlagFactory
 import org.bitcoins.core.util.TestUtil
@@ -50,9 +53,14 @@ class ScriptProgramFactoryTest extends FlatSpec with MustMatchers {
   it must "update the script program to the given stack and script" in {
     val stack = List(OP_0)
     val script = List(OP_1)
-    val program = ScriptProgram(TestUtil.transaction, TestUtil.scriptPubKey, UInt32.zero,
-      stack, script, ScriptFlagFactory.empty)
-    program.stack must be(stack)
-    program.script must be(script)
+    val t = BaseTxSigComponent(
+      transaction = TestUtil.transaction,
+      inputIndex = UInt32.zero,
+      output = TransactionOutput(CurrencyUnits.zero, TestUtil.scriptPubKey),
+      ScriptFlagFactory.empty)
+    val program = PreExecutionScriptProgram(t)
+    val inProgress = ExecutionInProgressScriptProgram(t, stack, script, Nil, Nil, Nil, None)
+    inProgress.stack must be(stack)
+    inProgress.script must be(script)
   }
 }

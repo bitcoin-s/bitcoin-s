@@ -1,21 +1,21 @@
 package org.bitcoins.core.gen
 
-import org.bitcoins.core.crypto.{ TransactionSignatureCreator, _ }
-import org.bitcoins.core.currency.{ CurrencyUnit, CurrencyUnits }
+import org.bitcoins.core.crypto.{TransactionSignatureCreator, _}
+import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.policy.Policy
-import org.bitcoins.core.protocol.script.{ P2SHScriptPubKey, _ }
+import org.bitcoins.core.protocol.script.{P2SHScriptPubKey, _}
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.ScriptSettings
-import org.bitcoins.core.script.constant.{ ScriptNumber, _ }
+import org.bitcoins.core.script.constant.{ScriptNumber, _}
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.util.BitcoinSLogger
-import org.bitcoins.core.wallet.signer.{ MultiSigSigner, P2PKHSigner, P2PKSigner }
+import org.bitcoins.core.wallet.signer.{MultiSigSigner, P2PKHSigner, P2PKSigner}
 import org.scalacheck.Gen
 
-import scala.concurrent.duration.DurationInt
-import scala.concurrent.{ Await, ExecutionContext }
+import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration.DurationInt
 
 /**
  * Created by chris on 6/22/16.
@@ -419,9 +419,9 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
     val (creditingTx, outputIndex) = TransactionGenerators.buildCreditingTransaction(tc.validLockVersion, lock)
     val (unsignedSpendingTx, inputIndex) = TransactionGenerators.buildSpendingTransaction(tc.validLockVersion, creditingTx,
       EmptyScriptSignature, outputIndex, lockTime.getOrElse(tc.lockTime), sequence)
-
+    val output = TransactionOutput(CurrencyUnits.zero, lock)
     val txSignatureComponent = BaseTxSigComponent(unsignedSpendingTx, inputIndex,
-      lock, Policy.standardScriptVerifyFlags)
+      output, Policy.standardScriptVerifyFlags)
 
     val txSignatures: Seq[ECDigitalSignature] = for {
       i <- 0 until requiredSigs.getOrElse(1)
@@ -453,8 +453,9 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
           EmptyScriptSignature, outputIndex, UInt32.zero, sequence, outputs)
       }
     }
+    val output = TransactionOutput(CurrencyUnits.zero, csvEscrowTimeout)
     val txSignatureComponent = BaseTxSigComponent(unsignedSpendingTx, inputIndex,
-      csvEscrowTimeout, Policy.standardScriptVerifyFlags)
+      output, Policy.standardScriptVerifyFlags)
 
     val txSignatures: Seq[ECDigitalSignature] = for {
       i <- 0 until requiredSigs.getOrElse(1)

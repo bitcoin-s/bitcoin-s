@@ -105,17 +105,21 @@ class BitcoinTxBuilderSpec extends Properties("TxBuilderSpec") {
         val spk = output.scriptPubKey
         val amount = output.value
         val txSigComponent = spk match {
-          case witSPK: WitnessScriptPubKeyV0 => WitnessTxSigComponentRaw(tx.asInstanceOf[WitnessTransaction], UInt32(idx),
-            witSPK, Policy.standardFlags, amount)
+          case witSPK: WitnessScriptPubKeyV0 =>
+            val o = TransactionOutput(amount, witSPK)
+            WitnessTxSigComponentRaw(tx.asInstanceOf[WitnessTransaction], UInt32(idx),
+              o, Policy.standardFlags)
           case _: UnassignedWitnessScriptPubKey => ???
           case x @ (_: P2PKScriptPubKey | _: P2PKHScriptPubKey | _: MultiSignatureScriptPubKey | _: WitnessCommitment
             | _: CSVScriptPubKey | _: CLTVScriptPubKey | _: NonStandardScriptPubKey | _: EscrowTimeoutScriptPubKey
             | EmptyScriptPubKey) =>
-            BaseTxSigComponent(tx, UInt32(idx), x, Policy.standardFlags)
+            val o = TransactionOutput(CurrencyUnits.zero, x)
+            BaseTxSigComponent(tx, UInt32(idx), o, Policy.standardFlags)
           case p2sh: P2SHScriptPubKey =>
-            BaseTxSigComponent(tx, UInt32(idx), p2sh, Policy.standardFlags)
+            val o = TransactionOutput(CurrencyUnits.zero, p2sh)
+            BaseTxSigComponent(tx, UInt32(idx), o, Policy.standardFlags)
         }
-        ScriptProgram(txSigComponent)
+        PreExecutionScriptProgram(txSigComponent)
     }
     ScriptInterpreter.runAllVerify(programs)
   }
