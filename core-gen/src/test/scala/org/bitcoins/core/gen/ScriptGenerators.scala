@@ -1,16 +1,16 @@
 package org.bitcoins.core.gen
 
-import org.bitcoins.core.crypto.{TransactionSignatureCreator, _}
-import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits}
+import org.bitcoins.core.crypto.{ TransactionSignatureCreator, _ }
+import org.bitcoins.core.currency.{ CurrencyUnit, CurrencyUnits }
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.policy.Policy
-import org.bitcoins.core.protocol.script.{P2SHScriptPubKey, _}
+import org.bitcoins.core.protocol.script.{ P2SHScriptPubKey, _ }
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.ScriptSettings
-import org.bitcoins.core.script.constant.{ScriptNumber, _}
+import org.bitcoins.core.script.constant.{ ScriptNumber, _ }
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.util.BitcoinSLogger
-import org.bitcoins.core.wallet.signer.{MultiSigSigner, P2PKHSigner, P2PKSigner}
+import org.bitcoins.core.wallet.signer.{ MultiSigSigner, P2PKHSigner, P2PKSigner }
 import org.scalacheck.Gen
 
 import scala.concurrent.Await

@@ -6,7 +6,7 @@ import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.flag.ScriptFlag
 
-import scala.util.{Failure, Success, Try}
+import scala.util.{ Failure, Success, Try }
 
 /**
  * Created by chris on 4/6/16.
@@ -31,6 +31,9 @@ sealed abstract class TxSigComponent {
   /** The scriptPubKey for which the input is being checked against */
   def scriptPubKey: ScriptPubKey = output.scriptPubKey
 
+  /** The amount of [[CurrencyUnit]] we are spending in this TxSigComponent */
+  def amount: CurrencyUnit = output.value
+
   /** The flags that are needed to verify if the signature is correct */
   def flags: Seq[ScriptFlag]
 
@@ -45,8 +48,6 @@ sealed abstract class TxSigComponent {
  */
 sealed abstract class BaseTxSigComponent extends TxSigComponent {
   override def sigVersion = SigVersionBase
-
-  override def scriptPubKey = output.scriptPubKey
 }
 
 /**
@@ -61,9 +62,6 @@ sealed abstract class WitnessTxSigComponent extends TxSigComponent {
 
   def witness: ScriptWitness = transaction.witness.witnesses(inputIndex.toInt)
 
-  /** The amount of [[CurrencyUnit]] this input is spending */
-  def amount: CurrencyUnit
-
   def witnessVersion: WitnessVersion
 
   override def sigVersion = SigVersionWitnessV0
@@ -76,8 +74,6 @@ sealed abstract class WitnessTxSigComponentRaw extends WitnessTxSigComponent {
   override def witnessVersion: WitnessVersion = {
     scriptPubKey.witnessVersion
   }
-
-  override def amount: CurrencyUnit = output.value
 }
 
 /** This represents checking the [[WitnessTransaction]] against a P2SH(P2WSH) or P2SH(P2WPKH) scriptPubKey */
@@ -115,6 +111,8 @@ sealed abstract class WitnessTxSigComponentP2SH extends WitnessTxSigComponent {
  * [[https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki#witness-program]]
  */
 sealed abstract class WitnessTxSigComponentRebuilt extends TxSigComponent {
+  override def transaction: WitnessTransaction
+
   override def scriptPubKey: ScriptPubKey = output.scriptPubKey
 
   /** The [[WitnessScriptPubKey]] we used to rebuild the scriptPubKey above */
@@ -124,7 +122,6 @@ sealed abstract class WitnessTxSigComponentRebuilt extends TxSigComponent {
 
   def witnessVersion = witnessScriptPubKey.witnessVersion
 
-  def amount: CurrencyUnit = output.value
 }
 
 object BaseTxSigComponent {

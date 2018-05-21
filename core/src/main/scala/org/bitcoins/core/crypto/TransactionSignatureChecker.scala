@@ -1,5 +1,7 @@
 package org.bitcoins.core.crypto
 
+import org.bitcoins.core.protocol.script.ScriptPubKey
+import org.bitcoins.core.protocol.transaction.TransactionOutput
 import org.bitcoins.core.script.constant.ScriptToken
 import org.bitcoins.core.script.crypto._
 import org.bitcoins.core.script.flag.{ ScriptFlag, ScriptFlagUtil }
@@ -51,22 +53,29 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
       val sigsRemovedScript = BitcoinScriptUtil.calculateScriptForChecking(txSignatureComponent, signature, script)
       val hashTypeByte = if (signature.bytes.nonEmpty) signature.bytes.last else 0x00.toByte
       val hashType = HashType(Seq(0.toByte, 0.toByte, 0.toByte, hashTypeByte))
-
+      val spk = ScriptPubKey.fromAsm(sigsRemovedScript)
       val hashForSignature = txSignatureComponent match {
         case b: BaseTxSigComponent =>
+          val sigsRemovedTxSigComponent = BaseTxSigComponent(
+            b.transaction, b.inputIndex, TransactionOutput(b.output.value, spk), b.flags)
           TransactionSignatureSerializer.hashForSignature(
-            txSignatureComponent.transaction,
-            txSignatureComponent.inputIndex,
-            sigsRemovedScript, hashType)
+            sigsRemovedTxSigComponent,
+            hashType)
         case w: WitnessTxSigComponent =>
-          TransactionSignatureSerializer.hashForSignature(w.transaction, w.inputIndex, sigsRemovedScript, hashType,
-            w.amount, w.sigVersion)
+          val sigsRemovedTxSigComponent = WitnessTxSigComponent(
+            w.transaction, w.inputIndex, TransactionOutput(w.output.value, spk), w.flags)
+          TransactionSignatureSerializer.hashForSignature(sigsRemovedTxSigComponent, hashType)
         case r: WitnessTxSigComponentRebuilt =>
-          TransactionSignatureSerializer.hashForSignature(r.transaction, r.inputIndex, sigsRemovedScript, hashType,
-            r.amount, r.sigVersion)
+          val sigsRemovedTxSigComponent = WitnessTxSigComponentRebuilt(
+            wtx = r.transaction,
+            inputIndex = r.inputIndex,
+            output = TransactionOutput(r.output.value, spk),
+            witScriptPubKey = r.witnessScriptPubKey,
+            flags = r.flags)
+          TransactionSignatureSerializer.hashForSignature(sigsRemovedTxSigComponent, hashType)
       }
 
-      logger.debug("Hash for signature: " + BitcoinSUtil.encodeHex(hashForSignature.bytes))
+      logger.trace("Hash for signature: " + BitcoinSUtil.encodeHex(hashForSignature.bytes))
       val sigWithoutHashType = stripHashType(signature)
       val isValid = pubKey.verify(hashForSignature, sigWithoutHashType)
       if (isValid) SignatureValidationSuccess
@@ -89,18 +98,18 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
   final def multiSignatureEvaluator(txSignatureComponent: TxSigComponent, script: Seq[ScriptToken],
     sigs: List[ECDigitalSignature], pubKeys: List[ECPublicKey], flags: Seq[ScriptFlag],
     requiredSigs: Long): TransactionSignatureCheckerResult = {
-    logger.debug("Signatures inside of helper: " + sigs)
-    logger.debug("Public keys inside of helper: " + pubKeys)
+    logger.trace("Signatures inside of helper: " + sigs)
+    logger.trace("Public keys inside of helper: " + pubKeys)
     if (sigs.size > pubKeys.size) {
       //this is how bitcoin core treats this. If there are ever any more
       //signatures than public keys remaining we immediately return
       //false https://github.com/bitcoin/bitcoin/blob/8c1dbc5e9ddbafb77e60e8c4e6eb275a3a76ac12/src/script/interpreter.cpp#L943-L945
-      logger.warn("We have more sigs than we have public keys remaining")
+      logger.info("We have more sigs than we have public keys remaining")
       nullFailCheck(sigs, SignatureValidationErrorIncorrectSignatures, flags)
     } else if (requiredSigs > sigs.size) {
       //for the case when we do not have enough sigs left to check to meet the required signature threshold
       //https://github.com/bitcoin/bitcoin/blob/8c1dbc5e9ddbafb77e60e8c4e6eb275a3a76ac12/src/script/interpreter.cpp#L990-L991
-      logger.warn("We do not have enough sigs to meet the threshold of requireSigs in the multiSignatureScriptPubKey")
+      logger.info("We do not have enough sigs to meet the threshold of requireSigs in the multiSignatureScriptPubKey")
       nullFailCheck(sigs, SignatureValidationErrorSignatureCount, flags)
     } else if (sigs.nonEmpty && pubKeys.nonEmpty) {
       val sig = sigs.head
