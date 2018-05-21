@@ -58,12 +58,12 @@ sealed abstract class ScriptInterpreter {
       ScriptProgram(program, ScriptErrorSigPushOnly)
     } else {
       val scriptSigExecutedProgram = loop(program, 0)
-      logger.debug(s"scriptSigExecutedProgram $scriptSigExecutedProgram")
+      logger.trace(s"scriptSigExecutedProgram $scriptSigExecutedProgram")
       val t = scriptSigExecutedProgram.txSignatureComponent
       val scriptPubKeyProgram = ExecutionInProgressScriptProgram(t, scriptSigExecutedProgram.stack, t.scriptPubKey.asm.toList,
         t.scriptPubKey.asm.toList, Nil, scriptSigExecutedProgram.flags, None)
       val scriptPubKeyExecutedProgram: ExecutedScriptProgram = loop(scriptPubKeyProgram, 0)
-      logger.debug(s"scriptPubKeyExecutedProgram $scriptPubKeyExecutedProgram")
+      logger.trace(s"scriptPubKeyExecutedProgram $scriptPubKeyExecutedProgram")
       if (scriptSigExecutedProgram.error.isDefined) {
         scriptSigExecutedProgram
       } else if (scriptPubKeyExecutedProgram.error.isDefined || scriptPubKeyExecutedProgram.stackTopIsFalse) {
@@ -83,7 +83,7 @@ sealed abstract class ScriptInterpreter {
         }
       }
     }
-    logger.debug("Executed Script Program: " + executedProgram)
+    logger.trace("Executed Script Program: " + executedProgram)
     if (executedProgram.error.isDefined) executedProgram.error.get
     else if (hasUnexpectedWitness(program)) {
       //note: the 'program' value we pass above is intentional, we need to check the original program
@@ -252,7 +252,7 @@ sealed abstract class ScriptInterpreter {
 
     /** Helper function to run the post segwit execution checks */
     def postSegWitProgramChecks(evaluated: ExecutedScriptProgram): ExecutedScriptProgram = {
-      logger.debug("Stack after evaluating witness: " + evaluated.stack)
+      logger.trace("Stack after evaluating witness: " + evaluated.stack)
       if (evaluated.error.isDefined) evaluated
       else if (evaluated.stack.size != 1 || evaluated.stackTopIsFalse) ScriptProgram(evaluated, ScriptErrorEvalFalse)
       else evaluated
@@ -299,8 +299,8 @@ sealed abstract class ScriptInterpreter {
    */
   @tailrec
   private def loop(program: ScriptProgram, opCount: Int): ExecutedScriptProgram = {
-    logger.debug("Stack: " + program.stack)
-    logger.debug("Script: " + program.script)
+    logger.trace("Stack: " + program.stack)
+    logger.trace("Script: " + program.script)
     if (opCount > maxScriptOps && !program.isInstanceOf[ExecutedScriptProgram]) {
       logger.error("We have reached the maximum amount of script operations allowed")
       logger.error("Here are the remaining operations in the script: " + program.script)
@@ -318,8 +318,7 @@ sealed abstract class ScriptInterpreter {
         case p: PreExecutionScriptProgram => loop(ScriptProgram.toExecutionInProgress(p, Some(p.stack)), opCount)
         case p: ExecutedScriptProgram =>
           val countedOps = program.originalScript.map(BitcoinScriptUtil.countsTowardsScriptOpLimit(_)).count(_ == true)
-          logger.debug("Counted ops: " + countedOps)
-          logger.debug(s"p $p")
+          logger.trace("Counted ops: " + countedOps)
           if (countedOps > maxScriptOps && p.error.isEmpty) {
             loop(ScriptProgram(p, ScriptErrorOpCount), opCount)
           } else p
