@@ -5,6 +5,8 @@ import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.protocol.script.ScriptWitness
 import org.bitcoins.core.serializers.RawBitcoinSerializer
 import org.bitcoins.core.util.BitcoinSUtil
+import org.slf4j.LoggerFactory
+import scodec.bits.ByteVector
 
 import scala.annotation.tailrec
 
@@ -13,12 +15,14 @@ import scala.annotation.tailrec
  */
 sealed abstract class RawScriptWitnessParser extends RawBitcoinSerializer[ScriptWitness] {
 
-  def read(bytes: List[Byte]): ScriptWitness = {
+  private val logger = LoggerFactory.getLogger(this.getClass.getSimpleName)
+
+  def read(bytes: scodec.bits.ByteVector): ScriptWitness = {
     //first byte is the number of stack items
     val stackSize = CompactSizeUInt.parseCompactSizeUInt(bytes)
     val (_, stackBytes) = bytes.splitAt(stackSize.size.toInt)
     @tailrec
-    def loop(remainingBytes: Seq[Byte], accum: Seq[Seq[Byte]], remainingStackItems: UInt64): Seq[Seq[Byte]] = {
+    def loop(remainingBytes: scodec.bits.ByteVector, accum: Seq[scodec.bits.ByteVector], remainingStackItems: UInt64): Seq[scodec.bits.ByteVector] = {
       if (remainingStackItems <= UInt64.zero) accum
       else {
         val elementSize = CompactSizeUInt.parseCompactSizeUInt(remainingBytes)
@@ -34,19 +38,19 @@ sealed abstract class RawScriptWitnessParser extends RawBitcoinSerializer[Script
     witness
   }
 
-  def write(scriptWitness: ScriptWitness): Seq[Byte] = {
+  def write(scriptWitness: ScriptWitness): scodec.bits.ByteVector = {
     @tailrec
-    def loop(remainingStack: Seq[Seq[Byte]], accum: Seq[Seq[Byte]]): Seq[Seq[Byte]] = {
+    def loop(remainingStack: Seq[scodec.bits.ByteVector], accum: Vector[scodec.bits.ByteVector]): Vector[scodec.bits.ByteVector] = {
       if (remainingStack.isEmpty) accum.reverse
       else {
         val compactSizeUInt: CompactSizeUInt = CompactSizeUInt.calc(remainingStack.head)
-        val serialization: Seq[Byte] = compactSizeUInt.bytes ++ remainingStack.head
+        val serialization: scodec.bits.ByteVector = compactSizeUInt.bytes ++ remainingStack.head
         loop(remainingStack.tail, serialization +: accum)
       }
     }
-    val stackItems: Seq[Seq[Byte]] = loop(scriptWitness.stack.reverse, Nil)
+    val stackItems: Vector[scodec.bits.ByteVector] = loop(scriptWitness.stack.reverse, Vector.empty)
     val size = CompactSizeUInt(UInt64(stackItems.size))
-    (size.bytes +: stackItems).flatten
+    (size.bytes +: stackItems).fold(ByteVector.empty)(_ ++ _)
   }
 }
 

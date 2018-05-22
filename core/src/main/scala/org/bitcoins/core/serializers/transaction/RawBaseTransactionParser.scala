@@ -12,7 +12,7 @@ import org.bitcoins.core.serializers.{ RawBitcoinSerializer, RawSerializerHelper
 sealed abstract class RawBaseTransactionParser extends RawBitcoinSerializer[BaseTransaction] {
 
   val helper = RawSerializerHelper
-  def read(bytes: List[Byte]): BaseTransaction = {
+  def read(bytes: scodec.bits.ByteVector): BaseTransaction = {
     val versionBytes = bytes.take(4)
     val version = Int32(versionBytes.reverse)
     val txInputBytes = bytes.slice(4, bytes.size)
@@ -24,12 +24,12 @@ sealed abstract class RawBaseTransactionParser extends RawBitcoinSerializer[Base
     BaseTransaction(version, inputs, outputs, lockTime)
   }
 
-  def write(tx: BaseTransaction): Seq[Byte] = {
+  def write(tx: BaseTransaction): scodec.bits.ByteVector = {
     val version = tx.version.bytes.reverse
-    val inputs: Seq[Byte] = helper.writeCmpctSizeUInt[TransactionInput](
+    val inputs: scodec.bits.ByteVector = helper.writeCmpctSizeUInt[TransactionInput](
       tx.inputs,
       RawTransactionInputParser.write(_))
-    val outputs: Seq[Byte] = helper.writeCmpctSizeUInt[TransactionOutput](
+    val outputs: scodec.bits.ByteVector = helper.writeCmpctSizeUInt[TransactionOutput](
       tx.outputs,
       RawTransactionOutputParser.write(_))
     val lockTime = tx.lockTime.bytes.reverse

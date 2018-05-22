@@ -1,6 +1,6 @@
 package org.bitcoins.rpc
 
-import java.io.{File, PrintWriter}
+import java.io.{ File, PrintWriter }
 import java.net.URI
 
 import akka.actor.ActorSystem
@@ -8,9 +8,9 @@ import akka.stream.ActorMaterializer
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.rpc.client.RpcClient
-import org.bitcoins.rpc.config.{AuthCredentials, DaemonInstance}
+import org.bitcoins.rpc.config.{ AuthCredentials, DaemonInstance }
 
-import scala.concurrent.{Await, Future}
+import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration.DurationInt
 import scala.util.Try
 
@@ -24,13 +24,13 @@ trait TestUtil extends BitcoinSLogger {
     0.until(5).map(_ => scala.util.Random.alphanumeric.head).mkString
 
   /**
-    * Creates a datadir and places the username/password combo
-    * in the bitcoin.conf in the datadir
-    */
+   * Creates a datadir and places the username/password combo
+   * in the bitcoin.conf in the datadir
+   */
   def authCredentials(
-      uri: URI,
-      rpcUri: URI,
-      pruneMode: Boolean): AuthCredentials = {
+    uri: URI,
+    rpcUri: URI,
+    pruneMode: Boolean): AuthCredentials = {
     val d = "/tmp/" + randomDirName
     val f = new java.io.File(d)
     f.mkdir()
@@ -58,15 +58,16 @@ trait TestUtil extends BitcoinSLogger {
   lazy val network = RegTest
 
   def instance(
-      port: Int = randomPort,
-      rpcPort: Int = randomPort,
-      pruneMode: Boolean = false): DaemonInstance = {
+    port: Int = randomPort,
+    rpcPort: Int = randomPort,
+    pruneMode: Boolean = false): DaemonInstance = {
     val uri = new URI("http://localhost:" + port)
     val rpcUri = new URI("http://localhost:" + rpcPort)
-    DaemonInstance(network,
-                   uri,
-                   rpcUri,
-                   authCredentials(uri, rpcUri, pruneMode))
+    DaemonInstance(
+      network,
+      uri,
+      rpcUri,
+      authCredentials(uri, rpcUri, pruneMode))
   }
 
   def randomPort: Int = {
@@ -91,9 +92,9 @@ trait TestUtil extends BitcoinSLogger {
   }
 
   def awaitCondition(
-      condition: => Boolean,
-      duration: Int = 100,
-      counter: Int = 0): Unit = {
+    condition: => Boolean,
+    duration: Int = 100,
+    counter: Int = 0): Unit = {
     if (counter == 50) {
       throw new RuntimeException("Condition timed out")
     } else if (condition) {
@@ -105,24 +106,24 @@ trait TestUtil extends BitcoinSLogger {
   }
 
   def awaitServer(
-      server: RpcClient,
-      duration: Int = 100,
-      counter: Int = 0): Unit = {
+    server: RpcClient,
+    duration: Int = 100,
+    counter: Int = 0): Unit = {
     awaitCondition(server.isStarted, duration, counter)
   }
 
   def awaitServerShutdown(
-      server: RpcClient,
-      duration: Int = 300,
-      counter: Int = 0): Unit = {
+    server: RpcClient,
+    duration: Int = 300,
+    counter: Int = 0): Unit = {
     awaitCondition(!server.isStarted, duration, counter)
   }
 
   def awaitConnection(
-      from: RpcClient,
-      to: RpcClient,
-      duration: Int = 100,
-      counter: Int = 0): Unit = {
+    from: RpcClient,
+    to: RpcClient,
+    duration: Int = 100,
+    counter: Int = 0): Unit = {
     awaitCondition(
       Await.result(
         from
@@ -134,10 +135,10 @@ trait TestUtil extends BitcoinSLogger {
   }
 
   def awaitSynced(
-      client1: RpcClient,
-      client2: RpcClient,
-      duration: Int = 100,
-      counter: Int = 0): Unit = {
+    client1: RpcClient,
+    client2: RpcClient,
+    duration: Int = 100,
+    counter: Int = 0): Unit = {
     awaitCondition(Await.result(client1.getBlockCount.flatMap { count1 =>
       client2.getBlockCount.map { count2 =>
         count1 == count2
@@ -146,10 +147,10 @@ trait TestUtil extends BitcoinSLogger {
   }
 
   def awaitDisconnected(
-      from: RpcClient,
-      to: RpcClient,
-      duration: Int = 100,
-      counter: Int = 0): Unit = {
+    from: RpcClient,
+    to: RpcClient,
+    duration: Int = 100,
+    counter: Int = 0): Unit = {
     awaitCondition(
       Await.result(
         from
@@ -161,10 +162,10 @@ trait TestUtil extends BitcoinSLogger {
   }
 
   def createNodePair(
-      port1: Int = randomPort,
-      rpcPort1: Int = randomPort,
-      port2: Int = randomPort,
-      rpcPort2: Int = randomPort): Future[(RpcClient, RpcClient)] = {
+    port1: Int = randomPort,
+    rpcPort1: Int = randomPort,
+    port2: Int = randomPort,
+    rpcPort2: Int = randomPort): Future[(RpcClient, RpcClient)] = {
     val client1: RpcClient = new RpcClient(TestUtil.instance(port1, rpcPort1))
     val client2: RpcClient = new RpcClient(TestUtil.instance(port2, rpcPort2))
     client1.start()

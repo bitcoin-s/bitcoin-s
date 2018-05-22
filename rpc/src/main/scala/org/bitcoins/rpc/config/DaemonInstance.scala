@@ -5,8 +5,8 @@ import java.net.URI
 import org.bitcoins.core.config.NetworkParameters
 
 /**
-  * Created by chris on 4/29/17.
-  */
+ * Created by chris on 4/29/17.
+ */
 sealed trait DaemonInstance {
 
   def network: NetworkParameters
@@ -17,17 +17,17 @@ sealed trait DaemonInstance {
 
 object DaemonInstance {
   private case class DaemonInstanceImpl(
-      network: NetworkParameters,
-      uri: URI,
-      rpcUri: URI,
-      authCredentials: AuthCredentials)
-      extends DaemonInstance
+    network: NetworkParameters,
+    uri: URI,
+    rpcUri: URI,
+    authCredentials: AuthCredentials)
+    extends DaemonInstance
 
   def apply(
-      network: NetworkParameters,
-      uri: URI,
-      rpcUri: URI,
-      authCredentials: AuthCredentials): DaemonInstance = {
+    network: NetworkParameters,
+    uri: URI,
+    rpcUri: URI,
+    authCredentials: AuthCredentials): DaemonInstance = {
     DaemonInstanceImpl(network, uri, rpcUri, authCredentials)
   }
 }

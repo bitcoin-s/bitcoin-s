@@ -128,7 +128,7 @@ sealed abstract class WitnessTransaction extends Transaction {
 
 object Transaction extends Factory[Transaction] {
 
-  def fromBytes(bytes: Seq[Byte]): Transaction = {
+  def fromBytes(bytes: scodec.bits.ByteVector): Transaction = {
     val wtxTry = Try(RawWitnessTransactionParser.read(bytes))
     wtxTry match {
       case Success(wtx) =>
@@ -144,7 +144,7 @@ object BaseTransaction extends Factory[BaseTransaction] {
   private case class BaseTransactionImpl(version: Int32, inputs: Seq[TransactionInput],
     outputs: Seq[TransactionOutput], lockTime: UInt32) extends BaseTransaction
 
-  override def fromBytes(bytes: Seq[Byte]): BaseTransaction = RawBaseTransactionParser.read(bytes)
+  override def fromBytes(bytes: scodec.bits.ByteVector): BaseTransaction = RawBaseTransactionParser.read(bytes)
 
   def apply(version: Int32, inputs: Seq[TransactionInput],
     outputs: Seq[TransactionOutput], lockTime: UInt32): BaseTransaction = BaseTransactionImpl(version, inputs, outputs, lockTime)
@@ -159,6 +159,6 @@ object WitnessTransaction extends Factory[WitnessTransaction] {
     lockTime: UInt32, witness: TransactionWitness): WitnessTransaction =
     WitnessTransactionImpl(version, inputs, outputs, lockTime, witness)
 
-  override def fromBytes(bytes: Seq[Byte]): WitnessTransaction = RawWitnessTransactionParser.read(bytes)
+  override def fromBytes(bytes: scodec.bits.ByteVector): WitnessTransaction = RawWitnessTransactionParser.read(bytes)
 
 }

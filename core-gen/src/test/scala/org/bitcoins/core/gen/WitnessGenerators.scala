@@ -25,11 +25,11 @@ sealed abstract class WitnessGenerators extends BitcoinSLogger {
 
     //0 include here to generate the EmptyScriptWitness
 
-    /*    val stack: Gen[Seq[Seq[Byte]]] = Gen.choose(0,10).flatMap(n => Gen.listOfN(n, NumberGenerator.bytes))
-    stack.map { s: Seq[Seq[Byte]] =>
+    /*    val stack: Gen[Seq[scodec.bits.ByteVector]] = Gen.choose(0,10).flatMap(n => Gen.listOfN(n, NumberGenerator.bytes))
+    stack.map { s: Seq[scodec.bits.ByteVector] =>
       val spkBytes = if (s.nonEmpty) s.head else Nil
       val cmpctSPK = CompactSizeUInt(UInt64(spkBytes.size))
-      val scriptSigBytes: Seq[Byte] = if (s.size > 1) s.tail.flatten else Nil
+      val scriptSigBytes: scodec.bits.ByteVector = if (s.size > 1) s.tail.flatten else Nil
       val cmpctScriptSig = CompactSizeUInt(UInt64(scriptSigBytes.size))
 
       val scriptSig = if (scriptSigBytes.isEmpty) EmptyScriptSignature else NonStandardScriptSignature(cmpctScriptSig.bytes ++ scriptSigBytes)

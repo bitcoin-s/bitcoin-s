@@ -6,6 +6,7 @@ import org.bitcoins.core.script.constant.ScriptNumber
 import org.bitcoins.core.util.NumberUtil
 import org.scalacheck.Gen
 import org.scalacheck.Arbitrary.arbitrary
+import scodec.bits.BitVector
 
 /**
  * Created by chris on 6/16/16.
@@ -60,7 +61,7 @@ trait NumberGenerator {
   def byte: Gen[Byte] = arbitrary[Byte]
 
   /** Generates a 100 byte sequence */
-  def bytes: Gen[Seq[Byte]] = for {
+  def bytes: Gen[List[Byte]] = for {
     num <- Gen.choose(0, 100)
     b <- bytes(num)
   } yield b
@@ -70,7 +71,7 @@ trait NumberGenerator {
    * @param num
    * @return
    */
-  def bytes(num: Int): Gen[Seq[Byte]] = Gen.listOfN(num, byte)
+  def bytes(num: Int): Gen[List[Byte]] = Gen.listOfN(num, byte)
 
   /** Generates a random boolean */
   def bool: Gen[Boolean] = for {
@@ -78,15 +79,11 @@ trait NumberGenerator {
   } yield num == 1
 
   /** Generates a bit vector */
-  def bitVector: Gen[Seq[Boolean]] = for {
-    vector <- Gen.listOfN(8, bool)
-  } yield vector
+  def bitVector: Gen[scodec.bits.BitVector] = for {
+    n <- Gen.choose(0, 100)
+    vector <- Gen.listOfN(n, bool)
+  } yield BitVector.bits(vector)
 
-  /** Generates a sequence of bit vectors */
-  def bitVectors: Gen[Seq[Seq[Boolean]]] = for {
-    num <- Gen.choose(0, 100)
-    vectors <- Gen.listOfN(num, bitVector)
-  } yield vectors
 }
 
 object NumberGenerator extends NumberGenerator

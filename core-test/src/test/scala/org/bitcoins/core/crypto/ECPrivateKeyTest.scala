@@ -3,6 +3,7 @@ package org.bitcoins.core.crypto
 import org.bitcoins.core.config.TestNet3
 import org.bitcoins.core.util.{ BitcoinJTestUtil, BitcoinSLogger, BitcoinSUtil, CryptoTestUtil }
 import org.scalatest.{ FlatSpec, MustMatchers }
+import scodec.bits.ByteVector
 
 /**
  * Created by chris on 3/7/16.
@@ -16,17 +17,17 @@ class ECPrivateKeyTest extends FlatSpec with MustMatchers {
   }
 
   it must "derive the same public from a private key as bitcoinj" in {
-    val bitcoinjPublicKeyBytes = CryptoTestUtil.bitcoinjPrivateKey.getPubKey
+    val bitcoinjPublicKeyBytes = ByteVector(CryptoTestUtil.bitcoinjPrivateKey.getPubKey)
     CryptoTestUtil.privateKey.publicKey.hex must be(BitcoinSUtil.encodeHex(bitcoinjPublicKeyBytes))
   }
 
   it must "create a bitcoin-s private key from a bitcoinj private key, then convert to the same public key" in {
     val bitcoinjKey = new org.bitcoinj.core.ECKey()
-    val bitcoinsPrivKey = ECPrivateKey(bitcoinjKey.getSecretBytes)
+    val bitcoinsPrivKey = ECPrivateKey(ByteVector(bitcoinjKey.getSecretBytes))
     val bitcoinsPublicKey = bitcoinsPrivKey.publicKey
     val bitcoinjPublicKey = bitcoinjKey.getPubKey
 
-    bitcoinsPublicKey.bytes must be(bitcoinjPublicKey)
+    bitcoinsPublicKey.bytes.toArray must be(bitcoinjPublicKey)
   }
 
   it must "create a bitcionj private key from a bitcoins private key and get the same public key" in {
@@ -35,7 +36,7 @@ class ECPrivateKeyTest extends FlatSpec with MustMatchers {
     val bitcoinjPublicKey = bitcoinjPrivKey.getPubKey
     val bitcoinsPublicKey = bitcoinsPrivKey.publicKey
 
-    bitcoinsPublicKey.bytes must be(bitcoinjPublicKey)
+    bitcoinsPublicKey.bytes.toArray must be(bitcoinjPublicKey)
   }
 
   it must "create a private key from the dumped base58 in bitcoin-cli" in {
@@ -47,7 +48,7 @@ class ECPrivateKeyTest extends FlatSpec with MustMatchers {
 
   it must "create a private key from a sequence of bytes that has the same byte representation of bitcoinj ECKeys" in {
     val bitcoinJKey = CryptoTestUtil.bitcoinjPrivateKey
-    val privateKey: ECPrivateKey = ECPrivateKey(bitcoinJKey.getPrivKeyBytes)
+    val privateKey: ECPrivateKey = ECPrivateKey(ByteVector(bitcoinJKey.getPrivKeyBytes))
     privateKey.hex must be(bitcoinJKey.getPrivateKeyAsHex)
   }
 

@@ -11,14 +11,14 @@ import org.bitcoins.core.serializers.RawBitcoinSerializer
  */
 sealed abstract class RawTransactionOutPointParser extends RawBitcoinSerializer[TransactionOutPoint] {
 
-  override def read(bytes: List[Byte]): TransactionOutPoint = {
-    val txId: List[Byte] = bytes.take(32)
+  override def read(bytes: scodec.bits.ByteVector): TransactionOutPoint = {
+    val txId: scodec.bits.ByteVector = bytes.take(32)
     val indexBytes = bytes.slice(32, 36)
     val index = UInt32(indexBytes.reverse)
     TransactionOutPoint(DoubleSha256Digest(txId), index)
   }
 
-  def write(outPoint: TransactionOutPoint): Seq[Byte] = {
+  def write(outPoint: TransactionOutPoint): scodec.bits.ByteVector = {
     //UInt32s cannot hold negative numbers, but sometimes the Bitcoin Protocol requires the vout to be -1, which is serialized
     //as "0xFFFFFFFF".
     //https://github.com/bitcoin/bitcoin/blob/d612837814020ae832499d18e6ee5eb919a87907/src/primitives/transaction.h

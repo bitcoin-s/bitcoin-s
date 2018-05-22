@@ -8,5 +8,5 @@ import org.bitcoins.core.script.constant._
 
 sealed trait ScriptPubKeyUpdateIndicator
 case class UpdateScriptPubKeyAsm(asm: Seq[ScriptToken]) extends ScriptPubKeyUpdateIndicator
-case class UpdateScriptPubKeyBytes(bytes: Seq[Byte]) extends ScriptPubKeyUpdateIndicator
+case class UpdateScriptPubKeyBytes(bytes: scodec.bits.ByteVector) extends ScriptPubKeyUpdateIndicator
 

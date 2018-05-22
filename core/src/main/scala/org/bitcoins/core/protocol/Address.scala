@@ -8,6 +8,7 @@ import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.script.constant.ScriptConstant
 import org.bitcoins.core.serializers.script.ScriptParser
 import org.bitcoins.core.util._
+import scodec.bits.ByteVector
 
 import scala.annotation.tailrec
 import scala.util.{ Failure, Success, Try }
@@ -84,7 +85,10 @@ sealed abstract class Bech32Address extends BitcoinAddress {
     Bech32Address.fromStringToWitSPK(value).get
   }
 
-  override def hash: Sha256Digest = Sha256Digest(scriptPubKey.witnessProgram.flatMap(_.bytes))
+  override def hash: Sha256Digest = {
+    val byteVector = BitcoinSUtil.toByteVector(scriptPubKey.witnessProgram)
+    Sha256Digest(byteVector)
+  }
 
   override def toString = "Bech32Address(" + value + ")"
 
@@ -134,12 +138,12 @@ object Bech32Address extends AddressFactory[Bech32Address] {
   }
 
   def hrpExpand(hrp: HumanReadablePart): Seq[UInt8] = {
-    val x: Seq[Byte] = hrp.bytes.map { b: Byte =>
+    val x: scodec.bits.ByteVector = hrp.bytes.map { b: Byte =>
       (b >> 5).toByte
     }
-    val withZero: Seq[Byte] = x ++ Seq(0.toByte)
+    val withZero: scodec.bits.ByteVector = x ++ scodec.bits.ByteVector.low(1)
 
-    val y: Seq[Byte] = hrp.bytes.map { char =>
+    val y: scodec.bits.ByteVector = hrp.bytes.map { char =>
       (char & 0x1f).toByte
     }
     val result = UInt8.toUInt8s(withZero ++ y)
@@ -167,7 +171,7 @@ object Bech32Address extends AddressFactory[Bech32Address] {
     chk
   }
 
-  def verifyChecksum(hrp: HumanReadablePart, data: Seq[Byte]): Boolean = {
+  def verifyChecksum(hrp: HumanReadablePart, data: scodec.bits.ByteVector): Boolean = {
     val u8s = UInt8.toUInt8s(data)
     verifyCheckSum(hrp, u8s)
   }
@@ -231,15 +235,15 @@ object Bech32Address extends AddressFactory[Bech32Address] {
       } else {
         val hrpValid = checkHrpValidity(hrp)
         val dataValid = checkDataValidity(data)
-        val isChecksumValid: Try[Seq[Byte]] = hrpValid.flatMap { h =>
+        val isChecksumValid: Try[scodec.bits.ByteVector] = hrpValid.flatMap { h =>
           dataValid.flatMap { d =>
             if (verifyChecksum(h, d)) {
-              if (d.size < 6) Success(Nil)
+              if (d.size < 6) Success(ByteVector.empty)
               else Success(d.take(d.size - 6))
             } else Failure(new IllegalArgumentException("Checksum was invalid on the bech32 address"))
           }
         }
-        isChecksumValid.flatMap { d: Seq[Byte] =>
+        isChecksumValid.flatMap { d: scodec.bits.ByteVector =>
           val u8s = UInt8.toUInt8s(d)
           hrpValid.map(h => Bech32Address(h, u8s))
         }
@@ -286,9 +290,9 @@ object Bech32Address extends AddressFactory[Bech32Address] {
    * Takes in the data portion of a bech32 address and decodes it to a byte array
    * It also checks the validity of the data portion according to BIP173
    */
-  def checkDataValidity(data: String): Try[Seq[Byte]] = {
+  def checkDataValidity(data: String): Try[scodec.bits.ByteVector] = {
     @tailrec
-    def loop(remaining: List[Char], accum: Seq[Byte], hasUpper: Boolean, hasLower: Boolean): Try[Seq[Byte]] = remaining match {
+    def loop(remaining: List[Char], accum: scodec.bits.ByteVector, hasUpper: Boolean, hasLower: Boolean): Try[scodec.bits.ByteVector] = remaining match {
       case Nil => Success(accum.reverse)
       case h :: t =>
         if (!charset.contains(h.toLower)) {
@@ -303,7 +307,8 @@ object Bech32Address extends AddressFactory[Bech32Address] {
           }
         }
     }
-    val payload: Try[Seq[Byte]] = loop(data.toCharArray.toList, Nil, false, false)
+    val payload: Try[scodec.bits.ByteVector] = loop(data.toCharArray.toList, ByteVector.empty,
+      false, false)
     payload
   }
 
@@ -331,9 +336,9 @@ object P2PKHAddress extends AddressFactory[P2PKHAddress] {
   }
 
   override def fromString(address: String): Try[P2PKHAddress] = {
-    val decodeCheckP2PKH: Try[Seq[Byte]] = Base58.decodeCheck(address)
+    val decodeCheckP2PKH: Try[scodec.bits.ByteVector] = Base58.decodeCheck(address)
     decodeCheckP2PKH.flatMap { bytes =>
-      val networkBytes: Option[(NetworkParameters, Seq[Byte])] = Networks.knownNetworks.map(n => (n, n.p2pkhNetworkByte))
+      val networkBytes: Option[(NetworkParameters, scodec.bits.ByteVector)] = Networks.knownNetworks.map(n => (n, n.p2pkhNetworkByte))
         .find {
           case (_, bs) =>
             bytes.startsWith(bs)
@@ -382,9 +387,9 @@ object P2SHAddress extends AddressFactory[P2SHAddress] {
   def apply(hash: Sha256Hash160Digest, network: NetworkParameters): P2SHAddress = P2SHAddressImpl(hash, network)
 
   override def fromString(address: String): Try[P2SHAddress] = {
-    val decodeCheckP2SH: Try[Seq[Byte]] = Base58.decodeCheck(address)
+    val decodeCheckP2SH: Try[scodec.bits.ByteVector] = Base58.decodeCheck(address)
     decodeCheckP2SH.flatMap { bytes =>
-      val networkBytes: Option[(NetworkParameters, Seq[Byte])] = Networks.knownNetworks.map(n => (n, n.p2shNetworkByte))
+      val networkBytes: Option[(NetworkParameters, scodec.bits.ByteVector)] = Networks.knownNetworks.map(n => (n, n.p2shNetworkByte))
         .find {
           case (_, bs) =>
             bytes.startsWith(bs)
@@ -452,14 +457,14 @@ object BitcoinAddress extends AddressFactory[BitcoinAddress] {
 
 object Address extends AddressFactory[Address] {
 
-  def fromBytes(bytes: Seq[Byte]): Try[Address] = {
+  def fromBytes(bytes: scodec.bits.ByteVector): Try[Address] = {
     val encoded = Base58.encode(bytes)
     BitcoinAddress.fromString(encoded)
   }
 
   def fromHex(hex: String): Try[Address] = fromBytes(BitcoinSUtil.decodeHex(hex))
 
-  def apply(bytes: Seq[Byte]): Try[Address] = fromBytes(bytes)
+  def apply(bytes: scodec.bits.ByteVector): Try[Address] = fromBytes(bytes)
 
   def apply(str: String): Try[Address] = fromString(str)
 

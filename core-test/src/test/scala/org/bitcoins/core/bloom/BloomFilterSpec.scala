@@ -10,7 +10,7 @@ class BloomFilterSpec extends Properties("BloomFilterSpec") {
 
   property("No false negatives && serialization symmetry") =
     Prop.forAll(BloomFilterGenerator.loadedBloomFilter) {
-      case (loadedFilter: BloomFilter, byteVectors: Seq[Seq[Byte]]) =>
+      case (loadedFilter: BloomFilter, byteVectors: Seq[scodec.bits.ByteVector]) =>
         val containsAllHashes = byteVectors.map(bytes => loadedFilter.contains(bytes))
         !containsAllHashes.exists(_ == false) &&
           BloomFilter(loadedFilter.hex) == loadedFilter

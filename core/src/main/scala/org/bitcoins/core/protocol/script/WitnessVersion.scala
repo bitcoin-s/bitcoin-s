@@ -28,7 +28,7 @@ case object WitnessVersion0 extends WitnessVersion {
 
   /** Rebuilds a witness version 0 program, see BIP141 */
   override def rebuild(scriptWitness: ScriptWitness, witnessProgram: Seq[ScriptToken]): Either[(Seq[ScriptToken], ScriptPubKey), ScriptError] = {
-    val programBytes = witnessProgram.flatMap(_.bytes)
+    val programBytes = BitcoinSUtil.toByteVector(witnessProgram)
     programBytes.size match {
       case 20 =>
         //p2wpkh

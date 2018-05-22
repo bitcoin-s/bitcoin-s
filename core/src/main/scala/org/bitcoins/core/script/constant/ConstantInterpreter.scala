@@ -4,6 +4,7 @@ import org.bitcoins.core.script.ScriptProgram
 import org.bitcoins.core.script.flag.ScriptFlagUtil
 import org.bitcoins.core.script.result._
 import org.bitcoins.core.util.{ BitcoinSLogger, BitcoinSUtil, BitcoinScriptUtil }
+import scodec.bits.ByteVector
 
 import scala.annotation.tailrec
 
@@ -62,7 +63,7 @@ sealed abstract class ConstantInterpreter {
     logger.debug("new script: " + newScript)
     logger.debug("Bytes to push onto stack: " + bytesToPushOntoStack)
     val constant: ScriptToken = if (bytesToPushOntoStack.size == 1) bytesToPushOntoStack.head
-    else ScriptConstant(BitcoinSUtil.flipEndianness(bytesToPushOntoStack.flatMap(_.bytes)))
+    else ScriptConstant(BitcoinSUtil.flipEndianness(BitcoinSUtil.toByteVector(bytesToPushOntoStack)))
 
     logger.debug("Constant to be pushed onto stack: " + constant)
     //check to see if we have the exact amount of bytes needed to be pushed onto the stack
@@ -93,10 +94,13 @@ sealed abstract class ConstantInterpreter {
     //for the case when we have the minimal data flag and the bytes to push onto stack is represented by the
     //constant telling OP_PUSHDATA how many bytes need to go onto the stack
     //for instance OP_PUSHDATA1 OP_0
-    val scriptNumOp = program.script(1).bytes match {
-      case h :: t => ScriptNumberOperation.fromNumber(h.toInt)
-      case Nil => None
+    val scriptNumOp = if (program.script(1).bytes.nonEmpty) {
+      val h = program.script(1).bytes.head
+      ScriptNumberOperation.fromNumber(h.toInt)
+    } else {
+      None
     }
+
     if (ScriptFlagUtil.requireMinimalData(program.flags) && program.script(1).bytes.size == 1 &&
       scriptNumOp.isDefined) {
       logger.error("We cannot use an OP_PUSHDATA operation for pushing " +

@@ -1,23 +1,23 @@
 package org.bitcoins.rpc.serializers
 
 import java.io.File
-import java.net.{InetAddress, URI}
+import java.net.{ InetAddress, URI }
 
 import org.bitcoins.core.crypto.{
   DoubleSha256Digest,
   ECPublicKey,
   Sha256Hash160Digest
 }
-import org.bitcoins.core.currency.{Bitcoins, Satoshis}
-import org.bitcoins.core.number.{Int32, UInt32, UInt64}
+import org.bitcoins.core.currency.{ Bitcoins, Satoshis }
+import org.bitcoins.core.number.{ Int32, UInt32, UInt64 }
 import org.bitcoins.core.protocol.{
   Address,
   BitcoinAddress,
   P2PKHAddress,
   P2SHAddress
 }
-import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, MerkleBlock}
-import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptSignature}
+import org.bitcoins.core.protocol.blockchain.{ Block, BlockHeader, MerkleBlock }
+import org.bitcoins.core.protocol.script.{ ScriptPubKey, ScriptSignature }
 import org.bitcoins.core.protocol.transaction.{
   Transaction,
   TransactionInput,
@@ -98,8 +98,7 @@ object JsonSerializers {
   implicit val fundRawTransactionResultReads: Reads[FundRawTransactionResult] =
     Json.reads[FundRawTransactionResult]
 
-  implicit val getRawTransactionScriptSigReads: Reads[
-    GetRawTransactionScriptSig] = Json.reads[GetRawTransactionScriptSig]
+  implicit val getRawTransactionScriptSigReads: Reads[GetRawTransactionScriptSig] = Json.reads[GetRawTransactionScriptSig]
   implicit val getRawTransactionVinReads: Reads[GetRawTransactionVin] =
     Json.reads[GetRawTransactionVin]
   implicit val getRawTransactionResultReads: Reads[GetRawTransactionResult] =
@@ -147,8 +146,7 @@ object JsonSerializers {
   implicit val getBlockResultReads: Reads[GetBlockResult] =
     Json.reads[GetBlockResult]
 
-  implicit val getBlockWithTransactionsResultReads: Reads[
-    GetBlockWithTransactionsResult] = Json.reads[GetBlockWithTransactionsResult]
+  implicit val getBlockWithTransactionsResultReads: Reads[GetBlockWithTransactionsResult] = Json.reads[GetBlockWithTransactionsResult]
 
   implicit val softforkProgressReads: Reads[SoftforkProgress] =
     Json.reads[SoftforkProgress]
@@ -301,8 +299,7 @@ object JsonSerializers {
     Json.reads[EstimateSmartFeeResult]
 
   // Map stuff
-  implicit def mapDoubleSha256DigestReads: Reads[
-    Map[DoubleSha256Digest, GetMemPoolResult]] =
+  implicit def mapDoubleSha256DigestReads: Reads[Map[DoubleSha256Digest, GetMemPoolResult]] =
     Reads.mapReads[DoubleSha256Digest, GetMemPoolResult](s =>
       JsSuccess(DoubleSha256Digest.fromHex(s)))
 

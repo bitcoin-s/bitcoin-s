@@ -13,7 +13,7 @@ import scala.util.Try
  */
 sealed abstract class RawScriptSignatureParser extends RawBitcoinSerializer[ScriptSignature] {
 
-  def read(bytes: List[Byte]): ScriptSignature = {
+  def read(bytes: scodec.bits.ByteVector): ScriptSignature = {
     if (bytes.isEmpty) EmptyScriptSignature
     else {
       val compactSizeUInt = CompactSizeUInt.parseCompactSizeUInt(bytes)
@@ -26,7 +26,7 @@ sealed abstract class RawScriptSignatureParser extends RawBitcoinSerializer[Scri
     }
   }
 
-  def write(scriptSig: ScriptSignature): Seq[Byte] = scriptSig.bytes
+  def write(scriptSig: ScriptSignature): scodec.bits.ByteVector = scriptSig.bytes
 }
 
 object RawScriptSignatureParser extends RawScriptSignatureParser

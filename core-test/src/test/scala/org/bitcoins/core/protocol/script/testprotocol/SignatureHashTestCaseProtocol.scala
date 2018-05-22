@@ -6,12 +6,14 @@ import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.serializers.script.ScriptParser
+import org.slf4j.LoggerFactory
 import spray.json._
 
 /**
  * Created by tom on 7/21/16.
  */
 object SignatureHashTestCaseProtocol extends DefaultJsonProtocol {
+  private val logger = LoggerFactory.getLogger(this.getClass.getSimpleName)
   implicit object SignatureTestCaseProtocol extends RootJsonFormat[SignatureHashTestCase] {
     override def read(value: JsValue): SignatureHashTestCase = {
       val jsArray: JsArray = value match {
@@ -25,7 +27,7 @@ object SignatureHashTestCaseProtocol extends DefaultJsonProtocol {
       val inputIndex: UInt32 = UInt32(elements(2).convertTo[Int])
       val hashTypeNum: Int32 = Int32(elements(3).convertTo[Int])
       val hashType: HashType = HashType(hashTypeNum)
-      val hash: DoubleSha256Digest = DoubleSha256Digest(elements.last.toString)
+      val hash: DoubleSha256Digest = DoubleSha256Digest(elements.last.convertTo[String])
       SignatureHashTestCaseImpl(transaction, script, inputIndex, hashTypeNum, hashType, hash)
     }
     override def write(testCase: SignatureHashTestCase): JsValue = ???

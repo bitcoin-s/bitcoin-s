@@ -246,7 +246,7 @@ class MerkleBlockTests extends FlatSpec with MustMatchers {
     partialMerkleTree must be(merkleBlock.partialMerkleTree)
     merkleBlock.partialMerkleTree.extractMatches must be(txIds)
     partialMerkleTree.extractMatches must be(txIds)
-    partialMerkleTree.bits must be(List(true, true, true, true, true, true, true, false))
+    partialMerkleTree.bits.toIndexedSeq must be(List(true, true, true, true, true, true, true, false))
   }
 
   it must "create a merkle block from a sequence of txids and a block" in {

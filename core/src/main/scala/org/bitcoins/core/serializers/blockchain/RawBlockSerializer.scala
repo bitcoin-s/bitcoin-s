@@ -12,15 +12,15 @@ import org.bitcoins.core.serializers.{ RawBitcoinSerializer, RawSerializerHelper
 sealed abstract class RawBlockSerializer extends RawBitcoinSerializer[Block] {
 
   /** Takes a list of bytes and converts it into a Block */
-  def read(bytes: List[Byte]): Block = {
+  def read(bytes: scodec.bits.ByteVector): Block = {
     val blockHeader: BlockHeader = BlockHeader(bytes.take(80))
-    val txBytes: Seq[Byte] = bytes.splitAt(80)._2
-    val (transactions, _) = RawSerializerHelper.parseCmpctSizeUIntSeq[Transaction](txBytes, Transaction(_: Seq[Byte]))
+    val txBytes: scodec.bits.ByteVector = bytes.splitAt(80)._2
+    val (transactions, _) = RawSerializerHelper.parseCmpctSizeUIntSeq[Transaction](txBytes, Transaction(_: scodec.bits.ByteVector))
     Block(blockHeader, transactions)
   }
 
   /** Takes in a block and converts it to a byte array */
-  def write(block: Block): Seq[Byte] = {
+  def write(block: Block): scodec.bits.ByteVector = {
     val writtenHeader = block.blockHeader.bytes
     val txBytes = RawSerializerHelper.writeCmpctSizeUInt(block.transactions, { tx: Transaction => tx.bytes })
     writtenHeader ++ txBytes

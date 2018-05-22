@@ -7,6 +7,7 @@ import org.bitcoins.core.script.flag.{ ScriptFlag, ScriptVerifyMinimalData }
 import org.bitcoins.core.script.result.{ ScriptErrorBadOpCode, ScriptErrorMinimalData }
 import org.bitcoins.core.util.{ ScriptProgramTestUtil, TestUtil }
 import org.scalatest.{ FlatSpec, MustMatchers }
+import scodec.bits.ByteVector
 
 /**
  * Created by chris on 1/24/16.
@@ -15,7 +16,7 @@ class ConstantInterpreterTest extends FlatSpec with MustMatchers {
   val CI = ConstantInterpreter
   "ConstantInterpreter" must "interpret OP_PUSHDATA1 correctly" in {
     val byteConstantSize = 76
-    val byteConstant = for { x <- 0 until byteConstantSize } yield 0x0.toByte
+    val byteConstant = ByteVector(Array.fill(byteConstantSize)(0.toByte))
     val scriptConstant = ScriptConstant(byteConstant)
     val stack = List()
     val script = List(OP_PUSHDATA1, ScriptNumber(byteConstantSize), scriptConstant, OP_7, OP_EQUAL)
@@ -27,7 +28,7 @@ class ConstantInterpreterTest extends FlatSpec with MustMatchers {
 
   it must "interpret OP_PUSHDATA2 correctly" in {
     val byteConstantSize = 256
-    val byteConstant = for { x <- 0 until byteConstantSize } yield 0x0.toByte
+    val byteConstant = ByteVector(Array.fill(byteConstantSize)(0.toByte))
     val scriptConstant = ScriptConstant(byteConstant)
     val stack = List()
     val script = List(OP_PUSHDATA2, ScriptNumber(256), scriptConstant, OP_8, OP_EQUAL)
@@ -39,7 +40,7 @@ class ConstantInterpreterTest extends FlatSpec with MustMatchers {
 
   it must "interpret OP_PUSHDATA4 correctly" in {
     val byteConstantSize = 65536
-    val byteConstant = for { x <- 0 until byteConstantSize } yield 0x0.toByte
+    val byteConstant = ByteVector(Array.fill(byteConstantSize)(0.toByte))
     val scriptConstant = ScriptConstant(byteConstant)
     val stack = List()
     val script = List(OP_PUSHDATA4, ScriptNumber(byteConstantSize), scriptConstant, OP_9, OP_EQUAL)

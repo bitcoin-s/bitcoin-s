@@ -4,6 +4,7 @@ import org.bitcoins.core.number.{ UInt32, UInt64 }
 import org.bitcoins.core.protocol.script.{ ScriptPubKey, ScriptSignature }
 import org.bitcoins.core.script.constant.ScriptNumberUtil
 import org.bitcoins.core.util.{ BitcoinSUtil, Factory }
+import scodec.bits.ByteVector
 
 /**
  * Created by chris on 7/14/15.
@@ -25,7 +26,7 @@ sealed abstract class CompactSizeUInt extends NetworkElement {
     case _ => "ff" + BitcoinSUtil.flipEndianness(num.hex)
   }
 
-  def bytes: Seq[Byte] = BitcoinSUtil.decodeHex(hex)
+  def bytes: scodec.bits.ByteVector = BitcoinSUtil.decodeHex(hex)
 
   def toLong: Long = num.toLong
 
@@ -37,9 +38,9 @@ sealed abstract class CompactSizeUInt extends NetworkElement {
 }
 
 object CompactSizeUInt extends Factory[CompactSizeUInt] {
-  private case class CompactSizeUIntImpl(num: UInt64, override val size: Int) extends CompactSizeUInt
+  private case class CompactSizeUIntImpl(num: UInt64, override val size: Long) extends CompactSizeUInt
 
-  override def fromBytes(bytes: Seq[Byte]): CompactSizeUInt = {
+  override def fromBytes(bytes: scodec.bits.ByteVector): CompactSizeUInt = {
     parseCompactSizeUInt(bytes)
   }
 
@@ -65,7 +66,7 @@ object CompactSizeUInt extends Factory[CompactSizeUInt] {
    * sequence of bytes
    * https://bitcoin.org/en/developer-reference#compactsize-unsigned-integers.
    */
-  def calculateCompactSizeUInt(bytes: Seq[Byte]): CompactSizeUInt = {
+  def calculateCompactSizeUInt(bytes: scodec.bits.ByteVector): CompactSizeUInt = {
     //means we can represent the number with a single byte
     if (bytes.size <= 252) CompactSizeUInt(UInt64(bytes.size), 1)
     // can be represented with two bytes
@@ -75,7 +76,7 @@ object CompactSizeUInt extends Factory[CompactSizeUInt] {
     else CompactSizeUInt(UInt64(bytes.size), 9)
   }
 
-  def calc(bytes: Seq[Byte]): CompactSizeUInt = calculateCompactSizeUInt(bytes)
+  def calc(bytes: scodec.bits.ByteVector): CompactSizeUInt = calculateCompactSizeUInt(bytes)
 
   /** Responsible for calculating what the [[CompactSizeUInt]] is for this hex string. */
   def calculateCompactSizeUInt(hex: String): CompactSizeUInt = calculateCompactSizeUInt(BitcoinSUtil.decodeHex(hex))
@@ -90,20 +91,21 @@ object CompactSizeUInt extends Factory[CompactSizeUInt] {
    * Parses a [[CompactSizeUInt]] from a sequence of bytes
    * [[https://bitcoin.org/en/developer-reference#compactsize-unsigned-integers]]
    */
-  def parseCompactSizeUInt(bytes: Seq[Byte]): CompactSizeUInt = {
+  def parseCompactSizeUInt(bytes: scodec.bits.ByteVector): CompactSizeUInt = {
     require(bytes.nonEmpty, "Cannot parse a VarInt if the byte array is size 0")
+    val firstByte = UInt64(ByteVector(bytes.head))
     //8 bit number
-    if (UInt64(Seq(bytes.head)).toBigInt < 253)
-      CompactSizeUInt(UInt64(Seq(bytes.head)), 1)
+    if (firstByte.toInt < 253)
+      CompactSizeUInt(firstByte, 1)
     //16 bit number
-    else if (UInt64(Seq(bytes.head)).toInt == 253) CompactSizeUInt(UInt64(bytes.slice(1, 3).reverse), 3)
+    else if (firstByte.toInt == 253) CompactSizeUInt(UInt64(bytes.slice(1, 3).reverse), 3)
     //32 bit number
-    else if (UInt64(Seq(bytes.head)).toInt == 254) CompactSizeUInt(UInt64(bytes.slice(1, 5).reverse), 5)
+    else if (firstByte.toInt == 254) CompactSizeUInt(UInt64(bytes.slice(1, 5).reverse), 5)
     //64 bit number
     else CompactSizeUInt(UInt64(bytes.slice(1, 9).reverse), 9)
   }
 
-  def parse(bytes: Seq[Byte]): CompactSizeUInt = parseCompactSizeUInt(bytes)
+  def parse(bytes: scodec.bits.ByteVector): CompactSizeUInt = parseCompactSizeUInt(bytes)
 
   /**
    * Returns the size of a VarInt in the number of bytes
@@ -136,8 +138,8 @@ object CompactSizeUInt extends Factory[CompactSizeUInt] {
 
   private def parseLong(hex: String): Long = java.lang.Long.parseLong(hex, 16)
 
-  private def parseLong(bytes: List[Byte]): Long = parseLong(BitcoinSUtil.encodeHex(bytes))
+  private def parseLong(bytes: scodec.bits.ByteVector): Long = parseLong(BitcoinSUtil.encodeHex(bytes))
 
-  private def parseLong(byte: Byte): Long = parseLong(List(byte))
+  private def parseLong(byte: Byte): Long = parseLong(ByteVector.fromByte(byte))
 }
 

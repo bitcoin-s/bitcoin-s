@@ -28,7 +28,7 @@ case object EmptyTransactionOutput extends TransactionOutput {
 object TransactionOutput extends Factory[TransactionOutput] {
   private case class TransactionOutputImpl(value: CurrencyUnit, scriptPubKey: ScriptPubKey) extends TransactionOutput
 
-  def fromBytes(bytes: Seq[Byte]): TransactionOutput = RawTransactionOutputParser.read(bytes)
+  def fromBytes(bytes: scodec.bits.ByteVector): TransactionOutput = RawTransactionOutputParser.read(bytes)
 
   def apply(currencyUnit: CurrencyUnit, scriptPubKey: ScriptPubKey): TransactionOutput = {
     TransactionOutputImpl(currencyUnit, scriptPubKey)

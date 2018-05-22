@@ -5,12 +5,14 @@ import org.bitcoins.core.protocol.script.EmptyScriptWitness
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.serializers.{ RawBitcoinSerializer, RawSerializerHelper }
 import org.bitcoins.core.util.BitcoinSUtil
+import org.slf4j.LoggerFactory
+import scodec.bits.ByteVector
 
 /**
  * Created by chris on 11/21/16.
  */
 sealed abstract class RawWitnessTransactionParser extends RawBitcoinSerializer[WitnessTransaction] {
-
+  private val logger = LoggerFactory.getLogger(this.getClass.getSimpleName)
   /**
    * This read function is unique to [[org.bitcoins.core.serializers.transaction.RawBaseTransactionParser]]
    * in the fact that it reads a 'marker' and 'flag' byte to indicate that this tx is a [[WitnessTransaction]]
@@ -19,7 +21,7 @@ sealed abstract class RawWitnessTransactionParser extends RawBitcoinSerializer[W
    * Functionality inside of Bitcoin Core:
    * [[https://github.com/bitcoin/bitcoin/blob/e8cfe1ee2d01c493b758a67ad14707dca15792ea/src/primitives/transaction.h#L244-L251]]
    */
-  def read(bytes: List[Byte]): WitnessTransaction = {
+  def read(bytes: scodec.bits.ByteVector): WitnessTransaction = {
     val versionBytes = bytes.take(4)
     val version = Int32(versionBytes.reverse)
     val marker = bytes(4)
@@ -44,7 +46,7 @@ sealed abstract class RawWitnessTransactionParser extends RawBitcoinSerializer[W
    * Functionality inside of Bitcoin Core:
    * [[https://github.com/bitcoin/bitcoin/blob/e8cfe1ee2d01c493b758a67ad14707dca15792ea/src/primitives/transaction.h#L282-L287s]]
    */
-  def write(tx: WitnessTransaction): Seq[Byte] = {
+  def write(tx: WitnessTransaction): scodec.bits.ByteVector = {
     val version = tx.version.bytes.reverse
     val inputs = RawSerializerHelper.writeCmpctSizeUInt[TransactionInput](
       tx.inputs,
@@ -57,7 +59,7 @@ sealed abstract class RawWitnessTransactionParser extends RawBitcoinSerializer[W
     //notice we use the old serialization format if all witnesses are empty
     //[[https://github.com/bitcoin/bitcoin/blob/e8cfe1ee2d01c493b758a67ad14707dca15792ea/src/primitives/transaction.h#L276-L281]]
     if (tx.witness.witnesses.exists(_ != EmptyScriptWitness)) {
-      val witConstant = Seq(0.toByte, 1.toByte)
+      val witConstant = ByteVector(0.toByte, 1.toByte)
       version ++ witConstant ++ inputs ++ outputs ++ witness ++ lockTime
     } else BaseTransaction(tx.version, tx.inputs, tx.outputs, tx.lockTime).bytes
   }

@@ -13,11 +13,8 @@ abstract class RawBitcoinSerializer[T] {
   def read(hex: String): T = read(BitcoinSUtil.decodeHex(hex))
 
   /** Reads in bytes and transforms it into the appropriate scala type T. */
-  def read(bytes: List[Byte]): T
-
-  /** Reads in bytes and transforms it into the appropriate scala type T. */
-  def read(bytes: Seq[Byte]): T = read(bytes.toList)
+  def read(bytes: scodec.bits.ByteVector): T
 
   /** Takes a type T and writes it into the appropriate hexadecimal serialization for type T. */
-  def write(t: T): Seq[Byte]
+  def write(t: T): scodec.bits.ByteVector
 }

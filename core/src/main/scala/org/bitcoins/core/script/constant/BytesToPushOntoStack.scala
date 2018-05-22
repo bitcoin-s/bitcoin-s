@@ -25,7 +25,7 @@ object BytesToPushOntoStack extends ScriptOperationFactory[BytesToPushOntoStack]
   override def operations: Seq[BytesToPushOntoStack] =
     (for { i <- 0 to 75 } yield BytesToPushOntoStackImpl(i))
 
-  def fromNumber(num: Int): BytesToPushOntoStack = {
+  def fromNumber(num: Long): BytesToPushOntoStack = {
     if (num > 75) throw new IllegalArgumentException("We cannot have a BytesToPushOntoStack for greater than 75 bytes")
     else {
       val bytesToPushOntoStackOpt = operations.find(_.opCode == num)
@@ -36,5 +36,5 @@ object BytesToPushOntoStack extends ScriptOperationFactory[BytesToPushOntoStack]
     }
   }
 
-  def apply(num: Int): BytesToPushOntoStack = fromNumber(num)
+  def apply(num: Long): BytesToPushOntoStack = fromNumber(num)
 }

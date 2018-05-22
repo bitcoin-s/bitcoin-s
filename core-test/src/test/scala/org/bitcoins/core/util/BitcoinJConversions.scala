@@ -14,6 +14,7 @@ import org.bitcoins.core.script.ScriptOperationFactory
 import org.bitcoins.core.script.constant.ScriptToken
 import org.bitcoins.core.script.crypto.SIGHASH_ANYONECANPAY
 import org.slf4j.LoggerFactory
+import scodec.bits.ByteVector
 
 import scala.collection.JavaConversions._
 /**
@@ -29,14 +30,9 @@ trait BitcoinjConversions {
    * @return
    */
   def toScriptPubKey(bitcoinjScript: org.bitcoinj.script.Script): ScriptPubKey = {
-    val p = bitcoinjScript.getProgram
+    val p = ByteVector(bitcoinjScript.getProgram)
     val compactSizeUInt = CompactSizeUInt.calculateCompactSizeUInt(p)
     val scriptPubKey = ScriptPubKey(compactSizeUInt.bytes ++ p)
-    require(
-      BitcoinSUtil.encodeHex(bitcoinjScript.getProgram) == BitcoinSUtil.encodeHex(scriptPubKey.asm.flatMap(_.bytes)),
-      "ScriptPubKey must be the same as the given bitcoinj script\n" +
-        BitcoinSUtil.encodeHex(bitcoinjScript.getProgram) + "\n" +
-        BitcoinSUtil.encodeHex(scriptPubKey.asmBytes))
     scriptPubKey
   }
 
@@ -48,7 +44,7 @@ trait BitcoinjConversions {
    * @param connectedScript
    * @return
    */
-  def signatureSerialization(tx: org.bitcoinj.core.Transaction, inputIndex: Int, connectedScript: Seq[Byte], sigHashType: Byte): String = {
+  def signatureSerialization(tx: org.bitcoinj.core.Transaction, inputIndex: Int, connectedScript: scodec.bits.ByteVector, sigHashType: Byte): String = {
     val params = TestNet3Params.get
     try {
       import org.bitcoinj.core._
@@ -98,14 +94,14 @@ trait BitcoinjConversions {
 
           // Bitcoin Core's bug is that SignatureHash was supposed to return a hash and on this codepath it
           // actually returns the constant "1" to indicate an error, which is never checked for. Oops.
-          return BitcoinSUtil.encodeHex(Sha256Hash.wrap("0100000000000000000000000000000000000000000000000000000000000000").getBytes)
+          return BitcoinSUtil.encodeHex(ByteVector(Sha256Hash.wrap("0100000000000000000000000000000000000000000000000000000000000000").getBytes))
         }
         // In SIGHASH_SINGLE the outputs after the matching input index are deleted, and the outputs before
         // that position are "nulled out". Unintuitively, the value in a "null" transaction is set to -1.
         //tx.outputs = new util.ArrayList[TransactionOutput](tx.getOutputs.subList(0, inputIndex + 1))
         tx.clearOutputs()
         for { i <- 0 until inputIndex } {
-          tx.addOutput(new org.bitcoinj.core.TransactionOutput(params, tx, Coin.NEGATIVE_SATOSHI, List[Byte]().toArray))
+          tx.addOutput(new org.bitcoinj.core.TransactionOutput(params, tx, Coin.NEGATIVE_SATOSHI, Array.emptyByteArray))
         }
         // The signature isn't broken by new versions of the transaction issued by other parties.
         for { i <- 0 until tx.getInputs.size } {
@@ -135,7 +131,7 @@ trait BitcoinjConversions {
       val txBytes = bos.toByteArray
       bos.close();
 
-      return BitcoinSUtil.encodeHex(txBytes)
+      return BitcoinSUtil.encodeHex(ByteVector(txBytes))
     } catch {
       case e: IOException => throw new RuntimeException(e); // Cannot happen.
     }
@@ -147,7 +143,7 @@ trait BitcoinjConversions {
    * @param bytes
    * @return
    */
-  def publicKey(bytes: Seq[Byte]): ECKey = ECKey.fromPublicOnly(bytes.toArray)
+  def publicKey(bytes: scodec.bits.ByteVector): ECKey = ECKey.fromPublicOnly(bytes.toArray)
 
   /**
    * Helper function to create bitcoinj ECKey

@@ -21,23 +21,23 @@ class ZMQSubscriberTest extends FlatSpec with MustMatchers {
     zmqSub.stop
   }
 
-  val rawBlockListener: Option[Seq[Byte] => Unit] = Some {
-    { bytes: Seq[Byte] =>
+  val rawBlockListener: Option[scodec.bits.ByteVector => Unit] = Some {
+    { bytes: scodec.bits.ByteVector =>
       val hex = BitcoinSUtil.encodeHex(bytes)
       logger.debug(s"received raw block ${hex}")
     }
   }
 
-  val hashBlockListener: Option[Seq[Byte] => Unit] = Some {
-    { bytes: Seq[Byte] =>
+  val hashBlockListener: Option[scodec.bits.ByteVector => Unit] = Some {
+    { bytes: scodec.bits.ByteVector =>
       val hex = BitcoinSUtil.encodeHex(bytes)
       logger.debug(s"received raw block hash ${hex}")
 
     }
   }
 
-  val rawTxListener: Option[Seq[Byte] => Unit] = Some {
-    { bytes: Seq[Byte] =>
+  val rawTxListener: Option[scodec.bits.ByteVector => Unit] = Some {
+    { bytes: scodec.bits.ByteVector =>
       val hex = BitcoinSUtil.encodeHex(bytes)
       logger.debug(s"received raw tx ${hex}")
     }

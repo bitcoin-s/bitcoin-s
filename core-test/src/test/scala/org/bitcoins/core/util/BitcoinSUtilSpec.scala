@@ -19,12 +19,6 @@ class BitcoinSUtilSpec extends Properties("BitcoinSUtilSpec") {
 
   property("Convert a byte to a bit vector, convert it back to the original byte") =
     Prop.forAll { byte: Byte =>
-      BitcoinSUtil.bitVectorToByte(BitcoinSUtil.byteToBitVector(byte)) == byte
-    }
-
-  property("Convert a sequence of bit vectors to a sequence of bytes") =
-    Prop.forAll(NumberGenerator.bitVectors) { bitVectors: Seq[Seq[Boolean]] =>
-      BitcoinSUtil.bytesToBitVectors(BitcoinSUtil.bitVectorsToBytes(bitVectors)) == bitVectors
-
+      BitcoinSUtil.bitVectorToBytes(BitcoinSUtil.byteToBitVector(byte)).toByte() == byte
     }
 }
