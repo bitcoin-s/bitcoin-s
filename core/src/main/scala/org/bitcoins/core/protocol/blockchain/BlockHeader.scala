@@ -108,7 +108,7 @@ sealed trait BlockHeader extends NetworkElement {
    */
   def hashBE: DoubleSha256Digest = hash.flip
 
-  override def bytes: Seq[Byte] = RawBlockHeaderSerializer.write(this)
+  override def bytes: scodec.bits.ByteVector = RawBlockHeaderSerializer.write(this)
 
 }
 
@@ -125,6 +125,6 @@ object BlockHeader extends Factory[BlockHeader] {
     BlockHeaderImpl(version, previousBlockHash, merkleRootHash, time, nBits, nonce)
   }
 
-  def fromBytes(bytes: Seq[Byte]): BlockHeader = RawBlockHeaderSerializer.read(bytes)
+  def fromBytes(bytes: scodec.bits.ByteVector): BlockHeader = RawBlockHeaderSerializer.read(bytes)
 
 }

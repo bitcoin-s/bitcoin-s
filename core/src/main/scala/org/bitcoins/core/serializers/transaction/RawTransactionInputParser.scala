@@ -13,7 +13,7 @@ import org.bitcoins.core.util.BitcoinSUtil
  */
 sealed abstract class RawTransactionInputParser extends RawBitcoinSerializer[TransactionInput] {
 
-  override def read(bytes: List[Byte]): TransactionInput = {
+  override def read(bytes: scodec.bits.ByteVector): TransactionInput = {
     val outPoint = TransactionOutPoint(bytes.take(36))
     val scriptSigBytes = bytes.slice(36, bytes.size)
     val scriptSig: ScriptSignature = RawScriptSignatureParser.read(scriptSigBytes)
@@ -26,7 +26,7 @@ sealed abstract class RawTransactionInputParser extends RawBitcoinSerializer[Tra
   }
 
   /** Writes a single transaction input */
-  def write(input: TransactionInput): Seq[Byte] = {
+  def write(input: TransactionInput): scodec.bits.ByteVector = {
     input.previousOutput.bytes ++ input.scriptSignature.bytes ++ input.sequence.bytes.reverse
   }
 }

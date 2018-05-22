@@ -7,6 +7,7 @@ import org.bitcoins.core.script.crypto._
 import org.bitcoins.core.script.flag.{ ScriptFlag, ScriptFlagUtil }
 import org.bitcoins.core.script.result.ScriptErrorWitnessPubKeyType
 import org.bitcoins.core.util.{ BitcoinSLogger, BitcoinSUtil, BitcoinScriptUtil }
+import scodec.bits.ByteVector
 
 import scala.annotation.tailrec
 
@@ -52,7 +53,7 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
     } else {
       val sigsRemovedScript = BitcoinScriptUtil.calculateScriptForChecking(txSignatureComponent, signature, script)
       val hashTypeByte = if (signature.bytes.nonEmpty) signature.bytes.last else 0x00.toByte
-      val hashType = HashType(Seq(0.toByte, 0.toByte, 0.toByte, hashTypeByte))
+      val hashType = HashType(ByteVector(0.toByte, 0.toByte, 0.toByte, hashTypeByte))
       val spk = ScriptPubKey.fromAsm(sigsRemovedScript)
       val hashForSignature = txSignatureComponent match {
         case b: BaseTxSigComponent =>

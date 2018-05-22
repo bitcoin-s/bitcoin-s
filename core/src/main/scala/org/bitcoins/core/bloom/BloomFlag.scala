@@ -41,6 +41,6 @@ object BloomFlag extends Factory[BloomFlag] {
     else throw new IllegalArgumentException("The given byte was not defined for BloomFlag, got: " + byte)
   }
 
-  def fromBytes(bytes: Seq[Byte]): BloomFlag = BloomFlag(bytes.head)
+  def fromBytes(bytes: scodec.bits.ByteVector): BloomFlag = BloomFlag(bytes.head)
 }
 

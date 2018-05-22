@@ -11,7 +11,7 @@ class RawTransactionOutPointParserTest extends FlatSpec with MustMatchers {
   //txid cad1082e674a7bd3bc9ab1bc7804ba8a57523607c876b8eb2cbe645f2b1803d6
   val rawOutPoint = "85d6b0da2edf96b282030d3f4f79d14cc8c882cfef1b3064170c850660317de100000000"
   val rawOutPointLargeVout = "df80e3e6eba7dcd4650281d3c13f140dafbb823a7227a78eb6ee9f6cedd0400134000000"
-  val encode = BitcoinSUtil.encodeHex(_: Seq[Byte])
+  val encode = BitcoinSUtil.encodeHex(_: scodec.bits.ByteVector)
   "RawTransactionOutPointParser" must "read a raw outpoint into a native scala TransactionOutPoint" in {
     val outPoint = RawTransactionOutPointParser.read(rawOutPoint)
     outPoint.txId.hex must be(BitcoinSUtil.flipEndianness("e17d316006850c1764301befcf82c8c84cd1794f3f0d0382b296df2edab0d685"))

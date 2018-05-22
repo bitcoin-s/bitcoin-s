@@ -1,8 +1,10 @@
 package org.bitcoins.core.script.constant
 
 import org.bitcoins.core.number.Int64
+import org.bitcoins.core.protocol.NetworkElement
 import org.bitcoins.core.script.ScriptOperationFactory
 import org.bitcoins.core.util.{ BitcoinSUtil, BitcoinScriptUtil, Factory }
+import scodec.bits.ByteVector
 
 import scala.util.{ Failure, Success, Try }
 
@@ -14,12 +16,9 @@ import scala.util.{ Failure, Success, Try }
  * This is the root class of Script. Every element in the Script language is a
  * ScriptToken - think of this the same way you think about Object in Java.
  */
-sealed trait ScriptToken {
-  /** The hexadecimal representation of this [[ScriptToken]]. */
-  def hex: String
-
+sealed trait ScriptToken extends NetworkElement {
   /** The byte representation of this [[ScriptToken]]. */
-  def bytes: Seq[Byte] = BitcoinSUtil.decodeHex(hex)
+  def bytes: scodec.bits.ByteVector
 
   /** The conversion from the byte representation of a [[ScriptToken]] to a number. */
   def toLong = ScriptNumberUtil.toLong(hex)
@@ -32,7 +31,7 @@ sealed trait ScriptToken {
 trait ScriptOperation extends ScriptToken {
   def opCode: Int
 
-  override def hex: String = BitcoinSUtil.encodeHex(opCode.toByte)
+  def bytes: ByteVector = ByteVector.fromByte(opCode.toByte)
 }
 
 /** A constant in the Script language for instance as String or a number. */
@@ -95,7 +94,7 @@ sealed abstract class ScriptNumber extends ScriptConstant {
 object ScriptNumber extends Factory[ScriptNumber] {
 
   /** Represents the number zero inside of bitcoin's script language. */
-  lazy val zero: ScriptNumber = ScriptNumberImpl(0, "")
+  lazy val zero: ScriptNumber = ScriptNumberImpl(0, ByteVector.empty)
   /** Represents the number one inside of bitcoin's script language. */
   lazy val one: ScriptNumber = ScriptNumberImpl(1)
   /** Represents the number negative one inside of bitcoin's script language. */
@@ -103,16 +102,16 @@ object ScriptNumber extends Factory[ScriptNumber] {
   /** Bitcoin has a numbering system which has a negative zero. */
   lazy val negativeZero: ScriptNumber = fromHex("80")
 
-  def fromBytes(bytes: Seq[Byte]) = {
+  def fromBytes(bytes: scodec.bits.ByteVector) = {
     if (bytes.isEmpty) zero
-    else ScriptNumberImpl(ScriptNumberUtil.toLong(bytes), BitcoinSUtil.encodeHex(bytes))
+    else ScriptNumberImpl(ScriptNumberUtil.toLong(bytes), bytes)
   }
 
   def apply(underlying: Long): ScriptNumber = {
     if (underlying == 0) zero else apply(ScriptNumberUtil.longToHex(underlying))
   }
 
-  def apply(bytes: Seq[Byte], requireMinimal: Boolean): Try[ScriptNumber] = apply(BitcoinSUtil.encodeHex(bytes), requireMinimal)
+  def apply(bytes: scodec.bits.ByteVector, requireMinimal: Boolean): Try[ScriptNumber] = apply(BitcoinSUtil.encodeHex(bytes), requireMinimal)
 
   def apply(hex: String, requireMinimal: Boolean): Try[ScriptNumber] = {
     if (requireMinimal && !BitcoinScriptUtil.isShortestEncoding(hex)) {
@@ -123,25 +122,22 @@ object ScriptNumber extends Factory[ScriptNumber] {
     }
   }
 
-  /**
-   * This represents a [[ScriptNumber]] inside of bitcoin
-   *
-   * @param underlying the number being represented
-   * @param hex        the hex representation of the number - this can be different than the obvious value for
-   *                   the number. For instance we could have padded the number with another word of zeros
-   */
-  private case class ScriptNumberImpl(underlying: Long, override val hex: String) extends ScriptNumber
+  private case class ScriptNumberImpl(underlying: Long, bytes: ByteVector) extends ScriptNumber
 
   /**
    * Companion object for [[ScriptNumberImpl]] that gives us access to more constructor types for the
    * [[ScriptNumberImpl]] case class.
    */
   private object ScriptNumberImpl {
-    def apply(hex: String): ScriptNumber = ScriptNumberImpl(ScriptNumberUtil.toLong(hex), hex)
+    def apply(hex: String): ScriptNumber = ScriptNumberImpl(ScriptNumberUtil.toLong(hex), BitcoinSUtil.decodeHex(hex))
 
-    def apply(bytes: Seq[Byte]): ScriptNumber = ScriptNumberImpl(ScriptNumberUtil.toLong(bytes))
+    def apply(bytes: scodec.bits.ByteVector): ScriptNumber = ScriptNumberImpl(ScriptNumberUtil.toLong(bytes))
 
-    def apply(underlying: Long): ScriptNumber = ScriptNumberImpl(underlying, ScriptNumberUtil.longToHex(underlying))
+    def apply(underlying: Long): ScriptNumber = {
+      ScriptNumberImpl(
+        underlying,
+        BitcoinSUtil.decodeHex(ScriptNumberUtil.longToHex(underlying)))
+    }
 
     def apply(int64: Int64): ScriptNumber = ScriptNumberImpl(int64.toLong)
   }
@@ -342,11 +338,9 @@ object ScriptConstant extends Factory[ScriptConstant] {
   lazy val negativeOne = ScriptConstant("81")
 
   /** Creates a [[ScriptConstant]] from a sequence of bytes. */
-  def fromBytes(bytes: Seq[Byte]): ScriptConstant = ScriptConstantImpl(BitcoinSUtil.encodeHex(bytes))
+  def fromBytes(bytes: scodec.bits.ByteVector): ScriptConstant = ScriptConstantImpl(bytes)
 
   /** Represent a public key or hash of a public key on our stack. */
-  private case class ScriptConstantImpl(hex: String) extends ScriptConstant {
-    def this(bytes: List[Byte]) = this(BitcoinSUtil.encodeHex(bytes))
-  }
+  private case class ScriptConstantImpl(bytes: ByteVector) extends ScriptConstant
 
 }

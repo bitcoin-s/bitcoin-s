@@ -12,7 +12,7 @@ import scala.util.Try
  */
 trait RawScriptPubKeyParser extends RawBitcoinSerializer[ScriptPubKey] {
 
-  override def read(bytes: List[Byte]): ScriptPubKey = {
+  override def read(bytes: scodec.bits.ByteVector): ScriptPubKey = {
     if (bytes.isEmpty) EmptyScriptPubKey
     else {
       val compactSizeUInt = CompactSizeUInt.parseCompactSizeUInt(bytes)
@@ -25,7 +25,7 @@ trait RawScriptPubKeyParser extends RawBitcoinSerializer[ScriptPubKey] {
     }
   }
 
-  override def write(scriptPubKey: ScriptPubKey): Seq[Byte] = scriptPubKey.bytes
+  override def write(scriptPubKey: ScriptPubKey): scodec.bits.ByteVector = scriptPubKey.bytes
 }
 
 object RawScriptPubKeyParser extends RawScriptPubKeyParser

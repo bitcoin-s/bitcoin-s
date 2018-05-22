@@ -1,6 +1,7 @@
 package org.bitcoins.core.number
 
 import org.scalatest.{ FlatSpec, MustMatchers }
+import scodec.bits.ByteVector
 
 /**
  * Created by chris on 6/15/16.
@@ -8,57 +9,57 @@ import org.scalatest.{ FlatSpec, MustMatchers }
 class Int64Test extends FlatSpec with MustMatchers {
 
   "Int64" must "represent the nubmer zero" in {
-    val int64 = Int64(Seq(0.toByte))
+    val int64 = Int64(scodec.bits.ByteVector.low(1))
     int64.toLong must be(0)
   }
   it must "represent the number 1" in {
-    val int64 = Int64(Seq(1.toByte))
+    val int64 = Int64(ByteVector(1.toByte))
     int64.toLong must be(1)
   }
   it must "represent the number -1 with 1 byte" in {
-    val int64 = Int64(Seq(0xff.toByte))
+    val int64 = Int64(scodec.bits.ByteVector(0xff.toByte))
     int64.toLong must be(-1)
   }
 
   it must "represent the number -1 with 8 bytes" in {
-    val int64 = Int64(Seq(0xff.toByte, 0xff.toByte, 0xff.toByte, 0xff.toByte,
+    val int64 = Int64(scodec.bits.ByteVector(0xff.toByte, 0xff.toByte, 0xff.toByte, 0xff.toByte,
       0xff.toByte, 0xff.toByte, 0xff.toByte, 0xff.toByte))
     int64.toLong must be(-1)
   }
   it must "represent the Int32 max value" in {
-    val int64 = Int64(Seq(0x7f.toByte, 0xff.toByte, 0xff.toByte, 0xff.toByte))
+    val int64 = Int64(scodec.bits.ByteVector(0x7f.toByte, 0xff.toByte, 0xff.toByte, 0xff.toByte))
     int64.toLong must be(2147483647)
   }
 
   it must "represent the Int32 min value" in {
-    val int64 = Int64(Seq(0x80.toByte, 0.toByte, 0.toByte, 0.toByte))
+    val int64 = Int64(scodec.bits.ByteVector(0x80.toByte, 0.toByte, 0.toByte, 0.toByte))
     int64.toLong must be(-2147483648L)
   }
 
   it must "represent the Int32 max value + 1" in {
-    val int64 = Int64(Seq(0x0.toByte, 0x80.toByte, 0.toByte, 0.toByte, 0.toByte))
+    val int64 = Int64(scodec.bits.ByteVector(0x0.toByte, 0x80.toByte, 0.toByte, 0.toByte, 0.toByte))
     int64.toLong must be(2147483648L)
   }
 
   it must "represent the Int32 min value - 1" in {
-    val int64 = Int64(Seq(0xff.toByte, 0x7f.toByte, 0xff.toByte, 0xff.toByte, 0xff.toByte))
+    val int64 = Int64(scodec.bits.ByteVector(0xff.toByte, 0x7f.toByte, 0xff.toByte, 0xff.toByte, 0xff.toByte))
     int64.toLong must be(-2147483649L)
   }
 
   it must "represent the minimum value for int64" in {
-    val int64 = Int64(Seq(0x80.toByte, 0.toByte, 0.toByte, 0.toByte, 0.toByte, 0.toByte, 0.toByte, 0.toByte))
+    val int64 = Int64(scodec.bits.ByteVector(0x80.toByte, 0.toByte, 0.toByte, 0.toByte, 0.toByte, 0.toByte, 0.toByte, 0.toByte))
     int64.toLong must be(-9223372036854775808L)
   }
 
   it must "represent the maximum value for a int64" in {
-    val int64 = Int64(Seq(0x7f.toByte, 0xff.toByte, 0xff.toByte, 0xff.toByte,
+    val int64 = Int64(scodec.bits.ByteVector(0x7f.toByte, 0xff.toByte, 0xff.toByte, 0xff.toByte,
       0xff.toByte, 0xff.toByte, 0xff.toByte, 0xff.toByte))
     int64.toLong must be(9223372036854775807L)
   }
 
   it must "throw an exception when trying to create a Int64 out of 9 bytes or more" in {
     intercept[IllegalArgumentException] {
-      Int64(Seq(0.toByte, 0.toByte, 0.toByte, 0.toByte, 0.toByte, 0.toByte, 0.toByte, 0.toByte, 0.toByte))
+      Int64(ByteVector(0.toByte, 0.toByte, 0.toByte, 0.toByte, 0.toByte, 0.toByte, 0.toByte, 0.toByte, 0.toByte))
     }
   }
 

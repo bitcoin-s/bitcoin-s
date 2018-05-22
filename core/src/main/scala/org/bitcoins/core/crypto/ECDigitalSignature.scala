@@ -1,6 +1,7 @@
 package org.bitcoins.core.crypto
 
 import org.bitcoins.core.util.{ BitcoinSLogger, BitcoinSUtil, Factory }
+import scodec.bits.ByteVector
 /**
  * Created by chris on 2/26/16.
  */
@@ -9,7 +10,7 @@ sealed abstract class ECDigitalSignature {
 
   def hex: String = BitcoinSUtil.encodeHex(bytes)
 
-  def bytes: Seq[Byte]
+  def bytes: scodec.bits.ByteVector
 
   def isEmpty = bytes.isEmpty
 
@@ -44,7 +45,7 @@ sealed abstract class ECDigitalSignature {
 }
 
 case object EmptyDigitalSignature extends ECDigitalSignature {
-  override val bytes = Nil
+  override val bytes = ByteVector.empty
   override def r = java.math.BigInteger.valueOf(0)
   override def s = r
 }
@@ -57,13 +58,13 @@ case object EmptyDigitalSignature extends ECDigitalSignature {
  * https://en.bitcoin.it/wiki/Elliptic_Curve_Digital_Signature_Algorithm
  */
 case object DummyECDigitalSignature extends ECDigitalSignature {
-  override val bytes = 0.until(72).map(_ => 0.toByte)
+  override val bytes = ByteVector(Array.fill(72)(0.toByte))
 }
 
 object ECDigitalSignature extends Factory[ECDigitalSignature] {
-  private case class ECDigitalSignatureImpl(bytes: Seq[Byte]) extends ECDigitalSignature
+  private case class ECDigitalSignatureImpl(bytes: scodec.bits.ByteVector) extends ECDigitalSignature
 
-  override def fromBytes(bytes: Seq[Byte]): ECDigitalSignature = {
+  override def fromBytes(bytes: scodec.bits.ByteVector): ECDigitalSignature = {
     //this represents the empty signature
     if (bytes.size == 1 && bytes.head == 0x0) EmptyDigitalSignature
     else if (bytes.size == 0) EmptyDigitalSignature
@@ -89,8 +90,13 @@ object ECDigitalSignature extends Factory[ECDigitalSignature] {
   def fromRS(r: BigInt, s: BigInt): ECDigitalSignature = {
     val rsSize = r.toByteArray.size + s.toByteArray.size
     val totalSize = 4 + rsSize
-    val bytes: Seq[Byte] = Seq(0x30.toByte, totalSize.toByte, 0x2.toByte, r.toByteArray.size.toByte) ++
-      r.toByteArray.toSeq ++ Seq(0x2.toByte, s.toByteArray.size.toByte) ++ s.toByteArray.toSeq
+    val bytes: scodec.bits.ByteVector = {
+      ByteVector(Array(0x30.toByte, totalSize.toByte, 0x2.toByte, r.toByteArray.size.toByte))
+        .++(ByteVector(r.toByteArray))
+        .++(ByteVector(Array(0x2.toByte, s.toByteArray.size.toByte)))
+        .++(ByteVector(s.toByteArray))
+    }
+
     fromBytes(bytes)
   }
 }

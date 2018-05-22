@@ -5,6 +5,7 @@ import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.util.{ BitcoinSUtil, Leaf, Node }
 import org.scalatest.{ FlatSpec, MustMatchers }
+import scodec.bits.BitVector
 
 /**
  * Created by chris on 8/9/16.
@@ -54,8 +55,8 @@ class PartialMerkleTreeTests extends FlatSpec with MustMatchers {
     val filter = BloomFilter(10, 0.000001, UInt32.zero, BloomUpdateAll).insert(hash1).insert(hash2)
     val (merkleBlock, _) = MerkleBlock(block, filter)
     val partialMerkleTree = merkleBlock.partialMerkleTree
-    partialMerkleTree.bits.slice(0, 8) must be(Seq(true, true, false, true, false, true, false, true))
-    partialMerkleTree.bits.slice(8, partialMerkleTree.bits.size) must be(Seq(true, true, true, true, false, false, false, false))
+    partialMerkleTree.bits.slice(0, 8).toIndexedSeq must be(Seq(true, true, false, true, false, true, false, true))
+    partialMerkleTree.bits.slice(8, partialMerkleTree.bits.size).toIndexedSeq must be(Seq(true, true, true, true, false, false, false, false))
     partialMerkleTree.hashes must be(Seq(
       DoubleSha256Digest("5ef2374cf1cd1c0b8c1b795950c077fc571cca44866c375a1ed17ace665cfaaa"),
       DoubleSha256Digest("d403489f6b1a2f7de72c6e4573e1cc7ac15745518e42a0bf884f58dc48f45533"),
@@ -134,7 +135,7 @@ class PartialMerkleTreeTests extends FlatSpec with MustMatchers {
   it must "build a partial merkle tree with no matches and 1 transaction in the original block" in {
     val txMatches = Seq((false, DoubleSha256Digest("01272b2b1c8c33a1b4e9ab111db41c9ac275e686fbd9c5d482e586d03e9e0552")))
     val partialMerkleTree = PartialMerkleTree(txMatches)
-    partialMerkleTree.bits must be(Seq(false, false, false, false, false, false, false, false))
+    partialMerkleTree.bits.toIndexedSeq must be(Seq(false, false, false, false, false, false, false, false))
     partialMerkleTree.tree must be(Leaf(DoubleSha256Digest("01272b2b1c8c33a1b4e9ab111db41c9ac275e686fbd9c5d482e586d03e9e0552")))
     partialMerkleTree.transactionCount must be(UInt32(1))
     partialMerkleTree.extractMatches.isEmpty must be(true)
@@ -145,7 +146,7 @@ class PartialMerkleTreeTests extends FlatSpec with MustMatchers {
       (false, DoubleSha256Digest("01272b2b1c8c33a1b4e9ab111db41c9ac275e686fbd9c5d482e586d03e9e0552")),
       (true, DoubleSha256Digest("076d0317ee70ee36cf396a9871ab3bf6f8e6d538d7f8a9062437dcb71c75fcf9")))
     val partialMerkleTree = PartialMerkleTree(txMatches)
-    partialMerkleTree.bits must be(Seq(true, false, true, false, false, false, false, false))
+    partialMerkleTree.bits.toIndexedSeq must be(Seq(true, false, true, false, false, false, false, false))
     partialMerkleTree.tree must be(Node(
       DoubleSha256Digest("b130d701e65ac8c65f30dc4b20aabf349036b7c87f11f012f4f3f53f666791e6"),
       Leaf(DoubleSha256Digest("01272b2b1c8c33a1b4e9ab111db41c9ac275e686fbd9c5d482e586d03e9e0552")),
@@ -157,7 +158,7 @@ class PartialMerkleTreeTests extends FlatSpec with MustMatchers {
     val matches = List((true, DoubleSha256Digest("caa02f1194fb44dea407a7cf713ddcf30e69f49c297f9275f9236fec42d945b2")))
     val partialMerkleTree = PartialMerkleTree(matches)
     partialMerkleTree.tree must be(Leaf(DoubleSha256Digest("caa02f1194fb44dea407a7cf713ddcf30e69f49c297f9275f9236fec42d945b2")))
-    partialMerkleTree.bits must be(Seq(true, false, false, false, false, false, false, false))
+    partialMerkleTree.bits.toIndexedSeq must be(Seq(true, false, false, false, false, false, false, false))
   }
 
   it must "correctly compute a merkle tree that has an odd amount of txids on the merkle tree" in {
@@ -183,9 +184,9 @@ class PartialMerkleTreeTests extends FlatSpec with MustMatchers {
       DoubleSha256Digest("5df6e0e2761359d30a8275058e299fcc0381534545f55cf43e41983f5d4c9456"),
       DoubleSha256Digest("5df6e0e2761359d30a8275058e299fcc0381534545f55cf43e41983f5d4c9456"))
     val numTransactions = UInt32(20)
-    val bits = List(true, true, true, true, true, true, true, false, true, true, false, true,
+    val bits = BitVector.bits(List(true, true, true, true, true, true, true, false, true, true, false, true,
       true, true, false, true, true, true, true, false, true, true, true, true, true, true, true,
-      false, true, true, true, true, false, true, true, true, true, false, false, false)
+      false, true, true, true, true, false, true, true, true, true, false, false, false))
     val tree = PartialMerkleTree(numTransactions, hashes, bits)
     tree.extractMatches.contains(DoubleSha256Digest("5df6e0e2761359d30a8275058e299fcc0381534545f55cf43e41983f5d4c9456")) must be(true)
   }

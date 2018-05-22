@@ -9,9 +9,9 @@ sealed abstract class NetworkParameters {
   /** The parameters of the blockchain we are connecting to */
   def chainParams: ChainParams
 
-  def p2pkhNetworkByte: Seq[Byte] = chainParams.base58Prefix(Base58Type.PubKeyAddress)
-  def p2shNetworkByte: Seq[Byte] = chainParams.base58Prefix(Base58Type.ScriptAddress)
-  def privateKey: Seq[Byte] = chainParams.base58Prefix(Base58Type.SecretKey)
+  def p2pkhNetworkByte: scodec.bits.ByteVector = chainParams.base58Prefix(Base58Type.PubKeyAddress)
+  def p2shNetworkByte: scodec.bits.ByteVector = chainParams.base58Prefix(Base58Type.ScriptAddress)
+  def privateKey: scodec.bits.ByteVector = chainParams.base58Prefix(Base58Type.SecretKey)
 
   def port: Int
   def rpcPort: Int
@@ -25,7 +25,7 @@ sealed abstract class NetworkParameters {
    * a large 32-bit integer with any alignment.
    * https://github.com/bitcoin/bitcoin/blob/master/src/chainparams.cpp#L108
    */
-  def magicBytes: Seq[Byte]
+  def magicBytes: scodec.bits.ByteVector
 
   /** In bitcoin, the network recaculates the difficulty for the network every 2016 blocks */
   def difficultyChangeThreshold: Int
@@ -46,7 +46,7 @@ sealed abstract class MainNet extends BitcoinNetwork {
   override def dnsSeeds = Seq("seed.bitcoin.sipa.be", "dnsseed.bluematt.me", "dnsseed.bitcoin.dashjr.org",
     "seed.bitcoinstats.com", "bitseed.xf2.org", "seed.bitcoin.jonasschnelli.ch")
 
-  override def magicBytes = Seq(0xf9.toByte, 0xbe.toByte, 0xb4.toByte, 0xd9.toByte)
+  override def magicBytes = scodec.bits.ByteVector(0xf9, 0xbe, 0xb4, 0xd9)
 
   override def difficultyChangeThreshold: Int = 2016
 }
@@ -60,7 +60,7 @@ sealed abstract class TestNet3 extends BitcoinNetwork {
   override def dnsSeeds = Seq(
     "testnet-seed.bitcoin.petertodd.org",
     "testnet-seed.bluematt.me", "testnet-seed.bitcoin.schildbach.de")
-  override def magicBytes = Seq(0x0b.toByte, 0x11.toByte, 0x09.toByte, 0x07.toByte)
+  override def magicBytes = scodec.bits.ByteVector(0x0b, 0x11, 0x09, 0x07)
 
   override def difficultyChangeThreshold: Int = 2016
 }
@@ -72,7 +72,7 @@ sealed abstract class RegTest extends BitcoinNetwork {
   override def port = 18444
   override def rpcPort = TestNet3.rpcPort
   override def dnsSeeds = Nil
-  override def magicBytes = Seq(0xfa.toByte, 0xbf.toByte, 0xb5.toByte, 0xda.toByte)
+  override def magicBytes = scodec.bits.ByteVector(0xfa, 0xbf, 0xb5, 0xda)
   override def difficultyChangeThreshold: Int = 2016
 }
 
@@ -84,7 +84,7 @@ object Networks {
   val p2pkhNetworkBytes = knownNetworks.map(_.p2pkhNetworkByte)
   val p2shNetworkBytes = knownNetworks.map(_.p2shNetworkByte)
 
-  def bytesToNetwork: Map[Seq[Byte], NetworkParameters] = Map(
+  def bytesToNetwork: Map[scodec.bits.ByteVector, NetworkParameters] = Map(
     MainNet.p2shNetworkByte -> MainNet,
     MainNet.p2pkhNetworkByte -> MainNet,
     MainNet.privateKey -> MainNet,

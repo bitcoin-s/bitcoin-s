@@ -31,7 +31,7 @@ class HashTypeTest extends FlatSpec with MustMatchers {
   }
 
   it must "default to SIGHASH_ALL if the given string/byte is not known" in {
-    HashType(Seq(0x124.toByte)) must be(SIGHASH_ALL(Int32(36)))
+    HashType(scodec.bits.ByteVector(0x124.toByte)) must be(SIGHASH_ALL(Int32(36)))
   }
 
   it must "find hashType for number 1190874345" in {

@@ -14,7 +14,7 @@ class RawScriptSignatureParserTest extends FlatSpec with MustMatchers {
   //from bitcoin developer examples
   //https://bitcoin.org/en/developer-reference#raw-transaction-format
   val rawScriptSig = "4a494830450221008949f0cb400094ad2b5eb399d59d01c14d73d8fe6e96df1a7150deb388ab8935022079656090d7f6bac4c9a94e0aad311a4268e082a725f8aeae0573fb12ff866a5f01"
-  val encode = BitcoinSUtil.encodeHex(_: Seq[Byte])
+  val encode = BitcoinSUtil.encodeHex(_: scodec.bits.ByteVector)
   "RawScriptSignatureParser" must "write a raw script sig" in {
     val scriptSig = RawScriptSignatureParser.read(rawScriptSig)
     encode(RawScriptSignatureParser.write(scriptSig)) must be(rawScriptSig)

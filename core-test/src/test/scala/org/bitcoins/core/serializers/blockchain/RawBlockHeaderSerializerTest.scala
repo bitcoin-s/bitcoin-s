@@ -20,7 +20,7 @@ class RawBlockHeaderSerializerTest extends FlatSpec with MustMatchers {
   val nBits = "FFFF001D".toLowerCase
   val nonce = "1DAC2B7C".toLowerCase
   val hash = "6fe28c0ab6f1b372c1a6a246ae63f74f931e8365e15a089c68d6190000000000"
-  val encode = BitcoinSUtil.encodeHex(_: Seq[Byte])
+  val encode = BitcoinSUtil.encodeHex(_: scodec.bits.ByteVector)
   val hex = version + prevBlockHash + merkleRoot + timeStamp + nBits + nonce
   "BlockHeader" must "parse genesis block header" in {
     val blockHeader = RawBlockHeaderSerializer.read(hex)

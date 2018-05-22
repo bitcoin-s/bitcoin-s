@@ -27,7 +27,7 @@ sealed abstract class Signer {
   def sign(signers: Seq[Sign], output: TransactionOutput, unsignedTx: Transaction,
     inputIndex: UInt32, hashType: HashType, isDummySignature: Boolean)(implicit ec: ExecutionContext): Future[TxSigComponent]
 
-  def doSign(sigComponent: TxSigComponent, sign: Seq[Byte] => Future[ECDigitalSignature], hashType: HashType,
+  def doSign(sigComponent: TxSigComponent, sign: scodec.bits.ByteVector => Future[ECDigitalSignature], hashType: HashType,
     isDummySignature: Boolean)(implicit ec: ExecutionContext): Future[ECDigitalSignature] = {
     if (isDummySignature) {
       Future.successful(DummyECDigitalSignature)
@@ -49,7 +49,7 @@ sealed abstract class P2PKSigner extends BitcoinSigner {
     if (signers.size != 1) {
       Future.fromTry(TxBuilderError.TooManySigners)
     } else {
-      val sign: Seq[Byte] => Future[ECDigitalSignature] = signers.head.signFunction
+      val sign: scodec.bits.ByteVector => Future[ECDigitalSignature] = signers.head.signFunction
       val unsignedInput = unsignedTx.inputs(inputIndex.toInt)
       val flags = Policy.standardFlags
       val amount = output.value

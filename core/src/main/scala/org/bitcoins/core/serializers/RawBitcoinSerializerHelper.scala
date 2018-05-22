@@ -3,6 +3,7 @@ package org.bitcoins.core.serializers
 import org.bitcoins.core.number.UInt64
 import org.bitcoins.core.protocol.{ CompactSizeUInt, NetworkElement }
 import org.bitcoins.core.util.BitcoinSLogger
+import scodec.bits.ByteVector
 
 /**
  * Created by chris on 2/18/16.
@@ -14,10 +15,10 @@ sealed abstract class RawSerializerHelper {
    * Used parse a byte sequence to a Seq[TransactionInput], Seq[TransactionOutput], etc
    * Makes sure that we parse the correct amount of elements
    */
-  def parseCmpctSizeUIntSeq[T <: NetworkElement](bytes: Seq[Byte], constructor: Seq[Byte] => T): (Seq[T], Seq[Byte]) = {
+  def parseCmpctSizeUIntSeq[T <: NetworkElement](bytes: scodec.bits.ByteVector, constructor: scodec.bits.ByteVector => T): (Seq[T], scodec.bits.ByteVector) = {
     val count = CompactSizeUInt.parse(bytes)
     val payload = bytes.splitAt(count.size.toInt)._2
-    def loop(accum: Seq[T], remaining: Seq[Byte]): (Seq[T], Seq[Byte]) = {
+    def loop(accum: Seq[T], remaining: scodec.bits.ByteVector): (Seq[T], scodec.bits.ByteVector) = {
       if (accum.size == count.num.toInt) {
         (accum.reverse, remaining)
       } else {
@@ -32,9 +33,10 @@ sealed abstract class RawSerializerHelper {
     (parsed, remaining)
   }
 
-  /** Writes a Seq[TransactionInput]/Seq[TransactionOutput]/Seq[Transaction] -> Seq[Byte] */
-  def writeCmpctSizeUInt[T](ts: Seq[T], serializer: T => Seq[Byte]): Seq[Byte] = {
-    val serialized = ts.flatMap(serializer(_))
+  /** Writes a Seq[TransactionInput]/Seq[TransactionOutput]/Seq[Transaction] -> scodec.bits.ByteVector */
+  def writeCmpctSizeUInt[T](ts: Seq[T], serializer: T => scodec.bits.ByteVector): scodec.bits.ByteVector = {
+    val serializedSeq: Seq[ByteVector] = ts.map(serializer(_))
+    val serialized = serializedSeq.foldLeft(ByteVector.empty)(_ ++ _)
     val cmpct = CompactSizeUInt(UInt64(ts.size))
     cmpct.bytes ++ serialized
   }

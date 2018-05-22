@@ -2,6 +2,7 @@ package org.bitcoins.core.util
 
 import org.bitcoins.core.crypto.ECPrivateKey
 import org.bitcoins.core.protocol.blockchain._
+import scodec.bits.ByteVector
 
 import scala.annotation.tailrec
 import scala.util.{ Failure, Success, Try }
@@ -16,15 +17,15 @@ sealed abstract class Base58 {
   val base58Pairs = base58Characters.zipWithIndex.toMap
   private val logger = BitcoinSLogger.logger
   /** Verifies a given [[Base58Type]] string against its checksum (last 4 decoded bytes). */
-  def decodeCheck(input: String): Try[Seq[Byte]] = {
-    val decodedTry: Try[Seq[Byte]] = Try(decode(input))
+  def decodeCheck(input: String): Try[scodec.bits.ByteVector] = {
+    val decodedTry: Try[scodec.bits.ByteVector] = Try(decode(input))
     decodedTry.flatMap { decoded =>
       if (decoded.length < 4) Failure(new IllegalArgumentException("Invalid input"))
       else {
         val splitSeqs = decoded.splitAt(decoded.length - 4)
-        val data: Seq[Byte] = splitSeqs._1
-        val checksum: Seq[Byte] = splitSeqs._2
-        val actualChecksum: Seq[Byte] = CryptoUtil.doubleSHA256(data).bytes.take(4)
+        val data: scodec.bits.ByteVector = splitSeqs._1
+        val checksum: scodec.bits.ByteVector = splitSeqs._2
+        val actualChecksum: scodec.bits.ByteVector = CryptoUtil.doubleSHA256(data).bytes.take(4)
         if (checksum == actualChecksum) Success(data)
         else Failure(new IllegalArgumentException("checksums don't validate"))
       }
@@ -32,8 +33,8 @@ sealed abstract class Base58 {
   }
 
   /** Encodes a sequence of bytes to a [[Base58Type]] string. */
-  def encode(bytes: Seq[Byte]): String = {
-    val ones: String = bytes.takeWhile(_ == 0).map(_ => '1').mkString
+  def encode(bytes: scodec.bits.ByteVector): String = {
+    val ones: String = bytes.toSeq.takeWhile(_ == 0).map(_ => '1').mkString
     @tailrec
     def loop(current: BigInt, str: String): String = current match {
       case a if current == BigInt(0) =>
@@ -59,18 +60,18 @@ sealed abstract class Base58 {
   }
 
   /** Encodes a [[Byte]] to its [[Base58Type]] representation. */
-  def encode(byte: Byte): String = encode(Seq(byte))
+  def encode(byte: Byte): String = encode(ByteVector.fromByte(byte))
 
   /**
    * Takes in [[Base58Type]] string and returns sequence of [[Byte]]s
    * https://github.com/ACINQ/bitcoin-lib/blob/master/src/main/scala/fr/acinq/bitcoin/Base58.scala.
    */
-  def decode(input: String): Seq[Byte] = {
-    val zeroes = input.takeWhile(_ == '1').map(_ => 0: Byte).toArray
+  def decode(input: String): scodec.bits.ByteVector = {
+    val zeroes = ByteVector(input.takeWhile(_ == '1').map(_ => 0: Byte))
     val trim = input.dropWhile(_ == '1').toList
     val decoded = trim.foldLeft(BigInt(0))((a, b) =>
       a.*(BigInt(58L)).+(BigInt(base58Pairs(b))))
-    if (trim.isEmpty) zeroes else zeroes ++ decoded.toByteArray.dropWhile(_ == 0)
+    if (trim.isEmpty) zeroes else zeroes ++ ByteVector(decoded.toByteArray.dropWhile(_ == 0))
   }
 
   /** Determines if a string is a valid [[Base58Type]] string. */
@@ -94,10 +95,10 @@ sealed abstract class Base58 {
    * ('1', '3', 'm', 'n', '2')
    */
   private def isValidAddressPreFixByte(byte: Byte): Boolean = {
-    val validAddressPreFixBytes: Seq[Byte] =
+    val validAddressPreFixBytes: scodec.bits.ByteVector =
       MainNetChainParams.base58Prefixes(PubKeyAddress) ++ MainNetChainParams.base58Prefixes(ScriptAddress) ++
         TestNetChainParams.base58Prefixes(PubKeyAddress) ++ TestNetChainParams.base58Prefixes(ScriptAddress)
-    validAddressPreFixBytes.contains(byte)
+    validAddressPreFixBytes.toSeq.contains(byte)
   }
 
   /**
@@ -105,9 +106,9 @@ sealed abstract class Base58 {
    * ('5', '9', 'c')
    */
   private def isValidSecretKeyPreFixByte(byte: Byte): Boolean = {
-    val validSecretKeyPreFixBytes: Seq[Byte] =
+    val validSecretKeyPreFixBytes: scodec.bits.ByteVector =
       MainNetChainParams.base58Prefixes(SecretKey) ++ TestNetChainParams.base58Prefixes(SecretKey)
-    validSecretKeyPreFixBytes.contains(byte)
+    validSecretKeyPreFixBytes.toSeq.contains(byte)
   }
 
   /**
