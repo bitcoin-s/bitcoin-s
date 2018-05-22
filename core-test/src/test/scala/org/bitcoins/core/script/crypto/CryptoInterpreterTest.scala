@@ -1,5 +1,6 @@
 package org.bitcoins.core.script.crypto
 
+import org.bitcoins.core.crypto.BaseTxSigComponent
 import org.bitcoins.core.currency.CurrencyUnits
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script.{ P2SHScriptSignature, ScriptPubKey, ScriptSignature, SigVersionBase }
@@ -141,9 +142,13 @@ class CryptoInterpreterTest extends FlatSpec with MustMatchers {
     val input = TransactionInput(EmptyTransactionOutPoint, scriptSig, TransactionConstants.sequence)
     val empty = EmptyTransaction
     val tx = BaseTransaction(empty.version, Seq(input), empty.outputs, empty.lockTime)
-
-    val baseProgram = ScriptProgram.toExecutionInProgress(ScriptProgram(tx, TestUtil.scriptPubKey,
-      UInt32.zero, flags))
+    val t = BaseTxSigComponent(
+      transaction = tx,
+      inputIndex = UInt32.zero,
+      output = TransactionOutput(CurrencyUnits.zero, TestUtil.scriptPubKey),
+      flags = flags)
+    val pre = PreExecutionScriptProgram(t)
+    val baseProgram = ScriptProgram.toExecutionInProgress(pre)
     val stack = Seq(OP_0, OP_0, OP_1)
     val script = Seq(OP_CHECKMULTISIG)
     val program = ScriptProgram(baseProgram, stack, script)

@@ -1,11 +1,12 @@
 package org.bitcoins.core.protocol.transaction
 
-import org.bitcoins.core.crypto.{ BaseTxSigComponent, TxSigComponent }
+import org.bitcoins.core.crypto.{ BaseTxSigComponent, TxSigComponent, WitnessTxSigComponentP2SH, WitnessTxSigComponentRaw }
+import org.bitcoins.core.currency.CurrencyUnits
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction.testprotocol.CoreTransactionTestCase
 import org.bitcoins.core.protocol.transaction.testprotocol.CoreTransactionTestCaseProtocol._
-import org.bitcoins.core.script.ScriptProgram
+import org.bitcoins.core.script.{ PreExecutionScriptProgram, ScriptProgram }
 import org.bitcoins.core.script.interpreter.ScriptInterpreter
 import org.bitcoins.core.script.result.ScriptOk
 import org.bitcoins.core.serializers.transaction.RawBaseTransactionParser
@@ -97,20 +98,11 @@ class TransactionTest extends FlatSpec with MustMatchers {
 
     //use this to represent a single test case from script_valid.json
     /*    val lines =
-        """
-          |[[[["0000000000000000000000000000000000000000000000000000000000000100", 0, "0x00 0x14 0x4c9c3dfac4207d5d8cb89df5722cb3d712385e3f", 1000],
-          |["0000000000000000000000000000000000000000000000000000000000000100", 1, "0x00 0x14 0x4c9c3dfac4207d5d8cb89df5722cb3d712385e3f", 1001],
-          |["0000000000000000000000000000000000000000000000000000000000000100", 2, "DUP HASH160 0x14 0x4c9c3dfac4207d5d8cb89df5722cb3d712385e3f EQUALVERIFY CHECKSIG", 1002],
-          |["0000000000000000000000000000000000000000000000000000000000000100", 3, "DUP HASH160 0x14 0x4c9c3dfac4207d5d8cb89df5722cb3d712385e3f EQUALVERIFY CHECKSIG", 1003],
-          |["0000000000000000000000000000000000000000000000000000000000000100", 4, "DUP HASH160 0x14 0x4c9c3dfac4207d5d8cb89df5722cb3d712385e3f EQUALVERIFY CHECKSIG", 1004],
-          |["0000000000000000000000000000000000000000000000000000000000000100", 5, "DUP HASH160 0x14 0x4c9c3dfac4207d5d8cb89df5722cb3d712385e3f EQUALVERIFY CHECKSIG", 1005],
-          |["0000000000000000000000000000000000000000000000000000000000000100", 6, "DUP HASH160 0x14 0x4c9c3dfac4207d5d8cb89df5722cb3d712385e3f EQUALVERIFY CHECKSIG", 1006],
-          |["0000000000000000000000000000000000000000000000000000000000000100", 7, "0x00 0x14 0x4c9c3dfac4207d5d8cb89df5722cb3d712385e3f", 1007],
-          |["0000000000000000000000000000000000000000000000000000000000000100", 8, "0x00 0x14 0x4c9c3dfac4207d5d8cb89df5722cb3d712385e3f", 1008],
-          |["0000000000000000000000000000000000000000000000000000000000000100", 9, "0x00 0x14 0x4c9c3dfac4207d5d8cb89df5722cb3d712385e3f", 1009],
-          |["0000000000000000000000000000000000000000000000000000000000000100", 10, "0x00 0x14 0x4c9c3dfac4207d5d8cb89df5722cb3d712385e3f", 1010],
-          |["0000000000000000000000000000000000000000000000000000000000000100", 11, "DUP HASH160 0x14 0x4c9c3dfac4207d5d8cb89df5722cb3d712385e3f EQUALVERIFY CHECKSIG", 1011]],
-          |"0100000000010c00010000000000000000000000000000000000000000000000000000000000000000000000ffffffff00010000000000000000000000000000000000000000000000000000000000000100000000ffffffff0001000000000000000000000000000000000000000000000000000000000000020000006a473044022026c2e65b33fcd03b2a3b0f25030f0244bd23cc45ae4dec0f48ae62255b1998a00220463aa3982b718d593a6b9e0044513fd67a5009c2fdccc59992cffc2b167889f4012103596d3451025c19dbbdeb932d6bf8bfb4ad499b95b6f88db8899efac102e5fc71ffffffff0001000000000000000000000000000000000000000000000000000000000000030000006a4730440220008bd8382911218dcb4c9f2e75bf5c5c3635f2f2df49b36994fde85b0be21a1a02205a539ef10fb4c778b522c1be852352ea06c67ab74200977c722b0bc68972575a012103596d3451025c19dbbdeb932d6bf8bfb4ad499b95b6f88db8899efac102e5fc71ffffffff0001000000000000000000000000000000000000000000000000000000000000040000006b483045022100d9436c32ff065127d71e1a20e319e4fe0a103ba0272743dbd8580be4659ab5d302203fd62571ee1fe790b182d078ecfd092a509eac112bea558d122974ef9cc012c7012103596d3451025c19dbbdeb932d6bf8bfb4ad499b95b6f88db8899efac102e5fc71ffffffff0001000000000000000000000000000000000000000000000000000000000000050000006a47304402200e2c149b114ec546015c13b2b464bbcb0cdc5872e6775787527af6cbc4830b6c02207e9396c6979fb15a9a2b96ca08a633866eaf20dc0ff3c03e512c1d5a1654f148012103596d3451025c19dbbdeb932d6bf8bfb4ad499b95b6f88db8899efac102e5fc71ffffffff0001000000000000000000000000000000000000000000000000000000000000060000006b483045022100b20e70d897dc15420bccb5e0d3e208d27bdd676af109abbd3f88dbdb7721e6d6022005836e663173fbdfe069f54cde3c2decd3d0ea84378092a5d9d85ec8642e8a41012103596d3451025c19dbbdeb932d6bf8bfb4ad499b95b6f88db8899efac102e5fc71ffffffff00010000000000000000000000000000000000000000000000000000000000000700000000ffffffff00010000000000000000000000000000000000000000000000000000000000000800000000ffffffff00010000000000000000000000000000000000000000000000000000000000000900000000ffffffff00010000000000000000000000000000000000000000000000000000000000000a00000000ffffffff00010000000000000000000000000000000000000000000000000000000000000b0000006a47304402206639c6e05e3b9d2675a7f3876286bdf7584fe2bbd15e0ce52dd4e02c0092cdc60220757d60b0a61fc95ada79d23746744c72bac1545a75ff6c2c7cdb6ae04e7e9592012103596d3451025c19dbbdeb932d6bf8bfb4ad499b95b6f88db8899efac102e5fc71ffffffff0ce8030000000000000151e9030000000000000151ea030000000000000151eb030000000000000151ec030000000000000151ed030000000000000151ee030000000000000151ef030000000000000151f0030000000000000151f1030000000000000151f2030000000000000151f30300000000000001510248304502210082219a54f61bf126bfc3fa068c6e33831222d1d7138c6faa9d33ca87fd4202d6022063f9902519624254d7c2c8ea7ba2d66ae975e4e229ae38043973ec707d5d4a83012103596d3451025c19dbbdeb932d6bf8bfb4ad499b95b6f88db8899efac102e5fc7102473044022017fb58502475848c1b09f162cb1688d0920ff7f142bed0ef904da2ccc88b168f02201798afa61850c65e77889cbcd648a5703b487895517c88f85cdd18b021ee246a012103596d3451025c19dbbdeb932d6bf8bfb4ad499b95b6f88db8899efac102e5fc7100000000000247304402202830b7926e488da75782c81a54cd281720890d1af064629ebf2e31bf9f5435f30220089afaa8b455bbeb7d9b9c3fe1ed37d07685ade8455c76472cda424d93e4074a012103596d3451025c19dbbdeb932d6bf8bfb4ad499b95b6f88db8899efac102e5fc7102473044022026326fcdae9207b596c2b05921dbac11d81040c4d40378513670f19d9f4af893022034ecd7a282c0163b89aaa62c22ec202cef4736c58cd251649bad0d8139bcbf55012103596d3451025c19dbbdeb932d6bf8bfb4ad499b95b6f88db8899efac102e5fc71024730440220214978daeb2f38cd426ee6e2f44131a33d6b191af1c216247f1dd7d74c16d84a02205fdc05529b0bc0c430b4d5987264d9d075351c4f4484c16e91662e90a72aab24012103596d3451025c19dbbdeb932d6bf8bfb4ad499b95b6f88db8899efac102e5fc710247304402204a6e9f199dc9672cf2ff8094aaa784363be1eb62b679f7ff2df361124f1dca3302205eeb11f70fab5355c9c8ad1a0700ea355d315e334822fa182227e9815308ee8f012103596d3451025c19dbbdeb932d6bf8bfb4ad499b95b6f88db8899efac102e5fc710000000000", "P2SH,WITNESS"]]
+      """
+          |[[[["0000000000000000000000000000000000000000000000000000000000000100", 0, "0x51", 1000],
+          |["0000000000000000000000000000000000000000000000000000000000000100", 1, "0x00 0x20 0x4d6c2a32c87821d68fc016fca70797abdb80df6cd84651d40a9300c6bad79e62", 1000]],
+          |"0100000000010200010000000000000000000000000000000000000000000000000000000000000000000000ffffffff00010000000000000000000000000000000000000000000000000000000000000100000000ffffffff01d00700000000000001510003483045022100e078de4e96a0e05dcdc0a414124dd8475782b5f3f0ed3f607919e9a5eeeb22bf02201de309b3a3109adb3de8074b3610d4cf454c49b61247a2779a0bcbf31c889333032103596d3451025c19dbbdeb932d6bf8bfb4ad499b95b6f88db8899efac102e5fc711976a9144c9c3dfac4207d5d8cb89df5722cb3d712385e3f88ac00000000", "P2SH,WITNESS"]
+          |]
           |""".stripMargin*/
 
     val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n" finally source.close()
@@ -123,42 +115,63 @@ class TransactionTest extends FlatSpec with MustMatchers {
       tx = testCase.spendingTx
       (input, inputIndex) = findInput(tx, outPoint).getOrElse((EmptyTransactionInput, 0))
     } yield {
-      logger.info("Raw test case: " + testCase.raw)
-      logger.info("Parsed ScriptSig: " + tx.inputs(inputIndex).scriptSignature)
-      logger.info("Sequence number: " + tx.inputs(inputIndex).sequence)
-      logger.info("ScriptPubKey: " + scriptPubKey)
-      logger.info("OutPoint: " + outPoint)
-      logger.info("Flags after parsing: " + testCase.flags)
-      logger.info("Satoshis: " + amountOpt)
+      logger.debug("Raw test case: " + testCase.raw)
+      logger.debug("Parsed ScriptSig: " + tx.inputs(inputIndex).scriptSignature)
+      logger.debug("Sequence number: " + tx.inputs(inputIndex).sequence)
+      logger.debug("ScriptPubKey: " + scriptPubKey)
+      logger.debug("OutPoint: " + outPoint)
+      logger.debug("Flags after parsing: " + testCase.flags)
+      logger.debug("Satoshis: " + amountOpt)
       require(
         outPoint.txId == input.previousOutput.txId,
         "OutPoint txId not the same as input prevout txid\noutPoint.txId: " + outPoint.txId + "\n" +
           "input prevout txid: " + input.previousOutput.txId)
-      val program = amountOpt match {
+      val txSigComponent = amountOpt match {
         case Some(amount) => scriptPubKey match {
           case p2sh: P2SHScriptPubKey =>
             tx match {
               case btx: BaseTransaction =>
-                ScriptProgram(btx, p2sh,
-                  UInt32(inputIndex), testCase.flags)
+                BaseTxSigComponent(
+                  transaction = btx,
+                  inputIndex = UInt32(inputIndex),
+                  output = TransactionOutput(amount, p2sh),
+                  flags = testCase.flags)
               case wtx: WitnessTransaction =>
-                ScriptProgram(wtx, p2sh,
-                  UInt32(inputIndex), testCase.flags, amount)
+                WitnessTxSigComponentP2SH(
+                  transaction = wtx,
+                  inputIndex = UInt32(inputIndex),
+                  output = TransactionOutput(amount, p2sh),
+                  flags = testCase.flags)
             }
           case wit: WitnessScriptPubKey =>
             tx match {
               case btx: BaseTransaction =>
-                ScriptProgram(btx, wit, UInt32(inputIndex), testCase.flags)
+                BaseTxSigComponent(
+                  transaction = btx,
+                  inputIndex = UInt32(inputIndex),
+                  output = TransactionOutput(amount, wit),
+                  flags = testCase.flags)
               case wtx: WitnessTransaction =>
-                ScriptProgram(wtx, wit, UInt32(inputIndex), testCase.flags, amount)
+                WitnessTxSigComponentRaw(
+                  transaction = wtx,
+                  inputIndex = UInt32(inputIndex),
+                  output = TransactionOutput(amount, wit),
+                  flags = testCase.flags)
             }
           case x @ (_: P2PKScriptPubKey | _: P2PKHScriptPubKey | _: MultiSignatureScriptPubKey | _: CLTVScriptPubKey | _: CSVScriptPubKey
             | _: CLTVScriptPubKey | _: EscrowTimeoutScriptPubKey | _: NonStandardScriptPubKey | _: WitnessCommitment | EmptyScriptPubKey) =>
-            val t = BaseTxSigComponent(tx, UInt32(inputIndex), x, testCase.flags)
-            ScriptProgram(t)
+            val output = TransactionOutput(amount, x)
+
+            BaseTxSigComponent(tx, UInt32(inputIndex), output, testCase.flags)
         }
-        case None => ScriptProgram(tx, scriptPubKey, UInt32(inputIndex), testCase.flags)
+        case None =>
+          BaseTxSigComponent(
+            transaction = tx,
+            inputIndex = UInt32(inputIndex),
+            output = TransactionOutput(CurrencyUnits.zero, scriptPubKey),
+            flags = testCase.flags)
       }
+      val program = PreExecutionScriptProgram(txSigComponent)
       withClue(testCase.raw + " input index: " + inputIndex) {
         ScriptInterpreter.run(program) must equal(ScriptOk)
       }
@@ -185,39 +198,62 @@ class TransactionTest extends FlatSpec with MustMatchers {
         tx = testCase.spendingTx
         (input, inputIndex) = findInput(tx, outPoint).getOrElse((EmptyTransactionInput, 0))
       } yield {
-        logger.info("Raw test case: " + testCase.raw)
-        logger.info("ScriptPubKey: " + scriptPubKey)
-        logger.info("OutPoint: " + outPoint)
-        logger.info("Flags after parsing: " + testCase.flags)
-        logger.info("spending tx: " + testCase.spendingTx)
-        logger.info("" + testCase.scriptPubKeys)
+        logger.debug("Raw test case: " + testCase.raw)
+        logger.debug("ScriptPubKey: " + scriptPubKey)
+        logger.debug("OutPoint: " + outPoint)
+        logger.debug("Flags after parsing: " + testCase.flags)
+        logger.debug("spending tx: " + testCase.spendingTx)
+        logger.debug("" + testCase.scriptPubKeys)
         val isValidTx = ScriptInterpreter.checkTransaction(tx)
         if (isValidTx) {
-          val program = amountOpt match {
+          val txSigComponent = amountOpt match {
             case Some(amount) => scriptPubKey match {
               case p2sh: P2SHScriptPubKey =>
                 tx match {
                   case btx: BaseTransaction =>
-                    ScriptProgram(btx, p2sh,
-                      UInt32(inputIndex), testCase.flags)
+                    BaseTxSigComponent(
+                      transaction = btx,
+                      inputIndex = UInt32(inputIndex),
+                      output = TransactionOutput(amount, scriptPubKey),
+                      flags = testCase.flags)
                   case wtx: WitnessTransaction =>
-                    ScriptProgram(wtx, p2sh,
-                      UInt32(inputIndex), testCase.flags, amount)
+                    WitnessTxSigComponentP2SH(
+                      transaction = wtx,
+                      inputIndex = UInt32(inputIndex),
+                      output = TransactionOutput(amount, scriptPubKey),
+                      flags = testCase.flags)
                 }
               case wit: WitnessScriptPubKey =>
                 tx match {
                   case btx: BaseTransaction =>
-                    ScriptProgram(btx, wit, UInt32(inputIndex), testCase.flags)
+                    BaseTxSigComponent(
+                      transaction = btx,
+                      inputIndex = UInt32(inputIndex),
+                      output = TransactionOutput(amount, wit),
+                      flags = testCase.flags)
                   case wtx: WitnessTransaction =>
-                    ScriptProgram(wtx, wit, UInt32(inputIndex), testCase.flags, amount)
+                    WitnessTxSigComponentRaw(
+                      transaction = wtx,
+                      inputIndex = UInt32(inputIndex),
+                      output = TransactionOutput(amount, wit),
+                      flags = testCase.flags)
                 }
               case x @ (_: P2PKScriptPubKey | _: P2PKHScriptPubKey | _: MultiSignatureScriptPubKey | _: CLTVScriptPubKey | _: CSVScriptPubKey
                 | _: CLTVScriptPubKey | _: EscrowTimeoutScriptPubKey | _: NonStandardScriptPubKey | _: WitnessCommitment | EmptyScriptPubKey) =>
-                val t = BaseTxSigComponent(tx, UInt32(inputIndex), x, testCase.flags)
-                ScriptProgram(t)
+                BaseTxSigComponent(
+                  transaction = tx,
+                  inputIndex = UInt32(inputIndex),
+                  output = TransactionOutput(amount, x),
+                  flags = testCase.flags)
             }
-            case None => ScriptProgram(tx, scriptPubKey, UInt32(inputIndex), testCase.flags)
+            case None =>
+              BaseTxSigComponent(
+                transaction = tx,
+                inputIndex = UInt32(inputIndex),
+                output = TransactionOutput(CurrencyUnits.zero, scriptPubKey),
+                flags = testCase.flags)
           }
+          val program = PreExecutionScriptProgram(txSigComponent)
           ScriptInterpreter.run(program) == ScriptOk
         } else {
           logger.error("Transaction does not pass CheckTransaction()")

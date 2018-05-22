@@ -129,8 +129,9 @@ trait TransactionGenerators extends BitcoinSLogger {
     (signedScriptSig, scriptPubKey, privateKey) <- ScriptGenerators.signedP2PKScriptSignature
     (creditingTx, outputIndex) = buildCreditingTransaction(scriptPubKey)
     (signedTx, inputIndex) = buildSpendingTransaction(creditingTx, signedScriptSig, outputIndex)
+    output = creditingTx.outputs(outputIndex.toInt)
     signedTxSignatureComponent = BaseTxSigComponent(signedTx, inputIndex,
-      scriptPubKey, Policy.standardScriptVerifyFlags)
+      output, Policy.standardScriptVerifyFlags)
   } yield (signedTxSignatureComponent, privateKey)
 
   /**
@@ -141,8 +142,9 @@ trait TransactionGenerators extends BitcoinSLogger {
     (signedScriptSig, scriptPubKey, privateKey) <- ScriptGenerators.signedP2PKHScriptSignature
     (creditingTx, outputIndex) = buildCreditingTransaction(scriptPubKey)
     (signedTx, inputIndex) = buildSpendingTransaction(creditingTx, signedScriptSig, outputIndex)
+    output = creditingTx.outputs(outputIndex.toInt)
     signedTxSignatureComponent = BaseTxSigComponent(signedTx, inputIndex,
-      scriptPubKey, Policy.standardScriptVerifyFlags)
+      output, Policy.standardScriptVerifyFlags)
   } yield (signedTxSignatureComponent, privateKey)
 
   /**
@@ -153,8 +155,9 @@ trait TransactionGenerators extends BitcoinSLogger {
     (signedScriptSig, scriptPubKey, privateKey) <- ScriptGenerators.signedMultiSignatureScriptSignature
     (creditingTx, outputIndex) = buildCreditingTransaction(scriptPubKey)
     (signedTx, inputIndex) = buildSpendingTransaction(creditingTx, signedScriptSig, outputIndex)
+    output = creditingTx.outputs(outputIndex.toInt)
     signedTxSignatureComponent = BaseTxSigComponent(signedTx, inputIndex,
-      scriptPubKey, Policy.standardScriptVerifyFlags)
+      output, Policy.standardScriptVerifyFlags)
   } yield (signedTxSignatureComponent, privateKey)
 
   /**
@@ -164,8 +167,9 @@ trait TransactionGenerators extends BitcoinSLogger {
     (signedScriptSig, scriptPubKey, privateKey) <- ScriptGenerators.signedP2SHScriptSignature
     (creditingTx, outputIndex) = buildCreditingTransaction(signedScriptSig.redeemScript)
     (signedTx, inputIndex) = buildSpendingTransaction(creditingTx, signedScriptSig, outputIndex)
+    output = TransactionOutput(creditingTx.outputs(outputIndex.toInt).value, scriptPubKey)
     signedTxSignatureComponent = BaseTxSigComponent(signedTx, inputIndex,
-      scriptPubKey, Policy.standardScriptVerifyFlags)
+      output, Policy.standardScriptVerifyFlags)
   } yield (signedTxSignatureComponent, privateKey)
 
   /** Generates a validly constructed CLTV transaction, which has a 50/50 chance of being spendable or unspendable. */
@@ -228,7 +232,8 @@ trait TransactionGenerators extends BitcoinSLogger {
     (creditingTx, outputIndex) = buildCreditingTransaction(TransactionConstants.validLockVersion, scriptPubKey, amount)
     (spendingTx, inputIndex) = buildSpendingTransaction(TransactionConstants.validLockVersion, creditingTx, scriptSig,
       outputIndex, TransactionConstants.lockTime, sequence, outputs)
-    baseTxSigComponent = BaseTxSigComponent(spendingTx, inputIndex, scriptPubKey, Policy.standardScriptVerifyFlags)
+    output = creditingTx.outputs(outputIndex.toInt)
+    baseTxSigComponent = BaseTxSigComponent(spendingTx, inputIndex, output, Policy.standardScriptVerifyFlags)
   } yield baseTxSigComponent
 
   /**
@@ -241,7 +246,8 @@ trait TransactionGenerators extends BitcoinSLogger {
     (creditingTx, outputIndex) = buildCreditingTransaction(TransactionConstants.validLockVersion, scriptPubKey)
     (spendingTx, inputIndex) = buildSpendingTransaction(TransactionConstants.validLockVersion, creditingTx,
       scriptSig, outputIndex, UInt32.zero, sequence, outputs)
-    baseTxSigComponent = BaseTxSigComponent(spendingTx, inputIndex, scriptPubKey, Policy.standardScriptVerifyFlags)
+    output = creditingTx.outputs(outputIndex.toInt)
+    baseTxSigComponent = BaseTxSigComponent(spendingTx, inputIndex, output, Policy.standardScriptVerifyFlags)
   } yield baseTxSigComponent
 
   /** Generates a [[Transaction]] that has a valid [[EscrowTimeoutScriptSignature]] */
@@ -264,7 +270,8 @@ trait TransactionGenerators extends BitcoinSLogger {
     (creditingTx, outputIndex) = buildCreditingTransaction(TransactionConstants.validLockVersion, scriptPubKey)
     (spendingTx, inputIndex) = buildSpendingTransaction(TransactionConstants.validLockVersion, creditingTx, scriptSig, outputIndex,
       TransactionConstants.lockTime, sequence)
-    baseTxSigComponent = BaseTxSigComponent(spendingTx, inputIndex, scriptPubKey, Policy.standardScriptVerifyFlags)
+    output = creditingTx.outputs(outputIndex.toInt)
+    baseTxSigComponent = BaseTxSigComponent(spendingTx, inputIndex, output, Policy.standardScriptVerifyFlags)
   } yield baseTxSigComponent
 
   def unspendableMultiSigEscrowTimeoutTransaction: Gen[BaseTxSigComponent] = for {
@@ -277,7 +284,8 @@ trait TransactionGenerators extends BitcoinSLogger {
     escrowScriptSig = EscrowTimeoutScriptSignature.fromMultiSig(multiSigScriptSig)
     (spendingTx, inputIndex) = buildSpendingTransaction(TransactionConstants.validLockVersion, creditingTx,
       escrowScriptSig, outputIndex, TransactionConstants.lockTime, sequence)
-    baseTxSigComponent = BaseTxSigComponent(spendingTx, inputIndex, escrow, Policy.standardScriptVerifyFlags)
+    output = creditingTx.outputs(outputIndex.toInt)
+    baseTxSigComponent = BaseTxSigComponent(spendingTx, inputIndex, output, Policy.standardScriptVerifyFlags)
   } yield baseTxSigComponent
 
   def unspendableEscrowTimeoutTransaction: Gen[BaseTxSigComponent] = {
@@ -321,8 +329,9 @@ trait TransactionGenerators extends BitcoinSLogger {
     (creditingTx, outputIndex) = buildCreditingTransaction(signedScriptSig.redeemScript, amount)
     (signedTx, inputIndex) = buildSpendingTransaction(TransactionConstants.validLockVersion, creditingTx,
       signedScriptSig, outputIndex, witness)
+    output = TransactionOutput(creditingTx.outputs(outputIndex.toInt).value, scriptPubKey)
     signedTxSignatureComponent = WitnessTxSigComponent(signedTx, inputIndex,
-      scriptPubKey, Policy.standardScriptVerifyFlags, amount)
+      output, Policy.standardScriptVerifyFlags)
   } yield (signedTxSignatureComponent, privKeys)
 
   def signedP2WSHTransaction: Gen[(WitnessTxSigComponentRaw, Seq[ECPrivateKey])] = {
@@ -338,8 +347,9 @@ trait TransactionGenerators extends BitcoinSLogger {
     sequence = wBaseTxSigComponent.transaction.inputs(wBaseTxSigComponent.inputIndex.toInt).sequence
     locktime = wBaseTxSigComponent.transaction.lockTime
     (signedTx, inputIndex) = buildSpendingTransaction(TransactionConstants.validLockVersion, creditingTx, p2shScriptSig, outputIndex, locktime, sequence, witness)
+    output = TransactionOutput(creditingTx.outputs(outputIndex.toInt).value, p2shScriptPubKey)
     signedTxSignatureComponent = WitnessTxSigComponent(signedTx, inputIndex,
-      p2shScriptPubKey, Policy.standardScriptVerifyFlags, wBaseTxSigComponent.amount)
+      output, Policy.standardScriptVerifyFlags)
   } yield (signedTxSignatureComponent, privKeys)
 
   /**
@@ -452,8 +462,9 @@ trait TransactionGenerators extends BitcoinSLogger {
     //Transaction version must not be less than 2 for a CSV transaction
     val (signedSpendingTx, inputIndex) = buildSpendingTransaction(TransactionConstants.validLockVersion, creditingTx,
       signedScriptSig, outputIndex, lockTime.getOrElse(TransactionConstants.lockTime), sequence)
+    val output = creditingTx.outputs(outputIndex.toInt)
     val baseTxSigComponent = BaseTxSigComponent(signedSpendingTx, inputIndex,
-      lock, Policy.standardScriptVerifyFlags)
+      output, Policy.standardScriptVerifyFlags)
     (baseTxSigComponent, privKeys)
   }
 

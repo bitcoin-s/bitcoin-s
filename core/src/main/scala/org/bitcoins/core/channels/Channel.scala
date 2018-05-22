@@ -91,7 +91,7 @@ sealed trait ChannelAwaitingAnchorTx extends Channel {
     val inputOpt = partiallySigned.inputs.zipWithIndex.find(_._1.previousOutput.txId == anchorTx.txId)
     val inputIndex = inputOpt.map(i => UInt32(i._2))
     val txSigComponent = inputIndex.map { i =>
-      WitnessTxSigComponent(partiallySigned, i, scriptPubKey, Policy.standardScriptVerifyFlags, lockedAmount)
+      WitnessTxSigComponent(partiallySigned, i, lockingOutput, Policy.standardScriptVerifyFlags)
     }
     txSigComponent.map(t => ChannelInProgressClientSigned(anchorTx, lock, clientChangeSPK, t, Nil))
   }
@@ -224,8 +224,8 @@ sealed trait ChannelInProgress extends Channel with BaseInProgress {
    * after we receive a partially signed transaction from the client
    */
   def createClientSigned(partiallySigned: WitnessTransaction): ChannelInProgressClientSigned = {
-    val txSigComponent = WitnessTxSigComponent(partiallySigned, current.inputIndex, scriptPubKey,
-      current.flags, lockedAmount)
+    val txSigComponent = WitnessTxSigComponent(partiallySigned, current.inputIndex, lockingOutput,
+      current.flags)
     ChannelInProgressClientSigned(anchorTx, lock, clientChangeSPK, txSigComponent, current +: old)
   }
 
@@ -240,7 +240,7 @@ sealed trait ChannelInProgressClientSigned extends Channel with BaseInProgress {
   def serverSign(serverKey: ECPrivateKey)(implicit ec: ExecutionContext): Future[ChannelInProgress] = {
     val unsignedTxSigComponent = WitnessTxSigComponentRaw(
       partiallySignedTx, current.inputIndex,
-      scriptPubKey, Policy.standardScriptVerifyFlags, lockedAmount)
+      lockingOutput, Policy.standardScriptVerifyFlags)
 
     val signedTxSigComponent: Future[WitnessTxSigComponentRaw] = EscrowTimeoutHelper.serverSign(
       serverKey,
@@ -271,7 +271,7 @@ sealed trait ChannelInProgressClientSigned extends Channel with BaseInProgress {
       val oldTx = partiallySignedTx
       val updatedTx = WitnessTransaction(oldTx.version, oldTx.inputs, outputs, oldTx.lockTime, oldTx.witness)
       val txSigComponent = WitnessTxSigComponent(updatedTx, current.inputIndex,
-        scriptPubKey, current.flags, current.amount)
+        lockingOutput, current.flags)
       val updatedInProgressClientSigned = ChannelInProgressClientSigned(anchorTx, lock, clientChangeSPK, txSigComponent, old)
       val serverSigned = updatedInProgressClientSigned.serverSign(serverKey)
       serverSigned.map(s => ChannelClosedWithEscrow(s, serverSPK))

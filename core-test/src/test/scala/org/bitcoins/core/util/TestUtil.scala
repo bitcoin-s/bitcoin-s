@@ -1,10 +1,12 @@
 package org.bitcoins.core.util
 
+import org.bitcoins.core.crypto.BaseTxSigComponent
+import org.bitcoins.core.currency.CurrencyUnits
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.script._
-import org.bitcoins.core.protocol.transaction.{ Transaction, TransactionInput }
+import org.bitcoins.core.protocol.transaction.{ Transaction, TransactionInput, TransactionOutput }
 import org.bitcoins.core.script.bitwise.{ OP_EQUAL, OP_EQUALVERIFY }
 import org.bitcoins.core.script.constant._
 import org.bitcoins.core.script.crypto.{ OP_CHECKMULTISIG, OP_CHECKSIG, OP_HASH160 }
@@ -131,9 +133,14 @@ object TestUtil {
   //https://tbtc.blockr.io/api/v1/tx/raw/bdc221db675c06dbee2ae75d33e31cad4e2555efea10c337ff32c8cdf97f8e74
   val rawScriptSig = "8b483045022100ad8e961fe3c22b2647d92b078f4c0cf81b3106ea5bf8b900ab8646aa4430216f022071d4edc2b5588be20ac4c2d07edd8ed069e10b2402d3dce2d3b835ccd075f283014104fa79182bbc26c708b5d9f36b8635947d4a834ea356cf612ede08395c295f962e0b1dc2557aba34188640e51a58ed547f2c89c8265cd0c04ff890d8435648746e"
   def scriptSig = ScriptSignature(rawScriptSig)
-  def testProgram: ScriptProgram = ScriptProgram(
-    TransactionTestUtil.testTransaction,
-    EmptyScriptPubKey, UInt32.zero, Policy.standardScriptVerifyFlags)
+  def testProgram: ScriptProgram = {
+    val t = BaseTxSigComponent(
+      transaction = TransactionTestUtil.testTransaction,
+      inputIndex = UInt32.zero,
+      output = TransactionOutput(CurrencyUnits.zero, EmptyScriptPubKey),
+      flags = Policy.standardFlags)
+    PreExecutionScriptProgram(t)
+  }
 
   def testProgramPreExecution = testProgram match {
     case p: PreExecutionScriptProgram => p

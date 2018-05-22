@@ -5,7 +5,7 @@ import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency.{ CurrencyUnit, CurrencyUnits }
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.protocol.script._
-import org.bitcoins.core.protocol.transaction.{ BaseTransaction, EmptyTransactionOutPoint, Transaction, WitnessTransaction }
+import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script._
 import org.bitcoins.core.script.arithmetic._
 import org.bitcoins.core.script.bitwise._
@@ -58,10 +58,12 @@ sealed abstract class ScriptInterpreter {
       ScriptProgram(program, ScriptErrorSigPushOnly)
     } else {
       val scriptSigExecutedProgram = loop(program, 0)
+      logger.trace(s"scriptSigExecutedProgram $scriptSigExecutedProgram")
       val t = scriptSigExecutedProgram.txSignatureComponent
-      val scriptPubKeyProgram = ScriptProgram(t, scriptSigExecutedProgram.stack, t.scriptPubKey.asm,
-        t.scriptPubKey.asm)
+      val scriptPubKeyProgram = ExecutionInProgressScriptProgram(t, scriptSigExecutedProgram.stack, t.scriptPubKey.asm.toList,
+        t.scriptPubKey.asm.toList, Nil, scriptSigExecutedProgram.flags, None)
       val scriptPubKeyExecutedProgram: ExecutedScriptProgram = loop(scriptPubKeyProgram, 0)
+      logger.trace(s"scriptPubKeyExecutedProgram $scriptPubKeyExecutedProgram")
       if (scriptSigExecutedProgram.error.isDefined) {
         scriptSigExecutedProgram
       } else if (scriptPubKeyExecutedProgram.error.isDefined || scriptPubKeyExecutedProgram.stackTopIsFalse) {
@@ -69,7 +71,6 @@ sealed abstract class ScriptInterpreter {
       } else {
         scriptPubKey match {
           case witness: WitnessScriptPubKey =>
-            //TODO: remove .get here
             if (segwitEnabled) executeSegWitScript(scriptPubKeyExecutedProgram, witness).get
             else scriptPubKeyExecutedProgram
           case p2sh: P2SHScriptPubKey =>
@@ -82,7 +83,7 @@ sealed abstract class ScriptInterpreter {
         }
       }
     }
-    logger.debug("Executed Script Program: " + executedProgram)
+    logger.trace("Executed Script Program: " + executedProgram)
     if (executedProgram.error.isDefined) executedProgram.error.get
     else if (hasUnexpectedWitness(program)) {
       //note: the 'program' value we pass above is intentional, we need to check the original program
@@ -134,8 +135,16 @@ sealed abstract class ScriptInterpreter {
     /** Helper function to actually run a p2sh script */
     def run(p: ExecutedScriptProgram, stack: Seq[ScriptToken], s: ScriptPubKey): ExecutedScriptProgram = {
       logger.debug("Running p2sh script: " + stack)
-      val p2shRedeemScriptProgram = ScriptProgram(p.txSignatureComponent, stack.tail,
-        s.asm)
+      val p2shRedeemScriptProgram = ExecutionInProgressScriptProgram(
+        txSignatureComponent = p.txSignatureComponent,
+        stack = p.stack.tail,
+        script = s.asm.toList,
+        originalScript = p.originalScript,
+        altStack = Nil,
+        flags = p.flags,
+        lastCodeSeparator = None)
+
+      /*ScriptProgram(p.txSignatureComponent, stack.tail,s.asm)*/
       if (ScriptFlagUtil.requirePushOnly(p2shRedeemScriptProgram.flags) && !BitcoinScriptUtil.isPushOnly(s.asm)) {
         logger.error("p2sh redeem script must be push only operations whe SIGPUSHONLY flag is set")
         ScriptProgram(p2shRedeemScriptProgram, ScriptErrorSigPushOnly)
@@ -243,7 +252,7 @@ sealed abstract class ScriptInterpreter {
 
     /** Helper function to run the post segwit execution checks */
     def postSegWitProgramChecks(evaluated: ExecutedScriptProgram): ExecutedScriptProgram = {
-      logger.debug("Stack after evaluating witness: " + evaluated.stack)
+      logger.trace("Stack after evaluating witness: " + evaluated.stack)
       if (evaluated.error.isDefined) evaluated
       else if (evaluated.stack.size != 1 || evaluated.stackTopIsFalse) ScriptProgram(evaluated, ScriptErrorEvalFalse)
       else evaluated
@@ -255,12 +264,27 @@ sealed abstract class ScriptInterpreter {
         either match {
           case Left((stack, scriptPubKey)) =>
             val newWTxSigComponent = rebuildWTxSigComponent(wTxSigComponent, scriptPubKey)
-            val newProgram = newWTxSigComponent.map(comp => ScriptProgram(comp, stack, scriptPubKey.asm, scriptPubKey.asm, Nil))
+            val newProgram = newWTxSigComponent.map { comp =>
+              PreExecutionScriptProgram(
+                txSignatureComponent = comp,
+                stack = stack.toList,
+                script = scriptPubKey.asm.toList,
+                originalScript = scriptPubKey.asm.toList,
+                altStack = Nil,
+                flags = comp.flags)
+            }
             val evaluated = newProgram.map(p => loop(p, 0))
             evaluated.map(e => postSegWitProgramChecks(e))
           case Right(err) =>
-            val program = ScriptProgram(wTxSigComponent, Nil, Nil, Nil)
-            Success(ScriptProgram(program, err))
+            val program = ExecutedScriptProgram(
+              txSignatureComponent = wTxSigComponent,
+              stack = Nil,
+              script = Nil,
+              originalScript = Nil,
+              altStack = Nil,
+              flags = wTxSigComponent.flags,
+              error = Some(err))
+            Success(program)
         }
       case UnassignedWitness(_) =>
         evaluateUnassignedWitness(wTxSigComponent)
@@ -275,8 +299,8 @@ sealed abstract class ScriptInterpreter {
    */
   @tailrec
   private def loop(program: ScriptProgram, opCount: Int): ExecutedScriptProgram = {
-    logger.debug("Stack: " + program.stack)
-    logger.debug("Script: " + program.script)
+    logger.trace("Stack: " + program.stack)
+    logger.trace("Script: " + program.script)
     if (opCount > maxScriptOps && !program.isInstanceOf[ExecutedScriptProgram]) {
       logger.error("We have reached the maximum amount of script operations allowed")
       logger.error("Here are the remaining operations in the script: " + program.script)
@@ -294,7 +318,7 @@ sealed abstract class ScriptInterpreter {
         case p: PreExecutionScriptProgram => loop(ScriptProgram.toExecutionInProgress(p, Some(p.stack)), opCount)
         case p: ExecutedScriptProgram =>
           val countedOps = program.originalScript.map(BitcoinScriptUtil.countsTowardsScriptOpLimit(_)).count(_ == true)
-          logger.debug("Counted ops: " + countedOps)
+          logger.trace("Counted ops: " + countedOps)
           if (countedOps > maxScriptOps && p.error.isEmpty) {
             loop(ScriptProgram(p, ScriptErrorOpCount), opCount)
           } else p
@@ -554,15 +578,27 @@ sealed abstract class ScriptInterpreter {
    * Helper function used to rebuild a [[WitnessTxSigComponentRebuilt]]
    * this converts a [[WitnessScriptPubKey]] into it's corresponding [[ScriptPubKey]]
    */
-  private def rebuildWTxSigComponent(old: WitnessTxSigComponent, rebuildScriptPubKey: ScriptPubKey): Try[WitnessTxSigComponentRebuilt] = old match {
-    case wTxSigComponentRaw: WitnessTxSigComponentRaw =>
-      Success(WitnessTxSigComponentRebuilt(old.transaction, old.inputIndex,
-        rebuildScriptPubKey, wTxSigComponentRaw.scriptPubKey, old.flags, old.amount))
-    case wTxSigComponentP2SH: WitnessTxSigComponentP2SH =>
-      wTxSigComponentP2SH.witnessScriptPubKey.map { wit: WitnessScriptPubKey =>
-        WitnessTxSigComponentRebuilt(old.transaction, old.inputIndex,
-          rebuildScriptPubKey, wit, old.flags, old.amount)
-      }
+  private def rebuildWTxSigComponent(old: WitnessTxSigComponent, rebuildScriptPubKey: ScriptPubKey): Try[WitnessTxSigComponentRebuilt] = {
+    val updatedOutput = TransactionOutput(old.output.value, rebuildScriptPubKey)
+    old match {
+      case wTxSigComponentRaw: WitnessTxSigComponentRaw =>
+        Success(WitnessTxSigComponentRebuilt(
+          old.transaction,
+          old.inputIndex,
+          updatedOutput,
+          wTxSigComponentRaw.scriptPubKey,
+          old.flags))
+      case wTxSigComponentP2SH: WitnessTxSigComponentP2SH =>
+        wTxSigComponentP2SH.witnessScriptPubKey.map { wit: WitnessScriptPubKey =>
+          val updatedOutput = TransactionOutput(old.output.value, rebuildScriptPubKey)
+          WitnessTxSigComponentRebuilt(
+            old.transaction,
+            old.inputIndex,
+            updatedOutput,
+            wit,
+            old.flags)
+        }
+    }
   }
 
   /** Logic to evaluate a witnesss version that has not been assigned yet */
@@ -570,13 +606,28 @@ sealed abstract class ScriptInterpreter {
     logger.warn("Unassigned witness inside of witness script pubkey")
     val flags = txSigComponent.flags
     val discourageUpgradableWitnessVersion = ScriptFlagUtil.discourageUpgradableWitnessProgram(flags)
-    val program = ScriptProgram(txSigComponent, Nil, Nil, txSigComponent.scriptPubKey.asm, Nil)
     if (discourageUpgradableWitnessVersion) {
-      Success(ScriptProgram(program, ScriptErrorDiscourageUpgradeableWitnessProgram))
+      val executed = ExecutedScriptProgram(
+        txSignatureComponent = txSigComponent,
+        stack = Nil,
+        script = Nil,
+        originalScript = txSigComponent.scriptPubKey.asm.toList,
+        altStack = Nil,
+        flags,
+        error = Some(ScriptErrorDiscourageUpgradeableWitnessProgram))
+      Success(executed)
     } else {
       //if we are not discouraging upgradable ops, we just trivially return the program with an OP_TRUE on the stack
       //see: https://github.com/bitcoin/bitcoin/blob/b83264d9c7a8ddb79f64bd9540caddc8632ef31f/src/script/interpreter.cpp#L1386-L1389
-      val evaluated = loop(ScriptProgram(program, Seq(OP_TRUE), ScriptProgram.Stack), 0)
+      val inProgress = ExecutionInProgressScriptProgram(
+        txSignatureComponent = txSigComponent,
+        stack = List(OP_TRUE),
+        script = Nil,
+        originalScript = txSigComponent.scriptPubKey.asm.toList,
+        altStack = Nil,
+        flags = flags,
+        lastCodeSeparator = None)
+      val evaluated = loop(inProgress, 0)
       Success(evaluated)
     }
   }

@@ -76,7 +76,7 @@ sealed abstract class WitnessGenerators extends BitcoinSLogger {
     oldTx = u.transaction
     txWitness = TransactionWitness(oldTx.witness.witnesses.updated(u.inputIndex.toInt, signedScriptWitness))
     wtx = WitnessTransaction(oldTx.version, oldTx.inputs, oldTx.outputs, oldTx.lockTime, txWitness)
-    signedWtxSigComponent = WitnessTxSigComponentRaw(wtx, u.inputIndex, witScriptPubKey, u.flags, u.amount)
+    signedWtxSigComponent = WitnessTxSigComponentRaw(wtx, u.inputIndex, u.output, u.flags)
   } yield (txWitness, signedWtxSigComponent, Seq(privKeys))
 
   def signedP2WSHP2PKHTransactionWitness: Gen[(TransactionWitness, WitnessTxSigComponentRaw, Seq[ECPrivateKey])] = for {
@@ -91,7 +91,7 @@ sealed abstract class WitnessGenerators extends BitcoinSLogger {
     oldTx = u.transaction
     txWitness = TransactionWitness(oldTx.witness.witnesses.updated(u.inputIndex.toInt, signedScriptWitness))
     wtx = WitnessTransaction(oldTx.version, oldTx.inputs, oldTx.outputs, oldTx.lockTime, txWitness)
-    signedWtxSigComponent = WitnessTxSigComponentRaw(wtx, u.inputIndex, witScriptPubKey, u.flags, u.amount)
+    signedWtxSigComponent = WitnessTxSigComponentRaw(wtx, u.inputIndex, u.output, u.flags)
   } yield (txWitness, signedWtxSigComponent, Seq(privKey))
 
   def signedP2WSHMultiSigTransactionWitness: Gen[(TransactionWitness, WitnessTxSigComponentRaw, Seq[ECPrivateKey])] = for {
@@ -107,7 +107,7 @@ sealed abstract class WitnessGenerators extends BitcoinSLogger {
     oldTx = u.transaction
     txWitness = TransactionWitness(oldTx.witness.witnesses.updated(u.inputIndex.toInt, signedScriptWitness))
     wtx = WitnessTransaction(oldTx.version, oldTx.inputs, oldTx.outputs, oldTx.lockTime, txWitness)
-    signedWtxSigComponent = WitnessTxSigComponentRaw(wtx, u.inputIndex, witScriptPubKey, u.flags, u.amount)
+    signedWtxSigComponent = WitnessTxSigComponentRaw(wtx, u.inputIndex, u.output, u.flags)
   } yield (txWitness, signedWtxSigComponent, privKeys)
 
   /**
@@ -131,7 +131,7 @@ sealed abstract class WitnessGenerators extends BitcoinSLogger {
     witness = EscrowTimeoutHelper.buildEscrowTimeoutScriptWitness(signedScriptSig, scriptPubKey, u)
     oldTx = u.transaction
     wTx = WitnessTransaction(oldTx.version, oldTx.inputs, oldTx.outputs, oldTx.lockTime, witness)
-    signedWTxSigComponent = WitnessTxSigComponentRaw(wTx, u.inputIndex, witScriptPubKey, u.flags, u.amount)
+    signedWTxSigComponent = WitnessTxSigComponentRaw(wTx, u.inputIndex, u.output, u.flags)
   } yield (witness, signedWTxSigComponent, privKeys)
 
   def spendableP2WSHTimeoutEscrowTimeoutWitness: Gen[(TransactionWitness, WitnessTxSigComponentRaw, Seq[ECPrivateKey])] = for {
@@ -155,7 +155,7 @@ sealed abstract class WitnessGenerators extends BitcoinSLogger {
     oldTx = u.transaction
     txWitness = TransactionWitness(oldTx.witness.witnesses.updated(u.inputIndex.toInt, signedScriptWitness))
     wtx = WitnessTransaction(oldTx.version, oldTx.inputs, oldTx.outputs, oldTx.lockTime, txWitness)
-    signedWtxSigComponent = WitnessTxSigComponentRaw(wtx, u.inputIndex, witScriptPubKey, u.flags, u.amount)
+    signedWtxSigComponent = WitnessTxSigComponentRaw(wtx, u.inputIndex, u.output, u.flags)
   } yield (txWitness, signedWtxSigComponent, Seq(privKey))
 
   def signedP2WSHEscrowTimeoutWitness: Gen[(TransactionWitness, WitnessTxSigComponentRaw, Seq[ECPrivateKey])] = {
@@ -220,10 +220,10 @@ sealed abstract class WitnessGenerators extends BitcoinSLogger {
     val signedWtxSigComponent = unsignedWTxComponent match {
       case wtxP2SH: WitnessTxSigComponentP2SH =>
         WitnessTxSigComponent(signedSpendingTx, unsignedWTxComponent.inputIndex,
-          wtxP2SH.scriptPubKey, unsignedWTxComponent.flags, unsignedWTxComponent.amount)
+          wtxP2SH.output, unsignedWTxComponent.flags)
       case wtxRaw: WitnessTxSigComponentRaw =>
         WitnessTxSigComponent(signedSpendingTx, unsignedWTxComponent.inputIndex,
-          wtxRaw.scriptPubKey, unsignedWTxComponent.flags, unsignedWTxComponent.amount)
+          wtxRaw.output, unsignedWTxComponent.flags)
     }
 
     (signedTxWitness, signedWtxSigComponent)
@@ -239,7 +239,8 @@ sealed abstract class WitnessGenerators extends BitcoinSLogger {
     val (unsignedSpendingTx, inputIndex) = TransactionGenerators.buildSpendingTransaction(tc.validLockVersion, creditingTx,
       EmptyScriptSignature, outputIndex, tc.lockTime,
       sequence.getOrElse(tc.sequence), witness)
-    val unsignedWtxSigComponent = WitnessTxSigComponentRaw(unsignedSpendingTx, inputIndex, witScriptPubKey, flags, amount)
+    val output = creditingTx.outputs(outputIndex.toInt)
+    val unsignedWtxSigComponent = WitnessTxSigComponentRaw(unsignedSpendingTx, inputIndex, output, flags)
     unsignedWtxSigComponent
   }
 }
