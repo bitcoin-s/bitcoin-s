@@ -3,7 +3,7 @@ package org.bitcoins.core.crypto
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script._
-import org.bitcoins.core.protocol.transaction.{ Transaction, TransactionInput, WitnessTransaction }
+import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.flag.ScriptFlag
 
 import scala.util.{ Failure, Success, Try }
@@ -25,8 +25,14 @@ sealed abstract class TxSigComponent {
   /** The script signature being checked */
   def scriptSignature: ScriptSignature = input.scriptSignature
 
+  /** This is the output we are spending. We need this for script and digital signatures checks */
+  def output: TransactionOutput
+
   /** The scriptPubKey for which the input is being checked against */
-  def scriptPubKey: ScriptPubKey
+  def scriptPubKey: ScriptPubKey = output.scriptPubKey
+
+  /** The amount of [[CurrencyUnit]] we are spending in this TxSigComponent */
+  def amount: CurrencyUnit = output.value
 
   /** The flags that are needed to verify if the signature is correct */
   def flags: Seq[ScriptFlag]
@@ -56,9 +62,6 @@ sealed abstract class WitnessTxSigComponent extends TxSigComponent {
 
   def witness: ScriptWitness = transaction.witness.witnesses(inputIndex.toInt)
 
-  /** The amount of [[CurrencyUnit]] this input is spending */
-  def amount: CurrencyUnit
-
   def witnessVersion: WitnessVersion
 
   override def sigVersion = SigVersionWitnessV0
@@ -66,14 +69,16 @@ sealed abstract class WitnessTxSigComponent extends TxSigComponent {
 
 /** This represents checking the [[WitnessTransaction]] against a [[P2WPKHWitnessSPKV0]] or a [[P2WSHWitnessSPKV0]] */
 sealed abstract class WitnessTxSigComponentRaw extends WitnessTxSigComponent {
-  override def scriptPubKey: WitnessScriptPubKey
+  override def scriptPubKey: WitnessScriptPubKey = output.scriptPubKey.asInstanceOf[WitnessScriptPubKey]
 
-  override def witnessVersion: WitnessVersion = scriptPubKey.witnessVersion
+  override def witnessVersion: WitnessVersion = {
+    scriptPubKey.witnessVersion
+  }
 }
 
 /** This represents checking the [[WitnessTransaction]] against a P2SH(P2WSH) or P2SH(P2WPKH) scriptPubKey */
 sealed abstract class WitnessTxSigComponentP2SH extends WitnessTxSigComponent {
-  override def scriptPubKey: P2SHScriptPubKey
+  override def scriptPubKey: P2SHScriptPubKey = output.scriptPubKey.asInstanceOf[P2SHScriptPubKey]
 
   override def scriptSignature: P2SHScriptSignature = {
     val s = transaction.inputs(inputIndex.toInt).scriptSignature
@@ -95,6 +100,8 @@ sealed abstract class WitnessTxSigComponentP2SH extends WitnessTxSigComponent {
     case Failure(err) => throw err
   }
 
+  override def amount = output.value
+
 }
 
 /**
@@ -104,7 +111,9 @@ sealed abstract class WitnessTxSigComponentP2SH extends WitnessTxSigComponent {
  * [[https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki#witness-program]]
  */
 sealed abstract class WitnessTxSigComponentRebuilt extends TxSigComponent {
-  override def scriptPubKey: ScriptPubKey
+  override def transaction: WitnessTransaction
+
+  override def scriptPubKey: ScriptPubKey = output.scriptPubKey
 
   /** The [[WitnessScriptPubKey]] we used to rebuild the scriptPubKey above */
   def witnessScriptPubKey: WitnessScriptPubKey
@@ -113,31 +122,30 @@ sealed abstract class WitnessTxSigComponentRebuilt extends TxSigComponent {
 
   def witnessVersion = witnessScriptPubKey.witnessVersion
 
-  def amount: CurrencyUnit
 }
 
 object BaseTxSigComponent {
 
   private case class BaseTxSigComponentImpl(transaction: Transaction, inputIndex: UInt32,
-    scriptPubKey: ScriptPubKey, flags: Seq[ScriptFlag]) extends BaseTxSigComponent
+    output: TransactionOutput, flags: Seq[ScriptFlag]) extends BaseTxSigComponent
 
   def apply(transaction: Transaction, inputIndex: UInt32,
-    scriptPubKey: ScriptPubKey, flags: Seq[ScriptFlag]): BaseTxSigComponent = {
-    BaseTxSigComponentImpl(transaction, inputIndex, scriptPubKey, flags)
+    output: TransactionOutput, flags: Seq[ScriptFlag]): BaseTxSigComponent = {
+    BaseTxSigComponentImpl(transaction, inputIndex, output, flags)
   }
 
 }
 
 object WitnessTxSigComponent {
 
-  def apply(transaction: WitnessTransaction, inputIndex: UInt32, scriptPubKey: WitnessScriptPubKey,
-    flags: Seq[ScriptFlag], amount: CurrencyUnit): WitnessTxSigComponent = {
-    WitnessTxSigComponentRaw(transaction, inputIndex, scriptPubKey, flags, amount)
-  }
-
-  def apply(transaction: WitnessTransaction, inputIndex: UInt32, scriptPubKey: P2SHScriptPubKey,
-    flags: Seq[ScriptFlag], amount: CurrencyUnit): WitnessTxSigComponent = {
-    WitnessTxSigComponentP2SH(transaction, inputIndex, scriptPubKey, flags, amount)
+  def apply(transaction: WitnessTransaction, inputIndex: UInt32, output: TransactionOutput,
+    flags: Seq[ScriptFlag]): WitnessTxSigComponent = output.scriptPubKey match {
+    case _: WitnessScriptPubKey => WitnessTxSigComponentRaw(transaction, inputIndex, output, flags)
+    case _: P2SHScriptPubKey => WitnessTxSigComponentP2SH(transaction, inputIndex, output, flags)
+    case x @ (_: P2PKScriptPubKey | _: P2PKHScriptPubKey | _: MultiSignatureScriptPubKey
+      | _: LockTimeScriptPubKey | _: WitnessCommitment | _: NonStandardScriptPubKey
+      | _: EscrowTimeoutScriptPubKey | EmptyScriptPubKey) =>
+      throw new IllegalArgumentException(s"Cannot create a WitnessTxSigComponent out of $x")
   }
 
 }
@@ -145,36 +153,46 @@ object WitnessTxSigComponent {
 object WitnessTxSigComponentRaw {
 
   private case class WitnessTxSigComponentRawImpl(transaction: WitnessTransaction, inputIndex: UInt32,
-    scriptPubKey: WitnessScriptPubKey, flags: Seq[ScriptFlag],
-    amount: CurrencyUnit) extends WitnessTxSigComponentRaw
+    output: TransactionOutput, flags: Seq[ScriptFlag]) extends WitnessTxSigComponentRaw
 
   def apply(transaction: WitnessTransaction, inputIndex: UInt32,
-    scriptPubKey: WitnessScriptPubKey, flags: Seq[ScriptFlag], amount: CurrencyUnit): WitnessTxSigComponentRaw = {
-    WitnessTxSigComponentRawImpl(transaction, inputIndex, scriptPubKey, flags, amount)
+    output: TransactionOutput, flags: Seq[ScriptFlag]): WitnessTxSigComponentRaw = {
+    output.scriptPubKey match {
+      case _: WitnessScriptPubKey => WitnessTxSigComponentRawImpl(transaction, inputIndex, output, flags)
+      case x @ (_: P2PKScriptPubKey | _: P2PKHScriptPubKey | _: MultiSignatureScriptPubKey
+        | _: P2SHScriptPubKey | _: LockTimeScriptPubKey | _: NonStandardScriptPubKey
+        | _: WitnessCommitment | _: EscrowTimeoutScriptPubKey | EmptyScriptPubKey) =>
+        throw new IllegalArgumentException(s"Cannot create a WitnessTxSigComponentRaw with a spk of $x")
+    }
+
   }
 }
 
 object WitnessTxSigComponentP2SH {
 
   private case class WitnessTxSigComponentP2SHImpl(transaction: WitnessTransaction, inputIndex: UInt32,
-    scriptPubKey: P2SHScriptPubKey, flags: Seq[ScriptFlag],
-    amount: CurrencyUnit) extends WitnessTxSigComponentP2SH
+    output: TransactionOutput, flags: Seq[ScriptFlag]) extends WitnessTxSigComponentP2SH
 
-  def apply(transaction: WitnessTransaction, inputIndex: UInt32, scriptPubKey: P2SHScriptPubKey, flags: Seq[ScriptFlag],
-    amount: CurrencyUnit): WitnessTxSigComponentP2SH = {
+  def apply(transaction: WitnessTransaction, inputIndex: UInt32, output: TransactionOutput, flags: Seq[ScriptFlag]): WitnessTxSigComponentP2SH = {
+    output.scriptPubKey match {
+      case _: P2SHScriptPubKey => WitnessTxSigComponentP2SHImpl(transaction, inputIndex, output, flags)
+      case x @ (_: P2PKScriptPubKey | _: P2PKHScriptPubKey | _: MultiSignatureScriptPubKey | _: LockTimeScriptPubKey
+        | _: NonStandardScriptPubKey | _: EscrowTimeoutScriptPubKey
+        | _: WitnessCommitment | _: WitnessScriptPubKey | EmptyScriptPubKey) =>
+        throw new IllegalArgumentException(s"Cannot create a WitnessTxSigComponentP2SH with a spk of $x")
+    }
 
-    WitnessTxSigComponentP2SHImpl(transaction, inputIndex, scriptPubKey, flags, amount)
   }
 }
 
 object WitnessTxSigComponentRebuilt {
 
   private case class WitnessTxSigComponentRebuiltImpl(transaction: WitnessTransaction, inputIndex: UInt32,
-    scriptPubKey: ScriptPubKey, witnessScriptPubKey: WitnessScriptPubKey,
-    flags: Seq[ScriptFlag], amount: CurrencyUnit) extends WitnessTxSigComponentRebuilt
+    output: TransactionOutput, witnessScriptPubKey: WitnessScriptPubKey,
+    flags: Seq[ScriptFlag]) extends WitnessTxSigComponentRebuilt
 
-  def apply(wtx: WitnessTransaction, inputIndex: UInt32, scriptPubKey: ScriptPubKey, witScriptPubKey: WitnessScriptPubKey,
-    flags: Seq[ScriptFlag], amount: CurrencyUnit): WitnessTxSigComponentRebuilt = {
-    WitnessTxSigComponentRebuiltImpl(wtx, inputIndex, scriptPubKey, witScriptPubKey, flags, amount)
+  def apply(wtx: WitnessTransaction, inputIndex: UInt32, output: TransactionOutput, witScriptPubKey: WitnessScriptPubKey,
+    flags: Seq[ScriptFlag]): WitnessTxSigComponentRebuilt = {
+    WitnessTxSigComponentRebuiltImpl(wtx, inputIndex, output, witScriptPubKey, flags)
   }
 }

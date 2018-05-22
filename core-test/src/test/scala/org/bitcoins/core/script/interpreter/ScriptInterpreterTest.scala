@@ -1,9 +1,10 @@
 package org.bitcoins.core.script.interpreter
 
-import org.bitcoins.core.crypto.BaseTxSigComponent
+import org.bitcoins.core.crypto.{ BaseTxSigComponent, WitnessTxSigComponentP2SH, WitnessTxSigComponentRaw }
+import org.bitcoins.core.currency.CurrencyUnits
 import org.bitcoins.core.protocol.script._
-import org.bitcoins.core.protocol.transaction.WitnessTransaction
-import org.bitcoins.core.script.ScriptProgram
+import org.bitcoins.core.protocol.transaction.{ Transaction, TransactionOutput, WitnessTransaction }
+import org.bitcoins.core.script.{ PreExecutionScriptProgram, ScriptProgram }
 import org.bitcoins.core.script.flag.ScriptFlagFactory
 import org.bitcoins.core.script.interpreter.testprotocol.CoreTestCase
 import org.bitcoins.core.script.interpreter.testprotocol.CoreTestCaseProtocol._
@@ -23,19 +24,8 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers {
 
     //use this to represent a single test case from script_valid.json
     /*    val lines =
-        """
-          | [[
-          |    [
-          |        "304402200d461c140cfdfcf36b94961db57ae8c18d1cb80e9d95a9e47ac22470c1bf125502201c8dc1cbfef6a3ef90acbbb992ca22fe9466ee6f9d4898eda277a7ac3ab4b25101",
-          |        "410479be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8ac",
-          |        0.00000001
-          |    ],
-          |    "",
-          |    "0 0x20 0xb95237b48faaa69eb078e1170be3b5cbb3fddf16d0a991e14ad274f7b33a4f64",
-          |    "P2SH,WITNESS",
-          |    "OK",
-          |    "Basic P2WSH"
-          |]]
+      """
+          | [["", "DEPTH 0 EQUAL", "P2SH,STRICTENC", "OK", "Test the test: we should have an empty stack after scriptSig evaluation"]]
    """.stripMargin*/
     val lines = try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n" finally source.close()
     val json = lines.parseJson
@@ -57,19 +47,39 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers {
       val witness = testCase.witness
       logger.info("Flags after parsing: " + flags)
       logger.info("Witness after parsing: " + witness)
-      val program = witness match {
+      val txSigComponent = witness match {
         case Some((w, amount)) => scriptPubKey match {
           case p2sh: P2SHScriptPubKey =>
-            ScriptProgram(tx.asInstanceOf[WitnessTransaction], p2sh, inputIndex, flags, amount)
+            val output = TransactionOutput(amount, p2sh)
+            WitnessTxSigComponentP2SH(tx.asInstanceOf[WitnessTransaction], inputIndex, output, flags)
+
           case wit: WitnessScriptPubKey =>
-            ScriptProgram(tx.asInstanceOf[WitnessTransaction], wit, inputIndex, flags, amount)
+            val output = TransactionOutput(amount, wit)
+            val t = WitnessTxSigComponentRaw(
+              transaction = tx.asInstanceOf[WitnessTransaction],
+              inputIndex = inputIndex,
+              output = output,
+              flags = flags)
+            t
           case x @ (_: P2PKScriptPubKey | _: P2PKHScriptPubKey | _: MultiSignatureScriptPubKey | _: CLTVScriptPubKey | _: CSVScriptPubKey
             | _: CLTVScriptPubKey | _: EscrowTimeoutScriptPubKey | _: NonStandardScriptPubKey | _: WitnessCommitment | EmptyScriptPubKey) =>
-            val t = BaseTxSigComponent(tx, inputIndex, x, flags)
-            ScriptProgram(t)
+            val output = TransactionOutput(amount, x)
+            BaseTxSigComponent(
+              transaction = tx,
+              inputIndex = inputIndex,
+              output = output,
+              flags = flags)
         }
-        case None => ScriptProgram(tx, scriptPubKey, inputIndex, flags)
+        case None =>
+          //value in the output does not matter here since it isn't covered by the digital signature
+          val output = TransactionOutput(CurrencyUnits.zero, scriptPubKey)
+          BaseTxSigComponent(
+            transaction = tx,
+            inputIndex = inputIndex,
+            output = output,
+            flags = flags)
       }
+      val program = PreExecutionScriptProgram(txSigComponent)
       withClue(testCase.raw) {
         ScriptInterpreter.run(program) must equal(testCase.expectedResult)
       }

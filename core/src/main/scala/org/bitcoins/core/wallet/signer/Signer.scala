@@ -65,7 +65,7 @@ sealed abstract class P2PKSigner extends BitcoinSigner {
             case _: P2WPKHWitnessV0 => Future.fromTry(TxBuilderError.NoRedeemScript)
             case EmptyScriptWitness => Future.fromTry(TxBuilderError.NoWitness)
           }
-          val sigComponent = WitnessTxSigComponentRaw(wtx, inputIndex, p2wshSPK, flags, amount)
+          val sigComponent = WitnessTxSigComponentRaw(wtx, inputIndex, output, flags)
           val signature = doSign(sigComponent, sign, hashType, isDummySignature)
           signature.flatMap { s =>
             redeemScript.map { rs =>
@@ -73,11 +73,11 @@ sealed abstract class P2PKSigner extends BitcoinSigner {
               val scriptWit = P2WSHWitnessV0(rs, p2pkScriptSig)
               val signedWitness = TransactionWitness(wtx.witness.witnesses.updated(inputIndex.toInt, scriptWit))
               val signedWTx = WitnessTransaction(wtx.version, wtx.inputs, wtx.outputs, wtx.lockTime, signedWitness)
-              WitnessTxSigComponentRaw(signedWTx, inputIndex, p2wshSPK, flags, amount)
+              WitnessTxSigComponentRaw(signedWTx, inputIndex, output, flags)
             }
           }
         case _: P2PKScriptPubKey =>
-          val sigComponent = BaseTxSigComponent(unsignedTx, inputIndex, spk, flags)
+          val sigComponent = BaseTxSigComponent(unsignedTx, inputIndex, output, flags)
           val signature = doSign(sigComponent, sign, hashType, isDummySignature)
           signature.map { sig =>
             val p2pkScriptSig = P2PKScriptSignature(sig)
@@ -89,12 +89,12 @@ sealed abstract class P2PKSigner extends BitcoinSigner {
               case wtx: WitnessTransaction => WitnessTransaction(wtx.version, signedInputs,
                 wtx.outputs, wtx.lockTime, wtx.witness)
             }
-            BaseTxSigComponent(signedTx, inputIndex, spk, flags)
+            BaseTxSigComponent(signedTx, inputIndex, output, flags)
           }
         case lock: LockTimeScriptPubKey =>
           lock.nestedScriptPubKey match {
             case _: P2PKScriptPubKey =>
-              val sigComponent = BaseTxSigComponent(unsignedTx, inputIndex, lock, flags)
+              val sigComponent = BaseTxSigComponent(unsignedTx, inputIndex, output, flags)
               val signature = doSign(sigComponent, sign, hashType, isDummySignature)
               signature.map { sig =>
                 val p2pkScriptSig = P2PKScriptSignature(sig)
@@ -106,7 +106,7 @@ sealed abstract class P2PKSigner extends BitcoinSigner {
                   case wtx: WitnessTransaction => WitnessTransaction(wtx.version, signedInputs,
                     wtx.outputs, wtx.lockTime, wtx.witness)
                 }
-                BaseTxSigComponent(signedTx, inputIndex, lock, flags)
+                BaseTxSigComponent(signedTx, inputIndex, output, flags)
               }
 
             case _: P2PKHScriptPubKey | _: MultiSignatureScriptPubKey | _: P2SHScriptPubKey
@@ -152,7 +152,7 @@ sealed abstract class P2PKHSigner extends BitcoinSigner {
             case EmptyScriptWitness | _: P2WPKHWitnessV0 => Future.fromTry(TxBuilderError.WrongWitness)
             case p2wsh: P2WSHWitnessV0 => Future.successful(p2wsh.redeemScript)
           }
-          val sigComponent = WitnessTxSigComponentRaw(wtx, inputIndex, p2wshSPK, flags, amount)
+          val sigComponent = WitnessTxSigComponentRaw(wtx, inputIndex, output, flags)
           val signature = doSign(sigComponent, sign, hashType, isDummySignature)
           val scriptWit: Future[ScriptWitness] = signature.flatMap { sig =>
             redeemScript.flatMap { rs =>
@@ -188,14 +188,14 @@ sealed abstract class P2PKHSigner extends BitcoinSigner {
             val txWit = TransactionWitness(wtx.witness.witnesses.updated(inputIndex.toInt, wit))
             val signedWTx = WitnessTransaction(wtx.version, wtx.inputs,
               wtx.outputs, wtx.lockTime, txWit)
-            WitnessTxSigComponentRaw(signedWTx, inputIndex, p2wshSPK, flags, amount)
+            WitnessTxSigComponentRaw(signedWTx, inputIndex, output, flags)
           }
 
         case p2pkh: P2PKHScriptPubKey =>
           if (p2pkh != P2PKHScriptPubKey(pubKey)) {
             Future.fromTry(TxBuilderError.WrongPublicKey)
           } else {
-            val sigComponent = BaseTxSigComponent(unsignedTx, inputIndex, p2pkh, flags)
+            val sigComponent = BaseTxSigComponent(unsignedTx, inputIndex, output, flags)
             val signature = doSign(sigComponent, sign, hashType, isDummySignature)
             signature.map { sig =>
               val p2pkhScriptSig = P2PKHScriptSignature(sig, pubKey)
@@ -207,7 +207,7 @@ sealed abstract class P2PKHSigner extends BitcoinSigner {
                 case wtx: WitnessTransaction => WitnessTransaction(wtx.version, signedInputs,
                   wtx.outputs, wtx.lockTime, wtx.witness)
               }
-              BaseTxSigComponent(signedTx, inputIndex, p2pkh, flags)
+              BaseTxSigComponent(signedTx, inputIndex, output, flags)
             }
           }
         case lock: LockTimeScriptPubKey =>
@@ -216,7 +216,7 @@ sealed abstract class P2PKHSigner extends BitcoinSigner {
               if (p2pkh != P2PKHScriptPubKey(pubKey)) {
                 Future.fromTry(TxBuilderError.WrongPublicKey)
               } else {
-                val sigComponent = BaseTxSigComponent(unsignedTx, inputIndex, lock, flags)
+                val sigComponent = BaseTxSigComponent(unsignedTx, inputIndex, output, flags)
                 val signature = doSign(sigComponent, sign, hashType, isDummySignature)
                 signature.map { sig =>
                   val p2pkhScriptSig = P2PKHScriptSignature(sig, pubKey)
@@ -228,7 +228,7 @@ sealed abstract class P2PKHSigner extends BitcoinSigner {
                     case wtx: WitnessTransaction => WitnessTransaction(wtx.version, signedInputs,
                       wtx.outputs, wtx.lockTime, wtx.witness)
                   }
-                  BaseTxSigComponent(signedTx, inputIndex, lock, flags)
+                  BaseTxSigComponent(signedTx, inputIndex, output, flags)
                 }
               }
             case _: P2PKScriptPubKey | _: MultiSignatureScriptPubKey | _: P2SHScriptPubKey
@@ -299,7 +299,7 @@ sealed abstract class MultiSigSigner extends BitcoinSigner {
         multiSigSPK.flatMap {
           case (multiSig, spk) =>
             val requiredSigs = multiSig.requiredSigs
-            val sigComponent = WitnessTxSigComponentRaw(wtx, inputIndex, p2wshSPK, flags, amount)
+            val sigComponent = WitnessTxSigComponentRaw(wtx, inputIndex, output, flags)
             val signaturesNested: Seq[Future[ECDigitalSignature]] = 0.until(requiredSigs).map { i =>
               doSign(sigComponent, signers(i), hashType, isDummySignature)
             }
@@ -309,7 +309,7 @@ sealed abstract class MultiSigSigner extends BitcoinSigner {
               val scriptWit = P2WSHWitnessV0(spk, multiSigScriptSig)
               val txWit = TransactionWitness(wtx.witness.witnesses.updated(inputIndex.toInt, scriptWit))
               val signedWTx = WitnessTransaction(wtx.version, wtx.inputs, wtx.outputs, wtx.lockTime, txWit)
-              WitnessTxSigComponentRaw(signedWTx, inputIndex, p2wshSPK, flags, amount)
+              WitnessTxSigComponentRaw(signedWTx, inputIndex, output, flags)
             }
         }
 
@@ -318,7 +318,7 @@ sealed abstract class MultiSigSigner extends BitcoinSigner {
         if (signers.size < requiredSigs) {
           Future.fromTry(TxBuilderError.WrongSigner)
         } else {
-          val sigComponent = BaseTxSigComponent(unsignedTx, inputIndex, multiSigSPK, flags)
+          val sigComponent = BaseTxSigComponent(unsignedTx, inputIndex, output, flags)
           val signaturesNested = 0.until(requiredSigs).map(i => doSign(sigComponent, signers(i), hashType, isDummySignature))
           val signatures = Future.sequence(signaturesNested)
           signatures.map { sigs =>
@@ -331,7 +331,7 @@ sealed abstract class MultiSigSigner extends BitcoinSigner {
               case wtx: WitnessTransaction => WitnessTransaction(wtx.version, signedInputs,
                 wtx.outputs, wtx.lockTime, wtx.witness)
             }
-            BaseTxSigComponent(signedTx, inputIndex, multiSigSPK, Policy.standardFlags)
+            BaseTxSigComponent(signedTx, inputIndex, output, Policy.standardFlags)
           }
         }
       case lock: LockTimeScriptPubKey =>
@@ -345,7 +345,7 @@ sealed abstract class MultiSigSigner extends BitcoinSigner {
         }
         multiSigSPK.flatMap { mSPK =>
           val requiredSigs = mSPK.requiredSigs
-          val sigComponent = BaseTxSigComponent(unsignedTx, inputIndex, lock, flags)
+          val sigComponent = BaseTxSigComponent(unsignedTx, inputIndex, output, flags)
           val signatures: Future[Seq[ECDigitalSignature]] = if (signers.size < requiredSigs) {
             Future.fromTry(TxBuilderError.WrongSigner)
           } else {
@@ -364,7 +364,7 @@ sealed abstract class MultiSigSigner extends BitcoinSigner {
               case wtx: WitnessTransaction => WitnessTransaction(wtx.version, signedInputs,
                 wtx.outputs, wtx.lockTime, wtx.witness)
             }
-            BaseTxSigComponent(signedTx, inputIndex, mSPK, flags)
+            BaseTxSigComponent(signedTx, inputIndex, output, flags)
           }
           signedTxSigComp
         }
@@ -405,14 +405,15 @@ sealed abstract class P2WPKHSigner extends BitcoinSigner {
         }
 
         witSPK.flatMap { w =>
-          val wtxComp = WitnessTxSigComponentRaw(unsignedWtx, inputIndex, w, Policy.standardFlags, output.value)
+          val witOutput = TransactionOutput(output.value, w)
+          val wtxComp = WitnessTxSigComponentRaw(unsignedWtx, inputIndex, witOutput, Policy.standardFlags)
           val signature = doSign(wtxComp, sign, hashType, isDummySignature)
           signature.map { sig =>
             val scriptWitness = P2WPKHWitnessV0(pubKey, sig)
             val signedTxWitness = TransactionWitness(unsignedWtx.witness.witnesses.updated(inputIndex.toInt, scriptWitness))
             val signedTx = WitnessTransaction(unsignedWtx.version, unsignedWtx.inputs, unsignedWtx.outputs,
               unsignedWtx.lockTime, signedTxWitness)
-            WitnessTxSigComponentRaw(signedTx, inputIndex, w, Policy.standardFlags, output.value)
+            WitnessTxSigComponentRaw(signedTx, inputIndex, witOutput, Policy.standardFlags)
           }
         }
       }
