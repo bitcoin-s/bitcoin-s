@@ -9,12 +9,18 @@ object Deps {
     val slf4j = "1.7.5"
     val spray = "1.3.2"
     val zeromq = "0.4.3"
+    val akkav = "10.1.1"
+    val akkaStreamv = "2.5.12"
+    val playv = "2.6.9"
   }
 
   object Compile {
     val bouncycastle = "org.bouncycastle" % "bcprov-jdk15on" % V.bouncyCastle
     val slf4j = "org.slf4j" % "slf4j-api" % V.slf4j % "provided"
     val zeromq = "org.zeromq" % "jeromq" % V.zeromq
+    val akkaHttp = "com.typesafe.akka" %% "akka-http" % V.akkav
+    val akkaStream = "com.typesafe.akka" %% "akka-stream" % V.akkaStreamv
+    val playJson = "com.typesafe.play" %% "play-json" % V.playv
   }
 
   object Test {
@@ -24,6 +30,8 @@ object Deps {
     val scalacheck = "org.scalacheck" %% "scalacheck" % V.scalacheck % "test" withSources() withJavadoc()
     val scalaTest = "org.scalatest" %% "scalatest" % V.scalaTest % "test"
     val spray = "io.spray" %% "spray-json" % V.spray  % "test"
+    val akkaHttp = "com.typesafe.akka" %% "akka-http-testkit" % V.akkav % "test"
+    val akkaStream = "com.typesafe.akka" %% "akka-stream-testkit" % V.akkaStreamv % "test"
   }
 
   val core = List(
@@ -50,5 +58,17 @@ object Deps {
     Test.logback,
     Test.scalacheck,
     Test.scalaTest
+  )
+
+  val rpc = List(
+    Compile.akkaHttp,
+    Compile.akkaStream,
+    Compile.playJson,
+    Compile.slf4j,
+    Test.akkaHttp,
+    Test.akkaStream,
+    Test.logback,
+    Test.scalaTest,
+    Test.scalacheck
   )
 }

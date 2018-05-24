@@ -42,4 +42,11 @@ lazy val zmq = project
     core
   )
 
+lazy val rpc = project
+  .in(file("rpc"))
+  .enablePlugins()
+  .dependsOn(
+    core
+  )
+
 publishArtifact in root := false
