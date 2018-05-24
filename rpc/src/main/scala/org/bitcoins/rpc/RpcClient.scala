@@ -17,8 +17,9 @@ class RpcClient {
   private val resultKey = "result"
   private val logger = BitcoinSLogger.logger
 
-  def getNewAddress(account: Option[String])(implicit m: ActorMaterializer): Future[Address] = {
-    val request = buildRequest("getnewaddress", JsArray.empty)
+  def getNewAddress(account: Option[String] = None)(implicit m: ActorMaterializer): Future[Address] = {
+    val parameters = List(JsString(account.getOrElse("")))
+    val request = buildRequest("getnewaddress", JsArray(parameters))
     val responseF = sendRequest(request)
 
     val payloadF: Future[JsValue] = responseF.flatMap(getPayload)(m.executionContext)

@@ -11,11 +11,20 @@ class RpcClientTest extends AsyncFlatSpec {
   implicit val m = ActorMaterializer(ActorMaterializerSettings(system))
   implicit val ec = m.executionContext
 
+  val client = new RpcClient
+  val logger = BitcoinSLogger.logger
+
   behavior of "RpcClient"
   it should "be able to get an address from bitcoind" in {
-    val client = new RpcClient
     val addressF = client.getNewAddress(None)
-    val logger = BitcoinSLogger.logger
+    addressF.map { address =>
+      logger.info(address.value)
+      assert(true)
+    }
+  }
+
+  it should "be able to get an address from bitcoind given an account" in {
+    val addressF = client.getNewAddress(Some(""))
     addressF.map { address =>
       logger.info(address.value)
       assert(true)
