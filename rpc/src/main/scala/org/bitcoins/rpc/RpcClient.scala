@@ -6,16 +6,52 @@ import akka.http.scaladsl.model._
 import org.bitcoins.core.protocol.Address
 import play.api.libs.json._
 
-import scala.concurrent.Future
+import scala.concurrent.{ ExecutionContext, Future }
 import akka.stream.ActorMaterializer
 import akka.util.ByteString
 import org.bitcoins.core.util.BitcoinSLogger
 
-import scala.util.{ Failure, Try }
+import scala.util.Try
 
 class RpcClient {
   private val resultKey = "result"
   private val logger = BitcoinSLogger.logger
+
+  def getBestBlockHash(implicit m: ActorMaterializer, ec: ExecutionContext): Future[String] = { // Is there a special data type (not String) for this hash?
+    val request = buildRequest("getbestblockhash", JsArray.empty)
+    val responseF = sendRequest(request)
+
+    val payloadF: Future[JsValue] = responseF.flatMap(getPayload)
+
+    payloadF.map { payload =>
+      val result: JsResult[String] = (payload \ resultKey).validate[String]
+      parseResult(result)
+    }
+  }
+
+  def getBlockCount(implicit m: ActorMaterializer, ec: ExecutionContext): Future[Int] = {
+    val request = buildRequest("getblockcount", JsArray.empty)
+    val reseponseF = sendRequest(request)
+
+    val payloadF: Future[JsValue] = reseponseF.flatMap(getPayload)
+
+    payloadF.map { payload =>
+      val result: JsResult[Int] = (payload \ resultKey).validate[Int]
+      parseResult(result)
+    }
+  }
+
+  def getConnectionCount(implicit m: ActorMaterializer, ec: ExecutionContext): Future[Int] = {
+    val request = buildRequest("getconnectioncount", JsArray.empty)
+    val responseF = sendRequest(request)
+
+    val payloadF: Future[JsValue] = responseF.flatMap(getPayload)
+
+    payloadF.map { payload =>
+      val result: JsResult[Int] = (payload \ resultKey).validate[Int]
+      parseResult(result)
+    }
+  }
 
   def getNewAddress(account: Option[String] = None)(implicit m: ActorMaterializer): Future[Address] = {
     val parameters = List(JsString(account.getOrElse("")))
@@ -26,17 +62,21 @@ class RpcClient {
 
     val addressF: Future[Try[Address]] = payloadF.map { payload =>
       val result: JsResult[String] = (payload \ resultKey).validate[String]
-      result match {
-        case res: JsSuccess[String] => Address.fromString(res.value)
-        case res: JsError =>
-          logger.error(JsError.toJson(res).toString())
-          Failure(new IllegalArgumentException("Address was not formed"))
-      }
+      Address.fromString(parseResult(result))
     }(m.executionContext)
 
     addressF.flatMap { f =>
       Future.fromTry(f)
     }(m.executionContext)
+  }
+
+  private def parseResult[T](result: JsResult[T]): T = {
+    result match {
+      case res: JsSuccess[T] => res.value
+      case res: JsError =>
+        logger.error(JsError.toJson(res).toString())
+        throw new IllegalArgumentException(s"Could not parse JsResult: ${res}")
+    }
   }
 
   private def getPayload(response: HttpResponse)(implicit m: ActorMaterializer): Future[JsValue] = {
