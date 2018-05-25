@@ -1,17 +1,12 @@
 package org.bitcoins.core.crypto
 
-import org.bitcoins.core.util.{ Factory, BitcoinSUtil }
+import org.bitcoins.core.protocol.NetworkElement
+import org.bitcoins.core.util.{ BitcoinSUtil, Factory }
 
 /**
  * Created by chris on 5/24/16.
  */
-sealed abstract class HashDigest {
-  /** The message digest represented in bytes */
-  def bytes: Seq[Byte]
-
-  /** The message digest represented in hexadecimal */
-  def hex: String = BitcoinSUtil.encodeHex(bytes)
-
+sealed abstract class HashDigest extends NetworkElement {
   /**
    * Flips the endianness of the byte sequence.
    * Since bitcoin unfortunately has inconsistent endianness between the protocol
