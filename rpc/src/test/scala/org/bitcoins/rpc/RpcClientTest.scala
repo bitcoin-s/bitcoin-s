@@ -50,7 +50,7 @@ class RpcClientTest extends AsyncFlatSpec {
   it should "be able to get the best block hash" in {
     val bestHashF = client.getBestBlockHash
     bestHashF.map { hash =>
-      logger.info(hash)
+      logger.info(hash.toString)
       assert(true)
     }
   }

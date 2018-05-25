@@ -6,9 +6,10 @@ import akka.http.scaladsl.model._
 import org.bitcoins.core.protocol.Address
 import play.api.libs.json._
 
-import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.{ExecutionContext, Future}
 import akka.stream.ActorMaterializer
 import akka.util.ByteString
+import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.util.BitcoinSLogger
 
 import scala.util.Try
@@ -17,7 +18,7 @@ class RpcClient {
   private val resultKey = "result"
   private val logger = BitcoinSLogger.logger
 
-  def getBestBlockHash(implicit m: ActorMaterializer, ec: ExecutionContext): Future[String] = { // Is there a special data type (not String) for this hash?
+  def getBestBlockHash(implicit m: ActorMaterializer, ec: ExecutionContext): Future[DoubleSha256Digest] = {
     val request = buildRequest("getbestblockhash", JsArray.empty)
     val responseF = sendRequest(request)
 
@@ -25,7 +26,7 @@ class RpcClient {
 
     payloadF.map { payload =>
       val result: JsResult[String] = (payload \ resultKey).validate[String]
-      parseResult(result)
+      DoubleSha256Digest.fromHex(parseResult(result))
     }
   }
 
@@ -53,21 +54,21 @@ class RpcClient {
     }
   }
 
-  def getNewAddress(account: Option[String] = None)(implicit m: ActorMaterializer): Future[Address] = {
+  def getNewAddress(account: Option[String] = None)(implicit m: ActorMaterializer, ec: ExecutionContext): Future[Address] = {
     val parameters = List(JsString(account.getOrElse("")))
     val request = buildRequest("getnewaddress", JsArray(parameters))
     val responseF = sendRequest(request)
 
-    val payloadF: Future[JsValue] = responseF.flatMap(getPayload)(m.executionContext)
+    val payloadF: Future[JsValue] = responseF.flatMap(getPayload)
 
     val addressF: Future[Try[Address]] = payloadF.map { payload =>
       val result: JsResult[String] = (payload \ resultKey).validate[String]
       Address.fromString(parseResult(result))
-    }(m.executionContext)
+    }
 
     addressF.flatMap { f =>
       Future.fromTry(f)
-    }(m.executionContext)
+    }
   }
 
   private def parseResult[T](result: JsResult[T]): T = {
@@ -79,12 +80,12 @@ class RpcClient {
     }
   }
 
-  private def getPayload(response: HttpResponse)(implicit m: ActorMaterializer): Future[JsValue] = {
+  private def getPayload(response: HttpResponse)(implicit m: ActorMaterializer, ec: ExecutionContext): Future[JsValue] = {
     val payloadF = response.entity.dataBytes.runFold(ByteString(""))(_ ++ _)
 
     payloadF.map { payload =>
       Json.parse(payload.decodeString(ByteString.UTF_8))
-    }(m.executionContext)
+    }
   }
 
   def sendRequest(req: HttpRequest)(implicit m: ActorMaterializer): Future[HttpResponse] = {
