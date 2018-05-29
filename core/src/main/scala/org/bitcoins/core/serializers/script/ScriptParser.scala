@@ -221,9 +221,14 @@ sealed abstract class ScriptParser extends Factory[List[ScriptToken]] {
       //TODO: Review this more, see this transaction's scriptSig as an example: b30d3148927f620f5b1228ba941c211fdabdae75d0ba0b688a58accbf018f3cc
       val bytesForPushOp = Try(uInt32Push.toInt).getOrElse(Int.MaxValue)
       val bytesToPushOntoStack = ScriptConstant(scriptConstantHex)
-      val scriptConstantBytes = tail.slice(numBytes, bytesForPushOp + numBytes)
+      val endIndex = {
+        val idx = bytesForPushOp + numBytes
+        //for the case of an overflow. Just assume Int.MaxValue for slice operation which only takes a Int
+        if (idx >= 0) idx else Int.MaxValue
+      }
+      val scriptConstantBytes = tail.slice(numBytes, endIndex)
       val scriptConstant = ScriptConstant(scriptConstantBytes)
-      val restOfBytes = tail.slice(bytesForPushOp + numBytes, tail.size)
+      val restOfBytes = tail.slice(endIndex, tail.size)
       buildParsingHelper(op, bytesToPushOntoStack, scriptConstant, restOfBytes, accum)
     }
 

@@ -93,6 +93,11 @@ class TransactionTest extends FlatSpec with MustMatchers {
 
   }
 
+  it must "parse a transaction with an OP_PUSHDATA4 op code but not enough data to push" in {
+    val hex = "01000000010000000000000000000000000000000000000000000000000000000000000000ffffffff2a03f35c0507062f503253482ffe4ecb3b55fefbde06000963676d696e6572343208040000000000000000ffffffff0100f90295000000001976a91496621bc1c9d1e5a1293e401519365de820792bbc88ac00000000"
+    val btx = BaseTransaction.fromHex(hex)
+    btx.hex must be(hex)
+  }
   it must "read all of the tx_valid.json's contents and return ScriptOk" in {
     val source = Source.fromURL(getClass.getResource("/tx_valid.json"))
 
