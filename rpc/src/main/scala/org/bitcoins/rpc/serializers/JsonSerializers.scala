@@ -17,6 +17,7 @@ object JsonSerializers {
   implicit val int32Reads: Reads[Int32] = Int32Reads
   implicit val uInt32Reads: Reads[UInt32] = UInt32Reads
   implicit val addressReads: Reads[Address] = AddressReads
+  implicit val unitReads: Reads[Unit] = UnitReads
 
   // Network Models
   implicit val networkReads: Reads[Network] = Json.reads[Network]

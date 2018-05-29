@@ -66,4 +66,8 @@ object JsonReaders {
       case err => JsError(s"error.expected.jsstring, got ${Json.toJson(err).toString()}")
     }
   }
+
+  implicit object UnitReads extends Reads[Unit] {
+    def reads(json: JsValue) = null
+  }
 }
