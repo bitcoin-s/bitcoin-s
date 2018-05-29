@@ -219,12 +219,11 @@ sealed abstract class ScriptParser extends Factory[List[ScriptToken]] {
       val uInt32Push = UInt32(BitcoinSUtil.flipEndianness(scriptConstantHex))
       //need this for the case where we have an OP_PUSHDATA4 with a number larger than a int32 can hold
       //TODO: Review this more, see this transaction's scriptSig as an example: b30d3148927f620f5b1228ba941c211fdabdae75d0ba0b688a58accbf018f3cc
-      val bytesForPushOp = Try(uInt32Push.toInt).getOrElse(Int.MaxValue)
+      val bytesForPushOp = Try(uInt32Push.toInt).getOrElse(tail.size)
       val bytesToPushOntoStack = ScriptConstant(scriptConstantHex)
       val endIndex = {
         val idx = bytesForPushOp + numBytes
-        //for the case of an overflow. Just assume Int.MaxValue for slice operation which only takes a Int
-        if (idx >= 0) idx else Int.MaxValue
+        if (idx >= numBytes) idx else tail.size
       }
       val scriptConstantBytes = tail.slice(numBytes, endIndex)
       val scriptConstant = ScriptConstant(scriptConstantBytes)
