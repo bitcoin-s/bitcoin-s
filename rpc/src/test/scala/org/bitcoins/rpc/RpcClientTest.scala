@@ -17,7 +17,7 @@ class RpcClientTest extends AsyncFlatSpec {
   behavior of "RpcClient"
 
   it should "be able to get an address from bitcoind" in {
-    val addressF = client.getNewAddress(None)
+    val addressF = client.getNewAddress()
     addressF.map { address =>
       logger.info(address.value)
       assert(true)
@@ -25,7 +25,7 @@ class RpcClientTest extends AsyncFlatSpec {
   }
 
   it should "be able to get an address from bitcoind given an account" in {
-    val addressF = client.getNewAddress(Some(""))
+    val addressF = client.getNewAddress("")
     addressF.map { address =>
       logger.info(address.value)
       assert(true)
@@ -67,7 +67,7 @@ class RpcClientTest extends AsyncFlatSpec {
   it should "be able to get the chain tips" in {
     val chainTipsF = client.getChainTips
     chainTipsF.map { tipArray =>
-      tipArray.foreach{tip =>
+      tipArray.foreach { tip =>
         logger.info(tip.toString)
         assert(tip.status == "active")
       }
@@ -80,6 +80,43 @@ class RpcClientTest extends AsyncFlatSpec {
     networkInfoF.map { info =>
       logger.info(info.toString)
       assert(true)
+    }
+  }
+
+  it should "be able to generate blocks" in {
+    val blocksF = client.generate(3)
+    blocksF.map { blocks =>
+      blocks.foreach(block => logger.info(block.toString))
+      assert(true)
+    }
+  }
+
+  it should "be able to generate blocks and then get their serialized headers" in {
+    val blocksF = client.generate(2)
+    blocksF.flatMap { blocks =>
+      blocks.foreach(block => logger.info(block.toString))
+      val headerF1 = client.getBlockHeaderRaw(blocks(1))
+      headerF1.map { header =>
+        logger.info(header.toString)
+        assert(header.previousBlockHashBE == blocks(0))
+      }
+    }
+  }
+
+  it should "be able to generate blocks and then get their headers" in {
+    val blocksF = client.generate(2)
+    blocksF.flatMap { blocks =>
+      val headerF0 = client.getBlockHeader(blocks(0))
+      headerF0.map { header =>
+        logger.info(header.toString)
+        assert(header.nextblockhash.contains(blocks(1)))
+      }
+      val headerF1 = client.getBlockHeader(blocks(1))
+      headerF1.map { header =>
+        logger.info(header.toString)
+        assert(header.previousblockhash.contains(blocks(0)))
+        assert(header.nextblockhash.isEmpty)
+      }
     }
   }
 }

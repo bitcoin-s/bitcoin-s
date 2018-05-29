@@ -7,12 +7,13 @@ import akka.stream.ActorMaterializer
 import akka.util.ByteString
 import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.protocol.Address
+import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.util.BitcoinSLogger
 import play.api.libs.json._
 import org.bitcoins.rpc.jsonmodels._
 import org.bitcoins.rpc.serializers.JsonSerializers._
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.Try
 
 class RpcClient {
@@ -43,17 +44,16 @@ class RpcClient {
     noParameterCall[GetMiningInfoResult]("getmininginfo")
   }
 
-  def getChainTips(implicit m: ActorMaterializer, ec:ExecutionContext): Future[Array[ChainTip]] = {
+  def getChainTips(implicit m: ActorMaterializer, ec: ExecutionContext): Future[Array[ChainTip]] = {
     noParameterCall[Array[ChainTip]]("getchaintips")
   }
 
-  def getNetworkInfo(implicit m: ActorMaterializer, ec: ExecutionContext): Future[GetNetworkInfoResult] =  {
+  def getNetworkInfo(implicit m: ActorMaterializer, ec: ExecutionContext): Future[GetNetworkInfoResult] = {
     noParameterCall[GetNetworkInfoResult]("getnetworkinfo")
   }
 
-  def getNewAddress(account: Option[String] = None)
-                   (implicit m: ActorMaterializer, ec: ExecutionContext): Future[Address] = {
-    val parameters = List(JsString(account.getOrElse("")))
+  def getNewAddress(account: String = "")(implicit m: ActorMaterializer, ec: ExecutionContext): Future[Address] = {
+    val parameters = List(JsString(account))
     val request = buildRequest("getnewaddress", JsArray(parameters))
     val responseF = sendRequest(request)
 
@@ -69,8 +69,43 @@ class RpcClient {
     }
   }
 
-  private def noParameterCall[T](command: String)
-                                (implicit m: ActorMaterializer, ec: ExecutionContext, reader: Reads[T]): Future[T] =  {
+  def getBlockHeaderRaw(headerHash: DoubleSha256Digest)(implicit m: ActorMaterializer, ec: ExecutionContext): Future[BlockHeader] = {
+    val parameters = List(JsString(headerHash.hex), JsBoolean(false))
+    val request = buildRequest("getblockheader", JsArray(parameters))
+    val responseF = sendRequest(request)
+
+    val payloadF: Future[JsValue] = responseF.flatMap(getPayload)
+
+    payloadF.map { payload =>
+      parseResult((payload \ resultKey).validate[BlockHeader])
+    }
+  }
+
+  def getBlockHeader(headerHash: DoubleSha256Digest)(implicit m: ActorMaterializer, ec: ExecutionContext): Future[GetBlockHeaderResult] = {
+    val parameters = List(JsString(headerHash.hex), JsBoolean(true))
+    val request = buildRequest("getblockheader", JsArray(parameters))
+    val responseF = sendRequest(request)
+
+    val payloadF: Future[JsValue] = responseF.flatMap(getPayload)
+
+    payloadF.map { payload =>
+      parseResult((payload \ resultKey).validate[GetBlockHeaderResult])
+    }
+  }
+
+  def generate(blocks: Int, maxTries: Int = 1000000)(implicit m: ActorMaterializer, ec: ExecutionContext): Future[Array[DoubleSha256Digest]] = {
+    val parameters = List(JsNumber(blocks), JsNumber(maxTries))
+    val request = buildRequest("generate", JsArray(parameters))
+    val responseF = sendRequest(request)
+
+    val payloadF: Future[JsValue] = responseF.flatMap(getPayload)
+
+    payloadF.map { payload =>
+      parseResult((payload \ resultKey).validate[Array[DoubleSha256Digest]])
+    }
+  }
+
+  private def noParameterCall[T](command: String)(implicit m: ActorMaterializer, ec: ExecutionContext, reader: Reads[T]): Future[T] = {
     val request = buildRequest(command, JsArray.empty)
     val responseF = sendRequest(request)
 
@@ -90,8 +125,7 @@ class RpcClient {
     }
   }
 
-  private def getPayload(response: HttpResponse)
-                        (implicit m: ActorMaterializer, ec: ExecutionContext): Future[JsValue] = {
+  private def getPayload(response: HttpResponse)(implicit m: ActorMaterializer, ec: ExecutionContext): Future[JsValue] = {
     val payloadF = response.entity.dataBytes.runFold(ByteString(""))(_ ++ _)
 
     payloadF.map { payload =>
