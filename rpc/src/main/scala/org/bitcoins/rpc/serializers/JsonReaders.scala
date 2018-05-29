@@ -2,9 +2,12 @@ package org.bitcoins.rpc.serializers
 
 import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.currency.Bitcoins
-import org.bitcoins.core.number.{ Int32, UInt32 }
+import org.bitcoins.core.number.{Int32, UInt32}
+import org.bitcoins.core.protocol.Address
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import play.api.libs.json._
+
+import scala.util.{Failure, Success}
 
 object JsonReaders {
   implicit object DoubleSha256DigestReads extends Reads[DoubleSha256Digest] {
@@ -51,6 +54,16 @@ object JsonReaders {
       }
       case JsString(s) => JsSuccess(UInt32.fromHex(s))
       case err => JsError(s"error.expected.jsnumber, got ${Json.toJson(err).toString()}")
+    }
+  }
+
+  implicit object AddressReads extends Reads[Address] {
+    def reads(json: JsValue) = json match {
+      case JsString(s) => Address.fromString(s) match {
+        case Success(address) => JsSuccess(address)
+        case Failure(err) => JsError(s"error.expected.address, got ${err.toString}")
+      }
+      case err => JsError(s"error.expected.jsstring, got ${Json.toJson(err).toString()}")
     }
   }
 }
