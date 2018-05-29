@@ -44,7 +44,7 @@ class RpcClientTest extends AsyncFlatSpec {
     val connectionCountF = client.getConnectionCount
     connectionCountF.map { count =>
       logger.info(count.toString)
-      assert(true)
+      assert(count == 0)
     }
   }
 
@@ -58,24 +58,27 @@ class RpcClientTest extends AsyncFlatSpec {
 
   it should "be able to get the mining info" in {
     val miningInfoF = client.getMiningInfo
-    miningInfoF.map { hash =>
-      logger.info(hash.toString)
-      assert(true)
+    miningInfoF.map { info =>
+      logger.info(info.toString)
+      assert(info.chain == "regtest")
     }
   }
 
   it should "be able to get the chain tips" in {
     val chainTipsF = client.getChainTips
-    chainTipsF.map { hash =>
-      hash.foreach(tip => logger.info(tip.toString))
+    chainTipsF.map { tipArray =>
+      tipArray.foreach{tip =>
+        logger.info(tip.toString)
+        assert(tip.status == "active")
+      }
       assert(true)
     }
   }
 
   it should "be able to get the network info" in {
     val networkInfoF = client.getNetworkInfo
-    networkInfoF.map { hash =>
-      logger.info(hash.toString)
+    networkInfoF.map { info =>
+      logger.info(info.toString)
       assert(true)
     }
   }
