@@ -1,17 +1,18 @@
-package org.bitcoins.rpc
+package org.bitcoins.rpc.client
 
 import akka.http.javadsl.model.headers.HttpCredentials
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
-import org.bitcoins.core.protocol.Address
-import play.api.libs.json._
-
-import scala.concurrent.{ExecutionContext, Future}
 import akka.stream.ActorMaterializer
 import akka.util.ByteString
 import org.bitcoins.core.crypto.DoubleSha256Digest
+import org.bitcoins.core.protocol.Address
 import org.bitcoins.core.util.BitcoinSLogger
+import play.api.libs.json._
+import org.bitcoins.rpc.jsonmodels._
+import org.bitcoins.rpc.serializers.JsonSerializers._
 
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
 
 class RpcClient {
@@ -31,30 +32,27 @@ class RpcClient {
   }
 
   def getBlockCount(implicit m: ActorMaterializer, ec: ExecutionContext): Future[Int] = {
-    val request = buildRequest("getblockcount", JsArray.empty)
-    val reseponseF = sendRequest(request)
-
-    val payloadF: Future[JsValue] = reseponseF.flatMap(getPayload)
-
-    payloadF.map { payload =>
-      val result: JsResult[Int] = (payload \ resultKey).validate[Int]
-      parseResult(result)
-    }
+    noParameterCall[Int]("getblockcount")
   }
 
   def getConnectionCount(implicit m: ActorMaterializer, ec: ExecutionContext): Future[Int] = {
-    val request = buildRequest("getconnectioncount", JsArray.empty)
-    val responseF = sendRequest(request)
-
-    val payloadF: Future[JsValue] = responseF.flatMap(getPayload)
-
-    payloadF.map { payload =>
-      val result: JsResult[Int] = (payload \ resultKey).validate[Int]
-      parseResult(result)
-    }
+    noParameterCall[Int]("getconnectioncount")
   }
 
-  def getNewAddress(account: Option[String] = None)(implicit m: ActorMaterializer, ec: ExecutionContext): Future[Address] = {
+  def getMiningInfo(implicit m: ActorMaterializer, ec: ExecutionContext): Future[GetMiningInfoResult] = {
+    noParameterCall[GetMiningInfoResult]("getmininginfo")
+  }
+
+  def getChainTips(implicit m: ActorMaterializer, ec:ExecutionContext): Future[Array[ChainTip]] = {
+    noParameterCall[Array[ChainTip]]("getchaintips")
+  }
+
+  def getNetworkInfo(implicit m: ActorMaterializer, ec: ExecutionContext): Future[GetNetworkInfoResult] =  {
+    noParameterCall[GetNetworkInfoResult]("getnetworkinfo")
+  }
+
+  def getNewAddress(account: Option[String] = None)
+                   (implicit m: ActorMaterializer, ec: ExecutionContext): Future[Address] = {
     val parameters = List(JsString(account.getOrElse("")))
     val request = buildRequest("getnewaddress", JsArray(parameters))
     val responseF = sendRequest(request)
@@ -71,6 +69,18 @@ class RpcClient {
     }
   }
 
+  private def noParameterCall[T](command: String)
+                                (implicit m: ActorMaterializer, ec: ExecutionContext, reader: Reads[T]): Future[T] =  {
+    val request = buildRequest(command, JsArray.empty)
+    val responseF = sendRequest(request)
+
+    val payloadF: Future[JsValue] = responseF.flatMap(getPayload)
+
+    payloadF.map { payload =>
+      parseResult((payload \ resultKey).validate[T])
+    }
+  }
+
   private def parseResult[T](result: JsResult[T]): T = {
     result match {
       case res: JsSuccess[T] => res.value
@@ -80,7 +90,8 @@ class RpcClient {
     }
   }
 
-  private def getPayload(response: HttpResponse)(implicit m: ActorMaterializer, ec: ExecutionContext): Future[JsValue] = {
+  private def getPayload(response: HttpResponse)
+                        (implicit m: ActorMaterializer, ec: ExecutionContext): Future[JsValue] = {
     val payloadF = response.entity.dataBytes.runFold(ByteString(""))(_ ++ _)
 
     payloadF.map { payload =>

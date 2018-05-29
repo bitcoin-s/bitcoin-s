@@ -3,6 +3,7 @@ package org.bitcoins.rpc
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import org.bitcoins.core.util.BitcoinSLogger
+import org.bitcoins.rpc.client.RpcClient
 import org.scalatest.AsyncFlatSpec
 
 class RpcClientTest extends AsyncFlatSpec {
@@ -50,6 +51,30 @@ class RpcClientTest extends AsyncFlatSpec {
   it should "be able to get the best block hash" in {
     val bestHashF = client.getBestBlockHash
     bestHashF.map { hash =>
+      logger.info(hash.toString)
+      assert(true)
+    }
+  }
+
+  it should "be able to get the mining info" in {
+    val miningInfoF = client.getMiningInfo
+    miningInfoF.map { hash =>
+      logger.info(hash.toString)
+      assert(true)
+    }
+  }
+
+  it should "be able to get the chain tips" in {
+    val chainTipsF = client.getChainTips
+    chainTipsF.map { hash =>
+      hash.foreach(tip => logger.info(tip.toString))
+      assert(true)
+    }
+  }
+
+  it should "be able to get the network info" in {
+    val networkInfoF = client.getNetworkInfo
+    networkInfoF.map { hash =>
       logger.info(hash.toString)
       assert(true)
     }
