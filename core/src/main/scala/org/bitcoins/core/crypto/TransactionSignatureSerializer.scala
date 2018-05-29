@@ -29,7 +29,7 @@ sealed abstract class TransactionSignatureSerializer {
 
   /**
    * Implements the signature serialization algorithim that Satoshi Nakamoto originally created
-    * and the new signature serialization algorithm as specified by BIP143
+   * and the new signature serialization algorithm as specified by BIP143
    * [[https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki]]
    * [[https://github.com/bitcoin/bitcoin/blob/f8528134fc188abc5c7175a19680206964a8fade/src/script/interpreter.cpp#L1113]]
    */
