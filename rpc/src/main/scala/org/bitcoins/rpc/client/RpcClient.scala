@@ -120,19 +120,6 @@ class RpcClient {
     bitcoindCall[String]("getaccount", JsArray(List(JsString(address.toString))))
   }
 
-  // This needs a home
-  case class Node(
-                 addednode: InetAddress, // Need to add Reads[InetAddress]
-                 connected: Option[Boolean],
-                 addresses: Option[Array[NodeAddress]]
-                 )
-  case class NodeAddress(
-                        address: InetAddress,
-                        connected: String
-                        )
-  implicit val nodeAddressReads: Reads[NodeAddress] = Json.reads[NodeAddress]
-  implicit val nodeReads: Reads[Node] = Json.reads[Node]
-
   def getAddedNodeInfo(details: Boolean, node: Option[InetAddress])(implicit m: ActorMaterializer, ec: ExecutionContext): Future[Array[Node]] = {
     val params = if (node.isEmpty) List(JsBoolean(details)) else List(JsBoolean(details), JsString(node.get.toString))
     bitcoindCall[Array[Node]]("getaddednodeinfo", JsArray(params))
@@ -246,23 +233,6 @@ class RpcClient {
     bitcoindCall[Bitcoins]("getunconfirmedbalance")
   }
 
-  // This needs a home
-  case class GetWalletInfoResult(
-                                walletname: String, // Is this right? FILE
-                                walletversion: Int,
-                                balance: Bitcoins,
-                                unconfirmed_balance: Bitcoins,
-                                immature_balance: Bitcoins,
-                                txcount: Int,
-                                keypoololdest: UInt32,
-                                keypoolsize: Int,
-                                keypoolsize_hd_internal: Int,
-                                paytxfee: Bitcoins,
-                                hdmasterkeyid: DoubleSha256Digest, // Is this right?
-                                unlocked_until: Option[Int]
-                                )
-  implicit val getWalletInfoResultReads: Reads[GetWalletInfoResult] = Json.reads[GetWalletInfoResult]
-
   def getWalletInfo(implicit m: ActorMaterializer, ec: ExecutionContext): Future[GetWalletInfoResult] = {
     bitcoindCall[GetWalletInfoResult]("getwalletinfo")
   }
@@ -284,15 +254,6 @@ class RpcClient {
   def keyPoolRefill(keyPoolSize: Int = 0)(implicit m: ActorMaterializer, ec: ExecutionContext): Future[Unit] = {
     bitcoindCall[Unit]("keypoolrefill", JsArray(List(JsNumber(keyPoolSize))))
   }
-
-  // This needs a home
-  case class NodeBan(
-                    address: InetAddress,
-                    banned_until: UInt32,
-                    ban_created: UInt32,
-                    ban_reason: String
-                    )
-  implicit val nodeBanReads: Reads[NodeBan] = Json.reads[NodeBan]
 
   def listBanned(implicit m: ActorMaterializer, ec: ExecutionContext): Future[Array[NodeBan]] = {
     bitcoindCall[Array[NodeBan]]("listbanned")
@@ -338,26 +299,6 @@ class RpcClient {
   def stop(implicit m: ActorMaterializer, ec: ExecutionContext): Future[String] = {
     bitcoindCall[String]("stop")
   }
-
-  // This needs a home
-  case class ValidateAddressResult(
-                                  isvalid: Boolean,
-                                  address: Option[Address],
-                                  scriptPubKey: Option[ScriptPubKey], // This needs a Reads
-                                  ismine: Option[Boolean],
-                                  iswatchonly: Option[Boolean],
-                                  isscript: Option[Boolean],
-                                  script: Option[String],
-                                  hex: Option[String],
-                                  addresses: Option[Array[Address]],
-                                  sigrequired: Option[Int],
-                                  pubkey: Option[String], // Is this right?
-                                  iscompressed: Option[Boolean],
-                                  account: Option[String],
-                                  hdkeypath: Option[String],
-                                  hdmasterkeyid: Option[String] // Is this right?
-                                  )
-  implicit val validateAddressResultReads: Reads[ValidateAddressResult] = Json.reads[ValidateAddressResult]
 
   def validateAddress(address: Address)(implicit m: ActorMaterializer, ec: ExecutionContext): Future[ValidateAddressResult] = {
     bitcoindCall[ValidateAddressResult]("validateaddress", JsArray(List(JsString(address.toString))))
@@ -449,7 +390,7 @@ class RpcClient {
       case res: JsSuccess[T] => res.value
       case res: JsError =>
         logger.error(JsError.toJson(res).toString())
-        throw new IllegalArgumentException(s"Could not parse JsResult: ${res}")
+        throw new IllegalArgumentException(s"Could not parse JsResult: $res")
     }
   }
 

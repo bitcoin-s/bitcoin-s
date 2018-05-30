@@ -1,8 +1,12 @@
 package org.bitcoins.rpc.jsonmodels
 
+import java.net.InetAddress
+
 import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.currency.Bitcoins
-import org.bitcoins.core.number.{ Int32, UInt32 }
+import org.bitcoins.core.number.{Int32, UInt32}
+import org.bitcoins.core.protocol.Address
+import org.bitcoins.core.protocol.script.ScriptPubKey
 
 sealed abstract class NetworkResult
 
@@ -54,3 +58,38 @@ case class GetBlockHeaderResult(
   chainwork: String,
   previousblockhash: Option[DoubleSha256Digest],
   nextblockhash: Option[DoubleSha256Digest]) extends NetworkResult
+
+case class ValidateAddressResult(
+                                  isvalid: Boolean,
+                                  address: Option[Address],
+                                  scriptPubKey: Option[ScriptPubKey],
+                                  ismine: Option[Boolean],
+                                  iswatchonly: Option[Boolean],
+                                  isscript: Option[Boolean],
+                                  script: Option[String],
+                                  hex: Option[String],
+                                  addresses: Option[Array[Address]],
+                                  sigrequired: Option[Int],
+                                  pubkey: Option[String], // Is this right?
+                                  iscompressed: Option[Boolean],
+                                  account: Option[String],
+                                  hdkeypath: Option[String],
+                                  hdmasterkeyid: Option[String] // Is this right?
+                                ) extends NetworkResult
+
+case class NodeBan(
+                    address: InetAddress,
+                    banned_until: UInt32,
+                    ban_created: UInt32,
+                    ban_reason: String
+                  ) extends NetworkResult
+
+case class Node(
+                 addednode: InetAddress, // Need to add Reads[InetAddress]
+                 connected: Option[Boolean],
+                 addresses: Option[Array[NodeAddress]]
+               ) extends NetworkResult
+case class NodeAddress(
+                        address: InetAddress,
+                        connected: String
+                      ) extends NetworkResult

@@ -1,10 +1,13 @@
 package org.bitcoins.rpc.serializers
 
+import java.net.InetAddress
+
 import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.protocol.Address
 import org.bitcoins.core.protocol.blockchain.BlockHeader
+import org.bitcoins.core.protocol.script.ScriptPubKey
 import play.api.libs.json._
 
 import scala.util.{Failure, Success}
@@ -69,5 +72,19 @@ object JsonReaders {
 
   implicit object UnitReads extends Reads[Unit] {
     def reads(json: JsValue) = null
+  }
+
+  implicit object InetAddressReads extends Reads[InetAddress] {
+    def reads(json: JsValue) = json match {
+      case JsString(s) => JsSuccess(InetAddress.getByAddress(???))
+      case err => JsError(s"error.expected.jsstring, got ${Json.toJson(err).toString()}")
+    }
+  }
+
+  implicit object ScriptPubKeyReads extends Reads[ScriptPubKey] {
+    def reads(json: JsValue) = json match {
+      case JsString(s) => JsSuccess(ScriptPubKey.fromHex(s))
+      case err => JsError(s"error.expected.jsstring, got ${Json.toJson(err).toString()}")
+    }
   }
 }
