@@ -12,6 +12,7 @@ import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.Address
 import org.bitcoins.core.protocol.blockchain.BlockHeader
+import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.util.BitcoinSLogger
 import play.api.libs.json._
 import org.bitcoins.rpc.jsonmodels._
@@ -297,8 +298,93 @@ class RpcClient {
     bitcoindCall[Array[NodeBan]]("listbanned")
   }
 
+  def ping(implicit m: ActorMaterializer, ec: ExecutionContext): Future[Unit] = {
+    bitcoindCall[Unit]("ping")
+  }
+
+  def preciousBlock(headerHash: DoubleSha256Digest): Future[Unit] = {
+    bitcoindCall[Unit]("preciousblock", JsArray(List(JsString(headerHash.hex))))
+  }
+
+  def prioritiseTransaction(txid: DoubleSha256Digest, priority: Double, fee: Satoshis)(implicit m: ActorMaterializer, ec: ExecutionContext): Future[Boolean] = {
+    bitcoindCall[Boolean]("prioritiseTransaction", JsArray(List(JsString(txid.hex), JsNumber(priority), JsNumber(fee.toLong))))
+  }
+
+  def pruneBlockChain(height: Int)(implicit m: ActorMaterializer, ec: ExecutionContext): Future[Int] = {
+    bitcoindCall[Int]("pruneblockchain", JsArray(List(JsNumber(height))))
+  }
+
+  def removePrunedFunds(txid: DoubleSha256Digest)(implicit m: ActorMaterializer, ec: ExecutionContext): Future[Unit] = {
+    bitcoindCall[Unit]("removeprunedfunds", JsArray(List(JsString(txid.hex))))
+  }
+
+  // Is String the right type for transaction? TRANSACTION
+  def sendRawTransaction(transaction: String, allowHighFees: Boolean = false)(implicit m: ActorMaterializer, ec: ExecutionContext): Future[DoubleSha256Digest] = {
+    bitcoindCall[DoubleSha256Digest]("sendrawtransaction", JsArray(List(JsString(transaction), JsBoolean(allowHighFees))))
+  }
+
+  def sendToAddress(address: Address, amount: Bitcoins, localComment: String = "", toComment: String = "", subractFeeFromAmount: Boolean = false)(implicit m: ActorMaterializer, ec: ExecutionContext): Future[DoubleSha256Digest] = {
+    bitcoindCall[DoubleSha256Digest]("sendtoaddress", JsArray(List(JsString(address.toString), JsNumber(amount.toBigDecimal), JsString(localComment), JsString(toComment), JsBoolean(subractFeeFromAmount))))
+  }
+
+  def setNetworkActive(activate: Boolean)(implicit m: ActorMaterializer, ec: ExecutionContext): Future[Unit] = {
+    bitcoindCall[Unit]("setnetworkactive", JsArray(List(JsBoolean(activate))))
+  }
+
+  def setTxFee(feePerKB: Bitcoins)(implicit m: ActorMaterializer, ec: ExecutionContext): Future[Boolean] = {
+    bitcoindCall[Boolean]("settxfee", JsArray(List(JsNumber(feePerKB.toBigDecimal))))
+  }
+
+  def stop(implicit m: ActorMaterializer, ec: ExecutionContext): Future[String] = {
+    bitcoindCall[String]("stop")
+  }
+
+  // This needs a home
+  case class ValidateAddressResult(
+                                  isvalid: Boolean,
+                                  address: Option[Address],
+                                  scriptPubKey: Option[ScriptPubKey], // This needs a Reads
+                                  ismine: Option[Boolean],
+                                  iswatchonly: Option[Boolean],
+                                  isscript: Option[Boolean],
+                                  script: Option[String],
+                                  hex: Option[String],
+                                  addresses: Option[Array[Address]],
+                                  sigrequired: Option[Int],
+                                  pubkey: Option[String], // Is this right?
+                                  iscompressed: Option[Boolean],
+                                  account: Option[String],
+                                  hdkeypath: Option[String],
+                                  hdmasterkeyid: Option[String] // Is this right?
+                                  )
+  implicit val validateAddressResultReads: Reads[ValidateAddressResult] = Json.reads[ValidateAddressResult]
+
+  def validateAddress(address: Address)(implicit m: ActorMaterializer, ec: ExecutionContext): Future[ValidateAddressResult] = {
+    bitcoindCall[ValidateAddressResult]("validateaddress", JsArray(List(JsString(address.toString))))
+  }
+
+  def verifyChain(level: Int, blocks: Int)(implicit m: ActorMaterializer, ec: ExecutionContext): Future[Boolean] = {
+    bitcoindCall[Boolean]("verifychain", JsArray(List(JsNumber(level), JsNumber(blocks))))
+  }
+
+  def verifyTxOutProof(proof: String)(implicit m: ActorMaterializer, ec: ExecutionContext): Future[Array[DoubleSha256Digest]] = {
+    bitcoindCall[Array[DoubleSha256Digest]]("verifytxoutproof", JsArray(List(JsString(proof))))
+  }
+
+  def walletLock(implicit m: ActorMaterializer, ec: ExecutionContext): Future[Unit] = {
+    bitcoindCall[Unit]("walletlock")
+  }
+
+  def walletPassphrase(passphrase: String, seconds: Int)(implicit m: ActorMaterializer, ec: ExecutionContext): Future[Unit] = {
+    bitcoindCall[Unit]("walletpassphrase", JsArray(List(JsString(passphrase), JsNumber(seconds))))
+  }
+
+  def walletPassphraseChange(currentPassphrase: String, newPassphrase: String)(implicit m: ActorMaterializer, ec: ExecutionContext): Future[Unit] = {
+    bitcoindCall[Unit]("walletpassphrasechange", JsArray(List(JsString(currentPassphrase), JsString(newPassphrase))))
+  }
+
   // Uses string:object pattern - CreateRawTransaction, GetBlockChainInfo, GetMemoryInfo, GetMemPoolAncestors, GetMemPoolDescendants, GetNetTotals, GetPeerInfo, GetTxOut, ImportMulti
-  // Also Skipped: DecodeRawTransaction, DecodeScript, FundRawTransaction, GetBlock, GetBlockTemplate, GetRawMemPool, GetRawTransaction, GetTransaction, ImportAddress, ImportPrunedFunds, ListAccounts, ListAddressGroupings
+  // Also Skipped: DecodeRawTransaction, DecodeScript, FundRawTransaction, GetBlock, GetBlockTemplate, GetRawMemPool, GetRawTransaction, GetTransaction, ImportAddress, ImportPrunedFunds, ListAccounts-Ping, SendFrom, SendMany, SetAccount, SetBan, SignMessage-SignRawTransaction, SubmitBlock, VerifyMessage
   // Not Yet Reached: Everything after and including ListLockUnspent
   // TODO: Overload calls with Option inputs?
   // TODO: Make bitcoindCall take care off JsArray(List(_))
