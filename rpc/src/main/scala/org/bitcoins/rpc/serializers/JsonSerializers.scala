@@ -2,11 +2,11 @@ package org.bitcoins.rpc.serializers
 
 import java.net.InetAddress
 
-import org.bitcoins.core.crypto.DoubleSha256Digest
+import org.bitcoins.core.crypto.{DoubleSha256Digest, ECPublicKey, Sha256Hash160Digest}
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.number.{Int32, UInt32}
-import org.bitcoins.core.protocol.Address
-import org.bitcoins.core.protocol.blockchain.BlockHeader
+import org.bitcoins.core.protocol.{Address, P2PKHAddress}
+import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader}
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.rpc.jsonmodels._
 import org.bitcoins.rpc.serializers.JsonReaders._
@@ -23,6 +23,10 @@ object JsonSerializers {
   implicit val unitReads: Reads[Unit] = UnitReads
   implicit val inetAddressReads: Reads[InetAddress] = InetAddressReads
   implicit val scriptPubKeyReads: Reads[ScriptPubKey] = ScriptPubKeyReads
+  implicit val blockReads: Reads[Block] = BlockReads
+  implicit val sha256Hash160DigestReads: Reads[Sha256Hash160Digest] = Sha256Hash160DigestReads
+  implicit val eCPublicKeyReads: Reads[ECPublicKey] = ECPublicKeyReads
+  implicit val p2PKHAddressReads: Reads[P2PKHAddress] = P2PKHAddressReads
 
   // Network Models
   implicit val networkReads: Reads[Network] = Json.reads[Network]
