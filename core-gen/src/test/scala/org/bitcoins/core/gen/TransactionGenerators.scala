@@ -80,10 +80,10 @@ trait TransactionGenerators extends BitcoinSLogger {
     } else TransactionInput(outPoint, scriptSig, sequenceNumber)
   }
 
-  def inputs = Gen.listOf(input)
+  def inputs: Gen[List[TransactionInput]] = Gen.nonEmptyListOf(input)
 
   /** Generates a small list of [[TransactionInput]] */
-  def smallInputs: Gen[Seq[TransactionInput]] = Gen.choose(0, 5).flatMap(i => Gen.listOfN(i, input))
+  def smallInputs: Gen[Seq[TransactionInput]] = Gen.choose(1, 5).flatMap(i => Gen.listOfN(i, input))
 
   /** Generates a small non empty list of [[TransactionInput]] */
   def smallInputsNonEmpty: Gen[Seq[TransactionInput]] = Gen.choose(1, 5).flatMap(i => Gen.listOfN(i, input))
