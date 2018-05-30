@@ -2,7 +2,7 @@ package org.bitcoins.rpc.jsonmodels
 
 import java.net.InetAddress
 
-import org.bitcoins.core.crypto.DoubleSha256Digest
+import org.bitcoins.core.crypto.{DoubleSha256Digest, ECPublicKey, Sha256Hash160Digest}
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.protocol.Address
@@ -66,15 +66,15 @@ case class ValidateAddressResult(
                                   ismine: Option[Boolean],
                                   iswatchonly: Option[Boolean],
                                   isscript: Option[Boolean],
-                                  script: Option[String],
+                                  script: Option[ScriptPubKey],
                                   hex: Option[String],
                                   addresses: Option[Array[Address]],
                                   sigrequired: Option[Int],
-                                  pubkey: Option[String], // Is this right?
+                                  pubkey: Option[ECPublicKey],
                                   iscompressed: Option[Boolean],
                                   account: Option[String],
                                   hdkeypath: Option[String],
-                                  hdmasterkeyid: Option[String] // Is this right?
+                                  hdmasterkeyid: Option[Sha256Hash160Digest]
                                 ) extends NetworkResult
 
 case class NodeBan(
@@ -85,7 +85,7 @@ case class NodeBan(
                   ) extends NetworkResult
 
 case class Node(
-                 addednode: InetAddress, // Need to add Reads[InetAddress]
+                 addednode: InetAddress,
                  connected: Option[Boolean],
                  addresses: Option[Array[NodeAddress]]
                ) extends NetworkResult

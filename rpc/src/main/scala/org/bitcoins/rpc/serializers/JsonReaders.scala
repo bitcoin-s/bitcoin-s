@@ -2,11 +2,11 @@ package org.bitcoins.rpc.serializers
 
 import java.net.InetAddress
 
-import org.bitcoins.core.crypto.DoubleSha256Digest
+import org.bitcoins.core.crypto.{DoubleSha256Digest, ECPublicKey, Sha256Hash160Digest}
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.number.{Int32, UInt32}
-import org.bitcoins.core.protocol.Address
-import org.bitcoins.core.protocol.blockchain.BlockHeader
+import org.bitcoins.core.protocol.{Address, P2PKHAddress}
+import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader}
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import play.api.libs.json._
 
@@ -84,6 +84,37 @@ object JsonReaders {
   implicit object ScriptPubKeyReads extends Reads[ScriptPubKey] {
     def reads(json: JsValue) = json match {
       case JsString(s) => JsSuccess(ScriptPubKey.fromHex(s))
+      case err => JsError(s"error.expected.jsstring, got ${Json.toJson(err).toString()}")
+    }
+  }
+
+  implicit object BlockReads extends Reads[Block] {
+    def reads(json: JsValue) = json match {
+      case JsString(s) => JsSuccess(Block.fromHex(s))
+      case err => JsError(s"error.expected.jsstring, got ${Json.toJson(err).toString()}")
+    }
+  }
+
+  implicit object Sha256Hash160DigestReads extends Reads[Sha256Hash160Digest] {
+    def reads(json: JsValue) = json match {
+      case JsString(s) => JsSuccess(Sha256Hash160Digest.fromHex(s))
+      case err => JsError(s"error.expected.jsstring, got ${Json.toJson(err).toString()}")
+    }
+  }
+
+  implicit object ECPublicKeyReads extends Reads[ECPublicKey] {
+    def reads(json: JsValue) = json match {
+      case JsString(s) => JsSuccess(ECPublicKey.fromHex(s))
+      case err => JsError(s"error.expected.jsstring, got ${Json.toJson(err).toString()}")
+    }
+  }
+
+  implicit object P2PKHAddressReads extends Reads[P2PKHAddress] {
+    def reads(json: JsValue) = json match {
+      case JsString(s) => P2PKHAddress.fromString(s) match {
+        case Success(address) => JsSuccess(address)
+        case Failure(err) => JsError(s"error.expected.p2pkhaddress, got ${err.toString}")
+      }
       case err => JsError(s"error.expected.jsstring, got ${Json.toJson(err).toString()}")
     }
   }
