@@ -40,9 +40,19 @@ object JsonSerializers {
   implicit val nodeAddressReads: Reads[NodeAddress] = Json.reads[NodeAddress]
   implicit val nodeReads: Reads[Node] = Json.reads[Node]
 
+  implicit val getMemPoolEntryResultReads: Reads[GetMemPoolEntryResult] = Json.reads[GetMemPoolEntryResult]
+
+  implicit val getMemPoolInfoResultReads: Reads[GetMemPoolInfoResult] = Json.reads[GetMemPoolInfoResult]
+
+  implicit val getTxOutSetInfoResultReads: Reads[GetTxOutSetInfoResult] = Json.reads[GetTxOutSetInfoResult]
+
   // Mining Models
   implicit val miningInfoReads: Reads[GetMiningInfoResult] = Json.reads[GetMiningInfoResult]
 
   // Wallet Models
   implicit val getWalletInfoResultReads: Reads[GetWalletInfoResult] = Json.reads[GetWalletInfoResult]
+
+  implicit val bumpFeeReads: Reads[BumpFeeResult] = Json.reads[BumpFeeResult]
+
+  implicit val createMultiSigReads: Reads[CreateMultiSigResult] = Json.reads[CreateMultiSigResult]
 }

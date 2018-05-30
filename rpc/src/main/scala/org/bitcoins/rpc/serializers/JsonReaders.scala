@@ -76,7 +76,7 @@ object JsonReaders {
 
   implicit object InetAddressReads extends Reads[InetAddress] {
     def reads(json: JsValue) = json match {
-      case JsString(s) => JsSuccess(InetAddress.getByAddress(???))
+      case JsString(s) => JsSuccess(InetAddress.getByName(s))
       case err => JsError(s"error.expected.jsstring, got ${Json.toJson(err).toString()}")
     }
   }

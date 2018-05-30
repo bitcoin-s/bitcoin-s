@@ -93,3 +93,40 @@ case class NodeAddress(
                         address: InetAddress,
                         connected: String
                       ) extends NetworkResult
+
+// Is Double the correct type for priorities? PRIORITY
+case class GetMemPoolEntryResult(
+                                  size: Int,
+                                  fee: Bitcoins,
+                                  modifiedfee: Bitcoins,
+                                  time: UInt32,
+                                  height: Int,
+                                  startingpriority: Double,
+                                  currentpriority: Double,
+                                  descendantcount: Int,
+                                  descendantsize: Int,
+                                  descendantfees: Int,
+                                  ancestorcount: Int,
+                                  ancestorsize: Int,
+                                  ancestorfees: Int,
+                                  depends: Option[Array[DoubleSha256Digest]]
+                                ) extends NetworkResult
+
+case class GetMemPoolInfoResult(
+                                 size: Int,
+                                 bytes: Int,
+                                 usage: Int,
+                                 maxmempool: Int,
+                                 mempoolminfee: Bitcoins,
+                                 minrelaytxfee: Bitcoins
+                               ) extends NetworkResult
+
+case class GetTxOutSetInfoResult(
+                                  height: Int,
+                                  bestblock: DoubleSha256Digest,
+                                  transactions: Int,
+                                  txouts: Int,
+                                  bytes_serialized: Int,
+                                  hash_serialized: DoubleSha256Digest,
+                                  total_amount: Bitcoins
+                                ) extends NetworkResult

@@ -9,10 +9,8 @@ import akka.stream.ActorMaterializer
 import akka.util.ByteString
 import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
-import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.Address
 import org.bitcoins.core.protocol.blockchain.BlockHeader
-import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.util.BitcoinSLogger
 import play.api.libs.json._
 import org.bitcoins.rpc.jsonmodels._
@@ -20,44 +18,35 @@ import org.bitcoins.rpc.serializers.JsonSerializers._
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class RpcClient {
+class RpcClient()(implicit m: ActorMaterializer, ec: ExecutionContext) {
   private val resultKey = "result"
   private val logger = BitcoinSLogger.logger
 
   // TODO: WRITE TESTS
 
-  def abandonTransaction(txid: DoubleSha256Digest)(implicit m: ActorMaterializer, ec: ExecutionContext): Future[Unit] = {
+  def abandonTransaction(txid: DoubleSha256Digest): Future[Unit] = {
     bitcoindCall[Unit]("abandontransaction", JsArray(List(JsString(txid.hex))))
   }
 
   // Is String the right type for keys? KEYADDRESS
-  def addMultiSigAddress(minSignatures: Int, keys: Array[String], account: String = "")(implicit m: ActorMaterializer, ec: ExecutionContext): Future[Address] = {
+  def addMultiSigAddress(minSignatures: Int, keys: Array[String], account: String = ""): Future[Address] = {
     bitcoindCall[Address]("addmultisigaddress", JsArray(List(JsNumber(minSignatures), JsArray(keys.map(JsString)), JsString(account))))
   }
 
-  def addNode(address: InetAddress, command: String)(implicit m: ActorMaterializer, ec: ExecutionContext): Future[Unit] = {
+  def addNode(address: InetAddress, command: String): Future[Unit] = {
     bitcoindCall[Unit]("addnode", JsArray(List(JsString(address.toString), JsString(command))))
   }
 
-  def addWitnessAddress(address: Address)(implicit m: ActorMaterializer, ec: ExecutionContext): Future[Address] = {
+  def addWitnessAddress(address: Address): Future[Address] = {
     bitcoindCall[Address]("addwitnessaddress", JsArray(List(JsString(address.toString))))
   }
 
   // Is String the correct type for destination? FILE
-  def backupWallet(destination: String)(implicit m: ActorMaterializer, ec: ExecutionContext): Future[Unit] = {
+  def backupWallet(destination: String): Future[Unit] = {
     bitcoindCall[Unit]("backupwallet", JsArray(List(JsString(destination))))
   }
 
-  // This needs a home
-  case class BumpFeeResult(
-                          txid: DoubleSha256Digest,
-                          origfee: Bitcoins,
-                          fee: Bitcoins,
-                          warnings: String
-                          )
-  implicit val bumpFeeReads: Reads[BumpFeeResult] = Json.reads[BumpFeeResult]
-
-  def bumpFee(txid: DoubleSha256Digest, confTarget: Int = 6, totalFee: Option[Satoshis], replaceable: Boolean = true)(implicit m: ActorMaterializer, ec: ExecutionContext): Future[BumpFeeResult] = {
+  def bumpFee(txid: DoubleSha256Digest, confTarget: Int = 6, totalFee: Option[Satoshis], replaceable: Boolean = true): Future[BumpFeeResult] = {
     val options =
     if (totalFee.nonEmpty)
       List(("confTarget", JsNumber(confTarget)), ("replaceable", JsBoolean(replaceable)))
@@ -67,144 +56,108 @@ class RpcClient {
     bitcoindCall[BumpFeeResult]("bumpfee", JsArray(List(JsString(txid.hex), JsObject(options))))
   }
 
-  def clearBanned(implicit m: ActorMaterializer, ec: ExecutionContext): Future[Unit] = {
+  def clearBanned: Future[Unit] = {
     bitcoindCall[Unit]("clearbanned")
   }
 
-  // This needs a home
-  // Is String the right type for reedemScript? SCRIPT
-  case class CreateMultiSigResult(address: Address, redeemScript: String)
-  implicit val createMultiSigReads: Reads[CreateMultiSigResult] = Json.reads[CreateMultiSigResult]
-
   // Is String the correct type for keys? KEYADDRESS
-  def createMultiSig(minSignatures: Int, keys: Array[String])(implicit m: ActorMaterializer, ec: ExecutionContext): Future[CreateMultiSigResult] = {
+  def createMultiSig(minSignatures: Int, keys: Array[String]): Future[CreateMultiSigResult] = {
     bitcoindCall[CreateMultiSigResult]("createmultisig", JsArray(List(JsNumber(minSignatures), JsArray(keys.map(JsString)))))
   }
 
-  def disconnectNode(address: InetAddress)(implicit m: ActorMaterializer, ec: ExecutionContext): Future[Unit] = {
+  def disconnectNode(address: InetAddress): Future[Unit] = {
     bitcoindCall[Unit]("disconnectnode", JsArray(List(JsString(address.toString))))
   }
 
   // Is String the correct return type? KEYADDRESS
-  def dumpPrivKey(address: Address)(implicit m: ActorMaterializer, ec: ExecutionContext): Future[String] = {
+  def dumpPrivKey(address: Address): Future[String] = {
     bitcoindCall[String]("dumpprivkey", JsArray(List(JsString(address.toString))))
   }
 
   // Is String the right type for file? FILE
-  def dumpWallet(file: String)(implicit m: ActorMaterializer, ec: ExecutionContext): Future[Unit] = {
+  def dumpWallet(file: String): Future[Unit] = {
     bitcoindCall[Unit]("dumpwallet", JsArray(List(JsString(file))))
   }
 
-  def encryptWallet(passphrase: String)(implicit m: ActorMaterializer, ec: ExecutionContext): Future[String] = {
+  def encryptWallet(passphrase: String): Future[String] = {
     bitcoindCall[String]("encryptwallet", JsArray(List(JsString(passphrase))))
   }
 
-  def estimateFee(blocks: Int)(implicit m: ActorMaterializer, ec: ExecutionContext): Future[Bitcoins] = {
+  def estimateFee(blocks: Int): Future[Bitcoins] = {
     bitcoindCall[Bitcoins]("estimatefee", JsArray(List(JsNumber(blocks))))
   }
 
   // Is Double the correct return type? PRIORITY
-  def estimatePriority(blocks: Int)(implicit m: ActorMaterializer, ec: ExecutionContext): Future[Double] = {
+  def estimatePriority(blocks: Int): Future[Double] = {
     bitcoindCall[Double]("estimatepriority", JsArray(List(JsNumber(blocks))))
   }
 
-  def generateToAddress(blocks: Int, address: Address, maxTries: Int = 1000000)(implicit m: ActorMaterializer, ec: ExecutionContext): Future[Array[DoubleSha256Digest]] = {
+  def generateToAddress(blocks: Int, address: Address, maxTries: Int = 1000000): Future[Array[DoubleSha256Digest]] = {
     bitcoindCall[Array[DoubleSha256Digest]]("generatetoaddress", JsArray(List(JsNumber(blocks), JsString(address.toString), JsNumber(maxTries))))
   }
 
-  def getAccountAddress(account: String = "")(implicit m: ActorMaterializer, ec: ExecutionContext): Future[Address] = {
+  def getAccountAddress(account: String = ""): Future[Address] = {
     bitcoindCall[Address]("getaccountaddress", JsArray(List(JsString(account))))
   }
 
-  def getAccount(address: Address)(implicit m: ActorMaterializer, ec: ExecutionContext): Future[String] = {
+  def getAccount(address: Address): Future[String] = {
     bitcoindCall[String]("getaccount", JsArray(List(JsString(address.toString))))
   }
 
-  def getAddedNodeInfo(details: Boolean, node: Option[InetAddress])(implicit m: ActorMaterializer, ec: ExecutionContext): Future[Array[Node]] = {
+  def getAddedNodeInfo(details: Boolean, node: Option[InetAddress]): Future[Array[Node]] = {
     val params = if (node.isEmpty) List(JsBoolean(details)) else List(JsBoolean(details), JsString(node.get.toString))
     bitcoindCall[Array[Node]]("getaddednodeinfo", JsArray(params))
   }
 
-  def getAddressByAccount(account: String)(implicit m: ActorMaterializer, ec: ExecutionContext): Future[Array[Address]] = {
+  def getAddressByAccount(account: String): Future[Array[Address]] = {
     bitcoindCall[Array[Address]]("getaddressesbyaccount", JsArray(List(JsString(account))))
   }
 
-  def getBalance(account: String = "*", minConfirmations: Int = 0, includeWatchOnly: Boolean = true)(implicit m: ActorMaterializer, ec: ExecutionContext): Future[Bitcoins] = {
+  def getBalance(account: String = "*", minConfirmations: Int = 0, includeWatchOnly: Boolean = true): Future[Bitcoins] = {
     bitcoindCall[Bitcoins]("getbalance", JsArray(List(JsString(account), JsNumber(minConfirmations), JsBoolean(includeWatchOnly))))
   }
 
   // Is BlockHeader the correct return type? SERIALIZEDBLOCK
-  def getBlockRaw(headerHash: DoubleSha256Digest)(implicit m: ActorMaterializer, ec: ExecutionContext): Future[BlockHeader] = {
+  def getBlockRaw(headerHash: DoubleSha256Digest): Future[BlockHeader] = {
     bitcoindCall[BlockHeader]("getblock", JsArray(List(JsString(headerHash.hex), JsNumber(0))))
   }
 
-  def getBlockHash(height: Int)(implicit m: ActorMaterializer, ec: ExecutionContext): Future[DoubleSha256Digest] = {
+  def getBlockHash(height: Int): Future[DoubleSha256Digest] = {
     bitcoindCall[DoubleSha256Digest]("getblockhash", JsArray(List(JsNumber(height))))
   }
 
   // Is Double the correct return type?
-  def getDifficulty(implicit m: ActorMaterializer, ec: ExecutionContext): Future[Double] = {
+  def getDifficulty: Future[Double] = {
     bitcoindCall[Double]("getdifficulty")
   }
 
-  //This needs a home
-  // Is Double the correct type for priorities? PRIORITY
-  case class GetMemPoolEntryResult(
-                                  size: Int,
-                                  fee: Bitcoins,
-                                  modifiedfee: Bitcoins,
-                                  time: UInt32,
-                                  height: Int,
-                                  startingpriority: Double,
-                                  currentpriority: Double,
-                                  descendantcount: Int,
-                                  descendantsize: Int,
-                                  descendantfees: Int,
-                                  ancestorcount: Int,
-                                  ancestorsize: Int,
-                                  ancestorfees: Int,
-                                  depends: Option[Array[DoubleSha256Digest]]
-                                  )
-  implicit val getMemPoolEntryResultReads: Reads[GetMemPoolEntryResult] = Json.reads[GetMemPoolEntryResult]
-
-  def getMemPoolEntry(txid: DoubleSha256Digest)(implicit m: ActorMaterializer, ec: ExecutionContext): Future[GetMemPoolEntryResult] = {
+  def getMemPoolEntry(txid: DoubleSha256Digest): Future[GetMemPoolEntryResult] = {
     bitcoindCall[GetMemPoolEntryResult]("getmempoolentry", JsArray(List(JsString(txid.hex))))
   }
 
-  // This needs a home
-  case class GetMemPoolInfoResult(
-                                 size: Int,
-                                 bytes: Int,
-                                 usage: Int,
-                                 maxmempool: Int,
-                                 mempoolminfee: Bitcoins,
-                                 minrelaytxfee: Bitcoins
-                                 )
-  implicit val getMemPoolInfoResultReads: Reads[GetMemPoolInfoResult] = Json.reads[GetMemPoolInfoResult]
-
-  def getMemPoolInfo(implicit m: ActorMaterializer, ec: ExecutionContext): Future[GetMemPoolInfoResult] = {
+  def getMemPoolInfo: Future[GetMemPoolInfoResult] = {
     bitcoindCall[GetMemPoolInfoResult]("getmempoolinfo")
   }
 
-  def getNetworkHashPS(blocks: Int = 120, height: Int = -1)(implicit m: ActorMaterializer, ec: ExecutionContext): Future[Int] = {
+  def getNetworkHashPS(blocks: Int = 120, height: Int = -1): Future[Int] = {
     bitcoindCall[Int]("getnetworkhashps", JsArray(List(JsNumber(blocks), JsNumber(height))))
   }
 
   // Is Address the correct return type? ADDRESS
-  def getRawChangeAddress(implicit m: ActorMaterializer, ec: ExecutionContext): Future[Address] = {
+  def getRawChangeAddress: Future[Address] = {
     bitcoindCall[Address]("getrawchangeaddress")
   }
 
-  def getReceivedByAccount(account: String, minConfirmations: Int)(implicit m: ActorMaterializer, ec: ExecutionContext): Future[Bitcoins] = {
+  def getReceivedByAccount(account: String, minConfirmations: Int): Future[Bitcoins] = {
     bitcoindCall[Bitcoins]("getreceivedbyaccount", JsArray(List(JsString(account), JsNumber(minConfirmations))))
   }
 
-  def getReceivedByAddress(address: Address, minConfirmations: Int)(implicit m: ActorMaterializer, ec: ExecutionContext): Future[Bitcoins] = {
+  def getReceivedByAddress(address: Address, minConfirmations: Int): Future[Bitcoins] = {
     bitcoindCall[Bitcoins]("getreceivedbyaddress", JsArray(List(JsString(address.toString), JsNumber(minConfirmations))))
   }
 
   // Is String the correct return type?
-  def getTxOutProof(txids: Array[DoubleSha256Digest], headerHash: Option[DoubleSha256Digest])(implicit m: ActorMaterializer, ec: ExecutionContext): Future[String] = {
+  def getTxOutProof(txids: Array[DoubleSha256Digest], headerHash: Option[DoubleSha256Digest]): Future[String] = {
     def params =
       if (headerHash.isEmpty)
         List(JsArray(txids.map(hash => JsString(hash.hex))))
@@ -213,53 +166,41 @@ class RpcClient {
     bitcoindCall[String]("gettxoutproof", JsArray(params))
   }
 
-  // This needs a home
-  case class GetTxOutSetInfoResult(
-                                  height: Int,
-                                  bestblock: DoubleSha256Digest,
-                                  transactions: Int,
-                                  txouts: Int,
-                                  bytes_serialized: Int,
-                                  hash_serialized: DoubleSha256Digest,
-                                  total_amount: Bitcoins
-                                  )
-  implicit val getTxOutSetInfoResultReads: Reads[GetTxOutSetInfoResult] = Json.reads[GetTxOutSetInfoResult]
-
-  def getTxOutSetInfo(implicit m: ActorMaterializer, ec: ExecutionContext): Future[GetTxOutSetInfoResult] = {
+  def getTxOutSetInfo: Future[GetTxOutSetInfoResult] = {
     bitcoindCall[GetTxOutSetInfoResult]("gettxoutsetinfo")
   }
 
-  def getUnconfirmedBalance(implicit m: ActorMaterializer, ec: ExecutionContext): Future[Bitcoins] = {
+  def getUnconfirmedBalance: Future[Bitcoins] = {
     bitcoindCall[Bitcoins]("getunconfirmedbalance")
   }
 
-  def getWalletInfo(implicit m: ActorMaterializer, ec: ExecutionContext): Future[GetWalletInfoResult] = {
+  def getWalletInfo: Future[GetWalletInfoResult] = {
     bitcoindCall[GetWalletInfoResult]("getwalletinfo")
   }
 
-  def help(rpcName: String = "")(implicit m: ActorMaterializer, ec: ExecutionContext): Future[String] = {
+  def help(rpcName: String = ""): Future[String] = {
     bitcoindCall[String]("help", JsArray(List(JsString(rpcName))))
   }
 
   // Is String the right type for key? KEYADDRESS
-  def importPrivKey(key: String, account: String = "", rescan: Boolean = true)(implicit m: ActorMaterializer, ec: ExecutionContext): Future[Unit] = {
+  def importPrivKey(key: String, account: String = "", rescan: Boolean = true): Future[Unit] = {
     bitcoindCall[Unit]("importprivkey", JsArray(List(JsString(key), JsString(account), JsBoolean(rescan))))
   }
 
   // Is String the right type for fileName? FILE
-  def importWallet(fileName: String)(implicit m: ActorMaterializer, ec: ExecutionContext): Future[Unit] = {
+  def importWallet(fileName: String): Future[Unit] = {
     bitcoindCall[Unit]("importwallet", JsArray(List(JsString(fileName))))
   }
 
-  def keyPoolRefill(keyPoolSize: Int = 0)(implicit m: ActorMaterializer, ec: ExecutionContext): Future[Unit] = {
+  def keyPoolRefill(keyPoolSize: Int = 0): Future[Unit] = {
     bitcoindCall[Unit]("keypoolrefill", JsArray(List(JsNumber(keyPoolSize))))
   }
 
-  def listBanned(implicit m: ActorMaterializer, ec: ExecutionContext): Future[Array[NodeBan]] = {
+  def listBanned: Future[Array[NodeBan]] = {
     bitcoindCall[Array[NodeBan]]("listbanned")
   }
 
-  def ping(implicit m: ActorMaterializer, ec: ExecutionContext): Future[Unit] = {
+  def ping: Future[Unit] = {
     bitcoindCall[Unit]("ping")
   }
 
@@ -267,60 +208,60 @@ class RpcClient {
     bitcoindCall[Unit]("preciousblock", JsArray(List(JsString(headerHash.hex))))
   }
 
-  def prioritiseTransaction(txid: DoubleSha256Digest, priority: Double, fee: Satoshis)(implicit m: ActorMaterializer, ec: ExecutionContext): Future[Boolean] = {
+  def prioritiseTransaction(txid: DoubleSha256Digest, priority: Double, fee: Satoshis): Future[Boolean] = {
     bitcoindCall[Boolean]("prioritiseTransaction", JsArray(List(JsString(txid.hex), JsNumber(priority), JsNumber(fee.toLong))))
   }
 
-  def pruneBlockChain(height: Int)(implicit m: ActorMaterializer, ec: ExecutionContext): Future[Int] = {
+  def pruneBlockChain(height: Int): Future[Int] = {
     bitcoindCall[Int]("pruneblockchain", JsArray(List(JsNumber(height))))
   }
 
-  def removePrunedFunds(txid: DoubleSha256Digest)(implicit m: ActorMaterializer, ec: ExecutionContext): Future[Unit] = {
+  def removePrunedFunds(txid: DoubleSha256Digest): Future[Unit] = {
     bitcoindCall[Unit]("removeprunedfunds", JsArray(List(JsString(txid.hex))))
   }
 
   // Is String the right type for transaction? TRANSACTION
-  def sendRawTransaction(transaction: String, allowHighFees: Boolean = false)(implicit m: ActorMaterializer, ec: ExecutionContext): Future[DoubleSha256Digest] = {
+  def sendRawTransaction(transaction: String, allowHighFees: Boolean = false): Future[DoubleSha256Digest] = {
     bitcoindCall[DoubleSha256Digest]("sendrawtransaction", JsArray(List(JsString(transaction), JsBoolean(allowHighFees))))
   }
 
-  def sendToAddress(address: Address, amount: Bitcoins, localComment: String = "", toComment: String = "", subractFeeFromAmount: Boolean = false)(implicit m: ActorMaterializer, ec: ExecutionContext): Future[DoubleSha256Digest] = {
+  def sendToAddress(address: Address, amount: Bitcoins, localComment: String = "", toComment: String = "", subractFeeFromAmount: Boolean = false): Future[DoubleSha256Digest] = {
     bitcoindCall[DoubleSha256Digest]("sendtoaddress", JsArray(List(JsString(address.toString), JsNumber(amount.toBigDecimal), JsString(localComment), JsString(toComment), JsBoolean(subractFeeFromAmount))))
   }
 
-  def setNetworkActive(activate: Boolean)(implicit m: ActorMaterializer, ec: ExecutionContext): Future[Unit] = {
+  def setNetworkActive(activate: Boolean): Future[Unit] = {
     bitcoindCall[Unit]("setnetworkactive", JsArray(List(JsBoolean(activate))))
   }
 
-  def setTxFee(feePerKB: Bitcoins)(implicit m: ActorMaterializer, ec: ExecutionContext): Future[Boolean] = {
+  def setTxFee(feePerKB: Bitcoins): Future[Boolean] = {
     bitcoindCall[Boolean]("settxfee", JsArray(List(JsNumber(feePerKB.toBigDecimal))))
   }
 
-  def stop(implicit m: ActorMaterializer, ec: ExecutionContext): Future[String] = {
+  def stop: Future[String] = {
     bitcoindCall[String]("stop")
   }
 
-  def validateAddress(address: Address)(implicit m: ActorMaterializer, ec: ExecutionContext): Future[ValidateAddressResult] = {
+  def validateAddress(address: Address): Future[ValidateAddressResult] = {
     bitcoindCall[ValidateAddressResult]("validateaddress", JsArray(List(JsString(address.toString))))
   }
 
-  def verifyChain(level: Int, blocks: Int)(implicit m: ActorMaterializer, ec: ExecutionContext): Future[Boolean] = {
+  def verifyChain(level: Int, blocks: Int): Future[Boolean] = {
     bitcoindCall[Boolean]("verifychain", JsArray(List(JsNumber(level), JsNumber(blocks))))
   }
 
-  def verifyTxOutProof(proof: String)(implicit m: ActorMaterializer, ec: ExecutionContext): Future[Array[DoubleSha256Digest]] = {
+  def verifyTxOutProof(proof: String): Future[Array[DoubleSha256Digest]] = {
     bitcoindCall[Array[DoubleSha256Digest]]("verifytxoutproof", JsArray(List(JsString(proof))))
   }
 
-  def walletLock(implicit m: ActorMaterializer, ec: ExecutionContext): Future[Unit] = {
+  def walletLock: Future[Unit] = {
     bitcoindCall[Unit]("walletlock")
   }
 
-  def walletPassphrase(passphrase: String, seconds: Int)(implicit m: ActorMaterializer, ec: ExecutionContext): Future[Unit] = {
+  def walletPassphrase(passphrase: String, seconds: Int): Future[Unit] = {
     bitcoindCall[Unit]("walletpassphrase", JsArray(List(JsString(passphrase), JsNumber(seconds))))
   }
 
-  def walletPassphraseChange(currentPassphrase: String, newPassphrase: String)(implicit m: ActorMaterializer, ec: ExecutionContext): Future[Unit] = {
+  def walletPassphraseChange(currentPassphrase: String, newPassphrase: String): Future[Unit] = {
     bitcoindCall[Unit]("walletpassphrasechange", JsArray(List(JsString(currentPassphrase), JsString(newPassphrase))))
   }
 
@@ -333,48 +274,47 @@ class RpcClient {
   // --------------------------------------------------------------------------------
   // EVERYTHING BELOW THIS COMMENT HAS TESTS
 
-  def getBestBlockHash(implicit m: ActorMaterializer, ec: ExecutionContext): Future[DoubleSha256Digest] = {
+  def getBestBlockHash: Future[DoubleSha256Digest] = {
     bitcoindCall[DoubleSha256Digest]("getbestblockhash")
   }
 
-  def getBlockCount(implicit m: ActorMaterializer, ec: ExecutionContext): Future[Int] = {
+  def getBlockCount: Future[Int] = {
     bitcoindCall[Int]("getblockcount")
   }
 
-  def getConnectionCount(implicit m: ActorMaterializer, ec: ExecutionContext): Future[Int] = {
+  def getConnectionCount: Future[Int] = {
     bitcoindCall[Int]("getconnectioncount")
   }
 
-  def getMiningInfo(implicit m: ActorMaterializer, ec: ExecutionContext): Future[GetMiningInfoResult] = {
+  def getMiningInfo: Future[GetMiningInfoResult] = {
     bitcoindCall[GetMiningInfoResult]("getmininginfo")
   }
 
-  def getChainTips(implicit m: ActorMaterializer, ec: ExecutionContext): Future[Array[ChainTip]] = {
+  def getChainTips: Future[Array[ChainTip]] = {
     bitcoindCall[Array[ChainTip]]("getchaintips")
   }
 
-  def getNetworkInfo(implicit m: ActorMaterializer, ec: ExecutionContext): Future[GetNetworkInfoResult] = {
+  def getNetworkInfo: Future[GetNetworkInfoResult] = {
     bitcoindCall[GetNetworkInfoResult]("getnetworkinfo")
   }
 
-  def getNewAddress(account: String = "")(implicit m: ActorMaterializer, ec: ExecutionContext): Future[Address] = {
+  def getNewAddress(account: String = ""): Future[Address] = {
     bitcoindCall[Address]("getnewaddress", JsArray(List(JsString(account))))
   }
 
-  def getBlockHeaderRaw(headerHash: DoubleSha256Digest)(implicit m: ActorMaterializer, ec: ExecutionContext): Future[BlockHeader] = {
+  def getBlockHeaderRaw(headerHash: DoubleSha256Digest): Future[BlockHeader] = {
     bitcoindCall[BlockHeader]("getblockheader", JsArray(List(JsString(headerHash.hex), JsBoolean(false))))
   }
 
-  def getBlockHeader(headerHash: DoubleSha256Digest)(implicit m: ActorMaterializer, ec: ExecutionContext): Future[GetBlockHeaderResult] = {
+  def getBlockHeader(headerHash: DoubleSha256Digest): Future[GetBlockHeaderResult] = {
     bitcoindCall[GetBlockHeaderResult]("getblockheader", JsArray(List(JsString(headerHash.hex), JsBoolean(true))))
   }
 
-  def generate(blocks: Int, maxTries: Int = 1000000)(implicit m: ActorMaterializer, ec: ExecutionContext): Future[Array[DoubleSha256Digest]] = {
+  def generate(blocks: Int, maxTries: Int = 1000000): Future[Array[DoubleSha256Digest]] = {
     bitcoindCall[Array[DoubleSha256Digest]]("generate", JsArray(List(JsNumber(blocks), JsNumber(maxTries))))
   }
 
-  private def bitcoindCall[T](command: String, parameters: JsArray = JsArray.empty)
-                             (implicit m: ActorMaterializer, ec: ExecutionContext, reader: Reads[T]): Future[T] = {
+  private def bitcoindCall[T](command: String, parameters: JsArray = JsArray.empty)(implicit reader: Reads[T]): Future[T] = {
     val request = buildRequest(command, parameters)
     val responseF = sendRequest(request)
 
@@ -394,7 +334,7 @@ class RpcClient {
     }
   }
 
-  private def getPayload(response: HttpResponse)(implicit m: ActorMaterializer, ec: ExecutionContext): Future[JsValue] = {
+  private def getPayload(response: HttpResponse): Future[JsValue] = {
     val payloadF = response.entity.dataBytes.runFold(ByteString(""))(_ ++ _)
 
     payloadF.map { payload =>
@@ -402,7 +342,7 @@ class RpcClient {
     }
   }
 
-  def sendRequest(req: HttpRequest)(implicit m: ActorMaterializer): Future[HttpResponse] = {
+  def sendRequest(req: HttpRequest): Future[HttpResponse] = {
     Http(m.system).singleRequest(req)
   }
 
