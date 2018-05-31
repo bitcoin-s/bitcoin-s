@@ -5,8 +5,10 @@ import java.net.InetAddress
 import org.bitcoins.core.crypto.{DoubleSha256Digest, ECPublicKey, Sha256Hash160Digest}
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.number.{Int32, UInt32}
-import org.bitcoins.core.protocol.Address
+import org.bitcoins.core.protocol.blockchain.Block
+import org.bitcoins.core.protocol.{Address, BitcoinAddress}
 import org.bitcoins.core.protocol.script.ScriptPubKey
+import org.bitcoins.core.protocol.transaction.TransactionInput
 
 sealed abstract class NetworkResult
 
@@ -54,7 +56,7 @@ case class GetBlockHeaderResult(
   mediantime: UInt32,
   nonce: UInt32,
   bits: UInt32,
-  difficulty: Double,
+  difficulty: BigDecimal,
   chainwork: String,
   previousblockhash: Option[DoubleSha256Digest],
   nextblockhash: Option[DoubleSha256Digest]) extends NetworkResult
@@ -94,15 +96,14 @@ case class NodeAddress(
                         connected: String
                       ) extends NetworkResult
 
-// Is Double the correct type for priorities? PRIORITY
 case class GetMemPoolEntryResult(
                                   size: Int,
                                   fee: Bitcoins,
                                   modifiedfee: Bitcoins,
                                   time: UInt32,
                                   height: Int,
-                                  startingpriority: Double,
-                                  currentpriority: Double,
+                                  startingpriority: BigDecimal,
+                                  currentpriority: BigDecimal,
                                   descendantcount: Int,
                                   descendantsize: Int,
                                   descendantfees: Int,
@@ -130,3 +131,71 @@ case class GetTxOutSetInfoResult(
                                   hash_serialized: DoubleSha256Digest,
                                   total_amount: Bitcoins
                                 ) extends NetworkResult
+
+case class GetBlockResult(
+                           hash: DoubleSha256Digest,
+                           confirmations: Int,
+                           strippedsize: Int,
+                           size: Int,
+                           weight: Int,
+                           height: Int,
+                           version: Int,
+                           versionHex: Int32,
+                           merkleroot: DoubleSha256Digest,
+                           tx: Vector[DoubleSha256Digest],
+                           time: UInt32,
+                           mediantime: UInt32,
+                           nonce: UInt32,
+                           bits: UInt32,
+                           difficulty: BigDecimal,
+                           chainwork: String,
+                           previousblockhash: Option[DoubleSha256Digest],
+                           nextblockhash: Option[DoubleSha256Digest]
+                         ) extends NetworkResult
+
+case class GetBlockWithTransactionsResult(
+                                           hash: DoubleSha256Digest,
+                                           confirmations: Int,
+                                           strippedsize: Int,
+                                           size: Int,
+                                           weight: Int,
+                                           height: Int,
+                                           version: Int,
+                                           versionHex: Int32,
+                                           merkleroot: DoubleSha256Digest,
+                                           tx: Vector[RpcTransaction],
+                                           time: UInt32,
+                                           mediantime: UInt32,
+                                           nonce: UInt32,
+                                           bits: UInt32,
+                                           difficulty: BigDecimal,
+                                           chainwork: String,
+                                           previousblockhash: Option[DoubleSha256Digest],
+                                           nextblockhash: Option[DoubleSha256Digest]
+                                         ) extends NetworkResult
+
+case class RpcTransaction(
+                           txid: DoubleSha256Digest,
+                           hash: DoubleSha256Digest,
+                           version: Int,
+                           size: Int,
+                           vsize: Int,
+                           locktime: UInt32,
+                           vin: Vector[TransactionInput],
+                           vout: Vector[RpcTransactionOutput],
+                           hex: Block
+                         ) extends NetworkResult
+
+case class RpcTransactionOutput(
+                                 value: Bitcoins,
+                                 n: Int,
+                                 scriptPubKey: RpcScriptPubKey
+                               ) extends NetworkResult
+
+case class RpcScriptPubKey(
+                            asm: String,
+                            hex: String,
+                            reqSigs: Int,
+                            scriptType: String,
+                            addresses: Vector[BitcoinAddress]
+                          ) extends NetworkResult

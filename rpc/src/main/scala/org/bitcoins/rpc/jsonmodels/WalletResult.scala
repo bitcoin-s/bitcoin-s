@@ -3,7 +3,7 @@ package org.bitcoins.rpc.jsonmodels
 import org.bitcoins.core.crypto.{DoubleSha256Digest, Sha256Hash160Digest}
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.Address
+import org.bitcoins.core.protocol.{Address, P2PKHAddress, P2SHAddress}
 import org.bitcoins.core.protocol.script.ScriptPubKey
 
 sealed abstract class WalletResult
@@ -30,3 +30,11 @@ case class BumpFeeResult(
                         ) extends WalletResult
 
 case class CreateMultiSigResult(address: Address, redeemScript: ScriptPubKey) extends WalletResult
+
+case class DecodeScriptResult(
+                               asm: String,
+                               typeOfScript: Option[String],
+                               reqSigs: Option[Int],
+                               addresses: Option[Vector[P2PKHAddress]],
+                               p2sh: P2SHAddress
+                             ) extends WalletResult
