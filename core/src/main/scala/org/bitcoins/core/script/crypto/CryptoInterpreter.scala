@@ -6,6 +6,7 @@ import org.bitcoins.core.script.control.{ ControlOperationsInterpreter, OP_VERIF
 import org.bitcoins.core.script.flag.ScriptFlagUtil
 import org.bitcoins.core.script.result._
 import org.bitcoins.core.script.{ ScriptProgram, _ }
+import org.bitcoins.core.consensus.Consensus
 import org.bitcoins.core.util.{ BitcoinSLogger, BitcoinScriptUtil, CryptoUtil }
 
 import scala.annotation.tailrec
@@ -188,7 +189,7 @@ sealed abstract class CryptoInterpreter {
             //this contains the extra Script OP that is required for OP_CHECKMULTISIG
             val stackWithoutPubKeysAndSignatures = stackWithoutPubKeys.tail.slice(mRequiredSignatures.toInt, stackWithoutPubKeys.tail.size)
             logger.debug("stackWithoutPubKeysAndSignatures: " + stackWithoutPubKeysAndSignatures)
-            if (pubKeys.size > ScriptSettings.maxPublicKeysPerMultiSig) {
+            if (pubKeys.size > Consensus.maxPublicKeysPerMultiSig) {
               logger.error("We have more public keys than the maximum amount of public keys allowed")
               ScriptProgram(executionInProgressScriptProgram, ScriptErrorPubKeyCount)
             } else if (signatures.size > pubKeys.size) {
