@@ -5,13 +5,14 @@ import java.net.InetAddress
 import org.bitcoins.core.crypto.{DoubleSha256Digest, ECPublicKey, Sha256Hash160Digest}
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.number.{Int32, UInt32}
-import org.bitcoins.core.protocol.{Address, P2PKHAddress, P2SHAddress}
-import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader}
+import org.bitcoins.core.protocol.{Address, BitcoinAddress, P2PKHAddress, P2SHAddress}
+import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, MerkleBlock}
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.{TransactionInput, TransactionOutput}
 import org.bitcoins.rpc.jsonmodels._
 import org.bitcoins.rpc.serializers.JsonReaders._
-import play.api.libs.json.{Json, Reads}
+import play.api.libs.json.{Json, Reads, __}
+import play.api.libs.functional.syntax._
 
 object JsonSerializers {
   // Internal Types
@@ -30,7 +31,8 @@ object JsonSerializers {
   implicit val p2PKHAddressReads: Reads[P2PKHAddress] = P2PKHAddressReads
   implicit val p2SHAddressReads: Reads[P2SHAddress] = P2SHAddressReads
   implicit val transactionInputReads: Reads[TransactionInput] = TransactionInputReads
-  implicit val transactionOutputReads: Reads[TransactionOutput] = TransactionOutputReads
+  implicit val bitcoinAddressReads: Reads[BitcoinAddress] = BitcoinAddressReads
+  implicit val merkleBlockReads: Reads[MerkleBlock] = MerkleBlockReads
 
   // Network Models
   implicit val networkReads: Reads[Network] = Json.reads[Network]
@@ -54,6 +56,13 @@ object JsonSerializers {
 
   implicit val getTxOutSetInfoResultReads: Reads[GetTxOutSetInfoResult] = Json.reads[GetTxOutSetInfoResult]
 
+  implicit val getBlockResultReads: Reads[GetBlockResult] = Json.reads[GetBlockResult]
+
+  implicit val rpcScriptPubKeyReads: Reads[RpcScriptPubKey] = Json.reads[RpcScriptPubKey]
+  implicit val rpcTransactionOutputReads: Reads[RpcTransactionOutput] = Json.reads[RpcTransactionOutput]
+  implicit val rpcTransactionReads: Reads[RpcTransaction] = Json.reads[RpcTransaction]
+  implicit val getBlockWithTransactionsResultReads: Reads[GetBlockWithTransactionsResult] = Json.reads[GetBlockWithTransactionsResult]
+
   // Mining Models
   implicit val miningInfoReads: Reads[GetMiningInfoResult] = Json.reads[GetMiningInfoResult]
 
@@ -63,4 +72,12 @@ object JsonSerializers {
   implicit val bumpFeeReads: Reads[BumpFeeResult] = Json.reads[BumpFeeResult]
 
   implicit val createMultiSigReads: Reads[CreateMultiSigResult] = Json.reads[CreateMultiSigResult]
+
+  implicit val decodeScriptResultReads: Reads[DecodeScriptResult] = (
+    (__ \ "asm").read[String] and
+      (__ \ "type").readNullable[String] and
+      (__ \ "reqSigs").readNullable[Int] and
+      (__ \ "addresses").readNullable[Vector[P2PKHAddress]] and
+      (__ \ "p2sh").read[P2SHAddress]
+    )(DecodeScriptResult)
 }

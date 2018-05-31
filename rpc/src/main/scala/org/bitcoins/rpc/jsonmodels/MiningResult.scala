@@ -6,8 +6,8 @@ case class GetMiningInfoResult(
   blocks: Int,
   currentblockweight: Int,
   currentblocktx: Int,
-  difficulty: Double,
-  networkhashps: Double,
+  difficulty: BigDecimal,
+  networkhashps: BigDecimal,
   pooledtx: Int,
   chain: String,
   warnings: String) extends MiningResult

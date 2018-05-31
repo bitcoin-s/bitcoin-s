@@ -5,8 +5,8 @@ import java.net.InetAddress
 import org.bitcoins.core.crypto.{DoubleSha256Digest, ECPublicKey, Sha256Hash160Digest}
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.number.{Int32, UInt32}
-import org.bitcoins.core.protocol.{Address, P2PKHAddress, P2SHAddress}
-import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader}
+import org.bitcoins.core.protocol.{Address, BitcoinAddress, P2PKHAddress, P2SHAddress}
+import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, MerkleBlock}
 import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptSignature}
 import org.bitcoins.core.protocol.transaction.{CoinbaseInput, TransactionInput, TransactionOutPoint, TransactionOutput}
 import play.api.libs.json._
@@ -134,42 +134,43 @@ object JsonReaders {
     def reads(json: JsValue): JsResult[TransactionInput] = {
       val sequence = (json \ "sequence").validate[UInt32] match {
         case s: JsSuccess[UInt32] => s.value
-        case err => return JsError("error.expected.vin.sequence")
+        case _ => return JsError("error.expected.vin.sequence")
       }
       (json \ "coinbase").validate[String] match {
         case s: JsSuccess[String] => JsSuccess(CoinbaseInput(ScriptSignature.fromAsmHex(s.value)))
-        case err => {
+        case _ =>
           val txid = (json \ "txid").validate[DoubleSha256Digest] match {
             case id: JsSuccess[DoubleSha256Digest] => id.value
-            case err => return JsError("error.expected.vin.txid")
+            case _ => return JsError("error.expected.vin.txid")
           }
           val vout = (json \ "vout").validate[UInt32] match {
             case ind: JsSuccess[UInt32] => ind.value
-            case err => return JsError("error.expected.vin.vout")
+            case _ => return JsError("error.expected.vin.vout")
           }
           val scriptSig = (json \ "scriptSig" \ "hex").validate[String] match {
-            case s: JsSuccess[String] => ScriptSignature.fromHex(s.value)
-            case err => return JsError("error.expected.vin.scriptSig")
+            case s: JsSuccess[String] => ScriptSignature.fromAsmHex(s.value)
+            case _ => return JsError("error.expected.vin.scriptSig")
           }
 
           JsSuccess(TransactionInput(TransactionOutPoint(txid, vout),scriptSig, sequence))
-        }
       }
     }
   }
 
-  implicit object TransactionOutputReads extends Reads[TransactionOutput] {
-    def reads(json: JsValue): JsResult[TransactionOutput] = {
-      val value = (json \ "value").validate[Bitcoins] match {
-        case bitcoins: JsSuccess[Bitcoins] => bitcoins.value
-        case err => return JsError("error.expected.vout.value")
+  implicit object BitcoinAddressReads extends Reads[BitcoinAddress] {
+    def reads(json: JsValue) = json match {
+      case JsString(s) => BitcoinAddress.fromString(s) match {
+        case Success(address) => JsSuccess(address)
+        case Failure(err) => JsError(s"error.expected.address, got ${err.toString}")
       }
-      val scriptPubKey = (json \ "scriptPubKey" \ "hex").validate[String] match {
-        case s: JsSuccess[String] => ScriptPubKey.fromHex(s.value)
-        case err => return JsError("error.expected.vout.scriptPubKey")
-      }
+      case err => JsError(s"error.expected.jsstring, got ${Json.toJson(err).toString()}")
+    }
+  }
 
-      JsSuccess(TransactionOutput(value, scriptPubKey)) // But there's more info?
+  implicit object MerkleBlockReads extends Reads[MerkleBlock] {
+    def reads(json: JsValue) = json match {
+      case JsString(s) => JsSuccess(MerkleBlock.fromHex(s))
+      case err => JsError(s"error.expected.jsstring, got ${Json.toJson(err).toString()}")
     }
   }
 }
