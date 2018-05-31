@@ -8,7 +8,7 @@ import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.protocol.{Address, BitcoinAddress, P2PKHAddress, P2SHAddress}
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, MerkleBlock}
 import org.bitcoins.core.protocol.script.ScriptPubKey
-import org.bitcoins.core.protocol.transaction.{Transaction, TransactionInput, TransactionOutput}
+import org.bitcoins.core.protocol.transaction.{Transaction, TransactionInput, TransactionOutPoint, TransactionOutput}
 import org.bitcoins.rpc.jsonmodels._
 import org.bitcoins.rpc.serializers.JsonReaders._
 import org.bitcoins.rpc.serializers.JsonWriters._
@@ -35,6 +35,7 @@ object JsonSerializers {
   implicit val bitcoinAddressReads: Reads[BitcoinAddress] = BitcoinAddressReads
   implicit val merkleBlockReads: Reads[MerkleBlock] = MerkleBlockReads
   implicit val transactionReads: Reads[Transaction] = TransactionReads
+  implicit val transactionOutPointReads: Reads[TransactionOutPoint] = TransactionOutPointReads
 
   implicit val bitcoinsWrites: Writes[Bitcoins] = BitcoinsWrites
   implicit val bitcoinAddressWrites: Writes[BitcoinAddress] = BitcoinAddressWrites
