@@ -72,6 +72,9 @@ class RpcClient()(implicit m: ActorMaterializer, ec: ExecutionContext) {
     bitcoindCall[CreateMultiSigResult]("createmultisig", List(JsNumber(minSignatures), JsArray(keys.map(keyToString))))
   }
 
+  def decodeRawTransaction(transaction: Transaction): Future[RpcTransaction] = {
+    bitcoindCall[RpcTransaction]("decoderawtransaction", List(JsString(transaction.hex)))
+  }
 
   def decodeScript(script: String): Future[DecodeScriptResult] = {
     bitcoindCall[DecodeScriptResult]("decodescript", List(JsString(script)))
@@ -101,6 +104,23 @@ class RpcClient()(implicit m: ActorMaterializer, ec: ExecutionContext) {
 
   def estimatePriority(blocks: Int): Future[BigDecimal] = {
     bitcoindCall[BigDecimal]("estimatepriority", List(JsNumber(blocks)))
+  }
+
+  // This needs a home?
+  case class FundRawTransactionOptions(
+                                      changeAddress: Option[BitcoinAddress] = None,
+                                      changePosition: Option[Int] = None,
+                                      includeWatching: Boolean = false,
+                                      lockUnspents: Boolean = false,
+                                      reverseChangeKey: Boolean = true,
+                                      feeRate: Option[Bitcoins] = None,
+                                      subtractFeeFromOutputs: Option[Array[Int]]
+                                      )
+
+  implicit val fundRawTransactionOptionsWrites: Writes[FundRawTransactionOptions] = Json.writes[FundRawTransactionOptions]
+
+  def fundRawTransaction(transaction: Transaction, options: Option[FundRawTransactionOptions]): Future[FundRawTransactionResult] = {
+    bitcoindCall[FundRawTransactionResult]("fundrawtransaction", List(JsString(transaction.hex), Json.toJson(options)))
   }
 
   def generateToAddress(blocks: Int, address: Address, maxTries: Int = 1000000): Future[Vector[DoubleSha256Digest]] = {
@@ -282,7 +302,6 @@ class RpcClient()(implicit m: ActorMaterializer, ec: ExecutionContext) {
   }
 
   // Uses string:object pattern - CreateRawTransaction, GetBlockChainInfo, GetMemoryInfo, GetMemPoolAncestors, GetMemPoolDescendants, GetNetTotals, GetPeerInfo, GetTxOut, ImportMulti
-  // Uses nameless object - DecodeRawTransaction, FundRawTransaction
   // Also Skipped: GetBlockTemplate, GetRawMemPool, GetRawTransaction, GetTransaction, ImportAddress, ImportPrunedFunds, ListAccounts-Ping, SendFrom, SendMany, SetAccount, SignMessage-SignRawTransaction, SubmitBlock, VerifyMessage
   // TODO: Overload calls with Option inputs?
   // --------------------------------------------------------------------------------

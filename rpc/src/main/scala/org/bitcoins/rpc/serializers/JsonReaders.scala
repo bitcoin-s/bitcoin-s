@@ -8,7 +8,7 @@ import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.protocol.{Address, BitcoinAddress, P2PKHAddress, P2SHAddress}
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, MerkleBlock}
 import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptSignature}
-import org.bitcoins.core.protocol.transaction.{CoinbaseInput, TransactionInput, TransactionOutPoint, TransactionOutput}
+import org.bitcoins.core.protocol.transaction._
 import play.api.libs.json._
 
 import scala.util.{Failure, Success}
@@ -170,6 +170,13 @@ object JsonReaders {
   implicit object MerkleBlockReads extends Reads[MerkleBlock] {
     def reads(json: JsValue) = json match {
       case JsString(s) => JsSuccess(MerkleBlock.fromHex(s))
+      case err => JsError(s"error.expected.jsstring, got ${Json.toJson(err).toString()}")
+    }
+  }
+
+  implicit object TransactionReads extends Reads[Transaction] {
+    def reads(json: JsValue) = json match {
+      case JsString(s) => JsSuccess(Transaction.fromHex(s))
       case err => JsError(s"error.expected.jsstring, got ${Json.toJson(err).toString()}")
     }
   }

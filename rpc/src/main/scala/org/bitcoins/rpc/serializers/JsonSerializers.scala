@@ -8,10 +8,11 @@ import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.protocol.{Address, BitcoinAddress, P2PKHAddress, P2SHAddress}
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, MerkleBlock}
 import org.bitcoins.core.protocol.script.ScriptPubKey
-import org.bitcoins.core.protocol.transaction.{TransactionInput, TransactionOutput}
+import org.bitcoins.core.protocol.transaction.{Transaction, TransactionInput, TransactionOutput}
 import org.bitcoins.rpc.jsonmodels._
 import org.bitcoins.rpc.serializers.JsonReaders._
-import play.api.libs.json.{Json, Reads, __}
+import org.bitcoins.rpc.serializers.JsonWriters._
+import play.api.libs.json.{Json, Reads, Writes, __}
 import play.api.libs.functional.syntax._
 
 object JsonSerializers {
@@ -33,6 +34,10 @@ object JsonSerializers {
   implicit val transactionInputReads: Reads[TransactionInput] = TransactionInputReads
   implicit val bitcoinAddressReads: Reads[BitcoinAddress] = BitcoinAddressReads
   implicit val merkleBlockReads: Reads[MerkleBlock] = MerkleBlockReads
+  implicit val transactionReads: Reads[Transaction] = TransactionReads
+
+  implicit val bitcoinsWrites: Writes[Bitcoins] = BitcoinsWrites
+  implicit val bitcoinAddressWrites: Writes[BitcoinAddress] = BitcoinAddressWrites
 
   // Network Models
   implicit val networkReads: Reads[Network] = Json.reads[Network]
@@ -80,4 +85,6 @@ object JsonSerializers {
       (__ \ "addresses").readNullable[Vector[P2PKHAddress]] and
       (__ \ "p2sh").read[P2SHAddress]
     )(DecodeScriptResult)
+
+  implicit val fundRawTransactionResultReads: Reads[FundRawTransactionResult] = Json.reads[FundRawTransactionResult]
 }
