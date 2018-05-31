@@ -563,11 +563,7 @@ sealed abstract class ScriptInterpreter {
       case w: WitnessTxSigComponentP2SH =>
         !w.scriptSignature.redeemScript.isInstanceOf[WitnessScriptPubKey]
       case r: WitnessTxSigComponentRebuilt =>
-        r.transaction match {
-          case wtx: WitnessTransaction =>
-            wtx.witness.witnesses(txSigComponent.inputIndex.toInt).stack.nonEmpty
-          case _: BaseTransaction => false
-        }
+        r.transaction.witness.witnesses(txSigComponent.inputIndex.toInt).stack.nonEmpty
     }
 
     if (unexpectedWitness) logger.error("Found unexpected witness that was not used by the ScriptProgram: " + program)
