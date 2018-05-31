@@ -1,5 +1,6 @@
 package org.bitcoins.core.util
 
+import org.bitcoins.core.consensus.Consensus
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script.{ CLTVScriptPubKey, CSVScriptPubKey, EmptyScriptPubKey, _ }
@@ -7,7 +8,7 @@ import org.bitcoins.core.script.constant._
 import org.bitcoins.core.script.crypto.{ OP_CHECKMULTISIG, OP_CHECKMULTISIGVERIFY, OP_CHECKSIG, OP_CHECKSIGVERIFY }
 import org.bitcoins.core.script.flag.{ ScriptFlag, ScriptFlagUtil }
 import org.bitcoins.core.script.result.{ ScriptError, ScriptErrorPubKeyType, ScriptErrorWitnessPubKeyType }
-import org.bitcoins.core.script.{ ExecutionInProgressScriptProgram, ScriptProgram, ScriptSettings }
+import org.bitcoins.core.script.{ ExecutionInProgressScriptProgram, ScriptProgram }
 
 import scala.annotation.tailrec
 
@@ -62,7 +63,7 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
           script(index - 1) match {
             case scriptNum: ScriptNumber => scriptNum.toLong
             case scriptConstant: ScriptConstant => ScriptNumberUtil.toLong(scriptConstant.hex)
-            case _: ScriptToken => ScriptSettings.maxPublicKeysPerMultiSig
+            case _: ScriptToken => Consensus.maxPublicKeysPerMultiSig
           }
         } else 0
     }.sum

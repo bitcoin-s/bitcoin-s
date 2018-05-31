@@ -1,7 +1,6 @@
 package org.bitcoins.core.gen
 
 import org.bitcoins.core.crypto._
-import org.bitcoins.core.script.ScriptSettings
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.util.CryptoUtil
 import org.scalacheck.Gen
