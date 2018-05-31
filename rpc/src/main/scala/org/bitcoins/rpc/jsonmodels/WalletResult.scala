@@ -5,6 +5,7 @@ import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.{Address, P2PKHAddress, P2SHAddress}
 import org.bitcoins.core.protocol.script.ScriptPubKey
+import org.bitcoins.core.protocol.transaction.Transaction
 
 sealed abstract class WalletResult
 
@@ -38,3 +39,9 @@ case class DecodeScriptResult(
                                addresses: Option[Vector[P2PKHAddress]],
                                p2sh: P2SHAddress
                              ) extends WalletResult
+
+case class FundRawTransactionResult(
+                                     hex: Transaction,
+                                     fee: Bitcoins,
+                                     changepos: Int
+                                   ) extends WalletResult
