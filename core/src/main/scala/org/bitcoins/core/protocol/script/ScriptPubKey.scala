@@ -4,7 +4,7 @@ import org.bitcoins.core.crypto._
 import org.bitcoins.core.protocol._
 import org.bitcoins.core.protocol.blockchain.Block
 import org.bitcoins.core.protocol.transaction.WitnessTransaction
-import org.bitcoins.core.script.ScriptSettings
+import org.bitcoins.core.consensus.Consensus
 import org.bitcoins.core.script.bitwise.{ OP_EQUAL, OP_EQUALVERIFY }
 import org.bitcoins.core.script.constant.{ BytesToPushOntoStack, _ }
 import org.bitcoins.core.script.control.{ OP_ELSE, OP_ENDIF, OP_IF, OP_RETURN }
@@ -95,7 +95,7 @@ sealed trait MultiSignatureScriptPubKey extends ScriptPubKey {
     val numSigsRequired = asmWithoutPushOps(opCheckMultiSigIndex - maxSigs.toInt - 2)
     numSigsRequired match {
       case x: ScriptNumber => x.toInt
-      case c: ScriptConstant if ScriptNumber(c.hex).toLong <= ScriptSettings.maxPublicKeysPerMultiSig =>
+      case c: ScriptConstant if ScriptNumber(c.hex).toLong <= Consensus.maxPublicKeysPerMultiSig =>
         ScriptNumber(c.hex).toInt
       case _ => throw new RuntimeException("The first element of the multisignature pubkey must be a script number operation\n" +
         "operation: " + numSigsRequired +
@@ -111,7 +111,7 @@ sealed trait MultiSignatureScriptPubKey extends ScriptPubKey {
     } else {
       asm(checkMultiSigIndex - 1) match {
         case x: ScriptNumber => x.toInt
-        case c: ScriptConstant if ScriptNumber(c.hex).toLong <= ScriptSettings.maxPublicKeysPerMultiSig =>
+        case c: ScriptConstant if ScriptNumber(c.hex).toLong <= Consensus.maxPublicKeysPerMultiSig =>
           ScriptNumber(c.hex).toInt
         case x => throw new RuntimeException("The element preceding a OP_CHECKMULTISIG operation in a  multisignature pubkey must be a script number operation, got: " + x)
       }
@@ -136,10 +136,10 @@ object MultiSignatureScriptPubKey extends ScriptFactory[MultiSignatureScriptPubK
   }
 
   def apply(requiredSigs: Int, pubKeys: Seq[ECPublicKey]): MultiSignatureScriptPubKey = {
-    require(requiredSigs <= ScriptSettings.maxPublicKeysPerMultiSig, "We cannot have more required signatures than: " +
-      ScriptSettings.maxPublicKeysPerMultiSig + " got: " + requiredSigs)
-    require(pubKeys.length <= ScriptSettings.maxPublicKeysPerMultiSig, "We cannot have more public keys than " +
-      ScriptSettings.maxPublicKeysPerMultiSig + " got: " + pubKeys.length)
+    require(requiredSigs <= Consensus.maxPublicKeysPerMultiSig, "We cannot have more required signatures than: " +
+      Consensus.maxPublicKeysPerMultiSig + " got: " + requiredSigs)
+    require(pubKeys.length <= Consensus.maxPublicKeysPerMultiSig, "We cannot have more public keys than " +
+      Consensus.maxPublicKeysPerMultiSig + " got: " + pubKeys.length)
 
     val required = ScriptNumberOperation.fromNumber(requiredSigs) match {
       case Some(scriptNumOp) => Seq(scriptNumOp)
@@ -212,7 +212,7 @@ object MultiSignatureScriptPubKey extends ScriptFactory[MultiSignatureScriptPubK
   private def isValidPubKeyNumber(token: ScriptToken): Boolean = token match {
     case constant: ScriptConstant =>
       constant.isInstanceOf[ScriptNumber] ||
-        ScriptNumber(constant.bytes) <= ScriptNumber(ScriptSettings.maxPublicKeysPerMultiSig)
+        ScriptNumber(constant.bytes) <= ScriptNumber(Consensus.maxPublicKeysPerMultiSig)
     case _: ScriptToken => false
   }
 }
