@@ -76,7 +76,7 @@ trait TransactionGenerators extends BitcoinSLogger {
   } yield {
     if (randomNum == 0) {
       //gives us a coinbase input
-      CoinbaseInput(scriptSig)
+      CoinbaseInput(scriptSig, sequenceNumber)
     } else TransactionInput(outPoint, scriptSig, sequenceNumber)
   }
 

@@ -31,7 +31,6 @@ case object EmptyTransactionInput extends TransactionInput {
  */
 sealed abstract class CoinbaseInput extends TransactionInput {
   override def previousOutput = EmptyTransactionOutPoint
-  override def sequence = TransactionConstants.sequence
 }
 
 object TransactionInput extends Factory[TransactionInput] {
@@ -44,7 +43,7 @@ object TransactionInput extends Factory[TransactionInput] {
 
   def apply(outPoint: TransactionOutPoint, scriptSignature: ScriptSignature,
     sequenceNumber: UInt32): TransactionInput = outPoint match {
-    case EmptyTransactionOutPoint => CoinbaseInput(scriptSignature)
+    case EmptyTransactionOutPoint => CoinbaseInput(scriptSignature, sequenceNumber)
     case _: TransactionOutPoint => TransactionInputImpl(outPoint, scriptSignature, sequenceNumber)
   }
 
@@ -52,13 +51,13 @@ object TransactionInput extends Factory[TransactionInput] {
 
 object CoinbaseInput {
 
-  private case class CoinbaseInputImpl(scriptSignature: ScriptSignature) extends CoinbaseInput
+  private case class CoinbaseInputImpl(scriptSignature: ScriptSignature, sequence: UInt32) extends CoinbaseInput
   /**
    * Creates a coinbase input - coinbase inputs always have an empty outpoint
    * @param scriptSignature this can contain anything, miners use this to signify support for various protocol BIPs
    * @return the coinbase input
    */
-  def apply(scriptSignature: ScriptSignature): CoinbaseInput = {
-    CoinbaseInputImpl(scriptSignature)
+  def apply(scriptSignature: ScriptSignature, sequence: UInt32): CoinbaseInput = {
+    CoinbaseInputImpl(scriptSignature, sequence)
   }
 }
