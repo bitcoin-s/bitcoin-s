@@ -10,15 +10,17 @@ import akka.stream.ActorMaterializer
 import akka.util.ByteString
 import org.bitcoins.core.crypto.{DoubleSha256Digest, ECPrivateKey, ECPublicKey}
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
+import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.{Address, BitcoinAddress, P2PKHAddress}
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, MerkleBlock}
-import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint}
 import org.bitcoins.core.util.BitcoinSLogger
 import play.api.libs.json._
 import org.bitcoins.rpc.jsonmodels._
 import org.bitcoins.rpc.serializers.JsonSerializers._
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Failure, Success}
 
 class RpcClient()(implicit m: ActorMaterializer, ec: ExecutionContext) {
   private val resultKey = "result"
@@ -184,12 +186,63 @@ class RpcClient()(implicit m: ActorMaterializer, ec: ExecutionContext) {
     bitcoindCall[P2PKHAddress]("getrawchangeaddress")
   }
 
+  def getRawMemPool: Future[Vector[DoubleSha256Digest]] = {
+    bitcoindCall[Vector[DoubleSha256Digest]]("getrawmempool", List(JsBoolean(false)))
+  }
+
+  def getRawTransactionRaw(txid: DoubleSha256Digest): Future[Transaction] = {
+    bitcoindCall[Transaction]("getrawtransaction", List(JsString(txid.hex), JsBoolean(false)))
+  }
+
+  // As is, RpcTransaction may not have enough data (add options?), also is RpcTransaction in the right place?
+  def getRawTransaction(txid: DoubleSha256Digest): Future[RpcTransaction] = {
+    bitcoindCall[RpcTransaction]("getrawtransaction", List(JsString(txid.hex), JsBoolean(true)))
+  }
+
   def getReceivedByAccount(account: String, minConfirmations: Int): Future[Bitcoins] = {
     bitcoindCall[Bitcoins]("getreceivedbyaccount", List(JsString(account), JsNumber(minConfirmations)))
   }
 
   def getReceivedByAddress(address: BitcoinAddress, minConfirmations: Int): Future[Bitcoins] = {
     bitcoindCall[Bitcoins]("getreceivedbyaddress", List(JsString(address.toString), JsNumber(minConfirmations)))
+  }
+
+  // This needs a home
+  case class GetTransactionResult(
+                                 amount: Bitcoins,
+                                 fee: Option[Bitcoins],
+                                 confirmations: Int,
+                                 generated: Option[Boolean],
+                                 blockhash: Option[DoubleSha256Digest],
+                                 blockIndex: Option[Int],
+                                 blockTime: Option[UInt32],
+                                 txid: DoubleSha256Digest,
+                                 walletconflicts: Vector[DoubleSha256Digest],
+                                 time: UInt32,
+                                 timereceived: UInt32,
+                                 bip125_replaceable: String,
+                                 comment: Option[String],
+                                 to: Option[String],
+                                 details: Vector[TransactionDetails],
+                                 hex: Transaction
+                                 )
+
+  case class TransactionDetails(
+                               involvesWatchonly: Option[Boolean],
+                               account: String,
+                               address: Option[BitcoinAddress],
+                               category: String,
+                               amount: Bitcoins,
+                               vout: Int,
+                               fee: Option[Bitcoins],
+                               abandoned: Option[Boolean]
+                               )
+
+  implicit val TransactionDetailsReads: Reads[TransactionDetails] = Json.reads[TransactionDetails]
+  implicit val getTransactionResultReads: Reads[GetTransactionResult] = Json.reads[GetTransactionResult]
+
+  def getTransaction(txid: DoubleSha256Digest, watchOnly: Boolean = false): Future[GetTransactionResult] = {
+    bitcoindCall[GetTransactionResult]("gettransaction", List(JsString(txid.hex), JsBoolean(watchOnly)))
   }
 
   def getTxOutProof(txids: Vector[DoubleSha256Digest], headerHash: Option[DoubleSha256Digest]): Future[MerkleBlock] = {
@@ -217,8 +270,16 @@ class RpcClient()(implicit m: ActorMaterializer, ec: ExecutionContext) {
     bitcoindCall[String]("help", List(JsString(rpcName)))
   }
 
+  def importAddress(address: BitcoinAddress, account: String = "", rescan: Boolean = true): Future[Unit] = {
+    bitcoindCall[Unit]("importaddress", List(JsString(address.value), JsString(account), JsBoolean(rescan)))
+  }
+
   def importPrivKey(key: String, account: String = "", rescan: Boolean = true): Future[Unit] = {
     bitcoindCall[Unit]("importprivkey", List(JsString(key), JsString(account), JsBoolean(rescan)))
+  }
+
+  def importPrunedFunds(transaction: Transaction, txOutProof: MerkleBlock): Future[Unit] = {
+    bitcoindCall[Unit]("importprunedfunds", List(JsString(transaction.hex), JsString(txOutProof.hex)))
   }
 
   def importWallet(file: File): Future[Unit] = {
@@ -229,8 +290,48 @@ class RpcClient()(implicit m: ActorMaterializer, ec: ExecutionContext) {
     bitcoindCall[Unit]("keypoolrefill", List(JsNumber(keyPoolSize)))
   }
 
+  // This needs a home
+  case class RpcAddress(
+                       address: BitcoinAddress,
+                       balance: Bitcoins,
+                       account: Option[String]
+                       )
+
+  implicit object RpcAddressReads extends Reads[RpcAddress] {
+    def reads(json: JsValue): JsResult[RpcAddress] = json match {
+      case array: JsArray =>
+        val balance = array.value.find(_.isInstanceOf[JsNumber]) match {
+          case Some(JsNumber(n)) => Bitcoins(n)
+          case None => return JsError("error.expected.balance")
+        }
+        val jsStrings: IndexedSeq[JsString] = array.value.filter(_.isInstanceOf[JsString]).map(_.asInstanceOf[JsString])
+        val address = jsStrings.find(s => BitcoinAddress.isValid(s.value)) match {
+          case Some(JsString(s)) => BitcoinAddress.fromString(s) match {
+            case Success(a) => a
+            case Failure(err) => return JsError(s"error.expected.address, got ${err.toString}")
+          }
+          case None => return JsError("error.expected.address")
+        }
+        jsStrings.find(s => !BitcoinAddress.isValid(s.value)) match {
+          case Some(JsString(s)) => JsSuccess(RpcAddress(address, balance, Some(s)))
+          case None => JsSuccess(RpcAddress(address, balance, None))
+        }
+      case err => JsError(s"error.expected.jsarray, got ${Json.toJson(err).toString()}")
+    }
+  }
+
+  implicit val rpcAddressReads: Reads[RpcAddress] = RpcAddressReads
+
+  def listAddressGroupings: Future[Vector[Vector[RpcAddress]]] = {
+    bitcoindCall[Vector[Vector[RpcAddress]]]("listaddressgroupings")
+  }
+
   def listBanned: Future[Vector[NodeBan]] = {
     bitcoindCall[Vector[NodeBan]]("listbanned")
+  }
+
+  def listLockUnspent: Future[Vector[TransactionOutPoint]] = {
+    bitcoindCall[Vector[TransactionOutPoint]]("listlockunspent")
   }
 
   def ping: Future[Unit] = {
@@ -301,8 +402,8 @@ class RpcClient()(implicit m: ActorMaterializer, ec: ExecutionContext) {
     bitcoindCall[Unit]("walletpassphrasechange", List(JsString(currentPassphrase), JsString(newPassphrase)))
   }
 
-  // Uses string:object pattern - CreateRawTransaction, GetBlockChainInfo, GetMemoryInfo, GetMemPoolAncestors, GetMemPoolDescendants, GetNetTotals, GetPeerInfo, GetTxOut, ImportMulti
-  // Also Skipped: GetBlockTemplate, GetRawMemPool, GetRawTransaction, GetTransaction, ImportAddress, ImportPrunedFunds, ListAccounts-Ping, SendFrom, SendMany, SetAccount, SignMessage-SignRawTransaction, SubmitBlock, VerifyMessage
+  // Uses string:object pattern - CreateRawTransaction, GetBlockChainInfo, GetMemoryInfo, GetMemPoolAncestors, GetMemPoolDescendants, GetNetTotals, GetPeerInfo, GetRawMemPoolWithTransactions, GetTxOut, ImportMulti, ListAccounts
+  // Also Skipped: GetBlockTemplate, ListReceivedByAccount-Ping, SendFrom, SendMany, SetAccount, SignMessage-SignRawTransaction, SubmitBlock, VerifyMessage
   // TODO: Overload calls with Option inputs?
   // --------------------------------------------------------------------------------
   // EVERYTHING BELOW THIS COMMENT HAS TESTS

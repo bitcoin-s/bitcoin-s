@@ -180,4 +180,15 @@ object JsonReaders {
       case err => JsError(s"error.expected.jsstring, got ${Json.toJson(err).toString()}")
     }
   }
+
+  implicit object TransactionOutPointReads extends Reads[TransactionOutPoint] {
+    def reads(json: JsValue) = {
+      case class OutPoint(txid: DoubleSha256Digest, vout: UInt32)
+      implicit val outPointReads: Reads[OutPoint] = Json.reads[OutPoint]
+      json.validate[OutPoint] match {
+        case JsSuccess(op, _) => JsSuccess(TransactionOutPoint(op.txid, op.vout))
+        case JsError(err) => JsError(s"Could not parse TransactionOutPoint, got ${err.toString()}")
+      }
+    }
+  }
 }
