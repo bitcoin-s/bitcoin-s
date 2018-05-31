@@ -25,10 +25,10 @@ case class GetNetworkInfoResult(
   timeoffset: Int,
   networkactive: Boolean,
   connections: Int,
-  networks: Array[Network],
+  networks: Vector[Network],
   relayfee: Bitcoins,
   incrementalfee: Bitcoins,
-  localadresses: Option[Array[NetworkAddress]],
+  localadresses: Option[Vector[NetworkAddress]],
   warnings: String) extends NetworkResult
 
 case class Network(
@@ -68,7 +68,7 @@ case class ValidateAddressResult(
                                   isscript: Option[Boolean],
                                   script: Option[ScriptPubKey],
                                   hex: Option[String],
-                                  addresses: Option[Array[Address]],
+                                  addresses: Option[Vector[Address]],
                                   sigrequired: Option[Int],
                                   pubkey: Option[ECPublicKey],
                                   iscompressed: Option[Boolean],
@@ -87,7 +87,7 @@ case class NodeBan(
 case class Node(
                  addednode: InetAddress,
                  connected: Option[Boolean],
-                 addresses: Option[Array[NodeAddress]]
+                 addresses: Option[Vector[NodeAddress]]
                ) extends NetworkResult
 case class NodeAddress(
                         address: InetAddress,
@@ -109,7 +109,7 @@ case class GetMemPoolEntryResult(
                                   ancestorcount: Int,
                                   ancestorsize: Int,
                                   ancestorfees: Int,
-                                  depends: Option[Array[DoubleSha256Digest]]
+                                  depends: Option[Vector[DoubleSha256Digest]]
                                 ) extends NetworkResult
 
 case class GetMemPoolInfoResult(
