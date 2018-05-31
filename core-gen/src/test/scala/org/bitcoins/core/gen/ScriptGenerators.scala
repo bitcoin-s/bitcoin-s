@@ -6,7 +6,7 @@ import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script.{ P2SHScriptPubKey, _ }
 import org.bitcoins.core.protocol.transaction._
-import org.bitcoins.core.script.ScriptSettings
+import org.bitcoins.core.consensus.Consensus
 import org.bitcoins.core.script.constant.{ ScriptNumber, _ }
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.util.BitcoinSLogger
@@ -37,7 +37,7 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
 
   def multiSignatureScriptSignature: Gen[MultiSignatureScriptSignature] = {
     val signatures: Gen[Seq[ECDigitalSignature]] = for {
-      numKeys <- Gen.choose(1, ScriptSettings.maxPublicKeysPerMultiSig)
+      numKeys <- Gen.choose(1, Consensus.maxPublicKeysPerMultiSig)
       hash <- CryptoGenerators.doubleSha256Digest
     } yield for {
       _ <- 0 until numKeys
