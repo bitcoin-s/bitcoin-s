@@ -5,9 +5,10 @@ import java.net.InetAddress
 import org.bitcoins.core.crypto.{DoubleSha256Digest, ECPublicKey, Sha256Hash160Digest}
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.number.{Int32, UInt32}
-import org.bitcoins.core.protocol.{Address, P2PKHAddress}
+import org.bitcoins.core.protocol.{Address, P2PKHAddress, P2SHAddress}
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader}
 import org.bitcoins.core.protocol.script.ScriptPubKey
+import org.bitcoins.core.protocol.transaction.{TransactionInput, TransactionOutput}
 import org.bitcoins.rpc.jsonmodels._
 import org.bitcoins.rpc.serializers.JsonReaders._
 import play.api.libs.json.{Json, Reads}
@@ -27,6 +28,9 @@ object JsonSerializers {
   implicit val sha256Hash160DigestReads: Reads[Sha256Hash160Digest] = Sha256Hash160DigestReads
   implicit val eCPublicKeyReads: Reads[ECPublicKey] = ECPublicKeyReads
   implicit val p2PKHAddressReads: Reads[P2PKHAddress] = P2PKHAddressReads
+  implicit val p2SHAddressReads: Reads[P2SHAddress] = P2SHAddressReads
+  implicit val transactionInputReads: Reads[TransactionInput] = TransactionInputReads
+  implicit val transactionOutputReads: Reads[TransactionOutput] = TransactionOutputReads
 
   // Network Models
   implicit val networkReads: Reads[Network] = Json.reads[Network]

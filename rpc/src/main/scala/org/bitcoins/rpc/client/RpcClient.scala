@@ -10,14 +10,18 @@ import akka.stream.ActorMaterializer
 import akka.util.ByteString
 import org.bitcoins.core.crypto.{DoubleSha256Digest, ECPrivateKey, ECPublicKey}
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
-import org.bitcoins.core.protocol.{Address, P2PKHAddress}
+import org.bitcoins.core.number.{Int32, UInt32}
+import org.bitcoins.core.protocol.{Address, P2PKHAddress, P2SHAddress}
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader}
+import org.bitcoins.core.protocol.script.ScriptPubKey
+import org.bitcoins.core.protocol.transaction.{TransactionInput, TransactionOutput}
 import org.bitcoins.core.util.BitcoinSLogger
 import play.api.libs.json._
 import org.bitcoins.rpc.jsonmodels._
 import org.bitcoins.rpc.serializers.JsonSerializers._
 
 import scala.concurrent.{ExecutionContext, Future}
+import play.api.libs.functional.syntax._
 
 class RpcClient()(implicit m: ActorMaterializer, ec: ExecutionContext) {
   private val resultKey = "result"
@@ -29,7 +33,7 @@ class RpcClient()(implicit m: ActorMaterializer, ec: ExecutionContext) {
     bitcoindCall[Unit]("abandontransaction", List(JsString(txid.hex)))
   }
 
-  def addMultiSigAddress(minSignatures: Int, keys: Array[Either[ECPublicKey, P2PKHAddress]], account: String = ""): Future[Address] = {
+  def addMultiSigAddress(minSignatures: Int, keys: Vector[Either[ECPublicKey, P2PKHAddress]], account: String = ""): Future[Address] = {
     def keyToString(key: Either[ECPublicKey, P2PKHAddress]): JsString = key match {
       case Right(k) => JsString(k.value)
       case Left(k) => JsString(k.hex)
@@ -63,12 +67,33 @@ class RpcClient()(implicit m: ActorMaterializer, ec: ExecutionContext) {
     bitcoindCall[Unit]("clearbanned")
   }
 
-  def createMultiSig(minSignatures: Int, keys: Array[Either[ECPublicKey, P2PKHAddress]]): Future[CreateMultiSigResult] = {
+  def createMultiSig(minSignatures: Int, keys: Vector[Either[ECPublicKey, P2PKHAddress]]): Future[CreateMultiSigResult] = {
     def keyToString(key: Either[ECPublicKey, P2PKHAddress]): JsString = key match {
       case Right(k) => JsString(k.value)
       case Left(k) => JsString(k.hex)
     }
     bitcoindCall[CreateMultiSigResult]("createmultisig", List(JsNumber(minSignatures), JsArray(keys.map(keyToString))))
+  }
+
+  //This needs a home
+  case class DecodeScriptResult(
+                               asm: String,
+                               typeOfScript: Option[String],
+                               reqSigs: Option[Int],
+                               addresses: Option[Vector[P2PKHAddress]],
+                               p2sh: P2SHAddress
+                               )
+  implicit val decodeScriptResultReads: Reads[DecodeScriptResult] = (
+    (__ \ "asm").read[String] and
+    (__ \ "type").readNullable[String] and
+    (__ \ "reqSigs").readNullable[Int] and
+    (__ \ "addresses").readNullable[Vector[P2PKHAddress]] and
+    (__ \ "p2sh").read[P2SHAddress]
+  )(DecodeScriptResult)
+
+  // Is ScriptPubKey the right type for script?
+  def decodeScript(script: ScriptPubKey): Future[DecodeScriptResult] = {
+    bitcoindCall[DecodeScriptResult]("decodescript", List(JsString(script.hex)))
   }
 
   def disconnectNode(address: InetAddress): Future[Unit] = {
@@ -98,8 +123,8 @@ class RpcClient()(implicit m: ActorMaterializer, ec: ExecutionContext) {
     bitcoindCall[Double]("estimatepriority", List(JsNumber(blocks)))
   }
 
-  def generateToAddress(blocks: Int, address: Address, maxTries: Int = 1000000): Future[Array[DoubleSha256Digest]] = {
-    bitcoindCall[Array[DoubleSha256Digest]]("generatetoaddress", List(JsNumber(blocks), JsString(address.toString), JsNumber(maxTries)))
+  def generateToAddress(blocks: Int, address: Address, maxTries: Int = 1000000): Future[Vector[DoubleSha256Digest]] = {
+    bitcoindCall[Vector[DoubleSha256Digest]]("generatetoaddress", List(JsNumber(blocks), JsString(address.toString), JsNumber(maxTries)))
   }
 
   def getAccountAddress(account: String = ""): Future[Address] = {
@@ -110,13 +135,13 @@ class RpcClient()(implicit m: ActorMaterializer, ec: ExecutionContext) {
     bitcoindCall[String]("getaccount", List(JsString(address.toString)))
   }
 
-  def getAddedNodeInfo(details: Boolean, node: Option[InetAddress]): Future[Array[Node]] = {
+  def getAddedNodeInfo(details: Boolean, node: Option[InetAddress]): Future[Vector[Node]] = {
     val params = if (node.isEmpty) List(JsBoolean(details)) else List(JsBoolean(details), JsString(node.get.toString))
-    bitcoindCall[Array[Node]]("getaddednodeinfo", params)
+    bitcoindCall[Vector[Node]]("getaddednodeinfo", params)
   }
 
-  def getAddressByAccount(account: String): Future[Array[Address]] = {
-    bitcoindCall[Array[Address]]("getaddressesbyaccount", List(JsString(account)))
+  def getAddressByAccount(account: String): Future[Vector[Address]] = {
+    bitcoindCall[Vector[Address]]("getaddressesbyaccount", List(JsString(account)))
   }
 
   def getBalance(account: String = "*", minConfirmations: Int = 0, includeWatchOnly: Boolean = true): Future[Bitcoins] = {
@@ -125,6 +150,74 @@ class RpcClient()(implicit m: ActorMaterializer, ec: ExecutionContext) {
 
   def getBlockRaw(headerHash: DoubleSha256Digest): Future[Block] = {
     bitcoindCall[Block]("getblock", List(JsString(headerHash.hex), JsNumber(0)))
+  }
+
+  // This needs a home
+  case class GetBlockResult(
+                           hash: DoubleSha256Digest,
+                           confirmations: Int,
+                           strippedsize: Int,
+                           size: Int,
+                           weight: Int,
+                           height: Int,
+                           version: Int,
+                           versionHex: Int32,
+                           merkleroot: DoubleSha256Digest,
+                           tx: Vector[DoubleSha256Digest],
+                           time: UInt32,
+                           mediantime: UInt32,
+                           nonce: UInt32,
+                           bits: UInt32,
+                           difficulty: Double,
+                           chainwork: String,
+                           previousblockhash: Option[DoubleSha256Digest],
+                           nextblockhash: Option[DoubleSha256Digest]
+                           )
+  implicit val getBlockResultReads: Reads[GetBlockResult] = Json.reads[GetBlockResult]
+
+  def getBlock(headerHash: DoubleSha256Digest): Future[GetBlockResult] = {
+    bitcoindCall[GetBlockResult]("getblock", List(JsString(headerHash.hex), JsNumber(1)))
+  }
+
+  // This needs a home
+  case class GetBlockWithTransactionsResult(
+                                           hash: DoubleSha256Digest,
+                                           confirmations: Int,
+                                           strippedsize: Int,
+                                           size: Int,
+                                           weight: Int,
+                                           height: Int,
+                                           version: Int,
+                                           versionHex: Int32,
+                                           merkleroot: DoubleSha256Digest,
+                                           tx: Vector[RpcTransaction],
+                                           time: UInt32,
+                                           mediantime: UInt32,
+                                           nonce: UInt32,
+                                           bits: UInt32,
+                                           difficulty: Double,
+                                           chainwork: String,
+                                           previousblockhash: Option[DoubleSha256Digest],
+                                           nextblockhash: Option[DoubleSha256Digest]
+                                           )
+
+  case class RpcTransaction(
+                        txid: DoubleSha256Digest,
+                        hash: DoubleSha256Digest,
+                        version: Int,
+                        size: Int,
+                        vsize: Int,
+                        locktime: UInt32,
+                        vin: Vector[TransactionInput],
+                        vout: Vector[TransactionOutput],
+                        hex: Block
+                        )
+
+  implicit val rpcTransactionReads: Reads[RpcTransaction] = Json.reads[RpcTransaction]
+  implicit val getBlockWithTransactionsResultReads: Reads[GetBlockWithTransactionsResult] = Json.reads[GetBlockWithTransactionsResult]
+
+  def getBlockWithTransactions(headerHash: DoubleSha256Digest): Future[GetBlockWithTransactionsResult] = {
+    bitcoindCall[GetBlockWithTransactionsResult]("getblock", List(JsString(headerHash.hex), JsNumber(2)))
   }
 
   def getBlockHash(height: Int): Future[DoubleSha256Digest] = {
@@ -161,7 +254,7 @@ class RpcClient()(implicit m: ActorMaterializer, ec: ExecutionContext) {
   }
 
   // Is String the correct return type?
-  def getTxOutProof(txids: Array[DoubleSha256Digest], headerHash: Option[DoubleSha256Digest]): Future[String] = {
+  def getTxOutProof(txids: Vector[DoubleSha256Digest], headerHash: Option[DoubleSha256Digest]): Future[String] = {
     def params =
       if (headerHash.isEmpty)
         List(JsArray(txids.map(hash => JsString(hash.hex))))
@@ -198,8 +291,8 @@ class RpcClient()(implicit m: ActorMaterializer, ec: ExecutionContext) {
     bitcoindCall[Unit]("keypoolrefill", List(JsNumber(keyPoolSize)))
   }
 
-  def listBanned: Future[Array[NodeBan]] = {
-    bitcoindCall[Array[NodeBan]]("listbanned")
+  def listBanned: Future[Vector[NodeBan]] = {
+    bitcoindCall[Vector[NodeBan]]("listbanned")
   }
 
   def ping: Future[Unit] = {
@@ -231,6 +324,10 @@ class RpcClient()(implicit m: ActorMaterializer, ec: ExecutionContext) {
     bitcoindCall[DoubleSha256Digest]("sendtoaddress", List(JsString(address.toString), JsNumber(amount.toBigDecimal), JsString(localComment), JsString(toComment), JsBoolean(subractFeeFromAmount)))
   }
 
+  def setBan(address: InetAddress, command: String, banTime: Int = 86400, absolute: Boolean = false): Future[Unit] = {
+    bitcoindCall[Unit]("setban", List(JsString(address.getHostAddress), JsString(command), JsNumber(banTime), JsBoolean(absolute)))
+  }
+
   def setNetworkActive(activate: Boolean): Future[Unit] = {
     bitcoindCall[Unit]("setnetworkactive", List(JsBoolean(activate)))
   }
@@ -251,8 +348,8 @@ class RpcClient()(implicit m: ActorMaterializer, ec: ExecutionContext) {
     bitcoindCall[Boolean]("verifychain", List(JsNumber(level), JsNumber(blocks)))
   }
 
-  def verifyTxOutProof(proof: String): Future[Array[DoubleSha256Digest]] = {
-    bitcoindCall[Array[DoubleSha256Digest]]("verifytxoutproof", List(JsString(proof)))
+  def verifyTxOutProof(proof: String): Future[Vector[DoubleSha256Digest]] = {
+    bitcoindCall[Vector[DoubleSha256Digest]]("verifytxoutproof", List(JsString(proof)))
   }
 
   def walletLock: Future[Unit] = {
@@ -268,7 +365,8 @@ class RpcClient()(implicit m: ActorMaterializer, ec: ExecutionContext) {
   }
 
   // Uses string:object pattern - CreateRawTransaction, GetBlockChainInfo, GetMemoryInfo, GetMemPoolAncestors, GetMemPoolDescendants, GetNetTotals, GetPeerInfo, GetTxOut, ImportMulti
-  // Also Skipped: DecodeRawTransaction, DecodeScript, FundRawTransaction, GetBlock, GetBlockTemplate, GetRawMemPool, GetRawTransaction, GetTransaction, ImportAddress, ImportPrunedFunds, ListAccounts-Ping, SendFrom, SendMany, SetAccount, SetBan, SignMessage-SignRawTransaction, SubmitBlock, VerifyMessage
+  // Uses nameless object - DecodeRawTransaction, FundRawTransaction
+  // Also Skipped: GetBlockTemplate, GetRawMemPool, GetRawTransaction, GetTransaction, ImportAddress, ImportPrunedFunds, ListAccounts-Ping, SendFrom, SendMany, SetAccount, SignMessage-SignRawTransaction, SubmitBlock, VerifyMessage
   // TODO: Overload calls with Option inputs?
   // --------------------------------------------------------------------------------
   // EVERYTHING BELOW THIS COMMENT HAS TESTS
@@ -289,8 +387,8 @@ class RpcClient()(implicit m: ActorMaterializer, ec: ExecutionContext) {
     bitcoindCall[GetMiningInfoResult]("getmininginfo")
   }
 
-  def getChainTips: Future[Array[ChainTip]] = {
-    bitcoindCall[Array[ChainTip]]("getchaintips")
+  def getChainTips: Future[Vector[ChainTip]] = {
+    bitcoindCall[Vector[ChainTip]]("getchaintips")
   }
 
   def getNetworkInfo: Future[GetNetworkInfoResult] = {
@@ -309,8 +407,8 @@ class RpcClient()(implicit m: ActorMaterializer, ec: ExecutionContext) {
     bitcoindCall[GetBlockHeaderResult]("getblockheader", List(JsString(headerHash.hex), JsBoolean(true)))
   }
 
-  def generate(blocks: Int, maxTries: Int = 1000000): Future[Array[DoubleSha256Digest]] = {
-    bitcoindCall[Array[DoubleSha256Digest]]("generate", List(JsNumber(blocks), JsNumber(maxTries)))
+  def generate(blocks: Int, maxTries: Int = 1000000): Future[Vector[DoubleSha256Digest]] = {
+    bitcoindCall[Vector[DoubleSha256Digest]]("generate", List(JsNumber(blocks), JsNumber(maxTries)))
   }
 
   private def bitcoindCall[T](command: String, parameters: List[JsValue] = List.empty)(implicit reader: Reads[T]): Future[T] = {
