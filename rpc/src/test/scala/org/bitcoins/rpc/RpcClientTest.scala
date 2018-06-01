@@ -2,6 +2,7 @@ package org.bitcoins.rpc
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
+import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.rpc.client.RpcClient
 import org.scalatest.AsyncFlatSpec
@@ -10,6 +11,7 @@ class RpcClientTest extends AsyncFlatSpec {
   implicit val system = ActorSystem()
   implicit val m = ActorMaterializer()
   implicit val ec = m.executionContext
+  implicit val regTestNetworkParam = RegTest
 
   val client = new RpcClient
   val logger = BitcoinSLogger.logger

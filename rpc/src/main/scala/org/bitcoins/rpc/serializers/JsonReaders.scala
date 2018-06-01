@@ -2,16 +2,16 @@ package org.bitcoins.rpc.serializers
 
 import java.net.InetAddress
 
-import org.bitcoins.core.crypto.{DoubleSha256Digest, ECPublicKey, Sha256Hash160Digest}
+import org.bitcoins.core.crypto.{ DoubleSha256Digest, ECPublicKey, Sha256Hash160Digest }
 import org.bitcoins.core.currency.Bitcoins
-import org.bitcoins.core.number.{Int32, UInt32}
-import org.bitcoins.core.protocol.{Address, BitcoinAddress, P2PKHAddress, P2SHAddress}
-import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, MerkleBlock}
-import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptSignature}
+import org.bitcoins.core.number.{ Int32, UInt32 }
+import org.bitcoins.core.protocol.{ Address, BitcoinAddress, P2PKHAddress, P2SHAddress }
+import org.bitcoins.core.protocol.blockchain.{ Block, BlockHeader, MerkleBlock }
+import org.bitcoins.core.protocol.script.{ ScriptPubKey, ScriptSignature }
 import org.bitcoins.core.protocol.transaction._
 import play.api.libs.json._
 
-import scala.util.{Failure, Success}
+import scala.util.{ Failure, Success }
 
 object JsonReaders {
   implicit object DoubleSha256DigestReads extends Reads[DoubleSha256Digest] {
@@ -105,7 +105,7 @@ object JsonReaders {
 
   implicit object ECPublicKeyReads extends Reads[ECPublicKey] {
     def reads(json: JsValue) = json match {
-      case JsString(s) => JsSuccess(ECPublicKey.fromHex(s))
+      case JsString(s) => JsSuccess(ECPublicKey.fromHex(s)) // Should this be WIF or Hex?
       case err => JsError(s"error.expected.jsstring, got ${Json.toJson(err).toString()}")
     }
   }
@@ -152,7 +152,7 @@ object JsonReaders {
             case _ => return JsError("error.expected.vin.scriptSig")
           }
 
-          JsSuccess(TransactionInput(TransactionOutPoint(txid, vout),scriptSig, sequence))
+          JsSuccess(TransactionInput(TransactionOutPoint(txid, vout), scriptSig, sequence))
       }
     }
   }
@@ -182,8 +182,8 @@ object JsonReaders {
   }
 
   implicit object TransactionOutPointReads extends Reads[TransactionOutPoint] {
+    private case class OutPoint(txid: DoubleSha256Digest, vout: UInt32)
     def reads(json: JsValue) = {
-      case class OutPoint(txid: DoubleSha256Digest, vout: UInt32)
       implicit val outPointReads: Reads[OutPoint] = Json.reads[OutPoint]
       json.validate[OutPoint] match {
         case JsSuccess(op, _) => JsSuccess(TransactionOutPoint(op.txid, op.vout))

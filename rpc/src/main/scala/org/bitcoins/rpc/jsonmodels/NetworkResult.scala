@@ -2,13 +2,13 @@ package org.bitcoins.rpc.jsonmodels
 
 import java.net.InetAddress
 
-import org.bitcoins.core.crypto.{DoubleSha256Digest, ECPublicKey, Sha256Hash160Digest}
+import org.bitcoins.core.crypto.{ DoubleSha256Digest, ECPublicKey, Sha256Hash160Digest }
 import org.bitcoins.core.currency.Bitcoins
-import org.bitcoins.core.number.{Int32, UInt32}
+import org.bitcoins.core.number.{ Int32, UInt32 }
 import org.bitcoins.core.protocol.blockchain.Block
-import org.bitcoins.core.protocol.{Address, BitcoinAddress}
+import org.bitcoins.core.protocol.{ Address, BitcoinAddress }
 import org.bitcoins.core.protocol.script.ScriptPubKey
-import org.bitcoins.core.protocol.transaction.TransactionInput
+import org.bitcoins.core.protocol.transaction.{ Transaction, TransactionInput }
 
 sealed abstract class NetworkResult
 
@@ -62,140 +62,210 @@ case class GetBlockHeaderResult(
   nextblockhash: Option[DoubleSha256Digest]) extends NetworkResult
 
 case class ValidateAddressResult(
-                                  isvalid: Boolean,
-                                  address: Option[Address],
-                                  scriptPubKey: Option[ScriptPubKey],
-                                  ismine: Option[Boolean],
-                                  iswatchonly: Option[Boolean],
-                                  isscript: Option[Boolean],
-                                  script: Option[ScriptPubKey],
-                                  hex: Option[String],
-                                  addresses: Option[Vector[Address]],
-                                  sigrequired: Option[Int],
-                                  pubkey: Option[ECPublicKey],
-                                  iscompressed: Option[Boolean],
-                                  account: Option[String],
-                                  hdkeypath: Option[String],
-                                  hdmasterkeyid: Option[Sha256Hash160Digest]
-                                ) extends NetworkResult
+  isvalid: Boolean,
+  address: Option[Address],
+  scriptPubKey: Option[ScriptPubKey],
+  ismine: Option[Boolean],
+  iswatchonly: Option[Boolean],
+  isscript: Option[Boolean],
+  script: Option[ScriptPubKey],
+  hex: Option[String],
+  addresses: Option[Vector[Address]],
+  sigrequired: Option[Int],
+  pubkey: Option[ECPublicKey],
+  iscompressed: Option[Boolean],
+  account: Option[String],
+  hdkeypath: Option[String],
+  hdmasterkeyid: Option[Sha256Hash160Digest]) extends NetworkResult
 
 case class NodeBan(
-                    address: InetAddress,
-                    banned_until: UInt32,
-                    ban_created: UInt32,
-                    ban_reason: String
-                  ) extends NetworkResult
+  address: InetAddress,
+  banned_until: UInt32,
+  ban_created: UInt32,
+  ban_reason: String) extends NetworkResult
 
 case class Node(
-                 addednode: InetAddress,
-                 connected: Option[Boolean],
-                 addresses: Option[Vector[NodeAddress]]
-               ) extends NetworkResult
+  addednode: InetAddress,
+  connected: Option[Boolean],
+  addresses: Option[Vector[NodeAddress]]) extends NetworkResult
 case class NodeAddress(
-                        address: InetAddress,
-                        connected: String
-                      ) extends NetworkResult
+  address: InetAddress,
+  connected: String) extends NetworkResult
 
 case class GetMemPoolEntryResult(
-                                  size: Int,
-                                  fee: Bitcoins,
-                                  modifiedfee: Bitcoins,
-                                  time: UInt32,
-                                  height: Int,
-                                  startingpriority: BigDecimal,
-                                  currentpriority: BigDecimal,
-                                  descendantcount: Int,
-                                  descendantsize: Int,
-                                  descendantfees: Int,
-                                  ancestorcount: Int,
-                                  ancestorsize: Int,
-                                  ancestorfees: Int,
-                                  depends: Option[Vector[DoubleSha256Digest]]
-                                ) extends NetworkResult
+  size: Int,
+  fee: Bitcoins,
+  modifiedfee: Bitcoins,
+  time: UInt32,
+  height: Int,
+  startingpriority: BigDecimal,
+  currentpriority: BigDecimal,
+  descendantcount: Int,
+  descendantsize: Int,
+  descendantfees: Int,
+  ancestorcount: Int,
+  ancestorsize: Int,
+  ancestorfees: Int,
+  depends: Option[Vector[DoubleSha256Digest]]) extends NetworkResult
 
 case class GetMemPoolInfoResult(
-                                 size: Int,
-                                 bytes: Int,
-                                 usage: Int,
-                                 maxmempool: Int,
-                                 mempoolminfee: Bitcoins,
-                                 minrelaytxfee: Bitcoins
-                               ) extends NetworkResult
+  size: Int,
+  bytes: Int,
+  usage: Int,
+  maxmempool: Int,
+  mempoolminfee: Bitcoins,
+  minrelaytxfee: Bitcoins) extends NetworkResult
 
 case class GetTxOutSetInfoResult(
-                                  height: Int,
-                                  bestblock: DoubleSha256Digest,
-                                  transactions: Int,
-                                  txouts: Int,
-                                  bytes_serialized: Int,
-                                  hash_serialized: DoubleSha256Digest,
-                                  total_amount: Bitcoins
-                                ) extends NetworkResult
+  height: Int,
+  bestblock: DoubleSha256Digest,
+  transactions: Int,
+  txouts: Int,
+  bytes_serialized: Int,
+  hash_serialized: DoubleSha256Digest,
+  total_amount: Bitcoins) extends NetworkResult
 
 case class GetBlockResult(
-                           hash: DoubleSha256Digest,
-                           confirmations: Int,
-                           strippedsize: Int,
-                           size: Int,
-                           weight: Int,
-                           height: Int,
-                           version: Int,
-                           versionHex: Int32,
-                           merkleroot: DoubleSha256Digest,
-                           tx: Vector[DoubleSha256Digest],
-                           time: UInt32,
-                           mediantime: UInt32,
-                           nonce: UInt32,
-                           bits: UInt32,
-                           difficulty: BigDecimal,
-                           chainwork: String,
-                           previousblockhash: Option[DoubleSha256Digest],
-                           nextblockhash: Option[DoubleSha256Digest]
-                         ) extends NetworkResult
+  hash: DoubleSha256Digest,
+  confirmations: Int,
+  strippedsize: Int,
+  size: Int,
+  weight: Int,
+  height: Int,
+  version: Int,
+  versionHex: Int32,
+  merkleroot: DoubleSha256Digest,
+  tx: Vector[DoubleSha256Digest],
+  time: UInt32,
+  mediantime: UInt32,
+  nonce: UInt32,
+  bits: UInt32,
+  difficulty: BigDecimal,
+  chainwork: String,
+  previousblockhash: Option[DoubleSha256Digest],
+  nextblockhash: Option[DoubleSha256Digest]) extends NetworkResult
 
 case class GetBlockWithTransactionsResult(
-                                           hash: DoubleSha256Digest,
-                                           confirmations: Int,
-                                           strippedsize: Int,
-                                           size: Int,
-                                           weight: Int,
-                                           height: Int,
-                                           version: Int,
-                                           versionHex: Int32,
-                                           merkleroot: DoubleSha256Digest,
-                                           tx: Vector[RpcTransaction],
-                                           time: UInt32,
-                                           mediantime: UInt32,
-                                           nonce: UInt32,
-                                           bits: UInt32,
-                                           difficulty: BigDecimal,
-                                           chainwork: String,
-                                           previousblockhash: Option[DoubleSha256Digest],
-                                           nextblockhash: Option[DoubleSha256Digest]
-                                         ) extends NetworkResult
+  hash: DoubleSha256Digest,
+  confirmations: Int,
+  strippedsize: Int,
+  size: Int,
+  weight: Int,
+  height: Int,
+  version: Int,
+  versionHex: Int32,
+  merkleroot: DoubleSha256Digest,
+  tx: Vector[RpcTransaction],
+  time: UInt32,
+  mediantime: UInt32,
+  nonce: UInt32,
+  bits: UInt32,
+  difficulty: BigDecimal,
+  chainwork: String,
+  previousblockhash: Option[DoubleSha256Digest],
+  nextblockhash: Option[DoubleSha256Digest]) extends NetworkResult
 
 case class RpcTransaction(
-                           txid: DoubleSha256Digest,
-                           hash: DoubleSha256Digest,
-                           version: Int,
-                           size: Int,
-                           vsize: Int,
-                           locktime: UInt32,
-                           vin: Vector[TransactionInput],
-                           vout: Vector[RpcTransactionOutput],
-                           hex: Block
-                         ) extends NetworkResult
+  txid: DoubleSha256Digest,
+  hash: DoubleSha256Digest,
+  version: Int,
+  size: Int,
+  vsize: Int,
+  locktime: UInt32,
+  vin: Vector[TransactionInput],
+  vout: Vector[RpcTransactionOutput],
+  hex: Block) extends NetworkResult
 
 case class RpcTransactionOutput(
-                                 value: Bitcoins,
-                                 n: Int,
-                                 scriptPubKey: RpcScriptPubKey
-                               ) extends NetworkResult
+  value: Bitcoins,
+  n: Int,
+  scriptPubKey: RpcScriptPubKey) extends NetworkResult
 
 case class RpcScriptPubKey(
-                            asm: String,
-                            hex: String,
-                            reqSigs: Int,
-                            scriptType: String,
-                            addresses: Vector[BitcoinAddress]
-                          ) extends NetworkResult
+  asm: String,
+  hex: String,
+  reqSigs: Int,
+  scriptType: String,
+  addresses: Vector[BitcoinAddress]) extends NetworkResult
+
+case class ListSinceBlockResult(
+  transactions: Vector[Payment],
+  lastblock: DoubleSha256Digest) extends NetworkResult
+
+case class Payment( // TODO: Get around the limit for parameters
+  involvesWatchonly: Option[Boolean],
+  account: String,
+  address: Option[BitcoinAddress],
+  category: String,
+  amount: Bitcoins,
+  vout: Option[Int],
+  fee: Option[Bitcoins],
+  confirmations: Option[Int],
+  generated: Option[Boolean],
+  blockhash: Option[DoubleSha256Digest],
+  blockindex: Option[Int],
+  blocktime: Option[UInt32],
+  txid: Option[DoubleSha256Digest],
+  walletconflicts: Option[Vector[DoubleSha256Digest]],
+  time: UInt32,
+  timereceived: Option[UInt32],
+  bip125_replaceable: String,
+  comment: Option[String],
+  to: Option[String],
+  label: Option[String],
+  trusted: Option[Boolean],
+  otheraccount: Option[String],
+  abandoned: Option[Boolean]) extends NetworkResult
+
+case class ReceivedAddress(
+  involvesWatchonly: Option[Boolean],
+  address: BitcoinAddress,
+  account: String,
+  amount: Bitcoins,
+  confirmations: Int,
+  label: String,
+  txids: Vector[DoubleSha256Digest]) extends NetworkResult
+
+case class GetTransactionResult(
+  amount: Bitcoins,
+  fee: Option[Bitcoins],
+  confirmations: Int,
+  generated: Option[Boolean],
+  blockhash: Option[DoubleSha256Digest],
+  blockIndex: Option[Int],
+  blockTime: Option[UInt32],
+  txid: DoubleSha256Digest,
+  walletconflicts: Vector[DoubleSha256Digest],
+  time: UInt32,
+  timereceived: UInt32,
+  bip125_replaceable: String,
+  comment: Option[String],
+  to: Option[String],
+  details: Vector[TransactionDetails],
+  hex: Transaction) extends NetworkResult
+
+case class TransactionDetails(
+  involvesWatchonly: Option[Boolean],
+  account: String,
+  address: Option[BitcoinAddress],
+  category: String,
+  amount: Bitcoins,
+  vout: Int,
+  fee: Option[Bitcoins],
+  abandoned: Option[Boolean]) extends NetworkResult
+
+case class UnspentOutput( // Naming?
+  txid: DoubleSha256Digest,
+  vout: Int,
+  address: Option[BitcoinAddress],
+  account: Option[String],
+  scriptPubKey: Option[ScriptPubKey],
+  reedemScript: Option[ScriptPubKey],
+  amount: Bitcoins,
+  confirmations: Int,
+  spendable: Boolean,
+  solvable: Boolean) extends NetworkResult
+
+case class LockUnspentOutputParameter(txid: DoubleSha256Digest, vout: Int) extends NetworkResult
+
+case class SignRawTransactionResult(hex: Transaction, complete: Boolean) extends NetworkResult
