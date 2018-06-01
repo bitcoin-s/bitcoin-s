@@ -9,7 +9,7 @@ import org.bitcoins.core.util.Factory
  */
 sealed trait HashType {
   def num: Int32
-  def byte: Byte
+  def byte: Byte = num.bytes.last
 }
 
 object HashType extends Factory[HashType] {
@@ -21,14 +21,23 @@ object HashType extends Factory[HashType] {
   def fromByte(byte: Byte): HashType = fromBytes(Seq(byte))
 
   def fromNumber(num: Int32): HashType = {
-    if (isSIGHASH_NONE(num)) {
-      if (isSIGHASH_NONE_ANYONECANPAY(num)) SIGHASH_NONE_ANYONECANPAY(num) else SIGHASH_NONE(num)
-    } else if (isSIGHASH_SINGLE(num)) {
-      if (isSIGHASH_SINGLE_ANYONECANPAY(num)) SIGHASH_SINGLE_ANYONECANPAY(num) else SIGHASH_SINGLE(num)
-    } else if (isSIGHASH_ANYONECANPAY(num)) {
-      if (isSIGHASH_ALL_ANYONECANPAY(num)) SIGHASH_ALL_ANYONECANPAY(num)
-      else {
-        require(isONLY_ANYONE_CANPAY(num))
+    if (isSigHashNone(num)) {
+      if (isSigHashNoneAnyoneCanPay(num)) {
+        SIGHASH_NONE_ANYONECANPAY(num)
+      } else {
+        SIGHASH_NONE(num)
+      }
+    } else if (isSigHashSingle(num)) {
+      if (isSigHashAnyoneCanPay(num)) {
+        SIGHASH_SINGLE_ANYONECANPAY(num)
+      } else {
+        SIGHASH_SINGLE(num)
+      }
+    } else if (isSigHashAnyoneCanPay(num)) {
+      if (isSigHashAllAnyoneCanPay(num)) {
+        SIGHASH_ALL_ANYONECANPAY(num)
+      } else {
+        require(isOnlyAnyoneCanPay(num))
         SIGHASH_ANYONECANPAY(num)
       }
     } else SIGHASH_ALL(num)
@@ -40,21 +49,40 @@ object HashType extends Factory[HashType] {
     case h: HashType => h.byte
   }
 
-  def isSIGHASH_ALL_ONE(num: Int32): Boolean = (num & Int32(0x1f)) == Int32(1)
-  def isSIGHASH_NONE(num: Int32): Boolean = (num & Int32(0x1f)) == Int32(2)
-  def isSIGHASH_SINGLE(num: Int32): Boolean = (num & Int32(0x1f)) == Int32(3)
-  def isSIGHASH_ANYONECANPAY(num: Int32): Boolean = (num & Int32(0x80)) == Int32(0x80)
-  def isSIGHASH_ALL_ANYONECANPAY(num: Int32): Boolean = isSIGHASH_ALL_ONE(num) && isSIGHASH_ANYONECANPAY(num)
-  def isSIGHASH_NONE_ANYONECANPAY(num: Int32): Boolean = isSIGHASH_NONE(num) && isSIGHASH_ANYONECANPAY(num)
-  def isSIGHASH_SINGLE_ANYONECANPAY(num: Int32): Boolean = isSIGHASH_SINGLE(num) && isSIGHASH_ANYONECANPAY(num)
-  def isSIGHASH_ALL(num: Int32): Boolean = {
-    if (!(isSIGHASH_NONE(num) || isSIGHASH_SINGLE(num) || isSIGHASH_ANYONECANPAY(num) || isSIGHASH_ALL_ANYONECANPAY(num) ||
-      isSIGHASH_SINGLE_ANYONECANPAY(num) || isSIGHASH_NONE_ANYONECANPAY(num))) true
+  def isSigHashAllOne(num: Int32): Boolean = (num & Int32(0x1f)) == Int32(1)
+
+  def isSigHashNone(num: Int32): Boolean = (num & Int32(0x1f)) == Int32(2)
+
+  def isSigHashSingle(num: Int32): Boolean = (num & Int32(0x1f)) == Int32(3)
+
+  def isSigHashAnyoneCanPay(num: Int32): Boolean = (num & Int32(0x80)) == Int32(0x80)
+
+  def isSigHashAllAnyoneCanPay(num: Int32): Boolean = {
+    isSigHashAllOne(num) && isSigHashAnyoneCanPay(num)
+  }
+
+  def isSigHashNoneAnyoneCanPay(num: Int32): Boolean = {
+    isSigHashNone(num) && isSigHashAnyoneCanPay(num)
+  }
+
+  def isSigHashSingleAnyoneCanPay(num: Int32): Boolean = {
+    isSigHashSingle(num) && isSigHashAnyoneCanPay(num)
+  }
+
+  def isSigHashAll(num: Int32): Boolean = {
+    if (!(isSigHashNone(num) ||
+      isSigHashSingle(num) ||
+      isSigHashAnyoneCanPay(num) ||
+      isSigHashAllAnyoneCanPay(num) ||
+      isSigHashSingleAnyoneCanPay(num) ||
+      isSigHashNoneAnyoneCanPay(num))) true
     else false
   }
-  def isONLY_ANYONE_CANPAY(num: Int32): Boolean = {
-    !(HashType.isSIGHASH_ALL_ANYONECANPAY(num) || HashType.isSIGHASH_NONE_ANYONECANPAY(num) ||
-      HashType.isSIGHASH_SINGLE_ANYONECANPAY(num))
+
+  def isOnlyAnyoneCanPay(num: Int32): Boolean = {
+    !(HashType.isSigHashAllAnyoneCanPay(num) ||
+      HashType.isSigHashNoneAnyoneCanPay(num) ||
+      HashType.isSigHashSingleAnyoneCanPay(num))
   }
 
   /** Checks if the given hash type has the ANYONECANPAY bit set */
@@ -69,6 +97,7 @@ object HashType extends Factory[HashType] {
 
   lazy val hashTypeBytes: Seq[Byte] = Seq(sigHashAllByte, sigHashSingleByte, sigHashNoneByte, sigHashAnyoneCanPayByte,
     sigHashNoneAnyoneCanPayByte, sigHashSingleAnyoneCanPayByte, sigHashAllAnyoneCanPayByte)
+
   def apply(num: Int32): HashType = fromNumber(num)
 
   def apply(int: Int): HashType = HashType(Int32(int))
@@ -140,40 +169,33 @@ object HashType extends Factory[HashType] {
  * https://en.bitcoin.it/wiki/OP_CHECKSIG
  */
 case class SIGHASH_ALL(override val num: Int32) extends HashType {
-  require(HashType.isSIGHASH_ALL(num), "SIGHASH_ALL acts as a 'catch-all' for undefined hashtypes, and has a default " +
+  require(HashType.isSigHashAll(num), "SIGHASH_ALL acts as a 'catch-all' for undefined hashtypes, and has a default " +
     "value of one. Your input was: " + num + ", which is of hashType: " + HashType(num))
-  override def byte = HashType.sigHashAllByte
 }
 object SIGHASH_ALL {
   def apply(byte: Byte): SIGHASH_ALL = SIGHASH_ALL(Int32(byte))
 }
 
 case class SIGHASH_NONE(override val num: Int32) extends HashType {
-  require(HashType.isSIGHASH_NONE(num), "The given number is not a SIGHASH_NONE number: " + num)
-  override def byte: Byte = HashType.sigHashNoneByte
+  require(HashType.isSigHashNone(num), "The given number is not a SIGHASH_NONE number: " + num)
 }
 
 case class SIGHASH_SINGLE(override val num: Int32) extends HashType {
-  require(HashType.isSIGHASH_SINGLE(num), "The given number is not a SIGHASH_SINGLE number: " + num)
-  override def byte: Byte = HashType.sigHashSingleByte
+  require(HashType.isSigHashSingle(num), "The given number is not a SIGHASH_SINGLE number: " + num)
 }
 
 case class SIGHASH_ANYONECANPAY(override val num: Int32) extends HashType {
-  require(HashType.isSIGHASH_ANYONECANPAY(num), "The given number was not a SIGHASH_ANYONECANPAY number: " + num)
-  override def byte: Byte = HashType.sigHashAnyoneCanPayByte
+  require(HashType.isSigHashAnyoneCanPay(num), "The given number was not a SIGHASH_ANYONECANPAY number: " + num)
 }
 
 case class SIGHASH_ALL_ANYONECANPAY(override val num: Int32) extends HashType {
-  require(HashType.isSIGHASH_ALL_ANYONECANPAY(num), "The given number was not a SIGHASH_ALL_ANYONECANPAY number: " + num)
-  override def byte: Byte = HashType.sigHashAllAnyoneCanPayByte
+  require(HashType.isSigHashAllAnyoneCanPay(num), "The given number was not a SIGHASH_ALL_ANYONECANPAY number: " + num)
 }
 
 case class SIGHASH_NONE_ANYONECANPAY(override val num: Int32) extends HashType {
-  require(HashType.isSIGHASH_NONE_ANYONECANPAY(num), "The given number was not a SIGHASH_NONE_ANYONECANPAY number: " + num)
-  override def byte: Byte = HashType.sigHashNoneAnyoneCanPayByte
+  require(HashType.isSigHashNoneAnyoneCanPay(num), "The given number was not a SIGHASH_NONE_ANYONECANPAY number: " + num)
 }
 
 case class SIGHASH_SINGLE_ANYONECANPAY(override val num: Int32) extends HashType {
-  require(HashType.isSIGHASH_SINGLE_ANYONECANPAY(num), "The given number was not a SIGHASH_SINGLE_ANYONECANPAY number: " + num)
-  override def byte: Byte = HashType.sigHashSingleAnyoneCanPayByte
+  require(HashType.isSigHashSingleAnyoneCanPay(num), "The given number was not a SIGHASH_SINGLE_ANYONECANPAY number: " + num)
 }
