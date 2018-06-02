@@ -42,12 +42,12 @@ class HashTypeTest extends FlatSpec with MustMatchers {
   }
 
   it must "determine if a given number is of hashType SIGHASH_ALL" in {
-    HashType.isSIGHASH_ALL(Int32.zero) must be(true)
-    HashType.isSIGHASH_ALL(Int32.one) must be(true)
-    HashType.isSIGHASH_ALL(Int32(5)) must be(true)
+    HashType.isSigHashAll(Int32.zero) must be(true)
+    HashType.isSigHashAll(Int32.one) must be(true)
+    HashType.isSigHashAll(Int32(5)) must be(true)
 
-    HashType.isSIGHASH_ALL(HashType.sigHashNone.num) must be(false)
-    HashType.isSIGHASH_ALL(HashType.sigHashSingle.num) must be(false)
+    HashType.isSigHashAll(HashType.sigHashNone.num) must be(false)
+    HashType.isSigHashAll(HashType.sigHashSingle.num) must be(false)
   }
 
   it must "return the correct byte for a given hashtype" in {

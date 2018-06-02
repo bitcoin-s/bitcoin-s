@@ -136,8 +136,8 @@ sealed abstract class TransactionSignatureSerializer {
         }
       case SigVersionWitnessV0 =>
         val isNotAnyoneCanPay = !HashType.isAnyoneCanPay(hashType)
-        val isNotSigHashSingle = !(HashType.isSIGHASH_SINGLE(hashType.num))
-        val isNotSigHashNone = !(HashType.isSIGHASH_NONE(hashType.num))
+        val isNotSigHashSingle = !(HashType.isSigHashSingle(hashType.num))
+        val isNotSigHashNone = !(HashType.isSigHashNone(hashType.num))
         val inputIndexInt = inputIndex.toInt
         val emptyHash = CryptoUtil.emptyDoubleSha256Hash
 
@@ -154,7 +154,8 @@ sealed abstract class TransactionSignatureSerializer {
         val outputHash: Seq[Byte] = if (isNotSigHashSingle && isNotSigHashNone) {
           val bytes = spendingTransaction.outputs.flatMap(o => o.bytes)
           CryptoUtil.doubleSHA256(bytes).bytes
-        } else if (HashType.isSIGHASH_SINGLE(hashType.num) && inputIndex < UInt32(spendingTransaction.outputs.size)) {
+        } else if (HashType.isSigHashSingle(hashType.num) &&
+          inputIndex < UInt32(spendingTransaction.outputs.size)) {
           val output = spendingTransaction.outputs(inputIndexInt)
           val bytes = CryptoUtil.doubleSHA256(RawTransactionOutputParser.write(output)).bytes
           bytes
