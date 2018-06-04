@@ -188,34 +188,58 @@ case class RpcScriptPubKey(
   scriptType: String,
   addresses: Vector[BitcoinAddress]) extends NetworkResult
 
+
 case class ListSinceBlockResult(
   transactions: Vector[Payment],
   lastblock: DoubleSha256Digest) extends NetworkResult
 
-case class Payment( // TODO: Get around the limit for parameters
+case class Payment(
   involvesWatchonly: Option[Boolean],
   account: String,
   address: Option[BitcoinAddress],
   category: String,
   amount: Bitcoins,
-  vout: Option[Int],
+  vout: Int,
   fee: Option[Bitcoins],
-  confirmations: Option[Int],
+  confirmations: Int,
   generated: Option[Boolean],
   blockhash: Option[DoubleSha256Digest],
   blockindex: Option[Int],
   blocktime: Option[UInt32],
-  txid: Option[DoubleSha256Digest],
-  walletconflicts: Option[Vector[DoubleSha256Digest]],
+  txid: DoubleSha256Digest,
+  walletconflicts: Vector[DoubleSha256Digest],
   time: UInt32,
-  timereceived: Option[UInt32],
+  timereceived: UInt32,
   bip125_replaceable: String,
   comment: Option[String],
   to: Option[String],
-  label: Option[String],
-  trusted: Option[Boolean],
-  otheraccount: Option[String],
-  abandoned: Option[Boolean]) extends NetworkResult
+  lastblock: DoubleSha256Digest) extends NetworkResult
+
+case class ListTransactionsResult(
+                                 account: String,
+                                 address: Option[BitcoinAddress],
+                                 category: String,
+                                 amount: Bitcoins,
+                                 label: Option[String],
+                                 vout: Option[Int],
+                                 fee: Option[Bitcoins],
+                                 confirmations: Option[Int],
+                                 trusted: Option[Boolean],
+                                 generated: Option[Boolean],
+                                 blockhash: Option[DoubleSha256Digest],
+                                 blockindex: Option[Int],
+                                 blocktime: Option[UInt32],
+                                 txid: Option[DoubleSha256Digest],
+                                 walletconflicts: Option[Vector[DoubleSha256Digest]],
+                                 time: UInt32,
+                                 timereceived: Option[UInt32],
+                                 comment: Option[String],
+                                 to: Option[String],
+                                 otheraccount: Option[String],
+                                 bip125_replaceable: String, // TODO: Needs to be a - not a _
+                                 abandoned: Option[Boolean]
+                                 ) extends NetworkResult
+
 
 case class ReceivedAddress(
   involvesWatchonly: Option[Boolean],
