@@ -314,8 +314,8 @@ class RpcClient()(implicit m: ActorMaterializer, ec: ExecutionContext, network: 
     bitcoindCall[ListSinceBlockResult]("listsinceblock", List(JsString(headerHash.hex), JsNumber(confirmations), JsBoolean(includeWatchOnly)))
   }
 
-  def listTransactions(account: String = "*", count: Int = 10, skip: Int = 0, includeWatchOnly: Boolean = false): Future[Vector[Payment]] = {
-    bitcoindCall[Vector[Payment]]("listtransactions", List(JsString(account), JsNumber(count), JsNumber(skip), JsBoolean(includeWatchOnly)))
+  def listTransactions(account: String = "*", count: Int = 10, skip: Int = 0, includeWatchOnly: Boolean = false): Future[Vector[ListTransactionsResult]] = {
+    bitcoindCall[Vector[ListTransactionsResult]]("listtransactions", List(JsString(account), JsNumber(count), JsNumber(skip), JsBoolean(includeWatchOnly)))
   }
 
   def listUnspent(minConfirmations: Int = 1, maxConfirmations: Int = 9999999, addresses: Vector[BitcoinAddress]): Future[Vector[UnspentOutput]] = {
@@ -534,7 +534,7 @@ class RpcClient()(implicit m: ActorMaterializer, ec: ExecutionContext, network: 
       "id" -> JsString("")) // java.util.UUID
     val jsObject = JsObject(m)
 
-    val uri = "http://localhost:18332"
+    val uri = "http://localhost:18443"
     val username = "nadav"
     val password = "abc123"
     HttpRequest(method = HttpMethods.POST, uri,

@@ -74,6 +74,8 @@ object JsonSerializers {
   implicit val paymentReads: Reads[Payment] = Json.reads[Payment]
   implicit val listSinceBlockResultReads: Reads[ListSinceBlockResult] = Json.reads[ListSinceBlockResult]
 
+  implicit val listTransactionsResultReads: Reads[ListTransactionsResult] = Json.reads[ListTransactionsResult]
+
   implicit val receivedAddressReads: Reads[ReceivedAddress] = Json.reads[ReceivedAddress]
 
   implicit val TransactionDetailsReads: Reads[TransactionDetails] = Json.reads[TransactionDetails]
