@@ -174,7 +174,7 @@ case class RpcTransaction(
   locktime: UInt32,
   vin: Vector[TransactionInput],
   vout: Vector[RpcTransactionOutput],
-  hex: Block) extends NetworkResult
+  hex: Option[Block]) extends NetworkResult
 
 case class RpcTransactionOutput(
   value: Bitcoins,
