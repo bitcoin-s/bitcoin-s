@@ -3,9 +3,14 @@ package org.bitcoins.rpc
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import org.bitcoins.core.config.RegTest
+import org.bitcoins.core.currency.Bitcoins
+import org.bitcoins.core.gen.ScriptGenerators
+import org.bitcoins.core.protocol.transaction.{Transaction, TransactionInput, TransactionOutPoint}
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.rpc.client.RpcClient
 import org.scalatest.AsyncFlatSpec
+import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.protocol.script.ScriptSignature
 
 class RpcClientTest extends AsyncFlatSpec {
   implicit val system = ActorSystem()
@@ -17,6 +22,38 @@ class RpcClientTest extends AsyncFlatSpec {
   val logger = BitcoinSLogger.logger
 
   behavior of "RpcClient"
+
+  it should "be able to get blockchain info" in {
+    client.getBlockChainInfo.flatMap { info =>
+      logger.info(info.toString)
+      assert(info.chain == "regtest")
+      client.getBestBlockHash.map( bestHash => assert(info.bestblockhash == bestHash))
+      assert(info.softforks.length >= 3)
+      assert(info.bip9_softforks.keySet.size >= 2)
+    }
+  }
+
+  it should "be able to create a raw transaction" in {
+    client.generate(2).flatMap { blocks =>
+      client.getBlock(blocks(0)).flatMap { block0 =>
+        client.getBlock(blocks(1)).flatMap { block1 =>
+          client.getTransaction(block0.tx(0)).flatMap { transaction0 =>
+            client.getTransaction(block1.tx(0)).flatMap { transaction1 =>
+              val input0 = TransactionOutPoint(transaction0.txid, UInt32(transaction0.blockindex.get))
+              val input1 = TransactionOutPoint(transaction1.txid, UInt32(transaction1.blockindex.get))
+              val sig: ScriptSignature = ScriptGenerators.scriptSignature.sample.get
+              client.getNewAddress().flatMap { address =>
+                client.createRawTransaction(Vector(TransactionInput(input0, sig, UInt32(0)), TransactionInput(input1, sig, UInt32(0))), Map((address.value, Bitcoins(1)))).map { info =>
+                  logger.info(info.toString)
+                  assert(true)
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
 
   it should "be able to get an address from bitcoind" in {
     val addressF = client.getNewAddress()

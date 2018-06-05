@@ -14,6 +14,13 @@ import play.api.libs.json._
 import scala.util.{ Failure, Success }
 
 object JsonReaders {
+  implicit object BigIntReads extends Reads[BigInt] {
+    def reads(json: JsValue) = json match {
+      case JsNumber(n) => JsSuccess(n.toBigInt())
+      case err => JsError(s"error.expected.jsnumber, got ${Json.toJson(err).toString()}")
+    }
+  }
+
   implicit object DoubleSha256DigestReads extends Reads[DoubleSha256Digest] {
     def reads(json: JsValue) = json match {
       case JsString(s) => JsSuccess(DoubleSha256Digest.fromHex(s))
@@ -137,7 +144,7 @@ object JsonReaders {
         case _ => return JsError("error.expected.vin.sequence")
       }
       (json \ "coinbase").validate[String] match {
-        case s: JsSuccess[String] => JsSuccess(CoinbaseInput(ScriptSignature.fromAsmHex(s.value)))
+        case s: JsSuccess[String] => JsSuccess(CoinbaseInput(ScriptSignature.fromAsmHex(s.value), sequence))
         case _ =>
           val txid = (json \ "txid").validate[DoubleSha256Digest] match {
             case id: JsSuccess[DoubleSha256Digest] => id.value

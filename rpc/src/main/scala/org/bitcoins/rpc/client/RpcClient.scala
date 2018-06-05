@@ -9,20 +9,19 @@ import akka.http.scaladsl.model._
 import akka.stream.ActorMaterializer
 import akka.util.ByteString
 import org.bitcoins.core.config.NetworkParameters
-import org.bitcoins.core.crypto.{ DoubleSha256Digest, ECPrivateKey, ECPublicKey }
-import org.bitcoins.core.currency.{ Bitcoins, Satoshis }
-import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.{ Address, BitcoinAddress, P2PKHAddress, P2SHAddress }
-import org.bitcoins.core.protocol.blockchain.{ Block, BlockHeader, MerkleBlock }
+import org.bitcoins.core.crypto.{DoubleSha256Digest, ECPrivateKey, ECPublicKey}
+import org.bitcoins.core.currency.{Bitcoins, Satoshis}
+import org.bitcoins.core.protocol.{Address, BitcoinAddress, P2PKHAddress}
+import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, MerkleBlock}
 import org.bitcoins.core.protocol.script.ScriptPubKey
-import org.bitcoins.core.protocol.transaction.{ Transaction, TransactionOutPoint }
+import org.bitcoins.core.protocol.transaction.{Transaction, TransactionInput, TransactionOutPoint}
 import org.bitcoins.core.util.BitcoinSLogger
 import play.api.libs.json._
 import org.bitcoins.rpc.jsonmodels._
 import org.bitcoins.rpc.serializers.JsonSerializers._
 
-import scala.concurrent.{ ExecutionContext, Future }
-import scala.util.{ Failure, Success }
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Failure, Success}
 
 class RpcClient()(implicit m: ActorMaterializer, ec: ExecutionContext, network: NetworkParameters) {
   private val resultKey = "result"
@@ -449,14 +448,29 @@ class RpcClient()(implicit m: ActorMaterializer, ec: ExecutionContext, network: 
     bitcoindCall[Unit]("walletpassphrasechange", List(JsString(currentPassphrase), JsString(newPassphrase)))
   }
 
-  // Uses string:object pattern - CreateRawTransaction, GetBlockChainInfo, GetMemoryInfo, GetMemPoolAncestors, GetMemPoolDescendants, GetNetTotals, GetPeerInfo, GetRawMemPoolWithTransactions, GetTxOut, ImportMulti, ListAccounts, SendMany
+  // Uses string:object pattern - GetMemoryInfo, GetMemPoolAncestors, GetMemPoolDescendants, GetNetTotals, GetPeerInfo, GetRawMemPoolWithTransactions, GetTxOut, ImportMulti, ListAccounts, SendMany
   // Also Skipped: GetBlockTemplate
   // TODO: Overload calls with Option inputs?
   // --------------------------------------------------------------------------------
   // EVERYTHING BELOW THIS COMMENT HAS TESTS
 
+  // This needs a home
+  implicit object TransactionInputWrites extends Writes[TransactionInput] {
+    def writes(o: TransactionInput) = JsObject(Seq(("txid", JsString(o.previousOutput.txId.hex)), ("vout", JsNumber(o.previousOutput.vout.toLong)), ("sequence", JsNumber(o.sequence.toLong))))
+  }
+
+  implicit val transactionInputWrites: Writes[TransactionInput] = TransactionInputWrites
+
+  def createRawTransaction(inputs: Vector[TransactionInput], outputs: Map[String, Bitcoins], locktime: Int = 0): Future[Transaction] = {
+    bitcoindCall[Transaction]("createrawtransaction", List(Json.toJson(inputs), Json.toJson(outputs), JsNumber(locktime)))
+  }
+
   def getBestBlockHash: Future[DoubleSha256Digest] = {
     bitcoindCall[DoubleSha256Digest]("getbestblockhash")
+  }
+
+  def getBlockChainInfo: Future[GetBlockChainInfoResult] = {
+    bitcoindCall[GetBlockChainInfoResult]("getblockchaininfo")
   }
 
   def getBlockCount: Future[Int] = {

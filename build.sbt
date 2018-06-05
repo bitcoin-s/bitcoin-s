@@ -46,7 +46,8 @@ lazy val rpc = project
   .in(file("rpc"))
   .enablePlugins()
   .dependsOn(
-    core
+    core,
+    coreGen % "test->test"
   )
 
 publishArtifact in root := false

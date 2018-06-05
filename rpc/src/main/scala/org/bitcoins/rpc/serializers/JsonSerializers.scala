@@ -16,6 +16,8 @@ import play.api.libs.json.{ Json, Reads, Writes, __ }
 import play.api.libs.functional.syntax._
 
 object JsonSerializers {
+  implicit val bigIntReads: Reads[BigInt] = BigIntReads
+
   // Internal Types
   implicit val doubleSha256DigestReads: Reads[DoubleSha256Digest] = DoubleSha256DigestReads
   implicit val bitcoinsReads: Reads[Bitcoins] = BitcoinsReads
@@ -71,21 +73,87 @@ object JsonSerializers {
   implicit val rpcTransactionReads: Reads[RpcTransaction] = Json.reads[RpcTransaction]
   implicit val getBlockWithTransactionsResultReads: Reads[GetBlockWithTransactionsResult] = Json.reads[GetBlockWithTransactionsResult]
 
-  implicit val paymentReads: Reads[Payment] = Json.reads[Payment]
+  implicit val paymentReads: Reads[Payment] = (
+    (__ \ "involvesWatchonly").readNullable[Boolean] and
+      (__ \ "account").read[String] and
+      (__ \ "address").readNullable[BitcoinAddress] and
+      (__ \ "category").read[String] and
+      (__ \ "amount").read[Bitcoins] and
+      (__ \ "vout").read[Int] and
+      (__ \ "fee").readNullable[Bitcoins] and
+      (__ \ "confirmations").read[Int] and
+      (__ \ "generated").readNullable[Boolean] and
+      (__ \ "blockhash").readNullable[DoubleSha256Digest] and
+      (__ \ "blockindex").readNullable[Int] and
+      (__ \ "blocktime").readNullable[UInt32] and
+      (__ \ "txid").read[DoubleSha256Digest] and
+      (__ \ "walletconflicts").read[Vector[DoubleSha256Digest]] and
+      (__ \ "time").read[UInt32] and
+      (__ \ "timereceived").read[UInt32] and
+      (__ \ "bip125-replaceable").read[String] and
+      (__ \ "comment").readNullable[String] and
+      (__ \ "to").readNullable[String] and
+      (__ \ "lastblock").read[DoubleSha256Digest]
+    )(Payment)
   implicit val listSinceBlockResultReads: Reads[ListSinceBlockResult] = Json.reads[ListSinceBlockResult]
 
-  implicit val listTransactionsResultReads: Reads[ListTransactionsResult] = Json.reads[ListTransactionsResult]
+  implicit val listTransactionsResultReads: Reads[ListTransactionsResult] = (
+    (__ \ "account").read[String] and
+      (__ \ "address").readNullable[BitcoinAddress] and
+      (__ \ "category").read[String] and
+      (__ \ "amount").read[Bitcoins] and
+      (__ \ "label").readNullable[String] and
+      (__ \ "vout").readNullable[Int] and
+      (__ \ "fee").readNullable[Bitcoins] and
+      (__ \ "confirmations").readNullable[Int] and
+      (__ \ "trusted").readNullable[Boolean] and
+      (__ \ "generated").readNullable[Boolean] and
+      (__ \ "blockhash").readNullable[DoubleSha256Digest] and
+      (__ \ "blockindex").readNullable[Int] and
+      (__ \ "blocktime").readNullable[UInt32] and
+      (__ \ "txid").readNullable[DoubleSha256Digest] and
+      (__ \ "walletconflicts").readNullable[Vector[DoubleSha256Digest]] and
+      (__ \ "time").read[UInt32] and
+      (__ \ "timereceived").readNullable[UInt32] and
+      (__ \ "comment").readNullable[String] and
+      (__ \ "to").readNullable[String] and
+      (__ \ "otheraccount").readNullable[String] and
+      (__ \ "bip125-replaceable").read[String] and
+      (__ \ "abandoned").readNullable[Boolean]
+    )(ListTransactionsResult)
 
   implicit val receivedAddressReads: Reads[ReceivedAddress] = Json.reads[ReceivedAddress]
 
   implicit val TransactionDetailsReads: Reads[TransactionDetails] = Json.reads[TransactionDetails]
-  implicit val getTransactionResultReads: Reads[GetTransactionResult] = Json.reads[GetTransactionResult]
+  implicit val getTransactionResultReads: Reads[GetTransactionResult] = (
+    (__ \ "amount").read[Bitcoins] and
+      (__ \ "fee").readNullable[Bitcoins] and
+      (__ \ "confirmations").read[Int] and
+      (__ \ "generated").readNullable[Boolean] and
+      (__ \ "blockhash").readNullable[DoubleSha256Digest] and
+      (__ \ "blockindex").readNullable[Int] and
+      (__ \ "blocktime").readNullable[UInt32] and
+      (__ \ "txid").read[DoubleSha256Digest] and
+      (__ \ "walletconflicts").read[Vector[DoubleSha256Digest]] and
+      (__ \ "time").read[UInt32] and
+      (__ \ "timereceived").read[UInt32] and
+      (__ \ "bip125-replaceable").read[String] and
+      (__ \ "comment").readNullable[String] and
+      (__ \ "to").readNullable[String] and
+      (__ \ "details").read[Vector[TransactionDetails]] and
+      (__ \ "hex").read[Transaction]
+    )(GetTransactionResult)
 
   implicit val unspentOutputReads: Reads[UnspentOutput] = Json.reads[UnspentOutput]
 
   implicit val lockUnspentParameterWrites: Writes[LockUnspentOutputParameter] = Json.writes[LockUnspentOutputParameter]
 
   implicit val signRawTransactionResultReads: Reads[SignRawTransactionResult] = Json.reads[SignRawTransactionResult]
+
+  implicit val softforkProgressReads: Reads[SoftforkProgress] = Json.reads[SoftforkProgress]
+  implicit val softforkReads: Reads[Softfork] = Json.reads[Softfork]
+  implicit val bip9SoftforkReads: Reads[Bip9Softfork] = Json.reads[Bip9Softfork]
+  implicit val getBlockChainInfoResultReads: Reads[GetBlockChainInfoResult] = Json.reads[GetBlockChainInfoResult]
 
   // Mining Models
   implicit val miningInfoReads: Reads[GetMiningInfoResult] = Json.reads[GetMiningInfoResult]
