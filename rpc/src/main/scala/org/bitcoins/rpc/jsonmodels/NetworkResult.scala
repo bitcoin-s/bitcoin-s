@@ -236,7 +236,7 @@ case class ListTransactionsResult(
                                  comment: Option[String],
                                  to: Option[String],
                                  otheraccount: Option[String],
-                                 bip125_replaceable: String, // TODO: Needs to be a - not a _
+                                 bip125_replaceable: String,
                                  abandoned: Option[Boolean]
                                  ) extends NetworkResult
 
@@ -256,8 +256,8 @@ case class GetTransactionResult(
   confirmations: Int,
   generated: Option[Boolean],
   blockhash: Option[DoubleSha256Digest],
-  blockIndex: Option[Int],
-  blockTime: Option[UInt32],
+  blockindex: Option[Int],
+  blocktime: Option[UInt32],
   txid: DoubleSha256Digest,
   walletconflicts: Vector[DoubleSha256Digest],
   time: UInt32,
@@ -270,7 +270,7 @@ case class GetTransactionResult(
 
 case class TransactionDetails(
   involvesWatchonly: Option[Boolean],
-  account: String,
+  account: Option[String],
   address: Option[BitcoinAddress],
   category: String,
   amount: Bitcoins,
@@ -293,3 +293,43 @@ case class UnspentOutput( // Naming?
 case class LockUnspentOutputParameter(txid: DoubleSha256Digest, vout: Int) extends NetworkResult
 
 case class SignRawTransactionResult(hex: Transaction, complete: Boolean) extends NetworkResult
+
+case class GetBlockChainInfoResult(
+                                    chain: String,
+                                    blocks: Int,
+                                    headers: Int,
+                                    bestblockhash: DoubleSha256Digest,
+                                    difficulty: BigDecimal,
+                                    mediantime: Int,
+                                    verificationprogress: BigDecimal,
+                                    initialblockdownload: Boolean,
+                                    chainwork: String, // How should this be handled?
+                                    size_on_disk: Int,
+                                    pruned: Boolean,
+                                    pruneheight: Option[Int],
+                                    softforks: Vector[Softfork],
+                                    bip9_softforks: Map[String, Bip9Softfork],
+                                    warnings: String
+                                  ) extends NetworkResult
+
+case class Softfork(
+                     id: String,
+                     version: Int,
+                     enforce: Option[Map[String, SoftforkProgress]],
+                     reject: SoftforkProgress
+                   ) extends NetworkResult
+
+case class SoftforkProgress(
+                             status: Option[Boolean],
+                             found: Option[Int],
+                             required: Option[Int],
+                             window: Option[Int]
+                           ) extends NetworkResult
+
+case class Bip9Softfork(
+                         status: String,
+                         bit: Option[Int],
+                         startTime: Int,
+                         timeout: BigInt,
+                         since: Int
+                       ) extends NetworkResult
