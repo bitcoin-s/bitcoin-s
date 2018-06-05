@@ -68,7 +68,13 @@ object JsonSerializers {
 
   implicit val getBlockResultReads: Reads[GetBlockResult] = Json.reads[GetBlockResult]
 
-  implicit val rpcScriptPubKeyReads: Reads[RpcScriptPubKey] = Json.reads[RpcScriptPubKey]
+  implicit val rpcScriptPubKeyReads: Reads[RpcScriptPubKey] = (
+    (__ \ "asm").read[String] and
+      (__ \ "hex").read[String] and
+      (__ \ "reqSigs").read[Int] and
+      (__ \ "type").read[String] and
+      (__ \ "addresses").read[Vector[BitcoinAddress]]
+    ) (RpcScriptPubKey)
   implicit val rpcTransactionOutputReads: Reads[RpcTransactionOutput] = Json.reads[RpcTransactionOutput]
   implicit val rpcTransactionReads: Reads[RpcTransaction] = Json.reads[RpcTransaction]
   implicit val getBlockWithTransactionsResultReads: Reads[GetBlockWithTransactionsResult] = Json.reads[GetBlockWithTransactionsResult]

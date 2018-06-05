@@ -10,7 +10,9 @@ import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.rpc.client.RpcClient
 import org.scalatest.AsyncFlatSpec
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.script.ScriptSignature
+import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptSignature}
+
+import scala.concurrent.Future
 
 class RpcClientTest extends AsyncFlatSpec {
   implicit val system = ActorSystem()
@@ -43,14 +45,59 @@ class RpcClientTest extends AsyncFlatSpec {
               val input1 = TransactionOutPoint(transaction1.txid, UInt32(transaction1.blockindex.get))
               val sig: ScriptSignature = ScriptGenerators.scriptSignature.sample.get
               client.getNewAddress().flatMap { address =>
-                client.createRawTransaction(Vector(TransactionInput(input0, sig, UInt32(0)), TransactionInput(input1, sig, UInt32(0))), Map((address.value, Bitcoins(1)))).map { info =>
-                  logger.info(info.toString)
-                  assert(true)
+                client.createRawTransaction(Vector(TransactionInput(input0, sig, UInt32(1)), TransactionInput(input1, sig, UInt32(2))), Map((address.value, Bitcoins(1)))).map { transaction =>
+                  logger.info(transaction.toString)
+                  assert(transaction.inputs(0).sequence == UInt32(1))
+                  assert(transaction.inputs(1).sequence == UInt32(2))
+                  assert(transaction.inputs(0).previousOutput.txId.flip == input0.txId)
+                  assert(transaction.inputs(1).previousOutput.txId.flip == input1.txId)
                 }
               }
             }
           }
         }
+      }
+    }
+  }
+
+  def createRawTransaction: Future[Transaction] = {
+    client.generate(2).flatMap { blocks =>
+      client.getBlock(blocks(0)).flatMap { block0 =>
+        client.getBlock(blocks(1)).flatMap { block1 =>
+          client.getTransaction(block0.tx(0)).flatMap { transaction0 =>
+            client.getTransaction(block1.tx(0)).flatMap { transaction1 =>
+              val input0 = TransactionOutPoint(transaction0.txid, UInt32(transaction0.blockindex.get))
+              val input1 = TransactionOutPoint(transaction1.txid, UInt32(transaction1.blockindex.get))
+              val sig: ScriptSignature = ScriptGenerators.scriptSignature.sample.get
+              client.getNewAddress().flatMap { address =>
+                client.createRawTransaction(Vector(TransactionInput(input0, sig, UInt32(1)), TransactionInput(input1, sig, UInt32(2))), Map((address.value, Bitcoins(1))))
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  it should "be able to decode a raw transaction" in {
+    val transactionF = createRawTransaction
+    transactionF.flatMap { transaction =>
+      client.decodeRawTransaction(transaction).map {rpcTransaction =>
+        assert(rpcTransaction.txid.flip == transaction.txId)
+        assert(rpcTransaction.locktime == transaction.lockTime)
+        assert(rpcTransaction.size == transaction.size)
+        assert(rpcTransaction.version == transaction.version.toInt)
+        assert(rpcTransaction.vsize == transaction.vsize)
+      }
+    }
+  }
+
+  it should "be able to sign a raw transaction with wallet keys" in {
+    val transactionF = createRawTransaction
+    transactionF.flatMap { transaction =>
+      client.signRawTransactionWithWallet(transaction).map { signedTransaction =>
+        logger.info(signedTransaction.toString)
+        assert(signedTransaction.complete)
       }
     }
   }

@@ -75,10 +75,6 @@ class RpcClient()(implicit m: ActorMaterializer, ec: ExecutionContext, network: 
     bitcoindCall[CreateMultiSigResult]("createmultisig", List(JsNumber(minSignatures), JsArray(keys.map(keyToString))))
   }
 
-  def decodeRawTransaction(transaction: Transaction): Future[RpcTransaction] = {
-    bitcoindCall[RpcTransaction]("decoderawtransaction", List(JsString(transaction.hex)))
-  }
-
   def decodeScript(script: String): Future[DecodeScriptResult] = {
     bitcoindCall[DecodeScriptResult]("decodescript", List(JsString(script)))
   }
@@ -389,21 +385,21 @@ class RpcClient()(implicit m: ActorMaterializer, ec: ExecutionContext, network: 
     txid: DoubleSha256Digest,
     vout: Int,
     scriptPubKey: ScriptPubKey,
-    reedemScript: Option[ScriptPubKey])
+    reedemScript: Option[ScriptPubKey] = None,
+    amount: Bitcoins)
 
   implicit val signRawTransactionOutputParameterWrites: Writes[SignRawTransactionOutputParameter] = Json.writes[SignRawTransactionOutputParameter]
 
-  def signRawTransaction(transaction: Transaction, utxoDeps: Vector[SignRawTransactionOutputParameter], keys: Option[Vector[ECPrivateKey]] = None, sigHash: Option[String] = None): Future[SignRawTransactionResult] = {
+  def signRawTransactionWithKey(transaction: Transaction, keys: Vector[ECPrivateKey], utxoDeps: Option[Vector[SignRawTransactionOutputParameter]] = None, sigHash: Option[String] = None): Future[SignRawTransactionResult] = {
     val params =
-      if (sigHash.isEmpty)
-        if (keys.isEmpty)
-          List(JsString(transaction.hex), JsArray(utxoDeps.map(Json.toJson(_))))
-        else
-          List(JsString(transaction.hex), JsArray(utxoDeps.map(Json.toJson(_))), JsArray(keys.get.map(key => JsString(key.toWIF(network)))))
+      if (utxoDeps.isEmpty)
+        List(JsString(transaction.hex), JsArray(keys.map(key => JsString(key.toWIF(network)))))
+      else if (sigHash.isEmpty)
+          List(JsString(transaction.hex), JsArray(keys.map(key => JsString(key.toWIF(network)))), JsArray(utxoDeps.get.map(Json.toJson(_))))
       else
-        List(JsString(transaction.hex), JsArray(utxoDeps.map(Json.toJson(_))), JsArray(keys.get.map(key => JsString(key.toWIF(network)))), JsString(sigHash.get))
+        List(JsString(transaction.hex), JsArray(keys.map(key => JsString(key.toWIF(network)))), JsArray(utxoDeps.get.map(Json.toJson(_))), JsString(sigHash.get))
 
-    bitcoindCall[SignRawTransactionResult]("signrawtransaction", params)
+    bitcoindCall[SignRawTransactionResult]("signrawtransactionwithkey", params)
   }
 
   def stop: Future[String] = {
@@ -465,6 +461,14 @@ class RpcClient()(implicit m: ActorMaterializer, ec: ExecutionContext, network: 
     bitcoindCall[Transaction]("createrawtransaction", List(Json.toJson(inputs), Json.toJson(outputs), JsNumber(locktime)))
   }
 
+  def decodeRawTransaction(transaction: Transaction): Future[RpcTransaction] = {
+    bitcoindCall[RpcTransaction]("decoderawtransaction", List(JsString(transaction.hex)))
+  }
+
+  def generate(blocks: Int, maxTries: Int = 1000000): Future[Vector[DoubleSha256Digest]] = {
+    bitcoindCall[Vector[DoubleSha256Digest]]("generate", List(JsNumber(blocks), JsNumber(maxTries)))
+  }
+
   def getBestBlockHash: Future[DoubleSha256Digest] = {
     bitcoindCall[DoubleSha256Digest]("getbestblockhash")
   }
@@ -477,16 +481,24 @@ class RpcClient()(implicit m: ActorMaterializer, ec: ExecutionContext, network: 
     bitcoindCall[Int]("getblockcount")
   }
 
+  def getBlockHeader(headerHash: DoubleSha256Digest): Future[GetBlockHeaderResult] = {
+    bitcoindCall[GetBlockHeaderResult]("getblockheader", List(JsString(headerHash.hex), JsBoolean(true)))
+  }
+
+  def getBlockHeaderRaw(headerHash: DoubleSha256Digest): Future[BlockHeader] = {
+    bitcoindCall[BlockHeader]("getblockheader", List(JsString(headerHash.hex), JsBoolean(false)))
+  }
+
+  def getChainTips: Future[Vector[ChainTip]] = {
+    bitcoindCall[Vector[ChainTip]]("getchaintips")
+  }
+
   def getConnectionCount: Future[Int] = {
     bitcoindCall[Int]("getconnectioncount")
   }
 
   def getMiningInfo: Future[GetMiningInfoResult] = {
     bitcoindCall[GetMiningInfoResult]("getmininginfo")
-  }
-
-  def getChainTips: Future[Vector[ChainTip]] = {
-    bitcoindCall[Vector[ChainTip]]("getchaintips")
   }
 
   def getNetworkInfo: Future[GetNetworkInfoResult] = {
@@ -497,16 +509,16 @@ class RpcClient()(implicit m: ActorMaterializer, ec: ExecutionContext, network: 
     bitcoindCall[BitcoinAddress]("getnewaddress", List(JsString(account)))
   }
 
-  def getBlockHeaderRaw(headerHash: DoubleSha256Digest): Future[BlockHeader] = {
-    bitcoindCall[BlockHeader]("getblockheader", List(JsString(headerHash.hex), JsBoolean(false)))
-  }
+  def signRawTransactionWithWallet(transaction: Transaction, utxoDeps: Option[Vector[SignRawTransactionOutputParameter]] = None, sigHash: Option[String] = None): Future[SignRawTransactionResult] = {
+    val params =
+      if (utxoDeps.isEmpty)
+        List(JsString(transaction.hex))
+      else if (sigHash.isEmpty)
+        List(JsString(transaction.hex), JsArray(utxoDeps.get.map(Json.toJson(_))))
+      else
+        List(JsString(transaction.hex), JsArray(utxoDeps.get.map(Json.toJson(_))), JsString(sigHash.get))
 
-  def getBlockHeader(headerHash: DoubleSha256Digest): Future[GetBlockHeaderResult] = {
-    bitcoindCall[GetBlockHeaderResult]("getblockheader", List(JsString(headerHash.hex), JsBoolean(true)))
-  }
-
-  def generate(blocks: Int, maxTries: Int = 1000000): Future[Vector[DoubleSha256Digest]] = {
-    bitcoindCall[Vector[DoubleSha256Digest]]("generate", List(JsNumber(blocks), JsNumber(maxTries)))
+    bitcoindCall[SignRawTransactionResult]("signrawtransactionwithwallet", params)
   }
 
   private def bitcoindCall[T](command: String, parameters: List[JsValue] = List.empty)(implicit reader: Reads[T]): Future[T] = {
