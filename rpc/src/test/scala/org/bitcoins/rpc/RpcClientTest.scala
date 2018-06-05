@@ -4,13 +4,12 @@ import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.currency.Bitcoins
-import org.bitcoins.core.gen.ScriptGenerators
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionInput, TransactionOutPoint}
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.rpc.client.RpcClient
 import org.scalatest.AsyncFlatSpec
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptSignature}
+import org.bitcoins.core.protocol.script.ScriptSignature
 
 import scala.concurrent.Future
 
@@ -43,7 +42,7 @@ class RpcClientTest extends AsyncFlatSpec {
             client.getTransaction(block1.tx(0)).flatMap { transaction1 =>
               val input0 = TransactionOutPoint(transaction0.txid, UInt32(transaction0.blockindex.get))
               val input1 = TransactionOutPoint(transaction1.txid, UInt32(transaction1.blockindex.get))
-              val sig: ScriptSignature = ScriptGenerators.scriptSignature.sample.get
+              val sig: ScriptSignature = ScriptSignature.empty
               client.getNewAddress().flatMap { address =>
                 client.createRawTransaction(Vector(TransactionInput(input0, sig, UInt32(1)), TransactionInput(input1, sig, UInt32(2))), Map((address.value, Bitcoins(1)))).map { transaction =>
                   logger.info(transaction.toString)
@@ -68,7 +67,7 @@ class RpcClientTest extends AsyncFlatSpec {
             client.getTransaction(block1.tx(0)).flatMap { transaction1 =>
               val input0 = TransactionOutPoint(transaction0.txid, UInt32(transaction0.blockindex.get))
               val input1 = TransactionOutPoint(transaction1.txid, UInt32(transaction1.blockindex.get))
-              val sig: ScriptSignature = ScriptGenerators.scriptSignature.sample.get
+              val sig: ScriptSignature = ScriptSignature.empty
               client.getNewAddress().flatMap { address =>
                 client.createRawTransaction(Vector(TransactionInput(input0, sig, UInt32(1)), TransactionInput(input1, sig, UInt32(2))), Map((address.value, Bitcoins(1))))
               }
