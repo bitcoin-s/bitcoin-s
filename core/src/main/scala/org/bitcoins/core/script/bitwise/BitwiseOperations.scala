@@ -4,8 +4,8 @@ import org.bitcoins.core.script.ScriptOperationFactory
 import org.bitcoins.core.script.constant.ScriptOperation
 
 /**
- * Created by chris on 1/6/16.
- */
+  * Created by chris on 1/6/16.
+  */
 sealed trait BitwiseOperation extends ScriptOperation
 
 /** Returns 1 if the inputs are exactly equal, 0 otherwise. */
@@ -39,5 +39,6 @@ case object OP_XOR extends BitwiseOperation {
 }
 
 object BitwiseOperation extends ScriptOperationFactory[BitwiseOperation] {
-  override def operations = Seq(OP_EQUAL, OP_EQUALVERIFY, OP_INVERT, OP_AND, OP_OR, OP_XOR)
+  override def operations =
+    Seq(OP_EQUAL, OP_EQUALVERIFY, OP_INVERT, OP_AND, OP_OR, OP_XOR)
 }

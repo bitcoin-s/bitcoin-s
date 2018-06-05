@@ -1,12 +1,12 @@
 package org.bitcoins.core.serializers
 
-import org.bitcoins.core.util.{ BitcoinSLogger, BitcoinSUtil }
+import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil}
 import org.slf4j.Logger
 
 /**
- * Created by chris on 1/11/16.
- * A common trait for reading/writing bitcoin objects to/from bytes/hex
- */
+  * Created by chris on 1/11/16.
+  * A common trait for reading/writing bitcoin objects to/from bytes/hex
+  */
 abstract class RawBitcoinSerializer[T] {
 
   /** Reads a hexadecimal value and transforms it into the native scala type T. */

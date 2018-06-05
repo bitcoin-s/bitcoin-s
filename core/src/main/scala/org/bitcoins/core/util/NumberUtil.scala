@@ -2,19 +2,20 @@ package org.bitcoins.core.util
 
 import java.math.BigInteger
 
-import org.bitcoins.core.number.{ UInt32, UInt8 }
+import org.bitcoins.core.number.{UInt32, UInt8}
 
 import scala.math.BigInt
-import scala.util.{ Failure, Success, Try }
+import scala.util.{Failure, Success, Try}
 
 /**
- * Created by chris on 2/8/16.
- */
+  * Created by chris on 2/8/16.
+  */
 trait NumberUtil extends BitcoinSLogger {
 
   private def parseLong(hex: String): Long = java.lang.Long.parseLong(hex, 16)
 
-  private def parseLong(bytes: List[Byte]): Long = parseLong(BitcoinSUtil.encodeHex(bytes))
+  private def parseLong(bytes: List[Byte]): Long =
+    parseLong(BitcoinSUtil.encodeHex(bytes))
 
   private def parseLong(byte: Byte): Long = parseLong(List(byte))
 
@@ -22,7 +23,9 @@ trait NumberUtil extends BitcoinSLogger {
 
   /** Takes 2^^num. */
   def pow2(exponent: Int): BigInt = {
-    require(exponent < 64, "We cannot have anything larger than 2^64 - 1 in a long, you tried to do 2^" + exponent)
+    require(
+      exponent < 64,
+      "We cannot have anything larger than 2^64 - 1 in a long, you tried to do 2^" + exponent)
     BigInt(1) << exponent
   }
 
@@ -67,24 +70,32 @@ trait NumberUtil extends BitcoinSLogger {
   def toLong(hex: String): Long = toLong(BitcoinSUtil.decodeHex(hex))
 
   /** Converts a sequence uint8 'from' base to 'to' base */
-  def convertUInt8s(data: Seq[UInt8], from: UInt32, to: UInt32, pad: Boolean): Try[Seq[UInt8]] = {
+  def convertUInt8s(
+      data: Seq[UInt8],
+      from: UInt32,
+      to: UInt32,
+      pad: Boolean): Try[Seq[UInt8]] = {
     var acc: UInt32 = UInt32.zero
     var bits: UInt32 = UInt32.zero
     var ret: Seq[UInt8] = Nil
     val maxv: UInt32 = (UInt32.one << to) - UInt32.one
     val eight = UInt32(8)
     if (from > eight || to > eight) {
-      Failure(new IllegalArgumentException("Can't have convert bits 'from' or 'to' parameter greater than 8"))
+      Failure(
+        new IllegalArgumentException(
+          "Can't have convert bits 'from' or 'to' parameter greater than 8"))
     } else {
       data.map { h =>
         if ((h >> UInt8(from.toLong.toShort)) != UInt8.zero) {
-          Failure(new IllegalArgumentException("Invalid input for bech32: " + h))
+          Failure(
+            new IllegalArgumentException("Invalid input for bech32: " + h))
         } else {
           acc = (acc << from) | UInt32(h.toLong)
           bits = bits + from
           while (bits >= to) {
             bits = bits - to
-            val r: Seq[UInt8] = Seq(UInt8((((acc >> bits) & maxv).toInt.toShort)))
+            val r: Seq[UInt8] =
+              Seq(UInt8((((acc >> bits) & maxv).toInt.toShort)))
             ret = ret ++ r
           }
         }
@@ -102,7 +113,11 @@ trait NumberUtil extends BitcoinSLogger {
     }
   }
 
-  def convertBytes(data: Seq[Byte], from: UInt32, to: UInt32, pad: Boolean): Try[Seq[UInt8]] = {
+  def convertBytes(
+      data: Seq[Byte],
+      from: UInt32,
+      to: UInt32,
+      pad: Boolean): Try[Seq[UInt8]] = {
     convertUInt8s(UInt8.toUInt8s(data), from, to, pad)
   }
 }

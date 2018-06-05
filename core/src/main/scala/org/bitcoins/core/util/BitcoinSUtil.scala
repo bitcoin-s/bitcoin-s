@@ -3,12 +3,17 @@ package org.bitcoins.core.util
 import scala.math.BigInt
 
 /**
- * Created by chris on 2/26/16.
- */
+  * Created by chris on 2/26/16.
+  */
 trait BitcoinSUtil {
 
   def decodeHex(hex: String): Seq[Byte] = {
-    hex.replaceAll("[^0-9A-Fa-f]", "").sliding(2, 2).toArray.map(Integer.parseInt(_, 16).toByte).toList
+    hex
+      .replaceAll("[^0-9A-Fa-f]", "")
+      .sliding(2, 2)
+      .toArray
+      .map(Integer.parseInt(_, 16).toByte)
+      .toList
   }
 
   def encodeHex(bytes: Seq[Byte]): String = bytes.map("%02x".format(_)).mkString
@@ -16,12 +21,12 @@ trait BitcoinSUtil {
   def encodeHex(byte: Byte): String = encodeHex(Seq(byte))
 
   /**
-   * Encodes a long number to a hex string, pads it with an extra '0' char
-   * if the hex string is an odd amount of characters.
-   */
+    * Encodes a long number to a hex string, pads it with an extra '0' char
+    * if the hex string is an odd amount of characters.
+    */
   def encodeHex(long: Long): String = {
     val hex = long.toHexString.length % 2 match {
-      case 1 => "0" + long.toHexString
+      case 1      => "0" + long.toHexString
       case _: Int => long.toHexString
     }
     addPadding(16, hex)
@@ -29,7 +34,7 @@ trait BitcoinSUtil {
 
   def encodeHex(int: Int): String = {
     val hex = int.toHexString.length % 2 match {
-      case 1 => "0" + int.toHexString
+      case 1      => "0" + int.toHexString
       case _: Int => int.toHexString
     }
     addPadding(8, hex)
@@ -37,13 +42,14 @@ trait BitcoinSUtil {
 
   def encodeHex(short: Short): String = {
     val hex = short.toHexString.length % 2 match {
-      case 1 => "0" + short.toHexString
+      case 1      => "0" + short.toHexString
       case _: Int => short.toHexString
     }
     addPadding(4, hex)
   }
 
-  def encodeHex(bigInt: BigInt): String = BitcoinSUtil.encodeHex(bigInt.toByteArray)
+  def encodeHex(bigInt: BigInt): String =
+    BitcoinSUtil.encodeHex(bigInt.toByteArray)
 
   /** Tests if a given string is a hexadecimal string. */
   def isHex(str: String): Boolean = {
@@ -64,11 +70,11 @@ trait BitcoinSUtil {
   def flipEndianness(bytes: Seq[Byte]): String = encodeHex(bytes.reverse)
 
   /**
-   * Adds the amount padding bytes needed to fix the size of the hex string
-   * for instance, ints are required to be 4 bytes. If the number is just 1
-   * it will only take 1 byte. We need to pad the byte with an extra 3 bytes so the result is
-   * 00000001 instead of just 1.
-   */
+    * Adds the amount padding bytes needed to fix the size of the hex string
+    * for instance, ints are required to be 4 bytes. If the number is just 1
+    * it will only take 1 byte. We need to pad the byte with an extra 3 bytes so the result is
+    * 00000001 instead of just 1.
+    */
   private def addPadding(charactersNeeded: Int, hex: String): String = {
     val paddingNeeded = charactersNeeded - hex.length
     val padding = for { i <- 0 until paddingNeeded } yield "0"
@@ -77,7 +83,8 @@ trait BitcoinSUtil {
   }
 
   /** Converts a sequence of bytes to a sequence of bit vectors */
-  def bytesToBitVectors(bytes: Seq[Byte]): Seq[Seq[Boolean]] = bytes.map(byteToBitVector)
+  def bytesToBitVectors(bytes: Seq[Byte]): Seq[Seq[Boolean]] =
+    bytes.map(byteToBitVector)
 
   /** Converts a byte to a bit vector representing that byte */
   def byteToBitVector(byte: Byte): Seq[Boolean] = {
@@ -89,7 +96,9 @@ trait BitcoinSUtil {
 
   /** Converts a bit vector to a single byte -- the resulting byte is big endian */
   def bitVectorToByte(bits: Seq[Boolean]): Byte = {
-    require(bits.size <= 8, "Cannot convert a bit vector to a byte when the size of the bit vector is larger than 8, got: " + bits)
+    require(
+      bits.size <= 8,
+      "Cannot convert a bit vector to a byte when the size of the bit vector is larger than 8, got: " + bits)
     val b = bits.reverse
     val result: Seq[Int] = b.zipWithIndex.map {
       case (b, index) =>
@@ -99,7 +108,8 @@ trait BitcoinSUtil {
   }
 
   /** Converts a sequence of bit vectors to a sequence of bytes */
-  def bitVectorsToBytes(bits: Seq[Seq[Boolean]]): Seq[Byte] = bits.map(bitVectorToByte)
+  def bitVectorsToBytes(bits: Seq[Seq[Boolean]]): Seq[Byte] =
+    bits.map(bitVectorToByte)
 
 }
 

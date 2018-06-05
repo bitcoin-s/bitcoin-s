@@ -9,9 +9,10 @@ import org.bitcoins.core.util.BitcoinSLogger
 import scala.util.Try
 
 /**
- * Created by chris on 1/12/16.
- */
-sealed abstract class RawScriptSignatureParser extends RawBitcoinSerializer[ScriptSignature] {
+  * Created by chris on 1/12/16.
+  */
+sealed abstract class RawScriptSignatureParser
+    extends RawBitcoinSerializer[ScriptSignature] {
 
   def read(bytes: List[Byte]): ScriptSignature = {
     if (bytes.isEmpty) EmptyScriptSignature
@@ -21,7 +22,8 @@ sealed abstract class RawScriptSignatureParser extends RawBitcoinSerializer[Scri
       val scriptSigBytes = bytes.slice(
         compactSizeUInt.size.toInt,
         compactSizeUInt.num.toInt + compactSizeUInt.size.toInt)
-      val scriptTokens: List[ScriptToken] = ScriptParser.fromBytes(scriptSigBytes)
+      val scriptTokens: List[ScriptToken] =
+        ScriptParser.fromBytes(scriptSigBytes)
       ScriptSignature.fromAsm(scriptTokens)
     }
   }

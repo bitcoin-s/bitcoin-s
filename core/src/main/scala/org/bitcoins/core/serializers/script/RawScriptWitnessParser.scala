@@ -9,23 +9,31 @@ import org.bitcoins.core.util.BitcoinSUtil
 import scala.annotation.tailrec
 
 /**
- * Created by chris on 12/14/16.
- */
-sealed abstract class RawScriptWitnessParser extends RawBitcoinSerializer[ScriptWitness] {
+  * Created by chris on 12/14/16.
+  */
+sealed abstract class RawScriptWitnessParser
+    extends RawBitcoinSerializer[ScriptWitness] {
 
   def read(bytes: List[Byte]): ScriptWitness = {
     //first byte is the number of stack items
     val stackSize = CompactSizeUInt.parseCompactSizeUInt(bytes)
     val (_, stackBytes) = bytes.splitAt(stackSize.size.toInt)
     @tailrec
-    def loop(remainingBytes: Seq[Byte], accum: Seq[Seq[Byte]], remainingStackItems: UInt64): Seq[Seq[Byte]] = {
+    def loop(
+        remainingBytes: Seq[Byte],
+        accum: Seq[Seq[Byte]],
+        remainingStackItems: UInt64): Seq[Seq[Byte]] = {
       if (remainingStackItems <= UInt64.zero) accum
       else {
         val elementSize = CompactSizeUInt.parseCompactSizeUInt(remainingBytes)
-        val (_, stackElementBytes) = remainingBytes.splitAt(elementSize.size.toInt)
+        val (_, stackElementBytes) =
+          remainingBytes.splitAt(elementSize.size.toInt)
         val stackElement = stackElementBytes.take(elementSize.num.toInt)
-        val (_, newRemainingBytes) = stackElementBytes.splitAt(stackElement.size)
-        loop(newRemainingBytes, stackElement +: accum, remainingStackItems - UInt64.one)
+        val (_, newRemainingBytes) =
+          stackElementBytes.splitAt(stackElement.size)
+        loop(newRemainingBytes,
+             stackElement +: accum,
+             remainingStackItems - UInt64.one)
       }
     }
     //note there is no 'reversing' the accum, in bitcoin-s we assume the top of the stack is the 'head' element in the sequence
@@ -36,10 +44,13 @@ sealed abstract class RawScriptWitnessParser extends RawBitcoinSerializer[Script
 
   def write(scriptWitness: ScriptWitness): Seq[Byte] = {
     @tailrec
-    def loop(remainingStack: Seq[Seq[Byte]], accum: Seq[Seq[Byte]]): Seq[Seq[Byte]] = {
+    def loop(
+        remainingStack: Seq[Seq[Byte]],
+        accum: Seq[Seq[Byte]]): Seq[Seq[Byte]] = {
       if (remainingStack.isEmpty) accum.reverse
       else {
-        val compactSizeUInt: CompactSizeUInt = CompactSizeUInt.calc(remainingStack.head)
+        val compactSizeUInt: CompactSizeUInt =
+          CompactSizeUInt.calc(remainingStack.head)
         val serialization: Seq[Byte] = compactSizeUInt.bytes ++ remainingStack.head
         loop(remainingStack.tail, serialization +: accum)
       }

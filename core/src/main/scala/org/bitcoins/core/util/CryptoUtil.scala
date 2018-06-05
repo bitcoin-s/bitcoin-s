@@ -3,18 +3,19 @@ package org.bitcoins.core.util
 import java.security.MessageDigest
 
 import org.bitcoins.core.crypto._
-import org.bouncycastle.crypto.digests.{ RIPEMD160Digest, SHA512Digest }
+import org.bouncycastle.crypto.digests.{RIPEMD160Digest, SHA512Digest}
 import org.bouncycastle.crypto.macs.HMac
 import org.bouncycastle.crypto.params.KeyParameter
 
 /**
- * Created by chris on 1/14/16.
- * Utility cryptographic functions
- */
+  * Created by chris on 1/14/16.
+  * Utility cryptographic functions
+  */
 trait CryptoUtil {
 
   /** Does the following computation: RIPEMD160(SHA256(hex)).*/
-  def sha256Hash160(hex: String): Sha256Hash160Digest = sha256Hash160(BitcoinSUtil.decodeHex(hex))
+  def sha256Hash160(hex: String): Sha256Hash160Digest =
+    sha256Hash160(BitcoinSUtil.decodeHex(hex))
 
   def sha256Hash160(bytes: Seq[Byte]): Sha256Hash160Digest = {
     val hash = ripeMd160(sha256(bytes.toArray).bytes).bytes
@@ -22,7 +23,8 @@ trait CryptoUtil {
   }
 
   /** Performs sha256(sha256(hex)). */
-  def doubleSHA256(hex: String): DoubleSha256Digest = doubleSHA256(BitcoinSUtil.decodeHex(hex))
+  def doubleSHA256(hex: String): DoubleSha256Digest =
+    doubleSHA256(BitcoinSUtil.decodeHex(hex))
 
   /** Performs sha256(sha256(bytes)). */
   def doubleSHA256(bytes: Seq[Byte]): DoubleSha256Digest = {
@@ -49,7 +51,8 @@ trait CryptoUtil {
   def sha1(hex: String): Sha1Digest = sha1(BitcoinSUtil.decodeHex(hex))
 
   /** Performs RIPEMD160(hex). */
-  def ripeMd160(hex: String): RipeMd160Digest = ripeMd160(BitcoinSUtil.decodeHex(hex))
+  def ripeMd160(hex: String): RipeMd160Digest =
+    ripeMd160(BitcoinSUtil.decodeHex(hex))
 
   /** Performs RIPEMD160(bytes). */
   def ripeMd160(bytes: Seq[Byte]): RipeMd160Digest = {
@@ -62,7 +65,8 @@ trait CryptoUtil {
     RipeMd160Digest(out.toList)
   }
 
-  val emptyDoubleSha256Hash = DoubleSha256Digest("0000000000000000000000000000000000000000000000000000000000000000")
+  val emptyDoubleSha256Hash = DoubleSha256Digest(
+    "0000000000000000000000000000000000000000000000000000000000000000")
 
   def hmac512(key: Seq[Byte], data: Seq[Byte]): Seq[Byte] = {
     val hmac512 = new HMac(new SHA512Digest())

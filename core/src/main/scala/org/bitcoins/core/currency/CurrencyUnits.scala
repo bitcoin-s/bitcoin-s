@@ -1,7 +1,7 @@
 package org.bitcoins.core.currency
 
 import org.bitcoins.core.consensus.Consensus
-import org.bitcoins.core.number.{ BaseNumbers, Int64 }
+import org.bitcoins.core.number.{BaseNumbers, Int64}
 import org.bitcoins.core.protocol.NetworkElement
 import org.bitcoins.core.serializers.RawSatoshisSerializer
 import org.bitcoins.core.util.Factory
@@ -77,7 +77,8 @@ object Satoshis extends Factory[Satoshis] with BaseNumbers[Satoshis] {
   val zero = Satoshis(Int64.zero)
   val one = Satoshis(Int64.one)
 
-  override def fromBytes(bytes: Seq[Byte]): Satoshis = RawSatoshisSerializer.read(bytes)
+  override def fromBytes(bytes: Seq[Byte]): Satoshis =
+    RawSatoshisSerializer.read(bytes)
 
   def apply(int64: Int64): Satoshis = SatoshisImpl(int64)
 
