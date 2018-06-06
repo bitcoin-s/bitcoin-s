@@ -43,6 +43,7 @@ object JsonSerializers {
   implicit val bitcoinAddressWrites: Writes[BitcoinAddress] = BitcoinAddressWrites
   implicit val doubleSha256DigestWrites: Writes[DoubleSha256Digest] = DoubleSha256DigestWrites
   implicit val scriptPubKeyWrites: Writes[ScriptPubKey] = ScriptPubKeyWrites
+  implicit val transactionInputWrites: Writes[TransactionInput] = TransactionInputWrites
 
   // Network Models
   implicit val networkReads: Reads[Network] = Json.reads[Network]
@@ -181,4 +182,6 @@ object JsonSerializers {
   implicit val fundRawTransactionResultReads: Reads[FundRawTransactionResult] = Json.reads[FundRawTransactionResult]
 
   implicit val rpcAccoutReads: Reads[RpcAccount] = Json.reads[RpcAccount]
+
+  implicit val rpcAddressReads: Reads[RpcAddress] = RpcAddressReads
 }

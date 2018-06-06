@@ -1,9 +1,9 @@
 package org.bitcoins.rpc.jsonmodels
 
-import org.bitcoins.core.crypto.{ DoubleSha256Digest, Sha256Hash160Digest }
+import org.bitcoins.core.crypto.{DoubleSha256Digest, Sha256Hash160Digest}
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.{ Address, P2PKHAddress, P2SHAddress }
+import org.bitcoins.core.protocol.{Address, BitcoinAddress, P2PKHAddress, P2SHAddress}
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.Transaction
 
@@ -19,13 +19,13 @@ case class GetWalletInfoResult(
   keypoololdest: UInt32,
   keypoolsize: Int,
   keypoolsize_hd_internal: Int,
-  paytxfee: Bitcoins,
+  paytxfee: Bitcoins, // Should be BitcoinFeeUnit
   hdmasterkeyid: Sha256Hash160Digest,
   unlocked_until: Option[Int]) extends WalletResult
 case class BumpFeeResult(
   txid: DoubleSha256Digest,
   origfee: Bitcoins,
-  fee: Bitcoins,
+  fee: Bitcoins, // Should be BitcoinFeeUnit
   warnings: String) extends WalletResult
 
 case class CreateMultiSigResult(address: Address, redeemScript: ScriptPubKey) extends WalletResult
@@ -47,3 +47,8 @@ case class RpcAccount(
   account: String,
   amount: Bitcoins,
   confirmations: Int) extends WalletResult
+
+case class RpcAddress(
+                       address: BitcoinAddress,
+                       balance: Bitcoins,
+                       account: Option[String]) extends WalletResult

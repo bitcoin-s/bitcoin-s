@@ -11,17 +11,17 @@ import akka.util.ByteString
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.crypto.{DoubleSha256Digest, ECPrivateKey, ECPublicKey}
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
+import org.bitcoins.core.number.Int64
 import org.bitcoins.core.protocol.{Address, BitcoinAddress, P2PKHAddress}
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, MerkleBlock}
-import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionInput, TransactionOutPoint}
 import org.bitcoins.core.util.BitcoinSLogger
+import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import play.api.libs.json._
 import org.bitcoins.rpc.jsonmodels._
 import org.bitcoins.rpc.serializers.JsonSerializers._
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success}
 
 class RpcClient()(implicit m: ActorMaterializer, ec: ExecutionContext, network: NetworkParameters) {
   private val resultKey = "result"
@@ -55,10 +55,11 @@ class RpcClient()(implicit m: ActorMaterializer, ec: ExecutionContext, network: 
 
   def bumpFee(txid: DoubleSha256Digest, confTarget: Int = 6, totalFee: Option[Satoshis], replaceable: Boolean = true): Future[BumpFeeResult] = {
     val options =
-      if (totalFee.nonEmpty)
+      if (totalFee.nonEmpty) {
         List(("confTarget", JsNumber(confTarget)), ("replaceable", JsBoolean(replaceable)))
-      else
+      } else {
         List(("confTarget", JsNumber(confTarget)), ("totalFee", JsNumber(totalFee.get.toBigDecimal)), ("replaceable", JsBoolean(replaceable)))
+      }
 
     bitcoindCall[BumpFeeResult]("bumpfee", List(JsString(txid.hex), JsObject(options)))
   }
@@ -96,28 +97,16 @@ class RpcClient()(implicit m: ActorMaterializer, ec: ExecutionContext, network: 
     bitcoindCall[String]("encryptwallet", List(JsString(passphrase)))
   }
 
-  def estimateFee(blocks: Int): Future[Satoshis] = {
-    bitcoindCall[Bitcoins]("estimatefee", List(JsNumber(blocks)))
-      .map(_.satoshis)
+  // Should be BitcoinFeeUnit
+  def estimateFee(blocks: Int): Future[SatoshisPerByte] = {
+    bitcoindCall[BigDecimal]("estimatefee", List(JsNumber(blocks))).map(num => SatoshisPerByte(Satoshis(Int64((num * 100000).toBigInt()))))
   }
 
   def estimatePriority(blocks: Int): Future[BigDecimal] = {
     bitcoindCall[BigDecimal]("estimatepriority", List(JsNumber(blocks)))
   }
 
-  // This needs a home?
-  case class FundRawTransactionOptions(
-    changeAddress: Option[BitcoinAddress] = None,
-    changePosition: Option[Int] = None,
-    includeWatching: Boolean = false,
-    lockUnspents: Boolean = false,
-    reverseChangeKey: Boolean = true,
-    feeRate: Option[Bitcoins] = None,
-    subtractFeeFromOutputs: Option[Array[Int]])
-
-  implicit val fundRawTransactionOptionsWrites: Writes[FundRawTransactionOptions] = Json.writes[FundRawTransactionOptions]
-
-  def fundRawTransaction(transaction: Transaction, options: Option[FundRawTransactionOptions]): Future[FundRawTransactionResult] = {
+  def fundRawTransaction(transaction: Transaction, options: Option[RpcOpts.FundRawTransactionOptions]): Future[FundRawTransactionResult] = {
     bitcoindCall[FundRawTransactionResult]("fundrawtransaction", List(JsString(transaction.hex), Json.toJson(options)))
   }
 
@@ -134,7 +123,12 @@ class RpcClient()(implicit m: ActorMaterializer, ec: ExecutionContext, network: 
   }
 
   def getAddedNodeInfo(details: Boolean, node: Option[InetAddress]): Future[Vector[Node]] = {
-    val params = if (node.isEmpty) List(JsBoolean(details)) else List(JsBoolean(details), JsString(node.get.toString))
+    val params =
+      if (node.isEmpty) {
+        List(JsBoolean(details))
+      } else {
+        List(JsBoolean(details), JsString(node.get.toString))
+      }
     bitcoindCall[Vector[Node]]("getaddednodeinfo", params)
   }
 
@@ -151,11 +145,13 @@ class RpcClient()(implicit m: ActorMaterializer, ec: ExecutionContext, network: 
   }
 
   def getBlock(headerHash: DoubleSha256Digest): Future[GetBlockResult] = {
-    bitcoindCall[GetBlockResult]("getblock", List(JsString(headerHash.hex), JsNumber(1)))
+    val isJsonObject = JsNumber(1)
+    bitcoindCall[GetBlockResult]("getblock", List(JsString(headerHash.hex), isJsonObject))
   }
 
   def getBlockWithTransactions(headerHash: DoubleSha256Digest): Future[GetBlockWithTransactionsResult] = {
-    bitcoindCall[GetBlockWithTransactionsResult]("getblock", List(JsString(headerHash.hex), JsNumber(2)))
+    val isVerboseJsonObject = JsNumber(2)
+    bitcoindCall[GetBlockWithTransactionsResult]("getblock", List(JsString(headerHash.hex), isVerboseJsonObject))
   }
 
   def getBlockHash(height: Int): Future[DoubleSha256Digest] = {
@@ -178,8 +174,8 @@ class RpcClient()(implicit m: ActorMaterializer, ec: ExecutionContext, network: 
     bitcoindCall[Int]("getnetworkhashps", List(JsNumber(blocks), JsNumber(height)))
   }
 
-  def getRawChangeAddress: Future[P2PKHAddress] = {
-    bitcoindCall[P2PKHAddress]("getrawchangeaddress")
+  def getRawChangeAddress: Future[BitcoinAddress] = {
+    bitcoindCall[BitcoinAddress]("getrawchangeaddress")
   }
 
   def getRawMemPool: Future[Vector[DoubleSha256Digest]] = {
@@ -208,11 +204,14 @@ class RpcClient()(implicit m: ActorMaterializer, ec: ExecutionContext, network: 
   }
 
   def getTxOutProof(txids: Vector[DoubleSha256Digest], headerHash: Option[DoubleSha256Digest]): Future[MerkleBlock] = {
-    def params =
-      if (headerHash.isEmpty)
-        List(JsArray(txids.map(hash => JsString(hash.hex))))
-      else
-        List(JsArray(txids.map(hash => JsString(hash.hex))), JsString(headerHash.get.hex))
+    def params = {
+      val hashes = JsArray(txids.map(hash => JsString(hash.hex)))
+      if (headerHash.isEmpty) {
+        List(hashes)
+      } else {
+        List(hashes, JsString(headerHash.get.hex))
+      }
+    }
     bitcoindCall[MerkleBlock]("gettxoutproof", params)
   }
 
@@ -252,38 +251,6 @@ class RpcClient()(implicit m: ActorMaterializer, ec: ExecutionContext, network: 
     bitcoindCall[Unit]("keypoolrefill", List(JsNumber(keyPoolSize)))
   }
 
-  // This needs a home
-  case class RpcAddress(
-    address: BitcoinAddress,
-    balance: Bitcoins,
-    account: Option[String])
-
-  implicit object RpcAddressReads extends Reads[RpcAddress] {
-    def reads(json: JsValue): JsResult[RpcAddress] = json match {
-      case array: JsArray =>
-        val balance = array.value.find(_.isInstanceOf[JsNumber]) match {
-          case Some(JsNumber(n)) => Bitcoins(n)
-          case Some(err) => return JsError(s"error.expected.jsnumber, got ${Json.toJson(err).toString()}")
-          case None => return JsError("error.expected.balance")
-        }
-        val jsStrings: IndexedSeq[JsString] = array.value.filter(_.isInstanceOf[JsString]).map(_.asInstanceOf[JsString])
-        val address = jsStrings.find(s => BitcoinAddress.isValid(s.value)) match {
-          case Some(JsString(s)) => BitcoinAddress.fromString(s) match {
-            case Success(a) => a
-            case Failure(err) => return JsError(s"error.expected.address, got ${err.toString}")
-          }
-          case None => return JsError("error.expected.address")
-        }
-        jsStrings.find(s => !BitcoinAddress.isValid(s.value)) match {
-          case Some(JsString(s)) => JsSuccess(RpcAddress(address, balance, Some(s)))
-          case None => JsSuccess(RpcAddress(address, balance, None))
-        }
-      case err => JsError(s"error.expected.jsarray, got ${Json.toJson(err).toString()}")
-    }
-  }
-
-  implicit val rpcAddressReads: Reads[RpcAddress] = RpcAddressReads
-
   def listAddressGroupings: Future[Vector[Vector[RpcAddress]]] = {
     bitcoindCall[Vector[Vector[RpcAddress]]]("listaddressgroupings")
   }
@@ -314,7 +281,8 @@ class RpcClient()(implicit m: ActorMaterializer, ec: ExecutionContext, network: 
   }
 
   def listUnspent(minConfirmations: Int = 1, maxConfirmations: Int = 9999999, addresses: Vector[BitcoinAddress]): Future[Vector[UnspentOutput]] = {
-    bitcoindCall[Vector[UnspentOutput]]("listunspent", List(JsNumber(minConfirmations), JsNumber(maxConfirmations), JsArray(addresses.map(address => JsString(address.value)))))
+    val jsonAddresses = JsArray(addresses.map(address => JsString(address.value)))
+    bitcoindCall[Vector[UnspentOutput]]("listunspent", List(JsNumber(minConfirmations), JsNumber(maxConfirmations), jsonAddresses))
   }
 
   def lockUnspent(unlock: Boolean, outputs: Vector[LockUnspentOutputParameter]): Future[Boolean] = {
@@ -369,6 +337,7 @@ class RpcClient()(implicit m: ActorMaterializer, ec: ExecutionContext, network: 
     bitcoindCall[Unit]("setnetworkactive", List(JsBoolean(activate)))
   }
 
+  // Should be BitcoinFeeUnit
   def setTxFee(feePerKB: Bitcoins): Future[Boolean] = {
     bitcoindCall[Boolean]("settxfee", List(JsNumber(feePerKB.toBigDecimal)))
   }
@@ -381,23 +350,20 @@ class RpcClient()(implicit m: ActorMaterializer, ec: ExecutionContext, network: 
     bitcoindCall[String]("signmessagewithprivkey", List(JsString(key.toWIF(network)), JsString(message)))
   }
 
-  case class SignRawTransactionOutputParameter(
-    txid: DoubleSha256Digest,
-    vout: Int,
-    scriptPubKey: ScriptPubKey,
-    reedemScript: Option[ScriptPubKey] = None,
-    amount: Bitcoins)
-
-  implicit val signRawTransactionOutputParameterWrites: Writes[SignRawTransactionOutputParameter] = Json.writes[SignRawTransactionOutputParameter]
-
-  def signRawTransactionWithKey(transaction: Transaction, keys: Vector[ECPrivateKey], utxoDeps: Option[Vector[SignRawTransactionOutputParameter]] = None, sigHash: Option[String] = None): Future[SignRawTransactionResult] = {
-    val params =
-      if (utxoDeps.isEmpty)
-        List(JsString(transaction.hex), JsArray(keys.map(key => JsString(key.toWIF(network)))))
-      else if (sigHash.isEmpty)
-          List(JsString(transaction.hex), JsArray(keys.map(key => JsString(key.toWIF(network)))), JsArray(utxoDeps.get.map(Json.toJson(_))))
-      else
-        List(JsString(transaction.hex), JsArray(keys.map(key => JsString(key.toWIF(network)))), JsArray(utxoDeps.get.map(Json.toJson(_))), JsString(sigHash.get))
+  def signRawTransactionWithKey(transaction: Transaction, keys: Vector[ECPrivateKey], utxoDeps: Option[Vector[RpcOpts.SignRawTransactionOutputParameter]] = None, sigHash: Option[String] = None): Future[SignRawTransactionResult] = {
+    val params = {
+      val jsonKeys = JsArray(keys.map(key => JsString(key.toWIF(network))))
+      if (utxoDeps.isEmpty) {
+        List(JsString(transaction.hex), jsonKeys)
+      } else {
+        val utxos = JsArray(utxoDeps.get.map(Json.toJson(_)))
+        if (sigHash.isEmpty) {
+          List(JsString(transaction.hex), jsonKeys, utxos)
+        } else {
+          List(JsString(transaction.hex), jsonKeys, utxos, JsString(sigHash.get))
+        }
+      }
+    }
 
     bitcoindCall[SignRawTransactionResult]("signrawtransactionwithkey", params)
   }
@@ -408,10 +374,11 @@ class RpcClient()(implicit m: ActorMaterializer, ec: ExecutionContext, network: 
 
   def submitBlock(block: Block, parameters: Option[JsValue] = None): Future[Unit] = {
     val params =
-      if (parameters.isEmpty)
+      if (parameters.isEmpty) {
         List(JsString(block.hex))
-      else
+      } else {
         List(JsString(block.hex), parameters.get)
+      }
 
     bitcoindCall[Unit]("submitblock", params)
   }
@@ -428,8 +395,8 @@ class RpcClient()(implicit m: ActorMaterializer, ec: ExecutionContext, network: 
     bitcoindCall[Boolean]("verifymessage", List(JsString(address.value), JsString(signature), JsString(message)))
   }
 
-  def verifyTxOutProof(proof: String): Future[Vector[DoubleSha256Digest]] = {
-    bitcoindCall[Vector[DoubleSha256Digest]]("verifytxoutproof", List(JsString(proof)))
+  def verifyTxOutProof(proof: MerkleBlock): Future[Vector[DoubleSha256Digest]] = {
+    bitcoindCall[Vector[DoubleSha256Digest]]("verifytxoutproof", List(JsString(proof.hex)))
   }
 
   def walletLock: Future[Unit] = {
@@ -449,13 +416,6 @@ class RpcClient()(implicit m: ActorMaterializer, ec: ExecutionContext, network: 
   // TODO: Overload calls with Option inputs?
   // --------------------------------------------------------------------------------
   // EVERYTHING BELOW THIS COMMENT HAS TESTS
-
-  // This needs a home
-  implicit object TransactionInputWrites extends Writes[TransactionInput] {
-    def writes(o: TransactionInput) = JsObject(Seq(("txid", JsString(o.previousOutput.txId.hex)), ("vout", JsNumber(o.previousOutput.vout.toLong)), ("sequence", JsNumber(o.sequence.toLong))))
-  }
-
-  implicit val transactionInputWrites: Writes[TransactionInput] = TransactionInputWrites
 
   def createRawTransaction(inputs: Vector[TransactionInput], outputs: Map[String, Bitcoins], locktime: Int = 0): Future[Transaction] = {
     bitcoindCall[Transaction]("createrawtransaction", List(Json.toJson(inputs), Json.toJson(outputs), JsNumber(locktime)))
@@ -509,14 +469,18 @@ class RpcClient()(implicit m: ActorMaterializer, ec: ExecutionContext, network: 
     bitcoindCall[BitcoinAddress]("getnewaddress", List(JsString(account)))
   }
 
-  def signRawTransactionWithWallet(transaction: Transaction, utxoDeps: Option[Vector[SignRawTransactionOutputParameter]] = None, sigHash: Option[String] = None): Future[SignRawTransactionResult] = {
+  def signRawTransactionWithWallet(transaction: Transaction, utxoDeps: Option[Vector[RpcOpts.SignRawTransactionOutputParameter]] = None, sigHash: Option[String] = None): Future[SignRawTransactionResult] = {
     val params =
-      if (utxoDeps.isEmpty)
+      if (utxoDeps.isEmpty) {
         List(JsString(transaction.hex))
-      else if (sigHash.isEmpty)
-        List(JsString(transaction.hex), JsArray(utxoDeps.get.map(Json.toJson(_))))
-      else
-        List(JsString(transaction.hex), JsArray(utxoDeps.get.map(Json.toJson(_))), JsString(sigHash.get))
+      } else {
+        val utxos = JsArray(utxoDeps.get.map(Json.toJson(_)))
+        if (sigHash.isEmpty) {
+          List(JsString(transaction.hex), utxos)
+        } else {
+          List(JsString(transaction.hex), utxos, JsString(sigHash.get))
+        }
+      }
 
     bitcoindCall[SignRawTransactionResult]("signrawtransactionwithwallet", params)
   }
