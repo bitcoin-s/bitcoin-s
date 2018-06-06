@@ -4,22 +4,27 @@ import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.script.ScriptPubKey
+import org.bitcoins.core.protocol.transaction.TransactionInput
 import play.api.libs.json._
 
 object JsonWriters {
   implicit object BitcoinsWrites extends Writes[Bitcoins] {
-    def writes(o: Bitcoins) = JsNumber(o.toBigDecimal)
+    override def writes(o: Bitcoins): JsValue = JsNumber(o.toBigDecimal)
   }
 
   implicit object BitcoinAddressWrites extends Writes[BitcoinAddress] {
-    def writes(o: BitcoinAddress) = JsString(o.value)
+    override def writes(o: BitcoinAddress): JsValue = JsString(o.value)
   }
 
   implicit object DoubleSha256DigestWrites extends Writes[DoubleSha256Digest] {
-    def writes(o: DoubleSha256Digest) = JsString(o.hex)
+    override def writes(o: DoubleSha256Digest): JsValue = JsString(o.hex)
   }
 
   implicit object ScriptPubKeyWrites extends Writes[ScriptPubKey] {
-    def writes(o: ScriptPubKey) = JsString(o.hex)
+    override def writes(o: ScriptPubKey): JsValue = JsString(o.hex)
+  }
+
+  implicit object TransactionInputWrites extends Writes[TransactionInput] {
+    override def writes(o: TransactionInput): JsValue = JsObject(Seq(("txid", JsString(o.previousOutput.txId.hex)), ("vout", JsNumber(o.previousOutput.vout.toLong)), ("sequence", JsNumber(o.sequence.toLong))))
   }
 }
