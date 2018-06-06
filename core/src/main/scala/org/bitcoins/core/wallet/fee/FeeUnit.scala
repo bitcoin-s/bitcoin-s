@@ -19,9 +19,9 @@ sealed abstract class FeeUnit {
  * Meant to represent the different fee unit types for the bitcoin protocol
  * [[https://en.bitcoin.it/wiki/Weight_units]]
  */
-sealed abstract class BitcoinFeeUnit
+sealed abstract class BitcoinFeeUnit extends FeeUnit
 
-case class SatoshisPerByte(currencyUnit: CurrencyUnit) extends FeeUnit
+case class SatoshisPerByte(currencyUnit: CurrencyUnit) extends BitcoinFeeUnit
 
 /**
  * A 'virtual byte' (also known as virtual size) is a new weight measurement that
@@ -29,4 +29,4 @@ case class SatoshisPerByte(currencyUnit: CurrencyUnit) extends FeeUnit
  * has the weight of 4 bytes in the [[org.bitcoins.core.protocol.transaction.TransactionWitness]]
  * of a [[org.bitcoins.core.protocol.transaction.WitnessTransaction]]
  */
-case class SatoshisPerVirtualByte(currencyUnit: CurrencyUnit) extends FeeUnit
+case class SatoshisPerVirtualByte(currencyUnit: CurrencyUnit) extends BitcoinFeeUnit
