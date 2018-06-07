@@ -6,7 +6,11 @@ import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.currency
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
-import org.bitcoins.core.protocol.transaction.{Transaction, TransactionInput, TransactionOutPoint}
+import org.bitcoins.core.protocol.transaction.{
+  Transaction,
+  TransactionInput,
+  TransactionOutPoint
+}
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.rpc.client.RpcClient
 import org.scalatest.AsyncFlatSpec
@@ -32,7 +36,8 @@ class RpcClientTest extends AsyncFlatSpec {
     client.getBlockChainInfo.flatMap { info =>
       logger.info(info.toString)
       assert(info.chain == "regtest")
-      client.getBestBlockHash.map( bestHash => assert(info.bestblockhash == bestHash))
+      client.getBestBlockHash.map(bestHash =>
+        assert(info.bestblockhash == bestHash))
       assert(info.softforks.length >= 3)
       assert(info.bip9_softforks.keySet.size >= 2)
     }
@@ -44,17 +49,36 @@ class RpcClientTest extends AsyncFlatSpec {
         client.getBlock(blocks(1)).flatMap { block1 =>
           client.getTransaction(block0.tx(0)).flatMap { transaction0 =>
             client.getTransaction(block1.tx(0)).flatMap { transaction1 =>
-              val input0 = TransactionOutPoint(transaction0.txid, UInt32(transaction0.blockindex.get))
-              val input1 = TransactionOutPoint(transaction1.txid, UInt32(transaction1.blockindex.get))
+              val input0 =
+                TransactionOutPoint(transaction0.txid,
+                                    UInt32(transaction0.blockindex.get))
+              val input1 =
+                TransactionOutPoint(transaction1.txid,
+                                    UInt32(transaction1.blockindex.get))
               val sig: ScriptSignature = ScriptSignature.empty
               client.getNewAddress().flatMap { address =>
-                client.createRawTransaction(Vector(TransactionInput(input0, sig, UInt32(1)), TransactionInput(input1, sig, UInt32(2))), Map((address.value, Bitcoins(1)))).map { transaction =>
-                  logger.info(transaction.toString)
-                  assert(transaction.inputs(0).sequence == UInt32(1))
-                  assert(transaction.inputs(1).sequence == UInt32(2))
-                  assert(transaction.inputs(0).previousOutput.txId.flip == input0.txId)
-                  assert(transaction.inputs(1).previousOutput.txId.flip == input1.txId)
-                }
+                client
+                  .createRawTransaction(
+                    Vector(TransactionInput(input0, sig, UInt32(1)),
+                           TransactionInput(input1, sig, UInt32(2))),
+                    Map((address.value, Bitcoins(1))))
+                  .map { transaction =>
+                    logger.info(transaction.toString)
+                    assert(transaction.inputs(0).sequence == UInt32(1))
+                    assert(transaction.inputs(1).sequence == UInt32(2))
+                    assert(
+                      transaction
+                        .inputs(0)
+                        .previousOutput
+                        .txId
+                        .flip == input0.txId)
+                    assert(
+                      transaction
+                        .inputs(1)
+                        .previousOutput
+                        .txId
+                        .flip == input1.txId)
+                  }
               }
             }
           }
@@ -69,11 +93,18 @@ class RpcClientTest extends AsyncFlatSpec {
         client.getBlock(blocks(1)).flatMap { block1 =>
           client.getTransaction(block0.tx(0)).flatMap { transaction0 =>
             client.getTransaction(block1.tx(0)).flatMap { transaction1 =>
-              val input0 = TransactionOutPoint(transaction0.txid, UInt32(transaction0.blockindex.get))
-              val input1 = TransactionOutPoint(transaction1.txid, UInt32(transaction1.blockindex.get))
+              val input0 =
+                TransactionOutPoint(transaction0.txid,
+                                    UInt32(transaction0.blockindex.get))
+              val input1 =
+                TransactionOutPoint(transaction1.txid,
+                                    UInt32(transaction1.blockindex.get))
               val sig: ScriptSignature = ScriptSignature.empty
               client.getNewAddress().flatMap { address =>
-                client.createRawTransaction(Vector(TransactionInput(input0, sig, UInt32(1)), TransactionInput(input1, sig, UInt32(2))), Map((address.value, Bitcoins(0.0000001))))
+                client.createRawTransaction(
+                  Vector(TransactionInput(input0, sig, UInt32(1)),
+                         TransactionInput(input1, sig, UInt32(2))),
+                  Map((address.value, Bitcoins(0.0000001))))
               }
             }
           }
@@ -85,7 +116,7 @@ class RpcClientTest extends AsyncFlatSpec {
   it should "be able to decode a raw transaction" in {
     val transactionF = createRawTransaction
     transactionF.flatMap { transaction =>
-      client.decodeRawTransaction(transaction).map {rpcTransaction =>
+      client.decodeRawTransaction(transaction).map { rpcTransaction =>
         assert(rpcTransaction.txid.flip == transaction.txId)
         assert(rpcTransaction.locktime == transaction.lockTime)
         assert(rpcTransaction.size == transaction.size)
@@ -98,10 +129,11 @@ class RpcClientTest extends AsyncFlatSpec {
   it should "be able to sign a raw transaction with wallet keys" in {
     val transactionF = createRawTransaction
     transactionF.flatMap { transaction =>
-      client.signRawTransactionWithWallet(transaction).map { signedTransaction =>
-        logger.info(signedTransaction.toString)
-        logger.info(signedTransaction.hex.hex)
-        assert(signedTransaction.complete)
+      client.signRawTransactionWithWallet(transaction).map {
+        signedTransaction =>
+          logger.info(signedTransaction.toString)
+          logger.info(signedTransaction.hex.hex)
+          assert(signedTransaction.complete)
       }
     }
   }
@@ -109,13 +141,17 @@ class RpcClientTest extends AsyncFlatSpec {
   it should "be able to send a raw transaction to the mem pool" in {
     val transactionF = createRawTransaction
     transactionF.flatMap { transaction =>
-      client.signRawTransactionWithWallet(transaction).flatMap { signedTransaction =>
-        client.generate(100).flatMap { _ => // Can't spend coinbase until depth 100
-          client.sendRawTransaction(signedTransaction.hex, true).map { transactionHash =>
-            logger.info(transactionHash.hex)
-            assert(true)
-          }
-        }
+      client.signRawTransactionWithWallet(transaction).flatMap {
+        signedTransaction =>
+          client
+            .generate(100)
+            .flatMap { _ => // Can't spend coinbase until depth 100
+              client.sendRawTransaction(signedTransaction.hex, true).map {
+                transactionHash =>
+                  logger.info(transactionHash.hex)
+                  assert(true)
+              }
+            }
       }
     }
   }
@@ -123,12 +159,16 @@ class RpcClientTest extends AsyncFlatSpec {
   private def sendTransaction: Future[GetTransactionResult] = {
     val transactionF = createRawTransaction
     transactionF.flatMap { transaction =>
-      client.signRawTransactionWithWallet(transaction).flatMap { signedTransaction =>
-        client.generate(100).flatMap { _ => // Can't spend coinbase until depth 100
-          client.sendRawTransaction(signedTransaction.hex, true).flatMap { transactionHash =>
-            client.getTransaction(transactionHash)
-          }
-        }
+      client.signRawTransactionWithWallet(transaction).flatMap {
+        signedTransaction =>
+          client
+            .generate(100)
+            .flatMap { _ => // Can't spend coinbase until depth 100
+              client.sendRawTransaction(signedTransaction.hex, true).flatMap {
+                transactionHash =>
+                  client.getTransaction(transactionHash)
+              }
+            }
       }
     }
   }
@@ -248,9 +288,9 @@ class RpcClientTest extends AsyncFlatSpec {
 
   it should "be able to refill the keypool" in {
     client.getWalletInfo.flatMap { info =>
-      client.keyPoolRefill(info.keypoolsize+1).flatMap { _ =>
+      client.keyPoolRefill(info.keypoolsize + 1).flatMap { _ =>
         client.getWalletInfo.flatMap { newInfo =>
-          assert(newInfo.keypoolsize == info.keypoolsize+1)
+          assert(newInfo.keypoolsize == info.keypoolsize + 1)
         }
       }
     }
@@ -365,7 +405,7 @@ class RpcClientTest extends AsyncFlatSpec {
         client.getBlockHash(count).map { hash =>
           assert(blocks(1) == hash)
         }
-        client.getBlockHash(count-1).map {hash =>
+        client.getBlockHash(count - 1).map { hash =>
           assert(blocks(0) == hash)
         }
       }
@@ -384,9 +424,9 @@ class RpcClientTest extends AsyncFlatSpec {
 
   it should "be able to deactivate and activate the network" in {
     client.setNetworkActive(false).flatMap { _ =>
-      client.getNetworkInfo.flatMap{ info =>
+      client.getNetworkInfo.flatMap { info =>
         assert(!info.networkactive)
-        client.setNetworkActive(true).flatMap {_ =>
+        client.setNetworkActive(true).flatMap { _ =>
           client.getNetworkInfo.map { newInfo =>
             assert(newInfo.networkactive)
           }
@@ -448,7 +488,7 @@ class RpcClientTest extends AsyncFlatSpec {
 
   it should "be able to list transactions in a given range" in { // Assumes 30 transactions
     client.listTransactions().flatMap { list1 =>
-      client.listTransactions(count=20).flatMap { list2 =>
+      client.listTransactions(count = 20).flatMap { list2 =>
         assert(list2.takeRight(10) == list1)
         client.listTransactions(count = 20, skip = 10).map { list3 =>
           assert(list2.splitAt(10)._1 == list3.takeRight(10))

@@ -9,22 +9,25 @@ import org.bitcoins.rpc.serializers.JsonSerializers._
 
 object RpcOpts {
   case class FundRawTransactionOptions(
-                                        changeAddress: Option[BitcoinAddress] = None,
-                                        changePosition: Option[Int] = None,
-                                        includeWatching: Boolean = false,
-                                        lockUnspents: Boolean = false,
-                                        reverseChangeKey: Boolean = true,
-                                        feeRate: Option[Bitcoins] = None,
-                                        subtractFeeFromOutputs: Option[Array[Int]])
+      changeAddress: Option[BitcoinAddress] = None,
+      changePosition: Option[Int] = None,
+      includeWatching: Boolean = false,
+      lockUnspents: Boolean = false,
+      reverseChangeKey: Boolean = true,
+      feeRate: Option[Bitcoins] = None,
+      subtractFeeFromOutputs: Option[Array[Int]])
 
-  implicit val fundRawTransactionOptionsWrites: Writes[FundRawTransactionOptions] = Json.writes[FundRawTransactionOptions]
+  implicit val fundRawTransactionOptionsWrites: Writes[
+    FundRawTransactionOptions] = Json.writes[FundRawTransactionOptions]
 
   case class SignRawTransactionOutputParameter(
-                                                txid: DoubleSha256Digest,
-                                                vout: Int,
-                                                scriptPubKey: ScriptPubKey,
-                                                reedemScript: Option[ScriptPubKey] = None,
-                                                amount: Bitcoins)
+      txid: DoubleSha256Digest,
+      vout: Int,
+      scriptPubKey: ScriptPubKey,
+      reedemScript: Option[ScriptPubKey] = None,
+      amount: Bitcoins)
 
-  implicit val signRawTransactionOutputParameterWrites: Writes[SignRawTransactionOutputParameter] = Json.writes[SignRawTransactionOutputParameter]
+  implicit val signRawTransactionOutputParameterWrites: Writes[
+    SignRawTransactionOutputParameter] =
+    Json.writes[SignRawTransactionOutputParameter]
 }
