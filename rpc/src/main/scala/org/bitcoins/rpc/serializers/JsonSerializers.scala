@@ -2,17 +2,18 @@ package org.bitcoins.rpc.serializers
 
 import java.net.InetAddress
 
-import org.bitcoins.core.crypto.{ DoubleSha256Digest, ECPublicKey, Sha256Hash160Digest }
+import org.bitcoins.core.crypto.{DoubleSha256Digest, ECPublicKey, Sha256Hash160Digest}
 import org.bitcoins.core.currency.Bitcoins
-import org.bitcoins.core.number.{ Int32, UInt32 }
-import org.bitcoins.core.protocol.{ Address, BitcoinAddress, P2PKHAddress, P2SHAddress }
-import org.bitcoins.core.protocol.blockchain.{ Block, BlockHeader, MerkleBlock }
+import org.bitcoins.core.number.{Int32, UInt32}
+import org.bitcoins.core.protocol.{Address, BitcoinAddress, P2PKHAddress, P2SHAddress}
+import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, MerkleBlock}
 import org.bitcoins.core.protocol.script.ScriptPubKey
-import org.bitcoins.core.protocol.transaction.{ Transaction, TransactionInput, TransactionOutPoint, TransactionOutput }
+import org.bitcoins.core.protocol.transaction.{Transaction, TransactionInput, TransactionOutPoint, TransactionOutput}
+import org.bitcoins.core.wallet.fee.BitcoinFeeUnit
 import org.bitcoins.rpc.jsonmodels._
 import org.bitcoins.rpc.serializers.JsonReaders._
 import org.bitcoins.rpc.serializers.JsonWriters._
-import play.api.libs.json.{ Json, Reads, Writes, __ }
+import play.api.libs.json.{Json, Reads, Writes, __}
 import play.api.libs.functional.syntax._
 
 object JsonSerializers {
@@ -38,6 +39,7 @@ object JsonSerializers {
   implicit val merkleBlockReads: Reads[MerkleBlock] = MerkleBlockReads
   implicit val transactionReads: Reads[Transaction] = TransactionReads
   implicit val transactionOutPointReads: Reads[TransactionOutPoint] = TransactionOutPointReads
+  implicit val bitcoinFeeUnitReads: Reads[BitcoinFeeUnit] = BitcoinFeeUnitReads
 
   implicit val bitcoinsWrites: Writes[Bitcoins] = BitcoinsWrites
   implicit val bitcoinAddressWrites: Writes[BitcoinAddress] = BitcoinAddressWrites
@@ -72,9 +74,9 @@ object JsonSerializers {
   implicit val rpcScriptPubKeyReads: Reads[RpcScriptPubKey] = (
     (__ \ "asm").read[String] and
       (__ \ "hex").read[String] and
-      (__ \ "reqSigs").read[Int] and
+      (__ \ "reqSigs").readNullable[Int] and
       (__ \ "type").read[String] and
-      (__ \ "addresses").read[Vector[BitcoinAddress]]
+      (__ \ "addresses").readNullable[Vector[BitcoinAddress]]
     ) (RpcScriptPubKey)
   implicit val rpcTransactionOutputReads: Reads[RpcTransactionOutput] = Json.reads[RpcTransactionOutput]
   implicit val rpcTransactionReads: Reads[RpcTransaction] = Json.reads[RpcTransaction]
@@ -82,7 +84,7 @@ object JsonSerializers {
 
   implicit val paymentReads: Reads[Payment] = (
     (__ \ "involvesWatchonly").readNullable[Boolean] and
-      (__ \ "account").read[String] and
+      (__ \ "account").readNullable[String] and
       (__ \ "address").readNullable[BitcoinAddress] and
       (__ \ "category").read[String] and
       (__ \ "amount").read[Bitcoins] and
@@ -99,13 +101,12 @@ object JsonSerializers {
       (__ \ "timereceived").read[UInt32] and
       (__ \ "bip125-replaceable").read[String] and
       (__ \ "comment").readNullable[String] and
-      (__ \ "to").readNullable[String] and
-      (__ \ "lastblock").read[DoubleSha256Digest]
+      (__ \ "to").readNullable[String]
     )(Payment)
   implicit val listSinceBlockResultReads: Reads[ListSinceBlockResult] = Json.reads[ListSinceBlockResult]
 
   implicit val listTransactionsResultReads: Reads[ListTransactionsResult] = (
-    (__ \ "account").read[String] and
+    (__ \ "account").readNullable[String] and
       (__ \ "address").readNullable[BitcoinAddress] and
       (__ \ "category").read[String] and
       (__ \ "amount").read[Bitcoins] and
@@ -161,6 +162,8 @@ object JsonSerializers {
   implicit val softforkReads: Reads[Softfork] = Json.reads[Softfork]
   implicit val bip9SoftforkReads: Reads[Bip9Softfork] = Json.reads[Bip9Softfork]
   implicit val getBlockChainInfoResultReads: Reads[GetBlockChainInfoResult] = Json.reads[GetBlockChainInfoResult]
+
+  implicit val estimateSmartFeeResultReads: Reads[EstimateSmartFeeResult] = Json.reads[EstimateSmartFeeResult]
 
   // Mining Models
   implicit val miningInfoReads: Reads[GetMiningInfoResult] = Json.reads[GetMiningInfoResult]

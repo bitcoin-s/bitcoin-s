@@ -6,6 +6,7 @@ import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.{Address, BitcoinAddress, P2PKHAddress, P2SHAddress}
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.core.wallet.fee.BitcoinFeeUnit
 
 sealed abstract class WalletResult
 
@@ -19,9 +20,10 @@ case class GetWalletInfoResult(
   keypoololdest: UInt32,
   keypoolsize: Int,
   keypoolsize_hd_internal: Int,
-  paytxfee: Bitcoins, // Should be BitcoinFeeUnit
+  paytxfee: BitcoinFeeUnit,
   hdmasterkeyid: Sha256Hash160Digest,
   unlocked_until: Option[Int]) extends WalletResult
+
 case class BumpFeeResult(
   txid: DoubleSha256Digest,
   origfee: Bitcoins,

@@ -2,13 +2,14 @@ package org.bitcoins.rpc.jsonmodels
 
 import java.net.InetAddress
 
-import org.bitcoins.core.crypto.{ DoubleSha256Digest, ECPublicKey, Sha256Hash160Digest }
+import org.bitcoins.core.crypto.{DoubleSha256Digest, ECPublicKey, Sha256Hash160Digest}
 import org.bitcoins.core.currency.Bitcoins
-import org.bitcoins.core.number.{ Int32, UInt32 }
+import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.protocol.blockchain.Block
-import org.bitcoins.core.protocol.{ Address, BitcoinAddress }
+import org.bitcoins.core.protocol.{Address, BitcoinAddress}
 import org.bitcoins.core.protocol.script.ScriptPubKey
-import org.bitcoins.core.protocol.transaction.{ Transaction, TransactionInput }
+import org.bitcoins.core.protocol.transaction.{Transaction, TransactionInput}
+import org.bitcoins.core.wallet.fee.BitcoinFeeUnit
 
 sealed abstract class NetworkResult
 
@@ -98,14 +99,12 @@ case class GetMemPoolEntryResult(
   modifiedfee: Bitcoins,
   time: UInt32,
   height: Int,
-  startingpriority: BigDecimal,
-  currentpriority: BigDecimal,
   descendantcount: Int,
   descendantsize: Int,
-  descendantfees: Int,
+  descendantfees: Bitcoins, // Should be BitcoinFeeUnit
   ancestorcount: Int,
   ancestorsize: Int,
-  ancestorfees: Int,
+  ancestorfees: Bitcoins, // Should be BitcoinFeeUnit
   depends: Option[Vector[DoubleSha256Digest]]) extends NetworkResult
 
 case class GetMemPoolInfoResult(
@@ -113,7 +112,7 @@ case class GetMemPoolInfoResult(
   bytes: Int,
   usage: Int,
   maxmempool: Int,
-  mempoolminfee: Bitcoins,
+  mempoolminfee: BitcoinFeeUnit,
   minrelaytxfee: Bitcoins) extends NetworkResult
 
 case class GetTxOutSetInfoResult(
@@ -121,8 +120,9 @@ case class GetTxOutSetInfoResult(
   bestblock: DoubleSha256Digest,
   transactions: Int,
   txouts: Int,
-  bytes_serialized: Int,
-  hash_serialized: DoubleSha256Digest,
+  bogosize: Int,
+  hash_serialized_2: DoubleSha256Digest,
+  disk_size: Int,
   total_amount: Bitcoins) extends NetworkResult
 
 case class GetBlockResult(
@@ -174,7 +174,7 @@ case class RpcTransaction(
   locktime: UInt32,
   vin: Vector[TransactionInput],
   vout: Vector[RpcTransactionOutput],
-  hex: Option[Block]) extends NetworkResult
+  hex: Option[Transaction]) extends NetworkResult
 
 case class RpcTransactionOutput(
   value: Bitcoins,
@@ -184,9 +184,9 @@ case class RpcTransactionOutput(
 case class RpcScriptPubKey(
   asm: String,
   hex: String,
-  reqSigs: Int,
+  reqSigs: Option[Int],
   scriptType: String,
-  addresses: Vector[BitcoinAddress]) extends NetworkResult
+  addresses: Option[Vector[BitcoinAddress]]) extends NetworkResult
 
 
 case class ListSinceBlockResult(
@@ -195,7 +195,7 @@ case class ListSinceBlockResult(
 
 case class Payment(
   involvesWatchonly: Option[Boolean],
-  account: String,
+  account: Option[String],
   address: Option[BitcoinAddress],
   category: String,
   amount: Bitcoins,
@@ -212,11 +212,10 @@ case class Payment(
   timereceived: UInt32,
   bip125_replaceable: String,
   comment: Option[String],
-  to: Option[String],
-  lastblock: DoubleSha256Digest) extends NetworkResult
+  to: Option[String]) extends NetworkResult
 
 case class ListTransactionsResult(
-                                 account: String,
+                                 account: Option[String],
                                  address: Option[BitcoinAddress],
                                  category: String,
                                  amount: Bitcoins,
@@ -333,3 +332,9 @@ case class Bip9Softfork(
                          timeout: BigInt,
                          since: Int
                        ) extends NetworkResult
+
+case class EstimateSmartFeeResult(
+                                   feerate: Option[BitcoinFeeUnit], // Given in BTC/kB
+                                   errors: Option[Vector[String]],
+                                   blocks: Int
+                                 ) extends NetworkResult
