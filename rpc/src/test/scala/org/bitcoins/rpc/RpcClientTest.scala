@@ -11,6 +11,7 @@ import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.rpc.client.RpcClient
 import org.scalatest.AsyncFlatSpec
 import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.script.ScriptSignature
 import org.bitcoins.rpc.jsonmodels.GetTransactionResult
 
@@ -458,5 +459,19 @@ class RpcClientTest extends AsyncFlatSpec {
 
   it should "be able to ping" in {
     client.ping.map(_ => assert(true))
+  }
+
+  it should "be able to validate a bitcoin address" in {
+    client.getNewAddress().flatMap { address =>
+      client.validateAddress(address).map { validation =>
+        assert(validation.isvalid)
+      }
+    }
+  }
+
+  it should "be able to verify the chain" in {
+    client.verifyChain(blocks = 0).map { valid =>
+      assert(valid)
+    }
   }
 }

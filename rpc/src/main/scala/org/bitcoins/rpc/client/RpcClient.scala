@@ -11,12 +11,10 @@ import akka.util.ByteString
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.crypto.{DoubleSha256Digest, ECPrivateKey, ECPublicKey}
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
-import org.bitcoins.core.number.Int64
 import org.bitcoins.core.protocol.{Address, BitcoinAddress, P2PKHAddress}
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, MerkleBlock}
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionInput, TransactionOutPoint}
 import org.bitcoins.core.util.BitcoinSLogger
-import org.bitcoins.core.wallet.fee.{BitcoinFeeUnit, SatoshisPerByte}
 import play.api.libs.json._
 import org.bitcoins.rpc.jsonmodels._
 import org.bitcoins.rpc.serializers.JsonSerializers._
@@ -199,8 +197,8 @@ class RpcClient()(implicit m: ActorMaterializer, ec: ExecutionContext, network: 
     bitcoindCall[Unit]("preciousblock", List(JsString(headerHash.hex)))
   }
 
-  def prioritiseTransaction(txid: DoubleSha256Digest, priority: BigDecimal, fee: Satoshis): Future[Boolean] = {
-    bitcoindCall[Boolean]("prioritiseTransaction", List(JsString(txid.hex), JsNumber(priority), JsNumber(fee.toLong)))
+  def prioritiseTransaction(txid: DoubleSha256Digest, dummy: BigDecimal = 0, feeDelta: Satoshis): Future[Boolean] = {
+    bitcoindCall[Boolean]("prioritiseTransaction", List(JsString(txid.hex), JsNumber(dummy), JsNumber(feeDelta.toLong)))
   }
 
   def pruneBlockChain(height: Int): Future[Int] = {
@@ -217,10 +215,6 @@ class RpcClient()(implicit m: ActorMaterializer, ec: ExecutionContext, network: 
 
   def sendToAddress(address: BitcoinAddress, amount: Bitcoins, localComment: String = "", toComment: String = "", subractFeeFromAmount: Boolean = false): Future[DoubleSha256Digest] = {
     bitcoindCall[DoubleSha256Digest]("sendtoaddress", List(JsString(address.toString), JsNumber(amount.toBigDecimal), JsString(localComment), JsString(toComment), JsBoolean(subractFeeFromAmount)))
-  }
-
-  def setAccount(address: BitcoinAddress, account: String = ""): Future[Unit] = {
-    bitcoindCall[Unit]("setaccount", List(JsString(address.value), JsString(account)))
   }
 
   def setBan(address: InetAddress, command: String, banTime: Int = 86400, absolute: Boolean = false): Future[Unit] = {
@@ -262,23 +256,15 @@ class RpcClient()(implicit m: ActorMaterializer, ec: ExecutionContext, network: 
     bitcoindCall[String]("stop")
   }
 
-  def submitBlock(block: Block, parameters: Option[JsValue] = None): Future[Unit] = {
+  def submitBlock(block: Block, dummy: Option[JsValue] = None): Future[Unit] = {
     val params =
-      if (parameters.isEmpty) {
+      if (dummy.isEmpty) {
         List(JsString(block.hex))
       } else {
-        List(JsString(block.hex), parameters.get)
+        List(JsString(block.hex), dummy.get)
       }
 
     bitcoindCall[Unit]("submitblock", params)
-  }
-
-  def validateAddress(address: BitcoinAddress): Future[ValidateAddressResult] = {
-    bitcoindCall[ValidateAddressResult]("validateaddress", List(JsString(address.toString)))
-  }
-
-  def verifyChain(level: Int, blocks: Int): Future[Boolean] = {
-    bitcoindCall[Boolean]("verifychain", List(JsNumber(level), JsNumber(blocks)))
   }
 
   def verifyMessage(address: P2PKHAddress, signature: String, message: String): Future[Boolean] = {
@@ -469,6 +455,14 @@ class RpcClient()(implicit m: ActorMaterializer, ec: ExecutionContext, network: 
       }
 
     bitcoindCall[SignRawTransactionResult]("signrawtransactionwithwallet", params)
+  }
+
+  def validateAddress(address: BitcoinAddress): Future[ValidateAddressResult] = {
+    bitcoindCall[ValidateAddressResult]("validateaddress", List(JsString(address.toString)))
+  }
+
+  def verifyChain(level: Int = 3, blocks: Int = 6): Future[Boolean] = {
+    bitcoindCall[Boolean]("verifychain", List(JsNumber(level), JsNumber(blocks)))
   }
 
   private def bitcoindCall[T](command: String, parameters: List[JsValue] = List.empty)(implicit reader: Reads[T]): Future[T] = {
