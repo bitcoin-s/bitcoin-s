@@ -25,6 +25,10 @@ object JsonWriters {
   }
 
   implicit object TransactionInputWrites extends Writes[TransactionInput] {
-    override def writes(o: TransactionInput): JsValue = JsObject(Seq(("txid", JsString(o.previousOutput.txId.hex)), ("vout", JsNumber(o.previousOutput.vout.toLong)), ("sequence", JsNumber(o.sequence.toLong))))
+    override def writes(o: TransactionInput): JsValue =
+      JsObject(
+        Seq(("txid", JsString(o.previousOutput.txId.hex)),
+            ("vout", JsNumber(o.previousOutput.vout.toLong)),
+            ("sequence", JsNumber(o.sequence.toLong))))
   }
 }
