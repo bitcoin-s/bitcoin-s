@@ -1,7 +1,8 @@
 package org.bitcoins.rpc.serializers
 
-import org.bitcoins.core.crypto.DoubleSha256Digest
+import org.bitcoins.core.crypto.{DoubleSha256Digest, ECPrivateKey}
 import org.bitcoins.core.currency.Bitcoins
+import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.TransactionInput
@@ -30,5 +31,9 @@ object JsonWriters {
         Seq(("txid", JsString(o.previousOutput.txId.hex)),
             ("vout", JsNumber(o.previousOutput.vout.toLong)),
             ("sequence", JsNumber(o.sequence.toLong))))
+  }
+
+  implicit object UInt32Writes extends Writes[UInt32] {
+    override def writes(o: UInt32): JsValue = JsNumber(o.toLong)
   }
 }
