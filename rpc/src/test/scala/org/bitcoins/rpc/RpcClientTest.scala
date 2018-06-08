@@ -3,9 +3,7 @@ package org.bitcoins.rpc
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import org.bitcoins.core.config.RegTest
-import org.bitcoins.core.crypto.DoubleSha256Digest
-import org.bitcoins.core.currency
-import org.bitcoins.core.currency.{Bitcoins, Satoshis}
+import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.protocol.transaction.{
   Transaction,
   TransactionInput,
@@ -15,7 +13,6 @@ import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.rpc.client.RpcClient
 import org.scalatest.AsyncFlatSpec
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.script.ScriptSignature
 import org.bitcoins.rpc.jsonmodels.GetTransactionResult
 
@@ -36,7 +33,6 @@ class RpcClientTest extends AsyncFlatSpec {
 
   it should "be able to get blockchain info" in {
     client.getBlockChainInfo.flatMap { info =>
-      logger.info(info.toString)
       assert(info.chain == "regtest")
       client.getBestBlockHash.map(bestHash =>
         assert(info.bestblockhash == bestHash))
@@ -65,7 +61,6 @@ class RpcClientTest extends AsyncFlatSpec {
                            TransactionInput(input1, sig, UInt32(2))),
                     Map((address.value, Bitcoins(1))))
                   .map { transaction =>
-                    logger.info(transaction.toString)
                     assert(transaction.inputs(0).sequence == UInt32(1))
                     assert(transaction.inputs(1).sequence == UInt32(2))
                     assert(
@@ -133,8 +128,6 @@ class RpcClientTest extends AsyncFlatSpec {
     transactionF.flatMap { transaction =>
       client.signRawTransactionWithWallet(transaction).map {
         signedTransaction =>
-          logger.info(signedTransaction.toString)
-          logger.info(signedTransaction.hex.hex)
           assert(signedTransaction.complete)
       }
     }
@@ -150,7 +143,6 @@ class RpcClientTest extends AsyncFlatSpec {
             .flatMap { _ => // Can't spend coinbase until depth 100
               client.sendRawTransaction(signedTransaction.hex, true).map {
                 transactionHash =>
-                  logger.info(transactionHash.hex)
                   assert(true)
               }
             }
@@ -187,7 +179,6 @@ class RpcClientTest extends AsyncFlatSpec {
     val transactionF = sendTransaction
     transactionF.flatMap { transaction =>
       client.getRawMemPool.map { memPool =>
-        logger.info(memPool.toString())
         assert(memPool.length == 1)
         assert(memPool.head == transaction.txid)
       }
@@ -198,7 +189,6 @@ class RpcClientTest extends AsyncFlatSpec {
     val transactionF = sendTransaction
     transactionF.flatMap { transaction =>
       client.getMemPoolEntry(transaction.txid).map { memPoolEntry =>
-        logger.info(memPoolEntry.toString)
         assert(true)
       }
     }
@@ -243,7 +233,6 @@ class RpcClientTest extends AsyncFlatSpec {
   it should "be able to get an address from bitcoind" in {
     val addressF = client.getNewAddress()
     addressF.map { address =>
-      logger.info(address.value)
       assert(true)
     }
   }
@@ -317,7 +306,6 @@ class RpcClientTest extends AsyncFlatSpec {
   it should "be able to get the block count" in {
     val blockCountF = client.getBlockCount
     blockCountF.map { count =>
-      logger.info(count.toString)
       assert(count >= 0)
     }
   }
@@ -325,7 +313,6 @@ class RpcClientTest extends AsyncFlatSpec {
   it should "be able to get the connection count" in {
     val connectionCountF = client.getConnectionCount
     connectionCountF.map { count =>
-      logger.info(count.toString)
       assert(count == 0)
     }
   }
@@ -333,7 +320,6 @@ class RpcClientTest extends AsyncFlatSpec {
   it should "be able to get the best block hash" in {
     val bestHashF = client.getBestBlockHash
     bestHashF.map { hash =>
-      logger.info(hash.toString)
       assert(true)
     }
   }
@@ -341,7 +327,6 @@ class RpcClientTest extends AsyncFlatSpec {
   it should "be able to get the mining info" in {
     val miningInfoF = client.getMiningInfo
     miningInfoF.map { info =>
-      logger.info(info.toString)
       assert(info.chain == "regtest")
     }
   }
@@ -350,7 +335,6 @@ class RpcClientTest extends AsyncFlatSpec {
     val chainTipsF = client.getChainTips
     chainTipsF.map { tipArray =>
       tipArray.foreach { tip =>
-        logger.info(tip.toString)
         assert(tip.status == "active")
       }
       assert(true)
@@ -360,7 +344,6 @@ class RpcClientTest extends AsyncFlatSpec {
   it should "be able to get the network info" in {
     val networkInfoF = client.getNetworkInfo
     networkInfoF.map { info =>
-      logger.info(info.toString)
       assert(info.networkactive)
       assert(info.connections == 0)
       assert(info.localrelay)
@@ -370,7 +353,6 @@ class RpcClientTest extends AsyncFlatSpec {
   it should "be able to generate blocks" in {
     val blocksF = client.generate(3)
     blocksF.map { blocks =>
-      blocks.foreach(block => logger.info(block.toString))
       assert(blocks.length == 3)
     }
   }
@@ -392,10 +374,8 @@ class RpcClientTest extends AsyncFlatSpec {
   it should "be able to generate blocks and then get their serialized headers" in {
     val blocksF = client.generate(2)
     blocksF.flatMap { blocks =>
-      blocks.foreach(block => logger.info(block.toString))
       val headerF1 = client.getBlockHeaderRaw(blocks(1))
       headerF1.map { header =>
-        logger.info(header.toString)
         assert(header.previousBlockHashBE == blocks(0))
       }
     }
@@ -406,12 +386,10 @@ class RpcClientTest extends AsyncFlatSpec {
     blocksF.flatMap { blocks =>
       val headerF0 = client.getBlockHeader(blocks(0))
       headerF0.map { header =>
-        logger.info(header.toString)
         assert(header.nextblockhash.contains(blocks(1)))
       }
       val headerF1 = client.getBlockHeader(blocks(1))
       headerF1.map { header =>
-        logger.info(header.toString)
         assert(header.previousblockhash.contains(blocks(0)))
         assert(header.nextblockhash.isEmpty)
       }
@@ -421,7 +399,6 @@ class RpcClientTest extends AsyncFlatSpec {
   it should "be able to get the balance" in {
     val balanceF = client.getBalance
     balanceF.flatMap { balance =>
-      logger.info(balance.toString)
       assert(balance.toBigDecimal > 0)
       client.generate(1).flatMap { _ =>
         client.getBalance.map { newBalance =>
