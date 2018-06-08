@@ -356,7 +356,7 @@ case class Bip9Softfork(
 ) extends NetworkResult
 
 case class EstimateSmartFeeResult(
-    feerate: Option[BitcoinFeeUnit], // Given in BTC/kB
+    feerate: Option[BitcoinFeeUnit],
     errors: Option[Vector[String]],
     blocks: Int
 ) extends NetworkResult
