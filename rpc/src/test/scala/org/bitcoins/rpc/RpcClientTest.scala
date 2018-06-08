@@ -21,6 +21,8 @@ import org.bitcoins.rpc.jsonmodels.GetTransactionResult
 
 import scala.concurrent.Future
 
+// Need to test encryptwallet, walletpassphrase, walletpassphrasechange on startup
+// And walletlock, stop on close
 class RpcClientTest extends AsyncFlatSpec {
   implicit val system = ActorSystem()
   implicit val m = ActorMaterializer()
@@ -117,7 +119,7 @@ class RpcClientTest extends AsyncFlatSpec {
     val transactionF = createRawTransaction
     transactionF.flatMap { transaction =>
       client.decodeRawTransaction(transaction).map { rpcTransaction =>
-        assert(rpcTransaction.txid.flip == transaction.txId)
+        assert(rpcTransaction.txid == transaction.txIdBE)
         assert(rpcTransaction.locktime == transaction.lockTime)
         assert(rpcTransaction.size == transaction.size)
         assert(rpcTransaction.version == transaction.version.toInt)
@@ -169,6 +171,14 @@ class RpcClientTest extends AsyncFlatSpec {
                   client.getTransaction(transactionHash)
               }
             }
+      }
+    }
+  }
+
+  it should "be able to get a raw transaction in serialized form from the mem pool" in {
+    sendTransaction.flatMap { tx =>
+      client.getRawTransactionRaw(tx.txid).map { transaction =>
+        assert(transaction.txIdBE == tx.txid)
       }
     }
   }
@@ -286,6 +296,14 @@ class RpcClientTest extends AsyncFlatSpec {
     }
   }
 
+  it should "be able to get the wallet info" in  {
+    client.getWalletInfo.map { info =>
+      assert(info.balance.toBigDecimal > 0)
+      assert(info.txcount > 0)
+      assert(info.keypoolsize > 0)
+    }
+  }
+
   it should "be able to refill the keypool" in {
     client.getWalletInfo.flatMap { info =>
       client.keyPoolRefill(info.keypoolsize + 1).flatMap { _ =>
@@ -354,6 +372,20 @@ class RpcClientTest extends AsyncFlatSpec {
     blocksF.map { blocks =>
       blocks.foreach(block => logger.info(block.toString))
       assert(blocks.length == 3)
+    }
+  }
+
+  it should "be able to generate blocks to an address" in {
+    client.getNewAddress().flatMap { address =>
+      client.generateToAddress(3, address).flatMap { blocks =>
+        assert(blocks.length == 3)
+        blocks.foreach { hash =>
+          client.getBlockWithTransactions(hash).map { block =>
+            assert(block.tx.head.vout.head.scriptPubKey.addresses.get.head == address)
+          }
+        }
+        assert(true)
+      }
     }
   }
 

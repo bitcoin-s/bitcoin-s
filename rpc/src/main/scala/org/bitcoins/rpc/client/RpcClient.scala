@@ -58,9 +58,9 @@ class RpcClient()(
                        List(JsString(address.toString), JsString(command)))
   }
 
-  def addWitnessAddress(address: BitcoinAddress): Future[BitcoinAddress] = {
+  def addWitnessAddress(address: BitcoinAddress, p2sh: Boolean = true): Future[BitcoinAddress] = {
     bitcoindCall[BitcoinAddress]("addwitnessaddress",
-                                 List(JsString(address.toString)))
+                                 List(JsString(address.toString), JsBoolean(p2sh)))
   }
 
   def backupWallet(destination: File): Future[Unit] = {
@@ -72,15 +72,18 @@ class RpcClient()(
       txid: DoubleSha256Digest,
       confTarget: Int = 6,
       totalFee: Option[Satoshis],
-      replaceable: Boolean = true): Future[BumpFeeResult] = {
+      replaceable: Boolean = true,
+      estimateMode: String = "UNSET"): Future[BumpFeeResult] = {
     val options =
       if (totalFee.nonEmpty) {
         List(("confTarget", JsNumber(confTarget)),
-             ("replaceable", JsBoolean(replaceable)))
+             ("replaceable", JsBoolean(replaceable)),
+             ("estimate_mode", JsString(estimateMode)))
       } else {
         List(("confTarget", JsNumber(confTarget)),
              ("totalFee", JsNumber(totalFee.get.toBigDecimal)),
-             ("replaceable", JsBoolean(replaceable)))
+             ("replaceable", JsBoolean(replaceable)),
+             ("estimate_mode", JsString(estimateMode)))
       }
 
     bitcoindCall[BumpFeeResult]("bumpfee",
@@ -126,6 +129,7 @@ class RpcClient()(
     bitcoindCall[String]("encryptwallet", List(JsString(passphrase)))
   }
 
+  // Needs manual testing!
   def estimateSmartFee(
       blocks: Int,
       mode: String = "CONSERVATIVE"): Future[EstimateSmartFeeResult] = {
@@ -140,15 +144,6 @@ class RpcClient()(
     bitcoindCall[FundRawTransactionResult](
       "fundrawtransaction",
       List(JsString(transaction.hex), Json.toJson(options)))
-  }
-
-  def generateToAddress(
-      blocks: Int,
-      address: Address,
-      maxTries: Int = 1000000): Future[Vector[DoubleSha256Digest]] = {
-    bitcoindCall[Vector[DoubleSha256Digest]](
-      "generatetoaddress",
-      List(JsNumber(blocks), JsString(address.toString), JsNumber(maxTries)))
   }
 
   def getAddedNodeInfo(
@@ -166,11 +161,6 @@ class RpcClient()(
   def getAddressesByAccount(account: String): Future[Vector[Address]] = {
     bitcoindCall[Vector[Address]]("getaddressesbyaccount",
                                   List(JsString(account)))
-  }
-
-  def getRawTransactionRaw(txid: DoubleSha256Digest): Future[Transaction] = {
-    bitcoindCall[Transaction]("getrawtransaction",
-                              List(JsString(txid.hex), JsBoolean(false)))
   }
 
   // As is, RpcTransaction may not have enough data (add options?), also is RpcTransaction in the right place?
@@ -191,10 +181,6 @@ class RpcClient()(
       }
     }
     bitcoindCall[MerkleBlock]("gettxoutproof", params)
-  }
-
-  def getWalletInfo: Future[GetWalletInfoResult] = {
-    bitcoindCall[GetWalletInfoResult]("getwalletinfo")
   }
 
   def importAddress(
@@ -464,6 +450,15 @@ class RpcClient()(
       List(JsNumber(blocks), JsNumber(maxTries)))
   }
 
+  def generateToAddress(
+                         blocks: Int,
+                         address: BitcoinAddress,
+                         maxTries: Int = 1000000): Future[Vector[DoubleSha256Digest]] = {
+    bitcoindCall[Vector[DoubleSha256Digest]](
+      "generatetoaddress",
+      List(JsNumber(blocks), JsString(address.toString), JsNumber(maxTries)))
+  }
+
   def getBalance: Future[Bitcoins] = {
     bitcoindCall[Bitcoins]("getbalance")
   }
@@ -569,6 +564,11 @@ class RpcClient()(
                                              List(JsBoolean(false)))
   }
 
+  def getRawTransactionRaw(txid: DoubleSha256Digest): Future[Transaction] = {
+    bitcoindCall[Transaction]("getrawtransaction",
+      List(JsString(txid.hex), JsBoolean(false)))
+  }
+
   def getReceivedByAddress(
       address: BitcoinAddress,
       minConfirmations: Int = 1): Future[Bitcoins] = {
@@ -591,6 +591,10 @@ class RpcClient()(
 
   def getUnconfirmedBalance: Future[Bitcoins] = {
     bitcoindCall[Bitcoins]("getunconfirmedbalance")
+  }
+
+  def getWalletInfo: Future[GetWalletInfoResult] = {
+    bitcoindCall[GetWalletInfoResult]("getwalletinfo")
   }
 
   def help(rpcName: String = ""): Future[String] = {
