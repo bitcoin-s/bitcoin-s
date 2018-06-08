@@ -206,15 +206,21 @@ object JsonSerializers {
   implicit val estimateSmartFeeResultReads: Reads[EstimateSmartFeeResult] =
     Json.reads[EstimateSmartFeeResult]
 
-  implicit val memoryManagerReads: Reads[MemoryManager] = Json.reads[MemoryManager]
-  implicit val getMemoryInfoResultReads: Reads[GetMemoryInfoResult] = Json.reads[GetMemoryInfoResult]
+  implicit val memoryManagerReads: Reads[MemoryManager] =
+    Json.reads[MemoryManager]
+  implicit val getMemoryInfoResultReads: Reads[GetMemoryInfoResult] =
+    Json.reads[GetMemoryInfoResult]
 
-  implicit val transactionFeesReads: Reads[TransactionFees] = Json.reads[TransactionFees]
-  implicit val memPoolTransactionReads: Reads[MemPoolTransaction] = Json.reads[MemPoolTransaction]
-  implicit val getMemPoolAncestorsResultReads: Reads[GetMemPoolResult] = Json.reads[GetMemPoolResult]
+  implicit val transactionFeesReads: Reads[TransactionFees] =
+    Json.reads[TransactionFees]
+  implicit val memPoolTransactionReads: Reads[MemPoolTransaction] =
+    Json.reads[MemPoolTransaction]
+  implicit val getMemPoolAncestorsResultReads: Reads[GetMemPoolResult] =
+    Json.reads[GetMemPoolResult]
 
   implicit val netTargetReads: Reads[NetTarget] = Json.reads[NetTarget]
-  implicit val getNetTotalsResultReads: Reads[GetNetTotalsResult] = Json.reads[GetNetTotalsResult]
+  implicit val getNetTotalsResultReads: Reads[GetNetTotalsResult] =
+    Json.reads[GetNetTotalsResult]
 
   // Mining Models
   implicit val miningInfoReads: Reads[GetMiningInfoResult] =
@@ -243,6 +249,8 @@ object JsonSerializers {
 
   implicit val rpcAddressReads: Reads[RpcAddress] = RpcAddressReads
 
-  implicit val importMultiErrorReads: Reads[ImportMultiError] = Json.reads[ImportMultiError]
-  implicit val importMultiResultReads: Reads[ImportMultiResult] = Json.reads[ImportMultiResult]
+  implicit val importMultiErrorReads: Reads[ImportMultiError] =
+    Json.reads[ImportMultiError]
+  implicit val importMultiResultReads: Reads[ImportMultiResult] =
+    Json.reads[ImportMultiResult]
 }
