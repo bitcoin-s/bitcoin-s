@@ -11,13 +11,10 @@ import akka.util.ByteString
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.crypto.{DoubleSha256Digest, ECPrivateKey, ECPublicKey}
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
+import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.{Address, BitcoinAddress, P2PKHAddress}
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, MerkleBlock}
-import org.bitcoins.core.protocol.transaction.{
-  Transaction,
-  TransactionInput,
-  TransactionOutPoint
-}
+import org.bitcoins.core.protocol.transaction.{Transaction, TransactionInput, TransactionOutPoint}
 import org.bitcoins.core.util.BitcoinSLogger
 import play.api.libs.json._
 import org.bitcoins.rpc.jsonmodels._
@@ -163,10 +160,91 @@ class RpcClient()(
                                   List(JsString(account)))
   }
 
+  def getMemPoolAncestors(txid: DoubleSha256Digest): Future[Vector[DoubleSha256Digest]] = {
+    bitcoindCall[Vector[DoubleSha256Digest]]("getmempoolancestors", List(JsString(txid.hex), JsBoolean(false)))
+  }
+
+  def getMemPoolAncestorsVerbose(txid: DoubleSha256Digest): Future[GetMemPoolResult] = {
+    bitcoindCall[GetMemPoolResult]("getmempoolancestors", List(JsString(txid.hex), JsBoolean(true)))
+  }
+
+  def getMemPoolDescendants(txid: DoubleSha256Digest): Future[Vector[DoubleSha256Digest]] = {
+    bitcoindCall[Vector[DoubleSha256Digest]]("getmempooldescendants", List(JsString(txid.hex), JsBoolean(false)))
+  }
+
+  def getMemPoolDescendantsVerbose(txid: DoubleSha256Digest): Future[GetMemPoolResult] = {
+    bitcoindCall[GetMemPoolResult]("getmempooldescendants", List(JsString(txid.hex), JsBoolean(true)))
+  }
+
+  def getNetTotals: Future[GetNetTotalsResult] = {
+    bitcoindCall[GetNetTotalsResult]("getnettotals")
+  }
+
+  // This needs a home once fixed
+  case class Peer(
+                 id: Int,
+                 networkInfo: PeerNetworkInfo,
+                 version: Int,
+                 subver: String,
+                 inbound: Boolean,
+                 addnode: Boolean,
+                 startingheight: Int,
+                 banscore: Int,
+                 synced_headers: Int,
+                 synced_blocks: Int,
+                 inflight: Vector[Int],
+                 whitelisted: Boolean,
+                 bytessent_per_msg: Map[String, Int],
+                 bytesrecv_per_msg: Map[String, Int]
+                 )
+
+  case class PeerNetworkInfo(
+                              addr: InetAddress,
+                              addrbind: InetAddress,
+                              addrlocal: InetAddress,
+                              services: String,
+                              relaytxes: Boolean,
+                              lastsend: UInt32,
+                              lastrecv: UInt32,
+                              bytessent: Int,
+                              bytesrecv: Int,
+                              conntime: UInt32,
+                              timeoffset: UInt32,
+                              pingtime: Option[UInt32],
+                              minping: Option[UInt32],
+                              pingwait: Option[UInt32]
+                            )
+
+  // This is wrong probably
+  implicit val peerNetworkInfoReads: Reads[PeerNetworkInfo] = Json.reads[PeerNetworkInfo]
+  implicit val peerReads: Reads[Peer] = Json.reads[Peer]
+
+  def getPeerInfo: Future[Vector[Peer]] = {
+    bitcoindCall[Vector[Peer]]("getpeerinfo")
+  }
+
+  def getRawMemPoolWithTransactions: Future[GetMemPoolResult] = {
+    bitcoindCall[GetMemPoolResult]("getrawmempool", List(JsBoolean(true)))
+  }
+
   // As is, RpcTransaction may not have enough data (add options?), also is RpcTransaction in the right place?
   def getRawTransaction(txid: DoubleSha256Digest): Future[RpcTransaction] = {
     bitcoindCall[RpcTransaction]("getrawtransaction",
                                  List(JsString(txid.hex), JsBoolean(true)))
+  }
+
+  case class GetTxOutResult(
+                           bestblock: DoubleSha256Digest,
+                           confirmations: Int,
+                           value: Bitcoins,
+                           scriptPubKey: RpcScriptPubKey,
+                           coinbase: Boolean
+                           )
+
+  implicit val getTxOutResultReads: Reads[GetTxOutResult] = Json.reads[GetTxOutResult]
+
+  def getTxOut(txid: DoubleSha256Digest, vout: Int, includeMemPool: Boolean = true): Future[GetTxOutResult] = {
+    bitcoindCall[GetTxOutResult]("gettxout", List(JsString(txid.hex), JsNumber(vout), JsBoolean(includeMemPool)))
   }
 
   def getTxOutProof(
@@ -193,6 +271,17 @@ class RpcClient()(
                             JsString(account),
                             JsBoolean(rescan),
                             JsBoolean(p2sh)))
+  }
+
+  // This is here so that network is accessible
+  implicit object ECPrivateKeyWrites extends Writes[ECPrivateKey] {
+    override def writes(o: ECPrivateKey): JsValue = JsString(o.toWIF(network))
+  }
+  implicit val eCPrivateKeyWrites: Writes[ECPrivateKey] = ECPrivateKeyWrites
+  implicit val importMultiRequestWrites: Writes[RpcOpts.ImportMultiRequest] = Json.writes[RpcOpts.ImportMultiRequest]
+
+  def importMulti(requests: Vector[RpcOpts.ImportMultiRequest], rescan: Boolean = true): Future[Vector[ImportMultiResult]] = {
+    bitcoindCall[Vector[ImportMultiResult]]("importmulti", List(Json.toJson(requests), JsBoolean(rescan)))
   }
 
   def importPrivKey(
@@ -303,6 +392,10 @@ class RpcClient()(
            JsString(comment),
            JsString(toComment))
     )
+  }
+
+  def sendMany(amounts: Map[BitcoinAddress, Bitcoins], minconf: Int = 1, comment: String = "", subtractFeeFrom: Vector[BitcoinAddress] = Vector.empty): Future[DoubleSha256Digest] = {
+    bitcoindCall[DoubleSha256Digest]("sendmany", List(JsString(""), Json.toJson(amounts), JsNumber(minconf), JsString(comment), Json.toJson(subtractFeeFrom)))
   }
 
   def sendToAddress(
@@ -422,8 +515,7 @@ class RpcClient()(
       List(JsString(currentPassphrase), JsString(newPassphrase)))
   }
 
-  // Uses string:object pattern - GetMemoryInfo, GetMemPoolAncestors, GetMemPoolDescendants, GetNetTotals, GetPeerInfo, GetRawMemPoolWithTransactions, GetTxOut, ImportMulti, ListAccounts, SendMany
-  // Also Skipped: GetBlockTemplate
+  // TODO: GetBlockTemplate
   // TODO: Overload calls with Option inputs?
   // --------------------------------------------------------------------------------
   // EVERYTHING BELOW THIS COMMENT HAS TESTS
@@ -519,6 +611,10 @@ class RpcClient()(
 
   def getDifficulty: Future[BigDecimal] = {
     bitcoindCall[BigDecimal]("getdifficulty")
+  }
+
+  def getMemoryInfo: Future[GetMemoryInfoResult] = {
+    bitcoindCall[GetMemoryInfoResult]("getmemoryinfo")
   }
 
   def getMemPoolEntry(

@@ -360,3 +360,57 @@ case class EstimateSmartFeeResult(
     errors: Option[Vector[String]],
     blocks: Int
 ) extends NetworkResult
+
+case class GetMemoryInfoResult (locked: MemoryManager) extends NetworkResult
+
+case class MemoryManager(
+                          used: Int,
+                          free: Int,
+                          total: Int,
+                          locked: Int,
+                          chunks_used: Int,
+                          chunks_free: Int
+                        ) extends NetworkResult
+
+case class GetMemPoolResult(transactionid: MemPoolTransaction) extends NetworkResult
+
+case class MemPoolTransaction(
+                               size: Int,
+                               fee: Option[Bitcoins],
+                               modifiedfee: Option[Bitcoins],
+                               time: UInt32,
+                               height: Int,
+                               descendantcount: Int,
+                               descendantsize: Int,
+                               descendantfees: Option[Bitcoins],
+                               ancestorcount: Int,
+                               ancestorsize: Int,
+                               ancestorfees: Option[Bitcoins],
+                               wtxid: Transaction,
+                               fees: TransactionFees,
+                               depends: Vector[DoubleSha256Digest],
+                               spentby: Vector[DoubleSha256Digest]
+                             ) extends NetworkResult
+
+case class TransactionFees(
+                            base: Bitcoins,
+                            modified: Bitcoins,
+                            ancestor: Bitcoins,
+                            descendant: Bitcoins
+                          ) extends NetworkResult
+
+case class GetNetTotalsResult(
+                               totalbytesrecv: Int,
+                               totalbytessent: Int,
+                               timemillis: UInt32,
+                               uploadtarget: NetTarget
+                             ) extends NetworkResult
+
+case class NetTarget(
+                      timeframe: UInt32,
+                      target: Int,
+                      target_reached: Boolean,
+                      serve_historical_blocks: Boolean,
+                      bytes_left_in_cycle: Int,
+                      time_left_in_cycle: UInt32
+                    ) extends NetworkResult

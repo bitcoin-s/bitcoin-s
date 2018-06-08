@@ -66,3 +66,7 @@ case class RpcAddress(
     balance: Bitcoins,
     account: Option[String])
     extends WalletResult
+
+case class ImportMultiResult(success: Boolean, error: Option[ImportMultiError]) extends WalletResult
+
+case class ImportMultiError(code: Int, message: String) extends WalletResult

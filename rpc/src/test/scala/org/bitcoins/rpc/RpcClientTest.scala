@@ -523,4 +523,14 @@ class RpcClientTest extends AsyncFlatSpec {
       assert(valid)
     }
   }
+
+  it should "be able to get the memory info" in {
+    client.getMemoryInfo.map { info =>
+      assert(info.locked.used > 0)
+      assert(info.locked.free > 0)
+      assert(info.locked.total > 0)
+      assert(info.locked.locked > 0)
+      assert(info.locked.chunks_used > 0)
+    }
+  }
 }

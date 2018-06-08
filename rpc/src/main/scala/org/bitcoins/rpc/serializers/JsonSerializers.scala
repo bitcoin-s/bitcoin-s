@@ -20,8 +20,7 @@ import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.{
   Transaction,
   TransactionInput,
-  TransactionOutPoint,
-  TransactionOutput
+  TransactionOutPoint
 }
 import org.bitcoins.core.wallet.fee.BitcoinFeeUnit
 import org.bitcoins.rpc.jsonmodels._
@@ -67,6 +66,7 @@ object JsonSerializers {
   implicit val scriptPubKeyWrites: Writes[ScriptPubKey] = ScriptPubKeyWrites
   implicit val transactionInputWrites: Writes[TransactionInput] =
     TransactionInputWrites
+  implicit val uInt32Writes: Writes[UInt32] = UInt32Writes
 
   // Network Models
   implicit val networkReads: Reads[Network] = Json.reads[Network]
@@ -206,6 +206,16 @@ object JsonSerializers {
   implicit val estimateSmartFeeResultReads: Reads[EstimateSmartFeeResult] =
     Json.reads[EstimateSmartFeeResult]
 
+  implicit val memoryManagerReads: Reads[MemoryManager] = Json.reads[MemoryManager]
+  implicit val getMemoryInfoResultReads: Reads[GetMemoryInfoResult] = Json.reads[GetMemoryInfoResult]
+
+  implicit val transactionFeesReads: Reads[TransactionFees] = Json.reads[TransactionFees]
+  implicit val memPoolTransactionReads: Reads[MemPoolTransaction] = Json.reads[MemPoolTransaction]
+  implicit val getMemPoolAncestorsResultReads: Reads[GetMemPoolResult] = Json.reads[GetMemPoolResult]
+
+  implicit val netTargetReads: Reads[NetTarget] = Json.reads[NetTarget]
+  implicit val getNetTotalsResultReads: Reads[GetNetTotalsResult] = Json.reads[GetNetTotalsResult]
+
   // Mining Models
   implicit val miningInfoReads: Reads[GetMiningInfoResult] =
     Json.reads[GetMiningInfoResult]
@@ -232,4 +242,7 @@ object JsonSerializers {
   implicit val rpcAccoutReads: Reads[RpcAccount] = Json.reads[RpcAccount]
 
   implicit val rpcAddressReads: Reads[RpcAddress] = RpcAddressReads
+
+  implicit val importMultiErrorReads: Reads[ImportMultiError] = Json.reads[ImportMultiError]
+  implicit val importMultiResultReads: Reads[ImportMultiResult] = Json.reads[ImportMultiResult]
 }
