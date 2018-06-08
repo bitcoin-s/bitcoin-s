@@ -285,7 +285,7 @@ class RpcClientTest extends AsyncFlatSpec {
     }
   }
 
-  it should "be able to get the wallet info" in  {
+  it should "be able to get the wallet info" in {
     client.getWalletInfo.map { info =>
       assert(info.balance.toBigDecimal > 0)
       assert(info.txcount > 0)
@@ -363,7 +363,8 @@ class RpcClientTest extends AsyncFlatSpec {
         assert(blocks.length == 3)
         blocks.foreach { hash =>
           client.getBlockWithTransactions(hash).map { block =>
-            assert(block.tx.head.vout.head.scriptPubKey.addresses.get.head == address)
+            assert(
+              block.tx.head.vout.head.scriptPubKey.addresses.get.head == address)
           }
         }
         assert(true)

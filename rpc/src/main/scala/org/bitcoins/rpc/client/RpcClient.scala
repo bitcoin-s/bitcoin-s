@@ -14,7 +14,11 @@ import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.{Address, BitcoinAddress, P2PKHAddress}
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, MerkleBlock}
-import org.bitcoins.core.protocol.transaction.{Transaction, TransactionInput, TransactionOutPoint}
+import org.bitcoins.core.protocol.transaction.{
+  Transaction,
+  TransactionInput,
+  TransactionOutPoint
+}
 import org.bitcoins.core.util.BitcoinSLogger
 import play.api.libs.json._
 import org.bitcoins.rpc.jsonmodels._
@@ -55,9 +59,12 @@ class RpcClient()(
                        List(JsString(address.toString), JsString(command)))
   }
 
-  def addWitnessAddress(address: BitcoinAddress, p2sh: Boolean = true): Future[BitcoinAddress] = {
-    bitcoindCall[BitcoinAddress]("addwitnessaddress",
-                                 List(JsString(address.toString), JsBoolean(p2sh)))
+  def addWitnessAddress(
+      address: BitcoinAddress,
+      p2sh: Boolean = true): Future[BitcoinAddress] = {
+    bitcoindCall[BitcoinAddress](
+      "addwitnessaddress",
+      List(JsString(address.toString), JsBoolean(p2sh)))
   }
 
   def backupWallet(destination: File): Future[Unit] = {
@@ -77,10 +84,12 @@ class RpcClient()(
              ("replaceable", JsBoolean(replaceable)),
              ("estimate_mode", JsString(estimateMode)))
       } else {
-        List(("confTarget", JsNumber(confTarget)),
-             ("totalFee", JsNumber(totalFee.get.toBigDecimal)),
-             ("replaceable", JsBoolean(replaceable)),
-             ("estimate_mode", JsString(estimateMode)))
+        List(
+          ("confTarget", JsNumber(confTarget)),
+          ("totalFee", JsNumber(totalFee.get.toBigDecimal)),
+          ("replaceable", JsBoolean(replaceable)),
+          ("estimate_mode", JsString(estimateMode))
+        )
       }
 
     bitcoindCall[BumpFeeResult]("bumpfee",
@@ -160,20 +169,30 @@ class RpcClient()(
                                   List(JsString(account)))
   }
 
-  def getMemPoolAncestors(txid: DoubleSha256Digest): Future[Vector[DoubleSha256Digest]] = {
-    bitcoindCall[Vector[DoubleSha256Digest]]("getmempoolancestors", List(JsString(txid.hex), JsBoolean(false)))
+  def getMemPoolAncestors(
+      txid: DoubleSha256Digest): Future[Vector[DoubleSha256Digest]] = {
+    bitcoindCall[Vector[DoubleSha256Digest]](
+      "getmempoolancestors",
+      List(JsString(txid.hex), JsBoolean(false)))
   }
 
-  def getMemPoolAncestorsVerbose(txid: DoubleSha256Digest): Future[GetMemPoolResult] = {
-    bitcoindCall[GetMemPoolResult]("getmempoolancestors", List(JsString(txid.hex), JsBoolean(true)))
+  def getMemPoolAncestorsVerbose(
+      txid: DoubleSha256Digest): Future[GetMemPoolResult] = {
+    bitcoindCall[GetMemPoolResult]("getmempoolancestors",
+                                   List(JsString(txid.hex), JsBoolean(true)))
   }
 
-  def getMemPoolDescendants(txid: DoubleSha256Digest): Future[Vector[DoubleSha256Digest]] = {
-    bitcoindCall[Vector[DoubleSha256Digest]]("getmempooldescendants", List(JsString(txid.hex), JsBoolean(false)))
+  def getMemPoolDescendants(
+      txid: DoubleSha256Digest): Future[Vector[DoubleSha256Digest]] = {
+    bitcoindCall[Vector[DoubleSha256Digest]](
+      "getmempooldescendants",
+      List(JsString(txid.hex), JsBoolean(false)))
   }
 
-  def getMemPoolDescendantsVerbose(txid: DoubleSha256Digest): Future[GetMemPoolResult] = {
-    bitcoindCall[GetMemPoolResult]("getmempooldescendants", List(JsString(txid.hex), JsBoolean(true)))
+  def getMemPoolDescendantsVerbose(
+      txid: DoubleSha256Digest): Future[GetMemPoolResult] = {
+    bitcoindCall[GetMemPoolResult]("getmempooldescendants",
+                                   List(JsString(txid.hex), JsBoolean(true)))
   }
 
   def getNetTotals: Future[GetNetTotalsResult] = {
@@ -182,41 +201,42 @@ class RpcClient()(
 
   // This needs a home once fixed
   case class Peer(
-                 id: Int,
-                 networkInfo: PeerNetworkInfo,
-                 version: Int,
-                 subver: String,
-                 inbound: Boolean,
-                 addnode: Boolean,
-                 startingheight: Int,
-                 banscore: Int,
-                 synced_headers: Int,
-                 synced_blocks: Int,
-                 inflight: Vector[Int],
-                 whitelisted: Boolean,
-                 bytessent_per_msg: Map[String, Int],
-                 bytesrecv_per_msg: Map[String, Int]
-                 )
+      id: Int,
+      networkInfo: PeerNetworkInfo,
+      version: Int,
+      subver: String,
+      inbound: Boolean,
+      addnode: Boolean,
+      startingheight: Int,
+      banscore: Int,
+      synced_headers: Int,
+      synced_blocks: Int,
+      inflight: Vector[Int],
+      whitelisted: Boolean,
+      bytessent_per_msg: Map[String, Int],
+      bytesrecv_per_msg: Map[String, Int]
+  )
 
   case class PeerNetworkInfo(
-                              addr: InetAddress,
-                              addrbind: InetAddress,
-                              addrlocal: InetAddress,
-                              services: String,
-                              relaytxes: Boolean,
-                              lastsend: UInt32,
-                              lastrecv: UInt32,
-                              bytessent: Int,
-                              bytesrecv: Int,
-                              conntime: UInt32,
-                              timeoffset: UInt32,
-                              pingtime: Option[UInt32],
-                              minping: Option[UInt32],
-                              pingwait: Option[UInt32]
-                            )
+      addr: InetAddress,
+      addrbind: InetAddress,
+      addrlocal: InetAddress,
+      services: String,
+      relaytxes: Boolean,
+      lastsend: UInt32,
+      lastrecv: UInt32,
+      bytessent: Int,
+      bytesrecv: Int,
+      conntime: UInt32,
+      timeoffset: UInt32,
+      pingtime: Option[UInt32],
+      minping: Option[UInt32],
+      pingwait: Option[UInt32]
+  )
 
   // This is wrong probably
-  implicit val peerNetworkInfoReads: Reads[PeerNetworkInfo] = Json.reads[PeerNetworkInfo]
+  implicit val peerNetworkInfoReads: Reads[PeerNetworkInfo] =
+    Json.reads[PeerNetworkInfo]
   implicit val peerReads: Reads[Peer] = Json.reads[Peer]
 
   def getPeerInfo: Future[Vector[Peer]] = {
@@ -234,17 +254,23 @@ class RpcClient()(
   }
 
   case class GetTxOutResult(
-                           bestblock: DoubleSha256Digest,
-                           confirmations: Int,
-                           value: Bitcoins,
-                           scriptPubKey: RpcScriptPubKey,
-                           coinbase: Boolean
-                           )
+      bestblock: DoubleSha256Digest,
+      confirmations: Int,
+      value: Bitcoins,
+      scriptPubKey: RpcScriptPubKey,
+      coinbase: Boolean
+  )
 
-  implicit val getTxOutResultReads: Reads[GetTxOutResult] = Json.reads[GetTxOutResult]
+  implicit val getTxOutResultReads: Reads[GetTxOutResult] =
+    Json.reads[GetTxOutResult]
 
-  def getTxOut(txid: DoubleSha256Digest, vout: Int, includeMemPool: Boolean = true): Future[GetTxOutResult] = {
-    bitcoindCall[GetTxOutResult]("gettxout", List(JsString(txid.hex), JsNumber(vout), JsBoolean(includeMemPool)))
+  def getTxOut(
+      txid: DoubleSha256Digest,
+      vout: Int,
+      includeMemPool: Boolean = true): Future[GetTxOutResult] = {
+    bitcoindCall[GetTxOutResult](
+      "gettxout",
+      List(JsString(txid.hex), JsNumber(vout), JsBoolean(includeMemPool)))
   }
 
   def getTxOutProof(
@@ -278,10 +304,15 @@ class RpcClient()(
     override def writes(o: ECPrivateKey): JsValue = JsString(o.toWIF(network))
   }
   implicit val eCPrivateKeyWrites: Writes[ECPrivateKey] = ECPrivateKeyWrites
-  implicit val importMultiRequestWrites: Writes[RpcOpts.ImportMultiRequest] = Json.writes[RpcOpts.ImportMultiRequest]
+  implicit val importMultiRequestWrites: Writes[RpcOpts.ImportMultiRequest] =
+    Json.writes[RpcOpts.ImportMultiRequest]
 
-  def importMulti(requests: Vector[RpcOpts.ImportMultiRequest], rescan: Boolean = true): Future[Vector[ImportMultiResult]] = {
-    bitcoindCall[Vector[ImportMultiResult]]("importmulti", List(Json.toJson(requests), JsBoolean(rescan)))
+  def importMulti(
+      requests: Vector[RpcOpts.ImportMultiRequest],
+      rescan: Boolean = true): Future[Vector[ImportMultiResult]] = {
+    bitcoindCall[Vector[ImportMultiResult]](
+      "importmulti",
+      List(Json.toJson(requests), JsBoolean(rescan)))
   }
 
   def importPrivKey(
@@ -361,11 +392,10 @@ class RpcClient()(
 
   def prioritiseTransaction(
       txid: DoubleSha256Digest,
-      dummy: BigDecimal = 0,
       feeDelta: Satoshis): Future[Boolean] = {
     bitcoindCall[Boolean](
       "prioritiseTransaction",
-      List(JsString(txid.hex), JsNumber(dummy), JsNumber(feeDelta.toLong)))
+      List(JsString(txid.hex), JsNumber(0), JsNumber(feeDelta.toLong)))
   }
 
   def pruneBlockChain(height: Int): Future[Int] = {
@@ -394,8 +424,18 @@ class RpcClient()(
     )
   }
 
-  def sendMany(amounts: Map[BitcoinAddress, Bitcoins], minconf: Int = 1, comment: String = "", subtractFeeFrom: Vector[BitcoinAddress] = Vector.empty): Future[DoubleSha256Digest] = {
-    bitcoindCall[DoubleSha256Digest]("sendmany", List(JsString(""), Json.toJson(amounts), JsNumber(minconf), JsString(comment), Json.toJson(subtractFeeFrom)))
+  def sendMany(
+      amounts: Map[BitcoinAddress, Bitcoins],
+      minconf: Int = 1,
+      comment: String = "",
+      subtractFeeFrom: Vector[BitcoinAddress] = Vector.empty): Future[
+    DoubleSha256Digest] = {
+    bitcoindCall[DoubleSha256Digest]("sendmany",
+                                     List(JsString(""),
+                                          Json.toJson(amounts),
+                                          JsNumber(minconf),
+                                          JsString(comment),
+                                          Json.toJson(subtractFeeFrom)))
   }
 
   def sendToAddress(
@@ -453,7 +493,7 @@ class RpcClient()(
       if (utxoDeps.isEmpty) {
         List(JsString(transaction.hex), jsonKeys)
       } else {
-        val utxos = JsArray(utxoDeps.get.map(Json.toJson(_)))
+        val utxos = Json.toJson(utxoDeps.get)
         if (sigHash.isEmpty) {
           List(JsString(transaction.hex), jsonKeys, utxos)
         } else {
@@ -472,15 +512,8 @@ class RpcClient()(
     bitcoindCall[String]("stop")
   }
 
-  def submitBlock(block: Block, dummy: Option[JsValue] = None): Future[Unit] = {
-    val params =
-      if (dummy.isEmpty) {
-        List(JsString(block.hex))
-      } else {
-        List(JsString(block.hex), dummy.get)
-      }
-
-    bitcoindCall[Unit]("submitblock", params)
+  def submitBlock(block: Block): Future[Unit] = {
+    bitcoindCall[Unit]("submitblock", List(JsString(block.hex)))
   }
 
   def verifyMessage(
@@ -543,9 +576,9 @@ class RpcClient()(
   }
 
   def generateToAddress(
-                         blocks: Int,
-                         address: BitcoinAddress,
-                         maxTries: Int = 1000000): Future[Vector[DoubleSha256Digest]] = {
+      blocks: Int,
+      address: BitcoinAddress,
+      maxTries: Int = 1000000): Future[Vector[DoubleSha256Digest]] = {
     bitcoindCall[Vector[DoubleSha256Digest]](
       "generatetoaddress",
       List(JsNumber(blocks), JsString(address.toString), JsNumber(maxTries)))
@@ -662,7 +695,7 @@ class RpcClient()(
 
   def getRawTransactionRaw(txid: DoubleSha256Digest): Future[Transaction] = {
     bitcoindCall[Transaction]("getrawtransaction",
-      List(JsString(txid.hex), JsBoolean(false)))
+                              List(JsString(txid.hex), JsBoolean(false)))
   }
 
   def getReceivedByAddress(
@@ -750,7 +783,7 @@ class RpcClient()(
       if (utxoDeps.isEmpty) {
         List(JsString(transaction.hex))
       } else {
-        val utxos = JsArray(utxoDeps.get.map(Json.toJson(_)))
+        val utxos = Json.toJson(utxoDeps.get)
         if (sigHash.isEmpty) {
           List(JsString(transaction.hex), utxos)
         } else {

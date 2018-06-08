@@ -33,13 +33,13 @@ object RpcOpts {
     Json.writes[SignRawTransactionOutputParameter]
 
   case class ImportMultiRequest(
-                               scriptPubKey: ScriptPubKey,
-                               timestamp: UInt32, // Needs writes
-                               reedemscript: Option[ScriptPubKey],
-                               pubkeys: Option[Vector[ScriptPubKey]],
-                               keys: Option[Vector[ECPrivateKey]], // Needs writes
-                               internal: Boolean = false,
-                               watchonly: Boolean = false,
-                               label: String = ""
-                               )
+      scriptPubKey: ScriptPubKey,
+      timestamp: UInt32, // Needs writes
+      reedemscript: Option[ScriptPubKey],
+      pubkeys: Option[Vector[ScriptPubKey]],
+      keys: Option[Vector[ECPrivateKey]], // Needs writes
+      internal: Boolean = false,
+      watchonly: Boolean = false,
+      label: String = ""
+  )
 }
