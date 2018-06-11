@@ -2,7 +2,11 @@ package org.bitcoins.rpc.jsonmodels
 
 import java.net.InetAddress
 
-import org.bitcoins.core.crypto.{DoubleSha256Digest, ECPublicKey, Sha256Hash160Digest}
+import org.bitcoins.core.crypto.{
+  DoubleSha256Digest,
+  ECPublicKey,
+  Sha256Hash160Digest
+}
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.number.{Int32, UInt32, UInt64}
 import org.bitcoins.core.protocol.blockchain.Block
@@ -249,8 +253,8 @@ case class ListTransactionsResult(
     to: Option[String],
     otheraccount: Option[String],
     bip125_replaceable: String,
-    abandoned: Option[Boolean]
-) extends NetworkResult
+    abandoned: Option[Boolean])
+    extends NetworkResult
 
 case class ReceivedAddress(
     involvesWatchonly: Option[Boolean],
@@ -326,36 +330,36 @@ case class GetBlockChainInfoResult(
     pruneheight: Option[Int],
     softforks: Vector[Softfork],
     bip9_softforks: Map[String, Bip9Softfork],
-    warnings: String
-) extends NetworkResult
+    warnings: String)
+    extends NetworkResult
 
 case class Softfork(
     id: String,
     version: Int,
     enforce: Option[Map[String, SoftforkProgress]],
-    reject: SoftforkProgress
-) extends NetworkResult
+    reject: SoftforkProgress)
+    extends NetworkResult
 
 case class SoftforkProgress(
     status: Option[Boolean],
     found: Option[Int],
     required: Option[Int],
-    window: Option[Int]
-) extends NetworkResult
+    window: Option[Int])
+    extends NetworkResult
 
 case class Bip9Softfork(
     status: String,
     bit: Option[Int],
     startTime: Int,
     timeout: BigInt,
-    since: Int
-) extends NetworkResult
+    since: Int)
+    extends NetworkResult
 
 case class EstimateSmartFeeResult(
     feerate: Option[BitcoinFeeUnit],
     errors: Option[Vector[String]],
-    blocks: Int
-) extends NetworkResult
+    blocks: Int)
+    extends NetworkResult
 
 case class GetMemoryInfoResult(locked: MemoryManager) extends NetworkResult
 
@@ -365,8 +369,8 @@ case class MemoryManager(
     total: Int,
     locked: Int,
     chunks_used: Int,
-    chunks_free: Int
-) extends NetworkResult
+    chunks_free: Int)
+    extends NetworkResult
 
 case class GetMemPoolResult(
     size: Int,
@@ -381,24 +385,15 @@ case class GetMemPoolResult(
     ancestorsize: Int,
     ancestorfees: Option[Bitcoins],
     wtxid: DoubleSha256Digest,
-    fees: TransactionFees,
-    depends: Vector[DoubleSha256Digest],
-    spentby: Vector[DoubleSha256Digest]
-) extends NetworkResult
-
-case class TransactionFees(
-    base: Bitcoins,
-    modified: Bitcoins,
-    ancestor: Bitcoins,
-    descendant: Bitcoins
-) extends NetworkResult
+    depends: Vector[DoubleSha256Digest])
+    extends NetworkResult
 
 case class GetNetTotalsResult(
     totalbytesrecv: Int,
     totalbytessent: Int,
     timemillis: UInt64,
-    uploadtarget: NetTarget
-) extends NetworkResult
+    uploadtarget: NetTarget)
+    extends NetworkResult
 
 case class NetTarget(
     timeframe: UInt32,
@@ -406,5 +401,5 @@ case class NetTarget(
     target_reached: Boolean,
     serve_historical_blocks: Boolean,
     bytes_left_in_cycle: Int,
-    time_left_in_cycle: UInt32
-) extends NetworkResult
+    time_left_in_cycle: UInt32)
+    extends NetworkResult
