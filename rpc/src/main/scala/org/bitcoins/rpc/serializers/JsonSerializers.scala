@@ -2,13 +2,26 @@ package org.bitcoins.rpc.serializers
 
 import java.net.InetAddress
 
-import org.bitcoins.core.crypto.{DoubleSha256Digest, ECPublicKey, Sha256Hash160Digest}
+import org.bitcoins.core.crypto.{
+  DoubleSha256Digest,
+  ECPublicKey,
+  Sha256Hash160Digest
+}
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.number.{Int32, UInt32, UInt64}
-import org.bitcoins.core.protocol.{Address, BitcoinAddress, P2PKHAddress, P2SHAddress}
+import org.bitcoins.core.protocol.{
+  Address,
+  BitcoinAddress,
+  P2PKHAddress,
+  P2SHAddress
+}
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, MerkleBlock}
 import org.bitcoins.core.protocol.script.ScriptPubKey
-import org.bitcoins.core.protocol.transaction.{Transaction, TransactionInput, TransactionOutPoint}
+import org.bitcoins.core.protocol.transaction.{
+  Transaction,
+  TransactionInput,
+  TransactionOutPoint
+}
 import org.bitcoins.core.wallet.fee.BitcoinFeeUnit
 import org.bitcoins.rpc.jsonmodels._
 import org.bitcoins.rpc.serializers.JsonReaders._
@@ -45,7 +58,6 @@ object JsonSerializers {
   implicit val transactionOutPointReads: Reads[TransactionOutPoint] =
     TransactionOutPointReads
   implicit val bitcoinFeeUnitReads: Reads[BitcoinFeeUnit] = BitcoinFeeUnitReads
-
 
   implicit val bitcoinsWrites: Writes[Bitcoins] = BitcoinsWrites
   implicit val bitcoinAddressWrites: Writes[BitcoinAddress] =
@@ -89,13 +101,12 @@ object JsonSerializers {
   implicit val getBlockResultReads: Reads[GetBlockResult] =
     Json.reads[GetBlockResult]
 
-  implicit val rpcScriptPubKeyReads: Reads[RpcScriptPubKey] = (
-    (__ \ "asm").read[String] and
+  implicit val rpcScriptPubKeyReads: Reads[RpcScriptPubKey] =
+    ((__ \ "asm").read[String] and
       (__ \ "hex").read[String] and
       (__ \ "reqSigs").readNullable[Int] and
       (__ \ "type").read[String] and
-      (__ \ "addresses").readNullable[Vector[BitcoinAddress]]
-  )(RpcScriptPubKey)
+      (__ \ "addresses").readNullable[Vector[BitcoinAddress]])(RpcScriptPubKey)
   implicit val rpcTransactionOutputReads: Reads[RpcTransactionOutput] =
     Json.reads[RpcTransactionOutput]
   implicit val rpcTransactionReads: Reads[RpcTransaction] =
@@ -103,8 +114,8 @@ object JsonSerializers {
   implicit val getBlockWithTransactionsResultReads: Reads[
     GetBlockWithTransactionsResult] = Json.reads[GetBlockWithTransactionsResult]
 
-  implicit val paymentReads: Reads[Payment] = (
-    (__ \ "involvesWatchonly").readNullable[Boolean] and
+  implicit val paymentReads: Reads[Payment] =
+    ((__ \ "involvesWatchonly").readNullable[Boolean] and
       (__ \ "account").readNullable[String] and
       (__ \ "address").readNullable[BitcoinAddress] and
       (__ \ "category").read[String] and
@@ -122,13 +133,12 @@ object JsonSerializers {
       (__ \ "timereceived").read[UInt32] and
       (__ \ "bip125-replaceable").read[String] and
       (__ \ "comment").readNullable[String] and
-      (__ \ "to").readNullable[String]
-  )(Payment)
+      (__ \ "to").readNullable[String])(Payment)
   implicit val listSinceBlockResultReads: Reads[ListSinceBlockResult] =
     Json.reads[ListSinceBlockResult]
 
-  implicit val listTransactionsResultReads: Reads[ListTransactionsResult] = (
-    (__ \ "account").readNullable[String] and
+  implicit val listTransactionsResultReads: Reads[ListTransactionsResult] =
+    ((__ \ "account").readNullable[String] and
       (__ \ "address").readNullable[BitcoinAddress] and
       (__ \ "category").read[String] and
       (__ \ "amount").read[Bitcoins] and
@@ -149,16 +159,15 @@ object JsonSerializers {
       (__ \ "to").readNullable[String] and
       (__ \ "otheraccount").readNullable[String] and
       (__ \ "bip125-replaceable").read[String] and
-      (__ \ "abandoned").readNullable[Boolean]
-  )(ListTransactionsResult)
+      (__ \ "abandoned").readNullable[Boolean])(ListTransactionsResult)
 
   implicit val receivedAddressReads: Reads[ReceivedAddress] =
     Json.reads[ReceivedAddress]
 
   implicit val TransactionDetailsReads: Reads[TransactionDetails] =
     Json.reads[TransactionDetails]
-  implicit val getTransactionResultReads: Reads[GetTransactionResult] = (
-    (__ \ "amount").read[Bitcoins] and
+  implicit val getTransactionResultReads: Reads[GetTransactionResult] =
+    ((__ \ "amount").read[Bitcoins] and
       (__ \ "fee").readNullable[Bitcoins] and
       (__ \ "confirmations").read[Int] and
       (__ \ "generated").readNullable[Boolean] and
@@ -173,8 +182,7 @@ object JsonSerializers {
       (__ \ "comment").readNullable[String] and
       (__ \ "to").readNullable[String] and
       (__ \ "details").read[Vector[TransactionDetails]] and
-      (__ \ "hex").read[Transaction]
-  )(GetTransactionResult)
+      (__ \ "hex").read[Transaction])(GetTransactionResult)
 
   implicit val unspentOutputReads: Reads[UnspentOutput] =
     Json.reads[UnspentOutput]
@@ -199,9 +207,6 @@ object JsonSerializers {
     Json.reads[MemoryManager]
   implicit val getMemoryInfoResultReads: Reads[GetMemoryInfoResult] =
     Json.reads[GetMemoryInfoResult]
-
-  implicit val transactionFeesReads: Reads[TransactionFees] =
-    Json.reads[TransactionFees]
 
   implicit val getMemPoolResultReads: Reads[GetMemPoolResult] =
     Json.reads[GetMemPoolResult]
@@ -243,6 +248,8 @@ object JsonSerializers {
     Json.reads[ImportMultiResult]
 
   // Map stuff
-  implicit def mapDoubleSha256DigestReads: Reads[Map[DoubleSha256Digest, GetMemPoolResult]] =
-    Reads.mapReads[DoubleSha256Digest, GetMemPoolResult](s => JsSuccess(DoubleSha256Digest.fromHex(s)))
+  implicit def mapDoubleSha256DigestReads: Reads[
+    Map[DoubleSha256Digest, GetMemPoolResult]] =
+    Reads.mapReads[DoubleSha256Digest, GetMemPoolResult](s =>
+      JsSuccess(DoubleSha256Digest.fromHex(s)))
 }

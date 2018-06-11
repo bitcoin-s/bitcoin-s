@@ -40,6 +40,5 @@ object RpcOpts {
       keys: Option[Vector[ECPrivateKey]],
       internal: Boolean = false,
       watchonly: Boolean = false,
-      label: String = ""
-  )
+      label: String = "")
 }

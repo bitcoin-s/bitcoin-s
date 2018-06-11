@@ -1,13 +1,18 @@
 package org.bitcoins.rpc
 
+import java.net.{InetAddress, InetSocketAddress}
+
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.currency.Bitcoins
-import org.bitcoins.core.protocol.transaction.{Transaction, TransactionInput, TransactionOutPoint}
+import org.bitcoins.core.protocol.transaction.{
+  Transaction,
+  TransactionInput,
+  TransactionOutPoint
+}
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.rpc.client.RpcClient
-import org.scalatest.AsyncFlatSpec
+import org.scalatest.{AsyncFlatSpec, BeforeAndAfterAll}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script.ScriptSignature
 import org.bitcoins.rpc.jsonmodels.GetTransactionResult
@@ -16,14 +21,22 @@ import scala.concurrent.Future
 
 // Need to test encryptwallet, walletpassphrase, walletpassphrasechange on startup
 // And walletlock, stop on close
-class RpcClientTest extends AsyncFlatSpec {
+class RpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
   implicit val system = ActorSystem()
   implicit val m = ActorMaterializer()
   implicit val ec = m.executionContext
-  implicit val regTestNetworkParam = RegTest
+  implicit val networkParam = TestUtil.network
 
-  val client = new RpcClient
+  val client = new RpcClient(
+    TestUtil.instance(networkParam.port, networkParam.rpcPort))
   val logger = BitcoinSLogger.logger
+
+  override def beforeAll(): Unit = {
+    println("Temp bitcoin directory created")
+    client.start()
+    println("Bitcoin server starting")
+    Thread.sleep(1000)
+  }
 
   behavior of "RpcClient"
 
@@ -122,9 +135,8 @@ class RpcClientTest extends AsyncFlatSpec {
   it should "be able to sign a raw transaction with wallet keys" in {
     val transactionF = createRawTransaction
     transactionF.flatMap { transaction =>
-      client.signRawTransactionWithWallet(transaction).map {
-        signedTransaction =>
-          assert(signedTransaction.complete)
+      client.signRawTransaction(transaction).map { signedTransaction =>
+        assert(signedTransaction.complete)
       }
     }
   }
@@ -132,16 +144,15 @@ class RpcClientTest extends AsyncFlatSpec {
   it should "be able to send a raw transaction to the mem pool" in {
     val transactionF = createRawTransaction
     transactionF.flatMap { transaction =>
-      client.signRawTransactionWithWallet(transaction).flatMap {
-        signedTransaction =>
-          client
-            .generate(100)
-            .flatMap { _ => // Can't spend coinbase until depth 100
-              client.sendRawTransaction(signedTransaction.hex, true).map {
-                transactionHash =>
-                  assert(true)
-              }
+      client.signRawTransaction(transaction).flatMap { signedTransaction =>
+        client
+          .generate(100)
+          .flatMap { _ => // Can't spend coinbase until depth 100
+            client.sendRawTransaction(signedTransaction.hex, true).map {
+              transactionHash =>
+                assert(true)
             }
+          }
       }
     }
   }
@@ -149,16 +160,15 @@ class RpcClientTest extends AsyncFlatSpec {
   private def sendTransaction: Future[GetTransactionResult] = {
     val transactionF = createRawTransaction
     transactionF.flatMap { transaction =>
-      client.signRawTransactionWithWallet(transaction).flatMap {
-        signedTransaction =>
-          client
-            .generate(100)
-            .flatMap { _ => // Can't spend coinbase until depth 100
-              client.sendRawTransaction(signedTransaction.hex, true).flatMap {
-                transactionHash =>
-                  client.getTransaction(transactionHash)
-              }
+      client.signRawTransaction(transaction).flatMap { signedTransaction =>
+        client
+          .generate(100)
+          .flatMap { _ => // Can't spend coinbase until depth 100
+            client.sendRawTransaction(signedTransaction.hex, true).flatMap {
+              transactionHash =>
+                client.getTransaction(transactionHash)
             }
+          }
       }
     }
   }
@@ -548,5 +558,11 @@ class RpcClientTest extends AsyncFlatSpec {
       assert(stats.totalbytesrecv == 0)
       assert(stats.totalbytessent == 0)
     }
+  }
+
+  override def afterAll(): Unit = {
+    client.stop.map(println)
+    if (TestUtil.deleteTmpDir(client.getInstance.authCredentials.datadir))
+      println("Temp bitcoin directory deleted")
   }
 }

@@ -1,14 +1,14 @@
 package org.bitcoins.rpc.client
 
 import java.io.File
-import java.net.InetAddress
+import java.net.{InetAddress, InetSocketAddress}
 
 import akka.http.javadsl.model.headers.HttpCredentials
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import akka.stream.ActorMaterializer
 import akka.util.ByteString
-import org.bitcoins.core.config.NetworkParameters
+import org.bitcoins.core.config.{MainNet, NetworkParameters, RegTest}
 import org.bitcoins.core.crypto.{DoubleSha256Digest, ECPrivateKey, ECPublicKey}
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.number.UInt32
@@ -20,18 +20,23 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionOutPoint
 }
 import org.bitcoins.core.util.BitcoinSLogger
+import org.bitcoins.rpc.config.{AuthCredentials, DaemonInstance}
 import play.api.libs.json._
 import org.bitcoins.rpc.jsonmodels._
 import org.bitcoins.rpc.serializers.JsonSerializers._
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.sys.process._
 
-class RpcClient()(
-    implicit m: ActorMaterializer,
-    ec: ExecutionContext,
-    network: NetworkParameters) {
+class RpcClient(instance: DaemonInstance)(
+    implicit
+    m: ActorMaterializer,
+    ec: ExecutionContext) {
   private val resultKey = "result"
   private val logger = BitcoinSLogger.logger
+  private implicit val network = instance.network
+
+  def getInstance: DaemonInstance = instance
 
   // TODO: WRITE TESTS
 
@@ -176,10 +181,11 @@ class RpcClient()(
       List(JsString(txid.hex), JsBoolean(false)))
   }
 
-  def getMemPoolAncestorsVerbose(
-      txid: DoubleSha256Digest): Future[Map[DoubleSha256Digest, GetMemPoolResult]] = {
-    bitcoindCall[Map[DoubleSha256Digest, GetMemPoolResult]]("getmempoolancestors",
-                                   List(JsString(txid.hex), JsBoolean(true)))
+  def getMemPoolAncestorsVerbose(txid: DoubleSha256Digest): Future[
+    Map[DoubleSha256Digest, GetMemPoolResult]] = {
+    bitcoindCall[Map[DoubleSha256Digest, GetMemPoolResult]](
+      "getmempoolancestors",
+      List(JsString(txid.hex), JsBoolean(true)))
   }
 
   def getMemPoolDescendants(
@@ -189,10 +195,11 @@ class RpcClient()(
       List(JsString(txid.hex), JsBoolean(false)))
   }
 
-  def getMemPoolDescendantsVerbose(
-      txid: DoubleSha256Digest): Future[Map[DoubleSha256Digest, GetMemPoolResult]] = {
-    bitcoindCall[Map[DoubleSha256Digest, GetMemPoolResult]]("getmempooldescendants",
-                                   List(JsString(txid.hex), JsBoolean(true)))
+  def getMemPoolDescendantsVerbose(txid: DoubleSha256Digest): Future[
+    Map[DoubleSha256Digest, GetMemPoolResult]] = {
+    bitcoindCall[Map[DoubleSha256Digest, GetMemPoolResult]](
+      "getmempooldescendants",
+      List(JsString(txid.hex), JsBoolean(true)))
   }
 
   // This needs a home once fixed (it was split since >22 params)
@@ -210,8 +217,7 @@ class RpcClient()(
       inflight: Vector[Int],
       whitelisted: Boolean,
       bytessent_per_msg: Map[String, Int],
-      bytesrecv_per_msg: Map[String, Int]
-  )
+      bytesrecv_per_msg: Map[String, Int])
 
   case class PeerNetworkInfo(
       addr: InetAddress,
@@ -227,8 +233,7 @@ class RpcClient()(
       timeoffset: UInt32,
       pingtime: Option[UInt32],
       minping: Option[UInt32],
-      pingwait: Option[UInt32]
-  )
+      pingwait: Option[UInt32])
 
   // This is wrong probably
   implicit val peerNetworkInfoReads: Reads[PeerNetworkInfo] =
@@ -250,8 +255,7 @@ class RpcClient()(
       confirmations: Int,
       value: Bitcoins,
       scriptPubKey: RpcScriptPubKey,
-      coinbase: Boolean
-  )
+      coinbase: Boolean)
 
   implicit val getTxOutResultReads: Reads[GetTxOutResult] =
     Json.reads[GetTxOutResult]
@@ -500,10 +504,6 @@ class RpcClient()(
     bitcoindCall[SignRawTransactionResult]("signrawtransactionwithkey", params)
   }
 
-  def stop: Future[String] = {
-    bitcoindCall[String]("stop")
-  }
-
   def submitBlock(block: Block): Future[Unit] = {
     bitcoindCall[Unit]("submitblock", List(JsString(block.hex)))
   }
@@ -660,9 +660,11 @@ class RpcClient()(
     bitcoindCall[GetNetTotalsResult]("getnettotals")
   }
 
-  def getNetworkHashPS(blocks: Int = 120, height: Int = -1): Future[Int] = {
-    bitcoindCall[Int]("getnetworkhashps",
-                      List(JsNumber(blocks), JsNumber(height)))
+  def getNetworkHashPS(
+      blocks: Int = 120,
+      height: Int = -1): Future[BigDecimal] = {
+    bitcoindCall[BigDecimal]("getnetworkhashps",
+                             List(JsNumber(blocks), JsNumber(height)))
   }
 
   def getNetworkInfo: Future[GetNetworkInfoResult] = {
@@ -689,8 +691,11 @@ class RpcClient()(
                                              List(JsBoolean(false)))
   }
 
-  def getRawMemPoolWithTransactions: Future[Map[DoubleSha256Digest, GetMemPoolResult]] = {
-    bitcoindCall[Map[DoubleSha256Digest, GetMemPoolResult]]("getrawmempool", List(JsBoolean(true)))
+  def getRawMemPoolWithTransactions: Future[
+    Map[DoubleSha256Digest, GetMemPoolResult]] = {
+    bitcoindCall[Map[DoubleSha256Digest, GetMemPoolResult]](
+      "getrawmempool",
+      List(JsBoolean(true)))
   }
 
   def getRawTransactionRaw(txid: DoubleSha256Digest): Future[Transaction] = {
@@ -775,24 +780,36 @@ class RpcClient()(
     bitcoindCall[Unit]("setnetworkactive", List(JsBoolean(activate)))
   }
 
-  def signRawTransactionWithWallet(
+  def signRawTransaction(
       transaction: Transaction,
       utxoDeps: Option[Vector[RpcOpts.SignRawTransactionOutputParameter]] = None,
+      keys: Option[Vector[ECPrivateKey]] = None,
       sigHash: Option[String] = None): Future[SignRawTransactionResult] = {
     val params =
       if (utxoDeps.isEmpty) {
         List(JsString(transaction.hex))
       } else {
         val utxos = Json.toJson(utxoDeps.get)
-        if (sigHash.isEmpty) {
+        if (keys.isEmpty) {
           List(JsString(transaction.hex), utxos)
         } else {
-          List(JsString(transaction.hex), utxos, JsString(sigHash.get))
+          val jsonKeys = Json.toJson(keys.get)
+          if (sigHash.isEmpty) {
+            List(JsString(transaction.hex), utxos, jsonKeys)
+          } else {
+            List(JsString(transaction.hex),
+                 utxos,
+                 jsonKeys,
+                 JsString(sigHash.get))
+          }
         }
       }
 
-    bitcoindCall[SignRawTransactionResult]("signrawtransactionwithwallet",
-                                           params)
+    bitcoindCall[SignRawTransactionResult]("signrawtransaction", params)
+  }
+
+  def stop: Future[String] = {
+    bitcoindCall[String]("stop")
   }
 
   def validateAddress(
@@ -809,8 +826,9 @@ class RpcClient()(
   private def bitcoindCall[T](
       command: String,
       parameters: List[JsValue] = List.empty)(
-      implicit reader: Reads[T]): Future[T] = {
-    val request = buildRequest(command, JsArray(parameters))
+      implicit
+      reader: Reads[T]): Future[T] = {
+    val request = buildRequest(instance, command, JsArray(parameters))
     val responseF = sendRequest(request)
 
     val payloadF: Future[JsValue] = responseF.flatMap(getPayload)
@@ -841,20 +859,31 @@ class RpcClient()(
     Http(m.system).singleRequest(req)
   }
 
-  def buildRequest(methodName: String, params: JsArray): HttpRequest = {
+  def buildRequest(
+      instance: DaemonInstance,
+      methodName: String,
+      params: JsArray): HttpRequest = {
     val m: Map[String, JsValue] = Map("method" -> JsString(methodName),
                                       "params" -> params,
                                       "id" -> JsString("")) // java.util.UUID
     val jsObject = JsObject(m)
 
-    val uri = "http://localhost:18443"
-    val username = "nadav"
-    val password = "abc123"
+    val uri = "http://" + instance.rpcUri.getHostName + ":" + instance.rpcUri.getPort
+    val username = instance.authCredentials.username
+    val password = instance.authCredentials.password
     HttpRequest(
       method = HttpMethods.POST,
       uri,
       entity = HttpEntity(ContentTypes.`application/json`, jsObject.toString()))
       .addCredentials(
         HttpCredentials.createBasicHttpCredentials(username, password))
+  }
+
+  def start(): String = {
+    val networkArg =
+      if (instance.network == MainNet) "" else "-" + instance.network.name
+    val datadir = instance.authCredentials.datadir
+    val cmd = "bitcoind -datadir=" + datadir
+    cmd.!!
   }
 }
