@@ -13,7 +13,6 @@ import org.bitcoins.core.script.interpreter.ScriptInterpreter
 import org.bitcoins.core.script.result.{ ScriptOk, ScriptResult }
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
-
 import org.bitcoins.core.wallet.signer.Signer
 import org.bitcoins.core.wallet.utxo.{ BitcoinUTXOSpendingInfo, UTXOSpendingInfo }
 import org.scalacheck.{ Prop, Properties }
@@ -23,6 +22,7 @@ import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.DurationInt
 import scala.util.Try
+
 class BitcoinTxBuilderSpec extends Properties("TxBuilderSpec") {
   private val logger = BitcoinSLogger.logger
   private val tc = TransactionConstants
@@ -30,7 +30,7 @@ class BitcoinTxBuilderSpec extends Properties("TxBuilderSpec") {
   property("sign a mix of spks in a tx and then have it verified") = {
     Prop.forAllNoShrink(CreditingTxGen.outputs) {
       case creditingTxsInfo =>
-        val creditingOutputs = creditingTxsInfo.map(c => c._1.outputs(c._2))
+        val creditingOutputs = creditingTxsInfo.map(c => c.output)
         val creditingOutputsAmt = creditingOutputs.map(_.value)
         val totalAmount = creditingOutputsAmt.fold(CurrencyUnits.zero)(_ + _)
         Prop.forAllNoShrink(TransactionGenerators.smallOutputs(totalAmount), ScriptGenerators.scriptPubKey, ChainParamsGenerator.bitcoinNetworkParams) {
@@ -39,8 +39,7 @@ class BitcoinTxBuilderSpec extends Properties("TxBuilderSpec") {
             val outpointsWithKeys = buildCreditingTxInfo(creditingTxsInfo)
             val builder = BitcoinTxBuilder(destinations, outpointsWithKeys, fee, changeSPK._1, network)
             val tx = Await.result(builder.flatMap(_.sign), timeout)
-            val noRedeem: Seq[(Transaction, Int)] = creditingTxsInfo.map(c => (c._1, c._2))
-            verifyScript(tx, noRedeem)
+            verifyScript(tx, creditingTxsInfo)
         }
     }
   }
@@ -48,7 +47,7 @@ class BitcoinTxBuilderSpec extends Properties("TxBuilderSpec") {
   property("sign a mix of p2sh/p2wsh in a tx and then have it verified") = {
     Prop.forAllNoShrink(CreditingTxGen.nestedOutputs) {
       case creditingTxsInfo =>
-        val creditingOutputs = creditingTxsInfo.map(c => c._1.outputs(c._2))
+        val creditingOutputs = creditingTxsInfo.map(c => c.output)
         val creditingOutputsAmt = creditingOutputs.map(_.value)
         val totalAmount = creditingOutputsAmt.fold(CurrencyUnits.zero)(_ + _)
         Prop.forAll(TransactionGenerators.smallOutputs(totalAmount), ScriptGenerators.scriptPubKey, ChainParamsGenerator.bitcoinNetworkParams) {
@@ -57,8 +56,7 @@ class BitcoinTxBuilderSpec extends Properties("TxBuilderSpec") {
             val outpointsWithKeys = buildCreditingTxInfo(creditingTxsInfo)
             val builder = BitcoinTxBuilder(destinations, outpointsWithKeys, fee, changeSPK._1, network)
             val tx = Await.result(builder.flatMap(_.sign), timeout)
-            val noRedeem = creditingTxsInfo.map(c => (c._1, c._2))
-            verifyScript(tx, noRedeem)
+            verifyScript(tx, creditingTxsInfo)
         }
     }
   }
@@ -66,7 +64,7 @@ class BitcoinTxBuilderSpec extends Properties("TxBuilderSpec") {
   property("random fuzz test for tx builder") = {
     Prop.forAllNoShrink(CreditingTxGen.randoms) {
       case creditingTxsInfo =>
-        val creditingOutputs = creditingTxsInfo.map(c => c._1.outputs(c._2))
+        val creditingOutputs = creditingTxsInfo.map(c => c.output)
         val creditingOutputsAmt = creditingOutputs.map(_.value)
         val totalAmount = creditingOutputsAmt.fold(CurrencyUnits.zero)(_ + _)
         Prop.forAllNoShrink(TransactionGenerators.smallOutputs(totalAmount), ScriptGenerators.scriptPubKey, ChainParamsGenerator.bitcoinNetworkParams) {
@@ -75,33 +73,32 @@ class BitcoinTxBuilderSpec extends Properties("TxBuilderSpec") {
             val outpointsWithKeys = buildCreditingTxInfo(creditingTxsInfo)
             val builder = BitcoinTxBuilder(destinations, outpointsWithKeys, fee, changeSPK._1, network)
             val result = Try(Await.result(builder.flatMap(_.sign), timeout))
-            val noRedeem = creditingTxsInfo.map(c => (c._1, c._2))
-            if (result.isFailure) true else !verifyScript(result.get, noRedeem)
+            if (result.isFailure) true else !verifyScript(result.get, creditingTxsInfo)
         }
     }
   }
 
-  private def buildCreditingTxInfo(info: Seq[CreditingTxGen.CreditingTxInfo]): BitcoinTxBuilder.UTXOMap = {
+  private def buildCreditingTxInfo(info: Seq[BitcoinUTXOSpendingInfo]): BitcoinTxBuilder.UTXOMap = {
     @tailrec
     def loop(
-      rem: Seq[CreditingTxGen.CreditingTxInfo],
+      rem: Seq[BitcoinUTXOSpendingInfo],
       accum: BitcoinTxBuilder.UTXOMap): BitcoinTxBuilder.UTXOMap = rem match {
       case Nil => accum
-      case (tx, idx, signers, redeemScriptOpt, scriptWitOpt, hashType) :: t =>
-        val o = TransactionOutPoint(tx.txId, UInt32(idx))
-        val output = tx.outputs(idx)
+      case BitcoinUTXOSpendingInfo(txOutPoint, txOutput, signers, redeemScriptOpt, scriptWitOpt, hashType) :: t =>
+        val o = txOutPoint
+        val output = txOutput
         val outPointsSpendingInfo = BitcoinUTXOSpendingInfo(o, output, signers, redeemScriptOpt, scriptWitOpt, hashType)
         loop(t, accum.updated(o, outPointsSpendingInfo))
     }
     loop(info, Map.empty)
   }
 
-  def verifyScript(tx: Transaction, creditingTxsInfo: Seq[(Transaction, Int)]): Boolean = {
+  def verifyScript(tx: Transaction, utxos: Seq[UTXOSpendingInfo]): Boolean = {
     val programs: Seq[PreExecutionScriptProgram] = tx.inputs.zipWithIndex.map {
       case (input: TransactionInput, idx: Int) =>
         val outpoint = input.previousOutput
-        val creditingTx = creditingTxsInfo.find(_._1.txId == outpoint.txId).get
-        val output = creditingTx._1.outputs(creditingTx._2)
+        val creditingTx = utxos.find(u => u.outPoint.txId == outpoint.txId).get
+        val output = creditingTx.output
         val spk = output.scriptPubKey
         val amount = output.value
         val txSigComponent = spk match {
