@@ -4,11 +4,7 @@ import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.currency.Bitcoins
-import org.bitcoins.core.protocol.transaction.{
-  Transaction,
-  TransactionInput,
-  TransactionOutPoint
-}
+import org.bitcoins.core.protocol.transaction.{Transaction, TransactionInput, TransactionOutPoint}
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.rpc.client.RpcClient
 import org.scalatest.AsyncFlatSpec
@@ -181,6 +177,16 @@ class RpcClientTest extends AsyncFlatSpec {
       client.getRawMemPool.map { memPool =>
         assert(memPool.length == 1)
         assert(memPool.head == transaction.txid)
+      }
+    }
+  }
+
+  it should "be able to find a verbose transaction in the mem pool" in {
+    sendTransaction.flatMap { transaction =>
+      client.getRawMemPoolWithTransactions.flatMap { memPool =>
+        val txid = memPool.keySet.head
+        assert(txid == transaction.txid)
+        assert(memPool(txid).size > 0)
       }
     }
   }
@@ -532,6 +538,15 @@ class RpcClientTest extends AsyncFlatSpec {
       assert(info.locked.total > 0)
       assert(info.locked.locked > 0)
       assert(info.locked.chunks_used > 0)
+    }
+  }
+
+  it should "be able to get network statistics" in {
+    client.getNetTotals.map { stats =>
+      assert(stats.timemillis.toBigInt > 0)
+      // Regtest so nothing sent over network
+      assert(stats.totalbytesrecv == 0)
+      assert(stats.totalbytessent == 0)
     }
   }
 }

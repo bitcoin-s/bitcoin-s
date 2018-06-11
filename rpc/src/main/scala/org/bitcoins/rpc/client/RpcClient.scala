@@ -177,8 +177,8 @@ class RpcClient()(
   }
 
   def getMemPoolAncestorsVerbose(
-      txid: DoubleSha256Digest): Future[GetMemPoolResult] = {
-    bitcoindCall[GetMemPoolResult]("getmempoolancestors",
+      txid: DoubleSha256Digest): Future[Map[DoubleSha256Digest, GetMemPoolResult]] = {
+    bitcoindCall[Map[DoubleSha256Digest, GetMemPoolResult]]("getmempoolancestors",
                                    List(JsString(txid.hex), JsBoolean(true)))
   }
 
@@ -190,16 +190,12 @@ class RpcClient()(
   }
 
   def getMemPoolDescendantsVerbose(
-      txid: DoubleSha256Digest): Future[GetMemPoolResult] = {
-    bitcoindCall[GetMemPoolResult]("getmempooldescendants",
+      txid: DoubleSha256Digest): Future[Map[DoubleSha256Digest, GetMemPoolResult]] = {
+    bitcoindCall[Map[DoubleSha256Digest, GetMemPoolResult]]("getmempooldescendants",
                                    List(JsString(txid.hex), JsBoolean(true)))
   }
 
-  def getNetTotals: Future[GetNetTotalsResult] = {
-    bitcoindCall[GetNetTotalsResult]("getnettotals")
-  }
-
-  // This needs a home once fixed
+  // This needs a home once fixed (it was split since >22 params)
   case class Peer(
       id: Int,
       networkInfo: PeerNetworkInfo,
@@ -241,10 +237,6 @@ class RpcClient()(
 
   def getPeerInfo: Future[Vector[Peer]] = {
     bitcoindCall[Vector[Peer]]("getpeerinfo")
-  }
-
-  def getRawMemPoolWithTransactions: Future[GetMemPoolResult] = {
-    bitcoindCall[GetMemPoolResult]("getrawmempool", List(JsBoolean(true)))
   }
 
   // As is, RpcTransaction may not have enough data (add options?), also is RpcTransaction in the right place?
@@ -664,6 +656,10 @@ class RpcClient()(
     bitcoindCall[GetMiningInfoResult]("getmininginfo")
   }
 
+  def getNetTotals: Future[GetNetTotalsResult] = {
+    bitcoindCall[GetNetTotalsResult]("getnettotals")
+  }
+
   def getNetworkHashPS(blocks: Int = 120, height: Int = -1): Future[Int] = {
     bitcoindCall[Int]("getnetworkhashps",
                       List(JsNumber(blocks), JsNumber(height)))
@@ -691,6 +687,10 @@ class RpcClient()(
   def getRawMemPool: Future[Vector[DoubleSha256Digest]] = {
     bitcoindCall[Vector[DoubleSha256Digest]]("getrawmempool",
                                              List(JsBoolean(false)))
+  }
+
+  def getRawMemPoolWithTransactions: Future[Map[DoubleSha256Digest, GetMemPoolResult]] = {
+    bitcoindCall[Map[DoubleSha256Digest, GetMemPoolResult]]("getrawmempool", List(JsBoolean(true)))
   }
 
   def getRawTransactionRaw(txid: DoubleSha256Digest): Future[Transaction] = {

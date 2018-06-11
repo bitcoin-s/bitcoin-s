@@ -34,10 +34,10 @@ object RpcOpts {
 
   case class ImportMultiRequest(
       scriptPubKey: ScriptPubKey,
-      timestamp: UInt32, // Needs writes
+      timestamp: UInt32,
       reedemscript: Option[ScriptPubKey],
       pubkeys: Option[Vector[ScriptPubKey]],
-      keys: Option[Vector[ECPrivateKey]], // Needs writes
+      keys: Option[Vector[ECPrivateKey]],
       internal: Boolean = false,
       watchonly: Boolean = false,
       label: String = ""

@@ -2,19 +2,10 @@ package org.bitcoins.rpc.serializers
 
 import java.net.InetAddress
 
-import org.bitcoins.core.crypto.{
-  DoubleSha256Digest,
-  ECPublicKey,
-  Sha256Hash160Digest
-}
+import org.bitcoins.core.crypto.{DoubleSha256Digest, ECPublicKey, Sha256Hash160Digest}
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
-import org.bitcoins.core.number.{Int32, Int64, UInt32}
-import org.bitcoins.core.protocol.{
-  Address,
-  BitcoinAddress,
-  P2PKHAddress,
-  P2SHAddress
-}
+import org.bitcoins.core.number.{Int32, Int64, UInt32, UInt64}
+import org.bitcoins.core.protocol.{Address, BitcoinAddress, P2PKHAddress, P2SHAddress}
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, MerkleBlock}
 import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptSignature}
 import org.bitcoins.core.protocol.transaction._
@@ -87,6 +78,24 @@ object JsonReaders {
           case None => JsError(s"error.expected.UInt32, got $n")
         }
       case JsString(s) => JsSuccess(UInt32.fromHex(s))
+      case err @ (JsNull | _: JsBoolean | _: JsArray | _: JsObject) =>
+        JsError(s"error.expected.jsnumber, got ${Json.toJson(err).toString()}")
+    }
+  }
+
+  implicit object UInt64Reads extends Reads[UInt64] {
+    override def reads(json: JsValue): JsResult[UInt64] = json match {
+      case JsNumber(n) =>
+        n.toBigIntExact() match {
+          case Some(num) =>
+            if (num >= 0) {
+              JsSuccess(UInt64(num))
+            } else {
+              JsError(s"error.expected.positive_value, got $num")
+            }
+          case None => JsError(s"error.expected.UInt32, got $n")
+        }
+      case JsString(s) => JsSuccess(UInt64.fromHex(s))
       case err @ (JsNull | _: JsBoolean | _: JsArray | _: JsObject) =>
         JsError(s"error.expected.jsnumber, got ${Json.toJson(err).toString()}")
     }
