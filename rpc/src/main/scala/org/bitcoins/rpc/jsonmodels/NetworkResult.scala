@@ -2,13 +2,9 @@ package org.bitcoins.rpc.jsonmodels
 
 import java.net.InetAddress
 
-import org.bitcoins.core.crypto.{
-  DoubleSha256Digest,
-  ECPublicKey,
-  Sha256Hash160Digest
-}
+import org.bitcoins.core.crypto.{DoubleSha256Digest, ECPublicKey, Sha256Hash160Digest}
 import org.bitcoins.core.currency.Bitcoins
-import org.bitcoins.core.number.{Int32, UInt32}
+import org.bitcoins.core.number.{Int32, UInt32, UInt64}
 import org.bitcoins.core.protocol.blockchain.Block
 import org.bitcoins.core.protocol.{Address, BitcoinAddress}
 import org.bitcoins.core.protocol.script.ScriptPubKey
@@ -372,10 +368,7 @@ case class MemoryManager(
     chunks_free: Int
 ) extends NetworkResult
 
-case class GetMemPoolResult(transactionid: MemPoolTransaction)
-    extends NetworkResult
-
-case class MemPoolTransaction(
+case class GetMemPoolResult(
     size: Int,
     fee: Option[Bitcoins],
     modifiedfee: Option[Bitcoins],
@@ -387,7 +380,7 @@ case class MemPoolTransaction(
     ancestorcount: Int,
     ancestorsize: Int,
     ancestorfees: Option[Bitcoins],
-    wtxid: Transaction,
+    wtxid: DoubleSha256Digest,
     fees: TransactionFees,
     depends: Vector[DoubleSha256Digest],
     spentby: Vector[DoubleSha256Digest]
@@ -403,7 +396,7 @@ case class TransactionFees(
 case class GetNetTotalsResult(
     totalbytesrecv: Int,
     totalbytessent: Int,
-    timemillis: UInt32,
+    timemillis: UInt64,
     uploadtarget: NetTarget
 ) extends NetworkResult
 
