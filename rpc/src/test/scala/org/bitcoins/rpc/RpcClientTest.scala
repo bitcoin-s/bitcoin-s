@@ -10,6 +10,7 @@ import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.rpc.client.RpcClient
 import org.scalatest.{AsyncFlatSpec, BeforeAndAfter, BeforeAndAfterAll}
 import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.protocol.P2PKHAddress
 import org.bitcoins.core.protocol.script.ScriptSignature
 import org.bitcoins.rpc.jsonmodels.{GetTransactionResult, GetWalletInfoResult}
 
@@ -31,7 +32,7 @@ class RpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll with BeforeAndA
 
   val logger = BitcoinSLogger.logger
 
-  val password = "password"
+  var password = "password"
 
   override def beforeAll(): Unit = {
     println("Temp bitcoin directory created")
@@ -580,6 +581,14 @@ class RpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll with BeforeAndA
     }
   }
 
+  it should "be able to dump a private key" in {
+    client.getNewAddress(addressType = Some("legacy")).flatMap { address =>
+      client.dumpPrivKey(address.asInstanceOf[P2PKHAddress]).map { key =>
+        succeed
+      }
+    }
+  }
+
   it should "be able to dump the wallet" in {
     client.dumpWallet(client.getDaemon.authCredentials.datadir + "/test.dat").map { result =>
       assert(result.filename.exists)
@@ -596,14 +605,51 @@ class RpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll with BeforeAndA
   }
 
   it should "be able to lock and unlock the wallet" in {
-    walletClient.walletPassphrase(password, 1000).flatMap { _ =>
-      walletClient.getWalletInfo.flatMap{ info =>
-        assert(info.unlocked_until.nonEmpty)
-        assert(info.unlocked_until.get > 0)
+    walletClient.walletLock.flatMap { _ =>
+      walletClient.walletPassphrase(password, 1000).flatMap { _ =>
+        walletClient.getWalletInfo.flatMap { info =>
+          assert(info.unlocked_until.nonEmpty)
+          assert(info.unlocked_until.get > 0)
 
-        walletClient.walletLock.flatMap { _ =>
-          walletClient.getWalletInfo.map { newInfo =>
-            assert(newInfo.unlocked_until.contains(0))
+          walletClient.walletLock.flatMap { _ =>
+            walletClient.getWalletInfo.map { newInfo =>
+              assert(newInfo.unlocked_until.contains(0))
+            }
+          }
+        }
+      }
+    }
+  }
+
+  it should "be able to change the wallet password" in {
+    walletClient.walletLock.flatMap { _ =>
+      walletClient.walletPassphraseChange(password, "new_password").flatMap { _ =>
+        password = "new_password"
+        walletClient.walletPassphrase(password, 1000).flatMap { _ =>
+          walletClient.getWalletInfo.flatMap { info =>
+            assert(info.unlocked_until.nonEmpty)
+            assert(info.unlocked_until.get > 0)
+
+            walletClient.walletLock.flatMap { _ =>
+              walletClient.getWalletInfo.map { newInfo =>
+                assert(newInfo.unlocked_until.contains(0))
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  it should "be able to import a wallet" in {
+    client.getNewAddress(addressType = Some("legacy")).flatMap { address =>
+      client.dumpWallet(client.getDaemon.authCredentials.datadir + "/client_wallet.dat").flatMap { fileResult =>
+        assert(fileResult.filename.exists)
+        walletClient.walletPassphrase(password, 1000).flatMap { _ =>
+          walletClient.importWallet(client.getDaemon.authCredentials.datadir + "/client_wallet.dat").flatMap { _ =>
+            walletClient.dumpPrivKey(address.asInstanceOf[P2PKHAddress]).flatMap { key =>
+              succeed
+            }
           }
         }
       }

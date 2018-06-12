@@ -121,11 +121,6 @@ class RpcClient(instance: DaemonInstance)(
     bitcoindCall[Unit]("disconnectnode", List(JsString(address.getAuthority)))
   }
 
-  def dumpPrivKey(address: P2PKHAddress): Future[ECPrivateKey] = {
-    bitcoindCall[String]("dumpprivkey", List(JsString(address.value)))
-      .map(ECPrivateKey.fromWIFToPrivateKey)
-  }
-
   def encryptWallet(passphrase: String): Future[String] = {
     bitcoindCall[String]("encryptwallet", List(JsString(passphrase)))
   }
@@ -513,23 +508,6 @@ class RpcClient(instance: DaemonInstance)(
                                              List(JsString(proof.hex)))
   }
 
-  def walletLock: Future[Unit] = {
-    bitcoindCall[Unit]("walletlock")
-  }
-
-  def walletPassphrase(passphrase: String, seconds: Int): Future[Unit] = {
-    bitcoindCall[Unit]("walletpassphrase",
-                       List(JsString(passphrase), JsNumber(seconds)))
-  }
-
-  def walletPassphraseChange(
-      currentPassphrase: String,
-      newPassphrase: String): Future[Unit] = {
-    bitcoindCall[Unit](
-      "walletpassphrasechange",
-      List(JsString(currentPassphrase), JsString(newPassphrase)))
-  }
-
   // TODO: GetBlockTemplate
   // TODO: Overload calls with Option inputs?
   // --------------------------------------------------------------------------------
@@ -552,6 +530,11 @@ class RpcClient(instance: DaemonInstance)(
   def decodeRawTransaction(transaction: Transaction): Future[RpcTransaction] = {
     bitcoindCall[RpcTransaction]("decoderawtransaction",
                                  List(JsString(transaction.hex)))
+  }
+
+  def dumpPrivKey(address: P2PKHAddress): Future[ECPrivateKey] = {
+    bitcoindCall[String]("dumpprivkey", List(JsString(address.value)))
+      .map(ECPrivateKey.fromWIFToPrivateKey)
   }
 
   def dumpWallet(filePath: String): Future[DumpWalletResult] = {
@@ -670,8 +653,15 @@ class RpcClient(instance: DaemonInstance)(
     bitcoindCall[GetNetworkInfoResult]("getnetworkinfo")
   }
 
-  def getNewAddress(account: String = ""): Future[BitcoinAddress] = {
-    bitcoindCall[BitcoinAddress]("getnewaddress", List(JsString(account)))
+  def getNewAddress(account: String = "", addressType: Option[String] = None): Future[BitcoinAddress] = {
+    val params =
+      if (addressType.isEmpty) {
+        List(JsString(account))
+      } else {
+        List(JsString(account), JsString(addressType.get))
+      }
+
+    bitcoindCall[BitcoinAddress]("getnewaddress", params)
   }
 
   // Should have a default addressType set by -changetype
@@ -820,6 +810,23 @@ class RpcClient(instance: DaemonInstance)(
   def verifyChain(level: Int = 3, blocks: Int = 6): Future[Boolean] = {
     bitcoindCall[Boolean]("verifychain",
                           List(JsNumber(level), JsNumber(blocks)))
+  }
+
+  def walletLock: Future[Unit] = {
+    bitcoindCall[Unit]("walletlock")
+  }
+
+  def walletPassphrase(passphrase: String, seconds: Int): Future[Unit] = {
+    bitcoindCall[Unit]("walletpassphrase",
+      List(JsString(passphrase), JsNumber(seconds)))
+  }
+
+  def walletPassphraseChange(
+                              currentPassphrase: String,
+                              newPassphrase: String): Future[Unit] = {
+    bitcoindCall[Unit](
+      "walletpassphrasechange",
+      List(JsString(currentPassphrase), JsString(newPassphrase)))
   }
 
   private def bitcoindCall[T](
