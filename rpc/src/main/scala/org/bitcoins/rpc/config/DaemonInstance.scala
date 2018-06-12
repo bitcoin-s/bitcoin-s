@@ -1,6 +1,6 @@
 package org.bitcoins.rpc.config
 
-import java.net.{InetAddress, InetSocketAddress}
+import java.net.URI
 
 import org.bitcoins.core.config.NetworkParameters
 
@@ -10,23 +10,23 @@ import org.bitcoins.core.config.NetworkParameters
 sealed trait DaemonInstance {
 
   def network: NetworkParameters
-  def uri: InetSocketAddress
-  def rpcUri: InetSocketAddress
+  def uri: URI
+  def rpcUri: URI
   def authCredentials: AuthCredentials
 }
 
 object DaemonInstance {
   private case class DaemonInstanceImpl(
       network: NetworkParameters,
-      uri: InetSocketAddress,
-      rpcUri: InetSocketAddress,
+      uri: URI,
+      rpcUri: URI,
       authCredentials: AuthCredentials)
       extends DaemonInstance
 
   def apply(
       network: NetworkParameters,
-      uri: InetSocketAddress,
-      rpcUri: InetSocketAddress,
+      uri: URI,
+      rpcUri: URI,
       authCredentials: AuthCredentials): DaemonInstance = {
     DaemonInstanceImpl(network, uri, rpcUri, authCredentials)
   }
