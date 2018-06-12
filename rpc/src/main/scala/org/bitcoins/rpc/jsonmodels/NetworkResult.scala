@@ -1,15 +1,10 @@
 package org.bitcoins.rpc.jsonmodels
 
-import java.net.InetAddress
+import java.net.URI
 
-import org.bitcoins.core.crypto.{
-  DoubleSha256Digest,
-  ECPublicKey,
-  Sha256Hash160Digest
-}
+import org.bitcoins.core.crypto.{DoubleSha256Digest, ECPublicKey, Sha256Hash160Digest}
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.number.{Int32, UInt32, UInt64}
-import org.bitcoins.core.protocol.blockchain.Block
 import org.bitcoins.core.protocol.{Address, BitcoinAddress}
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionInput}
@@ -87,18 +82,18 @@ case class ValidateAddressResult(
     extends NetworkResult
 
 case class NodeBan(
-    address: InetAddress,
+    address: URI,
     banned_until: UInt32,
     ban_created: UInt32,
     ban_reason: String)
     extends NetworkResult
 
 case class Node(
-    addednode: InetAddress,
+    addednode: URI,
     connected: Option[Boolean],
     addresses: Option[Vector[NodeAddress]])
     extends NetworkResult
-case class NodeAddress(address: InetAddress, connected: String)
+case class NodeAddress(address: URI, connected: String)
     extends NetworkResult
 
 case class GetMemPoolEntryResult(

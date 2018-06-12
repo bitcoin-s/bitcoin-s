@@ -12,11 +12,9 @@ import org.scalatest.{AsyncFlatSpec, BeforeAndAfter, BeforeAndAfterAll}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script.ScriptSignature
 import org.bitcoins.rpc.jsonmodels.{GetTransactionResult, GetWalletInfoResult}
-import org.scalatest.concurrent.ScalaFutures
 
 import scala.concurrent.{Await, Future}
 import scala.concurrent.duration.DurationInt
-import scala.util.Try
 
 // Need to test encryptwallet, walletpassphrase, walletpassphrasechange on startup
 // And walletlock, stop on close
@@ -571,15 +569,15 @@ class RpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll with BeforeAndA
   }
 
   it should "be able to dump the wallet" in {
-    client.dumpWallet(client.getInstance.authCredentials.datadir + "/test.dat").map { result =>
+    client.dumpWallet(client.getDaemon.authCredentials.datadir + "/test.dat").map { result =>
       assert(result.filename.exists)
       assert(result.filename.isFile)
     }
   }
 
   it should "be able to backup the wallet" in {
-    client.backupWallet(client.getInstance.authCredentials.datadir + "/backup.dat").map { _ =>
-      val file = new File(client.getInstance.authCredentials.datadir + "/backup.dat")
+    client.backupWallet(client.getDaemon.authCredentials.datadir + "/backup.dat").map { _ =>
+      val file = new File(client.getDaemon.authCredentials.datadir + "/backup.dat")
       assert(file.exists)
       assert(file.isFile)
     }
@@ -590,7 +588,7 @@ class RpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll with BeforeAndA
     require(info.unlocked_until.contains(0), "WalletLock Failed")
 
     client.stop.map(println)
-    if (TestUtil.deleteTmpDir(client.getInstance.authCredentials.datadir))
+    if (TestUtil.deleteTmpDir(client.getDaemon.authCredentials.datadir))
       println("Temp bitcoin directory deleted")
   }
 }

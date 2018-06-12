@@ -1,7 +1,7 @@
 package org.bitcoins.rpc.serializers
 
 import java.io.File
-import java.net.InetAddress
+import java.net.{InetAddress, URI}
 
 import org.bitcoins.core.crypto.{DoubleSha256Digest, ECPublicKey, Sha256Hash160Digest}
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
@@ -281,5 +281,9 @@ object JsonReaders {
 
   implicit object FileReads extends Reads[File] {
     override def reads(json: JsValue): JsResult[File] = processJsString[File](new File(_))(json)
+  }
+
+  implicit object URIReads extends Reads[URI] {
+    override def reads(json: JsValue): JsResult[URI] = processJsString[URI](new URI(_))(json)
   }
 }

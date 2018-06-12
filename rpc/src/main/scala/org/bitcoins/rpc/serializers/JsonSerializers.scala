@@ -1,7 +1,7 @@
 package org.bitcoins.rpc.serializers
 
 import java.io.File
-import java.net.InetAddress
+import java.net.{InetAddress, URI}
 
 import org.bitcoins.core.crypto.{DoubleSha256Digest, ECPublicKey, Sha256Hash160Digest}
 import org.bitcoins.core.currency.Bitcoins
@@ -47,6 +47,7 @@ object JsonSerializers {
     TransactionOutPointReads
   implicit val bitcoinFeeUnitReads: Reads[BitcoinFeeUnit] = BitcoinFeeUnitReads
   implicit val fileReads: Reads[File] = FileReads
+  implicit val uRIReads: Reads[URI] = URIReads
 
   implicit val bitcoinsWrites: Writes[Bitcoins] = BitcoinsWrites
   implicit val bitcoinAddressWrites: Writes[BitcoinAddress] =

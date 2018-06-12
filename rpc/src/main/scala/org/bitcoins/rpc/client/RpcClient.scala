@@ -1,7 +1,6 @@
 package org.bitcoins.rpc.client
 
-import java.io.File
-import java.net.{InetAddress, InetSocketAddress}
+import java.net.URI
 
 import akka.http.javadsl.model.headers.HttpCredentials
 import akka.http.scaladsl.Http
@@ -36,7 +35,7 @@ class RpcClient(instance: DaemonInstance)(
   private val logger = BitcoinSLogger.logger
   private implicit val network = instance.network
 
-  def getInstance: DaemonInstance = instance
+  def getDaemon: DaemonInstance = instance
 
   // TODO: WRITE TESTS
 
@@ -59,9 +58,9 @@ class RpcClient(instance: DaemonInstance)(
                                       JsString(account)))
   }
 
-  def addNode(address: InetAddress, command: String): Future[Unit] = {
+  def addNode(address: URI, command: String): Future[Unit] = {
     bitcoindCall[Unit]("addnode",
-                       List(JsString(address.toString), JsString(command)))
+                       List(JsString(address.getAuthority), JsString(command)))
   }
 
   def addWitnessAddress(
@@ -118,8 +117,8 @@ class RpcClient(instance: DaemonInstance)(
     bitcoindCall[DecodeScriptResult]("decodescript", List(JsString(script)))
   }
 
-  def disconnectNode(address: InetAddress): Future[Unit] = {
-    bitcoindCall[Unit]("disconnectnode", List(JsString(address.toString)))
+  def disconnectNode(address: URI): Future[Unit] = {
+    bitcoindCall[Unit]("disconnectnode", List(JsString(address.getAuthority)))
   }
 
   def dumpPrivKey(address: P2PKHAddress): Future[ECPrivateKey] = {
@@ -150,12 +149,12 @@ class RpcClient(instance: DaemonInstance)(
 
   def getAddedNodeInfo(
       details: Boolean,
-      node: Option[InetAddress]): Future[Vector[Node]] = {
+      node: Option[URI]): Future[Vector[Node]] = {
     val params =
       if (node.isEmpty) {
         List(JsBoolean(details))
       } else {
-        List(JsBoolean(details), JsString(node.get.toString))
+        List(JsBoolean(details), JsString(node.get.getAuthority))
       }
     bitcoindCall[Vector[Node]]("getaddednodeinfo", params)
   }
@@ -211,9 +210,9 @@ class RpcClient(instance: DaemonInstance)(
       bytesrecv_per_msg: Map[String, Int])
 
   case class PeerNetworkInfo(
-      addr: InetAddress,
-      addrbind: InetAddress,
-      addrlocal: InetAddress,
+      addr: URI,
+      addrbind: URI,
+      addrlocal: URI,
       services: String,
       relaytxes: Boolean,
       lastsend: UInt32,
@@ -442,12 +441,12 @@ class RpcClient(instance: DaemonInstance)(
   }
 
   def setBan(
-      address: InetAddress,
+      address: URI,
       command: String,
       banTime: Int = 86400,
       absolute: Boolean = false): Future[Unit] = {
     bitcoindCall[Unit]("setban",
-                       List(JsString(address.getHostAddress),
+                       List(JsString(address.getHost + ":" + address.getPort),
                             JsString(command),
                             JsNumber(banTime),
                             JsBoolean(absolute)))
@@ -868,7 +867,8 @@ class RpcClient(instance: DaemonInstance)(
                                       "id" -> JsString("")) // java.util.UUID
     val jsObject = JsObject(m)
 
-    val uri = "http://" + instance.rpcUri.getHostName + ":" + instance.rpcUri.getPort
+    // Would toString work?
+    val uri = "http://" + instance.rpcUri.getHost + ":" + instance.rpcUri.getPort
     val username = instance.authCredentials.username
     val password = instance.authCredentials.password
     HttpRequest(

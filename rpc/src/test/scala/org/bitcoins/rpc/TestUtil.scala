@@ -1,7 +1,7 @@
 package org.bitcoins.rpc
 
 import java.io.PrintWriter
-import java.net.{InetAddress, InetSocketAddress}
+import java.net.URI
 
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.util.BitcoinSLogger
@@ -16,8 +16,8 @@ trait TestUtil extends BitcoinSLogger {
   /** Creates a datadir and places the username/password combo
     * in the bitcoin.conf in the datadir */
   def authCredentials(
-      uri: InetSocketAddress,
-      rpcUri: InetSocketAddress): AuthCredentials = {
+      uri: URI,
+      rpcUri: URI): AuthCredentials = {
     val d = "/tmp/" + randomDirName
     val f = new java.io.File(d)
     f.mkdir()
@@ -28,7 +28,7 @@ trait TestUtil extends BitcoinSLogger {
     val pw = new PrintWriter(conf)
     pw.write("rpcuser=" + username + "\n")
     pw.write("rpcpassword=" + pass + "\n")
-    //pw.write("rpcbind=" + rpcUri.getHostName + "\n")
+    //pw.write("rpcbind=" + rpcUri.getHost + "\n")
     pw.write("rpcport=" + rpcUri.getPort + "\n")
     //pw.write("port=" + uri.getPort + "\n")
     pw.write("daemon=1\n")
@@ -42,8 +42,8 @@ trait TestUtil extends BitcoinSLogger {
   lazy val network = RegTest
 
   def instance(port: Int, rpcPort: Int): DaemonInstance = {
-    val uri = new InetSocketAddress(InetAddress.getLoopbackAddress, port)
-    val rpcUri = new InetSocketAddress(InetAddress.getLoopbackAddress, rpcPort)
+    val uri = new URI("http://localhost:" + port)
+    val rpcUri = new URI("http://localhost:" + rpcPort)
     DaemonInstance(network, uri, rpcUri, authCredentials(uri, rpcUri))
   }
 
