@@ -26,22 +26,34 @@ class RpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll with BeforeAndA
 
   val client = new RpcClient(
     TestUtil.instance(networkParam.port, networkParam.rpcPort))
+  val otherClient = new RpcClient(TestUtil.instance(networkParam.port+10, networkParam.rpcPort+10))
+  val walletClient = new RpcClient(TestUtil.instance(networkParam.port+20, networkParam.rpcPort+20))
+
   val logger = BitcoinSLogger.logger
 
   val password = "password"
 
   override def beforeAll(): Unit = {
     println("Temp bitcoin directory created")
+    println("Temp bitcoin directory created")
+    println("Temp bitcoin directory created")
+
+    walletClient.start()
+    println("Bitcoin server starting")
+    Thread.sleep(3000)
     client.start()
     println("Bitcoin server starting")
     Thread.sleep(3000)
-    Await.result(client.encryptWallet(password).map{msg =>
+    otherClient.start()
+    println("Bitcoin server starting")
+    Thread.sleep(3000)
+
+    Await.result(walletClient.encryptWallet(password).map{msg =>
       println(msg)
       Thread.sleep(3000)
-      client.start()
+      walletClient.start()
       println("Bitcoin server restarting")
       Thread.sleep(4000)
-      client.walletPassphrase(password, 100000)
     }, 15.seconds)
   }
 
@@ -583,12 +595,30 @@ class RpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll with BeforeAndA
     }
   }
 
-  override def afterAll(): Unit = {
-    val info: GetWalletInfoResult = Await.result(client.walletLock.flatMap(_ => client.getWalletInfo), 2.seconds)
-    require(info.unlocked_until.contains(0), "WalletLock Failed")
+  it should "be able to lock and unlock the wallet" in {
+    walletClient.walletPassphrase(password, 1000).flatMap { _ =>
+      walletClient.getWalletInfo.flatMap{ info =>
+        assert(info.unlocked_until.nonEmpty)
+        assert(info.unlocked_until.get > 0)
 
+        walletClient.walletLock.flatMap { _ =>
+          walletClient.getWalletInfo.map { newInfo =>
+            assert(newInfo.unlocked_until.contains(0))
+          }
+        }
+      }
+    }
+  }
+
+  override def afterAll(): Unit = {
     client.stop.map(println)
+    otherClient.stop.map(println)
+    walletClient.stop.map(println)
     if (TestUtil.deleteTmpDir(client.getDaemon.authCredentials.datadir))
+      println("Temp bitcoin directory deleted")
+    if (TestUtil.deleteTmpDir(otherClient.getDaemon.authCredentials.datadir))
+      println("Temp bitcoin directory deleted")
+    if (TestUtil.deleteTmpDir(walletClient.getDaemon.authCredentials.datadir))
       println("Temp bitcoin directory deleted")
   }
 }
