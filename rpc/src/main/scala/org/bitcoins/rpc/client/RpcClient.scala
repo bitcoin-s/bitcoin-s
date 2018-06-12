@@ -72,11 +72,6 @@ class RpcClient(instance: DaemonInstance)(
       List(JsString(address.toString), JsBoolean(p2sh)))
   }
 
-  def backupWallet(destination: File): Future[Unit] = {
-    bitcoindCall[Unit]("backupwallet",
-                       List(JsString(destination.getAbsolutePath)))
-  }
-
   def bumpFee(
       txid: DoubleSha256Digest,
       confTarget: Int = 6,
@@ -130,10 +125,6 @@ class RpcClient(instance: DaemonInstance)(
   def dumpPrivKey(address: P2PKHAddress): Future[ECPrivateKey] = {
     bitcoindCall[String]("dumpprivkey", List(JsString(address.value)))
       .map(ECPrivateKey.fromWIFToPrivateKey)
-  }
-
-  def dumpWallet(file: File): Future[Unit] = {
-    bitcoindCall[Unit]("dumpwallet", List(JsString(file.getAbsolutePath)))
   }
 
   def encryptWallet(passphrase: String): Future[String] = {
@@ -328,8 +319,8 @@ class RpcClient(instance: DaemonInstance)(
       List(JsString(transaction.hex), JsString(txOutProof.hex)))
   }
 
-  def importWallet(file: File): Future[Unit] = {
-    bitcoindCall[Unit]("importwallet", List(JsString(file.getName)))
+  def importWallet(filePath: String): Future[Unit] = {
+    bitcoindCall[Unit]("importwallet", List(JsString(filePath)))
   }
 
   def listAddressGroupings: Future[Vector[Vector[RpcAddress]]] = {
@@ -545,6 +536,11 @@ class RpcClient(instance: DaemonInstance)(
   // --------------------------------------------------------------------------------
   // EVERYTHING BELOW THIS COMMENT HAS TESTS
 
+  def backupWallet(destination: String): Future[Unit] = {
+    bitcoindCall[Unit]("backupwallet",
+      List(JsString(destination)))
+  }
+
   def createRawTransaction(
       inputs: Vector[TransactionInput],
       outputs: Map[String, Bitcoins],
@@ -557,6 +553,10 @@ class RpcClient(instance: DaemonInstance)(
   def decodeRawTransaction(transaction: Transaction): Future[RpcTransaction] = {
     bitcoindCall[RpcTransaction]("decoderawtransaction",
                                  List(JsString(transaction.hex)))
+  }
+
+  def dumpWallet(filePath: String): Future[DumpWalletResult] = {
+    bitcoindCall[DumpWalletResult]("dumpwallet", List(JsString(filePath)))
   }
 
   def generate(

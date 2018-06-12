@@ -1,27 +1,26 @@
 package org.bitcoins.rpc
 
-import java.net.{InetAddress, InetSocketAddress}
+import java.io.File
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import org.bitcoins.core.currency.Bitcoins
-import org.bitcoins.core.protocol.transaction.{
-  Transaction,
-  TransactionInput,
-  TransactionOutPoint
-}
+import org.bitcoins.core.protocol.transaction.{Transaction, TransactionInput, TransactionOutPoint}
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.rpc.client.RpcClient
-import org.scalatest.{AsyncFlatSpec, BeforeAndAfterAll}
+import org.scalatest.{AsyncFlatSpec, BeforeAndAfter, BeforeAndAfterAll}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script.ScriptSignature
-import org.bitcoins.rpc.jsonmodels.GetTransactionResult
+import org.bitcoins.rpc.jsonmodels.{GetTransactionResult, GetWalletInfoResult}
+import org.scalatest.concurrent.ScalaFutures
 
-import scala.concurrent.Future
+import scala.concurrent.{Await, Future}
+import scala.concurrent.duration.DurationInt
+import scala.util.Try
 
 // Need to test encryptwallet, walletpassphrase, walletpassphrasechange on startup
 // And walletlock, stop on close
-class RpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
+class RpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll with BeforeAndAfter {
   implicit val system = ActorSystem()
   implicit val m = ActorMaterializer()
   implicit val ec = m.executionContext
@@ -31,11 +30,21 @@ class RpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
     TestUtil.instance(networkParam.port, networkParam.rpcPort))
   val logger = BitcoinSLogger.logger
 
+  val password = "password"
+
   override def beforeAll(): Unit = {
     println("Temp bitcoin directory created")
     client.start()
     println("Bitcoin server starting")
-    Thread.sleep(1000)
+    Thread.sleep(3000)
+    Await.result(client.encryptWallet(password).map{msg =>
+      println(msg)
+      Thread.sleep(3000)
+      client.start()
+      println("Bitcoin server restarting")
+      Thread.sleep(4000)
+      client.walletPassphrase(password, 100000)
+    }, 15.seconds)
   }
 
   behavior of "RpcClient"
@@ -150,7 +159,7 @@ class RpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
           .flatMap { _ => // Can't spend coinbase until depth 100
             client.sendRawTransaction(signedTransaction.hex, true).map {
               transactionHash =>
-                assert(true)
+                succeed
             }
           }
       }
@@ -205,7 +214,7 @@ class RpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
     val transactionF = sendTransaction
     transactionF.flatMap { transaction =>
       client.getMemPoolEntry(transaction.txid).map { memPoolEntry =>
-        assert(true)
+        succeed
       }
     }
   }
@@ -249,25 +258,25 @@ class RpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
   it should "be able to get an address from bitcoind" in {
     val addressF = client.getNewAddress()
     addressF.map { address =>
-      assert(true)
+      succeed
     }
   }
 
   it should "be able to get a new raw change address" in {
     client.getRawChangeAddress().map { address =>
-      assert(true)
+      succeed
     }
 
     client.getRawChangeAddress(Some("legacy")).map { address =>
-      assert(true)
+      succeed
     }
 
     client.getRawChangeAddress(Some("p2sh-segwit")).map { address =>
-      assert(true)
+      succeed
     }
 
     client.getRawChangeAddress(Some("bech32")).map { address =>
-      assert(true)
+      succeed
     }
   }
 
@@ -306,6 +315,7 @@ class RpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
       assert(info.balance.toBigDecimal > 0)
       assert(info.txcount > 0)
       assert(info.keypoolsize > 0)
+      assert(!info.unlocked_until.contains(0))
     }
   }
 
@@ -336,7 +346,7 @@ class RpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
   it should "be able to get the best block hash" in {
     val bestHashF = client.getBestBlockHash
     bestHashF.map { hash =>
-      assert(true)
+      succeed
     }
   }
 
@@ -353,7 +363,7 @@ class RpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
       tipArray.foreach { tip =>
         assert(tip.status == "active")
       }
-      assert(true)
+      succeed
     }
   }
 
@@ -383,7 +393,7 @@ class RpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
               block.tx.head.vout.head.scriptPubKey.addresses.get.head == address)
           }
         }
-        assert(true)
+        succeed
       }
     }
   }
@@ -524,7 +534,7 @@ class RpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
   }
 
   it should "be able to ping" in {
-    client.ping.map(_ => assert(true))
+    client.ping.map(_ => succeed)
   }
 
   it should "be able to validate a bitcoin address" in {
@@ -560,7 +570,25 @@ class RpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
     }
   }
 
+  it should "be able to dump the wallet" in {
+    client.dumpWallet(client.getInstance.authCredentials.datadir + "/test.dat").map { result =>
+      assert(result.filename.exists)
+      assert(result.filename.isFile)
+    }
+  }
+
+  it should "be able to backup the wallet" in {
+    client.backupWallet(client.getInstance.authCredentials.datadir + "/backup.dat").map { _ =>
+      val file = new File(client.getInstance.authCredentials.datadir + "/backup.dat")
+      assert(file.exists)
+      assert(file.isFile)
+    }
+  }
+
   override def afterAll(): Unit = {
+    val info: GetWalletInfoResult = Await.result(client.walletLock.flatMap(_ => client.getWalletInfo), 2.seconds)
+    require(info.unlocked_until.contains(0), "WalletLock Failed")
+
     client.stop.map(println)
     if (TestUtil.deleteTmpDir(client.getInstance.authCredentials.datadir))
       println("Temp bitcoin directory deleted")
