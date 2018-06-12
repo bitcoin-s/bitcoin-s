@@ -350,6 +350,10 @@ class RpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll with BeforeAndA
   it should "be able to get the connection count" in {
     val connectionCountF = client.getConnectionCount
     connectionCountF.map { count =>
+      assert(count == 1)
+    }
+
+    walletClient.getConnectionCount.map{ count =>
       assert(count == 0)
     }
   }
@@ -575,7 +579,6 @@ class RpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll with BeforeAndA
   it should "be able to get network statistics" in {
     client.getNetTotals.map { stats =>
       assert(stats.timemillis.toBigInt > 0)
-      // Regtest so nothing sent over network
       assert(stats.totalbytesrecv == 0)
       assert(stats.totalbytessent == 0)
     }
@@ -650,6 +653,39 @@ class RpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll with BeforeAndA
             walletClient.dumpPrivKey(address.asInstanceOf[P2PKHAddress]).flatMap { key =>
               succeed
             }
+          }
+        }
+      }
+    }
+  }
+
+  it should "be able to add and remove a node" in {
+    client.addNode(walletClient.getDaemon.uri, "add").flatMap { _ =>
+      Thread.sleep(10000)
+      client.getAddedNodeInfo(Some(walletClient.getDaemon.uri)).flatMap { info =>
+        assert(info.length == 1)
+        assert(info.head.addednode == walletClient.getDaemon.uri)
+        assert(info.head.connected.contains(true))
+
+        client.addNode(walletClient.getDaemon.uri, "remove").flatMap { _ =>
+          client.getAddedNodeInfo().map { newInfo =>
+            assert(newInfo.isEmpty)
+          }
+        }
+      }
+    }
+  }
+
+  it should "be able to add and disconnect a node" in {
+    client.addNode(walletClient.getDaemon.uri, "add").flatMap { _ =>
+      Thread.sleep(3000)
+      client.getAddedNodeInfo(Some(walletClient.getDaemon.uri)).flatMap { info =>
+        assert(info.head.connected.contains(true))
+
+        client.disconnectNode(walletClient.getDaemon.uri).flatMap { _ =>
+          Thread.sleep(3000)
+          client.getAddedNodeInfo(Some(walletClient.getDaemon.uri)).map { newInfo =>
+            assert(newInfo.head.connected.contains(false))
           }
         }
       }

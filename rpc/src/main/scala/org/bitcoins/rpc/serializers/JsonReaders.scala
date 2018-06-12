@@ -284,6 +284,6 @@ object JsonReaders {
   }
 
   implicit object URIReads extends Reads[URI] {
-    override def reads(json: JsValue): JsResult[URI] = processJsString[URI](new URI(_))(json)
+    override def reads(json: JsValue): JsResult[URI] = processJsString[URI](str => new URI("http://" + str))(json)
   }
 }

@@ -58,11 +58,6 @@ class RpcClient(instance: DaemonInstance)(
                                       JsString(account)))
   }
 
-  def addNode(address: URI, command: String): Future[Unit] = {
-    bitcoindCall[Unit]("addnode",
-                       List(JsString(address.getAuthority), JsString(command)))
-  }
-
   def addWitnessAddress(
       address: BitcoinAddress,
       p2sh: Boolean = true): Future[BitcoinAddress] = {
@@ -117,10 +112,6 @@ class RpcClient(instance: DaemonInstance)(
     bitcoindCall[DecodeScriptResult]("decodescript", List(JsString(script)))
   }
 
-  def disconnectNode(address: URI): Future[Unit] = {
-    bitcoindCall[Unit]("disconnectnode", List(JsString(address.getAuthority)))
-  }
-
   def encryptWallet(passphrase: String): Future[String] = {
     bitcoindCall[String]("encryptwallet", List(JsString(passphrase)))
   }
@@ -142,14 +133,12 @@ class RpcClient(instance: DaemonInstance)(
       List(JsString(transaction.hex), Json.toJson(options)))
   }
 
-  def getAddedNodeInfo(
-      details: Boolean,
-      node: Option[URI]): Future[Vector[Node]] = {
+  def getAddedNodeInfo(node: Option[URI] = None): Future[Vector[Node]] = {
     val params =
       if (node.isEmpty) {
-        List(JsBoolean(details))
+        List()
       } else {
-        List(JsBoolean(details), JsString(node.get.getAuthority))
+        List(JsString(node.get.getAuthority))
       }
     bitcoindCall[Vector[Node]]("getaddednodeinfo", params)
   }
@@ -311,10 +300,6 @@ class RpcClient(instance: DaemonInstance)(
     bitcoindCall[Unit](
       "importprunedfunds",
       List(JsString(transaction.hex), JsString(txOutProof.hex)))
-  }
-
-  def importWallet(filePath: String): Future[Unit] = {
-    bitcoindCall[Unit]("importwallet", List(JsString(filePath)))
   }
 
   def listAddressGroupings: Future[Vector[Vector[RpcAddress]]] = {
@@ -513,6 +498,11 @@ class RpcClient(instance: DaemonInstance)(
   // --------------------------------------------------------------------------------
   // EVERYTHING BELOW THIS COMMENT HAS TESTS
 
+  def addNode(address: URI, command: String): Future[Unit] = {
+    bitcoindCall[Unit]("addnode",
+      List(JsString(address.getAuthority), JsString(command)))
+  }
+
   def backupWallet(destination: String): Future[Unit] = {
     bitcoindCall[Unit]("backupwallet",
       List(JsString(destination)))
@@ -530,6 +520,10 @@ class RpcClient(instance: DaemonInstance)(
   def decodeRawTransaction(transaction: Transaction): Future[RpcTransaction] = {
     bitcoindCall[RpcTransaction]("decoderawtransaction",
                                  List(JsString(transaction.hex)))
+  }
+
+  def disconnectNode(address: URI): Future[Unit] = {
+    bitcoindCall[Unit]("disconnectnode", List(JsString(address.getAuthority)))
   }
 
   def dumpPrivKey(address: P2PKHAddress): Future[ECPrivateKey] = {
@@ -572,16 +566,16 @@ class RpcClient(instance: DaemonInstance)(
                                  List(JsString(headerHash.hex), isJsonObject))
   }
 
-  def getBlockHash(height: Int): Future[DoubleSha256Digest] = {
-    bitcoindCall[DoubleSha256Digest]("getblockhash", List(JsNumber(height)))
-  }
-
   def getBlockChainInfo: Future[GetBlockChainInfoResult] = {
     bitcoindCall[GetBlockChainInfoResult]("getblockchaininfo")
   }
 
   def getBlockCount: Future[Int] = {
     bitcoindCall[Int]("getblockcount")
+  }
+
+  def getBlockHash(height: Int): Future[DoubleSha256Digest] = {
+    bitcoindCall[DoubleSha256Digest]("getblockhash", List(JsNumber(height)))
   }
 
   def getBlockHeader(
@@ -726,6 +720,10 @@ class RpcClient(instance: DaemonInstance)(
 
   def keyPoolRefill(keyPoolSize: Int = 100): Future[Unit] = {
     bitcoindCall[Unit]("keypoolrefill", List(JsNumber(keyPoolSize)))
+  }
+
+  def importWallet(filePath: String): Future[Unit] = {
+    bitcoindCall[Unit]("importwallet", List(JsString(filePath)))
   }
 
   // Need to configure default headerHash
