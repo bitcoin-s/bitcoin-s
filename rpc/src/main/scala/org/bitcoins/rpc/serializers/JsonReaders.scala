@@ -115,6 +115,7 @@ object JsonReaders {
     }
   }
 
+  // This lets errors go unattended
   implicit object UnitReads extends Reads[Unit] {
     override def reads(json: JsValue): JsResult[Unit] = JsSuccess(Unit)
   }

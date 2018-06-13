@@ -205,6 +205,24 @@ object JsonSerializers {
   implicit val getNetTotalsResultReads: Reads[GetNetTotalsResult] =
     Json.reads[GetNetTotalsResult]
 
+  implicit val peerNetworkInfoReads: Reads[PeerNetworkInfo] = Json.reads[PeerNetworkInfo]
+  implicit val peerReads: Reads[Peer] = (
+    (__ \ "id").read[Int] and
+      __.read[PeerNetworkInfo] and
+      (__ \ "version").read[Int] and
+      (__ \ "subver").read[String] and
+      (__ \ "inbound").read[Boolean] and
+      (__ \ "addnode").read[Boolean] and
+      (__ \ "startingheight").read[Int] and
+      (__ \ "banscore").read[Int] and
+      (__ \ "synced_headers").read[Int] and
+      (__ \ "synced_blocks").read[Int] and
+      (__ \ "inflight").read[Vector[Int]] and
+      (__ \ "whitelisted").read[Boolean] and
+      (__ \ "bytessent_per_msg").read[Map[String, Int]] and
+      (__ \ "bytesrecv_per_msg").read[Map[String, Int]]
+    ) (Peer)
+
   // Mining Models
   implicit val miningInfoReads: Reads[GetMiningInfoResult] =
     Json.reads[GetMiningInfoResult]

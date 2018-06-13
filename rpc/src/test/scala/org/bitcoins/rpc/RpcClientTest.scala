@@ -1,6 +1,7 @@
 package org.bitcoins.rpc
 
 import java.io.File
+import java.net.URI
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
@@ -26,7 +27,7 @@ class RpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll with BeforeAndA
   implicit val networkParam = TestUtil.network
 
   val client = new RpcClient(
-    TestUtil.instance(networkParam.port, networkParam.rpcPort))
+    TestUtil.instance(networkParam.port+5, networkParam.rpcPort+5)) // Change this back
   val otherClient = new RpcClient(TestUtil.instance(networkParam.port+10, networkParam.rpcPort+10))
   val walletClient = new RpcClient(TestUtil.instance(networkParam.port+20, networkParam.rpcPort+20))
 
@@ -49,6 +50,8 @@ class RpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll with BeforeAndA
     println("Bitcoin server starting")
     Thread.sleep(3000)
 
+    client.addNode(otherClient.getDaemon.uri, "add")
+
     Await.result(walletClient.encryptWallet(password).map{msg =>
       println(msg)
       Thread.sleep(3000)
@@ -59,6 +62,57 @@ class RpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll with BeforeAndA
   }
 
   behavior of "RpcClient"
+
+  it should "be able to get peer info" in {
+    client.getPeerInfo.flatMap { infoList =>
+      assert(infoList.length == 1)
+      val info = infoList.head
+      assert(!info.inbound)
+      assert(info.addnode)
+      assert(info.networkInfo.addr == otherClient.getDaemon.uri)
+    }
+  }
+
+  it should "be able to get the added node info" in {
+    client.getAddedNodeInfo().flatMap { info =>
+      assert(info.length == 1)
+      assert(info.head.addednode == otherClient.getDaemon.uri)
+      assert(info.head.connected.contains(true))
+    }
+  }
+
+  it should "be able to ban and clear the ban of a subnet" in {
+    val loopBack = URI.create("http://127.0.0.1")
+    client.setBan(loopBack, "add").flatMap { _ =>
+      client.listBanned.flatMap { list =>
+        assert(list.length == 1)
+        assert(list.head.address.getAuthority == loopBack.getAuthority)
+        assert(list.head.banned_until - list.head.ban_created == UInt32(86400))
+
+        client.setBan(loopBack, "remove").flatMap { _ =>
+          client.listBanned.map { newList =>
+            assert(newList.isEmpty)
+          }
+        }
+      }
+    }
+  }
+
+  it should "be able to clear banned subnets" in {
+    client.setBan(URI.create("http://127.0.0.1"), "add").flatMap { _ =>
+      client.setBan(URI.create("http://127.0.0.2"), "add").flatMap { _ =>
+        client.listBanned.flatMap { list =>
+          assert(list.length == 2)
+
+          client.clearBanned.flatMap { _ =>
+            client.listBanned.map { newList =>
+              assert(newList.isEmpty)
+            }
+          }
+        }
+      }
+    }
+  }
 
   it should "be able to get blockchain info" in {
     client.getBlockChainInfo.flatMap { info =>
@@ -386,7 +440,6 @@ class RpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll with BeforeAndA
     val networkInfoF = client.getNetworkInfo
     networkInfoF.map { info =>
       assert(info.networkactive)
-      assert(info.connections == 0)
       assert(info.localrelay)
     }
   }
@@ -579,8 +632,8 @@ class RpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll with BeforeAndA
   it should "be able to get network statistics" in {
     client.getNetTotals.map { stats =>
       assert(stats.timemillis.toBigInt > 0)
-      assert(stats.totalbytesrecv == 0)
-      assert(stats.totalbytessent == 0)
+      assert(stats.totalbytesrecv > 0)
+      assert(stats.totalbytessent > 0)
     }
   }
 
@@ -660,15 +713,15 @@ class RpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll with BeforeAndA
   }
 
   it should "be able to add and remove a node" in {
-    client.addNode(walletClient.getDaemon.uri, "add").flatMap { _ =>
+    otherClient.addNode(walletClient.getDaemon.uri, "add").flatMap { _ =>
       Thread.sleep(10000)
-      client.getAddedNodeInfo(Some(walletClient.getDaemon.uri)).flatMap { info =>
+      otherClient.getAddedNodeInfo(Some(walletClient.getDaemon.uri)).flatMap { info =>
         assert(info.length == 1)
         assert(info.head.addednode == walletClient.getDaemon.uri)
         assert(info.head.connected.contains(true))
 
-        client.addNode(walletClient.getDaemon.uri, "remove").flatMap { _ =>
-          client.getAddedNodeInfo().map { newInfo =>
+        otherClient.addNode(walletClient.getDaemon.uri, "remove").flatMap { _ =>
+          otherClient.getAddedNodeInfo().map { newInfo =>
             assert(newInfo.isEmpty)
           }
         }
@@ -677,14 +730,14 @@ class RpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll with BeforeAndA
   }
 
   it should "be able to add and disconnect a node" in {
-    client.addNode(walletClient.getDaemon.uri, "add").flatMap { _ =>
-      Thread.sleep(3000)
-      client.getAddedNodeInfo(Some(walletClient.getDaemon.uri)).flatMap { info =>
+    otherClient.addNode(walletClient.getDaemon.uri, "add").flatMap { _ =>
+      Thread.sleep(1000)
+      otherClient.getAddedNodeInfo(Some(walletClient.getDaemon.uri)).flatMap { info =>
         assert(info.head.connected.contains(true))
 
-        client.disconnectNode(walletClient.getDaemon.uri).flatMap { _ =>
-          Thread.sleep(3000)
-          client.getAddedNodeInfo(Some(walletClient.getDaemon.uri)).map { newInfo =>
+        otherClient.disconnectNode(walletClient.getDaemon.uri).flatMap { _ =>
+          Thread.sleep(1000)
+          otherClient.getAddedNodeInfo(Some(walletClient.getDaemon.uri)).map { newInfo =>
             assert(newInfo.head.connected.contains(false))
           }
         }

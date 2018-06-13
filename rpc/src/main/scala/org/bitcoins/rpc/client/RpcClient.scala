@@ -90,10 +90,6 @@ class RpcClient(instance: DaemonInstance)(
                                 List(JsString(txid.hex), JsObject(options)))
   }
 
-  def clearBanned: Future[Unit] = {
-    bitcoindCall[Unit]("clearbanned")
-  }
-
   def createMultiSig(
       minSignatures: Int,
       keys: Vector[Either[ECPublicKey, P2PKHAddress]]): Future[
@@ -133,16 +129,6 @@ class RpcClient(instance: DaemonInstance)(
       List(JsString(transaction.hex), Json.toJson(options)))
   }
 
-  def getAddedNodeInfo(node: Option[URI] = None): Future[Vector[Node]] = {
-    val params =
-      if (node.isEmpty) {
-        List()
-      } else {
-        List(JsString(node.get.getAuthority))
-      }
-    bitcoindCall[Vector[Node]]("getaddednodeinfo", params)
-  }
-
   def getAddressesByAccount(account: String): Future[Vector[Address]] = {
     bitcoindCall[Vector[Address]]("getaddressesbyaccount",
                                   List(JsString(account)))
@@ -174,48 +160,6 @@ class RpcClient(instance: DaemonInstance)(
     bitcoindCall[Map[DoubleSha256Digest, GetMemPoolResult]](
       "getmempooldescendants",
       List(JsString(txid.hex), JsBoolean(true)))
-  }
-
-  // This needs a home once fixed (it was split since >22 params)
-  case class Peer(
-      id: Int,
-      networkInfo: PeerNetworkInfo,
-      version: Int,
-      subver: String,
-      inbound: Boolean,
-      addnode: Boolean,
-      startingheight: Int,
-      banscore: Int,
-      synced_headers: Int,
-      synced_blocks: Int,
-      inflight: Vector[Int],
-      whitelisted: Boolean,
-      bytessent_per_msg: Map[String, Int],
-      bytesrecv_per_msg: Map[String, Int])
-
-  case class PeerNetworkInfo(
-      addr: URI,
-      addrbind: URI,
-      addrlocal: URI,
-      services: String,
-      relaytxes: Boolean,
-      lastsend: UInt32,
-      lastrecv: UInt32,
-      bytessent: Int,
-      bytesrecv: Int,
-      conntime: UInt32,
-      timeoffset: UInt32,
-      pingtime: Option[UInt32],
-      minping: Option[UInt32],
-      pingwait: Option[UInt32])
-
-  // This is wrong probably
-  implicit val peerNetworkInfoReads: Reads[PeerNetworkInfo] =
-    Json.reads[PeerNetworkInfo]
-  implicit val peerReads: Reads[Peer] = Json.reads[Peer]
-
-  def getPeerInfo: Future[Vector[Peer]] = {
-    bitcoindCall[Vector[Peer]]("getpeerinfo")
   }
 
   // As is, RpcTransaction may not have enough data (add options?), also is RpcTransaction in the right place?
@@ -304,10 +248,6 @@ class RpcClient(instance: DaemonInstance)(
 
   def listAddressGroupings: Future[Vector[Vector[RpcAddress]]] = {
     bitcoindCall[Vector[Vector[RpcAddress]]]("listaddressgroupings")
-  }
-
-  def listBanned: Future[Vector[NodeBan]] = {
-    bitcoindCall[Vector[NodeBan]]("listbanned")
   }
 
   def listLockUnspent: Future[Vector[TransactionOutPoint]] = {
@@ -420,18 +360,6 @@ class RpcClient(instance: DaemonInstance)(
     )
   }
 
-  def setBan(
-      address: URI,
-      command: String,
-      banTime: Int = 86400,
-      absolute: Boolean = false): Future[Unit] = {
-    bitcoindCall[Unit]("setban",
-                       List(JsString(address.getHost + ":" + address.getPort),
-                            JsString(command),
-                            JsNumber(banTime),
-                            JsBoolean(absolute)))
-  }
-
   // Should be BitcoinFeeUnit
   def setTxFee(feePerKB: Bitcoins): Future[Boolean] = {
     bitcoindCall[Boolean]("settxfee", List(JsNumber(feePerKB.toBigDecimal)))
@@ -508,6 +436,10 @@ class RpcClient(instance: DaemonInstance)(
       List(JsString(destination)))
   }
 
+  def clearBanned: Future[Unit] = {
+    bitcoindCall[Unit]("clearbanned")
+  }
+
   def createRawTransaction(
       inputs: Vector[TransactionInput],
       outputs: Map[String, Bitcoins],
@@ -550,6 +482,16 @@ class RpcClient(instance: DaemonInstance)(
     bitcoindCall[Vector[DoubleSha256Digest]](
       "generatetoaddress",
       List(JsNumber(blocks), JsString(address.toString), JsNumber(maxTries)))
+  }
+
+  def getAddedNodeInfo(node: Option[URI] = None): Future[Vector[Node]] = {
+    val params =
+      if (node.isEmpty) {
+        List()
+      } else {
+        List(JsString(node.get.getAuthority))
+      }
+    bitcoindCall[Vector[Node]]("getaddednodeinfo", params)
   }
 
   def getBalance: Future[Bitcoins] = {
@@ -658,6 +600,10 @@ class RpcClient(instance: DaemonInstance)(
     bitcoindCall[BitcoinAddress]("getnewaddress", params)
   }
 
+  def getPeerInfo: Future[Vector[Peer]] = {
+    bitcoindCall[Vector[Peer]]("getpeerinfo")
+  }
+
   // Should have a default addressType set by -changetype
   def getRawChangeAddress(
       addressType: Option[String] = None): Future[BitcoinAddress] = {
@@ -726,6 +672,10 @@ class RpcClient(instance: DaemonInstance)(
     bitcoindCall[Unit]("importwallet", List(JsString(filePath)))
   }
 
+  def listBanned: Future[Vector[NodeBan]] = {
+    bitcoindCall[Vector[NodeBan]]("listbanned")
+  }
+
   // Need to configure default headerHash
   def listSinceBlock(
       headerHash: DoubleSha256Digest,
@@ -761,6 +711,18 @@ class RpcClient(instance: DaemonInstance)(
     bitcoindCall[DoubleSha256Digest](
       "sendrawtransaction",
       List(JsString(transaction.hex), JsBoolean(allowHighFees)))
+  }
+
+  def setBan(
+              address: URI,
+              command: String,
+              banTime: Int = 86400,
+              absolute: Boolean = false): Future[Unit] = {
+    bitcoindCall[Unit]("setban",
+      List(JsString(address.getAuthority),
+        JsString(command),
+        JsNumber(banTime),
+        JsBoolean(absolute)))
   }
 
   def setNetworkActive(activate: Boolean): Future[Unit] = {
