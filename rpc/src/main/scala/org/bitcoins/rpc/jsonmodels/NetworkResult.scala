@@ -398,3 +398,35 @@ case class NetTarget(
     bytes_left_in_cycle: Int,
     time_left_in_cycle: UInt32)
     extends NetworkResult
+
+case class Peer(
+                 id: Int,
+                 networkInfo: PeerNetworkInfo,
+                 version: Int,
+                 subver: String,
+                 inbound: Boolean,
+                 addnode: Boolean,
+                 startingheight: Int,
+                 banscore: Int,
+                 synced_headers: Int,
+                 synced_blocks: Int,
+                 inflight: Vector[Int],
+                 whitelisted: Boolean,
+                 bytessent_per_msg: Map[String, Int],
+                 bytesrecv_per_msg: Map[String, Int]) extends NetworkResult
+
+case class PeerNetworkInfo(
+                            addr: URI,
+                            addrbind: URI,
+                            addrlocal: Option[URI],
+                            services: String,
+                            relaytxes: Boolean,
+                            lastsend: UInt32,
+                            lastrecv: UInt32,
+                            bytessent: Int,
+                            bytesrecv: Int,
+                            conntime: UInt32,
+                            timeoffset: UInt32,
+                            pingtime: Option[BigDecimal],
+                            minping: Option[BigDecimal],
+                            pingwait: Option[BigDecimal]) extends NetworkResult
