@@ -426,7 +426,7 @@ case class PeerNetworkInfo(
                             bytessent: Int,
                             bytesrecv: Int,
                             conntime: UInt32,
-                            timeoffset: UInt32,
+                            timeoffset: Int,
                             pingtime: Option[BigDecimal],
                             minping: Option[BigDecimal],
                             pingwait: Option[BigDecimal]) extends NetworkResult

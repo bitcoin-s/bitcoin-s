@@ -34,7 +34,7 @@ case class BumpFeeResult(
     warnings: String)
     extends WalletResult
 
-case class CreateMultiSigResult(address: Address, redeemScript: ScriptPubKey)
+case class MultiSigResult(address: BitcoinAddress, redeemScript: ScriptPubKey)
     extends WalletResult
 
 case class DecodeScriptResult(
