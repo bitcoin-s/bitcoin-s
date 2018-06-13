@@ -7,30 +7,45 @@ import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import org.bitcoins.core.crypto.ECPrivateKey
 import org.bitcoins.core.currency.Bitcoins
-import org.bitcoins.core.protocol.transaction.{Transaction, TransactionInput, TransactionOutPoint}
+import org.bitcoins.core.protocol.transaction.{
+  Transaction,
+  TransactionInput,
+  TransactionOutPoint
+}
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.rpc.client.{RpcClient, RpcOpts}
 import org.scalatest.{AsyncFlatSpec, BeforeAndAfter, BeforeAndAfterAll}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.P2PKHAddress
 import org.bitcoins.core.protocol.script.ScriptSignature
-import org.bitcoins.rpc.jsonmodels.{GetTransactionResult, GetWalletInfoResult, MultiSigResult}
+import org.bitcoins.rpc.jsonmodels.{
+  GetTransactionResult,
+  GetWalletInfoResult,
+  MultiSigResult
+}
 
 import scala.concurrent.{Await, Future}
 import scala.concurrent.duration.DurationInt
 
 // Need to test encryptwallet, walletpassphrase, walletpassphrasechange on startup
 // And walletlock, stop on close
-class RpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll with BeforeAndAfter {
+class RpcClientTest
+    extends AsyncFlatSpec
+    with BeforeAndAfterAll
+    with BeforeAndAfter {
   implicit val system = ActorSystem()
   implicit val m = ActorMaterializer()
   implicit val ec = m.executionContext
   implicit val networkParam = TestUtil.network
 
-  val client = new RpcClient(
-    TestUtil.instance(networkParam.port+5, networkParam.rpcPort+5)) // Change this back
-  val otherClient = new RpcClient(TestUtil.instance(networkParam.port+10, networkParam.rpcPort+10))
-  val walletClient = new RpcClient(TestUtil.instance(networkParam.port+20, networkParam.rpcPort+20))
+  val client = new RpcClient(TestUtil.instance(
+    networkParam.port + 5,
+    networkParam.rpcPort + 5)) // Change this back
+  val otherClient = new RpcClient(
+    TestUtil.instance(networkParam.port + 10, networkParam.rpcPort + 10))
+
+  val walletClient = new RpcClient(
+    TestUtil.instance(networkParam.port + 20, networkParam.rpcPort + 20))
 
   val logger = BitcoinSLogger.logger
 
@@ -53,13 +68,16 @@ class RpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll with BeforeAndA
 
     client.addNode(otherClient.getDaemon.uri, "add")
 
-    Await.result(walletClient.encryptWallet(password).map{msg =>
-      println(msg)
-      Thread.sleep(3000)
-      walletClient.start()
-      println("Bitcoin server restarting")
-      Thread.sleep(4000)
-    }, 15.seconds)
+    Await.result(
+      walletClient.encryptWallet(password).map { msg =>
+        println(msg)
+        Thread.sleep(3000)
+        walletClient.start()
+        println("Bitcoin server restarting")
+        Thread.sleep(4000)
+      },
+      15.seconds
+    )
   }
 
   behavior of "RpcClient"
@@ -408,7 +426,7 @@ class RpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll with BeforeAndA
       assert(count == 1)
     }
 
-    walletClient.getConnectionCount.map{ count =>
+    walletClient.getConnectionCount.map { count =>
       assert(count == 0)
     }
   }
@@ -655,9 +673,13 @@ class RpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll with BeforeAndA
     val pubKey1 = ecPrivKey1.publicKey
 
     client.getNewAddress(addressType = Some("legacy")).flatMap { address =>
-      client.addMultiSigAddress(2, Vector(Left(pubKey1), Right(address.asInstanceOf[P2PKHAddress]))).map { multisig =>
-        succeed
-      }
+      client
+        .addMultiSigAddress(2,
+                            Vector(Left(pubKey1),
+                                   Right(address.asInstanceOf[P2PKHAddress])))
+        .map { multisig =>
+          succeed
+        }
     }
   }
 
@@ -666,13 +688,17 @@ class RpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll with BeforeAndA
     val pubKey1 = ecPrivKey1.publicKey
 
     client.getNewAddress(addressType = Some("legacy")).flatMap { address =>
-      client.addMultiSigAddress(2, Vector(Left(pubKey1), Right(address.asInstanceOf[P2PKHAddress]))).flatMap { multisig =>
-        client.decodeScript(multisig.redeemScript).map { decoded =>
-          assert(decoded.reqSigs.contains(2))
-          assert(decoded.typeOfScript.contains("multisig"))
-          assert(decoded.addresses.get.contains(address))
+      client
+        .addMultiSigAddress(2,
+                            Vector(Left(pubKey1),
+                                   Right(address.asInstanceOf[P2PKHAddress])))
+        .flatMap { multisig =>
+          client.decodeScript(multisig.redeemScript).map { decoded =>
+            assert(decoded.reqSigs.contains(2))
+            assert(decoded.typeOfScript.contains("multisig"))
+            assert(decoded.addresses.get.contains(address))
+          }
         }
-      }
     }
   }
 
@@ -699,10 +725,15 @@ class RpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll with BeforeAndA
   it should "be able to sign a message and verify that signature" in {
     val message = "Never gonna give you up\nNever gonna let you down\n..."
     client.getNewAddress(addressType = Some("legacy")).flatMap { address =>
-      client.signMessage(address.asInstanceOf[P2PKHAddress], message).flatMap { signature =>
-        client.verifyMessage(address.asInstanceOf[P2PKHAddress], signature, message).map { validity =>
-          assert(validity)
-        }
+      client.signMessage(address.asInstanceOf[P2PKHAddress], message).flatMap {
+        signature =>
+          client
+            .verifyMessage(address.asInstanceOf[P2PKHAddress],
+                           signature,
+                           message)
+            .map { validity =>
+              assert(validity)
+            }
       }
     }
   }
@@ -726,33 +757,47 @@ class RpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll with BeforeAndA
     val privKey1 = ECPrivateKey.freshPrivateKey
     val privKey2 = ECPrivateKey.freshPrivateKey
 
-    client.createMultiSig(2, Vector(privKey1.publicKey, privKey2.publicKey)).flatMap { result =>
-      val address2 = result.address
+    client
+      .createMultiSig(2, Vector(privKey1.publicKey, privKey2.publicKey))
+      .flatMap { result =>
+        val address2 = result.address
 
-      client.importMulti(Vector(
-        RpcOpts.ImportMultiRequest(RpcOpts.ImportMultiAddress(address1), UInt32(0)),
-        RpcOpts.ImportMultiRequest(RpcOpts.ImportMultiAddress(address2), UInt32(0))
-      ), false).flatMap { result =>
-        assert(result.length == 2)
-        assert(result(0).success)
-        assert(result(1).success)
+        client
+          .importMulti(
+            Vector(
+              RpcOpts.ImportMultiRequest(RpcOpts.ImportMultiAddress(address1),
+                                         UInt32(0)),
+              RpcOpts.ImportMultiRequest(RpcOpts.ImportMultiAddress(address2),
+                                         UInt32(0))
+            ),
+            false
+          )
+          .flatMap { result =>
+            assert(result.length == 2)
+            assert(result(0).success)
+            assert(result(1).success)
+          }
       }
-    }
   }
 
   it should "be able to dump the wallet" in {
-    client.dumpWallet(client.getDaemon.authCredentials.datadir + "/test.dat").map { result =>
-      assert(result.filename.exists)
-      assert(result.filename.isFile)
-    }
+    client
+      .dumpWallet(client.getDaemon.authCredentials.datadir + "/test.dat")
+      .map { result =>
+        assert(result.filename.exists)
+        assert(result.filename.isFile)
+      }
   }
 
   it should "be able to backup the wallet" in {
-    client.backupWallet(client.getDaemon.authCredentials.datadir + "/backup.dat").map { _ =>
-      val file = new File(client.getDaemon.authCredentials.datadir + "/backup.dat")
-      assert(file.exists)
-      assert(file.isFile)
-    }
+    client
+      .backupWallet(client.getDaemon.authCredentials.datadir + "/backup.dat")
+      .map { _ =>
+        val file =
+          new File(client.getDaemon.authCredentials.datadir + "/backup.dat")
+        assert(file.exists)
+        assert(file.isFile)
+      }
   }
 
   it should "be able to lock and unlock the wallet" in {
@@ -774,52 +819,63 @@ class RpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll with BeforeAndA
 
   it should "be able to change the wallet password" in {
     walletClient.walletLock.flatMap { _ =>
-      walletClient.walletPassphraseChange(password, "new_password").flatMap { _ =>
-        password = "new_password"
-        walletClient.walletPassphrase(password, 1000).flatMap { _ =>
-          walletClient.getWalletInfo.flatMap { info =>
-            assert(info.unlocked_until.nonEmpty)
-            assert(info.unlocked_until.get > 0)
+      walletClient.walletPassphraseChange(password, "new_password").flatMap {
+        _ =>
+          password = "new_password"
+          walletClient.walletPassphrase(password, 1000).flatMap { _ =>
+            walletClient.getWalletInfo.flatMap { info =>
+              assert(info.unlocked_until.nonEmpty)
+              assert(info.unlocked_until.get > 0)
 
-            walletClient.walletLock.flatMap { _ =>
-              walletClient.getWalletInfo.map { newInfo =>
-                assert(newInfo.unlocked_until.contains(0))
+              walletClient.walletLock.flatMap { _ =>
+                walletClient.getWalletInfo.map { newInfo =>
+                  assert(newInfo.unlocked_until.contains(0))
+                }
               }
             }
           }
-        }
       }
     }
   }
 
   it should "be able to import a wallet" in {
     client.getNewAddress(addressType = Some("legacy")).flatMap { address =>
-      client.dumpWallet(client.getDaemon.authCredentials.datadir + "/client_wallet.dat").flatMap { fileResult =>
-        assert(fileResult.filename.exists)
-        walletClient.walletPassphrase(password, 1000).flatMap { _ =>
-          walletClient.importWallet(client.getDaemon.authCredentials.datadir + "/client_wallet.dat").flatMap { _ =>
-            walletClient.dumpPrivKey(address.asInstanceOf[P2PKHAddress]).flatMap { key =>
-              succeed
-            }
+      client
+        .dumpWallet(
+          client.getDaemon.authCredentials.datadir + "/client_wallet.dat")
+        .flatMap { fileResult =>
+          assert(fileResult.filename.exists)
+          walletClient.walletPassphrase(password, 1000).flatMap { _ =>
+            walletClient
+              .importWallet(
+                client.getDaemon.authCredentials.datadir + "/client_wallet.dat")
+              .flatMap { _ =>
+                walletClient
+                  .dumpPrivKey(address.asInstanceOf[P2PKHAddress])
+                  .flatMap { key =>
+                    succeed
+                  }
+              }
           }
         }
-      }
     }
   }
 
   it should "be able to add and remove a node" in {
     otherClient.addNode(walletClient.getDaemon.uri, "add").flatMap { _ =>
       Thread.sleep(10000)
-      otherClient.getAddedNodeInfo(Some(walletClient.getDaemon.uri)).flatMap { info =>
-        assert(info.length == 1)
-        assert(info.head.addednode == walletClient.getDaemon.uri)
-        assert(info.head.connected.contains(true))
+      otherClient.getAddedNodeInfo(Some(walletClient.getDaemon.uri)).flatMap {
+        info =>
+          assert(info.length == 1)
+          assert(info.head.addednode == walletClient.getDaemon.uri)
+          assert(info.head.connected.contains(true))
 
-        otherClient.addNode(walletClient.getDaemon.uri, "remove").flatMap { _ =>
-          otherClient.getAddedNodeInfo().map { newInfo =>
-            assert(newInfo.isEmpty)
+          otherClient.addNode(walletClient.getDaemon.uri, "remove").flatMap {
+            _ =>
+              otherClient.getAddedNodeInfo().map { newInfo =>
+                assert(newInfo.isEmpty)
+              }
           }
-        }
       }
     }
   }
@@ -827,15 +883,17 @@ class RpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll with BeforeAndA
   it should "be able to add and disconnect a node" in {
     otherClient.addNode(walletClient.getDaemon.uri, "add").flatMap { _ =>
       Thread.sleep(1000)
-      otherClient.getAddedNodeInfo(Some(walletClient.getDaemon.uri)).flatMap { info =>
-        assert(info.head.connected.contains(true))
+      otherClient.getAddedNodeInfo(Some(walletClient.getDaemon.uri)).flatMap {
+        info =>
+          assert(info.head.connected.contains(true))
 
-        otherClient.disconnectNode(walletClient.getDaemon.uri).flatMap { _ =>
-          Thread.sleep(1000)
-          otherClient.getAddedNodeInfo(Some(walletClient.getDaemon.uri)).map { newInfo =>
-            assert(newInfo.head.connected.contains(false))
+          otherClient.disconnectNode(walletClient.getDaemon.uri).flatMap { _ =>
+            Thread.sleep(1000)
+            otherClient.getAddedNodeInfo(Some(walletClient.getDaemon.uri)).map {
+              newInfo =>
+                assert(newInfo.head.connected.contains(false))
+            }
           }
-        }
       }
     }
   }
