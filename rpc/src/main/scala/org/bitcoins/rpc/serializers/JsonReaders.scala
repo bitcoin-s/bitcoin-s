@@ -127,7 +127,7 @@ object JsonReaders {
 
   implicit object ScriptPubKeyReads extends Reads[ScriptPubKey] {
     override def reads(json: JsValue): JsResult[ScriptPubKey] =
-      processJsString[ScriptPubKey](ScriptPubKey.fromHex)(json)
+      processJsString[ScriptPubKey](ScriptPubKey.fromAsmHex)(json)
   }
 
   implicit object BlockReads extends Reads[Block] {

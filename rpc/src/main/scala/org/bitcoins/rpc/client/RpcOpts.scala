@@ -33,12 +33,14 @@ object RpcOpts {
     Json.writes[SignRawTransactionOutputParameter]
 
   case class ImportMultiRequest(
-      scriptPubKey: ScriptPubKey,
+      scriptPubKey: ImportMultiAddress,
       timestamp: UInt32,
-      reedemscript: Option[ScriptPubKey],
-      pubkeys: Option[Vector[ScriptPubKey]],
-      keys: Option[Vector[ECPrivateKey]],
-      internal: Boolean = false,
-      watchonly: Boolean = false,
-      label: String = "")
+      reedemscript: Option[ScriptPubKey] = None,
+      pubkeys: Option[Vector[ScriptPubKey]] = None,
+      keys: Option[Vector[ECPrivateKey]] = None,
+      internal: Option[Boolean] = None,
+      watchonly: Option[Boolean] = None,
+      label: Option[String] = None)
+
+  case class ImportMultiAddress(address: BitcoinAddress)
 }

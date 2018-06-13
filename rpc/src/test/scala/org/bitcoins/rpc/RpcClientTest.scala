@@ -5,15 +5,16 @@ import java.net.URI
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
+import org.bitcoins.core.crypto.ECPrivateKey
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionInput, TransactionOutPoint}
 import org.bitcoins.core.util.BitcoinSLogger
-import org.bitcoins.rpc.client.RpcClient
+import org.bitcoins.rpc.client.{RpcClient, RpcOpts}
 import org.scalatest.{AsyncFlatSpec, BeforeAndAfter, BeforeAndAfterAll}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.P2PKHAddress
 import org.bitcoins.core.protocol.script.ScriptSignature
-import org.bitcoins.rpc.jsonmodels.{GetTransactionResult, GetWalletInfoResult}
+import org.bitcoins.rpc.jsonmodels.{GetTransactionResult, GetWalletInfoResult, MultiSigResult}
 
 import scala.concurrent.{Await, Future}
 import scala.concurrent.duration.DurationInt
@@ -637,10 +638,104 @@ class RpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll with BeforeAndA
     }
   }
 
+  it should "be able to create a multi sig address" in {
+    val ecPrivKey1 = ECPrivateKey.freshPrivateKey
+    val ecPrivKey2 = ECPrivateKey.freshPrivateKey
+
+    val pubKey1 = ecPrivKey1.publicKey
+    val pubKey2 = ecPrivKey2.publicKey
+
+    client.createMultiSig(2, Vector(pubKey1, pubKey2)).map { result =>
+      succeed
+    }
+  }
+
+  it should "be able to add a multi sig address to the wallet" in {
+    val ecPrivKey1 = ECPrivateKey.freshPrivateKey
+    val pubKey1 = ecPrivKey1.publicKey
+
+    client.getNewAddress(addressType = Some("legacy")).flatMap { address =>
+      client.addMultiSigAddress(2, Vector(Left(pubKey1), Right(address.asInstanceOf[P2PKHAddress]))).map { multisig =>
+        succeed
+      }
+    }
+  }
+
+  it should "be able to decode a reedem script" in {
+    val ecPrivKey1 = ECPrivateKey.freshPrivateKey
+    val pubKey1 = ecPrivKey1.publicKey
+
+    client.getNewAddress(addressType = Some("legacy")).flatMap { address =>
+      client.addMultiSigAddress(2, Vector(Left(pubKey1), Right(address.asInstanceOf[P2PKHAddress]))).flatMap { multisig =>
+        client.decodeScript(multisig.redeemScript).map { decoded =>
+          assert(decoded.reqSigs.contains(2))
+          assert(decoded.typeOfScript.contains("multisig"))
+          assert(decoded.addresses.get.contains(address))
+        }
+      }
+    }
+  }
+
   it should "be able to dump a private key" in {
     client.getNewAddress(addressType = Some("legacy")).flatMap { address =>
       client.dumpPrivKey(address.asInstanceOf[P2PKHAddress]).map { key =>
         succeed
+      }
+    }
+  }
+
+  it should "be able to import a private key" in {
+    val ecPrivateKey = ECPrivateKey.freshPrivateKey
+    val publicKey = ecPrivateKey.publicKey
+    val address = P2PKHAddress(publicKey, networkParam)
+
+    client.importPrivKey(ecPrivateKey, rescan = false).flatMap { _ =>
+      client.dumpPrivKey(address).map { key =>
+        assert(key == ecPrivateKey)
+      }
+    }
+  }
+
+  it should "be able to sign a message and verify that signature" in {
+    val message = "Never gonna give you up\nNever gonna let you down\n..."
+    client.getNewAddress(addressType = Some("legacy")).flatMap { address =>
+      client.signMessage(address.asInstanceOf[P2PKHAddress], message).flatMap { signature =>
+        client.verifyMessage(address.asInstanceOf[P2PKHAddress], signature, message).map { validity =>
+          assert(validity)
+        }
+      }
+    }
+  }
+
+  it should "be able to sign a message with a private key and verify that signature" in {
+    val message = "Never gonna give you up\nNever gonna let you down\n..."
+    val privKey = ECPrivateKey.freshPrivateKey
+    val address = P2PKHAddress(privKey.publicKey, networkParam)
+
+    client.signMessageWithPrivKey(privKey, message).flatMap { signature =>
+      client.verifyMessage(address, signature, message).map { validity =>
+        assert(validity)
+      }
+    }
+  }
+
+  it should "be able to import multiple addresses with importMulti" in {
+    val privKey = ECPrivateKey.freshPrivateKey
+    val address1 = P2PKHAddress(privKey.publicKey, networkParam)
+
+    val privKey1 = ECPrivateKey.freshPrivateKey
+    val privKey2 = ECPrivateKey.freshPrivateKey
+
+    client.createMultiSig(2, Vector(privKey1.publicKey, privKey2.publicKey)).flatMap { result =>
+      val address2 = result.address
+
+      client.importMulti(Vector(
+        RpcOpts.ImportMultiRequest(RpcOpts.ImportMultiAddress(address1), UInt32(0)),
+        RpcOpts.ImportMultiRequest(RpcOpts.ImportMultiAddress(address2), UInt32(0))
+      ), false).flatMap { result =>
+        assert(result.length == 2)
+        assert(result(0).success)
+        assert(result(1).success)
       }
     }
   }

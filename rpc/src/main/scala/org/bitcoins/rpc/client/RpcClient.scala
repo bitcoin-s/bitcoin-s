@@ -7,19 +7,14 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import akka.stream.ActorMaterializer
 import akka.util.ByteString
-import org.bitcoins.core.config.{MainNet, NetworkParameters, RegTest}
 import org.bitcoins.core.crypto.{DoubleSha256Digest, ECPrivateKey, ECPublicKey}
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
-import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.{Address, BitcoinAddress, P2PKHAddress}
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, MerkleBlock}
-import org.bitcoins.core.protocol.transaction.{
-  Transaction,
-  TransactionInput,
-  TransactionOutPoint
-}
-import org.bitcoins.core.util.BitcoinSLogger
-import org.bitcoins.rpc.config.{AuthCredentials, DaemonInstance}
+import org.bitcoins.core.protocol.script.ScriptPubKey
+import org.bitcoins.core.protocol.transaction.{Transaction, TransactionInput, TransactionOutPoint}
+import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil}
+import org.bitcoins.rpc.config.DaemonInstance
 import play.api.libs.json._
 import org.bitcoins.rpc.jsonmodels._
 import org.bitcoins.rpc.serializers.JsonSerializers._
@@ -41,29 +36,6 @@ class RpcClient(instance: DaemonInstance)(
 
   def abandonTransaction(txid: DoubleSha256Digest): Future[Unit] = {
     bitcoindCall[Unit]("abandontransaction", List(JsString(txid.hex)))
-  }
-
-  def addMultiSigAddress(
-      minSignatures: Int,
-      keys: Vector[Either[ECPublicKey, P2PKHAddress]],
-      account: String = ""): Future[BitcoinAddress] = {
-    def keyToString(key: Either[ECPublicKey, P2PKHAddress]): JsString =
-      key match {
-        case Right(k) => JsString(k.value)
-        case Left(k)  => JsString(k.hex)
-      }
-    bitcoindCall[BitcoinAddress]("addmultisigaddress",
-                                 List(JsNumber(minSignatures),
-                                      JsArray(keys.map(keyToString)),
-                                      JsString(account)))
-  }
-
-  def addWitnessAddress(
-      address: BitcoinAddress,
-      p2sh: Boolean = true): Future[BitcoinAddress] = {
-    bitcoindCall[BitcoinAddress](
-      "addwitnessaddress",
-      List(JsString(address.toString), JsBoolean(p2sh)))
   }
 
   def bumpFee(
@@ -88,24 +60,6 @@ class RpcClient(instance: DaemonInstance)(
 
     bitcoindCall[BumpFeeResult]("bumpfee",
                                 List(JsString(txid.hex), JsObject(options)))
-  }
-
-  def createMultiSig(
-      minSignatures: Int,
-      keys: Vector[Either[ECPublicKey, P2PKHAddress]]): Future[
-    CreateMultiSigResult] = {
-    def keyToString(key: Either[ECPublicKey, P2PKHAddress]): JsString =
-      key match {
-        case Right(k) => JsString(k.value)
-        case Left(k)  => JsString(k.hex)
-      }
-    bitcoindCall[CreateMultiSigResult](
-      "createmultisig",
-      List(JsNumber(minSignatures), JsArray(keys.map(keyToString))))
-  }
-
-  def decodeScript(script: String): Future[DecodeScriptResult] = {
-    bitcoindCall[DecodeScriptResult]("decodescript", List(JsString(script)))
   }
 
   def encryptWallet(passphrase: String): Future[String] = {
@@ -211,31 +165,6 @@ class RpcClient(instance: DaemonInstance)(
                             JsString(account),
                             JsBoolean(rescan),
                             JsBoolean(p2sh)))
-  }
-
-  // This is here so that network is accessible
-  implicit object ECPrivateKeyWrites extends Writes[ECPrivateKey] {
-    override def writes(o: ECPrivateKey): JsValue = JsString(o.toWIF(network))
-  }
-  implicit val eCPrivateKeyWrites: Writes[ECPrivateKey] = ECPrivateKeyWrites
-  implicit val importMultiRequestWrites: Writes[RpcOpts.ImportMultiRequest] =
-    Json.writes[RpcOpts.ImportMultiRequest]
-
-  def importMulti(
-      requests: Vector[RpcOpts.ImportMultiRequest],
-      rescan: Boolean = true): Future[Vector[ImportMultiResult]] = {
-    bitcoindCall[Vector[ImportMultiResult]](
-      "importmulti",
-      List(Json.toJson(requests), JsBoolean(rescan)))
-  }
-
-  def importPrivKey(
-      key: ECPrivateKey,
-      account: String = "",
-      rescan: Boolean = true): Future[Unit] = {
-    bitcoindCall[Unit](
-      "importprivkey",
-      List(JsString(key.toWIF(network)), JsString(account), JsBoolean(rescan)))
   }
 
   def importPrunedFunds(
@@ -365,54 +294,8 @@ class RpcClient(instance: DaemonInstance)(
     bitcoindCall[Boolean]("settxfee", List(JsNumber(feePerKB.toBigDecimal)))
   }
 
-  def signMessage(address: P2PKHAddress, message: String): Future[String] = {
-    bitcoindCall[String]("signmessage",
-                         List(JsString(address.value), JsString(message)))
-  }
-
-  def signMessageWithPrivKey(
-      key: ECPrivateKey,
-      message: String): Future[String] = {
-    bitcoindCall[String]("signmessagewithprivkey",
-                         List(JsString(key.toWIF(network)), JsString(message)))
-  }
-
-  def signRawTransactionWithKey(
-      transaction: Transaction,
-      keys: Vector[ECPrivateKey],
-      utxoDeps: Option[Vector[RpcOpts.SignRawTransactionOutputParameter]] = None,
-      sigHash: Option[String] = None): Future[SignRawTransactionResult] = {
-    val params = {
-      val jsonKeys = JsArray(keys.map(key => JsString(key.toWIF(network))))
-      if (utxoDeps.isEmpty) {
-        List(JsString(transaction.hex), jsonKeys)
-      } else {
-        val utxos = Json.toJson(utxoDeps.get)
-        if (sigHash.isEmpty) {
-          List(JsString(transaction.hex), jsonKeys, utxos)
-        } else {
-          List(JsString(transaction.hex),
-               jsonKeys,
-               utxos,
-               JsString(sigHash.get))
-        }
-      }
-    }
-
-    bitcoindCall[SignRawTransactionResult]("signrawtransactionwithkey", params)
-  }
-
   def submitBlock(block: Block): Future[Unit] = {
     bitcoindCall[Unit]("submitblock", List(JsString(block.hex)))
-  }
-
-  def verifyMessage(
-      address: P2PKHAddress,
-      signature: String,
-      message: String): Future[Boolean] = {
-    bitcoindCall[Boolean](
-      "verifymessage",
-      List(JsString(address.value), JsString(signature), JsString(message)))
   }
 
   def verifyTxOutProof(
@@ -425,6 +308,32 @@ class RpcClient(instance: DaemonInstance)(
   // TODO: Overload calls with Option inputs?
   // --------------------------------------------------------------------------------
   // EVERYTHING BELOW THIS COMMENT HAS TESTS
+
+  def addMultiSigAddress(
+                          minSignatures: Int,
+                          keys: Vector[Either[ECPublicKey, P2PKHAddress]],
+                          account: String = "",
+                          addressType: Option[String] = None): Future[MultiSigResult] = {
+    def keyToString(key: Either[ECPublicKey, P2PKHAddress]): JsString =
+      key match {
+        case Right(k) => JsString(k.value)
+        case Left(k)  => JsString(k.hex)
+      }
+
+    val params =
+      if (addressType.isEmpty) {
+        List(JsNumber(minSignatures),
+          JsArray(keys.map(keyToString)),
+          JsString(account))
+      } else {
+        List(JsNumber(minSignatures),
+          JsArray(keys.map(keyToString)),
+          JsString(account),
+          JsString(addressType.get))
+      }
+
+    bitcoindCall[MultiSigResult]("addmultisigaddress", params)
+  }
 
   def addNode(address: URI, command: String): Future[Unit] = {
     bitcoindCall[Unit]("addnode",
@@ -440,6 +349,15 @@ class RpcClient(instance: DaemonInstance)(
     bitcoindCall[Unit]("clearbanned")
   }
 
+  def createMultiSig(
+                      minSignatures: Int,
+                      keys: Vector[ECPublicKey]): Future[
+    MultiSigResult] = {
+    bitcoindCall[MultiSigResult](
+      "createmultisig",
+      List(JsNumber(minSignatures), Json.toJson(keys.map(_.hex))))
+  }
+
   def createRawTransaction(
       inputs: Vector[TransactionInput],
       outputs: Map[String, Bitcoins],
@@ -452,6 +370,11 @@ class RpcClient(instance: DaemonInstance)(
   def decodeRawTransaction(transaction: Transaction): Future[RpcTransaction] = {
     bitcoindCall[RpcTransaction]("decoderawtransaction",
                                  List(JsString(transaction.hex)))
+  }
+
+  // TODO: add ScriptPubKey.asmHex
+  def decodeScript(script: ScriptPubKey): Future[DecodeScriptResult] = {
+    bitcoindCall[DecodeScriptResult]("decodescript", List(JsString(BitcoinSUtil.encodeHex(script.asmBytes))))
   }
 
   def disconnectNode(address: URI): Future[Unit] = {
@@ -668,6 +591,33 @@ class RpcClient(instance: DaemonInstance)(
     bitcoindCall[Unit]("keypoolrefill", List(JsNumber(keyPoolSize)))
   }
 
+  // This is here so that network is accessible
+  implicit object ECPrivateKeyWrites extends Writes[ECPrivateKey] {
+    override def writes(o: ECPrivateKey): JsValue = JsString(o.toWIF(network))
+  }
+  implicit val eCPrivateKeyWrites: Writes[ECPrivateKey] = ECPrivateKeyWrites
+  implicit val importMultiAddressWrites: Writes[RpcOpts.ImportMultiAddress] =
+    Json.writes[RpcOpts.ImportMultiAddress]
+  implicit val importMultiRequestWrites: Writes[RpcOpts.ImportMultiRequest] =
+    Json.writes[RpcOpts.ImportMultiRequest]
+
+  def importMulti(
+                   requests: Vector[RpcOpts.ImportMultiRequest],
+                   rescan: Boolean = true): Future[Vector[ImportMultiResult]] = {
+    bitcoindCall[Vector[ImportMultiResult]](
+      "importmulti",
+      List(Json.toJson(requests), JsObject(Seq(("rescan", JsBoolean(rescan))))))
+  }
+
+  def importPrivKey(
+                     key: ECPrivateKey,
+                     account: String = "",
+                     rescan: Boolean = true): Future[Unit] = {
+    bitcoindCall[Unit](
+      "importprivkey",
+      List(JsString(key.toWIF(network)), JsString(account), JsBoolean(rescan)))
+  }
+
   def importWallet(filePath: String): Future[Unit] = {
     bitcoindCall[Unit]("importwallet", List(JsString(filePath)))
   }
@@ -729,6 +679,18 @@ class RpcClient(instance: DaemonInstance)(
     bitcoindCall[Unit]("setnetworkactive", List(JsBoolean(activate)))
   }
 
+  def signMessage(address: P2PKHAddress, message: String): Future[String] = {
+    bitcoindCall[String]("signmessage",
+      List(JsString(address.value), JsString(message)))
+  }
+
+  def signMessageWithPrivKey(
+                              key: ECPrivateKey,
+                              message: String): Future[String] = {
+    bitcoindCall[String]("signmessagewithprivkey",
+      List(JsString(key.toWIF(network)), JsString(message)))
+  }
+
   def signRawTransaction(
       transaction: Transaction,
       utxoDeps: Option[Vector[RpcOpts.SignRawTransactionOutputParameter]] = None,
@@ -770,6 +732,15 @@ class RpcClient(instance: DaemonInstance)(
   def verifyChain(level: Int = 3, blocks: Int = 6): Future[Boolean] = {
     bitcoindCall[Boolean]("verifychain",
                           List(JsNumber(level), JsNumber(blocks)))
+  }
+
+  def verifyMessage(
+                     address: P2PKHAddress,
+                     signature: String,
+                     message: String): Future[Boolean] = {
+    bitcoindCall[Boolean](
+      "verifymessage",
+      List(JsString(address.value), JsString(signature), JsString(message)))
   }
 
   def walletLock: Future[Unit] = {
@@ -846,11 +817,5 @@ class RpcClient(instance: DaemonInstance)(
         HttpCredentials.createBasicHttpCredentials(username, password))
   }
 
-  def start(): String = {
-    val networkArg =
-      if (instance.network == MainNet) "" else "-" + instance.network.name
-    val datadir = instance.authCredentials.datadir
-    val cmd = "bitcoind -datadir=" + datadir
-    cmd.!!
-  }
+  def start(): String = ("bitcoind -datadir=" + instance.authCredentials.datadir).!!
 }

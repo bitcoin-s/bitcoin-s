@@ -233,8 +233,8 @@ object JsonSerializers {
 
   implicit val bumpFeeReads: Reads[BumpFeeResult] = Json.reads[BumpFeeResult]
 
-  implicit val createMultiSigReads: Reads[CreateMultiSigResult] =
-    Json.reads[CreateMultiSigResult]
+  implicit val multiSigReads: Reads[MultiSigResult] =
+    Json.reads[MultiSigResult]
 
   implicit val decodeScriptResultReads: Reads[DecodeScriptResult] =
     ((__ \ "asm").read[String] and
