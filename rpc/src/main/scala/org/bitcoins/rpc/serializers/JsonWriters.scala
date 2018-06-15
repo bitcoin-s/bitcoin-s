@@ -36,4 +36,10 @@ object JsonWriters {
   implicit object UInt32Writes extends Writes[UInt32] {
     override def writes(o: UInt32): JsValue = JsNumber(o.toLong)
   }
+
+  implicit def mapWrites[K,V](keyString: K => String)(implicit vWrites: Writes[V]): Writes[Map[K,V]] = new Writes[Map[K,V]] {
+    override def writes(o: Map[K, V]): JsValue = {
+      Json.toJson(o.map{case (k, v) => (keyString(k), v)})
+    }
+  }
 }

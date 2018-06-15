@@ -7,7 +7,7 @@ import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.number.{Int32, UInt32, UInt64}
 import org.bitcoins.core.protocol.{Address, BitcoinAddress}
 import org.bitcoins.core.protocol.script.ScriptPubKey
-import org.bitcoins.core.protocol.transaction.{Transaction, TransactionInput}
+import org.bitcoins.core.protocol.transaction.{Transaction, TransactionInput, TransactionWitness}
 import org.bitcoins.core.wallet.fee.BitcoinFeeUnit
 
 sealed abstract class NetworkResult
@@ -430,3 +430,38 @@ case class PeerNetworkInfo(
                             pingtime: Option[BigDecimal],
                             minping: Option[BigDecimal],
                             pingwait: Option[BigDecimal]) extends NetworkResult
+
+
+case class GetRawTransactionResult(
+                                    in_active_blockchain: Option[Boolean],
+                                    hex: Transaction,
+                                    txid: DoubleSha256Digest,
+                                    hash: DoubleSha256Digest,
+                                    size: Int,
+                                    vsize: Int,
+                                    version: Int,
+                                    locktime: UInt32,
+                                    vin: Vector[GetRawTransactionVin],
+                                    vout: Vector[RpcTransactionOutput],
+                                    blockhash: DoubleSha256Digest,
+                                    confirmations: Int,
+                                    time: UInt32,
+                                    blocktime: UInt32
+                                  ) extends NetworkResult
+
+case class GetRawTransactionVin(
+                               txid: Option[DoubleSha256Digest],
+                               vout: Option[Int],
+                               scriptSig: Option[GetRawTransactionScriptSig],
+                               sequence: Option[BigDecimal],
+                               txinwitness: Option[Vector[String]] // Should be TransactionWitness?
+                               )
+
+case class GetRawTransactionScriptSig(asm: String, hex: ScriptPubKey) // Right???
+
+case class GetTxOutResult(
+                           bestblock: DoubleSha256Digest,
+                           confirmations: Int,
+                           value: Bitcoins,
+                           scriptPubKey: RpcScriptPubKey,
+                           coinbase: Boolean) extends NetworkResult
