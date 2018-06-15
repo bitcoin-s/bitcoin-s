@@ -34,6 +34,7 @@ trait TestUtil extends BitcoinSLogger {
     pw.write("server=1\n")
     pw.write("debug=1\n")
     pw.write("regtest=1\n")
+    pw.write("walletbroadcast=0\n")
     pw.close()
     AuthCredentials(username, pass, d)
   }

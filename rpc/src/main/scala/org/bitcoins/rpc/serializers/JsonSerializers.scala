@@ -223,6 +223,13 @@ object JsonSerializers {
       (__ \ "bytesrecv_per_msg").read[Map[String, Int]]
     ) (Peer)
 
+  implicit val getRawTransactionScriptSigReads: Reads[GetRawTransactionScriptSig] = Json.reads[GetRawTransactionScriptSig]
+  implicit val getRawTransactionVinReads: Reads[GetRawTransactionVin] = Json.reads[GetRawTransactionVin]
+  implicit val getRawTransactionResultReads: Reads[GetRawTransactionResult] = Json.reads[GetRawTransactionResult]
+
+  implicit val getTxOutResultReads: Reads[GetTxOutResult] =
+    Json.reads[GetTxOutResult]
+
   // Mining Models
   implicit val miningInfoReads: Reads[GetMiningInfoResult] =
     Json.reads[GetMiningInfoResult]

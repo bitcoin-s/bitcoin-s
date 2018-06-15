@@ -9,19 +9,16 @@ import akka.stream.ActorMaterializer
 import akka.util.ByteString
 import org.bitcoins.core.crypto.{DoubleSha256Digest, ECPrivateKey, ECPublicKey}
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
-import org.bitcoins.core.protocol.{Address, BitcoinAddress, P2PKHAddress}
+import org.bitcoins.core.protocol.{BitcoinAddress, P2PKHAddress}
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, MerkleBlock}
 import org.bitcoins.core.protocol.script.ScriptPubKey
-import org.bitcoins.core.protocol.transaction.{
-  Transaction,
-  TransactionInput,
-  TransactionOutPoint
-}
+import org.bitcoins.core.protocol.transaction.{Transaction, TransactionInput, TransactionOutPoint}
 import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil}
 import org.bitcoins.rpc.config.DaemonInstance
 import play.api.libs.json._
 import org.bitcoins.rpc.jsonmodels._
 import org.bitcoins.rpc.serializers.JsonSerializers._
+import org.bitcoins.rpc.serializers.JsonWriters.mapWrites
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.sys.process._
@@ -37,10 +34,6 @@ class RpcClient(instance: DaemonInstance)(
   def getDaemon: DaemonInstance = instance
 
   // TODO: WRITE TESTS
-
-  def abandonTransaction(txid: DoubleSha256Digest): Future[Unit] = {
-    bitcoindCall[Unit]("abandontransaction", List(JsString(txid.hex)))
-  }
 
   def bumpFee(
       txid: DoubleSha256Digest,
@@ -66,30 +59,12 @@ class RpcClient(instance: DaemonInstance)(
                                 List(JsString(txid.hex), JsObject(options)))
   }
 
-  def encryptWallet(passphrase: String): Future[String] = {
-    bitcoindCall[String]("encryptwallet", List(JsString(passphrase)))
-  }
-
   // Needs manual testing!
   def estimateSmartFee(
       blocks: Int,
       mode: String = "CONSERVATIVE"): Future[EstimateSmartFeeResult] = {
     bitcoindCall[EstimateSmartFeeResult]("estimatefee",
                                          List(JsNumber(blocks), JsString(mode)))
-  }
-
-  def fundRawTransaction(
-      transaction: Transaction,
-      options: Option[RpcOpts.FundRawTransactionOptions]): Future[
-    FundRawTransactionResult] = {
-    bitcoindCall[FundRawTransactionResult](
-      "fundrawtransaction",
-      List(JsString(transaction.hex), Json.toJson(options)))
-  }
-
-  def getAddressesByAccount(account: String): Future[Vector[Address]] = {
-    bitcoindCall[Vector[Address]]("getaddressesbyaccount",
-                                  List(JsString(account)))
   }
 
   def getMemPoolAncestors(
@@ -118,45 +93,6 @@ class RpcClient(instance: DaemonInstance)(
     bitcoindCall[Map[DoubleSha256Digest, GetMemPoolResult]](
       "getmempooldescendants",
       List(JsString(txid.hex), JsBoolean(true)))
-  }
-
-  // As is, RpcTransaction may not have enough data (add options?), also is RpcTransaction in the right place?
-  def getRawTransaction(txid: DoubleSha256Digest): Future[RpcTransaction] = {
-    bitcoindCall[RpcTransaction]("getrawtransaction",
-                                 List(JsString(txid.hex), JsBoolean(true)))
-  }
-
-  case class GetTxOutResult(
-      bestblock: DoubleSha256Digest,
-      confirmations: Int,
-      value: Bitcoins,
-      scriptPubKey: RpcScriptPubKey,
-      coinbase: Boolean)
-
-  implicit val getTxOutResultReads: Reads[GetTxOutResult] =
-    Json.reads[GetTxOutResult]
-
-  def getTxOut(
-      txid: DoubleSha256Digest,
-      vout: Int,
-      includeMemPool: Boolean = true): Future[GetTxOutResult] = {
-    bitcoindCall[GetTxOutResult](
-      "gettxout",
-      List(JsString(txid.hex), JsNumber(vout), JsBoolean(includeMemPool)))
-  }
-
-  def getTxOutProof(
-      txids: Vector[DoubleSha256Digest],
-      headerHash: Option[DoubleSha256Digest]): Future[MerkleBlock] = {
-    def params = {
-      val hashes = JsArray(txids.map(hash => JsString(hash.hex)))
-      if (headerHash.isEmpty) {
-        List(hashes)
-      } else {
-        List(hashes, JsString(headerHash.get.hex))
-      }
-    }
-    bitcoindCall[MerkleBlock]("gettxoutproof", params)
   }
 
   def importAddress(
@@ -245,54 +181,6 @@ class RpcClient(instance: DaemonInstance)(
     bitcoindCall[Unit]("removeprunedfunds", List(JsString(txid.hex)))
   }
 
-  def sendFrom(
-      fromAccount: String,
-      toAddress: BitcoinAddress,
-      amount: Bitcoins,
-      confirmations: Int = 1,
-      comment: String = "",
-      toComment: String = ""): Future[DoubleSha256Digest] = {
-    bitcoindCall[DoubleSha256Digest](
-      "sendfrom",
-      List(JsString(fromAccount),
-           JsString(toAddress.value),
-           JsNumber(amount.toBigDecimal),
-           JsNumber(confirmations),
-           JsString(comment),
-           JsString(toComment))
-    )
-  }
-
-  def sendMany(
-      amounts: Map[BitcoinAddress, Bitcoins],
-      minconf: Int = 1,
-      comment: String = "",
-      subtractFeeFrom: Vector[BitcoinAddress] = Vector.empty): Future[
-    DoubleSha256Digest] = {
-    bitcoindCall[DoubleSha256Digest]("sendmany",
-                                     List(JsString(""),
-                                          Json.toJson(amounts),
-                                          JsNumber(minconf),
-                                          JsString(comment),
-                                          Json.toJson(subtractFeeFrom)))
-  }
-
-  def sendToAddress(
-      address: BitcoinAddress,
-      amount: Bitcoins,
-      localComment: String = "",
-      toComment: String = "",
-      subractFeeFromAmount: Boolean = false): Future[DoubleSha256Digest] = {
-    bitcoindCall[DoubleSha256Digest](
-      "sendtoaddress",
-      List(JsString(address.toString),
-           JsNumber(amount.toBigDecimal),
-           JsString(localComment),
-           JsString(toComment),
-           JsBoolean(subractFeeFromAmount))
-    )
-  }
-
   // Should be BitcoinFeeUnit
   def setTxFee(feePerKB: Bitcoins): Future[Boolean] = {
     bitcoindCall[Boolean]("settxfee", List(JsNumber(feePerKB.toBigDecimal)))
@@ -302,16 +190,14 @@ class RpcClient(instance: DaemonInstance)(
     bitcoindCall[Unit]("submitblock", List(JsString(block.hex)))
   }
 
-  def verifyTxOutProof(
-      proof: MerkleBlock): Future[Vector[DoubleSha256Digest]] = {
-    bitcoindCall[Vector[DoubleSha256Digest]]("verifytxoutproof",
-                                             List(JsString(proof.hex)))
-  }
-
   // TODO: GetBlockTemplate
   // TODO: Overload calls with Option inputs?
   // --------------------------------------------------------------------------------
   // EVERYTHING BELOW THIS COMMENT HAS TESTS
+
+  def abandonTransaction(txid: DoubleSha256Digest): Future[Unit] = {
+    bitcoindCall[Unit]("abandontransaction", List(JsString(txid.hex)))
+  }
 
   def addMultiSigAddress(
       minSignatures: Int,
@@ -360,9 +246,10 @@ class RpcClient(instance: DaemonInstance)(
       List(JsNumber(minSignatures), Json.toJson(keys.map(_.hex))))
   }
 
+  implicit val outputMapWrites: Writes[Map[BitcoinAddress, Bitcoins]] = mapWrites[BitcoinAddress, Bitcoins](_.value)
   def createRawTransaction(
       inputs: Vector[TransactionInput],
-      outputs: Map[String, Bitcoins],
+      outputs: Map[BitcoinAddress, Bitcoins],
       locktime: Int = 0): Future[Transaction] = {
     bitcoindCall[Transaction](
       "createrawtransaction",
@@ -394,6 +281,25 @@ class RpcClient(instance: DaemonInstance)(
     bitcoindCall[DumpWalletResult]("dumpwallet", List(JsString(filePath)))
   }
 
+  def encryptWallet(passphrase: String): Future[String] = {
+    bitcoindCall[String]("encryptwallet", List(JsString(passphrase)))
+  }
+
+  def fundRawTransaction(
+                          transaction: Transaction,
+                          options: Option[RpcOpts.FundRawTransactionOptions] = None): Future[
+    FundRawTransactionResult] = {
+    val params =
+      if (options.isEmpty) {
+        List(JsString(transaction.hex))
+      } else {
+        List(JsString(transaction.hex), Json.toJson(options.get))
+      }
+
+    bitcoindCall[FundRawTransactionResult](
+      "fundrawtransaction", params)
+  }
+
   def generate(
       blocks: Int,
       maxTries: Int = 1000000): Future[Vector[DoubleSha256Digest]] = {
@@ -419,6 +325,11 @@ class RpcClient(instance: DaemonInstance)(
         List(JsString(node.get.getAuthority))
       }
     bitcoindCall[Vector[Node]]("getaddednodeinfo", params)
+  }
+
+  def getAddressesByAccount(account: String): Future[Vector[BitcoinAddress]] = {
+    bitcoindCall[Vector[BitcoinAddress]]("getaddressesbyaccount",
+      List(JsString(account)))
   }
 
   def getBalance: Future[Bitcoins] = {
@@ -556,6 +467,11 @@ class RpcClient(instance: DaemonInstance)(
       List(JsBoolean(true)))
   }
 
+  def getRawTransaction(txid: DoubleSha256Digest): Future[GetRawTransactionResult] = {
+    bitcoindCall[GetRawTransactionResult]("getrawtransaction",
+      List(JsString(txid.hex), JsBoolean(true)))
+  }
+
   def getRawTransactionRaw(txid: DoubleSha256Digest): Future[Transaction] = {
     bitcoindCall[Transaction]("getrawtransaction",
                               List(JsString(txid.hex), JsBoolean(false)))
@@ -575,6 +491,29 @@ class RpcClient(instance: DaemonInstance)(
     bitcoindCall[GetTransactionResult](
       "gettransaction",
       List(JsString(txid.hex), JsBoolean(watchOnly)))
+  }
+
+  def getTxOut(
+                txid: DoubleSha256Digest,
+                vout: Int,
+                includeMemPool: Boolean = true): Future[GetTxOutResult] = {
+    bitcoindCall[GetTxOutResult](
+      "gettxout",
+      List(JsString(txid.hex), JsNumber(vout), JsBoolean(includeMemPool)))
+  }
+
+  def getTxOutProof(
+                     txids: Vector[DoubleSha256Digest],
+                     headerHash: Option[DoubleSha256Digest] = None): Future[MerkleBlock] = {
+    def params = {
+      val hashes = JsArray(txids.map(hash => JsString(hash.hex)))
+      if (headerHash.isEmpty) {
+        List(hashes)
+      } else {
+        List(hashes, JsString(headerHash.get.hex))
+      }
+    }
+    bitcoindCall[MerkleBlock]("gettxoutproof", params)
   }
 
   def getTxOutSetInfo: Future[GetTxOutSetInfoResult] = {
@@ -659,6 +598,54 @@ class RpcClient(instance: DaemonInstance)(
 
   def ping: Future[Unit] = {
     bitcoindCall[Unit]("ping")
+  }
+
+  def sendFrom(
+                fromAccount: String,
+                toAddress: BitcoinAddress,
+                amount: Bitcoins,
+                confirmations: Int = 1,
+                comment: String = "",
+                toComment: String = ""): Future[DoubleSha256Digest] = {
+    bitcoindCall[DoubleSha256Digest](
+      "sendfrom",
+      List(JsString(fromAccount),
+        JsString(toAddress.value),
+        JsNumber(amount.toBigDecimal),
+        JsNumber(confirmations),
+        JsString(comment),
+        JsString(toComment))
+    )
+  }
+
+  def sendMany(
+                amounts: Map[BitcoinAddress, Bitcoins],
+                minconf: Int = 1,
+                comment: String = "",
+                subtractFeeFrom: Vector[BitcoinAddress] = Vector.empty): Future[
+    DoubleSha256Digest] = {
+    bitcoindCall[DoubleSha256Digest]("sendmany",
+      List(JsString(""),
+        Json.toJson(amounts),
+        JsNumber(minconf),
+        JsString(comment),
+        Json.toJson(subtractFeeFrom)))
+  }
+
+  def sendToAddress(
+                     address: BitcoinAddress,
+                     amount: Bitcoins,
+                     localComment: String = "",
+                     toComment: String = "",
+                     subractFeeFromAmount: Boolean = false): Future[DoubleSha256Digest] = {
+    bitcoindCall[DoubleSha256Digest](
+      "sendtoaddress",
+      List(JsString(address.toString),
+        JsNumber(amount.toBigDecimal),
+        JsString(localComment),
+        JsString(toComment),
+        JsBoolean(subractFeeFromAmount))
+    )
   }
 
   def sendRawTransaction(
@@ -747,6 +734,11 @@ class RpcClient(instance: DaemonInstance)(
     bitcoindCall[Boolean](
       "verifymessage",
       List(JsString(address.value), JsString(signature), JsString(message)))
+  }
+
+  def verifyTxOutProof(proof: MerkleBlock): Future[Vector[DoubleSha256Digest]] = {
+    bitcoindCall[Vector[DoubleSha256Digest]]("verifytxoutproof",
+      List(JsString(proof.hex)))
   }
 
   def walletLock: Future[Unit] = {
