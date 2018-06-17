@@ -307,8 +307,16 @@ case class UnspentOutput( // Naming?
 case class LockUnspentOutputParameter(txid: DoubleSha256Digest, vout: Int)
     extends NetworkResult
 
-case class SignRawTransactionResult(hex: Transaction, complete: Boolean)
+case class SignRawTransactionResult(hex: Transaction, complete: Boolean, errors: Option[Vector[SignRawTransactionError]])
     extends NetworkResult
+
+case class SignRawTransactionError(
+                                  txid: DoubleSha256Digest,
+                                  vout: Int,
+                                  scriptSig: ScriptPubKey,
+                                  sequence: Int,
+                                  error: String
+                                  ) extends NetworkResult
 
 case class GetBlockChainInfoResult(
     chain: String,
