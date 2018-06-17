@@ -7,28 +7,18 @@ import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import org.bitcoins.core.crypto.ECPrivateKey
 import org.bitcoins.core.currency.Bitcoins
-import org.bitcoins.core.protocol.transaction.{
-  Transaction,
-  TransactionInput,
-  TransactionOutPoint
-}
+import org.bitcoins.core.protocol.transaction.{Transaction, TransactionInput, TransactionOutPoint}
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.rpc.client.{RpcClient, RpcOpts}
 import org.scalatest.{AsyncFlatSpec, BeforeAndAfter, BeforeAndAfterAll}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.P2PKHAddress
-import org.bitcoins.core.protocol.script.ScriptSignature
-import org.bitcoins.rpc.jsonmodels.{
-  GetTransactionResult,
-  GetWalletInfoResult,
-  MultiSigResult
-}
+import org.bitcoins.core.protocol.script.{EmptyScriptSignature, ScriptSignature}
+import org.bitcoins.rpc.jsonmodels.{GetTransactionResult, GetWalletInfoResult, MultiSigResult}
 
 import scala.concurrent.{Await, Future}
 import scala.concurrent.duration.DurationInt
 
-// Need to test encryptwallet, walletpassphrase, walletpassphrasechange on startup
-// And walletlock, stop on close
 class RpcClientTest
     extends AsyncFlatSpec
     with BeforeAndAfterAll
@@ -80,7 +70,8 @@ class RpcClientTest
     )
 
     // Mine some blocks
-    client.generate(200)
+    println("Mining some blocks")
+    Await.result(client.generate(200), 3.seconds)
   }
 
   behavior of "RpcClient"
@@ -146,7 +137,7 @@ class RpcClientTest
     }
   }
 
-  it should "be able to create a raw transaction" in { // This test fails sometimes???
+  it should "be able to create a raw transaction" in {
     client.generate(2).flatMap { blocks =>
       client.getBlock(blocks(0)).flatMap { block0 =>
         client.getBlock(blocks(1)).flatMap { block1 =>
@@ -248,6 +239,46 @@ class RpcClientTest
         client.abandonTransaction(txid).flatMap { _ =>
           client.getTransaction(txid).map { transaction =>
             assert(transaction.details.head.abandoned.contains(true))
+          }
+        }
+      }
+    }
+  }
+
+  it should "be able to find mem pool ancestors and descendants" in {
+    client.generate(1)
+    client.getNewAddress().flatMap { address1 =>
+      client.createRawTransaction(Vector(), Map(address1 -> Bitcoins(2))).flatMap { createdTransaction1 =>
+        client.fundRawTransaction(createdTransaction1).flatMap { fundedTransaction1 =>
+          client.signRawTransaction(fundedTransaction1.hex).flatMap { signedTransaction1 =>
+            assert(signedTransaction1.complete)
+            client.sendRawTransaction(signedTransaction1.hex).flatMap { txid1 =>
+              client.getRawMemPool.map { mempool => assert(mempool.head == txid1)}
+              client.getNewAddress().flatMap { address2 =>
+                val input: TransactionInput = TransactionInput(TransactionOutPoint(txid1, UInt32(0)), ScriptSignature.empty, UInt32.max-UInt32.one)
+                client.createRawTransaction(Vector(input), Map(address2 -> Bitcoins(1))).flatMap { createdTransaction2 =>
+                  client.signRawTransaction(createdTransaction2).flatMap { signedTransaction2 =>
+                    assert(signedTransaction2.complete)
+                    client.sendRawTransaction(signedTransaction2.hex, true).flatMap { txid2 =>
+                      client.getMemPoolDescendants(txid1).map { descendants =>
+                        assert(descendants.head == txid2)
+                      }
+                      client.getMemPoolDescendantsVerbose(txid1).map { descendants =>
+                        assert(descendants.head._1 == txid2)
+                        assert(descendants.head._2.ancestorcount == 1)
+                      }
+                      client.getMemPoolAncestors(txid2).map { ancestors =>
+                        assert(ancestors.head == txid1)
+                      }
+                      client.getMemPoolAncestorsVerbose(txid2).map { ancestors =>
+                        assert(ancestors.head._1 == txid1)
+                        assert(ancestors.head._2.descendantcount == 2)
+                      }
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }

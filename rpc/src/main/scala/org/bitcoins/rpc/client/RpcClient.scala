@@ -28,6 +28,7 @@ class RpcClient(instance: DaemonInstance)(
     m: ActorMaterializer,
     ec: ExecutionContext) {
   private val resultKey = "result"
+  private val errorKey = "error"
   private val logger = BitcoinSLogger.logger
   private implicit val network = instance.network
 
@@ -65,34 +66,6 @@ class RpcClient(instance: DaemonInstance)(
       mode: String = "CONSERVATIVE"): Future[EstimateSmartFeeResult] = {
     bitcoindCall[EstimateSmartFeeResult]("estimatefee",
                                          List(JsNumber(blocks), JsString(mode)))
-  }
-
-  def getMemPoolAncestors(
-      txid: DoubleSha256Digest): Future[Vector[DoubleSha256Digest]] = {
-    bitcoindCall[Vector[DoubleSha256Digest]](
-      "getmempoolancestors",
-      List(JsString(txid.hex), JsBoolean(false)))
-  }
-
-  def getMemPoolAncestorsVerbose(txid: DoubleSha256Digest): Future[
-    Map[DoubleSha256Digest, GetMemPoolResult]] = {
-    bitcoindCall[Map[DoubleSha256Digest, GetMemPoolResult]](
-      "getmempoolancestors",
-      List(JsString(txid.hex), JsBoolean(true)))
-  }
-
-  def getMemPoolDescendants(
-      txid: DoubleSha256Digest): Future[Vector[DoubleSha256Digest]] = {
-    bitcoindCall[Vector[DoubleSha256Digest]](
-      "getmempooldescendants",
-      List(JsString(txid.hex), JsBoolean(false)))
-  }
-
-  def getMemPoolDescendantsVerbose(txid: DoubleSha256Digest): Future[
-    Map[DoubleSha256Digest, GetMemPoolResult]] = {
-    bitcoindCall[Map[DoubleSha256Digest, GetMemPoolResult]](
-      "getmempooldescendants",
-      List(JsString(txid.hex), JsBoolean(true)))
   }
 
   def importAddress(
@@ -396,6 +369,34 @@ class RpcClient(instance: DaemonInstance)(
 
   def getMemoryInfo: Future[GetMemoryInfoResult] = {
     bitcoindCall[GetMemoryInfoResult]("getmemoryinfo")
+  }
+
+  def getMemPoolAncestors(
+                           txid: DoubleSha256Digest): Future[Vector[DoubleSha256Digest]] = {
+    bitcoindCall[Vector[DoubleSha256Digest]](
+      "getmempoolancestors",
+      List(JsString(txid.hex), JsBoolean(false)))
+  }
+
+  def getMemPoolAncestorsVerbose(txid: DoubleSha256Digest): Future[
+    Map[DoubleSha256Digest, GetMemPoolResult]] = {
+    bitcoindCall[Map[DoubleSha256Digest, GetMemPoolResult]](
+      "getmempoolancestors",
+      List(JsString(txid.hex), JsBoolean(true)))
+  }
+
+  def getMemPoolDescendants(
+                             txid: DoubleSha256Digest): Future[Vector[DoubleSha256Digest]] = {
+    bitcoindCall[Vector[DoubleSha256Digest]](
+      "getmempooldescendants",
+      List(JsString(txid.hex), JsBoolean(false)))
+  }
+
+  def getMemPoolDescendantsVerbose(txid: DoubleSha256Digest): Future[
+    Map[DoubleSha256Digest, GetMemPoolResult]] = {
+    bitcoindCall[Map[DoubleSha256Digest, GetMemPoolResult]](
+      "getmempooldescendants",
+      List(JsString(txid.hex), JsBoolean(true)))
   }
 
   def getMemPoolEntry(
@@ -769,16 +770,26 @@ class RpcClient(instance: DaemonInstance)(
     val payloadF: Future[JsValue] = responseF.flatMap(getPayload)
 
     payloadF.map { payload =>
-      parseResult((payload \ resultKey).validate[T])
+      parseResult((payload \ resultKey).validate[T], payload)
     }
   }
 
-  private def parseResult[T](result: JsResult[T]): T = {
+  case class RpcError(code: Int, message: String)
+  implicit val rpcErrorReads: Reads[RpcError] = Json.reads[RpcError]
+
+  // Should both logging and throwing be happening?
+  private def parseResult[T](result: JsResult[T], json: JsValue): T = {
     result match {
       case res: JsSuccess[T] => res.value
       case res: JsError =>
-        logger.error(JsError.toJson(res).toString())
-        throw new IllegalArgumentException(s"Could not parse JsResult: $res")
+        (json \ errorKey).validate[RpcError] match {
+          case err: JsSuccess[RpcError] =>
+            logger.error(s"Error ${err.value.code}: ${err.value.message}")
+            throw new RuntimeException(s"Error ${err.value.code}: ${err.value.message}") // More specific type?
+          case _ : JsError =>
+            logger.error(JsError.toJson(res).toString())
+            throw new IllegalArgumentException(s"Could not parse JsResult: ${json \ resultKey}")
+        }
     }
   }
 
