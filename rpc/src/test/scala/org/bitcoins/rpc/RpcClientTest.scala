@@ -1133,6 +1133,151 @@ class RpcClientTest
     }
   }
 
+  it should "be able to list wallets" in {
+    client.listWallets.map { wallets =>
+      assert(wallets == Vector("wallet.dat"))
+    }
+  }
+
+  it should "be able to get the chain tx stats" in {
+    client.getChainTxStats().map { stats =>
+      assert(stats.time > UInt32(0))
+      assert(stats.txcount > 0)
+      assert(stats.window_block_count > 0)
+    }
+  }
+
+  it should "be able to save the mem pool to disk" in {
+    val regTest = new File(client.getDaemon.authCredentials.datadir + "/regtest")
+    assert(regTest.isDirectory)
+    assert(!regTest.list().contains("mempool.dat"))
+    client.saveMemPool.map { _ =>
+      assert(regTest.list().contains("mempool.dat"))
+    }
+  }
+
+  it should "be able to get and set the logging configuration" in {
+    client.logging().flatMap { info =>
+      info.keySet.foreach(category => assert(info(category) == 1))
+      client.logging(exclude = Some(Vector("qt"))).map { info =>
+        assert(info("qt") == 0)
+      }
+    }
+  }
+
+  it should "be able to get the client's uptime" in {
+    client.uptime.flatMap { time1 =>
+      assert(time1 > UInt32(0))
+      otherClient.uptime.map { time2 =>
+        assert(time1 > time2)
+      }
+    }
+  }
+
+  /*
+  it should "be able to combine raw transactions" in {
+    client.getNewAddress().flatMap { address =>
+      client.createRawTransaction(Vector(), Map(address -> Bitcoins(2.5))).flatMap { ctx1 =>
+        client.fundRawTransaction(ctx1).flatMap { ftx1 =>
+          client.signRawTransaction(ftx1.hex).flatMap { tx1 =>
+            client.createRawTransaction(Vector(), Map(address -> Bitcoins(3.5))).flatMap { ctx2 =>
+              client.fundRawTransaction(ctx2).flatMap { ftx2 =>
+                client.signRawTransaction(ftx2.hex).flatMap { tx2 =>
+                  client.combineRawTransaction(Vector(tx1.hex, tx2.hex)).flatMap { tx =>
+                    client.decodeRawTransaction(tx).map { decoded =>
+                      assert(decoded.vout.exists(output => output.value == Bitcoins(2.5)))
+                      assert(decoded.vout.exists(output => output.value == Bitcoins(3.5)))
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }*/
+
+  it should "be able to rescan the blockchain" in {
+    client.rescanBlockChain().flatMap { result =>
+      assert(result.start_height == 0)
+      client.getBlockCount.map { count =>
+        assert(count == result.stop_height)
+      }
+    }
+  }
+
+  it should "be able to abort a rescan of the blockchain" in {
+    recoverToSucceededIf[RuntimeException](client.rescanBlockChain())
+    client.abortRescan.map { _ =>
+      succeed
+    }
+  }
+
+  it should "be able to get and set the account for a given address" in {
+    val account1 = "account_1"
+    val account2 = "account_2"
+    client.getNewAddress(account1).flatMap { address =>
+      client.getAccount(address).flatMap { acc1 =>
+        assert(acc1 == account1)
+        client.setAccount(address, account2).flatMap { _ =>
+          client.getAccount(address).map { acc2 =>
+            assert(acc2 == account2)
+          }
+        }
+      }
+    }
+  }
+
+  it should "be able to get an account's address" in {
+    val account = "a_new_account"
+    client.getAccountAddress(account).flatMap { address =>
+      client.getAccount(address).map { result =>
+        assert(result == account)
+      }
+    }
+  }
+
+  it should "be able to get the amount received by an account and list amounts received by all accounts" in {
+    val account = "another_new_account"
+    val emptyAccount = "empty_account"
+    client.getNewAddress(account).flatMap { address =>
+      client.createRawTransaction(Vector(), Map(address -> Bitcoins(1.5))).flatMap { ctx =>
+        client.fundRawTransaction(ctx).flatMap { ftx =>
+          client.signRawTransaction(ftx.hex).flatMap { stx =>
+            client.sendRawTransaction(stx.hex).flatMap { txid =>
+              client.generate(1).flatMap { _ =>
+                client.getReceivedByAccount(account).flatMap { amount =>
+                  assert(amount == Bitcoins(1.5))
+                  client.listReceivedByAccount().map { list =>
+                    assert(list.filter(acc => acc.account == account).head.amount == Bitcoins(1.5))
+                    assert(list.filter(acc => acc.account == "").head.amount > Bitcoins(0))
+                    assert(!list.exists(acc => acc.account == emptyAccount))
+                  }
+                  client.listAccounts().map { map =>
+                    assert(map(account) == Bitcoins(1.5))
+                    assert(map("") > Bitcoins(0))
+                    assert(!map.keySet.contains(emptyAccount))
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  it should "be able to move funds from one account to another" in {
+    val account = "move_account"
+    client.move("", account, Bitcoins(1)).flatMap { success =>
+      assert(success)
+      client.listAccounts().map { map =>
+        assert(map(account) == Bitcoins(1))
+      }
+    }
+  }
+
   it should "be able to add and remove a node" in {
     otherClient.addNode(walletClient.getDaemon.uri, "add").flatMap { _ =>
       Thread.sleep(10000)
