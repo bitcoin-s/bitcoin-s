@@ -1,6 +1,7 @@
 package org.bitcoins.rpc
 
 import java.io.File
+import java.lang.RuntimeException
 import java.net.URI
 
 import akka.actor.ActorSystem
@@ -15,6 +16,7 @@ import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.P2PKHAddress
 import org.bitcoins.core.protocol.script.{EmptyScriptSignature, ScriptSignature}
 import org.bitcoins.rpc.jsonmodels.{GetTransactionResult, GetWalletInfoResult, MultiSigResult}
+import org.scalatest.concurrent.ScalaFutures
 
 import scala.concurrent.{Await, Future}
 import scala.concurrent.duration.DurationInt
@@ -241,6 +243,14 @@ class RpcClientTest
             assert(transaction.details.head.abandoned.contains(true))
           }
         }
+      }
+    }
+  }
+
+  it should "fail to abandon a transaction which has not been sent" in {
+    otherClient.getNewAddress().flatMap { address =>
+      client.createRawTransaction(Vector(), Map(address -> Bitcoins(1))).flatMap { tx =>
+        recoverToSucceededIf[RuntimeException](client.abandonTransaction(tx.txIdBE))
       }
     }
   }

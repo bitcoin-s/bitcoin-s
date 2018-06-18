@@ -779,6 +779,16 @@ class RpcClient(instance: DaemonInstance)(
 
   // Should both logging and throwing be happening?
   private def parseResult[T](result: JsResult[T], json: JsValue): T = {
+    // First catch errors thrown by calls with Unit as the expected return type (which isn't handled by UnitReads)
+    if (result == JsSuccess(())) {
+      (json \ errorKey).validate[RpcError] match {
+        case err: JsSuccess[RpcError] =>
+          logger.error(s"Error ${err.value.code}: ${err.value.message}")
+          throw new RuntimeException(s"Error ${err.value.code}: ${err.value.message}") // More specific type?
+        case _ : JsError =>
+      }
+    }
+
     result match {
       case res: JsSuccess[T] => res.value
       case res: JsError =>

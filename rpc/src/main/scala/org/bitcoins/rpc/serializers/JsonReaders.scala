@@ -115,7 +115,7 @@ object JsonReaders {
     }
   }
 
-  // This lets errors go unattended
+  // Errors for Unit return types are caught in RpcClient::parseResult
   implicit object UnitReads extends Reads[Unit] {
     override def reads(json: JsValue): JsResult[Unit] = JsSuccess(Unit)
   }
