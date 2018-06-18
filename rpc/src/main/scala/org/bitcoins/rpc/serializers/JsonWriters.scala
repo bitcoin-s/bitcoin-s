@@ -5,7 +5,7 @@ import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.script.ScriptPubKey
-import org.bitcoins.core.protocol.transaction.TransactionInput
+import org.bitcoins.core.protocol.transaction.{Transaction, TransactionInput}
 import play.api.libs.json._
 
 object JsonWriters {
@@ -35,6 +35,10 @@ object JsonWriters {
 
   implicit object UInt32Writes extends Writes[UInt32] {
     override def writes(o: UInt32): JsValue = JsNumber(o.toLong)
+  }
+
+  implicit object TransactionWrites extends Writes[Transaction] {
+    override def writes(o: Transaction): JsValue = JsString(o.hex)
   }
 
   implicit def mapWrites[K,V](keyString: K => String)(implicit vWrites: Writes[V]): Writes[Map[K,V]] = new Writes[Map[K,V]] {

@@ -58,6 +58,7 @@ object JsonSerializers {
   implicit val transactionInputWrites: Writes[TransactionInput] =
     TransactionInputWrites
   implicit val uInt32Writes: Writes[UInt32] = UInt32Writes
+  implicit val transactionWrites: Writes[Transaction] = TransactionWrites
 
   // Network Models
   implicit val networkReads: Reads[Network] = Json.reads[Network]
