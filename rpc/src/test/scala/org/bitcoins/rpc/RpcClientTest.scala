@@ -15,7 +15,7 @@ import org.scalatest.{AsyncFlatSpec, BeforeAndAfter, BeforeAndAfterAll}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.P2PKHAddress
 import org.bitcoins.core.protocol.script.{EmptyScriptSignature, ScriptSignature}
-import org.bitcoins.rpc.jsonmodels.{GetTransactionResult, GetWalletInfoResult, MultiSigResult}
+import org.bitcoins.rpc.jsonmodels.{GetTransactionResult, GetWalletInfoResult, MultiSigResult, RpcAddress}
 import org.scalatest.concurrent.ScalaFutures
 
 import scala.concurrent.{Await, Future}
@@ -95,7 +95,7 @@ class RpcClientTest
       assert(info.head.connected.contains(true))
     }
   }
-
+/* TODO: Reconnect after ban is removed
   it should "be able to ban and clear the ban of a subnet" in {
     val loopBack = URI.create("http://127.0.0.1")
     client.setBan(loopBack, "add").flatMap { _ =>
@@ -122,6 +122,69 @@ class RpcClientTest
           client.clearBanned.flatMap { _ =>
             client.listBanned.map { newList =>
               assert(newList.isEmpty)
+            }
+          }
+        }
+      }
+    }
+  }
+*/
+  it should "be able to list address groupings" in {
+    client.getNewAddress().flatMap { address =>
+      client.createRawTransaction(Vector(), Map(address -> Bitcoins(1.25))).flatMap { createdTransaction =>
+        client.fundRawTransaction(createdTransaction).flatMap { fundedTransaction =>
+          client.signRawTransaction(fundedTransaction.hex).flatMap { signedTransaction =>
+            client.sendRawTransaction(signedTransaction.hex).flatMap { txid =>
+              client.generate(1).flatMap { _ =>
+                client.listAddressGroupings.flatMap { groupings =>
+                  val rpcAddresss = groupings.last.head
+                  assert(rpcAddresss.address == address)
+                  assert(rpcAddresss.balance == Bitcoins(1.25))
+
+                  client.getBlockHash(1).flatMap { hash =>
+                    client.getBlockWithTransactions(hash).map { block =>
+                      val firstAddress = block.tx.head.vout.head.scriptPubKey.addresses.get.head
+                      assert(groupings.max(Ordering.by[Vector[RpcAddress], BigDecimal](addr => addr.head.balance.toBigDecimal)).head.address == firstAddress)
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  it should "be able to list utxos" in {
+    client.listUnspent().flatMap { unspent =>
+      client.getBlockHash(1).flatMap { hash =>
+        client.getBlockWithTransactions(hash).flatMap { block =>
+          val address = block.tx.head.vout.head.scriptPubKey.addresses.get.head
+          val unspentMined = unspent.filter(addr => addr.address.contains(address))
+          assert(unspentMined.length >= 100)
+        }
+      }
+    }
+  }
+
+  it should "be able to lock and unlock utxos as well as list locked utxos" in {
+    client.listUnspent().flatMap { unspent =>
+      val txid1 = unspent(0).txid
+      val vout1 = unspent(0).vout
+      val txid2 = unspent(1).txid
+      val vout2 = unspent(1).vout
+      val param = Vector(RpcOpts.LockUnspentOutputParameter(txid1, vout1), RpcOpts.LockUnspentOutputParameter(txid2, vout2))
+      client.lockUnspent(false, param).flatMap { success =>
+        assert(success)
+        client.listLockUnspent.flatMap { locked =>
+          assert(locked.length == 2)
+          assert(locked(0).txId == txid1)
+          assert(locked(1).txId == txid2)
+          client.lockUnspent(true, param).flatMap { success =>
+            assert(success)
+            client.listLockUnspent.map { newLocked =>
+              assert(newLocked.isEmpty)
             }
           }
         }
@@ -285,6 +348,56 @@ class RpcClientTest
                         assert(ancestors.head._2.descendantcount == 2)
                       }
                     }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  it should "be able to list transactions by receiving addresses" in {
+    client.getNewAddress().flatMap { address =>
+      client.createRawTransaction(Vector(), Map(address -> Bitcoins(1.5))).flatMap { createdTransaction =>
+        client.fundRawTransaction(createdTransaction).flatMap { fundedTransaction =>
+          client.signRawTransaction(fundedTransaction.hex).flatMap { signedTransaction =>
+            client.sendRawTransaction(signedTransaction.hex).flatMap { txid =>
+              client.generate(1).flatMap { _ =>
+                client.listReceivedByAddress().map { receivedList =>
+                  val entryList = receivedList.filter(entry => entry.address == address)
+                  assert(entryList.length == 1)
+                  val entry = entryList.head
+                  assert(entry.txids.head == txid)
+                  assert(entry.address == address)
+                  assert(entry.amount == Bitcoins(1.5))
+                  assert(entry.confirmations == 1)
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  it should "be able to import an address" in {
+    client.getNewAddress().flatMap { address =>
+      otherClient.importAddress(address).flatMap { _ =>
+        client.createRawTransaction(Vector(), Map(address -> Bitcoins(1.5))).flatMap { createdTransaction =>
+          client.fundRawTransaction(createdTransaction).flatMap { fundedTransaction =>
+            client.signRawTransaction(fundedTransaction.hex).flatMap { signedTransaction =>
+              client.sendRawTransaction(signedTransaction.hex).flatMap { txid =>
+                client.generate(1).flatMap { _ =>
+                  otherClient.listReceivedByAddress(includeWatchOnly = true).flatMap { list =>
+                    val entryList = list.filter(addr => addr.involvesWatchonly.contains(true))
+                    assert(entryList.length == 1)
+                    val entry = entryList.head
+                    assert(entry.address == address)
+                    assert(entry.involvesWatchonly.contains(true))
+                    assert(entry.amount == Bitcoins(1.5))
+                    assert(entry.txids.head == txid)
                   }
                 }
               }
@@ -574,8 +687,11 @@ class RpcClientTest
 
   it should "be able to get the block count" in {
     val blockCountF = client.getBlockCount
-    blockCountF.map { count =>
+    blockCountF.flatMap { count =>
       assert(count >= 0)
+      otherClient.getBlockCount.map { otherCount =>
+        assert(count == otherCount)
+      }
     }
   }
 

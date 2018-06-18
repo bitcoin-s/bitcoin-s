@@ -68,70 +68,12 @@ class RpcClient(instance: DaemonInstance)(
                                          List(JsNumber(blocks), JsString(mode)))
   }
 
-  def importAddress(
-      address: BitcoinAddress,
-      account: String = "",
-      rescan: Boolean = true,
-      p2sh: Boolean = false): Future[Unit] = {
-    bitcoindCall[Unit]("importaddress",
-                       List(JsString(address.value),
-                            JsString(account),
-                            JsBoolean(rescan),
-                            JsBoolean(p2sh)))
-  }
-
   def importPrunedFunds(
       transaction: Transaction,
       txOutProof: MerkleBlock): Future[Unit] = {
     bitcoindCall[Unit](
       "importprunedfunds",
       List(JsString(transaction.hex), JsString(txOutProof.hex)))
-  }
-
-  def listAddressGroupings: Future[Vector[Vector[RpcAddress]]] = {
-    bitcoindCall[Vector[Vector[RpcAddress]]]("listaddressgroupings")
-  }
-
-  def listLockUnspent: Future[Vector[TransactionOutPoint]] = {
-    bitcoindCall[Vector[TransactionOutPoint]]("listlockunspent")
-  }
-
-  def listReceivedByAddress(
-      confirmations: Int = 1,
-      includeEmpty: Boolean = false,
-      includeWatchOnly: Boolean = false,
-      addressFilter: Option[String] = None): Future[Vector[ReceivedAddress]] = {
-    val params =
-      if (addressFilter.isEmpty) {
-        List(JsNumber(confirmations),
-             JsBoolean(includeEmpty),
-             JsBoolean(includeWatchOnly))
-      } else {
-        List(JsNumber(confirmations),
-             JsBoolean(includeEmpty),
-             JsBoolean(includeWatchOnly),
-             JsString(addressFilter.get))
-      }
-    bitcoindCall[Vector[ReceivedAddress]]("listreceivedbyaddress", params)
-  }
-
-  def listUnspent(
-      minConfirmations: Int = 1,
-      maxConfirmations: Int = 9999999,
-      addresses: Vector[BitcoinAddress]): Future[Vector[UnspentOutput]] = {
-    val jsonAddresses = JsArray(
-      addresses.map(address => JsString(address.value)))
-    bitcoindCall[Vector[UnspentOutput]]("listunspent",
-                                        List(JsNumber(minConfirmations),
-                                             JsNumber(maxConfirmations),
-                                             jsonAddresses))
-  }
-
-  def lockUnspent(
-      unlock: Boolean,
-      outputs: Vector[LockUnspentOutputParameter]): Future[Boolean] = {
-    bitcoindCall[Boolean]("lockunspent",
-                          List(JsBoolean(unlock), Json.toJson(outputs)))
   }
 
   def preciousBlock(headerHash: DoubleSha256Digest): Future[Unit] = {
@@ -537,6 +479,18 @@ class RpcClient(instance: DaemonInstance)(
     bitcoindCall[Unit]("keypoolrefill", List(JsNumber(keyPoolSize)))
   }
 
+  def importAddress(
+                     address: BitcoinAddress,
+                     account: String = "",
+                     rescan: Boolean = true,
+                     p2sh: Boolean = false): Future[Unit] = {
+    bitcoindCall[Unit]("importaddress",
+      List(JsString(address.value),
+        JsString(account),
+        JsBoolean(rescan),
+        JsBoolean(p2sh)))
+  }
+
   // This is here so that network is accessible
   implicit object ECPrivateKeyWrites extends Writes[ECPrivateKey] {
     override def writes(o: ECPrivateKey): JsValue = JsString(o.toWIF(network))
@@ -568,8 +522,26 @@ class RpcClient(instance: DaemonInstance)(
     bitcoindCall[Unit]("importwallet", List(JsString(filePath)))
   }
 
+  def listAddressGroupings: Future[Vector[Vector[RpcAddress]]] = {
+    bitcoindCall[Vector[Vector[RpcAddress]]]("listaddressgroupings")
+  }
+
   def listBanned: Future[Vector[NodeBan]] = {
     bitcoindCall[Vector[NodeBan]]("listbanned")
+  }
+
+  def listLockUnspent: Future[Vector[TransactionOutPoint]] = {
+    bitcoindCall[Vector[TransactionOutPoint]]("listlockunspent")
+  }
+
+  def listReceivedByAddress(
+                             confirmations: Int = 1,
+                             includeEmpty: Boolean = false,
+                             includeWatchOnly: Boolean = false): Future[Vector[ReceivedAddress]] = {
+    bitcoindCall[Vector[ReceivedAddress]]("listreceivedbyaddress",
+      List(JsNumber(confirmations),
+        JsBoolean(includeEmpty),
+        JsBoolean(includeWatchOnly)))
   }
 
   // Need to configure default headerHash
@@ -595,6 +567,29 @@ class RpcClient(instance: DaemonInstance)(
            JsNumber(count),
            JsNumber(skip),
            JsBoolean(includeWatchOnly)))
+  }
+
+  def listUnspent(
+                   minConfirmations: Int = 1,
+                   maxConfirmations: Int = 9999999,
+                   addresses: Option[Vector[BitcoinAddress]] = None): Future[Vector[UnspentOutput]] = {
+    val params =
+      if (addresses.isEmpty) {
+        List(JsNumber(minConfirmations),
+          JsNumber(maxConfirmations))
+      } else {
+        List(JsNumber(minConfirmations),
+          JsNumber(maxConfirmations),
+          Json.toJson(addresses.get))
+      }
+    bitcoindCall[Vector[UnspentOutput]]("listunspent", params)
+  }
+
+  def lockUnspent(
+                   unlock: Boolean,
+                   outputs: Vector[RpcOpts.LockUnspentOutputParameter]): Future[Boolean] = {
+    bitcoindCall[Boolean]("lockunspent",
+      List(JsBoolean(unlock), Json.toJson(outputs)))
   }
 
   def ping: Future[Unit] = {

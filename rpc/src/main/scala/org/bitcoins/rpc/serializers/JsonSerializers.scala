@@ -177,9 +177,6 @@ object JsonSerializers {
   implicit val unspentOutputReads: Reads[UnspentOutput] =
     Json.reads[UnspentOutput]
 
-  implicit val lockUnspentParameterWrites: Writes[LockUnspentOutputParameter] =
-    Json.writes[LockUnspentOutputParameter]
-
   implicit val signRawTransactionErrorReads: Reads[SignRawTransactionError] =
     Json.reads[SignRawTransactionError]
   implicit val signRawTransactionResultReads: Reads[SignRawTransactionResult] =

@@ -304,9 +304,6 @@ case class UnspentOutput( // Naming?
     solvable: Boolean)
     extends NetworkResult
 
-case class LockUnspentOutputParameter(txid: DoubleSha256Digest, vout: Int)
-    extends NetworkResult
-
 case class SignRawTransactionResult(hex: Transaction, complete: Boolean, errors: Option[Vector[SignRawTransactionError]])
     extends NetworkResult
 

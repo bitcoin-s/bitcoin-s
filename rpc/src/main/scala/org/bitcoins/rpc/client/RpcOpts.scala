@@ -43,4 +43,9 @@ object RpcOpts {
       label: Option[String] = None)
 
   case class ImportMultiAddress(address: BitcoinAddress)
+
+  case class LockUnspentOutputParameter(txid: DoubleSha256Digest, vout: Int)
+
+  implicit val lockUnspentParameterWrites: Writes[LockUnspentOutputParameter] =
+    Json.writes[LockUnspentOutputParameter]
 }
