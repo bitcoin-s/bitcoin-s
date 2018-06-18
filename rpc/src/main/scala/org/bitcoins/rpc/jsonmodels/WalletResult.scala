@@ -70,3 +70,8 @@ case class ImportMultiResult(success: Boolean, error: Option[ImportMultiError])
 case class ImportMultiError(code: Int, message: String) extends WalletResult
 
 case class DumpWalletResult(filename: File)
+
+case class RescanBlockChainResult(
+                                   start_height: Option[Int],
+                                   stop_height: Option[Int]
+                                 ) extends WalletResult

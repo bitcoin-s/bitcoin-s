@@ -9,11 +9,13 @@ import akka.stream.ActorMaterializer
 import akka.util.ByteString
 import org.bitcoins.core.crypto.{DoubleSha256Digest, ECPrivateKey, ECPublicKey}
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
+import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.{BitcoinAddress, P2PKHAddress}
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, MerkleBlock}
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionInput, TransactionOutPoint}
 import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil}
+import org.bitcoins.core.wallet.fee.BitcoinFeeUnit
 import org.bitcoins.rpc.config.DaemonInstance
 import play.api.libs.json._
 import org.bitcoins.rpc.jsonmodels._
@@ -64,7 +66,7 @@ class RpcClient(instance: DaemonInstance)(
   def estimateSmartFee(
       blocks: Int,
       mode: String = "CONSERVATIVE"): Future[EstimateSmartFeeResult] = {
-    bitcoindCall[EstimateSmartFeeResult]("estimatefee",
+    bitcoindCall[EstimateSmartFeeResult]("estimatesmartfee",
                                          List(JsNumber(blocks), JsString(mode)))
   }
 
@@ -103,6 +105,100 @@ class RpcClient(instance: DaemonInstance)(
 
   def submitBlock(block: Block): Future[Unit] = {
     bitcoindCall[Unit]("submitblock", List(JsString(block.hex)))
+  }
+
+  def getChainTxStats(blocks: Option[Int] = None, blockHash: Option[DoubleSha256Digest]): Future[GetChainTxStatsResult] = {
+    val params =
+      if (blocks.isEmpty) {
+        List.empty
+      } else if (blockHash.isEmpty) {
+        List(JsNumber(blocks.get))
+      } else {
+        List(JsNumber(blocks.get), JsString(blockHash.get.hex))
+      }
+    bitcoindCall[GetChainTxStatsResult]("getchaintxstats", params)
+  }
+
+  def saveMemPool: Future[Unit] = {
+    bitcoindCall[Unit]("savemempool")
+  }
+
+  def logging(include: Option[Vector[String]] = None, exclude: Option[Vector[String]] = None): Future[Map[String, Int]] = {
+    val params =
+      if (include.isEmpty && exclude.isEmpty) {
+        List.empty
+      } else if (include.isEmpty) {
+        List(JsArray.empty, Json.toJson(exclude.get))
+      } else if (exclude.isEmpty) {
+        List(Json.toJson(include.get), JsArray.empty)
+      } else {
+        List(Json.toJson(include.get), Json.toJson(exclude.get))
+      }
+    bitcoindCall[Map[String, Int]]("logging", params)
+  }
+
+  def uptime: Future[UInt32] = {
+    bitcoindCall[UInt32]("uptime")
+  }
+
+  def combineRawTransaction(txs: Vector[DoubleSha256Digest]): Future[Transaction] = {
+    bitcoindCall[Transaction]("combinerawtransaction", List(Json.toJson(txs)))
+  }
+
+  def estimateFee(blocks: Int): Future[BitcoinFeeUnit] = {
+    bitcoindCall[BitcoinFeeUnit]("estimatefee", List(JsNumber(blocks)))
+  }
+
+  def abortRescan: Future[Unit] = {
+    bitcoindCall[Unit]("abortrescan")
+  }
+
+  def getAccount(address: BitcoinAddress): Future[String] = {
+    bitcoindCall[String]("getaccount", List(JsString(address.value)))
+  }
+
+  def getAccountAddress(account: String): Future[BitcoinAddress] = {
+    bitcoindCall[BitcoinAddress]("getaccountaddress", List(JsString(account)))
+  }
+
+  def getReceivedByAccount(account: String, confirmations: Int = 1): Future[Bitcoins] = {
+    bitcoindCall[Bitcoins]("getreceivedbyaccount", List(JsString(account), JsNumber(confirmations)))
+  }
+
+  def importPubKey(pubKey: ScriptPubKey, label: String = "", rescan: Boolean = true): Future[Unit] = {
+    bitcoindCall[Unit]("importpubkey", List(JsString(pubKey.hex), JsString(label), JsBoolean(rescan)))
+  }
+
+  def listAccounts(confirmations: Int = 1, includeWatchOnly: Boolean = false): Future[Map[String, Bitcoins]] = {
+    bitcoindCall[Map[String, Bitcoins]]("listaccounts", List(JsNumber(confirmations), JsBoolean(includeWatchOnly)))
+  }
+
+  def listReceivedByAccount(confirmations: Int = 1, includeEmpty: Boolean = false, includeWatchOnly: Boolean = false): Future[ReceivedAccount] = {
+    bitcoindCall[ReceivedAccount]("listreceivedbyaccount", List(JsNumber(confirmations), JsBoolean(includeEmpty), JsBoolean(includeWatchOnly)))
+  }
+
+  def listWallets: Future[Vector[String]] = {
+    bitcoindCall[Vector[String]]("listwallets")
+  }
+
+  def move(fromAccount: String, toAccount: String, amount: Bitcoins, comment: String = ""): Future[Boolean] = {
+    bitcoindCall[Boolean]("move", List(JsString(fromAccount), JsString(toAccount), JsNumber(amount.toBigDecimal), JsNumber(6), JsString(comment)))
+  }
+
+  def rescanBlockChain(start: Option[Int] = None, stop: Option[Int] = None): Future[RescanBlockChainResult] = {
+    val params =
+      if (start.isEmpty) {
+        List.empty
+      } else if (stop.isEmpty) {
+        List(JsNumber(start.get))
+      } else {
+        List(JsNumber(start.get), JsNumber(stop.get))
+      }
+    bitcoindCall[RescanBlockChainResult]("rescanblockchain", params)
+  }
+
+  def setAccount(address: BitcoinAddress, account: String): Future[Unit] = {
+    bitcoindCall[Unit]("setaccount", List(JsString(address.value), JsString(account)))
   }
 
   // TODO: GetBlockTemplate
