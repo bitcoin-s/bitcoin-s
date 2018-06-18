@@ -261,6 +261,14 @@ case class ReceivedAddress(
     txids: Vector[DoubleSha256Digest])
     extends NetworkResult
 
+case class ReceivedAccount(
+                          involvesWatchonly: Option[Boolean],
+                          account: String,
+                          amount: Bitcoins,
+                          confirmations: Int,
+                          lable: Option[String]
+                          ) extends NetworkResult
+
 case class GetTransactionResult(
     amount: Bitcoins,
     fee: Option[Bitcoins],
@@ -470,3 +478,12 @@ case class GetTxOutResult(
                            value: Bitcoins,
                            scriptPubKey: RpcScriptPubKey,
                            coinbase: Boolean) extends NetworkResult
+
+case class GetChainTxStatsResult(
+                                  time: UInt32,
+                                  txcount: Int,
+                                  window_block_count: Int,
+                                  window_tx_count: Option[Int],
+                                  window_interval: Option[UInt32],
+                                  txrate: Option[BigDecimal]
+                                ) extends NetworkResult

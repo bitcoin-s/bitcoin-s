@@ -154,6 +154,9 @@ object JsonSerializers {
   implicit val receivedAddressReads: Reads[ReceivedAddress] =
     Json.reads[ReceivedAddress]
 
+  implicit val receivedAccountReads: Reads[ReceivedAccount] =
+    Json.reads[ReceivedAccount]
+
   implicit val TransactionDetailsReads: Reads[TransactionDetails] =
     Json.reads[TransactionDetails]
   implicit val getTransactionResultReads: Reads[GetTransactionResult] =
@@ -229,6 +232,8 @@ object JsonSerializers {
   implicit val getTxOutResultReads: Reads[GetTxOutResult] =
     Json.reads[GetTxOutResult]
 
+  implicit val getChainTxStatsResultReads: Reads[GetChainTxStatsResult] = Json.reads[GetChainTxStatsResult]
+
   // Mining Models
   implicit val miningInfoReads: Reads[GetMiningInfoResult] =
     Json.reads[GetMiningInfoResult]
@@ -262,6 +267,9 @@ object JsonSerializers {
     Json.reads[ImportMultiResult]
 
   implicit val dumpWalletResultReads: Reads[DumpWalletResult] = Json.reads[DumpWalletResult]
+
+  implicit val rescanBlockChainResultReads: Reads[RescanBlockChainResult] =
+    Json.reads[RescanBlockChainResult]
 
   // Map stuff
   implicit def mapDoubleSha256DigestReads: Reads[
