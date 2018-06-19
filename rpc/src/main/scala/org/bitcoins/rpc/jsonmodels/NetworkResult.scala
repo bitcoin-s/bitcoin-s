@@ -2,12 +2,20 @@ package org.bitcoins.rpc.jsonmodels
 
 import java.net.URI
 
-import org.bitcoins.core.crypto.{DoubleSha256Digest, ECPublicKey, Sha256Hash160Digest}
+import org.bitcoins.core.crypto.{
+  DoubleSha256Digest,
+  ECPublicKey,
+  Sha256Hash160Digest
+}
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.number.{Int32, UInt32, UInt64}
 import org.bitcoins.core.protocol.{Address, BitcoinAddress}
 import org.bitcoins.core.protocol.script.ScriptPubKey
-import org.bitcoins.core.protocol.transaction.{Transaction, TransactionInput, TransactionWitness}
+import org.bitcoins.core.protocol.transaction.{
+  Transaction,
+  TransactionInput,
+  TransactionWitness
+}
 import org.bitcoins.core.wallet.fee.BitcoinFeeUnit
 
 sealed abstract class NetworkResult
@@ -93,8 +101,7 @@ case class Node(
     connected: Option[Boolean],
     addresses: Option[Vector[NodeAddress]])
     extends NetworkResult
-case class NodeAddress(address: URI, connected: String)
-    extends NetworkResult
+case class NodeAddress(address: URI, connected: String) extends NetworkResult
 
 case class GetMemPoolEntryResult(
     size: Int,
@@ -262,12 +269,12 @@ case class ReceivedAddress(
     extends NetworkResult
 
 case class ReceivedAccount(
-                          involvesWatchonly: Option[Boolean],
-                          account: String,
-                          amount: Bitcoins,
-                          confirmations: Int,
-                          lable: Option[String]
-                          ) extends NetworkResult
+    involvesWatchonly: Option[Boolean],
+    account: String,
+    amount: Bitcoins,
+    confirmations: Int,
+    lable: Option[String]
+) extends NetworkResult
 
 case class GetTransactionResult(
     amount: Bitcoins,
@@ -312,16 +319,19 @@ case class UnspentOutput( // Naming?
     solvable: Boolean)
     extends NetworkResult
 
-case class SignRawTransactionResult(hex: Transaction, complete: Boolean, errors: Option[Vector[SignRawTransactionError]])
+case class SignRawTransactionResult(
+    hex: Transaction,
+    complete: Boolean,
+    errors: Option[Vector[SignRawTransactionError]])
     extends NetworkResult
 
 case class SignRawTransactionError(
-                                  txid: DoubleSha256Digest,
-                                  vout: Int,
-                                  scriptSig: ScriptPubKey,
-                                  sequence: Int,
-                                  error: String
-                                  ) extends NetworkResult
+    txid: DoubleSha256Digest,
+    vout: Int,
+    scriptSig: ScriptPubKey,
+    sequence: Int,
+    error: String
+) extends NetworkResult
 
 case class GetBlockChainInfoResult(
     chain: String,
@@ -413,77 +423,79 @@ case class NetTarget(
     extends NetworkResult
 
 case class Peer(
-                 id: Int,
-                 networkInfo: PeerNetworkInfo,
-                 version: Int,
-                 subver: String,
-                 inbound: Boolean,
-                 addnode: Boolean,
-                 startingheight: Int,
-                 banscore: Int,
-                 synced_headers: Int,
-                 synced_blocks: Int,
-                 inflight: Vector[Int],
-                 whitelisted: Boolean,
-                 bytessent_per_msg: Map[String, Int],
-                 bytesrecv_per_msg: Map[String, Int]) extends NetworkResult
+    id: Int,
+    networkInfo: PeerNetworkInfo,
+    version: Int,
+    subver: String,
+    inbound: Boolean,
+    addnode: Boolean,
+    startingheight: Int,
+    banscore: Int,
+    synced_headers: Int,
+    synced_blocks: Int,
+    inflight: Vector[Int],
+    whitelisted: Boolean,
+    bytessent_per_msg: Map[String, Int],
+    bytesrecv_per_msg: Map[String, Int])
+    extends NetworkResult
 
 case class PeerNetworkInfo(
-                            addr: URI,
-                            addrbind: URI,
-                            addrlocal: Option[URI],
-                            services: String,
-                            relaytxes: Boolean,
-                            lastsend: UInt32,
-                            lastrecv: UInt32,
-                            bytessent: Int,
-                            bytesrecv: Int,
-                            conntime: UInt32,
-                            timeoffset: Int,
-                            pingtime: Option[BigDecimal],
-                            minping: Option[BigDecimal],
-                            pingwait: Option[BigDecimal]) extends NetworkResult
-
+    addr: URI,
+    addrbind: URI,
+    addrlocal: Option[URI],
+    services: String,
+    relaytxes: Boolean,
+    lastsend: UInt32,
+    lastrecv: UInt32,
+    bytessent: Int,
+    bytesrecv: Int,
+    conntime: UInt32,
+    timeoffset: Int,
+    pingtime: Option[BigDecimal],
+    minping: Option[BigDecimal],
+    pingwait: Option[BigDecimal])
+    extends NetworkResult
 
 case class GetRawTransactionResult(
-                                    in_active_blockchain: Option[Boolean],
-                                    hex: Transaction,
-                                    txid: DoubleSha256Digest,
-                                    hash: DoubleSha256Digest,
-                                    size: Int,
-                                    vsize: Int,
-                                    version: Int,
-                                    locktime: UInt32,
-                                    vin: Vector[GetRawTransactionVin],
-                                    vout: Vector[RpcTransactionOutput],
-                                    blockhash: DoubleSha256Digest,
-                                    confirmations: Int,
-                                    time: UInt32,
-                                    blocktime: UInt32
-                                  ) extends NetworkResult
+    in_active_blockchain: Option[Boolean],
+    hex: Transaction,
+    txid: DoubleSha256Digest,
+    hash: DoubleSha256Digest,
+    size: Int,
+    vsize: Int,
+    version: Int,
+    locktime: UInt32,
+    vin: Vector[GetRawTransactionVin],
+    vout: Vector[RpcTransactionOutput],
+    blockhash: DoubleSha256Digest,
+    confirmations: Int,
+    time: UInt32,
+    blocktime: UInt32
+) extends NetworkResult
 
 case class GetRawTransactionVin(
-                               txid: Option[DoubleSha256Digest],
-                               vout: Option[Int],
-                               scriptSig: Option[GetRawTransactionScriptSig],
-                               sequence: Option[BigDecimal],
-                               txinwitness: Option[Vector[String]] // Should be TransactionWitness?
-                               )
+    txid: Option[DoubleSha256Digest],
+    vout: Option[Int],
+    scriptSig: Option[GetRawTransactionScriptSig],
+    sequence: Option[BigDecimal],
+    txinwitness: Option[Vector[String]] // Should be TransactionWitness?
+)
 
 case class GetRawTransactionScriptSig(asm: String, hex: ScriptPubKey) // Right???
 
 case class GetTxOutResult(
-                           bestblock: DoubleSha256Digest,
-                           confirmations: Int,
-                           value: Bitcoins,
-                           scriptPubKey: RpcScriptPubKey,
-                           coinbase: Boolean) extends NetworkResult
+    bestblock: DoubleSha256Digest,
+    confirmations: Int,
+    value: Bitcoins,
+    scriptPubKey: RpcScriptPubKey,
+    coinbase: Boolean)
+    extends NetworkResult
 
 case class GetChainTxStatsResult(
-                                  time: UInt32,
-                                  txcount: Int,
-                                  window_block_count: Int,
-                                  window_tx_count: Option[Int],
-                                  window_interval: Option[UInt32],
-                                  txrate: Option[BigDecimal]
-                                ) extends NetworkResult
+    time: UInt32,
+    txcount: Int,
+    window_block_count: Int,
+    window_tx_count: Option[Int],
+    window_interval: Option[UInt32],
+    txrate: Option[BigDecimal]
+) extends NetworkResult

@@ -5,7 +5,12 @@ import java.io.File
 import org.bitcoins.core.crypto.{DoubleSha256Digest, Sha256Hash160Digest}
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.{Address, BitcoinAddress, P2PKHAddress, P2SHAddress}
+import org.bitcoins.core.protocol.{
+  Address,
+  BitcoinAddress,
+  P2PKHAddress,
+  P2SHAddress
+}
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.wallet.fee.BitcoinFeeUnit
@@ -72,6 +77,6 @@ case class ImportMultiError(code: Int, message: String) extends WalletResult
 case class DumpWalletResult(filename: File)
 
 case class RescanBlockChainResult(
-                                   start_height: Int,
-                                   stop_height: Int
-                                 ) extends WalletResult
+    start_height: Int,
+    stop_height: Int
+) extends WalletResult
