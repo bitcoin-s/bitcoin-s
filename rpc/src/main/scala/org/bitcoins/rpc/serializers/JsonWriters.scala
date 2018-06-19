@@ -41,9 +41,10 @@ object JsonWriters {
     override def writes(o: Transaction): JsValue = JsString(o.hex)
   }
 
-  implicit def mapWrites[K,V](keyString: K => String)(implicit vWrites: Writes[V]): Writes[Map[K,V]] = new Writes[Map[K,V]] {
+  implicit def mapWrites[K, V](keyString: K => String)(
+      implicit vWrites: Writes[V]): Writes[Map[K, V]] = new Writes[Map[K, V]] {
     override def writes(o: Map[K, V]): JsValue = {
-      Json.toJson(o.map{case (k, v) => (keyString(k), v)})
+      Json.toJson(o.map { case (k, v) => (keyString(k), v) })
     }
   }
 }

@@ -3,10 +3,19 @@ package org.bitcoins.rpc.serializers
 import java.io.File
 import java.net.{InetAddress, URI}
 
-import org.bitcoins.core.crypto.{DoubleSha256Digest, ECPublicKey, Sha256Hash160Digest}
+import org.bitcoins.core.crypto.{
+  DoubleSha256Digest,
+  ECPublicKey,
+  Sha256Hash160Digest
+}
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.number.{Int32, Int64, UInt32, UInt64}
-import org.bitcoins.core.protocol.{Address, BitcoinAddress, P2PKHAddress, P2SHAddress}
+import org.bitcoins.core.protocol.{
+  Address,
+  BitcoinAddress,
+  P2PKHAddress,
+  P2SHAddress
+}
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, MerkleBlock}
 import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptSignature}
 import org.bitcoins.core.protocol.transaction._
@@ -110,7 +119,8 @@ object JsonReaders {
           case Failure(err) =>
             JsError(s"error.expected.address, got ${err.toString}")
         }
-      case err =>
+      case err @ (JsNull | _: JsBoolean | _: JsNumber | _: JsArray |
+          _: JsObject) =>
         JsError(s"error.expected.jsstring, got ${Json.toJson(err).toString()}")
     }
   }
@@ -153,7 +163,8 @@ object JsonReaders {
           case Failure(err) =>
             JsError(s"error.expected.p2pkhaddress, got ${err.toString}")
         }
-      case err =>
+      case err @ (JsNull | _: JsBoolean | _: JsNumber | _: JsArray |
+          _: JsObject) =>
         JsError(s"error.expected.jsstring, got ${Json.toJson(err).toString()}")
     }
   }
@@ -166,7 +177,8 @@ object JsonReaders {
           case Failure(err) =>
             JsError(s"error.expected.p2shaddress, got ${err.toString}")
         }
-      case err =>
+      case err @ (JsNull | _: JsBoolean | _: JsNumber | _: JsArray |
+          _: JsObject) =>
         JsError(s"error.expected.jsstring, got ${Json.toJson(err).toString()}")
     }
   }
@@ -211,7 +223,8 @@ object JsonReaders {
           case Failure(err) =>
             JsError(s"error.expected.address, got ${err.toString}")
         }
-      case err =>
+      case err @ (JsNull | _: JsBoolean | _: JsNumber | _: JsArray |
+          _: JsObject) =>
         JsError(s"error.expected.jsstring, got ${Json.toJson(err).toString()}")
     }
   }
@@ -245,7 +258,9 @@ object JsonReaders {
       case array: JsArray =>
         val balance = array.value.find(_.isInstanceOf[JsNumber]) match {
           case Some(JsNumber(n)) => Bitcoins(n)
-          case Some(err) =>
+          case Some(
+              err @ (JsNull | _: JsBoolean | _: JsString | _: JsArray |
+              _: JsObject)) =>
             return JsError(
               s"error.expected.jsnumber, got ${Json.toJson(err).toString()}")
           case None => return JsError("error.expected.balance")
@@ -268,7 +283,8 @@ object JsonReaders {
             JsSuccess(RpcAddress(address, balance, Some(s)))
           case None => JsSuccess(RpcAddress(address, balance, None))
         }
-      case err =>
+      case err @ (JsNull | _: JsBoolean | _: JsNumber | _: JsString |
+          _: JsObject) =>
         JsError(s"error.expected.jsarray, got ${Json.toJson(err).toString()}")
     }
   }
@@ -281,10 +297,12 @@ object JsonReaders {
   }
 
   implicit object FileReads extends Reads[File] {
-    override def reads(json: JsValue): JsResult[File] = processJsString[File](new File(_))(json)
+    override def reads(json: JsValue): JsResult[File] =
+      processJsString[File](new File(_))(json)
   }
 
   implicit object URIReads extends Reads[URI] {
-    override def reads(json: JsValue): JsResult[URI] = processJsString[URI](str => new URI("http://" + str))(json)
+    override def reads(json: JsValue): JsResult[URI] =
+      processJsString[URI](str => new URI("http://" + str))(json)
   }
 }

@@ -3,13 +3,26 @@ package org.bitcoins.rpc.serializers
 import java.io.File
 import java.net.{InetAddress, URI}
 
-import org.bitcoins.core.crypto.{DoubleSha256Digest, ECPublicKey, Sha256Hash160Digest}
+import org.bitcoins.core.crypto.{
+  DoubleSha256Digest,
+  ECPublicKey,
+  Sha256Hash160Digest
+}
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.number.{Int32, UInt32, UInt64}
-import org.bitcoins.core.protocol.{Address, BitcoinAddress, P2PKHAddress, P2SHAddress}
+import org.bitcoins.core.protocol.{
+  Address,
+  BitcoinAddress,
+  P2PKHAddress,
+  P2SHAddress
+}
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, MerkleBlock}
 import org.bitcoins.core.protocol.script.ScriptPubKey
-import org.bitcoins.core.protocol.transaction.{Transaction, TransactionInput, TransactionOutPoint}
+import org.bitcoins.core.protocol.transaction.{
+  Transaction,
+  TransactionInput,
+  TransactionOutPoint
+}
 import org.bitcoins.core.wallet.fee.BitcoinFeeUnit
 import org.bitcoins.rpc.jsonmodels._
 import org.bitcoins.rpc.serializers.JsonReaders._
@@ -208,7 +221,8 @@ object JsonSerializers {
   implicit val getNetTotalsResultReads: Reads[GetNetTotalsResult] =
     Json.reads[GetNetTotalsResult]
 
-  implicit val peerNetworkInfoReads: Reads[PeerNetworkInfo] = Json.reads[PeerNetworkInfo]
+  implicit val peerNetworkInfoReads: Reads[PeerNetworkInfo] =
+    Json.reads[PeerNetworkInfo]
   implicit val peerReads: Reads[Peer] = (
     (__ \ "id").read[Int] and
       __.read[PeerNetworkInfo] and
@@ -224,16 +238,20 @@ object JsonSerializers {
       (__ \ "whitelisted").read[Boolean] and
       (__ \ "bytessent_per_msg").read[Map[String, Int]] and
       (__ \ "bytesrecv_per_msg").read[Map[String, Int]]
-    ) (Peer)
+  )(Peer)
 
-  implicit val getRawTransactionScriptSigReads: Reads[GetRawTransactionScriptSig] = Json.reads[GetRawTransactionScriptSig]
-  implicit val getRawTransactionVinReads: Reads[GetRawTransactionVin] = Json.reads[GetRawTransactionVin]
-  implicit val getRawTransactionResultReads: Reads[GetRawTransactionResult] = Json.reads[GetRawTransactionResult]
+  implicit val getRawTransactionScriptSigReads: Reads[
+    GetRawTransactionScriptSig] = Json.reads[GetRawTransactionScriptSig]
+  implicit val getRawTransactionVinReads: Reads[GetRawTransactionVin] =
+    Json.reads[GetRawTransactionVin]
+  implicit val getRawTransactionResultReads: Reads[GetRawTransactionResult] =
+    Json.reads[GetRawTransactionResult]
 
   implicit val getTxOutResultReads: Reads[GetTxOutResult] =
     Json.reads[GetTxOutResult]
 
-  implicit val getChainTxStatsResultReads: Reads[GetChainTxStatsResult] = Json.reads[GetChainTxStatsResult]
+  implicit val getChainTxStatsResultReads: Reads[GetChainTxStatsResult] =
+    Json.reads[GetChainTxStatsResult]
 
   // Mining Models
   implicit val miningInfoReads: Reads[GetMiningInfoResult] =
@@ -267,7 +285,8 @@ object JsonSerializers {
   implicit val importMultiResultReads: Reads[ImportMultiResult] =
     Json.reads[ImportMultiResult]
 
-  implicit val dumpWalletResultReads: Reads[DumpWalletResult] = Json.reads[DumpWalletResult]
+  implicit val dumpWalletResultReads: Reads[DumpWalletResult] =
+    Json.reads[DumpWalletResult]
 
   implicit val rescanBlockChainResultReads: Reads[RescanBlockChainResult] =
     Json.reads[RescanBlockChainResult]

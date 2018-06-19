@@ -45,10 +45,16 @@ trait TestUtil extends BitcoinSLogger {
 
   lazy val network = RegTest
 
-  def instance(port: Int, rpcPort: Int, pruneMode: Boolean = false): DaemonInstance = {
+  def instance(
+      port: Int,
+      rpcPort: Int,
+      pruneMode: Boolean = false): DaemonInstance = {
     val uri = new URI("http://localhost:" + port)
     val rpcUri = new URI("http://localhost:" + rpcPort)
-    DaemonInstance(network, uri, rpcUri, authCredentials(uri, rpcUri, pruneMode))
+    DaemonInstance(network,
+                   uri,
+                   rpcUri,
+                   authCredentials(uri, rpcUri, pruneMode))
   }
 
   def startNodes(clients: Vector[RpcClient]): Unit = {
