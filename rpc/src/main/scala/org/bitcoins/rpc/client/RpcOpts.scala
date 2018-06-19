@@ -48,4 +48,15 @@ object RpcOpts {
 
   implicit val lockUnspentParameterWrites: Writes[LockUnspentOutputParameter] =
     Json.writes[LockUnspentOutputParameter]
+
+  object AddressType extends Enumeration {
+    type AddressType = Value
+    val Legacy, P2SHSegwit, Bech32 = Value
+
+    def value(addressType: AddressType): String = addressType match {
+      case Legacy     => "legacy"
+      case P2SHSegwit => "p2sh-segwit"
+      case Bech32     => "bech32"
+    }
+  }
 }

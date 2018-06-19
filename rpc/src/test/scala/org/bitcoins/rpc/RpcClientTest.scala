@@ -7,7 +7,11 @@ import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import org.bitcoins.core.crypto.ECPrivateKey
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
-import org.bitcoins.core.protocol.transaction.{Transaction, TransactionInput, TransactionOutPoint}
+import org.bitcoins.core.protocol.transaction.{
+  Transaction,
+  TransactionInput,
+  TransactionOutPoint
+}
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.rpc.client.{RpcClient, RpcOpts}
 import org.scalatest.{AsyncFlatSpec, BeforeAndAfter, BeforeAndAfterAll}
@@ -15,6 +19,7 @@ import org.bitcoins.core.number.{Int64, UInt32}
 import org.bitcoins.core.protocol.P2PKHAddress
 import org.bitcoins.core.protocol.script.ScriptSignature
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
+import org.bitcoins.rpc.client.RpcOpts.AddressType
 import org.bitcoins.rpc.jsonmodels.{GetTransactionResult, RpcAddress}
 
 import scala.concurrent.{Await, Future}
@@ -103,13 +108,13 @@ class RpcClientTest
   }
 
   it should "be able to get the added node info" in {
-    client.getAddedNodeInfo().flatMap { info =>
+    client.getAddedNodeInfo.flatMap { info =>
       assert(info.length == 1)
       assert(info.head.addednode == otherClient.getDaemon.uri)
       assert(info.head.connected.contains(true))
     }
   }
-/* TODO: Reconnect after ban is removed
+  /* TODO: Reconnect after ban is removed
   it should "be able to ban and clear the ban of a subnet" in {
     val loopBack = URI.create("http://127.0.0.1")
     client.setBan(loopBack, "add").flatMap { _ =>
@@ -162,41 +167,54 @@ class RpcClientTest
       }
     }
   }
-*/
+   */
 
   it should "be able to list address groupings" in {
     client.getNewAddress().flatMap { address =>
-      client.createRawTransaction(Vector(), Map(address -> Bitcoins(1.25))).flatMap { createdTransaction =>
-        client.fundRawTransaction(createdTransaction).flatMap { fundedTransaction =>
-          client.signRawTransaction(fundedTransaction.hex).flatMap { signedTransaction =>
-            client.sendRawTransaction(signedTransaction.hex).flatMap { txid =>
-              client.generate(1).flatMap { _ =>
-                client.listAddressGroupings.flatMap { groupings =>
-                  val rpcAddresss = groupings.last.head
-                  assert(rpcAddresss.address == address)
-                  assert(rpcAddresss.balance == Bitcoins(1.25))
+      client
+        .createRawTransaction(Vector(), Map(address -> Bitcoins(1.25)))
+        .flatMap { createdTransaction =>
+          client.fundRawTransaction(createdTransaction).flatMap {
+            fundedTransaction =>
+              client.signRawTransaction(fundedTransaction.hex).flatMap {
+                signedTransaction =>
+                  client.sendRawTransaction(signedTransaction.hex).flatMap {
+                    txid =>
+                      client.generate(1).flatMap { _ =>
+                        client.listAddressGroupings.flatMap { groupings =>
+                          val rpcAddresss = groupings.last.head
+                          assert(rpcAddresss.address == address)
+                          assert(rpcAddresss.balance == Bitcoins(1.25))
 
-                  client.getBlockHash(1).flatMap { hash =>
-                    client.getBlockWithTransactions(hash).map { block =>
-                      val firstAddress = block.tx.head.vout.head.scriptPubKey.addresses.get.head
-                      assert(groupings.max(Ordering.by[Vector[RpcAddress], BigDecimal](addr => addr.head.balance.toBigDecimal)).head.address == firstAddress)
-                    }
+                          client.getBlockHash(1).flatMap { hash =>
+                            client.getBlockWithTransactions(hash).map { block =>
+                              val firstAddress =
+                                block.tx.head.vout.head.scriptPubKey.addresses.get.head
+                              assert(
+                                groupings
+                                  .max(
+                                    Ordering.by[Vector[RpcAddress], BigDecimal](
+                                      addr => addr.head.balance.toBigDecimal))
+                                  .head
+                                  .address == firstAddress)
+                            }
+                          }
+                        }
+                      }
                   }
-                }
               }
-            }
           }
         }
-      }
     }
   }
 
   it should "be able to list utxos" in {
-    client.listUnspent().flatMap { unspent =>
+    client.listUnspent.flatMap { unspent =>
       client.getBlockHash(1).flatMap { hash =>
         client.getBlockWithTransactions(hash).flatMap { block =>
           val address = block.tx.head.vout.head.scriptPubKey.addresses.get.head
-          val unspentMined = unspent.filter(addr => addr.address.contains(address))
+          val unspentMined =
+            unspent.filter(addr => addr.address.contains(address))
           assert(unspentMined.length >= 100)
         }
       }
@@ -204,12 +222,13 @@ class RpcClientTest
   }
 
   it should "be able to lock and unlock utxos as well as list locked utxos" in {
-    client.listUnspent().flatMap { unspent =>
+    client.listUnspent.flatMap { unspent =>
       val txid1 = unspent(0).txid
       val vout1 = unspent(0).vout
       val txid2 = unspent(1).txid
       val vout2 = unspent(1).vout
-      val param = Vector(RpcOpts.LockUnspentOutputParameter(txid1, vout1), RpcOpts.LockUnspentOutputParameter(txid2, vout2))
+      val param = Vector(RpcOpts.LockUnspentOutputParameter(txid1, vout1),
+                         RpcOpts.LockUnspentOutputParameter(txid2, vout2))
       client.lockUnspent(false, param).flatMap { success =>
         assert(success)
         client.listLockUnspent.flatMap { locked =>
@@ -282,18 +301,29 @@ class RpcClientTest
 
   it should "be able to fund a raw transaction" in {
     otherClient.getNewAddress().flatMap { address =>
-      client.createRawTransaction(Vector.empty, Map(address -> Bitcoins(1))).flatMap { transactionWithoutFunds =>
-        client.fundRawTransaction(transactionWithoutFunds).flatMap { transactionResult =>
-          val transaction = transactionResult.hex
-          assert(transaction.inputs.length == 1)
-          client.getRawTransaction(transaction.inputs.head.previousOutput.txId.flip).flatMap { inputTransaction =>
-            assert(inputTransaction.vout(transaction.inputs.head.previousOutput.vout.toInt).value.satoshis.toBigInt ==
-              transactionResult.fee.satoshis.toBigInt +
-                transaction.outputs(0).value.satoshis.toBigInt +
-                transaction.outputs(1).value.satoshis.toBigInt)
+      client
+        .createRawTransaction(Vector.empty, Map(address -> Bitcoins(1)))
+        .flatMap { transactionWithoutFunds =>
+          client.fundRawTransaction(transactionWithoutFunds).flatMap {
+            transactionResult =>
+              val transaction = transactionResult.hex
+              assert(transaction.inputs.length == 1)
+              client
+                .getRawTransaction(
+                  transaction.inputs.head.previousOutput.txId.flip)
+                .flatMap { inputTransaction =>
+                  assert(
+                    inputTransaction
+                      .vout(transaction.inputs.head.previousOutput.vout.toInt)
+                      .value
+                      .satoshis
+                      .toBigInt ==
+                      transactionResult.fee.satoshis.toBigInt +
+                        transaction.outputs(0).value.satoshis.toBigInt +
+                        transaction.outputs(1).value.satoshis.toBigInt)
+                }
           }
         }
-      }
     }
   }
 
@@ -322,13 +352,15 @@ class RpcClientTest
   it should "be able to send btc to many addresses" in {
     otherClient.getNewAddress().flatMap { address1 =>
       otherClient.getNewAddress().flatMap { address2 =>
-        client.sendMany(Map(address1 -> Bitcoins(1), address2 -> Bitcoins(2))).flatMap { txid =>
-          client.getTransaction(txid).map { transaction =>
-            assert(transaction.amount == Bitcoins(-3))
-            assert(transaction.details(0).address.contains(address1))
-            assert(transaction.details(1).address.contains(address2))
+        client
+          .sendMany(Map(address1 -> Bitcoins(1), address2 -> Bitcoins(2)))
+          .flatMap { txid =>
+            client.getTransaction(txid).map { transaction =>
+              assert(transaction.amount == Bitcoins(-3))
+              assert(transaction.details(0).address.contains(address1))
+              assert(transaction.details(1).address.contains(address2))
+            }
           }
-        }
       }
     }
   }
@@ -347,98 +379,141 @@ class RpcClientTest
 
   it should "fail to abandon a transaction which has not been sent" in {
     otherClient.getNewAddress().flatMap { address =>
-      client.createRawTransaction(Vector(), Map(address -> Bitcoins(1))).flatMap { tx =>
-        recoverToSucceededIf[RuntimeException](client.abandonTransaction(tx.txIdBE))
-      }
+      client
+        .createRawTransaction(Vector(), Map(address -> Bitcoins(1)))
+        .flatMap { tx =>
+          recoverToSucceededIf[RuntimeException](
+            client.abandonTransaction(tx.txIdBE))
+        }
     }
   }
 
   it should "be able to find mem pool ancestors and descendants" in {
     client.generate(1)
     client.getNewAddress().flatMap { address1 =>
-      client.createRawTransaction(Vector(), Map(address1 -> Bitcoins(2))).flatMap { createdTransaction1 =>
-        client.fundRawTransaction(createdTransaction1).flatMap { fundedTransaction1 =>
-          client.signRawTransaction(fundedTransaction1.hex).flatMap { signedTransaction1 =>
-            assert(signedTransaction1.complete)
-            client.sendRawTransaction(signedTransaction1.hex).flatMap { txid1 =>
-              client.getRawMemPool.map { mempool => assert(mempool.head == txid1)}
-              client.getNewAddress().flatMap { address2 =>
-                val input: TransactionInput = TransactionInput(TransactionOutPoint(txid1, UInt32(0)), ScriptSignature.empty, UInt32.max-UInt32.one)
-                client.createRawTransaction(Vector(input), Map(address2 -> Bitcoins(1))).flatMap { createdTransaction2 =>
-                  client.signRawTransaction(createdTransaction2).flatMap { signedTransaction2 =>
-                    assert(signedTransaction2.complete)
-                    client.sendRawTransaction(signedTransaction2.hex, true).flatMap { txid2 =>
-                      client.getMemPoolDescendants(txid1).map { descendants =>
-                        assert(descendants.head == txid2)
+      client
+        .createRawTransaction(Vector(), Map(address1 -> Bitcoins(2)))
+        .flatMap { createdTransaction1 =>
+          client.fundRawTransaction(createdTransaction1).flatMap {
+            fundedTransaction1 =>
+              client.signRawTransaction(fundedTransaction1.hex).flatMap {
+                signedTransaction1 =>
+                  assert(signedTransaction1.complete)
+                  client.sendRawTransaction(signedTransaction1.hex).flatMap {
+                    txid1 =>
+                      client.getRawMemPool.map { mempool =>
+                        assert(mempool.head == txid1)
                       }
-                      client.getMemPoolDescendantsVerbose(txid1).map { descendants =>
-                        assert(descendants.head._1 == txid2)
-                        assert(descendants.head._2.ancestorcount == 1)
+                      client.getNewAddress().flatMap { address2 =>
+                        val input: TransactionInput = TransactionInput(
+                          TransactionOutPoint(txid1, UInt32(0)),
+                          ScriptSignature.empty,
+                          UInt32.max - UInt32.one)
+                        client
+                          .createRawTransaction(Vector(input),
+                                                Map(address2 -> Bitcoins(1)))
+                          .flatMap { createdTransaction2 =>
+                            client
+                              .signRawTransaction(createdTransaction2)
+                              .flatMap { signedTransaction2 =>
+                                assert(signedTransaction2.complete)
+                                client
+                                  .sendRawTransaction(signedTransaction2.hex,
+                                                      true)
+                                  .flatMap { txid2 =>
+                                    client.getMemPoolDescendants(txid1).map {
+                                      descendants =>
+                                        assert(descendants.head == txid2)
+                                    }
+                                    client
+                                      .getMemPoolDescendantsVerbose(txid1)
+                                      .map { descendants =>
+                                        assert(descendants.head._1 == txid2)
+                                        assert(
+                                          descendants.head._2.ancestorcount == 1)
+                                      }
+                                    client.getMemPoolAncestors(txid2).map {
+                                      ancestors =>
+                                        assert(ancestors.head == txid1)
+                                    }
+                                    client
+                                      .getMemPoolAncestorsVerbose(txid2)
+                                      .map { ancestors =>
+                                        assert(ancestors.head._1 == txid1)
+                                        assert(
+                                          ancestors.head._2.descendantcount == 2)
+                                      }
+                                  }
+                              }
+                          }
                       }
-                      client.getMemPoolAncestors(txid2).map { ancestors =>
-                        assert(ancestors.head == txid1)
-                      }
-                      client.getMemPoolAncestorsVerbose(txid2).map { ancestors =>
-                        assert(ancestors.head._1 == txid1)
-                        assert(ancestors.head._2.descendantcount == 2)
-                      }
-                    }
                   }
-                }
               }
-            }
           }
         }
-      }
     }
   }
 
   it should "be able to list transactions by receiving addresses" in {
     client.getNewAddress().flatMap { address =>
-      client.createRawTransaction(Vector(), Map(address -> Bitcoins(1.5))).flatMap { createdTransaction =>
-        client.fundRawTransaction(createdTransaction).flatMap { fundedTransaction =>
-          client.signRawTransaction(fundedTransaction.hex).flatMap { signedTransaction =>
-            client.sendRawTransaction(signedTransaction.hex).flatMap { txid =>
-              client.generate(1).flatMap { _ =>
-                client.listReceivedByAddress().map { receivedList =>
-                  val entryList = receivedList.filter(entry => entry.address == address)
-                  assert(entryList.length == 1)
-                  val entry = entryList.head
-                  assert(entry.txids.head == txid)
-                  assert(entry.address == address)
-                  assert(entry.amount == Bitcoins(1.5))
-                  assert(entry.confirmations == 1)
-                }
+      client
+        .createRawTransaction(Vector(), Map(address -> Bitcoins(1.5)))
+        .flatMap { createdTransaction =>
+          client.fundRawTransaction(createdTransaction).flatMap {
+            fundedTransaction =>
+              client.signRawTransaction(fundedTransaction.hex).flatMap {
+                signedTransaction =>
+                  client.sendRawTransaction(signedTransaction.hex).flatMap {
+                    txid =>
+                      client.generate(1).flatMap { _ =>
+                        client.listReceivedByAddress().map { receivedList =>
+                          val entryList = receivedList.filter(entry =>
+                            entry.address == address)
+                          assert(entryList.length == 1)
+                          val entry = entryList.head
+                          assert(entry.txids.head == txid)
+                          assert(entry.address == address)
+                          assert(entry.amount == Bitcoins(1.5))
+                          assert(entry.confirmations == 1)
+                        }
+                      }
+                  }
               }
-            }
           }
         }
-      }
     }
   }
 
   it should "be able to import an address" in {
     client.getNewAddress().flatMap { address =>
       otherClient.importAddress(address).flatMap { _ =>
-        client.createRawTransaction(Vector(), Map(address -> Bitcoins(1.5))).flatMap { createdTransaction =>
-          client.fundRawTransaction(createdTransaction).flatMap { fundedTransaction =>
-            client.signRawTransaction(fundedTransaction.hex).flatMap { signedTransaction =>
-              client.sendRawTransaction(signedTransaction.hex).flatMap { txid =>
-                client.generate(1).flatMap { _ =>
-                  otherClient.listReceivedByAddress(includeWatchOnly = true).flatMap { list =>
-                    val entryList = list.filter(addr => addr.involvesWatchonly.contains(true))
-                    assert(entryList.length == 1)
-                    val entry = entryList.head
-                    assert(entry.address == address)
-                    assert(entry.involvesWatchonly.contains(true))
-                    assert(entry.amount == Bitcoins(1.5))
-                    assert(entry.txids.head == txid)
-                  }
+        client
+          .createRawTransaction(Vector(), Map(address -> Bitcoins(1.5)))
+          .flatMap { createdTransaction =>
+            client.fundRawTransaction(createdTransaction).flatMap {
+              fundedTransaction =>
+                client.signRawTransaction(fundedTransaction.hex).flatMap {
+                  signedTransaction =>
+                    client.sendRawTransaction(signedTransaction.hex).flatMap {
+                      txid =>
+                        client.generate(1).flatMap { _ =>
+                          otherClient
+                            .listReceivedByAddress(includeWatchOnly = true)
+                            .flatMap { list =>
+                              val entryList = list.filter(addr =>
+                                addr.involvesWatchonly.contains(true))
+                              assert(entryList.length == 1)
+                              val entry = entryList.head
+                              assert(entry.address == address)
+                              assert(entry.involvesWatchonly.contains(true))
+                              assert(entry.amount == Bitcoins(1.5))
+                              assert(entry.txids.head == txid)
+                            }
+                        }
+                    }
                 }
-              }
             }
           }
-        }
       }
     }
   }
@@ -654,19 +729,19 @@ class RpcClientTest
   }
 
   it should "be able to get a new raw change address" in {
-    client.getRawChangeAddress().map { address =>
+    client.getRawChangeAddress.map { address =>
       succeed
     }
 
-    client.getRawChangeAddress(Some("legacy")).map { address =>
+    client.getRawChangeAddress(AddressType.Legacy).map { address =>
       succeed
     }
 
-    client.getRawChangeAddress(Some("p2sh-segwit")).map { address =>
+    client.getRawChangeAddress(AddressType.P2SHSegwit).map { address =>
       succeed
     }
 
-    client.getRawChangeAddress(Some("bech32")).map { address =>
+    client.getRawChangeAddress(AddressType.Bech32).map { address =>
       succeed
     }
   }
@@ -979,7 +1054,7 @@ class RpcClientTest
     val ecPrivKey1 = ECPrivateKey.freshPrivateKey
     val pubKey1 = ecPrivKey1.publicKey
 
-    client.getNewAddress(addressType = Some("legacy")).flatMap { address =>
+    client.getNewAddress(addressType = AddressType.Legacy).flatMap { address =>
       client
         .addMultiSigAddress(2,
                             Vector(Left(pubKey1),
@@ -994,7 +1069,7 @@ class RpcClientTest
     val ecPrivKey1 = ECPrivateKey.freshPrivateKey
     val pubKey1 = ecPrivKey1.publicKey
 
-    client.getNewAddress(addressType = Some("legacy")).flatMap { address =>
+    client.getNewAddress(addressType = AddressType.Legacy).flatMap { address =>
       client
         .addMultiSigAddress(2,
                             Vector(Left(pubKey1),
@@ -1010,7 +1085,7 @@ class RpcClientTest
   }
 
   it should "be able to dump a private key" in {
-    client.getNewAddress(addressType = Some("legacy")).flatMap { address =>
+    client.getNewAddress(addressType = AddressType.Legacy).flatMap { address =>
       client.dumpPrivKey(address.asInstanceOf[P2PKHAddress]).map { key =>
         succeed
       }
@@ -1026,22 +1101,25 @@ class RpcClientTest
       client.dumpPrivKey(address).map { key =>
         assert(key == ecPrivateKey)
       }
-      client.dumpWallet(client.getDaemon.authCredentials.datadir + "/wallet_dump.dat").flatMap { result =>
-        val reader = new Scanner(result.filename)
-        var found = false
-        while (reader.hasNext) {
-          if (reader.next() == ecPrivateKey.toWIF(networkParam)) {
-            found = true
+      client
+        .dumpWallet(
+          client.getDaemon.authCredentials.datadir + "/wallet_dump.dat")
+        .flatMap { result =>
+          val reader = new Scanner(result.filename)
+          var found = false
+          while (reader.hasNext) {
+            if (reader.next() == ecPrivateKey.toWIF(networkParam)) {
+              found = true
+            }
           }
+          assert(found)
         }
-        assert(found)
-      }
     }
   }
 
   it should "be able to sign a message and verify that signature" in {
     val message = "Never gonna give you up\nNever gonna let you down\n..."
-    client.getNewAddress(addressType = Some("legacy")).flatMap { address =>
+    client.getNewAddress(addressType = AddressType.Legacy).flatMap { address =>
       client.signMessage(address.asInstanceOf[P2PKHAddress], message).flatMap {
         signature =>
           client
@@ -1156,7 +1234,7 @@ class RpcClientTest
   }
 
   it should "be able to import a wallet" in {
-    client.getNewAddress(addressType = Some("legacy")).flatMap { address =>
+    client.getNewAddress(addressType = AddressType.Legacy).flatMap { address =>
       client
         .dumpWallet(
           client.getDaemon.authCredentials.datadir + "/client_wallet.dat")
@@ -1185,7 +1263,7 @@ class RpcClientTest
   }
 
   it should "be able to get the chain tx stats" in {
-    client.getChainTxStats().map { stats =>
+    client.getChainTxStats.map { stats =>
       assert(stats.time > UInt32(0))
       assert(stats.txcount > 0)
       assert(stats.window_block_count > 0)
@@ -1202,7 +1280,8 @@ class RpcClientTest
   }
 
   it should "be able to save the mem pool to disk" in {
-    val regTest = new File(client.getDaemon.authCredentials.datadir + "/regtest")
+    val regTest =
+      new File(client.getDaemon.authCredentials.datadir + "/regtest")
     assert(regTest.isDirectory)
     assert(!regTest.list().contains("mempool.dat"))
     client.saveMemPool.map { _ =>
@@ -1211,9 +1290,9 @@ class RpcClientTest
   }
 
   it should "be able to get and set the logging configuration" in {
-    client.logging().flatMap { info =>
+    client.logging.flatMap { info =>
       info.keySet.foreach(category => assert(info(category) == 1))
-      client.logging(exclude = Some(Vector("qt"))).map { info =>
+      client.logging(exclude = Vector("qt")).map { info =>
         assert(info("qt") == 0)
       }
     }
@@ -1296,29 +1375,37 @@ class RpcClientTest
     val account = "another_new_account"
     val emptyAccount = "empty_account"
     client.getNewAddress(account).flatMap { address =>
-      client.createRawTransaction(Vector(), Map(address -> Bitcoins(1.5))).flatMap { ctx =>
-        client.fundRawTransaction(ctx).flatMap { ftx =>
-          client.signRawTransaction(ftx.hex).flatMap { stx =>
-            client.sendRawTransaction(stx.hex).flatMap { txid =>
-              client.generate(1).flatMap { _ =>
-                client.getReceivedByAccount(account).flatMap { amount =>
-                  assert(amount == Bitcoins(1.5))
-                  client.listReceivedByAccount().map { list =>
-                    assert(list.filter(acc => acc.account == account).head.amount == Bitcoins(1.5))
-                    assert(list.filter(acc => acc.account == "").head.amount > Bitcoins(0))
-                    assert(!list.exists(acc => acc.account == emptyAccount))
-                  }
-                  client.listAccounts().map { map =>
-                    assert(map(account) == Bitcoins(1.5))
-                    assert(map("") > Bitcoins(0))
-                    assert(!map.keySet.contains(emptyAccount))
+      client
+        .createRawTransaction(Vector(), Map(address -> Bitcoins(1.5)))
+        .flatMap { ctx =>
+          client.fundRawTransaction(ctx).flatMap { ftx =>
+            client.signRawTransaction(ftx.hex).flatMap { stx =>
+              client.sendRawTransaction(stx.hex).flatMap { txid =>
+                client.generate(1).flatMap { _ =>
+                  client.getReceivedByAccount(account).flatMap { amount =>
+                    assert(amount == Bitcoins(1.5))
+                    client.listReceivedByAccount().map { list =>
+                      assert(list
+                        .filter(acc => acc.account == account)
+                        .head
+                        .amount == Bitcoins(1.5))
+                      assert(list
+                        .filter(acc => acc.account == "")
+                        .head
+                        .amount > Bitcoins(0))
+                      assert(!list.exists(acc => acc.account == emptyAccount))
+                    }
+                    client.listAccounts().map { map =>
+                      assert(map(account) == Bitcoins(1.5))
+                      assert(map("") > Bitcoins(0))
+                      assert(!map.keySet.contains(emptyAccount))
+                    }
                   }
                 }
               }
             }
           }
         }
-      }
     }
   }
 
@@ -1335,18 +1422,16 @@ class RpcClientTest
   it should "be able to add and remove a node" in {
     otherClient.addNode(walletClient.getDaemon.uri, "add").flatMap { _ =>
       Thread.sleep(10000)
-      otherClient.getAddedNodeInfo(Some(walletClient.getDaemon.uri)).flatMap {
-        info =>
-          assert(info.length == 1)
-          assert(info.head.addednode == walletClient.getDaemon.uri)
-          assert(info.head.connected.contains(true))
+      otherClient.getAddedNodeInfo(walletClient.getDaemon.uri).flatMap { info =>
+        assert(info.length == 1)
+        assert(info.head.addednode == walletClient.getDaemon.uri)
+        assert(info.head.connected.contains(true))
 
-          otherClient.addNode(walletClient.getDaemon.uri, "remove").flatMap {
-            _ =>
-              otherClient.getAddedNodeInfo().map { newInfo =>
-                assert(newInfo.isEmpty)
-              }
+        otherClient.addNode(walletClient.getDaemon.uri, "remove").flatMap { _ =>
+          otherClient.getAddedNodeInfo.map { newInfo =>
+            assert(newInfo.isEmpty)
           }
+        }
       }
     }
   }
@@ -1354,17 +1439,16 @@ class RpcClientTest
   it should "be able to add and disconnect a node" in {
     otherClient.addNode(walletClient.getDaemon.uri, "add").flatMap { _ =>
       Thread.sleep(1000)
-      otherClient.getAddedNodeInfo(Some(walletClient.getDaemon.uri)).flatMap {
-        info =>
-          assert(info.head.connected.contains(true))
+      otherClient.getAddedNodeInfo(walletClient.getDaemon.uri).flatMap { info =>
+        assert(info.head.connected.contains(true))
 
-          otherClient.disconnectNode(walletClient.getDaemon.uri).flatMap { _ =>
-            Thread.sleep(1000)
-            otherClient.getAddedNodeInfo(Some(walletClient.getDaemon.uri)).map {
-              newInfo =>
-                assert(newInfo.head.connected.contains(false))
-            }
+        otherClient.disconnectNode(walletClient.getDaemon.uri).flatMap { _ =>
+          Thread.sleep(1000)
+          otherClient.getAddedNodeInfo(walletClient.getDaemon.uri).map {
+            newInfo =>
+              assert(newInfo.head.connected.contains(false))
           }
+        }
       }
     }
   }
