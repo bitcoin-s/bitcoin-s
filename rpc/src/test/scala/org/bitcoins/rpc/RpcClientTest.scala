@@ -1,22 +1,21 @@
 package org.bitcoins.rpc
 
 import java.io.File
-import java.lang.RuntimeException
-import java.net.URI
+import java.util.Scanner
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import org.bitcoins.core.crypto.ECPrivateKey
-import org.bitcoins.core.currency.Bitcoins
+import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionInput, TransactionOutPoint}
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.rpc.client.{RpcClient, RpcOpts}
 import org.scalatest.{AsyncFlatSpec, BeforeAndAfter, BeforeAndAfterAll}
-import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.number.{Int64, UInt32}
 import org.bitcoins.core.protocol.P2PKHAddress
-import org.bitcoins.core.protocol.script.{EmptyScriptSignature, ScriptSignature}
-import org.bitcoins.rpc.jsonmodels.{GetTransactionResult, GetWalletInfoResult, MultiSigResult, RpcAddress}
-import org.scalatest.concurrent.ScalaFutures
+import org.bitcoins.core.protocol.script.ScriptSignature
+import org.bitcoins.core.wallet.fee.SatoshisPerByte
+import org.bitcoins.rpc.jsonmodels.{GetTransactionResult, RpcAddress}
 
 import scala.concurrent.{Await, Future}
 import scala.concurrent.duration.DurationInt
@@ -39,6 +38,9 @@ class RpcClientTest
   val walletClient = new RpcClient(
     TestUtil.instance(networkParam.port + 20, networkParam.rpcPort + 20))
 
+  val pruneClient = new RpcClient(
+    TestUtil.instance(networkParam.port + 15, networkParam.rpcPort + 15, true))
+
   val logger = BitcoinSLogger.logger
 
   var password = "password"
@@ -55,6 +57,9 @@ class RpcClientTest
     println("Bitcoin server starting")
     Thread.sleep(3000)
     otherClient.start()
+    println("Bitcoin server starting")
+    Thread.sleep(3000)
+    pruneClient.start()
     println("Bitcoin server starting")
     Thread.sleep(3000)
 
@@ -74,9 +79,18 @@ class RpcClientTest
     // Mine some blocks
     println("Mining some blocks")
     Await.result(client.generate(200), 3.seconds)
+    Await.result(pruneClient.generate(3000), 60.seconds)
   }
 
   behavior of "RpcClient"
+
+  it should "be able to prune the blockchain" in {
+    pruneClient.getBlockCount.flatMap { count =>
+      pruneClient.pruneBlockChain(count).flatMap { pruned =>
+        assert(pruned > 0)
+      }
+    }
+  }
 
   it should "be able to get peer info" in {
     client.getPeerInfo.flatMap { infoList =>
@@ -128,7 +142,28 @@ class RpcClientTest
       }
     }
   }
+
+  it should "be able to submit a new block" in {
+    client.disconnectNode(otherClient.getDaemon.uri).flatMap { _ =>
+      otherClient.generate(1).flatMap { hash =>
+        otherClient.getBlockRaw(hash.head).flatMap { block =>
+          client.submitBlock(block).flatMap { _ =>
+            client.getBlockCount.flatMap { count =>
+              client.getBlockHash(count).flatMap { hash1 =>
+                otherClient.getBlockHash(count).flatMap { hash2 =>
+                  assert(hash1 == hash2)
+                  client.addNode(otherClient.getDaemon.uri, "add")
+                  succeed
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
 */
+
   it should "be able to list address groupings" in {
     client.getNewAddress().flatMap { address =>
       client.createRawTransaction(Vector(), Map(address -> Bitcoins(1.25))).flatMap { createdTransaction =>
@@ -991,6 +1026,16 @@ class RpcClientTest
       client.dumpPrivKey(address).map { key =>
         assert(key == ecPrivateKey)
       }
+      client.dumpWallet(client.getDaemon.authCredentials.datadir + "/wallet_dump.dat").flatMap { result =>
+        val reader = new Scanner(result.filename)
+        var found = false
+        while (reader.hasNext) {
+          if (reader.next() == ecPrivateKey.toWIF(networkParam)) {
+            found = true
+          }
+        }
+        assert(found)
+      }
     }
   }
 
@@ -1144,6 +1189,15 @@ class RpcClientTest
       assert(stats.time > UInt32(0))
       assert(stats.txcount > 0)
       assert(stats.window_block_count > 0)
+    }
+  }
+
+  it should "be able to set the tx fee" in {
+    client.setTxFee(Bitcoins(0.01)).flatMap { success =>
+      assert(success)
+      client.getWalletInfo.map { info =>
+        assert(info.paytxfee == SatoshisPerByte(Satoshis(Int64(1000))))
+      }
     }
   }
 
@@ -1319,11 +1373,14 @@ class RpcClientTest
     client.stop.map(println)
     otherClient.stop.map(println)
     walletClient.stop.map(println)
+    pruneClient.stop.map(println)
     if (TestUtil.deleteTmpDir(client.getDaemon.authCredentials.datadir))
       println("Temp bitcoin directory deleted")
     if (TestUtil.deleteTmpDir(otherClient.getDaemon.authCredentials.datadir))
       println("Temp bitcoin directory deleted")
     if (TestUtil.deleteTmpDir(walletClient.getDaemon.authCredentials.datadir))
+      println("Temp bitcoin directory deleted")
+    if (TestUtil.deleteTmpDir(pruneClient.getDaemon.authCredentials.datadir))
       println("Temp bitcoin directory deleted")
   }
 }

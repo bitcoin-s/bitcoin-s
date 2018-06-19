@@ -17,7 +17,8 @@ trait TestUtil extends BitcoinSLogger {
     * in the bitcoin.conf in the datadir */
   def authCredentials(
       uri: URI,
-      rpcUri: URI): AuthCredentials = {
+      rpcUri: URI,
+      pruneMode: Boolean): AuthCredentials = {
     val d = "/tmp/" + randomDirName
     val f = new java.io.File(d)
     f.mkdir()
@@ -35,16 +36,19 @@ trait TestUtil extends BitcoinSLogger {
     pw.write("debug=1\n")
     pw.write("regtest=1\n")
     pw.write("walletbroadcast=0\n")
+    if (pruneMode) {
+      pw.write("prune=1\n")
+    }
     pw.close()
     AuthCredentials(username, pass, d)
   }
 
   lazy val network = RegTest
 
-  def instance(port: Int, rpcPort: Int): DaemonInstance = {
+  def instance(port: Int, rpcPort: Int, pruneMode: Boolean = false): DaemonInstance = {
     val uri = new URI("http://localhost:" + port)
     val rpcUri = new URI("http://localhost:" + rpcPort)
-    DaemonInstance(network, uri, rpcUri, authCredentials(uri, rpcUri))
+    DaemonInstance(network, uri, rpcUri, authCredentials(uri, rpcUri, pruneMode))
   }
 
   def startNodes(clients: Vector[RpcClient]): Unit = {

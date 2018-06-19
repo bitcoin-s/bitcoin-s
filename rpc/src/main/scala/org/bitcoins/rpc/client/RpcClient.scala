@@ -15,7 +15,6 @@ import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, MerkleBlock}
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionInput, TransactionOutPoint}
 import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil}
-import org.bitcoins.core.wallet.fee.BitcoinFeeUnit
 import org.bitcoins.rpc.config.DaemonInstance
 import play.api.libs.json._
 import org.bitcoins.rpc.jsonmodels._
@@ -90,28 +89,15 @@ class RpcClient(instance: DaemonInstance)(
       List(JsString(txid.hex), JsNumber(0), JsNumber(feeDelta.toLong)))
   }
 
-  def pruneBlockChain(height: Int): Future[Int] = {
-    bitcoindCall[Int]("pruneblockchain", List(JsNumber(height)))
-  }
-
   def removePrunedFunds(txid: DoubleSha256Digest): Future[Unit] = {
     bitcoindCall[Unit]("removeprunedfunds", List(JsString(txid.hex)))
-  }
-
-  // Should be BitcoinFeeUnit
-  def setTxFee(feePerKB: Bitcoins): Future[Boolean] = {
-    bitcoindCall[Boolean]("settxfee", List(JsNumber(feePerKB.toBigDecimal)))
-  }
-
-  def submitBlock(block: Block): Future[Unit] = {
-    bitcoindCall[Unit]("submitblock", List(JsString(block.hex)))
   }
 
   def combineRawTransaction(txs: Vector[Transaction]): Future[Transaction] = {
     bitcoindCall[Transaction]("combinerawtransaction", List(Json.toJson(txs)))
   }
 
-  def importPubKey(pubKey: ScriptPubKey, label: String = "", rescan: Boolean = true): Future[Unit] = {
+  def importPubKey(pubKey: ECPublicKey, label: String = "", rescan: Boolean = true): Future[Unit] = {
     bitcoindCall[Unit]("importpubkey", List(JsString(pubKey.hex), JsString(label), JsBoolean(rescan)))
   }
 
@@ -664,6 +650,10 @@ class RpcClient(instance: DaemonInstance)(
     bitcoindCall[Unit]("ping")
   }
 
+  def pruneBlockChain(height: Int): Future[Int] = {
+    bitcoindCall[Int]("pruneblockchain", List(JsNumber(height)))
+  }
+
   def rescanBlockChain(start: Option[Int] = None, stop: Option[Int] = None): Future[RescanBlockChainResult] = {
     val params =
       if (start.isEmpty) {
@@ -756,6 +746,11 @@ class RpcClient(instance: DaemonInstance)(
     bitcoindCall[Unit]("setnetworkactive", List(JsBoolean(activate)))
   }
 
+  // Should be BitcoinFeeUnit
+  def setTxFee(feePerKB: Bitcoins): Future[Boolean] = {
+    bitcoindCall[Boolean]("settxfee", List(JsNumber(feePerKB.toBigDecimal)))
+  }
+
   def signMessage(address: P2PKHAddress, message: String): Future[String] = {
     bitcoindCall[String]("signmessage",
                          List(JsString(address.value), JsString(message)))
@@ -798,6 +793,10 @@ class RpcClient(instance: DaemonInstance)(
 
   def stop: Future[String] = {
     bitcoindCall[String]("stop")
+  }
+
+  def submitBlock(block: Block): Future[Unit] = {
+    bitcoindCall[Unit]("submitblock", List(JsString(block.hex)))
   }
 
   def uptime: Future[UInt32] = {
