@@ -138,7 +138,7 @@ class RpcClientTest
         client.listBanned.flatMap { list =>
           assert(list.length == 2)
 
-          client.clearBanned.flatMap { _ =>
+          client.clearBanned().flatMap { _ =>
             client.listBanned.map { newList =>
               assert(newList.isEmpty)
             }
@@ -518,7 +518,7 @@ class RpcClientTest
     }
   }
 
-  private def createRawTransaction: Future[Transaction] = {
+  private def createRawTransaction(): Future[Transaction] = {
     client.generate(2).flatMap { blocks =>
       client.getBlock(blocks(0)).flatMap { block0 =>
         client.getBlock(blocks(1)).flatMap { block1 =>
@@ -572,8 +572,7 @@ class RpcClientTest
   }
 
   it should "be able to decode a raw transaction" in {
-    val transactionF = createRawTransaction
-    transactionF.flatMap { transaction =>
+    createRawTransaction().flatMap { transaction =>
       client.decodeRawTransaction(transaction).map { rpcTransaction =>
         assert(rpcTransaction.txid == transaction.txIdBE)
         assert(rpcTransaction.locktime == transaction.lockTime)
@@ -585,8 +584,7 @@ class RpcClientTest
   }
 
   it should "be able to sign a raw transaction with wallet keys" in {
-    val transactionF = createRawTransaction
-    transactionF.flatMap { transaction =>
+    createRawTransaction().flatMap { transaction =>
       client.signRawTransaction(transaction).map { signedTransaction =>
         assert(signedTransaction.complete)
       }
@@ -594,8 +592,7 @@ class RpcClientTest
   }
 
   it should "be able to send a raw transaction to the mem pool" in {
-    val transactionF = createRawTransaction
-    transactionF.flatMap { transaction =>
+    createRawTransaction().flatMap { transaction =>
       client.signRawTransaction(transaction).flatMap { signedTransaction =>
         client
           .generate(100)
@@ -609,9 +606,8 @@ class RpcClientTest
     }
   }
 
-  private def sendTransaction: Future[GetTransactionResult] = {
-    val transactionF = createRawTransaction
-    transactionF.flatMap { transaction =>
+  private def sendTransaction(): Future[GetTransactionResult] = {
+    createRawTransaction().flatMap { transaction =>
       client.signRawTransaction(transaction).flatMap { signedTransaction =>
         client
           .generate(100)
@@ -626,7 +622,7 @@ class RpcClientTest
   }
 
   it should "be able to get a raw transaction in serialized form from the mem pool" in {
-    sendTransaction.flatMap { tx =>
+    sendTransaction().flatMap { tx =>
       client.getRawTransactionRaw(tx.txid).map { transaction =>
         assert(transaction.txIdBE == tx.txid)
       }
@@ -634,8 +630,7 @@ class RpcClientTest
   }
 
   it should "be able to find a transaction sent to the mem pool" in {
-    val transactionF = sendTransaction
-    transactionF.flatMap { transaction =>
+    sendTransaction().flatMap { transaction =>
       client.getRawMemPool.map { memPool =>
         assert(memPool.length == 1)
         assert(memPool.head == transaction.txid)
@@ -644,7 +639,7 @@ class RpcClientTest
   }
 
   it should "be able to find a verbose transaction in the mem pool" in {
-    sendTransaction.flatMap { transaction =>
+    sendTransaction().flatMap { transaction =>
       client.getRawMemPoolWithTransactions.flatMap { memPool =>
         val txid = memPool.keySet.head
         assert(txid == transaction.txid)
@@ -654,8 +649,7 @@ class RpcClientTest
   }
 
   it should "be able to find a mem pool entry" in {
-    val transactionF = sendTransaction
-    transactionF.flatMap { transaction =>
+    sendTransaction().flatMap { transaction =>
       client.getMemPoolEntry(transaction.txid).map { memPoolEntry =>
         succeed
       }
@@ -666,7 +660,7 @@ class RpcClientTest
     client.generate(1).flatMap { _ =>
       client.getMemPoolInfo.flatMap { info =>
         assert(info.size == 0)
-        sendTransaction.flatMap { _ =>
+        sendTransaction().flatMap { _ =>
           client.getMemPoolInfo.map { newInfo =>
             assert(newInfo.size == 1)
           }
@@ -714,8 +708,7 @@ class RpcClientTest
   }
 
   it should "be able to get an address from bitcoind" in {
-    val addressF = client.getNewAddress()
-    addressF.map { address =>
+    client.getNewAddress().map { address =>
       succeed
     }
   }
@@ -729,7 +722,7 @@ class RpcClientTest
   }
 
   it should "be able to get a new raw change address" in {
-    client.getRawChangeAddress.map { address =>
+    client.getRawChangeAddress().map { address =>
       succeed
     }
 
@@ -768,7 +761,7 @@ class RpcClientTest
   it should "be able to get the unconfirmed balance" in {
     client.getUnconfirmedBalance.flatMap { balance =>
       assert(balance == Bitcoins(0))
-      sendTransaction.flatMap { transaction =>
+      sendTransaction().flatMap { transaction =>
         client.getUnconfirmedBalance.map { newBalance =>
           assert(newBalance == transaction.amount)
         }
@@ -796,8 +789,7 @@ class RpcClientTest
   }
 
   it should "be able to get the block count" in {
-    val blockCountF = client.getBlockCount
-    blockCountF.flatMap { count =>
+    client.getBlockCount.flatMap { count =>
       assert(count >= 0)
       otherClient.getBlockCount.map { otherCount =>
         assert(count == otherCount)
@@ -806,8 +798,7 @@ class RpcClientTest
   }
 
   it should "be able to get the connection count" in {
-    val connectionCountF = client.getConnectionCount
-    connectionCountF.map { count =>
+    client.getConnectionCount.map { count =>
       assert(count == 1)
     }
 
@@ -817,37 +808,32 @@ class RpcClientTest
   }
 
   it should "be able to get the best block hash" in {
-    val bestHashF = client.getBestBlockHash
-    bestHashF.map { hash =>
+    client.getBestBlockHash.map { hash =>
       succeed
     }
   }
 
   it should "be able to get the mining info" in {
-    val miningInfoF = client.getMiningInfo
-    miningInfoF.map { info =>
+    client.getMiningInfo.map { info =>
       assert(info.chain == "regtest")
     }
   }
 
-  it should "be able to get the chain tips" in { // Is there more to test here?
-    val chainTipsF = client.getChainTips
-    chainTipsF.map { tipArray =>
+  it should "be able to get the chain tips" in {
+    client.getChainTips.map { tipArray =>
       succeed
     }
   }
 
   it should "be able to get the network info" in {
-    val networkInfoF = client.getNetworkInfo
-    networkInfoF.map { info =>
+    client.getNetworkInfo.map { info =>
       assert(info.networkactive)
       assert(info.localrelay)
     }
   }
 
   it should "be able to generate blocks" in {
-    val blocksF = client.generate(3)
-    blocksF.map { blocks =>
+    client.generate(3).map { blocks =>
       assert(blocks.length == 3)
     }
   }
@@ -868,24 +854,19 @@ class RpcClientTest
   }
 
   it should "be able to generate blocks and then get their serialized headers" in {
-    val blocksF = client.generate(2)
-    blocksF.flatMap { blocks =>
-      val headerF1 = client.getBlockHeaderRaw(blocks(1))
-      headerF1.map { header =>
+    client.generate(2).flatMap { blocks =>
+      client.getBlockHeaderRaw(blocks(1)).map { header =>
         assert(header.previousBlockHashBE == blocks(0))
       }
     }
   }
 
   it should "be able to generate blocks and then get their headers" in {
-    val blocksF = client.generate(2)
-    blocksF.flatMap { blocks =>
-      val headerF0 = client.getBlockHeader(blocks(0))
-      headerF0.map { header =>
+    client.generate(2).flatMap { blocks =>
+      client.getBlockHeader(blocks(0)).map { header =>
         assert(header.nextblockhash.contains(blocks(1)))
       }
-      val headerF1 = client.getBlockHeader(blocks(1))
-      headerF1.map { header =>
+      client.getBlockHeader(blocks(1)).map { header =>
         assert(header.previousblockhash.contains(blocks(0)))
         assert(header.nextblockhash.isEmpty)
       }
@@ -893,8 +874,7 @@ class RpcClientTest
   }
 
   it should "be able to get the balance" in {
-    val balanceF = client.getBalance
-    balanceF.flatMap { balance =>
+    client.getBalance.flatMap { balance =>
       assert(balance.toBigDecimal > 0)
       client.generate(1).flatMap { _ =>
         client.getBalance.map { newBalance =>
@@ -1003,7 +983,7 @@ class RpcClientTest
   }
 
   it should "be able to ping" in {
-    client.ping.map(_ => succeed)
+    client.ping().map(_ => succeed)
   }
 
   it should "be able to validate a bitcoin address" in {
@@ -1196,13 +1176,13 @@ class RpcClientTest
   }
 
   it should "be able to lock and unlock the wallet" in {
-    walletClient.walletLock.flatMap { _ =>
+    walletClient.walletLock().flatMap { _ =>
       walletClient.walletPassphrase(password, 1000).flatMap { _ =>
         walletClient.getWalletInfo.flatMap { info =>
           assert(info.unlocked_until.nonEmpty)
           assert(info.unlocked_until.get > 0)
 
-          walletClient.walletLock.flatMap { _ =>
+          walletClient.walletLock().flatMap { _ =>
             walletClient.getWalletInfo.map { newInfo =>
               assert(newInfo.unlocked_until.contains(0))
             }
@@ -1213,7 +1193,7 @@ class RpcClientTest
   }
 
   it should "be able to change the wallet password" in {
-    walletClient.walletLock.flatMap { _ =>
+    walletClient.walletLock().flatMap { _ =>
       walletClient.walletPassphraseChange(password, "new_password").flatMap {
         _ =>
           password = "new_password"
@@ -1222,7 +1202,7 @@ class RpcClientTest
               assert(info.unlocked_until.nonEmpty)
               assert(info.unlocked_until.get > 0)
 
-              walletClient.walletLock.flatMap { _ =>
+              walletClient.walletLock().flatMap { _ =>
                 walletClient.getWalletInfo.map { newInfo =>
                   assert(newInfo.unlocked_until.contains(0))
                 }
@@ -1284,7 +1264,7 @@ class RpcClientTest
       new File(client.getDaemon.authCredentials.datadir + "/regtest")
     assert(regTest.isDirectory)
     assert(!regTest.list().contains("mempool.dat"))
-    client.saveMemPool.map { _ =>
+    client.saveMemPool().map { _ =>
       assert(regTest.list().contains("mempool.dat"))
     }
   }
@@ -1342,7 +1322,7 @@ class RpcClientTest
 
   it should "be able to abort a rescan of the blockchain" in {
     recoverToSucceededIf[RuntimeException](client.rescanBlockChain())
-    client.abortRescan.map { _ =>
+    client.abortRescan().map { _ =>
       succeed
     }
   }
@@ -1454,10 +1434,10 @@ class RpcClientTest
   }
 
   override def afterAll(): Unit = {
-    client.stop.map(println)
-    otherClient.stop.map(println)
-    walletClient.stop.map(println)
-    pruneClient.stop.map(println)
+    client.stop().map(println)
+    otherClient.stop().map(println)
+    walletClient.stop().map(println)
+    pruneClient.stop().map(println)
     if (TestUtil.deleteTmpDir(client.getDaemon.authCredentials.datadir))
       println("Temp bitcoin directory deleted")
     if (TestUtil.deleteTmpDir(otherClient.getDaemon.authCredentials.datadir))

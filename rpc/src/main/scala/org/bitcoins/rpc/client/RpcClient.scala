@@ -120,7 +120,7 @@ class RpcClient(instance: DaemonInstance)(
     bitcoindCall[Unit]("abandontransaction", List(JsString(txid.hex)))
   }
 
-  def abortRescan: Future[Unit] = {
+  def abortRescan(): Future[Unit] = {
     bitcoindCall[Unit]("abortrescan")
   }
 
@@ -183,7 +183,7 @@ class RpcClient(instance: DaemonInstance)(
     bitcoindCall[Unit]("backupwallet", List(JsString(destination)))
   }
 
-  def clearBanned: Future[Unit] = {
+  def clearBanned(): Future[Unit] = {
     bitcoindCall[Unit]("clearbanned")
   }
 
@@ -492,7 +492,7 @@ class RpcClient(instance: DaemonInstance)(
         List(JsString(AddressType.value(addressType.get))))
     }
   }
-  def getRawChangeAddress: Future[BitcoinAddress] = getRawChangeAddress(None)
+  def getRawChangeAddress(): Future[BitcoinAddress] = getRawChangeAddress(None)
 
   def getRawChangeAddress(addressType: AddressType): Future[BitcoinAddress] =
     getRawChangeAddress(Some(addressType))
@@ -784,7 +784,7 @@ class RpcClient(instance: DaemonInstance)(
                                JsString(comment)))
   }
 
-  def ping: Future[Unit] = {
+  def ping(): Future[Unit] = {
     bitcoindCall[Unit]("ping")
   }
 
@@ -815,7 +815,7 @@ class RpcClient(instance: DaemonInstance)(
   def rescanBlockChain(start: Int, stop: Int): Future[RescanBlockChainResult] =
     rescanBlockChain(Some(start), Some(stop))
 
-  def saveMemPool: Future[Unit] = {
+  def saveMemPool(): Future[Unit] = {
     bitcoindCall[Unit]("savemempool")
   }
 
@@ -964,7 +964,7 @@ class RpcClient(instance: DaemonInstance)(
       sigHash: String): Future[SignRawTransactionResult] =
     signRawTransaction(transaction, Some(utxoDeps), Some(keys), Some(sigHash))
 
-  def stop: Future[String] = {
+  def stop(): Future[String] = {
     bitcoindCall[String]("stop")
   }
 
@@ -1002,7 +1002,7 @@ class RpcClient(instance: DaemonInstance)(
                                              List(JsString(proof.hex)))
   }
 
-  def walletLock: Future[Unit] = {
+  def walletLock(): Future[Unit] = {
     bitcoindCall[Unit]("walletlock")
   }
 
