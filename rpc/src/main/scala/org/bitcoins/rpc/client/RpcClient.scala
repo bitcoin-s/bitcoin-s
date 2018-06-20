@@ -591,10 +591,6 @@ class RpcClient(instance: DaemonInstance)(
     bitcoindCall[String]("help", List(JsString(rpcName)))
   }
 
-  def keyPoolRefill(keyPoolSize: Int = 100): Future[Unit] = {
-    bitcoindCall[Unit]("keypoolrefill", List(JsNumber(keyPoolSize)))
-  }
-
   def importAddress(
       address: BitcoinAddress,
       account: String = "",
@@ -636,6 +632,10 @@ class RpcClient(instance: DaemonInstance)(
 
   def importWallet(filePath: String): Future[Unit] = {
     bitcoindCall[Unit]("importwallet", List(JsString(filePath)))
+  }
+
+  def keyPoolRefill(keyPoolSize: Int = 100): Future[Unit] = {
+    bitcoindCall[Unit]("keypoolrefill", List(JsNumber(keyPoolSize)))
   }
 
   def listAccounts(
