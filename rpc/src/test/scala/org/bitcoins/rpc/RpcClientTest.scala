@@ -1,6 +1,7 @@
 package org.bitcoins.rpc
 
 import java.io.File
+import java.net.URI
 import java.util.Scanner
 
 import akka.actor.ActorSystem
@@ -32,7 +33,7 @@ class RpcClientTest
 
   val client = new RpcClient(TestUtil.instance(
     networkParam.port + 5,
-    networkParam.rpcPort + 5)) // Change this back
+    networkParam.rpcPort + 5))
   val otherClient = new RpcClient(
     TestUtil.instance(networkParam.port + 10, networkParam.rpcPort + 10))
 
@@ -175,7 +176,7 @@ class RpcClientTest
       assert(info.head.connected.contains(true))
     }
   }
-  /* TODO: Reconnect after ban is removed
+
   it should "be able to ban and clear the ban of a subnet" in {
     val loopBack = URI.create("http://127.0.0.1")
     client.setBan(loopBack, "add").flatMap { _ =>
@@ -185,8 +186,9 @@ class RpcClientTest
         assert(list.head.banned_until - list.head.ban_created == UInt32(86400))
 
         client.setBan(loopBack, "remove").flatMap { _ =>
-          client.listBanned.map { newList =>
+          client.listBanned.flatMap { newList =>
             assert(newList.isEmpty)
+            client.addNode(otherClient.getDaemon.uri, "onetry").map {_ => succeed}
           }
         }
       }
@@ -200,8 +202,9 @@ class RpcClientTest
           assert(list.length == 2)
 
           client.clearBanned().flatMap { _ =>
-            client.listBanned.map { newList =>
+            client.listBanned.flatMap { newList =>
               assert(newList.isEmpty)
+              client.addNode(otherClient.getDaemon.uri, "onetry").map { _ => succeed}
             }
           }
         }
@@ -218,8 +221,7 @@ class RpcClientTest
               client.getBlockHash(count).flatMap { hash1 =>
                 otherClient.getBlockHash(count).flatMap { hash2 =>
                   assert(hash1 == hash2)
-                  client.addNode(otherClient.getDaemon.uri, "add")
-                  succeed
+                  client.addNode(otherClient.getDaemon.uri, "onetry").map {_ => succeed}
                 }
               }
             }
@@ -228,7 +230,6 @@ class RpcClientTest
       }
     }
   }
-   */
 
   it should "be able to list address groupings" in {
     client.getNewAddress().flatMap { address =>
@@ -306,7 +307,7 @@ class RpcClientTest
                 TransactionOutPoint(transaction1.txid,
                                     UInt32(transaction1.blockindex.get))
               val sig: ScriptSignature = ScriptSignature.empty
-              client.getNewAddress().flatMap { address =>
+              otherClient.getNewAddress().flatMap { address =>
                 client
                   .createRawTransaction(
                     Vector(TransactionInput(input0, sig, UInt32(1)),
@@ -463,9 +464,9 @@ class RpcClientTest
   }
 
   it should "be able to list transactions by receiving addresses" in {
-    client.getNewAddress().flatMap { address =>
+    otherClient.getNewAddress().flatMap { address =>
       fundBlockChainTransaction(client, address, Bitcoins(1.5)).flatMap { txid =>
-        client.listReceivedByAddress().map { receivedList =>
+        otherClient.listReceivedByAddress().map { receivedList =>
           val entryList = receivedList.filter(entry => entry.address == address)
           assert(entryList.length == 1)
           val entry = entryList.head
@@ -769,7 +770,7 @@ class RpcClientTest
   }
 
   it should "be able to generate blocks to an address" in {
-    client.getNewAddress().flatMap { address =>
+    otherClient.getNewAddress().flatMap { address =>
       client.generateToAddress(3, address).flatMap { blocks =>
         assert(blocks.length == 3)
         blocks.foreach { hash =>
@@ -917,7 +918,7 @@ class RpcClientTest
   }
 
   it should "be able to validate a bitcoin address" in {
-    client.getNewAddress().flatMap { address =>
+    otherClient.getNewAddress().flatMap { address =>
       client.validateAddress(address).map { validation =>
         assert(validation.isvalid)
       }
