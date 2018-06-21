@@ -6,6 +6,7 @@ import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionInput}
+import org.bitcoins.core.util.BitcoinSUtil
 import play.api.libs.json._
 
 object JsonWriters {
@@ -22,7 +23,7 @@ object JsonWriters {
   }
 
   implicit object ScriptPubKeyWrites extends Writes[ScriptPubKey] {
-    override def writes(o: ScriptPubKey): JsValue = JsString(o.hex)
+    override def writes(o: ScriptPubKey): JsValue = JsString(BitcoinSUtil.encodeHex(o.asmBytes))
   }
 
   implicit object TransactionInputWrites extends Writes[TransactionInput] {

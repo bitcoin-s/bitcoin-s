@@ -24,7 +24,7 @@ case class BumpFeeResult(
     txid: DoubleSha256Digest,
     origfee: Bitcoins,
     fee: Bitcoins, // Should be BitcoinFeeUnit
-    warnings: String)
+    errors: Vector[String])
     extends WalletResult
 
 case class GetTransactionResult(

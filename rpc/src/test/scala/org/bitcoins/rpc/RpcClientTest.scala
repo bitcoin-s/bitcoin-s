@@ -9,15 +9,16 @@ import akka.stream.ActorMaterializer
 import org.bitcoins.core.crypto.{DoubleSha256Digest, ECPrivateKey}
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionInput, TransactionOutPoint}
-import org.bitcoins.core.util.BitcoinSLogger
+import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil}
 import org.bitcoins.rpc.client.{RpcClient, RpcOpts}
 import org.scalatest.{AsyncFlatSpec, BeforeAndAfter, BeforeAndAfterAll}
 import org.bitcoins.core.number.{Int64, UInt32}
-import org.bitcoins.core.protocol.{BitcoinAddress, P2PKHAddress}
-import org.bitcoins.core.protocol.script.ScriptSignature
+import org.bitcoins.core.protocol.{BitcoinAddress, P2PKHAddress, P2SHAddress}
+import org.bitcoins.core.protocol.script.{P2SHScriptPubKey, P2SHScriptSignature, ScriptPubKey, ScriptSignature}
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.rpc.client.RpcOpts.AddressType
 import org.bitcoins.rpc.jsonmodels.{GetBlockWithTransactionsResult, GetTransactionResult, RpcAddress}
+import play.api.libs.json.Json
 
 import scala.concurrent.{Await, Future}
 import scala.concurrent.duration.DurationInt
@@ -31,9 +32,9 @@ class RpcClientTest
   implicit val ec = m.executionContext
   implicit val networkParam = TestUtil.network
 
-  val client = new RpcClient(TestUtil.instance(
-    networkParam.port + 5,
-    networkParam.rpcPort + 5))
+  val client = new RpcClient(
+    TestUtil.instance(networkParam.port + 5, networkParam.rpcPort + 5))
+
   val otherClient = new RpcClient(
     TestUtil.instance(networkParam.port + 10, networkParam.rpcPort + 10))
 
@@ -47,7 +48,15 @@ class RpcClientTest
 
   var password = "password"
 
-  private def createRawCoinbaseTransaction(sender: RpcClient = client, receiver: RpcClient = otherClient, amount: Bitcoins = Bitcoins(1)): Future[Transaction] = {
+  P2SHScriptSignature("5221031ef932a3e39f7273534fd51a387b2d3bb2a663cd92739840167da6b5dd07b90e21023ba657cfddf8ce4a78df941d42ddb394c61234cd4b66ce45de223382752194d352ae")
+  val redeemScript = ScriptPubKey.fromAsmHex("5221031ef932a3e39f7273534fd51a387b2d3bb2a663cd92739840167da6b5dd07b90e21023ba657cfddf8ce4a78df941d42ddb394c61234cd4b66ce45de223382752194d352ae")
+  BitcoinSUtil.encodeHex(P2SHScriptPubKey(redeemScript).asmBytes)
+
+
+  private def createRawCoinbaseTransaction(
+      sender: RpcClient = client,
+      receiver: RpcClient = otherClient,
+      amount: Bitcoins = Bitcoins(1)): Future[Transaction] = {
     sender.generate(2).flatMap { blocks =>
       sender.getBlock(blocks(0)).flatMap { block0 =>
         sender.getBlock(blocks(1)).flatMap { block1 =>
@@ -55,15 +64,15 @@ class RpcClientTest
             sender.getTransaction(block1.tx(0)).flatMap { transaction1 =>
               val input0 =
                 TransactionOutPoint(transaction0.txid,
-                  UInt32(transaction0.blockindex.get))
+                                    UInt32(transaction0.blockindex.get))
               val input1 =
                 TransactionOutPoint(transaction1.txid,
-                  UInt32(transaction1.blockindex.get))
+                                    UInt32(transaction1.blockindex.get))
               val sig: ScriptSignature = ScriptSignature.empty
               receiver.getNewAddress().flatMap { address =>
                 sender.createRawTransaction(
                   Vector(TransactionInput(input0, sig, UInt32(1)),
-                    TransactionInput(input1, sig, UInt32(2))),
+                         TransactionInput(input1, sig, UInt32(2))),
                   Map(address -> amount))
               }
             }
@@ -73,32 +82,43 @@ class RpcClientTest
     }
   }
 
-  private def sendCoinbaseTransaction(sender: RpcClient = client, receiver: RpcClient = otherClient, amount: Bitcoins = Bitcoins(1)): Future[GetTransactionResult] = {
-    createRawCoinbaseTransaction(sender, receiver, amount).flatMap { transaction =>
-      sender.signRawTransaction(transaction).flatMap { signedTransaction =>
-        sender
-          .generate(100)
-          .flatMap { _ => // Can't spend coinbase until depth 100
-            sender.sendRawTransaction(signedTransaction.hex, true).flatMap {
-              transactionHash =>
-                sender.getTransaction(transactionHash)
+  private def sendCoinbaseTransaction(
+      sender: RpcClient = client,
+      receiver: RpcClient = otherClient,
+      amount: Bitcoins = Bitcoins(1)): Future[GetTransactionResult] = {
+    createRawCoinbaseTransaction(sender, receiver, amount).flatMap {
+      transaction =>
+        sender.signRawTransaction(transaction).flatMap { signedTransaction =>
+          sender
+            .generate(100)
+            .flatMap { _ => // Can't spend coinbase until depth 100
+              sender.sendRawTransaction(signedTransaction.hex, true).flatMap {
+                transactionHash =>
+                  sender.getTransaction(transactionHash)
+              }
             }
-          }
-      }
-    }
-  }
-
-  private def fundMemPoolTransaction(sender: RpcClient, address: BitcoinAddress, amount: Bitcoins): Future[DoubleSha256Digest] = {
-    sender.createRawTransaction(Vector.empty, Map(address -> amount)).flatMap { createdTx =>
-      sender.fundRawTransaction(createdTx).flatMap { fundedTx =>
-        sender.signRawTransaction(fundedTx.hex).flatMap { signedTx =>
-          sender.sendRawTransaction(signedTx.hex)
         }
-      }
     }
   }
 
-  private def fundBlockChainTransaction(sender: RpcClient, address: BitcoinAddress, amount: Bitcoins): Future[DoubleSha256Digest] = {
+  private def fundMemPoolTransaction(
+      sender: RpcClient,
+      address: BitcoinAddress,
+      amount: Bitcoins): Future[DoubleSha256Digest] = {
+    sender.createRawTransaction(Vector.empty, Map(address -> amount)).flatMap {
+      createdTx =>
+        sender.fundRawTransaction(createdTx).flatMap { fundedTx =>
+          sender.signRawTransaction(fundedTx.hex).flatMap { signedTx =>
+            sender.sendRawTransaction(signedTx.hex)
+          }
+        }
+    }
+  }
+
+  private def fundBlockChainTransaction(
+      sender: RpcClient,
+      address: BitcoinAddress,
+      amount: Bitcoins): Future[DoubleSha256Digest] = {
     fundMemPoolTransaction(sender, address, amount).flatMap { txid =>
       sender.generate(1).map { _ =>
         txid
@@ -106,7 +126,8 @@ class RpcClientTest
     }
   }
 
-  private def getFirstBlock(node: RpcClient = client): Future[GetBlockWithTransactionsResult] = {
+  private def getFirstBlock(
+      node: RpcClient = client): Future[GetBlockWithTransactionsResult] = {
     node.getBlockHash(1).flatMap { hash =>
       node.getBlockWithTransactions(hash)
     }
@@ -188,7 +209,9 @@ class RpcClientTest
         client.setBan(loopBack, "remove").flatMap { _ =>
           client.listBanned.flatMap { newList =>
             assert(newList.isEmpty)
-            client.addNode(otherClient.getDaemon.uri, "onetry").map {_ => succeed}
+            client.addNode(otherClient.getDaemon.uri, "onetry").map { _ =>
+              succeed
+            }
           }
         }
       }
@@ -204,7 +227,9 @@ class RpcClientTest
           client.clearBanned().flatMap { _ =>
             client.listBanned.flatMap { newList =>
               assert(newList.isEmpty)
-              client.addNode(otherClient.getDaemon.uri, "onetry").map { _ => succeed}
+              client.addNode(otherClient.getDaemon.uri, "onetry").map { _ =>
+                succeed
+              }
             }
           }
         }
@@ -221,7 +246,9 @@ class RpcClientTest
               client.getBlockHash(count).flatMap { hash1 =>
                 otherClient.getBlockHash(count).flatMap { hash2 =>
                   assert(hash1 == hash2)
-                  client.addNode(otherClient.getDaemon.uri, "onetry").map {_ => succeed}
+                  client.addNode(otherClient.getDaemon.uri, "onetry").map { _ =>
+                    succeed
+                  }
                 }
               }
             }
@@ -233,17 +260,24 @@ class RpcClientTest
 
   it should "be able to list address groupings" in {
     client.getNewAddress().flatMap { address =>
-      fundBlockChainTransaction(client, address, Bitcoins(1.25)).flatMap { txid =>
-        client.listAddressGroupings.flatMap { groupings =>
-          val rpcAddress = groupings.last.head
-          assert(rpcAddress.address == address)
-          assert(rpcAddress.balance == Bitcoins(1.25))
+      fundBlockChainTransaction(client, address, Bitcoins(1.25)).flatMap {
+        txid =>
+          client.listAddressGroupings.flatMap { groupings =>
+            val rpcAddress = groupings.last.head
+            assert(rpcAddress.address == address)
+            assert(rpcAddress.balance == Bitcoins(1.25))
 
-          getFirstBlock().flatMap { block =>
-            val firstAddress = block.tx.head.vout.head.scriptPubKey.addresses.get.head
-            assert(groupings.max(Ordering.by[Vector[RpcAddress], BigDecimal](addr => addr.head.balance.toBigDecimal)).head.address == firstAddress)
+            getFirstBlock().flatMap { block =>
+              val firstAddress =
+                block.tx.head.vout.head.scriptPubKey.addresses.get.head
+              assert(
+                groupings
+                  .max(Ordering.by[Vector[RpcAddress], BigDecimal](addr =>
+                    addr.head.balance.toBigDecimal))
+                  .head
+                  .address == firstAddress)
+            }
           }
-        }
       }
     }
   }
@@ -430,34 +464,41 @@ class RpcClientTest
     client.generate(1)
     client.getNewAddress().flatMap { address =>
       fundMemPoolTransaction(client, address, Bitcoins(2)).flatMap { txid1 =>
-        client.getRawMemPool.map { mempool => assert(mempool.head == txid1) }
+        client.getRawMemPool.map { mempool =>
+          assert(mempool.head == txid1)
+        }
         client.getNewAddress().flatMap { address =>
-          val input: TransactionInput = TransactionInput(TransactionOutPoint(txid1, UInt32(0)), ScriptSignature.empty, UInt32.max - UInt32.one)
-          client.createRawTransaction(Vector(input), Map(address -> Bitcoins(1))).flatMap { createdTx =>
-            client.signRawTransaction(createdTx).flatMap { signedTx =>
-              assert(signedTx.complete)
-              client.sendRawTransaction(signedTx.hex, true).flatMap { txid2 =>
-                client.getMemPoolDescendants(txid1).map {
-                  descendants => assert(descendants.head == txid2)
-                }
-                client
-                  .getMemPoolDescendantsVerbose(txid1)
-                  .map { descendants =>
-                    assert(descendants.head._1 == txid2)
-                    assert(descendants.head._2.ancestorcount == 1)
+          val input: TransactionInput =
+            TransactionInput(TransactionOutPoint(txid1, UInt32(0)),
+                             ScriptSignature.empty,
+                             UInt32.max - UInt32.one)
+          client
+            .createRawTransaction(Vector(input), Map(address -> Bitcoins(1)))
+            .flatMap { createdTx =>
+              client.signRawTransaction(createdTx).flatMap { signedTx =>
+                assert(signedTx.complete)
+                client.sendRawTransaction(signedTx.hex, true).flatMap { txid2 =>
+                  client.getMemPoolDescendants(txid1).map { descendants =>
+                    assert(descendants.head == txid2)
                   }
-                client.getMemPoolAncestors(txid2).map {
-                  ancestors => assert(ancestors.head == txid1)
-                }
-                client
-                  .getMemPoolAncestorsVerbose(txid2)
-                  .map { ancestors =>
-                    assert(ancestors.head._1 == txid1)
-                    assert(ancestors.head._2.descendantcount == 2)
+                  client
+                    .getMemPoolDescendantsVerbose(txid1)
+                    .map { descendants =>
+                      assert(descendants.head._1 == txid2)
+                      assert(descendants.head._2.ancestorcount == 1)
+                    }
+                  client.getMemPoolAncestors(txid2).map { ancestors =>
+                    assert(ancestors.head == txid1)
                   }
+                  client
+                    .getMemPoolAncestorsVerbose(txid2)
+                    .map { ancestors =>
+                      assert(ancestors.head._1 == txid1)
+                      assert(ancestors.head._2.descendantcount == 2)
+                    }
+                }
               }
             }
-          }
         }
       }
     }
@@ -465,16 +506,18 @@ class RpcClientTest
 
   it should "be able to list transactions by receiving addresses" in {
     otherClient.getNewAddress().flatMap { address =>
-      fundBlockChainTransaction(client, address, Bitcoins(1.5)).flatMap { txid =>
-        otherClient.listReceivedByAddress().map { receivedList =>
-          val entryList = receivedList.filter(entry => entry.address == address)
-          assert(entryList.length == 1)
-          val entry = entryList.head
-          assert(entry.txids.head == txid)
-          assert(entry.address == address)
-          assert(entry.amount == Bitcoins(1.5))
-          assert(entry.confirmations == 1)
-        }
+      fundBlockChainTransaction(client, address, Bitcoins(1.5)).flatMap {
+        txid =>
+          otherClient.listReceivedByAddress().map { receivedList =>
+            val entryList =
+              receivedList.filter(entry => entry.address == address)
+            assert(entryList.length == 1)
+            val entry = entryList.head
+            assert(entry.txids.head == txid)
+            assert(entry.address == address)
+            assert(entry.amount == Bitcoins(1.5))
+            assert(entry.confirmations == 1)
+          }
       }
     }
   }
@@ -482,16 +525,19 @@ class RpcClientTest
   it should "be able to import an address" in {
     client.getNewAddress().flatMap { address =>
       otherClient.importAddress(address).flatMap { _ =>
-        fundBlockChainTransaction(client, address, Bitcoins(1.5)).flatMap { txid =>
-          otherClient.listReceivedByAddress(includeWatchOnly = true).map { list =>
-            val entryList = list.filter(addr => addr.involvesWatchonly.contains(true))
-            assert(entryList.length == 1)
-            val entry = entryList.head
-            assert(entry.address == address)
-            assert(entry.involvesWatchonly.contains(true))
-            assert(entry.amount == Bitcoins(1.5))
-            assert(entry.txids.head == txid)
-          }
+        fundBlockChainTransaction(client, address, Bitcoins(1.5)).flatMap {
+          txid =>
+            otherClient.listReceivedByAddress(includeWatchOnly = true).map {
+              list =>
+                val entryList =
+                  list.filter(addr => addr.involvesWatchonly.contains(true))
+                assert(entryList.length == 1)
+                val entry = entryList.head
+                assert(entry.address == address)
+                assert(entry.involvesWatchonly.contains(true))
+                assert(entry.amount == Bitcoins(1.5))
+                assert(entry.txids.head == txid)
+            }
         }
       }
     }
@@ -1218,19 +1264,19 @@ class RpcClientTest
     }
   }
 
-  /*
-  it should "be able to combine raw transactions" in {
+  it should "be able to sign a raw transaction" in {
     client.getNewAddress().flatMap { address =>
-      client.createRawTransaction(Vector(), Map(address -> Bitcoins(2.5))).flatMap { ctx1 =>
-        client.fundRawTransaction(ctx1).flatMap { ftx1 =>
-          client.signRawTransaction(ftx1.hex).flatMap { tx1 =>
-            client.createRawTransaction(Vector(), Map(address -> Bitcoins(3.5))).flatMap { ctx2 =>
-              client.fundRawTransaction(ctx2).flatMap { ftx2 =>
-                client.signRawTransaction(ftx2.hex).flatMap { tx2 =>
-                  client.combineRawTransaction(Vector(tx1.hex, tx2.hex)).flatMap { tx =>
-                    client.decodeRawTransaction(tx).map { decoded =>
-                      assert(decoded.vout.exists(output => output.value == Bitcoins(2.5)))
-                      assert(decoded.vout.exists(output => output.value == Bitcoins(3.5)))
+      client.validateAddress(address).flatMap { addressInfo =>
+        client.addMultiSigAddress(1, Vector(Left(addressInfo.pubkey.get))).flatMap { multisig =>
+          fundBlockChainTransaction(client, multisig.address, Bitcoins(1.2)).flatMap { txid =>
+            client.getTransaction(txid).flatMap { rawTx =>
+              client.decodeRawTransaction(rawTx.hex).flatMap { tx =>
+                val output = tx.vout.filter(output => output.value == Bitcoins(1.2)).head
+                val input = TransactionInput(TransactionOutPoint(txid, UInt32(output.n)), P2SHScriptSignature(multisig.redeemScript.hex), UInt32.max - UInt32.one)
+                client.getNewAddress().flatMap { newAddress =>
+                  client.createRawTransaction(Vector(input), Map(newAddress -> Bitcoins(1.1))).flatMap { ctx =>
+                    client.signRawTransaction(ctx, Vector(RpcOpts.SignRawTransactionOutputParameter(txid, output.n, ScriptPubKey.fromAsmHex(output.scriptPubKey.hex), Some(multisig.redeemScript), Bitcoins(1.2)))).map { result =>
+                      assert(result.complete)
                     }
                   }
                 }
@@ -1240,7 +1286,71 @@ class RpcClientTest
         }
       }
     }
-  }*/
+  }
+
+  it should "be able to combine raw transacitons" in {
+    client.getNewAddress().flatMap{ address1 =>
+      otherClient.getNewAddress().flatMap { address2 =>
+        client.validateAddress(address1).flatMap { address1Info =>
+          otherClient.validateAddress(address2).flatMap { address2Info =>
+            client.addMultiSigAddress(2, Vector(Left(address1Info.pubkey.get), Left(address2Info.pubkey.get))).flatMap { multisig =>
+              otherClient.addMultiSigAddress(2, Vector(Left(address1Info.pubkey.get), Left(address2Info.pubkey.get))).flatMap { _ =>
+                client.validateAddress(multisig.address).flatMap { multisigInfo =>
+                  fundBlockChainTransaction(client, multisig.address, Bitcoins(1.2)).flatMap { txid =>
+                    client.getTransaction(txid).flatMap { rawTx =>
+                      client.decodeRawTransaction(rawTx.hex).flatMap { tx =>
+                        val output = tx.vout.filter(output => output.value == Bitcoins(1.2)).head
+                        val input = TransactionInput(TransactionOutPoint(txid, UInt32(output.n)), P2SHScriptSignature(multisig.redeemScript.hex), UInt32.max - UInt32.one)
+                        client.getNewAddress().flatMap { address =>
+                          otherClient.createRawTransaction(Vector(input), Map(address -> Bitcoins(1.1))).flatMap { ctx =>
+                            client.signRawTransaction(ctx,Vector(RpcOpts.SignRawTransactionOutputParameter(txid, output.n, ScriptPubKey.fromAsmHex(output.scriptPubKey.hex), Some(multisig.redeemScript), Bitcoins(1.2)))).flatMap { partialTx1 =>
+                              assert(!partialTx1.complete)
+                              assert(partialTx1.hex != ctx)
+                              otherClient.signRawTransaction(ctx,Vector(RpcOpts.SignRawTransactionOutputParameter(txid, output.n, ScriptPubKey.fromAsmHex(output.scriptPubKey.hex), Some(multisig.redeemScript), Bitcoins(1.2)))).flatMap { partialTx2 =>
+                                assert(!partialTx2.complete)
+                                assert(partialTx2.hex != ctx)
+                                client.combineRawTransaction(Vector(partialTx1.hex, partialTx2.hex)).flatMap { combinedTx =>
+                                  client.sendRawTransaction(combinedTx).map { _ =>
+                                    succeed
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  it should "be able to bump a mem pool tx fee" in {
+    otherClient.getNewAddress().flatMap { address =>
+      client.listUnspent.flatMap { unspent =>
+        val output = unspent.find(output => output.amount.toBigDecimal > 1).get
+        val input: TransactionInput = TransactionInput(TransactionOutPoint(output.txid, UInt32(output.vout)), ScriptSignature.empty, UInt32.max - UInt32(2))
+        client.getRawChangeAddress().flatMap { changeAddress =>
+          client.createRawTransaction(Vector(input), Map(address -> Bitcoins(0.5), changeAddress -> Bitcoins(output.amount.toBigDecimal - 0.55))).flatMap { ctx =>
+            client.signRawTransaction(ctx).flatMap { stx =>
+              client.sendRawTransaction(stx.hex, true).flatMap { txid =>
+                client.getTransaction(txid).flatMap { tx =>
+                  client.bumpFee(txid).flatMap { bumpedTx =>
+                    assert(tx.fee.get < bumpedTx.fee)
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
 
   it should "be able to rescan the blockchain" in {
     client.rescanBlockChain().flatMap { result =>
@@ -1286,26 +1396,29 @@ class RpcClientTest
     val account = "another_new_account"
     val emptyAccount = "empty_account"
     client.getNewAddress(account).flatMap { address =>
-      fundBlockChainTransaction(client, address, Bitcoins(1.5)).flatMap { txid =>
-        client.getReceivedByAccount(account).flatMap { amount =>
-          assert(amount == Bitcoins(1.5))
-          client.listReceivedByAccount().map { list =>
-            assert(list
-              .filter(acc => acc.account == account)
-              .head
-              .amount == Bitcoins(1.5))
-            assert(list
-              .filter(acc => acc.account == "")
-              .head
-              .amount > Bitcoins(0))
-            assert(!list.exists(acc => acc.account == emptyAccount))
+      fundBlockChainTransaction(client, address, Bitcoins(1.5)).flatMap {
+        txid =>
+          client.getReceivedByAccount(account).flatMap { amount =>
+            assert(amount == Bitcoins(1.5))
+            client.listReceivedByAccount().map { list =>
+              assert(
+                list
+                  .filter(acc => acc.account == account)
+                  .head
+                  .amount == Bitcoins(1.5))
+              assert(
+                list
+                  .filter(acc => acc.account == "")
+                  .head
+                  .amount > Bitcoins(0))
+              assert(!list.exists(acc => acc.account == emptyAccount))
+            }
+            client.listAccounts().map { map =>
+              assert(map(account) == Bitcoins(1.5))
+              assert(map("") > Bitcoins(0))
+              assert(!map.keySet.contains(emptyAccount))
+            }
           }
-          client.listAccounts().map { map =>
-            assert(map(account) == Bitcoins(1.5))
-            assert(map("") > Bitcoins(0))
-            assert(!map.keySet.contains(emptyAccount))
-          }
-        }
       }
     }
   }

@@ -43,30 +43,6 @@ class RpcClient(instance: DaemonInstance)(
 
   // TODO: WRITE TESTS
 
-  def bumpFee(
-      txid: DoubleSha256Digest,
-      confTarget: Int = 6,
-      totalFee: Option[Satoshis],
-      replaceable: Boolean = true,
-      estimateMode: String = "UNSET"): Future[BumpFeeResult] = {
-    val options =
-      if (totalFee.nonEmpty) {
-        List(("confTarget", JsNumber(confTarget)),
-             ("replaceable", JsBoolean(replaceable)),
-             ("estimate_mode", JsString(estimateMode)))
-      } else {
-        List(
-          ("confTarget", JsNumber(confTarget)),
-          ("totalFee", JsNumber(totalFee.get.toBigDecimal)),
-          ("replaceable", JsBoolean(replaceable)),
-          ("estimate_mode", JsString(estimateMode))
-        )
-      }
-
-    bitcoindCall[BumpFeeResult]("bumpfee",
-                                List(JsString(txid.hex), JsObject(options)))
-  }
-
   // Needs manual testing!
   def estimateSmartFee(
       blocks: Int,
@@ -97,10 +73,6 @@ class RpcClient(instance: DaemonInstance)(
 
   def removePrunedFunds(txid: DoubleSha256Digest): Future[Unit] = {
     bitcoindCall[Unit]("removeprunedfunds", List(JsString(txid.hex)))
-  }
-
-  def combineRawTransaction(txs: Vector[Transaction]): Future[Transaction] = {
-    bitcoindCall[Transaction]("combinerawtransaction", List(Json.toJson(txs)))
   }
 
   def importPubKey(
@@ -183,8 +155,36 @@ class RpcClient(instance: DaemonInstance)(
     bitcoindCall[Unit]("backupwallet", List(JsString(destination)))
   }
 
+  def bumpFee(
+               txid: DoubleSha256Digest,
+               confTarget: Int = 6,
+               totalFee: Option[Satoshis] = None,
+               replaceable: Boolean = true,
+               estimateMode: String = "UNSET"): Future[BumpFeeResult] = {
+    val options =
+      if (totalFee.isEmpty) {
+        List(("confTarget", JsNumber(confTarget)),
+          ("replaceable", JsBoolean(replaceable)),
+          ("estimate_mode", JsString(estimateMode)))
+      } else {
+        List(
+          ("confTarget", JsNumber(confTarget)),
+          ("totalFee", JsNumber(totalFee.get.toBigDecimal)),
+          ("replaceable", JsBoolean(replaceable)),
+          ("estimate_mode", JsString(estimateMode))
+        )
+      }
+
+    bitcoindCall[BumpFeeResult]("bumpfee",
+      List(JsString(txid.hex), JsObject(options)))
+  }
+
   def clearBanned(): Future[Unit] = {
     bitcoindCall[Unit]("clearbanned")
+  }
+
+  def combineRawTransaction(txs: Vector[Transaction]): Future[Transaction] = {
+    bitcoindCall[Transaction]("combinerawtransaction", List(Json.toJson(txs)))
   }
 
   def createMultiSig(
@@ -1061,7 +1061,7 @@ class RpcClient(instance: DaemonInstance)(
           case _: JsError =>
             logger.error(JsError.toJson(res).toString())
             throw new IllegalArgumentException(
-              s"Could not parse JsResult: ${json \ resultKey}")
+              s"Could not parse JsResult: ${(json \ resultKey).get}")
         }
     }
   }

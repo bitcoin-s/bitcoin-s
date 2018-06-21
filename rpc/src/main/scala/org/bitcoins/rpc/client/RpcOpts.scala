@@ -25,7 +25,7 @@ object RpcOpts {
       txid: DoubleSha256Digest,
       vout: Int,
       scriptPubKey: ScriptPubKey,
-      reedemScript: Option[ScriptPubKey] = None,
+      redeemScript: Option[ScriptPubKey] = None,
       amount: Bitcoins)
 
   implicit val signRawTransactionOutputParameterWrites: Writes[
@@ -35,7 +35,7 @@ object RpcOpts {
   case class ImportMultiRequest(
       scriptPubKey: ImportMultiAddress,
       timestamp: UInt32,
-      reedemscript: Option[ScriptPubKey] = None,
+      redeemscript: Option[ScriptPubKey] = None,
       pubkeys: Option[Vector[ScriptPubKey]] = None,
       keys: Option[Vector[ECPrivateKey]] = None,
       internal: Option[Boolean] = None,
