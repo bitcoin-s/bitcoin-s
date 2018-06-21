@@ -59,10 +59,6 @@ class RpcClient(instance: DaemonInstance)(
       List(JsString(transaction.hex), JsString(txOutProof.hex)))
   }
 
-  def preciousBlock(headerHash: DoubleSha256Digest): Future[Unit] = {
-    bitcoindCall[Unit]("preciousblock", List(JsString(headerHash.hex)))
-  }
-
   def prioritiseTransaction(
       txid: DoubleSha256Digest,
       feeDelta: Satoshis): Future[Boolean] = {
@@ -73,15 +69,6 @@ class RpcClient(instance: DaemonInstance)(
 
   def removePrunedFunds(txid: DoubleSha256Digest): Future[Unit] = {
     bitcoindCall[Unit]("removeprunedfunds", List(JsString(txid.hex)))
-  }
-
-  def importPubKey(
-      pubKey: ECPublicKey,
-      label: String = "",
-      rescan: Boolean = true): Future[Unit] = {
-    bitcoindCall[Unit](
-      "importpubkey",
-      List(JsString(pubKey.hex), JsString(label), JsBoolean(rescan)))
   }
 
   // TODO: GetBlockTemplate
@@ -630,6 +617,15 @@ class RpcClient(instance: DaemonInstance)(
       List(JsString(key.toWIF(network)), JsString(account), JsBoolean(rescan)))
   }
 
+  def importPubKey(
+                    pubKey: ECPublicKey,
+                    label: String = "",
+                    rescan: Boolean = true): Future[Unit] = {
+    bitcoindCall[Unit](
+      "importpubkey",
+      List(JsString(pubKey.hex), JsString(label), JsBoolean(rescan)))
+  }
+
   def importWallet(filePath: String): Future[Unit] = {
     bitcoindCall[Unit]("importwallet", List(JsString(filePath)))
   }
@@ -786,6 +782,10 @@ class RpcClient(instance: DaemonInstance)(
 
   def ping(): Future[Unit] = {
     bitcoindCall[Unit]("ping")
+  }
+
+  def preciousBlock(headerHash: DoubleSha256Digest): Future[Unit] = {
+    bitcoindCall[Unit]("preciousblock", List(JsString(headerHash.hex)))
   }
 
   def pruneBlockChain(height: Int): Future[Int] = {

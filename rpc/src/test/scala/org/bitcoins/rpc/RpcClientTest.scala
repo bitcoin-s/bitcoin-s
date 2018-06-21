@@ -6,7 +6,7 @@ import java.util.Scanner
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import org.bitcoins.core.crypto.{DoubleSha256Digest, ECPrivateKey}
+import org.bitcoins.core.crypto.{DoubleSha256Digest, ECPrivateKey, ECPublicKey}
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionInput, TransactionOutPoint}
 import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil}
@@ -248,6 +248,29 @@ class RpcClientTest
                   assert(hash1 == hash2)
                   client.addNode(otherClient.getDaemon.uri, "onetry").map { _ =>
                     succeed
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  it should "be able to mark a block as precious" in {
+    client.disconnectNode(otherClient.getDaemon.uri).flatMap { _ =>
+      client.generate(1).flatMap { blocks1 =>
+        otherClient.generate(1).flatMap { blocks2 =>
+          client.getBestBlockHash.flatMap { bestHash1 =>
+            assert(bestHash1 == blocks1.head)
+            otherClient.getBestBlockHash.flatMap { bestHash2 =>
+              assert(bestHash2 == blocks2.head)
+              client.addNode(otherClient.getDaemon.uri, "onetry").flatMap { _ =>
+                Thread.sleep(1000)
+                client.preciousBlock(bestHash2).flatMap { _ =>
+                  client.getBestBlockHash.map { newBestHash =>
+                    assert(newBestHash == blocks2.head)
                   }
                 }
               }
@@ -1071,6 +1094,14 @@ class RpcClientTest
           }
           assert(found)
         }
+    }
+  }
+
+  it should "be able to import a public key" in {
+    val pubKey = ECPublicKey.freshPublicKey
+
+    client.importPubKey(pubKey).map { _ =>
+      succeed
     }
   }
 
