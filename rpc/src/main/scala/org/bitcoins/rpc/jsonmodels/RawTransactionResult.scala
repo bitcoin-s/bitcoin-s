@@ -87,6 +87,6 @@ case class SignRawTransactionError(
     txid: DoubleSha256Digest,
     vout: Int,
     scriptSig: ScriptPubKey,
-    sequence: Int,
+    sequence: UInt32,
     error: String
 ) extends RawTransactionResult
