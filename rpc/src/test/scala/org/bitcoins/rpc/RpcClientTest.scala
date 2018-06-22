@@ -212,6 +212,26 @@ class RpcClientTest
     }
   }
 
+  it should "be able to invalidate a block" in {
+    otherClient.getNewAddress().flatMap { address =>
+      fundMemPoolTransaction(client, address, Bitcoins(3)).flatMap { txid =>
+        client.generate(1).flatMap { blocks =>
+          client.invalidateBlock(blocks.head).flatMap { _ =>
+            client.getRawMemPool.flatMap { mempool =>
+              assert(mempool.contains(txid))
+              client.getBlockCount.flatMap { count1 =>
+                otherClient.getBlockCount.flatMap { count2 =>
+                  client.generate(2) // Ensure client and otherClient have the same blockchain
+                  assert(count1 == count2 - 1)
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
   it should "be able to get peer info" in {
     client.getPeerInfo.flatMap { infoList =>
       assert(infoList.length == 1)
@@ -698,6 +718,23 @@ class RpcClientTest
         sendCoinbaseTransaction().flatMap { _ =>
           client.getMemPoolInfo.map { newInfo =>
             assert(newInfo.size == 1)
+          }
+        }
+      }
+    }
+  }
+
+  it should "be able to prioritise a mem pool transaction" in {
+    otherClient.getNewAddress().flatMap { address =>
+      fundMemPoolTransaction(client, address, Bitcoins(3.2)).flatMap { txid =>
+        client.getMemPoolEntry(txid).flatMap { entry =>
+          assert(entry.fee == entry.modifiedfee)
+          client.prioritiseTransaction(txid, Bitcoins(1).satoshis).flatMap { tt =>
+            assert(tt)
+            client.getMemPoolEntry(txid).map { newEntry =>
+              assert(newEntry.fee == entry.fee)
+              assert(newEntry.modifiedfee == newEntry.fee + Bitcoins(1))
+            }
           }
         }
       }

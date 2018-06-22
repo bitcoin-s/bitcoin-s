@@ -55,7 +55,7 @@ class RpcClient(instance: DaemonInstance)(
       txid: DoubleSha256Digest,
       feeDelta: Satoshis): Future[Boolean] = {
     bitcoindCall[Boolean](
-      "prioritiseTransaction",
+      "prioritisetransaction",
       List(JsString(txid.hex), JsNumber(0), JsNumber(feeDelta.toLong)))
   }
 
@@ -624,6 +624,10 @@ class RpcClient(instance: DaemonInstance)(
 
   def importWallet(filePath: String): Future[Unit] = {
     bitcoindCall[Unit]("importwallet", List(JsString(filePath)))
+  }
+
+  def invalidateBlock(blockHash: DoubleSha256Digest): Future[Unit] = {
+    bitcoindCall[Unit]("invalidateblock", List(JsString(blockHash.hex)))
   }
 
   def keyPoolRefill(keyPoolSize: Int = 100): Future[Unit] = {
