@@ -29,5 +29,9 @@ install:
   - ./configure --enable-jni --enable-experimental --enable-module-ecdh
   - sudo make install
   - cd ../
-script: sbt -Djava.library.path=secp256k1/.libs clean coverage test
-after_success: "sbt coverageReport coverageAggregate coveralls"
+script:
+  - sbt -Djava.library.path=secp256k1/.libs clean coverage test &&
+    sbt coverageReport &&
+    sbt coverageAggregate
+after_success:
+  - sbt coveralls
