@@ -13,11 +13,7 @@ import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.{BitcoinAddress, P2PKHAddress}
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, MerkleBlock}
 import org.bitcoins.core.protocol.script.ScriptPubKey
-import org.bitcoins.core.protocol.transaction.{
-  Transaction,
-  TransactionInput,
-  TransactionOutPoint
-}
+import org.bitcoins.core.protocol.transaction.{Transaction, TransactionInput, TransactionOutPoint}
 import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil}
 import org.bitcoins.rpc.client.RpcOpts.AddressType
 import org.bitcoins.rpc.client.RpcOpts.AddressType.AddressType
@@ -27,8 +23,10 @@ import org.bitcoins.rpc.jsonmodels._
 import org.bitcoins.rpc.serializers.JsonSerializers._
 import org.bitcoins.rpc.serializers.JsonWriters.mapWrites
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.concurrent.duration.DurationInt
 import scala.sys.process._
+import scala.util.{Failure, Try, Success}
 
 class RpcClient(instance: DaemonInstance)(
     implicit
@@ -40,6 +38,22 @@ class RpcClient(instance: DaemonInstance)(
   private implicit val network = instance.network
 
   def getDaemon: DaemonInstance = instance
+
+  def isStarted: Boolean = {
+    val request = buildRequest(instance, "ping", JsArray.empty)
+    val responseF = sendRequest(request)
+
+    val payloadF: Future[JsValue] = responseF.flatMap(getPayload)
+
+    val result = Try(Await.result(payloadF.map { payload =>
+      (payload \ errorKey).validate[RpcError] match {
+        case res: JsSuccess[RpcError] => false
+        case res: JsError => true
+      }
+    }, 2.seconds))
+
+    result.getOrElse(false)
+  }
 
   def abandonTransaction(txid: DoubleSha256Digest): Future[Unit] = {
     bitcoindCall[Unit]("abandontransaction", List(JsString(txid.hex)))

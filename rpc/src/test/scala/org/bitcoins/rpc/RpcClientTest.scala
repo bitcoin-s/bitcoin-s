@@ -8,33 +8,21 @@ import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import org.bitcoins.core.crypto.{DoubleSha256Digest, ECPrivateKey, ECPublicKey}
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
-import org.bitcoins.core.protocol.transaction.{
-  Transaction,
-  TransactionInput,
-  TransactionOutPoint
-}
+import org.bitcoins.core.protocol.transaction.{Transaction, TransactionInput, TransactionOutPoint}
 import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil}
 import org.bitcoins.rpc.client.{RpcClient, RpcOpts}
 import org.scalatest.{AsyncFlatSpec, BeforeAndAfter, BeforeAndAfterAll}
 import org.bitcoins.core.number.{Int64, UInt32}
 import org.bitcoins.core.protocol.{BitcoinAddress, P2PKHAddress, P2SHAddress}
-import org.bitcoins.core.protocol.script.{
-  P2SHScriptPubKey,
-  P2SHScriptSignature,
-  ScriptPubKey,
-  ScriptSignature
-}
+import org.bitcoins.core.protocol.script.{P2SHScriptPubKey, P2SHScriptSignature, ScriptPubKey, ScriptSignature}
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.rpc.client.RpcOpts.AddressType
-import org.bitcoins.rpc.jsonmodels.{
-  GetBlockWithTransactionsResult,
-  GetTransactionResult,
-  RpcAddress
-}
+import org.bitcoins.rpc.jsonmodels.{GetBlockWithTransactionsResult, GetTransactionResult, RpcAddress}
 import play.api.libs.json.Json
 
 import scala.concurrent.{Await, Future}
 import scala.concurrent.duration.DurationInt
+import scala.util.{Failure, Success, Try}
 
 class RpcClientTest
     extends AsyncFlatSpec
@@ -45,28 +33,33 @@ class RpcClientTest
   implicit val ec = m.executionContext
   implicit val networkParam = TestUtil.network
 
+  private var newPort = networkParam.port + 5
+  private var newRpcPort = networkParam.rpcPort + 5
+  private def getNewPort(): Int = {
+    newPort = newPort + 5
+    newPort
+  }
+  private def getNewRpcPort(): Int = {
+    newRpcPort = newRpcPort + 5
+    newRpcPort
+  }
+
   val client = new RpcClient(
-    TestUtil.instance(networkParam.port + 5, networkParam.rpcPort + 5))
+    TestUtil.instance(getNewPort(), getNewRpcPort()))
 
   val otherClient = new RpcClient(
-    TestUtil.instance(networkParam.port + 10, networkParam.rpcPort + 10))
+    TestUtil.instance(getNewPort(), getNewRpcPort()))
 
+  // This client's wallet is encrypted
   val walletClient = new RpcClient(
-    TestUtil.instance(networkParam.port + 20, networkParam.rpcPort + 20))
+    TestUtil.instance(getNewPort(), getNewRpcPort()))
 
   val pruneClient = new RpcClient(
-    TestUtil.instance(networkParam.port + 15, networkParam.rpcPort + 15, true))
+    TestUtil.instance(getNewPort(), getNewRpcPort(), true))
 
   val logger = BitcoinSLogger.logger
 
   var password = "password"
-
-  P2SHScriptSignature(
-    "5221031ef932a3e39f7273534fd51a387b2d3bb2a663cd92739840167da6b5dd07b90e21023ba657cfddf8ce4a78df941d42ddb394c61234cd4b66ce45de223382752194d352ae")
-
-  val redeemScript = ScriptPubKey.fromAsmHex(
-    "5221031ef932a3e39f7273534fd51a387b2d3bb2a663cd92739840167da6b5dd07b90e21023ba657cfddf8ce4a78df941d42ddb394c61234cd4b66ce45de223382752194d352ae")
-  BitcoinSUtil.encodeHex(P2SHScriptPubKey(redeemScript).asmBytes)
 
   private def createRawCoinbaseTransaction(
       sender: RpcClient = client,
@@ -148,41 +141,138 @@ class RpcClientTest
     }
   }
 
+  private def awaitServer(server: RpcClient, duration: Int = 100, counter: Int = 0): Unit = {
+    logger.debug(s"counter: ${counter.toString}")
+    if (counter == 50) {
+      throw new RuntimeException("Server is not up")
+    } else if (server.isStarted) {
+      Unit
+    } else {
+      Thread.sleep(duration)
+      awaitServer(server, counter = counter + 1)
+    }
+  }
+
+  private def awaitServerShutdown(server: RpcClient, duration: Int = 300, counter: Int = 0): Unit = {
+    logger.debug(s"counter: ${counter.toString}")
+    if (counter == 50) {
+      throw new RuntimeException("Server is not shutting down")
+    } else if (!server.isStarted) {
+      Unit
+    } else {
+      Thread.sleep(duration)
+      awaitServerShutdown(server, counter = counter + 1)
+    }
+  }
+
+  private def awaitConnection(from: RpcClient, to: RpcClient, duration: Int = 100, counter: Int = 0): Unit = {
+    logger.debug(s"counter: ${counter.toString}")
+    if (counter == 50) {
+      throw new RuntimeException("Servers are not connected")
+    }
+
+    val connected = from.getAddedNodeInfo(to.getDaemon.uri).map { info =>
+      if (info.nonEmpty && info.head.connected.contains(true)) {
+        Unit
+      } else {
+        Thread.sleep(duration)
+        awaitConnection(from, to, counter = counter + 1)
+      }
+    }
+
+    Await.result(connected, 5.seconds)
+  }
+
+  private def awaitDisconnected(from: RpcClient, to: RpcClient, duration: Int = 100, counter: Int = 0): Unit = {
+    logger.debug(s"counter: ${counter.toString}")
+    if (counter == 50) {
+      throw new RuntimeException("Servers are not disconnecting")
+    }
+
+    val disconnected = from.getAddedNodeInfo(to.getDaemon.uri).map { info =>
+      if (info.isEmpty || !info.head.connected.contains(true)) {
+        Unit
+      } else {
+        Thread.sleep(duration)
+        awaitDisconnected(from, to, counter = counter + 1)
+      }
+    }
+
+    Await.result(disconnected, 2.seconds)
+  }
+
+  private def createNodePair(): Future[(RpcClient, RpcClient)] = {
+    val client1: RpcClient = new RpcClient(TestUtil.instance(getNewPort(), getNewRpcPort()))
+    val client2: RpcClient = new RpcClient(TestUtil.instance(getNewPort(), getNewRpcPort()))
+    client1.start()
+    client2.start()
+    val try1 = Try(awaitServer(client1))
+    if (try1.isFailure) {
+      deleteNodePair(client1, client2)
+      throw try1.failed.get
+    }
+    val try2 = Try(awaitServer(client2))
+    if (try2.isFailure) {
+      deleteNodePair(client1, client2)
+      throw try2.failed.get
+    }
+    client1.addNode(client2.getDaemon.uri, "add").flatMap { _ =>
+      val try3 = Try(awaitConnection(client1, client2))
+      if (try3.isFailure) {
+        deleteNodePair(client1, client2)
+        throw try3.failed.get
+      }
+      client1.generate(100).map { _ =>
+        (client1, client2)
+      }
+    }
+  }
+
+  private def deleteNodePair(client1: RpcClient, client2: RpcClient): Unit = {
+    client1.stop()
+    client2.stop()
+    TestUtil.deleteTmpDir(client1.getDaemon.authCredentials.datadir)
+    TestUtil.deleteTmpDir(client2.getDaemon.authCredentials.datadir)
+  }
+
   override def beforeAll(): Unit = {
     println("Temp bitcoin directory created")
     println("Temp bitcoin directory created")
     println("Temp bitcoin directory created")
 
     walletClient.start()
-    println("Bitcoin server starting")
-    Thread.sleep(3000)
     client.start()
-    println("Bitcoin server starting")
-    Thread.sleep(3000)
     otherClient.start()
-    println("Bitcoin server starting")
-    Thread.sleep(3000)
     pruneClient.start()
-    println("Bitcoin server starting")
-    Thread.sleep(3000)
+    println("Bitcoin servers starting")
+    awaitServer(walletClient)
+    awaitServer(client)
+    awaitServer(otherClient)
+    awaitServer(pruneClient)
 
     client.addNode(otherClient.getDaemon.uri, "add")
 
     Await.result(
       walletClient.encryptWallet(password).map { msg =>
         println(msg)
-        Thread.sleep(3000)
+        awaitServerShutdown(walletClient)
+        logger.debug(walletClient.isStarted.toString)
         walletClient.start()
         println("Bitcoin server restarting")
-        Thread.sleep(4000)
+        awaitServer(walletClient)
       },
-      15.seconds
+      5.seconds
     )
 
     // Mine some blocks
     println("Mining some blocks")
     Await.result(client.generate(200), 3.seconds)
     Await.result(pruneClient.generate(3000), 60.seconds)
+
+    awaitConnection(client, otherClient)
+    client.getAddedNodeInfo(otherClient.getDaemon.uri).map { info =>
+      logger.debug(info.toString)
+    }
   }
 
   behavior of "RpcClient"
@@ -270,7 +360,7 @@ class RpcClientTest
     }
   }
 
-  it should "be able to ban and clear the ban of a subnet" in {
+  it should "be able to ban and clear the ban of a subnet" in { // TODO
     val loopBack = URI.create("http://127.0.0.1")
     client.setBan(loopBack, "add").flatMap { _ =>
       client.listBanned.flatMap { list =>
@@ -282,6 +372,7 @@ class RpcClientTest
           client.listBanned.flatMap { newList =>
             assert(newList.isEmpty)
             client.addNode(otherClient.getDaemon.uri, "onetry").map { _ =>
+              awaitConnection(client, otherClient)
               succeed
             }
           }
@@ -290,7 +381,7 @@ class RpcClientTest
     }
   }
 
-  it should "be able to clear banned subnets" in {
+  it should "be able to clear banned subnets" in { // TODO
     client.setBan(URI.create("http://127.0.0.1"), "add").flatMap { _ =>
       client.setBan(URI.create("http://127.0.0.2"), "add").flatMap { _ =>
         client.listBanned.flatMap { list =>
@@ -300,6 +391,7 @@ class RpcClientTest
             client.listBanned.flatMap { newList =>
               assert(newList.isEmpty)
               client.addNode(otherClient.getDaemon.uri, "onetry").map { _ =>
+                awaitConnection(client, otherClient)
                 succeed
               }
             }
@@ -309,17 +401,17 @@ class RpcClientTest
     }
   }
 
-  it should "be able to submit a new block" in {
-    client.disconnectNode(otherClient.getDaemon.uri).flatMap { _ =>
-      otherClient.generate(1).flatMap { hash =>
-        otherClient.getBlockRaw(hash.head).flatMap { block =>
-          client.submitBlock(block).flatMap { _ =>
-            client.getBlockCount.flatMap { count =>
-              client.getBlockHash(count).flatMap { hash1 =>
-                otherClient.getBlockHash(count).flatMap { hash2 =>
-                  assert(hash1 == hash2)
-                  client.addNode(otherClient.getDaemon.uri, "onetry").map { _ =>
-                    succeed
+  it should "be able to submit a new block" in { // TODO
+    createNodePair().flatMap { case (client1, client2) =>
+      client1.disconnectNode(client2.getDaemon.uri).flatMap { _ =>
+        client2.generate(1).flatMap { hash =>
+          client2.getBlockRaw(hash.head).flatMap { block =>
+            client1.submitBlock(block).flatMap { _ =>
+              client1.getBlockCount.flatMap { count =>
+                client1.getBlockHash(count).flatMap { hash1 =>
+                  client2.getBlockHash(count).flatMap { hash2 =>
+                    deleteNodePair(client1, client2)
+                    assert(hash1 == hash2)
                   }
                 }
               }
@@ -330,19 +422,26 @@ class RpcClientTest
     }
   }
 
-  it should "be able to mark a block as precious" in {
-    client.disconnectNode(otherClient.getDaemon.uri).flatMap { _ =>
-      client.generate(1).flatMap { blocks1 =>
-        otherClient.generate(1).flatMap { blocks2 =>
-          client.getBestBlockHash.flatMap { bestHash1 =>
-            assert(bestHash1 == blocks1.head)
-            otherClient.getBestBlockHash.flatMap { bestHash2 =>
-              assert(bestHash2 == blocks2.head)
-              client.addNode(otherClient.getDaemon.uri, "onetry").flatMap { _ =>
-                Thread.sleep(1000)
-                client.preciousBlock(bestHash2).flatMap { _ =>
-                  client.getBestBlockHash.map { newBestHash =>
-                    assert(newBestHash == blocks2.head)
+  it should "be able to mark a block as precious" in { // TODO Wrap in a try and kill the sandbox
+    createNodePair().flatMap { case (client1, client2) =>
+      client1.disconnectNode(client2.getDaemon.uri).flatMap { _ =>
+        client1.generate(1).flatMap { blocks1 =>
+          client2.generate(1).flatMap { blocks2 =>
+            client1.getBestBlockHash.flatMap { bestHash1 =>
+              assert(bestHash1 == blocks1.head)
+              client2.getBestBlockHash.flatMap { bestHash2 =>
+                assert(bestHash2 == blocks2.head)
+                client1.addNode(client2.getDaemon.uri, "onetry").flatMap { _ =>
+                  val t = Try(awaitConnection(client1, client2))
+                  if (t.isFailure) {
+                    deleteNodePair(client1, client2)
+                    throw t.failed.get
+                  }
+                  client2.preciousBlock(bestHash1).flatMap { _ =>
+                    client2.getBestBlockHash.map { newBestHash =>
+                      deleteNodePair(client1, client2)
+                      assert(newBestHash == blocks1.head)
+                    }
                   }
                 }
               }
@@ -1385,7 +1484,7 @@ class RpcClientTest
     client.uptime.flatMap { time1 =>
       assert(time1 > UInt32(0))
       otherClient.uptime.map { time2 =>
-        assert(time1 > time2)
+        assert(time1 >= time2)
       }
     }
   }
@@ -1646,7 +1745,7 @@ class RpcClientTest
 
   it should "be able to add and remove a node" in {
     otherClient.addNode(walletClient.getDaemon.uri, "add").flatMap { _ =>
-      Thread.sleep(10000)
+      awaitConnection(otherClient, walletClient)
       otherClient.getAddedNodeInfo(walletClient.getDaemon.uri).flatMap { info =>
         assert(info.length == 1)
         assert(info.head.addednode == walletClient.getDaemon.uri)
@@ -1663,12 +1762,12 @@ class RpcClientTest
 
   it should "be able to add and disconnect a node" in {
     otherClient.addNode(walletClient.getDaemon.uri, "add").flatMap { _ =>
-      Thread.sleep(1000)
+      awaitConnection(otherClient, walletClient)
       otherClient.getAddedNodeInfo(walletClient.getDaemon.uri).flatMap { info =>
         assert(info.head.connected.contains(true))
 
         otherClient.disconnectNode(walletClient.getDaemon.uri).flatMap { _ =>
-          Thread.sleep(1000)
+          awaitDisconnected(otherClient, walletClient)
           otherClient.getAddedNodeInfo(walletClient.getDaemon.uri).map {
             newInfo =>
               assert(newInfo.head.connected.contains(false))
