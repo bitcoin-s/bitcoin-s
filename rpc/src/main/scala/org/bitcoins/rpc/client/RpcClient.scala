@@ -51,24 +51,12 @@ class RpcClient(instance: DaemonInstance)(
                                          List(JsNumber(blocks), JsString(mode)))
   }
 
-  def importPrunedFunds(
-      transaction: Transaction,
-      txOutProof: MerkleBlock): Future[Unit] = {
-    bitcoindCall[Unit](
-      "importprunedfunds",
-      List(JsString(transaction.hex), JsString(txOutProof.hex)))
-  }
-
   def prioritiseTransaction(
       txid: DoubleSha256Digest,
       feeDelta: Satoshis): Future[Boolean] = {
     bitcoindCall[Boolean](
       "prioritiseTransaction",
       List(JsString(txid.hex), JsNumber(0), JsNumber(feeDelta.toLong)))
-  }
-
-  def removePrunedFunds(txid: DoubleSha256Digest): Future[Unit] = {
-    bitcoindCall[Unit]("removeprunedfunds", List(JsString(txid.hex)))
   }
 
   // TODO: GetBlockTemplate
@@ -210,7 +198,7 @@ class RpcClient(instance: DaemonInstance)(
     bitcoindCall[Unit]("disconnectnode", List(JsString(address.getAuthority)))
   }
 
-  def dumpPrivKey(address: P2PKHAddress): Future[ECPrivateKey] = {
+  def dumpPrivKey(address: BitcoinAddress): Future[ECPrivateKey] = {
     bitcoindCall[String]("dumpprivkey", List(JsString(address.value)))
       .map(ECPrivateKey.fromWIFToPrivateKey)
   }
@@ -617,6 +605,14 @@ class RpcClient(instance: DaemonInstance)(
       List(JsString(key.toWIF(network)), JsString(account), JsBoolean(rescan)))
   }
 
+  def importPrunedFunds(
+                         transaction: Transaction,
+                         txOutProof: MerkleBlock): Future[Unit] = {
+    bitcoindCall[Unit](
+      "importprunedfunds",
+      List(JsString(transaction.hex), JsString(txOutProof.hex)))
+  }
+
   def importPubKey(
                     pubKey: ECPublicKey,
                     label: String = "",
@@ -790,6 +786,10 @@ class RpcClient(instance: DaemonInstance)(
 
   def pruneBlockChain(height: Int): Future[Int] = {
     bitcoindCall[Int]("pruneblockchain", List(JsNumber(height)))
+  }
+
+  def removePrunedFunds(txid: DoubleSha256Digest): Future[Unit] = {
+    bitcoindCall[Unit]("removeprunedfunds", List(JsString(txid.hex)))
   }
 
   private def rescanBlockChain(

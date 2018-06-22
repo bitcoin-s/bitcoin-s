@@ -180,6 +180,38 @@ class RpcClientTest
     }
   }
 
+  it should "be able to import funds without rescan and then remove them" in {
+    client.getNewAddress().flatMap { address =>
+      client.dumpPrivKey(address).flatMap { privKey =>
+        fundBlockChainTransaction(client, address, Bitcoins(1.5)).flatMap { txid =>
+          client.generate(1).flatMap { _ =>
+            client.getTransaction(txid).flatMap { tx =>
+              client.getTxOutProof(Vector(txid)).flatMap { proof =>
+                otherClient.getBalance.flatMap { balanceBefore =>
+                  otherClient.importPrivKey(privKey, rescan = false).flatMap { _ =>
+                    otherClient.importPrunedFunds(tx.hex, proof).flatMap { _ =>
+                      otherClient.getBalance.map { balanceAfter =>
+                        assert(balanceAfter == balanceBefore + Bitcoins(1.5))
+                      }
+                      otherClient.validateAddress(address).map { addressInfo =>
+                        assert(addressInfo.ismine.contains(true))
+                      }
+                      otherClient.removePrunedFunds(txid).flatMap { _ =>
+                        otherClient.getBalance.flatMap { balance =>
+                          assert(balance == balanceBefore)
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
   it should "be able to get peer info" in {
     client.getPeerInfo.flatMap { infoList =>
       assert(infoList.length == 1)
@@ -286,7 +318,7 @@ class RpcClientTest
       fundBlockChainTransaction(client, address, Bitcoins(1.25)).flatMap {
         txid =>
           client.listAddressGroupings.flatMap { groupings =>
-            val rpcAddress = groupings.last.head
+            val rpcAddress = groupings.find(vec => vec.head.address == address).get.head
             assert(rpcAddress.address == address)
             assert(rpcAddress.balance == Bitcoins(1.25))
 
@@ -1065,8 +1097,8 @@ class RpcClientTest
   }
 
   it should "be able to dump a private key" in {
-    client.getNewAddress(addressType = AddressType.Legacy).flatMap { address =>
-      client.dumpPrivKey(address.asInstanceOf[P2PKHAddress]).map { key =>
+    client.getNewAddress().flatMap { address =>
+      client.dumpPrivKey(address).map { key =>
         succeed
       }
     }
@@ -1222,7 +1254,7 @@ class RpcClientTest
   }
 
   it should "be able to import a wallet" in {
-    client.getNewAddress(addressType = AddressType.Legacy).flatMap { address =>
+    client.getNewAddress().flatMap { address =>
       client
         .dumpWallet(
           client.getDaemon.authCredentials.datadir + "/client_wallet.dat")
@@ -1234,7 +1266,7 @@ class RpcClientTest
                 client.getDaemon.authCredentials.datadir + "/client_wallet.dat")
               .flatMap { _ =>
                 walletClient
-                  .dumpPrivKey(address.asInstanceOf[P2PKHAddress])
+                  .dumpPrivKey(address)
                   .flatMap { key =>
                     succeed
                   }
