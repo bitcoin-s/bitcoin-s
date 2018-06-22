@@ -23,7 +23,8 @@ object JsonWriters {
   }
 
   implicit object ScriptPubKeyWrites extends Writes[ScriptPubKey] {
-    override def writes(o: ScriptPubKey): JsValue = JsString(BitcoinSUtil.encodeHex(o.asmBytes))
+    override def writes(o: ScriptPubKey): JsValue =
+      JsString(BitcoinSUtil.encodeHex(o.asmBytes))
   }
 
   implicit object TransactionInputWrites extends Writes[TransactionInput] {
