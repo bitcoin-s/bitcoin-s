@@ -57,6 +57,11 @@ object JsonReaders {
       processJsNumber[Bitcoins](Bitcoins(_))(json)
   }
 
+  implicit object SatoshisReads extends Reads[Satoshis] {
+    override def reads(json: JsValue): JsResult[Satoshis] =
+      processJsNumber[Satoshis](num => Satoshis(Int64(num.toBigInt)))(json)
+  }
+
   implicit object BlockHeaderReads extends Reads[BlockHeader] {
     override def reads(json: JsValue): JsResult[BlockHeader] =
       processJsString[BlockHeader](BlockHeader.fromHex)(json)

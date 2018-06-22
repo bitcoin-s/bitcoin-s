@@ -59,4 +59,13 @@ object RpcOpts {
       case Bech32     => "bech32"
     }
   }
+
+  case class BlockTemplateRequest(
+      mode: String,
+      capabilities: Vector[String],
+      rules: Vector[String]
+  )
+
+  implicit val blockTemplateRequest: Writes[BlockTemplateRequest] =
+    Json.writes[BlockTemplateRequest]
 }

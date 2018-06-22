@@ -41,28 +41,6 @@ class RpcClient(instance: DaemonInstance)(
 
   def getDaemon: DaemonInstance = instance
 
-  // TODO: WRITE TESTS
-
-  // Needs manual testing!
-  def estimateSmartFee(
-      blocks: Int,
-      mode: String = "CONSERVATIVE"): Future[EstimateSmartFeeResult] = {
-    bitcoindCall[EstimateSmartFeeResult]("estimatesmartfee",
-                                         List(JsNumber(blocks), JsString(mode)))
-  }
-
-  def prioritiseTransaction(
-      txid: DoubleSha256Digest,
-      feeDelta: Satoshis): Future[Boolean] = {
-    bitcoindCall[Boolean](
-      "prioritisetransaction",
-      List(JsString(txid.hex), JsNumber(0), JsNumber(feeDelta.toLong)))
-  }
-
-  // TODO: GetBlockTemplate
-  // --------------------------------------------------------------------------------
-  // EVERYTHING BELOW THIS COMMENT HAS TESTS
-
   def abandonTransaction(txid: DoubleSha256Digest): Future[Unit] = {
     bitcoindCall[Unit]("abandontransaction", List(JsString(txid.hex)))
   }
@@ -131,16 +109,16 @@ class RpcClient(instance: DaemonInstance)(
   }
 
   def bumpFee(
-               txid: DoubleSha256Digest,
-               confTarget: Int = 6,
-               totalFee: Option[Satoshis] = None,
-               replaceable: Boolean = true,
-               estimateMode: String = "UNSET"): Future[BumpFeeResult] = {
+      txid: DoubleSha256Digest,
+      confTarget: Int = 6,
+      totalFee: Option[Satoshis] = None,
+      replaceable: Boolean = true,
+      estimateMode: String = "UNSET"): Future[BumpFeeResult] = {
     val options =
       if (totalFee.isEmpty) {
         List(("confTarget", JsNumber(confTarget)),
-          ("replaceable", JsBoolean(replaceable)),
-          ("estimate_mode", JsString(estimateMode)))
+             ("replaceable", JsBoolean(replaceable)),
+             ("estimate_mode", JsString(estimateMode)))
       } else {
         List(
           ("confTarget", JsNumber(confTarget)),
@@ -151,7 +129,7 @@ class RpcClient(instance: DaemonInstance)(
       }
 
     bitcoindCall[BumpFeeResult]("bumpfee",
-      List(JsString(txid.hex), JsObject(options)))
+                                List(JsString(txid.hex), JsObject(options)))
   }
 
   def clearBanned(): Future[Unit] = {
@@ -209,6 +187,14 @@ class RpcClient(instance: DaemonInstance)(
 
   def encryptWallet(passphrase: String): Future[String] = {
     bitcoindCall[String]("encryptwallet", List(JsString(passphrase)))
+  }
+
+  // Needs manual testing!
+  def estimateSmartFee(
+      blocks: Int,
+      mode: String = "CONSERVATIVE"): Future[EstimateSmartFeeResult] = {
+    bitcoindCall[EstimateSmartFeeResult]("estimatesmartfee",
+                                         List(JsNumber(blocks), JsString(mode)))
   }
 
   private def fundRawTransaction(
@@ -318,6 +304,18 @@ class RpcClient(instance: DaemonInstance)(
 
   def getBlockRaw(headerHash: DoubleSha256Digest): Future[Block] = {
     bitcoindCall[Block]("getblock", List(JsString(headerHash.hex), JsNumber(0)))
+  }
+
+  def getBlockTemplate(
+      request: Option[RpcOpts.BlockTemplateRequest] = None): Future[
+    GetBlockTemplateResult] = {
+    val params =
+      if (request.isEmpty) {
+        List.empty
+      } else {
+        List(Json.toJson(request.get))
+      }
+    bitcoindCall[GetBlockTemplateResult]("getblocktemplate", params)
   }
 
   def getBlockWithTransactions(headerHash: DoubleSha256Digest): Future[
@@ -606,17 +604,17 @@ class RpcClient(instance: DaemonInstance)(
   }
 
   def importPrunedFunds(
-                         transaction: Transaction,
-                         txOutProof: MerkleBlock): Future[Unit] = {
+      transaction: Transaction,
+      txOutProof: MerkleBlock): Future[Unit] = {
     bitcoindCall[Unit](
       "importprunedfunds",
       List(JsString(transaction.hex), JsString(txOutProof.hex)))
   }
 
   def importPubKey(
-                    pubKey: ECPublicKey,
-                    label: String = "",
-                    rescan: Boolean = true): Future[Unit] = {
+      pubKey: ECPublicKey,
+      label: String = "",
+      rescan: Boolean = true): Future[Unit] = {
     bitcoindCall[Unit](
       "importpubkey",
       List(JsString(pubKey.hex), JsString(label), JsBoolean(rescan)))
@@ -786,6 +784,14 @@ class RpcClient(instance: DaemonInstance)(
 
   def preciousBlock(headerHash: DoubleSha256Digest): Future[Unit] = {
     bitcoindCall[Unit]("preciousblock", List(JsString(headerHash.hex)))
+  }
+
+  def prioritiseTransaction(
+      txid: DoubleSha256Digest,
+      feeDelta: Satoshis): Future[Boolean] = {
+    bitcoindCall[Boolean](
+      "prioritisetransaction",
+      List(JsString(txid.hex), JsNumber(0), JsNumber(feeDelta.toLong)))
   }
 
   def pruneBlockChain(height: Int): Future[Int] = {

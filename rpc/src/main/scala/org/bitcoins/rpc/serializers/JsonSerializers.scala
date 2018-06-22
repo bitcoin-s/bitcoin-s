@@ -8,7 +8,7 @@ import org.bitcoins.core.crypto.{
   ECPublicKey,
   Sha256Hash160Digest
 }
-import org.bitcoins.core.currency.Bitcoins
+import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.number.{Int32, UInt32, UInt64}
 import org.bitcoins.core.protocol.{
   Address,
@@ -37,6 +37,7 @@ object JsonSerializers {
   implicit val doubleSha256DigestReads: Reads[DoubleSha256Digest] =
     DoubleSha256DigestReads
   implicit val bitcoinsReads: Reads[Bitcoins] = BitcoinsReads
+  implicit val satoshisReads: Reads[Satoshis] = SatoshisReads
   implicit val blockHeaderReads: Reads[BlockHeader] = BlockHeaderReads
   implicit val int32Reads: Reads[Int32] = Int32Reads
   implicit val uInt32Reads: Reads[UInt32] = UInt32Reads
@@ -280,6 +281,11 @@ object JsonSerializers {
     Json.reads[UnspentOutput]
 
   // Other Models
+  implicit val blockTransactionReads: Reads[BlockTransaction] =
+    Json.reads[BlockTransaction]
+  implicit val getBlockTemplateResultReads: Reads[GetBlockTemplateResult] =
+    Json.reads[GetBlockTemplateResult]
+
   implicit val miningInfoReads: Reads[GetMiningInfoResult] =
     Json.reads[GetMiningInfoResult]
 
