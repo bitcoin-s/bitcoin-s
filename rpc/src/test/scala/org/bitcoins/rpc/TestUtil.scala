@@ -1,6 +1,6 @@
 package org.bitcoins.rpc
 
-import java.io.PrintWriter
+import java.io.{File, PrintWriter}
 import java.net.URI
 
 import akka.actor.ActorSystem
@@ -50,7 +50,7 @@ trait TestUtil extends BitcoinSLogger {
       pw.write("prune=1\n")
     }
     pw.close()
-    AuthCredentials(username, pass, d)
+    AuthCredentials(username, pass, f)
   }
 
   lazy val network = RegTest
@@ -72,17 +72,19 @@ trait TestUtil extends BitcoinSLogger {
     servers.foreach(awaitServer(_))
   }
 
-  def deleteTmpDir(path: String): Boolean = {
-    val dir = new java.io.File(path)
+  def deleteTmpDir(dir: File): Boolean = {
     if (!dir.isDirectory) {
       dir.delete()
     } else {
-      dir.listFiles().foreach(file => deleteTmpDir(file.getAbsolutePath))
+      dir.listFiles().foreach(deleteTmpDir)
       dir.delete()
     }
   }
 
-  def awaitCondition(condition: => Boolean, duration: Int = 100, counter: Int = 0): Unit = {
+  def awaitCondition(
+      condition: => Boolean,
+      duration: Int = 100,
+      counter: Int = 0): Unit = {
     logger.debug(s"counter: ${counter.toString}")
     if (counter == 50) {
       throw new RuntimeException("Condition timed out")
@@ -94,33 +96,61 @@ trait TestUtil extends BitcoinSLogger {
     }
   }
 
-  def awaitServer(server: RpcClient, duration: Int = 100, counter: Int = 0): Unit = {
+  def awaitServer(
+      server: RpcClient,
+      duration: Int = 100,
+      counter: Int = 0): Unit = {
     awaitCondition(server.isStarted, duration, counter)
   }
 
-  def awaitServerShutdown(server: RpcClient, duration: Int = 300, counter: Int = 0): Unit = {
+  def awaitServerShutdown(
+      server: RpcClient,
+      duration: Int = 300,
+      counter: Int = 0): Unit = {
     awaitCondition(!server.isStarted, duration, counter)
   }
 
-  def awaitConnection(from: RpcClient, to: RpcClient, duration: Int = 100, counter: Int = 0): Unit = {
-    awaitCondition (Await.result (
-      from.getAddedNodeInfo(to.getDaemon.uri).map(
-        info => info.nonEmpty && info.head.connected.contains(true)
+  def awaitConnection(
+      from: RpcClient,
+      to: RpcClient,
+      duration: Int = 100,
+      counter: Int = 0): Unit = {
+    awaitCondition(
+      Await.result(
+        from
+          .getAddedNodeInfo(to.getDaemon.uri)
+          .map(
+            info => info.nonEmpty && info.head.connected.contains(true)
+          ),
+        5.seconds
       ),
-      5.seconds
-    ), duration, counter)
+      duration,
+      counter)
   }
 
-  def awaitDisconnected(from: RpcClient, to: RpcClient, duration: Int = 100, counter: Int = 0): Unit = {
-    awaitCondition(Await.result (
-      from.getAddedNodeInfo(to.getDaemon.uri).map(
-        info => info.isEmpty || !info.head.connected.contains(true)
+  def awaitDisconnected(
+      from: RpcClient,
+      to: RpcClient,
+      duration: Int = 100,
+      counter: Int = 0): Unit = {
+    awaitCondition(
+      Await.result(
+        from
+          .getAddedNodeInfo(to.getDaemon.uri)
+          .map(
+            info => info.isEmpty || !info.head.connected.contains(true)
+          ),
+        2.seconds
       ),
-      2.seconds
-    ), duration, counter)
+      duration,
+      counter)
   }
 
-  def createNodePair(port1: Int, rpcPort1: Int, port2: Int, rpcPort2: Int): Future[(RpcClient, RpcClient)] = {
+  def createNodePair(
+      port1: Int,
+      rpcPort1: Int,
+      port2: Int,
+      rpcPort2: Int): Future[(RpcClient, RpcClient)] = {
     val client1: RpcClient = new RpcClient(TestUtil.instance(port1, rpcPort1))
     val client2: RpcClient = new RpcClient(TestUtil.instance(port2, rpcPort2))
     client1.start()

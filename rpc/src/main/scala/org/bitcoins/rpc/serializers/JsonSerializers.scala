@@ -305,4 +305,7 @@ object JsonSerializers {
     Map[DoubleSha256Digest, GetMemPoolResult]] =
     Reads.mapReads[DoubleSha256Digest, GetMemPoolResult](s =>
       JsSuccess(DoubleSha256Digest.fromHex(s)))
+
+  implicit val outputMapWrites: Writes[Map[BitcoinAddress, Bitcoins]] =
+    mapWrites[BitcoinAddress, Bitcoins](_.value)
 }

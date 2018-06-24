@@ -23,9 +23,10 @@ import org.bitcoins.core.wallet.fee.{BitcoinFeeUnit, SatoshisPerByte}
 import org.bitcoins.rpc.jsonmodels.RpcAddress
 import play.api.libs.json._
 
-import scala.util.{Failure, Success, Try}
+import scala.util.{Failure, Success}
 
 object JsonReaders {
+  // For use in implementing reads method of Reads[T] where T is constructed from a JsNumber via numFunc
   private def processJsNumber[T](numFunc: BigDecimal => T)(
       json: JsValue): JsResult[T] = json match {
     case JsNumber(n) => JsSuccess(numFunc(n))
@@ -34,6 +35,7 @@ object JsonReaders {
       JsError(s"error.expected.jsnumber, got ${Json.toJson(err).toString()}")
   }
 
+  // For use in implementing reads method of Reads[T] where T is constructed from a JsString via strFunc
   private def processJsString[T](strFunc: String => T)(
       json: JsValue): JsResult[T] = json match {
     case JsString(s) => JsSuccess(strFunc(s))

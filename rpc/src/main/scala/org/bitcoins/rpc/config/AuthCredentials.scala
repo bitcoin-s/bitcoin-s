@@ -1,12 +1,14 @@
 package org.bitcoins.rpc.config
 
+import java.io.File
+
 /**
   * Created by chris on 5/2/17.
   */
 sealed trait AuthCredentials {
 
   /** The directory where our bitcoin.conf file is located */
-  def datadir: String
+  def datadir: File
 
   /** rpcusername field in our bitcoin.conf file */
   def username: String
@@ -19,18 +21,18 @@ object AuthCredentials {
   private case class AuthCredentialsImpl(
       username: String,
       password: String,
-      datadir: String)
+      datadir: File)
       extends AuthCredentials
 
   def apply(username: String, password: String): AuthCredentials = {
-    val defaultDataDir = System.getProperty("user.home") + "/.bitcoin"
+    val defaultDataDir = new File(System.getProperty("user.home") + "/.bitcoin")
     AuthCredentials(username, password, defaultDataDir)
   }
 
   def apply(
       username: String,
       password: String,
-      datadir: String): AuthCredentials = {
+      datadir: File): AuthCredentials = {
     AuthCredentialsImpl(username, password, datadir)
   }
 }

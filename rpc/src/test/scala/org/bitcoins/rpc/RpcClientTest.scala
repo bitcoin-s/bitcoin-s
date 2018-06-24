@@ -8,16 +8,27 @@ import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import org.bitcoins.core.crypto.{DoubleSha256Digest, ECPrivateKey, ECPublicKey}
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
-import org.bitcoins.core.protocol.transaction.{Transaction, TransactionInput, TransactionOutPoint}
+import org.bitcoins.core.protocol.transaction.{
+  Transaction,
+  TransactionInput,
+  TransactionOutPoint
+}
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.rpc.client.{RpcClient, RpcOpts}
 import org.scalatest.{AsyncFlatSpec, BeforeAndAfter, BeforeAndAfterAll}
 import org.bitcoins.core.number.{Int64, UInt32}
 import org.bitcoins.core.protocol.{BitcoinAddress, P2PKHAddress}
-import org.bitcoins.core.protocol.script.{P2SHScriptSignature, ScriptPubKey, ScriptSignature}
+import org.bitcoins.core.protocol.script.{
+  P2SHScriptSignature,
+  ScriptPubKey,
+  ScriptSignature
+}
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
-import org.bitcoins.rpc.client.RpcOpts.AddressType
-import org.bitcoins.rpc.jsonmodels.{GetBlockWithTransactionsResult, GetTransactionResult, RpcAddress}
+import org.bitcoins.rpc.jsonmodels.{
+  GetBlockWithTransactionsResult,
+  GetTransactionResult,
+  RpcAddress
+}
 
 import scala.concurrent.{Await, Future}
 import scala.concurrent.duration.DurationInt
@@ -43,8 +54,7 @@ class RpcClientTest
     newRpcPort
   }
 
-  val client = new RpcClient(
-    TestUtil.instance(getNewPort(), getNewRpcPort()))
+  val client = new RpcClient(TestUtil.instance(getNewPort(), getNewRpcPort()))
 
   val otherClient = new RpcClient(
     TestUtil.instance(getNewPort(), getNewRpcPort()))
@@ -141,7 +151,10 @@ class RpcClientTest
   }
 
   private def createNodePair(): Future[(RpcClient, RpcClient)] =
-    TestUtil.createNodePair(getNewPort(), getNewRpcPort(), getNewPort(), getNewRpcPort())
+    TestUtil.createNodePair(getNewPort(),
+                            getNewRpcPort(),
+                            getNewPort(),
+                            getNewRpcPort())
 
   override def beforeAll(): Unit = {
     logger.trace("Temp bitcoin directory created")
@@ -301,51 +314,53 @@ class RpcClientTest
   }
 
   it should "be able to submit a new block" in {
-    createNodePair().flatMap { case (client1, client2) =>
-      client1.disconnectNode(client2.getDaemon.uri).flatMap { _ =>
-        client2.generate(1).flatMap { hash =>
-          client2.getBlockRaw(hash.head).flatMap { block =>
-            client1.submitBlock(block).flatMap { _ =>
-              client1.getBlockCount.flatMap { count =>
-                client1.getBlockHash(count).flatMap { hash1 =>
-                  client2.getBlockHash(count).flatMap { hash2 =>
-                    TestUtil.deleteNodePair(client1, client2)
-                    assert(hash1 == hash2)
+    createNodePair().flatMap {
+      case (client1, client2) =>
+        client1.disconnectNode(client2.getDaemon.uri).flatMap { _ =>
+          client2.generate(1).flatMap { hash =>
+            client2.getBlockRaw(hash.head).flatMap { block =>
+              client1.submitBlock(block).flatMap { _ =>
+                client1.getBlockCount.flatMap { count =>
+                  client1.getBlockHash(count).flatMap { hash1 =>
+                    client2.getBlockHash(count).flatMap { hash2 =>
+                      TestUtil.deleteNodePair(client1, client2)
+                      assert(hash1 == hash2)
+                    }
                   }
                 }
               }
             }
           }
         }
-      }
     }
   }
 
   it should "be able to mark a block as precious" in {
-    createNodePair().flatMap { case (client1, client2) =>
-      client1.disconnectNode(client2.getDaemon.uri).flatMap { _ =>
-        client1.generate(1).flatMap { blocks1 =>
-          client2.generate(1).flatMap { blocks2 =>
-            client1.getBestBlockHash.flatMap { bestHash1 =>
-              assert(bestHash1 == blocks1.head)
-              client2.getBestBlockHash.flatMap { bestHash2 =>
-                assert(bestHash2 == blocks2.head)
-                client1.addNode(client2.getDaemon.uri, "onetry").flatMap { _ =>
-                  TestUtil.awaitCondition(
-                    Try(Await.result(
-                      client2.preciousBlock(bestHash1), 2.seconds))
-                    .isSuccess)
+    createNodePair().flatMap {
+      case (client1, client2) =>
+        client1.disconnectNode(client2.getDaemon.uri).flatMap { _ =>
+          client1.generate(1).flatMap { blocks1 =>
+            client2.generate(1).flatMap { blocks2 =>
+              client1.getBestBlockHash.flatMap { bestHash1 =>
+                assert(bestHash1 == blocks1.head)
+                client2.getBestBlockHash.flatMap { bestHash2 =>
+                  assert(bestHash2 == blocks2.head)
+                  client1.addNode(client2.getDaemon.uri, "onetry").flatMap {
+                    _ =>
+                      TestUtil.awaitCondition(
+                        Try(Await.result(client2.preciousBlock(bestHash1),
+                                         2.seconds)).isSuccess)
 
-                  client2.getBestBlockHash.map { newBestHash =>
-                    TestUtil.deleteNodePair(client1, client2)
-                    assert(newBestHash == blocks1.head)
+                      client2.getBestBlockHash.map { newBestHash =>
+                        TestUtil.deleteNodePair(client1, client2)
+                        assert(newBestHash == blocks1.head)
+                      }
                   }
                 }
               }
             }
           }
         }
-      }
     }
   }
 
@@ -810,15 +825,15 @@ class RpcClientTest
       succeed
     }
 
-    client.getRawChangeAddress(AddressType.Legacy).map { address =>
+    client.getRawChangeAddress(RpcOpts.Legacy()).map { address =>
       succeed
     }
 
-    client.getRawChangeAddress(AddressType.P2SHSegwit).map { address =>
+    client.getRawChangeAddress(RpcOpts.P2SHSegwit()).map { address =>
       succeed
     }
 
-    client.getRawChangeAddress(AddressType.Bech32).map { address =>
+    client.getRawChangeAddress(RpcOpts.Bech32()).map { address =>
       succeed
     }
   }
@@ -978,11 +993,11 @@ class RpcClientTest
   it should "be able to get block hash by height" in {
     client.generate(2).flatMap { blocks =>
       client.getBlockCount.flatMap { count =>
-        client.getBlockHash(count).map { hash =>
+        client.getBlockHash(count).flatMap { hash =>
           assert(blocks(1) == hash)
-        }
-        client.getBlockHash(count - 1).map { hash =>
-          assert(blocks(0) == hash)
+          client.getBlockHash(count - 1).map { hash =>
+            assert(blocks(0) == hash)
+          }
         }
       }
     }
@@ -1125,7 +1140,7 @@ class RpcClientTest
     val ecPrivKey1 = ECPrivateKey.freshPrivateKey
     val pubKey1 = ecPrivKey1.publicKey
 
-    client.getNewAddress(addressType = AddressType.Legacy).flatMap { address =>
+    client.getNewAddress(addressType = RpcOpts.Legacy()).flatMap { address =>
       client
         .addMultiSigAddress(2,
                             Vector(Left(pubKey1),
@@ -1140,7 +1155,7 @@ class RpcClientTest
     val ecPrivKey1 = ECPrivateKey.freshPrivateKey
     val pubKey1 = ecPrivKey1.publicKey
 
-    client.getNewAddress(addressType = AddressType.Legacy).flatMap { address =>
+    client.getNewAddress(addressType = RpcOpts.Legacy()).flatMap { address =>
       client
         .addMultiSigAddress(2,
                             Vector(Left(pubKey1),
@@ -1198,7 +1213,7 @@ class RpcClientTest
 
   it should "be able to sign a message and verify that signature" in {
     val message = "Never gonna give you up\nNever gonna let you down\n..."
-    client.getNewAddress(addressType = AddressType.Legacy).flatMap { address =>
+    client.getNewAddress(addressType = RpcOpts.Legacy()).flatMap { address =>
       client.signMessage(address.asInstanceOf[P2PKHAddress], message).flatMap {
         signature =>
           client

@@ -1,6 +1,7 @@
 package org.bitcoins.rpc.client
 
 import java.net.URI
+import java.util.UUID
 
 import akka.http.javadsl.model.headers.HttpCredentials
 import akka.http.scaladsl.Http
@@ -13,29 +14,31 @@ import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.{BitcoinAddress, P2PKHAddress}
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, MerkleBlock}
 import org.bitcoins.core.protocol.script.ScriptPubKey
-import org.bitcoins.core.protocol.transaction.{Transaction, TransactionInput, TransactionOutPoint}
+import org.bitcoins.core.protocol.transaction.{
+  Transaction,
+  TransactionInput,
+  TransactionOutPoint
+}
 import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil}
 import org.bitcoins.rpc.client.RpcOpts.AddressType
-import org.bitcoins.rpc.client.RpcOpts.AddressType.AddressType
 import org.bitcoins.rpc.config.DaemonInstance
 import play.api.libs.json._
 import org.bitcoins.rpc.jsonmodels._
 import org.bitcoins.rpc.serializers.JsonSerializers._
-import org.bitcoins.rpc.serializers.JsonWriters.mapWrites
 
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.concurrent.duration.DurationInt
 import scala.sys.process._
-import scala.util.{Failure, Try, Success}
+import scala.util.Try
 
 class RpcClient(instance: DaemonInstance)(
     implicit
-    m: ActorMaterializer,
-    ec: ExecutionContext) {
+    m: ActorMaterializer) {
   private val resultKey = "result"
   private val errorKey = "error"
   private val logger = BitcoinSLogger.logger
   private implicit val network = instance.network
+  private implicit val ec: ExecutionContext = m.executionContext
 
   def getDaemon: DaemonInstance = instance
 
@@ -49,7 +52,7 @@ class RpcClient(instance: DaemonInstance)(
     val result = Try(Await.result(payloadF.map { payload =>
       (payload \ errorKey).validate[RpcError] match {
         case res: JsSuccess[RpcError] => false
-        case res: JsError => true
+        case res: JsError             => true
       }
     }, 2.seconds))
 
@@ -84,7 +87,7 @@ class RpcClient(instance: DaemonInstance)(
         List(JsNumber(minSignatures),
              JsArray(keys.map(keyToString)),
              JsString(account),
-             JsString(AddressType.value(addressType.get)))
+             JsString(RpcOpts.addressTypeString(addressType.get)))
       }
 
     bitcoindCall[MultiSigResult]("addmultisigaddress", params)
@@ -162,9 +165,6 @@ class RpcClient(instance: DaemonInstance)(
       "createmultisig",
       List(JsNumber(minSignatures), Json.toJson(keys.map(_.hex))))
   }
-
-  implicit val outputMapWrites: Writes[Map[BitcoinAddress, Bitcoins]] =
-    mapWrites[BitcoinAddress, Bitcoins](_.value)
 
   def createRawTransaction(
       inputs: Vector[TransactionInput],
@@ -263,7 +263,7 @@ class RpcClient(instance: DaemonInstance)(
   private def getAddedNodeInfo(node: Option[URI]): Future[Vector[Node]] = {
     val params =
       if (node.isEmpty) {
-        List()
+        List.empty
       } else {
         List(JsString(node.get.getAuthority))
       }
@@ -446,7 +446,8 @@ class RpcClient(instance: DaemonInstance)(
       if (addressType.isEmpty) {
         List(JsString(account))
       } else {
-        List(JsString(account), JsString(AddressType.value(addressType.get)))
+        List(JsString(account),
+             JsString(RpcOpts.addressTypeString(addressType.get)))
       }
 
     bitcoindCall[BitcoinAddress]("getnewaddress", params)
@@ -477,7 +478,7 @@ class RpcClient(instance: DaemonInstance)(
     } else {
       bitcoindCall[BitcoinAddress](
         "getrawchangeaddress",
-        List(JsString(AddressType.value(addressType.get))))
+        List(JsString(RpcOpts.addressTypeString(addressType.get))))
     }
   }
   def getRawChangeAddress(): Future[BitcoinAddress] = getRawChangeAddress(None)
@@ -544,7 +545,7 @@ class RpcClient(instance: DaemonInstance)(
   private def getTxOutProof(
       txids: Vector[DoubleSha256Digest],
       headerHash: Option[DoubleSha256Digest]): Future[MerkleBlock] = {
-    def params = {
+    val params = {
       val hashes = JsArray(txids.map(hash => JsString(hash.hex)))
       if (headerHash.isEmpty) {
         List(hashes)
@@ -606,7 +607,7 @@ class RpcClient(instance: DaemonInstance)(
       rescan: Boolean = true): Future[Vector[ImportMultiResult]] = {
     bitcoindCall[Vector[ImportMultiResult]](
       "importmulti",
-      List(Json.toJson(requests), JsObject(Seq(("rescan", JsBoolean(rescan))))))
+      List(Json.toJson(requests), JsObject(Map("rescan" -> JsBoolean(rescan)))))
   }
 
   def importPrivKey(
@@ -689,14 +690,41 @@ class RpcClient(instance: DaemonInstance)(
 
   // Need to configure default headerHash
   def listSinceBlock(
-      headerHash: DoubleSha256Digest,
+      headerHash: Option[DoubleSha256Digest] = None,
       confirmations: Int = 1,
       includeWatchOnly: Boolean = false): Future[ListSinceBlockResult] = {
-    bitcoindCall[ListSinceBlockResult]("listsinceblock",
-                                       List(JsString(headerHash.hex),
-                                            JsNumber(confirmations),
-                                            JsBoolean(includeWatchOnly)))
+    val params =
+      if (headerHash.isEmpty) {
+        List.empty
+      } else {
+        List(JsString(headerHash.get.hex),
+             JsNumber(confirmations),
+             JsBoolean(includeWatchOnly))
+      }
+    bitcoindCall[ListSinceBlockResult]("listsinceblock", params)
   }
+
+  def listSinceBlock: Future[ListSinceBlockResult] = listSinceBlock(None)
+
+  def listSinceBlock(
+      headerHash: DoubleSha256Digest): Future[ListSinceBlockResult] =
+    listSinceBlock(Some(headerHash))
+
+  def listSinceBlock(
+      headerHash: DoubleSha256Digest,
+      confirmations: Int): Future[ListSinceBlockResult] =
+    listSinceBlock(Some(headerHash), confirmations)
+
+  def listSinceBlock(
+      headerHash: DoubleSha256Digest,
+      includeWatchOnly: Boolean): Future[ListSinceBlockResult] =
+    listSinceBlock(Some(headerHash), includeWatchOnly = includeWatchOnly)
+
+  def listSinceBlock(
+      headerHash: DoubleSha256Digest,
+      confirmations: Int,
+      includeWatchOnly: Boolean): Future[ListSinceBlockResult] =
+    listSinceBlock(Some(headerHash), confirmations, includeWatchOnly)
 
   def listTransactions(
       account: String = "*",
@@ -773,8 +801,8 @@ class RpcClient(instance: DaemonInstance)(
   def logging: Future[Map[String, Int]] = logging(None, None)
 
   def logging(
-      include: Vector[String] = Vector(),
-      exclude: Vector[String] = Vector()): Future[Map[String, Int]] = {
+      include: Vector[String] = Vector.empty,
+      exclude: Vector[String] = Vector.empty): Future[Map[String, Int]] = {
     val inc = if (include.nonEmpty) Some(include) else None
     val exc = if (exclude.nonEmpty) Some(exclude) else None
     logging(inc, exc)
@@ -921,7 +949,7 @@ class RpcClient(instance: DaemonInstance)(
     bitcoindCall[Unit]("setnetworkactive", List(JsBoolean(activate)))
   }
 
-  // Should be BitcoinFeeUnit
+  // TODO: Should be BitcoinFeeUnit
   def setTxFee(feePerKB: Bitcoins): Future[Boolean] = {
     bitcoindCall[Boolean]("settxfee", List(JsNumber(feePerKB.toBigDecimal)))
   }
@@ -943,24 +971,19 @@ class RpcClient(instance: DaemonInstance)(
       utxoDeps: Option[Vector[RpcOpts.SignRawTransactionOutputParameter]],
       keys: Option[Vector[ECPrivateKey]],
       sigHash: Option[String]): Future[SignRawTransactionResult] = {
+
+    val utxos = utxoDeps.map(Json.toJson(_)).getOrElse(JsArray.empty)
+    val jsonKeys = keys.map(Json.toJson(_)).getOrElse(JsArray.empty)
+
     val params =
       if (utxoDeps.isEmpty) {
         List(JsString(transaction.hex))
+      } else if (keys.isEmpty) {
+        List(JsString(transaction.hex), utxos)
+      } else if (sigHash.isEmpty) {
+        List(JsString(transaction.hex), utxos, jsonKeys)
       } else {
-        val utxos = Json.toJson(utxoDeps.get)
-        if (keys.isEmpty) {
-          List(JsString(transaction.hex), utxos)
-        } else {
-          val jsonKeys = Json.toJson(keys.get)
-          if (sigHash.isEmpty) {
-            List(JsString(transaction.hex), utxos, jsonKeys)
-          } else {
-            List(JsString(transaction.hex),
-                 utxos,
-                 jsonKeys,
-                 JsString(sigHash.get))
-          }
-        }
+        List(JsString(transaction.hex), utxos, jsonKeys, JsString(sigHash.get))
       }
 
     bitcoindCall[SignRawTransactionResult]("signrawtransaction", params)
@@ -1064,16 +1087,7 @@ class RpcClient(instance: DaemonInstance)(
 
   // Should both logging and throwing be happening?
   private def parseResult[T](result: JsResult[T], json: JsValue): T = {
-    // First catch errors thrown by calls with Unit as the expected return type (which isn't handled by UnitReads)
-    if (result == JsSuccess(())) {
-      (json \ errorKey).validate[RpcError] match {
-        case err: JsSuccess[RpcError] =>
-          logger.error(s"Error ${err.value.code}: ${err.value.message}")
-          throw new RuntimeException(
-            s"Error ${err.value.code}: ${err.value.message}") // More specific type?
-        case _: JsError =>
-      }
-    }
+    checkUnitError[T](result, json)
 
     result match {
       case res: JsSuccess[T] => res.value
@@ -1082,7 +1096,7 @@ class RpcClient(instance: DaemonInstance)(
           case err: JsSuccess[RpcError] =>
             logger.error(s"Error ${err.value.code}: ${err.value.message}")
             throw new RuntimeException(
-              s"Error ${err.value.code}: ${err.value.message}") // More specific type?
+              s"Error ${err.value.code}: ${err.value.message}")
           case _: JsError =>
             logger.error(JsError.toJson(res).toString())
             throw new IllegalArgumentException(
@@ -1091,8 +1105,21 @@ class RpcClient(instance: DaemonInstance)(
     }
   }
 
+  // Catches errors thrown by calls with Unit as the expected return type (which isn't handled by UnitReads)
+  private def checkUnitError[T](result: JsResult[T], json: JsValue): Unit = {
+    if (result == JsSuccess(())) {
+      (json \ errorKey).validate[RpcError] match {
+        case err: JsSuccess[RpcError] =>
+          logger.error(s"Error ${err.value.code}: ${err.value.message}")
+          throw new RuntimeException(
+            s"Error ${err.value.code}: ${err.value.message}")
+        case _: JsError =>
+      }
+    }
+  }
+
   private def getPayload(response: HttpResponse): Future[JsValue] = {
-    val payloadF = response.entity.dataBytes.runFold(ByteString(""))(_ ++ _)
+    val payloadF = response.entity.dataBytes.runFold(ByteString.empty)(_ ++ _)
 
     payloadF.map { payload =>
       Json.parse(payload.decodeString(ByteString.UTF_8))
@@ -1107,9 +1134,11 @@ class RpcClient(instance: DaemonInstance)(
       instance: DaemonInstance,
       methodName: String,
       params: JsArray): HttpRequest = {
+    val uuid = UUID.randomUUID().toString
+
     val m: Map[String, JsValue] = Map("method" -> JsString(methodName),
                                       "params" -> params,
-                                      "id" -> JsString("")) // java.util.UUID
+                                      "id" -> JsString(uuid))
     val jsObject = JsObject(m)
 
     // Would toString work?
