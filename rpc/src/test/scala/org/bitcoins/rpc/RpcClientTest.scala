@@ -80,10 +80,10 @@ class RpcClientTest
           sender.getTransaction(block0.tx(0)).flatMap { transaction0 =>
             sender.getTransaction(block1.tx(0)).flatMap { transaction1 =>
               val input0 =
-                TransactionOutPoint(transaction0.txid,
+                TransactionOutPoint(transaction0.txid.flip,
                                     UInt32(transaction0.blockindex.get))
               val input1 =
-                TransactionOutPoint(transaction1.txid,
+                TransactionOutPoint(transaction1.txid.flip,
                                     UInt32(transaction1.blockindex.get))
               val sig: ScriptSignature = ScriptSignature.empty
               receiver.getNewAddress().flatMap { address =>
@@ -419,8 +419,8 @@ class RpcClientTest
         assert(success)
         client.listLockUnspent.flatMap { locked =>
           assert(locked.length == 2)
-          assert(locked(0).txId == txid1)
-          assert(locked(1).txId == txid2)
+          assert(locked(0).txId.flip == txid1)
+          assert(locked(1).txId.flip == txid2)
           client.lockUnspent(true, param).flatMap { success =>
             assert(success)
             client.listLockUnspent.map { newLocked =>
@@ -449,10 +449,10 @@ class RpcClientTest
           client.getTransaction(block0.tx(0)).flatMap { transaction0 =>
             client.getTransaction(block1.tx(0)).flatMap { transaction1 =>
               val input0 =
-                TransactionOutPoint(transaction0.txid,
+                TransactionOutPoint(transaction0.txid.flip,
                                     UInt32(transaction0.blockindex.get))
               val input1 =
-                TransactionOutPoint(transaction1.txid,
+                TransactionOutPoint(transaction1.txid.flip,
                                     UInt32(transaction1.blockindex.get))
               val sig: ScriptSignature = ScriptSignature.empty
               otherClient.getNewAddress().flatMap { address =>
@@ -468,14 +468,12 @@ class RpcClientTest
                       transaction
                         .inputs(0)
                         .previousOutput
-                        .txId
-                        .flip == input0.txId)
+                        .txId == input0.txId)
                     assert(
                       transaction
                         .inputs(1)
                         .previousOutput
-                        .txId
-                        .flip == input1.txId)
+                        .txId == input1.txId)
                   }
               }
             }
@@ -582,7 +580,7 @@ class RpcClientTest
           assert(mempool.head == txid1)
           client.getNewAddress().flatMap { address =>
             val input: TransactionInput =
-              TransactionInput(TransactionOutPoint(txid1, UInt32(0)),
+              TransactionInput(TransactionOutPoint(txid1.flip, UInt32(0)),
                                ScriptSignature.empty,
                                UInt32.max - UInt32.one)
             client
@@ -1424,7 +1422,7 @@ class RpcClientTest
                     val output =
                       tx.vout.find(output => output.value == Bitcoins(1.2)).get
                     val input = TransactionInput(
-                      TransactionOutPoint(txid, UInt32(output.n)),
+                      TransactionOutPoint(txid.flip, UInt32(output.n)),
                       P2SHScriptSignature(multisig.redeemScript.hex),
                       UInt32.max - UInt32.one)
                     client.getNewAddress().flatMap { newAddress =>
@@ -1486,7 +1484,7 @@ class RpcClientTest
                                       output.value == Bitcoins(1.2))
                                     .get
                                   val input = TransactionInput(
-                                    TransactionOutPoint(txid, UInt32(output.n)),
+                                    TransactionOutPoint(txid.flip, UInt32(output.n)),
                                     P2SHScriptSignature(
                                       multisig.redeemScript.hex),
                                     UInt32.max - UInt32.one)
@@ -1559,7 +1557,7 @@ class RpcClientTest
       client.listUnspent.flatMap { unspent =>
         val output = unspent.find(output => output.amount.toBigDecimal > 1).get
         val input: TransactionInput = TransactionInput(
-          TransactionOutPoint(output.txid, UInt32(output.vout)),
+          TransactionOutPoint(output.txid.flip, UInt32(output.vout)),
           ScriptSignature.empty,
           UInt32.max - UInt32(2))
         client.getRawChangeAddress().flatMap { changeAddress =>

@@ -215,7 +215,7 @@ object JsonReaders {
               (json \ "vout").validate[UInt32].flatMap { vout =>
                 (json \ "scriptSig" \ "hex").validate[ScriptSignature].flatMap {
                   scriptSig =>
-                    JsSuccess(TransactionInput(TransactionOutPoint(txid, vout),
+                    JsSuccess(TransactionInput(TransactionOutPoint(txid.flip, vout),
                                                scriptSig,
                                                sequence))
                 }
@@ -256,7 +256,7 @@ object JsonReaders {
       implicit val outPointReads: Reads[OutPoint] = Json.reads[OutPoint]
       json.validate[OutPoint] match {
         case JsSuccess(op, _) =>
-          JsSuccess(TransactionOutPoint(op.txid, op.vout))
+          JsSuccess(TransactionOutPoint(op.txid.flip, op.vout))
         case JsError(err) =>
           JsError(s"Could not parse TransactionOutPoint, got ${err.toString()}")
       }
