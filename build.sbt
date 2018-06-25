@@ -6,7 +6,8 @@ lazy val root = project
       core,
       coreGen,
       coreTest,
-      zmq
+      zmq,
+      rpc
     )
 
 lazy val secp256k1jni = project

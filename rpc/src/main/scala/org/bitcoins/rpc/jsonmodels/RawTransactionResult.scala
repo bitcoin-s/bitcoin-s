@@ -4,7 +4,7 @@ import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.{BitcoinAddress, P2PKHAddress, P2SHAddress}
-import org.bitcoins.core.protocol.script.ScriptPubKey
+import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptSignature}
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionInput}
 
 sealed abstract class RawTransactionResult
@@ -63,8 +63,8 @@ case class GetRawTransactionResult(
     blockhash: DoubleSha256Digest,
     confirmations: Int,
     time: UInt32,
-    blocktime: UInt32
-) extends RawTransactionResult
+    blocktime: UInt32)
+    extends RawTransactionResult
 
 case class GetRawTransactionVin(
     txid: Option[DoubleSha256Digest],
@@ -74,8 +74,8 @@ case class GetRawTransactionVin(
     txinwitness: Option[Vector[String]] // Should be TransactionWitness?
 ) extends RawTransactionResult
 
-case class GetRawTransactionScriptSig(asm: String, hex: ScriptPubKey)
-    extends RawTransactionResult // is hex right???
+case class GetRawTransactionScriptSig(asm: String, hex: ScriptSignature)
+    extends RawTransactionResult
 
 case class SignRawTransactionResult(
     hex: Transaction,
@@ -88,5 +88,5 @@ case class SignRawTransactionError(
     vout: Int,
     scriptSig: ScriptPubKey,
     sequence: UInt32,
-    error: String
-) extends RawTransactionResult
+    error: String)
+    extends RawTransactionResult

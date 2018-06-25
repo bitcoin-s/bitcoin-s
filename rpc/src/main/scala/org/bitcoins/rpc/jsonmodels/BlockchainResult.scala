@@ -119,8 +119,8 @@ case class GetChainTxStatsResult(
     window_block_count: Int,
     window_tx_count: Option[Int],
     window_interval: Option[UInt32],
-    txrate: Option[BigDecimal]
-) extends BlockchainResult
+    txrate: Option[BigDecimal])
+    extends BlockchainResult
 
 case class GetMemPoolResult(
     size: Int,

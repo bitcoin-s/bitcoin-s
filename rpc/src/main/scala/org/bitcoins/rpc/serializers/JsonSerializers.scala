@@ -17,7 +17,7 @@ import org.bitcoins.core.protocol.{
   P2SHAddress
 }
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, MerkleBlock}
-import org.bitcoins.core.protocol.script.ScriptPubKey
+import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptSignature}
 import org.bitcoins.core.protocol.transaction.{
   Transaction,
   TransactionInput,
@@ -62,6 +62,8 @@ object JsonSerializers {
   implicit val bitcoinFeeUnitReads: Reads[BitcoinFeeUnit] = BitcoinFeeUnitReads
   implicit val fileReads: Reads[File] = FileReads
   implicit val uRIReads: Reads[URI] = URIReads
+  implicit val scriptSignatureReads: Reads[ScriptSignature] =
+    ScriptSignatureReads
 
   implicit val bitcoinsWrites: Writes[Bitcoins] = BitcoinsWrites
   implicit val bitcoinAddressWrites: Writes[BitcoinAddress] =
@@ -124,22 +126,20 @@ object JsonSerializers {
 
   implicit val peerNetworkInfoReads: Reads[PeerNetworkInfo] =
     Json.reads[PeerNetworkInfo]
-  implicit val peerReads: Reads[Peer] = (
-    (__ \ "id").read[Int] and
-      __.read[PeerNetworkInfo] and
-      (__ \ "version").read[Int] and
-      (__ \ "subver").read[String] and
-      (__ \ "inbound").read[Boolean] and
-      (__ \ "addnode").read[Boolean] and
-      (__ \ "startingheight").read[Int] and
-      (__ \ "banscore").read[Int] and
-      (__ \ "synced_headers").read[Int] and
-      (__ \ "synced_blocks").read[Int] and
-      (__ \ "inflight").read[Vector[Int]] and
-      (__ \ "whitelisted").read[Boolean] and
-      (__ \ "bytessent_per_msg").read[Map[String, Int]] and
-      (__ \ "bytesrecv_per_msg").read[Map[String, Int]]
-  )(Peer)
+  implicit val peerReads: Reads[Peer] = ((__ \ "id").read[Int] and
+    __.read[PeerNetworkInfo] and
+    (__ \ "version").read[Int] and
+    (__ \ "subver").read[String] and
+    (__ \ "inbound").read[Boolean] and
+    (__ \ "addnode").read[Boolean] and
+    (__ \ "startingheight").read[Int] and
+    (__ \ "banscore").read[Int] and
+    (__ \ "synced_headers").read[Int] and
+    (__ \ "synced_blocks").read[Int] and
+    (__ \ "inflight").read[Vector[Int]] and
+    (__ \ "whitelisted").read[Boolean] and
+    (__ \ "bytessent_per_msg").read[Map[String, Int]] and
+    (__ \ "bytesrecv_per_msg").read[Map[String, Int]])(Peer)
 
   implicit val nodeBanReads: Reads[NodeBan] = Json.reads[NodeBan]
 
