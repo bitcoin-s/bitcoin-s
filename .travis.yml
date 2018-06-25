@@ -19,6 +19,14 @@ before_cache:
   - find $HOME/.sbt -name "*.lock" | xargs rm
   - find $HOME/.ivy2 -name "ivydata-*.properties" | xargs rm
 
+before_install:
+  - sudo apt-add-repository ppa:bitcoin/bitcoin -y
+  - sudo apt-get update -qq
+  - sudo apt-get install bitcoind -y
+
+apt_packages:
+  - bitcoind
+
 addons:
   apt:
     packages: libgmp-dev

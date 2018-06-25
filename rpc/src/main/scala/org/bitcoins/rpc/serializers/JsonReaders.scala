@@ -32,7 +32,7 @@ object JsonReaders {
     case JsNumber(n) => JsSuccess(numFunc(n))
     case err @ (JsNull | _: JsBoolean | _: JsString | _: JsArray |
         _: JsObject) =>
-      JsError(s"error.expected.jsnumber, got ${Json.toJson(err).toString()}")
+      buildJsErrorMsg("jsnumber", err)
   }
 
   // For use in implementing reads method of Reads[T] where T is constructed from a JsString via strFunc
@@ -41,7 +41,15 @@ object JsonReaders {
     case JsString(s) => JsSuccess(strFunc(s))
     case err @ (JsNull | _: JsBoolean | _: JsNumber | _: JsArray |
         _: JsObject) =>
-      JsError(s"error.expected.jsstring, got ${Json.toJson(err).toString()}")
+      buildJsErrorMsg("jsstring", err)
+  }
+
+  private def buildJsErrorMsg(expected: String, err: JsValue): JsError = {
+    JsError(s"error.expected.$expected, got ${Json.toJson(err).toString()}")
+  }
+
+  private def buildErrorMsg(expected: String, err: Any): JsError = {
+    JsError(s"error.expected.$expected, got ${err.toString}")
   }
 
   implicit object BigIntReads extends Reads[BigInt] {
@@ -74,11 +82,11 @@ object JsonReaders {
       case JsNumber(n) =>
         n.toBigIntExact() match {
           case Some(num) => JsSuccess(Int32(num))
-          case None      => JsError(s"error.expected.Int32, got $n")
+          case None      => buildErrorMsg("Int32", n)
         }
       case JsString(s) => JsSuccess(Int32.fromHex(s))
       case err @ (JsNull | _: JsBoolean | _: JsArray | _: JsObject) =>
-        JsError(s"error.expected.jsnumber, got ${Json.toJson(err).toString()}")
+        buildJsErrorMsg("jsnumber", err)
     }
   }
 
@@ -90,13 +98,13 @@ object JsonReaders {
             if (num >= 0) {
               JsSuccess(UInt32(num))
             } else {
-              JsError(s"error.expected.positive_value, got $num")
+              buildErrorMsg("positive_value", num)
             }
-          case None => JsError(s"error.expected.UInt32, got $n")
+          case None => buildErrorMsg("UInt32", n)
         }
       case JsString(s) => JsSuccess(UInt32.fromHex(s))
       case err @ (JsNull | _: JsBoolean | _: JsArray | _: JsObject) =>
-        JsError(s"error.expected.jsnumber, got ${Json.toJson(err).toString()}")
+        buildJsErrorMsg("jsnumber", err)
     }
   }
 
@@ -108,13 +116,13 @@ object JsonReaders {
             if (num >= 0) {
               JsSuccess(UInt64(num))
             } else {
-              JsError(s"error.expected.positive_value, got $num")
+              buildErrorMsg("positive_value", num)
             }
-          case None => JsError(s"error.expected.UInt32, got $n")
+          case None => buildErrorMsg("UInt32", n)
         }
       case JsString(s) => JsSuccess(UInt64.fromHex(s))
       case err @ (JsNull | _: JsBoolean | _: JsArray | _: JsObject) =>
-        JsError(s"error.expected.jsnumber, got ${Json.toJson(err).toString()}")
+        buildJsErrorMsg("jsnumber", err)
     }
   }
 
@@ -124,15 +132,15 @@ object JsonReaders {
         Address.fromString(s) match {
           case Success(address) => JsSuccess(address)
           case Failure(err) =>
-            JsError(s"error.expected.address, got ${err.toString}")
+            buildErrorMsg("address", err)
         }
       case err @ (JsNull | _: JsBoolean | _: JsNumber | _: JsArray |
           _: JsObject) =>
-        JsError(s"error.expected.jsstring, got ${Json.toJson(err).toString()}")
+        buildJsErrorMsg("jsstring", err)
     }
   }
 
-  // Errors for Unit return types are caught in RpcClient::parseResult
+  // Errors for Unit return types are caught in RpcClient::checkUnit
   implicit object UnitReads extends Reads[Unit] {
     override def reads(json: JsValue): JsResult[Unit] = JsSuccess(Unit)
   }
@@ -168,11 +176,11 @@ object JsonReaders {
         P2PKHAddress.fromString(s) match {
           case Success(address) => JsSuccess(address)
           case Failure(err) =>
-            JsError(s"error.expected.p2pkhaddress, got ${err.toString}")
+            buildErrorMsg("p2pkhaddress", err)
         }
       case err @ (JsNull | _: JsBoolean | _: JsNumber | _: JsArray |
           _: JsObject) =>
-        JsError(s"error.expected.jsstring, got ${Json.toJson(err).toString()}")
+        buildJsErrorMsg("jsstring", err)
     }
   }
 
@@ -182,42 +190,38 @@ object JsonReaders {
         P2SHAddress.fromString(s) match {
           case Success(address) => JsSuccess(address)
           case Failure(err) =>
-            JsError(s"error.expected.p2shaddress, got ${err.toString}")
+            buildErrorMsg("p2shaddress", err)
         }
       case err @ (JsNull | _: JsBoolean | _: JsNumber | _: JsArray |
           _: JsObject) =>
-        JsError(s"error.expected.jsstring, got ${Json.toJson(err).toString()}")
+        buildJsErrorMsg("jsstring", err)
     }
+  }
+
+  implicit object ScriptSignatureReads extends Reads[ScriptSignature] {
+    override def reads(json: JsValue): JsResult[ScriptSignature] =
+      processJsString[ScriptSignature](ScriptSignature.fromAsmHex)(json)
   }
 
   implicit object TransactionInputReads extends Reads[TransactionInput] {
     override def reads(json: JsValue): JsResult[TransactionInput] = {
-      val sequence = (json \ "sequence").validate[UInt32] match {
-        case s: JsSuccess[UInt32] => s.value
-        case _                    => return JsError("error.expected.vin.sequence")
-      }
-      (json \ "coinbase").validate[String] match {
-        case s: JsSuccess[String] =>
-          JsSuccess(
-            CoinbaseInput(ScriptSignature.fromAsmHex(s.value), sequence))
-        case _ =>
-          val txid = (json \ "txid").validate[DoubleSha256Digest] match {
-            case id: JsSuccess[DoubleSha256Digest] => id.value
-            case _                                 => return JsError("error.expected.vin.txid")
-          }
-          val vout = (json \ "vout").validate[UInt32] match {
-            case ind: JsSuccess[UInt32] => ind.value
-            case _                      => return JsError("error.expected.vin.vout")
-          }
-          val scriptSig = (json \ "scriptSig" \ "hex").validate[String] match {
-            case s: JsSuccess[String] => ScriptSignature.fromAsmHex(s.value)
-            case _                    => return JsError("error.expected.vin.scriptSig")
-          }
-
-          JsSuccess(
-            TransactionInput(TransactionOutPoint(txid, vout),
-                             scriptSig,
-                             sequence))
+      (json \ "sequence").validate[UInt32].flatMap { sequence =>
+        (json \ "coinbase").validate[String] match {
+          case s: JsSuccess[String] =>
+            JsSuccess(
+              CoinbaseInput(ScriptSignature.fromAsmHex(s.value), sequence))
+          case _ =>
+            (json \ "txid").validate[DoubleSha256Digest].flatMap { txid =>
+              (json \ "vout").validate[UInt32].flatMap { vout =>
+                (json \ "scriptSig" \ "hex").validate[ScriptSignature].flatMap {
+                  scriptSig =>
+                    JsSuccess(TransactionInput(TransactionOutPoint(txid, vout),
+                                               scriptSig,
+                                               sequence))
+                }
+              }
+            }
+        }
       }
     }
   }
@@ -228,11 +232,11 @@ object JsonReaders {
         BitcoinAddress.fromString(s) match {
           case Success(address) => JsSuccess(address)
           case Failure(err) =>
-            JsError(s"error.expected.address, got ${err.toString}")
+            buildErrorMsg("address", err)
         }
       case err @ (JsNull | _: JsBoolean | _: JsNumber | _: JsArray |
           _: JsObject) =>
-        JsError(s"error.expected.jsstring, got ${Json.toJson(err).toString()}")
+        buildJsErrorMsg("jsstring", err)
     }
   }
 
@@ -259,40 +263,38 @@ object JsonReaders {
     }
   }
 
-  // This still needs cleanup
   implicit object RpcAddressReads extends Reads[RpcAddress] {
-    override def reads(json: JsValue): JsResult[RpcAddress] = json match {
+
+    def reads(json: JsValue): JsResult[RpcAddress] = json match {
       case array: JsArray =>
-        val balance = array.value.find(_.isInstanceOf[JsNumber]) match {
-          case Some(JsNumber(n)) => Bitcoins(n)
+        val bitcoinResult = array.value.find(_.isInstanceOf[JsNumber]) match {
+          case Some(JsNumber(n)) => JsSuccess(Bitcoins(n))
           case Some(
               err @ (JsNull | _: JsBoolean | _: JsString | _: JsArray |
               _: JsObject)) =>
-            return JsError(
-              s"error.expected.jsnumber, got ${Json.toJson(err).toString()}")
-          case None => return JsError("error.expected.balance")
+            buildJsErrorMsg("jsnumber", err)
+          case None => JsError("error.expected.balance")
         }
-        val jsStrings: IndexedSeq[JsString] = array.value
-          .filter(_.isInstanceOf[JsString])
-          .map(_.asInstanceOf[JsString])
-        val address =
-          jsStrings.find(s => BitcoinAddress.isValid(s.value)) match {
-            case Some(JsString(s)) =>
+        bitcoinResult.flatMap { bitcoins =>
+          val jsStrings: IndexedSeq[String] = array.value
+            .filter(_.isInstanceOf[JsString])
+            .map(_.asInstanceOf[JsString].value)
+          val addressResult = jsStrings.find(BitcoinAddress.isValid) match {
+            case Some(s) =>
               BitcoinAddress.fromString(s) match {
-                case Success(a) => a
-                case Failure(err) =>
-                  return JsError(s"error.expected.address, got ${err.toString}")
+                case Success(a)   => JsSuccess(a)
+                case Failure(err) => buildErrorMsg("address", err)
               }
-            case None => return JsError("error.expected.address")
+            case None => JsError("error.expected.address")
           }
-        jsStrings.find(s => !BitcoinAddress.isValid(s.value)) match {
-          case Some(JsString(s)) =>
-            JsSuccess(RpcAddress(address, balance, Some(s)))
-          case None => JsSuccess(RpcAddress(address, balance, None))
+          addressResult.flatMap { address =>
+            val account = jsStrings.find(s => !BitcoinAddress.isValid(s))
+            JsSuccess(RpcAddress(address, bitcoins, account))
+          }
         }
       case err @ (JsNull | _: JsBoolean | _: JsNumber | _: JsString |
           _: JsObject) =>
-        JsError(s"error.expected.jsarray, got ${Json.toJson(err).toString()}")
+        buildJsErrorMsg("jsarray", err)
     }
   }
 

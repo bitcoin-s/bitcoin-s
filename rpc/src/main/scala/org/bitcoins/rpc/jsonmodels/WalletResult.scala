@@ -87,10 +87,8 @@ case class RpcAccount(
 
 case class DumpWalletResult(filename: File)
 
-case class RescanBlockChainResult(
-    start_height: Int,
-    stop_height: Int
-) extends WalletResult
+case class RescanBlockChainResult(start_height: Int, stop_height: Int)
+    extends WalletResult
 
 case class ReceivedAddress(
     involvesWatchonly: Option[Boolean],
@@ -107,8 +105,8 @@ case class ReceivedAccount(
     account: String,
     amount: Bitcoins,
     confirmations: Int,
-    lable: Option[String]
-) extends WalletResult
+    lable: Option[String])
+    extends WalletResult
 
 case class ListSinceBlockResult(
     transactions: Vector[Payment],

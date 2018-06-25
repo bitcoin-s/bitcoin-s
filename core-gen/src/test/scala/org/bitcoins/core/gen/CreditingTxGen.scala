@@ -52,9 +52,9 @@ sealed abstract class CreditingTxGen {
   }
 
   /**
-    * Generates a transaction that has a p2pkh output at the returned index. This
-    * output can be spent by the returned ECPrivateKey
-    */
+   * Generates a transaction that has a p2pkh output at the returned index. This
+   * output can be spent by the returned ECPrivateKey
+   */
   def p2pkhOutput: Gen[BitcoinUTXOSpendingInfo] = ScriptGenerators.p2pkhScriptPubKey.flatMap { p2pkh =>
     build(p2pkh._1, Seq(p2pkh._2), None, None)
   }

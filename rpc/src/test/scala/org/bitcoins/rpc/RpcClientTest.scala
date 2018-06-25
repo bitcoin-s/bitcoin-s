@@ -210,17 +210,19 @@ class RpcClientTest
                       _ =>
                         otherClient.importPrunedFunds(tx.hex, proof).flatMap {
                           _ =>
-                            otherClient.getBalance.map { balanceAfter =>
+                            otherClient.getBalance.flatMap { balanceAfter =>
                               assert(
                                 balanceAfter == balanceBefore + Bitcoins(1.5))
-                            }
-                            otherClient.validateAddress(address).map {
-                              addressInfo =>
-                                assert(addressInfo.ismine.contains(true))
-                            }
-                            otherClient.removePrunedFunds(txid).flatMap { _ =>
-                              otherClient.getBalance.flatMap { balance =>
-                                assert(balance == balanceBefore)
+                              otherClient.validateAddress(address).flatMap {
+                                addressInfo =>
+                                  assert(addressInfo.ismine.contains(true))
+                                  otherClient.removePrunedFunds(txid).flatMap {
+                                    _ =>
+                                      otherClient.getBalance.flatMap {
+                                        balance =>
+                                          assert(balance == balanceBefore)
+                                      }
+                                  }
                               }
                             }
                         }
@@ -317,14 +319,18 @@ class RpcClientTest
     createNodePair().flatMap {
       case (client1, client2) =>
         client1.disconnectNode(client2.getDaemon.uri).flatMap { _ =>
+          TestUtil.awaitDisconnected(client1, client2)
           client2.generate(1).flatMap { hash =>
             client2.getBlockRaw(hash.head).flatMap { block =>
               client1.submitBlock(block).flatMap { _ =>
                 client1.getBlockCount.flatMap { count =>
-                  client1.getBlockHash(count).flatMap { hash1 =>
-                    client2.getBlockHash(count).flatMap { hash2 =>
-                      TestUtil.deleteNodePair(client1, client2)
-                      assert(hash1 == hash2)
+                  client2.getBlockCount.flatMap { count2 =>
+                    assert(count == count2)
+                    client1.getBlockHash(count).flatMap { hash1 =>
+                      client2.getBlockHash(count).flatMap { hash2 =>
+                        TestUtil.deleteNodePair(client1, client2)
+                        assert(hash1 == hash2)
+                      }
                     }
                   }
                 }
@@ -339,6 +345,7 @@ class RpcClientTest
     createNodePair().flatMap {
       case (client1, client2) =>
         client1.disconnectNode(client2.getDaemon.uri).flatMap { _ =>
+          TestUtil.awaitDisconnected(client1, client2)
           client1.generate(1).flatMap { blocks1 =>
             client2.generate(1).flatMap { blocks2 =>
               client1.getBestBlockHash.flatMap { bestHash1 =>
@@ -428,10 +435,10 @@ class RpcClientTest
   it should "be able to get blockchain info" in {
     client.getBlockChainInfo.flatMap { info =>
       assert(info.chain == "regtest")
-      client.getBestBlockHash.map(bestHash =>
-        assert(info.bestblockhash == bestHash))
       assert(info.softforks.length >= 3)
       assert(info.bip9_softforks.keySet.size >= 2)
+      client.getBestBlockHash.map(bestHash =>
+        assert(info.bestblockhash == bestHash))
     }
   }
 
@@ -571,41 +578,45 @@ class RpcClientTest
     client.generate(1)
     client.getNewAddress().flatMap { address =>
       fundMemPoolTransaction(client, address, Bitcoins(2)).flatMap { txid1 =>
-        client.getRawMemPool.map { mempool =>
+        client.getRawMemPool.flatMap { mempool =>
           assert(mempool.head == txid1)
-        }
-        client.getNewAddress().flatMap { address =>
-          val input: TransactionInput =
-            TransactionInput(TransactionOutPoint(txid1, UInt32(0)),
-                             ScriptSignature.empty,
-                             UInt32.max - UInt32.one)
-          client
-            .createRawTransaction(Vector(input), Map(address -> Bitcoins(1)))
-            .flatMap { createdTx =>
-              client.signRawTransaction(createdTx).flatMap { signedTx =>
-                assert(signedTx.complete)
-                client.sendRawTransaction(signedTx.hex, true).flatMap { txid2 =>
-                  client.getMemPoolDescendants(txid1).map { descendants =>
-                    assert(descendants.head == txid2)
+          client.getNewAddress().flatMap { address =>
+            val input: TransactionInput =
+              TransactionInput(TransactionOutPoint(txid1, UInt32(0)),
+                               ScriptSignature.empty,
+                               UInt32.max - UInt32.one)
+            client
+              .createRawTransaction(Vector(input), Map(address -> Bitcoins(1)))
+              .flatMap { createdTx =>
+                client.signRawTransaction(createdTx).flatMap { signedTx =>
+                  assert(signedTx.complete)
+                  client.sendRawTransaction(signedTx.hex, true).flatMap {
+                    txid2 =>
+                      client.getMemPoolDescendants(txid1).flatMap {
+                        descendants =>
+                          assert(descendants.head == txid2)
+                          client
+                            .getMemPoolDescendantsVerbose(txid1)
+                            .flatMap { descendants =>
+                              assert(descendants.head._1 == txid2)
+                              assert(descendants.head._2.ancestorcount == 2)
+                              client.getMemPoolAncestors(txid2).flatMap {
+                                ancestors =>
+                                  assert(ancestors.head == txid1)
+                                  client
+                                    .getMemPoolAncestorsVerbose(txid2)
+                                    .map { ancestors =>
+                                      assert(ancestors.head._1 == txid1)
+                                      assert(
+                                        ancestors.head._2.descendantcount == 2)
+                                    }
+                              }
+                            }
+                      }
                   }
-                  client
-                    .getMemPoolDescendantsVerbose(txid1)
-                    .map { descendants =>
-                      assert(descendants.head._1 == txid2)
-                      assert(descendants.head._2.ancestorcount == 1)
-                    }
-                  client.getMemPoolAncestors(txid2).map { ancestors =>
-                    assert(ancestors.head == txid1)
-                  }
-                  client
-                    .getMemPoolAncestorsVerbose(txid2)
-                    .map { ancestors =>
-                      assert(ancestors.head._1 == txid1)
-                      assert(ancestors.head._2.descendantcount == 2)
-                    }
                 }
               }
-            }
+          }
         }
       }
     }
@@ -1184,22 +1195,22 @@ class RpcClientTest
     val address = P2PKHAddress(publicKey, networkParam)
 
     client.importPrivKey(ecPrivateKey, rescan = false).flatMap { _ =>
-      client.dumpPrivKey(address).map { key =>
+      client.dumpPrivKey(address).flatMap { key =>
         assert(key == ecPrivateKey)
-      }
-      client
-        .dumpWallet(
-          client.getDaemon.authCredentials.datadir + "/wallet_dump.dat")
-        .flatMap { result =>
-          val reader = new Scanner(result.filename)
-          var found = false
-          while (reader.hasNext) {
-            if (reader.next() == ecPrivateKey.toWIF(networkParam)) {
-              found = true
+        client
+          .dumpWallet(
+            client.getDaemon.authCredentials.datadir + "/wallet_dump.dat")
+          .flatMap { result =>
+            val reader = new Scanner(result.filename)
+            var found = false
+            while (reader.hasNext) {
+              if (reader.next() == ecPrivateKey.toWIF(networkParam)) {
+                found = true
+              }
             }
+            assert(found)
           }
-          assert(found)
-        }
+      }
     }
   }
 
@@ -1257,8 +1268,7 @@ class RpcClientTest
               RpcOpts.ImportMultiRequest(RpcOpts.ImportMultiAddress(address1),
                                          UInt32(0)),
               RpcOpts.ImportMultiRequest(RpcOpts.ImportMultiAddress(address2),
-                                         UInt32(0))
-            ),
+                                         UInt32(0))),
             false
           )
           .flatMap { result =>
@@ -1622,7 +1632,7 @@ class RpcClientTest
         txid =>
           client.getReceivedByAccount(account).flatMap { amount =>
             assert(amount == Bitcoins(1.5))
-            client.listReceivedByAccount().map { list =>
+            client.listReceivedByAccount().flatMap { list =>
               assert(
                 list
                   .find(acc => acc.account == account)
@@ -1634,11 +1644,11 @@ class RpcClientTest
                   .get
                   .amount > Bitcoins(0))
               assert(!list.exists(acc => acc.account == emptyAccount))
-            }
-            client.listAccounts().map { map =>
-              assert(map(account) == Bitcoins(1.5))
-              assert(map("") > Bitcoins(0))
-              assert(!map.keySet.contains(emptyAccount))
+              client.listAccounts().map { map =>
+                assert(map(account) == Bitcoins(1.5))
+                assert(map("") > Bitcoins(0))
+                assert(!map.keySet.contains(emptyAccount))
+              }
             }
           }
       }

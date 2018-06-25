@@ -23,8 +23,10 @@ trait TestUtil extends BitcoinSLogger {
   def randomDirName: String =
     0.until(5).map(_ => scala.util.Random.alphanumeric.head).mkString
 
-  /** Creates a datadir and places the username/password combo
-    * in the bitcoin.conf in the datadir */
+  /**
+    * Creates a datadir and places the username/password combo
+    * in the bitcoin.conf in the datadir
+    */
   def authCredentials(
       uri: URI,
       rpcUri: URI,
@@ -119,13 +121,22 @@ trait TestUtil extends BitcoinSLogger {
       Await.result(
         from
           .getAddedNodeInfo(to.getDaemon.uri)
-          .map(
-            info => info.nonEmpty && info.head.connected.contains(true)
-          ),
-        5.seconds
-      ),
+          .map(info => info.nonEmpty && info.head.connected.contains(true)),
+        5.seconds),
       duration,
       counter)
+  }
+
+  def awaitSynced(
+      client1: RpcClient,
+      client2: RpcClient,
+      duration: Int = 100,
+      counter: Int = 0): Unit = {
+    awaitCondition(Await.result(client1.getBlockCount.flatMap { count1 =>
+      client2.getBlockCount.map { count2 =>
+        count1 == count2
+      }
+    }, 2.seconds), duration, counter)
   }
 
   def awaitDisconnected(
@@ -137,11 +148,8 @@ trait TestUtil extends BitcoinSLogger {
       Await.result(
         from
           .getAddedNodeInfo(to.getDaemon.uri)
-          .map(
-            info => info.isEmpty || !info.head.connected.contains(true)
-          ),
-        2.seconds
-      ),
+          .map(info => info.isEmpty || !info.head.connected.contains(true)),
+        2.seconds),
       duration,
       counter)
   }
@@ -172,6 +180,11 @@ trait TestUtil extends BitcoinSLogger {
         throw try3.failed.get
       }
       client1.generate(100).map { _ =>
+        val try4 = Try(awaitSynced(client1, client2))
+        if (try4.isFailure) {
+          deleteNodePair(client1, client2)
+          throw try4.failed.get
+        }
         (client1, client2)
       }
     }

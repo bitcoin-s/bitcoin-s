@@ -36,8 +36,8 @@ case class GetBlockTemplateResult(
     weightlimit: Int,
     curtime: UInt32,
     bits: String, // What should this be?
-    height: Int
-) extends OtherResult
+    height: Int)
+    extends OtherResult
 
 case class BlockTransaction(
     data: Transaction,
@@ -47,8 +47,8 @@ case class BlockTransaction(
     fee: Satoshis,
     sigops: Int,
     weight: Int,
-    required: Option[Boolean]
-) extends OtherResult
+    required: Option[Boolean])
+    extends OtherResult
 
 case class GetMiningInfoResult(
     blocks: Int,
