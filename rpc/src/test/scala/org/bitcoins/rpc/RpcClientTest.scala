@@ -464,16 +464,14 @@ class RpcClientTest
                   .map { transaction =>
                     assert(transaction.inputs(0).sequence == UInt32(1))
                     assert(transaction.inputs(1).sequence == UInt32(2))
-                    assert(
-                      transaction
-                        .inputs(0)
-                        .previousOutput
-                        .txId == input0.txId)
-                    assert(
-                      transaction
-                        .inputs(1)
-                        .previousOutput
-                        .txId == input1.txId)
+                    assert(transaction
+                      .inputs(0)
+                      .previousOutput
+                      .txId == input0.txId)
+                    assert(transaction
+                      .inputs(1)
+                      .previousOutput
+                      .txId == input1.txId)
                   }
               }
             }
@@ -1484,7 +1482,8 @@ class RpcClientTest
                                       output.value == Bitcoins(1.2))
                                     .get
                                   val input = TransactionInput(
-                                    TransactionOutPoint(txid.flip, UInt32(output.n)),
+                                    TransactionOutPoint(txid.flip,
+                                                        UInt32(output.n)),
                                     P2SHScriptSignature(
                                       multisig.redeemScript.hex),
                                     UInt32.max - UInt32.one)

@@ -215,9 +215,10 @@ object JsonReaders {
               (json \ "vout").validate[UInt32].flatMap { vout =>
                 (json \ "scriptSig" \ "hex").validate[ScriptSignature].flatMap {
                   scriptSig =>
-                    JsSuccess(TransactionInput(TransactionOutPoint(txid.flip, vout),
-                                               scriptSig,
-                                               sequence))
+                    JsSuccess(
+                      TransactionInput(TransactionOutPoint(txid.flip, vout),
+                                       scriptSig,
+                                       sequence))
                 }
               }
             }
