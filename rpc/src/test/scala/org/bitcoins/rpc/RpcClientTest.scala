@@ -276,42 +276,42 @@ class RpcClientTest
 
   it should "be able to ban and clear the ban of a subnet" in {
     val loopBack = URI.create("http://127.0.0.1")
-    client.setBan(loopBack, "add").flatMap { _ =>
-      client.listBanned.flatMap { list =>
-        assert(list.length == 1)
-        assert(list.head.address.getAuthority == loopBack.getAuthority)
-        assert(list.head.banned_until - list.head.ban_created == UInt32(86400))
+    createNodePair().flatMap {
+      case (client1, client2) =>
+        client1.setBan(loopBack, "add").flatMap { _ =>
+          client1.listBanned.flatMap { list =>
+            assert(list.length == 1)
+            assert(list.head.address.getAuthority == loopBack.getAuthority)
+            assert(list.head.banned_until - list.head.ban_created == UInt32(86400))
 
-        client.setBan(loopBack, "remove").flatMap { _ =>
-          client.listBanned.flatMap { newList =>
-            assert(newList.isEmpty)
-            client.addNode(otherClient.getDaemon.uri, "onetry").map { _ =>
-              TestUtil.awaitConnection(client, otherClient)
-              succeed
-            }
-          }
-        }
-      }
-    }
-  }
-
-  it should "be able to clear banned subnets" in {
-    client.setBan(URI.create("http://127.0.0.1"), "add").flatMap { _ =>
-      client.setBan(URI.create("http://127.0.0.2"), "add").flatMap { _ =>
-        client.listBanned.flatMap { list =>
-          assert(list.length == 2)
-
-          client.clearBanned().flatMap { _ =>
-            client.listBanned.flatMap { newList =>
-              assert(newList.isEmpty)
-              client.addNode(otherClient.getDaemon.uri, "onetry").map { _ =>
-                TestUtil.awaitConnection(client, otherClient)
-                succeed
+            client1.setBan(loopBack, "remove").flatMap { _ =>
+              client1.listBanned.flatMap { newList =>
+                TestUtil.deleteNodePair(client1, client2)
+                assert(newList.isEmpty)
               }
             }
           }
         }
-      }
+    }
+  }
+
+  it should "be able to clear banned subnets" in {
+    createNodePair().flatMap {
+      case (client1, client2) =>
+        client1.setBan(URI.create("http://127.0.0.1"), "add").flatMap { _ =>
+          client1.setBan(URI.create("http://127.0.0.2"), "add").flatMap { _ =>
+            client1.listBanned.flatMap { list =>
+              assert(list.length == 2)
+
+              client1.clearBanned().flatMap { _ =>
+                client1.listBanned.flatMap { newList =>
+                  TestUtil.deleteNodePair(client1, client2)
+                  assert(newList.isEmpty)
+                }
+              }
+            }
+          }
+        }
     }
   }
 
