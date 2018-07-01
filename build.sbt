@@ -6,7 +6,8 @@ lazy val root = project
       core,
       coreGen,
       coreTest,
-      zmq
+      zmq,
+      rpc
     )
 
 lazy val secp256k1jni = project
@@ -40,6 +41,14 @@ lazy val zmq = project
   .enablePlugins()
   .dependsOn(
     core
+  )
+
+lazy val rpc = project
+  .in(file("rpc"))
+  .enablePlugins()
+  .dependsOn(
+    core,
+    coreGen % "test->test"
   )
 
 publishArtifact in root := false
