@@ -43,28 +43,14 @@ class RpcClientTest
   implicit val ec = m.executionContext
   implicit val networkParam = TestUtil.network
 
-  private var newPort = networkParam.port + 5
-  private var newRpcPort = networkParam.rpcPort + 5
-  private def getNewPort(): Int = {
-    newPort = newPort + 5
-    newPort
-  }
-  private def getNewRpcPort(): Int = {
-    newRpcPort = newRpcPort + 5
-    newRpcPort
-  }
+  val client = new RpcClient(TestUtil.instance())
 
-  val client = new RpcClient(TestUtil.instance(getNewPort(), getNewRpcPort()))
-
-  val otherClient = new RpcClient(
-    TestUtil.instance(getNewPort(), getNewRpcPort()))
+  val otherClient = new RpcClient(TestUtil.instance())
 
   // This client's wallet is encrypted
-  val walletClient = new RpcClient(
-    TestUtil.instance(getNewPort(), getNewRpcPort()))
+  val walletClient = new RpcClient(TestUtil.instance())
 
-  val pruneClient = new RpcClient(
-    TestUtil.instance(getNewPort(), getNewRpcPort(), true))
+  val pruneClient = new RpcClient(TestUtil.instance(pruneMode = true))
 
   val logger = BitcoinSLogger.logger
 
@@ -150,19 +136,13 @@ class RpcClientTest
     }
   }
 
-  private def createNodePair(): Future[(RpcClient, RpcClient)] =
-    TestUtil.createNodePair(getNewPort(),
-                            getNewRpcPort(),
-                            getNewPort(),
-                            getNewRpcPort())
-
   override def beforeAll(): Unit = {
-    logger.trace("Temp bitcoin directory created")
-    logger.trace("Temp bitcoin directory created")
-    logger.trace("Temp bitcoin directory created")
+    logger.info("Temp bitcoin directory created")
+    logger.info("Temp bitcoin directory created")
+    logger.info("Temp bitcoin directory created")
 
     val servers = Vector(walletClient, client, otherClient, pruneClient)
-    logger.trace("Bitcoin servers starting")
+    logger.info("Bitcoin servers starting")
     TestUtil.startServers(servers)
 
     client.addNode(otherClient.getDaemon.uri, "add")
@@ -174,7 +154,7 @@ class RpcClientTest
         logger.debug(walletClient.isStarted.toString)
         // Very rarely, this may fail if bitocoind does not ping but hasn't yet released its locks
         walletClient.start()
-        logger.trace("Bitcoin server restarting")
+        logger.info("Bitcoin server restarting")
         TestUtil.awaitServer(walletClient)
       },
       5.seconds
@@ -276,13 +256,14 @@ class RpcClientTest
 
   it should "be able to ban and clear the ban of a subnet" in {
     val loopBack = URI.create("http://127.0.0.1")
-    createNodePair().flatMap {
+    TestUtil.createNodePair().flatMap {
       case (client1, client2) =>
         client1.setBan(loopBack, "add").flatMap { _ =>
           client1.listBanned.flatMap { list =>
             assert(list.length == 1)
             assert(list.head.address.getAuthority == loopBack.getAuthority)
-            assert(list.head.banned_until - list.head.ban_created == UInt32(86400))
+            assert(
+              list.head.banned_until - list.head.ban_created == UInt32(86400))
 
             client1.setBan(loopBack, "remove").flatMap { _ =>
               client1.listBanned.flatMap { newList =>
@@ -296,7 +277,7 @@ class RpcClientTest
   }
 
   it should "be able to clear banned subnets" in {
-    createNodePair().flatMap {
+    TestUtil.createNodePair().flatMap {
       case (client1, client2) =>
         client1.setBan(URI.create("http://127.0.0.1"), "add").flatMap { _ =>
           client1.setBan(URI.create("http://127.0.0.2"), "add").flatMap { _ =>
@@ -316,7 +297,7 @@ class RpcClientTest
   }
 
   it should "be able to submit a new block" in {
-    createNodePair().flatMap {
+    TestUtil.createNodePair().flatMap {
       case (client1, client2) =>
         client1.disconnectNode(client2.getDaemon.uri).flatMap { _ =>
           TestUtil.awaitDisconnected(client1, client2)
@@ -342,7 +323,7 @@ class RpcClientTest
   }
 
   it should "be able to mark a block as precious" in {
-    createNodePair().flatMap {
+    TestUtil.createNodePair().flatMap {
       case (client1, client2) =>
         client1.disconnectNode(client2.getDaemon.uri).flatMap { _ =>
           TestUtil.awaitDisconnected(client1, client2)
@@ -358,6 +339,10 @@ class RpcClientTest
                         Try(Await.result(client2.preciousBlock(bestHash1),
                                          2.seconds)).isSuccess)
 
+                      TestUtil.awaitCondition(
+                        Try(Await.result(client2.getBestBlockHash.map(hash =>
+                                           hash != bestHash2),
+                                         2.seconds)).isSuccess)
                       client2.getBestBlockHash.map { newBestHash =>
                         TestUtil.deleteNodePair(client1, client2)
                         assert(newBestHash == blocks1.head)
@@ -1697,17 +1682,17 @@ class RpcClientTest
   }
 
   override def afterAll(): Unit = {
-    client.stop().map(println)
-    otherClient.stop().map(println)
-    walletClient.stop().map(println)
-    pruneClient.stop().map(println)
+    client.stop().map(logger.info)
+    otherClient.stop().map(logger.info)
+    walletClient.stop().map(logger.info)
+    pruneClient.stop().map(logger.info)
     if (TestUtil.deleteTmpDir(client.getDaemon.authCredentials.datadir))
-      println("Temp bitcoin directory deleted")
+      logger.info("Temp bitcoin directory deleted")
     if (TestUtil.deleteTmpDir(otherClient.getDaemon.authCredentials.datadir))
-      println("Temp bitcoin directory deleted")
+      logger.info("Temp bitcoin directory deleted")
     if (TestUtil.deleteTmpDir(walletClient.getDaemon.authCredentials.datadir))
-      println("Temp bitcoin directory deleted")
+      logger.info("Temp bitcoin directory deleted")
     if (TestUtil.deleteTmpDir(pruneClient.getDaemon.authCredentials.datadir))
-      println("Temp bitcoin directory deleted")
+      logger.info("Temp bitcoin directory deleted")
   }
 }

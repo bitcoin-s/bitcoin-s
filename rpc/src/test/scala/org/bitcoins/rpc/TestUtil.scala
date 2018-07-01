@@ -58,8 +58,8 @@ trait TestUtil extends BitcoinSLogger {
   lazy val network = RegTest
 
   def instance(
-      port: Int,
-      rpcPort: Int,
+      port: Int = randomPort,
+      rpcPort: Int = randomPort,
       pruneMode: Boolean = false): DaemonInstance = {
     val uri = new URI("http://localhost:" + port)
     val rpcUri = new URI("http://localhost:" + rpcPort)
@@ -67,6 +67,13 @@ trait TestUtil extends BitcoinSLogger {
                    uri,
                    rpcUri,
                    authCredentials(uri, rpcUri, pruneMode))
+  }
+
+  def randomPort: Int = {
+    val firstAttempt = Math.abs(scala.util.Random.nextInt % 15000)
+    if (firstAttempt < network.port) {
+      firstAttempt + network.port
+    } else firstAttempt
   }
 
   def startServers(servers: Vector[RpcClient]): Unit = {
@@ -155,10 +162,10 @@ trait TestUtil extends BitcoinSLogger {
   }
 
   def createNodePair(
-      port1: Int,
-      rpcPort1: Int,
-      port2: Int,
-      rpcPort2: Int): Future[(RpcClient, RpcClient)] = {
+      port1: Int = randomPort,
+      rpcPort1: Int = randomPort,
+      port2: Int = randomPort,
+      rpcPort2: Int = randomPort): Future[(RpcClient, RpcClient)] = {
     val client1: RpcClient = new RpcClient(TestUtil.instance(port1, rpcPort1))
     val client2: RpcClient = new RpcClient(TestUtil.instance(port2, rpcPort2))
     client1.start()

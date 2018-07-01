@@ -688,7 +688,6 @@ class RpcClient(instance: DaemonInstance)(
                                                JsBoolean(includeWatchOnly)))
   }
 
-  // Need to configure default headerHash
   def listSinceBlock(
       headerHash: Option[DoubleSha256Digest] = None,
       confirmations: Int = 1,
