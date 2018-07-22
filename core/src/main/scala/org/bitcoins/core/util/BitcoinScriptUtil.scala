@@ -391,6 +391,29 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
     else asm
   }
 
+  /**
+   * Checks that all the [[org.bitcoins.core.crypto.ECPublicKey]] in this script
+   * is compressed public keys, this is required for BIP143
+   * @param spk
+   * @return
+   */
+  def isOnlyCompressedPubKey(spk: ScriptPubKey): Boolean = {
+    spk match {
+      case p2pk: P2PKScriptPubKey => p2pk.publicKey.isCompressed
+      case m: MultiSignatureScriptPubKey =>
+        !m.publicKeys.exists(k => !k.isCompressed)
+      case l: LockTimeScriptPubKey =>
+        isOnlyCompressedPubKey(l.nestedScriptPubKey)
+      case e: EscrowTimeoutScriptPubKey =>
+        isOnlyCompressedPubKey(e.escrow) && isOnlyCompressedPubKey(e.timeout)
+      case _: P2PKHScriptPubKey | _: P2SHScriptPubKey
+        | _: P2WPKHWitnessSPKV0 | _: P2WSHWitnessSPKV0 | _: UnassignedWitnessScriptPubKey
+        | _: NonStandardScriptPubKey | _: WitnessCommitment | EmptyScriptPubKey =>
+        true
+
+    }
+  }
+
 }
 
 object BitcoinScriptUtil extends BitcoinScriptUtil
