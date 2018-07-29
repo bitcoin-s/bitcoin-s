@@ -94,7 +94,6 @@ trait TestUtil extends BitcoinSLogger {
       condition: => Boolean,
       duration: Int = 100,
       counter: Int = 0): Unit = {
-    logger.debug(s"counter: ${counter.toString}")
     if (counter == 50) {
       throw new RuntimeException("Condition timed out")
     } else if (condition) {
