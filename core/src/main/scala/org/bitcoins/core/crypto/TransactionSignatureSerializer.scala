@@ -8,6 +8,7 @@ import org.bitcoins.core.script.constant.ScriptToken
 import org.bitcoins.core.script.crypto._
 import org.bitcoins.core.serializers.transaction.RawTransactionOutputParser
 import org.bitcoins.core.util.{ BitcoinSLogger, BitcoinSUtil, BitcoinScriptUtil, CryptoUtil }
+import scodec.bits.ByteVector
 
 /**
  * Created by chris on 2/16/16.
@@ -33,7 +34,7 @@ sealed abstract class TransactionSignatureSerializer {
    * [[https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki]]
    * [[https://github.com/bitcoin/bitcoin/blob/f8528134fc188abc5c7175a19680206964a8fade/src/script/interpreter.cpp#L1113]]
    */
-  def serializeForSignature(txSigComponent: TxSigComponent, hashType: HashType): scodec.bits.ByteVector = {
+  def serializeForSignature(txSigComponent: TxSigComponent, hashType: HashType): ByteVector = {
     val spendingTransaction = txSigComponent.transaction
     val inputIndex = txSigComponent.inputIndex
     val output = txSigComponent.output
@@ -141,19 +142,19 @@ sealed abstract class TransactionSignatureSerializer {
         val inputIndexInt = inputIndex.toInt
         val emptyHash = CryptoUtil.emptyDoubleSha256Hash
 
-        val outPointHash: scodec.bits.ByteVector = if (isNotAnyoneCanPay) {
+        val outPointHash: ByteVector = if (isNotAnyoneCanPay) {
           val prevOuts = spendingTransaction.inputs.map(_.previousOutput)
-          val bytes: scodec.bits.ByteVector = BitcoinSUtil.toByteVector(prevOuts)
+          val bytes: ByteVector = BitcoinSUtil.toByteVector(prevOuts)
           CryptoUtil.doubleSHA256(bytes).bytes
         } else emptyHash.bytes
 
-        val sequenceHash: scodec.bits.ByteVector = if (isNotAnyoneCanPay && isNotSigHashNone && isNotSigHashSingle) {
+        val sequenceHash: ByteVector = if (isNotAnyoneCanPay && isNotSigHashNone && isNotSigHashSingle) {
           val sequences = spendingTransaction.inputs.map(_.sequence)
           val bytes = BitcoinSUtil.toByteVector(sequences)
           CryptoUtil.doubleSHA256(bytes).bytes
         } else emptyHash.bytes
 
-        val outputHash: scodec.bits.ByteVector = if (isNotSigHashSingle && isNotSigHashNone) {
+        val outputHash: ByteVector = if (isNotSigHashSingle && isNotSigHashNone) {
           val outputs = spendingTransaction.outputs
           val bytes = BitcoinSUtil.toByteVector(outputs)
           CryptoUtil.doubleSHA256(bytes).bytes
@@ -167,7 +168,7 @@ sealed abstract class TransactionSignatureSerializer {
         val scriptBytes = BitcoinSUtil.toByteVector(script)
 
         val i = spendingTransaction.inputs(inputIndexInt)
-        val serializationForSig: scodec.bits.ByteVector = spendingTransaction.version.bytes.reverse ++ outPointHash ++ sequenceHash ++
+        val serializationForSig: ByteVector = spendingTransaction.version.bytes.reverse ++ outPointHash ++ sequenceHash ++
           i.previousOutput.bytes ++ CompactSizeUInt.calc(scriptBytes).bytes ++
           scriptBytes ++ amount.bytes ++ i.sequence.bytes.reverse ++
           outputHash ++ spendingTransaction.lockTime.bytes.reverse ++ hashType.num.bytes.reverse

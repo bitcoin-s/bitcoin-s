@@ -38,14 +38,14 @@ sealed abstract class ChainParams {
   def requireStandardTransaction: Boolean = true
 
   /** Takes in a [[Base58Type]] and returns its base58 prefix. */
-  def base58Prefix(base58: Base58Type): scodec.bits.ByteVector = base58Prefixes(base58)
+  def base58Prefix(base58: Base58Type): ByteVector = base58Prefixes(base58)
 
   /**
    * The mapping from a [[Base58Type]]to a String.
    * Base58 prefixes for various keys/hashes on the network.
    * See: [[https://en.bitcoin.it/wiki/List_of_address_prefixes]].
    */
-  def base58Prefixes: Map[Base58Type, scodec.bits.ByteVector]
+  def base58Prefixes: Map[Base58Type, ByteVector]
 
   /**
    * Creates the Genesis [[Block]] for this blockchain.
@@ -102,7 +102,7 @@ object MainNetChainParams extends BitcoinChainParams {
 
   override def genesisBlock: Block = createGenesisBlock(UInt32(1231006505), UInt32(2083236893), UInt32(0x1d00ffff), Int32.one, Satoshis(Int64(5000000000L)))
 
-  override def base58Prefixes: Map[Base58Type, scodec.bits.ByteVector] = Map(
+  override def base58Prefixes: Map[Base58Type, ByteVector] = Map(
     Base58Type.PubKeyAddress -> BitcoinSUtil.decodeHex("00"),
     Base58Type.ScriptAddress -> BitcoinSUtil.decodeHex("05"),
     Base58Type.SecretKey -> BitcoinSUtil.decodeHex("80"),
@@ -118,7 +118,7 @@ object TestNetChainParams extends BitcoinChainParams {
 
   override def genesisBlock: Block = createGenesisBlock(UInt32(1296688602), UInt32(414098458), UInt32(0x1d00ffff), Int32.one, Satoshis(Int64(5000000000L)))
 
-  override def base58Prefixes: Map[Base58Type, scodec.bits.ByteVector] = Map(
+  override def base58Prefixes: Map[Base58Type, ByteVector] = Map(
     Base58Type.PubKeyAddress -> BitcoinSUtil.decodeHex("6f"),
     Base58Type.ScriptAddress -> BitcoinSUtil.decodeHex("c4"),
     Base58Type.SecretKey -> BitcoinSUtil.decodeHex("ef"),
@@ -131,7 +131,7 @@ object TestNetChainParams extends BitcoinChainParams {
 object RegTestNetChainParams extends BitcoinChainParams {
   override def networkId = "regtest"
   override def genesisBlock: Block = createGenesisBlock(UInt32(1296688602), UInt32(2), UInt32(0x207fffff), Int32.one, Satoshis(Int64(5000000000L)))
-  override def base58Prefixes: Map[Base58Type, scodec.bits.ByteVector] = TestNetChainParams.base58Prefixes
+  override def base58Prefixes: Map[Base58Type, ByteVector] = TestNetChainParams.base58Prefixes
 }
 
 sealed abstract class Base58Type

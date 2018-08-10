@@ -14,6 +14,7 @@ import org.bitcoins.core.script.reserved.UndefinedOP_NOP
 import org.bitcoins.core.script.stack.{ OP_DROP, OP_DUP }
 import org.bitcoins.core.serializers.script.{ RawScriptPubKeyParser, ScriptParser }
 import org.bitcoins.core.util._
+import scodec.bits.ByteVector
 
 import scala.util.{ Failure, Success, Try }
 
@@ -38,7 +39,7 @@ sealed trait ScriptPubKey extends NetworkElement {
    * The byte representation of [[asm]], this does NOT have the bytes
    * for the [[org.bitcoins.core.protocol.CompactSizeUInt]] in the [[org.bitcoins.core.protocol.script.ScriptPubKey]]
    */
-  lazy val asmBytes: scodec.bits.ByteVector = BitcoinSUtil.toByteVector(asm)
+  lazy val asmBytes: ByteVector = BitcoinSUtil.toByteVector(asm)
 
 }
 
@@ -52,7 +53,7 @@ sealed trait P2PKHScriptPubKey extends ScriptPubKey {
 }
 
 object P2PKHScriptPubKey extends ScriptFactory[P2PKHScriptPubKey] {
-  private case class P2PKHScriptPubKeyImpl(bytes: scodec.bits.ByteVector) extends P2PKHScriptPubKey {
+  private case class P2PKHScriptPubKeyImpl(bytes: ByteVector) extends P2PKHScriptPubKey {
     override def toString = "P2PKHScriptPubKeyImpl(" + hex + ")"
   }
 
@@ -131,7 +132,7 @@ sealed trait MultiSignatureScriptPubKey extends ScriptPubKey {
 
 object MultiSignatureScriptPubKey extends ScriptFactory[MultiSignatureScriptPubKey] {
 
-  private case class MultiSignatureScriptPubKeyImpl(bytes: scodec.bits.ByteVector) extends MultiSignatureScriptPubKey {
+  private case class MultiSignatureScriptPubKeyImpl(bytes: ByteVector) extends MultiSignatureScriptPubKey {
     override def toString = "MultiSignatureScriptPubKeyImpl(" + hex + ")"
   }
 
@@ -228,7 +229,7 @@ sealed trait P2SHScriptPubKey extends ScriptPubKey {
 }
 
 object P2SHScriptPubKey extends ScriptFactory[P2SHScriptPubKey] {
-  private case class P2SHScriptPubKeyImpl(bytes: scodec.bits.ByteVector) extends P2SHScriptPubKey {
+  private case class P2SHScriptPubKeyImpl(bytes: ByteVector) extends P2SHScriptPubKey {
     override def toString = "P2SHScriptPubKeyImpl(" + hex + ")"
   }
 
@@ -267,7 +268,7 @@ sealed trait P2PKScriptPubKey extends ScriptPubKey {
 
 object P2PKScriptPubKey extends ScriptFactory[P2PKScriptPubKey] {
 
-  private case class P2PKScriptPubKeyImpl(bytes: scodec.bits.ByteVector) extends P2PKScriptPubKey {
+  private case class P2PKScriptPubKeyImpl(bytes: ByteVector) extends P2PKScriptPubKey {
     override def toString = "P2PKScriptPubKeyImpl(" + hex + ")"
   }
 
@@ -335,7 +336,7 @@ object LockTimeScriptPubKey extends ScriptFactory[LockTimeScriptPubKey] {
 sealed trait CLTVScriptPubKey extends LockTimeScriptPubKey
 
 object CLTVScriptPubKey extends ScriptFactory[CLTVScriptPubKey] {
-  private case class CLTVScriptPubKeyImpl(bytes: scodec.bits.ByteVector) extends CLTVScriptPubKey {
+  private case class CLTVScriptPubKeyImpl(bytes: ByteVector) extends CLTVScriptPubKey {
     override def toString = "CLTVScriptPubKeyImpl(" + hex + ")"
   }
 
@@ -405,7 +406,7 @@ object CLTVScriptPubKey extends ScriptFactory[CLTVScriptPubKey] {
 sealed trait CSVScriptPubKey extends LockTimeScriptPubKey
 
 object CSVScriptPubKey extends ScriptFactory[CSVScriptPubKey] {
-  private case class CSVScriptPubKeyImpl(bytes: scodec.bits.ByteVector) extends CSVScriptPubKey {
+  private case class CSVScriptPubKeyImpl(bytes: ByteVector) extends CSVScriptPubKey {
     override def toString = "CSVScriptPubKeyImpl(" + hex + ")"
   }
 
@@ -456,7 +457,7 @@ object CSVScriptPubKey extends ScriptFactory[CSVScriptPubKey] {
 sealed trait NonStandardScriptPubKey extends ScriptPubKey
 
 object NonStandardScriptPubKey extends ScriptFactory[NonStandardScriptPubKey] {
-  private case class NonStandardScriptPubKeyImpl(bytes: scodec.bits.ByteVector) extends NonStandardScriptPubKey {
+  private case class NonStandardScriptPubKeyImpl(bytes: ByteVector) extends NonStandardScriptPubKey {
     override def toString = "NonStandardScriptPubKeyImpl(" + hex + ")"
   }
 
@@ -470,7 +471,7 @@ object NonStandardScriptPubKey extends ScriptFactory[NonStandardScriptPubKey] {
 
 /** Represents the empty ScriptPubKey */
 case object EmptyScriptPubKey extends ScriptPubKey {
-  override def bytes = scodec.bits.ByteVector.low(1)
+  override def bytes = ByteVector.low(1)
 }
 
 /** Factory companion object used to create ScriptPubKey objects */
@@ -562,7 +563,7 @@ sealed abstract class P2WPKHWitnessSPKV0 extends WitnessScriptPubKeyV0 {
 }
 
 object P2WPKHWitnessSPKV0 extends ScriptFactory[P2WPKHWitnessSPKV0] {
-  private case class P2WPKHWitnessSPKV0Impl(bytes: scodec.bits.ByteVector) extends P2WPKHWitnessSPKV0
+  private case class P2WPKHWitnessSPKV0Impl(bytes: ByteVector) extends P2WPKHWitnessSPKV0
 
   override def fromAsm(asm: Seq[ScriptToken]): P2WPKHWitnessSPKV0 = {
     buildScript(asm, P2WPKHWitnessSPKV0Impl(_), isValid(_), s"Given asm was not a P2WPKHWitnessSPKV0, got $asm")
@@ -594,7 +595,7 @@ sealed abstract class P2WSHWitnessSPKV0 extends WitnessScriptPubKeyV0 {
 }
 
 object P2WSHWitnessSPKV0 extends ScriptFactory[P2WSHWitnessSPKV0] {
-  private case class P2WSHWitnessSPKV0Impl(bytes: scodec.bits.ByteVector) extends P2WSHWitnessSPKV0
+  private case class P2WSHWitnessSPKV0Impl(bytes: ByteVector) extends P2WSHWitnessSPKV0
 
   override def fromAsm(asm: Seq[ScriptToken]): P2WSHWitnessSPKV0 = {
     buildScript(asm, P2WSHWitnessSPKV0Impl(_), isValid(_), s"Given asm was not a P2WSHWitnessSPKV0, got $asm")
@@ -620,7 +621,7 @@ sealed trait UnassignedWitnessScriptPubKey extends WitnessScriptPubKey {
 }
 
 object UnassignedWitnessScriptPubKey extends ScriptFactory[UnassignedWitnessScriptPubKey] {
-  private case class UnassignedWitnessScriptPubKeyImpl(bytes: scodec.bits.ByteVector) extends UnassignedWitnessScriptPubKey {
+  private case class UnassignedWitnessScriptPubKeyImpl(bytes: ByteVector) extends UnassignedWitnessScriptPubKey {
     override def toString = "UnassignedWitnessScriptPubKeyImpl(" + hex + ")"
   }
 
@@ -644,7 +645,7 @@ sealed trait WitnessCommitment extends ScriptPubKey {
 }
 
 object WitnessCommitment extends ScriptFactory[WitnessCommitment] {
-  private case class WitnessCommitmentImpl(bytes: scodec.bits.ByteVector) extends WitnessCommitment {
+  private case class WitnessCommitmentImpl(bytes: ByteVector) extends WitnessCommitment {
     override def toString = "WitnessCommitmentImpl(" + hex + ")"
   }
 
@@ -703,7 +704,7 @@ sealed trait EscrowTimeoutScriptPubKey extends ScriptPubKey {
 }
 
 object EscrowTimeoutScriptPubKey extends ScriptFactory[EscrowTimeoutScriptPubKey] {
-  private case class EscrowTimeoutScriptPubKeyImpl(bytes: scodec.bits.ByteVector) extends EscrowTimeoutScriptPubKey {
+  private case class EscrowTimeoutScriptPubKeyImpl(bytes: ByteVector) extends EscrowTimeoutScriptPubKey {
     override def toString = "EscrowTimeoutScriptPubKeyImpl(" + hex + ")"
   }
 

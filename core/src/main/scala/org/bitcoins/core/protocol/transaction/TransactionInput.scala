@@ -5,6 +5,7 @@ import org.bitcoins.core.protocol.NetworkElement
 import org.bitcoins.core.protocol.script.{ EmptyScriptSignature, ScriptSignature }
 import org.bitcoins.core.serializers.transaction.RawTransactionInputParser
 import org.bitcoins.core.util.Factory
+import scodec.bits.ByteVector
 
 /**
  * Created by chris on 12/26/15.
@@ -39,7 +40,7 @@ object TransactionInput extends Factory[TransactionInput] {
     scriptSignature: ScriptSignature, sequence: UInt32) extends TransactionInput
   def empty: TransactionInput = EmptyTransactionInput
 
-  def fromBytes(bytes: scodec.bits.ByteVector): TransactionInput = RawTransactionInputParser.read(bytes)
+  def fromBytes(bytes: ByteVector): TransactionInput = RawTransactionInputParser.read(bytes)
 
   def apply(outPoint: TransactionOutPoint, scriptSignature: ScriptSignature,
     sequenceNumber: UInt32): TransactionInput = outPoint match {

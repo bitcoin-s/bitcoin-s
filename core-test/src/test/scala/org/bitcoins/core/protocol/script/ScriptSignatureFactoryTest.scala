@@ -1,9 +1,10 @@
 package org.bitcoins.core.protocol.script
 
 import org.bitcoins.core.crypto._
-import org.bitcoins.core.script.constant.{ ScriptConstant }
-import org.bitcoins.core.util.{ TestUtil, BitcoinSUtil }
+import org.bitcoins.core.script.constant.ScriptConstant
+import org.bitcoins.core.util.{ BitcoinSUtil, TestUtil }
 import org.scalatest.{ FlatSpec, MustMatchers }
+import scodec.bits.ByteVector
 
 /**
  * Created by chris on 2/17/16.
@@ -13,7 +14,7 @@ class ScriptSignatureFactoryTest extends FlatSpec with MustMatchers {
   "ScriptSignatureFactory" must "give the exact same result whether parsing bytes or parsing hex" in {
     val signatureHex = "30450221008949f0cb400094ad2b5eb399d59d01c14d73d8fe6e96df1a7150deb388ab8935022079656090d7" +
       "f6bac4c9a94e0aad311a4268e082a725f8aeae0573fb12ff866a5f01"
-    val signatureBytes: scodec.bits.ByteVector = BitcoinSUtil.decodeHex(signatureHex)
+    val signatureBytes: ByteVector = BitcoinSUtil.decodeHex(signatureHex)
 
     val scriptSigFromHex = ScriptSignature(signatureHex)
     val scriptSigFromBytes = ScriptSignature(signatureBytes)

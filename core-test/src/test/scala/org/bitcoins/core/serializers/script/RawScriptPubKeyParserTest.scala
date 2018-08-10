@@ -8,12 +8,13 @@ import org.bitcoins.core.script.crypto.{ OP_CHECKSIG, OP_HASH160 }
 import org.bitcoins.core.script.stack.OP_DUP
 import org.bitcoins.core.util.{ BitcoinSUtil, TestUtil }
 import org.scalatest.{ FlatSpec, MustMatchers }
+import scodec.bits.ByteVector
 
 /**
  * Created by chris on 1/12/16.
  */
 class RawScriptPubKeyParserTest extends FlatSpec with MustMatchers {
-  val encode = BitcoinSUtil.encodeHex(_: scodec.bits.ByteVector)
+  val encode = BitcoinSUtil.encodeHex(_: ByteVector)
   "RawScriptPubKeyParser" must "read then write the scriptPubKey and get the original scriptPubKey" in {
     val scriptPubKey: ScriptPubKey = RawScriptPubKeyParser.read(TestUtil.rawScriptPubKey)
     encode(RawScriptPubKeyParser.write(scriptPubKey)) must be(TestUtil.rawScriptPubKey)

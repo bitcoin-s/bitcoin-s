@@ -2,6 +2,7 @@ package org.bitcoins.core.crypto
 
 import org.bitcoins.core.util.{ BitcoinSLogger, BitcoinSUtil }
 import org.bouncycastle.asn1.{ ASN1InputStream, ASN1Integer, DLSequence }
+import scodec.bits.ByteVector
 
 import scala.util.{ Failure, Success, Try }
 
@@ -25,7 +26,7 @@ sealed abstract class DERSignatureUtil {
    * This will fail if this signature contains the hash type appended to the end of it
    * @return boolean representing if the signature is a valid
    */
-  def isDEREncoded(bytes: scodec.bits.ByteVector): Boolean = {
+  def isDEREncoded(bytes: ByteVector): Boolean = {
     //signature is trivially valid if the signature is empty
     if (bytes.nonEmpty && bytes.size < 9) false
     else if (bytes.nonEmpty) {
@@ -65,7 +66,7 @@ sealed abstract class DERSignatureUtil {
    * @param bytes
    * @return
    */
-  def decodeSignature(bytes: scodec.bits.ByteVector): (BigInt, BigInt) = {
+  def decodeSignature(bytes: ByteVector): (BigInt, BigInt) = {
     logger.debug("Signature to decode: " + BitcoinSUtil.encodeHex(bytes))
     val asn1InputStream = new ASN1InputStream(bytes.toArray)
     //TODO: this is nasty, is there any way to get rid of all this casting???
@@ -124,7 +125,7 @@ sealed abstract class DERSignatureUtil {
    * @param bytes the bytes to check if they are strictly der encoded
    * @return boolean indicating whether the bytes were der encoded or not
    */
-  def isValidSignatureEncoding(bytes: scodec.bits.ByteVector): Boolean = {
+  def isValidSignatureEncoding(bytes: ByteVector): Boolean = {
     // Format: 0x30 [total-length] 0x02 [R-length] [R] 0x02 [S-length] [S] [sighash]
     // * total-length: 1-byte length descriptor of everything that follows,
     //   excluding the sighash byte.
@@ -219,7 +220,7 @@ sealed abstract class DERSignatureUtil {
    * @param signature
    * @return if the S value is the low version
    */
-  def isLowS(signature: scodec.bits.ByteVector): Boolean = {
+  def isLowS(signature: ByteVector): Boolean = {
     val result = Try {
       val (r, s) = decodeSignature(signature)
       s.bigInteger.compareTo(CryptoParams.halfCurveOrder) <= 0

@@ -10,13 +10,13 @@ import scala.math.BigInt
  */
 trait BitcoinSUtil {
   private val logger = BitcoinSLogger.logger
-  def decodeHex(hex: String): scodec.bits.ByteVector = {
-    if (hex.isEmpty) ByteVector.empty else scodec.bits.ByteVector.fromHex(hex).get
+  def decodeHex(hex: String): ByteVector = {
+    if (hex.isEmpty) ByteVector.empty else ByteVector.fromHex(hex).get
   }
 
-  def encodeHex(bytes: scodec.bits.ByteVector): String = bytes.toHex
+  def encodeHex(bytes: ByteVector): String = bytes.toHex
 
-  def encodeHex(byte: Byte): String = encodeHex(scodec.bits.ByteVector(byte))
+  def encodeHex(byte: Byte): String = encodeHex(ByteVector(byte))
 
   /**
    * Encodes a long number to a hex string, pads it with an extra '0' char
@@ -64,7 +64,7 @@ trait BitcoinSUtil {
   def flipEndianness(hex: String): String = flipEndianness(decodeHex(hex))
 
   /** Flips the endianness of the given sequence of bytes. */
-  def flipEndianness(bytes: scodec.bits.ByteVector): String = encodeHex(bytes.reverse)
+  def flipEndianness(bytes: ByteVector): String = encodeHex(bytes.reverse)
 
   def flipEndiannessBytes(bytes: ByteVector): ByteVector = bytes.reverse
   /**
@@ -81,12 +81,12 @@ trait BitcoinSUtil {
   }
 
   /** Converts a sequence of bytes to a sequence of bit vectors */
-  def bytesToBitVectors(bytes: scodec.bits.ByteVector): scodec.bits.BitVector = {
+  def bytesToBitVectors(bytes: ByteVector): BitVector = {
     bytes.toBitVector
   }
 
   /** Converts a byte to a bit vector representing that byte */
-  def byteToBitVector(byte: Byte): scodec.bits.BitVector = {
+  def byteToBitVector(byte: Byte): BitVector = {
     BitVector.fromByte(byte)
   }
 
@@ -94,7 +94,7 @@ trait BitcoinSUtil {
   def isBitSet(byte: Byte, index: Int): Boolean = ((byte >> index) & 1) == 1
 
   /** Converts a sequence of bit vectors to a sequence of bytes */
-  def bitVectorToBytes(bits: scodec.bits.BitVector): scodec.bits.ByteVector = {
+  def bitVectorToBytes(bits: BitVector): ByteVector = {
     bits.bytes
   }
 

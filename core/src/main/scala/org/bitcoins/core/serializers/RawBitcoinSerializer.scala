@@ -1,7 +1,7 @@
 package org.bitcoins.core.serializers
 
-import org.bitcoins.core.util.{ BitcoinSLogger, BitcoinSUtil }
-import org.slf4j.Logger
+import org.bitcoins.core.util.BitcoinSUtil
+import scodec.bits.ByteVector
 
 /**
  * Created by chris on 1/11/16.
@@ -13,8 +13,8 @@ abstract class RawBitcoinSerializer[T] {
   def read(hex: String): T = read(BitcoinSUtil.decodeHex(hex))
 
   /** Reads in bytes and transforms it into the appropriate scala type T. */
-  def read(bytes: scodec.bits.ByteVector): T
+  def read(bytes: ByteVector): T
 
   /** Takes a type T and writes it into the appropriate hexadecimal serialization for type T. */
-  def write(t: T): scodec.bits.ByteVector
+  def write(t: T): ByteVector
 }

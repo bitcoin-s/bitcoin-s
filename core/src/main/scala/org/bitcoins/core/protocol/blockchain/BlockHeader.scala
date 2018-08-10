@@ -5,6 +5,7 @@ import org.bitcoins.core.number.{ Int32, UInt32 }
 import org.bitcoins.core.protocol.NetworkElement
 import org.bitcoins.core.serializers.blockchain.RawBlockHeaderSerializer
 import org.bitcoins.core.util.{ BitcoinSLogger, BitcoinSUtil, CryptoUtil, Factory }
+import scodec.bits.ByteVector
 
 /**
  * Created by chris on 5/19/16.
@@ -108,7 +109,7 @@ sealed trait BlockHeader extends NetworkElement {
    */
   def hashBE: DoubleSha256Digest = hash.flip
 
-  override def bytes: scodec.bits.ByteVector = RawBlockHeaderSerializer.write(this)
+  override def bytes: ByteVector = RawBlockHeaderSerializer.write(this)
 
 }
 
@@ -125,6 +126,6 @@ object BlockHeader extends Factory[BlockHeader] {
     BlockHeaderImpl(version, previousBlockHash, merkleRootHash, time, nBits, nonce)
   }
 
-  def fromBytes(bytes: scodec.bits.ByteVector): BlockHeader = RawBlockHeaderSerializer.read(bytes)
+  def fromBytes(bytes: ByteVector): BlockHeader = RawBlockHeaderSerializer.read(bytes)
 
 }

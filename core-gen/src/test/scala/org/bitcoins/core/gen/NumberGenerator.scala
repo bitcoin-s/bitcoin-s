@@ -79,7 +79,7 @@ trait NumberGenerator {
   } yield num == 1
 
   /** Generates a bit vector */
-  def bitVector: Gen[scodec.bits.BitVector] = for {
+  def bitVector: Gen[BitVector] = for {
     n <- Gen.choose(0, 100)
     vector <- Gen.listOfN(n, bool)
   } yield BitVector.bits(vector)

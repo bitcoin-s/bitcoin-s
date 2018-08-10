@@ -47,7 +47,7 @@ sealed trait NonStandardScriptSignature extends ScriptSignature {
 }
 
 object NonStandardScriptSignature extends ScriptFactory[NonStandardScriptSignature] {
-  private case class NonStandardScriptSignatureImpl(bytes: scodec.bits.ByteVector) extends NonStandardScriptSignature {
+  private case class NonStandardScriptSignatureImpl(bytes: ByteVector) extends NonStandardScriptSignature {
 
   }
 
@@ -79,7 +79,7 @@ sealed trait P2PKHScriptSignature extends ScriptSignature {
 }
 
 object P2PKHScriptSignature extends ScriptFactory[P2PKHScriptSignature] {
-  private case class P2PKHScriptSignatureImpl(bytes: scodec.bits.ByteVector) extends P2PKHScriptSignature
+  private case class P2PKHScriptSignatureImpl(bytes: ByteVector) extends P2PKHScriptSignature
 
   def fromAsm(asm: Seq[ScriptToken]): P2PKHScriptSignature = {
     buildScript(asm, P2PKHScriptSignatureImpl(_), isP2PKHScriptSig(_), "Given asm was not a P2PKHScriptSignature, got: " + asm)
@@ -168,7 +168,7 @@ sealed trait P2SHScriptSignature extends ScriptSignature {
 }
 
 object P2SHScriptSignature extends ScriptFactory[P2SHScriptSignature] {
-  private case class P2SHScriptSignatureImpl(bytes: scodec.bits.ByteVector) extends P2SHScriptSignature
+  private case class P2SHScriptSignatureImpl(bytes: ByteVector) extends P2SHScriptSignature
 
   def apply(scriptSig: ScriptSignature, redeemScript: ScriptPubKey): P2SHScriptSignature = {
     //we need to calculate the size of the redeemScript and add the corresponding push op
@@ -243,7 +243,7 @@ sealed trait MultiSignatureScriptSignature extends ScriptSignature {
 
 object MultiSignatureScriptSignature extends ScriptFactory[MultiSignatureScriptSignature] {
 
-  private case class MultiSignatureScriptSignatureImpl(bytes: scodec.bits.ByteVector) extends MultiSignatureScriptSignature
+  private case class MultiSignatureScriptSignatureImpl(bytes: ByteVector) extends MultiSignatureScriptSignature
 
   def apply(signatures: Seq[ECDigitalSignature]): MultiSignatureScriptSignature = {
     val sigsPushOpsPairs: Seq[Seq[ScriptToken]] = for {
@@ -299,7 +299,7 @@ sealed trait P2PKScriptSignature extends ScriptSignature {
 }
 
 object P2PKScriptSignature extends ScriptFactory[P2PKScriptSignature] {
-  private case class P2PKScriptSignatureImpl(bytes: scodec.bits.ByteVector) extends P2PKScriptSignature
+  private case class P2PKScriptSignatureImpl(bytes: ByteVector) extends P2PKScriptSignature
 
   def apply(signature: ECDigitalSignature): P2PKScriptSignature = {
     val pushOps = BitcoinScriptUtil.calculatePushOp(signature.bytes)
@@ -332,9 +332,9 @@ sealed trait CLTVScriptSignature extends LockTimeScriptSignature {
 }
 
 object CLTVScriptSignature extends Factory[CLTVScriptSignature] {
-  private case class CLTVScriptSignatureImpl(bytes: scodec.bits.ByteVector) extends CLTVScriptSignature
+  private case class CLTVScriptSignatureImpl(bytes: ByteVector) extends CLTVScriptSignature
 
-  override def fromBytes(bytes: scodec.bits.ByteVector): CLTVScriptSignature = {
+  override def fromBytes(bytes: ByteVector): CLTVScriptSignature = {
     CLTVScriptSignatureImpl(bytes)
   }
 
@@ -352,9 +352,9 @@ sealed trait CSVScriptSignature extends LockTimeScriptSignature {
 }
 
 object CSVScriptSignature extends Factory[CSVScriptSignature] {
-  private case class CSVScriptSignatureImpl(bytes: scodec.bits.ByteVector) extends CSVScriptSignature
+  private case class CSVScriptSignatureImpl(bytes: ByteVector) extends CSVScriptSignature
 
-  override def fromBytes(bytes: scodec.bits.ByteVector): CSVScriptSignature = {
+  override def fromBytes(bytes: ByteVector): CSVScriptSignature = {
     CSVScriptSignatureImpl(bytes)
   }
 
@@ -370,7 +370,7 @@ object CSVScriptSignature extends Factory[CSVScriptSignature] {
 /** Represents the empty script signature */
 case object EmptyScriptSignature extends ScriptSignature {
   def signatures = Nil
-  def bytes = scodec.bits.ByteVector.low(1)
+  def bytes = ByteVector.low(1)
 }
 
 object ScriptSignature extends ScriptFactory[ScriptSignature] {
@@ -444,9 +444,9 @@ sealed trait EscrowTimeoutScriptSignature extends ScriptSignature {
 }
 
 object EscrowTimeoutScriptSignature extends Factory[EscrowTimeoutScriptSignature] {
-  private case class EscrowTimeoutScriptSignatureImpl(bytes: scodec.bits.ByteVector) extends EscrowTimeoutScriptSignature
+  private case class EscrowTimeoutScriptSignatureImpl(bytes: ByteVector) extends EscrowTimeoutScriptSignature
 
-  override def fromBytes(bytes: scodec.bits.ByteVector): EscrowTimeoutScriptSignature = {
+  override def fromBytes(bytes: ByteVector): EscrowTimeoutScriptSignature = {
     //TODO: Come back and look at this, there is no invariant check here to see if the EscrowTiemoutScriptSig is valid
     EscrowTimeoutScriptSignatureImpl(bytes)
   }

@@ -5,6 +5,7 @@ import org.bitcoins.core.number.{ Int32, UInt32 }
 import org.bitcoins.core.protocol.NetworkElement
 import org.bitcoins.core.serializers.transaction.{ RawBaseTransactionParser, RawWitnessTransactionParser }
 import org.bitcoins.core.util.{ BitcoinSUtil, CryptoUtil, Factory }
+import scodec.bits.ByteVector
 
 import scala.util.{ Failure, Success, Try }
 
@@ -128,7 +129,7 @@ sealed abstract class WitnessTransaction extends Transaction {
 
 object Transaction extends Factory[Transaction] {
 
-  def fromBytes(bytes: scodec.bits.ByteVector): Transaction = {
+  def fromBytes(bytes: ByteVector): Transaction = {
     val wtxTry = Try(RawWitnessTransactionParser.read(bytes))
     wtxTry match {
       case Success(wtx) =>
@@ -144,7 +145,7 @@ object BaseTransaction extends Factory[BaseTransaction] {
   private case class BaseTransactionImpl(version: Int32, inputs: Seq[TransactionInput],
     outputs: Seq[TransactionOutput], lockTime: UInt32) extends BaseTransaction
 
-  override def fromBytes(bytes: scodec.bits.ByteVector): BaseTransaction = RawBaseTransactionParser.read(bytes)
+  override def fromBytes(bytes: ByteVector): BaseTransaction = RawBaseTransactionParser.read(bytes)
 
   def apply(version: Int32, inputs: Seq[TransactionInput],
     outputs: Seq[TransactionOutput], lockTime: UInt32): BaseTransaction = BaseTransactionImpl(version, inputs, outputs, lockTime)
@@ -159,6 +160,6 @@ object WitnessTransaction extends Factory[WitnessTransaction] {
     lockTime: UInt32, witness: TransactionWitness): WitnessTransaction =
     WitnessTransactionImpl(version, inputs, outputs, lockTime, witness)
 
-  override def fromBytes(bytes: scodec.bits.ByteVector): WitnessTransaction = RawWitnessTransactionParser.read(bytes)
+  override def fromBytes(bytes: ByteVector): WitnessTransaction = RawWitnessTransactionParser.read(bytes)
 
 }
