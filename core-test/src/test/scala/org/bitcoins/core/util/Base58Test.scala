@@ -34,7 +34,7 @@ class Base58Test extends FlatSpec with MustMatchers {
   it must "decode and return same result as bitcoinj" in {
     val address = "1AGNa15ZQXAZUgFiqJ2i7Z2DPU2J6hW62i"
     val bitcoinj = org.bitcoinj.core.Base58.decode(address)
-    Base58.decode(address) must be(bitcoinj)
+    Base58.decode(address).toArray must be(bitcoinj)
   }
 
   it must "encode tests in base58_encode_decode.json" in {

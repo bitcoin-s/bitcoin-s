@@ -1,6 +1,7 @@
 package org.bitcoins.core.script.constant
 
 import org.scalatest.{ FlatSpec, MustMatchers }
+import scodec.bits.ByteVector
 
 import scala.util.Try
 
@@ -124,7 +125,7 @@ class ConstantsTest extends FlatSpec with MustMatchers {
   }
 
   it must "create the number zero from an empty sequence" in {
-    val number: Try[ScriptNumber] = ScriptNumber(Seq(), true)
+    val number: Try[ScriptNumber] = ScriptNumber(ByteVector.empty, true)
     number.isSuccess must be(true)
     number.get must be(ScriptNumber.zero)
   }

@@ -6,23 +6,23 @@ import scala.concurrent.duration.DurationInt
 /**
  * This is meant to be an abstraction for a [[org.bitcoins.core.crypto.ECPrivateKey]], sometimes we will not
  * have direct access to a private key in memory -- for instance if that key is on a hardware device -- so we need to create an
- * abstraction of the signing process. Fundamentally a private key takes in a Seq[Byte] and returns a [[ECDigitalSignature]]
+ * abstraction of the signing process. Fundamentally a private key takes in a scodec.bits.ByteVector and returns a [[ECDigitalSignature]]
  * That is what this abstraction is meant to represent. If you have a [[ECPrivateKey]] in your application, you can get it's
  * [[Sign]] type by doing this:
  *
  * val key = ECPrivateKey()
- * val sign: Seq[Byte] => Future[ECDigitalSignature] = key.signFunction
+ * val sign: scodec.bits.ByteVector => Future[ECDigitalSignature] = key.signFunction
  *
  * If you have a hardware wallet, you will need to implement the protocol to send a message to the hardware device. The
- * type signature of the function you implement must be Seq[Byte] => Future[ECDigitalSignature]
+ * type signature of the function you implement must be scodec.bits.ByteVector => Future[ECDigitalSignature]
  *
  */
 trait Sign {
-  def signFunction: Seq[Byte] => Future[ECDigitalSignature]
+  def signFunction: scodec.bits.ByteVector => Future[ECDigitalSignature]
 
-  def signFuture(bytes: Seq[Byte]): Future[ECDigitalSignature] = signFunction(bytes)
+  def signFuture(bytes: scodec.bits.ByteVector): Future[ECDigitalSignature] = signFunction(bytes)
 
-  def sign(bytes: Seq[Byte]): ECDigitalSignature = {
+  def sign(bytes: scodec.bits.ByteVector): ECDigitalSignature = {
     Await.result(signFuture(bytes), 30.seconds)
   }
 
@@ -30,9 +30,9 @@ trait Sign {
 }
 
 object Sign {
-  private case class SignImpl(signFunction: Seq[Byte] => Future[ECDigitalSignature], publicKey: ECPublicKey) extends Sign
+  private case class SignImpl(signFunction: scodec.bits.ByteVector => Future[ECDigitalSignature], publicKey: ECPublicKey) extends Sign
 
-  def apply(signFunction: Seq[Byte] => Future[ECDigitalSignature], pubKey: ECPublicKey): Sign = {
+  def apply(signFunction: scodec.bits.ByteVector => Future[ECDigitalSignature], pubKey: ECPublicKey): Sign = {
     SignImpl(signFunction, pubKey)
   }
 
@@ -45,6 +45,6 @@ object Sign {
    * a specific private key on another server
    */
   def dummySign(publicKey: ECPublicKey): Sign = {
-    SignImpl({ _: Seq[Byte] => Future.successful(EmptyDigitalSignature) }, publicKey)
+    SignImpl({ _: scodec.bits.ByteVector => Future.successful(EmptyDigitalSignature) }, publicKey)
   }
 }

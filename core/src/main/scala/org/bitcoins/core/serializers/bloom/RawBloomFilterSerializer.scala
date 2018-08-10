@@ -4,6 +4,7 @@ import org.bitcoins.core.bloom.{ BloomFilter, BloomFlag }
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.serializers.RawBitcoinSerializer
+import scodec.bits.ByteVector
 
 /**
  * Created by chris on 8/4/16.
@@ -11,7 +12,7 @@ import org.bitcoins.core.serializers.RawBitcoinSerializer
  */
 sealed abstract class RawBloomFilterSerializer extends RawBitcoinSerializer[BloomFilter] {
 
-  override def read(bytes: List[Byte]): BloomFilter = {
+  override def read(bytes: scodec.bits.ByteVector): BloomFilter = {
     val filterSize = CompactSizeUInt.parseCompactSizeUInt(bytes)
     val filter = bytes.slice(filterSize.size.toInt, filterSize.size.toInt + filterSize.num.toInt)
     val hashFuncsIndex = (filterSize.size + filterSize.num.toInt).toInt
@@ -23,10 +24,10 @@ sealed abstract class RawBloomFilterSerializer extends RawBitcoinSerializer[Bloo
 
   }
 
-  override def write(bloomFilter: BloomFilter): Seq[Byte] = {
+  override def write(bloomFilter: BloomFilter): scodec.bits.ByteVector = {
     bloomFilter.filterSize.bytes ++ bloomFilter.data ++
       bloomFilter.hashFuncs.bytes.reverse ++ bloomFilter.tweak.bytes.reverse ++
-      Seq(bloomFilter.flags.byte)
+      ByteVector.fromByte(bloomFilter.flags.byte)
   }
 }
 

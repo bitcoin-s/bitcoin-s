@@ -21,31 +21,31 @@ sealed abstract class CryptoInterpreter {
   /** The input is hashed twice: first with SHA-256 and then with RIPEMD-160. */
   def opHash160(program: ScriptProgram): ScriptProgram = {
     require(program.script.headOption.contains(OP_HASH160), "Script operation must be OP_HASH160")
-    executeHashFunction(program, CryptoUtil.sha256Hash160(_: Seq[Byte]))
+    executeHashFunction(program, CryptoUtil.sha256Hash160(_: scodec.bits.ByteVector))
   }
 
   /** The input is hashed using RIPEMD-160. */
   def opRipeMd160(program: ScriptProgram): ScriptProgram = {
     require(program.script.headOption.contains(OP_RIPEMD160), "Script operation must be OP_RIPEMD160")
-    executeHashFunction(program, CryptoUtil.ripeMd160(_: Seq[Byte]))
+    executeHashFunction(program, CryptoUtil.ripeMd160(_: scodec.bits.ByteVector))
   }
 
   /** The input is hashed using SHA-256. */
   def opSha256(program: ScriptProgram): ScriptProgram = {
     require(program.script.headOption.contains(OP_SHA256), "Script operation must be OP_SHA256")
-    executeHashFunction(program, CryptoUtil.sha256(_: Seq[Byte]))
+    executeHashFunction(program, CryptoUtil.sha256(_: scodec.bits.ByteVector))
   }
 
   /** The input is hashed two times with SHA-256. */
   def opHash256(program: ScriptProgram): ScriptProgram = {
     require(program.script.headOption.contains(OP_HASH256), "Script operation must be OP_HASH256")
-    executeHashFunction(program, CryptoUtil.doubleSHA256(_: Seq[Byte]))
+    executeHashFunction(program, CryptoUtil.doubleSHA256(_: scodec.bits.ByteVector))
   }
 
   /** The input is hashed using SHA-1. */
   def opSha1(program: ScriptProgram): ScriptProgram = {
     require(program.script.headOption.contains(OP_SHA1), "Script top must be OP_SHA1")
-    executeHashFunction(program, CryptoUtil.sha1(_: Seq[Byte]))
+    executeHashFunction(program, CryptoUtil.sha1(_: scodec.bits.ByteVector))
   }
 
   /**
@@ -249,7 +249,7 @@ sealed abstract class CryptoInterpreter {
    * @param hashFunction the hash function which needs to be used on the stack top (sha256,ripemd160,etc..)
    * @return
    */
-  private def executeHashFunction(program: ScriptProgram, hashFunction: Seq[Byte] => HashDigest): ScriptProgram = {
+  private def executeHashFunction(program: ScriptProgram, hashFunction: scodec.bits.ByteVector => HashDigest): ScriptProgram = {
     if (program.stack.nonEmpty) {
       val stackTop = program.stack.head
       val hash = ScriptConstant(hashFunction(stackTop.bytes).bytes)

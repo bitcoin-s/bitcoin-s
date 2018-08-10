@@ -8,6 +8,7 @@ import org.bitcoins.core.protocol.{ CompactSizeUInt, NetworkElement }
 import org.bitcoins.core.script.constant.{ ScriptConstant, ScriptToken }
 import org.bitcoins.core.serializers.bloom.RawBloomFilterSerializer
 import org.bitcoins.core.util.{ BitcoinSLogger, BitcoinSUtil, Factory }
+import scodec.bits.{ BitVector, ByteVector }
 
 import scala.annotation.tailrec
 import scala.util.hashing.MurmurHash3
@@ -24,7 +25,7 @@ sealed abstract class BloomFilter extends NetworkElement {
   def filterSize: CompactSizeUInt
 
   /** The bits that are set inside of the bloom filter */
-  def data: Seq[Byte]
+  def data: scodec.bits.ByteVector
 
   /** The number of hash functions used in the bloom filter */
   def hashFuncs: UInt32
@@ -40,11 +41,11 @@ sealed abstract class BloomFilter extends NetworkElement {
   def flags: BloomFlag
 
   /** Inserts a sequence of bytes into the [[BloomFilter]] */
-  def insert(bytes: Seq[Byte]): BloomFilter = {
+  def insert(bytes: scodec.bits.ByteVector): BloomFilter = {
     //these are the bit indexes that need to be set inside of data
     val bitIndexes = (0 until hashFuncs.toInt).map(i => murmurHash(i, bytes))
     @tailrec
-    def loop(remainingBitIndexes: Seq[Int], accum: Seq[Byte]): Seq[Byte] = {
+    def loop(remainingBitIndexes: Seq[Int], accum: scodec.bits.ByteVector): scodec.bits.ByteVector = {
       if (remainingBitIndexes.isEmpty) accum
       else {
         val currentIndex = remainingBitIndexes.head
@@ -56,7 +57,7 @@ sealed abstract class BloomFilter extends NetworkElement {
         val byte = accum(byteIndex)
         val setBitByte: Byte = (byte | bitIndex).toByte
         //replace old byte with new byte with bit set
-        val newAccum: Seq[Byte] = accum.updated(byteIndex, setBitByte)
+        val newAccum: scodec.bits.ByteVector = accum.update(byteIndex, setBitByte)
         loop(remainingBitIndexes.tail, newAccum)
       }
     }
@@ -77,12 +78,13 @@ sealed abstract class BloomFilter extends NetworkElement {
   def insert(outPoint: TransactionOutPoint): BloomFilter = insert(outPoint.bytes)
 
   /** Checks if [[data]] contains the given sequence of bytes */
-  def contains(bytes: Seq[Byte]): Boolean = {
+  def contains(bytes: scodec.bits.ByteVector): Boolean = {
     val bitIndexes = (0 until hashFuncs.toInt).map(i => murmurHash(i, bytes))
     @tailrec
-    def loop(remainingBitIndexes: Seq[Int], accum: Seq[Boolean]): Boolean = {
-      if (remainingBitIndexes.isEmpty) !accum.exists(_ == false)
-      else {
+    def loop(remainingBitIndexes: Seq[Int], accum: scodec.bits.BitVector): Boolean = {
+      if (remainingBitIndexes.isEmpty) {
+        !accum.toIndexedSeq.exists(_ == false)
+      } else {
         val currentIndex = remainingBitIndexes.head
         val byteIndex = currentIndex >>> 3
         val bitIndex = (1 << (7 & currentIndex)).toByte
@@ -91,7 +93,7 @@ sealed abstract class BloomFilter extends NetworkElement {
         loop(remainingBitIndexes.tail, isBitSet +: accum)
       }
     }
-    loop(bitIndexes, Nil)
+    loop(bitIndexes, BitVector.empty)
   }
 
   /** Checks if [[data]] contains a [[DoubleSha256Digest]] */
@@ -211,7 +213,7 @@ sealed abstract class BloomFilter extends NetworkElement {
    * @param bytes the bytes of the data that needs to be inserted into the [[BloomFilter]]
    * @return the index of the bit inside of [[data]] that needs to be set to 1
    */
-  private def murmurHash(hashNum: Int, bytes: Seq[Byte]): Int = {
+  private def murmurHash(hashNum: Int, bytes: scodec.bits.ByteVector): Int = {
     //TODO: The call of .toInt is probably the source of a bug here, need to come back and look at this
     //since this isn't consensus critical though I'm leaving this for now
     val seed = (hashNum * murmurConstant.toLong + tweak.toLong).toInt
@@ -228,9 +230,9 @@ sealed abstract class BloomFilter extends NetworkElement {
   private def murmurConstant = UInt32("fba4c795")
 
   /** Adds a sequence of byte vectors to our bloom filter then returns that new filter*/
-  def insertByteVectors(bytes: Seq[Seq[Byte]]): BloomFilter = {
+  def insertByteVectors(bytes: Seq[scodec.bits.ByteVector]): BloomFilter = {
     @tailrec
-    def loop(remainingByteVectors: Seq[Seq[Byte]], accumBloomFilter: BloomFilter): BloomFilter = {
+    def loop(remainingByteVectors: Seq[scodec.bits.ByteVector], accumBloomFilter: BloomFilter): BloomFilter = {
       if (remainingByteVectors.isEmpty) accumBloomFilter
       else loop(remainingByteVectors.tail, accumBloomFilter.insert(remainingByteVectors.head))
     }
@@ -242,7 +244,7 @@ sealed abstract class BloomFilter extends NetworkElement {
 
 object BloomFilter extends Factory[BloomFilter] {
 
-  private case class BloomFilterImpl(filterSize: CompactSizeUInt, data: Seq[Byte], hashFuncs: UInt32,
+  private case class BloomFilterImpl(filterSize: CompactSizeUInt, data: scodec.bits.ByteVector, hashFuncs: UInt32,
     tweak: UInt32, flags: BloomFlag) extends BloomFilter
   /** Max bloom filter size as per [[https://bitcoin.org/en/developer-reference#filterload]] */
   val maxSize = UInt32(36000)
@@ -269,14 +271,14 @@ object BloomFilter extends Factory[BloomFilter] {
     //BIP37 places a limit on the amount of hashFuncs we can use, which is 50
     val actualHashFuncs: Int = max(1, min(optimalHashFuncs, maxHashFuncs.toInt)).toInt
 
-    val emptyByteArray = Seq.fill(actualFilterSize)(0.toByte)
+    val emptyByteArray = ByteVector(Array.fill(actualFilterSize)(0.toByte))
     BloomFilter(CompactSizeUInt(UInt64(actualFilterSize)), emptyByteArray, UInt32(actualHashFuncs), tweak, flags)
   }
 
-  def apply(filterSize: CompactSizeUInt, data: Seq[Byte], hashFuncs: UInt32, tweak: UInt32, flags: BloomFlag): BloomFilter = {
+  def apply(filterSize: CompactSizeUInt, data: scodec.bits.ByteVector, hashFuncs: UInt32, tweak: UInt32, flags: BloomFlag): BloomFilter = {
     BloomFilterImpl(filterSize, data, hashFuncs, tweak, flags)
   }
 
-  override def fromBytes(bytes: Seq[Byte]): BloomFilter = RawBloomFilterSerializer.read(bytes)
+  override def fromBytes(bytes: scodec.bits.ByteVector): BloomFilter = RawBloomFilterSerializer.read(bytes)
 
 }

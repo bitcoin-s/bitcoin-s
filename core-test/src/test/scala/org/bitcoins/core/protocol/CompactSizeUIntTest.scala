@@ -4,6 +4,7 @@ import org.bitcoins.core.number.UInt64
 import org.bitcoins.core.protocol.script.ScriptSignature
 import org.bitcoins.core.util.{ BitcoinSUtil, TestUtil }
 import org.scalatest.{ FlatSpec, MustMatchers }
+import scodec.bits.ByteVector
 
 /**
  * Created by chris on 7/26/15.
@@ -30,21 +31,21 @@ class CompactSizeUIntTest extends FlatSpec with MustMatchers {
     CompactSizeUInt.calculateCompactSizeUInt("00") must be(CompactSizeUInt(UInt64.one, 1))
 
     //for a string that is 256 bytes long
-    val byteSeq256Size = for (_ <- 0 until 256) yield 0.toByte
+    val byteSeq256Size = ByteVector(Array.fill(256)(0.toByte))
     CompactSizeUInt.calculateCompactSizeUInt(byteSeq256Size) must be(CompactSizeUInt(UInt64(256), 3))
   }
 
   it must "calculate the correct compact size uint for a number 515 bytes long" in {
     //from the bitcoin developer reference
     //https://bitcoin.org/en/developer-reference#compactsize-unsigned-integers
-    val byteSeq515Size = for (_ <- 0 until 515) yield 0.toByte
+    val byteSeq515Size = ByteVector(Array.fill(515)(0.toByte))
     val compactSizeUInt = CompactSizeUInt.calculateCompactSizeUInt(byteSeq515Size)
     compactSizeUInt must be(CompactSizeUInt(UInt64(515), 3))
     compactSizeUInt.hex must be("fd0302")
   }
 
   it must "calculate correct compact size uint for a number 500,000 bytes long" in {
-    val byteSeq500000Size = for (_ <- 0 until 500000) yield 0.toByte
+    val byteSeq500000Size = ByteVector(Array.fill(500000)(0.toByte))
     val compactSizeUInt = CompactSizeUInt.calculateCompactSizeUInt(byteSeq500000Size)
     compactSizeUInt must be(CompactSizeUInt(UInt64(500000), 5))
     compactSizeUInt.hex must be("fe20a10700")
@@ -101,7 +102,7 @@ class CompactSizeUIntTest extends FlatSpec with MustMatchers {
 
   it must "intercept a failed requirement when the byte array size is zero" in {
     intercept[IllegalArgumentException] {
-      val emptyBytes: Seq[Byte] = Seq()
+      val emptyBytes: scodec.bits.ByteVector = ByteVector.empty
       CompactSizeUInt.parseCompactSizeUInt(emptyBytes)
     }
   }

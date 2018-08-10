@@ -10,13 +10,13 @@ import org.bitcoins.core.util.{ BitcoinSLogger, BitcoinSUtil }
 abstract class NetworkElement {
 
   /** The size of the NetworkElement in bytes. */
-  def size: Int = bytes.size
+  def size: Long = bytes.size
 
   /** The hexadecimal representation of the NetworkElement */
   def hex: String = BitcoinSUtil.encodeHex(bytes)
 
   /** The byte representation of the NetworkElement */
-  def bytes: Seq[Byte]
+  def bytes: scodec.bits.ByteVector
 
   lazy val logger = BitcoinSLogger.logger
 }

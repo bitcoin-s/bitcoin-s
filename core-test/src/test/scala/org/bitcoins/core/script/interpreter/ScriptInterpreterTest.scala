@@ -36,17 +36,9 @@ class ScriptInterpreterTest extends FlatSpec with MustMatchers {
       (creditingTx, outputIndex) = TransactionTestUtil.buildCreditingTransaction(testCase.scriptPubKey, testCase.witness.map(_._2))
       (tx, inputIndex) = TransactionTestUtil.buildSpendingTransaction(creditingTx, testCase.scriptSig, outputIndex, testCase.witness)
     } yield {
-      logger.info("Raw test case: " + testCase.raw)
-      logger.info("Parsed ScriptSig: " + testCase.scriptSig)
-      logger.info("Parsed ScriptPubKey: " + testCase.scriptPubKey)
-      logger.info("Parsed tx: " + tx.hex)
-      logger.info("Flags: " + testCase.flags)
-      logger.info("Comments: " + testCase.comments)
       val scriptPubKey = ScriptPubKey.fromAsm(testCase.scriptPubKey.asm)
       val flags = ScriptFlagFactory.fromList(testCase.flags)
       val witness = testCase.witness
-      logger.info("Flags after parsing: " + flags)
-      logger.info("Witness after parsing: " + witness)
       val txSigComponent = witness match {
         case Some((w, amount)) => scriptPubKey match {
           case p2sh: P2SHScriptPubKey =>

@@ -1,17 +1,15 @@
 package org.bitcoins.core.util
 
-import org.bitcoin.NativeSecp256k1
 import org.bitcoins.core.crypto.{ ECPrivateKey, ECPublicKey }
 import org.bitcoins.core.protocol.script.{ SigVersionBase, SigVersionWitnessV0 }
-import org.bitcoins.core.script.bitwise.{ OP_EQUALVERIFY, OP_OR }
 import org.bitcoins.core.script.constant._
 import org.bitcoins.core.script.crypto._
 import org.bitcoins.core.script.flag.ScriptVerifyWitnessPubKeyType
 import org.bitcoins.core.script.locktime.OP_CHECKLOCKTIMEVERIFY
 import org.bitcoins.core.script.reserved.{ OP_NOP, OP_RESERVED }
 import org.bitcoins.core.script.result.ScriptErrorWitnessPubKeyType
-import org.bitcoins.core.script.stack.OP_DUP
 import org.scalatest.{ FlatSpec, MustMatchers }
+import scodec.bits.ByteVector
 
 /**
  * Created by chris on 3/2/16.
@@ -24,10 +22,6 @@ class BitcoinScriptUtilTest extends FlatSpec with MustMatchers {
   "BitcoinScriptUtil" must "give us the correct hexadecimal value of an asm script" in {
 
     BitcoinScriptUtil.asmToHex(asm) must be(asm.flatMap(_.hex).mkString)
-  }
-
-  it must "give us the correct byte representation of an asm script" in {
-    BitcoinScriptUtil.asmToBytes(asm) must be(asm.flatMap(_.bytes))
   }
 
   it must "filter out all of the push operations in a scriptSig" in {
@@ -118,43 +112,43 @@ class BitcoinScriptUtilTest extends FlatSpec with MustMatchers {
 
   it must "determine that a OP_PUSHDATA1 operation is the minimal push op for a 76 byte script constant" in {
     val byteConstantSize = 76
-    val byteConstant = for { x <- 0 to byteConstantSize } yield 0x0.toByte
-    val scriptConstant = ScriptConstant(byteConstant)
+    val byteConstant = Array.fill(byteConstantSize)(0.toByte)
+    val scriptConstant = ScriptConstant(ByteVector(byteConstant))
     BitcoinScriptUtil.isMinimalPush(OP_PUSHDATA1, scriptConstant) must be(true)
   }
 
   it must "determine that a OP_PUSHDATA1 operation is NOT the minimal push op for a 75 byte script constant" in {
     val byteConstantSize = 75
-    val byteConstant = for { x <- 0 until byteConstantSize } yield 0x0.toByte
-    val scriptConstant = ScriptConstant(byteConstant)
+    val byteConstant = Array.fill(byteConstantSize)(0.toByte)
+    val scriptConstant = ScriptConstant(ByteVector(byteConstant))
     BitcoinScriptUtil.isMinimalPush(OP_PUSHDATA1, scriptConstant) must be(false)
   }
 
   it must "determine that a OP_PUSHDATA2 operation is NOT the minimal push op for a 255 byte script constant" in {
     val byteConstantSize = 255
-    val byteConstant = for { x <- 0 until byteConstantSize } yield 0x0.toByte
-    val scriptConstant = ScriptConstant(byteConstant)
+    val byteConstant = Array.fill(byteConstantSize)(0.toByte)
+    val scriptConstant = ScriptConstant(ByteVector(byteConstant))
     BitcoinScriptUtil.isMinimalPush(OP_PUSHDATA2, scriptConstant) must be(false)
   }
 
   it must "determine that a OP_PUSHDATA2 operation is the minimal push op for a 256 byte script constant" in {
     val byteConstantSize = 256
-    val byteConstant = for { x <- 0 until byteConstantSize } yield 0x0.toByte
-    val scriptConstant = ScriptConstant(byteConstant)
+    val byteConstant = Array.fill(byteConstantSize)(0.toByte)
+    val scriptConstant = ScriptConstant(ByteVector(byteConstant))
     BitcoinScriptUtil.isMinimalPush(OP_PUSHDATA2, scriptConstant) must be(true)
   }
 
   it must "determine that a OP_PUSHDATA4 operation is NOT the minimal push op for a 65535 byte script constant" in {
     val byteConstantSize = 65535
-    val byteConstant = for { x <- 0 until byteConstantSize } yield 0x0.toByte
-    val scriptConstant = ScriptConstant(byteConstant)
+    val byteConstant = Array.fill(byteConstantSize)(0.toByte)
+    val scriptConstant = ScriptConstant(ByteVector(byteConstant))
     BitcoinScriptUtil.isMinimalPush(OP_PUSHDATA4, scriptConstant) must be(false)
   }
 
   it must "determine that a OP_PUSHDATA4 operation is the minimal push op for a 65536 byte script constant" in {
     val byteConstantSize = 65536
-    val byteConstant = for { x <- 0 until byteConstantSize } yield 0x0.toByte
-    val scriptConstant = ScriptConstant(byteConstant)
+    val byteConstant = Array.fill(byteConstantSize)(0.toByte)
+    val scriptConstant = ScriptConstant(ByteVector(byteConstant))
     BitcoinScriptUtil.isMinimalPush(OP_PUSHDATA4, scriptConstant) must be(true)
   }
 
@@ -222,7 +216,7 @@ class BitcoinScriptUtilTest extends FlatSpec with MustMatchers {
 
   it must "cast a script token to a boolean value" in {
     BitcoinScriptUtil.castToBool(ScriptConstant("")) must be(false)
-    BitcoinScriptUtil.castToBool(ScriptConstant(Seq(0x80.toByte))) must be(false)
+    BitcoinScriptUtil.castToBool(ScriptConstant(scodec.bits.ByteVector(0x80.toByte))) must be(false)
     BitcoinScriptUtil.castToBool(ScriptConstant("000000")) must be(false)
     BitcoinScriptUtil.castToBool(ScriptConstant("00000080")) must be(false)
 

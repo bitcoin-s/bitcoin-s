@@ -6,6 +6,8 @@ import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.protocol.blockchain.MerkleBlock
 import org.bitcoins.core.serializers.RawBitcoinSerializer
 import org.bitcoins.core.util.BitcoinSUtil
+import org.slf4j.LoggerFactory
+import scodec.bits.{ BitVector, ByteVector }
 
 import scala.annotation.tailrec
 
@@ -15,7 +17,9 @@ import scala.annotation.tailrec
  */
 sealed abstract class RawMerkleBlockSerializer extends RawBitcoinSerializer[MerkleBlock] {
 
-  def read(bytes: List[Byte]): MerkleBlock = {
+  private val logger = LoggerFactory.getLogger(this.getClass.getSimpleName)
+
+  def read(bytes: scodec.bits.ByteVector): MerkleBlock = {
     val blockHeader = RawBlockHeaderSerializer.read(bytes.take(80))
     val bytesAfterBlockHeaderParsing = bytes.slice(blockHeader.bytes.size, bytes.size)
     val transactionCount = UInt32(bytesAfterBlockHeaderParsing.slice(0, 4).reverse)
@@ -27,19 +31,26 @@ sealed abstract class RawMerkleBlockSerializer extends RawBitcoinSerializer[Merk
     val (hashes, bytesAfterTxHashParsing) = parseTransactionHashes(bytesAfterHashCountParsing, hashCount)
     val flagCount = CompactSizeUInt.parseCompactSizeUInt(bytesAfterTxHashParsing)
     val flags = bytesAfterTxHashParsing.slice(flagCount.size.toInt, bytesAfterTxHashParsing.size)
-    val matches = BitcoinSUtil.bytesToBitVectors(flags).flatMap(_.reverse)
+    val matches = flags.toArray
+      .map(BitVector(_).reverse)
+      .foldLeft(BitVector.empty)(_ ++ _)
     MerkleBlock(blockHeader, transactionCount, hashes, matches)
   }
 
-  def write(merkleBlock: MerkleBlock): Seq[Byte] = {
+  def write(merkleBlock: MerkleBlock): scodec.bits.ByteVector = {
     val partialMerkleTree = merkleBlock.partialMerkleTree
-    val bitVectors = parseToBytes(partialMerkleTree.bits)
-    val byteVectors: Seq[Byte] = BitcoinSUtil.bitVectorsToBytes(bitVectors)
+    val bitVectors = partialMerkleTree.bits
+    val byteVectors: scodec.bits.ByteVector = {
+      bitVectors.toByteArray
+        .map(BitVector(_).reverse)
+        .foldLeft(ByteVector.empty)(_ ++ _.bytes)
+    }
     val flagCount = CompactSizeUInt(UInt64(Math.ceil(partialMerkleTree.bits.size.toDouble / 8).toInt))
+    val hashes: ByteVector = BitcoinSUtil.toByteVector(merkleBlock.hashes)
     merkleBlock.blockHeader.bytes ++
       merkleBlock.transactionCount.bytes.reverse ++
       CompactSizeUInt(UInt64(merkleBlock.hashes.size)).bytes ++
-      merkleBlock.hashes.flatMap(_.bytes) ++ flagCount.bytes ++ byteVectors
+      hashes ++ flagCount.bytes ++ byteVectors
   }
 
   /**
@@ -48,32 +59,14 @@ sealed abstract class RawMerkleBlockSerializer extends RawBitcoinSerializer[Merk
    * @param hashCount the amount of tx hashes we need to parse from bytes
    * @return the sequence of tx hashes and the remaining bytes to be parsed into a MerkleBlockMessage
    */
-  private def parseTransactionHashes(bytes: Seq[Byte], hashCount: CompactSizeUInt): (Seq[DoubleSha256Digest], Seq[Byte]) = {
+  private def parseTransactionHashes(bytes: scodec.bits.ByteVector, hashCount: CompactSizeUInt): (Seq[DoubleSha256Digest], scodec.bits.ByteVector) = {
     @tailrec
-    def loop(remainingHashes: Long, remainingBytes: Seq[Byte],
-      accum: List[DoubleSha256Digest]): (Seq[DoubleSha256Digest], Seq[Byte]) = {
+    def loop(remainingHashes: Long, remainingBytes: scodec.bits.ByteVector,
+      accum: List[DoubleSha256Digest]): (Seq[DoubleSha256Digest], scodec.bits.ByteVector) = {
       if (remainingHashes <= 0) (accum.reverse, remainingBytes)
       else loop(remainingHashes - 1, remainingBytes.slice(32, remainingBytes.size), DoubleSha256Digest(remainingBytes.take(32)) :: accum)
     }
     loop(hashCount.num.toInt, bytes, Nil)
-  }
-
-  /** Parses a sequence of bits to a sequence of bit vectors grouped into bytes */
-  private def parseToBytes(bits: Seq[Boolean]): Seq[Seq[Boolean]] = {
-    @tailrec
-    def loop(remainingBits: Seq[Boolean], accum: Seq[Seq[Boolean]]): Seq[Seq[Boolean]] = remainingBits match {
-      case Nil => accum.reverse
-      case h :: t => accum.headOption match {
-        case None => loop(remainingBits, Nil +: accum)
-        case Some(bits) if bits.size == 8 =>
-          //if we have 8 bits in this sequence we need to create a new byte and prepend it to the accum
-          loop(remainingBits, Nil +: accum)
-        case Some(bits) =>
-          val newBits = h +: bits
-          loop(t, newBits +: accum.tail)
-      }
-    }
-    loop(bits, Seq(Nil))
   }
 }
 

@@ -89,10 +89,10 @@ object MerkleBlock extends Factory[MerkleBlock] {
     MerkleBlockImpl(blockHeader, txCount, partialMerkleTree)
   }
 
-  def apply(blockHeader: BlockHeader, txCount: UInt32, hashes: Seq[DoubleSha256Digest], bits: Seq[Boolean]): MerkleBlock = {
+  def apply(blockHeader: BlockHeader, txCount: UInt32, hashes: Seq[DoubleSha256Digest], bits: scodec.bits.BitVector): MerkleBlock = {
     val partialMerkleTree = PartialMerkleTree(txCount, hashes, bits)
     MerkleBlock(blockHeader, txCount, partialMerkleTree)
   }
 
-  def fromBytes(bytes: Seq[Byte]): MerkleBlock = RawMerkleBlockSerializer.read(bytes)
+  def fromBytes(bytes: scodec.bits.ByteVector): MerkleBlock = RawMerkleBlockSerializer.read(bytes)
 }

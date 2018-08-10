@@ -1,9 +1,10 @@
 package org.bitcoins.core.protocol.script
 
 import org.bitcoins.core.crypto.ECDigitalSignature
-import org.bitcoins.core.script.crypto.{ SIGHASH_ALL, HashType }
+import org.bitcoins.core.script.crypto.{ HashType, SIGHASH_ALL }
 import org.bitcoins.core.util.TestUtil
 import org.scalatest.{ FlatSpec, MustMatchers }
+import scodec.bits.ByteVector
 
 /**
  * Created by chris on 4/1/16.
@@ -15,7 +16,7 @@ class P2PKHScriptSignatureTest extends FlatSpec with MustMatchers {
       case s: P2PKHScriptSignature => s
       case _ => throw new RuntimeException("Must be p2pkh scriptSig")
     }
-    HashType.fromBytes(Seq(p2pkhScriptSig.signatures.head.bytes.last)) must be(HashType.sigHashAll)
+    HashType.fromBytes(ByteVector.fromByte(p2pkhScriptSig.signatures.head.bytes.last)) must be(HashType.sigHashAll)
   }
 
   it must "be able to identify the signature in a p2pkh scriptSig" in {

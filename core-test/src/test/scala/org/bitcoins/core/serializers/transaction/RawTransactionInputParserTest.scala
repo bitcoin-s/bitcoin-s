@@ -12,7 +12,7 @@ class RawTransactionInputParserTest extends FlatSpec with MustMatchers {
   private val logger = BitcoinSLogger.logger
   //txid cad1082e674a7bd3bc9ab1bc7804ba8a57523607c876b8eb2cbe645f2b1803d6
   val rawTxInput = "85d6b0da2edf96b282030d3f4f79d14cc8c882cfef1b3064170c850660317de100000000" + "6f0047304402207df6dd8dad22d49c3c83d8031733c32a53719278eb7985d3b35b375d776f84f102207054f9209a1e87d55feafc90aa04c33008e5bae9191da22aeaa16efde96f41f00125512102b022902a0fdd71e831c37e4136c2754a59887be0618fb75336d7ab67e2982ff551ae" + "ffffffff"
-  val encode = BitcoinSUtil.encodeHex(_: Seq[Byte])
+  val encode = BitcoinSUtil.encodeHex(_: scodec.bits.ByteVector)
   "RawTransactionInputParser" must "parse a raw serialized transaction input" in {
     val txInput = RawTransactionInputParser.read(rawTxInput)
     txInput.previousOutput.vout must be(UInt32.zero)
@@ -55,7 +55,6 @@ class RawTransactionInputParserTest extends FlatSpec with MustMatchers {
     txInput.previousOutput.txId.hex must be(BitcoinSUtil.flipEndianness("e99eb3e6551844d0db252ef242c043796b3b0ccfb126c0ae09f9dd0230e2f10d"))
     txInput.previousOutput.vout must be(UInt32.zero)
     txInput.scriptSignature.hex must be("fdfd00004730440220028c02f14654a0cc12c7e3229adb09d5d35bebb6ba1057e39adb1b2706607b0d0220564fab12c6da3d5acef332406027a7ff1cbba980175ffd880e1ba1bf40598f6b014830450221009362f8d67b60773745e983d07ba10efbe566127e244b724385b2ca2e47292dda022033def393954c320653843555ddbe7679b35cc1cacfe1dad923977de8cd6cc6d7014c695221025e9adcc3d65c11346c8a6069d6ebf5b51b348d1d6dc4b95e67480c34dc0bc75c21030585b3c80f4964bf0820086feda57c8e49fa1eab925db7c04c985467973df96521037753a5e3e9c4717d3f81706b38a6fb82b5fb89d29e580d7b98a37fea8cdefcad53ae")
-    txInput.scriptSignature.compactSizeUInt.num must be(UInt64(txInput.scriptSignature.asm.flatMap(_.bytes).size))
     txInput.sequence must be(UInt32(4294967295L))
     encode(RawTransactionInputParser.write(txInput)) must be(rawTxInput)
 

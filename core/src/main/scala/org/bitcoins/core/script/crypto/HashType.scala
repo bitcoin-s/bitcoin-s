@@ -3,6 +3,7 @@ package org.bitcoins.core.script.crypto
 import org.bitcoins.core.crypto.ECDigitalSignature
 import org.bitcoins.core.number.Int32
 import org.bitcoins.core.util.Factory
+import scodec.bits.ByteVector
 
 /**
  * Created by chris on 1/18/16.
@@ -13,12 +14,12 @@ sealed trait HashType {
 }
 
 object HashType extends Factory[HashType] {
-  def fromBytes(bytes: Seq[Byte]): HashType = {
+  def fromBytes(bytes: scodec.bits.ByteVector): HashType = {
     val num = Int32(bytes)
     fromNumber(num)
   }
 
-  def fromByte(byte: Byte): HashType = fromBytes(Seq(byte))
+  def fromByte(byte: Byte): HashType = fromBytes(ByteVector.fromByte(byte))
 
   def fromNumber(num: Int32): HashType = {
     if (isSigHashNone(num)) {
@@ -95,7 +96,7 @@ object HashType extends Factory[HashType] {
   lazy val hashTypes = Seq(sigHashAll, sigHashNone, sigHashSingle, sigHashAnyoneCanPay,
     sigHashNoneAnyoneCanPay, sigHashAllAnyoneCanPay, sigHashSingleAnyoneCanPay)
 
-  lazy val hashTypeBytes: Seq[Byte] = Seq(sigHashAllByte, sigHashSingleByte, sigHashNoneByte, sigHashAnyoneCanPayByte,
+  lazy val hashTypeBytes: Vector[Byte] = Vector(sigHashAllByte, sigHashSingleByte, sigHashNoneByte, sigHashAnyoneCanPayByte,
     sigHashNoneAnyoneCanPayByte, sigHashSingleAnyoneCanPayByte, sigHashAllAnyoneCanPayByte)
 
   def apply(num: Int32): HashType = fromNumber(num)

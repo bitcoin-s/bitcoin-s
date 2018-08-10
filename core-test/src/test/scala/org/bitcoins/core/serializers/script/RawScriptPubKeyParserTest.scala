@@ -13,7 +13,7 @@ import org.scalatest.{ FlatSpec, MustMatchers }
  * Created by chris on 1/12/16.
  */
 class RawScriptPubKeyParserTest extends FlatSpec with MustMatchers {
-  val encode = BitcoinSUtil.encodeHex(_: Seq[Byte])
+  val encode = BitcoinSUtil.encodeHex(_: scodec.bits.ByteVector)
   "RawScriptPubKeyParser" must "read then write the scriptPubKey and get the original scriptPubKey" in {
     val scriptPubKey: ScriptPubKey = RawScriptPubKeyParser.read(TestUtil.rawScriptPubKey)
     encode(RawScriptPubKeyParser.write(scriptPubKey)) must be(TestUtil.rawScriptPubKey)

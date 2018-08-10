@@ -1,14 +1,28 @@
 package org.bitcoins.core.protocol.blockchain
 
+import java.io.File
+
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.serializers.script.RawScriptSignatureParser
 import org.bitcoins.core.util.BitcoinSLogger
 import org.scalatest.{ FlatSpec, MustMatchers }
+import org.slf4j.LoggerFactory
+
+import scala.io.Source
 
 /**
  * Created by chris on 7/15/16.
  */
 class BlockTest extends FlatSpec with MustMatchers {
+  private val logger = LoggerFactory.getLogger(this.getClass.getSimpleName)
+  def timeBlockParsing[R](block: => R): Long = {
+    val t0 = System.currentTimeMillis()
+    val result = block // call-by-name
+    val t1 = System.currentTimeMillis()
+    val time = t1 - t0
+    logger.info("Elapsed time: " + (time) + "ms")
+    time
+  }
 
   "Block" must "deserialize and serialize a block with two txs" in {
     val hex = "b0aa0dced271237b5badb4365c33bc42b8fdb05c3defa03e75dcae425f42ddd210d69b8695e0f3cdf1eb9f56d0daa3c1e384204faa20792217d3103217773f4177b6b0f067079ac1ee733798f3bef9a0" +
@@ -16,5 +30,20 @@ class BlockTest extends FlatSpec with MustMatchers {
 
     val block = Block(hex)
     block.hex must be(hex)
+  }
+
+  it must "parse a large block 00000000000000000008513c860373da0484f065983aeb063ebf81c172e81d48" in {
+
+    val fileName = "/00000000000000000008513c860373da0484f065983aeb063ebf81c172e81d48.txt"
+    val lines = Source.fromURL(getClass.getResource(fileName)).mkString
+    val time = timeBlockParsing(Block.fromHex(lines))
+    assert(time <= 15000)
+  }
+
+  it must "parse a large block 000000000000000000050f70113ab1932c195442cb49bcc4ee4d7f426c8a3295" in {
+    val fileName = "/000000000000000000050f70113ab1932c195442cb49bcc4ee4d7f426c8a3295.txt"
+    val lines = Source.fromURL(getClass.getResource(fileName)).mkString
+    val time = timeBlockParsing(Block.fromHex(lines))
+    assert(time <= 15000)
   }
 }

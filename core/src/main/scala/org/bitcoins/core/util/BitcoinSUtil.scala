@@ -1,19 +1,22 @@
 package org.bitcoins.core.util
 
+import org.bitcoins.core.protocol.NetworkElement
+import scodec.bits.{ BitVector, ByteVector }
+
 import scala.math.BigInt
 
 /**
  * Created by chris on 2/26/16.
  */
 trait BitcoinSUtil {
-
-  def decodeHex(hex: String): Seq[Byte] = {
-    hex.replaceAll("[^0-9A-Fa-f]", "").sliding(2, 2).toArray.map(Integer.parseInt(_, 16).toByte).toList
+  private val logger = BitcoinSLogger.logger
+  def decodeHex(hex: String): scodec.bits.ByteVector = {
+    if (hex.isEmpty) ByteVector.empty else scodec.bits.ByteVector.fromHex(hex).get
   }
 
-  def encodeHex(bytes: Seq[Byte]): String = bytes.map("%02x".format(_)).mkString
+  def encodeHex(bytes: scodec.bits.ByteVector): String = bytes.toHex
 
-  def encodeHex(byte: Byte): String = encodeHex(Seq(byte))
+  def encodeHex(byte: Byte): String = encodeHex(scodec.bits.ByteVector(byte))
 
   /**
    * Encodes a long number to a hex string, pads it with an extra '0' char
@@ -43,7 +46,7 @@ trait BitcoinSUtil {
     addPadding(4, hex)
   }
 
-  def encodeHex(bigInt: BigInt): String = BitcoinSUtil.encodeHex(bigInt.toByteArray)
+  def encodeHex(bigInt: BigInt): String = BitcoinSUtil.encodeHex(ByteVector(bigInt.toByteArray))
 
   /** Tests if a given string is a hexadecimal string. */
   def isHex(str: String): Boolean = {
@@ -61,8 +64,9 @@ trait BitcoinSUtil {
   def flipEndianness(hex: String): String = flipEndianness(decodeHex(hex))
 
   /** Flips the endianness of the given sequence of bytes. */
-  def flipEndianness(bytes: Seq[Byte]): String = encodeHex(bytes.reverse)
+  def flipEndianness(bytes: scodec.bits.ByteVector): String = encodeHex(bytes.reverse)
 
+  def flipEndiannessBytes(bytes: ByteVector): ByteVector = bytes.reverse
   /**
    * Adds the amount padding bytes needed to fix the size of the hex string
    * for instance, ints are required to be 4 bytes. If the number is just 1
@@ -77,29 +81,26 @@ trait BitcoinSUtil {
   }
 
   /** Converts a sequence of bytes to a sequence of bit vectors */
-  def bytesToBitVectors(bytes: Seq[Byte]): Seq[Seq[Boolean]] = bytes.map(byteToBitVector)
+  def bytesToBitVectors(bytes: scodec.bits.ByteVector): scodec.bits.BitVector = {
+    bytes.toBitVector
+  }
 
   /** Converts a byte to a bit vector representing that byte */
-  def byteToBitVector(byte: Byte): Seq[Boolean] = {
-    (0 to 7).map(index => isBitSet(byte, 7 - index))
+  def byteToBitVector(byte: Byte): scodec.bits.BitVector = {
+    BitVector.fromByte(byte)
   }
 
   /** Checks if the bit at the given index is set */
   def isBitSet(byte: Byte, index: Int): Boolean = ((byte >> index) & 1) == 1
 
-  /** Converts a bit vector to a single byte -- the resulting byte is big endian */
-  def bitVectorToByte(bits: Seq[Boolean]): Byte = {
-    require(bits.size <= 8, "Cannot convert a bit vector to a byte when the size of the bit vector is larger than 8, got: " + bits)
-    val b = bits.reverse
-    val result: Seq[Int] = b.zipWithIndex.map {
-      case (b, index) =>
-        if (b) NumberUtil.pow2(index).toInt else 0
-    }
-    result.sum.toByte
+  /** Converts a sequence of bit vectors to a sequence of bytes */
+  def bitVectorToBytes(bits: scodec.bits.BitVector): scodec.bits.ByteVector = {
+    bits.bytes
   }
 
-  /** Converts a sequence of bit vectors to a sequence of bytes */
-  def bitVectorsToBytes(bits: Seq[Seq[Boolean]]): Seq[Byte] = bits.map(bitVectorToByte)
+  def toByteVector[T <: NetworkElement](h: Seq[T]): ByteVector = {
+    h.foldLeft(ByteVector.empty)(_ ++ _.bytes)
+  }
 
 }
 

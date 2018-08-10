@@ -120,13 +120,6 @@ class TransactionTest extends FlatSpec with MustMatchers {
       tx = testCase.spendingTx
       (input, inputIndex) = findInput(tx, outPoint).getOrElse((EmptyTransactionInput, 0))
     } yield {
-      logger.debug("Raw test case: " + testCase.raw)
-      logger.debug("Parsed ScriptSig: " + tx.inputs(inputIndex).scriptSignature)
-      logger.debug("Sequence number: " + tx.inputs(inputIndex).sequence)
-      logger.debug("ScriptPubKey: " + scriptPubKey)
-      logger.debug("OutPoint: " + outPoint)
-      logger.debug("Flags after parsing: " + testCase.flags)
-      logger.debug("Satoshis: " + amountOpt)
       require(
         outPoint.txId == input.previousOutput.txId,
         "OutPoint txId not the same as input prevout txid\noutPoint.txId: " + outPoint.txId + "\n" +
@@ -203,12 +196,6 @@ class TransactionTest extends FlatSpec with MustMatchers {
         tx = testCase.spendingTx
         (input, inputIndex) = findInput(tx, outPoint).getOrElse((EmptyTransactionInput, 0))
       } yield {
-        logger.debug("Raw test case: " + testCase.raw)
-        logger.debug("ScriptPubKey: " + scriptPubKey)
-        logger.debug("OutPoint: " + outPoint)
-        logger.debug("Flags after parsing: " + testCase.flags)
-        logger.debug("spending tx: " + testCase.spendingTx)
-        logger.debug("" + testCase.scriptPubKeys)
         val isValidTx = ScriptInterpreter.checkTransaction(tx)
         if (isValidTx) {
           val txSigComponent = amountOpt match {

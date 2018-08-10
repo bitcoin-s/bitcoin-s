@@ -5,7 +5,7 @@ import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.script.ScriptPubKey
-import org.bitcoins.core.protocol.transaction.{Transaction, TransactionInput}
+import org.bitcoins.core.protocol.transaction.{ Transaction, TransactionInput }
 import org.bitcoins.core.util.BitcoinSUtil
 import play.api.libs.json._
 
@@ -30,9 +30,10 @@ object JsonWriters {
   implicit object TransactionInputWrites extends Writes[TransactionInput] {
     override def writes(o: TransactionInput): JsValue =
       JsObject(
-        Seq(("txid", JsString(o.previousOutput.txId.flip.hex)),
-            ("vout", JsNumber(o.previousOutput.vout.toLong)),
-            ("sequence", JsNumber(o.sequence.toLong))))
+        Seq(
+          ("txid", JsString(o.previousOutput.txId.flip.hex)),
+          ("vout", JsNumber(o.previousOutput.vout.toLong)),
+          ("sequence", JsNumber(o.sequence.toLong))))
   }
 
   implicit object UInt32Writes extends Writes[UInt32] {
@@ -44,8 +45,8 @@ object JsonWriters {
   }
 
   implicit def mapWrites[K, V](keyString: K => String)(
-      implicit
-      vWrites: Writes[V]): Writes[Map[K, V]] = new Writes[Map[K, V]] {
+    implicit
+    vWrites: Writes[V]): Writes[Map[K, V]] = new Writes[Map[K, V]] {
     override def writes(o: Map[K, V]): JsValue = {
       Json.toJson(o.map { case (k, v) => (keyString(k), v) })
     }

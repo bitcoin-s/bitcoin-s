@@ -35,7 +35,7 @@ object TransactionOutPoint extends Factory[TransactionOutPoint] {
 
   private case class TransactionOutPointImpl(txId: DoubleSha256Digest, vout: UInt32) extends TransactionOutPoint
 
-  def fromBytes(bytes: Seq[Byte]): TransactionOutPoint = RawTransactionOutPointParser.read(bytes)
+  def fromBytes(bytes: scodec.bits.ByteVector): TransactionOutPoint = RawTransactionOutPointParser.read(bytes)
 
   def apply(txId: DoubleSha256Digest, index: UInt32): TransactionOutPoint = {
     if (txId == EmptyTransactionOutPoint.txId && index == EmptyTransactionOutPoint.vout) {

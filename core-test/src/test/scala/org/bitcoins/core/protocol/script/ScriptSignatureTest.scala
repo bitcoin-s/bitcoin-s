@@ -10,6 +10,7 @@ import org.bitcoins.core.script.crypto.{ HashType, SIGHASH_ALL, SIGHASH_SINGLE }
 import org.bitcoins.core.serializers.script.RawScriptSignatureParser
 import org.bitcoins.core.util.{ BitcoinSLogger, BitcoinSUtil, TestUtil }
 import org.scalatest.{ FlatSpec, MustMatchers }
+import scodec.bits.ByteVector
 import spray.json._
 
 import scala.io.Source
@@ -26,7 +27,7 @@ class ScriptSignatureTest extends FlatSpec with MustMatchers {
   }
 
   it must "derive the signature hash type from the signature" in {
-    HashType(Seq(TestUtil.scriptSig.signatures.head.bytes.last)) must be(HashType.sigHashAll)
+    HashType(ByteVector.fromByte(TestUtil.scriptSig.signatures.head.bytes.last)) must be(HashType.sigHashAll)
   }
 
   it must "find the digital signature for a p2sh script signature" in {
@@ -52,7 +53,7 @@ class ScriptSignatureTest extends FlatSpec with MustMatchers {
       ECDigitalSignature("30440220257b57cb09386d82c4328461f8fe200c2f381d6b635e2a2f4ea40c8d945e9ec102201ec67d58d51a309af4d8896e9147a42944e9f9833a456f733ea5fa6954ed2fed01")))
   }
   it must "find the hash type for a p2sh script signature" in {
-    HashType(Seq(TestUtil.p2shInputScript2Of2.signatures.head.bytes.last)) must be(HashType.sigHashAll)
+    HashType(ByteVector.fromByte(TestUtil.p2shInputScript2Of2.signatures.head.bytes.last)) must be(HashType.sigHashAll)
   }
 
   it must "find the digital signature and hash type for a SIGHASH_SINGLE" in {
@@ -69,7 +70,7 @@ class ScriptSignatureTest extends FlatSpec with MustMatchers {
 
   it must "have an empty script signature" in {
     EmptyScriptSignature.hex must be("00")
-    EmptyScriptSignature.bytes must be(Seq(0.toByte))
+    EmptyScriptSignature.bytes must be(scodec.bits.ByteVector.low(1))
     EmptyScriptSignature.asm must be(Nil)
     EmptyScriptSignature.signatures must be(Nil)
   }

@@ -8,9 +8,9 @@ import org.bitcoins.core.number.Int64
  */
 trait RawSatoshisSerializer extends RawBitcoinSerializer[Satoshis] {
 
-  def read(bytes: List[Byte]): Satoshis = Satoshis(Int64(bytes.reverse))
+  def read(bytes: scodec.bits.ByteVector): Satoshis = Satoshis(Int64(bytes.reverse))
 
-  def write(satoshis: Satoshis): Seq[Byte] = {
+  def write(satoshis: Satoshis): scodec.bits.ByteVector = {
     Int64(satoshis.toLong).bytes.reverse
   }
 

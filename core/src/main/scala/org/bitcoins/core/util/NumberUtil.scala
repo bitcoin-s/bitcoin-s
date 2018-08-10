@@ -3,6 +3,7 @@ package org.bitcoins.core.util
 import java.math.BigInteger
 
 import org.bitcoins.core.number.{ UInt32, UInt8 }
+import scodec.bits.ByteVector
 
 import scala.math.BigInt
 import scala.util.{ Failure, Success, Try }
@@ -14,11 +15,9 @@ trait NumberUtil extends BitcoinSLogger {
 
   private def parseLong(hex: String): Long = java.lang.Long.parseLong(hex, 16)
 
-  private def parseLong(bytes: List[Byte]): Long = parseLong(BitcoinSUtil.encodeHex(bytes))
+  private def parseLong(bytes: scodec.bits.ByteVector): Long = parseLong(BitcoinSUtil.encodeHex(bytes))
 
-  private def parseLong(byte: Byte): Long = parseLong(List(byte))
-
-  private def parseLong(bytes: Seq[Byte]): Long = parseLong(bytes.toList)
+  private def parseLong(byte: Byte): Long = parseLong(ByteVector.fromByte(byte))
 
   /** Takes 2^^num. */
   def pow2(exponent: Int): BigInt = {
@@ -27,7 +26,7 @@ trait NumberUtil extends BitcoinSLogger {
   }
 
   /** Converts a sequence of bytes to a **big endian** unsigned integer */
-  def toUnsignedInt(bytes: Seq[Byte]): BigInt = {
+  def toUnsignedInt(bytes: scodec.bits.ByteVector): BigInt = {
     BigInt(new BigInteger(1, bytes.toArray))
   }
 
@@ -35,7 +34,7 @@ trait NumberUtil extends BitcoinSLogger {
   def toBigInt(hex: String): BigInt = toBigInt(BitcoinSUtil.decodeHex(hex))
 
   /** Converts a sequence of bytes to twos complement signed number. */
-  def toBigInt(bytes: Seq[Byte]): BigInt = {
+  def toBigInt(bytes: scodec.bits.ByteVector): BigInt = {
     //BigInt interprets the number as an unsigned number then applies the given
     //sign in front of that number, therefore if we have a negative number we need to invert it
     //since twos complement is an inverted number representation for negative numbers
@@ -55,13 +54,13 @@ trait NumberUtil extends BitcoinSLogger {
   }
 
   /** Converts a sequence of [[Byte]] to a [[Int]]. */
-  def toInt(bytes: Seq[Byte]): Int = toBigInt(bytes).toInt
+  def toInt(bytes: scodec.bits.ByteVector): Int = toBigInt(bytes).toInt
 
   /** Converts a hex string to a [[Int]]. */
   def toInt(hex: String): Int = toInt(BitcoinSUtil.decodeHex(hex))
 
   /** Converts a sequence of [[Byte]] to a [[Long]]. */
-  def toLong(bytes: Seq[Byte]): Long = toBigInt(bytes).toLong
+  def toLong(bytes: scodec.bits.ByteVector): Long = toBigInt(bytes).toLong
 
   /** Converts a hex string to a [[Long]]. */
   def toLong(hex: String): Long = toLong(BitcoinSUtil.decodeHex(hex))
@@ -102,7 +101,7 @@ trait NumberUtil extends BitcoinSLogger {
     }
   }
 
-  def convertBytes(data: Seq[Byte], from: UInt32, to: UInt32, pad: Boolean): Try[Seq[UInt8]] = {
+  def convertBytes(data: scodec.bits.ByteVector, from: UInt32, to: UInt32, pad: Boolean): Try[Seq[UInt8]] = {
     convertUInt8s(UInt8.toUInt8s(data), from, to, pad)
   }
 }
