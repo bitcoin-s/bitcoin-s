@@ -5,6 +5,7 @@ import org.bitcoins.core.protocol.transaction.{ BaseTransaction, Transaction, Wi
 import org.bitcoins.core.protocol.{ CompactSizeUInt, NetworkElement }
 import org.bitcoins.core.serializers.blockchain.RawBlockSerializer
 import org.bitcoins.core.util.{ BitcoinSLogger, Factory }
+import scodec.bits.ByteVector
 
 /**
  * Created by chris on 5/19/16.
@@ -63,6 +64,6 @@ object Block extends Factory[Block] {
     Block(blockHeader, txCount, transactions)
   }
 
-  def fromBytes(bytes: scodec.bits.ByteVector): Block = RawBlockSerializer.read(bytes)
+  def fromBytes(bytes: ByteVector): Block = RawBlockSerializer.read(bytes)
 
 }

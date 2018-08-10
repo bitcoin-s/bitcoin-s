@@ -4,6 +4,7 @@ import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.protocol.script.{ EmptyScriptPubKey, ScriptPubKey }
 import org.bitcoins.core.script.constant.ScriptToken
 import org.bitcoins.core.serializers.RawBitcoinSerializer
+import scodec.bits.ByteVector
 
 import scala.util.Try
 
@@ -12,7 +13,7 @@ import scala.util.Try
  */
 trait RawScriptPubKeyParser extends RawBitcoinSerializer[ScriptPubKey] {
 
-  override def read(bytes: scodec.bits.ByteVector): ScriptPubKey = {
+  override def read(bytes: ByteVector): ScriptPubKey = {
     if (bytes.isEmpty) EmptyScriptPubKey
     else {
       val compactSizeUInt = CompactSizeUInt.parseCompactSizeUInt(bytes)
@@ -25,7 +26,7 @@ trait RawScriptPubKeyParser extends RawBitcoinSerializer[ScriptPubKey] {
     }
   }
 
-  override def write(scriptPubKey: ScriptPubKey): scodec.bits.ByteVector = scriptPubKey.bytes
+  override def write(scriptPubKey: ScriptPubKey): ByteVector = scriptPubKey.bytes
 }
 
 object RawScriptPubKeyParser extends RawScriptPubKeyParser

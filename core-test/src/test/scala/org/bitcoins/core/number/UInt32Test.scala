@@ -9,32 +9,32 @@ import scodec.bits.ByteVector
 class UInt32Test extends FlatSpec with MustMatchers {
 
   "UInt32" must "create the number zero as an unsigned 32 bit integer" in {
-    val zero = UInt32(scodec.bits.ByteVector(0x0.toByte))
+    val zero = UInt32(ByteVector(0x0.toByte))
     zero.toLong must be(0)
   }
 
   it must "create the max number for an unsigned byte" in {
-    val maxByteValue = UInt32(scodec.bits.ByteVector(0xff.toByte))
+    val maxByteValue = UInt32(ByteVector(0xff.toByte))
     maxByteValue.toLong must be(255)
   }
 
   it must "create the number 256" in {
-    val uInt32 = UInt32(scodec.bits.ByteVector(0x01.toByte, 0x00.toByte))
+    val uInt32 = UInt32(ByteVector(0x01.toByte, 0x00.toByte))
     uInt32.toLong must be(256)
   }
 
   it must "create the number 65535" in {
-    val uInt32 = UInt32(scodec.bits.ByteVector(0xff.toByte, 0xff.toByte))
+    val uInt32 = UInt32(ByteVector(0xff.toByte, 0xff.toByte))
     uInt32.toLong must be(65535)
   }
 
   it must "create the number 65536" in {
-    val uInt32 = UInt32(scodec.bits.ByteVector(0x01.toByte, 0x0.toByte, 0x0.toByte))
+    val uInt32 = UInt32(ByteVector(0x01.toByte, 0x0.toByte, 0x0.toByte))
     uInt32.toLong must be(65536)
   }
 
   it must "create the number 16777215" in {
-    val uInt32 = UInt32(scodec.bits.ByteVector(0xff.toByte, 0xff.toByte, 0xff.toByte))
+    val uInt32 = UInt32(ByteVector(0xff.toByte, 0xff.toByte, 0xff.toByte))
     uInt32.toLong must be(16777215)
   }
 
@@ -45,7 +45,7 @@ class UInt32Test extends FlatSpec with MustMatchers {
 
   it must "create the number 4294967295" in {
     //this is UInt32_t's max value
-    val uInt32 = UInt32(scodec.bits.ByteVector(0xff.toByte, 0xff.toByte, 0xff.toByte, 0xff.toByte))
+    val uInt32 = UInt32(ByteVector(0xff.toByte, 0xff.toByte, 0xff.toByte, 0xff.toByte))
     uInt32.toLong must be(4294967295L)
     uInt32.hex must be("ffffffff")
   }

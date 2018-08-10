@@ -5,6 +5,7 @@ import org.bitcoins.core.protocol.NetworkElement
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.serializers.transaction.RawTransactionOutputParser
 import org.bitcoins.core.util.Factory
+import scodec.bits.ByteVector
 
 /**
  * Created by chris on 12/26/15.
@@ -28,7 +29,7 @@ case object EmptyTransactionOutput extends TransactionOutput {
 object TransactionOutput extends Factory[TransactionOutput] {
   private case class TransactionOutputImpl(value: CurrencyUnit, scriptPubKey: ScriptPubKey) extends TransactionOutput
 
-  def fromBytes(bytes: scodec.bits.ByteVector): TransactionOutput = RawTransactionOutputParser.read(bytes)
+  def fromBytes(bytes: ByteVector): TransactionOutput = RawTransactionOutputParser.read(bytes)
 
   def apply(currencyUnit: CurrencyUnit, scriptPubKey: ScriptPubKey): TransactionOutput = {
     TransactionOutputImpl(currencyUnit, scriptPubKey)

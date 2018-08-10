@@ -5,6 +5,7 @@ import java.net.InetSocketAddress
 import org.bitcoins.core.util.BitcoinSUtil
 import org.scalatest.{ FlatSpec, MustMatchers }
 import org.slf4j.LoggerFactory
+import scodec.bits.ByteVector
 class ZMQSubscriberTest extends FlatSpec with MustMatchers {
   private val logger = LoggerFactory.getLogger(this.getClass().toString)
   "ZMQSubscriber" must "connect to a regtest instance of a daemon and stream txs/blocks from it" in {
@@ -21,23 +22,23 @@ class ZMQSubscriberTest extends FlatSpec with MustMatchers {
     zmqSub.stop
   }
 
-  val rawBlockListener: Option[scodec.bits.ByteVector => Unit] = Some {
-    { bytes: scodec.bits.ByteVector =>
+  val rawBlockListener: Option[ByteVector => Unit] = Some {
+    { bytes: ByteVector =>
       val hex = BitcoinSUtil.encodeHex(bytes)
       logger.debug(s"received raw block ${hex}")
     }
   }
 
-  val hashBlockListener: Option[scodec.bits.ByteVector => Unit] = Some {
-    { bytes: scodec.bits.ByteVector =>
+  val hashBlockListener: Option[ByteVector => Unit] = Some {
+    { bytes: ByteVector =>
       val hex = BitcoinSUtil.encodeHex(bytes)
       logger.debug(s"received raw block hash ${hex}")
 
     }
   }
 
-  val rawTxListener: Option[scodec.bits.ByteVector => Unit] = Some {
-    { bytes: scodec.bits.ByteVector =>
+  val rawTxListener: Option[ByteVector => Unit] = Some {
+    { bytes: ByteVector =>
       val hex = BitcoinSUtil.encodeHex(bytes)
       logger.debug(s"received raw tx ${hex}")
     }

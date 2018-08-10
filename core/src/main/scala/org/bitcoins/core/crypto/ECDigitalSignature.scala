@@ -10,7 +10,7 @@ sealed abstract class ECDigitalSignature {
 
   def hex: String = BitcoinSUtil.encodeHex(bytes)
 
-  def bytes: scodec.bits.ByteVector
+  def bytes: ByteVector
 
   def isEmpty = bytes.isEmpty
 
@@ -62,9 +62,9 @@ case object DummyECDigitalSignature extends ECDigitalSignature {
 }
 
 object ECDigitalSignature extends Factory[ECDigitalSignature] {
-  private case class ECDigitalSignatureImpl(bytes: scodec.bits.ByteVector) extends ECDigitalSignature
+  private case class ECDigitalSignatureImpl(bytes: ByteVector) extends ECDigitalSignature
 
-  override def fromBytes(bytes: scodec.bits.ByteVector): ECDigitalSignature = {
+  override def fromBytes(bytes: ByteVector): ECDigitalSignature = {
     //this represents the empty signature
     if (bytes.size == 1 && bytes.head == 0x0) EmptyDigitalSignature
     else if (bytes.size == 0) EmptyDigitalSignature
@@ -90,7 +90,7 @@ object ECDigitalSignature extends Factory[ECDigitalSignature] {
   def fromRS(r: BigInt, s: BigInt): ECDigitalSignature = {
     val rsSize = r.toByteArray.size + s.toByteArray.size
     val totalSize = 4 + rsSize
-    val bytes: scodec.bits.ByteVector = {
+    val bytes: ByteVector = {
       ByteVector(Array(0x30.toByte, totalSize.toByte, 0x2.toByte, r.toByteArray.size.toByte))
         .++(ByteVector(r.toByteArray))
         .++(ByteVector(Array(0x2.toByte, s.toByteArray.size.toByte)))

@@ -17,7 +17,7 @@ trait CryptoUtil {
   /** Does the following computation: RIPEMD160(SHA256(hex)).*/
   def sha256Hash160(hex: String): Sha256Hash160Digest = sha256Hash160(BitcoinSUtil.decodeHex(hex))
 
-  def sha256Hash160(bytes: scodec.bits.ByteVector): Sha256Hash160Digest = {
+  def sha256Hash160(bytes: ByteVector): Sha256Hash160Digest = {
     val hash = ripeMd160(sha256(bytes).bytes).bytes
     Sha256Hash160Digest(hash)
   }
@@ -26,8 +26,8 @@ trait CryptoUtil {
   def doubleSHA256(hex: String): DoubleSha256Digest = doubleSHA256(BitcoinSUtil.decodeHex(hex))
 
   /** Performs sha256(sha256(bytes)). */
-  def doubleSHA256(bytes: scodec.bits.ByteVector): DoubleSha256Digest = {
-    val hash: scodec.bits.ByteVector = sha256(sha256(bytes).bytes).bytes
+  def doubleSHA256(bytes: ByteVector): DoubleSha256Digest = {
+    val hash: ByteVector = sha256(sha256(bytes).bytes).bytes
     DoubleSha256Digest(hash)
   }
 
@@ -35,13 +35,13 @@ trait CryptoUtil {
   def sha256(hex: String): Sha256Digest = sha256(BitcoinSUtil.decodeHex(hex))
 
   /** Takes sha256(bytes). */
-  def sha256(bytes: scodec.bits.ByteVector): Sha256Digest = {
+  def sha256(bytes: ByteVector): Sha256Digest = {
     val hash = MessageDigest.getInstance("SHA-256").digest(bytes.toArray)
     Sha256Digest(ByteVector(hash))
   }
 
   /** Performs SHA1(bytes). */
-  def sha1(bytes: scodec.bits.ByteVector): Sha1Digest = {
+  def sha1(bytes: ByteVector): Sha1Digest = {
     val hash = MessageDigest.getInstance("SHA-1").digest(bytes.toArray).toList
     Sha1Digest(ByteVector(hash))
   }
@@ -53,7 +53,7 @@ trait CryptoUtil {
   def ripeMd160(hex: String): RipeMd160Digest = ripeMd160(BitcoinSUtil.decodeHex(hex))
 
   /** Performs RIPEMD160(bytes). */
-  def ripeMd160(bytes: scodec.bits.ByteVector): RipeMd160Digest = {
+  def ripeMd160(bytes: ByteVector): RipeMd160Digest = {
     //from this tutorial http://rosettacode.org/wiki/RIPEMD-160#Scala
     val messageDigest = new RIPEMD160Digest
     val raw = bytes.toArray
@@ -65,7 +65,7 @@ trait CryptoUtil {
 
   val emptyDoubleSha256Hash = DoubleSha256Digest("0000000000000000000000000000000000000000000000000000000000000000")
 
-  def hmac512(key: scodec.bits.ByteVector, data: scodec.bits.ByteVector): scodec.bits.ByteVector = {
+  def hmac512(key: ByteVector, data: ByteVector): ByteVector = {
     val hmac512 = new HMac(new SHA512Digest())
     hmac512.init(new KeyParameter(key.toArray))
     hmac512.update(data.toArray, 0, data.intSize.get)

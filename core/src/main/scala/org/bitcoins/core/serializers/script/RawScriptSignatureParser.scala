@@ -5,6 +5,7 @@ import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.script.constant.ScriptToken
 import org.bitcoins.core.serializers.RawBitcoinSerializer
 import org.bitcoins.core.util.BitcoinSLogger
+import scodec.bits.ByteVector
 
 import scala.util.Try
 
@@ -13,7 +14,7 @@ import scala.util.Try
  */
 sealed abstract class RawScriptSignatureParser extends RawBitcoinSerializer[ScriptSignature] {
 
-  def read(bytes: scodec.bits.ByteVector): ScriptSignature = {
+  def read(bytes: ByteVector): ScriptSignature = {
     if (bytes.isEmpty) EmptyScriptSignature
     else {
       val compactSizeUInt = CompactSizeUInt.parseCompactSizeUInt(bytes)
@@ -26,7 +27,7 @@ sealed abstract class RawScriptSignatureParser extends RawBitcoinSerializer[Scri
     }
   }
 
-  def write(scriptSig: ScriptSignature): scodec.bits.ByteVector = scriptSig.bytes
+  def write(scriptSig: ScriptSignature): ByteVector = scriptSig.bytes
 }
 
 object RawScriptSignatureParser extends RawScriptSignatureParser

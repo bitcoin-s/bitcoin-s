@@ -9,37 +9,37 @@ import scodec.bits.ByteVector
 class Int32Test extends FlatSpec with MustMatchers {
 
   "Int32" must "create the number zero" in {
-    val int32 = Int32(scodec.bits.ByteVector.low(1))
+    val int32 = Int32(ByteVector.low(1))
     int32.toInt must be(0)
   }
 
   it must "represent the number -1" in {
-    val int32 = Int32(scodec.bits.ByteVector(0xff.toByte))
+    val int32 = Int32(ByteVector(0xff.toByte))
     int32.toInt must be(-1)
   }
 
   it must "represent the number -1 with 4 bytes" in {
-    val int32 = Int32(scodec.bits.ByteVector(0xff.toByte, 0xff.toByte, 0xff.toByte, 0xff.toByte))
+    val int32 = Int32(ByteVector(0xff.toByte, 0xff.toByte, 0xff.toByte, 0xff.toByte))
     int32.toInt must be(-1)
   }
 
   it must "create the max number for a single byte" in {
-    val int32 = Int32(scodec.bits.ByteVector(0x7f.toByte))
+    val int32 = Int32(ByteVector(0x7f.toByte))
     int32.toInt must be(127)
   }
 
   it must "create the min number for a single byte" in {
-    val int32 = Int32(scodec.bits.ByteVector(0x80.toByte))
+    val int32 = Int32(ByteVector(0x80.toByte))
     int32.toInt must be(-128)
   }
 
   it must "create the max number for an Int32" in {
-    val int32 = Int32(scodec.bits.ByteVector(0x7f.toByte, 0xff.toByte, 0xff.toByte, 0xff.toByte))
+    val int32 = Int32(ByteVector(0x7f.toByte, 0xff.toByte, 0xff.toByte, 0xff.toByte))
     int32.toInt must be(2147483647)
   }
 
   it must "create the minimum number for an Int32" in {
-    val int32 = Int32(scodec.bits.ByteVector(0x80.toByte, 0.toByte, 0.toByte, 0.toByte))
+    val int32 = Int32(ByteVector(0x80.toByte, 0.toByte, 0.toByte, 0.toByte))
     int32.toInt must be(-2147483648)
   }
 

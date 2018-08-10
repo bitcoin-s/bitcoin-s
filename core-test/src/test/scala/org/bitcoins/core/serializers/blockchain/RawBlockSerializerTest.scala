@@ -6,6 +6,7 @@ import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.util.BitcoinSUtil
 import org.scalatest.{ FlatSpec, MustMatchers }
+import scodec.bits.ByteVector
 
 /**
  * Created by tom on 6/3/16.
@@ -31,7 +32,7 @@ class RawBlockSerializerTest extends FlatSpec with MustMatchers {
   val txSeq = List(tx1)
   val uInt = CompactSizeUInt(UInt64.one, 1)
   val hex = header + uInt.hex + rawTx1
-  val encode = BitcoinSUtil.encodeHex(_: scodec.bits.ByteVector)
+  val encode = BitcoinSUtil.encodeHex(_: ByteVector)
   "RawBlockSerializer" must "parse genesis block" in {
     val block = RawBlockSerializer.read(hex)
     block.txCount.num must be(UInt64(txSeq.size))

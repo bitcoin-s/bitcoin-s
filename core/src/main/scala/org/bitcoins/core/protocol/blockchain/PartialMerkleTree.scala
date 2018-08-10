@@ -47,7 +47,7 @@ sealed trait PartialMerkleTree extends BitcoinSLogger {
   def tree: BinaryTree[DoubleSha256Digest]
 
   /** A sequence representing if this node is the parent of another node that matched a txid */
-  def bits: scodec.bits.BitVector
+  def bits: BitVector
 
   /** The hashes used to create the binary tree */
   def hashes: Seq[DoubleSha256Digest]
@@ -57,7 +57,7 @@ sealed trait PartialMerkleTree extends BitcoinSLogger {
     //TODO: This is some really ugly that isn't tail recursive, try to clean this up eventually
     def loop(
       subTree: BinaryTree[DoubleSha256Digest],
-      remainingBits: scodec.bits.BitVector, height: Int, pos: Int, accumMatches: Seq[DoubleSha256Digest]): (Seq[DoubleSha256Digest], scodec.bits.BitVector) = {
+      remainingBits: BitVector, height: Int, pos: Int, accumMatches: Seq[DoubleSha256Digest]): (Seq[DoubleSha256Digest], BitVector) = {
       if (height == maxHeight) extractLeafMatch(accumMatches, remainingBits, subTree)
       else {
         //means we have a nontxid node
@@ -87,8 +87,8 @@ sealed trait PartialMerkleTree extends BitcoinSLogger {
   }
 
   /** Handles a leaf match when we are extracting matches from the partial merkle tree */
-  private def extractLeafMatch(accumMatches: Seq[DoubleSha256Digest], remainingBits: scodec.bits.BitVector,
-    subTree: BinaryTree[DoubleSha256Digest]): (Seq[DoubleSha256Digest], scodec.bits.BitVector) = {
+  private def extractLeafMatch(accumMatches: Seq[DoubleSha256Digest], remainingBits: BitVector,
+    subTree: BinaryTree[DoubleSha256Digest]): (Seq[DoubleSha256Digest], BitVector) = {
     if (remainingBits.head) {
       //means we have a txid node that matched the filter
       subTree match {
@@ -109,7 +109,7 @@ object PartialMerkleTree {
   private val logger = BitcoinSLogger.logger
 
   private case class PartialMerkleTreeImpl(tree: BinaryTree[DoubleSha256Digest], transactionCount: UInt32,
-    bits: scodec.bits.BitVector, hashes: Seq[DoubleSha256Digest]) extends PartialMerkleTree {
+    bits: BitVector, hashes: Seq[DoubleSha256Digest]) extends PartialMerkleTree {
     require(bits.size % 8 == 0, "As per BIP37, bits must be padded to the nearest byte")
   }
 
@@ -126,7 +126,7 @@ object PartialMerkleTree {
    * @return the binary tree that represents the partial merkle tree, the bits needed to reconstruct this partial merkle tree, and the hashes needed to be inserted
    *         according to the flags inside of bits
    */
-  private def build(txMatches: Seq[(Boolean, DoubleSha256Digest)]): (scodec.bits.BitVector, Seq[DoubleSha256Digest]) = {
+  private def build(txMatches: Seq[(Boolean, DoubleSha256Digest)]): (BitVector, Seq[DoubleSha256Digest]) = {
     val maxHeight = calcMaxHeight(txMatches.size)
 
     /**
@@ -138,7 +138,7 @@ object PartialMerkleTree {
      * @return the binary tree that represents the partial merkle tree, the bits needed to reconstruct this partial merkle tree, and the hashes needed to be inserted
      *         according to the flags inside of bits
      */
-    def loop(bits: scodec.bits.BitVector, hashes: Seq[DoubleSha256Digest], height: Int, pos: Int): (scodec.bits.BitVector, Seq[DoubleSha256Digest]) = {
+    def loop(bits: BitVector, hashes: Seq[DoubleSha256Digest], height: Int, pos: Int): (BitVector, Seq[DoubleSha256Digest]) = {
       val parentOfMatch = matchesTx(maxHeight, maxHeight - height, pos, txMatches)
       val newBits = parentOfMatch +: bits
       if (height == 0 || !parentOfMatch) {
@@ -204,7 +204,7 @@ object PartialMerkleTree {
    * @param bits the bits used indicate the structure of the partial merkle tree
    * @return
    */
-  def apply(transactionCount: UInt32, hashes: Seq[DoubleSha256Digest], bits: scodec.bits.BitVector): PartialMerkleTree = {
+  def apply(transactionCount: UInt32, hashes: Seq[DoubleSha256Digest], bits: BitVector): PartialMerkleTree = {
     val tree = reconstruct(transactionCount.toInt, hashes, bits)
     PartialMerkleTree(tree, transactionCount, bits, hashes)
   }
@@ -218,7 +218,7 @@ object PartialMerkleTree {
    * @param bits the path to the matches in the partial merkle tree
    * @param hashes the hashes used to reconstruct the binary tree according to [[bits]]
    */
-  def apply(tree: BinaryTree[DoubleSha256Digest], transactionCount: UInt32, bits: scodec.bits.BitVector, hashes: Seq[DoubleSha256Digest]): PartialMerkleTree = {
+  def apply(tree: BinaryTree[DoubleSha256Digest], transactionCount: UInt32, bits: BitVector, hashes: Seq[DoubleSha256Digest]): PartialMerkleTree = {
     PartialMerkleTreeImpl(tree, transactionCount, bits, hashes)
   }
 
@@ -227,10 +227,10 @@ object PartialMerkleTree {
    * [[https://bitcoin.org/en/developer-reference#parsing-a-merkleblock-message]]
    * [[https://github.com/bitcoin/bitcoin/blob/b7b48c8bbdf7a90861610b035d8b0a247ef78c45/src/merkleblock.cpp#L96]]
    */
-  private def reconstruct(numTransaction: Int, hashes: Seq[DoubleSha256Digest], bits: scodec.bits.BitVector): BinaryTree[DoubleSha256Digest] = {
+  private def reconstruct(numTransaction: Int, hashes: Seq[DoubleSha256Digest], bits: BitVector): BinaryTree[DoubleSha256Digest] = {
     val maxHeight = calcMaxHeight(numTransaction)
     //TODO: Optimize to tailrec function
-    def loop(remainingHashes: Seq[DoubleSha256Digest], remainingMatches: BitVector, height: Int, pos: Int): (BinaryTree[DoubleSha256Digest], Seq[DoubleSha256Digest], scodec.bits.BitVector) = {
+    def loop(remainingHashes: Seq[DoubleSha256Digest], remainingMatches: BitVector, height: Int, pos: Int): (BinaryTree[DoubleSha256Digest], Seq[DoubleSha256Digest], BitVector) = {
       if (height == maxHeight) {
         //means we have a txid node
         (
@@ -302,7 +302,7 @@ object PartialMerkleTree {
    * in a byte array when reconstruction a partial merkle tree
    * [[https://github.com/bitcoin/bitcoin/blob/b7b48c8bbdf7a90861610b035d8b0a247ef78c45/src/merkleblock.cpp#L174-L175]]
    */
-  private def usedAllBits(bits: scodec.bits.BitVector, remainingBits: scodec.bits.BitVector): Boolean = {
+  private def usedAllBits(bits: BitVector, remainingBits: BitVector): Boolean = {
     val bitsUsed = bits.size - remainingBits.size
     ((bitsUsed + 7) / 8) == ((bits.size + 7) / 8)
   }

@@ -1,6 +1,7 @@
 package org.bitcoins.core.util
 
 import org.slf4j.Logger
+import scodec.bits.ByteVector
 
 /**
  * Created by chris on 2/26/16.
@@ -12,10 +13,10 @@ trait Factory[T] {
   def fromHex(hex: String): T = fromBytes(BitcoinSUtil.decodeHex(hex))
 
   /** Creates a T out of a sequence of bytes. */
-  def fromBytes(bytes: scodec.bits.ByteVector): T
+  def fromBytes(bytes: ByteVector): T
 
   /** Creates a T out of a sequence of bytes. */
-  def apply(bytes: scodec.bits.ByteVector): T = fromBytes(bytes)
+  def apply(bytes: ByteVector): T = fromBytes(bytes)
 
   /** Creates a T from a hex string. */
   def apply(hex: String): T = fromHex(hex)
