@@ -4,6 +4,7 @@ import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.number.{ Int32, UInt32 }
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.serializers.RawBitcoinSerializer
+import scodec.bits.ByteVector
 
 /**
  * Created by chris on 5/19/16.
@@ -13,7 +14,7 @@ import org.bitcoins.core.serializers.RawBitcoinSerializer
 sealed abstract class RawBlockHeaderSerializer extends RawBitcoinSerializer[BlockHeader] {
 
   /** Converts a list of bytes into a block header */
-  def read(bytes: scodec.bits.ByteVector): BlockHeader = {
+  def read(bytes: ByteVector): BlockHeader = {
     //version first 4 bytes
     val version = Int32(bytes.take(4).reverse)
     //previous header hash next 32 bytes
@@ -35,7 +36,7 @@ sealed abstract class RawBlockHeaderSerializer extends RawBitcoinSerializer[Bloc
   }
 
   /** Serializes the BlockHeader to a byte array */
-  def write(blockHeader: BlockHeader): scodec.bits.ByteVector = {
+  def write(blockHeader: BlockHeader): ByteVector = {
     val version = blockHeader.version.bytes.reverse
 
     val prevHash = blockHeader.previousBlockHash.bytes

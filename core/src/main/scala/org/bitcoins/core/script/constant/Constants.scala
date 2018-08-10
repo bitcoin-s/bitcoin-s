@@ -18,7 +18,7 @@ import scala.util.{ Failure, Success, Try }
  */
 sealed trait ScriptToken extends NetworkElement {
   /** The byte representation of this [[ScriptToken]]. */
-  def bytes: scodec.bits.ByteVector
+  def bytes: ByteVector
 
   /** The conversion from the byte representation of a [[ScriptToken]] to a number. */
   def toLong = ScriptNumberUtil.toLong(hex)
@@ -102,7 +102,7 @@ object ScriptNumber extends Factory[ScriptNumber] {
   /** Bitcoin has a numbering system which has a negative zero. */
   lazy val negativeZero: ScriptNumber = fromHex("80")
 
-  def fromBytes(bytes: scodec.bits.ByteVector) = {
+  def fromBytes(bytes: ByteVector) = {
     if (bytes.isEmpty) zero
     else ScriptNumberImpl(ScriptNumberUtil.toLong(bytes), bytes)
   }
@@ -111,7 +111,7 @@ object ScriptNumber extends Factory[ScriptNumber] {
     if (underlying == 0) zero else apply(ScriptNumberUtil.longToHex(underlying))
   }
 
-  def apply(bytes: scodec.bits.ByteVector, requireMinimal: Boolean): Try[ScriptNumber] = apply(BitcoinSUtil.encodeHex(bytes), requireMinimal)
+  def apply(bytes: ByteVector, requireMinimal: Boolean): Try[ScriptNumber] = apply(BitcoinSUtil.encodeHex(bytes), requireMinimal)
 
   def apply(hex: String, requireMinimal: Boolean): Try[ScriptNumber] = {
     if (requireMinimal && !BitcoinScriptUtil.isShortestEncoding(hex)) {
@@ -131,7 +131,7 @@ object ScriptNumber extends Factory[ScriptNumber] {
   private object ScriptNumberImpl {
     def apply(hex: String): ScriptNumber = ScriptNumberImpl(ScriptNumberUtil.toLong(hex), BitcoinSUtil.decodeHex(hex))
 
-    def apply(bytes: scodec.bits.ByteVector): ScriptNumber = ScriptNumberImpl(ScriptNumberUtil.toLong(bytes))
+    def apply(bytes: ByteVector): ScriptNumber = ScriptNumberImpl(ScriptNumberUtil.toLong(bytes))
 
     def apply(underlying: Long): ScriptNumber = {
       ScriptNumberImpl(
@@ -338,7 +338,7 @@ object ScriptConstant extends Factory[ScriptConstant] {
   lazy val negativeOne = ScriptConstant("81")
 
   /** Creates a [[ScriptConstant]] from a sequence of bytes. */
-  def fromBytes(bytes: scodec.bits.ByteVector): ScriptConstant = ScriptConstantImpl(bytes)
+  def fromBytes(bytes: ByteVector): ScriptConstant = ScriptConstantImpl(bytes)
 
   /** Represent a public key or hash of a public key on our stack. */
   private case class ScriptConstantImpl(bytes: ByteVector) extends ScriptConstant

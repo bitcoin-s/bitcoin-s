@@ -1,8 +1,7 @@
 package org.bitcoins.core.protocol
 
 import org.bitcoins.core.number.{ UInt32, UInt64 }
-import org.bitcoins.core.protocol.script.{ ScriptPubKey, ScriptSignature }
-import org.bitcoins.core.script.constant.ScriptNumberUtil
+import org.bitcoins.core.protocol.script.ScriptSignature
 import org.bitcoins.core.util.{ BitcoinSUtil, Factory }
 import scodec.bits.ByteVector
 
@@ -26,7 +25,7 @@ sealed abstract class CompactSizeUInt extends NetworkElement {
     case _ => "ff" + BitcoinSUtil.flipEndianness(num.hex)
   }
 
-  def bytes: scodec.bits.ByteVector = BitcoinSUtil.decodeHex(hex)
+  def bytes: ByteVector = BitcoinSUtil.decodeHex(hex)
 
   def toLong: Long = num.toLong
 
@@ -40,7 +39,7 @@ sealed abstract class CompactSizeUInt extends NetworkElement {
 object CompactSizeUInt extends Factory[CompactSizeUInt] {
   private case class CompactSizeUIntImpl(num: UInt64, override val size: Long) extends CompactSizeUInt
 
-  override def fromBytes(bytes: scodec.bits.ByteVector): CompactSizeUInt = {
+  override def fromBytes(bytes: ByteVector): CompactSizeUInt = {
     parseCompactSizeUInt(bytes)
   }
 
@@ -66,7 +65,7 @@ object CompactSizeUInt extends Factory[CompactSizeUInt] {
    * sequence of bytes
    * https://bitcoin.org/en/developer-reference#compactsize-unsigned-integers.
    */
-  def calculateCompactSizeUInt(bytes: scodec.bits.ByteVector): CompactSizeUInt = {
+  def calculateCompactSizeUInt(bytes: ByteVector): CompactSizeUInt = {
     //means we can represent the number with a single byte
     if (bytes.size <= 252) CompactSizeUInt(UInt64(bytes.size), 1)
     // can be represented with two bytes
@@ -76,7 +75,7 @@ object CompactSizeUInt extends Factory[CompactSizeUInt] {
     else CompactSizeUInt(UInt64(bytes.size), 9)
   }
 
-  def calc(bytes: scodec.bits.ByteVector): CompactSizeUInt = calculateCompactSizeUInt(bytes)
+  def calc(bytes: ByteVector): CompactSizeUInt = calculateCompactSizeUInt(bytes)
 
   /** Responsible for calculating what the [[CompactSizeUInt]] is for this hex string. */
   def calculateCompactSizeUInt(hex: String): CompactSizeUInt = calculateCompactSizeUInt(BitcoinSUtil.decodeHex(hex))
@@ -91,7 +90,7 @@ object CompactSizeUInt extends Factory[CompactSizeUInt] {
    * Parses a [[CompactSizeUInt]] from a sequence of bytes
    * [[https://bitcoin.org/en/developer-reference#compactsize-unsigned-integers]]
    */
-  def parseCompactSizeUInt(bytes: scodec.bits.ByteVector): CompactSizeUInt = {
+  def parseCompactSizeUInt(bytes: ByteVector): CompactSizeUInt = {
     require(bytes.nonEmpty, "Cannot parse a VarInt if the byte array is size 0")
     val firstByte = UInt64(ByteVector(bytes.head))
     //8 bit number
@@ -105,7 +104,7 @@ object CompactSizeUInt extends Factory[CompactSizeUInt] {
     else CompactSizeUInt(UInt64(bytes.slice(1, 9).reverse), 9)
   }
 
-  def parse(bytes: scodec.bits.ByteVector): CompactSizeUInt = parseCompactSizeUInt(bytes)
+  def parse(bytes: ByteVector): CompactSizeUInt = parseCompactSizeUInt(bytes)
 
   /**
    * Returns the size of a VarInt in the number of bytes
@@ -138,7 +137,7 @@ object CompactSizeUInt extends Factory[CompactSizeUInt] {
 
   private def parseLong(hex: String): Long = java.lang.Long.parseLong(hex, 16)
 
-  private def parseLong(bytes: scodec.bits.ByteVector): Long = parseLong(BitcoinSUtil.encodeHex(bytes))
+  private def parseLong(bytes: ByteVector): Long = parseLong(BitcoinSUtil.encodeHex(bytes))
 
   private def parseLong(byte: Byte): Long = parseLong(ByteVector.fromByte(byte))
 }

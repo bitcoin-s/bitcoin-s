@@ -70,7 +70,7 @@ class ScriptSignatureTest extends FlatSpec with MustMatchers {
 
   it must "have an empty script signature" in {
     EmptyScriptSignature.hex must be("00")
-    EmptyScriptSignature.bytes must be(scodec.bits.ByteVector.low(1))
+    EmptyScriptSignature.bytes must be(ByteVector.low(1))
     EmptyScriptSignature.asm must be(Nil)
     EmptyScriptSignature.signatures must be(Nil)
   }

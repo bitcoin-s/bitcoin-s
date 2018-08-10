@@ -216,7 +216,7 @@ class BitcoinScriptUtilTest extends FlatSpec with MustMatchers {
 
   it must "cast a script token to a boolean value" in {
     BitcoinScriptUtil.castToBool(ScriptConstant("")) must be(false)
-    BitcoinScriptUtil.castToBool(ScriptConstant(scodec.bits.ByteVector(0x80.toByte))) must be(false)
+    BitcoinScriptUtil.castToBool(ScriptConstant(ByteVector(0x80.toByte))) must be(false)
     BitcoinScriptUtil.castToBool(ScriptConstant("000000")) must be(false)
     BitcoinScriptUtil.castToBool(ScriptConstant("00000080")) must be(false)
 

@@ -21,7 +21,7 @@ sealed abstract class ExtKey extends NetworkElement {
   /** 0 for master nodes, 1 for level-1 derived keys, .... */
   def depth: UInt8
   /** The fingerprint of the parent key */
-  def fingerprint: scodec.bits.ByteVector
+  def fingerprint: ByteVector
   /**
    * Child number. This is ser32(i) for i in xi = xpar/i, with xi the key being serialized.
    * (0x00000000 if master key)
@@ -49,10 +49,10 @@ sealed abstract class ExtKey extends NetworkElement {
     Try(UInt32(idx)).flatMap(deriveChildPubKey(_))
   }
 
-  override def bytes: scodec.bits.ByteVector = key match {
+  override def bytes: ByteVector = key match {
     case priv: ECPrivateKey =>
       version.bytes ++ depth.bytes ++ fingerprint ++
-        childNum.bytes ++ chainCode.bytes ++ scodec.bits.ByteVector.low(1) ++ priv.bytes
+        childNum.bytes ++ chainCode.bytes ++ ByteVector.low(1) ++ priv.bytes
     case pub: ECPublicKey =>
       version.bytes ++ depth.bytes ++ fingerprint ++
         childNum.bytes ++ chainCode.bytes ++ pub.bytes
@@ -71,7 +71,7 @@ object ExtKey extends Factory[ExtKey] {
 
   /** Takes in a base58 string and tries to convert it to an extended key */
   def fromString(base58: String): Try[ExtKey] = {
-    val decoded: Try[scodec.bits.ByteVector] = Base58.decodeCheck(base58)
+    val decoded: Try[ByteVector] = Base58.decodeCheck(base58)
     val extKey = decoded.flatMap { bytes =>
       require(bytes.size == 78, "Not 78 bytes")
       val version: Try[ExtKeyVersion] = ExtKeyVersion(bytes.take(4)) match {
@@ -96,7 +96,7 @@ object ExtKey extends Factory[ExtKey] {
     extKey
   }
 
-  override def fromBytes(bytes: scodec.bits.ByteVector): ExtKey = {
+  override def fromBytes(bytes: ByteVector): ExtKey = {
     val privTry = Try(ExtPrivateKey(bytes))
     if (privTry.isSuccess) privTry.get
     else {
@@ -109,7 +109,7 @@ sealed abstract class ExtPrivateKey extends ExtKey {
   override def key: ECPrivateKey
 
   def deriveChildPrivKey(idx: UInt32): ExtPrivateKey = {
-    val data: scodec.bits.ByteVector = if (idx >= ExtKey.hardenedIdx) {
+    val data: ByteVector = if (idx >= ExtKey.hardenedIdx) {
       //derive hardened key
       0.toByte +: ((key.bytes) ++ idx.bytes)
     } else {
@@ -139,12 +139,12 @@ sealed abstract class ExtPrivateKey extends ExtKey {
 }
 object ExtPrivateKey extends Factory[ExtPrivateKey] {
   private case class ExtPrivateKeyImpl(version: ExtKeyVersion, depth: UInt8,
-    fingerprint: scodec.bits.ByteVector, childNum: UInt32,
+    fingerprint: ByteVector, childNum: UInt32,
     chainCode: ChainCode, key: ECPrivateKey) extends ExtPrivateKey {
     require(fingerprint.size == 4, "Fingerprint must be 4 bytes in size, got: " + fingerprint)
   }
 
-  override def fromBytes(bytes: scodec.bits.ByteVector): ExtPrivateKey = {
+  override def fromBytes(bytes: ByteVector): ExtPrivateKey = {
     require(bytes.size == 78, "ExtPrivateKey can only be 78 bytes")
     val base58 = Base58.encode(bytes ++ CryptoUtil.doubleSHA256(bytes).bytes.take(4))
     ExtKey.fromString(base58) match {
@@ -154,7 +154,7 @@ object ExtPrivateKey extends Factory[ExtPrivateKey] {
     }
   }
   def apply(version: ExtKeyVersion, depth: UInt8,
-    fingerprint: scodec.bits.ByteVector, child: UInt32,
+    fingerprint: ByteVector, child: UInt32,
     chainCode: ChainCode, privateKey: ECPrivateKey): ExtPrivateKey = {
     ExtPrivateKeyImpl(version, depth, fingerprint, child, chainCode, privateKey)
   }
@@ -163,12 +163,12 @@ object ExtPrivateKey extends Factory[ExtPrivateKey] {
    * Generates a master private key
    * https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki#master-key-generation
    */
-  def apply(version: ExtKeyVersion, seedOpt: Option[scodec.bits.ByteVector] = None): ExtPrivateKey = {
+  def apply(version: ExtKeyVersion, seedOpt: Option[ByteVector] = None): ExtPrivateKey = {
     val seed = seedOpt match {
       case Some(bytes) => bytes
       case None => ECPrivateKey().bytes
     }
-    val i = CryptoUtil.hmac512(scodec.bits.ByteVector.encodeAscii("Bitcoin seed").right.get, seed)
+    val i = CryptoUtil.hmac512(ByteVector.encodeAscii("Bitcoin seed").right.get, seed)
     val (il, ir) = i.splitAt(32)
     val masterPrivKey = ECPrivateKey(il)
     val fp = UInt32.zero.bytes
@@ -207,15 +207,15 @@ sealed abstract class ExtPublicKey extends ExtKey {
 
 object ExtPublicKey extends Factory[ExtPublicKey] {
   private case class ExtPublicKeyImpl(version: ExtKeyVersion, depth: UInt8,
-    fingerprint: scodec.bits.ByteVector, childNum: UInt32,
+    fingerprint: ByteVector, childNum: UInt32,
     chainCode: ChainCode, key: ECPublicKey) extends ExtPublicKey
 
   def apply(version: ExtKeyVersion, depth: UInt8,
-    fingerprint: scodec.bits.ByteVector, child: UInt32, chainCode: ChainCode, publicKey: ECPublicKey): ExtPublicKey = {
+    fingerprint: ByteVector, child: UInt32, chainCode: ChainCode, publicKey: ECPublicKey): ExtPublicKey = {
     ExtPublicKeyImpl(version, depth, fingerprint, child, chainCode, publicKey)
   }
 
-  override def fromBytes(bytes: scodec.bits.ByteVector): ExtPublicKey = {
+  override def fromBytes(bytes: ByteVector): ExtPublicKey = {
     require(bytes.size == 78, "ExtPublicKey can only be 78 bytes")
     val base58 = Base58.encode(bytes ++ CryptoUtil.doubleSHA256(bytes).bytes.take(4))
     ExtKey.fromString(base58) match {

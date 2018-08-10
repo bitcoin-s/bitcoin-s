@@ -1,6 +1,7 @@
 package org.bitcoins.core.bloom
 
 import org.bitcoins.core.util.Factory
+import scodec.bits.ByteVector
 
 /**
  * Created by chris on 8/3/16.
@@ -41,6 +42,6 @@ object BloomFlag extends Factory[BloomFlag] {
     else throw new IllegalArgumentException("The given byte was not defined for BloomFlag, got: " + byte)
   }
 
-  def fromBytes(bytes: scodec.bits.ByteVector): BloomFlag = BloomFlag(bytes.head)
+  def fromBytes(bytes: ByteVector): BloomFlag = BloomFlag(bytes.head)
 }
 

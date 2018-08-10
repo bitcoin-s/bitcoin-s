@@ -19,7 +19,7 @@ sealed abstract class RawMerkleBlockSerializer extends RawBitcoinSerializer[Merk
 
   private val logger = LoggerFactory.getLogger(this.getClass.getSimpleName)
 
-  def read(bytes: scodec.bits.ByteVector): MerkleBlock = {
+  def read(bytes: ByteVector): MerkleBlock = {
     val blockHeader = RawBlockHeaderSerializer.read(bytes.take(80))
     val bytesAfterBlockHeaderParsing = bytes.slice(blockHeader.bytes.size, bytes.size)
     val transactionCount = UInt32(bytesAfterBlockHeaderParsing.slice(0, 4).reverse)
@@ -37,10 +37,10 @@ sealed abstract class RawMerkleBlockSerializer extends RawBitcoinSerializer[Merk
     MerkleBlock(blockHeader, transactionCount, hashes, matches)
   }
 
-  def write(merkleBlock: MerkleBlock): scodec.bits.ByteVector = {
+  def write(merkleBlock: MerkleBlock): ByteVector = {
     val partialMerkleTree = merkleBlock.partialMerkleTree
     val bitVectors = partialMerkleTree.bits
-    val byteVectors: scodec.bits.ByteVector = {
+    val byteVectors: ByteVector = {
       bitVectors.toByteArray
         .map(BitVector(_).reverse)
         .foldLeft(ByteVector.empty)(_ ++ _.bytes)
@@ -59,10 +59,10 @@ sealed abstract class RawMerkleBlockSerializer extends RawBitcoinSerializer[Merk
    * @param hashCount the amount of tx hashes we need to parse from bytes
    * @return the sequence of tx hashes and the remaining bytes to be parsed into a MerkleBlockMessage
    */
-  private def parseTransactionHashes(bytes: scodec.bits.ByteVector, hashCount: CompactSizeUInt): (Seq[DoubleSha256Digest], scodec.bits.ByteVector) = {
+  private def parseTransactionHashes(bytes: ByteVector, hashCount: CompactSizeUInt): (Seq[DoubleSha256Digest], ByteVector) = {
     @tailrec
-    def loop(remainingHashes: Long, remainingBytes: scodec.bits.ByteVector,
-      accum: List[DoubleSha256Digest]): (Seq[DoubleSha256Digest], scodec.bits.ByteVector) = {
+    def loop(remainingHashes: Long, remainingBytes: ByteVector,
+      accum: List[DoubleSha256Digest]): (Seq[DoubleSha256Digest], ByteVector) = {
       if (remainingHashes <= 0) (accum.reverse, remainingBytes)
       else loop(remainingHashes - 1, remainingBytes.slice(32, remainingBytes.size), DoubleSha256Digest(remainingBytes.take(32)) :: accum)
     }
