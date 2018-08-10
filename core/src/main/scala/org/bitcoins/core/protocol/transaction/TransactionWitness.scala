@@ -4,6 +4,7 @@ import org.bitcoins.core.protocol.NetworkElement
 import org.bitcoins.core.protocol.script.{ EmptyScriptWitness, ScriptWitness }
 import org.bitcoins.core.serializers.transaction.RawTransactionWitnessParser
 import org.bitcoins.core.util.BitcoinSUtil
+import scodec.bits.ByteVector
 
 /**
  * Created by chris on 11/21/16.
@@ -18,7 +19,7 @@ sealed abstract class TransactionWitness extends NetworkElement {
 
 /** Used to represent a transaction witness pre segwit, see BIP141 for details */
 case object EmptyWitness extends TransactionWitness {
-  override def bytes = scodec.bits.ByteVector.low(1)
+  override def bytes = ByteVector.low(1)
   override def witnesses = Nil
 }
 
@@ -46,9 +47,9 @@ object TransactionWitness {
     }
     TransactionWitness(replaced)
   }
-  def fromBytes(bytes: scodec.bits.ByteVector, numInputs: Int): TransactionWitness = RawTransactionWitnessParser.read(bytes, numInputs)
+  def fromBytes(bytes: ByteVector, numInputs: Int): TransactionWitness = RawTransactionWitnessParser.read(bytes, numInputs)
 
-  def apply(bytes: scodec.bits.ByteVector, numInputs: Int): TransactionWitness = fromBytes(bytes, numInputs)
+  def apply(bytes: ByteVector, numInputs: Int): TransactionWitness = fromBytes(bytes, numInputs)
 
   def apply(hex: String, numInputs: Int): TransactionWitness = fromBytes(BitcoinSUtil.decodeHex(hex), numInputs)
 }

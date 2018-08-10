@@ -14,7 +14,7 @@ import scodec.bits.ByteVector
 sealed abstract class ScriptWitness extends NetworkElement {
 
   /** The byte vectors that are placed on to the stack when evaluating a witness program */
-  def stack: Seq[scodec.bits.ByteVector]
+  def stack: Seq[ByteVector]
 
   override def bytes = RawScriptWitnessParser.write(this)
 }
@@ -22,7 +22,7 @@ sealed abstract class ScriptWitness extends NetworkElement {
 case object EmptyScriptWitness extends ScriptWitness {
   override def stack = Nil
 
-  override def bytes = scodec.bits.ByteVector.low(1)
+  override def bytes = ByteVector.low(1)
 }
 
 sealed abstract class ScriptWitnessV0 extends ScriptWitness
@@ -38,16 +38,16 @@ sealed abstract class P2WPKHWitnessV0 extends ScriptWitness {
 
   def signature: ECDigitalSignature = stack(1) match {
     case ByteVector.empty => EmptyDigitalSignature
-    case bytes: scodec.bits.ByteVector => ECDigitalSignature(bytes)
+    case bytes: ByteVector => ECDigitalSignature(bytes)
   }
 
   override def toString = "P2WPKHWitnessV0(" + stack.map(BitcoinSUtil.encodeHex(_)).toString + ")"
 }
 
 object P2WPKHWitnessV0 {
-  private case class P2WPKHWitnessV0Impl(stack: Seq[scodec.bits.ByteVector]) extends P2WPKHWitnessV0
+  private case class P2WPKHWitnessV0Impl(stack: Seq[ByteVector]) extends P2WPKHWitnessV0
 
-  private def apply(stack: Seq[scodec.bits.ByteVector]): P2WPKHWitnessV0 = P2WPKHWitnessV0Impl(stack)
+  private def apply(stack: Seq[ByteVector]): P2WPKHWitnessV0 = P2WPKHWitnessV0Impl(stack)
 
   def apply(pubKey: ECPublicKey): P2WPKHWitnessV0 = {
     P2WPKHWitnessV0(pubKey, EmptyDigitalSignature)
@@ -73,7 +73,7 @@ sealed abstract class P2WSHWitnessV0 extends ScriptWitness {
 }
 
 object P2WSHWitnessV0 {
-  private case class P2WSHWitnessV0Impl(stack: Seq[scodec.bits.ByteVector]) extends P2WSHWitnessV0
+  private case class P2WSHWitnessV0Impl(stack: Seq[ByteVector]) extends P2WSHWitnessV0
 
   def apply(spk: ScriptPubKey): P2WSHWitnessV0 = {
     P2WSHWitnessV0(spk, EmptyScriptSignature)
@@ -85,23 +85,23 @@ object P2WSHWitnessV0 {
     val minimalIf = BitcoinScriptUtil.minimalIfOp(scriptSig.asm)
     val noPushOps = BitcoinScriptUtil.filterPushOps(minimalIf)
     val minimalDummy = BitcoinScriptUtil.minimalDummy(noPushOps).reverse
-    val stack: Seq[scodec.bits.ByteVector] = spk.asmBytes +: minimalDummy.map(_.bytes)
+    val stack: Seq[ByteVector] = spk.asmBytes +: minimalDummy.map(_.bytes)
     P2WSHWitnessV0(stack)
   }
 
-  private def apply(stack: Seq[scodec.bits.ByteVector]): P2WSHWitnessV0 = {
+  private def apply(stack: Seq[ByteVector]): P2WSHWitnessV0 = {
     P2WSHWitnessV0Impl(stack)
   }
 
-  def apply(spk: ScriptPubKey, stack: Seq[scodec.bits.ByteVector]): P2WSHWitnessV0 = {
-    val fullStack: Seq[scodec.bits.ByteVector] = spk.asmBytes +: stack
+  def apply(spk: ScriptPubKey, stack: Seq[ByteVector]): P2WSHWitnessV0 = {
+    val fullStack: Seq[ByteVector] = spk.asmBytes +: stack
     P2WSHWitnessV0(fullStack)
   }
 }
 
 object ScriptWitness {
   private val logger = BitcoinSLogger.logger
-  def apply(stack: Seq[scodec.bits.ByteVector]): ScriptWitness = {
+  def apply(stack: Seq[ByteVector]): ScriptWitness = {
     //TODO: eventually only compressed public keys will be allowed in v0 scripts
     //https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki#restrictions-on-public-key-type
     val isPubKey = {

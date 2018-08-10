@@ -1,5 +1,7 @@
 package org.bitcoins.core.crypto
 
+import scodec.bits.ByteVector
+
 import scala.concurrent.{ Await, ExecutionContext, Future }
 import scala.concurrent.duration.DurationInt
 
@@ -18,11 +20,11 @@ import scala.concurrent.duration.DurationInt
  *
  */
 trait Sign {
-  def signFunction: scodec.bits.ByteVector => Future[ECDigitalSignature]
+  def signFunction: ByteVector => Future[ECDigitalSignature]
 
-  def signFuture(bytes: scodec.bits.ByteVector): Future[ECDigitalSignature] = signFunction(bytes)
+  def signFuture(bytes: ByteVector): Future[ECDigitalSignature] = signFunction(bytes)
 
-  def sign(bytes: scodec.bits.ByteVector): ECDigitalSignature = {
+  def sign(bytes: ByteVector): ECDigitalSignature = {
     Await.result(signFuture(bytes), 30.seconds)
   }
 
@@ -30,9 +32,9 @@ trait Sign {
 }
 
 object Sign {
-  private case class SignImpl(signFunction: scodec.bits.ByteVector => Future[ECDigitalSignature], publicKey: ECPublicKey) extends Sign
+  private case class SignImpl(signFunction: ByteVector => Future[ECDigitalSignature], publicKey: ECPublicKey) extends Sign
 
-  def apply(signFunction: scodec.bits.ByteVector => Future[ECDigitalSignature], pubKey: ECPublicKey): Sign = {
+  def apply(signFunction: ByteVector => Future[ECDigitalSignature], pubKey: ECPublicKey): Sign = {
     SignImpl(signFunction, pubKey)
   }
 
@@ -45,6 +47,6 @@ object Sign {
    * a specific private key on another server
    */
   def dummySign(publicKey: ECPublicKey): Sign = {
-    SignImpl({ _: scodec.bits.ByteVector => Future.successful(EmptyDigitalSignature) }, publicKey)
+    SignImpl({ _: ByteVector => Future.successful(EmptyDigitalSignature) }, publicKey)
   }
 }

@@ -102,7 +102,7 @@ class CompactSizeUIntTest extends FlatSpec with MustMatchers {
 
   it must "intercept a failed requirement when the byte array size is zero" in {
     intercept[IllegalArgumentException] {
-      val emptyBytes: scodec.bits.ByteVector = ByteVector.empty
+      val emptyBytes: ByteVector = ByteVector.empty
       CompactSizeUInt.parseCompactSizeUInt(emptyBytes)
     }
   }

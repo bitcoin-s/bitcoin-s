@@ -17,12 +17,12 @@ sealed abstract class RawScriptWitnessParser extends RawBitcoinSerializer[Script
 
   private val logger = LoggerFactory.getLogger(this.getClass.getSimpleName)
 
-  def read(bytes: scodec.bits.ByteVector): ScriptWitness = {
+  def read(bytes: ByteVector): ScriptWitness = {
     //first byte is the number of stack items
     val stackSize = CompactSizeUInt.parseCompactSizeUInt(bytes)
     val (_, stackBytes) = bytes.splitAt(stackSize.size.toInt)
     @tailrec
-    def loop(remainingBytes: scodec.bits.ByteVector, accum: Seq[scodec.bits.ByteVector], remainingStackItems: UInt64): Seq[scodec.bits.ByteVector] = {
+    def loop(remainingBytes: ByteVector, accum: Seq[ByteVector], remainingStackItems: UInt64): Seq[ByteVector] = {
       if (remainingStackItems <= UInt64.zero) accum
       else {
         val elementSize = CompactSizeUInt.parseCompactSizeUInt(remainingBytes)
@@ -38,17 +38,17 @@ sealed abstract class RawScriptWitnessParser extends RawBitcoinSerializer[Script
     witness
   }
 
-  def write(scriptWitness: ScriptWitness): scodec.bits.ByteVector = {
+  def write(scriptWitness: ScriptWitness): ByteVector = {
     @tailrec
-    def loop(remainingStack: Seq[scodec.bits.ByteVector], accum: Vector[scodec.bits.ByteVector]): Vector[scodec.bits.ByteVector] = {
+    def loop(remainingStack: Seq[ByteVector], accum: Vector[ByteVector]): Vector[ByteVector] = {
       if (remainingStack.isEmpty) accum.reverse
       else {
         val compactSizeUInt: CompactSizeUInt = CompactSizeUInt.calc(remainingStack.head)
-        val serialization: scodec.bits.ByteVector = compactSizeUInt.bytes ++ remainingStack.head
+        val serialization: ByteVector = compactSizeUInt.bytes ++ remainingStack.head
         loop(remainingStack.tail, serialization +: accum)
       }
     }
-    val stackItems: Vector[scodec.bits.ByteVector] = loop(scriptWitness.stack.reverse, Vector.empty)
+    val stackItems: Vector[ByteVector] = loop(scriptWitness.stack.reverse, Vector.empty)
     val size = CompactSizeUInt(UInt64(stackItems.size))
     (size.bytes +: stackItems).fold(ByteVector.empty)(_ ++ _)
   }

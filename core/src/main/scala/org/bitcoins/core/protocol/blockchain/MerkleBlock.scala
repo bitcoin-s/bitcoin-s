@@ -7,6 +7,7 @@ import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.protocol.{ CompactSizeUInt, NetworkElement }
 import org.bitcoins.core.serializers.blockchain.RawMerkleBlockSerializer
 import org.bitcoins.core.util.Factory
+import scodec.bits.{ BitVector, ByteVector }
 
 import scala.annotation.tailrec
 
@@ -89,10 +90,10 @@ object MerkleBlock extends Factory[MerkleBlock] {
     MerkleBlockImpl(blockHeader, txCount, partialMerkleTree)
   }
 
-  def apply(blockHeader: BlockHeader, txCount: UInt32, hashes: Seq[DoubleSha256Digest], bits: scodec.bits.BitVector): MerkleBlock = {
+  def apply(blockHeader: BlockHeader, txCount: UInt32, hashes: Seq[DoubleSha256Digest], bits: BitVector): MerkleBlock = {
     val partialMerkleTree = PartialMerkleTree(txCount, hashes, bits)
     MerkleBlock(blockHeader, txCount, partialMerkleTree)
   }
 
-  def fromBytes(bytes: scodec.bits.ByteVector): MerkleBlock = RawMerkleBlockSerializer.read(bytes)
+  def fromBytes(bytes: ByteVector): MerkleBlock = RawMerkleBlockSerializer.read(bytes)
 }

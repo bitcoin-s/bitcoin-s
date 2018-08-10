@@ -14,7 +14,7 @@ sealed trait HashType {
 }
 
 object HashType extends Factory[HashType] {
-  def fromBytes(bytes: scodec.bits.ByteVector): HashType = {
+  def fromBytes(bytes: ByteVector): HashType = {
     val num = Int32(bytes)
     fromNumber(num)
   }

@@ -4,6 +4,7 @@ import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.script.constant.ScriptToken
 import org.bitcoins.core.serializers.script.ScriptParser
 import org.bitcoins.core.util.{ BitcoinSUtil, Factory }
+import scodec.bits.ByteVector
 
 /**
  * Created by chris on 12/9/16.
@@ -11,7 +12,7 @@ import org.bitcoins.core.util.{ BitcoinSUtil, Factory }
 trait ScriptFactory[T] extends Factory[T] {
 
   /** Builds a script from the given asm with the given constructor if the invariant holds true, else throws an error */
-  def buildScript(asm: Seq[ScriptToken], constructor: scodec.bits.ByteVector => T,
+  def buildScript(asm: Seq[ScriptToken], constructor: ByteVector => T,
     invariant: Seq[ScriptToken] => Boolean, errorMsg: String): T = {
     if (invariant(asm)) {
       val asmBytes = BitcoinSUtil.toByteVector(asm)
@@ -23,7 +24,7 @@ trait ScriptFactory[T] extends Factory[T] {
   /** Creates a T from the given [[ScriptToken]]s */
   def fromAsm(asm: Seq[ScriptToken]): T
 
-  def fromBytes(bytes: scodec.bits.ByteVector): T = {
+  def fromBytes(bytes: ByteVector): T = {
     val cpmct = CompactSizeUInt.parseCompactSizeUInt(bytes)
     val (_, noCmpctUInt) = bytes.splitAt(cpmct.bytes.size)
     val asm = ScriptParser.fromBytes(noCmpctUInt)
@@ -37,7 +38,7 @@ trait ScriptFactory[T] extends Factory[T] {
    * @param bytes
    * @return
    */
-  def fromAsmBytes(bytes: scodec.bits.ByteVector): T = {
+  def fromAsmBytes(bytes: ByteVector): T = {
     val cmpct = CompactSizeUInt.calc(bytes)
     val fullBytes = cmpct.bytes ++ bytes
     fromBytes(fullBytes)

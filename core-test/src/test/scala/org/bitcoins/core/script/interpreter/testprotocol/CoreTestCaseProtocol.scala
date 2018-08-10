@@ -9,6 +9,7 @@ import org.bitcoins.core.script.constant.{ ScriptConstant, ScriptOperation, Scri
 import org.bitcoins.core.script.result.ScriptResult
 import org.bitcoins.core.util.{ BitcoinSLogger, BitcoinSUtil, BitcoinScriptUtil }
 import org.slf4j.LoggerFactory
+import scodec.bits.ByteVector
 import spray.json._
 
 /**
@@ -33,9 +34,9 @@ object CoreTestCaseProtocol extends DefaultJsonProtocol {
         None
       } else if (elements.size == 4) {
         //means we are missing a comment
-        val scriptPubKeyBytes: scodec.bits.ByteVector = parseScriptPubKey(elements(1))
+        val scriptPubKeyBytes: ByteVector = parseScriptPubKey(elements(1))
         val scriptPubKey = ScriptPubKey(scriptPubKeyBytes)
-        val scriptSignatureBytes: scodec.bits.ByteVector = parseScriptSignature(elements.head)
+        val scriptSignatureBytes: ByteVector = parseScriptSignature(elements.head)
         val scriptSignature: ScriptSignature = ScriptSignature(scriptSignatureBytes)
         val flags = elements(2).convertTo[String]
         logger.info("Result: " + elements(3).convertTo[String])
@@ -48,9 +49,9 @@ object CoreTestCaseProtocol extends DefaultJsonProtocol {
         val amount = Satoshis(Int64((witnessArray.elements.last.convertTo[Double] * 100000000L).toLong))
         val stack = witnessArray.elements.slice(0, witnessArray.elements.size - 1).map(c => BitcoinSUtil.decodeHex(c.convertTo[String]))
         val witness = ScriptWitness(stack.reverse)
-        val scriptPubKeyBytes: scodec.bits.ByteVector = parseScriptPubKey(elements(2))
+        val scriptPubKeyBytes: ByteVector = parseScriptPubKey(elements(2))
         val scriptPubKey = ScriptPubKey(scriptPubKeyBytes)
-        val scriptSignatureBytes: scodec.bits.ByteVector = parseScriptSignature(elements(1))
+        val scriptSignatureBytes: ByteVector = parseScriptSignature(elements(1))
         val scriptSignature: ScriptSignature = ScriptSignature(scriptSignatureBytes)
         val flags = elements(3).convertTo[String]
         logger.info("Result: " + elements(4).convertTo[String])
@@ -58,9 +59,9 @@ object CoreTestCaseProtocol extends DefaultJsonProtocol {
         Some(CoreTestCaseImpl(scriptSignature, scriptPubKey, flags,
           expectedResult, "", elements.toString, Some(witness, amount)))
       } else if (elements.size == 5) {
-        val scriptPubKeyBytes: scodec.bits.ByteVector = parseScriptPubKey(elements(1))
+        val scriptPubKeyBytes: ByteVector = parseScriptPubKey(elements(1))
         val scriptPubKey = ScriptPubKey(scriptPubKeyBytes)
-        val scriptSignatureBytes: scodec.bits.ByteVector = parseScriptSignature(elements.head)
+        val scriptSignatureBytes: ByteVector = parseScriptSignature(elements.head)
         val scriptSignature: ScriptSignature = ScriptSignature(scriptSignatureBytes)
         val flags = elements(2).convertTo[String]
         logger.info("Result: " + elements(3).convertTo[String])
@@ -73,9 +74,9 @@ object CoreTestCaseProtocol extends DefaultJsonProtocol {
         val amount = Satoshis(Int64((witnessArray.elements.last.convertTo[Double] * 100000000L).toLong))
         val stack = witnessArray.elements.slice(0, witnessArray.elements.size - 1).map(c => BitcoinSUtil.decodeHex(c.convertTo[String]))
         val witness = ScriptWitness(stack.reverse)
-        val scriptPubKeyBytes: scodec.bits.ByteVector = parseScriptPubKey(elements(2))
+        val scriptPubKeyBytes: ByteVector = parseScriptPubKey(elements(2))
         val scriptPubKey = ScriptPubKey(scriptPubKeyBytes)
-        val scriptSignatureBytes: scodec.bits.ByteVector = parseScriptSignature(elements(1))
+        val scriptSignatureBytes: ByteVector = parseScriptSignature(elements(1))
         val scriptSignature: ScriptSignature = ScriptSignature(scriptSignatureBytes)
         val flags = elements(3).convertTo[String]
         logger.info("Result: " + elements(4).convertTo[String])
@@ -95,7 +96,7 @@ object CoreTestCaseProtocol extends DefaultJsonProtocol {
      * @param element
      * @return
      */
-    private def parseScriptSignature(element: JsValue): scodec.bits.ByteVector = {
+    private def parseScriptSignature(element: JsValue): ByteVector = {
       val asm = ScriptParser.fromString(element.convertTo[String])
       val bytes = BitcoinScriptUtil.asmToBytes(asm)
       val compactSizeUInt = CompactSizeUInt.calculateCompactSizeUInt(bytes)
@@ -111,7 +112,7 @@ object CoreTestCaseProtocol extends DefaultJsonProtocol {
      * @param element
      * @return
      */
-    private def parseScriptPubKey(element: JsValue): scodec.bits.ByteVector = {
+    private def parseScriptPubKey(element: JsValue): ByteVector = {
       val asm = ScriptParser.fromString(element.convertTo[String])
       val bytes = BitcoinScriptUtil.asmToBytes(asm)
       val compactSizeUInt = CompactSizeUInt.calculateCompactSizeUInt(bytes)

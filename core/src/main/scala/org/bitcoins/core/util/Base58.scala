@@ -17,15 +17,15 @@ sealed abstract class Base58 {
   val base58Pairs = base58Characters.zipWithIndex.toMap
   private val logger = BitcoinSLogger.logger
   /** Verifies a given [[Base58Type]] string against its checksum (last 4 decoded bytes). */
-  def decodeCheck(input: String): Try[scodec.bits.ByteVector] = {
-    val decodedTry: Try[scodec.bits.ByteVector] = Try(decode(input))
+  def decodeCheck(input: String): Try[ByteVector] = {
+    val decodedTry: Try[ByteVector] = Try(decode(input))
     decodedTry.flatMap { decoded =>
       if (decoded.length < 4) Failure(new IllegalArgumentException("Invalid input"))
       else {
         val splitSeqs = decoded.splitAt(decoded.length - 4)
-        val data: scodec.bits.ByteVector = splitSeqs._1
-        val checksum: scodec.bits.ByteVector = splitSeqs._2
-        val actualChecksum: scodec.bits.ByteVector = CryptoUtil.doubleSHA256(data).bytes.take(4)
+        val data: ByteVector = splitSeqs._1
+        val checksum: ByteVector = splitSeqs._2
+        val actualChecksum: ByteVector = CryptoUtil.doubleSHA256(data).bytes.take(4)
         if (checksum == actualChecksum) Success(data)
         else Failure(new IllegalArgumentException("checksums don't validate"))
       }
@@ -33,7 +33,7 @@ sealed abstract class Base58 {
   }
 
   /** Encodes a sequence of bytes to a [[Base58Type]] string. */
-  def encode(bytes: scodec.bits.ByteVector): String = {
+  def encode(bytes: ByteVector): String = {
     val ones: String = bytes.toSeq.takeWhile(_ == 0).map(_ => '1').mkString
     @tailrec
     def loop(current: BigInt, str: String): String = current match {
@@ -66,7 +66,7 @@ sealed abstract class Base58 {
    * Takes in [[Base58Type]] string and returns sequence of [[Byte]]s
    * https://github.com/ACINQ/bitcoin-lib/blob/master/src/main/scala/fr/acinq/bitcoin/Base58.scala.
    */
-  def decode(input: String): scodec.bits.ByteVector = {
+  def decode(input: String): ByteVector = {
     val zeroes = ByteVector(input.takeWhile(_ == '1').map(_ => 0: Byte))
     val trim = input.dropWhile(_ == '1').toList
     val decoded = trim.foldLeft(BigInt(0))((a, b) =>
@@ -95,7 +95,7 @@ sealed abstract class Base58 {
    * ('1', '3', 'm', 'n', '2')
    */
   private def isValidAddressPreFixByte(byte: Byte): Boolean = {
-    val validAddressPreFixBytes: scodec.bits.ByteVector =
+    val validAddressPreFixBytes: ByteVector =
       MainNetChainParams.base58Prefixes(PubKeyAddress) ++ MainNetChainParams.base58Prefixes(ScriptAddress) ++
         TestNetChainParams.base58Prefixes(PubKeyAddress) ++ TestNetChainParams.base58Prefixes(ScriptAddress)
     validAddressPreFixBytes.toSeq.contains(byte)
@@ -106,7 +106,7 @@ sealed abstract class Base58 {
    * ('5', '9', 'c')
    */
   private def isValidSecretKeyPreFixByte(byte: Byte): Boolean = {
-    val validSecretKeyPreFixBytes: scodec.bits.ByteVector =
+    val validSecretKeyPreFixBytes: ByteVector =
       MainNetChainParams.base58Prefixes(SecretKey) ++ TestNetChainParams.base58Prefixes(SecretKey)
     validSecretKeyPreFixBytes.toSeq.contains(byte)
   }

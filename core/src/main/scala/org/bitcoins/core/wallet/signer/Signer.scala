@@ -8,6 +8,7 @@ import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.core.wallet.builder.TxBuilderError
+import scodec.bits.ByteVector
 
 import scala.concurrent.{ ExecutionContext, Future }
 
@@ -27,7 +28,7 @@ sealed abstract class Signer {
   def sign(signers: Seq[Sign], output: TransactionOutput, unsignedTx: Transaction,
     inputIndex: UInt32, hashType: HashType, isDummySignature: Boolean)(implicit ec: ExecutionContext): Future[TxSigComponent]
 
-  def doSign(sigComponent: TxSigComponent, sign: scodec.bits.ByteVector => Future[ECDigitalSignature], hashType: HashType,
+  def doSign(sigComponent: TxSigComponent, sign: ByteVector => Future[ECDigitalSignature], hashType: HashType,
     isDummySignature: Boolean)(implicit ec: ExecutionContext): Future[ECDigitalSignature] = {
     if (isDummySignature) {
       Future.successful(DummyECDigitalSignature)
@@ -49,7 +50,7 @@ sealed abstract class P2PKSigner extends BitcoinSigner {
     if (signers.size != 1) {
       Future.fromTry(TxBuilderError.TooManySigners)
     } else {
-      val sign: scodec.bits.ByteVector => Future[ECDigitalSignature] = signers.head.signFunction
+      val sign: ByteVector => Future[ECDigitalSignature] = signers.head.signFunction
       val unsignedInput = unsignedTx.inputs(inputIndex.toInt)
       val flags = Policy.standardFlags
       val amount = output.value

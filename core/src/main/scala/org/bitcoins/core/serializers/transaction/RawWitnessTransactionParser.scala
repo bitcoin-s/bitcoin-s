@@ -21,7 +21,7 @@ sealed abstract class RawWitnessTransactionParser extends RawBitcoinSerializer[W
    * Functionality inside of Bitcoin Core:
    * [[https://github.com/bitcoin/bitcoin/blob/e8cfe1ee2d01c493b758a67ad14707dca15792ea/src/primitives/transaction.h#L244-L251]]
    */
-  def read(bytes: scodec.bits.ByteVector): WitnessTransaction = {
+  def read(bytes: ByteVector): WitnessTransaction = {
     val versionBytes = bytes.take(4)
     val version = Int32(versionBytes.reverse)
     val marker = bytes(4)
@@ -46,7 +46,7 @@ sealed abstract class RawWitnessTransactionParser extends RawBitcoinSerializer[W
    * Functionality inside of Bitcoin Core:
    * [[https://github.com/bitcoin/bitcoin/blob/e8cfe1ee2d01c493b758a67ad14707dca15792ea/src/primitives/transaction.h#L282-L287s]]
    */
-  def write(tx: WitnessTransaction): scodec.bits.ByteVector = {
+  def write(tx: WitnessTransaction): ByteVector = {
     val version = tx.version.bytes.reverse
     val inputs = RawSerializerHelper.writeCmpctSizeUInt[TransactionInput](
       tx.inputs,

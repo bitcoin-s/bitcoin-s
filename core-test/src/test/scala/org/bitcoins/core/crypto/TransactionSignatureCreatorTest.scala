@@ -12,6 +12,7 @@ import org.bitcoins.core.script.result.ScriptOk
 import org.bitcoins.core.util.{ BitcoinSLogger, TransactionTestUtil }
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{ FlatSpec, MustMatchers }
+import scodec.bits.ByteVector
 
 import scala.concurrent.Future
 
@@ -211,8 +212,8 @@ class TransactionSignatureCreatorTest extends FlatSpec with MustMatchers with Sc
       inputIndex = inputIndex,
       output = TransactionOutput(CurrencyUnits.zero, redeemScript),
       flags = Policy.standardScriptVerifyFlags)
-    val sign: scodec.bits.ByteVector => Future[ECDigitalSignature] = {
-      bytes: scodec.bits.ByteVector => Future(privateKey.sign(bytes))
+    val sign: ByteVector => Future[ECDigitalSignature] = {
+      bytes: ByteVector => Future(privateKey.sign(bytes))
     }
     val txSignature = TransactionSignatureCreator.createSig(txSignatureComponent, sign, HashType.sigHashAll)
 

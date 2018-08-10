@@ -44,7 +44,7 @@ trait BitcoinjConversions {
    * @param connectedScript
    * @return
    */
-  def signatureSerialization(tx: org.bitcoinj.core.Transaction, inputIndex: Int, connectedScript: scodec.bits.ByteVector, sigHashType: Byte): String = {
+  def signatureSerialization(tx: org.bitcoinj.core.Transaction, inputIndex: Int, connectedScript: ByteVector, sigHashType: Byte): String = {
     val params = TestNet3Params.get
     try {
       import org.bitcoinj.core._
@@ -143,7 +143,7 @@ trait BitcoinjConversions {
    * @param bytes
    * @return
    */
-  def publicKey(bytes: scodec.bits.ByteVector): ECKey = ECKey.fromPublicOnly(bytes.toArray)
+  def publicKey(bytes: ByteVector): ECKey = ECKey.fromPublicOnly(bytes.toArray)
 
   /**
    * Helper function to create bitcoinj ECKey

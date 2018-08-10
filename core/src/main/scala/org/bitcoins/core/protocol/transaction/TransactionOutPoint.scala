@@ -5,6 +5,7 @@ import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.NetworkElement
 import org.bitcoins.core.serializers.transaction.RawTransactionOutPointParser
 import org.bitcoins.core.util.{ BitcoinSUtil, Factory }
+import scodec.bits.ByteVector
 /**
  * Created by chris on 12/26/15.
  *
@@ -35,7 +36,7 @@ object TransactionOutPoint extends Factory[TransactionOutPoint] {
 
   private case class TransactionOutPointImpl(txId: DoubleSha256Digest, vout: UInt32) extends TransactionOutPoint
 
-  def fromBytes(bytes: scodec.bits.ByteVector): TransactionOutPoint = RawTransactionOutPointParser.read(bytes)
+  def fromBytes(bytes: ByteVector): TransactionOutPoint = RawTransactionOutPointParser.read(bytes)
 
   def apply(txId: DoubleSha256Digest, index: UInt32): TransactionOutPoint = {
     if (txId == EmptyTransactionOutPoint.txId && index == EmptyTransactionOutPoint.vout) {

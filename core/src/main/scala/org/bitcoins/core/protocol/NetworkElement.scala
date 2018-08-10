@@ -1,6 +1,7 @@
 package org.bitcoins.core.protocol
 
 import org.bitcoins.core.util.{ BitcoinSLogger, BitcoinSUtil }
+import scodec.bits.ByteVector
 
 /**
  * Created by chris on 1/14/16.
@@ -16,7 +17,7 @@ abstract class NetworkElement {
   def hex: String = BitcoinSUtil.encodeHex(bytes)
 
   /** The byte representation of the NetworkElement */
-  def bytes: scodec.bits.ByteVector
+  def bytes: ByteVector
 
   lazy val logger = BitcoinSLogger.logger
 }
