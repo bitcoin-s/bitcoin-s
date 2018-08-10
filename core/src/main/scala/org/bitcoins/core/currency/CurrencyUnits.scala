@@ -77,7 +77,7 @@ object Satoshis extends Factory[Satoshis] with BaseNumbers[Satoshis] {
   val zero = Satoshis(Int64.zero)
   val one = Satoshis(Int64.one)
 
-  override def fromBytes(bytes: Seq[Byte]): Satoshis = RawSatoshisSerializer.read(bytes)
+  override def fromBytes(bytes: scodec.bits.ByteVector): Satoshis = RawSatoshisSerializer.read(bytes)
 
   def apply(int64: Int64): Satoshis = SatoshisImpl(int64)
 

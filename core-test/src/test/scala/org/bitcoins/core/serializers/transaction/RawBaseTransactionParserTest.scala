@@ -9,7 +9,7 @@ import org.scalatest.{ FlatSpec, MustMatchers }
  * Created by chris on 1/14/16.
  */
 class RawBaseTransactionParserTest extends FlatSpec with MustMatchers {
-  val encode = BitcoinSUtil.encodeHex(_: Seq[Byte])
+  val encode = BitcoinSUtil.encodeHex(_: scodec.bits.ByteVector)
   "RawBaseTransactionParser" must "parse a raw transaction" in {
     val tx: Transaction = RawBaseTransactionParser.read(TestUtil.rawTransaction)
     tx.version must be(Int32.one)

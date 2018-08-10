@@ -129,12 +129,12 @@ sealed abstract class BitcoinTxBuilder extends TxBuilder {
     val unsignedTxWithFee: Try[Future[Transaction]] = unsignedTxNoFee.map { utxnf =>
       val dummySignTx = loop(utxos, utxnf, true)
       dummySignTx.map { dtx =>
-        logger.info(s"dummySignTx $dtx")
+        logger.debug(s"dummySignTx $dtx")
         val fee = feeRate.calc(dtx)
-        logger.info(s"fee $fee")
+        logger.debug(s"fee $fee")
         val change = creditingAmount - destinationAmount - fee
         val newChangeOutput = TransactionOutput(change, changeSPK)
-        logger.info(s"newChangeOutput $newChangeOutput")
+        logger.debug(s"newChangeOutput $newChangeOutput")
         //if the change output is below the dust threshold after calculating the fee, don't add it
         //to the tx
         val newOutputs = if (newChangeOutput.value <= Policy.dustThreshold) {

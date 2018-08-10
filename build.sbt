@@ -49,6 +49,8 @@ lazy val rpc = project
   .dependsOn(
     core,
     coreGen % "test->test"
+  ).settings(
+    testOptions in Test += Tests.Argument("-oF")
   )
 
 publishArtifact in root := false

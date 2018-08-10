@@ -4,6 +4,7 @@ import java.net.InetSocketAddress
 
 import org.bitcoins.core.util.BitcoinSLogger
 import org.zeromq.{ ZMQ, ZMsg }
+import scodec.bits.ByteVector
 
 /**
  * This class is designed to consume a zmq stream from a cryptocurrency's daemon.
@@ -19,10 +20,10 @@ import org.zeromq.{ ZMQ, ZMsg }
  */
 class ZMQSubscriber(
   socket: InetSocketAddress,
-  hashTxListener: Option[Seq[Byte] => Unit],
-  hashBlockListener: Option[Seq[Byte] => Unit],
-  rawTxListener: Option[Seq[Byte] => Unit],
-  rawBlockListener: Option[Seq[Byte] => Unit]) {
+  hashTxListener: Option[ByteVector => Unit],
+  hashBlockListener: Option[ByteVector => Unit],
+  rawTxListener: Option[ByteVector => Unit],
+  rawBlockListener: Option[ByteVector => Unit]) {
   private val logger = BitcoinSLogger.logger
 
   private var running = true
@@ -95,24 +96,24 @@ class ZMQSubscriber(
    * Processes a message that we received the from the cryptocurrency daemon and then
    * applies the appropriate listener to that message.
    */
-  private def processMsg(topic: String, body: Seq[Byte]): Unit = {
+  private def processMsg(topic: String, body: Array[Byte]): Unit = {
     val notification = ZMQNotification.fromString(topic)
     notification.foreach {
       case HashTx =>
         hashTxListener.foreach { f =>
-          f(body)
+          f(ByteVector(body))
         }
       case RawTx =>
         rawTxListener.foreach { f =>
-          f(body)
+          f(ByteVector(body))
         }
       case HashBlock =>
         hashBlockListener.foreach { f =>
-          f(body)
+          f(ByteVector(body))
         }
       case RawBlock =>
         rawBlockListener.foreach { f =>
-          f(body)
+          f(ByteVector(body))
         }
     }
 

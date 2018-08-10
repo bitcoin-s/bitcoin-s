@@ -9,6 +9,7 @@ import org.bitcoins.core.script.reserved.OP_NOP
 import org.bitcoins.core.script.stack.OP_PICK
 import org.bitcoins.core.util.{ BitcoinSUtil, TestUtil }
 import org.scalatest.{ FlatSpec, MustMatchers }
+import scodec.bits.ByteVector
 
 /**
  * Created by chris on 1/7/16.
@@ -16,7 +17,7 @@ import org.scalatest.{ FlatSpec, MustMatchers }
 class ScriptParserTest extends FlatSpec with MustMatchers {
 
   "ScriptParser" must "parse 0x00 to a OP_0" in {
-    ScriptParser.fromBytes(List(0.toByte)) must be(List(OP_0))
+    ScriptParser.fromBytes(ByteVector(List(0.toByte))) must be(List(OP_0))
   }
 
   it must "parse the number 0 as an OP_0" in {
@@ -47,7 +48,7 @@ class ScriptParserTest extends FlatSpec with MustMatchers {
   }
 
   it must "parse a p2pkh output script from a byte array to script tokens" in {
-    val bytes: Seq[Byte] = BitcoinSUtil.decodeHex(TestUtil.p2pkhOutputScript).tail
+    val bytes: scodec.bits.ByteVector = BitcoinSUtil.decodeHex(TestUtil.p2pkhOutputScript).tail
     ScriptParser.fromBytes(bytes) must be(TestUtil.p2pkhOutputScriptAsm)
   }
 

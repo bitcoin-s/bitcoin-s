@@ -63,7 +63,6 @@ object CoreTransactionTestCaseProtocol extends DefaultJsonProtocol {
         //val prevoutIndex = UInt32(array.elements(1).convertTo[Int])
         val outPoint = TransactionOutPoint(prevoutHash, prevoutIndex)
         val scriptTokens: Seq[ScriptToken] = ScriptParser.fromString(array.elements(2).convertTo[String])
-        logger.info("ASM: " + scriptTokens)
         val scriptPubKey = ScriptPubKey.fromAsm(scriptTokens)
         (outPoint, scriptPubKey, amount)
       case _: JsValue => throw new RuntimeException("All tx outpoint/scriptpubkey info must be array elements")

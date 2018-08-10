@@ -31,7 +31,7 @@ class RawBlockSerializerTest extends FlatSpec with MustMatchers {
   val txSeq = List(tx1)
   val uInt = CompactSizeUInt(UInt64.one, 1)
   val hex = header + uInt.hex + rawTx1
-  val encode = BitcoinSUtil.encodeHex(_: Seq[Byte])
+  val encode = BitcoinSUtil.encodeHex(_: scodec.bits.ByteVector)
   "RawBlockSerializer" must "parse genesis block" in {
     val block = RawBlockSerializer.read(hex)
     block.txCount.num must be(UInt64(txSeq.size))

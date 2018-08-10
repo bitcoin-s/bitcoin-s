@@ -5,10 +5,10 @@ import org.bitcoins.core.util.Factory
 
 sealed abstract class ChainCode extends NetworkElement
 object ChainCode extends Factory[ChainCode] {
-  private case class ChainCodeImpl(bytes: Seq[Byte]) extends ChainCode {
+  private case class ChainCodeImpl(bytes: scodec.bits.ByteVector) extends ChainCode {
     require(bytes.size == 32, "ChainCode must be 32 bytes in size, got: " + bytes.size)
   }
 
-  def fromBytes(bytes: Seq[Byte]): ChainCode = ChainCodeImpl(bytes)
+  def fromBytes(bytes: scodec.bits.ByteVector): ChainCode = ChainCodeImpl(bytes)
 }
 

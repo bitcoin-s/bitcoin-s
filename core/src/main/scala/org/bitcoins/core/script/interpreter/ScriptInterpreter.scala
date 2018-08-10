@@ -171,7 +171,7 @@ sealed abstract class ScriptInterpreter {
           redeemScript match {
             case w: WitnessScriptPubKey =>
               val pushOp = BitcoinScriptUtil.calculatePushOp(redeemScriptBytes)
-              val expectedScriptBytes = pushOp.flatMap(_.bytes) ++ redeemScriptBytes
+              val expectedScriptBytes = BitcoinSUtil.toByteVector(pushOp) ++ redeemScriptBytes
               val flags = scriptPubKeyExecutedProgram.flags
               val segwitEnabled = ScriptFlagUtil.segWitEnabled(flags)
               if (segwitEnabled && (scriptSig.asmBytes == expectedScriptBytes)) {
@@ -301,11 +301,12 @@ sealed abstract class ScriptInterpreter {
   private def loop(program: ScriptProgram, opCount: Int): ExecutedScriptProgram = {
     logger.trace("Stack: " + program.stack)
     logger.trace("Script: " + program.script)
+    val scriptByteVector = BitcoinSUtil.toByteVector(program.script)
     if (opCount > maxScriptOps && !program.isInstanceOf[ExecutedScriptProgram]) {
       logger.error("We have reached the maximum amount of script operations allowed")
       logger.error("Here are the remaining operations in the script: " + program.script)
       loop(ScriptProgram(program, ScriptErrorOpCount), opCount)
-    } else if (program.script.flatMap(_.bytes).size > 10000 && !program.isInstanceOf[ExecutedScriptProgram]) {
+    } else if (scriptByteVector.length > 10000 && !program.isInstanceOf[ExecutedScriptProgram]) {
       logger.error("We cannot run a script that is larger than 10,000 bytes")
       program match {
         case p: PreExecutionScriptProgram =>

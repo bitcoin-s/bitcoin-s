@@ -2,6 +2,7 @@ package org.bitcoins.core.number
 
 import org.bitcoins.core.protocol.NetworkElement
 import org.bitcoins.core.util.{ BitcoinSUtil, Factory, NumberUtil }
+import scodec.bits.ByteVector
 
 import scala.util.{ Failure, Success, Try }
 
@@ -183,21 +184,25 @@ object UInt8 extends Factory[UInt8] with BaseNumbers[UInt8] {
 
   def isValid(bigInt: BigInt): Boolean = bigInt >= 0 && bigInt < 256
 
-  override def fromBytes(bytes: Seq[Byte]): UInt8 = {
+  override def fromBytes(bytes: scodec.bits.ByteVector): UInt8 = {
     require(bytes.size == 1, "Can only create a uint8 from a byte array of size one, got: " + bytes)
     val res = NumberUtil.toUnsignedInt(bytes)
     checkBounds(res)
   }
 
   def toUInt8(byte: Byte): UInt8 = {
-    fromBytes(Seq(byte))
+    fromBytes(ByteVector.fromByte(byte))
   }
 
   def toByte(uInt8: UInt8): Byte = uInt8.underlying.toByte
 
-  def toBytes(us: Seq[UInt8]): Seq[Byte] = us.map(toByte(_))
+  def toBytes(us: Seq[UInt8]): scodec.bits.ByteVector = {
+    ByteVector(us.map(toByte(_)))
+  }
 
-  def toUInt8s(bytes: Seq[Byte]): Seq[UInt8] = bytes.map(toUInt8(_))
+  def toUInt8s(bytes: scodec.bits.ByteVector): Seq[UInt8] = {
+    bytes.toSeq.map { b: Byte => toUInt8(b) }
+  }
 
   def checkBounds(res: BigInt): UInt8 = {
     if (res > max.underlying || res < min.underlying) {
@@ -218,7 +223,7 @@ object UInt32 extends Factory[UInt32] with BaseNumbers[UInt32] {
   lazy val min = zero
   lazy val max = UInt32(4294967295L)
 
-  override def fromBytes(bytes: Seq[Byte]): UInt32 = {
+  override def fromBytes(bytes: scodec.bits.ByteVector): UInt32 = {
     require(bytes.size <= 4, "UInt32 byte array was too large, got: " + BitcoinSUtil.encodeHex(bytes))
     val res = NumberUtil.toUnsignedInt(bytes)
     checkBounds(res)
@@ -248,7 +253,7 @@ object UInt64 extends Factory[UInt64] with BaseNumbers[UInt64] {
   lazy val min = zero
   lazy val max = UInt64(BigInt("18446744073709551615"))
 
-  override def fromBytes(bytes: Seq[Byte]): UInt64 = {
+  override def fromBytes(bytes: scodec.bits.ByteVector): UInt64 = {
     require(bytes.size <= 8)
     val res: BigInt = NumberUtil.toUnsignedInt(bytes)
     if (res > max.underlying || res < min.underlying) {
@@ -272,7 +277,7 @@ object Int32 extends Factory[Int32] with BaseNumbers[Int32] {
   lazy val min = Int32(-2147483648)
   lazy val max = Int32(2147483647)
 
-  override def fromBytes(bytes: Seq[Byte]): Int32 = {
+  override def fromBytes(bytes: scodec.bits.ByteVector): Int32 = {
     require(bytes.size <= 4, "We cannot have an Int32 be larger than 4 bytes")
     Int32(BigInt(bytes.toArray).toInt)
   }
@@ -294,7 +299,7 @@ object Int64 extends Factory[Int64] with BaseNumbers[Int64] {
   lazy val min = Int64(-9223372036854775808L)
   lazy val max = Int64(9223372036854775807L)
 
-  override def fromBytes(bytes: Seq[Byte]): Int64 = {
+  override def fromBytes(bytes: scodec.bits.ByteVector): Int64 = {
     require(bytes.size <= 8, "We cannot have an Int64 be larger than 8 bytes")
     Int64(BigInt(bytes.toArray).toLong)
   }
