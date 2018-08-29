@@ -5,7 +5,8 @@ lazy val compilerOpts =
 
 lazy val commonSettings = List(
   scalacOptions := compilerOpts,
-  assemblyOption in assembly := (assemblyOption in assembly).value.copy(includeScala = false)
+  assemblyOption in assembly := (assemblyOption in assembly).value.copy(includeScala = false),
+  testOptions in Test += Tests.Argument(TestFrameworks.ScalaTest, "-oF")
 )
 lazy val root = project
     .in(file("."))
@@ -15,7 +16,8 @@ lazy val root = project
       coreGen,
       coreTest,
       zmq,
-      rpc
+      rpc,
+      eclairRpc
     )
     .settings(commonSettings: _*)
 
@@ -67,5 +69,14 @@ lazy val rpc = project
   ).settings(
     testOptions in Test += Tests.Argument("-oF")
   )
+
+lazy val eclairRpc = project
+    .in(file("eclair-rpc"))
+    .enablePlugins()
+    .settings(commonSettings: _*)
+    .dependsOn(
+      core,
+      rpc
+    )
 
 publishArtifact in root := false
