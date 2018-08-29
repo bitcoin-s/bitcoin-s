@@ -15,7 +15,8 @@ lazy val root = project
       coreGen,
       coreTest,
       zmq,
-      rpc
+      rpc,
+      eclairRpc
     )
     .settings(commonSettings: _*)
 
@@ -67,5 +68,13 @@ lazy val rpc = project
   ).settings(
     testOptions in Test += Tests.Argument("-oF")
   )
+
+lazy val eclairRpc = project
+    .in(file("ecliar-rpc"))
+    .enablePlugins()
+    .settings(commonSettings: _*)
+    .dependsOn(
+      core
+    )
 
 publishArtifact in root := false
