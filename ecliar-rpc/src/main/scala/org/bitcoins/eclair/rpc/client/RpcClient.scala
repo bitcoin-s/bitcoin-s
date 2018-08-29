@@ -41,7 +41,7 @@ class RpcClient(implicit m: ActorMaterializer) {
   case class ChannelDesc(shortChannelId: String, a: String, b: String)
   implicit val channelDescReads: Reads[ChannelDesc] = Json.reads[ChannelDesc]
 
-  case class ChannelUpdate(signature: String, chainHash: String, shortChannelId: String, timestamp: Long, flags: String, cltvExpiryDelta: Int, htlcMinimumMsat: Long, feeBaseMsat: Long, feeProportionalMillionths: Int)
+  case class ChannelUpdate(signature: String, chainHash: String, shortChannelId: String, timestamp: Long, flags: String, cltvExpiryDelta: Int, htlcMinimumMsat: Long, feeBaseMsat: Long, feeProportionalMillionths: Long)
   implicit val channelUpdateReads: Reads[ChannelUpdate] = Json.reads[ChannelUpdate]
 
   case class PaymentRequest(prefix: String, amount: Option[Long], timestamp: Long, nodeId: String, tags: Vector[JsObject], signature: String)
@@ -236,8 +236,16 @@ class RpcClient(implicit m: ActorMaterializer) {
 
   def send(invoice: String, amountMsat: Long): Future[SendResult] = send(invoice, Some(amountMsat))
 
+  def updateRelayFee(channelId: String, feeBaseMsat: Long, feeProportionalMillionths: Long): Future[String] = {
+    eclairCall[String]("updaterelayfee", List(
+      JsString(channelId),
+      JsNumber(feeBaseMsat),
+      JsNumber(feeProportionalMillionths))
+    )
+  }
 
-  // TODO: updaterelayfee, channelstats, audit, networkfees
+  // TODO: channelstats, audit, networkfees?
+  // TODO: Add types
 
   private def eclairCall[T](
     command: String,
