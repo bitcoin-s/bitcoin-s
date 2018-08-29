@@ -47,6 +47,21 @@ class RpcClient(implicit m: ActorMaterializer) {
   case class PaymentRequest(prefix: String, amount: Option[Long], timestamp: Long, nodeId: String, tags: Vector[JsObject], signature: String)
   implicit val paymentRequestReads: Reads[PaymentRequest] = Json.reads[PaymentRequest]
 
+  sealed trait SendResult
+  case class PaymentSucceeded(amountMsat: Long, paymentHash: String, paymentPreimage: String, route: JsArray) extends SendResult
+  implicit val paymentSucceededReads: Reads[PaymentSucceeded] = Json.reads[PaymentSucceeded]
+  case class PaymentFailure() extends SendResult
+  implicit val paymentFailureReads: Reads[PaymentFailure] = Json.reads[PaymentFailure]
+  implicit val sendResultReads: Reads[SendResult] = Reads[SendResult] { json =>
+    json.validate[PaymentSucceeded] match {
+      case success: JsSuccess[PaymentSucceeded] => success
+      case err1: JsError => json.validate[PaymentFailure] match {
+        case failure: JsSuccess[PaymentFailure] => failure
+        case err2: JsError => JsError.merge(err1, err2)
+      }
+    }
+  }
+
   def allChannels: Future[Vector[ChannelDesc]] = {
     eclairCall[Vector[ChannelDesc]]("allchannels")
   }
@@ -80,6 +95,11 @@ class RpcClient(implicit m: ActorMaterializer) {
 
   def checkInvoice(invoice: String): Future[PaymentRequest] = {
     eclairCall[PaymentRequest]("checkinvoice", List(JsString(invoice)))
+  }
+
+  // When types are introduced this can be two different functions
+  def checkPayment(invoiceOrHash: String): Future[Boolean] = {
+    eclairCall[Boolean]("checkpayment", List(JsString(invoiceOrHash)))
   }
 
   private def close(channelId: String, scriptPubKey: Option[String]): Future[String] = {
@@ -193,8 +213,31 @@ class RpcClient(implicit m: ActorMaterializer) {
   def receive(description: String = "", amountMsat: Long, expirySeconds: Long): Future[String] =
     receive(description, Some(amountMsat), Some(expirySeconds))
 
+  def send(amountMsat: Long, paymentHash: String, nodeId: String): Future[SendResult] = {
+    eclairCall[SendResult]("send", List(
+      JsNumber(amountMsat),
+      JsString(paymentHash),
+      JsString(nodeId))
+    )
+  }
 
-  // TODO: send, checkpayment, updaterelayfee, channelstats, audit, networkfees
+  private def send(invoice: String, amountMsat: Option[Long]): Future[SendResult] = {
+    val params =
+      if (amountMsat.isEmpty) {
+        List(JsString(invoice))
+      } else {
+        List(JsString(invoice), JsNumber(amountMsat.get))
+      }
+
+    eclairCall[SendResult]("send", params)
+  }
+
+  def send(invoice: String): Future[SendResult] = send(invoice, None)
+
+  def send(invoice: String, amountMsat: Long): Future[SendResult] = send(invoice, Some(amountMsat))
+
+
+  // TODO: updaterelayfee, channelstats, audit, networkfees
 
   private def eclairCall[T](
     command: String,
