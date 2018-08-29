@@ -26,21 +26,175 @@ class RpcClient(implicit m: ActorMaterializer) {
   case class GetInfoResult(nodeId: String, alias: String, port: Int, chainHash: String, blockHeight: Long)
   implicit val getInfoResultReads: Reads[GetInfoResult] = Json.reads[GetInfoResult]
 
-  def connect(nodeId: String, host: String, port: Int): Future[Unit] = {
-    eclairCall[Unit]("connect", List(JsString(nodeId), JsString(host), JsNumber(port)))
+  case class PeerInfo(nodeId: String, state: String, address: String, channels: Int)
+  implicit val peerInfoReads: Reads[PeerInfo] = Json.reads[PeerInfo]
+
+  case class ChannelInfo(nodeId: String, channelId: String, state: String)
+  implicit val channelInfoReads: Reads[ChannelInfo] = Json.reads[ChannelInfo]
+
+  case class ChannelResult(nodeId: String, shortChannelId: String, channelId: String, state: String, balanceMsat: Long, capacitySat: Option[Long])
+  implicit val channelResultReads: Reads[ChannelResult] = Json.reads[ChannelResult]
+
+  case class NodeInfo(signature: String, features: String, timestamp: Long, nodeId: String, rgbColor: String, alias: String, addresses: Vector[String])
+  implicit val nodeInfoReads: Reads[NodeInfo] = Json.reads[NodeInfo]
+
+  case class ChannelDesc(shortChannelId: String, a: String, b: String)
+  implicit val channelDescReads: Reads[ChannelDesc] = Json.reads[ChannelDesc]
+
+  case class ChannelUpdate(signature: String, chainHash: String, shortChannelId: String, timestamp: Long, flags: String, cltvExpiryDelta: Int, htlcMinimumMsat: Long, feeBaseMsat: Long, feeProportionalMillionths: Int)
+  implicit val channelUpdateReads: Reads[ChannelUpdate] = Json.reads[ChannelUpdate]
+
+  case class PaymentRequest(prefix: String, amount: Option[Long], timestamp: Long, nodeId: String, tags: Vector[JsObject], signature: String)
+  implicit val paymentRequestReads: Reads[PaymentRequest] = Json.reads[PaymentRequest]
+
+  def allChannels: Future[Vector[ChannelDesc]] = {
+    eclairCall[Vector[ChannelDesc]]("allchannels")
   }
 
-  def connect(uri: String): Future[Unit] = {
-    eclairCall[Unit]("connect", List(JsString(uri)))
+  def allNodes: Future[Vector[NodeInfo]] = {
+    eclairCall[Vector[NodeInfo]]("allnodes")
+  }
+
+  private def allUpdates(nodeId: Option[String]): Future[Vector[ChannelUpdate]] = {
+    val params = if (nodeId.isEmpty) List.empty else List(JsString(nodeId.get))
+    eclairCall[Vector[ChannelUpdate]]("allUpdates", params)
+  }
+
+  def allUpdates: Future[Vector[ChannelUpdate]] = allUpdates(None)
+
+  def allUpdates(nodeId: String): Future[Vector[ChannelUpdate]] = allUpdates(Some(nodeId))
+
+  def channel(channelId: String): Future[ChannelResult] = {
+    eclairCall[ChannelResult]("channel", List(JsString(channelId)))
+  }
+
+  private def channels(nodeId: Option[String]): Future[Vector[ChannelInfo]] = {
+    val params = if (nodeId.isEmpty) List.empty else List(JsString(nodeId.get))
+
+    eclairCall[Vector[ChannelInfo]]("channels", params)
+  }
+
+  def channels: Future[Vector[ChannelInfo]] = channels(None)
+
+  def channels(nodeId: String): Future[Vector[ChannelInfo]] = channels(Some(nodeId))
+
+  def checkInvoice(invoice: String): Future[PaymentRequest] = {
+    eclairCall[PaymentRequest]("checkinvoice", List(JsString(invoice)))
+  }
+
+  private def close(channelId: String, scriptPubKey: Option[String]): Future[String] = {
+    val params =
+      if (scriptPubKey.isEmpty) {
+        List(JsString(channelId))
+      } else {
+        List(JsString(channelId), JsString(scriptPubKey.get))
+      }
+
+    eclairCall[String]("close", params)
+  }
+
+  def close(channelId: String): Future[String] = close(channelId, None)
+
+  def close(channelId: String, scriptPubKey: String): Future[String] = close(channelId, Some(scriptPubKey))
+
+  def connect(nodeId: String, host: String, port: Int): Future[String] = {
+    eclairCall[String]("connect", List(JsString(nodeId), JsString(host), JsNumber(port)))
+  }
+
+  def connect(uri: String): Future[String] = {
+    eclairCall[String]("connect", List(JsString(uri)))
+  }
+
+  // When types are introduced this can be two different functions
+  def findRoute(nodeIdOrInvoice: String): Future[Vector[String]] = {
+    eclairCall[Vector[String]]("findroute", List(JsString(nodeIdOrInvoice)))
+  }
+
+  def forceClose(channelId: String): Future[String] = {
+    eclairCall[String]("forceclose", List(JsString(channelId)))
   }
 
   def getInfo: Future[GetInfoResult] = {
     eclairCall[GetInfoResult]("getinfo")
   }
 
-  def help: Future[List[String]] = {
-    eclairCall[List[String]]("help")
+  def help: Future[Vector[String]] = {
+    eclairCall[Vector[String]]("help")
   }
+
+  private def open(nodeId: String,
+           fundingSatoshis: Long,
+           pushMsat: Long,
+           feerateSatPerByte: Option[Long],
+           channelFlags: Option[Byte]): Future[String] = {
+    val params =
+      if (feerateSatPerByte.isEmpty) {
+        List(
+          JsString(nodeId),
+          JsNumber(fundingSatoshis),
+          JsNumber(pushMsat)
+        )
+      } else if (channelFlags.isEmpty) {
+        List(
+          JsString(nodeId),
+          JsNumber(fundingSatoshis),
+          JsNumber(pushMsat),
+          JsNumber(feerateSatPerByte.get)
+        )
+      } else {
+        List(
+          JsString(nodeId),
+          JsNumber(fundingSatoshis),
+          JsNumber(pushMsat),
+          JsNumber(feerateSatPerByte.get),
+          JsString(channelFlags.toString)
+        )
+      }
+
+    eclairCall[String]("open", params)
+  }
+
+  def open(nodeId: String, fundingSatoshis: Long, pushMsat: Long = 0): Future[String] =
+    open(nodeId, fundingSatoshis, pushMsat, None, None)
+
+  def open(nodeId: String, fundingSatoshis: Long, pushMsat: Long = 0, feerateSatPerByte: Long): Future[String] =
+    open(nodeId, fundingSatoshis, pushMsat, Some(feerateSatPerByte), None)
+
+  def open(nodeId: String,
+           fundingSatoshis: Long,
+           pushMsat: Long = 0,
+           feerateSatPerByte: Long,
+           channelFlags: Byte): Future[String] =
+    open(nodeId, fundingSatoshis, pushMsat, Some(feerateSatPerByte), Some(channelFlags))
+
+  def peers: Future[Vector[PeerInfo]] = {
+    eclairCall[Vector[PeerInfo]]("peers")
+  }
+
+  private def receive(description: String, amountMsat: Option[Long], expirySeconds: Option[Long]): Future[String] = {
+    val params =
+      if (amountMsat.isEmpty) {
+        List(JsString(description))
+      } else if (expirySeconds.isEmpty) {
+        List(JsNumber(amountMsat.get), JsString(description))
+      } else {
+        List(JsNumber(amountMsat.get), JsString(description), JsNumber(expirySeconds.get))
+      }
+
+    eclairCall[String]("receive", params)
+  }
+
+  def receive(description: String = ""): Future[String] =
+    receive(description, None, None)
+
+  def receive(description: String ="", amountMsat: Long): Future[String] =
+    receive(description, Some(amountMsat), None)
+
+  def receive(description: String = "", amountMsat: Long, expirySeconds: Long): Future[String] =
+    receive(description, Some(amountMsat), Some(expirySeconds))
+
+
+  // TODO: send, checkpayment, updaterelayfee, channelstats, audit, networkfees
 
   private def eclairCall[T](
     command: String,
