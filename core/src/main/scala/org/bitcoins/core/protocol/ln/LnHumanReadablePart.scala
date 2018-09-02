@@ -1,10 +1,14 @@
 package org.bitcoins.core.protocol.ln
 
-import org.bitcoins.core.config.{ MainNet, NetworkParameters, RegTest, TestNet3 }
-import org.bitcoins.core.protocol.ln.LightningNetworkPrefix._
+import org.bitcoins.core.config.NetworkParameters
+import org.bitcoins.core.protocol.NetworkElement
+import org.bitcoins.core.protocol.ln.LnParams._
+import scodec.bits.ByteVector
+import scala.util.matching.Regex
+import scala.util.{ Failure, Try }
 
-sealed abstract class LnHumanReadablePart {
-  def network: LightningNetworkParams
+sealed abstract class LnHumanReadablePart extends NetworkElement {
+  def network: LnParams
 
   def amount: Option[LnCurrencyUnit]
 
@@ -16,52 +20,65 @@ sealed abstract class LnHumanReadablePart {
     } else ""
   }
 
-  def bytes: Seq[Byte] = network.value.map(c => c.toByte) ++ invoiceAmount.map(c => c.toByte)
+  override def bytes: ByteVector = ByteVector(network.value.map(c => c.toByte) ++ invoiceAmount.map(c => c.toByte)) //TODO: Verify
 }
 
-case class HumanReadablePart(inNetwork: LightningNetworkParams, amnt: LnCurrencyUnit) extends LnHumanReadablePart {
-  def network: LightningNetworkParams = inNetwork
-  def amount: Option[LnCurrencyUnit] = Some(amnt)
+case class HumanReadablePart(inNetwork: LnParams, amnt: Option[LnCurrencyUnit]) extends LnHumanReadablePart {
+  def network: LnParams = inNetwork
+  def amount: Option[LnCurrencyUnit] = amnt
 }
 
 case object lnbc extends LnHumanReadablePart {
-  def network: LightningNetworkParams = LnBitcoinMainNet
+  def network: LnParams = LnBitcoinMainNet
   def amount: Option[LnCurrencyUnit] = None
 }
 
 case object lntb extends LnHumanReadablePart {
-  def network: LightningNetworkParams = LnBitcoinTestNet
+  def network: LnParams = LnBitcoinTestNet
   def amount: Option[LnCurrencyUnit] = None
 }
 
 case object lnbcrt extends LnHumanReadablePart {
-  def network: LightningNetworkParams = LnBitcoinRegTest
+  def network: LnParams = LnBitcoinRegTest
   def amount: Option[LnCurrencyUnit] = None
 }
 
 object LnHumanReadablePart {
-  def apply(str: String): LnHumanReadablePart = str match {
-    case "lnbc" => lnbc
-    case "lntb" => lntb
-    case "lnbcrt" => lnbcrt
-    case _ => throw new IllegalArgumentException(s"Expected MainNet (lnbc), TestNet3 (lntb), or RegTestNet (lnbcrt), got $str")
-  }
-
-  def apply(network: NetworkParameters): LnHumanReadablePart = network match {
-    case MainNet => lnbc
-    case TestNet3 => lntb
-    case RegTest => lnbcrt
-    case _ => throw new IllegalArgumentException(s"Expected MainNet, TestNet3, or RegTestNet, got $network")
-  }
-
-  def apply(network: LightningNetworkParams, amnt: LnCurrencyUnit): LnHumanReadablePart = {
-    HumanReadablePart(network, amnt)
-  }
-
-  def apply(network: NetworkParameters, amnt: LnCurrencyUnit): LnHumanReadablePart = {
-    val lnNetwork = LightningNetworkPrefix.fromNetworkParameters(network)
+  def apply(network: NetworkParameters): Option[LnHumanReadablePart] = {
+    val lnNetwork = LnParams.fromNetworkParameters(network)
     if (lnNetwork.isDefined) {
-      HumanReadablePart(lnNetwork.get, amnt)
-    } else { throw new IllegalArgumentException(s"Expected NetworkParameter, got $network")}
+      Some(HumanReadablePart(lnNetwork.get, None))
+    } else { None }
+  }
+
+  def apply(network: NetworkParameters, amount: LnCurrencyUnit): Option[LnHumanReadablePart] = {
+    val lnNetwork = LnParams.fromNetworkParameters(network)
+    if (lnNetwork.isDefined) {
+      Some(HumanReadablePart(lnNetwork.get, Some(amount)))
+    } else { None }
+  }
+
+  def apply(network: LnParams): LnHumanReadablePart = {
+    HumanReadablePart(network, None)
+  }
+
+  def apply(network: LnParams, amount: LnCurrencyUnit): LnHumanReadablePart = {
+    HumanReadablePart(network, Some(amount))
+  }
+
+  def apply(input: String): Try[LnHumanReadablePart] = {
+    val networkPattern: Regex = "^[a-z]*".r //Select all of the letters, until we hit a number, as the network
+    val networkString = networkPattern.findFirstIn(input).getOrElse("")
+    val amountString = input.substring(networkString.length) //Select the remaining part of the string as the amount
+    val lnParam = LnParams.fromString(networkString)
+
+    if (lnParam.isDefined) {
+      if (amountString.isEmpty) {
+        Try(apply(lnParam.get.network).get)
+      } else {
+        val amount = LnCurrencyUnits.fromEncodedString(amountString)
+        Try(apply(lnParam.get.network, amount.get).get)
+      }
+    } else { Failure(new IllegalArgumentException(s"Could not convert to valid network. Expected MainNet (lnbc), TestNet3 (lntb), or RegTest (lnbcrt), got: $networkString")) }
   }
 }
