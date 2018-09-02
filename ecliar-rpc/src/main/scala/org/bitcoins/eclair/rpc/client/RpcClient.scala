@@ -8,15 +8,19 @@ import akka.http.scaladsl.model._
 import akka.stream.ActorMaterializer
 import akka.util.ByteString
 import org.bitcoins.core.util.BitcoinSLogger
+import org.bitcoins.eclair.rpc.config.DaemonInstance
 import play.api.libs.json._
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.sys.process._
 
-class RpcClient()(implicit m: ActorMaterializer) {
+class RpcClient(instance: DaemonInstance)(implicit m: ActorMaterializer) {
   private val resultKey = "result"
   private val errorKey = "error"
   implicit val ec: ExecutionContext = m.executionContext
   private val logger = BitcoinSLogger.logger
+
+  def getDaemon: DaemonInstance = instance
 
   case class GetInfoResult(
       nodeId: String,
@@ -348,7 +352,7 @@ class RpcClient()(implicit m: ActorMaterializer) {
       command: String,
       parameters: List[JsValue] = List.empty)(
       implicit reader: Reads[T]): Future[T] = {
-    val request = buildRequest(command, JsArray(parameters))
+    val request = buildRequest(getDaemon, command, JsArray(parameters))
     val responseF = sendRequest(request)
 
     val payloadF: Future[JsValue] = responseF.flatMap(getPayload)
@@ -390,7 +394,7 @@ class RpcClient()(implicit m: ActorMaterializer) {
     Http(m.system).singleRequest(req)
   }
 
-  def buildRequest(methodName: String, params: JsArray): HttpRequest = {
+  def buildRequest(instance: DaemonInstance, methodName: String, params: JsArray): HttpRequest = {
     val uuid = UUID.randomUUID().toString
 
     val obj: JsObject = JsObject(
@@ -398,14 +402,28 @@ class RpcClient()(implicit m: ActorMaterializer) {
           "params" -> params,
           "id" -> JsString(uuid)))
 
-    val uri = "http://localhost:8081"
-    val username = "suredbits"
-    val password = "abc123"
+    val uri = "http://" + instance.rpcUri.getHost + ":" + instance.rpcUri.getPort
+    val username = instance.authCredentials.username
+    val password = instance.authCredentials.password
     HttpRequest(method = HttpMethods.POST,
                 uri,
                 entity =
                   HttpEntity(ContentTypes.`application/json`, obj.toString))
       .addCredentials(
         HttpCredentials.createBasicHttpCredentials(username, password))
+  }
+
+  // TODO: THIS IS ALL HACKY
+
+  def start(): String = ("java -Declair.datadir=" + instance.authCredentials.datadir + " -jar /home/nkohen/Desktop/SuredBits/eclair-node/eclair-node-0.2-beta5-8aa51f4.jar").!!
+
+  def stop(): String = {
+    val processes = ("ps aux | grep \"java -Declair.datadir" + instance.authCredentials.datadir + "\"").!!
+    val scanner = new java.util.Scanner(processes)
+    scanner.next()
+    val process = scanner.nextInt()
+    scanner.close()
+
+    ("kill " + process).!!
   }
 }
