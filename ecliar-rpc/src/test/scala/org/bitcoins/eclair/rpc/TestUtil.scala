@@ -1,13 +1,13 @@
 package org.bitcoins.eclair.rpc
 
-import java.io.{File, PrintWriter}
+import java.io.{ File, PrintWriter }
 import java.net.URI
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.util.BitcoinSLogger
-import org.bitcoins.eclair.rpc.config.{AuthCredentials, DaemonInstance}
+import org.bitcoins.eclair.rpc.config.{ AuthCredentials, DaemonInstance }
 
 trait TestUtil extends BitcoinSLogger {
   implicit val system = ActorSystem()
@@ -18,13 +18,13 @@ trait TestUtil extends BitcoinSLogger {
     0.until(5).map(_ => scala.util.Random.alphanumeric.head).mkString
 
   /**
-    * Creates a datadir and places the username/password combo
-    * in the bitcoin.conf in the datadir
-    */
+   * Creates a datadir and places the username/password combo
+   * in the bitcoin.conf in the datadir
+   */
   def authCredentials(
-                       uri: URI,
-                       rpcUri: URI,
-                       bitcoinRpcUri: URI): AuthCredentials = {
+    uri: URI,
+    rpcUri: URI,
+    bitcoinRpcUri: URI): AuthCredentials = {
     val d = "/tmp/" + randomDirName
     val f = new java.io.File(d)
     f.mkdir()
@@ -42,7 +42,7 @@ trait TestUtil extends BitcoinSLogger {
     pw.println("eclair.api.enabled=true")
     pw.println("eclair.node.alias = \"" + username + "\"")
     pw.println("eclair.server.port = " + uri.getPort)
-    pw.println("eclair.api.password = \"" + pass)
+    pw.println("eclair.api.password = \"" + pass + "\"")
     pw.println("eclair.api.port = " + rpcUri.getPort)
     pw.close()
 

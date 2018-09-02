@@ -11,7 +11,7 @@ import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.eclair.rpc.config.DaemonInstance
 import play.api.libs.json._
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ ExecutionContext, Future }
 import scala.sys.process._
 
 class RpcClient(instance: DaemonInstance)(implicit m: ActorMaterializer) {
@@ -23,77 +23,77 @@ class RpcClient(instance: DaemonInstance)(implicit m: ActorMaterializer) {
   def getDaemon: DaemonInstance = instance
 
   case class GetInfoResult(
-      nodeId: String,
-      alias: String,
-      port: Int,
-      chainHash: String,
-      blockHeight: Long)
+    nodeId: String,
+    alias: String,
+    port: Int,
+    chainHash: String,
+    blockHeight: Long)
   implicit val getInfoResultReads: Reads[GetInfoResult] =
     Json.reads[GetInfoResult]
 
   case class PeerInfo(
-      nodeId: String,
-      state: String,
-      address: String,
-      channels: Int)
+    nodeId: String,
+    state: String,
+    address: String,
+    channels: Int)
   implicit val peerInfoReads: Reads[PeerInfo] = Json.reads[PeerInfo]
 
   case class ChannelInfo(nodeId: String, channelId: String, state: String)
   implicit val channelInfoReads: Reads[ChannelInfo] = Json.reads[ChannelInfo]
 
   case class ChannelResult(
-      nodeId: String,
-      shortChannelId: String,
-      channelId: String,
-      state: String,
-      balanceMsat: Long,
-      capacitySat: Option[Long])
+    nodeId: String,
+    shortChannelId: String,
+    channelId: String,
+    state: String,
+    balanceMsat: Long,
+    capacitySat: Option[Long])
   implicit val channelResultReads: Reads[ChannelResult] =
     Json.reads[ChannelResult]
 
   case class NodeInfo(
-      signature: String,
-      features: String,
-      timestamp: Long,
-      nodeId: String,
-      rgbColor: String,
-      alias: String,
-      addresses: Vector[String])
+    signature: String,
+    features: String,
+    timestamp: Long,
+    nodeId: String,
+    rgbColor: String,
+    alias: String,
+    addresses: Vector[String])
   implicit val nodeInfoReads: Reads[NodeInfo] = Json.reads[NodeInfo]
 
   case class ChannelDesc(shortChannelId: String, a: String, b: String)
   implicit val channelDescReads: Reads[ChannelDesc] = Json.reads[ChannelDesc]
 
   case class ChannelUpdate(
-      signature: String,
-      chainHash: String,
-      shortChannelId: String,
-      timestamp: Long,
-      flags: String,
-      cltvExpiryDelta: Int,
-      htlcMinimumMsat: Long,
-      feeBaseMsat: Long,
-      feeProportionalMillionths: Long)
+    signature: String,
+    chainHash: String,
+    shortChannelId: String,
+    timestamp: Long,
+    flags: String,
+    cltvExpiryDelta: Int,
+    htlcMinimumMsat: Long,
+    feeBaseMsat: Long,
+    feeProportionalMillionths: Long)
   implicit val channelUpdateReads: Reads[ChannelUpdate] =
     Json.reads[ChannelUpdate]
 
   case class PaymentRequest(
-      prefix: String,
-      amount: Option[Long],
-      timestamp: Long,
-      nodeId: String,
-      tags: Vector[JsObject],
-      signature: String)
+    prefix: String,
+    amount: Option[Long],
+    timestamp: Long,
+    nodeId: String,
+    tags: Vector[JsObject],
+    signature: String)
   implicit val paymentRequestReads: Reads[PaymentRequest] =
     Json.reads[PaymentRequest]
 
   sealed trait SendResult
   case class PaymentSucceeded(
-      amountMsat: Long,
-      paymentHash: String,
-      paymentPreimage: String,
-      route: JsArray)
-      extends SendResult
+    amountMsat: Long,
+    paymentHash: String,
+    paymentPreimage: String,
+    route: JsArray)
+    extends SendResult
   implicit val paymentSucceededReads: Reads[PaymentSucceeded] =
     Json.reads[PaymentSucceeded]
   implicit val sendResultReads: Reads[SendResult] =
@@ -120,7 +120,7 @@ class RpcClient(instance: DaemonInstance)(implicit m: ActorMaterializer) {
   }
 
   private def allUpdates(
-      nodeId: Option[String]): Future[Vector[ChannelUpdate]] = {
+    nodeId: Option[String]): Future[Vector[ChannelUpdate]] = {
     val params = if (nodeId.isEmpty) List.empty else List(JsString(nodeId.get))
     eclairCall[Vector[ChannelUpdate]]("allUpdates", params)
   }
@@ -155,8 +155,8 @@ class RpcClient(instance: DaemonInstance)(implicit m: ActorMaterializer) {
   }
 
   private def close(
-      channelId: String,
-      scriptPubKey: Option[String]): Future[String] = {
+    channelId: String,
+    scriptPubKey: Option[String]): Future[String] = {
     val params =
       if (scriptPubKey.isEmpty) {
         List(JsString(channelId))
@@ -173,8 +173,9 @@ class RpcClient(instance: DaemonInstance)(implicit m: ActorMaterializer) {
     close(channelId, Some(scriptPubKey))
 
   def connect(nodeId: String, host: String, port: Int): Future[String] = {
-    eclairCall[String]("connect",
-                       List(JsString(nodeId), JsString(host), JsNumber(port)))
+    eclairCall[String](
+      "connect",
+      List(JsString(nodeId), JsString(host), JsNumber(port)))
   }
 
   def connect(uri: String): Future[String] = {
@@ -199,11 +200,11 @@ class RpcClient(instance: DaemonInstance)(implicit m: ActorMaterializer) {
   }
 
   private def open(
-      nodeId: String,
-      fundingSatoshis: Long,
-      pushMsat: Option[Long],
-      feerateSatPerByte: Option[Long],
-      channelFlags: Option[Byte]): Future[String] = {
+    nodeId: String,
+    fundingSatoshis: Long,
+    pushMsat: Option[Long],
+    feerateSatPerByte: Option[Long],
+    channelFlags: Option[Byte]): Future[String] = {
     val num: Long = pushMsat.getOrElse(0)
     val pushMsatJson = JsNumber(num)
 
@@ -211,16 +212,18 @@ class RpcClient(instance: DaemonInstance)(implicit m: ActorMaterializer) {
       if (feerateSatPerByte.isEmpty) {
         List(JsString(nodeId), JsNumber(fundingSatoshis), pushMsatJson)
       } else if (channelFlags.isEmpty) {
-        List(JsString(nodeId),
-             JsNumber(fundingSatoshis),
-             pushMsatJson,
-             JsNumber(feerateSatPerByte.get))
+        List(
+          JsString(nodeId),
+          JsNumber(fundingSatoshis),
+          pushMsatJson,
+          JsNumber(feerateSatPerByte.get))
       } else {
-        List(JsString(nodeId),
-             JsNumber(fundingSatoshis),
-             pushMsatJson,
-             JsNumber(feerateSatPerByte.get),
-             JsString(channelFlags.toString))
+        List(
+          JsString(nodeId),
+          JsNumber(fundingSatoshis),
+          pushMsatJson,
+          JsNumber(feerateSatPerByte.get),
+          JsString(channelFlags.toString))
       }
 
     eclairCall[String]("open", params)
@@ -230,58 +233,61 @@ class RpcClient(instance: DaemonInstance)(implicit m: ActorMaterializer) {
     open(nodeId, fundingSatoshis, None, None, None)
 
   def open(
-      nodeId: String,
-      fundingSatoshis: Long,
-      pushMsat: Long): Future[String] =
+    nodeId: String,
+    fundingSatoshis: Long,
+    pushMsat: Long): Future[String] =
     open(nodeId, fundingSatoshis, Some(pushMsat), None, None)
 
   def open(
-      nodeId: String,
-      fundingSatoshis: Long,
-      pushMsat: Long,
-      feerateSatPerByte: Long): Future[String] =
+    nodeId: String,
+    fundingSatoshis: Long,
+    pushMsat: Long,
+    feerateSatPerByte: Long): Future[String] =
     open(nodeId, fundingSatoshis, Some(pushMsat), Some(feerateSatPerByte), None)
 
   def open(
-      nodeId: String,
-      fundingSatoshis: Long,
-      pushMsat: Long = 0,
-      feerateSatPerByte: Long,
-      channelFlags: Byte): Future[String] =
-    open(nodeId,
-         fundingSatoshis,
-         Some(pushMsat),
-         Some(feerateSatPerByte),
-         Some(channelFlags))
+    nodeId: String,
+    fundingSatoshis: Long,
+    pushMsat: Long = 0,
+    feerateSatPerByte: Long,
+    channelFlags: Byte): Future[String] =
+    open(
+      nodeId,
+      fundingSatoshis,
+      Some(pushMsat),
+      Some(feerateSatPerByte),
+      Some(channelFlags))
 
   def open(
-      nodeId: String,
-      fundingSatoshis: Long,
-      feerateSatPerByte: Long,
-      channelFlags: Byte): Future[String] =
-    open(nodeId,
-         fundingSatoshis,
-         None,
-         Some(feerateSatPerByte),
-         Some(channelFlags))
+    nodeId: String,
+    fundingSatoshis: Long,
+    feerateSatPerByte: Long,
+    channelFlags: Byte): Future[String] =
+    open(
+      nodeId,
+      fundingSatoshis,
+      None,
+      Some(feerateSatPerByte),
+      Some(channelFlags))
 
   def peers: Future[Vector[PeerInfo]] = {
     eclairCall[Vector[PeerInfo]]("peers")
   }
 
   private def receive(
-      description: Option[String],
-      amountMsat: Option[Long],
-      expirySeconds: Option[Long]): Future[String] = {
+    description: Option[String],
+    amountMsat: Option[Long],
+    expirySeconds: Option[Long]): Future[String] = {
     val params =
       if (amountMsat.isEmpty) {
         List(JsString(description.getOrElse("")))
       } else if (expirySeconds.isEmpty) {
         List(JsNumber(amountMsat.get), JsString(description.getOrElse("")))
       } else {
-        List(JsNumber(amountMsat.get),
-             JsString(description.getOrElse("")),
-             JsNumber(expirySeconds.get))
+        List(
+          JsNumber(amountMsat.get),
+          JsString(description.getOrElse("")),
+          JsNumber(expirySeconds.get))
       }
 
     eclairCall[String]("receive", params)
@@ -297,9 +303,9 @@ class RpcClient(instance: DaemonInstance)(implicit m: ActorMaterializer) {
     receive(Some(description), Some(amountMsat), None)
 
   def receive(
-      description: String,
-      amountMsat: Long,
-      expirySeconds: Long): Future[String] =
+    description: String,
+    amountMsat: Long,
+    expirySeconds: Long): Future[String] =
     receive(Some(description), Some(amountMsat), Some(expirySeconds))
 
   def receive(amountMsat: Long): Future[String] =
@@ -309,17 +315,17 @@ class RpcClient(instance: DaemonInstance)(implicit m: ActorMaterializer) {
     receive(None, Some(amountMsat), Some(expirySeconds))
 
   def send(
-      amountMsat: Long,
-      paymentHash: String,
-      nodeId: String): Future[SendResult] = {
+    amountMsat: Long,
+    paymentHash: String,
+    nodeId: String): Future[SendResult] = {
     eclairCall[SendResult](
       "send",
       List(JsNumber(amountMsat), JsString(paymentHash), JsString(nodeId)))
   }
 
   private def send(
-      invoice: String,
-      amountMsat: Option[Long]): Future[SendResult] = {
+    invoice: String,
+    amountMsat: Option[Long]): Future[SendResult] = {
     val params =
       if (amountMsat.isEmpty) {
         List(JsString(invoice))
@@ -336,22 +342,25 @@ class RpcClient(instance: DaemonInstance)(implicit m: ActorMaterializer) {
     send(invoice, Some(amountMsat))
 
   def updateRelayFee(
-      channelId: String,
-      feeBaseMsat: Long,
-      feeProportionalMillionths: Long): Future[String] = {
-    eclairCall[String]("updaterelayfee",
-                       List(JsString(channelId),
-                            JsNumber(feeBaseMsat),
-                            JsNumber(feeProportionalMillionths)))
+    channelId: String,
+    feeBaseMsat: Long,
+    feeProportionalMillionths: Long): Future[String] = {
+    eclairCall[String](
+      "updaterelayfee",
+      List(
+        JsString(channelId),
+        JsNumber(feeBaseMsat),
+        JsNumber(feeProportionalMillionths)))
   }
 
   // TODO: channelstats, audit, networkfees?
   // TODO: Add types
 
   private def eclairCall[T](
-      command: String,
-      parameters: List[JsValue] = List.empty)(
-      implicit reader: Reads[T]): Future[T] = {
+    command: String,
+    parameters: List[JsValue] = List.empty)(
+    implicit
+    reader: Reads[T]): Future[T] = {
     val request = buildRequest(getDaemon, command, JsArray(parameters))
     val responseF = sendRequest(request)
 
@@ -398,17 +407,19 @@ class RpcClient(instance: DaemonInstance)(implicit m: ActorMaterializer) {
     val uuid = UUID.randomUUID().toString
 
     val obj: JsObject = JsObject(
-      Map("method" -> JsString(methodName),
-          "params" -> params,
-          "id" -> JsString(uuid)))
+      Map(
+        "method" -> JsString(methodName),
+        "params" -> params,
+        "id" -> JsString(uuid)))
 
     val uri = "http://" + instance.rpcUri.getHost + ":" + instance.rpcUri.getPort
     val username = instance.authCredentials.username
     val password = instance.authCredentials.password
-    HttpRequest(method = HttpMethods.POST,
-                uri,
-                entity =
-                  HttpEntity(ContentTypes.`application/json`, obj.toString))
+    HttpRequest(
+      method = HttpMethods.POST,
+      uri,
+      entity =
+        HttpEntity(ContentTypes.`application/json`, obj.toString))
       .addCredentials(
         HttpCredentials.createBasicHttpCredentials(username, password))
   }

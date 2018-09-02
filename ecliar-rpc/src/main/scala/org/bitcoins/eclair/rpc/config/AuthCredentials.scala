@@ -22,30 +22,27 @@ sealed trait AuthCredentials {
 
 object AuthCredentials {
   private case class AuthCredentialsImpl(
-                                        username: String,
-                                        password: String,
-                                        bitcoinUsername: String,
-                                        bitcoinPassword: String,
-                                        datadir: File
-                                        ) extends AuthCredentials
+    username: String,
+    password: String,
+    bitcoinUsername: String,
+    bitcoinPassword: String,
+    datadir: File) extends AuthCredentials
 
   def apply(
-             username: String,
-             password: String,
-             bitcoinUsername: String,
-             bitcoinPassword: String
-           ): AuthCredentials = {
+    username: String,
+    password: String,
+    bitcoinUsername: String,
+    bitcoinPassword: String): AuthCredentials = {
     val defaultDataDir = new File(System.getProperty("user.home") + "/.eclair")
     AuthCredentials(username, password, bitcoinUsername, bitcoinPassword, defaultDataDir)
   }
 
   def apply(
-           username: String,
-           password: String,
-           bitcoinUsername: String,
-           bitcoinPassword: String,
-           datadir: File
-           ) = {
+    username: String,
+    password: String,
+    bitcoinUsername: String,
+    bitcoinPassword: String,
+    datadir: File): AuthCredentials = {
     AuthCredentialsImpl(username, password, bitcoinUsername, bitcoinPassword, datadir)
   }
 }
