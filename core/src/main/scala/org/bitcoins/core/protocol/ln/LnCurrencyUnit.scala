@@ -6,6 +6,7 @@ import org.bitcoins.core.protocol.NetworkElement
 import scodec.bits.ByteVector
 
 import scala.math.BigDecimal.RoundingMode
+import scala.util.{ Failure, Success, Try }
 
 sealed abstract class LnCurrencyUnit extends NetworkElement {
   type A
@@ -227,5 +228,20 @@ object LnCurrencyUnits {
     if (rounded >= 1) {
       Satoshis(Int64(rounded.toBigIntExact().get))
     } else Satoshis.zero
+  }
+
+  def fromEncodedString(input: String): Try[LnCurrencyUnit] = {
+    val currency = input.splitAt(input.length - 1)
+    val amount = Try(BigInt(currency._1))
+    if (amount.isSuccess) {
+      val unit = currency._2
+      unit match {
+        case "m" => Try(MilliBitcoins(amount.get))
+        case "u" => Try(MicroBitcoins(amount.get))
+        case "n" => Try(NanoBitcoins(amount.get))
+        case "p" => Try(PicoBitcoins(amount.get))
+        case _ => Failure(new IllegalArgumentException(s"LnCurrencyUnit not found. Expected MilliBitcoins (m), MicroBitcoins (u), NanoBitcoins (n), or PicoBitcoins (p), got: $unit"))
+      }
+    } else { Failure(new IllegalArgumentException(s"Could not convert amount to valid number, got: $amount")) }
   }
 }
