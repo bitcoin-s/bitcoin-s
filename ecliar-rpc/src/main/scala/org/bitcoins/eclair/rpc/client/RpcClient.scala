@@ -122,7 +122,7 @@ class RpcClient(instance: DaemonInstance)(implicit m: ActorMaterializer) {
   private def allUpdates(
     nodeId: Option[String]): Future[Vector[ChannelUpdate]] = {
     val params = if (nodeId.isEmpty) List.empty else List(JsString(nodeId.get))
-    eclairCall[Vector[ChannelUpdate]]("allUpdates", params)
+    eclairCall[Vector[ChannelUpdate]]("allupdates", params)
   }
 
   def allUpdates: Future[Vector[ChannelUpdate]] = allUpdates(None)
