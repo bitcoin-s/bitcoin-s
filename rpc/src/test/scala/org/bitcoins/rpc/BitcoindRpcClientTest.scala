@@ -38,7 +38,7 @@ class BitcoindRpcClientTest
   extends AsyncFlatSpec
   with BeforeAndAfterAll
   with BeforeAndAfter {
-  implicit val system = ActorSystem()
+  implicit val system = ActorSystem("RpcClientTest_ActorSystem")
   implicit val m = ActorMaterializer()
   implicit val ec = m.executionContext
   implicit val networkParam = TestUtil.network
@@ -153,12 +153,12 @@ class BitcoindRpcClientTest
     Await.result(
       walletClient.encryptWallet(password).map { msg =>
         logger.info(msg)
-        TestUtil.awaitServerShutdown(walletClient)
+        RpcUtil.awaitServerShutdown(walletClient)
         logger.debug(walletClient.isStarted.toString)
         // Very rarely, this may fail if bitocoind does not ping but hasn't yet released its locks
         walletClient.start()
         logger.info("Bitcoin server restarting")
-        TestUtil.awaitServer(walletClient)
+        RpcUtil.awaitServer(walletClient)
       },
       5.seconds)
 
@@ -176,6 +176,13 @@ class BitcoindRpcClientTest
       pruneClient.pruneBlockChain(count).flatMap { pruned =>
         assert(pruned > 0)
       }
+    }
+  }
+
+  it should "be able to get the first block" in {
+    getFirstBlock().flatMap { block =>
+      assert(block.tx.nonEmpty)
+      assert(block.height == 1)
     }
   }
 
@@ -337,16 +344,11 @@ class BitcoindRpcClientTest
                   assert(bestHash2 == blocks2.head)
                   client1.addNode(client2.getDaemon.uri, "onetry").flatMap {
                     _ =>
-                      TestUtil.awaitCondition(
+                      RpcUtil.awaitCondition(
                         Try(Await.result(
                           client2.preciousBlock(bestHash1),
                           2.seconds)).isSuccess)
 
-                      TestUtil.awaitCondition(
-                        Try(Await.result(
-                          client2.getBestBlockHash.map(hash =>
-                            hash != bestHash2),
-                          2.seconds)).isSuccess)
                       client2.getBestBlockHash.map { newBestHash =>
                         TestUtil.deleteNodePair(client1, client2)
                         assert(newBestHash == blocks1.head)
@@ -1715,5 +1717,7 @@ class BitcoindRpcClientTest
       logger.info("Temp bitcoin directory deleted")
     if (TestUtil.deleteTmpDir(pruneClient.getDaemon.authCredentials.datadir))
       logger.info("Temp bitcoin directory deleted")
+
+    Await.result(system.terminate(), 10.seconds)
   }
 }
