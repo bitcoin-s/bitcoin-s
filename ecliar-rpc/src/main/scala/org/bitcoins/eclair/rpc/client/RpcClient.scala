@@ -41,16 +41,6 @@ class RpcClient(instance: DaemonInstance)(implicit m: ActorMaterializer) {
   case class ChannelInfo(nodeId: String, channelId: String, state: String)
   implicit val channelInfoReads: Reads[ChannelInfo] = Json.reads[ChannelInfo]
 
-  case class ChannelResult(
-    nodeId: String,
-    shortChannelId: String,
-    channelId: String,
-    state: String,
-    balanceMsat: Long,
-    capacitySat: Option[Long])
-  implicit val channelResultReads: Reads[ChannelResult] =
-    Json.reads[ChannelResult]
-
   case class NodeInfo(
     signature: String,
     features: String,
@@ -76,6 +66,126 @@ class RpcClient(instance: DaemonInstance)(implicit m: ActorMaterializer) {
     feeProportionalMillionths: Long)
   implicit val channelUpdateReads: Reads[ChannelUpdate] =
     Json.reads[ChannelUpdate]
+
+  /* ChannelResult starts here, some of this may be useful but it seems that data is different at different times
+
+  case class CommitInput(
+    outPoint: String,
+    amountSatoshis: Long)
+  implicit val commitInputReads: Reads[CommitInput] =
+    Json.reads[CommitInput]
+
+  case class CommitChanges(
+    proposed: Vector[String], // IDK WHAT TYPE THIS SHOULD BE
+    signed: Vector[String], // IDK WHAT TYPE THIS SHOULD BE
+    acked: Vector[String] // IDK WHAT TYPE THIS SHOULD BE
+  )
+  implicit val commitChangesReads: Reads[CommitChanges] =
+    Json.reads[CommitChanges]
+
+  case class CommitSpec(
+    htlcs: Vector[String],
+    feeratePerKw: Long,
+    toLocalMsat: Long,
+    toRemoteMsat: Long)
+  implicit val commitSpecReads: Reads[CommitSpec] =
+    Json.reads[CommitSpec]
+
+  case class RemoteCommit(
+    index: Int,
+    spec: CommitSpec,
+    txid: String,
+    remotePerCommitmentPoint: String)
+  implicit val remoteCommitReads: Reads[RemoteCommit] =
+    Json.reads[RemoteCommit]
+
+  case class PublishableTxs(
+    commitTx: String,
+    htlcTxsAndSigs: Vector[String])
+  implicit val publishableTxsReads: Reads[PublishableTxs] =
+    Json.reads[PublishableTxs]
+
+  case class LocalCommit(
+    index: Int,
+    spec: CommitSpec,
+    publishableTxs: PublishableTxs)
+  implicit val localCommitReads: Reads[LocalCommit] =
+    Json.reads[LocalCommit]
+
+  case class RemoteParams(
+    nodeId: String,
+    dustLimitSatoshis: Long,
+    maxHtlcValueInFlightMsat: Long,
+    channelReserveSatoshis: Long,
+    htlcMinimumMsat: Long,
+    toSelfDelay: Long,
+    maxAcceptedHtlcs: Long,
+    fundingPubKey: String,
+    revocationBasepoint: String,
+    paymentBasepoint: String,
+    delayedPaymentBasepoint: String,
+    htlcBasepoint: String,
+    globalFeatures: String,
+    localFeatures: String)
+  implicit val remoteParamsReads: Reads[RemoteParams] =
+    Json.reads[RemoteParams]
+
+  case class ChannelKeyPath(
+    path: Vector[Long])
+  implicit val channelKeyPathReads: Reads[ChannelKeyPath] =
+    Json.reads[ChannelKeyPath]
+
+  case class LocalParams(
+    nodeId: String,
+    channelKeyPath: ChannelKeyPath,
+    dustLimitSatoshis: Long,
+    maxHtlcValueInFlightMsat: Long,
+    channelReserveSatoshis: Long,
+    htlcMinimumMsat: Long,
+    toSelfDelay: Long,
+    maxAcceptedHtlcs: Long,
+    isFunder: Boolean,
+    defaultFinalScriptPubKey: String,
+    globalFeatures: String,
+    localFeatures: String)
+  implicit val localParamsReads: Reads[LocalParams] =
+    Json.reads[LocalParams]
+
+  case class ChannelCommitments(
+    localParams: LocalParams,
+    remoteParams: RemoteParams,
+    channelFlags: Int,
+    localCommit: LocalCommit,
+    remoteCommit: RemoteCommit,
+    localChanges: CommitChanges,
+    remoteChanges: CommitChanges,
+    localNextHtlcId: Long,
+    remoteNextHtlcId: Long,
+    originChannels: String, // IDK WHAT TYPE THIS SHOULD BE
+    remoteNextCommitInfo: String,
+    commitInput: CommitInput,
+    remotePerCommitmentSecrets: Option[String], // IDK WHAT TYPE THIS SHOULD BE
+    channelId: String)
+  implicit val channelCommitmentsReads: Reads[ChannelCommitments] =
+    Json.reads[ChannelCommitments]
+
+  case class ChannelData(
+    commitments: ChannelCommitments,
+    shortChannelId: String,
+    buried: Boolean,
+    channelUpdate: ChannelUpdate)
+  implicit val channelDataReads: Reads[ChannelData] =
+    Json.reads[ChannelData]
+*/
+  case class ChannelResult(
+    nodeId: String,
+    channelId: String,
+    state: String,
+    data: JsObject)
+  implicit val channelResultReads: Reads[ChannelResult] =
+    Json.reads[ChannelResult]
+
+  // ChannelResult ends here
 
   case class PaymentRequest(
     prefix: String,
