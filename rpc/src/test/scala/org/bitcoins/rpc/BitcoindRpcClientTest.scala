@@ -14,7 +14,7 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionOutPoint
 }
 import org.bitcoins.core.util.BitcoinSLogger
-import org.bitcoins.rpc.client.{ RpcClient, RpcOpts }
+import org.bitcoins.rpc.client.{ BitcoindRpcClient, RpcOpts }
 import org.scalatest.{ AsyncFlatSpec, BeforeAndAfter, BeforeAndAfterAll }
 import org.bitcoins.core.number.{ Int64, UInt32 }
 import org.bitcoins.core.protocol.{ BitcoinAddress, P2PKHAddress }
@@ -34,7 +34,7 @@ import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration.DurationInt
 import scala.util.Try
 
-class RpcClientTest
+class BitcoindRpcClientTest
   extends AsyncFlatSpec
   with BeforeAndAfterAll
   with BeforeAndAfter {
@@ -43,22 +43,22 @@ class RpcClientTest
   implicit val ec = m.executionContext
   implicit val networkParam = TestUtil.network
 
-  val client = new RpcClient(TestUtil.instance())
+  val client = new BitcoindRpcClient(TestUtil.instance())
 
-  val otherClient = new RpcClient(TestUtil.instance())
+  val otherClient = new BitcoindRpcClient(TestUtil.instance())
 
   // This client's wallet is encrypted
-  val walletClient = new RpcClient(TestUtil.instance())
+  val walletClient = new BitcoindRpcClient(TestUtil.instance())
 
-  val pruneClient = new RpcClient(TestUtil.instance(pruneMode = true))
+  val pruneClient = new BitcoindRpcClient(TestUtil.instance(pruneMode = true))
 
   val logger = BitcoinSLogger.logger
 
   var password = "password"
 
   private def createRawCoinbaseTransaction(
-    sender: RpcClient = client,
-    receiver: RpcClient = otherClient,
+    sender: BitcoindRpcClient = client,
+    receiver: BitcoindRpcClient = otherClient,
     amount: Bitcoins = Bitcoins(1)): Future[Transaction] = {
     sender.generate(2).flatMap { blocks =>
       sender.getBlock(blocks(0)).flatMap { block0 =>
@@ -89,8 +89,8 @@ class RpcClientTest
   }
 
   private def sendCoinbaseTransaction(
-    sender: RpcClient = client,
-    receiver: RpcClient = otherClient,
+    sender: BitcoindRpcClient = client,
+    receiver: BitcoindRpcClient = otherClient,
     amount: Bitcoins = Bitcoins(1)): Future[GetTransactionResult] = {
     createRawCoinbaseTransaction(sender, receiver, amount).flatMap {
       transaction =>
@@ -108,7 +108,7 @@ class RpcClientTest
   }
 
   private def fundMemPoolTransaction(
-    sender: RpcClient,
+    sender: BitcoindRpcClient,
     address: BitcoinAddress,
     amount: Bitcoins): Future[DoubleSha256Digest] = {
     sender.createRawTransaction(Vector.empty, Map(address -> amount)).flatMap {
@@ -122,7 +122,7 @@ class RpcClientTest
   }
 
   private def fundBlockChainTransaction(
-    sender: RpcClient,
+    sender: BitcoindRpcClient,
     address: BitcoinAddress,
     amount: Bitcoins): Future[DoubleSha256Digest] = {
     fundMemPoolTransaction(sender, address, amount).flatMap { txid =>
@@ -133,7 +133,7 @@ class RpcClientTest
   }
 
   private def getFirstBlock(
-    node: RpcClient = client): Future[GetBlockWithTransactionsResult] = {
+    node: BitcoindRpcClient = client): Future[GetBlockWithTransactionsResult] = {
     node.getBlockHash(1).flatMap { hash =>
       node.getBlockWithTransactions(hash)
     }
@@ -169,7 +169,7 @@ class RpcClientTest
     TestUtil.awaitConnection(client, otherClient)
   }
 
-  behavior of "RpcClient"
+  behavior of "BitcoindRpcClient"
 
   it should "be able to prune the blockchain" in {
     pruneClient.getBlockCount.flatMap { count =>

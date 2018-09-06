@@ -11,27 +11,23 @@ import akka.util.ByteString
 import org.bitcoins.core.crypto.{ DoubleSha256Digest, ECPrivateKey, ECPublicKey }
 import org.bitcoins.core.currency.{ Bitcoins, Satoshis }
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.{ BitcoinAddress, P2PKHAddress }
 import org.bitcoins.core.protocol.blockchain.{ Block, BlockHeader, MerkleBlock }
 import org.bitcoins.core.protocol.script.ScriptPubKey
-import org.bitcoins.core.protocol.transaction.{
-  Transaction,
-  TransactionInput,
-  TransactionOutPoint
-}
+import org.bitcoins.core.protocol.transaction.{ Transaction, TransactionInput, TransactionOutPoint }
+import org.bitcoins.core.protocol.{ BitcoinAddress, P2PKHAddress }
 import org.bitcoins.core.util.{ BitcoinSLogger, BitcoinSUtil }
 import org.bitcoins.rpc.client.RpcOpts.AddressType
-import org.bitcoins.rpc.config.DaemonInstance
-import play.api.libs.json._
+import org.bitcoins.rpc.config.BitcoindInstance
 import org.bitcoins.rpc.jsonmodels._
 import org.bitcoins.rpc.serializers.JsonSerializers._
+import play.api.libs.json._
 
-import scala.concurrent.{ Await, ExecutionContext, Future }
 import scala.concurrent.duration.DurationInt
+import scala.concurrent.{ Await, ExecutionContext, Future }
 import scala.sys.process._
 import scala.util.Try
 
-class RpcClient(instance: DaemonInstance)(
+class BitcoindRpcClient(instance: BitcoindInstance)(
   implicit
   m: ActorMaterializer) {
   private val resultKey = "result"
@@ -40,7 +36,7 @@ class RpcClient(instance: DaemonInstance)(
   private implicit val network = instance.network
   private implicit val ec: ExecutionContext = m.executionContext
 
-  def getDaemon: DaemonInstance = instance
+  def getDaemon: BitcoindInstance = instance
 
   def isStarted: Boolean = {
     val request = buildRequest(instance, "ping", JsArray.empty)
@@ -1157,7 +1153,7 @@ class RpcClient(instance: DaemonInstance)(
   }
 
   def buildRequest(
-    instance: DaemonInstance,
+    instance: BitcoindInstance,
     methodName: String,
     params: JsArray): HttpRequest = {
     val uuid = UUID.randomUUID().toString
