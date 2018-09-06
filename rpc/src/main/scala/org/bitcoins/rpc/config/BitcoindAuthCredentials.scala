@@ -5,7 +5,7 @@ import java.io.File
 /**
  * Created by chris on 5/2/17.
  */
-sealed trait AuthCredentials {
+sealed trait BitcoindAuthCredentials {
 
   /** The directory where our bitcoin.conf file is located */
   def datadir: File
@@ -17,22 +17,22 @@ sealed trait AuthCredentials {
   def password: String
 }
 
-object AuthCredentials {
-  private case class AuthCredentialsImpl(
+object BitcoindAuthCredentials {
+  private case class BitcoindAuthCredentialsImpl(
     username: String,
     password: String,
     datadir: File)
-    extends AuthCredentials
+    extends BitcoindAuthCredentials
 
-  def apply(username: String, password: String): AuthCredentials = {
+  def apply(username: String, password: String): BitcoindAuthCredentials = {
     val defaultDataDir = new File(System.getProperty("user.home") + "/.bitcoin")
-    AuthCredentials(username, password, defaultDataDir)
+    BitcoindAuthCredentials(username, password, defaultDataDir)
   }
 
   def apply(
     username: String,
     password: String,
-    datadir: File): AuthCredentials = {
-    AuthCredentialsImpl(username, password, datadir)
+    datadir: File): BitcoindAuthCredentials = {
+    BitcoindAuthCredentialsImpl(username, password, datadir)
   }
 }
