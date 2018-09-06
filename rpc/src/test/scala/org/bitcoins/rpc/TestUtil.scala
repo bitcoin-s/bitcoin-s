@@ -7,11 +7,11 @@ import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.util.BitcoinSLogger
-import org.bitcoins.rpc.client.RpcClient
-import org.bitcoins.rpc.config.{ AuthCredentials, DaemonInstance }
+import org.bitcoins.rpc.client.BitcoindRpcClient
+import org.bitcoins.rpc.config.{ BitcoindAuthCredentials, BitcoindInstance }
 
-import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration.DurationInt
+import scala.concurrent.{ Await, Future }
 import scala.util.Try
 
 trait TestUtil extends BitcoinSLogger {
@@ -30,7 +30,7 @@ trait TestUtil extends BitcoinSLogger {
   def authCredentials(
     uri: URI,
     rpcUri: URI,
-    pruneMode: Boolean): AuthCredentials = {
+    pruneMode: Boolean): BitcoindAuthCredentials = {
     val d = "/tmp/" + randomDirName
     val f = new java.io.File(d)
     f.mkdir()
@@ -52,7 +52,7 @@ trait TestUtil extends BitcoinSLogger {
       pw.write("prune=1\n")
     }
     pw.close()
-    AuthCredentials(username, pass, f)
+    BitcoindAuthCredentials(username, pass, f)
   }
 
   lazy val network = RegTest
@@ -60,10 +60,10 @@ trait TestUtil extends BitcoinSLogger {
   def instance(
     port: Int = randomPort,
     rpcPort: Int = randomPort,
-    pruneMode: Boolean = false): DaemonInstance = {
+    pruneMode: Boolean = false): BitcoindInstance = {
     val uri = new URI("http://localhost:" + port)
     val rpcUri = new URI("http://localhost:" + rpcPort)
-    DaemonInstance(
+    BitcoindInstance(
       network,
       uri,
       rpcUri,
@@ -77,7 +77,7 @@ trait TestUtil extends BitcoinSLogger {
     } else firstAttempt
   }
 
-  def startServers(servers: Vector[RpcClient]): Unit = {
+  def startServers(servers: Vector[BitcoindRpcClient]): Unit = {
     servers.foreach(_.start())
     servers.foreach(awaitServer(_))
   }
@@ -106,22 +106,22 @@ trait TestUtil extends BitcoinSLogger {
   }
 
   def awaitServer(
-    server: RpcClient,
+    server: BitcoindRpcClient,
     duration: Int = 100,
     counter: Int = 0): Unit = {
     awaitCondition(server.isStarted, duration, counter)
   }
 
   def awaitServerShutdown(
-    server: RpcClient,
+    server: BitcoindRpcClient,
     duration: Int = 300,
     counter: Int = 0): Unit = {
     awaitCondition(!server.isStarted, duration, counter)
   }
 
   def awaitConnection(
-    from: RpcClient,
-    to: RpcClient,
+    from: BitcoindRpcClient,
+    to: BitcoindRpcClient,
     duration: Int = 100,
     counter: Int = 0): Unit = {
     awaitCondition(
@@ -135,8 +135,8 @@ trait TestUtil extends BitcoinSLogger {
   }
 
   def awaitSynced(
-    client1: RpcClient,
-    client2: RpcClient,
+    client1: BitcoindRpcClient,
+    client2: BitcoindRpcClient,
     duration: Int = 100,
     counter: Int = 0): Unit = {
     awaitCondition(Await.result(client1.getBlockCount.flatMap { count1 =>
@@ -147,8 +147,8 @@ trait TestUtil extends BitcoinSLogger {
   }
 
   def awaitDisconnected(
-    from: RpcClient,
-    to: RpcClient,
+    from: BitcoindRpcClient,
+    to: BitcoindRpcClient,
     duration: Int = 100,
     counter: Int = 0): Unit = {
     awaitCondition(
@@ -165,9 +165,9 @@ trait TestUtil extends BitcoinSLogger {
     port1: Int = randomPort,
     rpcPort1: Int = randomPort,
     port2: Int = randomPort,
-    rpcPort2: Int = randomPort): Future[(RpcClient, RpcClient)] = {
-    val client1: RpcClient = new RpcClient(TestUtil.instance(port1, rpcPort1))
-    val client2: RpcClient = new RpcClient(TestUtil.instance(port2, rpcPort2))
+    rpcPort2: Int = randomPort): Future[(BitcoindRpcClient, BitcoindRpcClient)] = {
+    val client1: BitcoindRpcClient = new BitcoindRpcClient(TestUtil.instance(port1, rpcPort1))
+    val client2: BitcoindRpcClient = new BitcoindRpcClient(TestUtil.instance(port2, rpcPort2))
     client1.start()
     client2.start()
     val try1 = Try(awaitServer(client1))
@@ -197,7 +197,7 @@ trait TestUtil extends BitcoinSLogger {
     }
   }
 
-  def deleteNodePair(client1: RpcClient, client2: RpcClient): Unit = {
+  def deleteNodePair(client1: BitcoindRpcClient, client2: BitcoindRpcClient): Unit = {
     client1.stop()
     client2.stop()
     deleteTmpDir(client1.getDaemon.authCredentials.datadir)
