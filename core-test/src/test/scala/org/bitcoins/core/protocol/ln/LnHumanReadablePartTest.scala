@@ -4,6 +4,8 @@ import org.bitcoins.core.config.{ MainNet, RegTest, TestNet3 }
 import org.bitcoins.core.protocol.ln.LnParams._
 import org.scalatest.{ FlatSpec, MustMatchers }
 
+import scala.util.Try
+
 class LnHumanReadablePartTest extends FlatSpec with MustMatchers {
   it must "match the correct hrp with the correct network" in {
     LnHumanReadablePart(MainNet).get must be(LnHumanReadablePart(LnBitcoinMainNet))
@@ -21,6 +23,12 @@ class LnHumanReadablePartTest extends FlatSpec with MustMatchers {
     LnHumanReadablePart(LnBitcoinMainNet).toString must be("lnbc")
     LnHumanReadablePart(LnBitcoinTestNet).toString must be("lntb")
     LnHumanReadablePart(LnBitcoinRegTest).toString must be("lnbcrt")
+  }
+
+  it must "fail to create hrp from invalid amount" in {
+    Try(LnHumanReadablePart(LnBitcoinMainNet, MilliBitcoins(LnPolicy.maxAmountMSat.toBigInt + 1))).isFailure must be(true)
+    Try(LnHumanReadablePart(LnBitcoinMainNet, MilliBitcoins(0))).isFailure must be(true)
+    Try(LnHumanReadablePart(LnBitcoinMainNet, MilliBitcoins(-1))).isFailure must be(true)
   }
 
   it must "deserialize hrp from string" in {

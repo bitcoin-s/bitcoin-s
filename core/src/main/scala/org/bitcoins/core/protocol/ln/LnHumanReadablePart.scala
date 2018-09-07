@@ -4,27 +4,35 @@ import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.protocol.NetworkElement
 import org.bitcoins.core.protocol.ln.LnParams._
 import scodec.bits.ByteVector
+
 import scala.util.matching.Regex
-import scala.util.{ Failure, Try }
+import scala.util.{ Failure, Success, Try }
 
 sealed abstract class LnHumanReadablePart extends NetworkElement {
   def network: LnParams
 
   def amount: Option[LnCurrencyUnit]
 
-  override def toString: String = network.value + invoiceAmount
-
-  def invoiceAmount: String = {
-    if (amount.isDefined) {
-      amount.get.toBigInt.toString() + amount.get.character
-    } else ""
+  def networkToString: String = network match {
+    case LnBitcoinMainNet => "lnbc"
+    case LnBitcoinTestNet => "lntb"
+    case LnBitcoinRegTest => "lnbcrt"
   }
 
-  override def bytes: ByteVector = ByteVector(network.value.map(c => c.toByte) ++ invoiceAmount.map(c => c.toByte)) //TODO: Verify
+  override def toString: String = {
+    if (amount.isDefined) { networkToString + amount.get.toEncodedString }
+    else networkToString
+  }
+
+  override def bytes: ByteVector = ByteVector(this.toString.map(n => n.toByte))
 }
 
-case class HumanReadablePart(inNetwork: LnParams, amnt: Option[LnCurrencyUnit]) extends LnHumanReadablePart {
-  def network: LnParams = inNetwork
+case class HumanReadablePart(lnParams: LnParams, amnt: Option[LnCurrencyUnit]) extends LnHumanReadablePart {
+  require(amnt.isEmpty || amnt.get.toBigInt > 0, s"Invoice amount must be greater then 0, got $amount")
+  require(amnt.isEmpty || amnt.get <= LnPolicy.maxAmountMSat, s"Invoice amount must be less than ${LnPolicy.maxAmountMSat}, got $amount")
+
+  def network: LnParams = lnParams
+
   def amount: Option[LnCurrencyUnit] = amnt
 }
 
@@ -44,18 +52,23 @@ case object lnbcrt extends LnHumanReadablePart {
 }
 
 object LnHumanReadablePart {
+
+  private val allHRPs: Vector[LnHumanReadablePart] = Vector(lnbc, lntb, lnbcrt)
+
+  private def networkFromString(prefix: String): Try[LnParams] = {
+    val hrp = allHRPs.find(_.networkToString == prefix)
+    if (hrp.isDefined) { Success(hrp.get.network) }
+    else { Failure(new IllegalArgumentException(s"Unable to find a matching network, expected 'lnbc', 'lntb, or 'lnbcrt', got: $prefix")) }
+  }
+
   def apply(network: NetworkParameters): Option[LnHumanReadablePart] = {
     val lnNetwork = LnParams.fromNetworkParameters(network)
-    if (lnNetwork.isDefined) {
-      Some(HumanReadablePart(lnNetwork.get, None))
-    } else { None }
+    lnNetwork.map { params => HumanReadablePart(params, None) }
   }
 
   def apply(network: NetworkParameters, amount: LnCurrencyUnit): Option[LnHumanReadablePart] = {
     val lnNetwork = LnParams.fromNetworkParameters(network)
-    if (lnNetwork.isDefined) {
-      Some(HumanReadablePart(lnNetwork.get, Some(amount)))
-    } else { None }
+    lnNetwork.map { params => HumanReadablePart(params, Some(amount)) }
   }
 
   def apply(network: LnParams): LnHumanReadablePart = {
@@ -70,15 +83,12 @@ object LnHumanReadablePart {
     val networkPattern: Regex = "^[a-z]*".r //Select all of the letters, until we hit a number, as the network
     val networkString = networkPattern.findFirstIn(input).getOrElse("")
     val amountString = input.substring(networkString.length) //Select the remaining part of the string as the amount
-    val lnParam = LnParams.fromString(networkString)
 
-    if (lnParam.isDefined) {
-      if (amountString.isEmpty) {
-        Try(apply(lnParam.get.network).get)
-      } else {
-        val amount = LnCurrencyUnits.fromEncodedString(amountString)
-        Try(apply(lnParam.get.network, amount.get).get)
-      }
-    } else { Failure(new IllegalArgumentException(s"Could not convert to valid network. Expected MainNet (lnbc), TestNet3 (lntb), or RegTest (lnbcrt), got: $networkString")) }
+    val lnNetwork = networkFromString(networkString)
+    val amount = LnCurrencyUnits.fromEncodedString(amountString).toOption
+
+    //If we are able to parse something as an amount, but are unable to convert it to a LnCurrencyUnit, we should fail.
+    if (amount.isEmpty && !amountString.isEmpty) { Failure(new IllegalArgumentException(s"Parsed an amount, but could not convert to a valid currency, got: $amountString")) }
+    else { lnNetwork.map { params => HumanReadablePart(params, amount) } }
   }
 }
