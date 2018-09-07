@@ -1,94 +1,121 @@
 package org.bitcoins.core.protocol.ln
 
 import org.bitcoins.core.config.NetworkParameters
-import org.bitcoins.core.protocol.NetworkElement
 import org.bitcoins.core.protocol.ln.LnParams._
-import scodec.bits.ByteVector
 
 import scala.util.matching.Regex
 import scala.util.{ Failure, Success, Try }
 
-sealed abstract class LnHumanReadablePart extends NetworkElement {
+sealed abstract class LnHumanReadablePart {
+  require(
+    amount.isEmpty || amount.get.toBigInt > 0,
+    s"Invoice amount must be greater then 0, got $amount")
+  require(
+    amount.isEmpty || amount.get <= LnPolicy.maxAmountMSat,
+    s"Invoice amount must be less than ${LnPolicy.maxAmountMSat}, got $amount")
+
   def network: LnParams
 
   def amount: Option[LnCurrencyUnit]
 
-  def networkToString: String = network match {
-    case LnBitcoinMainNet => "lnbc"
-    case LnBitcoinTestNet => "lntb"
-    case LnBitcoinRegTest => "lnbcrt"
-  }
-
   override def toString: String = {
-    if (amount.isDefined) { networkToString + amount.get.toEncodedString }
-    else networkToString
+    val b = StringBuilder.newBuilder
+    val prefix = network.invoicePrefix.toArray.map(_.toChar).mkString
+    b.append(prefix)
+
+    val amt = amount.map(_.toEncodedString).getOrElse("")
+    b.append(amt)
+
+    b.toString()
   }
-
-  override def bytes: ByteVector = ByteVector(this.toString.map(n => n.toByte))
 }
 
-case class HumanReadablePart(lnParams: LnParams, amnt: Option[LnCurrencyUnit]) extends LnHumanReadablePart {
-  require(amnt.isEmpty || amnt.get.toBigInt > 0, s"Invoice amount must be greater then 0, got $amount")
-  require(amnt.isEmpty || amnt.get <= LnPolicy.maxAmountMSat, s"Invoice amount must be less than ${LnPolicy.maxAmountMSat}, got $amount")
-
-  def network: LnParams = lnParams
-
-  def amount: Option[LnCurrencyUnit] = amnt
+/** Prefix for generating a LN invoice on the Bitcoin MainNet */
+case class lnbc(override val amount: Option[LnCurrencyUnit]) extends LnHumanReadablePart {
+  override def network: LnParams = LnBitcoinMainNet
 }
 
-case object lnbc extends LnHumanReadablePart {
-  def network: LnParams = LnBitcoinMainNet
-  def amount: Option[LnCurrencyUnit] = None
+/** Prefix for generating a LN invoice on the Bitcoin TestNet3 */
+case class lntb(override val amount: Option[LnCurrencyUnit]) extends LnHumanReadablePart {
+  override def network: LnParams = LnBitcoinTestNet
 }
 
-case object lntb extends LnHumanReadablePart {
-  def network: LnParams = LnBitcoinTestNet
-  def amount: Option[LnCurrencyUnit] = None
-}
-
-case object lnbcrt extends LnHumanReadablePart {
+/** Prefix for genearting a LN invoice on the Bitcoin RegTest */
+case class lnbcrt(override val amount: Option[LnCurrencyUnit]) extends LnHumanReadablePart {
   def network: LnParams = LnBitcoinRegTest
-  def amount: Option[LnCurrencyUnit] = None
 }
 
 object LnHumanReadablePart {
 
-  private val allHRPs: Vector[LnHumanReadablePart] = Vector(lnbc, lntb, lnbcrt)
-
-  private def networkFromString(prefix: String): Try[LnParams] = {
-    val hrp = allHRPs.find(_.networkToString == prefix)
-    if (hrp.isDefined) { Success(hrp.get.network) }
-    else { Failure(new IllegalArgumentException(s"Unable to find a matching network, expected 'lnbc', 'lntb, or 'lnbcrt', got: $prefix")) }
-  }
-
   def apply(network: NetworkParameters): Option[LnHumanReadablePart] = {
-    val lnNetwork = LnParams.fromNetworkParameters(network)
-    lnNetwork.map { params => HumanReadablePart(params, None) }
+    val lnNetworkOpt = LnParams.fromNetworkParameters(network)
+    lnNetworkOpt.map(LnHumanReadablePart.fromLnParams(_))
   }
 
   def apply(network: NetworkParameters, amount: LnCurrencyUnit): Option[LnHumanReadablePart] = {
-    val lnNetwork = LnParams.fromNetworkParameters(network)
-    lnNetwork.map { params => HumanReadablePart(params, Some(amount)) }
+    val lnNetworkOpt = LnParams.fromNetworkParameters(network)
+    lnNetworkOpt.map(ln => LnHumanReadablePart(ln, Some(amount)))
   }
 
   def apply(network: LnParams): LnHumanReadablePart = {
-    HumanReadablePart(network, None)
+    fromLnParams(network)
   }
 
-  def apply(network: LnParams, amount: LnCurrencyUnit): LnHumanReadablePart = {
-    HumanReadablePart(network, Some(amount))
+  /**
+   * Will return a [[org.bitcoins.core.protocol.ln.LnHumanReadablePart]]
+   * without a [[LnCurrencyUnit]] encoded in the invoice
+   * @param network
+   * @return
+   */
+  def fromLnParams(network: LnParams): LnHumanReadablePart = {
+    LnHumanReadablePart(network, None)
   }
 
-  def apply(input: String): Try[LnHumanReadablePart] = {
-    val networkPattern: Regex = "^[a-z]*".r //Select all of the letters, until we hit a number, as the network
-    val networkString = networkPattern.findFirstIn(input).getOrElse("")
-    val amountString = input.substring(networkString.length) //Select the remaining part of the string as the amount
+  /**
+   * Will return a [[org.bitcoins.core.protocol.ln.LnHumanReadablePart]]
+   * with the provide [[LnCurrencyUnit]] encoded in the invoice
+   * @param network
+   * @param amount
+   * @return
+   */
+  def apply(network: LnParams, amount: Option[LnCurrencyUnit]): LnHumanReadablePart = {
+    network match {
+      case LnParams.LnBitcoinMainNet => lnbc(amount)
+      case LnParams.LnBitcoinTestNet => lntb(amount)
+      case LnParams.LnBitcoinRegTest => lnbcrt(amount)
+    }
+  }
 
-    val lnNetwork = networkFromString(networkString)
-    val amount = LnCurrencyUnits.fromEncodedString(amountString).toOption
+  /**
+   * First two chars MUST be 'ln'
+   * Next chars must be the BIP173 currency prefixes
+   * [[https://github.com/lightningnetwork/lightning-rfc/blob/master/11-payment-encoding.md#human-readable-part]]
+   * [[https://github.com/bitcoin/bips/blob/master/bip-0173.mediawiki#Specification]]
+   * @param input
+   * @return
+   */
+  def fromString(input: String): Try[LnHumanReadablePart] = {
+    //Select all of the letters, until we hit a number, as the network
+    val networkPattern: Regex = "^[a-z]*".r
+    val networkStringOpt = networkPattern.findFirstIn(input)
+    val lnParamsOpt = networkStringOpt.flatMap(LnParams.fromPrefixString(_))
 
-    //If we are able to parse something as an amount, but are unable to convert it to a LnCurrencyUnit, we should fail.
-    if (amount.isEmpty && !amountString.isEmpty) { Failure(new IllegalArgumentException(s"Parsed an amount, but could not convert to a valid currency, got: $amountString")) }
-    else { lnNetwork.map { params => HumanReadablePart(params, amount) } }
+    if (lnParamsOpt.isEmpty) {
+      Failure(new IllegalArgumentException(s"Could not parse a valid network prefix, got ${input}"))
+    } else {
+
+      val lnParams = lnParamsOpt.get
+      val prefixSize = lnParams.invoicePrefix.size.toInt
+      val amountString = input.slice(prefixSize, input.size)
+      val amount = LnCurrencyUnits.fromEncodedString(amountString).toOption
+
+      //If we are able to parse something as an amount, but are unable to convert it to a LnCurrencyUnit, we should fail.
+      if (amount.isEmpty && !amountString.isEmpty) {
+        Failure(new IllegalArgumentException(s"Parsed an amount, " +
+          s"but could not convert to a valid currency, got: $amountString"))
+      } else {
+        Success(LnHumanReadablePart(lnParams, amount))
+      }
+    }
   }
 }
