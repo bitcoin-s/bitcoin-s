@@ -79,7 +79,18 @@ object Deps {
   )
 
   val bench = List(
-  "org.slf4j" % "slf4j-api" % V.slf4j withSources() withJavadoc(),
-  Compile.logback
+    "org.slf4j" % "slf4j-api" % V.slf4j withSources() withJavadoc(),
+    Compile.logback
+  )
+
+  val eclairRpc = List(
+    Compile.akkaHttp,
+    Compile.akkaStream,
+    Compile.playJson,
+    Compile.slf4j,
+    Test.akkaHttp,
+    Test.logback,
+    Test.scalaTest,
+    Test.scalacheck
   )
 }

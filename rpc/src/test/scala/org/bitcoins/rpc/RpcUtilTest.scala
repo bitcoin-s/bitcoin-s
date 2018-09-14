@@ -21,29 +21,35 @@ class RpcUtilTest extends AsyncFlatSpec with BeforeAndAfterAll {
     true
   }
 
-  private def boolLaterDoneAnd(bool: Boolean, boolFuture: Future[Boolean]): Boolean =
-    boolFuture.value.contains(Success(bool))
+  private def boolLaterDoneAnd(bool: Boolean, boolFuture: Future[Boolean]): Future[Boolean] = {
+    Future.successful(boolFuture.value.contains(Success(bool)))
+  }
 
-  private def boolLaterDoneAndTrue(trueLater: Future[Boolean]): Boolean =
-    boolLaterDoneAnd(true, trueLater)
+  private def boolLaterDoneAndTrue(trueLater: Future[Boolean]): () => Future[Boolean] = {
+    () => boolLaterDoneAnd(true, trueLater)
+  }
 
   behavior of "RpcUtil"
 
   it should "complete immediately if condition is true" in {
-    RpcUtil.retryUntilSatisfied(condition = true, duration = 0.millis).map { _ =>
+    RpcUtil.retryUntilSatisfiedF(
+      conditionF = () => Future.successful(true),
+      duration = 0.millis).map { _ =>
       succeed
     }
   }
 
   it should "fail if condition is false" in {
     recoverToSucceededIf[RuntimeException] {
-      RpcUtil.retryUntilSatisfied(condition = false, duration = 0.millis)
+      RpcUtil.retryUntilSatisfiedF(
+        conditionF = () => Future.successful(false),
+        duration = 0.millis)
     }
   }
 
   it should "succeed after a delay" in {
     val boolLater = trueLater(delay = 250)
-    RpcUtil.retryUntilSatisfied(boolLaterDoneAndTrue(boolLater)).map { _ =>
+    RpcUtil.retryUntilSatisfiedF(boolLaterDoneAndTrue(boolLater)).map { _ =>
       succeed
     }
   }
@@ -51,25 +57,25 @@ class RpcUtilTest extends AsyncFlatSpec with BeforeAndAfterAll {
   it should "fail if there is a delay and duration is zero" in {
     val boolLater = trueLater(delay = 250)
     recoverToSucceededIf[RuntimeException] {
-      RpcUtil.retryUntilSatisfied(boolLaterDoneAndTrue(boolLater), duration = 0.millis)
+      RpcUtil.retryUntilSatisfiedF(boolLaterDoneAndTrue(boolLater), duration = 0.millis)
     }
   }
 
   it should "succeed immediately if condition is true" in {
-    RpcUtil.awaitCondition(condition = true, 0.millis)
+    RpcUtil.awaitCondition(condition = () => true, 0.millis)
     succeed
   }
 
   it should "timeout if condition is false" in {
     assertThrows[RuntimeException] {
-      RpcUtil.awaitCondition(condition = false, duration = 0.millis)
+      RpcUtil.awaitCondition(condition = () => false, duration = 0.millis)
     }
   }
 
   it should "block for a delay and then succeed" in {
     val boolLater = trueLater(delay = 250)
     val before: Long = System.currentTimeMillis
-    RpcUtil.awaitCondition(boolLaterDoneAndTrue(boolLater))
+    RpcUtil.awaitConditionF(boolLaterDoneAndTrue(boolLater))
     val after: Long = System.currentTimeMillis
     assert(after - before >= 250)
   }
@@ -77,7 +83,7 @@ class RpcUtilTest extends AsyncFlatSpec with BeforeAndAfterAll {
   it should "timeout if there is a delay and duration is zero" in {
     val boolLater = trueLater(delay = 250)
     assertThrows[RuntimeException] {
-      RpcUtil.awaitCondition(boolLaterDoneAndTrue(boolLater), duration = 0.millis)
+      RpcUtil.awaitConditionF(boolLaterDoneAndTrue(boolLater), duration = 0.millis)
     }
   }
 

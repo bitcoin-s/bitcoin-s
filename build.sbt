@@ -40,7 +40,8 @@ lazy val root = project
       coreTest,
       zmq,
       rpc,
-      bench
+      bench,
+      eclairRpc
     )
     .settings(commonSettings: _*)
 
@@ -99,5 +100,14 @@ lazy val bench = project
   .settings(assemblyOption in assembly := (assemblyOption in assembly).value.copy(includeScala = true))
   .settings(libraryDependencies ++= Deps.bench)
   .dependsOn(core)
+
+lazy val eclairRpc = project
+  .in(file("eclair-rpc"))
+  .enablePlugins()
+  .settings(commonSettings: _*)
+  .dependsOn(
+    core,
+    rpc
+  )
 
 publishArtifact in root := false
