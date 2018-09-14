@@ -6,7 +6,7 @@ language: scala
 jdk: oraclejdk8
 
 scala:
-  - 2.11.7
+  - 2.11.12
 
 # These directories are cached to S3 at the end of the build
 cache:
@@ -36,6 +36,9 @@ install:
   - ./configure --enable-jni --enable-experimental --enable-module-ecdh
   - sudo make install
   - cd ../
+  - wget https://github.com/ACINQ/eclair/releases/download/v0.2-beta5/eclair-node-0.2-beta5-8aa51f4.jar
+  - export ECLAIR_PATH=$(pwd)
+
 script:
   - sbt clean coverage test &&
     sbt coverageReport &&
