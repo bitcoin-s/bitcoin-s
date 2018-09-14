@@ -74,4 +74,15 @@ object Deps {
     Test.scalaTest,
     Test.scalacheck
   )
+
+  val eclairRpc = List(
+    Compile.akkaHttp,
+    Compile.akkaStream,
+    Compile.playJson,
+    Compile.slf4j,
+    Test.akkaHttp,
+    Test.logback,
+    Test.scalaTest,
+    Test.scalacheck
+  )
 }
