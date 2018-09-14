@@ -148,7 +148,7 @@ class BitcoindRpcClientTest
         logger.info("Bitcoin server restarting")
         RpcUtil.awaitServer(walletClient)
       },
-      5.seconds)
+      10.seconds)
 
     logger.info("Mining some blocks")
     Await.result(client.generate(200), 3.seconds)
@@ -322,25 +322,41 @@ class BitcoindRpcClientTest
   it should "be able to mark a block as precious" in {
     TestUtil.createNodePair().flatMap {
       case (client1, client2) =>
+
         client1.disconnectNode(client2.getDaemon.uri).flatMap { _ =>
+
           TestUtil.awaitDisconnected(client1, client2)
+
           client1.generate(1).flatMap { blocks1 =>
+
             client2.generate(1).flatMap { blocks2 =>
+
               client1.getBestBlockHash.flatMap { bestHash1 =>
                 assert(bestHash1 == blocks1.head)
-                client2.getBestBlockHash.flatMap { bestHash2 =>
-                  assert(bestHash2 == blocks2.head)
-                  client1.addNode(client2.getDaemon.uri, "onetry").flatMap {
-                    _ =>
-                      RpcUtil.awaitCondition(
-                        Try(Await.result(
-                          client2.preciousBlock(bestHash1),
-                          2.seconds)).isSuccess)
 
-                      client2.getBestBlockHash.map { newBestHash =>
-                        TestUtil.deleteNodePair(client1, client2)
-                        assert(newBestHash == blocks1.head)
-                      }
+                client2.getBestBlockHash.flatMap { bestHash2 =>
+
+                  assert(bestHash2 == blocks2.head)
+
+                  val conn = client1.addNode(client2.getDaemon.uri, "onetry")
+
+                  conn.flatMap { _ =>
+
+                    //make sure the block was propogated to client2
+                    RpcUtil.awaitConditionF(
+                      conditionF = () => TestUtil.hasSeenBlock(client2, bestHash1))
+
+                    val precious = client2.preciousBlock(bestHash1)
+
+                    val client2BestBlock = precious.flatMap { _ =>
+                      val b = client2.getBestBlockHash
+                      b
+                    }
+
+                    client2BestBlock.map { newBestHash =>
+                      TestUtil.deleteNodePair(client1, client2)
+                      assert(newBestHash == bestHash1)
+                    }
                   }
                 }
               }
@@ -349,7 +365,6 @@ class BitcoindRpcClientTest
         }
     }
   }
-
   it should "be able to list address groupings" in {
     client.getNewAddress().flatMap { address =>
       fundBlockChainTransaction(client, address, Bitcoins(1.25)).flatMap {
