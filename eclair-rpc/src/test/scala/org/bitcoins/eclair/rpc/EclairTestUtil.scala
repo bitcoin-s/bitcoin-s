@@ -69,13 +69,14 @@ trait EclairTestUtil extends BitcoinSLogger {
   }
 
   def startedBitcoindInstance()(implicit system: ActorSystem): BitcoindInstance = {
-    implicit val m = ActorMaterializer.create(system)
 
     val i = bitcoindInstance()
 
     //start the bitcoind instance so eclair can properly use it
-    val rpc = new BitcoindRpcClient(i)(m)
+    val rpc = new BitcoindRpcClient(i)(system)
     rpc.start()
+
+    logger.debug(s"Starting bitcoind at ${i.authCredentials.datadir}")
     RpcUtil.awaitServer(rpc)
 
     //fund the wallet by generating 102 blocks, need this to get over coinbase maturity
