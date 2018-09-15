@@ -22,6 +22,10 @@ trait NumberGenerator {
   /** Creates a number generator that generates negative long numbers */
   def negativeLongs: Gen[Long] = Gen.choose(Long.MinValue, -1)
 
+  def uInt5: Gen[UInt5] = Gen.choose(0, 31).map(n => UInt5(n))
+
+  def uInt5s: Gen[Seq[UInt5]] = Gen.listOf(uInt5)
+
   def uInt8: Gen[UInt8] = Gen.choose(0, 255).map(n => UInt8(n.toShort))
 
   def uInt8s: Gen[Seq[UInt8]] = Gen.listOf(uInt8)

@@ -99,7 +99,6 @@ sealed abstract class DERSignatureUtil {
         }
       case Failure(_) => default
     }
-    logger.debug("s: " + s)
     asn1InputStream.close()
     (r.getPositiveValue, s.getPositiveValue)
   }
