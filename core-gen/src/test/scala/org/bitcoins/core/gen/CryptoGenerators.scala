@@ -10,7 +10,7 @@ import org.scalacheck.Gen
  */
 sealed abstract class CryptoGenerators {
 
-  def privateKey: Gen[ECPrivateKey] = Gen.const(ECPrivateKey())
+  def privateKey: Gen[ECPrivateKey] = Gen.delay(ECPrivateKey())
 
   /**
    * Generate a sequence of private keys
