@@ -2,6 +2,7 @@ package org.bitcoins.eclair.rpc
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
+import org.bitcoins.core.protocol.ln.channel.ChannelId
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.eclair.rpc.client.EclairRpcClient
 import org.bitcoins.eclair.rpc.json.ChannelResult
@@ -31,10 +32,8 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
   val otherClient = new EclairRpcClient(e2Instance)
 
   override def beforeAll(): Unit = {
-    logger.info("Temp eclair directory created")
-    logger.info("Temp eclair directory created")
-
-    logger.debug(client.getDaemon.authCredentials.datadir.toString)
+    logger.info(s"Temp eclair directory created ${client.getDaemon.authCredentials.datadir}")
+    logger.info(s"Temp eclair directory created ${otherClient.getDaemon.authCredentials.datadir}")
 
     client.start()
     otherClient.start()
@@ -46,6 +45,8 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
     RpcUtil.awaitCondition(
       condition = otherClient.isStarted,
       duration = 1.second)
+
+    logger.debug(s"Both clients started")
 
     val infoF = otherClient.getInfo
 
@@ -63,6 +64,7 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
       }
     }
 
+    logger.debug(s"Awaiting connection between clients")
     RpcUtil.awaitConditionF(
       conditionF = isConnected,
       duration = 1.second)
@@ -82,7 +84,7 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
   }
 
   /** Checks that the given [[org.bitcoins.eclair.rpc.client.EclairRpcClient]] has the given chanId */
-  private def hasChannel(client: EclairRpcClient, chanId: String): Future[Assertion] = {
+  private def hasChannel(client: EclairRpcClient, chanId: ChannelId): Future[Assertion] = {
     val recognizedOpenChannel: Future[Assertion] = {
       val chanResultF: Future[ChannelResult] = client.channel(chanId)
       chanResultF.map(c => assert(c.channelId == chanId))
@@ -95,6 +97,6 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
     val s1 = client.stop()
     val s2 = otherClient.stop()
     val s3 = bitcoindRpc.stop()
-    system.terminate()
+    Await.result(system.terminate(), 10.seconds)
   }
 }
