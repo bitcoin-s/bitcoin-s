@@ -115,7 +115,7 @@ trait RpcUtil extends BitcoinSLogger {
 
   def awaitServer(
     server: BitcoindRpcClient,
-    duration: FiniteDuration = 100.milliseconds,
+    duration: FiniteDuration = 1.seconds,
     maxTries: Int = 50)(implicit system: ActorSystem): Unit = {
     val f = () => server.isStarted
     awaitCondition(f, duration, maxTries)

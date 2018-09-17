@@ -1,29 +1,33 @@
 package org.bitcoins.eclair.rpc.json
 
+import org.bitcoins.core.crypto.{ DoubleSha256Digest, ECDigitalSignature }
+import org.bitcoins.core.protocol.ln.PicoBitcoins
+import org.bitcoins.core.protocol.ln.channel.FundedChannelId
+import org.bitcoins.eclair.rpc.network.{ NodeId, PeerState }
 import play.api.libs.json.{ JsArray, JsObject }
 
 sealed abstract class EclairModels
 
 case class GetInfoResult(
-  nodeId: String,
+  nodeId: NodeId,
   alias: String,
   port: Int,
-  chainHash: String,
+  chainHash: DoubleSha256Digest,
   blockHeight: Long)
 
 case class PeerInfo(
-  nodeId: String,
-  state: String,
+  nodeId: NodeId,
+  state: PeerState,
   //address: String,
   channels: Int)
 
-case class ChannelInfo(nodeId: String, channelId: String, state: String)
+case class ChannelInfo(nodeId: NodeId, channelId: FundedChannelId, state: String)
 
 case class NodeInfo(
-  signature: String,
+  signature: ECDigitalSignature,
   features: String,
   timestamp: Long,
-  nodeId: String,
+  nodeId: NodeId,
   rgbColor: String,
   alias: String,
   addresses: Vector[String])
@@ -31,14 +35,14 @@ case class NodeInfo(
 case class ChannelDesc(shortChannelId: String, a: String, b: String)
 
 case class ChannelUpdate(
-  signature: String,
-  chainHash: String,
+  signature: ECDigitalSignature,
+  chainHash: DoubleSha256Digest,
   shortChannelId: String,
   timestamp: Long,
   flags: String,
   cltvExpiryDelta: Int,
   htlcMinimumMsat: Long,
-  feeBaseMsat: Long,
+  feeBaseMsat: PicoBitcoins,
   feeProportionalMillionths: Long)
 
 /* ChannelResult starts here, some of this may be useful but it seems that data is different at different times
@@ -152,8 +156,8 @@ implicit val channelDataReads: Reads[ChannelData] =
   Json.reads[ChannelData]
 */
 case class ChannelResult(
-  nodeId: String,
-  channelId: String,
+  nodeId: NodeId,
+  channelId: FundedChannelId,
   state: String,
   data: JsObject)
 
@@ -163,13 +167,13 @@ case class PaymentRequest(
   prefix: String,
   amount: Option[Long],
   timestamp: Long,
-  nodeId: String,
+  nodeId: NodeId,
   tags: Vector[JsObject],
   signature: String)
 
 sealed trait SendResult
 case class PaymentSucceeded(
-  amountMsat: Long,
+  amountMsat: PicoBitcoins,
   paymentHash: String,
   paymentPreimage: String,
   route: JsArray) extends SendResult
