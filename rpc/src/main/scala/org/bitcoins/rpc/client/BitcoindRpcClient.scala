@@ -65,7 +65,7 @@ class BitcoindRpcClient(instance: BitcoindInstance)(
         conditionF = isConnected,
         duration = 1.seconds))
 
-    if (await.isSuccess) true else false
+    await.isSuccess
   }
 
   def abandonTransaction(txid: DoubleSha256Digest): Future[Unit] = {
@@ -1192,6 +1192,11 @@ class BitcoindRpcClient(instance: BitcoindInstance)(
         HttpCredentials.createBasicHttpCredentials(username, password))
   }
 
-  def start(): String =
-    ("bitcoind -datadir=" + instance.authCredentials.datadir).!!
+  def start(): String = {
+    val cmd = ("bitcoind -datadir=" + instance.authCredentials.datadir)
+    logger.debug(s"starting bitcoind")
+    val p = Process(cmd).run()
+    "Started bitcoind!"
+  }
+
 }

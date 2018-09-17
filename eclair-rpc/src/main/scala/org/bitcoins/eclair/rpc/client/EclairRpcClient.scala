@@ -8,9 +8,12 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import akka.stream.ActorMaterializer
 import akka.util.ByteString
+import org.bitcoins.core.crypto.Sha256Digest
+import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.protocol.ln.channel.{ ChannelId, FundedChannelId }
+import org.bitcoins.core.protocol.ln.{ LnCurrencyUnit, LnCurrencyUnits }
+import org.bitcoins.core.wallet.fee.{ FeeUnit, SatoshisPerByte }
 import org.bitcoins.eclair.rpc.config.EclairInstance
-import org.bitcoins.eclair.rpc.json.JsonReaders.nodeId
 import org.bitcoins.eclair.rpc.json._
 import org.bitcoins.eclair.rpc.network.{ NodeId, NodeUri, PeerState }
 import org.slf4j.LoggerFactory
@@ -127,28 +130,29 @@ class EclairRpcClient(instance: EclairInstance)(implicit system: ActorSystem) {
 
   private def open(
     nodeId: NodeId,
-    fundingSatoshis: Long,
-    pushMsat: Option[Long],
-    feerateSatPerByte: Option[Long],
+    fundingSatoshis: CurrencyUnit,
+    pushMsat: Option[LnCurrencyUnit],
+    feerateSatPerByte: Option[SatoshisPerByte],
     channelFlags: Option[Byte]): Future[FundedChannelId] = {
-    val num: Long = pushMsat.getOrElse(0)
+    val num = pushMsat.getOrElse(LnCurrencyUnits.zero).toPicoBitcoinDecimal
     val pushMsatJson = JsNumber(num)
+    val sat = fundingSatoshis.satoshis.toBigDecimal
 
     val params = {
       if (feerateSatPerByte.isEmpty) {
-        List(JsString(nodeId.toString), JsNumber(fundingSatoshis), pushMsatJson)
+        List(JsString(nodeId.toString), JsNumber(sat), pushMsatJson)
       } else if (channelFlags.isEmpty) {
         List(
           JsString(nodeId.toString),
-          JsNumber(fundingSatoshis),
+          JsNumber(sat),
           pushMsatJson,
-          JsNumber(feerateSatPerByte.get))
+          JsNumber(feerateSatPerByte.get.toLong))
       } else {
         List(
           JsString(nodeId.toString),
-          JsNumber(fundingSatoshis),
+          JsNumber(sat),
           pushMsatJson,
-          JsNumber(feerateSatPerByte.get),
+          JsNumber(feerateSatPerByte.get.toLong),
           JsString(channelFlags.toString))
       }
     }
@@ -163,30 +167,30 @@ class EclairRpcClient(instance: EclairInstance)(implicit system: ActorSystem) {
     chanIdF.map(FundedChannelId.fromHex(_))
   }
 
-  def open(nodeId: NodeId, fundingSatoshis: Long): Future[FundedChannelId] = {
+  def open(nodeId: NodeId, fundingSatoshis: CurrencyUnit): Future[FundedChannelId] = {
     open(nodeId, fundingSatoshis, None, None, None)
   }
 
   def open(
     nodeId: NodeId,
-    fundingSatoshis: Long,
-    pushMsat: Long): Future[FundedChannelId] = {
+    fundingSatoshis: CurrencyUnit,
+    pushMsat: LnCurrencyUnit): Future[FundedChannelId] = {
     open(nodeId, fundingSatoshis, Some(pushMsat), None, None)
   }
 
   def open(
     nodeId: NodeId,
-    fundingSatoshis: Long,
-    pushMsat: Long,
-    feerateSatPerByte: Long): Future[FundedChannelId] = {
+    fundingSatoshis: CurrencyUnit,
+    pushMsat: LnCurrencyUnit,
+    feerateSatPerByte: SatoshisPerByte): Future[FundedChannelId] = {
     open(nodeId, fundingSatoshis, Some(pushMsat), Some(feerateSatPerByte), None)
   }
 
   def open(
     nodeId: NodeId,
-    fundingSatoshis: Long,
-    pushMsat: Long = 0,
-    feerateSatPerByte: Long,
+    fundingSatoshis: CurrencyUnit,
+    pushMsat: LnCurrencyUnit = LnCurrencyUnits.zero,
+    feerateSatPerByte: SatoshisPerByte,
     channelFlags: Byte): Future[FundedChannelId] = {
     open(
       nodeId,
@@ -198,8 +202,8 @@ class EclairRpcClient(instance: EclairInstance)(implicit system: ActorSystem) {
 
   def open(
     nodeId: NodeId,
-    fundingSatoshis: Long,
-    feerateSatPerByte: Long,
+    fundingSatoshis: CurrencyUnit,
+    feerateSatPerByte: SatoshisPerByte,
     channelFlags: Byte): Future[FundedChannelId] = {
     open(
       nodeId,
@@ -215,16 +219,16 @@ class EclairRpcClient(instance: EclairInstance)(implicit system: ActorSystem) {
 
   private def receive(
     description: Option[String],
-    amountMsat: Option[Long],
+    amountMsat: Option[LnCurrencyUnit],
     expirySeconds: Option[Long]): Future[String] = {
     val params =
       if (amountMsat.isEmpty) {
         List(JsString(description.getOrElse("")))
       } else if (expirySeconds.isEmpty) {
-        List(JsNumber(amountMsat.get), JsString(description.getOrElse("")))
+        List(JsNumber(amountMsat.get.toPicoBitcoinDecimal), JsString(description.getOrElse("")))
       } else {
         List(
-          JsNumber(amountMsat.get),
+          JsNumber(amountMsat.get.toPicoBitcoinDecimal),
           JsString(description.getOrElse("")),
           JsNumber(expirySeconds.get))
       }
@@ -238,38 +242,38 @@ class EclairRpcClient(instance: EclairInstance)(implicit system: ActorSystem) {
   def receive(description: String): Future[String] =
     receive(Some(description), None, None)
 
-  def receive(description: String, amountMsat: Long): Future[String] =
+  def receive(description: String, amountMsat: LnCurrencyUnit): Future[String] =
     receive(Some(description), Some(amountMsat), None)
 
   def receive(
     description: String,
-    amountMsat: Long,
+    amountMsat: LnCurrencyUnit,
     expirySeconds: Long): Future[String] =
     receive(Some(description), Some(amountMsat), Some(expirySeconds))
 
-  def receive(amountMsat: Long): Future[String] =
+  def receive(amountMsat: LnCurrencyUnit): Future[String] =
     receive(None, Some(amountMsat), None)
 
-  def receive(amountMsat: Long, expirySeconds: Long): Future[String] =
+  def receive(amountMsat: LnCurrencyUnit, expirySeconds: Long): Future[String] =
     receive(None, Some(amountMsat), Some(expirySeconds))
 
   def send(
-    amountMsat: Long,
-    paymentHash: String,
-    nodeId: String): Future[SendResult] = {
+    amountMsat: LnCurrencyUnit,
+    paymentHash: Sha256Digest,
+    nodeId: NodeId): Future[SendResult] = {
     eclairCall[SendResult](
       "send",
-      List(JsNumber(amountMsat), JsString(paymentHash), JsString(nodeId)))
+      List(JsNumber(amountMsat.toPicoBitcoinDecimal), JsString(paymentHash.hex), JsString(nodeId.toString)))
   }
 
   private def send(
     invoice: String,
-    amountMsat: Option[Long]): Future[SendResult] = {
+    amountMsat: Option[LnCurrencyUnit]): Future[SendResult] = {
     val params =
       if (amountMsat.isEmpty) {
         List(JsString(invoice))
       } else {
-        List(JsString(invoice), JsNumber(amountMsat.get))
+        List(JsString(invoice), JsNumber(amountMsat.get.toPicoBitcoinDecimal))
       }
 
     eclairCall[SendResult]("send", params)
@@ -277,18 +281,18 @@ class EclairRpcClient(instance: EclairInstance)(implicit system: ActorSystem) {
 
   def send(invoice: String): Future[SendResult] = send(invoice, None)
 
-  def send(invoice: String, amountMsat: Long): Future[SendResult] =
+  def send(invoice: String, amountMsat: LnCurrencyUnit): Future[SendResult] =
     send(invoice, Some(amountMsat))
 
   def updateRelayFee(
     channelId: ChannelId,
-    feeBaseMsat: Long,
+    feeBaseMsat: LnCurrencyUnit,
     feeProportionalMillionths: Long): Future[String] = {
     eclairCall[String](
       "updaterelayfee",
       List(
         JsString(channelId.hex),
-        JsNumber(feeBaseMsat),
+        JsNumber(feeBaseMsat.toPicoBitcoinDecimal),
         JsNumber(feeProportionalMillionths)))
   }
 
@@ -306,7 +310,6 @@ class EclairRpcClient(instance: EclairInstance)(implicit system: ActorSystem) {
     val payloadF: Future[JsValue] = responseF.flatMap(getPayload)
     payloadF.map { payload =>
       val validated: JsResult[T] = (payload \ resultKey).validate[T]
-      logger.info(s"validated $validated")
       val parsed: T = parseResult(validated, payload)
       parsed
     }
@@ -342,12 +345,12 @@ class EclairRpcClient(instance: EclairInstance)(implicit system: ActorSystem) {
     }
   }
 
-  def sendRequest(req: HttpRequest): Future[HttpResponse] = {
+  private def sendRequest(req: HttpRequest): Future[HttpResponse] = {
     val respF = Http(m.system).singleRequest(req)
     respF
   }
 
-  def buildRequest(instance: EclairInstance, methodName: String, params: JsArray): HttpRequest = {
+  private def buildRequest(instance: EclairInstance, methodName: String, params: JsArray): HttpRequest = {
     val uuid = UUID.randomUUID().toString
 
     val obj: JsObject = JsObject(
