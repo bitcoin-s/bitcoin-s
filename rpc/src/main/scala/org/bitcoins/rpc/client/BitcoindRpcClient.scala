@@ -65,7 +65,7 @@ class BitcoindRpcClient(instance: BitcoindInstance)(
         conditionF = isConnected,
         duration = 1.seconds))
 
-    if (await.isSuccess) true else false
+    await.isSuccess
   }
 
   def abandonTransaction(txid: DoubleSha256Digest): Future[Unit] = {
@@ -1193,11 +1193,13 @@ class BitcoindRpcClient(instance: BitcoindInstance)(
   }
 
   def start(): String = {
-    val cmd = Seq(
+    val cmd = List(
       "bitcoind",
       "-datadir=" + instance.authCredentials.datadir,
       "-rpcport=" + instance.rpcUri.getPort,
       "-port=" + instance.uri.getPort)
-    cmd.!!
+    logger.debug(s"starting bitcoind")
+    val p = Process(cmd).run()
+    "Started bitcoind!"
   }
 }

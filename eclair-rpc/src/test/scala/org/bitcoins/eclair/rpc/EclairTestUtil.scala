@@ -24,7 +24,7 @@ trait EclairTestUtil extends BitcoinSLogger {
   def bitcoindAuthCredentials(
     uri: URI,
     rpcUri: URI,
-    pruneMode: Boolean): BitcoindAuthCredentials = {
+    zmqPort: Int): BitcoindAuthCredentials = {
     val d = "/tmp/" + randomDirName
     val f = new java.io.File(d)
     f.mkdir()
@@ -43,14 +43,11 @@ trait EclairTestUtil extends BitcoinSLogger {
     pw.write("regtest=1\n")
     pw.write("walletbroadcast=0\n")
 
-    pw.write("zmqpubhashtx=tcp://127.0.0.1:29000\n")
-    pw.write("zmqpubhashblock=tcp://127.0.0.1:29000\n")
-    pw.write("zmqpubrawtx=tcp://127.0.0.1:29000\n")
-    pw.write("zmqpubrawblock=tcp://127.0.0.1:29000\n")
+    pw.write(s"zmqpubhashtx=tcp://127.0.0.1:${zmqPort}\n")
+    pw.write(s"zmqpubhashblock=tcp://127.0.0.1:${zmqPort}\n")
+    pw.write(s"zmqpubrawtx=tcp://127.0.0.1:${zmqPort}\n")
+    pw.write(s"zmqpubrawblock=tcp://127.0.0.1:${zmqPort}\n")
 
-    if (pruneMode) {
-      pw.write("prune=1\n")
-    }
     pw.close()
     BitcoindAuthCredentials(username, pass, f)
   }
@@ -60,12 +57,12 @@ trait EclairTestUtil extends BitcoinSLogger {
   def bitcoindInstance(
     port: Int = randomPort,
     rpcPort: Int = randomPort,
-    pruneMode: Boolean = false): BitcoindInstance = {
+    zmqPort: Int = randomPort): BitcoindInstance = {
     val uri = new URI("http://localhost:" + port)
     val rpcUri = new URI("http://localhost:" + rpcPort)
-    val auth = bitcoindAuthCredentials(uri, rpcUri, pruneMode)
+    val auth = bitcoindAuthCredentials(uri, rpcUri, zmqPort)
 
-    BitcoindInstance(network, uri, rpcUri, auth)
+    BitcoindInstance(network, uri, rpcUri, auth, Some(zmqPort))
   }
 
   def startedBitcoindInstance()(implicit system: ActorSystem): BitcoindInstance = {
@@ -103,6 +100,7 @@ trait EclairTestUtil extends BitcoinSLogger {
     val bitcoindUser = bitcoindAuth.username
     val bitcoindPass = bitcoindAuth.password
 
+    val zmqUri: String = s"tcp://127.0.0.1:${bitcoind.zmqPortOpt.get}"
     val pw = new PrintWriter(conf)
     pw.println("eclair.chain=regtest")
 
@@ -110,6 +108,7 @@ trait EclairTestUtil extends BitcoinSLogger {
     pw.println("eclair.bitcoind.rpcpassword=\"" + bitcoindPass + "\"")
     pw.println(s"eclair.bitcoind.rpcport=${bitcoindRpcUri.getPort}")
     pw.println(s"eclair.bitcoind.host=${bitcoindRpcUri.getHost}")
+    pw.println("eclair.bitcoind.zmq =\"" + zmqUri + "\"")
 
     pw.println("eclair.api.enabled=true")
     pw.println("eclair.node.alias = \"" + username + "\"")
