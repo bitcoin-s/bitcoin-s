@@ -13,6 +13,8 @@ sealed trait BitcoindInstance {
   def uri: URI
   def rpcUri: URI
   def authCredentials: BitcoindAuthCredentials
+
+  def zmqPortOpt: Option[Int]
 }
 
 object BitcoindInstance {
@@ -20,14 +22,24 @@ object BitcoindInstance {
     network: NetworkParameters,
     uri: URI,
     rpcUri: URI,
-    authCredentials: BitcoindAuthCredentials)
-    extends BitcoindInstance
+    authCredentials: BitcoindAuthCredentials,
+    zmqPortOpt: Option[Int]) extends BitcoindInstance
 
   def apply(
     network: NetworkParameters,
     uri: URI,
     rpcUri: URI,
+    authCredentials: BitcoindAuthCredentials,
+    zmqPortOpt: Option[Int]): BitcoindInstance = {
+    BitcoindInstanceImpl(network, uri, rpcUri, authCredentials, zmqPortOpt)
+  }
+
+  /** Create a bitcoind instance with no zmq port specified */
+  def apply(
+    network: NetworkParameters,
+    uri: URI,
+    rpcUri: URI,
     authCredentials: BitcoindAuthCredentials): BitcoindInstance = {
-    BitcoindInstanceImpl(network, uri, rpcUri, authCredentials)
+    BitcoindInstance(network, uri, rpcUri, authCredentials, None)
   }
 }
