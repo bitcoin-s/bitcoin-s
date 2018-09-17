@@ -2,6 +2,8 @@ package org.bitcoins.eclair.rpc
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
+import org.bitcoins.core.currency.Satoshis
+import org.bitcoins.core.number.Int64
 import org.bitcoins.core.protocol.ln.channel.ChannelId
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.eclair.rpc.client.EclairRpcClient
@@ -75,7 +77,8 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
   it should "be able to open a channel" in {
     val result: Future[Assertion] = {
       otherClient.getInfo.flatMap { info =>
-        val openedChanF = client.open(info.nodeId, 100000)
+        val amt = Satoshis(Int64(100000))
+        val openedChanF = client.open(info.nodeId, amt)
         openedChanF.flatMap(channelId => hasChannel(client, channelId))
       }
     }
