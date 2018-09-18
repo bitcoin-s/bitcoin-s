@@ -1,8 +1,8 @@
 package org.bitcoins.eclair.rpc.json
 
-import org.bitcoins.core.crypto.{ DoubleSha256Digest, ECDigitalSignature }
+import org.bitcoins.core.crypto.{ DoubleSha256Digest, ECDigitalSignature, Sha256Digest }
 import org.bitcoins.core.protocol.ln.PicoBitcoins
-import org.bitcoins.core.protocol.ln.channel.FundedChannelId
+import org.bitcoins.core.protocol.ln.channel.{ ChannelState, FundedChannelId }
 import org.bitcoins.eclair.rpc.network.{ NodeId, PeerState }
 import play.api.libs.json.{ JsArray, JsObject }
 
@@ -21,7 +21,7 @@ case class PeerInfo(
   //address: String,
   channels: Int)
 
-case class ChannelInfo(nodeId: NodeId, channelId: FundedChannelId, state: String)
+case class ChannelInfo(nodeId: NodeId, channelId: FundedChannelId, state: ChannelState)
 
 case class NodeInfo(
   signature: ECDigitalSignature,
@@ -158,7 +158,7 @@ implicit val channelDataReads: Reads[ChannelData] =
 case class ChannelResult(
   nodeId: NodeId,
   channelId: FundedChannelId,
-  state: String,
+  state: ChannelState,
   data: JsObject)
 
 // ChannelResult ends here
@@ -169,15 +169,19 @@ case class PaymentRequest(
   timestamp: Long,
   nodeId: NodeId,
   tags: Vector[JsObject],
-  signature: String)
+  signature: String,
+  description: String)
 
-sealed trait SendResult
+sealed abstract class PaymentResult
 case class PaymentSucceeded(
   amountMsat: PicoBitcoins,
-  paymentHash: String,
+  paymentHash: Sha256Digest,
   paymentPreimage: String,
-  route: JsArray) extends SendResult
+  route: JsArray) extends PaymentResult
 
+case class PaymentFailed(
+  paymentHash: Sha256Digest,
+  failures: Vector[JsObject]) extends PaymentResult
 /*
 case class PaymentFailure(???) extends SendResult
 implicit val paymentFailureReads: Reads[PaymentFailure] = Json.reads[PaymentFailure]

@@ -6,11 +6,16 @@ import java.net.URI
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import org.bitcoins.core.config.RegTest
+import org.bitcoins.core.protocol.ln.channel.{ ChannelId, ChannelState }
 import org.bitcoins.core.util.BitcoinSLogger
+import org.bitcoins.eclair.rpc.client.EclairRpcClient
 import org.bitcoins.eclair.rpc.config.{ EclairAuthCredentials, EclairInstance }
 import org.bitcoins.rpc.RpcUtil
 import org.bitcoins.rpc.client.BitcoindRpcClient
 import org.bitcoins.rpc.config.{ BitcoindAuthCredentials, BitcoindInstance }
+
+import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.duration.DurationInt
 
 trait EclairTestUtil extends BitcoinSLogger {
 
@@ -144,6 +149,84 @@ trait EclairTestUtil extends BitcoinSLogger {
       dir.listFiles().foreach(deleteTmpDir)
       dir.delete()
     }
+  }
+
+  /**
+   * Doesn't return until the given channelId
+   * is in the [[ChannelState.NORMAL]] for this [[EclairRpcClient]]
+   * @param client
+   * @param chanId
+   */
+  def awaitUntilChannelNormal(client: EclairRpcClient, chanId: ChannelId)(implicit system: ActorSystem): Unit = {
+    awaitUntilChannelState(client, chanId, ChannelState.NORMAL)
+  }
+
+  def awaitUntilChannelClosing(client: EclairRpcClient, chanId: ChannelId)(implicit system: ActorSystem): Unit = {
+    awaitUntilChannelState(client, chanId, ChannelState.CLOSING)
+  }
+
+  private def awaitUntilChannelState(client: EclairRpcClient, chanId: ChannelId, state: ChannelState)(implicit system: ActorSystem): Unit = {
+    def isState(): Future[Boolean] = {
+      val chanF = client.channel(chanId)
+      chanF.map(_.state == state)(system.dispatcher)
+    }
+
+    RpcUtil.awaitConditionF(
+      conditionF = isState)
+  }
+
+  /**
+   * Creates two eclair nodes that are connected together and returns their
+   * respective [[EclairRpcClient]]s
+   */
+  def createNodePair(bitcoindInstance: BitcoindInstance)(implicit system: ActorSystem): (EclairRpcClient, EclairRpcClient) = {
+
+    implicit val ec = system.dispatcher
+    val e1Instance = EclairTestUtil.eclairInstance(bitcoindInstance)
+    val e2Instance = EclairTestUtil.eclairInstance(bitcoindInstance)
+
+    val client = new EclairRpcClient(e1Instance)
+    val otherClient = new EclairRpcClient(e2Instance)
+
+    logger.info(s"Temp eclair directory created ${client.getDaemon.authCredentials.datadir}")
+    logger.info(s"Temp eclair directory created ${otherClient.getDaemon.authCredentials.datadir}")
+
+    client.start()
+    otherClient.start()
+
+    RpcUtil.awaitCondition(
+      condition = client.isStarted,
+      duration = 1.second)
+
+    RpcUtil.awaitCondition(
+      condition = otherClient.isStarted,
+      duration = 1.second)
+
+    logger.debug(s"Both clients started")
+
+    val infoF = otherClient.getInfo
+
+    val connection: Future[String] = infoF.flatMap { info =>
+      client.connect(info.nodeId, "localhost", info.port)
+    }
+
+    def isConnected(): Future[Boolean] = {
+      val nodeIdF = infoF.map(_.nodeId)
+      nodeIdF.flatMap { nodeId =>
+        connection.flatMap { _ =>
+          val connected: Future[Boolean] = client.isConnected(nodeId)
+          connected
+        }
+      }
+    }
+
+    logger.debug(s"Awaiting connection between clients")
+    RpcUtil.awaitConditionF(
+      conditionF = isConnected,
+      duration = 1.second)
+
+    (client, otherClient)
+
   }
 }
 
