@@ -38,6 +38,15 @@ sealed abstract class SerializerUtil {
       SerializerUtil.buildJsErrorMsg("jsnumber", err)
   }
 
+  def processJsObject[T](f: JsObject => T)(json: JsValue): JsResult[T] = {
+    json match {
+      case obj: JsObject => JsSuccess(f(obj))
+      case err @ (JsNull | _: JsBoolean | _: JsString | _: JsArray |
+        _: JsNumber) =>
+        SerializerUtil.buildJsErrorMsg("jsobject", err)
+    }
+  }
+
   // For use in implementing reads method of Reads[T] where T is constructed from a JsString via strFunc
   def processJsString[T](strFunc: String => T)(
     json: JsValue): JsResult[T] = json match {
