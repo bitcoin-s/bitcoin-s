@@ -12,7 +12,7 @@ import org.bitcoins.core.crypto.Sha256Digest
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.protocol.ln.channel.{ ChannelId, FundedChannelId }
 import org.bitcoins.core.protocol.ln.{ LnCurrencyUnit, LnCurrencyUnits }
-import org.bitcoins.core.wallet.fee.{ FeeUnit, SatoshisPerByte }
+import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.eclair.rpc.config.EclairInstance
 import org.bitcoins.eclair.rpc.json._
 import org.bitcoins.eclair.rpc.network.{ NodeId, NodeUri, PeerState }
@@ -260,15 +260,15 @@ class EclairRpcClient(instance: EclairInstance)(implicit system: ActorSystem) {
   def send(
     amountMsat: LnCurrencyUnit,
     paymentHash: Sha256Digest,
-    nodeId: NodeId): Future[SendResult] = {
-    eclairCall[SendResult](
+    nodeId: NodeId): Future[PaymentResult] = {
+    eclairCall[PaymentResult](
       "send",
       List(JsNumber(amountMsat.toPicoBitcoinDecimal), JsString(paymentHash.hex), JsString(nodeId.toString)))
   }
 
   private def send(
     invoice: String,
-    amountMsat: Option[LnCurrencyUnit]): Future[SendResult] = {
+    amountMsat: Option[LnCurrencyUnit]): Future[PaymentResult] = {
     val params =
       if (amountMsat.isEmpty) {
         List(JsString(invoice))
@@ -276,12 +276,12 @@ class EclairRpcClient(instance: EclairInstance)(implicit system: ActorSystem) {
         List(JsString(invoice), JsNumber(amountMsat.get.toPicoBitcoinDecimal))
       }
 
-    eclairCall[SendResult]("send", params)
+    eclairCall[PaymentResult]("send", params)
   }
 
-  def send(invoice: String): Future[SendResult] = send(invoice, None)
+  def send(invoice: String): Future[PaymentResult] = send(invoice, None)
 
-  def send(invoice: String, amountMsat: LnCurrencyUnit): Future[SendResult] =
+  def send(invoice: String, amountMsat: LnCurrencyUnit): Future[PaymentResult] =
     send(invoice, Some(amountMsat))
 
   def updateRelayFee(
