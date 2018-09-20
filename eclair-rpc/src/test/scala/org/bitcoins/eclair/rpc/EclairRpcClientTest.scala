@@ -140,6 +140,36 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
     }
   }
 
+  it should "be able to send payments in both directions" in {
+    val openChannelIdF = openAndConfirmChannel(client, otherClient)
+
+    val paymentAmount = NanoBitcoins(100000)
+    val invoiceF = openChannelIdF.flatMap(_ => otherClient.receive(paymentAmount))
+    //send the payment now
+    val paidF: Future[PaymentResult] = invoiceF.flatMap(i => client.send(i))
+
+    val isPaidF: Future[Boolean] = paidF.flatMap { p =>
+      val succeed = p.asInstanceOf[PaymentSucceeded]
+      otherClient.checkPayment(succeed.paymentHash.hex)
+    }
+
+    val isPaidAssertF = isPaidF.map(isPaid => assert(isPaid))
+
+    isPaidAssertF.flatMap { isPaid =>
+      val invoice2F = openChannelIdF.flatMap(_ => client.receive(paymentAmount))
+      //send the payment now
+      val paid2F: Future[PaymentResult] = invoice2F.flatMap((i => otherClient.send(i)))
+
+      val isPaid2F: Future[Boolean] = paid2F.flatMap { p =>
+        assert(p.isInstanceOf[PaymentSucceeded])
+        val succeed = p.asInstanceOf[PaymentSucceeded]
+        client.checkPayment(succeed.paymentHash.hex)
+      }
+
+      isPaid2F.map(isPaid => assert(isPaid))
+    }
+  }
+
   private def hasConnection(client: EclairRpcClient, nodeId: NodeId): Future[Assertion] = {
 
     val hasPeersF = client.peers.map(_.nonEmpty)
