@@ -20,9 +20,9 @@ before_cache:
   - find $HOME/.ivy2 -name "ivydata-*.properties" | xargs rm
 
 before_install:
-  - wget https://bitcoincore.org/bin/bitcoin-core-0.16.0/bitcoin-0.16.0-x86_64-linux-gnu.tar.gz
-  - tar -xzf bitcoin-0.16.0-x86_64-linux-gnu.tar.gz
-  - cd bitcoin-0.16.0/bin
+  - wget https://bitcoincore.org/bin/bitcoin-core-0.16.3/bitcoin-0.16.3-x86_64-linux-gnu.tar.gz
+  - tar -xzf bitcoin-0.16.3-x86_64-linux-gnu.tar.gz
+  - cd bitcoin-0.16.3/bin
   - export PATH=$PATH:$(pwd)
   - cd ../..
 
