@@ -39,11 +39,8 @@ trait BitcoinSUtil {
   }
 
   def encodeHex(short: Short): String = {
-    val hex = short.toHexString.length % 2 match {
-      case 1 => "0" + short.toHexString
-      case _: Int => short.toHexString
-    }
-    addPadding(4, hex)
+    val bytes = ByteVector.fromShort(short)
+    encodeHex(bytes)
   }
 
   def encodeHex(bigInt: BigInt): String = BitcoinSUtil.encodeHex(ByteVector(bigInt.toByteArray))
