@@ -5,8 +5,8 @@ lazy val compilerOpts =
 
 lazy val commonSettings = List(
   scalacOptions := compilerOpts,
-  assemblyOption in assembly := (assemblyOption in assembly).value.copy(includeScala = false),
-  testOptions in Test += Tests.Argument(TestFrameworks.ScalaTest, "-oF")
+  assemblyOption in assembly := (assemblyOption in assembly).value.copy(includeScala = false)
+  //testOptions in Test += Tests.Argument(TestFrameworks.ScalaTest, "-oF")
 )
 lazy val root = project
     .in(file("."))

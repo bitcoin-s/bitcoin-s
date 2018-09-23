@@ -1,5 +1,6 @@
 package org.bitcoins.core.number
 
+import org.bitcoins.core.number.UInt8.toUInt8
 import org.bitcoins.core.protocol.NetworkElement
 import org.bitcoins.core.util.{ BitcoinSUtil, Factory, NumberUtil }
 import scodec.bits.ByteVector
@@ -92,12 +93,29 @@ sealed abstract class SignedNumber[T <: Number[T]] extends Number[T]
  */
 sealed abstract class UnsignedNumber[T <: Number[T]] extends Number[T]
 
+sealed abstract class UInt5 extends UnsignedNumber[UInt5] {
+  override def apply: A => UInt5 = UInt5(_)
+
+  override def andMask: BigInt = 0x1f
+
+  def byte: Byte = toInt.toByte
+
+  def toUInt8: UInt8 = UInt8(toInt)
+
+  override def hex: String = toUInt8.hex
+}
+
 sealed abstract class UInt8 extends UnsignedNumber[UInt8] {
   override def apply: A => UInt8 = UInt8(_)
 
   override def hex = BitcoinSUtil.encodeHex(toInt.toShort).slice(2, 4)
 
   override def andMask = 0xff
+
+  def toUInt5: UInt5 = {
+    //this will throw if not in range of a UInt5, come back and look later
+    UInt5(toInt)
+  }
 }
 
 /**
@@ -166,6 +184,47 @@ trait BaseNumbers[T] {
   def max: T
 }
 
+object UInt5 extends Factory[UInt5] with BaseNumbers[UInt5] {
+  private case class UInt5Impl(underlying: BigInt) extends UInt5 {
+    require(underlying.toInt >= 0, s"Cannot create UInt5 from $underlying")
+    require(underlying <= 31, s"Cannot create UInt5 from $underlying")
+  }
+
+  lazy val zero = UInt5(0.toByte)
+  lazy val one = UInt5(1.toByte)
+
+  lazy val min = zero
+  lazy val max = UInt5(31.toByte)
+
+  def apply(byte: Byte): UInt5 = fromByte(byte)
+
+  def apply(bigInt: BigInt): UInt5 = {
+
+    require(
+      bigInt.toByteArray.size == 1,
+      s"To create a uint5 from a ByteVector it must be of size one ${bigInt}")
+
+    UInt5.fromByte(bigInt.toByteArray.head)
+  }
+
+  override def fromBytes(bytes: ByteVector): UInt5 = {
+    require(bytes.size == 1, s"To create a uint5 from a ByteVector it must be of size one ${bytes.length}")
+    UInt5.fromByte(bytes.head)
+  }
+
+  def fromByte(byte: Byte): UInt5 = {
+    UInt5Impl(BigInt(byte))
+  }
+
+  def toUInt5(b: Byte): UInt5 = {
+    fromByte(b)
+  }
+
+  def toUInt5s(bytes: ByteVector): Vector[UInt5] = {
+    bytes.toArray.map(toUInt5(_)).toVector
+  }
+}
+
 object UInt8 extends Factory[UInt8] with BaseNumbers[UInt8] {
   private case class UInt8Impl(underlying: BigInt) extends UInt8 {
     require(isValid(underlying), "Invalid range for a UInt8, got: " + underlying)
@@ -200,8 +259,8 @@ object UInt8 extends Factory[UInt8] with BaseNumbers[UInt8] {
     ByteVector(us.map(toByte(_)))
   }
 
-  def toUInt8s(bytes: ByteVector): Seq[UInt8] = {
-    bytes.toSeq.map { b: Byte => toUInt8(b) }
+  def toUInt8s(bytes: ByteVector): Vector[UInt8] = {
+    bytes.toArray.map(toUInt8(_)).toVector
   }
 
   def checkBounds(res: BigInt): UInt8 = {
