@@ -1,6 +1,7 @@
 package org.bitcoins.core.protocol.ln
 
 import org.bitcoins.core.config.{ MainNet, NetworkParameters, RegTest, TestNet3 }
+import org.bitcoins.core.number.UInt5
 import org.bitcoins.core.protocol.blockchain.ChainParams
 import scodec.bits.ByteVector
 
@@ -31,7 +32,7 @@ object LnParams {
 
     override def lnPort = 9735
 
-    override def invoicePrefix: ByteVector = {
+    override val invoicePrefix: ByteVector = {
       ByteVector('l', 'n', 'b', 'c')
     }
   }
@@ -43,7 +44,7 @@ object LnParams {
 
     override def lnPort = 9735
 
-    override def invoicePrefix: ByteVector = {
+    override val invoicePrefix: ByteVector = {
       ByteVector('l', 'n', 't', 'b')
     }
   }
@@ -55,7 +56,7 @@ object LnParams {
 
     override def lnPort = 9735
 
-    override def invoicePrefix: ByteVector = {
+    override val invoicePrefix: ByteVector = {
       ByteVector('l', 'n', 'b', 'c', 'r', 't')
     }
   }

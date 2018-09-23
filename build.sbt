@@ -31,6 +31,7 @@ lazy val commonSettings = List(
   scalacOptions in Test := testCompilerOpts,
   assemblyOption in assembly := (assemblyOption in assembly).value.copy(includeScala = false)
 )
+
 lazy val root = project
     .in(file("."))
     .aggregate(
