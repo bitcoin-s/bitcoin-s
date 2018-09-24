@@ -11,7 +11,9 @@ import akka.util.ByteString
 import org.bitcoins.core.crypto.Sha256Digest
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.protocol.ln.channel.{ ChannelId, FundedChannelId }
-import org.bitcoins.core.protocol.ln.{ LnCurrencyUnit, LnCurrencyUnits }
+import org.bitcoins.core.protocol.ln.{ LnCurrencyUnit, LnCurrencyUnits, LnInvoice }
+import org.bitcoins.core.protocol.script.ScriptPubKey
+import org.bitcoins.core.util.BitcoinSUtil
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.eclair.rpc.config.EclairInstance
 import org.bitcoins.eclair.rpc.json._
@@ -22,7 +24,7 @@ import play.api.libs.json._
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ Await, ExecutionContext, Future }
 import scala.sys.process._
-import scala.util.Try
+import scala.util.{ Failure, Success, Try }
 
 class EclairRpcClient(instance: EclairInstance)(implicit system: ActorSystem) {
   import JsonReaders._
@@ -69,23 +71,34 @@ class EclairRpcClient(instance: EclairInstance)(implicit system: ActorSystem) {
   def channels(nodeId: NodeId): Future[Vector[ChannelInfo]] =
     channels(Some(nodeId))
 
-  def checkInvoice(invoice: String): Future[PaymentRequest] = {
-    eclairCall[PaymentRequest]("checkinvoice", List(JsString(invoice)))
+  def checkInvoice(invoice: LnInvoice): Future[PaymentRequest] = {
+    eclairCall[PaymentRequest]("checkinvoice", List(JsString(invoice.toString)))
   }
 
-  // When types are introduced this can be two different functions
-  def checkPayment(invoiceOrHash: String): Future[Boolean] = {
-    eclairCall[Boolean]("checkpayment", List(JsString(invoiceOrHash)))
+  def checkPayment(invoiceOrHash: Either[LnInvoice, Sha256Digest]): Future[Boolean] = {
+
+    val string = {
+      if (invoiceOrHash.isLeft) {
+        invoiceOrHash.left.get.toString
+      } else {
+        invoiceOrHash.right.get.hex
+      }
+    }
+
+    eclairCall[Boolean]("checkpayment", List(JsString(string)))
   }
 
   private def close(
     channelId: ChannelId,
-    scriptPubKey: Option[String]): Future[String] = {
+    scriptPubKey: Option[ScriptPubKey]): Future[String] = {
     val params =
       if (scriptPubKey.isEmpty) {
         List(JsString(channelId.hex))
       } else {
-        List(JsString(channelId.hex), JsString(scriptPubKey.get))
+        //TODO: test that we do NOT expect the compact size uint preprended to the spk
+        val asmHex = BitcoinSUtil.encodeHex(scriptPubKey.get.asmBytes)
+
+        List(JsString(channelId.hex), JsString(asmHex))
       }
 
     eclairCall[String]("close", params)
@@ -93,8 +106,9 @@ class EclairRpcClient(instance: EclairInstance)(implicit system: ActorSystem) {
 
   def close(channelId: ChannelId): Future[String] = close(channelId, None)
 
-  def close(channelId: ChannelId, scriptPubKey: String): Future[String] =
+  def close(channelId: ChannelId, scriptPubKey: ScriptPubKey): Future[String] = {
     close(channelId, Some(scriptPubKey))
+  }
 
   def connect(nodeId: NodeId, host: String, port: Int): Future[String] = {
     val uri = NodeUri(nodeId, host, port)
@@ -220,7 +234,7 @@ class EclairRpcClient(instance: EclairInstance)(implicit system: ActorSystem) {
   private def receive(
     description: Option[String],
     amountMsat: Option[LnCurrencyUnit],
-    expirySeconds: Option[Long]): Future[String] = {
+    expirySeconds: Option[Long]): Future[LnInvoice] = {
     val params =
       if (amountMsat.isEmpty) {
         List(JsString(description.getOrElse("")))
@@ -233,28 +247,38 @@ class EclairRpcClient(instance: EclairInstance)(implicit system: ActorSystem) {
           JsNumber(expirySeconds.get))
       }
 
-    eclairCall[String]("receive", params)
+    val serializedF = eclairCall[String]("receive", params)
+
+    serializedF.flatMap { str =>
+      val invoiceTry = LnInvoice.fromString(str)
+      invoiceTry match {
+        case Success(i) =>
+          Future.successful(i)
+        case Failure(err) =>
+          Future.failed(err)
+      }
+    }
   }
 
-  def receive(): Future[String] =
+  def receive(): Future[LnInvoice] =
     receive(None, None, None)
 
-  def receive(description: String): Future[String] =
+  def receive(description: String): Future[LnInvoice] =
     receive(Some(description), None, None)
 
-  def receive(description: String, amountMsat: LnCurrencyUnit): Future[String] =
+  def receive(description: String, amountMsat: LnCurrencyUnit): Future[LnInvoice] =
     receive(Some(description), Some(amountMsat), None)
 
   def receive(
     description: String,
     amountMsat: LnCurrencyUnit,
-    expirySeconds: Long): Future[String] =
+    expirySeconds: Long): Future[LnInvoice] =
     receive(Some(description), Some(amountMsat), Some(expirySeconds))
 
-  def receive(amountMsat: LnCurrencyUnit): Future[String] =
+  def receive(amountMsat: LnCurrencyUnit): Future[LnInvoice] =
     receive(None, Some(amountMsat), None)
 
-  def receive(amountMsat: LnCurrencyUnit, expirySeconds: Long): Future[String] =
+  def receive(amountMsat: LnCurrencyUnit, expirySeconds: Long): Future[LnInvoice] =
     receive(None, Some(amountMsat), Some(expirySeconds))
 
   def send(
@@ -267,21 +291,23 @@ class EclairRpcClient(instance: EclairInstance)(implicit system: ActorSystem) {
   }
 
   private def send(
-    invoice: String,
+    invoice: LnInvoice,
     amountMsat: Option[LnCurrencyUnit]): Future[PaymentResult] = {
-    val params =
+
+    val params = {
       if (amountMsat.isEmpty) {
-        List(JsString(invoice))
+        List(JsString(invoice.toString))
       } else {
-        List(JsString(invoice), JsNumber(amountMsat.get.toPicoBitcoinDecimal))
+        List(JsString(invoice.toString), JsNumber(amountMsat.get.toPicoBitcoinDecimal))
       }
+    }
 
     eclairCall[PaymentResult]("send", params)
   }
 
-  def send(invoice: String): Future[PaymentResult] = send(invoice, None)
+  def send(invoice: LnInvoice): Future[PaymentResult] = send(invoice, None)
 
-  def send(invoice: String, amountMsat: LnCurrencyUnit): Future[PaymentResult] =
+  def send(invoice: LnInvoice, amountMsat: LnCurrencyUnit): Future[PaymentResult] =
     send(invoice, Some(amountMsat))
 
   def updateRelayFee(

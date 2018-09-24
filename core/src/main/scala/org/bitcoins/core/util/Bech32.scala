@@ -205,14 +205,11 @@ sealed abstract class Bech32 {
     NumberUtil.convertUInt5sToUInt8(b)
   }
 
-  private def handleEncodeTry[T](vecT: Try[Vector[T]]): Vector[T] = {
-    //should always be able to encode a hex string to bech32
-    vecT match {
-      case Success(vec) => vec
-      case Failure(err) =>
-        logger.error(s"Failed to encode a vec to bech32. Vec: ${vecT} err: ${err.getMessage}")
-        throw err
-    }
+  /** Assumes we are given a valid bech32 string */
+  def decodeStringToU5s(str: String): Vector[UInt5] = {
+    str.map { char =>
+      UInt5(Bech32.charset.indexOf(char))
+    }.toVector
   }
 
 }
