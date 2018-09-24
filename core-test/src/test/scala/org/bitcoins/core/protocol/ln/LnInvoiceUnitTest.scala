@@ -20,7 +20,7 @@ class LnInvoiceUnitTest extends FlatSpec with MustMatchers {
   val time = UInt64(1496314658)
 
   val paymentHash = Sha256Digest.fromHex("0001020304050607080900010203040506070809000102030405060708090102")
-  val paymentTag = LnInvoiceTag.PaymentHashTag(paymentHash)
+  val paymentTag = LnTag.PaymentHashTag(paymentHash)
 
   val description = {
     ("One piece of chocolate cake, one icecream cone, one pickle, one slice of swiss cheese, " +
@@ -29,13 +29,13 @@ class LnInvoiceUnitTest extends FlatSpec with MustMatchers {
   }
   val descriptionHash = CryptoUtil.sha256(ByteVector(description))
 
-  val descpriptionHashTag = Right(LnInvoiceTag.DescriptionHashTag(descriptionHash))
+  val descpriptionHashTag = Right(LnTag.DescriptionHashTag(descriptionHash))
 
   it must "parse BOLT11 example 1" in {
     //BOLT11 Example #1
 
-    val descriptionTagE = Left(LnInvoiceTag.DescriptionTag("Please consider supporting this project"))
-    val lnTags = LnInvoiceTaggedFields(
+    val descriptionTagE = Left(LnTag.DescriptionTag("Please consider supporting this project"))
+    val lnTags = LnTaggedFields(
       paymentHash = paymentTag,
       descriptionOrHash = descriptionTagE)
 
@@ -56,9 +56,9 @@ class LnInvoiceUnitTest extends FlatSpec with MustMatchers {
   it must "parse BOLT11 example 2" in {
     //BOLT11 Example #2
 
-    val descriptionTagE = Left(LnInvoiceTag.DescriptionTag("1 cup coffee"))
-    val expiryTimeTag = LnInvoiceTag.ExpiryTimeTag(UInt32(60))
-    val lnTags = LnInvoiceTaggedFields(
+    val descriptionTagE = Left(LnTag.DescriptionTag("1 cup coffee"))
+    val expiryTimeTag = LnTag.ExpiryTimeTag(UInt32(60))
+    val lnTags = LnTaggedFields(
       paymentTag,
       descriptionOrHash = descriptionTagE,
       expiryTime = Some(expiryTimeTag))
@@ -81,9 +81,9 @@ class LnInvoiceUnitTest extends FlatSpec with MustMatchers {
   it must "parse BOLT11 example 3" in {
     //BOLT11 Example #3 - Description field does not encode correctly due to Japanese letters
 
-    val descriptionTagE = Left(LnInvoiceTag.DescriptionTag("ナンセンス 1杯"))
-    val expiryTag = LnInvoiceTag.ExpiryTimeTag(UInt32(60))
-    val lnTags = LnInvoiceTaggedFields(
+    val descriptionTagE = Left(LnTag.DescriptionTag("ナンセンス 1杯"))
+    val expiryTag = LnTag.ExpiryTimeTag(UInt32(60))
+    val lnTags = LnTaggedFields(
       paymentTag, descriptionTagE, None,
       Some(expiryTag), None, None,
       None)
@@ -107,8 +107,8 @@ class LnInvoiceUnitTest extends FlatSpec with MustMatchers {
     //BOLT11 Example #4
 
     val descriptionHash = Sha256Digest.fromHex("3925b6f67e2c340036ed12093dd44e0368df1b6ea26c53dbe4811f58fd5db8c1")
-    val descriptionHashTagE = Right(LnInvoiceTag.DescriptionHashTag(descriptionHash))
-    val lnTags = LnInvoiceTaggedFields(
+    val descriptionHashTagE = Right(LnTag.DescriptionHashTag(descriptionHash))
+    val lnTags = LnTaggedFields(
       paymentHash = paymentTag,
       descriptionOrHash = descriptionHashTagE,
       None, None, None,
@@ -133,10 +133,10 @@ class LnInvoiceUnitTest extends FlatSpec with MustMatchers {
     //BOLT11 Example #5
 
     val descriptionHash = Sha256Digest.fromHex("3925b6f67e2c340036ed12093dd44e0368df1b6ea26c53dbe4811f58fd5db8c1")
-    val descriptionHashTagE = Right(LnInvoiceTag.DescriptionHashTag(descriptionHash))
-    val fallbackAddr = LnInvoiceTag.FallbackAddressTag(P2PKHAddress.fromString("mk2QpYatsKicvFVuTAQLBryyccRXMUaGHP").get)
+    val descriptionHashTagE = Right(LnTag.DescriptionHashTag(descriptionHash))
+    val fallbackAddr = LnTag.FallbackAddressTag(P2PKHAddress.fromString("mk2QpYatsKicvFVuTAQLBryyccRXMUaGHP").get)
 
-    val lnTags = LnInvoiceTaggedFields(
+    val lnTags = LnTaggedFields(
       paymentHash = paymentTag,
       descriptionOrHash = descriptionHashTagE,
       fallbackAddress = Some(fallbackAddr))
@@ -161,7 +161,7 @@ class LnInvoiceUnitTest extends FlatSpec with MustMatchers {
   it must "parse BOLT11 example 6" in {
     val expected = "lnbc20m1pvjluezpp5qqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqypqhp58yjmdan79s6qqdhdzgynm4zwqd5d7xmw5fk98klysy043l2ahrqsfpp3qjmp7lwpagxun9pygexvgpjdc4jdj85fr9yq20q82gphp2nflc7jtzrcazrra7wwgzxqc8u7754cdlpfrmccae92qgzqvzq2ps8pqqqqqqpqqqqq9qqqvpeuqafqxu92d8lr6fvg0r5gv0heeeqgcrqlnm6jhphu9y00rrhy4grqszsvpcgpy9qqqqqqgqqqqq7qqzqj9n4evl6mr5aj9f58zp6fyjzup6ywn3x6sk8akg5v4tgn2q8g4fhx05wf6juaxu9760yp46454gpg5mtzgerlzezqcqvjnhjh8z3g2qqdhhwkj"
 
-    val fallbackAddr = LnInvoiceTag.FallbackAddressTag(P2PKHAddress.fromString("1RustyRX2oai4EYYDpQGWvEL62BBGqN9T").get)
+    val fallbackAddr = LnTag.FallbackAddressTag(P2PKHAddress.fromString("1RustyRX2oai4EYYDpQGWvEL62BBGqN9T").get)
 
     val signature = ECDigitalSignature.fromRS(
       "91675cb3fad8e9d915343883a49242e074474e26d42c7ed914655689a8074553733e8e4ea5ce9b85f69e40d755a55014536b12323f8b220600c94ef2b9c51428")
@@ -183,9 +183,9 @@ class LnInvoiceUnitTest extends FlatSpec with MustMatchers {
       feePropMilli = FeeProportionalMillionths(UInt32(30)),
       cltvExpiryDelta = 4)
 
-    val route = LnInvoiceTag.RoutingInfo(Vector(route1, route2))
+    val route = LnTag.RoutingInfo(Vector(route1, route2))
 
-    val lnTags = LnInvoiceTaggedFields(
+    val lnTags = LnTaggedFields(
       paymentHash = paymentTag,
       descriptionOrHash = descpriptionHashTag,
       fallbackAddress = Some(fallbackAddr),
@@ -211,9 +211,9 @@ class LnInvoiceUnitTest extends FlatSpec with MustMatchers {
       "dph2q7z9kmrgvr7xlaqm47apw3d48zm203kzcq357a4ls9al2ea73r8jcceyjtya6fu5wzzpe50zrge6ulk" +
       "4nvjcpxlekvmxl6qcs9j3tz0469gqsjurz5"
 
-    val fallbackAddr = LnInvoiceTag.FallbackAddressTag(P2SHAddress.fromString("3EktnHQD7RiAE6uzMj2ZifT9YgRrkSgzQX").get)
+    val fallbackAddr = LnTag.FallbackAddressTag(P2SHAddress.fromString("3EktnHQD7RiAE6uzMj2ZifT9YgRrkSgzQX").get)
 
-    val lnTags = LnInvoiceTaggedFields(
+    val lnTags = LnTaggedFields(
       paymentHash = paymentTag,
       descriptionOrHash = descpriptionHashTag,
       fallbackAddress = Some(fallbackAddr))
@@ -247,9 +247,9 @@ class LnInvoiceUnitTest extends FlatSpec with MustMatchers {
       "2ur5j5cr03890fa7k2pypgttmh4897d3raaq85a293e9jpuqwl0rnfu" +
       "wzam7yr8e690nd2ypcq9hlkdwdvycqe4x4ch"
 
-    val fallbackAddr = LnInvoiceTag.FallbackAddressTag(Bech32Address.fromString("bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4").get)
+    val fallbackAddr = LnTag.FallbackAddressTag(Bech32Address.fromString("bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4").get)
 
-    val lnTags = LnInvoiceTaggedFields(
+    val lnTags = LnTaggedFields(
       paymentHash = paymentTag,
       descriptionOrHash = descpriptionHashTag,
       fallbackAddress = Some(fallbackAddr))
@@ -283,9 +283,9 @@ class LnInvoiceUnitTest extends FlatSpec with MustMatchers {
       "q28j0v3rwgy9pvjnd48ee2pl8xrpxysd5g44td63g6xcjcu003j3qe8" +
       "878hluqlvl3km8rm92f5stamd3jw763n3hck0ct7p8wwj463cqm8cxgy"
 
-    val fallbackAddr = LnInvoiceTag.FallbackAddressTag(Bech32Address.fromString("bc1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3qccfmv3").get)
+    val fallbackAddr = LnTag.FallbackAddressTag(Bech32Address.fromString("bc1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3qccfmv3").get)
 
-    val lnTags = LnInvoiceTaggedFields(
+    val lnTags = LnTaggedFields(
       paymentHash = paymentTag,
       descriptionOrHash = descpriptionHashTag,
       fallbackAddress = Some(fallbackAddr))
@@ -309,5 +309,16 @@ class LnInvoiceUnitTest extends FlatSpec with MustMatchers {
     val deserialized = LnInvoice.fromString(serialized)
 
     deserialized.get must be(lnInvoice)
+  }
+
+  it must "deserialize and reserialize a invoice with a explicity expiry time" in {
+    //from eclair
+    val bech32 = "lnbcrt1m1pd6ssf3pp5mqcepx6yzx7uu0uagw5x3c7kqhnpwr3mfn844hjux8tlza6ztr7sdqqxqrrss0rl3gzer9gfc54fs84rd4xk6g8nf0syharnnyljc9za933memdzxrjz0v2v94ntuhdxduk3z0nlmpmznryvvvl4gzgu28kjkm4ey98gpmyhjfa"
+
+    val invoiceT = LnInvoice.fromString(bech32)
+
+    val deserialized = invoiceT.get.toString
+
+    deserialized must be(bech32)
   }
 }

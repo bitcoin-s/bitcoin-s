@@ -18,35 +18,35 @@ object LnTagPrefix {
   private val logger = LoggerFactory.getLogger(this.getClass.getSimpleName)
 
   case object PaymentHash extends LnTagPrefix {
-    override def value: Char = 'p'
+    override val value: Char = 'p'
   }
   case object Description extends LnTagPrefix {
-    override def value: Char = 'd'
+    override val value: Char = 'd'
   }
 
   /** The nodeId of the node paying the invoice */
   case object NodeId extends LnTagPrefix {
-    override def value: Char = 'n'
+    override val value: Char = 'n'
   }
 
   case object DescriptionHash extends LnTagPrefix {
-    override def value: Char = 'h'
+    override val value: Char = 'h'
   }
 
   case object ExpiryTime extends LnTagPrefix {
-    override def value: Char = 'x'
+    override val value: Char = 'x'
   }
 
   case object CltvExpiry extends LnTagPrefix {
-    override def value: Char = 'c'
+    override val value: Char = 'c'
   }
 
   case object FallbackAddress extends LnTagPrefix {
-    override def value: Char = 'f'
+    override val value: Char = 'f'
   }
 
   case object RoutingInfo extends LnTagPrefix {
-    override def value: Char = 'r'
+    override val value: Char = 'r'
   }
 
   private val all: List[LnTagPrefix] = List(
@@ -66,6 +66,7 @@ object LnTagPrefix {
   }
 
   def fromUInt5(u5: UInt5): Option[LnTagPrefix] = {
-    prefixUInt5.get(u5)
+    val p = prefixUInt5.get(u5)
+    p
   }
 }

@@ -1,12 +1,9 @@
 package org.bitcoins.core.protocol.ln
 
-import org.bitcoins.core.crypto.ECDigitalSignature
-import org.bitcoins.core.number.{ UInt32, UInt5, UInt64, UInt8 }
-import org.bitcoins.core.protocol.{ Bech32Address, HumanReadablePart }
-import org.bitcoins.core.protocol.Bech32Address.{ checkHrpValidity, hrpExpand, verifyChecksum }
+import org.bitcoins.core.number.{ UInt5, UInt64 }
+import org.bitcoins.core.protocol.ln.util.LnUtil
 import org.bitcoins.core.util._
 import org.slf4j.LoggerFactory
-import scodec.bits.ByteVector
 
 import scala.util.{ Failure, Success, Try }
 
@@ -31,7 +28,7 @@ sealed abstract class LnInvoice {
 
   def timestamp: UInt64
 
-  def lnTags: LnInvoiceTaggedFields
+  def lnTags: LnTaggedFields
 
   def signature: LnInvoiceSignature
 
@@ -43,18 +40,7 @@ sealed abstract class LnInvoice {
 
   //TODO: Refactor Into Bech32Address?
   def uInt64ToBase32(input: UInt64): Vector[UInt5] = {
-    //To fit a UInt64 value, we need at most ceil(64 / 5) = 13 groups of 5 bits.
-    /*    val arr: Array[Int] = new Array[Int](13)
-    for (x <- 0 to 12) {
-      arr(x) = (input >> x * 5 & UInt64(0x1F)).toInt.toByte
-    }
-    arr.reverse.dropWhile(_ == 0).map(b => UInt5(b)).toVector*/
-    LnInvoiceTag.encodeNumber(input.toLong)
-  }
-
-  private def bech32Signature: String = {
-    val signatureBase32 = signature.data
-    Bech32.encode5bitToString(signatureBase32)
+    LnUtil.encodeNumber(input.toLong)
   }
 
   private def bech32TimeStamp: Vector[UInt5] = {
@@ -117,7 +103,7 @@ object LnInvoice {
 
     val tags = data.slice(7, data.length - 104)
 
-    val taggedFields = LnInvoiceTaggedFields.fromUInt5s(tags)
+    val taggedFields = LnTaggedFields.fromUInt5s(tags)
 
     Invoice(
       hrp = hrp,
@@ -160,5 +146,5 @@ object LnInvoice {
   }
 }
 
-case class Invoice(hrp: LnHumanReadablePart, timestamp: UInt64, lnTags: LnInvoiceTaggedFields,
+case class Invoice(hrp: LnHumanReadablePart, timestamp: UInt64, lnTags: LnTaggedFields,
   signature: LnInvoiceSignature) extends LnInvoice
