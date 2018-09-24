@@ -117,7 +117,7 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
     val paymentAmount = NanoBitcoins(100000)
     val invoiceF = openChannelIdF.flatMap(_ => otherClient.receive(paymentAmount))
 
-    val isPaid1F = invoiceF.flatMap(i => otherClient.checkPayment(i))
+    val isPaid1F = invoiceF.flatMap(i => otherClient.checkPayment(Left(i)))
 
     val isNotPaidAssertF = isPaid1F.map(isPaid => assert(!isPaid))
 
@@ -127,7 +127,7 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
     val isPaid2F: Future[Boolean] = paidF.flatMap { p =>
       val succeed = p.asInstanceOf[PaymentSucceeded]
 
-      otherClient.checkPayment(succeed.paymentHash.hex)
+      otherClient.checkPayment(Right(succeed.paymentHash))
     }
 
     val isPaidAssertF = isPaid2F.map(isPaid => assert(isPaid))
@@ -150,7 +150,7 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
 
     val isPaidF: Future[Boolean] = paidF.flatMap { p =>
       val succeed = p.asInstanceOf[PaymentSucceeded]
-      otherClient.checkPayment(succeed.paymentHash.hex)
+      otherClient.checkPayment(Right(succeed.paymentHash))
     }
 
     val isPaidAssertF = isPaidF.map(isPaid => assert(isPaid))
@@ -163,7 +163,7 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
       val isPaid2F: Future[Boolean] = paid2F.flatMap { p =>
         assert(p.isInstanceOf[PaymentSucceeded])
         val succeed = p.asInstanceOf[PaymentSucceeded]
-        client.checkPayment(succeed.paymentHash.hex)
+        client.checkPayment(Right(succeed.paymentHash))
       }
 
       isPaid2F.map(isPaid => assert(isPaid))

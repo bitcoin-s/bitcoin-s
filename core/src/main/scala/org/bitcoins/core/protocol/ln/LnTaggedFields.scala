@@ -1,7 +1,8 @@
 package org.bitcoins.core.protocol.ln
 
 import org.bitcoins.core.number.UInt5
-import org.bitcoins.core.protocol.ln.LnInvoiceTag.PaymentHashTag
+import org.bitcoins.core.protocol.ln.LnTag.PaymentHashTag
+import org.bitcoins.core.protocol.ln.util.LnUtil
 import org.bitcoins.core.util.Bech32
 import org.slf4j.LoggerFactory
 
@@ -11,23 +12,23 @@ import scala.collection.mutable
 /**
  * An aggregation of all the individual tagged fields in a [[org.bitcoins.core.protocol.ln.LnInvoice]]
  */
-sealed abstract class LnInvoiceTaggedFields {
+sealed abstract class LnTaggedFields {
 
-  def paymentHash: LnInvoiceTag.PaymentHashTag
+  def paymentHash: LnTag.PaymentHashTag
 
-  def description: Option[LnInvoiceTag.DescriptionTag]
+  def description: Option[LnTag.DescriptionTag]
 
-  def nodeId: Option[LnInvoiceTag.NodeIdTag]
+  def nodeId: Option[LnTag.NodeIdTag]
 
-  def descriptionHash: Option[LnInvoiceTag.DescriptionHashTag]
+  def descriptionHash: Option[LnTag.DescriptionHashTag]
 
-  def expiryTime: Option[LnInvoiceTag.ExpiryTimeTag]
+  def expiryTime: Option[LnTag.ExpiryTimeTag]
 
-  def cltvExpiry: Option[LnInvoiceTag.MinFinalCltvExpiry]
+  def cltvExpiry: Option[LnTag.MinFinalCltvExpiry]
 
-  def fallbackAddress: Option[LnInvoiceTag.FallbackAddressTag]
+  def fallbackAddress: Option[LnTag.FallbackAddressTag]
 
-  def routingInfo: Option[LnInvoiceTag.RoutingInfo]
+  def routingInfo: Option[LnTag.RoutingInfo]
 
   def data: Vector[UInt5] = {
     paymentHash.data ++
@@ -50,16 +51,16 @@ sealed abstract class LnInvoiceTaggedFields {
   }
 }
 
-object LnInvoiceTaggedFields extends {
+object LnTaggedFields extends {
   private case class InvoiceTagImpl(
-    paymentHash: LnInvoiceTag.PaymentHashTag,
-    description: Option[LnInvoiceTag.DescriptionTag],
-    nodeId: Option[LnInvoiceTag.NodeIdTag],
-    descriptionHash: Option[LnInvoiceTag.DescriptionHashTag],
-    expiryTime: Option[LnInvoiceTag.ExpiryTimeTag],
-    cltvExpiry: Option[LnInvoiceTag.MinFinalCltvExpiry],
-    fallbackAddress: Option[LnInvoiceTag.FallbackAddressTag],
-    routingInfo: Option[LnInvoiceTag.RoutingInfo]) extends LnInvoiceTaggedFields {
+    paymentHash: LnTag.PaymentHashTag,
+    description: Option[LnTag.DescriptionTag],
+    nodeId: Option[LnTag.NodeIdTag],
+    descriptionHash: Option[LnTag.DescriptionHashTag],
+    expiryTime: Option[LnTag.ExpiryTimeTag],
+    cltvExpiry: Option[LnTag.MinFinalCltvExpiry],
+    fallbackAddress: Option[LnTag.FallbackAddressTag],
+    routingInfo: Option[LnTag.RoutingInfo]) extends LnTaggedFields {
     require(
       (description.nonEmpty && description.get.string.length < 640) ||
         descriptionHash.nonEmpty,
@@ -75,19 +76,19 @@ object LnInvoiceTaggedFields extends {
    */
   def apply(
     paymentHashTag: PaymentHashTag,
-    descriptionOrHash: Either[LnInvoiceTag.DescriptionTag, LnInvoiceTag.DescriptionHashTag]): LnInvoiceTaggedFields = {
+    descriptionOrHash: Either[LnTag.DescriptionTag, LnTag.DescriptionHashTag]): LnTaggedFields = {
 
-    LnInvoiceTaggedFields.apply(paymentHashTag, descriptionOrHash)
+    LnTaggedFields.apply(paymentHashTag, descriptionOrHash)
   }
 
   def apply(
-    paymentHash: LnInvoiceTag.PaymentHashTag,
-    descriptionOrHash: Either[LnInvoiceTag.DescriptionTag, LnInvoiceTag.DescriptionHashTag],
-    nodeId: Option[LnInvoiceTag.NodeIdTag] = None,
-    expiryTime: Option[LnInvoiceTag.ExpiryTimeTag] = None,
-    cltvExpiry: Option[LnInvoiceTag.MinFinalCltvExpiry] = None,
-    fallbackAddress: Option[LnInvoiceTag.FallbackAddressTag] = None,
-    routingInfo: Option[LnInvoiceTag.RoutingInfo] = None): LnInvoiceTaggedFields = {
+    paymentHash: LnTag.PaymentHashTag,
+    descriptionOrHash: Either[LnTag.DescriptionTag, LnTag.DescriptionHashTag],
+    nodeId: Option[LnTag.NodeIdTag] = None,
+    expiryTime: Option[LnTag.ExpiryTimeTag] = None,
+    cltvExpiry: Option[LnTag.MinFinalCltvExpiry] = None,
+    fallbackAddress: Option[LnTag.FallbackAddressTag] = None,
+    routingInfo: Option[LnTag.RoutingInfo] = None): LnTaggedFields = {
 
     if (descriptionOrHash.isLeft) {
       InvoiceTagImpl(
@@ -114,9 +115,10 @@ object LnInvoiceTaggedFields extends {
 
   }
 
-  def fromUInt5s(u5s: Vector[UInt5]): LnInvoiceTaggedFields = {
+  def fromUInt5s(u5s: Vector[UInt5]): LnTaggedFields = {
     @tailrec
-    def loop(remaining: List[UInt5], fields: Vector[LnInvoiceTag]): Vector[LnInvoiceTag] = {
+    def loop(remaining: List[UInt5], fields: Vector[LnTag]): Vector[LnTag] = {
+
       remaining match {
         case h :: h1 :: h2 :: t =>
 
@@ -126,19 +128,19 @@ object LnInvoiceTaggedFields extends {
           //next two 5 bit increments are data_length
           val dataLengthU5s = Vector(h1, h2)
 
-          val dataLength = LnInvoiceTag.decodeNumber(dataLengthU5s)
+          val dataLength = LnUtil.decodeDataLength(dataLengthU5s)
 
           //t is the actual possible payload
           val payload: Vector[UInt5] = t.take(dataLength.toInt).toVector
 
-          val tag = LnInvoiceTag.fromLnTagPrefix(prefix.get, payload)
+          val tag = LnTag.fromLnTagPrefix(prefix.get, payload)
 
           val newRemaining = t.slice(payload.size, t.size)
 
           loop(newRemaining, fields.:+(tag))
 
         case _ :: _ | _ :: _ :: _ =>
-          throw new IllegalArgumentException("Failed to parse LnInvoiceTaggedFields, needs 15bits of meta data to be able to parse")
+          throw new IllegalArgumentException("Failed to parse LnTaggedFields, needs 15bits of meta data to be able to parse")
         case Nil =>
           fields
       }
@@ -146,31 +148,31 @@ object LnInvoiceTaggedFields extends {
 
     val tags = loop(u5s.toList, Vector.empty)
 
-    val paymentHashTag = tags.find(_.isInstanceOf[LnInvoiceTag.PaymentHashTag])
-      .get.asInstanceOf[LnInvoiceTag.PaymentHashTag]
+    val paymentHashTag = tags.find(_.isInstanceOf[LnTag.PaymentHashTag])
+      .get.asInstanceOf[LnTag.PaymentHashTag]
 
-    val description = tags.find(_.isInstanceOf[LnInvoiceTag.DescriptionTag])
-      .map(_.asInstanceOf[LnInvoiceTag.DescriptionTag])
+    val description = tags.find(_.isInstanceOf[LnTag.DescriptionTag])
+      .map(_.asInstanceOf[LnTag.DescriptionTag])
 
-    val descriptionHash = tags.find(_.isInstanceOf[LnInvoiceTag.DescriptionHashTag])
-      .map(_.asInstanceOf[LnInvoiceTag.DescriptionHashTag])
+    val descriptionHash = tags.find(_.isInstanceOf[LnTag.DescriptionHashTag])
+      .map(_.asInstanceOf[LnTag.DescriptionHashTag])
 
-    val nodeId = tags.find(_.isInstanceOf[LnInvoiceTag.NodeIdTag])
-      .map(_.asInstanceOf[LnInvoiceTag.NodeIdTag])
+    val nodeId = tags.find(_.isInstanceOf[LnTag.NodeIdTag])
+      .map(_.asInstanceOf[LnTag.NodeIdTag])
 
-    val expiryTime = tags.find(_.isInstanceOf[LnInvoiceTag.ExpiryTimeTag])
-      .map(_.asInstanceOf[LnInvoiceTag.ExpiryTimeTag])
+    val expiryTime = tags.find(_.isInstanceOf[LnTag.ExpiryTimeTag])
+      .map(_.asInstanceOf[LnTag.ExpiryTimeTag])
 
-    val cltvExpiry = tags.find(_.isInstanceOf[LnInvoiceTag.MinFinalCltvExpiry])
-      .map(_.asInstanceOf[LnInvoiceTag.MinFinalCltvExpiry])
+    val cltvExpiry = tags.find(_.isInstanceOf[LnTag.MinFinalCltvExpiry])
+      .map(_.asInstanceOf[LnTag.MinFinalCltvExpiry])
 
-    val fallbackAddress = tags.find(_.isInstanceOf[LnInvoiceTag.FallbackAddressTag])
-      .map(_.asInstanceOf[LnInvoiceTag.FallbackAddressTag])
+    val fallbackAddress = tags.find(_.isInstanceOf[LnTag.FallbackAddressTag])
+      .map(_.asInstanceOf[LnTag.FallbackAddressTag])
 
-    val routingInfo = tags.find(_.isInstanceOf[LnInvoiceTag.RoutingInfo])
-      .map(_.asInstanceOf[LnInvoiceTag.RoutingInfo])
+    val routingInfo = tags.find(_.isInstanceOf[LnTag.RoutingInfo])
+      .map(_.asInstanceOf[LnTag.RoutingInfo])
 
-    val d: Either[LnInvoiceTag.DescriptionTag, LnInvoiceTag.DescriptionHashTag] = {
+    val d: Either[LnTag.DescriptionTag, LnTag.DescriptionHashTag] = {
       if (description.isDefined && descriptionHash.isDefined) {
         throw new IllegalArgumentException(s"Cannot have both description and description hash")
       } else if (description.isEmpty && descriptionHash.isEmpty) {
@@ -182,7 +184,7 @@ object LnInvoiceTaggedFields extends {
       }
     }
 
-    LnInvoiceTaggedFields(
+    LnTaggedFields(
       paymentHash = paymentHashTag,
       descriptionOrHash = d,
       nodeId = nodeId,

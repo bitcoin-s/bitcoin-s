@@ -67,7 +67,6 @@ sealed abstract class DERSignatureUtil {
    * @return
    */
   def decodeSignature(bytes: ByteVector): (BigInt, BigInt) = {
-    logger.debug("Signature to decode: " + BitcoinSUtil.encodeHex(bytes))
     val asn1InputStream = new ASN1InputStream(bytes.toArray)
     //TODO: this is nasty, is there any way to get rid of all this casting???
     //TODO: Not 100% this is completely right for signatures that are incorrectly DER encoded
@@ -88,7 +87,6 @@ sealed abstract class DERSignatureUtil {
         }
       case Failure(_) => default
     }
-    logger.debug("r: " + r)
     val s: ASN1Integer = Try(seq.getObjectAt(1).asInstanceOf[ASN1Integer]) match {
       case Success(s) =>
         //this is needed for a bug inside of bouncy castle where zero length values throw an exception
