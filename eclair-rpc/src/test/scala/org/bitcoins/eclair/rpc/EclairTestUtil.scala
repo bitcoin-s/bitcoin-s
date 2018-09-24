@@ -166,9 +166,12 @@ trait EclairTestUtil extends BitcoinSLogger {
   }
 
   private def awaitUntilChannelState(client: EclairRpcClient, chanId: ChannelId, state: ChannelState)(implicit system: ActorSystem): Unit = {
+
     def isState(): Future[Boolean] = {
       val chanF = client.channel(chanId)
-      chanF.map(_.state == state)(system.dispatcher)
+      chanF.map { chan =>
+        chan.state == state
+      }(system.dispatcher)
     }
 
     RpcUtil.awaitConditionF(
