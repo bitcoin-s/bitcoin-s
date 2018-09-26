@@ -89,7 +89,7 @@ sealed abstract class Bech32Address extends BitcoinAddress {
     val byteVector = BitcoinSUtil.toByteVector(scriptPubKey.witnessProgram)
     scriptPubKey match {
       case _: P2WPKHWitnessSPKV0 =>
-        RipeMd160Digest(byteVector)
+        Sha256Hash160Digest(byteVector)
       case _: P2WSHWitnessSPKV0 =>
         Sha256Digest(byteVector)
       case _: UnassignedWitnessScriptPubKey =>
