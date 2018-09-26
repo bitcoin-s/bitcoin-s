@@ -42,7 +42,7 @@ sealed abstract class WitnessGenerators extends BitcoinSLogger {
   /** Generates a [[TransactionWitness]] with the specified number of witnesses */
   def transactionWitness(numWitnesses: Int): Gen[TransactionWitness] = for {
     inputWitnesses <- Gen.listOfN(numWitnesses, Gen.option(scriptWitness))
-  } yield TransactionWitness.fromWitOpt(inputWitnesses)
+  } yield TransactionWitness.fromWitOpt(inputWitnesses.toVector)
 
   def transactionWitness: Gen[TransactionWitness] = for {
     num <- Gen.choose(1, 10)
@@ -213,10 +213,14 @@ sealed abstract class WitnessGenerators extends BitcoinSLogger {
 
   /** Takes a signed [[ScriptWitness]] and an unsignedTx and adds the witness to the unsigned [[WitnessTransaction]] */
   def createSignedWTxComponent(witness: ScriptWitness, unsignedWTxComponent: WitnessTxSigComponent): (TransactionWitness, WitnessTxSigComponent) = {
-    val signedTxWitness = TransactionWitness.fromWitOpt(Seq(Some(witness)))
+
+    val signedTxWitness = TransactionWitness.fromWitOpt(Vector(Some(witness)))
+
     val unsignedSpendingTx = unsignedWTxComponent.transaction
+
     val signedSpendingTx = WitnessTransaction(unsignedSpendingTx.version, unsignedSpendingTx.inputs, unsignedSpendingTx.outputs,
       unsignedSpendingTx.lockTime, signedTxWitness)
+
     val signedWtxSigComponent = unsignedWTxComponent match {
       case wtxP2SH: WitnessTxSigComponentP2SH =>
         WitnessTxSigComponent(signedSpendingTx, unsignedWTxComponent.inputIndex,
@@ -234,7 +238,7 @@ sealed abstract class WitnessGenerators extends BitcoinSLogger {
     unsignedScriptWitness: ScriptWitness, sequence: Option[UInt32]): WitnessTxSigComponentRaw = {
     val tc = TransactionConstants
     val flags = Policy.standardScriptVerifyFlags
-    val witness = TransactionWitness.fromWitOpt(Seq(Some(unsignedScriptWitness)))
+    val witness = TransactionWitness.fromWitOpt(Vector(Some(unsignedScriptWitness)))
     val (creditingTx, outputIndex) = TransactionGenerators.buildCreditingTransaction(witScriptPubKey, amount)
     val (unsignedSpendingTx, inputIndex) = TransactionGenerators.buildSpendingTransaction(tc.validLockVersion, creditingTx,
       EmptyScriptSignature, outputIndex, tc.lockTime,

@@ -150,8 +150,8 @@ sealed abstract class TransactionSignatureSerializer {
 
         val sequenceHash: ByteVector = if (isNotAnyoneCanPay && isNotSigHashNone && isNotSigHashSingle) {
           val sequences = spendingTransaction.inputs.map(_.sequence)
-          val bytes = BitcoinSUtil.toByteVector(sequences)
-          CryptoUtil.doubleSHA256(bytes).bytes
+          val littleEndianSeq = sequences.foldLeft(ByteVector.empty)(_ ++ _.bytes.reverse)
+          CryptoUtil.doubleSHA256(littleEndianSeq).bytes
         } else emptyHash.bytes
 
         val outputHash: ByteVector = if (isNotSigHashSingle && isNotSigHashNone) {

@@ -131,10 +131,13 @@ sealed abstract class ScriptInterpreter {
    * @return the executed program
    */
   private def executeP2shScript(scriptPubKeyExecutedProgram: ExecutedScriptProgram, originalProgram: ScriptProgram, p2shScriptPubKey: P2SHScriptPubKey): ExecutedScriptProgram = {
+    val flags = scriptPubKeyExecutedProgram.flags
+
+    val segwitEnabled = ScriptFlagUtil.segWitEnabled(flags)
 
     /** Helper function to actually run a p2sh script */
     def run(p: ExecutedScriptProgram, stack: Seq[ScriptToken], s: ScriptPubKey): ExecutedScriptProgram = {
-      logger.debug("Running p2sh script: " + stack)
+
       val p2shRedeemScriptProgram = ExecutionInProgressScriptProgram(
         txSignatureComponent = p.txSignatureComponent,
         stack = p.stack.tail,
@@ -163,37 +166,69 @@ sealed abstract class ScriptInterpreter {
       scriptPubKeyExecutedProgram.stackTopIsTrue match {
         case true =>
           logger.debug("Hashes matched between the p2shScriptSignature & the p2shScriptPubKey")
+
           //we need to run the deserialized redeemScript & the scriptSignature without the serialized redeemScript
           val stack = scriptPubKeyExecutedProgram.stack
+
           val redeemScriptBytes = stack.head.bytes
+
           val c = CompactSizeUInt.calculateCompactSizeUInt(redeemScriptBytes)
+
           val redeemScript = ScriptPubKey(c.bytes ++ redeemScriptBytes)
+
           redeemScript match {
-            case w: WitnessScriptPubKey =>
+
+            case p2wpkh: P2WPKHWitnessSPKV0 =>
+              val wtxSigP2SH = scriptPubKeyExecutedProgram.txSignatureComponent.asInstanceOf[WitnessTxSigComponentP2SH]
+
+              //for the p2sh(p2wpkh) case
+              //https://github.com/bitcoin/bitcoin/blob/78dae8caccd82cfbfd76557f1fb7d7557c7b5edb/src/script/interpreter.cpp#L1437
+
               val pushOp = BitcoinScriptUtil.calculatePushOp(redeemScriptBytes)
+
               val expectedScriptBytes = BitcoinSUtil.toByteVector(pushOp) ++ redeemScriptBytes
-              val flags = scriptPubKeyExecutedProgram.flags
-              val segwitEnabled = ScriptFlagUtil.segWitEnabled(flags)
-              if (segwitEnabled && (scriptSig.asmBytes == expectedScriptBytes)) {
+
+              val isExpectedScriptBytes = scriptSig.asmBytes == expectedScriptBytes
+              if (segwitEnabled &&
+                wtxSigP2SH.witness.stack.size == 2 &&
+                isExpectedScriptBytes) {
+                executeSegWitScript(scriptPubKeyExecutedProgram, p2wpkh).get
+              } else if (segwitEnabled) {
+                ScriptProgram(
+                  oldProgram = scriptPubKeyExecutedProgram,
+                  error = ScriptErrorWitnessMalleatedP2SH)
+              } else {
+                //segwit not enabled, treat as old spk
+                run(scriptPubKeyExecutedProgram, stack, p2wpkh)
+              }
+
+            case p2wsh: P2WSHWitnessSPKV0 =>
+
+              val pushOp = BitcoinScriptUtil.calculatePushOp(redeemScriptBytes)
+
+              val expectedScriptBytes = BitcoinSUtil.toByteVector(pushOp) ++ redeemScriptBytes
+
+              val isExpectedScriptBytes = scriptSig.asmBytes == expectedScriptBytes
+
+              if (segwitEnabled && isExpectedScriptBytes) {
                 // The scriptSig must be _exactly_ a single push of the redeemScript. Otherwise we
                 // reintroduce malleability.
                 logger.debug("redeem script was witness script pubkey, segwit was enabled, scriptSig was single push of redeemScript")
                 //TODO: remove .get here
-                executeSegWitScript(scriptPubKeyExecutedProgram, w).get
+                executeSegWitScript(scriptPubKeyExecutedProgram, p2wsh).get
               } else if (segwitEnabled && (scriptSig.asmBytes != expectedScriptBytes)) {
                 logger.error("Segwit was enabled, but p2sh redeem script was malleated")
                 logger.error("ScriptSig bytes: " + scriptSig.hex)
-                logger.error("expected scriptsig bytes: " + BitcoinSUtil.encodeHex(expectedScriptBytes))
+                logger.error("expected scriptsig bytes: " + expectedScriptBytes.toHex)
                 ScriptProgram(scriptPubKeyExecutedProgram, ScriptErrorWitnessMalleatedP2SH)
               } else {
                 logger.warn("redeem script was witness script pubkey, segwit was NOT enabled")
                 //treat the segwit scriptpubkey as any other redeem script
-                run(scriptPubKeyExecutedProgram, stack, w)
+                run(scriptPubKeyExecutedProgram, stack, p2wsh)
               }
             case s @ (_: P2SHScriptPubKey | _: P2PKHScriptPubKey | _: P2PKScriptPubKey | _: MultiSignatureScriptPubKey
               | _: CLTVScriptPubKey | _: CSVScriptPubKey | _: NonStandardScriptPubKey | _: WitnessCommitment
-              | _: EscrowTimeoutScriptPubKey | EmptyScriptPubKey) =>
-              logger.debug("redeemScript: " + s.asm)
+              | _: EscrowTimeoutScriptPubKey | _: UnassignedWitnessScriptPubKey | EmptyScriptPubKey) =>
               run(scriptPubKeyExecutedProgram, stack, s)
           }
         case false =>
@@ -552,7 +587,6 @@ sealed abstract class ScriptInterpreter {
    */
   private def hasUnexpectedWitness(program: ScriptProgram): Boolean = {
     val txSigComponent = program.txSignatureComponent
-    logger.debug("TxSigComponent: " + txSigComponent)
     val unexpectedWitness = txSigComponent match {
       case b: BaseTxSigComponent =>
         b.transaction match {

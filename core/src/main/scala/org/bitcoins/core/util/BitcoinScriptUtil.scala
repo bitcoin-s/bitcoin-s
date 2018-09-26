@@ -302,12 +302,34 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
     case _: P2SHScriptPubKey =>
 
       val p2shScriptSig = P2SHScriptSignature(txSignatureComponent.scriptSignature.bytes)
-      val sigsRemoved = removeSignaturesFromScript(p2shScriptSig.signatures, p2shScriptSig.redeemScript.asm)
-      sigsRemoved
+
+      p2shScriptSig.redeemScript match {
+        case p2wpkh: P2WPKHWitnessSPKV0 =>
+
+          //we treat p2sh(p2wpkh) differently for script signing than other spks
+          //Please note that for a P2SH-P2WPKH, the scriptCode is always 26 bytes including the leading size byte,
+          // as 0x1976a914{20-byte keyhash}88ac, NOT the redeemScript nor scriptPubKey
+          //https://bitcoincore.org/en/segwit_wallet_dev/#signature-generation-and-verification-for-p2sh-p2wpkh
+
+          P2PKHScriptPubKey(p2wpkh.pubKeyHash).asm
+
+        case p2wsh: P2WSHWitnessSPKV0 =>
+          val wtxSig = txSignatureComponent.asInstanceOf[WitnessTxSigComponentP2SH]
+
+          val p2wshRedeem = ScriptPubKey.fromAsmBytes(wtxSig.witness.stack.head)
+          p2wshRedeem.asm
+        case redeem: ScriptPubKey =>
+
+          val sigsRemoved = removeSignaturesFromScript(p2shScriptSig.signatures, p2shScriptSig.redeemScript.asm)
+          sigsRemoved
+      }
+
     case w: WitnessScriptPubKey =>
       txSignatureComponent match {
         case wtxSigComponent: WitnessTxSigComponent =>
-          val scriptEither: Either[(Seq[ScriptToken], ScriptPubKey), ScriptError] = w.witnessVersion.rebuild(wtxSigComponent.witness, w.witnessProgram)
+          val scriptEither: Either[(Seq[ScriptToken], ScriptPubKey), ScriptError] = {
+            w.witnessVersion.rebuild(wtxSigComponent.witness, w.witnessProgram)
+          }
           parseScriptEither(scriptEither)
         case rWTxSigComponent: WitnessTxSigComponentRebuilt =>
           rWTxSigComponent.scriptPubKey.asm
