@@ -111,4 +111,14 @@ lazy val eclairRpc = project
     rpc
   )
 
+lazy val testkit = project
+  .in(file("testkit"))
+  .enablePlugins()
+  .settings(commonSettings: _*)
+  .dependsOn(
+    core,
+    rpc,
+    eclairRpc
+  )
+
 publishArtifact in root := false
