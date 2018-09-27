@@ -21,13 +21,13 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     0.until(5).map(_ => scala.util.Random.alphanumeric.head).mkString
 
   /**
-   * Creates a datadir and places the username/password combo
-   * in the bitcoin.conf in the datadir
-   */
+    * Creates a datadir and places the username/password combo
+    * in the bitcoin.conf in the datadir
+    */
   def authCredentials(
-    uri: URI,
-    rpcUri: URI,
-    pruneMode: Boolean): BitcoindAuthCredentials = {
+                       uri: URI,
+                       rpcUri: URI,
+                       pruneMode: Boolean): BitcoindAuthCredentials = {
     val d = "/tmp/" + randomDirName
     val f = new java.io.File(d)
     f.mkdir()
@@ -55,9 +55,9 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
   lazy val network = RegTest
 
   def instance(
-    port: Int = randomPort,
-    rpcPort: Int = randomPort,
-    pruneMode: Boolean = false): BitcoindInstance = {
+                port: Int = randomPort,
+                rpcPort: Int = randomPort,
+                pruneMode: Boolean = false): BitcoindInstance = {
     val uri = new URI("http://localhost:" + port)
     val rpcUri = new URI("http://localhost:" + rpcPort)
     BitcoindInstance(
@@ -89,10 +89,10 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
   }
 
   def awaitConnection(
-    from: BitcoindRpcClient,
-    to: BitcoindRpcClient,
-    duration: FiniteDuration = 100.milliseconds,
-    maxTries: Int = 50)(implicit system: ActorSystem): Unit = {
+                       from: BitcoindRpcClient,
+                       to: BitcoindRpcClient,
+                       duration: FiniteDuration = 100.milliseconds,
+                       maxTries: Int = 50)(implicit system: ActorSystem): Unit = {
     implicit val ec = system.dispatcher
 
     def isConnected(): Future[Boolean] = {
@@ -109,10 +109,10 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
   }
 
   def awaitSynced(
-    client1: BitcoindRpcClient,
-    client2: BitcoindRpcClient,
-    duration: FiniteDuration = 1.second,
-    maxTries: Int = 50)(implicit system: ActorSystem): Unit = {
+                   client1: BitcoindRpcClient,
+                   client2: BitcoindRpcClient,
+                   duration: FiniteDuration = 1.second,
+                   maxTries: Int = 50)(implicit system: ActorSystem): Unit = {
     implicit val ec = system.dispatcher
 
     def isSynced(): Future[Boolean] = {
@@ -130,10 +130,10 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
   }
 
   def awaitSameBlockHeight(
-    client1: BitcoindRpcClient,
-    client2: BitcoindRpcClient,
-    duration: FiniteDuration = 1.second,
-    maxTries: Int = 50)(implicit system: ActorSystem): Unit = {
+                            client1: BitcoindRpcClient,
+                            client2: BitcoindRpcClient,
+                            duration: FiniteDuration = 1.second,
+                            maxTries: Int = 50)(implicit system: ActorSystem): Unit = {
     implicit val ec = system.dispatcher
 
     def isSameBlockHeight(): Future[Boolean] = {
@@ -151,10 +151,10 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
   }
 
   def awaitDisconnected(
-    from: BitcoindRpcClient,
-    to: BitcoindRpcClient,
-    duration: FiniteDuration = 100.milliseconds,
-    maxTries: Int = 50)(implicit system: ActorSystem): Unit = {
+                         from: BitcoindRpcClient,
+                         to: BitcoindRpcClient,
+                         duration: FiniteDuration = 100.milliseconds,
+                         maxTries: Int = 50)(implicit system: ActorSystem): Unit = {
     implicit val ec = system.dispatcher
 
     def isDisconnected(): Future[Boolean] = {
@@ -173,10 +173,10 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
 
   /** Returns a pair of RpcClients that are connected with 100 blocks in the chain */
   def createNodePair(
-    port1: Int = randomPort,
-    rpcPort1: Int = randomPort,
-    port2: Int = randomPort,
-    rpcPort2: Int = randomPort)(implicit system: ActorSystem): Future[(BitcoindRpcClient, BitcoindRpcClient)] = {
+                      port1: Int = randomPort,
+                      rpcPort1: Int = randomPort,
+                      port2: Int = randomPort,
+                      rpcPort2: Int = randomPort)(implicit system: ActorSystem): Future[(BitcoindRpcClient, BitcoindRpcClient)] = {
     implicit val m: ActorMaterializer = ActorMaterializer.create(system)
     implicit val ec = m.executionContext
     val client1: BitcoindRpcClient = new BitcoindRpcClient(instance(port1, rpcPort1))
@@ -240,4 +240,4 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
   }
 }
 
-object TestUtil extends BitcoindRpcTestUtil
+object BitcoindRpcTestUtil extends BitcoindRpcTestUtil
