@@ -1,35 +1,38 @@
 package org.bitcoins.eclair.rpc
 
-import java.io.{File, PrintWriter}
+import java.io.{ File, PrintWriter }
 import java.net.URI
 
 import akka.actor.ActorSystem
-import org.bitcoins.core.config.{NetworkParameters, RegTest}
-import org.bitcoins.core.protocol.ln.channel.{ChannelId, ChannelState}
+import org.bitcoins.core.config.{ NetworkParameters, RegTest }
+import org.bitcoins.core.protocol.ln.channel.{ ChannelId, ChannelState }
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.eclair.rpc.client.EclairRpcClient
-import org.bitcoins.eclair.rpc.config.{EclairAuthCredentials, EclairInstance}
+import org.bitcoins.eclair.rpc.config.{ EclairAuthCredentials, EclairInstance }
 import org.bitcoins.rpc.client.BitcoindRpcClient
-import org.bitcoins.rpc.config.{BitcoindAuthCredentials, BitcoindInstance}
-import org.bitcoins.rpc.{BitcoindRpcTestUtil, RpcUtil}
+import org.bitcoins.rpc.config.{ BitcoindAuthCredentials, BitcoindInstance }
+import org.bitcoins.rpc.{ BitcoindRpcTestUtil, RpcUtil }
+import org.slf4j.LoggerFactory
 
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 
-trait EclairRpcTestUtil extends BitcoinSLogger {
+trait EclairRpcTestUtil {
+
+  private val logger = LoggerFactory.getLogger(this.getClass.getSimpleName)
 
   def randomDirName: String = {
     BitcoindRpcTestUtil.randomDirName
   }
 
   /**
-    * Creates a datadir and places the username/password combo
-    * in the bitcoin.conf in the datadir
-    */
+   * Creates a datadir and places the username/password combo
+   * in the bitcoin.conf in the datadir
+   */
   def bitcoindAuthCredentials(
-                               uri: URI,
-                               rpcUri: URI,
-                               zmqPort: Int): BitcoindAuthCredentials = {
+    uri: URI,
+    rpcUri: URI,
+    zmqPort: Int): BitcoindAuthCredentials = {
     val d = "/tmp/" + randomDirName
     val f = new java.io.File(d)
     f.mkdir()
@@ -62,9 +65,9 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
   }
 
   def bitcoindInstance(
-                        port: Int = randomPort,
-                        rpcPort: Int = randomPort,
-                        zmqPort: Int = randomPort): BitcoindInstance = {
+    port: Int = randomPort,
+    rpcPort: Int = randomPort,
+    zmqPort: Int = randomPort): BitcoindInstance = {
     val uri = new URI("http://localhost:" + port)
     val rpcUri = new URI("http://localhost:" + rpcPort)
     val auth = bitcoindAuthCredentials(uri, rpcUri, zmqPort)
@@ -89,9 +92,9 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
   }
 
   /**
-    * Creates a datadir and places the username/password combo
-    * in the eclair.conf in the datadir
-    */
+   * Creates a datadir and places the username/password combo
+   * in the eclair.conf in the datadir
+   */
   def eclairAuthCredentials(uri: URI, rpcUri: URI, bitcoind: BitcoindInstance): EclairAuthCredentials = {
     val bitcoindAuth = bitcoind.authCredentials
     val bitcoindRpcUri = bitcoind.rpcUri
@@ -151,11 +154,11 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
   }
 
   /**
-    * Doesn't return until the given channelId
-    * is in the [[ChannelState.NORMAL]] for this [[EclairRpcClient]]
-    * @param client
-    * @param chanId
-    */
+   * Doesn't return until the given channelId
+   * is in the [[ChannelState.NORMAL]] for this [[EclairRpcClient]]
+   * @param client
+   * @param chanId
+   */
   def awaitUntilChannelNormal(client: EclairRpcClient, chanId: ChannelId)(implicit system: ActorSystem): Unit = {
     awaitUntilChannelState(client, chanId, ChannelState.NORMAL)
   }
@@ -178,9 +181,9 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
   }
 
   /**
-    * Creates two eclair nodes that are connected together and returns their
-    * respective [[EclairRpcClient]]s
-    */
+   * Creates two eclair nodes that are connected together and returns their
+   * respective [[EclairRpcClient]]s
+   */
   def createNodePair(bitcoindInstance: BitcoindInstance)(implicit system: ActorSystem): (EclairRpcClient, EclairRpcClient) = {
 
     implicit val ec = system.dispatcher
