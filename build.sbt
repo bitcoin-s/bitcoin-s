@@ -42,7 +42,8 @@ lazy val root = project
       zmq,
       rpc,
       bench,
-      eclairRpc
+      eclairRpc,
+      testkit
     )
     .settings(commonSettings: _*)
 
