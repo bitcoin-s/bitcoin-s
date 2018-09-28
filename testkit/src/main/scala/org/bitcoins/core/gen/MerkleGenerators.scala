@@ -6,12 +6,13 @@ import org.bitcoins.core.protocol.blockchain.{ Block, MerkleBlock, PartialMerkle
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.util.BitcoinSLogger
 import org.scalacheck.Gen
+import org.slf4j.LoggerFactory
 
 /**
  * Created by chris on 8/12/16.
  */
 abstract class MerkleGenerator {
-  private val logger = BitcoinSLogger.logger
+  private val logger = LoggerFactory.getLogger(this.getClass().getSimpleName)
 
   /** Generates a merkle block with the given txs matched inside the [[PartialMerkleTree]] */
   def merkleBlockWithInsertedTxIds(txs: Seq[Transaction]): Gen[(MerkleBlock, Block, Seq[DoubleSha256Digest])] = for {

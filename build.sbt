@@ -17,7 +17,8 @@ lazy val root = project
       coreTest,
       zmq,
       rpc,
-      eclairRpc
+      eclairRpc,
+      testkit
     )
     .settings(commonSettings: _*)
 
