@@ -82,8 +82,10 @@ sealed abstract class WitnessTxSigComponentP2SH extends WitnessTxSigComponent {
 
   override def scriptSignature: P2SHScriptSignature = {
     val s = transaction.inputs(inputIndex.toInt).scriptSignature
-    require(s.isInstanceOf[P2SHScriptSignature], "Must have P2SHScriptSignature for P2SH(P2WSH()), got: " + s)
-    s.asInstanceOf[P2SHScriptSignature]
+    require(s.isInstanceOf[P2SHScriptSignature], "Must have P2SHScriptSignature for P2SH(WitSPK()), got: " + s)
+    val p2sh = s.asInstanceOf[P2SHScriptSignature]
+    p2sh
+
   }
 
   def witnessScriptPubKey: Try[WitnessScriptPubKey] = scriptSignature.redeemScript match {

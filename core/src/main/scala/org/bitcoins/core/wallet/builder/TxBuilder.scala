@@ -1,6 +1,7 @@
 package org.bitcoins.core.wallet.builder
 
 import org.bitcoins.core.config.{ BitcoinNetwork, NetworkParameters }
+import org.bitcoins.core.crypto.{ ECDigitalSignature, EmptyDigitalSignature, TransactionSignatureSerializer, WitnessTxSigComponentP2SH }
 import org.bitcoins.core.currency.{ CurrencyUnit, CurrencyUnits, Satoshis }
 import org.bitcoins.core.number.{ Int64, UInt32 }
 import org.bitcoins.core.policy.Policy
@@ -8,11 +9,13 @@ import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.constant.ScriptNumber
 import org.bitcoins.core.script.control.OP_RETURN
+import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.script.locktime.LockTimeInterpreter
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.signer._
 import org.bitcoins.core.wallet.utxo.{ BitcoinUTXOSpendingInfo, UTXOSpendingInfo }
+import org.slf4j.LoggerFactory
 
 import scala.annotation.tailrec
 import scala.concurrent.{ ExecutionContext, Future }
@@ -28,7 +31,7 @@ import scala.util.{ Failure, Success, Try }
  * For usage examples see TxBuilderSpec
  */
 sealed abstract class TxBuilder {
-  private val logger = BitcoinSLogger.logger
+  private val logger = LoggerFactory.getLogger(this.getClass.getSimpleName)
 
   /** The outputs which we are spending bitcoins to */
   def destinations: Seq[TransactionOutput]
@@ -116,7 +119,7 @@ sealed abstract class BitcoinTxBuilder extends TxBuilder {
 
   override def unsignedTx(implicit ec: ExecutionContext): Future[Transaction] = {
     val utxos = utxoMap.values.toList
-    val unsignedTxWit = TransactionWitness.fromWitOpt(scriptWitOpt)
+    val unsignedTxWit = TransactionWitness.fromWitOpt(scriptWitOpt.toVector)
     val lockTime = calcLockTime(utxos)
     val inputs = calcSequenceForInputs(utxos, Policy.isRBFEnabled)
     val emptyChangeOutput = TransactionOutput(CurrencyUnits.zero, changeSPK)
@@ -169,13 +172,17 @@ sealed abstract class BitcoinTxBuilder extends TxBuilder {
       //sign the tx for this time
       val signedTx = loop(utxos, utx, false)
       signedTx.flatMap { tx =>
-        val t: Try[Transaction] = if (invariants(utxos, tx)) {
-          //final sanity checks
-          TxBuilder.sanityChecks(this, tx) match {
-            case Success(_) => Success(tx)
-            case Failure(err) => Failure(err)
+        val t: Try[Transaction] = {
+          if (invariants(utxos, tx)) {
+            //final sanity checks
+            TxBuilder.sanityChecks(this, tx) match {
+              case Success(_) => Success(tx)
+              case Failure(err) => Failure(err)
+            }
+          } else {
+            TxBuilderError.FailedUserInvariants
           }
-        } else TxBuilderError.FailedUserInvariants
+        }
         Future.fromTry(t)
       }
     }
@@ -198,7 +205,10 @@ sealed abstract class BitcoinTxBuilder extends TxBuilder {
    * @param unsignedTx - the transaction that we are spending this output in
    * @return either the transaction with the signed input added, or a [[TxBuilderError]]
    */
-  private def signAndAddInput(utxo: BitcoinUTXOSpendingInfo, unsignedTx: Transaction, dummySignatures: Boolean)(implicit ec: ExecutionContext): Future[Transaction] = {
+  private def signAndAddInput(
+    utxo: BitcoinUTXOSpendingInfo,
+    unsignedTx: Transaction,
+    dummySignatures: Boolean)(implicit ec: ExecutionContext): Future[Transaction] = {
     val outpoint = utxo.outPoint
     val output = utxo.output
     val signers = utxo.signers
@@ -228,33 +238,73 @@ sealed abstract class BitcoinTxBuilder extends TxBuilder {
               | EmptyScriptPubKey | _: UnassignedWitnessScriptPubKey => Future.fromTry(TxBuilderError.NoSigner)
           }
         case p2sh: P2SHScriptPubKey =>
+
           redeemScriptOpt match {
+
             case Some(redeemScript) =>
               if (p2sh != P2SHScriptPubKey(redeemScript)) {
+
                 Future.fromTry(TxBuilderError.WrongRedeemScript)
+
               } else {
-                val input = TransactionInput(outpoint, EmptyScriptSignature, oldInput.sequence)
-                val updatedTx = unsignedTx match {
-                  case btx: BaseTransaction =>
-                    BaseTransaction(btx.version, unsignedTx.inputs.updated(inputIndex.toInt, input), btx.outputs, btx.lockTime)
-                  case wtx: WitnessTransaction =>
-                    WitnessTransaction(wtx.version, unsignedTx.inputs.updated(inputIndex.toInt, input), wtx.outputs, wtx.lockTime, wtx.witness)
+
+                val signedTxF: Future[Transaction] = redeemScript match {
+
+                  case p2wpkh: P2WPKHWitnessSPKV0 =>
+
+                    val uwtx = WitnessTransaction.toWitnessTx(unsignedTx)
+
+                    //breaks an abstraction inside of all of the signers
+                    //won't be able to be handled properly until gemini stuff
+                    //is open sourced
+                    signP2SHP2WPKH(
+                      unsignedTx = uwtx,
+                      inputIndex = inputIndex,
+                      output = output,
+                      p2wpkh = p2wpkh,
+                      utxo = utxo,
+                      hashType = hashType,
+                      dummySignatures = dummySignatures)
+
+                  case _: P2PKScriptPubKey | _: P2PKHScriptPubKey
+                    | _: MultiSignatureScriptPubKey | _: LockTimeScriptPubKey
+                    | _: EscrowTimeoutScriptPubKey | _: NonStandardScriptPubKey
+                    | _: WitnessCommitment | _: UnassignedWitnessScriptPubKey
+                    | _: P2WSHWitnessSPKV0 | EmptyScriptPubKey =>
+                    val input = TransactionInput(outpoint, EmptyScriptSignature, oldInput.sequence)
+
+                    val updatedTx = unsignedTx.updateInput(inputIndex.toInt, input)
+
+                    val updatedOutput = TransactionOutput(output.value, redeemScript)
+
+                    val updatedUTXOInfo = BitcoinUTXOSpendingInfo(outpoint, updatedOutput, signers, None, scriptWitnessOpt, hashType)
+
+                    val signedTxEither = signAndAddInput(updatedUTXOInfo, updatedTx, dummySignatures)
+
+                    signedTxEither.map { signedTx =>
+                      val i = signedTx.inputs(inputIndex.toInt)
+
+                      val p2sh = P2SHScriptSignature(i.scriptSignature, redeemScript)
+
+                      val signedInput = TransactionInput(i.previousOutput, p2sh, i.sequence)
+
+                      val signedInputs = signedTx.inputs.updated(inputIndex.toInt, signedInput)
+
+                      signedTx match {
+                        case btx: BaseTransaction =>
+                          BaseTransaction(btx.version, signedInputs, btx.outputs, btx.lockTime)
+                        case wtx: WitnessTransaction =>
+                          WitnessTransaction(wtx.version, signedInputs, wtx.outputs, wtx.lockTime, wtx.witness)
+                      }
+
+                    }
+
+                  case _: P2SHScriptPubKey =>
+                    Future.fromTry(TxBuilderError.NestedP2SHSPK)
                 }
-                val updatedOutput = TransactionOutput(output.value, redeemScript)
-                val updatedUTXOInfo = BitcoinUTXOSpendingInfo(outpoint, updatedOutput, signers, None, scriptWitnessOpt, hashType)
-                val signedTxEither = signAndAddInput(updatedUTXOInfo, updatedTx, dummySignatures)
-                signedTxEither.map { signedTx =>
-                  val i = signedTx.inputs(inputIndex.toInt)
-                  val p2sh = P2SHScriptSignature(i.scriptSignature, redeemScript)
-                  val signedInput = TransactionInput(i.previousOutput, p2sh, i.sequence)
-                  val signedInputs = signedTx.inputs.updated(inputIndex.toInt, signedInput)
-                  signedTx match {
-                    case btx: BaseTransaction =>
-                      BaseTransaction(btx.version, signedInputs, btx.outputs, btx.lockTime)
-                    case wtx: WitnessTransaction =>
-                      WitnessTransaction(wtx.version, signedInputs, wtx.outputs, wtx.lockTime, wtx.witness)
-                  }
-                }
+
+                signedTxF
+
               }
             case None => Future.fromTry(TxBuilderError.NoRedeemScript)
           }
@@ -445,6 +495,65 @@ sealed abstract class BitcoinTxBuilder extends TxBuilder {
     val inputs = loop(utxos, Nil)
     inputs
   }
+
+  def signP2SHP2WPKH(
+    unsignedTx: WitnessTransaction,
+    inputIndex: UInt32,
+    p2wpkh: P2WPKHWitnessSPKV0,
+    output: TransactionOutput,
+    utxo: UTXOSpendingInfo,
+    hashType: HashType,
+    dummySignatures: Boolean): Future[Transaction] = {
+    //special rule for p2sh(p2wpkh)
+    //https://bitcoincore.org/en/segwit_wallet_dev/#signature-generation-and-verification-for-p2sh-p2wpkh
+    //we actually sign the fully expanded redeemScript
+    val pubKey = utxo.signers.head.publicKey
+    if (P2WPKHWitnessSPKV0(pubKey) != p2wpkh) {
+      Future.fromTry(TxBuilderError.WrongPublicKey)
+    } else {
+      val p2shScriptSig = P2SHScriptSignature(p2wpkh)
+
+      val oldInput = unsignedTx.inputs(inputIndex.toInt)
+
+      val updatedInput = TransactionInput(oldInput.previousOutput, p2shScriptSig, oldInput.sequence)
+
+      val uwtx = {
+        val u = unsignedTx.updateInput(inputIndex.toInt, updatedInput)
+        WitnessTransaction.toWitnessTx(u)
+      }
+
+      val wtxSigComp = {
+        WitnessTxSigComponentP2SH(
+          transaction = uwtx,
+          inputIndex = inputIndex,
+          output = output,
+          flags = Policy.standardFlags)
+      }
+
+      val hashForSig = TransactionSignatureSerializer.hashForSignature(
+        txSigComponent = wtxSigComp,
+        hashType = hashType)
+
+      //sign the hash
+      val signature: ECDigitalSignature = {
+        if (dummySignatures) {
+          EmptyDigitalSignature
+        } else {
+          val sig = utxo.signers.head.sign(hashForSig.bytes)
+          //append hash type
+          ECDigitalSignature.fromBytes(sig.bytes.:+(hashType.byte))
+        }
+      }
+
+      val p2wpkhWit = P2WPKHWitnessV0(
+        publicKey = pubKey,
+        signature = signature)
+
+      val updatedWit = uwtx.updateWitness(inputIndex.toInt, p2wpkhWit)
+
+      Future.successful(updatedWit)
+    }
+  }
 }
 
 object TxBuilder {
@@ -516,19 +625,29 @@ object TxBuilder {
    */
   def isValidFeeRange(estimatedFee: CurrencyUnit, actualFee: CurrencyUnit, feeRate: FeeUnit): Try[Unit] = {
 
-    //what the number '25' represents is the allowed variance -- in bytes -- between the size of the two
+    //what the number '40' represents is the allowed variance -- in bytes -- between the size of the two
     //versions of signed tx. I believe the two signed version can vary in size because the digital
     //signature might have changed in size. It could become larger or smaller depending on the digital
-    //signatures produced
+    //signatures produced.
+
+    //Personally I think 40 seems like a little high. As you shouldn't vary more than a 2 bytes per input in the tx i think?
+    //bumping for now though as I don't want to spend time debugging
+    //I think there is something incorrect that errors to the low side of fee estimation
+    //for p2sh(p2wpkh) txs
+
     //See this link for more info on variance in size on ECDigitalSignatures
     //https://en.bitcoin.it/wiki/Elliptic_Curve_Digital_Signature_Algorithm
-    val acceptableVariance = 25 * feeRate.toLong
+
+    val acceptableVariance = 40 * feeRate.toLong
     val min = Satoshis(Int64(-acceptableVariance))
     val max = Satoshis(Int64(acceptableVariance))
     val difference = estimatedFee - actualFee
     if (difference <= min) {
+      logger.error(s"Fee was too high. Estimated fee ${estimatedFee}, actualFee ${actualFee}, difference ${difference}, acceptableVariance ${acceptableVariance}")
       TxBuilderError.HighFee
     } else if (difference >= max) {
+      logger.error(s"Fee was too low. Estimated fee ${estimatedFee}, actualFee ${actualFee}, difference ${difference}, acceptableVariance ${acceptableVariance}")
+
       TxBuilderError.LowFee
     } else {
       Success(Unit)

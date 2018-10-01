@@ -22,14 +22,14 @@ sealed abstract class RawTransactionWitnessParser {
    */
   def read(bytes: ByteVector, numInputs: Int): TransactionWitness = {
     @tailrec
-    def loop(remainingBytes: ByteVector, remainingInputs: Int, accum: Seq[ScriptWitness]): Seq[ScriptWitness] = {
+    def loop(remainingBytes: ByteVector, remainingInputs: Int, accum: Vector[ScriptWitness]): Vector[ScriptWitness] = {
       if (remainingInputs != 0) {
         val w = RawScriptWitnessParser.read(remainingBytes)
         val (_, newRemainingBytes) = remainingBytes.splitAt(w.bytes.size)
         loop(newRemainingBytes, remainingInputs - 1, w +: accum)
       } else accum.reverse
     }
-    val witnesses = loop(bytes, numInputs, Nil)
+    val witnesses = loop(bytes, numInputs, Vector.empty)
     require(witnesses.size == numInputs)
     TransactionWitness(witnesses)
   }

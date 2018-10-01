@@ -79,7 +79,7 @@ trait TransactionTestUtil extends BitcoinSLogger {
 
     val tx = witness match {
       case Some((scriptWitness, amount)) =>
-        val txWitness = TransactionWitness(Seq(scriptWitness))
+        val txWitness = TransactionWitness(Vector(scriptWitness))
         val output = TransactionOutput(amount, EmptyScriptPubKey)
         WitnessTransaction(TransactionConstants.version, Seq(input), Seq(output),
           TransactionConstants.lockTime, txWitness)

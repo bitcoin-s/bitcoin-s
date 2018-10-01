@@ -36,7 +36,7 @@ sealed abstract class EscrowTimeoutHelper {
       val tc = TransactionConstants
       val uScriptWitness = P2WSHWitnessV0(lock)
       val inputs = Seq(TransactionInput(outPoint, EmptyScriptSignature, tc.sequence))
-      val wtx = WitnessTransaction(tc.validLockVersion, inputs, destinations, tc.lockTime, TransactionWitness(Seq(uScriptWitness)))
+      val wtx = WitnessTransaction(tc.validLockVersion, inputs, destinations, tc.lockTime, TransactionWitness(Vector(uScriptWitness)))
       val witSPK = P2WSHWitnessSPKV0(lock)
       val witOutput = TransactionOutput(amount, witSPK)
       val u = WitnessTxSigComponentRaw(wtx, UInt32.zero, witOutput, Policy.standardFlags)
@@ -63,8 +63,7 @@ sealed abstract class EscrowTimeoutHelper {
     unsigned: WitnessTxSigComponentRaw): TransactionWitness = {
     //need to remove the OP_0 or OP_1 and replace it with ScriptNumber.zero / ScriptNumber.one since witnesses are *not* run through the interpreter
     val signedScriptWitness = P2WSHWitnessV0(lock, signedScriptSig)
-    val updatedWitnesses = unsigned.transaction.witness.witnesses.updated(unsigned.inputIndex.toInt, signedScriptWitness)
-    val txWitness: TransactionWitness = TransactionWitness(updatedWitnesses)
+    val txWitness: TransactionWitness = unsigned.transaction.witness.updated(unsigned.inputIndex.toInt, signedScriptWitness)
     txWitness
   }
 
@@ -129,7 +128,7 @@ sealed abstract class EscrowTimeoutHelper {
       val amount = creditingOutput.value
       val tc = TransactionConstants
       val uScriptWitness = P2WSHWitnessV0(lock)
-      val uTxWitness = TransactionWitness(Seq(uScriptWitness))
+      val uTxWitness = TransactionWitness(Vector(uScriptWitness))
       val uwtx = WitnessTransaction(tc.validLockVersion, inputs, outputs, tc.lockTime, uTxWitness)
       val witOutput = TransactionOutput(amount, witSPK)
       val u = WitnessTxSigComponentRaw(uwtx, inputIndex, witOutput, Policy.standardFlags)
