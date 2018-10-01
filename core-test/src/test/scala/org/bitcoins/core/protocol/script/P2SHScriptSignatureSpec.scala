@@ -20,7 +20,7 @@ class P2SHScriptSignatureSpec extends Properties("P2SHScriptSignatureSpec") {
       case (witScriptPubKey, privKeys) =>
         val p2shScriptSig = P2SHScriptSignature(witScriptPubKey)
         p2shScriptSig.redeemScript == witScriptPubKey
-        p2shScriptSig.scriptSignatureNoRedeemScript.get == EmptyScriptSignature
+        p2shScriptSig.scriptSignatureNoRedeemScript == EmptyScriptSignature
 
     }
 }

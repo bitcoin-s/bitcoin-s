@@ -11,7 +11,7 @@ import org.bitcoins.core.protocol.transaction.Transaction
 sealed abstract class FeeUnit {
   def currencyUnit: CurrencyUnit
   def *(tx: Transaction): CurrencyUnit = calc(tx)
-  def calc(tx: Transaction): CurrencyUnit = Satoshis(Int64(tx.size * toLong))
+  def calc(tx: Transaction): CurrencyUnit = Satoshis(Int64(tx.vsize * toLong))
   def toLong: Long = currencyUnit.satoshis.toLong
 }
 

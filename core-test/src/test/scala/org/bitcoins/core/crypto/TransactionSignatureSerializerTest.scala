@@ -1,12 +1,14 @@
 package org.bitcoins.core.crypto
 
-import org.bitcoins.core.currency.{ CurrencyUnits, Satoshis }
+import org.bitcoins.core.currency.{ Bitcoins, CurrencyUnits, Satoshis }
 import org.bitcoins.core.number.{ Int64, UInt32 }
 import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
+import org.bitcoins.core.script.constant.{ OP_2, ScriptConstant }
 import org.bitcoins.core.script.crypto._
 import org.bitcoins.core.serializers.script.ScriptParser
+import org.bitcoins.core.util
 import org.bitcoins.core.util._
 import org.scalatest.{ FlatSpec, MustMatchers }
 import scodec.bits.ByteVector
@@ -17,7 +19,6 @@ import scodec.bits.ByteVector
 class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers {
   private def logger = BitcoinSLogger.logger
   val scriptPubKey = BitcoinjConversions.toScriptPubKey(BitcoinJTestUtil.multiSigScript)
-
   "TransactionSignatureSerializer" must "correctly serialize an input that is being checked where another input in the same tx is using SIGHASH_ANYONECANPAY" in {
     //this is from a test case inside of tx_valid.json
     //https://github.com/bitcoin/bitcoin/blob/master/src/test/data/tx_valid.json#L91
@@ -135,5 +136,201 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers {
       HashType.sigHashSingleAnyoneCanPay)
 
     BitcoinSUtil.encodeHex(serializedForSig) must be("01000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000010000001976a9144c9c3dfac4207d5d8cb89df5722cb3d712385e3f88acd007000000000000ffffffff2d793f9722ac8cbea9b2e0a2929cda4007b8312c6ec3b997088439e48e7aa64e0000000083000000")
+  }
+
+  it must "work with the p2sh(p2wpkh) example in BIP143" in {
+    //https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki#p2sh-p2wpkh
+
+    val expected = {
+      "01000000" +
+        "b0287b4a252ac05af83d2dcef00ba313af78a3e9c329afa216eb3aa2a7b4613a" +
+        "18606b350cd8bf565266bc352f0caddcf01e8fa789dd8a15386327cf8cabe198" +
+        "db6b1b20aa0fd7b23880be2ecbd4a98130974cf4748fb66092ac4d3ceb1a547701000000" +
+        "1976a91479091972186c449eb1ded22b78e40d009bdf008988ac" +
+        "00ca9a3b00000000" +
+        "feffffff" +
+        "de984f44532e2173ca0d64314fcefe6d30da6f8cf27bafa706da61df8a226c83" +
+        "92040000" +
+        "01000000"
+    }
+
+    val expectedHash = DoubleSha256Digest.fromHex("64f3b0f4dd2bb3aa1ce8566d220cc74dda9df97d8490cc81d89d735c92e59fb6")
+
+    val inputIndex = UInt32.zero
+
+    val p2sh = P2SHScriptPubKey.fromAsmHex("a9144733f37cf4db86fbc2efed2500b4f4e49f31202387")
+    val redeemScript = P2WPKHWitnessSPKV0.fromAsmHex("001479091972186c449eb1ded22b78e40d009bdf0089")
+
+    val amount = Bitcoins(10)
+
+    val output = TransactionOutput(amount, p2sh)
+
+    //https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki#p2sh-p2wpkh
+
+    val unsignedTx = "0100000001db6b1b20aa0fd7b23880be2ecbd4a98130974cf4748fb66092ac4d3ceb1a54770100000000feffffff02b8b4eb0b000000001976a914a457b684d7f0d539a46a45bbc043f35b59d0d96388ac0008af2f000000001976a914fd270b1ee6abcaea97fea7ad0402e8bd8ad6d77c88ac92040000"
+    val ubtx = BaseTransaction.fromHex(unsignedTx)
+
+    val p2shScriptSig = P2SHScriptSignature(redeemScript)
+
+    val oldInput = ubtx.inputs(inputIndex.toInt)
+
+    val updatedInput = TransactionInput(oldInput.previousOutput, p2shScriptSig, oldInput.sequence)
+
+    val updatedInputs = ubtx.inputs.updated(inputIndex.toInt, updatedInput)
+
+    val uwtx = WitnessTransaction(ubtx.version, updatedInputs, ubtx.outputs, ubtx.lockTime, EmptyWitness)
+
+    val wtxSigComp = {
+      WitnessTxSigComponentP2SH(
+        transaction = uwtx,
+        inputIndex = inputIndex,
+        output = output,
+        flags = Policy.standardFlags)
+    }
+
+    val serialized = TransactionSignatureSerializer.serializeForSignature(
+      txSigComponent = wtxSigComp,
+      hashType = HashType.sigHashAll)
+
+    BitcoinSUtil.encodeHex(serialized) must be(expected)
+
+    val hash = TransactionSignatureSerializer.hashForSignature(
+      txSigComponent = wtxSigComp,
+      hashType = HashType.sigHashAll)
+
+    hash must be(expectedHash)
+  }
+
+  it must "serialize the BIP143 p2sh(p2wsh) examples" in {
+    //https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki#p2sh-p2wsh
+
+    val unsignedTx = "010000000136641869ca081e70f394c6948e8af409e18b619df2ed74aa106c1ca29787b96e0100000000ffffffff" +
+      "0200e9a435000000001976a914389ffce9cd9ae88dcc0631e88a821ffdbe9bfe2688acc0832f05000000001976a9147480a33f95068" +
+      "9af511e6e84c138dbbd3c3ee41588ac00000000"
+
+    val ubtx = BaseTransaction.fromHex(unsignedTx)
+
+    val inputIndex = UInt32.zero
+
+    val bitcoins = Bitcoins(9.87654321)
+
+    val p2wsh = P2WSHWitnessSPKV0.fromAsmHex("0020a16b5755f7f6f96dbd65f5f0d6ab9418b89af4b1f14a1bb8a09062c35f0dcb54")
+
+    val p2shSPK = P2SHScriptPubKey.fromAsmHex("a9149993a429037b5d912407a71c252019287b8d27a587")
+
+    val p2shScriptSig = P2SHScriptSignature(
+      witnessScriptPubKey = p2wsh)
+
+    val oldInput = ubtx.inputs(inputIndex.toInt)
+
+    val updatedInput = TransactionInput(oldInput.previousOutput, p2shScriptSig, oldInput.sequence)
+
+    val updatedInputs = ubtx.inputs.updated(inputIndex.toInt, updatedInput)
+
+    val m = MultiSignatureScriptPubKey.fromAsmHex("56210307b8ae49ac90a048e9b53357a2354b3334e9c8bee813ecb98e99a7e07e8c3ba32103b28f0c28bfab54554ae8c658ac5c3e0ce6e79ad336331f78c428dd43eea8449b21034b8113d703413d57761b8b9781957b8c0ac1dfe69f492580ca4195f50376ba4a21033400f6afecb833092a9a21cfdf1ed1376e58c5d1f47de74683123987e967a8f42103a6d48b1131e94ba04d9737d61acdaa1322008af9602b3b14862c07a1789aac162102d8b661b0b3302ee2f162b09e07a55ad5dfbe673a9f01d9f0c19617681024306b56ae")
+    val witnessScript = P2WSHWitnessV0(m)
+    val txWit = TransactionWitness(Vector(witnessScript))
+
+    val uwtx = WitnessTransaction(ubtx.version, updatedInputs, ubtx.outputs, ubtx.lockTime, txWit)
+
+    val output = TransactionOutput(bitcoins, p2shSPK)
+
+    val wtxSigComp = {
+      WitnessTxSigComponentP2SH(
+        transaction = uwtx,
+        inputIndex = inputIndex,
+        output = output,
+        flags = Policy.standardFlags)
+    }
+
+    val expectedSerialization = "0100000074afdc312af5183c4198a40ca3c1a275b485496dd3929bca388c4b5e31f7aaa03bb13029ce7b1f559ef5e747fcac439f1455a2ec7c5f09b72290795e7066504436641869ca081e70f394c6948e8af409e18b619df2ed74aa106c1ca29787b96e01000000cf56210307b8ae49ac90a048e9b53357a2354b3334e9c8bee813ecb98e99a7e07e8c3ba32103b28f0c28bfab54554ae8c658ac5c3e0ce6e79ad336331f78c428dd43eea8449b21034b8113d703413d57761b8b9781957b8c0ac1dfe69f492580ca4195f50376ba4a21033400f6afecb833092a9a21cfdf1ed1376e58c5d1f47de74683123987e967a8f42103a6d48b1131e94ba04d9737d61acdaa1322008af9602b3b14862c07a1789aac162102d8b661b0b3302ee2f162b09e07a55ad5dfbe673a9f01d9f0c19617681024306b56aeb168de3a00000000ffffffffbc4d309071414bed932f98832b27b4d76dad7e6c1346f487a8fdbb8eb90307cc0000000001000000"
+
+    val serialization = TransactionSignatureSerializer.serializeForSignature(
+      txSigComponent = wtxSigComp,
+      hashType = HashType.sigHashAll)
+
+    serialization.toHex must be(expectedSerialization)
+
+    //with a SIGHASH_NONE
+
+    val expectedSigHashNone = "0100000074afdc312af5183c4198a40ca3c1a275b485496dd3929bca388c4b5e31f7aaa0000000000000000000000000000000000000000000000000000000000000000036641869ca081e70f394c6948e8af409e18b619df2ed74aa106c1ca29787b96e01000000cf56210307b8ae49ac90a048e9b53357a2354b3334e9c8bee813ecb98e99a7e07e8c3ba32103b28f0c28bfab54554ae8c658ac5c3e0ce6e79ad336331f78c428dd43eea8449b21034b8113d703413d57761b8b9781957b8c0ac1dfe69f492580ca4195f50376ba4a21033400f6afecb833092a9a21cfdf1ed1376e58c5d1f47de74683123987e967a8f42103a6d48b1131e94ba04d9737d61acdaa1322008af9602b3b14862c07a1789aac162102d8b661b0b3302ee2f162b09e07a55ad5dfbe673a9f01d9f0c19617681024306b56aeb168de3a00000000ffffffff00000000000000000000000000000000000000000000000000000000000000000000000002000000"
+
+    val serializationSigHashNone = TransactionSignatureSerializer.serializeForSignature(
+      txSigComponent = wtxSigComp,
+      hashType = HashType.sigHashNone)
+
+    serializationSigHashNone.toHex must be(expectedSigHashNone)
+
+    //with sighash single
+
+    val expectedSigHashSingle = "0100000074afdc312af5183c4198a40ca3c1a275b485496dd3929bca388c4b5e31f7aaa0000000000000000000000000000000000000000000000000000000000000000036641869ca081e70f394c6948e8af409e18b619df2ed74aa106c1ca29787b96e01000000cf56210307b8ae49ac90a048e9b53357a2354b3334e9c8bee813ecb98e99a7e07e8c3ba32103b28f0c28bfab54554ae8c658ac5c3e0ce6e79ad336331f78c428dd43eea8449b21034b8113d703413d57761b8b9781957b8c0ac1dfe69f492580ca4195f50376ba4a21033400f6afecb833092a9a21cfdf1ed1376e58c5d1f47de74683123987e967a8f42103a6d48b1131e94ba04d9737d61acdaa1322008af9602b3b14862c07a1789aac162102d8b661b0b3302ee2f162b09e07a55ad5dfbe673a9f01d9f0c19617681024306b56aeb168de3a00000000ffffffff9efe0c13a6b16c14a41b04ebe6a63f419bdacb2f8705b494a43063ca3cd4f7080000000003000000"
+
+    val serializationSigHashSingle = TransactionSignatureSerializer.serializeForSignature(
+      txSigComponent = wtxSigComp,
+      hashType = HashType.sigHashSingle)
+
+    serializationSigHashSingle.toHex must be(expectedSigHashSingle)
+
+    val expectedSigHashAllAnyoneCanPay = "010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000036641869ca081e70f394c6948e8af409e18b619df2ed74aa106c1ca29787b96e01000000cf56210307b8ae49ac90a048e9b53357a2354b3334e9c8bee813ecb98e99a7e07e8c3ba32103b28f0c28bfab54554ae8c658ac5c3e0ce6e79ad336331f78c428dd43eea8449b21034b8113d703413d57761b8b9781957b8c0ac1dfe69f492580ca4195f50376ba4a21033400f6afecb833092a9a21cfdf1ed1376e58c5d1f47de74683123987e967a8f42103a6d48b1131e94ba04d9737d61acdaa1322008af9602b3b14862c07a1789aac162102d8b661b0b3302ee2f162b09e07a55ad5dfbe673a9f01d9f0c19617681024306b56aeb168de3a00000000ffffffffbc4d309071414bed932f98832b27b4d76dad7e6c1346f487a8fdbb8eb90307cc0000000081000000"
+
+    val serializationSigHashAllAnyoneCanPay = TransactionSignatureSerializer.serializeForSignature(
+      txSigComponent = wtxSigComp,
+      hashType = HashType.sigHashAllAnyoneCanPay)
+
+    serializationSigHashAllAnyoneCanPay.toHex must be(expectedSigHashAllAnyoneCanPay)
+
+    val expectedSigHashNoneAnyoneCanPay = "010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000036641869ca081e70f394c6948e8af409e18b619df2ed74aa106c1ca29787b96e01000000cf56210307b8ae49ac90a048e9b53357a2354b3334e9c8bee813ecb98e99a7e07e8c3ba32103b28f0c28bfab54554ae8c658ac5c3e0ce6e79ad336331f78c428dd43eea8449b21034b8113d703413d57761b8b9781957b8c0ac1dfe69f492580ca4195f50376ba4a21033400f6afecb833092a9a21cfdf1ed1376e58c5d1f47de74683123987e967a8f42103a6d48b1131e94ba04d9737d61acdaa1322008af9602b3b14862c07a1789aac162102d8b661b0b3302ee2f162b09e07a55ad5dfbe673a9f01d9f0c19617681024306b56aeb168de3a00000000ffffffff00000000000000000000000000000000000000000000000000000000000000000000000082000000"
+
+    val serializationSigHashNoneAnyoneCanPay = {
+      TransactionSignatureSerializer.serializeForSignature(
+        txSigComponent = wtxSigComp,
+        hashType = HashType.sigHashNoneAnyoneCanPay)
+    }
+
+    serializationSigHashNoneAnyoneCanPay.toHex must be(expectedSigHashNoneAnyoneCanPay)
+
+    val expectedSigHashSingleAnyoneCanPay = "010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000036641869ca081e70f394c6948e8af409e18b619df2ed74aa106c1ca29787b96e01000000cf56210307b8ae49ac90a048e9b53357a2354b3334e9c8bee813ecb98e99a7e07e8c3ba32103b28f0c28bfab54554ae8c658ac5c3e0ce6e79ad336331f78c428dd43eea8449b21034b8113d703413d57761b8b9781957b8c0ac1dfe69f492580ca4195f50376ba4a21033400f6afecb833092a9a21cfdf1ed1376e58c5d1f47de74683123987e967a8f42103a6d48b1131e94ba04d9737d61acdaa1322008af9602b3b14862c07a1789aac162102d8b661b0b3302ee2f162b09e07a55ad5dfbe673a9f01d9f0c19617681024306b56aeb168de3a00000000ffffffff9efe0c13a6b16c14a41b04ebe6a63f419bdacb2f8705b494a43063ca3cd4f7080000000083000000"
+    val serializationSigHashSingleAnyoneCanPay = {
+      TransactionSignatureSerializer.serializeForSignature(
+        txSigComponent = wtxSigComp,
+        hashType = HashType.sigHashSingleAnyoneCanPay)
+    }
+
+    serializationSigHashSingleAnyoneCanPay.toHex must be(expectedSigHashSingleAnyoneCanPay)
+
+  }
+
+  it must "make sure FindAndDelete is not applied to the BIP143 serialization algorithm" in {
+    val unsignedTx = "010000000169c12106097dc2e0526493ef67f21269fe888ef05c7a3a5dacab38e1ac8387f14c1d000000ffffffff0101000000000000000000000000"
+    val ubtx = BaseTransaction.fromHex(unsignedTx)
+    val inputIndex = UInt32.zero
+
+    val p2wsh = P2WSHWitnessSPKV0.fromAsmHex("00209e1be07558ea5cc8e02ed1d80c0911048afad949affa36d5c3951e3159dbea19")
+    val amount = Satoshis(Int64(200000))
+    val output = TransactionOutput(amount, p2wsh)
+
+    //OP_CHECKSIGVERIFY <0x30450220487fb382c4974de3f7d834c1b617fe15860828c7f96454490edd6d891556dcc9022100baf95feb48f845d5bfc9882eb6aeefa1bc3790e39f59eaa46ff7f15ae626c53e01>
+    val redeemScript = NonStandardScriptPubKey.fromAsmHex("ad4830450220487fb382c4974de3f7d834c1b617fe15860828c7f96454490edd6d891556dcc9022100baf95feb48f845d5bfc9882eb6aeefa1bc3790e39f59eaa46ff7f15ae626c53e01")
+
+    val scriptWit = P2WSHWitnessV0(redeemScript)
+    val txWit = TransactionWitness(Vector(scriptWit))
+
+    val uwtx = WitnessTransaction(ubtx.version, ubtx.inputs, ubtx.outputs, ubtx.lockTime, txWit)
+
+    val wtxSigCompRaw = {
+      WitnessTxSigComponentRaw(
+        transaction = uwtx,
+        inputIndex = inputIndex,
+        output = output,
+        flags = Policy.standardFlags)
+    }
+
+    val serialized = TransactionSignatureSerializer.serializeForSignature(
+      txSigComponent = wtxSigCompRaw,
+      hashType = HashType.sigHashAll)
+
+    val expectedSerialization = "01000000b67c76d200c6ce72962d919dc107884b9d5d0e26f2aea7474b46a1904c53359f3bb13029ce7b1f559ef5e747fcac439f1455a2ec7c5f09b72290795e7066504469c12106097dc2e0526493ef67f21269fe888ef05c7a3a5dacab38e1ac8387f14c1d00004aad4830450220487fb382c4974de3f7d834c1b617fe15860828c7f96454490edd6d891556dcc9022100baf95feb48f845d5bfc9882eb6aeefa1bc3790e39f59eaa46ff7f15ae626c53e01400d030000000000ffffffffe5d196bfb21caca9dbd654cafb3b4dc0c4882c8927d2eb300d9539dd0b9342280000000001000000"
+
+    serialized.toHex must be(expectedSerialization)
   }
 }

@@ -56,6 +56,16 @@ object P2WPKHWitnessV0 {
   def apply(publicKey: ECPublicKey, signature: ECDigitalSignature): P2WPKHWitnessV0 = {
     P2WPKHWitnessV0(Seq(publicKey.bytes, signature.bytes))
   }
+
+  def fromP2PKHScriptSig(scriptSig: ScriptSignature): P2WPKHWitnessV0 = scriptSig match {
+    case p2pkh: P2PKHScriptSignature =>
+      P2WPKHWitnessV0(p2pkh.publicKey, p2pkh.signature)
+    case x @ (_: LockTimeScriptSignature | _: EscrowTimeoutScriptSignature
+      | _: MultiSignatureScriptSignature | _: NonStandardScriptSignature
+      | _: P2PKScriptSignature | _: P2SHScriptSignature
+      | EmptyScriptSignature) =>
+      throw new IllegalArgumentException(s"Expected P2PKHScriptSignature, got $x")
+  }
 }
 
 /**

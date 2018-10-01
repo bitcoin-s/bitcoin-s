@@ -117,16 +117,25 @@ sealed trait P2SHScriptSignature extends ScriptSignature {
 
   /** The redeemScript represents the conditions that must be satisfied to spend the output */
   def redeemScript: ScriptPubKey = {
-    //for P2SH(P2WSH) the entire scriptSig asm is technically the redeem script
-    //see BIP141
-    WitnessScriptPubKey(asm).getOrElse(ScriptPubKey(ScriptParser.fromBytes(asm.last.bytes)))
+    val scriptSig = scriptSignatureNoRedeemScript
+    if (scriptSig == EmptyScriptSignature &&
+      WitnessScriptPubKey.isWitnessScriptPubKey(asm.tail)) {
+      //if we have an EmptyScriptSignature, we need to check if the rest of the asm
+      //is a Witness script. It is not necessarily a witness script, since this code
+      //path might be used for signing a normal p2sh spk in TransactionSignatureSerializer
+      WitnessScriptPubKey(asm.tail).get
+    } else {
+      ScriptPubKey.fromAsmBytes(asm.last.bytes)
+    }
+
   }
 
   /** Returns the script signature of this p2shScriptSig with no serialized redeemScript */
-  def scriptSignatureNoRedeemScript: Try[ScriptSignature] = {
+  def scriptSignatureNoRedeemScript: ScriptSignature = {
     //witness scriptPubKeys always have EmptyScriptSigs
-    if (WitnessScriptPubKey.isWitnessScriptPubKey(asm)) Success(EmptyScriptSignature)
-    else {
+    if (WitnessScriptPubKey.isWitnessScriptPubKey(asm)) {
+      EmptyScriptSignature
+    } else {
       val asmWithoutRedeemScriptAndPushOp: Try[Seq[ScriptToken]] = Try {
         asm(asm.size - 2) match {
           case b: BytesToPushOntoStack => asm.dropRight(2)
@@ -134,7 +143,7 @@ sealed trait P2SHScriptSignature extends ScriptSignature {
         }
       }
       val script = asmWithoutRedeemScriptAndPushOp.getOrElse(EmptyScriptSignature.asm)
-      ScriptSignature.fromScriptPubKey(script, redeemScript)
+      ScriptSignature.fromAsm(script)
     }
   }
 
@@ -146,11 +155,14 @@ sealed trait P2SHScriptSignature extends ScriptSignature {
   }
 
   /** The digital signatures inside of the scriptSig */
-  def signatures: Seq[ECDigitalSignature] = scriptSignatureNoRedeemScript match {
-    case Failure(_) => Nil
-    case Success(nonRedeemScript) =>
-      val sigs = nonRedeemScript.asm.filter(_.isInstanceOf[ScriptConstant]).filterNot(_.isInstanceOf[ScriptNumberOperation]).filterNot(_.hex.length < 100)
-      sigs.map(s => ECDigitalSignature(s.hex))
+  def signatures: Seq[ECDigitalSignature] = {
+    val sigs = {
+      scriptSignatureNoRedeemScript
+        .asm.filter(_.isInstanceOf[ScriptConstant])
+        .filterNot(_.isInstanceOf[ScriptNumberOperation])
+        .filterNot(_.hex.length < 100)
+    }
+    sigs.map(s => ECDigitalSignature(s.hex))
   }
 
   /**
@@ -158,10 +170,8 @@ sealed trait P2SHScriptSignature extends ScriptSignature {
    * the first part is the digital signatures
    * the second part is the redeem script
    */
-  def splitAtRedeemScript(asm: Seq[ScriptToken]): Try[(Seq[ScriptToken], Seq[ScriptToken])] = {
-    scriptSignatureNoRedeemScript.map { scriptSig =>
-      (scriptSig.asm, redeemScript.asm)
-    }
+  def splitAtRedeemScript(asm: Seq[ScriptToken]): (Seq[ScriptToken], Seq[ScriptToken]) = {
+    (scriptSignatureNoRedeemScript.asm, redeemScript.asm)
   }
 
   override def toString = "P2SHScriptSignature(" + hex + ")"

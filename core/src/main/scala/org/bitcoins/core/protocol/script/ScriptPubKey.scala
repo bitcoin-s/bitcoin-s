@@ -14,6 +14,7 @@ import org.bitcoins.core.script.reserved.UndefinedOP_NOP
 import org.bitcoins.core.script.stack.{ OP_DROP, OP_DUP }
 import org.bitcoins.core.serializers.script.{ RawScriptPubKeyParser, ScriptParser }
 import org.bitcoins.core.util._
+import org.slf4j.LoggerFactory
 import scodec.bits.ByteVector
 
 import scala.util.{ Failure, Success, Try }
@@ -503,6 +504,7 @@ sealed trait WitnessScriptPubKey extends ScriptPubKey {
 }
 
 object WitnessScriptPubKey {
+  private val logger = LoggerFactory.getLogger(this.getClass().getSimpleName)
 
   /** Witness scripts must begin with one of these operations, see BIP141 */
   val validWitVersions: Seq[ScriptNumberOperation] = Seq(OP_0, OP_1, OP_2, OP_3, OP_4, OP_5, OP_6, OP_7, OP_8,
@@ -525,10 +527,25 @@ object WitnessScriptPubKey {
    * [[https://github.com/bitcoin/bitcoin/blob/14d01309bed59afb08651f2b701ff90371b15b20/src/script/script.cpp#L223-L237]]
    */
   def isWitnessScriptPubKey(asm: Seq[ScriptToken]): Boolean = {
+
+    //multisig spk with zero public keys
+    //OP_0, BytesToPushOntoStackImpl(3), ScriptConstantImpl(ByteVector(3 bytes, 0x0000ae)
+
+    //multisig spk with one public key
+    //List(OP_0, BytesToPushOntoStackImpl(37),
+    // ScriptConstantImpl(ByteVector(37 bytes, 0x0021020afd6012af90835558c68365a370b7e6cd1c0d4664a8656c8c7847185cb5db6651ae)))
+
+    //we can also have a LockTimeScriptPubKey with a nested 0 public key multisig script, need to check that as well
     val bytes = BitcoinSUtil.toByteVector(asm)
+    val isMultiSig = MultiSignatureScriptPubKey.isMultiSignatureScriptPubKey(asm)
+    val isLockTimeSPK = {
+      LockTimeScriptPubKey.isValidLockTimeScriptPubKey(asm)
+    }
+
     val firstOp = asm.headOption
     if (bytes.size < 4 || bytes.size > 42) false
     else if (!validWitVersions.contains(firstOp.getOrElse(OP_1NEGATE))) false
+    else if (isMultiSig || isLockTimeSPK) false
     else if (asm(1).toLong + 2 == bytes.size) true
     else false
   }
@@ -558,7 +575,7 @@ object WitnessScriptPubKeyV0 {
  * [[https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki#P2WPKH]]
  */
 sealed abstract class P2WPKHWitnessSPKV0 extends WitnessScriptPubKeyV0 {
-  def pubKeyHash: Sha256Hash160Digest = Sha256Hash160Digest(asm(3).bytes)
+  def pubKeyHash: Sha256Hash160Digest = Sha256Hash160Digest(asm(2).bytes)
   override def toString = s"P2WPKHWitnessSPKV0($hex)"
 }
 

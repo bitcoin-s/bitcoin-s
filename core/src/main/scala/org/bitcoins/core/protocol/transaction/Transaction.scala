@@ -3,6 +3,7 @@ package org.bitcoins.core.protocol.transaction
 import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.number.{ Int32, UInt32 }
 import org.bitcoins.core.protocol.NetworkElement
+import org.bitcoins.core.protocol.script.ScriptWitness
 import org.bitcoins.core.serializers.transaction.{ RawBaseTransactionParser, RawWitnessTransactionParser }
 import org.bitcoins.core.util.{ BitcoinSUtil, CryptoUtil, Factory }
 import scodec.bits.ByteVector
@@ -78,11 +79,23 @@ sealed abstract class Transaction extends NetworkElement {
     }
     case _: Int => false
   }
+
+  /** Updates the input at the given index and returns the new transaction with that input updated */
+  def updateInput(idx: Int, i: TransactionInput): Transaction = {
+    val updatedInputs = inputs.updated(idx, i)
+    this match {
+      case _: BaseTransaction =>
+        BaseTransaction(version, updatedInputs, outputs, lockTime)
+      case wtx: WitnessTransaction =>
+        WitnessTransaction(version, updatedInputs, outputs, lockTime, wtx.witness)
+    }
+  }
 }
 
 sealed abstract class BaseTransaction extends Transaction {
   override def bytes = RawBaseTransactionParser.write(this)
   override def weight = size * 4
+
 }
 
 case object EmptyTransaction extends BaseTransaction {
@@ -125,6 +138,15 @@ sealed abstract class WitnessTransaction extends Transaction {
   }
   override def bytes = RawWitnessTransactionParser.write(this)
 
+  /**
+   * Updates the [[ScriptWitness]] at the given index and
+   * returns a new WitnessTransaction with it's witness vector updated
+   */
+  def updateWitness(idx: Int, scriptWit: ScriptWitness): WitnessTransaction = {
+    val txWit = witness.updated(idx, scriptWit)
+    WitnessTransaction(version, inputs, outputs, lockTime, txWit)
+  }
+
 }
 
 object Transaction extends Factory[Transaction] {
@@ -162,4 +184,9 @@ object WitnessTransaction extends Factory[WitnessTransaction] {
 
   override def fromBytes(bytes: ByteVector): WitnessTransaction = RawWitnessTransactionParser.read(bytes)
 
+  def toWitnessTx(tx: Transaction): WitnessTransaction = tx match {
+    case btx: BaseTransaction =>
+      WitnessTransaction(btx.version, btx.inputs, btx.outputs, btx.lockTime, EmptyWitness)
+    case wtx: WitnessTransaction => wtx
+  }
 }
