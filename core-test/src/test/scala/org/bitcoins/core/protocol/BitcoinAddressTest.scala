@@ -6,6 +6,8 @@ import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.util.Base58
 import org.scalatest.{ FlatSpec, MustMatchers }
 
+import scala.util.Try
+
 class BitcoinAddressTest extends FlatSpec with MustMatchers {
 
   "3J98t1WpEZ73CNmQviecrnyiWrnqRhWNLy" must "be a valid bitcoin address" in {
@@ -28,6 +30,7 @@ class BitcoinAddressTest extends FlatSpec with MustMatchers {
 
   "The empty string" must "not be a valid bitcoin address" in {
     BitcoinAddress.fromString("").isFailure must be(true)
+    Try(BitcoinAddress.fromStringExn("")).isFailure must be(true)
   }
   "A string that is 25 characters long" must "not be a valid bitcoin address" in {
     val address = "3J98t1WpEZ73CNmQviecrnyiW"

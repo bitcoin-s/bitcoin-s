@@ -6,13 +6,16 @@ import org.bitcoins.core.protocol.blockchain.Block
 import org.bitcoins.core.protocol.transaction.{ Transaction, TransactionOutPoint }
 import org.bitcoins.core.util.{ BitcoinSLogger, BitcoinSUtil, CryptoUtil }
 import org.scalatest.{ FlatSpec, MustMatchers }
+import scodec.bits.ByteVector
+
+import scala.util.Try
 
 /**
  * Created by chris on 8/3/16.
  */
 class BloomFilterTest extends FlatSpec with MustMatchers {
   private val logger = BitcoinSLogger.logger
-  "BloomFilter" must "create a bloom filter, insert a few elements, then serialize it" in {
+  "BloomFilter" must "create a bloom filter, insert a few elements, then serialize and deserialize it" in {
     //test case in bitcoin core
     //https://github.com/bitcoin/bitcoin/blob/master/src/test/bloom_tests.cpp#L28
     val filter = BloomFilter(3, 0.01, UInt32.zero, BloomUpdateAll)
@@ -37,6 +40,9 @@ class BloomFilterTest extends FlatSpec with MustMatchers {
     filter3.contains(hash2) must be(true)
 
     filter3.hex must be("03614e9b050000000000000001")
+
+    val filter4 = BloomFilter.fromBytes(filter3.bytes)
+    (filter4 == filter3) must be(true)
   }
 
   it must "create a bloom filter with a tweak then insert elements and serialize it" in {
@@ -189,4 +195,11 @@ class BloomFilterTest extends FlatSpec with MustMatchers {
     filterNonP2PKTx.contains(outPoint2) must be(false)
   }
 
+  it must "successfully create or fail to create a bloom flag" in {
+    (BloomFlag(0.toByte) == BloomUpdateNone) must be(true)
+    (BloomFlag(1.toByte) == BloomUpdateAll) must be(true)
+    (BloomFlag(2.toByte) == BloomUpdateP2PKOnly) must be(true)
+    (BloomFlag.fromBytes(ByteVector(BloomUpdateNone.byte)) == BloomUpdateNone) must be(true)
+    Try(BloomFlag(Int.MaxValue.toByte)).isFailure must be(true)
+  }
 }
