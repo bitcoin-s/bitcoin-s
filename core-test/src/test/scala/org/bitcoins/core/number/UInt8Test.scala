@@ -1,6 +1,7 @@
 package org.bitcoins.core.number
 
 import org.scalatest.{ FlatSpec, MustMatchers }
+import scodec.bits.ByteVector
 
 class UInt8Test extends FlatSpec with MustMatchers {
 
@@ -8,6 +9,12 @@ class UInt8Test extends FlatSpec with MustMatchers {
     UInt8.toUInt8(0.toByte) must be(UInt8.zero)
     UInt8.toUInt8(1.toByte) must be(UInt8.one)
     UInt8.toUInt8(255.toByte) must be(UInt8(255.toShort))
+  }
+
+  it must "throw an exception if we try and create an UInt8 with more than 1 bytes" in {
+    intercept[IllegalArgumentException] {
+      UInt8(ByteVector(0.toByte, 0.toByte))
+    }
   }
 
 }
