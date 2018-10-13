@@ -26,6 +26,10 @@ sealed abstract class LnInvoice {
 
   def amount: Option[LnCurrencyUnit] = hrp.amount
 
+  def amountPicoBitcoins: Option[PicoBitcoins] = {
+    amount.map(_.toPicoBitcoins)
+  }
+
   def timestamp: UInt64
 
   def lnTags: LnTaggedFields

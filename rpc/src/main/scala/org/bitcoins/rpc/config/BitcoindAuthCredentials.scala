@@ -15,24 +15,28 @@ sealed trait BitcoindAuthCredentials {
 
   /** rpcpassword field in our bitcoin.conf file */
   def password: String
+
+  def rpcPort: Int
 }
 
 object BitcoindAuthCredentials {
   private case class BitcoindAuthCredentialsImpl(
     username: String,
     password: String,
+    rpcPort: Int,
     datadir: File)
     extends BitcoindAuthCredentials
 
-  def apply(username: String, password: String): BitcoindAuthCredentials = {
+  def apply(username: String, password: String, rpcPort: Int): BitcoindAuthCredentials = {
     val defaultDataDir = new File(System.getProperty("user.home") + "/.bitcoin")
-    BitcoindAuthCredentials(username, password, defaultDataDir)
+    BitcoindAuthCredentials(username, password, rpcPort, defaultDataDir)
   }
 
   def apply(
     username: String,
     password: String,
+    rpcPort: Int,
     datadir: File): BitcoindAuthCredentials = {
-    BitcoindAuthCredentialsImpl(username, password, datadir)
+    BitcoindAuthCredentialsImpl(username, password, rpcPort, datadir)
   }
 }
