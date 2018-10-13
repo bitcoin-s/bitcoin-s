@@ -1,5 +1,6 @@
 package org.bitcoins.core.script.constant
 
+import org.bitcoins.core.number.Int64
 import org.scalatest.{ FlatSpec, MustMatchers }
 
 /**
@@ -35,4 +36,16 @@ class ScriptNumberTest extends FlatSpec with MustMatchers {
     (ten * ScriptNumber(5)) must equal(ScriptNumber(50))
   }
 
+  it must "compare ScriptNumbers to Int64 correctly" in {
+    (zero < Int64.one) must equal(true)
+    (zero <= Int64.zero) must equal(true)
+    (one > Int64.zero) must equal(true)
+    (one >= Int64.one) must equal(true)
+  }
+
+  it must "compute bitwise operations correctly" in {
+    (ScriptNumber.one & Int64.one).toInt must be(1)
+    (ScriptNumber.one & ScriptNumber.one).toInt must be(1)
+    (ScriptNumber.one | ScriptNumber.one).toInt must be(1)
+  }
 }

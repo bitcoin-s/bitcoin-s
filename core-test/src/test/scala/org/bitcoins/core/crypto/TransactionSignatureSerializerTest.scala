@@ -1,23 +1,24 @@
 package org.bitcoins.core.crypto
 
-import org.bitcoins.core.currency.{ Bitcoins, CurrencyUnits, Satoshis }
-import org.bitcoins.core.number.{ Int64, UInt32 }
+import org.bitcoins.core.currency.Bitcoins
+import org.bitcoins.core.currency.{ CurrencyUnits, Satoshis }
+import org.bitcoins.core.number.{ Int32, Int64, UInt32 }
 import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
-import org.bitcoins.core.script.constant.{ OP_2, ScriptConstant }
 import org.bitcoins.core.script.crypto._
 import org.bitcoins.core.serializers.script.ScriptParser
-import org.bitcoins.core.util
 import org.bitcoins.core.util._
 import org.scalatest.{ FlatSpec, MustMatchers }
-import scodec.bits.ByteVector
+
+import scala.util.Try
 
 /**
  * Created by chris on 2/19/16.
  */
 class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers {
   private def logger = BitcoinSLogger.logger
+
   val scriptPubKey = BitcoinjConversions.toScriptPubKey(BitcoinJTestUtil.multiSigScript)
   "TransactionSignatureSerializer" must "correctly serialize an input that is being checked where another input in the same tx is using SIGHASH_ANYONECANPAY" in {
     //this is from a test case inside of tx_valid.json
@@ -332,5 +333,15 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers {
     val expectedSerialization = "01000000b67c76d200c6ce72962d919dc107884b9d5d0e26f2aea7474b46a1904c53359f3bb13029ce7b1f559ef5e747fcac439f1455a2ec7c5f09b72290795e7066504469c12106097dc2e0526493ef67f21269fe888ef05c7a3a5dacab38e1ac8387f14c1d00004aad4830450220487fb382c4974de3f7d834c1b617fe15860828c7f96454490edd6d891556dcc9022100baf95feb48f845d5bfc9882eb6aeefa1bc3790e39f59eaa46ff7f15ae626c53e01400d030000000000ffffffffe5d196bfb21caca9dbd654cafb3b4dc0c4882c8927d2eb300d9539dd0b9342280000000001000000"
 
     serialized.toHex must be(expectedSerialization)
+  }
+
+  it must "fail to create a SIGHASH from an invalid number" in {
+    val z = Int32.zero
+    Try(SIGHASH_NONE(z)).isFailure must be(true)
+    Try(SIGHASH_SINGLE(z)).isFailure must be(true)
+    Try(SIGHASH_ANYONECANPAY(z)).isFailure must be(true)
+    Try(SIGHASH_ALL_ANYONECANPAY(z)).isFailure must be(true)
+    Try(SIGHASH_NONE_ANYONECANPAY(z)).isFailure must be(true)
+    Try(SIGHASH_SINGLE_ANYONECANPAY(z)).isFailure must be(true)
   }
 }

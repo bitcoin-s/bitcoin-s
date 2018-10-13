@@ -12,6 +12,8 @@ import org.bitcoins.core.script.result._
 import org.bitcoins.core.util.{ BitcoinSLogger, ScriptProgramTestUtil, TestUtil, TransactionTestUtil }
 import org.scalatest.{ FlatSpec, MustMatchers }
 
+import scala.util.Try
+
 /**
  * Created by chris on 1/6/16.
  */
@@ -38,12 +40,19 @@ class CryptoInterpreterTest extends FlatSpec with MustMatchers {
 
   }
 
-  it must "fail to evaluate OP_HASH160 when the script stack is empty" in {
-    intercept[IllegalArgumentException] {
-      val script = List()
-      val program = ScriptProgram(TestUtil.testProgram, stack, script)
-      CI.opHash160(program)
-    }
+  it must "fail to evaluate all OP codes when the script stack is empty" in {
+    val script = List()
+    val program = ScriptProgram(TestUtil.testProgram, stack, script)
+    Try(CI.opHash160(program)).isFailure must be(true)
+    Try(CI.opRipeMd160(program)).isFailure must be(true)
+    Try(CI.opSha256(program)).isFailure must be(true)
+    Try(CI.opHash256(program)).isFailure must be(true)
+    Try(CI.opSha1(program)).isFailure must be(true)
+    Try(CI.opCheckSig(program)).isFailure must be(true)
+    Try(CI.opCheckSigVerify(program)).isFailure must be(true)
+    Try(CI.opCodeSeparator(program)).isFailure must be(true)
+    Try(CI.opCheckMultiSig(program)).isFailure must be(true)
+    Try(CI.opCheckMultiSigVerify(program)).isFailure must be(true)
   }
 
   it must "evaluate an OP_RIPEMD160 correctly" in {

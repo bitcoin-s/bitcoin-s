@@ -56,6 +56,12 @@ class UInt32Test extends FlatSpec with MustMatchers {
     }
   }
 
+  it must "throw an exception if we try and create a UInt32 with more than 4 bytes" in {
+    intercept[IllegalArgumentException] {
+      UInt32(ByteVector(0.toByte, 0.toByte, 0.toByte, 0.toByte, 0.toByte))
+    }
+  }
+
   it must "have the correct representation for 0" in {
     UInt32.zero.toLong must be(0)
   }
@@ -71,5 +77,11 @@ class UInt32Test extends FlatSpec with MustMatchers {
   it must "have the correct maximum number representation for UInt32" in {
     UInt32.max.toLong must be(4294967295L)
     UInt32.max.hex must be("ffffffff")
+  }
+
+  it must "throw an exception if we try to create a BigInt outside the range of UInt32" in {
+    intercept[IllegalArgumentException] {
+      UInt32(UInt32.max.toBigInt + 1)
+    }
   }
 }
