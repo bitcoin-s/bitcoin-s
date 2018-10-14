@@ -53,8 +53,8 @@ sealed abstract class ECDigitalSignature {
     val rBytes = r.toByteArray.takeRight(32)
     val sBytes = s.toByteArray.takeRight(32)
 
-    val rPadded = ByteVector(rBytes) //.padLeft(32)
-    val sPadded = ByteVector(sBytes) //.padLeft(32)
+    val rPadded = ByteVector(rBytes).padLeft(32)
+    val sPadded = ByteVector(sBytes).padLeft(32)
 
     require(rPadded.size == 32, s"rPadded.size ${rPadded.size}")
     require(sPadded.size == 32, s"sPadded.size ${sPadded.size}")

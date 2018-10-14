@@ -118,11 +118,9 @@ object LnTaggedFields extends {
   def fromUInt5s(u5s: Vector[UInt5]): LnTaggedFields = {
     @tailrec
     def loop(remaining: List[UInt5], fields: Vector[LnTag]): Vector[LnTag] = {
-
       remaining match {
         case h :: h1 :: h2 :: t =>
 
-          //first u5 is the prefix
           val prefix = LnTagPrefix.fromUInt5(h)
 
           //next two 5 bit increments are data_length

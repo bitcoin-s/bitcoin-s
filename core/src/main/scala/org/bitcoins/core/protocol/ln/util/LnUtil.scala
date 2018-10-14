@@ -47,7 +47,7 @@ trait LnUtil {
 
   /** Returns a 5bit bytevector with the encoded number for a ln invoice */
   @tailrec
-  final def encodeNumber(len: Long, accum: Vector[UInt5] = Vector.empty): Vector[UInt5] = {
+  final def encodeNumber(len: BigInt, accum: Vector[UInt5] = Vector.empty): Vector[UInt5] = {
     val quotient = len / 32
     val remainder = UInt5(len % 32)
     if (quotient >= 32) {
