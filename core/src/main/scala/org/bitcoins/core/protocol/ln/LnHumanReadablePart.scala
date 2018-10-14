@@ -5,6 +5,7 @@ import org.bitcoins.core.number.{ UInt5, UInt8 }
 import org.bitcoins.core.protocol.{ HumanReadablePart, NetworkElement }
 import org.bitcoins.core.protocol.ln.LnParams._
 import org.bitcoins.core.util.Bech32
+import org.slf4j.LoggerFactory
 import scodec.bits.ByteVector
 
 import scala.annotation.tailrec
@@ -39,22 +40,24 @@ sealed abstract class LnHumanReadablePart {
   }
 }
 
-/** Prefix for generating a LN invoice on the Bitcoin MainNet */
-case class lnbc(override val amount: Option[LnCurrencyUnit]) extends LnHumanReadablePart {
-  override def network: LnParams = LnBitcoinMainNet
-}
-
-/** Prefix for generating a LN invoice on the Bitcoin TestNet3 */
-case class lntb(override val amount: Option[LnCurrencyUnit]) extends LnHumanReadablePart {
-  override def network: LnParams = LnBitcoinTestNet
-}
-
-/** Prefix for genearting a LN invoice on the Bitcoin RegTest */
-case class lnbcrt(override val amount: Option[LnCurrencyUnit]) extends LnHumanReadablePart {
-  def network: LnParams = LnBitcoinRegTest
-}
-
 object LnHumanReadablePart {
+
+  private val logger = LoggerFactory.getLogger(this.getClass.getSimpleName)
+
+  /** Prefix for generating a LN invoice on the Bitcoin MainNet */
+  case class lnbc(override val amount: Option[LnCurrencyUnit]) extends LnHumanReadablePart {
+    override def network: LnParams = LnBitcoinMainNet
+  }
+
+  /** Prefix for generating a LN invoice on the Bitcoin TestNet3 */
+  case class lntb(override val amount: Option[LnCurrencyUnit]) extends LnHumanReadablePart {
+    override def network: LnParams = LnBitcoinTestNet
+  }
+
+  /** Prefix for genearting a LN invoice on the Bitcoin RegTest */
+  case class lnbcrt(override val amount: Option[LnCurrencyUnit]) extends LnHumanReadablePart {
+    def network: LnParams = LnBitcoinRegTest
+  }
 
   def apply(network: NetworkParameters): Option[LnHumanReadablePart] = {
     val lnNetworkOpt = LnParams.fromNetworkParameters(network)
@@ -88,6 +91,10 @@ object LnHumanReadablePart {
    * @return
    */
   def apply(network: LnParams, amount: Option[LnCurrencyUnit]): LnHumanReadablePart = {
+    fromParamsAmount(network, amount)
+  }
+
+  def fromParamsAmount(network: LnParams, amount: Option[LnCurrencyUnit]): LnHumanReadablePart = {
     network match {
       case LnParams.LnBitcoinMainNet => lnbc(amount)
       case LnParams.LnBitcoinTestNet => lntb(amount)
