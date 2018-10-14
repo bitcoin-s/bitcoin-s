@@ -40,7 +40,14 @@ sealed abstract class LnInvoice {
 
   //TODO: Refactor Into Bech32Address?
   def uInt64ToBase32(input: UInt64): Vector[UInt5] = {
-    LnUtil.encodeNumber(input.toLong)
+    var numNoPadding = LnUtil.encodeNumber(input.toBigInt)
+
+    while (numNoPadding.length < 7) {
+      numNoPadding = UInt5.zero +: numNoPadding
+    }
+
+    require(numNoPadding.length == 7)
+    numNoPadding
   }
 
   private def bech32TimeStamp: Vector[UInt5] = {
@@ -62,12 +69,17 @@ sealed abstract class LnInvoice {
 }
 
 object LnInvoice {
+  private case class LnInvoiceImpl(
+    hrp: LnHumanReadablePart,
+    timestamp: UInt64,
+    lnTags: LnTaggedFields,
+    signature: LnInvoiceSignature) extends LnInvoice
+
+  private val logger = LoggerFactory.getLogger(getClass.getSimpleName)
 
   def decodeTimestamp(u5s: Vector[UInt5]): UInt64 = {
-    val long: Long = u5s.take(7).foldLeft(0L) {
-      case (a, b) => a.toInt * 32 + b.toInt
-    }
-    UInt64(long)
+    val decoded = LnUtil.decodeNumber(u5s)
+    UInt64(decoded)
   }
 
   def hrpExpand(lnHumanReadablePart: LnHumanReadablePart): Vector[UInt5] = {
@@ -94,6 +106,7 @@ object LnInvoice {
 
     //first 35 bits is time stamp
     val timestampU5s = data.take(7)
+
     val timestamp = decodeTimestamp(timestampU5s)
 
     //last bits should be a 520 bit signature
@@ -105,7 +118,7 @@ object LnInvoice {
 
     val taggedFields = LnTaggedFields.fromUInt5s(tags)
 
-    Invoice(
+    LnInvoice(
       hrp = hrp,
       timestamp = timestamp,
       lnTags = taggedFields,
@@ -124,6 +137,7 @@ object LnInvoice {
       if (hrp.size < 1 || data.size < 6) {
         Failure(new IllegalArgumentException("Hrp/data too short"))
       } else {
+
         val hrpValid = LnHumanReadablePart.fromString(hrp)
 
         //is checksum returned here?
@@ -144,7 +158,14 @@ object LnInvoice {
       }
     }
   }
+
+  def apply(hrp: LnHumanReadablePart, timestamp: UInt64, lnTags: LnTaggedFields,
+    signature: LnInvoiceSignature): LnInvoice = {
+    LnInvoiceImpl(
+      hrp = hrp,
+      timestamp = timestamp,
+      lnTags = lnTags,
+      signature = signature)
+  }
 }
 
-case class Invoice(hrp: LnHumanReadablePart, timestamp: UInt64, lnTags: LnTaggedFields,
-  signature: LnInvoiceSignature) extends LnInvoice

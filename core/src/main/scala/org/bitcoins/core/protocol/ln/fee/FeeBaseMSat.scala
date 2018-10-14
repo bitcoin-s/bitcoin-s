@@ -13,6 +13,7 @@ import scodec.bits.ByteVector
  */
 case class FeeBaseMSat(msat: PicoBitcoins) extends NetworkElement {
   require(msat.toLong <= UInt32.max.toLong, s"Value too large for FeeBaseMSat ${msat}")
+  require(msat.toLong >= 0, s"Value cannot be negative for FeeBaseMSat ${msat}")
 
   override def bytes: ByteVector = {
     //note that the feebase msat is only 4 bytes
