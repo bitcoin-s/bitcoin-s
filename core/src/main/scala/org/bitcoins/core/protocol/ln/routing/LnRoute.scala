@@ -45,9 +45,13 @@ object LnRoute {
 
     val shortChannelId = ShortChannelId.fromBytes(bytes.slice(33, 41))
 
-    val i64 = Int64.fromBytes(bytes.slice(41, 45))
+    //type hacking here, fee base is a uint32, but PicoBitcoins needs a i64
+    //if we parse directly to an i64 we risk having the largest big endian byte
+    //be signed -- which will give us a negative number possibly
+    val feeBaseU32 = UInt32.fromBytes(bytes.slice(41, 45))
+    val feeBaseI64 = Int64(feeBaseU32.toLong)
 
-    val feeBaseMSat = FeeBaseMSat(PicoBitcoins(i64))
+    val feeBaseMSat = FeeBaseMSat(PicoBitcoins(feeBaseI64))
 
     val u32 = UInt32.fromBytes(bytes.slice(45, 49))
 

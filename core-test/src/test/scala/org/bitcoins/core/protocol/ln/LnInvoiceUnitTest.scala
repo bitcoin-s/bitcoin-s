@@ -1,17 +1,22 @@
 package org.bitcoins.core.protocol.ln
 
 import org.bitcoins.core.crypto.{ ECDigitalSignature, ECPublicKey, Sha256Digest }
+import org.bitcoins.core.gen.ln.LnInvoiceGen
 import org.bitcoins.core.number.{ UInt32, UInt64, UInt8 }
 import org.bitcoins.core.protocol.{ Bech32Address, P2PKHAddress, P2SHAddress }
 import org.bitcoins.core.protocol.ln.LnParams.{ LnBitcoinMainNet, LnBitcoinTestNet }
 import org.bitcoins.core.protocol.ln.fee.{ FeeBaseMSat, FeeProportionalMillionths }
 import org.bitcoins.core.protocol.ln.routing.LnRoute
 import org.bitcoins.core.util.CryptoUtil
+import org.scalatest.prop.PropertyChecks
 import org.scalatest.{ FlatSpec, MustMatchers }
+import org.slf4j.LoggerFactory
 import scodec.bits.ByteVector
 
-class LnInvoiceUnitTest extends FlatSpec with MustMatchers {
+class LnInvoiceUnitTest extends FlatSpec with MustMatchers with PropertyChecks {
   behavior of "LnInvoice"
+
+  private val logger = LoggerFactory.getLogger(getClass.getSimpleName)
 
   val hrpEmpty = LnHumanReadablePart(LnBitcoinMainNet)
   val hrpMicro = LnHumanReadablePart(LnBitcoinMainNet, Some(MicroBitcoins(2500)))
@@ -43,7 +48,7 @@ class LnInvoiceUnitTest extends FlatSpec with MustMatchers {
     val version = UInt8.zero
     val lnSig = LnInvoiceSignature(version, signature)
 
-    val invoice = Invoice(hrpEmpty, time, lnTags, lnSig)
+    val invoice = LnInvoice(hrpEmpty, time, lnTags, lnSig)
 
     val serialized = invoice.toString
     serialized must be("lnbc1pvjluezpp5qqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqypqdpl2pkx2ctnv5sxxmmwwd5kgetjypeh2ursdae8g6twvus8g6rfwvs8qun0dfjkxaq8rkx3yf5tcsyz3d73gafnh3cax9rn449d9p5uxz9ezhhypd0elx87sjle52x86fux2ypatgddc6k63n7erqz25le42c4u4ecky03ylcqca784w")
@@ -67,7 +72,7 @@ class LnInvoiceUnitTest extends FlatSpec with MustMatchers {
     val version = UInt8.one
     val lnSig = LnInvoiceSignature(version, signature)
 
-    val invoice = Invoice(hrpMicro, time, lnTags, lnSig)
+    val invoice = LnInvoice(hrpMicro, time, lnTags, lnSig)
 
     val serialized = invoice.toString
 
@@ -92,7 +97,7 @@ class LnInvoiceUnitTest extends FlatSpec with MustMatchers {
     val version = UInt8.zero
     val lnSig = LnInvoiceSignature(version, signature)
 
-    val invoice = Invoice(hrpMicro, time, lnTags, lnSig)
+    val invoice = LnInvoice(hrpMicro, time, lnTags, lnSig)
 
     val serialized = invoice.toString
 
@@ -118,7 +123,7 @@ class LnInvoiceUnitTest extends FlatSpec with MustMatchers {
     val version = UInt8.zero
     val lnSig = LnInvoiceSignature(version, signature)
 
-    val invoice = Invoice(hrpMilli, time, lnTags, lnSig)
+    val invoice = LnInvoice(hrpMilli, time, lnTags, lnSig)
 
     val serialized = invoice.toString
 
@@ -145,7 +150,7 @@ class LnInvoiceUnitTest extends FlatSpec with MustMatchers {
     val version = UInt8.one
     val lnSig = LnInvoiceSignature(version, signature)
 
-    val invoice = Invoice(hrpTestNetMilli, time, lnTags, lnSig)
+    val invoice = LnInvoice(hrpTestNetMilli, time, lnTags, lnSig)
 
     val serialized = invoice.toString
 
@@ -191,7 +196,7 @@ class LnInvoiceUnitTest extends FlatSpec with MustMatchers {
       fallbackAddress = Some(fallbackAddr),
       routingInfo = Some(route))
 
-    val lnInvoice = Invoice(
+    val lnInvoice = LnInvoice(
       hrp = hrpMilli,
       timestamp = time,
       lnTags = lnTags,
@@ -222,7 +227,7 @@ class LnInvoiceUnitTest extends FlatSpec with MustMatchers {
     val lnInvoiceSig = LnInvoiceSignature(
       signature = signature,
       version = UInt8.zero)
-    val lnInvoice = Invoice(
+    val lnInvoice = LnInvoice(
       hrp = hrpMilli,
       timestamp = time,
       lnTags = lnTags,
@@ -260,7 +265,7 @@ class LnInvoiceUnitTest extends FlatSpec with MustMatchers {
       signature = signature,
       version = UInt8.zero)
 
-    val lnInvoice = Invoice(
+    val lnInvoice = LnInvoice(
       hrp = hrpMilli,
       timestamp = time,
       lnTags = lnTags,
@@ -296,7 +301,7 @@ class LnInvoiceUnitTest extends FlatSpec with MustMatchers {
       signature = signature,
       version = UInt8.zero)
 
-    val lnInvoice = Invoice(
+    val lnInvoice = LnInvoice(
       hrp = hrpMilli,
       timestamp = time,
       lnTags = lnTags,
@@ -320,5 +325,18 @@ class LnInvoiceUnitTest extends FlatSpec with MustMatchers {
     val deserialized = invoiceT.get.toString
 
     deserialized must be(bech32)
+  }
+
+  it must "have serialization symmetry for LnHrps" in {
+    forAll(LnInvoiceGen.lnHrp) { hrp =>
+      LnHumanReadablePart.fromString(hrp.toString).get == hrp
+    }
+  }
+
+  it must "have serialization symmetry for the invoices" in {
+
+    forAll(LnInvoiceGen.lnInvoice) { invoice =>
+      LnInvoice.fromString(invoice.toString).get == invoice
+    }
   }
 }

@@ -9,7 +9,7 @@ import org.bitcoins.core.protocol._
 import org.bitcoins.core.protocol.ln.routing.LnRoute
 import org.bitcoins.core.protocol.ln.util.LnUtil
 import org.bitcoins.core.protocol.script.{ P2WPKHWitnessSPKV0, P2WSHWitnessSPKV0, WitnessScriptPubKeyV0 }
-import org.bitcoins.core.util.{ Bech32, BitcoinSUtil }
+import org.bitcoins.core.util.{ Bech32, BitcoinSUtil, CryptoUtil }
 import org.slf4j.LoggerFactory
 import scodec.bits.ByteVector
 
@@ -109,6 +109,15 @@ object LnTag {
   case class DescriptionTag(string: String) extends LnTag {
     override val prefix: LnTagPrefix = LnTagPrefix.Description
 
+    def descBytes: ByteVector = {
+      ByteVector(string.getBytes("UTF-8"))
+    }
+
+    def descriptionHashTag: LnTag.DescriptionHashTag = {
+      val hash = CryptoUtil.sha256(descBytes)
+      LnTag.DescriptionHashTag(hash)
+    }
+
     override val encoded: Vector[UInt5] = {
       val bytes = ByteVector(string.getBytes("UTF-8"))
       Bech32.from8bitTo5bit(bytes)
@@ -183,12 +192,16 @@ object LnTag {
     override val prefix: LnTagPrefix = LnTagPrefix.RoutingInfo
 
     override val encoded: Vector[UInt5] = {
-      val serializedRoutes: ByteVector = {
-        routes.foldLeft(ByteVector.empty)(_ ++ _.bytes)
-      }
+      if (routes.isEmpty) {
+        Vector.empty
+      } else {
+        val serializedRoutes: ByteVector = {
+          routes.foldLeft(ByteVector.empty)(_ ++ _.bytes)
+        }
 
-      val u5s = Bech32.from8bitTo5bit(serializedRoutes)
-      u5s
+        val u5s = Bech32.from8bitTo5bit(serializedRoutes)
+        u5s
+      }
     }
   }
 
