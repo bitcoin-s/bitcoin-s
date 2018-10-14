@@ -5,7 +5,7 @@ import org.bitcoins.core.protocol.NetworkElement
 import org.bitcoins.core.util.Factory
 import scodec.bits.ByteVector
 
-class ShortChannelId(u64: UInt64) extends NetworkElement {
+case class ShortChannelId(u64: UInt64) extends NetworkElement {
   override def bytes: ByteVector = u64.bytes
 }
 
