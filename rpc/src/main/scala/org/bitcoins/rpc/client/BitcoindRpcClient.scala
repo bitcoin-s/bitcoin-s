@@ -1179,6 +1179,12 @@ class BitcoindRpcClient(instance: BitcoindInstance)(
         HttpCredentials.createBasicHttpCredentials(username, password))
   }
 
-  def start(): String =
-    ("bitcoind -datadir=" + instance.authCredentials.datadir).!!
+  def start(): String = {
+    val cmd = Seq(
+      "bitcoind",
+      "-datadir=" + instance.authCredentials.datadir,
+      "-rpcport=" + instance.rpcUri.getPort,
+      "-port=" + instance.uri.getPort)
+    cmd.!!
+  }
 }
