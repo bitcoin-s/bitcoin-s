@@ -3,11 +3,14 @@ package org.bitcoins.rpc
 import java.io.File
 
 import akka.actor.ActorSystem
+import akka.stream.ActorMaterializer
+import org.bitcoins.core.util.BitcoinSLogger
+import org.bitcoins.rpc.client.BitcoindRpcClient
 import org.scalatest.{ AsyncFlatSpec, BeforeAndAfterAll }
 
 import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration.DurationInt
-import scala.util.Success
+import scala.util.{ Success, Try }
 
 class RpcUtilTest extends AsyncFlatSpec with BeforeAndAfterAll {
 
@@ -86,6 +89,23 @@ class RpcUtilTest extends AsyncFlatSpec with BeforeAndAfterAll {
     assert(dir.listFiles.contains(new File(dir.getAbsolutePath + "/bitcoin.conf")))
     TestUtil.deleteTmpDir(dir)
     assert(!dir.exists)
+  }
+
+  it should "be able to create a single node, wait for it to start and then delete it" in {
+    implicit val m: ActorMaterializer = ActorMaterializer.create(system)
+    implicit val ec = m.executionContext
+
+    val instance = TestUtil.instance()
+    val client = new BitcoindRpcClient(instance)
+    client.start()
+    RpcUtil.awaitCondition(client.isStarted)
+    assert(client.isStarted)
+    client.stop()
+    RpcUtil.awaitServerShutdown(client)
+    assert(!client.isStarted)
+
+    val t = Try(Await.result(client.getNetworkInfo, 1000.milliseconds))
+    assert(t.isFailure)
   }
 
   "TestUtil" should "be able to create a connected node pair with 100 blocks and then delete them" in {
