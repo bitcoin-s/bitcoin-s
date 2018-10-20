@@ -20,6 +20,7 @@ sealed abstract class Number[T <: Number[T]] extends NetworkElement {
   /** The underlying scala number used to to hold the number */
   protected def underlying: A
 
+  def toDouble: Double = toBigInt.toDouble
   def toInt: Int = toBigInt.bigInteger.intValueExact()
   def toLong: Long = toBigInt.bigInteger.longValueExact()
   def toBigInt: BigInt = underlying

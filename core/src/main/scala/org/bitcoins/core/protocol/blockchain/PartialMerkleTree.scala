@@ -3,7 +3,7 @@ package org.bitcoins.core.protocol.blockchain
 import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.util._
-import scodec.bits.{ BitVector, ByteVector }
+import scodec.bits.BitVector
 
 import scala.annotation.tailrec
 import scala.math._
@@ -106,7 +106,6 @@ sealed trait PartialMerkleTree extends BitcoinSLogger {
 }
 
 object PartialMerkleTree {
-  private val logger = BitcoinSLogger.logger
 
   private case class PartialMerkleTreeImpl(tree: BinaryTree[DoubleSha256Digest], transactionCount: UInt32,
     bits: BitVector, hashes: Seq[DoubleSha256Digest]) extends PartialMerkleTree {
@@ -280,7 +279,7 @@ object PartialMerkleTree {
   }
 
   /** Calculates the maximum height for a binary tree with the number of transactions specified */
-  def calcMaxHeight(numTransactions: Int): Int = Math.ceil((log(numTransactions) / log(2))).toInt
+  def calcMaxHeight(numTransactions: Int): Int = Math.ceil((log(numTransactions.toDouble) / log(2))).toInt
 
   /**
    * Determines if the right sub tree can exists inside of the partial merkle tree

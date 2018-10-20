@@ -7,7 +7,7 @@ import org.bitcoins.core.protocol.transaction.{ Transaction, TransactionOutPoint
 import org.bitcoins.core.protocol.{ CompactSizeUInt, NetworkElement }
 import org.bitcoins.core.script.constant.{ ScriptConstant, ScriptToken }
 import org.bitcoins.core.serializers.bloom.RawBloomFilterSerializer
-import org.bitcoins.core.util.{ BitcoinSLogger, BitcoinSUtil, Factory }
+import org.bitcoins.core.util.{ BitcoinSUtil, Factory }
 import scodec.bits.{ BitVector, ByteVector }
 
 import scala.annotation.tailrec
@@ -57,7 +57,7 @@ sealed abstract class BloomFilter extends NetworkElement {
         val byte = accum(byteIndex.toLong)
         val setBitByte: Byte = (byte | bitIndex).toByte
         //replace old byte with new byte with bit set
-        val newAccum: ByteVector = accum.update(byteIndex, setBitByte)
+        val newAccum: ByteVector = accum.update(byteIndex.toLong, setBitByte)
         loop(remainingBitIndexes.tail, newAccum)
       }
     }
@@ -88,7 +88,7 @@ sealed abstract class BloomFilter extends NetworkElement {
         val currentIndex = remainingBitIndexes.head
         val byteIndex = currentIndex >>> 3
         val bitIndex = (1 << (7 & currentIndex)).toByte
-        val byte = data(byteIndex)
+        val byte = data(byteIndex.toLong)
         val isBitSet = (byte & bitIndex) != 0
         loop(remainingBitIndexes.tail, isBitSet +: accum)
       }
@@ -265,11 +265,11 @@ object BloomFilter extends Factory[BloomFilter] {
     val optimalFilterSize: Double = (-1 / pow(log(2), 2) * numElements * log(falsePositiveRate)) / 8
     logger.debug("optimalFilterSize " + optimalFilterSize)
     //BIP37 places limitations on the filter size, namely it cannot be > 36,000 bytes
-    val actualFilterSize: Int = max(1, min(optimalFilterSize, maxSize.toInt * 8)).toInt
+    val actualFilterSize: Int = max(1, min(optimalFilterSize, maxSize.toDouble * 8)).toInt
     logger.debug("actualFilterSize: " + actualFilterSize)
     val optimalHashFuncs: Double = (actualFilterSize * 8 / numElements * log(2))
     //BIP37 places a limit on the amount of hashFuncs we can use, which is 50
-    val actualHashFuncs: Int = max(1, min(optimalHashFuncs, maxHashFuncs.toInt)).toInt
+    val actualHashFuncs: Int = max(1, min(optimalHashFuncs, maxHashFuncs.toDouble)).toInt
 
     val emptyByteArray = ByteVector(Array.fill(actualFilterSize)(0.toByte))
     BloomFilter(CompactSizeUInt(UInt64(actualFilterSize)), emptyByteArray, UInt32(actualHashFuncs), tweak, flags)
