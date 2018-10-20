@@ -26,7 +26,7 @@ import scala.concurrent.{ Await, ExecutionContext, Future }
 import scala.sys.process._
 import scala.util.{ Failure, Success, Try }
 
-class EclairRpcClient(instance: EclairInstance)(implicit system: ActorSystem) {
+class EclairRpcClient(val instance: EclairInstance)(implicit system: ActorSystem) {
   import JsonReaders._
 
   private val resultKey = "result"
@@ -121,8 +121,15 @@ class EclairRpcClient(instance: EclairInstance)(implicit system: ActorSystem) {
   }
 
   // When types are introduced this can be two different functions
-  def findRoute(nodeIdOrInvoice: String): Future[Vector[String]] = {
-    eclairCall[Vector[String]]("findroute", List(JsString(nodeIdOrInvoice)))
+  def findRoute(nodeIdOrInvoice: Either[NodeId, LnInvoice]): Future[Vector[String]] = {
+    val str = {
+      if (nodeIdOrInvoice.isLeft) {
+        nodeIdOrInvoice.left.get.hex
+      } else {
+        nodeIdOrInvoice.right.get.toString
+      }
+    }
+    eclairCall[Vector[String]]("findroute", List(JsString(str)))
   }
 
   def forceClose(channelId: ChannelId): Future[String] = {
@@ -142,7 +149,7 @@ class EclairRpcClient(instance: EclairInstance)(implicit system: ActorSystem) {
     peers.map(_.exists(p => p.nodeId == nodeId && p.state == PeerState.CONNECTED))
   }
 
-  private def open(
+  def open(
     nodeId: NodeId,
     fundingSatoshis: CurrencyUnit,
     pushMsat: Option[LnCurrencyUnit],
@@ -231,7 +238,7 @@ class EclairRpcClient(instance: EclairInstance)(implicit system: ActorSystem) {
     eclairCall[Vector[PeerInfo]]("peers")
   }
 
-  private def receive(
+  def receive(
     description: Option[String],
     amountMsat: Option[LnCurrencyUnit],
     expirySeconds: Option[Long]): Future[LnInvoice] = {
@@ -385,7 +392,7 @@ class EclairRpcClient(instance: EclairInstance)(implicit system: ActorSystem) {
         "params" -> params,
         "id" -> JsString(uuid)))
 
-    val uri = "http://" + instance.rpcUri.getHost + ":" + instance.rpcUri.getPort
+    val uri = instance.rpcUri.toString
     val username = instance.authCredentials.username
     val password = instance.authCredentials.password
     HttpRequest(
@@ -409,9 +416,9 @@ class EclairRpcClient(instance: EclairInstance)(implicit system: ActorSystem) {
   def start(): Unit = {
 
     if (process.isEmpty) {
-      val p = Process("java -jar -Declair.datadir=" + instance.authCredentials.datadir + s" ${pathToEclairJar} &")
+      val p = Process("java -jar -Declair.datadir=" + instance.authCredentials.datadir.get + s" ${pathToEclairJar} &")
       val result = p.run()
-      logger.info(s"Starting eclair with datadir ${instance.authCredentials.datadir}")
+      logger.info(s"Starting eclair with datadir ${instance.authCredentials.datadir.get}")
 
       process = Some(result)
       ()

@@ -6,7 +6,7 @@ import org.bitcoins.core.protocol.NetworkElement
 import org.bitcoins.core.util.Bech32
 import scodec.bits.ByteVector
 
-sealed abstract class LnInvoiceSignature {
+sealed abstract class LnInvoiceSignature extends NetworkElement {
   require(version.toInt >= 0 && version.toInt <= 3, s"signature recovery byte must be 0,1,2,3, got ${version.toInt}")
 
   def signature: ECDigitalSignature
@@ -16,6 +16,10 @@ sealed abstract class LnInvoiceSignature {
   def data: Vector[UInt5] = {
     val bytes = signature.toRawRS ++ version.bytes
     Bech32.from8bitTo5bit(bytes)
+  }
+
+  override def bytes: ByteVector = {
+    signature.toRawRS ++ version.bytes
   }
 }
 

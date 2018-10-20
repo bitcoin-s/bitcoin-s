@@ -119,6 +119,7 @@ trait RpcUtil extends BitcoinSLogger {
     maxTries: Int = 50)(implicit system: ActorSystem): Unit = {
     val f = () => server.isStarted
     awaitCondition(f, duration, maxTries)
+    logger.info(s"Server started ${server.getDaemon.authCredentials.datadir}")
   }
 
   def awaitServerShutdown(
