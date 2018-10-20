@@ -89,9 +89,9 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers {
   }
 
   it must "find the first indexes of OP_ELSE and OP_ENDIF in a list of script tokens" in {
-    COI.findFirstIndexesOpElseOpEndIf(List(OP_ELSE, OP_ENDIF)) must be(Some(0), Some(1))
-    COI.findFirstIndexesOpElseOpEndIf(List(OP_IF, OP_ELSE, OP_ENDIF, OP_IF, OP_ELSE, OP_ENDIF)) must be(Some(1), Some(2))
-    COI.findFirstIndexesOpElseOpEndIf(List(OP_IF, OP_IF)) must be(None, None)
+    COI.findFirstIndexesOpElseOpEndIf(List(OP_ELSE, OP_ENDIF)) must be((Some(0), Some(1)))
+    COI.findFirstIndexesOpElseOpEndIf(List(OP_IF, OP_ELSE, OP_ENDIF, OP_IF, OP_ELSE, OP_ENDIF)) must be((Some(1), Some(2)))
+    COI.findFirstIndexesOpElseOpEndIf(List(OP_IF, OP_IF)) must be((None, None))
   }
 
   it must "remove the first OP_IF expression in a script" in {

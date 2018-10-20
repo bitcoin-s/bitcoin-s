@@ -57,7 +57,7 @@ object CoreTestCaseProtocol extends DefaultJsonProtocol {
         logger.info("Result: " + elements(4).convertTo[String])
         val expectedResult = ScriptResult(elements(4).convertTo[String])
         Some(CoreTestCaseImpl(scriptSignature, scriptPubKey, flags,
-          expectedResult, "", elements.toString, Some(witness, amount)))
+          expectedResult, "", elements.toString, Some((witness, amount))))
       } else if (elements.size == 5) {
         val scriptPubKeyBytes: ByteVector = parseScriptPubKey(elements(1))
         val scriptPubKey = ScriptPubKey(scriptPubKeyBytes)
@@ -83,7 +83,7 @@ object CoreTestCaseProtocol extends DefaultJsonProtocol {
         val expectedResult = ScriptResult(elements(4).convertTo[String])
         val comments = elements(5).convertTo[String]
         Some(CoreTestCaseImpl(scriptSignature, scriptPubKey, flags,
-          expectedResult, comments, elements.toString, Some(witness, amount)))
+          expectedResult, comments, elements.toString, Some((witness, amount))))
       } else None
     }
 

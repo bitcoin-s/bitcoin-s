@@ -54,7 +54,7 @@ sealed abstract class BloomFilter extends NetworkElement {
         val byteIndex = currentIndex >>> 3
         //we need to calculate the bitIndex we need to set inside of our byte
         val bitIndex = (1 << (7 & currentIndex)).toByte
-        val byte = accum(byteIndex)
+        val byte = accum(byteIndex.toLong)
         val setBitByte: Byte = (byte | bitIndex).toByte
         //replace old byte with new byte with bit set
         val newAccum: ByteVector = accum.update(byteIndex, setBitByte)

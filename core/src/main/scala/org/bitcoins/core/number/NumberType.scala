@@ -231,11 +231,13 @@ object UInt32 extends Factory[UInt32] with BaseNumbers[UInt32] {
 
   def apply(long: Long): UInt32 = UInt32(BigInt(long))
 
+  def apply(int: Int): UInt32 = UInt32(BigInt(int))
+
   def apply(bigInt: BigInt): UInt32 = UInt32Impl(bigInt)
 
   def checkBounds(res: BigInt): UInt32 = {
     if (res > max.underlying || res < min.underlying) {
-      throw new IllegalArgumentException("Out of boudns for a UInt8, got: " + res)
+      throw new IllegalArgumentException("Out of bounds for a UInt8, got: " + res)
     } else UInt32(res)
   }
 

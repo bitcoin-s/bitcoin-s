@@ -469,21 +469,6 @@ trait TransactionGenerators extends BitcoinSLogger {
   }
 
   /**
-   * Determines if the transaction's lockTime value and CLTV script lockTime value are of the same type
-   * (i.e. determines whether both are a timestamp or block height)
-   */
-  private def cltvLockTimesOfSameType(num: ScriptNumber, lockTime: UInt32): Boolean = num.toLong match {
-    case negative if negative < 0 => false
-    case positive if positive >= 0 =>
-      if (!(
-        (lockTime < TransactionConstants.locktimeThreshold &&
-          num.toLong < TransactionConstants.locktimeThreshold.toLong) ||
-          (lockTime >= TransactionConstants.locktimeThreshold &&
-            num.toLong >= TransactionConstants.locktimeThreshold.toLong))) return false
-      true
-  }
-
-  /**
    * Determines if the transaction input's sequence value and CSV script sequence value are of the same type
    * (i.e. determines whether both are a timestamp or block-height)
    */

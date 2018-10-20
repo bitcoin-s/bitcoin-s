@@ -1,7 +1,22 @@
 
-
-lazy val compilerOpts =
-  List("-unchecked", "-deprecation", "-feature", "-Xmax-classfile-name", "128")
+lazy val compilerOpts = Seq(
+  "-target:jvm-1.8",
+  "-encoding", "UTF-8",
+  "-unchecked",
+  "-feature",
+  "-deprecation",
+  "-Xmax-classfile-name", "128",
+  "-Xfuture",
+  "-Yno-adapted-args",
+  "-Ywarn-dead-code",
+  "-Ywarn-unused-import",
+  "-Ywarn-numeric-widen",
+  "-Ywarn-value-discard",
+  "-Ywarn-unused",
+  "-language:existentials",
+  "-language:higherKinds",
+  "-language:implicitConversions"
+)
 
 lazy val commonSettings = List(
   scalacOptions := compilerOpts,

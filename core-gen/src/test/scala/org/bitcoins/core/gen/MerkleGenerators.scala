@@ -11,7 +11,6 @@ import org.scalacheck.Gen
  * Created by chris on 8/12/16.
  */
 abstract class MerkleGenerator {
-  private val logger = BitcoinSLogger.logger
 
   /** Generates a merkle block with the given txs matched inside the [[PartialMerkleTree]] */
   def merkleBlockWithInsertedTxIds(txs: Seq[Transaction]): Gen[(MerkleBlock, Block, Seq[DoubleSha256Digest])] = for {

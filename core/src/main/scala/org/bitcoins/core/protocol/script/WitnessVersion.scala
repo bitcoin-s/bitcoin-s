@@ -52,7 +52,7 @@ case object WitnessVersion0 extends WitnessVersion {
             val compactSizeUInt = CompactSizeUInt.calculateCompactSizeUInt(stackTop)
             val scriptPubKey = ScriptPubKey(compactSizeUInt.bytes ++ stackTop)
             val stack = scriptWitness.stack.tail.map(ScriptConstant(_))
-            Left(stack, scriptPubKey)
+            Left((stack, scriptPubKey))
           }
         }
       case _ =>
