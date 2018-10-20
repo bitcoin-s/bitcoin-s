@@ -4,26 +4,22 @@ import java.io.{ File, PrintWriter }
 import java.net.URI
 
 import akka.actor.ActorSystem
-import org.bitcoins.core.config.{ NetworkParameters, RegTest }
+import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.protocol.ln.channel.{ ChannelId, ChannelState }
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.eclair.rpc.client.EclairRpcClient
 import org.bitcoins.eclair.rpc.config.{ EclairAuthCredentials, EclairInstance }
+import org.bitcoins.rpc.RpcUtil
 import org.bitcoins.rpc.client.BitcoindRpcClient
 import org.bitcoins.rpc.config.{ BitcoindAuthCredentials, BitcoindInstance }
-import org.bitcoins.rpc.{ BitcoindRpcTestUtil, RpcUtil }
-import org.slf4j.LoggerFactory
 
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 
-trait EclairRpcTestUtil {
+trait EclairTestUtil extends BitcoinSLogger {
 
-  private val logger = LoggerFactory.getLogger(this.getClass.getSimpleName)
-
-  def randomDirName: String = {
-    BitcoindRpcTestUtil.randomDirName
-  }
+  def randomDirName: String =
+    0.until(5).map(_ => scala.util.Random.alphanumeric.head).mkString
 
   /**
    * Creates a datadir and places the username/password combo
@@ -57,12 +53,10 @@ trait EclairRpcTestUtil {
     pw.write(s"zmqpubrawblock=tcp://127.0.0.1:${zmqPort}\n")
 
     pw.close()
-    BitcoindAuthCredentials(username, pass, f)
+    BitcoindAuthCredentials(username, pass, rpcUri.getPort, f)
   }
 
-  lazy val network: NetworkParameters = {
-    BitcoindRpcTestUtil.network
-  }
+  lazy val network = RegTest
 
   def bitcoindInstance(
     port: Int = randomPort,
@@ -109,6 +103,7 @@ trait EclairRpcTestUtil {
 
     val bitcoindUser = bitcoindAuth.username
     val bitcoindPass = bitcoindAuth.password
+    val bitcoindHost = bitcoind.rpcUri.getHost
 
     val zmqUri: String = s"tcp://127.0.0.1:${bitcoind.zmqPortOpt.get}"
     val pw = new PrintWriter(conf)
@@ -117,7 +112,7 @@ trait EclairRpcTestUtil {
     pw.println(s"eclair.bitcoind.rpcuser=${bitcoindUser}")
     pw.println("eclair.bitcoind.rpcpassword=\"" + bitcoindPass + "\"")
     pw.println(s"eclair.bitcoind.rpcport=${bitcoindRpcUri.getPort}")
-    pw.println(s"eclair.bitcoind.host=${bitcoindRpcUri.getHost}")
+    pw.println("eclair.bitcoind.host=\"" + bitcoindHost + "\"")
     pw.println("eclair.bitcoind.zmq =\"" + zmqUri + "\"")
 
     pw.println("eclair.api.enabled=true")
@@ -128,7 +123,7 @@ trait EclairRpcTestUtil {
     pw.println("eclair.api.binding-ip = \"127.0.0.1\"")
     pw.close()
 
-    EclairAuthCredentials(username, pass, bitcoindUser, bitcoindPass, f)
+    EclairAuthCredentials(username, pass, Some(bitcoindAuth), rpcUri.getPort, Some(f))
   }
 
   lazy val bitcoinNetwork = RegTest
@@ -141,7 +136,10 @@ trait EclairRpcTestUtil {
   }
 
   def randomPort: Int = {
-    BitcoindRpcTestUtil.randomPort
+    val firstAttempt = Math.abs(scala.util.Random.nextInt % 15000)
+    if (firstAttempt < bitcoinNetwork.port) {
+      firstAttempt + bitcoinNetwork.port
+    } else firstAttempt
   }
 
   def deleteTmpDir(dir: File): Boolean = {
@@ -187,8 +185,8 @@ trait EclairRpcTestUtil {
   def createNodePair(bitcoindInstance: BitcoindInstance)(implicit system: ActorSystem): (EclairRpcClient, EclairRpcClient) = {
 
     implicit val ec = system.dispatcher
-    val e1Instance = EclairRpcTestUtil.eclairInstance(bitcoindInstance)
-    val e2Instance = EclairRpcTestUtil.eclairInstance(bitcoindInstance)
+    val e1Instance = EclairTestUtil.eclairInstance(bitcoindInstance)
+    val e2Instance = EclairTestUtil.eclairInstance(bitcoindInstance)
 
     val client = new EclairRpcClient(e1Instance)
     val otherClient = new EclairRpcClient(e2Instance)
@@ -209,6 +207,15 @@ trait EclairRpcTestUtil {
 
     logger.debug(s"Both clients started")
 
+    connectLNNodes(client, otherClient)
+
+    (client, otherClient)
+  }
+
+  def connectLNNodes(client: EclairRpcClient, otherClient: EclairRpcClient)(
+    implicit
+    system: ActorSystem): Unit = {
+    implicit val dispatcher = system.dispatcher
     val infoF = otherClient.getInfo
 
     val connection: Future[String] = infoF.flatMap { info =>
@@ -229,10 +236,23 @@ trait EclairRpcTestUtil {
     RpcUtil.awaitConditionF(
       conditionF = isConnected,
       duration = 1.second)
+  }
 
-    (client, otherClient)
+  def getBitcoindRpc(eclairRpcClient: EclairRpcClient)(implicit system: ActorSystem): BitcoindRpcClient = {
+    val bitcoindRpc = {
+      val eclairAuth = eclairRpcClient.instance.authCredentials
+      val bitcoindRpcPort = eclairAuth.bitcoinRpcPort
 
+      val bitcoindInstance = BitcoindInstance(
+        network = eclairRpcClient.instance.network,
+        uri = new URI("http://localhost:18333"),
+        rpcUri = new URI(s"http://localhost:${bitcoindRpcPort}"),
+        authCredentials = eclairRpcClient.instance.authCredentials.bitcoinAuthOpt.get,
+        None)
+      new BitcoindRpcClient(bitcoindInstance)
+    }
+    bitcoindRpc
   }
 }
 
-object EclairRpcTestUtil extends EclairRpcTestUtil
+object EclairTestUtil extends EclairTestUtil
