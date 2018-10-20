@@ -49,7 +49,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       pw.write("prune=1\n")
     }
     pw.close()
-    BitcoindAuthCredentials(username, pass, f)
+    BitcoindAuthCredentials(username, pass, rpcUri.getPort, f)
   }
 
   lazy val network = RegTest
