@@ -81,9 +81,12 @@ sealed abstract class LnCurrencyUnit extends NetworkElement {
 
   def toPicoBitcoinMultiplier: Int
 
+  def toPicoBitcoins: PicoBitcoins = PicoBitcoins(toPicoBitcoinValue)
+
   def encodedBytes: ByteVector = {
     ByteVector(toEncodedString.map(_.toByte))
   }
+
   def toEncodedString: String = {
     toBigInt + character.toString()
   }
