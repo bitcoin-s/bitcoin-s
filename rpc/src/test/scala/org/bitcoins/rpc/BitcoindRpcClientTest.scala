@@ -41,16 +41,17 @@ class BitcoindRpcClientTest
   implicit val system = ActorSystem("RpcClientTest_ActorSystem")
   implicit val m = ActorMaterializer()
   implicit val ec = m.executionContext
-  implicit val networkParam = TestUtil.network
+  implicit val networkParam = BitcoindRpcTestUtil.network
 
-  val client = new BitcoindRpcClient(TestUtil.instance())
+  val client = new BitcoindRpcClient(BitcoindRpcTestUtil.instance())
 
-  val otherClient = new BitcoindRpcClient(TestUtil.instance())
+  val otherClient = new BitcoindRpcClient(BitcoindRpcTestUtil.instance())
 
   // This client's wallet is encrypted
-  val walletClient = new BitcoindRpcClient(TestUtil.instance())
+  val walletClient = new BitcoindRpcClient(BitcoindRpcTestUtil.instance())
 
-  val pruneClient = new BitcoindRpcClient(TestUtil.instance(pruneMode = true))
+  val prunedInstance = BitcoindRpcTestUtil.instance(pruneMode = true)
+  val pruneClient = new BitcoindRpcClient(prunedInstance)
 
   val logger = BitcoinSLogger.logger
 
@@ -146,7 +147,7 @@ class BitcoindRpcClientTest
 
     val servers = Vector(walletClient, client, otherClient, pruneClient)
     logger.info("Bitcoin servers starting")
-    TestUtil.startServers(servers)
+    BitcoindRpcTestUtil.startServers(servers)
 
     client.addNode(otherClient.getDaemon.uri, "add")
 
@@ -166,7 +167,7 @@ class BitcoindRpcClientTest
     Await.result(client.generate(200), 3.seconds)
     Await.result(pruneClient.generate(3000), 60.seconds)
 
-    TestUtil.awaitConnection(client, otherClient)
+    BitcoindRpcTestUtil.awaitConnection(client, otherClient)
   }
 
   behavior of "BitcoindRpcClient"
@@ -265,7 +266,7 @@ class BitcoindRpcClientTest
 
   it should "be able to ban and clear the ban of a subnet" in {
     val loopBack = URI.create("http://127.0.0.1")
-    TestUtil.createNodePair().flatMap {
+    BitcoindRpcTestUtil.createNodePair().flatMap {
       case (client1, client2) =>
         client1.setBan(loopBack, "add").flatMap { _ =>
           client1.listBanned.flatMap { list =>
@@ -276,7 +277,7 @@ class BitcoindRpcClientTest
 
             client1.setBan(loopBack, "remove").flatMap { _ =>
               client1.listBanned.flatMap { newList =>
-                TestUtil.deleteNodePair(client1, client2)
+                BitcoindRpcTestUtil.deleteNodePair(client1, client2)
                 assert(newList.isEmpty)
               }
             }
@@ -286,7 +287,7 @@ class BitcoindRpcClientTest
   }
 
   it should "be able to clear banned subnets" in {
-    TestUtil.createNodePair().flatMap {
+    BitcoindRpcTestUtil.createNodePair().flatMap {
       case (client1, client2) =>
         client1.setBan(URI.create("http://127.0.0.1"), "add").flatMap { _ =>
           client1.setBan(URI.create("http://127.0.0.2"), "add").flatMap { _ =>
@@ -295,7 +296,7 @@ class BitcoindRpcClientTest
 
               client1.clearBanned().flatMap { _ =>
                 client1.listBanned.flatMap { newList =>
-                  TestUtil.deleteNodePair(client1, client2)
+                  BitcoindRpcTestUtil.deleteNodePair(client1, client2)
                   assert(newList.isEmpty)
                 }
               }
@@ -306,10 +307,10 @@ class BitcoindRpcClientTest
   }
 
   it should "be able to submit a new block" in {
-    TestUtil.createNodePair().flatMap {
+    BitcoindRpcTestUtil.createNodePair().flatMap {
       case (client1, client2) =>
         client1.disconnectNode(client2.getDaemon.uri).flatMap { _ =>
-          TestUtil.awaitDisconnected(client1, client2)
+          BitcoindRpcTestUtil.awaitDisconnected(client1, client2)
           client2.generate(1).flatMap { hash =>
             client2.getBlockRaw(hash.head).flatMap { block =>
               client1.submitBlock(block).flatMap { _ =>
@@ -318,7 +319,7 @@ class BitcoindRpcClientTest
                     assert(count == count2)
                     client1.getBlockHash(count).flatMap { hash1 =>
                       client2.getBlockHash(count).flatMap { hash2 =>
-                        TestUtil.deleteNodePair(client1, client2)
+                        BitcoindRpcTestUtil.deleteNodePair(client1, client2)
                         assert(hash1 == hash2)
                       }
                     }
@@ -332,12 +333,12 @@ class BitcoindRpcClientTest
   }
 
   it should "be able to mark a block as precious" in {
-    TestUtil.createNodePair().flatMap {
+    BitcoindRpcTestUtil.createNodePair().flatMap {
       case (client1, client2) =>
 
         client1.disconnectNode(client2.getDaemon.uri).flatMap { _ =>
 
-          TestUtil.awaitDisconnected(client1, client2)
+          BitcoindRpcTestUtil.awaitDisconnected(client1, client2)
 
           client1.generate(1).flatMap { blocks1 =>
 
@@ -356,7 +357,7 @@ class BitcoindRpcClientTest
 
                     //make sure the block was propogated to client2
                     RpcUtil.awaitConditionF(
-                      conditionF = () => TestUtil.hasSeenBlock(client2, bestHash1))
+                      conditionF = () => BitcoindRpcTestUtil.hasSeenBlock(client2, bestHash1))
 
                     val precious = client2.preciousBlock(bestHash1)
 
@@ -366,7 +367,7 @@ class BitcoindRpcClientTest
                     }
 
                     client2BestBlock.map { newBestHash =>
-                      TestUtil.deleteNodePair(client1, client2)
+                      BitcoindRpcTestUtil.deleteNodePair(client1, client2)
                       assert(newBestHash == bestHash1)
                     }
                   }
@@ -1687,7 +1688,7 @@ class BitcoindRpcClientTest
 
   it should "be able to add and remove a node" in {
     otherClient.addNode(walletClient.getDaemon.uri, "add").flatMap { _ =>
-      TestUtil.awaitConnection(otherClient, walletClient)
+      BitcoindRpcTestUtil.awaitConnection(otherClient, walletClient)
       otherClient.getAddedNodeInfo(walletClient.getDaemon.uri).flatMap { info =>
         assert(info.length == 1)
         assert(info.head.addednode == walletClient.getDaemon.uri)
@@ -1704,12 +1705,12 @@ class BitcoindRpcClientTest
 
   it should "be able to add and disconnect a node" in {
     otherClient.addNode(walletClient.getDaemon.uri, "add").flatMap { _ =>
-      TestUtil.awaitConnection(otherClient, walletClient)
+      BitcoindRpcTestUtil.awaitConnection(otherClient, walletClient)
       otherClient.getAddedNodeInfo(walletClient.getDaemon.uri).flatMap { info =>
         assert(info.head.connected.contains(true))
 
         otherClient.disconnectNode(walletClient.getDaemon.uri).flatMap { _ =>
-          TestUtil.awaitDisconnected(otherClient, walletClient)
+          BitcoindRpcTestUtil.awaitDisconnected(otherClient, walletClient)
           otherClient.getAddedNodeInfo(walletClient.getDaemon.uri).map {
             newInfo =>
               assert(newInfo.head.connected.contains(false))
@@ -1724,13 +1725,13 @@ class BitcoindRpcClientTest
     otherClient.stop().map(logger.info)
     walletClient.stop().map(logger.info)
     pruneClient.stop().map(logger.info)
-    if (TestUtil.deleteTmpDir(client.getDaemon.authCredentials.datadir))
+    if (BitcoindRpcTestUtil.deleteTmpDir(client.getDaemon.authCredentials.datadir))
       logger.info("Temp bitcoin directory deleted")
-    if (TestUtil.deleteTmpDir(otherClient.getDaemon.authCredentials.datadir))
+    if (BitcoindRpcTestUtil.deleteTmpDir(otherClient.getDaemon.authCredentials.datadir))
       logger.info("Temp bitcoin directory deleted")
-    if (TestUtil.deleteTmpDir(walletClient.getDaemon.authCredentials.datadir))
+    if (BitcoindRpcTestUtil.deleteTmpDir(walletClient.getDaemon.authCredentials.datadir))
       logger.info("Temp bitcoin directory deleted")
-    if (TestUtil.deleteTmpDir(pruneClient.getDaemon.authCredentials.datadir))
+    if (BitcoindRpcTestUtil.deleteTmpDir(pruneClient.getDaemon.authCredentials.datadir))
       logger.info("Temp bitcoin directory deleted")
 
     Await.result(system.terminate(), 10.seconds)

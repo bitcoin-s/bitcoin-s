@@ -27,6 +27,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
   def authCredentials(
     uri: URI,
     rpcUri: URI,
+    zmqPort: Int,
     pruneMode: Boolean): BitcoindAuthCredentials = {
     val d = "/tmp/" + randomDirName
     val f = new java.io.File(d)
@@ -45,9 +46,17 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     pw.write("debug=1\n")
     pw.write("regtest=1\n")
     pw.write("walletbroadcast=0\n")
+
+    pw.write(s"zmqpubhashtx=tcp://127.0.0.1:${zmqPort}\n")
+    pw.write(s"zmqpubhashblock=tcp://127.0.0.1:${zmqPort}\n")
+    pw.write(s"zmqpubrawtx=tcp://127.0.0.1:${zmqPort}\n")
+    pw.write(s"zmqpubrawblock=tcp://127.0.0.1:${zmqPort}\n")
+
     if (pruneMode) {
+      logger.info(s"Creating pruned node for ${f.getAbsolutePath}")
       pw.write("prune=1\n")
     }
+
     pw.close()
     BitcoindAuthCredentials(username, pass, rpcUri.getPort, f)
   }
@@ -57,14 +66,19 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
   def instance(
     port: Int = randomPort,
     rpcPort: Int = randomPort,
+    zmqPort: Int = randomPort,
     pruneMode: Boolean = false): BitcoindInstance = {
     val uri = new URI("http://localhost:" + port)
     val rpcUri = new URI("http://localhost:" + rpcPort)
-    BitcoindInstance(
-      network,
-      uri,
-      rpcUri,
-      authCredentials(uri, rpcUri, pruneMode))
+    val auth = authCredentials(uri, rpcUri, zmqPort, pruneMode)
+    val instance = BitcoindInstance(
+      network = network,
+      uri = uri,
+      rpcUri = rpcUri,
+      authCredentials = auth,
+      zmqPortOpt = Some(zmqPort))
+
+    instance
   }
 
   def randomPort: Int = {
@@ -238,6 +252,28 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
 
     p.future
   }
+
+  def startedBitcoindRpcClient(instance: BitcoindInstance = BitcoindRpcTestUtil.instance())(implicit system: ActorSystem): BitcoindRpcClient = {
+    implicit val ec = system.dispatcher
+    //start the bitcoind instance so eclair can properly use it
+    val rpc = new BitcoindRpcClient(instance)(system)
+    rpc.start()
+
+    logger.debug(s"Starting bitcoind at ${instance.authCredentials.datadir}")
+    RpcUtil.awaitServer(rpc)
+
+    val blocksToGenerate = 102
+    //fund the wallet by generating 102 blocks, need this to get over coinbase maturity
+    val blockGen = rpc.generate(blocksToGenerate)
+
+    def isBlocksGenerated(): Future[Boolean] = {
+      rpc.getBlockCount.map(_ >= blocksToGenerate)
+    }
+
+    RpcUtil.awaitConditionF(isBlocksGenerated)
+
+    rpc
+  }
 }
 
-object TestUtil extends BitcoindRpcTestUtil
+object BitcoindRpcTestUtil extends BitcoindRpcTestUtil
