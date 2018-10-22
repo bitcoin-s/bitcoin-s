@@ -36,13 +36,4 @@ object BitcoindInstance {
     zmqPortOpt: Option[Int]): BitcoindInstance = {
     BitcoindInstanceImpl(network, uri, rpcUri, authCredentials, zmqPortOpt)
   }
-
-  /** Create a bitcoind instance with no zmq port specified */
-  def apply(
-    network: NetworkParameters,
-    uri: URI,
-    rpcUri: URI,
-    authCredentials: BitcoindAuthCredentials): BitcoindInstance = {
-    BitcoindInstance(network, uri, rpcUri, authCredentials, None)
-  }
 }

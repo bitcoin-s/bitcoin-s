@@ -12,6 +12,7 @@ import org.bitcoins.core.script.result.ScriptOk
 import org.bitcoins.core.serializers.transaction.RawBaseTransactionParser
 import org.bitcoins.core.util.{ BitcoinSLogger, BitcoinSUtil, CryptoUtil, TestUtil }
 import org.scalatest.{ FlatSpec, MustMatchers }
+import org.slf4j.LoggerFactory
 import spray.json._
 
 import scala.io.Source
@@ -20,7 +21,7 @@ import scala.io.Source
  * Created by chris on 7/14/15.
  */
 class TransactionTest extends FlatSpec with MustMatchers {
-  private val logger = BitcoinSLogger.logger
+  private val logger = LoggerFactory.getLogger(this.getClass.getSimpleName)
   "Transaction" must "derive the correct txid from the transaction contents" in {
 
     //https://btc.blockr.io/api/v1/tx/raw/cddda897b0e9322937ee1f4fd5d6147d60f04a0f4d3b461e4f87066ac3918f2a
