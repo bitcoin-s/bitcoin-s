@@ -22,7 +22,6 @@ object CoreTestCaseProtocol extends DefaultJsonProtocol {
   implicit object CoreTestCaseFormatter extends RootJsonFormat[Option[CoreTestCase]] {
 
     override def read(value: JsValue): Option[CoreTestCase] = {
-      logger.debug("Test case: " + value)
       val jsArray: JsArray = value match {
         case array: JsArray => array
         case _ => throw new RuntimeException("Core test case must be in the format of js array")
@@ -39,7 +38,6 @@ object CoreTestCaseProtocol extends DefaultJsonProtocol {
         val scriptSignatureBytes: ByteVector = parseScriptSignature(elements.head)
         val scriptSignature: ScriptSignature = ScriptSignature(scriptSignatureBytes)
         val flags = elements(2).convertTo[String]
-        logger.info("Result: " + elements(3).convertTo[String])
         val expectedResult = ScriptResult(elements(3).convertTo[String])
         Some(CoreTestCaseImpl(scriptSignature, scriptPubKey, flags,
           expectedResult, "", elements.toString, None))
@@ -54,7 +52,6 @@ object CoreTestCaseProtocol extends DefaultJsonProtocol {
         val scriptSignatureBytes: ByteVector = parseScriptSignature(elements(1))
         val scriptSignature: ScriptSignature = ScriptSignature(scriptSignatureBytes)
         val flags = elements(3).convertTo[String]
-        logger.info("Result: " + elements(4).convertTo[String])
         val expectedResult = ScriptResult(elements(4).convertTo[String])
         Some(CoreTestCaseImpl(scriptSignature, scriptPubKey, flags,
           expectedResult, "", elements.toString, Some(witness, amount)))
@@ -64,7 +61,6 @@ object CoreTestCaseProtocol extends DefaultJsonProtocol {
         val scriptSignatureBytes: ByteVector = parseScriptSignature(elements.head)
         val scriptSignature: ScriptSignature = ScriptSignature(scriptSignatureBytes)
         val flags = elements(2).convertTo[String]
-        logger.info("Result: " + elements(3).convertTo[String])
         val expectedResult = ScriptResult(elements(3).convertTo[String])
         val comments = elements(4).convertTo[String]
         Some(CoreTestCaseImpl(scriptSignature, scriptPubKey, flags,
@@ -79,7 +75,6 @@ object CoreTestCaseProtocol extends DefaultJsonProtocol {
         val scriptSignatureBytes: ByteVector = parseScriptSignature(elements(1))
         val scriptSignature: ScriptSignature = ScriptSignature(scriptSignatureBytes)
         val flags = elements(3).convertTo[String]
-        logger.info("Result: " + elements(4).convertTo[String])
         val expectedResult = ScriptResult(elements(4).convertTo[String])
         val comments = elements(5).convertTo[String]
         Some(CoreTestCaseImpl(scriptSignature, scriptPubKey, flags,

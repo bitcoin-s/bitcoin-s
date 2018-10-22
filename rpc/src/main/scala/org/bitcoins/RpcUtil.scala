@@ -1,4 +1,4 @@
-package org.bitcoins.rpc
+package org.bitcoins
 
 import akka.actor.ActorSystem
 import org.bitcoins.core.util.BitcoinSLogger
