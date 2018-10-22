@@ -22,7 +22,6 @@ object CoreTestCaseProtocol extends DefaultJsonProtocol {
   implicit object CoreTestCaseFormatter extends RootJsonFormat[Option[CoreTestCase]] {
 
     override def read(value: JsValue): Option[CoreTestCase] = {
-      logger.debug("Test case: " + value)
       val jsArray: JsArray = value match {
         case array: JsArray => array
         case _ => throw new RuntimeException("Core test case must be in the format of js array")

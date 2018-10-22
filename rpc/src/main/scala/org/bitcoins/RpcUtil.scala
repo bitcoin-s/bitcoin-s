@@ -1,4 +1,4 @@
-package org.bitcoins.rpc
+package org.bitcoins
 
 import akka.actor.ActorSystem
 import org.bitcoins.core.util.BitcoinSLogger
@@ -12,7 +12,6 @@ trait RpcUtil extends BitcoinSLogger {
   private def retryRunnable(condition: => Boolean, p: Promise[Boolean]): Runnable = new Runnable {
     override def run(): Unit = {
       p.success(condition)
-      ()
     }
   }
 
@@ -46,9 +45,9 @@ trait RpcUtil extends BitcoinSLogger {
   // Has a different name so that default values are permitted
   private def retryUntilSatisfiedWithCounter(
     conditionF: () => Future[Boolean],
-    duration: FiniteDuration,
+    duration: FiniteDuration = 100.milliseconds,
     counter: Int = 0,
-    maxTries: Int)(implicit system: ActorSystem): Future[Unit] = {
+    maxTries: Int = 50)(implicit system: ActorSystem): Future[Unit] = {
 
     implicit val ec = system.dispatcher
 
@@ -59,6 +58,7 @@ trait RpcUtil extends BitcoinSLogger {
       } else if (counter == maxTries) {
         Future.failed(new RuntimeException("Condition timed out"))
       } else {
+
         val p = Promise[Boolean]()
         val runnable = retryRunnable(condition, p)
 

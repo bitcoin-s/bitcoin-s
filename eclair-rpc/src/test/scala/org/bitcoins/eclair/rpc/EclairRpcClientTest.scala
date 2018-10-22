@@ -4,32 +4,30 @@ import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import org.bitcoins.core.currency.{ CurrencyUnit, Satoshis }
 import org.bitcoins.core.number.Int64
-import org.bitcoins.core.protocol.ln.{ NanoBitcoins, PicoBitcoins }
 import org.bitcoins.core.protocol.ln.channel.{ ChannelId, ChannelState }
+import org.bitcoins.core.protocol.ln.{ NanoBitcoins, PicoBitcoins }
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.eclair.rpc.client.EclairRpcClient
 import org.bitcoins.eclair.rpc.json._
 import org.bitcoins.eclair.rpc.network.NodeId
-import org.bitcoins.rpc.RpcUtil
+import org.bitcoins.rpc.BitcoindRpcTestUtil
 import org.bitcoins.rpc.client.BitcoindRpcClient
 import org.scalatest.{ Assertion, AsyncFlatSpec, BeforeAndAfterAll }
 
-import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration.DurationInt
+import scala.concurrent.{ Await, Future }
 
 class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
 
   implicit val system = ActorSystem("EclairRpcClient")
   implicit val m = ActorMaterializer.create(system)
   implicit val ec = m.executionContext
-  implicit val bitcoinNp = EclairTestUtil.bitcoinNetwork
+  implicit val bitcoinNp = EclairTestUtil.network
 
   val logger = BitcoinSLogger.logger
 
-  val bitcoindInstance = EclairTestUtil.startedBitcoindInstance()
-  val bitcoindRpc = new BitcoindRpcClient(bitcoindInstance)
-
-  val (client, otherClient) = EclairTestUtil.createNodePair(bitcoindInstance)
+  val bitcoindRpcClient = BitcoindRpcTestUtil.startedBitcoindRpcClient()
+  val (client, otherClient) = EclairTestUtil.createNodePair(Some(bitcoindRpcClient))
 
   behavior of "RpcClient"
 
@@ -172,7 +170,7 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
 
   private def hasConnection(client: EclairRpcClient, nodeId: NodeId): Future[Assertion] = {
 
-    val hasPeersF = client.peers.map(_.nonEmpty)
+    val hasPeersF = client.getPeers.map(_.nonEmpty)
 
     val hasPeersAssertF = hasPeersF.map(h => assert(h))
 
@@ -201,6 +199,8 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
     client2: EclairRpcClient,
     amount: CurrencyUnit = Satoshis(Int64(1000000))): Future[ChannelId] = {
 
+    val bitcoindRpc = EclairTestUtil.getBitcoindRpc(client1)
+
     val nodeId2F: Future[NodeId] = client2.getInfo.map(_.nodeId)
 
     val channelIdF: Future[ChannelId] = nodeId2F.flatMap(nid2 => client1.open(nid2, amount))
@@ -222,9 +222,8 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
   }
 
   override def afterAll(): Unit = {
-    val s1 = client.stop()
+    val s1 = EclairTestUtil.shutdown(client)
     val s2 = otherClient.stop()
-    val s3 = bitcoindRpc.stop()
     Await.result(system.terminate(), 10.seconds)
   }
 }

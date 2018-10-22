@@ -10,6 +10,7 @@ import org.bitcoins.core.script.interpreter.testprotocol.CoreTestCase
 import org.bitcoins.core.script.interpreter.testprotocol.CoreTestCaseProtocol._
 import org.bitcoins.core.util._
 import org.scalatest.{ FlatSpec, MustMatchers }
+import org.slf4j.LoggerFactory
 import spray.json._
 
 import scala.io.Source
@@ -18,7 +19,7 @@ import scala.util.Try
  * Created by chris on 1/6/16.
  */
 class ScriptInterpreterTest extends FlatSpec with MustMatchers {
-  private def logger = BitcoinSLogger.logger
+  private val logger = LoggerFactory.getLogger(this.getClass.getSimpleName)
   "ScriptInterpreter" must "evaluate all the scripts from the bitcoin core script_tests.json" in {
 
     val source = Source.fromURL(getClass.getResource("/script_tests.json"))

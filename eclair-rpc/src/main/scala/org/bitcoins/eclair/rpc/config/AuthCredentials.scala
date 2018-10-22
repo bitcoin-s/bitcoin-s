@@ -2,7 +2,7 @@ package org.bitcoins.eclair.rpc.config
 
 import java.io.File
 
-import com.typesafe.config.Config
+import com.typesafe.config.{ Config, ConfigFactory }
 import org.bitcoins.rpc.config.BitcoindAuthCredentials
 
 sealed trait EclairAuthCredentials {
@@ -34,6 +34,15 @@ sealed trait EclairAuthCredentials {
 
   /** The port for eclair's rpc client */
   def port: Int
+
+  def copyWithDatadir(datadir: File): EclairAuthCredentials = {
+    EclairAuthCredentials(
+      username = username,
+      password = password,
+      bitcoinAuthOpt = bitcoinAuthOpt,
+      port = port,
+      datadir = Some(datadir))
+  }
 }
 
 object EclairAuthCredentials {
@@ -61,6 +70,13 @@ object EclairAuthCredentials {
     AuthCredentialsImpl(username, password, bitcoinAuthOpt, port, datadir)
   }
 
+  def fromDatadir(datadir: File): EclairAuthCredentials = {
+    val confFile = new File(datadir.getAbsolutePath + "/eclair.conf")
+    val config = ConfigFactory.parseFile(confFile)
+    val auth = fromConfig(config)
+    auth.copyWithDatadir(datadir = datadir)
+  }
+
   /**
    * Parses a config in the format of this to a [[EclairAuthCredentials]]
    * [[https://github.com/ACINQ/eclair/blob/master/eclair-core/src/main/resources/reference.conf]]
@@ -68,12 +84,14 @@ object EclairAuthCredentials {
    * @return
    */
   def fromConfig(config: Config): EclairAuthCredentials = {
-    //does eclair not have a username field??
-    val username = config.getString("eclair.alias")
-    val password = config.getString("eclair.api.password")
+
     val bitcoindUsername = config.getString("eclair.bitcoind.rpcuser")
     val bitcoindPassword = config.getString("eclair.bitcoind.rpcpassword")
     val bitcoindRpcPort = config.getInt("eclair.bitcoind.rpcport")
+
+    //does eclair not have a username field??
+    val username = config.getString("eclair.alias")
+    val password = config.getString("eclair.api.password")
     val eclairRpcPort = config.getInt("eclair.api.port")
 
     val bitcoindAuth = {
@@ -89,4 +107,5 @@ object EclairAuthCredentials {
       bitcoinAuthOpt = Some(bitcoindAuth),
       port = eclairRpcPort)
   }
+
 }

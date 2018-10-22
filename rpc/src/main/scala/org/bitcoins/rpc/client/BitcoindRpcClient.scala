@@ -29,7 +29,7 @@ import scala.concurrent.{ Await, ExecutionContext, Future }
 import scala.sys.process._
 import scala.util.Try
 
-class BitcoindRpcClient(instance: BitcoindInstance)(
+class BitcoindRpcClient(val instance: BitcoindInstance)(
   implicit
   system: ActorSystem) {
   private val resultKey = "result"
@@ -66,6 +66,23 @@ class BitcoindRpcClient(instance: BitcoindInstance)(
         duration = 1.seconds))
 
     await.isSuccess
+  }
+
+  def isConnected(): Future[Boolean] = {
+    val request = buildRequest(instance, "ping", JsArray.empty)
+    val responseF = sendRequest(request)
+    responseF.map(r => logger.debug(s"response isConnected $r"))
+    val payloadF: Future[JsValue] = responseF.flatMap(getPayload)
+
+    // Ping successful if no error can be parsed from the payload
+    val result: Future[Boolean] = payloadF.map { payload =>
+      (payload \ errorKey).validate[RpcError] match {
+        case res: JsSuccess[RpcError] => false
+        case res: JsError => true
+      }
+    }
+
+    result
   }
 
   def abandonTransaction(txid: DoubleSha256Digest): Future[Unit] = {
