@@ -139,9 +139,7 @@ trait EclairTestUtil extends BitcoinSLogger {
     val randInstance = randomEclairInstance(bitcoindRpc)
     val eclairRpc = new EclairRpcClient(randInstance)
     eclairRpc.start()
-    RpcUtil.awaitCondition(
-      eclairRpc.isStarted,
-      duration = 1.seconds)
+    RpcUtil.awaitCondition(eclairRpc.isStarted)
 
     eclairRpc
   }
@@ -186,7 +184,7 @@ trait EclairTestUtil extends BitcoinSLogger {
       val chanF = client.channel(chanId)
       chanF.map { chan =>
         if (!(chan.state == state)) {
-          logger.debug(s"ChanId ${chanId} has not entered ${state} yet. Currently in ${chan.state}")
+          logger.debug(s"ChainId ${chanId} has not entered ${state} yet. Currently in ${chan.state}")
         }
         chan.state == state
       }(system.dispatcher)
@@ -288,6 +286,7 @@ trait EclairTestUtil extends BitcoinSLogger {
           channelFlags = None)
       }
     }
+
     val gen = fundedChannelIdF.flatMap(_ => bitcoindRpcClient.generate(6))
 
     val opened = {
