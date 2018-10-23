@@ -45,7 +45,6 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
   it should "be able to list an existing peer and isConnected must be true" in {
     //test assumes that a connection to a peer was made in `beforeAll`
     val otherClientNodeIdF = otherClient.getInfo.map(_.nodeId)
-
     otherClientNodeIdF.flatMap(nid => hasConnection(client, nid))
   }
 

@@ -75,8 +75,8 @@ object JsonReaders {
   private def parsePaymentReq(obj: JsObject): JsResult[PaymentRequest] = {
     val prefix = obj("prefix").validate[String].get
     val amountOpt = obj("amount") match {
-      case o: JsObject => o("amount").validate[Long].asOpt
-      case x @ (_: JsArray | _: JsNumber | _: JsString | _: JsBoolean | JsNull) => None
+      case n: JsNumber => Some(n.value.toLongExact)
+      case x @ (_: JsArray | _: JsNumber | _: JsString | _: JsBoolean | _: JsObject | JsNull) => None
     }
     val timestamp = obj("timestamp").validate[Long].get
     val nodeId = obj("nodeId").validate[NodeId].get

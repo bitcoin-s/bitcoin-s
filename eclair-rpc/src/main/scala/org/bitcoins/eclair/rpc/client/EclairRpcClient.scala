@@ -479,7 +479,8 @@ class EclairRpcClient(val instance: EclairInstance)(implicit system: ActorSystem
 
   private def pathToEclairJar: String = {
     val path = System.getenv("ECLAIR_PATH")
-    val eclairV = "/eclair-node-0.2-beta5-8aa51f4.jar"
+    val eclairV = "/eclair-node-0.2-beta8-52821b8.jar"
+
     path + eclairV
   }
 

@@ -36,7 +36,7 @@ install:
   - ./configure --enable-jni --enable-experimental --enable-module-ecdh
   - sudo make install
   - cd ../
-  - wget https://github.com/ACINQ/eclair/releases/download/v0.2-beta5/eclair-node-0.2-beta5-8aa51f4.jar
+  - wget https://github.com/ACINQ/eclair/releases/download/v0.2-beta8/eclair-node-0.2-beta8-52821b8.jar
   - export ECLAIR_PATH=$(pwd)
 
 script:
