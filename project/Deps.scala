@@ -4,19 +4,20 @@ object Deps {
   object V {
     val bouncyCastle = "1.55"
     val logback = "1.0.13"
-    val scalacheck = "1.13.4"
+    val scalacheck = "1.14.0"
     val scalaTest = "3.0.5"
     val slf4j = "1.7.5"
     val spray = "1.3.2"
     val zeromq = "0.4.3"
-    val akkav = "10.1.1"
-    val akkaStreamv = "2.5.12"
-    val playv = "2.6.9"
+    val akkav = "10.1.5"
+    val akkaStreamv = "2.5.17"
+    val playv = "2.6.10"
+    val scodecV = "1.1.6"
   }
 
   object Compile {
     val bouncycastle = "org.bouncycastle" % "bcprov-jdk15on" % V.bouncyCastle
-    val scodec = "org.scodec" %% "scodec-bits" % "1.1.5"
+    val scodec = "org.scodec" %% "scodec-bits" % V.scodecV
     val slf4j = "org.slf4j" % "slf4j-api" % V.slf4j % "provided"
     val zeromq = "org.zeromq" % "jeromq" % V.zeromq
     val akkaHttp = "com.typesafe.akka" %% "akka-http" % V.akkav
