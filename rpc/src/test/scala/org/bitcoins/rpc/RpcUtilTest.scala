@@ -101,7 +101,7 @@ class RpcUtilTest extends AsyncFlatSpec with BeforeAndAfterAll {
     implicit val m: ActorMaterializer = ActorMaterializer.create(system)
     implicit val ec = m.executionContext
 
-    val instance = TestUtil.instance()
+    val instance = BitcoindRpcTestUtil.instance()
     val client = new BitcoindRpcClient(instance)
     client.start()
     RpcUtil.awaitCondition(client.isStarted)
