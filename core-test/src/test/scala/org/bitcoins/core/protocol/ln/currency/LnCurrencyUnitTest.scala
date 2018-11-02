@@ -72,7 +72,7 @@ class LnCurrencyUnitTest extends FlatSpec with MustMatchers {
 
   it must "have the correct maximum and minimum number representation for NanoBitcoins" in {
     NanoBitcoins.max must be(NanoBitcoins(9223372036854775L))
-    NanoBitcoins.min must be(NanoBitcoins(-9223372036854775L))
+    NanoBitcoins.min must be(NanoBitcoins(-9223372036854775L)
   }
 
   it must "have the correct maximum and minimum number representation for PicoBitcoins" in {
@@ -83,11 +83,11 @@ class LnCurrencyUnitTest extends FlatSpec with MustMatchers {
   it must "round pico bitcoins to satoshis correctly" in {
     PicoBitcoins.one.toSatoshis must be(Satoshis.zero)
 
-    PicoBitcoins(999).toSatoshis must be(Satoshis.zero)
+    PicoBitcoins(9999).toSatoshis must be(Satoshis.zero)
 
-    PicoBitcoins(1000).toSatoshis must be(Satoshis.one)
+    PicoBitcoins(10000).toSatoshis must be(Satoshis.one)
 
-    PicoBitcoins(1999).toSatoshis must be(Satoshis.one)
+    PicoBitcoins(19999).toSatoshis must be(Satoshis.one)
   }
 
   it must "convert units to the correct pico bitcoins amount" in {

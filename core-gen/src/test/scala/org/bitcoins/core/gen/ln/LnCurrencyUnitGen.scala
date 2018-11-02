@@ -1,5 +1,6 @@
 package org.bitcoins.core.gen.ln
 
+import org.bitcoins.core.gen.NumberGenerator
 import org.bitcoins.core.protocol.ln._
 import org.bitcoins.core.protocol.ln.currency._
 import org.scalacheck.Gen
@@ -39,6 +40,10 @@ trait LnCurrencyUnitGen {
   def negativeLnCurrencyUnit: Gen[LnCurrencyUnit] = {
     lnCurrencyUnit.suchThat(_ < LnCurrencyUnits.zero)
   }
+
+  def milliSatoshis: Gen[MilliSatoshis] = for {
+    i64 <- NumberGenerator.uInt64
+  } yield MilliSatoshis(i64.toBigInt)
 }
 
 object LnCurrencyUnitGen extends LnCurrencyUnitGen

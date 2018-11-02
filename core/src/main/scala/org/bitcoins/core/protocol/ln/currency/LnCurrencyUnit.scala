@@ -201,8 +201,9 @@ object PicoBitcoins extends BaseNumbers[PicoBitcoins] {
 }
 
 object LnCurrencyUnits {
-
-  val zero: LnCurrencyUnit = PicoBitcoins(0)
+  val PICO_TO_SATOSHIS = 10000
+  val MSAT_TO_PICO = 10
+  val zero: LnCurrencyUnit = PicoBitcoins.zero
 
   /**
    * For information regarding the rounding of sub-Satoshi values, please visit:
@@ -210,8 +211,15 @@ object LnCurrencyUnits {
    */
   def toSatoshi(lnCurrencyUnits: LnCurrencyUnit): Satoshis = {
     val pico = lnCurrencyUnits.toPicoBitcoins
-    val sat = pico.toBigInt / 1000
+    val sat = pico.toBigInt / PICO_TO_SATOSHIS
     Satoshis(Int64(sat))
+  }
+
+  def fromMSat(msat: MilliSatoshis): PicoBitcoins = {
+    //msat are technically 10^-11
+    //while pico are 10^-12, so we need to convert
+    val underlying = msat.toBigInt * MSAT_TO_PICO
+    PicoBitcoins(underlying)
   }
 
   def fromEncodedString(input: String): Try[LnCurrencyUnit] = {

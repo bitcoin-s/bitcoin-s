@@ -1,5 +1,6 @@
 package org.bitcoins.core.protocol.ln.currency
 
+import org.bitcoins.core.gen.CurrencyUnitGenerator
 import org.scalacheck.Gen
 import org.scalatest.prop.PropertyChecks
 import org.scalatest.{ FlatSpec, MustMatchers }
@@ -45,6 +46,14 @@ class MilliSatoshisTest extends FlatSpec with MustMatchers {
       val lnCurrencyUnit = msat.toLnCurrencyUnit
 
       assert(expectedPico == lnCurrencyUnit)
+    }
+  }
+
+  it must "convert sat -> msat -> sat" in {
+    PropertyChecks.forAll(CurrencyUnitGenerator.positiveRealistic) { sat =>
+      val msat = MilliSatoshis(sat)
+      assert(msat.toSatoshis == sat)
+
     }
   }
 }
