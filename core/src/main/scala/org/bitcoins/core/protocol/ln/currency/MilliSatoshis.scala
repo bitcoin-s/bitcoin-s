@@ -1,10 +1,11 @@
 package org.bitcoins.core.protocol.ln.currency
 
-import org.bitcoins.core.number.BaseNumbers
+import org.bitcoins.core.number.UInt64
+import org.bitcoins.core.protocol.NetworkElement
 
 import scala.math.BigDecimal.RoundingMode
 
-sealed abstract class MilliSatoshis {
+sealed abstract class MilliSatoshis extends NetworkElement {
   protected def underlying: BigInt
 
   def toBigInt: BigInt = underlying
@@ -26,6 +27,28 @@ sealed abstract class MilliSatoshis {
     toLnCurrencyUnit != lnCurrencyUnit
   }
 
+  def >=(ln: LnCurrencyUnit): Boolean = {
+    toLnCurrencyUnit >= ln
+  }
+
+  def >(ln: LnCurrencyUnit): Boolean = {
+    toLnCurrencyUnit > ln
+  }
+
+  def <(ln: LnCurrencyUnit): Boolean = {
+    toLnCurrencyUnit < ln
+  }
+
+  def <=(ln: LnCurrencyUnit): Boolean = {
+    toLnCurrencyUnit <= ln
+  }
+
+  def toUInt64: UInt64 = {
+    UInt64(underlying)
+  }
+
+  override def bytes = toUInt64.bytes.reverse
+
 }
 
 object MilliSatoshis {
@@ -41,7 +64,7 @@ object MilliSatoshis {
 
   def fromPico(picoBitcoins: PicoBitcoins): MilliSatoshis = {
     val pico = picoBitcoins.toPicoBitcoinDecimal
-    // we need to divide by 10
+    // we need to divide by 10 to get to msat
     val msatDec = pico / BigDecimal(10)
 
     //now we need to round, we are going to round the same way round
