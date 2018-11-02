@@ -2,7 +2,8 @@ package org.bitcoins.core.gen.ln
 
 import org.bitcoins.core.gen.{ CryptoGenerators, NumberGenerator }
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.ln.{ PicoBitcoins, ShortChannelId }
+import org.bitcoins.core.protocol.ln.ShortChannelId
+import org.bitcoins.core.protocol.ln.currency.{ MilliSatoshis, PicoBitcoins }
 import org.bitcoins.core.protocol.ln.fee.{ FeeBaseMSat, FeeProportionalMillionths }
 import org.bitcoins.core.protocol.ln.routing.LnRoute
 import org.scalacheck.Gen
@@ -16,7 +17,7 @@ trait LnRouteGen {
 
   def feeBaseMSat: Gen[FeeBaseMSat] = for {
     //note that the feebase msat is only 4 bytes
-    p <- Gen.choose(0, UInt32.max.toLong).map(PicoBitcoins(_))
+    p <- Gen.choose(0, UInt32.max.toLong).map(MilliSatoshis(_))
   } yield FeeBaseMSat(p)
 
   def feeProportionalMillionths: Gen[FeeProportionalMillionths] = for {

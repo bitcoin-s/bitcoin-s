@@ -1,8 +1,8 @@
 package org.bitcoins.core.gen
 
 import org.bitcoins.core.currency.{ Bitcoins, CurrencyUnit, CurrencyUnits, Satoshis }
-import org.bitcoins.core.number.{ Int32, Int64 }
-import org.bitcoins.core.protocol.ln._
+import org.bitcoins.core.number.Int64
+import org.bitcoins.core.protocol.ln.currency._
 import org.scalacheck.Gen
 
 /**

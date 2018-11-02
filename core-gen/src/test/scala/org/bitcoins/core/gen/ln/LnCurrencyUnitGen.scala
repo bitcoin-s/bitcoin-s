@@ -1,6 +1,7 @@
 package org.bitcoins.core.gen.ln
 
 import org.bitcoins.core.protocol.ln._
+import org.bitcoins.core.protocol.ln.currency._
 import org.scalacheck.Gen
 
 trait LnCurrencyUnitGen {

@@ -10,8 +10,9 @@ import akka.stream.ActorMaterializer
 import akka.util.ByteString
 import org.bitcoins.core.crypto.Sha256Digest
 import org.bitcoins.core.currency.CurrencyUnit
+import org.bitcoins.core.protocol.ln.LnInvoice
 import org.bitcoins.core.protocol.ln.channel.{ ChannelId, FundedChannelId }
-import org.bitcoins.core.protocol.ln.{ LnCurrencyUnit, LnCurrencyUnits, LnInvoice }
+import org.bitcoins.core.protocol.ln.currency.{ LnCurrencyUnit, MilliSatoshis }
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.util.BitcoinSUtil
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
@@ -38,15 +39,15 @@ class EclairRpcClient(val instance: EclairInstance)(implicit system: ActorSystem
 
   def getDaemon: EclairInstance = instance
 
-  def allChannels: Future[Vector[ChannelDesc]] = {
+  override def allChannels: Future[Vector[ChannelDesc]] = {
     eclairCall[Vector[ChannelDesc]]("allchannels")
   }
 
-  def allNodes: Future[Vector[NodeInfo]] = {
+  override def allNodes: Future[Vector[NodeInfo]] = {
     eclairCall[Vector[NodeInfo]]("allnodes")
   }
 
-  def allUpdates(
+  override def allUpdates(
     nodeIdOpt: Option[NodeId]): Future[Vector[ChannelUpdate]] = {
     val params = if (nodeIdOpt.isEmpty) List.empty else List(JsString(nodeIdOpt.get.toString))
     eclairCall[Vector[ChannelUpdate]]("allupdates", params)
@@ -57,7 +58,7 @@ class EclairRpcClient(val instance: EclairInstance)(implicit system: ActorSystem
   def allUpdates(nodeId: NodeId): Future[Vector[ChannelUpdate]] =
     allUpdates(Some(nodeId))
 
-  def channel(channelId: ChannelId): Future[ChannelResult] = {
+  override def channel(channelId: ChannelId): Future[ChannelResult] = {
     eclairCall[ChannelResult]("channel", List(JsString(channelId.hex)))
   }
 
@@ -67,16 +68,16 @@ class EclairRpcClient(val instance: EclairInstance)(implicit system: ActorSystem
     eclairCall[Vector[ChannelInfo]]("channels", params)
   }
 
-  def channels: Future[Vector[ChannelInfo]] = channels(None)
+  def channels(): Future[Vector[ChannelInfo]] = channels(None)
 
-  def channels(nodeId: NodeId): Future[Vector[ChannelInfo]] =
+  override def channels(nodeId: NodeId): Future[Vector[ChannelInfo]] =
     channels(Some(nodeId))
 
-  def checkInvoice(invoice: LnInvoice): Future[PaymentRequest] = {
+  override def checkInvoice(invoice: LnInvoice): Future[PaymentRequest] = {
     eclairCall[PaymentRequest]("checkinvoice", List(JsString(invoice.toString)))
   }
 
-  def checkPayment(invoiceOrHash: Either[LnInvoice, Sha256Digest]): Future[Boolean] = {
+  override def checkPayment(invoiceOrHash: Either[LnInvoice, Sha256Digest]): Future[Boolean] = {
 
     val string = {
       if (invoiceOrHash.isLeft) {
@@ -107,7 +108,7 @@ class EclairRpcClient(val instance: EclairInstance)(implicit system: ActorSystem
 
   def close(channelId: ChannelId): Future[String] = close(channelId, None)
 
-  def close(channelId: ChannelId, scriptPubKey: ScriptPubKey): Future[String] = {
+  override def close(channelId: ChannelId, scriptPubKey: ScriptPubKey): Future[String] = {
     close(channelId, Some(scriptPubKey))
   }
 
@@ -116,13 +117,13 @@ class EclairRpcClient(val instance: EclairInstance)(implicit system: ActorSystem
     connect(uri)
   }
 
-  def connect(uri: NodeUri): Future[String] = {
+  override def connect(uri: NodeUri): Future[String] = {
     logger.info(s"Connecting to $uri")
     eclairCall[String]("connect", List(JsString(uri.toString)))
   }
 
   // When types are introduced this can be two different functions
-  def findRoute(nodeIdOrInvoice: Either[NodeId, LnInvoice]): Future[Vector[String]] = {
+  override def findRoute(nodeIdOrInvoice: Either[NodeId, LnInvoice]): Future[Vector[String]] = {
     val str = {
       if (nodeIdOrInvoice.isLeft) {
         nodeIdOrInvoice.left.get.hex
@@ -133,11 +134,11 @@ class EclairRpcClient(val instance: EclairInstance)(implicit system: ActorSystem
     eclairCall[Vector[String]]("findroute", List(JsString(str)))
   }
 
-  def forceClose(channelId: ChannelId): Future[String] = {
+  override def forceClose(channelId: ChannelId): Future[String] = {
     eclairCall[String]("forceclose", List(JsString(channelId.hex)))
   }
 
-  def getInfo: Future[GetInfoResult] = {
+  override def getInfo: Future[GetInfoResult] = {
     val result = eclairCall[GetInfoResult]("getinfo")
     result
   }
@@ -155,17 +156,17 @@ class EclairRpcClient(val instance: EclairInstance)(implicit system: ActorSystem
     eclairCall[Vector[String]]("help")
   }
 
-  def isConnected(nodeId: NodeId): Future[Boolean] = {
+  override def isConnected(nodeId: NodeId): Future[Boolean] = {
     getPeers.map(_.exists(p => p.nodeId == nodeId && p.state == PeerState.CONNECTED))
   }
 
-  def open(
+  override def open(
     nodeId: NodeId,
     fundingSatoshis: CurrencyUnit,
-    pushMsat: Option[LnCurrencyUnit],
+    pushMsat: Option[MilliSatoshis],
     feerateSatPerByte: Option[SatoshisPerByte],
     channelFlags: Option[Byte]): Future[FundedChannelId] = {
-    val num = pushMsat.getOrElse(LnCurrencyUnits.zero).toPicoBitcoinDecimal
+    val num = pushMsat.getOrElse(MilliSatoshis.zero).toBigDecimal
     val pushMsatJson = JsNumber(num)
     val sat = fundingSatoshis.satoshis.toBigDecimal
 
@@ -205,14 +206,14 @@ class EclairRpcClient(val instance: EclairInstance)(implicit system: ActorSystem
   def open(
     nodeId: NodeId,
     fundingSatoshis: CurrencyUnit,
-    pushMsat: LnCurrencyUnit): Future[FundedChannelId] = {
+    pushMsat: MilliSatoshis): Future[FundedChannelId] = {
     open(nodeId, fundingSatoshis, Some(pushMsat), None, None)
   }
 
   def open(
     nodeId: NodeId,
     fundingSatoshis: CurrencyUnit,
-    pushMsat: LnCurrencyUnit,
+    pushMsat: MilliSatoshis,
     feerateSatPerByte: SatoshisPerByte): Future[FundedChannelId] = {
     open(nodeId, fundingSatoshis, Some(pushMsat), Some(feerateSatPerByte), None)
   }
@@ -220,7 +221,7 @@ class EclairRpcClient(val instance: EclairInstance)(implicit system: ActorSystem
   def open(
     nodeId: NodeId,
     fundingSatoshis: CurrencyUnit,
-    pushMsat: LnCurrencyUnit = LnCurrencyUnits.zero,
+    pushMsat: MilliSatoshis = MilliSatoshis.zero,
     feerateSatPerByte: SatoshisPerByte,
     channelFlags: Byte): Future[FundedChannelId] = {
     open(
@@ -244,7 +245,7 @@ class EclairRpcClient(val instance: EclairInstance)(implicit system: ActorSystem
       Some(channelFlags))
   }
 
-  def getPeers: Future[Vector[PeerInfo]] = {
+  override def getPeers: Future[Vector[PeerInfo]] = {
     eclairCall[Vector[PeerInfo]]("peers")
   }
 
@@ -252,17 +253,23 @@ class EclairRpcClient(val instance: EclairInstance)(implicit system: ActorSystem
     amountMsat: Option[LnCurrencyUnit],
     description: Option[String],
     expirySeconds: Option[Long]): Future[LnInvoice] = {
-    val params =
+    val msat = amountMsat.map(_.toMSat)
+
+    val params = {
       if (amountMsat.isEmpty) {
         List(JsString(description.getOrElse("")))
-      } else if (expirySeconds.isEmpty) {
-        List(JsNumber(amountMsat.get.toPicoBitcoinDecimal), JsString(description.getOrElse("")))
       } else {
-        List(
-          JsNumber(amountMsat.get.toPicoBitcoinDecimal),
-          JsString(description.getOrElse("")),
-          JsNumber(expirySeconds.get))
+        val amt = JsNumber(msat.get.toBigDecimal)
+        if (expirySeconds.isEmpty) {
+          List(amt, JsString(description.getOrElse("")))
+        } else {
+          List(
+            amt,
+            JsString(description.getOrElse("")),
+            JsNumber(expirySeconds.get))
+        }
       }
+    }
 
     val serializedF = eclairCall[String]("receive", params)
 
@@ -315,7 +322,7 @@ class EclairRpcClient(val instance: EclairInstance)(implicit system: ActorSystem
             //was received
             //we need to create a `PaymentSucceeded`
             val ps = PaymentSucceeded(
-              amountMsat = invoice.amount.get.toPicoBitcoins,
+              amountMsat = invoice.amount.get.toMSat,
               paymentHash = invoice.lnTags.paymentHash.hash,
               paymentPreimage = "",
               route = JsArray.empty)
