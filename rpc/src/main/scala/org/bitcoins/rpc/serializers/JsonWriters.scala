@@ -4,6 +4,7 @@ import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
+import org.bitcoins.core.protocol.ln.currency.MilliSatoshis
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.{ Transaction, TransactionInput }
 import org.bitcoins.core.util.BitcoinSUtil
@@ -50,5 +51,9 @@ object JsonWriters {
     override def writes(o: Map[K, V]): JsValue = {
       Json.toJson(o.map { case (k, v) => (keyString(k), v) })
     }
+  }
+
+  implicit object MilliSatoshisWrites extends Writes[MilliSatoshis] {
+    override def writes(o: MilliSatoshis): JsValue = JsNumber(o.toBigDecimal)
   }
 }
