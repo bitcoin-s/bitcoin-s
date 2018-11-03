@@ -1,7 +1,7 @@
 package org.bitcoins.eclair.rpc.json
 
-import org.bitcoins.core.protocol.ln.PicoBitcoins
 import org.bitcoins.core.protocol.ln.channel.{ ChannelState, FundedChannelId }
+import org.bitcoins.core.protocol.ln.currency.{ MilliSatoshis, PicoBitcoins }
 import org.bitcoins.eclair.rpc.network.{ NodeId, PeerState }
 import org.bitcoins.rpc.serializers.SerializerUtil
 import org.slf4j.LoggerFactory
@@ -26,6 +26,13 @@ object JsonReaders {
   implicit val picoBitcoinsReads: Reads[PicoBitcoins] = {
     Reads { jsValue: JsValue =>
       SerializerUtil.processJsNumberBigInt(PicoBitcoins.apply)(jsValue)
+    }
+  }
+
+  implicit val msatReads: Reads[MilliSatoshis] = {
+    Reads { jsValue: JsValue =>
+      SerializerUtil.processJsNumberBigInt(MilliSatoshis.apply)(jsValue)
+
     }
   }
 
@@ -75,7 +82,7 @@ object JsonReaders {
   private def parsePaymentReq(obj: JsObject): JsResult[PaymentRequest] = {
     val prefix = obj("prefix").validate[String].get
     val amountOpt = obj("amount") match {
-      case o: JsObject => o("amount").validate[Long].asOpt
+      case o: JsObject => o("amount").validate[MilliSatoshis].asOpt
       case x @ (_: JsArray | _: JsNumber | _: JsString | _: JsBoolean | JsNull) => None
     }
     val timestamp = obj("timestamp").validate[Long].get

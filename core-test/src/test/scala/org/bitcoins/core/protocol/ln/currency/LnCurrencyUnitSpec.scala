@@ -1,4 +1,4 @@
-package org.bitcoins.core.protocol.ln
+package org.bitcoins.core.protocol.ln.currency
 
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.gen.ln.LnCurrencyUnitGen
@@ -41,7 +41,7 @@ class LnCurrencyUnitSpec extends Properties("LnCurrencyUnitSpec") {
 
   property("Multiplicative identity for LnCurrencyUnits") =
     Prop.forAll(LnCurrencyUnitGen.lnCurrencyUnit) { lnUnit =>
-      lnUnit * LnCurrencyUnits.onePicoBTC == lnUnit
+      lnUnit * PicoBitcoins.one == lnUnit
     }
 
   property("Multiply two LnCurrencyUnit values") =
@@ -54,7 +54,7 @@ class LnCurrencyUnitSpec extends Properties("LnCurrencyUnitSpec") {
 
   property("Convert negative LnCurrencyUnit value to Satoshis") =
     Prop.forAll(LnCurrencyUnitGen.negativeLnCurrencyUnit) { lnUnit =>
-      lnUnit.toSatoshis == Satoshis.zero
+      lnUnit.toSatoshis <= Satoshis.zero
     }
 
   property("< & >=") =

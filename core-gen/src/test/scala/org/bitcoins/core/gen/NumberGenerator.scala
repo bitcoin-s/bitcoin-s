@@ -47,7 +47,9 @@ trait NumberGenerator {
    * Generates a number in the range 0 <= x < 2^^64
    * then wraps it in a UInt64
    */
-  def uInt64s: Gen[UInt64] = for {
+  def uInt64s: Gen[UInt64] = uInt64
+
+  def uInt64: Gen[UInt64] = for {
     bigInt <- bigIntsUInt64Range
   } yield UInt64(bigInt)
 

@@ -4,6 +4,7 @@ import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.number.{ UInt5, UInt8 }
 import org.bitcoins.core.protocol.{ HumanReadablePart, NetworkElement }
 import org.bitcoins.core.protocol.ln.LnParams._
+import org.bitcoins.core.protocol.ln.currency.{ LnCurrencyUnit, LnCurrencyUnits }
 import org.bitcoins.core.util.Bech32
 import org.slf4j.LoggerFactory
 import scodec.bits.ByteVector
