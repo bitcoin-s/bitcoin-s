@@ -2,7 +2,7 @@ package org.bitcoins.core.protocol.ln.fee
 
 import org.bitcoins.core.number.{ Int32, UInt32 }
 import org.bitcoins.core.protocol.NetworkElement
-import org.bitcoins.core.protocol.ln.{ LnCurrencyUnit, PicoBitcoins }
+import org.bitcoins.core.protocol.ln.currency.{ MilliSatoshis, PicoBitcoins }
 import scodec.bits.ByteVector
 
 /**
@@ -11,7 +11,7 @@ import scodec.bits.ByteVector
  * [[https://github.com/lightningnetwork/lightning-rfc/blob/master/07-routing-gossip.md#the-channel_update-message]]
  * [[https://github.com/lightningnetwork/lightning-rfc/blob/master/11-payment-encoding.md#on-mainnet-with-fallback-address-1rustyrx2oai4eyydpqgwvel62bbgqn9t-with-extra-routing-info-to-go-via-nodes-029e03a901b85534ff1e92c43c74431f7ce72046060fcf7a95c37e148f78c77255-then-039e03a901b85534ff1e92c43c74431f7ce72046060fcf7a95c37e148f78c77255]]
  */
-case class FeeBaseMSat(msat: PicoBitcoins) extends NetworkElement {
+case class FeeBaseMSat(msat: MilliSatoshis) extends NetworkElement {
   require(msat.toLong <= UInt32.max.toLong, s"Value too large for FeeBaseMSat ${msat}")
   require(msat.toLong >= 0, s"Value cannot be negative for FeeBaseMSat ${msat}")
 

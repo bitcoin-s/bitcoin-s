@@ -1,8 +1,8 @@
 package org.bitcoins.eclair.rpc.json
 
 import org.bitcoins.core.crypto.{ DoubleSha256Digest, ECDigitalSignature, Sha256Digest }
-import org.bitcoins.core.protocol.ln.PicoBitcoins
 import org.bitcoins.core.protocol.ln.channel.{ ChannelState, FundedChannelId }
+import org.bitcoins.core.protocol.ln.currency.{ LnCurrencyUnit, MilliSatoshis, PicoBitcoins }
 import org.bitcoins.eclair.rpc.network.{ NodeId, PeerState }
 import play.api.libs.json.{ JsArray, JsObject }
 
@@ -42,7 +42,7 @@ case class ChannelUpdate(
   flags: String,
   cltvExpiryDelta: Int,
   htlcMinimumMsat: Long,
-  feeBaseMsat: PicoBitcoins,
+  feeBaseMsat: MilliSatoshis,
   feeProportionalMillionths: Long)
 
 /* ChannelResult starts here, some of this may be useful but it seems that data is different at different times
@@ -165,7 +165,7 @@ case class ChannelResult(
 
 case class PaymentRequest(
   prefix: String,
-  amount: Option[Long],
+  amount: Option[MilliSatoshis],
   timestamp: Long,
   nodeId: NodeId,
   tags: Vector[JsObject],
@@ -174,7 +174,7 @@ case class PaymentRequest(
 
 sealed abstract class PaymentResult
 case class PaymentSucceeded(
-  amountMsat: PicoBitcoins,
+  amountMsat: MilliSatoshis,
   paymentHash: Sha256Digest,
   paymentPreimage: String,
   route: JsArray) extends PaymentResult
