@@ -72,7 +72,7 @@ class LnCurrencyUnitTest extends FlatSpec with MustMatchers {
 
   it must "have the correct maximum and minimum number representation for NanoBitcoins" in {
     NanoBitcoins.max must be(NanoBitcoins(9223372036854775L))
-    NanoBitcoins.min must be(NanoBitcoins(-9223372036854775L)
+    NanoBitcoins.min must be(NanoBitcoins(-9223372036854775L))
   }
 
   it must "have the correct maximum and minimum number representation for PicoBitcoins" in {
