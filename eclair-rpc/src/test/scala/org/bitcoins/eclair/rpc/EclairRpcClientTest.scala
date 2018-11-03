@@ -5,13 +5,12 @@ import akka.stream.ActorMaterializer
 import org.bitcoins.core.currency.{ CurrencyUnit, Satoshis }
 import org.bitcoins.core.number.Int64
 import org.bitcoins.core.protocol.ln.channel.{ ChannelId, ChannelState }
-import org.bitcoins.core.protocol.ln.{ NanoBitcoins, PicoBitcoins }
+import org.bitcoins.core.protocol.ln.currency.{ MicroBitcoins, MilliBitcoins, NanoBitcoins, PicoBitcoins }
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.eclair.rpc.client.EclairRpcClient
 import org.bitcoins.eclair.rpc.json._
 import org.bitcoins.eclair.rpc.network.NodeId
 import org.bitcoins.rpc.BitcoindRpcTestUtil
-import org.bitcoins.rpc.client.BitcoindRpcClient
 import org.scalatest.{ Assertion, AsyncFlatSpec, BeforeAndAfterAll }
 
 import scala.concurrent.duration.DurationInt
@@ -49,6 +48,74 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
     otherClientNodeIdF.flatMap(nid => hasConnection(client, nid))
   }
 
+  it should "be able to generate an invoice and get the same amount back" in {
+    val amt = PicoBitcoins(10) //this is the smallest unit we can use, 1 msat
+    val description = "bitcoin-s test case"
+    val expiry = (System.currentTimeMillis() / 1000)
+
+    val invoiceF = client.receive(
+      description = description,
+      amountMsat = amt,
+      expirySeconds = expiry)
+
+    val assert0: Future[Assertion] = {
+      invoiceF.map { i =>
+        assert(i.amount.get == amt)
+        assert(i.lnTags.description.get.string == description)
+        assert(i.lnTags.expiryTime.get.u32.toLong == expiry)
+      }
+    }
+
+    val amt1 = NanoBitcoins.one
+    val invoice1F = client.receive(
+      description = description,
+      amountMsat = amt1,
+      expirySeconds = expiry)
+
+    val assert1 = {
+      invoice1F.map { i =>
+        assert(i.amount.get == amt1)
+        assert(i.lnTags.description.get.string == description)
+        assert(i.lnTags.expiryTime.get.u32.toLong == expiry)
+      }
+    }
+
+    val amt2 = MicroBitcoins.one
+    val invoice2F = client.receive(
+      description = description,
+      amountMsat = amt2,
+      expirySeconds = expiry)
+
+    val assert2 = {
+      invoice2F.map { i =>
+        assert(i.amount.get == amt2)
+        assert(i.lnTags.description.get.string == description)
+        assert(i.lnTags.expiryTime.get.u32.toLong == expiry)
+
+      }
+    }
+
+    val amt3 = MilliBitcoins.one
+
+    val invoice3F = client.receive(
+      description = description,
+      amountMsat = amt3,
+      expirySeconds = expiry)
+
+    val assert3 = {
+      invoice3F.map { i =>
+        assert(i.amount.get == amt3)
+        assert(i.lnTags.description.get.string == description)
+        assert(i.lnTags.expiryTime.get.u32.toLong == expiry)
+      }
+    }
+
+    assert0.flatMap { _ =>
+      assert1.flatMap { _ =>
+        assert2.flatMap(_ => assert3)
+      }
+    }
+  }
   it should "be able to generate a payment invoice and then check that invoice" in {
     val amt = PicoBitcoins(1000) //1 satoshi
     val description = "bitcoin-s test case"
@@ -62,7 +129,7 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
     val paymentRequestF: Future[PaymentRequest] = invoiceF.flatMap(i => client.checkInvoice(i))
 
     paymentRequestF.map { paymentRequest =>
-      assert(paymentRequest.amount == Some(amt.toLong))
+      assert(paymentRequest.amount.get == amt)
       assert(paymentRequest.timestamp == expiry)
       assert(paymentRequest.description == description)
     }

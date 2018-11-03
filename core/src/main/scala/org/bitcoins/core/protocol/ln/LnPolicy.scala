@@ -1,6 +1,7 @@
 package org.bitcoins.core.protocol.ln
 
 import org.bitcoins.core.number.Int64
+import org.bitcoins.core.protocol.ln.currency.MilliBitcoins
 
 sealed abstract class LnPolicy {
 

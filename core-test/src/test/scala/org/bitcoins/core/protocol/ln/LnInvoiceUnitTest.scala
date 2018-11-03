@@ -5,6 +5,7 @@ import org.bitcoins.core.gen.ln.LnInvoiceGen
 import org.bitcoins.core.number.{ UInt32, UInt64, UInt8 }
 import org.bitcoins.core.protocol.{ Bech32Address, P2PKHAddress, P2SHAddress }
 import org.bitcoins.core.protocol.ln.LnParams.{ LnBitcoinMainNet, LnBitcoinTestNet }
+import org.bitcoins.core.protocol.ln.currency.{ MicroBitcoins, MilliBitcoins, MilliSatoshis, PicoBitcoins }
 import org.bitcoins.core.protocol.ln.fee.{ FeeBaseMSat, FeeProportionalMillionths }
 import org.bitcoins.core.protocol.ln.routing.LnRoute
 import org.bitcoins.core.util.CryptoUtil
@@ -177,14 +178,14 @@ class LnInvoiceUnitTest extends FlatSpec with MustMatchers with PropertyChecks {
     val route1 = LnRoute(
       pubkey = ECPublicKey.fromHex("029e03a901b85534ff1e92c43c74431f7ce72046060fcf7a95c37e148f78c77255"),
       shortChannelID = ShortChannelId.fromHex("0102030405060708"),
-      feeBaseMsat = FeeBaseMSat(PicoBitcoins.one),
+      feeBaseMsat = FeeBaseMSat(MilliSatoshis.one),
       feePropMilli = FeeProportionalMillionths(UInt32(20)),
       cltvExpiryDelta = 3)
 
     val route2 = LnRoute(
       pubkey = ECPublicKey.fromHex("039e03a901b85534ff1e92c43c74431f7ce72046060fcf7a95c37e148f78c77255"),
       shortChannelID = ShortChannelId.fromHex("030405060708090a"),
-      feeBaseMsat = FeeBaseMSat(PicoBitcoins(2)),
+      feeBaseMsat = FeeBaseMSat(MilliSatoshis(2)),
       feePropMilli = FeeProportionalMillionths(UInt32(30)),
       cltvExpiryDelta = 4)
 

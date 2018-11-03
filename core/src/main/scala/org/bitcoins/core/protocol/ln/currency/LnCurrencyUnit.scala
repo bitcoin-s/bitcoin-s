@@ -1,20 +1,19 @@
-package org.bitcoins.core.protocol.ln
+package org.bitcoins.core.protocol.ln.currency
 
 import org.bitcoins.core.currency.{ Bitcoins, Satoshis }
-import org.bitcoins.core.number.{ BaseNumbers, Int64, UInt5, UInt8 }
+import org.bitcoins.core.number.{ BaseNumbers, Int64, UInt5 }
 import org.bitcoins.core.protocol.NetworkElement
+import org.bitcoins.core.protocol.ln._
 import org.bitcoins.core.util.Bech32
 import scodec.bits.ByteVector
 
 import scala.math.BigDecimal.RoundingMode
-import scala.util.{ Failure, Success, Try }
+import scala.util.{ Failure, Try }
 
 sealed abstract class LnCurrencyUnit extends NetworkElement {
   type A
 
   def character: Char
-
-  def multiplier: BigDecimal
 
   def >=(ln: LnCurrencyUnit): Boolean = {
     toPicoBitcoinValue >= ln.toPicoBitcoinValue
@@ -61,19 +60,19 @@ sealed abstract class LnCurrencyUnit extends NetworkElement {
 
   def toBigInt: BigInt
 
-  def toLong: Long = toBigInt.toLong
+  def toLong: Long = toBigInt.bigInteger.longValueExact()
 
-  def toInt: Int = {
-    require(this.toBigInt >= Int.MinValue, "Number was too small for Int, got: " + underlying)
-    require(this.toBigInt <= Int.MaxValue, "Number was too big for Int, got: " + underlying)
-    toBigInt.toInt
-  }
+  def toInt: Int = toBigInt.bigInteger.intValueExact()
 
   protected def underlying: A
 
-  def toSatoshis: Satoshis
+  def toSatoshis: Satoshis = {
+    LnCurrencyUnits.toSatoshi(this)
+  }
 
-  def toPicoBitcoinValue: BigInt
+  def toPicoBitcoinValue: BigInt = {
+    toBigInt * toPicoBitcoinMultiplier
+  }
 
   def toPicoBitcoinDecimal: BigDecimal = {
     BigDecimal(toPicoBitcoinValue.bigInteger)
@@ -87,6 +86,8 @@ sealed abstract class LnCurrencyUnit extends NetworkElement {
     ByteVector(toEncodedString.map(_.toByte))
   }
 
+  def toMSat: MilliSatoshis = MilliSatoshis.fromPico(toPicoBitcoins)
+
   def toEncodedString: String = {
     toBigInt + character.toString()
   }
@@ -97,15 +98,10 @@ sealed abstract class MilliBitcoins extends LnCurrencyUnit {
 
   override def character: Char = 'm'
 
-  override def multiplier: BigDecimal = LnPolicy.milliMultiplier
-
   override def toPicoBitcoinMultiplier: Int = 1000000000
 
   override def toBigInt: A = underlying
 
-  override def toSatoshis: Satoshis = LnCurrencyUnits.toSatoshi(this)
-
-  override def toPicoBitcoinValue: BigInt = LnCurrencyUnits.toPicoBitcoinValue(this)
 }
 
 object MilliBitcoins extends BaseNumbers[MilliBitcoins] {
@@ -129,15 +125,10 @@ sealed abstract class MicroBitcoins extends LnCurrencyUnit {
 
   override def character: Char = 'u'
 
-  override def multiplier: BigDecimal = LnPolicy.microMultiplier
-
   override def toPicoBitcoinMultiplier: Int = 1000000
 
   override def toBigInt: A = underlying
 
-  override def toSatoshis: Satoshis = LnCurrencyUnits.toSatoshi(this)
-
-  override def toPicoBitcoinValue: BigInt = LnCurrencyUnits.toPicoBitcoinValue(this)
 }
 
 object MicroBitcoins extends BaseNumbers[MicroBitcoins] {
@@ -161,15 +152,10 @@ sealed abstract class NanoBitcoins extends LnCurrencyUnit {
 
   override def character: Char = 'n'
 
-  override def multiplier: BigDecimal = LnPolicy.nanoMultiplier
-
   override def toPicoBitcoinMultiplier: Int = 1000
 
   override def toBigInt: A = underlying
 
-  override def toSatoshis: Satoshis = LnCurrencyUnits.toSatoshi(this)
-
-  override def toPicoBitcoinValue: BigInt = LnCurrencyUnits.toPicoBitcoinValue(this)
 }
 
 object NanoBitcoins extends BaseNumbers[NanoBitcoins] {
@@ -193,15 +179,9 @@ sealed abstract class PicoBitcoins extends LnCurrencyUnit {
 
   override def character: Char = 'p'
 
-  override def multiplier: BigDecimal = LnPolicy.picoMultiplier
-
   override def toPicoBitcoinMultiplier: Int = 1
 
   override def toBigInt: A = underlying
-
-  override def toSatoshis: Satoshis = LnCurrencyUnits.toSatoshi(this)
-
-  override def toPicoBitcoinValue: BigInt = this.toBigInt
 }
 
 object PicoBitcoins extends BaseNumbers[PicoBitcoins] {
@@ -221,31 +201,25 @@ object PicoBitcoins extends BaseNumbers[PicoBitcoins] {
 }
 
 object LnCurrencyUnits {
-  val oneMilliBTC: LnCurrencyUnit = MilliBitcoins.one
-  val oneMicroBTC: LnCurrencyUnit = MicroBitcoins.one
-  val oneNanoBTC: LnCurrencyUnit = NanoBitcoins.one
-  val onePicoBTC: LnCurrencyUnit = PicoBitcoins.one
-  val zero = PicoBitcoins(0)
-
-  val milliMultiplier: BigDecimal = LnPolicy.milliMultiplier
-  val microMultiplier: BigDecimal = LnPolicy.microMultiplier
-  val nanoMultiplier: BigDecimal = LnPolicy.nanoMultiplier
-  val picoMultiplier: BigDecimal = LnPolicy.picoMultiplier
-
-  def toPicoBitcoinValue(lnCurrencyUnits: LnCurrencyUnit): BigInt = {
-    lnCurrencyUnits.toBigInt * lnCurrencyUnits.toPicoBitcoinMultiplier
-  }
+  val PICO_TO_SATOSHIS = 10000
+  val MSAT_TO_PICO = 10
+  val zero: LnCurrencyUnit = PicoBitcoins.zero
 
   /**
    * For information regarding the rounding of sub-Satoshi values, please visit:
    * https://github.com/lightningnetwork/lightning-rfc/blob/master/03-transactions.md#commitment-transaction-outputs
    */
   def toSatoshi(lnCurrencyUnits: LnCurrencyUnit): Satoshis = {
-    val sat = BigDecimal(lnCurrencyUnits.toBigInt) * Bitcoins.one.satoshis.toBigDecimal * lnCurrencyUnits.multiplier
-    val rounded = sat.setScale(0, RoundingMode.DOWN)
-    if (rounded >= 1) {
-      Satoshis(Int64(rounded.toBigIntExact().get))
-    } else Satoshis.zero
+    val pico = lnCurrencyUnits.toPicoBitcoins
+    val sat = pico.toBigInt / PICO_TO_SATOSHIS
+    Satoshis(Int64(sat))
+  }
+
+  def fromMSat(msat: MilliSatoshis): PicoBitcoins = {
+    //msat are technically 10^-11
+    //while pico are 10^-12, so we need to convert
+    val underlying = msat.toBigInt * MSAT_TO_PICO
+    PicoBitcoins(underlying)
   }
 
   def fromEncodedString(input: String): Try[LnCurrencyUnit] = {
