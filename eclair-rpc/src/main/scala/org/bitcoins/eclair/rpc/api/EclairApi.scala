@@ -1,9 +1,10 @@
 package org.bitcoins.eclair.rpc.api
 
-import org.bitcoins.core.crypto.{ ECPublicKey, Sha256Digest }
+import org.bitcoins.core.crypto.Sha256Digest
 import org.bitcoins.core.currency.CurrencyUnit
-import org.bitcoins.core.protocol.ln.{ LnCurrencyUnit, LnInvoice }
+import org.bitcoins.core.protocol.ln.LnInvoice
 import org.bitcoins.core.protocol.ln.channel.{ ChannelId, FundedChannelId }
+import org.bitcoins.core.protocol.ln.currency.{ LnCurrencyUnit, MilliSatoshis }
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.eclair.rpc.json._
@@ -46,7 +47,7 @@ trait EclairApi {
   def open(
     nodeId: NodeId,
     fundingSatoshis: CurrencyUnit,
-    pushMsat: Option[LnCurrencyUnit],
+    pushMsat: Option[MilliSatoshis],
     feerateSatPerByte: Option[SatoshisPerByte],
     channelFlags: Option[Byte]): Future[FundedChannelId]
 

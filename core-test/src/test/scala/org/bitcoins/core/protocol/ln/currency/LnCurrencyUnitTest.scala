@@ -1,5 +1,7 @@
-package org.bitcoins.core.protocol.ln
+package org.bitcoins.core.protocol.ln.currency
 
+import org.bitcoins.core.currency.Satoshis
+import org.bitcoins.core.protocol.ln.LnPolicy
 import org.scalatest.{ FlatSpec, MustMatchers }
 
 class LnCurrencyUnitTest extends FlatSpec with MustMatchers {
@@ -78,6 +80,28 @@ class LnCurrencyUnitTest extends FlatSpec with MustMatchers {
     PicoBitcoins.min must be(PicoBitcoins(-9223372036854775808L))
   }
 
+  it must "round pico bitcoins to satoshis correctly" in {
+    PicoBitcoins.one.toSatoshis must be(Satoshis.zero)
+
+    PicoBitcoins(9999).toSatoshis must be(Satoshis.zero)
+
+    PicoBitcoins(10000).toSatoshis must be(Satoshis.one)
+
+    PicoBitcoins(19999).toSatoshis must be(Satoshis.one)
+  }
+
+  it must "convert units to the correct pico bitcoins amount" in {
+
+    val expectedNano = BigInt(10).pow(3)
+    NanoBitcoins.one.toPicoBitcoins must be(PicoBitcoins(expectedNano))
+
+    val expectedMicro = BigInt(10).pow(6)
+    MicroBitcoins.one.toPicoBitcoins must be(PicoBitcoins(expectedMicro))
+
+    val expectedMilli = BigInt(10).pow(9)
+    MilliBitcoins.one.toPicoBitcoins must be(PicoBitcoins(expectedMilli))
+  }
+
   it must "fail to create a MilliBitcoin outside of the maximum range" in {
     intercept[IllegalArgumentException] {
       MilliBitcoins(LnPolicy.maxMilliBitcoins + 1)
@@ -139,9 +163,5 @@ class LnCurrencyUnitTest extends FlatSpec with MustMatchers {
     MicroBitcoins.one must be(MicroBitcoins(1))
     NanoBitcoins.one must be(NanoBitcoins(1))
     PicoBitcoins.one must be(PicoBitcoins(1))
-    LnCurrencyUnits.oneMilliBTC must be(MilliBitcoins(1))
-    LnCurrencyUnits.oneMicroBTC must be(MicroBitcoins(1))
-    LnCurrencyUnits.oneNanoBTC must be(NanoBitcoins(1))
-    LnCurrencyUnits.onePicoBTC must be(PicoBitcoins(1))
   }
 }

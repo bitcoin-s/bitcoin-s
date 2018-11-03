@@ -5,7 +5,8 @@ import java.math.BigInteger
 import org.bitcoins.core.crypto.ECPublicKey
 import org.bitcoins.core.number.{ Int64, UInt32, UInt5 }
 import org.bitcoins.core.protocol.NetworkElement
-import org.bitcoins.core.protocol.ln.{ PicoBitcoins, ShortChannelId }
+import org.bitcoins.core.protocol.ln.ShortChannelId
+import org.bitcoins.core.protocol.ln.currency.{ MilliSatoshis, PicoBitcoins }
 import org.bitcoins.core.protocol.ln.fee.{ FeeBaseMSat, FeeProportionalMillionths }
 import org.bitcoins.core.util.BitcoinSUtil
 import org.slf4j.LoggerFactory
@@ -49,9 +50,9 @@ object LnRoute {
     //if we parse directly to an i64 we risk having the largest big endian byte
     //be signed -- which will give us a negative number possibly
     val feeBaseU32 = UInt32.fromBytes(bytes.slice(41, 45))
-    val feeBaseI64 = Int64(feeBaseU32.toLong)
+    val feeBase = feeBaseU32.toLong
 
-    val feeBaseMSat = FeeBaseMSat(PicoBitcoins(feeBaseI64))
+    val feeBaseMSat = FeeBaseMSat(MilliSatoshis(feeBase))
 
     val u32 = UInt32.fromBytes(bytes.slice(45, 49))
 

@@ -7,8 +7,8 @@ import akka.actor.ActorSystem
 import com.typesafe.config.{ Config, ConfigFactory }
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.currency.CurrencyUnit
-import org.bitcoins.core.protocol.ln.PicoBitcoins
 import org.bitcoins.core.protocol.ln.channel.{ ChannelId, ChannelState, FundedChannelId }
+import org.bitcoins.core.protocol.ln.currency.MilliSatoshis
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.eclair.rpc.client.EclairRpcClient
 import org.bitcoins.eclair.rpc.config.EclairInstance
@@ -270,7 +270,7 @@ trait EclairTestUtil extends BitcoinSLogger {
     n1: EclairRpcClient,
     n2: EclairRpcClient,
     amt: CurrencyUnit,
-    pushMSat: PicoBitcoins)(implicit system: ActorSystem): Future[FundedChannelId] = {
+    pushMSat: MilliSatoshis)(implicit system: ActorSystem): Future[FundedChannelId] = {
 
     val bitcoindRpcClient = getBitcoindRpc(n1)
     implicit val ec = system.dispatcher
