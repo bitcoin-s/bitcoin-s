@@ -50,6 +50,30 @@ sealed abstract class MilliSatoshis extends NetworkElement {
     toLnCurrencyUnit <= ln
   }
 
+  def ==(ms: MilliSatoshis): Boolean = {
+    toLnCurrencyUnit == ms.toLnCurrencyUnit
+  }
+
+  def !=(ms: MilliSatoshis): Boolean = {
+    toLnCurrencyUnit != ms.toLnCurrencyUnit
+  }
+
+  def >=(ms: MilliSatoshis): Boolean = {
+    toLnCurrencyUnit >= ms.toLnCurrencyUnit
+  }
+
+  def >(ms: MilliSatoshis): Boolean = {
+    toLnCurrencyUnit > ms.toLnCurrencyUnit
+  }
+
+  def <(ms: MilliSatoshis): Boolean = {
+    toLnCurrencyUnit < ms.toLnCurrencyUnit
+  }
+
+  def <=(ms: MilliSatoshis): Boolean = {
+    toLnCurrencyUnit <= ms.toLnCurrencyUnit
+  }
+
   def toUInt64: UInt64 = {
     UInt64(underlying)
   }
