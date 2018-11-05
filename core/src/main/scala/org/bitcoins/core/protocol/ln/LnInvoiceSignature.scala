@@ -3,7 +3,7 @@ package org.bitcoins.core.protocol.ln
 import org.bitcoins.core.crypto.ECDigitalSignature
 import org.bitcoins.core.number.{ UInt5, UInt8 }
 import org.bitcoins.core.protocol.NetworkElement
-import org.bitcoins.core.util.Bech32
+import org.bitcoins.core.util.{ Bech32, Factory }
 import scodec.bits.ByteVector
 
 sealed abstract class LnInvoiceSignature extends NetworkElement {
@@ -23,7 +23,7 @@ sealed abstract class LnInvoiceSignature extends NetworkElement {
   }
 }
 
-object LnInvoiceSignature {
+object LnInvoiceSignature extends Factory[LnInvoiceSignature] {
   private case class LnInvoiceSignatureImpl(
     version: UInt8,
     signature: ECDigitalSignature) extends LnInvoiceSignature
