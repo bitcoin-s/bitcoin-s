@@ -1,5 +1,6 @@
 package org.bitcoins.eclair.rpc.json
 
+import org.bitcoins.core.protocol.ln.{ LnHumanReadablePart, LnInvoiceSignature }
 import org.bitcoins.core.protocol.ln.channel.{ ChannelState, FundedChannelId }
 import org.bitcoins.core.protocol.ln.currency.{ MilliSatoshis, PicoBitcoins }
 import org.bitcoins.eclair.rpc.network.{ NodeId, PeerState }
@@ -42,6 +43,18 @@ object JsonReaders {
     }
   }
 
+  implicit val lnHrpReads: Reads[LnHumanReadablePart] = {
+    Reads { jsValue =>
+      SerializerUtil.processJsStringOpt(LnHumanReadablePart.fromString(_).toOption)(jsValue)
+    }
+  }
+
+  implicit val lnInvoiceSignatureReads: Reads[LnInvoiceSignature] = {
+    Reads { jsValue =>
+      SerializerUtil.processJsString(LnInvoiceSignature.fromHex)(jsValue)
+    }
+  }
+
   implicit val getInfoResultReads: Reads[GetInfoResult] = {
     Json.reads[GetInfoResult]
   }
@@ -73,13 +86,10 @@ object JsonReaders {
   }
 
   implicit val paymentRequestReads: Reads[PaymentRequest] = {
-    Reads { jsValue: JsValue =>
-      SerializerUtil.processJsObject(parsePaymentReq)(jsValue)
-        .flatMap(g => g)
-    }
+    Json.reads[PaymentRequest]
   }
 
-  private def parsePaymentReq(obj: JsObject): JsResult[PaymentRequest] = {
+  /*  private def parsePaymentReq(obj: JsObject): JsResult[PaymentRequest] = {
     val prefix = obj("prefix").validate[String].get
     val amountOpt = obj("amount") match {
       case o: JsObject => o("amount").validate[MilliSatoshis].asOpt
@@ -102,7 +112,7 @@ object JsonReaders {
       signature = signature,
       tags = tags,
       description = description))
-  }
+  }*/
 
   implicit val paymentSucceededReads: Reads[PaymentSucceeded] = {
     Json.reads[PaymentSucceeded]
@@ -130,4 +140,5 @@ object JsonReaders {
 
   implicit val channelResultReads: Reads[ChannelResult] =
     Json.reads[ChannelResult]
+
 }

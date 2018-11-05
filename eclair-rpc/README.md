@@ -2,7 +2,7 @@
 
 This is a RPC client for [eclair](https://github.com/acinq/eclair)
 
-Currently this RPC client is written for the latest official version of eclair which is [v0.2-beta5](https://github.com/ACINQ/eclair/releases/tag/v0.2-beta5)
+Currently this RPC client is written for the latest official version of eclair which is [v0.2-beta8](https://github.com/ACINQ/eclair/releases/tag/v0.2-beta8)
 
 ## Configuration eclair 
 
@@ -15,13 +15,13 @@ https://github.com/acinq/eclair#configuring-eclair
 
 You need to download the jar from this link. 
 
-https://github.com/ACINQ/eclair/releases/tag/v0.2-beta5
+https://github.com/ACINQ/eclair/releases/tag/v0.2-beta8
 
 to run eclair you can use this command 
 
 ```
 
-$ java -jar eclair-node-0.2-beta5-8aa51f4.jar &
+$ java -jar eclair-node-0.2-beta8-52821b8.jar &
 
 ```
 
