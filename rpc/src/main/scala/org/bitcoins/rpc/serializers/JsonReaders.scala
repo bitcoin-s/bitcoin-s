@@ -294,10 +294,4 @@ object JsonReaders {
     override def reads(json: JsValue): JsResult[URI] =
       SerializerUtil.processJsString[URI](str => new URI("http://" + str))(json)
   }
-
-  implicit object MilliSatoshisReads extends Reads[MilliSatoshis] {
-    override def reads(json: JsValue): JsResult[MilliSatoshis] = {
-      SerializerUtil.processJsNumberBigInt(MilliSatoshis.apply)(json)
-    }
-  }
 }

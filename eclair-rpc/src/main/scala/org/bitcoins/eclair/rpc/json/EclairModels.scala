@@ -1,6 +1,7 @@
 package org.bitcoins.eclair.rpc.json
 
 import org.bitcoins.core.crypto.{ DoubleSha256Digest, ECDigitalSignature, Sha256Digest }
+import org.bitcoins.core.protocol.ln.{ LnHumanReadablePart, LnInvoiceSignature }
 import org.bitcoins.core.protocol.ln.channel.{ ChannelState, FundedChannelId }
 import org.bitcoins.core.protocol.ln.currency.{ LnCurrencyUnit, MilliSatoshis, PicoBitcoins }
 import org.bitcoins.eclair.rpc.network.{ NodeId, PeerState }
@@ -164,13 +165,12 @@ case class ChannelResult(
 // ChannelResult ends here
 
 case class PaymentRequest(
-  prefix: String,
+  prefix: LnHumanReadablePart,
   amount: Option[MilliSatoshis],
   timestamp: Long,
   nodeId: NodeId,
   tags: Vector[JsObject],
-  signature: String,
-  description: String)
+  signature: LnInvoiceSignature)
 
 sealed abstract class PaymentResult
 case class PaymentSucceeded(

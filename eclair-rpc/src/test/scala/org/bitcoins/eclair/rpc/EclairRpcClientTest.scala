@@ -126,12 +126,13 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
       amountMsat = amt,
       expirySeconds = expiry)
 
-    val paymentRequestF: Future[PaymentRequest] = invoiceF.flatMap(i => client.checkInvoice(i))
+    val paymentRequestF: Future[PaymentRequest] = invoiceF.flatMap { i =>
+      client.checkInvoice(i)
+    }
 
     paymentRequestF.map { paymentRequest =>
-      assert(paymentRequest.amount.get == amt)
+      assert(paymentRequest.amount.get == amt.toMSat)
       assert(paymentRequest.timestamp == expiry)
-      assert(paymentRequest.description == description)
     }
   }
 
