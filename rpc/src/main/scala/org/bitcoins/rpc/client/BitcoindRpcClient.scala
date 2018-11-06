@@ -9,37 +9,57 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import akka.stream.ActorMaterializer
 import akka.util.ByteString
-import org.bitcoins.core.crypto.{ DoubleSha256Digest, ECPrivateKey, ECPublicKey }
-import org.bitcoins.core.currency.{ Bitcoins, Satoshis }
+import org.bitcoins.core.config.NetworkParameters
+import org.bitcoins.core.crypto.{DoubleSha256Digest, ECPrivateKey, ECPublicKey}
+import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.blockchain.{ Block, BlockHeader, MerkleBlock }
+import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, MerkleBlock}
 import org.bitcoins.core.protocol.script.ScriptPubKey
-import org.bitcoins.core.protocol.transaction.{ Transaction, TransactionInput, TransactionOutPoint }
-import org.bitcoins.core.protocol.{ BitcoinAddress, P2PKHAddress }
-import org.bitcoins.core.util.{ BitcoinSLogger, BitcoinSUtil }
-import org.bitcoins.rpc.RpcUtil
+import org.bitcoins.core.protocol.transaction.{Transaction, TransactionInput, TransactionOutPoint}
+import org.bitcoins.core.protocol.{BitcoinAddress, P2PKHAddress}
+import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil}
 import org.bitcoins.rpc.client.RpcOpts.AddressType
 import org.bitcoins.rpc.config.BitcoindInstance
 import org.bitcoins.rpc.jsonmodels._
 import org.bitcoins.rpc.serializers.JsonSerializers._
+import org.slf4j.Logger
 import play.api.libs.json._
 
 import scala.concurrent.duration.DurationInt
-import scala.concurrent.{ Await, ExecutionContext, Future }
+import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.sys.process._
 import scala.util.Try
+import scala.util.parsing.input.Reader
 
-class BitcoindRpcClient(val instance: BitcoindInstance)(
-  implicit
-  system: ActorSystem) {
-  private val resultKey = "result"
-  private val errorKey = "error"
-  private val logger = BitcoinSLogger.logger
-  private implicit val network = instance.network
-  private implicit val m = ActorMaterializer.create(system)
-  private implicit val ec: ExecutionContext = m.executionContext
+trait Client {
+  protected def bitcoindCall[T](command: String,
+                                parameters: List[JsValue] = List.empty
+                               )(implicit
+                                 reader: Reads[T]): Future[T]
 
-  def getDaemon: BitcoindInstance = instance
+  protected def logger: Logger = BitcoinSLogger.logger
+
+  protected val instance: BitcoindInstance
+
+  protected val resultKey: String = "result"
+  protected val errorKey = "error"
+
+  protected def sendRequest(req: HttpRequest)(implicit materializer: ActorMaterializer): Future[HttpResponse] = {
+    Http(materializer.system).singleRequest(req)
+  }
+
+  protected def buildRequest(
+                    instance: BitcoindInstance,
+                    methodName: String,
+                    params: JsArray): HttpRequest = {
+    val uuid = UUID.randomUUID().toString
+
+    val m: Map[String, JsValue] = Map(
+      "method" -> JsString(methodName),
+      "params" -> params,
+      "id" -> JsString(uuid))
+
+    val jsObject = JsObject(m)
 
   def isStarted(): Boolean = {
     val await = Try(
@@ -59,17 +79,40 @@ class BitcoindRpcClient(val instance: BitcoindInstance)(
     // Ping successful if no error can be parsed from the payload
     val result: Future[Boolean] = payloadF.map { payload =>
       (payload \ errorKey).validate[RpcError] match {
-        case res: JsSuccess[RpcError] => false
-        case res: JsError => true
+        case _: JsSuccess[RpcError] => false
+        case _: JsError => true
       }
     }
 
     result
   }
 
+  protected def getPayload(response: HttpResponse)(implicit materializer: ActorMaterializer, executionContext: ExecutionContext): Future[JsValue] = {
+    val payloadF = response.entity.dataBytes.runFold(ByteString.empty)(_ ++ _)
+
+    payloadF.map { payload =>
+      Json.parse(payload.decodeString(ByteString.UTF_8))
+    }
+  }
+
+  case class RpcError(code: Int, message: String)
+  implicit val rpcErrorReads: Reads[RpcError] = Json.reads[RpcError]
+
+
+}
+
+class BitcoindRpcClient(instance: BitcoindInstance)(
+  implicit
+  m: ActorMaterializer) extends Client {
+  private implicit val network : NetworkParameters = instance.network
+  private implicit val ec: ExecutionContext = m.executionContext
+
+  def getDaemon: BitcoindInstance = instance
+
   def abandonTransaction(txid: DoubleSha256Digest): Future[Unit] = {
     bitcoindCall[Unit]("abandontransaction", List(JsString(txid.hex)))
   }
+
 
   def abortRescan(): Future[Unit] = {
     bitcoindCall[Unit]("abortrescan")
@@ -127,15 +170,7 @@ class BitcoindRpcClient(val instance: BitcoindInstance)(
     addressType: AddressType): Future[MultiSigResult] =
     addMultiSigAddress(minSignatures, keys, account, Some(addressType))
 
-  def addNode(address: URI, command: String): Future[Unit] = {
-    bitcoindCall[Unit](
-      "addnode",
-      List(JsString(address.getAuthority), JsString(command)))
-  }
 
-  def backupWallet(destination: String): Future[Unit] = {
-    bitcoindCall[Unit]("backupwallet", List(JsString(destination)))
-  }
 
   def bumpFee(
     txid: DoubleSha256Digest,
@@ -162,9 +197,6 @@ class BitcoindRpcClient(val instance: BitcoindInstance)(
       List(JsString(txid.hex), JsObject(options)))
   }
 
-  def clearBanned(): Future[Unit] = {
-    bitcoindCall[Unit]("clearbanned")
-  }
 
   def combineRawTransaction(txs: Vector[Transaction]): Future[Transaction] = {
     bitcoindCall[Transaction]("combinerawtransaction", List(Json.toJson(txs)))
@@ -200,22 +232,13 @@ class BitcoindRpcClient(val instance: BitcoindInstance)(
       List(JsString(BitcoinSUtil.encodeHex(script.asmBytes))))
   }
 
-  def disconnectNode(address: URI): Future[Unit] = {
-    bitcoindCall[Unit]("disconnectnode", List(JsString(address.getAuthority)))
-  }
 
   def dumpPrivKey(address: BitcoinAddress): Future[ECPrivateKey] = {
     bitcoindCall[String]("dumpprivkey", List(JsString(address.value)))
       .map(ECPrivateKey.fromWIFToPrivateKey)
   }
 
-  def dumpWallet(filePath: String): Future[DumpWalletResult] = {
-    bitcoindCall[DumpWalletResult]("dumpwallet", List(JsString(filePath)))
-  }
 
-  def encryptWallet(passphrase: String): Future[String] = {
-    bitcoindCall[String]("encryptwallet", List(JsString(passphrase)))
-  }
 
   // Needs manual testing!
   def estimateSmartFee(
@@ -272,19 +295,6 @@ class BitcoindRpcClient(val instance: BitcoindInstance)(
     bitcoindCall[BitcoinAddress]("getaccountaddress", List(JsString(account)))
   }
 
-  private def getAddedNodeInfo(node: Option[URI]): Future[Vector[Node]] = {
-    val params =
-      if (node.isEmpty) {
-        List.empty
-      } else {
-        List(JsString(node.get.getAuthority))
-      }
-    bitcoindCall[Vector[Node]]("getaddednodeinfo", params)
-  }
-  def getAddedNodeInfo: Future[Vector[Node]] = getAddedNodeInfo(None)
-
-  def getAddedNodeInfo(node: URI): Future[Vector[Node]] =
-    getAddedNodeInfo(Some(node))
 
   def getAddressesByAccount(account: String): Future[Vector[BitcoinAddress]] = {
     bitcoindCall[Vector[BitcoinAddress]](
@@ -383,9 +393,6 @@ class BitcoindRpcClient(val instance: BitcoindInstance)(
     blockHash: DoubleSha256Digest): Future[GetChainTxStatsResult] =
     getChainTxStats(Some(blocks), Some(blockHash))
 
-  def getConnectionCount: Future[Int] = {
-    bitcoindCall[Int]("getconnectioncount")
-  }
 
   def getDifficulty: Future[BigDecimal] = {
     bitcoindCall[BigDecimal]("getdifficulty")
@@ -393,43 +400,6 @@ class BitcoindRpcClient(val instance: BitcoindInstance)(
 
   def getMemoryInfo: Future[GetMemoryInfoResult] = {
     bitcoindCall[GetMemoryInfoResult]("getmemoryinfo")
-  }
-
-  def getMemPoolAncestors(
-    txid: DoubleSha256Digest): Future[Vector[DoubleSha256Digest]] = {
-    bitcoindCall[Vector[DoubleSha256Digest]](
-      "getmempoolancestors",
-      List(JsString(txid.hex), JsBoolean(false)))
-  }
-
-  def getMemPoolAncestorsVerbose(txid: DoubleSha256Digest): Future[Map[DoubleSha256Digest, GetMemPoolResult]] = {
-    bitcoindCall[Map[DoubleSha256Digest, GetMemPoolResult]](
-      "getmempoolancestors",
-      List(JsString(txid.hex), JsBoolean(true)))
-  }
-
-  def getMemPoolDescendants(
-    txid: DoubleSha256Digest): Future[Vector[DoubleSha256Digest]] = {
-    bitcoindCall[Vector[DoubleSha256Digest]](
-      "getmempooldescendants",
-      List(JsString(txid.hex), JsBoolean(false)))
-  }
-
-  def getMemPoolDescendantsVerbose(txid: DoubleSha256Digest): Future[Map[DoubleSha256Digest, GetMemPoolResult]] = {
-    bitcoindCall[Map[DoubleSha256Digest, GetMemPoolResult]](
-      "getmempooldescendants",
-      List(JsString(txid.hex), JsBoolean(true)))
-  }
-
-  def getMemPoolEntry(
-    txid: DoubleSha256Digest): Future[GetMemPoolEntryResult] = {
-    bitcoindCall[GetMemPoolEntryResult](
-      "getmempoolentry",
-      List(JsString(txid.hex)))
-  }
-
-  def getMemPoolInfo: Future[GetMemPoolInfoResult] = {
-    bitcoindCall[GetMemPoolInfoResult]("getmempoolinfo")
   }
 
   def getMiningInfo: Future[GetMiningInfoResult] = {
@@ -448,9 +418,6 @@ class BitcoindRpcClient(val instance: BitcoindInstance)(
       List(JsNumber(blocks), JsNumber(height)))
   }
 
-  def getNetworkInfo: Future[GetNetworkInfoResult] = {
-    bitcoindCall[GetNetworkInfoResult]("getnetworkinfo")
-  }
 
   private def getNewAddress(
     account: String = "",
@@ -500,17 +467,6 @@ class BitcoindRpcClient(val instance: BitcoindInstance)(
   def getRawChangeAddress(addressType: AddressType): Future[BitcoinAddress] =
     getRawChangeAddress(Some(addressType))
 
-  def getRawMemPool: Future[Vector[DoubleSha256Digest]] = {
-    bitcoindCall[Vector[DoubleSha256Digest]](
-      "getrawmempool",
-      List(JsBoolean(false)))
-  }
-
-  def getRawMemPoolWithTransactions: Future[Map[DoubleSha256Digest, GetMemPoolResult]] = {
-    bitcoindCall[Map[DoubleSha256Digest, GetMemPoolResult]](
-      "getrawmempool",
-      List(JsBoolean(true)))
-  }
 
   def getRawTransaction(
     txid: DoubleSha256Digest): Future[GetRawTransactionResult] = {
@@ -588,9 +544,6 @@ class BitcoindRpcClient(val instance: BitcoindInstance)(
     bitcoindCall[Bitcoins]("getunconfirmedbalance")
   }
 
-  def getWalletInfo: Future[GetWalletInfoResult] = {
-    bitcoindCall[GetWalletInfoResult]("getwalletinfo")
-  }
 
   def help(rpcName: String = ""): Future[String] = {
     bitcoindCall[String]("help", List(JsString(rpcName)))
@@ -654,9 +607,6 @@ class BitcoindRpcClient(val instance: BitcoindInstance)(
       List(JsString(pubKey.hex), JsString(label), JsBoolean(rescan)))
   }
 
-  def importWallet(filePath: String): Future[Unit] = {
-    bitcoindCall[Unit]("importwallet", List(JsString(filePath)))
-  }
 
   def invalidateBlock(blockHash: DoubleSha256Digest): Future[Unit] = {
     bitcoindCall[Unit]("invalidateblock", List(JsString(blockHash.hex)))
@@ -678,9 +628,6 @@ class BitcoindRpcClient(val instance: BitcoindInstance)(
     bitcoindCall[Vector[Vector[RpcAddress]]]("listaddressgroupings")
   }
 
-  def listBanned: Future[Vector[NodeBan]] = {
-    bitcoindCall[Vector[NodeBan]]("listbanned")
-  }
 
   def listLockUnspent: Future[Vector[TransactionOutPoint]] = {
     bitcoindCall[Vector[TransactionOutPoint]]("listlockunspent")
@@ -794,9 +741,6 @@ class BitcoindRpcClient(val instance: BitcoindInstance)(
     addresses: Vector[BitcoinAddress]): Future[Vector[UnspentOutput]] =
     listUnspent(minConfirmations, maxConfirmations, Some(addresses))
 
-  def listWallets: Future[Vector[String]] = {
-    bitcoindCall[Vector[String]]("listwallets")
-  }
 
   def lockUnspent(
     unlock: Boolean,
@@ -846,9 +790,6 @@ class BitcoindRpcClient(val instance: BitcoindInstance)(
         JsString(comment)))
   }
 
-  def ping(): Future[Unit] = {
-    bitcoindCall[Unit]("ping")
-  }
 
   def preciousBlock(headerHash: DoubleSha256Digest): Future[Unit] = {
     bitcoindCall[Unit]("preciousblock", List(JsString(headerHash.hex)))
@@ -893,9 +834,6 @@ class BitcoindRpcClient(val instance: BitcoindInstance)(
   def rescanBlockChain(start: Int, stop: Int): Future[RescanBlockChainResult] =
     rescanBlockChain(Some(start), Some(stop))
 
-  def saveMemPool(): Future[Unit] = {
-    bitcoindCall[Unit]("savemempool")
-  }
 
   def sendFrom(
     fromAccount: String,
@@ -974,9 +912,6 @@ class BitcoindRpcClient(val instance: BitcoindInstance)(
         JsBoolean(absolute)))
   }
 
-  def setNetworkActive(activate: Boolean): Future[Unit] = {
-    bitcoindCall[Unit]("setnetworkactive", List(JsBoolean(activate)))
-  }
 
   // TODO: Should be BitcoinFeeUnit
   def setTxFee(feePerKB: Bitcoins): Future[Boolean] = {
@@ -1083,25 +1018,9 @@ class BitcoindRpcClient(val instance: BitcoindInstance)(
       List(JsString(proof.hex)))
   }
 
-  def walletLock(): Future[Unit] = {
-    bitcoindCall[Unit]("walletlock")
-  }
 
-  def walletPassphrase(passphrase: String, seconds: Int): Future[Unit] = {
-    bitcoindCall[Unit](
-      "walletpassphrase",
-      List(JsString(passphrase), JsNumber(seconds)))
-  }
 
-  def walletPassphraseChange(
-    currentPassphrase: String,
-    newPassphrase: String): Future[Unit] = {
-    bitcoindCall[Unit](
-      "walletpassphrasechange",
-      List(JsString(currentPassphrase), JsString(newPassphrase)))
-  }
-
-  private def bitcoindCall[T](
+  override private def bitcoindCall[T](
     command: String,
     parameters: List[JsValue] = List.empty)(
     implicit
@@ -1115,9 +1034,6 @@ class BitcoindRpcClient(val instance: BitcoindInstance)(
       parseResult((payload \ resultKey).validate[T], payload)
     }
   }
-
-  case class RpcError(code: Int, message: String)
-  implicit val rpcErrorReads: Reads[RpcError] = Json.reads[RpcError]
 
   // Should both logging and throwing be happening?
   private def parseResult[T](result: JsResult[T], json: JsValue): T = {
@@ -1152,44 +1068,8 @@ class BitcoindRpcClient(val instance: BitcoindInstance)(
     }
   }
 
-  private def getPayload(response: HttpResponse): Future[JsValue] = {
-    val payloadF = response.entity.dataBytes.runFold(ByteString.empty)(_ ++ _)
 
-    payloadF.map { payload =>
-      Json.parse(payload.decodeString(ByteString.UTF_8))
-    }
-  }
 
-  def sendRequest(req: HttpRequest): Future[HttpResponse] = {
-    Http(m.system).singleRequest(req)
-  }
-
-  def buildRequest(
-    instance: BitcoindInstance,
-    methodName: String,
-    params: JsArray): HttpRequest = {
-    val uuid = UUID.randomUUID().toString
-
-    val m: Map[String, JsValue] = Map(
-      "method" -> JsString(methodName),
-      "params" -> params,
-      "id" -> JsString(uuid))
-
-    val jsObject = JsObject(m)
-
-    logger.debug(s"json rpc request: $m")
-
-    // Would toString work?
-    val uri = "http://" + instance.rpcUri.getHost + ":" + instance.rpcUri.getPort
-    val username = instance.authCredentials.username
-    val password = instance.authCredentials.password
-    HttpRequest(
-      method = HttpMethods.POST,
-      uri,
-      entity = HttpEntity(ContentTypes.`application/json`, jsObject.toString()))
-      .addCredentials(
-        HttpCredentials.createBasicHttpCredentials(username, password))
-  }
 
   def start(): String = {
     val cmd = List(
