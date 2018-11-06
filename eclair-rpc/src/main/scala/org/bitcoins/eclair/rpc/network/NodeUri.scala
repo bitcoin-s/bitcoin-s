@@ -1,5 +1,6 @@
 package org.bitcoins.eclair.rpc.network
 
+import org.bitcoins.core.protocol.ln.node.NodeId
 import org.slf4j.LoggerFactory
 
 import scala.util.{ Failure, Success, Try }

@@ -3,7 +3,9 @@ package org.bitcoins.core.crypto
 import java.math.BigInteger
 
 import org.bitcoinj.core.Sha256Hash
+import org.bitcoins.core.gen.CryptoGenerators
 import org.bitcoins.core.util.BitcoinSUtil
+import org.scalatest.prop.PropertyChecks
 import org.scalatest.{ FlatSpec, MustMatchers }
 import scodec.bits.ByteVector
 
@@ -54,4 +56,11 @@ class ECPublicKeyTest extends FlatSpec with MustMatchers {
       bitcoinsSignature.bytes.toArray) must be(true)
   }
 
+  it must "have serialization symmetry from ECPublicKey -> ECPoint -> ECPublicKey" in {
+    PropertyChecks.forAll(CryptoGenerators.publicKey) { pubKey =>
+      val p = pubKey.toPoint
+      val pub2 = ECPublicKey.fromPoint(p, pubKey.isCompressed)
+      assert(pubKey == pub2)
+    }
+  }
 }

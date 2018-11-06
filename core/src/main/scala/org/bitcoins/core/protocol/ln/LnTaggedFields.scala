@@ -1,10 +1,12 @@
 package org.bitcoins.core.protocol.ln
 
-import org.bitcoins.core.number.UInt5
+import org.bitcoins.core.number.{ UInt5, UInt8 }
+import org.bitcoins.core.protocol.NetworkElement
 import org.bitcoins.core.protocol.ln.LnTag.PaymentHashTag
 import org.bitcoins.core.protocol.ln.util.LnUtil
 import org.bitcoins.core.util.Bech32
 import org.slf4j.LoggerFactory
+import scodec.bits.ByteVector
 
 import scala.annotation.tailrec
 import scala.collection.mutable
@@ -12,7 +14,7 @@ import scala.collection.mutable
 /**
  * An aggregation of all the individual tagged fields in a [[org.bitcoins.core.protocol.ln.LnInvoice]]
  */
-sealed abstract class LnTaggedFields {
+sealed abstract class LnTaggedFields extends NetworkElement {
 
   def paymentHash: LnTag.PaymentHashTag
 
@@ -39,6 +41,11 @@ sealed abstract class LnTaggedFields {
       cltvExpiry.map(_.data).getOrElse(Vector.empty) ++
       fallbackAddress.map(_.data).getOrElse(Vector.empty) ++
       routingInfo.map(_.data).getOrElse(Vector.empty)
+  }
+
+  override def bytes: ByteVector = {
+    val u8s = Bech32.from5bitTo8bit(data)
+    UInt8.toBytes(u8s)
   }
 
   override def toString: String = {
