@@ -49,7 +49,7 @@ sealed abstract class LnInvoice {
    * We can either recover this with public key recovery from
    * the [[LnInvoiceSignature]] or if [[LnTag.NodeIdTag]] is
    * defined we MUST use that NodeId.
-   * [[https://github.com/lightningnetwork/lightning-rfc/blob/master/11-payment-encoding.md#requirements-3]]
+   * [[https://github.com/lightningnetwork/lihtning-rfc/blob/master/11-payment-encoding.md#requirements-3]]
    */
   def nodeId: NodeId = {
 

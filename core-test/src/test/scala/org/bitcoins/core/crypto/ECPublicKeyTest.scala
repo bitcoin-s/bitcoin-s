@@ -60,7 +60,7 @@ class ECPublicKeyTest extends FlatSpec with MustMatchers {
     PropertyChecks.forAll(CryptoGenerators.publicKey) { pubKey =>
       val p = pubKey.toPoint
       val pub2 = ECPublicKey.fromPoint(p, pubKey.isCompressed)
-      pubKey == pub2
+      assert(pubKey == pub2)
     }
   }
 }
