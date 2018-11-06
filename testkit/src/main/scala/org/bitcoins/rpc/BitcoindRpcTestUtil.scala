@@ -8,18 +8,30 @@ import akka.stream.ActorMaterializer
 import com.typesafe.config.{Config, ConfigFactory}
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.crypto.DoubleSha256Digest
+import org.bitcoins.core.currency.Bitcoins
+import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.rpc.client.BitcoindRpcClient
-import org.bitcoins.rpc.config.{BitcoindAuthCredentials, BitcoindInstance, ZmqConfig}
+import org.bitcoins.rpc.config.{
+  BitcoindAuthCredentials,
+  BitcoindInstance,
+  ZmqConfig
+}
 import org.bitcoins.util.AsyncUtil
 
 import scala.collection.immutable.Map
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
-import scala.concurrent.{ExecutionContext, Future, Promise}
+import scala.concurrent.{
+  ExecutionContext,
+  ExecutionContextExecutor,
+  Future,
+  Promise
+}
 import scala.util.{Failure, Success, Try}
 
 trait BitcoindRpcTestUtil extends BitcoinSLogger {
   import scala.collection.JavaConverters._
+
   def randomDirName: String =
     0.until(5).map(_ => scala.util.Random.alphanumeric.head).mkString
 
@@ -67,7 +79,8 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
         .map(entry => {
           val key = entry.getKey
           val value = entry.getValue.unwrapped
-          s"$key=$value"})
+          s"$key=$value"
+        })
         .mkString("\n")
 
     val datadir = new java.io.File("/tmp/" + randomDirName)
@@ -118,6 +131,14 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
 
     Future.sequence(startedServers).map(_ => ())
   }
+
+  def stopServers(servers: Vector[BitcoindRpcClient])(
+      implicit system: ActorSystem): Unit =
+    servers.foreach(server => {
+      server.stop()
+      RpcUtil.awaitServerShutdown(server)
+      deleteTmpDir(server.getDaemon.authCredentials.datadir)
+    })
 
   def deleteTmpDir(dir: File): Boolean = {
     if (!dir.isDirectory) {
@@ -260,6 +281,26 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     }
   }
 
+  def fundBlockChainTransaction(
+      sender: BitcoindRpcClient,
+      address: BitcoinAddress,
+      amount: Bitcoins)(
+      implicit ec: ExecutionContext): Future[DoubleSha256Digest] = {
+    fundMemPoolTransaction(sender, address, amount).flatMap { txid =>
+      sender.generate(1).map { _ =>
+        txid
+      }
+    }
+  }
+
+  def fundMemPoolTransaction(
+      sender: BitcoindRpcClient,
+      address: BitcoinAddress,
+      amount: Bitcoins)(
+      implicit ec: ExecutionContext): Future[DoubleSha256Digest] = {
+    sender.sendToAddress(address, amount)
+  }
+
   def deleteNodePair(
       client1: BitcoindRpcClient,
       client2: BitcoindRpcClient): Unit = {
@@ -285,9 +326,9 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
   def startedBitcoindRpcClient(
       instance: BitcoindInstance = BitcoindRpcTestUtil.instance())(
       implicit system: ActorSystem): Future[BitcoindRpcClient] = {
-    implicit val ec = system.dispatcher
+    implicit val ec: ExecutionContextExecutor = system.dispatcher
     //start the bitcoind instance so eclair can properly use it
-    val rpc = new BitcoindRpcClient(instance)(system)
+    val rpc = new BitcoindRpcClient(instance)
     val startedF = rpc.start()
 
     val blocksToGenerate = 102
@@ -296,7 +337,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       rpc.generate(blocksToGenerate)
     }
 
-    def isBlocksGenerated(): Future[Boolean] = {
+    def areBlocksGenerated(): Future[Boolean] = {
       rpc.getBlockCount.map { count =>
         count >= blocksToGenerate
       }
@@ -304,7 +345,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
 
     val blocksGeneratedF = generatedF.flatMap { _ =>
       AsyncUtil.retryUntilSatisfiedF(
-        () => isBlocksGenerated,
+        () => areBlocksGenerated(),
         duration = 1.seconds
       )
     }

@@ -7,7 +7,12 @@ import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.number.{Int32, Int64, UInt32, UInt64}
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, MerkleBlock}
-import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptSignature}
+import org.bitcoins.core.protocol.script.{
+  ScriptPubKey,
+  ScriptSignature,
+  WitnessVersion,
+  WitnessVersion0
+}
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.protocol.{
   Address,
@@ -16,6 +21,7 @@ import org.bitcoins.core.protocol.{
   P2SHAddress
 }
 import org.bitcoins.core.wallet.fee.{BitcoinFeeUnit, SatoshisPerByte}
+import org.bitcoins.rpc.client.RpcOpts.LabelPurpose
 import org.bitcoins.rpc.jsonmodels.RpcAddress
 import play.api.libs.json._
 
@@ -102,6 +108,29 @@ object JsonReaders {
       case err @ (JsNull | _: JsBoolean | _: JsArray | _: JsObject) =>
         SerializerUtil.buildJsErrorMsg("jsnumber", err)
     }
+  }
+
+  implicit object LabelPurposeReads extends Reads[LabelPurpose] {
+    override def reads(json: JsValue): JsResult[LabelPurpose] =
+      json match {
+        case JsString("send")    => JsSuccess(LabelPurpose.Send)
+        case JsString("receive") => JsSuccess(LabelPurpose.Receive)
+        // TODO better error message?
+        case err =>
+          SerializerUtil.buildErrorMsg(expected = "send or receive", err)
+      }
+  }
+
+  implicit object WitnessVersionReads extends Reads[WitnessVersion] {
+    override def reads(json: JsValue): JsResult[WitnessVersion] =
+      json match {
+        case JsNumber(num) if num == 0 => JsSuccess(WitnessVersion0)
+        case JsNumber(num) if num != 0 =>
+          SerializerUtil.buildErrorMsg("Expected witness_version 0", num)
+        case err =>
+          SerializerUtil.buildErrorMsg("Expected numerical witness_version",
+                                       err)
+      }
   }
 
   implicit object AddressReads extends Reads[Address] {
@@ -200,13 +229,14 @@ object JsonReaders {
           case _ =>
             (json \ "txid").validate[DoubleSha256Digest].flatMap { txid =>
               (json \ "vout").validate[UInt32].flatMap { vout =>
-                (json \ "scriptSig" \ "hex").validate[ScriptSignature].flatMap {
-                  scriptSig =>
+                (json \ "scriptSig" \ "hex")
+                  .validate[ScriptSignature]
+                  .flatMap { scriptSig =>
                     JsSuccess(
                       TransactionInput(TransactionOutPoint(txid.flip, vout),
                                        scriptSig,
                                        sequence))
-                }
+                  }
               }
             }
         }

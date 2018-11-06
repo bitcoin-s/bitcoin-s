@@ -4,6 +4,8 @@ import org.bitcoins.core.crypto.{DoubleSha256Digest, ECPrivateKey}
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
+import org.bitcoins.rpc.serializers.JsonWriters._
+import org.bitcoins.rpc.serializers.JsonSerializers._
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import play.api.libs.json.{Json, Writes}
 
@@ -17,8 +19,6 @@ object RpcOpts {
       reverseChangeKey: Boolean = true,
       feeRate: Option[Bitcoins] = None,
       subtractFeeFromOutputs: Option[Array[Int]])
-
-  import org.bitcoins.rpc.serializers.JsonWriters._
 
   implicit val fundRawTransactionOptionsWrites: Writes[
     FundRawTransactionOptions] = Json.writes[FundRawTransactionOptions]
@@ -51,16 +51,31 @@ object RpcOpts {
   implicit val lockUnspentParameterWrites: Writes[LockUnspentOutputParameter] =
     Json.writes[LockUnspentOutputParameter]
 
-  sealed abstract class AddressType
+  sealed trait AddressType
 
-  case class Legacy() extends AddressType
-  case class P2SHSegwit() extends AddressType
-  case class Bech32() extends AddressType
+  object AddressType {
+    case object Legacy extends AddressType {
+      override def toString: String = "legacy"
+    }
 
-  def addressTypeString(addressType: AddressType): String = addressType match {
-    case Legacy()     => "legacy"
-    case P2SHSegwit() => "p2sh-segwit"
-    case Bech32()     => "bech32"
+    case object P2SHSegwit extends AddressType {
+      override def toString: String = "p2sh-segwit"
+    }
+
+    case object Bech32 extends AddressType {
+      override def toString: String = "bech32"
+    }
+  }
+
+  sealed trait LabelPurpose
+
+  object LabelPurpose {
+    case object Send extends LabelPurpose {
+      override def toString: String = "send"
+    }
+    case object Receive extends LabelPurpose {
+      override def toString: String = "receive"
+    }
   }
 
   case class BlockTemplateRequest(

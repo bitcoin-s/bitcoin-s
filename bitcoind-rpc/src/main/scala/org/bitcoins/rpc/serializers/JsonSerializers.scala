@@ -230,6 +230,9 @@ object JsonSerializers {
   implicit val receivedAccountReads: Reads[ReceivedAccount] =
     Json.reads[ReceivedAccount]
 
+  implicit val labelResult: Reads[LabelResult] =
+    Json.reads[LabelResult]
+
   implicit val paymentReads: Reads[Payment] =
     ((__ \ "involvesWatchonly").readNullable[Boolean] and
       (__ \ "account").readNullable[String] and
@@ -297,6 +300,15 @@ object JsonSerializers {
   implicit val validateAddressResultReads: Reads[ValidateAddressResult] =
     Json.reads[ValidateAddressResult]
 
+  implicit val embeddedResultReads: Reads[EmbeddedResult] =
+    Json.reads[EmbeddedResult]
+
+  implicit val addressInfoResultReads: Reads[AddressInfoResult] =
+    Json.reads[AddressInfoResult]
+
+  implicit val receivedLabelReads: Reads[ReceivedLabel] =
+    Json.reads[ReceivedLabel]
+
   implicit val estimateSmartFeeResultReads: Reads[EstimateSmartFeeResult] =
     Json.reads[EstimateSmartFeeResult]
 
@@ -305,6 +317,11 @@ object JsonSerializers {
     Map[DoubleSha256Digest, GetMemPoolResult]] =
     Reads.mapReads[DoubleSha256Digest, GetMemPoolResult](s =>
       JsSuccess(DoubleSha256Digest.fromHex(s)))
+
+  implicit def mapAddressesByLabelReads: Reads[
+    Map[BitcoinAddress, LabelResult]] =
+    Reads.mapReads[BitcoinAddress, LabelResult](s =>
+      JsSuccess(BitcoinAddress.fromString(s).get))
 
   implicit val outputMapWrites: Writes[Map[BitcoinAddress, Bitcoins]] =
     mapWrites[BitcoinAddress, Bitcoins](_.value)
