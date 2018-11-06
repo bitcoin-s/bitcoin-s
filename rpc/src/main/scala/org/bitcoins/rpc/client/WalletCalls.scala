@@ -1,11 +1,18 @@
 package org.bitcoins.rpc.client
 
+import org.bitcoins.core.currency.Bitcoins
+import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.rpc.jsonmodels.{DumpWalletResult, GetWalletInfoResult}
-import play.api.libs.json.JsString
+import org.bitcoins.rpc.serializers.JsonReaders._
+import org.bitcoins.rpc.serializers.JsonSerializers._
+import play.api.libs.json.{JsNumber, JsString}
 
 import scala.concurrent.Future
 
-trait WalletCalls extends Client {
+/**
+  * RPC calls related to wallet functionality in bitcoind
+  */
+protected trait WalletCalls extends Client with BitcoindCall {
 
   def backupWallet(destination: String): Future[Unit] = {
     bitcoindCall[Unit]("backupwallet", List(JsString(destination)))
@@ -17,6 +24,24 @@ trait WalletCalls extends Client {
 
   def encryptWallet(passphrase: String): Future[String] = {
     bitcoindCall[String]("encryptwallet", List(JsString(passphrase)))
+  }
+
+  def getAccount(address: BitcoinAddress): Future[String] = {
+    bitcoindCall[String]("getaccount", List(JsString(address.value)))
+  }
+
+  def getAccountAddress(account: String): Future[BitcoinAddress] = {
+    bitcoindCall[BitcoinAddress]("getaccountaddress", List(JsString(account)))
+  }
+
+  def getAddressesByAccount(account: String): Future[Vector[BitcoinAddress]] = {
+    bitcoindCall[Vector[BitcoinAddress]](
+      "getaddressesbyaccount",
+      List(JsString(account)))
+  }
+
+  def getBalance: Future[Bitcoins] = {
+    bitcoindCall[Bitcoins]("getbalance")
   }
 
   def getWalletInfo: Future[GetWalletInfoResult] = {
