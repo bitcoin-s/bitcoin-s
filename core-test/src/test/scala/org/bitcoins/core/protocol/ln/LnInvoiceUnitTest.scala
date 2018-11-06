@@ -45,11 +45,16 @@ class LnInvoiceUnitTest extends FlatSpec with MustMatchers with PropertyChecks {
       paymentHash = paymentTag,
       descriptionOrHash = descriptionTagE)
 
+    val sigData = "6c6e62630b25fe64410d00004080c1014181c20240004080c1014181c20240004080c1014181c202404081a1fa83632b0b9b29031b7b739b4b232b91039bab83837b93a34b733903a3434b990383937b532b1ba0"
+    val hashSigData = Sha256Digest.fromHex("c3d4e83f646fa79a393d75277b1d858db1d1f7ab7137dcb7835db2ecd518e1c9")
+
     val signature = ECDigitalSignature.fromRS("38ec6891345e204145be8a3a99de38e98a39d6a569434e1845c8af7205afcfcc7f425fcd1463e93c32881ead0d6e356d467ec8c02553f9aab15e5738b11f127f")
     val version = UInt8.zero
     val lnSig = LnInvoiceSignature(version, signature)
 
     val invoice = LnInvoice(hrpEmpty, time, lnTags, lnSig)
+
+    invoice.signatureData.toHex must be(sigData)
 
     val serialized = invoice.toString
     serialized must be("lnbc1pvjluezpp5qqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqypqdpl2pkx2ctnv5sxxmmwwd5kgetjypeh2ursdae8g6twvus8g6rfwvs8qun0dfjkxaq8rkx3yf5tcsyz3d73gafnh3cax9rn449d9p5uxz9ezhhypd0elx87sjle52x86fux2ypatgddc6k63n7erqz25le42c4u4ecky03ylcqca784w")

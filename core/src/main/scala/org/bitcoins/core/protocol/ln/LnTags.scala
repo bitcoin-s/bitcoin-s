@@ -6,6 +6,7 @@ import org.bitcoins.core.config.{ MainNet, NetworkParameters }
 import org.bitcoins.core.crypto.{ ECPublicKey, Sha256Digest, Sha256Hash160Digest }
 import org.bitcoins.core.number.{ UInt32, UInt5, UInt8 }
 import org.bitcoins.core.protocol._
+import org.bitcoins.core.protocol.ln.node.NodeId
 import org.bitcoins.core.protocol.ln.routing.LnRoute
 import org.bitcoins.core.protocol.ln.util.LnUtil
 import org.bitcoins.core.protocol.script.{ P2WPKHWitnessSPKV0, P2WSHWitnessSPKV0, WitnessScriptPubKeyV0 }
@@ -125,12 +126,12 @@ object LnTag {
 
   }
 
-  case class NodeIdTag(pubKey: ECPublicKey) extends LnTag {
+  case class NodeIdTag(nodeId: NodeId) extends LnTag {
 
     override val prefix: LnTagPrefix = LnTagPrefix.NodeId
 
     override val encoded: Vector[UInt5] = {
-      Bech32.from8bitTo5bit(pubKey.bytes)
+      Bech32.from8bitTo5bit(nodeId.bytes)
     }
   }
 
@@ -250,8 +251,8 @@ object LnTag {
 
       case LnTagPrefix.NodeId =>
 
-        val pubKey = ECPublicKey.fromBytes(bytes)
-        LnTag.NodeIdTag(pubKey)
+        val nodeId = NodeId.fromBytes(bytes)
+        LnTag.NodeIdTag(nodeId)
 
       case LnTagPrefix.ExpiryTime =>
 

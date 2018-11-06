@@ -1,4 +1,4 @@
-package org.bitcoins.eclair.rpc.network
+package org.bitcoins.core.protocol.ln.node
 
 import org.bitcoins.core.crypto.ECPublicKey
 import org.bitcoins.core.protocol.NetworkElement
