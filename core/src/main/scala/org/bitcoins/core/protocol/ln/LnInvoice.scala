@@ -1,10 +1,13 @@
 package org.bitcoins.core.protocol.ln
 
-import org.bitcoins.core.number.{ UInt5, UInt64 }
+import org.bitcoins.core.crypto.Sha256Digest
+import org.bitcoins.core.number.{ UInt5, UInt64, UInt8 }
 import org.bitcoins.core.protocol.ln.currency.{ LnCurrencyUnit, PicoBitcoins }
+import org.bitcoins.core.protocol.ln.node.NodeId
 import org.bitcoins.core.protocol.ln.util.LnUtil
 import org.bitcoins.core.util._
 import org.slf4j.LoggerFactory
+import scodec.bits.ByteVector
 
 import scala.util.{ Failure, Success, Try }
 
@@ -13,10 +16,20 @@ sealed abstract class LnInvoice {
     timestamp < UInt64(NumberUtil.pow2(35)),
     s"timestamp ${timestamp.toBigInt} < ${NumberUtil.pow2(35)}")
 
+  require(
+    nodeId.pubKey.verify(sigHash, signature.signature),
+    s"Did not receive a valid digital signature for the invoice ${toString}")
+
   private val logger = LoggerFactory.getLogger(this.getClass.getSimpleName)
-  val bech32Separator: Char = Bech32.separator
+  private val bech32Separator: Char = Bech32.separator
 
   def hrp: LnHumanReadablePart
+
+  def timestamp: UInt64
+
+  def lnTags: LnTaggedFields
+
+  def signature: LnInvoiceSignature
 
   private def data: Vector[UInt5] = {
     val u5s: Vector[UInt5] = bech32TimeStamp ++ lnTags.data ++ signature.data
@@ -31,11 +44,43 @@ sealed abstract class LnInvoice {
     amount.map(_.toPicoBitcoins)
   }
 
-  def timestamp: UInt64
+  /**
+   * The [[NodeId]] that we are paying this invoice too
+   * We can either recover this with public key recovery from
+   * the [[LnInvoiceSignature]] or if [[LnTag.NodeIdTag]] is
+   * defined we MUST use that NodeId.
+   * [[https://github.com/lightningnetwork/lihtning-rfc/blob/master/11-payment-encoding.md#requirements-3]]
+   */
+  def nodeId: NodeId = {
 
-  def lnTags: LnTaggedFields
+    if (lnTags.nodeId.isDefined) {
+      lnTags.nodeId.get.nodeId
+    } else {
+      val recoverId = signature.bytes.last
+      val sigData = signatureData
+      val hashMsg = CryptoUtil.sha256(sigData)
+      val (pubKey1, pubKey2) = CryptoUtil.recoverPublicKey(signature.signature, hashMsg.bytes)
+      if (recoverId % 2 == 0) {
+        NodeId(pubKey1)
+      } else {
+        NodeId(pubKey2)
+      }
+    }
 
-  def signature: LnInvoiceSignature
+  }
+
+  /**
+   * The data that is hashed and then signed in the [[org.bitcoins.core.protocol.ln.LnInvoiceSignature]]
+   * @return
+   */
+  def signatureData: ByteVector = {
+    //remove the signature (520 bits, or 104 uint5s (520 / 5))
+    val noSig = data.dropRight(104)
+    val u8s = Bech32.from5bitTo8bit(noSig)
+    hrp.bytes ++ UInt8.toBytes(u8s)
+  }
+
+  private def sigHash: Sha256Digest = CryptoUtil.sha256(signatureData)
 
   def bech32Checksum: String = {
     val bytes: Vector[UInt5] = LnInvoice.createChecksum(hrp, data)
@@ -44,7 +89,7 @@ sealed abstract class LnInvoice {
   }
 
   //TODO: Refactor Into Bech32Address?
-  def uInt64ToBase32(input: UInt64): Vector[UInt5] = {
+  private def uInt64ToBase32(input: UInt64): Vector[UInt5] = {
     var numNoPadding = LnUtil.encodeNumber(input.toBigInt)
 
     while (numNoPadding.length < 7) {

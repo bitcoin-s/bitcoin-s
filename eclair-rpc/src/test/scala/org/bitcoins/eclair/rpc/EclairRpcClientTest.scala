@@ -6,10 +6,10 @@ import org.bitcoins.core.currency.{ CurrencyUnit, Satoshis }
 import org.bitcoins.core.number.Int64
 import org.bitcoins.core.protocol.ln.channel.{ ChannelId, ChannelState }
 import org.bitcoins.core.protocol.ln.currency.{ MicroBitcoins, MilliBitcoins, NanoBitcoins, PicoBitcoins }
+import org.bitcoins.core.protocol.ln.node.NodeId
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.eclair.rpc.client.EclairRpcClient
 import org.bitcoins.eclair.rpc.json._
-import org.bitcoins.eclair.rpc.network.NodeId
 import org.bitcoins.rpc.BitcoindRpcTestUtil
 import org.scalatest.{ Assertion, AsyncFlatSpec, BeforeAndAfterAll }
 
