@@ -18,7 +18,7 @@ import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.eclair.rpc.client.EclairRpcClient
 import org.bitcoins.eclair.rpc.config.{EclairAuthCredentials, EclairInstance}
 import org.bitcoins.eclair.rpc.json._
-import org.bitcoins.rpc.client.BitcoindRpcClient
+import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.util.AsyncUtil
 import org.bitcoins.testkit.eclair.rpc.{EclairNodes4, EclairRpcTestUtil}
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
@@ -113,7 +113,7 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
 
   it should "be able to open and close a channel" in {
 
-    val changeAddrF = bitcoindRpcClientF.flatMap(_.getNewAddress())
+    val changeAddrF = bitcoindRpcClientF.flatMap(_.getNewAddress)
     val result: Future[Assertion] = {
       val isOpenedF: Future[(ChannelId, Assertion)] = {
         val getChannelId =

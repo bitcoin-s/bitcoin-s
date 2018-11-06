@@ -2,13 +2,18 @@ package org.bitcoins.rpc.jsonmodels
 
 import java.io.File
 
-import org.bitcoins.core.crypto.{DoubleSha256DigestBE, Sha256Hash160Digest}
+import org.bitcoins.core.crypto.{
+  DoubleSha256DigestBE,
+  ECPublicKey,
+  Sha256Hash160Digest
+}
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
-import org.bitcoins.core.protocol.script.ScriptPubKey
+import org.bitcoins.core.protocol.script.{ScriptPubKey, WitnessVersion}
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.wallet.fee.BitcoinFeeUnit
+import org.bitcoins.rpc.client.common.RpcOpts.LabelPurpose
 
 sealed abstract class WalletResult
 
@@ -108,6 +113,13 @@ case class ReceivedAccount(
     lable: Option[String])
     extends WalletResult
 
+case class ReceivedLabel(
+    involvesWatchonly: Option[Boolean],
+    amount: Bitcoins,
+    confirmations: Int,
+    label: String)
+    extends WalletResult
+
 case class ListSinceBlockResult(
     transactions: Vector[Payment],
     lastblock: DoubleSha256DigestBE)
@@ -172,3 +184,43 @@ case class UnspentOutput(
     spendable: Boolean,
     solvable: Boolean)
     extends WalletResult
+
+case class AddressInfoResult(
+    address: BitcoinAddress,
+    scriptPubKey: ScriptPubKey,
+    ismine: Boolean,
+    iswatchonly: Boolean,
+    isscript: Boolean,
+    iswitness: Boolean,
+    iscompressed: Option[Boolean],
+    witness_version: Option[WitnessVersion],
+    // TODO witness_program: Option[ScriptWitness], needs Reads[ScriptWitness]
+    witness_program: Option[String],
+    // TODO something better here
+    script: Option[String],
+    // TODO something better here
+    hex: Option[String],
+    pubkeys: Option[Vector[ECPublicKey]], // TODO write test for this, with multisig address
+    sigsrequired: Option[Int],
+    pubkey: Option[ECPublicKey],
+    embedded: Option[EmbeddedResult],
+    label: String,
+    // This causes a horrible runtime execption that kills the JVM
+    // Commented out for now
+    // timestamp: Option[DateTime],
+    hdkeypath: Option[String],
+    hdmasterkeyid: Option[Sha256Hash160Digest],
+    labels: Vector[LabelResult])
+    extends WalletResult
+
+case class EmbeddedResult(
+    isscript: Boolean,
+    iswitness: Boolean,
+    witness_version: WitnessVersion,
+    witness_program: Option[String],
+    pubkey: ECPublicKey,
+    address: BitcoinAddress,
+    scriptPubKey: ScriptPubKey)
+    extends WalletResult
+
+case class LabelResult(name: String, purpose: LabelPurpose) extends WalletResult

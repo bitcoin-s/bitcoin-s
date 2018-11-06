@@ -5,18 +5,17 @@ import java.nio.file.{Files, Path}
 import akka.actor.ActorSystem
 import akka.testkit.TestKit
 import org.bitcoins.core.currency.Bitcoins
-import org.bitcoins.rpc.client.BitcoindRpcClient
+import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.config.BitcoindInstance
-import org.bitcoins.testkit.rpc.{BitcoindRpcTestUtil, TestRpcUtil}
+import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.scalatest.{AsyncFlatSpec, BeforeAndAfterAll}
 
-import scala.concurrent.Future
 import scala.io.Source
 
 class BitcoindInstanceTest extends AsyncFlatSpec with BeforeAndAfterAll {
 
-  private implicit val actorSystem: ActorSystem = ActorSystem(
-    "BitcoindInstanceTest")
+  private implicit val actorSystem: ActorSystem =
+    ActorSystem("BitcoindInstanceTest", BitcoindRpcTestUtil.AKKA_CONFIG)
 
   private val source =
     Source.fromURL(getClass.getResource("/sample-bitcoin.conf"))
@@ -43,18 +42,13 @@ class BitcoindInstanceTest extends AsyncFlatSpec with BeforeAndAfterAll {
   it should "parse a bitcoin.conf file, start bitcoind, mine some blocks and quit" in {
     val instance = BitcoindInstance.fromDatadir(datadir.toFile)
     val client = new BitcoindRpcClient(instance)
-    BitcoindRpcTestUtil.startServers(Vector(client))
-    TestRpcUtil.awaitServer(client)
 
     for {
+      _ <- client.start()
       _ <- client.generate(101)
       balance <- client.getBalance
-      _ <- {
-        assert(balance > Bitcoins(0))
-        client.stop()
-      }
-      _ <- Future.successful(TestRpcUtil.awaitServerShutdown(client))
-    } yield succeed
+      _ <- BitcoindRpcTestUtil.stopServers(Vector(client))
+    } yield assert(balance > Bitcoins(0))
 
   }
 

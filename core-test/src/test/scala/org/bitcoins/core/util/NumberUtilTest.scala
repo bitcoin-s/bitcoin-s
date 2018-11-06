@@ -5,7 +5,6 @@ import java.math.BigInteger
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 import org.scalatest.Assertion
-import scodec.bits.ByteVector
 
 class NumberUtilTest extends BitcoinSUnitTest {
 
