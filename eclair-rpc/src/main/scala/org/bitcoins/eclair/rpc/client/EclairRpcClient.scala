@@ -13,13 +13,14 @@ import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.protocol.ln.LnInvoice
 import org.bitcoins.core.protocol.ln.channel.{ ChannelId, FundedChannelId }
 import org.bitcoins.core.protocol.ln.currency.{ LnCurrencyUnit, MilliSatoshis }
+import org.bitcoins.core.protocol.ln.node.NodeId
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.util.BitcoinSUtil
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.eclair.rpc.api.EclairApi
 import org.bitcoins.eclair.rpc.config.EclairInstance
 import org.bitcoins.eclair.rpc.json._
-import org.bitcoins.eclair.rpc.network.{ NodeId, NodeUri, PeerState }
+import org.bitcoins.eclair.rpc.network.{ NodeUri, PeerState }
 import org.slf4j.LoggerFactory
 import play.api.libs.json._
 

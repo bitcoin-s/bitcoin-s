@@ -6,6 +6,10 @@ import org.bitcoins.core.protocol.NetworkElement
 import org.bitcoins.core.util.Bech32
 import scodec.bits.ByteVector
 
+/**
+ * 520 bit digital signature that signs the [[org.bitcoins.core.protocol.ln.LnInvoice]]
+ * https://github.com/lightningnetwork/lightning-rfc/blob/master/11-payment-encoding.md#data-part
+ */
 sealed abstract class LnInvoiceSignature extends NetworkElement {
   require(version.toInt >= 0 && version.toInt <= 3, s"signature recovery byte must be 0,1,2,3, got ${version.toInt}")
 
