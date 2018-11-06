@@ -2,11 +2,13 @@ package org.bitcoins.rpc.client
 
 import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.rpc.jsonmodels.{GetMemPoolEntryResult, GetMemPoolInfoResult, GetMemPoolResult}
+import org.bitcoins.rpc.serializers.JsonReaders._
+import org.bitcoins.rpc.serializers.JsonSerializers._
 import play.api.libs.json.{JsBoolean, JsString}
 
 import scala.concurrent.Future
 
-trait MempoolCalls extends Client {
+protected trait MempoolCalls extends Client with BitcoindCall {
 
   def getMemPoolAncestors(
                            txid: DoubleSha256Digest): Future[Vector[DoubleSha256Digest]] = {
