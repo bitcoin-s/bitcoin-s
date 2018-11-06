@@ -4,7 +4,8 @@ import org.bitcoins.core.crypto.{ DoubleSha256Digest, ECDigitalSignature, Sha256
 import org.bitcoins.core.protocol.ln.{ LnHumanReadablePart, LnInvoiceSignature }
 import org.bitcoins.core.protocol.ln.channel.{ ChannelState, FundedChannelId }
 import org.bitcoins.core.protocol.ln.currency.{ LnCurrencyUnit, MilliSatoshis, PicoBitcoins }
-import org.bitcoins.eclair.rpc.network.{ NodeId, PeerState }
+import org.bitcoins.core.protocol.ln.node.NodeId
+import org.bitcoins.eclair.rpc.network.{ PeerState }
 import play.api.libs.json.{ JsArray, JsObject }
 
 sealed abstract class EclairModels

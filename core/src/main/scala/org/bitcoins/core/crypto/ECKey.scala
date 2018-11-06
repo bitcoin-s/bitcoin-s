@@ -12,6 +12,7 @@ import org.bouncycastle.crypto.digests.SHA256Digest
 import org.bouncycastle.crypto.generators.ECKeyPairGenerator
 import org.bouncycastle.crypto.params.{ ECKeyGenerationParameters, ECPrivateKeyParameters, ECPublicKeyParameters }
 import org.bouncycastle.crypto.signers.{ ECDSASigner, HMacDSAKCalculator }
+import org.bouncycastle.math.ec.ECPoint
 import scodec.bits.ByteVector
 
 import scala.annotation.tailrec
@@ -286,6 +287,10 @@ sealed abstract class ECPublicKey extends BaseECKey {
       ECPublicKey.fromBytes(ByteVector(decompressed))
     } else this
   }
+
+  def toPoint: ECPoint = {
+    CryptoParams.curve.getCurve.decodePoint(bytes.toArray)
+  }
 }
 
 object ECPublicKey extends Factory[ECPublicKey] {
@@ -320,4 +325,9 @@ object ECPublicKey extends Factory[ECPublicKey] {
    * [[https://github.com/bitcoin/bitcoin/blob/27765b6403cece54320374b37afb01a0cfe571c3/src/pubkey.h#L158]]
    */
   def isValid(bytes: ByteVector): Boolean = bytes.nonEmpty
+
+  def fromPoint(p: ECPoint, isCompressed: Boolean = true): ECPublicKey = {
+    val bytes = p.getEncoded(isCompressed)
+    ECPublicKey.fromBytes(ByteVector(bytes))
+  }
 }

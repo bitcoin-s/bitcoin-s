@@ -3,7 +3,8 @@ package org.bitcoins.eclair.rpc.json
 import org.bitcoins.core.protocol.ln.{ LnHumanReadablePart, LnInvoiceSignature }
 import org.bitcoins.core.protocol.ln.channel.{ ChannelState, FundedChannelId }
 import org.bitcoins.core.protocol.ln.currency.{ MilliSatoshis, PicoBitcoins }
-import org.bitcoins.eclair.rpc.network.{ NodeId, PeerState }
+import org.bitcoins.core.protocol.ln.node.NodeId
+import org.bitcoins.eclair.rpc.network.PeerState
 import org.bitcoins.rpc.serializers.SerializerUtil
 import org.slf4j.LoggerFactory
 import play.api.libs.json._
