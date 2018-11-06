@@ -2,6 +2,7 @@ import sbt.Credentials
 import sbt.Keys.publishTo
 import com.typesafe.sbt.SbtGit.GitKeys._
 
+import scala.util.Properties
 
 cancelable in Global := true
 
@@ -85,9 +86,7 @@ lazy val commonSettings = List(
       bintrayPublish
     }
   },
-
   bintrayReleaseOnPublish := !isSnapshot.value,
-
   //fix for https://github.com/sbt/sbt/issues/3519
   updateOptions := updateOptions.value.withGigahorse(false),
   git.formattedShaVersion := git.gitHeadCommit.value.map { sha =>
@@ -105,7 +104,11 @@ lazy val commonSettings = List(
     val file = (Test / sourceManaged).value / "amm.scala"
     IO.write(file, """object amm extends App { ammonite.Main.main(args) }""")
     Seq(file)
-  }.taskValue
+  }.taskValue,
+  // Travis has performance issues on macOS
+  Test / parallelExecution := !(Properties.isMac && sys.props
+    .get("CI")
+    .isDefined)
 )
 
 lazy val root = project

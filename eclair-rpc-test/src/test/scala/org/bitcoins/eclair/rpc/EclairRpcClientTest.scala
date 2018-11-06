@@ -18,10 +18,9 @@ import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.eclair.rpc.client.EclairRpcClient
 import org.bitcoins.eclair.rpc.config.{EclairAuthCredentials, EclairInstance}
 import org.bitcoins.eclair.rpc.json._
-import org.bitcoins.rpc.client.BitcoindRpcClient
+import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.util.AsyncUtil
 import org.bitcoins.testkit.eclair.rpc.{EclairNodes4, EclairRpcTestUtil}
-import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.scalatest.{Assertion, AsyncFlatSpec, BeforeAndAfterAll}
 import org.slf4j.Logger
 
@@ -38,7 +37,7 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
   val logger: Logger = BitcoinSLogger.logger
 
   val bitcoindRpcClientF: Future[BitcoindRpcClient] = {
-    val cliF = BitcoindRpcTestUtil.startedBitcoindRpcClient()
+    val cliF = EclairRpcTestUtil.startedBitcoindRpcClient()
     // make sure we have enough money open channels
     //not async safe
     val blocksF = cliF.flatMap(_.generate(200))
@@ -113,7 +112,7 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
 
   it should "be able to open and close a channel" in {
 
-    val changeAddrF = bitcoindRpcClientF.flatMap(_.getNewAddress())
+    val changeAddrF = bitcoindRpcClientF.flatMap(_.getNewAddress)
     val result: Future[Assertion] = {
       val isOpenedF: Future[(ChannelId, Assertion)] = {
         val getChannelId =

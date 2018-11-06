@@ -7,7 +7,12 @@ import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.number.{Int32, Int64, UInt32, UInt64}
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, MerkleBlock}
-import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptSignature}
+import org.bitcoins.core.protocol.script.{
+  ScriptPubKey,
+  ScriptSignature,
+  WitnessVersion,
+  WitnessVersion0
+}
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.protocol.{
   Address,
@@ -15,13 +20,54 @@ import org.bitcoins.core.protocol.{
   P2PKHAddress,
   P2SHAddress
 }
+import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.wallet.fee.{BitcoinFeeUnit, SatoshisPerByte}
-import org.bitcoins.rpc.jsonmodels.RpcAddress
+import org.bitcoins.rpc.client.common.RpcOpts.LabelPurpose
+import org.bitcoins.rpc.jsonmodels._
+import org.bitcoins.rpc.serializers.JsonSerializers._
+import org.joda.time.DateTime
 import play.api.libs.json._
 
 import scala.util.{Failure, Success}
 
 object JsonReaders {
+
+  /**
+    * Tries to prase the provided JSON into a map with keys of
+    * type `K` and values of type `V`
+    */
+  def mapReads[K, V](js: JsValue)(
+      implicit readsK: Reads[K],
+      readsV: Reads[V]): JsResult[Map[K, V]] = {
+    js.validate[JsObject].flatMap { jsObj =>
+      val jsResults: Seq[(JsResult[K], JsResult[V])] = jsObj.fields.map {
+        case (key, value) => JsString(key).validate[K] -> value.validate[V]
+      }
+
+      val allErrors: Seq[(JsPath, Seq[JsonValidationError])] =
+        jsResults.collect {
+          case (JsError(keyErrors), _)   => keyErrors
+          case (_, JsError(valueErrors)) => valueErrors
+        }.flatten
+
+      if (allErrors.nonEmpty) {
+        JsError(allErrors)
+      } else {
+        JsSuccess(jsResults.collect {
+          case (JsSuccess(k, _), JsSuccess(v, _)) =>
+            k -> v
+        }.toMap)
+      }
+    }
+  }
+
+  implicit object DateTimeReads extends Reads[DateTime] {
+    override def reads(json: JsValue): JsResult[DateTime] =
+      SerializerUtil.processJsNumber { num =>
+        // Joda counts in millis since epoch, Core in seconds
+        new DateTime(num.toLong * 1000)
+      }(json)
+  }
 
   implicit object BigIntReads extends Reads[BigInt] {
     override def reads(json: JsValue): JsResult[BigInt] =
@@ -31,6 +77,18 @@ object JsonReaders {
   implicit object Sha256DigestReads extends Reads[Sha256Digest] {
     override def reads(json: JsValue): JsResult[Sha256Digest] =
       SerializerUtil.processJsString[Sha256Digest](Sha256Digest.fromHex)(json)
+  }
+
+  implicit object RipeMd160DigestReads extends Reads[RipeMd160Digest] {
+    override def reads(json: JsValue): JsResult[RipeMd160Digest] =
+      SerializerUtil.processJsString[RipeMd160Digest](RipeMd160Digest.fromHex)(
+        json)
+  }
+
+  implicit object RipeMd160DigestBEReads extends Reads[RipeMd160DigestBE] {
+    override def reads(json: JsValue): JsResult[RipeMd160DigestBE] =
+      SerializerUtil.processJsString[RipeMd160DigestBE](
+        RipeMd160DigestBE.fromHex)(json)
   }
 
   implicit object DoubleSha256DigestReads extends Reads[DoubleSha256Digest] {
@@ -109,6 +167,29 @@ object JsonReaders {
       case err @ (JsNull | _: JsBoolean | _: JsArray | _: JsObject) =>
         SerializerUtil.buildJsErrorMsg("jsnumber", err)
     }
+  }
+
+  implicit object LabelPurposeReads extends Reads[LabelPurpose] {
+    override def reads(json: JsValue): JsResult[LabelPurpose] =
+      json match {
+        case JsString("send")    => JsSuccess(LabelPurpose.Send)
+        case JsString("receive") => JsSuccess(LabelPurpose.Receive)
+        // TODO better error message?
+        case err =>
+          SerializerUtil.buildErrorMsg(expected = "send or receive", err)
+      }
+  }
+
+  implicit object WitnessVersionReads extends Reads[WitnessVersion] {
+    override def reads(json: JsValue): JsResult[WitnessVersion] =
+      json match {
+        case JsNumber(num) if num == 0 => JsSuccess(WitnessVersion0)
+        case JsNumber(num) if num != 0 =>
+          SerializerUtil.buildErrorMsg("Expected witness_version 0", num)
+        case err =>
+          SerializerUtil.buildErrorMsg("Expected numerical witness_version",
+                                       err)
+      }
   }
 
   implicit object AddressReads extends Reads[Address] {
@@ -207,13 +288,14 @@ object JsonReaders {
           case _ =>
             (json \ "txid").validate[DoubleSha256DigestBE].flatMap { txid =>
               (json \ "vout").validate[UInt32].flatMap { vout =>
-                (json \ "scriptSig" \ "hex").validate[ScriptSignature].flatMap {
-                  scriptSig =>
+                (json \ "scriptSig" \ "hex")
+                  .validate[ScriptSignature]
+                  .flatMap { scriptSig =>
                     JsSuccess(
                       TransactionInput(TransactionOutPoint(txid.flip, vout),
                                        scriptSig,
                                        sequence))
-                }
+                  }
               }
             }
         }
@@ -225,7 +307,8 @@ object JsonReaders {
     override def reads(json: JsValue): JsResult[BitcoinAddress] = json match {
       case JsString(s) =>
         BitcoinAddress.fromString(s) match {
-          case Success(address) => JsSuccess(address)
+          case Success(address) =>
+            JsSuccess(address)
           case Failure(err) =>
             SerializerUtil.buildErrorMsg("address", err)
         }
@@ -292,6 +375,153 @@ object JsonReaders {
           _: JsObject) =>
         SerializerUtil.buildJsErrorMsg("jsarray", err)
     }
+  }
+
+  implicit object HashTypeReads extends Reads[HashType] {
+    override def reads(json: JsValue): JsResult[HashType] =
+      SerializerUtil.processJsString {
+        case "ALL"                 => HashType.sigHashAll
+        case "NONE"                => HashType.sigHashNone
+        case "SINGLE"              => HashType.sigHashSingle
+        case "ALL|ANYONECANPAY"    => HashType.sigHashAllAnyoneCanPay
+        case "NONE|ANYONECANPAY"   => HashType.sigHashNoneAnyoneCanPay
+        case "SINGLE|ANYONECANPAY" => HashType.sigHashSingleAnyoneCanPay
+      }(json)
+  }
+
+  implicit object FinalizedPsbtReads extends Reads[FinalizedPsbt] {
+    override def reads(json: JsValue): JsResult[FinalizedPsbt] =
+      (json \ "complete").validate[Boolean].flatMap { completed =>
+        if (completed) {
+          (json \ "hex").validate[Transaction].flatMap { tx =>
+            JsSuccess(FinalizedPsbt(tx))
+          }
+        } else {
+          JsError("PSBT was not completed!")
+        }
+      }
+  }
+
+  implicit object NonFinalizedPsbtReads extends Reads[NonFinalizedPsbt] {
+    override def reads(json: JsValue): JsResult[NonFinalizedPsbt] =
+      if ((json \ "hex").isDefined) {
+        JsError("PSBT was submitted as a serialized hex transaction!")
+      } else {
+        (json \ "psbt").validate[String].map(NonFinalizedPsbt)
+      }
+  }
+
+  implicit object FinalizePsbtResultReads extends Reads[FinalizePsbtResult] {
+    override def reads(json: JsValue): JsResult[FinalizePsbtResult] =
+      if ((json \ "hex").isDefined) {
+        json.validate[FinalizedPsbt]
+      } else {
+        json.validate[NonFinalizedPsbt]
+      }
+  }
+
+  implicit object RpcPsbtOutputReads extends Reads[RpcPsbtOutput] {
+    override def reads(json: JsValue): JsResult[RpcPsbtOutput] =
+      for {
+        redeemScript <- (json \ "redeem_script").validateOpt[RpcPsbtScript]
+        witnessScript <- (json \ "witness_script").validateOpt[RpcPsbtScript]
+        unknown <- (json \ "unknown").validateOpt[Map[String, String]]
+        bip32Derivs <- (json \ "bip32_derivs")
+          .validateOpt[Vector[PsbtBIP32Deriv]]
+      } yield RpcPsbtOutput(redeemScript, witnessScript, bip32Derivs, unknown)
+  }
+
+  implicit object PsbtBIP32DerivsReads extends Reads[PsbtBIP32Deriv] {
+    override def reads(json: JsValue): JsResult[PsbtBIP32Deriv] =
+      for {
+        pubkey <- (json \ "pubkey").validate[ECPublicKey]
+        masterFingerprint <- (json \ "master_fingerprint").validate[String]
+        path <- (json \ "path").validate[String]
+      } yield
+        PsbtBIP32Deriv(pubkey = pubkey,
+                       masterFingerprint = masterFingerprint,
+                       path = path)
+  }
+
+  implicit object RpcPsbtScriptReads extends Reads[RpcPsbtScript] {
+    override def reads(json: JsValue): JsResult[RpcPsbtScript] =
+      for {
+        asm <- (json \ "asm").validate[String]
+        hex <- (json \ "hex").validate[ScriptPubKey]
+        scriptType <- (json \ "type").validateOpt[RpcScriptType]
+        address <- (json \ "address").validateOpt[BitcoinAddress]
+      } yield
+        RpcPsbtScript(asm = asm,
+                      hex = hex,
+                      scriptType = scriptType,
+                      address = address)
+  }
+
+  implicit object MapPubKeySignatureReads
+      extends Reads[Map[ECPublicKey, ECDigitalSignature]] {
+    override def reads(
+        json: JsValue): JsResult[Map[ECPublicKey, ECDigitalSignature]] =
+      JsonReaders.mapReads(json)(implicitly[Reads[ECPublicKey]],
+                                 implicitly[Reads[ECDigitalSignature]])
+  }
+
+  implicit object RpcPsbtInputReads extends Reads[RpcPsbtInput] {
+    override def reads(json: JsValue): JsResult[RpcPsbtInput] =
+      for {
+        nonWitnessUtxo <- (json \ "non_witness_utxo")
+          .validateOpt[RpcTransaction]
+        witnessUtxo <- (json \ "witness_utxo").validateOpt[PsbtWitnessUtxoInput]
+        finalScriptSig <- (json \ "final_scriptSig").validateOpt[RpcPsbtScript]
+        redeemScript <- (json \ "redeem_script").validateOpt[RpcPsbtScript]
+        sighash <- (json \ "sighash").validateOpt[HashType]
+        partialSignatures <- (json \ "partial_signatures")
+          .validateOpt[Map[ECPublicKey, ECDigitalSignature]]
+        witnessScript <- (json \ "witness_script").validateOpt[RpcPsbtScript]
+        bip32Derivs <- (json \ "bi32_derivs")
+          .validateOpt[Vector[PsbtBIP32Deriv]]
+        finalScriptWitness <- JsSuccess(None) // todo(torkelrogstad) find an example of this
+        unknown <- (json \ "unknown").validateOpt[Map[String, String]]
+      } yield {
+        RpcPsbtInput(
+          nonWitnessUtxo = nonWitnessUtxo,
+          witnessUtxo = witnessUtxo,
+          partialSignatures = partialSignatures,
+          sighash = sighash,
+          redeemScript = redeemScript,
+          witnessScript = witnessScript,
+          bip32Derivs = bip32Derivs,
+          finalScriptSig = finalScriptSig,
+          finalScriptwitness = finalScriptWitness,
+          unknown = unknown
+        )
+      }
+
+  }
+
+  implicit object RpcScriptTypeReads extends Reads[RpcScriptType] {
+    import RpcScriptType._
+    override def reads(json: JsValue): JsResult[RpcScriptType] =
+      json.validate[String].flatMap {
+        case "nonstandard"           => JsSuccess(NONSTANDARD)
+        case "pubkey"                => JsSuccess(PUBKEY)
+        case "pubkeyhash"            => JsSuccess(PUBKEYHASH)
+        case "scripthash"            => JsSuccess(SCRIPTHASH)
+        case "multisig"              => JsSuccess(MULTISIG)
+        case "nulldata"              => JsSuccess(NULLDATA)
+        case "witness_v0_keyhash"    => JsSuccess(WITNESS_V0_KEYHASH)
+        case "witness_v0_scripthash" => JsSuccess(WITNESS_V0_SCRIPTHASH)
+        case "witness_unknown"       => JsSuccess(WITNESS_UNKNOWN)
+      }
+  }
+
+  implicit object TestMempoolAcceptResultReads
+      extends Reads[TestMempoolAcceptResult] {
+    override def reads(json: JsValue): JsResult[TestMempoolAcceptResult] =
+      for {
+        txid <- (json \ "txid").validate[DoubleSha256DigestBE]
+        allowed <- (json \ "allowed").validate[Boolean]
+        rejectReason <- (json \ "reject-reason").validateOpt[String]
+      } yield TestMempoolAcceptResult(txid, allowed, rejectReason)
   }
 
   // Currently takes in BTC/kB

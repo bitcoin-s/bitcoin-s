@@ -1,5 +1,6 @@
 package org.bitcoins.core.protocol.transaction
 
+import org.bitcoins.core.crypto.DoubleSha256DigestBE
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.NetworkElement
 import org.bitcoins.core.protocol.script.{EmptyScriptSignature, ScriptSignature}
@@ -41,6 +42,21 @@ object TransactionInput extends Factory[TransactionInput] {
       sequence: UInt32)
       extends TransactionInput
   def empty: TransactionInput = EmptyTransactionInput
+
+  /**
+    * Generates a transaction input from the provided txid and output index.
+    * A script signature can also be provided, this defaults to an empty signature.
+    */
+  def fromTxidAndVout(
+      txid: DoubleSha256DigestBE,
+      vout: UInt32,
+      signature: ScriptSignature = ScriptSignature.empty): TransactionInput = {
+    val outpoint = TransactionOutPoint(txid, vout)
+    TransactionInput(outPoint = outpoint,
+                     scriptSignature = signature,
+                     sequenceNumber = TransactionConstants.sequence)
+
+  }
 
   def fromBytes(bytes: ByteVector): TransactionInput =
     RawTransactionInputParser.read(bytes)

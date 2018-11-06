@@ -46,7 +46,7 @@ abstract class BitcoinSUnitTest
 
 }
 
-object BitcoinSUnitTest {
+private object BitcoinSUnitTest {
 
   /** The number of times new code
     * should be executed in a property based test

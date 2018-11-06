@@ -2,13 +2,21 @@ package org.bitcoins.rpc.jsonmodels
 
 import java.io.File
 
-import org.bitcoins.core.crypto.{DoubleSha256DigestBE, Sha256Hash160Digest}
+import org.bitcoins.core.crypto.bip32.BIP32Path
+import org.bitcoins.core.crypto.{
+  DoubleSha256DigestBE,
+  ECPublicKey,
+  RipeMd160Digest,
+  Sha256Hash160Digest
+}
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
-import org.bitcoins.core.protocol.script.ScriptPubKey
+import org.bitcoins.core.protocol.script.{ScriptPubKey, WitnessVersion}
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.wallet.fee.BitcoinFeeUnit
+import org.bitcoins.rpc.client.common.RpcOpts.LabelPurpose
+import org.joda.time.DateTime
 
 sealed abstract class WalletResult
 
@@ -108,6 +116,13 @@ case class ReceivedAccount(
     lable: Option[String])
     extends WalletResult
 
+case class ReceivedLabel(
+    involvesWatchonly: Option[Boolean],
+    amount: Bitcoins,
+    confirmations: Int,
+    label: String)
+    extends WalletResult
+
 case class ListSinceBlockResult(
     transactions: Vector[Payment],
     lastblock: DoubleSha256DigestBE)
@@ -172,3 +187,39 @@ case class UnspentOutput(
     spendable: Boolean,
     solvable: Boolean)
     extends WalletResult
+
+case class AddressInfoResult(
+    address: BitcoinAddress,
+    scriptPubKey: ScriptPubKey,
+    ismine: Boolean,
+    iswatchonly: Boolean,
+    isscript: Boolean,
+    iswitness: Boolean,
+    iscompressed: Option[Boolean],
+    witness_version: Option[WitnessVersion],
+    witness_program: Option[String], // todo what's the correct type here?
+    script: Option[RpcScriptType],
+    hex: Option[ScriptPubKey],
+    pubkeys: Option[Vector[ECPublicKey]],
+    sigsrequired: Option[Int],
+    pubkey: Option[ECPublicKey],
+    embedded: Option[EmbeddedResult],
+    label: String,
+    timestamp: Option[DateTime],
+    hdkeypath: Option[BIP32Path],
+    hdseedid: Option[RipeMd160Digest],
+    hdmasterkeyid: Option[RipeMd160Digest],
+    labels: Vector[LabelResult])
+    extends WalletResult
+
+case class EmbeddedResult(
+    isscript: Boolean,
+    iswitness: Boolean,
+    witness_version: WitnessVersion,
+    witness_program: Option[String],
+    pubkey: ECPublicKey,
+    address: BitcoinAddress,
+    scriptPubKey: ScriptPubKey)
+    extends WalletResult
+
+case class LabelResult(name: String, purpose: LabelPurpose) extends WalletResult
