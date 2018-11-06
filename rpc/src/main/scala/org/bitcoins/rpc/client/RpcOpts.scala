@@ -6,7 +6,6 @@ import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import play.api.libs.json.{ Json, Writes }
-import org.bitcoins.rpc.serializers.JsonSerializers._
 
 object RpcOpts {
   case class FundRawTransactionOptions(
