@@ -8,13 +8,15 @@ import akka.http.scaladsl.model._
 import akka.stream.ActorMaterializer
 import akka.util.ByteString
 import org.bitcoins.core.config.NetworkParameters
+import org.bitcoins.core.crypto.ECPrivateKey
+import org.bitcoins.rpc.serializers.BitcoindJsonWriters._
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.rpc.config.BitcoindInstance
 import org.slf4j.Logger
 import play.api.libs.json._
 
 import scala.concurrent.duration.DurationInt
-import scala.concurrent.{ Await, ExecutionContext, Future }
+import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.sys.process._
 import scala.util.Try
 
@@ -24,6 +26,20 @@ protected trait Client {
   protected implicit val executor: ExecutionContext
   protected implicit val materializer: ActorMaterializer
   protected implicit val network: NetworkParameters = instance.network
+
+  /**
+    * This is here (and not in BitcoindJsonWrriters)
+    * so that the implicit network val is accessible
+     */
+  implicit object ECPrivateKeyWrites extends Writes[ECPrivateKey] {
+    override def writes(o: ECPrivateKey): JsValue = JsString(o.toWIF(network))
+  }
+
+  implicit val eCPrivateKeyWrites: Writes[ECPrivateKey] = ECPrivateKeyWrites
+  implicit val importMultiAddressWrites: Writes[RpcOpts.ImportMultiAddress] =
+    Json.writes[RpcOpts.ImportMultiAddress]
+  implicit val importMultiRequestWrites: Writes[RpcOpts.ImportMultiRequest] =
+    Json.writes[RpcOpts.ImportMultiRequest]
 
   protected val resultKey: String = "result"
   protected val errorKey: String = "error"
@@ -57,9 +73,9 @@ protected trait Client {
   }
 
   protected def buildRequest(
-    instance: BitcoindInstance,
-    methodName: String,
-    params: JsArray): HttpRequest = {
+                              instance: BitcoindInstance,
+                              methodName: String,
+                              params: JsArray): HttpRequest = {
     val uuid = UUID.randomUUID().toString
 
     val m: Map[String, JsValue] = Map(
@@ -98,10 +114,10 @@ protected trait Client {
   }
 
   protected def bitcoindCall[T](
-    command: String,
-    parameters: List[JsValue] = List.empty)(
-    implicit
-    reader: Reads[T]): Future[T] = {
+                                 command: String,
+                                 parameters: List[JsValue] = List.empty)(
+                                 implicit
+                                 reader: Reads[T]): Future[T] = {
     val request = buildRequest(instance, command, JsArray(parameters))
     val responseF = sendRequest(request)
 

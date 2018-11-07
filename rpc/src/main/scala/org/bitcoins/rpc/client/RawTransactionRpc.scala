@@ -1,13 +1,15 @@
 package org.bitcoins.rpc.client
 
-import org.bitcoins.core.crypto.{DoubleSha256Digest, ECPrivateKey}
+import org.bitcoins.core.config.NetworkParameters
+import org.bitcoins.core.crypto.{ DoubleSha256Digest, ECPrivateKey }
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.protocol.BitcoinAddress
-import org.bitcoins.rpc.jsonmodels.{FundRawTransactionResult, GetRawTransactionResult, RpcTransaction, SignRawTransactionResult}
-import play.api.libs.json._
-import org.bitcoins.rpc.serializers.BitcoindJsonSerializers._
+import org.bitcoins.core.protocol.transaction.{ Transaction, TransactionInput }
+import org.bitcoins.rpc.jsonmodels.{ FundRawTransactionResult, GetRawTransactionResult, RpcTransaction, SignRawTransactionResult }
 import org.bitcoins.rpc.serializers.BitcoindJsonReaders._
-import org.bitcoins.core.protocol.transaction.{Transaction, TransactionInput}
+import org.bitcoins.rpc.serializers.BitcoindJsonSerializers._
+import org.bitcoins.rpc.serializers.BitcoindJsonWriters._
+import play.api.libs.json._
 
 import scala.concurrent.Future
 
@@ -36,10 +38,6 @@ protected trait RawTransactionRpc extends Client {
     transaction: Transaction): Future[FundRawTransactionResult] =
     fundRawTransaction(transaction, None)
 
-  def fundRawTransaction(
-    transaction: Transaction,
-    options: RpcOpts.FundRawTransactionOptions): Future[FundRawTransactionResult] = fundRawTransaction(transaction, Some(options))
-
   private def fundRawTransaction(
     transaction: Transaction,
     options: Option[RpcOpts.FundRawTransactionOptions]): Future[FundRawTransactionResult] = {
@@ -52,6 +50,10 @@ protected trait RawTransactionRpc extends Client {
 
     bitcoindCall[FundRawTransactionResult]("fundrawtransaction", params)
   }
+
+  def fundRawTransaction(
+    transaction: Transaction,
+    options: RpcOpts.FundRawTransactionOptions): Future[FundRawTransactionResult] = fundRawTransaction(transaction, Some(options))
 
   def getRawTransaction(
     txid: DoubleSha256Digest): Future[GetRawTransactionResult] = {
@@ -74,11 +76,9 @@ protected trait RawTransactionRpc extends Client {
       List(JsString(transaction.hex), JsBoolean(allowHighFees)))
   }
 
-  implicit object ECPrivateKeyWrites extends Writes[ECPrivateKey] {
-    override def writes(o: ECPrivateKey): JsValue = JsString(o.toWIF(network))
-  }
-
-  implicit val eCPrivateKeyWrites: Writes[ECPrivateKey] = ECPrivateKeyWrites
+  def signRawTransaction(
+    transaction: Transaction): Future[SignRawTransactionResult] =
+    signRawTransaction(transaction, None, None, None)
 
   private def signRawTransaction(
     transaction: Transaction,
@@ -102,9 +102,6 @@ protected trait RawTransactionRpc extends Client {
 
     bitcoindCall[SignRawTransactionResult]("signrawtransaction", params)
   }
-  def signRawTransaction(
-    transaction: Transaction): Future[SignRawTransactionResult] =
-    signRawTransaction(transaction, None, None, None)
 
   def signRawTransaction(
     transaction: Transaction,
