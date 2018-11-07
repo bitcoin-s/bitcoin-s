@@ -1,17 +1,17 @@
 package org.bitcoins.rpc.client
 
 import org.bitcoins.core.crypto.DoubleSha256Digest
-import org.bitcoins.rpc.jsonmodels.{GetMemPoolEntryResult, GetMemPoolInfoResult, GetMemPoolResult}
+import org.bitcoins.rpc.jsonmodels.{ GetMemPoolEntryResult, GetMemPoolInfoResult, GetMemPoolResult }
 import org.bitcoins.rpc.serializers.JsonReaders._
-import org.bitcoins.rpc.serializers.JsonSerializers._
-import play.api.libs.json.{JsBoolean, JsString}
+import org.bitcoins.rpc.serializers.BitcoindJsonSerializers._
+import play.api.libs.json.{ JsBoolean, JsString }
 
 import scala.concurrent.Future
 
 protected trait MempoolRpc extends Client {
 
   def getMemPoolAncestors(
-                           txid: DoubleSha256Digest): Future[Vector[DoubleSha256Digest]] = {
+    txid: DoubleSha256Digest): Future[Vector[DoubleSha256Digest]] = {
     bitcoindCall[Vector[DoubleSha256Digest]](
       "getmempoolancestors",
       List(JsString(txid.hex), JsBoolean(false)))
@@ -24,7 +24,7 @@ protected trait MempoolRpc extends Client {
   }
 
   def getMemPoolDescendants(
-                             txid: DoubleSha256Digest): Future[Vector[DoubleSha256Digest]] = {
+    txid: DoubleSha256Digest): Future[Vector[DoubleSha256Digest]] = {
     bitcoindCall[Vector[DoubleSha256Digest]](
       "getmempooldescendants",
       List(JsString(txid.hex), JsBoolean(false)))
@@ -37,7 +37,7 @@ protected trait MempoolRpc extends Client {
   }
 
   def getMemPoolEntry(
-                       txid: DoubleSha256Digest): Future[GetMemPoolEntryResult] = {
+    txid: DoubleSha256Digest): Future[GetMemPoolEntryResult] = {
     bitcoindCall[GetMemPoolEntryResult](
       "getmempoolentry",
       List(JsString(txid.hex)))
@@ -62,7 +62,5 @@ protected trait MempoolRpc extends Client {
   def saveMemPool(): Future[Unit] = {
     bitcoindCall[Unit]("savemempool")
   }
-
-
 
 }

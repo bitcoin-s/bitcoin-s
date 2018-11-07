@@ -14,7 +14,8 @@ import org.slf4j.Logger
 import play.api.libs.json._
 
 import scala.concurrent.duration.DurationInt
-import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.concurrent.{ Await, ExecutionContext, Future }
+import scala.sys.process._
 import scala.util.Try
 
 protected trait Client {
@@ -22,9 +23,21 @@ protected trait Client {
 
   protected implicit val executor: ExecutionContext
   protected implicit val materializer: ActorMaterializer
-  protected val resultKey: String = "result"
   protected implicit val network: NetworkParameters = instance.network
+
+  protected val resultKey: String = "result"
   protected val errorKey: String = "error"
+
+  def getDaemon: BitcoindInstance = instance
+
+  def start(): String = {
+    val cmd = Seq(
+      "bitcoind",
+      "-datadir=" + instance.authCredentials.datadir,
+      "-rpcport=" + instance.rpcUri.getPort,
+      "-port=" + instance.uri.getPort)
+    cmd.!!
+  }
 
   def isStarted: Boolean = {
     val request = buildRequest(instance, "ping", JsArray.empty)
@@ -43,10 +56,52 @@ protected trait Client {
     result.getOrElse(false)
   }
 
+  protected def buildRequest(
+    instance: BitcoindInstance,
+    methodName: String,
+    params: JsArray): HttpRequest = {
+    val uuid = UUID.randomUUID().toString
+
+    val m: Map[String, JsValue] = Map(
+      "method" -> JsString(methodName),
+      "params" -> params,
+      "id" -> JsString(uuid))
+
+    val jsObject = JsObject(m)
+
+    logger.debug(s"json rpc request: $m")
+
+    // Would toString work?
+    val uri = "http://" + instance.rpcUri.getHost + ":" + instance.rpcUri.getPort
+    val username = instance.authCredentials.username
+    val password = instance.authCredentials.password
+    HttpRequest(
+      method = HttpMethods.POST,
+      uri,
+      entity = HttpEntity(ContentTypes.`application/json`, jsObject.toString()))
+      .addCredentials(
+        HttpCredentials.createBasicHttpCredentials(username, password))
+  }
+
+  protected def logger: Logger = BitcoinSLogger.logger
+
+  protected def sendRequest(req: HttpRequest): Future[HttpResponse] = {
+    Http(materializer.system).singleRequest(req)
+  }
+
+  protected def getPayload(response: HttpResponse): Future[JsValue] = {
+    val payloadF = response.entity.dataBytes.runFold(ByteString.empty)(_ ++ _)
+
+    payloadF.map { payload =>
+      Json.parse(payload.decodeString(ByteString.UTF_8))
+    }
+  }
+
   protected def bitcoindCall[T](
-                                 command: String,
-                                 parameters: List[JsValue] = List.empty)(
-                                 implicit reader: Reads[T]): Future[T] = {
+    command: String,
+    parameters: List[JsValue] = List.empty)(
+    implicit
+    reader: Reads[T]): Future[T] = {
     val request = buildRequest(instance, command, JsArray(parameters))
     val responseF = sendRequest(request)
 
@@ -77,8 +132,6 @@ protected trait Client {
     }
   }
 
-  protected def logger: Logger = BitcoinSLogger.logger
-
   // Catches errors thrown by calls with Unit as the expected return type (which isn't handled by UnitReads)
   private def checkUnitError[T](result: JsResult[T], json: JsValue): Unit = {
     if (result == JsSuccess(())) {
@@ -92,50 +145,8 @@ protected trait Client {
     }
   }
 
-  protected def buildRequest(instance: BitcoindInstance,
-                             methodName: String,
-                             params: JsArray): HttpRequest = {
-    val uuid = UUID.randomUUID().toString
-
-    val m: Map[String, JsValue] = Map(
-      "method" -> JsString(methodName),
-      "params" -> params,
-      "id" -> JsString(uuid))
-
-    val jsObject = JsObject(m)
-
-    logger.debug(s"json rpc request: $m")
-
-    // Would toString work?
-    val uri = "http://" + instance.rpcUri.getHost + ":" + instance.rpcUri.getPort
-    val username = instance.authCredentials.username
-    val password = instance.authCredentials.password
-    HttpRequest(
-      method = HttpMethods.POST,
-      uri,
-      entity = HttpEntity(ContentTypes.`application/json`, jsObject.toString()))
-      .addCredentials(
-        HttpCredentials.createBasicHttpCredentials(username, password))
-  }
-
-  protected def sendRequest(req: HttpRequest)(
-    implicit materializer: ActorMaterializer
-  ): Future[HttpResponse] = {
-    Http(materializer.system).singleRequest(req)
-  }
-
-  protected def getPayload(response: HttpResponse)(
-    implicit materializer: ActorMaterializer,
-    executionContext: ExecutionContext
-  ): Future[JsValue] = {
-    val payloadF = response.entity.dataBytes.runFold(ByteString.empty)(_ ++ _)
-
-    payloadF.map { payload =>
-      Json.parse(payload.decodeString(ByteString.UTF_8))
-    }
-  }
-
   case class RpcError(code: Int, message: String)
+
   implicit val rpcErrorReads: Reads[RpcError] = Json.reads[RpcError]
 
 }
