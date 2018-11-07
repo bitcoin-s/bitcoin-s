@@ -9,9 +9,9 @@ import akka.stream.ActorMaterializer
 import akka.util.ByteString
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.crypto.ECPrivateKey
-import org.bitcoins.rpc.serializers.BitcoindJsonWriters._
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.rpc.config.BitcoindInstance
+import org.bitcoins.rpc.serializers.BitcoindJsonWriters._
 import org.slf4j.Logger
 import play.api.libs.json._
 
