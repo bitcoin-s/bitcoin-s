@@ -24,12 +24,12 @@ class BitcoindRpcClient(instance: BitcoindInstance)(
   implicit
   m: ActorMaterializer) extends Client
   with BitcoindCall
-  with BlockchainCalls
-  with P2PCalls
-  with WalletCalls
-  with MempoolCalls
-  with MiningCalls
-  with NodeCalls {
+  with BlockchainRpc
+  with P2PRpc
+  with WalletRpc
+  with MempoolRpc
+  with MiningRpc
+  with NodeRpc {
   override protected implicit val executor: ExecutionContext = m.executionContext
 
   def getDaemon: BitcoindInstance = instance

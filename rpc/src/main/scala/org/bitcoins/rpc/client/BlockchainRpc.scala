@@ -12,7 +12,7 @@ import scala.concurrent.Future
 /**
   * RPC calls related to querying the state of the blockchain
   */
-protected trait BlockchainCalls extends Client with BitcoindCall {
+protected trait BlockchainRpc extends Client with BitcoindCall {
   def getBestBlockHash: Future[DoubleSha256Digest] = {
     bitcoindCall[DoubleSha256Digest]("getbestblockhash")
   }
