@@ -25,7 +25,7 @@ import org.bitcoins.core.protocol.transaction.{
 }
 import org.bitcoins.core.wallet.fee.BitcoinFeeUnit
 import org.bitcoins.rpc.jsonmodels._
-import org.bitcoins.rpc.serializers.JsonReaders._
+import org.bitcoins.rpc.serializers.BitcoindJsonReaders._
 import org.bitcoins.rpc.serializers.BitcoindJsonWriters._
 import play.api.libs.json._
 import play.api.libs.functional.syntax._

@@ -4,7 +4,7 @@ import java.net.URI
 
 import org.bitcoins.core.protocol.blockchain.Block
 import org.bitcoins.rpc.jsonmodels._
-import org.bitcoins.rpc.serializers.JsonReaders._
+import org.bitcoins.rpc.serializers.BitcoindJsonReaders._
 import org.bitcoins.rpc.serializers.BitcoindJsonSerializers._
 import play.api.libs.json.{ JsBoolean, JsNumber, JsString }
 

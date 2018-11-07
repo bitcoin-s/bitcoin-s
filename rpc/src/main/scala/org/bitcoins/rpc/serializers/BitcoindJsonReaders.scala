@@ -25,7 +25,7 @@ import play.api.libs.json._
 
 import scala.util.{ Failure, Success }
 
-object JsonReaders {
+object BitcoindJsonReaders {
   // For use in implementing reads method of Reads[T] where T is constructed from a JsNumber via numFunc
   private def processJsNumber[T](numFunc: BigDecimal => T)(
     json: JsValue): JsResult[T] = json match {
