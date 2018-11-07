@@ -26,11 +26,11 @@ import org.bitcoins.core.protocol.transaction.{
 import org.bitcoins.core.wallet.fee.BitcoinFeeUnit
 import org.bitcoins.rpc.jsonmodels._
 import org.bitcoins.rpc.serializers.JsonReaders._
-import org.bitcoins.rpc.serializers.JsonWriters._
+import org.bitcoins.rpc.serializers.BitcoindJsonWriters._
 import play.api.libs.json._
 import play.api.libs.functional.syntax._
 
-object JsonSerializers {
+object BitcoindJsonSerializers {
   implicit val bigIntReads: Reads[BigInt] = BigIntReads
 
   // Internal Types

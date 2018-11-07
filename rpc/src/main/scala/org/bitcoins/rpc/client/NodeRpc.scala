@@ -3,14 +3,14 @@ package org.bitcoins.rpc.client
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.rpc.jsonmodels.GetMemoryInfoResult
 import org.bitcoins.rpc.serializers.JsonReaders._
-import org.bitcoins.rpc.serializers.JsonSerializers._
-import play.api.libs.json.{JsArray, JsString, Json}
+import org.bitcoins.rpc.serializers.BitcoindJsonSerializers._
+import play.api.libs.json.{ JsArray, JsString, Json }
 
 import scala.concurrent.Future
 
 /**
-  * RPC calls related to administration of a given node
-  */
+ * RPC calls related to administration of a given node
+ */
 protected trait NodeRpc extends Client {
   def abortRescan(): Future[Unit] = {
     bitcoindCall[Unit]("abortrescan")
