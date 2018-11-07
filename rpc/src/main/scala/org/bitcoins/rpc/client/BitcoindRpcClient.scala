@@ -9,14 +9,16 @@ class BitcoindRpcClient(protected val instance: BitcoindInstance)(
   implicit
   m: ActorMaterializer) extends Client
   with BlockchainRpc
-  with P2PRpc
-  with WalletRpc
+  with MessageRpc
   with MempoolRpc
   with MiningRpc
+  with MultisigRpc
+  with NodeRpc
+  with P2PRpc
   with RawTransactionRpc
   with TransacationRpc
   with UTXORpc
-  with NodeRpc {
+  with WalletRpc {
   override protected implicit val executor: ExecutionContext = m.executionContext
   override protected implicit val materializer: ActorMaterializer =
     m
