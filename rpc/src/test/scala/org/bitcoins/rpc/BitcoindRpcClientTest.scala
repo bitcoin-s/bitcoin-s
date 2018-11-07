@@ -74,7 +74,7 @@ class BitcoindRpcClientTest
                   transaction1.txid.flip,
                   UInt32(transaction1.blockindex.get))
               val sig: ScriptSignature = ScriptSignature.empty
-              receiver.getNewAddress().flatMap { address =>
+              receiver.getNewAddress.flatMap { address =>
                 sender.createRawTransaction(
                   Vector(
                     TransactionInput(input0, sig, UInt32(1)),
@@ -187,7 +187,7 @@ class BitcoindRpcClientTest
   }
 
   it should "be able to import funds without rescan and then remove them" in {
-    client.getNewAddress().flatMap { address =>
+    client.getNewAddress.flatMap { address =>
       client.dumpPrivKey(address).flatMap { privKey =>
         fundBlockChainTransaction(client, address, Bitcoins(1.5)).flatMap {
           txid =>
@@ -226,7 +226,7 @@ class BitcoindRpcClientTest
   }
 
   it should "be able to invalidate a block" in {
-    otherClient.getNewAddress().flatMap { address =>
+    otherClient.getNewAddress.flatMap { address =>
       fundMemPoolTransaction(client, address, Bitcoins(3)).flatMap { txid =>
         client.generate(1).flatMap { blocks =>
           client.invalidateBlock(blocks.head).flatMap { _ =>
@@ -363,7 +363,7 @@ class BitcoindRpcClientTest
   }
 
   it should "be able to list address groupings" in {
-    client.getNewAddress().flatMap { address =>
+    client.getNewAddress.flatMap { address =>
       fundBlockChainTransaction(client, address, Bitcoins(1.25)).flatMap {
         txid =>
           client.listAddressGroupings.flatMap { groupings =>
@@ -449,7 +449,7 @@ class BitcoindRpcClientTest
                   transaction1.txid.flip,
                   UInt32(transaction1.blockindex.get))
               val sig: ScriptSignature = ScriptSignature.empty
-              otherClient.getNewAddress().flatMap { address =>
+              otherClient.getNewAddress.flatMap { address =>
                 client
                   .createRawTransaction(
                     Vector(
@@ -477,7 +477,7 @@ class BitcoindRpcClientTest
   }
 
   it should "be able to fund a raw transaction" in {
-    otherClient.getNewAddress().flatMap { address =>
+    otherClient.getNewAddress.flatMap { address =>
       client
         .createRawTransaction(Vector.empty, Map(address -> Bitcoins(1)))
         .flatMap { transactionWithoutFunds =>
@@ -505,7 +505,7 @@ class BitcoindRpcClientTest
   }
 
   it should "be able to send from an account to an addresss" in {
-    otherClient.getNewAddress().flatMap { address =>
+    otherClient.getNewAddress.flatMap { address =>
       client.sendFrom("", address, Bitcoins(1)).flatMap { txid =>
         client.getTransaction(txid).map { transaction =>
           assert(transaction.amount == Bitcoins(-1))
@@ -516,7 +516,7 @@ class BitcoindRpcClientTest
   }
 
   it should "be able to send to an address" in {
-    otherClient.getNewAddress().flatMap { address =>
+    otherClient.getNewAddress.flatMap { address =>
       client.sendToAddress(address, Bitcoins(1)).flatMap { txid =>
         client.getTransaction(txid).map { transaction =>
           assert(transaction.amount == Bitcoins(-1))
@@ -527,8 +527,8 @@ class BitcoindRpcClientTest
   }
 
   it should "be able to send btc to many addresses" in {
-    otherClient.getNewAddress().flatMap { address1 =>
-      otherClient.getNewAddress().flatMap { address2 =>
+    otherClient.getNewAddress.flatMap { address1 =>
+      otherClient.getNewAddress.flatMap { address2 =>
         client
           .sendMany(Map(address1 -> Bitcoins(1), address2 -> Bitcoins(2)))
           .flatMap { txid =>
@@ -543,7 +543,7 @@ class BitcoindRpcClientTest
   }
 
   it should "be able to abandon a transaction" in {
-    otherClient.getNewAddress().flatMap { address =>
+    otherClient.getNewAddress.flatMap { address =>
       client.sendToAddress(address, Bitcoins(1)).flatMap { txid =>
         client.abandonTransaction(txid).flatMap { _ =>
           client.getTransaction(txid).map { transaction =>
@@ -555,7 +555,7 @@ class BitcoindRpcClientTest
   }
 
   it should "fail to abandon a transaction which has not been sent" in {
-    otherClient.getNewAddress().flatMap { address =>
+    otherClient.getNewAddress.flatMap { address =>
       client
         .createRawTransaction(Vector(), Map(address -> Bitcoins(1)))
         .flatMap { tx =>
@@ -567,11 +567,11 @@ class BitcoindRpcClientTest
 
   it should "be able to find mem pool ancestors and descendants" in {
     client.generate(1)
-    client.getNewAddress().flatMap { address =>
+    client.getNewAddress.flatMap { address =>
       fundMemPoolTransaction(client, address, Bitcoins(2)).flatMap { txid1 =>
         client.getRawMemPool.flatMap { mempool =>
           assert(mempool.head == txid1)
-          client.getNewAddress().flatMap { address =>
+          client.getNewAddress.flatMap { address =>
             val input: TransactionInput =
               TransactionInput(
                 TransactionOutPoint(txid1.flip, UInt32(0)),
@@ -615,7 +615,7 @@ class BitcoindRpcClientTest
   }
 
   it should "be able to list transactions by receiving addresses" in {
-    otherClient.getNewAddress().flatMap { address =>
+    otherClient.getNewAddress.flatMap { address =>
       fundBlockChainTransaction(client, address, Bitcoins(1.5)).flatMap {
         txid =>
           otherClient.listReceivedByAddress().map { receivedList =>
@@ -633,7 +633,7 @@ class BitcoindRpcClientTest
   }
 
   it should "be able to import an address" in {
-    client.getNewAddress().flatMap { address =>
+    client.getNewAddress.flatMap { address =>
       otherClient.importAddress(address).flatMap { _ =>
         fundBlockChainTransaction(client, address, Bitcoins(1.5)).flatMap {
           txid =>
@@ -758,7 +758,7 @@ class BitcoindRpcClientTest
   }
 
   it should "be able to prioritise a mem pool transaction" in {
-    otherClient.getNewAddress().flatMap { address =>
+    otherClient.getNewAddress.flatMap { address =>
       fundMemPoolTransaction(client, address, Bitcoins(3.2)).flatMap { txid =>
         client.getMemPoolEntry(txid).flatMap { entry =>
           assert(entry.fee == entry.modifiedfee)
@@ -810,13 +810,13 @@ class BitcoindRpcClientTest
   }
 
   it should "be able to get an address from bitcoind" in {
-    client.getNewAddress().map { address =>
+    client.getNewAddress.map { address =>
       succeed
     }
   }
 
   it should "be able to get all addresses belonging to an account" in {
-    client.getNewAddress().flatMap { address =>
+    client.getNewAddress.flatMap { address =>
       client.getAddressesByAccount("").map { addresses =>
         assert(addresses.contains(address))
       }
@@ -824,7 +824,7 @@ class BitcoindRpcClientTest
   }
 
   it should "be able to get a new raw change address" in {
-    client.getRawChangeAddress().map { address =>
+    client.getRawChangeAddress.map { address =>
       succeed
     }
 
@@ -842,7 +842,7 @@ class BitcoindRpcClientTest
   }
 
   it should "be able to get the amount recieved by some address" in {
-    client.getNewAddress().flatMap { address =>
+    client.getNewAddress.flatMap { address =>
       client.getReceivedByAddress(address).flatMap { amount =>
         assert(amount == Bitcoins(0))
       }
@@ -942,7 +942,7 @@ class BitcoindRpcClientTest
   }
 
   it should "be able to generate blocks to an address" in {
-    otherClient.getNewAddress().flatMap { address =>
+    otherClient.getNewAddress.flatMap { address =>
       client.generateToAddress(3, address).flatMap { blocks =>
         assert(blocks.length == 3)
         blocks.foreach { hash =>
@@ -1096,7 +1096,7 @@ class BitcoindRpcClientTest
   }
 
   it should "be able to validate a bitcoin address" in {
-    otherClient.getNewAddress().flatMap { address =>
+    otherClient.getNewAddress.flatMap { address =>
       client.validateAddress(address).map { validation =>
         assert(validation.isvalid)
       }
@@ -1137,6 +1137,7 @@ class BitcoindRpcClientTest
     client.createMultiSig(2, Vector(pubKey1, pubKey2)).map { result =>
       succeed
     }
+    succeed
   }
 
   it should "be able to add a multi sig address to the wallet" in {
@@ -1178,7 +1179,7 @@ class BitcoindRpcClientTest
   }
 
   it should "be able to dump a private key" in {
-    client.getNewAddress().flatMap { address =>
+    client.getNewAddress.flatMap { address =>
       client.dumpPrivKey(address).map { key =>
         succeed
       }
@@ -1336,7 +1337,7 @@ class BitcoindRpcClientTest
   }
 
   it should "be able to import a wallet" in {
-    client.getNewAddress().flatMap { address =>
+    client.getNewAddress.flatMap { address =>
       client
         .dumpWallet(
           client.getDaemon.authCredentials.datadir + "/client_wallet.dat")
@@ -1410,7 +1411,7 @@ class BitcoindRpcClientTest
   }
 
   it should "be able to sign a raw transaction" in {
-    client.getNewAddress().flatMap { address =>
+    client.getNewAddress.flatMap { address =>
       client.validateAddress(address).flatMap { addressInfo =>
         client
           .addMultiSigAddress(1, Vector(Left(addressInfo.pubkey.get)))
@@ -1425,7 +1426,7 @@ class BitcoindRpcClientTest
                       TransactionOutPoint(txid.flip, UInt32(output.n)),
                       P2SHScriptSignature(multisig.redeemScript.hex),
                       UInt32.max - UInt32.one)
-                    client.getNewAddress().flatMap { newAddress =>
+                    client.getNewAddress.flatMap { newAddress =>
                       client
                         .createRawTransaction(
                           Vector(input),
@@ -1456,8 +1457,8 @@ class BitcoindRpcClientTest
   }
 
   it should "be able to combine raw transacitons" in {
-    client.getNewAddress().flatMap { address1 =>
-      otherClient.getNewAddress().flatMap { address2 =>
+    client.getNewAddress.flatMap { address1 =>
+      otherClient.getNewAddress.flatMap { address2 =>
         client.validateAddress(address1).flatMap { address1Info =>
           otherClient.validateAddress(address2).flatMap { address2Info =>
             client
@@ -1495,7 +1496,7 @@ class BitcoindRpcClientTest
                                       P2SHScriptSignature(
                                         multisig.redeemScript.hex),
                                       UInt32.max - UInt32.one)
-                                    client.getNewAddress().flatMap { address =>
+                                    client.getNewAddress.flatMap { address =>
                                       otherClient
                                         .createRawTransaction(
                                           Vector(input),
@@ -1559,14 +1560,14 @@ class BitcoindRpcClientTest
   }
 
   it should "be able to bump a mem pool tx fee" in {
-    otherClient.getNewAddress().flatMap { address =>
+    otherClient.getNewAddress.flatMap { address =>
       client.listUnspent.flatMap { unspent =>
         val output = unspent.find(output => output.amount.toBigDecimal > 1).get
         val input: TransactionInput = TransactionInput(
           TransactionOutPoint(output.txid.flip, UInt32(output.vout)),
           ScriptSignature.empty,
           UInt32.max - UInt32(2))
-        client.getRawChangeAddress().flatMap { changeAddress =>
+        client.getRawChangeAddress.flatMap { changeAddress =>
           client
             .createRawTransaction(
               Vector(input),
