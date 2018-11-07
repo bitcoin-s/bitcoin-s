@@ -8,9 +8,13 @@ import org.bitcoins.core.protocol.ln.currency.MilliSatoshis
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.{ Transaction, TransactionInput }
 import org.bitcoins.core.util.BitcoinSUtil
+import org.bitcoins.rpc.client.RpcOpts
 import play.api.libs.json._
 
-object JsonWriters {
+import scala.language.implicitConversions
+
+object BitcoindJsonWriters {
+
   implicit object BitcoinsWrites extends Writes[Bitcoins] {
     override def writes(o: Bitcoins): JsValue = JsNumber(o.toBigDecimal)
   }
@@ -56,4 +60,9 @@ object JsonWriters {
   implicit object MilliSatoshisWrites extends Writes[MilliSatoshis] {
     override def writes(o: MilliSatoshis): JsValue = JsNumber(o.toBigDecimal)
   }
+  implicit val importMultiAddressWrites: Writes[RpcOpts.ImportMultiAddress] =
+    Json.writes[RpcOpts.ImportMultiAddress]
+  implicit val importMultiRequestWrites: Writes[RpcOpts.ImportMultiRequest] =
+    Json.writes[RpcOpts.ImportMultiRequest]
 }
+

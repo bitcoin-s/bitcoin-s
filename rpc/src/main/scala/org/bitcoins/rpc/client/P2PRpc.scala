@@ -1,12 +1,12 @@
 package org.bitcoins.rpc.client
 
-
-import org.bitcoins.rpc.jsonmodels.{GetNetworkInfoResult, Node, NodeBan}
-import org.bitcoins.rpc.serializers.JsonSerializers._
-import org.bitcoins.rpc.serializers.JsonReaders._
 import java.net.URI
 
-import play.api.libs.json.{JsBoolean, JsNumber, JsString}
+import org.bitcoins.core.protocol.blockchain.Block
+import org.bitcoins.rpc.jsonmodels._
+import org.bitcoins.rpc.serializers.JsonReaders._
+import org.bitcoins.rpc.serializers.BitcoindJsonSerializers._
+import play.api.libs.json.{ JsBoolean, JsNumber, JsString }
 
 import scala.concurrent.Future
 
@@ -26,6 +26,8 @@ protected trait P2PRpc extends Client {
     bitcoindCall[Unit]("disconnectnode", List(JsString(address.getAuthority)))
   }
 
+  def getAddedNodeInfo: Future[Vector[Node]] = getAddedNodeInfo(None)
+
   private def getAddedNodeInfo(node: Option[URI]): Future[Vector[Node]] = {
     val params =
       if (node.isEmpty) {
@@ -35,8 +37,6 @@ protected trait P2PRpc extends Client {
       }
     bitcoindCall[Vector[Node]]("getaddednodeinfo", params)
   }
-
-  def getAddedNodeInfo: Future[Vector[Node]] = getAddedNodeInfo(None)
 
   def getAddedNodeInfo(node: URI): Future[Vector[Node]] =
     getAddedNodeInfo(Some(node))
@@ -49,6 +49,14 @@ protected trait P2PRpc extends Client {
     bitcoindCall[GetNetworkInfoResult]("getnetworkinfo")
   }
 
+  def getNetTotals: Future[GetNetTotalsResult] = {
+    bitcoindCall[GetNetTotalsResult]("getnettotals")
+  }
+
+  def getPeerInfo: Future[Vector[Peer]] = {
+    bitcoindCall[Vector[Peer]]("getpeerinfo")
+  }
+
   def listBanned: Future[Vector[NodeBan]] = {
     bitcoindCall[Vector[NodeBan]]("listbanned")
   }
@@ -58,10 +66,10 @@ protected trait P2PRpc extends Client {
   }
 
   def setBan(
-              address: URI,
-              command: String,
-              banTime: Int = 86400,
-              absolute: Boolean = false): Future[Unit] = {
+    address: URI,
+    command: String,
+    banTime: Int = 86400,
+    absolute: Boolean = false): Future[Unit] = {
     bitcoindCall[Unit](
       "setban",
       List(
@@ -73,5 +81,10 @@ protected trait P2PRpc extends Client {
 
   def setNetworkActive(activate: Boolean): Future[Unit] = {
     bitcoindCall[Unit]("setnetworkactive", List(JsBoolean(activate)))
+  }
+
+  def submitBlock(block: Block): Future[Unit] = {
+    bitcoindCall[Unit]("submitblock", List(JsString(block.hex)))
+
   }
 }
