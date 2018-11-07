@@ -8,7 +8,7 @@ import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.util.BitcoinSUtil
 import org.bitcoins.rpc.client.RpcOpts.AddressType
 import org.bitcoins.rpc.jsonmodels._
-import org.bitcoins.rpc.serializers.JsonReaders._
+import org.bitcoins.rpc.serializers.BitcoindJsonReaders._
 import org.bitcoins.rpc.serializers.BitcoindJsonSerializers._
 import play.api.libs.json._
 
