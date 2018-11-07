@@ -11,7 +11,7 @@ import scala.concurrent.Future
 /**
   * RPC calls related to administration of a given node
   */
-protected trait NodeRpc extends Client with BitcoindCall {
+protected trait NodeRpc extends Client {
   def abortRescan(): Future[Unit] = {
     bitcoindCall[Unit]("abortrescan")
   }

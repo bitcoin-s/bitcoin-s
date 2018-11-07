@@ -23,7 +23,6 @@ import scala.sys.process._
 class BitcoindRpcClient(instance: BitcoindInstance)(
   implicit
   m: ActorMaterializer) extends Client
-  with BitcoindCall
   with BlockchainRpc
   with P2PRpc
   with WalletRpc
