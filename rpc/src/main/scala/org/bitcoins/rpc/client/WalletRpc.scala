@@ -12,7 +12,7 @@ import scala.concurrent.Future
 /**
   * RPC calls related to wallet functionality in bitcoind
   */
-protected trait WalletRpc extends Client with BitcoindCall {
+protected trait WalletRpc extends Client {
 
   def backupWallet(destination: String): Future[Unit] = {
     bitcoindCall[Unit]("backupwallet", List(JsString(destination)))

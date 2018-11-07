@@ -12,7 +12,7 @@ import scala.concurrent.Future
 /**
   * RPC calls related to mining
   */
-protected trait MiningRpc extends Client with BitcoindCall {
+protected trait MiningRpc extends Client {
   def generate(
     blocks: Int,
     maxTries: Int = 1000000): Future[Vector[DoubleSha256Digest]] = {

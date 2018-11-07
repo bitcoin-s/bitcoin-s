@@ -10,7 +10,6 @@ import akka.util.ByteString
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.rpc.config.BitcoindInstance
-import org.bitcoins.rpc.jsonmodels.Network
 import org.slf4j.Logger
 import play.api.libs.json._
 
@@ -19,17 +18,79 @@ import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.util.Try
 
 protected trait Client {
-  protected def logger: Logger = BitcoinSLogger.logger
+  protected val instance: BitcoindInstance
 
   protected implicit val executor: ExecutionContext
   protected implicit val materializer: ActorMaterializer
-
-  protected val instance: BitcoindInstance
-  protected implicit val network : NetworkParameters = instance.network
-
   protected val resultKey: String = "result"
-  protected val errorKey : String = "error"
+  protected implicit val network: NetworkParameters = instance.network
+  protected val errorKey: String = "error"
 
+  def isStarted: Boolean = {
+    val request = buildRequest(instance, "ping", JsArray.empty)
+    val responseF = sendRequest(request)
+
+    val payloadF: Future[JsValue] = responseF.flatMap(getPayload)
+
+    // Ping successful if no error can be parsed from the payload
+    val result = Try(Await.result(payloadF.map { payload =>
+      (payload \ errorKey).validate[RpcError] match {
+        case _: JsSuccess[RpcError] => false
+        case _: JsError => true
+      }
+    }, 2.seconds))
+
+    result.getOrElse(false)
+  }
+
+  protected def bitcoindCall[T](
+                                 command: String,
+                                 parameters: List[JsValue] = List.empty)(
+                                 implicit reader: Reads[T]): Future[T] = {
+    val request = buildRequest(instance, command, JsArray(parameters))
+    val responseF = sendRequest(request)
+
+    val payloadF: Future[JsValue] = responseF.flatMap(getPayload)
+
+    payloadF.map { payload =>
+      parseResult((payload \ resultKey).validate[T], payload)
+    }
+  }
+
+  // Should both logging and throwing be happening?
+  private def parseResult[T](result: JsResult[T], json: JsValue): T = {
+    checkUnitError[T](result, json)
+
+    result match {
+      case res: JsSuccess[T] => res.value
+      case res: JsError =>
+        (json \ errorKey).validate[RpcError] match {
+          case err: JsSuccess[RpcError] =>
+            logger.error(s"Error ${err.value.code}: ${err.value.message}")
+            throw new RuntimeException(
+              s"Error ${err.value.code}: ${err.value.message}")
+          case _: JsError =>
+            logger.error(JsError.toJson(res).toString())
+            throw new IllegalArgumentException(
+              s"Could not parse JsResult: ${(json \ resultKey).get}")
+        }
+    }
+  }
+
+  protected def logger: Logger = BitcoinSLogger.logger
+
+  // Catches errors thrown by calls with Unit as the expected return type (which isn't handled by UnitReads)
+  private def checkUnitError[T](result: JsResult[T], json: JsValue): Unit = {
+    if (result == JsSuccess(())) {
+      (json \ errorKey).validate[RpcError] match {
+        case err: JsSuccess[RpcError] =>
+          logger.error(s"Error ${err.value.code}: ${err.value.message}")
+          throw new RuntimeException(
+            s"Error ${err.value.code}: ${err.value.message}")
+        case _: JsError =>
+      }
+    }
+  }
 
   protected def buildRequest(instance: BitcoindInstance,
                              methodName: String,
@@ -61,23 +122,6 @@ protected trait Client {
     implicit materializer: ActorMaterializer
   ): Future[HttpResponse] = {
     Http(materializer.system).singleRequest(req)
-  }
-
-  def isStarted(implicit materializer: ActorMaterializer, executor: ExecutionContext): Boolean = {
-    val request = buildRequest(instance, "ping", JsArray.empty)
-    val responseF = sendRequest(request)
-
-    val payloadF: Future[JsValue] = responseF.flatMap(getPayload)
-
-    // Ping successful if no error can be parsed from the payload
-    val result = Try(Await.result(payloadF.map { payload =>
-      (payload \ errorKey).validate[RpcError] match {
-        case _: JsSuccess[RpcError] => false
-        case _: JsError => true
-      }
-    }, 2.seconds))
-
-    result.getOrElse(false)
   }
 
   protected def getPayload(response: HttpResponse)(
