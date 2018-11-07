@@ -1,6 +1,6 @@
 package org.bitcoins.core.protocol.ln
 
-import org.bitcoins.core.crypto.{ ECDigitalSignature, ECPublicKey, Sha256Digest }
+import org.bitcoins.core.crypto._
 import org.bitcoins.core.gen.ln.LnInvoiceGen
 import org.bitcoins.core.number.{ UInt32, UInt64, UInt8 }
 import org.bitcoins.core.protocol.{ Bech32Address, P2PKHAddress, P2SHAddress }
@@ -344,5 +344,37 @@ class LnInvoiceUnitTest extends FlatSpec with MustMatchers with PropertyChecks {
     forAll(LnInvoiceGen.lnInvoice) { invoice =>
       LnInvoice.fromString(invoice.toString).get == invoice
     }
+  }
+
+  it must "fail to create an invoice if the digital signature is invalid" in {
+    intercept[IllegalArgumentException] {
+      val sig = EmptyDigitalSignature
+      val tags = LnTaggedFields(
+        paymentHash = paymentTag,
+        descriptionOrHash = Right(LnTag.DescriptionHashTag(descriptionHash)))
+      val lnSig = LnInvoiceSignature(
+        version = UInt8.zero,
+        signature = sig)
+      LnInvoice(
+        hrp = hrpEmpty,
+        timestamp = UInt64.zero,
+        lnTags = tags,
+        signature = lnSig)
+    }
+  }
+
+  it must "create a valid digital signature for an invoice" in {
+    val privKey = ECPrivateKey.freshPrivateKey
+
+    val tags = LnTaggedFields(
+      paymentHash = paymentTag,
+      descriptionOrHash = Right(LnTag.DescriptionHashTag(descriptionHash)))
+
+    val invoice = LnInvoice.build(
+      hrp = hrpEmpty,
+      lnTags = tags,
+      privateKey = privKey)
+
+    assert(invoice.isValidSignature())
   }
 }

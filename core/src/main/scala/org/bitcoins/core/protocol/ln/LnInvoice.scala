@@ -1,6 +1,8 @@
 package org.bitcoins.core.protocol.ln
 
-import org.bitcoins.core.crypto.Sha256Digest
+import java.sql.Timestamp
+
+import org.bitcoins.core.crypto.{ ECPrivateKey, Sha256Digest }
 import org.bitcoins.core.number.{ UInt5, UInt64, UInt8 }
 import org.bitcoins.core.protocol.ln.currency.{ LnCurrencyUnit, PicoBitcoins }
 import org.bitcoins.core.protocol.ln.node.NodeId
@@ -17,7 +19,7 @@ sealed abstract class LnInvoice {
     s"timestamp ${timestamp.toBigInt} < ${NumberUtil.pow2(35)}")
 
   require(
-    nodeId.pubKey.verify(sigHash, signature.signature),
+    isValidSignature(),
     s"Did not receive a valid digital signature for the invoice ${toString}")
 
   private val logger = LoggerFactory.getLogger(this.getClass.getSimpleName)
@@ -32,7 +34,8 @@ sealed abstract class LnInvoice {
   def signature: LnInvoiceSignature
 
   private def data: Vector[UInt5] = {
-    val u5s: Vector[UInt5] = bech32TimeStamp ++ lnTags.data ++ signature.data
+    val ts = LnInvoice.uInt64ToBase32(timestamp)
+    val u5s: Vector[UInt5] = ts ++ lnTags.data ++ signature.data
     u5s
   }
 
@@ -74,10 +77,7 @@ sealed abstract class LnInvoice {
    * @return
    */
   def signatureData: ByteVector = {
-    //remove the signature (520 bits, or 104 uint5s (520 / 5))
-    val noSig = data.dropRight(104)
-    val u8s = Bech32.from5bitTo8bit(noSig)
-    hrp.bytes ++ UInt8.toBytes(u8s)
+    LnInvoice.buildSignatureData(hrp, timestamp, lnTags)
   }
 
   private def sigHash: Sha256Digest = CryptoUtil.sha256(signatureData)
@@ -88,21 +88,8 @@ sealed abstract class LnInvoice {
     bech32
   }
 
-  //TODO: Refactor Into Bech32Address?
-  private def uInt64ToBase32(input: UInt64): Vector[UInt5] = {
-    var numNoPadding = LnUtil.encodeNumber(input.toBigInt)
-
-    while (numNoPadding.length < 7) {
-      numNoPadding = UInt5.zero +: numNoPadding
-    }
-
-    require(numNoPadding.length == 7)
-    numNoPadding
-  }
-
-  private def bech32TimeStamp: Vector[UInt5] = {
-    val tsB32 = uInt64ToBase32(timestamp)
-    tsB32
+  def isValidSignature(): Boolean = {
+    Try(nodeId.pubKey.verify(sigHash, signature.signature)).getOrElse(false)
   }
 
   override def toString: String = {
@@ -216,6 +203,98 @@ object LnInvoice {
       timestamp = timestamp,
       lnTags = lnTags,
       signature = signature)
+  }
+
+  def buildSignatureData(
+    hrp: LnHumanReadablePart,
+    timestamp: UInt64,
+    lnTags: LnTaggedFields): ByteVector = {
+    val tsu5 = uInt64ToBase32(timestamp)
+    val payloadU5 = tsu5 ++ lnTags.data
+    val payloadU8 = Bech32.from5bitTo8bit(payloadU5)
+    val payload = UInt8.toBytes(payloadU8)
+    hrp.bytes ++ payload
+  }
+
+  def buildSigHashData(
+    hrp: LnHumanReadablePart,
+    timestamp: UInt64,
+    lnTags: LnTaggedFields): Sha256Digest = {
+    val sigdata = buildSignatureData(hrp, timestamp, lnTags)
+    CryptoUtil.sha256(sigdata)
+  }
+
+  def buildLnInvoiceSignature(
+    hrp: LnHumanReadablePart,
+    timestamp: UInt64,
+    lnTags: LnTaggedFields,
+    privateKey: ECPrivateKey): LnInvoiceSignature = {
+    val sigHash = buildSigHashData(hrp, timestamp, lnTags)
+    val sig = privateKey.sign(sigHash)
+
+    LnInvoiceSignature(
+      version = UInt8.zero,
+      signature = sig)
+  }
+
+  /**
+   * The easiest way to create a [[LnInvoice]]
+   * is by just passing the given pareameters and
+   * and then build will create a [[LnInvoice]]
+   * with a valid [[LnInvoiceSignature]]
+   * @param hrp the [[LnHumanReadablePart]]
+   * @param timestamp the timestamp on the invoice
+   * @param lnTags the various tags in the invoice
+   * @param privateKey - the key used to sign the invoice
+   * @return
+   */
+  def build(
+    hrp: LnHumanReadablePart,
+    timestamp: UInt64,
+    lnTags: LnTaggedFields,
+    privateKey: ECPrivateKey): LnInvoice = {
+    val lnInvoiceSignature = buildLnInvoiceSignature(hrp, timestamp, lnTags, privateKey)
+
+    LnInvoice(
+      hrp = hrp,
+      timestamp = timestamp,
+      lnTags = lnTags,
+      signature = lnInvoiceSignature)
+  }
+
+  /**
+   * The easiest way to create a [[LnInvoice]]
+   * is by just passing the given parameters and
+   * and then build will create a [[LnInvoice]]
+   * with a valid [[LnInvoiceSignature]]
+   * @param hrp the [[LnHumanReadablePart]]
+   * @param lnTags the various tags in the invoice
+   * @param privateKey - the key used to sign the invoice
+   * @return
+   */
+  def build(
+    hrp: LnHumanReadablePart,
+    lnTags: LnTaggedFields,
+    privateKey: ECPrivateKey): LnInvoice = {
+    val timestamp = UInt64(System.currentTimeMillis() / 1000L)
+    val lnInvoiceSignature = buildLnInvoiceSignature(hrp, timestamp, lnTags, privateKey)
+
+    LnInvoice(
+      hrp = hrp,
+      timestamp = timestamp,
+      lnTags = lnTags,
+      signature = lnInvoiceSignature)
+  }
+
+  def uInt64ToBase32(input: UInt64): Vector[UInt5] = {
+    var numNoPadding = LnUtil.encodeNumber(input.toBigInt)
+
+    while (numNoPadding.length < 7) {
+      numNoPadding = UInt5.zero +: numNoPadding
+    }
+
+    require(numNoPadding.length == 7)
+    numNoPadding
   }
 }
 
