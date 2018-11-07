@@ -1,13 +1,13 @@
 package org.bitcoins.rpc.client
 
-import org.bitcoins.core.crypto.{ DoubleSha256Digest, ECPrivateKey }
+import org.bitcoins.core.crypto.{DoubleSha256Digest, ECPrivateKey}
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.protocol.BitcoinAddress
-import org.bitcoins.rpc.jsonmodels.{ FundRawTransactionResult, GetRawTransactionResult, RpcTransaction, SignRawTransactionResult }
+import org.bitcoins.rpc.jsonmodels.{FundRawTransactionResult, GetRawTransactionResult, RpcTransaction, SignRawTransactionResult}
 import play.api.libs.json._
 import org.bitcoins.rpc.serializers.BitcoindJsonSerializers._
-import org.bitcoins.rpc.serializers.JsonReaders._
-import org.bitcoins.core.protocol.transaction.{ Transaction, TransactionInput }
+import org.bitcoins.rpc.serializers.BitcoindJsonReaders._
+import org.bitcoins.core.protocol.transaction.{Transaction, TransactionInput}
 
 import scala.concurrent.Future
 

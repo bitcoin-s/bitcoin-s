@@ -2,7 +2,7 @@ package org.bitcoins.rpc.client
 
 import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.rpc.jsonmodels.{ GetMemPoolEntryResult, GetMemPoolInfoResult, GetMemPoolResult }
-import org.bitcoins.rpc.serializers.JsonReaders._
+import org.bitcoins.rpc.serializers.BitcoindJsonReaders._
 import org.bitcoins.rpc.serializers.BitcoindJsonSerializers._
 import play.api.libs.json.{ JsBoolean, JsString }
 
