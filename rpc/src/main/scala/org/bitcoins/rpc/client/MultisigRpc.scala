@@ -9,7 +9,7 @@ import play.api.libs.json.{JsArray, JsNumber, JsString, Json}
 
 import scala.concurrent.Future
 
-protected trait MultisigCalls extends Client with BitcoindCall {
+protected trait MultisigRpc extends Client with BitcoindCall {
 
   private def addMultiSigAddress(
                                   minSignatures: Int,

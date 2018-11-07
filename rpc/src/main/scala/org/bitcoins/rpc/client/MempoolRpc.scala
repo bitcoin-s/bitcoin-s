@@ -8,7 +8,7 @@ import play.api.libs.json.{JsBoolean, JsString}
 
 import scala.concurrent.Future
 
-protected trait MempoolCalls extends Client with BitcoindCall {
+protected trait MempoolRpc extends Client with BitcoindCall {
 
   def getMemPoolAncestors(
                            txid: DoubleSha256Digest): Future[Vector[DoubleSha256Digest]] = {
