@@ -56,13 +56,5 @@ object BitcoindJsonWriters {
       Json.toJson(o.map { case (k, v) => (keyString(k), v) })
     }
   }
-
-  implicit object MilliSatoshisWrites extends Writes[MilliSatoshis] {
-    override def writes(o: MilliSatoshis): JsValue = JsNumber(o.toBigDecimal)
-  }
-  implicit val importMultiAddressWrites: Writes[RpcOpts.ImportMultiAddress] =
-    Json.writes[RpcOpts.ImportMultiAddress]
-  implicit val importMultiRequestWrites: Writes[RpcOpts.ImportMultiRequest] =
-    Json.writes[RpcOpts.ImportMultiRequest]
 }
 
