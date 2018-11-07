@@ -7,7 +7,6 @@ import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.{ Transaction, TransactionInput }
 import org.bitcoins.core.util.BitcoinSUtil
-import org.bitcoins.rpc.client.RpcOpts
 import play.api.libs.json._
 
 import scala.language.implicitConversions
