@@ -10,7 +10,7 @@ import scala.concurrent.Future
   * RPC calls related to the message signing functionality
   * in bitcoind
   */
-protected trait MessageCalls extends Client with BitcoindCall{
+protected trait MessageRpc extends Client with BitcoindCall{
   def signMessage(address: P2PKHAddress, message: String): Future[String] = {
     bitcoindCall[String](
       "signmessage",
