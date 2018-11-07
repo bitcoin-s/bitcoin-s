@@ -37,7 +37,7 @@ install:
   - sudo make install
   - cd ../
 script:
-  - sbt -Djava.library.path=secp256k1/.libs clean coverage test &&
+  - sbt clean coverage test &&
     sbt coverageReport &&
     sbt coverageAggregate
 after_success:
