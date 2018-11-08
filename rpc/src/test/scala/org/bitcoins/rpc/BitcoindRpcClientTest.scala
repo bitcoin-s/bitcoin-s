@@ -7,21 +7,21 @@ import java.util.Scanner
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import org.bitcoins.core.config.NetworkParameters
-import org.bitcoins.core.crypto.{ DoubleSha256Digest, ECPrivateKey, ECPublicKey }
-import org.bitcoins.core.currency.{ Bitcoins, Satoshis }
-import org.bitcoins.core.number.{ Int64, UInt32 }
-import org.bitcoins.core.protocol.script.{ P2SHScriptSignature, ScriptPubKey, ScriptSignature }
-import org.bitcoins.core.protocol.transaction.{ Transaction, TransactionInput, TransactionOutPoint }
-import org.bitcoins.core.protocol.{ BitcoinAddress, P2PKHAddress }
+import org.bitcoins.core.crypto.{ECPrivateKey, ECPublicKey}
+import org.bitcoins.core.currency.{Bitcoins, Satoshis}
+import org.bitcoins.core.number.{Int64, UInt32}
+import org.bitcoins.core.protocol.P2PKHAddress
+import org.bitcoins.core.protocol.script.{P2SHScriptSignature, ScriptPubKey, ScriptSignature}
+import org.bitcoins.core.protocol.transaction.{Transaction, TransactionInput, TransactionOutPoint}
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
-import org.bitcoins.rpc.client.{ BitcoindRpcClient, RpcOpts }
-import org.bitcoins.rpc.jsonmodels.{ GetBlockWithTransactionsResult, GetTransactionResult, RpcAddress }
-import org.scalatest.{ AsyncFlatSpec, BeforeAndAfter, BeforeAndAfterAll }
+import org.bitcoins.rpc.client.{BitcoindRpcClient, RpcOpts}
+import org.bitcoins.rpc.jsonmodels.{GetBlockWithTransactionsResult, GetTransactionResult, RpcAddress}
+import org.scalatest.{AsyncFlatSpec, BeforeAndAfter, BeforeAndAfterAll}
 import org.slf4j.Logger
 
 import scala.concurrent.duration.DurationInt
-import scala.concurrent.{ Await, ExecutionContextExecutor, Future }
+import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.util.Try
 
 class BitcoindRpcClientTest
@@ -30,7 +30,7 @@ class BitcoindRpcClientTest
   with BeforeAndAfter {
   implicit val system: ActorSystem = ActorSystem("RpcClientTest_ActorSystem")
   implicit val m: ActorMaterializer = ActorMaterializer()
-  implicit val ec: ExecutionContextExecutor = m.executionContext
+  implicit val ec: ExecutionContext= m.executionContext
   implicit val networkParam: NetworkParameters = TestUtil.network
 
   val client = new BitcoindRpcClient(TestUtil.instance())
@@ -45,6 +45,73 @@ class BitcoindRpcClientTest
   val logger: Logger = BitcoinSLogger.logger
 
   var password = "password"
+
+  override def beforeAll(): Unit = {
+    logger.info("Temp bitcoin directory created")
+    logger.info("Temp bitcoin directory created")
+    logger.info("Temp bitcoin directory created")
+
+    logger.info("Bitcoin servers starting")
+    TestUtil.startServers(walletClient, client, otherClient, pruneClient)
+
+    client.addNode(otherClient.getDaemon.uri, "add")
+
+    Await.result(
+      walletClient.encryptWallet(password).map { msg =>
+        logger.info(msg)
+        RpcUtil.awaitServerShutdown(walletClient)
+        logger.debug(walletClient.isStarted.toString)
+        // Very rarely, this may fail if bitocoind does not ping but hasn't yet released its locks
+        walletClient.start()
+        logger.info("Bitcoin server restarting")
+        RpcUtil.awaitServer(walletClient)
+      },
+      5.seconds)
+
+    logger.info("Mining some blocks")
+    Await.result(client.generate(200), 3.seconds)
+    Await.result(pruneClient.generate(3000), 60.seconds)
+
+    TestUtil.awaitConnection(client, otherClient)
+  }
+
+  override def afterAll(): Unit = {
+    client.stop().map(logger.info)
+    otherClient.stop().map(logger.info)
+    walletClient.stop().map(logger.info)
+    pruneClient.stop().map(logger.info)
+    if (TestUtil.deleteTmpDir(client.getDaemon.authCredentials.datadir))
+      logger.info("Temp bitcoin directory deleted")
+    if (TestUtil.deleteTmpDir(otherClient.getDaemon.authCredentials.datadir))
+      logger.info("Temp bitcoin directory deleted")
+    if (TestUtil.deleteTmpDir(walletClient.getDaemon.authCredentials.datadir))
+      logger.info("Temp bitcoin directory deleted")
+    if (TestUtil.deleteTmpDir(pruneClient.getDaemon.authCredentials.datadir))
+      logger.info("Temp bitcoin directory deleted")
+
+    Await.result(system.terminate(), 10.seconds)
+  }
+
+  private def sendCoinbaseTransaction(
+    sender: BitcoindRpcClient = client,
+    receiver: BitcoindRpcClient = otherClient,
+    amount: Bitcoins = Bitcoins(1)): Future[GetTransactionResult] = {
+    createRawCoinbaseTransaction(sender, receiver, amount).flatMap {
+      transaction =>
+        sender.signRawTransaction(transaction).flatMap { signedTransaction =>
+          sender
+            .generate(100)
+            .flatMap { _ => // Can't spend coinbase until depth 100
+              sender.sendRawTransaction(
+                signedTransaction.hex,
+                allowHighFees = true).flatMap {
+                  transactionHash =>
+                    sender.getTransaction(transactionHash)
+                }
+            }
+        }
+    }
+  }
 
   private def createRawCoinbaseTransaction(
     sender: BitcoindRpcClient = client,
@@ -78,88 +145,6 @@ class BitcoindRpcClientTest
     }
   }
 
-  private def sendCoinbaseTransaction(
-    sender: BitcoindRpcClient = client,
-    receiver: BitcoindRpcClient = otherClient,
-    amount: Bitcoins = Bitcoins(1)): Future[GetTransactionResult] = {
-    createRawCoinbaseTransaction(sender, receiver, amount).flatMap {
-      transaction =>
-        sender.signRawTransaction(transaction).flatMap { signedTransaction =>
-          sender
-            .generate(100)
-            .flatMap { _ => // Can't spend coinbase until depth 100
-              sender.sendRawTransaction(
-                signedTransaction.hex,
-                allowHighFees = true).flatMap {
-                  transactionHash =>
-                    sender.getTransaction(transactionHash)
-                }
-            }
-        }
-    }
-  }
-
-  private def fundMemPoolTransaction(
-    sender: BitcoindRpcClient,
-    address: BitcoinAddress,
-    amount: Bitcoins): Future[DoubleSha256Digest] = {
-    sender.createRawTransaction(Vector.empty, Map(address -> amount)).flatMap {
-      createdTx =>
-        sender.fundRawTransaction(createdTx).flatMap { fundedTx =>
-          sender.signRawTransaction(fundedTx.hex).flatMap { signedTx =>
-            sender.sendRawTransaction(signedTx.hex)
-          }
-        }
-    }
-  }
-
-  private def fundBlockChainTransaction(
-    sender: BitcoindRpcClient,
-    address: BitcoinAddress,
-    amount: Bitcoins): Future[DoubleSha256Digest] = {
-    fundMemPoolTransaction(sender, address, amount).flatMap { txid =>
-      sender.generate(1).map { _ =>
-        txid
-      }
-    }
-  }
-
-  private def getFirstBlock(
-    node: BitcoindRpcClient = client): Future[GetBlockWithTransactionsResult] = {
-    node.getBlockHash(1).flatMap { hash =>
-      node.getBlockWithTransactions(hash)
-    }
-  }
-
-  override def beforeAll(): Unit = {
-    logger.info("Temp bitcoin directory created")
-    logger.info("Temp bitcoin directory created")
-    logger.info("Temp bitcoin directory created")
-
-    logger.info("Bitcoin servers starting")
-    TestUtil.startServers(walletClient, client, otherClient, pruneClient)
-
-    client.addNode(otherClient.getDaemon.uri, "add")
-
-    Await.result(
-      walletClient.encryptWallet(password).map { msg =>
-        logger.info(msg)
-        RpcUtil.awaitServerShutdown(walletClient)
-        logger.debug(walletClient.isStarted.toString)
-        // Very rarely, this may fail if bitocoind does not ping but hasn't yet released its locks
-        walletClient.start()
-        logger.info("Bitcoin server restarting")
-        RpcUtil.awaitServer(walletClient)
-      },
-      5.seconds)
-
-    logger.info("Mining some blocks")
-    Await.result(client.generate(200), 3.seconds)
-    Await.result(pruneClient.generate(3000), 60.seconds)
-
-    TestUtil.awaitConnection(client, otherClient)
-  }
-
   behavior of "BitcoindRpcClient"
 
   it should "be able to prune the blockchain" in {
@@ -180,7 +165,7 @@ class BitcoindRpcClientTest
   it should "be able to import funds without rescan and then remove them" in {
     client.getNewAddress.flatMap { address =>
       client.dumpPrivKey(address).flatMap { privKey =>
-        fundBlockChainTransaction(client, address, Bitcoins(1.5)).flatMap {
+        TestUtil.fundBlockChainTransaction(client, address, Bitcoins(1.5)).flatMap {
           txid =>
             client.generate(1).flatMap { _ =>
               client.getTransaction(txid).flatMap { tx =>
@@ -218,7 +203,7 @@ class BitcoindRpcClientTest
 
   it should "be able to invalidate a block" in {
     otherClient.getNewAddress.flatMap { address =>
-      fundMemPoolTransaction(client, address, Bitcoins(3)).flatMap { txid =>
+      TestUtil.fundMemPoolTransaction(client, address, Bitcoins(3)).flatMap { txid =>
         client.generate(1).flatMap { blocks =>
           client.invalidateBlock(blocks.head).flatMap { _ =>
             client.getRawMemPool.flatMap { mempool =>
@@ -355,7 +340,7 @@ class BitcoindRpcClientTest
 
   it should "be able to list address groupings" in {
     client.getNewAddress.flatMap { address =>
-      fundBlockChainTransaction(client, address, Bitcoins(1.25)).flatMap {
+      TestUtil.fundBlockChainTransaction(client, address, Bitcoins(1.25)).flatMap {
         _ =>
           client.listAddressGroupings.flatMap { groupings =>
             val rpcAddress =
@@ -495,17 +480,6 @@ class BitcoindRpcClientTest
     }
   }
 
-  it should "be able to send from an account to an addresss" in {
-    otherClient.getNewAddress.flatMap { address =>
-      client.sendFrom("", address, Bitcoins(1)).flatMap { txid =>
-        client.getTransaction(txid).map { transaction =>
-          assert(transaction.amount == Bitcoins(-1))
-          assert(transaction.details.head.address.contains(address))
-        }
-      }
-    }
-  }
-
   it should "be able to send to an address" in {
     otherClient.getNewAddress.flatMap { address =>
       client.sendToAddress(address, Bitcoins(1)).flatMap { txid =>
@@ -559,7 +533,7 @@ class BitcoindRpcClientTest
   it should "be able to find mem pool ancestors and descendants" in {
     client.generate(1)
     client.getNewAddress.flatMap { address =>
-      fundMemPoolTransaction(client, address, Bitcoins(2)).flatMap { txid1 =>
+      TestUtil.fundMemPoolTransaction(client, address, Bitcoins(2)).flatMap { txid1 =>
         client.getRawMemPool.flatMap { mempool =>
           assert(mempool.head == txid1)
           client.getNewAddress.flatMap { address =>
@@ -607,7 +581,7 @@ class BitcoindRpcClientTest
 
   it should "be able to list transactions by receiving addresses" in {
     otherClient.getNewAddress.flatMap { address =>
-      fundBlockChainTransaction(client, address, Bitcoins(1.5)).flatMap {
+      TestUtil.fundBlockChainTransaction(client, address, Bitcoins(1.5)).flatMap {
         txid =>
           otherClient.listReceivedByAddress().map { receivedList =>
             val entryList =
@@ -626,7 +600,7 @@ class BitcoindRpcClientTest
   it should "be able to import an address" in {
     client.getNewAddress.flatMap { address =>
       otherClient.importAddress(address).flatMap { _ =>
-        fundBlockChainTransaction(client, address, Bitcoins(1.5)).flatMap {
+        TestUtil.fundBlockChainTransaction(client, address, Bitcoins(1.5)).flatMap {
           txid =>
             otherClient.listReceivedByAddress(includeWatchOnly = true).map {
               list =>
@@ -750,7 +724,7 @@ class BitcoindRpcClientTest
 
   it should "be able to prioritise a mem pool transaction" in {
     otherClient.getNewAddress.flatMap { address =>
-      fundMemPoolTransaction(client, address, Bitcoins(3.2)).flatMap { txid =>
+      TestUtil.fundMemPoolTransaction(client, address, Bitcoins(3.2)).flatMap { txid =>
         client.getMemPoolEntry(txid).flatMap { entry =>
           assert(entry.fee == entry.modifiedfee)
           client.prioritiseTransaction(txid, Bitcoins(1).satoshis).flatMap {
@@ -1378,7 +1352,7 @@ class BitcoindRpcClientTest
         client
           .addMultiSigAddress(1, Vector(Left(addressInfo.pubkey.get)))
           .flatMap { multisig =>
-            fundBlockChainTransaction(client, multisig.address, Bitcoins(1.2))
+            TestUtil.fundBlockChainTransaction(client, multisig.address, Bitcoins(1.2))
               .flatMap { txid =>
                 client.getTransaction(txid).flatMap { rawTx =>
                   client.decodeRawTransaction(rawTx.hex).flatMap { tx =>
@@ -1439,7 +1413,7 @@ class BitcoindRpcClientTest
                   .flatMap { _ =>
                     client.validateAddress(multisig.address).flatMap {
                       _ =>
-                        fundBlockChainTransaction(
+                        TestUtil.fundBlockChainTransaction(
                           client,
                           multisig.address,
                           Bitcoins(1.2)).flatMap {
@@ -1583,56 +1557,6 @@ class BitcoindRpcClientTest
     }
   }
 
-  it should "be able to get an account's address" in {
-    val account = "a_new_account"
-    client.getAccountAddress(account).flatMap { address =>
-      client.getAccount(address).map { result =>
-        assert(result == account)
-      }
-    }
-  }
-
-  it should "be able to get the amount received by an account and list amounts received by all accounts" in {
-    val account = "another_new_account"
-    val emptyAccount = "empty_account"
-    client.getNewAddress(account).flatMap { address =>
-      fundBlockChainTransaction(client, address, Bitcoins(1.5)).flatMap {
-        _ =>
-          client.getReceivedByAccount(account).flatMap { amount =>
-            assert(amount == Bitcoins(1.5))
-            client.listReceivedByAccount().flatMap { list =>
-              assert(
-                list
-                  .find(acc => acc.account == account)
-                  .get
-                  .amount == Bitcoins(1.5))
-              assert(
-                list
-                  .find(acc => acc.account == "")
-                  .get
-                  .amount > Bitcoins(0))
-              assert(!list.exists(acc => acc.account == emptyAccount))
-              client.listAccounts().map { map =>
-                assert(map(account) == Bitcoins(1.5))
-                assert(map("") > Bitcoins(0))
-                assert(!map.keySet.contains(emptyAccount))
-              }
-            }
-          }
-      }
-    }
-  }
-
-  it should "be able to move funds from one account to another" in {
-    val account = "move_account"
-    client.move("", account, Bitcoins(1)).flatMap { success =>
-      assert(success)
-      client.listAccounts().map { map =>
-        assert(map(account) == Bitcoins(1))
-      }
-    }
-  }
-
   it should "be able to add and remove a node" in {
     otherClient.addNode(walletClient.getDaemon.uri, "add").flatMap { _ =>
       TestUtil.awaitConnection(otherClient, walletClient)
@@ -1667,20 +1591,10 @@ class BitcoindRpcClientTest
     }
   }
 
-  override def afterAll(): Unit = {
-    client.stop().map(logger.info)
-    otherClient.stop().map(logger.info)
-    walletClient.stop().map(logger.info)
-    pruneClient.stop().map(logger.info)
-    if (TestUtil.deleteTmpDir(client.getDaemon.authCredentials.datadir))
-      logger.info("Temp bitcoin directory deleted")
-    if (TestUtil.deleteTmpDir(otherClient.getDaemon.authCredentials.datadir))
-      logger.info("Temp bitcoin directory deleted")
-    if (TestUtil.deleteTmpDir(walletClient.getDaemon.authCredentials.datadir))
-      logger.info("Temp bitcoin directory deleted")
-    if (TestUtil.deleteTmpDir(pruneClient.getDaemon.authCredentials.datadir))
-      logger.info("Temp bitcoin directory deleted")
-
-    Await.result(system.terminate(), 10.seconds)
+  private def getFirstBlock(
+    node: BitcoindRpcClient = client): Future[GetBlockWithTransactionsResult] = {
+    node.getBlockHash(1).flatMap { hash =>
+      node.getBlockWithTransactions(hash)
+    }
   }
 }
