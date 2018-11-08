@@ -11,12 +11,12 @@ import org.scalatest.{AsyncFlatSpec, BeforeAndAfter, BeforeAndAfterAll}
 import org.slf4j.Logger
 
 import scala.concurrent.duration.DurationInt
-import scala.concurrent.{Await, ExecutionContextExecutor}
+import scala.concurrent.{Await, ExecutionContext}
 
 class MessageRpcTest extends AsyncFlatSpec with BeforeAndAfterAll with BeforeAndAfter {
   implicit val system: ActorSystem = ActorSystem("MessageRpcTest_ActorSystem")
   implicit val m: ActorMaterializer = ActorMaterializer()
-  implicit val ec: ExecutionContextExecutor = m.executionContext
+  implicit val ec: ExecutionContext= m.executionContext
   implicit val networkParam: NetworkParameters = TestUtil.network
 
   val client = new BitcoindRpcClient(TestUtil.instance())
@@ -33,8 +33,7 @@ class MessageRpcTest extends AsyncFlatSpec with BeforeAndAfterAll with BeforeAnd
   override protected def afterAll(): Unit = {
     logger.info("Cleaning up after MessageRpcTest")
     logger.info("Stopping Bitcoin server")
-    client.stop().map(logger.info)
-    RpcUtil.awaitServerShutdown(client)
+    TestUtil.stopServers(client)
     logger.info("Bitcoin server stopped")
 
     logger.info("Stopping ActorSystem")

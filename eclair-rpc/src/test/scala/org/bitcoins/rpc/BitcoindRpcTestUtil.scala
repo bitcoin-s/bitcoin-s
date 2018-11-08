@@ -17,6 +17,8 @@ import scala.util.{ Failure, Success, Try }
 
 trait BitcoindRpcTestUtil extends BitcoinSLogger {
 
+  lazy val network: NetworkParameters = RegTest
+
   def randomDirName: String =
     0.until(5).map(_ => scala.util.Random.alphanumeric.head).mkString
 
@@ -61,8 +63,6 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     BitcoindAuthCredentials(username, pass, rpcUri.getPort, f)
   }
 
-  lazy val network: NetworkParameters = RegTest
-
   def instance(
     port: Int = randomPort,
     rpcPort: Int = randomPort,
@@ -96,6 +96,17 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     servers.foreach(_.start())
     servers.foreach(RpcUtil.awaitServer(_))
   }
+
+  /**
+   * Stops the given servers, and waits for them (in a blocking manner)
+   * until they are stopped. Deletes their temp dir.
+   */
+  def stopServers(servers: BitcoindRpcClient*)(implicit system: ActorSystem): Unit =
+    servers.foreach(server => {
+      server.stop()
+      RpcUtil.awaitServerShutdown(server)
+      deleteTmpDir(server.getDaemon.authCredentials.datadir)
+    })
 
   def deleteTmpDir(dir: File): Boolean = {
     if (!dir.isDirectory) {
@@ -196,7 +207,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     port2: Int = randomPort,
     rpcPort2: Int = randomPort)(implicit system: ActorSystem): Future[(BitcoindRpcClient, BitcoindRpcClient)] = {
     implicit val m: ActorMaterializer = ActorMaterializer.create(system)
-    implicit val ec: ExecutionContextExecutor = m.executionContext
+    implicit val ec: ExecutionContext = m.executionContext
     val client1: BitcoindRpcClient = new BitcoindRpcClient(instance(port1, rpcPort1))
     val client2: BitcoindRpcClient = new BitcoindRpcClient(instance(port2, rpcPort2))
 
@@ -239,11 +250,15 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     }
   }
 
-  def deleteNodePair(client1: BitcoindRpcClient, client2: BitcoindRpcClient): Unit = {
-    client1.stop()
-    client2.stop()
-    deleteTmpDir(client1.getDaemon.authCredentials.datadir)
-    deleteTmpDir(client2.getDaemon.authCredentials.datadir)
+  def fundBlockChainTransaction(
+    sender: BitcoindRpcClient,
+    address: BitcoinAddress,
+    amount: Bitcoins)(implicit ec: ExecutionContext): Future[DoubleSha256Digest] = {
+    fundMemPoolTransaction(sender, address, amount).flatMap { txid =>
+      sender.generate(1).map { _ =>
+        txid
+      }
+    }
   }
 
   def hasSeenBlock(client1: BitcoindRpcClient, hash: DoubleSha256Digest)(implicit ec: ExecutionContext): Future[Boolean] = {
@@ -278,6 +293,22 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
 
     rpc
   }
+  def fundMemPoolTransaction(
+    sender: BitcoindRpcClient,
+    address: BitcoinAddress,
+    amount: Bitcoins)(implicit ec: ExecutionContext): Future[DoubleSha256Digest] = {
+    sender.createRawTransaction(Vector.empty, Map(address -> amount)).flatMap {
+      createdTx =>
+        sender.fundRawTransaction(createdTx).flatMap { fundedTx =>
+          sender.signRawTransaction(fundedTx.hex).flatMap { signedTx =>
+            sender.sendRawTransaction(signedTx.hex)
+          }
+        }
+    }
+  }
+
+  def deleteNodePair(client1: BitcoindRpcClient, client2: BitcoindRpcClient)(implicit actorSystem: ActorSystem): Unit = stopServers(client1, client2)
+
 }
 
 object BitcoindRpcTestUtil extends BitcoindRpcTestUtil
