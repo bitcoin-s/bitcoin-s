@@ -10,7 +10,7 @@ import play.api.libs.json.{ JsBoolean, JsNumber, JsString }
 
 import scala.concurrent.Future
 
-protected trait P2PRpc extends Client {
+trait P2PRpc extends Client {
 
   def addNode(address: URI, command: String): Future[Unit] = {
     bitcoindCall[Unit](

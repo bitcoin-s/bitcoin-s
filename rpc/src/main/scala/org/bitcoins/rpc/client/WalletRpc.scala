@@ -7,8 +7,8 @@ import org.bitcoins.core.protocol.blockchain.MerkleBlock
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.rpc.client.RpcOpts.AddressType
 import org.bitcoins.rpc.jsonmodels._
-import org.bitcoins.rpc.serializers.BitcoindJsonWriters._
 import org.bitcoins.rpc.serializers.BitcoindJsonSerializers._
+import org.bitcoins.rpc.serializers.BitcoindJsonWriters._
 import play.api.libs.json._
 
 import scala.concurrent.Future
@@ -17,7 +17,7 @@ import scala.concurrent.Future
  * RPC calls related to wallet management
  * functionality in bitcoind
  */
-protected trait WalletRpc extends Client {
+trait WalletRpc extends Client {
 
   def backupWallet(destination: String): Future[Unit] = {
     bitcoindCall[Unit]("backupwallet", List(JsString(destination)))
@@ -40,10 +40,6 @@ protected trait WalletRpc extends Client {
     bitcoindCall[String]("getaccount", List(JsString(address.value)))
   }
 
-  def getAccountAddress(account: String): Future[BitcoinAddress] = {
-    bitcoindCall[BitcoinAddress]("getaccountaddress", List(JsString(account)))
-  }
-
   def getAddressesByAccount(account: String): Future[Vector[BitcoinAddress]] = {
     bitcoindCall[Vector[BitcoinAddress]](
       "getaddressesbyaccount",
@@ -56,14 +52,6 @@ protected trait WalletRpc extends Client {
 
   def getNewAddress: Future[BitcoinAddress] =
     getNewAddress(addressType = None)
-
-  def getReceivedByAccount(
-    account: String,
-    confirmations: Int = 1): Future[Bitcoins] = {
-    bitcoindCall[Bitcoins](
-      "getreceivedbyaccount",
-      List(JsString(account), JsNumber(confirmations)))
-  }
 
   def getReceivedByAddress(
     address: BitcoinAddress,

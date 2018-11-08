@@ -1,6 +1,5 @@
 package org.bitcoins.rpc.client
 
-import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.transaction.TransactionOutPoint
 import org.bitcoins.rpc.jsonmodels._
@@ -10,7 +9,7 @@ import play.api.libs.json._
 
 import scala.concurrent.Future
 
-protected trait UTXORpc extends Client {
+trait UTXORpc extends Client {
   def listLockUnspent: Future[Vector[TransactionOutPoint]] = {
     bitcoindCall[Vector[TransactionOutPoint]]("listlockunspent")
   }
@@ -54,21 +53,6 @@ protected trait UTXORpc extends Client {
     bitcoindCall[Boolean](
       "lockunspent",
       List(JsBoolean(unlock), Json.toJson(outputs)))
-  }
-
-  def move(
-    fromAccount: String,
-    toAccount: String,
-    amount: Bitcoins,
-    comment: String = ""): Future[Boolean] = {
-    bitcoindCall[Boolean](
-      "move",
-      List(
-        JsString(fromAccount),
-        JsString(toAccount),
-        JsNumber(amount.toBigDecimal),
-        JsNumber(6),
-        JsString(comment)))
   }
 
 }

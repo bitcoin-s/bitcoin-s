@@ -13,7 +13,7 @@ import play.api.libs.json._
 
 import scala.concurrent.Future
 
-protected trait RawTransactionRpc extends Client {
+trait RawTransactionRpc extends Client {
 
   def combineRawTransaction(txs: Vector[Transaction]): Future[Transaction] = {
     bitcoindCall[Transaction]("combinerawtransaction", List(Json.toJson(txs)))
