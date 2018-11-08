@@ -1,13 +1,15 @@
 package org.bitcoins.eclair.rpc.json
 
-import org.bitcoins.core.protocol.ln.{ LnHumanReadablePart, LnInvoiceSignature }
-import org.bitcoins.core.protocol.ln.channel.{ ChannelState, FundedChannelId }
-import org.bitcoins.core.protocol.ln.currency.{ MilliSatoshis, PicoBitcoins }
+import org.bitcoins.core.protocol.ln.{LnHumanReadablePart, LnInvoice, LnInvoiceSignature}
+import org.bitcoins.core.protocol.ln.channel.{ChannelState, FundedChannelId}
+import org.bitcoins.core.protocol.ln.currency.{MilliSatoshis, PicoBitcoins}
 import org.bitcoins.core.protocol.ln.node.NodeId
 import org.bitcoins.eclair.rpc.network.PeerState
 import org.bitcoins.rpc.serializers.SerializerUtil
 import org.slf4j.LoggerFactory
 import play.api.libs.json._
+
+import scala.util.{Failure, Success}
 
 object JsonReaders {
   import org.bitcoins.rpc.serializers.JsonReaders._
@@ -142,4 +144,16 @@ object JsonReaders {
   implicit val channelResultReads: Reads[ChannelResult] =
     Json.reads[ChannelResult]
 
+  implicit val lnInvoiceReads: Reads[LnInvoice] =
+    Reads[LnInvoice] {
+      case JsString(invoice) =>
+        LnInvoice.fromString(invoice) match {
+          case Success(paymentRequest) => JsSuccess(paymentRequest)
+          case Failure(err) =>
+            JsError(s"Invalid refund invoice: ${err.toString}")
+        }
+      case bad @ (_: JsNumber | _: JsObject | _: JsArray | _: JsBoolean |
+                  JsNull) =>
+        JsError(s"Invalid type on refund invoice: $bad, expected JsString")
+    }
 }

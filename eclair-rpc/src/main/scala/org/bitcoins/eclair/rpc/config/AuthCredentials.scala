@@ -2,10 +2,8 @@ package org.bitcoins.eclair.rpc.config
 
 import java.io.File
 
-import com.typesafe.config.{Config, ConfigFactory}
+import com.typesafe.config.{ Config, ConfigFactory }
 import org.bitcoins.rpc.config.BitcoindAuthCredentials
-
-import scala.util.{Failure, Success, Try}
 
 sealed trait EclairAuthCredentials {
 

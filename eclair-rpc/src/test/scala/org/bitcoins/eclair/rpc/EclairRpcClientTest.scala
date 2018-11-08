@@ -9,6 +9,7 @@ import org.bitcoins.core.protocol.ln.currency.{ MicroBitcoins, MilliBitcoins, Na
 import org.bitcoins.core.protocol.ln.node.NodeId
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.eclair.rpc.client.EclairRpcClient
+import org.bitcoins.eclair.rpc.config.{ EclairAuthCredentials, EclairInstance }
 import org.bitcoins.eclair.rpc.json._
 import org.bitcoins.rpc.BitcoindRpcTestUtil
 import org.scalatest.{ Assertion, AsyncFlatSpec, BeforeAndAfterAll }
@@ -39,6 +40,15 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
       }
     }
     result
+  }
+
+  it should "fail to authenticate on bad password" in {
+    val goodCredentials = client.instance.authCredentials
+    val badCredentials = EclairAuthCredentials("bad_password", goodCredentials.bitcoinAuthOpt, goodCredentials.port)
+    val badInstance = EclairInstance(client.instance.network, client.instance.uri, client.instance.rpcUri, badCredentials)
+    val badClient = new EclairRpcClient(badInstance)
+
+    recoverToSucceededIf[RuntimeException](badClient.getInfo)
   }
 
   it should "be able to list an existing peer and isConnected must be true" in {

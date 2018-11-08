@@ -472,7 +472,8 @@ class EclairRpcClient(val instance: EclairInstance)(implicit system: ActorSystem
         "id" -> JsString(uuid)))
 
     val uri = instance.rpcUri.toString
-    val username = instance.authCredentials.username
+    // Eclair doesn't use a username
+    val username = ""
     val password = instance.authCredentials.password
     HttpRequest(
       method = HttpMethods.POST,
