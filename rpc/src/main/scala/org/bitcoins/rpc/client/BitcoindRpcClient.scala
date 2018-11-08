@@ -19,7 +19,9 @@ class BitcoindRpcClient(protected val instance: BitcoindInstance)(
   with TransacationRpc
   with UTXORpc
   with WalletRpc {
+
   override protected implicit val executor: ExecutionContext = m.executionContext
   override protected implicit val materializer: ActorMaterializer =
     m
+
 }
