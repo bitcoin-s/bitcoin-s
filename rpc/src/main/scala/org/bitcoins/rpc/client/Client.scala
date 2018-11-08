@@ -20,7 +20,7 @@ import scala.concurrent.{ Await, ExecutionContext, Future }
 import scala.sys.process._
 import scala.util.Try
 
-protected trait Client {
+trait Client {
   protected val instance: BitcoindInstance
 
   protected implicit val executor: ExecutionContext
