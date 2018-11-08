@@ -5,14 +5,18 @@ import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.rpc.config.BitcoindInstance
+import org.bitcoins.rpc.jsonmodels.ReceivedAccount
 import org.bitcoins.rpc.serializers.BitcoindJsonReaders._
-import play.api.libs.json.{ JsNumber, JsString }
+import org.bitcoins.rpc.serializers.BitcoindJsonSerializers._
+import play.api.libs.json.{ JsBoolean, JsNumber, JsString }
 
 import scala.concurrent.Future
 
 class BitcoindV16RpcClient(override protected val instance: BitcoindInstance)(
   implicit
   m: ActorMaterializer) extends BitcoindRpcClient(instance) {
+
+  override val version: BitcoindVersion = BitcoindV16
 
   def move(
     fromAccount: String,
@@ -57,5 +61,41 @@ class BitcoindV16RpcClient(override protected val instance: BitcoindInstance)(
     bitcoindCall[Bitcoins](
       "getreceivedbyaccount",
       List(JsString(account), JsNumber(confirmations)))
+  }
+
+  def getAccount(address: BitcoinAddress): Future[String] = {
+    bitcoindCall[String]("getaccount", List(JsString(address.value)))
+  }
+
+  def getAddressesByAccount(account: String): Future[Vector[BitcoinAddress]] = {
+    bitcoindCall[Vector[BitcoinAddress]](
+      "getaddressesbyaccount",
+      List(JsString(account)))
+  }
+
+  def listAccounts(
+    confirmations: Int = 1,
+    includeWatchOnly: Boolean = false): Future[Map[String, Bitcoins]] = {
+    bitcoindCall[Map[String, Bitcoins]](
+      "listaccounts",
+      List(JsNumber(confirmations), JsBoolean(includeWatchOnly)))
+  }
+
+  def setAccount(address: BitcoinAddress, account: String): Future[Unit] = {
+    bitcoindCall[Unit](
+      "setaccount",
+      List(JsString(address.value), JsString(account)))
+  }
+
+  def listReceivedByAccount(
+    confirmations: Int = 1,
+    includeEmpty: Boolean = false,
+    includeWatchOnly: Boolean = false): Future[Vector[ReceivedAccount]] = {
+    bitcoindCall[Vector[ReceivedAccount]](
+      "listreceivedbyaccount",
+      List(
+        JsNumber(confirmations),
+        JsBoolean(includeEmpty),
+        JsBoolean(includeWatchOnly)))
   }
 }

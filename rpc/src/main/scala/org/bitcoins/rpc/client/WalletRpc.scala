@@ -36,22 +36,9 @@ trait WalletRpc extends Client {
     bitcoindCall[String]("encryptwallet", List(JsString(passphrase)))
   }
 
-  def getAccount(address: BitcoinAddress): Future[String] = {
-    bitcoindCall[String]("getaccount", List(JsString(address.value)))
-  }
-
-  def getAddressesByAccount(account: String): Future[Vector[BitcoinAddress]] = {
-    bitcoindCall[Vector[BitcoinAddress]](
-      "getaddressesbyaccount",
-      List(JsString(account)))
-  }
-
   def getBalance: Future[Bitcoins] = {
     bitcoindCall[Bitcoins]("getbalance")
   }
-
-  def getNewAddress: Future[BitcoinAddress] =
-    getNewAddress(addressType = None)
 
   def getReceivedByAddress(
     address: BitcoinAddress,
@@ -78,6 +65,9 @@ trait WalletRpc extends Client {
         JsBoolean(rescan),
         JsBoolean(p2sh)))
   }
+
+  def getNewAddress: Future[BitcoinAddress] =
+    getNewAddress(addressType = None)
 
   def getNewAddress(account: String): Future[BitcoinAddress] =
     getNewAddress(account, None)
@@ -155,28 +145,8 @@ trait WalletRpc extends Client {
     bitcoindCall[Unit]("importwallet", List(JsString(filePath)))
   }
 
-  def listAccounts(
-    confirmations: Int = 1,
-    includeWatchOnly: Boolean = false): Future[Map[String, Bitcoins]] = {
-    bitcoindCall[Map[String, Bitcoins]](
-      "listaccounts",
-      List(JsNumber(confirmations), JsBoolean(includeWatchOnly)))
-  }
-
   def listAddressGroupings: Future[Vector[Vector[RpcAddress]]] = {
     bitcoindCall[Vector[Vector[RpcAddress]]]("listaddressgroupings")
-  }
-
-  def listReceivedByAccount(
-    confirmations: Int = 1,
-    includeEmpty: Boolean = false,
-    includeWatchOnly: Boolean = false): Future[Vector[ReceivedAccount]] = {
-    bitcoindCall[Vector[ReceivedAccount]](
-      "listreceivedbyaccount",
-      List(
-        JsNumber(confirmations),
-        JsBoolean(includeEmpty),
-        JsBoolean(includeWatchOnly)))
   }
 
   def listReceivedByAddress(
@@ -193,12 +163,6 @@ trait WalletRpc extends Client {
 
   def listWallets: Future[Vector[String]] = {
     bitcoindCall[Vector[String]]("listwallets")
-  }
-
-  def setAccount(address: BitcoinAddress, account: String): Future[Unit] = {
-    bitcoindCall[Unit](
-      "setaccount",
-      List(JsString(address.value), JsString(account)))
   }
 
   // TODO: Should be BitcoinFeeUnit

@@ -21,6 +21,7 @@ import scala.sys.process._
 import scala.util.Try
 
 trait Client {
+  val version: BitcoindVersion
   protected val instance: BitcoindInstance
 
   protected implicit val executor: ExecutionContext
@@ -40,13 +41,26 @@ trait Client {
     Json.writes[RpcOpts.ImportMultiAddress]
   implicit val importMultiRequestWrites: Writes[RpcOpts.ImportMultiRequest] =
     Json.writes[RpcOpts.ImportMultiRequest]
-
   private val resultKey: String = "result"
   private val errorKey: String = "error"
 
   def getDaemon: BitcoindInstance = instance
 
   def start(): String = {
+
+    if (version != UnknownBitcoindVersion) {
+      val foundVersion = Seq("bitcoind", "--version")
+        .!!
+        .split("\n")
+        .head
+        .split(" ")
+        .last
+
+      if (!foundVersion.startsWith(version.toString)) {
+        throw new RuntimeException(s"Wrong version for bitcoind RPC client! Expected $version, got $foundVersion")
+      }
+    }
+
     val cmd = Seq(
       "bitcoind",
       "-datadir=" + instance.authCredentials.datadir,
