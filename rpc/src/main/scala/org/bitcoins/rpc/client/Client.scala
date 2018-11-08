@@ -41,8 +41,8 @@ protected trait Client {
   implicit val importMultiRequestWrites: Writes[RpcOpts.ImportMultiRequest] =
     Json.writes[RpcOpts.ImportMultiRequest]
 
-  protected val resultKey: String = "result"
-  protected val errorKey: String = "error"
+  private val resultKey: String = "result"
+  private val errorKey: String = "error"
 
   def getDaemon: BitcoindInstance = instance
 
