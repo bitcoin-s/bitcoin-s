@@ -6,32 +6,22 @@ import java.util.Scanner
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import org.bitcoins.core.crypto.{ DoubleSha256Digest, ECPrivateKey, ECPublicKey }
-import org.bitcoins.core.currency.{ Bitcoins, Satoshis }
-import org.bitcoins.core.protocol.transaction.{
-  Transaction,
-  TransactionInput,
-  TransactionOutPoint
-}
+import org.bitcoins.core.config.NetworkParameters
+import org.bitcoins.core.crypto.{DoubleSha256Digest, ECPrivateKey, ECPublicKey}
+import org.bitcoins.core.currency.{Bitcoins, Satoshis}
+import org.bitcoins.core.number.{Int64, UInt32}
+import org.bitcoins.core.protocol.script.{P2SHScriptSignature, ScriptPubKey, ScriptSignature}
+import org.bitcoins.core.protocol.transaction.{Transaction, TransactionInput, TransactionOutPoint}
+import org.bitcoins.core.protocol.{BitcoinAddress, P2PKHAddress}
 import org.bitcoins.core.util.BitcoinSLogger
-import org.bitcoins.rpc.client.{ BitcoindRpcClient, RpcOpts }
-import org.scalatest.{ AsyncFlatSpec, BeforeAndAfter, BeforeAndAfterAll }
-import org.bitcoins.core.number.{ Int64, UInt32 }
-import org.bitcoins.core.protocol.{ BitcoinAddress, P2PKHAddress }
-import org.bitcoins.core.protocol.script.{
-  P2SHScriptSignature,
-  ScriptPubKey,
-  ScriptSignature
-}
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
-import org.bitcoins.rpc.jsonmodels.{
-  GetBlockWithTransactionsResult,
-  GetTransactionResult,
-  RpcAddress
-}
+import org.bitcoins.rpc.client.{BitcoindRpcClient, RpcOpts}
+import org.bitcoins.rpc.jsonmodels.{GetBlockWithTransactionsResult, GetTransactionResult, RpcAddress}
+import org.scalatest.{AsyncFlatSpec, BeforeAndAfter, BeforeAndAfterAll}
+import org.slf4j.Logger
 
-import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration.DurationInt
+import scala.concurrent.{Await, ExecutionContextExecutor, Future}
 import scala.util.Try
 
 class BitcoindRpcClientTest
@@ -53,7 +43,7 @@ class BitcoindRpcClientTest
   val prunedInstance = BitcoindRpcTestUtil.instance(pruneMode = true)
   val pruneClient = new BitcoindRpcClient(prunedInstance)
 
-  val logger = BitcoinSLogger.logger
+  val logger : Logger = BitcoinSLogger.logger
 
   var password = "password"
 
@@ -99,7 +89,10 @@ class BitcoindRpcClientTest
           sender
             .generate(100)
             .flatMap { _ => // Can't spend coinbase until depth 100
-              sender.sendRawTransaction(signedTransaction.hex, true).flatMap {
+              sender.sendRawTransaction(
+                signedTransaction.hex,
+                allowHighFees = true
+              ).flatMap {
                 transactionHash =>
                   sender.getTransaction(transactionHash)
               }
@@ -381,7 +374,7 @@ class BitcoindRpcClientTest
   it should "be able to list address groupings" in {
     client.getNewAddress.flatMap { address =>
       fundBlockChainTransaction(client, address, Bitcoins(1.25)).flatMap {
-        txid =>
+        _ =>
           client.listAddressGroupings.flatMap { groupings =>
             val rpcAddress =
               groupings.find(vec => vec.head.address == address).get.head
@@ -423,13 +416,13 @@ class BitcoindRpcClientTest
       val param = Vector(
         RpcOpts.LockUnspentOutputParameter(txid1, vout1),
         RpcOpts.LockUnspentOutputParameter(txid2, vout2))
-      client.lockUnspent(false, param).flatMap { success =>
+      client.lockUnspent(unlock = false, param).flatMap { success =>
         assert(success)
         client.listLockUnspent.flatMap { locked =>
           assert(locked.length == 2)
           assert(locked(0).txId.flip == txid1)
           assert(locked(1).txId.flip == txid2)
-          client.lockUnspent(true, param).flatMap { success =>
+          client.lockUnspent(unlock = true, param).flatMap { success =>
             assert(success)
             client.listLockUnspent.map { newLocked =>
               assert(newLocked.isEmpty)
@@ -473,10 +466,10 @@ class BitcoindRpcClientTest
                       TransactionInput(input1, sig, UInt32(2))),
                     Map((address, Bitcoins(1))))
                   .map { transaction =>
-                    assert(transaction.inputs(0).sequence == UInt32(1))
+                    assert(transaction.inputs.head.sequence == UInt32(1))
                     assert(transaction.inputs(1).sequence == UInt32(2))
                     assert(transaction
-                      .inputs(0)
+                      .inputs.head
                       .previousOutput
                       .txId == input0.txId)
                     assert(transaction
@@ -512,7 +505,7 @@ class BitcoindRpcClientTest
                       .satoshis
                       .toBigInt ==
                       transactionResult.fee.satoshis.toBigInt +
-                      transaction.outputs(0).value.satoshis.toBigInt +
+                      transaction.outputs.head.value.satoshis.toBigInt +
                       transaction.outputs(1).value.satoshis.toBigInt)
                 }
           }
@@ -598,7 +591,7 @@ class BitcoindRpcClientTest
               .flatMap { createdTx =>
                 client.signRawTransaction(createdTx).flatMap { signedTx =>
                   assert(signedTx.complete)
-                  client.sendRawTransaction(signedTx.hex, true).flatMap {
+                  client.sendRawTransaction(signedTx.hex, allowHighFees = true).flatMap {
                     txid2 =>
                       client.getMemPoolDescendants(txid1).flatMap {
                         descendants =>
@@ -716,8 +709,8 @@ class BitcoindRpcClientTest
         client
           .generate(100)
           .flatMap { _ => // Can't spend coinbase until depth 100
-            client.sendRawTransaction(signedTransaction.hex, true).map {
-              transactionHash =>
+            client.sendRawTransaction(signedTransaction.hex, allowHighFees = true).map {
+              _ =>
                 succeed
             }
           }
@@ -754,7 +747,7 @@ class BitcoindRpcClientTest
 
   it should "be able to find a mem pool entry" in {
     sendCoinbaseTransaction().flatMap { transaction =>
-      client.getMemPoolEntry(transaction.txid).map { memPoolEntry =>
+      client.getMemPoolEntry(transaction.txid).map { _ =>
         succeed
       }
     }
@@ -826,7 +819,7 @@ class BitcoindRpcClientTest
   }
 
   it should "be able to get an address from bitcoind" in {
-    client.getNewAddress.map { address =>
+    client.getNewAddress.map { _ =>
       succeed
     }
   }
@@ -840,19 +833,19 @@ class BitcoindRpcClientTest
   }
 
   it should "be able to get a new raw change address" in {
-    client.getRawChangeAddress.map { address =>
+    client.getRawChangeAddress.map { _ =>
       succeed
     }
 
-    client.getRawChangeAddress(RpcOpts.Legacy()).map { address =>
+    client.getRawChangeAddress(RpcOpts.Legacy()).map { _ =>
       succeed
     }
 
-    client.getRawChangeAddress(RpcOpts.P2SHSegwit()).map { address =>
+    client.getRawChangeAddress(RpcOpts.P2SHSegwit()).map { _ =>
       succeed
     }
 
-    client.getRawChangeAddress(RpcOpts.Bech32()).map { address =>
+    client.getRawChangeAddress(RpcOpts.Bech32()).map { _ =>
       succeed
     }
   }
@@ -926,7 +919,7 @@ class BitcoindRpcClientTest
   }
 
   it should "be able to get the best block hash" in {
-    client.getBestBlockHash.map { hash =>
+    client.getBestBlockHash.map { _ =>
       succeed
     }
   }
@@ -938,7 +931,7 @@ class BitcoindRpcClientTest
   }
 
   it should "be able to get the chain tips" in {
-    client.getChainTips.map { tipArray =>
+    client.getChainTips.map { _ =>
       succeed
     }
   }
@@ -993,7 +986,7 @@ class BitcoindRpcClientTest
   }
 
   it should "be able to get a block template" in {
-    client.getBlockTemplate().map { template =>
+    client.getBlockTemplate().map { _ =>
       succeed
     }
   }
@@ -1150,7 +1143,7 @@ class BitcoindRpcClientTest
     val pubKey1 = ecPrivKey1.publicKey
     val pubKey2 = ecPrivKey2.publicKey
 
-    client.createMultiSig(2, Vector(pubKey1, pubKey2)).map { result =>
+    client.createMultiSig(2, Vector(pubKey1, pubKey2)).map { _ =>
       succeed
     }
     succeed
@@ -1167,7 +1160,7 @@ class BitcoindRpcClientTest
           Vector(
             Left(pubKey1),
             Right(address.asInstanceOf[P2PKHAddress])))
-        .map { multisig =>
+        .map { _ =>
           succeed
         }
     }
@@ -1196,7 +1189,7 @@ class BitcoindRpcClientTest
 
   it should "be able to dump a private key" in {
     client.getNewAddress.flatMap { address =>
-      client.dumpPrivKey(address).map { key =>
+      client.dumpPrivKey(address).map { _ =>
         succeed
       }
     }
@@ -1285,7 +1278,7 @@ class BitcoindRpcClientTest
               RpcOpts.ImportMultiRequest(
                 RpcOpts.ImportMultiAddress(address2),
                 UInt32(0))),
-            false)
+            rescan = false)
           .flatMap { result =>
             assert(result.length == 2)
             assert(result(0).success)
@@ -1366,7 +1359,7 @@ class BitcoindRpcClientTest
               .flatMap { _ =>
                 walletClient
                   .dumpPrivKey(address)
-                  .flatMap { key =>
+                  .flatMap { _ =>
                     succeed
                   }
               }
@@ -1492,7 +1485,7 @@ class BitcoindRpcClientTest
                       Left(address2Info.pubkey.get)))
                   .flatMap { _ =>
                     client.validateAddress(multisig.address).flatMap {
-                      multisigInfo =>
+                      _ =>
                         fundBlockChainTransaction(
                           client,
                           multisig.address,
@@ -1592,7 +1585,7 @@ class BitcoindRpcClientTest
                 changeAddress -> Bitcoins(output.amount.toBigDecimal - 0.55)))
             .flatMap { ctx =>
               client.signRawTransaction(ctx).flatMap { stx =>
-                client.sendRawTransaction(stx.hex, true).flatMap { txid =>
+                client.sendRawTransaction(stx.hex, allowHighFees = true).flatMap { txid =>
                   client.getTransaction(txid).flatMap { tx =>
                     client.bumpFee(txid).flatMap { bumpedTx =>
                       assert(tx.fee.get < bumpedTx.fee)
@@ -1651,7 +1644,7 @@ class BitcoindRpcClientTest
     val emptyAccount = "empty_account"
     client.getNewAddress(account).flatMap { address =>
       fundBlockChainTransaction(client, address, Bitcoins(1.5)).flatMap {
-        txid =>
+        _ =>
           client.getReceivedByAccount(account).flatMap { amount =>
             assert(amount == Bitcoins(1.5))
             client.listReceivedByAccount().flatMap { list =>
