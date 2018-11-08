@@ -80,7 +80,6 @@ trait EclairTestUtil extends BitcoinSLogger {
         "eclair.alias" -> "suredbits")
     }
     val c = ConfigFactory.parseMap(configMap)
-    logger.debug(s"Eclair config ${c.toString}")
     c
   }
 
@@ -186,7 +185,7 @@ trait EclairTestUtil extends BitcoinSLogger {
       val chanF = client.channel(chanId)
       chanF.map { chan =>
         if (!(chan.state == state)) {
-          logger.debug(s"ChanId ${chanId} has not entered ${state} yet. Currently in ${chan.state}")
+          logger.trace(s"ChanId ${chanId} has not entered ${state} yet. Currently in ${chan.state}")
         }
         chan.state == state
       }(system.dispatcher)
@@ -215,8 +214,8 @@ trait EclairTestUtil extends BitcoinSLogger {
     val client = new EclairRpcClient(e1Instance)
     val otherClient = new EclairRpcClient(e2Instance)
 
-    logger.info(s"Temp eclair directory created ${client.getDaemon.authCredentials.datadir}")
-    logger.info(s"Temp eclair directory created ${otherClient.getDaemon.authCredentials.datadir}")
+    logger.debug(s"Temp eclair directory created ${client.getDaemon.authCredentials.datadir}")
+    logger.debug(s"Temp eclair directory created ${otherClient.getDaemon.authCredentials.datadir}")
 
     client.start()
     otherClient.start()
