@@ -5,16 +5,16 @@ import java.io.File
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import org.bitcoins.rpc.client.BitcoindRpcClient
-import org.scalatest.{AsyncFlatSpec, BeforeAndAfterAll}
+import org.scalatest.{ AsyncFlatSpec, BeforeAndAfterAll }
 
-import scala.concurrent.{Await, ExecutionContext,  Future}
+import scala.concurrent.{ Await, ExecutionContext, Future }
 import scala.concurrent.duration.DurationInt
-import scala.util.{Success, Try}
+import scala.util.{ Success, Try }
 
 class RpcUtilTest extends AsyncFlatSpec with BeforeAndAfterAll {
 
   implicit val system: ActorSystem = ActorSystem("RpcUtilTest_ActorSystem")
-  implicit val ec: ExecutionContext= system.dispatcher
+  implicit val ec: ExecutionContext = system.dispatcher
 
   private def trueLater(delay: Int = 1000): Future[Boolean] = Future {
     Thread.sleep(delay)
