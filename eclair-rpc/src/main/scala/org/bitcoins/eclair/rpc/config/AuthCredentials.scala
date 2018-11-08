@@ -2,8 +2,10 @@ package org.bitcoins.eclair.rpc.config
 
 import java.io.File
 
-import com.typesafe.config.{ Config, ConfigFactory }
+import com.typesafe.config.{Config, ConfigFactory}
 import org.bitcoins.rpc.config.BitcoindAuthCredentials
+
+import scala.util.{Failure, Success, Try}
 
 sealed trait EclairAuthCredentials {
 
@@ -26,9 +28,6 @@ sealed trait EclairAuthCredentials {
     bitcoinAuthOpt.map(_.rpcPort)
   }
 
-  /** alias field in our eclair.conf file */
-  def username: String
-
   /** api password field in our eclair.conf file */
   def password: String
 
@@ -37,7 +36,6 @@ sealed trait EclairAuthCredentials {
 
   def copyWithDatadir(datadir: File): EclairAuthCredentials = {
     EclairAuthCredentials(
-      username = username,
       password = password,
       bitcoinAuthOpt = bitcoinAuthOpt,
       port = port,
@@ -47,27 +45,24 @@ sealed trait EclairAuthCredentials {
 
 object EclairAuthCredentials {
   private case class AuthCredentialsImpl(
-    username: String,
     password: String,
     bitcoinAuthOpt: Option[BitcoindAuthCredentials],
     port: Int,
     datadir: Option[File]) extends EclairAuthCredentials
 
   def apply(
-    username: String,
     password: String,
     bitcoinAuthOpt: Option[BitcoindAuthCredentials],
     port: Int): EclairAuthCredentials = {
-    EclairAuthCredentials(username, password, bitcoinAuthOpt, port, None)
+    EclairAuthCredentials(password, bitcoinAuthOpt, port, None)
   }
 
   def apply(
-    username: String,
     password: String,
     bitcoinAuthOpt: Option[BitcoindAuthCredentials],
     port: Int,
     datadir: Option[File]): EclairAuthCredentials = {
-    AuthCredentialsImpl(username, password, bitcoinAuthOpt, port, datadir)
+    AuthCredentialsImpl(password, bitcoinAuthOpt, port, datadir)
   }
 
   def fromDatadir(datadir: File): EclairAuthCredentials = {
@@ -90,9 +85,8 @@ object EclairAuthCredentials {
     val bitcoindRpcPort = config.getInt("eclair.bitcoind.rpcport")
 
     //does eclair not have a username field??
-    val username = config.getString("eclair.alias")
     val password = config.getString("eclair.api.password")
-    val eclairRpcPort = config.getInt("eclair.api.port")
+    val eclairRpcPort = ConfigUtil.getIntOrElse(config, "eclair.api.port", 8080)
 
     val bitcoindAuth = {
       BitcoindAuthCredentials(
@@ -102,7 +96,6 @@ object EclairAuthCredentials {
     }
 
     EclairAuthCredentials(
-      username = username,
       password = password,
       bitcoinAuthOpt = Some(bitcoindAuth),
       port = eclairRpcPort)
