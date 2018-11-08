@@ -13,12 +13,15 @@ import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ Await, ExecutionContext }
 
 class BitcoindV17RpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
-  implicit val system: ActorSystem = ActorSystem("BitcoindV16RpcClientTest_ActorSystem")
+  implicit val system: ActorSystem = ActorSystem("BitcoindV17RpcClientTest_ActorSystem")
   implicit val m: ActorMaterializer = ActorMaterializer()
   implicit val ec: ExecutionContext = m.executionContext
   implicit val networkParam: NetworkParameters = TestUtil.network
 
   val logger: Logger = BitcoinSLogger.logger
+
+  val label = "another_new_label"
+  val otherLabel = "other_label"
 
   val client = new BitcoindV17RpcClient(TestUtil.instance())
 
@@ -46,35 +49,43 @@ class BitcoindV17RpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
 
   behavior of "BitcoindV17RpcClient"
 
-  it should "be able to get the amount received by a label and list amounts received by all labels" in {
-    val account = "another_new_account"
-    val emptyAccount = "empty_account"
-    client.getNewAddress(account).flatMap { address =>
+  it should "be able to get the address info for a given address" in {
+    client.getNewAddress.flatMap { addr =>
+      client.getAddressInfo(addr).flatMap { info =>
+        logger.error(s"Got address info $info")
+        succeed
+      }
+    }
+  }
+
+  it should "be able to get the amount received by a label" in {
+    client.getNewAddress(label).flatMap { address =>
       TestUtil.fundBlockChainTransaction(client, address, Bitcoins(1.5)).flatMap {
         _ =>
-          client.getReceivedByLabel(account).flatMap { amount =>
+          client.getReceivedByLabel(label).flatMap { amount =>
             assert(amount == Bitcoins(1.5))
-            client.listReceivedByAccount().flatMap { list =>
-              logger.error(s"Got list $list")
+            client.listReceivedByLabel().flatMap { list =>
               assert(
                 list
-                  .find(acc => acc.account == account)
+                  .find(l => l.label == label)
                   .get
                   .amount == Bitcoins(1.5))
               assert(
                 list
-                  .find(acc => acc.account == "")
+                  .find(l => l.label == "")
                   .get
                   .amount > Bitcoins(0))
-              assert(!list.exists(acc => acc.account == emptyAccount))
-              client.listAccounts().map { map =>
-                assert(map(account) == Bitcoins(1.5))
-                assert(map("") > Bitcoins(0))
-                assert(!map.keySet.contains(emptyAccount))
-              }
+              assert(!list.exists(acc => acc.account == otherLabel))
             }
           }
       }
+    }
+  }
+
+  it should "list amounts received by all labels" in {
+    client.listLabels().flatMap { labels =>
+      assert(labels.contains(label))
+      assert(!labels.contains(otherLabel))
     }
   }
 }

@@ -7,21 +7,21 @@ import java.util.Scanner
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import org.bitcoins.core.config.NetworkParameters
-import org.bitcoins.core.crypto.{ECPrivateKey, ECPublicKey}
-import org.bitcoins.core.currency.{Bitcoins, Satoshis}
-import org.bitcoins.core.number.{Int64, UInt32}
+import org.bitcoins.core.crypto.{ ECPrivateKey, ECPublicKey }
+import org.bitcoins.core.currency.{ Bitcoins, Satoshis }
+import org.bitcoins.core.number.{ Int64, UInt32 }
 import org.bitcoins.core.protocol.P2PKHAddress
-import org.bitcoins.core.protocol.script.{P2SHScriptSignature, ScriptPubKey, ScriptSignature}
-import org.bitcoins.core.protocol.transaction.{Transaction, TransactionInput, TransactionOutPoint}
+import org.bitcoins.core.protocol.script.{ P2SHScriptSignature, ScriptPubKey, ScriptSignature }
+import org.bitcoins.core.protocol.transaction.{ Transaction, TransactionInput, TransactionOutPoint }
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
-import org.bitcoins.rpc.client.{BitcoindRpcClient, RpcOpts}
-import org.bitcoins.rpc.jsonmodels.{GetBlockWithTransactionsResult, GetTransactionResult, RpcAddress}
-import org.scalatest.{AsyncFlatSpec, BeforeAndAfter, BeforeAndAfterAll}
+import org.bitcoins.rpc.client.{ BitcoindRpcClient, RpcOpts }
+import org.bitcoins.rpc.jsonmodels.{ GetBlockWithTransactionsResult, GetTransactionResult, RpcAddress }
+import org.scalatest.{ AsyncFlatSpec, BeforeAndAfter, BeforeAndAfterAll }
 import org.slf4j.Logger
 
 import scala.concurrent.duration.DurationInt
-import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.concurrent.{ Await, ExecutionContext, Future }
 import scala.util.Try
 
 class BitcoindRpcClientTest
@@ -30,7 +30,7 @@ class BitcoindRpcClientTest
   with BeforeAndAfter {
   implicit val system: ActorSystem = ActorSystem("RpcClientTest_ActorSystem")
   implicit val m: ActorMaterializer = ActorMaterializer()
-  implicit val ec: ExecutionContext= m.executionContext
+  implicit val ec: ExecutionContext = m.executionContext
   implicit val networkParam: NetworkParameters = TestUtil.network
 
   val client = new BitcoindRpcClient(TestUtil.instance())
@@ -1539,21 +1539,6 @@ class BitcoindRpcClientTest
     recoverToSucceededIf[RuntimeException](client.rescanBlockChain())
     client.abortRescan().map { _ =>
       succeed
-    }
-  }
-
-  it should "be able to get and set the account for a given address" in {
-    val account1 = "account_1"
-    val account2 = "account_2"
-    client.getNewAddress(account1).flatMap { address =>
-      client.getAccount(address).flatMap { acc1 =>
-        assert(acc1 == account1)
-        client.setAccount(address, account2).flatMap { _ =>
-          client.getAccount(address).map { acc2 =>
-            assert(acc2 == account2)
-          }
-        }
-      }
     }
   }
 
