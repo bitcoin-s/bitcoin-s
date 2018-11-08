@@ -5,12 +5,12 @@ import java.net.URI
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import org.bitcoins.core.config.RegTest
+import org.bitcoins.core.config.{ NetworkParameters, RegTest }
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.rpc.client.BitcoindRpcClient
 import org.bitcoins.rpc.config.{ BitcoindAuthCredentials, BitcoindInstance }
 
-import scala.concurrent.{ Await, Future }
+import scala.concurrent.{ Await, ExecutionContextExecutor, Future }
 import scala.concurrent.duration.{ DurationInt, FiniteDuration }
 import scala.util.Try
 
@@ -51,7 +51,7 @@ trait TestUtil extends BitcoinSLogger {
     BitcoindAuthCredentials(username, pass, f)
   }
 
-  lazy val network = RegTest
+  lazy val network: NetworkParameters = RegTest
 
   def instance(
     port: Int = randomPort,
@@ -73,7 +73,11 @@ trait TestUtil extends BitcoinSLogger {
     } else firstAttempt
   }
 
-  def startServers(servers: Vector[BitcoindRpcClient])(implicit system: ActorSystem): Unit = {
+  /**
+   * Starts the given servers, and waits for them (in a blocking manner)
+   * until they are started.
+   */
+  def startServers(servers: BitcoindRpcClient*)(implicit system: ActorSystem): Unit = {
     servers.foreach(_.start())
     servers.foreach(RpcUtil.awaitServer(_))
   }
@@ -92,7 +96,7 @@ trait TestUtil extends BitcoinSLogger {
     to: BitcoindRpcClient,
     duration: FiniteDuration = 100.milliseconds,
     maxTries: Int = 50)(implicit system: ActorSystem): Unit = {
-    implicit val ec = system.dispatcher
+    implicit val ec: ExecutionContextExecutor = system.dispatcher
     RpcUtil.awaitCondition(
       Await.result(
         from
@@ -108,7 +112,7 @@ trait TestUtil extends BitcoinSLogger {
     client2: BitcoindRpcClient,
     duration: FiniteDuration = 100.milliseconds,
     maxTries: Int = 50)(implicit system: ActorSystem): Unit = {
-    implicit val ec = system.dispatcher
+    implicit val ec: ExecutionContextExecutor = system.dispatcher
     RpcUtil.awaitCondition(Await.result(client1.getBlockCount.flatMap { count1 =>
       client2.getBlockCount.map { count2 =>
         count1 == count2
@@ -121,7 +125,7 @@ trait TestUtil extends BitcoinSLogger {
     to: BitcoindRpcClient,
     duration: FiniteDuration = 100.milliseconds,
     maxTries: Int = 50)(implicit system: ActorSystem): Unit = {
-    implicit val ec = system.dispatcher
+    implicit val ec: ExecutionContextExecutor = system.dispatcher
     RpcUtil.awaitCondition(
       Await.result(
         from
@@ -139,7 +143,7 @@ trait TestUtil extends BitcoinSLogger {
     port2: Int = randomPort,
     rpcPort2: Int = randomPort)(implicit system: ActorSystem): Future[(BitcoindRpcClient, BitcoindRpcClient)] = {
     implicit val m: ActorMaterializer = ActorMaterializer.create(system)
-    implicit val ec = m.executionContext
+    implicit val ec: ExecutionContextExecutor = m.executionContext
     val client1: BitcoindRpcClient = new BitcoindRpcClient(instance(port1, rpcPort1))
     val client2: BitcoindRpcClient = new BitcoindRpcClient(instance(port2, rpcPort2))
     client1.start()

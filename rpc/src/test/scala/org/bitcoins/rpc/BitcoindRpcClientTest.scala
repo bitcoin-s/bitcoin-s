@@ -7,31 +7,31 @@ import java.util.Scanner
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import org.bitcoins.core.config.NetworkParameters
-import org.bitcoins.core.crypto.{DoubleSha256Digest, ECPrivateKey, ECPublicKey}
-import org.bitcoins.core.currency.{Bitcoins, Satoshis}
-import org.bitcoins.core.number.{Int64, UInt32}
-import org.bitcoins.core.protocol.script.{P2SHScriptSignature, ScriptPubKey, ScriptSignature}
-import org.bitcoins.core.protocol.transaction.{Transaction, TransactionInput, TransactionOutPoint}
-import org.bitcoins.core.protocol.{BitcoinAddress, P2PKHAddress}
+import org.bitcoins.core.crypto.{ DoubleSha256Digest, ECPrivateKey, ECPublicKey }
+import org.bitcoins.core.currency.{ Bitcoins, Satoshis }
+import org.bitcoins.core.number.{ Int64, UInt32 }
+import org.bitcoins.core.protocol.script.{ P2SHScriptSignature, ScriptPubKey, ScriptSignature }
+import org.bitcoins.core.protocol.transaction.{ Transaction, TransactionInput, TransactionOutPoint }
+import org.bitcoins.core.protocol.{ BitcoinAddress, P2PKHAddress }
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
-import org.bitcoins.rpc.client.{BitcoindRpcClient, RpcOpts}
-import org.bitcoins.rpc.jsonmodels.{GetBlockWithTransactionsResult, GetTransactionResult, RpcAddress}
-import org.scalatest.{AsyncFlatSpec, BeforeAndAfter, BeforeAndAfterAll}
+import org.bitcoins.rpc.client.{ BitcoindRpcClient, RpcOpts }
+import org.bitcoins.rpc.jsonmodels.{ GetBlockWithTransactionsResult, GetTransactionResult, RpcAddress }
+import org.scalatest.{ AsyncFlatSpec, BeforeAndAfter, BeforeAndAfterAll }
 import org.slf4j.Logger
 
 import scala.concurrent.duration.DurationInt
-import scala.concurrent.{Await, ExecutionContextExecutor, Future}
+import scala.concurrent.{ Await, ExecutionContextExecutor, Future }
 import scala.util.Try
 
 class BitcoindRpcClientTest
   extends AsyncFlatSpec
   with BeforeAndAfterAll
   with BeforeAndAfter {
-  implicit val system : ActorSystem = ActorSystem("RpcClientTest_ActorSystem")
-  implicit val m : ActorMaterializer= ActorMaterializer()
-  implicit val ec : ExecutionContextExecutor= m.executionContext
-  implicit val networkParam : NetworkParameters= TestUtil.network
+  implicit val system: ActorSystem = ActorSystem("RpcClientTest_ActorSystem")
+  implicit val m: ActorMaterializer = ActorMaterializer()
+  implicit val ec: ExecutionContextExecutor = m.executionContext
+  implicit val networkParam: NetworkParameters = TestUtil.network
 
   val client = new BitcoindRpcClient(TestUtil.instance())
 
@@ -42,7 +42,7 @@ class BitcoindRpcClientTest
 
   val pruneClient = new BitcoindRpcClient(TestUtil.instance(pruneMode = true))
 
-  val logger : Logger = BitcoinSLogger.logger
+  val logger: Logger = BitcoinSLogger.logger
 
   var password = "password"
 
@@ -90,11 +90,10 @@ class BitcoindRpcClientTest
             .flatMap { _ => // Can't spend coinbase until depth 100
               sender.sendRawTransaction(
                 signedTransaction.hex,
-                allowHighFees = true
-              ).flatMap {
-                transactionHash =>
-                  sender.getTransaction(transactionHash)
-              }
+                allowHighFees = true).flatMap {
+                  transactionHash =>
+                    sender.getTransaction(transactionHash)
+                }
             }
         }
     }
@@ -137,9 +136,8 @@ class BitcoindRpcClientTest
     logger.info("Temp bitcoin directory created")
     logger.info("Temp bitcoin directory created")
 
-    val servers = Vector(walletClient, client, otherClient, pruneClient)
     logger.info("Bitcoin servers starting")
-    TestUtil.startServers(servers)
+    TestUtil.startServers(walletClient, client, otherClient, pruneClient)
 
     client.addNode(otherClient.getDaemon.uri, "add")
 
@@ -1209,35 +1207,6 @@ class BitcoindRpcClientTest
 
     client.importPubKey(pubKey).map { _ =>
       succeed
-    }
-  }
-
-  it should "be able to sign a message and verify that signature" in {
-    val message = "Never gonna give you up\nNever gonna let you down\n..."
-    client.getNewAddress(addressType = RpcOpts.Legacy()).flatMap { address =>
-      client.signMessage(address.asInstanceOf[P2PKHAddress], message).flatMap {
-        signature =>
-          client
-            .verifyMessage(
-              address.asInstanceOf[P2PKHAddress],
-              signature,
-              message)
-            .map { validity =>
-              assert(validity)
-            }
-      }
-    }
-  }
-
-  it should "be able to sign a message with a private key and verify that signature" in {
-    val message = "Never gonna give you up\nNever gonna let you down\n..."
-    val privKey = ECPrivateKey.freshPrivateKey
-    val address = P2PKHAddress(privKey.publicKey, networkParam)
-
-    client.signMessageWithPrivKey(privKey, message).flatMap { signature =>
-      client.verifyMessage(address, signature, message).map { validity =>
-        assert(validity)
-      }
     }
   }
 
