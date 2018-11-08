@@ -4,7 +4,7 @@ import akka.actor.ActorSystem
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.rpc.client.BitcoindRpcClient
 
-import scala.concurrent.duration.{DurationInt, FiniteDuration}
+import scala.concurrent.duration.{ DurationInt, FiniteDuration }
 import scala.concurrent._
 
 trait RpcUtil extends BitcoinSLogger {
@@ -36,7 +36,7 @@ trait RpcUtil extends BitcoinSLogger {
     duration: FiniteDuration = 100.milliseconds,
     counter: Int = 0,
     maxTries: Int = 50)(implicit system: ActorSystem): Future[Unit] = {
-    implicit val ec: ExecutionContext= system.dispatcher
+    implicit val ec: ExecutionContext = system.dispatcher
     if (counter == maxTries) {
       Future.failed(new RuntimeException("Condition timed out"))
     } else if (condition) {

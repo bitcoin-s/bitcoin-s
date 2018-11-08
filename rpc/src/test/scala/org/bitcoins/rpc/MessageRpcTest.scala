@@ -6,17 +6,17 @@ import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.crypto.ECPrivateKey
 import org.bitcoins.core.protocol.P2PKHAddress
 import org.bitcoins.core.util.BitcoinSLogger
-import org.bitcoins.rpc.client.{BitcoindRpcClient, RpcOpts}
-import org.scalatest.{AsyncFlatSpec, BeforeAndAfter, BeforeAndAfterAll}
+import org.bitcoins.rpc.client.{ BitcoindRpcClient, RpcOpts }
+import org.scalatest.{ AsyncFlatSpec, BeforeAndAfter, BeforeAndAfterAll }
 import org.slf4j.Logger
 
 import scala.concurrent.duration.DurationInt
-import scala.concurrent.{Await, ExecutionContext}
+import scala.concurrent.{ Await, ExecutionContext }
 
 class MessageRpcTest extends AsyncFlatSpec with BeforeAndAfterAll with BeforeAndAfter {
   implicit val system: ActorSystem = ActorSystem("MessageRpcTest_ActorSystem")
   implicit val m: ActorMaterializer = ActorMaterializer()
-  implicit val ec: ExecutionContext= m.executionContext
+  implicit val ec: ExecutionContext = m.executionContext
   implicit val networkParam: NetworkParameters = TestUtil.network
 
   val client = new BitcoindRpcClient(TestUtil.instance())
