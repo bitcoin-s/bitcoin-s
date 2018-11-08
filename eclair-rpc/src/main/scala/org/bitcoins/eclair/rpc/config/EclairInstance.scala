@@ -53,10 +53,10 @@ object EclairInstance {
     val chain = config.getString("eclair.chain")
 
     val serverBindingIp = config.getString("eclair.server.binding-ip")
-    val serverPort = config.getInt("eclair.server.port")
+    val serverPort = ConfigUtil.getIntOrElse(config, "eclair.server.port", 9735)
 
     val rpcHost = config.getString("eclair.api.binding-ip")
-    val rpcPort = config.getInt("eclair.api.port")
+    val rpcPort = ConfigUtil.getIntOrElse(config, "eclair.api.port", 8080)
 
     val np: NetworkParameters = chain match {
       case "regtest" => RegTest
