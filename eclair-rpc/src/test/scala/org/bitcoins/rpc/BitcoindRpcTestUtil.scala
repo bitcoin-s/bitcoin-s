@@ -61,7 +61,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     BitcoindAuthCredentials(username, pass, rpcUri.getPort, f)
   }
 
-  lazy val network = RegTest
+  lazy val network: NetworkParameters = RegTest
 
   def instance(
     port: Int = randomPort,
@@ -88,7 +88,11 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     } else firstAttempt
   }
 
-  def startServers(servers: Vector[BitcoindRpcClient])(implicit system: ActorSystem): Unit = {
+  /**
+   * Starts the given servers, and waits for them (in a blocking manner)
+   * until they are started.
+   */
+  def startServers(servers: BitcoindRpcClient*)(implicit system: ActorSystem): Unit = {
     servers.foreach(_.start())
     servers.foreach(RpcUtil.awaitServer(_))
   }
@@ -192,7 +196,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     port2: Int = randomPort,
     rpcPort2: Int = randomPort)(implicit system: ActorSystem): Future[(BitcoindRpcClient, BitcoindRpcClient)] = {
     implicit val m: ActorMaterializer = ActorMaterializer.create(system)
-    implicit val ec = m.executionContext
+    implicit val ec: ExecutionContextExecutor = m.executionContext
     val client1: BitcoindRpcClient = new BitcoindRpcClient(instance(port1, rpcPort1))
     val client2: BitcoindRpcClient = new BitcoindRpcClient(instance(port2, rpcPort2))
 
