@@ -5,8 +5,9 @@ import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.rpc.serializers.BitcoindJsonWriters._
+import org.bitcoins.rpc.serializers.BitcoindJsonSerializers._
 import org.bitcoins.core.protocol.script.ScriptPubKey
-import play.api.libs.json.{ Json, Writes }
+import play.api.libs.json.{ Json, Reads, Writes }
 
 object RpcOpts {
   case class FundRawTransactionOptions(
@@ -58,6 +59,15 @@ object RpcOpts {
     case P2SHSegwit() => "p2sh-segwit"
     case Bech32() => "bech32"
   }
+
+  sealed class LabelPurpose {
+    override def toString: String = super.toString.toLowerCase
+  }
+  case class Send() extends LabelPurpose
+  case class Receive() extends LabelPurpose
+
+  implicit val labelPurposeWrites: Writes[LabelPurpose] = Json.writes[LabelPurpose]
+  implicit val labelPurposeReads: Reads[LabelPurpose] = Json.reads[LabelPurpose]
 
   case class BlockTemplateRequest(
     mode: String,
