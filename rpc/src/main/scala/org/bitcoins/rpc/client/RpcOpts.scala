@@ -60,14 +60,14 @@ object RpcOpts {
     case Bech32() => "bech32"
   }
 
-  sealed class LabelPurpose {
-    override def toString: String = super.toString.toLowerCase
-  }
-  case class Send() extends LabelPurpose
-  case class Receive() extends LabelPurpose
+  sealed abstract class LabelPurpose
+  case class SendLabelPurpose() extends LabelPurpose
+  case class ReceiveLabelPurpose() extends LabelPurpose
 
-  implicit val labelPurposeWrites: Writes[LabelPurpose] = Json.writes[LabelPurpose]
-  implicit val labelPurposeReads: Reads[LabelPurpose] = Json.reads[LabelPurpose]
+  def labelPurposeString(labelPurpose: LabelPurpose): String = labelPurpose match {
+    case SendLabelPurpose() => "send"
+    case ReceiveLabelPurpose() => "receive"
+  }
 
   case class BlockTemplateRequest(
     mode: String,

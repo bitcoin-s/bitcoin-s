@@ -3,24 +3,17 @@ package org.bitcoins.rpc.serializers
 import java.io.File
 import java.net.{ InetAddress, URI }
 
-import org.bitcoins.core.crypto.{
-  DoubleSha256Digest,
-  ECPublicKey,
-  Sha256Hash160Digest
-}
+import org.bitcoins.core.crypto.{ DoubleSha256Digest, ECPublicKey, Sha256Hash160Digest }
 import org.bitcoins.core.currency.{ Bitcoins, Satoshis }
 import org.bitcoins.core.number.{ Int32, Int64, UInt32, UInt64 }
-import org.bitcoins.core.protocol.{
-  Address,
-  BitcoinAddress,
-  P2PKHAddress,
-  P2SHAddress
-}
+import org.bitcoins.core.protocol.{ Address, BitcoinAddress, P2PKHAddress, P2SHAddress }
 import org.bitcoins.core.protocol.blockchain.{ Block, BlockHeader, MerkleBlock }
 import org.bitcoins.core.protocol.script.{ ScriptPubKey, ScriptSignature }
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.wallet.fee.{ BitcoinFeeUnit, SatoshisPerByte }
+import org.bitcoins.rpc.client.RpcOpts.{ LabelPurpose, ReceiveLabelPurpose, SendLabelPurpose }
 import org.bitcoins.rpc.jsonmodels.RpcAddress
+import org.joda.time.DateTime
 import play.api.libs.json._
 
 import scala.util.{ Failure, Success }
@@ -50,6 +43,16 @@ object BitcoindJsonReaders {
 
   private def buildErrorMsg(expected: String, err: Any): JsError = {
     JsError(s"error.expected.$expected, got ${err.toString}")
+  }
+
+  implicit object LabelPurposeReads extends Reads[LabelPurpose] {
+    override def reads(json: JsValue): JsResult[LabelPurpose] =
+      json match {
+        case JsString("send") => JsSuccess(SendLabelPurpose())
+        case JsString("receive") => JsSuccess(ReceiveLabelPurpose())
+        // TODO better error message?
+        case err => buildErrorMsg(expected = "send or receive", err)
+      }
   }
 
   implicit object BigIntReads extends Reads[BigInt] {
