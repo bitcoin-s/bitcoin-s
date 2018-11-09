@@ -1,6 +1,5 @@
 package org.bitcoins.rpc.client
 
-import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.crypto.{ DoubleSha256Digest, ECPrivateKey }
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.protocol.BitcoinAddress
