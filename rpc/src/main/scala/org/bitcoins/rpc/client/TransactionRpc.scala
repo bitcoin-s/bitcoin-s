@@ -14,7 +14,7 @@ import play.api.libs.json._
 
 import scala.concurrent.Future
 
-trait TransacationRpc extends Client {
+trait TransactionRpc extends Client {
 
   def abandonTransaction(txid: DoubleSha256Digest): Future[Unit] = {
     bitcoindCall[Unit]("abandontransaction", List(JsString(txid.hex)))
@@ -123,7 +123,9 @@ trait TransacationRpc extends Client {
     } else {
       bitcoindCall[BitcoinAddress](
         "getrawchangeaddress",
-        List(JsString(RpcOpts.addressTypeString(addressType.get))))
+        List(JsString(addressType
+          .map(_.toString)
+          .getOrElse(""))))
     }
   }
 
