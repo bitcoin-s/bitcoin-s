@@ -66,21 +66,15 @@ trait WalletRpc extends Client {
         JsBoolean(p2sh)))
   }
 
-  def getNewAddress: Future[BitcoinAddress] =
-    getNewAddress(addressType = None)
-
-  def getNewAddress(account: String): Future[BitcoinAddress] =
-    getNewAddress(account, None)
-
-  private def getNewAddress(
-    account: String = "",
+  private def getNewAddressInternal(
+    accountOrLabel: String = "",
     addressType: Option[AddressType]): Future[BitcoinAddress] = {
     val params =
       if (addressType.isEmpty) {
-        List(JsString(account))
+        List(JsString(accountOrLabel))
       } else {
         List(
-          JsString(account),
+          JsString(accountOrLabel),
           JsString(addressType
             .map(_.toString)
             .getOrElse("")))
@@ -89,13 +83,19 @@ trait WalletRpc extends Client {
     bitcoindCall[BitcoinAddress]("getnewaddress", params)
   }
 
+  def getNewAddress: Future[BitcoinAddress] =
+    getNewAddressInternal(addressType = None)
+
   def getNewAddress(addressType: AddressType): Future[BitcoinAddress] =
-    getNewAddress(addressType = Some(addressType))
+    getNewAddressInternal(addressType = Some(addressType))
+
+  def getNewAddress(accountOrLabel: String): Future[BitcoinAddress] =
+    getNewAddressInternal(accountOrLabel, None)
 
   def getNewAddress(
-    account: String,
+    accountOrLabel: String,
     addressType: AddressType): Future[BitcoinAddress] =
-    getNewAddress(account, Some(addressType))
+    getNewAddressInternal(accountOrLabel, Some(addressType))
 
   def getWalletInfo: Future[GetWalletInfoResult] = {
     bitcoindCall[GetWalletInfoResult]("getwalletinfo")
