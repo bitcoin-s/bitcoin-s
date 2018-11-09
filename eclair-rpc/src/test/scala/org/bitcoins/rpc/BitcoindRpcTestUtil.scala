@@ -297,14 +297,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     sender: BitcoindRpcClient,
     address: BitcoinAddress,
     amount: Bitcoins)(implicit ec: ExecutionContext): Future[DoubleSha256Digest] = {
-    sender.createRawTransaction(Vector.empty, Map(address -> amount)).flatMap {
-      createdTx =>
-        sender.fundRawTransaction(createdTx).flatMap { fundedTx =>
-          sender.signRawTransaction(fundedTx.hex).flatMap { signedTx =>
-            sender.sendRawTransaction(signedTx.hex)
-          }
-        }
-    }
+    sender.sendToAddress(address, amount)
   }
 
   def deleteNodePair(client1: BitcoindRpcClient, client2: BitcoindRpcClient)(implicit actorSystem: ActorSystem): Unit = stopServers(client1, client2)
