@@ -33,7 +33,9 @@ trait MultisigRpc extends Client {
           JsNumber(minSignatures),
           JsArray(keys.map(keyToString)),
           JsString(account),
-          JsString(RpcOpts.addressTypeString(addressType.get)))
+          JsString(addressType
+            .map(_.toString)
+            .getOrElse("")))
       }
 
     bitcoindCall[MultiSigResult]("addmultisigaddress", params)

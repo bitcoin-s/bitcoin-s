@@ -5,6 +5,13 @@ import org.bitcoins.rpc.config.BitcoindInstance
 
 import scala.concurrent.ExecutionContext
 
+/**
+ * This class is not guaranteed to be compatible with any particular
+ * version of Bitcoin Core. It implements RPC calls that are similar
+ * across different versions. If you need RPC calls specific to a
+ * version, check out [[BitcoindV16RpcClient]] or
+ * [[BitcoindV17RpcClient]].
+ */
 class BitcoindRpcClient(protected val instance: BitcoindInstance)(
   implicit
   m: ActorMaterializer) extends Client
@@ -16,11 +23,11 @@ class BitcoindRpcClient(protected val instance: BitcoindInstance)(
   with NodeRpc
   with P2PRpc
   with RawTransactionRpc
-  with TransacationRpc
+  with TransactionRpc
   with UTXORpc
   with WalletRpc {
 
-  override val version: BitcoindVersion = UnknownBitcoindVersion
+  override val version: BitcoindVersion = BitcoindVersion.Unknown
 
   override protected implicit val executor: ExecutionContext = m.executionContext
   override protected implicit val materializer: ActorMaterializer =
@@ -29,12 +36,19 @@ class BitcoindRpcClient(protected val instance: BitcoindInstance)(
 }
 
 sealed trait BitcoindVersion
-case object BitcoindV16 extends BitcoindVersion {
-  override def toString: String = "v0.16"
-}
-case object BitcoindV17 extends BitcoindVersion {
-  override def toString: String = "v0.17"
-}
-case object UnknownBitcoindVersion extends BitcoindVersion {
-  override def toString: String = "Unknown"
+
+object BitcoindVersion {
+
+  case object V16 extends BitcoindVersion {
+    override def toString: String = "v0.16"
+  }
+
+  case object V17 extends BitcoindVersion {
+    override def toString: String = "v0.17"
+  }
+
+  case object Unknown extends BitcoindVersion {
+    override def toString: String = "Unknown"
+  }
+
 }

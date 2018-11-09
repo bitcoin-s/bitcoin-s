@@ -7,7 +7,7 @@ import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.rpc.serializers.BitcoindJsonWriters._
 import org.bitcoins.rpc.serializers.BitcoindJsonSerializers._
 import org.bitcoins.core.protocol.script.ScriptPubKey
-import play.api.libs.json.{ Json, Reads, Writes }
+import play.api.libs.json.{ Json, Writes }
 
 object RpcOpts {
   case class FundRawTransactionOptions(
@@ -48,25 +48,31 @@ object RpcOpts {
   implicit val lockUnspentParameterWrites: Writes[LockUnspentOutputParameter] =
     Json.writes[LockUnspentOutputParameter]
 
-  sealed abstract class AddressType
+  sealed trait AddressType
 
-  case class Legacy() extends AddressType
-  case class P2SHSegwit() extends AddressType
-  case class Bech32() extends AddressType
+  object AddressType {
+    case object Legacy extends AddressType {
+      override def toString: String = "legacy"
+    }
 
-  def addressTypeString(addressType: AddressType): String = addressType match {
-    case Legacy() => "legacy"
-    case P2SHSegwit() => "p2sh-segwit"
-    case Bech32() => "bech32"
+    case object P2SHSegwit extends AddressType {
+      override def toString: String = "p2sh-segwit"
+    }
+
+    case object Bech32 extends AddressType {
+      override def toString: String = "bech32"
+    }
   }
 
-  sealed abstract class LabelPurpose
-  case class SendLabelPurpose() extends LabelPurpose
-  case class ReceiveLabelPurpose() extends LabelPurpose
+  sealed trait LabelPurpose
 
-  def labelPurposeString(labelPurpose: LabelPurpose): String = labelPurpose match {
-    case SendLabelPurpose() => "send"
-    case ReceiveLabelPurpose() => "receive"
+  object LabelPurpose {
+    case object Send extends LabelPurpose {
+      override def toString: String = "send"
+    }
+    case object Receive extends LabelPurpose {
+      override def toString: String = "receive"
+    }
   }
 
   case class BlockTemplateRequest(
