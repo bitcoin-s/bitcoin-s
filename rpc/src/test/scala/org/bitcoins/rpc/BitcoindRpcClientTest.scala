@@ -24,6 +24,7 @@ import org.slf4j.Logger
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ Await, ExecutionContext, Future }
 import scala.util.Try
+import scala.async.Async.{ async, await }
 
 class BitcoindRpcClientTest
   extends AsyncFlatSpec
@@ -1244,11 +1245,27 @@ class BitcoindRpcClientTest
     }
   }
 
+  it should "be able to change the wallet password - refactored" in async {
+    val newPass = "new_password"
+
+    await(walletClient.walletLock())
+    await(walletClient.walletPassphraseChange(password, newPass))
+    password = newPass
+    await(walletClient.walletPassphrase(password, 1000))
+    val info = await(walletClient.getWalletInfo)
+    assert(info.unlocked_until.nonEmpty)
+    assert(info.unlocked_until.get > 0)
+    await(walletClient.walletLock())
+    val newInfo = await(walletClient.getWalletInfo)
+    assert(newInfo.unlocked_until.contains(0))
+  }
+
   it should "be able to change the wallet password" in {
+    val newPass = "new_password"
     walletClient.walletLock().flatMap { _ =>
-      walletClient.walletPassphraseChange(password, "new_password").flatMap {
+      walletClient.walletPassphraseChange(password, newPass).flatMap {
         _ =>
-          password = "new_password"
+          password = newPass
           walletClient.walletPassphrase(password, 1000).flatMap { _ =>
             walletClient.getWalletInfo.flatMap { info =>
               assert(info.unlocked_until.nonEmpty)
