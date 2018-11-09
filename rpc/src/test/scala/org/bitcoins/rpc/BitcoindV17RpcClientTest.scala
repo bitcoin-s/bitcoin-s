@@ -6,6 +6,7 @@ import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.rpc.client.BitcoindV17RpcClient
+import org.bitcoins.rpc.client.RpcOpts.{ Bech32, P2SHSegwit }
 import org.scalatest.{ AsyncFlatSpec, BeforeAndAfterAll }
 import org.slf4j.Logger
 
@@ -51,8 +52,16 @@ class BitcoindV17RpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
 
   it should "be able to get the address info for a given address" in {
     client.getNewAddress.flatMap { addr =>
+      client.getAddressInfo(addr).flatMap { _ =>
+        succeed
+      }
+    }
+  }
+
+  it should "be able to get the address info for a given P2SHSegwit address" in {
+    client.getNewAddress(addressType = P2SHSegwit()).flatMap { addr =>
       client.getAddressInfo(addr).flatMap { info =>
-        logger.error(s"Got address info $info")
+        logger.trace(s"got info ${info.toString} ")
         succeed
       }
     }

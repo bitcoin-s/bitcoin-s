@@ -108,6 +108,14 @@ class BitcoindV16RpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
     }
   }
 
+  it should "be able to get all addresses belonging to an account" in {
+    client.getNewAddress.flatMap { address =>
+      client.getAddressesByAccount("").map { addresses =>
+        assert(addresses.contains(address))
+      }
+    }
+  }
+
   it should "be able to get an account's address" in {
     val account = "a_new_account"
     client.getAccountAddress(account).flatMap { address =>
