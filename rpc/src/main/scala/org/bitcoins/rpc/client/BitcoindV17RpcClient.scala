@@ -36,6 +36,11 @@ class BitcoindV17RpcClient(override protected val instance: BitcoindInstance)(
       List(JsString(account), JsNumber(confirmations)))
   }
 
+  def setLabel(address: BitcoinAddress, label: String): Future[Unit] = {
+    bitcoindCall[Unit](
+      "setlabel", List(JsString(address.value), JsString(label)))
+  }
+
   def listLabels(
     purpose: Option[LabelPurpose] = None): Future[Vector[String]] = {
     bitcoindCall[Vector[String]](
