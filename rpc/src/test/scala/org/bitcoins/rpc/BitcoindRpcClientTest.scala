@@ -780,14 +780,6 @@ class BitcoindRpcClientTest
     }
   }
 
-  it should "be able to get all addresses belonging to an account" in {
-    client.getNewAddress.flatMap { address =>
-      client.getAddressesByAccount("").map { addresses =>
-        assert(addresses.contains(address))
-      }
-    }
-  }
-
   it should "be able to get a new raw change address" in {
     client.getRawChangeAddress.map { _ =>
       succeed
