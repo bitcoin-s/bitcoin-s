@@ -11,15 +11,32 @@ import org.bitcoins.core.protocol.script.{ ScriptPubKey, ScriptSignature }
 import org.bitcoins.core.protocol.transaction.{ Transaction, TransactionInput, TransactionOutPoint }
 import org.bitcoins.core.protocol.{ Address, BitcoinAddress, P2PKHAddress, P2SHAddress }
 import org.bitcoins.core.wallet.fee.BitcoinFeeUnit
-import org.bitcoins.rpc.client.RpcOpts.LabelPurpose
 import org.bitcoins.rpc.jsonmodels._
 import org.bitcoins.rpc.serializers.BitcoindJsonReaders._
 import org.bitcoins.rpc.serializers.BitcoindJsonWriters._
+import org.joda.time.DateTime
+import org.joda.time.format.ISODateTimeFormat
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
 
 object BitcoindJsonSerializers {
   implicit val bigIntReads: Reads[BigInt] = BigIntReads
+
+  private val dateFormat = ISODateTimeFormat.dateTime()
+
+  implicit val jodaDateWrites: Writes[DateTime] = {
+    Writes[DateTime] { d =>
+      JsString(d.toString(dateFormat))
+    }
+  }
+
+  implicit val jodaDateReads: Reads[DateTime] = {
+    Reads[DateTime] {
+      case jStr: JsString => JsSuccess(DateTime.parse(jStr.toString, dateFormat))
+      case JsNumber(num) if num.isValidLong => JsSuccess(new DateTime(num.toLongExact))
+      case err => JsError(s"Expected long or String, got ${err.toString()}")
+    }
+  }
 
   // Internal Types
   implicit val doubleSha256DigestReads: Reads[DoubleSha256Digest] =
