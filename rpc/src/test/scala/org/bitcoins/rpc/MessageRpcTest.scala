@@ -6,7 +6,8 @@ import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.crypto.ECPrivateKey
 import org.bitcoins.core.protocol.P2PKHAddress
 import org.bitcoins.core.util.BitcoinSLogger
-import org.bitcoins.rpc.client.{ BitcoindRpcClient, RpcOpts }
+import org.bitcoins.rpc.client.RpcOpts.AddressType
+import org.bitcoins.rpc.client.BitcoindRpcClient
 import org.scalatest.{ AsyncFlatSpec, BeforeAndAfter, BeforeAndAfterAll }
 import org.slf4j.Logger
 
@@ -46,7 +47,7 @@ class MessageRpcTest extends AsyncFlatSpec with BeforeAndAfterAll with BeforeAnd
 
   it should "be able to sign a message and verify that signature" in {
     val message = "Never gonna give you up\nNever gonna let you down\n..."
-    client.getNewAddress(addressType = RpcOpts.Legacy()).flatMap { address =>
+    client.getNewAddress(addressType = AddressType.Legacy).flatMap { address =>
       client.signMessage(address.asInstanceOf[P2PKHAddress], message).flatMap {
         signature =>
           client

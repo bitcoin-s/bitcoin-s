@@ -15,6 +15,7 @@ import org.bitcoins.core.protocol.script.{ P2SHScriptSignature, ScriptPubKey, Sc
 import org.bitcoins.core.protocol.transaction.{ Transaction, TransactionInput, TransactionOutPoint }
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
+import org.bitcoins.rpc.client.RpcOpts.AddressType
 import org.bitcoins.rpc.client.{ BitcoindRpcClient, RpcOpts }
 import org.bitcoins.rpc.jsonmodels.{ GetBlockWithTransactionsResult, GetTransactionResult, RpcAddress }
 import org.scalatest.{ AsyncFlatSpec, BeforeAndAfter, BeforeAndAfterAll }
@@ -785,15 +786,15 @@ class BitcoindRpcClientTest
       succeed
     }
 
-    client.getRawChangeAddress(RpcOpts.Legacy()).map { _ =>
+    client.getRawChangeAddress(AddressType.Legacy).map { _ =>
       succeed
     }
 
-    client.getRawChangeAddress(RpcOpts.P2SHSegwit()).map { _ =>
+    client.getRawChangeAddress(AddressType.P2SHSegwit).map { _ =>
       succeed
     }
 
-    client.getRawChangeAddress(RpcOpts.Bech32()).map { _ =>
+    client.getRawChangeAddress(AddressType.Bech32).map { _ =>
       succeed
     }
   }
@@ -1101,7 +1102,7 @@ class BitcoindRpcClientTest
     val ecPrivKey1 = ECPrivateKey.freshPrivateKey
     val pubKey1 = ecPrivKey1.publicKey
 
-    client.getNewAddress(addressType = RpcOpts.Legacy()).flatMap { address =>
+    client.getNewAddress(addressType = AddressType.Legacy).flatMap { address =>
       client
         .addMultiSigAddress(
           2,
@@ -1118,7 +1119,7 @@ class BitcoindRpcClientTest
     val ecPrivKey1 = ECPrivateKey.freshPrivateKey
     val pubKey1 = ecPrivKey1.publicKey
 
-    client.getNewAddress(addressType = RpcOpts.Legacy()).flatMap { address =>
+    client.getNewAddress(addressType = AddressType.Legacy).flatMap { address =>
       client
         .addMultiSigAddress(
           2,

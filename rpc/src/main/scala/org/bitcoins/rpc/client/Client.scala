@@ -48,7 +48,7 @@ trait Client {
 
   def start(): String = {
 
-    if (version != UnknownBitcoindVersion) {
+    if (version != BitcoindVersion.Unknown) {
       val foundVersion = Seq("bitcoind", "--version")
         .!!
         .split("\n")
@@ -84,6 +84,34 @@ trait Client {
     }, 2.seconds))
 
     result.getOrElse(false)
+  }
+
+  protected def bitcoindCall[T](
+    command: String,
+    parameters: List[JsValue] = List.empty)(
+    implicit
+    reader: Reads[T]): Future[T] = {
+
+    val request = buildRequest(instance, command, JsArray(parameters))
+    val responseF = sendRequest(request)
+
+    val payloadF: Future[JsValue] = responseF.flatMap(getPayload)
+
+    payloadF.map { payload =>
+      {
+
+        /**
+         * These lines are handy if you want to inspect what's being sent to and
+         * returned from bitcoind before it's parsed into a Scala type. However,
+         * there will sensitive material in some of those calls (private keys,
+         * XPUBs, balances, etc). It's therefore not a good idea to enable
+         * this logging in production.
+         */
+        logger.error(s"Command: $command ${parameters.map(_.toString).mkString(" ")}")
+        logger.error(s"Payload: \n${Json.prettyPrint(payload)}")
+        parseResult((payload \ resultKey).validate[T], payload)
+      }
+    }
   }
 
   protected def buildRequest(
@@ -124,21 +152,6 @@ trait Client {
 
     payloadF.map { payload =>
       Json.parse(payload.decodeString(ByteString.UTF_8))
-    }
-  }
-
-  protected def bitcoindCall[T](
-    command: String,
-    parameters: List[JsValue] = List.empty)(
-    implicit
-    reader: Reads[T]): Future[T] = {
-    val request = buildRequest(instance, command, JsArray(parameters))
-    val responseF = sendRequest(request)
-
-    val payloadF: Future[JsValue] = responseF.flatMap(getPayload)
-
-    payloadF.map { payload =>
-      parseResult((payload \ resultKey).validate[T], payload)
     }
   }
 

@@ -12,11 +12,14 @@ import play.api.libs.json.{ JsBoolean, JsNumber, JsString }
 
 import scala.concurrent.Future
 
+/**
+ * This class is compatible with version 0.16 of Bitcoin Core.
+ */
 class BitcoindV16RpcClient(override protected val instance: BitcoindInstance)(
   implicit
   m: ActorMaterializer) extends BitcoindRpcClient(instance) {
 
-  override val version: BitcoindVersion = BitcoindV16
+  override val version: BitcoindVersion = BitcoindVersion.V16
 
   def move(
     fromAccount: String,

@@ -5,17 +5,20 @@ import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.rpc.client.RpcOpts.LabelPurpose
 import org.bitcoins.rpc.config.BitcoindInstance
-import org.bitcoins.rpc.jsonmodels.{ AddressInfoResult, AddressesByLabelResult, ReceivedLabel }
+import org.bitcoins.rpc.jsonmodels.{ AddressInfoResult, LabelResult, ReceivedLabel }
 import org.bitcoins.rpc.serializers.BitcoindJsonSerializers._
 import play.api.libs.json.{ JsBoolean, JsNumber, JsString }
 
 import scala.concurrent.Future
 
+/**
+ * This class is compatible with version 0.17 of Bitcoin Core.
+ */
 class BitcoindV17RpcClient(override protected val instance: BitcoindInstance)(
   implicit
   m: ActorMaterializer) extends BitcoindRpcClient(instance) {
 
-  override val version: BitcoindVersion = BitcoindV17
+  override val version: BitcoindVersion = BitcoindVersion.V17
 
   def getAddressInfo(address: BitcoinAddress): Future[AddressInfoResult] = {
     bitcoindCall[AddressInfoResult]("getaddressinfo", List(JsString(address.value)))
@@ -37,10 +40,7 @@ class BitcoindV17RpcClient(override protected val instance: BitcoindInstance)(
     purpose: Option[LabelPurpose] = None): Future[Vector[String]] = {
     bitcoindCall[Vector[String]](
       "listlabels",
-      List(JsString(purpose match {
-        case None => ""
-        case Some(p) => RpcOpts.labelPurposeString(p)
-      })))
+      List(JsString(purpose.getOrElse("").toString)))
   }
 
   def listReceivedByLabel(

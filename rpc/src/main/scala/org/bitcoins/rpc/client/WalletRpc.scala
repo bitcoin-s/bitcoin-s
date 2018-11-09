@@ -81,7 +81,9 @@ trait WalletRpc extends Client {
       } else {
         List(
           JsString(account),
-          JsString(RpcOpts.addressTypeString(addressType.get)))
+          JsString(addressType
+            .map(_.toString)
+            .getOrElse("")))
       }
 
     bitcoindCall[BitcoinAddress]("getnewaddress", params)
