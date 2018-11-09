@@ -6,7 +6,7 @@ import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.rpc.client.BitcoindV17RpcClient
-import org.bitcoins.rpc.client.RpcOpts.{ Bech32, P2SHSegwit }
+import org.bitcoins.rpc.client.RpcOpts.AddressType
 import org.scalatest.{ AsyncFlatSpec, BeforeAndAfterAll }
 import org.slf4j.Logger
 
@@ -59,9 +59,26 @@ class BitcoindV17RpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
   }
 
   it should "be able to get the address info for a given P2SHSegwit address" in {
-    client.getNewAddress(addressType = P2SHSegwit()).flatMap { addr =>
-      client.getAddressInfo(addr).flatMap { info =>
-        logger.trace(s"got info ${info.toString} ")
+    client.getNewAddress(addressType = AddressType.P2SHSegwit).flatMap { addr =>
+      client.getAddressInfo(addr).flatMap { _ =>
+        succeed
+      }
+    }
+  }
+
+  it should "be able to the address info for a given Legacy address" in {
+    client.getNewAddress(addressType = AddressType.Legacy).flatMap { addr =>
+      client.getAddressInfo(addr).flatMap { _ =>
+        succeed
+      }
+    }
+  }
+
+  // TODO There's an issue here with how Bech32Addr.value works,
+  // it results in "UndefinedHRP(ByteVector(4 bytes, 0x62637274))1qm5zxhmrm4nnphye72rsnz9g5wna656mn5xyvw0"
+  it should "be able to the address info for a given Bech32 address" in {
+    client.getNewAddress(addressType = AddressType.Bech32).flatMap { addr =>
+      client.getAddressInfo(addr).flatMap { _ =>
         succeed
       }
     }
