@@ -7,7 +7,7 @@ import org.bitcoins.core.crypto.{ DoubleSha256Digest, ECPublicKey, Sha256Hash160
 import org.bitcoins.core.currency.{ Bitcoins, Satoshis }
 import org.bitcoins.core.number.{ Int32, UInt32, UInt64 }
 import org.bitcoins.core.protocol.blockchain.{ Block, BlockHeader, MerkleBlock }
-import org.bitcoins.core.protocol.script.{ ScriptPubKey, ScriptSignature }
+import org.bitcoins.core.protocol.script.{ ScriptPubKey, ScriptSignature, WitnessVersion }
 import org.bitcoins.core.protocol.transaction.{ Transaction, TransactionInput, TransactionOutPoint }
 import org.bitcoins.core.protocol.{ Address, BitcoinAddress, P2PKHAddress, P2SHAddress }
 import org.bitcoins.core.wallet.fee.BitcoinFeeUnit
@@ -69,6 +69,7 @@ object BitcoindJsonSerializers {
   implicit val uRIReads: Reads[URI] = URIReads
   implicit val scriptSignatureReads: Reads[ScriptSignature] =
     ScriptSignatureReads
+  implicit val witnessVersionReads: Reads[WitnessVersion] = WitnessVersionReads
 
   implicit val bitcoinsWrites: Writes[Bitcoins] = BitcoinsWrites
   implicit val bitcoinAddressWrites: Writes[BitcoinAddress] =
@@ -236,8 +237,8 @@ object BitcoindJsonSerializers {
   implicit val receivedLabelReads: Reads[ReceivedLabel] =
     Json.reads[ReceivedLabel]
 
-  implicit val addressesByLabelResultReads: Reads[AddressesByLabelResult] =
-    Json.reads[AddressesByLabelResult]
+  implicit val labelResult: Reads[LabelResult] =
+    Json.reads[LabelResult]
 
   implicit val paymentReads: Reads[Payment] =
     ((__ \ "involvesWatchonly").readNullable[Boolean] and
@@ -306,6 +307,8 @@ object BitcoindJsonSerializers {
   implicit val validateAddressResultReads: Reads[ValidateAddressResult] =
     Json.reads[ValidateAddressResult]
 
+  implicit val embeddedResultReads: Reads[EmbeddedResult] = Json.reads[EmbeddedResult]
+
   implicit val addressInfoResultReads: Reads[AddressInfoResult] =
     Json.reads[AddressInfoResult]
 
@@ -317,8 +320,8 @@ object BitcoindJsonSerializers {
     Reads.mapReads[DoubleSha256Digest, GetMemPoolResult](s =>
       JsSuccess(DoubleSha256Digest.fromHex(s)))
 
-  implicit def mapAddressesByLabelReads: Reads[Map[BitcoinAddress, AddressesByLabelResult]] =
-    Reads.mapReads[BitcoinAddress, AddressesByLabelResult](s =>
+  implicit def mapAddressesByLabelReads: Reads[Map[BitcoinAddress, LabelResult]] =
+    Reads.mapReads[BitcoinAddress, LabelResult](s =>
       JsSuccess(BitcoinAddress.fromString(s).get))
 
   implicit val outputMapWrites: Writes[Map[BitcoinAddress, Bitcoins]] =

@@ -10,7 +10,6 @@ import org.bitcoins.core.protocol.script.{ ScriptPubKey, WitnessVersion }
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.wallet.fee.BitcoinFeeUnit
 import org.bitcoins.rpc.client.RpcOpts.LabelPurpose
-import org.joda.time.DateTime
 
 sealed abstract class WalletResult
 
@@ -112,6 +111,7 @@ case class ReceivedAccount(
 
 case class ReceivedLabel(
   involvesWatchonly: Option[Boolean],
+
   /**
    * Should this be removed?
    * DEPRECATED. Backwards compatible alias for label.
@@ -189,30 +189,40 @@ case class UnspentOutput(
 
 case class AddressInfoResult(
   address: BitcoinAddress,
-  // scriptPubKey: ScriptPubKey,
+  scriptPubKey: ScriptPubKey,
   ismine: Boolean,
   iswatchonly: Boolean,
   isscript: Boolean,
   iswitness: Boolean,
   iscompressed: Option[Boolean],
-  // witness_version: Option[WitnessVersion],
-  // TODO something better here
+  witness_version: Option[WitnessVersion],
+  // TODO witness_program: Option[ScriptWitness], needs Reads[ScriptWitness]
   witness_program: Option[String],
+  // TODO something better here
   script: Option[String],
   // TODO something better here
-  hex: String,
-  // TODO something better here
-  // pubkeys: Option[Vector[ECPublicKey]],
-  // TODO something better here
+  hex: Option[String],
+  pubkeys: Option[Vector[ECPublicKey]], // TODO write test for this, with multisig address
   sigsrequired: Option[Int],
   pubkey: Option[ECPublicKey],
-  // embedded: Option[???],
+  embedded: Option[EmbeddedResult],
   label: String,
+  // This causes a horrible runtime execption that kills the JVM
+  // Commented out for now
   // timestamp: Option[DateTime],
   hdkeypath: Option[String],
-  hdmasterkeyid: Option[Sha256Hash160Digest]
-// labels: Vector[???]
-) extends WalletResult
+  hdmasterkeyid: Option[Sha256Hash160Digest],
+  labels: Vector[LabelResult]) extends WalletResult
 
-case class AddressesByLabelResult(
+case class EmbeddedResult(
+  isscript: Boolean,
+  iswitness: Boolean,
+  witness_version: WitnessVersion,
+  witness_program: Option[String],
+  pubkey: ECPublicKey,
+  address: BitcoinAddress,
+  scriptPubKey: ScriptPubKey) extends WalletResult
+
+case class LabelResult(
+  name: String,
   purpose: LabelPurpose) extends WalletResult
