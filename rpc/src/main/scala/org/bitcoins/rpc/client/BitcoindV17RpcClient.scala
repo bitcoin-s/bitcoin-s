@@ -39,7 +39,7 @@ class BitcoindV17RpcClient(override protected val instance: BitcoindInstance)(
       "listlabels",
       List(JsString(purpose match {
         case None => ""
-        case Some(p) => p.toString
+        case Some(p) => RpcOpts.labelPurposeString(p)
       })))
   }
 

@@ -189,31 +189,30 @@ case class UnspentOutput(
 
 case class AddressInfoResult(
   address: BitcoinAddress,
-  scriptPubKey: ScriptPubKey,
+  // scriptPubKey: ScriptPubKey,
   ismine: Boolean,
   iswatchonly: Boolean,
   isscript: Boolean,
   iswitness: Boolean,
+  iscompressed: Option[Boolean],
   // witness_version: Option[WitnessVersion],
   // TODO something better here
   witness_program: Option[String],
-  // TODO Option[Script]
   script: Option[String],
   // TODO something better here
   hex: String,
   // TODO something better here
-  pubkeys: Option[Vector[ECPublicKey]],
+  // pubkeys: Option[Vector[ECPublicKey]],
   // TODO something better here
   sigsrequired: Option[Int],
   pubkey: Option[ECPublicKey],
   // embedded: Option[???],
-  iscompressed: Boolean,
   label: String,
-  timestamp: DateTime,
+  // timestamp: Option[DateTime],
   hdkeypath: Option[String],
-  hdmasterkeyid: Option[Sha256Hash160Digest])
-  // labels: Vector[???]
-  extends WalletResult
+  hdmasterkeyid: Option[Sha256Hash160Digest]
+// labels: Vector[???]
+) extends WalletResult
 
 case class AddressesByLabelResult(
   purpose: LabelPurpose) extends WalletResult
