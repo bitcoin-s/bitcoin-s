@@ -24,8 +24,8 @@ class BitcoindV17RpcClient(override protected val instance: BitcoindInstance)(
     bitcoindCall[AddressInfoResult]("getaddressinfo", List(JsString(address.value)))
   }
 
-  def getAddressesByLabel(label: String): Future[Map[BitcoinAddress, AddressesByLabelResult]] = {
-    bitcoindCall[Map[BitcoinAddress, AddressesByLabelResult]]("getaddressesbylabel", List(JsString(label)))
+  def getAddressesByLabel(label: String): Future[Map[BitcoinAddress, LabelResult]] = {
+    bitcoindCall[Map[BitcoinAddress, LabelResult]]("getaddressesbylabel", List(JsString(label)))
   }
 
   def getReceivedByLabel(
