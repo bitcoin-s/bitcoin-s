@@ -185,11 +185,11 @@ sealed abstract class BloomFilter extends NetworkElement {
   def updateP2PKOnly(scriptPubKeysWithIndex: Seq[(ScriptPubKey, Int)], txId: DoubleSha256Digest): BloomFilter = {
     @tailrec
     def loop(constantsWithIndex: Seq[(ScriptToken, Int)], accumFilter: BloomFilter): BloomFilter = constantsWithIndex match {
-      case h :: t if (accumFilter.contains(h._1.bytes)) =>
+      case h +: t if (accumFilter.contains(h._1.bytes)) =>
         logger.debug("Found constant in bloom filter: " + h._1.hex)
         val filter = accumFilter.insert(TransactionOutPoint(txId, UInt32(h._2)))
         loop(t, filter)
-      case h :: t => loop(t, accumFilter)
+      case h +: t => loop(t, accumFilter)
       case Nil => accumFilter
     }
     val p2pkOrMultiSigScriptPubKeys: Seq[(ScriptPubKey, Int)] = scriptPubKeysWithIndex.filter {

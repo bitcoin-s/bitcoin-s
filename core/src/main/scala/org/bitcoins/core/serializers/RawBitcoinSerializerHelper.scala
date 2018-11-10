@@ -5,6 +5,10 @@ import org.bitcoins.core.protocol.{ CompactSizeUInt, NetworkElement }
 import org.bitcoins.core.util.BitcoinSLogger
 import scodec.bits.ByteVector
 
+import scala.annotation.tailrec
+import scala.collection.immutable.VectorBuilder
+import scala.collection.mutable
+
 /**
  * Created by chris on 2/18/16.
  */
@@ -18,19 +22,27 @@ sealed abstract class RawSerializerHelper {
   def parseCmpctSizeUIntSeq[T <: NetworkElement](bytes: ByteVector, constructor: ByteVector => T): (Seq[T], ByteVector) = {
     val count = CompactSizeUInt.parse(bytes)
     val payload = bytes.splitAt(count.size.toInt)._2
-    def loop(accum: Seq[T], remaining: ByteVector): (Seq[T], ByteVector) = {
-      if (accum.size == count.num.toInt) {
-        (accum.reverse, remaining)
+    var counter = 0
+    val b = Vector.newBuilder[T]
+    @tailrec
+    def loop(remaining: ByteVector): ByteVector = {
+      if (counter == count.num.toInt) {
+        remaining
       } else {
         val parsed = constructor(remaining)
         val (_, newRemaining) = remaining.splitAt(parsed.size)
-        loop(parsed +: accum, newRemaining)
+
+        counter = counter + 1
+        b.+=(parsed)
+
+        loop(newRemaining)
       }
     }
 
-    val (parsed, remaining) = loop(Nil, payload)
-    require(parsed.size == count.num.toInt, "Could not parse the amount of required elements, got: " + parsed.size + " required: " + count)
-    (parsed, remaining)
+    val remaining = loop(payload)
+    val result = b.result()
+    require(result.size == count.num.toInt, s"Could not parse the amount of required elements, got: ${result.size} required: ${count}")
+    (result, remaining)
   }
 
   /** Writes a Seq[TransactionInput]/Seq[TransactionOutput]/Seq[Transaction] -> ByteVector */
