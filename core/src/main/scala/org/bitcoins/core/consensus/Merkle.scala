@@ -30,8 +30,8 @@ trait Merkle extends BitcoinSLogger {
    */
   def computeMerkleRoot(transactions: Seq[Transaction]): DoubleSha256Digest = transactions match {
     case Nil => throw new IllegalArgumentException("We cannot have zero transactions in the block. There always should be ATLEAST one - the coinbase tx")
-    case h :: Nil => h.txId
-    case h :: t =>
+    case h +: Nil => h.txId
+    case h +: t =>
       val leafs = transactions.map(tx => Leaf(tx.txId))
       val merkleTree = build(leafs, Nil)
       merkleTree.value.get
@@ -50,10 +50,10 @@ trait Merkle extends BitcoinSLogger {
       if (accum.size == 1) accum.head
       else if (accum.isEmpty) throw new IllegalArgumentException("Should never have sub tree size of zero, this implies there was zero hashes given")
       else build(accum.reverse, Nil)
-    case h :: h1 :: t =>
+    case h +: h1 +: t =>
       val newTree = computeTree(h, h1)
       build(t, newTree +: accum)
-    case h :: t =>
+    case h +: t =>
       //means that we have an odd amount of txids, this means we duplicate the last hash in the tree
       val newTree = computeTree(h, h)
       build(t, newTree +: accum)
