@@ -37,10 +37,19 @@ $ sh autogen.sh && ./configure --enable-jni --enable-experimental --enable-modul
 $ sudo make install #optional, this installs the lib on your system
 ```
 
-Now you should be able to run secp256k1 with something like this. Or you can just copy `libsecp256k1.so` to your system library path. 
+By default, `.jvmopts` adds the freshly compiled `secp256k1` to the JVM classpath. It should therefore be sufficient to start `sbt` by simply doing
+
+```bash
+$ sbt
 ```
-$ sbt -Djava.library.path=/usr/local/lib test
+
+If you run into classpath problems, you can manually specify the JVM classpath like this:
+
 ```
+$ sbt -Djava.library.path=/your/class/path 
+```
+
+You can also copy `libsecp256k1.so` to your system library path. 
 
 # Property based testing
 This library aims to achieve high level of correctness via property based testing. At the simplest level, you can think of property based testing as specifying a invariant that must always hold true. [Here](https://github.com/bitcoin-s/bitcoin-s-core/blob/89fbf35d78046b7ed21fd93fec05bb57cba023bb/src/test/scala/org/bitcoins/core/protocol/transaction/TransactionSpec.scala#L13-L17) is an example of a property in the bitcoin-s-core test suite
