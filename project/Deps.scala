@@ -16,24 +16,24 @@ object Deps {
   }
 
   object Compile {
-    val bouncycastle = "org.bouncycastle" % "bcprov-jdk15on" % V.bouncyCastle
-    val scodec = "org.scodec" %% "scodec-bits" % V.scodecV
-    val slf4j = "org.slf4j" % "slf4j-api" % V.slf4j % "provided"
-    val zeromq = "org.zeromq" % "jeromq" % V.zeromq
-    val akkaHttp = "com.typesafe.akka" %% "akka-http" % V.akkav
-    val akkaStream = "com.typesafe.akka" %% "akka-stream" % V.akkaStreamv
-    val playJson = "com.typesafe.play" %% "play-json" % V.playv
+    val bouncycastle = "org.bouncycastle" % "bcprov-jdk15on" % V.bouncyCastle withSources() withJavadoc()
+    val scodec = "org.scodec" %% "scodec-bits" % V.scodecV withSources() withJavadoc()
+    val slf4j = "org.slf4j" % "slf4j-api" % V.slf4j % "provided" withSources() withJavadoc()
+    val zeromq = "org.zeromq" % "jeromq" % V.zeromq withSources() withJavadoc()
+    val akkaHttp = "com.typesafe.akka" %% "akka-http" % V.akkav withSources() withJavadoc()
+    val akkaStream = "com.typesafe.akka" %% "akka-stream" % V.akkaStreamv withSources() withJavadoc()
+    val playJson = "com.typesafe.play" %% "play-json" % V.playv withSources() withJavadoc()
   }
 
   object Test {
     val bitcoinj = ("org.bitcoinj" % "bitcoinj-core" % "0.14.4" % "test").exclude("org.slf4j", "slf4j-api")
-    val junitInterface = "com.novocode" % "junit-interface" % "0.10" % "test"
-    val logback = "ch.qos.logback" % "logback-classic" % V.logback % "test"
+    val junitInterface = "com.novocode" % "junit-interface" % "0.10" % "test" withSources() withJavadoc()
+    val logback = "ch.qos.logback" % "logback-classic" % V.logback % "test" withSources() withJavadoc()
     val scalacheck = "org.scalacheck" %% "scalacheck" % V.scalacheck % "test" withSources() withJavadoc()
-    val scalaTest = "org.scalatest" %% "scalatest" % V.scalaTest % "test"
-    val spray = "io.spray" %% "spray-json" % V.spray  % "test"
-    val akkaHttp = "com.typesafe.akka" %% "akka-http-testkit" % V.akkav % "test"
-    val akkaStream = "com.typesafe.akka" %% "akka-stream-testkit" % V.akkaStreamv % "test"
+    val scalaTest = "org.scalatest" %% "scalatest" % V.scalaTest % "test" withSources() withJavadoc()
+    val spray = "io.spray" %% "spray-json" % V.spray  % "test" withSources() withJavadoc()
+    val akkaHttp = "com.typesafe.akka" %% "akka-http-testkit" % V.akkav % "test" withSources() withJavadoc()
+    val akkaStream = "com.typesafe.akka" %% "akka-stream-testkit" % V.akkaStreamv % "test" withSources() withJavadoc()
   }
 
   val core = List(
