@@ -92,7 +92,6 @@ class RpcUtilTest extends AsyncFlatSpec with BeforeAndAfterAll {
 
   it should "be able to create a single node, wait for it to start and then delete it" in {
     implicit val m: ActorMaterializer = ActorMaterializer.create(system)
-    implicit val ec: ExecutionContext = m.executionContext
 
     val instance = TestUtil.instance()
     val client = new BitcoindRpcClient(instance)
@@ -103,35 +102,45 @@ class RpcUtilTest extends AsyncFlatSpec with BeforeAndAfterAll {
     RpcUtil.awaitServerShutdown(client)
     assert(!client.isStarted)
 
-    val t = Try(Await.result(client.getNetworkInfo, 1000.milliseconds))
-    assert(t.isFailure)
+    // We expect this future to fail. The second case in the last block
+    // indicates we got a response from bitcoind, which we don't want.
+    client.getNetworkInfo
+      .recover { case _: StreamTcpException => succeed }
+      .flatMap {
+        case assertion: Assertion => assertion
+        case _ => fail
+      }
   }
 
-  "TestUtil" should "be able to create a connected node pair with 100 blocks and then delete them" in {
-    TestUtil.createNodePair().flatMap {
-      case (client1, client2) =>
+  behavior of "TestUtil"
+
+  it should "be able to create a connected node pair" in async {
+    val (client1, client2) = await(TestUtil.createNodePair())
+    val nodes = await(client1.getAddedNodeInfo(client2.getDaemon.uri))
+    assert(nodes.nonEmpty)
+    assert(nodes.head.connected.contains(true))
+  }
+
+  it should "be able to create a connected node pair with 100 blocks and then delete them" in async {
+    val (client1, client2) = await(TestUtil.createNodePair())
         assert(client1.getDaemon.authCredentials.datadir.isDirectory)
         assert(client2.getDaemon.authCredentials.datadir.isDirectory)
 
-        client1.getAddedNodeInfo(client2.getDaemon.uri).flatMap { nodes =>
+    val nodes = await(client1.getAddedNodeInfo(client2.getDaemon.uri))
           assert(nodes.nonEmpty)
 
-          client1.getBlockCount.flatMap { count1 =>
+    val count1 = await(client1.getBlockCount)
             assert(count1 == 100)
 
-            client2.getBlockCount.map { count2 =>
+    val count2 = await(client2.getBlockCount)
               assert(count2 == 100)
 
               TestUtil.deleteNodePair(client1, client2)
               assert(!client1.getDaemon.authCredentials.datadir.exists)
               assert(!client2.getDaemon.authCredentials.datadir.exists)
             }
-          }
-        }
-    }
-  }
 
-  override def afterAll(): Unit = {
-    Await.result(system.terminate(), 10.seconds)
+  override def afterAll(): Unit = async {
+    await(system.terminate())
   }
 }

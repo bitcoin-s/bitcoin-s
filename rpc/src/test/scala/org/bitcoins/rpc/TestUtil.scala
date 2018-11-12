@@ -13,8 +13,9 @@ import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.rpc.client.BitcoindRpcClient
 import org.bitcoins.rpc.config.{ BitcoindAuthCredentials, BitcoindInstance }
 
+import scala.async.Async.{ async, await }
 import scala.concurrent.duration.{ DurationInt, FiniteDuration }
-import scala.concurrent.{ Await, ExecutionContext, Future }
+import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.Try
 
 trait TestUtil extends BitcoinSLogger {
@@ -81,8 +82,10 @@ trait TestUtil extends BitcoinSLogger {
    * until they are started.
    */
   def startServers(servers: BitcoindRpcClient*)(implicit system: ActorSystem): Unit = {
-    servers.foreach(_.start())
-    servers.foreach(RpcUtil.awaitServer(_))
+    servers.foreach(server => {
+      server.start()
+      RpcUtil.awaitServer(server)
+    })
   }
 
   /**
@@ -111,14 +114,15 @@ trait TestUtil extends BitcoinSLogger {
     duration: FiniteDuration = 100.milliseconds,
     maxTries: Int = 50)(implicit system: ActorSystem): Unit = {
     implicit val ec: ExecutionContext = system.dispatcher
-    RpcUtil.awaitCondition(
-      Await.result(
-        from
-          .getAddedNodeInfo(to.getDaemon.uri)
-          .map(info => info.nonEmpty && info.head.connected.contains(true)),
-        5.seconds),
-      duration,
-      maxTries)
+    val connectedF = from.getAddedNodeInfo(to.getDaemon.uri)
+      .map(info => info.nonEmpty && info.head.connected.contains(true))
+    async {
+      val connected = await(connectedF)
+      RpcUtil.awaitCondition(
+        connected,
+        duration,
+        maxTries)
+    }
   }
 
   def awaitSynced(
@@ -127,11 +131,15 @@ trait TestUtil extends BitcoinSLogger {
     duration: FiniteDuration = 100.milliseconds,
     maxTries: Int = 50)(implicit system: ActorSystem): Unit = {
     implicit val ec: ExecutionContext = system.dispatcher
-    RpcUtil.awaitCondition(Await.result(client1.getBlockCount.flatMap { count1 =>
-      client2.getBlockCount.map { count2 =>
-        count1 == count2
-      }
-    }, 2.seconds), duration, maxTries)
+    val blockCount1F = client1.getBlockCount
+    val blockCount2F = client2.getBlockCount
+    async {
+      val blockCount1 = await(blockCount1F)
+      val blockCount2 = await(blockCount2F)
+      RpcUtil.awaitCondition(
+        blockCount1 == blockCount2,
+        duration, maxTries)
+    }
   }
 
   def awaitDisconnected(
@@ -140,14 +148,16 @@ trait TestUtil extends BitcoinSLogger {
     duration: FiniteDuration = 100.milliseconds,
     maxTries: Int = 50)(implicit system: ActorSystem): Unit = {
     implicit val ec: ExecutionContext = system.dispatcher
-    RpcUtil.awaitCondition(
-      Await.result(
-        from
-          .getAddedNodeInfo(to.getDaemon.uri)
-          .map(info => info.isEmpty || !info.head.connected.contains(true)),
-        2.seconds),
-      duration,
-      maxTries)
+    val disconnectedF = from
+      .getAddedNodeInfo(to.getDaemon.uri)
+      .map(info => info.isEmpty || !info.head.connected.contains(true))
+    async {
+      val disconnected = await(disconnectedF)
+      RpcUtil.awaitCondition(
+        disconnected,
+        duration,
+        maxTries)
+    }
   }
 
   /** Returns a pair of RpcClients that are connected with 100 blocks in the chain */
@@ -158,46 +168,48 @@ trait TestUtil extends BitcoinSLogger {
     rpcPort2: Int = randomPort)(implicit system: ActorSystem): Future[(BitcoindRpcClient, BitcoindRpcClient)] = {
     implicit val m: ActorMaterializer = ActorMaterializer.create(system)
     implicit val ec: ExecutionContext = m.executionContext
-    val client1: BitcoindRpcClient = new BitcoindRpcClient(instance(port1, rpcPort1))
-    val client2: BitcoindRpcClient = new BitcoindRpcClient(instance(port2, rpcPort2))
-    client1.start()
-    client2.start()
-    val try1 = Try(RpcUtil.awaitServer(client1))
-    if (try1.isFailure) {
-      deleteNodePair(client1, client2)
-      throw try1.failed.get
-    }
-    val try2 = Try(RpcUtil.awaitServer(client2))
-    if (try2.isFailure) {
-      deleteNodePair(client1, client2)
-      throw try2.failed.get
-    }
-    client1.addNode(client2.getDaemon.uri, "add").flatMap { _ =>
+    async {
+      val client1: BitcoindRpcClient = new BitcoindRpcClient(instance(port1, rpcPort1))
+      val client2: BitcoindRpcClient = new BitcoindRpcClient(instance(port2, rpcPort2))
+
+      client1.start()
+      client2.start()
+      val try1 = Try(RpcUtil.awaitServer(client1))
+      if (try1.isFailure) {
+        deleteNodePair(client1, client2)
+        throw try1.failed.get
+      }
+
+      val try2 = Try(RpcUtil.awaitServer(client2))
+      if (try2.isFailure) {
+        deleteNodePair(client1, client2)
+        throw try2.failed.get
+      }
+
+      await(client1.addNode(client2.getDaemon.uri, "add"))
       val try3 = Try(awaitConnection(client1, client2))
       if (try3.isFailure) {
         deleteNodePair(client1, client2)
         throw try3.failed.get
       }
-      client1.generate(100).map { _ =>
-        val try4 = Try(awaitSynced(client1, client2))
-        if (try4.isFailure) {
-          deleteNodePair(client1, client2)
-          throw try4.failed.get
-        }
-        (client1, client2)
+
+      await(client1.generate(100))
+      val try4 = Try(awaitSynced(client1, client2))
+      if (try4.isFailure) {
+        deleteNodePair(client1, client2)
+        throw try4.failed.get
       }
+      (client1, client2)
     }
   }
 
   def fundBlockChainTransaction(
     sender: BitcoindRpcClient,
     address: BitcoinAddress,
-    amount: Bitcoins)(implicit ec: ExecutionContext): Future[DoubleSha256Digest] = {
-    fundMemPoolTransaction(sender, address, amount).flatMap { txid =>
-      sender.generate(1).map { _ =>
-        txid
-      }
-    }
+    amount: Bitcoins)(implicit ec: ExecutionContext): Future[DoubleSha256Digest] = async {
+    val txid = await(fundMemPoolTransaction(sender, address, amount))
+    await(sender.generate(1))
+    txid
   }
 
   def fundMemPoolTransaction(

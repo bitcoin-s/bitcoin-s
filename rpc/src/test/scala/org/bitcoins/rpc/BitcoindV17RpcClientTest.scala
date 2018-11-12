@@ -125,19 +125,17 @@ class BitcoindV17RpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
   }
 
   it should "set labels" in async {
-    val l = "setLabel"
-    val btc = Bitcoins(1)
+    val labelWithBtc = "labelWithBtc"
+    val labelWithoutBtc = "labelWithoutBtc"
+    val btcAmount = Bitcoins(1)
+
     val addr = await(client.getNewAddress)
-    await(TestUtil.fundBlockChainTransaction(otherClient, addr, btc))
-    val oldAmount = await(client.getReceivedByLabel(l))
+    await(client.setLabel(addr, labelWithBtc))
 
-    assert(oldAmount == Bitcoins(0))
+    await(TestUtil.fundBlockChainTransaction(otherClient, addr, btcAmount))
 
-    await(client.setLabel(addr, l))
-
-    val newAmount = await(client.getReceivedByLabel(l))
-
-    assert(newAmount == btc)
+    assert(await(client.getReceivedByLabel(labelWithBtc)) == btcAmount)
+    assert(await(client.getReceivedByLabel(labelWithoutBtc)) == Bitcoins(0))
   }
 
   it should "list all labels with purpose \"send\"" in {
