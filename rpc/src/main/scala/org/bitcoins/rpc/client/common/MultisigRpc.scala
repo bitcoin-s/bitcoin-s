@@ -1,8 +1,8 @@
-package org.bitcoins.rpc.client
+package org.bitcoins.rpc.client.common
 
 import org.bitcoins.core.crypto.ECPublicKey
 import org.bitcoins.core.protocol.P2PKHAddress
-import org.bitcoins.rpc.client.RpcOpts.AddressType
+import org.bitcoins.rpc.client.common.RpcOpts.AddressType
 import org.bitcoins.rpc.jsonmodels.MultiSigResult
 import org.bitcoins.rpc.serializers.BitcoindJsonSerializers._
 import play.api.libs.json.{ JsArray, JsNumber, JsString, Json }

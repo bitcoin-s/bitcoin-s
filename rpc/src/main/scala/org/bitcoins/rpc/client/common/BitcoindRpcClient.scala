@@ -1,6 +1,8 @@
-package org.bitcoins.rpc.client
+package org.bitcoins.rpc.client.common
 
 import akka.stream.ActorMaterializer
+import org.bitcoins.rpc.client.v16.BitcoindV16RpcClient
+import org.bitcoins.rpc.client.v17.BitcoindV17RpcClient
 import org.bitcoins.rpc.config.BitcoindInstance
 
 import scala.concurrent.ExecutionContext

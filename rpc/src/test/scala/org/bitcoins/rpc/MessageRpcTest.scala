@@ -6,8 +6,8 @@ import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.crypto.ECPrivateKey
 import org.bitcoins.core.protocol.P2PKHAddress
 import org.bitcoins.core.util.BitcoinSLogger
-import org.bitcoins.rpc.client.RpcOpts.AddressType
-import org.bitcoins.rpc.client.BitcoindRpcClient
+import org.bitcoins.rpc.client.common.BitcoindRpcClient
+import org.bitcoins.rpc.client.common.RpcOpts.AddressType
 import org.scalatest.{ AsyncFlatSpec, BeforeAndAfter, BeforeAndAfterAll }
 import org.slf4j.Logger
 

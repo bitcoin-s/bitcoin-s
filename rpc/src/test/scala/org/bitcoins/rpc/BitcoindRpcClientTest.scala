@@ -15,8 +15,8 @@ import org.bitcoins.core.protocol.script.{ P2SHScriptSignature, ScriptPubKey, Sc
 import org.bitcoins.core.protocol.transaction.{ Transaction, TransactionInput, TransactionOutPoint }
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
-import org.bitcoins.rpc.client.RpcOpts.AddressType
-import org.bitcoins.rpc.client.{ BitcoindRpcClient, RpcOpts }
+import org.bitcoins.rpc.client.common.RpcOpts.AddressType
+import org.bitcoins.rpc.client.common.{ BitcoindRpcClient, RpcOpts }
 import org.bitcoins.rpc.jsonmodels.{ GetBlockWithTransactionsResult, GetTransactionResult, RpcAddress }
 import org.scalatest.{ AsyncFlatSpec, BeforeAndAfter, BeforeAndAfterAll }
 import org.slf4j.Logger

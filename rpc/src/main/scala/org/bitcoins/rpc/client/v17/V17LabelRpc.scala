@@ -1,29 +1,16 @@
-package org.bitcoins.rpc.client
+package org.bitcoins.rpc.client.v17
 
-import akka.stream.ActorMaterializer
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.protocol.BitcoinAddress
-import org.bitcoins.rpc.client.RpcOpts.LabelPurpose
-import org.bitcoins.rpc.config.BitcoindInstance
-import org.bitcoins.rpc.jsonmodels.{ AddressInfoResult, LabelResult, ReceivedLabel }
+import org.bitcoins.rpc.client.common.Client
+import org.bitcoins.rpc.client.common.RpcOpts.LabelPurpose
+import org.bitcoins.rpc.jsonmodels.{ LabelResult, ReceivedLabel }
 import org.bitcoins.rpc.serializers.BitcoindJsonSerializers._
 import play.api.libs.json.{ JsBoolean, JsNumber, JsString }
 
 import scala.concurrent.Future
 
-/**
- * This class is compatible with version 0.17 of Bitcoin Core.
- */
-class BitcoindV17RpcClient(override protected val instance: BitcoindInstance)(
-  implicit
-  m: ActorMaterializer) extends BitcoindRpcClient(instance) {
-
-  override val version: BitcoindVersion = BitcoindVersion.V17
-
-  def getAddressInfo(address: BitcoinAddress): Future[AddressInfoResult] = {
-    bitcoindCall[AddressInfoResult]("getaddressinfo", List(JsString(address.value)))
-  }
-
+trait V17LabelRpc extends Client {
   def getAddressesByLabel(label: String): Future[Map[BitcoinAddress, LabelResult]] = {
     bitcoindCall[Map[BitcoinAddress, LabelResult]]("getaddressesbylabel", List(JsString(label)))
   }
@@ -60,4 +47,3 @@ class BitcoindV17RpcClient(override protected val instance: BitcoindInstance)(
         JsBoolean(includeWatchOnly)))
   }
 }
-

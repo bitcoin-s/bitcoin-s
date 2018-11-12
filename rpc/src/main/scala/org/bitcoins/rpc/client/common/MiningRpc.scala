@@ -1,10 +1,9 @@
-package org.bitcoins.rpc.client
+package org.bitcoins.rpc.client.common
 
 import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.rpc.jsonmodels.{ GetBlockTemplateResult, GetMiningInfoResult }
-import org.bitcoins.rpc.serializers.BitcoindJsonReaders._
 import org.bitcoins.rpc.serializers.BitcoindJsonSerializers._
 import play.api.libs.json.{ JsNumber, JsString, Json }
 

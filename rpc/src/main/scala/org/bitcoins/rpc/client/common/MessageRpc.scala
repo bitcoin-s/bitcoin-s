@@ -1,4 +1,4 @@
-package org.bitcoins.rpc.client
+package org.bitcoins.rpc.client.common
 
 import org.bitcoins.core.crypto.ECPrivateKey
 import org.bitcoins.core.protocol.P2PKHAddress

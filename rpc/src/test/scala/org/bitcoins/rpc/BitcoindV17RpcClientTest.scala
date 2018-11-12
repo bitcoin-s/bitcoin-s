@@ -5,8 +5,8 @@ import akka.stream.ActorMaterializer
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.util.BitcoinSLogger
-import org.bitcoins.rpc.client.BitcoindV17RpcClient
-import org.bitcoins.rpc.client.RpcOpts.{ AddressType, LabelPurpose }
+import org.bitcoins.rpc.client.common.RpcOpts.{ AddressType, LabelPurpose }
+import org.bitcoins.rpc.client.v17.BitcoindV17RpcClient
 import org.scalatest.{ AsyncFlatSpec, BeforeAndAfterAll }
 import org.slf4j.Logger
 

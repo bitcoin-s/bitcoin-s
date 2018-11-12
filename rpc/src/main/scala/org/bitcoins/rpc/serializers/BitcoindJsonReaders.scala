@@ -12,7 +12,7 @@ import org.bitcoins.core.protocol.script.{ ScriptPubKey, ScriptSignature }
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.protocol.{ Address, BitcoinAddress, P2PKHAddress, P2SHAddress }
 import org.bitcoins.core.wallet.fee.{ BitcoinFeeUnit, SatoshisPerByte }
-import org.bitcoins.rpc.client.RpcOpts.LabelPurpose
+import org.bitcoins.rpc.client.common.RpcOpts.LabelPurpose
 import org.bitcoins.rpc.jsonmodels.RpcAddress
 import play.api.libs.json._
 

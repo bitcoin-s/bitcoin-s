@@ -8,7 +8,7 @@ import akka.stream.ActorMaterializer
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.util.BitcoinSLogger
-import org.bitcoins.rpc.client.BitcoindRpcClient
+import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.config.{ BitcoindAuthCredentials, BitcoindInstance }
 
 import scala.concurrent.{ Await, ExecutionContext, Future, Promise }

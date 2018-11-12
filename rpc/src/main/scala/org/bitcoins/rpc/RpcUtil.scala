@@ -2,7 +2,7 @@ package org.bitcoins.rpc
 
 import akka.actor.ActorSystem
 import org.bitcoins.core.util.BitcoinSLogger
-import org.bitcoins.rpc.client.BitcoindRpcClient
+import org.bitcoins.rpc.client.common.BitcoindRpcClient
 
 import scala.concurrent.duration.{ DurationInt, FiniteDuration }
 import scala.concurrent._

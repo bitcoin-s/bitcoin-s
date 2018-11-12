@@ -9,7 +9,7 @@ import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.script.{ ScriptPubKey, WitnessVersion }
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.wallet.fee.BitcoinFeeUnit
-import org.bitcoins.rpc.client.RpcOpts.LabelPurpose
+import org.bitcoins.rpc.client.common.RpcOpts.LabelPurpose
 
 sealed abstract class WalletResult
 

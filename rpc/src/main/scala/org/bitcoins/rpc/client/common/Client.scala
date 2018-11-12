@@ -1,4 +1,4 @@
-package org.bitcoins.rpc.client
+package org.bitcoins.rpc.client.common
 
 import java.util.UUID
 
@@ -11,7 +11,7 @@ import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.crypto.ECPrivateKey
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.rpc.config.BitcoindInstance
-import org.bitcoins.rpc.serializers.BitcoindJsonWriters._
+import org.bitcoins.rpc.serializers.BitcoindJsonSerializers._
 import org.slf4j.Logger
 import play.api.libs.json._
 
@@ -107,8 +107,8 @@ trait Client {
          * XPUBs, balances, etc). It's therefore not a good idea to enable
          * this logging in production.
          */
-        // logger.debug(s"Command: $command ${parameters.map(_.toString).mkString(" ")}")
-        // logger.debug(s"Payload: \n${Json.prettyPrint(payload)}")
+        logger.error(s"Command: $command ${parameters.map(_.toString).mkString(" ")}")
+        logger.error(s"Payload: \n${Json.prettyPrint(payload)}")
         parseResult((payload \ resultKey).validate[T], payload)
       }
     }

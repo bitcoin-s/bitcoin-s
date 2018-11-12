@@ -5,6 +5,8 @@ import java.io.File
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import org.bitcoins.rpc.client.BitcoindRpcClient
+import org.bitcoins.rpc.client.common.BitcoindRpcClient
+
 import org.scalatest.{ AsyncFlatSpec, BeforeAndAfterAll }
 
 import scala.concurrent.{ Await, ExecutionContext, Future }
