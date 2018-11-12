@@ -1,11 +1,10 @@
-package org.bitcoins.rpc.client
+package org.bitcoins.rpc.client.common
 
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.transaction.TransactionOutPoint
-import org.bitcoins.rpc.jsonmodels._
-import org.bitcoins.rpc.serializers.JsonReaders._
+import org.bitcoins.rpc.jsonmodels.UnspentOutput
 import org.bitcoins.rpc.serializers.JsonSerializers._
-import play.api.libs.json._
+import play.api.libs.json.{JsBoolean, JsNumber, Json}
 
 import scala.concurrent.Future
 

@@ -5,8 +5,10 @@ import java.net.URI
 import java.nio.file.Paths
 
 import com.typesafe.config._
-import org.bitcoins.core.config._
+import org.bitcoins.core.config.{NetworkParameters, _}
+import org.bitcoins.rpc.client.common.BitcoindVersion
 
+import scala.sys.process._
 import scala.util.{Failure, Properties, Success, Try}
 
 /**
@@ -23,6 +25,21 @@ sealed trait BitcoindInstance {
   def zmqConfig: ZmqConfig
 
   def rpcPort: Int = authCredentials.rpcPort
+
+  def getVersion: BitcoindVersion = {
+
+    val foundVersion = Seq("bitcoind", "--version").!!.split("\n").head
+      .split(" ")
+      .last
+
+    foundVersion match {
+      case _: String if foundVersion.startsWith(BitcoindVersion.V16.toString) =>
+        BitcoindVersion.V16
+      case _: String if foundVersion.startsWith(BitcoindVersion.V17.toString) =>
+        BitcoindVersion.V17
+      case _: String => BitcoindVersion.Unknown
+    }
+  }
 }
 
 object BitcoindInstance {

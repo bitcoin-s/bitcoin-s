@@ -1,12 +1,11 @@
-package org.bitcoins.rpc.client
+package org.bitcoins.rpc.client.common
 
 import org.bitcoins.core.crypto.{DoubleSha256Digest, ECPrivateKey}
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
-import org.bitcoins.rpc.serializers.JsonWriters._
-import org.bitcoins.rpc.serializers.JsonSerializers._
 import org.bitcoins.core.protocol.script.ScriptPubKey
+import org.bitcoins.rpc.serializers.JsonWriters._
 import play.api.libs.json.{Json, Writes}
 
 object RpcOpts {
@@ -50,6 +49,24 @@ object RpcOpts {
 
   implicit val lockUnspentParameterWrites: Writes[LockUnspentOutputParameter] =
     Json.writes[LockUnspentOutputParameter]
+
+  sealed trait AddNodeArgument
+
+  object AddNodeArgument {
+
+    case object Add extends AddNodeArgument {
+      override def toString: String = "add"
+    }
+
+    case object Remove extends AddNodeArgument {
+      override def toString: String = "remove"
+    }
+
+    case object OneTry extends AddNodeArgument {
+      override def toString: String = "onetry"
+    }
+
+  }
 
   sealed trait AddressType
 

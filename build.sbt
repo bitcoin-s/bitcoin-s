@@ -2,6 +2,7 @@ import sbt.Credentials
 import sbt.Keys.publishTo
 import com.typesafe.sbt.SbtGit.GitKeys._
 
+import scala.util.Properties
 
 cancelable in Global := true
 
@@ -85,14 +86,22 @@ lazy val commonSettings = List(
       bintrayPublish
     }
   },
-
   bintrayReleaseOnPublish := !isSnapshot.value,
-
   //fix for https://github.com/sbt/sbt/issues/3519
   updateOptions := updateOptions.value.withGigahorse(false),
 
-  git.formattedShaVersion := git.gitHeadCommit.value.map { sha => s"${sha.take(6)}-${timestamp}-SNAPSHOT" }
+  git.formattedShaVersion := git.gitHeadCommit.value.map { sha => s"${sha.take(6)}-${timestamp}-SNAPSHOT" },
+  
+  // makes it possible to detect if we're in tests
+  testOptions += Tests.Setup(_ => sys.props("test") = "true"),
 
+  // Travis has performance issues on macOS
+  if (Properties.isMac && sys.props.get("CI").isDefined) {
+
+    Test / parallelExecution := false
+  } else {
+    Test / parallelExecution := true
+  }
 )
 
 lazy val root = project

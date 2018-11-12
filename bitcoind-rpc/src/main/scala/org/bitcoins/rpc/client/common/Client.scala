@@ -1,4 +1,4 @@
-package org.bitcoins.rpc.client
+package org.bitcoins.rpc.client.common
 
 import java.util.UUID
 
@@ -12,14 +12,13 @@ import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.crypto.ECPrivateKey
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.rpc.config.BitcoindInstance
-import org.bitcoins.rpc.serializers.JsonWriters._
-import org.bitcoins.rpc.serializers.JsonReaders.UnitReads
+import org.bitcoins.rpc.serializers.JsonSerializers._
 import org.bitcoins.rpc.util.AsyncUtil
 import org.slf4j.Logger
 import play.api.libs.json._
 
+import scala.concurrent._
 import scala.concurrent.duration.DurationInt
-import scala.concurrent.{Await, ExecutionContext, Future, Promise}
 import scala.sys.process._
 import scala.util.{Failure, Success, Try}
 
@@ -34,7 +33,7 @@ trait Client {
   protected implicit val network: NetworkParameters = instance.network
 
   /**
-    * This is here (and not in BitcoindJsonWrriters)
+    * This is here (and not in JsonWrriters)
     * so that the implicit network val is accessible
     */
   implicit object ECPrivateKeyWrites extends Writes[ECPrivateKey] {
@@ -57,6 +56,14 @@ trait Client {
     *         cannot be started
     */
   def start(): Future[Unit] = {
+    if (version != BitcoindVersion.Unknown) {
+      val foundVersion = instance.getVersion
+      if (foundVersion != version) {
+        throw new RuntimeException(
+          s"Wrong version for bitcoind RPC client! Expected $version, got $foundVersion")
+      }
+    }
+
     val cmd = List("bitcoind",
                    "-datadir=" + instance.authCredentials.datadir,
                    "-rpcport=" + instance.rpcUri.getPort,

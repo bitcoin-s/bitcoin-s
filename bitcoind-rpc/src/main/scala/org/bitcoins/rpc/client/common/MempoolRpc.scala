@@ -1,4 +1,4 @@
-package org.bitcoins.rpc.client
+package org.bitcoins.rpc.client.common
 
 import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.rpc.jsonmodels.{
