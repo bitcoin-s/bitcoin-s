@@ -8,7 +8,7 @@ import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script.{ P2SHScriptSignature, ScriptPubKey }
 import org.bitcoins.core.protocol.transaction.{ TransactionInput, TransactionOutPoint }
 import org.bitcoins.core.util.BitcoinSLogger
-import org.bitcoins.rpc.client.common.{ BitcoindRpcClient, RpcOpts }
+import org.bitcoins.rpc.client.{ BitcoindRpcClient, RpcOpts }
 import org.scalatest.{ AsyncFlatSpec, BeforeAndAfterAll }
 import org.slf4j.Logger
 
