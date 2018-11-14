@@ -28,7 +28,7 @@ class RpcUtilTest extends AsyncFlatSpec with BeforeAndAfterAll {
   }
 
   private def boolLaterDoneAndTrue(trueLater: Future[Boolean]): () => Future[Boolean] = {
-    () => boolLaterDoneAnd(true, trueLater)
+    () => boolLaterDoneAnd(bool = true, trueLater)
   }
 
   behavior of "RpcUtil"
@@ -89,7 +89,7 @@ class RpcUtilTest extends AsyncFlatSpec with BeforeAndAfterAll {
     }
   }
 
-  "TestUtil" should "create a temp bitcoin directory when creating a DaemonInstance, and then delete it" in {
+  "BitcoindRpcTestUtil" should "create a temp bitcoin directory when creating a DaemonInstance, and then delete it" in {
     val instance = BitcoindRpcTestUtil.instance(BitcoindRpcTestUtil.randomPort, BitcoindRpcTestUtil.randomPort)
     val dir = instance.authCredentials.datadir
     assert(dir.isDirectory)
@@ -105,7 +105,7 @@ class RpcUtilTest extends AsyncFlatSpec with BeforeAndAfterAll {
     val instance = BitcoindRpcTestUtil.instance()
     val client = new BitcoindRpcClient(instance)
     client.start()
-    RpcUtil.awaitCondition(client.isStarted)
+    RpcUtil.awaitCondition(() => client.isStarted)
     assert(client.isStarted)
     client.stop()
     RpcUtil.awaitServerShutdown(client)
@@ -115,7 +115,7 @@ class RpcUtilTest extends AsyncFlatSpec with BeforeAndAfterAll {
     assert(t.isFailure)
   }
 
-  "TestUtil" should "be able to create a connected node pair with 100 blocks and then delete them" in {
+  it should "be able to create a connected node pair with 100 blocks and then delete them" in {
     BitcoindRpcTestUtil.createNodePair().flatMap {
       case (client1, client2) =>
         assert(client1.getDaemon.authCredentials.datadir.isDirectory)
@@ -140,7 +140,7 @@ class RpcUtilTest extends AsyncFlatSpec with BeforeAndAfterAll {
   }
 
   it should "be able to create a unconnected node pair" in async {
-    val (client1, client2) = TestUtil.createUnconnectedNodePair()
+    val (client1, client2) = BitcoindRpcTestUtil.createUnconnectedNodePair()
     assert(client1.getDaemon.authCredentials.datadir.isDirectory)
     assert(client2.getDaemon.authCredentials.datadir.isDirectory)
 

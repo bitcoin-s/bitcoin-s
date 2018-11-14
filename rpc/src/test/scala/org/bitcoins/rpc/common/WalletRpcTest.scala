@@ -5,32 +5,31 @@ import java.io.File
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import org.bitcoins.core.config.NetworkParameters
-import org.bitcoins.core.crypto.ECPrivateKey
-import org.bitcoins.core.protocol.P2PKHAddress
-import org.bitcoins.rpc.{ RpcUtil, TestUtil }
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
-import org.bitcoins.rpc.client.common.RpcOpts.AddressType
+import org.bitcoins.rpc.{ BitcoindRpcTestUtil, RpcUtil }
 import org.scalatest.{ AsyncFlatSpec, BeforeAndAfterAll }
 
+import scala.async.Async.{ async, await }
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ Await, ExecutionContext }
-import scala.async.Async.{ async, await }
 
 class WalletRpcTest extends AsyncFlatSpec with BeforeAndAfterAll {
   implicit val system: ActorSystem = ActorSystem("WalletRpcTest")
   implicit val m: ActorMaterializer = ActorMaterializer()
   implicit val ec: ExecutionContext = m.executionContext
-  implicit val networkParam: NetworkParameters = TestUtil.network
+  implicit val networkParam: NetworkParameters = BitcoindRpcTestUtil.network
 
-  val client: BitcoindRpcClient = new BitcoindRpcClient(TestUtil.instance())
+  val client: BitcoindRpcClient = new BitcoindRpcClient(BitcoindRpcTestUtil.instance())
 
   // This client's wallet is encrypted
-  val walletClient = new BitcoindRpcClient(TestUtil.instance())
+  val walletClient = new BitcoindRpcClient(BitcoindRpcTestUtil.instance())
+
+  val clients = Vector(client, walletClient)
 
   var password = "password"
 
   override def beforeAll(): Unit = {
-    TestUtil.startServers(client, walletClient)
+    BitcoindRpcTestUtil.startServers(clients)
     Await.result(client.generate(200), 3.seconds)
 
     Await.result(
@@ -45,7 +44,7 @@ class WalletRpcTest extends AsyncFlatSpec with BeforeAndAfterAll {
   }
 
   override protected def afterAll(): Unit = {
-    TestUtil.stopServers(client, walletClient)
+    BitcoindRpcTestUtil.stopServers(clients)
     Await.result(system.terminate(), 10.seconds)
   }
 

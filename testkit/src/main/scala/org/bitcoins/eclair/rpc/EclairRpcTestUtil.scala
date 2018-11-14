@@ -4,6 +4,7 @@ import java.io.{ File, PrintWriter }
 import java.net.URI
 
 import akka.actor.ActorSystem
+import akka.stream.ActorMaterializer
 import com.typesafe.config.{ Config, ConfigFactory }
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.currency.CurrencyUnit
@@ -12,7 +13,7 @@ import org.bitcoins.core.protocol.ln.currency.MilliSatoshis
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.eclair.rpc.client.EclairRpcClient
 import org.bitcoins.eclair.rpc.config.EclairInstance
-import org.bitcoins.rpc.client.BitcoindRpcClient
+import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.config.BitcoindInstance
 import org.bitcoins.rpc.{ BitcoindRpcTestUtil, RpcUtil }
 
@@ -84,13 +85,13 @@ trait EclairTestUtil extends BitcoinSLogger {
   }
 
   def eclairDataDir(bitcoindRpcClient: BitcoindRpcClient, isCannonical: Boolean): File = {
-    val bitcoindInstance = bitcoindRpcClient.instance
+    val bitcoindInstance = bitcoindRpcClient.getDaemon
     if (isCannonical) {
       //assumes that the ${HOME}/.eclair/eclair.conf file is created AND a bitcoind instance is running
       cannonicalDatadir
     } else {
       //creates a random eclair datadir, but still assumes that a bitcoind instance is running right now
-      val datadir = randomEclairDatadir
+      val datadir = randomEclairDatadir()
       datadir.mkdirs()
       logger.trace(s"Creating temp eclair dir ${datadir.getAbsolutePath}")
 

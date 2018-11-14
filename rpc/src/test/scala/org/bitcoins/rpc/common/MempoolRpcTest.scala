@@ -7,7 +7,7 @@ import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script.ScriptSignature
 import org.bitcoins.core.protocol.transaction.{ TransactionInput, TransactionOutPoint }
-import org.bitcoins.rpc.TestUtil
+import org.bitcoins.rpc.BitcoindRpcTestUtil
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.scalatest.{ AsyncFlatSpec, BeforeAndAfterAll }
 
@@ -18,25 +18,26 @@ class MempoolRpcTest extends AsyncFlatSpec with BeforeAndAfterAll {
   implicit val system: ActorSystem = ActorSystem("MempoolRpcTest")
   implicit val m: ActorMaterializer = ActorMaterializer()
   implicit val ec: ExecutionContext = m.executionContext
-  implicit val networkParam: NetworkParameters = TestUtil.network
+  implicit val networkParam: NetworkParameters = BitcoindRpcTestUtil.network
 
-  val client: BitcoindRpcClient = new BitcoindRpcClient(TestUtil.instance())
-  val otherClient: BitcoindRpcClient = new BitcoindRpcClient(TestUtil.instance())
+  val client: BitcoindRpcClient = new BitcoindRpcClient(BitcoindRpcTestUtil.instance())
+  val otherClient: BitcoindRpcClient = new BitcoindRpcClient(BitcoindRpcTestUtil.instance())
+  val clients = Vector(client, otherClient)
 
   override def beforeAll(): Unit = {
-    TestUtil.startServers(client, otherClient)
+    BitcoindRpcTestUtil.startServers(clients)
     Await.result(client.generate(200), 3.seconds)
   }
 
   override protected def afterAll(): Unit = {
-    TestUtil.stopServers(client, otherClient)
+    BitcoindRpcTestUtil.stopServers(clients)
     Await.result(system.terminate(), 10.seconds)
   }
 
   behavior of "MempoolRpc"
 
   it should "be able to find a transaction sent to the mem pool" in {
-    TestUtil.sendCoinbaseTransaction(client, otherClient).flatMap { transaction =>
+    BitcoindRpcTestUtil.sendCoinbaseTransaction(client, otherClient).flatMap { transaction =>
       client.getRawMemPool.map { memPool =>
         assert(memPool.length == 1)
         assert(memPool.head == transaction.txid)
@@ -45,7 +46,7 @@ class MempoolRpcTest extends AsyncFlatSpec with BeforeAndAfterAll {
   }
 
   it should "be able to find a verbose transaction in the mem pool" in {
-    TestUtil.sendCoinbaseTransaction(client, otherClient).flatMap { transaction =>
+    BitcoindRpcTestUtil.sendCoinbaseTransaction(client, otherClient).flatMap { transaction =>
       client.getRawMemPoolWithTransactions.flatMap { memPool =>
         val txid = memPool.keySet.head
         assert(txid == transaction.txid)
@@ -55,7 +56,7 @@ class MempoolRpcTest extends AsyncFlatSpec with BeforeAndAfterAll {
   }
 
   it should "be able to find a mem pool entry" in {
-    TestUtil.sendCoinbaseTransaction(client, otherClient).flatMap { transaction =>
+    BitcoindRpcTestUtil.sendCoinbaseTransaction(client, otherClient).flatMap { transaction =>
       client.getMemPoolEntry(transaction.txid).map { _ =>
         succeed
       }
@@ -66,7 +67,7 @@ class MempoolRpcTest extends AsyncFlatSpec with BeforeAndAfterAll {
     client.generate(1).flatMap { _ =>
       client.getMemPoolInfo.flatMap { info =>
         assert(info.size == 0)
-        TestUtil.sendCoinbaseTransaction(client, otherClient).flatMap { _ =>
+        BitcoindRpcTestUtil.sendCoinbaseTransaction(client, otherClient).flatMap { _ =>
           client.getMemPoolInfo.map { newInfo =>
             assert(newInfo.size == 1)
           }
@@ -77,7 +78,7 @@ class MempoolRpcTest extends AsyncFlatSpec with BeforeAndAfterAll {
 
   it should "be able to prioritise a mem pool transaction" in {
     otherClient.getNewAddress.flatMap { address =>
-      TestUtil.fundMemPoolTransaction(client, address, Bitcoins(3.2)).flatMap { txid =>
+      BitcoindRpcTestUtil.fundMemPoolTransaction(client, address, Bitcoins(3.2)).flatMap { txid =>
         client.getMemPoolEntry(txid).flatMap { entry =>
           assert(entry.fee == entry.modifiedfee)
           client.prioritiseTransaction(txid, Bitcoins(1).satoshis).flatMap {
@@ -96,7 +97,7 @@ class MempoolRpcTest extends AsyncFlatSpec with BeforeAndAfterAll {
   it should "be able to find mem pool ancestors and descendants" in {
     client.generate(1)
     client.getNewAddress.flatMap { address =>
-      TestUtil.fundMemPoolTransaction(client, address, Bitcoins(2)).flatMap { txid1 =>
+      BitcoindRpcTestUtil.fundMemPoolTransaction(client, address, Bitcoins(2)).flatMap { txid1 =>
         client.getRawMemPool.flatMap { mempool =>
           assert(mempool.head == txid1)
           client.getNewAddress.flatMap { address =>

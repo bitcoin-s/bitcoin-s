@@ -5,7 +5,7 @@ import akka.stream.ActorMaterializer
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.crypto.ECPrivateKey
 import org.bitcoins.core.protocol.P2PKHAddress
-import org.bitcoins.rpc.TestUtil
+import org.bitcoins.rpc.BitcoindRpcTestUtil
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.client.common.RpcOpts.AddressType
 import org.scalatest.{ AsyncFlatSpec, BeforeAndAfterAll }
@@ -17,17 +17,18 @@ class MultisigRpcTest extends AsyncFlatSpec with BeforeAndAfterAll {
   implicit val system: ActorSystem = ActorSystem("MultisigRpcTest")
   implicit val m: ActorMaterializer = ActorMaterializer()
   implicit val ec: ExecutionContext = m.executionContext
-  implicit val networkParam: NetworkParameters = TestUtil.network
+  implicit val networkParam: NetworkParameters = BitcoindRpcTestUtil.network
 
-  val client: BitcoindRpcClient = new BitcoindRpcClient(TestUtil.instance())
+  val client: BitcoindRpcClient = new BitcoindRpcClient(BitcoindRpcTestUtil.instance())
+  val clients = Vector(client)
 
   override def beforeAll(): Unit = {
-    TestUtil.startServers(client)
+    BitcoindRpcTestUtil.startServers(clients)
     Await.result(client.generate(200), 3.seconds)
   }
 
   override protected def afterAll(): Unit = {
-    TestUtil.stopServers()
+    BitcoindRpcTestUtil.stopServers(clients)
     Await.result(system.terminate(), 10.seconds)
   }
 

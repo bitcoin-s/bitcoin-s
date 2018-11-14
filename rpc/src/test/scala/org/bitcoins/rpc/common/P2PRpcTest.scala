@@ -6,36 +6,37 @@ import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.rpc.TestUtil
+import org.bitcoins.rpc.BitcoindRpcTestUtil
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.client.common.RpcOpts.AddNodeArgument
-import org.scalatest.{AsyncFlatSpec, BeforeAndAfterAll}
+import org.scalatest.{ AsyncFlatSpec, BeforeAndAfterAll }
 
-import scala.async.Async.{async, await}
+import scala.async.Async.{ async, await }
 import scala.concurrent.duration.DurationInt
-import scala.concurrent.{Await, ExecutionContext}
+import scala.concurrent.{ Await, ExecutionContext }
 
 class P2PRpcTest extends AsyncFlatSpec with BeforeAndAfterAll {
   implicit val system: ActorSystem = ActorSystem("P2PRpcTest")
   implicit val m: ActorMaterializer = ActorMaterializer()
   implicit val ec: ExecutionContext = m.executionContext
-  implicit val networkParam: NetworkParameters = TestUtil.network
+  implicit val networkParam: NetworkParameters = BitcoindRpcTestUtil.network
 
-  val client = new BitcoindRpcClient(TestUtil.instance())
+  val client = new BitcoindRpcClient(BitcoindRpcTestUtil.instance())
+  val clients = Vector(client)
 
   override protected def beforeAll(): Unit = {
-    TestUtil.startServers(client)
+    BitcoindRpcTestUtil.startServers(clients)
   }
 
   override protected def afterAll(): Unit = {
-    TestUtil.stopServers(client)
+    BitcoindRpcTestUtil.stopServers(clients)
     Await.result(system.terminate(), 10.seconds)
   }
 
   behavior of "P2PRpcTest"
 
   it should "be able to get peer info" in async {
-    val (freshClient, otherFreshClient) = await(TestUtil.createNodePair())
+    val (freshClient, otherFreshClient) = await(BitcoindRpcTestUtil.createNodePair())
     val infoList = await(freshClient.getPeerInfo)
     assert(infoList.length == 1)
 
@@ -46,7 +47,7 @@ class P2PRpcTest extends AsyncFlatSpec with BeforeAndAfterAll {
   }
 
   it should "be able to get the added node info" in async {
-    val (freshClient, otherFreshClient) = await(TestUtil.createNodePair())
+    val (freshClient, otherFreshClient) = await(BitcoindRpcTestUtil.createNodePair())
     val info = await(freshClient.getAddedNodeInfo)
 
     assert(info.length == 1)
@@ -56,33 +57,34 @@ class P2PRpcTest extends AsyncFlatSpec with BeforeAndAfterAll {
   }
 
   it should "be able to get the network info" in async {
-    val (freshClient, otherFreshClient) = TestUtil.createUnconnectedNodePair()
+    val (freshClient, otherFreshClient) = BitcoindRpcTestUtil.createUnconnectedNodePair()
     val info = await(freshClient.getNetworkInfo)
     assert(info.networkactive)
     assert(info.localrelay)
     assert(info.connections == 0)
     freshClient.addNode(otherFreshClient.getDaemon.uri, AddNodeArgument.Add)
-    TestUtil.awaitConnection(freshClient, otherFreshClient)
+    BitcoindRpcTestUtil.awaitConnection(freshClient, otherFreshClient)
     val newInfo = await(freshClient.getNetworkInfo)
     assert(newInfo.connections == 1)
 
   }
 
   it should "be able to get network statistics" in {
-    TestUtil.createNodePair() flatMap {
+    BitcoindRpcTestUtil.createNodePair() flatMap {
       case (connectedClient, _) =>
-        connectedClient.getNetTotals flatMap { stats => {
-          assert(stats.timemillis.toBigInt > 0)
-          assert(stats.totalbytesrecv > 0)
-          assert(stats.totalbytessent > 0)
-        }
+        connectedClient.getNetTotals flatMap { stats =>
+          {
+            assert(stats.timemillis.toBigInt > 0)
+            assert(stats.totalbytesrecv > 0)
+            assert(stats.totalbytessent > 0)
+          }
         } flatMap { _ => succeed }
     }
   }
 
   it should "be able to ban and clear the ban of a subnet" in {
     val loopBack = URI.create("http://127.0.0.1")
-    TestUtil.createNodePair().flatMap {
+    BitcoindRpcTestUtil.createNodePair().flatMap {
       case (client1, client2) =>
         client1.setBan(loopBack, "add").flatMap { _ =>
           client1.listBanned.flatMap { list =>
@@ -93,7 +95,7 @@ class P2PRpcTest extends AsyncFlatSpec with BeforeAndAfterAll {
 
             client1.setBan(loopBack, "remove").flatMap { _ =>
               client1.listBanned.flatMap { newList =>
-                TestUtil.deleteNodePair(client1, client2)
+                BitcoindRpcTestUtil.deleteNodePair(client1, client2)
                 assert(newList.isEmpty)
               }
             }
@@ -123,7 +125,7 @@ class P2PRpcTest extends AsyncFlatSpec with BeforeAndAfterAll {
   }
 
   it should "be able to clear banned subnets" in {
-    TestUtil.createNodePair().flatMap {
+    BitcoindRpcTestUtil.createNodePair().flatMap {
       case (client1, client2) =>
         client1.setBan(URI.create("http://127.0.0.1"), "add").flatMap { _ =>
           client1.setBan(URI.create("http://127.0.0.2"), "add").flatMap { _ =>
@@ -132,7 +134,7 @@ class P2PRpcTest extends AsyncFlatSpec with BeforeAndAfterAll {
 
               client1.clearBanned().flatMap { _ =>
                 client1.listBanned.flatMap { newList =>
-                  TestUtil.deleteNodePair(client1, client2)
+                  BitcoindRpcTestUtil.deleteNodePair(client1, client2)
                   assert(newList.isEmpty)
                 }
               }

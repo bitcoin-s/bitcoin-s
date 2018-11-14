@@ -17,22 +17,21 @@ import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.rpc.client.common.RpcOpts.{ AddNodeArgument, AddressType }
 import org.bitcoins.rpc.client.common.{ BitcoindRpcClient, RpcOpts }
 import org.bitcoins.rpc.jsonmodels.RpcAddress
-import org.bitcoins.rpc.{ RpcUtil, TestUtil }
+import org.bitcoins.rpc.{ BitcoindRpcTestUtil, RpcUtil }
 import org.scalatest.{ AsyncFlatSpec, BeforeAndAfter, BeforeAndAfterAll }
 import org.slf4j.Logger
 
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ Await, ExecutionContext }
-import scala.util.Try
 
 class BitcoindRpcClientTest
   extends AsyncFlatSpec
   with BeforeAndAfterAll
   with BeforeAndAfter {
-  implicit val system = ActorSystem("RpcClientTest_ActorSystem")
-  implicit val m = ActorMaterializer()
-  implicit val ec = m.executionContext
-  implicit val networkParam = BitcoindRpcTestUtil.network
+  implicit val system: ActorSystem = ActorSystem("RpcClientTest_ActorSystem")
+  implicit val m: ActorMaterializer = ActorMaterializer()
+  implicit val ec: ExecutionContext = m.executionContext
+  implicit val networkParam: NetworkParameters = BitcoindRpcTestUtil.network
 
   implicit val client: BitcoindRpcClient = new BitcoindRpcClient(BitcoindRpcTestUtil.instance())
 
@@ -44,17 +43,17 @@ class BitcoindRpcClientTest
   val prunedInstance = BitcoindRpcTestUtil.instance(pruneMode = true)
   val pruneClient = new BitcoindRpcClient(prunedInstance)
 
+  val clients = Vector(client, otherClient, walletClient, pruneClient)
+
   val logger: Logger = BitcoinSLogger.logger
 
   var password = "password"
 
   override def beforeAll(): Unit = {
     logger.info("Temp bitcoin directory created")
-    logger.info("Temp bitcoin directory created")
-    logger.info("Temp bitcoin directory created")
 
     logger.info("Bitcoin servers starting")
-    TestUtil.startServers(walletClient, client, otherClient, pruneClient)
+    BitcoindRpcTestUtil.startServers(clients)
 
     client.addNode(otherClient.getDaemon.uri, AddNodeArgument.Add)
 
@@ -74,23 +73,11 @@ class BitcoindRpcClientTest
     Await.result(client.generate(200), 3.seconds)
     Await.result(pruneClient.generate(3000), 60.seconds)
 
-    TestUtil.awaitConnection(client, otherClient)
+    BitcoindRpcTestUtil.awaitConnection(client, otherClient)
   }
 
   override def afterAll(): Unit = {
-    client.stop().map(logger.info)
-    otherClient.stop().map(logger.info)
-    walletClient.stop().map(logger.info)
-    pruneClient.stop().map(logger.info)
-    if (TestUtil.deleteTmpDir(client.getDaemon.authCredentials.datadir))
-      logger.info("Temp bitcoin directory deleted")
-    if (TestUtil.deleteTmpDir(otherClient.getDaemon.authCredentials.datadir))
-      logger.info("Temp bitcoin directory deleted")
-    if (TestUtil.deleteTmpDir(walletClient.getDaemon.authCredentials.datadir))
-      logger.info("Temp bitcoin directory deleted")
-    if (TestUtil.deleteTmpDir(pruneClient.getDaemon.authCredentials.datadir))
-      logger.info("Temp bitcoin directory deleted")
-
+    BitcoindRpcTestUtil.stopServers(clients)
     Await.result(system.terminate(), 10.seconds)
   }
 
@@ -105,7 +92,7 @@ class BitcoindRpcClientTest
   }
 
   it should "be able to get the first block" in {
-    TestUtil.getFirstBlock.flatMap { block =>
+    BitcoindRpcTestUtil.getFirstBlock.flatMap { block =>
       assert(block.tx.nonEmpty)
       assert(block.height == 1)
     }
@@ -114,7 +101,7 @@ class BitcoindRpcClientTest
   it should "be able to import funds without rescan and then remove them" in {
     client.getNewAddress.flatMap { address =>
       client.dumpPrivKey(address).flatMap { privKey =>
-        TestUtil.fundBlockChainTransaction(client, address, Bitcoins(1.5)).flatMap {
+        BitcoindRpcTestUtil.fundBlockChainTransaction(client, address, Bitcoins(1.5)).flatMap {
           txid =>
             client.generate(1).flatMap { _ =>
               client.getTransaction(txid).flatMap { tx =>
@@ -152,7 +139,7 @@ class BitcoindRpcClientTest
 
   it should "be able to invalidate a block" in {
     otherClient.getNewAddress.flatMap { address =>
-      TestUtil.fundMemPoolTransaction(client, address, Bitcoins(3)).flatMap { txid =>
+      BitcoindRpcTestUtil.fundMemPoolTransaction(client, address, Bitcoins(3)).flatMap { txid =>
         client.getRawMemPool.flatMap { _ =>
           client.generate(1).flatMap { blocks =>
             client.invalidateBlock(blocks.head).flatMap { _ =>
@@ -246,7 +233,7 @@ class BitcoindRpcClientTest
   }
   it should "be able to list address groupings" in {
     client.getNewAddress.flatMap { address =>
-      TestUtil.fundBlockChainTransaction(client, address, Bitcoins(1.25)).flatMap {
+      BitcoindRpcTestUtil.fundBlockChainTransaction(client, address, Bitcoins(1.25)).flatMap {
         _ =>
           client.listAddressGroupings.flatMap { groupings =>
             val rpcAddress =
@@ -254,7 +241,7 @@ class BitcoindRpcClientTest
             assert(rpcAddress.address == address)
             assert(rpcAddress.balance == Bitcoins(1.25))
 
-            TestUtil.getFirstBlock.flatMap { block =>
+            BitcoindRpcTestUtil.getFirstBlock.flatMap { block =>
               val firstAddress =
                 block.tx.head.vout.head.scriptPubKey.addresses.get.head
               assert(
@@ -321,7 +308,7 @@ class BitcoindRpcClientTest
 
   it should "be able to list transactions by receiving addresses" in {
     otherClient.getNewAddress.flatMap { address =>
-      TestUtil.fundBlockChainTransaction(client, address, Bitcoins(1.5)).flatMap {
+      BitcoindRpcTestUtil.fundBlockChainTransaction(client, address, Bitcoins(1.5)).flatMap {
         txid =>
           otherClient.listReceivedByAddress().map { receivedList =>
             val entryList =
@@ -340,7 +327,7 @@ class BitcoindRpcClientTest
   it should "be able to import an address" in {
     client.getNewAddress.flatMap { address =>
       otherClient.importAddress(address).flatMap { _ =>
-        TestUtil.fundBlockChainTransaction(client, address, Bitcoins(1.5)).flatMap {
+        BitcoindRpcTestUtil.fundBlockChainTransaction(client, address, Bitcoins(1.5)).flatMap {
           txid =>
             otherClient.listReceivedByAddress(includeWatchOnly = true).map {
               list =>
@@ -357,7 +344,7 @@ class BitcoindRpcClientTest
   }
 
   it should "be able to get a transaction" in {
-    TestUtil.getFirstBlock.flatMap { block =>
+    BitcoindRpcTestUtil.getFirstBlock.flatMap { block =>
       client.getTransaction(block.tx.head.txid).flatMap { tx =>
         assert(tx.txid == block.tx.head.txid)
         assert(tx.amount == Bitcoins(50))
@@ -417,7 +404,7 @@ class BitcoindRpcClientTest
   it should "be able to get the unconfirmed balance" in { // otherClient isn't receiving txs from client???
     client.getUnconfirmedBalance.flatMap { balance =>
       assert(balance == Bitcoins(0))
-      TestUtil.sendCoinbaseTransaction(client, client).flatMap { transaction =>
+      BitcoindRpcTestUtil.sendCoinbaseTransaction(client, client).flatMap { transaction =>
         client.getUnconfirmedBalance.map { newBalance =>
           assert(newBalance == transaction.amount)
         }
@@ -740,7 +727,7 @@ class BitcoindRpcClientTest
         client
           .addMultiSigAddress(1, Vector(Left(addressInfo.pubkey.get)))
           .flatMap { multisig =>
-            TestUtil.fundBlockChainTransaction(client, multisig.address, Bitcoins(1.2))
+            BitcoindRpcTestUtil.fundBlockChainTransaction(client, multisig.address, Bitcoins(1.2))
               .flatMap { txid =>
                 client.getTransaction(txid).flatMap { rawTx =>
                   client.decodeRawTransaction(rawTx.hex).flatMap { tx =>
@@ -801,7 +788,7 @@ class BitcoindRpcClientTest
                   .flatMap { _ =>
                     client.validateAddress(multisig.address).flatMap {
                       _ =>
-                        TestUtil.fundBlockChainTransaction(
+                        BitcoindRpcTestUtil.fundBlockChainTransaction(
                           client,
                           multisig.address,
                           Bitcoins(1.2)).flatMap {

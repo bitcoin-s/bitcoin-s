@@ -3,7 +3,7 @@ package org.bitcoins.rpc.common
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import org.bitcoins.core.config.NetworkParameters
-import org.bitcoins.rpc.TestUtil
+import org.bitcoins.rpc.BitcoindRpcTestUtil
 import org.bitcoins.rpc.client.common.RpcOpts.AddNodeArgument
 import org.bitcoins.rpc.client.common.{ BitcoindRpcClient, RpcOpts }
 import org.scalatest.{ AsyncFlatSpec, BeforeAndAfterAll }
@@ -15,19 +15,20 @@ class UTXORpcTest extends AsyncFlatSpec with BeforeAndAfterAll {
   implicit val system: ActorSystem = ActorSystem("UTXORpcTest")
   implicit val m: ActorMaterializer = ActorMaterializer()
   implicit val ec: ExecutionContext = m.executionContext
-  implicit val networkParam: NetworkParameters = TestUtil.network
+  implicit val networkParam: NetworkParameters = BitcoindRpcTestUtil.network
 
-  implicit val client: BitcoindRpcClient = new BitcoindRpcClient(TestUtil.instance())
-  val otherClient = new BitcoindRpcClient(TestUtil.instance())
+  implicit val client: BitcoindRpcClient = new BitcoindRpcClient(BitcoindRpcTestUtil.instance())
+  val otherClient = new BitcoindRpcClient(BitcoindRpcTestUtil.instance())
+  val clients = Vector(client, otherClient)
 
   override def beforeAll(): Unit = {
-    TestUtil.startServers(client, otherClient)
+    BitcoindRpcTestUtil.startServers(clients)
     Await.result(client.addNode(otherClient.getDaemon.uri, AddNodeArgument.Add), 3.seconds)
     Await.result(client.generate(200), 3.seconds)
   }
 
   override protected def afterAll(): Unit = {
-    TestUtil.stopServers()
+    BitcoindRpcTestUtil.stopServers(clients)
     Await.result(system.terminate(), 10.seconds)
   }
 
@@ -35,7 +36,7 @@ class UTXORpcTest extends AsyncFlatSpec with BeforeAndAfterAll {
 
   it should "be able to list utxos" in {
     client.listUnspent.flatMap { unspent =>
-      TestUtil.getFirstBlock.flatMap { block =>
+      BitcoindRpcTestUtil.getFirstBlock.flatMap { block =>
         val address = block.tx.head.vout.head.scriptPubKey.addresses.get.head
         val unspentMined =
           unspent.filter(addr => addr.address.contains(address))
@@ -71,7 +72,7 @@ class UTXORpcTest extends AsyncFlatSpec with BeforeAndAfterAll {
   }
 
   it should "be able to get utxo info" in {
-    TestUtil.getFirstBlock.flatMap { block =>
+    BitcoindRpcTestUtil.getFirstBlock.flatMap { block =>
       client.getTxOut(block.tx.head.txid, 0).map { info1 =>
         assert(info1.coinbase)
       }

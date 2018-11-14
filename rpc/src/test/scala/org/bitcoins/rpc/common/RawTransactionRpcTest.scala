@@ -7,7 +7,7 @@ import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script.ScriptSignature
 import org.bitcoins.core.protocol.transaction.{ TransactionInput, TransactionOutPoint }
-import org.bitcoins.rpc.TestUtil
+import org.bitcoins.rpc.BitcoindRpcTestUtil
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.client.common.RpcOpts.AddNodeArgument
 import org.scalatest.{ AsyncFlatSpec, BeforeAndAfterAll }
@@ -19,19 +19,20 @@ class RawTransactionRpcTest extends AsyncFlatSpec with BeforeAndAfterAll {
   implicit val system: ActorSystem = ActorSystem("RawTransactionRpcTest")
   implicit val m: ActorMaterializer = ActorMaterializer()
   implicit val ec: ExecutionContext = m.executionContext
-  implicit val networkParam: NetworkParameters = TestUtil.network
+  implicit val networkParam: NetworkParameters = BitcoindRpcTestUtil.network
 
-  implicit val client: BitcoindRpcClient = new BitcoindRpcClient(TestUtil.instance())
-  val otherClient = new BitcoindRpcClient(TestUtil.instance())
+  implicit val client: BitcoindRpcClient = new BitcoindRpcClient(BitcoindRpcTestUtil.instance())
+  val otherClient = new BitcoindRpcClient(BitcoindRpcTestUtil.instance())
+  val clients = Vector(client, otherClient)
 
   override def beforeAll(): Unit = {
-    TestUtil.startServers(client, otherClient)
+    BitcoindRpcTestUtil.startServers(clients)
     Await.result(client.addNode(otherClient.getDaemon.uri, AddNodeArgument.Add), 3.seconds)
     Await.result(client.generate(200), 3.seconds)
   }
 
   override protected def afterAll(): Unit = {
-    TestUtil.stopServers()
+    BitcoindRpcTestUtil.stopServers(clients)
     Await.result(system.terminate(), 10.seconds)
   }
 
@@ -66,7 +67,7 @@ class RawTransactionRpcTest extends AsyncFlatSpec with BeforeAndAfterAll {
   }
 
   it should "be able to decode a raw transaction" in {
-    TestUtil.createRawCoinbaseTransaction(client, otherClient).flatMap { transaction =>
+    BitcoindRpcTestUtil.createRawCoinbaseTransaction(client, otherClient).flatMap { transaction =>
       client.decodeRawTransaction(transaction).map { rpcTransaction =>
         assert(rpcTransaction.txid == transaction.txIdBE)
         assert(rpcTransaction.locktime == transaction.lockTime)
@@ -78,7 +79,7 @@ class RawTransactionRpcTest extends AsyncFlatSpec with BeforeAndAfterAll {
   }
 
   it should "be able to get a raw transaction using both rpcs available" in {
-    TestUtil.getFirstBlock.flatMap { block =>
+    BitcoindRpcTestUtil.getFirstBlock.flatMap { block =>
       val txid = block.tx.head.txid
       client.getRawTransaction(txid).flatMap { transaction1 =>
         client.getTransaction(txid).map { transaction2 =>
@@ -135,7 +136,7 @@ class RawTransactionRpcTest extends AsyncFlatSpec with BeforeAndAfterAll {
   }
 
   it should "be able to sign a raw transaction with wallet keys" in {
-    TestUtil.createRawCoinbaseTransaction(client, otherClient).flatMap { transaction =>
+    BitcoindRpcTestUtil.createRawCoinbaseTransaction(client, otherClient).flatMap { transaction =>
       client.signRawTransaction(transaction).map { signedTransaction =>
         assert(signedTransaction.complete)
       }
@@ -143,7 +144,7 @@ class RawTransactionRpcTest extends AsyncFlatSpec with BeforeAndAfterAll {
   }
 
   it should "be able to send a raw transaction to the mem pool" in {
-    TestUtil.createRawCoinbaseTransaction(client, otherClient).flatMap { transaction =>
+    BitcoindRpcTestUtil.createRawCoinbaseTransaction(client, otherClient).flatMap { transaction =>
       client.signRawTransaction(transaction).flatMap { signedTransaction =>
         client
           .generate(100)
@@ -158,7 +159,7 @@ class RawTransactionRpcTest extends AsyncFlatSpec with BeforeAndAfterAll {
   }
 
   it should "be able to get a raw transaction in serialized form from the mem pool" in {
-    TestUtil.sendCoinbaseTransaction(client, otherClient).flatMap { tx =>
+    BitcoindRpcTestUtil.sendCoinbaseTransaction(client, otherClient).flatMap { tx =>
       client.getRawTransactionRaw(tx.txid).map { transaction =>
         assert(transaction.txIdBE == tx.txid)
       }

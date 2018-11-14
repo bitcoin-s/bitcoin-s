@@ -5,7 +5,7 @@ import akka.stream.ActorMaterializer
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.util.BitcoinSLogger
-import org.bitcoins.rpc.TestUtil
+import org.bitcoins.rpc.BitcoindRpcTestUtil
 import org.bitcoins.rpc.client.common.RpcOpts.AddNodeArgument
 import org.bitcoins.rpc.client.v16.BitcoindV16RpcClient
 import org.scalatest.{ AsyncFlatSpec, BeforeAndAfterAll }
@@ -18,17 +18,18 @@ class BitcoindV16RpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
   implicit val system: ActorSystem = ActorSystem("BitcoindV16RpcClientTest_ActorSystem")
   implicit val m: ActorMaterializer = ActorMaterializer()
   implicit val ec: ExecutionContext = m.executionContext
-  implicit val networkParam: NetworkParameters = TestUtil.network
+  implicit val networkParam: NetworkParameters = BitcoindRpcTestUtil.network
 
   val logger: Logger = BitcoinSLogger.logger
 
-  val client = new BitcoindV16RpcClient(TestUtil.instance())
-  val otherClient = new BitcoindV16RpcClient(TestUtil.instance())
+  val client = new BitcoindV16RpcClient(BitcoindRpcTestUtil.instance())
+  val otherClient = new BitcoindV16RpcClient(BitcoindRpcTestUtil.instance())
+  val clients = Vector(client, otherClient)
 
   override protected def beforeAll(): Unit = {
     logger.info("Starting MessageRpcTest")
     logger.info("Bitcoin server starting")
-    TestUtil.startServers(client, otherClient)
+    BitcoindRpcTestUtil.startServers(clients)
     logger.info("Bitcoin server started")
 
     client.addNode(otherClient.getDaemon.uri, AddNodeArgument.Add)
@@ -38,16 +39,8 @@ class BitcoindV16RpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
   }
 
   override protected def afterAll(): Unit = {
-    logger.info("Cleaning up after MessageRpcTest")
-
-    logger.info("Stopping Bitcoin servers")
-    TestUtil.stopServers(client, otherClient)
-    logger.info("Bitcoin servers stopped")
-
-    logger.info("Stopping ActorSystem")
+    BitcoindRpcTestUtil.stopServers(clients)
     Await.result(system.terminate(), 10.seconds)
-    logger.info("Stopped ActorSystem")
-
   }
 
   behavior of "BitoindV16RpcClient"
@@ -67,7 +60,7 @@ class BitcoindV16RpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
     val account = "another_new_account"
     val emptyAccount = "empty_account"
     client.getNewAddress(account).flatMap { address =>
-      TestUtil.fundBlockChainTransaction(client, address, Bitcoins(1.5)).flatMap {
+      BitcoindRpcTestUtil.fundBlockChainTransaction(client, address, Bitcoins(1.5)).flatMap {
         _ =>
           client.getReceivedByAccount(account).flatMap { amount =>
             assert(amount == Bitcoins(1.5))

@@ -8,10 +8,11 @@ import akka.stream.ActorMaterializer
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.util.BitcoinSLogger
-import org.bitcoins.rpc.client.BitcoindRpcClient
+import org.bitcoins.rpc.client.common.BitcoindRpcClient
+import org.bitcoins.rpc.client.common.RpcOpts.AddNodeArgument
 import org.bitcoins.rpc.config.{ BitcoindAuthCredentials, BitcoindInstance }
 
-import scala.concurrent.{ Await, ExecutionContext, Future, Promise }
+import scala.concurrent._
 import scala.concurrent.duration.{ DurationInt, FiniteDuration }
 import scala.util.{ Failure, Success, Try }
 
@@ -61,7 +62,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     BitcoindAuthCredentials(username, pass, rpcUri.getPort, f)
   }
 
-  lazy val network = RegTest
+  lazy val network: RegTest.type = RegTest
 
   def instance(
     port: Int = randomPort,
@@ -107,7 +108,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     to: BitcoindRpcClient,
     duration: FiniteDuration = 100.milliseconds,
     maxTries: Int = 50)(implicit system: ActorSystem): Unit = {
-    implicit val ec = system.dispatcher
+    implicit val ec: ExecutionContext = system.dispatcher
 
     def isConnected(): Future[Boolean] = {
       from.getAddedNodeInfo(to.getDaemon.uri)
@@ -127,7 +128,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     client2: BitcoindRpcClient,
     duration: FiniteDuration = 1.second,
     maxTries: Int = 50)(implicit system: ActorSystem): Unit = {
-    implicit val ec = system.dispatcher
+    implicit val ec: ExecutionContext = system.dispatcher
 
     def isSynced(): Future[Boolean] = {
       client1.getBestBlockHash.flatMap { hash1 =>
@@ -148,7 +149,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     client2: BitcoindRpcClient,
     duration: FiniteDuration = 1.second,
     maxTries: Int = 50)(implicit system: ActorSystem): Unit = {
-    implicit val ec = system.dispatcher
+    implicit val ec: ExecutionContext = system.dispatcher
 
     def isSameBlockHeight(): Future[Boolean] = {
       client1.getBlockCount.flatMap { count1 =>
@@ -169,7 +170,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     to: BitcoindRpcClient,
     duration: FiniteDuration = 100.milliseconds,
     maxTries: Int = 50)(implicit system: ActorSystem): Unit = {
-    implicit val ec = system.dispatcher
+    implicit val ec: ExecutionContext = system.dispatcher
 
     def isDisconnected(): Future[Boolean] = {
       val f = from.getAddedNodeInfo(to.getDaemon.uri)
@@ -192,7 +193,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     port2: Int = randomPort,
     rpcPort2: Int = randomPort)(implicit system: ActorSystem): Future[(BitcoindRpcClient, BitcoindRpcClient)] = {
     implicit val m: ActorMaterializer = ActorMaterializer.create(system)
-    implicit val ec = m.executionContext
+    implicit val ec: ExecutionContext = m.executionContext
     val client1: BitcoindRpcClient = new BitcoindRpcClient(instance(port1, rpcPort1))
     val client2: BitcoindRpcClient = new BitcoindRpcClient(instance(port2, rpcPort2))
 
@@ -211,7 +212,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       throw try2.failed.get
     }
 
-    client1.addNode(client2.getDaemon.uri, "add").flatMap { _ =>
+    client1.addNode(client2.getDaemon.uri, AddNodeArgument.Add).flatMap { _ =>
       val try3 = Try(awaitConnection(
         from = client1,
         to = client2,
@@ -254,7 +255,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
   }
 
   def startedBitcoindRpcClient(instance: BitcoindInstance = BitcoindRpcTestUtil.instance())(implicit system: ActorSystem): BitcoindRpcClient = {
-    implicit val ec = system.dispatcher
+    implicit val ec: ExecutionContext = system.dispatcher
     //start the bitcoind instance so eclair can properly use it
     val rpc = new BitcoindRpcClient(instance)(system)
     rpc.start()

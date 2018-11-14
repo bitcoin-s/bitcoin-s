@@ -2,10 +2,10 @@ package org.bitcoins.rpc
 
 import akka.actor.ActorSystem
 import org.bitcoins.core.util.BitcoinSLogger
-import org.bitcoins.rpc.client.BitcoindRpcClient
+import org.bitcoins.rpc.client.common.BitcoindRpcClient
 
+import scala.concurrent._
 import scala.concurrent.duration.{ DurationInt, FiniteDuration }
-import scala.concurrent.{ Await, Future, Promise }
 
 trait RpcUtil extends BitcoinSLogger {
 
@@ -49,7 +49,7 @@ trait RpcUtil extends BitcoinSLogger {
     counter: Int = 0,
     maxTries: Int = 50)(implicit system: ActorSystem): Future[Unit] = {
 
-    implicit val ec = system.dispatcher
+    implicit val ec: ExecutionContextExecutor = system.dispatcher
 
     conditionF().flatMap { condition =>
 
@@ -88,7 +88,7 @@ trait RpcUtil extends BitcoinSLogger {
     duration: FiniteDuration = 100.milliseconds,
     maxTries: Int = 50,
     overallTimeout: FiniteDuration = 1.hour)(implicit system: ActorSystem): Unit = {
-    implicit val ec = system.dispatcher
+    implicit val ec: ExecutionContextExecutor = system.dispatcher
 
     //type hackery here to go from () => Boolean to () => Future[Boolean]
     //to make sure we re-evaluate every time retryUntilSatisfied is called
@@ -103,7 +103,7 @@ trait RpcUtil extends BitcoinSLogger {
     duration: FiniteDuration = 100.milliseconds,
     maxTries: Int = 50,
     overallTimeout: FiniteDuration = 1.hour)(implicit system: ActorSystem): Unit = {
-    implicit val d = system.dispatcher
+    implicit val d: ExecutionContext = system.dispatcher
 
     val f: Future[Unit] = retryUntilSatisfiedF(
       conditionF = conditionF,

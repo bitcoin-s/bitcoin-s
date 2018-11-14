@@ -5,34 +5,35 @@ import akka.stream.ActorMaterializer
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.rpc.TestUtil
+import org.bitcoins.rpc.BitcoindRpcTestUtil
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.client.common.RpcOpts.{ AddNodeArgument, AddressType }
 import org.scalatest.{ AsyncFlatSpec, BeforeAndAfterAll }
 
-import scala.concurrent.{ Await, ExecutionContext, Future }
 import scala.async.Async.{ async, await }
 import scala.concurrent.duration.DurationInt
+import scala.concurrent.{ Await, ExecutionContext }
 
 class BlockchainRpcTest extends AsyncFlatSpec with BeforeAndAfterAll {
 
   implicit val system: ActorSystem = ActorSystem("RpcClientTest_ActorSystem")
   implicit val m: ActorMaterializer = ActorMaterializer()
   implicit val ec: ExecutionContext = m.executionContext
-  implicit val networkParam: NetworkParameters = TestUtil.network
+  implicit val networkParam: NetworkParameters = BitcoindRpcTestUtil.network
 
-  implicit val client: BitcoindRpcClient = new BitcoindRpcClient(TestUtil.instance())
-  val otherClient = new BitcoindRpcClient(TestUtil.instance())
+  implicit val client: BitcoindRpcClient = new BitcoindRpcClient(BitcoindRpcTestUtil.instance())
+  val otherClient = new BitcoindRpcClient(BitcoindRpcTestUtil.instance())
+  val clients = Vector(client, otherClient)
 
   override def beforeAll(): Unit = {
-    TestUtil.startServers(client, otherClient)
+    BitcoindRpcTestUtil.startServers(clients)
     Await.result(client.addNode(otherClient.getDaemon.uri, AddNodeArgument.Add), 3.seconds)
     Await.result(client.generate(200), 3.seconds)
-    TestUtil.awaitConnection(client, otherClient)
+    BitcoindRpcTestUtil.awaitConnection(client, otherClient)
   }
 
   override def afterAll(): Unit = {
-    TestUtil.stopServers(client, otherClient)
+    BitcoindRpcTestUtil.stopServers(clients)
     Await.result(system.terminate(), 10.seconds)
   }
 
@@ -66,7 +67,7 @@ class BlockchainRpcTest extends AsyncFlatSpec with BeforeAndAfterAll {
   }
 
   it should "be able to get tx out proof and verify it" in {
-    TestUtil.getFirstBlock.flatMap { block =>
+    BitcoindRpcTestUtil.getFirstBlock.flatMap { block =>
       client.getTxOutProof(Vector(block.tx.head.txid)).flatMap { merkle =>
         assert(merkle.transactionCount == UInt32(1))
         assert(merkle.hashes.length == 1)
