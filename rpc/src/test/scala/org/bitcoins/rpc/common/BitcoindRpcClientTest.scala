@@ -1,4 +1,4 @@
-package org.bitcoins.rpc
+package org.bitcoins.rpc.common
 
 import java.io.File
 import java.net.URI

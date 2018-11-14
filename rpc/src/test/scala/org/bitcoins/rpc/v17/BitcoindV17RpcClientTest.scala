@@ -1,10 +1,11 @@
-package org.bitcoins.rpc
+package org.bitcoins.rpc.v17
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.util.BitcoinSLogger
+import org.bitcoins.rpc.TestUtil
 import org.bitcoins.rpc.client.common.RpcOpts.{ AddressType, LabelPurpose }
 import org.bitcoins.rpc.client.v17.BitcoindV17RpcClient
 import org.scalatest.{ AsyncFlatSpec, BeforeAndAfterAll }
