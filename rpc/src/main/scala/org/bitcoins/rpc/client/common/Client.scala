@@ -107,8 +107,9 @@ trait Client {
          * XPUBs, balances, etc). It's therefore not a good idea to enable
          * this logging in production.
          */
-        logger.error(s"Command: $command ${parameters.map(_.toString).mkString(" ")}")
-        logger.error(s"Payload: \n${Json.prettyPrint(payload)}")
+        // logger.error(s"Client datadir: ${instance.authCredentials.datadir}")
+        // logger.error(s"Command: $command ${parameters.map(_.toString).mkString(" ")}")
+        // logger.error(s"Payload: \n${Json.prettyPrint(payload)}")
         parseResult((payload \ resultKey).validate[T], payload)
       }
     }

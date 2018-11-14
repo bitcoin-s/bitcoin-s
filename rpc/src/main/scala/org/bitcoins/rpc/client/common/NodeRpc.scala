@@ -44,6 +44,10 @@ trait NodeRpc extends Client {
     bitcoindCall[UInt32]("uptime")
   }
 
+  def ping(): Future[Unit] = {
+    bitcoindCall[Unit]("ping")
+  }
+
   def getMemoryInfo: Future[GetMemoryInfoResult] = {
     bitcoindCall[GetMemoryInfoResult]("getmemoryinfo")
   }

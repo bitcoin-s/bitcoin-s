@@ -11,6 +11,7 @@ import org.scalatest.{ AsyncFlatSpec, BeforeAndAfterAll }
 import scala.concurrent.{ Await, ExecutionContext, Future }
 import scala.concurrent.duration.DurationInt
 import scala.util.{ Success, Try }
+import scala.async.Async.{ async, await }
 
 class RpcUtilTest extends AsyncFlatSpec with BeforeAndAfterAll {
 
@@ -136,6 +137,22 @@ class RpcUtilTest extends AsyncFlatSpec with BeforeAndAfterAll {
           }
         }
     }
+  }
+
+  it should "be able to create a unconnected node pair" in async {
+    val (client1, client2) = TestUtil.createUnconnectedNodePair()
+    assert(client1.getDaemon.authCredentials.datadir.isDirectory)
+    assert(client2.getDaemon.authCredentials.datadir.isDirectory)
+
+    val nodes = await(client1.getConnectionCount)
+    assert(nodes == 0)
+
+    val count1 = await(client1.getBlockCount)
+    assert(count1 == 0)
+
+    val count2 = await(client2.getBlockCount)
+    assert(count2 == 0)
+
   }
 
   override def afterAll(): Unit = {

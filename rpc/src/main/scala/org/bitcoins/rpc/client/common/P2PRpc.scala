@@ -61,10 +61,6 @@ trait P2PRpc extends Client {
     bitcoindCall[Vector[NodeBan]]("listbanned")
   }
 
-  def ping(): Future[Unit] = {
-    bitcoindCall[Unit]("ping")
-  }
-
   def setBan(
     address: URI,
     command: String,
