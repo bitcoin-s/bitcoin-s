@@ -6,6 +6,7 @@ import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.rpc.TestUtil
+import org.bitcoins.rpc.client.common.RpcOpts.AddNodeArgument
 import org.bitcoins.rpc.client.v16.BitcoindV16RpcClient
 import org.scalatest.{ AsyncFlatSpec, BeforeAndAfterAll }
 import org.slf4j.Logger
@@ -30,7 +31,7 @@ class BitcoindV16RpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
     TestUtil.startServers(client, otherClient)
     logger.info("Bitcoin server started")
 
-    client.addNode(otherClient.getDaemon.uri, "add")
+    client.addNode(otherClient.getDaemon.uri, AddNodeArgument.Add)
 
     logger.info("Funding wallet by mining some blocks")
     Await.result(client.generate(200), 3.seconds)

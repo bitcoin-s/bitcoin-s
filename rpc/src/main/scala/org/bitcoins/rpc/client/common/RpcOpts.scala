@@ -48,6 +48,24 @@ object RpcOpts {
   implicit val lockUnspentParameterWrites: Writes[LockUnspentOutputParameter] =
     Json.writes[LockUnspentOutputParameter]
 
+  sealed trait AddNodeArgument
+
+  object AddNodeArgument {
+
+    case object Add extends AddNodeArgument {
+      override def toString: String = "add"
+    }
+
+    case object Remove extends AddNodeArgument {
+      override def toString: String = "remove"
+    }
+
+    case object OneTry extends AddNodeArgument {
+      override def toString: String = "onetry"
+    }
+
+  }
+
   sealed trait AddressType
 
   object AddressType {

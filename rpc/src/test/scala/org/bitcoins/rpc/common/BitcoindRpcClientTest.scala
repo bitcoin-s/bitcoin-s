@@ -12,10 +12,10 @@ import org.bitcoins.core.currency.{ Bitcoins, Satoshis }
 import org.bitcoins.core.number.{ Int64, UInt32 }
 import org.bitcoins.core.protocol.P2PKHAddress
 import org.bitcoins.core.protocol.script.{ P2SHScriptSignature, ScriptPubKey, ScriptSignature }
-import org.bitcoins.core.protocol.transaction.{ Transaction, TransactionInput, TransactionOutPoint }
+import org.bitcoins.core.protocol.transaction.{ TransactionInput, TransactionOutPoint }
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
-import org.bitcoins.rpc.client.common.RpcOpts.AddressType
+import org.bitcoins.rpc.client.common.RpcOpts.{ AddNodeArgument, AddressType }
 import org.bitcoins.rpc.client.common.{ BitcoindRpcClient, RpcOpts }
 import org.bitcoins.rpc.jsonmodels.{ GetBlockWithTransactionsResult, GetTransactionResult, RpcAddress }
 import org.scalatest.{ AsyncFlatSpec, BeforeAndAfter, BeforeAndAfterAll }
@@ -57,7 +57,7 @@ class BitcoindRpcClientTest
     logger.info("Bitcoin servers starting")
     TestUtil.startServers(walletClient, client, otherClient, pruneClient)
 
-    client.addNode(otherClient.getDaemon.uri, "add")
+    client.addNode(otherClient.getDaemon.uri, AddNodeArgument.Add)
 
     Await.result(
       walletClient.encryptWallet(password).map { msg =>
@@ -329,7 +329,7 @@ class BitcoindRpcClientTest
 
                   assert(bestHash2 == blocks2.head)
 
-                  val conn = client1.addNode(client2.getDaemon.uri, "onetry")
+                  val conn = client1.addNode(client2.getDaemon.uri, AddNodeArgument.OneTry)
 
                   conn.flatMap { _ =>
 
@@ -1569,14 +1569,14 @@ class BitcoindRpcClientTest
   }
 
   it should "be able to add and remove a node" in {
-    otherClient.addNode(walletClient.getDaemon.uri, "add").flatMap { _ =>
+    otherClient.addNode(walletClient.getDaemon.uri, AddNodeArgument.Add).flatMap { _ =>
       BitcoindRpcTestUtil.awaitConnection(otherClient, walletClient)
       otherClient.getAddedNodeInfo(walletClient.getDaemon.uri).flatMap { info =>
         assert(info.length == 1)
         assert(info.head.addednode == walletClient.getDaemon.uri)
         assert(info.head.connected.contains(true))
 
-        otherClient.addNode(walletClient.getDaemon.uri, "remove").flatMap { _ =>
+        otherClient.addNode(walletClient.getDaemon.uri, AddNodeArgument.Remove).flatMap { _ =>
           otherClient.getAddedNodeInfo.map { newInfo =>
             assert(newInfo.isEmpty)
           }
@@ -1586,7 +1586,7 @@ class BitcoindRpcClientTest
   }
 
   it should "be able to add and disconnect a node" in {
-    otherClient.addNode(walletClient.getDaemon.uri, "add").flatMap { _ =>
+    otherClient.addNode(walletClient.getDaemon.uri, AddNodeArgument.Add).flatMap { _ =>
       BitcoindRpcTestUtil.awaitConnection(otherClient, walletClient)
       otherClient.getAddedNodeInfo(walletClient.getDaemon.uri).flatMap { info =>
         assert(info.head.connected.contains(true))
