@@ -1,4 +1,4 @@
-
+cancelable in Global := true
 
 lazy val compilerOpts =
   List("-unchecked", "-deprecation", "-feature", "-Xmax-classfile-name", "128")
