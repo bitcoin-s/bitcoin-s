@@ -117,7 +117,7 @@ sealed abstract class StackInterpreter {
   def opPick(program: ScriptProgram): ScriptProgram = {
     require(program.script.headOption.contains(OP_PICK), "Top of script stack must be OP_PICK")
     executeOpWithStackTopAsNumberArg(program, { number: ScriptNumber =>
-      logger.info("Script number for OP_PICK: " + number)
+
       //check if n is within the bound of the script
       if (program.stack.size < 2) ScriptProgram(program, ScriptErrorInvalidStackOperation)
       else if (number.toLong >= 0 && number.toLong < program.stack.tail.size) {

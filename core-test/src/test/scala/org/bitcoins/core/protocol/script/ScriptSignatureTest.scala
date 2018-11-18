@@ -113,7 +113,6 @@ class ScriptSignatureTest extends FlatSpec with MustMatchers {
     for {
       testCase <- testCases
     } yield {
-      logger.info("testCase: " + testCase)
       Transaction(testCase.transaction.hex) must be(testCase.transaction)
       val output = TransactionOutput(CurrencyUnits.zero, testCase.script)
       val txSigComponent = testCase.transaction match {
