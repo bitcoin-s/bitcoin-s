@@ -3,10 +3,13 @@ sudo: false
 
 language: scala
 
-jdk: oraclejdk8
+jdk: 
+  - oraclejdk8
+  - openjdk8
 
 scala:
-  - 2.11.7
+  - 2.11.12
+  - 2.12.7
 
 # These directories are cached to S3 at the end of the build
 cache:
@@ -37,8 +40,8 @@ install:
   - sudo make install
   - cd ../
 script:
-  - sbt clean coverage test &&
-    sbt core/coverageReport &&
-    sbt coverageAggregate
+  - sbt ++$TRAVIS_SCALA_VERSION coverage test &&
+    sbt ++$TRAVIS_SCALA_VERSION core/coverageReport &&
+    sbt ++$TRAVIS_SCALA_VERSION coverageAggregate
 after_success:
-  - sbt coveralls
+  - sbt ++$TRAVIS_SCALA_VERSION coveralls

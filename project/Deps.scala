@@ -13,6 +13,7 @@ object Deps {
     val akkaStreamv = "2.5.17"
     val playv = "2.6.10"
     val scodecV = "1.1.6"
+    val junitV = "0.11"
   }
 
   object Compile {
@@ -27,7 +28,7 @@ object Deps {
 
   object Test {
     val bitcoinj = ("org.bitcoinj" % "bitcoinj-core" % "0.14.4" % "test").exclude("org.slf4j", "slf4j-api")
-    val junitInterface = "com.novocode" % "junit-interface" % "0.10" % "test" withSources() withJavadoc()
+    val junitInterface = "com.novocode" % "junit-interface" % V.junitV % "test" withSources() withJavadoc()
     val logback = "ch.qos.logback" % "logback-classic" % V.logback % "test" withSources() withJavadoc()
     val scalacheck = "org.scalacheck" %% "scalacheck" % V.scalacheck % "test" withSources() withJavadoc()
     val scalaTest = "org.scalatest" %% "scalatest" % V.scalaTest % "test" withSources() withJavadoc()
