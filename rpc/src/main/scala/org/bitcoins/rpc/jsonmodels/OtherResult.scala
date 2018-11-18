@@ -1,10 +1,6 @@
 package org.bitcoins.rpc.jsonmodels
 
-import org.bitcoins.core.crypto.{
-  DoubleSha256Digest,
-  ECPublicKey,
-  Sha256Hash160Digest
-}
+import org.bitcoins.core.crypto.{ DoubleSha256Digest, ECPublicKey, Sha256Hash160Digest }
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress

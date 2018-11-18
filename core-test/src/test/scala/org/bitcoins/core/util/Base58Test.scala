@@ -1,8 +1,5 @@
 package org.bitcoins.core.util
 
-import org.bitcoins.core.config.MainNet
-import org.bitcoins.core.crypto.{ ECPrivateKey, Sha256Hash160Digest }
-import org.bitcoins.core.protocol.Address
 import org.bitcoins.core.util.testprotocol._
 import org.scalatest.{ FlatSpec, MustMatchers }
 import spray.json._

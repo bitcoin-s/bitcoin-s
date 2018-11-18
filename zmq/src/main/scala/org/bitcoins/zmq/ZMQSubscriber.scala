@@ -35,38 +35,44 @@ class ZMQSubscriber(
   private case object SubscriberRunnable extends Runnable {
     override def run(): Unit = {
 
-      val connected = subscriber.connect(uri)
+      val isConnected = subscriber.connect(uri)
 
-      hashTxListener.map { _ =>
-        subscriber.subscribe(HashTx.topic.getBytes(ZMQ.CHARSET))
-        logger.debug("subscribed to the transaction hashes from zmq")
-      }
-
-      rawTxListener.map { _ =>
-        subscriber.subscribe(RawTx.topic.getBytes(ZMQ.CHARSET))
-        logger.debug("subscribed to raw transactions from zmq")
-      }
-
-      hashBlockListener.map { _ =>
-        subscriber.subscribe(HashBlock.topic.getBytes(ZMQ.CHARSET))
-        logger.debug("subscribed to the hashblock stream from zmq")
-      }
-
-      rawBlockListener.map { _ =>
-        subscriber.subscribe(RawBlock.topic.getBytes(ZMQ.CHARSET))
-        logger.debug("subscribed to raw block stream from zmq")
-      }
-
-      while (running) {
-        val zmsg = ZMsg.recvMsg(subscriber, ZMQ.NOBLOCK)
-        if (zmsg != null) {
-          val notificationTypeStr = zmsg.pop().getString(ZMQ.CHARSET)
-          val body = zmsg.pop().getData
-          processMsg(notificationTypeStr, body)
-        } else {
-          Thread.sleep(1)
+      if (isConnected) {
+        hashTxListener.map { _ =>
+          subscriber.subscribe(HashTx.topic.getBytes(ZMQ.CHARSET))
+          logger.debug("subscribed to the transaction hashes from zmq")
         }
+
+        rawTxListener.map { _ =>
+          subscriber.subscribe(RawTx.topic.getBytes(ZMQ.CHARSET))
+          logger.debug("subscribed to raw transactions from zmq")
+        }
+
+        hashBlockListener.map { _ =>
+          subscriber.subscribe(HashBlock.topic.getBytes(ZMQ.CHARSET))
+          logger.debug("subscribed to the hashblock stream from zmq")
+        }
+
+        rawBlockListener.map { _ =>
+          subscriber.subscribe(RawBlock.topic.getBytes(ZMQ.CHARSET))
+          logger.debug("subscribed to raw block stream from zmq")
+        }
+
+        while (running) {
+          val zmsg = ZMsg.recvMsg(subscriber, ZMQ.NOBLOCK)
+          if (zmsg != null) {
+            val notificationTypeStr = zmsg.pop().getString(ZMQ.CHARSET)
+            val body = zmsg.pop().getData
+            processMsg(notificationTypeStr, body)
+          } else {
+            Thread.sleep(1)
+          }
+        }
+      } else {
+        logger.error(s"Failed to connect to zmq socket ${uri}")
+        throw new RuntimeException(s"Failed to connect to zmq socket ${uri}")
       }
+
     }
   }
 

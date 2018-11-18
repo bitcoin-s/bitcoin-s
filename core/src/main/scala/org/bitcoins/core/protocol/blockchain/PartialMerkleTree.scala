@@ -3,7 +3,7 @@ package org.bitcoins.core.protocol.blockchain
 import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.util._
-import scodec.bits.{ BitVector, ByteVector }
+import scodec.bits.BitVector
 
 import scala.annotation.tailrec
 import scala.math._
@@ -106,8 +106,6 @@ sealed trait PartialMerkleTree extends BitcoinSLogger {
 }
 
 object PartialMerkleTree {
-  private val logger = BitcoinSLogger.logger
-
   private case class PartialMerkleTreeImpl(tree: BinaryTree[DoubleSha256Digest], transactionCount: UInt32,
     bits: BitVector, hashes: Seq[DoubleSha256Digest]) extends PartialMerkleTree {
     require(bits.size % 8 == 0, "As per BIP37, bits must be padded to the nearest byte")

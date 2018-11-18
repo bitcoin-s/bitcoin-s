@@ -1,7 +1,7 @@
 package org.bitcoins.core.crypto
 
 import org.bitcoins.core.protocol.NetworkElement
-import org.bitcoins.core.util.{ BitcoinSUtil, Factory }
+import org.bitcoins.core.util.Factory
 import scodec.bits.ByteVector
 /**
  * Created by chris on 5/24/16.

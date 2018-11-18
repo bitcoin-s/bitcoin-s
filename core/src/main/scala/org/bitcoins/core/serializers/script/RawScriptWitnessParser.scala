@@ -4,8 +4,6 @@ import org.bitcoins.core.number.UInt64
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.protocol.script.ScriptWitness
 import org.bitcoins.core.serializers.RawBitcoinSerializer
-import org.bitcoins.core.util.BitcoinSUtil
-import org.slf4j.LoggerFactory
 import scodec.bits.ByteVector
 
 import scala.annotation.tailrec
@@ -14,8 +12,6 @@ import scala.annotation.tailrec
  * Created by chris on 12/14/16.
  */
 sealed abstract class RawScriptWitnessParser extends RawBitcoinSerializer[ScriptWitness] {
-
-  private val logger = LoggerFactory.getLogger(this.getClass.getSimpleName)
 
   def read(bytes: ByteVector): ScriptWitness = {
     //first byte is the number of stack items

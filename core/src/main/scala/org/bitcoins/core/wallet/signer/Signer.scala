@@ -6,9 +6,7 @@ import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.crypto.HashType
-import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.core.wallet.builder.TxBuilderError
-import org.slf4j.LoggerFactory
 import scodec.bits.ByteVector
 
 import scala.concurrent.{ ExecutionContext, Future }
@@ -54,7 +52,7 @@ sealed abstract class P2PKSigner extends BitcoinSigner {
       val sign: ByteVector => Future[ECDigitalSignature] = signers.head.signFunction
       val unsignedInput = unsignedTx.inputs(inputIndex.toInt)
       val flags = Policy.standardFlags
-      val amount = output.value
+
       val signed: Future[TxSigComponent] = spk match {
         case p2wshSPK: P2WSHWitnessSPKV0 =>
           val wtx = unsignedTx match {
@@ -132,8 +130,6 @@ object P2PKSigner extends P2PKSigner
 /** Used to sign a [[org.bitcoins.core.protocol.script.P2PKHScriptPubKey]] */
 sealed abstract class P2PKHSigner extends BitcoinSigner {
 
-  private val logger = LoggerFactory.getLogger(this.getClass().getSimpleName)
-
   override def sign(signers: Seq[Sign], output: TransactionOutput, unsignedTx: Transaction,
     inputIndex: UInt32, hashType: HashType, isDummySignature: Boolean)(implicit ec: ExecutionContext): Future[TxSigComponent] = {
     val spk = output.scriptPubKey
@@ -144,7 +140,7 @@ sealed abstract class P2PKHSigner extends BitcoinSigner {
       val pubKey = signers.head.publicKey
       val unsignedInput = unsignedTx.inputs(inputIndex.toInt)
       val flags = Policy.standardFlags
-      val amount = output.value
+
       val signed: Future[TxSigComponent] = spk match {
         case p2wshSPK: P2WSHWitnessSPKV0 =>
           val wtx = unsignedTx match {
@@ -254,7 +250,6 @@ sealed abstract class P2PKHSigner extends BitcoinSigner {
 object P2PKHSigner extends P2PKHSigner
 
 sealed abstract class MultiSigSigner extends BitcoinSigner {
-  private val logger = BitcoinSLogger.logger
 
   override def sign(signersWithPubKeys: Seq[Sign], output: TransactionOutput, unsignedTx: Transaction,
     inputIndex: UInt32, hashType: HashType, isDummySignature: Boolean)(implicit ec: ExecutionContext): Future[TxSigComponent] = {
@@ -262,7 +257,7 @@ sealed abstract class MultiSigSigner extends BitcoinSigner {
     val signers = signersWithPubKeys.map(_.signFunction)
     val unsignedInput = unsignedTx.inputs(inputIndex.toInt)
     val flags = Policy.standardFlags
-    val amount = output.value
+
     val signed: Future[TxSigComponent] = spk match {
       case p2wshSPK: P2WSHWitnessSPKV0 =>
         val wtx = unsignedTx match {

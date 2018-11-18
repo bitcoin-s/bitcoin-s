@@ -9,7 +9,7 @@ import org.bitcoins.core.script.crypto.{ OP_CHECKMULTISIG, OP_CHECKMULTISIGVERIF
 import org.bitcoins.core.script.flag.{ ScriptFlag, ScriptFlagUtil }
 import org.bitcoins.core.script.result.{ ScriptError, ScriptErrorPubKeyType, ScriptErrorWitnessPubKeyType }
 import org.bitcoins.core.script.{ ExecutionInProgressScriptProgram, ScriptProgram }
-import scodec.bits.{ BitVector, ByteVector }
+import scodec.bits.ByteVector
 
 import scala.annotation.tailrec
 

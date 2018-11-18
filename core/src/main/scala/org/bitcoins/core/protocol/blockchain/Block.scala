@@ -1,10 +1,10 @@
 package org.bitcoins.core.protocol.blockchain
 
 import org.bitcoins.core.number.UInt64
-import org.bitcoins.core.protocol.transaction.{ BaseTransaction, Transaction, WitnessTransaction }
+import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.protocol.{ CompactSizeUInt, NetworkElement }
 import org.bitcoins.core.serializers.blockchain.RawBlockSerializer
-import org.bitcoins.core.util.{ BitcoinSLogger, Factory }
+import org.bitcoins.core.util.Factory
 import scodec.bits.ByteVector
 
 /**

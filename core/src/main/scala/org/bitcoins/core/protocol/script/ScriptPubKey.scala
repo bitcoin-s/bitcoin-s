@@ -2,8 +2,6 @@ package org.bitcoins.core.protocol.script
 
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.protocol._
-import org.bitcoins.core.protocol.blockchain.Block
-import org.bitcoins.core.protocol.transaction.WitnessTransaction
 import org.bitcoins.core.consensus.Consensus
 import org.bitcoins.core.script.bitwise.{ OP_EQUAL, OP_EQUALVERIFY }
 import org.bitcoins.core.script.constant.{ BytesToPushOntoStack, _ }
@@ -12,9 +10,8 @@ import org.bitcoins.core.script.crypto.{ OP_CHECKMULTISIG, OP_CHECKMULTISIGVERIF
 import org.bitcoins.core.script.locktime.{ OP_CHECKLOCKTIMEVERIFY, OP_CHECKSEQUENCEVERIFY }
 import org.bitcoins.core.script.reserved.UndefinedOP_NOP
 import org.bitcoins.core.script.stack.{ OP_DROP, OP_DUP }
-import org.bitcoins.core.serializers.script.{ RawScriptPubKeyParser, ScriptParser }
+import org.bitcoins.core.serializers.script.{ ScriptParser }
 import org.bitcoins.core.util._
-import org.slf4j.LoggerFactory
 import scodec.bits.ByteVector
 
 import scala.util.{ Failure, Success, Try }
@@ -504,8 +501,6 @@ sealed trait WitnessScriptPubKey extends ScriptPubKey {
 }
 
 object WitnessScriptPubKey {
-  private val logger = LoggerFactory.getLogger(this.getClass().getSimpleName)
-
   /** Witness scripts must begin with one of these operations, see BIP141 */
   val validWitVersions: Seq[ScriptNumberOperation] = Seq(OP_0, OP_1, OP_2, OP_3, OP_4, OP_5, OP_6, OP_7, OP_8,
     OP_9, OP_10, OP_11, OP_12, OP_13, OP_14, OP_15, OP_16)

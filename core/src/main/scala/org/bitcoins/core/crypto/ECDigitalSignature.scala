@@ -1,12 +1,11 @@
 package org.bitcoins.core.crypto
 
-import org.bitcoins.core.util.{ BitcoinSLogger, BitcoinSUtil, Factory }
+import org.bitcoins.core.util.{ BitcoinSUtil, Factory }
 import scodec.bits.ByteVector
 /**
  * Created by chris on 2/26/16.
  */
 sealed abstract class ECDigitalSignature {
-  private val logger = BitcoinSLogger.logger
 
   def hex: String = BitcoinSUtil.encodeHex(bytes)
 

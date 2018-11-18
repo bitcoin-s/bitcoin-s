@@ -2,9 +2,6 @@ package org.bitcoins.core.consensus
 
 import org.bitcoins.core.currency.{ CurrencyUnit, Satoshis }
 import org.bitcoins.core.number.Int64
-import org.bitcoins.core.protocol.blockchain.Block
-import org.bitcoins.core.protocol.transaction.{ BaseTransaction, WitnessTransaction }
-import org.bitcoins.core.serializers.transaction.RawBaseTransactionParser
 
 /**
  * Created by chris on 5/13/16.

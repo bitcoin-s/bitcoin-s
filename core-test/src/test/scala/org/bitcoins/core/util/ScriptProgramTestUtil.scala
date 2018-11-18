@@ -1,6 +1,6 @@
 package org.bitcoins.core.util
 
-import org.bitcoins.core.script.{ ExecutionInProgressScriptProgram, PreExecutionScriptProgram, ExecutedScriptProgram, ScriptProgram }
+import org.bitcoins.core.script.{ ExecutedScriptProgram, ExecutionInProgressScriptProgram, PreExecutionScriptProgram, ScriptProgram }
 
 /**
  * Created by chris on 4/20/16.

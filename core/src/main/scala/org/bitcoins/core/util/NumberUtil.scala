@@ -13,12 +13,6 @@ import scala.util.{ Failure, Success, Try }
  */
 trait NumberUtil extends BitcoinSLogger {
 
-  private def parseLong(hex: String): Long = java.lang.Long.parseLong(hex, 16)
-
-  private def parseLong(bytes: ByteVector): Long = parseLong(BitcoinSUtil.encodeHex(bytes))
-
-  private def parseLong(byte: Byte): Long = parseLong(ByteVector.fromByte(byte))
-
   /** Takes 2^^num. */
   def pow2(exponent: Int): BigInt = {
     require(exponent < 64, "We cannot have anything larger than 2^64 - 1 in a long, you tried to do 2^" + exponent)

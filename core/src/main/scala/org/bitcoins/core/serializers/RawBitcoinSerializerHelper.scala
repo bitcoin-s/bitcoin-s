@@ -2,7 +2,6 @@ package org.bitcoins.core.serializers
 
 import org.bitcoins.core.number.UInt64
 import org.bitcoins.core.protocol.{ CompactSizeUInt, NetworkElement }
-import org.bitcoins.core.util.BitcoinSLogger
 import scodec.bits.ByteVector
 
 import scala.annotation.tailrec
@@ -13,7 +12,6 @@ import scala.collection.mutable
  * Created by chris on 2/18/16.
  */
 sealed abstract class RawSerializerHelper {
-  private val logger = BitcoinSLogger.logger
 
   /**
    * Used parse a byte sequence to a Seq[TransactionInput], Seq[TransactionOutput], etc

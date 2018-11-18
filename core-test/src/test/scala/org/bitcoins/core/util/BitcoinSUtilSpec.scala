@@ -1,7 +1,7 @@
 package org.bitcoins.core.util
 
-import org.bitcoins.core.gen.{ CryptoGenerators, NumberGenerator, StringGenerators }
-import org.scalacheck.{ Gen, Prop, Properties }
+import org.bitcoins.core.gen.StringGenerators
+import org.scalacheck.{ Prop, Properties }
 /**
  * Created by chris on 6/20/16.
  */
