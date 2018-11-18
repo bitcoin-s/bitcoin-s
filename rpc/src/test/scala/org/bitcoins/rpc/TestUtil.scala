@@ -10,8 +10,8 @@ import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.rpc.client.BitcoindRpcClient
 import org.bitcoins.rpc.config.{ BitcoindAuthCredentials, BitcoindInstance }
 
-import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration.{ DurationInt, FiniteDuration }
+import scala.concurrent.{ Await, Future }
 import scala.util.Try
 
 trait TestUtil extends BitcoinSLogger {

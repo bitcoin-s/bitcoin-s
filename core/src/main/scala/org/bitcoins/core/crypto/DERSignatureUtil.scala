@@ -40,14 +40,10 @@ sealed abstract class DERSignatureUtil {
       val thirdByteIs0x02 = bytes(2) == 0x02
       //this is the size of the r value in the signature
       val rSize = bytes(3)
-      //r value in the signature
-      val r = bytes.slice(3, rSize + 3)
+
       //this 0x02 separates the r and s value )in the signature
       val second0x02Exists = bytes(rSize + 4) == 0x02
-      //this is the size of the s value in the signature
-      val sSize = bytes(rSize + 4)
 
-      val s = bytes.slice(rSize + 4 + 1, bytes.size)
       firstByteIs0x30 && signatureLengthIsCorrect && thirdByteIs0x02 &&
         second0x02Exists
     } else true
@@ -222,7 +218,7 @@ sealed abstract class DERSignatureUtil {
    */
   def isLowS(signature: ByteVector): Boolean = {
     val result = Try {
-      val (r, s) = decodeSignature(signature)
+      val (_, s) = decodeSignature(signature)
       s.bigInteger.compareTo(CryptoParams.halfCurveOrder) <= 0
     }
     result match {

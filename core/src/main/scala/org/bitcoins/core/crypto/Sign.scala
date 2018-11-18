@@ -2,8 +2,8 @@ package org.bitcoins.core.crypto
 
 import scodec.bits.ByteVector
 
-import scala.concurrent.{ Await, ExecutionContext, Future }
 import scala.concurrent.duration.DurationInt
+import scala.concurrent.{ Await, Future }
 
 /**
  * This is meant to be an abstraction for a [[org.bitcoins.core.crypto.ECPrivateKey]], sometimes we will not

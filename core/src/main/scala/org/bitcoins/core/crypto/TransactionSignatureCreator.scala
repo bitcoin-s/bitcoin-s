@@ -1,7 +1,6 @@
 package org.bitcoins.core.crypto
 
 import org.bitcoins.core.script.crypto.HashType
-import org.bitcoins.core.util.BitcoinSLogger
 import scodec.bits.ByteVector
 
 import scala.concurrent.{ ExecutionContext, Future }
@@ -10,7 +9,7 @@ import scala.concurrent.{ ExecutionContext, Future }
  * Created by chris on 7/21/16.
  */
 sealed abstract class TransactionSignatureCreator {
-  private val logger = BitcoinSLogger.logger
+
   /**
    * Creates a signature from a tx signature component
    *

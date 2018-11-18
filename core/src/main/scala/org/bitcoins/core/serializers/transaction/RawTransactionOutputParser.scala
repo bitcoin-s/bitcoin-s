@@ -1,7 +1,6 @@
 package org.bitcoins.core.serializers.transaction
 
 import org.bitcoins.core.currency.{ CurrencyUnits, Satoshis }
-import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.protocol.transaction.TransactionOutput
 import org.bitcoins.core.serializers.script.RawScriptPubKeyParser
 import org.bitcoins.core.serializers.{ RawBitcoinSerializer, RawSatoshisSerializer }
@@ -21,7 +20,7 @@ sealed abstract class RawTransactionOutputParser extends RawBitcoinSerializer[Tr
 
   /**
    * Reads a single output from the given bytes, note this is different than [[org.bitcoins.core.serializers.transaction.RawTransactionOutputParser.read]]
-   * because it does NOT expect a [[CompactSizeUInt]] to be the first element in the byte array indicating how many outputs we have
+   * because it does NOT expect a [[org.bitcoins.core.protocol.CompactSizeUInt]] to be the first element in the byte array indicating how many outputs we have
    */
   override def read(bytes: ByteVector): TransactionOutput = {
     val satoshisBytes = bytes.take(8)

@@ -4,10 +4,7 @@ import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.script.constant.ScriptToken
 import org.bitcoins.core.serializers.RawBitcoinSerializer
-import org.bitcoins.core.util.BitcoinSLogger
 import scodec.bits.ByteVector
-
-import scala.util.Try
 
 /**
  * Created by chris on 1/12/16.

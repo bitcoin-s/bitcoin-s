@@ -7,7 +7,7 @@ import org.bitcoins.core.protocol.transaction.{ Transaction, TransactionOutPoint
 import org.bitcoins.core.protocol.{ CompactSizeUInt, NetworkElement }
 import org.bitcoins.core.script.constant.{ ScriptConstant, ScriptToken }
 import org.bitcoins.core.serializers.bloom.RawBloomFilterSerializer
-import org.bitcoins.core.util.{ BitcoinSLogger, BitcoinSUtil, Factory }
+import org.bitcoins.core.util.{ BitcoinSUtil, Factory }
 import scodec.bits.{ BitVector, ByteVector }
 
 import scala.annotation.tailrec

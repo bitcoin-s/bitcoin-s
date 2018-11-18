@@ -3,7 +3,7 @@ package org.bitcoins.core.protocol.script
 import org.bitcoins.core.crypto.{ ECDigitalSignature, ECPublicKey }
 import org.bitcoins.core.protocol.{ CompactSizeUInt, NetworkElement }
 import org.bitcoins.core.script.constant._
-import org.bitcoins.core.serializers.script.{ RawScriptSignatureParser, ScriptParser }
+import org.bitcoins.core.serializers.script.ScriptParser
 import org.bitcoins.core.util._
 import scodec.bits.ByteVector
 

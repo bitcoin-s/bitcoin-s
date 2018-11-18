@@ -1,10 +1,6 @@
 package org.bitcoins.core.script
 
 import org.bitcoins.core.crypto._
-import org.bitcoins.core.currency.CurrencyUnit
-import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.script._
-import org.bitcoins.core.protocol.transaction.{ BaseTransaction, Transaction, TransactionOutput, WitnessTransaction }
 import org.bitcoins.core.script.constant._
 import org.bitcoins.core.script.flag.ScriptFlag
 import org.bitcoins.core.script.result._
@@ -15,7 +11,9 @@ import org.bitcoins.core.util.{ BitcoinSLogger, BitcoinScriptUtil }
  */
 sealed trait ScriptProgram {
   /**
-   * This contains all relevant information for hashing and checking a [[org.bitcoins.core.protocol.script.ScriptSignature]] for a [[Transaction]].
+   * This contains all relevant information for hashing and checking a
+   * [[org.bitcoins.core.protocol.script.ScriptSignature]] for
+   * a [[org.bitcoins.core.protocol.transaction.Transaction]].
    */
   def txSignatureComponent: TxSigComponent
 

@@ -3,7 +3,7 @@ package org.bitcoins.core.protocol.script
 import org.bitcoins.core.crypto.{ ECDigitalSignature, ECPublicKey, EmptyDigitalSignature }
 import org.bitcoins.core.protocol.{ CompactSizeUInt, NetworkElement }
 import org.bitcoins.core.serializers.script.RawScriptWitnessParser
-import org.bitcoins.core.util.{ BitcoinSLogger, BitcoinSUtil, BitcoinScriptUtil }
+import org.bitcoins.core.util.{ BitcoinSUtil, BitcoinScriptUtil }
 import scodec.bits.ByteVector
 
 /**
@@ -110,7 +110,7 @@ object P2WSHWitnessV0 {
 }
 
 object ScriptWitness {
-  private val logger = BitcoinSLogger.logger
+
   def apply(stack: Seq[ByteVector]): ScriptWitness = {
     //TODO: eventually only compressed public keys will be allowed in v0 scripts
     //https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki#restrictions-on-public-key-type

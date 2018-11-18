@@ -4,15 +4,13 @@ import org.bitcoins.core.number.{ Int32, UInt32 }
 import org.bitcoins.core.protocol.script.EmptyScriptWitness
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.serializers.{ RawBitcoinSerializer, RawSerializerHelper }
-import org.bitcoins.core.util.BitcoinSUtil
-import org.slf4j.LoggerFactory
 import scodec.bits.ByteVector
 
 /**
  * Created by chris on 11/21/16.
  */
 sealed abstract class RawWitnessTransactionParser extends RawBitcoinSerializer[WitnessTransaction] {
-  private val logger = LoggerFactory.getLogger(this.getClass.getSimpleName)
+
   /**
    * This read function is unique to [[org.bitcoins.core.serializers.transaction.RawBaseTransactionParser]]
    * in the fact that it reads a 'marker' and 'flag' byte to indicate that this tx is a [[WitnessTransaction]]

@@ -1,7 +1,5 @@
 package org.bitcoins.core.crypto
 
-import java.math.BigInteger
-
 import org.bitcoin.NativeSecp256k1
 import org.bitcoins.core.number.{ UInt32, UInt8 }
 import org.bitcoins.core.protocol.NetworkElement
@@ -193,7 +191,7 @@ sealed abstract class ExtPublicKey extends ExtKey {
         hmac.toArray,
         priv.isCompressed)
       val childPubKey = ECPublicKey(ByteVector(tweaked))
-      val bi = BigInt(new BigInteger(1, priv.bytes.toArray))
+
       //we do not handle this case since it is impossible
       //In case parse256(IL) ≥ n or Ki is the point at infinity, the resulting key is invalid,
       //and one should proceed with the next value for i.

@@ -3,7 +3,6 @@ package org.bitcoins.core.serializers.transaction
 import org.bitcoins.core.protocol.script.ScriptWitness
 import org.bitcoins.core.protocol.transaction.TransactionWitness
 import org.bitcoins.core.serializers.script.RawScriptWitnessParser
-import org.slf4j.LoggerFactory
 import scodec.bits.ByteVector
 
 import scala.annotation.tailrec
@@ -15,7 +14,7 @@ import scala.annotation.tailrec
  * [[https://github.com/bitcoin/bitcoin/blob/b4e4ba475a5679e09f279aaf2a83dcf93c632bdb/src/primitives/transaction.h#L232-L268]]
  */
 sealed abstract class RawTransactionWitnessParser {
-  private val logger = LoggerFactory.getLogger(this.getClass.getSimpleName)
+
   /**
    * We can only tell how many [[ScriptWitness]]
    * we have if we have the number of inputs the transaction creates

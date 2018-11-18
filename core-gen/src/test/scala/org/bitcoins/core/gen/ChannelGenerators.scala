@@ -7,13 +7,11 @@ import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.util.BitcoinSLogger
-import org.bitcoins.core.wallet.builder.TxBuilderError
 import org.scalacheck.Gen
 
-import scala.annotation.tailrec
-import scala.concurrent.{ Await, Future }
-import scala.concurrent.duration.DurationInt
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration.DurationInt
+import scala.concurrent.{ Await, Future }
 
 /**
  * Created by chris on 4/18/17.

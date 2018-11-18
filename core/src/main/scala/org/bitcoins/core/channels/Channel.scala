@@ -159,8 +159,6 @@ sealed trait ChannelInProgress extends Channel with BaseInProgress {
   /** Increments a payment to the server in a [[ChannelInProgress]] */
   def clientSign(amount: CurrencyUnit, clientKey: ECPrivateKey)(implicit ec: ExecutionContext): Future[ChannelInProgressClientSigned] = {
     val outputs = current.transaction.outputs
-    val inputs = current.transaction.inputs
-    val inputIndex = current.inputIndex
     val client = clientOutput
     val newClient: Try[Option[TransactionOutput]] = client match {
       case Some(c) =>
@@ -195,7 +193,7 @@ sealed trait ChannelInProgress extends Channel with BaseInProgress {
   private def checkAmounts(outputs: Seq[TransactionOutput]): Try[Unit] = {
     @tailrec
     def loop(remaining: Seq[TransactionOutput]): Try[Unit] = {
-      if (remaining.isEmpty) Success(Unit)
+      if (remaining.isEmpty) Success(())
       else {
         val output = remaining.head
         if (output.value > lockedAmount) {
@@ -301,7 +299,7 @@ sealed trait ChannelInProgressClientSigned extends Channel with BaseInProgress {
       TxBuilderError.FeeToLarge
     } else if (fullOutputValue <= CurrencyUnits.zero) {
       TxBuilderError.UnknownError
-    } else Success(Unit)
+    } else Success(())
   }
 }
 

@@ -4,8 +4,8 @@ import org.bitcoins.core.number._
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.script.constant.ScriptNumber
 import org.bitcoins.core.util.NumberUtil
-import org.scalacheck.Gen
 import org.scalacheck.Arbitrary.arbitrary
+import org.scalacheck.Gen
 import scodec.bits.BitVector
 
 /**

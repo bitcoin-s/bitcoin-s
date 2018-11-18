@@ -1,12 +1,10 @@
 package org.bitcoins.core.protocol.script
 
-import org.bitcoins.core.crypto.{ ECPublicKey, Sha256Digest, Sha256Hash160Digest }
+import org.bitcoins.core.crypto.{ Sha256Digest, Sha256Hash160Digest }
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.script.constant._
 import org.bitcoins.core.script.result._
 import org.bitcoins.core.util.{ BitcoinSLogger, BitcoinSUtil, CryptoUtil }
-
-import scala.util.Try
 
 /**
  * Created by chris on 11/10/16.
@@ -52,7 +50,7 @@ case object WitnessVersion0 extends WitnessVersion {
             val compactSizeUInt = CompactSizeUInt.calculateCompactSizeUInt(stackTop)
             val scriptPubKey = ScriptPubKey(compactSizeUInt.bytes ++ stackTop)
             val stack = scriptWitness.stack.tail.map(ScriptConstant(_))
-            Left(stack, scriptPubKey)
+            Left((stack, scriptPubKey))
           }
         }
       case _ =>
@@ -75,8 +73,6 @@ case class UnassignedWitness(version: ScriptNumberOperation) extends WitnessVers
 }
 
 object WitnessVersion {
-
-  private val versions = Seq(WitnessVersion0, UnassignedWitness)
 
   def apply(scriptNumberOp: ScriptNumberOperation): WitnessVersion = scriptNumberOp match {
     case OP_0 | OP_FALSE => WitnessVersion0

@@ -1,12 +1,9 @@
 package org.bitcoins.core.protocol
-import org.bitcoins.core.config._
-import org.bitcoins.core.config.{ MainNet, RegTest, TestNet3 }
+import org.bitcoins.core.config.{ MainNet, RegTest, TestNet3, _ }
 import org.bitcoins.core.crypto.{ ECPublicKey, HashDigest, Sha256Digest, Sha256Hash160Digest }
 import org.bitcoins.core.number.{ UInt32, UInt8 }
-import org.bitcoins.core.protocol.transaction.TransactionOutput
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.script.constant.ScriptConstant
-import org.bitcoins.core.serializers.script.ScriptParser
 import org.bitcoins.core.util._
 import scodec.bits.ByteVector
 
@@ -21,7 +18,7 @@ sealed abstract class Address {
   /** The string representation of this address */
   def value: String
 
-  /** Every address is derived from a [[HashDigest]] in a [[TransactionOutput]] */
+  /** Every address is derived from a [[HashDigest]] in a [[org.bitcoins.core.protocol.transaction.TransactionOutput]] */
   def hash: HashDigest
 
   /** The [[ScriptPubKey]] the address represents */
@@ -66,8 +63,6 @@ sealed abstract class P2SHAddress extends BitcoinAddress {
  */
 sealed abstract class Bech32Address extends BitcoinAddress {
 
-  private def logger = BitcoinSLogger.logger
-
   def hrp: HumanReadablePart
 
   def data: Seq[UInt8]
@@ -102,8 +97,6 @@ object Bech32Address extends AddressFactory[Bech32Address] {
   /** Separator used to separate the hrp & data parts of a bech32 addr */
   val separator = '1'
 
-  private val logger = BitcoinSLogger.logger
-
   def apply(
     witSPK: WitnessScriptPubKey,
     networkParameters: NetworkParameters): Try[Bech32Address] = {
@@ -129,8 +122,6 @@ object Bech32Address extends AddressFactory[Bech32Address] {
     val polymod: Long = polyMod(values ++ Seq(z, z, z, z, z, z)) ^ 1
     //[(polymod >> 5 * (5 - i)) & 31 for i in range(6)]
     val result: Seq[UInt8] = 0.until(6).map { i =>
-      val u = UInt8(i.toShort)
-      val five = UInt8(5.toShort)
       //((polymod >> five * (five - u)) & UInt8(31.toShort))
       UInt8(((polymod >> 5 * (5 - i)) & 31).toShort)
     }
@@ -419,8 +410,6 @@ object P2SHAddress extends AddressFactory[P2SHAddress] {
 }
 
 object BitcoinAddress extends AddressFactory[BitcoinAddress] {
-  private val logger = BitcoinSLogger.logger
-
   /** Creates a [[BitcoinAddress]] from the given string value */
   def apply(value: String): Try[BitcoinAddress] = fromString(value)
 

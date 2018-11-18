@@ -1,10 +1,34 @@
 cancelable in Global := true
 
-lazy val compilerOpts =
-  List("-unchecked", "-deprecation", "-feature", "-Xmax-classfile-name", "128")
+lazy val commonCompilerOpts = {
+  List(
+    "-Xmax-classfile-name",
+    "128"
+  )
+}
+//https://docs.scala-lang.org/overviews/compiler-options/index.html
+lazy val compilerOpts = Seq(
+  "-target:jvm-1.8",
+  "-encoding",
+  "UTF-8",
+  "-unchecked",
+  "-feature",
+  "-deprecation",
+  "-Xfuture",
+  "-Ywarn-dead-code",
+  "-Ywarn-unused-import",
+  "-Ywarn-value-discard",
+  "-Ywarn-unused",
+  "-unchecked",
+  "-deprecation",
+  "-feature"
+) ++ commonCompilerOpts
+
+lazy val testCompilerOpts = commonCompilerOpts
 
 lazy val commonSettings = List(
-  scalacOptions := compilerOpts,
+  scalacOptions in Compile := compilerOpts,
+  scalacOptions in Test := testCompilerOpts,
   assemblyOption in assembly := (assemblyOption in assembly).value.copy(includeScala = false)
 )
 lazy val root = project

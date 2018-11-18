@@ -5,7 +5,6 @@ import org.bitcoins.core.protocol.script.ScriptSignature
 import org.bitcoins.core.protocol.transaction.{ TransactionInput, TransactionOutPoint }
 import org.bitcoins.core.serializers.RawBitcoinSerializer
 import org.bitcoins.core.serializers.script.RawScriptSignatureParser
-import org.bitcoins.core.util.BitcoinSUtil
 import scodec.bits.ByteVector
 
 /**

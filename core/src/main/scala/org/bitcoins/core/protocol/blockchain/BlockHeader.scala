@@ -4,7 +4,7 @@ import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.number.{ Int32, UInt32 }
 import org.bitcoins.core.protocol.NetworkElement
 import org.bitcoins.core.serializers.blockchain.RawBlockHeaderSerializer
-import org.bitcoins.core.util.{ BitcoinSLogger, BitcoinSUtil, CryptoUtil, Factory }
+import org.bitcoins.core.util.{ CryptoUtil, Factory }
 import scodec.bits.ByteVector
 
 /**

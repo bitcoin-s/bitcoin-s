@@ -155,8 +155,6 @@ trait ScriptNumberUtil {
 
   def firstByteAllZeros(hex: String): Boolean = firstByteAllZeros(BitcoinSUtil.decodeHex(hex))
 
-  private def parseLong(byte: Byte): Long = parseLong(ByteVector.fromByte(byte))
-
 }
 
 object ScriptNumberUtil extends ScriptNumberUtil

@@ -15,7 +15,7 @@ sealed abstract class Base58 {
   import Base58Type._
   val base58Characters = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
   val base58Pairs = base58Characters.zipWithIndex.toMap
-  private val logger = BitcoinSLogger.logger
+
   /** Verifies a given [[Base58Type]] string against its checksum (last 4 decoded bytes). */
   def decodeCheck(input: String): Try[ByteVector] = {
     val decodedTry: Try[ByteVector] = Try(decode(input))
