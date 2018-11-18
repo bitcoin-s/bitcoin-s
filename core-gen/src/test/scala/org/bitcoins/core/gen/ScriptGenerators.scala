@@ -1,12 +1,12 @@
 package org.bitcoins.core.gen
 
+import org.bitcoins.core.consensus.Consensus
 import org.bitcoins.core.crypto.{ TransactionSignatureCreator, _ }
 import org.bitcoins.core.currency.{ CurrencyUnit, CurrencyUnits }
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script.{ P2SHScriptPubKey, _ }
 import org.bitcoins.core.protocol.transaction._
-import org.bitcoins.core.consensus.Consensus
 import org.bitcoins.core.script.constant.{ ScriptNumber, _ }
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.util.BitcoinSLogger

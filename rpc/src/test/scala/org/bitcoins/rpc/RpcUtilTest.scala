@@ -4,12 +4,11 @@ import java.io.File
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.rpc.client.BitcoindRpcClient
 import org.scalatest.{ AsyncFlatSpec, BeforeAndAfterAll }
 
-import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration.DurationInt
+import scala.concurrent.{ Await, Future }
 import scala.util.{ Success, Try }
 
 class RpcUtilTest extends AsyncFlatSpec with BeforeAndAfterAll {

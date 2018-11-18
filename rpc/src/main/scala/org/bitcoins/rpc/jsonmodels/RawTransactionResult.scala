@@ -3,9 +3,9 @@ package org.bitcoins.rpc.jsonmodels
 import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.{ BitcoinAddress, P2PKHAddress, P2SHAddress }
 import org.bitcoins.core.protocol.script.{ ScriptPubKey, ScriptSignature }
 import org.bitcoins.core.protocol.transaction.{ Transaction, TransactionInput }
+import org.bitcoins.core.protocol.{ BitcoinAddress, P2PKHAddress, P2SHAddress }
 
 sealed abstract class RawTransactionResult
 

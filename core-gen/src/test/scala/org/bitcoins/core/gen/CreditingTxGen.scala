@@ -1,12 +1,12 @@
 package org.bitcoins.core.gen
 
 import org.bitcoins.core.crypto.Sign
+import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.crypto.HashType
-import org.scalacheck.Gen
 import org.bitcoins.core.wallet.utxo.BitcoinUTXOSpendingInfo
-import org.bitcoins.core.number.UInt32
+import org.scalacheck.Gen
 
 sealed abstract class CreditingTxGen {
   /** Minimum amount of outputs to generate */

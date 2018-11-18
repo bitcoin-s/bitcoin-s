@@ -1,8 +1,7 @@
 package org.bitcoins.core.util
 
 import org.bitcoinj.core.DumpedPrivateKey
-import org.bitcoins.core.config.TestNet3
-import org.bitcoins.core.crypto.{ ECPrivateKey }
+import org.bitcoins.core.crypto.ECPrivateKey
 
 /**
  * Created by chris on 3/7/16.

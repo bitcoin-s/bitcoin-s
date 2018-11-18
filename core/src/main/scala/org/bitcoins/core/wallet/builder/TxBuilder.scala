@@ -15,7 +15,6 @@ import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.signer._
 import org.bitcoins.core.wallet.utxo.{ BitcoinUTXOSpendingInfo, UTXOSpendingInfo }
-import org.slf4j.LoggerFactory
 
 import scala.annotation.tailrec
 import scala.concurrent.{ ExecutionContext, Future }
@@ -31,7 +30,6 @@ import scala.util.{ Failure, Success, Try }
  * For usage examples see TxBuilderSpec
  */
 sealed abstract class TxBuilder {
-  private val logger = LoggerFactory.getLogger(this.getClass.getSimpleName)
 
   /** The outputs which we are spending bitcoins to */
   def destinations: Seq[TransactionOutput]
@@ -590,7 +588,7 @@ object TxBuilder {
     } else if (hasExtraOutPoints) {
       TxBuilderError.ExtraOutPoints
     } else {
-      Success(Unit)
+      Success(())
     }
   }
 
@@ -650,7 +648,7 @@ object TxBuilder {
 
       TxBuilderError.LowFee
     } else {
-      Success(Unit)
+      Success(())
     }
   }
 }
@@ -664,8 +662,6 @@ object BitcoinTxBuilder {
     feeRate: FeeUnit,
     changeSPK: ScriptPubKey,
     network: BitcoinNetwork) extends BitcoinTxBuilder
-
-  private val logger = BitcoinSLogger.logger
 
   /**
    * @param destinations where the money is going in the signed tx

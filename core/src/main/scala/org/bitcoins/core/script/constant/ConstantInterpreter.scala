@@ -4,7 +4,6 @@ import org.bitcoins.core.script.ScriptProgram
 import org.bitcoins.core.script.flag.ScriptFlagUtil
 import org.bitcoins.core.script.result._
 import org.bitcoins.core.util.{ BitcoinSLogger, BitcoinSUtil, BitcoinScriptUtil }
-import scodec.bits.ByteVector
 
 import scala.annotation.tailrec
 

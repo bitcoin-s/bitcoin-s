@@ -1,22 +1,14 @@
 package org.bitcoins.core.util
 
 import java.io.{ ByteArrayOutputStream, IOException }
-import java.util
 
-import org.bitcoinj.core.{ ECKey, Sha256Hash }
+import org.bitcoinj.core.ECKey
 import org.bitcoinj.params.TestNet3Params
-import org.bitcoins.core.config.TestNet3
 import org.bitcoins.core.crypto.ECPublicKey
 import org.bitcoins.core.protocol.CompactSizeUInt
-import org.bitcoins.core.protocol.script.{ ScriptPubKey, UpdateScriptPubKeyAsm }
-import org.bitcoins.core.protocol.transaction.{ Transaction, TransactionOutput }
-import org.bitcoins.core.script.ScriptOperationFactory
-import org.bitcoins.core.script.constant.ScriptToken
-import org.bitcoins.core.script.crypto.SIGHASH_ANYONECANPAY
+import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.slf4j.LoggerFactory
 import scodec.bits.ByteVector
-
-import scala.collection.JavaConversions._
 /**
  * Created by chris on 2/23/16.
  */

@@ -4,7 +4,8 @@ import org.junit.Test;
 
 import javax.xml.bind.DatatypeConverter;
 
-import static org.bitcoin.NativeSecp256k1Util.*;
+import static org.bitcoin.NativeSecp256k1Util.AssertFailException;
+import static org.bitcoin.NativeSecp256k1Util.assertEquals;
 
 /**
  * This class holds test cases defined for testing this library.

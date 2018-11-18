@@ -6,7 +6,6 @@ import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.crypto.HashType
-import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.core.wallet.builder.TxBuilderError
 
 import scala.concurrent.{ ExecutionContext, Future }
@@ -16,8 +15,6 @@ import scala.util.{ Failure, Success, Try }
  * Created by chris on 5/9/17.
  */
 sealed abstract class EscrowTimeoutHelper {
-
-  private val logger = BitcoinSLogger.logger
 
   /**
    * Signs a [[org.bitcoins.core.protocol.transaction.WitnessTransaction]] with the given private key

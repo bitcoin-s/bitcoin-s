@@ -3,8 +3,8 @@ package org.bitcoins.core.util
 import java.util
 
 import com.google.common.collect.ImmutableList
-import org.bitcoinj.core.{ ECKey, DumpedPrivateKey }
 import org.bitcoinj.core.Transaction.SigHash
+import org.bitcoinj.core.{ DumpedPrivateKey, ECKey }
 import org.bitcoinj.crypto.TransactionSignature
 import org.bitcoinj.params.TestNet3Params
 import org.bitcoinj.script.{ Script, ScriptBuilder }

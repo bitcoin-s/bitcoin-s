@@ -5,7 +5,7 @@ import org.bitcoins.core.number.{ Int32, UInt32 }
 import org.bitcoins.core.protocol.NetworkElement
 import org.bitcoins.core.protocol.script.ScriptWitness
 import org.bitcoins.core.serializers.transaction.{ RawBaseTransactionParser, RawWitnessTransactionParser }
-import org.bitcoins.core.util.{ BitcoinSUtil, CryptoUtil, Factory }
+import org.bitcoins.core.util.{ CryptoUtil, Factory }
 import scodec.bits.ByteVector
 
 import scala.util.{ Failure, Success, Try }

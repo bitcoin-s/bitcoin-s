@@ -3,22 +3,13 @@ package org.bitcoins.rpc.serializers
 import java.io.File
 import java.net.{ InetAddress, URI }
 
-import org.bitcoins.core.crypto.{
-  DoubleSha256Digest,
-  ECPublicKey,
-  Sha256Hash160Digest
-}
+import org.bitcoins.core.crypto.{ DoubleSha256Digest, ECPublicKey, Sha256Hash160Digest }
 import org.bitcoins.core.currency.{ Bitcoins, Satoshis }
 import org.bitcoins.core.number.{ Int32, Int64, UInt32, UInt64 }
-import org.bitcoins.core.protocol.{
-  Address,
-  BitcoinAddress,
-  P2PKHAddress,
-  P2SHAddress
-}
 import org.bitcoins.core.protocol.blockchain.{ Block, BlockHeader, MerkleBlock }
 import org.bitcoins.core.protocol.script.{ ScriptPubKey, ScriptSignature }
 import org.bitcoins.core.protocol.transaction._
+import org.bitcoins.core.protocol.{ Address, BitcoinAddress, P2PKHAddress, P2SHAddress }
 import org.bitcoins.core.wallet.fee.{ BitcoinFeeUnit, SatoshisPerByte }
 import org.bitcoins.rpc.jsonmodels.RpcAddress
 import play.api.libs.json._
@@ -142,7 +133,7 @@ object JsonReaders {
 
   // Errors for Unit return types are caught in RpcClient::checkUnit
   implicit object UnitReads extends Reads[Unit] {
-    override def reads(json: JsValue): JsResult[Unit] = JsSuccess(Unit)
+    override def reads(json: JsValue): JsResult[Unit] = JsSuccess(())
   }
 
   implicit object InetAddressReads extends Reads[InetAddress] {
