@@ -2,7 +2,7 @@ package org.bitcoins.core.protocol
 
 import org.bitcoins.core.gen.{ AddressGenerator, ChainParamsGenerator, ScriptGenerators }
 import org.bitcoins.core.util.{ Bech32, BitcoinSLogger }
-import org.scalacheck.{ Gen, Prop, Properties }
+import org.scalacheck.{ Prop, Properties }
 
 import scala.annotation.tailrec
 import scala.util.{ Random, Success }

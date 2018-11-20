@@ -2,7 +2,6 @@ package org.bitcoins.core.protocol.ln
 
 import org.bitcoins.core.number.UInt5
 import org.bitcoins.core.util.Bech32
-import org.slf4j.LoggerFactory
 
 sealed abstract class LnTagPrefix {
   def value: Char
@@ -15,7 +14,6 @@ sealed abstract class LnTagPrefix {
  * Please see: https://github.com/lightningnetwork/lightning-rfc/blob/master/11-payment-encoding.md#tagged-fields
  */
 object LnTagPrefix {
-  private val logger = LoggerFactory.getLogger(this.getClass.getSimpleName)
 
   case object PaymentHash extends LnTagPrefix {
     override val value: Char = 'p'

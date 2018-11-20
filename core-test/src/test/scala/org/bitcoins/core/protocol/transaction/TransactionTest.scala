@@ -1,16 +1,16 @@
 package org.bitcoins.core.protocol.transaction
 
-import org.bitcoins.core.crypto.{ BaseTxSigComponent, TxSigComponent, WitnessTxSigComponentP2SH, WitnessTxSigComponentRaw }
+import org.bitcoins.core.crypto.{ BaseTxSigComponent, WitnessTxSigComponentP2SH, WitnessTxSigComponentRaw }
 import org.bitcoins.core.currency.CurrencyUnits
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction.testprotocol.CoreTransactionTestCase
 import org.bitcoins.core.protocol.transaction.testprotocol.CoreTransactionTestCaseProtocol._
-import org.bitcoins.core.script.{ PreExecutionScriptProgram, ScriptProgram }
+import org.bitcoins.core.script.PreExecutionScriptProgram
 import org.bitcoins.core.script.interpreter.ScriptInterpreter
 import org.bitcoins.core.script.result.ScriptOk
 import org.bitcoins.core.serializers.transaction.RawBaseTransactionParser
-import org.bitcoins.core.util.{ BitcoinSLogger, BitcoinSUtil, CryptoUtil, TestUtil }
+import org.bitcoins.core.util.{ BitcoinSUtil, CryptoUtil, TestUtil }
 import org.scalatest.{ FlatSpec, MustMatchers }
 import org.slf4j.LoggerFactory
 import spray.json._

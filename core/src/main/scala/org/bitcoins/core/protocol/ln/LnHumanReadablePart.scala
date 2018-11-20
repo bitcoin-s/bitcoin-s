@@ -1,15 +1,11 @@
 package org.bitcoins.core.protocol.ln
 
 import org.bitcoins.core.config.NetworkParameters
-import org.bitcoins.core.number.{ UInt5, UInt8 }
-import org.bitcoins.core.protocol.{ HumanReadablePart, NetworkElement }
 import org.bitcoins.core.protocol.ln.LnParams._
 import org.bitcoins.core.protocol.ln.currency.{ LnCurrencyUnit, LnCurrencyUnits }
 import org.bitcoins.core.util.Bech32
-import org.slf4j.LoggerFactory
 import scodec.bits.ByteVector
 
-import scala.annotation.tailrec
 import scala.util.matching.Regex
 import scala.util.{ Failure, Success, Try }
 
@@ -42,8 +38,6 @@ sealed abstract class LnHumanReadablePart {
 }
 
 object LnHumanReadablePart {
-
-  private val logger = LoggerFactory.getLogger(this.getClass.getSimpleName)
 
   /** Prefix for generating a LN invoice on the Bitcoin MainNet */
   case class lnbc(override val amount: Option[LnCurrencyUnit]) extends LnHumanReadablePart {

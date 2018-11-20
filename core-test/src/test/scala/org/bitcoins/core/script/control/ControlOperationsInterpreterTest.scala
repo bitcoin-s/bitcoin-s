@@ -1,15 +1,12 @@
 package org.bitcoins.core.script.control
 
-import org.bitcoins.core.serializers.script.ScriptParser
 import org.bitcoins.core.script.ScriptProgram
 import org.bitcoins.core.script.arithmetic.OP_ADD
 import org.bitcoins.core.script.bitwise.OP_EQUAL
 import org.bitcoins.core.script.constant._
-import org.bitcoins.core.script.crypto.OP_CHECKSIG
-import org.bitcoins.core.script.locktime.OP_CHECKSEQUENCEVERIFY
 import org.bitcoins.core.script.reserved.{ OP_RESERVED, OP_VER }
 import org.bitcoins.core.script.result.{ ScriptErrorInvalidStackOperation, ScriptErrorOpReturn }
-import org.bitcoins.core.script.stack.OP_DROP
+import org.bitcoins.core.serializers.script.ScriptParser
 import org.bitcoins.core.util._
 import org.scalatest.{ FlatSpec, MustMatchers }
 

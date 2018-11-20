@@ -1,7 +1,5 @@
 package org.bitcoins.core.protocol.ln.util
 
-import java.math.BigInteger
-
 import org.bitcoins.core.number.UInt5
 import org.bitcoins.core.util.Bech32
 

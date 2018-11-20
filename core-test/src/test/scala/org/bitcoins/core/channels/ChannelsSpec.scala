@@ -7,7 +7,7 @@ import org.bitcoins.core.number.Int64
 import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script.EmptyScriptPubKey
 import org.bitcoins.core.protocol.transaction.TransactionOutput
-import org.bitcoins.core.script.{ PreExecutionScriptProgram, ScriptProgram }
+import org.bitcoins.core.script.PreExecutionScriptProgram
 import org.bitcoins.core.script.interpreter.ScriptInterpreter
 import org.bitcoins.core.script.result.ScriptOk
 import org.bitcoins.core.util.BitcoinSLogger
@@ -15,8 +15,8 @@ import org.scalacheck.{ Gen, Prop, Properties }
 
 import scala.annotation.tailrec
 import scala.concurrent.Await
-import scala.concurrent.duration.DurationInt
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration.DurationInt
 import scala.util.Try
 /**
  * Created by chris on 4/18/17.

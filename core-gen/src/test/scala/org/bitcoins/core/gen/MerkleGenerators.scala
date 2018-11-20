@@ -4,14 +4,12 @@ import org.bitcoins.core.bloom.BloomFilter
 import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.protocol.blockchain.{ Block, MerkleBlock, PartialMerkleTree }
 import org.bitcoins.core.protocol.transaction.Transaction
-import org.bitcoins.core.util.BitcoinSLogger
 import org.scalacheck.Gen
 
 /**
  * Created by chris on 8/12/16.
  */
 abstract class MerkleGenerator {
-  private val logger = BitcoinSLogger.logger
 
   /** Generates a merkle block with the given txs matched inside the [[PartialMerkleTree]] */
   def merkleBlockWithInsertedTxIds(txs: Seq[Transaction]): Gen[(MerkleBlock, Block, Seq[DoubleSha256Digest])] = for {
@@ -41,8 +39,10 @@ abstract class MerkleGenerator {
     //choose some random txs in the block to put in the bloom filter
     txIds <- Gen.someOf(block.transactions.map(_.txId))
     initialFilter <- BloomFilterGenerator.bloomFilter(txIds.map(_.bytes))
-    (merkleBlock, loadedFilter) = MerkleBlock(block, initialFilter)
-  } yield (merkleBlock, block, txIds, loadedFilter)
+  } yield {
+    val (merkleBlock, loadedFilter) = MerkleBlock(block, initialFilter)
+    (merkleBlock, block, txIds, loadedFilter)
+  }
 
   /** Generates a partial merkle tree with a sequence of txids and a flag indicating if the txid was matched */
   def partialMerkleTree: Gen[(PartialMerkleTree, Seq[(Boolean, DoubleSha256Digest)])] = for {

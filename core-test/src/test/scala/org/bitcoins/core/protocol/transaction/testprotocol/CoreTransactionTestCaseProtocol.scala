@@ -4,7 +4,7 @@ import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.currency.{ CurrencyUnit, Satoshis }
 import org.bitcoins.core.number.{ Int64, UInt32 }
 import org.bitcoins.core.protocol.script.ScriptPubKey
-import org.bitcoins.core.protocol.transaction.{ EmptyTransactionOutPoint, Transaction, TransactionOutPoint }
+import org.bitcoins.core.protocol.transaction.{ Transaction, TransactionOutPoint }
 import org.bitcoins.core.script.constant.ScriptToken
 import org.bitcoins.core.script.flag.{ ScriptFlag, ScriptFlagFactory }
 import org.bitcoins.core.serializers.script.ScriptParser

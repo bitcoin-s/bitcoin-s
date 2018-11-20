@@ -1,9 +1,9 @@
 package org.bitcoins.core.protocol.ln
 
 import org.bitcoins.core.crypto.{ ECPublicKey, Sha256Digest }
-import org.bitcoins.core.number.{ UInt32, UInt5, UInt64, UInt8 }
+import org.bitcoins.core.number.{ UInt32, UInt5 }
 import org.bitcoins.core.protocol.P2PKHAddress
-import org.bitcoins.core.protocol.ln.currency.{ MilliSatoshis, PicoBitcoins }
+import org.bitcoins.core.protocol.ln.currency.MilliSatoshis
 import org.bitcoins.core.protocol.ln.fee.{ FeeBaseMSat, FeeProportionalMillionths }
 import org.bitcoins.core.protocol.ln.routing.LnRoute
 import org.bitcoins.core.protocol.ln.util.LnUtil

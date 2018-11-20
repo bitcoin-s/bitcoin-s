@@ -1,13 +1,8 @@
 package org.bitcoins.rpc.serializers
 
-import java.math.BigInteger
-
-import org.slf4j.LoggerFactory
 import play.api.libs.json._
 
 sealed abstract class SerializerUtil {
-  private val logger = LoggerFactory.getLogger(this.getClass.getSimpleName)
-
   def processJsNumberBigInt[T](numFunc: BigInt => T)(
     json: JsValue): JsResult[T] = json match {
     case JsNumber(nDecimal) =>

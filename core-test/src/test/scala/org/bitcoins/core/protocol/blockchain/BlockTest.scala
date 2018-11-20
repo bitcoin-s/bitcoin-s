@@ -1,10 +1,5 @@
 package org.bitcoins.core.protocol.blockchain
 
-import java.io.File
-
-import org.bitcoins.core.protocol.CompactSizeUInt
-import org.bitcoins.core.serializers.script.RawScriptSignatureParser
-import org.bitcoins.core.util.BitcoinSLogger
 import org.scalatest.{ FlatSpec, MustMatchers }
 import org.slf4j.LoggerFactory
 

@@ -3,7 +3,6 @@ package org.bitcoins.core.script
 import org.bitcoins.core.crypto.BaseTxSigComponent
 import org.bitcoins.core.currency.CurrencyUnits
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.script.SigVersionBase
 import org.bitcoins.core.protocol.transaction.TransactionOutput
 import org.bitcoins.core.script.constant.{ OP_0, OP_1 }
 import org.bitcoins.core.script.flag.ScriptFlagFactory

@@ -1,6 +1,5 @@
 package org.bitcoins.core.util.testprotocol
 
-import org.bitcoins.core.util.BitcoinSLogger
 import spray.json._
 
 /**

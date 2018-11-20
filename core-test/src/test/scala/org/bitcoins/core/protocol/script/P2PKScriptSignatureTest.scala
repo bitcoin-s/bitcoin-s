@@ -1,6 +1,6 @@
 package org.bitcoins.core.protocol.script
 
-import org.bitcoins.core.crypto.{ ECDigitalSignature }
+import org.bitcoins.core.crypto.ECDigitalSignature
 import org.bitcoins.core.util.TestUtil
 import org.scalatest.{ FlatSpec, MustMatchers }
 

@@ -3,12 +3,10 @@ package org.bitcoins.core.script.interpreter.testprotocol
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.number.Int64
 import org.bitcoins.core.protocol.CompactSizeUInt
-import org.bitcoins.core.serializers.script.ScriptParser
 import org.bitcoins.core.protocol.script._
-import org.bitcoins.core.script.constant.{ ScriptConstant, ScriptOperation, ScriptToken }
 import org.bitcoins.core.script.result.ScriptResult
+import org.bitcoins.core.serializers.script.ScriptParser
 import org.bitcoins.core.util.{ BitcoinSLogger, BitcoinSUtil, BitcoinScriptUtil }
-import org.slf4j.LoggerFactory
 import scodec.bits.ByteVector
 import spray.json._
 

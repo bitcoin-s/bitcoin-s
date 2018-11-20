@@ -3,14 +3,12 @@ package org.bitcoins.core.wallet.builder
 import org.bitcoins.core.config.TestNet3
 import org.bitcoins.core.crypto.ECPrivateKey
 import org.bitcoins.core.currency.{ CurrencyUnits, Satoshis }
-import org.bitcoins.core.gen.{ CryptoGenerators, ScriptGenerators }
+import org.bitcoins.core.gen.ScriptGenerators
 import org.bitcoins.core.number.{ Int64, UInt32 }
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.util.BitcoinSLogger
-import org.bitcoins.core.wallet
-import org.bitcoins.core.wallet.builder.BitcoinTxBuilder.UTXOMap
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.BitcoinUTXOSpendingInfo
 import org.scalatest.{ AsyncFlatSpec, MustMatchers }

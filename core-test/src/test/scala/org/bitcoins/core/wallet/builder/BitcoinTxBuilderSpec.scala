@@ -7,13 +7,10 @@ import org.bitcoins.core.number.{ Int64, UInt32 }
 import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
-import org.bitcoins.core.script.{ PreExecutionScriptProgram, ScriptProgram }
-import org.bitcoins.core.script.crypto.HashType
+import org.bitcoins.core.script.PreExecutionScriptProgram
 import org.bitcoins.core.script.interpreter.ScriptInterpreter
-import org.bitcoins.core.script.result.{ ScriptOk, ScriptResult }
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.core.wallet.fee.{ SatoshisPerByte, SatoshisPerVirtualByte }
-import org.bitcoins.core.wallet.signer.Signer
 import org.bitcoins.core.wallet.utxo.{ BitcoinUTXOSpendingInfo, UTXOSpendingInfo }
 import org.scalacheck.{ Prop, Properties }
 

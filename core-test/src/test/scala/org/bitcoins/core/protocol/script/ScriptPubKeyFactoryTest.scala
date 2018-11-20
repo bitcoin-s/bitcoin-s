@@ -1,6 +1,6 @@
 package org.bitcoins.core.protocol.script
 
-import org.bitcoins.core.util.{ TestUtil, BitcoinjConversions, BitcoinJTestUtil, BitcoinSUtil }
+import org.bitcoins.core.util.{ BitcoinSUtil, TestUtil }
 import org.scalatest.{ FlatSpec, MustMatchers }
 
 /**

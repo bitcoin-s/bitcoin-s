@@ -1,12 +1,10 @@
 package org.bitcoins.core.protocol.script
 
-import org.bitcoins.core.crypto.ECPrivateKey
 import org.bitcoins.core.gen.CryptoGenerators
 import org.bitcoins.core.script.bitwise.OP_EQUALVERIFY
 import org.bitcoins.core.script.constant._
-import org.bitcoins.core.script.crypto.{ OP_CHECKSIG, OP_CODESEPARATOR, OP_HASH160 }
-import org.bitcoins.core.script.locktime.{ OP_CHECKLOCKTIMEVERIFY, OP_CHECKSEQUENCEVERIFY }
-import org.bitcoins.core.script.stack.{ OP_DROP, OP_DUP }
+import org.bitcoins.core.script.crypto.{ OP_CHECKSIG, OP_HASH160 }
+import org.bitcoins.core.script.stack.OP_DUP
 import org.bitcoins.core.util.{ CryptoUtil, TestUtil }
 import org.scalatest.{ FlatSpec, MustMatchers }
 

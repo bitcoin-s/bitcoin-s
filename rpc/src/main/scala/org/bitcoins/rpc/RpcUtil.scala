@@ -18,7 +18,7 @@ trait RpcUtil extends BitcoinSLogger {
 
   def retryUntilSatisfied(
     condition: => Boolean,
-    duration: FiniteDuration = 100.milliseconds,
+    duration: FiniteDuration,
     maxTries: Int = 50)(implicit system: ActorSystem): Future[Unit] = {
     val f = () => Future.successful(condition)
     retryUntilSatisfiedF(f, duration, maxTries)
@@ -34,7 +34,7 @@ trait RpcUtil extends BitcoinSLogger {
    */
   def retryUntilSatisfiedF(
     conditionF: () => Future[Boolean],
-    duration: FiniteDuration = 100.milliseconds,
+    duration: FiniteDuration = 100.millis,
     maxTries: Int = 50)(implicit system: ActorSystem): Future[Unit] = {
 
     retryUntilSatisfiedWithCounter(
@@ -55,7 +55,7 @@ trait RpcUtil extends BitcoinSLogger {
     conditionF().flatMap { condition =>
 
       if (condition) {
-        Future.successful(Unit)
+        Future.successful(())
       } else if (counter == maxTries) {
         Future.failed(new RuntimeException("Condition timed out"))
       } else {
@@ -65,7 +65,7 @@ trait RpcUtil extends BitcoinSLogger {
         system.scheduler.scheduleOnce(duration, runnable)
 
         p.future.flatMap {
-          case true => Future.successful(Unit)
+          case true => Future.successful(())
           case false => retryUntilSatisfiedWithCounter(conditionF, duration, counter + 1, maxTries)
         }
       }
@@ -88,7 +88,6 @@ trait RpcUtil extends BitcoinSLogger {
     duration: FiniteDuration = 100.milliseconds,
     maxTries: Int = 50,
     overallTimeout: FiniteDuration = 1.hour)(implicit system: ActorSystem): Unit = {
-    implicit val ec = system.dispatcher
 
     //type hackery here to go from () => Boolean to () => Future[Boolean]
     //to make sure we re-evaluate every time retryUntilSatisfied is called
@@ -103,7 +102,6 @@ trait RpcUtil extends BitcoinSLogger {
     duration: FiniteDuration = 100.milliseconds,
     maxTries: Int = 50,
     overallTimeout: FiniteDuration = 1.hour)(implicit system: ActorSystem): Unit = {
-    implicit val d = system.dispatcher
 
     val f: Future[Unit] = retryUntilSatisfiedF(
       conditionF = conditionF,

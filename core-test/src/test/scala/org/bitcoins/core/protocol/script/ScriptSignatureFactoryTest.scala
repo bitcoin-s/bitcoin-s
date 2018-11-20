@@ -1,7 +1,6 @@
 package org.bitcoins.core.protocol.script
 
 import org.bitcoins.core.crypto._
-import org.bitcoins.core.script.constant.ScriptConstant
 import org.bitcoins.core.util.{ BitcoinSUtil, TestUtil }
 import org.scalatest.{ FlatSpec, MustMatchers }
 import scodec.bits.ByteVector

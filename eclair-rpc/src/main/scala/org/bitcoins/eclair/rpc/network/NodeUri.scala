@@ -1,7 +1,6 @@
 package org.bitcoins.eclair.rpc.network
 
 import org.bitcoins.core.protocol.ln.node.NodeId
-import org.slf4j.LoggerFactory
 
 import scala.util.{ Failure, Success, Try }
 
@@ -10,7 +9,6 @@ case class NodeUri(nodeId: NodeId, host: String, port: Int) {
 }
 
 object NodeUri {
-  private val logger = LoggerFactory.getLogger(this.getClass().getSimpleName)
 
   private val defaultPort = ":9735"
 

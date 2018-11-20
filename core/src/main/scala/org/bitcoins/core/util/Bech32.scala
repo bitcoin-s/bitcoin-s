@@ -1,9 +1,6 @@
 package org.bitcoins.core.util
 
 import org.bitcoins.core.number.{ UInt32, UInt5, UInt8 }
-import org.bitcoins.core.protocol.ln.LnHumanReadablePart
-import org.bitcoins.core.protocol.ln.LnHumanReadablePart.parse
-import org.slf4j.LoggerFactory
 import scodec.bits.{ BitVector, ByteVector }
 
 import scala.annotation.tailrec
@@ -16,16 +13,10 @@ import scala.util.{ Failure, Success, Try }
  */
 sealed abstract class Bech32 {
 
-  private val logger = LoggerFactory.getLogger(this.getClass.getSimpleName)
-
   private val generators: Vector[Long] = Vector(
     UInt32("3b6a57b2").toLong,
     UInt32("26508e6d").toLong, UInt32("1ea119fa").toLong,
     UInt32("3d4233dd").toLong, UInt32("2a1462b3").toLong)
-
-  private val u32Five = UInt32(5)
-  private val u32Eight = UInt32(8)
-  private val u8ThirtyTwo = UInt8(32)
 
   /**
    * Creates a checksum for the given byte vector according to BIP173

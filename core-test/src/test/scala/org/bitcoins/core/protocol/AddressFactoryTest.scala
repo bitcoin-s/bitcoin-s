@@ -1,9 +1,7 @@
 package org.bitcoins.core.protocol
 
-import org.bitcoins.core.util.{ Base58, BitcoinSUtil, TestUtil }
+import org.bitcoins.core.util.{ Base58, TestUtil }
 import org.scalatest.{ FlatSpec, MustMatchers }
-
-import scala.util.Success
 
 /**
  * Created by chris on 3/30/16.

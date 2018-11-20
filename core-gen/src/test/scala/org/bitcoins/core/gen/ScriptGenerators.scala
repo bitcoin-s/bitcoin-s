@@ -22,7 +22,6 @@ import scala.concurrent.duration.DurationInt
  */
 //TODO: Need to provide generators for [[NonStandardScriptSignature]] and [[NonStandardScriptPubKey]]
 sealed abstract class ScriptGenerators extends BitcoinSLogger {
-  private val tc = TransactionConstants
   val timeout = 5.seconds
 
   def p2pkScriptSignature: Gen[P2PKScriptSignature] = for {
@@ -439,7 +438,7 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
   /** Helper function to generate a signed [[EscrowTimeoutScriptSignature]] */
   private def csvEscrowTimeoutHelper(sequence: UInt32, csvEscrowTimeout: EscrowTimeoutScriptPubKey, privateKeys: Seq[ECPrivateKey],
     requiredSigs: Option[Int], hashType: HashType, isMultiSig: Boolean,
-    outputs: Seq[TransactionOutput] = Nil, amount: CurrencyUnit = CurrencyUnits.zero): EscrowTimeoutScriptSignature = {
+    outputs: Seq[TransactionOutput], amount: CurrencyUnit = CurrencyUnits.zero): EscrowTimeoutScriptSignature = {
     val pubKeys = privateKeys.map(_.publicKey)
     val (creditingTx, outputIndex) = TransactionGenerators.buildCreditingTransaction(
       TransactionConstants.validLockVersion, csvEscrowTimeout, amount)
