@@ -1,6 +1,6 @@
 package org.bitcoins.core.script.splice
 
-import org.scalatest.{ MustMatchers, FlatSpec }
+import org.scalatest.{ FlatSpec, MustMatchers }
 
 /**
  * Created by chris on 1/22/16.

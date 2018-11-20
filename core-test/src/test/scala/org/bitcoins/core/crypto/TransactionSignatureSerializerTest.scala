@@ -1,7 +1,6 @@
 package org.bitcoins.core.crypto
 
-import org.bitcoins.core.currency.Bitcoins
-import org.bitcoins.core.currency.{ CurrencyUnits, Satoshis }
+import org.bitcoins.core.currency.{ Bitcoins, CurrencyUnits, Satoshis }
 import org.bitcoins.core.number.{ Int32, Int64, UInt32 }
 import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script._

@@ -1,6 +1,5 @@
 package org.bitcoins.core.crypto
 
-import org.bitcoins.core.util.{ BitcoinSLogger, BitcoinSUtil }
 import org.bouncycastle.asn1.{ ASN1InputStream, ASN1Integer, DLSequence }
 import scodec.bits.ByteVector
 
@@ -11,7 +10,6 @@ import scala.util.{ Failure, Success, Try }
  */
 sealed abstract class DERSignatureUtil {
 
-  private val logger = BitcoinSLogger.logger
   /**
    * Checks if this signature is encoded to DER correctly
    * https://crypto.stackexchange.com/questions/1795/how-can-i-convert-a-der-ecdsa-signature-to-asn-1

@@ -1,14 +1,11 @@
 package org.bitcoins.core.protocol.ln
 
-import java.sql.Timestamp
-
 import org.bitcoins.core.crypto.{ ECPrivateKey, Sha256Digest }
 import org.bitcoins.core.number.{ UInt5, UInt64, UInt8 }
 import org.bitcoins.core.protocol.ln.currency.{ LnCurrencyUnit, PicoBitcoins }
 import org.bitcoins.core.protocol.ln.node.NodeId
 import org.bitcoins.core.protocol.ln.util.LnUtil
 import org.bitcoins.core.util._
-import org.slf4j.LoggerFactory
 import scodec.bits.ByteVector
 
 import scala.util.{ Failure, Success, Try }
@@ -22,7 +19,6 @@ sealed abstract class LnInvoice {
     isValidSignature(),
     s"Did not receive a valid digital signature for the invoice ${toString}")
 
-  private val logger = LoggerFactory.getLogger(this.getClass.getSimpleName)
   private val bech32Separator: Char = Bech32.separator
 
   def hrp: LnHumanReadablePart
@@ -111,8 +107,6 @@ object LnInvoice {
     timestamp: UInt64,
     lnTags: LnTaggedFields,
     signature: LnInvoiceSignature) extends LnInvoice
-
-  private val logger = LoggerFactory.getLogger(getClass.getSimpleName)
 
   def decodeTimestamp(u5s: Vector[UInt5]): UInt64 = {
     val decoded = LnUtil.decodeNumber(u5s)

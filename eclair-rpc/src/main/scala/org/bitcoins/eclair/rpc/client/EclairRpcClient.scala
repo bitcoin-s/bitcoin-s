@@ -344,6 +344,7 @@ class EclairRpcClient(val instance: EclairInstance)(implicit system: ActorSystem
 
     p.future.map(_ => cancellable.cancel())
 
+    ()
   }
 
   def receive(): Future[LnInvoice] =

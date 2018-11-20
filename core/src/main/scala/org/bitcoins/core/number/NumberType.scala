@@ -1,6 +1,5 @@
 package org.bitcoins.core.number
 
-import org.bitcoins.core.number.UInt8.toUInt8
 import org.bitcoins.core.protocol.NetworkElement
 import org.bitcoins.core.util.{ BitcoinSUtil, Factory, NumberUtil }
 import scodec.bits.ByteVector

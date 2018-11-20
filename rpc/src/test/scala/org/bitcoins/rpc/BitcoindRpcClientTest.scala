@@ -20,7 +20,6 @@ import org.scalatest.{ AsyncFlatSpec, BeforeAndAfter, BeforeAndAfterAll }
 
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ Await, Future }
-import scala.util.Try
 
 class BitcoindRpcClientTest
   extends AsyncFlatSpec

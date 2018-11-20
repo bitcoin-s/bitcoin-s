@@ -25,7 +25,7 @@ import org.bitcoins.rpc.serializers.JsonSerializers._
 import play.api.libs.json._
 
 import scala.concurrent.duration.DurationInt
-import scala.concurrent.{ Await, ExecutionContext, Future }
+import scala.concurrent.{ ExecutionContext, Future }
 import scala.sys.process._
 import scala.util.Try
 
@@ -1216,7 +1216,7 @@ class BitcoindRpcClient(val instance: BitcoindInstance)(
       "-rpcport=" + instance.rpcUri.getPort,
       "-port=" + instance.uri.getPort)
     logger.debug(s"starting bitcoind")
-    val p = Process(cmd).run()
+    val _ = Process(cmd).run()
     "Started bitcoind!"
   }
 }

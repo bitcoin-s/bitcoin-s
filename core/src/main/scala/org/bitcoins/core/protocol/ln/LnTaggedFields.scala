@@ -5,7 +5,6 @@ import org.bitcoins.core.protocol.NetworkElement
 import org.bitcoins.core.protocol.ln.LnTag.PaymentHashTag
 import org.bitcoins.core.protocol.ln.util.LnUtil
 import org.bitcoins.core.util.Bech32
-import org.slf4j.LoggerFactory
 import scodec.bits.ByteVector
 
 import scala.annotation.tailrec
@@ -73,8 +72,6 @@ object LnTaggedFields extends {
         descriptionHash.nonEmpty,
       "You must supply either a description hash, or a literal description that is 640 characters or less to create an invoice.")
   }
-
-  private val logger = LoggerFactory.getLogger(this.getClass.getSimpleName)
 
   /**
    * According to BOLT11 these are the required fields in a LnInvoice

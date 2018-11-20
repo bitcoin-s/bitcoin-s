@@ -1,7 +1,7 @@
 package org.bitcoins.core.gen
 
 import org.bitcoins.core.config._
-import org.bitcoins.core.protocol.ln.{ LnHumanReadablePart, LnParams }
+import org.bitcoins.core.protocol.ln.LnParams
 import org.scalacheck.Gen
 
 /**

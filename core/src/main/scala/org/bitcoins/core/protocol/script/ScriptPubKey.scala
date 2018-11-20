@@ -1,8 +1,8 @@
 package org.bitcoins.core.protocol.script
 
+import org.bitcoins.core.consensus.Consensus
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.protocol._
-import org.bitcoins.core.consensus.Consensus
 import org.bitcoins.core.script.bitwise.{ OP_EQUAL, OP_EQUALVERIFY }
 import org.bitcoins.core.script.constant.{ BytesToPushOntoStack, _ }
 import org.bitcoins.core.script.control.{ OP_ELSE, OP_ENDIF, OP_IF, OP_RETURN }
@@ -10,7 +10,7 @@ import org.bitcoins.core.script.crypto.{ OP_CHECKMULTISIG, OP_CHECKMULTISIGVERIF
 import org.bitcoins.core.script.locktime.{ OP_CHECKLOCKTIMEVERIFY, OP_CHECKSEQUENCEVERIFY }
 import org.bitcoins.core.script.reserved.UndefinedOP_NOP
 import org.bitcoins.core.script.stack.{ OP_DROP, OP_DUP }
-import org.bitcoins.core.serializers.script.{ ScriptParser }
+import org.bitcoins.core.serializers.script.ScriptParser
 import org.bitcoins.core.util._
 import scodec.bits.ByteVector
 

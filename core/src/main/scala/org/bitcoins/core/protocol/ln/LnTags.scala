@@ -3,15 +3,14 @@ package org.bitcoins.core.protocol.ln
 import java.nio.charset.Charset
 
 import org.bitcoins.core.config.{ MainNet, NetworkParameters }
-import org.bitcoins.core.crypto.{ ECPublicKey, Sha256Digest, Sha256Hash160Digest }
+import org.bitcoins.core.crypto.{ Sha256Digest, Sha256Hash160Digest }
 import org.bitcoins.core.number.{ UInt32, UInt5, UInt8 }
 import org.bitcoins.core.protocol._
 import org.bitcoins.core.protocol.ln.node.NodeId
 import org.bitcoins.core.protocol.ln.routing.LnRoute
 import org.bitcoins.core.protocol.ln.util.LnUtil
-import org.bitcoins.core.protocol.script.{ P2WPKHWitnessSPKV0, P2WSHWitnessSPKV0, WitnessScriptPubKeyV0 }
-import org.bitcoins.core.util.{ Bech32, BitcoinSUtil, CryptoUtil }
-import org.slf4j.LoggerFactory
+import org.bitcoins.core.protocol.script.{ P2WPKHWitnessSPKV0, P2WSHWitnessSPKV0 }
+import org.bitcoins.core.util.{ Bech32, CryptoUtil }
 import scodec.bits.ByteVector
 
 import scala.annotation.tailrec
@@ -52,7 +51,6 @@ sealed abstract class LnTag {
  * [[https://github.com/lightningnetwork/lightning-rfc/blob/master/11-payment-encoding.md#tagged-fields]]
  */
 object LnTag {
-  private val logger = LoggerFactory.getLogger(this.getClass.getName)
 
   /** Fallback address versions */
   object FallbackAddressV {

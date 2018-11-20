@@ -207,7 +207,7 @@ trait EclairTestUtil extends BitcoinSLogger {
     val bitcoindRpcClient = {
       bitcoindRpcClientOpt.getOrElse(BitcoindRpcTestUtil.startedBitcoindRpcClient())
     }
-    implicit val ec = system.dispatcher
+
     val e1Instance = EclairTestUtil.eclairInstance(bitcoindRpcClient)
     val e2Instance = EclairTestUtil.eclairInstance(bitcoindRpcClient)
 

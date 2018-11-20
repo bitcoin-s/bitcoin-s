@@ -1,13 +1,12 @@
 package org.bitcoins.core.protocol.ln.currency
 
-import org.bitcoins.core.currency.{ Bitcoins, Satoshis }
+import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.number.{ BaseNumbers, Int64, UInt5 }
 import org.bitcoins.core.protocol.NetworkElement
 import org.bitcoins.core.protocol.ln._
 import org.bitcoins.core.util.Bech32
 import scodec.bits.ByteVector
 
-import scala.math.BigDecimal.RoundingMode
 import scala.util.{ Failure, Try }
 
 sealed abstract class LnCurrencyUnit extends NetworkElement {

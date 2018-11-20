@@ -3,13 +3,12 @@ package org.bitcoins.core.protocol.ln.routing
 import java.math.BigInteger
 
 import org.bitcoins.core.crypto.ECPublicKey
-import org.bitcoins.core.number.{ Int64, UInt32, UInt5 }
+import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.NetworkElement
 import org.bitcoins.core.protocol.ln.ShortChannelId
-import org.bitcoins.core.protocol.ln.currency.{ MilliSatoshis, PicoBitcoins }
+import org.bitcoins.core.protocol.ln.currency.MilliSatoshis
 import org.bitcoins.core.protocol.ln.fee.{ FeeBaseMSat, FeeProportionalMillionths }
 import org.bitcoins.core.util.BitcoinSUtil
-import org.slf4j.LoggerFactory
 import scodec.bits.ByteVector
 
 /**
@@ -39,7 +38,7 @@ case class LnRoute(
 }
 
 object LnRoute {
-  private val logger = LoggerFactory.getLogger(this.getClass.getSimpleName)
+
   def fromBytes(bytes: ByteVector): LnRoute = {
 
     val pubKey = ECPublicKey.fromBytes(bytes.take(33))

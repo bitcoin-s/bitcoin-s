@@ -1,6 +1,6 @@
 package org.bitcoins.core.script.interpreter.testprotocol
 
-import org.bitcoins.core.protocol.script.{ ScriptSignature, ScriptPubKey }
+import org.bitcoins.core.protocol.script.ScriptSignature
 import org.bitcoins.core.script.constant.ScriptToken
 
 /**

@@ -2,7 +2,6 @@ package org.bitcoins.core.script.interpreter.testprotocol
 
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.protocol.script.{ ScriptPubKey, ScriptSignature, ScriptWitness }
-import org.bitcoins.core.script.constant.ScriptToken
 import org.bitcoins.core.script.result.ScriptResult
 
 /**

@@ -3,7 +3,6 @@ package org.bitcoins.core.protocol
 import org.bitcoins.core.config.MainNet
 import org.bitcoins.core.crypto.Sha256Hash160Digest
 import org.bitcoins.core.protocol.script.ScriptPubKey
-import org.bitcoins.core.util.Base58
 import org.scalatest.{ FlatSpec, MustMatchers }
 
 import scala.util.Try

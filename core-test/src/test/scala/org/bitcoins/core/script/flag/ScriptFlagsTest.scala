@@ -1,6 +1,6 @@
 package org.bitcoins.core.script.flag
 
-import org.scalatest.{ MustMatchers, FlatSpec }
+import org.scalatest.{ FlatSpec, MustMatchers }
 
 /**
  * Created by chris on 3/23/16.

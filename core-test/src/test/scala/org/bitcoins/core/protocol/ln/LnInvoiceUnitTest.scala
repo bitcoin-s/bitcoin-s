@@ -3,11 +3,11 @@ package org.bitcoins.core.protocol.ln
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.gen.ln.LnInvoiceGen
 import org.bitcoins.core.number.{ UInt32, UInt64, UInt8 }
-import org.bitcoins.core.protocol.{ Bech32Address, P2PKHAddress, P2SHAddress }
 import org.bitcoins.core.protocol.ln.LnParams.{ LnBitcoinMainNet, LnBitcoinTestNet }
-import org.bitcoins.core.protocol.ln.currency.{ MicroBitcoins, MilliBitcoins, MilliSatoshis, PicoBitcoins }
+import org.bitcoins.core.protocol.ln.currency.{ MicroBitcoins, MilliBitcoins, MilliSatoshis }
 import org.bitcoins.core.protocol.ln.fee.{ FeeBaseMSat, FeeProportionalMillionths }
 import org.bitcoins.core.protocol.ln.routing.LnRoute
+import org.bitcoins.core.protocol.{ Bech32Address, P2PKHAddress, P2SHAddress }
 import org.bitcoins.core.util.CryptoUtil
 import org.scalatest.prop.PropertyChecks
 import org.scalatest.{ FlatSpec, MustMatchers }

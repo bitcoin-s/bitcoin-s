@@ -1,8 +1,8 @@
 package org.bitcoins.core.util
 
 import org.bitcoins.core.gen.NumberGenerator
-import org.bitcoins.core.number.{ UInt32, UInt8 }
-import org.scalacheck.{ Gen, Prop, Properties }
+import org.bitcoins.core.number.UInt8
+import org.scalacheck.{ Prop, Properties }
 
 /**
  * Created by chris on 6/20/16.

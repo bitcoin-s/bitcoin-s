@@ -3,8 +3,8 @@ package org.bitcoins.core.script.interpreter
 import org.bitcoins.core.crypto.{ BaseTxSigComponent, WitnessTxSigComponentP2SH, WitnessTxSigComponentRaw }
 import org.bitcoins.core.currency.CurrencyUnits
 import org.bitcoins.core.protocol.script._
-import org.bitcoins.core.protocol.transaction.{ Transaction, TransactionOutput, WitnessTransaction }
-import org.bitcoins.core.script.{ PreExecutionScriptProgram, ScriptProgram }
+import org.bitcoins.core.protocol.transaction.{ TransactionOutput, WitnessTransaction }
+import org.bitcoins.core.script.PreExecutionScriptProgram
 import org.bitcoins.core.script.flag.ScriptFlagFactory
 import org.bitcoins.core.script.interpreter.testprotocol.CoreTestCase
 import org.bitcoins.core.script.interpreter.testprotocol.CoreTestCaseProtocol._

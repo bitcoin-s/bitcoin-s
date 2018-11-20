@@ -1,7 +1,6 @@
 package org.bitcoins.core.protocol.ln
 
 import org.bitcoins.core.config.{ MainNet, NetworkParameters, RegTest, TestNet3 }
-import org.bitcoins.core.number.UInt5
 import org.bitcoins.core.protocol.blockchain.ChainParams
 import scodec.bits.ByteVector
 

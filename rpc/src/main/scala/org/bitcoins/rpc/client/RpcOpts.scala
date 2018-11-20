@@ -9,8 +9,6 @@ import play.api.libs.json.{ Json, Writes }
 
 object RpcOpts {
 
-  import org.bitcoins.rpc.serializers.JsonWriters._
-
   case class FundRawTransactionOptions(
     changeAddress: Option[BitcoinAddress] = None,
     changePosition: Option[Int] = None,
@@ -19,6 +17,8 @@ object RpcOpts {
     reverseChangeKey: Boolean = true,
     feeRate: Option[Bitcoins] = None,
     subtractFeeFromOutputs: Option[Array[Int]])
+
+  import org.bitcoins.rpc.serializers.JsonWriters._
 
   implicit val fundRawTransactionOptionsWrites: Writes[FundRawTransactionOptions] = Json.writes[FundRawTransactionOptions]
 

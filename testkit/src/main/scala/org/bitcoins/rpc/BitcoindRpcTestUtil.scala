@@ -11,8 +11,8 @@ import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.rpc.client.BitcoindRpcClient
 import org.bitcoins.rpc.config.{ BitcoindAuthCredentials, BitcoindInstance }
 
-import scala.concurrent.{ Await, ExecutionContext, Future, Promise }
 import scala.concurrent.duration.{ DurationInt, FiniteDuration }
+import scala.concurrent.{ ExecutionContext, Future, Promise }
 import scala.util.{ Failure, Success, Try }
 
 trait BitcoindRpcTestUtil extends BitcoinSLogger {
@@ -240,6 +240,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     client2.stop()
     deleteTmpDir(client1.getDaemon.authCredentials.datadir)
     deleteTmpDir(client2.getDaemon.authCredentials.datadir)
+    ()
   }
 
   def hasSeenBlock(client1: BitcoindRpcClient, hash: DoubleSha256Digest)(implicit ec: ExecutionContext): Future[Boolean] = {
@@ -264,7 +265,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
 
     val blocksToGenerate = 102
     //fund the wallet by generating 102 blocks, need this to get over coinbase maturity
-    val blockGen = rpc.generate(blocksToGenerate)
+    val _ = rpc.generate(blocksToGenerate)
 
     def isBlocksGenerated(): Future[Boolean] = {
       rpc.getBlockCount.map(_ >= blocksToGenerate)

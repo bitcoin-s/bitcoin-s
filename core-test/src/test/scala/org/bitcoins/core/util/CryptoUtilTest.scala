@@ -1,10 +1,9 @@
 package org.bitcoins.core.util
 
-import org.bitcoins.core.gen.{ CryptoGenerators, NumberGenerator }
+import org.bitcoins.core.gen.CryptoGenerators
 import org.scalatest.prop.PropertyChecks
 import org.scalatest.{ FlatSpec, MustMatchers }
 import org.slf4j.LoggerFactory
-import scodec.bits.ByteVector
 
 /**
  * Created by chris on 1/26/16.

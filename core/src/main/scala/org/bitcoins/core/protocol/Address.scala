@@ -1,13 +1,10 @@
 package org.bitcoins.core.protocol
-import org.bitcoins.core.config._
-import org.bitcoins.core.config.{ MainNet, RegTest, TestNet3 }
+import org.bitcoins.core.config.{ MainNet, RegTest, TestNet3, _ }
 import org.bitcoins.core.crypto._
-import org.bitcoins.core.number.{ UInt32, UInt5, UInt8 }
-import org.bitcoins.core.protocol.transaction.TransactionOutput
+import org.bitcoins.core.number.{ UInt5, UInt8 }
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.script.constant.ScriptConstant
 import org.bitcoins.core.util._
-import org.slf4j.LoggerFactory
 import scodec.bits.ByteVector
 
 import scala.annotation.tailrec
@@ -146,7 +143,7 @@ object Bech32Address extends AddressFactory[Bech32Address] {
     decoded.flatMap {
       case bech32Addr =>
         val bytes = bech32Addr.data
-        val (v, prog) = (bytes.head, bytes.tail)
+        val (v, _) = (bytes.head, bytes.tail)
         val convertedProg = NumberUtil.convertUInt5sToUInt8(bytes.tail)
         val progBytes = UInt8.toBytes(convertedProg)
         val witVersion = WitnessVersion(v.toInt)
