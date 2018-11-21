@@ -28,6 +28,7 @@ object BlockBench extends App {
     require(time <= 15000)
   }
 
-  bench1()
+  0.until(10).foreach(_ => bench1())
+
   //bench2()
 }

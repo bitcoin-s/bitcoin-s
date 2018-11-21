@@ -19,7 +19,7 @@ object BytesToPushOntoStack extends ScriptOperationFactory[BytesToPushOntoStack]
     /*  //see the 'Constants; section in https://en.bitcoin.it/wiki/Script
       require(num >= -1 && num <= 75, "A valid script number is between 1 and 75, the number passed in was: " + num)*/
     require(num >= 0, "BytesToPushOntoStackImpl cannot be negative")
-    override def opCode = num
+    override val opCode = num
   }
 
   override def operations: Seq[BytesToPushOntoStack] =

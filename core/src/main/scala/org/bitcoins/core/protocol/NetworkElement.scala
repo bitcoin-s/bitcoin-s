@@ -14,7 +14,7 @@ abstract class NetworkElement {
   def size: Long = bytes.size
 
   /** The hexadecimal representation of the NetworkElement */
-  def hex: String = BitcoinSUtil.encodeHex(bytes)
+  def hex: String = bytes.toHex
 
   /** The byte representation of the NetworkElement */
   def bytes: ByteVector
