@@ -24,6 +24,8 @@ object Deps {
     val akkaHttp = "com.typesafe.akka" %% "akka-http" % V.akkav withSources() withJavadoc()
     val akkaStream = "com.typesafe.akka" %% "akka-stream" % V.akkaStreamv withSources() withJavadoc()
     val playJson = "com.typesafe.play" %% "play-json" % V.playv withSources() withJavadoc()
+
+    val logback = "ch.qos.logback" % "logback-classic" % V.logback withSources() withJavadoc()
   }
 
   object Test {
@@ -74,5 +76,10 @@ object Deps {
     Test.logback,
     Test.scalaTest,
     Test.scalacheck
+  )
+
+  val bench = List(
+  "org.slf4j" % "slf4j-api" % V.slf4j withSources() withJavadoc(),
+  Compile.logback
   )
 }
