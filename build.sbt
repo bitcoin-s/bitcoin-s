@@ -39,7 +39,8 @@ lazy val root = project
       coreGen,
       coreTest,
       zmq,
-      rpc
+      rpc,
+      bench
     )
     .settings(commonSettings: _*)
 
@@ -91,5 +92,12 @@ lazy val rpc = project
   ).settings(
     testOptions in Test += Tests.Argument("-oF")
   )
+
+lazy val bench = project
+  .in(file("bench"))
+  .enablePlugins()
+  .settings(assemblyOption in assembly := (assemblyOption in assembly).value.copy(includeScala = true))
+  .settings(libraryDependencies ++= Deps.bench)
+  .dependsOn(core)
 
 publishArtifact in root := false
