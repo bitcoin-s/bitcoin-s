@@ -6,7 +6,7 @@ import org.bitcoins.core.script.constant.ScriptOperation
 /**
  * Created by chris on 1/6/16.
  */
-sealed trait ControlOperations extends ScriptOperation
+sealed abstract class ControlOperations extends ScriptOperation
 
 /** If the top stack value is not 0, the statements are executed. The top stack value is removed. */
 case object OP_IF extends ControlOperations {
@@ -52,5 +52,5 @@ case object OP_RETURN extends ControlOperations {
 }
 
 object ControlOperations extends ScriptOperationFactory[ControlOperations] {
-  override def operations = Seq(OP_ELSE, OP_ENDIF, OP_IF, OP_NOTIF, OP_RETURN, OP_VERIFY)
+  override val operations = Seq(OP_ELSE, OP_ENDIF, OP_IF, OP_NOTIF, OP_RETURN, OP_VERIFY)
 }
