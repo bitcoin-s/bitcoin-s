@@ -13,7 +13,7 @@ class SpliceOperationFactoryTest extends FlatSpec with MustMatchers {
   }
 
   it must "instantiate splice operations from their byte values" in {
-    SpliceOperation(126.toByte) must be(Some(OP_CAT))
-    SpliceOperation(127.toByte) must be(Some(OP_SUBSTR))
+    SpliceOperation(126.toByte) must be(OP_CAT)
+    SpliceOperation(127.toByte) must be(OP_SUBSTR)
   }
 }

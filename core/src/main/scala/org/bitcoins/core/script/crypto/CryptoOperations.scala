@@ -14,27 +14,27 @@ sealed trait CryptoSignatureEvaluation extends CryptoOperation
 
 /** The input is hashed using RIPEMD-160. */
 case object OP_RIPEMD160 extends CryptoOperation {
-  override def opCode = 166
+  override val opCode: Int = 166
 }
 
 /** The input is hashed using SHA-1. */
 case object OP_SHA1 extends CryptoOperation {
-  override def opCode = 167
+  override val opCode: Int = 167
 }
 
 /** The input is hashed using SHA-256. */
 case object OP_SHA256 extends CryptoOperation {
-  override def opCode = 168
+  override val opCode: Int = 168
 }
 
 /** The input is hashed twice: first with SHA-256 and then with RIPEMD-160. */
 case object OP_HASH160 extends CryptoOperation {
-  override def opCode = 169
+  override val opCode: Int = 169
 }
 
 /** The input is hashed two times with SHA-256. */
 case object OP_HASH256 extends CryptoOperation {
-  override def opCode = 170
+  override val opCode: Int = 170
 }
 
 /**
@@ -42,7 +42,7 @@ case object OP_HASH256 extends CryptoOperation {
  * the data after the most recently-executed OP_CODESEPARATOR.
  */
 case object OP_CODESEPARATOR extends CryptoOperation {
-  override def opCode = 171
+  override val opCode: Int = 171
 }
 
 /**
@@ -52,12 +52,12 @@ case object OP_CODESEPARATOR extends CryptoOperation {
  * If it is, 1 is returned, 0 otherwise.
  */
 case object OP_CHECKSIG extends CryptoSignatureEvaluation {
-  override def opCode = 172
+  override val opCode: Int = 172
 }
 
 /** Same as OP_CHECKSIG, but OP_VERIFY is executed afterward. */
 case object OP_CHECKSIGVERIFY extends CryptoSignatureEvaluation {
-  override def opCode = 173
+  override val opCode: Int = 173
 }
 
 /**
@@ -72,12 +72,12 @@ case object OP_CHECKSIGVERIFY extends CryptoSignatureEvaluation {
  * Due to a bug, one extra unused value is removed from the stack.
  */
 case object OP_CHECKMULTISIG extends CryptoSignatureEvaluation {
-  override def opCode = 174
+  override val opCode: Int = 174
 }
 
 /** Same as OP_CHECKMULTISIG, but OP_VERIFY is executed afterward. */
 case object OP_CHECKMULTISIGVERIFY extends CryptoSignatureEvaluation {
-  override def opCode = 175
+  override val opCode: Int = 175
 }
 
 object CryptoOperation extends ScriptOperationFactory[CryptoOperation] {

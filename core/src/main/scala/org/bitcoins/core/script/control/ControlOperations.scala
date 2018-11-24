@@ -6,16 +6,16 @@ import org.bitcoins.core.script.constant.ScriptOperation
 /**
  * Created by chris on 1/6/16.
  */
-sealed trait ControlOperations extends ScriptOperation
+sealed abstract class ControlOperations extends ScriptOperation
 
 /** If the top stack value is not 0, the statements are executed. The top stack value is removed. */
 case object OP_IF extends ControlOperations {
-  override def opCode = 99
+  override val opCode: Int = 99
 }
 
 /** If the top stack value is 0, the statements are executed. The top stack value is removed. */
 case object OP_NOTIF extends ControlOperations {
-  override def opCode = 100
+  override val opCode: Int = 100
 }
 
 /**
@@ -23,7 +23,7 @@ case object OP_NOTIF extends ControlOperations {
  * if the preceding OP_IF or OP_NOTIF or OP_ELSE was executed then these statements are not.
  */
 case object OP_ELSE extends ControlOperations {
-  override def opCode = 103
+  override val opCode: Int = 103
 }
 
 /**
@@ -31,12 +31,12 @@ case object OP_ELSE extends ControlOperations {
  * An OP_ENDIF without OP_IF earlier is also invalid.
  */
 case object OP_ENDIF extends ControlOperations {
-  override def opCode = 104
+  override val opCode: Int = 104
 }
 
 /** Marks transaction as invalid if top stack value is not true. */
 case object OP_VERIFY extends ControlOperations {
-  override def opCode = 105
+  override val opCode: Int = 105
 }
 
 /**
@@ -48,9 +48,9 @@ case object OP_VERIFY extends ControlOperations {
  * with more than one pushdata op.
  */
 case object OP_RETURN extends ControlOperations {
-  override def opCode = 106
+  override val opCode: Int = 106
 }
 
 object ControlOperations extends ScriptOperationFactory[ControlOperations] {
-  override def operations = Seq(OP_ELSE, OP_ENDIF, OP_IF, OP_NOTIF, OP_RETURN, OP_VERIFY)
+  override val operations = Seq(OP_ELSE, OP_ENDIF, OP_IF, OP_NOTIF, OP_RETURN, OP_VERIFY)
 }

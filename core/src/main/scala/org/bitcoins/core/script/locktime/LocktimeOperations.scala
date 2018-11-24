@@ -18,7 +18,7 @@ sealed trait LocktimeOperation extends ScriptOperation
  * The precise semantics are described in BIP 0065
  */
 case object OP_CHECKLOCKTIMEVERIFY extends LocktimeOperation {
-  override def opCode = 177
+  override val opCode: Int = 177
 }
 
 /**
@@ -35,7 +35,7 @@ case object OP_CHECKLOCKTIMEVERIFY extends LocktimeOperation {
  * https://github.com/bitcoin/bips/blob/master/bip-0112.mediawiki
  */
 case object OP_CHECKSEQUENCEVERIFY extends LocktimeOperation {
-  override def opCode = 178
+  override val opCode: Int = 178
 }
 
 object LocktimeOperation extends ScriptOperationFactory[LocktimeOperation] {

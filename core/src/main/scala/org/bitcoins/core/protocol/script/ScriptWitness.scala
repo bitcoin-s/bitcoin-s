@@ -14,18 +14,19 @@ import scodec.bits.ByteVector
 sealed abstract class ScriptWitness extends NetworkElement {
 
   /** The byte vectors that are placed on to the stack when evaluating a witness program */
-  def stack: Seq[ByteVector]
+  val stack: Seq[ByteVector]
 
-  override def bytes = RawScriptWitnessParser.write(this)
 }
 
 case object EmptyScriptWitness extends ScriptWitness {
-  override def stack = Nil
+  override val stack: Seq[ByteVector] = Vector.empty
 
-  override def bytes = ByteVector.low(1)
+  override val bytes: ByteVector = ByteVector.low(1)
 }
 
-sealed abstract class ScriptWitnessV0 extends ScriptWitness
+sealed abstract class ScriptWitnessV0 extends ScriptWitness {
+  override val bytes: ByteVector = RawScriptWitnessParser.write(this)
+}
 
 /**
  * Represents a [[org.bitcoins.core.protocol.script.ScriptWitness]] that is needed to spend a
@@ -33,7 +34,7 @@ sealed abstract class ScriptWitnessV0 extends ScriptWitness
  * [[https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki#p2wpkh-nested-in-bip16-p2sh]]
  * Format: <pubKey> <signature>
  */
-sealed abstract class P2WPKHWitnessV0 extends ScriptWitness {
+sealed abstract class P2WPKHWitnessV0 extends ScriptWitnessV0 {
   def pubKey: ECPublicKey = ECPublicKey(stack.head)
 
   def signature: ECDigitalSignature = stack(1) match {
@@ -41,7 +42,7 @@ sealed abstract class P2WPKHWitnessV0 extends ScriptWitness {
     case bytes: ByteVector => ECDigitalSignature(bytes)
   }
 
-  override def toString = "P2WPKHWitnessV0(" + stack.map(BitcoinSUtil.encodeHex(_)).toString + ")"
+  override def toString = s"P2WPKHWitnessV0(${stack.map(BitcoinSUtil.encodeHex(_)).toString})"
 }
 
 object P2WPKHWitnessV0 {
@@ -74,12 +75,12 @@ object P2WPKHWitnessV0 {
  * [[https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki#p2wsh]]
  * Format: <redeem script> <scriptSig data1> <scriptSig data2> ... <scriptSig dataN>
  */
-sealed abstract class P2WSHWitnessV0 extends ScriptWitness {
-  def redeemScript: ScriptPubKey = {
+sealed abstract class P2WSHWitnessV0 extends ScriptWitnessV0 {
+  lazy val redeemScript: ScriptPubKey = {
     val cmpct = CompactSizeUInt.calc(stack.head)
     ScriptPubKey.fromBytes(cmpct.bytes ++ stack.head)
   }
-  override def toString = "P2WSHWitnessV0(" + stack.map(BitcoinSUtil.encodeHex(_)).toString + ")"
+  override def toString = s"P2WSHWitnessV0(${stack.map(BitcoinSUtil.encodeHex(_)).toString})"
 }
 
 object P2WSHWitnessV0 {

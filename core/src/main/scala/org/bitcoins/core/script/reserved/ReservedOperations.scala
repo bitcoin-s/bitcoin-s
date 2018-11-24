@@ -18,42 +18,42 @@ sealed trait ReservedOperation extends ScriptOperation
  * Transaction is invalid unless occuring in an unexecuted OP_IF branch
  */
 case object OP_RESERVED extends ReservedOperation {
-  override def opCode = 80
+  override val opCode: Int = 80
 }
 
 /**
  * Transaction is invalid unless occuring in an unexecuted OP_IF branch
  */
 case object OP_VER extends ReservedOperation {
-  override def opCode = 98
+  override val opCode: Int = 98
 }
 
 /**
  * Transaction is invalid even when occuring in an unexecuted OP_IF branch
  */
 case object OP_VERIF extends ReservedOperation {
-  override def opCode = 101
+  override val opCode: Int = 101
 }
 
 /**
  * 	Transaction is invalid even when occuring in an unexecuted OP_IF branch
  */
 case object OP_VERNOTIF extends ReservedOperation {
-  override def opCode = 102
+  override val opCode: Int = 102
 }
 
 /**
  * Transaction is invalid unless occuring in an unexecuted OP_IF branch
  */
 case object OP_RESERVED1 extends ReservedOperation {
-  override def opCode = 137
+  override val opCode: Int = 137
 }
 
 /**
  * Transaction is invalid unless occuring in an unexecuted OP_IF branch
  */
 case object OP_RESERVED2 extends ReservedOperation {
-  override def opCode = 138
+  override val opCode: Int = 138
 }
 
 /**
@@ -63,33 +63,33 @@ case object OP_RESERVED2 extends ReservedOperation {
 sealed trait NOP extends ReservedOperation
 
 case object OP_NOP extends NOP {
-  override def opCode = 97
+  override val opCode: Int = 97
 }
 
 case object OP_NOP1 extends NOP {
-  override def opCode = 176
+  override val opCode: Int = 176
 }
 
 case object OP_NOP4 extends NOP {
-  override def opCode = 179
+  override val opCode: Int = 179
 }
 case object OP_NOP5 extends NOP {
-  override def opCode = 180
+  override val opCode: Int = 180
 }
 case object OP_NOP6 extends NOP {
-  override def opCode = 181
+  override val opCode: Int = 181
 }
 case object OP_NOP7 extends NOP {
-  override def opCode = 182
+  override val opCode: Int = 182
 }
 case object OP_NOP8 extends NOP {
-  override def opCode = 183
+  override val opCode: Int = 183
 }
 case object OP_NOP9 extends NOP {
-  override def opCode = 184
+  override val opCode: Int = 184
 }
 case object OP_NOP10 extends NOP {
-  override def opCode = 185
+  override val opCode: Int = 185
 }
 
 case class UndefinedOP_NOP(opCode: Int) extends ReservedOperation

@@ -12,133 +12,133 @@ sealed trait StackOperation extends ScriptOperation
  * Puts the input onto the top of the alt stack. Removes it from the main stack.
  */
 case object OP_TOALTSTACK extends StackOperation {
-  override def opCode = 107
+  override val opCode: Int = 107
 }
 
 /**
  * Puts the input onto the top of the main stack. Removes it from the alt stack.
  */
 case object OP_FROMALTSTACK extends StackOperation {
-  override def opCode = 108
+  override val opCode: Int = 108
 }
 
 /**
  * If the top stack value is not 0, duplicate it.
  */
 case object OP_IFDUP extends StackOperation {
-  override def opCode = 115
+  override val opCode: Int = 115
 }
 
 /**
  * Puts the number of stack items onto the stack.
  */
 case object OP_DEPTH extends StackOperation {
-  override def opCode = 116
+  override val opCode: Int = 116
 }
 
 /**
  * Removes the top stack item
  */
 case object OP_DROP extends StackOperation {
-  override def opCode = 117
+  override val opCode: Int = 117
 }
 
 /**
  * 	Duplicates the top stack item.
  */
 case object OP_DUP extends StackOperation {
-  override def opCode = 118
+  override val opCode: Int = 118
 }
 
 /**
  * Removes the second-to-top stack item.
  */
 case object OP_NIP extends StackOperation {
-  override def opCode = 119
+  override val opCode: Int = 119
 }
 
 /**
  * 	Copies the second-to-top stack item to the top.
  */
 case object OP_OVER extends StackOperation {
-  override def opCode = 120
+  override val opCode: Int = 120
 }
 
 /**
  * The item n back in the stack is copied to the top.
  */
 case object OP_PICK extends StackOperation {
-  override def opCode = 121
+  override val opCode: Int = 121
 }
 
 /**
  * The item n back in the stack is moved to the top.
  */
 case object OP_ROLL extends StackOperation {
-  override def opCode = 122
+  override val opCode: Int = 122
 }
 
 /**
  * The top three items on the stack are rotated to the left.
  */
 case object OP_ROT extends StackOperation {
-  override def opCode = 123
+  override val opCode: Int = 123
 }
 
 /**
  * 	The top two items on the stack are swapped.
  */
 case object OP_SWAP extends StackOperation {
-  override def opCode = 124
+  override val opCode: Int = 124
 }
 
 /**
  * The item at the top of the stack is copied and inserted before the second-to-top item.
  */
 case object OP_TUCK extends StackOperation {
-  override def opCode = 125
+  override val opCode: Int = 125
 }
 
 /**
  * 	Removes the top two stack items.
  */
 case object OP_2DROP extends StackOperation {
-  override def opCode = 109
+  override val opCode: Int = 109
 }
 
 /**
  * Duplicates the top two stack items
  */
 case object OP_2DUP extends StackOperation {
-  override def opCode = 110
+  override val opCode: Int = 110
 }
 
 /**
  * Duplicates the top 3 stack items
  */
 case object OP_3DUP extends StackOperation {
-  override def opCode = 111
+  override val opCode: Int = 111
 }
 
 /**
  * Copies the pair of items two spaces back in the stack to the front.
  */
 case object OP_2OVER extends StackOperation {
-  override def opCode = 112
+  override val opCode: Int = 112
 }
 
 /**
  * The fifth and sixth items back are moved to the top of the stack.
  */
 case object OP_2ROT extends StackOperation {
-  override def opCode = 113
+  override val opCode: Int = 113
 }
 
 /**
  * 	Swaps the top two pairs of items.
  */
 case object OP_2SWAP extends StackOperation {
-  override def opCode = 114
+  override val opCode: Int = 114
 }
 
 object StackOperation extends ScriptOperationFactory[StackOperation] {

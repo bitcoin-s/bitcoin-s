@@ -10,6 +10,7 @@ import org.bitcoins.core.script.reserved.ReservedOperation
 import org.bitcoins.core.script.splice.SpliceOperation
 import org.bitcoins.core.script.stack.StackOperation
 import org.bitcoins.core.util.{ BitcoinSLogger, BitcoinSUtil }
+import scodec.bits.ByteVector
 
 /**
  * Created by chris on 1/8/16.
@@ -35,7 +36,10 @@ trait ScriptOperationFactory[T <: ScriptOperation] extends BitcoinSLogger {
   /**
    * Finds a [[ScriptOperation]] from its hexadecimal representation.
    */
-  def fromHex(hex: String): Option[T] = operations.find(_.hex == hex.toLowerCase)
+  def fromHex(hex: String): Option[T] = {
+    val bytes = BitcoinSUtil.decodeHex(hex)
+    fromBytes(bytes)
+  }
 
   /**
    * Removes the 'OP_' prefix from a given operation.
@@ -46,21 +50,38 @@ trait ScriptOperationFactory[T <: ScriptOperation] extends BitcoinSLogger {
   }
 
   /** Finds a [[ScriptOperation]] from a given [[Byte]]. */
-  def fromByte(byte: Byte): Option[T] = {
-    val hex = BitcoinSUtil.encodeHex(byte)
-    fromHex(hex)
+  def fromByte(byte: Byte): T = {
+    operations.find(_.toByte == byte).get
   }
 
-  def apply(byte: Byte): Option[T] = fromByte(byte)
+  def fromBytes(bytes: ByteVector): Option[T] = {
+    if (bytes.length == 1) {
+      val op = fromByte(bytes.head)
+      Some(op)
+    } else {
+      None
+    }
+  }
+
+  def apply(byte: Byte): T = fromByte(byte)
 
   def apply(hex: String): Option[T] = fromHex(hex)
 }
 
 object ScriptOperation extends ScriptOperationFactory[ScriptOperation] {
 
-  lazy val operations = ScriptNumberOperation.operations ++ Seq(OP_FALSE, OP_PUSHDATA1, OP_PUSHDATA2, OP_PUSHDATA4, OP_TRUE) ++ StackOperation.operations ++ LocktimeOperation.operations ++
-    CryptoOperation.operations ++ ControlOperations.operations ++ BitwiseOperation.operations ++
-    ArithmeticOperation.operations ++ BytesToPushOntoStack.operations ++ SpliceOperation.operations ++
-    ReservedOperation.operations
+  val operations: Seq[ScriptOperation] = {
+    ScriptNumberOperation.operations ++
+      Seq(OP_FALSE, OP_PUSHDATA1, OP_PUSHDATA2, OP_PUSHDATA4, OP_TRUE) ++
+      StackOperation.operations ++
+      LocktimeOperation.operations ++
+      CryptoOperation.operations ++
+      ControlOperations.operations ++
+      BitwiseOperation.operations ++
+      ArithmeticOperation.operations ++
+      BytesToPushOntoStack.operations ++
+      SpliceOperation.operations ++
+      ReservedOperation.operations
+  }
 
 }
