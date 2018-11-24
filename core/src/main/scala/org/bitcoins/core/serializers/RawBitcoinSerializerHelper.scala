@@ -45,8 +45,11 @@ sealed abstract class RawSerializerHelper {
 
   /** Writes a Seq[TransactionInput]/Seq[TransactionOutput]/Seq[Transaction] -> ByteVector */
   def writeCmpctSizeUInt[T](ts: Seq[T], serializer: T => ByteVector): ByteVector = {
-    val serializedSeq: Seq[ByteVector] = ts.map(serializer(_))
-    val serialized = serializedSeq.foldLeft(ByteVector.empty)(_ ++ _)
+    val serialized = ts.foldLeft(ByteVector.empty) {
+      case (accum, t) =>
+        val ser = serializer(t)
+        accum ++ ser
+    }
     val cmpct = CompactSizeUInt(UInt64(ts.size))
     cmpct.bytes ++ serialized
   }

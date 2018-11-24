@@ -131,7 +131,7 @@ sealed abstract class ScriptParser extends Factory[List[ScriptToken]] {
     def loop(bytes: ByteVector, accum: List[ScriptToken]): List[ScriptToken] = {
       //logger.debug("Byte to be parsed: " + bytes.headOption)
       if (bytes.nonEmpty) {
-        val op = ScriptOperation(bytes.head).get
+        val op = ScriptOperation.fromByte(bytes.head)
         val parsingHelper: ParsingHelper = parseOperationByte(op, accum, bytes.tail)
         loop(parsingHelper.tail, parsingHelper.accum)
       } else {

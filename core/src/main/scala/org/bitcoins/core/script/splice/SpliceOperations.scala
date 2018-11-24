@@ -9,23 +9,23 @@ import org.bitcoins.core.script.constant.ScriptOperation
 sealed trait SpliceOperation extends ScriptOperation
 
 case object OP_CAT extends SpliceOperation {
-  override def opCode = 126
+  override val opCode: Int = 126
 }
 
 case object OP_SUBSTR extends SpliceOperation {
-  override def opCode = 127
+  override val opCode: Int = 127
 }
 
 case object OP_LEFT extends SpliceOperation {
-  override def opCode = 128
+  override val opCode: Int = 128
 }
 
 case object OP_RIGHT extends SpliceOperation {
-  override def opCode = 129
+  override val opCode: Int = 129
 }
 
 case object OP_SIZE extends SpliceOperation {
-  override def opCode = 130
+  override val opCode: Int = 130
 }
 
 object SpliceOperation extends ScriptOperationFactory[SpliceOperation] {

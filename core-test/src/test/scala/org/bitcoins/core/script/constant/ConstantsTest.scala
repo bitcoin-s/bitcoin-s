@@ -36,6 +36,7 @@ class ConstantsTest extends FlatSpec with MustMatchers {
   it must "define an OP_1NEGATE" in {
     OP_1NEGATE.opCode must be(79)
     OP_1NEGATE.hex must be("4f")
+    OP_1NEGATE.underlying must be(-1)
 
   }
 
