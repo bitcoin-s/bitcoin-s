@@ -122,7 +122,7 @@ sealed abstract class CreditingTxGen {
   def p2wpkhOutputs: Gen[Seq[BitcoinUTXOSpendingInfo]] = Gen.choose(min, max).flatMap(n => Gen.listOfN(n, p2wpkhOutput))
 
   def p2wshOutput: Gen[BitcoinUTXOSpendingInfo] = nonP2WSHOutput.flatMap {
-    case BitcoinUTXOSpendingInfo(txOutPoint, txOutput, signer, redeemScriptOpt, scriptWitOpt, _) =>
+    case BitcoinUTXOSpendingInfo(_, txOutput, signer, _, _, _) =>
       val spk = txOutput.scriptPubKey
       val scriptWit = P2WSHWitnessV0(spk)
       val witSPK = P2WSHWitnessSPKV0(spk)

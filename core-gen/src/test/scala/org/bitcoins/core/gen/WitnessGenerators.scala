@@ -187,7 +187,7 @@ sealed abstract class WitnessGenerators extends BitcoinSLogger {
     if (scriptPubKey.escrow.requiredSigs == 0) {
       EscrowTimeoutScriptSignature.fromMultiSig(MultiSignatureScriptSignature(Nil))
     } else if (privateKeys.size == 1) {
-      val signature = csvEscrowTimeoutGenSignature(privateKeys.head, scriptPubKey, unsignedWtxSigComponent, hashType)
+      val signature = csvEscrowTimeoutGenSignature(privateKeys.head, unsignedWtxSigComponent, hashType)
       EscrowTimeoutScriptSignature.fromMultiSig(MultiSignatureScriptSignature(Seq(signature)))
     } else {
       val multiSig = multiSigScriptSigGenHelper(privateKeys, scriptPubKey.escrow, unsignedWtxSigComponent, hashType)
@@ -195,7 +195,8 @@ sealed abstract class WitnessGenerators extends BitcoinSLogger {
     }
   }
 
-  def csvEscrowTimeoutGenSignature(privKey: ECPrivateKey, scriptPubKey: EscrowTimeoutScriptPubKey,
+  def csvEscrowTimeoutGenSignature(
+    privKey: ECPrivateKey,
     unsignedWtxSigComponent: WitnessTxSigComponent, hashType: HashType): ECDigitalSignature = {
 
     val signature = TransactionSignatureCreator.createSig(unsignedWtxSigComponent, privKey, hashType)

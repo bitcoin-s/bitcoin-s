@@ -62,7 +62,7 @@ class BitcoindRpcClient(val instance: BitcoindInstance)(
 
     val await = Try(
       RpcUtil.awaitConditionF(
-        conditionF = isConnected,
+        conditionF = () => isConnected(),
         duration = 1.seconds))
 
     await.isSuccess
@@ -77,8 +77,8 @@ class BitcoindRpcClient(val instance: BitcoindInstance)(
     // Ping successful if no error can be parsed from the payload
     val result: Future[Boolean] = payloadF.map { payload =>
       (payload \ errorKey).validate[RpcError] match {
-        case res: JsSuccess[RpcError] => false
-        case res: JsError => true
+        case _: JsSuccess[RpcError] => false
+        case _: JsError => true
       }
     }
 

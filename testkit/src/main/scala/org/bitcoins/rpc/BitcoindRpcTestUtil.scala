@@ -117,7 +117,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     }
 
     RpcUtil.awaitConditionF(
-      conditionF = isConnected,
+      conditionF = () => isConnected(),
       duration = duration,
       maxTries = maxTries)
   }
@@ -138,7 +138,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     }
 
     RpcUtil.awaitConditionF(
-      conditionF = isSynced,
+      conditionF = () => isSynced(),
       duration = duration,
       maxTries = maxTries)
   }
@@ -159,7 +159,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     }
 
     RpcUtil.awaitConditionF(
-      conditionF = isSameBlockHeight,
+      conditionF = () => isSameBlockHeight(),
       duration = duration,
       maxTries = maxTries)
   }
@@ -180,7 +180,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     }
 
     RpcUtil.awaitConditionF(
-      conditionF = isDisconnected,
+      conditionF = () => isDisconnected(),
       duration = duration,
       maxTries = maxTries)
   }
@@ -271,7 +271,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       rpc.getBlockCount.map(_ >= blocksToGenerate)
     }
 
-    RpcUtil.awaitConditionF(isBlocksGenerated)
+    RpcUtil.awaitConditionF(() => isBlocksGenerated())
 
     rpc
   }

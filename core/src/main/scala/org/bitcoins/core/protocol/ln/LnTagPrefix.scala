@@ -53,7 +53,12 @@ object LnTagPrefix {
     FallbackAddress, RoutingInfo)
 
   def fromString(str: String): Option[LnTagPrefix] = {
-    all.find(_.value == str)
+    if (str.length == 1) {
+      all.find(_.value == str.head)
+    } else {
+      None
+    }
+
   }
 
   private lazy val prefixUInt5: Map[UInt5, LnTagPrefix] = {
