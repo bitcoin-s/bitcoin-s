@@ -256,18 +256,18 @@ sealed abstract class ControlOperationsInterpreter {
   /** Removes the first [[OP_ELSE]] in a [[BinaryTree]]. */
   def removeFirstOpElse(tree: BinaryTree[ScriptToken]): BinaryTree[ScriptToken] = {
     //@tailrec
-    def loop(child: BinaryTree[ScriptToken], parent: Node[ScriptToken]): BinaryTree[ScriptToken] = child match {
+    def loop(child: BinaryTree[ScriptToken]): BinaryTree[ScriptToken] = child match {
       case Empty => Empty
       case l: Leaf[ScriptToken] => l
       case Node(OP_ELSE, _, r) => r
       case n: Node[ScriptToken] =>
-        Node(n.v, n.l, loop(n.r, n))
+        Node(n.v, n.l, loop(n.r))
     }
     tree match {
       case Empty => Empty
       case l: Leaf[ScriptToken] => l
       case n: Node[ScriptToken] =>
-        val result = Node(n.v, n.l, loop(n.r, n))
+        val result = Node(n.v, n.l, loop(n.r))
         result
     }
   }

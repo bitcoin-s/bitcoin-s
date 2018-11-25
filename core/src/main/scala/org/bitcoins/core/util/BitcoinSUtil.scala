@@ -75,7 +75,7 @@ trait BitcoinSUtil {
    */
   private def addPadding(charactersNeeded: Int, hex: String): String = {
     val paddingNeeded = charactersNeeded - hex.length
-    val padding = for { i <- 0 until paddingNeeded } yield "0"
+    val padding = Vector.fill(paddingNeeded)("0")
     val paddedHex = padding.mkString + hex
     paddedHex
   }

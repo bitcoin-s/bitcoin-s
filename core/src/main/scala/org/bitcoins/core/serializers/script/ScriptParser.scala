@@ -50,8 +50,8 @@ sealed abstract class ScriptParser extends Factory[List[ScriptToken]] {
       operations match {
         //for parsing strings like 'Az', need to remove single quotes
         //example: [[https://github.com/bitcoin/bitcoin/blob/master/src/test/data/script_valid.json#L24]]
-        case h +: t if (h.size > 0 && h.head == ''' && h.last == ''') =>
-          val strippedQuotes = h.replace("'", "")
+        case h +: t if (h.size > 0 && h.head == '\'' && h.last == '\'') =>
+          val strippedQuotes = h.replace("\'", "")
           if (strippedQuotes.size == 0) {
             loop(t, OP_0.bytes ++ accum)
           } else {

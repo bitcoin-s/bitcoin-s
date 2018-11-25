@@ -13,13 +13,13 @@ trait BinaryTree[+T] {
 
   def left: Option[BinaryTree[T]] = this match {
     case n: Node[T] => Some(n.l)
-    case l: Leaf[T] => None
+    case _: Leaf[T] => None
     case Empty => None
   }
 
   def right: Option[BinaryTree[T]] = this match {
     case n: Node[T] => Some(n.r)
-    case l: Leaf[T] => None
+    case _: Leaf[T] => None
     case Empty => None
   }
 
@@ -55,7 +55,7 @@ trait BinaryTree[+T] {
   /** Checks if the [[BinaryTree]] contains a certain element. */
   def contains[T](t: T)(f: T => Boolean = (x: T) => x == t)(implicit tree: BinaryTree[T] = this): Boolean = findFirstDFS(t)(f)(tree).isDefined
 
-  def count[T](t: T)(implicit tree: BinaryTree[T] = this): Int = toSeq.count(_ == t)
+  def count[T](t: T): Int = toSeq.count(_ == t)
 
   /**
    * Inserts an element into one of the two branches in a [[BinaryTree]].

@@ -156,7 +156,7 @@ sealed abstract class BloomFilter extends NetworkElement {
           //constants that matched inside of our current filter
           val constants = scriptPubKey.asm.filter(c => c.isInstanceOf[ScriptConstant] && contains(c.bytes))
           //we need to create a new outpoint in the filter if a constant in the scriptPubKey matched
-          constants.map(c => TransactionOutPoint(transaction.txId, UInt32(index)))
+          constants.map(_ => TransactionOutPoint(transaction.txId, UInt32(index)))
       }
 
       logger.debug("Inserting outPoints: " + outPoints)
@@ -189,18 +189,18 @@ sealed abstract class BloomFilter extends NetworkElement {
         logger.debug("Found constant in bloom filter: " + h._1.hex)
         val filter = accumFilter.insert(TransactionOutPoint(txId, UInt32(h._2)))
         loop(t, filter)
-      case h +: t => loop(t, accumFilter)
+      case _ +: t => loop(t, accumFilter)
       case Nil => accumFilter
     }
     val p2pkOrMultiSigScriptPubKeys: Seq[(ScriptPubKey, Int)] = scriptPubKeysWithIndex.filter {
-      case (s, index) => s.isInstanceOf[P2PKScriptPubKey] ||
+      case (s, _) => s.isInstanceOf[P2PKScriptPubKey] ||
         s.isInstanceOf[MultiSignatureScriptPubKey]
     }
     //gets rid of all asm operations in the scriptPubKey except for the constants
     val scriptConstantsWithOutputIndex: Seq[(ScriptToken, Int)] = p2pkOrMultiSigScriptPubKeys.flatMap {
       case (scriptPubKey, index) =>
         (scriptPubKey.asm.map(token => (token, index))).filter {
-          case (token, index) => token.isInstanceOf[ScriptConstant]
+          case (token, _) => token.isInstanceOf[ScriptConstant]
         }
     }
     loop(scriptConstantsWithOutputIndex, this)

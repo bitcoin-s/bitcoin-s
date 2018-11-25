@@ -461,7 +461,7 @@ object Address extends AddressFactory[Address] {
     BitcoinAddress.fromString(str)
   }
   override def fromScriptPubKey(spk: ScriptPubKey, network: NetworkParameters): Try[Address] = network match {
-    case bitcoinNetwork: BitcoinNetwork => BitcoinAddress.fromScriptPubKey(spk, network)
+    case _: BitcoinNetwork => BitcoinAddress.fromScriptPubKey(spk, network)
   }
   def apply(spk: ScriptPubKey, networkParameters: NetworkParameters): Try[Address] = {
     fromScriptPubKey(spk, networkParameters)

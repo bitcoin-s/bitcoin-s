@@ -54,7 +54,7 @@ sealed abstract class P2PKSigner extends BitcoinSigner {
       val flags = Policy.standardFlags
 
       val signed: Future[TxSigComponent] = spk match {
-        case p2wshSPK: P2WSHWitnessSPKV0 =>
+        case _: P2WSHWitnessSPKV0 =>
           val wtx = unsignedTx match {
             case btx: BaseTransaction => WitnessTransaction(btx.version, btx.inputs,
               btx.outputs, btx.lockTime, EmptyWitness)
@@ -142,7 +142,7 @@ sealed abstract class P2PKHSigner extends BitcoinSigner {
       val flags = Policy.standardFlags
 
       val signed: Future[TxSigComponent] = spk match {
-        case p2wshSPK: P2WSHWitnessSPKV0 =>
+        case _: P2WSHWitnessSPKV0 =>
           val wtx = unsignedTx match {
             case btx: BaseTransaction => WitnessTransaction(btx.version, btx.inputs,
               btx.outputs, btx.lockTime, EmptyWitness)
@@ -259,7 +259,7 @@ sealed abstract class MultiSigSigner extends BitcoinSigner {
     val flags = Policy.standardFlags
 
     val signed: Future[TxSigComponent] = spk match {
-      case p2wshSPK: P2WSHWitnessSPKV0 =>
+      case _: P2WSHWitnessSPKV0 =>
         val wtx = unsignedTx match {
           case btx: BaseTransaction => WitnessTransaction(btx.version, btx.inputs,
             btx.outputs, btx.lockTime, EmptyWitness)
