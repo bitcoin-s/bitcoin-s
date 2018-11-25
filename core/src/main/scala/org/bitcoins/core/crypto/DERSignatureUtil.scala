@@ -71,7 +71,7 @@ sealed abstract class DERSignatureUtil {
     //https://stackoverflow.com/questions/2409618/how-do-i-decode-a-der-encoded-string-in-java
     val seq: DLSequence = Try(asn1InputStream.readObject.asInstanceOf[DLSequence]) match {
       case Success(seq) => seq
-      case Failure(err) => new DLSequence()
+      case Failure(_) => new DLSequence()
     }
     val default = new ASN1Integer(0)
     val r: ASN1Integer = Try(seq.getObjectAt(0).asInstanceOf[ASN1Integer]) match {

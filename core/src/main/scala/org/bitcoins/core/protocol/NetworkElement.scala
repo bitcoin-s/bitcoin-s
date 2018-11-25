@@ -1,6 +1,6 @@
 package org.bitcoins.core.protocol
 
-import org.bitcoins.core.util.{ BitcoinSLogger, BitcoinSUtil }
+import org.bitcoins.core.util.BitcoinSLogger
 import scodec.bits.ByteVector
 
 /**

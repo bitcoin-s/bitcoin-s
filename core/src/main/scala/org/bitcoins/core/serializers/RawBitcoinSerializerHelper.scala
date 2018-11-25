@@ -5,8 +5,6 @@ import org.bitcoins.core.protocol.{ CompactSizeUInt, NetworkElement }
 import scodec.bits.ByteVector
 
 import scala.annotation.tailrec
-import scala.collection.immutable.VectorBuilder
-import scala.collection.mutable
 
 /**
  * Created by chris on 2/18/16.

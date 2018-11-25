@@ -74,7 +74,7 @@ sealed abstract class Transaction extends NetworkElement {
   /** Determines if this transaction is a coinbase transaction. */
   def isCoinbase: Boolean = inputs.size match {
     case 1 => inputs.head match {
-      case coinbase: CoinbaseInput => true
+      case _: CoinbaseInput => true
       case _: TransactionInput => false
     }
     case _: Int => false
@@ -156,7 +156,7 @@ object Transaction extends Factory[Transaction] {
     wtxTry match {
       case Success(wtx) =>
         wtx
-      case Failure(f) =>
+      case Failure(_) =>
         val btx = RawBaseTransactionParser.read(bytes)
         btx
     }

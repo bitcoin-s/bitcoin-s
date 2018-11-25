@@ -262,7 +262,7 @@ sealed abstract class ECPublicKey extends BaseECKey {
       signer.init(false, publicKeyParams)
       signature match {
         case EmptyDigitalSignature => signer.verifySignature(data.toArray, java.math.BigInteger.valueOf(0), java.math.BigInteger.valueOf(0))
-        case sig: ECDigitalSignature =>
+        case _: ECDigitalSignature =>
           logger.debug("Public key bytes: " + BitcoinSUtil.encodeHex(bytes))
           val rBigInteger: BigInteger = new BigInteger(signature.r.toString())
           val sBigInteger: BigInteger = new BigInteger(signature.s.toString())

@@ -37,7 +37,7 @@ sealed abstract class Base58 {
     val ones: String = bytes.toSeq.takeWhile(_ == 0).map(_ => '1').mkString
     @tailrec
     def loop(current: BigInt, str: String): String = current match {
-      case a if current == BigInt(0) =>
+      case _ if current == BigInt(0) =>
         ones + str.reverse
       case _: BigInt =>
         val quotient: BigInt = current / BigInt(58L)
@@ -77,7 +77,7 @@ sealed abstract class Base58 {
   /** Determines if a string is a valid [[Base58Type]] string. */
   def isValid(base58: String): Boolean = validityChecks(base58) match {
     case Success(bool) => bool
-    case Failure(exception) => false
+    case Failure(_) => false
   }
 
   /**
