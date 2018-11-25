@@ -31,7 +31,7 @@ trait Merkle extends BitcoinSLogger {
   def computeMerkleRoot(transactions: Seq[Transaction]): DoubleSha256Digest = transactions match {
     case Nil => throw new IllegalArgumentException("We cannot have zero transactions in the block. There always should be ATLEAST one - the coinbase tx")
     case h +: Nil => h.txId
-    case h +: t =>
+    case _ +: _ =>
       val leafs = transactions.map(tx => Leaf(tx.txId))
       val merkleTree = build(leafs, Nil)
       merkleTree.value.get

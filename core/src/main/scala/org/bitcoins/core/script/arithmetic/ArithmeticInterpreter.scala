@@ -56,7 +56,7 @@ sealed abstract class ArithmeticInterpreter {
   /** If the input is 0 or 1, it is flipped. Otherwise the output will be 0. */
   def opNot(program: ScriptProgram): ScriptProgram = {
     require(program.script.headOption.contains(OP_NOT), "Script top must be OP_NOT")
-    performUnaryArithmeticOperation(program, x => if (program.stackTopIsFalse) OP_TRUE else OP_FALSE)
+    performUnaryArithmeticOperation(program, _ => if (program.stackTopIsFalse) OP_TRUE else OP_FALSE)
   }
 
   /** Returns 0 if the input is 0. 1 otherwise. */
@@ -250,7 +250,7 @@ sealed abstract class ArithmeticInterpreter {
           val newProgram = ScriptProgram(program, interpretedNumber :: program.stack.tail, ScriptProgram.Stack)
           performUnaryArithmeticOperation(newProgram, op)
         }
-      case Some(s: ScriptToken) =>
+      case Some(_: ScriptToken) =>
         //pretty sure that an error is thrown inside of CScriptNum which in turn is caught by interpreter.cpp here
         //https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L999-L1002
         logger.error("Stack top must be a script number/script constant to perform an arithmetic operation")
@@ -284,7 +284,7 @@ sealed abstract class ArithmeticInterpreter {
             val newStackTop = op(x, y)
             ScriptProgram(program, newStackTop :: program.stack.tail.tail, program.script.tail)
           }
-        case (x: ScriptConstant, y: ScriptNumber) =>
+        case (x: ScriptConstant, _: ScriptNumber) =>
           //interpret x as a number
           val interpretedNumber = ScriptNumber(x.hex)
           val newProgram = ScriptProgram(program, interpretedNumber :: program.stack.tail, ScriptProgram.Stack)
@@ -299,7 +299,7 @@ sealed abstract class ArithmeticInterpreter {
           val interpretedNumberY = ScriptNumber(y.hex)
           val newProgram = ScriptProgram(program, interpretedNumberX :: interpretedNumberY :: program.stack.tail.tail, ScriptProgram.Stack)
           performBinaryArithmeticOperation(newProgram, op)
-        case (x: ScriptToken, y: ScriptToken) =>
+        case (_: ScriptToken, _: ScriptToken) =>
           //pretty sure that an error is thrown inside of CScriptNum which in turn is caught by interpreter.cpp here
           //https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L999-L1002
           logger.error("The top two stack items must be script numbers to perform an arithmetic operation")
@@ -369,7 +369,7 @@ sealed abstract class ArithmeticInterpreter {
         val interpretedNumberX = ScriptNumber(x.hex)
         val interpretedNumberY = ScriptNumber(y.hex)
         (interpretedNumberX, interpretedNumberY)
-      case (x: ScriptToken, y: ScriptToken) =>
+      case (_: ScriptToken, _: ScriptToken) =>
         //pretty sure that an error is thrown inside of CScriptNum which in turn is caught by interpreter.cpp here
         //https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L999-L1002
         logger.error("The top two stack items must be script numbers to perform an arithmetic operation")

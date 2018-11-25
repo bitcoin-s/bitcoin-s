@@ -99,7 +99,7 @@ object P2PKHScriptSignature extends ScriptFactory[P2PKHScriptSignature] {
 
   /** Determines if the given asm matches a [[P2PKHScriptSignature]] */
   def isP2PKHScriptSig(asm: Seq[ScriptToken]): Boolean = asm match {
-    case List(w: BytesToPushOntoStack, x: ScriptConstant, y: BytesToPushOntoStack,
+    case Seq(_: BytesToPushOntoStack, _: ScriptConstant, _: BytesToPushOntoStack,
       z: ScriptConstant) =>
       if (ECPublicKey.isFullyValid(z.bytes)) true
       else !P2SHScriptSignature.isRedeemScript(z)
@@ -138,7 +138,7 @@ sealed trait P2SHScriptSignature extends ScriptSignature {
     } else {
       val asmWithoutRedeemScriptAndPushOp: Try[Seq[ScriptToken]] = Try {
         asm(asm.size - 2) match {
-          case b: BytesToPushOntoStack => asm.dropRight(2)
+          case _: BytesToPushOntoStack => asm.dropRight(2)
           case _ => asm.dropRight(3)
         }
       }
@@ -170,7 +170,7 @@ sealed trait P2SHScriptSignature extends ScriptSignature {
    * the first part is the digital signatures
    * the second part is the redeem script
    */
-  def splitAtRedeemScript(asm: Seq[ScriptToken]): (Seq[ScriptToken], Seq[ScriptToken]) = {
+  def splitAtRedeemScript: (Seq[ScriptToken], Seq[ScriptToken]) = {
     (scriptSignatureNoRedeemScript.asm, redeemScript.asm)
   }
 
@@ -325,7 +325,7 @@ object P2PKScriptSignature extends ScriptFactory[P2PKScriptSignature] {
 
   /** P2PK scriptSigs always have the pattern [pushop, digitalSignature] */
   def isP2PKScriptSignature(asm: Seq[ScriptToken]): Boolean = asm match {
-    case List(w: BytesToPushOntoStack, x: ScriptConstant) => true
+    case Seq(_: BytesToPushOntoStack, _: ScriptConstant) => true
     case _ => false
   }
 }

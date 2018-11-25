@@ -113,7 +113,7 @@ sealed abstract class TransactionSignatureSerializer {
             }
 
           case _: SIGHASH_ALL =>
-            val sigHashAllTx: Transaction = sigHashAll(txWithInputSigsRemoved, inputIndex)
+            val sigHashAllTx: Transaction = sigHashAll(txWithInputSigsRemoved)
             sigHashAllTx.bytes ++ sigHashBytes
 
           case _: SIGHASH_ANYONECANPAY =>
@@ -121,7 +121,7 @@ sealed abstract class TransactionSignatureSerializer {
             txWithInputsRemoved.bytes ++ sigHashBytes
 
           case _: SIGHASH_ALL_ANYONECANPAY =>
-            val sigHashAllTx = sigHashAll(txWithInputSigsRemoved, inputIndex)
+            val sigHashAllTx = sigHashAll(txWithInputSigsRemoved)
             val sigHashAllAnyoneCanPayTx = sigHashAnyoneCanPay(sigHashAllTx, inputWithConnectedScript)
             sigHashAllAnyoneCanPayTx.bytes ++ sigHashBytes
 
@@ -245,7 +245,7 @@ sealed abstract class TransactionSignatureSerializer {
   }
 
   /** Executes the [[SIGHASH_ALL]] procedure on a spending transaction at inputIndex. */
-  private def sigHashAll(spendingTransaction: Transaction, inputIndex: UInt32): Transaction = {
+  private def sigHashAll(spendingTransaction: Transaction): Transaction = {
     spendingTransaction
   }
 

@@ -155,7 +155,7 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
       case size if (size <= 75) => token.bytes.size == pushOp.toLong
       case size if (size <= 255) => pushOp == OP_PUSHDATA1
       case size if (size <= 65535) => pushOp == OP_PUSHDATA2
-      case size =>
+      case _: Long =>
         //default case is true because we have to use the largest push op as possible which is OP_PUSHDATA4
         true
     }
@@ -313,12 +313,12 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
 
           P2PKHScriptPubKey(p2wpkh.pubKeyHash).asm
 
-        case p2wsh: P2WSHWitnessSPKV0 =>
+        case _: P2WSHWitnessSPKV0 =>
           val wtxSig = txSignatureComponent.asInstanceOf[WitnessTxSigComponentP2SH]
 
           val p2wshRedeem = ScriptPubKey.fromAsmBytes(wtxSig.witness.stack.head)
           p2wshRedeem.asm
-        case redeem: ScriptPubKey =>
+        case _: ScriptPubKey =>
 
           val sigsRemoved = removeSignaturesFromScript(p2shScriptSig.signatures, p2shScriptSig.redeemScript.asm)
           sigsRemoved

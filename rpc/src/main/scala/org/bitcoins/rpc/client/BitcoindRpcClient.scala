@@ -47,8 +47,8 @@ class BitcoindRpcClient(instance: BitcoindInstance)(
     // Ping successful if no error can be parsed from the payload
     val result = Try(Await.result(payloadF.map { payload =>
       (payload \ errorKey).validate[RpcError] match {
-        case res: JsSuccess[RpcError] => false
-        case res: JsError => true
+        case _: JsSuccess[RpcError] => false
+        case _: JsError => true
       }
     }, 2.seconds))
 

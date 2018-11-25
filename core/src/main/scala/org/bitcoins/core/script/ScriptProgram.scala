@@ -96,7 +96,7 @@ object ScriptProgram extends BitcoinSLogger {
     case program: ExecutionInProgressScriptProgram =>
       ExecutionInProgressScriptProgram(program.txSignatureComponent, program.stack, program.script, program.originalScript,
         program.altStack, flags, program.lastCodeSeparator)
-    case program: ExecutedScriptProgram =>
+    case _: ExecutedScriptProgram =>
       throw new RuntimeException("Cannot update the script flags on a program that has been executed")
   }
 
@@ -110,7 +110,7 @@ object ScriptProgram extends BitcoinSLogger {
           case program: ExecutionInProgressScriptProgram =>
             ExecutionInProgressScriptProgram(program.txSignatureComponent, tokens.toList, program.script, program.originalScript,
               program.altStack, program.flags, program.lastCodeSeparator)
-          case program: ExecutedScriptProgram =>
+          case _: ExecutedScriptProgram =>
             throw new RuntimeException("Cannot update stack for program that has been fully executed")
         }
       case Script =>
@@ -121,7 +121,7 @@ object ScriptProgram extends BitcoinSLogger {
           case program: ExecutionInProgressScriptProgram =>
             ExecutionInProgressScriptProgram(program.txSignatureComponent, program.stack, tokens.toList, program.originalScript,
               program.altStack, program.flags, program.lastCodeSeparator)
-          case program: ExecutedScriptProgram =>
+          case _: ExecutedScriptProgram =>
             throw new RuntimeException("Cannot update the script for a program that has been fully executed")
         }
       case AltStack => oldProgram match {
@@ -131,7 +131,7 @@ object ScriptProgram extends BitcoinSLogger {
         case program: ExecutionInProgressScriptProgram =>
           ExecutionInProgressScriptProgram(program.txSignatureComponent, program.stack, program.script, program.originalScript,
             tokens.toList, program.flags, program.lastCodeSeparator)
-        case program: ExecutedScriptProgram =>
+        case _: ExecutedScriptProgram =>
           throw new RuntimeException("Cannot update the alt stack for a program that has been fully executed")
       }
 
@@ -142,7 +142,7 @@ object ScriptProgram extends BitcoinSLogger {
         case program: ExecutionInProgressScriptProgram =>
           ExecutionInProgressScriptProgram(program.txSignatureComponent, program.stack, program.script, tokens.toList,
             program.altStack, program.flags, program.lastCodeSeparator)
-        case program: ExecutedScriptProgram =>
+        case _: ExecutedScriptProgram =>
           throw new RuntimeException("Cannot update the original script for a program that has been fully executed")
       }
 
@@ -178,8 +178,11 @@ object ScriptProgram extends BitcoinSLogger {
   }
 
   /** Updates the [[Stack]], [[Script]], [[AltStack]] of the given [[ScriptProgram]]. */
-  def apply(oldProgram: ScriptProgram, stack: Seq[ScriptToken], script: Seq[ScriptToken], altStack: Seq[ScriptToken],
-    updateIndicator: UpdateIndicator): ScriptProgram = {
+  def apply(
+    oldProgram: ScriptProgram,
+    stack: Seq[ScriptToken],
+    script: Seq[ScriptToken],
+    altStack: Seq[ScriptToken]): ScriptProgram = {
     val updatedProgramStack = ScriptProgram(oldProgram, stack, Stack)
     val updatedProgramScript = ScriptProgram(updatedProgramStack, script, Script)
     val updatedProgramAltStack = ScriptProgram(updatedProgramScript, altStack, AltStack)
