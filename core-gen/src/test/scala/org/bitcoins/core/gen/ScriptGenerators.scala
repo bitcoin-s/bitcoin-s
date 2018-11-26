@@ -520,9 +520,9 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
     keys: Seq[ECPublicKey]): LockTimeScriptSignature = {
 
     val nestedScriptSig = lock.nestedScriptPubKey match {
-      case p2pk: P2PKScriptPubKey => P2PKScriptSignature(sigs.head)
-      case p2pkh: P2PKHScriptPubKey => P2PKHScriptSignature(sigs.head, keys.head)
-      case multisig: MultiSignatureScriptPubKey => MultiSignatureScriptSignature(sigs)
+      case _: P2PKScriptPubKey => P2PKScriptSignature(sigs.head)
+      case _: P2PKHScriptPubKey => P2PKHScriptSignature(sigs.head, keys.head)
+      case _: MultiSignatureScriptPubKey => MultiSignatureScriptSignature(sigs)
       case EmptyScriptPubKey => CSVScriptSignature(EmptyScriptSignature)
       case _: WitnessScriptPubKeyV0 | _: UnassignedWitnessScriptPubKey =>
         //bare segwit always has an empty script sig, see BIP141

@@ -117,7 +117,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     }
 
     RpcUtil.awaitConditionF(
-      conditionF = isConnected,
+      conditionF = () => isConnected(),
       duration = duration,
       maxTries = maxTries)
   }
@@ -138,7 +138,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     }
 
     RpcUtil.awaitConditionF(
-      conditionF = isSynced,
+      conditionF = () => isSynced(),
       duration = duration,
       maxTries = maxTries)
   }
@@ -159,7 +159,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     }
 
     RpcUtil.awaitConditionF(
-      conditionF = isSameBlockHeight,
+      conditionF = () => isSameBlockHeight(),
       duration = duration,
       maxTries = maxTries)
   }
@@ -180,7 +180,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     }
 
     RpcUtil.awaitConditionF(
-      conditionF = isDisconnected,
+      conditionF = () => isDisconnected(),
       duration = duration,
       maxTries = maxTries)
   }
@@ -240,6 +240,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     client2.stop()
     deleteTmpDir(client1.getDaemon.authCredentials.datadir)
     deleteTmpDir(client2.getDaemon.authCredentials.datadir)
+    ()
   }
 
   def hasSeenBlock(client1: BitcoindRpcClient, hash: DoubleSha256Digest)(implicit ec: ExecutionContext): Future[Boolean] = {
@@ -264,13 +265,13 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
 
     val blocksToGenerate = 102
     //fund the wallet by generating 102 blocks, need this to get over coinbase maturity
-    val blockGen = rpc.generate(blocksToGenerate)
+    val _ = rpc.generate(blocksToGenerate)
 
     def isBlocksGenerated(): Future[Boolean] = {
       rpc.getBlockCount.map(_ >= blocksToGenerate)
     }
 
-    RpcUtil.awaitConditionF(isBlocksGenerated)
+    RpcUtil.awaitConditionF(() => isBlocksGenerated())
 
     rpc
   }

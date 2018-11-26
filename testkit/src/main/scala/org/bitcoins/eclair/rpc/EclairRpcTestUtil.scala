@@ -20,7 +20,7 @@ import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 
 trait EclairTestUtil extends BitcoinSLogger {
-  import collection.JavaConversions._
+  import collection.JavaConverters._
 
   def randomDirName: String =
     0.until(5).map(_ => scala.util.Random.alphanumeric.head).mkString
@@ -79,7 +79,7 @@ trait EclairTestUtil extends BitcoinSLogger {
 
         "eclair.alias" -> "suredbits")
     }
-    val c = ConfigFactory.parseMap(configMap)
+    val c = ConfigFactory.parseMap(configMap.asJava)
     c
   }
 
@@ -116,7 +116,7 @@ trait EclairTestUtil extends BitcoinSLogger {
   }
 
   /** Starts the given bitcoind instance and then starts the eclair instance */
-  def eclairInstance(bitcoindRpc: BitcoindRpcClient)(implicit system: ActorSystem): EclairInstance = {
+  def eclairInstance(bitcoindRpc: BitcoindRpcClient): EclairInstance = {
     val datadir = eclairDataDir(bitcoindRpc, false)
     eclairInstance(datadir)
   }
@@ -138,8 +138,9 @@ trait EclairTestUtil extends BitcoinSLogger {
     val randInstance = randomEclairInstance(bitcoindRpc)
     val eclairRpc = new EclairRpcClient(randInstance)
     eclairRpc.start()
+
     RpcUtil.awaitCondition(
-      eclairRpc.isStarted,
+      () => eclairRpc.isStarted(),
       duration = 1.seconds)
 
     eclairRpc
@@ -192,7 +193,7 @@ trait EclairTestUtil extends BitcoinSLogger {
     }
 
     RpcUtil.awaitConditionF(
-      conditionF = isState,
+      conditionF = () => isState(),
       duration = 1.seconds)
 
     logger.debug(s"${chanId} has successfully entered the ${state} state")
@@ -221,11 +222,11 @@ trait EclairTestUtil extends BitcoinSLogger {
     otherClient.start()
 
     RpcUtil.awaitCondition(
-      condition = client.isStarted,
+      condition = () => client.isStarted(),
       duration = 1.second)
 
     RpcUtil.awaitCondition(
-      condition = otherClient.isStarted,
+      condition = () => otherClient.isStarted(),
       duration = 1.second)
 
     logger.debug(s"Both clients started")
@@ -257,7 +258,7 @@ trait EclairTestUtil extends BitcoinSLogger {
 
     logger.debug(s"Awaiting connection between clients")
     RpcUtil.awaitConditionF(
-      conditionF = isConnected,
+      conditionF = () => isConnected(),
       duration = 1.second)
     logger.debug(s"Successfully connected two clients")
 
