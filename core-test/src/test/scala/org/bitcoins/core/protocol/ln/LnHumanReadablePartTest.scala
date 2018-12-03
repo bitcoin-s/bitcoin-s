@@ -8,7 +8,7 @@ import org.scalatest.{ FlatSpec, MustMatchers }
 import scala.util.Try
 
 class LnHumanReadablePartTest extends FlatSpec with MustMatchers {
-  val mBtc = MilliBitcoins(1000)
+  val mBtc = MilliBitcoins(1)
   val mBtcOpt = Some(mBtc)
   it must "match the correct hrp with the correct network" in {
     LnHumanReadablePart(MainNet).get must be(LnHumanReadablePart(LnBitcoinMainNet))
@@ -21,9 +21,9 @@ class LnHumanReadablePartTest extends FlatSpec with MustMatchers {
   }
 
   it must "correctly serialize the hrp to string" in {
-    LnHumanReadablePart(LnBitcoinMainNet, mBtcOpt).toString must be("lnbc1000m")
-    LnHumanReadablePart(LnBitcoinTestNet, mBtcOpt).toString must be("lntb1000m")
-    LnHumanReadablePart(LnBitcoinRegTest, mBtcOpt).toString must be("lnbcrt1000m")
+    LnHumanReadablePart(LnBitcoinMainNet, mBtcOpt).toString must be("lnbc1m")
+    LnHumanReadablePart(LnBitcoinTestNet, mBtcOpt).toString must be("lntb1m")
+    LnHumanReadablePart(LnBitcoinRegTest, mBtcOpt).toString must be("lnbcrt1m")
 
     LnHumanReadablePart(LnBitcoinMainNet).toString must be("lnbc")
     LnHumanReadablePart(LnBitcoinTestNet).toString must be("lntb")
@@ -47,9 +47,9 @@ class LnHumanReadablePartTest extends FlatSpec with MustMatchers {
     LnHumanReadablePart.fromString("lntb").get must be(LnHumanReadablePart(LnBitcoinTestNet))
     LnHumanReadablePart.fromString("lnbcrt").get must be(LnHumanReadablePart(LnBitcoinRegTest))
 
-    LnHumanReadablePart.fromString("lnbc1000m").get must be(LnHumanReadablePart(LnBitcoinMainNet, mBtcOpt))
-    LnHumanReadablePart.fromString("lntb1000m").get must be(LnHumanReadablePart(LnBitcoinTestNet, mBtcOpt))
-    LnHumanReadablePart.fromString("lnbcrt1000m").get must be(LnHumanReadablePart(LnBitcoinRegTest, mBtcOpt))
+    LnHumanReadablePart.fromString("lnbc1m").get must be(LnHumanReadablePart(LnBitcoinMainNet, mBtcOpt))
+    LnHumanReadablePart.fromString("lntb1m").get must be(LnHumanReadablePart(LnBitcoinTestNet, mBtcOpt))
+    LnHumanReadablePart.fromString("lnbcrt1m").get must be(LnHumanReadablePart(LnBitcoinRegTest, mBtcOpt))
   }
 
   it must "fail to deserialize hrp from invalid string" in {

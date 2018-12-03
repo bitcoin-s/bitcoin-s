@@ -287,6 +287,11 @@ sealed abstract class ECPublicKey extends BaseECKey {
     } else this
   }
 
+  /** Decodes a [[org.bitcoins.core.crypto.ECPublicKey]] in bitcoin-s
+    * to a [[ECPoint]] data structure that is internal to the
+    * bouncy castle library
+    * @return
+    */
   def toPoint: ECPoint = {
     CryptoParams.curve.getCurve.decodePoint(bytes.toArray)
   }
@@ -325,6 +330,13 @@ object ECPublicKey extends Factory[ECPublicKey] {
    */
   def isValid(bytes: ByteVector): Boolean = bytes.nonEmpty
 
+
+  /** Creates a [[org.bitcoins.core.crypto.ECPublicKey]] from the [[org.bouncycastle.math.ec.ECPoint]]
+    * data structure used internally inside  of bouncy castle
+    * @param p
+    * @param isCompressed
+    * @return
+    */
   def fromPoint(p: ECPoint, isCompressed: Boolean = true): ECPublicKey = {
     val bytes = p.getEncoded(isCompressed)
     ECPublicKey.fromBytes(ByteVector(bytes))

@@ -1,7 +1,7 @@
 package org.bitcoins.core.protocol.ln
 
 import org.bitcoins.core.number.Int64
-import org.bitcoins.core.protocol.ln.currency.MilliBitcoins
+import org.bitcoins.core.protocol.ln.currency.{MilliSatoshis}
 
 sealed abstract class LnPolicy {
 
@@ -11,7 +11,7 @@ sealed abstract class LnPolicy {
    * This is a self imposed limit, and is subject to change.
    * Please see BOLT #2: https://github.com/lightningnetwork/lightning-rfc/blob/master/02-peer-protocol.md#adding-an-htlc-update_add_htlc
    */
-  lazy val maxAmountMSat: MilliBitcoins = MilliBitcoins(4294967295L)
+  val maxAmountMSat: MilliSatoshis = MilliSatoshis(4294967295L)
 
   val milliMultiplier: BigDecimal = BigDecimal(0.001)
   val microMultiplier: BigDecimal = BigDecimal(0.000001)

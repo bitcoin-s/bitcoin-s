@@ -1,9 +1,10 @@
 package org.bitcoins.core.protocol.ln.currency
 
 import org.bitcoins.core.gen.CurrencyUnitGenerator
+import org.bitcoins.core.gen.ln.LnCurrencyUnitGen
 import org.scalacheck.Gen
 import org.scalatest.prop.PropertyChecks
-import org.scalatest.{ FlatSpec, MustMatchers }
+import org.scalatest.{FlatSpec, MustMatchers}
 import org.slf4j.LoggerFactory
 
 class MilliSatoshisTest extends FlatSpec with MustMatchers {
@@ -28,11 +29,9 @@ class MilliSatoshisTest extends FlatSpec with MustMatchers {
   }
 
   it must "covert from a ln currency unit -> millisatoshis -> lnCurrencyUnit" in {
-    def gen(): Gen[Long] = {
-      Gen.choose(0, PicoBitcoins.max.toLong)
-    }
 
-    PropertyChecks.forAll(gen) { underlying =>
+    PropertyChecks.forAll(LnCurrencyUnitGen.positivePicoBitcoin) { pb =>
+      val underlying = pb.toBigInt
       //we lose the last digit of precision converting
       //PicoBitcoins -> MilliSatoshis
       //this is the expected answer

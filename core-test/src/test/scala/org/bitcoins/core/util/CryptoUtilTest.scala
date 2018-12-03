@@ -59,7 +59,19 @@ class CryptoUtilTest extends FlatSpec with MustMatchers {
     CryptoUtil.sha256Hash160(hex).flip.flip.hex must be(expected)
   }
 
-  it must "recover the two public keys used to sign a message" in {
+  it must "recover the compressed and uncompressed public key from a message" in {
+    PropertyChecks.forAll(CryptoGenerators.privateKey, CryptoGenerators.sha256Digest) {
+      case (privKey, hash) =>
+        val pubKey = privKey.publicKey
+        val uncompressed = pubKey.decompressed
+        val message = hash.bytes
+        val sig = privKey.sign(message)
+        val (recovPub1, recovPub2) = CryptoUtil.recoverPublicKey(sig, message)
+        assert(recovPub1 == pubKey || recovPub2 == pubKey)
+    }
+  }
+
+  it must "be able to recover and verify a siganture for a message" in {
     PropertyChecks.forAll(CryptoGenerators.privateKey, CryptoGenerators.sha256Digest) {
       case (privKey, hash) =>
         val message = hash.bytes
@@ -68,4 +80,6 @@ class CryptoUtilTest extends FlatSpec with MustMatchers {
         assert(recovPub1.verify(message, sig) && recovPub2.verify(message, sig))
     }
   }
+
+
 }

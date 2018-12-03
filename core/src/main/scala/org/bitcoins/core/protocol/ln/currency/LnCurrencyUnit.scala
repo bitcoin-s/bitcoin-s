@@ -52,7 +52,7 @@ sealed abstract class LnCurrencyUnit extends NetworkElement {
 
   override def bytes: ByteVector = Int64(toPicoBitcoinValue).bytes.reverse
 
-  def fiveBitEncoding: Vector[UInt5] = {
+  def toUInt5s: Vector[UInt5] = {
     val u5s = Bech32.from8bitTo5bit(bytes)
     u5s
   }
@@ -87,6 +87,10 @@ sealed abstract class LnCurrencyUnit extends NetworkElement {
 
   def toMSat: MilliSatoshis = MilliSatoshis.fromPico(toPicoBitcoins)
 
+  /** This returns the string encoding defined in BOLT11
+    * For instance, 100 [[PicoBitcoins]] would appear as "100p"
+    * @return
+    */
   def toEncodedString: String = {
     toBigInt + character.toString()
   }
@@ -231,8 +235,10 @@ object LnCurrencyUnits {
         case "u" => Try(MicroBitcoins(amount.get))
         case "n" => Try(NanoBitcoins(amount.get))
         case "p" => Try(PicoBitcoins(amount.get))
-        case _ => Failure(new IllegalArgumentException(s"LnCurrencyUnit not found. Expected MilliBitcoins (m), MicroBitcoins (u), NanoBitcoins (n), or PicoBitcoins (p), got: $unit"))
+        case _: String => Failure(new IllegalArgumentException(s"LnCurrencyUnit not found. Expected MilliBitcoins (m), MicroBitcoins (u), NanoBitcoins (n), or PicoBitcoins (p), got: $unit"))
       }
-    } else { Failure(new IllegalArgumentException(s"Could not convert amount to valid number, got: $amount")) }
+    } else {
+      Failure(new IllegalArgumentException(s"Could not convert amount to valid number, got: $amount"))
+    }
   }
 }

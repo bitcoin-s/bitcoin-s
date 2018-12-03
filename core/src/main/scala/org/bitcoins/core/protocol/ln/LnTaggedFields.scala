@@ -15,6 +15,11 @@ import scala.collection.mutable
  */
 sealed abstract class LnTaggedFields extends NetworkElement {
 
+  require(
+    (description.nonEmpty && description.get.string.length < 640) ||
+      descriptionHash.nonEmpty,
+    "You must supply either a description hash, or a literal description that is 640 characters or less to create an invoice.")
+
   def paymentHash: LnTag.PaymentHashTag
 
   def description: Option[LnTag.DescriptionTag]
@@ -57,7 +62,7 @@ sealed abstract class LnTaggedFields extends NetworkElement {
   }
 }
 
-object LnTaggedFields extends {
+object LnTaggedFields {
   private case class InvoiceTagImpl(
     paymentHash: LnTag.PaymentHashTag,
     description: Option[LnTag.DescriptionTag],
@@ -66,12 +71,7 @@ object LnTaggedFields extends {
     expiryTime: Option[LnTag.ExpiryTimeTag],
     cltvExpiry: Option[LnTag.MinFinalCltvExpiry],
     fallbackAddress: Option[LnTag.FallbackAddressTag],
-    routingInfo: Option[LnTag.RoutingInfo]) extends LnTaggedFields {
-    require(
-      (description.nonEmpty && description.get.string.length < 640) ||
-        descriptionHash.nonEmpty,
-      "You must supply either a description hash, or a literal description that is 640 characters or less to create an invoice.")
-  }
+    routingInfo: Option[LnTag.RoutingInfo]) extends LnTaggedFields
 
   /**
    * According to BOLT11 these are the required fields in a LnInvoice
@@ -150,8 +150,16 @@ object LnTaggedFields extends {
 
     val tags = loop(u5s.toList, Vector.empty)
 
-    val paymentHashTag = tags.find(_.isInstanceOf[LnTag.PaymentHashTag])
-      .get.asInstanceOf[LnTag.PaymentHashTag]
+    val paymentHashTag = {
+
+      val fOpt = tags.find(_.isInstanceOf[LnTag.PaymentHashTag])
+      if (fOpt.isDefined) {
+        fOpt.get.asInstanceOf[LnTag.PaymentHashTag]
+      } else {
+        throw new IllegalArgumentException(s"Payment hash must be defined in a LnInvoice")
+      }
+
+    }
 
     val description = tags.find(_.isInstanceOf[LnTag.DescriptionTag])
       .map(_.asInstanceOf[LnTag.DescriptionTag])

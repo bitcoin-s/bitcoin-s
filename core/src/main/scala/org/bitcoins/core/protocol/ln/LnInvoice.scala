@@ -1,19 +1,20 @@
 package org.bitcoins.core.protocol.ln
 
-import org.bitcoins.core.crypto.{ ECPrivateKey, Sha256Digest }
-import org.bitcoins.core.number.{ UInt5, UInt64, UInt8 }
-import org.bitcoins.core.protocol.ln.currency.{ LnCurrencyUnit, PicoBitcoins }
+import org.bitcoins.core.crypto.{ECPrivateKey, Sha256Digest}
+import org.bitcoins.core.number.{UInt5, UInt64, UInt8}
+import org.bitcoins.core.protocol.ln.currency.{LnCurrencyUnit, PicoBitcoins}
 import org.bitcoins.core.protocol.ln.node.NodeId
 import org.bitcoins.core.protocol.ln.util.LnUtil
 import org.bitcoins.core.util._
 import scodec.bits.ByteVector
 
-import scala.util.{ Failure, Success, Try }
+import scala.util.{Failure, Success, Try}
 
 sealed abstract class LnInvoice {
+
   require(
-    timestamp < UInt64(NumberUtil.pow2(35)),
-    s"timestamp ${timestamp.toBigInt} < ${NumberUtil.pow2(35)}")
+    timestamp < LnInvoice.MAX_TIMESTAMP_U64,
+    s"timestamp ${timestamp.toBigInt} < ${LnInvoice.MAX_TIMESTAMP}")
 
   require(
     isValidSignature(),
@@ -73,10 +74,14 @@ sealed abstract class LnInvoice {
    * @return
    */
   def signatureData: ByteVector = {
-    LnInvoice.buildSignatureData(hrp, timestamp, lnTags)
+    val sig = LnInvoice.buildSignatureData(hrp, timestamp, lnTags)
+    sig
   }
 
-  private def sigHash: Sha256Digest = CryptoUtil.sha256(signatureData)
+  private def sigHash: Sha256Digest = {
+    val hash = CryptoUtil.sha256(signatureData)
+    hash
+  }
 
   def bech32Checksum: String = {
     val bytes: Vector[UInt5] = LnInvoice.createChecksum(hrp, data)
@@ -107,6 +112,11 @@ object LnInvoice {
     timestamp: UInt64,
     lnTags: LnTaggedFields,
     signature: LnInvoiceSignature) extends LnInvoice
+
+
+  val MAX_TIMESTAMP: BigInt = NumberUtil.pow2(35)
+
+  val MAX_TIMESTAMP_U64: UInt64 = UInt64(MAX_TIMESTAMP)
 
   def decodeTimestamp(u5s: Vector[UInt5]): UInt64 = {
     val decoded = LnUtil.decodeNumber(u5s)
@@ -164,22 +174,22 @@ object LnInvoice {
       Failure(new IllegalArgumentException("LnInvoice did not have the correct separator"))
     } else {
       val sepIndex = sepIndexes.last._2
-      val (hrp, data) = (bech32String.take(sepIndex), bech32String.splitAt(sepIndex + 1)._2)
+
+      val hrp = bech32String.take(sepIndex)
+
+      val data = bech32String.splitAt(sepIndex + 1)._2
+
       if (hrp.size < 1 || data.size < 6) {
         Failure(new IllegalArgumentException("Hrp/data too short"))
       } else {
 
         val hrpValid = LnHumanReadablePart.fromString(hrp)
 
-        //is checksum returned here?
         val dataValid = Bech32.checkDataValidity(data)
 
         val isChecksumValid: Try[Vector[UInt5]] = hrpValid.flatMap { h: LnHumanReadablePart =>
           dataValid.flatMap { d: Vector[UInt5] =>
-            if (verifyChecksum(h, d)) {
-              if (d.size < 6) Success(Vector.empty)
-              else Success(d.take(d.size - 6))
-            } else Failure(new IllegalArgumentException("Checksum was invalid on the LnInvoice"))
+            stripChecksumIfValid(h,d)
           }
         }
 
@@ -280,7 +290,7 @@ object LnInvoice {
       signature = lnInvoiceSignature)
   }
 
-  def uInt64ToBase32(input: UInt64): Vector[UInt5] = {
+  private def uInt64ToBase32(input: UInt64): Vector[UInt5] = {
     var numNoPadding = LnUtil.encodeNumber(input.toBigInt)
 
     while (numNoPadding.length < 7) {
@@ -289,6 +299,21 @@ object LnInvoice {
 
     require(numNoPadding.length == 7)
     numNoPadding
+  }
+
+
+  /** Checks the checksum on a [[org.bitcoins.core.protocol.Bech32Address]]
+    * and if it is valid, strips the checksum from @d and returns strictly
+    * the payload
+    * @param h - the [[LnHumanReadablePart]] of the invoice
+    * @param d - the payload WITH the checksum included
+    * @return
+    */
+  private def stripChecksumIfValid(h : LnHumanReadablePart, d: Vector[UInt5]): Try[Vector[UInt5]] = {
+    if (verifyChecksum(h, d)) {
+      if (d.size < 6) Success(Vector.empty)
+      else Success(d.take(d.size - 6))
+    } else Failure(new IllegalArgumentException("Checksum was invalid on the LnInvoice"))
   }
 }
 

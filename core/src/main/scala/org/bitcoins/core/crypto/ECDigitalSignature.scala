@@ -48,7 +48,6 @@ sealed abstract class ECDigitalSignature {
    */
   def toRawRS: ByteVector = {
 
-    //comeback and look at this, i think this will fail if r/s is a small bigint
     val rBytes = r.toByteArray.takeRight(32)
     val sBytes = s.toByteArray.takeRight(32)
 

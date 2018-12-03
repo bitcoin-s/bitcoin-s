@@ -92,6 +92,11 @@ sealed abstract class SignedNumber[T <: Number[T]] extends Number[T]
  */
 sealed abstract class UnsignedNumber[T <: Number[T]] extends Number[T]
 
+
+/** This number type is useful for dealing with [[org.bitcoins.core.util.Bech32]]
+  * related applications. The native encoding for Bech32 is a 5 bit number which
+  * is what this abstraction is meant to  be used for
+  */
 sealed abstract class UInt5 extends UnsignedNumber[UInt5] {
   override def apply: A => UInt5 = UInt5(_)
 

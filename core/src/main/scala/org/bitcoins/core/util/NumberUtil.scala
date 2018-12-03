@@ -63,7 +63,7 @@ trait NumberUtil extends BitcoinSLogger {
   def convert[To <: Number[To]](data: Vector[UInt8], from: UInt32, to: UInt32, pad: Boolean, f: UInt8 => To): Try[Vector[To]] = {
     var acc: UInt32 = UInt32.zero
     var bits: UInt32 = UInt32.zero
-    var ret: Vector[To] = Vector.empty
+    val ret = Vector.newBuilder[To]
     val maxv: UInt32 = (UInt32.one << to) - UInt32.one
     val eight = UInt32(8)
     val fromU8 = UInt8(from.toLong.toShort)
@@ -80,7 +80,7 @@ trait NumberUtil extends BitcoinSLogger {
             bits = bits - to
             val newBase = UInt8((((acc >> bits) & maxv).toInt.toShort))
             val r: To = f(newBase)
-            ret = ret :+ r
+            ret.+=(r)
           }
         }
       }
@@ -88,12 +88,12 @@ trait NumberUtil extends BitcoinSLogger {
       if (pad) {
         if (bits > UInt32.zero) {
           val r: Long = ((acc << (to - bits) & maxv)).toLong
-          ret = ret ++ Seq(f(UInt8(r.toShort)))
+          ret.+=(f(UInt8(r.toShort)))
         }
       } else if (bits >= from || ((acc << (to - bits)) & maxv) != UInt8.zero) {
         Failure(new IllegalArgumentException("Invalid padding in encoding"))
       }
-      Success(ret)
+      Success(ret.result())
     }
   }
 
