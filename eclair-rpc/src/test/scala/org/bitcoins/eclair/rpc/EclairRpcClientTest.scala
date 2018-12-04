@@ -2,7 +2,7 @@ package org.bitcoins.eclair.rpc
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
+import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits, Satoshis}
 import org.bitcoins.core.number.Int64
 import org.bitcoins.core.protocol.ln.channel.{ChannelId, ChannelState}
 import org.bitcoins.core.protocol.ln.currency.{MicroBitcoins, MilliBitcoins, NanoBitcoins, PicoBitcoins}
@@ -32,6 +32,8 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
   behavior of "RpcClient"
 
   it should "be able to open and close a channel" in {
+
+    val changeAddrF = bitcoindRpcClient.getNewAddress()
     val result: Future[Assertion] = {
       val isOpenedF: Future[(ChannelId, Assertion)] = {
         otherClient.getInfo.flatMap { info =>
@@ -60,9 +62,7 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
       val isClosedF = {
         isConfirmedF.flatMap { case (chanId, assertion) =>
 
-          val addrF = bitcoindRpcClient.getNewAddress()
-
-          val closedF = addrF.flatMap { addr =>
+          val closedF = changeAddrF.flatMap { addr =>
             client.close(chanId,addr.scriptPubKey)
           }
 
@@ -77,8 +77,23 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
         }
       }
 
-      isClosedF
+      val closedOnChainF = {
+        isClosedF.flatMap { _ =>
+          changeAddrF.flatMap { addr =>
+
+            val amountF = bitcoindRpcClient.getReceivedByAddress(
+              address = addr,
+              minConfirmations = 0)
+
+            amountF.map(amt => assert(amt > CurrencyUnits.zero))
+
+          }
+        }
+      }
+
+      closedOnChainF
     }
+
     result
   }
 
