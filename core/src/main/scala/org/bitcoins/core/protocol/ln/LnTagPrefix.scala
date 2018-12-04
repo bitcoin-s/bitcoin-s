@@ -4,7 +4,7 @@ import org.bitcoins.core.number.UInt5
 import org.bitcoins.core.util.Bech32
 
 sealed abstract class LnTagPrefix {
-  def value: Char
+  val value: Char
 
   override def toString: String = value.toString
 }

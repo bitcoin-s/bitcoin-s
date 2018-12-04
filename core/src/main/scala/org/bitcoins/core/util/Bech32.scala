@@ -115,12 +115,17 @@ sealed abstract class Bech32 {
             Failure(new IllegalArgumentException("Cannot have mixed case for bech32 address"))
           } else {
             val byte = Bech32.charset.indexOf(h.toLower).toByte
-            require(byte >= 0 && byte < 32, "Not in valid range, got: " + byte)
-            loop(
-              remaining = t,
-              accum = UInt5.fromByte(byte) +: accum,
-              hasUpper = h.isUpper || hasUpper,
-              hasLower = h.isLower || hasLower)
+
+            if (byte >= 0 && byte < 32) {
+              loop(
+                remaining = t,
+                accum = UInt5.fromByte(byte) +: accum,
+                hasUpper = h.isUpper || hasUpper,
+                hasLower = h.isLower || hasLower)
+            } else {
+              Failure(new IllegalArgumentException(s"Byte was not in a valid range, got $byte"))
+            }
+
           }
         }
     }

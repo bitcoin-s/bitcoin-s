@@ -14,7 +14,7 @@ class Bech32Spec extends Properties("Bech32Spec") {
     Prop.forAll(ScriptGenerators.witnessScriptPubKey, ChainParamsGenerator.networkParams) {
       case ((witSPK, _), network) =>
         val addr = Bech32Address(witSPK, network)
-        val spk = addr.flatMap(a => Bech32Address.fromStringToWitSPK(a.value))
+        val spk = Bech32Address.fromStringToWitSPK(addr.value)
         spk == Success(witSPK)
     }
   }

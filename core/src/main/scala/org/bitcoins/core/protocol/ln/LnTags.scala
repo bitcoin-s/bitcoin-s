@@ -2,15 +2,16 @@ package org.bitcoins.core.protocol.ln
 
 import java.nio.charset.Charset
 
-import org.bitcoins.core.config.{ MainNet, NetworkParameters }
-import org.bitcoins.core.crypto.{ Sha256Digest, Sha256Hash160Digest }
-import org.bitcoins.core.number.{ UInt32, UInt5, UInt8 }
+import org.bitcoins.core.config.{MainNet, NetworkParameters}
+import org.bitcoins.core.crypto.{Sha256Digest, Sha256Hash160Digest}
+import org.bitcoins.core.number.{UInt32, UInt5, UInt8}
 import org.bitcoins.core.protocol._
 import org.bitcoins.core.protocol.ln.node.NodeId
 import org.bitcoins.core.protocol.ln.routing.LnRoute
 import org.bitcoins.core.protocol.ln.util.LnUtil
-import org.bitcoins.core.protocol.script.{ P2WPKHWitnessSPKV0, P2WSHWitnessSPKV0 }
-import org.bitcoins.core.util.{ Bech32, CryptoUtil }
+import org.bitcoins.core.protocol.script.{P2WPKHWitnessSPKV0, P2WSHWitnessSPKV0}
+import org.bitcoins.core.util.{Bech32, CryptoUtil}
+import org.slf4j.LoggerFactory
 import scodec.bits.ByteVector
 
 import scala.annotation.tailrec
@@ -52,21 +53,37 @@ sealed abstract class LnTag {
  */
 object LnTag {
 
+
+  sealed abstract class FallbackAddressV {
+    val u8: UInt8
+  }
+
+
+
   /** Fallback address versions */
   object FallbackAddressV {
-    val p2pkh = UInt8(17)
-    val p2sh = UInt8(18)
-    val witSpkV0 = UInt8.zero
+
+    case object P2PKH extends FallbackAddressV {
+      val u8: UInt8 = UInt8(17)
+    }
+
+    case object P2SH extends FallbackAddressV {
+      val u8: UInt8 = UInt8(18)
+    }
+
+    case object WitSPK extends FallbackAddressV {
+      val u8 = UInt8.zero
+    }
 
     def fromU8(version: UInt8, bytes: ByteVector, np: NetworkParameters): FallbackAddressTag = {
       val address: Address = {
-        if (p2pkh == version) {
+        if (P2PKH.u8 == version) {
           val hash = Sha256Hash160Digest(bytes)
           P2PKHAddress(hash, np)
-        } else if (p2sh == version) {
+        } else if (P2SH.u8 == version) {
           val hash = Sha256Hash160Digest(bytes)
           P2SHAddress(hash, np)
-        } else if (witSpkV0 == version) {
+        } else if (WitSPK.u8 == version) {
           val witSPK = {
             if (bytes.size == 32) {
               val hash = Sha256Digest.fromBytes(bytes)
@@ -76,11 +93,11 @@ object LnTag {
               val hash = Sha256Hash160Digest.fromBytes(bytes)
               P2WPKHWitnessSPKV0.fromHash(hash)
             } else {
-              throw new IllegalArgumentException(s"Can only create witness spk out of a 32 byte or 20 byte hash")
+              throw new IllegalArgumentException(s"Can only create witness spk out of a 32 byte or 20 byte hash, got ${bytes.length}")
             }
           }
 
-          Bech32Address(witSPK, np).get
+          Bech32Address(witSPK, np)
         } else {
           throw new IllegalArgumentException(s"Illegal version to create a fallback address from, got $version")
         }
@@ -170,8 +187,8 @@ object LnTag {
     /** The version of the fallback address is indicated here in BOLT11 */
     def version: UInt8 = {
       address match {
-        case _: P2PKHAddress => FallbackAddressV.p2pkh
-        case _: P2SHAddress => FallbackAddressV.p2sh
+        case _: P2PKHAddress => FallbackAddressV.P2PKH.u8
+        case _: P2SHAddress => FallbackAddressV.P2SH.u8
         case bech32: Bech32Address =>
           UInt8(bech32.scriptPubKey.witnessVersion.version.toInt)
       }
@@ -250,6 +267,7 @@ object LnTag {
       case LnTagPrefix.NodeId =>
 
         val nodeId = NodeId.fromBytes(bytes)
+
         LnTag.NodeIdTag(nodeId)
 
       case LnTagPrefix.ExpiryTime =>
@@ -260,7 +278,8 @@ object LnTag {
 
       case LnTagPrefix.CltvExpiry =>
 
-        val u32 = UInt32.fromBytes(bytes)
+        val decoded = LnUtil.decodeNumber(payload)
+        val u32 = UInt32(decoded)
         LnTag.MinFinalCltvExpiry(u32)
 
       case LnTagPrefix.FallbackAddress =>

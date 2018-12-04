@@ -105,7 +105,7 @@ object Bech32Address extends AddressFactory[Bech32Address] {
 
   def apply(
     witSPK: WitnessScriptPubKey,
-    networkParameters: NetworkParameters): Try[Bech32Address] = {
+    networkParameters: NetworkParameters): Bech32Address = {
     //we don't encode the wit version or pushop for program into base5
     val prog = UInt8.toUInt8s(witSPK.asmBytes.tail.tail)
     val encoded = Bech32.from8bitTo5bit(prog)
@@ -114,7 +114,7 @@ object Bech32Address extends AddressFactory[Bech32Address] {
       case _: TestNet3 | _: RegTest => tb
     }
     val witVersion = witSPK.witnessVersion.version.toInt.toByte
-    Try(Bech32Address(hrp, Vector(UInt5(witVersion)) ++ encoded))
+    Bech32Address(hrp, Vector(UInt5(witVersion)) ++ encoded)
   }
 
   def apply(hrp: HumanReadablePart, data: Vector[UInt5]): Bech32Address = {
@@ -150,7 +150,8 @@ object Bech32Address extends AddressFactory[Bech32Address] {
         val pushOp = BitcoinScriptUtil.calculatePushOp(progBytes)
         witVersion match {
           case Some(v) =>
-            WitnessScriptPubKey(List(v.version) ++ pushOp ++ List(ScriptConstant(progBytes))) match {
+            val witSPK = WitnessScriptPubKey(List(v.version) ++ pushOp ++ List(ScriptConstant(progBytes)))
+            witSPK match {
               case Some(spk) => Success(spk)
               case None => Failure(new IllegalArgumentException("Failed to decode bech32 into a witSPK"))
             }
@@ -353,7 +354,7 @@ object BitcoinAddress extends AddressFactory[BitcoinAddress] {
   override def fromScriptPubKey(spk: ScriptPubKey, np: NetworkParameters): Try[BitcoinAddress] = spk match {
     case p2pkh: P2PKHScriptPubKey => Success(P2PKHAddress(p2pkh, np))
     case p2sh: P2SHScriptPubKey => Success(P2SHAddress(p2sh, np))
-    case witSPK: WitnessScriptPubKey => Bech32Address(witSPK, np)
+    case witSPK: WitnessScriptPubKey => Success(Bech32Address(witSPK, np))
     case x @ (_: P2PKScriptPubKey | _: MultiSignatureScriptPubKey | _: LockTimeScriptPubKey
       | _: EscrowTimeoutScriptPubKey | _: NonStandardScriptPubKey
       | _: WitnessCommitment | _: UnassignedWitnessScriptPubKey | EmptyScriptPubKey) =>

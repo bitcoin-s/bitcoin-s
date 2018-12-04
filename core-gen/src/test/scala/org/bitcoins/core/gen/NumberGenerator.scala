@@ -13,6 +13,10 @@ import scodec.bits.BitVector
  */
 trait NumberGenerator {
 
+  def positiveShort: Gen[Short] = {
+    Gen.chooseNum[Short](0, Short.MaxValue)
+  }
+
   /** Creates a generator that generates positive long numbers */
   def positiveLongs: Gen[Long] = Gen.choose(0, Long.MaxValue)
 

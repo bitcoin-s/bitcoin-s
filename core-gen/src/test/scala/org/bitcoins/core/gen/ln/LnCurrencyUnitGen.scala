@@ -23,6 +23,10 @@ trait LnCurrencyUnitGen {
     amount <- Gen.choose(PicoBitcoins.min.toLong, PicoBitcoins.max.toLong)
   } yield PicoBitcoins(amount)
 
+  def positivePicoBitcoin: Gen[PicoBitcoins] = {
+    Gen.choose(0, PicoBitcoins.max.toLong).map(PicoBitcoins(_))
+  }
+
   def lnCurrencyUnit: Gen[LnCurrencyUnit] = Gen.oneOf(milliBitcoin, microBitcoin, nanoBitcoin, picoBitcoin)
 
   def lnCurrencyUnitOpt: Gen[Option[LnCurrencyUnit]] = {
@@ -34,7 +38,7 @@ trait LnCurrencyUnitGen {
   }
 
   def realisticLnInvoice: Gen[LnCurrencyUnit] = {
-    positiveLnCurrencyUnit.suchThat(_ <= LnPolicy.maxAmountMSat)
+    positiveLnCurrencyUnit.suchThat(_.toMSat <= LnPolicy.maxAmountMSat)
   }
 
   def negativeLnCurrencyUnit: Gen[LnCurrencyUnit] = {
