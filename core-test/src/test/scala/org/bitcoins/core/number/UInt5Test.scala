@@ -24,7 +24,7 @@ class UInt5Test extends FlatSpec with MustMatchers with PropertyChecks {
     }
   }
 
-  it must "not allow numbers more than 32" in {
+  it must "not allow numbers more than 31" in {
     intercept[IllegalArgumentException] {
       UInt5(32)
     }
