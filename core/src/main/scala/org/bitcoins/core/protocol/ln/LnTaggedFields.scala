@@ -1,6 +1,6 @@
 package org.bitcoins.core.protocol.ln
 
-import org.bitcoins.core.number.{ UInt5, UInt8 }
+import org.bitcoins.core.number.{UInt5, UInt8}
 import org.bitcoins.core.protocol.NetworkElement
 import org.bitcoins.core.protocol.ln.LnTag.PaymentHashTag
 import org.bitcoins.core.protocol.ln.util.LnUtil
@@ -9,6 +9,7 @@ import scodec.bits.ByteVector
 
 import scala.annotation.tailrec
 import scala.collection.mutable
+import scala.reflect.ClassTag
 
 /**
  * An aggregation of all the individual tagged fields in a [[org.bitcoins.core.protocol.ln.LnInvoice]]
@@ -97,20 +98,24 @@ object LnTaggedFields {
 
     val (description, descriptionHash): (Option[LnTag.DescriptionTag],
       Option[LnTag.DescriptionHashTag]) = {
-      if (descriptionOrHash.isLeft) (descriptionOrHash.left.toOption, None)
-      else (None, descriptionOrHash.right.toOption)
+      if (descriptionOrHash.isLeft) {
+        (descriptionOrHash.left.toOption, None)
+      } else {
+        (None, descriptionOrHash.right.toOption)
+      }
     }
 
     InvoiceTagImpl(
-      paymentHash,
-      description,
-      nodeId,
-      descriptionHash,
-      expiryTime,
-      cltvExpiry,
-      fallbackAddress,
-      routingInfo)
+      paymentHash = paymentHash,
+      description = description,
+      nodeId = nodeId,
+      descriptionHash = descriptionHash,
+      expiryTime = expiryTime,
+      cltvExpiry = cltvExpiry,
+      fallbackAddress = fallbackAddress,
+      routingInfo = routingInfo)
   }
+
 
   def fromUInt5s(u5s: Vector[UInt5]): LnTaggedFields = {
     @tailrec
@@ -141,10 +146,14 @@ object LnTaggedFields {
       }
     }
 
+
     val tags = loop(u5s.toList, Vector.empty)
 
-    def getTag[T] = {
-      tags.find(_.isInstanceOf[T]).map(_.asInstanceOf[T])
+    def getTag[T <: LnTag : ClassTag]: Option[T] = {
+      tags.map {
+        case t: T => Some(t)
+        case _ => None
+      }.find(_.isDefined).flatten
     }
 
     val paymentHashTag = getTag[LnTag.PaymentHashTag].getOrElse(

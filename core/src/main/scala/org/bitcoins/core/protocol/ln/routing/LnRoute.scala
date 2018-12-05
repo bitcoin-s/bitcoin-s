@@ -52,7 +52,7 @@ object LnRoute {
       FEE_PROPORTIONAL_LEN +
       CLTV_EXPIRTY_DELTA_LEN
 
-    require(bytes.length == TOTAL_LEN, s"ByteVector must be of length $TOTAL_LEN, got ${bytes.length}")
+    require(bytes.length >= TOTAL_LEN, s"ByteVector must at least of length $TOTAL_LEN, got ${bytes.length}")
 
     val (pubKeyBytes, rest0) = bytes.splitAt(PUBKEY_LEN)
     val pubKey = ECPublicKey.fromBytes(pubKeyBytes)
