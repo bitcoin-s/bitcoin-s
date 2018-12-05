@@ -40,23 +40,42 @@ case class LnRoute(
 object LnRoute {
 
   def fromBytes(bytes: ByteVector): LnRoute = {
+    val PUBKEY_LEN = 33
+    val SHORT_CHANNEL_ID_LEN = 8
+    val FEE_BASE_U32_LEN = 4
+    val FEE_PROPORTIONAL_LEN = 4
+    val CLTV_EXPIRTY_DELTA_LEN = 2
 
-    val pubKey = ECPublicKey.fromBytes(bytes.take(33))
+    val TOTAL_LEN = PUBKEY_LEN +
+      SHORT_CHANNEL_ID_LEN +
+      FEE_BASE_U32_LEN +
+      FEE_PROPORTIONAL_LEN +
+      CLTV_EXPIRTY_DELTA_LEN
 
-    val shortChannelId = ShortChannelId.fromBytes(bytes.slice(33, 41))
+    require(bytes.length == TOTAL_LEN, s"ByteVector must be of length $TOTAL_LEN, got ${bytes.length}")
 
-    val feeBaseU32 = UInt32.fromBytes(bytes.slice(41, 45))
+    val (pubKeyBytes, rest0) = bytes.splitAt(PUBKEY_LEN)
+    val pubKey = ECPublicKey.fromBytes(pubKeyBytes)
+
+    val (shortChannelIdBytes, rest1) = rest0.splitAt(SHORT_CHANNEL_ID_LEN)
+
+    val shortChannelId = ShortChannelId.fromBytes(shortChannelIdBytes)
+
+    val (feeBaseU32Bytes, rest2) = rest1.splitAt(FEE_BASE_U32_LEN)
+
+    val feeBaseU32 = UInt32.fromBytes(feeBaseU32Bytes)
     val feeBase = feeBaseU32.toLong
-
     val feeBaseMSat = FeeBaseMSat(MilliSatoshis(feeBase))
 
-    val u32 = UInt32.fromBytes(bytes.slice(45, 49))
+    val (u32Bytes, rest3) = rest2.splitAt(FEE_PROPORTIONAL_LEN)
 
+    val u32 = UInt32.fromBytes(u32Bytes)
     val feeProportionalMillionths = FeeProportionalMillionths(u32)
 
-    val cltvExpiryDelta = new BigInteger(bytes.slice(49, 51).toArray).shortValueExact()
+    val (cltvExpiryDeltaBytes, _) = rest3.splitAt(CLTV_EXPIRTY_DELTA_LEN)
+
+    val cltvExpiryDelta = new BigInteger(cltvExpiryDeltaBytes.toArray).shortValueExact
 
     LnRoute(pubKey, shortChannelId, feeBaseMSat, feeProportionalMillionths, cltvExpiryDelta)
-
   }
 }

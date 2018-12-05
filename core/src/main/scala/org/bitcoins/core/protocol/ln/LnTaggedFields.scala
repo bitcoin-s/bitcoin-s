@@ -36,16 +36,17 @@ sealed abstract class LnTaggedFields extends NetworkElement {
 
   def routingInfo: Option[LnTag.RoutingInfo]
 
-  def data: Vector[UInt5] = {
-    paymentHash.data ++
-      description.map(_.data).getOrElse(Vector.empty) ++
-      nodeId.map(_.data).getOrElse(Vector.empty) ++
-      descriptionHash.map(_.data).getOrElse(Vector.empty) ++
-      expiryTime.map(_.data).getOrElse(Vector.empty) ++
-      cltvExpiry.map(_.data).getOrElse(Vector.empty) ++
-      fallbackAddress.map(_.data).getOrElse(Vector.empty) ++
-      routingInfo.map(_.data).getOrElse(Vector.empty)
-  }
+  lazy val data: Vector[UInt5] = Vector(
+    Some(paymentHash),
+    description,
+    nodeId,
+    descriptionHash,
+    expiryTime,
+    cltvExpiry,
+    fallbackAddress,
+    routingInfo)
+    .filter(_.isDefined)
+    .flatMap(_.get.data)
 
   override def bytes: ByteVector = {
     val u8s = Bech32.from5bitTo8bit(data)
@@ -94,29 +95,21 @@ object LnTaggedFields {
     fallbackAddress: Option[LnTag.FallbackAddressTag] = None,
     routingInfo: Option[LnTag.RoutingInfo] = None): LnTaggedFields = {
 
-    if (descriptionOrHash.isLeft) {
-      InvoiceTagImpl(
-        paymentHash = paymentHash,
-        description = descriptionOrHash.left.toOption,
-        nodeId = nodeId,
-        descriptionHash = None,
-        expiryTime = expiryTime,
-        cltvExpiry = cltvExpiry,
-        fallbackAddress = fallbackAddress,
-        routingInfo = routingInfo)
-    } else {
-
-      InvoiceTagImpl(
-        paymentHash = paymentHash,
-        description = None,
-        nodeId = nodeId,
-        descriptionHash = descriptionOrHash.right.toOption,
-        expiryTime = expiryTime,
-        cltvExpiry = cltvExpiry,
-        fallbackAddress = fallbackAddress,
-        routingInfo = routingInfo)
+    val (description, descriptionHash): (Option[LnTag.DescriptionTag],
+      Option[LnTag.DescriptionHashTag]) = {
+      if (descriptionOrHash.isLeft) (descriptionOrHash.left.toOption, None)
+      else (None, descriptionOrHash.right.toOption)
     }
 
+    InvoiceTagImpl(
+      paymentHash,
+      description,
+      nodeId,
+      descriptionHash,
+      expiryTime,
+      cltvExpiry,
+      fallbackAddress,
+      routingInfo)
   }
 
   def fromUInt5s(u5s: Vector[UInt5]): LnTaggedFields = {
@@ -141,46 +134,36 @@ object LnTaggedFields {
 
           loop(newRemaining, fields.:+(tag))
 
-        case _ :: _ | _ :: _ :: _ =>
-          throw new IllegalArgumentException("Failed to parse LnTaggedFields, needs 15bits of meta data to be able to parse")
         case Nil =>
           fields
+        case _ =>
+          throw new IllegalArgumentException("Failed to parse LnTaggedFields, needs 15bits of meta data to be able to parse")
       }
     }
 
     val tags = loop(u5s.toList, Vector.empty)
 
-    val paymentHashTag = {
-
-      val fOpt = tags.find(_.isInstanceOf[LnTag.PaymentHashTag])
-      if (fOpt.isDefined) {
-        fOpt.get.asInstanceOf[LnTag.PaymentHashTag]
-      } else {
-        throw new IllegalArgumentException(s"Payment hash must be defined in a LnInvoice")
-      }
-
+    def getTag[T] = {
+      tags.find(_.isInstanceOf[T]).map(_.asInstanceOf[T])
     }
 
-    val description = tags.find(_.isInstanceOf[LnTag.DescriptionTag])
-      .map(_.asInstanceOf[LnTag.DescriptionTag])
+    val paymentHashTag = getTag[LnTag.PaymentHashTag].getOrElse(
+      throw new IllegalArgumentException(s"Payment hash must be defined in a LnInvoice")
+    )
 
-    val descriptionHash = tags.find(_.isInstanceOf[LnTag.DescriptionHashTag])
-      .map(_.asInstanceOf[LnTag.DescriptionHashTag])
+    val description = getTag[LnTag.DescriptionTag]
 
-    val nodeId = tags.find(_.isInstanceOf[LnTag.NodeIdTag])
-      .map(_.asInstanceOf[LnTag.NodeIdTag])
+    val descriptionHash = getTag[LnTag.DescriptionHashTag]
 
-    val expiryTime = tags.find(_.isInstanceOf[LnTag.ExpiryTimeTag])
-      .map(_.asInstanceOf[LnTag.ExpiryTimeTag])
+    val nodeId = getTag[LnTag.NodeIdTag]
 
-    val cltvExpiry = tags.find(_.isInstanceOf[LnTag.MinFinalCltvExpiry])
-      .map(_.asInstanceOf[LnTag.MinFinalCltvExpiry])
+    val expiryTime = getTag[LnTag.ExpiryTimeTag]
 
-    val fallbackAddress = tags.find(_.isInstanceOf[LnTag.FallbackAddressTag])
-      .map(_.asInstanceOf[LnTag.FallbackAddressTag])
+    val cltvExpiry = getTag[LnTag.MinFinalCltvExpiry]
 
-    val routingInfo = tags.find(_.isInstanceOf[LnTag.RoutingInfo])
-      .map(_.asInstanceOf[LnTag.RoutingInfo])
+    val fallbackAddress = getTag[LnTag.FallbackAddressTag]
+
+    val routingInfo = getTag[LnTag.RoutingInfo]
 
     val d: Either[LnTag.DescriptionTag, LnTag.DescriptionHashTag] = {
       if (description.isDefined && descriptionHash.isDefined) {

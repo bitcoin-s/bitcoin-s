@@ -75,36 +75,33 @@ object LnTag {
       val u8 = UInt8.zero
     }
 
+    private def witnessFromU8(bytes: ByteVector, np: NetworkParameters) = {
+      val witSPK = bytes.size match {
+        case 32 =>
+          val hash = Sha256Digest.fromBytes(bytes)
+          P2WSHWitnessSPKV0.fromHash(hash)
+        case 20 =>
+          val hash = Sha256Hash160Digest.fromBytes(bytes)
+          P2WPKHWitnessSPKV0.fromHash(hash)
+        case _ =>
+          throw new IllegalArgumentException(s"Can only create witness spk out of a 32 byte or 20 byte hash, got ${bytes.length}")
+      }
+      Bech32Address(witSPK, np)
+    }
+
     def fromU8(version: UInt8, bytes: ByteVector, np: NetworkParameters): FallbackAddressTag = {
-      val address: Address = {
-        if (P2PKH.u8 == version) {
+      val address: Address = version match {
+        case P2PKH.u8 =>
           val hash = Sha256Hash160Digest(bytes)
           P2PKHAddress(hash, np)
-        } else if (P2SH.u8 == version) {
+        case P2SH.u8 =>
           val hash = Sha256Hash160Digest(bytes)
           P2SHAddress(hash, np)
-        } else if (WitSPK.u8 == version) {
-          val witSPK = {
-            if (bytes.size == 32) {
-              val hash = Sha256Digest.fromBytes(bytes)
-              P2WSHWitnessSPKV0.fromHash(hash)
-            } else if (bytes.size == 20) {
-
-              val hash = Sha256Hash160Digest.fromBytes(bytes)
-              P2WPKHWitnessSPKV0.fromHash(hash)
-            } else {
-              throw new IllegalArgumentException(s"Can only create witness spk out of a 32 byte or 20 byte hash, got ${bytes.length}")
-            }
-          }
-
-          Bech32Address(witSPK, np)
-        } else {
+        case WitSPK.u8 => witnessFromU8(bytes, np)
+        case _ =>
           throw new IllegalArgumentException(s"Illegal version to create a fallback address from, got $version")
-        }
       }
-
       LnTag.FallbackAddressTag(address)
-
     }
   }
 
