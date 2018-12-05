@@ -12,10 +12,10 @@ import scala.util.{ Failure, Success, Try }
 sealed abstract class LnHumanReadablePart {
   require(
     amount.isEmpty || amount.get.toBigInt > 0,
-    s"Invoice amount must be greater then 0, got $amount")
+    s"Invoice amount must not be negative, got $amount")
   require(
     amount.isEmpty || amount.get.toMSat <= LnPolicy.maxAmountMSat,
-    s"Invoice amount must be less than ${LnPolicy.maxAmountMSat}, got ${amount.get.toMSat}")
+    s"Invoice amount must not exceed ${LnPolicy.maxAmountMSat}, got ${amount.get.toMSat}")
 
   def network: LnParams
 
@@ -56,7 +56,7 @@ object LnHumanReadablePart {
 
   def apply(network: NetworkParameters): Option[LnHumanReadablePart] = {
     val lnNetworkOpt = LnParams.fromNetworkParameters(network)
-    lnNetworkOpt.map(LnHumanReadablePart.fromLnParams(_))
+    lnNetworkOpt.map(LnHumanReadablePart.fromLnParams)
   }
 
   def apply(network: NetworkParameters, amount: LnCurrencyUnit): Option[LnHumanReadablePart] = {

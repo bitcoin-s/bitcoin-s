@@ -98,7 +98,7 @@ class EclairRpcClient(val instance: EclairInstance)(implicit system: ActorSystem
       if (scriptPubKey.isEmpty) {
         List(JsString(channelId.hex))
       } else {
-        //TODO: test that we do NOT expect the compact size uint preprended to the spk
+
         val asmHex = BitcoinSUtil.encodeHex(scriptPubKey.get.asmBytes)
 
         List(JsString(channelId.hex), JsString(asmHex))

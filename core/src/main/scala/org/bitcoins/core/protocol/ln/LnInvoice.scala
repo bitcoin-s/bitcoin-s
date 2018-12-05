@@ -49,7 +49,7 @@ sealed abstract class LnInvoice {
    * We can either recover this with public key recovery from
    * the [[LnInvoiceSignature]] or if [[LnTag.NodeIdTag]] is
    * defined we MUST use that NodeId.
-   * [[https://github.com/lightningnetwork/lihtning-rfc/blob/master/11-payment-encoding.md#requirements-3]]
+   * [[https://github.com/lightningnetwork/lightning-rfc/blob/master/11-payment-encoding.md#requirements-3]]
    */
   def nodeId: NodeId = {
 
@@ -144,26 +144,34 @@ object LnInvoice {
   def apply(hrp: LnHumanReadablePart, data: Vector[UInt5]): LnInvoice = {
 
     //https://github.com/lightningnetwork/lightning-rfc/blob/master/11-payment-encoding.md#data-part
+    val TIMESTAMP_LEN = 7
+    val SIGNATURE_LEN = 104
+    val MIN_LENGTH = TIMESTAMP_LEN + SIGNATURE_LEN
+    if (data.length < MIN_LENGTH) {
+      throw new IllegalArgumentException(
+        s"Cannot create invoice with data length less then ${MIN_LENGTH}, got ${data.length}")
+    } else {
+      //first 35 bits is time stamp
+      val timestampU5s = data.take(TIMESTAMP_LEN)
 
-    //first 35 bits is time stamp
-    val timestampU5s = data.take(7)
+      val timestamp = decodeTimestamp(timestampU5s)
 
-    val timestamp = decodeTimestamp(timestampU5s)
+      //last bits should be a 520 bit signature
+      //should be 104 5 bit increments (104 * 5 = 520)
+      val signatureU5s = data.takeRight(SIGNATURE_LEN)
+      val signature = LnInvoiceSignature.fromU5s(signatureU5s)
 
-    //last bits should be a 520 bit signature
-    //should be 104 5 bit increments (104 * 5 = 520)
-    val signatureU5s = data.takeRight(104)
-    val signature = LnInvoiceSignature.fromU5s(signatureU5s)
+      val tags = data.slice(TIMESTAMP_LEN, data.length - SIGNATURE_LEN)
 
-    val tags = data.slice(7, data.length - 104)
+      val taggedFields = LnTaggedFields.fromUInt5s(tags)
 
-    val taggedFields = LnTaggedFields.fromUInt5s(tags)
+      LnInvoice(
+        hrp = hrp,
+        timestamp = timestamp,
+        lnTags = taggedFields,
+        signature = signature)
+    }
 
-    LnInvoice(
-      hrp = hrp,
-      timestamp = timestamp,
-      lnTags = taggedFields,
-      signature = signature)
   }
 
   def fromString(bech32String: String): Try[LnInvoice] = {
@@ -179,8 +187,10 @@ object LnInvoice {
 
       val data = bech32String.splitAt(sepIndex + 1)._2
 
-      if (hrp.size < 1 || data.size < 6) {
-        Failure(new IllegalArgumentException("Hrp/data too short"))
+      if (hrp.length < 1) {
+        Failure(new IllegalArgumentException("HumanReadablePart is too short"))
+      } else if (data.length < 6) {
+        Failure(new IllegalArgumentException("Data part is too short"))
       } else {
 
         val hrpValid = LnHumanReadablePart.fromString(hrp)

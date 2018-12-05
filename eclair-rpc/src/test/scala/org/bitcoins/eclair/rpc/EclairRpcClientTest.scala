@@ -2,20 +2,20 @@ package org.bitcoins.eclair.rpc
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import org.bitcoins.core.currency.{ CurrencyUnit, Satoshis }
+import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits, Satoshis}
 import org.bitcoins.core.number.Int64
-import org.bitcoins.core.protocol.ln.channel.{ ChannelId, ChannelState }
-import org.bitcoins.core.protocol.ln.currency.{ MicroBitcoins, MilliBitcoins, NanoBitcoins, PicoBitcoins }
+import org.bitcoins.core.protocol.ln.channel.{ChannelId, ChannelState}
+import org.bitcoins.core.protocol.ln.currency.{MicroBitcoins, MilliBitcoins, NanoBitcoins, PicoBitcoins}
 import org.bitcoins.core.protocol.ln.node.NodeId
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.eclair.rpc.client.EclairRpcClient
-import org.bitcoins.eclair.rpc.config.{ EclairAuthCredentials, EclairInstance }
+import org.bitcoins.eclair.rpc.config.{EclairAuthCredentials, EclairInstance}
 import org.bitcoins.eclair.rpc.json._
 import org.bitcoins.rpc.BitcoindRpcTestUtil
-import org.scalatest.{ Assertion, AsyncFlatSpec, BeforeAndAfterAll }
+import org.scalatest.{Assertion, AsyncFlatSpec, BeforeAndAfterAll}
 
 import scala.concurrent.duration.DurationInt
-import scala.concurrent.{ Await, Future }
+import scala.concurrent.{Await, Future}
 
 class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
 
@@ -31,14 +31,69 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
 
   behavior of "RpcClient"
 
-  it should "be able to open a channel" in {
+  it should "be able to open and close a channel" in {
+
+    val changeAddrF = bitcoindRpcClient.getNewAddress()
     val result: Future[Assertion] = {
-      otherClient.getInfo.flatMap { info =>
-        val amt = Satoshis(Int64(100000))
-        val openedChanF = client.open(info.nodeId, amt)
-        openedChanF.flatMap(channelId => hasChannel(client, channelId))
+      val isOpenedF: Future[(ChannelId, Assertion)] = {
+        otherClient.getInfo.flatMap { info =>
+          val amt = Satoshis(Int64(100000))
+          val openedChanF = client.open(info.nodeId, amt)
+
+          openedChanF.flatMap { channelId =>
+            val exists = hasChannel(client, channelId)
+            exists.map(e => (channelId, e))
+          }
+        }
       }
+
+      val isConfirmedF: Future[(ChannelId,Assertion)] = {
+        isOpenedF.map { case (chanId, assertion) =>
+          val _  = bitcoindRpcClient.generate(6)
+          EclairTestUtil.awaitChannelNormal(
+            client1 = client,
+            chanId = chanId
+          )
+
+          (chanId, assertion)
+        }
+      }
+
+      val isClosedF = {
+        isConfirmedF.flatMap { case (chanId, assertion) =>
+
+          val closedF = changeAddrF.flatMap { addr =>
+            client.close(chanId,addr.scriptPubKey)
+          }
+
+          closedF.flatMap { _ =>
+
+            EclairTestUtil.awaitUntilChannelClosing(client,chanId)
+            val chanF = client.channel(chanId)
+            chanF.map { chan =>
+              assert(chan.state == ChannelState.CLOSING)
+            }
+          }
+        }
+      }
+
+      val closedOnChainF = {
+        isClosedF.flatMap { _ =>
+          changeAddrF.flatMap { addr =>
+
+            val amountF = bitcoindRpcClient.getReceivedByAddress(
+              address = addr,
+              minConfirmations = 0)
+
+            amountF.map(amt => assert(amt > CurrencyUnits.zero))
+
+          }
+        }
+      }
+
+      closedOnChainF
     }
+
     result
   }
 

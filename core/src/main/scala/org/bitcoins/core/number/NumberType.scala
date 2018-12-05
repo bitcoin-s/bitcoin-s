@@ -206,7 +206,7 @@ object UInt5 extends Factory[UInt5] with BaseNumbers[UInt5] {
 
     require(
       bigInt.toByteArray.size == 1,
-      s"To create a uint5 from a ByteVector it must be of size one ${bigInt}")
+      s"To create a uint5 from a BigInt it must be less than 32. Got: ${bigInt.toString}")
 
     UInt5.fromByte(bigInt.toByteArray.head)
   }
@@ -264,7 +264,7 @@ object UInt8 extends Factory[UInt8] with BaseNumbers[UInt8] {
   }
 
   def toUInt8s(bytes: ByteVector): Vector[UInt8] = {
-    bytes.toArray.map(toUInt8(_)).toVector
+    bytes.toArray.map(toUInt8).toVector
   }
 
   def checkBounds(res: BigInt): UInt8 = {

@@ -293,7 +293,7 @@ trait EclairTestUtil extends BitcoinSLogger {
     val opened = {
       gen.flatMap { _ =>
         fundedChannelIdF.map { fcid =>
-          awaitChannelOpened(n1, fcid)
+          awaitChannelNormal(n1, fcid)
           fcid
         }
       }
@@ -306,7 +306,7 @@ trait EclairTestUtil extends BitcoinSLogger {
     opened
   }
 
-  def awaitChannelOpened(
+  def awaitChannelNormal(
     client1: EclairRpcClient,
     chanId: ChannelId)(implicit system: ActorSystem): Unit = {
     EclairTestUtil.awaitUntilChannelNormal(client1, chanId)

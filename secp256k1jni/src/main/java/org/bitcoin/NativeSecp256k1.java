@@ -17,12 +17,12 @@
 
 package org.bitcoin;
 
-import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+
+import java.math.BigInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-
 import static org.bitcoin.NativeSecp256k1Util.*;
 
 /**
