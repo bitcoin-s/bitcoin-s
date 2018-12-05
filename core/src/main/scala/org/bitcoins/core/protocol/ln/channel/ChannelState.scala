@@ -1,6 +1,8 @@
 package org.bitcoins.core.protocol.ln.channel
 
-/** copied from eclair [[https://github.com/ACINQ/eclair/blob/master/eclair-core/src/main/scala/fr/acinq/eclair/channel/ChannelTypes.scala]] */
+/**
+  * Copied from [[https://github.com/ACINQ/eclair/blob/master/eclair-core/src/main/scala/fr/acinq/eclair/channel/ChannelTypes.scala Eclair]]
+  */
 sealed trait ChannelState
 
 object ChannelState {

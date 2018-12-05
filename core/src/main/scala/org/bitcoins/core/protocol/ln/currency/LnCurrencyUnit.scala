@@ -204,14 +204,14 @@ object PicoBitcoins extends BaseNumbers[PicoBitcoins] {
 }
 
 object LnCurrencyUnits {
-  val PICO_TO_SATOSHIS = 10000
-  val MSAT_TO_PICO = 10
+  private[currency] val PICO_TO_SATOSHIS = 10000
+  private[currency] val MSAT_TO_PICO = 10
   val zero: LnCurrencyUnit = PicoBitcoins.zero
 
   /**
-   * For information regarding the rounding of sub-Satoshi values, please visit:
-   * https://github.com/lightningnetwork/lightning-rfc/blob/master/03-transactions.md#commitment-transaction-outputs
-   */
+    * For information regarding the rounding of sub-Satoshi values, see
+    * [[https://github.com/lightningnetwork/lightning-rfc/blob/master/03-transactions.md#commitment-transaction-outputs BOLT3]]
+    */
   def toSatoshi(lnCurrencyUnits: LnCurrencyUnit): Satoshis = {
     val pico = lnCurrencyUnits.toPicoBitcoins
     val sat = pico.toBigInt / PICO_TO_SATOSHIS
@@ -226,10 +226,9 @@ object LnCurrencyUnits {
   }
 
   def fromEncodedString(input: String): Try[LnCurrencyUnit] = {
-    val currency = input.splitAt(input.length - 1)
-    val amount = Try(BigInt(currency._1))
+    val (amountStr, unit) = input.splitAt(input.length - 1)
+    val amount = Try(BigInt(amountStr))
     if (amount.isSuccess) {
-      val unit = currency._2
       unit match {
         case "m" => Try(MilliBitcoins(amount.get))
         case "u" => Try(MicroBitcoins(amount.get))
