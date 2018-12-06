@@ -71,21 +71,16 @@ object LnHumanReadablePart {
   }
 
   /**
-    * Will return a [[org.bitcoins.core.protocol.ln.LnHumanReadablePart]]
-    * without a [[LnCurrencyUnit]] encoded in the invoice
-    * @param network
-    * @return
+    * Will return a [[org.bitcoins.core.protocol.ln.LnHumanReadablePart LnHumanReadablePart]]
+    * without a [[org.bitcoins.core.protocol.ln.currency.LnCurrencyUnit LnCurrencyUnit]] encoded in the invoice
     */
   def fromLnParams(network: LnParams): LnHumanReadablePart = {
     LnHumanReadablePart(network, None)
   }
 
   /**
-    * Will return a [[org.bitcoins.core.protocol.ln.LnHumanReadablePart]]
-    * with the provide [[LnCurrencyUnit]] encoded in the invoice
-    * @param network
-    * @param amount
-    * @return
+    * Will return a [[org.bitcoins.core.protocol.ln.LnHumanReadablePart LnHumanReadablePart]]
+    * with the provide [[org.bitcoins.core.protocol.ln.currency.LnCurrencyUnit LnCurrencyUnit]] encoded in the invoice
     */
   def apply(network: LnParams, amount: Option[LnCurrencyUnit]): LnHumanReadablePart = {
     fromParamsAmount(network, amount)
@@ -101,11 +96,10 @@ object LnHumanReadablePart {
 
   /**
     * First two chars MUST be 'ln'
-    * Next chars must be the BIP173 currency prefixes
-    * [[https://github.com/lightningnetwork/lightning-rfc/blob/master/11-payment-encoding.md#human-readable-part]]
-    * [[https://github.com/bitcoin/bips/blob/master/bip-0173.mediawiki#Specification]]
-    * @param input
-    * @return
+    * Next chars must be the BIP173 currency prefixes. For more information, see
+    * [[https://github.com/lightningnetwork/lightning-rfc/blob/master/11-payment-encoding.md#human-readable-part BOLT11]]
+    * and
+    * [[https://github.com/bitcoin/bips/blob/master/bip-0173.mediawiki#Specification BIP173]]
     */
   def fromString(input: String): Try[LnHumanReadablePart] = {
     val hrpIsValidT = Bech32.checkHrpValidity(input, parse)

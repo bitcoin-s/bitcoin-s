@@ -10,8 +10,6 @@ import scodec.bits.ByteVector
 import scala.util.{ Failure, Try }
 
 sealed abstract class LnCurrencyUnit extends NetworkElement {
-  type A
-
   def character: Char
 
   def >=(ln: LnCurrencyUnit): Boolean = {
@@ -63,7 +61,7 @@ sealed abstract class LnCurrencyUnit extends NetworkElement {
 
   def toInt: Int = toBigInt.bigInteger.intValueExact()
 
-  protected def underlying: A
+  protected def underlying: BigInt
 
   def toSatoshis: Satoshis = {
     LnCurrencyUnits.toSatoshi(this)
@@ -88,22 +86,21 @@ sealed abstract class LnCurrencyUnit extends NetworkElement {
   def toMSat: MilliSatoshis = MilliSatoshis.fromPico(toPicoBitcoins)
 
   /** This returns the string encoding defined in BOLT11
-    * For instance, 100 [[PicoBitcoins]] would appear as "100p"
-    * @return
+    * For instance, 100
+    * [[org.bitcoins.core.protocol.ln.currency.PicoBitcoins PicoBitcoins]]
+    * would appear as "100p"
     */
   def toEncodedString: String = {
-    toBigInt + character.toString()
+    toBigInt + character.toString
   }
 }
 
 sealed abstract class MilliBitcoins extends LnCurrencyUnit {
-  override type A = BigInt
-
   override def character: Char = 'm'
 
   override def toPicoBitcoinMultiplier: Int = 1000000000
 
-  override def toBigInt: A = underlying
+  override def toBigInt: BigInt = underlying
 
 }
 
@@ -124,13 +121,11 @@ object MilliBitcoins extends BaseNumbers[MilliBitcoins] {
 }
 
 sealed abstract class MicroBitcoins extends LnCurrencyUnit {
-  override type A = BigInt
-
   override def character: Char = 'u'
 
   override def toPicoBitcoinMultiplier: Int = 1000000
 
-  override def toBigInt: A = underlying
+  override def toBigInt: BigInt = underlying
 
 }
 
@@ -151,13 +146,11 @@ object MicroBitcoins extends BaseNumbers[MicroBitcoins] {
 }
 
 sealed abstract class NanoBitcoins extends LnCurrencyUnit {
-  override type A = BigInt
-
   override def character: Char = 'n'
 
   override def toPicoBitcoinMultiplier: Int = 1000
 
-  override def toBigInt: A = underlying
+  override def toBigInt: BigInt = underlying
 
 }
 
@@ -178,13 +171,11 @@ object NanoBitcoins extends BaseNumbers[NanoBitcoins] {
 }
 
 sealed abstract class PicoBitcoins extends LnCurrencyUnit {
-  override type A = BigInt
-
   override def character: Char = 'p'
 
   override def toPicoBitcoinMultiplier: Int = 1
 
-  override def toBigInt: A = underlying
+  override def toBigInt: BigInt = underlying
 }
 
 object PicoBitcoins extends BaseNumbers[PicoBitcoins] {
