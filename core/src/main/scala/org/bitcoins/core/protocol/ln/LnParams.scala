@@ -60,11 +60,13 @@ object LnParams {
     }
   }
 
-  private val allNetworks: Vector[LnParams] = Vector(LnBitcoinMainNet, LnBitcoinTestNet, LnBitcoinRegTest)
-
-  def fromNetworkParameters(np: NetworkParameters): Option[LnParams] = {
-    allNetworks.find(_.network == np)
+  def fromNetworkParameters(np: NetworkParameters): LnParams = np match {
+    case MainNet => LnBitcoinMainNet
+    case TestNet3 => LnBitcoinTestNet
+    case RegTest => LnBitcoinRegTest
   }
+
+  private val allNetworks: Vector[LnParams] = Vector(LnBitcoinMainNet, LnBitcoinTestNet, LnBitcoinRegTest)
 
   private val prefixes: Map[String, LnParams] = {
     val vec: Vector[(String, LnParams)] = {

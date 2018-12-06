@@ -11,13 +11,13 @@ class LnHumanReadablePartTest extends FlatSpec with MustMatchers {
   val mBtc = MilliBitcoins(1)
   val mBtcOpt = Some(mBtc)
   it must "match the correct hrp with the correct network" in {
-    LnHumanReadablePart(MainNet).get must be(LnHumanReadablePart(LnBitcoinMainNet))
-    LnHumanReadablePart(TestNet3).get must be(LnHumanReadablePart(LnBitcoinTestNet))
-    LnHumanReadablePart(RegTest).get must be(LnHumanReadablePart(LnBitcoinRegTest))
+    LnHumanReadablePart(MainNet) must be(LnHumanReadablePart(LnBitcoinMainNet))
+    LnHumanReadablePart(TestNet3) must be(LnHumanReadablePart(LnBitcoinTestNet))
+    LnHumanReadablePart(RegTest) must be(LnHumanReadablePart(LnBitcoinRegTest))
 
-    LnHumanReadablePart(MainNet, mBtc).get must be(LnHumanReadablePart(LnBitcoinMainNet, mBtcOpt))
-    LnHumanReadablePart(TestNet3, mBtc).get must be(LnHumanReadablePart(LnBitcoinTestNet, mBtcOpt))
-    LnHumanReadablePart(RegTest, mBtc).get must be(LnHumanReadablePart(LnBitcoinRegTest, mBtcOpt))
+    LnHumanReadablePart(MainNet, mBtc) must be(LnHumanReadablePart(LnBitcoinMainNet, mBtcOpt))
+    LnHumanReadablePart(TestNet3, mBtc) must be(LnHumanReadablePart(LnBitcoinTestNet, mBtcOpt))
+    LnHumanReadablePart(RegTest, mBtc) must be(LnHumanReadablePart(LnBitcoinRegTest, mBtcOpt))
   }
 
   it must "correctly serialize the hrp to string" in {

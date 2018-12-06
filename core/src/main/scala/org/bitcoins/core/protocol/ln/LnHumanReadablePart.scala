@@ -56,14 +56,14 @@ object LnHumanReadablePart {
     def network: LnParams = LnBitcoinRegTest
   }
 
-  def apply(network: NetworkParameters): Option[LnHumanReadablePart] = {
-    val lnNetworkOpt = LnParams.fromNetworkParameters(network)
-    lnNetworkOpt.map(LnHumanReadablePart.fromLnParams)
+  def apply(network: NetworkParameters): LnHumanReadablePart = {
+    val lnNetwork= LnParams.fromNetworkParameters(network)
+    LnHumanReadablePart.fromLnParams(lnNetwork)
   }
 
-  def apply(network: NetworkParameters, amount: LnCurrencyUnit): Option[LnHumanReadablePart] = {
-    val lnNetworkOpt = LnParams.fromNetworkParameters(network)
-    lnNetworkOpt.map(ln => LnHumanReadablePart(ln, Some(amount)))
+  def apply(network: NetworkParameters, amount: LnCurrencyUnit): LnHumanReadablePart = {
+    val lnNetwork = LnParams.fromNetworkParameters(network)
+    LnHumanReadablePart(lnNetwork, Some(amount))
   }
 
   def apply(network: LnParams): LnHumanReadablePart = {
