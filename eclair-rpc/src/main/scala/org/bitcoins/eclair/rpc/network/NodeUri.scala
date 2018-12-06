@@ -13,13 +13,13 @@ object NodeUri {
   private val defaultPort = ":9735"
 
   def fromString(uri: String): Try[NodeUri] = {
-    val patternWithPort = ("""(\w+)@([\w\.]+(\w+)):(\d{2,5})""").r
+    val patternWithPort = """(\w+)@([\w.]+(\w+)):(\d{2,5})""".r
 
     val isUriWithPort = patternWithPort.findFirstIn(uri)
 
     val nodeUriT = isUriWithPort match {
-      case Some(uri) =>
-        Success(parse(uri))
+      case Some(withPort) =>
+        Success(parse(withPort))
       case None =>
         Failure(new IllegalArgumentException(s"Failed to parse $uri to a NodeUri"))
     }

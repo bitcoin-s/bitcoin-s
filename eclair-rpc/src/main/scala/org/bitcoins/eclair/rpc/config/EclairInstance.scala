@@ -48,7 +48,7 @@ object EclairInstance {
     * [[https://github.com/ACINQ/eclair/blob/master/eclair-core/src/main/resources/reference.conf sample reference.conf]]
     * file to a
     * [[org.bitcoins.eclair.rpc.config.EclairInstance EclairInstance]]
-   */
+    */
   def fromConfig(config: Config): EclairInstance = {
     val chain = config.getString("eclair.chain")
 
@@ -65,9 +65,9 @@ object EclairInstance {
       case network: String => throw new IllegalArgumentException(s"Unknown network $network in eclair.conf")
     }
 
-    val uri: URI = new URI(s"http://${serverBindingIp}:${serverPort}")
+    val uri: URI = new URI(s"http://$serverBindingIp:$serverPort")
 
-    val rpcUri: URI = new URI(s"http://${rpcHost}:${rpcPort}")
+    val rpcUri: URI = new URI(s"http://$rpcHost:$rpcPort")
 
     val eclairAuth = EclairAuthCredentials.fromConfig(config)
 
