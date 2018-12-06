@@ -19,10 +19,8 @@ sealed abstract class Bech32 {
     UInt32("3d4233dd").toLong, UInt32("2a1462b3").toLong)
 
   /**
-   * Creates a checksum for the given byte vector according to BIP173
-   * [[https://github.com/bitcoin/bips/blob/master/bip-0173.mediawiki#bech32]]
-   * @param u5s
-   * @return
+    * Creates a checksum for the given byte vector according to
+    * [[https://github.com/bitcoin/bips/blob/master/bip-0173.mediawiki#bech32 BIP173]]
    */
   def createChecksum(u5s: Vector[UInt5]): Vector[UInt5] = {
     val z = UInt5.zero
@@ -37,10 +35,8 @@ sealed abstract class Bech32 {
   }
 
   /**
-   * Expands the human readable part of a bech32 address as per BIP173
-   * [[https://github.com/bitcoin/bips/blob/master/bip-0173.mediawiki#bech32]]
-   * @param bytes
-   * @return
+    * Expands the human readable part of a bech32 address as per
+    * [[https://github.com/bitcoin/bips/blob/master/bip-0173.mediawiki#bech32 BIP173]]
    */
   def hrpExpand(bytes: ByteVector): Vector[UInt5] = {
     val x: ByteVector = bytes.map { b: Byte =>
@@ -72,7 +68,9 @@ sealed abstract class Bech32 {
     chk
   }
 
-  /** Checks if the possible human readable part follows BIP173 rules */
+  /** Checks if the possible human readable part follows
+    * [[https://github.com/bitcoin/bips/blob/master/bip-0173.mediawiki#bech32 BIP173]]
+    * rules */
   def checkHrpValidity[T](hrp: String, f: String => Try[T]): Try[T] = {
     @tailrec
     def loop(remaining: List[Char], accum: Seq[UInt8], isLower: Boolean, isUpper: Boolean): Try[Seq[UInt8]] = remaining match {
@@ -215,7 +213,10 @@ object Bech32 extends Bech32 {
   /** Separator used to separate the hrp & data parts of a bech32 addr */
   val separator = '1'
 
-  /** https://github.com/bitcoin/bips/blob/master/bip-0173.mediawiki#bech32 */
+  /*
+   * See [[https://github.com/bitcoin/bips/blob/master/bip-0173.mediawiki#bech32 BIP173]]
+   * for more
+   */
   val charset: Vector[Char] = Vector(
     'q', 'p', 'z', 'r', 'y', '9', 'x', '8',
     'g', 'f', '2', 't', 'v', 'd', 'w', '0',

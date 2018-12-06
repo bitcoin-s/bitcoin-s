@@ -7,26 +7,27 @@ import org.bitcoins.rpc.config.BitcoindAuthCredentials
 
 sealed trait EclairAuthCredentials {
 
-  /** The directory where our eclair.conf file is located */
+  /** The directory where our `eclair.conf` file is located */
   def datadir: Option[File]
 
   def bitcoinAuthOpt: Option[BitcoindAuthCredentials]
 
-  /** rpcusername field in our bitcoin.conf file */
+  /** `rpcusername` field in our `bitcoin.conf` file */
   def bitcoinUsername: Option[String] = {
     bitcoinAuthOpt.map(_.username)
   }
 
-  /** rpcpassword field in our bitcoin.conf file */
+  /** `rpcpassword` field in our `bitcoin.conf` file */
   def bitcoinPassword: Option[String] = {
     bitcoinAuthOpt.map(_.password)
   }
 
+  /** `rpcport` field in our `bitcoin.conf` file */
   def bitcoinRpcPort: Option[Int] = {
     bitcoinAuthOpt.map(_.rpcPort)
   }
 
-  /** api password field in our eclair.conf file */
+  /** `eclair.api.password` field in our `eclair.conf` file */
   def password: String
 
   /** The port for eclair's rpc client */
@@ -71,10 +72,10 @@ object EclairAuthCredentials {
   }
 
   /**
-   * Parses a config in the format of this to a [[EclairAuthCredentials]]
-   * [[https://github.com/ACINQ/eclair/blob/master/eclair-core/src/main/resources/reference.conf]]
-   * @param config
-   * @return
+   * Parses a [[com.typesafe.config.Config Config]] in the format of this
+   * [[https://github.com/ACINQ/eclair/blob/master/eclair-core/src/main/resources/reference.conf sample reference.conf]]
+   * file to a
+   * [[org.bitcoins.eclair.rpc.config.EclairAuthCredentials EclairAuthCredentials]]
    */
   def fromConfig(config: Config): EclairAuthCredentials = {
 

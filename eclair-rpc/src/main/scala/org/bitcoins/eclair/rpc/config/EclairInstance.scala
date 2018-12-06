@@ -44,10 +44,10 @@ object EclairInstance {
 
   }
   /**
-   * Parses a [[Config]] to a [[EclairInstance]] in the format of this
-   * [[https://github.com/ACINQ/eclair/blob/master/eclair-core/src/main/resources/reference.conf]]
-   * @param config
-   * @return
+    * Parses a [[com.typesafe.config.Config Config]] in the format of this
+    * [[https://github.com/ACINQ/eclair/blob/master/eclair-core/src/main/resources/reference.conf sample reference.conf]]
+    * file to a
+    * [[org.bitcoins.eclair.rpc.config.EclairInstance EclairInstance]]
    */
   def fromConfig(config: Config): EclairInstance = {
     val chain = config.getString("eclair.chain")

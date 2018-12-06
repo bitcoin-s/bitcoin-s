@@ -59,7 +59,12 @@ trait NumberUtil extends BitcoinSLogger {
   /** Converts a hex string to a [[Long]]. */
   def toLong(hex: String): Long = toLong(BitcoinSUtil.decodeHex(hex))
 
-  /** Converts a sequence uint8 'from' base to 'to' base */
+  /**
+    *
+    * Converts a sequence uint8 `from` base to `to` base
+    * @param pad
+    * @param f
+    */
   def convert[To <: Number[To]](data: Vector[UInt8], from: UInt32, to: UInt32, pad: Boolean, f: UInt8 => To): Try[Vector[To]] = {
     var acc: UInt32 = UInt32.zero
     var bits: UInt32 = UInt32.zero

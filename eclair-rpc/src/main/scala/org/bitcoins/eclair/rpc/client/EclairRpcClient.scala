@@ -291,15 +291,16 @@ class EclairRpcClient(val instance: EclairInstance)(implicit system: ActorSystem
 
   /**
    * Pings eclair every second to see if a invoice has been paid
-   * If the invoice has bene paid, we publish a [[PaymentSucceeded]]
-   * event to the [[ActorSystem]]'s [[ActorSystem.eventStream]]
+   * If the invoice has bene paid, we publish a
+    * [[org.bitcoins.eclair.rpc.json.PaymentSucceeded PaymentSucceeded]]
+   * event to the [[akka.actor.ActorSystem ActorSystem]]'s
+    * [[akka.event.EventStream ActorSystem.eventStream]]
    *
-   * If your application is interested in listening for payemtns,
+   * If your application is interested in listening for payments,
    * you need to subscribe to the even stream and listen for a
-   * [[PaymentSucceeded]] case class. You also need to check the
+   * [[org.bitcoins.eclair.rpc.json.PaymentSucceeded PaymentSucceeded]]
+    * case class. You also need to check the
    * payment hash is the hash you expected
-   * @param invoice
-   * @param system
    */
   private def registerPaymentMonitor(invoice: LnInvoice)(implicit system: ActorSystem): Unit = {
 
