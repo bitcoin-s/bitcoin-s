@@ -123,17 +123,13 @@ class EclairRpcClient(val instance: EclairInstance)(implicit system: ActorSystem
     eclairCall[String]("connect", List(JsString(uri.toString)))
   }
 
-  // When types are introduced this can be two different functions
-  override def findRoute(nodeIdOrInvoice: Either[NodeId, LnInvoice]): Future[Vector[String]] = {
-    val str = {
-      if (nodeIdOrInvoice.isLeft) {
-        nodeIdOrInvoice.left.get.hex
-      } else {
-        nodeIdOrInvoice.right.get.toString
+  override def findRoute(nodeId: NodeId): Future[Vector[String]] = {
+    eclairCall[Vector[String]]("findroute", List(JsString(nodeId.hex)))
       }
+
+  override def findRoute(invoice: LnInvoice): Future[Vector[String]] = {
+    eclairCall[Vector[String]]("findroute", List(JsString(invoice.toString)))
     }
-    eclairCall[Vector[String]]("findroute", List(JsString(str)))
-  }
 
   override def forceClose(channelId: ChannelId): Future[String] = {
     eclairCall[String]("forceclose", List(JsString(channelId.hex)))
