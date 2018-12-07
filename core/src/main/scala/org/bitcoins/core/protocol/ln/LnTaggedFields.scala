@@ -138,11 +138,11 @@ object LnTaggedFields {
           val newRemaining = t.slice(payload.size, t.size)
 
           loop(newRemaining, fields.:+(tag))
-
         case Nil =>
           fields
-        case _ =>
-          throw new IllegalArgumentException("Failed to parse LnTaggedFields, needs 15bits of meta data to be able to parse")
+        case _ :: _ | _ :: _ :: _ =>
+          throw new IllegalArgumentException(
+            "Failed to parse LnTaggedFields, needs 15bits of meta data to be able to parse")
       }
     }
 

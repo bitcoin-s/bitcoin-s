@@ -83,7 +83,7 @@ object LnTag {
         case 20 =>
           val hash = Sha256Hash160Digest.fromBytes(bytes)
           P2WPKHWitnessSPKV0.fromHash(hash)
-        case _ =>
+        case _: Long =>
           throw new IllegalArgumentException(s"Can only create witness spk out of a 32 byte or 20 byte hash, got ${bytes.length}")
       }
       Bech32Address(witSPK, np)
