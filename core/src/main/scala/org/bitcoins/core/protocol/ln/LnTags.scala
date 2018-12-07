@@ -98,7 +98,7 @@ object LnTag {
           val hash = Sha256Hash160Digest(bytes)
           P2SHAddress(hash, np)
         case WitSPK.u8 => witnessFromU8(bytes, np)
-        case _ =>
+        case _: UInt8 =>
           throw new IllegalArgumentException(s"Illegal version to create a fallback address from, got $version")
       }
       LnTag.FallbackAddressTag(address)
