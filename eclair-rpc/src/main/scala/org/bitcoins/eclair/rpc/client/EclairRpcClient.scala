@@ -1,5 +1,6 @@
 package org.bitcoins.eclair.rpc.client
 
+import java.io.File
 import java.util.UUID
 
 import akka.actor.ActorSystem
@@ -11,8 +12,8 @@ import akka.util.ByteString
 import org.bitcoins.core.crypto.Sha256Digest
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.protocol.ln.LnInvoice
-import org.bitcoins.core.protocol.ln.channel.{ ChannelId, FundedChannelId }
-import org.bitcoins.core.protocol.ln.currency.{ LnCurrencyUnit, MilliSatoshis }
+import org.bitcoins.core.protocol.ln.channel.{ChannelId, FundedChannelId}
+import org.bitcoins.core.protocol.ln.currency.{LnCurrencyUnit, MilliSatoshis}
 import org.bitcoins.core.protocol.ln.node.NodeId
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.util.BitcoinSUtil
@@ -20,14 +21,14 @@ import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.eclair.rpc.api.EclairApi
 import org.bitcoins.eclair.rpc.config.EclairInstance
 import org.bitcoins.eclair.rpc.json._
-import org.bitcoins.eclair.rpc.network.{ NodeUri, PeerState }
+import org.bitcoins.eclair.rpc.network.{NodeUri, PeerState}
 import org.slf4j.LoggerFactory
 import play.api.libs.json._
 
 import scala.concurrent.duration.DurationInt
-import scala.concurrent.{ Await, ExecutionContext, Future, Promise }
+import scala.concurrent.{Await, ExecutionContext, Future, Promise}
 import scala.sys.process._
-import scala.util.{ Failure, Success, Try }
+import scala.util.{Failure, Properties, Success, Try}
 
 class EclairRpcClient(val instance: EclairInstance)(implicit system: ActorSystem) extends EclairApi {
   import JsonReaders._
@@ -54,7 +55,7 @@ class EclairRpcClient(val instance: EclairInstance)(implicit system: ActorSystem
     eclairCall[Vector[ChannelUpdate]]("allupdates", params)
   }
 
-  def allUpdates: Future[Vector[ChannelUpdate]] = allUpdates(None)
+  def allUpdates: Future[Vector[ChannelUpdate]] = allUpdates(nodeIdOpt = None)
 
   def allUpdates(nodeId: NodeId): Future[Vector[ChannelUpdate]] =
     allUpdates(Some(nodeId))
@@ -69,7 +70,7 @@ class EclairRpcClient(val instance: EclairInstance)(implicit system: ActorSystem
     eclairCall[Vector[ChannelInfo]]("channels", params)
   }
 
-  def channels(): Future[Vector[ChannelInfo]] = channels(None)
+  def channels(): Future[Vector[ChannelInfo]] = channels(nodeId = None)
 
   override def channels(nodeId: NodeId): Future[Vector[ChannelInfo]] =
     channels(Some(nodeId))
@@ -107,7 +108,7 @@ class EclairRpcClient(val instance: EclairInstance)(implicit system: ActorSystem
     eclairCall[String]("close", params)
   }
 
-  def close(channelId: ChannelId): Future[String] = close(channelId, None)
+  def close(channelId: ChannelId): Future[String] = close(channelId, scriptPubKey = None)
 
   override def close(channelId: ChannelId, scriptPubKey: ScriptPubKey): Future[String] = {
     close(channelId, Some(scriptPubKey))
@@ -123,16 +124,8 @@ class EclairRpcClient(val instance: EclairInstance)(implicit system: ActorSystem
     eclairCall[String]("connect", List(JsString(uri.toString)))
   }
 
-  // When types are introduced this can be two different functions
-  override def findRoute(nodeIdOrInvoice: Either[NodeId, LnInvoice]): Future[Vector[String]] = {
-    val str = {
-      if (nodeIdOrInvoice.isLeft) {
-        nodeIdOrInvoice.left.get.hex
-      } else {
-        nodeIdOrInvoice.right.get.toString
-      }
-    }
-    eclairCall[Vector[String]]("findroute", List(JsString(str)))
+  override def findRoute(nodeId: NodeId): Future[Vector[String]] = {
+    eclairCall[Vector[String]]("findroute", List(JsString(nodeId.hex)))
   }
 
   override def forceClose(channelId: ChannelId): Future[String] = {
@@ -197,18 +190,18 @@ class EclairRpcClient(val instance: EclairInstance)(implicit system: ActorSystem
     //let's just return the chanId
     val chanIdF = call.map(_.split(" ").last)
 
-    chanIdF.map(FundedChannelId.fromHex(_))
+    chanIdF.map(FundedChannelId.fromHex)
   }
 
   def open(nodeId: NodeId, fundingSatoshis: CurrencyUnit): Future[FundedChannelId] = {
-    open(nodeId, fundingSatoshis, None, None, None)
+    open(nodeId, fundingSatoshis, pushMsat = None, feerateSatPerByte = None, channelFlags = None)
   }
 
   def open(
     nodeId: NodeId,
     fundingSatoshis: CurrencyUnit,
     pushMsat: MilliSatoshis): Future[FundedChannelId] = {
-    open(nodeId, fundingSatoshis, Some(pushMsat), None, None)
+    open(nodeId, fundingSatoshis, Some(pushMsat), feerateSatPerByte = None, channelFlags = None)
   }
 
   def open(
@@ -216,7 +209,7 @@ class EclairRpcClient(val instance: EclairInstance)(implicit system: ActorSystem
     fundingSatoshis: CurrencyUnit,
     pushMsat: MilliSatoshis,
     feerateSatPerByte: SatoshisPerByte): Future[FundedChannelId] = {
-    open(nodeId, fundingSatoshis, Some(pushMsat), Some(feerateSatPerByte), None)
+    open(nodeId, fundingSatoshis, Some(pushMsat), Some(feerateSatPerByte), channelFlags = None)
   }
 
   def open(
@@ -241,7 +234,7 @@ class EclairRpcClient(val instance: EclairInstance)(implicit system: ActorSystem
     open(
       nodeId,
       fundingSatoshis,
-      None,
+      pushMsat = None,
       Some(feerateSatPerByte),
       Some(channelFlags))
   }
@@ -291,15 +284,16 @@ class EclairRpcClient(val instance: EclairInstance)(implicit system: ActorSystem
 
   /**
    * Pings eclair every second to see if a invoice has been paid
-   * If the invoice has bene paid, we publish a [[PaymentSucceeded]]
-   * event to the [[ActorSystem]]'s [[ActorSystem.eventStream]]
+   * If the invoice has bene paid, we publish a
+    * [[org.bitcoins.eclair.rpc.json.PaymentSucceeded PaymentSucceeded]]
+   * event to the [[akka.actor.ActorSystem ActorSystem]]'s
+    * [[akka.event.EventStream ActorSystem.eventStream]]
    *
-   * If your application is interested in listening for payemtns,
+   * If your application is interested in listening for payments,
    * you need to subscribe to the even stream and listen for a
-   * [[PaymentSucceeded]] case class. You also need to check the
+   * [[org.bitcoins.eclair.rpc.json.PaymentSucceeded PaymentSucceeded]]
+    * case class. You also need to check the
    * payment hash is the hash you expected
-   * @param invoice
-   * @param system
    */
   private def registerPaymentMonitor(invoice: LnInvoice)(implicit system: ActorSystem): Unit = {
 
@@ -348,13 +342,13 @@ class EclairRpcClient(val instance: EclairInstance)(implicit system: ActorSystem
   }
 
   def receive(): Future[LnInvoice] =
-    receive(None, None, None)
+    receive(amountMsat = None, description = None, expirySeconds = None)
 
   def receive(description: String): Future[LnInvoice] =
-    receive(None, Some(description), None)
+    receive(amountMsat = None, Some(description), expirySeconds = None)
 
   override def receive(amountMsat: LnCurrencyUnit, description: String): Future[LnInvoice] =
-    receive(Some(amountMsat), Some(description), None)
+    receive(Some(amountMsat), Some(description), expirySeconds = None)
 
   def receive(
     amountMsat: LnCurrencyUnit,
@@ -363,10 +357,10 @@ class EclairRpcClient(val instance: EclairInstance)(implicit system: ActorSystem
     receive(Some(amountMsat), Some(description), Some(expirySeconds))
 
   def receive(amountMsat: LnCurrencyUnit): Future[LnInvoice] =
-    receive(Some(amountMsat), None, None)
+    receive(Some(amountMsat), description = None, expirySeconds = None)
 
   def receive(amountMsat: LnCurrencyUnit, expirySeconds: Long): Future[LnInvoice] =
-    receive(Some(amountMsat), None, Some(expirySeconds))
+    receive(Some(amountMsat), description = None, Some(expirySeconds))
 
   def send(
     amountMsat: LnCurrencyUnit,
@@ -488,9 +482,22 @@ class EclairRpcClient(val instance: EclairInstance)(implicit system: ActorSystem
   // TODO: THIS IS ALL HACKY
 
   private def pathToEclairJar: String = {
-    val path = System.getenv("ECLAIR_PATH")
+    val path = Properties
+      .envOrNone("ECLAIR_PATH")
+      .getOrElse(throw new RuntimeException(
+        List("Environment variable ECLAIR_PATH is not set!",
+        "This needs to be set to the directory containing the Eclair Jar"
+        ).mkString(" ")))
+
     val eclairV = "/eclair-node-0.2-beta8-52821b8.jar"
-    path + eclairV
+    val fullPath = path + eclairV
+
+    val jar = new File(fullPath)
+    if (jar.exists) {
+      fullPath
+    } else {
+      throw new RuntimeException(s"Could not Eclair Jar at location $fullPath")
+    }
   }
 
   private var process: Option[Process] = None
@@ -498,7 +505,7 @@ class EclairRpcClient(val instance: EclairInstance)(implicit system: ActorSystem
   def start(): Unit = {
 
     if (process.isEmpty) {
-      val p = Process("java -jar -Declair.datadir=" + instance.authCredentials.datadir.get + s" ${pathToEclairJar} &")
+      val p = Process(s"java -jar -Declair.datadir=${instance.authCredentials.datadir.get} $pathToEclairJar &")
       val result = p.run()
       logger.info(s"Starting eclair with datadir ${instance.authCredentials.datadir.get}")
 

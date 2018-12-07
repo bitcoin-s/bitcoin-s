@@ -59,7 +59,12 @@ trait NumberUtil extends BitcoinSLogger {
   /** Converts a hex string to a [[Long]]. */
   def toLong(hex: String): Long = toLong(BitcoinSUtil.decodeHex(hex))
 
-  /** Converts a sequence uint8 'from' base to 'to' base */
+  /**
+    *
+    * Converts a sequence uint8 `from` base to `to` base
+    * @param pad
+    * @param f
+    */
   def convert[To <: Number[To]](data: Vector[UInt8], from: UInt32, to: UInt32, pad: Boolean, f: UInt8 => To): Try[Vector[To]] = {
     var acc: UInt32 = UInt32.zero
     var bits: UInt32 = UInt32.zero
@@ -78,7 +83,7 @@ trait NumberUtil extends BitcoinSLogger {
           bits = bits + from
           while (bits >= to) {
             bits = bits - to
-            val newBase = UInt8((((acc >> bits) & maxv).toInt.toShort))
+            val newBase = UInt8(((acc >> bits) & maxv).toInt.toShort)
             val r: To = f(newBase)
             ret.+=(r)
           }
@@ -106,14 +111,14 @@ trait NumberUtil extends BitcoinSLogger {
 
   def convertUInt8sToUInt5s(u8s: Vector[UInt8]): Vector[UInt5] = {
     val f = { u8: UInt8 => UInt5.fromByte(UInt8.toByte(u8)) }
-    val u8sTry = NumberUtil.convert[UInt5](u8s, UInt32(8), UInt32(5), true, f)
+    val u8sTry = NumberUtil.convert[UInt5](u8s, UInt32(8), UInt32(5), pad = true, f)
     u8sTry.get
 
   }
 
   def convertUInt5sToUInt8(u5s: Vector[UInt5]): Vector[UInt8] = {
     val u8s = u5s.map(_.toUInt8)
-    val u8sTry = NumberUtil.convert[UInt8](u8s, UInt32(5), UInt32(8), false, { u8: UInt8 => u8 })
+    val u8sTry = NumberUtil.convert[UInt8](u8s, UInt32(5), UInt32(8), pad = false, { u8: UInt8 => u8 })
     //should always be able to convert from uint5 => uint8
     u8sTry.get
   }

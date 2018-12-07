@@ -10,9 +10,9 @@ sealed abstract class LnTagPrefix {
 }
 
 /**
- * This defines the necessary Lightning Network Tag Prefix's, as specified in BOLT-11
- * Please see: https://github.com/lightningnetwork/lightning-rfc/blob/master/11-payment-encoding.md#tagged-fields
- */
+  * This defines the necessary Lightning Network Tag Prefix's, as specified in BOLT-11
+  * Please see: https://github.com/lightningnetwork/lightning-rfc/blob/master/11-payment-encoding.md#tagged-fields
+  */
 object LnTagPrefix {
 
   case object PaymentHash extends LnTagPrefix {
@@ -47,25 +47,36 @@ object LnTagPrefix {
     override val value: Char = 'r'
   }
 
-  private val all: List[LnTagPrefix] = List(
-    PaymentHash, Description, NodeId,
-    DescriptionHash, ExpiryTime, CltvExpiry,
-    FallbackAddress, RoutingInfo)
+  private lazy val all: Map[Char, LnTagPrefix] =
+    List(PaymentHash,
+         Description,
+         NodeId,
+         DescriptionHash,
+         ExpiryTime,
+         CltvExpiry,
+         FallbackAddress,
+         RoutingInfo)
+      .map(prefix => prefix.value -> prefix)
+      .toMap
 
   def fromString(str: String): Option[LnTagPrefix] = {
     if (str.length == 1) {
-      all.find(_.value == str.head)
+      fromChar(str.head)
     } else {
       None
     }
+  }
 
+  def fromChar(char: Char): Option[LnTagPrefix] = {
+    all.get(char)
   }
 
   private lazy val prefixUInt5: Map[UInt5, LnTagPrefix] = {
-    all.map { a =>
-      val index = Bech32.charset.indexOf(a.value)
-      (UInt5(index), a)
-    }.toMap
+    all.map {
+      case (_, prefix) =>
+        val index = Bech32.charset.indexOf(prefix.value)
+        (UInt5(index), prefix)
+    }
   }
 
   def fromUInt5(u5: UInt5): Option[LnTagPrefix] = {

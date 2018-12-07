@@ -10,8 +10,6 @@ import scodec.bits.ByteVector
 import scala.util.{ Failure, Try }
 
 sealed abstract class LnCurrencyUnit extends NetworkElement {
-  type A
-
   def character: Char
 
   def >=(ln: LnCurrencyUnit): Boolean = {
@@ -63,7 +61,7 @@ sealed abstract class LnCurrencyUnit extends NetworkElement {
 
   def toInt: Int = toBigInt.bigInteger.intValueExact()
 
-  protected def underlying: A
+  protected def underlying: BigInt
 
   def toSatoshis: Satoshis = {
     LnCurrencyUnits.toSatoshi(this)
@@ -88,22 +86,21 @@ sealed abstract class LnCurrencyUnit extends NetworkElement {
   def toMSat: MilliSatoshis = MilliSatoshis.fromPico(toPicoBitcoins)
 
   /** This returns the string encoding defined in BOLT11
-    * For instance, 100 [[PicoBitcoins]] would appear as "100p"
-    * @return
+    * For instance, 100
+    * [[org.bitcoins.core.protocol.ln.currency.PicoBitcoins PicoBitcoins]]
+    * would appear as "100p"
     */
   def toEncodedString: String = {
-    toBigInt + character.toString()
+    toBigInt + character.toString
   }
 }
 
 sealed abstract class MilliBitcoins extends LnCurrencyUnit {
-  override type A = BigInt
-
   override def character: Char = 'm'
 
   override def toPicoBitcoinMultiplier: Int = 1000000000
 
-  override def toBigInt: A = underlying
+  override def toBigInt: BigInt = underlying
 
 }
 
@@ -124,13 +121,11 @@ object MilliBitcoins extends BaseNumbers[MilliBitcoins] {
 }
 
 sealed abstract class MicroBitcoins extends LnCurrencyUnit {
-  override type A = BigInt
-
   override def character: Char = 'u'
 
   override def toPicoBitcoinMultiplier: Int = 1000000
 
-  override def toBigInt: A = underlying
+  override def toBigInt: BigInt = underlying
 
 }
 
@@ -151,13 +146,11 @@ object MicroBitcoins extends BaseNumbers[MicroBitcoins] {
 }
 
 sealed abstract class NanoBitcoins extends LnCurrencyUnit {
-  override type A = BigInt
-
   override def character: Char = 'n'
 
   override def toPicoBitcoinMultiplier: Int = 1000
 
-  override def toBigInt: A = underlying
+  override def toBigInt: BigInt = underlying
 
 }
 
@@ -178,13 +171,11 @@ object NanoBitcoins extends BaseNumbers[NanoBitcoins] {
 }
 
 sealed abstract class PicoBitcoins extends LnCurrencyUnit {
-  override type A = BigInt
-
   override def character: Char = 'p'
 
   override def toPicoBitcoinMultiplier: Int = 1
 
-  override def toBigInt: A = underlying
+  override def toBigInt: BigInt = underlying
 }
 
 object PicoBitcoins extends BaseNumbers[PicoBitcoins] {
@@ -204,14 +195,14 @@ object PicoBitcoins extends BaseNumbers[PicoBitcoins] {
 }
 
 object LnCurrencyUnits {
-  val PICO_TO_SATOSHIS = 10000
-  val MSAT_TO_PICO = 10
+  private[currency] val PICO_TO_SATOSHIS = 10000
+  private[currency] val MSAT_TO_PICO = 10
   val zero: LnCurrencyUnit = PicoBitcoins.zero
 
   /**
-   * For information regarding the rounding of sub-Satoshi values, please visit:
-   * https://github.com/lightningnetwork/lightning-rfc/blob/master/03-transactions.md#commitment-transaction-outputs
-   */
+    * For information regarding the rounding of sub-Satoshi values, see
+    * [[https://github.com/lightningnetwork/lightning-rfc/blob/master/03-transactions.md#commitment-transaction-outputs BOLT3]]
+    */
   def toSatoshi(lnCurrencyUnits: LnCurrencyUnit): Satoshis = {
     val pico = lnCurrencyUnits.toPicoBitcoins
     val sat = pico.toBigInt / PICO_TO_SATOSHIS
@@ -226,10 +217,9 @@ object LnCurrencyUnits {
   }
 
   def fromEncodedString(input: String): Try[LnCurrencyUnit] = {
-    val currency = input.splitAt(input.length - 1)
-    val amount = Try(BigInt(currency._1))
+    val (amountStr, unit) = input.splitAt(input.length - 1)
+    val amount = Try(BigInt(amountStr))
     if (amount.isSuccess) {
-      val unit = currency._2
       unit match {
         case "m" => Try(MilliBitcoins(amount.get))
         case "u" => Try(MicroBitcoins(amount.get))

@@ -14,10 +14,9 @@ sealed abstract class LnParams {
   def lnPort: Int
 
   /**
-   * The prefix for generating invoices for a Lightning Invoice
-   * See BOLT11 for more details
-   * [[https://github.com/lightningnetwork/lightning-rfc/blob/master/11-payment-encoding.md]]
-   * @return
+   * The prefix for generating invoices for a Lightning Invoice. See
+   * [[https://github.com/lightningnetwork/lightning-rfc/blob/master/11-payment-encoding.md BOLT11]]
+   * for more details
    */
   def invoicePrefix: ByteVector
 }
@@ -25,7 +24,7 @@ sealed abstract class LnParams {
 object LnParams {
 
   case object LnBitcoinMainNet extends LnParams {
-    override def network = MainNet
+    override def network: MainNet.type = MainNet
 
     override def lnRpcPort = 8080
 
@@ -37,7 +36,7 @@ object LnParams {
   }
 
   case object LnBitcoinTestNet extends LnParams {
-    override def network = TestNet3
+    override def network: TestNet3.type = TestNet3
 
     override def lnRpcPort = 8080
 
@@ -49,7 +48,7 @@ object LnParams {
   }
 
   case object LnBitcoinRegTest extends LnParams {
-    override def network = RegTest
+    override def network: RegTest.type = RegTest
 
     override def lnRpcPort = 8080
 
@@ -60,11 +59,13 @@ object LnParams {
     }
   }
 
-  private val allNetworks: Vector[LnParams] = Vector(LnBitcoinMainNet, LnBitcoinTestNet, LnBitcoinRegTest)
-
-  def fromNetworkParameters(np: NetworkParameters): Option[LnParams] = {
-    allNetworks.find(_.network == np)
+  def fromNetworkParameters(np: NetworkParameters): LnParams = np match {
+    case MainNet => LnBitcoinMainNet
+    case TestNet3 => LnBitcoinTestNet
+    case RegTest => LnBitcoinRegTest
   }
+
+  private val allNetworks: Vector[LnParams] = Vector(LnBitcoinMainNet, LnBitcoinTestNet, LnBitcoinRegTest)
 
   private val prefixes: Map[String, LnParams] = {
     val vec: Vector[(String, LnParams)] = {
@@ -76,11 +77,9 @@ object LnParams {
   }
 
   /**
-   * Returns a [[org.bitcoins.core.protocol.ln.LnParams]] whose
-   * network prefix matches the given string. See BOLT11 for more details on prefixes
-   * [[https://github.com/lightningnetwork/lightning-rfc/blob/master/11-payment-encoding.md#human-readable-part]]
-   * @param str
-   * @return
+   * Returns a [[org.bitcoins.core.protocol.ln.LnParams LnParams]] whose
+   * network prefix matches the given string. See [[https://github.com/lightningnetwork/lightning-rfc/blob/master/11-payment-encoding.md#human-readable-part BOLT11 ]]
+   * for more details on prefixes.
    */
   def fromPrefixString(str: String): Option[LnParams] = {
     prefixes.get(str)

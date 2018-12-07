@@ -1,24 +1,25 @@
 package org.bitcoins.core.protocol.ln.currency
 
-import org.bitcoins.core.currency.{ CurrencyUnit, Satoshis }
+import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.number.UInt64
 import org.bitcoins.core.protocol.NetworkElement
+import scodec.bits.ByteVector
 
 import scala.math.BigDecimal.RoundingMode
 
 /**
  * The common currency unit used in the
- * Lightning Protocols for updating HTLCs
- * [[https://github.com/lightningnetwork/lightning-rfc/blob/1ddc1a54d704185364eec6f4fa7c13a39abe3005/02-peer-protocol.md#adding-an-htlc-update_add_htlc]]
+ * LN protocol for updating HTLCs. See
+ * [[https://github.com/lightningnetwork/lightning-rfc/blob/master/02-peer-protocol.md#adding-an-htlc-update_add_htlc BOLT2]]
  */
 sealed abstract class MilliSatoshis extends NetworkElement {
-  require(toBigInt >= 0, s"Millisatoshis cannot be negative, got ${toBigInt}")
+  require(toBigInt >= 0, s"Millisatoshis cannot be negative, got $toBigInt")
 
   protected def underlying: BigInt
 
   def toBigInt: BigInt = underlying
 
-  def toLong: Long = toBigInt.bigInteger.longValueExact()
+  def toLong: Long = toBigInt.bigInteger.longValueExact
 
   def toBigDecimal: BigDecimal = BigDecimal(toBigInt)
 
@@ -82,7 +83,7 @@ sealed abstract class MilliSatoshis extends NetworkElement {
     toLnCurrencyUnit.toSatoshis
   }
 
-  override def bytes = toUInt64.bytes.reverse
+  override def bytes: ByteVector = toUInt64.bytes.reverse
 
 }
 
@@ -108,7 +109,7 @@ object MilliSatoshis {
 
     val rounded = msatDec.setScale(0, RoundingMode.DOWN)
 
-    MilliSatoshis(rounded.toBigIntExact().get)
+    MilliSatoshis(rounded.toBigIntExact.get)
   }
 
   def apply(lnCurrencyUnit: LnCurrencyUnit): MilliSatoshis = {
