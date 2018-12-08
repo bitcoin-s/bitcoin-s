@@ -1,6 +1,6 @@
 package org.bitcoins.core.serializers.transaction
 
-import org.bitcoins.core.number.{ UInt32, UInt64 }
+import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.transaction.{ TransactionConstants, TransactionInput }
 import org.bitcoins.core.util.{ BitcoinSLogger, BitcoinSUtil, TestUtil }
 import org.scalatest.{ FlatSpec, MustMatchers }

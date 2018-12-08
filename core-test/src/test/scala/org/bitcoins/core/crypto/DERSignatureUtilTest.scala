@@ -1,6 +1,6 @@
 package org.bitcoins.core.crypto
 
-import org.bitcoins.core.util.{ BitcoinSUtil, NumberUtil }
+import org.bitcoins.core.util.NumberUtil
 import org.scalatest.{ FlatSpec, MustMatchers }
 
 /**

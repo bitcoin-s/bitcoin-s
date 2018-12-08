@@ -2,7 +2,7 @@ package org.bitcoins.core.script
 
 import org.bitcoins.core.script.constant.ScriptConstant
 import org.bitcoins.core.util.BitcoinSUtil
-import org.scalatest.{ MustMatchers, FlatSpec }
+import org.scalatest.{ FlatSpec, MustMatchers }
 
 /**
  * Created by chris on 4/1/16.

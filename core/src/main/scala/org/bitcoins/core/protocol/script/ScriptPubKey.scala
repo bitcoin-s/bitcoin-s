@@ -1,8 +1,8 @@
 package org.bitcoins.core.protocol.script
 
+import org.bitcoins.core.consensus.Consensus
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.protocol._
-import org.bitcoins.core.consensus.Consensus
 import org.bitcoins.core.script.bitwise.{ OP_EQUAL, OP_EQUALVERIFY }
 import org.bitcoins.core.script.constant.{ BytesToPushOntoStack, _ }
 import org.bitcoins.core.script.control.{ OP_ELSE, OP_ENDIF, OP_IF, OP_RETURN }
@@ -10,7 +10,7 @@ import org.bitcoins.core.script.crypto.{ OP_CHECKMULTISIG, OP_CHECKMULTISIGVERIF
 import org.bitcoins.core.script.locktime.{ OP_CHECKLOCKTIMEVERIFY, OP_CHECKSEQUENCEVERIFY }
 import org.bitcoins.core.script.reserved.UndefinedOP_NOP
 import org.bitcoins.core.script.stack.{ OP_DROP, OP_DUP }
-import org.bitcoins.core.serializers.script.{ ScriptParser }
+import org.bitcoins.core.serializers.script.ScriptParser
 import org.bitcoins.core.util._
 import scodec.bits.ByteVector
 
@@ -587,13 +587,17 @@ object P2WPKHWitnessSPKV0 extends ScriptFactory[P2WPKHWitnessSPKV0] {
       asmBytes.size == 22
   }
 
+  def fromHash(hash: Sha256Hash160Digest): P2WPKHWitnessSPKV0 = {
+    val pushop = BitcoinScriptUtil.calculatePushOp(hash.bytes)
+    fromAsm(Seq(OP_0) ++ pushop ++ Seq(ScriptConstant(hash.bytes)))
+  }
+
   /** Creates a P2WPKH witness script pubkey */
   def apply(pubKey: ECPublicKey): P2WPKHWitnessSPKV0 = {
     //https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki#restrictions-on-public-key-type
     require(pubKey.isCompressed, s"Public key must be compressed to be used in a segwit script, see BIP143")
     val hash = CryptoUtil.sha256Hash160(pubKey.bytes)
-    val pushop = BitcoinScriptUtil.calculatePushOp(hash.bytes)
-    fromAsm(Seq(OP_0) ++ pushop ++ Seq(ScriptConstant(hash.bytes)))
+    fromHash(hash)
   }
 }
 
@@ -619,11 +623,15 @@ object P2WSHWitnessSPKV0 extends ScriptFactory[P2WSHWitnessSPKV0] {
       asmBytes.size == 34
   }
 
+  def fromHash(hash: Sha256Digest): P2WSHWitnessSPKV0 = {
+    val pushop = BitcoinScriptUtil.calculatePushOp(hash.bytes)
+    fromAsm(Seq(OP_0) ++ pushop ++ Seq(ScriptConstant(hash.bytes)))
+  }
+
   def apply(spk: ScriptPubKey): P2WSHWitnessSPKV0 = {
     require(BitcoinScriptUtil.isOnlyCompressedPubKey(spk), s"Public key must be compressed to be used in a segwit script, see BIP143")
     val hash = CryptoUtil.sha256(spk.asmBytes)
-    val pushop = BitcoinScriptUtil.calculatePushOp(hash.bytes)
-    fromAsm(Seq(OP_0) ++ pushop ++ Seq(ScriptConstant(hash.bytes)))
+    fromHash(hash)
   }
 }
 

@@ -1,11 +1,7 @@
 package org.bitcoins.core.protocol.script
 
-import org.bitcoins.core.gen.{ TransactionGenerators, ScriptGenerators }
-import org.bitcoins.core.script.ScriptProgram
-import org.bitcoins.core.script.interpreter.ScriptInterpreter
-import org.bitcoins.core.script.result.ScriptOk
-import org.bitcoins.core.util.BitcoinSLogger
-import org.scalacheck.{ Properties, Prop }
+import org.bitcoins.core.gen.ScriptGenerators
+import org.scalacheck.{ Prop, Properties }
 
 /**
  * Created by tom on 8/23/16.

@@ -2,8 +2,7 @@ package org.bitcoins.core.serializers.script
 
 import org.bitcoins.core.protocol.script.ScriptSignature
 import org.bitcoins.core.script.constant._
-import org.bitcoins.core.script.crypto.OP_CHECKMULTISIG
-import org.bitcoins.core.util.{ BitcoinSLogger, BitcoinSUtil, TestUtil }
+import org.bitcoins.core.util.{ BitcoinSUtil, TestUtil }
 import org.scalatest.{ FlatSpec, MustMatchers }
 import scodec.bits.ByteVector
 

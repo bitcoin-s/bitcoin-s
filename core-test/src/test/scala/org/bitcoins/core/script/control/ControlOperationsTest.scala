@@ -1,9 +1,6 @@
 package org.bitcoins.core.script.control
 
-import org.bitcoins.core.script.arithmetic.OP_ADD
-import org.bitcoins.core.script.bitwise.OP_EQUAL
-import org.bitcoins.core.script.constant.{ OP_2, OP_1, OP_0 }
-import org.scalatest.{ MustMatchers, FlatSpec }
+import org.scalatest.{ FlatSpec, MustMatchers }
 
 /**
  * Created by chris on 1/6/16.

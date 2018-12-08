@@ -36,10 +36,28 @@ sealed abstract class ECDigitalSignature {
   def decodeSignature: (BigInt, BigInt) = DERSignatureUtil.decodeSignature(this)
 
   /** Represents the r value found in a elliptic curve digital signature */
-  def r = decodeSignature._1
+  def r: BigInt = decodeSignature._1
 
   /** Represents the s value found in a elliptic curve digital signature */
-  def s = decodeSignature._2
+  def s: BigInt = decodeSignature._2
+
+  /**
+   * Creates a ByteVector with only
+   * the 32byte r value and 32 byte s value
+   * in the vector
+   */
+  def toRawRS: ByteVector = {
+
+    val rBytes = r.toByteArray.takeRight(32)
+    val sBytes = s.toByteArray.takeRight(32)
+
+    val rPadded = ByteVector(rBytes).padLeft(32)
+    val sPadded = ByteVector(sBytes).padLeft(32)
+
+    require(rPadded.size == 32, s"rPadded.size ${rPadded.size}")
+    require(sPadded.size == 32, s"sPadded.size ${sPadded.size}")
+    rPadded ++ sPadded
+  }
 
 }
 
@@ -97,5 +115,29 @@ object ECDigitalSignature extends Factory[ECDigitalSignature] {
     }
 
     fromBytes(bytes)
+  }
+
+  /**
+   * Reads a 64 byte bytevector and assumes
+   * the first 32 bytes in the R value,
+   * the second 32 is the value
+   */
+  def fromRS(byteVector: ByteVector): ECDigitalSignature = {
+    require(
+      byteVector.length == 64,
+      s"Incorrect size for reading a ECDigital signature from a bytevec, got ${byteVector.length}")
+    val r = BigInt(byteVector.take(32).toArray)
+    val s = BigInt(byteVector.takeRight(32).toArray)
+    fromRS(r, s)
+  }
+
+  /**
+   * Reads a 64 byte bytevector and assumes
+   * the first 32 bytes in the R value,
+   * the second 32 is the value
+   */
+  def fromRS(hex: String): ECDigitalSignature = {
+    val bytes = BitcoinSUtil.decodeHex(hex)
+    fromRS(bytes)
   }
 }

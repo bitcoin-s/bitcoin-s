@@ -1,7 +1,7 @@
 package org.bitcoins.core.protocol
 import org.bitcoins.core.config.{ MainNet, RegTest, TestNet3, _ }
-import org.bitcoins.core.crypto.{ ECPublicKey, HashDigest, Sha256Digest, Sha256Hash160Digest }
-import org.bitcoins.core.number.{ UInt32, UInt8 }
+import org.bitcoins.core.crypto._
+import org.bitcoins.core.number.{ UInt5, UInt8 }
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.script.constant.ScriptConstant
 import org.bitcoins.core.util._
@@ -65,24 +65,33 @@ sealed abstract class Bech32Address extends BitcoinAddress {
 
   def hrp: HumanReadablePart
 
-  def data: Seq[UInt8]
+  def data: Vector[UInt5]
 
   override def networkParameters = hrp.network.get
 
   override def value: String = {
-    val checksum = Bech32Address.createChecksum(hrp, data)
-    val all = data ++ checksum
-    val encoding = Bech32Address.encodeToString(all)
-    hrp.toString + Bech32Address.separator + encoding
+    val all: Vector[UInt5] = data ++ checksum
+    val encoding = Bech32.encode5bitToString(all)
+
+    hrp.toString + Bech32.separator + encoding
   }
+
+  def checksum: Vector[UInt5] = Bech32Address.createChecksum(hrp, data)
 
   override def scriptPubKey: WitnessScriptPubKey = {
     Bech32Address.fromStringToWitSPK(value).get
   }
 
-  override def hash: Sha256Digest = {
+  override def hash: HashDigest = {
     val byteVector = BitcoinSUtil.toByteVector(scriptPubKey.witnessProgram)
-    Sha256Digest(byteVector)
+    scriptPubKey match {
+      case _: P2WPKHWitnessSPKV0 =>
+        Sha256Hash160Digest(byteVector)
+      case _: P2WSHWitnessSPKV0 =>
+        Sha256Digest(byteVector)
+      case _: UnassignedWitnessScriptPubKey =>
+        throw new IllegalArgumentException(s"Cannot parse the hash of an unassigned witness scriptpubkey for bech32 address")
+    }
   }
 
   override def toString = "Bech32Address(" + value + ")"
@@ -90,130 +99,71 @@ sealed abstract class Bech32Address extends BitcoinAddress {
 }
 
 object Bech32Address extends AddressFactory[Bech32Address] {
-  private case class Bech32AddressImpl(hrp: HumanReadablePart, data: Seq[UInt8]) extends Bech32Address {
-    verifyChecksum(hrp, UInt8.toBytes(data))
+  private case class Bech32AddressImpl(hrp: HumanReadablePart, data: Vector[UInt5]) extends Bech32Address {
+    //require(verifyChecksum(hrp, data), "checksum did not pass")
   }
-
-  /** Separator used to separate the hrp & data parts of a bech32 addr */
-  val separator = '1'
 
   def apply(
     witSPK: WitnessScriptPubKey,
-    networkParameters: NetworkParameters): Try[Bech32Address] = {
+    networkParameters: NetworkParameters): Bech32Address = {
     //we don't encode the wit version or pushop for program into base5
     val prog = UInt8.toUInt8s(witSPK.asmBytes.tail.tail)
-    val encoded = Bech32Address.encode(prog)
+    val encoded = Bech32.from8bitTo5bit(prog)
     val hrp = networkParameters match {
       case _: MainNet => bc
       case _: TestNet3 | _: RegTest => tb
     }
-    val witVersion = witSPK.witnessVersion.version.toLong.toShort
-    encoded.map(e => Bech32Address(hrp, Seq(UInt8(witVersion)) ++ e))
+    val witVersion = witSPK.witnessVersion.version.toInt.toByte
+    Bech32Address(hrp, Vector(UInt5(witVersion)) ++ encoded)
   }
 
-  def apply(hrp: HumanReadablePart, data: Seq[UInt8]): Bech32Address = {
+  def apply(hrp: HumanReadablePart, data: Vector[UInt5]): Bech32Address = {
     Bech32AddressImpl(hrp, data)
   }
 
   /** Returns a base 5 checksum as specified by BIP173 */
-  def createChecksum(hrp: HumanReadablePart, bytes: Seq[UInt8]): Seq[UInt8] = {
-    val values: Seq[UInt8] = hrpExpand(hrp) ++ bytes
-    val z = UInt8.zero
-    val polymod: Long = polyMod(values ++ Seq(z, z, z, z, z, z)) ^ 1
-    //[(polymod >> 5 * (5 - i)) & 31 for i in range(6)]
-    val result: Seq[UInt8] = 0.until(6).map { i =>
-      //((polymod >> five * (five - u)) & UInt8(31.toShort))
-      UInt8(((polymod >> 5 * (5 - i)) & 31).toShort)
-    }
-    result
+  def createChecksum(hrp: HumanReadablePart, bytes: Vector[UInt5]): Vector[UInt5] = {
+    val values = hrpExpand(hrp) ++ bytes
+    Bech32.createChecksum(values)
   }
 
-  def hrpExpand(hrp: HumanReadablePart): Seq[UInt8] = {
-    val x: ByteVector = hrp.bytes.map { b: Byte =>
-      (b >> 5).toByte
-    }
-    val withZero: ByteVector = x ++ ByteVector.low(1)
-
-    val y: ByteVector = hrp.bytes.map { char =>
-      (char & 0x1f).toByte
-    }
-    val result = UInt8.toUInt8s(withZero ++ y)
-    result
+  def hrpExpand(hrp: HumanReadablePart): Vector[UInt5] = {
+    Bech32.hrpExpand(hrp.bytes)
   }
 
-  private def generators: Seq[Long] = Seq(
-    UInt32("3b6a57b2").toLong,
-    UInt32("26508e6d").toLong, UInt32("1ea119fa").toLong,
-    UInt32("3d4233dd").toLong, UInt32("2a1462b3").toLong)
-
-  def polyMod(bytes: Seq[UInt8]): Long = {
-    var chk: Long = 1
-    bytes.map { v =>
-      val b = chk >> 25
-      //chk = (chk & 0x1ffffff) << 5 ^ v
-      chk = (chk & 0x1ffffff) << 5 ^ v.toLong
-      0.until(5).map { i: Int =>
-        //chk ^= GEN[i] if ((b >> i) & 1) else 0
-        if (((b >> i) & 1) == 1) {
-          chk = chk ^ generators(i)
-        }
-      }
-    }
-    chk
-  }
-
-  def verifyChecksum(hrp: HumanReadablePart, data: ByteVector): Boolean = {
-    val u8s = UInt8.toUInt8s(data)
-    verifyCheckSum(hrp, u8s)
-  }
-
-  def verifyCheckSum(hrp: HumanReadablePart, u8s: Seq[UInt8]): Boolean = {
-    polyMod(hrpExpand(hrp) ++ u8s) == 1
-  }
-
-  private val u32Five = UInt32(5)
-  private val u32Eight = UInt32(8)
-
-  /** Converts a byte array from base 8 to base 5 */
-  def encode(bytes: Seq[UInt8]): Try[Seq[UInt8]] = {
-    NumberUtil.convertUInt8s(bytes, u32Eight, u32Five, true)
-  }
-  /** Decodes a byte array from base 5 to base 8 */
-  def decodeToBase8(b: Seq[UInt8]): Try[Seq[UInt8]] = {
-    NumberUtil.convertUInt8s(b, u32Five, u32Eight, false)
+  def verifyChecksum(hrp: HumanReadablePart, u5s: Seq[UInt5]): Boolean = {
+    val data = hrpExpand(hrp) ++ u5s
+    val checksum = Bech32.polyMod(data)
+    checksum == 1
   }
 
   /** Tries to convert the given string a to a [[org.bitcoins.core.protocol.script.WitnessScriptPubKey]] */
   def fromStringToWitSPK(string: String): Try[WitnessScriptPubKey] = {
     val decoded = fromString(string)
     decoded.flatMap {
-      case bec32Addr =>
-        val bytes = UInt8.toBytes(bec32Addr.data)
-        val (v, prog) = (bytes.head, bytes.tail)
-        val convertedProg = NumberUtil.convertBytes(prog, u32Five, u32Eight, false)
-        val progBytes = convertedProg.map(UInt8.toBytes(_))
-        val witVersion = WitnessVersion(v)
-        progBytes.flatMap { prog =>
-          val pushOp = BitcoinScriptUtil.calculatePushOp(prog)
-          witVersion match {
-            case Some(v) =>
-              WitnessScriptPubKey(Seq(v.version) ++ pushOp ++ Seq(ScriptConstant(prog))) match {
-                case Some(spk) => Success(spk)
-                case None => Failure(new IllegalArgumentException("Failed to decode bech32 into a witSPK"))
-              }
-            case None => Failure(new IllegalArgumentException("Witness version was not valid, got: " + v))
-          }
-
+      case bech32Addr =>
+        val bytes = bech32Addr.data
+        val (v, _) = (bytes.head, bytes.tail)
+        val convertedProg = NumberUtil.convertUInt5sToUInt8(bytes.tail)
+        val progBytes = UInt8.toBytes(convertedProg)
+        val witVersion = WitnessVersion(v.toInt)
+        val pushOp = BitcoinScriptUtil.calculatePushOp(progBytes)
+        witVersion match {
+          case Some(v) =>
+            val witSPK = WitnessScriptPubKey(List(v.version) ++ pushOp ++ List(ScriptConstant(progBytes)))
+            witSPK match {
+              case Some(spk) => Success(spk)
+              case None => Failure(new IllegalArgumentException("Failed to decode bech32 into a witSPK"))
+            }
+          case None => Failure(new IllegalArgumentException("Witness version was not valid, got: " + v))
         }
+
     }
   }
-  /** Takes a base32 byte array and encodes it to a string */
-  def encodeToString(b: Seq[UInt8]): String = {
-    b.map(b => charset(b.toInt)).mkString
-  }
+
   /** Decodes bech32 string to the [[HumanReadablePart]] & data part */
   override def fromString(str: String): Try[Bech32Address] = {
-    val sepIndexes = str.zipWithIndex.filter(_._1 == separator)
+    val sepIndexes = str.zipWithIndex.filter(_._1 == Bech32.separator)
     if (str.size > 90 || str.size < 8) {
       Failure(new IllegalArgumentException("bech32 payloads must be betwee 8 and 90 chars, got: " + str.size))
     } else if (sepIndexes.isEmpty) {
@@ -225,18 +175,18 @@ object Bech32Address extends AddressFactory[Bech32Address] {
         Failure(new IllegalArgumentException("Hrp/data too short"))
       } else {
         val hrpValid = checkHrpValidity(hrp)
-        val dataValid = checkDataValidity(data)
-        val isChecksumValid: Try[ByteVector] = hrpValid.flatMap { h =>
-          dataValid.flatMap { d =>
+        val dataValid = Bech32.checkDataValidity(data)
+        val isChecksumValid: Try[Vector[UInt5]] = hrpValid.flatMap { h: HumanReadablePart =>
+          dataValid.flatMap { d: Vector[UInt5] =>
             if (verifyChecksum(h, d)) {
-              if (d.size < 6) Success(ByteVector.empty)
+              if (d.size < 6) Success(Vector.empty)
               else Success(d.take(d.size - 6))
             } else Failure(new IllegalArgumentException("Checksum was invalid on the bech32 address"))
           }
         }
-        isChecksumValid.flatMap { d: ByteVector =>
-          val u8s = UInt8.toUInt8s(d)
-          hrpValid.map(h => Bech32Address(h, u8s))
+
+        isChecksumValid.flatMap { d: Vector[UInt5] =>
+          hrpValid.map(h => Bech32Address(h, d))
         }
       }
     }
@@ -277,37 +227,6 @@ object Bech32Address extends AddressFactory[Bech32Address] {
     }
   }
 
-  /**
-   * Takes in the data portion of a bech32 address and decodes it to a byte array
-   * It also checks the validity of the data portion according to BIP173
-   */
-  def checkDataValidity(data: String): Try[ByteVector] = {
-    @tailrec
-    def loop(remaining: List[Char], accum: ByteVector, hasUpper: Boolean, hasLower: Boolean): Try[ByteVector] = remaining match {
-      case Nil => Success(accum.reverse)
-      case h :: t =>
-        if (!charset.contains(h.toLower)) {
-          Failure(new IllegalArgumentException("Invalid character in data of bech32 address, got: " + h))
-        } else {
-          if ((h.isUpper && hasLower) || (h.isLower && hasUpper)) {
-            Failure(new IllegalArgumentException("Cannot have mixed case for bech32 address"))
-          } else {
-            val byte = charset.indexOf(h.toLower).toByte
-            require(byte >= 0 && byte < 32, "Not in valid range, got: " + byte)
-            loop(t, byte +: accum, h.isUpper || hasUpper, h.isLower || hasLower)
-          }
-        }
-    }
-    val payload: Try[ByteVector] = loop(data.toCharArray.toList, ByteVector.empty,
-      false, false)
-    payload
-  }
-
-  /** https://github.com/bitcoin/bips/blob/master/bip-0173.mediawiki#bech32 */
-  def charset: Seq[Char] = Seq('q', 'p', 'z', 'r', 'y', '9', 'x', '8',
-    'g', 'f', '2', 't', 'v', 'd', 'w', '0',
-    's', '3', 'j', 'n', '5', '4', 'k', 'h',
-    'c', 'e', '6', 'm', 'u', 'a', '7', 'l')
 }
 
 object P2PKHAddress extends AddressFactory[P2PKHAddress] {
@@ -435,7 +354,7 @@ object BitcoinAddress extends AddressFactory[BitcoinAddress] {
   override def fromScriptPubKey(spk: ScriptPubKey, np: NetworkParameters): Try[BitcoinAddress] = spk match {
     case p2pkh: P2PKHScriptPubKey => Success(P2PKHAddress(p2pkh, np))
     case p2sh: P2SHScriptPubKey => Success(P2SHAddress(p2sh, np))
-    case witSPK: WitnessScriptPubKey => Bech32Address(witSPK, np)
+    case witSPK: WitnessScriptPubKey => Success(Bech32Address(witSPK, np))
     case x @ (_: P2PKScriptPubKey | _: MultiSignatureScriptPubKey | _: LockTimeScriptPubKey
       | _: EscrowTimeoutScriptPubKey | _: NonStandardScriptPubKey
       | _: WitnessCommitment | _: UnassignedWitnessScriptPubKey | EmptyScriptPubKey) =>

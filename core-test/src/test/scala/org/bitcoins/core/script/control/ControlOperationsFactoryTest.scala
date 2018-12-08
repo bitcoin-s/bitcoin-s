@@ -1,6 +1,6 @@
 package org.bitcoins.core.script.control
 
-import org.scalatest.{ MustMatchers, FlatSpec }
+import org.scalatest.{ FlatSpec, MustMatchers }
 
 /**
  * Created by chris on 1/8/16.

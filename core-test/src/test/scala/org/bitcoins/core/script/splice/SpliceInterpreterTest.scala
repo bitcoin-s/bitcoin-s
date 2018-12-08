@@ -1,9 +1,8 @@
 package org.bitcoins.core.script.splice
 
-import org.bitcoins.core.script.{ ExecutedScriptProgram, ScriptProgram }
-import org.bitcoins.core.script.bitwise.OP_EQUAL
 import org.bitcoins.core.script.constant._
 import org.bitcoins.core.script.result.ScriptErrorInvalidStackOperation
+import org.bitcoins.core.script.{ ExecutedScriptProgram, ScriptProgram }
 import org.bitcoins.core.util.TestUtil
 import org.scalatest.{ FlatSpec, MustMatchers }
 
