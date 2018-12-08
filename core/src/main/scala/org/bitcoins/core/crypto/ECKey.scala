@@ -12,6 +12,7 @@ import org.bouncycastle.crypto.digests.SHA256Digest
 import org.bouncycastle.crypto.generators.ECKeyPairGenerator
 import org.bouncycastle.crypto.params.{ ECKeyGenerationParameters, ECPrivateKeyParameters, ECPublicKeyParameters }
 import org.bouncycastle.crypto.signers.{ ECDSASigner, HMacDSAKCalculator }
+import org.bouncycastle.math.ec.ECPoint
 import scodec.bits.ByteVector
 
 import scala.annotation.tailrec
@@ -263,7 +264,6 @@ sealed abstract class ECPublicKey extends BaseECKey {
       signature match {
         case EmptyDigitalSignature => signer.verifySignature(data.toArray, java.math.BigInteger.valueOf(0), java.math.BigInteger.valueOf(0))
         case _: ECDigitalSignature =>
-          logger.debug("Public key bytes: " + BitcoinSUtil.encodeHex(bytes))
           val rBigInteger: BigInteger = new BigInteger(signature.r.toString())
           val sBigInteger: BigInteger = new BigInteger(signature.s.toString())
           signer.verifySignature(data.toArray, rBigInteger, sBigInteger)
@@ -285,6 +285,15 @@ sealed abstract class ECPublicKey extends BaseECKey {
       val decompressed = NativeSecp256k1.decompress(bytes.toArray)
       ECPublicKey.fromBytes(ByteVector(decompressed))
     } else this
+  }
+
+  /** Decodes a [[org.bitcoins.core.crypto.ECPublicKey]] in bitcoin-s
+    * to a [[ECPoint]] data structure that is internal to the
+    * bouncy castle library
+    * @return
+    */
+  def toPoint: ECPoint = {
+    CryptoParams.curve.getCurve.decodePoint(bytes.toArray)
   }
 }
 
@@ -320,4 +329,16 @@ object ECPublicKey extends Factory[ECPublicKey] {
    * [[https://github.com/bitcoin/bitcoin/blob/27765b6403cece54320374b37afb01a0cfe571c3/src/pubkey.h#L158]]
    */
   def isValid(bytes: ByteVector): Boolean = bytes.nonEmpty
+
+
+  /** Creates a [[org.bitcoins.core.crypto.ECPublicKey]] from the [[org.bouncycastle.math.ec.ECPoint]]
+    * data structure used internally inside  of bouncy castle
+    * @param p
+    * @param isCompressed
+    * @return
+    */
+  def fromPoint(p: ECPoint, isCompressed: Boolean = true): ECPublicKey = {
+    val bytes = p.getEncoded(isCompressed)
+    ECPublicKey.fromBytes(ByteVector(bytes))
+  }
 }

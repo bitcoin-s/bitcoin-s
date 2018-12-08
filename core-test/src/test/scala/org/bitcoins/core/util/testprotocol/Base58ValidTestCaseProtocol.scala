@@ -2,7 +2,6 @@ package org.bitcoins.core.util.testprotocol
 
 import org.bitcoins.core.crypto.{ ECPrivateKey, Sha256Hash160Digest }
 import org.bitcoins.core.protocol.Address
-import org.bitcoins.core.util.BitcoinSLogger
 import spray.json._
 
 /**

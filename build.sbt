@@ -31,6 +31,7 @@ lazy val commonSettings = List(
   scalacOptions in Test := testCompilerOpts,
   assemblyOption in assembly := (assemblyOption in assembly).value.copy(includeScala = false)
 )
+
 lazy val root = project
     .in(file("."))
     .aggregate(
@@ -40,7 +41,9 @@ lazy val root = project
       coreTest,
       zmq,
       rpc,
-      bench
+      bench,
+      eclairRpc,
+      testkit
     )
     .settings(commonSettings: _*)
 
@@ -99,5 +102,24 @@ lazy val bench = project
   .settings(assemblyOption in assembly := (assemblyOption in assembly).value.copy(includeScala = true))
   .settings(libraryDependencies ++= Deps.bench)
   .dependsOn(core)
+
+lazy val eclairRpc = project
+  .in(file("eclair-rpc"))
+  .enablePlugins()
+  .settings(commonSettings: _*)
+  .dependsOn(
+    core,
+    rpc
+  )
+
+lazy val testkit = project
+  .in(file("testkit"))
+  .enablePlugins()
+  .settings(commonSettings: _*)
+  .dependsOn(
+    core,
+    rpc,
+    eclairRpc
+  )
 
 publishArtifact in root := false

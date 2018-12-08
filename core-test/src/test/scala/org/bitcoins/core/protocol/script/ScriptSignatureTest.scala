@@ -6,7 +6,7 @@ import org.bitcoins.core.number.Int32
 import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script.testprotocol.SignatureHashTestCase
 import org.bitcoins.core.protocol.transaction.{ BaseTransaction, Transaction, TransactionOutput, WitnessTransaction }
-import org.bitcoins.core.script.crypto.{ HashType, SIGHASH_ALL, SIGHASH_SINGLE }
+import org.bitcoins.core.script.crypto.{ HashType, SIGHASH_ALL }
 import org.bitcoins.core.serializers.script.RawScriptSignatureParser
 import org.bitcoins.core.util.{ BitcoinSLogger, BitcoinSUtil, TestUtil }
 import org.scalatest.{ FlatSpec, MustMatchers }

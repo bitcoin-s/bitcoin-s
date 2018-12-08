@@ -7,7 +7,6 @@ import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction.{ TransactionInput, TransactionOutPoint, TransactionOutput, _ }
 import org.bitcoins.core.script.constant.ScriptNumber
-import org.bitcoins.core.script.interpreter.ScriptInterpreter
 import org.bitcoins.core.script.locktime.LockTimeInterpreter
 import org.bitcoins.core.util.BitcoinSLogger
 import org.scalacheck.Gen
@@ -466,21 +465,6 @@ trait TransactionGenerators extends BitcoinSLogger {
     val baseTxSigComponent = BaseTxSigComponent(signedSpendingTx, inputIndex,
       output, Policy.standardScriptVerifyFlags)
     (baseTxSigComponent, privKeys)
-  }
-
-  /**
-   * Determines if the transaction's lockTime value and CLTV script lockTime value are of the same type
-   * (i.e. determines whether both are a timestamp or block height)
-   */
-  private def cltvLockTimesOfSameType(num: ScriptNumber, lockTime: UInt32): Boolean = num.toLong match {
-    case negative if negative < 0 => false
-    case positive if positive >= 0 =>
-      if (!(
-        (lockTime < TransactionConstants.locktimeThreshold &&
-          num.toLong < TransactionConstants.locktimeThreshold.toLong) ||
-          (lockTime >= TransactionConstants.locktimeThreshold &&
-            num.toLong >= TransactionConstants.locktimeThreshold.toLong))) return false
-      true
   }
 
   /**

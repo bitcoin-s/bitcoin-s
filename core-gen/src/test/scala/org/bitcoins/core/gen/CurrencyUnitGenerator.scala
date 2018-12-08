@@ -31,3 +31,4 @@ trait CurrencyUnitGenerator {
 }
 
 object CurrencyUnitGenerator extends CurrencyUnitGenerator
+

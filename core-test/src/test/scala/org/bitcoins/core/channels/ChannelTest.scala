@@ -5,13 +5,12 @@ import org.bitcoins.core.currency.{ CurrencyUnits, Satoshis }
 import org.bitcoins.core.gen.ScriptGenerators
 import org.bitcoins.core.number.Int64
 import org.bitcoins.core.policy.Policy
-import org.bitcoins.core.protocol.script.{ P2SHScriptPubKey, P2WSHWitnessSPKV0, WitnessScriptPubKeyV0 }
+import org.bitcoins.core.protocol.script.{ P2SHScriptPubKey, P2WSHWitnessSPKV0 }
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.util.BitcoinSLogger
-import org.scalatest.{ Assertion, AsyncFlatSpec, FlatSpec, MustMatchers }
+import org.scalatest.{ Assertion, AsyncFlatSpec, MustMatchers }
 
-import scala.concurrent.{ Await, Future }
-import scala.util.Try
+import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 /**
  * Created by chris on 5/31/17.

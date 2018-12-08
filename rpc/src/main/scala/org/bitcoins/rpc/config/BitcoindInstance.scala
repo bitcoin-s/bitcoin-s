@@ -8,11 +8,16 @@ import org.bitcoins.core.config.NetworkParameters
  * Created by chris on 4/29/17.
  */
 sealed trait BitcoindInstance {
-
+  require(
+    rpcUri.getPort == rpcPort,
+    s"RpcUri and the rpcPort in authCredentials are different ${rpcUri} authcred: ${rpcPort}")
   def network: NetworkParameters
   def uri: URI
   def rpcUri: URI
   def authCredentials: BitcoindAuthCredentials
+
+  def rpcPort: Int = authCredentials.rpcPort
+  def zmqPortOpt: Option[Int]
 }
 
 object BitcoindInstance {
@@ -20,14 +25,15 @@ object BitcoindInstance {
     network: NetworkParameters,
     uri: URI,
     rpcUri: URI,
-    authCredentials: BitcoindAuthCredentials)
-    extends BitcoindInstance
+    authCredentials: BitcoindAuthCredentials,
+    zmqPortOpt: Option[Int]) extends BitcoindInstance
 
   def apply(
     network: NetworkParameters,
     uri: URI,
     rpcUri: URI,
-    authCredentials: BitcoindAuthCredentials): BitcoindInstance = {
-    BitcoindInstanceImpl(network, uri, rpcUri, authCredentials)
+    authCredentials: BitcoindAuthCredentials,
+    zmqPortOpt: Option[Int] = None): BitcoindInstance = {
+    BitcoindInstanceImpl(network, uri, rpcUri, authCredentials, zmqPortOpt)
   }
 }

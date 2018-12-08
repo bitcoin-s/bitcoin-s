@@ -1,6 +1,6 @@
 package org.bitcoins.core.protocol.transaction
 
-import org.bitcoins.core.protocol.script.{ EmptyScriptSignature, P2PKHScriptSignature, P2PKScriptSignature }
+import org.bitcoins.core.protocol.script.{ EmptyScriptSignature, P2PKScriptSignature }
 import org.bitcoins.core.util.TestUtil
 import org.scalatest.{ FlatSpec, MustMatchers }
 

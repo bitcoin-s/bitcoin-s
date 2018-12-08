@@ -3,13 +3,13 @@ package org.bitcoins.core.script.crypto
 import org.bitcoins.core.crypto.BaseTxSigComponent
 import org.bitcoins.core.currency.CurrencyUnits
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.script.{ P2SHScriptSignature, ScriptPubKey, ScriptSignature, SigVersionBase }
+import org.bitcoins.core.protocol.script.ScriptSignature
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script._
 import org.bitcoins.core.script.constant._
 import org.bitcoins.core.script.flag.{ ScriptFlagFactory, ScriptVerifyDerSig, ScriptVerifyNullDummy }
 import org.bitcoins.core.script.result._
-import org.bitcoins.core.util.{ BitcoinSLogger, ScriptProgramTestUtil, TestUtil, TransactionTestUtil }
+import org.bitcoins.core.util.{ BitcoinSLogger, ScriptProgramTestUtil, TestUtil }
 import org.scalatest.{ FlatSpec, MustMatchers }
 
 import scala.util.Try

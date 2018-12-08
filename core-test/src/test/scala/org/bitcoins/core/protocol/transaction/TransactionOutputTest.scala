@@ -2,7 +2,6 @@ package org.bitcoins.core.protocol.transaction
 
 import org.bitcoins.core.currency.CurrencyUnits
 import org.bitcoins.core.protocol.script.EmptyScriptPubKey
-import org.bitcoins.core.util.TestUtil
 import org.scalatest.{ FlatSpec, MustMatchers }
 
 /**

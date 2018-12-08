@@ -1,7 +1,7 @@
 package org.bitcoins.core.crypto
 
 import org.bitcoins.core.config.TestNet3
-import org.bitcoins.core.util.{ BitcoinJTestUtil, BitcoinSLogger, BitcoinSUtil, CryptoTestUtil }
+import org.bitcoins.core.util.{ BitcoinSLogger, BitcoinSUtil, CryptoTestUtil }
 import org.scalatest.{ FlatSpec, MustMatchers }
 import scodec.bits.ByteVector
 

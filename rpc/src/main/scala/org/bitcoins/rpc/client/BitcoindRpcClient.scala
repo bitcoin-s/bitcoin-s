@@ -3,6 +3,7 @@ package org.bitcoins.rpc.client
 import java.net.URI
 import java.util.UUID
 
+import akka.actor.ActorSystem
 import akka.http.javadsl.model.headers.HttpCredentials
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
@@ -16,6 +17,7 @@ import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.{ Transaction, TransactionInput, TransactionOutPoint }
 import org.bitcoins.core.protocol.{ BitcoinAddress, P2PKHAddress }
 import org.bitcoins.core.util.{ BitcoinSLogger, BitcoinSUtil }
+import org.bitcoins.rpc.RpcUtil
 import org.bitcoins.rpc.client.RpcOpts.AddressType
 import org.bitcoins.rpc.config.BitcoindInstance
 import org.bitcoins.rpc.jsonmodels._
@@ -23,36 +25,64 @@ import org.bitcoins.rpc.serializers.JsonSerializers._
 import play.api.libs.json._
 
 import scala.concurrent.duration.DurationInt
-import scala.concurrent.{ Await, ExecutionContext, Future }
+import scala.concurrent.{ ExecutionContext, Future }
 import scala.sys.process._
 import scala.util.Try
 
-class BitcoindRpcClient(instance: BitcoindInstance)(
+class BitcoindRpcClient(val instance: BitcoindInstance)(
   implicit
-  m: ActorMaterializer) {
+  system: ActorSystem) {
   private val resultKey = "result"
   private val errorKey = "error"
   private val logger = BitcoinSLogger.logger
   private implicit val network = instance.network
+  private implicit val m = ActorMaterializer.create(system)
   private implicit val ec: ExecutionContext = m.executionContext
 
   def getDaemon: BitcoindInstance = instance
 
-  def isStarted: Boolean = {
+  def isStarted(): Boolean = {
+
+    def isConnected(): Future[Boolean] = {
+      val request = buildRequest(instance, "ping", JsArray.empty)
+      val responseF = sendRequest(request)
+      responseF.map(r => logger.info(s"response isConnected $r"))
+      val payloadF: Future[JsValue] = responseF.flatMap(getPayload)
+
+      // Ping successful if no error can be parsed from the payload
+      val result: Future[Boolean] = payloadF.map { payload =>
+        (payload \ errorKey).validate[RpcError] match {
+          case _: JsSuccess[RpcError] => false
+          case _: JsError => true
+        }
+      }
+
+      result
+    }
+
+    val await = Try(
+      RpcUtil.awaitConditionF(
+        conditionF = () => isConnected(),
+        duration = 1.seconds))
+
+    await.isSuccess
+  }
+
+  def isConnected(): Future[Boolean] = {
     val request = buildRequest(instance, "ping", JsArray.empty)
     val responseF = sendRequest(request)
-
+    responseF.map(r => logger.debug(s"response isConnected $r"))
     val payloadF: Future[JsValue] = responseF.flatMap(getPayload)
 
     // Ping successful if no error can be parsed from the payload
-    val result = Try(Await.result(payloadF.map { payload =>
+    val result: Future[Boolean] = payloadF.map { payload =>
       (payload \ errorKey).validate[RpcError] match {
         case _: JsSuccess[RpcError] => false
         case _: JsError => true
       }
-    }, 2.seconds))
+    }
 
-    result.getOrElse(false)
+    result
   }
 
   def abandonTransaction(txid: DoubleSha256Digest): Future[Unit] = {
@@ -1180,11 +1210,13 @@ class BitcoindRpcClient(instance: BitcoindInstance)(
   }
 
   def start(): String = {
-    val cmd = Seq(
+    val cmd = List(
       "bitcoind",
       "-datadir=" + instance.authCredentials.datadir,
       "-rpcport=" + instance.rpcUri.getPort,
       "-port=" + instance.uri.getPort)
-    cmd.!!
+    logger.debug(s"starting bitcoind")
+    val _ = Process(cmd).run()
+    "Started bitcoind!"
   }
 }

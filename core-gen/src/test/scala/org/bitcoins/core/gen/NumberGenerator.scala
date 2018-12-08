@@ -13,6 +13,10 @@ import scodec.bits.BitVector
  */
 trait NumberGenerator {
 
+  def positiveShort: Gen[Short] = {
+    Gen.chooseNum[Short](0, Short.MaxValue)
+  }
+
   /** Creates a generator that generates positive long numbers */
   def positiveLongs: Gen[Long] = Gen.choose(0, Long.MaxValue)
 
@@ -21,6 +25,10 @@ trait NumberGenerator {
 
   /** Creates a number generator that generates negative long numbers */
   def negativeLongs: Gen[Long] = Gen.choose(Long.MinValue, -1)
+
+  def uInt5: Gen[UInt5] = Gen.choose(0, 31).map(n => UInt5(n))
+
+  def uInt5s: Gen[Seq[UInt5]] = Gen.listOf(uInt5)
 
   def uInt8: Gen[UInt8] = Gen.choose(0, 255).map(n => UInt8(n.toShort))
 
@@ -43,7 +51,9 @@ trait NumberGenerator {
    * Generates a number in the range 0 <= x < 2^^64
    * then wraps it in a UInt64
    */
-  def uInt64s: Gen[UInt64] = for {
+  def uInt64s: Gen[UInt64] = uInt64
+
+  def uInt64: Gen[UInt64] = for {
     bigInt <- bigIntsUInt64Range
   } yield UInt64(bigInt)
 
