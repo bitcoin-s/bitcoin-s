@@ -90,31 +90,6 @@ object JsonReaders {
     Json.reads[PaymentRequest]
   }
 
-  /*  private def parsePaymentReq(obj: JsObject): JsResult[PaymentRequest] = {
-    val prefix = obj("prefix").validate[String].get
-    val amountOpt = obj("amount") match {
-      case o: JsObject => o("amount").validate[MilliSatoshis].asOpt
-      case x @ (_: JsArray | _: JsNumber | _: JsString | _: JsBoolean | JsNull) => None
-    }
-    val timestamp = obj("timestamp").validate[Long].get
-    val nodeId = obj("nodeId").validate[NodeId].get
-    val signature = obj("signature").validate[String].get
-    val tags = obj("tags").validate[Vector[JsObject]].get
-
-    val descriptionObj: JsObject = tags.find(t => t.keys.exists(_ == "description")).get
-
-    val description = descriptionObj("description").validate[String].get
-
-    JsSuccess(PaymentRequest(
-      prefix = prefix,
-      amount = amountOpt,
-      timestamp = timestamp,
-      nodeId = nodeId,
-      signature = signature,
-      tags = tags,
-      description = description))
-  }*/
-
   implicit val paymentSucceededReads: Reads[PaymentSucceeded] = {
     Json.reads[PaymentSucceeded]
   }

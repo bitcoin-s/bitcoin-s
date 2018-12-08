@@ -243,6 +243,14 @@ class EclairRpcClient(val instance: EclairInstance)(implicit system: ActorSystem
     eclairCall[Vector[PeerInfo]]("peers")
   }
 
+
+  /** A way to generate a [[org.bitcoins.core.protocol.ln.LnInvoice LnInvoice]]
+    * with eclair.
+    * @param amountMsat the amount to be encoded in the invoice
+    * @param description meta information about the invoice
+    * @param expirySeconds when the invoice expires
+    * @return
+    */
   override def receive(
     amountMsat: Option[LnCurrencyUnit],
     description: Option[String],
@@ -478,8 +486,6 @@ class EclairRpcClient(val instance: EclairInstance)(implicit system: ActorSystem
       .addCredentials(
         HttpCredentials.createBasicHttpCredentials(username, password))
   }
-
-  // TODO: THIS IS ALL HACKY
 
   private def pathToEclairJar: String = {
     val path = Properties

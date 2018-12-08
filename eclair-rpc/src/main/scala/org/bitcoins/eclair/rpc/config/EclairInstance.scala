@@ -3,8 +3,9 @@ package org.bitcoins.eclair.rpc.config
 import java.io.File
 import java.net.URI
 
-import com.typesafe.config.{ Config, ConfigFactory }
-import org.bitcoins.core.config.{ MainNet, NetworkParameters, RegTest, TestNet3 }
+import com.typesafe.config.{Config, ConfigFactory}
+import org.bitcoins.core.config.{MainNet, NetworkParameters, RegTest, TestNet3}
+import org.bitcoins.core.protocol.ln.LnPolicy
 
 sealed trait EclairInstance {
   def network: NetworkParameters
@@ -52,11 +53,13 @@ object EclairInstance {
   def fromConfig(config: Config): EclairInstance = {
     val chain = config.getString("eclair.chain")
 
+
+
     val serverBindingIp = config.getString("eclair.server.binding-ip")
-    val serverPort = ConfigUtil.getIntOrElse(config, "eclair.server.port", 9735)
+    val serverPort = ConfigUtil.getIntOrElse(config, "eclair.server.port", LnPolicy.DEFAULT_LN_P2P_PORT)
 
     val rpcHost = config.getString("eclair.api.binding-ip")
-    val rpcPort = ConfigUtil.getIntOrElse(config, "eclair.api.port", 8080)
+    val rpcPort = ConfigUtil.getIntOrElse(config, "eclair.api.port", LnPolicy.DEFAULT_ECLAIR_API_PORT)
 
     val np: NetworkParameters = chain match {
       case "regtest" => RegTest

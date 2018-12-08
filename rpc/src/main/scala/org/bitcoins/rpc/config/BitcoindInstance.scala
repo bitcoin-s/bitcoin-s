@@ -33,7 +33,7 @@ object BitcoindInstance {
     uri: URI,
     rpcUri: URI,
     authCredentials: BitcoindAuthCredentials,
-    zmqPortOpt: Option[Int]): BitcoindInstance = {
+    zmqPortOpt: Option[Int] = None): BitcoindInstance = {
     BitcoindInstanceImpl(network, uri, rpcUri, authCredentials, zmqPortOpt)
   }
 }

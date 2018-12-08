@@ -1,7 +1,7 @@
 package org.bitcoins.core.protocol.ln
 
 import org.bitcoins.core.number.Int64
-import org.bitcoins.core.protocol.ln.currency.MilliSatoshis
+import org.bitcoins.core.protocol.ln.currency.{LnMultiplier, MilliSatoshis}
 
 sealed abstract class LnPolicy {
 
@@ -14,19 +14,39 @@ sealed abstract class LnPolicy {
    */
   val maxAmountMSat: MilliSatoshis = MilliSatoshis(4294967295L)
 
-  val milliMultiplier: BigDecimal = BigDecimal(0.001)
-  val microMultiplier: BigDecimal = BigDecimal(0.000001)
-  val nanoMultiplier: BigDecimal = BigDecimal(0.000000001)
-  val picoMultiplier: BigDecimal = BigDecimal(0.000000000001)
+
 
   val maxPicoBitcoins: BigInt = Int64.max.toBigInt
   val minPicoBitcoins: BigInt = Int64.min.toBigInt
-  val maxMilliBitcoins: BigInt = maxPicoBitcoins / (milliMultiplier / picoMultiplier).toBigIntExact().get
-  val minMilliBitcoins: BigInt = -(maxPicoBitcoins / (milliMultiplier / picoMultiplier).toBigIntExact().get)
-  val maxMicroBitcoins: BigInt = maxPicoBitcoins / (microMultiplier / picoMultiplier).toBigIntExact().get
-  val minMicroBitcoins: BigInt = -(maxPicoBitcoins / (microMultiplier / picoMultiplier).toBigIntExact().get)
-  val maxNanoBitcoins: BigInt = maxPicoBitcoins / (nanoMultiplier / picoMultiplier).toBigIntExact().get
-  val minNanoBitcoins: BigInt = -(maxPicoBitcoins / (nanoMultiplier / picoMultiplier).toBigIntExact().get)
+
+  val maxMilliBitcoins: BigInt = {
+    calc(LnMultiplier.Milli)
+  }
+
+  val minMilliBitcoins: BigInt = -maxMilliBitcoins
+
+  val maxMicroBitcoins: BigInt = {
+    calc(LnMultiplier.Micro)
+  }
+  val minMicroBitcoins: BigInt = -maxMicroBitcoins
+
+  val maxNanoBitcoins: BigInt = {
+    calc(LnMultiplier.Nano)
+  }
+
+  val minNanoBitcoins: BigInt = -maxNanoBitcoins
+
+  private def calc(mul: LnMultiplier): BigInt = {
+    maxPicoBitcoins /
+      (mul.multiplier / LnMultiplier.Pico.multiplier)
+        .toBigIntExact().get
+  }
+
+
+  val DEFAULT_LN_P2P_PORT = 9735
+
+  val DEFAULT_ECLAIR_API_PORT = 8080
+
 }
 
 object LnPolicy extends LnPolicy

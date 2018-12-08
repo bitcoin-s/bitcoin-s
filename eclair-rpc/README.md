@@ -1,6 +1,6 @@
 # Bitcoin-s Eclair RPC client
 
-This is a RPC client for [Eclair](https://github.com/acinq/eclair)
+This is a RPC client for [Eclair](https://github.com/acinq/eclair). It assumes that a bitcoind instance is running.
 
 Currently this RPC client is written for the latest official version of eclair which is [v0.2-beta8](https://github.com/ACINQ/eclair/releases/tag/v0.2-beta8)
 

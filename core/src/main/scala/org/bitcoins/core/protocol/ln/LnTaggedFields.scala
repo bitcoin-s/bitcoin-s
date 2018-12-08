@@ -117,6 +117,13 @@ object LnTaggedFields {
   }
 
 
+  /** This is intended to parse all of the [[org.bitcoins.core.protocol.ln.LnTaggedFields LnTaggedFields]]
+    * from the tagged part of the ln invoice. This should only be called
+    * if other information has already been remove from the invoice
+    * like the [[LnHumanReadablePart]]
+    * @param u5s payload of the tagged fields in the invoice
+    * @return
+    */
   def fromUInt5s(u5s: Vector[UInt5]): LnTaggedFields = {
     @tailrec
     def loop(remaining: List[UInt5], fields: Vector[LnTag]): Vector[LnTag] = {
