@@ -167,15 +167,13 @@ sealed abstract class P2PKSigner extends BitcoinSigner {
                 _: P2WSHWitnessSPKV0 | _: NonStandardScriptPubKey |
                 _: CLTVScriptPubKey | _: CSVScriptPubKey |
                 _: WitnessCommitment | EmptyScriptPubKey |
-                _: UnassignedWitnessScriptPubKey |
-                _: EscrowTimeoutScriptPubKey =>
+                _: UnassignedWitnessScriptPubKey =>
               Future.fromTry(TxBuilderError.WrongSigner)
           }
         case _: P2PKHScriptPubKey | _: MultiSignatureScriptPubKey |
             _: P2SHScriptPubKey | _: P2WPKHWitnessSPKV0 |
             _: NonStandardScriptPubKey | _: WitnessCommitment |
-            EmptyScriptPubKey | _: UnassignedWitnessScriptPubKey |
-            _: EscrowTimeoutScriptPubKey =>
+            EmptyScriptPubKey | _: UnassignedWitnessScriptPubKey =>
           Future.fromTry(TxBuilderError.WrongSigner)
       }
       signed
@@ -246,16 +244,14 @@ sealed abstract class P2PKHSigner extends BitcoinSigner {
                         _: P2WSHWitnessSPKV0 | _: NonStandardScriptPubKey |
                         _: CLTVScriptPubKey | _: CSVScriptPubKey |
                         _: WitnessCommitment | EmptyScriptPubKey |
-                        _: UnassignedWitnessScriptPubKey |
-                        _: EscrowTimeoutScriptPubKey =>
+                        _: UnassignedWitnessScriptPubKey =>
                       Future.fromTry(TxBuilderError.WrongSigner)
                   }
                 case _: P2PKScriptPubKey | _: MultiSignatureScriptPubKey |
                     _: P2SHScriptPubKey | _: P2WPKHWitnessSPKV0 |
                     _: P2WSHWitnessSPKV0 | _: NonStandardScriptPubKey |
                     _: WitnessCommitment | EmptyScriptPubKey |
-                    _: UnassignedWitnessScriptPubKey |
-                    _: EscrowTimeoutScriptPubKey =>
+                    _: UnassignedWitnessScriptPubKey =>
                   Future.fromTry(TxBuilderError.WrongSigner)
               }
             }
@@ -341,15 +337,13 @@ sealed abstract class P2PKHSigner extends BitcoinSigner {
                 _: P2WSHWitnessSPKV0 | _: NonStandardScriptPubKey |
                 _: CLTVScriptPubKey | _: CSVScriptPubKey |
                 _: WitnessCommitment | EmptyScriptPubKey |
-                _: UnassignedWitnessScriptPubKey |
-                _: EscrowTimeoutScriptPubKey =>
+                _: UnassignedWitnessScriptPubKey =>
               Future.fromTry(TxBuilderError.WrongSigner)
           }
         case _: P2PKScriptPubKey | _: MultiSignatureScriptPubKey |
             _: P2SHScriptPubKey | _: P2WPKHWitnessSPKV0 |
             _: NonStandardScriptPubKey | _: WitnessCommitment |
-            EmptyScriptPubKey | _: UnassignedWitnessScriptPubKey |
-            _: EscrowTimeoutScriptPubKey =>
+            EmptyScriptPubKey | _: UnassignedWitnessScriptPubKey =>
           Future.fromTry(TxBuilderError.WrongSigner)
       }
       signed
@@ -405,8 +399,7 @@ sealed abstract class MultiSigSigner extends BitcoinSigner {
                       Future.successful((m, lock))
                     case _: P2PKScriptPubKey | _: P2PKHScriptPubKey |
                         _: P2SHScriptPubKey | _: P2WPKHWitnessV0 |
-                        _: P2WSHWitnessSPKV0 | _: WitnessCommitment |
-                        _: EscrowTimeoutScriptPubKey | _: CSVScriptPubKey |
+                        _: P2WSHWitnessSPKV0 | _: WitnessCommitment| _: CSVScriptPubKey |
                         _: CLTVScriptPubKey | _: NonStandardScriptPubKey |
                         _: UnassignedWitnessScriptPubKey |
                         _: P2WPKHWitnessSPKV0 | EmptyScriptPubKey =>
@@ -415,8 +408,7 @@ sealed abstract class MultiSigSigner extends BitcoinSigner {
                 case m: MultiSignatureScriptPubKey => Future.successful((m, m))
                 case _: P2PKScriptPubKey | _: P2PKHScriptPubKey |
                     _: P2SHScriptPubKey | _: P2WPKHWitnessV0 |
-                    _: P2WSHWitnessSPKV0 | _: WitnessCommitment |
-                    _: EscrowTimeoutScriptPubKey | _: NonStandardScriptPubKey |
+                    _: P2WSHWitnessSPKV0 | _: WitnessCommitment| _: NonStandardScriptPubKey |
                     _: P2WPKHWitnessSPKV0 | _: UnassignedWitnessScriptPubKey |
                     EmptyScriptPubKey =>
                   Future.fromTry(TxBuilderError.WrongSigner)
@@ -493,7 +485,7 @@ sealed abstract class MultiSigSigner extends BitcoinSigner {
               _: P2WPKHWitnessSPKV0 | _: P2WSHWitnessSPKV0 |
               _: CLTVScriptPubKey | _: CSVScriptPubKey |
               _: UnassignedWitnessScriptPubKey | _: NonStandardScriptPubKey |
-              _: WitnessCommitment | _: EscrowTimeoutScriptPubKey |
+              _: WitnessCommitment |
               EmptyScriptPubKey =>
             Future.fromTry(TxBuilderError.WrongSigner)
         }
@@ -536,8 +528,7 @@ sealed abstract class MultiSigSigner extends BitcoinSigner {
         }
       case _: P2PKScriptPubKey | _: P2PKHScriptPubKey | _: P2SHScriptPubKey |
           _: P2WPKHWitnessSPKV0 | _: NonStandardScriptPubKey |
-          _: WitnessCommitment | EmptyScriptPubKey |
-          _: UnassignedWitnessScriptPubKey | _: EscrowTimeoutScriptPubKey =>
+          _: WitnessCommitment | _: UnassignedWitnessScriptPubKey | EmptyScriptPubKey =>
         Future.fromTry(TxBuilderError.WrongSigner)
     }
     signed
@@ -586,8 +577,7 @@ sealed abstract class P2WPKHSigner extends BitcoinSigner {
                 _: P2WSHWitnessSPKV0 | _: NonStandardScriptPubKey |
                 _: CLTVScriptPubKey | _: CSVScriptPubKey |
                 _: WitnessCommitment | EmptyScriptPubKey |
-                _: UnassignedWitnessScriptPubKey |
-                _: EscrowTimeoutScriptPubKey =>
+                _: UnassignedWitnessScriptPubKey =>
               Future.fromTry(TxBuilderError.NonWitnessSPK)
           }
 
