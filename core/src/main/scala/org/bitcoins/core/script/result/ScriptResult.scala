@@ -5,8 +5,8 @@ sealed trait ScriptResult {
 }
 
 /**
- * [[https://github.com/bitcoin/bitcoin/blob/master/src/test/script_tests.cpp#L61]]
- */
+  * [[https://github.com/bitcoin/bitcoin/blob/master/src/test/script_tests.cpp#L61]]
+  */
 sealed trait ScriptError extends ScriptResult
 
 //SCRIPT_ERR_OK = 0,
@@ -226,18 +226,56 @@ case object ScriptErrorWitnessPubKeyType extends ScriptError {
 }
 
 /**
- * Factory companion object for creating ScriptError objects
- */
+  * Factory companion object for creating ScriptError objects
+  */
 object ScriptResult {
-  def results: Seq[ScriptResult] = Seq(ScriptOk, ScriptErrorUnknownError, ScriptErrorEvalFalse, ScriptErrorOpReturn,
-    ScriptErrorPushSize, ScriptErrorScriptSize, ScriptErrorOpCount, ScriptErrorStackSize, ScriptErrorSigCount,
-    ScriptErrorPubKeyCount, ScriptErrorVerify, ScriptErrorEqualVerify, ScriptErrorCheckSigVerify, ScriptErrorCheckMultiSigVerify,
-    ScriptErrorNumEqualVerify, ScriptErrorBadOpCode, ScriptErrorDisabledOpCode, ScriptErrorInvalidStackOperation,
-    ScriptErrorInvalidAltStackOperation, ScriptErrorUnbalancedConditional, ScriptErrorNegativeLockTime,
-    ScriptErrorUnsatisfiedLocktime, ScriptErrorSigHashType, ScriptErrorSigDer, ScriptErrorMinimalData, ScriptErrorSigPushOnly,
-    ScriptErrorSigHighS, ScriptErrorSigNullDummy, ScriptErrorPubKeyType, ScriptErrorCleanStack, ScriptErrorDiscourageUpgradableNOPs,
-    ScriptErrorCount, ScriptErrorMinimalIf, ScriptErrorSigNullFail, ScriptErrorDiscourageUpgradeableWitnessProgram, ScriptErrorWitnessProgramWrongLength,
-    ScriptErrorWitnessProgramWitnessEmpty, ScriptErrorWitnessProgramMisMatch, ScriptErrorWitnessMalleated,
-    ScriptErrorWitnessMalleatedP2SH, ScriptErrorWitnessUnexpected, ScriptErrorWitnessPubKeyType)
-  def apply(str: String): ScriptResult = results.filter(_.description == str).head
+
+  def results: Seq[ScriptResult] =
+    Seq(
+      ScriptOk,
+      ScriptErrorUnknownError,
+      ScriptErrorEvalFalse,
+      ScriptErrorOpReturn,
+      ScriptErrorPushSize,
+      ScriptErrorScriptSize,
+      ScriptErrorOpCount,
+      ScriptErrorStackSize,
+      ScriptErrorSigCount,
+      ScriptErrorPubKeyCount,
+      ScriptErrorVerify,
+      ScriptErrorEqualVerify,
+      ScriptErrorCheckSigVerify,
+      ScriptErrorCheckMultiSigVerify,
+      ScriptErrorNumEqualVerify,
+      ScriptErrorBadOpCode,
+      ScriptErrorDisabledOpCode,
+      ScriptErrorInvalidStackOperation,
+      ScriptErrorInvalidAltStackOperation,
+      ScriptErrorUnbalancedConditional,
+      ScriptErrorNegativeLockTime,
+      ScriptErrorUnsatisfiedLocktime,
+      ScriptErrorSigHashType,
+      ScriptErrorSigDer,
+      ScriptErrorMinimalData,
+      ScriptErrorSigPushOnly,
+      ScriptErrorSigHighS,
+      ScriptErrorSigNullDummy,
+      ScriptErrorPubKeyType,
+      ScriptErrorCleanStack,
+      ScriptErrorDiscourageUpgradableNOPs,
+      ScriptErrorCount,
+      ScriptErrorMinimalIf,
+      ScriptErrorSigNullFail,
+      ScriptErrorDiscourageUpgradeableWitnessProgram,
+      ScriptErrorWitnessProgramWrongLength,
+      ScriptErrorWitnessProgramWitnessEmpty,
+      ScriptErrorWitnessProgramMisMatch,
+      ScriptErrorWitnessMalleated,
+      ScriptErrorWitnessMalleatedP2SH,
+      ScriptErrorWitnessUnexpected,
+      ScriptErrorWitnessPubKeyType
+    )
+
+  def apply(str: String): ScriptResult =
+    results.filter(_.description == str).head
 }

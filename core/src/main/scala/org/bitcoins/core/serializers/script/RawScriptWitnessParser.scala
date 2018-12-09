@@ -9,23 +9,31 @@ import scodec.bits.ByteVector
 import scala.annotation.tailrec
 
 /**
- * Created by chris on 12/14/16.
- */
-sealed abstract class RawScriptWitnessParser extends RawBitcoinSerializer[ScriptWitness] {
+  * Created by chris on 12/14/16.
+  */
+sealed abstract class RawScriptWitnessParser
+    extends RawBitcoinSerializer[ScriptWitness] {
 
   def read(bytes: ByteVector): ScriptWitness = {
     //first byte is the number of stack items
     val stackSize = CompactSizeUInt.parseCompactSizeUInt(bytes)
     val (_, stackBytes) = bytes.splitAt(stackSize.size.toInt)
     @tailrec
-    def loop(remainingBytes: ByteVector, accum: Seq[ByteVector], remainingStackItems: UInt64): Seq[ByteVector] = {
+    def loop(
+        remainingBytes: ByteVector,
+        accum: Seq[ByteVector],
+        remainingStackItems: UInt64): Seq[ByteVector] = {
       if (remainingStackItems <= UInt64.zero) accum
       else {
         val elementSize = CompactSizeUInt.parseCompactSizeUInt(remainingBytes)
-        val (_, stackElementBytes) = remainingBytes.splitAt(elementSize.size.toInt)
+        val (_, stackElementBytes) =
+          remainingBytes.splitAt(elementSize.size.toInt)
         val stackElement = stackElementBytes.take(elementSize.num.toInt)
-        val (_, newRemainingBytes) = stackElementBytes.splitAt(stackElement.size)
-        loop(newRemainingBytes, stackElement +: accum, remainingStackItems - UInt64.one)
+        val (_, newRemainingBytes) =
+          stackElementBytes.splitAt(stackElement.size)
+        loop(newRemainingBytes,
+             stackElement +: accum,
+             remainingStackItems - UInt64.one)
       }
     }
     //note there is no 'reversing' the accum, in bitcoin-s we assume the top of the stack is the 'head' element in the sequence
@@ -36,15 +44,19 @@ sealed abstract class RawScriptWitnessParser extends RawBitcoinSerializer[Script
 
   def write(scriptWitness: ScriptWitness): ByteVector = {
     @tailrec
-    def loop(remainingStack: Seq[ByteVector], accum: Vector[ByteVector]): Vector[ByteVector] = {
+    def loop(
+        remainingStack: Seq[ByteVector],
+        accum: Vector[ByteVector]): Vector[ByteVector] = {
       if (remainingStack.isEmpty) accum.reverse
       else {
-        val compactSizeUInt: CompactSizeUInt = CompactSizeUInt.calc(remainingStack.head)
+        val compactSizeUInt: CompactSizeUInt =
+          CompactSizeUInt.calc(remainingStack.head)
         val serialization: ByteVector = compactSizeUInt.bytes ++ remainingStack.head
         loop(remainingStack.tail, serialization +: accum)
       }
     }
-    val stackItems: Vector[ByteVector] = loop(scriptWitness.stack.reverse, Vector.empty)
+    val stackItems: Vector[ByteVector] =
+      loop(scriptWitness.stack.reverse, Vector.empty)
     val size = CompactSizeUInt(UInt64(stackItems.size))
     (size.bytes +: stackItems).fold(ByteVector.empty)(_ ++ _)
   }

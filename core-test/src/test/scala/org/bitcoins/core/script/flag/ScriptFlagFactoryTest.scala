@@ -1,10 +1,10 @@
 package org.bitcoins.core.script.flag
 
-import org.scalatest.{ FlatSpec, MustMatchers }
+import org.scalatest.{FlatSpec, MustMatchers}
 
 /**
- * Created by chris on 3/23/16.
- */
+  * Created by chris on 3/23/16.
+  */
 class ScriptFlagFactoryTest extends FlatSpec with MustMatchers {
 
   "ScriptFlagFactory" must "find a NONE script flag" in {
@@ -28,11 +28,13 @@ class ScriptFlagFactoryTest extends FlatSpec with MustMatchers {
   }
 
   it must "find a SIGPUSHONLY flag" in {
-    ScriptFlagFactory.fromString("SIGPUSHONLY").get must be(ScriptVerifySigPushOnly)
+    ScriptFlagFactory.fromString("SIGPUSHONLY").get must be(
+      ScriptVerifySigPushOnly)
   }
 
   it must "find a MINIMALDATA flag" in {
-    ScriptFlagFactory.fromString("MINIMALDATA").get must be(ScriptVerifyMinimalData)
+    ScriptFlagFactory.fromString("MINIMALDATA").get must be(
+      ScriptVerifyMinimalData)
   }
 
   it must "find a NULLDUMMY flag" in {
@@ -40,20 +42,24 @@ class ScriptFlagFactoryTest extends FlatSpec with MustMatchers {
   }
 
   it must "find a DISCOURAGE_UPGRADABLE_NOPS flag" in {
-    ScriptFlagFactory.fromString("DISCOURAGE_UPGRADABLE_NOPS").get must be(ScriptVerifyDiscourageUpgradableNOPs)
+    ScriptFlagFactory.fromString("DISCOURAGE_UPGRADABLE_NOPS").get must be(
+      ScriptVerifyDiscourageUpgradableNOPs)
   }
 
   it must "find a CLEANSTACK flag" in {
-    ScriptFlagFactory.fromString("CLEANSTACK").get must be(ScriptVerifyCleanStack)
+    ScriptFlagFactory.fromString("CLEANSTACK").get must be(
+      ScriptVerifyCleanStack)
   }
 
   it must "find a CHECKLOCKTIMEVERIFY flag" in {
-    ScriptFlagFactory.fromString("CHECKLOCKTIMEVERIFY").get must be(ScriptVerifyCheckLocktimeVerify)
+    ScriptFlagFactory.fromString("CHECKLOCKTIMEVERIFY").get must be(
+      ScriptVerifyCheckLocktimeVerify)
 
   }
 
   it must "find a CHECKSEQUENCEVERIFY flag" in {
-    ScriptFlagFactory.fromString("CHECKSEQUENCEVERIFY").get must be(ScriptVerifyCheckSequenceVerify)
+    ScriptFlagFactory.fromString("CHECKSEQUENCEVERIFY").get must be(
+      ScriptVerifyCheckSequenceVerify)
   }
 
   it must "match a string version of a script flag" in {
@@ -63,12 +69,14 @@ class ScriptFlagFactoryTest extends FlatSpec with MustMatchers {
 
   it must "match a comma separated list of flags" in {
     val str = "P2SH,STRICTENC"
-    ScriptFlagFactory.fromList(str) must be(Seq(ScriptVerifyP2SH, ScriptVerifyStrictEnc))
+    ScriptFlagFactory.fromList(str) must be(
+      Seq(ScriptVerifyP2SH, ScriptVerifyStrictEnc))
   }
 
   it must "match a sequence of strings with their script flags" in {
     val l = List("P2SH", "STRICTENC")
-    ScriptFlagFactory.fromList(l) must be(Seq(ScriptVerifyP2SH, ScriptVerifyStrictEnc))
+    ScriptFlagFactory.fromList(l) must be(
+      Seq(ScriptVerifyP2SH, ScriptVerifyStrictEnc))
   }
 
 }

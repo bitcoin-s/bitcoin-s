@@ -7,27 +7,32 @@ import org.scalacheck.Gen
 
 trait LnCurrencyUnitGen {
 
-  def milliBitcoin: Gen[MilliBitcoins] = for {
-    amount <- Gen.choose(MilliBitcoins.min.toLong, MilliBitcoins.max.toLong)
-  } yield MilliBitcoins(amount)
+  def milliBitcoin: Gen[MilliBitcoins] =
+    for {
+      amount <- Gen.choose(MilliBitcoins.min.toLong, MilliBitcoins.max.toLong)
+    } yield MilliBitcoins(amount)
 
-  def microBitcoin: Gen[MicroBitcoins] = for {
-    amount <- Gen.choose(MicroBitcoins.min.toLong, MicroBitcoins.max.toLong)
-  } yield MicroBitcoins(amount)
+  def microBitcoin: Gen[MicroBitcoins] =
+    for {
+      amount <- Gen.choose(MicroBitcoins.min.toLong, MicroBitcoins.max.toLong)
+    } yield MicroBitcoins(amount)
 
-  def nanoBitcoin: Gen[NanoBitcoins] = for {
-    amount <- Gen.choose(NanoBitcoins.min.toLong, NanoBitcoins.max.toLong)
-  } yield NanoBitcoins(amount)
+  def nanoBitcoin: Gen[NanoBitcoins] =
+    for {
+      amount <- Gen.choose(NanoBitcoins.min.toLong, NanoBitcoins.max.toLong)
+    } yield NanoBitcoins(amount)
 
-  def picoBitcoin: Gen[PicoBitcoins] = for {
-    amount <- Gen.choose(PicoBitcoins.min.toLong, PicoBitcoins.max.toLong)
-  } yield PicoBitcoins(amount)
+  def picoBitcoin: Gen[PicoBitcoins] =
+    for {
+      amount <- Gen.choose(PicoBitcoins.min.toLong, PicoBitcoins.max.toLong)
+    } yield PicoBitcoins(amount)
 
   def positivePicoBitcoin: Gen[PicoBitcoins] = {
     Gen.choose(0, PicoBitcoins.max.toLong).map(PicoBitcoins(_))
   }
 
-  def lnCurrencyUnit: Gen[LnCurrencyUnit] = Gen.oneOf(milliBitcoin, microBitcoin, nanoBitcoin, picoBitcoin)
+  def lnCurrencyUnit: Gen[LnCurrencyUnit] =
+    Gen.oneOf(milliBitcoin, microBitcoin, nanoBitcoin, picoBitcoin)
 
   def lnCurrencyUnitOpt: Gen[Option[LnCurrencyUnit]] = {
     Gen.option(lnCurrencyUnit)
@@ -45,9 +50,10 @@ trait LnCurrencyUnitGen {
     lnCurrencyUnit.suchThat(_ < LnCurrencyUnits.zero)
   }
 
-  def milliSatoshis: Gen[MilliSatoshis] = for {
-    i64 <- NumberGenerator.uInt64
-  } yield MilliSatoshis(i64.toBigInt)
+  def milliSatoshis: Gen[MilliSatoshis] =
+    for {
+      i64 <- NumberGenerator.uInt64
+    } yield MilliSatoshis(i64.toBigInt)
 }
 
 object LnCurrencyUnitGen extends LnCurrencyUnitGen

@@ -1,17 +1,18 @@
 package org.bitcoins.core.serializers.blockchain
 
 import org.bitcoins.core.crypto.DoubleSha256Digest
-import org.bitcoins.core.number.{ Int32, UInt32 }
+import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.serializers.RawBitcoinSerializer
 import scodec.bits.ByteVector
 
 /**
- * Created by chris on 5/19/16.
- * Serializes block headers
- * https://bitcoin.org/en/developer-reference#block-headers
- */
-sealed abstract class RawBlockHeaderSerializer extends RawBitcoinSerializer[BlockHeader] {
+  * Created by chris on 5/19/16.
+  * Serializes block headers
+  * https://bitcoin.org/en/developer-reference#block-headers
+  */
+sealed abstract class RawBlockHeaderSerializer
+    extends RawBitcoinSerializer[BlockHeader] {
 
   /** Converts a list of bytes into a block header */
   def read(bytes: ByteVector): BlockHeader = {
@@ -19,7 +20,8 @@ sealed abstract class RawBlockHeaderSerializer extends RawBitcoinSerializer[Bloc
     val version = Int32(bytes.take(4).reverse)
     //previous header hash next 32 bytes
     val prevBlockHashBytes = bytes.slice(4, 36)
-    val prevBlockHash: DoubleSha256Digest = DoubleSha256Digest(prevBlockHashBytes)
+    val prevBlockHash: DoubleSha256Digest = DoubleSha256Digest(
+      prevBlockHashBytes)
     //merkle hash next 32 bytes
     val merkleRootBytes = bytes.slice(36, 68)
     val merkleRoot: DoubleSha256Digest = DoubleSha256Digest(merkleRootBytes)

@@ -5,8 +5,8 @@ import java.net.URI
 import org.bitcoins.core.config.NetworkParameters
 
 /**
- * Created by chris on 4/29/17.
- */
+  * Created by chris on 4/29/17.
+  */
 sealed trait BitcoindInstance {
   require(
     rpcUri.getPort == rpcPort,
@@ -22,18 +22,19 @@ sealed trait BitcoindInstance {
 
 object BitcoindInstance {
   private case class BitcoindInstanceImpl(
-    network: NetworkParameters,
-    uri: URI,
-    rpcUri: URI,
-    authCredentials: BitcoindAuthCredentials,
-    zmqPortOpt: Option[Int]) extends BitcoindInstance
+      network: NetworkParameters,
+      uri: URI,
+      rpcUri: URI,
+      authCredentials: BitcoindAuthCredentials,
+      zmqPortOpt: Option[Int])
+      extends BitcoindInstance
 
   def apply(
-    network: NetworkParameters,
-    uri: URI,
-    rpcUri: URI,
-    authCredentials: BitcoindAuthCredentials,
-    zmqPortOpt: Option[Int] = None): BitcoindInstance = {
+      network: NetworkParameters,
+      uri: URI,
+      rpcUri: URI,
+      authCredentials: BitcoindAuthCredentials,
+      zmqPortOpt: Option[Int] = None): BitcoindInstance = {
     BitcoindInstanceImpl(network, uri, rpcUri, authCredentials, zmqPortOpt)
   }
 }

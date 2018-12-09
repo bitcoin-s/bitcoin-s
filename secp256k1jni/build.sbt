@@ -1,4 +1,3 @@
-
 name := "secp256k1jni"
 
 // TODO: we may want to override the version and publish separately

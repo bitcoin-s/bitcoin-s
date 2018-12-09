@@ -1,15 +1,16 @@
 package org.bitcoins.core.protocol.blockchain
 
-import org.scalatest.{ FlatSpec, MustMatchers }
+import org.scalatest.{FlatSpec, MustMatchers}
 import org.slf4j.LoggerFactory
 
 import scala.io.Source
 
 /**
- * Created by chris on 7/15/16.
- */
+  * Created by chris on 7/15/16.
+  */
 class BlockTest extends FlatSpec with MustMatchers {
   private val logger = LoggerFactory.getLogger(this.getClass.getSimpleName)
+
   def timeBlockParsing[R](block: => R): Long = {
     val t0 = System.currentTimeMillis()
     val result = block // call-by-name
@@ -29,14 +30,16 @@ class BlockTest extends FlatSpec with MustMatchers {
 
   it must "parse a large block 00000000000000000008513c860373da0484f065983aeb063ebf81c172e81d48" in {
 
-    val fileName = "/00000000000000000008513c860373da0484f065983aeb063ebf81c172e81d48.txt"
+    val fileName =
+      "/00000000000000000008513c860373da0484f065983aeb063ebf81c172e81d48.txt"
     val lines = Source.fromURL(getClass.getResource(fileName)).mkString
     val time = timeBlockParsing(Block.fromHex(lines))
     assert(time <= 15000)
   }
 
   it must "parse a large block 000000000000000000050f70113ab1932c195442cb49bcc4ee4d7f426c8a3295" in {
-    val fileName = "/000000000000000000050f70113ab1932c195442cb49bcc4ee4d7f426c8a3295.txt"
+    val fileName =
+      "/000000000000000000050f70113ab1932c195442cb49bcc4ee4d7f426c8a3295.txt"
     val lines = Source.fromURL(getClass.getResource(fileName)).mkString
     val time = timeBlockParsing(Block.fromHex(lines))
     assert(time <= 15000)

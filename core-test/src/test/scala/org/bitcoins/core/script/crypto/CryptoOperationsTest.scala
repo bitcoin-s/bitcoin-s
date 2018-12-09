@@ -1,10 +1,10 @@
 package org.bitcoins.core.script.crypto
 
-import org.scalatest.{ FlatSpec, MustMatchers }
+import org.scalatest.{FlatSpec, MustMatchers}
 
 /**
- * Created by chris on 1/6/16.
- */
+  * Created by chris on 1/6/16.
+  */
 class CryptoOperationsTest extends FlatSpec with MustMatchers {
 
   "CryptoOperations" must "define OP_RIPEMD160" in {

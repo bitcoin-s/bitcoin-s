@@ -2,11 +2,11 @@ package org.bitcoins.core.util
 
 import org.bitcoins.core.gen.NumberGenerator
 import org.bitcoins.core.number.UInt8
-import org.scalacheck.{ Prop, Properties }
+import org.scalacheck.{Prop, Properties}
 
 /**
- * Created by chris on 6/20/16.
- */
+  * Created by chris on 6/20/16.
+  */
 class NumberUtilSpec extends Properties("NumberUtilSpec") {
   private val logger = BitcoinSLogger.logger
 
@@ -15,15 +15,13 @@ class NumberUtilSpec extends Properties("NumberUtilSpec") {
       NumberUtil.toBigInt(BitcoinSUtil.encodeHex(bigInt)) == bigInt
     }
 
-  property("serialization symmetry for ints") =
-    Prop.forAll { int: Int =>
-      NumberUtil.toInt(BitcoinSUtil.encodeHex(int)) == int
-    }
+  property("serialization symmetry for ints") = Prop.forAll { int: Int =>
+    NumberUtil.toInt(BitcoinSUtil.encodeHex(int)) == int
+  }
 
-  property("serialization symmetry for longs") =
-    Prop.forAll { long: Long =>
-      NumberUtil.toLong(BitcoinSUtil.encodeHex(long)) == long
-    }
+  property("serialization symmetry for longs") = Prop.forAll { long: Long =>
+    NumberUtil.toLong(BitcoinSUtil.encodeHex(long)) == long
+  }
 
   property("convertBits symmetry") = {
     Prop.forAllNoShrink(NumberGenerator.uInt8s) {

@@ -1,11 +1,11 @@
 package org.bitcoins.core.policy
 
 import org.bitcoins.core.script.flag._
-import org.scalatest.{ FlatSpec, MustMatchers }
+import org.scalatest.{FlatSpec, MustMatchers}
 
 /**
- * Created by chris on 5/2/16.
- */
+  * Created by chris on 5/2/16.
+  */
 class PolicyTest extends FlatSpec with MustMatchers {
 
   "Policy" must "determine what the mandatory script verify flags are" in {

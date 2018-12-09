@@ -3,15 +3,19 @@ package org.bitcoins.core.script.arithmetic
 import org.bitcoins.core.script.constant._
 import org.bitcoins.core.script.flag.ScriptFlag
 import org.bitcoins.core.script.result._
-import org.bitcoins.core.script.{ ExecutedScriptProgram, ExecutionInProgressScriptProgram, ScriptProgram }
-import org.bitcoins.core.util.{ ScriptProgramTestUtil, TestUtil }
-import org.scalatest.{ FlatSpec, MustMatchers }
+import org.bitcoins.core.script.{
+  ExecutedScriptProgram,
+  ExecutionInProgressScriptProgram,
+  ScriptProgram
+}
+import org.bitcoins.core.util.{ScriptProgramTestUtil, TestUtil}
+import org.scalatest.{FlatSpec, MustMatchers}
 
 import scala.util.Try
 
 /**
- * Created by chris on 1/25/16.
- */
+  * Created by chris on 1/25/16.
+  */
 class ArithmeticInterpreterTest extends FlatSpec with MustMatchers {
 
   val AI = ArithmeticInterpreter
@@ -39,8 +43,10 @@ class ArithmeticInterpreterTest extends FlatSpec with MustMatchers {
 
     val stack = List()
     val script = List(OP_1ADD)
-    val program = ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script)
-    val newProgram = ScriptProgramTestUtil.toExecutedScriptProgram(AI.op1Add(program))
+    val program =
+      ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script)
+    val newProgram =
+      ScriptProgramTestUtil.toExecutedScriptProgram(AI.op1Add(program))
     newProgram.error must be(Some(ScriptErrorInvalidStackOperation))
 
   }
@@ -59,8 +65,10 @@ class ArithmeticInterpreterTest extends FlatSpec with MustMatchers {
 
     val stack = List()
     val script = List(OP_1SUB)
-    val program = ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script)
-    val newProgram = ScriptProgramTestUtil.toExecutedScriptProgram(AI.op1Sub(program))
+    val program =
+      ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script)
+    val newProgram =
+      ScriptProgramTestUtil.toExecutedScriptProgram(AI.op1Sub(program))
     newProgram.error must be(Some(ScriptErrorInvalidStackOperation))
   }
 
@@ -77,8 +85,10 @@ class ArithmeticInterpreterTest extends FlatSpec with MustMatchers {
   it must "mark a script as invalid if we have an OP_SUB with nothing on the stack" in {
     val stack = List()
     val script = List(OP_SUB)
-    val program = ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script)
-    val newProgram = ScriptProgramTestUtil.toExecutedScriptProgram(AI.opSub(program))
+    val program =
+      ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script)
+    val newProgram =
+      ScriptProgramTestUtil.toExecutedScriptProgram(AI.opSub(program))
     newProgram.error must be(Some(ScriptErrorInvalidStackOperation))
   }
 
@@ -104,8 +114,10 @@ class ArithmeticInterpreterTest extends FlatSpec with MustMatchers {
   it must "mark a script as invalid if we have an OP_ABS with nothing on the stack" in {
     val stack = List()
     val script = List(OP_ABS)
-    val program = ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script)
-    val newProgram = ScriptProgramTestUtil.toExecutedScriptProgram(AI.opAbs(program))
+    val program =
+      ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script)
+    val newProgram =
+      ScriptProgramTestUtil.toExecutedScriptProgram(AI.opAbs(program))
     newProgram.error must be(Some(ScriptErrorInvalidStackOperation))
   }
 
@@ -142,8 +154,10 @@ class ArithmeticInterpreterTest extends FlatSpec with MustMatchers {
 
     val stack = List()
     val script = List(OP_NEGATE)
-    val program = ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script)
-    val newProgram = ScriptProgramTestUtil.toExecutedScriptProgram(AI.opNegate(program))
+    val program =
+      ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script)
+    val newProgram =
+      ScriptProgramTestUtil.toExecutedScriptProgram(AI.opNegate(program))
     newProgram.error must be(Some(ScriptErrorInvalidStackOperation))
   }
 
@@ -264,7 +278,8 @@ class ArithmeticInterpreterTest extends FlatSpec with MustMatchers {
   it must "evaluate an OP_NUMEQUALVERIFY for two zeros" in {
     val stack = List(ScriptNumber.zero, ScriptNumber.zero)
     val script = List(OP_NUMEQUALVERIFY)
-    val program = ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script)
+    val program =
+      ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script)
     val newProgram = AI.opNumEqualVerify(program)
     newProgram.isInstanceOf[ExecutionInProgressScriptProgram] must be(true)
     newProgram.stack.isEmpty must be(true)
@@ -273,19 +288,23 @@ class ArithmeticInterpreterTest extends FlatSpec with MustMatchers {
   it must "evaluate an OP_NUMEQUALVERIFY for two different numbers" in {
     val stack = List(ScriptNumber.zero, ScriptNumber.one)
     val script = List(OP_NUMEQUALVERIFY)
-    val program = ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script)
+    val program =
+      ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script)
     val newProgram = AI.opNumEqualVerify(program)
     newProgram.isInstanceOf[ExecutedScriptProgram] must be(true)
-    newProgram.asInstanceOf[ExecutedScriptProgram].error must be(Some(ScriptErrorVerify))
+    newProgram.asInstanceOf[ExecutedScriptProgram].error must be(
+      Some(ScriptErrorVerify))
   }
 
   it must "mark the script as invalid for OP_NUMEQAULVERIFY without two stack elements" in {
     val stack = List(ScriptNumber.zero)
     val script = List(OP_NUMEQUALVERIFY)
-    val program = ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script)
+    val program =
+      ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script)
     val newProgram = AI.opNumEqualVerify(program)
     newProgram.isInstanceOf[ExecutedScriptProgram] must be(true)
-    newProgram.asInstanceOf[ExecutedScriptProgram].error must be(Some(ScriptErrorInvalidStackOperation))
+    newProgram.asInstanceOf[ExecutedScriptProgram].error must be(
+      Some(ScriptErrorInvalidStackOperation))
   }
 
   it must "evaluate an OP_NUMNOTEQUAL for two numbers that are the same" in {
@@ -417,7 +436,8 @@ class ArithmeticInterpreterTest extends FlatSpec with MustMatchers {
   it must "evaluate an OP_MIN correctly" in {
     val stack = List(ScriptNumber.zero, ScriptNumber.one)
     val script = List(OP_MIN)
-    val program = ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script)
+    val program =
+      ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script)
     val newProgram = AI.opMin(program)
 
     newProgram.stack must be(List(ScriptNumber.zero))
@@ -426,17 +446,20 @@ class ArithmeticInterpreterTest extends FlatSpec with MustMatchers {
   it must "mark a script invalid for OP_MIN if there isn't two elements on the stack" in {
     val stack = List(ScriptNumber.zero)
     val script = List(OP_MIN)
-    val program = ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script)
+    val program =
+      ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script)
     val newProgram = AI.opMin(program)
 
     newProgram.isInstanceOf[ExecutedScriptProgram] must be(true)
-    newProgram.asInstanceOf[ExecutedScriptProgram].error must be(Some(ScriptErrorInvalidStackOperation))
+    newProgram.asInstanceOf[ExecutedScriptProgram].error must be(
+      Some(ScriptErrorInvalidStackOperation))
   }
 
   it must "evaluate an OP_MAX correctly" in {
     val stack = List(ScriptNumber.zero, ScriptNumber.one)
     val script = List(OP_MAX)
-    val program = ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script)
+    val program =
+      ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script)
     val newProgram = AI.opMax(program)
 
     newProgram.stack must be(List(ScriptNumber.one))
@@ -445,24 +468,30 @@ class ArithmeticInterpreterTest extends FlatSpec with MustMatchers {
   it must "mark a script invalid for OP_MAX if there isn't two elements on the stack" in {
     val stack = List(ScriptNumber.zero)
     val script = List(OP_MAX)
-    val program = ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script)
+    val program =
+      ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script)
     val newProgram = AI.opMax(program)
 
     newProgram.isInstanceOf[ExecutedScriptProgram] must be(true)
-    newProgram.asInstanceOf[ExecutedScriptProgram].error must be(Some(ScriptErrorInvalidStackOperation))
+    newProgram.asInstanceOf[ExecutedScriptProgram].error must be(
+      Some(ScriptErrorInvalidStackOperation))
   }
 
   it must "evaluate an OP_WITHIN correctly" in {
     val stack = List(ScriptNumber(2), ScriptNumber.one, ScriptNumber.zero)
     val script = List(OP_WITHIN)
-    val program = ScriptProgram(ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script), Seq[ScriptFlag]())
+    val program = ScriptProgram(
+      ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script),
+      Seq[ScriptFlag]())
     val newProgram = AI.opWithin(program)
     newProgram.stack must be(List(OP_FALSE))
     newProgram.script.isEmpty must be(true)
 
     val stack1 = List(ScriptNumber.one, OP_0, ScriptNumber.zero)
     val script1 = List(OP_WITHIN)
-    val program1 = ScriptProgram(ScriptProgram(TestUtil.testProgramExecutionInProgress, stack1, script1), Seq[ScriptFlag]())
+    val program1 = ScriptProgram(
+      ScriptProgram(TestUtil.testProgramExecutionInProgress, stack1, script1),
+      Seq[ScriptFlag]())
     val newProgram1 = AI.opWithin(program1)
     newProgram1.stack must be(List(OP_TRUE))
     newProgram1.script.isEmpty must be(true)
@@ -471,28 +500,37 @@ class ArithmeticInterpreterTest extends FlatSpec with MustMatchers {
   it must "mark the script as invalid if one of the numbers within OP_WITHIN is not encoded the smallest way possible" in {
     val stack = List(ScriptNumber("00"), ScriptNumber.one, ScriptNumber.one)
     val script = List(OP_WITHIN)
-    val program = ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script)
+    val program =
+      ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script)
     val newProgram = AI.opWithin(program)
     newProgram.isInstanceOf[ExecutedScriptProgram] must be(true)
-    newProgram.asInstanceOf[ExecutedScriptProgram].error must be(Some(ScriptErrorUnknownError))
+    newProgram.asInstanceOf[ExecutedScriptProgram].error must be(
+      Some(ScriptErrorUnknownError))
   }
 
   it must "mark the script as invalid for OP_WITHIN if one of the numbers is larger than 4 bytes" in {
-    val stack = List(ScriptNumber("0000000000000000"), ScriptNumber.one, ScriptNumber.one)
+    val stack =
+      List(ScriptNumber("0000000000000000"), ScriptNumber.one, ScriptNumber.one)
     val script = List(OP_WITHIN)
-    val program = ScriptProgram(ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script), Seq[ScriptFlag]())
+    val program = ScriptProgram(
+      ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script),
+      Seq[ScriptFlag]())
     val newProgram = AI.opWithin(program)
     newProgram.isInstanceOf[ExecutedScriptProgram] must be(true)
-    newProgram.asInstanceOf[ExecutedScriptProgram].error must be(Some(ScriptErrorUnknownError))
+    newProgram.asInstanceOf[ExecutedScriptProgram].error must be(
+      Some(ScriptErrorUnknownError))
   }
 
   it must "mark the script as invalid for OP_WITHIN if we do not have 3 stack elements" in {
     val stack = List(ScriptNumber("0000000000000000"), ScriptNumber.one)
     val script = List(OP_WITHIN)
-    val program = ScriptProgram(ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script), Seq[ScriptFlag]())
+    val program = ScriptProgram(
+      ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script),
+      Seq[ScriptFlag]())
     val newProgram = AI.opWithin(program)
     newProgram.isInstanceOf[ExecutedScriptProgram] must be(true)
-    newProgram.asInstanceOf[ExecutedScriptProgram].error must be(Some(ScriptErrorInvalidStackOperation))
+    newProgram.asInstanceOf[ExecutedScriptProgram].error must be(
+      Some(ScriptErrorInvalidStackOperation))
   }
 
   it must "interpret two script constants as numbers and then add them" in {

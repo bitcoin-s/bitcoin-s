@@ -1,19 +1,20 @@
 package org.bitcoins.core.protocol.ln
 
 import org.bitcoins.core.crypto.ECDigitalSignature
-import org.bitcoins.core.number.{ UInt5, UInt8 }
+import org.bitcoins.core.number.{UInt5, UInt8}
 import org.bitcoins.core.protocol.NetworkElement
-import org.bitcoins.core.util.{ Bech32, Factory }
+import org.bitcoins.core.util.{Bech32, Factory}
 import scodec.bits.ByteVector
 
 /**
- * 520 bit digital signature that signs the [[org.bitcoins.core.protocol.ln.LnInvoice LnInvoice]];
- * See
- * [[https://github.com/lightningnetwork/lightning-rfc/blob/master/11-payment-encoding.md#data-part BOLT11]]
+  * 520 bit digital signature that signs the [[org.bitcoins.core.protocol.ln.LnInvoice LnInvoice]];
+  * See
+  * [[https://github.com/lightningnetwork/lightning-rfc/blob/master/11-payment-encoding.md#data-part BOLT11]]
   * for more info.
- */
+  */
 sealed abstract class LnInvoiceSignature extends NetworkElement {
-  require(version.toInt >= 0 && version.toInt <= 3, s"signature recovery byte must be 0,1,2,3, got ${version.toInt}")
+  require(version.toInt >= 0 && version.toInt <= 3,
+          s"signature recovery byte must be 0,1,2,3, got ${version.toInt}")
 
   def signature: ECDigitalSignature
 
@@ -31,10 +32,13 @@ sealed abstract class LnInvoiceSignature extends NetworkElement {
 
 object LnInvoiceSignature extends Factory[LnInvoiceSignature] {
   private case class LnInvoiceSignatureImpl(
-    version: UInt8,
-    signature: ECDigitalSignature) extends LnInvoiceSignature
+      version: UInt8,
+      signature: ECDigitalSignature)
+      extends LnInvoiceSignature
 
-  def apply(version: UInt8, signature: ECDigitalSignature): LnInvoiceSignature = {
+  def apply(
+      version: UInt8,
+      signature: ECDigitalSignature): LnInvoiceSignature = {
     LnInvoiceSignatureImpl(version, signature)
   }
 
@@ -44,9 +48,7 @@ object LnInvoiceSignature extends Factory[LnInvoiceSignature] {
 
     val signature = ECDigitalSignature.fromRS(sigBytes)
 
-    LnInvoiceSignature.apply(
-      version = version,
-      signature = signature)
+    LnInvoiceSignature.apply(version = version, signature = signature)
   }
 
   def fromU5s(u5s: Vector[UInt5]): LnInvoiceSignature = {

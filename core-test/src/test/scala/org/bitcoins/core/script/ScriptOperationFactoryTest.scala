@@ -9,11 +9,11 @@ import org.bitcoins.core.script.locktime.OP_CHECKLOCKTIMEVERIFY
 import org.bitcoins.core.script.splice.OP_SUBSTR
 import org.bitcoins.core.script.stack.OP_TOALTSTACK
 import org.bitcoins.core.util.BitcoinSUtil
-import org.scalatest.{ FlatSpec, MustMatchers }
+import org.scalatest.{FlatSpec, MustMatchers}
 
 /**
- * Created by chris on 1/9/16.
- */
+  * Created by chris on 1/9/16.
+  */
 class ScriptOperationFactoryTest extends FlatSpec with MustMatchers {
 
   "ScriptOperationFactory" must "match operations with their byte representation" in {

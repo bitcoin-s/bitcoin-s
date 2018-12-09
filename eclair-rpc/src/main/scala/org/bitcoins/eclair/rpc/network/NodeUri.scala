@@ -2,7 +2,7 @@ package org.bitcoins.eclair.rpc.network
 
 import org.bitcoins.core.protocol.ln.node.NodeId
 
-import scala.util.{ Failure, Success, Try }
+import scala.util.{Failure, Success, Try}
 
 case class NodeUri(nodeId: NodeId, host: String, port: Int) {
   override def toString = s"$nodeId@$host:$port"
@@ -21,7 +21,8 @@ object NodeUri {
       case Some(withPort) =>
         Success(parse(withPort))
       case None =>
-        Failure(new IllegalArgumentException(s"Failed to parse $uri to a NodeUri"))
+        Failure(
+          new IllegalArgumentException(s"Failed to parse $uri to a NodeUri"))
     }
     nodeUriT
   }
@@ -31,8 +32,8 @@ object NodeUri {
   }
 
   /**
-   * Assumes format is [nodeId]@[host]:[port]
-   */
+    * Assumes format is [nodeId]@[host]:[port]
+    */
   private def parse(validUri: String): NodeUri = {
     //key is 33 bytes in size
     val (key: String, rest: String) = validUri.splitAt(66)

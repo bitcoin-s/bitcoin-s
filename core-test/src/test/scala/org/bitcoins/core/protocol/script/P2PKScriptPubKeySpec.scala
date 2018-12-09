@@ -1,11 +1,11 @@
 package org.bitcoins.core.protocol.script
 
 import org.bitcoins.core.gen.ScriptGenerators
-import org.scalacheck.{ Prop, Properties }
+import org.scalacheck.{Prop, Properties}
 
 /**
- * Created by chris on 6/22/16.
- */
+  * Created by chris on 6/22/16.
+  */
 class P2PKScriptPubKeySpec extends Properties("P2PKScriptPubKeySpec") {
 
   property("Serialization symmetry") =

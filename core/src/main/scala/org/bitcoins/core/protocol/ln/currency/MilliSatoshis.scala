@@ -8,10 +8,10 @@ import scodec.bits.ByteVector
 import scala.math.BigDecimal.RoundingMode
 
 /**
- * The common currency unit used in the
- * LN protocol for updating HTLCs. See
- * [[https://github.com/lightningnetwork/lightning-rfc/blob/master/02-peer-protocol.md#adding-an-htlc-update_add_htlc BOLT2]]
- */
+  * The common currency unit used in the
+  * LN protocol for updating HTLCs. See
+  * [[https://github.com/lightningnetwork/lightning-rfc/blob/master/02-peer-protocol.md#adding-an-htlc-update_add_htlc BOLT2]]
+  */
 sealed abstract class MilliSatoshis extends NetworkElement {
   require(toBigInt >= 0, s"Millisatoshis cannot be negative, got $toBigInt")
 

@@ -1,10 +1,10 @@
 package org.bitcoins.core.script.stack
 
-import org.scalatest.{ FlatSpec, MustMatchers }
+import org.scalatest.{FlatSpec, MustMatchers}
 
 /**
- * Created by chris on 1/6/16.
- */
+  * Created by chris on 1/6/16.
+  */
 class StackOperationsTest extends FlatSpec with MustMatchers {
 
   "StackOperations" must "define OP_TOALTSTACK" in {

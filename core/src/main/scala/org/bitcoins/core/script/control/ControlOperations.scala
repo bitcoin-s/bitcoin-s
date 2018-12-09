@@ -4,8 +4,8 @@ import org.bitcoins.core.script.ScriptOperationFactory
 import org.bitcoins.core.script.constant.ScriptOperation
 
 /**
- * Created by chris on 1/6/16.
- */
+  * Created by chris on 1/6/16.
+  */
 sealed abstract class ControlOperations extends ScriptOperation
 
 /** If the top stack value is not 0, the statements are executed. The top stack value is removed. */
@@ -19,17 +19,17 @@ case object OP_NOTIF extends ControlOperations {
 }
 
 /**
- * If the preceding OP_IF or OP_NOTIF or OP_ELSE was not executed then these statements are and
- * if the preceding OP_IF or OP_NOTIF or OP_ELSE was executed then these statements are not.
- */
+  * If the preceding OP_IF or OP_NOTIF or OP_ELSE was not executed then these statements are and
+  * if the preceding OP_IF or OP_NOTIF or OP_ELSE was executed then these statements are not.
+  */
 case object OP_ELSE extends ControlOperations {
   override val opCode: Int = 103
 }
 
 /**
- * Ends an if/else block. All blocks must end, or the transaction is invalid.
- * An OP_ENDIF without OP_IF earlier is also invalid.
- */
+  * Ends an if/else block. All blocks must end, or the transaction is invalid.
+  * An OP_ENDIF without OP_IF earlier is also invalid.
+  */
 case object OP_ENDIF extends ControlOperations {
   override val opCode: Int = 104
 }
@@ -40,17 +40,18 @@ case object OP_VERIFY extends ControlOperations {
 }
 
 /**
- * Marks transaction as invalid. A standard way of attaching extra data to transactions is to add a zero-value
- * output with a scriptPubKey consisting of OP_RETURN followed by exactly one pushdata op.
- * Such outputs are provably unspendable, reducing their cost to the network.
- * Currently it is usually considered non-standard
- * (though valid) for a transaction to have more than one OP_RETURN output or an OP_RETURN output
- * with more than one pushdata op.
- */
+  * Marks transaction as invalid. A standard way of attaching extra data to transactions is to add a zero-value
+  * output with a scriptPubKey consisting of OP_RETURN followed by exactly one pushdata op.
+  * Such outputs are provably unspendable, reducing their cost to the network.
+  * Currently it is usually considered non-standard
+  * (though valid) for a transaction to have more than one OP_RETURN output or an OP_RETURN output
+  * with more than one pushdata op.
+  */
 case object OP_RETURN extends ControlOperations {
   override val opCode: Int = 106
 }
 
 object ControlOperations extends ScriptOperationFactory[ControlOperations] {
-  override val operations = Seq(OP_ELSE, OP_ENDIF, OP_IF, OP_NOTIF, OP_RETURN, OP_VERIFY)
+  override val operations =
+    Seq(OP_ELSE, OP_ENDIF, OP_IF, OP_NOTIF, OP_RETURN, OP_VERIFY)
 }

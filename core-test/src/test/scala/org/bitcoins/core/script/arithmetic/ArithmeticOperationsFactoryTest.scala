@@ -1,10 +1,10 @@
 package org.bitcoins.core.script.arithmetic
 
-import org.scalatest.{ FlatSpec, MustMatchers }
+import org.scalatest.{FlatSpec, MustMatchers}
 
 /**
- * Created by chris on 1/8/16.
- */
+  * Created by chris on 1/8/16.
+  */
 class ArithmeticOperationsFactoryTest extends FlatSpec with MustMatchers {
   "ArithmeticOperationsFactory" must "match strings with arithmetic operations" in {
     ArithmeticOperation.fromString("OP_1ADD") must be(Some(OP_1ADD))

@@ -1,11 +1,11 @@
 package org.bitcoins.core.number
 
-import org.scalatest.{ FlatSpec, MustMatchers }
+import org.scalatest.{FlatSpec, MustMatchers}
 import scodec.bits.ByteVector
 
 /**
- * Created by chris on 6/15/16.
- */
+  * Created by chris on 6/15/16.
+  */
 class Int32Test extends FlatSpec with MustMatchers {
 
   "Int32" must "create the number zero" in {
@@ -19,7 +19,8 @@ class Int32Test extends FlatSpec with MustMatchers {
   }
 
   it must "represent the number -1 with 4 bytes" in {
-    val int32 = Int32(ByteVector(0xff.toByte, 0xff.toByte, 0xff.toByte, 0xff.toByte))
+    val int32 =
+      Int32(ByteVector(0xff.toByte, 0xff.toByte, 0xff.toByte, 0xff.toByte))
     int32.toInt must be(-1)
   }
 
@@ -34,7 +35,8 @@ class Int32Test extends FlatSpec with MustMatchers {
   }
 
   it must "create the max number for an Int32" in {
-    val int32 = Int32(ByteVector(0x7f.toByte, 0xff.toByte, 0xff.toByte, 0xff.toByte))
+    val int32 =
+      Int32(ByteVector(0x7f.toByte, 0xff.toByte, 0xff.toByte, 0xff.toByte))
     int32.toInt must be(2147483647)
   }
 

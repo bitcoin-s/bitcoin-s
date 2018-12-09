@@ -5,11 +5,11 @@ import java.io.File
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import org.bitcoins.rpc.client.BitcoindRpcClient
-import org.scalatest.{ AsyncFlatSpec, BeforeAndAfterAll }
+import org.scalatest.{AsyncFlatSpec, BeforeAndAfterAll}
 
 import scala.concurrent.duration.DurationInt
-import scala.concurrent.{ Await, Future }
-import scala.util.{ Success, Try }
+import scala.concurrent.{Await, Future}
+import scala.util.{Success, Try}
 
 class RpcUtilTest extends AsyncFlatSpec with BeforeAndAfterAll {
 
@@ -21,29 +21,32 @@ class RpcUtilTest extends AsyncFlatSpec with BeforeAndAfterAll {
     true
   }
 
-  private def boolLaterDoneAnd(bool: Boolean, boolFuture: Future[Boolean]): Future[Boolean] = {
+  private def boolLaterDoneAnd(
+      bool: Boolean,
+      boolFuture: Future[Boolean]): Future[Boolean] = {
     Future.successful(boolFuture.value.contains(Success(bool)))
   }
 
-  private def boolLaterDoneAndTrue(trueLater: Future[Boolean]): () => Future[Boolean] = {
-    () => boolLaterDoneAnd(true, trueLater)
+  private def boolLaterDoneAndTrue(
+      trueLater: Future[Boolean]): () => Future[Boolean] = { () =>
+    boolLaterDoneAnd(true, trueLater)
   }
 
   behavior of "RpcUtil"
 
   it should "complete immediately if condition is true" in {
-    RpcUtil.retryUntilSatisfiedF(
-      conditionF = () => Future.successful(true),
-      duration = 0.millis).map { _ =>
-      succeed
-    }
+    RpcUtil
+      .retryUntilSatisfiedF(conditionF = () => Future.successful(true),
+                            duration = 0.millis)
+      .map { _ =>
+        succeed
+      }
   }
 
   it should "fail if condition is false" in {
     recoverToSucceededIf[RuntimeException] {
-      RpcUtil.retryUntilSatisfiedF(
-        conditionF = () => Future.successful(false),
-        duration = 0.millis)
+      RpcUtil.retryUntilSatisfiedF(conditionF = () => Future.successful(false),
+                                   duration = 0.millis)
     }
   }
 
@@ -57,7 +60,8 @@ class RpcUtilTest extends AsyncFlatSpec with BeforeAndAfterAll {
   it should "fail if there is a delay and duration is zero" in {
     val boolLater = trueLater(delay = 250)
     recoverToSucceededIf[RuntimeException] {
-      RpcUtil.retryUntilSatisfiedF(boolLaterDoneAndTrue(boolLater), duration = 0.millis)
+      RpcUtil.retryUntilSatisfiedF(boolLaterDoneAndTrue(boolLater),
+                                   duration = 0.millis)
     }
   }
 
@@ -83,15 +87,18 @@ class RpcUtilTest extends AsyncFlatSpec with BeforeAndAfterAll {
   it should "timeout if there is a delay and duration is zero" in {
     val boolLater = trueLater(delay = 250)
     assertThrows[RuntimeException] {
-      RpcUtil.awaitConditionF(boolLaterDoneAndTrue(boolLater), duration = 0.millis)
+      RpcUtil.awaitConditionF(boolLaterDoneAndTrue(boolLater),
+                              duration = 0.millis)
     }
   }
 
   "TestUtil" should "create a temp bitcoin directory when creating a DaemonInstance, and then delete it" in {
-    val instance = BitcoindRpcTestUtil.instance(BitcoindRpcTestUtil.randomPort, BitcoindRpcTestUtil.randomPort)
+    val instance = BitcoindRpcTestUtil.instance(BitcoindRpcTestUtil.randomPort,
+                                                BitcoindRpcTestUtil.randomPort)
     val dir = instance.authCredentials.datadir
     assert(dir.isDirectory)
-    assert(dir.listFiles.contains(new File(dir.getAbsolutePath + "/bitcoin.conf")))
+    assert(
+      dir.listFiles.contains(new File(dir.getAbsolutePath + "/bitcoin.conf")))
     BitcoindRpcTestUtil.deleteTmpDir(dir)
     assert(!dir.exists)
   }

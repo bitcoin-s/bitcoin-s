@@ -3,12 +3,13 @@ package org.bitcoins.zmq
 import java.net.InetSocketAddress
 
 import org.bitcoins.core.util.BitcoinSUtil
-import org.scalatest.{ AsyncFlatSpec, MustMatchers }
+import org.scalatest.{AsyncFlatSpec, MustMatchers}
 import org.slf4j.LoggerFactory
-import org.zeromq.{ ZFrame, ZMQ, ZMsg }
+import org.zeromq.{ZFrame, ZMQ, ZMsg}
 import scodec.bits.ByteVector
 
 import scala.concurrent.Promise
+
 class ZMQSubscriberTest extends AsyncFlatSpec with MustMatchers {
   private val logger = LoggerFactory.getLogger(this.getClass().toString)
 
@@ -21,7 +22,8 @@ class ZMQSubscriberTest extends AsyncFlatSpec with MustMatchers {
     //see: https://github.com/bitcoin/bitcoin/blob/master/doc/zmq.md
     val socket = new InetSocketAddress("tcp://127.0.0.1", 29000)
 
-    val zmqSub = new ZMQSubscriber(socket, None, None, rawTxListener, rawBlockListener)
+    val zmqSub =
+      new ZMQSubscriber(socket, None, None, rawTxListener, rawBlockListener)
     //stupid, doesn't test anything, for now. You need to look at log output to verify this is working
     // TODO: In the future this could use the testkit to verify the subscriber by calling generate(1)
     zmqSub.start()
@@ -42,11 +44,10 @@ class ZMQSubscriberTest extends AsyncFlatSpec with MustMatchers {
     publisher.bind(uri)
 
     val valuePromise = Promise[String]()
-    val fakeBlockListener: Option[ByteVector => Unit] = Some {
-      bytes =>
-        val str = new String(bytes.toArray)
-        valuePromise.success(str)
-        ()
+    val fakeBlockListener: Option[ByteVector => Unit] = Some { bytes =>
+      val str = new String(bytes.toArray)
+      valuePromise.success(str)
+      ()
     }
 
     val sub = new ZMQSubscriber(socket, None, None, None, fakeBlockListener)
