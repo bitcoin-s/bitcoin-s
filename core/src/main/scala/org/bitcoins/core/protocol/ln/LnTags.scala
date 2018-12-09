@@ -11,7 +11,6 @@ import org.bitcoins.core.protocol.ln.routing.LnRoute
 import org.bitcoins.core.protocol.ln.util.LnUtil
 import org.bitcoins.core.protocol.script.{P2WPKHWitnessSPKV0, P2WSHWitnessSPKV0}
 import org.bitcoins.core.util.{Bech32, CryptoUtil}
-import org.slf4j.LoggerFactory
 import scodec.bits.ByteVector
 
 import scala.annotation.tailrec

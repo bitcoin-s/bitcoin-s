@@ -301,131 +301,6 @@ trait TransactionGenerators extends BitcoinSLogger {
                        sequence,
                        None)
 
-  /**
-    * Generates a [[Transaction]] that has a valid [[EscrowTimeoutScriptSignature]] that specifically spends the
-    * [[EscrowTimeoutScriptPubKey]] using the multisig escrow branch
-    */
-  def spendableMultiSigEscrowTimeoutTransaction(
-      outputs: Seq[TransactionOutput]): Gen[BaseTxSigComponent] =
-    for {
-      sequence <- NumberGenerator.uInt32s
-      amount <- CurrencyUnitGenerator.satoshis
-      (scriptSig, scriptPubKey, privKeys) <- ScriptGenerators
-        .signedMultiSigEscrowTimeoutScriptSig(sequence, outputs, amount)
-      (creditingTx, outputIndex) = buildCreditingTransaction(
-        TransactionConstants.validLockVersion,
-        scriptPubKey,
-        amount)
-      (spendingTx, inputIndex) = buildSpendingTransaction(
-        TransactionConstants.validLockVersion,
-        creditingTx,
-        scriptSig,
-        outputIndex,
-        TransactionConstants.lockTime,
-        sequence,
-        outputs)
-      output = creditingTx.outputs(outputIndex.toInt)
-      baseTxSigComponent = BaseTxSigComponent(spendingTx,
-                                              inputIndex,
-                                              output,
-                                              Policy.standardScriptVerifyFlags)
-    } yield baseTxSigComponent
-
-  /**
-    * Generates a [[Transaction]] that has a valid [[EscrowTimeoutScriptSignature]] that specfically spends the
-    * [[EscrowTimeoutScriptPubKey]] using the timeout branch
-    */
-  def spendableTimeoutEscrowTimeoutTransaction(
-      outputs: Seq[TransactionOutput]): Gen[BaseTxSigComponent] =
-    for {
-      (csvScriptNum, sequence) <- spendableCSVValues
-      (scriptSig, scriptPubKey, privKeys) <- ScriptGenerators
-        .timeoutEscrowTimeoutScriptSig(csvScriptNum, sequence, outputs)
-      (creditingTx, outputIndex) = buildCreditingTransaction(
-        TransactionConstants.validLockVersion,
-        scriptPubKey)
-      (spendingTx, inputIndex) = buildSpendingTransaction(
-        TransactionConstants.validLockVersion,
-        creditingTx,
-        scriptSig,
-        outputIndex,
-        UInt32.zero,
-        sequence,
-        outputs)
-      output = creditingTx.outputs(outputIndex.toInt)
-      baseTxSigComponent = BaseTxSigComponent(spendingTx,
-                                              inputIndex,
-                                              output,
-                                              Policy.standardScriptVerifyFlags)
-    } yield baseTxSigComponent
-
-  /** Generates a [[Transaction]] that has a valid [[EscrowTimeoutScriptSignature]] */
-  def spendableEscrowTimeoutTransaction(
-      outputs: Seq[TransactionOutput] = Nil): Gen[BaseTxSigComponent] = {
-    Gen.oneOf(spendableMultiSigEscrowTimeoutTransaction(outputs),
-              spendableTimeoutEscrowTimeoutTransaction(outputs))
-  }
-
-  /** Generates a [[Transaction]] that has a valid [[EscrowTimeoutScriptSignature]] */
-  def spendableEscrowTimeoutTransaction: Gen[BaseTxSigComponent] = {
-    Gen.oneOf(spendableMultiSigEscrowTimeoutTransaction(Nil),
-              spendableTimeoutEscrowTimeoutTransaction(Nil))
-  }
-
-  /** Generates a CSVEscrowTimeoutTransaction that should evaluate to false when run through the [[ScriptInterpreter]] */
-  def unspendableTimeoutEscrowTimeoutTransaction: Gen[BaseTxSigComponent] =
-    for {
-      (csvScriptNum, sequence) <- unspendableCSVValues
-      (scriptSig, scriptPubKey, privKeys) <- ScriptGenerators
-        .timeoutEscrowTimeoutScriptSig(csvScriptNum, sequence, Nil)
-      (creditingTx, outputIndex) = buildCreditingTransaction(
-        TransactionConstants.validLockVersion,
-        scriptPubKey)
-      (spendingTx, inputIndex) = buildSpendingTransaction(
-        TransactionConstants.validLockVersion,
-        creditingTx,
-        scriptSig,
-        outputIndex,
-        TransactionConstants.lockTime,
-        sequence)
-      output = creditingTx.outputs(outputIndex.toInt)
-      baseTxSigComponent = BaseTxSigComponent(spendingTx,
-                                              inputIndex,
-                                              output,
-                                              Policy.standardScriptVerifyFlags)
-    } yield baseTxSigComponent
-
-  def unspendableMultiSigEscrowTimeoutTransaction: Gen[BaseTxSigComponent] =
-    for {
-      sequence <- NumberGenerator.uInt32s
-      (multiSigScriptPubKey, _) <- ScriptGenerators.multiSigScriptPubKey
-      (lock, _) <- ScriptGenerators.lockTimeScriptPubKey
-      escrow = EscrowTimeoutScriptPubKey(multiSigScriptPubKey, lock)
-      multiSigScriptSig <- ScriptGenerators.multiSignatureScriptSignature
-      (creditingTx, outputIndex) = buildCreditingTransaction(
-        TransactionConstants.validLockVersion,
-        escrow)
-      escrowScriptSig = EscrowTimeoutScriptSignature.fromMultiSig(
-        multiSigScriptSig)
-      (spendingTx, inputIndex) = buildSpendingTransaction(
-        TransactionConstants.validLockVersion,
-        creditingTx,
-        escrowScriptSig,
-        outputIndex,
-        TransactionConstants.lockTime,
-        sequence)
-      output = creditingTx.outputs(outputIndex.toInt)
-      baseTxSigComponent = BaseTxSigComponent(spendingTx,
-                                              inputIndex,
-                                              output,
-                                              Policy.standardScriptVerifyFlags)
-    } yield baseTxSigComponent
-
-  def unspendableEscrowTimeoutTransaction: Gen[BaseTxSigComponent] = {
-    Gen.oneOf(unspendableTimeoutEscrowTimeoutTransaction,
-              unspendableMultiSigEscrowTimeoutTransaction)
-  }
-
   /** Generates a [[WitnessTransaction]] that has all of it's inputs signed correctly */
   def signedP2WPKHTransaction: Gen[(WitnessTxSigComponent, Seq[ECPrivateKey])] =
     for {
@@ -451,24 +326,6 @@ trait TransactionGenerators extends BitcoinSLogger {
     for {
       (_, wBaseTxSigComponent, privKeys) <- WitnessGenerators.signedP2WSHMultiSigTransactionWitness
     } yield (wBaseTxSigComponent, privKeys)
-
-  def signedP2WSHMultiSigEscrowTimeoutTransaction: Gen[
-    (WitnessTxSigComponentRaw, Seq[ECPrivateKey])] =
-    for {
-      (_, wBaseTxSigComponent, privKeys) <- WitnessGenerators.signedP2WSHMultiSigEscrowTimeoutWitness
-    } yield (wBaseTxSigComponent, privKeys)
-
-  def spendableP2WSHTimeoutEscrowTimeoutTransaction: Gen[
-    (WitnessTxSigComponentRaw, Seq[ECPrivateKey])] =
-    for {
-      (_, wBaseTxSigComponent, privKeys) <- WitnessGenerators.spendableP2WSHTimeoutEscrowTimeoutWitness
-    } yield (wBaseTxSigComponent, privKeys)
-
-  def signedP2WSHEscrowTimeoutTransaction: Gen[
-    (WitnessTxSigComponentRaw, Seq[ECPrivateKey])] = {
-    Gen.oneOf(signedP2WSHMultiSigEscrowTimeoutTransaction,
-              spendableP2WSHTimeoutEscrowTimeoutTransaction)
-  }
 
   /** Creates a signed P2SH(P2WPKH) transaction */
   def signedP2SHP2WPKHTransaction: Gen[
@@ -498,8 +355,7 @@ trait TransactionGenerators extends BitcoinSLogger {
     (WitnessTxSigComponentRaw, Seq[ECPrivateKey])] = {
     Gen.oneOf(signedP2WSHP2PKTransaction,
               signedP2WSHP2PKHTransaction,
-              signedP2WSHMultiSigTransaction,
-              signedP2WSHEscrowTimeoutTransaction)
+              signedP2WSHMultiSigTransaction)
   }
 
   /** Creates a signed P2SH(P2WSH) transaction */

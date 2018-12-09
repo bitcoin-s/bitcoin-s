@@ -239,7 +239,7 @@ object P2SHScriptSignature extends ScriptFactory[P2SHScriptSignature] {
           case _: P2PKHScriptPubKey | _: MultiSignatureScriptPubKey |
               _: P2SHScriptPubKey | _: P2PKScriptPubKey | _: CLTVScriptPubKey |
               _: CSVScriptPubKey | _: WitnessScriptPubKeyV0 |
-              _: UnassignedWitnessScriptPubKey | _: EscrowTimeoutScriptPubKey =>
+              _: UnassignedWitnessScriptPubKey =>
             true
           case _: NonStandardScriptPubKey | _: WitnessCommitment => false
           case EmptyScriptPubKey                                 => false
@@ -435,8 +435,6 @@ object ScriptSignature extends ScriptFactory[ScriptSignature] {
         if (tokens.size > 1 && P2SHScriptSignature.isRedeemScript(
           tokens.last)) =>
       P2SHScriptSignature.fromAsm(tokens)
-    case _ if EscrowTimeoutScriptSignature.isEscrowTimeoutScriptSig(tokens) =>
-      EscrowTimeoutScriptSignature.fromAsm(tokens)
     case _
         if (MultiSignatureScriptSignature.isMultiSignatureScriptSignature(
           tokens)) =>
@@ -466,14 +464,7 @@ object ScriptSignature extends ScriptFactory[ScriptSignature] {
       Try(NonStandardScriptSignature.fromAsm(tokens))
     case s: CLTVScriptPubKey => fromScriptPubKey(tokens, s.nestedScriptPubKey)
     case s: CSVScriptPubKey  => fromScriptPubKey(tokens, s.nestedScriptPubKey)
-    case escrowWithTimeout: EscrowTimeoutScriptPubKey =>
-      val isMultiSig = BitcoinScriptUtil.castToBool(tokens.last)
-      if (isMultiSig) {
-        val multiSig = Try(
-          MultiSignatureScriptSignature.fromAsm(tokens.take(tokens.size - 1)))
-        multiSig.map(m => EscrowTimeoutScriptSignature.fromMultiSig(m))
-      } else
-        Try(EscrowTimeoutScriptSignature.fromAsm(tokens, escrowWithTimeout))
+
     case _: WitnessScriptPubKeyV0 | _: UnassignedWitnessScriptPubKey =>
       Success(EmptyScriptSignature)
     case EmptyScriptPubKey =>
@@ -489,118 +480,5 @@ object ScriptSignature extends ScriptFactory[ScriptSignature] {
       tokens: Seq[ScriptToken],
       scriptPubKey: ScriptPubKey): Try[ScriptSignature] = {
     fromScriptPubKey(tokens, scriptPubKey)
-  }
-}
-
-/**
-  * [[ScriptSignature]] that spends a [[EscrowTimeoutScriptPubKey]], the underlying script signature can be
-  * a [[MultiSignatureScriptSignature]] or a [[CSVScriptSignature]] as those are te two underlying scripts
-  * of a [[EscrowTimeoutScriptPubKey]]
-  *
-  * If the last element of the [[asm]] evaluates to true, it is a scriptsig that attempts to spend the escrow
-  * if the last element of the [[asm]] evaluates to false, it is a scriptsig that attempts to spend the timeout
-  */
-sealed trait EscrowTimeoutScriptSignature extends ScriptSignature {
-  def scriptSig: ScriptSignature = ScriptSignature(bytes.take(bytes.length - 1))
-  override def signatures = scriptSig.signatures
-
-  /** Checks if the given asm fulfills the timeout or escrow of the [[EscrowTimeoutScriptPubKey]] */
-  def isEscrow: Boolean = BitcoinScriptUtil.castToBool(asm.last)
-
-  def isTimeout: Boolean = !isEscrow
-
-  override def toString = "EscrowTimeoutScriptSignature(" + hex + ")"
-}
-
-object EscrowTimeoutScriptSignature
-    extends Factory[EscrowTimeoutScriptSignature] {
-  private case class EscrowTimeoutScriptSignatureImpl(bytes: ByteVector)
-      extends EscrowTimeoutScriptSignature
-
-  override def fromBytes(bytes: ByteVector): EscrowTimeoutScriptSignature = {
-    //TODO: Come back and look at this, there is no invariant check here to see if the EscrowTiemoutScriptSig is valid
-    EscrowTimeoutScriptSignatureImpl(bytes)
-  }
-
-  def fromAsm(
-      asm: Seq[ScriptToken],
-      scriptPubKey: EscrowTimeoutScriptPubKey): EscrowTimeoutScriptSignature = {
-    require(isEscrowTimeoutScriptSig(asm, Some(scriptPubKey)),
-            "Given asm was not a EscrowWithTimeoutScriptSignature, got: " + asm)
-    val asmHex = asm.map(_.hex).mkString
-    val c = CompactSizeUInt.calculateCompactSizeUInt(asmHex)
-    val fullHex = c.hex + asmHex
-    fromHex(fullHex)
-  }
-
-  def fromAsm(asm: Seq[ScriptToken]): EscrowTimeoutScriptSignature = {
-    require(asm.nonEmpty)
-    val nested = asm.take(asm.length - 1)
-    val nestedScriptSig = if (BitcoinScriptUtil.castToBool(asm.last)) {
-      require(
-        MultiSignatureScriptSignature.isMultiSignatureScriptSignature(nested),
-        "Need multisigScriptSig, got: " + nested)
-      MultiSignatureScriptSignature.fromAsm(nested)
-    } else {
-      CSVScriptSignature(ScriptSignature.fromAsm(nested))
-    }
-    val bytes = nestedScriptSig.asmBytes ++ asm.last.bytes
-    val c = CompactSizeUInt.calculateCompactSizeUInt(bytes)
-    val fullBytes = c.bytes ++ bytes
-    fromBytes(fullBytes)
-  }
-
-  def isEscrowTimeoutScriptSig(
-      asm: Seq[ScriptToken],
-      scriptPubKey: Option[EscrowTimeoutScriptPubKey] = None): Boolean = {
-    val nested = asm.take(asm.length - 1)
-    val last = asm.last
-    val validIfToken = last == OP_0 || last == OP_1
-    val isMultiSig = BitcoinScriptUtil.castToBool(last)
-    if (isMultiSig && validIfToken) {
-      MultiSignatureScriptSignature.isMultiSignatureScriptSignature(nested)
-    } else if (validIfToken) {
-      //if they provide the [[EscrowTimeoutScriptPubKey]] we can detected
-      // if we have a valid scriptsig for the timeout branch
-      // if they do not provide it, we have to guess that it
-      // is the timeout branch since we can nest ANY scriptPubKey inside of a [[LockTimeScriptPubKey]]
-      val isValidTimeout = scriptPubKey.map { s =>
-        val locktimeScript = s.timeout.nestedScriptPubKey
-        Try(ScriptSignature.fromScriptPubKey(asm, locktimeScript)).isSuccess
-      }
-      isValidTimeout.getOrElse(true)
-    } else false
-  }
-
-  def apply(scriptSig: ScriptSignature): Try[EscrowTimeoutScriptSignature] =
-    scriptSig match {
-      case m: MultiSignatureScriptSignature => Success(fromMultiSig(m))
-      case lock: LockTimeScriptSignature    => Success(fromLockTime(lock))
-      case x @ (_: P2PKScriptSignature | _: P2PKHScriptSignature |
-          _: P2SHScriptSignature | _: NonStandardScriptSignature |
-          _: EscrowTimeoutScriptSignature | EmptyScriptSignature) =>
-        Failure(
-          new IllegalArgumentException(
-            "Cannot create a EscrowTimeoutScriptSignature out of " + x))
-
-    }
-
-  /**
-    * Creates a [[org.bitcoins.core.protocol.script.EscrowTimeoutScriptSignature]] that spends the escrow
-    * branch of a [[EscrowTimeoutScriptPubKey]]
-    */
-  def fromMultiSig(
-      multiSigScriptSig: MultiSignatureScriptSignature): EscrowTimeoutScriptSignature = {
-    val asm = multiSigScriptSig.asm ++ Seq(OP_1)
-    fromAsm(asm)
-  }
-
-  /**
-    * Creates a [[org.bitcoins.core.protocol.script.EscrowTimeoutScriptSignature]] that spends the locktime branch
-    * of the [[EscrowTimeoutScriptPubKey]]
-    */
-  def fromLockTime(l: LockTimeScriptSignature): EscrowTimeoutScriptSignature = {
-    val asm = l.asm ++ Seq(OP_0)
-    fromAsm(asm)
   }
 }

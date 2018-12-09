@@ -122,31 +122,4 @@ class TransactionSignatureCreatorSpec
         if (result != ScriptOk) logger.warn("Result: " + result)
         Seq(ScriptErrorPushSize, ScriptOk).contains(result)
     }
-
-  property("generate a valid signature for a escrow timeout transaction") =
-    Prop.forAll(TransactionGenerators.spendableEscrowTimeoutTransaction) {
-      txSigComponent: TxSigComponent =>
-        val program = PreExecutionScriptProgram(txSigComponent)
-        val result = ScriptInterpreter.run(program)
-        result == ScriptOk
-    }
-
-  property("fail to evaluate a locktime escrow timeout transaction") = {
-    Prop.forAll(TransactionGenerators.unspendableEscrowTimeoutTransaction) {
-      txSigComponent: TxSigComponent =>
-        val program = PreExecutionScriptProgram(txSigComponent)
-        val result = ScriptInterpreter.run(program)
-        result != ScriptOk
-    }
-  }
-
-  property("generate a valid signature for a P2WSH(EscrowTimeout) tx") = {
-    Prop.forAllNoShrink(
-      TransactionGenerators.signedP2WSHEscrowTimeoutTransaction) {
-      case (txSigComponent, _) =>
-        val program = PreExecutionScriptProgram(txSigComponent)
-        val result = ScriptInterpreter.run(program)
-        result == ScriptOk
-    }
-  }
 }
