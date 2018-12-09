@@ -29,16 +29,7 @@ before_install:
   - export PATH=$PATH:$(pwd)
   - cd ../..
 
-addons:
-  apt:
-    packages: libgmp-dev
-
 install:
-  - mkdir lib && cd secp256k1
-  - ./autogen.sh
-  - ./configure --enable-jni --enable-experimental --enable-module-ecdh
-  - sudo make install
-  - cd ../
   - wget https://github.com/ACINQ/eclair/releases/download/v0.2-beta8/eclair-node-0.2-beta8-52821b8.jar 
   - export ECLAIR_PATH=$(pwd)
 

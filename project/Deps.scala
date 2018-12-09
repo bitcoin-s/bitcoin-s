@@ -14,6 +14,8 @@ object Deps {
     val playv = "2.6.10"
     val scodecV = "1.1.6"
     val junitV = "0.11"
+
+    val bitcoinsV = "0.0.1-SNAPSHOT"
   }
 
   object Compile {
@@ -24,6 +26,8 @@ object Deps {
     val akkaHttp = "com.typesafe.akka" %% "akka-http" % V.akkav withSources() withJavadoc()
     val akkaStream = "com.typesafe.akka" %% "akka-stream" % V.akkaStreamv withSources() withJavadoc()
     val playJson = "com.typesafe.play" %% "play-json" % V.playv withSources() withJavadoc()
+
+    val secp256k1jni = "org.bitcoins" % "secp256k1jni" % V.bitcoinsV
 
     val logback = "ch.qos.logback" % "logback-classic" % V.logback withSources() withJavadoc()
   }
@@ -43,6 +47,10 @@ object Deps {
     Compile.bouncycastle,
     Compile.scodec,
     Compile.slf4j
+  )
+
+  val secp256k1jni = List(
+    Test.junitInterface
   )
 
   val coreGen = List(
