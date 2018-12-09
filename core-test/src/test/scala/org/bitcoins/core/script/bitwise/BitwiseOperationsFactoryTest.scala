@@ -1,10 +1,10 @@
 package org.bitcoins.core.script.bitwise
 
-import org.scalatest.{ FlatSpec, MustMatchers }
+import org.scalatest.{FlatSpec, MustMatchers}
 
 /**
- * Created by chris on 1/8/16.
- */
+  * Created by chris on 1/8/16.
+  */
 class BitwiseOperationsFactoryTest extends FlatSpec with MustMatchers {
 
   "BitwiseOperationsFactory" must "match strings with bitwise operations" in {

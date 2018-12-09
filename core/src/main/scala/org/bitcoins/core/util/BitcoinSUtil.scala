@@ -1,13 +1,13 @@
 package org.bitcoins.core.util
 
 import org.bitcoins.core.protocol.NetworkElement
-import scodec.bits.{ BitVector, ByteVector }
+import scodec.bits.{BitVector, ByteVector}
 
 import scala.math.BigInt
 
 /**
- * Created by chris on 2/26/16.
- */
+  * Created by chris on 2/26/16.
+  */
 trait BitcoinSUtil {
 
   def decodeHex(hex: String): ByteVector = {
@@ -19,12 +19,12 @@ trait BitcoinSUtil {
   def encodeHex(byte: Byte): String = encodeHex(ByteVector(byte))
 
   /**
-   * Encodes a long number to a hex string, pads it with an extra '0' char
-   * if the hex string is an odd amount of characters.
-   */
+    * Encodes a long number to a hex string, pads it with an extra '0' char
+    * if the hex string is an odd amount of characters.
+    */
   def encodeHex(long: Long): String = {
     val hex = long.toHexString.length % 2 match {
-      case 1 => "0" + long.toHexString
+      case 1      => "0" + long.toHexString
       case _: Int => long.toHexString
     }
     addPadding(16, hex)
@@ -32,7 +32,7 @@ trait BitcoinSUtil {
 
   def encodeHex(int: Int): String = {
     val hex = int.toHexString.length % 2 match {
-      case 1 => "0" + int.toHexString
+      case 1      => "0" + int.toHexString
       case _: Int => int.toHexString
     }
     addPadding(8, hex)
@@ -43,7 +43,8 @@ trait BitcoinSUtil {
     encodeHex(bytes)
   }
 
-  def encodeHex(bigInt: BigInt): String = BitcoinSUtil.encodeHex(ByteVector(bigInt.toByteArray))
+  def encodeHex(bigInt: BigInt): String =
+    BitcoinSUtil.encodeHex(ByteVector(bigInt.toByteArray))
 
   /** Tests if a given string is a hexadecimal string. */
   def isHex(str: String): Boolean = {
@@ -64,12 +65,13 @@ trait BitcoinSUtil {
   def flipEndianness(bytes: ByteVector): String = encodeHex(bytes.reverse)
 
   def flipEndiannessBytes(bytes: ByteVector): ByteVector = bytes.reverse
+
   /**
-   * Adds the amount padding bytes needed to fix the size of the hex string
-   * for instance, ints are required to be 4 bytes. If the number is just 1
-   * it will only take 1 byte. We need to pad the byte with an extra 3 bytes so the result is
-   * 00000001 instead of just 1.
-   */
+    * Adds the amount padding bytes needed to fix the size of the hex string
+    * for instance, ints are required to be 4 bytes. If the number is just 1
+    * it will only take 1 byte. We need to pad the byte with an extra 3 bytes so the result is
+    * 00000001 instead of just 1.
+    */
   private def addPadding(charactersNeeded: Int, hex: String): String = {
     val paddingNeeded = charactersNeeded - hex.length
     val padding = Vector.fill(paddingNeeded)("0")

@@ -6,15 +6,13 @@ import org.bitcoins.core.protocol.ln.currency.{LnMultiplier, MilliSatoshis}
 sealed abstract class LnPolicy {
 
   /**
-   * The "amount_msat" field has been artificially limited to a UInt32. This means that the current maximum transaction that can be completed
-   * over the lightning network is 4294967295 MilliSatoshi.
-   * This is a self imposed limit, and is subject to change.
-   * Please see [[https://github.com/lightningnetwork/lightning-rfc/blob/master/02-peer-protocol.md#adding-an-htlc-update_add_htlc BOLT2]]
+    * The "amount_msat" field has been artificially limited to a UInt32. This means that the current maximum transaction that can be completed
+    * over the lightning network is 4294967295 MilliSatoshi.
+    * This is a self imposed limit, and is subject to change.
+    * Please see [[https://github.com/lightningnetwork/lightning-rfc/blob/master/02-peer-protocol.md#adding-an-htlc-update_add_htlc BOLT2]]
     * for more info.
-   */
+    */
   val maxAmountMSat: MilliSatoshis = MilliSatoshis(4294967295L)
-
-
 
   val maxPicoBitcoins: BigInt = Int64.max.toBigInt
   val minPicoBitcoins: BigInt = Int64.min.toBigInt
@@ -39,9 +37,9 @@ sealed abstract class LnPolicy {
   private def calc(mul: LnMultiplier): BigInt = {
     maxPicoBitcoins /
       (mul.multiplier / LnMultiplier.Pico.multiplier)
-        .toBigIntExact().get
+        .toBigIntExact()
+        .get
   }
-
 
   val DEFAULT_LN_P2P_PORT = 9735
 

@@ -2,7 +2,7 @@ package org.bitcoins.eclair.rpc.config
 
 import java.io.File
 
-import com.typesafe.config.{ Config, ConfigFactory }
+import com.typesafe.config.{Config, ConfigFactory}
 import org.bitcoins.rpc.config.BitcoindAuthCredentials
 
 sealed trait EclairAuthCredentials {
@@ -34,33 +34,33 @@ sealed trait EclairAuthCredentials {
   def port: Int
 
   def copyWithDatadir(datadir: File): EclairAuthCredentials = {
-    EclairAuthCredentials(
-      password = password,
-      bitcoinAuthOpt = bitcoinAuthOpt,
-      port = port,
-      datadir = Some(datadir))
+    EclairAuthCredentials(password = password,
+                          bitcoinAuthOpt = bitcoinAuthOpt,
+                          port = port,
+                          datadir = Some(datadir))
   }
 }
 
 object EclairAuthCredentials {
   private case class AuthCredentialsImpl(
-    password: String,
-    bitcoinAuthOpt: Option[BitcoindAuthCredentials],
-    port: Int,
-    datadir: Option[File]) extends EclairAuthCredentials
+      password: String,
+      bitcoinAuthOpt: Option[BitcoindAuthCredentials],
+      port: Int,
+      datadir: Option[File])
+      extends EclairAuthCredentials
 
   def apply(
-    password: String,
-    bitcoinAuthOpt: Option[BitcoindAuthCredentials],
-    port: Int): EclairAuthCredentials = {
+      password: String,
+      bitcoinAuthOpt: Option[BitcoindAuthCredentials],
+      port: Int): EclairAuthCredentials = {
     EclairAuthCredentials(password, bitcoinAuthOpt, port, None)
   }
 
   def apply(
-    password: String,
-    bitcoinAuthOpt: Option[BitcoindAuthCredentials],
-    port: Int,
-    datadir: Option[File]): EclairAuthCredentials = {
+      password: String,
+      bitcoinAuthOpt: Option[BitcoindAuthCredentials],
+      port: Int,
+      datadir: Option[File]): EclairAuthCredentials = {
     AuthCredentialsImpl(password, bitcoinAuthOpt, port, datadir)
   }
 
@@ -72,11 +72,11 @@ object EclairAuthCredentials {
   }
 
   /**
-   * Parses a [[com.typesafe.config.Config Config]] in the format of this
-   * [[https://github.com/ACINQ/eclair/blob/master/eclair-core/src/main/resources/reference.conf sample reference.conf]]
-   * file to a
-   * [[org.bitcoins.eclair.rpc.config.EclairAuthCredentials EclairAuthCredentials]]
-   */
+    * Parses a [[com.typesafe.config.Config Config]] in the format of this
+    * [[https://github.com/ACINQ/eclair/blob/master/eclair-core/src/main/resources/reference.conf sample reference.conf]]
+    * file to a
+    * [[org.bitcoins.eclair.rpc.config.EclairAuthCredentials EclairAuthCredentials]]
+    */
   def fromConfig(config: Config): EclairAuthCredentials = {
 
     val bitcoindUsername = config.getString("eclair.bitcoind.rpcuser")
@@ -88,16 +88,14 @@ object EclairAuthCredentials {
     val eclairRpcPort = ConfigUtil.getIntOrElse(config, "eclair.api.port", 8080)
 
     val bitcoindAuth = {
-      BitcoindAuthCredentials(
-        username = bitcoindUsername,
-        password = bitcoindPassword,
-        rpcPort = bitcoindRpcPort)
+      BitcoindAuthCredentials(username = bitcoindUsername,
+                              password = bitcoindPassword,
+                              rpcPort = bitcoindRpcPort)
     }
 
-    EclairAuthCredentials(
-      password = password,
-      bitcoinAuthOpt = Some(bitcoindAuth),
-      port = eclairRpcPort)
+    EclairAuthCredentials(password = password,
+                          bitcoinAuthOpt = Some(bitcoindAuth),
+                          port = eclairRpcPort)
   }
 
 }

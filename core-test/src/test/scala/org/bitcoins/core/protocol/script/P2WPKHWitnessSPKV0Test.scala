@@ -1,7 +1,7 @@
 package org.bitcoins.core.protocol.script
 
 import org.bitcoins.core.crypto.ECPrivateKey
-import org.scalatest.{ FlatSpec, MustMatchers }
+import org.scalatest.{FlatSpec, MustMatchers}
 
 class P2WPKHWitnessSPKV0Test extends FlatSpec with MustMatchers {
 
@@ -12,4 +12,3 @@ class P2WPKHWitnessSPKV0Test extends FlatSpec with MustMatchers {
     }
   }
 }
-

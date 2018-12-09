@@ -2,15 +2,16 @@ package org.bitcoins.core.script.bitwise
 
 import org.bitcoins.core.script.constant._
 import org.bitcoins.core.script.result.ScriptErrorInvalidStackOperation
-import org.bitcoins.core.script.{ ExecutedScriptProgram, ScriptProgram }
+import org.bitcoins.core.script.{ExecutedScriptProgram, ScriptProgram}
 import org.bitcoins.core.util.TestUtil
-import org.scalatest.{ FlatSpec, MustMatchers }
+import org.scalatest.{FlatSpec, MustMatchers}
 
 /**
- * Created by chris on 1/6/16.
- */
+  * Created by chris on 1/6/16.
+  */
 class BitwiseInterpreterTest extends FlatSpec with MustMatchers {
-  private val pubKeyHash = ScriptConstant("5238C71458E464D9FF90299ABCA4A1D7B9CB76AB".toLowerCase)
+  private val pubKeyHash = ScriptConstant(
+    "5238C71458E464D9FF90299ABCA4A1D7B9CB76AB".toLowerCase)
   val BI = BitwiseInterpreter
   "BitwiseInterpreter" must "evaluate OP_EQUAL" in {
     val stack = List(pubKeyHash, pubKeyHash)
@@ -43,7 +44,8 @@ class BitwiseInterpreterTest extends FlatSpec with MustMatchers {
   it must "evaulate OP_EQUALVERIFY must not evaluate a transaction to invalid with two of the same pubkeys" in {
     val stack = List(pubKeyHash, pubKeyHash)
     val script = List(OP_EQUALVERIFY)
-    val program = ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script)
+    val program =
+      ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script)
     val result = BI.opEqualVerify(program)
     //if verification fails it will transform the script to a ExecutedProgram with an error set
     result.isInstanceOf[ExecutedScriptProgram] must be(false)
@@ -53,7 +55,8 @@ class BitwiseInterpreterTest extends FlatSpec with MustMatchers {
     val uniquePubKey = ScriptConstant(pubKeyHash.hex + "00")
     val stack = List(pubKeyHash, uniquePubKey)
     val script = List(OP_EQUALVERIFY)
-    val program = ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script)
+    val program =
+      ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script)
     val result = BI.opEqualVerify(program)
     result.stackTopIsTrue must be(false)
   }
@@ -80,9 +83,11 @@ class BitwiseInterpreterTest extends FlatSpec with MustMatchers {
   it must "mark the script as invalid of OP_EQUALVERIFY is run without two stack elements" in {
     val stack = List(OP_0)
     val script = List(OP_EQUALVERIFY)
-    val program = ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script)
+    val program =
+      ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script)
     val newProgram = BI.opEqualVerify(program)
     newProgram.isInstanceOf[ExecutedScriptProgram] must be(true)
-    newProgram.asInstanceOf[ExecutedScriptProgram].error must be(Some(ScriptErrorInvalidStackOperation))
+    newProgram.asInstanceOf[ExecutedScriptProgram].error must be(
+      Some(ScriptErrorInvalidStackOperation))
   }
 }

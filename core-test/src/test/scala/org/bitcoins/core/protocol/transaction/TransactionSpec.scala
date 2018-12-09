@@ -1,12 +1,12 @@
 package org.bitcoins.core.protocol.transaction
 
 import org.bitcoins.core.gen.TransactionGenerators
-import org.bitcoins.core.util.{ BitcoinSLogger, CryptoUtil }
-import org.scalacheck.{ Prop, Properties }
+import org.bitcoins.core.util.{BitcoinSLogger, CryptoUtil}
+import org.scalacheck.{Prop, Properties}
 
 /**
- * Created by chris on 6/24/16.
- */
+  * Created by chris on 6/24/16.
+  */
 class TransactionSpec extends Properties("TransactionSpec") {
   private val logger = BitcoinSLogger.logger
 
@@ -25,10 +25,12 @@ class TransactionSpec extends Properties("TransactionSpec") {
       btx.txId == CryptoUtil.doubleSHA256(btx.hex)
     }
 
-  property("wtxid must be the same as the SHA256(SHA256(hex)) of a wtx && " +
-    "wtxid and txid are not the same for witness transactions") =
-    Prop.forAll(TransactionGenerators.witnessTransaction) { wtx: WitnessTransaction =>
-      wtx.wTxId == CryptoUtil.doubleSHA256(wtx.hex) &&
+  property(
+    "wtxid must be the same as the SHA256(SHA256(hex)) of a wtx && " +
+      "wtxid and txid are not the same for witness transactions") =
+    Prop.forAll(TransactionGenerators.witnessTransaction) {
+      wtx: WitnessTransaction =>
+        wtx.wTxId == CryptoUtil.doubleSHA256(wtx.hex) &&
         wtx.wTxId != wtx.txId
     }
 }

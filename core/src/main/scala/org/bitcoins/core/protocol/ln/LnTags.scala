@@ -17,9 +17,9 @@ import scodec.bits.ByteVector
 import scala.annotation.tailrec
 
 /**
- * One of the tagged fields on a Lightning Network invoice
- * [[https://github.com/lightningnetwork/lightning-rfc/blob/master/11-payment-encoding.md#tagged-fields]]
- */
+  * One of the tagged fields on a Lightning Network invoice
+  * [[https://github.com/lightningnetwork/lightning-rfc/blob/master/11-payment-encoding.md#tagged-fields]]
+  */
 sealed abstract class LnTag {
 
   def prefix: LnTagPrefix
@@ -47,18 +47,15 @@ sealed abstract class LnTag {
 }
 
 /**
- * All of the different invoice tags that are currently defined
- * Refer to BOLT11 for a full list
- * [[https://github.com/lightningnetwork/lightning-rfc/blob/master/11-payment-encoding.md#tagged-fields]]
- */
+  * All of the different invoice tags that are currently defined
+  * Refer to BOLT11 for a full list
+  * [[https://github.com/lightningnetwork/lightning-rfc/blob/master/11-payment-encoding.md#tagged-fields]]
+  */
 object LnTag {
-
 
   sealed abstract class FallbackAddressV {
     val u8: UInt8
   }
-
-
 
   /** Fallback address versions */
   object FallbackAddressV {
@@ -84,12 +81,16 @@ object LnTag {
           val hash = Sha256Hash160Digest.fromBytes(bytes)
           P2WPKHWitnessSPKV0.fromHash(hash)
         case _: Long =>
-          throw new IllegalArgumentException(s"Can only create witness spk out of a 32 byte or 20 byte hash, got ${bytes.length}")
+          throw new IllegalArgumentException(
+            s"Can only create witness spk out of a 32 byte or 20 byte hash, got ${bytes.length}")
       }
       Bech32Address(witSPK, np)
     }
 
-    def fromU8(version: UInt8, bytes: ByteVector, np: NetworkParameters): FallbackAddressTag = {
+    def fromU8(
+        version: UInt8,
+        bytes: ByteVector,
+        np: NetworkParameters): FallbackAddressTag = {
       val address: Address = version match {
         case P2PKH.u8 =>
           val hash = Sha256Hash160Digest(bytes)
@@ -99,7 +100,8 @@ object LnTag {
           P2SHAddress(hash, np)
         case WitSPK.u8 => witnessFromU8(bytes, np)
         case _: UInt8 =>
-          throw new IllegalArgumentException(s"Illegal version to create a fallback address from, got $version")
+          throw new IllegalArgumentException(
+            s"Illegal version to create a fallback address from, got $version")
       }
       LnTag.FallbackAddressTag(address)
     }
@@ -165,11 +167,11 @@ object LnTag {
   }
 
   /**
-   * `min_final_ctlv_expiry` is the minimum difference between
-   * HTLC CLTV timeout and the current block height, for the
-   * terminal case (C). This is denominated in blocks.
-   * [[https://github.com/lightningnetwork/lightning-rfc/blob/master/02-peer-protocol.md#cltv_expiry_delta-selection]]
-   */
+    * `min_final_ctlv_expiry` is the minimum difference between
+    * HTLC CLTV timeout and the current block height, for the
+    * terminal case (C). This is denominated in blocks.
+    * [[https://github.com/lightningnetwork/lightning-rfc/blob/master/02-peer-protocol.md#cltv_expiry_delta-selection]]
+    */
   case class MinFinalCltvExpiry(u32: UInt32) extends LnTag {
     override val prefix: LnTagPrefix = LnTagPrefix.CltvExpiry
 
@@ -185,7 +187,7 @@ object LnTag {
     def version: UInt8 = {
       address match {
         case _: P2PKHAddress => FallbackAddressV.P2PKH.u8
-        case _: P2SHAddress => FallbackAddressV.P2SH.u8
+        case _: P2SHAddress  => FallbackAddressV.P2SH.u8
         case bech32: Bech32Address =>
           UInt8(bech32.scriptPubKey.witnessVersion.version.toInt)
       }
@@ -219,10 +221,13 @@ object LnTag {
   }
 
   object RoutingInfo {
+
     def fromU5s(u5s: Vector[UInt5]): RoutingInfo = {
 
       @tailrec
-      def loop(remaining: ByteVector, accum: Vector[LnRoute]): Vector[LnRoute] = {
+      def loop(
+          remaining: ByteVector,
+          accum: Vector[LnRoute]): Vector[LnRoute] = {
         if (remaining.isEmpty) {
           accum
         } else {
@@ -247,40 +252,33 @@ object LnTag {
 
     val tag: LnTag = prefix match {
       case LnTagPrefix.PaymentHash =>
-
         val hash = Sha256Digest.fromBytes(bytes)
         LnTag.PaymentHashTag(hash)
 
       case LnTagPrefix.Description =>
-
         val description = new String(bytes.toArray, Charset.forName("UTF-8"))
         LnTag.DescriptionTag(description)
 
       case LnTagPrefix.DescriptionHash =>
-
         val hash = Sha256Digest.fromBytes(bytes)
         LnTag.DescriptionHashTag(hash)
 
       case LnTagPrefix.NodeId =>
-
         val nodeId = NodeId.fromBytes(bytes)
 
         LnTag.NodeIdTag(nodeId)
 
       case LnTagPrefix.ExpiryTime =>
-
         val decoded = LnUtil.decodeNumber(payload)
         val u32 = UInt32(decoded)
         LnTag.ExpiryTimeTag(u32)
 
       case LnTagPrefix.CltvExpiry =>
-
         val decoded = LnUtil.decodeNumber(payload)
         val u32 = UInt32(decoded)
         LnTag.MinFinalCltvExpiry(u32)
 
       case LnTagPrefix.FallbackAddress =>
-
         val version = payload.head.toUInt8
         val noVersion = payload.tail
         val noVersionBytes = UInt8.toBytes(Bech32.from5bitTo8bit(noVersion))

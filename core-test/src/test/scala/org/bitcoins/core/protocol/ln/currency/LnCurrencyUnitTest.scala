@@ -2,7 +2,7 @@ package org.bitcoins.core.protocol.ln.currency
 
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.protocol.ln.LnPolicy
-import org.scalatest.{ FlatSpec, MustMatchers }
+import org.scalatest.{FlatSpec, MustMatchers}
 
 class LnCurrencyUnitTest extends FlatSpec with MustMatchers {
   it must "serialize MilliBitcoins to string" in {

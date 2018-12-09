@@ -27,7 +27,6 @@ case object OP_ABS extends ArithmeticOperation {
 }
 
 /** If the input is 0 or 1, it is flipped. Otherwise the output will be 0. */
-
 case object OP_NOT extends ArithmeticOperation {
   override val opCode: Int = 145
 }
@@ -145,9 +144,34 @@ case object OP_RSHIFT extends ArithmeticOperation {
 }
 
 object ArithmeticOperation extends ScriptOperationFactory[ArithmeticOperation] {
-  override val operations = Seq(OP_0NOTEQUAL, OP_1ADD, OP_1SUB, OP_ABS, OP_ADD, OP_BOOLAND, OP_BOOLOR,
-    OP_GREATERTHAN, OP_GREATERTHANOREQUAL, OP_LESSTHAN, OP_LESSTHANOREQUAL, OP_MAX, OP_MIN, OP_NEGATE,
-    OP_NEGATE, OP_NOT, OP_NUMEQUAL, OP_NUMEQUALVERIFY, OP_NUMNOTEQUAL, OP_SUB, OP_WITHIN,
-    OP_2MUL, OP_2DIV, OP_MUL, OP_DIV, OP_MOD, OP_LSHIFT, OP_RSHIFT)
+  override val operations = Seq(
+    OP_0NOTEQUAL,
+    OP_1ADD,
+    OP_1SUB,
+    OP_ABS,
+    OP_ADD,
+    OP_BOOLAND,
+    OP_BOOLOR,
+    OP_GREATERTHAN,
+    OP_GREATERTHANOREQUAL,
+    OP_LESSTHAN,
+    OP_LESSTHANOREQUAL,
+    OP_MAX,
+    OP_MIN,
+    OP_NEGATE,
+    OP_NEGATE,
+    OP_NOT,
+    OP_NUMEQUAL,
+    OP_NUMEQUALVERIFY,
+    OP_NUMNOTEQUAL,
+    OP_SUB,
+    OP_WITHIN,
+    OP_2MUL,
+    OP_2DIV,
+    OP_MUL,
+    OP_DIV,
+    OP_MOD,
+    OP_LSHIFT,
+    OP_RSHIFT
+  )
 }
-

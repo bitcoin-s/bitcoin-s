@@ -26,7 +26,9 @@ case object TestNet3Priv extends ExtKeyVersion {
 }
 
 object ExtKeyVersion {
-  private val all: Seq[ExtKeyVersion] = Seq(MainNetPriv, MainNetPub, TestNet3Pub, TestNet3Priv)
+  private val all: Seq[ExtKeyVersion] =
+    Seq(MainNetPriv, MainNetPub, TestNet3Pub, TestNet3Priv)
 
-  def apply(bytes: ByteVector): Option[ExtKeyVersion] = all.find(_.bytes == bytes)
+  def apply(bytes: ByteVector): Option[ExtKeyVersion] =
+    all.find(_.bytes == bytes)
 }

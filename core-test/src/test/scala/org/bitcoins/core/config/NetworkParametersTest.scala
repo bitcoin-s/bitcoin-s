@@ -1,11 +1,11 @@
 package org.bitcoins.core.config
 
 import org.bitcoins.core.util.BitcoinSUtil
-import org.scalatest.{ FlatSpec, MustMatchers }
+import org.scalatest.{FlatSpec, MustMatchers}
 
 /**
- * Created by chris on 6/10/16.
- */
+  * Created by chris on 6/10/16.
+  */
 class NetworkParametersTest extends FlatSpec with MustMatchers {
 
   //test case answers are from this link

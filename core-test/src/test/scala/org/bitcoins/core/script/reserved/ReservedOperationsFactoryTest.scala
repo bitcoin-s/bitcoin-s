@@ -1,10 +1,10 @@
 package org.bitcoins.core.script.reserved
 
-import org.scalatest.{ FlatSpec, MustMatchers }
+import org.scalatest.{FlatSpec, MustMatchers}
 
 /**
- * Created by chris on 1/22/16.
- */
+  * Created by chris on 1/22/16.
+  */
 class ReservedOperationsFactoryTest extends FlatSpec with MustMatchers {
 
   "ReservedOperationsFactory" must "instantiate reserved operations" in {

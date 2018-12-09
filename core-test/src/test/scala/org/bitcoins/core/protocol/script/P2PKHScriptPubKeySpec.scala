@@ -1,11 +1,11 @@
 package org.bitcoins.core.protocol.script
 
-import org.bitcoins.core.gen.{ CryptoGenerators, ScriptGenerators }
-import org.scalacheck.{ Prop, Properties }
+import org.bitcoins.core.gen.{CryptoGenerators, ScriptGenerators}
+import org.scalacheck.{Prop, Properties}
 
 /**
- * Created by chris on 6/22/16.
- */
+  * Created by chris on 6/22/16.
+  */
 class P2PKHScriptPubKeySpec extends Properties("P2PKHScriptPubKeySpec") {
 
   property("Serialization symmetry") =

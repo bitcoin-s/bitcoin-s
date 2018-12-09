@@ -2,15 +2,19 @@ package org.bitcoins.core.serializers.transaction
 
 import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.transaction.{ EmptyTransactionOutPoint, TransactionOutPoint }
+import org.bitcoins.core.protocol.transaction.{
+  EmptyTransactionOutPoint,
+  TransactionOutPoint
+}
 import org.bitcoins.core.serializers.RawBitcoinSerializer
 import scodec.bits.ByteVector
 
 /**
- * Source for serialization
- * https://bitcoin.org/en/developer-reference#outpoint
- */
-sealed abstract class RawTransactionOutPointParser extends RawBitcoinSerializer[TransactionOutPoint] {
+  * Source for serialization
+  * https://bitcoin.org/en/developer-reference#outpoint
+  */
+sealed abstract class RawTransactionOutPointParser
+    extends RawBitcoinSerializer[TransactionOutPoint] {
 
   override def read(bytes: ByteVector): TransactionOutPoint = {
     val txId: ByteVector = bytes.take(32)
@@ -25,7 +29,7 @@ sealed abstract class RawTransactionOutPointParser extends RawBitcoinSerializer[
     //https://github.com/bitcoin/bitcoin/blob/d612837814020ae832499d18e6ee5eb919a87907/src/primitives/transaction.h
     //http://stackoverflow.com/questions/2711522/what-happens-if-i-assign-a-negative-value-to-an-unsigned-variable
     val idxBytes = outPoint match {
-      case EmptyTransactionOutPoint => UInt32.max.bytes
+      case EmptyTransactionOutPoint      => UInt32.max.bytes
       case outPoint: TransactionOutPoint => outPoint.vout.bytes
     }
     val txIdHex = outPoint.txId.bytes

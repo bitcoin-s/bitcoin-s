@@ -13,10 +13,11 @@ import scala.util.{Failure, Success, Try}
   */
 sealed abstract class Bech32 {
 
-  private val generators: Vector[Long] = Vector(
-    UInt32("3b6a57b2").toLong,
-    UInt32("26508e6d").toLong, UInt32("1ea119fa").toLong,
-    UInt32("3d4233dd").toLong, UInt32("2a1462b3").toLong)
+  private val generators: Vector[Long] = Vector(UInt32("3b6a57b2").toLong,
+                                                UInt32("26508e6d").toLong,
+                                                UInt32("1ea119fa").toLong,
+                                                UInt32("3d4233dd").toLong,
+                                                UInt32("2a1462b3").toLong)
 
   /**
     * Creates a checksum for the given byte vector according to
@@ -27,10 +28,13 @@ sealed abstract class Bech32 {
     val polymod: Long = polyMod(u5s ++ Array(z, z, z, z, z, z)) ^ 1
     //[(polymod >> 5 * (5 - i)) & 31 for i in range(6)]
 
-    val result: Vector[UInt5] = 0.until(6).map { i =>
-      //((polymod >> five * (five - u)) & UInt8(31.toShort))
-      UInt5((polymod >> 5 * (5 - i)) & 31)
-    }.toVector
+    val result: Vector[UInt5] = 0
+      .until(6)
+      .map { i =>
+        //((polymod >> five * (five - u)) & UInt8(31.toShort))
+        UInt5((polymod >> 5 * (5 - i)) & 31)
+      }
+      .toVector
     result
   }
 
@@ -73,18 +77,24 @@ sealed abstract class Bech32 {
     * rules */
   def checkHrpValidity[T](hrp: String, f: String => Try[T]): Try[T] = {
     @tailrec
-    def loop(remaining: List[Char], accum: Seq[UInt8], isLower: Boolean, isUpper: Boolean): Try[Seq[UInt8]] = remaining match {
+    def loop(
+        remaining: List[Char],
+        accum: Seq[UInt8],
+        isLower: Boolean,
+        isUpper: Boolean): Try[Seq[UInt8]] = remaining match {
       case h :: t =>
         if (h < 33 || h > 126) {
-          Failure(new IllegalArgumentException("Invalid character range for hrp, got: " + hrp))
+          Failure(
+            new IllegalArgumentException(
+              "Invalid character range for hrp, got: " + hrp))
         } else if (isLower && isUpper) {
-          Failure(new IllegalArgumentException("HRP had mixed case, got: " + hrp))
+          Failure(
+            new IllegalArgumentException("HRP had mixed case, got: " + hrp))
         } else {
-          loop(
-            remaining = t,
-            accum = UInt8(h.toByte) +: accum,
-            isLower = h.isLower || isLower,
-            isUpper = h.isUpper || isUpper)
+          loop(remaining = t,
+               accum = UInt8(h.toByte) +: accum,
+               isLower = h.isLower || isLower,
+               isUpper = h.isUpper || isUpper)
         }
       case Nil =>
         if (isLower && isUpper) {
@@ -109,10 +119,11 @@ sealed abstract class Bech32 {
     */
   def checkDataValidity(data: String): Try[Vector[UInt5]] = {
     @tailrec
-    def loop(remaining: List[Char],
-             accum: Vector[UInt5],
-             hasUpper: Boolean,
-             hasLower: Boolean): Try[Vector[UInt5]] = remaining match {
+    def loop(
+        remaining: List[Char],
+        accum: Vector[UInt5],
+        hasUpper: Boolean,
+        hasLower: Boolean): Try[Vector[UInt5]] = remaining match {
       case Nil => Success(accum.reverse)
       case h :: t =>
         if (!Bech32.charset.contains(h.toLower)) {
@@ -141,8 +152,10 @@ sealed abstract class Bech32 {
           }
         }
     }
-    val payload: Try[Vector[UInt5]] = loop(data.toCharArray.toList, Vector.empty,
-      hasUpper = false, hasLower = false)
+    val payload: Try[Vector[UInt5]] = loop(data.toCharArray.toList,
+                                           Vector.empty,
+                                           hasUpper = false,
+                                           hasLower = false)
 
     payload
   }
@@ -231,9 +244,7 @@ object Bech32 extends Bech32 {
    * See [[https://github.com/bitcoin/bips/blob/master/bip-0173.mediawiki#bech32 BIP173]]
    * for more
    */
-  val charset: Vector[Char] = Vector(
-    'q', 'p', 'z', 'r', 'y', '9', 'x', '8',
-    'g', 'f', '2', 't', 'v', 'd', 'w', '0',
-    's', '3', 'j', 'n', '5', '4', 'k', 'h',
-    'c', 'e', '6', 'm', 'u', 'a', '7', 'l')
+  val charset: Vector[Char] = Vector('q', 'p', 'z', 'r', 'y', '9', 'x', '8',
+    'g', 'f', '2', 't', 'v', 'd', 'w', '0', 's', '3', 'j', 'n', '5', '4', 'k',
+    'h', 'c', 'e', '6', 'm', 'u', 'a', '7', 'l')
 }

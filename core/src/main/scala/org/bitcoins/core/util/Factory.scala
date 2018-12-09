@@ -4,9 +4,9 @@ import org.slf4j.Logger
 import scodec.bits.ByteVector
 
 /**
- * Created by chris on 2/26/16.
- * Trait to implement ubiquitous factory functions across our codebase
- */
+  * Created by chris on 2/26/16.
+  * Trait to implement ubiquitous factory functions across our codebase
+  */
 trait Factory[T] {
 
   /** Creates a T out of a hex string. */

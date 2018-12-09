@@ -1,10 +1,10 @@
 package org.bitcoins.core.script.control
 
-import org.scalatest.{ FlatSpec, MustMatchers }
+import org.scalatest.{FlatSpec, MustMatchers}
 
 /**
- * Created by chris on 1/6/16.
- */
+  * Created by chris on 1/6/16.
+  */
 class ControlOperationsTest extends FlatSpec with MustMatchers {
 
   "ControlOperations" must "define an OP_IF" in {

@@ -1,7 +1,7 @@
 package org.bitcoins.core.protocol
 
-import org.bitcoins.core.config.{ MainNet, TestNet3 }
-import org.scalatest.{ FlatSpec, MustMatchers }
+import org.bitcoins.core.config.{MainNet, TestNet3}
+import org.scalatest.{FlatSpec, MustMatchers}
 
 class HumanReadablePartTest extends FlatSpec with MustMatchers {
 

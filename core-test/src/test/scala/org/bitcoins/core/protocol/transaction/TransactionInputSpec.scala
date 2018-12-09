@@ -2,11 +2,11 @@ package org.bitcoins.core.protocol.transaction
 
 import org.bitcoins.core.gen.TransactionGenerators
 import org.bitcoins.core.util.BitcoinSLogger
-import org.scalacheck.{ Prop, Properties }
+import org.scalacheck.{Prop, Properties}
 
 /**
- * Created by chris on 6/24/16.
- */
+  * Created by chris on 6/24/16.
+  */
 class TransactionInputSpec extends Properties("TranactionInputSpec") {
   private val logger = BitcoinSLogger.logger
   property("Serialization symmetry") = {
@@ -16,4 +16,3 @@ class TransactionInputSpec extends Properties("TranactionInputSpec") {
     }
   }
 }
-

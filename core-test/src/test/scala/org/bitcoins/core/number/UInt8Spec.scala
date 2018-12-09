@@ -2,7 +2,7 @@ package org.bitcoins.core.number
 
 import org.bitcoins.core.gen.NumberGenerator
 import org.bitcoins.core.util.BitcoinSLogger
-import org.scalacheck.{ Gen, Prop, Properties }
+import org.scalacheck.{Gen, Prop, Properties}
 
 import scala.util.Try
 
@@ -38,7 +38,8 @@ class UInt8Spec extends Properties("UInt8Spec") {
     Prop.forAllNoShrink(NumberGenerator.uInt8, Gen.choose(0, 100)) {
       case (u8: UInt8, shift: Int) =>
         val r = (u8 >> shift)
-        val expected = if (shift > 31) UInt8.zero else UInt8((u8.toLong >> shift).toShort)
+        val expected =
+          if (shift > 31) UInt8.zero else UInt8((u8.toLong >> shift).toShort)
         if (r != expected) {
           logger.warn("expected: " + expected)
           logger.warn("r: " + r)
