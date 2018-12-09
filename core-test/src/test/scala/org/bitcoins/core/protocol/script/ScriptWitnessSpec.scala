@@ -1,8 +1,8 @@
 package org.bitcoins.core.protocol.script
 
-import org.bitcoins.core.gen.{ ScriptGenerators, WitnessGenerators }
+import org.bitcoins.core.gen.{ScriptGenerators, WitnessGenerators}
 import org.bitcoins.core.util.BitcoinSLogger
-import org.scalacheck.{ Prop, Properties }
+import org.scalacheck.{Prop, Properties}
 
 class ScriptWitnessSpec extends Properties("ScriptWitnessSpec") {
   private val logger = BitcoinSLogger.logger

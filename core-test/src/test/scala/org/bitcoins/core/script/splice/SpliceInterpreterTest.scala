@@ -2,13 +2,13 @@ package org.bitcoins.core.script.splice
 
 import org.bitcoins.core.script.constant._
 import org.bitcoins.core.script.result.ScriptErrorInvalidStackOperation
-import org.bitcoins.core.script.{ ExecutedScriptProgram, ScriptProgram }
+import org.bitcoins.core.script.{ExecutedScriptProgram, ScriptProgram}
 import org.bitcoins.core.util.TestUtil
-import org.scalatest.{ FlatSpec, MustMatchers }
+import org.scalatest.{FlatSpec, MustMatchers}
 
 /**
- * Created by chris on 2/4/16.
- */
+  * Created by chris on 2/4/16.
+  */
 class SpliceInterpreterTest extends FlatSpec with MustMatchers {
   val SI = SpliceInterpreter
 
@@ -62,9 +62,11 @@ class SpliceInterpreterTest extends FlatSpec with MustMatchers {
   it must "mark the script as invalid if OP_SIZE has nothing on the stack" in {
     val stack = List()
     val script = List(OP_SIZE)
-    val program = ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script)
+    val program =
+      ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script)
     val newProgram = SI.opSize(program)
     newProgram.isInstanceOf[ExecutedScriptProgram] must be(true)
-    newProgram.asInstanceOf[ExecutedScriptProgram].error must be(Some(ScriptErrorInvalidStackOperation))
+    newProgram.asInstanceOf[ExecutedScriptProgram].error must be(
+      Some(ScriptErrorInvalidStackOperation))
   }
 }

@@ -3,27 +3,27 @@ package org.bitcoins.zmq
 import java.net.InetSocketAddress
 
 import org.bitcoins.core.util.BitcoinSLogger
-import org.zeromq.{ ZMQ, ZMsg }
+import org.zeromq.{ZMQ, ZMsg}
 import scodec.bits.ByteVector
 
 /**
- * This class is designed to consume a zmq stream from a cryptocurrency's daemon.
- * An example of this is  bitcoind. For information on how to setup your coin's  conf
- * file to be able to consume a zmq stream please see
- * [[https://github.com/bitcoin/bitcoin/blob/master/doc/zmq.md#usage]]
- * [[http://zguide.zeromq.org/java:psenvsub]]
- * @param socket
- * @param hashTxListener
- * @param hashBlockListener
- * @param rawTxListener
- * @param rawBlockListener
- */
+  * This class is designed to consume a zmq stream from a cryptocurrency's daemon.
+  * An example of this is  bitcoind. For information on how to setup your coin's  conf
+  * file to be able to consume a zmq stream please see
+  * [[https://github.com/bitcoin/bitcoin/blob/master/doc/zmq.md#usage]]
+  * [[http://zguide.zeromq.org/java:psenvsub]]
+  * @param socket
+  * @param hashTxListener
+  * @param hashBlockListener
+  * @param rawTxListener
+  * @param rawBlockListener
+  */
 class ZMQSubscriber(
-  socket: InetSocketAddress,
-  hashTxListener: Option[ByteVector => Unit],
-  hashBlockListener: Option[ByteVector => Unit],
-  rawTxListener: Option[ByteVector => Unit],
-  rawBlockListener: Option[ByteVector => Unit]) {
+    socket: InetSocketAddress,
+    hashTxListener: Option[ByteVector => Unit],
+    hashBlockListener: Option[ByteVector => Unit],
+    rawTxListener: Option[ByteVector => Unit],
+    rawBlockListener: Option[ByteVector => Unit]) {
   private val logger = BitcoinSLogger.logger
 
   private var running = true
@@ -86,9 +86,9 @@ class ZMQSubscriber(
   }
 
   /**
-   * Stops running the zmq subscriber and cleans up after zmq
-   * http://zguide.zeromq.org/java:psenvsub
-   */
+    * Stops running the zmq subscriber and cleans up after zmq
+    * http://zguide.zeromq.org/java:psenvsub
+    */
   def stop: Unit = {
     //i think this could technically not work, because currently we are blocking
     //on Zmsg.recvMsg in our while loop. If we don't get another message we won't
@@ -99,9 +99,9 @@ class ZMQSubscriber(
   }
 
   /**
-   * Processes a message that we received the from the cryptocurrency daemon and then
-   * applies the appropriate listener to that message.
-   */
+    * Processes a message that we received the from the cryptocurrency daemon and then
+    * applies the appropriate listener to that message.
+    */
   private def processMsg(topic: String, body: Array[Byte]): Unit = {
     val notification = ZMQNotification.fromString(topic)
     notification.foreach {

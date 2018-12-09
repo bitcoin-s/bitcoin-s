@@ -29,23 +29,24 @@ lazy val testCompilerOpts = commonCompilerOpts
 lazy val commonSettings = List(
   scalacOptions in Compile := compilerOpts,
   scalacOptions in Test := testCompilerOpts,
-  assemblyOption in assembly := (assemblyOption in assembly).value.copy(includeScala = false)
+  assemblyOption in assembly := (assemblyOption in assembly).value
+    .copy(includeScala = false)
 )
 
 lazy val root = project
-    .in(file("."))
-    .aggregate(
-      secp256k1jni,
-      core,
-      coreGen,
-      coreTest,
-      zmq,
-      rpc,
-      bench,
-      eclairRpc,
-      testkit
-    )
-    .settings(commonSettings: _*)
+  .in(file("."))
+  .aggregate(
+    secp256k1jni,
+    core,
+    coreGen,
+    coreTest,
+    zmq,
+    rpc,
+    bench,
+    eclairRpc,
+    testkit
+  )
+  .settings(commonSettings: _*)
 
 lazy val secp256k1jni = project
   .in(file("secp256k1jni"))
@@ -92,14 +93,16 @@ lazy val rpc = project
   .dependsOn(
     core,
     coreGen % "test->test"
-  ).settings(
+  )
+  .settings(
     testOptions in Test += Tests.Argument("-oF")
   )
 
 lazy val bench = project
   .in(file("bench"))
   .enablePlugins()
-  .settings(assemblyOption in assembly := (assemblyOption in assembly).value.copy(includeScala = true))
+  .settings(assemblyOption in assembly := (assemblyOption in assembly).value
+    .copy(includeScala = true))
   .settings(libraryDependencies ++= Deps.bench)
   .dependsOn(core)
 

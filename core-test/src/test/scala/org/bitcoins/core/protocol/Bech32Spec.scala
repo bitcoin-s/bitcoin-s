@@ -1,17 +1,22 @@
 package org.bitcoins.core.protocol
 
-import org.bitcoins.core.gen.{ AddressGenerator, ChainParamsGenerator, ScriptGenerators }
-import org.bitcoins.core.util.{ Bech32, BitcoinSLogger }
-import org.scalacheck.{ Prop, Properties }
+import org.bitcoins.core.gen.{
+  AddressGenerator,
+  ChainParamsGenerator,
+  ScriptGenerators
+}
+import org.bitcoins.core.util.{Bech32, BitcoinSLogger}
+import org.scalacheck.{Prop, Properties}
 
 import scala.annotation.tailrec
-import scala.util.{ Random, Success }
+import scala.util.{Random, Success}
 
 class Bech32Spec extends Properties("Bech32Spec") {
   private val logger = BitcoinSLogger.logger
 
   property("serialization symmetry") = {
-    Prop.forAll(ScriptGenerators.witnessScriptPubKey, ChainParamsGenerator.networkParams) {
+    Prop.forAll(ScriptGenerators.witnessScriptPubKey,
+                ChainParamsGenerator.networkParams) {
       case ((witSPK, _), network) =>
         val addr = Bech32Address(witSPK, network)
         val spk = Bech32Address.fromStringToWitSPK(addr.value)

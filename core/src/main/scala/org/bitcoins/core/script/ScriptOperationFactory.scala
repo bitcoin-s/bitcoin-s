@@ -9,42 +9,43 @@ import org.bitcoins.core.script.locktime.LocktimeOperation
 import org.bitcoins.core.script.reserved.ReservedOperation
 import org.bitcoins.core.script.splice.SpliceOperation
 import org.bitcoins.core.script.stack.StackOperation
-import org.bitcoins.core.util.{ BitcoinSLogger, BitcoinSUtil }
+import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil}
 import scodec.bits.ByteVector
 
 /**
- * Created by chris on 1/8/16.
- * Responsible for matching script op codes with their given
- * hexadecimal representation or byte representation
- */
+  * Created by chris on 1/8/16.
+  * Responsible for matching script op codes with their given
+  * hexadecimal representation or byte representation
+  */
 trait ScriptOperationFactory[T <: ScriptOperation] extends BitcoinSLogger {
 
   /** All of the [[ScriptOperation]]s for a particular T. */
   def operations: Seq[T]
 
   /**
-   * Finds a [[ScriptOperation]] from a given string
-   */
+    * Finds a [[ScriptOperation]] from a given string
+    */
   def fromString(str: String): Option[T] = {
     val result: Option[T] = operations.find(_.toString == str)
     if (result.isEmpty) {
       //try and remove the 'OP_' prefix on the operations and see if it matches anything.
-      operations.find(op => removeOP_Prefix(op.toString) == removeOP_Prefix(str))
+      operations.find(op =>
+        removeOP_Prefix(op.toString) == removeOP_Prefix(str))
     } else result
   }
 
   /**
-   * Finds a [[ScriptOperation]] from its hexadecimal representation.
-   */
+    * Finds a [[ScriptOperation]] from its hexadecimal representation.
+    */
   def fromHex(hex: String): Option[T] = {
     val bytes = BitcoinSUtil.decodeHex(hex)
     fromBytes(bytes)
   }
 
   /**
-   * Removes the 'OP_' prefix from a given operation.
-   * Example: OP_EQUALVERIFY would be transformed into EQUALVERIFY
-   */
+    * Removes the 'OP_' prefix from a given operation.
+    * Example: OP_EQUALVERIFY would be transformed into EQUALVERIFY
+    */
   private def removeOP_Prefix(str: String): String = {
     str.replace("OP_", "")
   }

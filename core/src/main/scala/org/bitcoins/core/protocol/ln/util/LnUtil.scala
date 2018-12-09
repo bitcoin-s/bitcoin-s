@@ -8,14 +8,14 @@ import scala.annotation.tailrec
 trait LnUtil {
 
   /**
-   * The formula for this calculation is as follows:
-   * Take the length of the Bech32 encoded input and divide it by 32.
-   * Take the quotient, and encode this value as Bech32. Take the remainder and encode this value as Bech32.
-   * Append these values to produce a valid Lighting Network `data_length` field.
-   * Please see
-   * [[https://github.com/lightningnetwork/lightning-rfc/blob/master/11-payment-encoding.md#examples Bolt11]]
+    * The formula for this calculation is as follows:
+    * Take the length of the Bech32 encoded input and divide it by 32.
+    * Take the quotient, and encode this value as Bech32. Take the remainder and encode this value as Bech32.
+    * Append these values to produce a valid Lighting Network `data_length` field.
+    * Please see
+    * [[https://github.com/lightningnetwork/lightning-rfc/blob/master/11-payment-encoding.md#examples Bolt11]]
     * for examples.
-   */
+    */
   def createDataLength(bech32String: String): Vector[UInt5] = {
     val u5s = Bech32.decodeStringToU5s(bech32String)
     createDataLength(u5s)
@@ -41,13 +41,16 @@ trait LnUtil {
   }
 
   def decodeDataLength(u5s: Vector[UInt5]): Long = {
-    require(u5s.length == 2, s"Data Length is required to be 10 bits, got ${u5s.length}")
+    require(u5s.length == 2,
+            s"Data Length is required to be 10 bits, got ${u5s.length}")
     decodeNumber(u5s)
   }
 
   /** Returns a 5 bit bytevector with the encoded number for a LN invoice */
   @tailrec
-  final def encodeNumber(len: BigInt, accum: Vector[UInt5] = Vector.empty): Vector[UInt5] = {
+  final def encodeNumber(
+      len: BigInt,
+      accum: Vector[UInt5] = Vector.empty): Vector[UInt5] = {
     val quotient = len / 32
     val remainder = UInt5(len % 32)
     if (quotient >= 32) {

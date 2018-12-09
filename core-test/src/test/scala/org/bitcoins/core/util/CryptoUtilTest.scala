@@ -2,12 +2,12 @@ package org.bitcoins.core.util
 
 import org.bitcoins.core.gen.CryptoGenerators
 import org.scalatest.prop.PropertyChecks
-import org.scalatest.{ FlatSpec, MustMatchers }
+import org.scalatest.{FlatSpec, MustMatchers}
 import org.slf4j.LoggerFactory
 
 /**
- * Created by chris on 1/26/16.
- */
+  * Created by chris on 1/26/16.
+  */
 class CryptoUtilTest extends FlatSpec with MustMatchers {
   private val logger = LoggerFactory.getLogger(this.getClass.getSimpleName)
   "CryptoUtil" must "perform a SHA-1 hash" in {
@@ -35,7 +35,8 @@ class CryptoUtilTest extends FlatSpec with MustMatchers {
   it must "perform a single SHA256 hash" in {
     val hex = ""
     val strBytes = BitcoinSUtil.decodeHex(hex)
-    val expected = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    val expected =
+      "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     CryptoUtil.sha256(strBytes).hex must be(expected)
     CryptoUtil.sha256(hex).hex must be(expected)
     CryptoUtil.sha256(hex).flip.flip.hex must be(expected)
@@ -44,7 +45,8 @@ class CryptoUtilTest extends FlatSpec with MustMatchers {
   it must "perform a double SHA256 hash" in {
     val hex = ""
     val strBytes = BitcoinSUtil.decodeHex(hex)
-    val expected = "5df6e0e2761359d30a8275058e299fcc0381534545f55cf43e41983f5d4c9456"
+    val expected =
+      "5df6e0e2761359d30a8275058e299fcc0381534545f55cf43e41983f5d4c9456"
     CryptoUtil.doubleSHA256(strBytes).hex must be(expected)
     CryptoUtil.doubleSHA256(hex).hex must be(expected)
     CryptoUtil.doubleSHA256(hex).flip.flip.hex must be(expected)
@@ -60,7 +62,8 @@ class CryptoUtilTest extends FlatSpec with MustMatchers {
   }
 
   it must "recover the compressed and uncompressed public key from a message" in {
-    PropertyChecks.forAll(CryptoGenerators.privateKey, CryptoGenerators.sha256Digest) {
+    PropertyChecks.forAll(CryptoGenerators.privateKey,
+                          CryptoGenerators.sha256Digest) {
       case (privKey, hash) =>
         val pubKey = privKey.publicKey
         val uncompressed = pubKey.decompressed
@@ -72,7 +75,8 @@ class CryptoUtilTest extends FlatSpec with MustMatchers {
   }
 
   it must "be able to recover and verify a siganture for a message" in {
-    PropertyChecks.forAll(CryptoGenerators.privateKey, CryptoGenerators.sha256Digest) {
+    PropertyChecks.forAll(CryptoGenerators.privateKey,
+                          CryptoGenerators.sha256Digest) {
       case (privKey, hash) =>
         val message = hash.bytes
         val sig = privKey.sign(message)
@@ -80,6 +84,5 @@ class CryptoUtilTest extends FlatSpec with MustMatchers {
         assert(recovPub1.verify(message, sig) && recovPub2.verify(message, sig))
     }
   }
-
 
 }

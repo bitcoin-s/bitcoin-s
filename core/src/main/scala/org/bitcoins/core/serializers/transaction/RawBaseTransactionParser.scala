@@ -1,23 +1,31 @@
 package org.bitcoins.core.serializers.transaction
 
-import org.bitcoins.core.number.{ Int32, UInt32 }
-import org.bitcoins.core.protocol.transaction.{ BaseTransaction, TransactionInput, TransactionOutput }
-import org.bitcoins.core.serializers.{ RawBitcoinSerializer, RawSerializerHelper }
+import org.bitcoins.core.number.{Int32, UInt32}
+import org.bitcoins.core.protocol.transaction.{
+  BaseTransaction,
+  TransactionInput,
+  TransactionOutput
+}
+import org.bitcoins.core.serializers.{RawBitcoinSerializer, RawSerializerHelper}
 import scodec.bits.ByteVector
 
 /**
- * Created by chris on 1/14/16.
- * For deserializing and re-serializing a bitcoin transaction
- * https://bitcoin.org/en/developer-reference#raw-transaction-format
- */
-sealed abstract class RawBaseTransactionParser extends RawBitcoinSerializer[BaseTransaction] {
+  * Created by chris on 1/14/16.
+  * For deserializing and re-serializing a bitcoin transaction
+  * https://bitcoin.org/en/developer-reference#raw-transaction-format
+  */
+sealed abstract class RawBaseTransactionParser
+    extends RawBitcoinSerializer[BaseTransaction] {
 
   val helper = RawSerializerHelper
+
   def read(bytes: ByteVector): BaseTransaction = {
     val versionBytes = bytes.take(4)
     val version = Int32(versionBytes.reverse)
     val txInputBytes = bytes.slice(4, bytes.size)
-    val (inputs, outputBytes) = helper.parseCmpctSizeUIntSeq(txInputBytes, RawTransactionInputParser.read(_))
+    val (inputs, outputBytes) = helper.parseCmpctSizeUIntSeq(
+      txInputBytes,
+      RawTransactionInputParser.read(_))
     val (outputs, lockTimeBytes) = helper.parseCmpctSizeUIntSeq(
       outputBytes,
       RawTransactionOutputParser.read(_))

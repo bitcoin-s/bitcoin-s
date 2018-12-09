@@ -1,11 +1,11 @@
 package org.bitcoins.core.protocol.script
 
 import org.bitcoins.core.gen.CryptoGenerators
-import org.scalatest.{ FlatSpec, MustMatchers }
+import org.scalatest.{FlatSpec, MustMatchers}
 
 /**
- * Created by chris on 9/22/16.
- */
+  * Created by chris on 9/22/16.
+  */
 class P2PKHScriptPubKeyTest extends FlatSpec with MustMatchers {
 
   "P2PKHScriptPubKey" must "return the pubkeyhash" in {

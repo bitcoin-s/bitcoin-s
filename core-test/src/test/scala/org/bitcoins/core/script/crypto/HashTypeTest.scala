@@ -1,12 +1,12 @@
 package org.bitcoins.core.script.crypto
 
 import org.bitcoins.core.number.Int32
-import org.scalatest.{ FlatSpec, MustMatchers }
+import org.scalatest.{FlatSpec, MustMatchers}
 import scodec.bits.ByteVector
 
 /**
- * Created by chris on 2/27/16.
- */
+  * Created by chris on 2/27/16.
+  */
 class HashTypeTest extends FlatSpec with MustMatchers {
 
   "HashType" must "combine hash types with SIGHASH_ANYONECANPAY" in {
@@ -72,10 +72,14 @@ class HashTypeTest extends FlatSpec with MustMatchers {
     HashType(HashType.sigHashAll.num.bytes) must be(HashType.sigHashAll)
     HashType(HashType.sigHashNone.num.bytes) must be(HashType.sigHashNone)
     HashType(HashType.sigHashSingle.num.bytes) must be(HashType.sigHashSingle)
-    HashType(HashType.sigHashAnyoneCanPay.num.bytes) must be(HashType.sigHashAnyoneCanPay)
-    HashType(HashType.sigHashAllAnyoneCanPay.num.bytes) must be(HashType.sigHashAllAnyoneCanPay)
-    HashType(HashType.sigHashNoneAnyoneCanPay.num.bytes) must be(HashType.sigHashNoneAnyoneCanPay)
-    HashType(HashType.sigHashSingleAnyoneCanPay.num.bytes) must be(HashType.sigHashSingleAnyoneCanPay)
+    HashType(HashType.sigHashAnyoneCanPay.num.bytes) must be(
+      HashType.sigHashAnyoneCanPay)
+    HashType(HashType.sigHashAllAnyoneCanPay.num.bytes) must be(
+      HashType.sigHashAllAnyoneCanPay)
+    HashType(HashType.sigHashNoneAnyoneCanPay.num.bytes) must be(
+      HashType.sigHashNoneAnyoneCanPay)
+    HashType(HashType.sigHashSingleAnyoneCanPay.num.bytes) must be(
+      HashType.sigHashSingleAnyoneCanPay)
   }
 
   it must "find a hashtype with only an integer" in {

@@ -2,7 +2,7 @@ package org.bitcoins.core.protocol.script
 
 import org.bitcoins.core.crypto.ECPrivateKey
 import org.bitcoins.core.script.constant.ScriptNumber
-import org.scalatest.{ FlatSpec, MustMatchers }
+import org.scalatest.{FlatSpec, MustMatchers}
 
 class P2WSHWitnessSPKV0Test extends FlatSpec with MustMatchers {
   val uncompressed = ECPrivateKey(false).publicKey

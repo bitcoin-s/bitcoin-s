@@ -1,22 +1,22 @@
 package org.bitcoins.core.number
 
 import org.bitcoins.core.protocol.NetworkElement
-import org.bitcoins.core.util.{ BitcoinSUtil, Factory, NumberUtil }
+import org.bitcoins.core.util.{BitcoinSUtil, Factory, NumberUtil}
 import scodec.bits.ByteVector
 
-import scala.util.{ Failure, Success, Try }
+import scala.util.{Failure, Success, Try}
 
 /**
- * Created by chris on 6/4/16.
- */
-
+  * Created by chris on 6/4/16.
+  */
 /**
- * This abstract class is meant to represent a signed and unsigned number in C
- * This is useful for dealing with codebases/protocols that rely on C's
- * unsigned integer types
- */
+  * This abstract class is meant to represent a signed and unsigned number in C
+  * This is useful for dealing with codebases/protocols that rely on C's
+  * unsigned integer types
+  */
 sealed abstract class Number[T <: Number[T]] extends NetworkElement {
   type A = BigInt
+
   /** The underlying scala number used to to hold the number */
   protected def underlying: A
 
@@ -25,11 +25,12 @@ sealed abstract class Number[T <: Number[T]] extends NetworkElement {
   def toBigInt: BigInt = underlying
 
   /**
-   * This is used to determine the valid amount of bytes in a number
-   * for instance a UInt8 has an andMask of 0xff
-   * a UInt32 has an andMask of 0xffffffff
-   */
+    * This is used to determine the valid amount of bytes in a number
+    * for instance a UInt8 has an andMask of 0xff
+    * a UInt32 has an andMask of 0xffffffff
+    */
   def andMask: BigInt
+
   /** Factory function to create the underlying T, for instance a UInt32 */
   def apply: A => T
   def +(num: T): T = apply(checkResult(underlying + num.underlying))
@@ -64,14 +65,17 @@ sealed abstract class Number[T <: Number[T]] extends NetworkElement {
   def &(num: T): T = apply(checkResult(underlying & num.underlying))
   def unary_- : T = apply(-underlying)
   private def checkResult(result: BigInt): A = {
-    require((result & andMask) == result, "Result was out of bounds, got: " + result)
+    require((result & andMask) == result,
+            "Result was out of bounds, got: " + result)
     result
   }
 
   /** Checks if the given nubmer is within range of a Int */
   private def checkIfInt(num: T): Try[Unit] = {
     if (num.toBigInt >= Int.MaxValue || num.toBigInt <= Int.MinValue) {
-      Failure(new IllegalArgumentException("Num was not in range of int, got: " + num))
+      Failure(
+        new IllegalArgumentException(
+          "Num was not in range of int, got: " + num))
     } else {
       Success(())
     }
@@ -81,17 +85,16 @@ sealed abstract class Number[T <: Number[T]] extends NetworkElement {
 }
 
 /**
- * Represents a signed number in our number system
- * Instances of this are [[Int32]] or [[Int64]]
- */
+  * Represents a signed number in our number system
+  * Instances of this are [[Int32]] or [[Int64]]
+  */
 sealed abstract class SignedNumber[T <: Number[T]] extends Number[T]
 
 /**
- * Represents an unsigned number in our number system
- * Instances of this are [[UInt32]] or [[UInt64]]
- */
+  * Represents an unsigned number in our number system
+  * Instances of this are [[UInt32]] or [[UInt64]]
+  */
 sealed abstract class UnsignedNumber[T <: Number[T]] extends Number[T]
-
 
 /** This number type is useful for dealing with [[org.bitcoins.core.util.Bech32]]
   * related applications. The native encoding for Bech32 is a 5 bit number which
@@ -123,8 +126,8 @@ sealed abstract class UInt8 extends UnsignedNumber[UInt8] {
 }
 
 /**
- * Represents a uint32_t in C
- */
+  * Represents a uint32_t in C
+  */
 sealed abstract class UInt32 extends UnsignedNumber[UInt32] {
   override def apply: A => UInt32 = UInt32(_)
   override def hex = BitcoinSUtil.encodeHex(toLong).slice(8, 16)
@@ -133,20 +136,20 @@ sealed abstract class UInt32 extends UnsignedNumber[UInt32] {
 }
 
 /**
- * Represents a uint64_t in C
- */
+  * Represents a uint64_t in C
+  */
 sealed abstract class UInt64 extends UnsignedNumber[UInt64] {
   override def hex = encodeHex(underlying)
   override def apply: A => UInt64 = UInt64(_)
   override def andMask = 0xffffffffffffffffL
 
   /**
-   * The converts a [[BigInt]] to a 8 byte hex representation
-   * [[BigInt]] will only allocate 1 byte for numbers like 1 which require 1 byte, giving us the hex representation 01
-   * this function pads the hex chars to be 0000000000000001
-   * @param bigInt
-   * @return
-   */
+    * The converts a [[BigInt]] to a 8 byte hex representation
+    * [[BigInt]] will only allocate 1 byte for numbers like 1 which require 1 byte, giving us the hex representation 01
+    * this function pads the hex chars to be 0000000000000001
+    * @param bigInt
+    * @return
+    */
   private def encodeHex(bigInt: BigInt): String = {
     val hex = BitcoinSUtil.encodeHex(bigInt)
     if (hex.length == 18) {
@@ -160,8 +163,8 @@ sealed abstract class UInt64 extends UnsignedNumber[UInt64] {
 }
 
 /**
- * Represents a int32_t in C
- */
+  * Represents a int32_t in C
+  */
 sealed abstract class Int32 extends SignedNumber[Int32] {
   override def apply: A => Int32 = Int32(_)
   override def andMask = 0xffffffff
@@ -169,8 +172,8 @@ sealed abstract class Int32 extends SignedNumber[Int32] {
 }
 
 /**
- * Represents a int64_t in C
- */
+  * Represents a int64_t in C
+  */
 sealed abstract class Int64 extends SignedNumber[Int64] {
   override def apply: A => Int64 = Int64(_)
   override def andMask = 0xffffffffffffffffL
@@ -178,9 +181,9 @@ sealed abstract class Int64 extends SignedNumber[Int64] {
 }
 
 /**
- * Represents various numbers that should be implemented
- * inside of any companion object for a number
- */
+  * Represents various numbers that should be implemented
+  * inside of any companion object for a number
+  */
 trait BaseNumbers[T] {
   def zero: T
   def one: T
@@ -212,7 +215,9 @@ object UInt5 extends Factory[UInt5] with BaseNumbers[UInt5] {
   }
 
   override def fromBytes(bytes: ByteVector): UInt5 = {
-    require(bytes.size == 1, s"To create a uint5 from a ByteVector it must be of size one ${bytes.length}")
+    require(
+      bytes.size == 1,
+      s"To create a uint5 from a ByteVector it must be of size one ${bytes.length}")
     UInt5.fromByte(bytes.head)
   }
 
@@ -231,7 +236,8 @@ object UInt5 extends Factory[UInt5] with BaseNumbers[UInt5] {
 
 object UInt8 extends Factory[UInt8] with BaseNumbers[UInt8] {
   private case class UInt8Impl(underlying: BigInt) extends UInt8 {
-    require(isValid(underlying), "Invalid range for a UInt8, got: " + underlying)
+    require(isValid(underlying),
+            "Invalid range for a UInt8, got: " + underlying)
   }
   lazy val zero = UInt8(0.toShort)
   lazy val one = UInt8(1.toShort)
@@ -248,7 +254,9 @@ object UInt8 extends Factory[UInt8] with BaseNumbers[UInt8] {
   def isValid(bigInt: BigInt): Boolean = bigInt >= 0 && bigInt < 256
 
   override def fromBytes(bytes: ByteVector): UInt8 = {
-    require(bytes.size == 1, "Can only create a uint8 from a byte array of size one, got: " + bytes)
+    require(
+      bytes.size == 1,
+      "Can only create a uint8 from a byte array of size one, got: " + bytes)
     val res = NumberUtil.toUnsignedInt(bytes)
     checkBounds(res)
   }
@@ -269,15 +277,20 @@ object UInt8 extends Factory[UInt8] with BaseNumbers[UInt8] {
 
   def checkBounds(res: BigInt): UInt8 = {
     if (res > max.underlying || res < min.underlying) {
-      throw new IllegalArgumentException("Out of boudns for a UInt8, got: " + res)
+      throw new IllegalArgumentException(
+        "Out of boudns for a UInt8, got: " + res)
     } else UInt8(res.toShort)
   }
 }
 
 object UInt32 extends Factory[UInt32] with BaseNumbers[UInt32] {
   private case class UInt32Impl(underlying: BigInt) extends UInt32 {
-    require(underlying >= 0, "We cannot have a negative number in an unsigned number, got: " + underlying)
-    require(underlying <= 4294967295L, "We cannot have a number larger than 2^32 -1 in UInt32, got: " + underlying)
+    require(
+      underlying >= 0,
+      "We cannot have a negative number in an unsigned number, got: " + underlying)
+    require(
+      underlying <= 4294967295L,
+      "We cannot have a number larger than 2^32 -1 in UInt32, got: " + underlying)
   }
 
   lazy val zero = UInt32(0)
@@ -287,7 +300,9 @@ object UInt32 extends Factory[UInt32] with BaseNumbers[UInt32] {
   lazy val max = UInt32(4294967295L)
 
   override def fromBytes(bytes: ByteVector): UInt32 = {
-    require(bytes.size <= 4, "UInt32 byte array was too large, got: " + BitcoinSUtil.encodeHex(bytes))
+    require(
+      bytes.size <= 4,
+      "UInt32 byte array was too large, got: " + BitcoinSUtil.encodeHex(bytes))
     val res = NumberUtil.toUnsignedInt(bytes)
     checkBounds(res)
   }
@@ -298,7 +313,8 @@ object UInt32 extends Factory[UInt32] with BaseNumbers[UInt32] {
 
   def checkBounds(res: BigInt): UInt32 = {
     if (res > max.underlying || res < min.underlying) {
-      throw new IllegalArgumentException("Out of boudns for a UInt8, got: " + res)
+      throw new IllegalArgumentException(
+        "Out of boudns for a UInt8, got: " + res)
     } else UInt32(res)
   }
 
@@ -306,8 +322,12 @@ object UInt32 extends Factory[UInt32] with BaseNumbers[UInt32] {
 
 object UInt64 extends Factory[UInt64] with BaseNumbers[UInt64] {
   private case class UInt64Impl(underlying: BigInt) extends UInt64 {
-    require(underlying >= 0, "We cannot have a negative number in an unsigned number: " + underlying)
-    require(underlying <= BigInt("18446744073709551615"), "We cannot have a number larger than 2^64 -1 in UInt64, got: " + underlying)
+    require(
+      underlying >= 0,
+      "We cannot have a negative number in an unsigned number: " + underlying)
+    require(
+      underlying <= BigInt("18446744073709551615"),
+      "We cannot have a number larger than 2^64 -1 in UInt64, got: " + underlying)
   }
 
   lazy val zero = UInt64(BigInt(0))
@@ -320,7 +340,8 @@ object UInt64 extends Factory[UInt64] with BaseNumbers[UInt64] {
     require(bytes.size <= 8)
     val res: BigInt = NumberUtil.toUnsignedInt(bytes)
     if (res > max.underlying || res < min.underlying) {
-      throw new IllegalArgumentException("Out of bounds for a UInt64, got: " + res)
+      throw new IllegalArgumentException(
+        "Out of bounds for a UInt64, got: " + res)
     } else UInt64(res)
   }
 
@@ -330,8 +351,10 @@ object UInt64 extends Factory[UInt64] with BaseNumbers[UInt64] {
 
 object Int32 extends Factory[Int32] with BaseNumbers[Int32] {
   private case class Int32Impl(underlying: BigInt) extends Int32 {
-    require(underlying >= -2147483648, "Number was too small for a int32, got: " + underlying)
-    require(underlying <= 2147483647, "Number was too large for a int32, got: " + underlying)
+    require(underlying >= -2147483648,
+            "Number was too small for a int32, got: " + underlying)
+    require(underlying <= 2147483647,
+            "Number was too large for a int32, got: " + underlying)
   }
 
   lazy val zero = Int32(0)
@@ -352,8 +375,10 @@ object Int32 extends Factory[Int32] with BaseNumbers[Int32] {
 
 object Int64 extends Factory[Int64] with BaseNumbers[Int64] {
   private case class Int64Impl(underlying: BigInt) extends Int64 {
-    require(underlying >= -9223372036854775808L, "Number was too small for a int64, got: " + underlying)
-    require(underlying <= 9223372036854775807L, "Number was too big for a int64, got: " + underlying)
+    require(underlying >= -9223372036854775808L,
+            "Number was too small for a int64, got: " + underlying)
+    require(underlying <= 9223372036854775807L,
+            "Number was too big for a int64, got: " + underlying)
   }
 
   lazy val zero = Int64(0)

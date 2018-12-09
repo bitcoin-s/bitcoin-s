@@ -14,26 +14,26 @@ sealed trait EclairInstance {
   def authCredentials: EclairAuthCredentials
 
   def copyWithDatadir(datadir: File): EclairInstance = {
-    EclairInstance(
-      network = network,
-      uri = uri,
-      rpcUri = rpcUri,
-      authCredentials = authCredentials.copyWithDatadir(datadir))
+    EclairInstance(network = network,
+                   uri = uri,
+                   rpcUri = rpcUri,
+                   authCredentials = authCredentials.copyWithDatadir(datadir))
   }
 }
 
 object EclairInstance {
   private case class EclairInstanceImpl(
-    network: NetworkParameters,
-    uri: URI,
-    rpcUri: URI,
-    authCredentials: EclairAuthCredentials) extends EclairInstance
+      network: NetworkParameters,
+      uri: URI,
+      rpcUri: URI,
+      authCredentials: EclairAuthCredentials)
+      extends EclairInstance
 
   def apply(
-    network: NetworkParameters,
-    uri: URI,
-    rpcUri: URI,
-    authCredentials: EclairAuthCredentials): EclairInstance = {
+      network: NetworkParameters,
+      uri: URI,
+      rpcUri: URI,
+      authCredentials: EclairAuthCredentials): EclairInstance = {
     EclairInstanceImpl(network, uri, rpcUri, authCredentials)
   }
 
@@ -44,6 +44,7 @@ object EclairInstance {
     instance.copyWithDatadir(datadir)
 
   }
+
   /**
     * Parses a [[com.typesafe.config.Config Config]] in the format of this
     * [[https://github.com/ACINQ/eclair/blob/master/eclair-core/src/main/resources/reference.conf sample reference.conf]]
@@ -53,19 +54,23 @@ object EclairInstance {
   def fromConfig(config: Config): EclairInstance = {
     val chain = config.getString("eclair.chain")
 
-
-
     val serverBindingIp = config.getString("eclair.server.binding-ip")
-    val serverPort = ConfigUtil.getIntOrElse(config, "eclair.server.port", LnPolicy.DEFAULT_LN_P2P_PORT)
+    val serverPort = ConfigUtil.getIntOrElse(config,
+                                             "eclair.server.port",
+                                             LnPolicy.DEFAULT_LN_P2P_PORT)
 
     val rpcHost = config.getString("eclair.api.binding-ip")
-    val rpcPort = ConfigUtil.getIntOrElse(config, "eclair.api.port", LnPolicy.DEFAULT_ECLAIR_API_PORT)
+    val rpcPort = ConfigUtil.getIntOrElse(config,
+                                          "eclair.api.port",
+                                          LnPolicy.DEFAULT_ECLAIR_API_PORT)
 
     val np: NetworkParameters = chain match {
       case "regtest" => RegTest
       case "testnet" => TestNet3
       case "mainnet" => MainNet
-      case network: String => throw new IllegalArgumentException(s"Unknown network $network in eclair.conf")
+      case network: String =>
+        throw new IllegalArgumentException(
+          s"Unknown network $network in eclair.conf")
     }
 
     val uri: URI = new URI(s"http://$serverBindingIp:$serverPort")
@@ -74,11 +79,10 @@ object EclairInstance {
 
     val eclairAuth = EclairAuthCredentials.fromConfig(config)
 
-    val instance = EclairInstance(
-      network = np,
-      uri = uri,
-      rpcUri = rpcUri,
-      authCredentials = eclairAuth)
+    val instance = EclairInstance(network = np,
+                                  uri = uri,
+                                  rpcUri = rpcUri,
+                                  authCredentials = eclairAuth)
 
     instance
   }

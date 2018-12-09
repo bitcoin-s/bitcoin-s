@@ -1,6 +1,6 @@
 package org.bitcoins.core.number
 
-import org.scalatest.{ FlatSpec, MustMatchers }
+import org.scalatest.{FlatSpec, MustMatchers}
 import scodec.bits.ByteVector
 
 class UInt8Test extends FlatSpec with MustMatchers {

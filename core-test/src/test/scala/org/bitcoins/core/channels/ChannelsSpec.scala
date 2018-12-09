@@ -1,8 +1,8 @@
 package org.bitcoins.core.channels
 
 import org.bitcoins.core.crypto.TxSigComponent
-import org.bitcoins.core.currency.{ CurrencyUnit, Satoshis }
-import org.bitcoins.core.gen.{ ChannelGenerators, ScriptGenerators }
+import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
+import org.bitcoins.core.gen.{ChannelGenerators, ScriptGenerators}
 import org.bitcoins.core.number.Int64
 import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script.EmptyScriptPubKey
@@ -11,20 +11,22 @@ import org.bitcoins.core.script.PreExecutionScriptProgram
 import org.bitcoins.core.script.interpreter.ScriptInterpreter
 import org.bitcoins.core.script.result.ScriptOk
 import org.bitcoins.core.util.BitcoinSLogger
-import org.scalacheck.{ Gen, Prop, Properties }
+import org.scalacheck.{Gen, Prop, Properties}
 
 import scala.annotation.tailrec
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.DurationInt
 import scala.util.Try
+
 /**
- * Created by chris on 4/18/17.
- */
+  * Created by chris on 4/18/17.
+  */
 class ChannelsSpec extends Properties("ChannelProperties") {
   private val logger = BitcoinSLogger.logger
   val timeout = 5.seconds
-  property("spend a anchor transaction with the first spendingTx in a payment channel") = {
+  property(
+    "spend a anchor transaction with the first spendingTx in a payment channel") = {
     Prop.forAllNoShrink(ChannelGenerators.freshChannelInProgress) {
       case (inProgress, _) =>
         val p = PreExecutionScriptProgram(inProgress.current)
@@ -33,10 +35,15 @@ class ChannelsSpec extends Properties("ChannelProperties") {
     }
   }
 
-  property("fail to increment a payment channel when the values are larger than the locked output") = {
+  property(
+    "fail to increment a payment channel when the values are larger than the locked output") = {
     Prop.forAllNoShrink(ChannelGenerators.freshChannelInProgress) {
       case (inProgress, privKeys) =>
-        val inc = Try(Await.result(inProgress.clientSign(inProgress.lockedAmount + Satoshis.one, privKeys.head), timeout))
+        val inc = Try(
+          Await.result(
+            inProgress.clientSign(inProgress.lockedAmount + Satoshis.one,
+                                  privKeys.head),
+            timeout))
         inc.isFailure
     }
   }
@@ -45,24 +52,38 @@ class ChannelsSpec extends Properties("ChannelProperties") {
     Prop.forAllNoShrink(ChannelGenerators.freshChannelInProgress) {
       case (inProgress, privKeys) =>
         val num = Gen.choose(1, 20).sample.get
-        val serverScriptPubKey = ScriptGenerators.p2pkhScriptPubKey.sample.get._1
+        val serverScriptPubKey =
+          ScriptGenerators.p2pkhScriptPubKey.sample.get._1
         val amount = Policy.dustThreshold
         val fee = Satoshis(Int64(100))
         val (clientKey, serverKey) = (privKeys.head, privKeys(1))
-        val simulated = ChannelGenerators.simulate(num, inProgress, amount, clientKey, serverKey)
+        val simulated = ChannelGenerators.simulate(num,
+                                                   inProgress,
+                                                   amount,
+                                                   clientKey,
+                                                   serverKey)
         val clientSigned = simulated.flatMap(_.clientSign(amount, clientKey))
-        val closedFuture = clientSigned.flatMap(_.close(serverScriptPubKey, serverKey, fee))
-        val closed = Await.result(closedFuture.map(closed => verifyChannel(closed, amount, fee)), timeout)
+        val closedFuture =
+          clientSigned.flatMap(_.close(serverScriptPubKey, serverKey, fee))
+        val closed = Await.result(
+          closedFuture.map(closed => verifyChannel(closed, amount, fee)),
+          timeout)
         closed
     }
   }
 
-  property("close a payment channel awaiting anchor tx with the timeout branch") = {
+  property(
+    "close a payment channel awaiting anchor tx with the timeout branch") = {
     Prop.forAllNoShrink(ChannelGenerators.channelAwaitingAnchorTxNotConfirmed) {
       case (awaiting, privKeys) =>
-        val channelClosedWithTimeout = awaiting.closeWithTimeout(EmptyScriptPubKey, privKeys(2), Satoshis.one)
-        val program = channelClosedWithTimeout.map(c => PreExecutionScriptProgram(c.current))
-        val result = Await.result(program.map(p => ScriptInterpreter.run(p)), timeout)
+        val channelClosedWithTimeout =
+          awaiting.closeWithTimeout(EmptyScriptPubKey,
+                                    privKeys(2),
+                                    Satoshis.one)
+        val program = channelClosedWithTimeout.map(c =>
+          PreExecutionScriptProgram(c.current))
+        val result =
+          Await.result(program.map(p => ScriptInterpreter.run(p)), timeout)
         result == ScriptOk
     }
   }
@@ -70,14 +91,20 @@ class ChannelsSpec extends Properties("ChannelProperties") {
   property("close a payment channel in progress with the timeout branch") = {
     Prop.forAllNoShrink(ChannelGenerators.baseInProgress) {
       case (inProgress, privKeys) =>
-        val channelClosedWithTimeout = inProgress.closeWithTimeout(privKeys(2), Satoshis.one)
-        val program = channelClosedWithTimeout.map(c => PreExecutionScriptProgram(c.current))
-        val result = Await.result(program.map(p => ScriptInterpreter.run(p)), timeout)
+        val channelClosedWithTimeout =
+          inProgress.closeWithTimeout(privKeys(2), Satoshis.one)
+        val program = channelClosedWithTimeout.map(c =>
+          PreExecutionScriptProgram(c.current))
+        val result =
+          Await.result(program.map(p => ScriptInterpreter.run(p)), timeout)
         result == ScriptOk
     }
   }
 
-  def verifyChannel(p: ChannelClosed, amount: CurrencyUnit, fee: CurrencyUnit): Boolean = {
+  def verifyChannel(
+      p: ChannelClosed,
+      amount: CurrencyUnit,
+      fee: CurrencyUnit): Boolean = {
     @tailrec
     def loop(last: TxSigComponent, remaining: Seq[TxSigComponent]): Boolean = {
       if (remaining.isEmpty) true
@@ -86,10 +113,14 @@ class ChannelsSpec extends Properties("ChannelProperties") {
         val program = PreExecutionScriptProgram(current)
         val interpreterResult = ScriptInterpreter.run(program)
         val isValidTx = interpreterResult == ScriptOk
-        if (!isValidTx) logger.error("Invalid tx when verifying payment channel, got error: " + interpreterResult)
+        if (!isValidTx)
+          logger.error(
+            "Invalid tx when verifying payment channel, got error: " + interpreterResult)
         val lastClientOutput = last.transaction.outputs.head
         val currentClientOutput = current.transaction.outputs.head
-        val expectedClientOutput = TransactionOutput(lastClientOutput.value - amount, lastClientOutput.scriptPubKey)
+        val expectedClientOutput = TransactionOutput(
+          lastClientOutput.value - amount,
+          lastClientOutput.scriptPubKey)
         val serverOutputIsValid = if (remaining.size == 1) {
           //check server output
           val serverOutput = current.transaction.outputs(1)

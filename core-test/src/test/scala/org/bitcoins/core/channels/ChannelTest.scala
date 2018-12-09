@@ -1,20 +1,21 @@
 package org.bitcoins.core.channels
 
 import org.bitcoins.core.crypto.ECPrivateKey
-import org.bitcoins.core.currency.{ CurrencyUnits, Satoshis }
+import org.bitcoins.core.currency.{CurrencyUnits, Satoshis}
 import org.bitcoins.core.gen.ScriptGenerators
 import org.bitcoins.core.number.Int64
 import org.bitcoins.core.policy.Policy
-import org.bitcoins.core.protocol.script.{ P2SHScriptPubKey, P2WSHWitnessSPKV0 }
+import org.bitcoins.core.protocol.script.{P2SHScriptPubKey, P2WSHWitnessSPKV0}
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.util.BitcoinSLogger
-import org.scalatest.{ Assertion, AsyncFlatSpec, MustMatchers }
+import org.scalatest.{Assertion, AsyncFlatSpec, MustMatchers}
 
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
+
 /**
- * Created by chris on 5/31/17.
- */
+  * Created by chris on 5/31/17.
+  */
 class ChannelTest extends AsyncFlatSpec with MustMatchers {
   private val logger = BitcoinSLogger.logger
   val timeout = 5.seconds
@@ -23,7 +24,10 @@ class ChannelTest extends AsyncFlatSpec with MustMatchers {
     val p2sh = P2SHScriptPubKey(lock)
     val amount = Policy.minChannelAmount - Satoshis.one
     val output = TransactionOutput(amount, p2sh)
-    val tx = BaseTransaction(TransactionConstants.version, Nil, Seq(output), TransactionConstants.lockTime)
+    val tx = BaseTransaction(TransactionConstants.version,
+                             Nil,
+                             Seq(output),
+                             TransactionConstants.lockTime)
     val chan = ChannelAwaitingAnchorTx(tx, lock)
     chan.isFailure must be(true)
   }
@@ -34,13 +38,19 @@ class ChannelTest extends AsyncFlatSpec with MustMatchers {
     val p2sh = P2SHScriptPubKey(randomScript)
     val amount = Policy.minChannelAmount
     val output = TransactionOutput(amount, p2sh)
-    val tx = BaseTransaction(TransactionConstants.version, Nil, Seq(output), TransactionConstants.lockTime)
+    val tx = BaseTransaction(TransactionConstants.version,
+                             Nil,
+                             Seq(output),
+                             TransactionConstants.lockTime)
     val chan = ChannelAwaitingAnchorTx(tx, lock)
     chan.isFailure must be(true)
 
     //it must also fail if we do not have a p2sh output at all
     val output2 = TransactionOutput(amount, randomScript)
-    val tx2 = BaseTransaction(TransactionConstants.version, Nil, Seq(output2), TransactionConstants.lockTime)
+    val tx2 = BaseTransaction(TransactionConstants.version,
+                              Nil,
+                              Seq(output2),
+                              TransactionConstants.lockTime)
     val chan2 = ChannelAwaitingAnchorTx(tx2, lock)
     chan2.isFailure must be(true)
   }
@@ -75,12 +85,16 @@ class ChannelTest extends AsyncFlatSpec with MustMatchers {
     val p2wsh = P2WSHWitnessSPKV0(lock)
     val amount = CurrencyUnits.oneBTC
     val output = TransactionOutput(amount, p2wsh)
-    val tx = BaseTransaction(TransactionConstants.version, Nil, Seq(output), TransactionConstants.lockTime)
+    val tx = BaseTransaction(TransactionConstants.version,
+                             Nil,
+                             Seq(output),
+                             TransactionConstants.lockTime)
     val chan = ChannelAwaitingAnchorTx(tx, lock, Policy.confirmations)
     chan.isSuccess must be(true)
     val inProgress = chan.get.clientSign(clientSPK, amount, keys.head)
     val f: Future[Assertion] = inProgress.flatMap { _ =>
-      val closed = inProgress.flatMap(_.close(serverSPK, keys(1), CurrencyUnits.zero))
+      val closed =
+        inProgress.flatMap(_.close(serverSPK, keys(1), CurrencyUnits.zero))
       closed.map { c =>
         assert(c.serverAmount.get == amount)
       }
@@ -96,12 +110,18 @@ class ChannelTest extends AsyncFlatSpec with MustMatchers {
     val p2wsh = P2WSHWitnessSPKV0(lock)
     val amount = CurrencyUnits.oneBTC * Satoshis(Int64(2))
     val output = TransactionOutput(amount, p2wsh)
-    val tx = BaseTransaction(TransactionConstants.version, Nil, Seq(output), TransactionConstants.lockTime)
+    val tx = BaseTransaction(TransactionConstants.version,
+                             Nil,
+                             Seq(output),
+                             TransactionConstants.lockTime)
     val chan = ChannelAwaitingAnchorTx(tx, lock, Policy.confirmations)
-    val inProgress = chan.get.clientSign(clientSPK, CurrencyUnits.oneBTC, keys.head)
+    val inProgress =
+      chan.get.clientSign(clientSPK, CurrencyUnits.oneBTC, keys.head)
     val serverSign = inProgress.flatMap(_.serverSign(keys(1)))
-    val inProgress2 = serverSign.flatMap(_.clientSign(CurrencyUnits.oneBTC, keys.head))
-    val closed = inProgress2.flatMap(_.close(serverSPK, keys(1), CurrencyUnits.zero))
+    val inProgress2 =
+      serverSign.flatMap(_.clientSign(CurrencyUnits.oneBTC, keys.head))
+    val closed =
+      inProgress2.flatMap(_.close(serverSPK, keys(1), CurrencyUnits.zero))
     closed.map { c =>
       assert(c.serverAmount.get == amount)
     }
@@ -114,11 +134,15 @@ class ChannelTest extends AsyncFlatSpec with MustMatchers {
     val p2wsh = P2WSHWitnessSPKV0(lock)
     val amount = CurrencyUnits.oneBTC
     val output = TransactionOutput(amount, p2wsh)
-    val tx = BaseTransaction(TransactionConstants.version, Nil, Seq(output), TransactionConstants.lockTime)
+    val tx = BaseTransaction(TransactionConstants.version,
+                             Nil,
+                             Seq(output),
+                             TransactionConstants.lockTime)
     val chan = ChannelAwaitingAnchorTx(tx, lock, Policy.confirmations)
     val inProgress = chan.get.clientSign(clientSPK, amount, keys.head)
     //Note the fee here, we try and spend too much money
-    val closed = inProgress.flatMap(_.close(serverSPK, keys(1), CurrencyUnits.oneBTC + Satoshis.one))
+    val closed = inProgress.flatMap(
+      _.close(serverSPK, keys(1), CurrencyUnits.oneBTC + Satoshis.one))
     recoverToSucceededIf[IllegalArgumentException](closed)
   }
 

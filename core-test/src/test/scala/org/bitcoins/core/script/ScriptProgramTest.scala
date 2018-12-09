@@ -2,11 +2,11 @@ package org.bitcoins.core.script
 
 import org.bitcoins.core.script.constant._
 import org.bitcoins.core.util.TestUtil
-import org.scalatest.{ FlatSpec, MustMatchers }
+import org.scalatest.{FlatSpec, MustMatchers}
 
 /**
- * Created by chris on 2/6/16.
- */
+  * Created by chris on 2/6/16.
+  */
 class ScriptProgramTest extends FlatSpec with MustMatchers {
 
   "ScriptProgram" must "determine if the stack top is true" in {
@@ -26,7 +26,9 @@ class ScriptProgramTest extends FlatSpec with MustMatchers {
     program2.stackTopIsTrue must be(false)
 
     //stack top should not be true for negative zero
-    val program3 = ScriptProgram(program, List(ScriptNumber.negativeZero), ScriptProgram.Stack)
+    val program3 = ScriptProgram(program,
+                                 List(ScriptNumber.negativeZero),
+                                 ScriptProgram.Stack)
     program3.stackTopIsTrue must be(false)
   }
 }

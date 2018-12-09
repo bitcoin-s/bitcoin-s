@@ -3,24 +3,25 @@ package org.bitcoins.core.gen
 import org.scalacheck.Gen
 
 /**
- * Created by chris on 6/20/16.
- */
+  * Created by chris on 6/20/16.
+  */
 trait StringGenerators {
 
   lazy val validHexChars = "0123456789abcdef".toCharArray
 
   /**
-   * Generates a hex char
-   *
-   * @return
-   */
-  def hexChar: Gen[Char] = Gen.choose(0, validHexChars.length - 1).map(validHexChars(_))
+    * Generates a hex char
+    *
+    * @return
+    */
+  def hexChar: Gen[Char] =
+    Gen.choose(0, validHexChars.length - 1).map(validHexChars(_))
 
   /**
-   * Generates a random hex string
-   *
-   * @return
-   */
+    * Generates a random hex string
+    *
+    * @return
+    */
   def hexString: Gen[String] = {
     val int = Gen.choose(0, 100)
     val hexStringGen: Gen[List[Char]] = int.flatMap { i =>
@@ -48,10 +49,11 @@ trait StringGenerators {
     l.map(_.mkString)
   }
 
-  def genString: Gen[String] = for {
-    randomNum <- Gen.choose(0, 100)
-    randomString <- genString(randomNum)
-  } yield randomString
+  def genString: Gen[String] =
+    for {
+      randomNum <- Gen.choose(0, 100)
+      randomString <- genString(randomNum)
+    } yield randomString
 
 }
 

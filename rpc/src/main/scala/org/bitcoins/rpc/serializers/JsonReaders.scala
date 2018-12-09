@@ -1,20 +1,25 @@
 package org.bitcoins.rpc.serializers
 
 import java.io.File
-import java.net.{ InetAddress, URI }
+import java.net.{InetAddress, URI}
 
 import org.bitcoins.core.crypto._
-import org.bitcoins.core.currency.{ Bitcoins, Satoshis }
-import org.bitcoins.core.number.{ Int32, Int64, UInt32, UInt64 }
-import org.bitcoins.core.protocol.blockchain.{ Block, BlockHeader, MerkleBlock }
-import org.bitcoins.core.protocol.script.{ ScriptPubKey, ScriptSignature }
+import org.bitcoins.core.currency.{Bitcoins, Satoshis}
+import org.bitcoins.core.number.{Int32, Int64, UInt32, UInt64}
+import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, MerkleBlock}
+import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptSignature}
 import org.bitcoins.core.protocol.transaction._
-import org.bitcoins.core.protocol.{ Address, BitcoinAddress, P2PKHAddress, P2SHAddress }
-import org.bitcoins.core.wallet.fee.{ BitcoinFeeUnit, SatoshisPerByte }
+import org.bitcoins.core.protocol.{
+  Address,
+  BitcoinAddress,
+  P2PKHAddress,
+  P2SHAddress
+}
+import org.bitcoins.core.wallet.fee.{BitcoinFeeUnit, SatoshisPerByte}
 import org.bitcoins.rpc.jsonmodels.RpcAddress
 import play.api.libs.json._
 
-import scala.util.{ Failure, Success }
+import scala.util.{Failure, Success}
 
 object JsonReaders {
 
@@ -30,7 +35,8 @@ object JsonReaders {
 
   implicit object DoubleSha256DigestReads extends Reads[DoubleSha256Digest] {
     override def reads(json: JsValue): JsResult[DoubleSha256Digest] =
-      SerializerUtil.processJsString[DoubleSha256Digest](DoubleSha256Digest.fromHex)(json)
+      SerializerUtil.processJsString[DoubleSha256Digest](
+        DoubleSha256Digest.fromHex)(json)
   }
 
   implicit object BitcoinsReads extends Reads[Bitcoins] {
@@ -40,7 +46,8 @@ object JsonReaders {
 
   implicit object SatoshisReads extends Reads[Satoshis] {
     override def reads(json: JsValue): JsResult[Satoshis] =
-      SerializerUtil.processJsNumber[Satoshis](num => Satoshis(Int64(num.toBigInt)))(json)
+      SerializerUtil.processJsNumber[Satoshis](num =>
+        Satoshis(Int64(num.toBigInt)))(json)
   }
 
   implicit object BlockHeaderReads extends Reads[BlockHeader] {
@@ -53,7 +60,7 @@ object JsonReaders {
       case JsNumber(n) =>
         n.toBigIntExact() match {
           case Some(num) => JsSuccess(Int32(num))
-          case None => SerializerUtil.buildErrorMsg("Int32", n)
+          case None      => SerializerUtil.buildErrorMsg("Int32", n)
         }
       case JsString(s) => JsSuccess(Int32.fromHex(s))
       case err @ (JsNull | _: JsBoolean | _: JsArray | _: JsObject) =>
@@ -106,7 +113,7 @@ object JsonReaders {
             SerializerUtil.buildErrorMsg("address", err)
         }
       case err @ (JsNull | _: JsBoolean | _: JsNumber | _: JsArray |
-        _: JsObject) =>
+          _: JsObject) =>
         SerializerUtil.buildJsErrorMsg("jsstring", err)
     }
   }
@@ -129,7 +136,8 @@ object JsonReaders {
 
   implicit object ScriptPubKeyReads extends Reads[ScriptPubKey] {
     override def reads(json: JsValue): JsResult[ScriptPubKey] =
-      SerializerUtil.processJsString[ScriptPubKey](ScriptPubKey.fromAsmHex)(json)
+      SerializerUtil.processJsString[ScriptPubKey](ScriptPubKey.fromAsmHex)(
+        json)
   }
 
   implicit object BlockReads extends Reads[Block] {
@@ -139,7 +147,8 @@ object JsonReaders {
 
   implicit object Sha256Hash160DigestReads extends Reads[Sha256Hash160Digest] {
     override def reads(json: JsValue): JsResult[Sha256Hash160Digest] =
-      SerializerUtil.processJsString[Sha256Hash160Digest](Sha256Hash160Digest.fromHex)(json)
+      SerializerUtil.processJsString[Sha256Hash160Digest](
+        Sha256Hash160Digest.fromHex)(json)
   }
 
   implicit object ECPublicKeyReads extends Reads[ECPublicKey] {
@@ -156,7 +165,7 @@ object JsonReaders {
             SerializerUtil.buildErrorMsg("p2pkhaddress", err)
         }
       case err @ (JsNull | _: JsBoolean | _: JsNumber | _: JsArray |
-        _: JsObject) =>
+          _: JsObject) =>
         SerializerUtil.buildJsErrorMsg("jsstring", err)
     }
   }
@@ -170,14 +179,15 @@ object JsonReaders {
             SerializerUtil.buildErrorMsg("p2shaddress", err)
         }
       case err @ (JsNull | _: JsBoolean | _: JsNumber | _: JsArray |
-        _: JsObject) =>
+          _: JsObject) =>
         SerializerUtil.buildJsErrorMsg("jsstring", err)
     }
   }
 
   implicit object ScriptSignatureReads extends Reads[ScriptSignature] {
     override def reads(json: JsValue): JsResult[ScriptSignature] =
-      SerializerUtil.processJsString[ScriptSignature](ScriptSignature.fromAsmHex)(json)
+      SerializerUtil.processJsString[ScriptSignature](
+        ScriptSignature.fromAsmHex)(json)
   }
 
   implicit object TransactionInputReads extends Reads[TransactionInput] {
@@ -193,10 +203,9 @@ object JsonReaders {
                 (json \ "scriptSig" \ "hex").validate[ScriptSignature].flatMap {
                   scriptSig =>
                     JsSuccess(
-                      TransactionInput(
-                        TransactionOutPoint(txid.flip, vout),
-                        scriptSig,
-                        sequence))
+                      TransactionInput(TransactionOutPoint(txid.flip, vout),
+                                       scriptSig,
+                                       sequence))
                 }
               }
             }
@@ -214,7 +223,7 @@ object JsonReaders {
             SerializerUtil.buildErrorMsg("address", err)
         }
       case err @ (JsNull | _: JsBoolean | _: JsNumber | _: JsArray |
-        _: JsObject) =>
+          _: JsObject) =>
         SerializerUtil.buildJsErrorMsg("jsstring", err)
     }
   }
@@ -249,7 +258,7 @@ object JsonReaders {
         val bitcoinResult = array.value.find(_.isInstanceOf[JsNumber]) match {
           case Some(JsNumber(n)) => JsSuccess(Bitcoins(n))
           case Some(
-            err @ (JsNull | _: JsBoolean | _: JsString | _: JsArray |
+              err @ (JsNull | _: JsBoolean | _: JsString | _: JsArray |
               _: JsObject)) =>
             SerializerUtil.buildJsErrorMsg("jsnumber", err)
           case None => JsError("error.expected.balance")
@@ -262,7 +271,8 @@ object JsonReaders {
             case Some(s) =>
               BitcoinAddress.fromString(s) match {
                 case Success(a) => JsSuccess(a)
-                case Failure(err) => SerializerUtil.buildErrorMsg("address", err)
+                case Failure(err) =>
+                  SerializerUtil.buildErrorMsg("address", err)
               }
             case None => JsError("error.expected.address")
           }
@@ -272,7 +282,7 @@ object JsonReaders {
           }
         }
       case err @ (JsNull | _: JsBoolean | _: JsNumber | _: JsString |
-        _: JsObject) =>
+          _: JsObject) =>
         SerializerUtil.buildJsErrorMsg("jsarray", err)
     }
   }

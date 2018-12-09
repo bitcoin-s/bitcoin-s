@@ -1,11 +1,11 @@
 package org.bitcoins.core.number
 
-import org.scalatest.{ FlatSpec, MustMatchers }
+import org.scalatest.{FlatSpec, MustMatchers}
 import scodec.bits.ByteVector
 
 /**
- * Created by chris on 6/14/16.
- */
+  * Created by chris on 6/14/16.
+  */
 class UInt32Test extends FlatSpec with MustMatchers {
 
   "UInt32" must "create the number zero as an unsigned 32 bit integer" in {
@@ -45,7 +45,8 @@ class UInt32Test extends FlatSpec with MustMatchers {
 
   it must "create the number 4294967295" in {
     //this is UInt32_t's max value
-    val uInt32 = UInt32(ByteVector(0xff.toByte, 0xff.toByte, 0xff.toByte, 0xff.toByte))
+    val uInt32 =
+      UInt32(ByteVector(0xff.toByte, 0xff.toByte, 0xff.toByte, 0xff.toByte))
     uInt32.toLong must be(4294967295L)
     uInt32.hex must be("ffffffff")
   }

@@ -4,20 +4,21 @@ import java.math.BigInteger
 import java.security.MessageDigest
 
 import org.bitcoins.core.crypto._
-import org.bouncycastle.crypto.digests.{ RIPEMD160Digest, SHA512Digest }
+import org.bouncycastle.crypto.digests.{RIPEMD160Digest, SHA512Digest}
 import org.bouncycastle.crypto.macs.HMac
 import org.bouncycastle.crypto.params.KeyParameter
 import org.bouncycastle.math.ec.ECPoint
 import scodec.bits.ByteVector
 
 /**
- * Created by chris on 1/14/16.
- * Utility cryptographic functions
- */
+  * Created by chris on 1/14/16.
+  * Utility cryptographic functions
+  */
 trait CryptoUtil {
 
   /** Does the following computation: RIPEMD160(SHA256(hex)).*/
-  def sha256Hash160(hex: String): Sha256Hash160Digest = sha256Hash160(BitcoinSUtil.decodeHex(hex))
+  def sha256Hash160(hex: String): Sha256Hash160Digest =
+    sha256Hash160(BitcoinSUtil.decodeHex(hex))
 
   def sha256Hash160(bytes: ByteVector): Sha256Hash160Digest = {
     val hash = ripeMd160(sha256(bytes).bytes).bytes
@@ -25,7 +26,8 @@ trait CryptoUtil {
   }
 
   /** Performs sha256(sha256(hex)). */
-  def doubleSHA256(hex: String): DoubleSha256Digest = doubleSHA256(BitcoinSUtil.decodeHex(hex))
+  def doubleSHA256(hex: String): DoubleSha256Digest =
+    doubleSHA256(BitcoinSUtil.decodeHex(hex))
 
   /** Performs sha256(sha256(bytes)). */
   def doubleSHA256(bytes: ByteVector): DoubleSha256Digest = {
@@ -52,7 +54,8 @@ trait CryptoUtil {
   def sha1(hex: String): Sha1Digest = sha1(BitcoinSUtil.decodeHex(hex))
 
   /** Performs RIPEMD160(hex). */
-  def ripeMd160(hex: String): RipeMd160Digest = ripeMd160(BitcoinSUtil.decodeHex(hex))
+  def ripeMd160(hex: String): RipeMd160Digest =
+    ripeMd160(BitcoinSUtil.decodeHex(hex))
 
   /** Performs RIPEMD160(bytes). */
   def ripeMd160(bytes: ByteVector): RipeMd160Digest = {
@@ -65,7 +68,8 @@ trait CryptoUtil {
     RipeMd160Digest(ByteVector(out))
   }
 
-  val emptyDoubleSha256Hash = DoubleSha256Digest("0000000000000000000000000000000000000000000000000000000000000000")
+  val emptyDoubleSha256Hash = DoubleSha256Digest(
+    "0000000000000000000000000000000000000000000000000000000000000000")
 
   def hmac512(key: ByteVector, data: ByteVector): ByteVector = {
     val hmac512 = new HMac(new SHA512Digest())
@@ -77,11 +81,11 @@ trait CryptoUtil {
   }
 
   /**
-   *
-   * @param x x coordinate
-   * @return a tuple (p1, p2) where p1 and p2 are points on the curve and p1.x = p2.x = x
-   *         p1.y is even, p2.y is odd
-   */
+    *
+    * @param x x coordinate
+    * @return a tuple (p1, p2) where p1 and p2 are points on the curve and p1.x = p2.x = x
+    *         p1.y is even, p2.y is odd
+    */
   def recoverPoint(x: BigInteger): (ECPoint, ECPoint) = {
     val curve = CryptoParams.curve.getCurve()
     val x1 = curve.fromBigInteger(x)
@@ -94,22 +98,30 @@ trait CryptoUtil {
   }
 
   /**
-   * Recover public keys from a signature and the message that was signed. This method will return 2 public keys, and the signature
-   * can be verified with both, but only one of them matches that private key that was used to generate the signature.
-   *
-   * @param signature       signature
-   * @param message message that was signed
-   * @return a (pub1, pub2) tuple where pub1 and pub2 are candidates public keys. If you have the recovery id  then use
-   *         pub1 if the recovery id is even and pub2 if it is odd
-   */
-  def recoverPublicKey(signature: ECDigitalSignature, message: ByteVector): (ECPublicKey, ECPublicKey) = {
+    * Recover public keys from a signature and the message that was signed. This method will return 2 public keys, and the signature
+    * can be verified with both, but only one of them matches that private key that was used to generate the signature.
+    *
+    * @param signature       signature
+    * @param message message that was signed
+    * @return a (pub1, pub2) tuple where pub1 and pub2 are candidates public keys. If you have the recovery id  then use
+    *         pub1 if the recovery id is even and pub2 if it is odd
+    */
+  def recoverPublicKey(
+      signature: ECDigitalSignature,
+      message: ByteVector): (ECPublicKey, ECPublicKey) = {
     val curve = CryptoParams.curve
     val (r, s) = (signature.r.bigInteger, signature.s.bigInteger)
     val m = new BigInteger(1, message.toArray)
 
     val (p1, p2) = recoverPoint(r)
-    val Q1 = (p1.multiply(s).subtract(curve.getG.multiply(m))).multiply(r.modInverse(curve.getN))
-    val Q2 = (p2.multiply(s).subtract(curve.getG.multiply(m))).multiply(r.modInverse(curve.getN))
+    val Q1 = (p1
+      .multiply(s)
+      .subtract(curve.getG.multiply(m)))
+      .multiply(r.modInverse(curve.getN))
+    val Q2 = (p2
+      .multiply(s)
+      .subtract(curve.getG.multiply(m)))
+      .multiply(r.modInverse(curve.getN))
     (ECPublicKey.fromPoint(Q1), ECPublicKey.fromPoint(Q2))
   }
 }

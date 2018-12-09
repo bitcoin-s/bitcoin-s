@@ -3,20 +3,20 @@ package org.bitcoins.core.script.constant
 import org.bitcoins.core.number.Int64
 import org.bitcoins.core.protocol.NetworkElement
 import org.bitcoins.core.script.ScriptOperationFactory
-import org.bitcoins.core.util.{ BitcoinSUtil, BitcoinScriptUtil, Factory }
+import org.bitcoins.core.util.{BitcoinSUtil, BitcoinScriptUtil, Factory}
 import scodec.bits.ByteVector
 
-import scala.util.{ Failure, Success, Try }
+import scala.util.{Failure, Success, Try}
 
 /**
- * Created by chris on 1/6/16.
- */
-
+  * Created by chris on 1/6/16.
+  */
 /**
- * This is the root class of Script. Every element in the Script language is a
- * ScriptToken - think of this the same way you think about Object in Java.
- */
+  * This is the root class of Script. Every element in the Script language is a
+  * ScriptToken - think of this the same way you think about Object in Java.
+  */
 sealed trait ScriptToken extends NetworkElement {
+
   /** The byte representation of this [[ScriptToken]]. */
   def bytes: ByteVector
 
@@ -25,9 +25,9 @@ sealed trait ScriptToken extends NetworkElement {
 }
 
 /**
- * A script operation is an instruction that takes an input and gives an output
- * Think of these as functions.
- */
+  * A script operation is an instruction that takes an input and gives an output
+  * Think of these as functions.
+  */
 trait ScriptOperation extends ScriptToken {
   def opCode: Int
 
@@ -38,19 +38,24 @@ trait ScriptOperation extends ScriptToken {
 
 /** A constant in the Script language for instance as String or a number. */
 sealed abstract class ScriptConstant extends ScriptToken {
+
   /** Returns if the [[ScriptConstant]] is encoded in the shortest possible way. */
   def isShortestEncoding: Boolean = BitcoinScriptUtil.isShortestEncoding(this)
 }
 
 /** Represents a [[ScriptNumber]] in the Script language. */
 sealed abstract class ScriptNumber extends ScriptConstant {
-  def +(that: ScriptNumber): ScriptNumber = ScriptNumber(underlying + that.underlying)
+
+  def +(that: ScriptNumber): ScriptNumber =
+    ScriptNumber(underlying + that.underlying)
 
   def unary_- = ScriptNumber(-underlying)
 
-  def -(that: ScriptNumber): ScriptNumber = ScriptNumber(underlying - that.underlying)
+  def -(that: ScriptNumber): ScriptNumber =
+    ScriptNumber(underlying - that.underlying)
 
-  def *(that: ScriptNumber): ScriptNumber = ScriptNumber(underlying * that.underlying)
+  def *(that: ScriptNumber): ScriptNumber =
+    ScriptNumber(underlying * that.underlying)
 
   def <(that: ScriptNumber): Boolean = underlying < that.underlying
 
@@ -68,17 +73,19 @@ sealed abstract class ScriptNumber extends ScriptConstant {
 
   def >=(that: Int64): Boolean = underlying >= that.toLong
 
-  def &(that: ScriptNumber): ScriptNumber = ScriptNumber(underlying & that.underlying)
+  def &(that: ScriptNumber): ScriptNumber =
+    ScriptNumber(underlying & that.underlying)
 
   def &(that: Int64): ScriptNumber = ScriptNumber(underlying & that.toLong)
 
-  def |(that: ScriptNumber): ScriptNumber = ScriptNumber(underlying | that.underlying)
+  def |(that: ScriptNumber): ScriptNumber =
+    ScriptNumber(underlying | that.underlying)
 
   /**
-   * This equality just checks that the underlying scala numbers are equivalent, NOT if the numbers
-   * are bitwise equivalent in Script. For instance ScriptNumber(0x01).numEqual(ScriptNumber(0x00000000001)) == true
-   * but (ScriptNumber(0x01) == (ScriptNumber(0x00000000001))) == false.
-   */
+    * This equality just checks that the underlying scala numbers are equivalent, NOT if the numbers
+    * are bitwise equivalent in Script. For instance ScriptNumber(0x01).numEqual(ScriptNumber(0x00000000001)) == true
+    * but (ScriptNumber(0x01) == (ScriptNumber(0x00000000001))) == false.
+    */
   def numEqual(that: ScriptNumber): Boolean = underlying == that.underlying
 
   def toInt = {
@@ -97,10 +104,13 @@ object ScriptNumber extends Factory[ScriptNumber] {
 
   /** Represents the number zero inside of bitcoin's script language. */
   lazy val zero: ScriptNumber = ScriptNumberImpl(0, ByteVector.empty)
+
   /** Represents the number one inside of bitcoin's script language. */
   lazy val one: ScriptNumber = ScriptNumberImpl(1)
+
   /** Represents the number negative one inside of bitcoin's script language. */
   lazy val negativeOne: ScriptNumber = ScriptNumberImpl(-1)
+
   /** Bitcoin has a numbering system which has a negative zero. */
   lazy val negativeZero: ScriptNumber = fromHex("80")
 
@@ -113,27 +123,34 @@ object ScriptNumber extends Factory[ScriptNumber] {
     if (underlying == 0) zero else apply(ScriptNumberUtil.longToHex(underlying))
   }
 
-  def apply(bytes: ByteVector, requireMinimal: Boolean): Try[ScriptNumber] = apply(BitcoinSUtil.encodeHex(bytes), requireMinimal)
+  def apply(bytes: ByteVector, requireMinimal: Boolean): Try[ScriptNumber] =
+    apply(BitcoinSUtil.encodeHex(bytes), requireMinimal)
 
   def apply(hex: String, requireMinimal: Boolean): Try[ScriptNumber] = {
     if (requireMinimal && !BitcoinScriptUtil.isShortestEncoding(hex)) {
-      Failure(new IllegalArgumentException("The given hex was not the shortest encoding for the script number: " + hex))
+      Failure(new IllegalArgumentException(
+        "The given hex was not the shortest encoding for the script number: " + hex))
     } else {
       val number = apply(hex)
       Success(number)
     }
   }
 
-  private case class ScriptNumberImpl(underlying: Long, bytes: ByteVector) extends ScriptNumber
+  private case class ScriptNumberImpl(underlying: Long, bytes: ByteVector)
+      extends ScriptNumber
 
   /**
-   * Companion object for [[ScriptNumberImpl]] that gives us access to more constructor types for the
-   * [[ScriptNumberImpl]] case class.
-   */
+    * Companion object for [[ScriptNumberImpl]] that gives us access to more constructor types for the
+    * [[ScriptNumberImpl]] case class.
+    */
   private object ScriptNumberImpl {
-    def apply(hex: String): ScriptNumber = ScriptNumberImpl(ScriptNumberUtil.toLong(hex), BitcoinSUtil.decodeHex(hex))
 
-    def apply(bytes: ByteVector): ScriptNumber = ScriptNumberImpl(ScriptNumberUtil.toLong(bytes))
+    def apply(hex: String): ScriptNumber =
+      ScriptNumberImpl(ScriptNumberUtil.toLong(hex),
+                       BitcoinSUtil.decodeHex(hex))
+
+    def apply(bytes: ByteVector): ScriptNumber =
+      ScriptNumberImpl(ScriptNumberUtil.toLong(bytes))
 
     def apply(underlying: Long): ScriptNumber = {
       ScriptNumberImpl(
@@ -171,10 +188,12 @@ case object OP_PUSHDATA4 extends ScriptOperation {
 }
 
 /**
- * Represents a [[ScriptNumberOperation]] where the the number in the operation is pushed onto the stack
- * i.e. OP_0 would be push 0 onto the stack, OP_1 would be push 1 onto the stack.
- */
-sealed abstract class ScriptNumberOperation extends ScriptNumber with ScriptOperation {
+  * Represents a [[ScriptNumberOperation]] where the the number in the operation is pushed onto the stack
+  * i.e. OP_0 would be push 0 onto the stack, OP_1 would be push 1 onto the stack.
+  */
+sealed abstract class ScriptNumberOperation
+    extends ScriptNumber
+    with ScriptOperation {
   override def hex = opCode.toHexString
 }
 
@@ -324,12 +343,31 @@ case object OP_16 extends ScriptNumberOperation {
   override val underlying: Long = 16
 }
 
-object ScriptNumberOperation extends ScriptOperationFactory[ScriptNumberOperation] {
+object ScriptNumberOperation
+    extends ScriptOperationFactory[ScriptNumberOperation] {
 
   /** Finds the [[ScriptNumberOperation]] based on the given integer. */
-  def fromNumber(underlying: Long): Option[ScriptNumberOperation] = operations.find(_.underlying == underlying)
+  def fromNumber(underlying: Long): Option[ScriptNumberOperation] =
+    operations.find(_.underlying == underlying)
 
-  val operations = Seq(OP_0, OP_1, OP_1NEGATE, OP_2, OP_3, OP_4, OP_5, OP_6, OP_7, OP_8, OP_9, OP_10, OP_11, OP_12, OP_13, OP_14, OP_15, OP_16)
+  val operations = Seq(OP_0,
+                       OP_1,
+                       OP_1NEGATE,
+                       OP_2,
+                       OP_3,
+                       OP_4,
+                       OP_5,
+                       OP_6,
+                       OP_7,
+                       OP_8,
+                       OP_9,
+                       OP_10,
+                       OP_11,
+                       OP_12,
+                       OP_13,
+                       OP_14,
+                       OP_15,
+                       OP_16)
 
 }
 
@@ -343,6 +381,7 @@ object ScriptConstant extends Factory[ScriptConstant] {
   def fromBytes(bytes: ByteVector): ScriptConstant = ScriptConstantImpl(bytes)
 
   /** Represent a public key or hash of a public key on our stack. */
-  private case class ScriptConstantImpl(bytes: ByteVector) extends ScriptConstant
+  private case class ScriptConstantImpl(bytes: ByteVector)
+      extends ScriptConstant
 
 }

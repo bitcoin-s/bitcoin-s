@@ -1,4 +1,3 @@
-
 name := "bitcoin-s-core-gen"
 
 libraryDependencies ++= Deps.coreGen

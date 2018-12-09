@@ -6,16 +6,18 @@ import org.bitcoins.core.number._
 import scodec.bits.ByteVector
 
 import scala.math.BigInt
-import scala.util.{ Failure, Success, Try }
+import scala.util.{Failure, Success, Try}
 
 /**
- * Created by chris on 2/8/16.
- */
+  * Created by chris on 2/8/16.
+  */
 trait NumberUtil extends BitcoinSLogger {
 
   /** Takes 2^^num. */
   def pow2(exponent: Int): BigInt = {
-    require(exponent < 64, "We cannot have anything larger than 2^64 - 1 in a long, you tried to do 2^" + exponent)
+    require(
+      exponent < 64,
+      "We cannot have anything larger than 2^64 - 1 in a long, you tried to do 2^" + exponent)
     BigInt(1) << exponent
   }
 
@@ -65,7 +67,12 @@ trait NumberUtil extends BitcoinSLogger {
     * @param pad
     * @param f
     */
-  def convert[To <: Number[To]](data: Vector[UInt8], from: UInt32, to: UInt32, pad: Boolean, f: UInt8 => To): Try[Vector[To]] = {
+  def convert[To <: Number[To]](
+      data: Vector[UInt8],
+      from: UInt32,
+      to: UInt32,
+      pad: Boolean,
+      f: UInt8 => To): Try[Vector[To]] = {
     var acc: UInt32 = UInt32.zero
     var bits: UInt32 = UInt32.zero
     val ret = Vector.newBuilder[To]
@@ -73,11 +80,14 @@ trait NumberUtil extends BitcoinSLogger {
     val eight = UInt32(8)
     val fromU8 = UInt8(from.toLong.toShort)
     if (from > eight || to > eight) {
-      Failure(new IllegalArgumentException("Can't have convert bits 'from' or 'to' parameter greater than 8"))
+      Failure(
+        new IllegalArgumentException(
+          "Can't have convert bits 'from' or 'to' parameter greater than 8"))
     } else {
       data.map { h: UInt8 =>
         if ((h >> fromU8.toInt) != UInt8.zero) {
-          Failure(new IllegalArgumentException("Invalid input for bech32: " + h))
+          Failure(
+            new IllegalArgumentException("Invalid input for bech32: " + h))
         } else {
           acc = (acc << from) | UInt32(h.toLong)
           bits = bits + from
@@ -102,7 +112,12 @@ trait NumberUtil extends BitcoinSLogger {
     }
   }
 
-  def convertBytes[T <: Number[T]](data: ByteVector, from: UInt32, to: UInt32, pad: Boolean, f: Byte => T): Try[Vector[T]] = {
+  def convertBytes[T <: Number[T]](
+      data: ByteVector,
+      from: UInt32,
+      to: UInt32,
+      pad: Boolean,
+      f: Byte => T): Try[Vector[T]] = {
     val wrapperF: UInt8 => T = { u8: UInt8 =>
       f(UInt8.toByte(u8))
     }
@@ -110,15 +125,22 @@ trait NumberUtil extends BitcoinSLogger {
   }
 
   def convertUInt8sToUInt5s(u8s: Vector[UInt8]): Vector[UInt5] = {
-    val f = { u8: UInt8 => UInt5.fromByte(UInt8.toByte(u8)) }
-    val u8sTry = NumberUtil.convert[UInt5](u8s, UInt32(8), UInt32(5), pad = true, f)
+    val f = { u8: UInt8 =>
+      UInt5.fromByte(UInt8.toByte(u8))
+    }
+    val u8sTry =
+      NumberUtil.convert[UInt5](u8s, UInt32(8), UInt32(5), pad = true, f)
     u8sTry.get
 
   }
 
   def convertUInt5sToUInt8(u5s: Vector[UInt5]): Vector[UInt8] = {
     val u8s = u5s.map(_.toUInt8)
-    val u8sTry = NumberUtil.convert[UInt8](u8s, UInt32(5), UInt32(8), pad = false, { u8: UInt8 => u8 })
+    val u8sTry =
+      NumberUtil.convert[UInt8](u8s, UInt32(5), UInt32(8), pad = false, {
+        u8: UInt8 =>
+          u8
+      })
     //should always be able to convert from uint5 => uint8
     u8sTry.get
   }

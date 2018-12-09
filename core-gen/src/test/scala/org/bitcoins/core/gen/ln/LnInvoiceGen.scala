@@ -12,27 +12,25 @@ import org.scalacheck.Gen
 sealed abstract class LnInvoiceGen {
 
   /**
-   * Generates a [[org.bitcoins.core.protocol.ln.LnHumanReadablePart]]
-   * that does not contain a amount
-   * @return
-   */
+    * Generates a [[org.bitcoins.core.protocol.ln.LnHumanReadablePart]]
+    * that does not contain a amount
+    * @return
+    */
   def lnHrpNoAmt: Gen[LnHumanReadablePart] = {
-    ChainParamsGenerator.lnNetworkParams.flatMap {
-      lnParam =>
-        LnHumanReadablePart.fromLnParams(lnParam)
+    ChainParamsGenerator.lnNetworkParams.flatMap { lnParam =>
+      LnHumanReadablePart.fromLnParams(lnParam)
     }
   }
 
   /**
-   * Generates a [[org.bitcoins.core.protocol.ln.LnHumanReadablePart]]
-   * with an amount encoded
-   */
+    * Generates a [[org.bitcoins.core.protocol.ln.LnHumanReadablePart]]
+    * with an amount encoded
+    */
   def lnHrpAmt: Gen[LnHumanReadablePart] = {
     ChainParamsGenerator.lnNetworkParams.flatMap { lnParam =>
       LnCurrencyUnitGen.realisticLnInvoice.map { lcu =>
-        LnHumanReadablePart.fromParamsAmount(
-          network = lnParam,
-          amount = Some(lcu))
+        LnHumanReadablePart.fromParamsAmount(network = lnParam,
+                                             amount = Some(lcu))
       }
     }
   }
@@ -40,7 +38,6 @@ sealed abstract class LnInvoiceGen {
   def lnHrp: Gen[LnHumanReadablePart] = {
     Gen.oneOf(lnHrpAmt, lnHrpNoAmt)
   }
-
 
   def nodeId: Gen[NodeId] = {
     CryptoGenerators.publicKey.map(NodeId(_))
@@ -64,7 +61,8 @@ sealed abstract class LnInvoiceGen {
     }
   }
 
-  def descriptionOrDescriptionHashTag: Gen[Either[LnTag.DescriptionTag, LnTag.DescriptionHashTag]] = {
+  def descriptionOrDescriptionHashTag: Gen[
+    Either[LnTag.DescriptionTag, LnTag.DescriptionHashTag]] = {
     if (scala.util.Random.nextBoolean()) {
       descriptionTag.map(Left(_))
     } else {
@@ -102,59 +100,61 @@ sealed abstract class LnInvoiceGen {
 
   /** Generated a tagged fields with an explicit [[LnTag.NodeIdTag]]
     * */
-  def taggedFields(nodeIdOpt: Option[NodeId]): Gen[LnTaggedFields] = for {
-    paymentHash <- paymentHashTag
-    descOrHashTag <- descriptionOrDescriptionHashTag
+  def taggedFields(nodeIdOpt: Option[NodeId]): Gen[LnTaggedFields] =
+    for {
+      paymentHash <- paymentHashTag
+      descOrHashTag <- descriptionOrDescriptionHashTag
 
-    //optional fields
-    expiryTime <- Gen.option(expiryTime)
-    cltvExpiry <- Gen.option(cltvExpiry)
-    fallbackAddress <- Gen.option(fallbackAddress)
-    routes <- Gen.option(routingInfo)
-  } yield LnTaggedFields(
-    paymentHash = paymentHash,
-    descriptionOrHash = descOrHashTag,
-    expiryTime = expiryTime,
-    cltvExpiry = cltvExpiry,
-    fallbackAddress = fallbackAddress,
-    nodeId = nodeIdOpt.map(NodeIdTag(_)),
-    routingInfo = routes)
+      //optional fields
+      expiryTime <- Gen.option(expiryTime)
+      cltvExpiry <- Gen.option(cltvExpiry)
+      fallbackAddress <- Gen.option(fallbackAddress)
+      routes <- Gen.option(routingInfo)
+    } yield
+      LnTaggedFields(
+        paymentHash = paymentHash,
+        descriptionOrHash = descOrHashTag,
+        expiryTime = expiryTime,
+        cltvExpiry = cltvExpiry,
+        fallbackAddress = fallbackAddress,
+        nodeId = nodeIdOpt.map(NodeIdTag(_)),
+        routingInfo = routes
+      )
 
   def signatureVersion: Gen[UInt8] = {
     Gen.choose(0, 3).map(UInt8(_))
   }
 
-  def lnInvoiceSignature: Gen[LnInvoiceSignature] = for {
-    sig <- CryptoGenerators.digitalSignature
-    version <- signatureVersion
-  } yield LnInvoiceSignature(version, sig)
-
+  def lnInvoiceSignature: Gen[LnInvoiceSignature] =
+    for {
+      sig <- CryptoGenerators.digitalSignature
+      version <- signatureVersion
+    } yield LnInvoiceSignature(version, sig)
 
   def invoiceTimestamp: Gen[UInt64] = {
     Gen.choose(0, LnInvoice.MAX_TIMESTAMP_U64.toLong).map(UInt64(_))
   }
 
-  def lnInvoice(privateKey: ECPrivateKey): Gen[LnInvoice] = for {
-    hrp <- lnHrp
-    //timestamp is 35 bits according to BOLT11
-    timestamp <- invoiceTimestamp
-    nodeIdOpt <- Gen.option(NodeId(privateKey.publicKey))
-    tags <- taggedFields(nodeIdOpt)
-  } yield {
-    val signature = LnInvoice.buildLnInvoiceSignature(
-      hrp = hrp,
-      timestamp = timestamp,
-      lnTags = tags,
-      privateKey = privateKey
-    )
+  def lnInvoice(privateKey: ECPrivateKey): Gen[LnInvoice] =
+    for {
+      hrp <- lnHrp
+      //timestamp is 35 bits according to BOLT11
+      timestamp <- invoiceTimestamp
+      nodeIdOpt <- Gen.option(NodeId(privateKey.publicKey))
+      tags <- taggedFields(nodeIdOpt)
+    } yield {
+      val signature = LnInvoice.buildLnInvoiceSignature(
+        hrp = hrp,
+        timestamp = timestamp,
+        lnTags = tags,
+        privateKey = privateKey
+      )
 
-    LnInvoice(
-      hrp = hrp,
-      timestamp = timestamp,
-      lnTags = tags,
-      signature = signature)
-  }
-
+      LnInvoice(hrp = hrp,
+                timestamp = timestamp,
+                lnTags = tags,
+                signature = signature)
+    }
 
   def lnInvoice: Gen[LnInvoice] = {
     CryptoGenerators.privateKey.flatMap { p =>

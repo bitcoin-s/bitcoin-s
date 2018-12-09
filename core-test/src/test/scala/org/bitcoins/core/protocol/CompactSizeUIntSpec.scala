@@ -1,11 +1,11 @@
 package org.bitcoins.core.protocol
 
 import org.bitcoins.core.gen.NumberGenerator
-import org.scalacheck.{ Prop, Properties }
+import org.scalacheck.{Prop, Properties}
 
 /**
- * Created by chris on 6/29/16.
- */
+  * Created by chris on 6/29/16.
+  */
 class CompactSizeUIntSpec extends Properties("CompactSizeUIntSpec") {
 
   property("Serialization symmetry") =

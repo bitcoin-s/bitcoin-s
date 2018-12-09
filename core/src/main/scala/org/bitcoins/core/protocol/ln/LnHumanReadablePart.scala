@@ -2,16 +2,15 @@ package org.bitcoins.core.protocol.ln
 
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.protocol.ln.LnParams._
-import org.bitcoins.core.protocol.ln.currency.{ LnCurrencyUnit, LnCurrencyUnits }
+import org.bitcoins.core.protocol.ln.currency.{LnCurrencyUnit, LnCurrencyUnits}
 import org.bitcoins.core.util.Bech32
 import scodec.bits.ByteVector
 
 import scala.util.matching.Regex
-import scala.util.{ Failure, Success, Try }
+import scala.util.{Failure, Success, Try}
 
 sealed abstract class LnHumanReadablePart {
-  require(
-    amount.isEmpty || amount.get.toBigInt > 0,
+  require(amount.isEmpty || amount.get.toBigInt > 0,
           s"Invoice amount must be greater then 0, got $amount")
   require(
     amount.isEmpty || amount.get.toMSat <= LnPolicy.maxAmountMSat,
@@ -42,26 +41,31 @@ sealed abstract class LnHumanReadablePart {
 object LnHumanReadablePart {
 
   /** Prefix for generating a LN invoice on the Bitcoin MainNet */
-  case class lnbc(override val amount: Option[LnCurrencyUnit]) extends LnHumanReadablePart {
+  case class lnbc(override val amount: Option[LnCurrencyUnit])
+      extends LnHumanReadablePart {
     override def network: LnParams = LnBitcoinMainNet
   }
 
   /** Prefix for generating a LN invoice on the Bitcoin TestNet3 */
-  case class lntb(override val amount: Option[LnCurrencyUnit]) extends LnHumanReadablePart {
+  case class lntb(override val amount: Option[LnCurrencyUnit])
+      extends LnHumanReadablePart {
     override def network: LnParams = LnBitcoinTestNet
   }
 
   /** Prefix for genearting a LN invoice on the Bitcoin RegTest */
-  case class lnbcrt(override val amount: Option[LnCurrencyUnit]) extends LnHumanReadablePart {
+  case class lnbcrt(override val amount: Option[LnCurrencyUnit])
+      extends LnHumanReadablePart {
     def network: LnParams = LnBitcoinRegTest
   }
 
   def apply(network: NetworkParameters): LnHumanReadablePart = {
-    val lnNetwork= LnParams.fromNetworkParameters(network)
+    val lnNetwork = LnParams.fromNetworkParameters(network)
     LnHumanReadablePart.fromLnParams(lnNetwork)
   }
 
-  def apply(network: NetworkParameters, amount: LnCurrencyUnit): LnHumanReadablePart = {
+  def apply(
+      network: NetworkParameters,
+      amount: LnCurrencyUnit): LnHumanReadablePart = {
     val lnNetwork = LnParams.fromNetworkParameters(network)
     LnHumanReadablePart(lnNetwork, Some(amount))
   }
@@ -82,11 +86,15 @@ object LnHumanReadablePart {
     * Will return a [[org.bitcoins.core.protocol.ln.LnHumanReadablePart LnHumanReadablePart]]
     * with the provide [[org.bitcoins.core.protocol.ln.currency.LnCurrencyUnit LnCurrencyUnit]] encoded in the invoice
     */
-  def apply(network: LnParams, amount: Option[LnCurrencyUnit]): LnHumanReadablePart = {
+  def apply(
+      network: LnParams,
+      amount: Option[LnCurrencyUnit]): LnHumanReadablePart = {
     fromParamsAmount(network, amount)
   }
 
-  def fromParamsAmount(network: LnParams, amount: Option[LnCurrencyUnit]): LnHumanReadablePart = {
+  def fromParamsAmount(
+      network: LnParams,
+      amount: Option[LnCurrencyUnit]): LnHumanReadablePart = {
     network match {
       case LnParams.LnBitcoinMainNet => lnbc(amount)
       case LnParams.LnBitcoinTestNet => lntb(amount)
@@ -113,7 +121,9 @@ object LnHumanReadablePart {
     val lnParamsOpt = networkStringOpt.flatMap(LnParams.fromPrefixString(_))
 
     if (lnParamsOpt.isEmpty) {
-      Failure(new IllegalArgumentException(s"Could not parse a valid network prefix, got ${input}"))
+      Failure(
+        new IllegalArgumentException(
+          s"Could not parse a valid network prefix, got ${input}"))
     } else {
 
       val lnParams = lnParamsOpt.get
@@ -123,7 +133,9 @@ object LnHumanReadablePart {
 
       //If we are able to parse something as an amount, but are unable to convert it to a LnCurrencyUnit, we should fail.
       if (amount.isEmpty && !amountString.isEmpty) {
-        Failure(new IllegalArgumentException(s"Parsed an amount, " +
+        Failure(
+          new IllegalArgumentException(
+            s"Parsed an amount, " +
               s"but could not convert to a valid currency, got: $amountString"))
       } else {
         Success(LnHumanReadablePart(lnParams, amount))
