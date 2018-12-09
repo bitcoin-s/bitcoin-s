@@ -12,24 +12,23 @@ import scodec.bits.ByteVector
   * [[https://github.com/bitcoin/bitcoin/blob/b4e4ba475a5679e09f279aaf2a83dcf93c632bdb/src/primitives/transaction.h#L232-L268]]
   */
 sealed abstract class TransactionWitness extends NetworkElement {
-  def witnesses: Vector[ScriptWitness]
+  val witnesses: Vector[ScriptWitness]
 
-  override def bytes = RawTransactionWitnessParser.write(this)
+  override def bytes: ByteVector = {
+    RawTransactionWitnessParser.write(this)
+  }
 
   /**
     * Update the [[witnesses]] index to the given witness
     * Pads the witnesses vector if needed to accomodate the new witness
     */
   def updated(index: Int, witness: ScriptWitness): TransactionWitness = {
-    val scriptWits = {
+    val scriptWits: Vector[ScriptWitness] = {
       if (index < 0) {
         throw new IndexOutOfBoundsException(index.toString)
       } else if (index >= witnesses.size) {
-
         val padded = padScriptWitness(index)
-
         padded.updated(index, witness)
-
       } else {
         witnesses.updated(index, witness)
       }
@@ -58,9 +57,8 @@ sealed abstract class TransactionWitness extends NetworkElement {
 
 /** Used to represent a transaction witness pre segwit, see BIP141 for details */
 case object EmptyWitness extends TransactionWitness {
-  override def bytes = ByteVector.low(1)
-  override def witnesses: Vector[ScriptWitness] = Vector.empty
-
+  override val bytes: ByteVector = ByteVector.low(1)
+  override val witnesses: Vector[ScriptWitness] = Vector.empty
 }
 
 object TransactionWitness {
