@@ -179,40 +179,6 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
       hash <- CryptoGenerators.doubleSha256Digest
     } yield (WitnessCommitment(hash), Nil)
 
-  def escrowTimeoutScriptPubKey: Gen[
-    (EscrowTimeoutScriptPubKey, Seq[ECPrivateKey])] =
-    for {
-      (escrow, k1) <- ScriptGenerators.smallMultiSigScriptPubKey
-      //We use a p2pkh scriptPubkey here to minimize the script size of EscrowTimeoutScriptPubKey
-      //otherwise we surpass the 520 byte push op limit
-      (p2pkh, _) <- ScriptGenerators.p2pkhScriptPubKey
-      scriptNum <- NumberGenerator.scriptNumbers
-      timeout = CSVScriptPubKey(scriptNum, p2pkh)
-    } yield (EscrowTimeoutScriptPubKey(escrow, timeout), k1)
-
-  def escrowTimeoutScriptPubKey2Of2: Gen[
-    (EscrowTimeoutScriptPubKey, Seq[ECPrivateKey])] =
-    for {
-      privKey1 <- CryptoGenerators.privateKey
-      privKey2 <- CryptoGenerators.privateKey
-      escrowPrivKeys = Seq(privKey1, privKey2)
-      escrow = MultiSignatureScriptPubKey(2, escrowPrivKeys.map(_.publicKey))
-      //We use a p2pkh scriptPubkey here to minimize the script size of EscrowTimeoutScriptPubKey
-      //otherwise we surpass the 520 byte push op limit
-      (p2pkh, p2pkhPrivKey) <- ScriptGenerators.p2pkhScriptPubKey
-      privKeys = escrowPrivKeys ++ Seq(p2pkhPrivKey)
-      (scriptNum, _) <- TransactionGenerators.spendableCSVValues
-      timeout = CSVScriptPubKey(scriptNum, p2pkh)
-    } yield (EscrowTimeoutScriptPubKey(escrow, timeout), privKeys)
-
-  def escrowTimeoutScriptSig: Gen[EscrowTimeoutScriptSignature] =
-    for {
-      scriptSig <- Gen.oneOf(lockTimeScriptSig, multiSignatureScriptSignature)
-      bool = if (scriptSig.isInstanceOf[MultiSignatureScriptSignature]) OP_1
-      else OP_0
-      asm = scriptSig.asm ++ Seq(bool)
-    } yield EscrowTimeoutScriptSignature.fromAsm(asm)
-
   def randomNonP2SHScriptPubKey: Gen[(ScriptPubKey, Seq[ECPrivateKey])] = {
     Gen.oneOf(
       p2pkScriptPubKey.map(privKeyToSeq(_)),
@@ -223,8 +189,7 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
         !_._1.nestedScriptPubKey.isInstanceOf[CLTVScriptPubKey]),
       multiSigScriptPubKey,
       p2wpkhSPKV0,
-      unassignedWitnessScriptPubKey,
-      escrowTimeoutScriptPubKey
+      unassignedWitnessScriptPubKey
     )
   }
 
@@ -266,8 +231,7 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
       p2wshSPKV0,
       unassignedWitnessScriptPubKey,
       p2shScriptPubKey,
-      witnessCommitment,
-      escrowTimeoutScriptPubKey
+      witnessCommitment
     )
   }
 
@@ -278,8 +242,7 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
       p2pkhScriptSignature,
       multiSignatureScriptSignature,
       emptyScriptSignature,
-      p2shScriptSignature,
-      escrowTimeoutScriptSig
+      p2shScriptSignature
       //NOTE: This are commented out because it fail serializatoin symmetry
       //sicne we cannot properly type CSV/CLTV ScriptSigs w/o it's SPK
       //csvScriptSignature, cltvScriptSignature
@@ -298,7 +261,6 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
     case EmptyScriptPubKey             => emptyScriptSignature
     case _: CLTVScriptPubKey           => cltvScriptSignature
     case _: CSVScriptPubKey            => csvScriptSignature
-    case _: EscrowTimeoutScriptPubKey  => escrowTimeoutScriptSig
     case _: WitnessScriptPubKeyV0 | _: UnassignedWitnessScriptPubKey =>
       emptyScriptSignature
     case x @ (_: P2SHScriptPubKey | _: NonStandardScriptPubKey |
@@ -461,7 +423,7 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
             "Cannot created a witness scriptPubKey for a CSVScriptSig since we do not have a witness")
         case _: P2SHScriptPubKey | _: CLTVScriptPubKey | _: CSVScriptPubKey |
             _: NonStandardScriptPubKey | _: WitnessCommitment |
-            _: EscrowTimeoutScriptPubKey | EmptyScriptPubKey =>
+            EmptyScriptPubKey =>
           throw new IllegalArgumentException(
             "We only " +
               "want to generate P2PK, P2PKH, and MultiSig ScriptSignatures when creating a CSVScriptSignature")
@@ -501,7 +463,7 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
             "Cannot created a witness scriptPubKey for a CSVScriptSig since we do not have a witness")
         case _: P2SHScriptPubKey | _: CLTVScriptPubKey | _: CSVScriptPubKey |
             _: NonStandardScriptPubKey | _: WitnessCommitment |
-            _: EscrowTimeoutScriptPubKey | EmptyScriptPubKey =>
+            EmptyScriptPubKey =>
           throw new IllegalArgumentException(
             "We only " +
               "want to generate P2PK, P2PKH, and MultiSig ScriptSignatures when creating a CLTVScriptSignature.")
@@ -531,75 +493,6 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
     (LockTimeScriptSignature, LockTimeScriptPubKey, Seq[ECPrivateKey])] = {
     Gen.oneOf(signedCSVScriptSignature, signedCLTVScriptSignature)
   }
-
-  /** Generates a [[EscrowTimeoutScriptPubKey]] and [[EscrowTimeoutScriptSignature]] where the scriptsig spends the escrow branch */
-  def signedMultiSigEscrowTimeoutScriptSig(
-      sequence: UInt32,
-      outputs: Seq[TransactionOutput],
-      amount: CurrencyUnit): Gen[(
-      EscrowTimeoutScriptSignature,
-      EscrowTimeoutScriptPubKey,
-      Seq[ECPrivateKey])] =
-    for {
-      (_, csvScriptPubkey, _) <- signedCSVScriptSignature
-      (_, multiSigScriptPubKey, multiSigPrivKeys) <- signedMultiSignatureScriptSignature
-      csvEscrowTimeout = EscrowTimeoutScriptPubKey(multiSigScriptPubKey,
-                                                   csvScriptPubkey)
-      r <- signedMultiSigEscrowTimeoutScriptSig(csvEscrowTimeout,
-                                                multiSigPrivKeys,
-                                                sequence,
-                                                outputs,
-                                                amount)
-    } yield r
-
-  def signedMultiSigEscrowTimeoutScriptSig(
-      escrowTimeout: EscrowTimeoutScriptPubKey,
-      privKeys: Seq[ECPrivateKey],
-      sequence: UInt32,
-      outputs: Seq[TransactionOutput],
-      amount: CurrencyUnit): Gen[(
-      EscrowTimeoutScriptSignature,
-      EscrowTimeoutScriptPubKey,
-      Seq[ECPrivateKey])] =
-    for {
-      hashType <- CryptoGenerators.hashType
-      scriptSig = csvEscrowTimeoutHelper(
-        sequence,
-        escrowTimeout,
-        privKeys,
-        Some(escrowTimeout.escrow.requiredSigs),
-        hashType,
-        true,
-        outputs,
-        amount)
-    } yield (scriptSig, escrowTimeout, privKeys)
-
-  /** Generates a [[EscrowTimeoutScriptPubKey]] and [[EscrowTimeoutScriptSignature]] where the scriptsig spends the timeout branch */
-  def timeoutEscrowTimeoutScriptSig(
-      scriptNum: ScriptNumber,
-      sequence: UInt32,
-      outputs: Seq[TransactionOutput]): Gen[(
-      EscrowTimeoutScriptSignature,
-      EscrowTimeoutScriptPubKey,
-      Seq[ECPrivateKey])] =
-    for {
-      (_, csv, csvPrivKeys) <- signedCSVScriptSignature(scriptNum, sequence)
-      (multiSigScriptPubKey, _) <- multiSigScriptPubKey
-      hashType <- CryptoGenerators.hashType
-      csvEscrowTimeout = EscrowTimeoutScriptPubKey(multiSigScriptPubKey, csv)
-      requireSigs = if (csv.nestedScriptPubKey
-                          .isInstanceOf[MultiSignatureScriptPubKey]) {
-        val m = csv.nestedScriptPubKey.asInstanceOf[MultiSignatureScriptPubKey]
-        Some(m.requiredSigs)
-      } else None
-      scriptSig = csvEscrowTimeoutHelper(sequence,
-                                         csvEscrowTimeout,
-                                         csvPrivKeys,
-                                         requireSigs,
-                                         hashType,
-                                         false,
-                                         outputs)
-    } yield (scriptSig, csvEscrowTimeout, csvPrivKeys)
 
   /** Helper function to generate [[LockTimeScriptSignature]]s */
   private def lockTimeHelper(
@@ -644,66 +537,6 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
         val nestedScriptSig =
           lockTimeHelperScriptSig(cltv, txSignatures, pubKeys)
         CLTVScriptSignature(nestedScriptSig)
-    }
-  }
-
-  /** Helper function to generate a signed [[EscrowTimeoutScriptSignature]] */
-  private def csvEscrowTimeoutHelper(
-      sequence: UInt32,
-      csvEscrowTimeout: EscrowTimeoutScriptPubKey,
-      privateKeys: Seq[ECPrivateKey],
-      requiredSigs: Option[Int],
-      hashType: HashType,
-      isMultiSig: Boolean,
-      outputs: Seq[TransactionOutput],
-      amount: CurrencyUnit = CurrencyUnits.zero): EscrowTimeoutScriptSignature = {
-    val pubKeys = privateKeys.map(_.publicKey)
-    val (creditingTx, outputIndex) =
-      TransactionGenerators.buildCreditingTransaction(
-        TransactionConstants.validLockVersion,
-        csvEscrowTimeout,
-        amount)
-    val (unsignedSpendingTx, inputIndex) = {
-      if (outputs.isEmpty) {
-        TransactionGenerators.buildSpendingTransaction(
-          TransactionConstants.validLockVersion,
-          creditingTx,
-          EmptyScriptSignature,
-          outputIndex,
-          UInt32.zero,
-          sequence)
-      } else {
-        TransactionGenerators.buildSpendingTransaction(
-          TransactionConstants.validLockVersion,
-          creditingTx,
-          EmptyScriptSignature,
-          outputIndex,
-          UInt32.zero,
-          sequence,
-          outputs)
-      }
-    }
-    val output = TransactionOutput(CurrencyUnits.zero, csvEscrowTimeout)
-    val txSignatureComponent = BaseTxSigComponent(
-      unsignedSpendingTx,
-      inputIndex,
-      output,
-      Policy.standardScriptVerifyFlags)
-
-    val txSignatures: Seq[ECDigitalSignature] = for {
-      i <- 0 until requiredSigs.getOrElse(1)
-    } yield
-      TransactionSignatureCreator.createSig(txSignatureComponent,
-                                            privateKeys(i),
-                                            hashType)
-
-    if (isMultiSig) {
-      EscrowTimeoutScriptSignature.fromMultiSig(
-        MultiSignatureScriptSignature(txSignatures))
-    } else {
-      val nestedScriptSig =
-        lockTimeHelperScriptSig(csvEscrowTimeout.timeout, txSignatures, pubKeys)
-      EscrowTimeoutScriptSignature(nestedScriptSig).get
     }
   }
 
@@ -807,7 +640,7 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
       case _: WitnessScriptPubKeyV0 | _: UnassignedWitnessScriptPubKey =>
         //bare segwit always has an empty script sig, see BIP141
         CSVScriptSignature(EmptyScriptSignature)
-      case _: LockTimeScriptPubKey | _: EscrowTimeoutScriptPubKey =>
+      case _: LockTimeScriptPubKey =>
         throw new IllegalArgumentException(
           "Cannot have a nested locktimeScriptPubKey inside a lockTimeScriptPubKey")
       case x @ (_: NonStandardScriptPubKey | _: P2SHScriptPubKey |

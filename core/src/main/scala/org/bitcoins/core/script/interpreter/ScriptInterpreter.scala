@@ -96,7 +96,7 @@ sealed abstract class ScriptInterpreter {
             case _: P2PKHScriptPubKey | _: P2PKScriptPubKey |
                 _: MultiSignatureScriptPubKey | _: CSVScriptPubKey |
                 _: CLTVScriptPubKey | _: NonStandardScriptPubKey |
-                _: WitnessCommitment | _: EscrowTimeoutScriptPubKey |
+                _: WitnessCommitment |
                 EmptyScriptPubKey =>
               scriptPubKeyExecutedProgram
           }
@@ -263,7 +263,6 @@ sealed abstract class ScriptInterpreter {
                 _: P2PKScriptPubKey | _: MultiSignatureScriptPubKey |
                 _: CLTVScriptPubKey | _: CSVScriptPubKey |
                 _: NonStandardScriptPubKey | _: WitnessCommitment |
-                _: EscrowTimeoutScriptPubKey |
                 _: UnassignedWitnessScriptPubKey | EmptyScriptPubKey) =>
               run(scriptPubKeyExecutedProgram, s)
           }

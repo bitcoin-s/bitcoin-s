@@ -71,7 +71,7 @@ object P2WPKHWitnessV0 {
     scriptSig match {
       case p2pkh: P2PKHScriptSignature =>
         P2WPKHWitnessV0(p2pkh.publicKey, p2pkh.signature)
-      case x @ (_: LockTimeScriptSignature | _: EscrowTimeoutScriptSignature |
+      case x @ (_: LockTimeScriptSignature |
           _: MultiSignatureScriptSignature | _: NonStandardScriptSignature |
           _: P2PKScriptSignature | _: P2SHScriptSignature |
           EmptyScriptSignature) =>

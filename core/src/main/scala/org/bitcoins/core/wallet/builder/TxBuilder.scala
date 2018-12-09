@@ -312,7 +312,7 @@ sealed abstract class BitcoinTxBuilder extends TxBuilder {
               Future.fromTry(TxBuilderError.NestedWitnessSPK)
             case _: CSVScriptPubKey | _: CLTVScriptPubKey |
                 _: NonStandardScriptPubKey | _: WitnessCommitment |
-                _: EscrowTimeoutScriptPubKey | EmptyScriptPubKey |
+                EmptyScriptPubKey |
                 _: UnassignedWitnessScriptPubKey =>
               Future.fromTry(TxBuilderError.NoSigner)
           }
@@ -344,7 +344,6 @@ sealed abstract class BitcoinTxBuilder extends TxBuilder {
 
                   case _: P2PKScriptPubKey | _: P2PKHScriptPubKey |
                       _: MultiSignatureScriptPubKey | _: LockTimeScriptPubKey |
-                      _: EscrowTimeoutScriptPubKey |
                       _: NonStandardScriptPubKey | _: WitnessCommitment |
                       _: UnassignedWitnessScriptPubKey | _: P2WSHWitnessSPKV0 |
                       EmptyScriptPubKey =>
@@ -512,23 +511,19 @@ sealed abstract class BitcoinTxBuilder extends TxBuilder {
                     case _: P2WSHWitnessSPKV0 =>
                       Future.fromTry(TxBuilderError.NestedWitnessSPK)
                     case _: CSVScriptPubKey | _: CLTVScriptPubKey |
-                        _: EscrowTimeoutScriptPubKey |
                         _: NonStandardScriptPubKey | _: WitnessCommitment |
-                        EmptyScriptPubKey | _: UnassignedWitnessScriptPubKey |
-                        _: EscrowTimeoutScriptPubKey =>
+                        EmptyScriptPubKey | _: UnassignedWitnessScriptPubKey =>
                       Future.fromTry(TxBuilderError.NoSigner)
                   }
                 case _: NonStandardScriptPubKey | _: WitnessCommitment |
-                    EmptyScriptPubKey | _: UnassignedWitnessScriptPubKey |
-                    _: EscrowTimeoutScriptPubKey =>
+                    EmptyScriptPubKey | _: UnassignedWitnessScriptPubKey =>
                   Future.fromTry(TxBuilderError.NoSigner)
               }
             }
           }
           result.map(_.transaction)
         case _: NonStandardScriptPubKey | _: WitnessCommitment |
-            EmptyScriptPubKey | _: UnassignedWitnessScriptPubKey |
-            _: EscrowTimeoutScriptPubKey =>
+            EmptyScriptPubKey | _: UnassignedWitnessScriptPubKey =>
           Future.fromTry(TxBuilderError.NoSigner)
       }
     }
@@ -626,7 +621,7 @@ sealed abstract class BitcoinTxBuilder extends TxBuilder {
               _: P2WPKHWitnessSPKV0 | _: P2WSHWitnessSPKV0 |
               _: NonStandardScriptPubKey | _: WitnessCommitment |
               EmptyScriptPubKey | _: UnassignedWitnessScriptPubKey |
-              _: CSVScriptPubKey | _: EscrowTimeoutScriptPubKey =>
+              _: CSVScriptPubKey =>
             //non of these scripts affect the locktime of a tx
             loop(t, currentLockTime)
         }
@@ -691,8 +686,7 @@ sealed abstract class BitcoinTxBuilder extends TxBuilder {
           case _: P2PKScriptPubKey | _: P2PKHScriptPubKey |
               _: MultiSignatureScriptPubKey | _: P2WPKHWitnessSPKV0 |
               _: NonStandardScriptPubKey | _: WitnessCommitment |
-              EmptyScriptPubKey | _: UnassignedWitnessScriptPubKey |
-              _: EscrowTimeoutScriptPubKey =>
+              EmptyScriptPubKey | _: UnassignedWitnessScriptPubKey =>
             //none of these script types affect the sequence number of a tx
             //the sequence only needs to be adjustd if we have replace by fee (RBF) enabled
             //see BIP125 for more information

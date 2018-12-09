@@ -5,17 +5,9 @@ import org.bitcoins.core.crypto._
 import org.bitcoins.core.protocol._
 import org.bitcoins.core.script.bitwise.{OP_EQUAL, OP_EQUALVERIFY}
 import org.bitcoins.core.script.constant.{BytesToPushOntoStack, _}
-import org.bitcoins.core.script.control.{OP_ELSE, OP_ENDIF, OP_IF, OP_RETURN}
-import org.bitcoins.core.script.crypto.{
-  OP_CHECKMULTISIG,
-  OP_CHECKMULTISIGVERIFY,
-  OP_CHECKSIG,
-  OP_HASH160
-}
-import org.bitcoins.core.script.locktime.{
-  OP_CHECKLOCKTIMEVERIFY,
-  OP_CHECKSEQUENCEVERIFY
-}
+import org.bitcoins.core.script.control.OP_RETURN
+import org.bitcoins.core.script.crypto.{OP_CHECKMULTISIG, OP_CHECKMULTISIGVERIFY, OP_CHECKSIG, OP_HASH160}
+import org.bitcoins.core.script.locktime.{OP_CHECKLOCKTIMEVERIFY, OP_CHECKSEQUENCEVERIFY}
 import org.bitcoins.core.script.reserved.UndefinedOP_NOP
 import org.bitcoins.core.script.stack.{OP_DROP, OP_DUP}
 import org.bitcoins.core.serializers.script.ScriptParser
@@ -601,8 +593,6 @@ object ScriptPubKey extends ScriptFactory[ScriptPubKey] {
       WitnessScriptPubKey(asm).get
     case _ if WitnessCommitment.isWitnessCommitment(asm) =>
       WitnessCommitment(asm)
-    case _ if EscrowTimeoutScriptPubKey.isValidEscrowTimeout(asm) =>
-      EscrowTimeoutScriptPubKey.fromAsm(asm)
     case _ => NonStandardScriptPubKey(asm)
   }
 
@@ -856,66 +846,5 @@ object WitnessCommitment extends ScriptFactory[WitnessCommitment] {
       opReturn == OP_RETURN && pushOp == BytesToPushOntoStack(36) &&
       constant.hex.take(8) == commitmentHeader && asmBytes.size >= minCommitmentSize
     }
-  }
-}
-
-/**
-  * Represents a [[ScriptPubKey]] that either times out allowing Alice to spend from the scriptpubkey
-  * or allows a federation to spend from the escrow
-  * [[https://github.com/bitcoin/bips/blob/master/bip-0112.mediawiki#contracts-with-expiration-deadlines]]
-  * Format: OP_IF <multsig scriptpubkey> OP_ELSE <locktime scriptPubKey> OP_ENDIF
-  */
-sealed trait EscrowTimeoutScriptPubKey extends ScriptPubKey {
-
-  /** The [[MultiSignatureScriptPubKey]] that can be used to spend funds */
-  def escrow: MultiSignatureScriptPubKey = {
-    val escrowAsm = asm.slice(1, opElseIndex)
-    MultiSignatureScriptPubKey(escrowAsm)
-  }
-
-  /** The [[CSVScriptPubKey]] that you can spend funds from after a certain timeout */
-  def timeout: LockTimeScriptPubKey = {
-    val timeoutAsm = asm.slice(opElseIndex + 1, asm.length - 1)
-    LockTimeScriptPubKey.fromAsm(timeoutAsm)
-  }
-
-  private def opElseIndex: Int = {
-    val idx = asm.indexOf(OP_ELSE)
-    require(idx != -1, "CSVEscrowWithTimeout has to contain OP_ELSE asm token")
-    idx
-  }
-}
-
-object EscrowTimeoutScriptPubKey
-    extends ScriptFactory[EscrowTimeoutScriptPubKey] {
-  private case class EscrowTimeoutScriptPubKeyImpl(bytes: ByteVector)
-      extends EscrowTimeoutScriptPubKey {
-    override def toString = "EscrowTimeoutScriptPubKeyImpl(" + hex + ")"
-  }
-
-  override def fromAsm(asm: Seq[ScriptToken]): EscrowTimeoutScriptPubKey = {
-    buildScript(asm,
-                EscrowTimeoutScriptPubKeyImpl(_),
-                isValidEscrowTimeout(_),
-                "Given asm was not a valid CSVEscrowTimeout, got: " + asm)
-  }
-
-  def isValidEscrowTimeout(asm: Seq[ScriptToken]): Boolean = {
-    val opElseIndex = asm.indexOf(OP_ELSE)
-    val correctControlStructure = asm.headOption.contains(OP_IF) && asm.last == OP_ENDIF && opElseIndex != -1
-    if (correctControlStructure) {
-      val escrowAsm = asm.slice(1, opElseIndex)
-      val escrow = Try(MultiSignatureScriptPubKey(escrowAsm))
-      val timeoutAsm = asm.slice(opElseIndex + 1, asm.length - 1)
-      val timeout = Try(LockTimeScriptPubKey.fromAsm(timeoutAsm))
-      escrow.isSuccess && timeout.isSuccess
-    } else false
-  }
-
-  def apply(
-      escrow: MultiSignatureScriptPubKey,
-      timeout: LockTimeScriptPubKey): EscrowTimeoutScriptPubKey = {
-    fromAsm(
-      Seq(OP_IF) ++ escrow.asm ++ Seq(OP_ELSE) ++ timeout.asm ++ Seq(OP_ENDIF))
   }
 }

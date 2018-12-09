@@ -8,7 +8,6 @@ import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.util.BitcoinSLogger
-import org.bitcoins.core.wallet.EscrowTimeoutHelper
 import org.scalacheck.Gen
 
 /**
@@ -178,85 +177,7 @@ sealed abstract class WitnessGenerators extends BitcoinSLogger {
     (TransactionWitness, WitnessTxSigComponentRaw, Seq[ECPrivateKey])] = {
     Gen.oneOf(signedP2WSHP2PKTransactionWitness,
               signedP2WSHP2PKHTransactionWitness,
-              signedP2WSHMultiSigTransactionWitness,
-              signedP2WSHEscrowTimeoutWitness)
-  }
-
-  def signedP2WSHMultiSigEscrowTimeoutWitness: Gen[
-    (TransactionWitness, WitnessTxSigComponentRaw, Seq[ECPrivateKey])] =
-    for {
-      (scriptPubKey, privKeys) <- ScriptGenerators.escrowTimeoutScriptPubKey
-      amount <- CurrencyUnitGenerator.satoshis
-      hashType <- CryptoGenerators.hashType
-      witScriptPubKey = P2WSHWitnessSPKV0(scriptPubKey)
-      unsignedScriptWitness = P2WSHWitnessV0(scriptPubKey)
-      u = createUnsignedRawWTxSigComponent(witScriptPubKey,
-                                           amount,
-                                           unsignedScriptWitness,
-                                           None)
-      signedScriptSig = csvEscrowTimeoutGenHelper(privKeys,
-                                                  scriptPubKey,
-                                                  u,
-                                                  hashType)
-      witness = EscrowTimeoutHelper.buildEscrowTimeoutScriptWitness(
-        signedScriptSig,
-        scriptPubKey,
-        u)
-      oldTx = u.transaction
-      wTx = WitnessTransaction(oldTx.version,
-                               oldTx.inputs,
-                               oldTx.outputs,
-                               oldTx.lockTime,
-                               witness)
-      signedWTxSigComponent = WitnessTxSigComponentRaw(wTx,
-                                                       u.inputIndex,
-                                                       u.output,
-                                                       u.flags)
-    } yield (witness, signedWTxSigComponent, privKeys)
-
-  def spendableP2WSHTimeoutEscrowTimeoutWitness: Gen[
-    (TransactionWitness, WitnessTxSigComponentRaw, Seq[ECPrivateKey])] =
-    for {
-      (p2pkh, privKey) <- ScriptGenerators.p2pkhScriptPubKey
-      (scriptNum, sequence) <- TransactionGenerators.spendableCSVValues
-      csv = CSVScriptPubKey(scriptNum, p2pkh)
-      (m, _) <- ScriptGenerators.smallMultiSigScriptPubKey
-      scriptPubKey = EscrowTimeoutScriptPubKey(m, csv)
-      amount <- CurrencyUnitGenerator.satoshis
-      hashType <- CryptoGenerators.hashType
-      witScriptPubKey = P2WSHWitnessSPKV0(scriptPubKey)
-      unsignedScriptWitness = P2WSHWitnessV0(scriptPubKey)
-      u = createUnsignedRawWTxSigComponent(witScriptPubKey,
-                                           amount,
-                                           unsignedScriptWitness,
-                                           Some(sequence))
-      createdSig = TransactionSignatureCreator.createSig(u, privKey, hashType)
-      scriptSig = CSVScriptSignature(
-        P2PKHScriptSignature(createdSig, privKey.publicKey))
-      signedScriptWitness = P2WSHWitnessV0(
-        scriptPubKey,
-        EscrowTimeoutScriptSignature.fromLockTime(scriptSig))
-      //ScriptWitness(scriptPubKey.asm.flatMap(_.bytes) +: Seq(ScriptNumber.zero.bytes, privKey.publicKey.bytes,
-      //createdSig.bytes))
-      oldTx = u.transaction
-      txWitness = TransactionWitness(
-        oldTx.witness.witnesses
-          .updated(u.inputIndex.toInt, signedScriptWitness))
-      wtx = WitnessTransaction(oldTx.version,
-                               oldTx.inputs,
-                               oldTx.outputs,
-                               oldTx.lockTime,
-                               txWitness)
-      signedWtxSigComponent = WitnessTxSigComponentRaw(wtx,
-                                                       u.inputIndex,
-                                                       u.output,
-                                                       u.flags)
-    } yield (txWitness, signedWtxSigComponent, Seq(privKey))
-
-  def signedP2WSHEscrowTimeoutWitness: Gen[
-    (TransactionWitness, WitnessTxSigComponentRaw, Seq[ECPrivateKey])] = {
-    Gen.oneOf(signedP2WSHMultiSigEscrowTimeoutWitness,
-              spendableP2WSHTimeoutEscrowTimeoutWitness)
+              signedP2WSHMultiSigTransactionWitness)
   }
 
   /** Helps generate a signed [[MultiSignatureScriptSignature]] */
@@ -276,41 +197,6 @@ sealed abstract class WitnessGenerators extends BitcoinSLogger {
     //add the signature to the scriptSig instead of having an empty scriptSig
     val signedScriptSig = MultiSignatureScriptSignature(txSignatures)
     signedScriptSig
-  }
-
-  def csvEscrowTimeoutGenHelper(
-      privateKeys: Seq[ECPrivateKey],
-      scriptPubKey: EscrowTimeoutScriptPubKey,
-      unsignedWtxSigComponent: WitnessTxSigComponent,
-      hashType: HashType): EscrowTimeoutScriptSignature = {
-    if (scriptPubKey.escrow.requiredSigs == 0) {
-      EscrowTimeoutScriptSignature.fromMultiSig(
-        MultiSignatureScriptSignature(Nil))
-    } else if (privateKeys.size == 1) {
-      val signature = csvEscrowTimeoutGenSignature(privateKeys.head,
-                                                   unsignedWtxSigComponent,
-                                                   hashType)
-      EscrowTimeoutScriptSignature.fromMultiSig(
-        MultiSignatureScriptSignature(Seq(signature)))
-    } else {
-      val multiSig = multiSigScriptSigGenHelper(privateKeys,
-                                                scriptPubKey.escrow,
-                                                unsignedWtxSigComponent,
-                                                hashType)
-      EscrowTimeoutScriptSignature.fromMultiSig(multiSig)
-    }
-  }
-
-  def csvEscrowTimeoutGenSignature(
-      privKey: ECPrivateKey,
-      unsignedWtxSigComponent: WitnessTxSigComponent,
-      hashType: HashType): ECDigitalSignature = {
-
-    val signature = TransactionSignatureCreator.createSig(
-      unsignedWtxSigComponent,
-      privKey,
-      hashType)
-    signature
   }
 
   /** Generates a random [[org.bitcoins.core.protocol.script.P2WPKHWitnessV0]] */
