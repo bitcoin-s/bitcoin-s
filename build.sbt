@@ -51,6 +51,9 @@ lazy val root = project
 lazy val secp256k1jni = project
   .in(file("secp256k1jni"))
   .settings(commonSettings: _*)
+  .settings(
+    libraryDependencies ++= Deps.secp256k1jni
+  )
   .enablePlugins()
 
 lazy val core = project
