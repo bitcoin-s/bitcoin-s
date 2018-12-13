@@ -114,7 +114,11 @@ lazy val bench = project
   .enablePlugins()
   .settings(assemblyOption in assembly := (assemblyOption in assembly).value
     .copy(includeScala = true))
-  .settings(libraryDependencies ++= Deps.bench)
+  .settings(commonSettings: _*)
+  .settings(
+    libraryDependencies ++= Deps.bench,
+    name := "bitcoin-s-bench"
+  )
   .dependsOn(core)
 
 lazy val eclairRpc = project
