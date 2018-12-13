@@ -9,3 +9,5 @@ addSbtPlugin("org.scoverage" % "sbt-coveralls" % "1.2.7")
 addSbtPlugin("net.virtual-void" % "sbt-dependency-graph" % "0.9.2")
 
 addSbtPlugin("com.lucidchart" % "sbt-scalafmt" % "1.15")
+
+addSbtPlugin("org.foundweekends" % "sbt-bintray" % "0.5.4")
