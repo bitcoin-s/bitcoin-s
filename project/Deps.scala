@@ -14,8 +14,7 @@ object Deps {
     val playv = "2.6.10"
     val scodecV = "1.1.6"
     val junitV = "0.11"
-
-    val bitcoinsV = "0.0.1-SNAPSHOT"
+    val nativeLoaderV = "2.3.2"
   }
 
   object Compile {
@@ -27,9 +26,10 @@ object Deps {
     val akkaStream = "com.typesafe.akka" %% "akka-stream" % V.akkaStreamv withSources() withJavadoc()
     val playJson = "com.typesafe.play" %% "play-json" % V.playv withSources() withJavadoc()
 
-    val secp256k1jni = "org.bitcoins" % "secp256k1jni" % V.bitcoinsV
-
     val logback = "ch.qos.logback" % "logback-classic" % V.logback withSources() withJavadoc()
+
+    //for loading secp256k1 natively
+    val nativeLoader = "org.scijava" % "native-lib-loader" % V.nativeLoaderV withSources() withJavadoc()
   }
 
   object Test {
@@ -50,6 +50,7 @@ object Deps {
   )
 
   val secp256k1jni = List(
+    Compile.nativeLoader,
     Test.junitInterface
   )
 

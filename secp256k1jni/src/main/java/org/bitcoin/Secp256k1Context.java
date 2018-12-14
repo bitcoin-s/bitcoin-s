@@ -16,6 +16,8 @@
 
 package org.bitcoin;
 
+import org.scijava.nativelib.NativeLoader;
+
 /**
  * This class holds the context reference used in native methods 
  * to handle ECDSA operations.
@@ -28,9 +30,9 @@ public class Secp256k1Context {
       boolean isEnabled = true;
       long contextRef = -1;
       try {
-          System.loadLibrary("secp256k1");
+          NativeLoader.loadLibrary("secp256k1");
           contextRef = secp256k1_init_context();
-      } catch (UnsatisfiedLinkError e) {
+      } catch (java.io.IOException | UnsatisfiedLinkError e) {
           System.out.println("UnsatisfiedLinkError: " + e.toString());
           isEnabled = false;
       }

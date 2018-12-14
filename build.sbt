@@ -30,7 +30,13 @@ lazy val commonSettings = List(
   scalacOptions in Compile := compilerOpts,
   scalacOptions in Test := testCompilerOpts,
   assemblyOption in assembly := (assemblyOption in assembly).value
-    .copy(includeScala = false)
+    .copy(includeScala = false),
+
+  bintrayOrganization := Some("bitcoin-s"),
+
+  bintrayRepository := "bitcoin-s-core",
+
+  licenses += ("MIT", url("http://opensource.org/licenses/MIT"))
 )
 
 lazy val root = project
@@ -48,11 +54,13 @@ lazy val root = project
   )
   .settings(commonSettings: _*)
 
+
 lazy val secp256k1jni = project
   .in(file("secp256k1jni"))
   .settings(commonSettings: _*)
   .settings(
-    libraryDependencies ++= Deps.secp256k1jni
+    libraryDependencies ++= Deps.secp256k1jni,
+    unmanagedResourceDirectories in Compile += baseDirectory.value / "natives"
   )
   .enablePlugins()
 
@@ -106,7 +114,11 @@ lazy val bench = project
   .enablePlugins()
   .settings(assemblyOption in assembly := (assemblyOption in assembly).value
     .copy(includeScala = true))
-  .settings(libraryDependencies ++= Deps.bench)
+  .settings(commonSettings: _*)
+  .settings(
+    libraryDependencies ++= Deps.bench,
+    name := "bitcoin-s-bench"
+  )
   .dependsOn(core)
 
 lazy val eclairRpc = project
@@ -127,5 +139,6 @@ lazy val testkit = project
     rpc,
     eclairRpc
   )
+
 
 publishArtifact in root := false
