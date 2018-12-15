@@ -4,14 +4,18 @@ import org.bitcoins.core.number._
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.script.constant.ScriptNumber
 import org.bitcoins.core.util.NumberUtil
-import org.scalacheck.Gen
 import org.scalacheck.Arbitrary.arbitrary
+import org.scalacheck.Gen
 import scodec.bits.BitVector
 
 /**
   * Created by chris on 6/16/16.
   */
 trait NumberGenerator {
+
+  def positiveShort: Gen[Short] = {
+    Gen.chooseNum[Short](0, Short.MaxValue)
+  }
 
   /** Creates a generator that generates positive long numbers */
   def positiveLongs: Gen[Long] = Gen.choose(0, Long.MaxValue)
@@ -52,7 +56,9 @@ trait NumberGenerator {
     * Generates a number in the range 0 <= x < 2^^64
     * then wraps it in a UInt64
     */
-  def uInt64s: Gen[UInt64] =
+  def uInt64s: Gen[UInt64] = uInt64
+
+  def uInt64: Gen[UInt64] =
     for {
       bigInt <- bigIntsUInt64Range
     } yield UInt64(bigInt)

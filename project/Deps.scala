@@ -15,6 +15,8 @@ object Deps {
     val scodecV = "1.1.6"
     val junitV = "0.11"
     val nativeLoaderV = "2.3.2"
+
+    val bitcoinsV = "0.0.1"
   }
 
   object Compile {
@@ -41,6 +43,8 @@ object Deps {
     val spray = "io.spray" %% "spray-json" % V.spray  % "test" withSources() withJavadoc()
     val akkaHttp = "com.typesafe.akka" %% "akka-http-testkit" % V.akkav % "test" withSources() withJavadoc()
     val akkaStream = "com.typesafe.akka" %% "akka-stream-testkit" % V.akkaStreamv % "test" withSources() withJavadoc()
+
+    val testkit = "org.bitcoins" %% "bitcoin-s-testkit" % V.bitcoinsV withSources() withJavadoc()
   }
 
   val core = List(
@@ -64,7 +68,8 @@ object Deps {
     Test.junitInterface,
     Test.logback,
     Test.scalaTest,
-    Test.spray
+    Test.spray,
+    Test.testkit
   )
 
   val zmq = List(
@@ -84,7 +89,8 @@ object Deps {
     Test.akkaStream,
     Test.logback,
     Test.scalaTest,
-    Test.scalacheck
+    Test.scalacheck,
+    Test.testkit
   )
 
   val bench = List(
@@ -100,7 +106,8 @@ object Deps {
     Test.akkaHttp,
     Test.logback,
     Test.scalaTest,
-    Test.scalacheck
+    Test.scalacheck,
+    Test.testkit
   )
 
   val testkit = List(
