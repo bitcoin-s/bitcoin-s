@@ -36,7 +36,10 @@ lazy val commonSettings = List(
 
   bintrayRepository := "bitcoin-s-core",
 
-  licenses += ("MIT", url("http://opensource.org/licenses/MIT"))
+  licenses += ("MIT", url("http://opensource.org/licenses/MIT")),
+
+  resolvers += Resolver.bintrayRepo("bitcoin-s", "bitcoin-s-core")
+
 )
 
 lazy val root = project

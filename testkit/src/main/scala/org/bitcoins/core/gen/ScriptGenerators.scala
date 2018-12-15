@@ -172,8 +172,11 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
 
   /** Generates an arbitrary [[org.bitcoins.core.protocol.script.WitnessScriptPubKey]] */
   def witnessScriptPubKey: Gen[(WitnessScriptPubKey, Seq[ECPrivateKey])] =
-    Gen.oneOf(p2wpkhSPKV0, p2wshSPKV0, unassignedWitnessScriptPubKey)
+    Gen.oneOf(assignedWitnessScriptPubKey,unassignedWitnessScriptPubKey)
 
+  def assignedWitnessScriptPubKey: Gen[(WitnessScriptPubKey, Seq[ECPrivateKey])] = {
+    Gen.oneOf(p2wpkhSPKV0, p2wshSPKV0)
+  }
   def witnessCommitment: Gen[(WitnessCommitment, Seq[ECPrivateKey])] =
     for {
       hash <- CryptoGenerators.doubleSha256Digest
