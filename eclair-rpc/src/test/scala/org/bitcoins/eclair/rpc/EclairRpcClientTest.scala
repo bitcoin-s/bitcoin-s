@@ -58,8 +58,8 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
         isOpenedF.map {
           case (chanId, assertion) =>
             val _ = bitcoindRpcClient.generate(6)
-            EclairTestUtil.awaitChannelNormal(
-              client1 = client,
+            EclairTestUtil.awaitUntilChannelNormal(
+              client = client,
               chanId = chanId
             )
 
