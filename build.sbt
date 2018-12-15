@@ -36,7 +36,10 @@ lazy val commonSettings = List(
 
   bintrayRepository := "bitcoin-s-core",
 
-  licenses += ("MIT", url("http://opensource.org/licenses/MIT"))
+  licenses += ("MIT", url("http://opensource.org/licenses/MIT")),
+
+  resolvers += Resolver.bintrayRepo("bitcoin-s", "bitcoin-s-core")
+
 )
 
 lazy val root = project
@@ -44,7 +47,6 @@ lazy val root = project
   .aggregate(
     secp256k1jni,
     core,
-    coreGen,
     coreTest,
     zmq,
     rpc,
@@ -72,21 +74,12 @@ lazy val core = project
     secp256k1jni
   )
 
-lazy val coreGen = project
-  .in(file("core-gen"))
-  .enablePlugins()
-  .settings(commonSettings: _*)
-  .dependsOn(
-    core
-  )
-
 lazy val coreTest = project
   .in(file("core-test"))
   .enablePlugins()
   .settings(commonSettings: _*)
   .dependsOn(
     core,
-    coreGen % "test->test"
   )
 
 lazy val zmq = project
@@ -102,8 +95,7 @@ lazy val rpc = project
   .enablePlugins()
   .settings(commonSettings: _*)
   .dependsOn(
-    core,
-    coreGen % "test->test"
+    core
   )
   .settings(
     testOptions in Test += Tests.Argument("-oF")

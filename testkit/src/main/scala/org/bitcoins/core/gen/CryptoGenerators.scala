@@ -10,7 +10,7 @@ import org.scalacheck.Gen
   */
 sealed abstract class CryptoGenerators {
 
-  def privateKey: Gen[ECPrivateKey] = Gen.const(ECPrivateKey())
+  def privateKey: Gen[ECPrivateKey] = Gen.delay(ECPrivateKey())
 
   /**
     * Generate a sequence of private keys
@@ -67,6 +67,12 @@ sealed abstract class CryptoGenerators {
       privKey <- privateKey
       hash <- CryptoGenerators.doubleSha256Digest
     } yield privKey.sign(hash)
+
+  def sha256Digest: Gen[Sha256Digest] =
+    for {
+      hex <- StringGenerators.hexString
+      digest = CryptoUtil.sha256(hex)
+    } yield digest
 
   /** Generates a random [[DoubleSha256Digest]] */
   def doubleSha256Digest: Gen[DoubleSha256Digest] =

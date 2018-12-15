@@ -1,12 +1,11 @@
 package org.bitcoins.core.gen.ln
 
-import org.bitcoins.core.crypto.{ECPrivateKey, ECPublicKey}
+import org.bitcoins.core.crypto.ECPrivateKey
 import org.bitcoins.core.gen._
 import org.bitcoins.core.number.{UInt64, UInt8}
 import org.bitcoins.core.protocol.ln.LnTag.NodeIdTag
 import org.bitcoins.core.protocol.ln._
 import org.bitcoins.core.protocol.ln.node.NodeId
-import org.bitcoins.core.util.NumberUtil
 import org.scalacheck.Gen
 
 sealed abstract class LnInvoiceGen {
