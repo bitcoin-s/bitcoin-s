@@ -3,9 +3,12 @@ sudo: false
 
 language: scala
 
-jdk: 
-  - oraclejdk8
-  - openjdk8
+#https://docs.travis-ci.com/user/reference/osx#jdk-and-os-x
+#Note: osx uses jdk10 by default which is NOT officially supported by scala
+#This does not seem to be causing any errors right now
+os:
+  - linux
+  - osx
 
 scala:
   - 2.11.12
@@ -23,14 +26,15 @@ before_cache:
   - find $HOME/.ivy2 -name "ivydata-*.properties" | xargs rm
 
 before_install:
-  - wget https://bitcoincore.org/bin/bitcoin-core-0.16.3/bitcoin-0.16.3-x86_64-linux-gnu.tar.gz
-  - tar -xzf bitcoin-0.16.3-x86_64-linux-gnu.tar.gz
+  - if [[ $TRAVIS_OS_NAME == "linux" ]]; then export PLATFORM="x86_64-linux-gnu"; else export PLATFORM="osx64"; fi
+  - wget https://bitcoincore.org/bin/bitcoin-core-0.16.3/bitcoin-0.16.3-${PLATFORM}.tar.gz
+  - tar -xzf bitcoin-0.16.3-${PLATFORM}.tar.gz
   - cd bitcoin-0.16.3/bin
   - export PATH=$PATH:$(pwd)
   - cd ../..
 
 install:
-  - wget https://github.com/ACINQ/eclair/releases/download/v0.2-beta8/eclair-node-0.2-beta8-52821b8.jar 
+  - wget https://github.com/ACINQ/eclair/releases/download/v0.2-beta8/eclair-node-0.2-beta8-52821b8.jar
   - export ECLAIR_PATH=$(pwd)
 
 script:
