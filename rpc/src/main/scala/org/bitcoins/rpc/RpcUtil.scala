@@ -1,5 +1,7 @@
 package org.bitcoins.rpc
 
+import java.io.PrintStream
+
 import akka.actor.ActorSystem
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.rpc.client.BitcoindRpcClient
@@ -38,10 +40,37 @@ trait RpcUtil extends BitcoinSLogger {
       conditionF: () => Future[Boolean],
       duration: FiniteDuration = 100.millis,
       maxTries: Int = 50)(implicit system: ActorSystem): Future[Unit] = {
+    val stackTrace: Array[StackTraceElement] =
+      Thread.currentThread().getStackTrace
 
     retryUntilSatisfiedWithCounter(conditionF = conditionF,
                                    duration = duration,
-                                   maxTries = maxTries)
+                                   maxTries = maxTries,
+                                   stackTrace = stackTrace)
+  }
+
+  case class RpcRetryException(
+      message: String,
+      caller: Array[StackTraceElement])
+      extends Exception(message) {
+    override def printStackTrace(s: PrintStream): Unit = {
+      super.printStackTrace(s)
+
+      val indexOfLastBitcoinSOpt = caller.reverse.zipWithIndex
+        .find {
+          case (element, _) =>
+            element.getClassName.contains("bitcoins")
+        }
+
+      val indexOfLastRelevantElement =
+        indexOfLastBitcoinSOpt.map(_._2).getOrElse(0)
+
+      val relevantStackTrace =
+        caller.dropRight(indexOfLastRelevantElement).drop(1)
+
+      s.println("Called from:")
+      relevantStackTrace.foreach(element => s.println(s"\t$element"))
+    }
   }
 
   // Has a different name so that default values are permitted
@@ -49,7 +78,9 @@ trait RpcUtil extends BitcoinSLogger {
       conditionF: () => Future[Boolean],
       duration: FiniteDuration,
       counter: Int = 0,
-      maxTries: Int)(implicit system: ActorSystem): Future[Unit] = {
+      maxTries: Int,
+      stackTrace: Array[StackTraceElement])(
+      implicit system: ActorSystem): Future[Unit] = {
 
     implicit val ec = system.dispatcher
 
@@ -57,7 +88,7 @@ trait RpcUtil extends BitcoinSLogger {
       if (condition) {
         Future.successful(())
       } else if (counter == maxTries) {
-        Future.failed(new RuntimeException("Condition timed out"))
+        Future.failed(RpcRetryException("Condition timed out", stackTrace))
       } else {
         val p = Promise[Boolean]()
         val runnable = retryRunnable(condition, p)
@@ -70,7 +101,8 @@ trait RpcUtil extends BitcoinSLogger {
             retryUntilSatisfiedWithCounter(conditionF,
                                            duration,
                                            counter + 1,
-                                           maxTries)
+                                           maxTries,
+                                           stackTrace)
         }
       }
     }

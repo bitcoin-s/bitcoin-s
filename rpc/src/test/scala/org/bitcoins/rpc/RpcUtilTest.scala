@@ -4,6 +4,7 @@ import java.io.File
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
+import org.bitcoins.rpc.RpcUtil.RpcRetryException
 import org.bitcoins.rpc.client.BitcoindRpcClient
 import org.scalatest.{AsyncFlatSpec, BeforeAndAfterAll}
 
@@ -44,7 +45,7 @@ class RpcUtilTest extends AsyncFlatSpec with BeforeAndAfterAll {
   }
 
   it should "fail if condition is false" in {
-    recoverToSucceededIf[RuntimeException] {
+    recoverToSucceededIf[RpcRetryException] {
       RpcUtil.retryUntilSatisfiedF(conditionF = () => Future.successful(false),
                                    duration = 0.millis)
     }
@@ -59,7 +60,7 @@ class RpcUtilTest extends AsyncFlatSpec with BeforeAndAfterAll {
 
   it should "fail if there is a delay and duration is zero" in {
     val boolLater = trueLater(delay = 250)
-    recoverToSucceededIf[RuntimeException] {
+    recoverToSucceededIf[RpcRetryException] {
       RpcUtil.retryUntilSatisfiedF(boolLaterDoneAndTrue(boolLater),
                                    duration = 0.millis)
     }
@@ -71,7 +72,7 @@ class RpcUtilTest extends AsyncFlatSpec with BeforeAndAfterAll {
   }
 
   it should "timeout if condition is false" in {
-    assertThrows[RuntimeException] {
+    assertThrows[RpcRetryException] {
       RpcUtil.awaitCondition(condition = () => false, duration = 0.millis)
     }
   }
@@ -86,7 +87,7 @@ class RpcUtilTest extends AsyncFlatSpec with BeforeAndAfterAll {
 
   it should "timeout if there is a delay and duration is zero" in {
     val boolLater = trueLater(delay = 250)
-    assertThrows[RuntimeException] {
+    assertThrows[RpcRetryException] {
       RpcUtil.awaitConditionF(boolLaterDoneAndTrue(boolLater),
                               duration = 0.millis)
     }
