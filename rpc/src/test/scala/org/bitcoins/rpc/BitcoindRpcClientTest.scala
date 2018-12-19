@@ -152,17 +152,17 @@ class BitcoindRpcClientTest
         logger.info(msg)
         RpcUtil.awaitServerShutdown(walletClient)
         logger.debug(walletClient.isStarted.toString)
-        // Very rarely, this may fail if bitocoind does not ping but hasn't yet released its locks
+        // Very rarely, this may fail if bitcoind does not ping but hasn't yet released its locks
         walletClient.start()
         logger.info("Bitcoin server restarting")
         RpcUtil.awaitServer(walletClient)
       },
-      10.seconds
+      30.seconds
     )
 
     logger.info("Mining some blocks")
-    Await.result(client.generate(200), 3.seconds)
-    Await.result(pruneClient.generate(3000), 60.seconds)
+    Await.result(client.generate(200), 30.seconds)
+    Await.result(pruneClient.generate(1000), 60.seconds)
 
     BitcoindRpcTestUtil.awaitConnection(client, otherClient)
   }
