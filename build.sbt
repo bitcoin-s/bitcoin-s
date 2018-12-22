@@ -107,6 +107,7 @@ lazy val root = project
     bench,
     eclairRpc,
     eclairRpcTest,
+    node,
     testkit,
     doc
   )
@@ -214,15 +215,28 @@ lazy val eclairRpcTest = project
   .dependsOn(testkit)
   .enablePlugins()
 
+lazy val node = project
+  .in(file("node"))
+  .enablePlugins()
+  .settings(commonSettings: _*)
+  .settings(
+    name := "bitcoin-s-node",
+    libraryDependencies ++= Deps.node,
+    parallelExecution in Test := false
+  )
+  .dependsOn(
+    core
+  )
+
 lazy val testkit = project
   .in(file("testkit"))
   .settings(commonSettings: _*)
   .dependsOn(
     core,
     bitcoindRpc,
-    eclairRpc
+    eclairRpc,
+    node
   ).enablePlugins()
-
 
 lazy val doc = project
   .in(file("doc"))
