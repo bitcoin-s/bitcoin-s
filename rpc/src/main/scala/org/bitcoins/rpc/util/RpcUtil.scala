@@ -8,17 +8,17 @@ import scala.concurrent.duration.{DurationInt, FiniteDuration}
 trait RpcUtil extends AsyncUtil {
 
   def awaitServer(
-                   server: BitcoindRpcClient,
-                   duration: FiniteDuration = 1.seconds,
-                   maxTries: Int = 50)(implicit system: ActorSystem): Unit = {
+      server: BitcoindRpcClient,
+      duration: FiniteDuration = 1.seconds,
+      maxTries: Int = 50)(implicit system: ActorSystem): Unit = {
     val f = () => server.isStarted
     awaitCondition(f, duration, maxTries)
   }
 
   def awaitServerShutdown(
-                           server: BitcoindRpcClient,
-                           duration: FiniteDuration = 300.milliseconds,
-                           maxTries: Int = 50)(implicit system: ActorSystem): Unit = {
+      server: BitcoindRpcClient,
+      duration: FiniteDuration = 300.milliseconds,
+      maxTries: Int = 50)(implicit system: ActorSystem): Unit = {
     val f = () => !server.isStarted
     awaitCondition(f, duration, maxTries)
   }
