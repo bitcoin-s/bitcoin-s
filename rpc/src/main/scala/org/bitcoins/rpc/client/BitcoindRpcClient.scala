@@ -14,18 +14,14 @@ import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, MerkleBlock}
 import org.bitcoins.core.protocol.script.ScriptPubKey
-import org.bitcoins.core.protocol.transaction.{
-  Transaction,
-  TransactionInput,
-  TransactionOutPoint
-}
+import org.bitcoins.core.protocol.transaction.{Transaction, TransactionInput, TransactionOutPoint}
 import org.bitcoins.core.protocol.{BitcoinAddress, P2PKHAddress}
 import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil}
-import org.bitcoins.rpc.RpcUtil
 import org.bitcoins.rpc.client.RpcOpts.AddressType
 import org.bitcoins.rpc.config.BitcoindInstance
 import org.bitcoins.rpc.jsonmodels._
 import org.bitcoins.rpc.serializers.JsonSerializers._
+import org.bitcoins.rpc.util.RpcUtil
 import play.api.libs.json._
 
 import scala.concurrent.duration.DurationInt

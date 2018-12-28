@@ -4,8 +4,9 @@ import java.io.File
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import org.bitcoins.rpc.RpcUtil.RpcRetryException
+import org.bitcoins.rpc.util.RpcUtil.RpcRetryException
 import org.bitcoins.rpc.client.BitcoindRpcClient
+import org.bitcoins.rpc.util.RpcUtil
 import org.scalatest.{AsyncFlatSpec, BeforeAndAfterAll}
 
 import scala.concurrent.duration.DurationInt

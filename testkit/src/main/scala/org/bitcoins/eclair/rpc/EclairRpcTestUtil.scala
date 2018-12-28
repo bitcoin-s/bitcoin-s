@@ -18,7 +18,8 @@ import org.bitcoins.eclair.rpc.client.EclairRpcClient
 import org.bitcoins.eclair.rpc.config.EclairInstance
 import org.bitcoins.rpc.client.BitcoindRpcClient
 import org.bitcoins.rpc.config.{BitcoindInstance, ZmqConfig}
-import org.bitcoins.rpc.{BitcoindRpcTestUtil, RpcUtil}
+import org.bitcoins.rpc.BitcoindRpcTestUtil
+import org.bitcoins.rpc.util.RpcUtil
 
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
