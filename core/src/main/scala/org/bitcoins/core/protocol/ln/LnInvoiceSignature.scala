@@ -13,42 +13,43 @@ import scodec.bits.ByteVector
   * for more info.
   */
 sealed abstract class LnInvoiceSignature extends NetworkElement {
-  require(version.toInt >= 0 && version.toInt <= 3,
-          s"signature recovery byte must be 0,1,2,3, got ${version.toInt}")
+  require(recoverId.toInt >= 0 && recoverId.toInt <= 3,
+          s"signature recovery byte must be 0,1,2,3, got ${recoverId.toInt}")
 
+  require(bytes.length == 65, s"LnInvoiceSignatures MUST be 65 bytes in length, got ${bytes.length}")
   def signature: ECDigitalSignature
 
-  def version: UInt8
+  def recoverId: UInt8
 
   def data: Vector[UInt5] = {
-    val bytes = signature.toRawRS ++ version.bytes
+    val bytes = signature.toRawRS ++ recoverId.bytes
     Bech32.from8bitTo5bit(bytes)
   }
 
   override def bytes: ByteVector = {
-    signature.toRawRS ++ version.bytes
+    signature.toRawRS ++ recoverId.bytes
   }
 }
 
 object LnInvoiceSignature extends Factory[LnInvoiceSignature] {
   private case class LnInvoiceSignatureImpl(
-      version: UInt8,
+                                             recoverId: UInt8,
       signature: ECDigitalSignature)
       extends LnInvoiceSignature
 
   def apply(
-      version: UInt8,
+             recoverId: UInt8,
       signature: ECDigitalSignature): LnInvoiceSignature = {
-    LnInvoiceSignatureImpl(version, signature)
+    LnInvoiceSignatureImpl(recoverId, signature)
   }
 
   def fromBytes(bytes: ByteVector): LnInvoiceSignature = {
     val sigBytes = bytes.take(64)
-    val version = UInt8(bytes(64))
+    val recoverId = UInt8(bytes(64))
 
     val signature = ECDigitalSignature.fromRS(sigBytes)
 
-    LnInvoiceSignature.apply(version = version, signature = signature)
+    LnInvoiceSignature.apply(recoverId = recoverId, signature = signature)
   }
 
   def fromU5s(u5s: Vector[UInt5]): LnInvoiceSignature = {

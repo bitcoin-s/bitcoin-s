@@ -212,7 +212,7 @@ class LnInvoiceUnitTest extends FlatSpec with MustMatchers with PropertyChecks {
     val signature = ECDigitalSignature.fromRS(
       "91675cb3fad8e9d915343883a49242e074474e26d42c7ed914655689a8074553733e8e4ea5ce9b85f69e40d755a55014536b12323f8b220600c94ef2b9c51428")
     val lnInvoiceSig =
-      LnInvoiceSignature(version = UInt8.zero, signature = signature)
+      LnInvoiceSignature(recoverId = UInt8.zero, signature = signature)
 
     val route1 = LnRoute(
       pubkey = ECPublicKey.fromHex(
@@ -268,7 +268,7 @@ class LnInvoiceUnitTest extends FlatSpec with MustMatchers with PropertyChecks {
     val signature = ECDigitalSignature.fromRS(
       "b6c6860fc6ff41bafba1745b538b6a7c6c2c0234f76bf817bf567be88cf2c632492c9dd279470841cd1e21a33ae7ed59b25809bf9b3366fe81881651589f5d15")
     val lnInvoiceSig =
-      LnInvoiceSignature(signature = signature, version = UInt8.zero)
+      LnInvoiceSignature(signature = signature, recoverId = UInt8.zero)
     val lnInvoice = LnInvoice(hrp = hrpMilli,
                               timestamp = time,
                               lnTags = lnTags,
@@ -306,7 +306,7 @@ class LnInvoiceUnitTest extends FlatSpec with MustMatchers with PropertyChecks {
       "c8583b8f65853d7cc90f0eb4ae0e92a606f89caf4f7d65048142d7bbd4e5f3623ef407a75458e4b20f00efbc734f1c2eefc419f3a2be6d51038016ffb35cd613")
 
     val lnInvoiceSig =
-      LnInvoiceSignature(signature = signature, version = UInt8.zero)
+      LnInvoiceSignature(signature = signature, recoverId = UInt8.zero)
 
     val lnInvoice = LnInvoice(hrp = hrpMilli,
                               timestamp = time,
@@ -344,7 +344,7 @@ class LnInvoiceUnitTest extends FlatSpec with MustMatchers with PropertyChecks {
       "51e4f6446e410a164a6da9f39507e730c26241b4456ab6ea28d1b12c71ef8ca20c9cfe3dffc07d9f8db671ecaa4d20beedb193bda8ce37c59f85f82773a55d47")
 
     val lnInvoiceSig =
-      LnInvoiceSignature(signature = signature, version = UInt8.zero)
+      LnInvoiceSignature(signature = signature, recoverId = UInt8.zero)
 
     val lnInvoice = LnInvoice(hrp = hrpMilli,
                               timestamp = time,
@@ -392,7 +392,7 @@ class LnInvoiceUnitTest extends FlatSpec with MustMatchers with PropertyChecks {
         LnTaggedFields(paymentHash = paymentTag,
                        descriptionOrHash =
                          Right(LnTag.DescriptionHashTag(descriptionHash)))
-      val lnSig = LnInvoiceSignature(version = UInt8.zero, signature = sig)
+      val lnSig = LnInvoiceSignature(recoverId = UInt8.zero, signature = sig)
       LnInvoice(hrp = hrpEmpty,
                 timestamp = UInt64.zero,
                 lnTags = tags,
@@ -412,5 +412,41 @@ class LnInvoiceUnitTest extends FlatSpec with MustMatchers with PropertyChecks {
       LnInvoice.build(hrp = hrpEmpty, lnTags = tags, privateKey = privKey)
 
     assert(invoice.isValidSignature())
+  }
+
+  it must "handle the weird case if sigdata being exactly on a byte boundary, which means we need to pad the sigdata with a zero byte" in {
+    //https://github.com/bitcoin-s/bitcoin-s-core/issues/277
+    val expected =
+      "03fad6c016f998e85d03ce0b7358b3b6a38ebc7fd60030340d0245fea0d95c8c12"
+    val expectedHash =
+      "6b80b9b7320bc1203534e78f86b6a32945c35ab464e475ed00e92c7b98755f9d"
+    val str =
+      "lntb100n1pwz34mzpp5dwqtndejp0qjqdf5u78cdd4r99zuxk45vnj8tmgqayk8hxr4t7wsd890v3xgatjv96xjmmwygarzvpsxqczcgnrdpskumn9ds3r5gn5wfskgetnygkzyetkv4h8gg36yfeh2cnnvdexjcn9ygkzyat4d9jzyw3zxqcrzvfjxgenxtf5xs6n2tfkxcmnwtfc8qunjttpv93xycmrv3jx2etxvc3zcgn90p3ksctwvajjyw3zvf5hgenfdejhsg3vyfehjmtzdakzyw3zgf2yx42ngs386xqrrssqr6xn7dtkyxk0rhl98k3esksst578uwhud5glp9svq24ddwlgqwz6v9uf7mqljrj07xl87ufrn4yfplrsz2vpmc9xwv44634h54dq3sq257hh4"
+    val invoice = LnInvoice.fromString(str).get
+
+    invoice.lnTags.paymentHash.hash.hex must be(expectedHash)
+
+    invoice.signature.hex must be(
+      "00f469f9abb10d678eff29ed1cc2d082e9e3f1d7e3688f84b0601556b5df401c2d30bc4fb60fc8727f8df3fb891cea4487e38094c0ef0533995aea35bd2ad04600")
+    invoice.signature.signature.hex must be(
+      "3044022000f469f9abb10d678eff29ed1cc2d082e9e3f1d7e3688f84b0601556b5df401c02202d30bc4fb60fc8727f8df3fb891cea4487e38094c0ef0533995aea35bd2ad046")
+
+    invoice.lnTags.description.get.string must be(
+      "{\"duration\":10000,\"channel\":\"trades\",\"event\":\"subscribe\",\"uuid\":\"00112233-4455-6677-8899-aabbccddeeff\",\"exchange\":\"bitfinex\",\"symbol\":\"BTCUSD\"}")
+
+    invoice.timestamp must be(UInt64(1546180450))
+
+    invoice.amount.get.toMSat must be(MilliSatoshis(10000))
+
+    invoice.lnTags.expiryTime.get.u32 must be(UInt32(3600))
+
+    invoice.isValidSignature() must be(true)
+
+    invoice.signatureData.toHex must be(
+      "6c6e74623130306e0b851aec410d1ae02e6dcc82f0480d4d39e3e1ada8ca5170d6ad19391d7b403a4b1ee61d57e741a72bd91323ab930ba34b7b7111d1898181818161131b430b73732b6111d113a3930b232b991161132bb32b73a111d1139bab139b1b934b1329116113abab4b2111d111818189899191999969a1a1a9a969b1b1b9b969c1c1c9c96b0b0b13131b1b23232b2b33311161132bc31b430b733b2911d113134ba3334b732bc11161139bcb6b137b6111d11212a21aaa9a2113e8c018e100")
+
+    invoice.toString must be(str)
+
+    invoice.nodeId.hex must be(expected)
   }
 }
