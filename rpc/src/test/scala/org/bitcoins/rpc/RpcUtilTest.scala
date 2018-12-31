@@ -92,7 +92,7 @@ class RpcUtilTest extends AsyncFlatSpec with BeforeAndAfterAll {
     }
   }
 
-  "TestUtil" should "create a temp bitcoin directory when creating a DaemonInstance, and then delete it" in {
+  "BitcoindRpcUtil" should "create a temp bitcoin directory when creating a DaemonInstance, and then delete it" in {
     val instance = BitcoindRpcTestUtil.instance(BitcoindRpcTestUtil.randomPort,
                                                 BitcoindRpcTestUtil.randomPort)
     val dir = instance.authCredentials.datadir
@@ -120,7 +120,7 @@ class RpcUtilTest extends AsyncFlatSpec with BeforeAndAfterAll {
     assert(t.isFailure)
   }
 
-  "TestUtil" should "be able to create a connected node pair with 100 blocks and then delete them" in {
+  it should "be able to create a connected node pair with 100 blocks and then delete them" in {
     BitcoindRpcTestUtil.createNodePair().flatMap {
       case (client1, client2) =>
         assert(client1.getDaemon.authCredentials.datadir.isDirectory)
