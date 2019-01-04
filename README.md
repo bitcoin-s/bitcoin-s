@@ -51,30 +51,6 @@ $ sbt -Djava.library.path=/your/class/path
 
 You can also copy `libsecp256k1.so` to your system library path. 
 
-# Property based testing
-This library aims to achieve high level of correctness via property based testing. At the simplest level, you can think of property based testing as specifying a invariant that must always hold true. [Here](https://github.com/bitcoin-s/bitcoin-s-core/blob/89fbf35d78046b7ed21fd93fec05bb57cba023bb/src/test/scala/org/bitcoins/core/protocol/transaction/TransactionSpec.scala#L13-L17) is an example of a property in the bitcoin-s-core test suite
-
-```scala
-  property("Serialization symmetry") =
-    Prop.forAll(TransactionGenerators.transactions) { tx =>
-      Transaction(tx.hex) == tx
-  }
-```
-
-What this property says is that for every transaction we can generate with [`TransactionGenerators.transactions`](https://github.com/bitcoin-s/bitcoin-s-core/blob/1c7a7b9f46679a753248d9f55246c272bb3d63b9/src/main/scala/org/bitcoins/core/gen/TransactionGenerators.scala#L50) we *must* be able to serialize it to hex format, then deserialize it back to a transaction and get the original `tx` back. 
-
-A more complex example of property based testing is checking that a [multi signature transaction was signed correctly](https://github.com/bitcoin-s/bitcoin-s-core/blob/89fbf35d78046b7ed21fd93fec05bb57cba023bb/src/test/scala/org/bitcoins/core/crypto/TransactionSignatureCreatorSpec.scala#L33-L40). First we generate a *supposedly* validly signed multisig transaction with [`TransactionGenerators.signedMultiSigTransaction`](https://github.com/bitcoin-s/bitcoin-s-core/blob/1c7a7b9f46679a753248d9f55246c272bb3d63b9/src/main/scala/org/bitcoins/core/gen/TransactionGenerators.scala#L102-L108). These transactions have varying m of n requirements. An interesting corner case if when you have 0 of n signatures. Which means no signature is required. Property based testing is really good at fleshing out these corner cases. We check to see if this transaction is valid by running it through our [`ScriptInterpreter`](https://github.com/bitcoin-s/bitcoin-s-core/blob/89fbf35d78046b7ed21fd93fec05bb57cba023bb/src/main/scala/org/bitcoins/core/script/interpreter/ScriptInterpreter.scala#L29). If we have built our functionality correctly the ScriptInterpreter should always return [`ScriptOk`](https://github.com/bitcoin-s/bitcoin-s-core/blob/89fbf35d78046b7ed21fd93fec05bb57cba023bb/src/main/scala/org/bitcoins/core/script/result/ScriptResult.scala#L15) indicating the script was valid.
-```scala
-  property("generate valid signatures for a multisignature transaction") =
-    Prop.forAllNoShrink(TransactionGenerators.signedMultiSigTransaction) {
-      case (txSignatureComponent: TxSigComponent, _)  =>
-        //run it through the interpreter
-        val program = ScriptProgram(txSignatureComponent)
-        val result = ScriptInterpreter.run(program)
-        result == ScriptOk
-  }
-  ```
-
 # TODO
   - Simple [`TransactionBuilder`](https://github.com/MetacoSA/NBitcoin/blob/56bfd1cbca535424b160d8a40688a79de4800630/NBitcoin/TransactionBuilder.cs#L172) similar nbitcoin 
   - Hardware wallet support (trezor, ledger etc)
@@ -189,40 +165,6 @@ scala> val program = ScriptProgram(spendingTx,scriptPubKey,inputIndex, Policy.st
 program: org.bitcoins.core.script.PreExecutionScriptProgram = PreExecutionScriptProgramImpl(TransactionSignatureComponentImpl(TransactionImpl(1,List(TransactionInputImpl(TransactionOutPointImpl(b30d3148927f620f5b1228ba941c211fdabdae75d0ba0b688a58accbf018f3cc,0),P2PKHScriptSignatureImpl(4830450221008337ce3ce0c6ac0ab72509f889c1d52701817a2362d6357457b63e3bdedc0c0602202908963b9cf1a095ab3b34b95ce2bc0d67fb0f19be1cc5f7b3de0b3a325629bf01210241d746ca08da0a668735c3e01c1fa02045f2f399c5937079b6434b5a31dfe353,List(BytesToPushOntoStackImpl(72), ScriptConstantImpl(30450221008337ce3ce0c6ac0ab72509f889c1d52701817a2362d6357457b63e3bdedc0c0602202908963b9cf1a095ab3b34b95ce2bc0d67fb0f19be1cc5f7b3de0b3a325629bf01), BytesToPushOntoStackImpl(33), ScriptConstantImpl(0241d746ca08da0a668735c3e01c1fa02045f2f399c5937079...
 scala> ScriptInterpreter.run(program)
 res0: org.bitcoins.core.script.result.ScriptResult = ScriptOk
-```
-# Running tests
-
-To run the entire test suite all you need to do is run the following command
-```scala 
-
-chris@chris:~/dev/bitcoins-core$ sbt test
-[info] Elapsed time: 4 min 36.760 sec 
-[info] ScalaCheck
-[info] Passed: Total 149, Failed 0, Errors 0, Passed 149
-[info] ScalaTest
-[info] Run completed in 4 minutes, 55 seconds.
-[info] Total number of tests run: 744
-[info] Suites: completed 97, aborted 0
-[info] Tests: succeeded 744, failed 0, canceled 0, ignored 0, pending 0
-[info] All tests passed.
-[info] Passed: Total 909, Failed 0, Errors 0, Passed 909
-[success] Total time: 297 s, completed Jul 20, 2017 10:34:16 AM
-chris@chris:~/dev/bitcoin-s-core$ 
-```
-
-To run a specific suite of tests you can specify the suite name in the following way
-```scala
-chris@chris:~/dev/bitcoins-core$ sbt
-> test-only *ScriptInterpreterTest*
-[info] ScriptInterpreterTest:
-[info] ScriptInterpreter
-[info] - must evaluate all the scripts from the bitcoin core script_tests.json
-[info] Run completed in 8 seconds, 208 milliseconds.
-[info] Total number of tests run: 1
-[info] Suites: completed 1, aborted 0
-[info] Tests: succeeded 1, failed 0, canceled 0, ignored 0, pending 0
-[info] All tests passed.
->
 ```
 
 # Interacting with bitcoind
