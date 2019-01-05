@@ -1,3 +1,6 @@
+import sbt.Credentials
+import sbt.Keys.publishTo
+
 cancelable in Global := true
 
 lazy val commonCompilerOpts = {
@@ -26,6 +29,8 @@ lazy val compilerOpts = Seq(
 
 lazy val testCompilerOpts = commonCompilerOpts
 
+
+
 lazy val commonSettings = List(
   scalacOptions in Compile := compilerOpts,
   scalacOptions in Test := testCompilerOpts,
@@ -38,7 +43,39 @@ lazy val commonSettings = List(
 
   licenses += ("MIT", url("http://opensource.org/licenses/MIT")),
 
-  resolvers += Resolver.bintrayRepo("bitcoin-s", "bitcoin-s-core")
+  resolvers += Resolver.bintrayRepo("bitcoin-s", "bitcoin-s-core"),
+
+  resolvers += Resolver.jcenterRepo,
+
+  resolvers += "oss-jfrog-artifactory-snapshot" at "https://oss.jfrog.org/artifactory/oss-snapshot-local",
+
+  credentials ++= List(
+    //for snapshot publishing
+    //http://szimano.org/automatic-deployments-to-jfrog-oss-and-bintrayjcentermaven-central-via-travis-ci-from-sbt/
+    Credentials(Path.userHome / ".bintray" / ".artifactory"),
+
+    //sbt bintray plugin
+    //release publshing
+    Credentials(Path.userHome / ".bintray" / ".credentials")
+  ),
+
+
+  publishTo := {
+    //preserve the old bintray publishing stuff here
+    //we need to preserve it for the publishTo settings below
+    val bintrayPublish = publishTo.value
+    if (isSnapshot.value) {
+      Some("Artifactory Realm" at
+        "https://oss.jfrog.org/artifactory/oss-snapshot-local;build.timestamp=" + new java.util.Date().getTime)
+    } else {
+      bintrayPublish
+    }
+  },
+
+  bintrayReleaseOnPublish := !isSnapshot.value,
+
+  //fix for https://github.com/sbt/sbt/issues/3519
+  updateOptions := updateOptions.value.withGigahorse(false)
 
 )
 
