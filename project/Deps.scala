@@ -16,7 +16,7 @@ object Deps {
     val junitV = "0.11"
     val nativeLoaderV = "2.3.2"
 
-    val bitcoinsV = "0.0.1"
+    val bitcoinsV = "0.0.1-SNAPSHOT"
   }
 
   object Compile {
