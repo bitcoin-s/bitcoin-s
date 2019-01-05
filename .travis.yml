@@ -38,6 +38,17 @@ install:
   - export ECLAIR_PATH=$(pwd)
 
 script:
+  # in case the testkit project has had changes in it we have to recompile and
+  # publish locally before tests can be run
+  - sbt ++$TRAVIS_SCALA_VERSION compile publishLocal
+  # sets VERSION to last word in version.sbt
+  # substitures bitcoinsV in Deps.scala value for the value of VERSION
+  # in other words, makes us depend on the freshly compiled and locally published
+  # code from the first line in this script
+  - VERSION=`cat version.sbt`; VERSION=`echo ${VERSION##* }`
+  - TMP_FILE=`mktemp`
+  - sed -e "s/.*val bitcoinsV.*/val bitcoinsV = ${VERSION}/" project/Deps.scala > $TMP_FILE
+  - mv $TMP_FILE project/Deps.scala
   - sbt ++$TRAVIS_SCALA_VERSION coverage test &&
     sbt ++$TRAVIS_SCALA_VERSION core/coverageReport &&
     sbt ++$TRAVIS_SCALA_VERSION coverageAggregate
