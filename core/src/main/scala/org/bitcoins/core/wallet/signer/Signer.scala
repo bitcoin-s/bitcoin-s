@@ -398,7 +398,7 @@ sealed abstract class MultiSigSigner extends BitcoinSigner {
                     case m: MultiSignatureScriptPubKey =>
                       Future.successful((m, lock))
                     case _: P2PKScriptPubKey | _: P2PKHScriptPubKey |
-                        _: P2SHScriptPubKey | _: P2WPKHWitnessV0 |
+                        _: P2SHScriptPubKey | _: P2WPKHWitnessSPKV0 |
                         _: P2WSHWitnessSPKV0 | _: WitnessCommitment| _: CSVScriptPubKey |
                         _: CLTVScriptPubKey | _: NonStandardScriptPubKey |
                         _: UnassignedWitnessScriptPubKey |
@@ -407,7 +407,7 @@ sealed abstract class MultiSigSigner extends BitcoinSigner {
                   }
                 case m: MultiSignatureScriptPubKey => Future.successful((m, m))
                 case _: P2PKScriptPubKey | _: P2PKHScriptPubKey |
-                    _: P2SHScriptPubKey | _: P2WPKHWitnessV0 |
+                    _: P2SHScriptPubKey | _: P2WPKHWitnessSPKV0 |
                     _: P2WSHWitnessSPKV0 | _: WitnessCommitment| _: NonStandardScriptPubKey |
                     _: P2WPKHWitnessSPKV0 | _: UnassignedWitnessScriptPubKey |
                     EmptyScriptPubKey =>

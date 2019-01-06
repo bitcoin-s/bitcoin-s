@@ -8,11 +8,7 @@ import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.number.{Int32, Int64, UInt32}
 import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptSignature}
 import org.bitcoins.core.protocol.transaction._
-import org.bitcoins.core.script.constant.{
-  BytesToPushOntoStack,
-  ScriptConstant,
-  ScriptNumber
-}
+import org.bitcoins.core.script.constant.{BytesToPushOntoStack, ScriptConstant}
 import org.bitcoins.core.script.crypto.OP_CHECKSIG
 import org.bitcoins.core.util.{BitcoinSUtil, BitcoinScriptUtil}
 import scodec.bits.ByteVector
@@ -108,12 +104,19 @@ sealed abstract class ChainParams {
     //see https://bitcoin.stackexchange.com/questions/13122/scriptsig-coinbase-structure-of-the-genesis-block
     //for a full breakdown of the genesis block & its script signature
     val const = ScriptConstant(timestampBytes)
-    val scriptSignature = ScriptSignature.fromAsm(
-      Seq(BytesToPushOntoStack(4),
-          ScriptNumber(486604799),
-          BytesToPushOntoStack(1),
-          ScriptNumber(4)) ++ BitcoinScriptUtil.calculatePushOp(const) ++ Seq(
-        const))
+
+    val asm = {
+      List(
+        BytesToPushOntoStack(4),
+        ScriptConstant("ffff001d"),
+        BytesToPushOntoStack(1),
+        ScriptConstant("04")) ++
+        BitcoinScriptUtil.calculatePushOp(const) ++
+        List(const)
+    }
+
+    val scriptSignature = ScriptSignature.fromAsm(asm)
+
     val input = CoinbaseInput(scriptSignature, TransactionConstants.sequence)
     val output = TransactionOutput(amount, scriptPubKey)
     val tx = BaseTransaction(TransactionConstants.version,
