@@ -3,32 +3,18 @@ package org.bitcoins.core.util
 import org.bitcoins.core.consensus.Consensus
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.script.{
-  CLTVScriptPubKey,
-  CSVScriptPubKey,
-  EmptyScriptPubKey,
-  _
-}
+import org.bitcoins.core.protocol.CompactSizeUInt
+import org.bitcoins.core.protocol.script.{CLTVScriptPubKey, CSVScriptPubKey, EmptyScriptPubKey, _}
 import org.bitcoins.core.script.constant._
-import org.bitcoins.core.script.crypto.{
-  OP_CHECKMULTISIG,
-  OP_CHECKMULTISIGVERIFY,
-  OP_CHECKSIG,
-  OP_CHECKSIGVERIFY
-}
+import org.bitcoins.core.script.crypto.{OP_CHECKMULTISIG, OP_CHECKMULTISIGVERIFY, OP_CHECKSIG, OP_CHECKSIGVERIFY}
 import org.bitcoins.core.script.flag.{ScriptFlag, ScriptFlagUtil}
-import org.bitcoins.core.script.result.{
-  ScriptError,
-  ScriptErrorPubKeyType,
-  ScriptErrorWitnessPubKeyType
-}
-import org.bitcoins.core.script.{
-  ExecutionInProgressScriptProgram,
-  ScriptProgram
-}
+import org.bitcoins.core.script.result.{ScriptError, ScriptErrorPubKeyType, ScriptErrorWitnessPubKeyType}
+import org.bitcoins.core.script.{ExecutionInProgressScriptProgram, ScriptProgram}
+import org.bitcoins.core.serializers.script.ScriptParser
 import scodec.bits.ByteVector
 
 import scala.annotation.tailrec
+import scala.util.Try
 
 /**
   * Created by chris on 3/2/16.
@@ -146,7 +132,7 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
   def isPushOnly(script: Seq[ScriptToken]): Boolean = {
     @tailrec
     def loop(tokens: Seq[ScriptToken]): Boolean = tokens match {
-      case h :: t =>
+      case h +: t =>
         h match {
           case scriptOp: ScriptOperation =>
             if (scriptOp.opCode < OP_16.opCode) {
@@ -436,7 +422,7 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
         scriptTokens: Seq[ScriptToken]): Seq[ScriptToken] = {
       remainingSigs match {
         case Nil => scriptTokens
-        case h :: t =>
+        case h +: t =>
           val newScriptTokens = removeSignatureFromScript(h, scriptTokens)
           loop(t, newScriptTokens)
       }
@@ -521,6 +507,15 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
     }
   }
 
+  def parseScript[T <: Script](bytes: ByteVector, f: Vector[ScriptToken] => T): T = {
+    val compactSizeUInt = CompactSizeUInt.parseCompactSizeUInt(bytes)
+    //TODO: Figure out a better way to do this, we can theoretically have numbers larger than Int.MaxValue,
+    //but scala collections don't allow you to use 'slice' with longs
+    val len = Try(compactSizeUInt.num.toInt).getOrElse(Int.MaxValue)
+    val scriptPubKeyBytes = bytes.slice(compactSizeUInt.size.toInt, len + compactSizeUInt.size.toInt)
+    val script: List[ScriptToken] = ScriptParser.fromBytes(scriptPubKeyBytes)
+    f(script.toVector)
+  }
 }
 
 object BitcoinScriptUtil extends BitcoinScriptUtil
