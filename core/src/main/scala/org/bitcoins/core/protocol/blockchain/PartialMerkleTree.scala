@@ -10,15 +10,16 @@ import scala.math._
 
 /**
   * Created by chris on 8/7/16.
-  * Represents a subset of known txids inside of a [[Block]]
+  * Represents a subset of known txids inside of a [[org.bitcoins.core.protocol.blockchain.Block Block]]
   * in a way that allows recovery of the txids & merkle root
   * without having to store them all explicitly.
-  * See BIP37 for more details
-  * [[https://github.com/bitcoin/bips/blob/master/bip-0037.mediawiki#partial-merkle-branch-format]]
+  * See
+  * [[https://github.com/bitcoin/bips/blob/master/bip-0037.mediawiki#partial-merkle-branch-format BIP37]]
+  * for more details
   *
   * Encoding procedure:
-  * [[https://bitcoin.org/en/developer-reference#creating-a-merkleblock-message]]
-  * [[https://github.com/bitcoin/bitcoin/blob/b7b48c8bbdf7a90861610b035d8b0a247ef78c45/src/merkleblock.cpp#L78]]
+  * [[https://bitcoin.org/en/developer-reference#creating-a-merkleblock-message "Bitcoin.org: creating a merkleblock message"]]
+  * [[https://github.com/bitcoin/bitcoin/blob/b7b48c8bbdf7a90861610b035d8b0a247ef78c45/src/merkleblock.cpp#L78 "Bitcoin Core: merkleblock.cpp"]]
   * Traverse the tree in depth first order, storing a bit for each traversal.
   * This bit signifies if the node is a parent of at least one
   * matched leaf txid (or a matched leaf txid) itself.
@@ -27,8 +28,8 @@ import scala.math._
   * Otherwise no hash is stored, but we recurse all of this node's child branches.
   *
   * Decoding procedure:
-  * [[https://bitcoin.org/en/developer-reference#parsing-a-merkleblock-message]]
-  * [[https://github.com/bitcoin/bitcoin/blob/b7b48c8bbdf7a90861610b035d8b0a247ef78c45/src/merkleblock.cpp#L96]]
+  * [[https://bitcoin.org/en/developer-reference#parsing-a-merkleblock-message "Bitcoin.org: parsing a merkleblock message"]]
+  * [[https://github.com/bitcoin/bitcoin/blob/b7b48c8bbdf7a90861610b035d8b0a247ef78c45/src/merkleblock.cpp#L96 "Bitcoin Core: merkleblock.cpp"]]
   * The same depth first decoding procedure is performed, but we consume the
   * bits and hashes that we used during encoding
   */
@@ -37,10 +38,10 @@ sealed trait PartialMerkleTree extends BitcoinSLogger {
   /** The total number of transactions in this block */
   def transactionCount: UInt32
 
-  /** The actual scala integer representation for [[transactionCount]] */
+  /** The actual scala integer representation for `transactionCount` */
   private def numTransactions: Int = transactionCount.toInt
 
-  /** Maximum height of the [[tree]] */
+  /** Maximum height of the `tree` */
   private def maxHeight = PartialMerkleTree.calcMaxHeight(numTransactions)
 
   /** The actual tree used to represent this partial merkle tree*/
@@ -154,8 +155,10 @@ object PartialMerkleTree {
 
   /**
     * @param txMatches indicates whether the given txid matches the bloom filter, the full merkle branch needs
-    *                  to be included inside of the [[PartialMerkleTree]]
-    * @return the binary tree that represents the partial merkle tree, the bits needed to reconstruct this partial merkle tree, and the hashes needed to be inserted
+    *                  to be included inside of the
+    *                  [[org.bitcoins.core.protocol.blockchain.PartialMerkleTree PartialMerkleTree]]
+    * @return the binary tree that represents the partial merkle tree, the bits needed to reconstruct this partial
+    *         merkle tree, and the hashes needed to be inserted
     *         according to the flags inside of bits
     */
   private def build(txMatches: Seq[(Boolean, DoubleSha256Digest)]): (
@@ -164,7 +167,7 @@ object PartialMerkleTree {
     val maxHeight = calcMaxHeight(txMatches.size)
 
     /**
-      * This loops through our merkle tree building [[bits]] so we can instruct another node how to create the partial merkle tree
+      * This loops through our merkle tree building `bits` so we can instruct another node how to create the partial merkle tree
       * [[https://github.com/bitcoin/bitcoin/blob/b7b48c8bbdf7a90861610b035d8b0a247ef78c45/src/merkleblock.cpp#L78]]
       * @param bits the accumulator for bits indicating how to reconsctruct the partial merkle tree
       * @param hashes the relevant hashes used with bits to reconstruct the merkle tree
@@ -261,13 +264,13 @@ object PartialMerkleTree {
   }
 
   /**
-    * This constructor creates a partial from this given [[BinaryTree]]
-    * You probably don't want to use this constructor, unless you manually constructed [[bits]] and the [[tree]]
+    * This constructor creates a partial from this given [[org.bitcoins.core.util.BinaryTree BinaryTree]]
+    * You probably don't want to use this constructor, unless you manually constructed `bits` and the `tree`
     * by hand
     * @param tree the partial merkle tree -- note this is NOT the full merkle tree
     * @param transactionCount the number of transactions there initially was in the full merkle tree
     * @param bits the path to the matches in the partial merkle tree
-    * @param hashes the hashes used to reconstruct the binary tree according to [[bits]]
+    * @param hashes the hashes used to reconstruct the binary tree according to `bits`
     */
   def apply(
       tree: BinaryTree[DoubleSha256Digest],

@@ -3,7 +3,10 @@ package org.bitcoins.core.gen.ln
 import org.bitcoins.core.gen.{CryptoGenerators, NumberGenerator}
 import org.bitcoins.core.protocol.ln.ShortChannelId
 import org.bitcoins.core.protocol.ln.currency.MilliSatoshis
-import org.bitcoins.core.protocol.ln.fee.{FeeBaseMSat, FeeProportionalMillionths}
+import org.bitcoins.core.protocol.ln.fee.{
+  FeeBaseMSat,
+  FeeProportionalMillionths
+}
 import org.bitcoins.core.protocol.ln.routing.LnRoute
 import org.scalacheck.Gen
 

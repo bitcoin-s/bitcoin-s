@@ -10,7 +10,8 @@ import scala.util.{Failure, Success, Try}
 
 /**
   * Created by chris on 4/6/16.
-  * Represents a transaction whose input is being checked against the spending conditions of a [[ScriptPubKey]]
+  * Represents a transaction whose input is being checked against the spending conditions of a
+  * [[org.bitcoins.core.protocol.script.ScriptPubKey ScriptPubKey]]
   */
 sealed abstract class TxSigComponent {
 
@@ -31,7 +32,7 @@ sealed abstract class TxSigComponent {
   /** The scriptPubKey for which the input is being checked against */
   def scriptPubKey: ScriptPubKey = output.scriptPubKey
 
-  /** The amount of [[CurrencyUnit]] we are spending in this TxSigComponent */
+  /** The amount of [[org.bitcoins.core.currency.CurrencyUnit CurrencyUnit]] we are spending in this TxSigComponent */
   def amount: CurrencyUnit = output.value
 
   /** The flags that are needed to verify if the signature is correct */
@@ -42,19 +43,24 @@ sealed abstract class TxSigComponent {
 }
 
 /**
-  * The [[TxSigComponent]] used to evaluate the the original Satoshi transaction digest algorithm.
-  * Basically this is every spk that is not a [[WitnessScriptPubKey]] EXCEPT in the case of a
-  * P2SH(witness script) [[ScriptPubKey]]
+  * The [[org.bitcoins.core.crypto.TxSigComponent TxSigComponent]]
+  * used to evaluate the the original Satoshi transaction digest algorithm.
+  * Basically this is every spk that is not a
+  * [[org.bitcoins.core.protocol.script.WitnessScriptPubKey WitnessScriptPubKey]] EXCEPT in the case of a
+  * P2SH(witness script) [[org.bitcoins.core.protocol.script.ScriptPubKey ScriptPubKey]]
   */
 sealed abstract class BaseTxSigComponent extends TxSigComponent {
   override def sigVersion = SigVersionBase
 }
 
 /**
-  * The [[TxSigComponent]] used to represent all the components necessarily for BIP143
-  * [[https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki]]
-  * Examples of these [[ScriptPubKey]]'s are [[P2WPKHWitnessSPKV0]],
-  * [[P2WSHWitnessSPKV0]], and P2SH(witness script)
+  * The [[org.bitcoins.core.crypto.TxSigComponent TxSigComponent]]
+  * used to represent all the components necessarily for
+  * [[https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki BIP143]].
+  * Examples of these [[org.bitcoins.core.protocol.script.ScriptPubKey ScriptPubKey]]'s
+  * are [[org.bitcoins.core.protocol.script.P2WPKHWitnessV0 P2WPKHWitnessSPKV0]],
+  * [[org.bitcoins.core.protocol.script.P2WSHWitnessSPKV0  P2WSHWitnessSPKV0]],
+  * and P2SH(witness script)
   */
 sealed abstract class WitnessTxSigComponent extends TxSigComponent {
 
@@ -67,7 +73,9 @@ sealed abstract class WitnessTxSigComponent extends TxSigComponent {
   override def sigVersion = SigVersionWitnessV0
 }
 
-/** This represents checking the [[WitnessTransaction]] against a [[P2WPKHWitnessSPKV0]] or a [[P2WSHWitnessSPKV0]] */
+/** This represents checking the [[org.bitcoins.core.protocol.transaction.WitnessTransaction WitnessTransaction]]
+  * against a [[org.bitcoins.core.protocol.script.P2WPKHWitnessSPKV0 P2WPKHWitnessSPKV0]] or a
+  * [[org.bitcoins.core.protocol.script.P2WSHWitnessSPKV0 P2WSHWitnessSPKV0]] */
 sealed abstract class WitnessTxSigComponentRaw extends WitnessTxSigComponent {
   override def scriptPubKey: WitnessScriptPubKey =
     output.scriptPubKey.asInstanceOf[WitnessScriptPubKey]
@@ -77,7 +85,8 @@ sealed abstract class WitnessTxSigComponentRaw extends WitnessTxSigComponent {
   }
 }
 
-/** This represents checking the [[WitnessTransaction]] against a P2SH(P2WSH) or P2SH(P2WPKH) scriptPubKey */
+/** This represents checking the [[org.bitcoins.core.protocol.transaction.WitnessTransaction WitnessTransaction]]
+  * against a P2SH(P2WSH) or P2SH(P2WPKH) scriptPubKey */
 sealed abstract class WitnessTxSigComponentP2SH extends WitnessTxSigComponent {
   override def scriptPubKey: P2SHScriptPubKey =
     output.scriptPubKey.asInstanceOf[P2SHScriptPubKey]
@@ -97,8 +106,8 @@ sealed abstract class WitnessTxSigComponentP2SH extends WitnessTxSigComponent {
       case x @ (_: P2PKScriptPubKey | _: P2PKHScriptPubKey |
           _: MultiSignatureScriptPubKey | _: P2SHScriptPubKey |
           _: CSVScriptPubKey | _: CLTVScriptPubKey |
-          _: NonStandardScriptPubKey |
-          _: WitnessCommitment | EmptyScriptPubKey) =>
+          _: NonStandardScriptPubKey | _: WitnessCommitment |
+          EmptyScriptPubKey) =>
         Failure(new IllegalArgumentException(
           "Must have a witness scriptPubKey as redeemScript for P2SHScriptPubKey in WitnessTxSigComponentP2SH, got: " + x))
 
@@ -114,10 +123,14 @@ sealed abstract class WitnessTxSigComponentP2SH extends WitnessTxSigComponent {
 }
 
 /**
-  * This represents a 'rebuilt' [[ScriptPubKey]] that was constructed from [[WitnessScriptPubKey]]
-  * After the [[ScriptPubKey]] is rebuilt, we need to use that rebuilt scriptpubkey to evaluate the [[ScriptSignature]]
-  * See BIP141 for more info on rebuilding P2WSH and P2WPKH scriptpubkeys
-  * [[https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki#witness-program]]
+  * This represents a 'rebuilt' [[org.bitcoins.core.protocol.script.ScriptPubKey ScriptPubKey]]
+  * that was constructed from [[org.bitcoins.core.protocol.script.WitnessScriptPubKey WitnessScriptPubKey]]
+  * After the
+  * [[org.bitcoins.core.protocol.script.ScriptPubKey ScriptPubKey]] is rebuilt, we need to use that rebuilt
+  * scriptpubkey to evaluate the [[org.bitcoins.core.protocol.script.ScriptSignature ScriptSignature]]
+  * See
+  * [[https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki#witness-program BIP141]]
+  * for more info on rebuilding P2WSH and P2WPKH scriptpubkeys
   */
 sealed abstract class WitnessTxSigComponentRebuilt extends TxSigComponent {
   override def transaction: WitnessTransaction
@@ -194,8 +207,7 @@ object WitnessTxSigComponentRaw {
       case x @ (_: P2PKScriptPubKey | _: P2PKHScriptPubKey |
           _: MultiSignatureScriptPubKey | _: P2SHScriptPubKey |
           _: LockTimeScriptPubKey | _: NonStandardScriptPubKey |
-          _: WitnessCommitment |
-          EmptyScriptPubKey) =>
+          _: WitnessCommitment | EmptyScriptPubKey) =>
         throw new IllegalArgumentException(
           s"Cannot create a WitnessTxSigComponentRaw with a spk of $x")
     }
@@ -222,8 +234,8 @@ object WitnessTxSigComponentP2SH {
         WitnessTxSigComponentP2SHImpl(transaction, inputIndex, output, flags)
       case x @ (_: P2PKScriptPubKey | _: P2PKHScriptPubKey |
           _: MultiSignatureScriptPubKey | _: LockTimeScriptPubKey |
-          _: NonStandardScriptPubKey |
-          _: WitnessCommitment | _: WitnessScriptPubKey | EmptyScriptPubKey) =>
+          _: NonStandardScriptPubKey | _: WitnessCommitment |
+          _: WitnessScriptPubKey | EmptyScriptPubKey) =>
         throw new IllegalArgumentException(
           s"Cannot create a WitnessTxSigComponentP2SH with a spk of $x")
     }

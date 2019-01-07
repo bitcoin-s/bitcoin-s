@@ -1,10 +1,8 @@
-
 package org.bitcoins.core.protocol.script
 
-import org.bitcoins.core.protocol.{ CompactSizeUInt, NetworkElement }
+import org.bitcoins.core.protocol.{CompactSizeUInt, NetworkElement}
 import org.bitcoins.core.script.constant.ScriptToken
 import scodec.bits.ByteVector
-
 
 /** This is meant to be a super type for
   * scripts in the bitcoin protocol. This gives us

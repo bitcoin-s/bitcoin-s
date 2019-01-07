@@ -399,8 +399,9 @@ sealed abstract class MultiSigSigner extends BitcoinSigner {
                       Future.successful((m, lock))
                     case _: P2PKScriptPubKey | _: P2PKHScriptPubKey |
                         _: P2SHScriptPubKey | _: P2WPKHWitnessSPKV0 |
-                        _: P2WSHWitnessSPKV0 | _: WitnessCommitment| _: CSVScriptPubKey |
-                        _: CLTVScriptPubKey | _: NonStandardScriptPubKey |
+                        _: P2WSHWitnessSPKV0 | _: WitnessCommitment |
+                        _: CSVScriptPubKey | _: CLTVScriptPubKey |
+                        _: NonStandardScriptPubKey |
                         _: UnassignedWitnessScriptPubKey |
                         _: P2WPKHWitnessSPKV0 | EmptyScriptPubKey =>
                       Future.fromTry(TxBuilderError.WrongSigner)
@@ -408,9 +409,9 @@ sealed abstract class MultiSigSigner extends BitcoinSigner {
                 case m: MultiSignatureScriptPubKey => Future.successful((m, m))
                 case _: P2PKScriptPubKey | _: P2PKHScriptPubKey |
                     _: P2SHScriptPubKey | _: P2WPKHWitnessSPKV0 |
-                    _: P2WSHWitnessSPKV0 | _: WitnessCommitment| _: NonStandardScriptPubKey |
-                    _: P2WPKHWitnessSPKV0 | _: UnassignedWitnessScriptPubKey |
-                    EmptyScriptPubKey =>
+                    _: P2WSHWitnessSPKV0 | _: WitnessCommitment |
+                    _: NonStandardScriptPubKey | _: P2WPKHWitnessSPKV0 |
+                    _: UnassignedWitnessScriptPubKey | EmptyScriptPubKey =>
                   Future.fromTry(TxBuilderError.WrongSigner)
               }
           }
@@ -485,8 +486,7 @@ sealed abstract class MultiSigSigner extends BitcoinSigner {
               _: P2WPKHWitnessSPKV0 | _: P2WSHWitnessSPKV0 |
               _: CLTVScriptPubKey | _: CSVScriptPubKey |
               _: UnassignedWitnessScriptPubKey | _: NonStandardScriptPubKey |
-              _: WitnessCommitment |
-              EmptyScriptPubKey =>
+              _: WitnessCommitment | EmptyScriptPubKey =>
             Future.fromTry(TxBuilderError.WrongSigner)
         }
         multiSigSPK.flatMap { mSPK =>
@@ -528,7 +528,8 @@ sealed abstract class MultiSigSigner extends BitcoinSigner {
         }
       case _: P2PKScriptPubKey | _: P2PKHScriptPubKey | _: P2SHScriptPubKey |
           _: P2WPKHWitnessSPKV0 | _: NonStandardScriptPubKey |
-          _: WitnessCommitment | _: UnassignedWitnessScriptPubKey | EmptyScriptPubKey =>
+          _: WitnessCommitment | _: UnassignedWitnessScriptPubKey |
+          EmptyScriptPubKey =>
         Future.fromTry(TxBuilderError.WrongSigner)
     }
     signed

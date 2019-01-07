@@ -9,10 +9,11 @@ import org.bitcoins.core.wallet.utxo.{BitcoinUTXOSpendingInfo, UTXOSpendingInfo}
 
 /**
   * This meant to represent the class used to 'fund' an
-  * unsigned [[Transaction]].
-  * This is useful for when we have multiple [[org.bitcoins.core.config.NetworkParameters]]
+  * unsigned [[org.bitcoins.core.protocol.transaction.Transaction Transaction]].
+  * This is useful for when we have multiple [[org.bitcoins.core.config.NetworkParameters NetworkParameters]]
   * that each have their own transaction type. I.e. we should only be able to have
-  * BitcoinTransactions paired with [[BitcoinUTXOSpendingInfo]], the same would apply for litecoin etc.
+  * BitcoinTransactions paired with [[org.bitcoins.core.wallet.utxo.BitcoinUTXOSpendingInfo BitcoinUTXOSpendingInfo]],
+  * the same would apply for litecoin etc.
   */
 sealed abstract class FundingInfo {
 

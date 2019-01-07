@@ -96,8 +96,7 @@ sealed abstract class ScriptInterpreter {
             case _: P2PKHScriptPubKey | _: P2PKScriptPubKey |
                 _: MultiSignatureScriptPubKey | _: CSVScriptPubKey |
                 _: CLTVScriptPubKey | _: NonStandardScriptPubKey |
-                _: WitnessCommitment |
-                EmptyScriptPubKey =>
+                _: WitnessCommitment | EmptyScriptPubKey =>
               scriptPubKeyExecutedProgram
           }
         }
