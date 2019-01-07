@@ -30,7 +30,8 @@ import scala.util.{Failure, Success, Try}
   * unspent transaction outputs.
   *
   * The most important method in this class is the 'sign' method. This will start the signing procedure for a
-  * transaction and then return either a signed [[Transaction]] or a [[TxBuilderError]]
+  * transaction and then return either a signed [[org.bitcoins.core.protocol.transaction.Transaction Transaction]]
+  * or a [[org.bitcoins.core.wallet.builder.TxBuilderError TxBuilderError]]
   *
   * For usage examples see TxBuilderSpec
   */
@@ -39,7 +40,7 @@ sealed abstract class TxBuilder {
   /** The outputs which we are spending bitcoins to */
   def destinations: Seq[TransactionOutput]
 
-  /** The [[ScriptPubKey]]'s we are spending bitcoins to */
+  /** The [[org.bitcoins.core.protocol.script.ScriptPubKey ScriptPubKey]]'s we are spending bitcoins to */
   def destinationSPKs: Seq[ScriptPubKey] = destinations.map(_.scriptPubKey)
 
   /** A sequence of the amounts we are spending in this transaction */
@@ -57,30 +58,35 @@ sealed abstract class TxBuilder {
   def largestFee: CurrencyUnit = creditingAmount - destinationAmount
 
   /**
-    * The list of [[org.bitcoins.core.protocol.transaction.TransactionOutPoint]]s we are attempting to spend
+    * The list of [[org.bitcoins.core.protocol.transaction.TransactionOutPoint TransactionOutPoint]]s we are
+    * attempting to spend
     * and the signers, redeem scripts, and script witnesses that might be needed to spend this outpoint.
-    * This information is dependent on what the [[ScriptPubKey]] type is we are spending. For isntance, if we are spending a
-    * regular [[P2PKHScriptPubKey]], we do not need a redeem script or script witness.
+    * This information is dependent on what the [[org.bitcoins.core.protocol.script.ScriptPubKey ScriptPubKey]]
+    * type is we are spending. For isntance, if we are spending a
+    * regular [[org.bitcoins.core.protocol.script.P2PKHScriptPubKey P2PKHScriptPubKey]], we do not need a
+    * redeem script or script witness.
     *
-    * If we are spending a [[P2WPKHWitnessSPKV0]] we do not need a redeem script, but we need a [[ScriptWitness]]
+    * If we are spending a [[org.bitcoins.core.protocol.script.P2WPKHWitnessSPKV0 P2WPKHWitnessSPKV0]] we do not
+    * need a redeem script, but we need a [[org.bitcoins.core.protocol.script.ScriptWitness ScriptWitness]]
     */
   def utxoMap: TxBuilder.UTXOMap
 
   def utxos: Seq[UTXOSpendingInfo] = utxoMap.values.toSeq
 
-  /** This represents the rate, in [[FeeUnit]], we should pay for this transaction */
+  /** This represents the rate, in [[org.bitcoins.core.wallet.fee.FeeUnit FeeUnit]], we
+    * should pay for this transaction */
   def feeRate: FeeUnit
 
   /**
     * This is where all the money that is NOT sent to destination outputs is spent too.
     * If we don't specify a change output, a large miner fee may be paid as more than likely
-    * the difference between [[creditingAmount]] and [[destinationAmount]] is not a market rate miner fee
+    * the difference between  `creditingAmount` and `destinationAmount` is not a market rate miner fee
     */
   def changeSPK: ScriptPubKey
 
   /**
-    * The network that this [[org.bitcoins.core.wallet.builder.TxBuilder]] is signing a transaction for.
-    * An example could be [[org.bitcoins.core.config.MainNet]]
+    * The network that this [[org.bitcoins.core.wallet.builder.TxBuilder TxBuilder]] is signing a transaction for.
+    * An example could be [[org.bitcoins.core.config.MainNet MainNet]]
     */
   def network: NetworkParameters
 
@@ -312,8 +318,7 @@ sealed abstract class BitcoinTxBuilder extends TxBuilder {
               Future.fromTry(TxBuilderError.NestedWitnessSPK)
             case _: CSVScriptPubKey | _: CLTVScriptPubKey |
                 _: NonStandardScriptPubKey | _: WitnessCommitment |
-                EmptyScriptPubKey |
-                _: UnassignedWitnessScriptPubKey =>
+                EmptyScriptPubKey | _: UnassignedWitnessScriptPubKey =>
               Future.fromTry(TxBuilderError.NoSigner)
           }
         case p2sh: P2SHScriptPubKey =>

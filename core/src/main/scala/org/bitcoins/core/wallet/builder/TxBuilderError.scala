@@ -3,7 +3,7 @@ package org.bitcoins.core.wallet.builder
 import scala.util.Failure
 
 /**
-  * Represents an error that can be returned by the [[org.bitcoins.core.wallet.builder.TxBuilder]]
+  * Represents an error that can be returned by the [[org.bitcoins.core.wallet.builder.TxBuilder TxBuilder]]
   * if it failed to sign a set of utxos
   */
 sealed abstract class TxBuilderError
@@ -20,7 +20,7 @@ object TxBuilderError {
       "This tx fails the invariants function you passed in"))
 
   /**
-    * Means that we gave too many [[org.bitcoins.core.wallet.signer.Signer.Sign]] for the TxBuilder
+    * Means that we gave too many [[org.bitcoins.core.crypto.Sign Sign]] for the TxBuilder
     * to use during the signing process for a utxo.
     * An example of this occurring is if we gave 2 private keys to sign a p2pkh spk.
     * A p2pkh only requires one private key to sign the utxo.
@@ -30,29 +30,30 @@ object TxBuilderError {
       "You passed in too many signers for this scriptPubKey type"))
 
   /**
-    * Means that you are using the wrong [[org.bitcoins.core.wallet.signer.Signer]] to
-    * sign the given [[org.bitcoins.core.protocol.script.ScriptPubKey]]
+    * Means that you are using the wrong [[org.bitcoins.core.wallet.signer.Signer Signer]] to
+    * sign the given [[org.bitcoins.core.protocol.script.ScriptPubKey ScriptPubKey]]
     */
   val WrongSigner = Failure(new IllegalArgumentException(
     "You did not pass in the write Signer to sign the given transaction, you probably gave the wrong identifier"))
 
   /**
-    * Means that the [[org.bitcoins.core.protocol.script.ScriptWitnessV0]] you passed as an argument does
-    * not hash to the commitment inside of [[org.bitcoins.core.protocol.script.P2WSHWitnessSPKV0]]
+    * Means that the [[org.bitcoins.core.protocol.script.ScriptWitnessV0 ScriptWitnessV0]] you passed as an argument does
+    * not hash to the commitment inside of [[org.bitcoins.core.protocol.script.P2WSHWitnessSPKV0 P2WSHWitnessSPKV0]]
     */
   val WrongWitness = Failure(new IllegalArgumentException(
     "You passed in the wrong ScriptWitness type to sign the given WitnessScriptPubKey"))
 
   /**
     * Means that the redeem script you passed as an argument does not hash to the commitment
-    * inside of the [[org.bitcoins.core.protocol.script.P2SHScriptPubKey]]
+    * inside of the [[org.bitcoins.core.protocol.script.P2SHScriptPubKey P2SHScriptPubKey]]
     */
   val WrongRedeemScript = Failure(new IllegalArgumentException(
     "Means that the redeem script you passed as an argument does not hash to the commitment"))
 
   /**
-    * Means that you passed the wrong public key for a [[org.bitcoins.core.protocol.script.P2PKHScriptPubKey]] or a
-    * [[org.bitcoins.core.protocol.script.P2WPKHWitnessSPKV0]] that you are trying to spend
+    * Means that you passed the wrong public key for a
+    * [[org.bitcoins.core.protocol.script.P2PKHScriptPubKey P2PKHScriptPubKey]] or a
+    * [[org.bitcoins.core.protocol.script.P2WPKHWitnessSPKV0 P2WPKHWitnessSPKV0]] that you are trying to spend
     */
   //case object WrongPublicKey extends TxBuilderError
   val WrongPublicKey = Failure(
@@ -60,7 +61,8 @@ object TxBuilderError {
       "You passed in the wrong public key to sign a P2PKHScriptPubKey"))
 
   /**
-    * Can occurr when we are trying to sign a [[org.bitcoins.core.protocol.script.P2SHScriptPubKey]] but
+    * Can occurr when we are trying to sign a
+    * [[org.bitcoins.core.protocol.script.P2SHScriptPubKey P2SHScriptPubKey]] but
     * we do not have a redeem script for that p2sh spk.
     */
   //case object NoRedeemScript extends TxBuilderError
@@ -69,30 +71,38 @@ object TxBuilderError {
       "We are missing a redeem script to sign a transaction"))
 
   /**
-    * Can occurr when we are trying to sign a [[org.bitcoins.core.protocol.script.WitnessScriptPubKey]]
-    * but we do not have a [[org.bitcoins.core.protocol.script.ScriptWitness]] for that witness spk
+    * Can occurr when we are trying to sign a
+    * [[org.bitcoins.core.protocol.script.WitnessScriptPubKey WitnessScriptPubKey]]
+    * but we do not have a [[org.bitcoins.core.protocol.script.ScriptWitness ScriptWitness]] for that witness spk
     */
   //case object NoWitness extends TxBuilderError
   val NoWitness = Failure(
     new IllegalArgumentException("We are missing a witness redeem script"))
 
-  /** We expected a [[org.bitcoins.core.protocol.script.WitnessScriptPubKeyV0]], but got a non witness spk type */
+  /** We expected a
+    * [[org.bitcoins.core.protocol.script.WitnessScriptPubKeyV0 WitnessScriptPubKeyV0]],
+    * but got a non witness spk type */
   val NonWitnessSPK = Failure(
     new IllegalArgumentException(
       "We expected a witness spk, but got a non witness spk"))
 
-  /** We cannot have a [[org.bitcoins.core.protocol.script.WitnessScriptPubKey]] nested inside of another [[org.bitcoins.core.protocol.script.ScriptPubKey]] */
+  /** We cannot have a
+    * [[org.bitcoins.core.protocol.script.WitnessScriptPubKey WitnessScriptPubKey]] nested inside of another
+    * [[org.bitcoins.core.protocol.script.ScriptPubKey ScriptPubKey]] */
   //case object NestedWitnessSPK extends TxBuilderError
   val NestedWitnessSPK = Failure(
     new IllegalArgumentException("We cannot nested witness SPKs"))
 
-  /** We cannot have a [[org.bitcoins.core.protocol.script.P2SHScriptPubKey]] nested inside of another spk   */
+  /** We cannot have a [[org.bitcoins.core.protocol.script.P2SHScriptPubKey P2SHScriptPubKey]]
+    * nested inside of another spk   */
   val NestedP2SHSPK = Failure(
     new IllegalArgumentException("We cannot sign nested P2SHScriptPubKeys"))
 
   /**
-    * Means that there is no signer defined for the given [[org.bitcoins.core.protocol.script.ScriptPubKey]] type.
-    * An example of a spk with no signer that is defined is [[org.bitcoins.core.protocol.script.WitnessCommitment]]
+    * Means that there is no signer defined for the given
+    * [[org.bitcoins.core.protocol.script.ScriptPubKey ScriptPubKey]] type.
+    * An example of a spk with no signer that is defined is
+    * [[org.bitcoins.core.protocol.script.WitnessCommitment WitnessCommitment]]
     */
   val NoSigner = Failure(
     new IllegalArgumentException(
@@ -106,7 +116,9 @@ object TxBuilderError {
   val FeeToLarge = Failure(new IllegalArgumentException("Fee too large"))
 
   /**
-    * Means that the [[TxBuilder.destinations]] outputs you specified when creating the [[TxBuilder]] are NOT
+    * Means that the
+    * [[org.bitcoins.core.wallet.builder.TxBuilder.destinations TxBuilder.destinations]]
+    * outputs you specified when creating the [[org.bitcoins.core.wallet.builder.TxBuilder TxBuilder]] are NOT
     * all included in the final signed tx
     */
   val MissingDestinationOutput = Failure(
@@ -115,7 +127,7 @@ object TxBuilderError {
 
   /**
     * Means that the script we are signing for requires a public key, but we did not pass one in
-    * as a parameter inside of [[org.bitcoins.core.crypto.Sign]]
+    * as a parameter inside of [[org.bitcoins.core.crypto.Sign Sign]]
     */
   val MissingPublicKey = Failure(
     new IllegalArgumentException(
@@ -127,7 +139,9 @@ object TxBuilderError {
 
   /**
     * Means that the signed version of this transaction has MORE outputs than what was specified
-    * when building the [[TxBuilder]]. [[TxBuilder.destinations]] && [[TxBuilder.changeOutput]] should
+    * when building the [[org.bitcoins.core.wallet.builder.TxBuilder TxBuilder]].
+    * [[org.bitcoins.core.wallet.builder.TxBuilder.destinations TxBuilder.destinations]] &&
+    * [[org.bitcoins.core.wallet.builder.TxBuilder.changeSPK TxBuilder.changeSPK]] should
     * be the only outputs in the signedTx
     */
   val ExtraOutputsAdded = Failure(new IllegalArgumentException(
@@ -135,7 +149,9 @@ object TxBuilderError {
 
   /**
     * Means that the transaction spends outpoints that were not given when creating
-    * the [[TxBuilder]], aka, we should only spend outpoints in [[TxBuilder.outPoints]]
+    * the [[org.bitcoins.core.wallet.builder.TxBuilder TxBuilder]], aka, we should
+    * only spend outpoints in
+    * [[org.bitcoins.core.wallet.builder.TxBuilder.outPoints TxBuilder.outPoints]]
     */
   val ExtraOutPoints = Failure(new IllegalArgumentException(
     "Means that the transaction spends outpoints that were not given when creating the TxBuilder"))
@@ -144,17 +160,20 @@ object TxBuilderError {
   val MintsMoney = Failure(new IllegalArgumentException(
     "This transaction creates spends more money than it was funded by the given utxos"))
 
-  /** Means that the fee was too low for [[TxBuilder.feeRate]] */
+  /** Means that the fee was too low for
+    * [[org.bitcoins.core.wallet.builder.TxBuilder.feeRate TxBuilder.feeRate]] */
   val LowFee = Failure(
     new IllegalArgumentException("Means that the fee was too low"))
 
-  /** Means tha this transaction pays too high of a fee for [[TxBuilder.feeRate]] */
+  /** Means tha this transaction pays too high of a fee for
+    * [[org.bitcoins.core.wallet.builder.TxBuilder.feeRate TxBuilder.feeRate]] */
 
   val HighFee = Failure(
     new IllegalArgumentException("Means that the fee was too high"))
 
   /**
-    * Indicates we are spending multiple [[org.bitcoins.core.protocol.script.CLTVScriptPubKey]],
+    * Indicates we are spending multiple
+    * [[org.bitcoins.core.protocol.script.CLTVScriptPubKey CLTVScriptPubKey]],
     * and that one of those spk's outputs are locked by block height, while the other is locked by
     * a time stamp. Since there is only one locktime field on a transaction, we cannot satisfy both of these
     * locktimes simultaneously.
@@ -162,7 +181,8 @@ object TxBuilderError {
   val IncompatibleLockTimes = Failure(new IllegalArgumentException(
     "Means you tried to spend an output that requires a lock by blockheight, and another output that requires a lock by timestamp"))
 
-  /** Means we have a output on this transaction below [[org.bitcoins.core.policy.Policy.dustThreshold]] */
+  /** Means we have a output on this transaction below
+    * [[org.bitcoins.core.policy.Policy.dustThreshold Policy.dustThreshold]] */
   val OutputBelowDustThreshold = Failure(new IllegalArgumentException(
     "The p2p network discourages outputs below the dustThreshold, this tx won't be relayed"))
 
