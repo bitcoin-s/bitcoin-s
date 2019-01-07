@@ -22,17 +22,16 @@ class TransactionWitnessSpec extends FlatSpec with MustMatchers {
   it must "be able to resize a witness to the given index" in {
     val empty = EmptyWitness
     val pubKey = ECPrivateKey.freshPrivateKey.publicKey
-    val p2pkh = P2PKHScriptSignature(EmptyDigitalSignature,pubKey)
+    val p2pkh = P2PKHScriptSignature(EmptyDigitalSignature, pubKey)
     val scriptWit = P2WPKHWitnessV0.fromP2PKHScriptSig(p2pkh)
-    val updated = empty.updated(2,scriptWit)
+    val updated = empty.updated(2, scriptWit)
 
-    updated.witnesses.length must be (3)
+    updated.witnesses.length must be(3)
   }
-
 
   it must "fail to update a negative index witness" in {
     intercept[IndexOutOfBoundsException] {
-      EmptyWitness.updated(-1,EmptyScriptWitness)
+      EmptyWitness.updated(-1, EmptyScriptWitness)
     }
   }
 
