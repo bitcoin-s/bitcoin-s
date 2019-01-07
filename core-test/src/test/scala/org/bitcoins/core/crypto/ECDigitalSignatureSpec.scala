@@ -36,4 +36,11 @@ class ECDigitalSignatureSpec extends Properties("ECDigitalSignatureSpec") {
         sig1.r != sig2.r
     }
   }
+
+  property("must have serialization symmetry with r,s") = {
+    Prop.forAll(CryptoGenerators.digitalSignature) {
+      case sig: ECDigitalSignature =>
+        ECDigitalSignature.fromRS(sig.r, sig.s) == sig
+    }
+  }
 }

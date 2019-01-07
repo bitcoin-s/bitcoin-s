@@ -14,7 +14,7 @@ import scodec.bits.ByteVector
   * Created by chris on 1/14/16.
   * Utility cryptographic functions
   */
-trait CryptoUtil {
+trait CryptoUtil extends BitcoinSLogger {
 
   /** Does the following computation: RIPEMD160(SHA256(hex)).*/
   def sha256Hash160(hex: String): Sha256Hash160Digest =
@@ -109,11 +109,14 @@ trait CryptoUtil {
   def recoverPublicKey(
       signature: ECDigitalSignature,
       message: ByteVector): (ECPublicKey, ECPublicKey) = {
+
     val curve = CryptoParams.curve
     val (r, s) = (signature.r.bigInteger, signature.s.bigInteger)
+
     val m = new BigInteger(1, message.toArray)
 
     val (p1, p2) = recoverPoint(r)
+
     val Q1 = (p1
       .multiply(s)
       .subtract(curve.getG.multiply(m)))
@@ -122,7 +125,10 @@ trait CryptoUtil {
       .multiply(s)
       .subtract(curve.getG.multiply(m)))
       .multiply(r.modInverse(curve.getN))
-    (ECPublicKey.fromPoint(Q1), ECPublicKey.fromPoint(Q2))
+
+    val pub1 = ECPublicKey.fromPoint(Q1)
+    val pub2 = ECPublicKey.fromPoint(Q2)
+    (pub1,pub2)
   }
 }
 

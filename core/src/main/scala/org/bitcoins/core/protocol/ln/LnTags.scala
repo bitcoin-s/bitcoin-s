@@ -133,8 +133,7 @@ object LnTag {
     }
 
     override val encoded: Vector[UInt5] = {
-      val bytes = ByteVector(string.getBytes("UTF-8"))
-      Bech32.from8bitTo5bit(bytes)
+      Bech32.from8bitTo5bit(descBytes)
     }
 
   }
