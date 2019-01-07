@@ -7,6 +7,7 @@ import akka.testkit.TestKit
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.rpc.client.BitcoindRpcClient
 import org.bitcoins.rpc.config.BitcoindInstance
+import org.bitcoins.rpc.util.RpcUtil
 import org.scalatest.{AsyncFlatSpec, BeforeAndAfterAll}
 
 import scala.concurrent.Future
