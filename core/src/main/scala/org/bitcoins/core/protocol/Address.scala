@@ -223,9 +223,8 @@ object Bech32Address extends AddressFactory[Bech32Address] {
     case x @ (_: P2PKScriptPubKey | _: P2PKHScriptPubKey |
         _: MultiSignatureScriptPubKey | _: P2SHScriptPubKey |
         _: LockTimeScriptPubKey | _: WitnessScriptPubKey |
-        _: NonStandardScriptPubKey |
-        _: WitnessCommitment | _: UnassignedWitnessScriptPubKey |
-        EmptyScriptPubKey) =>
+        _: NonStandardScriptPubKey | _: WitnessCommitment |
+        _: UnassignedWitnessScriptPubKey | EmptyScriptPubKey) =>
       Failure(
         new IllegalArgumentException(
           "Cannot create a address for the scriptPubKey: " + x))
@@ -328,9 +327,8 @@ object P2PKHAddress extends AddressFactory[P2PKHAddress] {
     case p2pkh: P2PKHScriptPubKey => Success(P2PKHAddress(p2pkh, np))
     case x @ (_: P2PKScriptPubKey | _: MultiSignatureScriptPubKey |
         _: P2SHScriptPubKey | _: LockTimeScriptPubKey | _: WitnessScriptPubKey |
-        _: NonStandardScriptPubKey |
-        _: WitnessCommitment | _: UnassignedWitnessScriptPubKey |
-        EmptyScriptPubKey) =>
+        _: NonStandardScriptPubKey | _: WitnessCommitment |
+        _: UnassignedWitnessScriptPubKey | EmptyScriptPubKey) =>
       Failure(
         new IllegalArgumentException(
           "Cannot create a address for the scriptPubKey: " + x))
@@ -398,9 +396,9 @@ object P2SHAddress extends AddressFactory[P2SHAddress] {
     case p2sh: P2SHScriptPubKey => Success(P2SHAddress(p2sh, np))
     case x @ (_: P2PKScriptPubKey | _: P2PKHScriptPubKey |
         _: MultiSignatureScriptPubKey | _: LockTimeScriptPubKey |
-        _: WitnessScriptPubKey |
-        _: NonStandardScriptPubKey | _: WitnessCommitment |
-        _: UnassignedWitnessScriptPubKey | EmptyScriptPubKey) =>
+        _: WitnessScriptPubKey | _: NonStandardScriptPubKey |
+        _: WitnessCommitment | _: UnassignedWitnessScriptPubKey |
+        EmptyScriptPubKey) =>
       Failure(
         new IllegalArgumentException(
           "Cannot create a address for the scriptPubKey: " + x))
@@ -439,9 +437,9 @@ object BitcoinAddress extends AddressFactory[BitcoinAddress] {
     case p2sh: P2SHScriptPubKey      => Success(P2SHAddress(p2sh, np))
     case witSPK: WitnessScriptPubKey => Success(Bech32Address(witSPK, np))
     case x @ (_: P2PKScriptPubKey | _: MultiSignatureScriptPubKey |
-        _: LockTimeScriptPubKey |
-        _: NonStandardScriptPubKey | _: WitnessCommitment |
-        _: UnassignedWitnessScriptPubKey | EmptyScriptPubKey) =>
+        _: LockTimeScriptPubKey | _: NonStandardScriptPubKey |
+        _: WitnessCommitment | _: UnassignedWitnessScriptPubKey |
+        EmptyScriptPubKey) =>
       Failure(
         new IllegalArgumentException(
           "Cannot create a address for the scriptPubKey: " + x))

@@ -13,13 +13,12 @@ trait RawScriptPubKeyParser extends RawBitcoinSerializer[ScriptPubKey] {
   override def read(bytes: ByteVector): ScriptPubKey = {
     if (bytes.isEmpty) EmptyScriptPubKey
     else {
-      BitcoinScriptUtil.parseScript(
-        bytes = bytes,
-        f = ScriptPubKey.fromAsm)
+      BitcoinScriptUtil.parseScript(bytes = bytes, f = ScriptPubKey.fromAsm)
     }
   }
 
-  override def write(scriptPubKey: ScriptPubKey): ByteVector = scriptPubKey.bytes
+  override def write(scriptPubKey: ScriptPubKey): ByteVector =
+    scriptPubKey.bytes
 }
 
 object RawScriptPubKeyParser extends RawScriptPubKeyParser
