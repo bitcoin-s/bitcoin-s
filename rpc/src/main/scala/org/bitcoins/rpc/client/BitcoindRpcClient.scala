@@ -21,11 +21,11 @@ import org.bitcoins.core.protocol.transaction.{
 }
 import org.bitcoins.core.protocol.{BitcoinAddress, P2PKHAddress}
 import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil}
-import org.bitcoins.rpc.RpcUtil
 import org.bitcoins.rpc.client.RpcOpts.AddressType
 import org.bitcoins.rpc.config.BitcoindInstance
 import org.bitcoins.rpc.jsonmodels._
 import org.bitcoins.rpc.serializers.JsonSerializers._
+import org.bitcoins.rpc.util.RpcUtil
 import play.api.libs.json._
 
 import scala.concurrent.duration.DurationInt

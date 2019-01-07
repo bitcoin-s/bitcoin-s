@@ -15,6 +15,7 @@ import org.bitcoins.rpc.config.{
   BitcoindInstance,
   ZmqConfig
 }
+import org.bitcoins.rpc.util.RpcUtil
 
 import scala.collection.immutable.Map
 import scala.collection.JavaConverters.{asScalaSet, mapAsJavaMap}
