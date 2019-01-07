@@ -72,7 +72,12 @@ object BitcoindInstance {
         .setSyntax(ConfigSyntax.PROPERTIES)) // bitcoin.conf is not a proper .conf file, uses Java properties=like syntax
 
     val configWithDatadir =
-      config.withValue("datadir", ConfigValueFactory.fromAnyRef(file.getParent))
+      if (config.hasPath("datadir")) {
+        config
+      } else {
+        config.withValue("datadir",
+                         ConfigValueFactory.fromAnyRef(file.getParent))
+      }
 
     fromConfig(configWithDatadir)
   }
