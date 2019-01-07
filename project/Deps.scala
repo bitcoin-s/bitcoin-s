@@ -15,6 +15,7 @@ object Deps {
     val scodecV = "1.1.6"
     val junitV = "0.11"
     val nativeLoaderV = "2.3.2"
+    val typesafeConfigV = "1.3.3"
 
     val bitcoinsV = "0.0.1-SNAPSHOT"
   }
@@ -27,6 +28,7 @@ object Deps {
     val akkaHttp = "com.typesafe.akka" %% "akka-http" % V.akkav withSources() withJavadoc()
     val akkaStream = "com.typesafe.akka" %% "akka-stream" % V.akkaStreamv withSources() withJavadoc()
     val playJson = "com.typesafe.play" %% "play-json" % V.playv withSources() withJavadoc()
+    val typesafeConfig = "com.typesafe" % "config" % V.typesafeConfigV withSources() withJavadoc()
 
     val logback = "ch.qos.logback" % "logback-classic" % V.logback withSources() withJavadoc()
 
@@ -85,6 +87,7 @@ object Deps {
     Compile.akkaStream,
     Compile.playJson,
     Compile.slf4j,
+    Compile.typesafeConfig,
     Test.akkaHttp,
     Test.akkaStream,
     Test.logback,

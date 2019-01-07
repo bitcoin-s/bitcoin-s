@@ -5,12 +5,19 @@ import java.net.URI
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
+import com.typesafe.config.{Config, ConfigFactory}
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.rpc.client.BitcoindRpcClient
-import org.bitcoins.rpc.config.{BitcoindAuthCredentials, BitcoindInstance}
+import org.bitcoins.rpc.config.{
+  BitcoindAuthCredentials,
+  BitcoindInstance,
+  ZmqConfig
+}
 
+import scala.collection.immutable.Map
+import scala.collection.JavaConverters.{asScalaSet, mapAsJavaMap}
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.{Failure, Success, Try}
@@ -19,6 +26,34 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
 
   def randomDirName: String =
     0.until(5).map(_ => scala.util.Random.alphanumeric.head).mkString
+
+  def config(
+      uri: URI,
+      rpcUri: URI,
+      zmqPort: Int,
+      pruneMode: Boolean): Config = {
+    val pass = randomDirName
+    val username = "random_user_name"
+    val values = Map(
+      "rpcuser" -> username,
+      "rpcpassword" -> pass,
+      "rpcport" -> rpcUri.getPort,
+      "port" -> uri.getPort,
+      "daemon" -> "1",
+      "server" -> "1",
+      "debug" -> "1",
+      "regtest" -> "1",
+      "walletbroadcast" -> "0",
+      "zmqpubhashtx" -> s"tcp://127.0.0.1:$zmqPort",
+      "zmqpubhashblock" -> s"tcp://127.0.0.1:$zmqPort",
+      "zmqpubrawtx" -> s"tcp://127.0.0.1:$zmqPort",
+      "zmqpubrawblock" -> s"tcp://127.0.0.1:$zmqPort",
+      "prune" -> (if (pruneMode) "1" else "0")
+    )
+    val javaMap = mapAsJavaMap(values)
+
+    ConfigFactory.parseMap(javaMap)
+  }
 
   /**
     * Creates a datadir and places the username/password combo
@@ -29,39 +64,33 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       rpcUri: URI,
       zmqPort: Int,
       pruneMode: Boolean): BitcoindAuthCredentials = {
-    val d = "/tmp/" + randomDirName
-    val f = new java.io.File(d)
-    f.mkdir()
-    val conf = new java.io.File(f.getAbsolutePath + "/bitcoin.conf")
-    conf.createNewFile()
-    val username = "random_user_name"
-    val pass = randomDirName
-    val pw = new PrintWriter(conf)
-    pw.write("rpcuser=" + username + "\n")
-    pw.write("rpcpassword=" + pass + "\n")
-    pw.write("rpcport=" + rpcUri.getPort + "\n")
-    pw.write("port=" + uri.getPort + "\n")
-    pw.write("daemon=1\n")
-    pw.write("server=1\n")
-    pw.write("debug=1\n")
-    pw.write("regtest=1\n")
-    pw.write("walletbroadcast=0\n")
+    val conf = config(uri, rpcUri, zmqPort, pruneMode)
+    val confSet = asScalaSet(conf.entrySet).toSet
+    val confStr =
+      confSet
+        .map(entry => {
+          val key = entry.getKey
+          val value = entry.getValue.unwrapped
+          s"$key=$value"})
+        .mkString("\n")
 
-    pw.write(s"zmqpubhashtx=tcp://127.0.0.1:${zmqPort}\n")
-    pw.write(s"zmqpubhashblock=tcp://127.0.0.1:${zmqPort}\n")
-    pw.write(s"zmqpubrawtx=tcp://127.0.0.1:${zmqPort}\n")
-    pw.write(s"zmqpubrawblock=tcp://127.0.0.1:${zmqPort}\n")
+    val datadir = new java.io.File("/tmp/" + randomDirName)
+    datadir.mkdir()
 
-    if (pruneMode) {
-      logger.info(s"Creating pruned node for ${f.getAbsolutePath}")
-      pw.write("prune=1\n")
-    }
+    val confFile = new java.io.File(datadir.getAbsolutePath + "/bitcoin.conf")
+    confFile.createNewFile()
 
+    val pw = new PrintWriter(confFile)
+    pw.write(confStr)
     pw.close()
-    BitcoindAuthCredentials(username, pass, rpcUri.getPort, f)
+
+    val username = conf.getString("rpcuser")
+    val pass = conf.getString("rpcpassword")
+
+    BitcoindAuthCredentials(username, pass, rpcUri.getPort, datadir)
   }
 
-  lazy val network = RegTest
+  lazy val network: RegTest.type = RegTest
 
   def instance(
       port: Int = randomPort,
@@ -75,7 +104,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
                                     uri = uri,
                                     rpcUri = rpcUri,
                                     authCredentials = auth,
-                                    zmqPortOpt = Some(zmqPort))
+                                    zmqConfig = ZmqConfig.fromPort(zmqPort))
 
     instance
   }

@@ -17,7 +17,7 @@ import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.eclair.rpc.client.EclairRpcClient
 import org.bitcoins.eclair.rpc.config.EclairInstance
 import org.bitcoins.rpc.client.BitcoindRpcClient
-import org.bitcoins.rpc.config.BitcoindInstance
+import org.bitcoins.rpc.config.{BitcoindInstance, ZmqConfig}
 import org.bitcoins.rpc.{BitcoindRpcTestUtil, RpcUtil}
 
 import scala.concurrent.Future
@@ -47,7 +47,7 @@ trait EclairTestUtil extends BitcoinSLogger {
                      uri = uri,
                      rpcUri = rpcUri,
                      authCredentials = auth,
-                     zmqPortOpt = Some(zmqPort))
+                     zmqConfig = ZmqConfig.fromPort(zmqPort))
   }
 
   //cribbed from https://github.com/Christewart/eclair/blob/bad02e2c0e8bd039336998d318a861736edfa0ad/eclair-core/src/test/scala/fr/acinq/eclair/integration/IntegrationSpec.scala#L140-L153
@@ -65,7 +65,11 @@ trait EclairTestUtil extends BitcoinSLogger {
         "eclair.bitcoind.rpcuser" -> bitcoindInstance.authCredentials.username,
         "eclair.bitcoind.rpcpassword" -> bitcoindInstance.authCredentials.password,
         "eclair.bitcoind.rpcport" -> bitcoindInstance.authCredentials.rpcPort,
-        "eclair.bitcoind.zmq" -> s"tcp://127.0.0.1:${bitcoindInstance.zmqPortOpt.get}",
+        // newer versions of Eclair has removed this config setting, in favor of
+        // the below it. All three are included here for good measure
+        "eclair.bitcoind.zmq" -> bitcoindInstance.zmqConfig.rawTx.get.toString,
+        "eclair.bitcoind.zmqblock" -> bitcoindInstance.zmqConfig.rawBlock.get.toString,
+        "eclair.bitcoind.zmqtx" -> bitcoindInstance.zmqConfig.rawTx.get.toString,
         "eclair.api.enabled" -> true,
         "eclair.api.binding-ip" -> "127.0.0.1",
         "eclair.api.password" -> "abc123",
@@ -332,7 +336,6 @@ trait EclairTestUtil extends BitcoinSLogger {
         rpcUri = new URI(s"http://localhost:${bitcoindRpcPort}"),
         authCredentials =
           eclairRpcClient.instance.authCredentials.bitcoinAuthOpt.get,
-        None
       )
       new BitcoindRpcClient(bitcoindInstance)
     }
