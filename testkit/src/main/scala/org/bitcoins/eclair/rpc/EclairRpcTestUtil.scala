@@ -65,6 +65,9 @@ trait EclairTestUtil extends BitcoinSLogger {
         "eclair.bitcoind.rpcuser" -> bitcoindInstance.authCredentials.username,
         "eclair.bitcoind.rpcpassword" -> bitcoindInstance.authCredentials.password,
         "eclair.bitcoind.rpcport" -> bitcoindInstance.authCredentials.rpcPort,
+        // newer versions of Eclair has removed this config setting, in favor of
+        // the below it. All three are included here for good measure
+        "eclair.bitcoind.zmq" -> bitcoindInstance.zmqConfig.rawTx.get.toString,
         "eclair.bitcoind.zmqblock" -> bitcoindInstance.zmqConfig.rawBlock.get.toString,
         "eclair.bitcoind.zmqtx" -> bitcoindInstance.zmqConfig.rawTx.get.toString,
         "eclair.api.enabled" -> true,
