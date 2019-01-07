@@ -106,11 +106,10 @@ sealed abstract class ChainParams {
     val const = ScriptConstant(timestampBytes)
 
     val asm = {
-      List(
-        BytesToPushOntoStack(4),
-        ScriptConstant("ffff001d"),
-        BytesToPushOntoStack(1),
-        ScriptConstant("04")) ++
+      List(BytesToPushOntoStack(4),
+           ScriptConstant("ffff001d"),
+           BytesToPushOntoStack(1),
+           ScriptConstant("04")) ++
         BitcoinScriptUtil.calculatePushOp(const) ++
         List(const)
     }

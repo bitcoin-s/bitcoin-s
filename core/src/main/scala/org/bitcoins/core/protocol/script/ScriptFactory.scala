@@ -11,8 +11,11 @@ import scodec.bits.ByteVector
 trait ScriptFactory[T <: Script] extends Factory[T] {
 
   /** Builds a script from the given asm with the given constructor if the invariant holds true, else throws an error */
-  def buildScript(asm: Vector[ScriptToken], constructor: Vector[ScriptToken] => T,
-                  invariant: Seq[ScriptToken] => Boolean, errorMsg: String): T = {
+  def buildScript(
+      asm: Vector[ScriptToken],
+      constructor: Vector[ScriptToken] => T,
+      invariant: Seq[ScriptToken] => Boolean,
+      errorMsg: String): T = {
     if (invariant(asm)) {
       constructor(asm)
     } else throw new IllegalArgumentException(errorMsg)
@@ -22,9 +25,7 @@ trait ScriptFactory[T <: Script] extends Factory[T] {
   def fromAsm(asm: Seq[ScriptToken]): T
 
   def fromBytes(bytes: ByteVector): T = {
-    BitcoinScriptUtil.parseScript(
-      bytes = bytes,
-      f = fromAsm)
+    BitcoinScriptUtil.parseScript(bytes = bytes, f = fromAsm)
   }
 
   /**
