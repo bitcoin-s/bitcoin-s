@@ -55,12 +55,13 @@ sealed abstract class LnInvoice {
     if (lnTags.nodeId.isDefined) {
       lnTags.nodeId.get.nodeId
     } else {
-      val recoverId = signature.bytes.last
-      val sigData = signatureData
-      val hashMsg = CryptoUtil.sha256(sigData)
+      val recoverId = signature.recoverId
+
+      val hashMsg = sigHash
       val (pubKey1, pubKey2) =
         CryptoUtil.recoverPublicKey(signature.signature, hashMsg.bytes)
-      if (recoverId % 2 == 0) {
+
+      if (recoverId.toInt % 2 == 0) {
         NodeId(pubKey1)
       } else {
         NodeId(pubKey2)
@@ -78,6 +79,10 @@ sealed abstract class LnInvoice {
     sig
   }
 
+  /** The hash that is signed by the [[org.bitcoins.core.crypto.ECPrivateKey]] corresponding
+    * to the [[nodeId]]
+    * @return
+    */
   private def sigHash: Sha256Digest = {
     val hash = CryptoUtil.sha256(signatureData)
     hash
@@ -106,7 +111,7 @@ sealed abstract class LnInvoice {
   }
 }
 
-object LnInvoice {
+object LnInvoice extends BitcoinSLogger {
   private case class LnInvoiceImpl(
       hrp: LnHumanReadablePart,
       timestamp: UInt64,
@@ -233,7 +238,20 @@ object LnInvoice {
     val payloadU5 = tsu5 ++ lnTags.data
     val payloadU8 = Bech32.from5bitTo8bit(payloadU5)
     val payload = UInt8.toBytes(payloadU8)
-    hrp.bytes ++ payload
+    val allBytes = hrp.bytes ++ payload
+
+
+    //for an explanation of why this is needed see
+    //https://github.com/bitcoin-s/bitcoin-s-core/issues/277
+    //https://github.com/bitcoin-s/bitcoin-s-core/pull/285
+    val allBytesU5s = Bech32.from8bitTo5bit(allBytes)
+
+    if (allBytesU5s.length % 8 == 0) {
+      allBytes ++ ByteVector(0)
+    } else {
+      allBytes
+    }
+
   }
 
   def buildSigHashData(
@@ -252,7 +270,7 @@ object LnInvoice {
     val sigHash = buildSigHashData(hrp, timestamp, lnTags)
     val sig = privateKey.sign(sigHash)
 
-    LnInvoiceSignature(version = UInt8.zero, signature = sig)
+    LnInvoiceSignature(recoverId = UInt8.zero, signature = sig)
   }
 
   /**

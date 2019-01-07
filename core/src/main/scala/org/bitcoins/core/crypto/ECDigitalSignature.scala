@@ -1,12 +1,12 @@
 package org.bitcoins.core.crypto
 
-import org.bitcoins.core.util.{BitcoinSUtil, Factory}
+import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil, Factory}
 import scodec.bits.ByteVector
 
 /**
   * Created by chris on 2/26/16.
   */
-sealed abstract class ECDigitalSignature {
+sealed abstract class ECDigitalSignature extends BitcoinSLogger {
 
   def hex: String = BitcoinSUtil.encodeHex(bytes)
 
@@ -37,27 +37,42 @@ sealed abstract class ECDigitalSignature {
   def decodeSignature: (BigInt, BigInt) = DERSignatureUtil.decodeSignature(this)
 
   /** Represents the r value found in a elliptic curve digital signature */
-  def r: BigInt = decodeSignature._1
+  def r: BigInt = {
+    decodeSignature._1
+  }
 
-  /** Represents the s value found in a elliptic curve digital signature */
-  def s: BigInt = decodeSignature._2
+  /** If we need to do serialization with the
+    * r value, you should use this. It will pad
+    * the byte vector so we have exactly 32 bytes
+    * @return
+    */
+  def rBytes: ByteVector = {
+    val bytes = r.bigInteger.toByteArray.takeRight(32)
+    val padded = ByteVector(bytes).padLeft(32)
+    padded
+  }
 
+  /** If we need to do serialization with the
+    * s value, you should use this. It will pad
+    * the byte vector so we have exactly 32 bytes
+    * @return
+    */
+  def s: BigInt = {
+    decodeSignature._2
+  }
+
+  def sBytes:ByteVector = {
+    val bytes = s.bigInteger.toByteArray.takeRight(32)
+    val padded = ByteVector(bytes).padLeft(32)
+    padded
+  }
   /**
     * Creates a ByteVector with only
     * the 32byte r value and 32 byte s value
     * in the vector
     */
   def toRawRS: ByteVector = {
-
-    val rBytes = r.toByteArray.takeRight(32)
-    val sBytes = s.toByteArray.takeRight(32)
-
-    val rPadded = ByteVector(rBytes).padLeft(32)
-    val sPadded = ByteVector(sBytes).padLeft(32)
-
-    require(rPadded.size == 32, s"rPadded.size ${rPadded.size}")
-    require(sPadded.size == 32, s"sPadded.size ${sPadded.size}")
-    rPadded ++ sPadded
+    rBytes ++ sBytes
   }
 
 }
