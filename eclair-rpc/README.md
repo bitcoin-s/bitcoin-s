@@ -1,3 +1,5 @@
+[ ![Download](https://api.bintray.com/packages/bitcoin-s/bitcoin-s-core/bitcoin-s-eclair-rpc/images/download.svg) ](https://bintray.com/bitcoin-s/bitcoin-s-core/bitcoin-s-eclair-rpc/_latestVersion)
+
 # Bitcoin-s Eclair RPC client
 
 This is a RPC client for [Eclair](https://github.com/acinq/eclair). It assumes that a bitcoind instance is running.

@@ -139,8 +139,7 @@ object ECPrivateKey extends Factory[ECPrivateKey] {
       extends ECPrivateKey {
     require(
       NativeSecp256k1.secKeyVerify(bytes.toArray),
-      "Invalid key according to secp256k1, hex: " + BitcoinSUtil.encodeHex(
-        bytes))
+      s"Invalid key according to secp256k1, hex: ${bytes.toHex}")
   }
 
   def apply(bytes: ByteVector, isCompressed: Boolean)(
