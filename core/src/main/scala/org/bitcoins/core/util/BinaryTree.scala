@@ -46,7 +46,8 @@ trait BinaryTree[+T] {
     loop(this, List(), List()).reverse
   }
 
-  /** A function to find the first occurrence of a predicate inside a [[BinaryTree]]. */
+  /** A function to find the first occurrence of a predicate inside a
+    * [[org.bitcoins.core.util.BinaryTree BinaryTree]]. */
   def findFirstDFS[T](t: T)(f: T => Boolean = (x: T) => x == t)(
       implicit tree: BinaryTree[T] = this): Option[BinaryTree[T]] = {
     @tailrec
@@ -68,7 +69,7 @@ trait BinaryTree[+T] {
     loop(tree, List())
   }
 
-  /** Checks if the [[BinaryTree]] contains a certain element. */
+  /** Checks if the [[org.bitcoins.core.util.BinaryTree BinaryTree]] contains a certain element. */
   def contains[T](t: T)(f: T => Boolean = (x: T) => x == t)(
       implicit tree: BinaryTree[T] = this): Boolean =
     findFirstDFS(t)(f)(tree).isDefined
@@ -76,7 +77,7 @@ trait BinaryTree[+T] {
   def count[T](t: T): Int = toSeq.count(_ == t)
 
   /**
-    * Inserts an element into one of the two branches in a [[BinaryTree]].
+    * Inserts an element into one of the two branches in a [[org.bitcoins.core.util.BinaryTree BinaryTree]].
     * If it cannot insert it because the branches are not empty,
     * it throws a [[RuntimeException]].
     */
@@ -85,7 +86,7 @@ trait BinaryTree[+T] {
   }
 
   /**
-    * Inserts a tree into one of the two branches in a [[BinaryTree]]
+    * Inserts a tree into one of the two branches in a [[org.bitcoins.core.util.BinaryTree BinaryTree]]
     * If it cannot insert it because the branches are not empty,
     * it throws a [[RuntimeException]].
     */

@@ -13,12 +13,13 @@ sealed trait ScriptProgram {
 
   /**
     * This contains all relevant information for hashing and checking a
-    * [[org.bitcoins.core.protocol.script.ScriptSignature]] for
-    * a [[org.bitcoins.core.protocol.transaction.Transaction]].
+    * [[org.bitcoins.core.protocol.script.ScriptSignature ScriptSignature]] for
+    * a [[org.bitcoins.core.protocol.transaction.Transaction Transaction]].
     */
   def txSignatureComponent: TxSigComponent
 
-  /** The current state of the stack for execution of the [[ScriptProgram]]. */
+  /** The current state of the stack for execution of the
+    * [[org.bitcoins.core.script.ScriptProgram ScriptProgram]]. */
   def stack: List[ScriptToken]
 
   /** The script operations that need to still be executed. */
@@ -31,7 +32,7 @@ sealed trait ScriptProgram {
   def altStack: List[ScriptToken]
 
   /**
-    * [[ScriptFlag]] that are run with the script.
+    * [[org.bitcoins.core.script.flag.ScriptFlag ScriptFlag]] that are run with the script.
     * These flags indicate special conditions that a script needs to be run with.
     * [[https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.h#L31]]
     * @return
@@ -47,24 +48,27 @@ sealed trait ScriptProgram {
 }
 
 /**
-  * This represents a [[ScriptProgram]] before any script operations have been executed in the [[org.bitcoins.core.script.interpreter.ScriptInterpreter]].
+  * This represents a [[org.bitcoins.core.script.ScriptProgram ScriptProgram]]
+  * before any script operations have been executed in the
+  * [[org.bitcoins.core.script.interpreter.ScriptInterpreter ScriptInterpreter]].
   */
 sealed trait PreExecutionScriptProgram extends ScriptProgram
 sealed trait ExecutionInProgressScriptProgram extends ScriptProgram {
 
-  /** The index of the last [[org.bitcoins.core.script.crypto.OP_CODESEPARATOR]] */
+  /** The index of the last [[org.bitcoins.core.script.crypto.OP_CODESEPARATOR OP_CODESEPARATOR]] */
   def lastCodeSeparator: Option[Int]
 
 }
 
 sealed trait ExecutedScriptProgram extends ScriptProgram {
 
-  /** Indicates if the [[ScriptProgram]] has encountered a [[ScriptError]] in its execution.*/
+  /** Indicates if the [[org.bitcoins.core.script.ScriptProgram ScriptProgram]]
+    * has encountered a [[org.bitcoins.core.script.result.ScriptError ScriptError]] in its execution.*/
   def error: Option[ScriptError]
 }
 
 /**
-  * Factory companion object for [[ScriptProgram]]
+  * Factory companion object for [[org.bitcoins.core.script.ScriptProgram ScriptProgram]]
   */
 object ScriptProgram extends BitcoinSLogger {
 
@@ -76,7 +80,8 @@ object ScriptProgram extends BitcoinSLogger {
   case object OriginalScript extends UpdateIndicator
 
   /**
-    * Sets a [[ScriptError]] on a given [[ScriptProgram]].
+    * Sets a [[org.bitcoins.core.script.result.ScriptError ScriptError]] on a given
+    * [[org.bitcoins.core.script.ScriptProgram ScriptProgram]].
     * @param oldProgram the program who has hit an invalid state
     * @param error the error that the program hit while being executed in the script interpreter
     * @return the ExecutedScriptProgram with the given error set inside of the trait
@@ -231,7 +236,7 @@ object ScriptProgram extends BitcoinSLogger {
     updatedScript
   }
 
-  /** Updates the last [[org.bitcoins.core.script.crypto.OP_CODESEPARATOR]] index. */
+  /** Updates the last [[org.bitcoins.core.script.crypto.OP_CODESEPARATOR OP_CODESEPARATOR]] index. */
   def apply(
       oldProgram: ExecutionInProgressScriptProgram,
       lastCodeSeparator: Int): ExecutionInProgressScriptProgram = {
@@ -246,7 +251,9 @@ object ScriptProgram extends BitcoinSLogger {
     )
   }
 
-  /** Updates the [[ScriptToken]]s in either the stack or script and the last [[org.bitcoins.core.script.crypto.OP_CODESEPARATOR]] index */
+  /** Updates the [[org.bitcoins.core.script.constant.ScriptToken ScriptToken]]s
+    * in either the stack or script and the last
+    * [[org.bitcoins.core.script.crypto.OP_CODESEPARATOR OP_CODESEPARATOR]] index */
   def apply(
       oldProgram: ExecutionInProgressScriptProgram,
       tokens: Seq[ScriptToken],
@@ -262,7 +269,10 @@ object ScriptProgram extends BitcoinSLogger {
     }
   }
 
-  /** Updates the [[Stack]], [[Script]], [[AltStack]] of the given [[ScriptProgram]]. */
+  /** Updates the [[org.bitcoins.core.script.ScriptProgram.Stack Stack]],
+    * [[org.bitcoins.core.script.ScriptProgram.Script Script]],
+    * [[org.bitcoins.core.script.ScriptProgram.AltStack AltStack]] of the given
+    * [[org.bitcoins.core.script.ScriptProgram ScriptProgram]]. */
   def apply(
       oldProgram: ScriptProgram,
       stack: Seq[ScriptToken],
@@ -276,7 +286,9 @@ object ScriptProgram extends BitcoinSLogger {
     updatedProgramAltStack
   }
 
-  /** Changes a [[ScriptProgram]] that is a [[ExecutionInProgressScriptProgram]] and changes it to an [[ExecutedScriptProgram]].*/
+  /** Changes a [[org.bitcoins.core.script.ScriptProgram ScriptProgram]] that is a
+    * [[org.bitcoins.core.script.ExecutionInProgressScriptProgram ExecutionInProgressScriptProgram]]
+    * and changes it to an [[org.bitcoins.core.script.ExecutedScriptProgram ExecutedScriptProgram]].*/
   def toExecutedProgram(
       executionInProgressScriptProgram: ExecutionInProgressScriptProgram): ExecutedScriptProgram = {
     ExecutedScriptProgram(
@@ -290,13 +302,18 @@ object ScriptProgram extends BitcoinSLogger {
     )
   }
 
-  /** Changes a [[ScriptProgram]] that is a [[PreExecutionScriptProgram]] and changes it to an [[ExecutionInProgressScriptProgram]].*/
+  /** Changes a [[org.bitcoins.core.script.ScriptProgram ScriptProgram]] that is a
+    * [[org.bitcoins.core.script.PreExecutionScriptProgram PreExecutionScriptProgram]] and changes it to an
+    * [[org.bitcoins.core.script.ExecutionInProgressScriptProgram ExecutionInProgressScriptProgram]].*/
   def toExecutionInProgress(
       preExecutionScriptProgram: PreExecutionScriptProgram): ExecutionInProgressScriptProgram = {
     toExecutionInProgress(preExecutionScriptProgram, None)
   }
 
-  /** Changes a [[ScriptProgram]] that is a [[PreExecutionScriptProgram]] and changes it to an [[ExecutionInProgressScriptProgram]] given the stack state. */
+  /** Changes a [[org.bitcoins.core.script.ScriptProgram ScriptProgram]] that is a
+    * [[org.bitcoins.core.script.PreExecutionScriptProgram PreExecutionScriptProgram]] and changes it to an
+    * [[org.bitcoins.core.script.ExecutionInProgressScriptProgram ExecutionInProgressScriptProgram]]
+    * given the stack state. */
   def toExecutionInProgress(
       preExecutionScriptProgram: PreExecutionScriptProgram,
       stack: Option[Seq[ScriptToken]]): ExecutionInProgressScriptProgram = {
@@ -328,8 +345,9 @@ object ScriptProgram extends BitcoinSLogger {
 object PreExecutionScriptProgram {
 
   /**
-    * Implementation type for a [[PreExecutionScriptProgram]] - a [[ScriptProgram]] that has not yet begun being
-    * evaluated  by the [[org.bitcoins.core.script.interpreter.ScriptInterpreter]].
+    * Implementation type for a [[org.bitcoins.core.script.PreExecutionScriptProgram PreExecutionScriptProgram]] - a
+    * [[org.bitcoins.core.script.ScriptProgram ScriptProgram]] that has not yet begun being
+    * evaluated  by the [[org.bitcoins.core.script.interpreter.ScriptInterpreter ScriptInterpreter]].
     */
   private case class PreExecutionScriptProgramImpl(
       txSignatureComponent: TxSigComponent,
@@ -370,8 +388,10 @@ object PreExecutionScriptProgram {
 object ExecutionInProgressScriptProgram {
 
   /**
-    * Implementation type for a [[ExecutionInProgressScriptProgram]] - a [[ScriptProgram]] that is currently being
-    * evaluated by the [[org.bitcoins.core.script.interpreter.ScriptInterpreter]].
+    * Implementation type for a
+    * [[org.bitcoins.core.script.ExecutionInProgressScriptProgram ExecutionInProgressScriptProgram]] - a
+    * [[org.bitcoins.core.script.ScriptProgram ScriptProgram]] that is currently being
+    * evaluated by the [[org.bitcoins.core.script.interpreter.ScriptInterpreter ScriptInterpreter]].
     */
   private case class ExecutionInProgressScriptProgramImpl(
       txSignatureComponent: TxSigComponent,
@@ -404,8 +424,9 @@ object ExecutionInProgressScriptProgram {
 object ExecutedScriptProgram {
 
   /**
-    * The implementation type for a [[ExecutedScriptProgram]] - a [[ScriptProgram]] that has been evaluated completely
-    * by the [[org.bitcoins.core.script.interpreter.ScriptInterpreter]].
+    * The implementation type for a [[org.bitcoins.core.script.ExecutedScriptProgram ExecutedScriptProgram]] - a
+    * [[org.bitcoins.core.script.ScriptProgram ScriptProgram]] that has been evaluated completely
+    * by the [[org.bitcoins.core.script.interpreter.ScriptInterpreter ScriptInterpreter]].
     */
   private case class ExecutedScriptProgramImpl(
       txSignatureComponent: TxSigComponent,

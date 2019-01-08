@@ -50,7 +50,11 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
 
   /**
     * Filters out push operations in our sequence of script tokens
-    * this removes OP_PUSHDATA1, OP_PUSHDATA2, OP_PUSHDATA4 and all ByteToPushOntoStack tokens
+    * this removes
+    * [[org.bitcoins.core.script.constant.OP_PUSHDATA1 OP_PUSHDATA1]],
+    * [[org.bitcoins.core.script.constant.OP_PUSHDATA2 OP_PUSHDATA2]],
+    * [[org.bitcoins.core.script.constant.OP_PUSHDATA4 OP_PUSHDATA4]],
+    * and all [[org.bitcoins.core.script.constant.BytesToPushOntoStack ByteToPushOntoStack]] tokens
     */
   def filterPushOps(asm: Seq[ScriptToken]): Seq[ScriptToken] = {
     //TODO: This does not remove the following script number after a OP_PUSHDATA
@@ -64,8 +68,9 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
 
   /**
     * Returns true if the given script token counts towards our max script operations in a script
-    * See https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L269-L271
-    * which is how bitcoin core handles this
+    * See
+    * [[https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L269-L271 interpreter.cpp#L269-L271]]
+    * which is how Bitcoin Core handles this
     */
   def countsTowardsScriptOpLimit(token: ScriptToken): Boolean = token match {
     case scriptOp: ScriptOperation if (scriptOp.opCode > OP_16.opCode) => true
@@ -73,8 +78,8 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
   }
 
   /**
-    * Counts the amount of sigops in a script
-    * https://github.com/bitcoin/bitcoin/blob/master/src/script/script.cpp#L156-L202
+    * Counts the amount of sigops in a script.
+    * [[https://github.com/bitcoin/bitcoin/blob/master/src/script/script.cpp#L156-L202 Bitcoin Core script.cpp]]
     * @param script the script whose sigops are being counted
     * @return the number of signature operations in the script
     */
@@ -98,7 +103,8 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
 
   /**
     * Parses the number of signatures on the stack
-    * This can only be called when an OP_CHECKMULTISIG operation is about to be executed
+    * This can only be called when an [[org.bitcoins.core.script.crypto.OP_CHECKMULTISIG OP_CHECKMULTISIG]]
+    * operation is about to be executed
     * on the stack
     * For instance if this was a 2/3 multisignature script, it would return the number 3
     */
@@ -144,7 +150,7 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
   /**
     * Determines if a script contains only script operations
     * This is equivalent to
-    * [[https://github.com/bitcoin/bitcoin/blob/master/src/script/script.cpp#L213]]
+    * [[https://github.com/bitcoin/bitcoin/blob/master/src/script/script.cpp#L213 Bitcoin Core script.cpp#L213]]
     */
   def isPushOnly(script: Seq[ScriptToken]): Boolean = {
     @tailrec
@@ -168,7 +174,7 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
   /**
     * Determines if the token being pushed onto the stack is being pushed by the SMALLEST push operation possible
     * This is equivalent to
-    * [[https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L209]]
+    * [[https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L209 Bitcoin Core interpreter.cpp#L209]]
     * @param pushOp the operation that is pushing the data onto the stack
     * @param token the token that is being pushed onto the stack by the pushOp
     * @return
@@ -201,7 +207,7 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
         }
     }
 
-  /** Calculates the push operation for the given [[ScriptToken]] */
+  /** Calculates the push operation for the given [[org.bitcoins.core.script.constant.ScriptToken ScriptToken]] */
   def calculatePushOp(scriptToken: ScriptToken): Seq[ScriptToken] = {
     //push ops following an OP_PUSHDATA operation are interpreted as unsigned numbers
     val scriptTokenSize = UInt32(scriptToken.bytes.size)
@@ -233,7 +239,8 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
     calculatePushOp(ScriptConstant(bytes))
 
   /**
-    * Whenever a [[ScriptConstant]] is interpreted to a number BIP62 could enforce that number to be encoded
+    * Whenever a [[org.bitcoins.core.script.constant.ScriptConstant ScriptConstant]] is interpreted to a number
+    * BIP62 could enforce that number to be encoded
     * in the smallest encoding possible
     * [[https://github.com/bitcoin/bitcoin/blob/a6a860796a44a2805a58391a009ba22752f64e32/src/script/script.h#L220-L237]]
     */
@@ -259,13 +266,13 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
   /**
     * Whenever a script constant is interpreted to a number BIP62 should enforce that number to be encoded
     * in the smallest encoding possible
-    * https://github.com/bitcoin/bitcoin/blob/a6a860796a44a2805a58391a009ba22752f64e32/src/script/script.h#L220-L237
+    * [[https://github.com/bitcoin/bitcoin/blob/a6a860796a44a2805a58391a009ba22752f64e32/src/script/script.h#L220-L237]]
     */
   def isShortestEncoding(hex: String): Boolean =
     isShortestEncoding(BitcoinSUtil.decodeHex(hex))
 
   /**
-    * Checks the [[ECPublicKey]] encoding according to bitcoin core's function:
+    * Checks the [[org.bitcoins.core.crypto.ECPublicKey ECPublicKey]] encoding according to bitcoin core's function:
     * [[https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L202]].
     */
   def checkPubKeyEncoding(key: ECPublicKey, program: ScriptProgram): Boolean =
@@ -279,7 +286,7 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
 
   /**
     * Returns true if the key is compressed or uncompressed, false otherwise
-    * https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L66
+    * [[https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L66]]
     * @param key the public key that is being checked
     * @return true if the key is compressed/uncompressed otherwise false
     */
@@ -313,8 +320,10 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
   }
 
   /**
-    * Determines if the given pubkey is valid in accordance to the given [[ScriptFlag]]s
-    * and [[SignatureVersion]]. Mimics this function inside of Bitcoin Core
+    * Determines if the given pubkey is valid in accordance to the given
+    * [[org.bitcoins.core.script.flag.ScriptFlag ScriptFlag]]s
+    * and [[org.bitcoins.core.protocol.script.SignatureVersion SignatureVersion]].
+    * Mimics this function inside of Bitcoin Core
     * [[https://github.com/bitcoin/bitcoin/blob/528472111b4965b1a99c4bcf08ac5ec93d87f10f/src/script/interpreter.cpp#L214-L223]]
     */
   def isValidPubKeyEncoding(
@@ -335,8 +344,11 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
     * We need to check if the scriptSignature has a redeemScript
     * In that case, we need to pass the redeemScript to the TransactionSignatureChecker
     *
-    * In the case we have a P2SH(P2WSH) we need to pass the witness's redeem script to the [[TransactionSignatureChecker]]
-    * instead of passing the [[WitnessScriptPubKey]] inside of the [[P2SHScriptSignature]]'s redeem script.
+    * In the case we have a P2SH(P2WSH) we need to pass the witness's redeem script to the
+    * [[org.bitcoins.core.crypto.TransactionSignatureChecker TransactionSignatureChecker]]
+    * instead of passing the
+    * [[org.bitcoins.core.protocol.script.WitnessScriptPubKey WitnessScriptPubKey]] inside of the
+    * [[org.bitcoins.core.protocol.script.P2SHScriptSignature P2SHScriptSignature]]'s redeem script.
     */
   def calculateScriptForChecking(
       txSignatureComponent: TxSigComponent,
@@ -412,7 +424,8 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
         script
     }
 
-  /** Removes the given [[ECDigitalSignature]] from the list of [[ScriptToken]] if it exists. */
+  /** Removes the given [[org.bitcoins.core.crypto.ECDigitalSignature ECDigitalSignature]] from the list of
+    * [[org.bitcoins.core.script.constant.ScriptToken ScriptToken]] if it exists. */
   def removeSignatureFromScript(
       signature: ECDigitalSignature,
       script: Seq[ScriptToken]): Seq[ScriptToken] = {
@@ -430,7 +443,8 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
     } else script
   }
 
-  /** Removes the list of [[ECDigitalSignature]] from the list of [[ScriptToken]] */
+  /** Removes the list of [[org.bitcoins.core.crypto.ECDigitalSignature ECDigitalSignature]] from the list of
+    * [[org.bitcoins.core.script.constant.ScriptToken ScriptToken]] */
   def removeSignaturesFromScript(
       sigs: Seq[ECDigitalSignature],
       script: Seq[ScriptToken]): Seq[ScriptToken] = {
@@ -449,7 +463,8 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
   }
 
   /**
-    * Removes the [[org.bitcoins.core.script.crypto.OP_CODESEPARATOR]] in the original script according to
+    * Removes the [[org.bitcoins.core.script.crypto.OP_CODESEPARATOR OP_CODESEPARATOR]]
+    * in the original script according to
     * the last code separator index in the script.
     */
   def removeOpCodeSeparator(
@@ -486,7 +501,8 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
     }
   }
 
-  /** Since witnesses are not run through the interpreter, replace OP_0/OP_1 with ScriptNumber.zero/ScriptNumber.one */
+  /** Since witnesses are not run through the interpreter, replace
+    * `OP_0`/`OP_1` with `ScriptNumber.zero`/`ScriptNumber.one` */
   def minimalIfOp(asm: Seq[ScriptToken]): Seq[ScriptToken] = {
     if (asm == Nil) asm
     else if (asm.last == OP_0) {
@@ -497,14 +513,16 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
 
   }
 
-  /** Replaces the OP_0 dummy for OP_CHECKMULTISIG with ScriptNumber.zero */
+  /** Replaces the [[org.bitcoins.core.script.constant.OP_0 OP_0]] dummy for
+    * [[org.bitcoins.core.script.crypto.OP_CHECKMULTISIG OP_CHECKMULTISIG]] with
+    * [[org.bitcoins.core.script.constant.ScriptNumber.zero ScriptNumber.zero]] */
   def minimalDummy(asm: Seq[ScriptToken]): Seq[ScriptToken] = {
     if (asm.headOption == Some(OP_0)) ScriptNumber.zero +: asm.tail
     else asm
   }
 
   /**
-    * Checks that all the [[org.bitcoins.core.crypto.ECPublicKey]] in this script
+    * Checks that all the [[org.bitcoins.core.crypto.ECPublicKey ECPublicKey]] in this script
     * is compressed public keys, this is required for BIP143
     * @param spk
     * @return
