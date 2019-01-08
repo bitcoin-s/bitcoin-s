@@ -19,11 +19,11 @@ import scodec.bits.ByteVector
   */
 trait ScriptOperationFactory[T <: ScriptOperation] extends BitcoinSLogger {
 
-  /** All of the [[ScriptOperation]]s for a particular T. */
+  /** All of the [[org.bitcoins.core.script.ScriptOperation ScriptOperation]]s for a particular `T`. */
   def operations: Seq[T]
 
   /**
-    * Finds a [[ScriptOperation]] from a given string
+    * Finds a [[org.bitcoins.core.script.ScriptOperation ScriptOperation]] from a given string
     */
   def fromString(str: String): Option[T] = {
     val result: Option[T] = operations.find(_.toString == str)
@@ -35,7 +35,7 @@ trait ScriptOperationFactory[T <: ScriptOperation] extends BitcoinSLogger {
   }
 
   /**
-    * Finds a [[ScriptOperation]] from its hexadecimal representation.
+    * Finds a [[org.bitcoins.core.script.ScriptOperation ScriptOperation]] from its hexadecimal representation.
     */
   def fromHex(hex: String): Option[T] = {
     val bytes = BitcoinSUtil.decodeHex(hex)
@@ -44,13 +44,13 @@ trait ScriptOperationFactory[T <: ScriptOperation] extends BitcoinSLogger {
 
   /**
     * Removes the 'OP_' prefix from a given operation.
-    * Example: OP_EQUALVERIFY would be transformed into EQUALVERIFY
+    * Example: `OP_EQUALVERIFY` would be transformed into `EQUALVERIFY`
     */
   private def removeOP_Prefix(str: String): String = {
     str.replace("OP_", "")
   }
 
-  /** Finds a [[ScriptOperation]] from a given [[Byte]]. */
+  /** Finds a [[org.bitcoins.core.script.ScriptOperation ScriptOperation]] from a given [[Byte]]. */
   def fromByte(byte: Byte): T = {
     operations.find(_.toByte == byte).get
   }

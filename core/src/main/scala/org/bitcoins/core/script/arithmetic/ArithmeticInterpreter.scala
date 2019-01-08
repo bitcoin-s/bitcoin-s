@@ -116,7 +116,8 @@ sealed abstract class ArithmeticInterpreter {
     performBinaryBooleanOperation(program, (x, y) => x.numEqual(y))
   }
 
-  /** Same as [[OP_NUMEQUAL]], but runs [[OP_VERIFY]] afterward. */
+  /** Same as [[org.bitcoins.core.script.arithmetic.OP_NUMEQUAL OP_NUMEQUAL]], but runs
+    * [[org.bitcoins.core.script.control.OP_VERIFY OP_VERIFY]] afterward. */
   def opNumEqualVerify(program: ScriptProgram): ScriptProgram = {
     require(program.script.headOption.contains(OP_NUMEQUALVERIFY),
             "Script top must be OP_NUMEQUALVERIFY")

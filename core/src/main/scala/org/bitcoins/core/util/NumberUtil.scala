@@ -26,7 +26,7 @@ trait NumberUtil extends BitcoinSLogger {
     BigInt(new BigInteger(1, bytes.toArray))
   }
 
-  /** Takes a hex string and parses it to a [[BigInt]]. */
+  /** Takes a hex string and parses it to a [[scala.math.BigInt BigInt]]. */
   def toBigInt(hex: String): BigInt = toBigInt(BitcoinSUtil.decodeHex(hex))
 
   /** Converts a sequence of bytes to twos complement signed number. */
@@ -49,10 +49,10 @@ trait NumberUtil extends BitcoinSLogger {
     }
   }
 
-  /** Converts a sequence of [[Byte]] to a [[Int]]. */
+  /** Converts a sequence of [[Byte]] to a [[scala.Int Int]]. */
   def toInt(bytes: ByteVector): Int = toBigInt(bytes).toInt
 
-  /** Converts a hex string to a [[Int]]. */
+  /** Converts a hex string to a [[scala.Int Int]]. */
   def toInt(hex: String): Int = toInt(BitcoinSUtil.decodeHex(hex))
 
   /** Converts a sequence of [[Byte]] to a [[Long]]. */
