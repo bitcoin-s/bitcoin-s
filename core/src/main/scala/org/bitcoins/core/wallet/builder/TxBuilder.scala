@@ -781,7 +781,8 @@ object TxBuilder {
     }
   }
 
-  /** Checks that we did not lose a [[TransactionOutput]] in the signing process of this transaction */
+  /** Checks that we did not lose a [[org.bitcoins.core.protocol.transaction.TransactionOutput TransactionOutput]]
+    * in the signing process of this transaction */
   def sanityDestinationChecks(
       txBuilder: TxBuilder,
       signedTx: Transaction): Try[Unit] = {
@@ -813,7 +814,8 @@ object TxBuilder {
   }
 
   /**
-    * Checks that the [[TxBuilder.creditingAmount]] >= [[TxBuilder.destinationAmount]]
+    * Checks that the [[org.bitcoins.core.wallet.builder.TxBuilder.creditingAmount TxBuilder.creditingAmount]]
+    * >= [[org.bitcoins.core.wallet.builder.TxBuilder.destinationAmount TxBuilder.destinationAmount]]
     * and then does a sanity check on the tx's fee
     */
   def sanityAmountChecks(
@@ -900,9 +902,10 @@ object BitcoinTxBuilder {
     * @param utxos extra information needed to spend the outputs in the creditingTxs
     * @param feeRate the desired fee rate for this tx
     * @param changeSPK where we should send the change from the creditingTxs
-    * @return either a instance of a [[TxBuilder]],
-    *         from which you can call [[TxBuilder.sign]] to generate a signed tx,
-    *         or a [[TxBuilderError]]
+    * @return either a instance of a [[org.bitcoins.core.wallet.builder.TxBuilder TxBuilder]],
+    *         from which you can call [[org.bitcoins.core.wallet.builder.TxBuilder.sign TxBuilder.sign]]
+    *         to generate a signed tx, or a
+    *         [[org.bitcoins.core.wallet.builder.TxBuilderError TxBuilderError]]
     */
   def apply(
       destinations: Seq[TransactionOutput],

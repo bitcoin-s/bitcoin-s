@@ -22,13 +22,13 @@ sealed abstract class LockTimeInterpreter {
   private def logger = BitcoinSLogger.logger
 
   /**
-    * Marks transaction as invalid if the top stack item is greater than the transaction's nLockTime field,
-    * otherwise script evaluation continues as though an OP_NOP was executed. Transaction is also invalid if
+    * Marks transaction as invalid if the top stack item is greater than the transaction's `nLockTime` field,
+    * otherwise script evaluation continues as though an `OP_NOP` was executed. Transaction is also invalid if
     * 1. the stack is empty; or
     * 2. the top stack item is negative; or
     * 3. the top stack item is greater than or equal to 500000000 while the transaction's nLockTime field is less than 500000000,
     * or vice versa; or
-    * 4. the input's nSequence field is equal to 0xffffffff.
+    * 4. the input's `nSequence` field is equal to 0xffffffff.
     * The precise semantics are described in BIP 0065
     */
   @tailrec
@@ -94,9 +94,8 @@ sealed abstract class LockTimeInterpreter {
     *       the transaction input sequence number disable flag (1 << 31) is set; or
     *       the relative lock-time type is not the same; or
     *       the top stack item is greater than the transaction sequence (when masked according to the BIP68);
-    * Otherwise, script execution will continue as if a NOP had been executed.
-    * See BIP112 for more information
-    * [[https://github.com/bitcoin/bips/blob/master/bip-0112.mediawiki]]
+    * Otherwise, script execution will continue as if a `NOP` had been executed.
+    * See [[https://github.com/bitcoin/bips/blob/master/bip-0112.mediawiki BIP112]] for more information
     */
   @tailrec
   final def opCheckSequenceVerify(program: ScriptProgram): ScriptProgram = {
@@ -217,7 +216,9 @@ sealed abstract class LockTimeInterpreter {
   }
 
   /**
-    * Checks if the given [[ScriptNumber]] and [[UInt32]] are valid values for spending
+    * Checks if the given
+    * [[org.bitcoins.core.script.constant.ScriptNumber ScriptNumber]] and
+    * [[org.bitcoins.core.number.UInt32 UInt32]] are valid values for spending
     * a OP_CSV value by block height
     */
   def isCSVLockByBlockHeight(
@@ -233,7 +234,8 @@ sealed abstract class LockTimeInterpreter {
     !isCSVLockByRelativeLockTime(scriptNumber)
 
   /**
-    * Checks if the given [[ScriptNumber]] and [[UInt32]] are valid values
+    * Checks if the given [[org.bitcoins.core.script.constant.ScriptNumber ScriptNumber]] and
+    * [[org.bitcoins.core.number.UInt32 UInt32]] are valid values
     * for spending an OP_CSV value by time based relative lock time
     */
   def isCSVLockByRelativeLockTime(
@@ -253,7 +255,7 @@ sealed abstract class LockTimeInterpreter {
     result
   }
 
-  /** Masks the given [[ScriptNumber]] according to BIP112 */
+  /** Masks the given [[org.bitcoins.core.script.constant.ScriptNumber ScriptNumber]] according to BIP112 */
   def maskScriptNumber(scriptNumber: ScriptNumber): ScriptNumber = {
     val nSequenceMasked: ScriptNumber = scriptNumber & Int64(
       TransactionConstants.fullSequenceLockTimeMask.toLong)
@@ -308,7 +310,7 @@ sealed abstract class LockTimeInterpreter {
     } else true
   }
 
-  /** The [[ScriptNumber]] on the stack has the disable flag (1 << 31) unset. */
+  /** The [[org.bitcoins.core.script.constant.ScriptNumber ScriptNumber]] on the stack has the disable flag (1 << 31) unset. */
   def isLockTimeBitOff(s: ScriptNumber): Boolean =
     (s.toLong & TransactionConstants.locktimeDisabledFlag.toLong) == 0
 

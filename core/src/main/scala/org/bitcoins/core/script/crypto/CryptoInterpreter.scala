@@ -60,7 +60,9 @@ sealed abstract class CryptoInterpreter {
   /**
     * The entire transaction's outputs, inputs, and script (from the most
     * recently-executed OP_CODESEPARATOR to the end) are hashed.
-    * The signature used by [[OP_CHECKSIG]] must be a valid signature for this hash and public key.
+    * The signature used by
+    * [[org.bitcoins.core.script.crypto.OP_CHECKSIG OP_CHECKSIG]]
+    * must be a valid signature for this hash and public key.
     * [[https://github.com/bitcoin/bitcoin/blob/528472111b4965b1a99c4bcf08ac5ec93d87f10f/src/script/interpreter.cpp#L880]]
     */
   def opCheckSig(program: ScriptProgram): ScriptProgram = {
@@ -101,7 +103,8 @@ sealed abstract class CryptoInterpreter {
     }
   }
 
-  /** Runs [[OP_CHECKSIG]] with an [[OP_VERIFY]] afterwards. */
+  /** Runs [[org.bitcoins.core.script.crypto.OP_CHECKSIG OP_CHECKSIG]] with an
+    * [[org.bitcoins.core.script.control.OP_VERIFY OP_VERIFY]] afterwards. */
   def opCheckSigVerify(program: ScriptProgram): ScriptProgram = {
     require(program.script.headOption.contains(OP_CHECKSIGVERIFY),
             "Script top must be OP_CHECKSIGVERIFY")
@@ -125,7 +128,8 @@ sealed abstract class CryptoInterpreter {
 
   /**
     * All of the signature checking words will only match signatures to the data
-    * after the most recently-executed [[OP_CODESEPARATOR]].
+    * after the most recently-executed
+    * [[org.bitcoins.core.script.crypto.OP_CODESEPARATOR OP_CODESEPARATOR]].
     */
   def opCodeSeparator(program: ScriptProgram): ScriptProgram = {
     require(program.script.headOption.contains(OP_CODESEPARATOR),
@@ -276,7 +280,9 @@ sealed abstract class CryptoInterpreter {
     }
   }
 
-  /** Runs [[OP_CHECKMULTISIG]] with an [[OP_VERIFY]] afterwards */
+  /** Runs
+    * [[org.bitcoins.core.script.crypto.OP_CHECKMULTISIG OP_CHECKMULTISIG]] with an
+    * [[org.bitcoins.core.script.control.OP_VERIFY OP_VERIFY]] afterwards */
   def opCheckMultiSigVerify(program: ScriptProgram): ScriptProgram = {
     require(program.script.headOption.contains(OP_CHECKMULTISIGVERIFY),
             "Script top must be OP_CHECKMULTISIGVERIFY")
@@ -301,7 +307,7 @@ sealed abstract class CryptoInterpreter {
 
   /**
     * This is a higher order function designed to execute a hash function on the stack top of the program
-    * For instance, we could pass in CryptoUtil.sha256 function as the 'hashFunction' argument, which would then
+    * For instance, we could pass in CryptoUtil.sha256 function as the `hashFunction` argument, which would then
     * apply sha256 to the stack top
     * @param program the script program whose stack top needs to be hashed
     * @param hashFunction the hash function which needs to be used on the stack top (sha256,ripemd160,etc..)

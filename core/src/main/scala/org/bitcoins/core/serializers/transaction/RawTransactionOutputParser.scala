@@ -11,7 +11,7 @@ import scodec.bits.ByteVector
 
 /**
   * Created by chris on 1/11/16.
-  * https://bitcoin.org/en/developer-reference#txout
+  * [[https://bitcoin.org/en/developer-reference#txout]]
   */
 sealed abstract class RawTransactionOutputParser
     extends RawBitcoinSerializer[TransactionOutput] {
@@ -23,8 +23,10 @@ sealed abstract class RawTransactionOutputParser
   }
 
   /**
-    * Reads a single output from the given bytes, note this is different than [[org.bitcoins.core.serializers.transaction.RawTransactionOutputParser.read]]
-    * because it does NOT expect a [[org.bitcoins.core.protocol.CompactSizeUInt]] to be the first element in the byte array indicating how many outputs we have
+    * Reads a single output from the given bytes, note this is different than
+    * [[org.bitcoins.core.serializers.transaction.RawTransactionOutputParser.read RawTransactionOutputParser.read]]
+    * because it does NOT expect a [[org.bitcoins.core.protocol.CompactSizeUInt CompactSizeUInt]]
+    * to be the first element in the byte array indicating how many outputs we have
     */
   override def read(bytes: ByteVector): TransactionOutput = {
     val satoshisBytes = bytes.take(8)
