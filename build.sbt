@@ -35,6 +35,7 @@ lazy val commonSettings = List(
   scalacOptions in Compile := compilerOpts,
 
   scalacOptions in Test := testCompilerOpts,
+
   assemblyOption in assembly := (assemblyOption in assembly).value
     .copy(includeScala = false),
 
@@ -94,6 +95,7 @@ lazy val root = project
     doc
   )
   .settings(commonSettings: _*)
+  .settings(crossScalaVersions := Nil)
 
 
 lazy val secp256k1jni = project
@@ -101,7 +103,7 @@ lazy val secp256k1jni = project
   .settings(commonSettings: _*)
   .settings(
     libraryDependencies ++= Deps.secp256k1jni,
-    unmanagedResourceDirectories in Compile += baseDirectory.value / "natives"
+    unmanagedResourceDirectories in Compile += baseDirectory.value / "natives",
   )
   .enablePlugins()
 
@@ -117,6 +119,7 @@ lazy val coreTest = project
   .in(file("core-test"))
   .enablePlugins()
   .settings(commonSettings: _*)
+  .settings(skip in publish := true)
   .dependsOn(
     core,
   )
@@ -145,7 +148,8 @@ lazy val bench = project
   .settings(commonSettings: _*)
   .settings(
     libraryDependencies ++= Deps.bench,
-    name := "bitcoin-s-bench"
+    name := "bitcoin-s-bench",
+    skip in publish := true
   )
   .dependsOn(core)
 
@@ -173,7 +177,8 @@ lazy val doc = project
   .in(file("doc"))
   .settings(
     name := "bitcoin-s-doc",
-    libraryDependencies ++= Deps.doc
+    libraryDependencies ++= Deps.doc,
+    skip in publish := true
   )
   .dependsOn(
     secp256k1jni,
