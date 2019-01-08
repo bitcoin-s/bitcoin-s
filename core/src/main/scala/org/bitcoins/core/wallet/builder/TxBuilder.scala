@@ -932,12 +932,12 @@ object BitcoinTxBuilder {
       utxos match {
         case Nil => accum
         case h :: t =>
-          val u = BitcoinUTXOSpendingInfo(h.outPoint,
-                                          h.output,
-                                          h.signers,
-                                          h.redeemScriptOpt,
-                                          h.scriptWitnessOpt,
-                                          h.hashType)
+          val u = BitcoinUTXOSpendingInfo(outPoint = h.outPoint,
+                                          output = h.output,
+                                          signers = h.signers,
+                                          redeemScriptOpt = h.redeemScriptOpt,
+                                          scriptWitnessOpt = h.scriptWitnessOpt,
+                                          hashType = h.hashType)
           val result: BitcoinTxBuilder.UTXOMap = accum.updated(h.outPoint, u)
           loop(t, result)
       }

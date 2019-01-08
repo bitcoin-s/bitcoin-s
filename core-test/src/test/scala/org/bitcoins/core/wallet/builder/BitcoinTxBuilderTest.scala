@@ -21,25 +21,25 @@ class BitcoinTxBuilderTest extends AsyncFlatSpec with MustMatchers {
 
     val creditingOutput = TransactionOutput(CurrencyUnits.zero, spk)
     val destinations =
-      Seq(TransactionOutput(Satoshis(Int64(1)), EmptyScriptPubKey))
-    val creditingTx = BaseTransaction(tc.validLockVersion,
-                                      Nil,
-                                      Seq(creditingOutput),
-                                      tc.lockTime)
+      Seq(TransactionOutput(Satoshis.one, EmptyScriptPubKey))
+    val creditingTx = BaseTransaction(version = tc.validLockVersion,
+                                      inputs = Nil,
+                                      outputs = Seq(creditingOutput),
+                                      lockTime = tc.lockTime)
     val outPoint = TransactionOutPoint(creditingTx.txId, UInt32.zero)
-    val utxo = BitcoinUTXOSpendingInfo(outPoint,
-                                       creditingOutput,
-                                       Seq(privKey),
-                                       None,
-                                       None,
-                                       HashType.sigHashAll)
+    val utxo = BitcoinUTXOSpendingInfo(outPoint = outPoint,
+                                       output = creditingOutput,
+                                       signers = Seq(privKey),
+                                       redeemScriptOpt = None,
+                                       scriptWitnessOpt = None,
+                                       hashType = HashType.sigHashAll)
     val utxoMap: BitcoinTxBuilder.UTXOMap = Map(outPoint -> utxo)
     val feeUnit = SatoshisPerVirtualByte(Satoshis.one)
-    val txBuilder = BitcoinTxBuilder(destinations,
-                                     utxoMap,
-                                     feeUnit,
-                                     EmptyScriptPubKey,
-                                     TestNet3)
+    val txBuilder = BitcoinTxBuilder(destinations = destinations,
+                                     utxos = utxoMap,
+                                     feeRate = feeUnit,
+                                     changeSPK = EmptyScriptPubKey,
+                                     network = TestNet3)
     val resultFuture = txBuilder.flatMap(_.sign)
     recoverToSucceededIf[IllegalArgumentException] {
       resultFuture
@@ -49,25 +49,25 @@ class BitcoinTxBuilderTest extends AsyncFlatSpec with MustMatchers {
   it must "fail to build a transaction when we pass in a negative fee rate" in {
     val creditingOutput = TransactionOutput(CurrencyUnits.zero, spk)
     val destinations =
-      Seq(TransactionOutput(Satoshis(Int64(1)), EmptyScriptPubKey))
-    val creditingTx = BaseTransaction(tc.validLockVersion,
-                                      Nil,
-                                      Seq(creditingOutput),
-                                      tc.lockTime)
+      Seq(TransactionOutput(Satoshis.one, EmptyScriptPubKey))
+    val creditingTx = BaseTransaction(version = tc.validLockVersion,
+                                      inputs = Nil,
+                                      outputs = Seq(creditingOutput),
+                                      lockTime = tc.lockTime)
     val outPoint = TransactionOutPoint(creditingTx.txId, UInt32.zero)
-    val utxo = BitcoinUTXOSpendingInfo(outPoint,
-                                       creditingOutput,
-                                       Seq(privKey),
-                                       None,
-                                       None,
-                                       HashType.sigHashAll)
+    val utxo = BitcoinUTXOSpendingInfo(outPoint = outPoint,
+                                       output = creditingOutput,
+                                       signers = Seq(privKey),
+                                       redeemScriptOpt = None,
+                                       scriptWitnessOpt = None,
+                                       hashType = HashType.sigHashAll)
     val utxoMap: BitcoinTxBuilder.UTXOMap = Map(outPoint -> utxo)
     val feeUnit = SatoshisPerVirtualByte(Satoshis(Int64(-1)))
-    val txBuilder = BitcoinTxBuilder(destinations,
-                                     utxoMap,
-                                     feeUnit,
-                                     EmptyScriptPubKey,
-                                     TestNet3)
+    val txBuilder = BitcoinTxBuilder(destinations = destinations,
+                                     utxos = utxoMap,
+                                     feeRate = feeUnit,
+                                     changeSPK = EmptyScriptPubKey,
+                                     network = TestNet3)
     recoverToSucceededIf[IllegalArgumentException] {
       txBuilder
     }
@@ -76,7 +76,7 @@ class BitcoinTxBuilderTest extends AsyncFlatSpec with MustMatchers {
   it must "fail a transaction when the user invariants fail" in {
     val creditingOutput = TransactionOutput(CurrencyUnits.zero, spk)
     val destinations =
-      Seq(TransactionOutput(Satoshis(Int64(1)), EmptyScriptPubKey))
+      Seq(TransactionOutput(Satoshis.one, EmptyScriptPubKey))
     val creditingTx = BaseTransaction(tc.validLockVersion,
                                       Nil,
                                       Seq(creditingOutput),
@@ -89,12 +89,12 @@ class BitcoinTxBuilderTest extends AsyncFlatSpec with MustMatchers {
                                        None,
                                        HashType.sigHashAll)
     val utxoMap: BitcoinTxBuilder.UTXOMap = Map(outPoint -> utxo)
-    val feeUnit = SatoshisPerVirtualByte(Satoshis(Int64(1)))
-    val txBuilder = BitcoinTxBuilder(destinations,
-                                     utxoMap,
-                                     feeUnit,
-                                     EmptyScriptPubKey,
-                                     TestNet3)
+    val feeUnit = SatoshisPerVirtualByte(currencyUnit = Satoshis(Int64(1)))
+    val txBuilder = BitcoinTxBuilder(destinations = destinations,
+                                     utxos = utxoMap,
+                                     feeRate = feeUnit,
+                                     changeSPK = EmptyScriptPubKey,
+                                     network = TestNet3)
     //trivially false
     val f = (_: Seq[BitcoinUTXOSpendingInfo], _: Transaction) => false
     val resultFuture = txBuilder.flatMap(_.sign(f))
@@ -104,39 +104,44 @@ class BitcoinTxBuilderTest extends AsyncFlatSpec with MustMatchers {
   }
 
   it must "be able to create a BitcoinTxBuilder from UTXOTuple and UTXOMap" in {
-    val creditingOutput = TransactionOutput(CurrencyUnits.zero, spk)
-    val destinations =
-      Seq(TransactionOutput(Satoshis(Int64(1)), EmptyScriptPubKey))
-    val creditingTx = BaseTransaction(tc.validLockVersion,
-                                      Nil,
-                                      Seq(creditingOutput),
-                                      tc.lockTime)
+    val creditingOutput =
+      TransactionOutput(currencyUnit = CurrencyUnits.zero, scriptPubKey = spk)
+    val destinations = {
+      Seq(
+        TransactionOutput(currencyUnit = Satoshis.one,
+                          scriptPubKey = EmptyScriptPubKey))
+    }
+    val creditingTx = BaseTransaction(version = tc.validLockVersion,
+                                      inputs = Nil,
+                                      outputs = Seq(creditingOutput),
+                                      lockTime = tc.lockTime)
     val outPoint = TransactionOutPoint(creditingTx.txId, UInt32.zero)
-    val utxo = BitcoinUTXOSpendingInfo(outPoint,
-                                       creditingOutput,
-                                       Seq(privKey),
-                                       None,
-                                       None,
-                                       HashType.sigHashAll)
+    val utxo = BitcoinUTXOSpendingInfo(outPoint = outPoint,
+                                       output = creditingOutput,
+                                       signers = Seq(privKey),
+                                       redeemScriptOpt = None,
+                                       scriptWitnessOpt = None,
+                                       hashType = HashType.sigHashAll)
     val utxoMap: BitcoinTxBuilder.UTXOMap = Map(outPoint -> utxo)
-    val utxoSpendingInfo = BitcoinUTXOSpendingInfo(outPoint,
-                                                   creditingOutput,
-                                                   Seq(privKey),
-                                                   None,
-                                                   None,
-                                                   HashType.sigHashAll)
+    val utxoSpendingInfo = BitcoinUTXOSpendingInfo(outPoint = outPoint,
+                                                   output = creditingOutput,
+                                                   signers = Seq(privKey),
+                                                   redeemScriptOpt = None,
+                                                   scriptWitnessOpt = None,
+                                                   hashType =
+                                                     HashType.sigHashAll)
 
-    val feeUnit = SatoshisPerVirtualByte(Satoshis(Int64(1)))
-    val txBuilderMap = BitcoinTxBuilder(destinations,
-                                        utxoMap,
-                                        feeUnit,
-                                        EmptyScriptPubKey,
-                                        TestNet3)
-    val txBuilderTuple = BitcoinTxBuilder(destinations,
-                                          Seq(utxoSpendingInfo),
-                                          feeUnit,
-                                          EmptyScriptPubKey,
-                                          TestNet3)
+    val feeUnit = SatoshisPerVirtualByte(Satoshis.one)
+    val txBuilderMap = BitcoinTxBuilder(destinations = destinations,
+                                        utxos = utxoMap,
+                                        feeRate = feeUnit,
+                                        changeSPK = EmptyScriptPubKey,
+                                        network = TestNet3)
+    val txBuilderTuple = BitcoinTxBuilder(destinations = destinations,
+                                          utxos = Seq(utxoSpendingInfo),
+                                          feeRate = feeUnit,
+                                          changeSPK = EmptyScriptPubKey,
+                                          network = TestNet3)
 
     txBuilderTuple.flatMap { tup =>
       txBuilderMap.map { map =>
@@ -149,25 +154,27 @@ class BitcoinTxBuilderTest extends AsyncFlatSpec with MustMatchers {
     val p2sh = P2SHScriptPubKey(spk)
     val creditingOutput = TransactionOutput(CurrencyUnits.zero, p2sh)
     val destinations =
-      Seq(TransactionOutput(Satoshis(Int64(1)), EmptyScriptPubKey))
-    val creditingTx = BaseTransaction(tc.validLockVersion,
-                                      Nil,
-                                      Seq(creditingOutput),
-                                      tc.lockTime)
+      Seq(TransactionOutput(Satoshis.one, EmptyScriptPubKey))
+    val creditingTx = BaseTransaction(version = tc.validLockVersion,
+                                      inputs = Nil,
+                                      outputs = Seq(creditingOutput),
+                                      lockTime = tc.lockTime)
     val outPoint = TransactionOutPoint(creditingTx.txId, UInt32.zero)
-    val utxo = BitcoinUTXOSpendingInfo(outPoint,
-                                       creditingOutput,
-                                       Seq(privKey),
-                                       Some(EmptyScriptPubKey),
-                                       None,
-                                       HashType.sigHashAll)
+    val utxo = BitcoinUTXOSpendingInfo(
+      outPoint = outPoint,
+      output = creditingOutput,
+      signers = Seq(privKey),
+      redeemScriptOpt = Some(EmptyScriptPubKey),
+      scriptWitnessOpt = None,
+      hashType = HashType.sigHashAll
+    )
     val utxoMap: BitcoinTxBuilder.UTXOMap = Map(outPoint -> utxo)
-    val feeUnit = SatoshisPerVirtualByte(Satoshis(Int64(1)))
-    val txBuilderNoRedeem = BitcoinTxBuilder(destinations,
-                                             utxoMap,
-                                             feeUnit,
-                                             EmptyScriptPubKey,
-                                             TestNet3)
+    val feeUnit = SatoshisPerVirtualByte(Satoshis.one)
+    val txBuilderNoRedeem = BitcoinTxBuilder(destinations = destinations,
+                                             utxos = utxoMap,
+                                             feeRate = feeUnit,
+                                             changeSPK = EmptyScriptPubKey,
+                                             network = TestNet3)
     val resultFuture = txBuilderNoRedeem.flatMap(_.sign)
     recoverToSucceededIf[IllegalArgumentException] {
       resultFuture
@@ -178,7 +185,7 @@ class BitcoinTxBuilderTest extends AsyncFlatSpec with MustMatchers {
     val p2wsh = P2WSHWitnessSPKV0(spk)
     val creditingOutput = TransactionOutput(CurrencyUnits.zero, p2wsh)
     val destinations =
-      Seq(TransactionOutput(Satoshis(Int64(1)), EmptyScriptPubKey))
+      Seq(TransactionOutput(Satoshis.one, EmptyScriptPubKey))
     val creditingTx = BaseTransaction(tc.validLockVersion,
                                       Nil,
                                       Seq(creditingOutput),
@@ -192,7 +199,7 @@ class BitcoinTxBuilderTest extends AsyncFlatSpec with MustMatchers {
                                        HashType.sigHashAll)
     val utxoMap: BitcoinTxBuilder.UTXOMap = Map(outPoint -> utxo)
 
-    val feeUnit = SatoshisPerVirtualByte(Satoshis(Int64(1)))
+    val feeUnit = SatoshisPerVirtualByte(Satoshis.one)
     val txBuilderWitness = BitcoinTxBuilder(destinations,
                                             utxoMap,
                                             feeUnit,
@@ -208,7 +215,7 @@ class BitcoinTxBuilderTest extends AsyncFlatSpec with MustMatchers {
     val p2pkh = P2PKHScriptPubKey(privKey.publicKey)
     val creditingOutput = TransactionOutput(CurrencyUnits.zero, p2pkh)
     val destinations =
-      Seq(TransactionOutput(Satoshis(Int64(1)), EmptyScriptPubKey))
+      Seq(TransactionOutput(Satoshis.one, EmptyScriptPubKey))
     val creditingTx = BaseTransaction(tc.validLockVersion,
                                       Nil,
                                       Seq(creditingOutput),
@@ -222,7 +229,7 @@ class BitcoinTxBuilderTest extends AsyncFlatSpec with MustMatchers {
                                        HashType.sigHashAll)
     val utxoMap: BitcoinTxBuilder.UTXOMap = Map(outPoint -> utxo)
 
-    val feeUnit = SatoshisPerVirtualByte(Satoshis(Int64(1)))
+    val feeUnit = SatoshisPerVirtualByte(Satoshis.one)
     val txBuilderWitness = BitcoinTxBuilder(destinations,
                                             utxoMap,
                                             feeUnit,
@@ -239,26 +246,29 @@ class BitcoinTxBuilderTest extends AsyncFlatSpec with MustMatchers {
     val pubKey2 = ECPrivateKey().publicKey
     val creditingOutput = TransactionOutput(CurrencyUnits.zero, p2pkh)
     val destinations =
-      Seq(TransactionOutput(Satoshis(Int64(1)), EmptyScriptPubKey))
-    val creditingTx = BaseTransaction(tc.validLockVersion,
-                                      Nil,
-                                      Seq(creditingOutput),
-                                      tc.lockTime)
-    val outPoint = TransactionOutPoint(creditingTx.txId, UInt32.zero)
-    val utxo = BitcoinUTXOSpendingInfo(outPoint,
-                                       creditingOutput,
-                                       Seq(privKey),
-                                       None,
-                                       Some(P2WSHWitnessV0(EmptyScriptPubKey)),
-                                       HashType.sigHashAll)
+      Seq(TransactionOutput(Satoshis.one, EmptyScriptPubKey))
+    val creditingTx = BaseTransaction(version = tc.validLockVersion,
+                                      inputs = Nil,
+                                      outputs = Seq(creditingOutput),
+                                      lockTime = tc.lockTime)
+    val outPoint =
+      TransactionOutPoint(txId = creditingTx.txId, index = UInt32.zero)
+    val utxo = BitcoinUTXOSpendingInfo(
+      outPoint = outPoint,
+      output = creditingOutput,
+      signers = Seq(privKey),
+      redeemScriptOpt = None,
+      scriptWitnessOpt = Some(P2WSHWitnessV0(EmptyScriptPubKey)),
+      hashType = HashType.sigHashAll
+    )
     val utxoMap: BitcoinTxBuilder.UTXOMap = Map(outPoint -> utxo)
 
-    val feeUnit = SatoshisPerVirtualByte(Satoshis(Int64(1)))
-    val txBuilderWitness = BitcoinTxBuilder(destinations,
-                                            utxoMap,
-                                            feeUnit,
-                                            EmptyScriptPubKey,
-                                            TestNet3)
+    val feeUnit = SatoshisPerVirtualByte(Satoshis.one)
+    val txBuilderWitness = BitcoinTxBuilder(destinations = destinations,
+                                            utxos = utxoMap,
+                                            feeRate = feeUnit,
+                                            changeSPK = EmptyScriptPubKey,
+                                            network = TestNet3)
     val resultFuture = txBuilderWitness.flatMap(_.sign)
     recoverToSucceededIf[IllegalArgumentException] {
       resultFuture
@@ -266,24 +276,30 @@ class BitcoinTxBuilderTest extends AsyncFlatSpec with MustMatchers {
   }
 
   it must "fail to sign a p2wpkh if we don't pass in the public key" in {
-    val p2wpkh = P2WPKHWitnessSPKV0(privKey.publicKey)
-    val creditingOutput = TransactionOutput(CurrencyUnits.zero, p2wpkh)
+    val p2wpkh = P2WPKHWitnessSPKV0(pubKey = privKey.publicKey)
+    val creditingOutput = TransactionOutput(currencyUnit = CurrencyUnits.zero,
+                                            scriptPubKey = p2wpkh)
     val destinations =
-      Seq(TransactionOutput(Satoshis(Int64(1)), EmptyScriptPubKey))
-    val creditingTx = BaseTransaction(tc.validLockVersion,
-                                      Nil,
-                                      Seq(creditingOutput),
-                                      tc.lockTime)
-    val outPoint = TransactionOutPoint(creditingTx.txId, UInt32.zero)
-    val utxo = BitcoinUTXOSpendingInfo(outPoint,
-                                       creditingOutput,
-                                       Seq(privKey),
-                                       None,
-                                       Some(P2WSHWitnessV0(EmptyScriptPubKey)),
-                                       HashType.sigHashAll)
+      Seq(
+        TransactionOutput(currencyUnit = Satoshis.one,
+                          scriptPubKey = EmptyScriptPubKey))
+    val creditingTx = BaseTransaction(version = tc.validLockVersion,
+                                      inputs = Nil,
+                                      outputs = Seq(creditingOutput),
+                                      lockTime = tc.lockTime)
+    val outPoint =
+      TransactionOutPoint(txId = creditingTx.txId, index = UInt32.zero)
+    val utxo = BitcoinUTXOSpendingInfo(
+      outPoint = outPoint,
+      output = creditingOutput,
+      signers = Seq(privKey),
+      redeemScriptOpt = None,
+      scriptWitnessOpt = Some(P2WSHWitnessV0(EmptyScriptPubKey)),
+      hashType = HashType.sigHashAll
+    )
     val utxoMap: BitcoinTxBuilder.UTXOMap = Map(outPoint -> utxo)
 
-    val feeUnit = SatoshisPerVirtualByte(Satoshis(Int64(1)))
+    val feeUnit = SatoshisPerVirtualByte(Satoshis.one)
     val txBuilderWitness = BitcoinTxBuilder(destinations,
                                             utxoMap,
                                             feeUnit,
@@ -300,7 +316,7 @@ class BitcoinTxBuilderTest extends AsyncFlatSpec with MustMatchers {
     val pubKey2 = ECPrivateKey().publicKey
     val creditingOutput = TransactionOutput(CurrencyUnits.zero, p2wpkh)
     val destinations =
-      Seq(TransactionOutput(Satoshis(Int64(1)), EmptyScriptPubKey))
+      Seq(TransactionOutput(Satoshis.one, EmptyScriptPubKey))
     val creditingTx = BaseTransaction(tc.validLockVersion,
                                       Nil,
                                       Seq(creditingOutput),
@@ -314,7 +330,7 @@ class BitcoinTxBuilderTest extends AsyncFlatSpec with MustMatchers {
                                        HashType.sigHashAll)
     val utxoMap: BitcoinTxBuilder.UTXOMap = Map(outPoint -> utxo)
 
-    val feeUnit = SatoshisPerVirtualByte(Satoshis(Int64(1)))
+    val feeUnit = SatoshisPerVirtualByte(Satoshis.one)
     val txBuilderWitness = BitcoinTxBuilder(destinations,
                                             utxoMap,
                                             feeUnit,
