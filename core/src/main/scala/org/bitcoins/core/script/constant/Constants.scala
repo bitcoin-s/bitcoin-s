@@ -131,8 +131,7 @@ object ScriptNumber extends Factory[ScriptNumber] {
       Failure(new IllegalArgumentException(
         "The given hex was not the shortest encoding for the script number: " + hex))
     } else {
-      val number = apply(hex)
-      Success(number)
+      Try(apply(hex))
     }
   }
 
