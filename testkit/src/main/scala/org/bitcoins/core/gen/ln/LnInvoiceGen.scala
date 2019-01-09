@@ -11,7 +11,7 @@ import org.scalacheck.Gen
 sealed abstract class LnInvoiceGen {
 
   /**
-    * Generates a [[org.bitcoins.core.protocol.ln.LnHumanReadablePart]]
+    * Generates a [[org.bitcoins.core.protocol.ln.LnHumanReadablePart LnHumanReadablePart]]
     * that does not contain a amount
     * @return
     */
@@ -22,7 +22,7 @@ sealed abstract class LnInvoiceGen {
   }
 
   /**
-    * Generates a [[org.bitcoins.core.protocol.ln.LnHumanReadablePart]]
+    * Generates a [[org.bitcoins.core.protocol.ln.LnHumanReadablePart LnHumanReadablePart]]
     * with an amount encoded
     */
   def lnHrpAmt: Gen[LnHumanReadablePart] = {
@@ -97,7 +97,8 @@ sealed abstract class LnInvoiceGen {
       .map(rs => LnTag.RoutingInfo(rs))
   }
 
-  /** Generated a tagged fields with an explicit [[LnTag.NodeIdTag]]
+  /** Generated a tagged fields with an explicit
+    * [[org.bitcoins.core.protocol.ln.LnTag.NodeIdTag LnTag.NodeIdTag]]
     * */
   def taggedFields(nodeIdOpt: Option[NodeId]): Gen[LnTaggedFields] =
     for {
