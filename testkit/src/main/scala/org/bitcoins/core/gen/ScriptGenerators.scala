@@ -51,9 +51,9 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
   def emptyScriptSignature = p2pkhScriptSignature.map(_ => EmptyScriptSignature)
 
   /**
-    * Generates a [[org.bitcoins.core.protocol.script.P2SHScriptSignature]]
+    * Generates a [[org.bitcoins.core.protocol.script.P2SHScriptSignature P2SHScriptSignature]]
     * WARNING: the redeem script and the script signature DO NOT evaluate to true
-    * if executed by [[org.bitcoins.core.script.interpreter.ScriptInterpreter]]
+    * if executed by [[org.bitcoins.core.script.interpreter.ScriptInterpreter ScriptInterpreter]]
     */
   def p2shScriptSignature: Gen[P2SHScriptSignature] =
     for {
@@ -159,8 +159,9 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
     Gen.oneOf(p2wpkhSPKV0, p2wshSPKV0)
 
   /**
-    * Creates an [[UnassignedWitnessScriptPubKey]],
-    * currently this is any witness script pubkey besides [[org.bitcoins.core.protocol.script.WitnessScriptPubKeyV0]
+    * Creates an [[org.bitcoins.core.protocol.script.UnassignedWitnessScriptPubKey UnassignedWitnessScriptPubKey]],
+    * currently this is any witness script pubkey besides
+    * [[org.bitcoins.core.protocol.script.WitnessScriptPubKeyV0 WitnessScriptPubKeyV0]]
     */
   def unassignedWitnessScriptPubKey: Gen[
     (UnassignedWitnessScriptPubKey, Seq[ECPrivateKey])] =
@@ -170,7 +171,7 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
       unassignedAsm = version +: witV0.asm.tail
     } yield (UnassignedWitnessScriptPubKey(unassignedAsm), privKeys)
 
-  /** Generates an arbitrary [[org.bitcoins.core.protocol.script.WitnessScriptPubKey]] */
+  /** Generates an arbitrary [[org.bitcoins.core.protocol.script.WitnessScriptPubKey WitnessScriptPubKey]] */
   def witnessScriptPubKey: Gen[(WitnessScriptPubKey, Seq[ECPrivateKey])] =
     Gen.oneOf(assignedWitnessScriptPubKey, unassignedWitnessScriptPubKey)
 
@@ -223,7 +224,7 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
   def lockTimeScriptSig: Gen[LockTimeScriptSignature] =
     Gen.oneOf(csvScriptSignature, cltvScriptSignature)
 
-  /** Generates an arbitrary [[ScriptPubKey]] */
+  /** Generates an arbitrary [[org.bitcoins.core.protocol.script.ScriptPubKey ScriptPubKey]] */
   def scriptPubKey: Gen[(ScriptPubKey, Seq[ECPrivateKey])] = {
     Gen.oneOf(
       p2pkScriptPubKey.map(privKeyToSeq(_)),
@@ -240,7 +241,7 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
     )
   }
 
-  /** Generates an arbitrary [[ScriptSignature]] */
+  /** Generates an arbitrary [[org.bitcoins.core.protocol.script.ScriptSignature ScriptSignature]] */
   def scriptSignature: Gen[ScriptSignature] = {
     Gen.oneOf(
       p2pkScriptSignature,
@@ -255,7 +256,8 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
   }
 
   /**
-    * Generates a [[ScriptSignature]] corresponding to the type of [[ScriptPubKey]] given.
+    * Generates a [[org.bitcoins.core.protocol.script.ScriptSignature ScriptSignature]] corresponding to the type of
+    * [[org.bitcoins.core.protocol.script.ScriptPubKey ScriptPubKey]] given.
     * Note: Does NOT generate a correct/valid signature
     */
   private def pickCorrespondingScriptSignature(
@@ -276,10 +278,12 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
   }
 
   /**
-    * Generates a signed [[P2PKScriptSignature]] that spends the [[P2PKScriptPubKey]] correctly
+    * Generates a signed [[org.bitcoins.core.protocol.script.P2PKScriptSignature P2PKScriptSignature]] that spends the
+    * [[org.bitcoins.core.protocol.script.P2PKScriptPubKey P2PKScriptPubKey]] correctly
     *
-    * @return the signed [[P2PKScriptSignature]], the [[P2PKScriptPubKey]] it spends, and the
-    *         [[ECPrivateKey]] used to sign the scriptSig
+    * @return the signed [[org.bitcoins.core.protocol.script.P2PKScriptSignature P2PKScriptSignature]],
+    *         the [[org.bitcoins.core.protocol.script.P2PKScriptPubKey P2PKScriptPubKey]] it spends, and the
+    *         [[org.bitcoins.core.crypto.ECPrivateKey ECPrivateKey]] used to sign the scriptSig
     */
   def signedP2PKScriptSignature: Gen[
     (P2PKScriptSignature, P2PKScriptPubKey, ECPrivateKey)] =
@@ -309,10 +313,12 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
     } yield (signedScriptSig, scriptPubKey, privateKey)
 
   /**
-    * Generates a signed [[P2PKHScriptSignature]] that spends the [[P2PKHScriptPubKey]] correctly
+    * Generates a signed [[org.bitcoins.core.protocol.script.P2PKHScriptSignature P2PKHScriptSignature]] that
+    * spends the [[org.bitcoins.core.protocol.script.P2PKHScriptPubKey P2PKHScriptPubKey]] correctly
     *
-    * @return the signed [[P2PKHScriptSignature]], the [[P2PKHScriptPubKey]] it spends, and the
-    *         [[ECPrivateKey]] used to sign the scriptSig
+    * @return the signed [[org.bitcoins.core.protocol.script.P2PKHScriptSignature P2PKHScriptSignature]], the
+    *         [[org.bitcoins.core.protocol.script.P2PKHScriptPubKey P2PKHScriptPubKey]] it spends, and the
+    *         [[org.bitcoins.core.crypto.ECPrivateKey ECPrivateKey]] used to sign the scriptSig
     */
   def signedP2PKHScriptSignature: Gen[
     (P2PKHScriptSignature, P2PKHScriptPubKey, ECPrivateKey)] =
@@ -340,10 +346,13 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
     } yield (signedScriptSig, scriptPubKey, privateKey)
 
   /**
-    * Generates a signed [[MultiSignatureScriptSignature]] that spends the [[MultiSignatureScriptPubKey]] correctly
+    * Generates a signed
+    * [[org.bitcoins.core.protocol.script.MultiSignatureScriptSignature MultiSignatureScriptSignature]] that spends the
+    * [[org.bitcoins.core.protocol.script.MultiSignatureScriptPubKey MultiSignatureScriptPubKey]] correctly
     * ti
-    * @return the signed [[MultiSignatureScriptSignature]], the [[MultiSignatureScriptPubKey]] it spends and the
-    *         sequence of [[ECPrivateKey]] used to sign the scriptSig
+    * @return the signed [[org.bitcoins.core.protocol.script.MultiSignatureScriptSignature MultiSignatureScriptSignature]],
+    *         the [[org.bitcoins.core.protocol.script.MultiSignatureScriptPubKey MultiSignatureScriptPubKey]] it spends and the
+    *         sequence of [[org.bitcoins.core.crypto.ECPrivateKey ECPrivateKey]] used to sign the scriptSig
     */
   def signedMultiSignatureScriptSignature: Gen[(
       MultiSignatureScriptSignature,
@@ -376,9 +385,12 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
     } yield (signedScriptSig, multiSigScriptPubKey, privateKeys)
 
   /**
-    * Generates a signed [[P2SHScriptSignature]] that spends from a [[P2SHScriptPubKey]] correctly
+    * Generates a signed [[org.bitcoins.core.protocol.script.P2SHScriptSignature P2SHScriptSignature]]
+    * that spends from a [[org.bitcoins.core.protocol.script.P2SHScriptPubKey P2SHScriptPubKey]] correctly
     *
-    * @return the signed [[P2SHScriptSignature]], the [[P2SHScriptPubKey]] it spends, and the sequence of [[ECPrivateKey]]
+    * @return the signed [[org.bitcoins.core.protocol.script.P2SHScriptSignature P2SHScriptSignature]],
+    *         the [[org.bitcoins.core.protocol.script.P2SHScriptPubKey P2SHScriptPubKey]] it spends, and the
+    *         sequence of [[org.bitcoins.core.crypto.ECPrivateKey ECPrivateKey]]
     *         used to sign the scriptSig
     */
   def signedP2SHScriptSignature: Gen[
@@ -390,9 +402,12 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
     } yield (p2SHScriptSignature, p2SHScriptPubKey, privateKeys)
 
   /**
-    * Generates a signed [[CLTVScriptSignature]] that spends from a [[CLTVScriptPubKey]] correctly
+    * Generates a signed [[org.bitcoins.core.protocol.script.P2SHScriptSignature CLTVScriptSignature]] that spends
+    * from a [[org.bitcoins.core.protocol.script.P2SHScriptSignature CLTVScriptPubKey]] correctly
     *
-    * @return the signed [[CLTVScriptSignature]], the [[CLTVScriptPubKey]] it spends, and the sequences of [[ECPrivateKey]]
+    * @return the signed [[org.bitcoins.core.protocol.script.CLTVScriptSignature CLTVScriptSignature]], the
+    *         [[org.bitcoins.core.protocol.script.CLTVScriptPubKey CLTVScriptPubKey]] it spends, and the
+    *         sequences of [[org.bitcoins.core.crypto.ECPrivateKey ECPrivateKey]]
     *         used to sign the scriptSig
     */
   def signedCLTVScriptSignature(
@@ -435,9 +450,12 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
       }
 
   /**
-    * Generates a signed [[CSVScriptSignature]] that spends from a [[CSVScriptPubKey]] correctly
+    * Generates a signed [[org.bitcoins.core.protocol.script.CLTVScriptSignature CSVScriptSignature]] that spends
+    * from a [[org.bitcoins.core.protocol.script.CLTVScriptSignature CSVScriptPubKey]] correctly
     *
-    * @return the signed [[CSVScriptSignature]], the [[CSVScriptPubKey]] it spends, and the sequences of [[ECPrivateKey]]
+    * @return the signed [[org.bitcoins.core.protocol.script.CSVScriptSignature CSVScriptSignature]], the
+    *         [[org.bitcoins.core.protocol.script.CSVScriptPubKey CSVScriptPubKey]] it spends, and the
+    *         sequences of [[org.bitcoins.core.crypto.ECPrivateKey ECPrivateKey]]
     *         used to sign the scriptSig
     */
   def signedCSVScriptSignature(
@@ -493,13 +511,15 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
                                              sequence)
     } yield scriptSig
 
-  /** Generates a [[LockTimeScriptSignature]] and [[LockTimeScriptPubKey]] pair that are valid when run through the interpreter */
+  /** Generates a [[org.bitcoins.core.protocol.script.LockTimeScriptSignature LockTimeScriptSignature]] and
+    * [[org.bitcoins.core.protocol.script.LockTimeScriptPubKey LockTimeScriptPubKey]] pair that are valid when
+    * run through the interpreter */
   def signedLockTimeScriptSignature: Gen[
     (LockTimeScriptSignature, LockTimeScriptPubKey, Seq[ECPrivateKey])] = {
     Gen.oneOf(signedCSVScriptSignature, signedCLTVScriptSignature)
   }
 
-  /** Helper function to generate [[LockTimeScriptSignature]]s */
+  /** Helper function to generate [[org.bitcoins.core.protocol.script.LockTimeScriptSignature LockTimeScriptSignature]]s */
   private def lockTimeHelper(
       lockTime: Option[UInt32],
       sequence: UInt32,
@@ -583,11 +603,14 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
        wtxSigComponent.amount)
 
   /**
-    * This function chooses a random signed [[ScriptSignature]] that is NOT a [[P2SHScriptSignature]], [[CSVScriptSignature]],
-    * [[CLTVScriptSignature]], or any witness type
+    * This function chooses a random signed [[org.bitcoins.core.protocol.script.ScriptSignature ScriptSignature]]
+    * that is NOT a [[org.bitcoins.core.protocol.script.P2SHScriptSignature P2SHScriptSignature]],
+    * [[org.bitcoins.core.protocol.script.CSVScriptSignature CSVScriptSignature]],
+    * [[org.bitcoins.core.protocol.script.CLTVScriptSignature CLTVScriptSignature]], or any witness type
     *
-    * @return the signed [[ScriptSignature]], the [[ScriptPubKey]] it is spending,
-    *         and the sequence of[[ECPrivateKey]] used to sign it
+    * @return the signed [[org.bitcoins.core.protocol.script.ScriptSignature ScriptSignature]],
+    *         the [[org.bitcoins.core.protocol.script.ScriptPubKey ScriptPubKey]] it is spending,
+    *         and the sequence of [[org.bitcoins.core.crypto.ECPublicKey ECPrivateKey]] used to sign it
     */
   def chooseSignedScriptSig: Gen[
     (ScriptSignature, ScriptPubKey, Seq[ECPrivateKey])] = {
@@ -598,7 +621,9 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
     )
   }
 
-  /** Generates a random [[ScriptSignature]], the [[ScriptPubKey]] it is spending, and the [[ECPrivateKey]] needed to spend it. */
+  /** Generates a random [[org.bitcoins.core.protocol.script.ScriptSignature ScriptSignature]], the
+    * [[org.bitcoins.core.protocol.script.ScriptPubKey ScriptPubKey]] it is spending, and the
+    * [[org.bitcoins.core.crypto.ECPrivateKey ECPrivateKey]] needed to spend it. */
   def randomScriptSig: Gen[(ScriptSignature, ScriptPubKey, Seq[ECPrivateKey])] = {
     val witP2SHP2WPKH =
       signedP2SHP2WPKHScriptSignature.map(x => (x._1, x._2, x._3))
