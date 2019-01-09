@@ -176,7 +176,8 @@ trait EclairTestUtil extends BitcoinSLogger {
 
   /**
     * Doesn't return until the given channelId
-    * is in the [[ChannelState.NORMAL]] for this [[EclairRpcClient]]
+    * is in the [[org.bitcoins.core.protocol.ln.channel.ChannelState ChannelState.NORMAL]]
+    * for this [[org.bitcoins.eclair.rpc.client.EclairRpcClient EclairRpcClient]]
     * @param client
     * @param chanId
     */

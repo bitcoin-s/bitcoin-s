@@ -25,7 +25,7 @@ sealed abstract class BlockchainElementsGenerator {
     } yield Block(header, allTxs)
 
   /**
-    * Generates a random [[Block]], note that we limit this
+    * Generates a random [[org.bitcoins.core.protocol.blockchain.Block Block]], note that we limit this
     * to 10 transactions currently
     */
   def block: Gen[Block] =
@@ -34,21 +34,23 @@ sealed abstract class BlockchainElementsGenerator {
       txs <- TransactionGenerators.smallTransactions
     } yield Block(header, txs)
 
-  /** Generates a random [[BlockHeader]] */
+  /** Generates a random [[org.bitcoins.core.protocol.blockchain.BlockHeader BlockHeader]] */
   def blockHeader: Gen[BlockHeader] =
     for {
       previousBlockHash <- CryptoGenerators.doubleSha256Digest
       b <- blockHeader(previousBlockHash)
     } yield b
 
-  /** Generates a random [[BlockHeader]] with the specified previousBlockHash */
+  /** Generates a random
+    * [[org.bitcoins.core.protocol.blockchain.BlockHeader BlockHeader]] with the specified previousBlockHash */
   def blockHeader(previousBlockHash: DoubleSha256Digest): Gen[BlockHeader] =
     for {
       nBits <- NumberGenerator.uInt32s
       b <- blockHeader(previousBlockHash, nBits)
     } yield b
 
-  /** Generates a random [[BlockHeader]] where you can specify the previousBlockHash and nBits */
+  /** Generates a random [[org.bitcoins.core.protocol.blockchain.BlockHeader BlockHeader]] where you can specify
+    * the previousBlockHash and nBits */
   def blockHeader(
       previousBlockHash: DoubleSha256Digest,
       nBits: UInt32): Gen[BlockHeader] =
@@ -58,7 +60,8 @@ sealed abstract class BlockchainElementsGenerator {
       header <- blockHeader(previousBlockHash, nBits, txs)
     } yield header
 
-  /** Generates a [[BlockHeader]]] that has the fields set to the given values */
+  /** Generates a [[org.bitcoins.core.protocol.blockchain.BlockHeader BlockHeader]]] that has the fields
+    * set to the given values */
   def blockHeader(
       previousBlockHash: DoubleSha256Digest,
       nBits: UInt32,
@@ -76,7 +79,8 @@ sealed abstract class BlockchainElementsGenerator {
                   nBits,
                   nonce)
 
-  /** Generates a [[BlockHeader]] that has a merkle root hash corresponding to the given txs */
+  /** Generates a [[org.bitcoins.core.protocol.blockchain.BlockHeader BlockHeader]] that has a merkle root
+    * hash corresponding to the given txs */
   def blockHeader(txs: Seq[Transaction]): Gen[BlockHeader] =
     for {
       previousBlockHash <- CryptoGenerators.doubleSha256Digest

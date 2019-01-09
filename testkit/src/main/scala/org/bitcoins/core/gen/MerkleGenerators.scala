@@ -15,7 +15,8 @@ import org.scalacheck.Gen
   */
 abstract class MerkleGenerator {
 
-  /** Generates a merkle block with the given txs matched inside the [[PartialMerkleTree]] */
+  /** Generates a merkle block with the given txs matched inside the
+    * [[org.bitcoins.core.protocol.blockchain.PartialMerkleTree PartialMerkleTree]] */
   def merkleBlockWithInsertedTxIds(txs: Seq[Transaction]): Gen[
     (MerkleBlock, Block, Seq[DoubleSha256Digest])] =
     for {
@@ -24,7 +25,7 @@ abstract class MerkleGenerator {
       merkleBlock = MerkleBlock(block, txIds)
     } yield (merkleBlock, block, txIds)
 
-  /** Returns a [[MerkleBlock]] including the sequence of hashes inserted in to the bloom filter */
+  /** Returns a [[org.bitcoins.core.protocol.blockchain.MerkleBlock MerkleBlock]] including the sequence of hashes inserted in to the bloom filter */
   def merkleBlockWithInsertedTxIds: Gen[
     (MerkleBlock, Block, Seq[DoubleSha256Digest])] =
     for {
@@ -35,7 +36,7 @@ abstract class MerkleGenerator {
     } yield result
 
   /**
-    * Returns a [[MerkleBlock]] created with a [[org.bitcoins.core.bloom.BloomFilter]], with the block it was created from
+    * Returns a [[org.bitcoins.core.protocol.blockchain.MerkleBlock MerkleBlock]] created with a [[org.bitcoins.core.bloom.BloomFilter BloomFilter]], with the block it was created from
     * and the transactions that were matched inside of that block
     * NOTE: Since bloom filters can produce false positives, it is possible that there will be
     * matches in the parital merkle tree that SHOULD NOT be matched. Bloom filters do not guaratnee no
