@@ -18,8 +18,13 @@ class BitcoindInstanceTest extends AsyncFlatSpec with BeforeAndAfterAll {
   private implicit val actorSystem: ActorSystem = ActorSystem(
     "BitcoindInstanceTest")
 
-  private val sampleConf: Seq[String] =
-    Source.fromResource("sample-bitcoin.conf").mkString.split("\n")
+  private val source =
+    Source.fromURL(getClass.getResource("/sample-bitcoin.conf"))
+
+  private val sampleConf: Seq[String] = {
+    source.getLines.toSeq
+  }
+
   private val datadir: Path = Files.createTempDirectory(null)
 
   override protected def beforeAll(): Unit = {
