@@ -80,7 +80,8 @@ object CompactSizeUInt extends Factory[CompactSizeUInt] {
 
   def calc(bytes: ByteVector): CompactSizeUInt = calculateCompactSizeUInt(bytes)
 
-  /** Responsible for calculating what the [[CompactSizeUInt]] is for this hex string. */
+  /** Responsible for calculating what the
+    * [[org.bitcoins.core.protocol.CompactSizeUInt CompactSizeUInt]] is for this hex string. */
   def calculateCompactSizeUInt(hex: String): CompactSizeUInt =
     calculateCompactSizeUInt(BitcoinSUtil.decodeHex(hex))
 
@@ -92,7 +93,7 @@ object CompactSizeUInt extends Factory[CompactSizeUInt] {
     parseCompactSizeUInt(BitcoinSUtil.decodeHex(hex))
 
   /**
-    * Parses a [[CompactSizeUInt]] from a sequence of bytes
+    * Parses a [[org.bitcoins.core.protocol.CompactSizeUInt CompactSizeUInt]] from a sequence of bytes
     * [[https://bitcoin.org/en/developer-reference#compactsize-unsigned-integers]]
     */
   def parseCompactSizeUInt(bytes: ByteVector): CompactSizeUInt = {
@@ -129,7 +130,8 @@ object CompactSizeUInt extends Factory[CompactSizeUInt] {
   }
 
   /**
-    * Parses the [[CompactSizeUInt]] from a [[ScriptSignature]].
+    * Parses the [[org.bitcoins.core.protocol.CompactSizeUInt CompactSizeUInt]] from a
+    * [[org.bitcoins.core.protocol.script.ScriptSignature ScriptSignature]].
     * https://bitcoin.org/en/developer-reference#compactsize-unsigned-integers.
     */
   def parseCompactSizeUInt(script: ScriptSignature): CompactSizeUInt = {

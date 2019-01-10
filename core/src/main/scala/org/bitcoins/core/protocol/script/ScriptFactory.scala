@@ -21,7 +21,7 @@ trait ScriptFactory[T <: Script] extends Factory[T] {
     } else throw new IllegalArgumentException(errorMsg)
   }
 
-  /** Creates a T from the given [[ScriptToken]]s */
+  /** Creates a T from the given [[org.bitcoins.core.script.constant.ScriptToken ScriptToken]]s */
   def fromAsm(asm: Seq[ScriptToken]): T
 
   def fromBytes(bytes: ByteVector): T = {
@@ -29,11 +29,10 @@ trait ScriptFactory[T <: Script] extends Factory[T] {
   }
 
   /**
-    * Scripts are serialized with a [[org.bitcoins.core.protocol.CompactSizeUInt]] at the beginning
-    * to indicate how long the Script is. This construct assumes the [[CompactSizeUInt]]
+    * Scripts are serialized with a [[org.bitcoins.core.protocol.CompactSizeUInt CompactSizeUInt]] at the beginning
+    * to indicate how long the Script is. This construct assumes the
+    * [[org.bitcoins.core.protocol.CompactSizeUInt CompactSizeUInt]]
     * is NOT passed into the constructor. Only the actual Script program bytes.
-    * @param bytes
-    * @return
     */
   def fromAsmBytes(bytes: ByteVector): T = {
     val cmpct = CompactSizeUInt.calc(bytes)
@@ -42,11 +41,10 @@ trait ScriptFactory[T <: Script] extends Factory[T] {
   }
 
   /**
-    * Scripts are serialized with a [[org.bitcoins.core.protocol.CompactSizeUInt]] at the beginning
-    * to indicate how long the [[ScriptSignature]] is. This construct assumes the [[CompactSizeUInt]]
+    * Scripts are serialized with a [[org.bitcoins.core.protocol.CompactSizeUInt CompactSizeUInt]] at the beginning
+    * to indicate how long the [[org.bitcoins.core.protocol.script.ScriptSignature ScriptSignature]] is
+    * . This construct assumes the [[org.bitcoins.core.protocol.CompactSizeUInt CompactSizeUInt]]
     * is NOT passed into the constructor. Only the actual Script program hex is.
-    * @param hex
-    * @return
     */
   def fromAsmHex(hex: String): T = {
     fromAsmBytes(BitcoinSUtil.decodeHex(hex))

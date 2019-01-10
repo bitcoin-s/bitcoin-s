@@ -28,7 +28,7 @@ sealed abstract class MerkleBlock extends NetworkElement {
   /** One or more hashes of both transactions and merkle nodes used to build the partial merkle tree */
   def hashes: Seq[DoubleSha256Digest] = partialMerkleTree.hashes
 
-  /** The [[PartialMerkleTree]] for this merkle block */
+  /** The [[org.bitcoins.core.protocol.blockchain.PartialMerkleTree PartialMerkleTree]] for this merkle block */
   def partialMerkleTree: PartialMerkleTree
 
   def bytes = RawMerkleBlockSerializer.write(this)
@@ -43,9 +43,11 @@ object MerkleBlock extends Factory[MerkleBlock] {
       extends MerkleBlock
 
   /**
-    * Creates a [[MerkleBlock]] from the given [[Block]] and [[BloomFilter]]
+    * Creates a [[org.bitcoins.core.protocol.blockchain.MerkleBlock MerkleBlock]] from the given
+    * [[org.bitcoins.core.protocol.blockchain.Block Block]] and [[org.bitcoins.core.bloom.BloomFilter BloomFilter]]
     * This function iterates through each transaction inside our block checking if it is relevant to the given bloom filter
-    * If it is relevant, it will set a flag to indicate we should include it inside of our [[PartialMerkleTree]]
+    * If it is relevant, it will set a flag to indicate we should include it inside of our
+    * [[org.bitcoins.core.protocol.blockchain.PartialMerkleTree PartialMerkleTree]].
     * @param block the block that we searching for transactions that match the bloom filter
     * @param filter the filter we are comparing transactions in the block against
     * @return the merkle block and the bloom filter loaded with information from the relevant txs in the block

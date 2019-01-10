@@ -19,10 +19,11 @@ import scala.util.{Failure, Success, Try}
 sealed abstract class Transaction extends NetworkElement {
 
   /**
-    * The sha256(sha256(tx)) of this transaction
+    * The `sha256(sha256(tx))` of this transaction,
     * Note that this is the little endian encoding of the hash, NOT the big endian encoding shown in block
-    * explorers. See this link for more info
-    * [[https://bitcoin.stackexchange.com/questions/2063/why-does-the-bitcoin-protocol-use-the-little-endian-notation]]
+    * explorers. See
+    * [[https://bitcoin.stackexchange.com/questions/2063/why-does-the-bitcoin-protocol-use-the-little-endian-notation this link]]
+    * for more info
     */
   def txId: DoubleSha256Digest = CryptoUtil.doubleSHA256(bytes)
 
@@ -31,7 +32,6 @@ sealed abstract class Transaction extends NetworkElement {
     * RPC interfaces and block explorers, this encoding is NOT used at the protocol level
     * For more info see:
     * [[https://bitcoin.stackexchange.com/questions/2063/why-does-the-bitcoin-protocol-use-the-little-endian-notation]]
-    * @return
     */
   def txIdBE: DoubleSha256Digest = txId.flip
 
@@ -50,10 +50,12 @@ sealed abstract class Transaction extends NetworkElement {
   /**
     * This is used to indicate how 'expensive' the transction is on the blockchain.
     * This use to be a simple calculation before segwit (BIP141). Each byte in the transaction
-    * counted as 4 'weight' units. Now with segwit, the [[TransactionWitness]] is counted as 1 weight unit per byte,
+    * counted as 4 'weight' units. Now with segwit, the
+    * [[org.bitcoins.core.protocol.transaction.TransactionWitness TransactionWitness]]
+    * is counted as 1 weight unit per byte,
     * while other parts of the transaction (outputs, inputs, locktime etc) count as 4 weight units.
-    * As we add more witness versions, this may be subject to change
-    * [[https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki#Transaction_size_calculations]]
+    * As we add more witness versions, this may be subject to change.
+    * [[https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki#Transaction_size_calculations BIP 141]]
     * [[https://github.com/bitcoin/bitcoin/blob/5961b23898ee7c0af2626c46d5d70e80136578d3/src/consensus/validation.h#L96]]
     */
   def weight: Long
@@ -125,14 +127,16 @@ sealed abstract class WitnessTransaction extends Transaction {
   }
 
   /**
-    * The witness used to evaluate [[org.bitcoins.core.protocol.script.ScriptSignature]]/[[org.bitcoins.core.protocol.script.ScriptPubKey]]s inside of a segwit tx
-    * [[https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki]]
+    * The witness used to evaluate
+    * [[org.bitcoins.core.protocol.script.ScriptSignature ScriptSignature]]/
+    * [[org.bitcoins.core.protocol.script.ScriptPubKey ScriptPubKey]]s inside of a SegWit tx.
+    * [[https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki BIP141]]
     */
   def witness: TransactionWitness
 
   /**
-    * The witness transaction id as defined by BIP141
-    * [[https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki#transaction-id]]
+    * The witness transaction id as defined by
+    * [[https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki#transaction-id BIP141]]
     */
   def wTxId: DoubleSha256Digest = CryptoUtil.doubleSHA256(bytes)
 
@@ -142,7 +146,6 @@ sealed abstract class WitnessTransaction extends Transaction {
   /**
     * Weight calculation in bitcoin for witness txs
     * [[https://github.com/bitcoin/bitcoin/blob/5961b23898ee7c0af2626c46d5d70e80136578d3/src/consensus/validation.h#L96]]
-    * @return
     */
   override def weight: Long = {
     val base = BaseTransaction(version, inputs, outputs, lockTime)
@@ -151,8 +154,9 @@ sealed abstract class WitnessTransaction extends Transaction {
   override def bytes = RawWitnessTransactionParser.write(this)
 
   /**
-    * Updates the [[ScriptWitness]] at the given index and
-    * returns a new WitnessTransaction with it's witness vector updated
+    * Updates the [[org.bitcoins.core.protocol.script.ScriptWitness ScriptWitness]] at the given index and
+    * returns a new [[org.bitcoins.core.protocol.transaction.WitnessTransaction WitnessTransaction]]
+    * with it's witness vector updated
     */
   def updateWitness(idx: Int, scriptWit: ScriptWitness): WitnessTransaction = {
     val txWit = witness.updated(idx, scriptWit)
