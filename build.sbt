@@ -104,6 +104,10 @@ lazy val secp256k1jni = project
   .settings(
     libraryDependencies ++= Deps.secp256k1jni,
     unmanagedResourceDirectories in Compile += baseDirectory.value / "natives",
+    //since this is not a scala module, we have no code coverage
+    //this also doesn't place nice with scoverage, see
+    //https://github.com/scoverage/sbt-scoverage/issues/275
+    coverageEnabled := false
   )
   .enablePlugins()
 
