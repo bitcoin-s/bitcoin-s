@@ -17,7 +17,7 @@ object Deps {
     val nativeLoaderV = "2.3.2"
     val typesafeConfigV = "1.3.3"
 
-    val bitcoinsV = "0.0.2"
+    val bitcoinsV = "0.0.2-SNAPSHOT"
   }
 
   object Compile {
@@ -46,13 +46,13 @@ object Deps {
     val akkaHttp = "com.typesafe.akka" %% "akka-http-testkit" % V.akkav % "test" withSources() withJavadoc()
     val akkaStream = "com.typesafe.akka" %% "akka-stream-testkit" % V.akkaStreamv % "test" withSources() withJavadoc()
 
-    val testkit = "org.bitcoins" %% "bitcoin-s-testkit" % V.bitcoinsV withSources() withJavadoc()
+    val testkit = "org.bitcoins" %% "bitcoin-s-testkit" % V.bitcoinsV % "test" withSources() withJavadoc()
   }
 
-  val core = List(
-    Compile.bouncycastle,
-    Compile.scodec,
-    Compile.slf4j
+    val core = List(
+      Compile.bouncycastle,
+      Compile.scodec,
+      Compile.slf4j
   )
 
   val secp256k1jni = List(
