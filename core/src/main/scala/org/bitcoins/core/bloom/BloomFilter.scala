@@ -23,8 +23,8 @@ import scala.util.hashing.MurmurHash3
 
 /**
   * Created by chris on 8/2/16.
-  * Implements a bloom fitler that abides by the semantics of BIP37
-  * [[https://github.com/bitcoin/bips/blob/master/bip-0037.mediawiki]]
+  * Implements a bloom fitler that abides by the semantics of
+  * [[https://github.com/bitcoin/bips/blob/master/bip-0037.mediawiki BIP37]].
   * [[https://github.com/bitcoin/bitcoin/blob/master/src/bloom.h]]
   */
 sealed abstract class BloomFilter extends NetworkElement {
@@ -43,12 +43,12 @@ sealed abstract class BloomFilter extends NetworkElement {
 
   /**
     * A set of flags that control how outpoints corresponding to a matched pubkey script are added to the filter.
-    * See the 'Comparing Transaction Elements to a Bloom Filter' section in this link
-    * [[https://bitcoin.org/en/developer-reference#filterload]]
+    * See the 'Comparing Transaction Elements to a Bloom Filter' section in this
+    * [[https://bitcoin.org/en/developer-reference#filterload link]]
     */
   def flags: BloomFlag
 
-  /** Inserts a sequence of bytes into the [[BloomFilter]] */
+  /** Inserts a sequence of bytes into the [[org.bitcoins.core.bloom.BloomFilter BloomFilter]] */
   def insert(bytes: ByteVector): BloomFilter = {
     //these are the bit indexes that need to be set inside of data
     val bitIndexes = (0 until hashFuncs.toInt).map(i => murmurHash(i, bytes))
@@ -73,20 +73,20 @@ sealed abstract class BloomFilter extends NetworkElement {
     BloomFilter(filterSize, newData, hashFuncs, tweak, flags)
   }
 
-  /** Inserts a [[HashDigest]] into [[data]] */
+  /** Inserts a [[org.bitcoins.core.crypto.HashDigest HashDigest]] into `data` */
   def insert(hash: HashDigest): BloomFilter = insert(hash.bytes)
 
-  /** Inserts a sequence of [[HashDigest]]'s into our BloomFilter */
+  /** Inserts a sequence of [[org.bitcoins.core.crypto.HashDigest HashDigest]]'s into our BloomFilter */
   def insertHashes(hashes: Seq[HashDigest]): BloomFilter = {
     val byteVectors = hashes.map(_.bytes)
     insertByteVectors(byteVectors)
   }
 
-  /** Inserts a [[TransactionOutPoint]] into [[data]] */
+  /** Inserts a [[org.bitcoins.core.protocol.transaction.TransactionOutPoint TransactionOutPoint]] into `data` */
   def insert(outPoint: TransactionOutPoint): BloomFilter =
     insert(outPoint.bytes)
 
-  /** Checks if [[data]] contains the given sequence of bytes */
+  /** Checks if `data` contains the given sequence of bytes */
   def contains(bytes: ByteVector): Boolean = {
     val bitIndexes = (0 until hashFuncs.toInt).map(i => murmurHash(i, bytes))
     @tailrec
@@ -105,20 +105,20 @@ sealed abstract class BloomFilter extends NetworkElement {
     loop(bitIndexes, BitVector.empty)
   }
 
-  /** Checks if [[data]] contains a [[DoubleSha256Digest]] */
+  /** Checks if `data` contains a [[org.bitcoins.core.crypto.DoubleSha256Digest DoubleSha256Digest]] */
   def contains(hash: DoubleSha256Digest): Boolean = contains(hash.bytes)
 
-  /** Checks if [[data]] contains a [[TransactionOutPoint]] */
+  /** Checks if `data` contains a [[org.bitcoins.core.protocol.transaction.TransactionOutPoint TransactionOutPoint]] */
   def contains(outPoint: TransactionOutPoint): Boolean =
     contains(outPoint.bytes)
 
-  /** Checks if [[data]] contains a [[Sha256Hash160Digest]] */
+  /** Checks if `data` contains a [[org.bitcoins.core.crypto.DoubleSha256Digest Sha256Hash160Digest]] */
   def contains(hash: Sha256Hash160Digest): Boolean = contains(hash.bytes)
 
   /**
     * Checks if the transaction's txid, or any of the constants in it's scriptPubKeys/scriptSigs match our BloomFilter
-    * See BIP37 for exact details on what is relevant to a bloom filter and what is not relevant
-    * [[https://github.com/bitcoin/bips/blob/master/bip-0037.mediawiki#filter-matching-algorithm]]
+    * See [[https://github.com/bitcoin/bips/blob/master/bip-0037.mediawiki#filter-matching-algorithm BIP37]]
+    * for exact details on what is relevant to a bloom filter and what is not relevant
     */
   def isRelevant(transaction: Transaction): Boolean = {
     val scriptPubKeys = transaction.outputs.map(_.scriptPubKey)
@@ -155,8 +155,8 @@ sealed abstract class BloomFilter extends NetworkElement {
 
   /**
     * Updates this bloom filter to contain the relevant information for the given Transaction
-    * See BIP37 for the exact details on what parts of a transaction is added to the bloom filter
-    * [[https://github.com/bitcoin/bips/blob/master/bip-0037.mediawiki#filter-matching-algorithm]]
+    * See [[https://github.com/bitcoin/bips/blob/master/bip-0037.mediawiki#filter-matching-algorithm BIP37]]
+    * for the exact details on what parts of a transaction is added to the bloom filter
     */
   def update(transaction: Transaction): BloomFilter = flags match {
     case BloomUpdateAll =>
@@ -194,9 +194,10 @@ sealed abstract class BloomFilter extends NetworkElement {
   }
 
   /**
-    * Updates a bloom filter according to the rules specified by the [[BloomUpdateP2PKOnly]] flag
-    * See BIP37 for the exact rules on updating a bloom filter with this flag set
-    * [[https://github.com/bitcoin/bips/blob/master/bip-0037.mediawiki#filter-matching-algorithm]]
+    * Updates a bloom filter according to the rules specified by the
+    * [[org.bitcoins.core.bloom.BloomUpdateP2PKOnly BloomUpdateP2PKOnly]] flag
+    * See [[https://github.com/bitcoin/bips/blob/master/bip-0037.mediawiki#filter-matching-algorithm BIP37]]
+    * for the exact rules on updating a bloom filter with this flag set
     */
   def updateP2PKOnly(
       scriptPubKeysWithIndex: Seq[(ScriptPubKey, Int)],
@@ -230,11 +231,12 @@ sealed abstract class BloomFilter extends NetworkElement {
   }
 
   /**
-    * Performs the [[MurmurHash3]] on the given hash
+    * Performs the [[scala.util.hashing.MurmurHash3 MurmurHash3]] on the given hash
     *
     * @param hashNum the nth hash function we are using
-    * @param bytes the bytes of the data that needs to be inserted into the [[BloomFilter]]
-    * @return the index of the bit inside of [[data]] that needs to be set to 1
+    * @param bytes the bytes of the data that needs to be inserted into the
+    *              [[org.bitcoins.core.bloom.BloomFilter BloomFilter]]
+    * @return the index of the bit inside of `data` that needs to be set to 1
     */
   private def murmurHash(hashNum: Int, bytes: ByteVector): Int = {
     //TODO: The call of .toInt is probably the source of a bug here, need to come back and look at this
@@ -247,8 +249,8 @@ sealed abstract class BloomFilter extends NetworkElement {
   }
 
   /**
-    * See BIP37 to see where this number comes from
-    * [[https://github.com/bitcoin/bips/blob/master/bip-0037.mediawiki#bloom-filter-format]]
+    * See [[https://github.com/bitcoin/bips/blob/master/bip-0037.mediawiki#bloom-filter-format BIP37]]
+    * to see where this number comes from
     */
   private def murmurConstant = UInt32("fba4c795")
 
@@ -287,8 +289,8 @@ object BloomFilter extends Factory[BloomFilter] {
 
   /**
     * Creates a bloom filter based on the number of elements to be inserted into the filter
-    * and the desired false positive rate
-    * [[https://github.com/bitcoin/bips/blob/master/bip-0037.mediawiki#bloom-filter-format]]
+    * and the desired false positive rate.
+    * [[https://github.com/bitcoin/bips/blob/master/bip-0037.mediawiki#bloom-filter-format BIP37]]
     */
   def apply(
       numElements: Int,

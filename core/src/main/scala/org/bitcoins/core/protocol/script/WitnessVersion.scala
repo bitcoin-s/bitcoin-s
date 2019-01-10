@@ -8,15 +8,17 @@ import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil, CryptoUtil}
 
 /**
   * Created by chris on 11/10/16.
-  * The version of the [[WitnessScriptPubKey]], this indicates how a [[ScriptWitness]] is rebuilt
-  * [[https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki#witness-program]]
+  * The version of the [[org.bitcoins.core.protocol.script.WitnessScriptPubKey WitnessScriptPubKey]],
+  * this indicates how a [[org.bitcoins.core.protocol.script.ScriptWitness ScriptWitness]] is rebuilt.
+  * [[https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki#witness-program BIP141]]
   */
 sealed trait WitnessVersion extends BitcoinSLogger {
 
   /**
-    * Rebuilds the full script from the given witness and [[ScriptPubKey]]
-    * Either returns the stack and the [[ScriptPubKey]] it needs to be executed against or
-    * the [[ScriptError]] that was encountered while rebuilding the witness
+    * Rebuilds the full script from the given witness and [[org.bitcoins.core.protocol.script.ScriptPubKey ScriptPubKey]]
+    * Either returns the stack and the [[org.bitcoins.core.protocol.script.ScriptPubKey ScriptPubKey]]
+    * it needs to be executed against or the [[org.bitcoins.core.script.result.ScriptError ScriptError]]
+    * that was encountered while rebuilding the witness
     */
   def rebuild(
       scriptWitness: ScriptWitness,

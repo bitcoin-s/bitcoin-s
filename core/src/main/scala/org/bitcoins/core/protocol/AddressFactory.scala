@@ -17,8 +17,8 @@ abstract class AddressFactory[T] {
   }
 
   /**
-    * Attempts to create a address from the given [[org.bitcoins.core.protocol.script.ScriptPubKey]]
-    * and [[NetworkParameters]]
+    * Attempts to create a address from the given [[org.bitcoins.core.protocol.script.ScriptPubKey ScriptPubKey]]
+    * and [[org.bitcoins.core.config.NetworkParameters NetworkParameters]]
     */
   def fromScriptPubKey(spk: ScriptPubKey, np: NetworkParameters): Try[T]
 

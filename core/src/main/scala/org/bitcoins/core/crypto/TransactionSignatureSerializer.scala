@@ -37,8 +37,8 @@ sealed abstract class TransactionSignatureSerializer {
 
   /**
     * Implements the signature serialization algorithim that Satoshi Nakamoto originally created
-    * and the new signature serialization algorithm as specified by BIP143
-    * [[https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki]]
+    * and the new signature serialization algorithm as specified by
+    * [[https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki BIP143]].
     * [[https://github.com/bitcoin/bitcoin/blob/f8528134fc188abc5c7175a19680206964a8fade/src/script/interpreter.cpp#L1113]]
     */
   def serializeForSignature(
@@ -219,8 +219,9 @@ sealed abstract class TransactionSignatureSerializer {
   }
 
   /**
-    * Hashes a [[TxSigComponent]] to give the value that needs to be signed by a [[Sign]] to
-    * produce a valid [[ECDigitalSignature]] for a transaction
+    * Hashes a [[org.bitcoins.core.crypto.TxSigComponent TxSigComponent]] to give the value that needs to be signed
+    * by a [[org.bitcoins.core.crypto.Sign Sign]] to
+    * produce a valid [[org.bitcoins.core.crypto.ECDigitalSignature ECDigitalSignature]] for a transaction
     */
   def hashForSignature(
       txSigComponent: TxSigComponent,
@@ -264,7 +265,8 @@ sealed abstract class TransactionSignatureSerializer {
                          UInt32.zero)
     }
 
-  /** Executes the [[SIGHASH_NONE]] procedure on a spending transaction for the input specified by inputIndex. */
+  /** Executes the [[org.bitcoins.core.script.crypto.SIGHASH_NONE SIGHASH_NONE]]
+    * procedure on a spending transaction for the input specified by inputIndex. */
   private def sigHashNone(
       spendingTransaction: Transaction,
       inputIndex: UInt32): Transaction = {
@@ -282,7 +284,8 @@ sealed abstract class TransactionSignatureSerializer {
     sigHashNoneTx
   }
 
-  /** Executes the [[SIGHASH_SINGLE]] procedure on a spending transaction for the input specified by inputIndex */
+  /** Executes the [[org.bitcoins.core.script.crypto.SIGHASH_SINGLE SIGHASH_SINGLE]] procedure on a spending
+    * transaction for the input specified by inputIndex */
   private def sigHashSingle(
       spendingTransaction: Transaction,
       inputIndex: UInt32): Transaction = {
@@ -311,12 +314,14 @@ sealed abstract class TransactionSignatureSerializer {
     sigHashSingleTx
   }
 
-  /** Executes the [[SIGHASH_ALL]] procedure on a spending transaction at inputIndex. */
+  /** Executes the [[org.bitcoins.core.script.crypto.SIGHASH_ALL SIGHASH_ALL]] procedure on a spending
+    * transaction at inputIndex. */
   private def sigHashAll(spendingTransaction: Transaction): Transaction = {
     spendingTransaction
   }
 
-  /** Executes the [[SIGHASH_ANYONECANPAY]] procedure on a spending transaction at inputIndex. */
+  /** Executes the [[org.bitcoins.core.script.crypto.SIGHASH_ANYONECANPAY SIGHASH_ANYONECANPAY]] procedure
+    * on a spending transaction at inputIndex. */
   private def sigHashAnyoneCanPay(
       spendingTransaction: Transaction,
       input: TransactionInput): Transaction = {
@@ -326,7 +331,8 @@ sealed abstract class TransactionSignatureSerializer {
                     spendingTransaction.lockTime)
   }
 
-  /** Removes [[OP_CODESEPARATOR]] operations then returns the script. */
+  /** Removes [[org.bitcoins.core.script.crypto.OP_CODESEPARATOR OP_CODESEPARATOR]]
+    * operations then returns the script. */
   def removeOpCodeSeparators(script: Seq[ScriptToken]): Seq[ScriptToken] = {
     if (script.contains(OP_CODESEPARATOR)) {
       val scriptWithoutOpCodeSeparators: Seq[ScriptToken] =

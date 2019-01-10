@@ -6,8 +6,8 @@ import org.bitcoins.core.script.flag._
 
 /**
   * Created by chris on 4/6/16.
-  * Mimics the policy files found in bitcoin core
-  * https://github.com/bitcoin/bitcoin/blob/master/src/policy/policy.h
+  * Mimics the policy files found in
+  * [[https://github.com/bitcoin/bitcoin/blob/master/src/policy/policy.h Bitcoin Core]]
   */
 sealed abstract class Policy {
 
@@ -50,9 +50,11 @@ sealed abstract class Policy {
   def confirmations: Long = 6
 
   /**
-    * Minimum amount of [[org.bitcoins.core.currency.CurrencyUnit]]
-    * lock in a [[org.bitcoins.core.channels.Channel]]
+    * Minimum amount of [[org.bitcoins.core.currency.CurrencyUnit CurrencyUnit]]
+    * lock in a Channel
     * Currently set to 1 mBTC
+    *
+    * TODO: Remove this?
     */
   def minChannelAmount: CurrencyUnit = CurrencyUnits.oneMBTC
 
