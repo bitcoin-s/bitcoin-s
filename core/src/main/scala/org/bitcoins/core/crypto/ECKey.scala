@@ -111,9 +111,8 @@ sealed abstract class ECPrivateKey extends BaseECKey {
   }
 
   /**
-    * Converts a [[ECPrivateKey]] to WIF
-    * https://en.bitcoin.it/wiki/Wallet_import_format
-    * @return
+    * Converts a [[org.bitcoins.core.crypto.ECPrivateKey ECPrivateKey]] to
+    * [[https://en.bitcoin.it/wiki/Wallet_import_format WIF]]
     */
   def toWIF(network: NetworkParameters): String = {
     val networkByte = network.privateKey
@@ -170,12 +169,12 @@ object ECPrivateKey extends Factory[ECPrivateKey] {
   def fromHex(hex: String, isCompressed: Boolean): ECPrivateKey =
     fromBytes(BitcoinSUtil.decodeHex(hex), isCompressed)
 
-  /** Generates a fresh [[ECPrivateKey]] that has not been used before. */
+  /** Generates a fresh [[org.bitcoins.core.crypto.ECPrivateKey ECPrivateKey]] that has not been used before. */
   def apply(): ECPrivateKey = ECPrivateKey(true)
 
   def apply(isCompressed: Boolean) = freshPrivateKey(isCompressed)
 
-  /** Generates a fresh [[ECPrivateKey]] that has not been used before. */
+  /** Generates a fresh [[org.bitcoins.core.crypto.ECPrivateKey ECPrivateKey]] that has not been used before. */
   def freshPrivateKey: ECPrivateKey = freshPrivateKey(true)
 
   def freshPrivateKey(isCompressed: Boolean): ECPrivateKey = {
@@ -256,7 +255,7 @@ object ECPrivateKey extends Factory[ECPrivateKey] {
   /** The Base58 prefixes that represent uncompressed private keys */
   def uncompressedKeyPrefixes = Seq(Some('5'), Some('9'))
 
-  /** Returns the [[NetworkParameters]] from a serialized WIF key */
+  /** Returns the [[org.bitcoins.core.config.NetworkParameters NetworkParameters]] from a serialized WIF key */
   def parseNetworkFromWIF(wif: String): Try[NetworkParameters] = {
     val decoded = Base58.decodeCheck(wif)
     decoded match {
@@ -284,7 +283,9 @@ sealed abstract class ECPublicKey extends BaseECKey {
   def verify(hash: HashDigest, signature: ECDigitalSignature): Boolean =
     verify(hash.bytes, signature)
 
-  /** Verifies if a given piece of data is signed by the [[ECPrivateKey]]'s corresponding [[ECPublicKey]]. */
+  /** Verifies if a given piece of data is signed by the
+    * [[org.bitcoins.core.crypto.ECPrivateKey ECPrivateKey]]'s corresponding
+    * [[org.bitcoins.core.crypto.ECPublicKey ECPublicKey]]. */
   def verify(data: ByteVector, signature: ECDigitalSignature): Boolean = {
     val result = NativeSecp256k1.verify(data.toArray,
                                         signature.bytes.toArray,
@@ -338,13 +339,13 @@ sealed abstract class ECPublicKey extends BaseECKey {
   }
   override def publicKey: ECPublicKey = this
 
-  /** Checks if the [[ECPublicKey]] is compressed */
+  /** Checks if the [[org.bitcoins.core.crypto.ECPublicKey ECPublicKey]] is compressed */
   def isCompressed: Boolean = bytes.size == 33
 
-  /** Checks if the [[ECPublicKey]] is valid according to secp256k1 */
+  /** Checks if the [[org.bitcoins.core.crypto.ECPublicKey ECPublicKey]] is valid according to secp256k1 */
   def isFullyValid = ECPublicKey.isFullyValid(bytes)
 
-  /** Returns the decompressed version of this [[ECPublicKey]] */
+  /** Returns the decompressed version of this [[org.bitcoins.core.crypto.ECPublicKey ECPublicKey]] */
   def decompressed: ECPublicKey = {
     if (isCompressed) {
       val decompressed = NativeSecp256k1.decompress(bytes.toArray)
@@ -352,8 +353,8 @@ sealed abstract class ECPublicKey extends BaseECKey {
     } else this
   }
 
-  /** Decodes a [[org.bitcoins.core.crypto.ECPublicKey]] in bitcoin-s
-    * to a [[ECPoint]] data structure that is internal to the
+  /** Decodes a [[org.bitcoins.core.crypto.ECPublicKey ECPublicKey]] in bitcoin-s
+    * to a [[org.bouncycastle.math.ec.ECPoint ECPoint]] data structure that is internal to the
     * bouncy castle library
     * @return
     */
@@ -382,7 +383,7 @@ object ECPublicKey extends Factory[ECPublicKey] {
 
   def apply() = freshPublicKey
 
-  /** Generates a fresh [[ECPublicKey]] that has not been used before. */
+  /** Generates a fresh [[org.bitcoins.core.crypto.ECPublicKey ECPublicKey]] that has not been used before. */
   def freshPublicKey = ECPrivateKey.freshPrivateKey.publicKey
 
   /**
@@ -400,11 +401,8 @@ object ECPublicKey extends Factory[ECPublicKey] {
     */
   def isValid(bytes: ByteVector): Boolean = bytes.nonEmpty
 
-  /** Creates a [[org.bitcoins.core.crypto.ECPublicKey]] from the [[org.bouncycastle.math.ec.ECPoint]]
-    * data structure used internally inside  of bouncy castle
-    * @param p
-    * @param isCompressed
-    * @return
+  /** Creates a [[org.bitcoins.core.crypto.ECPublicKey ECPublicKey]] from the
+    * [[org.bouncycastle.math.ec.ECPoint ECPoint]] data structure used internally inside of Bouncy Castle
     */
   def fromPoint(p: ECPoint, isCompressed: Boolean = true): ECPublicKey = {
     val bytes = p.getEncoded(isCompressed)
