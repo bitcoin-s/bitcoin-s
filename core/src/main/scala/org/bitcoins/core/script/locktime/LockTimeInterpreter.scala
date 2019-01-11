@@ -146,9 +146,12 @@ sealed abstract class LockTimeInterpreter {
   }
 
   /**
-    * Mimics this function inside of bitcoin core
-    * [[https://github.com/bitcoin/bitcoin/blob/e26b62093ae21e89ed7d36a24a6b863f38ec631d/src/script/interpreter.cpp#L1196]]
-    * [[https://github.com/bitcoin/bips/blob/master/bip-0068.mediawiki#specification]]
+    * @see Mimics
+    *      [[https://github.com/bitcoin/bitcoin/blob/e26b62093ae21e89ed7d36a24a6b863f38ec631d/src/script/interpreter.cpp#L1196 this function]]
+    *      inside of Bitcoin Core
+    *
+    * @see [[https://github.com/bitcoin/bips/blob/master/bip-0068.mediawiki#specification BIP68]]
+    *
     * @param program the program whose transaction input's sequence is being compared
     * @param nSequence the script number on the stack top to compare to the input's sequence number
     * @return if the given script number is valid or not
@@ -269,8 +272,10 @@ sealed abstract class LockTimeInterpreter {
   }
 
   /**
-    * Mimics this function inside of bitcoin core for checking the locktime of a transaction
-    * [[https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L1160]].
+    * Checks the locktime of a transaction.
+    * @see Mimics
+    *      [[https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L1160 this function]]
+    *     inside of Bitcoin Core
     */
   private def checkLockTime(
       program: ScriptProgram,
