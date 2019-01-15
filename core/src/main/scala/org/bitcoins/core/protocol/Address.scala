@@ -18,10 +18,11 @@ sealed abstract class Address {
   /** The string representation of this address */
   def value: String
 
-  /** Every address is derived from a [[HashDigest]] in a [[org.bitcoins.core.protocol.transaction.TransactionOutput]] */
+  /** Every address is derived from a [[org.bitcoins.core.crypto.HashDigest HashDigest]] in a
+    * [[org.bitcoins.core.protocol.transaction.TransactionOutput TransactionOutput]] */
   def hash: HashDigest
 
-  /** The [[ScriptPubKey]] the address represents */
+  /** The [[org.bitcoins.core.protocol.script.ScriptPubKey ScriptPubKey]] the address represents */
   def scriptPubKey: ScriptPubKey
 
   override def toString = value
@@ -145,7 +146,8 @@ object Bech32Address extends AddressFactory[Bech32Address] {
     checksum == 1
   }
 
-  /** Tries to convert the given string a to a [[org.bitcoins.core.protocol.script.WitnessScriptPubKey]] */
+  /** Tries to convert the given string a to a
+    * [[org.bitcoins.core.protocol.script.WitnessScriptPubKey WitnessScriptPubKey]] */
   def fromStringToWitSPK(string: String): Try[WitnessScriptPubKey] = {
     val decoded = fromString(string)
     decoded.flatMap {
@@ -176,7 +178,7 @@ object Bech32Address extends AddressFactory[Bech32Address] {
     }
   }
 
-  /** Decodes bech32 string to the [[HumanReadablePart]] & data part */
+  /** Decodes bech32 string to the [[org.bitcoins.core.protocol.HumanReadablePart HumanReadablePart]] & data part */
   override def fromString(str: String): Try[Bech32Address] = {
     val sepIndexes = str.zipWithIndex.filter(_._1 == Bech32.separator)
     if (str.size > 90 || str.size < 8) {
@@ -342,8 +344,9 @@ object P2SHAddress extends AddressFactory[P2SHAddress] {
       extends P2SHAddress
 
   /**
-    * Creates a [[P2SHScriptPubKey]] from the given [[ScriptPubKey]],
-    * then creates an address from that [[P2SHScriptPubKey]]
+    * Creates a [[org.bitcoins.core.protocol.script.P2SHScriptPubKey P2SHScriptPubKey]] from the given
+    * [[org.bitcoins.core.protocol.script.ScriptPubKey ScriptPubKey]],
+    * then creates an address from that [[org.bitcoins.core.protocol.script.P2SHScriptPubKey P2SHScriptPubKey]]
     */
   def apply(
       scriptPubKey: ScriptPubKey,
@@ -407,7 +410,7 @@ object P2SHAddress extends AddressFactory[P2SHAddress] {
 
 object BitcoinAddress extends AddressFactory[BitcoinAddress] {
 
-  /** Creates a [[BitcoinAddress]] from the given string value */
+  /** Creates a [[org.bitcoins.core.protocol.BitcoinAddress BitcoinAddress]] from the given string value */
   def apply(value: String): Try[BitcoinAddress] = fromString(value)
 
   override def fromString(value: String): Try[BitcoinAddress] = {

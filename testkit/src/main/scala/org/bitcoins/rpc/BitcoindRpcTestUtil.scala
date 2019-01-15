@@ -18,13 +18,13 @@ import org.bitcoins.rpc.config.{
 import org.bitcoins.rpc.util.RpcUtil
 
 import scala.collection.immutable.Map
-import scala.collection.JavaConverters.{asScalaSet, mapAsJavaMap}
+
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.{Failure, Success, Try}
 
 trait BitcoindRpcTestUtil extends BitcoinSLogger {
-
+  import scala.collection.JavaConverters._
   def randomDirName: String =
     0.until(5).map(_ => scala.util.Random.alphanumeric.head).mkString
 
@@ -51,7 +51,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       "zmqpubrawblock" -> s"tcp://127.0.0.1:$zmqPort",
       "prune" -> (if (pruneMode) "1" else "0")
     )
-    val javaMap = mapAsJavaMap(values)
+    val javaMap = values.asJava
 
     ConfigFactory.parseMap(javaMap)
   }
@@ -66,7 +66,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       zmqPort: Int,
       pruneMode: Boolean): BitcoindAuthCredentials = {
     val conf = config(uri, rpcUri, zmqPort, pruneMode)
-    val confSet = asScalaSet(conf.entrySet).toSet
+    val confSet = conf.entrySet.asScala
     val confStr =
       confSet
         .map(entry => {

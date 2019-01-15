@@ -215,7 +215,7 @@ trait EclairTestUtil extends BitcoinSLogger {
 
   /**
     * Creates two eclair nodes that are connected together and returns their
-    * respective [[EclairRpcClient]]s
+    * respective [[org.bitcoins.eclair.rpc.client.EclairRpcClient EclairRpcClient]]s
     */
   def createNodePair(bitcoindRpcClientOpt: Option[BitcoindRpcClient])(
       implicit system: ActorSystem): (EclairRpcClient, EclairRpcClient) = {
@@ -337,7 +337,7 @@ trait EclairTestUtil extends BitcoinSLogger {
         uri = new URI("http://localhost:18333"),
         rpcUri = new URI(s"http://localhost:${bitcoindRpcPort}"),
         authCredentials =
-          eclairRpcClient.instance.authCredentials.bitcoinAuthOpt.get,
+          eclairRpcClient.instance.authCredentials.bitcoinAuthOpt.get
       )
       new BitcoindRpcClient(bitcoindInstance)
     }
