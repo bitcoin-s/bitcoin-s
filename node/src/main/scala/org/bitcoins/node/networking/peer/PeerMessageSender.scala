@@ -6,15 +6,12 @@ import akka.io.Tcp
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.node.NetworkMessage
 import org.bitcoins.node.constant.Constants
-import org.bitcoins.node.db.DbConfig
 import org.bitcoins.node.messages._
 import org.bitcoins.node.messages.control.{PongMessage, VersionMessage}
 import org.bitcoins.node.networking.Client
-import org.bitcoins.node.networking.peer.PeerMessageHandler.{HandshakeFinished, MessageAccumulator, PeerMessageHandlerMsg}
+import org.bitcoins.node.networking.peer.PeerMessageSender.{HandshakeFinished, MessageAccumulator, PeerMessageHandlerMsg}
 import org.bitcoins.node.util.BitcoinSpvNodeUtil
 import scodec.bits.ByteVector
-
-import scala.concurrent.ExecutionContext
 
 /**
   * Created by chris on 6/7/16.
@@ -24,17 +21,15 @@ import scala.concurrent.ExecutionContext
   * with our peer on the network. When the Client finally responds to the [[NetworkMessage]] we originally
   * sent it sends that [[NetworkMessage]] back to the actor that requested it.
   */
-sealed abstract class PeerMessageHandler(dbConfig: DbConfig) extends Actor with BitcoinSLogger {
-  private implicit val ec: ExecutionContext = context.dispatcher
-  lazy val peer: ActorRef = context.actorOf(
-    Client.props,
-    BitcoinSpvNodeUtil.createActorName(this.getClass))
+sealed abstract class PeerMessageSender extends Actor with BitcoinSLogger {
+
+  def client: Client
 
   def receive = LoggingReceive {
     case connect: Tcp.Connect =>
       val msgAccum = MessageAccumulator(Vector.empty, sender)
       context.become(awaitConnected(msgAccum, ByteVector.empty))
-      peer ! connect
+      client.peer ! connect
   }
 
   /** Waits for us to receive a [[Tcp.Connected]] message from our [[Client]] */
@@ -44,7 +39,7 @@ sealed abstract class PeerMessageHandler(dbConfig: DbConfig) extends Actor with 
     case Tcp.Connected(_, local) =>
       val versionMsg =
         VersionMessage(Constants.networkParameters, local.getAddress)
-      peer ! versionMsg
+      client.peer ! versionMsg
       logger.info("Switching to awaitVersionMessage from awaitConnected")
       context.become(awaitVersionMessage(msgAccum, unalignedBytes))
     case msg: NetworkMessage =>
@@ -65,7 +60,7 @@ sealed abstract class PeerMessageHandler(dbConfig: DbConfig) extends Actor with 
     case networkMessage: NetworkMessage =>
       networkMessage.payload match {
         case _: VersionMessage =>
-          peer ! VerAckMessage
+          client.peer ! VerAckMessage
           //need to wait for the peer to send back a verack message
           logger.debug("Switching to awaitVerack from awaitVersionMessage")
           context.become(awaitVerack(msgAccum, unalignedBytes))
@@ -118,10 +113,10 @@ sealed abstract class PeerMessageHandler(dbConfig: DbConfig) extends Actor with 
   private def sendPeerRequests(requests: Seq[(ActorRef, NetworkMessage)]) =
     for {
       (sender, peerRequest) <- requests
-    } yield peer ! peerRequest
+    } yield client.peer ! peerRequest
 
   /**
-    * This is the main receive function inside of [[PeerMessageHandler]]
+    * This is the main receive function inside of [[PeerMessageSender]]
     * This will receive peer requests, then send the payload to the the corresponding
     * actor responsible for handling that specific message
     *
@@ -138,10 +133,10 @@ sealed abstract class PeerMessageHandler(dbConfig: DbConfig) extends Actor with 
         handleControlPayload(controlPayload, sender, controlMessages)
       context.become(peerMessageHandler(newControlMsgs, unalignedBytes))
     case dataPayload: DataPayload =>
-      handleDataPayload(dataPayload, sender)
+      handleDataPayload(dataPayload)
     case msg: PeerMessageHandlerMsg => msg match {
-      case PeerMessageHandler.SendToPeer(msg) =>
-        peer ! msg
+      case PeerMessageSender.SendToPeer(msg) =>
+        client.peer ! msg
 
       case HandshakeFinished =>
         logger.warn(s"HandshakeFinished should not be receved in peerMessageHandler context")
@@ -156,17 +151,8 @@ sealed abstract class PeerMessageHandler(dbConfig: DbConfig) extends Actor with 
     * @param payload
     * @param sender
     */
-  private def handleDataPayload(payload: DataPayload, sender: ActorRef): Unit = {
-    val dataMsgHandler = new DataMessageHandler(dbConfig = dbConfig)
-    if (sender == context.parent) {
-      //means we need to send this message to our peer
-      val msg = NetworkMessage(Constants.networkParameters, payload)
-      peer ! msg
-    } else {
-      //else it means we are receiving this data payload from a peer,
-      //we need to handle it
-      dataMsgHandler.handleDataPayload(payload)
-    }
+  private def handleDataPayload(payload: DataPayload): Unit = {
+    client.peer ! payload
   }
 
   /**
@@ -187,7 +173,7 @@ sealed abstract class PeerMessageHandler(dbConfig: DbConfig) extends Actor with 
       case pingMsg: PingMessage =>
         if (destination == context.parent) {
           //means that our peer sent us a ping message, we respond with a pong
-          peer ! PongMessage(pingMsg.nonce)
+          client.peer ! PongMessage(pingMsg.nonce)
           //remove ping message from requests
           requests.filterNot {
             case (_, msg) => msg.isInstanceOf[PingMessage]
@@ -195,7 +181,7 @@ sealed abstract class PeerMessageHandler(dbConfig: DbConfig) extends Actor with 
         } else {
           //means we initialized the ping message, send it to our peer
           logger.debug("Sending ping message to peer: " + pingMsg)
-          peer ! pingMsg
+          client.peer ! pingMsg
           requests
         }
       case SendHeadersMessage =>
@@ -243,7 +229,7 @@ sealed abstract class PeerMessageHandler(dbConfig: DbConfig) extends Actor with 
     if (sender == context.parent) {
       logger.debug(
         "The sender was context.parent, therefore we are sending this message to our peer on the network")
-      peer
+      client.peer
     } else {
       logger.debug(
         "The sender was the peer on the network, therefore we need to send to context.parent")
@@ -269,10 +255,10 @@ sealed abstract class PeerMessageHandler(dbConfig: DbConfig) extends Actor with 
   }
 }
 
-object PeerMessageHandler {
+object PeerMessageSender {
 
-  private case class PeerMessageHandlerImpl(dbConfig: DbConfig)
-    extends PeerMessageHandler(dbConfig)
+  private case class PeerMessageSenderImpl(client: Client)
+    extends PeerMessageSender
 
   sealed abstract class PeerMessageHandlerMsg
 
@@ -295,15 +281,11 @@ object PeerMessageHandler {
   case class MessageAccumulator(networkMsgs: Vector[(ActorRef, NetworkMessage)],
                                 peerHandler: ActorRef)
 
-  def props: Props = {
-    props(Constants.dbConfig)
-  }
+  def props(client: Client): Props =
+    Props(classOf[PeerMessageSenderImpl], client)
 
-  def props(dbConfig: DbConfig): Props =
-    Props(classOf[PeerMessageHandlerImpl], dbConfig)
-
-  def apply(dbConfig: DbConfig)(implicit context: ActorRefFactory): ActorRef =
-    context.actorOf(props = props(dbConfig),
+  def apply(client: Client)(implicit context: ActorRefFactory): ActorRef = {
+    context.actorOf(props = props(client),
       name = BitcoinSpvNodeUtil.createActorName(this.getClass))
-
+  }
 }

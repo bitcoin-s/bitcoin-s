@@ -14,7 +14,7 @@ import scala.concurrent.{ExecutionContext, Future}
   * You are responsible for the create function. You also need to specify
   * the table and the database you are connecting to.
   */
-trait CRUD[T, PrimaryKeyType] extends BitcoinSLogger {
+abstract class CRUD[T, PrimaryKeyType] extends BitcoinSLogger {
   implicit def ec: ExecutionContext
 
   /** The table inside our database we are inserting into */

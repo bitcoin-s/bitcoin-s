@@ -10,7 +10,6 @@ import org.bitcoins.node.constant.Constants
 import org.bitcoins.node.db.DbConfig
 import org.bitcoins.node.messages.data.{GetDataMessage, Inventory}
 import org.bitcoins.node.messages.{BlockMessage, MsgBlock}
-import org.bitcoins.node.networking.peer.PeerMessageHandler
 
 /**
   * Created by chris on 7/10/16.
@@ -19,9 +18,10 @@ sealed abstract class BlockActor extends Actor with BitcoinSLogger {
 
   def dbConfig: DbConfig
 
+  def peerMsgHandler: ActorRef
+
   def receive: Receive = LoggingReceive {
     case hash: DoubleSha256Digest =>
-      val peerMsgHandler = PeerMessageHandler(dbConfig)(context.system)
       val inv = Inventory(MsgBlock, hash)
       val getDataMessage = GetDataMessage(inv)
       val networkMessage =
@@ -40,12 +40,14 @@ sealed abstract class BlockActor extends Actor with BitcoinSLogger {
 }
 
 object BlockActor {
-  private case class BlockActorImpl(dbConfig: DbConfig) extends BlockActor
+  private case class BlockActorImpl(peerMsgHandler: ActorRef, dbConfig: DbConfig) extends BlockActor
 
-  def props(dbConfig: DbConfig): Props = Props(classOf[BlockActorImpl], dbConfig)
+  def props(peerMsgHandler: ActorRef,dbConfig: DbConfig): Props = {
+    Props(classOf[BlockActorImpl], peerMsgHandler, dbConfig)
+  }
 
-  def apply(dbConfig: DbConfig)(implicit context: ActorContext): ActorRef = {
-    context.actorOf(props(dbConfig))
+  def apply(peerMsgHandler: ActorRef,dbConfig: DbConfig)(implicit context: ActorContext): ActorRef = {
+    context.actorOf(props(peerMsgHandler,dbConfig))
   }
 
 }

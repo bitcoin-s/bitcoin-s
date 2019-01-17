@@ -15,7 +15,6 @@ import org.bitcoins.node.db.DbConfig
 import org.bitcoins.node.messages._
 import org.bitcoins.node.messages.control.FilterLoadMessage
 import org.bitcoins.node.messages.data.{GetDataMessage, Inventory}
-import org.bitcoins.node.networking.peer.PeerMessageHandler
 import org.bitcoins.node.util.BitcoinSpvNodeUtil
 
 /**
@@ -33,9 +32,11 @@ import org.bitcoins.node.util.BitcoinSpvNodeUtil
   * to our peer on the network to see if the tx was included on that block
   * 7.) If it was, send the actor that that requested this [[PaymentActor.SuccessfulPayment]] message back
   */
-sealed trait PaymentActor extends Actor with BitcoinSLogger {
+sealed abstract class PaymentActor extends Actor with BitcoinSLogger {
 
   def dbConfig: DbConfig
+
+  def peerMsgHandler: ActorRef
 
   def receive = LoggingReceive {
     case hash: Sha256Hash160Digest =>
@@ -50,25 +51,9 @@ sealed trait PaymentActor extends Actor with BitcoinSLogger {
     val bloomFilter =
       BloomFilter(10, 0.0001, UInt32.zero, BloomUpdateNone).insert(hash)
     val filterLoadMsg = FilterLoadMessage(bloomFilter)
-    val peerMsgHandler = PeerMessageHandler(dbConfig)(context.system)
     val bloomFilterNetworkMsg =
       NetworkMessage(Constants.networkParameters, filterLoadMsg)
     peerMsgHandler ! bloomFilterNetworkMsg
-    logger.debug("Switching to awaitTransactionInventoryMessage")
-    context.become(awaitTransactionInventoryMessage(hash, peerMsgHandler))
-  }
-
-  /** Waits for a transaction inventory message on the p2p network,
-    * once we receive one we switch to teh awaitTransactionGetDataMessage context */
-  def awaitTransactionInventoryMessage(
-      hash: Sha256Hash160Digest,
-      peerMessageHandler: ActorRef): Receive = LoggingReceive {
-    case invMsg: InventoryMessage =>
-      //txs are broadcast by nodes on the network when they are seen by a node
-      //filter out the txs we do not care about
-      val txInventories = invMsg.inventories.filter(_.typeIdentifier == MsgTx)
-      handleTransactionInventoryMessages(txInventories, peerMessageHandler)
-      context.become(awaitTransactionGetDataMessage(hash, peerMessageHandler))
   }
 
   /** Awaits for a [[GetDataMessage]] that requested a transaction. We can also fire off more [[GetDataMessage]] inside of this context */
@@ -101,11 +86,15 @@ sealed trait PaymentActor extends Actor with BitcoinSLogger {
   /** Sends a [[GetDataMessage]] to get the full transaction for a transaction inventory message */
   private def handleTransactionInventoryMessages(
       inventory: Seq[Inventory],
-      peerMessageHandler: ActorRef) =
+      peerMessageHandler: ActorRef): Unit = {
     for {
       txInv <- inventory
       inventory = GetDataMessage(txInv)
     } yield peerMessageHandler ! inventory
+
+    ()
+  }
+
 
   /** This context waits for a block announcement on the network,
     * then constructs a [[MerkleBlockMessage]] to check
@@ -165,12 +154,12 @@ sealed trait PaymentActor extends Actor with BitcoinSLogger {
 }
 
 object PaymentActor {
-  private case class PaymentActorImpl(dbConfig: DbConfig) extends PaymentActor
+  private case class PaymentActorImpl(peerMsgHandler: ActorRef, dbConfig: DbConfig) extends PaymentActor
 
-  def props(dbConfig: DbConfig): Props = Props(classOf[PaymentActorImpl], dbConfig)
+  def props(peerMsgHandler: ActorRef, dbConfig: DbConfig): Props = Props(classOf[PaymentActorImpl],  peerMsgHandler, dbConfig)
 
-  def apply(dbConfig: DbConfig)(implicit context: ActorRefFactory): ActorRef =
-    context.actorOf(props(dbConfig), BitcoinSpvNodeUtil.createActorName(this.getClass))
+  def apply(peerMsgHandler: ActorRef, dbConfig: DbConfig)(implicit context: ActorRefFactory): ActorRef =
+    context.actorOf(props(peerMsgHandler, dbConfig), BitcoinSpvNodeUtil.createActorName(this.getClass))
 
   sealed trait PaymentActorMessage
   case class SuccessfulPayment(

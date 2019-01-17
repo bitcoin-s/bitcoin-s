@@ -9,13 +9,9 @@ import org.bitcoins.core.config.TestNet3
 import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil}
 import org.bitcoins.node.messages.control.VersionMessage
 import org.bitcoins.node.messages.{NetworkPayload, VersionMessage}
+import org.bitcoins.node.networking.peer.PeerMessageReceiver
 import org.bitcoins.node.util.BitcoinSpvNodeUtil
-import org.scalatest.{
-  BeforeAndAfter,
-  BeforeAndAfterAll,
-  FlatSpecLike,
-  MustMatchers
-}
+import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll, FlatSpecLike, MustMatchers}
 
 import scala.concurrent.duration._
 import scala.util.Try
@@ -36,7 +32,8 @@ class ClientTest
     "send a version message to a peer on the network and receive a version message back, then close that connection" in {
     val probe = TestProbe()
 
-    val client = TestActorRef(Client.props, probe.ref)
+    val peerMessageReceiver = PeerMessageReceiver(self)
+    val client = TestActorRef(Client.props(peerMessageReceiver), probe.ref)
 
     val remote = new InetSocketAddress(TestNet3.dnsSeeds(0), TestNet3.port)
     val randomPort = 23521
@@ -68,8 +65,9 @@ class ClientTest
     val probe1 = TestProbe()
     val probe2 = TestProbe()
 
-    val client1 = TestActorRef(Client.props, probe1.ref)
-    val client2 = TestActorRef(Client.props, probe2.ref)
+    val peerMessageReceiver = PeerMessageReceiver(self)
+    val client1 = TestActorRef(Client.props(peerMessageReceiver), probe1.ref)
+    val client2 = TestActorRef(Client.props(peerMessageReceiver), probe2.ref)
 
     client1 ! Tcp.Connect(remote1)
 

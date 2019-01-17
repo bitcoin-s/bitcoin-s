@@ -11,7 +11,7 @@ import org.bitcoins.node.NetworkMessage
 import org.bitcoins.node.constant.Constants
 import org.bitcoins.node.db.DbConfig
 import org.bitcoins.node.messages.{GetHeadersMessage, HeadersMessage, NetworkPayload}
-import org.bitcoins.node.networking.peer.PeerMessageHandler.SendToPeer
+import org.bitcoins.node.networking.peer.PeerMessageSender.SendToPeer
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -32,7 +32,7 @@ abstract class PeerHandler extends BitcoinSLogger {
 
   /** Connects with our peer*/
   def connect(): Future[Unit] = {
-    val handshakeF = (peerActor ? Tcp.Connect(socket)).mapTo[PeerMessageHandler.HandshakeFinished.type]
+    val handshakeF = (peerActor ? Tcp.Connect(socket)).mapTo[PeerMessageSender.HandshakeFinished.type]
     handshakeF.map(_ => ())
   }
 
@@ -63,8 +63,8 @@ object PeerHandler {
     PeerHandlerImpl(peerActor, socket, dbConfig)(system,timeout)
   }
 
-  def apply(peer: Peer, dbConfig: DbConfig)(implicit system: ActorSystem, timeout: Timeout): PeerHandler = {
+/*  def apply(peer: Peer, dbConfig: DbConfig)(implicit system: ActorSystem, timeout: Timeout): PeerHandler = {
     val actorRef = PeerMessageHandler(dbConfig = dbConfig)
     PeerHandler(actorRef,peer.socket,dbConfig)
-  }
+  }*/
 }

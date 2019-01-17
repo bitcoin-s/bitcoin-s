@@ -5,6 +5,7 @@ import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.node.db.DbConfig
 import org.bitcoins.node.messages.{DataPayload, HeadersMessage}
 import org.bitcoins.node.models.BlockHeaderDAO
+import org.bitcoins.node.networking.Client
 import org.bitcoins.node.util.BitcoinSpvNodeUtil
 
 import scala.concurrent.ExecutionContext
@@ -18,7 +19,7 @@ class DataMessageHandler(dbConfig: DbConfig)(implicit ec: ExecutionContext) exte
 
   private val blockHeaderDAO = BlockHeaderDAO(dbConfig)
 
-  def handleDataPayload(payload: DataPayload): Unit = payload match {
+  def handleDataPayload(payload: DataPayload, client: Client): Unit = payload match {
     case headersMsg: HeadersMessage =>
       blockHeaderDAO.upsertAll(headersMsg.headers.toVector)
   }

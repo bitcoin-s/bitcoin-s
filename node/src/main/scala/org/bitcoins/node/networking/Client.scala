@@ -9,9 +9,7 @@ import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.node.NetworkMessage
 import org.bitcoins.node.constant.Constants
 import org.bitcoins.node.messages.NetworkPayload
-import org.bitcoins.node.util.BitcoinSpvNodeUtil
-import org.bitcoins.node.NetworkMessage
-import org.bitcoins.node.messages._
+import org.bitcoins.node.networking.peer.PeerMessageReceiver
 import org.bitcoins.node.util.BitcoinSpvNodeUtil
 import scodec.bits.ByteVector
 
@@ -23,14 +21,14 @@ import scodec.bits.ByteVector
   * with the p2p network. It's responsibly is to deal with low
   * level [[Tcp.Message]].
   *
-  * If the [[Client]] receives a [[NetworkMessage]], from a [[org.bitcoins.node.networking.peer.PeerMessageHandler]]
+  * If the [[Client]] receives a [[NetworkMessage]], from a [[org.bitcoins.node.networking.peer.PeerMessageSender]]
   * it serializes the message to it to a [[akka.util.ByteString]] and then sends it to the [[manager]]
   * which streams the data to our peer on the bitcoin network.
   *
   * If the [[Client]] receives a [[Tcp.Received]] message, it means we have received
   * a message from our peer on the bitcoin p2p network. This means we try to parse
   * the [[ByteString]] into a [[NetworkMessage]]. If we successfully parse the message
-  * we relay that message to the [[org.bitcoins.node.networking.peer.PeerMessageHandler]]
+  * we relay that message to the [[org.bitcoins.node.networking.peer.PeerMessageSender]]
   * that created the Client Actor.
   *
   * In this class you will see a 'unalignedBytes' value passed around in a lot of methods
@@ -39,7 +37,15 @@ import scodec.bits.ByteVector
   * CANNOT fit in a single tcp packet. This means we must cache
   * the bytes and wait for the rest of them to be sent.
   */
-sealed abstract class Client extends Actor with BitcoinSLogger {
+sealed abstract class ClientActor extends Actor with BitcoinSLogger {
+
+
+  /** The place we send messages that we successfully parsed from our
+    * peer on the p2p network. This is mostly likely a [[org.bitcoins.node.networking.peer.PeerMessageSender]]
+    *
+    * @return
+    */
+  def peerMsgHandlerReceiver: PeerMessageReceiver
 
   /**
     * The manager is an actor that handles the underlying low level I/O resources (selectors, channels)
@@ -155,7 +161,7 @@ sealed abstract class Client extends Actor with BitcoinSLogger {
         //send them to 'context.parent' -- this is the
         //PeerMessageHandler that is responsible for
         //creating this Client Actor
-        messages.foreach(m => context.parent ! m)
+        messages.foreach(m => peerMsgHandlerReceiver.actor ! m)
 
         newUnalignedBytes
     }
@@ -189,11 +195,21 @@ sealed abstract class Client extends Actor with BitcoinSLogger {
 
 }
 
+
+case class Client(peer: ActorRef)
+
+
 object Client {
-  private case class ClientImpl() extends Client
+  private case class ClientActorImpl(peerMsgHandlerReceiver: PeerMessageReceiver) extends ClientActor
 
-  def props: Props = Props(classOf[ClientImpl])
+  def props(peerMsgHandlerReceiver: PeerMessageReceiver): Props = Props(classOf[ClientActorImpl], peerMsgHandlerReceiver)
 
-  def apply(context: ActorContext): ActorRef =
-    context.actorOf(props, BitcoinSpvNodeUtil.createActorName(this.getClass))
+  def apply(context: ActorContext, peerMessageReceiver: PeerMessageReceiver): Client = {
+    val peer = context.actorOf(
+      props(peerMsgHandlerReceiver = peerMessageReceiver),
+      BitcoinSpvNodeUtil.createActorName(this.getClass))
+
+    Client(peer)
+  }
+
 }

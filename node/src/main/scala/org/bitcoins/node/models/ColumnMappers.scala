@@ -1,8 +1,9 @@
 package org.bitcoins.node.models
 
 import org.bitcoins.core.crypto.DoubleSha256Digest
-import org.bitcoins.core.number.{Int32, UInt32}
+import org.bitcoins.core.number.{Int32, UInt32, UInt64}
 import org.bitcoins.core.protocol.transaction.TransactionOutput
+import org.bitcoins.node.messages.control.ServiceIdentifier
 import slick.jdbc.PostgresProfile.api._
 
 /**
@@ -36,6 +37,21 @@ trait ColumnMappers {
     MappedColumnType.base[TransactionOutput, String](
       _.hex,
       TransactionOutput(_)
+    )
+  }
+
+  implicit val uint64Mapper: BaseColumnType[UInt64] = {
+    MappedColumnType.base[UInt64, BigDecimal](
+      { u64: UInt64 => BigDecimal(u64.toBigInt.bigInteger) } ,
+      //this has the potential to throw
+      { bigDec: BigDecimal => UInt64(bigDec.toBigIntExact().get) }
+    )
+  }
+
+  implicit val serviceIdentifierMapper: BaseColumnType[ServiceIdentifier] = {
+    MappedColumnType.base[ServiceIdentifier, UInt64](
+      _.num,
+      ServiceIdentifier(_)
     )
   }
 }

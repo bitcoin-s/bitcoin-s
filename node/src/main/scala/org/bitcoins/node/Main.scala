@@ -20,10 +20,10 @@ object Main extends App {
     val startHeader = BlockHeaderSyncActor.StartHeaders(Seq(gensisBlockHash))
 
     Constants.database.executor*/
-    val blockHeaderSyncActor = BlockHeaderSyncActor(Constants.actorSystem,
+/*    val blockHeaderSyncActor = BlockHeaderSyncActor(Constants.actorSystem,
                                                     Constants.dbConfig,
-                                                    Constants.networkParameters)
-    blockHeaderSyncActor ! StartAtLastSavedHeader
+                                                    Constants.networkParameters)*/
+    //blockHeaderSyncActor ! StartAtLastSavedHeader
   }
 
 }

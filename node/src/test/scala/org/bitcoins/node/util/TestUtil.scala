@@ -1,12 +1,17 @@
 package org.bitcoins.node.util
 
+import akka.actor.{ActorRef, ActorRefFactory}
+import akka.testkit.TestProbe
 import org.bitcoins.core.protocol.blockchain.{BlockHeader, TestNetChainParams}
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.node.NetworkMessage
 import org.bitcoins.node.messages.control.VersionMessage
 import org.bitcoins.node.messages.data.GetHeadersMessage
 import org.bitcoins.node.NetworkMessage
+import org.bitcoins.node.db.{DbConfig, UnitTestDbConfig}
 import org.bitcoins.node.messages.data.GetHeadersMessage
+import org.bitcoins.node.networking.Client
+import org.bitcoins.node.networking.peer.PeerMessageReceiver
 
 /**
   * Created by chris on 6/2/16.
@@ -62,6 +67,33 @@ trait TestUtil {
       BlockHeader(
         "01000000dde5b648f594fdd2ec1c4083762dd13b197bb1381e74b1fff90a5d8b00000000b3c6c6c1118c3b6abaa17c5aa74ee279089ad34dc3cec3640522737541cb016818e8494dffff001d02da84c0")
     )
+  }
+
+
+  def dbConfig: DbConfig = UnitTestDbConfig
+
+  def peer(peerMsgReceiver: PeerMessageReceiver, probeOpt: Option[TestProbe])(implicit ref: ActorRefFactory): Client = {
+    val actoref = {
+      if (probeOpt.isDefined) {
+
+        val probe = probeOpt.get
+
+        probe.forward(peerMsgReceiver.actor)
+
+        ref.actorOf(
+          props = Client.props(probe.ref),
+          name = BitcoinSpvNodeUtil.createActorName(s"TestUtil-${getClass.getSimpleName}")
+        )
+      } else {
+        ref.actorOf(
+          props = Client.props(peerMsgReceiver),
+          name = BitcoinSpvNodeUtil.createActorName(s"TestUtil-${getClass.getSimpleName}")
+        )
+      }
+    }
+
+    Client(actoref)
+
   }
 }
 

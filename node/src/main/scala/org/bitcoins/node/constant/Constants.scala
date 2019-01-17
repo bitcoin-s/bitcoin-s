@@ -5,7 +5,7 @@ import org.bitcoins.core.config.{MainNet, NetworkParameters, RegTest, TestNet3}
 import org.bitcoins.core.protocol.blockchain.{ChainParams, MainNetChainParams, RegTestNetChainParams, TestNetChainParams}
 import org.bitcoins.node.db.{DbConfig, MainNetDbConfig, RegTestDbConfig, TestNet3DbConfig}
 import org.bitcoins.node.messages.control.VersionMessage
-import org.bitcoins.node.versions.{ProtocolVersion70013, ProtocolVersion70015}
+import org.bitcoins.node.versions.ProtocolVersion70013
 import slick.jdbc.PostgresProfile.api._
 
 import scala.concurrent.duration.DurationInt

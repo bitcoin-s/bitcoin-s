@@ -11,7 +11,7 @@ import org.bitcoins.node.db.DbConfig
 import org.bitcoins.node.messages.HeadersMessage
 import org.bitcoins.node.messages.data.GetHeadersMessage
 import org.bitcoins.node.models.BlockHeaderDAO
-import org.bitcoins.node.networking.peer.PeerMessageHandler
+import org.bitcoins.node.networking.peer.PeerMessageSender
 import org.bitcoins.node.networking.sync.BlockHeaderSyncActor.{CheckHeaderResult, GetHeaders, StartAtLastSavedHeader}
 import org.bitcoins.node.util.BitcoinSpvNodeUtil
 
@@ -46,7 +46,7 @@ trait BlockHeaderSyncActor extends Actor with BitcoinSLogger {
   def maxHeightF: Future[Long] = blockHeaderDAO.maxHeight
 
   /** Helper function to connect to a new peer on the network */
-  private def peerMessageHandler: ActorRef = PeerMessageHandler(dbConfig)(context.system)
+  def peerMessageHandler: ActorRef
 
   def receive = LoggingReceive {
     case startHeader: BlockHeaderSyncActor.StartHeaders =>
@@ -235,20 +235,22 @@ trait BlockHeaderSyncActor extends Actor with BitcoinSLogger {
 object BlockHeaderSyncActor extends BitcoinSLogger {
   private case class BlockHeaderSyncActorImpl(
       dbConfig: DbConfig,
-      networkParameters: NetworkParameters)
+      networkParameters: NetworkParameters,
+      peerMessageHandler: ActorRef)
       extends BlockHeaderSyncActor
 
   def apply(
+      peerMessageHandler: ActorRef,
       context: ActorRefFactory,
       dbConfig: DbConfig,
       networkParameters: NetworkParameters): ActorRef = {
     context.actorOf(
-      props(dbConfig, networkParameters),
+      props(peerMessageHandler, dbConfig, networkParameters),
       BitcoinSpvNodeUtil.createActorName(BlockHeaderSyncActor.getClass))
   }
 
-  def props(dbConfig: DbConfig, networkParameters: NetworkParameters): Props = {
-    Props(classOf[BlockHeaderSyncActorImpl], dbConfig, networkParameters)
+  def props(peerMsgHandler: ActorRef, dbConfig: DbConfig, networkParameters: NetworkParameters): Props = {
+    Props(classOf[BlockHeaderSyncActorImpl], dbConfig, networkParameters,peerMsgHandler)
   }
 
   sealed trait BlockHeaderSyncMessage
