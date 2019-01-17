@@ -1,5 +1,7 @@
 import sbt.Credentials
 import sbt.Keys.publishTo
+import com.typesafe.sbt.SbtGit.GitKeys._
+
 
 cancelable in Global := true
 
@@ -96,6 +98,12 @@ lazy val root = project
   )
   .settings(commonSettings: _*)
   .settings(crossScalaVersions := Nil)
+  .enablePlugins(ScalaUnidocPlugin, GhpagesPlugin)
+  .settings(
+    ScalaUnidoc / siteSubdirName := "latest/api",
+    addMappingsToSiteDir(ScalaUnidoc / packageDoc / mappings, ScalaUnidoc / siteSubdirName),
+    gitRemoteRepo := "git@github.com:bitcoin-s/bitcoin-s-core.git"
+  )
 
 
 lazy val secp256k1jni = project
@@ -190,3 +198,7 @@ lazy val doc = project
   )
 
 publishArtifact in root := false
+
+previewSite / aggregate := false
+previewAuto / aggregate := false
+previewSite / aggregate := false

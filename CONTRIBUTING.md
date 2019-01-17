@@ -10,6 +10,58 @@ It's possible to communicate with other developers through a variety of communic
 - [Bitcoin-S Gitter](https://gitter.im/bitcoin-s-core/)
 - [#bitcoin-scala](https://webchat.freenode.net/?channels=bitcoin-scala) on IRC Freenode
 
+## Documentation
+
+One of the goals of Bitcoin-S is having useful and well-formatted Scaladoc comments on classes,
+objects and functions. Here are some useful resources on how to properly format your Scaladoc comments:
+
+- [Scaladoc for library authors](https://docs.scala-lang.org/overviews/scaladoc/for-library-authors.html)
+- [Guidelines](https://docs.scala-lang.org/style/scaladoc.html) used by the official Scala language Scaladoc
+
+### Bitcoin-S static site
+
+Bitcoin-S comes bundles with it's own web site with documentation about the library. It consists if the generated Scaladoc of the project, as well as the content of `src/site`.
+
+### Working with documentation locally
+
+View generated site:
+
+```bash
+$ sbt previewSite
+```
+
+### Publishing Bitcoin-S site
+
+```bash
+$ sbt ghpagesPushSite
+```
+
+Read more on the [`sbt-ghpages`](https://github.com/sbt/sbt-ghpages) sbt plugin.
+
+> Note: some setup is required before doing this the first time  
+> From the `sbt-ghpages` documentation:
+
+Before using sbt-ghpages, you must create the gh-pages branch in your repository and push the branch to GitHub. The quick steps are:
+
+```bash
+# Using a fresh, temporary clone is safest for this procedure
+$ pushd /tmp
+$ git clone git@github.com:youruser/yourproject.git
+$ cd yourproject
+
+# Create branch with no history or content
+$ git checkout --orphan gh-pages
+$ git rm -rf .
+
+# Establish the branch existence
+$ git commit --allow-empty -m "Initialize gh-pages branch"
+$ git push origin gh-pages
+
+# Return to original working copy clone, we're finished with the /tmp one
+$ popd
+$ rm -rf /tmp/yourproject
+```
+
 ## Development
 
 ### `testkit` and circular dependencies
