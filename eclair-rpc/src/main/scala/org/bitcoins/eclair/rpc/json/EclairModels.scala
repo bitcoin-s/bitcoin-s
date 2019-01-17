@@ -5,11 +5,15 @@ import org.bitcoins.core.crypto.{
   ECDigitalSignature,
   Sha256Digest
 }
-import org.bitcoins.core.protocol.ln.{LnHumanReadablePart, LnInvoiceSignature}
+import org.bitcoins.core.protocol.ln.{
+  LnHumanReadablePart,
+  LnInvoiceSignature,
+  ShortChannelId
+}
 import org.bitcoins.core.protocol.ln.channel.{ChannelState, FundedChannelId}
-import org.bitcoins.core.protocol.ln.currency.{MilliSatoshis}
+import org.bitcoins.core.protocol.ln.currency.MilliSatoshis
 import org.bitcoins.core.protocol.ln.node.NodeId
-import org.bitcoins.eclair.rpc.network.{PeerState}
+import org.bitcoins.eclair.rpc.network.PeerState
 import play.api.libs.json.{JsArray, JsObject}
 
 sealed abstract class EclairModels
@@ -24,13 +28,50 @@ case class GetInfoResult(
 case class PeerInfo(
     nodeId: NodeId,
     state: PeerState,
-    //address: String,
+    address: Option[String],
     channels: Int)
 
-case class ChannelInfo(
+/**
+  * This is the data model returned by the RPC call
+  * `channels nodeId`. The content of the objects
+  * being returne differ based on whatever state
+  * the channel is in. The member of this abstract
+  * class are in eveyr channel state, whereas other
+  * channel states may have extra information.
+  */
+sealed abstract class ChannelInfo {
+  def nodeId: NodeId
+  def channelId: FundedChannelId
+  def localMsat: MilliSatoshis
+  def remoteMsat: MilliSatoshis
+  def state: ChannelState
+}
+
+/**
+  * This represents the case where the
+  * [[org.bitcoins.core.protocol.ln.channel.ChannelState ChannelState]] is
+  * undetermined
+  */
+case class BaseChannelInfo(
     nodeId: NodeId,
     channelId: FundedChannelId,
-    state: ChannelState)
+    localMsat: MilliSatoshis,
+    remoteMsat: MilliSatoshis,
+    state: ChannelState
+) extends ChannelInfo
+
+/**
+  * This represents the case where the channel is
+  * in state `NORMAL` (i.e. an open channel)
+  */
+case class OpenChannelInfo(
+    nodeId: NodeId,
+    shortChannelId: ShortChannelId,
+    channelId: FundedChannelId,
+    localMsat: MilliSatoshis,
+    remoteMsat: MilliSatoshis,
+    state: ChannelState.NORMAL.type
+) extends ChannelInfo
 
 case class NodeInfo(
     signature: ECDigitalSignature,
@@ -41,16 +82,18 @@ case class NodeInfo(
     alias: String,
     addresses: Vector[String])
 
-case class ChannelDesc(shortChannelId: String, a: String, b: String)
+case class ChannelDesc(shortChannelId: ShortChannelId, a: String, b: String)
 
 case class ChannelUpdate(
     signature: ECDigitalSignature,
     chainHash: DoubleSha256Digest,
-    shortChannelId: String,
+    shortChannelId: ShortChannelId,
     timestamp: Long,
-    flags: String,
+    messageFlags: Int,
+    channelFlags: Int,
     cltvExpiryDelta: Int,
-    htlcMinimumMsat: Long,
+    htlcMinimumMsat: MilliSatoshis,
+    htlcMaximumMsat: MilliSatoshis,
     feeBaseMsat: MilliSatoshis,
     feeProportionalMillionths: Long)
 

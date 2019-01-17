@@ -43,26 +43,20 @@ class EclairRpcClient(val instance: EclairInstance)(
 
   def getDaemon: EclairInstance = instance
 
-  override def allChannels: Future[Vector[ChannelDesc]] = {
+  override def allChannels(): Future[Vector[ChannelDesc]] = {
     eclairCall[Vector[ChannelDesc]]("allchannels")
   }
 
-  override def allNodes: Future[Vector[NodeInfo]] = {
+  override def allNodes(): Future[Vector[NodeInfo]] = {
     eclairCall[Vector[NodeInfo]]("allnodes")
   }
 
-  override def allUpdates(
-      nodeIdOpt: Option[NodeId]): Future[Vector[ChannelUpdate]] = {
-    val params =
-      if (nodeIdOpt.isEmpty) List.empty
-      else List(JsString(nodeIdOpt.get.toString))
-    eclairCall[Vector[ChannelUpdate]]("allupdates", params)
-  }
+  override def allUpdates(): Future[Vector[ChannelUpdate]] =
+    eclairCall[Vector[ChannelUpdate]]("allupdates", List.empty)
 
-  def allUpdates: Future[Vector[ChannelUpdate]] = allUpdates(nodeIdOpt = None)
-
-  def allUpdates(nodeId: NodeId): Future[Vector[ChannelUpdate]] =
-    allUpdates(Some(nodeId))
+  override def allUpdates(nodeId: NodeId): Future[Vector[ChannelUpdate]] =
+    eclairCall[Vector[ChannelUpdate]]("allupdates",
+                                      List(JsString(nodeId.toString)))
 
   override def channel(channelId: ChannelId): Future[ChannelResult] = {
     eclairCall[ChannelResult]("channel", List(JsString(channelId.hex)))
@@ -469,7 +463,7 @@ class EclairRpcClient(val instance: EclairInstance)(
           case _: JsError =>
             logger.error(JsError.toJson(res).toString())
             throw new IllegalArgumentException(
-              s"Could not parse JsResult: ${(json \ resultKey).get}")
+              s"Could not parse JsResult! JSON: ${(json \ resultKey).get}")
         }
     }
   }

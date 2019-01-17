@@ -6,25 +6,27 @@ import java.net.URI
 import akka.actor.ActorSystem
 import com.typesafe.config.{Config, ConfigFactory}
 import org.bitcoins.core.config.RegTest
-import org.bitcoins.core.currency.CurrencyUnit
+import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
+import org.bitcoins.core.number.Int64
 import org.bitcoins.core.protocol.ln.channel.{
   ChannelId,
   ChannelState,
   FundedChannelId
 }
-import org.bitcoins.core.protocol.ln.currency.MilliSatoshis
+import org.bitcoins.core.protocol.ln.currency.{MilliSatoshis, PicoBitcoins}
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.eclair.rpc.client.EclairRpcClient
 import org.bitcoins.eclair.rpc.config.EclairInstance
+import org.bitcoins.eclair.rpc.json.PaymentResult
 import org.bitcoins.rpc.client.BitcoindRpcClient
 import org.bitcoins.rpc.config.{BitcoindInstance, ZmqConfig}
 import org.bitcoins.rpc.BitcoindRpcTestUtil
 import org.bitcoins.rpc.util.RpcUtil
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.DurationInt
 
-trait EclairTestUtil extends BitcoinSLogger {
+trait EclairRpcTestUtil extends BitcoinSLogger {
   import collection.JavaConverters._
 
   def randomDirName: String =
@@ -224,8 +226,8 @@ trait EclairTestUtil extends BitcoinSLogger {
         BitcoindRpcTestUtil.startedBitcoindRpcClient())
     }
 
-    val e1Instance = EclairTestUtil.eclairInstance(bitcoindRpcClient)
-    val e2Instance = EclairTestUtil.eclairInstance(bitcoindRpcClient)
+    val e1Instance = EclairRpcTestUtil.eclairInstance(bitcoindRpcClient)
+    val e2Instance = EclairRpcTestUtil.eclairInstance(bitcoindRpcClient)
 
     val client = new EclairRpcClient(e1Instance)
     val otherClient = new EclairRpcClient(e2Instance)
@@ -279,12 +281,34 @@ trait EclairTestUtil extends BitcoinSLogger {
     ()
   }
 
+  /**
+    * Sends `numPayments` between `c1` and `c2`. No aspect of the payment
+    * (size, description, etc) should be assumed to have a certain value,
+    * this method is just for populating channel update history with
+    * <i>something<i/>.
+    */
+  def sendPayments(
+      c1: EclairRpcClient,
+      c2: EclairRpcClient,
+      numPayments: Int = 10)(
+      implicit ec: ExecutionContext): Future[Seq[PaymentResult]] = {
+    val payments = (1 to numPayments).map(
+      n =>
+        c1.receive(s"this is a note $n")
+          .flatMap(invoice => c2.send(invoice, PicoBitcoins(n)))
+    )
+
+    Future.sequence(payments)
+  }
+
+  private val DEFAULT_CHANNEL_MSAT_AMT = 500000
+
   /** Opens a channel from n1 -> n2 */
   def openChannel(
       n1: EclairRpcClient,
       n2: EclairRpcClient,
-      amt: CurrencyUnit,
-      pushMSat: MilliSatoshis)(
+      amt: CurrencyUnit = Satoshis(Int64(DEFAULT_CHANNEL_MSAT_AMT)),
+      pushMSat: MilliSatoshis = MilliSatoshis(DEFAULT_CHANNEL_MSAT_AMT))(
       implicit system: ActorSystem): Future[FundedChannelId] = {
 
     val bitcoindRpcClient = getBitcoindRpc(n1)
@@ -323,7 +347,7 @@ trait EclairTestUtil extends BitcoinSLogger {
 
   def awaitChannelOpened(client1: EclairRpcClient, chanId: ChannelId)(
       implicit system: ActorSystem): Unit = {
-    EclairTestUtil.awaitUntilChannelNormal(client1, chanId)
+    EclairRpcTestUtil.awaitUntilChannelNormal(client1, chanId)
   }
 
   def getBitcoindRpc(eclairRpcClient: EclairRpcClient)(
@@ -357,4 +381,4 @@ trait EclairTestUtil extends BitcoinSLogger {
   }
 }
 
-object EclairTestUtil extends EclairTestUtil
+object EclairRpcTestUtil extends EclairRpcTestUtil
