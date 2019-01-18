@@ -9,7 +9,7 @@ import org.bitcoins.core.protocol.ln.node.NodeId
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.eclair.rpc.json._
-import org.bitcoins.eclair.rpc.network.{NodeUri}
+import org.bitcoins.eclair.rpc.network.NodeUri
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -19,7 +19,16 @@ trait EclairApi {
 
   def allNodes(): Future[Vector[NodeInfo]]
 
-  def allUpdates(nodeIdOpt: Option[NodeId]): Future[Vector[ChannelUpdate]]
+  def allUpdates(): Future[Vector[ChannelUpdate]]
+
+  def allUpdates(nodeId: NodeId): Future[Vector[ChannelUpdate]]
+
+  def allUpdates(
+      nodeIdOpt: Option[NodeId] = None): Future[Vector[ChannelUpdate]] =
+    nodeIdOpt match {
+      case Some(nodeId) => allUpdates(nodeId)
+      case None         => allUpdates()
+    }
 
   def channels(nodeId: NodeId): Future[Vector[ChannelInfo]]
 
