@@ -264,6 +264,9 @@ class BitcoindRpcClient(val instance: BitcoindInstance)(
       options: RpcOpts.FundRawTransactionOptions): Future[
     FundRawTransactionResult] = fundRawTransaction(transaction, Some(options))
 
+  /**
+    * @note Blocks the thread. Only available on regtest
+    */
   def generate(
       blocks: Int,
       maxTries: Int = 1000000): Future[Vector[DoubleSha256Digest]] = {
