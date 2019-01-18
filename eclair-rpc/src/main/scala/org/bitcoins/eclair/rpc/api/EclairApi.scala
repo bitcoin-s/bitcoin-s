@@ -43,11 +43,9 @@ trait EclairApi {
 
   def close(id: ChannelId, spk: ScriptPubKey): Future[String]
 
-  def findRoute(nodeId: NodeId): Future[Vector[String]]
+  def findRoute(nodeId: NodeId): Future[Vector[NodeId]]
 
-  def findRoute(invoice: LnInvoice): Future[Vector[String]] = {
-    findRoute(nodeId = invoice.nodeId)
-  }
+  def findRoute(invoice: LnInvoice): Future[Vector[NodeId]]
 
   def forceClose(id: ChannelId): Future[String]
 

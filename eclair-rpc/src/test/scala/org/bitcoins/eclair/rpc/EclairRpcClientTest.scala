@@ -15,9 +15,11 @@ import org.bitcoins.eclair.rpc.config.{EclairAuthCredentials, EclairInstance}
 import org.bitcoins.eclair.rpc.json._
 import org.bitcoins.rpc.BitcoindRpcTestUtil
 import org.bitcoins.rpc.client.BitcoindRpcClient
+import org.bitcoins.rpc.util.AsyncUtil
 import org.scalatest.{Assertion, AsyncFlatSpec, BeforeAndAfterAll}
 import org.slf4j.Logger
 
+import scala.collection.immutable.VectorBuilder
 import scala.concurrent._
 import scala.concurrent.duration.DurationInt
 
@@ -33,8 +35,20 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
   val bitcoindRpcClient: BitcoindRpcClient =
     BitcoindRpcTestUtil.startedBitcoindRpcClient()
 
-  val (client, otherClient) =
-    EclairRpcTestUtil.createNodePair(Some(bitcoindRpcClient))
+  lazy val (client, otherClient) = {
+    val (c1, c2) = EclairRpcTestUtil.createNodePair(Some(bitcoindRpcClient))
+    clients += c1
+    clients += c2
+    (c1, c2)
+  }
+
+  private val clients =
+    Vector.newBuilder[EclairRpcClient]
+
+  override def beforeAll(): Unit = {
+    // make sure we have enough money open channels
+    bitcoindRpcClient.generate(200)
+  }
 
   behavior of "RpcClient"
 
@@ -320,6 +334,51 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
     }
   }
 
+  it should "get a route to a node ID" in {
+    val EclairNodes4(first, second, third, fourth) =
+      EclairRpcTestUtil.createNodeLink(bitcoindRpcClient)
+    clients ++= List(first, second, third, fourth)
+
+    val hasRoute = () => {
+      fourth.getInfo
+        .flatMap(info => first.findRoute(info.nodeId))
+        .map(route => route.length == 4)
+        .recover {
+          case err: RuntimeException
+              if err.getMessage.contains("route not found") =>
+            false
+        }
+    }
+
+    // Eclair is a bit slow in propagating channel changes
+    AsyncUtil.awaitConditionF(hasRoute, duration = 1000.millis, maxTries = 10)
+
+    succeed
+  }
+
+  it should "get a route to an invoice" in {
+    val EclairNodes4(first, second, third, fourth) =
+      EclairRpcTestUtil.createNodeLink(bitcoindRpcClient)
+    clients ++= List(first, second, third, fourth)
+
+    val hasRoute = () => {
+      fourth
+        .receive("foo")
+        .flatMap(invoice => first.findRoute(invoice))
+        .map(route => route.length == 4)
+        .recover {
+          case err: RuntimeException
+              if err.getMessage.contains("route not found") =>
+            false
+        }
+    }
+
+    // Eclair is a bit slow in propagating channel changes
+    AsyncUtil.awaitConditionF(hasRoute, duration = 1000.millis, maxTries = 10)
+
+    succeed
+  }
+
   // We spawn fresh clients in this test because the test
   // needs nodes with activity both related and not related
   // to them
@@ -328,6 +387,11 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
       EclairRpcTestUtil.createNodePair(Some(bitcoindRpcClient))
     val (thirdFreshClient, fourthFreshClient) =
       EclairRpcTestUtil.createNodePair(Some(bitcoindRpcClient))
+
+    clients ++= List(firstFreshClient,
+                     secondFreshClient,
+                     thirdFreshClient,
+                     fourthFreshClient)
 
     EclairRpcTestUtil.connectLNNodes(firstFreshClient, thirdFreshClient)
     EclairRpcTestUtil.connectLNNodes(firstFreshClient, fourthFreshClient)
@@ -370,11 +434,6 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
     } yield {
       assert(ourChannelUpdates.forall(updateIsInChannels(ourOpenChannels)))
       assert(allChannelUpdates.exists(updateIsNotInChannels(ourOpenChannels)))
-
-      List(firstFreshClient,
-           secondFreshClient,
-           thirdFreshClient,
-           fourthFreshClient).foreach(EclairRpcTestUtil.shutdown)
 
       succeed
     }
@@ -440,7 +499,7 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
   }
 
   override def afterAll(): Unit = {
-    List(client, otherClient).foreach(EclairRpcTestUtil.shutdown)
+    clients.result().foreach(EclairRpcTestUtil.shutdown)
     TestKit.shutdownActorSystem(system)
   }
 }
