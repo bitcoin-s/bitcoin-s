@@ -3,7 +3,8 @@ package org.bitcoins.eclair.rpc.json
 import org.bitcoins.core.protocol.ln.{
   LnHumanReadablePart,
   LnInvoice,
-  LnInvoiceSignature
+  LnInvoiceSignature,
+  ShortChannelId
 }
 import org.bitcoins.core.protocol.ln.channel.{ChannelState, FundedChannelId}
 import org.bitcoins.core.protocol.ln.currency.{MilliSatoshis, PicoBitcoins}
@@ -22,6 +23,17 @@ object JsonReaders {
       SerializerUtil.processJsStringOpt(ChannelState.fromString)(jsValue)
     }
   }
+
+  implicit val normalChannelStateReads: Reads[ChannelState.NORMAL.type] =
+    Reads { jsValue =>
+      jsValue
+        .validate[ChannelState]
+        .flatMap {
+          case ChannelState.NORMAL => JsSuccess(ChannelState.NORMAL)
+          case state: ChannelState =>
+            JsError(s"$state is not ChannelState.NORMAL")
+        }
+    }
 
   implicit val peerStateReads: Reads[PeerState] = {
     Reads { jsValue: JsValue =>
@@ -79,12 +91,65 @@ object JsonReaders {
     }
   }
 
+  implicit val shortChannelIdReads: Reads[ShortChannelId] = {
+    Reads { jsValue =>
+      SerializerUtil.processJsString(ShortChannelId.fromHex)(jsValue)
+    }
+  }
+
   implicit val channelDescReads: Reads[ChannelDesc] = {
     Json.reads[ChannelDesc]
   }
 
-  implicit val channelInfoReads: Reads[ChannelInfo] = {
-    Json.reads[ChannelInfo]
+
+  implicit val openChannelInfoReads: Reads[OpenChannelInfo] = Reads { jsValue =>
+    for {
+      nodeId <- (jsValue \ "nodeId").validate[NodeId]
+      shortChannelId <- (jsValue \ "data" \ "shortChannelId")
+        .validate[ShortChannelId]
+      channelId <- (jsValue \ "channelId").validate[FundedChannelId]
+      state <- (jsValue \ "state").validate[ChannelState.NORMAL.type]
+      remoteMsat <- (jsValue \ "data" \ "commitments" \ "localCommit" \ "spec" \ "toLocalMsat")
+        .validate[MilliSatoshis]
+      localMsat <- (jsValue \ "data" \ "commitments" \ "localCommit" \ "spec" \ "toLocalMsat")
+        .validate[MilliSatoshis]
+
+    } yield
+      OpenChannelInfo(nodeId = nodeId,
+                      shortChannelId = shortChannelId,
+                      channelId = channelId,
+                      localMsat = localMsat,
+                      remoteMsat = remoteMsat,
+                      state = state)
+  }
+
+  implicit val baseChannelInfoReads: Reads[BaseChannelInfo] = Reads { jsValue =>
+    for {
+      nodeId <- (jsValue \ "nodeId").validate[NodeId]
+      channelId <- (jsValue \ "channelId").validate[FundedChannelId]
+      state <- (jsValue \ "state").validate[ChannelState]
+      remoteMsat <- (jsValue \ "data" \ "commitments" \ "localCommit" \ "spec" \ "toRemoteMsat")
+        .validate[MilliSatoshis]
+      localMsat <- (jsValue \ "data" \ "commitments" \ "localCommit" \ "spec" \ "toLocalMsat")
+        .validate[MilliSatoshis]
+
+    } yield
+      BaseChannelInfo(nodeId = nodeId,
+                  channelId = channelId,
+                  localMsat = localMsat,
+                  remoteMsat = remoteMsat,
+                  state = state)
+  }
+
+  implicit val channelInfoReads: Reads[ChannelInfo] = Reads { jsValue =>
+    (jsValue \ "state")
+      .validate[ChannelState]
+      .flatMap {
+        case ChannelState.NORMAL =>
+          jsValue.validate[OpenChannelInfo]
+        case _: ChannelState =>
+          jsValue.validate[BaseChannelInfo]
+      }
   }
 
   implicit val channelUpdateReads: Reads[ChannelUpdate] = {

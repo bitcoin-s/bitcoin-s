@@ -51,3 +51,12 @@ Now you should be able to add Bitcoin-S artifacts like this:
 
 "org.bitcoins" %% "bitcoin-s-zmq" % "0.0.3" withSources() withJavadoc()
 ```
+
+### Published artifacts
+
+Versioned artifacts are available online.
+
+Snapshots (not necessarily stable, use for local development) are available at
+[JFrog](https://oss.jfrog.org/webapp/#/artifacts/browse/tree/General/oss-snapshot-local/org/bitcoins).
+
+Tagged versions are available at [Bintray](https://bintray.com/beta/#/bitcoin-s/bitcoin-s-core?tab=packages).
