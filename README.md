@@ -29,6 +29,8 @@
 
 You need to add the Bitcoin-S Bintray to your resolvers to be able to access published artifacts.
 
+### sbt
+
 With sbt, this can be done like this:
 
 ```scala
@@ -51,6 +53,32 @@ Now you should be able to add Bitcoin-S artifacts like this:
 
 "org.bitcoins" %% "bitcoin-s-zmq" % "0.0.3" withSources() withJavadoc()
 ```
+
+### Ammonite
+
+> Ammonite is (among other things) a modernized Scala REPL with syntax highlighting, multi-line editing, the ability to load artifacts directly in the REPL, and many other quality-of-life improvements missing in the default Scala REPL.
+>
+> Ammonite is a project by Li Haoyi, and you can get it at [ammonite.io](https://ammonite.io)
+
+With Ammonite, this can be done like this:
+
+```scala
+@ import coursier.MavenRepository
+import coursier.MavenRepository
+
+@ interp.repositories() ++= Seq(MavenRepository("https://dl.bintray.com/bitcoin-s/bitcoin-s-core"))
+
+@ import $ivy.`org.bitcoins::bitcoin-s-core:0.0.3`
+import $ivy.$
+
+@ import org.bitcoins.core.currency.Bitcoins
+import org.bitcoins.core.currency.Bitcoins
+
+@ Bitcoins(10)
+res0: Bitcoins = BitcoinsImpl(10) // 🎉
+```
+
+This is only necessary one time, Ammonite remembers your resolvers across sessions.
 
 ### Published artifacts
 
