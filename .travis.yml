@@ -23,7 +23,7 @@ jobs:
   include:
     - jdk: openjdk7
       scala:
-        - 2.12.7
+        - 2.11.12
       os: linux
       script: *test_script
     - jdk: oraclejdk8
