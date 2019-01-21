@@ -26,7 +26,7 @@ jobs:
         - 2.11.12
       os: linux
       script: *test_script
-      sbt_args: -Dsbt.version=0.13.18
+      env: SBT_OPTS=-Dsbt.version=0.13.18
     - jdk: oraclejdk8
       scala:
         - 2.11.12
