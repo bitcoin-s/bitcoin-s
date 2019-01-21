@@ -19,14 +19,30 @@ test_script: &test_script
     sbt ++$TRAVIS_SCALA_VERSION core/coverageReport &&
     sbt ++$TRAVIS_SCALA_VERSION coverageAggregate
 
+jdk7_script: &jdk7_script
+  - rm project/build.properties
+  # in case the testkit project has had changes in it we have to recompile and
+  # publish locally before tests can be run
+  - sbt ++$TRAVIS_SCALA_VERSION compile publishLocal
+  # sets VERSION to last word in version.sbt
+  # substitures bitcoinsV in Deps.scala value for the value of VERSION
+  # in other words, makes us depend on the freshly compiled and locally published
+  # code from the first line in this script
+  - VERSION=`cat version.sbt`; VERSION=`echo ${VERSION##* }`
+  - TMP_FILE=`mktemp`
+  - sed -e "s/.*val bitcoinsV.*/val bitcoinsV = ${VERSION}/" project/Deps.scala > $TMP_FILE
+  - mv $TMP_FILE project/Deps.scala
+  - sbt ++$TRAVIS_SCALA_VERSION coverage test &&
+    sbt ++$TRAVIS_SCALA_VERSION core/coverageReport &&
+    sbt ++$TRAVIS_SCALA_VERSION coverageAggregate
+
 jobs:
   include:
     - jdk: openjdk7
       scala:
         - 2.11.12
       os: linux
-      script: *test_script
-      env: SBT_OPTS=-Dsbt.version=0.13.18
+      script: *jdk7_script
     - jdk: oraclejdk8
       scala:
         - 2.11.12
