@@ -3,21 +3,43 @@ sudo: false
 
 language: scala
 
-#https://docs.travis-ci.com/user/reference/osx#jdk-and-os-x
-#Note: osx uses jdk10 by default which is NOT officially supported by scala
-#This does not seem to be causing any errors right now
-os:
-  - linux
-  - osx
+test_script: &test_script
+  # in case the testkit project has had changes in it we have to recompile and
+  # publish locally before tests can be run
+  - sbt ++$TRAVIS_SCALA_VERSION compile publishLocal
+  # sets VERSION to last word in version.sbt
+  # substitures bitcoinsV in Deps.scala value for the value of VERSION
+  # in other words, makes us depend on the freshly compiled and locally published
+  # code from the first line in this script
+  - VERSION=`cat version.sbt`; VERSION=`echo ${VERSION##* }`
+  - TMP_FILE=`mktemp`
+  - sed -e "s/.*val bitcoinsV.*/val bitcoinsV = ${VERSION}/" project/Deps.scala > $TMP_FILE
+  - mv $TMP_FILE project/Deps.scala
+  - sbt ++$TRAVIS_SCALA_VERSION coverage test &&
+    sbt ++$TRAVIS_SCALA_VERSION core/coverageReport &&
+    sbt ++$TRAVIS_SCALA_VERSION coverageAggregate
 
-scala:
-  - 2.11.12
-  - 2.12.7
-
-jdk: 
-  - openjdk7
-  - openjdk8
-  - oraclejdk8
+jobs:
+  include:
+    - jdk: openjdk7
+      scala:
+        - 2.12.7
+      os: linux
+      script: *test_script
+    - jdk: oraclejdk8
+      scala:
+        - 2.11.12
+      os: linux
+      script: *test_script
+    - jdk: oraclejdk8
+      scala:
+        - 2.12.7
+      os: linux
+      script: *test_script
+    - scala:
+        - 2.12.7
+      os: osx
+      script: *test_script
 
 # These directories are cached to S3 at the end of the build
 cache:
@@ -42,20 +64,5 @@ install:
   - wget https://github.com/ACINQ/eclair/releases/download/v0.2-beta8/eclair-node-0.2-beta8-52821b8.jar
   - export ECLAIR_PATH=$(pwd)
 
-script:
-  # in case the testkit project has had changes in it we have to recompile and
-  # publish locally before tests can be run
-  - sbt ++$TRAVIS_SCALA_VERSION compile publishLocal
-  # sets VERSION to last word in version.sbt
-  # substitures bitcoinsV in Deps.scala value for the value of VERSION
-  # in other words, makes us depend on the freshly compiled and locally published
-  # code from the first line in this script
-  - VERSION=`cat version.sbt`; VERSION=`echo ${VERSION##* }`
-  - TMP_FILE=`mktemp`
-  - sed -e "s/.*val bitcoinsV.*/val bitcoinsV = ${VERSION}/" project/Deps.scala > $TMP_FILE
-  - mv $TMP_FILE project/Deps.scala
-  - sbt ++$TRAVIS_SCALA_VERSION coverage test &&
-    sbt ++$TRAVIS_SCALA_VERSION core/coverageReport &&
-    sbt ++$TRAVIS_SCALA_VERSION coverageAggregate
 after_success:
   - sbt ++$TRAVIS_SCALA_VERSION coveralls
