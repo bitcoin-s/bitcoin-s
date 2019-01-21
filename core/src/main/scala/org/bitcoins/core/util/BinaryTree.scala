@@ -79,7 +79,7 @@ trait BinaryTree[+T] {
   /**
     * Inserts an element into one of the two branches in a [[org.bitcoins.core.util.BinaryTree BinaryTree]].
     * If it cannot insert it because the branches are not empty,
-    * it throws a [[RuntimeException]].
+    * it throws a [[scala.RuntimeException RuntimeException]].
     */
   def insert[T](t: T)(implicit tree: BinaryTree[T] = this): BinaryTree[T] = {
     insert(Leaf(t))(tree)
@@ -88,7 +88,7 @@ trait BinaryTree[+T] {
   /**
     * Inserts a tree into one of the two branches in a [[org.bitcoins.core.util.BinaryTree BinaryTree]]
     * If it cannot insert it because the branches are not empty,
-    * it throws a [[RuntimeException]].
+    * it throws a [[scala.RuntimeException RuntimeException]].
     */
   def insert[T](subTree: BinaryTree[T])(
       implicit parentTree: BinaryTree[T]): BinaryTree[T] = parentTree match {

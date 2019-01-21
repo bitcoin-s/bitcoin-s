@@ -49,16 +49,16 @@ trait NumberUtil extends BitcoinSLogger {
     }
   }
 
-  /** Converts a sequence of [[Byte]] to a [[scala.Int Int]]. */
+  /** Converts a sequence of [[scala.Byte Byte]] to a [[scala.Int Int]]. */
   def toInt(bytes: ByteVector): Int = toBigInt(bytes).toInt
 
   /** Converts a hex string to a [[scala.Int Int]]. */
   def toInt(hex: String): Int = toInt(BitcoinSUtil.decodeHex(hex))
 
-  /** Converts a sequence of [[Byte]] to a [[Long]]. */
+  /** Converts a sequence of [[scala.Byte Byte]] to a [[scala.Long Long]]. */
   def toLong(bytes: ByteVector): Long = toBigInt(bytes).toLong
 
-  /** Converts a hex string to a [[Long]]. */
+  /** Converts a hex string to a [[scala.Long Long]]. */
   def toLong(hex: String): Long = toLong(BitcoinSUtil.decodeHex(hex))
 
   /**

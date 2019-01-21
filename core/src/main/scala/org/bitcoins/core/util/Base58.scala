@@ -64,12 +64,13 @@ sealed abstract class Base58 {
     encode(bytes)
   }
 
-  /** Encodes a [[Byte]] to its [[org.bitcoins.core.protocol.blockchain.Base58Type Base58Type]] representation. */
+  /** Encodes a [[scala.Byte Byte]] to its
+    * [[org.bitcoins.core.protocol.blockchain.Base58Type Base58Type]] representation. */
   def encode(byte: Byte): String = encode(ByteVector.fromByte(byte))
 
   /**
     * Takes in [[org.bitcoins.core.protocol.blockchain.Base58Type Base58Type]]
-    * string and returns sequence of [[Byte]]s.
+    * string and returns sequence of [[scala.Byte Byte]]s.
     * [[https://github.com/ACINQ/bitcoin-lib/blob/master/src/main/scala/fr/acinq/bitcoin/Base58.scala]]
     */
   def decode(input: String): ByteVector = {

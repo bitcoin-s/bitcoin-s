@@ -14,9 +14,9 @@ sealed abstract class RawWitnessTransactionParser
 
   /**
     * This read function is unique to [[org.bitcoins.core.serializers.transaction.RawBaseTransactionParser]]
-    * in the fact that it reads a 'marker' and 'flag' byte to indicate that this tx is a [[WitnessTransaction]]
-    * See BIP144 for more details:
-    * [[https://github.com/bitcoin/bips/blob/master/bip-0144.mediawiki]]
+    * in the fact that it reads a 'marker' and 'flag' byte to indicate that this tx is a
+    * [[org.bitcoins.core.protocol.transaction.WitnessTransaction WitnessTransaction]].
+    * See [[https://github.com/bitcoin/bips/blob/master/bip-0144.mediawiki BIP144 ]] for more details.
     * Functionality inside of Bitcoin Core:
     * [[https://github.com/bitcoin/bitcoin/blob/e8cfe1ee2d01c493b758a67ad14707dca15792ea/src/primitives/transaction.h#L244-L251]]
     */
@@ -45,11 +45,13 @@ sealed abstract class RawWitnessTransactionParser
   }
 
   /**
-    * Writes a [[WitnessTransaction]] to a hex string
-    * This is unique from [[RawBaseTransactionParser]] in the fact that it adds a 'marker' and 'flag' to indicate
-    * that this tx is a [[WitnessTransaction]] and has extra witness data attached to it
-    * See BIP144 for more info
-    * [[https://github.com/bitcoin/bips/blob/master/bip-0144.mediawiki]]
+    * Writes a [[org.bitcoins.core.protocol.transaction.WitnessTransaction WitnessTransaction]] to a hex string
+    * This is unique from
+    * [[org.bitcoins.core.serializers.transaction.RawBaseTransactionParser RawBaseTransactionParser]] in the fact
+    * that it adds a 'marker' and 'flag' to indicate that this tx is a
+    * [[org.bitcoins.core.protocol.transaction.WitnessTransaction WitnessTransaction]] and has extra
+    * witness data attached to it.
+    * See [[https://github.com/bitcoin/bips/blob/master/bip-0144.mediawiki BIP144]] for more info.
     * Functionality inside of Bitcoin Core:
     * [[https://github.com/bitcoin/bitcoin/blob/e8cfe1ee2d01c493b758a67ad14707dca15792ea/src/primitives/transaction.h#L282-L287s]]
     */
@@ -64,7 +66,7 @@ sealed abstract class RawWitnessTransactionParser
     val witness = tx.witness.bytes
     val lockTime = tx.lockTime.bytes.reverse
     //notice we use the old serialization format if all witnesses are empty
-    //[[https://github.com/bitcoin/bitcoin/blob/e8cfe1ee2d01c493b758a67ad14707dca15792ea/src/primitives/transaction.h#L276-L281]]
+    // https://github.com/bitcoin/bitcoin/blob/e8cfe1ee2d01c493b758a67ad14707dca15792ea/src/primitives/transaction.h#L276-L281
     if (tx.witness.witnesses.exists(_ != EmptyScriptWitness)) {
       val witConstant = ByteVector(0.toByte, 1.toByte)
       version ++ witConstant ++ inputs ++ outputs ++ witness ++ lockTime

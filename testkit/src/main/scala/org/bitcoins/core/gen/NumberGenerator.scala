@@ -77,7 +77,7 @@ trait NumberGenerator {
 
   def compactSizeUInts: Gen[CompactSizeUInt] = uInt64s.map(CompactSizeUInt(_))
 
-  /** Generates an arbitrary [[Byte]] in Scala */
+  /** Generates an arbitrary [[scala.Byte Byte]] in Scala */
   def byte: Gen[Byte] = arbitrary[Byte]
 
   /** Generates a 100 byte sequence */

@@ -45,7 +45,8 @@ sealed abstract class ScriptInterpreter {
 
   /**
     * Runs an entire script though our script programming language and
-    * returns a [[ScriptResult]] indicating if the script was valid, or if not what error it encountered
+    * returns a [[org.bitcoins.core.script.result.ScriptResult ScriptResult]]
+    * indicating if the script was valid, or if not what error it encountered
     */
   def run(program: PreExecutionScriptProgram): ScriptResult = {
     val scriptSig = program.txSignatureComponent.scriptSignature
@@ -118,7 +119,7 @@ sealed abstract class ScriptInterpreter {
   }
 
   /**
-    * Runs the given [[org.bitcoins.core.script.PreExecutionScriptProgram]] and
+    * Runs the given [[org.bitcoins.core.script.PreExecutionScriptProgram PreExecutionScriptProgram]] and
     * return if that script was valid or not
     */
   def runVerify(p: PreExecutionScriptProgram): Boolean = {
@@ -126,15 +127,15 @@ sealed abstract class ScriptInterpreter {
   }
 
   /**
-    * Every given [[org.bitcoins.core.script.PreExecutionScriptProgram]] and returns
-    * it's [[org.bitcoins.core.script.result.ScriptResult]]
+    * Every given [[org.bitcoins.core.script.PreExecutionScriptProgram PreExecutionScriptProgram]] and returns
+    * it's [[org.bitcoins.core.script.result.ScriptResult ScriptResult]]
     */
   def runAll(programs: Seq[PreExecutionScriptProgram]): Seq[ScriptResult] = {
     programs.map(p => ScriptInterpreter.run(p))
   }
 
   /**
-    * Runs all the given [[org.bitcoins.core.script.ScriptProgram]] and return
+    * Runs all the given [[org.bitcoins.core.script.ScriptProgram ScriptProgram]] and return
     * if it is valid or not
     */
   def runAllVerify(programs: Seq[PreExecutionScriptProgram]): Boolean = {
@@ -277,8 +278,8 @@ sealed abstract class ScriptInterpreter {
   /**
     * Runs a segwit script through our interpreter, mimics this functionality in bitcoin core:
     * [[https://github.com/bitcoin/bitcoin/blob/528472111b4965b1a99c4bcf08ac5ec93d87f10f/src/script/interpreter.cpp#L1441-L1452]]
-    * @param scriptPubKeyExecutedProgram the program with the [[ScriptPubKey]] executed
-    * @return
+    * @param scriptPubKeyExecutedProgram the program with the
+    *                                    [[org.bitcoins.core.protocol.script.ScriptPubKey ScriptPubKey]] executed
     */
   private def executeSegWitScript(
       scriptPubKeyExecutedProgram: ExecutedScriptProgram,
@@ -798,7 +799,8 @@ sealed abstract class ScriptInterpreter {
     currencyUnit >= CurrencyUnits.zero && currencyUnit <= Consensus.maxMoney
   }
 
-  /**  Calculates the new op count after the execution of the given [[ScriptToken]] */
+  /**  Calculates the new op count after the execution of the given
+    * [[org.bitcoins.core.script.constant.ScriptToken ScriptToken]] */
   private def calcOpCount(oldOpCount: Int, token: ScriptToken): Int =
     BitcoinScriptUtil.countsTowardsScriptOpLimit(token) match {
       case true  => oldOpCount + 1
@@ -839,8 +841,10 @@ sealed abstract class ScriptInterpreter {
   }
 
   /**
-    * Helper function used to rebuild a [[WitnessTxSigComponentRebuilt]]
-    * this converts a [[WitnessScriptPubKey]] into it's corresponding [[ScriptPubKey]]
+    * Helper function used to rebuild a
+    * [[org.bitcoins.core.crypto.WitnessTxSigComponentRebuilt WitnessTxSigComponentRebuilt]]
+    * this converts a [[org.bitcoins.core.protocol.script.WitnessScriptPubKey WitnessScriptPubKey]]
+    * into it's corresponding [[org.bitcoins.core.protocol.script.ScriptPubKey ScriptPubKey]]
     */
   private def rebuildWTxSigComponent(
       old: WitnessTxSigComponent,

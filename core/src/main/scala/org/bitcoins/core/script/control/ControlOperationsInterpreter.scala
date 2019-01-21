@@ -93,7 +93,7 @@ sealed abstract class ControlOperationsInterpreter {
 
   }
 
-  /** Evaluates the [[OP_ELSE]] operator. */
+  /** Evaluates the [[org.bitcoins.core.script.control.OP_ELSE OP_ELSE]] operator. */
   def opElse(program: ScriptProgram): ScriptProgram = {
     require(program.script.headOption.contains(OP_ELSE),
             "First script opt must be OP_ELSE")
@@ -114,7 +114,7 @@ sealed abstract class ControlOperationsInterpreter {
     }
   }
 
-  /** Evaluates an [[OP_ENDIF]] operator. */
+  /** Evaluates an [[org.bitcoins.core.script.control.OP_ENDIF OP_ENDIF]] operator. */
   def opEndIf(program: ScriptProgram): ScriptProgram = {
     require(program.script.headOption.contains(OP_ENDIF),
             "Script top must be OP_ENDIF")
@@ -128,16 +128,20 @@ sealed abstract class ControlOperationsInterpreter {
 
   /**
     * Marks transaction as invalid. A standard way of attaching extra data to transactions is to add a zero-value output
-    * with a [[org.bitcoins.core.protocol.script.ScriptPubKey]] consisting of [[OP_RETURN]] followed by exactly one pushdata op. Such outputs are provably unspendable,
-    * reducing their cost to the network. Currently it is usually considered non-standard (though valid) for a transaction to
-    * have more than one OP_RETURN output or an OP_RETURN output with more than one pushdata op.
+    * with a [[org.bitcoins.core.protocol.script.ScriptPubKey ScriptPubKey]] consisting of
+    * [[org.bitcoins.core.script.control.OP_RETURN OP_RETURN]] followed by exactly one pushdata op.
+    * Such outputs are provably unspendable,
+    * reducing their cost to the network. Currently it is usually considered non-standard (though valid) for
+    * a transaction to
+    * have more than one [[org.bitcoins.core.script.control.OP_RETURN OP_RETURN]] output or an
+    * [[org.bitcoins.core.script.control.OP_RETURN OP_RETURN]] output with more than one pushdata op.
     */
   def opReturn(program: ScriptProgram): ScriptProgram = {
     require(program.script.headOption.contains(OP_RETURN))
     ScriptProgram(program, ScriptErrorOpReturn)
   }
 
-  /** Marks [[org.bitcoins.core.protocol.transaction.Transaction]] as invalid if top stack value is not true. */
+  /** Marks [[org.bitcoins.core.protocol.transaction.Transaction Transaction]] as invalid if top stack value is not true. */
   def opVerify(program: ScriptProgram): ScriptProgram = {
     require(program.script.headOption.contains(OP_VERIFY),
             "Script top must be OP_VERIFY")
@@ -152,7 +156,8 @@ sealed abstract class ControlOperationsInterpreter {
     }
   }
 
-  /** Parses a list of [[ScriptToken]]s into its corresponding [[BinaryTree]] */
+  /** Parses a list of [[org.bitcoins.core.script.constant.ScriptToken ScriptToken]]s
+    * into its corresponding [[org.bitcoins.core.util.BinaryTree BinaryTree]] */
   def parseBinaryTree(script: List[ScriptToken]): BinaryTree[ScriptToken] = {
     //@tailrec
     def loop(
@@ -184,7 +189,8 @@ sealed abstract class ControlOperationsInterpreter {
     t
   }
 
-  /** The loop that parses a list of [[ScriptToken]]s into a [[BinaryTree]]. */
+  /** The loop that parses a list of [[org.bitcoins.core.script.constant.ScriptToken ScriptToken]]s into a
+    * [[org.bitcoins.core.util.BinaryTree BinaryTree]]. */
   private def parse(script: List[ScriptToken], tree: BinaryTree[ScriptToken]): (
       BinaryTree[ScriptToken],
       List[ScriptToken]) = script match {
@@ -239,7 +245,10 @@ sealed abstract class ControlOperationsInterpreter {
       Node(node.v, insertSubTree(node.l, subTree), node.r)
   }
 
-  /** Checks if an [[OP_IF]]/[[OP_NOTIF]] [[ScriptToken]] has a matching [[OP_ENDIF]] */
+  /** Checks if an [[org.bitcoins.core.script.control.OP_IF OP_IF]]/
+    * [[org.bitcoins.core.script.control.OP_NOTIF OP_NOTIF]]
+    * [[org.bitcoins.core.script.constant.ScriptToken ScriptToken]] has a matching
+    * [[org.bitcoins.core.script.control.OP_ENDIF OP_ENDIF]] */
   def checkMatchingOpIfOpNotIfOpEndIf(script: List[ScriptToken]): Boolean = {
     @tailrec
     def loop(script: List[ScriptToken], counter: Int): Boolean = script match {
@@ -253,7 +262,7 @@ sealed abstract class ControlOperationsInterpreter {
     loop(script, 0)
   }
 
-  /** Returns the first index of an [[OP_ENDIF]]. */
+  /** Returns the first index of an [[org.bitcoins.core.script.control.OP_ENDIF OP_ENDIF]]. */
   def findFirstOpEndIf(script: List[ScriptToken]): Option[Int] = {
     val index = script.indexOf(OP_ENDIF)
     index match {
@@ -262,14 +271,14 @@ sealed abstract class ControlOperationsInterpreter {
     }
   }
 
-  /** Finds the last [[OP_ENDIF]] in the given script. */
+  /** Finds the last [[org.bitcoins.core.script.control.OP_ENDIF OP_ENDIF]] in the given script. */
   def findLastOpEndIf(script: List[ScriptToken]): Option[Int] = {
     val lastOpEndIf = findFirstOpEndIf(script.reverse)
     if (lastOpEndIf.isDefined) Some(script.size - lastOpEndIf.get - 1)
     else None
   }
 
-  /** Returns the first index of an [[OP_ENDIF]]. */
+  /** Returns the first index of an [[org.bitcoins.core.script.control.OP_ENDIF OP_ENDIF]]. */
   def findFirstOpElse(script: List[ScriptToken]): Option[Int] = {
     val index = script.indexOf(OP_ELSE)
     index match {
@@ -278,12 +287,13 @@ sealed abstract class ControlOperationsInterpreter {
     }
   }
 
-  /** Removes the first [[OP_ELSE]] expression encountered in the script. */
+  /** Removes the first [[org.bitcoins.core.script.control.OP_ELSE OP_ELSE]] expression encountered in the script. */
   def removeFirstOpElse(script: List[ScriptToken]): List[ScriptToken] = {
     removeFirstOpElse(parseBinaryTree(script)).toList
   }
 
-  /** Removes the first [[OP_ELSE]] in a [[BinaryTree]]. */
+  /** Removes the first [[org.bitcoins.core.script.control.OP_ELSE OP_ELSE]] in a
+    * [[org.bitcoins.core.util.BinaryTree BinaryTree]]. */
   def removeFirstOpElse(
       tree: BinaryTree[ScriptToken]): BinaryTree[ScriptToken] = {
     //@tailrec
@@ -304,12 +314,14 @@ sealed abstract class ControlOperationsInterpreter {
     }
   }
 
-  /** Removes the first [[OP_IF]] encountered in the script. */
+  /** Removes the first [[org.bitcoins.core.script.control.OP_IF OP_IF]] encountered in the script. */
   def removeFirstOpIf(script: List[ScriptToken]): List[ScriptToken] = {
     removeFirstOpIf(parseBinaryTree(script)).toList
   }
 
-  /** Removes the first occurrence of [[OP_IF]] or [[OP_NOTIF]] in the [[BinaryTree]]. */
+  /** Removes the first occurrence of [[org.bitcoins.core.script.control.OP_IF OP_IF]] or
+    * [[org.bitcoins.core.script.control.OP_NOTIF OP_NOTIF]] in the
+    * [[org.bitcoins.core.util.BinaryTree BinaryTree]]. */
   def removeFirstOpIf(
       tree: BinaryTree[ScriptToken]): BinaryTree[ScriptToken] = {
     require(
@@ -318,7 +330,9 @@ sealed abstract class ControlOperationsInterpreter {
     tree.right.getOrElse(Empty)
   }
 
-  /** Finds the indexes of our [[OP_ELSE]] (if it exists) and our [[OP_ENDIF]]. */
+  /** Finds the indexes of our
+    * [[org.bitcoins.core.script.control.OP_ELSE OP_ELSE]] (if it exists) and our
+    * [[org.bitcoins.core.script.control.OP_ENDIF OP_ENDIF]]. */
   def findFirstIndexesOpElseOpEndIf(
       script: List[ScriptToken]): (Option[Int], Option[Int]) = {
     val indexOpElse = findFirstOpElse(script)
@@ -326,7 +340,8 @@ sealed abstract class ControlOperationsInterpreter {
     (indexOpElse, indexOpEndIf)
   }
 
-  /** Returns the index of the matching [[OP_ENDIF]] for the [[OP_IF]] statement. */
+  /** Returns the index of the matching [[org.bitcoins.core.script.control.OP_ENDIF OP_ENDIF]] for the
+    * [[org.bitcoins.core.script.control.OP_IF OP_IF]] statement. */
   def findMatchingOpEndIf(script: List[ScriptToken]): Int = {
     val matchingOpEndIfIndex = findLastOpEndIf(script)
     require(matchingOpEndIfIndex.isDefined,
