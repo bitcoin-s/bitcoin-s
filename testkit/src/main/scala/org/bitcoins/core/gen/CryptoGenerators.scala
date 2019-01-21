@@ -39,8 +39,8 @@ sealed abstract class CryptoGenerators {
   }
 
   /**
-    * Generates a random number of private keys less than the max public keys setting in [[ScriptSettings]]
-    * also generates a random 'requiredSigs' number that a transaction needs to be signed with
+    * Generates a random number of private keys less than 15.
+    * Also generates a random 'requiredSigs' number that a transaction needs to be signed with
     */
   def privateKeySeqWithRequiredSigs: Gen[(Seq[ECPrivateKey], Int)] =
     for {
@@ -74,7 +74,7 @@ sealed abstract class CryptoGenerators {
       digest = CryptoUtil.sha256(hex)
     } yield digest
 
-  /** Generates a random [[DoubleSha256Digest]] */
+  /** Generates a random [[org.bitcoins.core.crypto.DoubleSha256Digest DoubleSha256Digest]] */
   def doubleSha256Digest: Gen[DoubleSha256Digest] =
     for {
       hex <- StringGenerators.hexString
@@ -82,21 +82,21 @@ sealed abstract class CryptoGenerators {
     } yield digest
 
   /**
-    * Generates a sequence of [[DoubleSha256Digest]]
+    * Generates a sequence of [[org.bitcoins.core.crypto.DoubleSha256Digest DoubleSha256Digest]]
     * @param num the number of digets to generate
     * @return
     */
   def doubleSha256DigestSeq(num: Int): Gen[Seq[DoubleSha256Digest]] =
     Gen.listOfN(num, doubleSha256Digest)
 
-  /** Generates a random [[org.bitcoins.core.crypto.Sha256Hash160Digest]] */
+  /** Generates a random [[org.bitcoins.core.crypto.Sha256Hash160Digest Sha256Hash160Digest]] */
   def sha256Hash160Digest: Gen[Sha256Hash160Digest] =
     for {
       pubKey <- publicKey
       hash = CryptoUtil.sha256Hash160(pubKey.bytes)
     } yield hash
 
-  /** Generates a random [[HashType]] */
+  /** Generates a random [[org.bitcoins.core.script.crypto.HashType HashType]] */
   def hashType: Gen[HashType] =
     Gen.oneOf(
       HashType.sigHashAll,
@@ -111,7 +111,7 @@ sealed abstract class CryptoGenerators {
   def extVersion: Gen[ExtKeyVersion] =
     Gen.oneOf(MainNetPriv, MainNetPub, TestNet3Priv, TestNet3Pub)
 
-  /** Generates an [[org.bitcoins.core.crypto.ExtPrivateKey]] */
+  /** Generates an [[org.bitcoins.core.crypto.ExtPrivateKey ExtPrivateKey]] */
   def extPrivateKey: Gen[ExtPrivateKey] =
     for {
       version <- Gen.oneOf(MainNetPriv, TestNet3Priv)

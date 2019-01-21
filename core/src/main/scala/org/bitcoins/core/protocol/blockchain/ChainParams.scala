@@ -15,42 +15,55 @@ import scodec.bits.ByteVector
 
 /**
   * Created by chris on 5/22/16.
-  * CChainParams defines various tweakable parameters of a given instance of the
+  * `ChainParams` defines various tweakable parameters of a given instance of the
   * Bitcoin system. There are three: the main network on which people trade goods
   * and services, the public test network which gets reset from time to time and
   * a regression test mode which is intended for private networks only. It has
   * minimal difficulty to ensure that blocks can be found instantly.
-  * Mimics this C++ interface
-  * https://github.com/bitcoin/bitcoin/blob/master/src/chainparams.h#L42
+  * @see Mimics
+  *      [[https://github.com/bitcoin/bitcoin/blob/master/src/chainparams.h#L42 this C++ interface]]
+  *      in Bitcoin Core
   */
 sealed abstract class ChainParams {
 
-  /** Return the BIP70 network string ([[MainNetChainParams]], [[TestNetChainParams]] or [[RegTestNetChainParams]].) */
+  /** Return the BIP70 network string (
+    * [[org.bitcoins.core.protocol.blockchain.MainNetChainParams MainNetChainParams]],
+    * [[org.bitcoins.core.protocol.blockchain.MainNetChainParams TestNetChainParams]] or
+    * [[org.bitcoins.core.protocol.blockchain.MainNetChainParams  RegTestNetChainParams]].)
+    *
+    * @see [[https://github.com/bitcoin/bips/blob/master/bip-0070.mediawiki  BIP70]]
+    * */
   def networkId: String
 
-  /** The Genesis [[Block]] in the blockchain. */
+  /** The Genesis [[org.bitcoins.core.protocol.blockchain.Block Block]] in the blockchain. */
   def genesisBlock: Block
 
   /**
     * Filter transactions that do not match well-defined patterns
-    * inside of [[org.bitcoins.core.policy.Policy]].
+    * inside of [[org.bitcoins.core.policy.Policy Policy]].
     */
   def requireStandardTransaction: Boolean = true
 
-  /** Takes in a [[Base58Type]] and returns its base58 prefix. */
+  /** Takes in a [[org.bitcoins.core.protocol.blockchain.Base58Type Base58Type]] and returns its base58 prefix. */
   def base58Prefix(base58: Base58Type): ByteVector = base58Prefixes(base58)
 
   /**
-    * The mapping from a [[Base58Type]]to a String.
+    * The mapping from a [[org.bitcoins.core.protocol.blockchain.Base58Type Base58Type]]to a String.
     * Base58 prefixes for various keys/hashes on the network.
-    * See: [[https://en.bitcoin.it/wiki/List_of_address_prefixes]].
+    *
+    * @see Bitcoin wiki
+    *      [[https://en.bitcoin.it/wiki/List_of_address_prefixes article]]
+    *      on address prefixes
     */
   def base58Prefixes: Map[Base58Type, ByteVector]
 
   /**
-    * Creates the Genesis [[Block]] for this blockchain.
-    * Mimics this function in bitcoin core:
-    * [[https://github.com/bitcoin/bitcoin/blob/master/src/chainparams.cpp#L51]]
+    * Creates the Genesis [[org.bitcoins.core.protocol.blockchain.Block Block]] for this blockchain.
+    *
+    * @see Mimics
+    *      [[https://github.com/bitcoin/bitcoin/blob/master/src/chainparams.cpp#L51 this function]]
+    *      in Bitcoin Core
+    *
     * @param time the time when the miner started hashing the block header
     * @param nonce the nonce to mine the block
     * @param nBits An encoded version of the target threshold this block’s header hash must be less than or equal to.

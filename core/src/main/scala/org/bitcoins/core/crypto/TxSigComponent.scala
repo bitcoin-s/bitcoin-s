@@ -137,7 +137,8 @@ sealed abstract class WitnessTxSigComponentRebuilt extends TxSigComponent {
 
   override def scriptPubKey: ScriptPubKey = output.scriptPubKey
 
-  /** The [[WitnessScriptPubKey]] we used to rebuild the scriptPubKey above */
+  /** The [[org.bitcoins.core.protocol.script.WitnessScriptPubKey WitnessScriptPubKey]] we used to
+    * rebuild the scriptPubKey above */
   def witnessScriptPubKey: WitnessScriptPubKey
 
   override def sigVersion = SigVersionWitnessV0

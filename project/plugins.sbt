@@ -22,3 +22,7 @@ addSbtPlugin("com.typesafe.sbt" % "sbt-site" % "1.3.2")
 
 // publish said site to GitHub pages
 addSbtPlugin("com.typesafe.sbt" % "sbt-ghpages" % "0.6.2")
+
+// ensure proper linkage across libraries in Scaladoc
+addSbtPlugin(
+  "com.thoughtworks.sbt-api-mappings" % "sbt-api-mappings" % "latest.release")
