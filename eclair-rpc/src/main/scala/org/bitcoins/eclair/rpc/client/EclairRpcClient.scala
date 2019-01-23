@@ -11,7 +11,7 @@ import akka.stream.ActorMaterializer
 import akka.util.ByteString
 import org.bitcoins.core.crypto.Sha256Digest
 import org.bitcoins.core.currency.CurrencyUnit
-import org.bitcoins.core.protocol.ln.LnInvoice
+import org.bitcoins.core.protocol.ln.{LnInvoice, LnParams}
 import org.bitcoins.core.protocol.ln.channel.{ChannelId, FundedChannelId}
 import org.bitcoins.core.protocol.ln.currency.{LnCurrencyUnit, MilliSatoshis}
 import org.bitcoins.core.protocol.ln.node.NodeId
@@ -160,6 +160,10 @@ class EclairRpcClient(val instance: EclairInstance)(
   override def isConnected(nodeId: NodeId): Future[Boolean] = {
     getPeers.map(
       _.exists(p => p.nodeId == nodeId && p.state == PeerState.CONNECTED))
+  }
+
+  override def network: LnParams = {
+    LnParams.fromNetworkParameters(instance.network)
   }
 
   override def open(
