@@ -2,7 +2,7 @@ package org.bitcoins.eclair.rpc.api
 
 import org.bitcoins.core.crypto.Sha256Digest
 import org.bitcoins.core.currency.CurrencyUnit
-import org.bitcoins.core.protocol.ln.LnInvoice
+import org.bitcoins.core.protocol.ln.{LnInvoice, LnParams}
 import org.bitcoins.core.protocol.ln.channel.{ChannelId, FundedChannelId}
 import org.bitcoins.core.protocol.ln.currency.{LnCurrencyUnit, MilliSatoshis}
 import org.bitcoins.core.protocol.ln.node.NodeId
@@ -63,6 +63,14 @@ trait EclairApi {
       pushMsat: Option[MilliSatoshis],
       feerateSatPerByte: Option[SatoshisPerByte],
       channelFlags: Option[Byte]): Future[FundedChannelId]
+
+
+  /** The network that this [[org.bitcoins.eclair.rpc.api.EclairApi EclairApi]] is
+    * running on. This is not available directly from the eclair api, but is a very
+    * useful helper method
+    * @return
+    */
+  def network: LnParams
 
   def nodeId()(implicit ec: ExecutionContext): Future[NodeId] = {
     getNodeURI.map(_.nodeId)

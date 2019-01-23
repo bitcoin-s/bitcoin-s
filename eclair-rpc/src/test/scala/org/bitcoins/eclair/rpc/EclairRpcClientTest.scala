@@ -6,6 +6,7 @@ import akka.testkit.TestKit
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits, Satoshis}
 import org.bitcoins.core.number.Int64
+import org.bitcoins.core.protocol.ln.LnParams.LnBitcoinRegTest
 import org.bitcoins.core.protocol.ln.channel.{ChannelId, ChannelState}
 import org.bitcoins.core.protocol.ln.currency._
 import org.bitcoins.core.protocol.ln.node.NodeId
@@ -437,6 +438,10 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
 
       succeed
     }
+  }
+
+  it should "detect what network we are on" in {
+    assert(client.network == LnBitcoinRegTest)
   }
 
   private def hasConnection(
