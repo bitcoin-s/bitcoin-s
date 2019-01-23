@@ -79,7 +79,9 @@ lazy val commonSettings = List(
   bintrayReleaseOnPublish := !isSnapshot.value,
 
   //fix for https://github.com/sbt/sbt/issues/3519
-  updateOptions := updateOptions.value.withGigahorse(false)
+  updateOptions := updateOptions.value.withGigahorse(false),
+
+  git.formattedShaVersion := git.gitHeadCommit.value.map { sha => s"${sha.take(6)}-${new java.util.Date().getTime}-SNAPSHOT" }
 
 )
 
@@ -98,7 +100,7 @@ lazy val root = project
   )
   .settings(commonSettings: _*)
   .settings(crossScalaVersions := Nil)
-  .enablePlugins(ScalaUnidocPlugin, GhpagesPlugin)
+  .enablePlugins(ScalaUnidocPlugin, GhpagesPlugin, GitVersioning)
   .settings(
     ScalaUnidoc / siteSubdirName := "latest/api",
     addMappingsToSiteDir(ScalaUnidoc / packageDoc / mappings, ScalaUnidoc / siteSubdirName),

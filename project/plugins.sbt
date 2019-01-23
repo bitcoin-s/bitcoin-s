@@ -26,3 +26,5 @@ addSbtPlugin("com.typesafe.sbt" % "sbt-ghpages" % "0.6.2")
 // ensure proper linkage across libraries in Scaladoc
 addSbtPlugin(
   "com.thoughtworks.sbt-api-mappings" % "sbt-api-mappings" % "latest.release")
+
+addSbtPlugin("com.typesafe.sbt" % "sbt-git" % "0.9.3")
