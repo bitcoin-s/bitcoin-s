@@ -9,13 +9,23 @@ import scala.math.BigDecimal.RoundingMode
 
 /**
   * The common currency unit used in the
-  * LN protocol for updating HTLCs. See
-  * [[https://github.com/lightningnetwork/lightning-rfc/blob/master/02-peer-protocol.md#adding-an-htlc-update_add_htlc BOLT2]]
+  * LN protocol for updating HTLCs.
+  *
+  * @see [[https://github.com/lightningnetwork/lightning-rfc/blob/master/02-peer-protocol.md#adding-an-htlc-update_add_htlc BOLT2]]
   */
 sealed abstract class MilliSatoshis extends NetworkElement {
   require(toBigInt >= 0, s"Millisatoshis cannot be negative, got $toBigInt")
 
   protected def underlying: BigInt
+
+  /**
+    * Output example:
+    * {{{
+    * > MilliSatoshis(10)
+    * 10 msat
+    * }}}
+    */
+  override def toString: String = s"$toLong msat"
 
   def toBigInt: BigInt = underlying
 

@@ -82,7 +82,7 @@ case class NodeInfo(
     alias: String,
     addresses: Vector[String])
 
-case class ChannelDesc(shortChannelId: ShortChannelId, a: String, b: String)
+case class ChannelDesc(shortChannelId: ShortChannelId, a: NodeId, b: NodeId)
 
 case class ChannelUpdate(
     signature: ECDigitalSignature,

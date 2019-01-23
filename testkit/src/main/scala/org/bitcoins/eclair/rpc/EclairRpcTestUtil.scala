@@ -6,8 +6,7 @@ import java.net.URI
 import akka.actor.ActorSystem
 import com.typesafe.config.{Config, ConfigFactory}
 import org.bitcoins.core.config.RegTest
-import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
-import org.bitcoins.core.number.Int64
+import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.protocol.ln.channel.{
   ChannelId,
   ChannelState,
@@ -18,14 +17,25 @@ import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.eclair.rpc.client.EclairRpcClient
 import org.bitcoins.eclair.rpc.config.EclairInstance
 import org.bitcoins.eclair.rpc.json.PaymentResult
+import org.bitcoins.rpc.BitcoindRpcTestUtil
 import org.bitcoins.rpc.client.BitcoindRpcClient
 import org.bitcoins.rpc.config.{BitcoindInstance, ZmqConfig}
-import org.bitcoins.rpc.BitcoindRpcTestUtil
 import org.bitcoins.rpc.util.RpcUtil
 
-import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.DurationInt
+import scala.concurrent.{Await, ExecutionContext, Future}
 
+/**
+  * @define nodeLinkDoc
+  * Creates two Eclair nodes that are connected in the following manner:
+  * {{{
+  *   node1 <-> node2 <-> node3 <-> node4
+  * }}}
+  *
+  * Each double sided arrow represents a P2P connection as well as a funded
+  * channel
+  *
+  */
 trait EclairRpcTestUtil extends BitcoinSLogger {
   import collection.JavaConverters._
 
@@ -215,8 +225,88 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
     ()
   }
 
+  private def createNodeLink(
+      bitcoindRpcClient: Option[BitcoindRpcClient],
+      channelAmount: MilliSatoshis)(
+      implicit actorSystem: ActorSystem): EclairNodes4 = {
+    implicit val ec: ExecutionContext = actorSystem.dispatcher
+    val internalBitcoind = bitcoindRpcClient.getOrElse(
+      BitcoindRpcTestUtil.startedBitcoindRpcClient()
+    )
+
+    val (first, second) = createNodePair(Some(internalBitcoind))
+    val (third, fourth) = createNodePair(Some(internalBitcoind))
+
+    def open(
+        c1: EclairRpcClient,
+        c2: EclairRpcClient): Future[FundedChannelId] = {
+      openChannel(n1 = c1,
+                  n2 = c2,
+                  amt = channelAmount.toSatoshis,
+                  pushMSat = MilliSatoshis(channelAmount.toLong / 2))
+    }
+
+    EclairRpcTestUtil.connectLNNodes(second, third)
+
+    val openF = Future.sequence(
+      List(open(first, second), open(second, third), open(third, fourth)))
+
+    Await.result(openF, 60.seconds)
+
+    internalBitcoind.generate(3)
+
+    EclairNodes4(first, second, third, fourth)
+  }
+
   /**
-    * Creates two eclair nodes that are connected together and returns their
+    * $nodeLinkDoc
+    * @note Blocks the current thread
+    * @return A 4-tuple of the created nodes' respective
+    *         [[org.bitcoins.eclair.rpc.client.EclairRpcClient EclairRpcClient]]
+    */
+  def createNodeLink(
+      bitcoindRpcClient: BitcoindRpcClient
+  )(implicit actorSystem: ActorSystem): EclairNodes4 = {
+    createNodeLink(Some(bitcoindRpcClient), DEFAULT_CHANNEL_MSAT_AMT)
+  }
+
+  /**
+    * $nodeLinkDoc
+    * @note Blocks the current thread
+    * @return A 4-tuple of the created nodes' respective
+    *         [[org.bitcoins.eclair.rpc.client.EclairRpcClient EclairRpcClient]]
+    */
+  def createNodeLink(
+      bitcoindRpcClient: BitcoindRpcClient,
+      channelAmount: MilliSatoshis)(
+      implicit actorSystem: ActorSystem): EclairNodes4 = {
+    createNodeLink(Some(bitcoindRpcClient), channelAmount)
+  }
+
+  /**
+    * $nodeLinkDoc
+    * @note Blocks the current thread
+    * @return A 4-tuple of the created nodes' respective
+    *         [[org.bitcoins.eclair.rpc.client.EclairRpcClient EclairRpcClient]]
+    */
+  def createNodeLink()(implicit actorSystem: ActorSystem): EclairNodes4 = {
+    createNodeLink(None, DEFAULT_CHANNEL_MSAT_AMT)
+  }
+
+  /**
+    * $nodeLinkDoc
+    * @note Blocks the current thread
+    * @return A 4-tuple of the created nodes' respective
+    *         [[org.bitcoins.eclair.rpc.client.EclairRpcClient EclairRpcClient]]
+    */
+  def createNodeLink(
+      channelAmount: MilliSatoshis
+  )(implicit actorSystem: ActorSystem): EclairNodes4 = {
+    createNodeLink(None, channelAmount)
+  }
+
+  /**
+    * Creates two Eclair nodes that are connected together and returns their
     * respective [[org.bitcoins.eclair.rpc.client.EclairRpcClient EclairRpcClient]]s
     */
   def createNodePair(bitcoindRpcClientOpt: Option[BitcoindRpcClient])(
@@ -301,14 +391,15 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
     Future.sequence(payments)
   }
 
-  private val DEFAULT_CHANNEL_MSAT_AMT = 500000
+  private val DEFAULT_CHANNEL_MSAT_AMT = MilliSatoshis(500000000L)
 
   /** Opens a channel from n1 -> n2 */
   def openChannel(
       n1: EclairRpcClient,
       n2: EclairRpcClient,
-      amt: CurrencyUnit = Satoshis(Int64(DEFAULT_CHANNEL_MSAT_AMT)),
-      pushMSat: MilliSatoshis = MilliSatoshis(DEFAULT_CHANNEL_MSAT_AMT))(
+      amt: CurrencyUnit = DEFAULT_CHANNEL_MSAT_AMT.toSatoshis,
+      pushMSat: MilliSatoshis = MilliSatoshis(
+        DEFAULT_CHANNEL_MSAT_AMT.toLong / 2))(
       implicit system: ActorSystem): Future[FundedChannelId] = {
 
     val bitcoindRpcClient = getBitcoindRpc(n1)
@@ -382,3 +473,9 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
 }
 
 object EclairRpcTestUtil extends EclairRpcTestUtil
+
+case class EclairNodes4(
+    c1: EclairRpcClient,
+    c2: EclairRpcClient,
+    c3: EclairRpcClient,
+    c4: EclairRpcClient)
