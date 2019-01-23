@@ -127,8 +127,12 @@ class EclairRpcClient(val instance: EclairInstance)(
     eclairCall[String]("connect", List(JsString(uri.toString)))
   }
 
-  override def findRoute(nodeId: NodeId): Future[Vector[String]] = {
-    eclairCall[Vector[String]]("findroute", List(JsString(nodeId.hex)))
+  override def findRoute(nodeId: NodeId): Future[Vector[NodeId]] = {
+    eclairCall[Vector[NodeId]]("findroute", List(JsString(nodeId.hex)))
+  }
+
+  override def findRoute(invoice: LnInvoice): Future[Vector[NodeId]] = {
+    eclairCall[Vector[NodeId]]("findroute", List(JsString(invoice.toString)))
   }
 
   override def forceClose(channelId: ChannelId): Future[String] = {
