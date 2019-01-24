@@ -11,7 +11,7 @@ import akka.stream.ActorMaterializer
 import akka.util.ByteString
 import org.bitcoins.core.crypto.Sha256Digest
 import org.bitcoins.core.currency.CurrencyUnit
-import org.bitcoins.core.protocol.ln.{LnInvoice, LnParams}
+import org.bitcoins.core.protocol.ln.{LnInvoice, LnParams, ShortChannelId}
 import org.bitcoins.core.protocol.ln.channel.{ChannelId, FundedChannelId}
 import org.bitcoins.core.protocol.ln.currency.{LnCurrencyUnit, MilliSatoshis}
 import org.bitcoins.core.protocol.ln.node.NodeId
@@ -22,6 +22,7 @@ import org.bitcoins.eclair.rpc.api.EclairApi
 import org.bitcoins.eclair.rpc.config.EclairInstance
 import org.bitcoins.eclair.rpc.json._
 import org.bitcoins.eclair.rpc.network.{NodeUri, PeerState}
+import org.bitcoins.rpc.serializers.JsonReaders._
 import org.slf4j.LoggerFactory
 import play.api.libs.json._
 
@@ -426,14 +427,24 @@ class EclairRpcClient(val instance: EclairInstance)(
       amountMsat: LnCurrencyUnit): Future[PaymentResult] =
     send(invoice, Some(amountMsat))
 
-  def updateRelayFee(
+  override def updateRelayFee(
       channelId: ChannelId,
-      feeBaseMsat: LnCurrencyUnit,
-      feeProportionalMillionths: Long): Future[String] = {
-    eclairCall[String]("updaterelayfee",
-                       List(JsString(channelId.hex),
-                            JsNumber(feeBaseMsat.toPicoBitcoinDecimal),
-                            JsNumber(feeProportionalMillionths)))
+      feeBaseMsat: MilliSatoshis,
+      feeProportionalMillionths: Long): Future[Unit] = {
+    eclairCall[Unit]("updaterelayfee",
+                     List(JsString(channelId.hex),
+                          JsNumber(feeBaseMsat.toLong),
+                          JsNumber(feeProportionalMillionths)))
+  }
+
+  override def updateRelayFee(
+      shortChannelId: ShortChannelId,
+      feeBaseMsat: MilliSatoshis,
+      feePropertionalMillionths: Long): Future[Unit] = {
+    eclairCall[Unit]("updaterelayfee",
+                     List(JsString(shortChannelId.hex),
+                          JsNumber(feeBaseMsat.toLong),
+                          JsNumber(feePropertionalMillionths)))
   }
 
   // TODO: channelstats, audit, networkfees?

@@ -335,13 +335,14 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
       (channel, feeOpt.get)
     }
 
+
     for {
       (channel, oldFee) <- channelAndFeeF
-      _ <- client.updateRelayFee(channel, MilliSatoshis(oldFee.toLong * 2).toLnCurrencyUnit, 1)
+      _ <- client.updateRelayFee(channel, MilliSatoshis(oldFee.toLong * 2), 1)
       newFeeOpt <- client.channel(channel).map(_.feeBaseMsat)
     } yield {
       assert(newFeeOpt.isDefined)
-      assert(newFeeOpt.get > oldFee)
+      assert(newFeeOpt.get == MilliSatoshis(oldFee.toLong * 2))
     }
   }
 
