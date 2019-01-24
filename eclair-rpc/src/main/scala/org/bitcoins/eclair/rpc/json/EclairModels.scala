@@ -12,6 +12,7 @@ import org.bitcoins.core.protocol.ln.{
 }
 import org.bitcoins.core.protocol.ln.channel.{ChannelState, FundedChannelId}
 import org.bitcoins.core.protocol.ln.currency.MilliSatoshis
+import org.bitcoins.core.protocol.ln.fee.FeeProportionalMillionths
 import org.bitcoins.core.protocol.ln.node.NodeId
 import org.bitcoins.eclair.rpc.network.PeerState
 import play.api.libs.json.{JsArray, JsObject}
@@ -80,6 +81,7 @@ case class NodeInfo(
     nodeId: NodeId,
     rgbColor: String,
     alias: String,
+    shortChannelId: ShortChannelId,
     addresses: Vector[String])
 
 case class ChannelDesc(shortChannelId: ShortChannelId, a: NodeId, b: NodeId)
@@ -211,6 +213,8 @@ case class ChannelResult(
     nodeId: NodeId,
     channelId: FundedChannelId,
     state: ChannelState,
+    feeBaseMsat: Option[MilliSatoshis],
+    feeProportionalMillionths: Option[FeeProportionalMillionths],
     data: JsObject)
 
 // ChannelResult ends here
