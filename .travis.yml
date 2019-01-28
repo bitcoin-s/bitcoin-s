@@ -45,7 +45,7 @@ script:
   # substitutes bitcoinsV in Deps.scala value for the value of VERSION
   # in other words, makes us depend on the freshly compiled and locally published
   # code from the first line in this script
-  - SHORT_SCALA_VERSION=`echo $TRAVIS_SCALA_VERSION | cut --delimiter "." --fields 1,2`
+  - SHORT_SCALA_VERSION=`echo $TRAVIS_SCALA_VERSION | cut -d "." -f 1,2`
   - VERSION=`ls -1 $HOME/.ivy2/local/org.bitcoins/bitcoin-s-core_$SHORT_SCALA_VERSION |
     sort --field-separator=- --key=2 | tail -1`
   - TMP_FILE=`mktemp`
