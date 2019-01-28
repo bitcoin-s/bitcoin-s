@@ -3,7 +3,7 @@
 ## Secp256k1jni
 
 
-This project gives people a conviinent way to use [libsecp256k1](https://github.com/bitcoin-core/secp256k1) on the JVM without compiling natives themselves. 
+This project gives people a convenient way to use [libsecp256k1](https://github.com/bitcoin-core/secp256k1) on the JVM without compiling natives themselves. 
 
 Currently we have support for natives on
 
@@ -58,3 +58,48 @@ The file [NativeSecp256k1.java](src/main/java/org/bitcoin/NativeSecp256k1.java) 
 3. Computing a public key from a private key
 4. tweaking keys
 5. Checking public key validity
+
+## Binaries
+
+The binaries provided here are PGP signed, to give at least some assurances that
+nothing funny has happened to them.
+
+### macOS 64 bit
+
+```bash
+bitcoin-s/secp256k1jni/natives/osx_64 $ find -type f -exec sha256sum {} \; | \
+        sort -k 2 | sha256sum | cut --fields 1 --delimiter=" " | \
+        gpg --clearsign --output hashed-dir.sig --detach-sig
+
+bitcoin-s/secp256k1jni/natives/osx_64 $ cat hashed-dir.sig
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA512
+
+341d768b915d989db82c1fb94b29faec9509ad45e30a27c217feb121747789ce
+-----BEGIN PGP SIGNATURE-----
+
+iQEzBAEBCgAdFiEEcQE9FyWyvvLjrwybHk0b2DvgrM0FAlxPHuQACgkQHk0b2Dvg
+rM07EwgApXWPlVKMDP7Z8RQhhDmlnycTJxFaw315TH2IKDMEtCA0mBGY8UOy7jis
+ZtQEyUQdspBnLW6RHeEBhkDlQzjMS3G4K2T2D1r2eL4vXf7dnZ2CUSy7N9Gd8Lsy
+Tcdi9a/GSyFu1RCtmklCZ75/oECPlmNctdOY30+5FDIfWIcTHqKebfDstTqeYGbd
+0+U5N2xDI/07g5jCF1EsgiqvFkXZEjI/44xlxWon6GtbiYR/n+MHzgwBi5XqNs2p
+0t3Tvx5NbJiVVn7K2ThQFaW4ap/bqggZh1ddT/v2Wq0BH+UX6b6Abrq0tD5+ZPst
+5+tz19oEa9XK+X/DDkFrT4WEMDpyIw==
+=CauS
+-----END PGP SIGNATURE-----
+
+bitcoin-s/secp256k1jni/natives/osx_64 $ gpg --verify hashed-dir.sig
+gpg: Signature made Mon 28 Jan 2019 04:25:24 PM CET
+gpg:                using RSA key 71013D1725B2BEF2E3AF0C9B1E4D1BD83BE0ACCD
+gpg: Good signature from "Torkel Rogstad <torkel@suredbits.com>" [ultimate]
+
+```
+
+
+### Linux 32 bit
+
+TODO
+
+### Linux 64 bit
+
+TODO
