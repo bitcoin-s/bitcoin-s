@@ -59,6 +59,18 @@ class EclairRpcClient(val instance: EclairInstance)(
     eclairCall[Vector[ChannelUpdate]]("allupdates",
                                       List(JsString(nodeId.toString)))
 
+  /**
+    * @inheritdoc
+    */
+  override def audit(): Future[AuditResult] =
+    eclairCall[AuditResult]("audit", List.empty)
+
+  /**
+    * @inheritdoc
+    */
+  override def audit(from: Long, to: Long): Future[AuditResult] =
+    eclairCall[AuditResult]("audit", List(JsNumber(from), JsNumber(to)))
+
   override def channel(channelId: ChannelId): Future[ChannelResult] = {
     eclairCall[ChannelResult]("channel", List(JsString(channelId.hex)))
   }

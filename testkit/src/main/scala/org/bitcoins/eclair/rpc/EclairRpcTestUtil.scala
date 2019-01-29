@@ -93,6 +93,7 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
         "eclair.auto-reconnect" -> false,
         "eclair.db.driver" -> "org.sqlite.JDBC",
         "eclair.db.regtest.url" -> "jdbc:sqlite:regtest/",
+        "eclair.max-payment-fee" -> 10, // avoid complaints about too high fees
         "eclair.alias" -> "suredbits"
       )
     }

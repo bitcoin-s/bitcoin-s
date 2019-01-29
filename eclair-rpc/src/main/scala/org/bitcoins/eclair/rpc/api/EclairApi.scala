@@ -19,6 +19,18 @@ trait EclairApi {
 
   def allNodes(): Future[Vector[NodeInfo]]
 
+  /**
+    * List all sent/received/relayed payments
+    */
+  def audit(): Future[AuditResult]
+
+  /**
+    * List all sent/received/relayed payments in the given interval
+    * @param from start timestamp
+    * @param to end timestamp
+    */
+  def audit(from: Long, to: Long): Future[AuditResult]
+
   def allUpdates(): Future[Vector[ChannelUpdate]]
 
   def allUpdates(nodeId: NodeId): Future[Vector[ChannelUpdate]]
