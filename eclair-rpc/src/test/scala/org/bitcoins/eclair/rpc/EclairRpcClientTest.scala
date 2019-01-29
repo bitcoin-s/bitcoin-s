@@ -2,39 +2,62 @@ package org.bitcoins.eclair.rpc
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
+import akka.testkit.TestKit
+import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits, Satoshis}
 import org.bitcoins.core.number.Int64
+import org.bitcoins.core.protocol.ln.LnParams.LnBitcoinRegTest
 import org.bitcoins.core.protocol.ln.channel.{ChannelId, ChannelState}
-import org.bitcoins.core.protocol.ln.currency.{
-  MicroBitcoins,
-  MilliBitcoins,
-  NanoBitcoins,
-  PicoBitcoins
-}
+import org.bitcoins.core.protocol.ln.currency._
 import org.bitcoins.core.protocol.ln.node.NodeId
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.eclair.rpc.client.EclairRpcClient
 import org.bitcoins.eclair.rpc.config.{EclairAuthCredentials, EclairInstance}
 import org.bitcoins.eclair.rpc.json._
 import org.bitcoins.rpc.BitcoindRpcTestUtil
+import org.bitcoins.rpc.client.BitcoindRpcClient
+import org.bitcoins.rpc.util.AsyncUtil
 import org.scalatest.{Assertion, AsyncFlatSpec, BeforeAndAfterAll}
+import org.slf4j.Logger
 
+import scala.collection.immutable.VectorBuilder
+import scala.concurrent._
 import scala.concurrent.duration.DurationInt
-import scala.concurrent.{Await, Future}
 
 class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
 
-  implicit val system = ActorSystem("EclairRpcClient")
-  implicit val m = ActorMaterializer.create(system)
-  implicit val ec = m.executionContext
-  implicit val bitcoinNp = EclairTestUtil.network
+  implicit val system: ActorSystem = ActorSystem("EclairRpcClient")
+  implicit val m: ActorMaterializer = ActorMaterializer.create(system)
+  implicit val ec: ExecutionContext = m.executionContext
+  implicit val bitcoinNp: RegTest.type = EclairRpcTestUtil.network
 
-  val logger = BitcoinSLogger.logger
+  val logger: Logger = BitcoinSLogger.logger
 
-  val bitcoindRpcClient = BitcoindRpcTestUtil.startedBitcoindRpcClient()
+  val bitcoindRpcClient: BitcoindRpcClient =
+    BitcoindRpcTestUtil.startedBitcoindRpcClient()
 
-  val (client, otherClient) =
-    EclairTestUtil.createNodePair(Some(bitcoindRpcClient))
+  lazy val EclairNodes4(firstClient, secondClient, thirdClient, fourthClient) = {
+    val EclairNodes4(first, second, third, fourth) =
+      EclairRpcTestUtil.createNodeLink(bitcoindRpcClient)
+    clients ++= List(first, second, third, fourth)
+    EclairNodes4(first, second, third, fourth)
+
+  }
+
+  lazy val (client, otherClient) = {
+    val (c1, c2) = EclairRpcTestUtil.createNodePair(Some(bitcoindRpcClient))
+    clients += c1
+    clients += c2
+    (c1, c2)
+  }
+
+  private val clients =
+    Vector.newBuilder[EclairRpcClient]
+
+  override def beforeAll(): Unit = {
+    // make sure we have enough money open channels
+    bitcoindRpcClient.generate(200)
+  }
 
   behavior of "RpcClient"
 
@@ -58,7 +81,7 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
         isOpenedF.map {
           case (chanId, assertion) =>
             val _ = bitcoindRpcClient.generate(6)
-            EclairTestUtil.awaitUntilChannelNormal(
+            EclairRpcTestUtil.awaitUntilChannelNormal(
               client = client,
               chanId = chanId
             )
@@ -75,7 +98,7 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
             }
 
             closedF.flatMap { _ =>
-              EclairTestUtil.awaitUntilChannelClosing(client, chanId)
+              EclairRpcTestUtil.awaitUntilChannelClosing(client, chanId)
               val chanF = client.channel(chanId)
               chanF.map { chan =>
                 assert(chan.state == ChannelState.CLOSING)
@@ -229,7 +252,7 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
       openChannelIdF.flatMap { cid =>
         val closedF = client.close(cid)
 
-        EclairTestUtil.awaitUntilChannelClosing(otherClient, cid)
+        EclairRpcTestUtil.awaitUntilChannelClosing(otherClient, cid)
 
         val otherStateF = closedF.flatMap(_ => otherClient.channel(cid))
 
@@ -310,6 +333,160 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
     }
   }
 
+  it should "update the relay fee of a channel" in {
+    val channelAndFeeF = for {
+      channel <- openAndConfirmChannel(client, otherClient)
+      feeOpt <- client.channel(channel).map(_.feeBaseMsat)
+    } yield {
+      assert(feeOpt.isDefined)
+      assert(feeOpt.get > MilliSatoshis.zero)
+      (channel, feeOpt.get)
+    }
+
+
+    for {
+      (channel, oldFee) <- channelAndFeeF
+      _ <- client.updateRelayFee(channel, MilliSatoshis(oldFee.toLong * 2), 1)
+      newFeeOpt <- client.channel(channel).map(_.feeBaseMsat)
+    } yield {
+      assert(newFeeOpt.isDefined)
+      assert(newFeeOpt.get == MilliSatoshis(oldFee.toLong * 2))
+    }
+  }
+
+  it should "get all channels" in {
+    client.allChannels().flatMap(_ => succeed)
+  }
+
+  it should "get all channel updates" in {
+    client.allUpdates().flatMap { _ =>
+      succeed
+    }
+  }
+
+  it should "get a route to a node ID" in {
+    val hasRoute = () => {
+      fourthClient.getInfo
+        .flatMap(info => firstClient.findRoute(info.nodeId))
+        .map(route => route.length == 4)
+        .recover {
+          case err: RuntimeException
+              if err.getMessage.contains("route not found") =>
+            false
+        }
+    }
+
+    // Eclair is a bit slow in propagating channel changes
+    AsyncUtil.awaitConditionF(hasRoute, duration = 1000.millis, maxTries = 10)
+
+    succeed
+  }
+
+  it should "get a route to an invoice" in {
+    val hasRoute = () => {
+      fourthClient
+        .receive("foo")
+        .flatMap(invoice => firstClient.findRoute(invoice))
+        .map(route => route.length == 4)
+        .recover {
+          case err: RuntimeException
+              if err.getMessage.contains("route not found") =>
+            false
+        }
+    }
+
+    // Eclair is a bit slow in propagating channel changes
+    AsyncUtil.awaitConditionF(hasRoute, duration = 1000.millis, maxTries = 10)
+
+    succeed
+  }
+
+  it should "send some payments and get the audit info" in {
+    for {
+      invoice <- fourthClient.receive(MilliSatoshis(50000).toLnCurrencyUnit)
+      _ <- firstClient
+        .send(invoice)
+        .map(payment => assert(payment.isInstanceOf[PaymentSucceeded]))
+      received <- fourthClient
+        .audit()
+        .map(_.received) // check for received payments
+      relayed <- secondClient
+        .audit()
+        .map(_.relayed) // check for relayed payments
+      sent <- firstClient
+        .audit()
+        .map(_.sent) // check for sent payments
+    } yield {
+      assert(received.nonEmpty)
+      assert(relayed.nonEmpty)
+      assert(sent.nonEmpty)
+    }
+  }
+
+  // We spawn fresh clients in this test because the test
+  // needs nodes with activity both related and not related
+  // to them
+  it should "get all channel updates for a given node ID" in {
+    val (firstFreshClient, secondFreshClient) =
+      EclairRpcTestUtil.createNodePair(Some(bitcoindRpcClient))
+    val (thirdFreshClient, fourthFreshClient) =
+      EclairRpcTestUtil.createNodePair(Some(bitcoindRpcClient))
+
+    clients ++= List(firstFreshClient,
+                     secondFreshClient,
+                     thirdFreshClient,
+                     fourthFreshClient)
+
+    EclairRpcTestUtil.connectLNNodes(firstFreshClient, thirdFreshClient)
+    EclairRpcTestUtil.connectLNNodes(firstFreshClient, fourthFreshClient)
+
+    def block[T](fut: Future[T]): T = Await.result(fut, 60.seconds)
+
+    def openChannel(c1: EclairRpcClient, c2: EclairRpcClient) = {
+      block(
+        EclairRpcTestUtil
+          .openChannel(c1, c2, Satoshis(Int64(500000)), MilliSatoshis(500000)))
+    }
+
+    openChannel(firstFreshClient, secondFreshClient)
+    openChannel(thirdFreshClient, fourthFreshClient)
+
+    block(bitcoindRpcClient.generate(10))
+
+    block(EclairRpcTestUtil.sendPayments(firstFreshClient, secondFreshClient))
+    block(EclairRpcTestUtil.sendPayments(thirdFreshClient, fourthFreshClient))
+
+    def updateIsInChannels(channels: Seq[OpenChannelInfo])(
+        update: ChannelUpdate): Boolean = {
+      channels.exists(_.shortChannelId == update.shortChannelId)
+    }
+
+    def updateIsNotInChannels(channels: Seq[OpenChannelInfo])(
+        update: ChannelUpdate): Boolean =
+      !updateIsInChannels(channels)(update)
+
+    for {
+      nodeId <- secondFreshClient.getInfo.map(_.nodeId)
+      ourOpenChannels <- firstFreshClient
+        .channels(nodeId)
+        .map(_.collect {
+          case open: OpenChannelInfo => open
+        })
+
+      ourChannelUpdates <- firstFreshClient.allUpdates(nodeId)
+      allChannelUpdates <- firstFreshClient.allUpdates()
+    } yield {
+      assert(ourChannelUpdates.forall(updateIsInChannels(ourOpenChannels)))
+      assert(allChannelUpdates.exists(updateIsNotInChannels(ourOpenChannels)))
+
+      succeed
+    }
+  }
+
+  it should "detect what network we are on" in {
+    assert(client.network == LnBitcoinRegTest)
+  }
+
   private def hasConnection(
       client: EclairRpcClient,
       nodeId: NodeId): Future[Assertion] = {
@@ -347,7 +524,7 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
       client2: EclairRpcClient,
       amount: CurrencyUnit = Satoshis(Int64(1000000))): Future[ChannelId] = {
 
-    val bitcoindRpc = EclairTestUtil.getBitcoindRpc(client1)
+    val bitcoindRpc = EclairRpcTestUtil.getBitcoindRpc(client1)
 
     val nodeId2F: Future[NodeId] = client2.getInfo.map(_.nodeId)
 
@@ -361,7 +538,7 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
       genF.map { _ =>
         //wait until our peer has put the channel in the
         //NORMAL state so we can route payments to them
-        EclairTestUtil.awaitUntilChannelNormal(client2, cid)
+        EclairRpcTestUtil.awaitUntilChannelNormal(client2, cid)
 
         cid
 
@@ -370,8 +547,7 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
   }
 
   override def afterAll(): Unit = {
-    val s1 = EclairTestUtil.shutdown(client)
-    val s2 = otherClient.stop()
-    Await.result(system.terminate(), 10.seconds)
+    clients.result().foreach(EclairRpcTestUtil.shutdown)
+    TestKit.shutdownActorSystem(system)
   }
 }

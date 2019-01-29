@@ -50,7 +50,7 @@ trait ScriptOperationFactory[T <: ScriptOperation] extends BitcoinSLogger {
     str.replace("OP_", "")
   }
 
-  /** Finds a [[org.bitcoins.core.script.ScriptOperation ScriptOperation]] from a given [[Byte]]. */
+  /** Finds a [[org.bitcoins.core.script.ScriptOperation ScriptOperation]] from a given [[scala.Byte Byte]]. */
   def fromByte(byte: Byte): T = {
     operations.find(_.toByte == byte).get
   }

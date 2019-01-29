@@ -1,5 +1,7 @@
 import sbt.Credentials
 import sbt.Keys.publishTo
+import com.typesafe.sbt.SbtGit.GitKeys._
+
 
 cancelable in Global := true
 
@@ -77,7 +79,9 @@ lazy val commonSettings = List(
   bintrayReleaseOnPublish := !isSnapshot.value,
 
   //fix for https://github.com/sbt/sbt/issues/3519
-  updateOptions := updateOptions.value.withGigahorse(false)
+  updateOptions := updateOptions.value.withGigahorse(false),
+
+  git.formattedShaVersion := git.gitHeadCommit.value.map { sha => s"${sha.take(6)}-${new java.util.Date().getTime}-SNAPSHOT" }
 
 )
 
@@ -96,6 +100,12 @@ lazy val root = project
   )
   .settings(commonSettings: _*)
   .settings(crossScalaVersions := Nil)
+  .enablePlugins(ScalaUnidocPlugin, GhpagesPlugin, GitVersioning)
+  .settings(
+    ScalaUnidoc / siteSubdirName := "latest/api",
+    addMappingsToSiteDir(ScalaUnidoc / packageDoc / mappings, ScalaUnidoc / siteSubdirName),
+    gitRemoteRepo := "git@github.com:bitcoin-s/bitcoin-s-core.git"
+  )
 
 
 lazy val secp256k1jni = project
@@ -190,3 +200,7 @@ lazy val doc = project
   )
 
 publishArtifact in root := false
+
+previewSite / aggregate := false
+previewAuto / aggregate := false
+previewSite / aggregate := false

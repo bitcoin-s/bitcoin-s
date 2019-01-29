@@ -101,8 +101,10 @@ sealed abstract class TxBuilder {
 
   /**
     * The unsigned version of the tx with dummy signatures instead of real signatures in
-    * the [[ScriptSignature]]s. This unsigned transaction has fee estimation done against
-    * the [[org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte]] you passed in as a parameter
+    * the [[org.bitcoins.core.protocol.script.ScriptSignature ScriptSignature]]s.
+    * This unsigned transaction has fee estimation done against
+    * the [[org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte SatoshisPerVirtualByte]]
+    * you passed in as a parameter
     * the change output is calculated and ready for signing.
     */
   def unsignedTx(implicit ec: ExecutionContext): Future[Transaction]
@@ -111,8 +113,8 @@ sealed abstract class TxBuilder {
 }
 
 /**
-  * The [[org.bitcoins.core.wallet.builder.TxBuilder]] for the
-  * bitcoin network(s) [[org.bitcoins.core.config.BitcoinNetwork]]
+  * The [[org.bitcoins.core.wallet.builder.TxBuilder TxBuilder]] for the
+  * bitcoin network(s) [[org.bitcoins.core.config.BitcoinNetwork BitcoinNetwork]]
   */
 sealed abstract class BitcoinTxBuilder extends TxBuilder {
 
@@ -767,7 +769,8 @@ sealed abstract class BitcoinTxBuilder extends TxBuilder {
 
 object TxBuilder {
 
-  /** This contains all the information needed to create a valid [[TransactionInput]] that spends this utxo */
+  /** This contains all the information needed to create a valid
+    * [[org.bitcoins.core.protocol.transaction.TransactionInput TransactionInput]] that spends this utxo */
   type UTXOMap = Map[TransactionOutPoint, UTXOSpendingInfo]
   private val logger = BitcoinSLogger.logger
 

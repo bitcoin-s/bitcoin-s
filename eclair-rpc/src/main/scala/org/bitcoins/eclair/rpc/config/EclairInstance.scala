@@ -52,14 +52,21 @@ object EclairInstance {
     * [[org.bitcoins.eclair.rpc.config.EclairInstance EclairInstance]]
     */
   def fromConfig(config: Config): EclairInstance = {
-    val chain = config.getString("eclair.chain")
+    val chain = ConfigUtil.getStringOrElse(config, "eclair.chain", "testnet")
 
-    val serverBindingIp = config.getString("eclair.server.binding-ip")
+
+    //  default conf: https://github.com/ACINQ/eclair/blob/master/eclair-core/src/main/resources/reference.conf
+    val serverBindingIp =
+      ConfigUtil.getStringOrElse(config, "eclair.server.binding-ip", "0.0.0.0")
+
     val serverPort = ConfigUtil.getIntOrElse(config,
                                              "eclair.server.port",
                                              LnPolicy.DEFAULT_LN_P2P_PORT)
 
-    val rpcHost = config.getString("eclair.api.binding-ip")
+    //  default conf: https://github.com/ACINQ/eclair/blob/master/eclair-core/src/main/resources/reference.conf
+    val rpcHost =
+      ConfigUtil.getStringOrElse(config, "eclair.api.binding-ip", "127.0.0.1")
+
     val rpcPort = ConfigUtil.getIntOrElse(config,
                                           "eclair.api.port",
                                           LnPolicy.DEFAULT_ECLAIR_API_PORT)

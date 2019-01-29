@@ -41,13 +41,15 @@ script:
   # in case the testkit project has had changes in it we have to recompile and
   # publish locally before tests can be run
   - sbt ++$TRAVIS_SCALA_VERSION compile publishLocal
-  # sets VERSION to last word in version.sbt
-  # substitures bitcoinsV in Deps.scala value for the value of VERSION
+  # sets VERSION to the most recently published version
+  # substitutes bitcoinsV in Deps.scala value for the value of VERSION
   # in other words, makes us depend on the freshly compiled and locally published
   # code from the first line in this script
-  - VERSION=`cat version.sbt`; VERSION=`echo ${VERSION##* }`
+  - SHORT_SCALA_VERSION=`echo $TRAVIS_SCALA_VERSION | cut -d "." -f 1,2`
+  - VERSION=`ls -1 $HOME/.ivy2/local/org.bitcoins/bitcoin-s-core_$SHORT_SCALA_VERSION |
+    sort --field-separator=- --key=2 | tail -1`
   - TMP_FILE=`mktemp`
-  - sed -e "s/.*val bitcoinsV.*/val bitcoinsV = ${VERSION}/" project/Deps.scala > $TMP_FILE
+  - sed -e "s/.*val bitcoinsV.*/val bitcoinsV = \"${VERSION}\"/" project/Deps.scala > $TMP_FILE
   - mv $TMP_FILE project/Deps.scala
   - sbt ++$TRAVIS_SCALA_VERSION coverage test &&
     sbt ++$TRAVIS_SCALA_VERSION core/coverageReport &&

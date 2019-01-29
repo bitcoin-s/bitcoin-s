@@ -11,7 +11,7 @@ import akka.stream.ActorMaterializer
 import akka.util.ByteString
 import org.bitcoins.core.crypto.Sha256Digest
 import org.bitcoins.core.currency.CurrencyUnit
-import org.bitcoins.core.protocol.ln.LnInvoice
+import org.bitcoins.core.protocol.ln.{LnInvoice, LnParams, ShortChannelId}
 import org.bitcoins.core.protocol.ln.channel.{ChannelId, FundedChannelId}
 import org.bitcoins.core.protocol.ln.currency.{LnCurrencyUnit, MilliSatoshis}
 import org.bitcoins.core.protocol.ln.node.NodeId
@@ -22,6 +22,7 @@ import org.bitcoins.eclair.rpc.api.EclairApi
 import org.bitcoins.eclair.rpc.config.EclairInstance
 import org.bitcoins.eclair.rpc.json._
 import org.bitcoins.eclair.rpc.network.{NodeUri, PeerState}
+import org.bitcoins.rpc.serializers.JsonReaders._
 import org.slf4j.LoggerFactory
 import play.api.libs.json._
 
@@ -43,26 +44,32 @@ class EclairRpcClient(val instance: EclairInstance)(
 
   def getDaemon: EclairInstance = instance
 
-  override def allChannels: Future[Vector[ChannelDesc]] = {
+  override def allChannels(): Future[Vector[ChannelDesc]] = {
     eclairCall[Vector[ChannelDesc]]("allchannels")
   }
 
-  override def allNodes: Future[Vector[NodeInfo]] = {
+  override def allNodes(): Future[Vector[NodeInfo]] = {
     eclairCall[Vector[NodeInfo]]("allnodes")
   }
 
-  override def allUpdates(
-      nodeIdOpt: Option[NodeId]): Future[Vector[ChannelUpdate]] = {
-    val params =
-      if (nodeIdOpt.isEmpty) List.empty
-      else List(JsString(nodeIdOpt.get.toString))
-    eclairCall[Vector[ChannelUpdate]]("allupdates", params)
-  }
+  override def allUpdates(): Future[Vector[ChannelUpdate]] =
+    eclairCall[Vector[ChannelUpdate]]("allupdates", List.empty)
 
-  def allUpdates: Future[Vector[ChannelUpdate]] = allUpdates(nodeIdOpt = None)
+  override def allUpdates(nodeId: NodeId): Future[Vector[ChannelUpdate]] =
+    eclairCall[Vector[ChannelUpdate]]("allupdates",
+                                      List(JsString(nodeId.toString)))
 
-  def allUpdates(nodeId: NodeId): Future[Vector[ChannelUpdate]] =
-    allUpdates(Some(nodeId))
+  /**
+    * @inheritdoc
+    */
+  override def audit(): Future[AuditResult] =
+    eclairCall[AuditResult]("audit", List.empty)
+
+  /**
+    * @inheritdoc
+    */
+  override def audit(from: Long, to: Long): Future[AuditResult] =
+    eclairCall[AuditResult]("audit", List(JsNumber(from), JsNumber(to)))
 
   override def channel(channelId: ChannelId): Future[ChannelResult] = {
     eclairCall[ChannelResult]("channel", List(JsString(channelId.hex)))
@@ -133,8 +140,12 @@ class EclairRpcClient(val instance: EclairInstance)(
     eclairCall[String]("connect", List(JsString(uri.toString)))
   }
 
-  override def findRoute(nodeId: NodeId): Future[Vector[String]] = {
-    eclairCall[Vector[String]]("findroute", List(JsString(nodeId.hex)))
+  override def findRoute(nodeId: NodeId): Future[Vector[NodeId]] = {
+    eclairCall[Vector[NodeId]]("findroute", List(JsString(nodeId.hex)))
+  }
+
+  override def findRoute(invoice: LnInvoice): Future[Vector[NodeId]] = {
+    eclairCall[Vector[NodeId]]("findroute", List(JsString(invoice.toString)))
   }
 
   override def forceClose(channelId: ChannelId): Future[String] = {
@@ -162,6 +173,10 @@ class EclairRpcClient(val instance: EclairInstance)(
   override def isConnected(nodeId: NodeId): Future[Boolean] = {
     getPeers.map(
       _.exists(p => p.nodeId == nodeId && p.state == PeerState.CONNECTED))
+  }
+
+  override def network: LnParams = {
+    LnParams.fromNetworkParameters(instance.network)
   }
 
   override def open(
@@ -424,14 +439,24 @@ class EclairRpcClient(val instance: EclairInstance)(
       amountMsat: LnCurrencyUnit): Future[PaymentResult] =
     send(invoice, Some(amountMsat))
 
-  def updateRelayFee(
+  override def updateRelayFee(
       channelId: ChannelId,
-      feeBaseMsat: LnCurrencyUnit,
-      feeProportionalMillionths: Long): Future[String] = {
-    eclairCall[String]("updaterelayfee",
-                       List(JsString(channelId.hex),
-                            JsNumber(feeBaseMsat.toPicoBitcoinDecimal),
-                            JsNumber(feeProportionalMillionths)))
+      feeBaseMsat: MilliSatoshis,
+      feeProportionalMillionths: Long): Future[Unit] = {
+    eclairCall[Unit]("updaterelayfee",
+                     List(JsString(channelId.hex),
+                          JsNumber(feeBaseMsat.toLong),
+                          JsNumber(feeProportionalMillionths)))
+  }
+
+  override def updateRelayFee(
+      shortChannelId: ShortChannelId,
+      feeBaseMsat: MilliSatoshis,
+      feePropertionalMillionths: Long): Future[Unit] = {
+    eclairCall[Unit]("updaterelayfee",
+                     List(JsString(shortChannelId.hex),
+                          JsNumber(feeBaseMsat.toLong),
+                          JsNumber(feePropertionalMillionths)))
   }
 
   // TODO: channelstats, audit, networkfees?
@@ -469,7 +494,7 @@ class EclairRpcClient(val instance: EclairInstance)(
           case _: JsError =>
             logger.error(JsError.toJson(res).toString())
             throw new IllegalArgumentException(
-              s"Could not parse JsResult: ${(json \ resultKey).get}")
+              s"Could not parse JsResult! JSON: ${(json \ resultKey).get}")
         }
     }
   }
