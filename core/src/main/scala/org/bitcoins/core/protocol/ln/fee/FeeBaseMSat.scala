@@ -31,4 +31,10 @@ case class FeeBaseMSat(msat: MilliSatoshis) extends NetworkElement {
   */
 case class FeeProportionalMillionths(u32: UInt32) extends NetworkElement {
   override def bytes: ByteVector = u32.bytes
+
+}
+
+object FeeProportionalMillionths {
+  def fromBigInt(bigInt: BigInt): FeeProportionalMillionths =
+    FeeProportionalMillionths(UInt32(bigInt))
 }

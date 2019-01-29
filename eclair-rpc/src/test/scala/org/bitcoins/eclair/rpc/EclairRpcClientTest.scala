@@ -325,6 +325,27 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
     }
   }
 
+  it should "update the relay fee of a channel" in {
+    val channelAndFeeF = for {
+      channel <- openAndConfirmChannel(client, otherClient)
+      feeOpt <- client.channel(channel).map(_.feeBaseMsat)
+    } yield {
+      assert(feeOpt.isDefined)
+      assert(feeOpt.get > MilliSatoshis.zero)
+      (channel, feeOpt.get)
+    }
+
+
+    for {
+      (channel, oldFee) <- channelAndFeeF
+      _ <- client.updateRelayFee(channel, MilliSatoshis(oldFee.toLong * 2), 1)
+      newFeeOpt <- client.channel(channel).map(_.feeBaseMsat)
+    } yield {
+      assert(newFeeOpt.isDefined)
+      assert(newFeeOpt.get == MilliSatoshis(oldFee.toLong * 2))
+    }
+  }
+
   it should "get all channels" in {
     client.allChannels().flatMap(_ => succeed)
   }
