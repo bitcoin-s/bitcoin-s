@@ -86,6 +86,37 @@ case class NodeInfo(
 
 case class ChannelDesc(shortChannelId: ShortChannelId, a: NodeId, b: NodeId)
 
+case class AuditResult(
+    sent: Vector[SentPayment],
+    relayed: Vector[RelayedPayment],
+    received: Vector[ReceivedPayment]
+)
+
+case class ReceivedPayment(
+    amount: MilliSatoshis,
+    paymentHash: Sha256Digest,
+    fromChannelId: FundedChannelId,
+    timestamp: Long
+)
+
+case class RelayedPayment(
+    amountIn: MilliSatoshis,
+    amountOut: MilliSatoshis,
+    paymentHash: Sha256Digest,
+    fromChannelId: FundedChannelId,
+    toChannelId: FundedChannelId,
+    timestamp: Long
+)
+
+case class SentPayment(
+    amount: MilliSatoshis,
+    feesPaid: MilliSatoshis,
+    paymentHash: Sha256Digest,
+    paymentPreimage: String,
+    toChannelId: FundedChannelId,
+    timestamp: Long
+)
+
 case class ChannelUpdate(
     signature: ECDigitalSignature,
     chainHash: DoubleSha256Digest,

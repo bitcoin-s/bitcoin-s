@@ -222,4 +222,11 @@ object JsonReaders {
           JsNull) =>
         JsError(s"Invalid type on refund invoice: $bad, expected JsString")
     }
+
+  implicit val receivedPaymentReads: Reads[ReceivedPayment] =
+    Json.reads[ReceivedPayment]
+  implicit val sentPaymentReads: Reads[SentPayment] = Json.reads[SentPayment]
+  implicit val relayedPaymentReads: Reads[RelayedPayment] =
+    Json.reads[RelayedPayment]
+  implicit val auditResultReads: Reads[AuditResult] = Json.reads[AuditResult]
 }

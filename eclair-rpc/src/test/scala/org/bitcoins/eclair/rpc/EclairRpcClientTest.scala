@@ -36,6 +36,14 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
   val bitcoindRpcClient: BitcoindRpcClient =
     BitcoindRpcTestUtil.startedBitcoindRpcClient()
 
+  lazy val EclairNodes4(firstClient, secondClient, thirdClient, fourthClient) = {
+    val EclairNodes4(first, second, third, fourth) =
+      EclairRpcTestUtil.createNodeLink(bitcoindRpcClient)
+    clients ++= List(first, second, third, fourth)
+    EclairNodes4(first, second, third, fourth)
+
+  }
+
   lazy val (client, otherClient) = {
     val (c1, c2) = EclairRpcTestUtil.createNodePair(Some(bitcoindRpcClient))
     clients += c1
@@ -357,13 +365,9 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
   }
 
   it should "get a route to a node ID" in {
-    val EclairNodes4(first, second, third, fourth) =
-      EclairRpcTestUtil.createNodeLink(bitcoindRpcClient)
-    clients ++= List(first, second, third, fourth)
-
     val hasRoute = () => {
-      fourth.getInfo
-        .flatMap(info => first.findRoute(info.nodeId))
+      fourthClient.getInfo
+        .flatMap(info => firstClient.findRoute(info.nodeId))
         .map(route => route.length == 4)
         .recover {
           case err: RuntimeException
@@ -379,14 +383,10 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
   }
 
   it should "get a route to an invoice" in {
-    val EclairNodes4(first, second, third, fourth) =
-      EclairRpcTestUtil.createNodeLink(bitcoindRpcClient)
-    clients ++= List(first, second, third, fourth)
-
     val hasRoute = () => {
-      fourth
+      fourthClient
         .receive("foo")
-        .flatMap(invoice => first.findRoute(invoice))
+        .flatMap(invoice => firstClient.findRoute(invoice))
         .map(route => route.length == 4)
         .recover {
           case err: RuntimeException
@@ -399,6 +399,28 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
     AsyncUtil.awaitConditionF(hasRoute, duration = 1000.millis, maxTries = 10)
 
     succeed
+  }
+
+  it should "send some payments and get the audit info" in {
+    for {
+      invoice <- fourthClient.receive(MilliSatoshis(50000).toLnCurrencyUnit)
+      _ <- firstClient
+        .send(invoice)
+        .map(payment => assert(payment.isInstanceOf[PaymentSucceeded]))
+      received <- fourthClient
+        .audit()
+        .map(_.received) // check for received payments
+      relayed <- secondClient
+        .audit()
+        .map(_.relayed) // check for relayed payments
+      sent <- firstClient
+        .audit()
+        .map(_.sent) // check for sent payments
+    } yield {
+      assert(received.nonEmpty)
+      assert(relayed.nonEmpty)
+      assert(sent.nonEmpty)
+    }
   }
 
   // We spawn fresh clients in this test because the test
