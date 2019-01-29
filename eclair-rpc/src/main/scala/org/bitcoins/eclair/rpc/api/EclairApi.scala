@@ -2,7 +2,7 @@ package org.bitcoins.eclair.rpc.api
 
 import org.bitcoins.core.crypto.Sha256Digest
 import org.bitcoins.core.currency.CurrencyUnit
-import org.bitcoins.core.protocol.ln.{LnInvoice, LnParams}
+import org.bitcoins.core.protocol.ln.{LnInvoice, LnParams, ShortChannelId}
 import org.bitcoins.core.protocol.ln.channel.{ChannelId, FundedChannelId}
 import org.bitcoins.core.protocol.ln.currency.{LnCurrencyUnit, MilliSatoshis}
 import org.bitcoins.core.protocol.ln.node.NodeId
@@ -56,6 +56,17 @@ trait EclairApi {
   def getPeers: Future[Vector[PeerInfo]]
 
   def isConnected(nodeId: NodeId): Future[Boolean]
+
+  def updateRelayFee(
+      channelId: ChannelId,
+      feeBaseMsat: MilliSatoshis,
+      feePropertionalMillionths: Long): Future[Unit]
+
+  def updateRelayFee(
+      shortChannelId: ShortChannelId,
+      feeBaseMsat: MilliSatoshis,
+      feePropertionalMillionths: Long
+  ): Future[Unit]
 
   def open(
       nodeId: NodeId,

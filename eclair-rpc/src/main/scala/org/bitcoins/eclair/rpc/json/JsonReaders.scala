@@ -8,6 +8,7 @@ import org.bitcoins.core.protocol.ln.{
 }
 import org.bitcoins.core.protocol.ln.channel.{ChannelState, FundedChannelId}
 import org.bitcoins.core.protocol.ln.currency.{MilliSatoshis, PicoBitcoins}
+import org.bitcoins.core.protocol.ln.fee.FeeProportionalMillionths
 import org.bitcoins.core.protocol.ln.node.NodeId
 import org.bitcoins.eclair.rpc.network.PeerState
 import org.bitcoins.rpc.serializers.SerializerUtil
@@ -81,6 +82,12 @@ object JsonReaders {
     Json.reads[PeerInfo]
   }
 
+  implicit val shortChannelIdReads: Reads[ShortChannelId] = {
+    Reads { jsValue =>
+      SerializerUtil.processJsString(ShortChannelId.fromHex)(jsValue)
+    }
+  }
+
   implicit val nodeInfoReads: Reads[NodeInfo] = {
     Json.reads[NodeInfo]
   }
@@ -91,16 +98,9 @@ object JsonReaders {
     }
   }
 
-  implicit val shortChannelIdReads: Reads[ShortChannelId] = {
-    Reads { jsValue =>
-      SerializerUtil.processJsString(ShortChannelId.fromHex)(jsValue)
-    }
-  }
-
   implicit val channelDescReads: Reads[ChannelDesc] = {
     Json.reads[ChannelDesc]
   }
-
 
   implicit val openChannelInfoReads: Reads[OpenChannelInfo] = Reads { jsValue =>
     for {
@@ -135,10 +135,10 @@ object JsonReaders {
 
     } yield
       BaseChannelInfo(nodeId = nodeId,
-                  channelId = channelId,
-                  localMsat = localMsat,
-                  remoteMsat = remoteMsat,
-                  state = state)
+                      channelId = channelId,
+                      localMsat = localMsat,
+                      remoteMsat = remoteMsat,
+                      state = state)
   }
 
   implicit val channelInfoReads: Reads[ChannelInfo] = Reads { jsValue =>
@@ -184,8 +184,31 @@ object JsonReaders {
     }
   }
 
-  implicit val channelResultReads: Reads[ChannelResult] =
-    Json.reads[ChannelResult]
+  implicit val feeProportionalMillionthsReads: Reads[
+    FeeProportionalMillionths] = Reads { js =>
+    SerializerUtil.processJsNumberBigInt(
+      FeeProportionalMillionths.fromBigInt
+    )(js)
+  }
+
+  implicit val channelResultReads: Reads[ChannelResult] = Reads { js =>
+    for {
+      nodeId <- (js \ "nodeId").validate[NodeId]
+      channelId <- (js \ "channelId").validate[FundedChannelId]
+      state <- (js \ "state").validate[ChannelState]
+      feeBaseMsat <- (js \ "data" \ "channelUpdate" \ "feeBaseMsat")
+        .validateOpt[MilliSatoshis]
+      feeProportional <- (js \ "data" \ "channelUpdate" \ "feeProportionalMillionths")
+        .validateOpt[FeeProportionalMillionths]
+      data <- (js \ "data").validate[JsObject]
+    } yield
+      ChannelResult(nodeId = nodeId,
+                    state = state,
+                    channelId = channelId,
+                    feeBaseMsat = feeBaseMsat,
+                    feeProportionalMillionths = feeProportional,
+                    data = data)
+  }
 
   implicit val lnInvoiceReads: Reads[LnInvoice] =
     Reads[LnInvoice] {
