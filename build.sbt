@@ -5,6 +5,8 @@ import com.typesafe.sbt.SbtGit.GitKeys._
 
 cancelable in Global := true
 
+lazy val timestamp = new java.util.Date().getTime
+
 lazy val commonCompilerOpts = {
   List(
     "-Xmax-classfile-name",
@@ -70,7 +72,7 @@ lazy val commonSettings = List(
     val bintrayPublish = publishTo.value
     if (isSnapshot.value) {
       Some("Artifactory Realm" at
-        "https://oss.jfrog.org/artifactory/oss-snapshot-local;build.timestamp=" + new java.util.Date().getTime)
+        "https://oss.jfrog.org/artifactory/oss-snapshot-local;build.timestamp=" + timestamp)
     } else {
       bintrayPublish
     }
@@ -81,7 +83,7 @@ lazy val commonSettings = List(
   //fix for https://github.com/sbt/sbt/issues/3519
   updateOptions := updateOptions.value.withGigahorse(false),
 
-  git.formattedShaVersion := git.gitHeadCommit.value.map { sha => s"${sha.take(6)}-${new java.util.Date().getTime}-SNAPSHOT" }
+  git.formattedShaVersion := git.gitHeadCommit.value.map { sha => s"${sha.take(6)}-${timestamp}-SNAPSHOT" }
 
 )
 
