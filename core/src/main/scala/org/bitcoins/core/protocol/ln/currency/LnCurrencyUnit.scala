@@ -122,6 +122,9 @@ object MilliBitcoins extends BaseNumbers[MilliBitcoins] {
             "Number was too small for MilliBitcoins, got: " + underlying)
     require(underlying <= LnPolicy.maxMilliBitcoins,
             "Number was too big for MilliBitcoins, got: " + underlying)
+
+    override def toString: String =
+      s"${underlying / toPicoBitcoinMultiplier} mBTC"
   }
 }
 
@@ -151,6 +154,9 @@ object MicroBitcoins extends BaseNumbers[MicroBitcoins] {
             "Number was too small for MicroBitcoins, got: " + underlying)
     require(underlying <= LnPolicy.maxMicroBitcoins,
             "Number was too big for MicroBitcoins, got: " + underlying)
+
+    override def toString: String =
+      s"${underlying / toPicoBitcoinMultiplier} uBTC"
   }
 }
 
@@ -179,6 +185,9 @@ object NanoBitcoins extends BaseNumbers[NanoBitcoins] {
             "Number was too small for NanoBitcoins, got: " + underlying)
     require(underlying <= LnPolicy.maxNanoBitcoins,
             "Number was too big for NanoBitcoins, got: " + underlying)
+
+    override def toString: String =
+      s"${underlying / toPicoBitcoinMultiplier} nBTC"
   }
 }
 
@@ -205,6 +214,8 @@ object PicoBitcoins extends BaseNumbers[PicoBitcoins] {
             "Number was too small for PicoBitcoins, got: " + underlying)
     require(underlying <= LnPolicy.maxPicoBitcoins,
             "Number was too big for PicoBitcoins, got: " + underlying)
+
+    override def toString: String = s"$toBigInt pBTC"
   }
 }
 
