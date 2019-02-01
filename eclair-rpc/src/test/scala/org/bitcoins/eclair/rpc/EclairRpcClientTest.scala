@@ -20,7 +20,6 @@ import org.bitcoins.rpc.util.AsyncUtil
 import org.scalatest.{Assertion, AsyncFlatSpec, BeforeAndAfterAll}
 import org.slf4j.Logger
 
-import scala.collection.immutable.VectorBuilder
 import scala.concurrent._
 import scala.concurrent.duration.DurationInt
 
@@ -145,6 +144,61 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
     val otherClientNodeIdF = otherClient.getInfo.map(_.nodeId)
 
     otherClientNodeIdF.flatMap(nid => hasConnection(client, nid))
+  }
+
+  it should "ble able to pay to a hash" in {
+    val amt = MilliSatoshis(50)
+
+    for {
+      channelId <- openAndConfirmChannel(client, otherClient)
+      otherClientNodeId <- otherClient.getInfo.map(_.nodeId)
+      channels <- client.channels(otherClientNodeId)
+      // without this we've been getting "route not found"
+      // probably an async issue, this is more elegant than Thread.sleep
+      _ = assert(channels.exists(_.state == ChannelState.NORMAL), "Nodes did not have open channel!")
+      invoice <- otherClient.receive(amt.toLnCurrencyUnit)
+      payment <- client.send(amt.toLnCurrencyUnit,
+                             invoice.lnTags.paymentHash.hash,
+                             otherClientNodeId)
+      _ <- client.close(channelId)
+      _ <- bitcoindRpcClient.generate(6)
+    } yield {
+      assert(payment.isInstanceOf[PaymentSucceeded])
+      val succeeded = payment.asInstanceOf[PaymentSucceeded]
+      assert(succeeded.amountMsat == amt)
+    }
+  }
+
+  it should "be able to generate an invoice with amount and pay it" in {
+    val amt = MilliSatoshis(50)
+
+    for {
+      channelId <- openAndConfirmChannel(client, otherClient)
+      invoice <- otherClient.receive(amt.toLnCurrencyUnit)
+      payment <- client.send(invoice)
+      _ <- client.close(channelId)
+      _ <- bitcoindRpcClient.generate(6)
+    } yield {
+      assert(payment.isInstanceOf[PaymentSucceeded])
+      val succeeded = payment.asInstanceOf[PaymentSucceeded]
+      assert(succeeded.amountMsat == amt)
+    }
+  }
+
+  it should "be able to generate an invoice without amount and pay it" in {
+    val amt = MilliSatoshis(50)
+
+    for {
+      channelId <- openAndConfirmChannel(client, otherClient)
+      invoice <- otherClient.receive("no amount")
+      payment <- client.send(invoice, amt.toLnCurrencyUnit)
+      _ <- client.close(channelId)
+      _ <- bitcoindRpcClient.generate(6)
+    } yield {
+      assert(payment.isInstanceOf[PaymentSucceeded])
+      val succeeded = payment.asInstanceOf[PaymentSucceeded]
+      assert(succeeded.amountMsat == amt)
+    }
   }
 
   it should "be able to generate an invoice and get the same amount back" in {
@@ -342,7 +396,6 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
       assert(feeOpt.get > MilliSatoshis.zero)
       (channel, feeOpt.get)
     }
-
 
     for {
       (channel, oldFee) <- channelAndFeeF
