@@ -12,7 +12,7 @@ import org.bitcoins.core.protocol.ln.channel.{
   ChannelState,
   FundedChannelId
 }
-import org.bitcoins.core.protocol.ln.currency.{MilliSatoshis, PicoBitcoins}
+import org.bitcoins.core.protocol.ln.currency.MilliSatoshis
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.eclair.rpc.client.EclairRpcClient
 import org.bitcoins.eclair.rpc.config.EclairInstance
@@ -383,11 +383,13 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
       c2: EclairRpcClient,
       numPayments: Int = 10)(
       implicit ec: ExecutionContext): Future[Seq[PaymentResult]] = {
-    val payments = (1 to numPayments).map(
-      n =>
-        c1.receive(s"this is a note $n")
-          .flatMap(invoice => c2.send(invoice, PicoBitcoins(n)))
-    )
+    val payments = (1 to numPayments)
+      .map(MilliSatoshis(_))
+      .map(
+        sats =>
+          c1.receive(s"this is a note for $sats")
+            .flatMap(invoice => c2.send(invoice, sats.toLnCurrencyUnit))
+      )
 
     Future.sequence(payments)
   }
