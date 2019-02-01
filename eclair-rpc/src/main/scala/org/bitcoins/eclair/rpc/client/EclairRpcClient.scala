@@ -411,7 +411,7 @@ class EclairRpcClient(val instance: EclairInstance)(
       paymentHash: Sha256Digest,
       nodeId: NodeId): Future[PaymentResult] = {
     eclairCall[PaymentResult]("send",
-                              List(JsNumber(amountMsat.toPicoBitcoinDecimal),
+                              List(JsNumber(amountMsat.toMSat.toLong),
                                    JsString(paymentHash.hex),
                                    JsString(nodeId.toString)))
   }
@@ -425,7 +425,7 @@ class EclairRpcClient(val instance: EclairInstance)(
         List(JsString(invoice.toString))
       } else {
         List(JsString(invoice.toString),
-             JsNumber(amountMsat.get.toPicoBitcoinDecimal))
+             JsNumber(amountMsat.get.toMSat.toLong))
       }
     }
 
