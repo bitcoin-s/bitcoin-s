@@ -468,6 +468,8 @@ class EclairRpcClient(val instance: EclairInstance)(
       implicit
       reader: Reads[T]): Future[T] = {
     val request = buildRequest(getDaemon, command, JsArray(parameters))
+
+    logger.trace(s"eclair rpc call ${request}")
     val responseF = sendRequest(request)
 
     val payloadF: Future[JsValue] = responseF.flatMap(getPayload)
@@ -484,6 +486,7 @@ class EclairRpcClient(val instance: EclairInstance)(
   private def parseResult[T](result: JsResult[T], json: JsValue): T = {
     result match {
       case res: JsSuccess[T] =>
+        logger.trace(s"eclair rpc response ${res}")
         res.value
       case res: JsError =>
         (json \ errorKey).validate[RpcError] match {

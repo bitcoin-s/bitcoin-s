@@ -1153,7 +1153,10 @@ class BitcoindRpcClient(val instance: BitcoindInstance)(
     val payloadF = response.entity.dataBytes.runFold(ByteString.empty)(_ ++ _)
 
     payloadF.map { payload =>
-      Json.parse(payload.decodeString(ByteString.UTF_8))
+
+      val json = Json.parse(payload.decodeString(ByteString.UTF_8))
+      logger.trace(s"bitcoind rpc response ${json}")
+      json
     }
   }
 

@@ -14,15 +14,13 @@
     </appender>
 
 
+
+    <logger name="org.bitcoins.eclair.rpc.EclairRpcClient" level="TRACE"/>
+
+
     <root level="INFO">
         <appender-ref ref="STDOUT" />
         <appender-ref ref="FILE"/>
     </root>
-
-
-
-    <logger name="com.zaxxer" level="INFO"/>
-
-    <logger name="fr.acinq" level="DEBUG"/>
 
 </configuration>
