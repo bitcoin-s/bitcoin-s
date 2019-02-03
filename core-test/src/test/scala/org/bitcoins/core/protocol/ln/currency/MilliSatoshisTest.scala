@@ -8,7 +8,7 @@ import org.scalatest.{FlatSpec, MustMatchers}
 import org.slf4j.LoggerFactory
 
 class MilliSatoshisTest extends FlatSpec with MustMatchers {
-  private val logger = LoggerFactory.getLogger(this.getClass.getSimpleName)
+  private val logger = LoggerFactory.getLogger(this.getClass)
   behavior of "MilliSatoshis"
 
   it must "convert pico bitcoins to msat correctly" in {

@@ -27,7 +27,7 @@ import scala.util.Try
   * Created by chris on 1/6/16.
   */
 class ScriptInterpreterTest extends FlatSpec with MustMatchers {
-  private val logger = LoggerFactory.getLogger(this.getClass.getSimpleName)
+  private val logger = LoggerFactory.getLogger(this.getClass)
   "ScriptInterpreter" must "evaluate all the scripts from the bitcoin core script_tests.json" in {
 
     val source = Source.fromURL(getClass.getResource("/script_tests.json"))

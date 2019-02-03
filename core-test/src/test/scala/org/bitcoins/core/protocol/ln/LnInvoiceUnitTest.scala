@@ -27,7 +27,7 @@ import scodec.bits.ByteVector
 class LnInvoiceUnitTest extends FlatSpec with MustMatchers with PropertyChecks {
   behavior of "LnInvoice"
 
-  private val logger = LoggerFactory.getLogger(getClass.getSimpleName)
+  private val logger = LoggerFactory.getLogger(getClass)
 
   val hrpEmpty = LnHumanReadablePart(LnBitcoinMainNet)
 
