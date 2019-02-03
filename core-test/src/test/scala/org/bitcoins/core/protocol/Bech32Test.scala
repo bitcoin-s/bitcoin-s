@@ -11,7 +11,7 @@ import org.slf4j.LoggerFactory
 import scala.util.{Success, Try}
 
 class Bech32Test extends FlatSpec with MustMatchers {
-  private val logger = LoggerFactory.getLogger(this.getClass.getSimpleName)
+  private val logger = LoggerFactory.getLogger(this.getClass)
   "Bech32" must "validly encode the test vectors from bitcoin core correctly" in {
     val valid = Seq(
       "A12UEL5L",
