@@ -40,7 +40,7 @@ class EclairRpcClient(val instance: EclairInstance)(
   private val errorKey = "error"
   implicit val m = ActorMaterializer.create(system)
   implicit val ec: ExecutionContext = m.executionContext
-  private val logger = LoggerFactory.getLogger(this.getClass.getSimpleName)
+  private val logger = LoggerFactory.getLogger(this.getClass)
 
   def getDaemon: EclairInstance = instance
 

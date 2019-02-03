@@ -9,7 +9,7 @@ import org.slf4j.LoggerFactory
   * Created by chris on 1/26/16.
   */
 class CryptoUtilTest extends FlatSpec with MustMatchers with PropertyChecks {
-  private val logger = LoggerFactory.getLogger(this.getClass.getSimpleName)
+  private val logger = LoggerFactory.getLogger(this.getClass)
 
   "CryptoUtil" must "perform a SHA-1 hash" in {
     val hash = CryptoUtil.sha1("")

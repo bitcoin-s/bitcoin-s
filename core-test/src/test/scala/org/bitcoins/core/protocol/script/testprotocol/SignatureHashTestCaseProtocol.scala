@@ -13,7 +13,7 @@ import spray.json._
   * Created by tom on 7/21/16.
   */
 object SignatureHashTestCaseProtocol extends DefaultJsonProtocol {
-  private val logger = LoggerFactory.getLogger(this.getClass.getSimpleName)
+  private val logger = LoggerFactory.getLogger(this.getClass)
   implicit object SignatureTestCaseProtocol
       extends RootJsonFormat[SignatureHashTestCase] {
     override def read(value: JsValue): SignatureHashTestCase = {

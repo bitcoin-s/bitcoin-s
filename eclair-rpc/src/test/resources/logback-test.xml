@@ -15,8 +15,6 @@
 
 
 
-    <logger name="org.bitcoins.eclair.rpc.EclairRpcClient" level="TRACE"/>
-
 
     <root level="INFO">
         <appender-ref ref="STDOUT" />

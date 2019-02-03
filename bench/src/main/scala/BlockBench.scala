@@ -4,7 +4,7 @@ import org.slf4j.LoggerFactory
 import scala.io.Source
 
 object BlockBench extends App {
-  private def logger = LoggerFactory.getLogger(this.getClass.getSimpleName)
+  private def logger = LoggerFactory.getLogger(this.getClass)
 
   private def timeBlockParsing[R](block: () => R): Long = {
     val t0 = System.currentTimeMillis()
