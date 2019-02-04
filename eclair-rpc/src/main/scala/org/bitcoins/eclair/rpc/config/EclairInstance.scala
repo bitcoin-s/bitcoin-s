@@ -60,7 +60,7 @@ object EclairInstance {
 
     val config = ConfigFactory.parseFile(file)
 
-    fromConfig(config)
+    fromConfig(config, file.getParentFile)
   }
 
   /**
