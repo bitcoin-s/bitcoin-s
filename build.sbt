@@ -40,6 +40,8 @@ lazy val commonSettings = List(
 
   scalacOptions in Test := testCompilerOpts,
 
+  testOptions in Test += Tests.Argument("-oF"),
+
   assemblyOption in assembly := (assemblyOption in assembly).value
     .copy(includeScala = false),
 
