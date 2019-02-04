@@ -90,9 +90,22 @@ lazy val commonSettings = List(
 
   //fix for https://github.com/sbt/sbt/issues/3519
   updateOptions := updateOptions.value.withGigahorse(false),
+  git.formattedShaVersion := git.gitHeadCommit.value.map { sha =>
+    s"${sha.take(6)}-$timestamp-SNAPSHOT"
+  },
 
-  git.formattedShaVersion := git.gitHeadCommit.value.map { sha => s"${sha.take(6)}-${timestamp}-SNAPSHOT" }
-
+  /**
+    * Adding Ammonite REPL to test scope, can access both test and compile
+    * sources. Docs: http://ammonite.io/#Ammonite-REPL
+    * Creates an ad-hoc main file that can be run by doing 
+    * test:run (or test:runMain amm if there's multiple main files
+    * in scope)
+    */
+  Test / sourceGenerators += Def.task {
+    val file = (Test / sourceManaged).value / "amm.scala"
+    IO.write(file, """object amm extends App { ammonite.Main.main(args) }""")
+    Seq(file)
+  }.taskValue
 )
 
 lazy val root = project
@@ -236,8 +249,20 @@ lazy val doc = project
     core
   )
 
+// Ammonite is invoked through running
+// a main class it places in test sources
+// for us. This makes it a bit less awkward
+// to start the Ammonite shell. Sadly, 
+// prepending the project and then doing
+// `amm` (e.g. sbt coreTest/amm`) does not 
+// work. For that you either have to do 
+// `sbt coreTest/test:run` or: 
+// sbt
+// project coreTest
+// amm
+addCommandAlias("amm", "test:run")
+
 publishArtifact in root := false
 
 previewSite / aggregate := false
 previewAuto / aggregate := false
-previewSite / aggregate := false
