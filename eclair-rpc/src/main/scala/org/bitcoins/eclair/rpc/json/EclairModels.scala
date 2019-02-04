@@ -126,7 +126,7 @@ case class ChannelUpdate(
     channelFlags: Int,
     cltvExpiryDelta: Int,
     htlcMinimumMsat: MilliSatoshis,
-    htlcMaximumMsat: MilliSatoshis,
+    htlcMaximumMsat: Option[MilliSatoshis],
     feeBaseMsat: MilliSatoshis,
     feeProportionalMillionths: Long)
 
