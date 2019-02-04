@@ -93,6 +93,13 @@ object EclairAuthCredentials {
     val password = config.getString("eclair.api.password")
     val eclairRpcPort = ConfigUtil.getIntOrElse(config, "eclair.api.port", 8080)
 
+    val eclairDatadirOpt: Option[File] = if (config.hasPath("eclair.datadir")) {
+      val dir = config.getString("eclair.datadir")
+      Some(new File(dir))
+    } else {
+      None
+    }
+
     val bitcoindAuth = {
       BitcoindAuthCredentials(username = bitcoindUsername,
                               password = bitcoindPassword,
@@ -101,7 +108,8 @@ object EclairAuthCredentials {
 
     EclairAuthCredentials(password = password,
                           bitcoinAuthOpt = Some(bitcoindAuth),
-                          port = eclairRpcPort)
+                          port = eclairRpcPort,
+                          eclairDatadirOpt)
   }
 
   private def getDefaultBitcoindRpcPort(config: Config): Int = {
