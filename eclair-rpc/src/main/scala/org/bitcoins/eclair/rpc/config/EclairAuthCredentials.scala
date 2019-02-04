@@ -42,6 +42,13 @@ sealed trait EclairAuthCredentials {
   }
 }
 
+/**
+  * @define fromConfigDoc
+  * Parses a [[com.typesafe.config.Config Config]] in the format of this
+  * [[https://github.com/ACINQ/eclair/blob/master/eclair-core/src/main/resources/reference.conf sample reference.conf]]
+  * file to a
+  * [[org.bitcoins.eclair.rpc.config.EclairAuthCredentials EclairAuthCredentials]]
+  */
 object EclairAuthCredentials {
   private case class AuthCredentialsImpl(
       password: String,
@@ -73,12 +80,20 @@ object EclairAuthCredentials {
   }
 
   /**
-    * Parses a [[com.typesafe.config.Config Config]] in the format of this
-    * [[https://github.com/ACINQ/eclair/blob/master/eclair-core/src/main/resources/reference.conf sample reference.conf]]
-    * file to a
-    * [[org.bitcoins.eclair.rpc.config.EclairAuthCredentials EclairAuthCredentials]]
+    * $fromConfigDoc
     */
-  def fromConfig(config: Config): EclairAuthCredentials = {
+  def fromConfig(config: Config, datadir: File): EclairAuthCredentials =
+    fromConfig(config, Some(datadir))
+
+  /**
+    * $fromConfigDoc
+    */
+  def fromConfig(config: Config): EclairAuthCredentials =
+    fromConfig(config, None)
+
+  private[config] def fromConfig(
+      config: Config,
+      datadir: Option[File]): EclairAuthCredentials = {
 
     val bitcoindUsername = config.getString("eclair.bitcoind.rpcuser")
     val bitcoindPassword = config.getString("eclair.bitcoind.rpcpassword")
@@ -101,7 +116,8 @@ object EclairAuthCredentials {
 
     EclairAuthCredentials(password = password,
                           bitcoinAuthOpt = Some(bitcoindAuth),
-                          port = eclairRpcPort)
+                          port = eclairRpcPort,
+                          datadir = datadir)
   }
 
   private def getDefaultBitcoindRpcPort(config: Config): Int = {

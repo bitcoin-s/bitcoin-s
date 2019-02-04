@@ -17,6 +17,13 @@ sealed trait EclairInstance {
   def authCredentials: EclairAuthCredentials
 }
 
+/**
+  * @define fromConfigDoc
+  * Parses a [[com.typesafe.config.Config Config]] in the format of this
+  * [[https://github.com/ACINQ/eclair/blob/master/eclair-core/src/main/resources/reference.conf sample reference.conf]]
+  * file to a
+  * [[org.bitcoins.eclair.rpc.config.EclairInstance EclairInstance]]
+  */
 object EclairInstance {
   private case class EclairInstanceImpl(
       network: NetworkParameters,
@@ -53,24 +60,26 @@ object EclairInstance {
 
     val config = ConfigFactory.parseFile(file)
 
-    val configWithDatadir =
-      if (config.hasPath("eclair.datadir")) {
-        config
-      } else {
-        config.withValue("eclair.datadir",
-                         ConfigValueFactory.fromAnyRef(file.getParent))
-      }
-
-    fromConfig(configWithDatadir)
+    fromConfig(config, file.getParentFile)
   }
 
   /**
-    * Parses a [[com.typesafe.config.Config Config]] in the format of this
-    * [[https://github.com/ACINQ/eclair/blob/master/eclair-core/src/main/resources/reference.conf sample reference.conf]]
-    * file to a
-    * [[org.bitcoins.eclair.rpc.config.EclairInstance EclairInstance]]
+    * $fromConfigDoc
+    */
+  def fromConfig(config: Config, datadir: File): EclairInstance = {
+    fromConfig(config, Some(datadir))
+  }
+
+  /**
+    * $fromConfigDoc
     */
   def fromConfig(config: Config): EclairInstance = {
+    fromConfig(config, None)
+  }
+
+  private def fromConfig(
+      config: Config,
+      datadir: Option[File]): EclairInstance = {
     val chain = ConfigUtil.getStringOrElse(config, "eclair.chain", "testnet")
 
     //  default conf: https://github.com/ACINQ/eclair/blob/master/eclair-core/src/main/resources/reference.conf
@@ -102,7 +111,7 @@ object EclairInstance {
 
     val rpcUri: URI = new URI(s"http://$rpcHost:$rpcPort")
 
-    val eclairAuth = EclairAuthCredentials.fromConfig(config)
+    val eclairAuth = EclairAuthCredentials.fromConfig(config, datadir)
 
     val instance = EclairInstance(network = np,
                                   uri = uri,
