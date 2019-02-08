@@ -7,7 +7,7 @@ import scodec.bits.ByteVector
   * Created by chris on 2/26/16.
   * Trait to implement ubiquitous factory functions across our codebase
   */
-trait Factory[T] {
+abstract class Factory[+T] {
 
   /** Creates a T out of a hex string. */
   def fromHex(hex: String): T = fromBytes(BitcoinSUtil.decodeHex(hex))
@@ -21,7 +21,7 @@ trait Factory[T] {
   /** Creates a T from a hex string. */
   def apply(hex: String): T = fromHex(hex)
 
-  def logger: Logger = BitcoinSLogger.logger
+  lazy val logger: Logger = BitcoinSLogger.logger
 
   /** Allows a `def foo[C: Factory]()` construction. */
   implicit def self: Factory[T] = this
