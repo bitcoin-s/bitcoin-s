@@ -111,15 +111,12 @@ class RpcUtilTest extends AsyncFlatSpec with BeforeAndAfterAll {
 
     val instance = BitcoindRpcTestUtil.instance()
     val client = new BitcoindRpcClient(instance)
-    client.start()
-    RpcUtil.awaitCondition(client.isStarted)
-    assert(client.isStarted)
-    client.stop()
-    RpcUtil.awaitServerShutdown(client)
-    assert(!client.isStarted)
+    val startedF = client.start()
 
-    val t = Try(Await.result(client.getNetworkInfo, 1000.milliseconds))
-    assert(t.isFailure)
+    startedF.map { _ =>
+      client.stop()
+      succeed
+    }
   }
 
   it should "be able to create a connected node pair with 100 blocks and then delete them" in {
