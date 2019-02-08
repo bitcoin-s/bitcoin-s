@@ -14,24 +14,20 @@ import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, MerkleBlock}
 import org.bitcoins.core.protocol.script.ScriptPubKey
-import org.bitcoins.core.protocol.transaction.{
-  Transaction,
-  TransactionInput,
-  TransactionOutPoint
-}
+import org.bitcoins.core.protocol.transaction.{Transaction, TransactionInput, TransactionOutPoint}
 import org.bitcoins.core.protocol.{BitcoinAddress, P2PKHAddress}
 import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil}
 import org.bitcoins.rpc.client.RpcOpts.AddressType
 import org.bitcoins.rpc.config.BitcoindInstance
 import org.bitcoins.rpc.jsonmodels._
 import org.bitcoins.rpc.serializers.JsonSerializers._
-import org.bitcoins.rpc.util.RpcUtil
+import org.bitcoins.rpc.util.{AsyncUtil, RpcUtil}
 import play.api.libs.json._
 
 import scala.concurrent.duration.DurationInt
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.sys.process._
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 class BitcoindRpcClient(val instance: BitcoindInstance)(
     implicit
@@ -1108,8 +1104,10 @@ class BitcoindRpcClient(val instance: BitcoindInstance)(
 
     val payloadF: Future[JsValue] = responseF.flatMap(getPayload)
 
-    payloadF.map { payload =>
-      parseResult((payload \ resultKey).validate[T], payload)
+    payloadF.flatMap { payload =>
+      val jsResult = (payload \ resultKey).validate[T]
+      val result = parseResult(jsResult, payload)
+      Future.fromTry(result)
     }
   }
 
@@ -1117,21 +1115,21 @@ class BitcoindRpcClient(val instance: BitcoindInstance)(
   implicit val rpcErrorReads: Reads[RpcError] = Json.reads[RpcError]
 
   // Should both logging and throwing be happening?
-  private def parseResult[T](result: JsResult[T], json: JsValue): T = {
+  private def parseResult[T](result: JsResult[T], json: JsValue): Try[T] = {
     checkUnitError[T](result, json)
 
     result match {
-      case res: JsSuccess[T] => res.value
+      case res: JsSuccess[T] => Success(res.value)
       case res: JsError =>
         (json \ errorKey).validate[RpcError] match {
           case err: JsSuccess[RpcError] =>
             logger.error(s"Error ${err.value.code}: ${err.value.message}")
-            throw new RuntimeException(
-              s"Error ${err.value.code}: ${err.value.message}")
+            Failure(new RuntimeException(
+              s"Error ${err.value.code}: ${err.value.message}"))
           case _: JsError =>
             logger.error(JsError.toJson(res).toString())
-            throw new IllegalArgumentException(
-              s"Could not parse JsResult: ${(json \ resultKey).get}")
+            Failure(new IllegalArgumentException(
+              s"Could not parse JsResult: ${(json \ resultKey).get}"))
         }
     }
   }
@@ -1190,13 +1188,37 @@ class BitcoindRpcClient(val instance: BitcoindInstance)(
         HttpCredentials.createBasicHttpCredentials(username, password))
   }
 
-  def start(): String = {
+  /** Starts bitcoind on the local system.
+    * @return a future that completes when bitcoind is fully started.
+    *         This future times out after 60 seconds if the client
+    *         cannot be started
+    */
+  def start(): Future[Unit] = {
     val cmd = List("bitcoind",
                    "-datadir=" + instance.authCredentials.datadir,
                    "-rpcport=" + instance.rpcUri.getPort,
                    "-port=" + instance.uri.getPort)
     logger.debug(s"starting bitcoind")
     val _ = Process(cmd).run()
-    "Started bitcoind!"
+
+
+    def isStartedF(): Future[Boolean] = {
+      val started: Promise[Boolean] = Promise()
+      getBlockCount.onComplete {
+        case Success(_) => started.success(true)
+        case Failure(_) => started.success(false)
+      }
+
+      started.future
+    }
+
+    val started = AsyncUtil.retryUntilSatisfiedF(
+      () => isStartedF,
+      duration = 1.seconds,
+      maxTries = 60)
+
+    started.map(_ => logger.debug(s"started bitcoind"))
+
+    started
   }
 }

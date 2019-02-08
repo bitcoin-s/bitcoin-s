@@ -10,15 +10,10 @@ import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.rpc.client.BitcoindRpcClient
-import org.bitcoins.rpc.config.{
-  BitcoindAuthCredentials,
-  BitcoindInstance,
-  ZmqConfig
-}
-import org.bitcoins.rpc.util.RpcUtil
+import org.bitcoins.rpc.config.{BitcoindAuthCredentials, BitcoindInstance, ZmqConfig}
+import org.bitcoins.rpc.util.{AsyncUtil, RpcUtil}
 
 import scala.collection.immutable.Map
-
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.{Failure, Success, Try}
@@ -118,9 +113,10 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
   }
 
   def startServers(servers: Vector[BitcoindRpcClient])(
-      implicit system: ActorSystem): Unit = {
-    servers.foreach(_.start())
-    servers.foreach(RpcUtil.awaitServer(_))
+      implicit ec: ExecutionContext): Future[Unit] = {
+    val startedServers = servers.map(_.start())
+
+    Future.sequence(startedServers).map(_ => ())
   }
 
   def deleteTmpDir(dir: File): Boolean = {
@@ -288,26 +284,34 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
 
   def startedBitcoindRpcClient(
       instance: BitcoindInstance = BitcoindRpcTestUtil.instance())(
-      implicit system: ActorSystem): BitcoindRpcClient = {
+      implicit system: ActorSystem): Future[BitcoindRpcClient] = {
     implicit val ec = system.dispatcher
     //start the bitcoind instance so eclair can properly use it
     val rpc = new BitcoindRpcClient(instance)(system)
-    rpc.start()
-
-    logger.debug(s"Starting bitcoind at ${instance.authCredentials.datadir}")
-    RpcUtil.awaitServer(rpc)
+    val startedF = rpc.start()
 
     val blocksToGenerate = 102
     //fund the wallet by generating 102 blocks, need this to get over coinbase maturity
-    val _ = rpc.generate(blocksToGenerate)
-
-    def isBlocksGenerated(): Future[Boolean] = {
-      rpc.getBlockCount.map(_ >= blocksToGenerate)
+    val generatedF = startedF.flatMap { _ =>
+      rpc.generate(blocksToGenerate)
     }
 
-    RpcUtil.awaitConditionF(() => isBlocksGenerated())
+    def isBlocksGenerated(): Future[Boolean] = {
+      rpc.getBlockCount.map { count =>
+        count >= blocksToGenerate
+      }
+    }
 
-    rpc
+    val blocksGeneratedF = generatedF.flatMap { _ =>
+      AsyncUtil.retryUntilSatisfiedF(
+        () => isBlocksGenerated,
+        duration = 1.seconds
+      )
+    }
+
+    val result = blocksGeneratedF.map(_ => rpc)
+
+    result
   }
 }
 

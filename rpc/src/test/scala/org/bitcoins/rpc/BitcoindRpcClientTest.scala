@@ -144,22 +144,27 @@ class BitcoindRpcClientTest
 
     val servers = Vector(walletClient, client, otherClient, pruneClient)
     logger.info("Bitcoin servers starting")
-    BitcoindRpcTestUtil.startServers(servers)
+    val startedF = BitcoindRpcTestUtil.startServers(servers)
 
-    client.addNode(otherClient.getDaemon.uri, "add")
+    val _ = startedF.flatMap { _ =>
+      logger.info(s"Adding node...")
+      client.addNode(otherClient.getDaemon.uri, "add")
+    }
 
-    Await.result(
-      walletClient.encryptWallet(password).map { msg =>
-        logger.info(msg)
-        RpcUtil.awaitServerShutdown(walletClient)
-        logger.debug(walletClient.isStarted.toString)
-        // Very rarely, this may fail if bitcoind does not ping but hasn't yet released its locks
-        walletClient.start()
-        logger.info("Bitcoin server restarting")
-        RpcUtil.awaitServer(walletClient)
-      },
-      30.seconds
-    )
+    val encryptedStartAndShutdown = {
+      startedF.flatMap { _ =>
+        walletClient.encryptWallet(password).flatMap { msg =>
+          logger.info(msg)
+          RpcUtil.awaitServerShutdown(walletClient)
+          logger.debug(walletClient.isStarted.toString)
+          // Very rarely, this may fail if bitcoind does not ping but hasn't yet released its locks
+          walletClient.start()
+        }
+      }
+
+    }
+
+    Await.result(encryptedStartAndShutdown, 30.seconds)
 
     logger.info("Mining some blocks")
     Await.result(client.generate(200), 30.seconds)

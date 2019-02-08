@@ -11,10 +11,10 @@ import akka.stream.ActorMaterializer
 import akka.util.ByteString
 import org.bitcoins.core.crypto.Sha256Digest
 import org.bitcoins.core.currency.CurrencyUnit
-import org.bitcoins.core.protocol.ln.{LnInvoice, LnParams, ShortChannelId}
 import org.bitcoins.core.protocol.ln.channel.{ChannelId, FundedChannelId}
 import org.bitcoins.core.protocol.ln.currency.{LnCurrencyUnit, MilliSatoshis}
 import org.bitcoins.core.protocol.ln.node.NodeId
+import org.bitcoins.core.protocol.ln.{LnInvoice, LnParams, ShortChannelId}
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.util.BitcoinSUtil
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
@@ -23,13 +23,14 @@ import org.bitcoins.eclair.rpc.config.EclairInstance
 import org.bitcoins.eclair.rpc.json._
 import org.bitcoins.eclair.rpc.network.{NodeUri, PeerState}
 import org.bitcoins.rpc.serializers.JsonReaders._
+import org.bitcoins.rpc.util.AsyncUtil
 import org.slf4j.LoggerFactory
 import play.api.libs.json._
 
 import scala.concurrent.duration.DurationInt
-import scala.concurrent.{Await, ExecutionContext, Future, Promise}
+import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.sys.process._
-import scala.util.{Failure, Properties, Success, Try}
+import scala.util.{Failure, Properties, Success}
 
 class EclairRpcClient(val instance: EclairInstance)(
     implicit system: ActorSystem)
@@ -559,27 +560,51 @@ class EclairRpcClient(val instance: EclairInstance)(
 
   private var process: Option[Process] = None
 
-  def start(): Unit = {
+  /** Starts eclair on the local system.
+    *
+    * @return a future that completes when eclair is fully started.
+    *         If eclair has not successfully started in 60 seconds
+    *         the future times out.
+    */
+  def start(): Future[Unit] = {
 
-    if (process.isEmpty) {
-      val p = Process(
-        s"java -jar -Declair.datadir=${instance.authCredentials.datadir.get} $pathToEclairJar &")
-      val result = p.run()
-      logger.info(
-        s"Starting eclair with datadir ${instance.authCredentials.datadir.get}")
+    val _ = {
 
-      process = Some(result)
-      ()
-    } else {
-      logger.info(s"Eclair was already started!")
-      ()
+      require(instance.authCredentials.datadir.isDefined, s"A datadir needs to be provided to start eclair")
+
+      if (process.isEmpty) {
+        val p = Process(
+          s"java -jar -Declair.datadir=${instance.authCredentials.datadir.get} $pathToEclairJar &")
+        val result = p.run()
+        logger.info(
+          s"Starting eclair with datadir ${instance.authCredentials.datadir.get}")
+
+        process = Some(result)
+        ()
+      } else {
+        logger.info(s"Eclair was already started!")
+        ()
+      }
     }
 
+    val started = AsyncUtil.retryUntilSatisfiedF(
+      () => isStarted,
+      duration = 1.seconds,
+      maxTries = 60)
+
+
+    started
   }
 
-  def isStarted(): Boolean = {
-    val t = Try(Await.result(getInfo, 1.second))
-    t.isSuccess
+  def isStarted(): Future[Boolean] = {
+    val p = Promise[Boolean]()
+
+    getInfo.onComplete {
+      case Success(_) => p.success(true)
+      case Failure(_) => p.success(false)
+    }
+
+    p.future
   }
 
   def stop(): Option[Unit] = {
