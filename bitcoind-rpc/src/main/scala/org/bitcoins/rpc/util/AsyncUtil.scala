@@ -52,28 +52,15 @@ trait AsyncUtil extends BitcoinSLogger {
       message: String,
       caller: Array[StackTraceElement])
       extends Exception(message) {
-    override def printStackTrace(s: PrintStream): Unit = {
-      super.printStackTrace(s)
+    private val relevantStackTrace = caller.tail
+      .dropWhile(elem => elem.getFileName == "AsyncUtil.scala"
+        || elem.getFileName == "RpcUtil.scala")
 
-      val indexOfLastBitcoinSOpt = caller.reverse.zipWithIndex
-        .find {
-          case (element, _) =>
-            element.getClassName.contains("bitcoins")
-        }
-
-      val indexOfLastRelevantElement =
-        indexOfLastBitcoinSOpt.map(_._2).getOrElse(0)
-
-      val relevantStackTrace =
-        caller.dropRight(indexOfLastRelevantElement).drop(1)
-
-      s.println("Called from:")
-      relevantStackTrace.foreach(element => s.println(s"\t$element"))
-    }
+    this.setStackTrace(relevantStackTrace)
   }
 
   // Has a different name so that default values are permitted
-  private def retryUntilSatisfiedWithCounter(
+  protected def retryUntilSatisfiedWithCounter(
       conditionF: () => Future[Boolean],
       duration: FiniteDuration,
       counter: Int = 0,

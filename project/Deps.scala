@@ -114,7 +114,8 @@ object Deps {
 
   val testkit = List(
     Compile.slf4j,
-    "org.scalacheck" %% "scalacheck" % V.scalacheck withSources() withJavadoc()
+    "org.scalacheck" %% "scalacheck" % V.scalacheck withSources() withJavadoc(),
+    "org.scalatest" %% "scalatest" % V.scalaTest withSources() withJavadoc()
   )
 
   val doc = List(
