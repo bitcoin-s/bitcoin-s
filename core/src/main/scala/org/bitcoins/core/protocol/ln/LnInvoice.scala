@@ -19,8 +19,6 @@ sealed abstract class LnInvoice {
     isValidSignature(),
     s"Did not receive a valid digital signature for the invoice ${toString}")
 
-  private val bech32Separator: Char = Bech32.separator
-
   def hrp: LnHumanReadablePart
 
   def timestamp: UInt64
@@ -101,7 +99,7 @@ sealed abstract class LnInvoice {
   override def toString: String = {
     val b = new StringBuilder
     b.append(hrp.toString)
-    b.append(bech32Separator)
+    b.append(Bech32.separator)
 
     val dataToString = Bech32.encode5bitToString(data)
     b.append(dataToString)
