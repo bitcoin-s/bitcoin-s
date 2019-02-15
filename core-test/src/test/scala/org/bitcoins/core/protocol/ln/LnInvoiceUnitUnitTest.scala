@@ -3,31 +3,18 @@ package org.bitcoins.core.protocol.ln
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.gen.ln.LnInvoiceGen
 import org.bitcoins.core.number.{UInt32, UInt64, UInt8}
-import org.bitcoins.core.protocol.ln.LnParams.{
-  LnBitcoinMainNet,
-  LnBitcoinTestNet
-}
-import org.bitcoins.core.protocol.ln.currency.{
-  MicroBitcoins,
-  MilliBitcoins,
-  MilliSatoshis
-}
-import org.bitcoins.core.protocol.ln.fee.{
-  FeeBaseMSat,
-  FeeProportionalMillionths
-}
+import org.bitcoins.core.protocol.ln.LnParams.{LnBitcoinMainNet, LnBitcoinTestNet}
+import org.bitcoins.core.protocol.ln.currency.{MicroBitcoins, MilliBitcoins, MilliSatoshis}
+import org.bitcoins.core.protocol.ln.fee.{FeeBaseMSat, FeeProportionalMillionths}
 import org.bitcoins.core.protocol.ln.routing.LnRoute
 import org.bitcoins.core.protocol.{Bech32Address, P2PKHAddress, P2SHAddress}
-import org.bitcoins.core.util.CryptoUtil
-import org.scalatest.prop.PropertyChecks
-import org.scalatest.{FlatSpec, MustMatchers}
-import org.slf4j.LoggerFactory
+import org.bitcoins.core.util.{BitcoinSUnitTest, CryptoUtil}
 import scodec.bits.ByteVector
 
-class LnInvoiceUnitTest extends FlatSpec with MustMatchers with PropertyChecks {
+class LnInvoiceUnitTest extends BitcoinSUnitTest {
   behavior of "LnInvoice"
 
-  private val logger = LoggerFactory.getLogger(getClass)
+  override implicit val generatorDrivenConfig: PropertyCheckConfiguration = generatorDrivenConfigNewCode
 
   val hrpEmpty = LnHumanReadablePart(LnBitcoinMainNet)
 
@@ -449,4 +436,5 @@ class LnInvoiceUnitTest extends FlatSpec with MustMatchers with PropertyChecks {
 
     invoice.nodeId.hex must be(expected)
   }
+
 }
