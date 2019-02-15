@@ -40,7 +40,11 @@ lazy val commonSettings = List(
 
   scalacOptions in Test := testCompilerOpts,
 
-  testOptions in Test += Tests.Argument("-oF"),
+  //show full stack trace of failed tests
+  testOptions in Test += Tests.Argument(TestFrameworks.ScalaTest, "-oF"),
+
+  //show duration of tests
+  testOptions in Test += Tests.Argument(TestFrameworks.ScalaTest, "-oD"),
 
   assemblyOption in assembly := (assemblyOption in assembly).value
     .copy(includeScala = false),
@@ -127,36 +131,33 @@ lazy val secp256k1jni = project
 
 lazy val core = project
   .in(file("core"))
-  .enablePlugins()
   .settings(commonSettings: _*)
   .dependsOn(
     secp256k1jni
-  )
+  ).enablePlugins()
 
 lazy val coreTest = project
   .in(file("core-test"))
-  .enablePlugins()
   .settings(commonSettings: _*)
   .settings(skip in publish := true)
   .dependsOn(
     core,
-  )
+  ).enablePlugins()
 
 lazy val zmq = project
   .in(file("zmq"))
-  .enablePlugins()
   .settings(commonSettings: _*)
   .dependsOn(
     core
-  )
+  ).enablePlugins()
 
 lazy val rpc = project
   .in(file("rpc"))
-  .enablePlugins()
+
   .settings(commonSettings: _*)
   .dependsOn(
     core
-  )
+  ).enablePlugins()
 
 lazy val bench = project
   .in(file("bench"))
