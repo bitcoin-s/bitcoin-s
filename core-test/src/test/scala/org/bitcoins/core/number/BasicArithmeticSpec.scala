@@ -1,12 +1,9 @@
 package org.bitcoins.core.number
 import org.bitcoins.core.gen.NumberGenerator
+import org.bitcoins.core.util.BitcoinSUnitTest
 import org.scalatest.prop.PropertyChecks
-import org.scalatest.{FlatSpec, MustMatchers}
 
-class BasicArithmeticSpec
-    extends FlatSpec
-    with MustMatchers
-    with PropertyChecks {
+class BasicArithmeticSpec extends BitcoinSUnitTest {
 
   // We have to wrap BasicArithmetic instead of doing
   // an anonymous class, that causes overloading confusion

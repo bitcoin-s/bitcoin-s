@@ -2,10 +2,10 @@ package org.bitcoins.core.protocol.ln.currency
 
 import org.bitcoins.core.gen.{CurrencyUnitGenerator, NumberGenerator}
 import org.bitcoins.core.gen.ln.LnCurrencyUnitGen
+import org.bitcoins.core.util.BitcoinSUnitTest
 import org.scalatest.prop.PropertyChecks
-import org.scalatest.{FlatSpec, MustMatchers}
 
-class MilliSatoshisTest extends FlatSpec with MustMatchers {
+class MilliSatoshisTest extends BitcoinSUnitTest {
   behavior of "MilliSatoshis"
 
   it must "convert pico bitcoins to msat correctly" in {
