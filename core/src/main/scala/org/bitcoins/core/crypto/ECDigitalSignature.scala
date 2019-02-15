@@ -93,6 +93,8 @@ case object EmptyDigitalSignature extends ECDigitalSignature {
   */
 case object DummyECDigitalSignature extends ECDigitalSignature {
   override val bytes = ByteVector(Array.fill(72)(0.toByte))
+  override def r = EmptyDigitalSignature.r
+  override def s = r
 }
 
 object ECDigitalSignature extends Factory[ECDigitalSignature] {
