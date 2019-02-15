@@ -40,7 +40,8 @@ class BasicArithmeticSpec extends BitcoinSUnitTest {
   it must "multiply safely and unsafely with itself" in {
     PropertyChecks.forAll(numWrapperGen, numWrapperGen) { (first, second) =>
       val unsafe = first * second
-      val safe = first
+      val safe = first.multiplySafe(second)
+      assert(safe.toOption.contains(unsafe))
     }
   }
 

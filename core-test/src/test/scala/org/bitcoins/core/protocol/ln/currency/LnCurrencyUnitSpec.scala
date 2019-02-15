@@ -69,9 +69,8 @@ class LnCurrencyUnitSpec extends Properties("LnCurrencyUnitSpec") {
         val safeProduct = ln.multiplySafe(int)
         val underlyingProduct = ln.toBigInt * int
         if (underlyingProduct <= PicoBitcoins.min.toBigInt && underlyingProduct >= PicoBitcoins.max.toBigInt) {
-          safeProduct.toOption.exists {
-            _.toBigInt == underlyingProduct
-          }
+          assert(safeProduct.isSuccess)
+          safeProduct.get.toBigInt == underlyingProduct
         } else {
           safeProduct.isFailure
         }

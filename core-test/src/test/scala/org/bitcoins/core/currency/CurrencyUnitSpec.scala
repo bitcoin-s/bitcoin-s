@@ -79,9 +79,9 @@ class CurrencyUnitSpec extends Properties("CurrencyUnitSpec") {
       val safeProduct = sat.multiplySafe(int)
       val underlyingProduct = sat.toBigInt * int
       if (underlyingProduct < Satoshis.max.toBigInt && underlyingProduct > Satoshis.min.toBigInt) {
-        safeProduct.toOption.exists {
-          _.satoshis.toBigInt == underlyingProduct
-        }
+        assert(safeProduct.isSuccess)
+        safeProduct.get.satoshis.toBigInt == underlyingProduct
+
       } else {
         safeProduct.isFailure
       }
