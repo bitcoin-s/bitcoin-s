@@ -62,7 +62,7 @@ class LnCurrencyUnitSpec extends Properties("LnCurrencyUnitSpec") {
             result.get <= PicoBitcoins.max) num1 * num2 == result.get
         else Try(num1 * num2).isFailure
     }
-
+  
   property("Multiply a LnCurrencyUnit value with an int") =
     Prop.forAll(lnCurrWithInt) {
       case (ln, int) =>

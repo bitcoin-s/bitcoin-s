@@ -23,7 +23,8 @@ abstract class BitcoinSUnitTest
     PropertyCheckConfig(
       minSuccessful = executions,
       minSize = executions,
-      maxSize = executions
+      maxSize = executions,
+      workers = 2
     )
   }
 

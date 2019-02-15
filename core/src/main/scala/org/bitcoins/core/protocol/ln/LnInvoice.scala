@@ -79,7 +79,7 @@ sealed abstract class LnInvoice {
   }
 
   /** The hash that is signed by the [[org.bitcoins.core.crypto.ECPrivateKey ECPrivateKey]] corresponding
-    * to the `nodeId``
+    * to the `nodeId`
     */
   private def sigHash: Sha256Digest = {
     val hash = CryptoUtil.sha256(signatureData)
@@ -99,7 +99,7 @@ sealed abstract class LnInvoice {
   override def toString: String = {
     val b = new StringBuilder
     b.append(hrp.toString)
-    b.append(Bech32.separator)
+    b.append('1')
 
     val dataToString = Bech32.encode5bitToString(data)
     b.append(dataToString)
@@ -122,7 +122,7 @@ object LnInvoice extends BitcoinSLogger {
   val MAX_TIMESTAMP_U64: UInt64 = UInt64(MAX_TIMESTAMP)
 
   def decodeTimestamp(u5s: Vector[UInt5]): UInt64 = {
-    val decoded = LnUtil.decodeNumber(u5s)
+    val decoded = LnUtil.decodeNumber(u5s.toList)
     UInt64(decoded)
   }
 
@@ -228,6 +228,19 @@ object LnInvoice extends BitcoinSLogger {
                   signature = signature)
   }
 
+  def apply(
+             hrp: LnHumanReadablePart,
+             timestamp: UInt64,
+             lnTags: LnTaggedFields,
+             privateKey: ECPrivateKey): LnInvoice = {
+
+    val signature = buildLnInvoiceSignature(hrp,timestamp,lnTags,privateKey)
+    LnInvoiceImpl(hrp = hrp,
+      timestamp = timestamp,
+      lnTags = lnTags,
+      signature = signature)
+  }
+
   def buildSignatureData(
       hrp: LnHumanReadablePart,
       timestamp: UInt64,
@@ -326,7 +339,7 @@ object LnInvoice extends BitcoinSLogger {
     }
 
     require(numNoPadding.length == 7)
-    numNoPadding
+    numNoPadding.toVector
   }
 
   /** Checks the checksum on a [[org.bitcoins.core.protocol.Bech32Address Bech32Address]]

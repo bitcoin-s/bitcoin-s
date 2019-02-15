@@ -7,7 +7,8 @@ import scodec.bits.ByteVector
   * Created by chris on 2/26/16.
   */
 sealed abstract class ECDigitalSignature extends BitcoinSLogger {
-
+  require(r.signum == 1 || r.signum == 0, s"r must not be negative, got ${r}")
+  require(s.signum == 1 || s.signum == 0, s"s must not be negative, got ${s}")
   def hex: String = BitcoinSUtil.encodeHex(bytes)
 
   def bytes: ByteVector
@@ -148,8 +149,8 @@ object ECDigitalSignature extends Factory[ECDigitalSignature] {
     require(
       byteVector.length == 64,
       s"Incorrect size for reading a ECDigital signature from a bytevec, got ${byteVector.length}")
-    val r = BigInt(byteVector.take(32).toArray)
-    val s = BigInt(byteVector.takeRight(32).toArray)
+    val r = BigInt(1,byteVector.take(32).toArray)
+    val s = BigInt(1,byteVector.takeRight(32).toArray)
     fromRS(r, s)
   }
 

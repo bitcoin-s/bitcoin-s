@@ -1,5 +1,7 @@
 package org.bitcoins.core.protocol.ln
 
+import java.math.BigInteger
+
 import org.bitcoins.core.crypto.ECDigitalSignature
 import org.bitcoins.core.number.{UInt5, UInt8}
 import org.bitcoins.core.protocol.NetworkElement
@@ -50,6 +52,11 @@ object LnInvoiceSignature extends Factory[LnInvoiceSignature] {
     val signature = ECDigitalSignature.fromRS(sigBytes)
 
     LnInvoiceSignature.apply(recoverId = recoverId, signature = signature)
+  }
+
+  def fromRS(r:BigInteger, s: BigInteger, recovId: UInt8): LnInvoiceSignature = {
+    val sig = ECDigitalSignature.fromRS(r,s)
+    LnInvoiceSignature(recovId, sig)
   }
 
   def fromU5s(u5s: Vector[UInt5]): LnInvoiceSignature = {
