@@ -38,11 +38,24 @@ class MilliSatoshisTest extends FlatSpec with MustMatchers {
     num <- NumberGenerator.bigIntsUInt64Range.filter(_ > 0)
   } yield (msat, num)
 
-  it must "multiply millisatoshis" in {
+  it must "multiply millisatoshis with an int" in {
     PropertyChecks.forAll(msatWithNum) {
       case (msat, bigint) =>
         val underlyingCalc = msat.toBigInt * bigint
         assert((msat * bigint).toBigInt == underlyingCalc)
+    }
+  }
+
+  it must "multiply millisatoshis with itself" in {
+    PropertyChecks.forAll(LnCurrencyUnitGen.milliSatoshisPair) {
+      case (first, second) =>
+        val safe = first.multiplySafe(second)
+        val unsafe = first * second
+
+        assert(safe.toOption.contains(unsafe))
+
+        val underlying = first.toBigInt * second.toBigInt
+        assert(unsafe.toBigInt == underlying)
     }
   }
 
