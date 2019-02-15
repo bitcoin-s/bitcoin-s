@@ -1,7 +1,7 @@
 package org.bitcoins.core.protocol.ln.currency
 
 import org.bitcoins.core.currency.Satoshis
-import org.bitcoins.core.number.{BaseNumbers, Int64, UInt5}
+import org.bitcoins.core.number.{BaseNumbers, BasicArithmetic, Int64, UInt5}
 import org.bitcoins.core.protocol.NetworkElement
 import org.bitcoins.core.protocol.ln._
 import org.bitcoins.core.util.Bech32
@@ -9,7 +9,9 @@ import scodec.bits.ByteVector
 
 import scala.util.{Failure, Try}
 
-sealed abstract class LnCurrencyUnit extends NetworkElement {
+sealed abstract class LnCurrencyUnit
+    extends NetworkElement
+    with BasicArithmetic[LnCurrencyUnit] {
   def character: Char
 
   def >=(ln: LnCurrencyUnit): Boolean = {
@@ -33,15 +35,18 @@ sealed abstract class LnCurrencyUnit extends NetworkElement {
   def ==(ln: LnCurrencyUnit): Boolean =
     toPicoBitcoinValue == ln.toPicoBitcoinValue
 
-  def +(ln: LnCurrencyUnit): LnCurrencyUnit = {
+  override def +(ln: LnCurrencyUnit): LnCurrencyUnit = {
     PicoBitcoins(toPicoBitcoinValue + ln.toPicoBitcoinValue)
   }
 
-  def -(ln: LnCurrencyUnit): LnCurrencyUnit = {
+  override def -(ln: LnCurrencyUnit): LnCurrencyUnit = {
     PicoBitcoins(toPicoBitcoinValue - ln.toPicoBitcoinValue)
   }
 
-  def *(ln: LnCurrencyUnit): LnCurrencyUnit = {
+  override def *(factor: BigInt): LnCurrencyUnit =
+    PicoBitcoins(toPicoBitcoinValue * factor)
+
+  override def *(ln: LnCurrencyUnit): LnCurrencyUnit = {
     PicoBitcoins(toPicoBitcoinValue * ln.toPicoBitcoinValue)
   }
 

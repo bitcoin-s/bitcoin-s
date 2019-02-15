@@ -58,7 +58,7 @@ class MilliSatoshisTest extends FlatSpec with MustMatchers {
   it must "subtract msats" in {
     PropertyChecks.forAll(LnCurrencyUnitGen.milliSatoshisPair) {
       case (first, second) =>
-        val subtracted = first safeSubtract second
+        val subtracted = first subtractSafe second
         val isPositive = (first.toBigInt - second.toBigInt) >= 0
 
         assert(subtracted.isSuccess == isPositive)

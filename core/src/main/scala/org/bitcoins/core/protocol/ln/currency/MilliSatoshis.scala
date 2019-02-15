@@ -99,6 +99,10 @@ sealed abstract class MilliSatoshis
     MilliSatoshis(toBigInt * factor)
   }
 
+  override def *(factor: MilliSatoshis): MilliSatoshis = {
+    MilliSatoshis(toBigInt * factor.toBigInt)
+  }
+
   def toUInt64: UInt64 = {
     UInt64(underlying)
   }
