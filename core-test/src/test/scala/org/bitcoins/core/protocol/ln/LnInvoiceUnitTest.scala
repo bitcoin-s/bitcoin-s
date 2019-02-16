@@ -368,7 +368,9 @@ class LnInvoiceUnitTest extends BitcoinSUnitTest {
   it must "have serialization symmetry for the invoices" in {
 
     forAll(LnInvoiceGen.lnInvoice) { invoice =>
+
       LnInvoice.fromString(invoice.toString).get == invoice
+
     }
   }
 
@@ -436,5 +438,4 @@ class LnInvoiceUnitTest extends BitcoinSUnitTest {
 
     invoice.nodeId.hex must be(expected)
   }
-
 }

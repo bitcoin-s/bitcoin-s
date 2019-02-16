@@ -38,16 +38,10 @@ trait LnCurrencyUnitGen {
     Gen.option(lnCurrencyUnit)
   }
 
-  def positiveLnCurrencyUnit: Gen[LnCurrencyUnit] = {
-    lnCurrencyUnit.suchThat(_ >= LnCurrencyUnits.zero)
-  }
-
   def realisticLnInvoice: Gen[LnCurrencyUnit] = {
-    positiveLnCurrencyUnit.suchThat(_.toMSat <= LnPolicy.maxAmountMSat)
-  }
-
-  def negativeLnCurrencyUnit: Gen[LnCurrencyUnit] = {
-    lnCurrencyUnit.suchThat(_ < LnCurrencyUnits.zero)
+    val gen = Gen.choose(0,LnPolicy.maxAmountMSat.toLong)
+    val msat = gen.map(MilliSatoshis(_))
+    msat.map(LnCurrencyUnits.fromMSat(_))
   }
 
   def milliSatoshis: Gen[MilliSatoshis] =

@@ -7,7 +7,8 @@ import scodec.bits.ByteVector
   * Created by chris on 2/26/16.
   */
 sealed abstract class ECDigitalSignature extends BitcoinSLogger {
-
+  require(r.signum == 1 || r.signum == 0, s"r must not be negative, got ${r}")
+  require(s.signum == 1 || s.signum == 0, s"s must not be negative, got ${s}")
   def hex: String = BitcoinSUtil.encodeHex(bytes)
 
   def bytes: ByteVector
@@ -77,7 +78,7 @@ sealed abstract class ECDigitalSignature extends BitcoinSLogger {
 
 }
 
-case object EmptyDigitalSignature extends ECDigitalSignature {
+final case object EmptyDigitalSignature extends ECDigitalSignature {
   override val bytes = ByteVector.empty
   override def r = java.math.BigInteger.valueOf(0)
   override def s = r
@@ -90,8 +91,10 @@ case object EmptyDigitalSignature extends ECDigitalSignature {
   * likely though according to
   * https://en.bitcoin.it/wiki/Elliptic_Curve_Digital_Signature_Algorithm
   */
-case object DummyECDigitalSignature extends ECDigitalSignature {
+final case object DummyECDigitalSignature extends ECDigitalSignature {
   override val bytes = ByteVector(Array.fill(72)(0.toByte))
+  override def r = EmptyDigitalSignature.r
+  override def s = r
 }
 
 object ECDigitalSignature extends Factory[ECDigitalSignature] {
@@ -148,8 +151,8 @@ object ECDigitalSignature extends Factory[ECDigitalSignature] {
     require(
       byteVector.length == 64,
       s"Incorrect size for reading a ECDigital signature from a bytevec, got ${byteVector.length}")
-    val r = BigInt(byteVector.take(32).toArray)
-    val s = BigInt(byteVector.takeRight(32).toArray)
+    val r = BigInt(1,byteVector.take(32).toArray)
+    val s = BigInt(1,byteVector.takeRight(32).toArray)
     fromRS(r, s)
   }
 
