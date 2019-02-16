@@ -1,7 +1,7 @@
 package org.bitcoins.core.protocol.ln.currency
 
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
-import org.bitcoins.core.number.UInt64
+import org.bitcoins.core.number.{BasicArithmetic, UInt64}
 import org.bitcoins.core.protocol.NetworkElement
 import scodec.bits.ByteVector
 
@@ -13,7 +13,9 @@ import scala.math.BigDecimal.RoundingMode
   *
   * @see [[https://github.com/lightningnetwork/lightning-rfc/blob/master/02-peer-protocol.md#adding-an-htlc-update_add_htlc BOLT2]]
   */
-sealed abstract class MilliSatoshis extends NetworkElement {
+sealed abstract class MilliSatoshis
+    extends NetworkElement
+    with BasicArithmetic[MilliSatoshis] {
   require(toBigInt >= 0, s"Millisatoshis cannot be negative, got $toBigInt")
 
   protected def underlying: BigInt
@@ -25,7 +27,7 @@ sealed abstract class MilliSatoshis extends NetworkElement {
     * 10 msat
     * }}}
     */
-  override def toString: String = s"$toLong msat"
+  override def toString: String = s"$toBigInt msat"
 
   def toBigInt: BigInt = underlying
 
@@ -62,27 +64,43 @@ sealed abstract class MilliSatoshis extends NetworkElement {
   }
 
   def ==(ms: MilliSatoshis): Boolean = {
-    toLnCurrencyUnit == ms.toLnCurrencyUnit
+    toBigInt == ms.toBigInt
   }
 
   def !=(ms: MilliSatoshis): Boolean = {
-    toLnCurrencyUnit != ms.toLnCurrencyUnit
+    toBigInt != ms.toBigInt
   }
 
   def >=(ms: MilliSatoshis): Boolean = {
-    toLnCurrencyUnit >= ms.toLnCurrencyUnit
+    toBigInt >= ms.toBigInt
   }
 
   def >(ms: MilliSatoshis): Boolean = {
-    toLnCurrencyUnit > ms.toLnCurrencyUnit
+    toBigInt > ms.toBigInt
   }
 
   def <(ms: MilliSatoshis): Boolean = {
-    toLnCurrencyUnit < ms.toLnCurrencyUnit
+    toBigInt < ms.toBigInt
   }
 
   def <=(ms: MilliSatoshis): Boolean = {
-    toLnCurrencyUnit <= ms.toLnCurrencyUnit
+    toBigInt <= ms.toBigInt
+  }
+
+  override def +(ms: MilliSatoshis): MilliSatoshis = {
+    MilliSatoshis(toBigInt + ms.toBigInt)
+  }
+
+  override def -(ms: MilliSatoshis): MilliSatoshis = {
+    MilliSatoshis(toBigInt - ms.toBigInt)
+  }
+
+  override def *(factor: BigInt): MilliSatoshis = {
+    MilliSatoshis(toBigInt * factor)
+  }
+
+  override def *(factor: MilliSatoshis): MilliSatoshis = {
+    MilliSatoshis(toBigInt * factor.toBigInt)
   }
 
   def toUInt64: UInt64 = {
