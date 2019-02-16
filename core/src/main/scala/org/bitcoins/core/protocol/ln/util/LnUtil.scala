@@ -1,12 +1,12 @@
 package org.bitcoins.core.protocol.ln.util
 
 import org.bitcoins.core.number.UInt5
-import org.bitcoins.core.util.Bech32
+import org.bitcoins.core.util.{Bech32, BitcoinSLogger}
 
 import scala.annotation.tailrec
 
 /** Useful utility functions for the Lightning encoding / decoding */
-abstract class LnUtil {
+abstract class LnUtil extends BitcoinSLogger {
 
   /**
     * The formula for this calculation is as follows:
@@ -69,20 +69,17 @@ abstract class LnUtil {
   /** Decodes a number from Bech32 to a long */
   @tailrec
   final def decodeNumber(list: List[UInt5], accum: BigInt = 0): BigInt = {
-
-    val b32 = BigInt(32)
-
     list match {
       case h :: Nil =>
         decodeNumber(Nil, h.toInt + accum)
       case h :: t =>
+        val b32 = BigInt(32)
         val n = b32.pow(t.size)
         val newAccum = h.toBigInt * n + accum
         decodeNumber(t, newAccum)
       case Nil =>
         accum
     }
-
   }
 }
 

@@ -139,11 +139,8 @@ class Bech32Test extends BitcoinSUnitTest {
   it must "encode from 8 bit to 5 bit and back" in {
     forAll(NumberGenerator.uInt8s) { u8s =>
       val u5s = Bech32.from8bitTo5bit(u8s.toVector)
-
       val u8sAgain = Bech32.from5bitTo8bit(u5s)
-
-      u8s == u8sAgain
-
+      assert(u8s == u8sAgain)
     }
   }
 }

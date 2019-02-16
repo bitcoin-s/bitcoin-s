@@ -78,7 +78,7 @@ sealed abstract class ECDigitalSignature extends BitcoinSLogger {
 
 }
 
-case object EmptyDigitalSignature extends ECDigitalSignature {
+final case object EmptyDigitalSignature extends ECDigitalSignature {
   override val bytes = ByteVector.empty
   override def r = java.math.BigInteger.valueOf(0)
   override def s = r
@@ -91,7 +91,7 @@ case object EmptyDigitalSignature extends ECDigitalSignature {
   * likely though according to
   * https://en.bitcoin.it/wiki/Elliptic_Curve_Digital_Signature_Algorithm
   */
-case object DummyECDigitalSignature extends ECDigitalSignature {
+final case object DummyECDigitalSignature extends ECDigitalSignature {
   override val bytes = ByteVector(Array.fill(72)(0.toByte))
   override def r = EmptyDigitalSignature.r
   override def s = r
