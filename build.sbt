@@ -162,9 +162,9 @@ lazy val rpc = project
 lazy val bench = project
   .in(file("bench"))
   .enablePlugins()
+  .settings(commonSettings: _*)
   .settings(assemblyOption in assembly := (assemblyOption in assembly).value
     .copy(includeScala = true))
-  .settings(commonSettings: _*)
   .settings(
     libraryDependencies ++= Deps.bench,
     name := "bitcoin-s-bench",
