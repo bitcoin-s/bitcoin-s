@@ -2,7 +2,7 @@ package org.bitcoins.core.currency
 
 import org.bitcoins.core.gen.CurrencyUnitGenerator
 import org.bitcoins.core.number.Int64
-import org.scalacheck.{Prop, Properties}
+import org.scalacheck.{Gen, Prop, Properties}
 
 import scala.util.Try
 
@@ -10,6 +10,11 @@ import scala.util.Try
   * Created by chris on 6/23/16.
   */
 class CurrencyUnitSpec extends Properties("CurrencyUnitSpec") {
+
+  private val satoshiWithInt: Gen[(Satoshis, Int)] = for {
+    sat <- CurrencyUnitGenerator.satoshis
+    num <- Gen.choose(Int.MinValue, Int.MaxValue)
+  } yield (sat, num)
 
   property("Symmetrical serialization for satoshis") =
     Prop.forAll(CurrencyUnitGenerator.satoshis) { satoshis =>
@@ -65,6 +70,21 @@ class CurrencyUnitSpec extends Properties("CurrencyUnitSpec") {
         result.get <= Int64(Satoshis.max.toLong))
       num1 * num2 == Satoshis(result.get)
     else Try(num1 * num2).isFailure
+  }
+
+  property("Multiply a satoshi value with an int") = Prop.forAll(
+    satoshiWithInt
+  ) {
+    case (sat, int) =>
+      val safeProduct = sat.multiplySafe(int)
+      val underlyingProduct = sat.toBigInt * int
+      if (underlyingProduct < Satoshis.max.toBigInt && underlyingProduct > Satoshis.min.toBigInt) {
+        assert(safeProduct.isSuccess)
+        safeProduct.get.satoshis.toBigInt == underlyingProduct
+
+      } else {
+        safeProduct.isFailure
+      }
   }
 
   property("< & >=") = Prop.forAll(CurrencyUnitGenerator.satoshis,

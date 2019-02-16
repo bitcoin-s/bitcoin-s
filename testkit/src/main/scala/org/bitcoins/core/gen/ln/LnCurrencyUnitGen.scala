@@ -54,6 +54,12 @@ trait LnCurrencyUnitGen {
     for {
       i64 <- NumberGenerator.uInt64
     } yield MilliSatoshis(i64.toBigInt)
+
+  def milliSatoshisPair: Gen[(MilliSatoshis, MilliSatoshis)] =
+    for {
+      first <- milliSatoshis
+      second <- milliSatoshis
+    } yield (first, second)
 }
 
 object LnCurrencyUnitGen extends LnCurrencyUnitGen

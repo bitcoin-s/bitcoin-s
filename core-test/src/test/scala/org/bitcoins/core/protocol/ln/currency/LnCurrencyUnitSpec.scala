@@ -2,11 +2,16 @@ package org.bitcoins.core.protocol.ln.currency
 
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.gen.ln.LnCurrencyUnitGen
-import org.scalacheck.{Prop, Properties}
+import org.scalacheck.{Gen, Prop, Properties}
 
 import scala.util.Try
 
 class LnCurrencyUnitSpec extends Properties("LnCurrencyUnitSpec") {
+
+  private val lnCurrWithInt: Gen[(LnCurrencyUnit, Int)] = for {
+    ln <- LnCurrencyUnitGen.lnCurrencyUnit
+    num <- Gen.choose(Int.MinValue, Int.MaxValue)
+  } yield (ln, num)
 
   property("Additive identity for LnCurrencyUnits") =
     Prop.forAll(LnCurrencyUnitGen.lnCurrencyUnit) { lnUnit =>
@@ -56,6 +61,19 @@ class LnCurrencyUnitSpec extends Properties("LnCurrencyUnitSpec") {
         if (result.isSuccess && result.get >= PicoBitcoins.min &&
             result.get <= PicoBitcoins.max) num1 * num2 == result.get
         else Try(num1 * num2).isFailure
+    }
+
+  property("Multiply a LnCurrencyUnit value with an int") =
+    Prop.forAll(lnCurrWithInt) {
+      case (ln, int) =>
+        val safeProduct = ln.multiplySafe(int)
+        val underlyingProduct = ln.toBigInt * int
+        if (underlyingProduct <= PicoBitcoins.min.toBigInt && underlyingProduct >= PicoBitcoins.max.toBigInt) {
+          assert(safeProduct.isSuccess)
+          safeProduct.get.toBigInt == underlyingProduct
+        } else {
+          safeProduct.isFailure
+        }
     }
 
   property("Convert negative LnCurrencyUnit value to Satoshis") =
