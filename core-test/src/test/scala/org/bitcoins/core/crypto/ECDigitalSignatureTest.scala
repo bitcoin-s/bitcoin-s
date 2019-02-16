@@ -1,12 +1,15 @@
 package org.bitcoins.core.crypto
 
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.bitcoins.core.gen.CryptoGenerators
+import org.bitcoins.core.util.BitcoinSUnitTest
 import scodec.bits.ByteVector
 
 /**
   * Created by chris on 3/22/16.
   */
-class ECDigitalSignatureTest extends FlatSpec with MustMatchers {
+class ECDigitalSignatureTest extends BitcoinSUnitTest {
+
+  override implicit val generatorDrivenConfig = generatorDrivenConfigNewCode
 
   "ECDigitalSignature" must "say that empty signature is a valid DER encoded signature" in {
     val emptySiganture = ECDigitalSignature(ByteVector.empty)
@@ -37,16 +40,6 @@ class ECDigitalSignatureTest extends FlatSpec with MustMatchers {
     EmptyDigitalSignature.s must be(0)
   }
 
-  it must "create a digital signature from it's r,s components" in {
-    //from the tx 44e504f5b7649d215be05ad9f09026dee95201244a3b218013c504a6a49a26ff
-    val rawDigitalSignature =
-      "3044022040f91c48f4011bf2e2edb6621bfa8fb802241de939cb86f1872c99c580ef0fe402204fc27388bc525e1b655b5f5b35f9d601d28602432dd5672f29e0a47f5b8bbb26"
-    val digitalSignature = ECDigitalSignature(rawDigitalSignature)
-    val (r, s) = (digitalSignature.r, digitalSignature.s)
-    val digitalSignatureFromRS = ECDigitalSignature(r, s)
-    digitalSignatureFromRS must be(digitalSignature)
-  }
-
   it must "create an empty digital signature when given 0 in hex or byte format" in {
     val hex = ECDigitalSignature("00")
     val byte = ECDigitalSignature(ByteVector.low(1))
@@ -54,4 +47,56 @@ class ECDigitalSignatureTest extends FlatSpec with MustMatchers {
     byte must be(emptySignature)
     hex must be(emptySignature)
   }
+
+  it must "must be der encoded" in {
+    forAll(CryptoGenerators.digitalSignature) { signature =>
+      assert(signature.isDEREncoded)
+    }
+  }
+
+  it must "must have a low s" in {
+    forAll(CryptoGenerators.digitalSignature) { signature =>
+      assert(DERSignatureUtil.isLowS(signature))
+    }
+  }
+
+  it must "must create and verify a digital signature" in {
+    forAll(CryptoGenerators.doubleSha256Digest,
+      CryptoGenerators.privateKey) {
+      case (hash, key) =>
+        val sig = key.sign(hash)
+        assert(key.publicKey.verify(hash, sig))
+    }
+  }
+
+  it must "must not reuse r values" in {
+    forAll(CryptoGenerators.privateKey,
+      CryptoGenerators.doubleSha256Digest,
+      CryptoGenerators.doubleSha256Digest) {
+      case (key, hash1, hash2) =>
+        val sig1 = key.sign(hash1)
+        val sig2 = key.sign(hash2)
+        assert(sig1.r != sig2.r)
+    }
+  }
+
+  it must "must have serialization symmetry with r,s" in {
+    forAll(CryptoGenerators.digitalSignature) {
+      case sig: ECDigitalSignature =>
+        val sig2 = ECDigitalSignature.fromRS(sig.r, sig.s)
+
+        assert(sig2 == sig)
+        assert(sig2.r == sig.r)
+        assert(sig2.s == sig.s)
+    }
+  }
+
+  it must "must have serialization symmetry toRawRS & fromRS" in {
+    forAll(CryptoGenerators.digitalSignature) {
+      case sig: ECDigitalSignature =>
+        val raw = sig.toRawRS
+        assert(ECDigitalSignature.fromRS(raw) == sig)
+    }
+  }
+
 }

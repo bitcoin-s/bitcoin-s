@@ -2,16 +2,16 @@ package org.bitcoins.core.protocol
 
 import org.bitcoins.core.config.{MainNet, TestNet3}
 import org.bitcoins.core.crypto.ECPublicKey
+import org.bitcoins.core.gen.NumberGenerator
 import org.bitcoins.core.number.{UInt5, UInt8}
 import org.bitcoins.core.protocol.script._
-import org.bitcoins.core.util.Bech32
-import org.scalatest.{FlatSpec, MustMatchers}
-import org.slf4j.LoggerFactory
+import org.bitcoins.core.util.{Bech32, BitcoinSUnitTest}
+import org.scalacheck.Gen
 
 import scala.util.{Success, Try}
 
-class Bech32Test extends FlatSpec with MustMatchers {
-  private val logger = LoggerFactory.getLogger(this.getClass)
+class Bech32Test extends BitcoinSUnitTest {
+  override implicit val generatorDrivenConfig = generatorDrivenConfigNewCode
   "Bech32" must "validly encode the test vectors from bitcoin core correctly" in {
     val valid = Seq(
       "A12UEL5L",
@@ -133,5 +133,14 @@ class Bech32Test extends FlatSpec with MustMatchers {
 
     encoded6 must be(
       Seq(31, 31, 31, 31, 31, 31, 31, 31, 31, 28).map(i => UInt5(i.toByte)))
+  }
+
+
+  it must "encode from 8 bit to 5 bit and back" in {
+    forAll(NumberGenerator.uInt8s) { u8s =>
+      val u5s = Bech32.from8bitTo5bit(u8s.toVector)
+      val u8sAgain = Bech32.from5bitTo8bit(u5s)
+      assert(u8s == u8sAgain)
+    }
   }
 }

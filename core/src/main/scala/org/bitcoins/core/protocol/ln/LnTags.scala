@@ -32,8 +32,16 @@ sealed abstract class LnTag {
   def encoded: Vector[UInt5]
 
   def data: Vector[UInt5] = {
-    val len = LnUtil.createDataLength(encoded)
-    prefixUInt5 +: (len ++ encoded)
+    val b = Vector.newBuilder[UInt5]
+    val len = LnUtil.createDataLength(encoded.toList)
+
+    b.+=(prefixUInt5)
+
+    len.foreach(u5 => b.+=(u5))
+
+    encoded.foreach(u5 => b.+=(u5))
+
+    b.result()
   }
 
   override def toString: String = {
@@ -108,7 +116,7 @@ object LnTag {
 
   private def u32ToU5(u32: UInt32): Vector[UInt5] = {
     val encoded = LnUtil.encodeNumber(u32.toLong)
-    encoded
+    encoded.toVector
   }
 
   case class PaymentHashTag(hash: Sha256Digest) extends LnTag {
@@ -160,7 +168,7 @@ object LnTag {
     override val prefix: LnTagPrefix = LnTagPrefix.ExpiryTime
 
     override val encoded: Vector[UInt5] = {
-      LnUtil.encodeNumber(u32.toLong)
+      LnUtil.encodeNumber(u32.toLong).toVector
     }
   }
 
@@ -267,12 +275,12 @@ object LnTag {
         LnTag.NodeIdTag(nodeId)
 
       case LnTagPrefix.ExpiryTime =>
-        val decoded = LnUtil.decodeNumber(payload)
+        val decoded = LnUtil.decodeNumber(payload.toList)
         val u32 = UInt32(decoded)
         LnTag.ExpiryTimeTag(u32)
 
       case LnTagPrefix.CltvExpiry =>
-        val decoded = LnUtil.decodeNumber(payload)
+        val decoded = LnUtil.decodeNumber(payload.toList)
         val u32 = UInt32(decoded)
         LnTag.MinFinalCltvExpiry(u32)
 

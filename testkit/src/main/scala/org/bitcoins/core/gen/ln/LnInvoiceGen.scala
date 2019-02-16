@@ -97,10 +97,24 @@ sealed abstract class LnInvoiceGen {
       .map(rs => LnTag.RoutingInfo(rs))
   }
 
-  /** Generated a tagged fields with an explicit
-    * [[org.bitcoins.core.protocol.ln.LnTag.NodeIdTag LnTag.NodeIdTag]]
-    * */
-  def taggedFields(nodeIdOpt: Option[NodeId]): Gen[LnTaggedFields] =
+  def mandatoryTags: Gen[LnTaggedFields] = {
+    for {
+      paymentHash <- paymentHashTag
+      descOrHashTag <- descriptionOrDescriptionHashTag
+    } yield
+      LnTaggedFields(
+        paymentHash = paymentHash,
+        descriptionOrHash = descOrHashTag,
+        expiryTime = None,
+        cltvExpiry = None,
+        fallbackAddress = None,
+        nodeId = None,
+        routingInfo = None
+      )
+  }
+
+
+  def optionalTags(nodeIdOpt: Option[NodeId]): Gen[LnTaggedFields] = {
     for {
       paymentHash <- paymentHashTag
       descOrHashTag <- descriptionOrDescriptionHashTag
@@ -120,6 +134,40 @@ sealed abstract class LnInvoiceGen {
         nodeId = nodeIdOpt.map(NodeIdTag(_)),
         routingInfo = routes
       )
+  }
+
+  def allTags(nodeIdOpt: Option[NodeId]): Gen[LnTaggedFields] = {
+    for {
+      paymentHash <- paymentHashTag
+      descOrHashTag <- descriptionOrDescriptionHashTag
+
+      //optional fields
+      expiryTime <- expiryTime
+      cltvExpiry <- cltvExpiry
+      fallbackAddress <- fallbackAddress
+      routes <- routingInfo
+    } yield
+      LnTaggedFields(
+        paymentHash = paymentHash,
+        descriptionOrHash = descOrHashTag,
+        expiryTime = Some(expiryTime),
+        cltvExpiry = Some(cltvExpiry),
+        fallbackAddress = Some(fallbackAddress),
+        nodeId = nodeIdOpt.map(NodeIdTag(_)),
+        routingInfo = Some(routes)
+      )
+  }
+
+
+  /** Generated a tagged fields with an explicit
+    * [[org.bitcoins.core.protocol.ln.LnTag.NodeIdTag LnTag.NodeIdTag]]
+    * */
+  def taggedFields(nodeIdOpt: Option[NodeId]): Gen[LnTaggedFields] = {
+    Gen.oneOf(allTags(nodeIdOpt),
+      mandatoryTags,
+      optionalTags(nodeIdOpt))
+  }
+
 
   def signatureVersion: Gen[UInt8] = {
     Gen.choose(0, 3).map(UInt8(_))
@@ -135,7 +183,7 @@ sealed abstract class LnInvoiceGen {
     Gen.choose(0, LnInvoice.MAX_TIMESTAMP_U64.toLong).map(UInt64(_))
   }
 
-  def lnInvoice(privateKey: ECPrivateKey): Gen[LnInvoice] =
+  def lnInvoice(privateKey: ECPrivateKey): Gen[LnInvoice] = {
     for {
       hrp <- lnHrp
       //timestamp is 35 bits according to BOLT11
@@ -151,10 +199,34 @@ sealed abstract class LnInvoiceGen {
       )
 
       LnInvoice(hrp = hrp,
-                timestamp = timestamp,
-                lnTags = tags,
-                signature = signature)
+        timestamp = timestamp,
+        lnTags = tags,
+        signature = signature)
     }
+  }
+
+
+
+  def lnInvoice(tags: LnTaggedFields): Gen[LnInvoice] = {
+    for {
+      privateKey <- CryptoGenerators.privateKey
+      hrp <- lnHrp
+      //timestamp is 35 bits according to BOLT11
+      timestamp <- invoiceTimestamp
+    } yield {
+      val signature = LnInvoice.buildLnInvoiceSignature(
+        hrp = hrp,
+        timestamp = timestamp,
+        lnTags = tags,
+        privateKey = privateKey
+      )
+
+      LnInvoice(hrp = hrp,
+        timestamp = timestamp,
+        lnTags = tags,
+        signature = signature)
+    }
+  }
 
   def lnInvoice: Gen[LnInvoice] = {
     CryptoGenerators.privateKey.flatMap { p =>

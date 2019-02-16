@@ -76,11 +76,6 @@ class LnCurrencyUnitSpec extends Properties("LnCurrencyUnitSpec") {
         }
     }
 
-  property("Convert negative LnCurrencyUnit value to Satoshis") =
-    Prop.forAll(LnCurrencyUnitGen.negativeLnCurrencyUnit) { lnUnit =>
-      lnUnit.toSatoshis <= Satoshis.zero
-    }
-
   property("< & >=") = Prop.forAll(LnCurrencyUnitGen.lnCurrencyUnit,
                                    LnCurrencyUnitGen.lnCurrencyUnit) {
     (num1: LnCurrencyUnit, num2: LnCurrencyUnit) =>
