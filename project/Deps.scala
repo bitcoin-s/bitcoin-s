@@ -82,8 +82,7 @@ object Deps {
     Compile.akkaStream,
     Compile.playJson,
     Compile.slf4j,
-    Compile.typesafeConfig,
-
+    Compile.typesafeConfig
   )
 
   val bitcoindRpcTest = List(
