@@ -601,12 +601,12 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
   // to them
   it should "get all channel updates for a given node ID" in {
     val freshClients1F = bitcoindRpcClientF.flatMap { bitcoindRpcClient =>
-         EclairRpcTestUtil.createNodePair(Some(bitcoindRpcClient))
+      EclairRpcTestUtil.createNodePair(Some(bitcoindRpcClient))
     }
 
 
-    val freshClients2F = bitcoindRpcClientF.flatMap { bitcoindRpcClient =>
-      EclairRpcTestUtil.createNodePair(Some(bitcoindRpcClient))
+    val freshClients2F = bitcoindRpcClientF.flatMap { _ =>
+      thirdClientF.flatMap(t => fourthClientF.map(f => (t,f)))
     }
 
 
@@ -620,14 +620,13 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
             freshClient4)
 
           val connect1And3 = EclairRpcTestUtil.connectLNNodes(freshClient1, freshClient3)
-          val connect1And4 = EclairRpcTestUtil.connectLNNodes(freshClient1, freshClient4)
+          val connect1And4 = connect1And3.flatMap(_ => EclairRpcTestUtil.connectLNNodes(freshClient1, freshClient4))
           connect1And3.flatMap { _ =>
             connect1And4.map { _ =>
               EclairNodes4(freshClient1, freshClient2, freshClient3, freshClient4)
             }
           }
         }
-
       }
     }
 
@@ -650,8 +649,14 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
 
     val sendPaymentsF = nodesReadyForPayments.flatMap { n4 =>
 
-      val p1F = EclairRpcTestUtil.sendPayments(n4.c1, n4.c2)
-      val p2F = EclairRpcTestUtil.sendPayments(n4.c3, n4.c4)
+      val p1F = EclairRpcTestUtil.sendPayments(
+        c1 = n4.c1,
+        c2 = n4.c2,
+        numPayments = 2)
+      val p2F = EclairRpcTestUtil.sendPayments(
+        c1 = n4.c3,
+        c2 = n4.c4,
+        numPayments = 2)
       p1F.flatMap(_ => p2F)
     }
 
@@ -682,6 +687,7 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
         otherClientF = client2F,
         test = getChannelUpdates)
     }
+
 
   }
 

@@ -9,6 +9,7 @@ import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.protocol.ln.channel.{ChannelId, ChannelState, FundedChannelId}
 import org.bitcoins.core.protocol.ln.currency.MilliSatoshis
+import org.bitcoins.core.protocol.ln.node.NodeId
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.eclair.rpc.client.EclairRpcClient
 import org.bitcoins.eclair.rpc.config.EclairInstance
@@ -425,7 +426,7 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
       c1: EclairRpcClient,
       c2: EclairRpcClient,
       numPayments: Int = 10)(
-      implicit ec: ExecutionContext): Future[Seq[PaymentResult]] = {
+      implicit ec: ExecutionContext): Future[Vector[PaymentResult]] = {
     val payments = (1 to numPayments)
       .map(MilliSatoshis(_))
       .map(
@@ -434,7 +435,7 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
             .flatMap(invoice => c2.send(invoice, sats.toLnCurrencyUnit))
       )
 
-    Future.sequence(payments)
+    Future.sequence(payments).map(_.toVector)
   }
 
   private val DEFAULT_CHANNEL_MSAT_AMT = MilliSatoshis(500000000L)
@@ -450,23 +451,29 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
 
     val bitcoindRpcClient = getBitcoindRpc(n1)
     implicit val ec = system.dispatcher
-    val fundedChannelIdF: Future[FundedChannelId] = {
-      n2.nodeId.flatMap { nodeId =>
-        n1.getInfo.map { info =>
-          logger.debug(
-            s"Opening a channel from ${info.nodeId} -> ${nodeId} with amount ${amt}")
 
-        }
-        n1.open(nodeId = nodeId,
+    val n1NodeIdF = n1.nodeId()
+    val n2NodeIdF = n2.nodeId()
+
+    val nodeIdsF: Future[(NodeId, NodeId)] = {
+      n1NodeIdF.flatMap(n1 => n2NodeIdF.map(n2 => (n1,n2)))
+    }
+
+    val fundedChannelIdF: Future[FundedChannelId] = {
+      nodeIdsF.flatMap { case(nodeId1, nodeId2) =>
+        logger.debug(
+          s"Opening a channel from ${nodeId1} -> ${nodeId2} with amount ${amt}")
+        n1.open(nodeId = nodeId2,
                 fundingSatoshis = amt,
                 pushMsat = Some(pushMSat),
                 feerateSatPerByte = None,
                 channelFlags = None)
       }
     }
+
     val gen = fundedChannelIdF.flatMap(_ => bitcoindRpcClient.generate(6))
 
-    val opened = {
+    val openedF = {
       gen.flatMap { _ =>
         fundedChannelIdF.flatMap { fcid =>
           val chanOpenF = awaitChannelOpened(n1, fcid)
@@ -474,12 +481,15 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
         }
       }
     }
-    opened.map {
-      case _ =>
+
+    openedF.flatMap { case _ =>
+      nodeIdsF.map { case (nodeId1,nodeId2) =>
         logger.debug(
-          s"Channel successfully opened ${n1.getNodeURI} -> ${n2.getNodeURI} with amount $amt")
+          s"Channel successfully opened ${nodeId1} -> ${nodeId2} with amount $amt")
+      }
     }
-    opened
+
+    openedF
   }
 
   def awaitChannelOpened(client1: EclairRpcClient, chanId: ChannelId)(
