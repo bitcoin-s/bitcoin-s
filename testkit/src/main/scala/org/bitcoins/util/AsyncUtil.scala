@@ -6,7 +6,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.FiniteDuration
 import scala.util.{Failure, Success}
 
-trait AsyncUtil extends org.bitcoins.rpc.util.AsyncUtil {
+abstract class AsyncUtil extends org.bitcoins.rpc.util.AsyncUtil {
   override protected def retryUntilSatisfiedWithCounter(
       conditionF: () => Future[Boolean],
       duration: FiniteDuration,
@@ -26,6 +26,13 @@ trait AsyncUtil extends org.bitcoins.rpc.util.AsyncUtil {
 }
 
 object AsyncUtil extends AsyncUtil {
+  /**
+    * As opposed to the AsyncUtil in the rpc project, in the testkit, we can assume that
+    * AsyncUtil methods are being called from tests and as such, we want to trim the stack
+    * trace to exclude stack elements that occur before the beginning of a test.
+    * Additionally, we want to transform RpcRetryExceptions to TestFailedExceptions which
+    * conveniently mention the line that called the AsyncUtil method.
+    */
   def transformRetryToTestFailure[T](fut: Future[T])(implicit ec: ExecutionContext): Future[T] = {
     fut.transform {
       case Failure(RpcRetryException(message, caller)) =>

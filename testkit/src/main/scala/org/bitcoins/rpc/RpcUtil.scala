@@ -6,7 +6,7 @@ import org.bitcoins.util.AsyncUtil
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 
-trait RpcUtil extends org.bitcoins.rpc.util.RpcUtil {
+abstract class RpcUtil extends org.bitcoins.rpc.util.RpcUtil {
   override protected def retryUntilSatisfiedWithCounter(
                                                          conditionF: () => Future[Boolean],
                                                          duration: FiniteDuration,
