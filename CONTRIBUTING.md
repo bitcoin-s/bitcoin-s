@@ -62,22 +62,6 @@ $ popd
 $ rm -rf /tmp/yourproject
 ```
 
-## Development
-
-### `testkit` and circular dependencies
-
-One issue you might run into when making local changes and compiling/testing is a circular depedency conundrum. Bitcoin-S has multiple submodules, such as `rpc` (interfacing with a Bitcoin Core RPC server), `eclair-rpc` (interfacing with an Eclair RPC server) and `testkit` (utilities for spinning up Bitcoin and Lightning nodes, etc.). `testkit` depends on `rpc` and `eclair-rpc`, and both `rpc` and `eclair-rpc` tests depend on `testkit`. This causes the compiler and build system to have a hard time. We solve this problem by publishing `testkit` as a standalone project in [Bintray](https://bintray.com/beta/#/bitcoin-s/bitcoin-s-core/bitcoin-s-testkit?tab=overview).
-
-Now, what happens when you need to make changes in `testkit`, and have either `rpc` or `eclair-rpc` utilize these changes?
-
-1. Change the value of `version in ThisBuild` in [`version.sbt`](version.sbt) by adding `-SNAPSHOT` to it. If the file previously was `version in ThisBuild := "0.0.1"`, change it to `version in ThisBuild := "0.0.1-SNAPSHOT"`
-2. If you have an active sbt shell/session, do `sbt reload`
-3. Compile the project: `sbt compile`
-4. Publish the freshly compiled project locally: `sbt publishLocal`. This places the newly compiled files into `~/.ivy2/local/org.bitcoins`, where sbt will find them.
-5. Change the value of `Deps.V.bitcoinsV` in [`project/Deps.scala`](project/Deps.scala) to the version number you previously changed in `version.sbt`. In our case, `"0.0.1-SNAPSHOT"`.
-6. If you have an active sbt shell/session, do `sbt reload` again
-7. You should now be good to go, and both `sbt test:compile` and `sbt test` should work without issues.
-
 ## Testing
 
 ### Property based testing
