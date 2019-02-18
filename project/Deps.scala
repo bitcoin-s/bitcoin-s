@@ -16,8 +16,6 @@ object Deps {
     val junitV = "0.11"
     val nativeLoaderV = "2.3.2"
     val typesafeConfigV = "1.3.3"
-
-    val bitcoinsV = "236041-1549541584036-SNAPSHOT"
   }
 
   object Compile {
@@ -45,8 +43,6 @@ object Deps {
     val spray = "io.spray" %% "spray-json" % V.spray  % "test" withSources() withJavadoc()
     val akkaHttp = "com.typesafe.akka" %% "akka-http-testkit" % V.akkav % "test" withSources() withJavadoc()
     val akkaStream = "com.typesafe.akka" %% "akka-stream-testkit" % V.akkaStreamv % "test" withSources() withJavadoc()
-
-    val testkit = "org.bitcoins" %% "bitcoin-s-testkit" % V.bitcoinsV % "test" withSources() withJavadoc()
   }
 
     val core = List(
@@ -70,11 +66,10 @@ object Deps {
     Test.junitInterface,
     Test.logback,
     Test.scalaTest,
-    Test.spray,
-    Test.testkit
+    Test.spray
   )
 
-  val zmq = List(
+  val bitcoindZmq = List(
     Compile.zeromq,
     Compile.slf4j,
     Test.logback,
@@ -82,18 +77,20 @@ object Deps {
     Test.scalaTest
   )
 
-  val rpc = List(
+  val bitcoindRpc = List(
     Compile.akkaHttp,
     Compile.akkaStream,
     Compile.playJson,
     Compile.slf4j,
-    Compile.typesafeConfig,
+    Compile.typesafeConfig
+  )
+
+  val bitcoindRpcTest = List(
     Test.akkaHttp,
     Test.akkaStream,
     Test.logback,
     Test.scalaTest,
-    Test.scalacheck,
-    Test.testkit
+    Test.scalacheck
   )
 
   val bench = List(
@@ -105,12 +102,14 @@ object Deps {
     Compile.akkaHttp,
     Compile.akkaStream,
     Compile.playJson,
-    Compile.slf4j,
+    Compile.slf4j
+  )
+
+  val eclairRpcTest = List(
     Test.akkaHttp,
     Test.logback,
     Test.scalaTest,
-    Test.scalacheck,
-    Test.testkit
+    Test.scalacheck
   )
 
   val testkit = List(

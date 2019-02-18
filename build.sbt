@@ -5,6 +5,8 @@ import com.typesafe.sbt.SbtGit.GitKeys._
 
 cancelable in Global := true
 
+fork in Test := true
+
 lazy val timestamp = new java.util.Date().getTime
 
 lazy val commonCompilerOpts = {
@@ -100,9 +102,11 @@ lazy val root = project
     core,
     coreTest,
     zmq,
-    rpc,
+    bitcoindRpc,
+    bitcoindRpcTest,
     bench,
     eclairRpc,
+    eclairRpcTest,
     testkit,
     doc
   )
@@ -142,26 +146,38 @@ lazy val coreTest = project
   .settings(skip in publish := true)
   .dependsOn(
     core,
+    testkit,
   ).enablePlugins()
 
 lazy val zmq = project
   .in(file("zmq"))
   .settings(commonSettings: _*)
+  .settings(
+    name := "bitcoin-s-zmq",
+    libraryDependencies ++= Deps.bitcoindZmq)
   .dependsOn(
     core
   ).enablePlugins()
 
-lazy val rpc = project
-  .in(file("rpc"))
-
+lazy val bitcoindRpc = project
+  .in(file("bitcoind-rpc"))
   .settings(commonSettings: _*)
-  .dependsOn(
-    core
-  ).enablePlugins()
+  .settings(
+    name := "bitcoin-s-bitcoind-rpc",
+    libraryDependencies ++= Deps.bitcoindRpc)
+  .dependsOn(core)
+  .enablePlugins()
+
+lazy val bitcoindRpcTest = project
+  .in(file("bitcoind-rpc-test"))
+  .settings(commonSettings: _*)
+  .settings(libraryDependencies ++= Deps.bitcoindRpcTest)
+  .dependsOn(testkit)
+  .enablePlugins()
 
 lazy val bench = project
   .in(file("bench"))
-  .enablePlugins()
+
   .settings(commonSettings: _*)
   .settings(assemblyOption in assembly := (assemblyOption in assembly).value
     .copy(includeScala = true))
@@ -171,25 +187,34 @@ lazy val bench = project
     skip in publish := true
   )
   .dependsOn(core)
+  .enablePlugins()
 
 lazy val eclairRpc = project
   .in(file("eclair-rpc"))
-  .enablePlugins()
   .settings(commonSettings: _*)
+  .settings(
+    name := "bitcoin-s-eclair-rpc",
+    libraryDependencies ++= Deps.eclairRpc)
   .dependsOn(
     core,
-    rpc
-  )
+    bitcoindRpc
+  ).enablePlugins()
+
+lazy val eclairRpcTest = project
+  .in(file("eclair-rpc-test"))
+  .settings(commonSettings: _*)
+  .settings(libraryDependencies ++= Deps.eclairRpcTest)
+  .dependsOn(testkit)
+  .enablePlugins()
 
 lazy val testkit = project
   .in(file("testkit"))
-  .enablePlugins()
   .settings(commonSettings: _*)
   .dependsOn(
     core,
-    rpc,
+    bitcoindRpc,
     eclairRpc
-  )
+  ).enablePlugins()
 
 
 lazy val doc = project
