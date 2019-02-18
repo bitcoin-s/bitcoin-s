@@ -16,7 +16,7 @@ import org.bitcoins.eclair.rpc.json.PaymentResult
 import org.bitcoins.rpc.BitcoindRpcTestUtil
 import org.bitcoins.rpc.client.BitcoindRpcClient
 import org.bitcoins.rpc.config.{BitcoindInstance, ZmqConfig}
-import org.bitcoins.rpc.util.RpcUtil
+import org.bitcoins.rpc.RpcUtil
 import org.bitcoins.util.AsyncUtil
 
 import scala.concurrent.duration.DurationInt
