@@ -62,15 +62,11 @@ sealed abstract class BaseECKey extends NetworkElement with Sign {
       implicit ec: ExecutionContext): Future[ECDigitalSignature] =
     Future(sign(hash))
 
-  @deprecated("Deprecated in favor of signing algorithm inside of secp256k1",
-              "2/20/2017")
-  private def oldSign(
-      dataToSign: ByteVector,
-      signingKey: BaseECKey): ECDigitalSignature = {
+  def signWithBouncyCastle(dataToSign: ByteVector): ECDigitalSignature = {
     val signer: ECDSASigner = new ECDSASigner(
       new HMacDSAKCalculator(new SHA256Digest()))
     val privKey: ECPrivateKeyParameters = new ECPrivateKeyParameters(
-      new BigInteger(1, signingKey.bytes.toArray),
+      new BigInteger(1, bytes.toArray),
       CryptoParams.curve)
     signer.init(true, privKey)
     val components: Array[BigInteger] =
@@ -136,9 +132,8 @@ object ECPrivateKey extends Factory[ECPrivateKey] {
       isCompressed: Boolean,
       ec: ExecutionContext)
       extends ECPrivateKey {
-    require(
-      NativeSecp256k1.secKeyVerify(bytes.toArray),
-      s"Invalid key according to secp256k1, hex: ${bytes.toHex}")
+    require(NativeSecp256k1.secKeyVerify(bytes.toArray),
+            s"Invalid key according to secp256k1, hex: ${bytes.toHex}")
   }
 
   def apply(bytes: ByteVector, isCompressed: Boolean)(
