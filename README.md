@@ -41,17 +41,17 @@ Now you should be able to add Bitcoin-S artifacts like this:
 
 ```scala
 
-"org.bitcoins" % "bitcoin-s-secp256k1jni" % "0.0.3"
+"org.bitcoins" % "bitcoin-s-secp256k1jni" % "0.0.4"
 
-"org.bitcoins" %% "bitcoin-s-core" % "0.0.3" withSources() withJavadoc()
+"org.bitcoins" %% "bitcoin-s-core" % "0.0.4" withSources() withJavadoc()
 
-"org.bitcoins" %% "bitcoin-s-bitcoind-rpc" % "0.0.3" withSources() withJavadoc()
+"org.bitcoins" %% "bitcoin-s-bitcoind-rpc" % "0.0.4" withSources() withJavadoc()
 
-"org.bitcoins" %% "bitcoin-s-eclair-rpc" % "0.0.3" withSources() withJavadoc()
+"org.bitcoins" %% "bitcoin-s-eclair-rpc" % "0.0.4" withSources() withJavadoc()
 
-"org.bitcoins" %% "bitcoin-s-testkit" % "0.0.3" withSources() withJavadoc()
+"org.bitcoins" %% "bitcoin-s-testkit" % "0.0.4" withSources() withJavadoc()
 
-"org.bitcoins" %% "bitcoin-s-zmq" % "0.0.3" withSources() withJavadoc()
+"org.bitcoins" %% "bitcoin-s-zmq" % "0.0.4" withSources() withJavadoc()
 ```
 
 ### Ammonite
@@ -68,7 +68,7 @@ import coursier.MavenRepository
 
 @ interp.repositories() ++= Seq(MavenRepository("https://dl.bintray.com/bitcoin-s/bitcoin-s-core"))
 
-@ import $ivy.`org.bitcoins::bitcoin-s-core:0.0.3`
+@ import $ivy.`org.bitcoins::bitcoin-s-core:0.0.4`
 import $ivy.$
 
 @ import org.bitcoins.core.currency.Bitcoins
