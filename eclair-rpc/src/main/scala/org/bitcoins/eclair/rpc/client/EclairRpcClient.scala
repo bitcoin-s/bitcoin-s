@@ -491,9 +491,9 @@ class EclairRpcClient(val instance: EclairInstance)(
       case res: JsError =>
         (json \ errorKey).validate[RpcError] match {
           case err: JsSuccess[RpcError] =>
-            logger.error(s"Error for command=${commandName}, ${err.value.code}=${err.value.message}")
-            throw new RuntimeException(
-              s"Error for command=${commandName}, ${err.value.code}=${err.value.message}")
+            val errMsg = s"Error for command=${commandName} ${instance.authCredentials.datadir.map(d => s"datadir=${d}").getOrElse("")}, ${err.value.code}=${err.value.message}"
+            logger.error(errMsg)
+            throw new RuntimeException(errMsg)
           case _: JsError =>
             logger.error(JsError.toJson(res).toString())
             throw new IllegalArgumentException(

@@ -611,7 +611,7 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
 
 
     val connectedClientsF: Future[EclairNodes4] = {
-      freshClients1F.flatMap { case (freshClient1, freshClient2) =>
+      freshClients1F.flatMap {   case (freshClient1, freshClient2) =>
         freshClients2F.flatMap { case (freshClient3,freshClient4) =>
 
           clients ++= List(freshClient1,

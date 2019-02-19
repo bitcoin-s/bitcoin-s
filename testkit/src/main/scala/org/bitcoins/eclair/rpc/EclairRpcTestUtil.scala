@@ -277,7 +277,7 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
       }
     }
 
-    val openChannelsF :Future[List[FundedChannelId]] = {
+    val openChannelsF: Future[List[FundedChannelId]] = {
       openChannelsFNested.flatMap(Future.sequence(_))
     }
 
@@ -390,13 +390,13 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
       system: ActorSystem): Future[Unit] = {
     implicit val dispatcher = system.dispatcher
     val infoF = otherClient.getInfo
-
+    val nodeIdF = infoF.map(_.nodeId)
     val connection: Future[String] = infoF.flatMap { info =>
       client.connect(info.nodeId, "localhost", info.port)
     }
 
     def isConnected(): Future[Boolean] = {
-      val nodeIdF = infoF.map(_.nodeId)
+
       nodeIdF.flatMap { nodeId =>
         connection.flatMap { _ =>
           val connected: Future[Boolean] = client.isConnected(nodeId)
