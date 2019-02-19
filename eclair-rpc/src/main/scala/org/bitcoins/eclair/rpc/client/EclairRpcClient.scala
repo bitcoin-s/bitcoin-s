@@ -476,7 +476,7 @@ class EclairRpcClient(val instance: EclairInstance)(
     val payloadF: Future[JsValue] = responseF.flatMap(getPayload)
     payloadF.map { payload =>
       val validated: JsResult[T] = (payload \ resultKey).validate[T]
-      val parsed: T = parseResult(validated, payload)
+      val parsed: T = parseResult(validated, payload, command)
       parsed
     }
   }
@@ -484,16 +484,19 @@ class EclairRpcClient(val instance: EclairInstance)(
   case class RpcError(code: Int, message: String)
   implicit val rpcErrorReads: Reads[RpcError] = Json.reads[RpcError]
 
-  private def parseResult[T](result: JsResult[T], json: JsValue): T = {
+  private def parseResult[T](result: JsResult[T], json: JsValue, commandName: String): T = {
     result match {
       case res: JsSuccess[T] =>
         res.value
       case res: JsError =>
         (json \ errorKey).validate[RpcError] match {
           case err: JsSuccess[RpcError] =>
-            logger.error(s"Error ${err.value.code}: ${err.value.message}")
-            throw new RuntimeException(
-              s"Error ${err.value.code}: ${err.value.message}")
+            val datadirMsg = instance.authCredentials.datadir
+              .map(d => s"datadir=${d}")
+              .getOrElse("")
+            val errMsg = s"Error for command=${commandName} ${datadirMsg}, ${err.value.code}=${err.value.message}"
+            logger.error(errMsg)
+            throw new RuntimeException(errMsg)
           case _: JsError =>
             logger.error(JsError.toJson(res).toString())
             throw new IllegalArgumentException(
