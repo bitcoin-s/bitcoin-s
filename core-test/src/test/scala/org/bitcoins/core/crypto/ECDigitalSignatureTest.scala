@@ -61,8 +61,7 @@ class ECDigitalSignatureTest extends BitcoinSUnitTest {
   }
 
   it must "must create and verify a digital signature" in {
-    forAll(CryptoGenerators.doubleSha256Digest,
-      CryptoGenerators.privateKey) {
+    forAll(CryptoGenerators.doubleSha256Digest, CryptoGenerators.privateKey) {
       case (hash, key) =>
         val sig = key.sign(hash)
         assert(key.publicKey.verify(hash, sig))
@@ -71,8 +70,8 @@ class ECDigitalSignatureTest extends BitcoinSUnitTest {
 
   it must "must not reuse r values" in {
     forAll(CryptoGenerators.privateKey,
-      CryptoGenerators.doubleSha256Digest,
-      CryptoGenerators.doubleSha256Digest) {
+           CryptoGenerators.doubleSha256Digest,
+           CryptoGenerators.doubleSha256Digest) {
       case (key, hash1, hash2) =>
         val sig1 = key.sign(hash1)
         val sig2 = key.sign(hash2)
@@ -96,6 +95,16 @@ class ECDigitalSignatureTest extends BitcoinSUnitTest {
       case sig: ECDigitalSignature =>
         val raw = sig.toRawRS
         assert(ECDigitalSignature.fromRS(raw) == sig)
+    }
+  }
+
+  it must "be able to generate valid signatures with bouncy castle" in {
+    forAll(CryptoGenerators.privateKey, CryptoGenerators.sha256Digest) {
+      case (privKey: ECPrivateKey, hash: Sha256Digest) =>
+        val sig = privKey.signWithBouncyCastle(hash.bytes)
+        val pubKey = privKey.publicKey
+
+        assert(pubKey.verify(hash, sig))
     }
   }
 
