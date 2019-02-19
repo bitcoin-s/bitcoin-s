@@ -28,7 +28,6 @@ import org.bitcoins.rpc.jsonmodels.{
   GetTransactionResult,
   RpcAddress
 }
-import org.bitcoins.rpc.util.RpcUtil
 import org.scalatest.{AsyncFlatSpec, BeforeAndAfter, BeforeAndAfterAll}
 
 import scala.concurrent.duration.DurationInt
