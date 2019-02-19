@@ -1,14 +1,12 @@
 package org.bitcoins.rpc.util
 
-import java.io.PrintStream
-
 import akka.actor.ActorSystem
 import org.bitcoins.core.util.BitcoinSLogger
 
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{Await, Future, Promise}
 
-trait AsyncUtil extends BitcoinSLogger {
+abstract class AsyncUtil extends BitcoinSLogger {
 
   private def retryRunnable(
       condition: => Boolean,
@@ -52,28 +50,23 @@ trait AsyncUtil extends BitcoinSLogger {
       message: String,
       caller: Array[StackTraceElement])
       extends Exception(message) {
-    override def printStackTrace(s: PrintStream): Unit = {
-      super.printStackTrace(s)
+    /*
+    Someone who calls a method in this class will be interested
+     * in where the call was made (and the stack trace from there
+     * backwards) and what happens between their call and the failure,
+     * i.e. the internal calls of this class, are not of interest.
+     * 
+     * This trims the top of the stack trace to exclude these internal calls.
+     */
+    private val relevantStackTrace = caller.tail
+      .dropWhile(elem => elem.getFileName == "AsyncUtil.scala"
+        || elem.getFileName == "RpcUtil.scala")
 
-      val indexOfLastBitcoinSOpt = caller.reverse.zipWithIndex
-        .find {
-          case (element, _) =>
-            element.getClassName.contains("bitcoins")
-        }
-
-      val indexOfLastRelevantElement =
-        indexOfLastBitcoinSOpt.map(_._2).getOrElse(0)
-
-      val relevantStackTrace =
-        caller.dropRight(indexOfLastRelevantElement).drop(1)
-
-      s.println("Called from:")
-      relevantStackTrace.foreach(element => s.println(s"\t$element"))
-    }
+    this.setStackTrace(relevantStackTrace)
   }
 
   // Has a different name so that default values are permitted
-  private def retryUntilSatisfiedWithCounter(
+  protected def retryUntilSatisfiedWithCounter(
       conditionF: () => Future[Boolean],
       duration: FiniteDuration,
       counter: Int = 0,

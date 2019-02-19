@@ -11,7 +11,7 @@ import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.rpc.client.BitcoindRpcClient
 import org.bitcoins.rpc.config.{BitcoindAuthCredentials, BitcoindInstance, ZmqConfig}
-import org.bitcoins.rpc.util.{AsyncUtil, RpcUtil}
+import org.bitcoins.util.AsyncUtil
 
 import scala.collection.immutable.Map
 import scala.concurrent.duration.{DurationInt, FiniteDuration}

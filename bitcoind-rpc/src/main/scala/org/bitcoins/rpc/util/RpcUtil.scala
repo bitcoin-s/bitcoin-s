@@ -5,7 +5,7 @@ import org.bitcoins.rpc.client.BitcoindRpcClient
 
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 
-trait RpcUtil extends AsyncUtil {
+abstract class RpcUtil extends AsyncUtil {
 
   def awaitServer(
       server: BitcoindRpcClient,
