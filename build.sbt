@@ -143,8 +143,10 @@ lazy val core = project
 lazy val coreTest = project
   .in(file("core-test"))
   .settings(commonSettings: _*)
-  .settings(skip in publish := true)
-  .dependsOn(
+  .settings(
+    skip in publish := true,
+    name := "bitcoin-s-core-test"
+  ).dependsOn(
     core,
     testkit,
   ).enablePlugins()
@@ -171,7 +173,9 @@ lazy val bitcoindRpc = project
 lazy val bitcoindRpcTest = project
   .in(file("bitcoind-rpc-test"))
   .settings(commonSettings: _*)
-  .settings(libraryDependencies ++= Deps.bitcoindRpcTest)
+  .settings(libraryDependencies ++= Deps.bitcoindRpcTest,
+    name := "bitcoin-s-bitcoind-rpc-test",
+    skip in publish := true)
   .dependsOn(testkit)
   .enablePlugins()
 
@@ -203,7 +207,10 @@ lazy val eclairRpc = project
 lazy val eclairRpcTest = project
   .in(file("eclair-rpc-test"))
   .settings(commonSettings: _*)
-  .settings(libraryDependencies ++= Deps.eclairRpcTest)
+  .settings(libraryDependencies ++= Deps.eclairRpcTest,
+    name := "bitcoin-s-eclair-rpc-test",
+    skip in publish := true
+  )
   .dependsOn(testkit)
   .enablePlugins()
 

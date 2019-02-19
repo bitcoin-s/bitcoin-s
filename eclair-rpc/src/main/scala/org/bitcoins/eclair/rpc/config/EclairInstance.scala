@@ -4,7 +4,7 @@ import java.io.File
 import java.net.URI
 import java.nio.file.Paths
 
-import com.typesafe.config.{Config, ConfigFactory, ConfigValueFactory}
+import com.typesafe.config.{Config, ConfigFactory}
 import org.bitcoins.core.config.{MainNet, NetworkParameters, RegTest, TestNet3}
 import org.bitcoins.core.protocol.ln.LnPolicy
 
