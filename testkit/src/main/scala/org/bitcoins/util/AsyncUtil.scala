@@ -4,7 +4,6 @@ import org.scalatest.exceptions.{StackDepthException, TestFailedException}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.FiniteDuration
-import scala.util.{Failure, Success}
 
 abstract class AsyncUtil extends org.bitcoins.rpc.util.AsyncUtil {
   override protected def retryUntilSatisfiedWithCounter(
@@ -34,9 +33,10 @@ object AsyncUtil extends AsyncUtil {
     * conveniently mention the line that called the AsyncUtil method.
     */
   def transformRetryToTestFailure[T](fut: Future[T])(implicit ec: ExecutionContext): Future[T] = {
-    fut.transform {
-      case Failure(RpcRetryException(message, caller)) =>
-        val relevantStackTrace = caller.tail
+    def transformRetry(err: Throwable): Throwable = {
+      if (err.isInstanceOf[RpcRetryException]) {
+        val retryErr = err.asInstanceOf[RpcRetryException]
+        val relevantStackTrace = retryErr.caller.tail
           .dropWhile(_.getFileName == "AsyncUtil.scala")
           .takeWhile(!_.getFileName.contains("TestSuite"))
         val stackElement = relevantStackTrace.head
@@ -44,13 +44,16 @@ object AsyncUtil extends AsyncUtil {
         val path = stackElement.getClassName
         val line = stackElement.getLineNumber
         val pos = org.scalactic.source.Position(file, path, line)
-        val err = new TestFailedException({ _: StackDepthException =>
-          Some(message)
+        val newErr = new TestFailedException({ _: StackDepthException =>
+          Some(retryErr.message)
         }, None, pos)
-        err.setStackTrace(relevantStackTrace)
-        Failure(err)
-      case Failure(err) => Failure(err)
-      case Success(elem)  => Success(elem)
+        newErr.setStackTrace(relevantStackTrace)
+        newErr
+      } else {
+        err
+      }
     }
+
+    fut.transform({ elem: T => elem }, transformRetry)
   }
 }
