@@ -491,7 +491,10 @@ class EclairRpcClient(val instance: EclairInstance)(
       case res: JsError =>
         (json \ errorKey).validate[RpcError] match {
           case err: JsSuccess[RpcError] =>
-            val errMsg = s"Error for command=${commandName} ${instance.authCredentials.datadir.map(d => s"datadir=${d}").getOrElse("")}, ${err.value.code}=${err.value.message}"
+            val datadirMsg = instance.authCredentials.datadir
+              .map(d => s"datadir=${d}")
+              .getOrElse("")
+            val errMsg = s"Error for command=${commandName} ${datadirMsg}, ${err.value.code}=${err.value.message}"
             logger.error(errMsg)
             throw new RuntimeException(errMsg)
           case _: JsError =>
