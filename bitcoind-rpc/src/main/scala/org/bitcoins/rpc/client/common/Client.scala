@@ -74,7 +74,7 @@ trait Client {
     def isStartedF: Future[Boolean] = {
       val started: Promise[Boolean] = Promise()
 
-      val pingF = ping()
+      val pingF = bitcoindCall[Unit]("ping", printError = false)
       pingF.onComplete {
         case Success(_) => started.success(true)
         case Failure(_) => started.success(false)
@@ -116,7 +116,8 @@ trait Client {
 
   protected def bitcoindCall[T](
       command: String,
-      parameters: List[JsValue] = List.empty)(
+      parameters: List[JsValue] = List.empty,
+      printError: Boolean = true)(
       implicit
       reader: Reads[T]): Future[T] = {
 
@@ -137,7 +138,7 @@ trait Client {
           */
         // logger.debug(s"Command: $command ${parameters.map(_.toString).mkString(" ")}")
         // logger.debug(s"Payload: \n${Json.prettyPrint(payload)}")
-        parseResult((payload \ resultKey).validate[T], payload)
+        parseResult((payload \ resultKey).validate[T], payload, printError)
       }
     }
   }
@@ -183,19 +184,24 @@ trait Client {
   }
 
   // Should both logging and throwing be happening?
-  private def parseResult[T](result: JsResult[T], json: JsValue): T = {
-    checkUnitError[T](result, json)
+  private def parseResult[T](
+      result: JsResult[T],
+      json: JsValue,
+      printError: Boolean): T = {
+    checkUnitError[T](result, json, printError)
 
     result match {
       case res: JsSuccess[T] => res.value
       case res: JsError =>
         (json \ errorKey).validate[RpcError] match {
           case err: JsSuccess[RpcError] =>
-            logger.error(s"Error ${err.value.code}: ${err.value.message}")
+            if (printError) {
+              logger.error(s"Error ${err.value.code}: ${err.value.message}")
+            }
             throw new RuntimeException(
               s"Error ${err.value.code}: ${err.value.message}")
           case _: JsError =>
-            logger.error(JsError.toJson(res).toString())
+            if (printError) logger.error(JsError.toJson(res).toString())
             throw new IllegalArgumentException(
               s"Could not parse JsResult: ${(json \ resultKey).get}")
         }
@@ -203,11 +209,16 @@ trait Client {
   }
 
   // Catches errors thrown by calls with Unit as the expected return type (which isn't handled by UnitReads)
-  private def checkUnitError[T](result: JsResult[T], json: JsValue): Unit = {
+  private def checkUnitError[T](
+      result: JsResult[T],
+      json: JsValue,
+      printError: Boolean): Unit = {
     if (result == JsSuccess(())) {
       (json \ errorKey).validate[RpcError] match {
         case err: JsSuccess[RpcError] =>
-          logger.error(s"Error ${err.value.code}: ${err.value.message}")
+          if (printError) {
+            logger.error(s"Error ${err.value.code}: ${err.value.message}")
+          }
           throw new RuntimeException(
             s"Error ${err.value.code}: ${err.value.message}")
         case _: JsError =>
