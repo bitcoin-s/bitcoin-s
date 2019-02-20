@@ -233,14 +233,6 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
                               maxTries = maxTries)
   }
 
-  def awaitServerShutdown(
-      server: BitcoindRpcClient,
-      duration: FiniteDuration = 300.milliseconds,
-      maxTries: Int = 50)(implicit system: ActorSystem): Unit = {
-    val f = () => !server.isStarted
-    AsyncUtil.awaitCondition(f, duration, maxTries)
-  }
-
   def awaitDisconnected(
       from: BitcoindRpcClient,
       to: BitcoindRpcClient,

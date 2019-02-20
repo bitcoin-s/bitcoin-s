@@ -18,7 +18,7 @@ import org.bitcoins.core.protocol.transaction.{
 }
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
-import org.bitcoins.rpc.{BitcoindRpcTestConfig, BitcoindRpcTestUtil}
+import org.bitcoins.rpc.{BitcoindRpcTestConfig, BitcoindRpcTestUtil, RpcUtil}
 import org.bitcoins.rpc.client.common.RpcOpts.{AddNodeArgument, AddressType}
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, RpcOpts}
 import org.bitcoins.rpc.jsonmodels.RpcAddress
@@ -68,7 +68,7 @@ class WalletRpcTest extends AsyncFlatSpec with BeforeAndAfterAll {
     Await.result(client.generate(200), DEFAULT_TIMEOUT)
 
     Await.result(walletClient.encryptWallet(password), DEFAULT_TIMEOUT)
-    BitcoindRpcTestUtil.awaitServerShutdown(walletClient)
+    RpcUtil.awaitServerShutdown(walletClient)
 
     // Very rarely, this may fail if bitcoind does not ping but hasn't yet released its locks
     // fails more often on mac
