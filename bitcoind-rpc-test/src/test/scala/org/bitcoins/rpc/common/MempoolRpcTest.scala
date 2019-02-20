@@ -19,16 +19,25 @@ import org.bitcoins.rpc.{BitcoindRpcTestConfig, BitcoindRpcTestUtil}
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.client.common.RpcOpts.AddNodeArgument
 import org.bitcoins.rpc.config.BitcoindInstance
+import org.bitcoins.rpc.util.AsyncUtil
 import org.scalatest.{AsyncFlatSpec, BeforeAndAfterAll}
+import org.slf4j.LoggerFactory
 
 import scala.async.Async.{async, await}
 import scala.concurrent.{Await, ExecutionContext}
+import scala.concurrent.duration.DurationInt
 
 class MempoolRpcTest extends AsyncFlatSpec with BeforeAndAfterAll {
   implicit val system: ActorSystem = ActorSystem("MempoolRpcTest")
   implicit val m: ActorMaterializer = ActorMaterializer()
   implicit val ec: ExecutionContext = m.executionContext
   implicit val networkParam: NetworkParameters = BitcoindRpcTestUtil.network
+
+  val client: BitcoindRpcClient = new BitcoindRpcClient(
+    BitcoindRpcTestUtil.instance())
+
+  val otherClient: BitcoindRpcClient = new BitcoindRpcClient(
+    BitcoindRpcTestUtil.instance())
 
   val clientWithoutBroadcast: BitcoindRpcClient = {
     val defaultConfig = BitcoindRpcTestUtil.standardConfig
@@ -41,10 +50,15 @@ class MempoolRpcTest extends AsyncFlatSpec with BeforeAndAfterAll {
 
     // walletbroadcast must be turned off for a transaction to be abondonable
     val noBroadcastValue = ConfigValueFactory.fromAnyRef(0)
+
+    // connecting clients once they are started takes forever for some reason
+    val addnodeValue =
+      ConfigValueFactory.fromAnyRef(s"127.0.0.1:${client.instance.uri.getPort}")
     val configNoBroadcast =
       defaultConfig
         .withValue("walletbroadcast", noBroadcastValue)
         .withValue("datadir", datadirValue)
+        .withValue("addnode", addnodeValue)
 
     val _ = BitcoindRpcTestUtil.writeConfigToFile(configNoBroadcast)
 
@@ -55,34 +69,44 @@ class MempoolRpcTest extends AsyncFlatSpec with BeforeAndAfterAll {
 
   }
 
-  val client: BitcoindRpcClient = new BitcoindRpcClient(
-    BitcoindRpcTestUtil.instance())
-
-  val otherClient: BitcoindRpcClient = new BitcoindRpcClient(
-    BitcoindRpcTestUtil.instance())
-
-  private val ALL_CLIENTS = Vector(client, otherClient, clientWithoutBroadcast)
-
   override def beforeAll(): Unit = {
     import BitcoindRpcTestConfig.DEFAULT_TIMEOUT
+    val startFirstF =
+      BitcoindRpcTestUtil.startServers(Vector(client, otherClient))
+    Await.result(startFirstF, DEFAULT_TIMEOUT)
 
-    val startF = BitcoindRpcTestUtil.startServers(ALL_CLIENTS)
-    Await.result(startF, DEFAULT_TIMEOUT)
+    // trying to speed up connection time by doing it this way
+    val startLastF =
+      BitcoindRpcTestUtil.startServers(Vector(clientWithoutBroadcast))
+    Await.result(startLastF, DEFAULT_TIMEOUT)
 
-    List(client -> otherClient, otherClient -> clientWithoutBroadcast).foreach {
+    List(client -> otherClient,
+         otherClient -> clientWithoutBroadcast,
+         client -> clientWithoutBroadcast).foreach {
       case (first, second) =>
         val addNodeF =
           first.addNode(second.getDaemon.uri, AddNodeArgument.Add)
         Await.result(addNodeF, DEFAULT_TIMEOUT)
-        BitcoindRpcTestUtil.awaitConnection(first, second)
+        // TODO(torkelrogstad) this take forever to complete when connecting nobroadcast and first, why?
+        BitcoindRpcTestUtil.awaitConnection(first,
+                                            second,
+                                            duration = 1.second,
+                                            maxTries = 200000)
     }
 
     Await.result(client.generate(200), DEFAULT_TIMEOUT)
-    Await.result(clientWithoutBroadcast.generate(200), DEFAULT_TIMEOUT)
+
+    val sendToNoBroadcastF =
+      clientWithoutBroadcast.getNewAddress.flatMap(
+        BitcoindRpcTestUtil
+          .fundBlockChainTransaction(client, _, Bitcoins(2)))
+
+    Await.result(sendToNoBroadcastF, DEFAULT_TIMEOUT)
   }
 
   override protected def afterAll(): Unit = {
-    BitcoindRpcTestUtil.stopServers(ALL_CLIENTS)
+    BitcoindRpcTestUtil.stopServers(
+      Vector(client, otherClient, clientWithoutBroadcast))
     TestKit.shutdownActorSystem(system)
   }
 
