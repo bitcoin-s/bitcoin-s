@@ -30,28 +30,59 @@ class MempoolRpcTest extends AsyncFlatSpec with BeforeAndAfterAll {
   implicit val ec: ExecutionContext = m.executionContext
   implicit val networkParam: NetworkParameters = BitcoindRpcTestUtil.network
 
+  val clientWithoutBroadcast: BitcoindRpcClient = {
+    val defaultConfig = BitcoindRpcTestUtil.standardConfig
+
+    val datadirValue = {
+      val tempDirPrefix = null // because java APIs are bad
+      val tempdirPath = Files.createTempDirectory(tempDirPrefix).toString
+      ConfigValueFactory.fromAnyRef(tempdirPath)
+    }
+
+    // walletbroadcast must be turned off for a transaction to be abondonable
+    val noBroadcastValue = ConfigValueFactory.fromAnyRef(0)
+    val configNoBroadcast =
+      defaultConfig
+        .withValue("walletbroadcast", noBroadcastValue)
+        .withValue("datadir", datadirValue)
+
+    val _ = BitcoindRpcTestUtil.writeConfigToFile(configNoBroadcast)
+
+    val instanceWithoutBroadcast =
+      BitcoindInstance.fromConfig(configNoBroadcast)
+
+    new BitcoindRpcClient(instanceWithoutBroadcast)
+
+  }
+
   val client: BitcoindRpcClient = new BitcoindRpcClient(
     BitcoindRpcTestUtil.instance())
 
   val otherClient: BitcoindRpcClient = new BitcoindRpcClient(
     BitcoindRpcTestUtil.instance())
 
+  private val ALL_CLIENTS = Vector(client, otherClient, clientWithoutBroadcast)
+
   override def beforeAll(): Unit = {
     import BitcoindRpcTestConfig.DEFAULT_TIMEOUT
 
-    val startF = BitcoindRpcTestUtil.startServers(Vector(client, otherClient))
+    val startF = BitcoindRpcTestUtil.startServers(ALL_CLIENTS)
     Await.result(startF, DEFAULT_TIMEOUT)
 
-    val addNodeF =
-      client.addNode(otherClient.getDaemon.uri, AddNodeArgument.Add)
-    Await.result(addNodeF, DEFAULT_TIMEOUT)
+    List(client -> otherClient, otherClient -> clientWithoutBroadcast).foreach {
+      case (first, second) =>
+        val addNodeF =
+          first.addNode(second.getDaemon.uri, AddNodeArgument.Add)
+        Await.result(addNodeF, DEFAULT_TIMEOUT)
+        BitcoindRpcTestUtil.awaitConnection(first, second)
+    }
 
-    BitcoindRpcTestUtil.awaitConnection(client, otherClient)
     Await.result(client.generate(200), DEFAULT_TIMEOUT)
+    Await.result(clientWithoutBroadcast.generate(200), DEFAULT_TIMEOUT)
   }
 
   override protected def afterAll(): Unit = {
-    BitcoindRpcTestUtil.stopServers(Vector(client, otherClient))
+    BitcoindRpcTestUtil.stopServers(ALL_CLIENTS)
     TestKit.shutdownActorSystem(system)
   }
 
@@ -169,39 +200,12 @@ class MempoolRpcTest extends AsyncFlatSpec with BeforeAndAfterAll {
   }
 
   it should "be able to abandon a transaction" in {
-    val defaultConfig = BitcoindRpcTestUtil.standardConfig
-
-    val noBroadcastValue = ConfigValueFactory.fromAnyRef(0)
-    val datadirValue = {
-      val tempDirPrefix = null // because java APIs are bad
-      val tempdirPath = Files.createTempDirectory(tempDirPrefix).toString
-      ConfigValueFactory.fromAnyRef(tempdirPath)
-    }
-
-    val configNoBroadcast =
-      defaultConfig
-        .withValue("walletbroadcast", noBroadcastValue)
-        .withValue("datadir", datadirValue)
-
-    val _ = BitcoindRpcTestUtil.writeConfigToFile(configNoBroadcast)
-    val instanceWithoutBroadcast =
-      BitcoindInstance.fromConfig(configNoBroadcast)
-
-    // walletbroadcast must be turned off for a transaction to be abondonable
-    val clientWithOutBroadcast = new BitcoindRpcClient(instanceWithoutBroadcast)
 
     for {
-      _ <- clientWithOutBroadcast.start()
-      _ <- clientWithOutBroadcast.addNode(otherClient.getDaemon.uri,
-                                          AddNodeArgument.Add)
-      _ = BitcoindRpcTestUtil.awaitConnection(clientWithOutBroadcast,
-                                              otherClient)
-      _ <- clientWithOutBroadcast.generate(150) // to ensure we have enough balance
       recipient <- otherClient.getNewAddress
-      txid <- clientWithOutBroadcast.sendToAddress(recipient, Bitcoins(1))
-      _ <- clientWithOutBroadcast.abandonTransaction(txid)
-      maybeAbandoned <- clientWithOutBroadcast.getTransaction(txid)
-      _ <- clientWithOutBroadcast.stop()
+      txid <- clientWithoutBroadcast.sendToAddress(recipient, Bitcoins(1))
+      _ <- clientWithoutBroadcast.abandonTransaction(txid)
+      maybeAbandoned <- clientWithoutBroadcast.getTransaction(txid)
     } yield assert(maybeAbandoned.details.head.abandoned.contains(true))
   }
 
