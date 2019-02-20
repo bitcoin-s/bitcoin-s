@@ -1,7 +1,7 @@
 package org.bitcoins.core.protocol
 
 import org.bitcoins.core.config.{RegTest, TestNet3}
-import org.bitcoins.core.gen.AddressGenerator
+import org.bitcoins.testkit.core.gen.AddressGenerator
 import org.scalacheck.{Prop, Properties}
 
 class AddressSpec extends Properties("AddressSpec") {

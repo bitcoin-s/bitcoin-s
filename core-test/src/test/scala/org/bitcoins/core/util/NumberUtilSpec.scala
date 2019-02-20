@@ -1,6 +1,6 @@
 package org.bitcoins.core.util
 
-import org.bitcoins.core.gen.NumberGenerator
+import org.bitcoins.testkit.core.gen.NumberGenerator
 import org.bitcoins.core.number.UInt8
 import org.scalacheck.{Prop, Properties}
 

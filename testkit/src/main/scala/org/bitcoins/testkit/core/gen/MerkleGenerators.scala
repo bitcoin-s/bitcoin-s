@@ -1,4 +1,4 @@
-package org.bitcoins.core.gen
+package org.bitcoins.testkit.core.gen
 
 import org.bitcoins.core.bloom.BloomFilter
 import org.bitcoins.core.crypto.DoubleSha256Digest

@@ -3,7 +3,7 @@ package org.bitcoins.core.wallet.builder
 import org.bitcoins.core.config.TestNet3
 import org.bitcoins.core.crypto.ECPrivateKey
 import org.bitcoins.core.currency.{CurrencyUnits, Satoshis}
-import org.bitcoins.core.gen.ScriptGenerators
+import org.bitcoins.testkit.core.gen.ScriptGenerators
 import org.bitcoins.core.number.{Int64, UInt32}
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._

@@ -18,9 +18,10 @@ import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.eclair.rpc.client.EclairRpcClient
 import org.bitcoins.eclair.rpc.config.{EclairAuthCredentials, EclairInstance}
 import org.bitcoins.eclair.rpc.json._
-import org.bitcoins.rpc.BitcoindRpcTestUtil
 import org.bitcoins.rpc.client.BitcoindRpcClient
 import org.bitcoins.rpc.util.AsyncUtil
+import org.bitcoins.testkit.eclair.rpc.{EclairNodes4, EclairRpcTestUtil}
+import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.scalatest.{Assertion, AsyncFlatSpec, BeforeAndAfterAll}
 import org.slf4j.Logger
 

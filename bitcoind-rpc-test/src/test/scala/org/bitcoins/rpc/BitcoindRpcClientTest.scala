@@ -28,6 +28,7 @@ import org.bitcoins.rpc.jsonmodels.{
   GetTransactionResult,
   RpcAddress
 }
+import org.bitcoins.testkit.rpc.{BitcoindRpcTestUtil, TestRpcUtil}
 import org.scalatest.{AsyncFlatSpec, BeforeAndAfter, BeforeAndAfterAll}
 
 import scala.concurrent.duration.DurationInt
@@ -154,7 +155,7 @@ class BitcoindRpcClientTest
       startedF.flatMap { _ =>
         walletClient.encryptWallet(password).flatMap { msg =>
           logger.info(msg)
-          RpcUtil.awaitServerShutdown(walletClient)
+          TestRpcUtil.awaitServerShutdown(walletClient)
           logger.debug(walletClient.isStarted.toString)
           // Very rarely, this may fail if bitcoind does not ping but hasn't yet released its locks
           walletClient.start()
@@ -352,7 +353,7 @@ class BitcoindRpcClientTest
 
                   conn.flatMap { _ =>
                     //make sure the block was propogated to client2
-                    RpcUtil.awaitConditionF(conditionF = () =>
+                    TestRpcUtil.awaitConditionF(conditionF = () =>
                       BitcoindRpcTestUtil.hasSeenBlock(client2, bestHash1))
 
                     val precious = client2.preciousBlock(bestHash1)

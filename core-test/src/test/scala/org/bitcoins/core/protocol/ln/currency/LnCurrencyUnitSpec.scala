@@ -1,7 +1,7 @@
 package org.bitcoins.core.protocol.ln.currency
 
 import org.bitcoins.core.currency.Satoshis
-import org.bitcoins.core.gen.ln.LnCurrencyUnitGen
+import org.bitcoins.testkit.core.gen.ln.LnCurrencyUnitGen
 import org.scalacheck.{Gen, Prop, Properties}
 
 import scala.util.Try

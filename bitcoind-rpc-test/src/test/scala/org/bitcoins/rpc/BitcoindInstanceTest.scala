@@ -7,6 +7,7 @@ import akka.testkit.TestKit
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.rpc.client.BitcoindRpcClient
 import org.bitcoins.rpc.config.BitcoindInstance
+import org.bitcoins.testkit.rpc.{BitcoindRpcTestUtil, TestRpcUtil}
 import org.scalatest.{AsyncFlatSpec, BeforeAndAfterAll}
 
 import scala.concurrent.Future
@@ -43,7 +44,7 @@ class BitcoindInstanceTest extends AsyncFlatSpec with BeforeAndAfterAll {
     val instance = BitcoindInstance.fromDatadir(datadir.toFile)
     val client = new BitcoindRpcClient(instance)
     BitcoindRpcTestUtil.startServers(Vector(client))
-    RpcUtil.awaitServer(client)
+    TestRpcUtil.awaitServer(client)
 
     for {
       _ <- client.generate(101)
@@ -52,7 +53,7 @@ class BitcoindInstanceTest extends AsyncFlatSpec with BeforeAndAfterAll {
         assert(balance > Bitcoins(0))
         client.stop()
       }
-      _ <- Future.successful(RpcUtil.awaitServerShutdown(client))
+      _ <- Future.successful(TestRpcUtil.awaitServerShutdown(client))
     } yield succeed
 
   }

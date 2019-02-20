@@ -1,6 +1,6 @@
 package org.bitcoins.core.serializers
 
-import org.bitcoins.core.gen.TransactionGenerators
+import org.bitcoins.testkit.core.gen.TransactionGenerators
 import org.bitcoins.core.protocol.transaction.TransactionOutput
 import org.scalacheck.{Prop, Properties}
 import scodec.bits.ByteVector

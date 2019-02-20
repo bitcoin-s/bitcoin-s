@@ -2,7 +2,7 @@ package org.bitcoins.core.protocol
 
 import org.bitcoins.core.config.{MainNet, TestNet3}
 import org.bitcoins.core.crypto.ECPublicKey
-import org.bitcoins.core.gen.NumberGenerator
+import org.bitcoins.testkit.core.gen.NumberGenerator
 import org.bitcoins.core.number.{UInt5, UInt8}
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.util.{Bech32, BitcoinSUnitTest}
@@ -134,7 +134,6 @@ class Bech32Test extends BitcoinSUnitTest {
     encoded6 must be(
       Seq(31, 31, 31, 31, 31, 31, 31, 31, 31, 28).map(i => UInt5(i.toByte)))
   }
-
 
   it must "encode from 8 bit to 5 bit and back" in {
     forAll(NumberGenerator.uInt8s) { u8s =>

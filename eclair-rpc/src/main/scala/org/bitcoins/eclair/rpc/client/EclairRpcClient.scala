@@ -425,8 +425,7 @@ class EclairRpcClient(val instance: EclairInstance)(
       if (amountMsat.isEmpty) {
         List(JsString(invoice.toString))
       } else {
-        List(JsString(invoice.toString),
-             JsNumber(amountMsat.get.toMSat.toLong))
+        List(JsString(invoice.toString), JsNumber(amountMsat.get.toMSat.toLong))
       }
     }
 
@@ -484,7 +483,10 @@ class EclairRpcClient(val instance: EclairInstance)(
   case class RpcError(code: Int, message: String)
   implicit val rpcErrorReads: Reads[RpcError] = Json.reads[RpcError]
 
-  private def parseResult[T](result: JsResult[T], json: JsValue, commandName: String): T = {
+  private def parseResult[T](
+      result: JsResult[T],
+      json: JsValue,
+      commandName: String): T = {
     result match {
       case res: JsSuccess[T] =>
         res.value
@@ -494,7 +496,8 @@ class EclairRpcClient(val instance: EclairInstance)(
             val datadirMsg = instance.authCredentials.datadir
               .map(d => s"datadir=${d}")
               .getOrElse("")
-            val errMsg = s"Error for command=${commandName} ${datadirMsg}, ${err.value.code}=${err.value.message}"
+            val errMsg =
+              s"Error for command=${commandName} ${datadirMsg}, ${err.value.code}=${err.value.message}"
             logger.error(errMsg)
             throw new RuntimeException(errMsg)
           case _: JsError =>
@@ -573,7 +576,8 @@ class EclairRpcClient(val instance: EclairInstance)(
 
     val _ = {
 
-      require(instance.authCredentials.datadir.isDefined, s"A datadir needs to be provided to start eclair")
+      require(instance.authCredentials.datadir.isDefined,
+              s"A datadir needs to be provided to start eclair")
 
       if (process.isEmpty) {
         val p = Process(
@@ -590,11 +594,9 @@ class EclairRpcClient(val instance: EclairInstance)(
       }
     }
 
-    val started = AsyncUtil.retryUntilSatisfiedF(
-      () => isStarted,
-      duration = 1.seconds,
-      maxTries = 60)
-
+    val started = AsyncUtil.retryUntilSatisfiedF(() => isStarted,
+                                                 duration = 1.seconds,
+                                                 maxTries = 60)
 
     started
   }

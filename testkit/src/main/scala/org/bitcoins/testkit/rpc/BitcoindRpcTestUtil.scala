@@ -1,4 +1,4 @@
-package org.bitcoins.rpc
+package org.bitcoins.testkit.rpc
 
 import java.io.{File, PrintWriter}
 import java.net.URI
@@ -10,8 +10,12 @@ import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.rpc.client.BitcoindRpcClient
-import org.bitcoins.rpc.config.{BitcoindAuthCredentials, BitcoindInstance, ZmqConfig}
-import org.bitcoins.util.AsyncUtil
+import org.bitcoins.rpc.config.{
+  BitcoindAuthCredentials,
+  BitcoindInstance,
+  ZmqConfig
+}
+import org.bitcoins.testkit.async.TestAsyncUtil
 
 import scala.collection.immutable.Map
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
@@ -20,6 +24,7 @@ import scala.util.{Failure, Success, Try}
 
 trait BitcoindRpcTestUtil extends BitcoinSLogger {
   import scala.collection.JavaConverters._
+
   def randomDirName: String =
     0.until(5).map(_ => scala.util.Random.alphanumeric.head).mkString
 
@@ -67,7 +72,8 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
         .map(entry => {
           val key = entry.getKey
           val value = entry.getValue.unwrapped
-          s"$key=$value"})
+          s"$key=$value"
+        })
         .mkString("\n")
 
     val datadir = new java.io.File("/tmp/" + randomDirName)
@@ -143,9 +149,9 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
         }
     }
 
-    RpcUtil.awaitConditionF(conditionF = () => isConnected(),
-                            duration = duration,
-                            maxTries = maxTries)
+    TestRpcUtil.awaitConditionF(conditionF = () => isConnected(),
+                                duration = duration,
+                                maxTries = maxTries)
   }
 
   def awaitSynced(
@@ -163,9 +169,9 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       }
     }
 
-    RpcUtil.awaitConditionF(conditionF = () => isSynced(),
-                            duration = duration,
-                            maxTries = maxTries)
+    TestRpcUtil.awaitConditionF(conditionF = () => isSynced(),
+                                duration = duration,
+                                maxTries = maxTries)
   }
 
   def awaitSameBlockHeight(
@@ -183,9 +189,9 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       }
     }
 
-    RpcUtil.awaitConditionF(conditionF = () => isSameBlockHeight(),
-                            duration = duration,
-                            maxTries = maxTries)
+    TestRpcUtil.awaitConditionF(conditionF = () => isSameBlockHeight(),
+                                duration = duration,
+                                maxTries = maxTries)
   }
 
   def awaitDisconnected(
@@ -204,9 +210,9 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
 
     }
 
-    RpcUtil.awaitConditionF(conditionF = () => isDisconnected(),
-                            duration = duration,
-                            maxTries = maxTries)
+    TestRpcUtil.awaitConditionF(conditionF = () => isDisconnected(),
+                                duration = duration,
+                                maxTries = maxTries)
   }
 
   /** Returns a pair of RpcClients that are connected with 100 blocks in the chain */
@@ -226,13 +232,13 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     client1.start()
     client2.start()
 
-    val try1 = Try(RpcUtil.awaitServer(client1))
+    val try1 = Try(TestRpcUtil.awaitServer(client1))
     if (try1.isFailure) {
       deleteNodePair(client1, client2)
       throw try1.failed.get
     }
 
-    val try2 = Try(RpcUtil.awaitServer(client2))
+    val try2 = Try(TestRpcUtil.awaitServer(client2))
     if (try2.isFailure) {
       deleteNodePair(client1, client2)
       throw try2.failed.get
@@ -303,7 +309,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     }
 
     val blocksGeneratedF = generatedF.flatMap { _ =>
-      AsyncUtil.retryUntilSatisfiedF(
+      TestAsyncUtil.retryUntilSatisfiedF(
         () => isBlocksGenerated,
         duration = 1.seconds
       )

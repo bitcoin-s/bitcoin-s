@@ -229,16 +229,16 @@ object LnInvoice extends BitcoinSLogger {
   }
 
   def apply(
-             hrp: LnHumanReadablePart,
-             timestamp: UInt64,
-             lnTags: LnTaggedFields,
-             privateKey: ECPrivateKey): LnInvoice = {
+      hrp: LnHumanReadablePart,
+      timestamp: UInt64,
+      lnTags: LnTaggedFields,
+      privateKey: ECPrivateKey): LnInvoice = {
 
-    val signature = buildLnInvoiceSignature(hrp,timestamp,lnTags,privateKey)
+    val signature = buildLnInvoiceSignature(hrp, timestamp, lnTags, privateKey)
     LnInvoiceImpl(hrp = hrp,
-      timestamp = timestamp,
-      lnTags = lnTags,
-      signature = signature)
+                  timestamp = timestamp,
+                  lnTags = lnTags,
+                  signature = signature)
   }
 
   def buildSignatureData(
@@ -250,7 +250,6 @@ object LnInvoice extends BitcoinSLogger {
     val payloadU8 = Bech32.from5bitTo8bit(payloadU5)
     val payload = UInt8.toBytes(payloadU8)
     val allBytes = hrp.bytes ++ payload
-
 
     //for an explanation of why this is needed see
     //https://github.com/bitcoin-s/bitcoin-s-core/issues/277

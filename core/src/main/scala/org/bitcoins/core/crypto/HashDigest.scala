@@ -47,7 +47,7 @@ sealed abstract class Sha256Digest extends HashDigest {
 object Sha256Digest extends Factory[Sha256Digest] {
   private case class Sha256DigestImpl(bytes: ByteVector) extends Sha256Digest {
     require(bytes.length == 32,
-      // $COVERAGE-OFF$
+            // $COVERAGE-OFF$
             "Sha256Digest must be 32 bytes in size, got: " + bytes.length)
     override def toString = s"Sha256DigestImpl($hex)"
     // $COVERAGE-ON$

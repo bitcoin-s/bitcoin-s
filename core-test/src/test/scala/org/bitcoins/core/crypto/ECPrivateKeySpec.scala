@@ -1,7 +1,7 @@
 package org.bitcoins.core.crypto
 
 import org.bitcoins.core.config.{MainNet, RegTest, TestNet3}
-import org.bitcoins.core.gen.{ChainParamsGenerator, CryptoGenerators}
+import org.bitcoins.testkit.core.gen.{ChainParamsGenerator, CryptoGenerators}
 import org.scalacheck.{Prop, Properties}
 
 /**

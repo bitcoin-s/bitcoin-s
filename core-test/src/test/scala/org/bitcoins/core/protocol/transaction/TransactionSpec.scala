@@ -1,6 +1,6 @@
 package org.bitcoins.core.protocol.transaction
 
-import org.bitcoins.core.gen.TransactionGenerators
+import org.bitcoins.testkit.core.gen.TransactionGenerators
 import org.bitcoins.core.util.{BitcoinSLogger, CryptoUtil}
 import org.scalacheck.{Prop, Properties}
 
