@@ -431,7 +431,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
   def signRawTransaction(
       signer: BitcoindRpcClient,
       transaction: Transaction,
-      utxoDeps: Vector[RpcOpts.SignRawTransactionOutputParameter] = Vector.empty,
+      utxoDeps: Vector[RpcOpts.SignRawTransactionOutputParameter] = Vector.empty
   )(implicit actorSystemw: ActorSystem): Future[SignRawTransactionResult] =
     signer match {
       case v17: BitcoindV17RpcClient =>
