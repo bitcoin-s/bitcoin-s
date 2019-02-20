@@ -412,9 +412,9 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
     }
 
     logger.debug(s"Awaiting connection between clients")
-    val connected = RpcUtil.retryUntilSatisfiedF(conditionF =
-                                                   () => isConnected(),
-                                                 duration = 1.second)
+    val connected = AsyncUtil.retryUntilSatisfiedF(conditionF =
+                                                     () => isConnected(),
+                                                   duration = 1.second)
 
     connected.map(_ => logger.debug(s"Successfully connected two clients"))
 

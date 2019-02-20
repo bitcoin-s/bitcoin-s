@@ -3,7 +3,7 @@ package org.bitcoins.rpc
 import java.io.File
 
 import akka.actor.ActorSystem
-import org.bitcoins.rpc.client.BitcoindRpcClient
+import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.scalatest.exceptions.TestFailedException
 import org.scalatest.{AsyncFlatSpec, BeforeAndAfterAll}
 
