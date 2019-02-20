@@ -1,10 +1,12 @@
 package org.bitcoins.rpc.common
 
 import java.io.File
+import java.nio.file.Files
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.testkit.TestKit
+import com.typesafe.config.ConfigValueFactory
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.number.UInt32
@@ -16,6 +18,7 @@ import org.bitcoins.core.protocol.transaction.{
 import org.bitcoins.rpc.{BitcoindRpcTestConfig, BitcoindRpcTestUtil}
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.client.common.RpcOpts.AddNodeArgument
+import org.bitcoins.rpc.config.BitcoindInstance
 import org.scalatest.{AsyncFlatSpec, BeforeAndAfterAll}
 
 import scala.async.Async.{async, await}
@@ -165,18 +168,41 @@ class MempoolRpcTest extends AsyncFlatSpec with BeforeAndAfterAll {
     assert(verboseAncestorsTxid2.head._2.descendantcount == 2)
   }
 
-  it should "be able to abandon a transaction" in async {
+  it should "be able to abandon a transaction" in {
+    val defaultConfig = BitcoindRpcTestUtil.standardConfig
 
-    val recipient = await(otherClient.getNewAddress)
+    val noBroadcastValue = ConfigValueFactory.fromAnyRef(0)
+    val datadirValue = {
+      val tempDirPrefix = null // because java APIs are bad
+      val tempdirPath = Files.createTempDirectory(tempDirPrefix).toString
+      ConfigValueFactory.fromAnyRef(tempdirPath)
+    }
 
-    val maybeAbandonedF = for {
-      txid <- client.sendToAddress(recipient, Bitcoins(1))
-      _ <- client.abandonTransaction(txid)
-      maybeAbandoned <- client.getTransaction(txid)
-    } yield maybeAbandoned
+    val configNoBroadcast =
+      defaultConfig
+        .withValue("walletbroadcast", noBroadcastValue)
+        .withValue("datadir", datadirValue)
 
-    val maybeAbandoned = await(maybeAbandonedF)
-    assert(maybeAbandoned.details.head.abandoned.contains(true))
+    val _ = BitcoindRpcTestUtil.writeConfigToFile(configNoBroadcast)
+    val instanceWithoutBroadcast =
+      BitcoindInstance.fromConfig(configNoBroadcast)
+
+    // walletbroadcast must be turned off for a transaction to be abondonable
+    val clientWithOutBroadcast = new BitcoindRpcClient(instanceWithoutBroadcast)
+
+    for {
+      _ <- clientWithOutBroadcast.start()
+      _ <- clientWithOutBroadcast.addNode(otherClient.getDaemon.uri,
+                                          AddNodeArgument.Add)
+      _ = BitcoindRpcTestUtil.awaitConnection(clientWithOutBroadcast,
+                                              otherClient)
+      _ <- clientWithOutBroadcast.generate(150) // to ensure we have enough balance
+      recipient <- otherClient.getNewAddress
+      txid <- clientWithOutBroadcast.sendToAddress(recipient, Bitcoins(1))
+      _ <- clientWithOutBroadcast.abandonTransaction(txid)
+      maybeAbandoned <- clientWithOutBroadcast.getTransaction(txid)
+      _ <- clientWithOutBroadcast.stop()
+    } yield assert(maybeAbandoned.details.head.abandoned.contains(true))
   }
 
   it should "be able to save the mem pool to disk" in {

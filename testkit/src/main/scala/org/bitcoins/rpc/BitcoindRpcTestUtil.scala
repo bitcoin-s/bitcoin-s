@@ -5,7 +5,7 @@ import java.net.URI
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import com.typesafe.config.{Config, ConfigFactory}
+import com.typesafe.config.{Config, ConfigFactory, ConfigValueFactory}
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.currency.Bitcoins
@@ -54,6 +54,17 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     }
   }
 
+  /**
+    * Standard config used for testing purposes
+    */
+  def standardConfig: Config = {
+    def newUri: URI = new URI(s"http://localhost:$randomPort")
+    config(uri = newUri,
+           rpcUri = newUri,
+           zmqPort = randomPort,
+           pruneMode = false)
+  }
+
   def config(
       uri: URI,
       rpcUri: URI,
@@ -70,7 +81,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       "server" -> "1",
       "debug" -> "1",
       "regtest" -> "1",
-      "walletbroadcast" -> "0",
+      "walletbroadcast" -> "1",
       "txindex" -> (if (pruneMode) "0" else "1"), // pruning and txindex are not compatible
       "zmqpubhashtx" -> s"tcp://127.0.0.1:$zmqPort",
       "zmqpubhashblock" -> s"tcp://127.0.0.1:$zmqPort",
@@ -84,16 +95,12 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
   }
 
   /**
-    * Creates a datadir and places the username/password combo
-    * in the bitcoin.conf in the datadir
+    * Assumes the `config` object has a `datadir` string. Returns the written
+    * file.
     */
-  def authCredentials(
-      uri: URI,
-      rpcUri: URI,
-      zmqPort: Int,
-      pruneMode: Boolean): BitcoindAuthCredentials = {
-    val conf = config(uri, rpcUri, zmqPort, pruneMode)
-    val confSet = conf.entrySet.asScala
+  def writeConfigToFile(config: Config): File = {
+
+    val confSet = config.entrySet.asScala
     val confStr =
       confSet
         .map(entry => {
@@ -103,7 +110,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
         })
         .mkString("\n")
 
-    val datadir = new java.io.File("/tmp/" + randomDirName)
+    val datadir = new File(config.getString("datadir"))
     datadir.mkdir()
 
     val confFile = new java.io.File(datadir.getAbsolutePath + "/bitcoin.conf")
@@ -113,10 +120,37 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     pw.write(confStr)
     pw.close()
 
-    val username = conf.getString("rpcuser")
-    val pass = conf.getString("rpcpassword")
+    confFile
+  }
 
-    BitcoindAuthCredentials(username, pass, rpcUri.getPort, datadir)
+  /**
+    * Creates a datadir and places the username/password combo
+    * in the bitcoin.conf in the datadir
+    */
+  def authCredentials(
+      uri: URI,
+      rpcUri: URI,
+      zmqPort: Int,
+      pruneMode: Boolean): BitcoindAuthCredentials = {
+    val conf = config(uri, rpcUri, zmqPort, pruneMode)
+
+    val configWithDatadir =
+      if (conf.hasPath("datadir")) {
+        conf
+      } else {
+        conf.withValue("datadir",
+                       ConfigValueFactory.fromAnyRef("/tmp/" + randomDirName))
+      }
+
+    val configFile = writeConfigToFile(configWithDatadir)
+
+    val username = configWithDatadir.getString("rpcuser")
+    val pass = configWithDatadir.getString("rpcpassword")
+
+    BitcoindAuthCredentials(username,
+                            pass,
+                            rpcUri.getPort,
+                            configFile.getParentFile)
   }
 
   lazy val network: RegTest.type = RegTest
@@ -473,11 +507,8 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       address: BitcoinAddress,
       amount: Bitcoins)(
       implicit system: ActorSystem): Future[DoubleSha256Digest] = {
-    implicit val materializer: ActorMaterializer =
-      ActorMaterializer.create(system)
     implicit val executionContext: ExecutionContext =
-      materializer.executionContext
-    // TODO(torkel) is this necessary?
+      system.getDispatcher
     sender
       .createRawTransaction(Vector.empty, Map(address -> amount))
       .flatMap(sender.fundRawTransaction)

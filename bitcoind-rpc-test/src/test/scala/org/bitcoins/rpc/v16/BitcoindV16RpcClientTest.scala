@@ -62,18 +62,22 @@ class BitcoindV16RpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
       addr <- client.getNewAddress
       txid <- otherClient.sendToAddress(addr, Bitcoins.one)
       mempool <- otherClient.getRawMemPool
-      _ = logger.info(s"mempool: $mempool")
+      _ = {
+        logger.info(s"txid in mempool: ${mempool.contains(txid)}")
+      }
       _ <- otherClient.generate(6)
-      _ <- client.generate(6)
       tx <- otherClient.getTransaction(txid)
       (utxoTxid, utxoVout) <- client.listUnspent
         .map(utxos => {
           logger.info(s"tx confirmations: ${tx.confirmations}")
           logger.info(s"Addr $addr")
-          logger.info(s"utxos $utxos")
           utxos
         })
         .map(_.filter(_.address.contains(addr)))
+        .map { utxos =>
+          logger.info(s"utxos related to our address: $utxos")
+          utxos
+        }
         .map(_.head)
         .map(utxo => (utxo.txid, utxo.vout))
       newAddress <- client.getNewAddress
