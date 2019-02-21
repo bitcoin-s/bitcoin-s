@@ -1,6 +1,6 @@
-package org.bitcoins.core.gen.ln
+package org.bitcoins.testkit.core.gen.ln
 
-import org.bitcoins.core.gen.NumberGenerator
+import org.bitcoins.testkit.core.gen.NumberGenerator
 import org.bitcoins.core.protocol.ln._
 import org.bitcoins.core.protocol.ln.currency._
 import org.scalacheck.Gen
@@ -39,7 +39,7 @@ trait LnCurrencyUnitGen {
   }
 
   def realisticLnInvoice: Gen[LnCurrencyUnit] = {
-    val gen = Gen.choose(0,LnPolicy.maxAmountMSat.toLong)
+    val gen = Gen.choose(0, LnPolicy.maxAmountMSat.toLong)
     val msat = gen.map(MilliSatoshis(_))
     msat.map(LnCurrencyUnits.fromMSat(_))
   }

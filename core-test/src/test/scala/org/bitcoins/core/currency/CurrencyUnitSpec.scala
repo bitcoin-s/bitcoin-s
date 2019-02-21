@@ -1,6 +1,6 @@
 package org.bitcoins.core.currency
 
-import org.bitcoins.core.gen.CurrencyUnitGenerator
+import org.bitcoins.testkit.core.gen.CurrencyUnitGenerator
 import org.bitcoins.core.number.Int64
 import org.scalacheck.{Gen, Prop, Properties}
 

@@ -1,6 +1,6 @@
 package org.bitcoins.core.bloom
 
-import org.bitcoins.core.gen.BloomFilterGenerator
+import org.bitcoins.testkit.core.gen.BloomFilterGenerator
 import org.scalacheck.{Prop, Properties}
 import scodec.bits.ByteVector
 

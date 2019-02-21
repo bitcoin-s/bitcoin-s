@@ -14,7 +14,11 @@ import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, MerkleBlock}
 import org.bitcoins.core.protocol.script.ScriptPubKey
-import org.bitcoins.core.protocol.transaction.{Transaction, TransactionInput, TransactionOutPoint}
+import org.bitcoins.core.protocol.transaction.{
+  Transaction,
+  TransactionInput,
+  TransactionOutPoint
+}
 import org.bitcoins.core.protocol.{BitcoinAddress, P2PKHAddress}
 import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil}
 import org.bitcoins.rpc.client.RpcOpts.AddressType
@@ -1124,12 +1128,14 @@ class BitcoindRpcClient(val instance: BitcoindInstance)(
         (json \ errorKey).validate[RpcError] match {
           case err: JsSuccess[RpcError] =>
             logger.error(s"Error ${err.value.code}: ${err.value.message}")
-            Failure(new RuntimeException(
-              s"Error ${err.value.code}: ${err.value.message}"))
+            Failure(
+              new RuntimeException(
+                s"Error ${err.value.code}: ${err.value.message}"))
           case _: JsError =>
             logger.error(JsError.toJson(res).toString())
-            Failure(new IllegalArgumentException(
-              s"Could not parse JsResult: ${(json \ resultKey).get}"))
+            Failure(
+              new IllegalArgumentException(
+                s"Could not parse JsResult: ${(json \ resultKey).get}"))
         }
     }
   }
@@ -1151,7 +1157,6 @@ class BitcoindRpcClient(val instance: BitcoindInstance)(
     val payloadF = response.entity.dataBytes.runFold(ByteString.empty)(_ ++ _)
 
     payloadF.map { payload =>
-
       val json = Json.parse(payload.decodeString(ByteString.UTF_8))
       logger.trace(s"bitcoind rpc response ${json}")
       json
@@ -1201,7 +1206,6 @@ class BitcoindRpcClient(val instance: BitcoindInstance)(
     logger.debug(s"starting bitcoind")
     val _ = Process(cmd).run()
 
-
     def isStartedF(): Future[Boolean] = {
       val started: Promise[Boolean] = Promise()
       getBlockCount.onComplete {
@@ -1212,10 +1216,9 @@ class BitcoindRpcClient(val instance: BitcoindInstance)(
       started.future
     }
 
-    val started = AsyncUtil.retryUntilSatisfiedF(
-      () => isStartedF,
-      duration = 1.seconds,
-      maxTries = 60)
+    val started = AsyncUtil.retryUntilSatisfiedF(() => isStartedF,
+                                                 duration = 1.seconds,
+                                                 maxTries = 60)
 
     started.map(_ => logger.debug(s"started bitcoind"))
 

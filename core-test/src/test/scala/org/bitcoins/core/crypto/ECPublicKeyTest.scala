@@ -1,7 +1,7 @@
 package org.bitcoins.core.crypto
 
 import org.bitcoinj.core.Sha256Hash
-import org.bitcoins.core.gen.CryptoGenerators
+import org.bitcoins.testkit.core.gen.CryptoGenerators
 import org.scalatest.prop.PropertyChecks
 import org.scalatest.{FlatSpec, MustMatchers}
 import scodec.bits.ByteVector

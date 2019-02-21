@@ -6,7 +6,7 @@ import org.bitcoins.core.crypto.{
   WitnessTxSigComponentRaw
 }
 import org.bitcoins.core.currency.{CurrencyUnits, Satoshis}
-import org.bitcoins.core.gen.{
+import org.bitcoins.testkit.core.gen.{
   ChainParamsGenerator,
   CreditingTxGen,
   ScriptGenerators,

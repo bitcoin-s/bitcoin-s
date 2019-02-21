@@ -1,4 +1,4 @@
-package org.bitcoins.core.gen
+package org.bitcoins.testkit.core.gen
 
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits, Satoshis}

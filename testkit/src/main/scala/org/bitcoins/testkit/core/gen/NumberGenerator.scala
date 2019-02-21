@@ -1,4 +1,4 @@
-package org.bitcoins.core.gen
+package org.bitcoins.testkit.core.gen
 
 import org.bitcoins.core.number._
 import org.bitcoins.core.protocol.CompactSizeUInt

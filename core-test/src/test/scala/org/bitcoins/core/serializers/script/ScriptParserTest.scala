@@ -4,7 +4,11 @@ import org.bitcoins.core.script.arithmetic.OP_1ADD
 import org.bitcoins.core.script.bitwise.{OP_EQUAL, OP_EQUALVERIFY}
 import org.bitcoins.core.script.constant._
 import org.bitcoins.core.script.control.{OP_ELSE, OP_ENDIF, OP_IF, OP_NOTIF}
-import org.bitcoins.core.script.crypto.{OP_CHECKMULTISIG, OP_CHECKSIG, OP_HASH160}
+import org.bitcoins.core.script.crypto.{
+  OP_CHECKMULTISIG,
+  OP_CHECKSIG,
+  OP_HASH160
+}
 import org.bitcoins.core.script.locktime.OP_CHECKLOCKTIMEVERIFY
 import org.bitcoins.core.script.reserved.OP_NOP
 import org.bitcoins.core.script.splice.OP_SIZE
@@ -267,7 +271,8 @@ class ScriptParserTest extends FlatSpec with MustMatchers {
 
   it must "parse a offered htlc" in {
     //https://github.com/lightningnetwork/lightning-rfc/blob/master/03-transactions.md#offered-htlc-outputs
-    val witScriptHex = "76a91414011f7254d96b819c76986c277d115efce6f7b58763ac67210394854aa6eab5b2a8122cc726e9dded053a2184d88256816826d6231c068d4a5b7c820120876475527c21030d417a46946384f88d5f3337267c5e579765875dc4daca813e21734b140639e752ae67a914b43e1b38138a41b37f7cd9a1d274bc63e3a9b5d188ac6868"
+    val witScriptHex =
+      "76a91414011f7254d96b819c76986c277d115efce6f7b58763ac67210394854aa6eab5b2a8122cc726e9dded053a2184d88256816826d6231c068d4a5b7c820120876475527c21030d417a46946384f88d5f3337267c5e579765875dc4daca813e21734b140639e752ae67a914b43e1b38138a41b37f7cd9a1d274bc63e3a9b5d188ac6868"
     val asm = ScriptParser.fromHex(witScriptHex)
 
     /**
@@ -287,41 +292,45 @@ class ScriptParserTest extends FlatSpec with MustMatchers {
       * OP_ENDIF
       * OP_ENDIF
       */
+    val expectedAsm = List(
+      OP_DUP,
+      OP_HASH160,
+      BytesToPushOntoStack(20),
+      ScriptConstant(
+        ByteVector.fromValidHex("14011f7254d96b819c76986c277d115efce6f7b5")),
+      OP_EQUAL,
+      OP_IF,
+      OP_CHECKSIG,
+      OP_ELSE,
+      BytesToPushOntoStack(33),
+      ScriptConstant(ByteVector.fromValidHex(
+        "0394854aa6eab5b2a8122cc726e9dded053a2184d88256816826d6231c068d4a5b")),
+      OP_SWAP,
+      OP_SIZE,
+      BytesToPushOntoStack(1),
+      ScriptConstant.fromHex("20"),
+      OP_EQUAL,
+      OP_NOTIF,
+      OP_DROP,
+      OP_2,
+      OP_SWAP,
+      BytesToPushOntoStack(33),
+      ScriptConstant(ByteVector.fromValidHex(
+        "030d417a46946384f88d5f3337267c5e579765875dc4daca813e21734b140639e7")),
+      OP_2,
+      OP_CHECKMULTISIG,
+      OP_ELSE,
+      OP_HASH160,
+      BytesToPushOntoStack(20),
+      ScriptConstant(
+        ByteVector.fromValidHex("b43e1b38138a41b37f7cd9a1d274bc63e3a9b5d1")),
+      OP_EQUALVERIFY,
+      OP_CHECKSIG,
+      OP_ENDIF,
+      OP_ENDIF
+    )
 
-    val expectedAsm = List(OP_DUP,
-    OP_HASH160,
-    BytesToPushOntoStack(20),
-    ScriptConstant(ByteVector.fromValidHex("14011f7254d96b819c76986c277d115efce6f7b5")),
-    OP_EQUAL,
-    OP_IF,
-    OP_CHECKSIG,
-    OP_ELSE,
-    BytesToPushOntoStack(33),
-    ScriptConstant(ByteVector.fromValidHex("0394854aa6eab5b2a8122cc726e9dded053a2184d88256816826d6231c068d4a5b")),
-    OP_SWAP,
-    OP_SIZE,
-    BytesToPushOntoStack(1),
-    ScriptConstant.fromHex("20"),
-    OP_EQUAL,
-    OP_NOTIF,
-    OP_DROP,
-    OP_2,
-    OP_SWAP,
-    BytesToPushOntoStack(33),
-    ScriptConstant(ByteVector.fromValidHex("030d417a46946384f88d5f3337267c5e579765875dc4daca813e21734b140639e7")),
-    OP_2,
-    OP_CHECKMULTISIG,
-    OP_ELSE,
-    OP_HASH160,
-    BytesToPushOntoStack(20),
-    ScriptConstant(ByteVector.fromValidHex("b43e1b38138a41b37f7cd9a1d274bc63e3a9b5d1")),
-    OP_EQUALVERIFY,
-    OP_CHECKSIG,
-    OP_ENDIF,
-    OP_ENDIF)
-
-    asm must be (expectedAsm)
-
+    asm must be(expectedAsm)
 
   }
 
@@ -345,53 +354,56 @@ class ScriptParserTest extends FlatSpec with MustMatchers {
       * OP_ENDIF
       * OP_ENDIF
       */
-    val witScriptHex = "76a91414011f7254d96b819c76986c277d115efce6f7b58763ac67210394854aa6eab5b2a8122cc726e9dded053a2184d88256816826d6231c068d4a5b7c8201208763a914b8bcb07f6344b42ab04250c86a6e8b75d3fdbbc688527c21030d417a46946384f88d5f3337267c5e579765875dc4daca813e21734b140639e752ae677502f401b175ac6868"
-
+    val witScriptHex =
+      "76a91414011f7254d96b819c76986c277d115efce6f7b58763ac67210394854aa6eab5b2a8122cc726e9dded053a2184d88256816826d6231c068d4a5b7c8201208763a914b8bcb07f6344b42ab04250c86a6e8b75d3fdbbc688527c21030d417a46946384f88d5f3337267c5e579765875dc4daca813e21734b140639e752ae677502f401b175ac6868"
 
     val asm = ScriptParser.fromHex(witScriptHex)
 
     val expectedAsm = {
       List(
         OP_DUP,
-          OP_HASH160,
-          BytesToPushOntoStack(20),
-          ScriptConstant(ByteVector.fromValidHex("14011f7254d96b819c76986c277d115efce6f7b5")),
-          OP_EQUAL,
-          OP_IF,
-          OP_CHECKSIG,
-          OP_ELSE,
-          BytesToPushOntoStack(33),
-          ScriptConstant(ByteVector.fromValidHex("0394854aa6eab5b2a8122cc726e9dded053a2184d88256816826d6231c068d4a5b")),
-          OP_SWAP,
-          OP_SIZE,
-          BytesToPushOntoStack(1),
-          ScriptConstant(ByteVector.fromValidHex("20")),
-          OP_EQUAL,
-          OP_IF,
-          OP_HASH160,
-          BytesToPushOntoStack(20),
-          ScriptConstant(ByteVector.fromValidHex("b8bcb07f6344b42ab04250c86a6e8b75d3fdbbc6")),
-          OP_EQUALVERIFY,
-          OP_2,
-          OP_SWAP,
-          BytesToPushOntoStack(33),
-          ScriptConstant(ByteVector.fromValidHex("030d417a46946384f88d5f3337267c5e579765875dc4daca813e21734b140639e7")),
-          OP_2,
-          OP_CHECKMULTISIG,
-          OP_ELSE,
-          OP_DROP,
-          BytesToPushOntoStack(2),
-          ScriptConstant(ByteVector.fromValidHex("f401")),
-          OP_CHECKLOCKTIMEVERIFY,
-          OP_DROP,
-          OP_CHECKSIG,
-          OP_ENDIF,
-          OP_ENDIF
-
+        OP_HASH160,
+        BytesToPushOntoStack(20),
+        ScriptConstant(
+          ByteVector.fromValidHex("14011f7254d96b819c76986c277d115efce6f7b5")),
+        OP_EQUAL,
+        OP_IF,
+        OP_CHECKSIG,
+        OP_ELSE,
+        BytesToPushOntoStack(33),
+        ScriptConstant(ByteVector.fromValidHex(
+          "0394854aa6eab5b2a8122cc726e9dded053a2184d88256816826d6231c068d4a5b")),
+        OP_SWAP,
+        OP_SIZE,
+        BytesToPushOntoStack(1),
+        ScriptConstant(ByteVector.fromValidHex("20")),
+        OP_EQUAL,
+        OP_IF,
+        OP_HASH160,
+        BytesToPushOntoStack(20),
+        ScriptConstant(
+          ByteVector.fromValidHex("b8bcb07f6344b42ab04250c86a6e8b75d3fdbbc6")),
+        OP_EQUALVERIFY,
+        OP_2,
+        OP_SWAP,
+        BytesToPushOntoStack(33),
+        ScriptConstant(ByteVector.fromValidHex(
+          "030d417a46946384f88d5f3337267c5e579765875dc4daca813e21734b140639e7")),
+        OP_2,
+        OP_CHECKMULTISIG,
+        OP_ELSE,
+        OP_DROP,
+        BytesToPushOntoStack(2),
+        ScriptConstant(ByteVector.fromValidHex("f401")),
+        OP_CHECKLOCKTIMEVERIFY,
+        OP_DROP,
+        OP_CHECKSIG,
+        OP_ENDIF,
+        OP_ENDIF
       )
     }
 
-    asm must be (expectedAsm)
+    asm must be(expectedAsm)
   }
 
 }

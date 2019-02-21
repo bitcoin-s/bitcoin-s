@@ -1,6 +1,6 @@
 package org.bitcoins.core.protocol.blockchain
 
-import org.bitcoins.core.gen.BlockchainElementsGenerator
+import org.bitcoins.testkit.core.gen.BlockchainElementsGenerator
 import org.bitcoins.core.util.BitcoinSLogger
 import org.scalacheck.{Prop, Properties}
 

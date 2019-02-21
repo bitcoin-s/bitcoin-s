@@ -1,6 +1,6 @@
-package org.bitcoins.core.gen.ln
+package org.bitcoins.testkit.core.gen.ln
 
-import org.bitcoins.core.gen.{CryptoGenerators, NumberGenerator}
+import org.bitcoins.testkit.core.gen.{CryptoGenerators, NumberGenerator}
 import org.bitcoins.core.protocol.ln.ShortChannelId
 import org.bitcoins.core.protocol.ln.currency.MilliSatoshis
 import org.bitcoins.core.protocol.ln.fee.{

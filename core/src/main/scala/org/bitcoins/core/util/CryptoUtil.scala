@@ -128,7 +128,7 @@ trait CryptoUtil extends BitcoinSLogger {
 
     val pub1 = ECPublicKey.fromPoint(Q1)
     val pub2 = ECPublicKey.fromPoint(Q2)
-    (pub1,pub2)
+    (pub1, pub2)
   }
 }
 

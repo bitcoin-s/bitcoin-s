@@ -1,6 +1,6 @@
 package org.bitcoins.core.crypto
 
-import org.bitcoins.core.gen.CryptoGenerators
+import org.bitcoins.testkit.core.gen.CryptoGenerators
 import org.bitcoins.core.util.BitcoinSUnitTest
 import scodec.bits.ByteVector
 

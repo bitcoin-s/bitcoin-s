@@ -1,7 +1,7 @@
 package org.bitcoins.core.protocol.transaction
 
 import org.bitcoins.core.crypto.{ECPrivateKey, EmptyDigitalSignature}
-import org.bitcoins.core.gen.WitnessGenerators
+import org.bitcoins.testkit.core.gen.WitnessGenerators
 import org.bitcoins.core.protocol.script._
 import org.scalacheck.Prop
 import org.scalatest.{FlatSpec, MustMatchers}
