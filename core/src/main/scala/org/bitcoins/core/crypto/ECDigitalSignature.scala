@@ -62,11 +62,12 @@ sealed abstract class ECDigitalSignature extends BitcoinSLogger {
     decodeSignature._2
   }
 
-  def sBytes:ByteVector = {
+  def sBytes: ByteVector = {
     val bytes = s.bigInteger.toByteArray.takeRight(32)
     val padded = ByteVector(bytes).padLeft(32)
     padded
   }
+
   /**
     * Creates a ByteVector with only
     * the 32byte r value and 32 byte s value
@@ -151,8 +152,8 @@ object ECDigitalSignature extends Factory[ECDigitalSignature] {
     require(
       byteVector.length == 64,
       s"Incorrect size for reading a ECDigital signature from a bytevec, got ${byteVector.length}")
-    val r = BigInt(1,byteVector.take(32).toArray)
-    val s = BigInt(1,byteVector.takeRight(32).toArray)
+    val r = BigInt(1, byteVector.take(32).toArray)
+    val s = BigInt(1, byteVector.takeRight(32).toArray)
     fromRS(r, s)
   }
 

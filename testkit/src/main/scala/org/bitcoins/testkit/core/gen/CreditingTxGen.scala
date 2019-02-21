@@ -1,4 +1,4 @@
-package org.bitcoins.core.gen
+package org.bitcoins.testkit.core.gen
 
 import org.bitcoins.core.crypto.Sign
 import org.bitcoins.core.number.UInt32

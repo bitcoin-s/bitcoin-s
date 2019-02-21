@@ -1,5 +1,5 @@
 package org.bitcoins.core.number
-import org.bitcoins.core.gen.NumberGenerator
+import org.bitcoins.testkit.core.gen.NumberGenerator
 import org.bitcoins.core.util.BitcoinSUnitTest
 import org.scalatest.prop.PropertyChecks
 

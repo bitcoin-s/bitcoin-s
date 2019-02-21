@@ -65,7 +65,6 @@ abstract class LnUtil extends BitcoinSLogger {
 
   }
 
-
   /** Decodes a number from Bech32 to a long */
   @tailrec
   final def decodeNumber(list: List[UInt5], accum: BigInt = 0): BigInt = {

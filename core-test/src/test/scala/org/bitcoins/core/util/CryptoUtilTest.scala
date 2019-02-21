@@ -1,6 +1,6 @@
 package org.bitcoins.core.util
 
-import org.bitcoins.core.gen.CryptoGenerators
+import org.bitcoins.testkit.core.gen.CryptoGenerators
 import org.scalatest.prop.{Configuration, PropertyChecks}
 import org.scalatest.{FlatSpec, MustMatchers}
 import org.slf4j.LoggerFactory

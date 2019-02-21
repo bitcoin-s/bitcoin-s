@@ -1,4 +1,4 @@
-package org.bitcoins.eclair.rpc
+package org.bitcoins.testkit.eclair.rpc
 
 import java.io.{File, PrintWriter}
 import java.net.URI
@@ -18,11 +18,10 @@ import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.eclair.rpc.client.EclairRpcClient
 import org.bitcoins.eclair.rpc.config.EclairInstance
 import org.bitcoins.eclair.rpc.json.PaymentResult
-import org.bitcoins.rpc.BitcoindRpcTestUtil
 import org.bitcoins.rpc.client.BitcoindRpcClient
 import org.bitcoins.rpc.config.{BitcoindInstance, ZmqConfig}
-import org.bitcoins.rpc.RpcUtil
-import org.bitcoins.util.AsyncUtil
+import org.bitcoins.testkit.async.TestAsyncUtil
+import org.bitcoins.testkit.rpc.{BitcoindRpcTestUtil, TestRpcUtil}
 
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
@@ -223,8 +222,8 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
       }(system.dispatcher)
     }
 
-    AsyncUtil.retryUntilSatisfiedF(conditionF = () => isState(),
-                                   duration = 1.seconds)
+    TestAsyncUtil.retryUntilSatisfiedF(conditionF = () => isState(),
+                                       duration = 1.seconds)
   }
 
   private def createNodeLink(
@@ -415,9 +414,9 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
     }
 
     logger.debug(s"Awaiting connection between clients")
-    val connected = RpcUtil.retryUntilSatisfiedF(conditionF =
-                                                   () => isConnected(),
-                                                 duration = 1.second)
+    val connected = TestRpcUtil.retryUntilSatisfiedF(conditionF =
+                                                       () => isConnected(),
+                                                     duration = 1.second)
 
     connected.map(_ => logger.debug(s"Successfully connected two clients"))
 

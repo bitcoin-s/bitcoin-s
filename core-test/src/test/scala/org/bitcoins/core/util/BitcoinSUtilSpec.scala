@@ -1,6 +1,6 @@
 package org.bitcoins.core.util
 
-import org.bitcoins.core.gen.StringGenerators
+import org.bitcoins.testkit.core.gen.StringGenerators
 import org.scalacheck.{Prop, Properties}
 
 /**

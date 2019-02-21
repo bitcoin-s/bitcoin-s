@@ -1,6 +1,6 @@
 package org.bitcoins.core.script.constant
 
-import org.bitcoins.core.gen.NumberGenerator
+import org.bitcoins.testkit.core.gen.NumberGenerator
 import org.scalacheck.{Prop, Properties}
 
 /**

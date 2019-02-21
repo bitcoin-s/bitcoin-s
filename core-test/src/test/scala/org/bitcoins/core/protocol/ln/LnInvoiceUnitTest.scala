@@ -1,11 +1,21 @@
 package org.bitcoins.core.protocol.ln
 
 import org.bitcoins.core.crypto._
-import org.bitcoins.core.gen.ln.LnInvoiceGen
+import org.bitcoins.testkit.core.gen.ln.LnInvoiceGen
 import org.bitcoins.core.number.{UInt32, UInt64, UInt8}
-import org.bitcoins.core.protocol.ln.LnParams.{LnBitcoinMainNet, LnBitcoinTestNet}
-import org.bitcoins.core.protocol.ln.currency.{MicroBitcoins, MilliBitcoins, MilliSatoshis}
-import org.bitcoins.core.protocol.ln.fee.{FeeBaseMSat, FeeProportionalMillionths}
+import org.bitcoins.core.protocol.ln.LnParams.{
+  LnBitcoinMainNet,
+  LnBitcoinTestNet
+}
+import org.bitcoins.core.protocol.ln.currency.{
+  MicroBitcoins,
+  MilliBitcoins,
+  MilliSatoshis
+}
+import org.bitcoins.core.protocol.ln.fee.{
+  FeeBaseMSat,
+  FeeProportionalMillionths
+}
 import org.bitcoins.core.protocol.ln.routing.LnRoute
 import org.bitcoins.core.protocol.{Bech32Address, P2PKHAddress, P2SHAddress}
 import org.bitcoins.core.util.{BitcoinSUnitTest, CryptoUtil}
@@ -14,7 +24,8 @@ import scodec.bits.ByteVector
 class LnInvoiceUnitTest extends BitcoinSUnitTest {
   behavior of "LnInvoice"
 
-  override implicit val generatorDrivenConfig: PropertyCheckConfiguration = generatorDrivenConfigNewCode
+  override implicit val generatorDrivenConfig: PropertyCheckConfiguration =
+    generatorDrivenConfigNewCode
 
   val hrpEmpty = LnHumanReadablePart(LnBitcoinMainNet)
 
@@ -368,7 +379,6 @@ class LnInvoiceUnitTest extends BitcoinSUnitTest {
   it must "have serialization symmetry for the invoices" in {
 
     forAll(LnInvoiceGen.lnInvoice) { invoice =>
-
       LnInvoice.fromString(invoice.toString).get == invoice
 
     }

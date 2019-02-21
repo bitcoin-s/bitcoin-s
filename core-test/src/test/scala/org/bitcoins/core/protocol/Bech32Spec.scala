@@ -1,6 +1,6 @@
 package org.bitcoins.core.protocol
 
-import org.bitcoins.core.gen.{
+import org.bitcoins.testkit.core.gen.{
   AddressGenerator,
   ChainParamsGenerator,
   ScriptGenerators

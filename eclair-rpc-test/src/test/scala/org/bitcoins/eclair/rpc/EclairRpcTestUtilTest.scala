@@ -2,7 +2,8 @@ package org.bitcoins.eclair.rpc
 import akka.actor.ActorSystem
 import akka.testkit.TestKit
 import org.bitcoins.eclair.rpc.client.EclairRpcClient
-import org.bitcoins.rpc.BitcoindRpcTestUtil
+import org.bitcoins.testkit.eclair.rpc.EclairRpcTestUtil
+import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.scalatest.{AsyncFlatSpec, BeforeAndAfterAll}
 import org.slf4j.LoggerFactory
 
