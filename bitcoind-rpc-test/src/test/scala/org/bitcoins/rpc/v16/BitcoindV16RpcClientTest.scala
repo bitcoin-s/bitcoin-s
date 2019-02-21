@@ -16,11 +16,13 @@ import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.rpc.{BitcoindRpcTestConfig, BitcoindRpcTestUtil}
 import org.bitcoins.rpc.client.common.RpcOpts.AddNodeArgument
 import org.bitcoins.rpc.client.v16.BitcoindV16RpcClient
+import org.bitcoins.rpc.util.AsyncUtil
 import org.scalatest.{AsyncFlatSpec, BeforeAndAfterAll}
 import org.slf4j.Logger
 
 import scala.async.Async.{async, await}
 import scala.concurrent.{Await, ExecutionContext}
+import scala.concurrent.duration.DurationInt
 import scala.util.Properties
 
 class BitcoindV16RpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
@@ -60,20 +62,17 @@ class BitcoindV16RpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
   it should "be able to sign a raw transaction" in {
     for {
       addr <- client.getNewAddress
-      txid <- otherClient.sendToAddress(addr, Bitcoins.one)
+      _ <- otherClient.sendToAddress(addr, Bitcoins.one)
       _ <- otherClient.generate(6)
-      tx <- otherClient.getTransaction(txid)
+      peers <- client.getPeerInfo
+      _ = {
+        assert(peers.exists(_.networkInfo.addr == otherClient.getDaemon.uri))
+      }
+      recentBlock <- otherClient.getBestBlockHash
+      _ <- AsyncUtil.retryUntilSatisfiedF(() =>
+        BitcoindRpcTestUtil.hasSeenBlock(client, recentBlock), 1.second)
       (utxoTxid, utxoVout) <- client.listUnspent
-        .map(utxos => {
-          logger.info(s"tx confirmations: ${tx.confirmations}")
-          logger.info(s"Addr $addr")
-          utxos
-        })
         .map(_.filter(_.address.contains(addr)))
-        .map { utxos =>
-          logger.info(s"utxos related to our address: $utxos")
-          utxos
-        }
         .map(_.head)
         .map(utxo => (utxo.txid, utxo.vout))
       newAddress <- client.getNewAddress
@@ -82,27 +81,14 @@ class BitcoindV16RpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
         val input = TransactionInput(outPoint,
                                      ScriptSignature.empty,
                                      TransactionConstants.sequence)
-        logger.info(s"Constructing raw TX with input $input")
         val outputs = Map(newAddress -> Bitcoins(0.5))
 
         client.createRawTransaction(Vector(input), outputs)
       }
       signedRawTx <- client.signRawTransaction(rawTx)
     } yield {
-      println("Errors: " + signedRawTx.errors.getOrElse("None"))
       assert(signedRawTx.complete)
     }
-
-    /*for {
-      raw <- BitcoindRpcTestUtil.createRawCoinbaseTransaction(client,
-                                                              otherClient)
-      signed <- client.signRawTransaction(raw)
-    } yield {
-      if (!signed.complete) {
-        logger.info(s"SignedTX errors: ${signed.errors.getOrElse("None")}")
-      }
-      assert(signed.complete)
-    }*/
   }
 
   it should "be able to sign a raw transaction with a private key" ignore {

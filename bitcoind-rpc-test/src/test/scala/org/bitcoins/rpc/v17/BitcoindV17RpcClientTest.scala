@@ -28,7 +28,8 @@ class BitcoindV17RpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
   val otherLabel = "other_label"
 
   lazy val client = new BitcoindV17RpcClient(BitcoindRpcTestUtil.instance())
-  lazy val otherClient = new BitcoindV17RpcClient(BitcoindRpcTestUtil.instance())
+  lazy val otherClient = new BitcoindV17RpcClient(
+    BitcoindRpcTestUtil.instance())
 
   private val DEFAULT_TIMEOUT = BitcoindRpcTestConfig.DEFAULT_TIMEOUT
 
