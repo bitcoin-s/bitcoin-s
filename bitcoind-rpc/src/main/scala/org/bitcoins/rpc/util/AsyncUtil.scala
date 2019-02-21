@@ -50,6 +50,7 @@ abstract class AsyncUtil extends BitcoinSLogger {
       message: String,
       caller: Array[StackTraceElement])
       extends Exception(message) {
+
     /*
     Someone who calls a method in this class will be interested
      * in where the call was made (and the stack trace from there
@@ -58,11 +59,13 @@ abstract class AsyncUtil extends BitcoinSLogger {
      *
      * This trims the top of the stack trace to exclude these internal calls.
      */
-    private val relevantStackTrace = caller.tail
-      .dropWhile(
-        elem =>
-          elem.getFileName == "AsyncUtil.scala"
-            || elem.getFileName == "RpcUtil.scala")
+    val internalFiles: Vector[String] = Vector("AsyncUtil.scala",
+                                               "RpcUtil.scala",
+                                               "TestAsyncUtil.scala",
+                                               "TestRpcUtil.scala")
+
+    private val relevantStackTrace =
+      caller.tail.dropWhile(elem => internalFiles.contains(elem.getFileName))
 
     this.setStackTrace(relevantStackTrace)
   }

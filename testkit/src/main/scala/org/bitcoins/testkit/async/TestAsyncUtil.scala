@@ -39,7 +39,7 @@ object TestAsyncUtil extends TestAsyncUtil {
       if (err.isInstanceOf[RpcRetryException]) {
         val retryErr = err.asInstanceOf[RpcRetryException]
         val relevantStackTrace = retryErr.caller.tail
-          .dropWhile(_.getFileName == "TestAsyncUtil.scalacala")
+          .dropWhile(elem => retryErr.internalFiles.contains(elem.getFileName))
           .takeWhile(!_.getFileName.contains("TestSuite"))
         val stackElement = relevantStackTrace.head
         val file = stackElement.getFileName
