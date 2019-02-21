@@ -1,18 +1,15 @@
-package org.bitcoins.rpc.client
+package org.bitcoins.rpc.client.common
 
-import org.bitcoins.core.crypto.{DoubleSha256Digest, ECPrivateKey}
+import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionInput}
 import org.bitcoins.rpc.jsonmodels.{
   FundRawTransactionResult,
   GetRawTransactionResult,
-  RpcTransaction,
-  SignRawTransactionResult
+  RpcTransaction
 }
-import org.bitcoins.rpc.serializers.JsonReaders._
 import org.bitcoins.rpc.serializers.JsonSerializers._
-import org.bitcoins.rpc.serializers.JsonWriters._
 import play.api.libs.json._
 
 import scala.concurrent.Future
@@ -79,50 +76,4 @@ trait RawTransactionRpc extends Client {
       "sendrawtransaction",
       List(JsString(transaction.hex), JsBoolean(allowHighFees)))
   }
-
-  def signRawTransaction(
-      transaction: Transaction): Future[SignRawTransactionResult] =
-    signRawTransaction(transaction, None, None, None)
-
-  private def signRawTransaction(
-      transaction: Transaction,
-      utxoDeps: Option[Vector[RpcOpts.SignRawTransactionOutputParameter]],
-      keys: Option[Vector[ECPrivateKey]],
-      sigHash: Option[String]): Future[SignRawTransactionResult] = {
-
-    val utxos = utxoDeps.map(Json.toJson(_)).getOrElse(JsArray.empty)
-    val jsonKeys = keys.map(Json.toJson(_)).getOrElse(JsArray.empty)
-
-    val params =
-      if (utxoDeps.isEmpty) {
-        List(JsString(transaction.hex))
-      } else if (keys.isEmpty) {
-        List(JsString(transaction.hex), utxos)
-      } else if (sigHash.isEmpty) {
-        List(JsString(transaction.hex), utxos, jsonKeys)
-      } else {
-        List(JsString(transaction.hex), utxos, jsonKeys, JsString(sigHash.get))
-      }
-
-    bitcoindCall[SignRawTransactionResult]("signrawtransaction", params)
-  }
-
-  def signRawTransaction(
-      transaction: Transaction,
-      utxoDeps: Vector[RpcOpts.SignRawTransactionOutputParameter]): Future[
-    SignRawTransactionResult] =
-    signRawTransaction(transaction, Some(utxoDeps), None, None)
-
-  def signRawTransaction(
-      transaction: Transaction,
-      utxoDeps: Vector[RpcOpts.SignRawTransactionOutputParameter],
-      keys: Vector[ECPrivateKey]): Future[SignRawTransactionResult] =
-    signRawTransaction(transaction, Some(utxoDeps), Some(keys), None)
-
-  def signRawTransaction(
-      transaction: Transaction,
-      utxoDeps: Vector[RpcOpts.SignRawTransactionOutputParameter],
-      keys: Vector[ECPrivateKey],
-      sigHash: String): Future[SignRawTransactionResult] =
-    signRawTransaction(transaction, Some(utxoDeps), Some(keys), Some(sigHash))
 }

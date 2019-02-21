@@ -5,7 +5,7 @@ import java.nio.file.{Files, Path}
 import akka.actor.ActorSystem
 import akka.testkit.TestKit
 import org.bitcoins.core.currency.Bitcoins
-import org.bitcoins.rpc.client.BitcoindRpcClient
+import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.config.BitcoindInstance
 import org.scalatest.{AsyncFlatSpec, BeforeAndAfterAll}
 

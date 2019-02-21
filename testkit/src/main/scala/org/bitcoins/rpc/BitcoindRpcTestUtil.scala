@@ -5,35 +5,65 @@ import java.net.URI
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import com.typesafe.config.{Config, ConfigFactory}
+import com.typesafe.config.{Config, ConfigFactory, ConfigValueFactory}
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.currency.Bitcoins
+import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
+import org.bitcoins.core.protocol.script.ScriptSignature
+import org.bitcoins.core.protocol.transaction.{
+  Transaction,
+  TransactionInput,
+  TransactionOutPoint
+}
 import org.bitcoins.core.util.BitcoinSLogger
-import org.bitcoins.rpc.client.BitcoindRpcClient
+import org.bitcoins.rpc.client.common.RpcOpts.AddNodeArgument
+import org.bitcoins.rpc.client.common.{BitcoindRpcClient, RpcOpts}
+import org.bitcoins.rpc.client.v16.BitcoindV16RpcClient
+import org.bitcoins.rpc.client.v17.BitcoindV17RpcClient
 import org.bitcoins.rpc.config.{
   BitcoindAuthCredentials,
   BitcoindInstance,
   ZmqConfig
 }
+import org.bitcoins.rpc.jsonmodels.{
+  GetBlockWithTransactionsResult,
+  GetTransactionResult,
+  SignRawTransactionResult
+}
 import org.bitcoins.util.AsyncUtil
 
+import scala.annotation.tailrec
 import scala.collection.immutable.Map
+import scala.concurrent._
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
-import scala.concurrent.{
-  ExecutionContext,
-  ExecutionContextExecutor,
-  Future,
-  Promise
-}
-import scala.util.{Failure, Success, Try}
+import scala.util._
 
 trait BitcoindRpcTestUtil extends BitcoinSLogger {
   import scala.collection.JavaConverters._
 
-  def randomDirName: String =
-    0.until(5).map(_ => scala.util.Random.alphanumeric.head).mkString
+  @tailrec
+  private def randomDirName: String = {
+    val dirname = 0.until(5).map(_ => Random.alphanumeric.head).mkString
+    val dir = new File(dirname)
+    if (!dir.exists()) {
+      dirname
+    } else {
+      randomDirName
+    }
+  }
+
+  /**
+    * Standard config used for testing purposes
+    */
+  def standardConfig: Config = {
+    def newUri: URI = new URI(s"http://localhost:$randomPort")
+    config(uri = newUri,
+           rpcUri = newUri,
+           zmqPort = randomPort,
+           pruneMode = false)
+  }
 
   def config(
       uri: URI,
@@ -42,25 +72,55 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       pruneMode: Boolean): Config = {
     val pass = randomDirName
     val username = "random_user_name"
-    val values = Map(
+    val values = Map[String, String](
       "rpcuser" -> username,
       "rpcpassword" -> pass,
-      "rpcport" -> rpcUri.getPort,
-      "port" -> uri.getPort,
+      "rpcport" -> rpcUri.getPort.toString,
+      "port" -> uri.getPort.toString,
       "daemon" -> "1",
       "server" -> "1",
       "debug" -> "1",
       "regtest" -> "1",
-      "walletbroadcast" -> "0",
+      "walletbroadcast" -> "1",
+      "txindex" -> (if (pruneMode) "0" else "1"), // pruning and txindex are not compatible
       "zmqpubhashtx" -> s"tcp://127.0.0.1:$zmqPort",
       "zmqpubhashblock" -> s"tcp://127.0.0.1:$zmqPort",
       "zmqpubrawtx" -> s"tcp://127.0.0.1:$zmqPort",
       "zmqpubrawblock" -> s"tcp://127.0.0.1:$zmqPort",
       "prune" -> (if (pruneMode) "1" else "0")
     )
-    val javaMap = values.asJava
 
+    val javaMap = values.asJava
     ConfigFactory.parseMap(javaMap)
+  }
+
+  /**
+    * Assumes the `config` object has a `datadir` string. Returns the written
+    * file.
+    */
+  def writeConfigToFile(config: Config): File = {
+
+    val confSet = config.entrySet.asScala
+    val confStr =
+      confSet
+        .map(entry => {
+          val key = entry.getKey
+          val value = entry.getValue.unwrapped
+          s"$key=$value"
+        })
+        .mkString("\n")
+
+    val datadir = new File(config.getString("datadir"))
+    datadir.mkdir()
+
+    val confFile = new java.io.File(datadir.getAbsolutePath + "/bitcoin.conf")
+    confFile.createNewFile()
+
+    val pw = new PrintWriter(confFile)
+    pw.write(confStr)
+    pw.close()
+
+    confFile
   }
 
   /**
@@ -73,30 +133,24 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       zmqPort: Int,
       pruneMode: Boolean): BitcoindAuthCredentials = {
     val conf = config(uri, rpcUri, zmqPort, pruneMode)
-    val confSet = conf.entrySet.asScala
-    val confStr =
-      confSet
-        .map(entry => {
-          val key = entry.getKey
-          val value = entry.getValue.unwrapped
-          s"$key=$value"
-        })
-        .mkString("\n")
 
-    val datadir = new java.io.File("/tmp/" + randomDirName)
-    datadir.mkdir()
+    val configWithDatadir =
+      if (conf.hasPath("datadir")) {
+        conf
+      } else {
+        conf.withValue("datadir",
+                       ConfigValueFactory.fromAnyRef("/tmp/" + randomDirName))
+      }
 
-    val confFile = new java.io.File(datadir.getAbsolutePath + "/bitcoin.conf")
-    confFile.createNewFile()
+    val configFile = writeConfigToFile(configWithDatadir)
 
-    val pw = new PrintWriter(confFile)
-    pw.write(confStr)
-    pw.close()
+    val username = configWithDatadir.getString("rpcuser")
+    val pass = configWithDatadir.getString("rpcpassword")
 
-    val username = conf.getString("rpcuser")
-    val pass = conf.getString("rpcpassword")
-
-    BitcoindAuthCredentials(username, pass, rpcUri.getPort, datadir)
+    BitcoindAuthCredentials(username,
+                            pass,
+                            rpcUri.getPort,
+                            configFile.getParentFile)
   }
 
   lazy val network: RegTest.type = RegTest
@@ -133,12 +187,16 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
   }
 
   def stopServers(servers: Vector[BitcoindRpcClient])(
-      implicit system: ActorSystem): Unit =
-    servers.foreach(server => {
-      server.stop()
-      RpcUtil.awaitServerShutdown(server)
-      deleteTmpDir(server.getDaemon.authCredentials.datadir)
-    })
+      implicit system: ActorSystem): Future[Unit] = {
+    implicit val ec: ExecutionContextExecutor = system.getDispatcher
+
+    val serverStops = servers.map { s =>
+      val stopF = s.stop()
+      deleteTmpDir(s.getDaemon.authCredentials.datadir)
+      stopF
+    }
+    Future.sequence(serverStops).map(_ => ())
+  }
 
   def deleteTmpDir(dir: File): Boolean = {
     if (!dir.isDirectory) {
@@ -164,9 +222,9 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
         }
     }
 
-    RpcUtil.awaitConditionF(conditionF = () => isConnected(),
-                            duration = duration,
-                            maxTries = maxTries)
+    AsyncUtil.awaitConditionF(conditionF = () => isConnected(),
+                              duration = duration,
+                              maxTries = maxTries)
   }
 
   def awaitSynced(
@@ -184,9 +242,9 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       }
     }
 
-    RpcUtil.awaitConditionF(conditionF = () => isSynced(),
-                            duration = duration,
-                            maxTries = maxTries)
+    AsyncUtil.awaitConditionF(conditionF = () => isSynced(),
+                              duration = duration,
+                              maxTries = maxTries)
   }
 
   def awaitSameBlockHeight(
@@ -204,9 +262,9 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       }
     }
 
-    RpcUtil.awaitConditionF(conditionF = () => isSameBlockHeight(),
-                            duration = duration,
-                            maxTries = maxTries)
+    AsyncUtil.awaitConditionF(conditionF = () => isSameBlockHeight(),
+                              duration = duration,
+                              maxTries = maxTries)
   }
 
   def awaitDisconnected(
@@ -225,67 +283,218 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
 
     }
 
-    RpcUtil.awaitConditionF(conditionF = () => isDisconnected(),
-                            duration = duration,
-                            maxTries = maxTries)
+    AsyncUtil.awaitConditionF(conditionF = () => isDisconnected(),
+                              duration = duration,
+                              maxTries = maxTries)
   }
 
-  /** Returns a pair of RpcClients that are connected with 100 blocks in the chain */
+  /**
+    * Returns a pair of unconnected
+    * [[org.bitcoins.rpc.client.common.BitcoindRpcClient BitcoindRpcClient]]s
+    * with no blocks
+    */
+  def createUnconnectedNodePair(
+      port1: Int = randomPort,
+      rpcPort1: Int = randomPort,
+      port2: Int = randomPort,
+      rpcPort2: Int = randomPort)(
+      implicit
+      system: ActorSystem): Future[(BitcoindRpcClient, BitcoindRpcClient)] = {
+    implicit val ec: ExecutionContextExecutor = system.getDispatcher
+    val client1: BitcoindRpcClient = new BitcoindRpcClient(
+      instance(port1, rpcPort1))
+    val client2: BitcoindRpcClient = new BitcoindRpcClient(
+      instance(port2, rpcPort2))
+
+    val start1F = client1.start()
+    val start2F = client2.start()
+
+    for {
+      _ <- start1F
+      _ <- start2F
+    } yield (client1, client2)
+
+  }
+
+  /**
+    * Returns a pair of [[org.bitcoins.rpc.client.common.BitcoindRpcClient BitcoindRpcClient]]
+    * that are connected with 100 blocks in the chain
+    */
   def createNodePair(
       port1: Int = randomPort,
       rpcPort1: Int = randomPort,
       port2: Int = randomPort,
       rpcPort2: Int = randomPort)(implicit system: ActorSystem): Future[
     (BitcoindRpcClient, BitcoindRpcClient)] = {
-    implicit val m: ActorMaterializer = ActorMaterializer.create(system)
-    implicit val ec = m.executionContext
-    val client1: BitcoindRpcClient = new BitcoindRpcClient(
-      instance(port1, rpcPort1))
-    val client2: BitcoindRpcClient = new BitcoindRpcClient(
-      instance(port2, rpcPort2))
+    implicit val executionContext: ExecutionContext = system.dispatcher
+    val clientsF = createUnconnectedNodePair(port1 = port1,
+                                             rpcPort1 = rpcPort1,
+                                             port2 = port2,
+                                             rpcPort2 = rpcPort2)
 
-    client1.start()
-    client2.start()
-
-    val try1 = Try(RpcUtil.awaitServer(client1))
-    if (try1.isFailure) {
-      deleteNodePair(client1, client2)
-      throw try1.failed.get
-    }
-
-    val try2 = Try(RpcUtil.awaitServer(client2))
-    if (try2.isFailure) {
-      deleteNodePair(client1, client2)
-      throw try2.failed.get
-    }
-
-    client1.addNode(client2.getDaemon.uri, "add").flatMap { _ =>
-      val try3 =
-        Try(awaitConnection(from = client1, to = client2, duration = 1.seconds))
-
-      if (try3.isFailure) {
-        logger.error(
-          s"Failed to connect client1 and client 2 ${try3.failed.get.getMessage}")
-        deleteNodePair(client1, client2)
-        throw try3.failed.get
-      }
-      client1.generate(100).map { _ =>
-        val try4 = Try(awaitSynced(client1, client2))
-
-        if (try4.isFailure) {
+    def cleanUp(
+        attempt: Try[_],
+        client1: BitcoindRpcClient,
+        client2: BitcoindRpcClient) =
+      attempt match {
+        case Success(_) => Future.successful(())
+        case Failure(exc) =>
           deleteNodePair(client1, client2)
-          throw try4.failed.get
+          Future.failed(exc)
+      }
+
+    for {
+      (client1, client2) <- clientsF
+      _ <- client1.addNode(client2.getDaemon.uri, AddNodeArgument.Add)
+      connT = Try { awaitConnection(client1, client2) }
+      _ <- cleanUp(connT, client1, client2)
+      _ <- client1.generate(100)
+      syncT = Try { awaitSynced(client1, client2) }
+      _ <- cleanUp(syncT, client1, client2)
+    } yield (client1, client2)
+  }
+
+  def createRawCoinbaseTransaction(
+      sender: BitcoindRpcClient,
+      receiver: BitcoindRpcClient,
+      amount: Bitcoins = Bitcoins(1))(
+      implicit executionContext: ExecutionContext): Future[Transaction] = {
+    {
+      sender.generate(2).flatMap { blocks =>
+        sender.getBlock(blocks(0)).flatMap { block0 =>
+          sender.getBlock(blocks(1)).flatMap { block1 =>
+            sender.getTransaction(block0.tx(0)).flatMap { transaction0 =>
+              sender.getTransaction(block1.tx(0)).flatMap { transaction1 =>
+                val input0 =
+                  TransactionOutPoint(transaction0.txid.flip,
+                                      UInt32(transaction0.blockindex.get))
+                val input1 =
+                  TransactionOutPoint(transaction1.txid.flip,
+                                      UInt32(transaction1.blockindex.get))
+                val sig: ScriptSignature = ScriptSignature.empty
+                receiver.getNewAddress.flatMap { address =>
+                  sender.createRawTransaction(
+                    Vector(TransactionInput(input0, sig, UInt32(1)),
+                           TransactionInput(input1, sig, UInt32(2))),
+                    Map(address -> amount))
+                }
+              }
+            }
+          }
         }
-        (client1, client2)
       }
     }
+
+    /* val txsF = for {
+      firstHash +: secondHash +: _ <- sender.generate(2)
+      firstBlock <- {
+        if (isTest && Properties.isMac) { // macOS is having issues on Travis
+          Thread.sleep(3000)
+        }
+        sender.getBlock(firstHash)
+      }
+      firstTransaction <- sender.getRawTransaction(firstBlock.tx.head)
+      secondBlock <- sender.getBlock(secondHash)
+      secondTransaction <- sender.getRawTransaction(secondBlock.tx.head)
+    } yield (firstTransaction, secondTransaction)
+
+    txsF.flatMap {
+      case (firstTransaction, secondTransaction) =>
+        val input0 =
+          TransactionOutPoint(firstTransaction.txid.flip,
+                              UInt32(firstTransaction.vout.head.n))
+        val input1 =
+          TransactionOutPoint(secondTransaction.txid.flip,
+                              UInt32(secondTransaction.vout.head.n))
+
+        val sig: ScriptSignature = ScriptSignature.empty
+        receiver.getNewAddress.flatMap { address =>
+          sender.createRawTransaction(
+            Vector(TransactionInput(input0, sig, UInt32(1)),
+                   TransactionInput(input1, sig, UInt32(2))),
+            Map(address -> amount))
+        }
+    }*/
+  }
+
+  /**
+    * Bitcoin Core 0.16 and 0.17 has diffrent APIs for signing raw transactions.
+    * This method tries to construct either a
+    * [[org.bitcoins.rpc.client.v16.BitcoindV16RpcClient BitcoindV16RpcClient]]
+    * or a [[org.bitcoins.rpc.client.v16.BitcoindV16RpcClient BitcoindV16RpcClient]]
+    * from the provided `signer`, and then calls the appropriate method on the result.
+    *
+    * Throws a [[RuntimeException]] if no versioned
+    * [[org.bitcoins.rpc.client.common.BitcoindRpcClient BitcoindRpcClient]]
+    * can be constructed.
+    */
+  def signRawTransaction(
+      signer: BitcoindRpcClient,
+      transaction: Transaction,
+      utxoDeps: Vector[RpcOpts.SignRawTransactionOutputParameter] = Vector.empty
+  )(implicit actorSystemw: ActorSystem): Future[SignRawTransactionResult] =
+    signer match {
+      case v17: BitcoindV17RpcClient =>
+        v17.signRawTransactionWithWallet(transaction, utxoDeps)
+      case v16: BitcoindV16RpcClient =>
+        v16.signRawTransaction(transaction, utxoDeps)
+      case unknown: BitcoindRpcClient =>
+        val v16T = BitcoindV16RpcClient.fromUnknownVersion(unknown)
+        val v17T = BitcoindV17RpcClient.fromUnknownVersion(unknown)
+        (v16T, v17T) match {
+          case (Failure(_), Failure(_)) =>
+            throw new RuntimeException(
+              "Could not figure out version of provided bitcoind RPC client!")
+          case (Success(_), Success(_)) =>
+            throw new RuntimeException(
+              "This should not happen, managed to construct different versioned RPC clients from one single client")
+          case (Success(v16), Failure(_)) =>
+            v16.signRawTransaction(transaction, utxoDeps)
+          case (Failure(_), Success(v17)) =>
+            v17.signRawTransactionWithWallet(transaction, utxoDeps)
+        }
+    }
+
+  def sendCoinbaseTransaction(
+      sender: BitcoindRpcClient,
+      receiver: BitcoindRpcClient,
+      amount: Bitcoins = Bitcoins(1))(
+      implicit actorSystem: ActorSystem): Future[GetTransactionResult] = {
+    implicit val materializer: ActorMaterializer =
+      ActorMaterializer.create(actorSystem)
+    implicit val ec: ExecutionContextExecutor = materializer.executionContext
+    createRawCoinbaseTransaction(sender, receiver, amount)
+      .flatMap(signRawTransaction(sender, _))
+      .flatMap { signedTransaction =>
+        sender
+          .generate(100)
+          .flatMap { _ => // Can't spend coinbase until depth 100
+            sender
+              .sendRawTransaction(signedTransaction.hex, allowHighFees = true)
+              .flatMap { transactionHash =>
+                sender.getTransaction(transactionHash)
+              }
+          }
+      }
+  }
+
+  def getFirstBlock(
+      implicit
+      node: BitcoindRpcClient,
+      executionContext: ExecutionContext): Future[
+    GetBlockWithTransactionsResult] = {
+    node
+      .getBlockHash(1)
+      .flatMap(node.getBlockWithTransactions)
   }
 
   def fundBlockChainTransaction(
       sender: BitcoindRpcClient,
       address: BitcoinAddress,
       amount: Bitcoins)(
-      implicit ec: ExecutionContext): Future[DoubleSha256Digest] = {
+      implicit system: ActorSystem): Future[DoubleSha256Digest] = {
+    implicit val mat: ActorMaterializer = ActorMaterializer.create(system)
+    implicit val ec: ExecutionContextExecutor = mat.executionContext
     fundMemPoolTransaction(sender, address, amount).flatMap { txid =>
       sender.generate(1).map { _ =>
         txid
@@ -297,8 +506,17 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       sender: BitcoindRpcClient,
       address: BitcoinAddress,
       amount: Bitcoins)(
-      implicit ec: ExecutionContext): Future[DoubleSha256Digest] = {
-    sender.sendToAddress(address, amount)
+      implicit system: ActorSystem): Future[DoubleSha256Digest] = {
+    implicit val executionContext: ExecutionContext =
+      system.getDispatcher
+    sender
+      .createRawTransaction(Vector.empty, Map(address -> amount))
+      .flatMap(sender.fundRawTransaction)
+      .flatMap { fundedTx =>
+        signRawTransaction(sender, fundedTx.hex).flatMap { signedTx =>
+          sender.sendRawTransaction(signedTx.hex)
+        }
+      }
   }
 
   def deleteNodePair(

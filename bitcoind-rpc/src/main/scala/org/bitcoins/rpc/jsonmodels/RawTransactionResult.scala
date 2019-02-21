@@ -60,10 +60,10 @@ case class GetRawTransactionResult(
     locktime: UInt32,
     vin: Vector[GetRawTransactionVin],
     vout: Vector[RpcTransactionOutput],
-    blockhash: DoubleSha256Digest,
+    blockhash: Option[DoubleSha256Digest],
     confirmations: Int,
-    time: UInt32,
-    blocktime: UInt32)
+    time: Option[UInt32],
+    blocktime: Option[UInt32])
     extends RawTransactionResult
 
 case class GetRawTransactionVin(

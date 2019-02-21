@@ -19,10 +19,9 @@ import org.bitcoins.eclair.rpc.client.EclairRpcClient
 import org.bitcoins.eclair.rpc.config.EclairInstance
 import org.bitcoins.eclair.rpc.json.PaymentResult
 import org.bitcoins.rpc.BitcoindRpcTestUtil
-import org.bitcoins.rpc.client.BitcoindRpcClient
+import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.config.{BitcoindInstance, ZmqConfig}
-import org.bitcoins.rpc.RpcUtil
-import org.bitcoins.util.AsyncUtil
+import org.bitcoins.rpc.util.AsyncUtil
 
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
@@ -379,8 +378,6 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
       e.start().map(_ => e)
     }
 
-    logger.debug(s"Both clients started")
-
     val connectedLnF: Future[(EclairRpcClient, EclairRpcClient)] =
       clientF.flatMap { c1 =>
         otherClientF.flatMap { c2 =>
@@ -415,9 +412,9 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
     }
 
     logger.debug(s"Awaiting connection between clients")
-    val connected = RpcUtil.retryUntilSatisfiedF(conditionF =
-                                                   () => isConnected(),
-                                                 duration = 1.second)
+    val connected = AsyncUtil.retryUntilSatisfiedF(conditionF =
+                                                     () => isConnected(),
+                                                   duration = 1.second)
 
     connected.map(_ => logger.debug(s"Successfully connected two clients"))
 
@@ -537,7 +534,7 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
         authCredentials =
           eclairRpcClient.instance.authCredentials.bitcoinAuthOpt.get
       )
-      new BitcoindRpcClient(bitcoindInstance)
+      new BitcoindRpcClient(bitcoindInstance)(system)
     }
     bitcoindRpc
   }

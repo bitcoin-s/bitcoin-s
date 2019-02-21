@@ -1,10 +1,8 @@
-package org.bitcoins.rpc.client
+package org.bitcoins.rpc.client.common
 
 import org.bitcoins.core.crypto.DoubleSha256Digest
-import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader}
 import org.bitcoins.rpc.jsonmodels._
-import org.bitcoins.rpc.serializers.JsonReaders._
 import org.bitcoins.rpc.serializers.JsonSerializers._
 import play.api.libs.json.{JsBoolean, JsNumber, JsString}
 
@@ -178,12 +176,6 @@ trait BlockchainRpc extends Client {
 
   def preciousBlock(headerHash: DoubleSha256Digest): Future[Unit] = {
     bitcoindCall[Unit]("preciousblock", List(JsString(headerHash.hex)))
-  }
-
-  def validateAddress(
-      address: BitcoinAddress): Future[ValidateAddressResult] = {
-    bitcoindCall[ValidateAddressResult]("validateaddress",
-                                        List(JsString(address.toString)))
   }
 
   def verifyChain(level: Int = 3, blocks: Int = 6): Future[Boolean] = {

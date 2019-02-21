@@ -1,10 +1,10 @@
-package org.bitcoins.rpc.client
+package org.bitcoins.rpc.client.common
 
 import java.net.URI
 
 import org.bitcoins.core.protocol.blockchain.Block
+import org.bitcoins.rpc.client.common.RpcOpts.AddNodeArgument
 import org.bitcoins.rpc.jsonmodels._
-import org.bitcoins.rpc.serializers.JsonReaders._
 import org.bitcoins.rpc.serializers.JsonSerializers._
 import play.api.libs.json.{JsBoolean, JsNumber, JsString}
 
@@ -12,9 +12,10 @@ import scala.concurrent.Future
 
 trait P2PRpc extends Client {
 
-  def addNode(address: URI, command: String): Future[Unit] = {
-    bitcoindCall[Unit]("addnode",
-                       List(JsString(address.getAuthority), JsString(command)))
+  def addNode(address: URI, command: AddNodeArgument): Future[Unit] = {
+    bitcoindCall[Unit](
+      "addnode",
+      List(JsString(address.getAuthority), JsString(command.toString)))
   }
 
   def clearBanned(): Future[Unit] = {

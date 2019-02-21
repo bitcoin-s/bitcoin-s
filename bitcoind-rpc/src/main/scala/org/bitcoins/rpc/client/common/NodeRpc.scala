@@ -1,8 +1,7 @@
-package org.bitcoins.rpc.client
+package org.bitcoins.rpc.client.common
 
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.rpc.jsonmodels.GetMemoryInfoResult
-import org.bitcoins.rpc.serializers.JsonReaders._
 import org.bitcoins.rpc.serializers.JsonSerializers._
 import play.api.libs.json.{JsArray, JsString, Json}
 

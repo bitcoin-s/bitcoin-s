@@ -1,17 +1,18 @@
-package org.bitcoins.rpc
+package org.bitcoins.rpc.common
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
+import akka.testkit.TestKit
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.crypto.ECPrivateKey
 import org.bitcoins.core.protocol.P2PKHAddress
 import org.bitcoins.core.util.BitcoinSLogger
-import org.bitcoins.rpc.client.BitcoindRpcClient
-import org.bitcoins.rpc.client.RpcOpts.AddressType
+import org.bitcoins.rpc.BitcoindRpcTestUtil
+import org.bitcoins.rpc.client.common.BitcoindRpcClient
+import org.bitcoins.rpc.client.common.RpcOpts.AddressType
 import org.scalatest.{AsyncFlatSpec, BeforeAndAfter, BeforeAndAfterAll}
 import org.slf4j.Logger
 
-import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, ExecutionContext}
 
 class MessageRpcTest
@@ -28,22 +29,14 @@ class MessageRpcTest
   val logger: Logger = BitcoinSLogger.logger
 
   override protected def beforeAll(): Unit = {
-    logger.info("Starting MessageRpcTest")
-    logger.info("Bitcoin server starting")
-    BitcoindRpcTestUtil.startServers(Vector(client))
-    logger.info("Bitcoin server started")
+    import org.bitcoins.rpc.BitcoindRpcTestConfig.DEFAULT_TIMEOUT
+    Await.result(BitcoindRpcTestUtil.startServers(Vector(client)),
+                 DEFAULT_TIMEOUT)
   }
 
   override protected def afterAll(): Unit = {
-    logger.info("Cleaning up after MessageRpcTest")
-    logger.info("Stopping Bitcoin server")
     BitcoindRpcTestUtil.stopServers(Vector(client))
-    logger.info("Bitcoin server stopped")
-
-    logger.info("Stopping ActorSystem")
-    Await.result(system.terminate(), 10.seconds)
-    logger.info("Stopped ActorSystem")
-
+    TestKit.shutdownActorSystem(system)
   }
 
   behavior of "MessageRpc"

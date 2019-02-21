@@ -1,14 +1,11 @@
-package org.bitcoins.rpc.client
+package org.bitcoins.rpc.client.common
 
 import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.blockchain.MerkleBlock
-import org.bitcoins.core.protocol.script.ScriptPubKey
-import org.bitcoins.core.util.BitcoinSUtil
-import org.bitcoins.rpc.client.RpcOpts.AddressType
+import org.bitcoins.rpc.client.common.RpcOpts.AddressType
 import org.bitcoins.rpc.jsonmodels._
-import org.bitcoins.rpc.serializers.JsonReaders._
 import org.bitcoins.rpc.serializers.JsonSerializers._
 import play.api.libs.json._
 
@@ -42,13 +39,6 @@ trait TransactionRpc extends Client {
 
     bitcoindCall[BumpFeeResult]("bumpfee",
                                 List(JsString(txid.hex), JsObject(options)))
-  }
-
-  // TODO: add ScriptPubKey.asmHex
-  def decodeScript(script: ScriptPubKey): Future[DecodeScriptResult] = {
-    bitcoindCall[DecodeScriptResult](
-      "decodescript",
-      List(JsString(BitcoinSUtil.encodeHex(script.asmBytes))))
   }
 
   // Needs manual testing!
