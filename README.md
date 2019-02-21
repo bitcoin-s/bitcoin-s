@@ -15,15 +15,21 @@
 
 2. `core-test` - this is where all test cases for the `core` project live
 
-3. `rpc` - this is a RPC client implementation for `bitcoind`. For more info read [`rpc/README.md`](rpc/README.md)
+3. `bitcoind-rpc` - this is a RPC client implementation for `bitcoind`. For more info read [`bitcoind-rpc/README.md`](bitcoind-rpc/README.md)
 
-4. `eclair-rpc` - this is a RPC client implementation for [Eclair](https://en.wikipedia.org/wiki/Algebraic_data_type), which is a Lightning Network implementation. For more information please read [`eclair-rpc/README.md`](eclair-rpc-README.md)
+4. `bitcoind-rpc-test` - this is where all test cases for the `bitcoind-rpc` project live
 
-5. `bench` - benchmarks for Bitcoin-S. For more information please read [`bench/README.md`](bench/README.md)
+5. `eclair-rpc` - this is a RPC client implementation for [Eclair](https://en.wikipedia.org/wiki/Algebraic_data_type), which is a Lightning Network implementation. For more information please read [`eclair-rpc/README.md`](eclair-rpc/README.md)
 
-6. `testkit` - This is a useful testkit for testing Bitcoin related applications. You can spin up Bitcoin and Lightning nodes arbitrarily and set them in specific states. For more information please read [`testkit/README.md`](testkit/README.md)
+6. `eclair-rpc-test` - this is where all test cases for the `eclair-rpc` project live
 
-7. `zmq` - `bitcoind` has a setting that publishes information about the state of the network over ZMQ. This project implements a subscriber that allows you to read and parse that information. For more information see [`zmq/README.md`](zmq/README.md) as well as the official [Bitcoin Core ZMQ documentation](https://github.com/bitcoin/bitcoin/blob/master/doc/zmq.md)
+7. `bench` - benchmarks for Bitcoin-S. For more information please read [`bench/README.md`](bench/README.md)
+
+8. `testkit` - This is a useful testkit for testing Bitcoin related applications. You can spin up Bitcoin and Lightning nodes arbitrarily and set them in specific states. For more information please read [`testkit/README.md`](testkit/README.md)
+
+9. `zmq` - `bitcoind` has a setting that publishes information about the state of the network over ZMQ. This project implements a subscriber that allows you to read and parse that information. For more information see [`zmq/README.md`](zmq/README.md) as well as the official [Bitcoin Core ZMQ documentation](https://github.com/bitcoin/bitcoin/blob/master/doc/zmq.md)
+
+10. `secp256k1jni` - JNI (Java Native Interface) for [secp256k1](https://github.com/bitcoin-core/secp256k1), a optimized C library for EC operations on curve secp256k1. It has support for a wide range of cryptographic operations used in the Bitcoin protocol. Fore more information please read [`secp256k1jni/README.md`](secp256k1jni/README.md)
 
 ## Artifacts
 
