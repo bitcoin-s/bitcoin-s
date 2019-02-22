@@ -108,6 +108,7 @@ lazy val root = project
     eclairRpc,
     eclairRpcTest,
     node,
+    nodeTest,
     testkit,
     doc
   )

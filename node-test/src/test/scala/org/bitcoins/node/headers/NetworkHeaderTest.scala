@@ -4,9 +4,9 @@ import org.bitcoins.core.config.TestNet3
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.util.{BitcoinSUtil, CryptoUtil}
 import org.bitcoins.node.messages.VerAckMessage
-import org.bitcoins.node.util.TestUtil
+import org.bitcoins.node.util.NodeTestUtil
 import org.bitcoins.node.messages.VerAckMessage
-import org.bitcoins.node.util.TestUtil
+import org.bitcoins.node.util.NodeTestUtil
 import org.scalatest.{FlatSpec, MustMatchers}
 
 /**
@@ -15,13 +15,13 @@ import org.scalatest.{FlatSpec, MustMatchers}
 class NetworkHeaderTest extends FlatSpec with MustMatchers {
 
   "MessageHeader" must "must create a message header for a message" in {
-    val messageHeader = NetworkHeader(TestNet3, TestUtil.versionMessage)
+    val messageHeader = NetworkHeader(TestNet3, NodeTestUtil.versionMessage)
     messageHeader.network must be(TestNet3.magicBytes)
-    messageHeader.commandName must be(TestUtil.versionMessage.commandName)
+    messageHeader.commandName must be(NodeTestUtil.versionMessage.commandName)
     messageHeader.payloadSize must be(
-      UInt32(TestUtil.versionMessage.bytes.size))
+      UInt32(NodeTestUtil.versionMessage.bytes.size))
     messageHeader.checksum must be(
-      CryptoUtil.doubleSHA256(TestUtil.versionMessage.bytes).bytes.take(4))
+      CryptoUtil.doubleSHA256(NodeTestUtil.versionMessage.bytes).bytes.take(4))
   }
 
   it must "build the correct message header for a verack message" in {

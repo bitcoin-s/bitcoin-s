@@ -3,9 +3,9 @@ package org.bitcoins.node.serializers.headers
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil}
 import org.bitcoins.node.messages.NetworkPayload
-import org.bitcoins.node.util.TestUtil
+import org.bitcoins.node.util.NodeTestUtil
 import org.bitcoins.node.messages.NetworkPayload
-import org.bitcoins.node.util.TestUtil
+import org.bitcoins.node.util.NodeTestUtil
 import org.scalatest.{FlatSpec, MustMatchers}
 
 /**
@@ -37,7 +37,7 @@ class RawNetworkHeaderSerializerTest
   }
 
   it must "read a network header from a node on the network" in {
-    val hex = TestUtil.rawNetworkMessage.take(48)
+    val hex = NodeTestUtil.rawNetworkMessage.take(48)
     val header = RawNetworkHeaderSerializer.read(hex)
     BitcoinSUtil.encodeHex(header.network) must be("0B110907".toLowerCase)
     header.commandName.size must be(NetworkPayload.versionCommandName.size)

@@ -19,7 +19,7 @@ abstract class AsyncUtil extends BitcoinSLogger {
 
   def retryUntilSatisfied(
       condition: => Boolean,
-      duration: FiniteDuration,
+      duration: FiniteDuration = 100.millis,
       maxTries: Int = 50)(implicit system: ActorSystem): Future[Unit] = {
     val f = () => Future.successful(condition)
     retryUntilSatisfiedF(f, duration, maxTries)

@@ -1,6 +1,6 @@
 package org.bitcoins.node.networking
 
-import akka.actor.{Actor, ActorContext, ActorRef, Props}
+import akka.actor.{Actor, ActorContext, ActorRef, ActorRefFactory, Props}
 import akka.event.LoggingReceive
 import akka.io.{IO, Tcp}
 import akka.util.ByteString
@@ -9,7 +9,9 @@ import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.node.NetworkMessage
 import org.bitcoins.node.constant.Constants
 import org.bitcoins.node.messages.NetworkPayload
+import org.bitcoins.node.messages.control.VersionMessage
 import org.bitcoins.node.networking.peer.PeerMessageReceiver
+import org.bitcoins.node.networking.peer.PeerMessageReceiver.NetworkMessageReceived
 import org.bitcoins.node.util.BitcoinSpvNodeUtil
 import scodec.bits.ByteVector
 
@@ -33,12 +35,11 @@ import scodec.bits.ByteVector
   *
   * In this class you will see a 'unalignedBytes' value passed around in a lot of methods
   * This is because we cannot assume that a Bitcoin [[NetworkMessage]] aligns with a tcp packet.
-  * For instance, a large [[BlockMessage]] (up to 4MB in size)
+  * For instance, a large [[org.bitcoins.node.messages.BlockMessage]] (up to 4MB in size)
   * CANNOT fit in a single tcp packet. This means we must cache
   * the bytes and wait for the rest of them to be sent.
   */
 sealed abstract class ClientActor extends Actor with BitcoinSLogger {
-
 
   /** The place we send messages that we successfully parsed from our
     * peer on the p2p network. This is mostly likely a [[org.bitcoins.node.networking.peer.PeerMessageSender]]
@@ -64,20 +65,22 @@ sealed abstract class ClientActor extends Actor with BitcoinSLogger {
     * This actor signifies the node we are connected to on the p2p network
     * This is the context we are in after we received a [[Tcp.Connected]] message
     */
-  private def awaitNetworkRequest(peer: ActorRef, unalignedBytes: ByteVector): Receive = LoggingReceive {
+  private def awaitNetworkRequest(
+      peer: ActorRef,
+      unalignedBytes: ByteVector): Receive = LoggingReceive {
     case message: NetworkMessage => sendNetworkMessage(message, peer)
     case payload: NetworkPayload =>
       val networkMsg = NetworkMessage(network, payload)
       self.forward(networkMsg)
     case message: Tcp.Message =>
-      val newUnalignedBytes = handleTcpMessage(message, Some(peer), unalignedBytes)
-      context.become(awaitNetworkRequest(peer,newUnalignedBytes))
+      val newUnalignedBytes =
+        handleTcpMessage(message, Some(peer), unalignedBytes)
+      context.become(awaitNetworkRequest(peer, newUnalignedBytes))
   }
 
   /** This context is responsible for initializing a tcp connection with a peer on the bitcoin p2p network */
   def receive = LoggingReceive {
     case cmd: Tcp.Command =>
-
       //we only accept a Tcp.Connect/Tcp.Connected
       //message to the default receive on this actor
       //after receiving Tcp.Connected we switch to the
@@ -85,11 +88,9 @@ sealed abstract class ClientActor extends Actor with BitcoinSLogger {
       //execution loop for the Client actor
       val _ = handleCommand(cmd, None)
 
-
     case connected: Tcp.Connected =>
+      val _ = handleEvent(connected, ByteVector.empty)
 
-      val _ = handleEvent(connected,ByteVector.empty)
-      
   }
 
   /**
@@ -97,9 +98,12 @@ sealed abstract class ClientActor extends Actor with BitcoinSLogger {
     * @param message
     * @return the unaligned bytes if we haven't received a full bitcoin p2p message yet
     */
-  private def handleTcpMessage(message: Tcp.Message, peer: Option[ActorRef], unalignedBytes: ByteVector): ByteVector = {
+  private def handleTcpMessage(
+      message: Tcp.Message,
+      peer: Option[ActorRef],
+      unalignedBytes: ByteVector): ByteVector = {
     message match {
-      case event: Tcp.Event     =>
+      case event: Tcp.Event =>
         handleEvent(event, unalignedBytes)
       case command: Tcp.Command =>
         handleCommand(command, peer)
@@ -108,15 +112,17 @@ sealed abstract class ClientActor extends Actor with BitcoinSLogger {
     }
   }
 
-
   /**
     * This function is responsible for handling a [[Tcp.Event]] algebraic data type
     * @param event
     */
-  private def handleEvent(event: Tcp.Event, unalignedBytes: ByteVector): ByteVector = {
+  private def handleEvent(
+      event: Tcp.Event,
+      unalignedBytes: ByteVector): ByteVector = {
     event match {
       case Tcp.Bound(localAddress) =>
-        logger.debug(s"Actor is now bound to the local address: ${localAddress}")
+        logger.debug(
+          s"Actor is now bound to the local address: ${localAddress}")
         context.parent ! Tcp.Bound(localAddress)
 
         unalignedBytes
@@ -128,25 +134,26 @@ sealed abstract class ClientActor extends Actor with BitcoinSLogger {
         logger.debug(s"Tcp connection to: ${remote}")
         logger.debug(s"Local: ${local}")
 
-
         //this is what registers a actor to send all byte messages to that is
         //received from our peer. Since we are using 'self' that means
         //our bitcoin peer will send all messages to this actor.
         sender ! Tcp.Register(self)
 
+        val _ = peerMsgHandlerReceiver.connect(Client(self))
 
-        context.parent ! Tcp.Connected(remote, local)
         context.become(awaitNetworkRequest(sender, ByteVector.empty))
 
         unalignedBytes
       case closeCmd @ (Tcp.ConfirmedClosed | Tcp.Closed | Tcp.Aborted |
-                       Tcp.PeerClosed) =>
+          Tcp.PeerClosed) =>
         logger.debug(s"Closed command received: ${closeCmd}")
-        context.parent ! closeCmd
+
+        //tell our peer message handler we are disconnecting
+        val _ = peerMsgHandlerReceiver.disconnect()
+
         context.stop(self)
         unalignedBytes
       case Tcp.Received(byteString: ByteString) =>
-
         //logger.debug("Received byte string in peerMessageHandler " + BitcoinSUtil.encodeHex(byteString.toArray))
         //logger.debug("Unaligned bytes: " + BitcoinSUtil.encodeHex(unalignedBytes))
 
@@ -161,7 +168,11 @@ sealed abstract class ClientActor extends Actor with BitcoinSLogger {
         //send them to 'context.parent' -- this is the
         //PeerMessageHandler that is responsible for
         //creating this Client Actor
-        messages.foreach(m => peerMsgHandlerReceiver.actor ! m)
+        messages.foreach { m =>
+          val msg = NetworkMessageReceived(m, Client(self))
+          peerMsgHandlerReceiver.handleNetworkMessageReceived(msg)
+
+        }
 
         newUnalignedBytes
     }
@@ -171,7 +182,9 @@ sealed abstract class ClientActor extends Actor with BitcoinSLogger {
     * This function is responsible for handling a [[Tcp.Command]] algebraic data type
     * @param command
     */
-  private def handleCommand(command: Tcp.Command, peer: Option[ActorRef]): Unit =
+  private def handleCommand(
+      command: Tcp.Command,
+      peer: Option[ActorRef]): Unit =
     command match {
       case closeCmd @ (Tcp.ConfirmedClose | Tcp.Close | Tcp.Abort) =>
         peer.map(p => p ! closeCmd)
@@ -187,7 +200,9 @@ sealed abstract class ClientActor extends Actor with BitcoinSLogger {
     * @param message
     * @return
     */
-  private def sendNetworkMessage(message: NetworkMessage, peer: ActorRef): Unit = {
+  private def sendNetworkMessage(
+      message: NetworkMessage,
+      peer: ActorRef): Unit = {
     val byteMessage = BitcoinSpvNodeUtil.buildByteString(message.bytes)
     logger.debug(s"Network message: ${message}")
     peer ! Tcp.Write(byteMessage)
@@ -195,16 +210,19 @@ sealed abstract class ClientActor extends Actor with BitcoinSLogger {
 
 }
 
-
 case class Client(peer: ActorRef)
 
-
 object Client {
-  private case class ClientActorImpl(peerMsgHandlerReceiver: PeerMessageReceiver) extends ClientActor
+  private case class ClientActorImpl(
+      peerMsgHandlerReceiver: PeerMessageReceiver)
+      extends ClientActor
 
-  def props(peerMsgHandlerReceiver: PeerMessageReceiver): Props = Props(classOf[ClientActorImpl], peerMsgHandlerReceiver)
+  def props(peerMsgHandlerReceiver: PeerMessageReceiver): Props =
+    Props(classOf[ClientActorImpl], peerMsgHandlerReceiver)
 
-  def apply(context: ActorContext, peerMessageReceiver: PeerMessageReceiver): Client = {
+  def apply(
+      context: ActorRefFactory,
+      peerMessageReceiver: PeerMessageReceiver): Client = {
     val peer = context.actorOf(
       props(peerMsgHandlerReceiver = peerMessageReceiver),
       BitcoinSpvNodeUtil.createActorName(this.getClass))

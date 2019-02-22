@@ -10,7 +10,11 @@ import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.node.NetworkMessage
 import org.bitcoins.node.constant.Constants
 import org.bitcoins.node.db.DbConfig
-import org.bitcoins.node.messages.{GetHeadersMessage, HeadersMessage, NetworkPayload}
+import org.bitcoins.node.messages.{
+  GetHeadersMessage,
+  HeadersMessage,
+  NetworkPayload
+}
 import org.bitcoins.node.networking.peer.PeerMessageSender.SendToPeer
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -24,7 +28,7 @@ abstract class PeerHandler extends BitcoinSLogger {
 
   def dbConfig: DbConfig
 
-  def peerActor: ActorRef
+  def peerMsgSender: PeerMessageSender
 
   def getHeaders(getHeadersMsg: GetHeadersMessage): Unit = {
     sendToPeer(getHeadersMsg)
@@ -32,7 +36,8 @@ abstract class PeerHandler extends BitcoinSLogger {
 
   /** Connects with our peer*/
   def connect(): Future[Unit] = {
-    val handshakeF = (peerActor ? Tcp.Connect(socket)).mapTo[PeerMessageSender.HandshakeFinished.type]
+    val handshakeF = (peerMsgSender.actor ? Tcp.Connect(socket))
+      .mapTo[PeerMessageSender.HandshakeFinished.type]
     handshakeF.map(_ => ())
   }
 
@@ -41,29 +46,37 @@ abstract class PeerHandler extends BitcoinSLogger {
 
   /** Closes our connection with our peer */
   def close(): Future[Unit] = {
-    val closedF = (peerActor ? Tcp.Close).mapTo[Tcp.Closed.type]
+    val closedF = (peerMsgSender.actor ? Tcp.Close).mapTo[Tcp.Closed.type]
 
     closedF.map(_ => ())
   }
 
   /** Helper function to send a message to our peer on the p2p network */
-  private def sendToPeer(payload: NetworkPayload) : Unit = {
+  private def sendToPeer(payload: NetworkPayload): Unit = {
     val networkMsg = NetworkMessage(Constants.networkParameters, payload)
-    peerActor ! SendToPeer(networkMsg)
+    peerMsgSender.actor ! SendToPeer(networkMsg)
   }
 }
 
-
 object PeerHandler {
-  private case class PeerHandlerImpl(peerActor: ActorRef, socket: InetSocketAddress,
-                                     dbConfig: DbConfig)(override implicit val system: ActorSystem,
-                                                         val timeout: Timeout) extends PeerHandler
+  private case class PeerHandlerImpl(
+      peerMsgSender: PeerMessageSender,
+      socket: InetSocketAddress,
+      dbConfig: DbConfig)(
+      override implicit val system: ActorSystem,
+      val timeout: Timeout)
+      extends PeerHandler
 
-  def apply(peerActor: ActorRef, socket: InetSocketAddress, dbConfig: DbConfig)(implicit system: ActorSystem, timeout: Timeout): PeerHandler = {
-    PeerHandlerImpl(peerActor, socket, dbConfig)(system,timeout)
+  def apply(
+      peerMsgSender: PeerMessageSender,
+      socket: InetSocketAddress,
+      dbConfig: DbConfig)(
+      implicit system: ActorSystem,
+      timeout: Timeout): PeerHandler = {
+    PeerHandlerImpl(peerMsgSender, socket, dbConfig)(system, timeout)
   }
 
-/*  def apply(peer: Peer, dbConfig: DbConfig)(implicit system: ActorSystem, timeout: Timeout): PeerHandler = {
+  /*  def apply(peer: Peer, dbConfig: DbConfig)(implicit system: ActorSystem, timeout: Timeout): PeerHandler = {
     val actorRef = PeerMessageHandler(dbConfig = dbConfig)
     PeerHandler(actorRef,peer.socket,dbConfig)
   }*/

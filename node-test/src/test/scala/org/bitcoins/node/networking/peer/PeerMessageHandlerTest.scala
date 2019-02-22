@@ -3,8 +3,7 @@ package org.bitcoins.node.networking.peer
 import java.net.InetSocketAddress
 
 import akka.actor.{ActorRef, ActorSystem}
-import akka.io.Tcp
-import akka.testkit.{ImplicitSender, TestActorRef, TestKit, TestProbe}
+import akka.testkit.{ImplicitSender, TestKit, TestProbe}
 import akka.util.Timeout
 import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil}
@@ -14,8 +13,18 @@ import org.bitcoins.node.db.UnitTestDbConfig
 import org.bitcoins.node.messages._
 import org.bitcoins.node.messages.data.GetHeadersMessage
 import org.bitcoins.node.models.Peer
-import org.bitcoins.node.util.{BitcoinSpvNodeUtil, TestUtil}
-import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll, FlatSpecLike, MustMatchers}
+import org.bitcoins.node.networking.Client
+import org.bitcoins.node.util.{
+  BitcoinSpvNodeUtil,
+  NetworkIpAddress,
+  NodeTestUtil
+}
+import org.scalatest.{
+  BeforeAndAfter,
+  BeforeAndAfterAll,
+  FlatSpecLike,
+  MustMatchers
+}
 
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, ExecutionContext}
@@ -24,7 +33,7 @@ import scala.concurrent.{Await, ExecutionContext}
   * Created by chris on 7/1/16.
   */
 class PeerMessageHandlerTest
-  extends TestKit(ActorSystem("PeerMessageHandlerTest"))
+    extends TestKit(ActorSystem("PeerMessageHandlerTest"))
     with FlatSpecLike
     with MustMatchers
     with ImplicitSender
@@ -36,33 +45,36 @@ class PeerMessageHandlerTest
 
   implicit val ec: ExecutionContext = system.dispatcher
 
-  private def peerActor(peerMsgHandlerActor: ActorRef,probe: TestProbe): ActorRef = {
-    TestUtil.peer(peerMsgHandlerActor,Some(probe))
+  private def buildPeerMessageReceiver(): (PeerMessageReceiver, TestProbe) = {
+    val dbConfig = UnitTestDbConfig
+    val probe = TestProbe()
+    //may need to come back and create a real PeerMessageReceiver
+    val receiver = PeerMessageReceiver(dbConfig)
+
+    (receiver, probe)
   }
 
-  def peerMsgHandlerRef: (ActorRef, TestProbe) = {
+  def buildPeerMessageSender(): (PeerMessageSender, TestProbe) = {
     val probe = TestProbe(
       s"TestProbe-${BitcoinSpvNodeUtil.createActorName(getClass.getSimpleName)}")
 
-
+    val (peerMsgReceiver, testProbe) = buildPeerMessageReceiver()
     //the problem here is the 'self', this needs to be an ordinary peer message handler
     //that can handle the handshake
-    val peerActorRef: ActorRef = peerActor(self,probe)
-
-    val peerMsgHandlerProps = PeerMessageSender.props(peer = peerActorRef, dbConfig = TestUtil.dbConfig)
-    val testActor = {
-      system.actorOf(
-        props = peerMsgHandlerProps,
-        name = BitcoinSpvNodeUtil.createActorName(PeerMessageSender.getClass))
+    val peerMsgSender: PeerMessageSender = {
+      val client = NodeTestUtil.client(peerMsgReceiver)
+      PeerMessageSender(client)
     }
-
-    (testActor, probe)
+    (peerMsgSender, testProbe)
   }
 
+  /*
   def peer: Peer = {
     val socket = peerSocketAddress
+    val nipAddress = NetworkIpAddress.
     Peer(socket, Constants.networkParameters)
   }
+   */
 
   def peerSocketAddress: InetSocketAddress = {
     val randIndex = Math.abs(scala.util.Random.nextInt()) % Constants.networkParameters.dnsSeeds.size
@@ -81,10 +93,11 @@ class PeerMessageHandlerTest
     val getHeadersMessage =
       GetHeadersMessage(Constants.version, List(hashStart), hashStop)
 
-
-    val (peerMsgHandler, testProbe) = peerMsgHandlerRef
+    val (peerMsgSender, testProbe) = buildPeerMessageSender()
     val socket = peerSocketAddress
-    val peerHandler = PeerHandler(dbConfig = TestUtil.dbConfig, peerActor = peerMsgHandler, socket = socket)
+    val peerHandler = PeerHandler(dbConfig = NodeTestUtil.dbConfig,
+                                  peerMsgSender = peerMsgSender,
+                                  socket = socket)
 
     val connected = Await.result(peerHandler.connect(), timeout)
 
@@ -104,7 +117,6 @@ class PeerMessageHandlerTest
     secondHeader.hash.hex must be(
       BitcoinSUtil.flipEndianness(
         "000000006c02c8ea6e4ff69651f7fcde348fb9d557a06e6957b65552002a7820"))
-
 
     peerHandler.close()
 

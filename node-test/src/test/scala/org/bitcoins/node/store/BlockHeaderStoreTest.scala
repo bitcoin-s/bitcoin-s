@@ -1,6 +1,6 @@
 package org.bitcoins.node.store
 
-import org.bitcoins.core.gen.BlockchainElementsGenerator
+import org.bitcoins.testkit.core.gen.BlockchainElementsGenerator
 import org.scalatest.{BeforeAndAfter, FlatSpec, MustMatchers}
 
 /**

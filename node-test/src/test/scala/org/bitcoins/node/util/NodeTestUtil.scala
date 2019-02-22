@@ -1,22 +1,22 @@
 package org.bitcoins.node.util
 
-import akka.actor.{ActorRef, ActorRefFactory}
-import akka.testkit.TestProbe
-import org.bitcoins.core.protocol.blockchain.{BlockHeader, TestNetChainParams}
+import java.net.InetSocketAddress
+
+import akka.actor.ActorRefFactory
+import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.node.NetworkMessage
-import org.bitcoins.node.messages.control.VersionMessage
-import org.bitcoins.node.messages.data.GetHeadersMessage
-import org.bitcoins.node.NetworkMessage
 import org.bitcoins.node.db.{DbConfig, UnitTestDbConfig}
+import org.bitcoins.node.messages.control.VersionMessage
 import org.bitcoins.node.messages.data.GetHeadersMessage
 import org.bitcoins.node.networking.Client
 import org.bitcoins.node.networking.peer.PeerMessageReceiver
+import org.bitcoins.rpc.client.BitcoindRpcClient
 
 /**
   * Created by chris on 6/2/16.
   */
-trait TestUtil {
+abstract class NodeTestUtil {
 
   //txid on testnet 44e504f5b7649d215be05ad9f09026dee95201244a3b218013c504a6a49a26ff
   //this tx has multiple inputs and outputs
@@ -69,32 +69,23 @@ trait TestUtil {
     )
   }
 
-
   def dbConfig: DbConfig = UnitTestDbConfig
 
-  def peer(peerMsgReceiver: PeerMessageReceiver, probeOpt: Option[TestProbe])(implicit ref: ActorRefFactory): Client = {
-    val actoref = {
-      if (probeOpt.isDefined) {
+  def client(peerMsgReceiver: PeerMessageReceiver)(
+      implicit ref: ActorRefFactory): Client = {
+    Client.apply(ref, peerMsgReceiver)
+  }
 
-        val probe = probeOpt.get
-
-        probe.forward(peerMsgReceiver.actor)
-
-        ref.actorOf(
-          props = Client.props(probe.ref),
-          name = BitcoinSpvNodeUtil.createActorName(s"TestUtil-${getClass.getSimpleName}")
-        )
-      } else {
-        ref.actorOf(
-          props = Client.props(peerMsgReceiver),
-          name = BitcoinSpvNodeUtil.createActorName(s"TestUtil-${getClass.getSimpleName}")
-        )
-      }
-    }
-
-    Client(actoref)
-
+  /** Helper method to get the [[java.net.InetSocketAddress]]
+    * we need to connect to to make a p2p connection with bitcoind
+    * @param bitcoindRpcClient
+    * @return
+    */
+  def getBitcoindRemote(
+      bitcoindRpcClient: BitcoindRpcClient): InetSocketAddress = {
+    val instance = bitcoindRpcClient.instance
+    new InetSocketAddress(instance.uri.getHost, instance.p2pPort)
   }
 }
 
-object TestUtil extends TestUtil
+object NodeTestUtil extends NodeTestUtil

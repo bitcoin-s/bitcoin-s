@@ -1,7 +1,7 @@
 package org.bitcoins.node.store
 
-import org.bitcoins.core.gen.BlockchainElementsGenerator
 import org.bitcoins.core.protocol.blockchain.BlockHeader
+import org.bitcoins.testkit.core.gen.BlockchainElementsGenerator
 import org.scalacheck.{Gen, Prop, Properties}
 
 /**

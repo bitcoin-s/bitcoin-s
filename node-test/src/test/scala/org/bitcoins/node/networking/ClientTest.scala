@@ -1,85 +1,102 @@
 package org.bitcoins.node.networking
 
-import java.net.{InetSocketAddress, ServerSocket}
+import java.net.InetSocketAddress
 
 import akka.actor.ActorSystem
-import akka.io.{Inet, Tcp}
-import akka.testkit.{ImplicitSender, TestActorRef, TestKit, TestProbe}
-import org.bitcoins.core.config.TestNet3
-import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil}
-import org.bitcoins.node.messages.control.VersionMessage
-import org.bitcoins.node.messages.{NetworkPayload, VersionMessage}
+import akka.io.Tcp
+import akka.testkit.{TestActorRef, TestKit, TestProbe}
+import org.bitcoins.core.util.BitcoinSLogger
+import org.bitcoins.node.db.UnitTestDbConfig
 import org.bitcoins.node.networking.peer.PeerMessageReceiver
-import org.bitcoins.node.util.BitcoinSpvNodeUtil
-import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll, FlatSpecLike, MustMatchers}
+import org.bitcoins.node.util.NodeTestUtil
+import org.bitcoins.testkit.async.TestAsyncUtil
+import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
+import org.scalatest._
 
-import scala.concurrent.duration._
-import scala.util.Try
+import scala.concurrent.Future
 
 /**
   * Created by chris on 6/7/16.
   */
 class ClientTest
-    extends TestKit(ActorSystem("ClientTest"))
-    with FlatSpecLike
+    extends AsyncFlatSpec
     with MustMatchers
-    with ImplicitSender
     with BeforeAndAfter
     with BeforeAndAfterAll
     with BitcoinSLogger {
+  implicit val system = ActorSystem(
+    s"Client-Test-System-${System.currentTimeMillis()}")
+  val dbConfig = UnitTestDbConfig
 
-  "Client" must "connect to a node on the bitcoin network, " +
-    "send a version message to a peer on the network and receive a version message back, then close that connection" in {
-    val probe = TestProbe()
+  val bitcoindRpcF = BitcoindRpcTestUtil.startedBitcoindRpcClient()
 
-    val peerMessageReceiver = PeerMessageReceiver(self)
-    val client = TestActorRef(Client.props(peerMessageReceiver), probe.ref)
+  val bitcoindRemoteF = bitcoindRpcF.map { bitcoind =>
+    NodeTestUtil.getBitcoindRemote(bitcoind)
+  }
 
-    val remote = new InetSocketAddress(TestNet3.dnsSeeds(0), TestNet3.port)
-    val randomPort = 23521
-    //random port
-    client ! Tcp.Connect(remote, Some(new InetSocketAddress(randomPort)))
+  val bitcoindRpc2F = BitcoindRpcTestUtil.startedBitcoindRpcClient()
 
-    //val bound : Tcp.Bound = probe.expectMsgType[Tcp.Bound]
-    val conn: Tcp.Connected = probe.expectMsgType[Tcp.Connected]
+  val bitcoindRemote2F = bitcoindRpcF.map { bitcoind =>
+    NodeTestUtil.getBitcoindRemote(bitcoind)
+  }
 
-    //make sure the socket is currently bound
-    Try(new ServerSocket(randomPort)).isSuccess must be(false)
-    client ! Tcp.Abort
-    val confirmedClosed = probe.expectMsg(Tcp.Aborted)
+  behavior of "Client"
 
-    //make sure the port is now available
-    val boundSocket = Try(new ServerSocket(randomPort))
-    boundSocket.isSuccess must be(true)
-
-    boundSocket.get.close()
-
+  it must "establish a tcp connection with a bitcoin node" in {
+    val randomPort = BitcoindRpcTestUtil.randomPort
+    bitcoindRemoteF.flatMap(remote => connectAndDisconnect(remote, randomPort))
   }
 
   it must "connect to two nodes" in {
-    //NOTE if this test case fails it is more than likely because one of the two dns seeds
-    //below is offline
-    val remote1 = new InetSocketAddress(TestNet3.dnsSeeds(2), TestNet3.port)
-    val remote2 = new InetSocketAddress(TestNet3.dnsSeeds(1), TestNet3.port)
+    val randomPort = BitcoindRpcTestUtil.randomPort
+    val try1 = bitcoindRemoteF.flatMap(remote =>
+      connectAndDisconnect(remote, randomPort))
 
-    val probe1 = TestProbe()
-    val probe2 = TestProbe()
+    val randomPort2 = BitcoindRpcTestUtil.randomPort
+    val try2 = bitcoindRemote2F.flatMap(remote =>
+      connectAndDisconnect(remote, randomPort2))
 
-    val peerMessageReceiver = PeerMessageReceiver(self)
-    val client1 = TestActorRef(Client.props(peerMessageReceiver), probe1.ref)
-    val client2 = TestActorRef(Client.props(peerMessageReceiver), probe2.ref)
+    try1.flatMap { _ =>
+      try2
+    }
+  }
 
-    client1 ! Tcp.Connect(remote1)
+  /**
+    * Helper method to connect to the
+    * remote node and bind our local
+    * connection to the specified port
+    * @param remote the remote node on the p2p network we are connecting to
+    * @param port the port we are binding on our machine
+    * @return
+    */
+  def connectAndDisconnect(
+      remote: InetSocketAddress,
+      port: Int): Future[Assertion] = {
+    val probe = TestProbe()
 
-    probe1.expectMsgType[Tcp.Connected](5.seconds)
-    client1 ! Tcp.Abort
+    val peerMessageReceiver = PeerMessageReceiver(dbConfig)
+    val client = TestActorRef(Client.props(peerMessageReceiver), probe.ref)
 
-    client2 ! Tcp.Connect(remote2)
-    probe2.expectMsgType[Tcp.Connected](5.seconds)
-    client2 ! Tcp.Abort
+    //random port
+    client ! Tcp.Connect(remote, Some(new InetSocketAddress(port)))
+
+    val isConnectedF =
+      TestAsyncUtil.retryUntilSatisfied(peerMessageReceiver.isConnected)
+
+    isConnectedF.flatMap { _ =>
+      //disconnect here
+      client ! Tcp.Abort
+      val isDisconnectedF =
+        TestAsyncUtil.retryUntilSatisfied(peerMessageReceiver.isDisconnected)
+
+      isDisconnectedF.map { _ =>
+        succeed
+      }
+    }
   }
 
   override def afterAll: Unit = {
+    bitcoindRpcF.map(_.stop())
     TestKit.shutdownActorSystem(system)
   }
 

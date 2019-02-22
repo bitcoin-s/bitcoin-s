@@ -1,7 +1,7 @@
 package org.bitcoins.node.messages.data
 
 import org.bitcoins.core.util.BitcoinSLogger
-import org.bitcoins.node.gen.DataMessageGenerator
+import org.bitcoins.testkit.gen.DataMessageGenerator
 import org.scalacheck.{Prop, Properties}
 
 /**

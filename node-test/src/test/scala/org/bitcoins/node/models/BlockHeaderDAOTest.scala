@@ -1,11 +1,11 @@
 package org.bitcoins.node.models
 
 import org.bitcoins.core.crypto.{DoubleSha256Digest, ECPrivateKey}
-import org.bitcoins.core.gen.BlockchainElementsGenerator
 import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.node.constant.Constants
 import org.bitcoins.node.db.{DbConfig, NodeDbManagement, UnitTestDbConfig}
+import org.bitcoins.testkit.core.gen.BlockchainElementsGenerator
 import org.scalatest._
 
 import scala.concurrent.duration.DurationInt
