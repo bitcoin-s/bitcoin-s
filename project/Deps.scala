@@ -18,7 +18,12 @@ object Deps {
     val nativeLoaderV = "2.3.2"
     val typesafeConfigV = "1.3.3"
     val ammoniteV = "1.6.2"
+
     val asyncV = "0.9.7"
+    val jodaV = "2.9.4"
+    val postgresV = "9.4.1210"
+    val akkaActorV = akkaStreamv
+    val slickV = "3.2.3"
   }
 
   object Compile {
@@ -28,6 +33,7 @@ object Deps {
     val zeromq = "org.zeromq" % "jeromq" % V.zeromq withSources () withJavadoc ()
     val akkaHttp = "com.typesafe.akka" %% "akka-http" % V.akkav withSources () withJavadoc ()
     val akkaStream = "com.typesafe.akka" %% "akka-stream" % V.akkaStreamv withSources () withJavadoc ()
+    val akkaActor = "com.typesafe.akka" %% "akka-actor" % V.akkaStreamv withSources () withJavadoc ()
     val playJson = "com.typesafe.play" %% "play-json" % V.playv withSources () withJavadoc ()
     val typesafeConfig = "com.typesafe" % "config" % V.typesafeConfigV withSources () withJavadoc ()
 
@@ -35,6 +41,16 @@ object Deps {
 
     //for loading secp256k1 natively
     val nativeLoader = "org.scijava" % "native-lib-loader" % V.nativeLoaderV withSources () withJavadoc ()
+
+    //node deps
+    val joda = "joda-time" % "joda-time" % V.jodaV
+
+    val akkaSlf4j =
+      ("com.typesafe.akka" %% "akka-slf4j" % V.akkaStreamv withSources () withJavadoc ())
+        .exclude("org.slf4j", "slf4j-api")
+    val slick = "com.typesafe.slick" %% "slick" % V.slickV withSources () withJavadoc ()
+    val slickHikari = "com.typesafe.slick" %% "slick-hikaricp" % V.slickV
+    val postgres = "org.postgresql" % "postgresql" % V.postgresV
   }
 
   object Test {
@@ -51,6 +67,7 @@ object Deps {
     val akkaStream = "com.typesafe.akka" %% "akka-stream-testkit" % V.akkaStreamv % "test" withSources () withJavadoc ()
     val ammonite = "com.lihaoyi" %% "ammonite" % V.ammoniteV % "test" cross CrossVersion.full
     val playJson = Compile.playJson % "test"
+    val akkaTestkit = "com.typesafe.akka" %% "akka-testkit" % V.akkaActorV withSources () withJavadoc ()
   }
 
   val root = List(
@@ -125,6 +142,24 @@ object Deps {
   val eclairRpcTest = List(
     Test.akkaHttp,
     Test.akkaStream,
+    Test.logback,
+    Test.scalaTest,
+    Test.scalacheck,
+    Test.ammonite
+  )
+
+  val node = List(
+    Compile.akkaActor,
+    Compile.akkaSlf4j,
+    Compile.joda,
+    Compile.slick,
+    Compile.slickHikari,
+    Compile.postgres,
+    Test.ammonite
+  )
+
+  val nodeTest = List(
+    Test.akkaTestkit,
     Test.logback,
     Test.scalaTest,
     Test.scalacheck,
