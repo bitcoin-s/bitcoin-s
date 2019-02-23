@@ -1,12 +1,11 @@
 package org.bitcoins.node.util
 
-import java.net.InetAddress
+import java.net.{InetAddress, InetSocketAddress}
 
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.NetworkElement
 import org.bitcoins.core.util.Factory
-import org.bitcoins.node.messages.control.ServiceIdentifier
-import org.bitcoins.node.serializers.messages.control.RawNetworkIpAddressSerializer
+import org.bitcoins.node.messages.control.{NodeNetwork, ServiceIdentifier}
 import org.bitcoins.node.messages.control.ServiceIdentifier
 import org.bitcoins.node.serializers.messages.control.RawNetworkIpAddressSerializer
 import scodec.bits.ByteVector
@@ -16,7 +15,7 @@ import scodec.bits.ByteVector
   * Encapsulated network IP address currently uses the following structure
   * https://bitcoin.org/en/developer-reference#addr
   */
-sealed trait NetworkIpAddress extends NetworkElement {
+sealed abstract class NetworkIpAddress extends NetworkElement {
 
   /**
     * Added in protocol version 31402.
@@ -76,4 +75,16 @@ object NetworkIpAddress extends Factory[NetworkIpAddress] {
 
   def fromBytes(bytes: ByteVector): NetworkIpAddress =
     RawNetworkIpAddressSerializer.read(bytes)
+
+  def fromInetSocketAddress(socket: InetSocketAddress): NetworkIpAddress = {
+    //TODO: this might be wrong, read this time documentation above
+    val timestamp = UInt32(System.currentTimeMillis() / 1000)
+
+    NetworkIpAddress(
+      time = timestamp,
+      services = NodeNetwork,
+      address = socket.getAddress,
+      port = socket.getPort
+    )
+  }
 }

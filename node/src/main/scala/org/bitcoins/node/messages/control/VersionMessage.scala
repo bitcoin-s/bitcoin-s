@@ -1,6 +1,6 @@
 package org.bitcoins.node.messages.control
 
-import java.net.InetAddress
+import java.net.{InetAddress, InetSocketAddress}
 
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.number.{Int32, Int64, UInt64}
@@ -10,10 +10,6 @@ import org.bitcoins.node.constant.Constants
 import org.bitcoins.node.messages.VersionMessage
 import org.bitcoins.node.serializers.messages.control.RawVersionMessageSerializer
 import org.bitcoins.node.versions.ProtocolVersion
-import org.bitcoins.node.messages._
-import org.bitcoins.node.serializers.messages.control.RawVersionMessageSerializer
-import org.bitcoins.node.versions.ProtocolVersion
-import org.bitcoins.node.constant.Constants
 import org.joda.time.DateTime
 import scodec.bits.ByteVector
 
@@ -94,24 +90,31 @@ object VersionMessage extends Factory[VersionMessage] {
     val startHeight = Int32.zero
     val relay = false
     VersionMessage(
-      Constants.version,
-      UnnamedService,
-      Int64(DateTime.now.getMillis),
-      UnnamedService,
-      receivingIpAddress,
-      network.port,
-      NodeNetwork,
-      transmittingIpAddress,
-      network.port,
-      nonce,
-      userAgent,
-      startHeight,
-      relay
+      version = Constants.version,
+      services = UnnamedService,
+      timestamp = Int64(DateTime.now.getMillis),
+      addressReceiveServices = UnnamedService,
+      addressReceiveIpAddress = receivingIpAddress,
+      addressReceivePort = network.port,
+      addressTransServices = NodeNetwork,
+      addressTransIpAddress = transmittingIpAddress,
+      addressTransPort = network.port,
+      nonce = nonce,
+      userAgent = userAgent,
+      startHeight = startHeight,
+      relay = relay
     )
   }
 
-  def apply(network: NetworkParameters): VersionMessage = {
-    val transmittingIpAddress = InetAddress.getByName(network.dnsSeeds(0))
+  def apply(host: String, network: NetworkParameters): VersionMessage = {
+    //network.dnsSeeds(0)
+    val transmittingIpAddress = InetAddress.getByName(host)
     VersionMessage(network, transmittingIpAddress)
+  }
+
+  def apply(
+      socket: InetSocketAddress,
+      network: NetworkParameters): VersionMessage = {
+    VersionMessage(network, socket.getAddress)
   }
 }

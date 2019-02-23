@@ -5,9 +5,12 @@ import java.net.InetSocketAddress
 import akka.actor.ActorSystem
 import akka.io.Tcp
 import akka.testkit.{TestActorRef, TestKit, TestProbe}
+import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.node.db.UnitTestDbConfig
+import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.peer.PeerMessageReceiver
+import org.bitcoins.node.networking.peer.PeerMessageReceiverState.Preconnection
 import org.bitcoins.node.util.NodeTestUtil
 import org.bitcoins.testkit.async.TestAsyncUtil
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
@@ -28,33 +31,31 @@ class ClientTest
     s"Client-Test-System-${System.currentTimeMillis()}")
   val dbConfig = UnitTestDbConfig
 
+  implicit val np = RegTest
+
   val bitcoindRpcF = BitcoindRpcTestUtil.startedBitcoindRpcClient()
 
-  val bitcoindRemoteF = bitcoindRpcF.map { bitcoind =>
-    NodeTestUtil.getBitcoindRemote(bitcoind)
+  val bitcoindPeerF = bitcoindRpcF.map { bitcoind =>
+    NodeTestUtil.getBitcoindPeer(bitcoind)
   }
 
   val bitcoindRpc2F = BitcoindRpcTestUtil.startedBitcoindRpcClient()
 
-  val bitcoindRemote2F = bitcoindRpcF.map { bitcoind =>
-    NodeTestUtil.getBitcoindRemote(bitcoind)
+  val bitcoindPeer2F = bitcoindRpcF.map { bitcoind =>
+    NodeTestUtil.getBitcoindPeer(bitcoind)
   }
 
   behavior of "Client"
 
   it must "establish a tcp connection with a bitcoin node" in {
-    val randomPort = BitcoindRpcTestUtil.randomPort
-    bitcoindRemoteF.flatMap(remote => connectAndDisconnect(remote, randomPort))
+    bitcoindPeerF.flatMap(remote => connectAndDisconnect(remote))
   }
 
   it must "connect to two nodes" in {
-    val randomPort = BitcoindRpcTestUtil.randomPort
-    val try1 = bitcoindRemoteF.flatMap(remote =>
-      connectAndDisconnect(remote, randomPort))
+    val try1 =
+      bitcoindPeerF.flatMap(remote => connectAndDisconnect(remote))
 
-    val randomPort2 = BitcoindRpcTestUtil.randomPort
-    val try2 = bitcoindRemote2F.flatMap(remote =>
-      connectAndDisconnect(remote, randomPort2))
+    val try2 = bitcoindPeer2F.flatMap(remote => connectAndDisconnect(remote))
 
     try1.flatMap { _ =>
       try2
@@ -69,16 +70,14 @@ class ClientTest
     * @param port the port we are binding on our machine
     * @return
     */
-  def connectAndDisconnect(
-      remote: InetSocketAddress,
-      port: Int): Future[Assertion] = {
+  def connectAndDisconnect(peer: Peer): Future[Assertion] = {
     val probe = TestProbe()
+    val remote = peer.socket
+    val peerMessageReceiver = PeerMessageReceiver(Preconnection, dbConfig)
+    val client =
+      TestActorRef(Client.props(peer, peerMessageReceiver), probe.ref)
 
-    val peerMessageReceiver = PeerMessageReceiver(dbConfig)
-    val client = TestActorRef(Client.props(peerMessageReceiver), probe.ref)
-
-    //random port
-    client ! Tcp.Connect(remote, Some(new InetSocketAddress(port)))
+    client ! Tcp.Connect(remote)
 
     val isConnectedF =
       TestAsyncUtil.retryUntilSatisfied(peerMessageReceiver.isConnected)
@@ -96,7 +95,8 @@ class ClientTest
   }
 
   override def afterAll: Unit = {
-    bitcoindRpcF.map(_.stop())
+    bitcoindRpcF.flatMap(_.stop())
+    bitcoindRpc2F.flatMap(_.stop())
     TestKit.shutdownActorSystem(system)
   }
 

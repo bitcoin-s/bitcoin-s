@@ -1,5 +1,6 @@
 package org.bitcoins.node.util
 
+import org.bitcoins.core.config.TestNet3
 import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.number.{Int32, UInt32, UInt64}
 import org.bitcoins.core.protocol.CompactSizeUInt
@@ -12,6 +13,7 @@ import org.bitcoins.node.messages.data.HeadersMessage
 import org.bitcoins.node.NetworkMessage
 import org.bitcoins.node.constant.Constants
 import org.bitcoins.node.messages.HeadersMessage
+import org.bitcoins.node.messages.control.VersionMessage
 import org.bitcoins.node.messages.data.HeadersMessage
 import org.scalatest.{FlatSpec, MustMatchers}
 
@@ -24,7 +26,8 @@ class BitcoinSpvNodeUtilTest
     with BitcoinSLogger {
 
   "BitcoinSpvNodeUtil" must "return the entire byte array if a message is not aligned to a byte frame" in {
-    val versionMessage = Constants.versionMessage
+    val versionMessage =
+      VersionMessage(TestNet3.dnsSeeds(0), Constants.networkParameters)
     val networkMsg = NetworkMessage(Constants.networkParameters, versionMessage)
     //remove last byte so the message is not aligned
     val bytes = networkMsg.bytes.slice(0, networkMsg.bytes.size - 1)

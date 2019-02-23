@@ -1,6 +1,6 @@
 package org.bitcoins.node.networking
 
-import akka.actor.{Actor, ActorContext, ActorRef, ActorRefFactory, Props}
+import akka.actor.{Actor, ActorRef, ActorRefFactory, Props}
 import akka.event.LoggingReceive
 import akka.io.{IO, Tcp}
 import akka.util.ByteString
@@ -9,7 +9,7 @@ import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.node.NetworkMessage
 import org.bitcoins.node.constant.Constants
 import org.bitcoins.node.messages.NetworkPayload
-import org.bitcoins.node.messages.control.VersionMessage
+import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.peer.PeerMessageReceiver
 import org.bitcoins.node.networking.peer.PeerMessageReceiver.NetworkMessageReceived
 import org.bitcoins.node.util.BitcoinSpvNodeUtil
@@ -40,6 +40,8 @@ import scodec.bits.ByteVector
   * the bytes and wait for the rest of them to be sent.
   */
 sealed abstract class ClientActor extends Actor with BitcoinSLogger {
+
+  def peer: Peer
 
   /** The place we send messages that we successfully parsed from our
     * peer on the p2p network. This is mostly likely a [[org.bitcoins.node.networking.peer.PeerMessageSender]]
@@ -139,7 +141,7 @@ sealed abstract class ClientActor extends Actor with BitcoinSLogger {
         //our bitcoin peer will send all messages to this actor.
         sender ! Tcp.Register(self)
 
-        val _ = peerMsgHandlerReceiver.connect(Client(self))
+        val _ = peerMsgHandlerReceiver.connect(Client(self, peer))
 
         context.become(awaitNetworkRequest(sender, ByteVector.empty))
 
@@ -149,8 +151,10 @@ sealed abstract class ClientActor extends Actor with BitcoinSLogger {
         logger.debug(s"Closed command received: ${closeCmd}")
 
         //tell our peer message handler we are disconnecting
-        val _ = peerMsgHandlerReceiver.disconnect()
+        val disconnectT = peerMsgHandlerReceiver.disconnect()
 
+        disconnectT.failed.foreach(err =>
+          logger.error(s"Failed to disconnect=${err}"))
         context.stop(self)
         unalignedBytes
       case Tcp.Received(byteString: ByteString) =>
@@ -169,7 +173,7 @@ sealed abstract class ClientActor extends Actor with BitcoinSLogger {
         //PeerMessageHandler that is responsible for
         //creating this Client Actor
         messages.foreach { m =>
-          val msg = NetworkMessageReceived(m, Client(self))
+          val msg = NetworkMessageReceived(m, Client(self, peer))
           peerMsgHandlerReceiver.handleNetworkMessageReceived(msg)
 
         }
@@ -210,24 +214,26 @@ sealed abstract class ClientActor extends Actor with BitcoinSLogger {
 
 }
 
-case class Client(peer: ActorRef)
+case class Client(actor: ActorRef, peer: Peer)
 
 object Client {
   private case class ClientActorImpl(
+      peer: Peer,
       peerMsgHandlerReceiver: PeerMessageReceiver)
       extends ClientActor
 
-  def props(peerMsgHandlerReceiver: PeerMessageReceiver): Props =
-    Props(classOf[ClientActorImpl], peerMsgHandlerReceiver)
+  def props(peer: Peer, peerMsgHandlerReceiver: PeerMessageReceiver): Props =
+    Props(classOf[ClientActorImpl], peer, peerMsgHandlerReceiver)
 
   def apply(
       context: ActorRefFactory,
+      peer: Peer,
       peerMessageReceiver: PeerMessageReceiver): Client = {
-    val peer = context.actorOf(
-      props(peerMsgHandlerReceiver = peerMessageReceiver),
+    val actorRef = context.actorOf(
+      props(peer = peer, peerMsgHandlerReceiver = peerMessageReceiver),
       BitcoinSpvNodeUtil.createActorName(this.getClass))
 
-    Client(peer)
+    Client(actorRef, peer)
   }
 
 }

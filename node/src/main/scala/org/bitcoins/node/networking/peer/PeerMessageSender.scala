@@ -1,21 +1,14 @@
 package org.bitcoins.node.networking.peer
 
-import akka.actor.{Actor, ActorRef, ActorRefFactory, Props}
-import akka.event.LoggingReceive
+import akka.actor.ActorRef
 import akka.io.Tcp
+import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.node.NetworkMessage
-import org.bitcoins.node.constant.Constants
 import org.bitcoins.node.messages._
 import org.bitcoins.node.messages.control.{PongMessage, VersionMessage}
+import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.Client
-import org.bitcoins.node.networking.peer.PeerMessageSender.{
-  HandshakeFinished,
-  MessageAccumulator,
-  PeerMessageHandlerMsg
-}
-import org.bitcoins.node.util.BitcoinSpvNodeUtil
-import scodec.bits.ByteVector
 
 /**
   * Created by chris on 6/7/16.
@@ -25,241 +18,45 @@ import scodec.bits.ByteVector
   * with our peer on the network. When the Client finally responds to the [[NetworkMessage]] we originally
   * sent it sends that [[NetworkMessage]] back to the actor that requested it.
   */
-sealed abstract class PeerMessageSenderActor extends Actor with BitcoinSLogger {
+class PeerMessageSender(client: Client)(implicit np: NetworkParameters)
+    extends BitcoinSLogger {
 
-  def client: Client
-
-  def receive = LoggingReceive {
-    case connect: Tcp.Connect =>
-      val msgAccum = MessageAccumulator(Vector.empty, sender)
-      context.become(awaitConnected(msgAccum, ByteVector.empty))
-      client.peer ! connect
-  }
-
-  /** Waits for us to receive a [[Tcp.Connected]] message from our [[Client]] */
-  def awaitConnected(
-      msgAccum: MessageAccumulator,
-      unalignedBytes: ByteVector): Receive = LoggingReceive {
-    case Tcp.Connected(_, local) =>
-      val versionMsg =
-        VersionMessage(Constants.networkParameters, local.getAddress)
-      client.peer ! versionMsg
-      logger.info("Switching to awaitVersionMessage from awaitConnected")
-      context.become(awaitVersionMessage(msgAccum, unalignedBytes))
-    case msg: NetworkMessage =>
-      logger.debug(
-        "Received another peer request while waiting for Tcp.Connected: " + msg)
-
-      val newNetworkMsg = (sender, msg) +: msgAccum.networkMsgs
-      val newMsgAccum = MessageAccumulator(newNetworkMsg, msgAccum.peerHandler)
-      context.become(awaitConnected(newMsgAccum, unalignedBytes))
-    case payload: NetworkPayload =>
-      self ! NetworkMessage(Constants.networkParameters, payload)
-  }
-
-  /** Waits for a peer on the network to send us a [[VersionMessage]] */
-  private def awaitVersionMessage(
-      msgAccum: MessageAccumulator,
-      unalignedBytes: ByteVector): Receive = LoggingReceive {
-    case networkMessage: NetworkMessage =>
-      networkMessage.payload match {
-        case _: VersionMessage =>
-          client.peer ! VerAckMessage
-          //need to wait for the peer to send back a verack message
-          logger.debug("Switching to awaitVerack from awaitVersionMessage")
-          context.become(awaitVerack(msgAccum, unalignedBytes))
-        case _: NetworkPayload =>
-          val newNetworkMsg = (sender, networkMessage) +: msgAccum.networkMsgs
-          val newAccum = MessageAccumulator(newNetworkMsg, msgAccum.peerHandler)
-
-          context.become(awaitVersionMessage(newAccum, unalignedBytes))
-      }
-    case payload: NetworkPayload =>
-      self ! NetworkMessage(Constants.networkParameters, payload)
-  }
-
-  /** Waits for our peer on the network to send us a [[VerAckMessage]] */
-  private def awaitVerack(
-      msgAccum: MessageAccumulator,
-      unalignedBytes: ByteVector): Receive = LoggingReceive {
-    case networkMessage: NetworkMessage =>
-      networkMessage.payload match {
-        case VerAckMessage =>
-          logger.info(
-            "Received verack message, sending queued messages: " + msgAccum.networkMsgs)
-          sendPeerRequests(msgAccum.networkMsgs)
-          logger.info("Switching to peerMessageHandler from awaitVerack")
-          val controlPayloads = findControlPayloads(msgAccum.networkMsgs)
-          context.become(peerMessageHandler(controlPayloads, unalignedBytes))
-
-          msgAccum.peerHandler ! HandshakeFinished
-        case _: NetworkPayload =>
-          val newNetworkMsg = (sender, networkMessage) +: msgAccum.networkMsgs
-          val newMsgAccum =
-            MessageAccumulator(newNetworkMsg, msgAccum.peerHandler)
-          context.become(awaitVerack(newMsgAccum, unalignedBytes))
-      }
-    case payload: NetworkPayload =>
-      self ! NetworkMessage(Constants.networkParameters, payload)
-  }
-
-  /**
-    * Sends all of the given [[NetworkMessage]] to our peer on the p2p network
-    *
-    * @param requests
-    * @return
+  /** Initiates a connection with the given [[Peer]]
+    * @param socket
     */
-  private def sendPeerRequests(requests: Seq[(ActorRef, NetworkMessage)]) =
-    for {
-      (sender, peerRequest) <- requests
-    } yield client.peer ! peerRequest
-
-  /**
-    * This is the main receive function inside of [[PeerMessageSender]]
-    * This will receive peer requests, then send the payload to the the corresponding
-    * actor responsible for handling that specific message
-    *
-    * @return
-    */
-  def peerMessageHandler(
-      controlMessages: Seq[(ActorRef, ControlPayload)],
-      unalignedBytes: ByteVector): Receive = LoggingReceive {
-    case networkMessage: NetworkMessage =>
-      //hack to get around using 'self' as the sender
-      self.tell(networkMessage.payload, sender)
-    case controlPayload: ControlPayload =>
-      val newControlMsgs =
-        handleControlPayload(controlPayload, sender, controlMessages)
-      context.become(peerMessageHandler(newControlMsgs, unalignedBytes))
-    case dataPayload: DataPayload =>
-      handleDataPayload(dataPayload)
-    case msg: PeerMessageHandlerMsg =>
-      msg match {
-        case PeerMessageSender.SendToPeer(msg) =>
-          client.peer ! msg
-
-        case HandshakeFinished =>
-          logger.warn(
-            s"HandshakeFinished should not be receved in peerMessageHandler context")
-      }
+  def connect(): Unit = {
+    val socket = client.peer.socket
+    (client.actor ! Tcp.Connect(socket))
   }
 
-  /**
-    * Handles a [[DataPayload]] message. It checks if the sender is the parent
-    * actor, it sends it to our peer on the network. If the sender was the
-    * peer on the network, forward to the actor that spawned our actor
-    *
-    * @param payload
-    * @param sender
-    */
-  private def handleDataPayload(payload: DataPayload): Unit = {
-    client.peer ! payload
+  def disconnect(): Unit = {
+    (client.actor ! Tcp.Close)
   }
 
-  /**
-    * Handles control payloads defined here https://bitcoin.org/en/developer-reference#control-messages
-    *
-    * @param payload  the payload we need to do something with
-    * @param requests the @payload may be a response to a request inside this sequence
-    * @return the requests with the request removed for which the @payload is responding too
-    */
-  private def handleControlPayload(
-      payload: ControlPayload,
-      sender: ActorRef,
-      requests: Seq[(ActorRef, ControlPayload)]): Seq[
-    (ActorRef, ControlPayload)] = {
-    logger.debug("Control payload before derive: " + payload)
-    val destination = deriveDestination(sender)
-    payload match {
-      case pingMsg: PingMessage =>
-        if (destination == context.parent) {
-          //means that our peer sent us a ping message, we respond with a pong
-          client.peer ! PongMessage(pingMsg.nonce)
-          //remove ping message from requests
-          requests.filterNot {
-            case (_, msg) => msg.isInstanceOf[PingMessage]
-          }
-        } else {
-          //means we initialized the ping message, send it to our peer
-          logger.debug("Sending ping message to peer: " + pingMsg)
-          client.peer ! pingMsg
-          requests
-        }
-      case SendHeadersMessage =>
-        requests
-      case addrMessage: AddrMessage =>
-        //figure out if this was a solicited AddrMessage or an Unsolicited AddrMessage
-        //see https://bitcoin.org/en/developer-reference#addr
-        val getAddrMessage: Option[(ActorRef, ControlPayload)] = requests.find {
-          case (_, msg) => msg == GetAddrMessage
-        }
-        if (getAddrMessage.isDefined) {
-          destination ! addrMessage
-          //remove the GetAddrMessage request
-          requests.filterNot { case (_, msg) => msg == GetAddrMessage }
-        } else requests
-      case filterMsg @ (_: FilterAddMessage | _: FilterLoadMessage |
-          FilterClearMessage) =>
-        logger.debug(
-          "Sending filter message: " + filterMsg + " to " + "destination")
-        destination ! filterMsg
-        requests
-      case controlMsg @ (GetAddrMessage | VerAckMessage | _: VersionMessage |
-          _: PongMessage) =>
-        destination ! controlMsg
-        requests
-      case rejectMsg: RejectMessage =>
-        logger.error(
-          "Received a reject message from the p2p network: " + rejectMsg)
-        requests
-
-      case _: FeeFilterMessage =>
-        requests
-    }
+  /** Sends a [[org.bitcoins.node.messages.VersionMessage VersionMessage]] to our peer */
+  def sendVersionMessage(): Unit = {
+    val versionMsg = VersionMessage(client.peer.socket, np)
+    val networkMsg = NetworkMessage(np, versionMsg)
+    sendMsg(networkMsg)
   }
 
-  /**
-    * Figures out the actor that is the destination for a message
-    * For messages, if the sender was context.parent, we need to send the message to our peer on the network
-    * if the sender was the peer, we need to relay the message to the context.parent
-    *
-    * @param sender
-    * @return
-    */
-  private def deriveDestination(sender: ActorRef): ActorRef = {
-    if (sender == context.parent) {
-      logger.debug(
-        "The sender was context.parent, therefore we are sending this message to our peer on the network")
-      client.peer
-    } else {
-      logger.debug(
-        "The sender was the peer on the network, therefore we need to send to context.parent")
-      context.parent
-    }
+  def sendVerackMessage(): Unit = {
+    val verackMsg = VerAckMessage
+    val networkMsg = NetworkMessage(np, verackMsg)
+    sendMsg(networkMsg)
   }
 
-  /**
-    * Finds all control payloads inside of a given sequence of requests
-    *
-    * @param requests
-    * @return
-    */
-  private def findControlPayloads(
-      requests: Seq[(ActorRef, NetworkMessage)]): Seq[
-    (ActorRef, ControlPayload)] = {
-    val controlPayloads = requests.filter {
-      case (_, msg) => msg.payload.isInstanceOf[ControlPayload]
-    }
-    controlPayloads.map {
-      case (sender, msg) => (sender, msg.payload.asInstanceOf[ControlPayload])
-    }
+  private def sendMsg(msg: NetworkMessage): Unit = {
+    logger.debug(s"PeerMessageSender sending msg=${msg}")
+    client.actor ! msg
   }
 }
 
 object PeerMessageSender {
 
-  private case class PeerMessageSenderActorImpl(client: Client)
-      extends PeerMessageSenderActor
+  private case class PeerMessageSenderImpl(client: Client)(
+      implicit np: NetworkParameters)
+      extends PeerMessageSender(client)(np)
 
   sealed abstract class PeerMessageHandlerMsg
 
@@ -282,24 +79,8 @@ object PeerMessageSender {
       networkMsgs: Vector[(ActorRef, NetworkMessage)],
       peerHandler: ActorRef)
 
-  def props(client: Client): Props =
-    Props(classOf[PeerMessageSenderActorImpl], client)
-
   def apply(client: Client)(
-      implicit context: ActorRefFactory): PeerMessageSender = {
-    val actorRef = {
-      context.actorOf(props = props(client),
-                      name = BitcoinSpvNodeUtil.createActorName(this.getClass))
-    }
-
-    PeerMessageSender(actorRef)
-  }
-}
-
-case class PeerMessageSender(actor: ActorRef) extends BitcoinSLogger {
-
-  def send(msg: NetworkMessage): Unit = {
-    logger.debug(s"PeerMessageSender sending msg=${msg}")
-    actor ! msg
+      implicit np: NetworkParameters): PeerMessageSender = {
+    PeerMessageSenderImpl(client)
   }
 }

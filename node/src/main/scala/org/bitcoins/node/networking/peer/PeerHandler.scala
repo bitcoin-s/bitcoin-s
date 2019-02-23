@@ -19,6 +19,7 @@ import org.bitcoins.node.networking.peer.PeerMessageSender.SendToPeer
 
 import scala.concurrent.{ExecutionContext, Future}
 
+/*
 abstract class PeerHandler extends BitcoinSLogger {
   implicit val system: ActorSystem
   implicit val ec: ExecutionContext = system.dispatcher
@@ -36,9 +37,7 @@ abstract class PeerHandler extends BitcoinSLogger {
 
   /** Connects with our peer*/
   def connect(): Future[Unit] = {
-    val handshakeF = (peerMsgSender.actor ? Tcp.Connect(socket))
-      .mapTo[PeerMessageSender.HandshakeFinished.type]
-    handshakeF.map(_ => ())
+    pee
   }
 
   /** Checks if we are connected with our peer */
@@ -51,11 +50,6 @@ abstract class PeerHandler extends BitcoinSLogger {
     closedF.map(_ => ())
   }
 
-  /** Helper function to send a message to our peer on the p2p network */
-  private def sendToPeer(payload: NetworkPayload): Unit = {
-    val networkMsg = NetworkMessage(Constants.networkParameters, payload)
-    peerMsgSender.actor ! SendToPeer(networkMsg)
-  }
 }
 
 object PeerHandler {
@@ -81,3 +75,8 @@ object PeerHandler {
     PeerHandler(actorRef,peer.socket,dbConfig)
   }*/
 }
+ */
+
+case class PeerHandler(
+    peerMsgRecv: PeerMessageReceiver,
+    peerMsgSender: PeerMessageSender)

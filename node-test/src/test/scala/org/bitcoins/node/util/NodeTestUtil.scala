@@ -9,6 +9,7 @@ import org.bitcoins.node.NetworkMessage
 import org.bitcoins.node.db.{DbConfig, UnitTestDbConfig}
 import org.bitcoins.node.messages.control.VersionMessage
 import org.bitcoins.node.messages.data.GetHeadersMessage
+import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.Client
 import org.bitcoins.node.networking.peer.PeerMessageReceiver
 import org.bitcoins.rpc.client.BitcoindRpcClient
@@ -71,9 +72,9 @@ abstract class NodeTestUtil {
 
   def dbConfig: DbConfig = UnitTestDbConfig
 
-  def client(peerMsgReceiver: PeerMessageReceiver)(
+  def client(peer: Peer, peerMsgReceiver: PeerMessageReceiver)(
       implicit ref: ActorRefFactory): Client = {
-    Client.apply(ref, peerMsgReceiver)
+    Client.apply(ref, peer, peerMsgReceiver)
   }
 
   /** Helper method to get the [[java.net.InetSocketAddress]]
@@ -81,11 +82,20 @@ abstract class NodeTestUtil {
     * @param bitcoindRpcClient
     * @return
     */
-  def getBitcoindRemote(
+  def getBitcoindSocketAddress(
       bitcoindRpcClient: BitcoindRpcClient): InetSocketAddress = {
     val instance = bitcoindRpcClient.instance
     new InetSocketAddress(instance.uri.getHost, instance.p2pPort)
   }
+
+  /** Gets the [[Peer]] that
+    * corresponds to [[org.bitcoins.rpc.client.BitcoindRpcClient]] */
+  def getBitcoindPeer(bitcoindRpcClient: BitcoindRpcClient): Peer = {
+    val socket = getBitcoindSocketAddress(bitcoindRpcClient)
+    val networkIpAddress = NetworkIpAddress.fromInetSocketAddress(socket)
+    Peer.fromNetworkIpAddress(networkIpAddress)
+  }
+
 }
 
 object NodeTestUtil extends NodeTestUtil
