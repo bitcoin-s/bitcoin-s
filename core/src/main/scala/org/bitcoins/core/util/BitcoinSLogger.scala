@@ -5,10 +5,8 @@ import org.slf4j.{Logger, LoggerFactory}
 /**
   * Created by chris on 3/11/16.
   */
-abstract class BitcoinSLogger {
-
-  def logger: Logger = LoggerFactory.getLogger(this.getClass().toString)
-
+trait BitcoinSLogger {
+  lazy val logger: Logger = LoggerFactory.getLogger(getClass)
 }
 
 object BitcoinSLogger extends BitcoinSLogger
