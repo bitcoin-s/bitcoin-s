@@ -68,6 +68,11 @@ object Sha256Digest extends Factory[Sha256Digest] {
   }
   override def fromBytes(bytes: ByteVector): Sha256Digest =
     Sha256DigestImpl(bytes)
+
+  private val e = ByteVector(Array.fill(32)(0.toByte))
+
+  val empty: Sha256Digest = Sha256Digest.fromBytes(e)
+
 }
 
 /**
@@ -108,6 +113,9 @@ object DoubleSha256Digest extends Factory[DoubleSha256Digest] {
   }
   override def fromBytes(bytes: ByteVector): DoubleSha256Digest =
     DoubleSha256DigestImpl(bytes)
+
+  private val e = ByteVector(Array.fill(32)(0.toByte))
+  val empty: DoubleSha256Digest = DoubleSha256Digest.fromBytes(e)
 
 }
 

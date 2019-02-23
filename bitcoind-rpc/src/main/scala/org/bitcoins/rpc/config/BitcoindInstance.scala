@@ -35,6 +35,8 @@ sealed trait BitcoindInstance {
   def authCredentials: BitcoindAuthCredentials
   def zmqConfig: ZmqConfig
 
+  def p2pPort: Int = uri.getPort
+
   def rpcPort: Int = authCredentials.rpcPort
 
   def getVersion: BitcoindVersion = {
