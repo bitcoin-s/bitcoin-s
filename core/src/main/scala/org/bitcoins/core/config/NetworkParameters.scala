@@ -74,13 +74,15 @@ sealed abstract class MainNet extends BitcoinNetwork {
   /**
     * @inheritdoc
     */
-  override def dnsSeeds: Seq[String] =
-    Seq("seed.bitcoin.sipa.be",
-        "dnsseed.bluematt.me",
-        "dnsseed.bitcoin.dashjr.org",
-        "seed.bitcoinstats.com",
-        "bitseed.xf2.org",
-        "seed.bitcoin.jonasschnelli.ch")
+  override def dnsSeeds = {
+    List("seed.bitcoin.sipa.be",
+      "dnsseed.bluematt.me",
+      "dnsseed.bitcoin.dashjr.org",
+      "seed.bitcoinstats.com",
+      "seed.btc.petertodd.org",
+      "seed.bitcoin.jonasschnelli.ch",
+      "seed.bitcoin.sprovoost.nl")
+  }
 
   /**
     * @inheritdoc
