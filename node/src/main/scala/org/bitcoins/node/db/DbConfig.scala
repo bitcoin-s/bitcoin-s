@@ -7,7 +7,7 @@ import slick.jdbc.PostgresProfile.api._
 /**
   * Created by chris on 9/11/16.
   */
-trait DbConfig {
+sealed abstract class DbConfig {
 
   /** The configuration details for connecting/using the database for our spv node */
   def dbConfig: DatabaseConfig[PostgresProfile]
@@ -16,28 +16,28 @@ trait DbConfig {
   def database: Database = dbConfig.db
 }
 
-trait MainNetDbConfig extends DbConfig {
+sealed abstract class MainNetDbConfig extends DbConfig {
   override def dbConfig: DatabaseConfig[PostgresProfile] =
     DatabaseConfig.forConfig("databaseUrl")
 }
 object MainNetDbConfig extends MainNetDbConfig
 
-trait TestNet3DbConfig extends DbConfig {
+sealed abstract class TestNet3DbConfig extends DbConfig {
   override def dbConfig: DatabaseConfig[PostgresProfile] =
     DatabaseConfig.forConfig("testNet3DatabaseUrl")
 }
 object TestNet3DbConfig extends TestNet3DbConfig
 
-trait RegTestDbConfig extends DbConfig {
+sealed abstract class RegTestDbConfig extends DbConfig {
   override def dbConfig: DatabaseConfig[PostgresProfile] =
     DatabaseConfig.forConfig("regTestDatabaseUrl")
 }
 object RegTestDbConfig extends RegTestDbConfig
 
+sealed abstract class UnitTestDbConfig extends DbConfig {
 
-trait UnitTestDbConfig extends DbConfig {
   /** Reads the configuration for the database specified inside of application.conf */
-  lazy val dbConfig: DatabaseConfig[PostgresProfile] =
+  override def dbConfig: DatabaseConfig[PostgresProfile] =
     DatabaseConfig.forConfig("unitTestDatabaseUrl")
 }
 
