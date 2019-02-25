@@ -1,18 +1,31 @@
 package org.bitcoins.core.protocol
 
+import org.bitcoins.core.util.Bech32
+import org.bitcoins.testkit.core.gen.ln.LnInvoiceGen
 import org.bitcoins.testkit.core.gen.{
   AddressGenerator,
   ChainParamsGenerator,
   ScriptGenerators
 }
-import org.bitcoins.core.util.{Bech32, BitcoinSLogger}
 import org.scalacheck.{Prop, Properties}
 
 import scala.annotation.tailrec
 import scala.util.{Random, Success}
 
 class Bech32Spec extends Properties("Bech32Spec") {
-  private val logger = BitcoinSLogger.logger
+  property("split all LN invoices into HRP and data") = {
+    Prop.forAll(LnInvoiceGen.lnInvoice) { invoice =>
+      val splitT = Bech32.splitToHrpAndData(invoice.toString)
+      splitT.isSuccess
+    }
+  }
+
+  property("split all Bech32 addresses into HRP and data") = {
+    Prop.forAll(AddressGenerator.bech32Address) { address =>
+      val splitT = Bech32.splitToHrpAndData(address.value)
+      splitT.isSuccess
+    }
+  }
 
   property("serialization symmetry") = {
     Prop.forAll(ScriptGenerators.witnessScriptPubKey,
@@ -25,27 +38,25 @@ class Bech32Spec extends Properties("Bech32Spec") {
   }
 
   property("checksum must not work if we modify a char") = {
-    Prop.forAll(AddressGenerator.bech32Address) {
-      case addr: Bech32Address =>
-        val old = addr.value
-        val rand = Math.abs(Random.nextInt)
-        val idx = rand % old.size
-        val (f, l) = old.splitAt(idx)
-        val replacementChar = pickReplacementChar(l.head)
-        val replaced = f ++ Seq(replacementChar) ++ l.tail
-        //should fail because we replaced a char in the addr, so checksum invalid
-        Bech32Address.fromString(replaced).isFailure
+    Prop.forAll(AddressGenerator.bech32Address) { addr: Bech32Address =>
+      val old = addr.value
+      val rand = Math.abs(Random.nextInt)
+      val idx = rand % old.length
+      val (f, l) = old.splitAt(idx)
+      val replacementChar = pickReplacementChar(l.head)
+      val replaced = f ++ Seq(replacementChar) ++ l.tail
+      //should fail because we replaced a char in the addr, so checksum invalid
+      Bech32Address.fromString(replaced).isFailure
     }
   }
 
   property("must fail if we have a mixed case") = {
-    Prop.forAllNoShrink(AddressGenerator.bech32Address) {
-      case addr: Bech32Address =>
-        val old = addr.value
-        val replaced = switchCaseRandChar(old)
-        //should fail because we we switched the case of a random char
-        val actual = Bech32Address.fromString(replaced)
-        actual.isFailure
+    Prop.forAllNoShrink(AddressGenerator.bech32Address) { addr: Bech32Address =>
+      val old = addr.value
+      val replaced = switchCaseRandChar(old)
+      //should fail because we we switched the case of a random char
+      val actual = Bech32Address.fromString(replaced)
+      actual.isFailure
     }
   }
 
@@ -61,7 +72,7 @@ class Bech32Spec extends Properties("Bech32Spec") {
   @tailrec
   private def switchCaseRandChar(addr: String): String = {
     val rand = Math.abs(Random.nextInt)
-    val idx = rand % addr.size
+    val idx = rand % addr.length
     val (f, l) = addr.splitAt(idx)
     if (l.head.isDigit) {
       switchCaseRandChar(addr)

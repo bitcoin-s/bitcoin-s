@@ -2,49 +2,28 @@ package org.bitcoins.core.protocol
 
 import org.bitcoins.core.config.{MainNet, TestNet3}
 import org.bitcoins.core.crypto.ECPublicKey
-import org.bitcoins.testkit.core.gen.NumberGenerator
 import org.bitcoins.core.number.{UInt5, UInt8}
+import org.bitcoins.core.protocol.ln.LnHumanReadablePart
+import org.bitcoins.core.protocol.ln.currency.PicoBitcoins
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.util.{Bech32, BitcoinSUnitTest}
-import org.scalacheck.Gen
+import org.bitcoins.testkit.core.gen.NumberGenerator
 
-import scala.util.{Success, Try}
+import scala.util.{Failure, Success}
 
 class Bech32Test extends BitcoinSUnitTest {
-  override implicit val generatorDrivenConfig = generatorDrivenConfigNewCode
-  "Bech32" must "validly encode the test vectors from bitcoin core correctly" in {
-    val valid = Seq(
-      "A12UEL5L",
-      "a12uel5l",
-      "an83characterlonghumanreadablepartthatcontainsthenumber1andtheexcludedcharactersbio1tt5tgs",
-      "abcdef1qpzry9x8gf2tvdw0s3jn54khce6mua7lmqqqxw",
-      "11qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqc8247j",
-      "split1checkupstagehandshakeupstreamerranterredcaperred2y9e3w",
-      "?1ezyfcl"
-    )
-    val results: Seq[Try[Bech32Address]] =
-      valid.map(Bech32Address.fromString(_))
-    results.exists(_.isFailure) must be(false)
-  }
+  override implicit val generatorDrivenConfig: PropertyCheckConfiguration =
+    generatorDrivenConfigNewCode
 
-  it must "mark invalid test vectors as invalid from bitcoin core" in {
-    val invalid = Seq(
-      " 1nwldj5",
-      "\\x7f\"\"1axkwrx",
-      "\\x80\"\"1eym55h",
-      "an84characterslonghumanreadablepartthatcontainsthenumber1andtheexcludedcharactersbio1569pvx",
-      "pzry9x0s0muk",
-      "1pzry9x0s0muk",
-      "x1b4n0q5v",
-      "li1dgmt3",
-      "de1lg7wt\\xff",
-      "A1G7SGD8",
-      "10a06t8",
-      "1qzzfhee"
-    )
-    val results: Seq[Try[Bech32Address]] =
-      invalid.map(Bech32Address.fromString(_))
-    results.exists(_.isSuccess) must be(false)
+  behavior of "Bech32"
+
+  it must "decode a regtest address from Bitcoin Core" in {
+    val addrStr = "bcrt1qq6w6pu6zq90az9krn53zlkvgyzkyeglzukyepf"
+    val addrT = Address.fromString(addrStr)
+    addrT match {
+      case Success(addr: Bech32Address) => assert(addr.value == addrStr)
+      case _                            => fail()
+    }
   }
 
   it must "follow the example in BIP173" in {
@@ -82,21 +61,103 @@ class Bech32Test extends BitcoinSUnitTest {
     mp2wshDecoded must be(Success(p2wsh))
   }
 
-  it must "expand the human readable part correctly" in {
-    Bech32Address.hrpExpand(bc) must be(
+  it must "expand the human readable part correctly - BTC" in {
+    BtcHumanReadablePart.bc.expand must be(
       Vector(UInt5(3), UInt5(3), UInt5(0), UInt5(2), UInt5(3)))
 
-    Bech32Address.hrpExpand(tb) must be(
+    BtcHumanReadablePart.tb.expand must be(
       Vector(UInt5(3), UInt5(3), UInt5(0), UInt5(20), UInt5(2)))
+
+    BtcHumanReadablePart.bcrt.expand must be(
+      Vector(UInt5(3),
+             UInt5(3),
+             UInt5(3),
+             UInt5(3),
+             UInt5(0),
+             UInt5(2),
+             UInt5(3),
+             UInt5(18),
+             UInt5(20)))
+
+  }
+  it must "expand the human readable part correctly - LN no amount" in {
+    LnHumanReadablePart.lnbc(None).expand must be(
+      Vector(
+        UInt5(3),
+        UInt5(3),
+        UInt5(3),
+        UInt5(3),
+        UInt5(0),
+        UInt5(12),
+        UInt5(14),
+        UInt5(2),
+        UInt5(3)
+      ))
+
+    LnHumanReadablePart.lntb(None).expand must be(
+      Vector(
+        UInt5(3),
+        UInt5(3),
+        UInt5(3),
+        UInt5(3),
+        UInt5(0),
+        UInt5(12),
+        UInt5(14),
+        UInt5(20),
+        UInt5(2)
+      ))
+
+    LnHumanReadablePart.lnbcrt(None).expand must be(
+      Vector(
+        UInt5(3),
+        UInt5(3),
+        UInt5(3),
+        UInt5(3),
+        UInt5(3),
+        UInt5(3),
+        UInt5(0),
+        UInt5(12),
+        UInt5(14),
+        UInt5(2),
+        UInt5(3),
+        UInt5(18),
+        UInt5(20)
+      ))
+  }
+
+  it must "expand the human readable part correctly - LN with amount" in {
+    val hrp = LnHumanReadablePart.lnbc(Some(PicoBitcoins(724)))
+    val expanded = hrp.expand
+    assert(
+      expanded == Vector(
+        UInt5(3),
+        UInt5(3),
+        UInt5(3),
+        UInt5(3),
+        UInt5(1),
+        UInt5(1),
+        UInt5(1),
+        UInt5(3),
+        UInt5(0),
+        UInt5(12),
+        UInt5(14),
+        UInt5(2),
+        UInt5(3),
+        UInt5(23),
+        UInt5(18),
+        UInt5(20),
+        UInt5(16)
+      ))
   }
 
   it must "encode 0 byte correctly" in {
-    val addr = Bech32Address(bc, Vector(UInt5.zero))
+    val addr = Bech32Address(BtcHumanReadablePart.bc, Vector(UInt5.zero))
     addr.value must be("bc1q9zpgru")
   }
 
   it must "create the correct checksum for a 0 byte address" in {
-    val checksum = Bech32Address.createChecksum(bc, Vector(UInt5.zero))
+    val checksum =
+      Bech32Address.createChecksum(BtcHumanReadablePart.bc, Vector(UInt5.zero))
     checksum must be(Seq(5, 2, 1, 8, 3, 28).map(i => UInt5(i.toByte)))
     checksum.map(ch => Bech32.charset(ch.toInt)).mkString must be("9zpgru")
   }
@@ -111,7 +172,8 @@ class Bech32Test extends BitcoinSUnitTest {
     val encoded1 = Bech32.from8bitTo5bit(Vector(z, UInt8.one))
     encoded1 must be(Seq(fz, fz, fz, UInt5(16.toByte)))
     //130.toByte == -126
-    val encoded2 = Bech32.from8bitTo5bit(Vector(130).map(i => UInt8(i.toShort)))
+    val encoded2 =
+      Bech32.from8bitTo5bit(Vector(130).map(i => UInt8(i.toShort)))
     encoded2 must be(Seq(16, 8).map(i => UInt5(i.toByte)))
 
     //130.toByte == -126
