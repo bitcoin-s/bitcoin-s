@@ -115,11 +115,6 @@ case class ReceivedAccount(
 
 case class ReceivedLabel(
     involvesWatchonly: Option[Boolean],
-    /**
-      * Should this be removed?
-      * DEPRECATED. Backwards compatible alias for label.
-      */
-    account: String,
     amount: Bitcoins,
     confirmations: Int,
     label: String)

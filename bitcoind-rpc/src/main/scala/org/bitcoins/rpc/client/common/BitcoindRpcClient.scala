@@ -29,7 +29,9 @@ class BitcoindRpcClient(val instance: BitcoindInstance)(
     with WalletRpc
     with UtilRpc {
 
-  override val version: BitcoindVersion = BitcoindVersion.Unknown
+  override def version: BitcoindVersion = BitcoindVersion.Unknown
+  require(version == instance.getVersion,
+          s"bitcoind version must be $version, got ${instance.getVersion}")
 
 }
 

@@ -248,7 +248,8 @@ object JsonReaders {
     override def reads(json: JsValue): JsResult[BitcoinAddress] = json match {
       case JsString(s) =>
         BitcoinAddress.fromString(s) match {
-          case Success(address) => JsSuccess(address)
+          case Success(address) =>
+            JsSuccess(address)
           case Failure(err) =>
             SerializerUtil.buildErrorMsg("address", err)
         }

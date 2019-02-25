@@ -34,8 +34,9 @@ class BitcoindV16RpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
 
   val logger: Logger = BitcoinSLogger.logger
 
-  val client = new BitcoindV16RpcClient(BitcoindRpcTestUtil.instance())
-  val otherClient = new BitcoindV16RpcClient(BitcoindRpcTestUtil.instance())
+  val client = new BitcoindV16RpcClient(BitcoindRpcTestUtil.v16Instance())
+
+  val otherClient = new BitcoindV16RpcClient(BitcoindRpcTestUtil.v16Instance())
 
   override protected def beforeAll(): Unit = {
     import BitcoindRpcTestConfig.DEFAULT_TIMEOUT
@@ -53,7 +54,9 @@ class BitcoindV16RpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
   }
 
   override protected def afterAll(): Unit = {
-    BitcoindRpcTestUtil.stopServers(Vector(client, otherClient))
+    Await.result(BitcoindRpcTestUtil.stopServers(Vector(client, otherClient)),
+                 BitcoindRpcTestConfig.DEFAULT_TIMEOUT)
+
     TestKit.shutdownActorSystem(system)
   }
 
@@ -69,8 +72,9 @@ class BitcoindV16RpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
         assert(peers.exists(_.networkInfo.addr == otherClient.getDaemon.uri))
       }
       recentBlock <- otherClient.getBestBlockHash
-      _ <- AsyncUtil.retryUntilSatisfiedF(() =>
-        BitcoindRpcTestUtil.hasSeenBlock(client, recentBlock), 1.second)
+      _ <- AsyncUtil.retryUntilSatisfiedF(
+        () => BitcoindRpcTestUtil.hasSeenBlock(client, recentBlock),
+        1.second)
       (utxoTxid, utxoVout) <- client.listUnspent
         .map(_.filter(_.address.contains(addr)))
         .map(_.head)
