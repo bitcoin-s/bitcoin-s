@@ -270,11 +270,11 @@ lazy val nodeFlywaySettings = {
   lazy val DB_HOST = "localhost"
   lazy val DB_NAME = "nodedb"
   lazy val unittest = List(
-    Test / flywayUrl := s"jdbc:postgresql://$DB_HOST:5432/${DB_NAME}-unittest",
+    Test / flywayUrl := s"jdbc:sqlite:${System.getenv("HOME")}/.bitcoin-s/unittest/nodedb.sqlite",
     Test / flywayLocations := List("nodedb/migration"),
     Test / flywayUser := "nodedb",
     Test / flywayPassword := "",
-    flywayUrl := s"jdbc:postgresql://$DB_HOST:5432/${DB_NAME}-unittest",
+    flywayUrl := s"jdbc:sqlite:${System.getenv("HOME")}/.bitcoin-s/unittest/nodedb.sqlite",
     flywayUser := "nodedb",
     flywayPassword := ""
   )
