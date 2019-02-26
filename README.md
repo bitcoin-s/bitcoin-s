@@ -31,6 +31,45 @@
 
 10. `secp256k1jni` - JNI (Java Native Interface) for [secp256k1](https://github.com/bitcoin-core/secp256k1), a optimized C library for EC operations on curve secp256k1. It has support for a wide range of cryptographic operations used in the Bitcoin protocol. Fore more information please read [`secp256k1jni/README.md`](secp256k1jni/README.md)
 
+## REPL
+
+In any given sub project, it's possible to open a REPL session. This session has both main and test sources from Bitcoin-S available, as well as all dependencies for the given sub project. To do this: 
+
+```scala 
+// core project 
+$ sbt coreTest/test:run // we do coreTest instead of core to have all test sources available
+
+// this works as well
+$ sbt
+> project coreTest
+> amm
+...
+Loading...
+Compiling (synthetic)/ammonite/predef/interpBridge.sc
+Compiling (synthetic)/ammonite/predef/replBridge.sc
+Compiling (synthetic)/ammonite/predef/DefaultPredef.sc
+Welcome to the Ammonite Repl 1.6.2
+(Scala 2.12.7 Java 1.8.0_191)
+If you like Ammonite, please support our development at www.patreon.com/lihaoyi
+@ import org.bitcoins.core.protocol.ln.currency.MilliSatoshis 
+import org.bitcoins.core.protocol.ln.currency.MilliSatoshis
+
+@ MilliSatoshis(100) 
+res1: MilliSatoshis = MilliSatoshisImpl(100)
+
+
+// Bitcoind RPC project
+$ sbt bitcoindRpcTest/test:run
+
+// this works as well
+$ sbt
+> project bitcoindRpcTest
+> amm
+
+// Similarly for other projects
+```
+
+
 ## Artifacts
 
 You need to add the Bitcoin-S Bintray to your resolvers to be able to access published artifacts.

@@ -16,6 +16,7 @@ object Deps {
     val junitV = "0.11"
     val nativeLoaderV = "2.3.2"
     val typesafeConfigV = "1.3.3"
+    val ammoniteV = "1.6.2"
   }
 
   object Compile {
@@ -43,22 +44,20 @@ object Deps {
     val spray = "io.spray" %% "spray-json" % V.spray  % "test" withSources() withJavadoc()
     val akkaHttp = "com.typesafe.akka" %% "akka-http-testkit" % V.akkav % "test" withSources() withJavadoc()
     val akkaStream = "com.typesafe.akka" %% "akka-stream-testkit" % V.akkaStreamv % "test" withSources() withJavadoc()
+    val ammonite = "com.lihaoyi" %% "ammonite" % V.ammoniteV % "test" cross CrossVersion.full
   }
 
     val core = List(
       Compile.bouncycastle,
       Compile.scodec,
-      Compile.slf4j
+      Compile.slf4j,
+      Test.ammonite
   )
 
   val secp256k1jni = List(
     Compile.nativeLoader,
-    Test.junitInterface
-  )
-
-  val coreGen = List(
-    Compile.slf4j,
-    Test.scalacheck
+    Test.junitInterface,
+    Test.ammonite
   )
 
   val coreTest = List(
@@ -66,7 +65,8 @@ object Deps {
     Test.junitInterface,
     Test.logback,
     Test.scalaTest,
-    Test.spray
+    Test.spray,
+    Test.ammonite
   )
 
   val bitcoindZmq = List(
@@ -74,7 +74,8 @@ object Deps {
     Compile.slf4j,
     Test.logback,
     Test.scalacheck,
-    Test.scalaTest
+    Test.scalaTest,
+    Test.ammonite
   )
 
   val bitcoindRpc = List(
@@ -90,12 +91,14 @@ object Deps {
     Test.akkaStream,
     Test.logback,
     Test.scalaTest,
-    Test.scalacheck
+    Test.scalacheck,
+    Test.ammonite
   )
 
   val bench = List(
     "org.slf4j" % "slf4j-api" % V.slf4j withSources() withJavadoc(),
-    Compile.logback
+    Compile.logback,
+    Test.ammonite
   )
 
   val eclairRpc = List(
@@ -109,13 +112,15 @@ object Deps {
     Test.akkaHttp,
     Test.logback,
     Test.scalaTest,
-    Test.scalacheck
+    Test.scalacheck,
+    Test.ammonite
   )
 
   val testkit = List(
     Compile.slf4j,
     "org.scalacheck" %% "scalacheck" % V.scalacheck withSources() withJavadoc(),
-    "org.scalatest" %% "scalatest" % V.scalaTest withSources() withJavadoc()
+    "org.scalatest" %% "scalatest" % V.scalaTest withSources() withJavadoc(),
+    Test.ammonite
   )
 
   val doc = List(
