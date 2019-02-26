@@ -268,18 +268,70 @@ lazy val doc = project
 
 lazy val nodeFlywaySettings = {
   lazy val DB_HOST = "localhost"
-  lazy val DB_NAME = "nodedb"
-  lazy val unittest = List(
-    Test / flywayUrl := s"jdbc:sqlite:${System.getenv("HOME")}/.bitcoin-s/unittest/nodedb.sqlite",
+  lazy val DB_NAME = "nodedb.sqlite"
+  lazy val network = "unittest" //mainnet, testnet3, regtest, unittest
+
+  lazy val mainnetDir = s"${System.getenv("HOME")}/.bitcoin-s/mainnet/"
+  lazy val testnetDir = s"${System.getenv("HOME")}/.bitcoin-s/testnet3/"
+  lazy val regtestDir = s"${System.getenv("HOME")}/.bitcoin-s/regtest/"
+  lazy val unittestDir = s"${System.getenv("HOME")}/.bitcoin-s/unittest/"
+
+  lazy val dirs = List(mainnetDir,testnetDir,regtestDir,unittestDir)
+
+  //create directies if they DNE
+  dirs.foreach { d =>
+    val file = new File(d)
+    file.mkdirs()
+    val db = new File(d + DB_NAME)
+    db.createNewFile()
+  }
+
+  lazy val mainnet = List(
+    Test / flywayUrl := s"jdbc:sqlite:${mainnetDir}${DB_NAME}",
     Test / flywayLocations := List("nodedb/migration"),
     Test / flywayUser := "nodedb",
     Test / flywayPassword := "",
-    flywayUrl := s"jdbc:sqlite:${System.getenv("HOME")}/.bitcoin-s/unittest/nodedb.sqlite",
+    flywayUrl := s"jdbc:sqlite:${mainnetDir}${DB_NAME}",
     flywayUser := "nodedb",
     flywayPassword := ""
   )
 
-  unittest
+  lazy val testnet3 = List(
+    Test / flywayUrl := s"jdbc:sqlite:${testnetDir}${DB_NAME}",
+    Test / flywayLocations := List("nodedb/migration"),
+    Test / flywayUser := "nodedb",
+    Test / flywayPassword := "",
+    flywayUrl := s"jdbc:sqlite:${testnetDir}${DB_NAME}",
+    flywayUser := "nodedb",
+    flywayPassword := ""
+  )
+
+  lazy val regtest = List(
+    Test / flywayUrl := s"jdbc:sqlite:${regtestDir}${DB_NAME}",
+    Test / flywayLocations := List("nodedb/migration"),
+    Test / flywayUser := "nodedb",
+    Test / flywayPassword := "",
+    flywayUrl := s"jdbc:sqlite:${regtestDir}${DB_NAME}",
+    flywayUser := "nodedb",
+    flywayPassword := ""
+  )
+
+  lazy val unittest = List(
+    Test / flywayUrl := s"jdbc:sqlite:${unittestDir}${DB_NAME}",
+    Test / flywayLocations := List("nodedb/migration"),
+    Test / flywayUser := "nodedb",
+    Test / flywayPassword := "",
+    flywayUrl := s"jdbc:sqlite:${unittestDir}${DB_NAME}",
+    flywayUser := "nodedb",
+    flywayPassword := ""
+  )
+  network match {
+    case "mainnet" => mainnet
+    case "testnet3" => testnet3
+    case "regtest" => regtest
+    case "unittest" => unittest
+    case unknown: String => throw new IllegalArgumentException(s"Unknown network=${unknown}")
+  }
 }
 
 publishArtifact in root := false
