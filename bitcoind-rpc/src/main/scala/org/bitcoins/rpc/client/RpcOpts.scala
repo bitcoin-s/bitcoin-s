@@ -1,6 +1,10 @@
 package org.bitcoins.rpc.client
 
-import org.bitcoins.core.crypto.{DoubleSha256Digest, ECPrivateKey}
+import org.bitcoins.core.crypto.{
+  DoubleSha256Digest,
+  DoubleSha256DigestBE,
+  ECPrivateKey
+}
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
@@ -24,7 +28,7 @@ object RpcOpts {
     FundRawTransactionOptions] = Json.writes[FundRawTransactionOptions]
 
   case class SignRawTransactionOutputParameter(
-      txid: DoubleSha256Digest,
+      txid: DoubleSha256DigestBE,
       vout: Int,
       scriptPubKey: ScriptPubKey,
       redeemScript: Option[ScriptPubKey] = None,
@@ -46,7 +50,7 @@ object RpcOpts {
 
   case class ImportMultiAddress(address: BitcoinAddress)
 
-  case class LockUnspentOutputParameter(txid: DoubleSha256Digest, vout: Int)
+  case class LockUnspentOutputParameter(txid: DoubleSha256DigestBE, vout: Int)
 
   implicit val lockUnspentParameterWrites: Writes[LockUnspentOutputParameter] =
     Json.writes[LockUnspentOutputParameter]

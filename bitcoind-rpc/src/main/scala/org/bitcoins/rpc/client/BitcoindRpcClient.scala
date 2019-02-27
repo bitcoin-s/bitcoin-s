@@ -9,7 +9,12 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import akka.stream.ActorMaterializer
 import akka.util.ByteString
-import org.bitcoins.core.crypto.{DoubleSha256Digest, ECPrivateKey, ECPublicKey}
+import org.bitcoins.core.crypto.{
+  DoubleSha256Digest,
+  DoubleSha256DigestBE,
+  ECPrivateKey,
+  ECPublicKey
+}
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, MerkleBlock}
@@ -88,8 +93,12 @@ class BitcoindRpcClient(val instance: BitcoindInstance)(
     result
   }
 
-  def abandonTransaction(txid: DoubleSha256Digest): Future[Unit] = {
+  def abandonTransaction(txid: DoubleSha256DigestBE): Future[Unit] = {
     bitcoindCall[Unit]("abandontransaction", List(JsString(txid.hex)))
+  }
+
+  def abandonTransaction(txid: DoubleSha256Digest): Future[Unit] = {
+    abandonTransaction(txid.flip)
   }
 
   def abortRescan(): Future[Unit] = {
@@ -156,7 +165,7 @@ class BitcoindRpcClient(val instance: BitcoindInstance)(
   }
 
   def bumpFee(
-      txid: DoubleSha256Digest,
+      txid: DoubleSha256DigestBE,
       confTarget: Int = 6,
       totalFee: Option[Satoshis] = None,
       replaceable: Boolean = true,
@@ -177,6 +186,15 @@ class BitcoindRpcClient(val instance: BitcoindInstance)(
 
     bitcoindCall[BumpFeeResult]("bumpfee",
                                 List(JsString(txid.hex), JsObject(options)))
+  }
+
+  def bumpFee(
+      txid: DoubleSha256Digest,
+      confTarget: Int,
+      totalFee: Option[Satoshis],
+      replaceable: Boolean,
+      estimateMode: String): Future[BumpFeeResult] = {
+    bumpFee(txid.flip, confTarget, totalFee, replaceable, estimateMode)
   }
 
   def clearBanned(): Future[Unit] = {
@@ -269,8 +287,8 @@ class BitcoindRpcClient(val instance: BitcoindInstance)(
     */
   def generate(
       blocks: Int,
-      maxTries: Int = 1000000): Future[Vector[DoubleSha256Digest]] = {
-    bitcoindCall[Vector[DoubleSha256Digest]](
+      maxTries: Int = 1000000): Future[Vector[DoubleSha256DigestBE]] = {
+    bitcoindCall[Vector[DoubleSha256DigestBE]](
       "generate",
       List(JsNumber(blocks), JsNumber(maxTries)))
   }
@@ -278,8 +296,8 @@ class BitcoindRpcClient(val instance: BitcoindInstance)(
   def generateToAddress(
       blocks: Int,
       address: BitcoinAddress,
-      maxTries: Int = 1000000): Future[Vector[DoubleSha256Digest]] = {
-    bitcoindCall[Vector[DoubleSha256Digest]](
+      maxTries: Int = 1000000): Future[Vector[DoubleSha256DigestBE]] = {
+    bitcoindCall[Vector[DoubleSha256DigestBE]](
       "generatetoaddress",
       List(JsNumber(blocks), JsString(address.toString), JsNumber(maxTries)))
   }
@@ -315,14 +333,18 @@ class BitcoindRpcClient(val instance: BitcoindInstance)(
     bitcoindCall[Bitcoins]("getbalance")
   }
 
-  def getBestBlockHash: Future[DoubleSha256Digest] = {
-    bitcoindCall[DoubleSha256Digest]("getbestblockhash")
+  def getBestBlockHash: Future[DoubleSha256DigestBE] = {
+    bitcoindCall[DoubleSha256DigestBE]("getbestblockhash")
   }
 
-  def getBlock(headerHash: DoubleSha256Digest): Future[GetBlockResult] = {
+  def getBlock(headerHash: DoubleSha256DigestBE): Future[GetBlockResult] = {
     val isJsonObject = JsNumber(1)
     bitcoindCall[GetBlockResult]("getblock",
                                  List(JsString(headerHash.hex), isJsonObject))
+  }
+
+  def getBlock(headerHash: DoubleSha256Digest): Future[GetBlockResult] = {
+    getBlock(headerHash.flip)
   }
 
   def getBlockChainInfo: Future[GetBlockChainInfoResult] = {
@@ -333,24 +355,38 @@ class BitcoindRpcClient(val instance: BitcoindInstance)(
     bitcoindCall[Int]("getblockcount")
   }
 
-  def getBlockHash(height: Int): Future[DoubleSha256Digest] = {
-    bitcoindCall[DoubleSha256Digest]("getblockhash", List(JsNumber(height)))
+  def getBlockHash(height: Int): Future[DoubleSha256DigestBE] = {
+    bitcoindCall[DoubleSha256DigestBE]("getblockhash", List(JsNumber(height)))
   }
 
   def getBlockHeader(
-      headerHash: DoubleSha256Digest): Future[GetBlockHeaderResult] = {
+      headerHash: DoubleSha256DigestBE): Future[GetBlockHeaderResult] = {
     bitcoindCall[GetBlockHeaderResult](
       "getblockheader",
       List(JsString(headerHash.hex), JsBoolean(true)))
   }
 
-  def getBlockHeaderRaw(headerHash: DoubleSha256Digest): Future[BlockHeader] = {
+  def getBlockHeader(
+      headerHash: DoubleSha256Digest): Future[GetBlockHeaderResult] = {
+    getBlockHeader(headerHash.flip)
+  }
+
+  def getBlockHeaderRaw(
+      headerHash: DoubleSha256DigestBE): Future[BlockHeader] = {
     bitcoindCall[BlockHeader]("getblockheader",
                               List(JsString(headerHash.hex), JsBoolean(false)))
   }
 
-  def getBlockRaw(headerHash: DoubleSha256Digest): Future[Block] = {
+  def getBlockHeaderRaw(headerHash: DoubleSha256Digest): Future[BlockHeader] = {
+    getBlockHeaderRaw(headerHash.flip)
+  }
+
+  def getBlockRaw(headerHash: DoubleSha256DigestBE): Future[Block] = {
     bitcoindCall[Block]("getblock", List(JsString(headerHash.hex), JsNumber(0)))
+  }
+
+  def getBlockRaw(headerHash: DoubleSha256Digest): Future[Block] = {
+    getBlockRaw(headerHash.flip)
   }
 
   def getBlockTemplate(
@@ -365,12 +401,17 @@ class BitcoindRpcClient(val instance: BitcoindInstance)(
     bitcoindCall[GetBlockTemplateResult]("getblocktemplate", params)
   }
 
-  def getBlockWithTransactions(headerHash: DoubleSha256Digest): Future[
+  def getBlockWithTransactions(headerHash: DoubleSha256DigestBE): Future[
     GetBlockWithTransactionsResult] = {
     val isVerboseJsonObject = JsNumber(2)
     bitcoindCall[GetBlockWithTransactionsResult](
       "getblock",
       List(JsString(headerHash.hex), isVerboseJsonObject))
+  }
+
+  def getBlockWithTransactions(headerHash: DoubleSha256Digest): Future[
+    GetBlockWithTransactionsResult] = {
+    getBlockWithTransactions(headerHash.flip)
   }
 
   def getChainTips: Future[Vector[ChainTip]] = {
@@ -379,7 +420,7 @@ class BitcoindRpcClient(val instance: BitcoindInstance)(
 
   private def getChainTxStats(
       blocks: Option[Int],
-      blockHash: Option[DoubleSha256Digest]): Future[GetChainTxStatsResult] = {
+      blockHash: Option[DoubleSha256DigestBE]): Future[GetChainTxStatsResult] = {
     val params =
       if (blocks.isEmpty) {
         List.empty
@@ -399,8 +440,13 @@ class BitcoindRpcClient(val instance: BitcoindInstance)(
 
   def getChainTxStats(
       blocks: Int,
-      blockHash: DoubleSha256Digest): Future[GetChainTxStatsResult] =
+      blockHash: DoubleSha256DigestBE): Future[GetChainTxStatsResult] =
     getChainTxStats(Some(blocks), Some(blockHash))
+
+  def getChainTxStats(
+      blocks: Int,
+      blockHash: DoubleSha256Digest): Future[GetChainTxStatsResult] =
+    getChainTxStats(Some(blocks), Some(blockHash.flip))
 
   def getConnectionCount: Future[Int] = {
     bitcoindCall[Int]("getconnectioncount")
@@ -415,37 +461,62 @@ class BitcoindRpcClient(val instance: BitcoindInstance)(
   }
 
   def getMemPoolAncestors(
-      txid: DoubleSha256Digest): Future[Vector[DoubleSha256Digest]] = {
-    bitcoindCall[Vector[DoubleSha256Digest]](
+      txid: DoubleSha256DigestBE): Future[Vector[DoubleSha256DigestBE]] = {
+    bitcoindCall[Vector[DoubleSha256DigestBE]](
       "getmempoolancestors",
       List(JsString(txid.hex), JsBoolean(false)))
+  }
+
+  def getMemPoolAncestors(
+      txid: DoubleSha256Digest): Future[Vector[DoubleSha256DigestBE]] = {
+    getMemPoolAncestors(txid.flip)
+  }
+
+  def getMemPoolAncestorsVerbose(txid: DoubleSha256DigestBE): Future[
+    Map[DoubleSha256DigestBE, GetMemPoolResult]] = {
+    bitcoindCall[Map[DoubleSha256DigestBE, GetMemPoolResult]](
+      "getmempoolancestors",
+      List(JsString(txid.hex), JsBoolean(true)))
   }
 
   def getMemPoolAncestorsVerbose(txid: DoubleSha256Digest): Future[
-    Map[DoubleSha256Digest, GetMemPoolResult]] = {
-    bitcoindCall[Map[DoubleSha256Digest, GetMemPoolResult]](
-      "getmempoolancestors",
-      List(JsString(txid.hex), JsBoolean(true)))
+    Map[DoubleSha256DigestBE, GetMemPoolResult]] = {
+    getMemPoolAncestorsVerbose(txid.flip)
   }
 
   def getMemPoolDescendants(
-      txid: DoubleSha256Digest): Future[Vector[DoubleSha256Digest]] = {
-    bitcoindCall[Vector[DoubleSha256Digest]](
+      txid: DoubleSha256DigestBE): Future[Vector[DoubleSha256DigestBE]] = {
+    bitcoindCall[Vector[DoubleSha256DigestBE]](
       "getmempooldescendants",
       List(JsString(txid.hex), JsBoolean(false)))
   }
 
-  def getMemPoolDescendantsVerbose(txid: DoubleSha256Digest): Future[
-    Map[DoubleSha256Digest, GetMemPoolResult]] = {
-    bitcoindCall[Map[DoubleSha256Digest, GetMemPoolResult]](
+  def getMemPoolDescendants(
+      txid: DoubleSha256Digest): Future[Vector[DoubleSha256DigestBE]] = {
+    getMemPoolDescendants(txid.flip)
+  }
+
+  def getMemPoolDescendantsVerbose(txid: DoubleSha256DigestBE): Future[
+    Map[DoubleSha256DigestBE, GetMemPoolResult]] = {
+    bitcoindCall[Map[DoubleSha256DigestBE, GetMemPoolResult]](
       "getmempooldescendants",
       List(JsString(txid.hex), JsBoolean(true)))
+  }
+
+  def getMemPoolDescendantsVerbose(txid: DoubleSha256Digest): Future[
+    Map[DoubleSha256DigestBE, GetMemPoolResult]] = {
+    getMemPoolDescendantsVerbose(txid.flip)
+  }
+
+  def getMemPoolEntry(
+      txid: DoubleSha256DigestBE): Future[GetMemPoolEntryResult] = {
+    bitcoindCall[GetMemPoolEntryResult]("getmempoolentry",
+                                        List(JsString(txid.hex)))
   }
 
   def getMemPoolEntry(
       txid: DoubleSha256Digest): Future[GetMemPoolEntryResult] = {
-    bitcoindCall[GetMemPoolEntryResult]("getmempoolentry",
-                                        List(JsString(txid.hex)))
+    getMemPoolEntry(txid.flip)
   }
 
   def getMemPoolInfo: Future[GetMemPoolInfoResult] = {
@@ -518,28 +589,37 @@ class BitcoindRpcClient(val instance: BitcoindInstance)(
   def getRawChangeAddress(addressType: AddressType): Future[BitcoinAddress] =
     getRawChangeAddress(Some(addressType))
 
-  def getRawMemPool: Future[Vector[DoubleSha256Digest]] = {
-    bitcoindCall[Vector[DoubleSha256Digest]]("getrawmempool",
-                                             List(JsBoolean(false)))
+  def getRawMemPool: Future[Vector[DoubleSha256DigestBE]] = {
+    bitcoindCall[Vector[DoubleSha256DigestBE]]("getrawmempool",
+                                               List(JsBoolean(false)))
   }
 
   def getRawMemPoolWithTransactions: Future[
-    Map[DoubleSha256Digest, GetMemPoolResult]] = {
-    bitcoindCall[Map[DoubleSha256Digest, GetMemPoolResult]](
+    Map[DoubleSha256DigestBE, GetMemPoolResult]] = {
+    bitcoindCall[Map[DoubleSha256DigestBE, GetMemPoolResult]](
       "getrawmempool",
       List(JsBoolean(true)))
   }
 
   def getRawTransaction(
-      txid: DoubleSha256Digest): Future[GetRawTransactionResult] = {
+      txid: DoubleSha256DigestBE): Future[GetRawTransactionResult] = {
     bitcoindCall[GetRawTransactionResult](
       "getrawtransaction",
       List(JsString(txid.hex), JsBoolean(true)))
   }
 
-  def getRawTransactionRaw(txid: DoubleSha256Digest): Future[Transaction] = {
+  def getRawTransaction(
+      txid: DoubleSha256Digest): Future[GetRawTransactionResult] = {
+    getRawTransaction(txid.flip)
+  }
+
+  def getRawTransactionRaw(txid: DoubleSha256DigestBE): Future[Transaction] = {
     bitcoindCall[Transaction]("getrawtransaction",
                               List(JsString(txid.hex), JsBoolean(false)))
+  }
+
+  def getRawTransactionRaw(txid: DoubleSha256Digest): Future[Transaction] = {
+    getRawTransactionRaw(txid.flip)
   }
 
   def getReceivedByAccount(
@@ -558,15 +638,21 @@ class BitcoindRpcClient(val instance: BitcoindInstance)(
   }
 
   def getTransaction(
-      txid: DoubleSha256Digest,
+      txid: DoubleSha256DigestBE,
       watchOnly: Boolean = false): Future[GetTransactionResult] = {
     bitcoindCall[GetTransactionResult](
       "gettransaction",
       List(JsString(txid.hex), JsBoolean(watchOnly)))
   }
 
-  def getTxOut(
+  def getTransaction(
       txid: DoubleSha256Digest,
+      watchOnly: Boolean): Future[GetTransactionResult] = {
+    getTransaction(txid.flip, watchOnly)
+  }
+
+  def getTxOut(
+      txid: DoubleSha256DigestBE,
       vout: Int,
       includeMemPool: Boolean = true): Future[GetTxOutResult] = {
     bitcoindCall[GetTxOutResult](
@@ -574,9 +660,16 @@ class BitcoindRpcClient(val instance: BitcoindInstance)(
       List(JsString(txid.hex), JsNumber(vout), JsBoolean(includeMemPool)))
   }
 
+  def getTxOut(
+      txid: DoubleSha256Digest,
+      vout: Int,
+      includeMemPool: Boolean): Future[GetTxOutResult] = {
+    getTxOut(txid.flip, vout, includeMemPool)
+  }
+
   private def getTxOutProof(
-      txids: Vector[DoubleSha256Digest],
-      headerHash: Option[DoubleSha256Digest]): Future[MerkleBlock] = {
+      txids: Vector[DoubleSha256DigestBE],
+      headerHash: Option[DoubleSha256DigestBE]): Future[MerkleBlock] = {
     val params = {
       val hashes = JsArray(txids.map(hash => JsString(hash.hex)))
       if (headerHash.isEmpty) {
@@ -588,13 +681,18 @@ class BitcoindRpcClient(val instance: BitcoindInstance)(
     bitcoindCall[MerkleBlock]("gettxoutproof", params)
   }
 
-  def getTxOutProof(txids: Vector[DoubleSha256Digest]): Future[MerkleBlock] =
+  def getTxOutProof(txids: Vector[DoubleSha256DigestBE]): Future[MerkleBlock] =
     getTxOutProof(txids, None)
+
+  def getTxOutProof(
+      txids: Vector[DoubleSha256DigestBE],
+      headerHash: DoubleSha256DigestBE): Future[MerkleBlock] =
+    getTxOutProof(txids, Some(headerHash))
 
   def getTxOutProof(
       txids: Vector[DoubleSha256Digest],
       headerHash: DoubleSha256Digest): Future[MerkleBlock] =
-    getTxOutProof(txids, Some(headerHash))
+    getTxOutProof(txids.map(_.flip), Some(headerHash.flip))
 
   def getTxOutSetInfo: Future[GetTxOutSetInfoResult] = {
     bitcoindCall[GetTxOutSetInfoResult]("gettxoutsetinfo")
@@ -672,8 +770,12 @@ class BitcoindRpcClient(val instance: BitcoindInstance)(
     bitcoindCall[Unit]("importwallet", List(JsString(filePath)))
   }
 
-  def invalidateBlock(blockHash: DoubleSha256Digest): Future[Unit] = {
+  def invalidateBlock(blockHash: DoubleSha256DigestBE): Future[Unit] = {
     bitcoindCall[Unit]("invalidateblock", List(JsString(blockHash.hex)))
+  }
+
+  def invalidateBlock(blockHash: DoubleSha256Digest): Future[Unit] = {
+    invalidateBlock(blockHash.flip)
   }
 
   def keyPoolRefill(keyPoolSize: Int = 100): Future[Unit] = {
@@ -721,7 +823,7 @@ class BitcoindRpcClient(val instance: BitcoindInstance)(
   }
 
   def listSinceBlock(
-      headerHash: Option[DoubleSha256Digest] = None,
+      headerHash: Option[DoubleSha256DigestBE] = None,
       confirmations: Int = 1,
       includeWatchOnly: Boolean = false): Future[ListSinceBlockResult] = {
     val params =
@@ -738,21 +840,21 @@ class BitcoindRpcClient(val instance: BitcoindInstance)(
   def listSinceBlock: Future[ListSinceBlockResult] = listSinceBlock(None)
 
   def listSinceBlock(
-      headerHash: DoubleSha256Digest): Future[ListSinceBlockResult] =
+      headerHash: DoubleSha256DigestBE): Future[ListSinceBlockResult] =
     listSinceBlock(Some(headerHash))
 
   def listSinceBlock(
-      headerHash: DoubleSha256Digest,
+      headerHash: DoubleSha256DigestBE,
       confirmations: Int): Future[ListSinceBlockResult] =
     listSinceBlock(Some(headerHash), confirmations)
 
   def listSinceBlock(
-      headerHash: DoubleSha256Digest,
+      headerHash: DoubleSha256DigestBE,
       includeWatchOnly: Boolean): Future[ListSinceBlockResult] =
     listSinceBlock(Some(headerHash), includeWatchOnly = includeWatchOnly)
 
   def listSinceBlock(
-      headerHash: DoubleSha256Digest,
+      headerHash: DoubleSha256DigestBE,
       confirmations: Int,
       includeWatchOnly: Boolean): Future[ListSinceBlockResult] =
     listSinceBlock(Some(headerHash), confirmations, includeWatchOnly)
@@ -856,24 +958,34 @@ class BitcoindRpcClient(val instance: BitcoindInstance)(
     bitcoindCall[Unit]("ping")
   }
 
-  def preciousBlock(headerHash: DoubleSha256Digest): Future[Unit] = {
+  def preciousBlock(headerHash: DoubleSha256DigestBE): Future[Unit] = {
     bitcoindCall[Unit]("preciousblock", List(JsString(headerHash.hex)))
   }
 
   def prioritiseTransaction(
-      txid: DoubleSha256Digest,
+      txid: DoubleSha256DigestBE,
       feeDelta: Satoshis): Future[Boolean] = {
     bitcoindCall[Boolean](
       "prioritisetransaction",
       List(JsString(txid.hex), JsNumber(0), JsNumber(feeDelta.toLong)))
   }
 
+  def prioritiseTransaction(
+      txid: DoubleSha256Digest,
+      feeDelta: Satoshis): Future[Boolean] = {
+    prioritiseTransaction(txid.flip, feeDelta)
+  }
+
   def pruneBlockChain(height: Int): Future[Int] = {
     bitcoindCall[Int]("pruneblockchain", List(JsNumber(height)))
   }
 
-  def removePrunedFunds(txid: DoubleSha256Digest): Future[Unit] = {
+  def removePrunedFunds(txid: DoubleSha256DigestBE): Future[Unit] = {
     bitcoindCall[Unit]("removeprunedfunds", List(JsString(txid.hex)))
+  }
+
+  def removePrunedFunds(txid: DoubleSha256Digest): Future[Unit] = {
+    removePrunedFunds(txid.flip)
   }
 
   private def rescanBlockChain(
@@ -909,8 +1021,8 @@ class BitcoindRpcClient(val instance: BitcoindInstance)(
       amount: Bitcoins,
       confirmations: Int = 1,
       comment: String = "",
-      toComment: String = ""): Future[DoubleSha256Digest] = {
-    bitcoindCall[DoubleSha256Digest](
+      toComment: String = ""): Future[DoubleSha256DigestBE] = {
+    bitcoindCall[DoubleSha256DigestBE](
       "sendfrom",
       List(JsString(fromAccount),
            JsString(toAddress.value),
@@ -926,13 +1038,13 @@ class BitcoindRpcClient(val instance: BitcoindInstance)(
       minconf: Int = 1,
       comment: String = "",
       subtractFeeFrom: Vector[BitcoinAddress] = Vector.empty): Future[
-    DoubleSha256Digest] = {
-    bitcoindCall[DoubleSha256Digest]("sendmany",
-                                     List(JsString(""),
-                                          Json.toJson(amounts),
-                                          JsNumber(minconf),
-                                          JsString(comment),
-                                          Json.toJson(subtractFeeFrom)))
+    DoubleSha256DigestBE] = {
+    bitcoindCall[DoubleSha256DigestBE]("sendmany",
+                                       List(JsString(""),
+                                            Json.toJson(amounts),
+                                            JsNumber(minconf),
+                                            JsString(comment),
+                                            Json.toJson(subtractFeeFrom)))
   }
 
   def sendToAddress(
@@ -940,8 +1052,8 @@ class BitcoindRpcClient(val instance: BitcoindInstance)(
       amount: Bitcoins,
       localComment: String = "",
       toComment: String = "",
-      subractFeeFromAmount: Boolean = false): Future[DoubleSha256Digest] = {
-    bitcoindCall[DoubleSha256Digest](
+      subractFeeFromAmount: Boolean = false): Future[DoubleSha256DigestBE] = {
+    bitcoindCall[DoubleSha256DigestBE](
       "sendtoaddress",
       List(JsString(address.toString),
            JsNumber(amount.toBigDecimal),
@@ -953,8 +1065,8 @@ class BitcoindRpcClient(val instance: BitcoindInstance)(
 
   def sendRawTransaction(
       transaction: Transaction,
-      allowHighFees: Boolean = false): Future[DoubleSha256Digest] = {
-    bitcoindCall[DoubleSha256Digest](
+      allowHighFees: Boolean = false): Future[DoubleSha256DigestBE] = {
+    bitcoindCall[DoubleSha256DigestBE](
       "sendrawtransaction",
       List(JsString(transaction.hex), JsBoolean(allowHighFees)))
   }
@@ -1076,9 +1188,9 @@ class BitcoindRpcClient(val instance: BitcoindInstance)(
   }
 
   def verifyTxOutProof(
-      proof: MerkleBlock): Future[Vector[DoubleSha256Digest]] = {
-    bitcoindCall[Vector[DoubleSha256Digest]]("verifytxoutproof",
-                                             List(JsString(proof.hex)))
+      proof: MerkleBlock): Future[Vector[DoubleSha256DigestBE]] = {
+    bitcoindCall[Vector[DoubleSha256DigestBE]]("verifytxoutproof",
+                                               List(JsString(proof.hex)))
   }
 
   def walletLock(): Future[Unit] = {
@@ -1110,7 +1222,7 @@ class BitcoindRpcClient(val instance: BitcoindInstance)(
 
     payloadF.flatMap { payload =>
       val jsResult = (payload \ resultKey).validate[T]
-      val result = parseResult(jsResult, payload)
+      val result = parseResult(jsResult, payload, command)
       Future.fromTry(result)
     }
   }
@@ -1119,18 +1231,21 @@ class BitcoindRpcClient(val instance: BitcoindInstance)(
   implicit val rpcErrorReads: Reads[RpcError] = Json.reads[RpcError]
 
   // Should both logging and throwing be happening?
-  private def parseResult[T](result: JsResult[T], json: JsValue): Try[T] = {
-    checkUnitError[T](result, json)
+  private def parseResult[T](
+      result: JsResult[T],
+      json: JsValue,
+      command: String): Try[T] = {
+    checkUnitError[T](result, json, command)
 
     result match {
       case res: JsSuccess[T] => Success(res.value)
       case res: JsError =>
         (json \ errorKey).validate[RpcError] match {
           case err: JsSuccess[RpcError] =>
-            logger.error(s"Error ${err.value.code}: ${err.value.message}")
-            Failure(
-              new RuntimeException(
-                s"Error ${err.value.code}: ${err.value.message}"))
+            val errMsg =
+              s"Error for command=${command} ${err.value.code}: ${err.value.message}"
+            logger.error(errMsg)
+            Failure(new RuntimeException(errMsg))
           case _: JsError =>
             logger.error(JsError.toJson(res).toString())
             Failure(
@@ -1141,13 +1256,17 @@ class BitcoindRpcClient(val instance: BitcoindInstance)(
   }
 
   // Catches errors thrown by calls with Unit as the expected return type (which isn't handled by UnitReads)
-  private def checkUnitError[T](result: JsResult[T], json: JsValue): Unit = {
+  private def checkUnitError[T](
+      result: JsResult[T],
+      json: JsValue,
+      command: String): Unit = {
     if (result == JsSuccess(())) {
       (json \ errorKey).validate[RpcError] match {
         case err: JsSuccess[RpcError] =>
-          logger.error(s"Error ${err.value.code}: ${err.value.message}")
-          throw new RuntimeException(
-            s"Error ${err.value.code}: ${err.value.message}")
+          val errMsg =
+            s"Error for command=${command} ${err.value.code}: ${err.value.message}"
+          logger.error(errMsg)
+          throw new RuntimeException(errMsg)
         case _: JsError =>
       }
     }
