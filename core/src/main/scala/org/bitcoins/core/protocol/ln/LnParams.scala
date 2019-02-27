@@ -2,7 +2,6 @@ package org.bitcoins.core.protocol.ln
 
 import org.bitcoins.core.config.{MainNet, NetworkParameters, RegTest, TestNet3}
 import org.bitcoins.core.protocol.blockchain.ChainParams
-import scodec.bits.ByteVector
 
 sealed abstract class LnParams {
   def chain: ChainParams = network.chainParams
@@ -18,7 +17,7 @@ sealed abstract class LnParams {
     * [[https://github.com/lightningnetwork/lightning-rfc/blob/master/11-payment-encoding.md BOLT11]]
     * for more details
     */
-  def invoicePrefix: ByteVector
+  def invoicePrefix: String
 }
 
 object LnParams {
@@ -30,9 +29,7 @@ object LnParams {
 
     override def lnPort = 9735
 
-    override val invoicePrefix: ByteVector = {
-      ByteVector('l', 'n', 'b', 'c')
-    }
+    override val invoicePrefix: String = "lnbc"
   }
 
   case object LnBitcoinTestNet extends LnParams {
@@ -42,9 +39,7 @@ object LnParams {
 
     override def lnPort = 9735
 
-    override val invoicePrefix: ByteVector = {
-      ByteVector('l', 'n', 't', 'b')
-    }
+    override val invoicePrefix: String = "lntb"
   }
 
   case object LnBitcoinRegTest extends LnParams {
@@ -54,9 +49,7 @@ object LnParams {
 
     override def lnPort = 9735
 
-    override val invoicePrefix: ByteVector = {
-      ByteVector('l', 'n', 'b', 'c', 'r', 't')
-    }
+    override val invoicePrefix: String = "lnbcrt"
   }
 
   def fromNetworkParameters(np: NetworkParameters): LnParams = np match {
@@ -71,7 +64,7 @@ object LnParams {
   private val prefixes: Map[String, LnParams] = {
     val vec: Vector[(String, LnParams)] = {
       allNetworks.map { network =>
-        (network.invoicePrefix.decodeAscii.right.get, network)
+        (network.invoicePrefix, network)
       }
     }
     vec.toMap

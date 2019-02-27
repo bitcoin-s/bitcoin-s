@@ -1,8 +1,28 @@
 package org.bitcoins.core.protocol
 
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.bitcoins.core.util.BitcoinSUnitTest
+import org.bitcoins.testkit.core.gen.AddressGenerator
 
-/**
-  * Created by chris on 3/23/15.
-  */
-class AddressTest extends FlatSpec with MustMatchers {}
+import scala.util.{Failure, Success}
+
+class AddressTest extends BitcoinSUnitTest {
+
+  behavior of "Address"
+
+  it must "have serialization symmetry" in {
+    forAll(AddressGenerator.address) { addr =>
+      val fromSPK = Address
+        .fromScriptPubKey(addr.scriptPubKey, addr.networkParameters)
+      fromSPK match {
+        case Success(newAddr)   => assert(newAddr.value == addr.value)
+        case Failure(exception) => fail(exception.getMessage)
+      }
+
+      val fromStringT = Address.fromString(addr.value)
+      fromStringT match {
+        case Success(newAddr)   => assert(newAddr.value == addr.value)
+        case Failure(exception) => fail(exception.getMessage)
+      }
+    }
+  }
+}

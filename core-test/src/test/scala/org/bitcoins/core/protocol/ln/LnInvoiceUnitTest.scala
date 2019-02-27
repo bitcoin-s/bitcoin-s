@@ -410,7 +410,7 @@ class LnInvoiceUnitTest extends BitcoinSUnitTest {
     val invoice =
       LnInvoice.build(hrp = hrpEmpty, lnTags = tags, privateKey = privKey)
 
-    assert(invoice.isValidSignature())
+    assert(invoice.isValidSignature)
   }
 
   it must "handle the weird case if sigdata being exactly on a byte boundary, which means we need to pad the sigdata with a zero byte" in {
@@ -439,7 +439,7 @@ class LnInvoiceUnitTest extends BitcoinSUnitTest {
 
     invoice.lnTags.expiryTime.get.u32 must be(UInt32(3600))
 
-    invoice.isValidSignature() must be(true)
+    invoice.isValidSignature must be(true)
 
     invoice.signatureData.toHex must be(
       "6c6e74623130306e0b851aec410d1ae02e6dcc82f0480d4d39e3e1ada8ca5170d6ad19391d7b403a4b1ee61d57e741a72bd91323ab930ba34b7b7111d1898181818161131b430b73732b6111d113a3930b232b991161132bb32b73a111d1139bab139b1b934b1329116113abab4b2111d111818189899191999969a1a1a9a969b1b1b9b969c1c1c9c96b0b0b13131b1b23232b2b33311161132bc31b430b733b2911d113134ba3334b732bc11161139bcb6b137b6111d11212a21aaa9a2113e8c018e100")
