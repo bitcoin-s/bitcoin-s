@@ -1,7 +1,7 @@
 package org.bitcoins.core.crypto
 
-import org.bitcoins.core.gen.CryptoGenerators
 import org.bitcoins.core.util.BitcoinSUnitTest
+import org.bitcoins.testkit.core.gen.CryptoGenerators
 import org.scalatest.Assertion
 import play.api.libs.json._
 import scodec.bits.{BinStringSyntax, BitVector, ByteVector}
