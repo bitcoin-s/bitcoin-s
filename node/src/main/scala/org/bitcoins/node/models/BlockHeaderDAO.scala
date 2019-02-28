@@ -5,15 +5,17 @@ import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.util.BitcoinSUtil
 import org.bitcoins.node.constant.Constants
 import org.bitcoins.node.db.DbConfig
-import slick.jdbc.PostgresProfile.api._
+import slick.jdbc.SQLiteProfile.api._
 
 import scala.concurrent.{ExecutionContext, Future}
+
 /**
   * Created by chris on 9/8/16.
   * This actor is responsible for all database operations relating to
   * [[BlockHeader]]'s. Currently we store all block headers in a postgresql database
   */
-sealed abstract class BlockHeaderDAO extends CRUD[BlockHeader, DoubleSha256Digest] {
+sealed abstract class BlockHeaderDAO
+    extends CRUD[BlockHeader, DoubleSha256Digest] {
   import ColumnMappers._
 
   override val table = TableQuery[BlockHeaderTable]
@@ -32,7 +34,8 @@ sealed abstract class BlockHeaderDAO extends CRUD[BlockHeader, DoubleSha256Diges
   }
 
   /** Creates all of the given [[BlockHeader]] in the database */
-  override def createAll(headers: Vector[BlockHeader]): Future[Vector[BlockHeader]] = {
+  override def createAll(
+      headers: Vector[BlockHeader]): Future[Vector[BlockHeader]] = {
     headers.headOption match {
       case Some(header) =>
         val first = {
@@ -53,11 +56,14 @@ sealed abstract class BlockHeaderDAO extends CRUD[BlockHeader, DoubleSha256Diges
   }
 
   /** Special query here to insert a block header with height zero */
-  private def buildGenesisHeaderQuery(blockHeader: BlockHeader): DBIOAction[BlockHeader,NoStream,Effect] = {
-    require(Constants.chainParams.genesisBlock.blockHeader == blockHeader, s"Header at height zero must be genesis block")
+  private def buildGenesisHeaderQuery(
+      blockHeader: BlockHeader): DBIOAction[BlockHeader, NoStream, Effect] = {
+    require(Constants.chainParams.genesisBlock.blockHeader == blockHeader,
+            s"Header at height zero must be genesis block")
     sqlu"insert into block_headers values(0, ${blockHeader.hash.hex}, ${blockHeader.version.toLong}, ${blockHeader.previousBlockHash.hex}, ${blockHeader.merkleRootHash.hex}, ${blockHeader.time.toLong}, ${blockHeader.nBits.toLong}, ${blockHeader.nonce.toLong}, ${blockHeader.hex})"
       .andThen(DBIO.successful(blockHeader))
   }
+
   /** This is the custom insert statement needed for block headers, the magic here is it
     * increments the height of the previous [[BlockHeader]] by one.
     * See this question for how the statement works
@@ -78,7 +84,8 @@ sealed abstract class BlockHeaderDAO extends CRUD[BlockHeader, DoubleSha256Diges
       }
   }
 
-  override protected def findAll(ts: Vector[BlockHeader]): Query[Table[_], BlockHeader, Seq] = {
+  override protected def findAll(
+      ts: Vector[BlockHeader]): Query[Table[_], BlockHeader, Seq] = {
     findByPrimaryKeys(ts.map(_.hash))
   }
 
@@ -124,10 +131,12 @@ sealed abstract class BlockHeaderDAO extends CRUD[BlockHeader, DoubleSha256Diges
 }
 
 object BlockHeaderDAO {
-  private case class BlockHeaderDAOImpl(dbConfig: DbConfig)(override implicit val ec: ExecutionContext)
+  private case class BlockHeaderDAOImpl(dbConfig: DbConfig)(
+      override implicit val ec: ExecutionContext)
       extends BlockHeaderDAO
 
-  def apply(dbConfig: DbConfig)(implicit ec: ExecutionContext): BlockHeaderDAO = {
+  def apply(dbConfig: DbConfig)(
+      implicit ec: ExecutionContext): BlockHeaderDAO = {
     BlockHeaderDAOImpl(dbConfig)(ec)
   }
 

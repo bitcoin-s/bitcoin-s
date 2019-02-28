@@ -1,8 +1,6 @@
 package org.bitcoins.node.models
 
-
-import slick.jdbc.PostgresProfile.api._
-
+import slick.jdbc.SQLiteProfile.api._
 
 /** Defines a table that has an auto incremented fields that is named id.
   * This is useful for things we want to store that don't have an
@@ -11,8 +9,9 @@ import slick.jdbc.PostgresProfile.api._
   * @param tableName
   * @tparam T
   */
-abstract class TableAutoInc[T](tag: Tag, tableName: String) extends Table[T](tag,tableName) {
+abstract class TableAutoInc[T](tag: Tag, tableName: String)
+    extends Table[T](tag, tableName) {
 
-  def id: Rep[Long] = column[Long]("id",O.PrimaryKey,O.AutoInc)
+  def id: Rep[Long] = column[Long]("id", O.PrimaryKey, O.AutoInc)
 
 }

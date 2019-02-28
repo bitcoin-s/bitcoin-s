@@ -2,7 +2,7 @@ package org.bitcoins.node.models
 
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.node.db.DbConfig
-import slick.jdbc.PostgresProfile.api._
+import slick.jdbc.SQLiteProfile.api._
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -108,7 +108,7 @@ abstract class CRUD[T, PrimaryKeyType] extends BitcoinSLogger {
 
   /** Finds the rows that correlate to the given primary keys */
   protected def findByPrimaryKeys(
-                                   ids: Vector[PrimaryKeyType]): Query[Table[_], T, Seq]
+      ids: Vector[PrimaryKeyType]): Query[Table[_], T, Seq]
 
   /**
     * return the row that corresponds with this record
@@ -131,7 +131,7 @@ class SafeDatabase(dbConfig: DbConfig) {
   }
 
   def runVec[R](a: DBIOAction[Seq[R], NoStream, Nothing])(
-    implicit ec: ExecutionContext): Future[Vector[R]] = {
+      implicit ec: ExecutionContext): Future[Vector[R]] = {
     val db = dbConfig.database
     val result = db.run[Seq[R]](a)
     result.map(_.toVector)
@@ -143,4 +143,4 @@ object SafeDatabase {
 }
 
 case class UpdateFailedException(message: String)
-  extends RuntimeException(message)
+    extends RuntimeException(message)
