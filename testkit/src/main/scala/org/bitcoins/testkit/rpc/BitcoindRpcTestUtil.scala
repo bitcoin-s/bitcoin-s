@@ -7,7 +7,7 @@ import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import com.typesafe.config.{Config, ConfigFactory}
 import org.bitcoins.core.config.RegTest
-import org.bitcoins.core.crypto.DoubleSha256Digest
+import org.bitcoins.core.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.rpc.client.BitcoindRpcClient
 import org.bitcoins.rpc.config.{
@@ -280,12 +280,17 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       implicit ec: ExecutionContext): Future[Boolean] = {
     val p = Promise[Boolean]()
 
-    client1.getBlock(hash).onComplete {
+    client1.getBlock(hash.flip).onComplete {
       case Success(_) => p.success(true)
       case Failure(_) => p.success(false)
     }
 
     p.future
+  }
+
+  def hasSeenBlock(client1: BitcoindRpcClient, hash: DoubleSha256DigestBE)(
+      implicit ec: ExecutionContext): Future[Boolean] = {
+    hasSeenBlock(client1, hash.flip)
   }
 
   def startedBitcoindRpcClient(

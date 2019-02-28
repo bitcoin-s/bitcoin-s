@@ -5,6 +5,7 @@ import java.net.{InetAddress, URI}
 
 import org.bitcoins.core.crypto.{
   DoubleSha256Digest,
+  DoubleSha256DigestBE,
   ECPublicKey,
   Sha256Hash160Digest
 }
@@ -36,6 +37,8 @@ object JsonSerializers {
   // Internal Types
   implicit val doubleSha256DigestReads: Reads[DoubleSha256Digest] =
     DoubleSha256DigestReads
+  implicit val doubleSha256DigestBEReads: Reads[DoubleSha256DigestBE] =
+    DoubleSha256DigestBEReads
   implicit val bitcoinsReads: Reads[Bitcoins] = BitcoinsReads
   implicit val satoshisReads: Reads[Satoshis] = SatoshisReads
   implicit val blockHeaderReads: Reads[BlockHeader] = BlockHeaderReads
@@ -193,11 +196,11 @@ object JsonSerializers {
       (__ \ "fee").readNullable[Bitcoins] and
       (__ \ "confirmations").read[Int] and
       (__ \ "generated").readNullable[Boolean] and
-      (__ \ "blockhash").readNullable[DoubleSha256Digest] and
+      (__ \ "blockhash").readNullable[DoubleSha256DigestBE] and
       (__ \ "blockindex").readNullable[Int] and
       (__ \ "blocktime").readNullable[UInt32] and
-      (__ \ "txid").read[DoubleSha256Digest] and
-      (__ \ "walletconflicts").read[Vector[DoubleSha256Digest]] and
+      (__ \ "txid").read[DoubleSha256DigestBE] and
+      (__ \ "walletconflicts").read[Vector[DoubleSha256DigestBE]] and
       (__ \ "time").read[UInt32] and
       (__ \ "timereceived").read[UInt32] and
       (__ \ "bip125-replaceable").read[String] and
@@ -240,11 +243,11 @@ object JsonSerializers {
       (__ \ "fee").readNullable[Bitcoins] and
       (__ \ "confirmations").read[Int] and
       (__ \ "generated").readNullable[Boolean] and
-      (__ \ "blockhash").readNullable[DoubleSha256Digest] and
+      (__ \ "blockhash").readNullable[DoubleSha256DigestBE] and
       (__ \ "blockindex").readNullable[Int] and
       (__ \ "blocktime").readNullable[UInt32] and
-      (__ \ "txid").read[DoubleSha256Digest] and
-      (__ \ "walletconflicts").read[Vector[DoubleSha256Digest]] and
+      (__ \ "txid").read[DoubleSha256DigestBE] and
+      (__ \ "walletconflicts").read[Vector[DoubleSha256DigestBE]] and
       (__ \ "time").read[UInt32] and
       (__ \ "timereceived").read[UInt32] and
       (__ \ "bip125-replaceable").read[String] and
@@ -264,11 +267,11 @@ object JsonSerializers {
       (__ \ "confirmations").readNullable[Int] and
       (__ \ "trusted").readNullable[Boolean] and
       (__ \ "generated").readNullable[Boolean] and
-      (__ \ "blockhash").readNullable[DoubleSha256Digest] and
+      (__ \ "blockhash").readNullable[DoubleSha256DigestBE] and
       (__ \ "blockindex").readNullable[Int] and
       (__ \ "blocktime").readNullable[UInt32] and
-      (__ \ "txid").readNullable[DoubleSha256Digest] and
-      (__ \ "walletconflicts").readNullable[Vector[DoubleSha256Digest]] and
+      (__ \ "txid").readNullable[DoubleSha256DigestBE] and
+      (__ \ "walletconflicts").readNullable[Vector[DoubleSha256DigestBE]] and
       (__ \ "time").read[UInt32] and
       (__ \ "timereceived").readNullable[UInt32] and
       (__ \ "comment").readNullable[String] and
@@ -305,6 +308,11 @@ object JsonSerializers {
     Map[DoubleSha256Digest, GetMemPoolResult]] =
     Reads.mapReads[DoubleSha256Digest, GetMemPoolResult](s =>
       JsSuccess(DoubleSha256Digest.fromHex(s)))
+
+  implicit def mapDoubleSha256DigestBEReads: Reads[
+    Map[DoubleSha256DigestBE, GetMemPoolResult]] =
+    Reads.mapReads[DoubleSha256DigestBE, GetMemPoolResult](s =>
+      JsSuccess(DoubleSha256DigestBE.fromHex(s)))
 
   implicit val outputMapWrites: Writes[Map[BitcoinAddress, Bitcoins]] =
     mapWrites[BitcoinAddress, Bitcoins](_.value)

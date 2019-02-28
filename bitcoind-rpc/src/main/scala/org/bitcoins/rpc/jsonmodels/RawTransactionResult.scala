@@ -1,6 +1,6 @@
 package org.bitcoins.rpc.jsonmodels
 
-import org.bitcoins.core.crypto.DoubleSha256Digest
+import org.bitcoins.core.crypto.DoubleSha256DigestBE
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptSignature}
@@ -10,8 +10,8 @@ import org.bitcoins.core.protocol.{BitcoinAddress, P2PKHAddress, P2SHAddress}
 sealed abstract class RawTransactionResult
 
 case class RpcTransaction(
-    txid: DoubleSha256Digest,
-    hash: DoubleSha256Digest,
+    txid: DoubleSha256DigestBE,
+    hash: DoubleSha256DigestBE,
     version: Int,
     size: Int,
     vsize: Int,
@@ -52,22 +52,22 @@ case class FundRawTransactionResult(
 case class GetRawTransactionResult(
     in_active_blockchain: Option[Boolean],
     hex: Transaction,
-    txid: DoubleSha256Digest,
-    hash: DoubleSha256Digest,
+    txid: DoubleSha256DigestBE,
+    hash: DoubleSha256DigestBE,
     size: Int,
     vsize: Int,
     version: Int,
     locktime: UInt32,
     vin: Vector[GetRawTransactionVin],
     vout: Vector[RpcTransactionOutput],
-    blockhash: DoubleSha256Digest,
+    blockhash: DoubleSha256DigestBE,
     confirmations: Int,
     time: UInt32,
     blocktime: UInt32)
     extends RawTransactionResult
 
 case class GetRawTransactionVin(
-    txid: Option[DoubleSha256Digest],
+    txid: Option[DoubleSha256DigestBE],
     vout: Option[Int],
     scriptSig: Option[GetRawTransactionScriptSig],
     sequence: Option[BigDecimal],
@@ -84,7 +84,7 @@ case class SignRawTransactionResult(
     extends RawTransactionResult
 
 case class SignRawTransactionError(
-    txid: DoubleSha256Digest,
+    txid: DoubleSha256DigestBE,
     vout: Int,
     scriptSig: ScriptPubKey,
     sequence: UInt32,

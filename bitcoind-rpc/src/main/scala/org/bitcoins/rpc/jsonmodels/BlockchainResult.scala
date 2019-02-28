@@ -1,6 +1,6 @@
 package org.bitcoins.rpc.jsonmodels
 
-import org.bitcoins.core.crypto.DoubleSha256Digest
+import org.bitcoins.core.crypto.{DoubleSha256DigestBE}
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.wallet.fee.BitcoinFeeUnit
@@ -8,7 +8,7 @@ import org.bitcoins.core.wallet.fee.BitcoinFeeUnit
 sealed abstract class BlockchainResult
 
 case class GetBlockResult(
-    hash: DoubleSha256Digest,
+    hash: DoubleSha256DigestBE,
     confirmations: Int,
     strippedsize: Int,
     size: Int,
@@ -16,20 +16,20 @@ case class GetBlockResult(
     height: Int,
     version: Int,
     versionHex: Int32,
-    merkleroot: DoubleSha256Digest,
-    tx: Vector[DoubleSha256Digest],
+    merkleroot: DoubleSha256DigestBE,
+    tx: Vector[DoubleSha256DigestBE],
     time: UInt32,
     mediantime: UInt32,
     nonce: UInt32,
     bits: UInt32,
     difficulty: BigDecimal,
     chainwork: String,
-    previousblockhash: Option[DoubleSha256Digest],
-    nextblockhash: Option[DoubleSha256Digest])
+    previousblockhash: Option[DoubleSha256DigestBE],
+    nextblockhash: Option[DoubleSha256DigestBE])
     extends BlockchainResult
 
 case class GetBlockWithTransactionsResult(
-    hash: DoubleSha256Digest,
+    hash: DoubleSha256DigestBE,
     confirmations: Int,
     strippedsize: Int,
     size: Int,
@@ -37,7 +37,7 @@ case class GetBlockWithTransactionsResult(
     height: Int,
     version: Int,
     versionHex: Int32,
-    merkleroot: DoubleSha256Digest,
+    merkleroot: DoubleSha256DigestBE,
     tx: Vector[RpcTransaction],
     time: UInt32,
     mediantime: UInt32,
@@ -45,15 +45,15 @@ case class GetBlockWithTransactionsResult(
     bits: UInt32,
     difficulty: BigDecimal,
     chainwork: String,
-    previousblockhash: Option[DoubleSha256Digest],
-    nextblockhash: Option[DoubleSha256Digest])
+    previousblockhash: Option[DoubleSha256DigestBE],
+    nextblockhash: Option[DoubleSha256DigestBE])
     extends BlockchainResult
 
 case class GetBlockChainInfoResult(
     chain: String,
     blocks: Int,
     headers: Int,
-    bestblockhash: DoubleSha256Digest,
+    bestblockhash: DoubleSha256DigestBE,
     difficulty: BigDecimal,
     mediantime: Int,
     verificationprogress: BigDecimal,
@@ -90,25 +90,25 @@ case class Bip9Softfork(
     extends BlockchainResult
 
 case class GetBlockHeaderResult(
-    hash: DoubleSha256Digest,
+    hash: DoubleSha256DigestBE,
     confirmations: Int,
     height: Int,
     version: Int,
     versionHex: Int32,
-    merkleroot: DoubleSha256Digest,
+    merkleroot: DoubleSha256DigestBE,
     time: UInt32,
     mediantime: UInt32,
     nonce: UInt32,
     bits: UInt32,
     difficulty: BigDecimal,
     chainwork: String,
-    previousblockhash: Option[DoubleSha256Digest],
-    nextblockhash: Option[DoubleSha256Digest])
+    previousblockhash: Option[DoubleSha256DigestBE],
+    nextblockhash: Option[DoubleSha256DigestBE])
     extends BlockchainResult
 
 case class ChainTip(
     height: Int,
-    hash: DoubleSha256Digest,
+    hash: DoubleSha256DigestBE,
     branchlen: Int,
     status: String)
     extends BlockchainResult
@@ -134,8 +134,8 @@ case class GetMemPoolResult(
     ancestorcount: Int,
     ancestorsize: Int,
     ancestorfees: Option[Bitcoins],
-    wtxid: DoubleSha256Digest,
-    depends: Vector[DoubleSha256Digest])
+    wtxid: DoubleSha256DigestBE,
+    depends: Vector[DoubleSha256DigestBE])
     extends BlockchainResult
 
 case class GetMemPoolEntryResult(
@@ -150,7 +150,7 @@ case class GetMemPoolEntryResult(
     ancestorcount: Int,
     ancestorsize: Int,
     ancestorfees: Bitcoins, // Should be BitcoinFeeUnit
-    depends: Option[Vector[DoubleSha256Digest]])
+    depends: Option[Vector[DoubleSha256DigestBE]])
     extends BlockchainResult
 
 case class GetMemPoolInfoResult(
@@ -163,7 +163,7 @@ case class GetMemPoolInfoResult(
     extends BlockchainResult
 
 case class GetTxOutResult(
-    bestblock: DoubleSha256Digest,
+    bestblock: DoubleSha256DigestBE,
     confirmations: Int,
     value: Bitcoins,
     scriptPubKey: RpcScriptPubKey,
@@ -172,11 +172,11 @@ case class GetTxOutResult(
 
 case class GetTxOutSetInfoResult(
     height: Int,
-    bestblock: DoubleSha256Digest,
+    bestblock: DoubleSha256DigestBE,
     transactions: Int,
     txouts: Int,
     bogosize: Int,
-    hash_serialized_2: DoubleSha256Digest,
+    hash_serialized_2: DoubleSha256DigestBE,
     disk_size: Int,
     total_amount: Bitcoins)
     extends BlockchainResult
