@@ -39,6 +39,13 @@ object JsonReaders {
         DoubleSha256Digest.fromHex)(json)
   }
 
+  implicit object DoubleSha256DigestBEReads
+      extends Reads[DoubleSha256DigestBE] {
+    override def reads(json: JsValue): JsResult[DoubleSha256DigestBE] =
+      SerializerUtil.processJsString[DoubleSha256DigestBE](
+        DoubleSha256DigestBE.fromHex)(json)
+  }
+
   implicit object BitcoinsReads extends Reads[Bitcoins] {
     override def reads(json: JsValue): JsResult[Bitcoins] =
       SerializerUtil.processJsNumber[Bitcoins](Bitcoins(_))(json)
@@ -198,7 +205,7 @@ object JsonReaders {
             JsSuccess(
               CoinbaseInput(ScriptSignature.fromAsmHex(s.value), sequence))
           case _ =>
-            (json \ "txid").validate[DoubleSha256Digest].flatMap { txid =>
+            (json \ "txid").validate[DoubleSha256DigestBE].flatMap { txid =>
               (json \ "vout").validate[UInt32].flatMap { vout =>
                 (json \ "scriptSig" \ "hex").validate[ScriptSignature].flatMap {
                   scriptSig =>
@@ -239,7 +246,7 @@ object JsonReaders {
   }
 
   implicit object TransactionOutPointReads extends Reads[TransactionOutPoint] {
-    private case class OutPoint(txid: DoubleSha256Digest, vout: UInt32)
+    private case class OutPoint(txid: DoubleSha256DigestBE, vout: UInt32)
     override def reads(json: JsValue): JsResult[TransactionOutPoint] = {
       implicit val outPointReads: Reads[OutPoint] = Json.reads[OutPoint]
       json.validate[OutPoint] match {

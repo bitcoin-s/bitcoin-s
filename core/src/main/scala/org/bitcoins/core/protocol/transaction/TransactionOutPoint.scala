@@ -1,6 +1,6 @@
 package org.bitcoins.core.protocol.transaction
 
-import org.bitcoins.core.crypto.DoubleSha256Digest
+import org.bitcoins.core.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.NetworkElement
 import org.bitcoins.core.serializers.transaction.RawTransactionOutPointParser
@@ -16,6 +16,8 @@ sealed abstract class TransactionOutPoint extends NetworkElement {
   /** The transaction id for the crediting transaction for this input */
   def txId: DoubleSha256Digest
 
+  def txIdBE: DoubleSha256DigestBE = txId.flip
+
   /** The output index in the parent transaction for the output we are spending */
   def vout: UInt32
 
@@ -28,13 +30,13 @@ sealed abstract class TransactionOutPoint extends NetworkElement {
   * https://github.com/bitcoin/bitcoin/blob/d612837814020ae832499d18e6ee5eb919a87907/src/primitives/transaction.h
   * http://stackoverflow.com/questions/2711522/what-happens-if-i-assign-a-negative-value-to-an-unsigned-variable
   */
-case object EmptyTransactionOutPoint extends TransactionOutPoint {
+final case object EmptyTransactionOutPoint extends TransactionOutPoint {
 
-  def txId =
+  override val txId: DoubleSha256Digest =
     DoubleSha256Digest(
       BitcoinSUtil.decodeHex(
         "0000000000000000000000000000000000000000000000000000000000000000"))
-  def vout = UInt32("ffffffff")
+  override val vout: UInt32 = UInt32("ffffffff")
 }
 
 object TransactionOutPoint extends Factory[TransactionOutPoint] {
@@ -51,5 +53,9 @@ object TransactionOutPoint extends Factory[TransactionOutPoint] {
     if (txId == EmptyTransactionOutPoint.txId && index == EmptyTransactionOutPoint.vout) {
       EmptyTransactionOutPoint
     } else TransactionOutPointImpl(txId, index)
+  }
+
+  def apply(txId: DoubleSha256DigestBE, index: UInt32): TransactionOutPoint = {
+    TransactionOutPoint(txId.flip, index)
   }
 }

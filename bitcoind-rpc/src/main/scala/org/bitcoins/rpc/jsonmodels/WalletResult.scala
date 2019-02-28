@@ -2,7 +2,7 @@ package org.bitcoins.rpc.jsonmodels
 
 import java.io.File
 
-import org.bitcoins.core.crypto.{DoubleSha256Digest, Sha256Hash160Digest}
+import org.bitcoins.core.crypto.{DoubleSha256DigestBE, Sha256Hash160Digest}
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
@@ -16,7 +16,7 @@ case class MultiSigResult(address: BitcoinAddress, redeemScript: ScriptPubKey)
     extends WalletResult
 
 case class BumpFeeResult(
-    txid: DoubleSha256Digest,
+    txid: DoubleSha256DigestBE,
     origfee: Bitcoins,
     fee: Bitcoins, // TODO: Should be BitcoinFeeUnit
     errors: Vector[String])
@@ -27,11 +27,11 @@ case class GetTransactionResult(
     fee: Option[Bitcoins],
     confirmations: Int,
     generated: Option[Boolean],
-    blockhash: Option[DoubleSha256Digest],
+    blockhash: Option[DoubleSha256DigestBE],
     blockindex: Option[Int],
     blocktime: Option[UInt32],
-    txid: DoubleSha256Digest,
-    walletconflicts: Vector[DoubleSha256Digest],
+    txid: DoubleSha256DigestBE,
+    walletconflicts: Vector[DoubleSha256DigestBE],
     time: UInt32,
     timereceived: UInt32,
     bip125_replaceable: String,
@@ -97,7 +97,7 @@ case class ReceivedAddress(
     amount: Bitcoins,
     confirmations: Int,
     label: String,
-    txids: Vector[DoubleSha256Digest])
+    txids: Vector[DoubleSha256DigestBE])
     extends WalletResult
 
 case class ReceivedAccount(
@@ -110,7 +110,7 @@ case class ReceivedAccount(
 
 case class ListSinceBlockResult(
     transactions: Vector[Payment],
-    lastblock: DoubleSha256Digest)
+    lastblock: DoubleSha256DigestBE)
     extends WalletResult
 
 case class Payment(
@@ -123,11 +123,11 @@ case class Payment(
     fee: Option[Bitcoins],
     confirmations: Int,
     generated: Option[Boolean],
-    blockhash: Option[DoubleSha256Digest],
+    blockhash: Option[DoubleSha256DigestBE],
     blockindex: Option[Int],
     blocktime: Option[UInt32],
-    txid: DoubleSha256Digest,
-    walletconflicts: Vector[DoubleSha256Digest],
+    txid: DoubleSha256DigestBE,
+    walletconflicts: Vector[DoubleSha256DigestBE],
     time: UInt32,
     timereceived: UInt32,
     bip125_replaceable: String,
@@ -146,11 +146,11 @@ case class ListTransactionsResult(
     confirmations: Option[Int],
     trusted: Option[Boolean],
     generated: Option[Boolean],
-    blockhash: Option[DoubleSha256Digest],
+    blockhash: Option[DoubleSha256DigestBE],
     blockindex: Option[Int],
     blocktime: Option[UInt32],
-    txid: Option[DoubleSha256Digest],
-    walletconflicts: Option[Vector[DoubleSha256Digest]],
+    txid: Option[DoubleSha256DigestBE],
+    walletconflicts: Option[Vector[DoubleSha256DigestBE]],
     time: UInt32,
     timereceived: Option[UInt32],
     comment: Option[String],
@@ -161,7 +161,7 @@ case class ListTransactionsResult(
     extends WalletResult
 
 case class UnspentOutput(
-    txid: DoubleSha256Digest,
+    txid: DoubleSha256DigestBE,
     vout: Int,
     address: Option[BitcoinAddress],
     account: Option[String],

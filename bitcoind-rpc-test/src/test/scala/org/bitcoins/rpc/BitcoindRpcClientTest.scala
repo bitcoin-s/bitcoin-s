@@ -6,7 +6,12 @@ import java.util.Scanner
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import org.bitcoins.core.crypto.{DoubleSha256Digest, ECPrivateKey, ECPublicKey}
+import org.bitcoins.core.crypto.{
+  DoubleSha256Digest,
+  DoubleSha256DigestBE,
+  ECPrivateKey,
+  ECPublicKey
+}
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.number.{Int64, UInt32}
 import org.bitcoins.core.protocol.script.{
@@ -108,7 +113,7 @@ class BitcoindRpcClientTest
   private def fundMemPoolTransaction(
       sender: BitcoindRpcClient,
       address: BitcoinAddress,
-      amount: Bitcoins): Future[DoubleSha256Digest] = {
+      amount: Bitcoins): Future[DoubleSha256DigestBE] = {
     sender.createRawTransaction(Vector.empty, Map(address -> amount)).flatMap {
       createdTx =>
         sender.fundRawTransaction(createdTx).flatMap { fundedTx =>
@@ -122,7 +127,7 @@ class BitcoindRpcClientTest
   private def fundBlockChainTransaction(
       sender: BitcoindRpcClient,
       address: BitcoinAddress,
-      amount: Bitcoins): Future[DoubleSha256Digest] = {
+      amount: Bitcoins): Future[DoubleSha256DigestBE] = {
     fundMemPoolTransaction(sender, address, amount).flatMap { txid =>
       sender.generate(1).map { _ =>
         txid
@@ -495,8 +500,7 @@ class BitcoindRpcClientTest
               val transaction = transactionResult.hex
               assert(transaction.inputs.length == 1)
               client
-                .getRawTransaction(
-                  transaction.inputs.head.previousOutput.txId.flip)
+                .getRawTransaction(transaction.inputs.head.previousOutput.txId)
                 .flatMap { inputTransaction =>
                   assert(
                     inputTransaction
@@ -569,7 +573,7 @@ class BitcoindRpcClientTest
         .createRawTransaction(Vector(), Map(address -> Bitcoins(1)))
         .flatMap { tx =>
           recoverToSucceededIf[RuntimeException](
-            client.abandonTransaction(tx.txIdBE))
+            client.abandonTransaction(tx.txId))
         }
     }
   }
@@ -1486,8 +1490,7 @@ class BitcoindRpcClientTest
                                       output.value == Bitcoins(1.2))
                                     .get
                                   val input = TransactionInput(
-                                    TransactionOutPoint(txid.flip,
-                                                        UInt32(output.n)),
+                                    TransactionOutPoint(txid, UInt32(output.n)),
                                     P2SHScriptSignature(
                                       multisig.redeemScript.hex),
                                     UInt32.max - UInt32.one)

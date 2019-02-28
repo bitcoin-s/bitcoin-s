@@ -1,6 +1,6 @@
 package org.bitcoins.rpc.serializers
 
-import org.bitcoins.core.crypto.DoubleSha256Digest
+import org.bitcoins.core.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
@@ -23,6 +23,11 @@ object JsonWriters {
     override def writes(o: DoubleSha256Digest): JsValue = JsString(o.hex)
   }
 
+  implicit object DoubleSha256DigestBEWrites
+      extends Writes[DoubleSha256DigestBE] {
+    override def writes(o: DoubleSha256DigestBE): JsValue = JsString(o.hex)
+  }
+
   implicit object ScriptPubKeyWrites extends Writes[ScriptPubKey] {
     override def writes(o: ScriptPubKey): JsValue =
       JsString(BitcoinSUtil.encodeHex(o.asmBytes))
@@ -31,7 +36,7 @@ object JsonWriters {
   implicit object TransactionInputWrites extends Writes[TransactionInput] {
     override def writes(o: TransactionInput): JsValue =
       JsObject(
-        Seq(("txid", JsString(o.previousOutput.txId.flip.hex)),
+        Seq(("txid", JsString(o.previousOutput.txIdBE.hex)),
             ("vout", JsNumber(o.previousOutput.vout.toLong)),
             ("sequence", JsNumber(o.sequence.toLong))))
   }
