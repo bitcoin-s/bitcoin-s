@@ -10,9 +10,9 @@ object Deps {
     val slf4j = "1.7.5"
     val spray = "1.3.2"
     val zeromq = "0.4.3"
-    val akkav = "10.1.5"
-    val akkaStreamv = "2.5.17"
-    val playv = "2.6.10"
+    val akkav = "10.1.7"
+    val akkaStreamv = "2.5.21"
+    val playv = "2.7.0"
     val scodecV = "1.1.6"
     val junitV = "0.11"
     val nativeLoaderV = "2.3.2"
@@ -115,6 +115,7 @@ object Deps {
 
   val eclairRpcTest = List(
     Test.akkaHttp,
+    Test.akkaStream,
     Test.logback,
     Test.scalaTest,
     Test.scalacheck,
