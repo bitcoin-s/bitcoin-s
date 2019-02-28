@@ -286,45 +286,24 @@ lazy val nodeFlywaySettings = {
     db.createNewFile()
   }
 
-  lazy val mainnet = List(
-    Test / flywayUrl := s"jdbc:sqlite:${mainnetDir}${DB_NAME}",
+  def makeNetworkSettings(directoryPath: String): List[Setting[_]] = List(
+    Test / flywayUrl := s"jdbc:sqlite:$directoryPath$DB_NAME",
     Test / flywayLocations := List("nodedb/migration"),
     Test / flywayUser := "nodedb",
     Test / flywayPassword := "",
-    flywayUrl := s"jdbc:sqlite:${mainnetDir}${DB_NAME}",
+    flywayUrl := s"jdbc:sqlite:$directoryPath$DB_NAME",
     flywayUser := "nodedb",
     flywayPassword := ""
   )
 
-  lazy val testnet3 = List(
-    Test / flywayUrl := s"jdbc:sqlite:${testnetDir}${DB_NAME}",
-    Test / flywayLocations := List("nodedb/migration"),
-    Test / flywayUser := "nodedb",
-    Test / flywayPassword := "",
-    flywayUrl := s"jdbc:sqlite:${testnetDir}${DB_NAME}",
-    flywayUser := "nodedb",
-    flywayPassword := ""
-  )
+  lazy val mainnet = makeNetworkSettings(mainnetDir)
 
-  lazy val regtest = List(
-    Test / flywayUrl := s"jdbc:sqlite:${regtestDir}${DB_NAME}",
-    Test / flywayLocations := List("nodedb/migration"),
-    Test / flywayUser := "nodedb",
-    Test / flywayPassword := "",
-    flywayUrl := s"jdbc:sqlite:${regtestDir}${DB_NAME}",
-    flywayUser := "nodedb",
-    flywayPassword := ""
-  )
+  lazy val testnet3 = makeNetworkSettings(testnetDir)
 
-  lazy val unittest = List(
-    Test / flywayUrl := s"jdbc:sqlite:${unittestDir}${DB_NAME}",
-    Test / flywayLocations := List("nodedb/migration"),
-    Test / flywayUser := "nodedb",
-    Test / flywayPassword := "",
-    flywayUrl := s"jdbc:sqlite:${unittestDir}${DB_NAME}",
-    flywayUser := "nodedb",
-    flywayPassword := ""
-  )
+  lazy val regtest = makeNetworkSettings(regtestDir)
+
+  lazy val unittest = makeNetworkSettings(unittestDir)
+
   network match {
     case "mainnet" => mainnet
     case "testnet3" => testnet3
