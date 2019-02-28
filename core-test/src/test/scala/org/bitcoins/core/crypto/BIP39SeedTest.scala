@@ -1,6 +1,6 @@
 package org.bitcoins.core.crypto
-import org.bitcoins.core.gen.CryptoGenerators
 import org.bitcoins.core.util.BitcoinSUnitTest
+import org.bitcoins.testkit.core.gen.CryptoGenerators
 import scodec.bits.HexStringSyntax
 
 import scala.util.{Failure, Try}
