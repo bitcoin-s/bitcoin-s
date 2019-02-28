@@ -7,6 +7,11 @@ cancelable in Global := true
 
 fork in Test := true
 
+//don't allow us to wipe all of our prod databases
+flywayClean / aggregate := false
+//allow us to wipe our test databases
+Test / flywayClean / aggregate := true
+
 lazy val timestamp = new java.util.Date().getTime
 
 lazy val commonCompilerOpts = {
@@ -34,8 +39,6 @@ lazy val compilerOpts = Seq(
 ) ++ commonCompilerOpts
 
 lazy val testCompilerOpts = commonCompilerOpts
-
-
 
 lazy val commonSettings = List(
   scalacOptions in Compile := compilerOpts,
@@ -233,6 +236,7 @@ lazy val eclairRpcTest = project
 lazy val node = project
   .in(file("node"))
   .settings(commonSettings: _*)
+  .settings(nodeFlywaySettings: _*)
   .settings(
     name := "bitcoin-s-node",
     libraryDependencies ++= Deps.node,
@@ -240,18 +244,19 @@ lazy val node = project
   )
   .dependsOn(
     core
-  ).enablePlugins()
+  ).enablePlugins(FlywayPlugin)
 
 lazy val nodeTest = project
   .in(file("node-test"))
   .settings(commonSettings: _*)
+  .settings(nodeFlywaySettings: _*)
   .settings(
     name := "bitcoin-s-node-test",
     libraryDependencies ++= Deps.nodeTest
   ).dependsOn(
     node,
     testkit
-  ).enablePlugins()
+  ).enablePlugins(FlywayPlugin)
 
 lazy val testkit = project
   .in(file("testkit"))
@@ -287,6 +292,53 @@ lazy val doc = project
 // project coreTest
 // amm
 addCommandAlias("amm", "test:run")
+
+lazy val nodeFlywaySettings = {
+  lazy val DB_HOST = "localhost"
+  lazy val DB_NAME = "nodedb.sqlite"
+  lazy val network = "unittest" //mainnet, testnet3, regtest, unittest
+
+  lazy val mainnetDir = s"${System.getenv("HOME")}/.bitcoin-s/mainnet/"
+  lazy val testnetDir = s"${System.getenv("HOME")}/.bitcoin-s/testnet3/"
+  lazy val regtestDir = s"${System.getenv("HOME")}/.bitcoin-s/regtest/"
+  lazy val unittestDir = s"${System.getenv("HOME")}/.bitcoin-s/unittest/"
+
+  lazy val dirs = List(mainnetDir,testnetDir,regtestDir,unittestDir)
+
+  //create directies if they DNE
+  dirs.foreach { d =>
+    val file = new File(d)
+    file.mkdirs()
+    val db = new File(d + DB_NAME)
+    db.createNewFile()
+  }
+
+  def makeNetworkSettings(directoryPath: String): List[Setting[_]] = List(
+    Test / flywayUrl := s"jdbc:sqlite:$directoryPath$DB_NAME",
+    Test / flywayLocations := List("nodedb/migration"),
+    Test / flywayUser := "nodedb",
+    Test / flywayPassword := "",
+    flywayUrl := s"jdbc:sqlite:$directoryPath$DB_NAME",
+    flywayUser := "nodedb",
+    flywayPassword := ""
+  )
+
+  lazy val mainnet = makeNetworkSettings(mainnetDir)
+
+  lazy val testnet3 = makeNetworkSettings(testnetDir)
+
+  lazy val regtest = makeNetworkSettings(regtestDir)
+
+  lazy val unittest = makeNetworkSettings(unittestDir)
+
+  network match {
+    case "mainnet" => mainnet
+    case "testnet3" => testnet3
+    case "regtest" => regtest
+    case "unittest" => unittest
+    case unknown: String => throw new IllegalArgumentException(s"Unknown network=${unknown}")
+  }
+}
 
 publishArtifact in root := false
 
