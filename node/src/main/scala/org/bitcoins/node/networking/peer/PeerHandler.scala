@@ -7,9 +7,9 @@ import akka.io.Tcp
 import akka.pattern.ask
 import akka.util.Timeout
 import org.bitcoins.core.util.BitcoinSLogger
+import org.bitcoins.db.DbConfig
 import org.bitcoins.node.NetworkMessage
 import org.bitcoins.node.constant.Constants
-import org.bitcoins.node.db.DbConfig
 import org.bitcoins.node.messages.{
   GetHeadersMessage,
   HeadersMessage,

@@ -1,4 +1,4 @@
-package org.bitcoins.node.models
+package org.bitcoins.db
 
 import slick.jdbc.SQLiteProfile.api._
 

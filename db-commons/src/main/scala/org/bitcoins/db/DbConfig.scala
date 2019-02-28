@@ -1,4 +1,4 @@
-package org.bitcoins.node.db
+package org.bitcoins.db
 
 import java.io.File
 
@@ -37,7 +37,7 @@ sealed abstract class MainNetDbConfig extends DbConfig {
 }
 
 object MainNetDbConfig extends MainNetDbConfig {
-  createDbFileIfDNE()
+  //createDbFileIfDNE()
 }
 
 sealed abstract class TestNet3DbConfig extends DbConfig {
@@ -45,7 +45,7 @@ sealed abstract class TestNet3DbConfig extends DbConfig {
 }
 
 object TestNet3DbConfig extends TestNet3DbConfig {
-  createDbFileIfDNE()
+  //createDbFileIfDNE()
 }
 
 sealed abstract class RegTestDbConfig extends DbConfig {
@@ -53,7 +53,7 @@ sealed abstract class RegTestDbConfig extends DbConfig {
 }
 
 object RegTestDbConfig extends RegTestDbConfig {
-  createDbFileIfDNE()
+  //createDbFileIfDNE()
 }
 
 sealed abstract class UnitTestDbConfig extends DbConfig {
@@ -62,5 +62,5 @@ sealed abstract class UnitTestDbConfig extends DbConfig {
 }
 
 object UnitTestDbConfig extends UnitTestDbConfig {
-  createDbFileIfDNE()
+  //createDbFileIfDNE()
 }

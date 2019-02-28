@@ -1,6 +1,6 @@
 package org.bitcoins.node.models
 
-import org.bitcoins.node.db.DbConfig
+import org.bitcoins.db.{CRUDAutoInc, DbConfig}
 import slick.jdbc.SQLiteProfile.api._
 
 import scala.concurrent.ExecutionContext

@@ -8,7 +8,7 @@ import org.bitcoins.core.protocol.blockchain.{
   RegTestNetChainParams,
   TestNetChainParams
 }
-import org.bitcoins.node.db.{
+import org.bitcoins.db.{
   DbConfig,
   MainNetDbConfig,
   RegTestDbConfig,

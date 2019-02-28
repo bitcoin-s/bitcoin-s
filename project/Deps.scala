@@ -67,6 +67,11 @@ object Deps {
     val akkaTestkit = "com.typesafe.akka" %% "akka-testkit" % V.akkaActorV withSources () withJavadoc ()
   }
 
+  val chain = List(
+    )
+
+  val chainTest = List()
+
   val core = List(
     Compile.bouncycastle,
     Compile.scodec,
@@ -120,6 +125,12 @@ object Deps {
     Compile.logback
   )
 
+  val dbCommons = List(
+    Compile.slick,
+    Compile.sqlite,
+    Compile.slickHikari
+  )
+
   val eclairRpc = List(
     Compile.akkaHttp,
     Compile.akkaStream,
@@ -155,6 +166,12 @@ object Deps {
     "org.scalacheck" %% "scalacheck" % V.scalacheck withSources () withJavadoc (),
     "org.scalatest" %% "scalatest" % V.scalaTest withSources () withJavadoc ()
   )
+
+  val wallet = List(
+    )
+
+  val walletTest = List(
+    )
 
   val doc = List(
     Test.scalaTest,
