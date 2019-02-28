@@ -8,7 +8,7 @@ import org.bouncycastle.crypto.digests.{RIPEMD160Digest, SHA512Digest}
 import org.bouncycastle.crypto.macs.HMac
 import org.bouncycastle.crypto.params.KeyParameter
 import org.bouncycastle.math.ec.ECPoint
-import scodec.bits.ByteVector
+import scodec.bits.{BitVector, ByteVector}
 
 /**
   * Created by chris on 1/14/16.
@@ -44,6 +44,11 @@ trait CryptoUtil extends BitcoinSLogger {
     Sha256Digest(ByteVector(hash))
   }
 
+  /** Takes sha256(bits). */
+  def sha256(bits: BitVector): Sha256Digest = {
+    sha256(bits.toByteVector)
+  }
+
   /** Performs SHA1(bytes). */
   def sha1(bytes: ByteVector): Sha1Digest = {
     val hash = MessageDigest.getInstance("SHA-1").digest(bytes.toArray).toList
@@ -71,6 +76,9 @@ trait CryptoUtil extends BitcoinSLogger {
   val emptyDoubleSha256Hash = DoubleSha256Digest(
     "0000000000000000000000000000000000000000000000000000000000000000")
 
+  /**
+    * Calculates `HMAC-SHA512(key, data)`
+    */
   def hmac512(key: ByteVector, data: ByteVector): ByteVector = {
     val hmac512 = new HMac(new SHA512Digest())
     hmac512.init(new KeyParameter(key.toArray))

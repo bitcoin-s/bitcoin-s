@@ -1,15 +1,12 @@
 package org.bitcoins.core.util
 
 import org.bitcoins.testkit.core.gen.CryptoGenerators
-import org.scalatest.prop.{Configuration, PropertyChecks}
-import org.scalatest.{FlatSpec, MustMatchers}
-import org.slf4j.LoggerFactory
+import scodec.bits.BinStringSyntax
 
 /**
   * Created by chris on 1/26/16.
   */
-class CryptoUtilTest extends FlatSpec with MustMatchers with PropertyChecks {
-  private val logger = LoggerFactory.getLogger(this.getClass)
+class CryptoUtilTest extends BitcoinSUnitTest {
 
   "CryptoUtil" must "perform a SHA-1 hash" in {
     val hash = CryptoUtil.sha1("")
@@ -33,7 +30,7 @@ class CryptoUtilTest extends FlatSpec with MustMatchers with PropertyChecks {
     CryptoUtil.ripeMd160(str).flip.flip.hex must be(expected)
   }
 
-  it must "perform a single SHA256 hash" in {
+  it must "perform a single SHA256 hash on a byte vector" in {
     val hex = ""
     val strBytes = BitcoinSUtil.decodeHex(hex)
     val expected =
@@ -41,6 +38,19 @@ class CryptoUtilTest extends FlatSpec with MustMatchers with PropertyChecks {
     CryptoUtil.sha256(strBytes).hex must be(expected)
     CryptoUtil.sha256(hex).hex must be(expected)
     CryptoUtil.sha256(hex).flip.flip.hex must be(expected)
+  }
+
+  it must "perform a single SHA256 hash on a bit vector" in {
+    val binary = bin"010001101110010001101110"
+    val strBytes = BitcoinSUtil.decodeHex(binary.toHex)
+
+    val shaStrBytes = CryptoUtil.sha256(strBytes)
+    val shaBinary = CryptoUtil.sha256(binary)
+    val shaBytes = CryptoUtil.sha256(binary.toByteVector)
+
+    shaStrBytes must be(shaBinary)
+    shaBytes must be(shaBinary)
+    shaBytes must be(shaStrBytes)
   }
 
   it must "perform a double SHA256 hash" in {
