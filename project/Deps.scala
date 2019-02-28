@@ -24,6 +24,7 @@ object Deps {
     val postgresV = "9.4.1210"
     val akkaActorV = akkaStreamv
     val slickV = "3.2.3"
+    val sqliteV = "3.8.11.2"
   }
 
   object Compile {
@@ -51,6 +52,7 @@ object Deps {
         .exclude("org.slf4j", "slf4j-api")
     val slick = "com.typesafe.slick" %% "slick" % V.slickV withSources () withJavadoc ()
     val slickHikari = "com.typesafe.slick" %% "slick-hikaricp" % V.slickV
+    val sqlite = "org.xerial" % "sqlite-jdbc" % V.sqliteV
     val postgres = "org.postgresql" % "postgresql" % V.postgresV
   }
 
@@ -155,7 +157,7 @@ object Deps {
     Compile.joda,
     Compile.slick,
     Compile.slickHikari,
-    Compile.postgres,
+    Compile.sqlite,
     Test.ammonite
   )
 

@@ -25,3 +25,5 @@ addSbtPlugin("com.geirsson" % "sbt-ci-release" % "1.2.6")
 
 // write markdown files with type-checked Scala
 addSbtPlugin("org.scalameta" % "sbt-mdoc" % "1.3.0")
+
+addSbtPlugin("io.github.davidmweber" % "flyway-sbt" % "5.2.0")
