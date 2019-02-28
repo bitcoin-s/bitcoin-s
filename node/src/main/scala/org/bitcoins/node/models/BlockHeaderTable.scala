@@ -3,7 +3,7 @@ package org.bitcoins.node.models
 import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.protocol.blockchain.BlockHeader
-import slick.jdbc.PostgresProfile.api._
+import slick.jdbc.SQLiteProfile.api._
 
 /**
   * Created by chris on 9/7/16.
