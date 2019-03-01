@@ -4,6 +4,7 @@ import akka.actor.ActorSystem
 import org.bitcoins.core.crypto.ECPrivateKey
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.rpc.client.common.{
   BitcoindRpcClient,
   BitcoindVersion,
@@ -12,6 +13,7 @@ import org.bitcoins.rpc.client.common.{
 import org.bitcoins.rpc.config.BitcoindInstance
 import org.bitcoins.rpc.jsonmodels.{AddressInfoResult, SignRawTransactionResult}
 import org.bitcoins.rpc.serializers.JsonSerializers._
+import org.bitcoins.rpc.serializers.JsonWriters._
 import play.api.libs.json.{JsString, Json}
 
 import scala.concurrent.Future
@@ -26,8 +28,7 @@ class BitcoindV17RpcClient(override val instance: BitcoindInstance)(
     extends BitcoindRpcClient(instance)
     with V17LabelRpc {
 
-  override val version: BitcoindVersion = BitcoindVersion.V17
-  require(version == instance.getVersion, "bitcoind version must be 0.17")
+  override def version: BitcoindVersion = BitcoindVersion.V17
 
   def getAddressInfo(address: BitcoinAddress): Future[AddressInfoResult] = {
     bitcoindCall[AddressInfoResult]("getaddressinfo",
@@ -37,7 +38,7 @@ class BitcoindV17RpcClient(override val instance: BitcoindInstance)(
   def signRawTransactionWithWallet(
       transaction: Transaction,
       utxoDeps: Vector[RpcOpts.SignRawTransactionOutputParameter] = Vector.empty,
-      sigHash: String = ""
+      sigHash: HashType = HashType.sigHashAll
   ): Future[SignRawTransactionResult] =
     bitcoindCall[SignRawTransactionResult]("signrawtransactionwithwallet",
                                            List(JsString(transaction.hex),
@@ -48,7 +49,7 @@ class BitcoindV17RpcClient(override val instance: BitcoindInstance)(
       transaction: Transaction,
       keys: Vector[ECPrivateKey],
       utxoDeps: Vector[RpcOpts.SignRawTransactionOutputParameter] = Vector.empty,
-      sigHash: String = ""
+      sigHash: HashType = HashType.sigHashAll
   ): Future[SignRawTransactionResult] =
     bitcoindCall[SignRawTransactionResult]("signrawtransactionwithkey",
                                            List(JsString(transaction.hex),

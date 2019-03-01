@@ -19,7 +19,11 @@ import org.bitcoins.core.protocol.transaction.{
 }
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.rpc.client.common.RpcOpts.AddNodeArgument
-import org.bitcoins.rpc.client.common.{BitcoindRpcClient, RpcOpts}
+import org.bitcoins.rpc.client.common.{
+  BitcoindRpcClient,
+  BitcoindVersion,
+  RpcOpts
+}
 import org.bitcoins.rpc.client.v16.BitcoindV16RpcClient
 import org.bitcoins.rpc.client.v17.BitcoindV17RpcClient
 import org.bitcoins.rpc.config.{
@@ -40,6 +44,7 @@ import scala.concurrent._
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.util._
 
+//noinspection AccessorLikeMethodIsEmptyParen
 trait BitcoindRpcTestUtil extends BitcoinSLogger {
   import scala.collection.JavaConverters._
 
@@ -155,22 +160,70 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
 
   lazy val network: RegTest.type = RegTest
 
+  private val V16_ENV = "BITCOIND_V16_PATH"
+  private val V17_ENV = "BITCOIND_V17_PATH"
+
+  private def getFileFromEnv(env: String): File =
+    new File(
+      Properties
+        .envOrNone(env)
+        .getOrElse(throw new IllegalArgumentException(
+          s"$env environment variable is not set")))
+
+  private def getBinary(version: BitcoindVersion): File =
+    version match {
+      case BitcoindVersion.V16     => getFileFromEnv(V16_ENV)
+      case BitcoindVersion.V17     => getFileFromEnv(V17_ENV)
+      case BitcoindVersion.Unknown => BitcoindInstance.DEFAULT_BITCOIND_LOCATION
+    }
+
   def instance(
       port: Int = randomPort,
       rpcPort: Int = randomPort,
       zmqPort: Int = randomPort,
-      pruneMode: Boolean = false): BitcoindInstance = {
+      pruneMode: Boolean = false,
+      versionOpt: Option[BitcoindVersion] = None): BitcoindInstance = {
     val uri = new URI("http://localhost:" + port)
     val rpcUri = new URI("http://localhost:" + rpcPort)
     val auth = authCredentials(uri, rpcUri, zmqPort, pruneMode)
+    val binary = versionOpt match {
+      case Some(version) =>
+        getBinary(version)
+      case None => BitcoindInstance.DEFAULT_BITCOIND_LOCATION
+    }
     val instance = BitcoindInstance(network = network,
                                     uri = uri,
                                     rpcUri = rpcUri,
                                     authCredentials = auth,
-                                    zmqConfig = ZmqConfig.fromPort(zmqPort))
+                                    zmqConfig = ZmqConfig.fromPort(zmqPort),
+                                    binary = binary)
 
     instance
   }
+
+  def v16Instance(
+      port: Int = randomPort,
+      rpcPort: Int = randomPort,
+      zmqPort: Int = randomPort,
+      pruneMode: Boolean = false,
+  ): BitcoindInstance =
+    instance(port = port,
+             rpcPort = rpcPort,
+             zmqPort = zmqPort,
+             pruneMode = pruneMode,
+             versionOpt = Some(BitcoindVersion.V16))
+
+  def v17Instance(
+      port: Int = randomPort,
+      rpcPort: Int = randomPort,
+      zmqPort: Int = randomPort,
+      pruneMode: Boolean = false,
+  ): BitcoindInstance =
+    instance(port = port,
+             rpcPort = rpcPort,
+             zmqPort = zmqPort,
+             pruneMode = pruneMode,
+             versionOpt = Some(BitcoindVersion.V17))
 
   def randomPort: Int = {
     val firstAttempt = Math.abs(scala.util.Random.nextInt % 15000)
@@ -212,7 +265,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       to: BitcoindRpcClient,
       duration: FiniteDuration = 100.milliseconds,
       maxTries: Int = 50)(implicit system: ActorSystem): Unit = {
-    implicit val ec = system.dispatcher
+    implicit val ec: ExecutionContextExecutor = system.dispatcher
 
     def isConnected(): Future[Boolean] = {
       from
@@ -232,7 +285,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       client2: BitcoindRpcClient,
       duration: FiniteDuration = 1.second,
       maxTries: Int = 50)(implicit system: ActorSystem): Unit = {
-    implicit val ec = system.dispatcher
+    implicit val ec: ExecutionContextExecutor = system.dispatcher
 
     def isSynced(): Future[Boolean] = {
       client1.getBestBlockHash.flatMap { hash1 =>
@@ -252,7 +305,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       client2: BitcoindRpcClient,
       duration: FiniteDuration = 1.second,
       maxTries: Int = 50)(implicit system: ActorSystem): Unit = {
-    implicit val ec = system.dispatcher
+    implicit val ec: ExecutionContextExecutor = system.dispatcher
 
     def isSameBlockHeight(): Future[Boolean] = {
       client1.getBlockCount.flatMap { count1 =>
@@ -272,7 +325,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       to: BitcoindRpcClient,
       duration: FiniteDuration = 100.milliseconds,
       maxTries: Int = 50)(implicit system: ActorSystem): Unit = {
-    implicit val ec = system.dispatcher
+    implicit val ec: ExecutionContextExecutor = system.dispatcher
 
     def isDisconnected(): Future[Boolean] = {
       val f = from
@@ -359,62 +412,24 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       receiver: BitcoindRpcClient,
       amount: Bitcoins = Bitcoins(1))(
       implicit executionContext: ExecutionContext): Future[Transaction] = {
-    {
-      sender.generate(2).flatMap { blocks =>
-        sender.getBlock(blocks(0)).flatMap { block0 =>
-          sender.getBlock(blocks(1)).flatMap { block1 =>
-            sender.getTransaction(block0.tx(0)).flatMap { transaction0 =>
-              sender.getTransaction(block1.tx(0)).flatMap { transaction1 =>
-                val input0 =
-                  TransactionOutPoint(transaction0.txid.flip,
-                                      UInt32(transaction0.blockindex.get))
-                val input1 =
-                  TransactionOutPoint(transaction1.txid.flip,
-                                      UInt32(transaction1.blockindex.get))
-                val sig: ScriptSignature = ScriptSignature.empty
-                receiver.getNewAddress.flatMap { address =>
-                  sender.createRawTransaction(
-                    Vector(TransactionInput(input0, sig, UInt32(1)),
-                           TransactionInput(input1, sig, UInt32(2))),
-                    Map(address -> amount))
-                }
-              }
-            }
-          }
-        }
-      }
-    }
+    for {
+      blocks <- sender.generate(2)
+      block0 <- sender.getBlock(blocks(0))
+      block1 <- sender.getBlock(blocks(1))
+      transaction0 <- sender.getTransaction(block0.tx(0))
+      transaction1 <- sender.getTransaction(block1.tx(0))
+      input0 = TransactionOutPoint(transaction0.txid.flip,
+                                   UInt32(transaction0.blockindex.get))
+      input1 = TransactionOutPoint(transaction1.txid.flip,
+                                   UInt32(transaction1.blockindex.get))
+      sig: ScriptSignature = ScriptSignature.empty
+      address <- receiver.getNewAddress
+      tx <- sender.createRawTransaction(
+        Vector(TransactionInput(input0, sig, UInt32(1)),
+               TransactionInput(input1, sig, UInt32(2))),
+        Map(address -> amount))
+    } yield tx
 
-    /* val txsF = for {
-      firstHash +: secondHash +: _ <- sender.generate(2)
-      firstBlock <- {
-        if (isTest && Properties.isMac) { // macOS is having issues on Travis
-          Thread.sleep(3000)
-        }
-        sender.getBlock(firstHash)
-      }
-      firstTransaction <- sender.getRawTransaction(firstBlock.tx.head)
-      secondBlock <- sender.getBlock(secondHash)
-      secondTransaction <- sender.getRawTransaction(secondBlock.tx.head)
-    } yield (firstTransaction, secondTransaction)
-
-    txsF.flatMap {
-      case (firstTransaction, secondTransaction) =>
-        val input0 =
-          TransactionOutPoint(firstTransaction.txid.flip,
-                              UInt32(firstTransaction.vout.head.n))
-        val input1 =
-          TransactionOutPoint(secondTransaction.txid.flip,
-                              UInt32(secondTransaction.vout.head.n))
-
-        val sig: ScriptSignature = ScriptSignature.empty
-        receiver.getNewAddress.flatMap { address =>
-          sender.createRawTransaction(
-            Vector(TransactionInput(input0, sig, UInt32(1)),
-                   TransactionInput(input1, sig, UInt32(2))),
-            Map(address -> amount))
-        }
-    }*/
   }
 
   /**

@@ -7,10 +7,25 @@ import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.ln.currency.MilliSatoshis
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionInput}
+import org.bitcoins.core.script.crypto._
 import org.bitcoins.core.util.BitcoinSUtil
 import play.api.libs.json._
 
 object JsonWriters {
+  implicit object HashTypeWrites extends Writes[HashType] {
+    override def writes(hash: HashType): JsValue = hash match {
+      case _: SIGHASH_ALL                 => JsString("ALL")
+      case _: SIGHASH_NONE                => JsString("NONE")
+      case _: SIGHASH_SINGLE              => JsString("SINGLE")
+      case _: SIGHASH_ALL_ANYONECANPAY    => JsString("ALL|ANYONECANPAY")
+      case _: SIGHASH_NONE_ANYONECANPAY   => JsString("NONE|ANYONECANPAY")
+      case _: SIGHASH_SINGLE_ANYONECANPAY => JsString("SINGLE|ANYONECANPAY")
+      case _: SIGHASH_ANYONECANPAY =>
+        throw new IllegalArgumentException(
+          "SIGHHASH_ANYONECANPAY is not supported by the bitcoind RPC interface")
+    }
+  }
+
   implicit object BitcoinsWrites extends Writes[Bitcoins] {
     override def writes(o: Bitcoins): JsValue = JsNumber(o.toBigDecimal)
   }

@@ -17,7 +17,14 @@ import scala.util.{Failure, Properties, Success, Try}
 sealed trait BitcoindInstance {
   require(
     rpcUri.getPort == rpcPort,
-    s"RpcUri and the rpcPort in authCredentials are different ${rpcUri} authcred: ${rpcPort}")
+    s"RpcUri and the rpcPort in authCredentials are different $rpcUri authcred: $rpcPort")
+
+  // would like to check .canExecute as well, but we've run into issues on some machines
+  require(binary.isFile,
+          s"bitcoind binary path (${binary.getAbsolutePath}) must be a file")
+
+  def binary: File
+
   def network: NetworkParameters
   def uri: URI
   def rpcUri: URI
@@ -28,7 +35,8 @@ sealed trait BitcoindInstance {
 
   def getVersion: BitcoindVersion = {
 
-    val foundVersion = Seq("bitcoind", "--version").!!.split("\n").head
+    val binaryPath = binary.getAbsolutePath
+    val foundVersion = Seq(binaryPath, "--version").!!.split("\n").head
       .split(" ")
       .last
 
@@ -48,7 +56,8 @@ object BitcoindInstance {
       uri: URI,
       rpcUri: URI,
       authCredentials: BitcoindAuthCredentials,
-      zmqConfig: ZmqConfig = ZmqConfig()
+      zmqConfig: ZmqConfig,
+      binary: File
   ) extends BitcoindInstance
 
   def apply(
@@ -56,17 +65,37 @@ object BitcoindInstance {
       uri: URI,
       rpcUri: URI,
       authCredentials: BitcoindAuthCredentials,
-      zmqConfig: ZmqConfig = ZmqConfig()
+      zmqConfig: ZmqConfig = ZmqConfig(),
+      binary: File = DEFAULT_BITCOIND_LOCATION
   ): BitcoindInstance = {
     BitcoindInstanceImpl(network,
                          uri,
                          rpcUri,
                          authCredentials,
-                         zmqConfig = zmqConfig)
+                         zmqConfig = zmqConfig,
+                         binary = binary)
   }
 
+  lazy val DEFAULT_BITCOIND_LOCATION: File = {
+    val path = Try("which bitcoind".!!)
+      .getOrElse(
+        throw new RuntimeException("Could not locate bitcoind on user PATH"))
+    new File(path)
+  }
+
+  /**
+    * Taken from Bitcoin Wiki
+    * https://en.bitcoin.it/wiki/Data_directory
+    */
   private val DEFAULT_DATADIR =
-    Paths.get(Properties.userHome, ".bitcoin")
+    if (Properties.isMac) {
+      Paths.get(Properties.userHome,
+                "Library",
+                "Application Support",
+                "Bitcoin")
+    } else {
+      Paths.get(Properties.userHome, ".bitcoin")
+    }
 
   private val DEFAULT_CONF_FILE = DEFAULT_DATADIR.resolve("bitcoin.conf")
 

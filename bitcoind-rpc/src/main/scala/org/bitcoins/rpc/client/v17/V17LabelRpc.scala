@@ -40,7 +40,7 @@ trait V17LabelRpc extends Client {
       confirmations: Int = 1,
       includeEmpty: Boolean = false,
       includeWatchOnly: Boolean = false): Future[Vector[ReceivedLabel]] = {
-    bitcoindCall[Vector[ReceivedLabel]]("listreceivedbyaccount",
+    bitcoindCall[Vector[ReceivedLabel]]("listreceivedbylabel",
                                         List(JsNumber(confirmations),
                                              JsBoolean(includeEmpty),
                                              JsBoolean(includeWatchOnly)))

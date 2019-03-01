@@ -23,13 +23,13 @@ import scala.sys.process._
 import scala.util.{Failure, Success, Try}
 
 trait Client {
-  val version: BitcoindVersion
+  def version: BitcoindVersion
   protected val instance: BitcoindInstance
 
   protected implicit val system: ActorSystem
-  protected implicit val executor: ExecutionContext = system.getDispatcher
   protected implicit val materializer: ActorMaterializer =
     ActorMaterializer.create(system)
+  protected implicit val executor: ExecutionContext = system.getDispatcher
   protected implicit val network: NetworkParameters = instance.network
 
   /**
@@ -64,7 +64,8 @@ trait Client {
       }
     }
 
-    val cmd = List("bitcoind",
+    val binaryPath = instance.binary.getAbsolutePath
+    val cmd = List(binaryPath,
                    "-datadir=" + instance.authCredentials.datadir,
                    "-rpcport=" + instance.rpcUri.getPort,
                    "-port=" + instance.uri.getPort)
@@ -136,8 +137,9 @@ trait Client {
           * XPUBs, balances, etc). It's therefore not a good idea to enable
           * this logging in production.
           */
-        // logger.debug(s"Command: $command ${parameters.map(_.toString).mkString(" ")}")
-        // logger.debug(s"Payload: \n${Json.prettyPrint(payload)}")
+        // logger.info(
+        // s"Command: $command ${parameters.map(_.toString).mkString(" ")}")
+        // logger.info(s"Payload: \n${Json.prettyPrint(payload)}")
         parseResult((payload \ resultKey).validate[T], payload, printError)
       }
     }
