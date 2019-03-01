@@ -19,9 +19,9 @@ sealed trait BitcoindInstance {
     rpcUri.getPort == rpcPort,
     s"RpcUri and the rpcPort in authCredentials are different $rpcUri authcred: $rpcPort")
 
-  require(
-    binary.isFile && binary.canExecute,
-    s"bitcoind binary path (${binary.getAbsolutePath} must be an exectuable file")
+  // would like to check .canExecute as well, but we've run into issues on some machines
+  require(binary.isFile,
+          s"bitcoind binary path (${binary.getAbsolutePath}) must be a file")
 
   def binary: File
 
