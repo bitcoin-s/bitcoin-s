@@ -51,6 +51,10 @@ object Deps {
     val playJson = Compile.playJson % "test"
   }
 
+  val root = List(
+    Test.ammonite
+  )
+
   val core = List(
     Compile.bouncycastle,
     Compile.scodec,
@@ -88,7 +92,8 @@ object Deps {
     Compile.akkaStream,
     Compile.playJson,
     Compile.slf4j,
-    Compile.typesafeConfig
+    Compile.typesafeConfig,
+    Test.ammonite
   )
 
   val bitcoindRpcTest = List(
@@ -110,7 +115,8 @@ object Deps {
     Compile.akkaHttp,
     Compile.akkaStream,
     Compile.playJson,
-    Compile.slf4j
+    Compile.slf4j,
+    Test.ammonite
   )
 
   val eclairRpcTest = List(
