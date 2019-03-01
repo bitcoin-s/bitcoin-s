@@ -51,7 +51,7 @@ class BitcoindV17RpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
   }
 
   override protected def afterAll(): Unit = {
-    // BitcoindRpcTestUtil.stopServers(client, otherClient)
+    BitcoindRpcTestUtil.stopServers(Vector(client, otherClient))
     TestKit.shutdownActorSystem(system)
   }
 
