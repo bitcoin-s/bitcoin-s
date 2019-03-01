@@ -3,15 +3,25 @@ package org.bitcoins.rpc
 import java.io.File
 
 import akka.actor.ActorSystem
+import akka.testkit.TestKit
+import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.scalatest.exceptions.TestFailedException
 import org.scalatest.{AsyncFlatSpec, BeforeAndAfterAll}
 
 import scala.concurrent.duration.DurationInt
-import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Success
 
 class RpcUtilTest extends AsyncFlatSpec with BeforeAndAfterAll {
+
+  private val clients = Vector.newBuilder[BitcoindRpcClient]
+
+  private lazy val clientsF = BitcoindRpcTestUtil.createNodePair().map {
+    case (first, second) =>
+      clients += (first, second)
+      (first, second)
+  }
 
   implicit val system: ActorSystem = ActorSystem("RpcUtilTest_ActorSystem")
   implicit val ec: ExecutionContext = system.dispatcher
@@ -92,7 +102,9 @@ class RpcUtilTest extends AsyncFlatSpec with BeforeAndAfterAll {
     }
   }
 
-  "BitcoindRpcUtil" should "create a temp bitcoin directory when creating a DaemonInstance, and then delete it" in {
+  behavior of "BitcoindRpcUtil"
+
+  it should "create a temp bitcoin directory when creating a DaemonInstance, and then delete it" in {
     val instance = BitcoindRpcTestUtil.instance(BitcoindRpcTestUtil.randomPort,
                                                 BitcoindRpcTestUtil.randomPort)
     val dir = instance.authCredentials.datadir
@@ -114,7 +126,7 @@ class RpcUtilTest extends AsyncFlatSpec with BeforeAndAfterAll {
     }
   }
 
-  it should "be able to create a connected node pair with 100 blocks and then delete them" in {
+  it should "be able to create a connected node pair with 101 blocks and then delete them" in {
     BitcoindRpcTestUtil.createNodePair().flatMap {
       case (client1, client2) =>
         assert(client1.getDaemon.authCredentials.datadir.isDirectory)
@@ -124,10 +136,10 @@ class RpcUtilTest extends AsyncFlatSpec with BeforeAndAfterAll {
           assert(nodes.nonEmpty)
 
           client1.getBlockCount.flatMap { count1 =>
-            assert(count1 == 100)
+            assert(count1 == 101)
 
             client2.getBlockCount.map { count2 =>
-              assert(count2 == 100)
+              assert(count2 == 101)
 
               BitcoindRpcTestUtil.deleteNodePair(client1, client2)
               assert(!client1.getDaemon.authCredentials.datadir.exists)
@@ -138,7 +150,60 @@ class RpcUtilTest extends AsyncFlatSpec with BeforeAndAfterAll {
     }
   }
 
+  it should "be able to generate and sync blocks" in {
+    for {
+      (first, second) <- clientsF
+      _ = clients += (first, second)
+      address <- second.getNewAddress
+      txid <- first.sendToAddress(address, Bitcoins.one)
+      _ <- BitcoindRpcTestUtil.generateAndSync(Vector(first, second))
+      tx <- first.getTransaction(txid)
+      _ = assert(tx.confirmations > 0)
+      rawTx <- second.getRawTransaction(txid)
+      _ = assert(rawTx.confirmations.exists(_ > 0))
+      firstBlock <- first.getBestBlockHash
+      secondBlock <- second.getBestBlockHash
+    } yield assert(firstBlock == secondBlock)
+  }
+
+  it should "ble able to generate blocks with multiple clients and sync inbetween" in {
+    val blocksToGenerate = 10
+
+    for {
+      (first, second) <- clientsF
+      heightPreGeneration <- first.getBlockCount
+      _ <- BitcoindRpcTestUtil.generateAllAndSync(Vector(first, second),
+                                                  blocks = blocksToGenerate)
+      firstHash <- first.getBestBlockHash
+      secondHash <- second.getBestBlockHash
+      heightPostGeneration <- first.getBlockCount
+    } yield {
+      assert(firstHash == secondHash)
+      assert(heightPostGeneration - heightPreGeneration == blocksToGenerate * 2)
+    }
+  }
+
+  it should "be able to find outputs of previous transactions" in {
+    for {
+      (first, second) <- clientsF
+      address <- second.getNewAddress
+      txid <- first.sendToAddress(address, Bitcoins.one)
+      hashes <- BitcoindRpcTestUtil.generateAndSync(Vector(first, second))
+      vout <- BitcoindRpcTestUtil.findOutput(first,
+                                             txid,
+                                             Bitcoins.one,
+                                             Some(hashes.head))
+      tx <- first.getRawTransaction(txid, Some(hashes.head))
+    } yield {
+      assert(tx.vout(vout.toInt).value == Bitcoins.one)
+    }
+  }
+
   override def afterAll(): Unit = {
-    Await.result(system.terminate(), 10.seconds)
+    BitcoindRpcTestUtil.stopServers(
+      clients.result()
+    )
+
+    TestKit.shutdownActorSystem(system)
   }
 }

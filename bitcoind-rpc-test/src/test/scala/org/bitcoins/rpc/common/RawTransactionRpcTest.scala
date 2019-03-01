@@ -102,7 +102,8 @@ class RawTransactionRpcTest extends AsyncFlatSpec with BeforeAndAfterAll {
       client.getRawTransaction(txid).flatMap { transaction1 =>
         client.getTransaction(txid).map { transaction2 =>
           assert(transaction1.txid == transaction2.txid)
-          assert(transaction1.confirmations == transaction2.confirmations)
+          assert(
+            transaction1.confirmations.contains(transaction2.confirmations))
           assert(transaction1.hex == transaction2.hex)
 
           assert(transaction1.blockhash.isDefined)

@@ -4,7 +4,7 @@ import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.blockchain.MerkleBlock
-import org.bitcoins.rpc.client.common.RpcOpts.AddressType
+import org.bitcoins.rpc.client.common.RpcOpts.{AddressType, FeeEstimationMode}
 import org.bitcoins.rpc.jsonmodels._
 import org.bitcoins.rpc.serializers.JsonSerializers._
 import play.api.libs.json._
@@ -44,9 +44,11 @@ trait TransactionRpc extends Client {
   // Needs manual testing!
   def estimateSmartFee(
       blocks: Int,
-      mode: String = "CONSERVATIVE"): Future[EstimateSmartFeeResult] = {
-    bitcoindCall[EstimateSmartFeeResult]("estimatesmartfee",
-                                         List(JsNumber(blocks), JsString(mode)))
+      mode: FeeEstimationMode = FeeEstimationMode.Ecnomical): Future[
+    EstimateSmartFeeResult] = {
+    bitcoindCall[EstimateSmartFeeResult](
+      "estimatesmartfee",
+      List(JsNumber(blocks), JsString(mode.toString)))
   }
 
   def getTransaction(
