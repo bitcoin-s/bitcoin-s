@@ -20,7 +20,9 @@ object JsonWriters {
       case _: SIGHASH_ALL_ANYONECANPAY    => JsString("ALL|ANYONECANPAY")
       case _: SIGHASH_NONE_ANYONECANPAY   => JsString("NONE|ANYONECANPAY")
       case _: SIGHASH_SINGLE_ANYONECANPAY => JsString("SINGLE|ANYONECANPAY")
-      case _: SIGHASH_ANYONECANPAY        => ???
+      case _: SIGHASH_ANYONECANPAY =>
+        throw new IllegalArgumentException(
+          "SIGHHASH_ANYONECANPAY is not supported by the bitcoind RPC interface")
     }
   }
 
