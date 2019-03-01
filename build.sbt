@@ -125,6 +125,7 @@ lazy val root = project
   )
   .settings(commonSettings: _*)
   .settings(crossScalaVersions := Nil)
+  .settings(libraryDependencies ++= Deps.root)
   .enablePlugins(ScalaUnidocPlugin, GhpagesPlugin, GitVersioning)
   .settings(
     ScalaUnidoc / siteSubdirName := "latest/api",
