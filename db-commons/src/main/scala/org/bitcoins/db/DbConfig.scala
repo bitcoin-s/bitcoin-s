@@ -7,6 +7,7 @@ import org.bitcoins.core.util.BitcoinSLogger
 import slick.basic.DatabaseConfig
 import slick.jdbc.SQLiteProfile
 import slick.jdbc.SQLiteProfile.api._
+
 /**
   * Created by chris on 9/11/16.
   */
@@ -27,14 +28,15 @@ sealed abstract class DbConfig extends BitcoinSLogger {
 
   private def createDbFileIfDNE(): Boolean = {
     val resolvedConfig = dbConfig.config.resolve()
+    logger.info(s"DbConfig=${dbConfig.config.root().render()}")
     //should add a check in here that we are using sqlite
     val dbPath = new File(resolvedConfig.getString("dbPath"))
     if (!dbPath.exists()) {
+      logger.info(s"Creating database directory=${dbPath.getAbsolutePath}")
       dbPath.mkdirs()
     } else {
       true
     }
-
   }
 }
 
