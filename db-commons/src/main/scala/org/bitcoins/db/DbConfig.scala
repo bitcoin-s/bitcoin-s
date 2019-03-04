@@ -2,8 +2,8 @@ package org.bitcoins.db
 
 import java.io.File
 
+import com.typesafe.config.Config
 import org.bitcoins.core.util.BitcoinSLogger
-
 import slick.basic.DatabaseConfig
 import slick.jdbc.SQLiteProfile
 import slick.jdbc.SQLiteProfile.api._
@@ -23,19 +23,24 @@ sealed abstract class DbConfig extends BitcoinSLogger {
     //errors around the loaded configuration depending
     //on the state of the default classLoader
     //https://github.com/lightbend/config#debugging-your-configuration
-    DatabaseConfig.forConfig(path = configKey,
-                             classLoader = getClass().getClassLoader())
+    val dbConfig: DatabaseConfig[SQLiteProfile] = {
+      DatabaseConfig.forConfig(path = configKey,
+                               classLoader = getClass().getClassLoader())
+    }
+
+    createDbFileIfDNE(config = dbConfig.config)
+
+    dbConfig
   }
 
   /** The database we are connecting to for our spv node */
   def database: Database = {
-    createDbFileIfDNE()
     dbConfig.db
   }
 
-  private def createDbFileIfDNE(): Boolean = {
-    val resolvedConfig = dbConfig.config.resolve()
-    logger.info(s"DbConfig=${dbConfig.config.root().render()}")
+  private def createDbFileIfDNE(config: Config): Boolean = {
+    val resolvedConfig = config.resolve()
+    logger.info(s"DbConfig=${resolvedConfig.root().render()}")
     //should add a check in here that we are using sqlite
     val dbPath = new File(resolvedConfig.getString("dbPath"))
     if (!dbPath.exists()) {
