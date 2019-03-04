@@ -1,9 +1,11 @@
 package org.bitcoins.core.crypto
 
+import com.fasterxml.jackson.databind.JsonNode
 import org.bitcoins.core.util.BitcoinSUnitTest
 import org.bitcoins.testkit.core.gen.CryptoGenerators
 import org.scalatest.Assertion
 import play.api.libs.json._
+import play.api.libs.json.jackson.JacksonJson
 import scodec.bits.{BinStringSyntax, BitVector, ByteVector}
 
 import scala.io.Source
@@ -222,20 +224,16 @@ class MnemonicCodeTest extends BitcoinSUnitTest {
       )
     }
 
-    implicit val trezorReads: Reads[Vector[RawTrezorTestVector]] = { jsValue =>
-      def singleReads(singleJs: JsValue) = {
+    implicit object TrezorReads extends Reads[RawTrezorTestVector] {
+      def reads(json: JsValue): JsResult[RawTrezorTestVector] = {
         for {
-          arr <- singleJs.validate[JsArray]
+          arr <- json.validate[JsArray]
           entropy <- arr(0).validate[String]
           words <- arr(1).validate[String]
           seed <- arr(2).validate[String]
           xpriv <- arr(3).validate[String]
         } yield RawTrezorTestVector(entropy, words, seed, xpriv)
       }
-
-      jsValue
-        .validate[JsArray]
-        .map(_.value.map(js => singleReads(js).get).toVector)
     }
 
     val rawJsonStream = getClass
@@ -254,6 +252,6 @@ class MnemonicCodeTest extends BitcoinSUnitTest {
         .map(_.map(trezorFromRaw))
         .get
 
-    testVectors.map(testTrezorVector)
+    testVectors.map(testTrezorVector(_))
   }
 }
