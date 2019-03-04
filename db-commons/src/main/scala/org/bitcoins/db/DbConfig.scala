@@ -40,7 +40,6 @@ sealed abstract class DbConfig extends BitcoinSLogger {
 
   private def createDbFileIfDNE(config: Config): Boolean = {
     val resolvedConfig = config.resolve()
-    logger.info(s"DbConfig=${resolvedConfig.root().render()}")
     //should add a check in here that we are using sqlite
     val dbPath = new File(resolvedConfig.getString("dbPath"))
     if (!dbPath.exists()) {
