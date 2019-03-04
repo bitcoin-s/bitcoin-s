@@ -10,9 +10,29 @@ import slick.jdbc.SQLiteProfile.api._
 
 /**
   * Created by chris on 9/11/16.
+  *
+  * This is meant to encapsulate all of our database configuration related things
+  * There are currently 4 "network" databases that we have setup
+  * 1. mainnet - this stores things related to the [[org.bitcoins.core.protocol.blockchain.MainNetChainParams MainNet]] networ
+  * 2. testnet3 - this stores things related to the [[org.bitcoins.core.config.TestNet3 testnet3]] network
+  * 3. regtest - this stores things related your local [[org.bitcoins.core.config.RegTest regtest]] network
+  * 4. unittest - this stores things related to unit tests. This is the database unit tests have
+  *
+  * Each instance of [[DbConfig dbConfig]] has a [[configKey]] that indicates
+  * how you read the database configurations from on the classpath. For instance,
+  * the [[MainNetDbConfig]] has a [[configKey]] of ''mainnetDb''.
+  *
+  * An example of a project creating their own database configuration can be seen
+  * in the node project. This project defines a database name, a database username,
+  * and various other slick database configurations [[https://github.com/bitcoin-s/bitcoin-s-core/blob/016d45c672ec7ef15142516332d92dffd633960f/node/src/main/resources/application.conf#L33 here]]
   */
 sealed abstract class DbConfig extends BitcoinSLogger {
 
+  /** This is the key we look for in the config file
+    * to identify a database database. An example
+    * of this for the [[MainNetDbConfig]] is ''mainnetDb''
+    * @return
+    */
   def configKey: String
 
   /** The configuration details for connecting/using the database for our projects
