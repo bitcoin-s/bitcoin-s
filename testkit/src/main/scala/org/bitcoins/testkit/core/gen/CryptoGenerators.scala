@@ -174,8 +174,8 @@ sealed abstract class CryptoGenerators {
   /** Generates a random [[org.bitcoins.core.crypto.DoubleSha256Digest DoubleSha256Digest]] */
   def doubleSha256Digest: Gen[DoubleSha256Digest] =
     for {
-      hex <- StringGenerators.hexString
-      digest = CryptoUtil.doubleSHA256(hex)
+      key <- privateKey
+      digest = CryptoUtil.doubleSHA256(key.bytes)
     } yield digest
 
   /**
