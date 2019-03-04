@@ -15,9 +15,16 @@ sealed abstract class DbConfig extends BitcoinSLogger {
 
   def configKey: String
 
-  /** The configuration details for connecting/using the database for our spv node */
+  /** The configuration details for connecting/using the database for our projects
+    * that require datbase connections
+    * */
   def dbConfig: DatabaseConfig[SQLiteProfile] = {
-    DatabaseConfig.forConfig(configKey)
+    //if we don't pass specific class, non-deterministic
+    //errors around the loaded configuration depending
+    //on the state of the default classLoader
+    //https://github.com/lightbend/config#debugging-your-configuration
+    DatabaseConfig.forConfig(path = configKey,
+                             classLoader = getClass().getClassLoader())
   }
 
   /** The database we are connecting to for our spv node */
