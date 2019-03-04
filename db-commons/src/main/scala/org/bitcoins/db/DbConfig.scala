@@ -18,7 +18,7 @@ sealed abstract class DbConfig extends BitcoinSLogger {
   /** The configuration details for connecting/using the database for our projects
     * that require datbase connections
     * */
-  def dbConfig: DatabaseConfig[SQLiteProfile] = {
+  lazy val dbConfig: DatabaseConfig[SQLiteProfile] = {
     //if we don't pass specific class, non-deterministic
     //errors around the loaded configuration depending
     //on the state of the default classLoader
