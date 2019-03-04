@@ -3,10 +3,10 @@ package org.bitcoins.db
 import java.io.File
 
 import org.bitcoins.core.util.BitcoinSLogger
+
 import slick.basic.DatabaseConfig
 import slick.jdbc.SQLiteProfile
 import slick.jdbc.SQLiteProfile.api._
-
 /**
   * Created by chris on 9/11/16.
   */
@@ -20,15 +20,21 @@ sealed abstract class DbConfig extends BitcoinSLogger {
   }
 
   /** The database we are connecting to for our spv node */
-  def database: Database = dbConfig.db
+  def database: Database = {
+    createDbFileIfDNE()
+    dbConfig.db
+  }
 
-  protected def createDbFileIfDNE(): Boolean = {
+  private def createDbFileIfDNE(): Boolean = {
     val resolvedConfig = dbConfig.config.resolve()
     //should add a check in here that we are using sqlite
     val dbPath = new File(resolvedConfig.getString("dbPath"))
-    val dbName = dbConfig.config.getString("dbName")
+    if (!dbPath.exists()) {
+      dbPath.mkdirs()
+    } else {
+      true
+    }
 
-    dbPath.mkdirs()
   }
 }
 
@@ -36,31 +42,23 @@ sealed abstract class MainNetDbConfig extends DbConfig {
   override lazy val configKey: String = "mainnetDb"
 }
 
-object MainNetDbConfig extends MainNetDbConfig {
-  //createDbFileIfDNE()
-}
+object MainNetDbConfig extends MainNetDbConfig
 
 sealed abstract class TestNet3DbConfig extends DbConfig {
   override lazy val configKey: String = "testnet3Db"
 }
 
-object TestNet3DbConfig extends TestNet3DbConfig {
-  //createDbFileIfDNE()
-}
+object TestNet3DbConfig extends TestNet3DbConfig
 
 sealed abstract class RegTestDbConfig extends DbConfig {
   override lazy val configKey: String = "regtestDb"
 }
 
-object RegTestDbConfig extends RegTestDbConfig {
-  //createDbFileIfDNE()
-}
+object RegTestDbConfig extends RegTestDbConfig
 
 sealed abstract class UnitTestDbConfig extends DbConfig {
   override lazy val configKey: String = "unittestDb"
 
 }
 
-object UnitTestDbConfig extends UnitTestDbConfig {
-  //createDbFileIfDNE()
-}
+object UnitTestDbConfig extends UnitTestDbConfig
