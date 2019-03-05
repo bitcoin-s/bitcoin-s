@@ -1,7 +1,6 @@
-package org.bitcoins.node.models
+package org.bitcoins.db
 
 import org.bitcoins.core.util.BitcoinSLogger
-import org.bitcoins.node.db.DbConfig
 import slick.jdbc.SQLiteProfile.api._
 
 import scala.concurrent.{ExecutionContext, Future}

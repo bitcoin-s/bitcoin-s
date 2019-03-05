@@ -8,9 +8,9 @@ import akka.util.Timeout
 import org.bitcoins.core.config.{NetworkParameters, RegTest}
 import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil}
+import org.bitcoins.db.UnitTestDbConfig
 import org.bitcoins.node.NetworkMessage
 import org.bitcoins.node.constant.Constants
-import org.bitcoins.node.db.UnitTestDbConfig
 import org.bitcoins.node.messages._
 import org.bitcoins.node.messages.data.GetHeadersMessage
 import org.bitcoins.node.models.Peer

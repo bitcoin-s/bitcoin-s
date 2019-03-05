@@ -1,6 +1,6 @@
 package org.bitcoins.node.constant
 
-import org.bitcoins.node.db.{DbConfig, UnitTestDbConfig}
+import org.bitcoins.db.{DbConfig, UnitTestDbConfig}
 
 /**
   * Created by chris on 9/11/16.
