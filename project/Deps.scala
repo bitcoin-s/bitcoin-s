@@ -77,6 +77,14 @@ object Deps {
     Test.ammonite
   )
 
+  val chain = List(
+    Test.ammonite
+  )
+
+  val chainTest = List(
+    Test.ammonite
+  )
+
   val core = List(
     Compile.bouncycastle,
     Compile.scodec,
@@ -134,6 +142,12 @@ object Deps {
     Test.ammonite
   )
 
+  val dbCommons = List(
+    Compile.slick,
+    Compile.sqlite,
+    Compile.slickHikari
+  )
+
   val eclairRpc = List(
     Compile.akkaHttp,
     Compile.akkaStream,
@@ -178,7 +192,19 @@ object Deps {
 
   val scripts = List(
     Compile.ammonite,
-    Compile.logback,
+    Compile.logback
+  )
+
+  val wallet = List(
+    Test.ammonite
+  )
+
+  val walletTest = List(
+    Test.ammonite
+  )
+
+  val doc = List(
+    Test.ammonite,
     Test.scalaTest,
     Test.logback
   )

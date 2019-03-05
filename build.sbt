@@ -92,9 +92,10 @@ lazy val bitcoins = project
   .in(file("."))
   .aggregate(
     secp256k1jni,
+    chain,
+    chainTest,
     core,
     coreTest,
-    zmq,
     bitcoindRpc,
     bitcoindRpcTest,
     bench,
@@ -102,8 +103,13 @@ lazy val bitcoins = project
     eclairRpcTest,
     node,
     nodeTest,
+    wallet,
+    walletTest,
     testkit,
-    scripts
+    scripts,
+    zmq,
+    doc
+
   )
   .settings(commonSettings: _*)
   .settings(crossScalaVersions := Nil)
@@ -214,6 +220,39 @@ lazy val coreTest = project
   )
   .enablePlugins()
 
+lazy val chainDbSettings = dbFlywaySettings("chaindb")
+lazy val chain = project
+  .in(file("chain"))
+  .settings(commonSettings: _*)
+  .settings(chainDbSettings: _*)
+  .settings(
+    name := "bitcoin-s-chain",
+    libraryDependencies ++= Deps.chain
+  ).dependsOn(core)
+  .enablePlugins(FlywayPlugin)
+
+lazy val chainTest = project
+  .in(file("chain-test"))
+  .settings(commonSettings: _*)
+  .settings(chainDbSettings: _*)
+  .settings(
+    skip in publish := true,
+    name := "bitcoin-s-chain-test",
+    libraryDependencies ++= Deps.chainTest
+  ).dependsOn(chain, core, testkit)
+  .enablePlugins(FlywayPlugin)
+
+
+lazy val dbCommons = project
+  .in(file("db-commons"))
+  .settings(commonSettings: _*)
+  .settings(
+    name := "bitcoin-s-db-commons",
+    libraryDependencies ++= Deps.dbCommons
+  ).dependsOn(core)
+  .enablePlugins()
+
+
 lazy val zmq = project
   .in(file("zmq"))
   .settings(commonSettings: _*)
@@ -271,30 +310,37 @@ lazy val eclairRpcTest = project
   .dependsOn(testkit)
   .enablePlugins()
 
-lazy val node = project
-  .in(file("node"))
-  .settings(commonSettings: _*)
-  .settings(nodeFlywaySettings: _*)
-  .settings(
-    name := "bitcoin-s-node",
-    libraryDependencies ++= Deps.node,
-    parallelExecution in Test := false
-  )
-  .dependsOn(
-    core
-  ).enablePlugins(FlywayPlugin)
+lazy val nodeDbSettings = dbFlywaySettings("nodedb")
+lazy val node = {
+  project
+    .in(file("node"))
+    .settings(commonSettings: _*)
+    .settings(nodeDbSettings: _*)
+    .settings(
+      name := "bitcoin-s-node",
+      libraryDependencies ++= Deps.node,
+      parallelExecution in Test := false
+    )
+    .dependsOn(
+      core,
+      chain,
+      dbCommons
+    ).enablePlugins(FlywayPlugin)
+}
 
-lazy val nodeTest = project
-  .in(file("node-test"))
-  .settings(commonSettings: _*)
-  .settings(nodeFlywaySettings: _*)
-  .settings(
-    name := "bitcoin-s-node-test",
-    libraryDependencies ++= Deps.nodeTest
-  ).dependsOn(
+lazy val nodeTest = {
+  project
+    .in(file("node-test"))
+    .settings(commonSettings: _*)
+    .settings(nodeDbSettings: _*)
+    .settings(
+      name := "bitcoin-s-node-test",
+      libraryDependencies ++= Deps.nodeTest
+    ).dependsOn(
     node,
     testkit
   ).enablePlugins(FlywayPlugin)
+}
 
 lazy val testkit = project
   .in(file("testkit"))
@@ -310,6 +356,30 @@ lazy val publishWebsite = taskKey[Unit]("Publish website")
 
 lazy val docs = project
   .in(file("bitcoin-s-docs")) // important: it must not be docs/
+
+lazy val walletDbSettings = dbFlywaySettings("walletdb")
+lazy val wallet = project
+  .in(file("wallet"))
+  .settings(commonSettings: _*)
+  .settings(walletDbSettings: _*)
+  .settings(
+    name := "bitcoin-s-wallet",
+    libraryDependencies ++= Deps.wallet
+  )
+  .dependsOn(core, dbCommons)
+  .enablePlugins(FlywayPlugin)
+
+lazy val walletTest = project
+  .in(file("wallet-test"))
+  .settings(commonSettings: _*)
+  .settings(walletDbSettings: _*)
+  .settings(
+    name := "bitcoin-s-wallet-test",
+    libraryDependencies ++= Deps.walletTest,
+    skip in publish := true
+  )
+  .dependsOn(core, testkit, wallet)
+  .enablePlugins(FlywayPlugin)
   .settings(commonTestSettings: _*)
   .settings(
     // come back to visit this setting later
@@ -359,12 +429,10 @@ lazy val scripts = project
 addCommandAlias("amm", "test:run")
 
 publishArtifact in bitcoins := false
-<<<<<<< HEAD
-=======
 
-lazy val nodeFlywaySettings = {
+def dbFlywaySettings(dbName: String): List[Setting[_]] = {
   lazy val DB_HOST = "localhost"
-  lazy val DB_NAME = "nodedb.sqlite"
+  lazy val DB_NAME = s"${dbName}.sqlite"
   lazy val network = "unittest" //mainnet, testnet3, regtest, unittest
 
   lazy val mainnetDir = s"${System.getenv("HOME")}/.bitcoin-s/mainnet/"
@@ -413,4 +481,3 @@ publishArtifact in bitcoins := false
 
 previewSite / aggregate := false
 previewAuto / aggregate := false
->>>>>>> Add flyway plugin to manage database schemas (#361)

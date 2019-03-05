@@ -7,7 +7,7 @@ import akka.io.Tcp
 import akka.testkit.{TestActorRef, TestKit, TestProbe}
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.util.BitcoinSLogger
-import org.bitcoins.node.db.UnitTestDbConfig
+import org.bitcoins.db.UnitTestDbConfig
 import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.peer.PeerMessageReceiver
 import org.bitcoins.node.networking.peer.PeerMessageReceiverState.Preconnection
