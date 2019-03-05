@@ -74,6 +74,14 @@ object Deps {
     Test.ammonite
   )
 
+  val chain = List(
+    Test.ammonite
+  )
+
+  val chainTest = List(
+    Test.ammonite
+  )
+
   val core = List(
     Compile.bouncycastle,
     Compile.scodec,
@@ -130,6 +138,12 @@ object Deps {
     Test.ammonite
   )
 
+  val dbCommons = List(
+    Compile.slick,
+    Compile.sqlite,
+    Compile.slickHikari
+  )
+
   val eclairRpc = List(
     Compile.akkaHttp,
     Compile.akkaStream,
@@ -169,6 +183,14 @@ object Deps {
     Compile.slf4j,
     "org.scalacheck" %% "scalacheck" % V.scalacheck withSources () withJavadoc (),
     "org.scalatest" %% "scalatest" % V.scalaTest withSources () withJavadoc (),
+    Test.ammonite
+  )
+
+  val wallet = List(
+    Test.ammonite
+  )
+
+  val walletTest = List(
     Test.ammonite
   )
 
