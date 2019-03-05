@@ -3,8 +3,8 @@ package org.bitcoins.node.models
 import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.util.BitcoinSUtil
+import org.bitcoins.db.{CRUD, DbConfig}
 import org.bitcoins.node.constant.Constants
-import org.bitcoins.node.db.DbConfig
 import slick.jdbc.SQLiteProfile.api._
 
 import scala.concurrent.{ExecutionContext, Future}
