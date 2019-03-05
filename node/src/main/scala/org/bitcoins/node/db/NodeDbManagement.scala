@@ -1,8 +1,8 @@
 package org.bitcoins.node.db
 
+import org.bitcoins.db.{DbConfig, DbManagement}
 import org.bitcoins.node.models.BlockHeaderTable
 import slick.lifted.TableQuery
-
 import slick.jdbc.SQLiteProfile.api._
 
 import scala.concurrent.{ExecutionContext, Future}

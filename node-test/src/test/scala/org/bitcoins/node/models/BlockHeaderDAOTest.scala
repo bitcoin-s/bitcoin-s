@@ -3,8 +3,9 @@ package org.bitcoins.node.models
 import org.bitcoins.core.crypto.{DoubleSha256Digest, ECPrivateKey}
 import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.protocol.blockchain.BlockHeader
+import org.bitcoins.db.{DbConfig, UnitTestDbConfig}
 import org.bitcoins.node.constant.Constants
-import org.bitcoins.node.db.{DbConfig, NodeDbManagement, UnitTestDbConfig}
+import org.bitcoins.node.db.NodeDbManagement
 import org.bitcoins.testkit.core.gen.BlockchainElementsGenerator
 import org.scalatest._
 

@@ -2,7 +2,7 @@ package org.bitcoins.node.networking.peer
 
 import akka.actor.{ActorRef, ActorRefFactory, Props}
 import org.bitcoins.core.util.BitcoinSLogger
-import org.bitcoins.node.db.DbConfig
+import org.bitcoins.db.DbConfig
 import org.bitcoins.node.messages.{DataPayload, HeadersMessage}
 import org.bitcoins.node.models.BlockHeaderDAO
 import org.bitcoins.node.util.BitcoinSpvNodeUtil

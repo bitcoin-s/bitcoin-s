@@ -6,13 +6,17 @@ import org.bitcoins.core.config.{MainNet, NetworkParameters, RegTest, TestNet3}
 import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.util.BitcoinSLogger
+import org.bitcoins.db.DbConfig
 import org.bitcoins.node.constant.Constants
-import org.bitcoins.node.db.DbConfig
 import org.bitcoins.node.messages.HeadersMessage
 import org.bitcoins.node.messages.data.GetHeadersMessage
 import org.bitcoins.node.models.BlockHeaderDAO
 import org.bitcoins.node.networking.peer.PeerMessageSender
-import org.bitcoins.node.networking.sync.BlockHeaderSyncActor.{CheckHeaderResult, GetHeaders, StartAtLastSavedHeader}
+import org.bitcoins.node.networking.sync.BlockHeaderSyncActor.{
+  CheckHeaderResult,
+  GetHeaders,
+  StartAtLastSavedHeader
+}
 import org.bitcoins.node.util.BitcoinSpvNodeUtil
 
 import scala.annotation.tailrec
@@ -26,6 +30,7 @@ import scala.concurrent.{ExecutionContextExecutor, Future}
 trait BlockHeaderSyncActor extends Actor with BitcoinSLogger {
 
   private implicit val ec: ExecutionContextExecutor = context.dispatcher
+
   /** This is the maximum amount of headers the bitcoin protocol will transmit
     * in one request
     * [[https://bitcoin.org/en/developer-reference#getheaders]]
@@ -56,7 +61,8 @@ trait BlockHeaderSyncActor extends Actor with BitcoinSLogger {
 
       val syncReadyF: Future[Unit] = {
         if (lastHeader == genesis) {
-          logger.debug(s"Syncing a fresh blockchain with genesis header hash ${genesis.hash.hex}")
+          logger.debug(
+            s"Syncing a fresh blockchain with genesis header hash ${genesis.hash.hex}")
 
           val createdF = createGenesisHeader()
           createdF.map(_ => ())
@@ -104,11 +110,13 @@ trait BlockHeaderSyncActor extends Actor with BitcoinSLogger {
       val getHeadersMsg = GetHeadersMessage(startHeader.headers.map(_.hash))
       peerMessageHandler ! getHeadersMsg
 
-    case headersMsg: HeadersMessage => handleHeadersMsg(headersMsg,Some(lastHeader))
+    case headersMsg: HeadersMessage =>
+      handleHeadersMsg(headersMsg, Some(lastHeader))
   }
 
-
-  private def handleHeadersMsg(headersMsg: HeadersMessage, lastHeaderOpt: Option[BlockHeader]): Unit = {
+  private def handleHeadersMsg(
+      headersMsg: HeadersMessage,
+      lastHeaderOpt: Option[BlockHeader]): Unit = {
 
     val checkHeadersResultF = maxHeightF.map { maxHeight =>
       checkHeaders(
@@ -121,7 +129,8 @@ trait BlockHeaderSyncActor extends Actor with BitcoinSLogger {
     checkHeadersResultF.map(handleCheckHeadersResult)
   }
 
-  private def handleCheckHeadersResult(checkHeaderResult: CheckHeaderResult): Unit = {
+  private def handleCheckHeadersResult(
+      checkHeaderResult: CheckHeaderResult): Unit = {
     logger.debug("Received check header result inside of blockHeaderSync")
     if (checkHeaderResult.error.isDefined) {
       logger.error(
@@ -147,22 +156,22 @@ trait BlockHeaderSyncActor extends Actor with BitcoinSLogger {
       lastHeader: Option[BlockHeader],
       headers: List[BlockHeader],
       maxHeight: Long): CheckHeaderResult = {
-      val result = BlockHeaderSyncActor.checkHeaders(startingHeader = lastHeader,
-                                                     blockHeaders = headers,
-                                                     maxHeight = maxHeight,
-                                                     networkParameters = networkParameters)
-      result
+    val result = BlockHeaderSyncActor.checkHeaders(startingHeader = lastHeader,
+                                                   blockHeaders = headers,
+                                                   maxHeight = maxHeight,
+                                                   networkParameters =
+                                                     networkParameters)
+    result
   }
 
   /** Actor context that specifically deals with the [[BlockHeaderSyncActor.GetHeaders]] message */
   def awaitGetHeaders: Receive = LoggingReceive {
     case headersMsg: HeadersMessage =>
-      handleHeadersMsg(headersMsg = headersMsg,lastHeaderOpt = None)
+      handleHeadersMsg(headersMsg = headersMsg, lastHeaderOpt = None)
     case checkHeaderResult: CheckHeaderResult =>
       context.parent ! checkHeaderResult.error.getOrElse(
         BlockHeaderSyncActor.GetHeadersReply(checkHeaderResult.headers))
   }
-
 
   //    case lastSavedHeader: BlockHeaderDAO.LastSavedHeaderReply =>
   //      if (lastSavedHeader.headers.size <= 1) {
@@ -197,7 +206,6 @@ trait BlockHeaderSyncActor extends Actor with BitcoinSLogger {
       headers: List[BlockHeader],
       peerMessageHandler: ActorRef): Future[Unit] = {
     val createdF = blockHeaderDAO.createAll(headers.toVector)
-
 
     //now that we have created all the valid headers, we need to keep syncing the chain
 
@@ -249,8 +257,14 @@ object BlockHeaderSyncActor extends BitcoinSLogger {
       BitcoinSpvNodeUtil.createActorName(BlockHeaderSyncActor.getClass))
   }
 
-  def props(peerMsgHandler: ActorRef, dbConfig: DbConfig, networkParameters: NetworkParameters): Props = {
-    Props(classOf[BlockHeaderSyncActorImpl], dbConfig, networkParameters,peerMsgHandler)
+  def props(
+      peerMsgHandler: ActorRef,
+      dbConfig: DbConfig,
+      networkParameters: NetworkParameters): Props = {
+    Props(classOf[BlockHeaderSyncActorImpl],
+          dbConfig,
+          networkParameters,
+          peerMsgHandler)
   }
 
   sealed trait BlockHeaderSyncMessage
