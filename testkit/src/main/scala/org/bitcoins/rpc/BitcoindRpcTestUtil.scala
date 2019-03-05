@@ -2,6 +2,7 @@ package org.bitcoins.rpc
 
 import java.io.{File, PrintWriter}
 import java.net.URI
+import java.nio.file.Paths
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
@@ -163,12 +164,23 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
   private val V16_ENV = "BITCOIND_V16_PATH"
   private val V17_ENV = "BITCOIND_V17_PATH"
 
-  private def getFileFromEnv(env: String): File =
-    new File(
-      Properties
-        .envOrNone(env)
-        .getOrElse(throw new IllegalArgumentException(
-          s"$env environment variable is not set")))
+  private def getFileFromEnv(env: String): File = {
+    val envValue = Properties
+      .envOrNone(env)
+      .getOrElse(
+        throw new IllegalArgumentException(
+          s"$env environment variable is not set"))
+
+    val maybeDir = new File(envValue.trim)
+
+    val binary = if (maybeDir.isDirectory) {
+      Paths.get(maybeDir.getAbsolutePath, "bitcoind").toFile
+    } else {
+      maybeDir
+    }
+
+    binary
+  }
 
   private def getBinary(version: BitcoindVersion): File =
     version match {
@@ -205,7 +217,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       port: Int = randomPort,
       rpcPort: Int = randomPort,
       zmqPort: Int = randomPort,
-      pruneMode: Boolean = false,
+      pruneMode: Boolean = false
   ): BitcoindInstance =
     instance(port = port,
              rpcPort = rpcPort,
@@ -217,7 +229,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       port: Int = randomPort,
       rpcPort: Int = randomPort,
       zmqPort: Int = randomPort,
-      pruneMode: Boolean = false,
+      pruneMode: Boolean = false
   ): BitcoindInstance =
     instance(port = port,
              rpcPort = rpcPort,

@@ -19,6 +19,9 @@ sealed trait BitcoindInstance {
     rpcUri.getPort == rpcPort,
     s"RpcUri and the rpcPort in authCredentials are different $rpcUri authcred: $rpcPort")
 
+  require(binary.exists,
+          s"bitcoind binary path (${binary.getAbsolutePath}) does not exist!")
+
   // would like to check .canExecute as well, but we've run into issues on some machines
   require(binary.isFile,
           s"bitcoind binary path (${binary.getAbsolutePath}) must be a file")
@@ -80,7 +83,7 @@ object BitcoindInstance {
     val path = Try("which bitcoind".!!)
       .getOrElse(
         throw new RuntimeException("Could not locate bitcoind on user PATH"))
-    new File(path)
+    new File(path.trim)
   }
 
   /**

@@ -30,7 +30,7 @@ class BitcoindRpcClient(val instance: BitcoindInstance)(
     with UtilRpc {
 
   override def version: BitcoindVersion = BitcoindVersion.Unknown
-  require(version == instance.getVersion,
+  require(version == BitcoindVersion.Unknown || version == instance.getVersion,
           s"bitcoind version must be $version, got ${instance.getVersion}")
 
 }
