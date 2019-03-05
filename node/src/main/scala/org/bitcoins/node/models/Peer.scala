@@ -3,6 +3,7 @@ package org.bitcoins.node.models
 import java.net.InetSocketAddress
 
 import org.bitcoins.core.number.UInt32
+import org.bitcoins.db.DbRowAutoInc
 import org.bitcoins.node.util.NetworkIpAddress
 
 case class Peer(id: Option[Long], networkIpAddress: NetworkIpAddress)

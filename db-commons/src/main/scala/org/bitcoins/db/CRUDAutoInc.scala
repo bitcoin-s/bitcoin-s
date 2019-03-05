@@ -1,4 +1,5 @@
-package org.bitcoins.node.models
+package org.bitcoins.db
+
 import slick.dbio.Effect.Write
 import slick.jdbc.SQLiteProfile.api._
 
