@@ -162,12 +162,8 @@ trait BlockHeaderSyncActor extends Actor with BitcoinSLogger {
       lastHeader: Option[BlockHeader],
       headers: List[BlockHeader],
       maxHeight: Long): CheckHeaderResult = {
-    val result = BlockHeaderSyncActor.checkHeaders(startingHeader = lastHeader,
-                                                   blockHeaders = headers,
-                                                   maxHeight = maxHeight,
-                                                   networkParameters =
-                                                     networkParameters)
-    result
+
+    ???
   }
 
   /** Actor context that specifically deals with the [[BlockHeaderSyncActor.GetHeaders]] message */
@@ -334,57 +330,5 @@ object BlockHeaderSyncActor extends BitcoinSLogger {
       error: Option[BlockHeaderSyncError],
       headers: List[BlockHeader])
       extends BlockHeaderSyncMessage
-
-  /** Checks that the given block headers all connect to each other
-    * If the headers do not connect, it returns the two block header hashes that do not connec
-    * @param startingHeader header we are starting our header check from, this header is not checked
-    *                       if this is not defined we just start from the first header in blockHeaders
-    * @param blockHeaders the set of headers we are checking the validity of
-    * @param maxHeight the height of the blockchain before checking the block headers
-    * */
-  def checkHeaders(
-      startingHeader: Option[BlockHeader],
-      blockHeaders: List[BlockHeader],
-      maxHeight: Long,
-      networkParameters: NetworkParameters): CheckHeaderResult = {
-    @tailrec
-    def loop(
-        previousBlockHeader: BlockHeader,
-        remainingBlockHeaders: List[BlockHeader]): CheckHeaderResult = {
-      if (remainingBlockHeaders.isEmpty) CheckHeaderResult(None, blockHeaders)
-      else {
-        val header = remainingBlockHeaders.head
-        if (header.previousBlockHash != previousBlockHeader.hash) {
-          val error = BlockHeaderSyncActor.BlockHeadersDoNotConnect(
-            previousBlockHeader.hash,
-            header.hash)
-          CheckHeaderResult(Some(error), blockHeaders)
-        } else if (header.nBits == previousBlockHeader.nBits) {
-          loop(header, remainingBlockHeaders.tail)
-        } else {
-          networkParameters match {
-            case MainNet =>
-              val blockHeaderHeight = (blockHeaders.size - remainingBlockHeaders.tail.size) + maxHeight
-              logger.debug("Block header height: " + blockHeaderHeight)
-              if ((blockHeaderHeight % MainNet.difficultyChangeThreshold) == 0)
-                loop(remainingBlockHeaders.head, remainingBlockHeaders.tail)
-              else {
-                val error = BlockHeaderSyncActor.BlockHeaderDifficultyFailure(
-                  previousBlockHeader,
-                  remainingBlockHeaders.head)
-                CheckHeaderResult(Some(error), blockHeaders)
-              }
-            case RegTest | TestNet3 =>
-              //currently we are just ignoring checking difficulty on testnet and regtest as they vary wildly
-              loop(remainingBlockHeaders.head, remainingBlockHeaders.tail)
-          }
-        }
-      }
-    }
-    val result =
-      if (startingHeader.isDefined) loop(startingHeader.get, blockHeaders)
-      else loop(blockHeaders.head, blockHeaders.tail)
-    result
-  }
 
 }
