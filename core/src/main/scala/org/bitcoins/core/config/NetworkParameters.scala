@@ -45,12 +45,9 @@ sealed abstract class NetworkParameters {
     */
   def magicBytes: ByteVector
 
-  /** In bitcoin, the network recaculates the difficulty for the network every 2016 blocks */
-  def difficultyChangeThreshold: Int
 }
 
 sealed abstract class BitcoinNetwork extends NetworkParameters {
-  override def difficultyChangeThreshold: Int = 2016
 
   override def chainParams: BitcoinChainParams
 }
@@ -75,13 +72,15 @@ sealed abstract class MainNet extends BitcoinNetwork {
     * @inheritdoc
     */
   override def dnsSeeds = {
-    List("seed.bitcoin.sipa.be",
+    List(
+      "seed.bitcoin.sipa.be",
       "dnsseed.bluematt.me",
       "dnsseed.bitcoin.dashjr.org",
       "seed.bitcoinstats.com",
       "seed.btc.petertodd.org",
       "seed.bitcoin.jonasschnelli.ch",
-      "seed.bitcoin.sprovoost.nl")
+      "seed.bitcoin.sprovoost.nl"
+    )
   }
 
   /**
@@ -89,7 +88,6 @@ sealed abstract class MainNet extends BitcoinNetwork {
     */
   override def magicBytes = ByteVector(0xf9, 0xbe, 0xb4, 0xd9)
 
-  override def difficultyChangeThreshold: Int = 2016
 }
 
 object MainNet extends MainNet
@@ -119,7 +117,6 @@ sealed abstract class TestNet3 extends BitcoinNetwork {
    */
   override def magicBytes = ByteVector(0x0b, 0x11, 0x09, 0x07)
 
-  override def difficultyChangeThreshold: Int = 2016
 }
 
 object TestNet3 extends TestNet3
@@ -146,7 +143,6 @@ sealed abstract class RegTest extends BitcoinNetwork {
     * @inheritdoc
     */
   override def magicBytes = ByteVector(0xfa, 0xbf, 0xb5, 0xda)
-  override def difficultyChangeThreshold: Int = 2016
 }
 
 object RegTest extends RegTest
