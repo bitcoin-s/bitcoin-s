@@ -1,7 +1,7 @@
 package org.bitcoins.core.protocol
 
 import org.bitcoins.core.config.TestNet3
-import org.bitcoins.core.gen.{
+import org.bitcoins.testkit.core.gen.{
   AddressGenerator,
   CryptoGenerators,
   ScriptGenerators

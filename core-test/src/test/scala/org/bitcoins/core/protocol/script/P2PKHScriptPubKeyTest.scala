@@ -1,6 +1,6 @@
 package org.bitcoins.core.protocol.script
 
-import org.bitcoins.core.gen.CryptoGenerators
+import org.bitcoins.testkit.core.gen.CryptoGenerators
 import org.scalatest.{FlatSpec, MustMatchers}
 
 /**

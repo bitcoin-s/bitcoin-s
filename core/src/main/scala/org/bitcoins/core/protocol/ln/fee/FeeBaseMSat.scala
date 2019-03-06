@@ -35,6 +35,7 @@ case class FeeProportionalMillionths(u32: UInt32) extends NetworkElement {
 }
 
 object FeeProportionalMillionths {
+
   def fromBigInt(bigInt: BigInt): FeeProportionalMillionths =
     FeeProportionalMillionths(UInt32(bigInt))
 }

@@ -1,13 +1,13 @@
 package org.bitcoins.core.number
 
-import org.bitcoins.core.gen.NumberGenerator
+import org.bitcoins.testkit.core.gen.NumberGenerator
 import org.scalatest.prop.PropertyChecks
 import org.scalatest.{FlatSpec, MustMatchers}
 import org.slf4j.LoggerFactory
 
 class UInt5Test extends FlatSpec with MustMatchers with PropertyChecks {
 
-  private val logger = LoggerFactory.getLogger(this.getClass.getSimpleName)
+  private val logger = LoggerFactory.getLogger(this.getClass)
 
   behavior of "UInt5"
 

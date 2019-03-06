@@ -53,6 +53,47 @@ hexAgain: String = 0100000001ccf318f0cbac588a680bbad075aebdda1f211c94ba28125b0f6
 
 This gives us an example of a hex encoded Bitcoin transaction that is deserialized to a native Scala object called a [`Transaction`](https://github.com/bitcoin-s/bitcoin-s-core/blob/6358eb83067909771f989d615b422759222d060a/src/main/scala/org/bitcoins/core/protocol/transaction/Transaction.scala#L14-L42). You could also serialize the transaction to bytes using `tx.bytes` instead of `tx.hex`. These methods are available on every data structure that extends NetworkElement, like [`ECPrivateKey`](https://github.com/bitcoin-s/bitcoin-s-core/blob/6358eb83067909771f989d615b422759222d060a/src/main/scala/org/bitcoins/core/crypto/ECKey.scala#L23-L67), [`ScriptPubKey`](https://github.com/bitcoin-s/bitcoin-s-core/blob/6358eb83067909771f989d615b422759222d060a/src/main/scala/org/bitcoins/core/protocol/script/ScriptPubKey.scala#L23), [`ScriptWitness`](https://github.com/bitcoin-s/bitcoin-s-core/blob/6358eb83067909771f989d615b422759222d060a/src/main/scala/org/bitcoins/core/protocol/script/ScriptWitness.scala#L13), and [`Block`](https://github.com/bitcoin-s/bitcoin-s-core/blob/6358eb83067909771f989d615b422759222d060a/src/main/scala/org/bitcoins/core/protocol/blockchain/Block.scala#L17).
 
+#### Generating a BIP39 mnemonic phrase and an `xpriv`
+
+BIP39 mnemonic phrases are the most common way of creating backups of wallets.
+They are between 12 and 24 words the user writes down, and can later be used to restore 
+their bitcoins. From the mnemonic phrase we generate a wallet seed, and that seed 
+can be used to generate what's called an extended private key 
+([`ExtPrivateKey`](src/main/scala/org/bitcoins/core/crypto/ExtKey.scala) in Bitcoin-S).
+
+Here's an example: 
+
+```scala
+import scodec.bits._
+import org.bitcoins.core.crypto._
+
+// the length of the entropy bit vector determine
+// how long our phrase ends up being
+// 256 bits of entropy results in 24 words
+val entropy: BitVector = MnemonicCode.getEntropy256Bits
+
+val mnemonicCode = MnemonicCode.fromEntropy(entropy)
+
+mnemonicCode.words // the phrase the user should write down
+
+// the password argument is an optional, extra security
+// measure. all MnemonicCode instances will give you a 
+// valid BIP39 seed, but different passwords will give 
+// you different seeds. So you could have as many wallets
+// from the same seed as you'd like, by simply giving them
+// different passwords. 
+val bip39Seed = BIP39Seed.fromMnemonic(mnemonicCode, 
+                                       password = "secret password")
+                                   
+val xpriv = ExtPrivateKey.fromBIP39Seed(ExtKeyVersion.MainNetPriv,  // or testnet/regtest
+                                        bip39Seed)
+                                      
+// you can now use the generated xpriv to derive further
+// private or public keys
+
+```
+
+
 ### Building a signed transaction
 
 Bitcoin Core supports building unsigned transactions and then signing them with a set of private keys. The first important thing to look at is [`UTXOSpendingInfo`](src/main/scala/org/bitcoins/core/wallet/utxo/UTXOSpendingInfo.scala). This contains all of the information needed to create a validly signed [`ScriptSignature`](src/main/scala/org/bitcoins/core/protocol/script/ScriptSignature.scala) that spends this output.

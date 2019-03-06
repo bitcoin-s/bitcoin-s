@@ -1,5 +1,7 @@
 package org.bitcoins.core.protocol.ln
 
+import java.math.BigInteger
+
 import org.bitcoins.core.crypto.ECDigitalSignature
 import org.bitcoins.core.number.{UInt5, UInt8}
 import org.bitcoins.core.protocol.NetworkElement
@@ -16,7 +18,9 @@ sealed abstract class LnInvoiceSignature extends NetworkElement {
   require(recoverId.toInt >= 0 && recoverId.toInt <= 3,
           s"signature recovery byte must be 0,1,2,3, got ${recoverId.toInt}")
 
-  require(bytes.length == 65, s"LnInvoiceSignatures MUST be 65 bytes in length, got ${bytes.length}")
+  require(
+    bytes.length == 65,
+    s"LnInvoiceSignatures MUST be 65 bytes in length, got ${bytes.length}")
   def signature: ECDigitalSignature
 
   def recoverId: UInt8
@@ -33,12 +37,12 @@ sealed abstract class LnInvoiceSignature extends NetworkElement {
 
 object LnInvoiceSignature extends Factory[LnInvoiceSignature] {
   private case class LnInvoiceSignatureImpl(
-                                             recoverId: UInt8,
+      recoverId: UInt8,
       signature: ECDigitalSignature)
       extends LnInvoiceSignature
 
   def apply(
-             recoverId: UInt8,
+      recoverId: UInt8,
       signature: ECDigitalSignature): LnInvoiceSignature = {
     LnInvoiceSignatureImpl(recoverId, signature)
   }
@@ -50,6 +54,14 @@ object LnInvoiceSignature extends Factory[LnInvoiceSignature] {
     val signature = ECDigitalSignature.fromRS(sigBytes)
 
     LnInvoiceSignature.apply(recoverId = recoverId, signature = signature)
+  }
+
+  def fromRS(
+      r: BigInteger,
+      s: BigInteger,
+      recovId: UInt8): LnInvoiceSignature = {
+    val sig = ECDigitalSignature.fromRS(r, s)
+    LnInvoiceSignature(recovId, sig)
   }
 
   def fromU5s(u5s: Vector[UInt5]): LnInvoiceSignature = {

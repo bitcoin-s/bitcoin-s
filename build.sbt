@@ -5,6 +5,10 @@ import com.typesafe.sbt.SbtGit.GitKeys._
 
 cancelable in Global := true
 
+fork in Test := true
+
+lazy val timestamp = new java.util.Date().getTime
+
 lazy val commonCompilerOpts = {
   List(
     "-Xmax-classfile-name",
@@ -38,6 +42,12 @@ lazy val commonSettings = List(
 
   scalacOptions in Test := testCompilerOpts,
 
+  //show full stack trace of failed tests
+  testOptions in Test += Tests.Argument(TestFrameworks.ScalaTest, "-oF"),
+
+  //show duration of tests
+  testOptions in Test += Tests.Argument(TestFrameworks.ScalaTest, "-oD"),
+
   assemblyOption in assembly := (assemblyOption in assembly).value
     .copy(includeScala = false),
 
@@ -70,7 +80,7 @@ lazy val commonSettings = List(
     val bintrayPublish = publishTo.value
     if (isSnapshot.value) {
       Some("Artifactory Realm" at
-        "https://oss.jfrog.org/artifactory/oss-snapshot-local;build.timestamp=" + new java.util.Date().getTime)
+        "https://oss.jfrog.org/artifactory/oss-snapshot-local;build.timestamp=" + timestamp)
     } else {
       bintrayPublish
     }
@@ -80,9 +90,22 @@ lazy val commonSettings = List(
 
   //fix for https://github.com/sbt/sbt/issues/3519
   updateOptions := updateOptions.value.withGigahorse(false),
+  git.formattedShaVersion := git.gitHeadCommit.value.map { sha =>
+    s"${sha.take(6)}-$timestamp-SNAPSHOT"
+  },
 
-  git.formattedShaVersion := git.gitHeadCommit.value.map { sha => s"${sha.take(6)}-${new java.util.Date().getTime}-SNAPSHOT" }
-
+  /**
+    * Adding Ammonite REPL to test scope, can access both test and compile
+    * sources. Docs: http://ammonite.io/#Ammonite-REPL
+    * Creates an ad-hoc main file that can be run by doing 
+    * test:run (or test:runMain amm if there's multiple main files
+    * in scope)
+    */
+  Test / sourceGenerators += Def.task {
+    val file = (Test / sourceManaged).value / "amm.scala"
+    IO.write(file, """object amm extends App { ammonite.Main.main(args) }""")
+    Seq(file)
+  }.taskValue
 )
 
 lazy val root = project
@@ -92,14 +115,17 @@ lazy val root = project
     core,
     coreTest,
     zmq,
-    rpc,
+    bitcoindRpc,
+    bitcoindRpcTest,
     bench,
     eclairRpc,
+    eclairRpcTest,
     testkit,
     doc
   )
   .settings(commonSettings: _*)
   .settings(crossScalaVersions := Nil)
+  .settings(libraryDependencies ++= Deps.root)
   .enablePlugins(ScalaUnidocPlugin, GhpagesPlugin, GitVersioning)
   .settings(
     ScalaUnidoc / siteSubdirName := "latest/api",
@@ -123,68 +149,93 @@ lazy val secp256k1jni = project
 
 lazy val core = project
   .in(file("core"))
-  .enablePlugins()
   .settings(commonSettings: _*)
   .dependsOn(
     secp256k1jni
-  )
+  ).enablePlugins()
 
 lazy val coreTest = project
   .in(file("core-test"))
-  .enablePlugins()
   .settings(commonSettings: _*)
-  .settings(skip in publish := true)
-  .dependsOn(
+  .settings(
+    skip in publish := true,
+    name := "bitcoin-s-core-test"
+  ).dependsOn(
     core,
-  )
+    testkit,
+  ).enablePlugins()
 
 lazy val zmq = project
   .in(file("zmq"))
-  .enablePlugins()
   .settings(commonSettings: _*)
+  .settings(
+    name := "bitcoin-s-zmq",
+    libraryDependencies ++= Deps.bitcoindZmq)
   .dependsOn(
     core
-  )
+  ).enablePlugins()
 
-lazy val rpc = project
-  .in(file("rpc"))
-  .enablePlugins()
+lazy val bitcoindRpc = project
+  .in(file("bitcoind-rpc"))
   .settings(commonSettings: _*)
-  .dependsOn(
-    core
-  )
+  .settings(
+    name := "bitcoin-s-bitcoind-rpc",
+    libraryDependencies ++= Deps.bitcoindRpc)
+  .dependsOn(core)
+  .enablePlugins()
+
+lazy val bitcoindRpcTest = project
+  .in(file("bitcoind-rpc-test"))
+  .settings(commonSettings: _*)
+  .settings(libraryDependencies ++= Deps.bitcoindRpcTest,
+    name := "bitcoin-s-bitcoind-rpc-test",
+    skip in publish := true)
+  .dependsOn(testkit)
+  .enablePlugins()
 
 lazy val bench = project
   .in(file("bench"))
-  .enablePlugins()
+
+  .settings(commonSettings: _*)
   .settings(assemblyOption in assembly := (assemblyOption in assembly).value
     .copy(includeScala = true))
-  .settings(commonSettings: _*)
   .settings(
     libraryDependencies ++= Deps.bench,
     name := "bitcoin-s-bench",
     skip in publish := true
   )
   .dependsOn(core)
+  .enablePlugins()
 
 lazy val eclairRpc = project
   .in(file("eclair-rpc"))
-  .enablePlugins()
   .settings(commonSettings: _*)
+  .settings(
+    name := "bitcoin-s-eclair-rpc",
+    libraryDependencies ++= Deps.eclairRpc)
   .dependsOn(
     core,
-    rpc
+    bitcoindRpc
+  ).enablePlugins()
+
+lazy val eclairRpcTest = project
+  .in(file("eclair-rpc-test"))
+  .settings(commonSettings: _*)
+  .settings(libraryDependencies ++= Deps.eclairRpcTest,
+    name := "bitcoin-s-eclair-rpc-test",
+    skip in publish := true
   )
+  .dependsOn(testkit)
+  .enablePlugins()
 
 lazy val testkit = project
   .in(file("testkit"))
-  .enablePlugins()
   .settings(commonSettings: _*)
   .dependsOn(
     core,
-    rpc,
+    bitcoindRpc,
     eclairRpc
-  )
+  ).enablePlugins()
 
 
 lazy val doc = project
@@ -199,8 +250,20 @@ lazy val doc = project
     core
   )
 
+// Ammonite is invoked through running
+// a main class it places in test sources
+// for us. This makes it a bit less awkward
+// to start the Ammonite shell. Sadly, 
+// prepending the project and then doing
+// `amm` (e.g. sbt coreTest/amm`) does not 
+// work. For that you either have to do 
+// `sbt coreTest/test:run` or: 
+// sbt
+// project coreTest
+// amm
+addCommandAlias("amm", "test:run")
+
 publishArtifact in root := false
 
 previewSite / aggregate := false
 previewAuto / aggregate := false
-previewSite / aggregate := false

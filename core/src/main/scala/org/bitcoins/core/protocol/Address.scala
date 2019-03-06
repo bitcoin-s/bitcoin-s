@@ -1,5 +1,5 @@
 package org.bitcoins.core.protocol
-import org.bitcoins.core.config.{MainNet, RegTest, TestNet3, _}
+import org.bitcoins.core.config.{MainNet, TestNet3, _}
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.number.{UInt5, UInt8}
 import org.bitcoins.core.protocol.script._
@@ -7,7 +7,6 @@ import org.bitcoins.core.script.constant.ScriptConstant
 import org.bitcoins.core.util._
 import scodec.bits.ByteVector
 
-import scala.annotation.tailrec
 import scala.util.{Failure, Success, Try}
 
 sealed abstract class Address {
@@ -66,11 +65,11 @@ sealed abstract class P2SHAddress extends BitcoinAddress {
   */
 sealed abstract class Bech32Address extends BitcoinAddress {
 
-  def hrp: HumanReadablePart
+  def hrp: BtcHumanReadablePart
 
   def data: Vector[UInt5]
 
-  override def networkParameters = hrp.network.get
+  override def networkParameters: NetworkParameters = hrp.network
 
   override def value: String = {
     val all: Vector[UInt5] = data ++ checksum
@@ -98,13 +97,17 @@ sealed abstract class Bech32Address extends BitcoinAddress {
     }
   }
 
-  override def toString = "Bech32Address(" + value + ")"
+  def expandHrp: Vector[UInt5] = {
+    Bech32.hrpExpand(hrp)
+  }
+
+  override def toString: String = "Bech32Address(" + value + ")"
 
 }
 
 object Bech32Address extends AddressFactory[Bech32Address] {
   private case class Bech32AddressImpl(
-      hrp: HumanReadablePart,
+      hrp: BtcHumanReadablePart,
       data: Vector[UInt5])
       extends Bech32Address {
     //require(verifyChecksum(hrp, data), "checksum did not pass")
@@ -117,33 +120,24 @@ object Bech32Address extends AddressFactory[Bech32Address] {
     val prog = UInt8.toUInt8s(witSPK.asmBytes.tail.tail)
     val encoded = Bech32.from8bitTo5bit(prog)
     val hrp = networkParameters match {
-      case _: MainNet               => bc
-      case _: TestNet3 | _: RegTest => tb
+      case _: MainNet  => BtcHumanReadablePart.bc
+      case _: TestNet3 => BtcHumanReadablePart.tb
+      case _: RegTest  => BtcHumanReadablePart.bcrt
     }
     val witVersion = witSPK.witnessVersion.version.toInt.toByte
     Bech32Address(hrp, Vector(UInt5(witVersion)) ++ encoded)
   }
 
-  def apply(hrp: HumanReadablePart, data: Vector[UInt5]): Bech32Address = {
+  def apply(hrp: BtcHumanReadablePart, data: Vector[UInt5]): Bech32Address = {
     Bech32AddressImpl(hrp, data)
   }
 
   /** Returns a base 5 checksum as specified by BIP173 */
   def createChecksum(
-      hrp: HumanReadablePart,
+      hrp: BtcHumanReadablePart,
       bytes: Vector[UInt5]): Vector[UInt5] = {
-    val values = hrpExpand(hrp) ++ bytes
+    val values = Bech32.hrpExpand(hrp) ++ bytes
     Bech32.createChecksum(values)
-  }
-
-  def hrpExpand(hrp: HumanReadablePart): Vector[UInt5] = {
-    Bech32.hrpExpand(hrp.bytes)
-  }
-
-  def verifyChecksum(hrp: HumanReadablePart, u5s: Seq[UInt5]): Boolean = {
-    val data = hrpExpand(hrp) ++ u5s
-    val checksum = Bech32.polyMod(data)
-    checksum == 1
   }
 
   /** Tries to convert the given string a to a
@@ -178,43 +172,12 @@ object Bech32Address extends AddressFactory[Bech32Address] {
     }
   }
 
-  /** Decodes bech32 string to the [[org.bitcoins.core.protocol.HumanReadablePart HumanReadablePart]] & data part */
-  override def fromString(str: String): Try[Bech32Address] = {
-    val sepIndexes = str.zipWithIndex.filter(_._1 == Bech32.separator)
-    if (str.size > 90 || str.size < 8) {
-      Failure(
-        new IllegalArgumentException(
-          "bech32 payloads must be betwee 8 and 90 chars, got: " + str.size))
-    } else if (sepIndexes.isEmpty) {
-      Failure(
-        new IllegalArgumentException(
-          "Bech32 address did not have the correct separator"))
-    } else {
-      val sepIndex = sepIndexes.last._2
-      val (hrp, data) = (str.take(sepIndex), str.splitAt(sepIndex + 1)._2)
-      if (hrp.size < 1 || data.size < 6) {
-        Failure(new IllegalArgumentException("Hrp/data too short"))
-      } else {
-        val hrpValid = checkHrpValidity(hrp)
-        val dataValid = Bech32.checkDataValidity(data)
-        val isChecksumValid: Try[Vector[UInt5]] = hrpValid.flatMap {
-          h: HumanReadablePart =>
-            dataValid.flatMap { d: Vector[UInt5] =>
-              if (verifyChecksum(h, d)) {
-                if (d.size < 6) Success(Vector.empty)
-                else Success(d.take(d.size - 6))
-              } else
-                Failure(
-                  new IllegalArgumentException(
-                    "Checksum was invalid on the bech32 address"))
-            }
-        }
-
-        isChecksumValid.flatMap { d: Vector[UInt5] =>
-          hrpValid.map(h => Bech32Address(h, d))
-        }
-      }
-    }
+  /** Decodes bech32 string to the [[org.bitcoins.core.protocol.BtcHumanReadablePart HumanReadablePart]] & data part */
+  override def fromString(bech32: String): Try[Bech32Address] = {
+    for {
+      (hrp, data) <- Bech32.splitToHrpAndData(bech32)
+      btcHrp <- BtcHumanReadablePart(hrp)
+    } yield Bech32Address(btcHrp, data)
   }
 
   override def fromScriptPubKey(
@@ -230,42 +193,6 @@ object Bech32Address extends AddressFactory[Bech32Address] {
       Failure(
         new IllegalArgumentException(
           "Cannot create a address for the scriptPubKey: " + x))
-  }
-
-  /** Checks if the possible human readable part follows BIP173 rules */
-  private def checkHrpValidity(hrp: String): Try[HumanReadablePart] = {
-    @tailrec
-    def loop(
-        remaining: List[Char],
-        accum: Seq[UInt8],
-        isLower: Boolean,
-        isUpper: Boolean): Try[Seq[UInt8]] = remaining match {
-      case h :: t =>
-        if (h < 33 || h > 126) {
-          Failure(
-            new IllegalArgumentException(
-              "Invalid character range for hrp, got: " + hrp))
-        } else if (isLower && isUpper) {
-          Failure(
-            new IllegalArgumentException("HRP had mixed case, got: " + hrp))
-        } else {
-          loop(t,
-               UInt8(h.toByte) +: accum,
-               h.isLower || isLower,
-               h.isUpper || isUpper)
-        }
-      case Nil =>
-        if (isLower && isUpper) {
-          Failure(
-            new IllegalArgumentException("HRP had mixed case, got: " + hrp))
-        } else {
-          Success(accum.reverse)
-        }
-    }
-
-    loop(hrp.toCharArray.toList, Nil, false, false).flatMap { _ =>
-      Success(HumanReadablePart(hrp.toLowerCase))
-    }
   }
 
 }
@@ -414,23 +341,12 @@ object BitcoinAddress extends AddressFactory[BitcoinAddress] {
   def apply(value: String): Try[BitcoinAddress] = fromString(value)
 
   override def fromString(value: String): Try[BitcoinAddress] = {
-    val p2pkhTry = P2PKHAddress.fromString(value)
-    if (p2pkhTry.isSuccess) {
-      p2pkhTry
-    } else {
-      val p2shTry = P2SHAddress.fromString(value)
-      if (p2shTry.isSuccess) {
-        p2shTry
-      } else {
-        val bech32Try = Bech32Address.fromString(value)
-        if (bech32Try.isSuccess) {
-          bech32Try
-        } else {
-          Failure(new IllegalArgumentException(
-            s"Could not decode the given value to a BitcoinAddress, got: $value"))
-        }
-      }
-    }
+    P2PKHAddress
+      .fromString(value)
+      .orElse(P2SHAddress.fromString(value))
+      .orElse(Bech32Address.fromString(value))
+      .orElse(Failure(new IllegalArgumentException(
+        s"Could not decode the given value to a BitcoinAddress, got: $value")))
   }
 
   override def fromScriptPubKey(

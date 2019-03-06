@@ -87,7 +87,6 @@ trait EclairApi {
       feerateSatPerByte: Option[SatoshisPerByte],
       channelFlags: Option[Byte]): Future[FundedChannelId]
 
-
   /** The network that this [[org.bitcoins.eclair.rpc.api.EclairApi EclairApi]] is
     * running on. This is not available directly from the eclair api, but is a very
     * useful helper method

@@ -1,6 +1,6 @@
 package org.bitcoins.core.protocol.transaction
 
-import org.bitcoins.core.crypto.DoubleSha256Digest
+import org.bitcoins.core.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.protocol.NetworkElement
 import org.bitcoins.core.protocol.script.ScriptWitness
@@ -33,7 +33,7 @@ sealed abstract class Transaction extends NetworkElement {
     * For more info see:
     * [[https://bitcoin.stackexchange.com/questions/2063/why-does-the-bitcoin-protocol-use-the-little-endian-notation]]
     */
-  def txIdBE: DoubleSha256Digest = txId.flip
+  def txIdBE: DoubleSha256DigestBE = txId.flip
 
   /** The version number for this transaction */
   def version: Int32
@@ -141,7 +141,7 @@ sealed abstract class WitnessTransaction extends Transaction {
   def wTxId: DoubleSha256Digest = CryptoUtil.doubleSHA256(bytes)
 
   /** Returns the big endian encoding of the wtxid */
-  def wTxIdBE: DoubleSha256Digest = wTxId.flip
+  def wTxIdBE: DoubleSha256DigestBE = wTxId.flip
 
   /**
     * Weight calculation in bitcoin for witness txs

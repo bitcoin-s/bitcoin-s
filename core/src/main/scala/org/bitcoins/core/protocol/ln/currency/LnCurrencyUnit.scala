@@ -1,7 +1,7 @@
 package org.bitcoins.core.protocol.ln.currency
 
 import org.bitcoins.core.currency.Satoshis
-import org.bitcoins.core.number.{BaseNumbers, Int64, UInt5}
+import org.bitcoins.core.number.{BaseNumbers, BasicArithmetic, Int64, UInt5}
 import org.bitcoins.core.protocol.NetworkElement
 import org.bitcoins.core.protocol.ln._
 import org.bitcoins.core.util.Bech32
@@ -9,7 +9,9 @@ import scodec.bits.ByteVector
 
 import scala.util.{Failure, Try}
 
-sealed abstract class LnCurrencyUnit extends NetworkElement {
+sealed abstract class LnCurrencyUnit
+    extends NetworkElement
+    with BasicArithmetic[LnCurrencyUnit] {
   def character: Char
 
   def >=(ln: LnCurrencyUnit): Boolean = {
@@ -33,15 +35,18 @@ sealed abstract class LnCurrencyUnit extends NetworkElement {
   def ==(ln: LnCurrencyUnit): Boolean =
     toPicoBitcoinValue == ln.toPicoBitcoinValue
 
-  def +(ln: LnCurrencyUnit): LnCurrencyUnit = {
+  override def +(ln: LnCurrencyUnit): LnCurrencyUnit = {
     PicoBitcoins(toPicoBitcoinValue + ln.toPicoBitcoinValue)
   }
 
-  def -(ln: LnCurrencyUnit): LnCurrencyUnit = {
+  override def -(ln: LnCurrencyUnit): LnCurrencyUnit = {
     PicoBitcoins(toPicoBitcoinValue - ln.toPicoBitcoinValue)
   }
 
-  def *(ln: LnCurrencyUnit): LnCurrencyUnit = {
+  override def *(factor: BigInt): LnCurrencyUnit =
+    PicoBitcoins(toPicoBitcoinValue * factor)
+
+  override def *(ln: LnCurrencyUnit): LnCurrencyUnit = {
     PicoBitcoins(toPicoBitcoinValue * ln.toPicoBitcoinValue)
   }
 
@@ -122,6 +127,9 @@ object MilliBitcoins extends BaseNumbers[MilliBitcoins] {
             "Number was too small for MilliBitcoins, got: " + underlying)
     require(underlying <= LnPolicy.maxMilliBitcoins,
             "Number was too big for MilliBitcoins, got: " + underlying)
+
+    override def toString: String =
+      s"${underlying / toPicoBitcoinMultiplier} mBTC"
   }
 }
 
@@ -151,6 +159,9 @@ object MicroBitcoins extends BaseNumbers[MicroBitcoins] {
             "Number was too small for MicroBitcoins, got: " + underlying)
     require(underlying <= LnPolicy.maxMicroBitcoins,
             "Number was too big for MicroBitcoins, got: " + underlying)
+
+    override def toString: String =
+      s"${underlying / toPicoBitcoinMultiplier} uBTC"
   }
 }
 
@@ -179,6 +190,9 @@ object NanoBitcoins extends BaseNumbers[NanoBitcoins] {
             "Number was too small for NanoBitcoins, got: " + underlying)
     require(underlying <= LnPolicy.maxNanoBitcoins,
             "Number was too big for NanoBitcoins, got: " + underlying)
+
+    override def toString: String =
+      s"${underlying / toPicoBitcoinMultiplier} nBTC"
   }
 }
 
@@ -205,6 +219,8 @@ object PicoBitcoins extends BaseNumbers[PicoBitcoins] {
             "Number was too small for PicoBitcoins, got: " + underlying)
     require(underlying <= LnPolicy.maxPicoBitcoins,
             "Number was too big for PicoBitcoins, got: " + underlying)
+
+    override def toString: String = s"$toBigInt pBTC"
   }
 }
 

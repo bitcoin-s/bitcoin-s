@@ -134,7 +134,7 @@ object LnTaggedFields {
           val prefix = LnTagPrefix.fromUInt5(h)
 
           //next two 5 bit increments are data_length
-          val dataLengthU5s = Vector(h1, h2)
+          val dataLengthU5s = List(h1, h2)
 
           val dataLength = LnUtil.decodeDataLength(dataLengthU5s)
 

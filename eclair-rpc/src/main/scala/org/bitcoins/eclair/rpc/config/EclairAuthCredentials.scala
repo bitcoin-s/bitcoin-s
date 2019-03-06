@@ -3,6 +3,7 @@ package org.bitcoins.eclair.rpc.config
 import java.io.File
 
 import com.typesafe.config.{Config, ConfigFactory}
+import org.bitcoins.core.config.{MainNet, RegTest, TestNet3}
 import org.bitcoins.rpc.config.BitcoindAuthCredentials
 
 sealed trait EclairAuthCredentials {
@@ -41,6 +42,13 @@ sealed trait EclairAuthCredentials {
   }
 }
 
+/**
+  * @define fromConfigDoc
+  * Parses a [[com.typesafe.config.Config Config]] in the format of this
+  * [[https://github.com/ACINQ/eclair/blob/master/eclair-core/src/main/resources/reference.conf sample reference.conf]]
+  * file to a
+  * [[org.bitcoins.eclair.rpc.config.EclairAuthCredentials EclairAuthCredentials]]
+  */
 object EclairAuthCredentials {
   private case class AuthCredentialsImpl(
       password: String,
@@ -72,16 +80,29 @@ object EclairAuthCredentials {
   }
 
   /**
-    * Parses a [[com.typesafe.config.Config Config]] in the format of this
-    * [[https://github.com/ACINQ/eclair/blob/master/eclair-core/src/main/resources/reference.conf sample reference.conf]]
-    * file to a
-    * [[org.bitcoins.eclair.rpc.config.EclairAuthCredentials EclairAuthCredentials]]
+    * $fromConfigDoc
     */
-  def fromConfig(config: Config): EclairAuthCredentials = {
+  def fromConfig(config: Config, datadir: File): EclairAuthCredentials =
+    fromConfig(config, Some(datadir))
+
+  /**
+    * $fromConfigDoc
+    */
+  def fromConfig(config: Config): EclairAuthCredentials =
+    fromConfig(config, None)
+
+  private[config] def fromConfig(
+      config: Config,
+      datadir: Option[File]): EclairAuthCredentials = {
 
     val bitcoindUsername = config.getString("eclair.bitcoind.rpcuser")
     val bitcoindPassword = config.getString("eclair.bitcoind.rpcpassword")
-    val bitcoindRpcPort = config.getInt("eclair.bitcoind.rpcport")
+
+    val defaultBitcoindPort = getDefaultBitcoindRpcPort(config)
+    val bitcoindRpcPort =
+      ConfigUtil.getIntOrElse(config,
+                              "eclair.bitcoind.rpcport",
+                              defaultBitcoindPort)
 
     //does eclair not have a username field??
     val password = config.getString("eclair.api.password")
@@ -95,7 +116,20 @@ object EclairAuthCredentials {
 
     EclairAuthCredentials(password = password,
                           bitcoinAuthOpt = Some(bitcoindAuth),
-                          port = eclairRpcPort)
+                          port = eclairRpcPort,
+                          datadir = datadir)
+  }
+
+  private def getDefaultBitcoindRpcPort(config: Config): Int = {
+    val network = ConfigUtil.getStringOrElse(config, "eclair.chain", "testnet")
+    network match {
+      case "mainnet" => MainNet.rpcPort
+      case "testnet" => TestNet3.rpcPort
+      case "regtest" => RegTest.rpcPort
+      case _: String =>
+        throw new IllegalArgumentException(
+          s"Got invalid chain parameter $network ")
+    }
   }
 
 }

@@ -1,13 +1,15 @@
 package org.bitcoins.core.currency
 
 import org.bitcoins.core.consensus.Consensus
-import org.bitcoins.core.number.{BaseNumbers, Int64}
+import org.bitcoins.core.number.{BaseNumbers, BasicArithmetic, Int64}
 import org.bitcoins.core.protocol.NetworkElement
 import org.bitcoins.core.serializers.RawSatoshisSerializer
 import org.bitcoins.core.util.Factory
 import scodec.bits.ByteVector
 
-sealed abstract class CurrencyUnit extends NetworkElement {
+sealed abstract class CurrencyUnit
+    extends NetworkElement
+    with BasicArithmetic[CurrencyUnit] {
   type A
 
   def satoshis: Satoshis
@@ -32,15 +34,19 @@ sealed abstract class CurrencyUnit extends NetworkElement {
 
   def ==(c: CurrencyUnit): Boolean = satoshis == c.satoshis
 
-  def +(c: CurrencyUnit): CurrencyUnit = {
+  override def +(c: CurrencyUnit): CurrencyUnit = {
     Satoshis(satoshis.underlying + c.satoshis.underlying)
   }
 
-  def -(c: CurrencyUnit): CurrencyUnit = {
+  override def -(c: CurrencyUnit): CurrencyUnit = {
     Satoshis(satoshis.underlying - c.satoshis.underlying)
   }
 
-  def *(c: CurrencyUnit): CurrencyUnit = {
+  override def *(factor: BigInt): CurrencyUnit = {
+    Satoshis(satoshis.underlying * factor)
+  }
+
+  override def *(c: CurrencyUnit): CurrencyUnit = {
     Satoshis(satoshis.underlying * c.satoshis.underlying)
   }
 
@@ -48,7 +54,7 @@ sealed abstract class CurrencyUnit extends NetworkElement {
     Satoshis(-satoshis.underlying)
   }
 
-  override def bytes = satoshis.bytes
+  override def bytes: ByteVector = satoshis.bytes
 
   def toBigDecimal: BigDecimal
 
@@ -58,7 +64,9 @@ sealed abstract class CurrencyUnit extends NetworkElement {
 sealed abstract class Satoshis extends CurrencyUnit {
   override type A = Int64
 
-  override def bytes = RawSatoshisSerializer.write(this)
+  override def toString: String = s"$toLong sat"
+
+  override def bytes: ByteVector = RawSatoshisSerializer.write(this)
 
   override def satoshis: Satoshis = this
 
@@ -66,7 +74,7 @@ sealed abstract class Satoshis extends CurrencyUnit {
 
   def toBigInt: BigInt = BigInt(toLong)
 
-  def toLong = underlying.toLong
+  def toLong: Long = underlying.toLong
 
   def ==(satoshis: Satoshis): Boolean = underlying == satoshis.underlying
 }
@@ -80,7 +88,6 @@ object Satoshis extends Factory[Satoshis] with BaseNumbers[Satoshis] {
 
   override def fromBytes(bytes: ByteVector): Satoshis =
     RawSatoshisSerializer.read(bytes)
-
   def apply(int64: Int64): Satoshis = SatoshisImpl(int64)
 
   private case class SatoshisImpl(underlying: Int64) extends Satoshis
@@ -89,9 +96,11 @@ object Satoshis extends Factory[Satoshis] with BaseNumbers[Satoshis] {
 sealed abstract class Bitcoins extends CurrencyUnit {
   override type A = BigDecimal
 
+  override def toString: String = s"$toBigDecimal BTC"
+
   override def toBigDecimal: BigDecimal = underlying
 
-  override def hex = satoshis.hex
+  override def hex: String = satoshis.hex
 
   override def satoshis: Satoshis = {
     val sat = underlying * CurrencyUnits.btcToSatoshiScalar

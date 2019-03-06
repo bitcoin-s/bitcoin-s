@@ -16,10 +16,8 @@ sealed abstract class LnInvoice {
           s"timestamp ${timestamp.toBigInt} < ${LnInvoice.MAX_TIMESTAMP}")
 
   require(
-    isValidSignature(),
-    s"Did not receive a valid digital signature for the invoice ${toString}")
-
-  private val bech32Separator: Char = Bech32.separator
+    isValidSignature,
+    s"Did not receive a valid digital signature for the invoice $toString")
 
   def hrp: LnHumanReadablePart
 
@@ -81,7 +79,7 @@ sealed abstract class LnInvoice {
   }
 
   /** The hash that is signed by the [[org.bitcoins.core.crypto.ECPrivateKey ECPrivateKey]] corresponding
-    * to the `nodeId``
+    * to the `nodeId`
     */
   private def sigHash: Sha256Digest = {
     val hash = CryptoUtil.sha256(signatureData)
@@ -94,14 +92,14 @@ sealed abstract class LnInvoice {
     bech32
   }
 
-  def isValidSignature(): Boolean = {
+  def isValidSignature: Boolean = {
     Try(nodeId.pubKey.verify(sigHash, signature.signature)).getOrElse(false)
   }
 
   override def toString: String = {
     val b = new StringBuilder
     b.append(hrp.toString)
-    b.append(bech32Separator)
+    b.append('1')
 
     val dataToString = Bech32.encode5bitToString(data)
     b.append(dataToString)
@@ -124,15 +122,12 @@ object LnInvoice extends BitcoinSLogger {
   val MAX_TIMESTAMP_U64: UInt64 = UInt64(MAX_TIMESTAMP)
 
   def decodeTimestamp(u5s: Vector[UInt5]): UInt64 = {
-    val decoded = LnUtil.decodeNumber(u5s)
+    val decoded = LnUtil.decodeNumber(u5s.toList)
     UInt64(decoded)
   }
 
-  def hrpExpand(lnHumanReadablePart: LnHumanReadablePart): Vector[UInt5] = {
-    val bytes = lnHumanReadablePart.bytes
-    val u5s = Bech32.hrpExpand(bytes)
-    u5s
-  }
+  def hrpExpand(lnHumanReadablePart: LnHumanReadablePart): Vector[UInt5] =
+    lnHumanReadablePart.expand
 
   def createChecksum(
       hrp: LnHumanReadablePart,
@@ -156,7 +151,7 @@ object LnInvoice extends BitcoinSLogger {
     val MIN_LENGTH = TIMESTAMP_LEN + SIGNATURE_LEN
     if (data.length < MIN_LENGTH) {
       throw new IllegalArgumentException(
-        s"Cannot create invoice with data length less then ${MIN_LENGTH}, got ${data.length}")
+        s"Cannot create invoice with data length less then $MIN_LENGTH, got ${data.length}")
     } else {
       //first 35 bits is time stamp
       val timestampU5s = data.take(TIMESTAMP_LEN)
@@ -182,18 +177,20 @@ object LnInvoice extends BitcoinSLogger {
 
   def fromString(bech32String: String): Try[LnInvoice] = {
     val sepIndexes = {
-      bech32String.zipWithIndex.filter(_._1 == Bech32.separator)
+      bech32String.zipWithIndex.filter {
+        case (sep, _) => sep == Bech32.separator
+      }
     }
     if (sepIndexes.isEmpty) {
       Failure(
         new IllegalArgumentException(
           "LnInvoice did not have the correct separator"))
     } else {
-      val sepIndex = sepIndexes.last._2
+      val (_, sepIndex) = sepIndexes.last
 
       val hrp = bech32String.take(sepIndex)
 
-      val data = bech32String.splitAt(sepIndex + 1)._2
+      val (_, data) = bech32String.splitAt(sepIndex + 1)
 
       if (hrp.length < 1) {
         Failure(new IllegalArgumentException("HumanReadablePart is too short"))
@@ -230,6 +227,19 @@ object LnInvoice extends BitcoinSLogger {
                   signature = signature)
   }
 
+  def apply(
+      hrp: LnHumanReadablePart,
+      timestamp: UInt64,
+      lnTags: LnTaggedFields,
+      privateKey: ECPrivateKey): LnInvoice = {
+
+    val signature = buildLnInvoiceSignature(hrp, timestamp, lnTags, privateKey)
+    LnInvoiceImpl(hrp = hrp,
+                  timestamp = timestamp,
+                  lnTags = lnTags,
+                  signature = signature)
+  }
+
   def buildSignatureData(
       hrp: LnHumanReadablePart,
       timestamp: UInt64,
@@ -239,7 +249,6 @@ object LnInvoice extends BitcoinSLogger {
     val payloadU8 = Bech32.from5bitTo8bit(payloadU5)
     val payload = UInt8.toBytes(payloadU8)
     val allBytes = hrp.bytes ++ payload
-
 
     //for an explanation of why this is needed see
     //https://github.com/bitcoin-s/bitcoin-s-core/issues/277
@@ -328,7 +337,7 @@ object LnInvoice extends BitcoinSLogger {
     }
 
     require(numNoPadding.length == 7)
-    numNoPadding
+    numNoPadding.toVector
   }
 
   /** Checks the checksum on a [[org.bitcoins.core.protocol.Bech32Address Bech32Address]]

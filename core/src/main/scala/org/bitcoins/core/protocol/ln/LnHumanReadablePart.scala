@@ -3,13 +3,13 @@ package org.bitcoins.core.protocol.ln
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.protocol.ln.LnParams._
 import org.bitcoins.core.protocol.ln.currency.{LnCurrencyUnit, LnCurrencyUnits}
-import org.bitcoins.core.util.Bech32
+import org.bitcoins.core.util.Bech32HumanReadablePart
 import scodec.bits.ByteVector
 
 import scala.util.matching.Regex
 import scala.util.{Failure, Success, Try}
 
-sealed abstract class LnHumanReadablePart {
+sealed abstract class LnHumanReadablePart extends Bech32HumanReadablePart {
   require(amount.isEmpty || amount.get.toBigInt > 0,
           s"Invoice amount must be greater then 0, got $amount")
   require(
@@ -20,22 +20,15 @@ sealed abstract class LnHumanReadablePart {
 
   def amount: Option[LnCurrencyUnit]
 
-  def bytes: ByteVector = {
-    network.invoicePrefix ++ amount
-      .map(_.encodedBytes)
-      .getOrElse(ByteVector.empty)
+  override lazy val chars: String = {
+    val amountEncoded = amount.map(_.toEncodedString).getOrElse("")
+    network.invoicePrefix + amountEncoded
   }
 
-  override def toString: String = {
-    val b = StringBuilder.newBuilder
-    val prefixChars = network.invoicePrefix.toArray.map(_.toChar)
-    prefixChars.foreach(b.append)
+  lazy val bytes: ByteVector =
+    ByteVector.encodeAscii(chars).right.get
 
-    val amt = amount.map(_.toEncodedString).getOrElse("")
-    b.append(amt)
-
-    b.toString()
-  }
+  override lazy val toString: String = chars
 }
 
 object LnHumanReadablePart {
@@ -57,6 +50,9 @@ object LnHumanReadablePart {
       extends LnHumanReadablePart {
     def network: LnParams = LnBitcoinRegTest
   }
+
+  /** Tries to construct a LN HRP with optional amount specified from the given string */
+  def apply(bech32: String): Try[LnHumanReadablePart] = fromString(bech32)
 
   def apply(network: NetworkParameters): LnHumanReadablePart = {
     val lnNetwork = LnParams.fromNetworkParameters(network)
@@ -109,26 +105,21 @@ object LnHumanReadablePart {
     * and
     * [[https://github.com/bitcoin/bips/blob/master/bip-0173.mediawiki#Specification BIP173]]
     */
-  def fromString(input: String): Try[LnHumanReadablePart] = {
-    val hrpIsValidT = Bech32.checkHrpValidity(input, parse)
-    hrpIsValidT
-  }
-
-  private def parse(input: String): Try[LnHumanReadablePart] = {
+  def fromString(bech32: String): Try[LnHumanReadablePart] = {
     //Select all of the letters, until we hit a number, as the network
     val networkPattern: Regex = "^[a-z]*".r
-    val networkStringOpt = networkPattern.findFirstIn(input)
-    val lnParamsOpt = networkStringOpt.flatMap(LnParams.fromPrefixString(_))
+    val networkStringOpt = networkPattern.findFirstIn(bech32)
+    val lnParamsOpt = networkStringOpt.flatMap(LnParams.fromPrefixString)
 
     if (lnParamsOpt.isEmpty) {
       Failure(
         new IllegalArgumentException(
-          s"Could not parse a valid network prefix, got ${input}"))
+          s"Could not parse a valid network prefix, got $bech32"))
     } else {
 
       val lnParams = lnParamsOpt.get
-      val prefixSize = lnParams.invoicePrefix.size.toInt
-      val amountString = input.slice(prefixSize, input.size)
+      val prefixSize = lnParams.invoicePrefix.length
+      val amountString = bech32.slice(prefixSize, bech32.length)
       val amount = LnCurrencyUnits.fromEncodedString(amountString).toOption
 
       //If we are able to parse something as an amount, but are unable to convert it to a LnCurrencyUnit, we should fail.
@@ -142,5 +133,4 @@ object LnHumanReadablePart {
       }
     }
   }
-
 }

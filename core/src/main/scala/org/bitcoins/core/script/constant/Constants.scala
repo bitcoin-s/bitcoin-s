@@ -6,7 +6,7 @@ import org.bitcoins.core.script.ScriptOperationFactory
 import org.bitcoins.core.util.{BitcoinSUtil, BitcoinScriptUtil, Factory}
 import scodec.bits.ByteVector
 
-import scala.util.{Failure, Success, Try}
+import scala.util.{Failure, Try}
 
 /**
   * Created by chris on 1/6/16.

@@ -9,7 +9,7 @@ import scala.io.Source
   * Created by chris on 7/15/16.
   */
 class BlockTest extends FlatSpec with MustMatchers {
-  private val logger = LoggerFactory.getLogger(this.getClass.getSimpleName)
+  private val logger = LoggerFactory.getLogger(this.getClass)
 
   def timeBlockParsing[R](block: => R): Long = {
     val t0 = System.currentTimeMillis()
