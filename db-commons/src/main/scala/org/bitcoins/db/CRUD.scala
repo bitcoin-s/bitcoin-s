@@ -75,7 +75,6 @@ abstract class CRUD[T, PrimaryKeyType] extends BitcoinSLogger {
     * @return int - the number of rows affected by the deletion
     */
   def delete(t: T): Future[Int] = {
-    logger.debug("Deleting record: " + t)
     val query: Query[Table[_], T, Seq] = find(t)
     database.run(query.delete)
   }

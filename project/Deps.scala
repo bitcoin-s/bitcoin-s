@@ -22,7 +22,7 @@ object Deps {
     val jodaV = "2.9.4"
     val postgresV = "9.4.1210"
     val akkaActorV = akkaStreamv
-    val slickV = "3.2.3"
+    val slickV = "3.3.0"
     val sqliteV = "3.8.11.2"
   }
 
@@ -71,14 +71,6 @@ object Deps {
   }
 
   val root = List(
-    Test.ammonite
-  )
-
-  val chain = List(
-    Test.ammonite
-  )
-
-  val chainTest = List(
     Test.ammonite
   )
 
@@ -187,11 +179,28 @@ object Deps {
   )
 
   val wallet = List(
+    Compile.slick,
+    Compile.slickHikari,
+    Compile.sqlite,
     Test.ammonite
   )
 
   val walletTest = List(
+    Test.ammonite,
+    Test.logback
+  )
+
+  val chain = List(
+    Compile.slf4j,
+    Compile.slick,
+    Compile.slickHikari,
+    Compile.sqlite,
     Test.ammonite
+  )
+
+  val chainTest = List(
+    Test.ammonite,
+    Test.logback
   )
 
   val doc = List(

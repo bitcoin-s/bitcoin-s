@@ -1,24 +1,13 @@
 package org.bitcoins.node.db
 
 import org.bitcoins.db.{DbConfig, DbManagement}
-import org.bitcoins.node.models.BlockHeaderTable
+import slick.jdbc.SQLiteProfile
 import slick.lifted.TableQuery
 import slick.jdbc.SQLiteProfile.api._
 
 import scala.concurrent.{ExecutionContext, Future}
 
 object NodeDbManagement extends DbManagement {
-
-  private val blockHeaderTable = TableQuery[BlockHeaderTable]
-  override val allTables = List(blockHeaderTable)
-
-  def createBlockHeaderTable(dbConfig: DbConfig)(
-      implicit ec: ExecutionContext): Future[Unit] = {
-    createTable(blockHeaderTable, dbConfig)
-  }
-
-  def dropBlockHeaderTable(dbConfig: DbConfig)(
-      implicit ec: ExecutionContext): Future[Unit] = {
-    dropTable(blockHeaderTable, dbConfig)
-  }
+  override def allTables: List[
+    SQLiteProfile.api.TableQuery[_ <: SQLiteProfile.api.Table[_]]] = List.empty
 }

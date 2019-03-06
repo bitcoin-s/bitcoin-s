@@ -1,24 +1,24 @@
-package org.bitcoins.node.models
+package org.bitcoins.chain.models
 
-import org.bitcoins.core.crypto.DoubleSha256Digest
+import org.bitcoins.core.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.core.number.{Int32, UInt32, UInt64}
 import org.bitcoins.core.protocol.transaction.TransactionOutput
-import org.bitcoins.node.messages.control.ServiceIdentifier
 import slick.jdbc.SQLiteProfile.api._
 
-/**
-  * Created by chris on 9/9/16.
-  * These are a collection of functions to map our native bitcoin-s types to scala slick types
-  * For instance, taking a [[org.bitcoins.core.crypto.DoubleSha256Digest]] and converting it
-  * into a String, which s a type that Slick understands
-  */
-trait ColumnMappers {
+trait ChainColumnMappers {
 
   /** Responsible for mapping a [[DoubleSha256Digest]] to a String, and vice versa */
   implicit val doubleSha256DigestMapper: BaseColumnType[DoubleSha256Digest] =
     MappedColumnType.base[DoubleSha256Digest, String](
       _.hex,
       DoubleSha256Digest(_)
+    )
+
+  implicit val doubleSha256DigestBEMapper: BaseColumnType[
+    DoubleSha256DigestBE] =
+    MappedColumnType.base[DoubleSha256DigestBE, String](
+      _.hex,
+      DoubleSha256DigestBE.fromHex
     )
 
   /** Responsible for mapping a [[UInt32]] to a long in Slick, and vice versa */
@@ -51,13 +51,6 @@ trait ColumnMappers {
       }
     )
   }
-
-  implicit val serviceIdentifierMapper: BaseColumnType[ServiceIdentifier] = {
-    MappedColumnType.base[ServiceIdentifier, UInt64](
-      _.num,
-      ServiceIdentifier(_)
-    )
-  }
 }
 
-object ColumnMappers extends ColumnMappers
+object ChainColumnMappers extends ChainColumnMappers

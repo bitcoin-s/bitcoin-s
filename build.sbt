@@ -182,7 +182,7 @@ lazy val chain = project
   .settings(
     name := "bitcoin-s-chain",
     libraryDependencies ++= Deps.chain
-  ).dependsOn(core)
+  ).dependsOn(core, dbCommons)
   .enablePlugins(FlywayPlugin)
 
 lazy val chainTest = project
@@ -383,12 +383,13 @@ def dbFlywaySettings(dbName: String): List[Setting[_]] = {
 
   def makeNetworkSettings(directoryPath: String): List[Setting[_]] = List(
     Test / flywayUrl := s"jdbc:sqlite:$directoryPath$DB_NAME",
-    Test / flywayLocations := List("nodedb/migration"),
-    Test / flywayUser := "nodedb",
+    Test / flywayLocations := List(s"${dbName}/migration"),
+    Test / flywayUser := dbName,
     Test / flywayPassword := "",
     flywayUrl := s"jdbc:sqlite:$directoryPath$DB_NAME",
-    flywayUser := "nodedb",
-    flywayPassword := ""
+    flywayUser := dbName,
+    flywayPassword := "",
+    flywayLocations := List(s"${dbName}/migration"),
   )
 
   lazy val mainnet = makeNetworkSettings(mainnetDir)
