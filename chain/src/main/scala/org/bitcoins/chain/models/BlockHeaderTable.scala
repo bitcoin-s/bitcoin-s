@@ -16,7 +16,7 @@ case class BlockHeaderDb(
     nonce: UInt32,
     hex: String) {
 
-  def blockHeader: BlockHeader = {
+  lazy val blockHeader: BlockHeader = {
     val blockHeader = BlockHeader.fromHex(hex)
 
     require(blockHeader.hashBE == hashBE)

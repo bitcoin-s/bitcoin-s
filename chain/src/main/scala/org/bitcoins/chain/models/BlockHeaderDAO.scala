@@ -2,7 +2,7 @@ package org.bitcoins.chain.models
 
 import org.bitcoins.core.crypto.DoubleSha256DigestBE
 import org.bitcoins.core.protocol.blockchain.ChainParams
-import org.bitcoins.db.{CRUD, DbConfig}
+import org.bitcoins.db.{CRUD, DbConfig, SlickUtil}
 import slick.jdbc.SQLiteProfile
 import slick.jdbc.SQLiteProfile.api._
 
@@ -25,9 +25,9 @@ sealed abstract class BlockHeaderDAO
   /** Creates all of the given [[BlockHeaderDb]] in the database */
   override def createAll(
       headers: Vector[BlockHeaderDb]): Future[Vector[BlockHeaderDb]] = {
-    val actions = headers.map(t => (table += t).andThen(DBIO.successful(t)))
-    val result = database.run(DBIO.sequence(actions))
-    result
+    SlickUtil.createAllNoAutoInc(ts = headers,
+                                 database = database,
+                                 table = table)
   }
 
   override protected def findAll(
