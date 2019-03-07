@@ -18,7 +18,8 @@ import org.bitcoins.core.protocol.ln.fee.{
 }
 import org.bitcoins.core.protocol.ln.routing.LnRoute
 import org.bitcoins.core.protocol.{Bech32Address, P2PKHAddress, P2SHAddress}
-import org.bitcoins.core.util.{BitcoinSUnitTest, CryptoUtil}
+import org.bitcoins.core.util.CryptoUtil
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 import scodec.bits.ByteVector
 
 class LnInvoiceUnitTest extends BitcoinSUnitTest {

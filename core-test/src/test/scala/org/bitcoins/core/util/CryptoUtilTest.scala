@@ -1,6 +1,7 @@
 package org.bitcoins.core.util
 
 import org.bitcoins.testkit.core.gen.CryptoGenerators
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 import scodec.bits.BinStringSyntax
 
 /**
