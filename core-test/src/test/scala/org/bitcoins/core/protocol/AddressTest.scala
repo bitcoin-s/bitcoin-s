@@ -1,7 +1,7 @@
 package org.bitcoins.core.protocol
 
-import org.bitcoins.core.util.BitcoinSUnitTest
 import org.bitcoins.testkit.core.gen.AddressGenerator
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 
 import scala.util.{Failure, Success}
 

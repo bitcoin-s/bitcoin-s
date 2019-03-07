@@ -1,7 +1,7 @@
 package org.bitcoins.core.crypto
 
 import org.bitcoins.testkit.core.gen.CryptoGenerators
-import org.bitcoins.core.util.BitcoinSUnitTest
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 import scodec.bits.ByteVector
 
 import scala.concurrent.{ExecutionContext, Future}

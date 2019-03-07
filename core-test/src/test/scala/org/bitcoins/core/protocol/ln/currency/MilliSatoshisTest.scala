@@ -2,7 +2,7 @@ package org.bitcoins.core.protocol.ln.currency
 
 import org.bitcoins.testkit.core.gen.{CurrencyUnitGenerator, NumberGenerator}
 import org.bitcoins.testkit.core.gen.ln.LnCurrencyUnitGen
-import org.bitcoins.core.util.BitcoinSUnitTest
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 import org.scalatest.prop.PropertyChecks
 
 class MilliSatoshisTest extends BitcoinSUnitTest {

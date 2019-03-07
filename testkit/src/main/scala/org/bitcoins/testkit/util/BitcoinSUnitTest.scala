@@ -1,4 +1,4 @@
-package org.bitcoins.core.util
+package org.bitcoins.testkit.util
 
 import org.scalatest.prop.PropertyChecks
 import org.scalatest.{FlatSpec, MustMatchers}

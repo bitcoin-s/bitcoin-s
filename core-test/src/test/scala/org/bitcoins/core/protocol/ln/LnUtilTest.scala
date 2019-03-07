@@ -3,7 +3,7 @@ package org.bitcoins.core.protocol.ln
 import org.bitcoins.testkit.core.gen.NumberGenerator
 import org.bitcoins.core.number.{UInt5, UInt64}
 import org.bitcoins.core.protocol.ln.util.LnUtil
-import org.bitcoins.core.util.BitcoinSUnitTest
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 
 class LnUtilTest extends BitcoinSUnitTest {
   override implicit val generatorDrivenConfig: PropertyCheckConfiguration =
