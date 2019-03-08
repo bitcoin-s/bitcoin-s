@@ -7,6 +7,8 @@ import scala.concurrent._
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 
 abstract class AsyncUtil extends BitcoinSLogger {
+  import AsyncUtil.DEFAULT_DURATION
+  import AsyncUtil.DEFAULT_MAX_TRIES
 
   private def retryRunnable(
       condition: => Boolean,
@@ -19,8 +21,9 @@ abstract class AsyncUtil extends BitcoinSLogger {
 
   def retryUntilSatisfied(
       condition: => Boolean,
-      duration: FiniteDuration,
-      maxTries: Int = 50)(implicit system: ActorSystem): Future[Unit] = {
+      duration: FiniteDuration = DEFAULT_DURATION,
+      maxTries: Int = DEFAULT_MAX_TRIES)(
+      implicit system: ActorSystem): Future[Unit] = {
     val f = () => Future.successful(condition)
     retryUntilSatisfiedF(f, duration, maxTries)
   }
@@ -35,8 +38,9 @@ abstract class AsyncUtil extends BitcoinSLogger {
     */
   def retryUntilSatisfiedF(
       conditionF: () => Future[Boolean],
-      duration: FiniteDuration = 100.millis,
-      maxTries: Int = 50)(implicit system: ActorSystem): Future[Unit] = {
+      duration: FiniteDuration = DEFAULT_DURATION,
+      maxTries: Int = DEFAULT_MAX_TRIES)(
+      implicit system: ActorSystem): Future[Unit] = {
     val stackTrace: Array[StackTraceElement] =
       Thread.currentThread().getStackTrace
 
@@ -55,12 +59,14 @@ abstract class AsyncUtil extends BitcoinSLogger {
      * in where the call was made (and the stack trace from there
      * backwards) and what happens between their call and the failure,
      * i.e. the internal calls of this class, are not of interest.
-     * 
+     *
      * This trims the top of the stack trace to exclude these internal calls.
      */
     private val relevantStackTrace = caller.tail
-      .dropWhile(elem => elem.getFileName == "AsyncUtil.scala"
-        || elem.getFileName == "RpcUtil.scala")
+      .dropWhile(
+        elem =>
+          elem.getFileName == "AsyncUtil.scala"
+            || elem.getFileName == "RpcUtil.scala")
 
     this.setStackTrace(relevantStackTrace)
   }
@@ -74,13 +80,16 @@ abstract class AsyncUtil extends BitcoinSLogger {
       stackTrace: Array[StackTraceElement])(
       implicit system: ActorSystem): Future[Unit] = {
 
-    implicit val ec = system.dispatcher
+    import system.dispatcher
 
     conditionF().flatMap { condition =>
       if (condition) {
         Future.successful(())
       } else if (counter == maxTries) {
-        Future.failed(RpcRetryException("Condition timed out", stackTrace))
+        Future.failed(
+          RpcRetryException(
+            s"Condition timed out after $maxTries attempts with $duration waiting periods",
+            stackTrace))
       } else {
         val p = Promise[Boolean]()
         val runnable = retryRunnable(condition, p)
@@ -101,22 +110,18 @@ abstract class AsyncUtil extends BitcoinSLogger {
   }
 
   /**
-    * Blocks until condition becomes true, the condition
+    * Returns a future that resolved when the condition becomes true, the condition
     * is checked maxTries times, or overallTimeout is reached
     * @param condition The blocking condition
     * @param duration The interval between calls to check condition
     * @param maxTries If condition is tried this many times, an exception is thrown
-    * @param overallTimeout If this much time passes, an exception is thrown.
-    *                       This exists in case calls to condition take significant time,
-    *                       otherwise just use duration and maxTries to configure timeout.
     * @param system An ActorSystem to schedule calls to condition
     */
   def awaitCondition(
       condition: () => Boolean,
-      duration: FiniteDuration = 100.milliseconds,
-      maxTries: Int = 50,
-      overallTimeout: FiniteDuration = 1.hour)(
-      implicit system: ActorSystem): Unit = {
+      duration: FiniteDuration = DEFAULT_DURATION,
+      maxTries: Int = DEFAULT_MAX_TRIES)(
+      implicit system: ActorSystem): Future[Unit] = {
 
     //type hackery here to go from () => Boolean to () => Future[Boolean]
     //to make sure we re-evaluate every time retryUntilSatisfied is called
@@ -124,22 +129,32 @@ abstract class AsyncUtil extends BitcoinSLogger {
     val conditionF: () => Future[Boolean] = () =>
       Future.successful(conditionDef)
 
-    awaitConditionF(conditionF, duration, maxTries, overallTimeout)
+    awaitConditionF(conditionF, duration, maxTries)
   }
 
   def awaitConditionF(
       conditionF: () => Future[Boolean],
-      duration: FiniteDuration = 100.milliseconds,
-      maxTries: Int = 50,
-      overallTimeout: FiniteDuration = 1.hour)(
-      implicit system: ActorSystem): Unit = {
+      duration: FiniteDuration = DEFAULT_DURATION,
+      maxTries: Int = DEFAULT_MAX_TRIES)(
+      implicit system: ActorSystem): Future[Unit] = {
 
-    val f: Future[Unit] = retryUntilSatisfiedF(conditionF = conditionF,
-                                               duration = duration,
-                                               maxTries = maxTries)
+    retryUntilSatisfiedF(conditionF = conditionF,
+                         duration = duration,
+                         maxTries = maxTries)
 
-    Await.result(f, overallTimeout)
   }
 }
 
-object AsyncUtil extends AsyncUtil
+object AsyncUtil extends AsyncUtil {
+
+  /**
+    * The default duration between async attempt
+    */
+  private[bitcoins] val DEFAULT_DURATION: FiniteDuration = 100.milliseconds
+
+  /**
+    * The default number of async attempts before timing out
+    */
+  private[bitcoins] val DEFAULT_MAX_TRIES: Int = 50
+
+}

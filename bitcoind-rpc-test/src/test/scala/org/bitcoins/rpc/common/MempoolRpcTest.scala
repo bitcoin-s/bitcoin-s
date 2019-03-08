@@ -4,7 +4,6 @@ import java.io.File
 import java.nio.file.Files
 
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
 import akka.testkit.TestKit
 import com.typesafe.config.ConfigValueFactory
 import org.bitcoins.core.config.NetworkParameters
@@ -15,217 +14,191 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionInput,
   TransactionOutPoint
 }
-import org.bitcoins.rpc.{BitcoindRpcTestConfig, BitcoindRpcTestUtil}
+import org.bitcoins.rpc.BitcoindRpcTestUtil
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
-import org.bitcoins.rpc.client.common.RpcOpts.AddNodeArgument
 import org.bitcoins.rpc.config.BitcoindInstance
-import org.bitcoins.rpc.util.AsyncUtil
 import org.scalatest.{AsyncFlatSpec, BeforeAndAfterAll}
-import org.slf4j.LoggerFactory
 
-import scala.async.Async.{async, await}
-import scala.concurrent.{Await, ExecutionContext}
-import scala.concurrent.duration.DurationInt
+import scala.concurrent.{ExecutionContext, Future}
 
 class MempoolRpcTest extends AsyncFlatSpec with BeforeAndAfterAll {
-  implicit val system: ActorSystem = ActorSystem("MempoolRpcTest")
-  implicit val m: ActorMaterializer = ActorMaterializer()
-  implicit val ec: ExecutionContext = m.executionContext
+  implicit val system: ActorSystem =
+    ActorSystem("MempoolRpcTest", BitcoindRpcTestUtil.AKKA_CONFIG)
+  implicit val ec: ExecutionContext = system.dispatcher
   implicit val networkParam: NetworkParameters = BitcoindRpcTestUtil.network
 
-  val client: BitcoindRpcClient = new BitcoindRpcClient(
-    BitcoindRpcTestUtil.instance())
+  private val clientAccum = Vector.newBuilder[BitcoindRpcClient]
 
-  val otherClient: BitcoindRpcClient = new BitcoindRpcClient(
-    BitcoindRpcTestUtil.instance())
+  lazy val clientsF: Future[(BitcoindRpcClient, BitcoindRpcClient)] =
+    BitcoindRpcTestUtil.createNodePair(clientAccum = clientAccum)
 
-  val clientWithoutBroadcast: BitcoindRpcClient = {
-    val defaultConfig = BitcoindRpcTestUtil.standardConfig
+  lazy val clientWithoutBroadcastF: Future[BitcoindRpcClient] =
+    clientsF.flatMap {
+      case (client, otherClient) =>
+        val defaultConfig = BitcoindRpcTestUtil.standardConfig
 
-    val datadirValue = {
-      val tempDirPrefix = null // because java APIs are bad
-      val tempdirPath = Files.createTempDirectory(tempDirPrefix).toString
-      ConfigValueFactory.fromAnyRef(tempdirPath)
+        val datadirValue = {
+          val tempDirPrefix = null // because java APIs are bad
+          val tempdirPath = Files.createTempDirectory(tempDirPrefix).toString
+          ConfigValueFactory.fromAnyRef(tempdirPath)
+        }
+
+        // walletbroadcast must be turned off for a transaction to be abondonable
+        val noBroadcastValue = ConfigValueFactory.fromAnyRef(0)
+
+        // connecting clients once they are started takes forever for some reason
+        val addnodeValue =
+          ConfigValueFactory.fromAnyRef(
+            s"127.0.0.1:${client.instance.uri.getPort}")
+        val configNoBroadcast =
+          defaultConfig
+            .withValue("walletbroadcast", noBroadcastValue)
+            .withValue("datadir", datadirValue)
+            .withValue("addnode", addnodeValue)
+
+        val _ = BitcoindRpcTestUtil.writeConfigToFile(configNoBroadcast)
+
+        val instanceWithoutBroadcast =
+          BitcoindInstance.fromConfig(configNoBroadcast)
+
+        val clientWithoutBroadcast =
+          new BitcoindRpcClient(instanceWithoutBroadcast)
+        clientAccum += clientWithoutBroadcast
+
+        val pairs = Vector(client -> clientWithoutBroadcast,
+                           otherClient -> clientWithoutBroadcast)
+
+        for {
+          _ <- clientWithoutBroadcast.start()
+          _ <- BitcoindRpcTestUtil.connectPairs(pairs)
+          _ <- BitcoindRpcTestUtil.generateAndSync(
+            Vector(clientWithoutBroadcast, client, otherClient),
+            blocks = 200)
+        } yield clientWithoutBroadcast
     }
-
-    // walletbroadcast must be turned off for a transaction to be abondonable
-    val noBroadcastValue = ConfigValueFactory.fromAnyRef(0)
-
-    // connecting clients once they are started takes forever for some reason
-    val addnodeValue =
-      ConfigValueFactory.fromAnyRef(s"127.0.0.1:${client.instance.uri.getPort}")
-    val configNoBroadcast =
-      defaultConfig
-        .withValue("walletbroadcast", noBroadcastValue)
-        .withValue("datadir", datadirValue)
-        .withValue("addnode", addnodeValue)
-
-    val _ = BitcoindRpcTestUtil.writeConfigToFile(configNoBroadcast)
-
-    val instanceWithoutBroadcast =
-      BitcoindInstance.fromConfig(configNoBroadcast)
-
-    new BitcoindRpcClient(instanceWithoutBroadcast)
-
-  }
-
-  override def beforeAll(): Unit = {
-    import BitcoindRpcTestConfig.DEFAULT_TIMEOUT
-    val startFirstF =
-      BitcoindRpcTestUtil.startServers(Vector(client, otherClient))
-    Await.result(startFirstF, DEFAULT_TIMEOUT)
-
-    // trying to speed up connection time by doing it this way
-    val startLastF =
-      BitcoindRpcTestUtil.startServers(Vector(clientWithoutBroadcast))
-    Await.result(startLastF, DEFAULT_TIMEOUT)
-
-    List(client -> otherClient,
-         otherClient -> clientWithoutBroadcast,
-         client -> clientWithoutBroadcast).foreach {
-      case (first, second) =>
-        val addNodeF =
-          first.addNode(second.getDaemon.uri, AddNodeArgument.Add)
-        Await.result(addNodeF, DEFAULT_TIMEOUT)
-        // TODO(torkelrogstad) this take forever to complete when connecting nobroadcast and first, why?
-        BitcoindRpcTestUtil.awaitConnection(first,
-                                            second,
-                                            duration = 1.second,
-                                            maxTries = 200000)
-    }
-
-    Await.result(client.generate(200), DEFAULT_TIMEOUT)
-
-    val sendToNoBroadcastF =
-      clientWithoutBroadcast.getNewAddress.flatMap(
-        BitcoindRpcTestUtil
-          .fundBlockChainTransaction(client, _, Bitcoins(2)))
-
-    Await.result(sendToNoBroadcastF, DEFAULT_TIMEOUT)
-  }
 
   override protected def afterAll(): Unit = {
-    BitcoindRpcTestUtil.stopServers(
-      Vector(client, otherClient, clientWithoutBroadcast))
+    BitcoindRpcTestUtil.stopServers(clientAccum.result)
     TestKit.shutdownActorSystem(system)
   }
 
   behavior of "MempoolRpc"
 
   it should "be able to find a transaction sent to the mem pool" in {
-    BitcoindRpcTestUtil.sendCoinbaseTransaction(client, otherClient).flatMap {
-      transaction =>
-        client.getRawMemPool.map { memPool =>
-          assert(memPool.length == 1)
-          assert(memPool.head == transaction.txid)
-        }
+    for {
+      (client, otherClient) <- clientsF
+      transaction <- BitcoindRpcTestUtil.sendCoinbaseTransaction(client,
+                                                                 otherClient)
+      mempool <- client.getRawMemPool
+    } yield {
+      assert(mempool.length == 1)
+      assert(mempool.head == transaction.txid)
     }
   }
 
   it should "be able to find a verbose transaction in the mem pool" in {
-    BitcoindRpcTestUtil.sendCoinbaseTransaction(client, otherClient).flatMap {
-      transaction =>
-        client.getRawMemPoolWithTransactions.flatMap { memPool =>
-          val txid = memPool.keySet.head
-          assert(txid == transaction.txid)
-          assert(memPool(txid).size > 0)
-        }
+    for {
+      (client, otherClient) <- clientsF
+      transaction <- BitcoindRpcTestUtil.sendCoinbaseTransaction(client,
+                                                                 otherClient)
+      mempool <- client.getRawMemPoolWithTransactions
+    } yield {
+      val txid = mempool.keySet.head
+      assert(txid == transaction.txid)
+      assert(mempool(txid).size > 0)
     }
   }
 
   it should "be able to find a mem pool entry" in {
-    BitcoindRpcTestUtil.sendCoinbaseTransaction(client, otherClient).flatMap {
-      transaction =>
-        client.getMemPoolEntry(transaction.txid).map { _ =>
-          succeed
-        }
-    }
+    for {
+      (client, otherClient) <- clientsF
+      transaction <- BitcoindRpcTestUtil.sendCoinbaseTransaction(client,
+                                                                 otherClient)
+      _ <- client.getMemPoolEntry(transaction.txid)
+    } yield succeed
   }
 
   it should "be able to get mem pool info" in {
-    client.generate(1).flatMap { _ =>
-      client.getMemPoolInfo.flatMap { info =>
-        assert(info.size == 0)
-        BitcoindRpcTestUtil
-          .sendCoinbaseTransaction(client, otherClient)
-          .flatMap { _ =>
-            client.getMemPoolInfo.map { newInfo =>
-              assert(newInfo.size == 1)
-            }
-          }
-      }
+    for {
+      (client, otherClient) <- clientsF
+      _ <- client.generate(1)
+      info <- client.getMemPoolInfo
+      _ <- BitcoindRpcTestUtil
+        .sendCoinbaseTransaction(client, otherClient)
+      newInfo <- client.getMemPoolInfo
+    } yield {
+      assert(info.size == 0)
+      assert(newInfo.size == 1)
     }
   }
 
-  it should "be able to prioritise a mem pool transaction" in async {
-    val address = await(otherClient.getNewAddress)
-    val txid =
-      await(
-        BitcoindRpcTestUtil
-          .fundMemPoolTransaction(client, address, Bitcoins(3.2)))
-
-    val entry = await(client.getMemPoolEntry(txid))
-    assert(entry.fee == entry.modifiedfee)
-
-    val tt = await(client.prioritiseTransaction(txid, Bitcoins(1).satoshis))
-    assert(tt)
-
-    val newEntry = await(client.getMemPoolEntry(txid))
-    assert(newEntry.fee == entry.fee)
-    assert(newEntry.modifiedfee == newEntry.fee + Bitcoins(1))
+  it should "be able to prioritise a mem pool transaction" in {
+    for {
+      (client, otherClient) <- clientsF
+      address <- otherClient.getNewAddress
+      txid <- BitcoindRpcTestUtil
+        .fundMemPoolTransaction(client, address, Bitcoins(3.2))
+      entry <- client.getMemPoolEntry(txid)
+      tt <- client.prioritiseTransaction(txid, Bitcoins(1).satoshis)
+      newEntry <- client.getMemPoolEntry(txid)
+    } yield {
+      assert(entry.fee == entry.modifiedfee)
+      assert(tt)
+      assert(newEntry.fee == entry.fee)
+      assert(newEntry.modifiedfee == newEntry.fee + Bitcoins(1))
+    }
   }
 
-  it should "be able to find mem pool ancestors and descendants" in async {
-    client.generate(1)
-    val address1 = await(client.getNewAddress)
-    val txid1 =
-      await(
-        BitcoindRpcTestUtil
-          .fundMemPoolTransaction(client, address1, Bitcoins(2)))
-    val mempool = await(client.getRawMemPool)
+  it should "be able to find mem pool ancestors and descendants" in {
+    for {
+      (client, _) <- clientsF
+      _ <- client.generate(1)
+      address1 <- client.getNewAddress
+      txid1 <- BitcoindRpcTestUtil.fundMemPoolTransaction(client,
+                                                          address1,
+                                                          Bitcoins(2))
+      mempool <- client.getRawMemPool
+      address2 <- client.getNewAddress
 
-    assert(mempool.head == txid1)
-    val address2 = await(client.getNewAddress)
+      createdTx <- {
+        val input: TransactionInput =
+          TransactionInput(TransactionOutPoint(txid1.flip, UInt32.zero),
+                           ScriptSignature.empty,
+                           UInt32.max - UInt32.one)
+        client
+          .createRawTransaction(Vector(input), Map(address2 -> Bitcoins.one))
+      }
+      signedTx <- BitcoindRpcTestUtil.signRawTransaction(client, createdTx)
+      txid2 <- client.sendRawTransaction(signedTx.hex, allowHighFees = true)
 
-    val input: TransactionInput =
-      TransactionInput(TransactionOutPoint(txid1.flip, UInt32(0)),
-                       ScriptSignature.empty,
-                       UInt32.max - UInt32.one)
+      descendantsTxid1 <- client.getMemPoolDescendants(txid1)
+      verboseDescendantsTxid1 <- client.getMemPoolDescendantsVerbose(txid1)
+      _ = {
+        assert(descendantsTxid1.head == txid2)
+        val (txid, mempoolreults) = verboseDescendantsTxid1.head
+        assert(txid == txid2)
+        assert(mempoolreults.ancestorcount == 2)
+      }
 
-    val createdTx = await(
-      client
-        .createRawTransaction(Vector(input), Map(address2 -> Bitcoins(1))))
+      ancestorsTxid2 <- client.getMemPoolAncestors(txid2)
+      verboseAncestorsTxid2 <- client.getMemPoolAncestorsVerbose(txid2)
+      _ = {
+        assert(ancestorsTxid2.head == txid1)
+        val (txid, mempoolreults) = verboseAncestorsTxid2.head
+        assert(txid == txid1)
+        assert(mempoolreults.descendantcount == 2)
+      }
 
-    val signedTx =
-      await(BitcoindRpcTestUtil.signRawTransaction(client, createdTx))
-    assert(signedTx.complete)
-
-    val txid2 = await(
-      client
-        .sendRawTransaction(signedTx.hex, allowHighFees = true))
-
-    val descendantsTxid1 = await(client.getMemPoolDescendants(txid1))
-    assert(descendantsTxid1.head == txid2)
-
-    val verboseDescendantsTxid1 = await(
-      client
-        .getMemPoolDescendantsVerbose(txid1))
-    assert(verboseDescendantsTxid1.head._1 == txid2)
-    assert(verboseDescendantsTxid1.head._2.ancestorcount == 2)
-
-    val ancestorsTxid2 = await(client.getMemPoolAncestors(txid2))
-    assert(ancestorsTxid2.head == txid1)
-
-    val verboseAncestorsTxid2 = await(
-      client
-        .getMemPoolAncestorsVerbose(txid2))
-    assert(verboseAncestorsTxid2.head._1 == txid1)
-    assert(verboseAncestorsTxid2.head._2.descendantcount == 2)
+    } yield {
+      assert(mempool.head == txid1)
+      assert(signedTx.complete)
+    }
   }
 
   it should "be able to abandon a transaction" in {
-
     for {
+      (_, otherClient) <- clientsF
+      clientWithoutBroadcast <- clientWithoutBroadcastF
       recipient <- otherClient.getNewAddress
       txid <- clientWithoutBroadcast.sendToAddress(recipient, Bitcoins(1))
       _ <- clientWithoutBroadcast.abandonTransaction(txid)
@@ -234,12 +207,16 @@ class MempoolRpcTest extends AsyncFlatSpec with BeforeAndAfterAll {
   }
 
   it should "be able to save the mem pool to disk" in {
-    val regTest =
-      new File(client.getDaemon.authCredentials.datadir + "/regtest")
-    assert(regTest.isDirectory)
-    assert(!regTest.list().contains("mempool.dat"))
-    client.saveMemPool().map { _ =>
-      assert(regTest.list().contains("mempool.dat"))
-    }
+    for {
+      (client, _) <- clientsF
+      regTest = {
+        val regTest =
+          new File(client.getDaemon.authCredentials.datadir + "/regtest")
+        assert(regTest.isDirectory)
+        assert(!regTest.list().contains("mempool.dat"))
+        regTest
+      }
+      _ <- client.saveMemPool()
+    } yield assert(regTest.list().contains("mempool.dat"))
   }
 }

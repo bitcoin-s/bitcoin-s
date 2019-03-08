@@ -11,307 +11,276 @@ import org.bitcoins.core.protocol.script.{
   ScriptSignature
 }
 import org.bitcoins.core.protocol.transaction.{
-  Transaction,
   TransactionInput,
   TransactionOutPoint
 }
-import org.bitcoins.rpc.{BitcoindRpcTestConfig, BitcoindRpcTestUtil}
-import org.bitcoins.rpc.client.common.RpcOpts.AddNodeArgument
+import org.bitcoins.rpc.BitcoindRpcTestUtil
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, RpcOpts}
 import org.scalatest.{AsyncFlatSpec, BeforeAndAfterAll}
 
-import scala.async.Async.{async, await}
-import scala.concurrent.{Await, ExecutionContext}
+import scala.collection.mutable
+import scala.concurrent.{ExecutionContext, Future}
 
 class RawTransactionRpcTest extends AsyncFlatSpec with BeforeAndAfterAll {
-  implicit val system: ActorSystem = ActorSystem("RawTransactionRpcTest")
+  implicit val system: ActorSystem =
+    ActorSystem("RawTransactionRpcTest", BitcoindRpcTestUtil.AKKA_CONFIG)
   implicit val ec: ExecutionContext = system.getDispatcher
   implicit val networkParam: NetworkParameters = BitcoindRpcTestUtil.network
 
-  implicit val client: BitcoindRpcClient = new BitcoindRpcClient(
-    BitcoindRpcTestUtil.instance())
-  val otherClient = new BitcoindRpcClient(BitcoindRpcTestUtil.instance())
+  lazy val accum: mutable.Builder[
+    BitcoindRpcClient,
+    Vector[BitcoindRpcClient]] = Vector.newBuilder[BitcoindRpcClient]
 
-  override def beforeAll(): Unit = {
-    import BitcoindRpcTestConfig.DEFAULT_TIMEOUT
-
-    val startF =
-      BitcoindRpcTestUtil.startServers(Vector(client, otherClient))
-
-    Await.result(startF, DEFAULT_TIMEOUT)
-
-    val addNodeF =
-      client.addNode(otherClient.getDaemon.uri, AddNodeArgument.Add)
-    Await.result(addNodeF, DEFAULT_TIMEOUT)
-
-    Await.result(client.generate(200), DEFAULT_TIMEOUT)
-  }
+  lazy val clientsF: Future[(BitcoindRpcClient, BitcoindRpcClient)] =
+    BitcoindRpcTestUtil.createNodePair(clientAccum = accum)
 
   override protected def afterAll(): Unit = {
-    BitcoindRpcTestUtil.stopServers(Vector(client, otherClient))
+    BitcoindRpcTestUtil.stopServers(accum.result)
     TestKit.shutdownActorSystem(system)
   }
 
   behavior of "RawTransactionRpc"
 
   it should "be able to fund a raw transaction" in {
-    otherClient.getNewAddress.flatMap { address =>
-      client
+    for {
+      (client, otherClient) <- clientsF
+      address <- otherClient.getNewAddress
+      transactionWithoutFunds <- client
         .createRawTransaction(Vector.empty, Map(address -> Bitcoins(1)))
-        .flatMap { transactionWithoutFunds =>
-          client.fundRawTransaction(transactionWithoutFunds).flatMap {
-            transactionResult =>
-              val transaction = transactionResult.hex
-              assert(transaction.inputs.length == 1)
-              client
-                .getRawTransaction(
-                  transaction.inputs.head.previousOutput.txId.flip)
-                .flatMap { inputTransaction =>
-                  assert(
-                    inputTransaction
-                      .vout(transaction.inputs.head.previousOutput.vout.toInt)
-                      .value
-                      .satoshis
-                      .toBigInt ==
-                      transactionResult.fee.satoshis.toBigInt +
-                        transaction.outputs.head.value.satoshis.toBigInt +
-                        transaction.outputs(1).value.satoshis.toBigInt)
-                }
-          }
-        }
+      transactionResult <- client.fundRawTransaction(transactionWithoutFunds)
+      transaction = transactionResult.hex
+      inputTransaction <- client
+        .getRawTransaction(transaction.inputs.head.previousOutput.txId.flip)
+    } yield {
+      assert(transaction.inputs.length == 1)
+
+      val inputTxSats =
+        inputTransaction
+          .vout(transaction.inputs.head.previousOutput.vout.toInt)
+          .value
+          .satoshis
+
+      val txResultSats =
+        transactionResult.fee.satoshis +
+          transaction.outputs.head.value.satoshis +
+          transaction.outputs(1).value.satoshis
+
+      assert(txResultSats == inputTxSats)
     }
   }
 
   it should "be able to decode a raw transaction" in {
-    BitcoindRpcTestUtil
-      .createRawCoinbaseTransaction(client, otherClient)
-      .flatMap { transaction =>
-        client.decodeRawTransaction(transaction).map { rpcTransaction =>
-          assert(rpcTransaction.txid == transaction.txIdBE)
-          assert(rpcTransaction.locktime == transaction.lockTime)
-          assert(rpcTransaction.size == transaction.size)
-          assert(rpcTransaction.version == transaction.version.toInt)
-          assert(rpcTransaction.vsize == transaction.vsize)
-        }
-      }
+    for {
+      (client, otherClient) <- clientsF
+      transaction <- BitcoindRpcTestUtil
+        .createRawCoinbaseTransaction(client, otherClient)
+      rpcTransaction <- client.decodeRawTransaction(transaction)
+    } yield {
+      assert(rpcTransaction.txid == transaction.txIdBE)
+      assert(rpcTransaction.locktime == transaction.lockTime)
+      assert(rpcTransaction.size == transaction.size)
+      assert(rpcTransaction.version == transaction.version.toInt)
+      assert(rpcTransaction.vsize == transaction.vsize)
+    }
   }
 
   it should "be able to get a raw transaction using both rpcs available" in {
-    BitcoindRpcTestUtil.getFirstBlock.flatMap { block =>
-      val txid = block.tx.head.txid
-      client.getRawTransaction(txid).flatMap { transaction1 =>
-        client.getTransaction(txid).map { transaction2 =>
-          assert(transaction1.txid == transaction2.txid)
-          assert(
-            transaction1.confirmations.contains(transaction2.confirmations))
-          assert(transaction1.hex == transaction2.hex)
+    for {
+      (client, _) <- clientsF
+      block <- BitcoindRpcTestUtil.getFirstBlock(client)
+      txid = block.tx.head.txid
+      transaction1 <- client.getRawTransaction(txid)
+      transaction2 <- client.getTransaction(txid)
+    } yield {
+      assert(transaction1.txid == transaction2.txid)
+      assert(transaction1.confirmations.contains(transaction2.confirmations))
+      assert(transaction1.hex == transaction2.hex)
 
-          assert(transaction1.blockhash.isDefined)
-          assert(transaction2.blockhash.isDefined)
+      assert(transaction1.blockhash.isDefined)
+      assert(transaction2.blockhash.isDefined)
 
-          for {
-            hash1 <- transaction1.blockhash
-            hash2 <- transaction2.blockhash
-          } yield assert(hash1 == hash2)
-
-          succeed
-        }
-      }
+      assert(transaction1.blockhash == transaction2.blockhash)
     }
   }
 
-  it should "be able to create a raw transaction" in async {
-    val txsF = for {
+  it should "be able to create a raw transaction" in {
+    for {
+      (client, otherClient) <- clientsF
       blocks <- client.generate(2)
       firstBlock <- client.getBlock(blocks(0))
-      firstTransaction <- client.getTransaction(firstBlock.tx(0))
+      transaction0 <- client.getTransaction(firstBlock.tx(0))
       secondBlock <- client.getBlock(blocks(1))
-      secondTransaction <- client.getTransaction(secondBlock.tx(0))
-    } yield (firstTransaction, secondTransaction)
+      transaction1 <- client.getTransaction(secondBlock.tx(0))
 
-    val (transaction0, transaction1) = await(txsF)
+      address <- otherClient.getNewAddress
 
-    val input0 =
-      TransactionOutPoint(transaction0.txid.flip,
-                          UInt32(transaction0.blockindex.get))
-    val input1 =
-      TransactionOutPoint(transaction1.txid.flip,
-                          UInt32(transaction1.blockindex.get))
-    val sig: ScriptSignature = ScriptSignature.empty
-
-    val address = await(otherClient.getNewAddress)
-
-    val transaction = await({
-      val inputs = Vector(TransactionInput(input0, sig, UInt32(1)),
-                          TransactionInput(input1, sig, UInt32(2)))
-      val outputs = Map(address -> Bitcoins(1))
-      client.createRawTransaction(inputs, outputs)
-    })
-
-    val inputs = transaction.inputs
-    assert(inputs.head.sequence == UInt32(1))
-    assert(inputs(1).sequence == UInt32(2))
-    assert(inputs.head.previousOutput.txId == input0.txId)
-    assert(inputs(1).previousOutput.txId == input1.txId)
+      input0 = TransactionOutPoint(transaction0.txid.flip,
+                                   UInt32(transaction0.blockindex.get))
+      input1 = TransactionOutPoint(transaction1.txid.flip,
+                                   UInt32(transaction1.blockindex.get))
+      transaction <- {
+        val sig: ScriptSignature = ScriptSignature.empty
+        val inputs = Vector(TransactionInput(input0, sig, UInt32(1)),
+                            TransactionInput(input1, sig, UInt32(2)))
+        val outputs = Map(address -> Bitcoins(1))
+        client.createRawTransaction(inputs, outputs)
+      }
+    } yield {
+      val inputs = transaction.inputs
+      assert(inputs.head.sequence == UInt32(1))
+      assert(inputs(1).sequence == UInt32(2))
+      assert(inputs.head.previousOutput.txId == input0.txId)
+      assert(inputs(1).previousOutput.txId == input1.txId)
+    }
   }
 
   it should "be able to send a raw transaction to the mem pool" in {
-    BitcoindRpcTestUtil
-      .createRawCoinbaseTransaction(client, otherClient)
-      .flatMap(BitcoindRpcTestUtil.signRawTransaction(client, _))
-      .flatMap { signedTransaction =>
-        client
-          .generate(100)
-          .flatMap { _ => // Can't spend coinbase until depth 100
-            client
-              .sendRawTransaction(signedTransaction.hex, allowHighFees = true)
-              .map { _ =>
-                succeed
-              }
-          }
-      }
+    for {
+      (client, otherClient) <- clientsF
+      rawTx <- BitcoindRpcTestUtil.createRawCoinbaseTransaction(client,
+                                                                otherClient)
+      signedTransaction <- BitcoindRpcTestUtil.signRawTransaction(client, rawTx)
+
+      _ <- client.generate(100) // Can't spend coinbase until depth 100
+
+      _ <- client.sendRawTransaction(signedTransaction.hex,
+                                     allowHighFees = true)
+    } yield succeed
   }
 
   it should "be able to sign a raw transaction" in {
-    client.getNewAddress.flatMap { address =>
-      client.validateAddress(address).flatMap { addressInfo =>
+    for {
+      (client, _) <- clientsF
+      address <- client.getNewAddress
+      addressInfo <- client.validateAddress(address)
+      multisig <- client
+        .addMultiSigAddress(1, Vector(Left(addressInfo.pubkey.get)))
+      txid <- BitcoindRpcTestUtil
+        .fundBlockChainTransaction(client, multisig.address, Bitcoins(1.2))
+      rawTx <- client.getTransaction(txid)
+
+      tx <- client.decodeRawTransaction(rawTx.hex)
+      output = tx.vout
+        .find(output => output.value == Bitcoins(1.2))
+        .get
+
+      newAddress <- client.getNewAddress
+      rawCreatedTx <- {
+        val input =
+          TransactionInput(TransactionOutPoint(txid.flip, UInt32(output.n)),
+                           P2SHScriptSignature(multisig.redeemScript.hex),
+                           UInt32.max - UInt32.one)
         client
-          .addMultiSigAddress(1, Vector(Left(addressInfo.pubkey.get)))
-          .flatMap { multisig =>
-            BitcoindRpcTestUtil
-              .fundBlockChainTransaction(client,
-                                         multisig.address,
-                                         Bitcoins(1.2))
-              .flatMap { txid =>
-                client.getTransaction(txid).flatMap { rawTx =>
-                  client.decodeRawTransaction(rawTx.hex).flatMap { tx =>
-                    val output =
-                      tx.vout
-                        .find(output => output.value == Bitcoins(1.2))
-                        .get
-                    val input = TransactionInput(
-                      TransactionOutPoint(txid.flip, UInt32(output.n)),
-                      P2SHScriptSignature(multisig.redeemScript.hex),
-                      UInt32.max - UInt32.one)
-                    client.getNewAddress.flatMap { newAddress =>
-                      client
-                        .createRawTransaction(Vector(input),
-                                              Map(newAddress -> Bitcoins(1.1)))
-                        .flatMap {
-                          BitcoindRpcTestUtil.signRawTransaction(
-                            client,
-                            _: Transaction,
-                            Vector(RpcOpts.SignRawTransactionOutputParameter(
-                              txid,
-                              output.n,
-                              ScriptPubKey.fromAsmHex(output.scriptPubKey.hex),
-                              Some(multisig.redeemScript),
-                              Bitcoins(1.2)))
-                          )
-                        }
-                        .map { result =>
-                          assert(result.complete)
-                        }
-                    }
-                  }
-                }
-              }
-          }
+          .createRawTransaction(Vector(input), Map(newAddress -> Bitcoins(1.1)))
       }
-    }
-  }
 
-  it should "be able to combine raw transactions" in async {
-    val address1 = await(client.getNewAddress)
-    val address2 = await(otherClient.getNewAddress)
-
-    val address1Info = await(client.validateAddress(address1))
-    val address2Info = await(otherClient.validateAddress(address2))
-
-    val keys =
-      Vector(Left(address1Info.pubkey.get), Left(address2Info.pubkey.get))
-
-    val multisig = await(
-      client
-        .addMultiSigAddress(2, keys))
-
-    await(
-      otherClient
-        .addMultiSigAddress(2, keys))
-
-    await(client.validateAddress(multisig.address))
-
-    val txid = await(
-      BitcoindRpcTestUtil
-        .fundBlockChainTransaction(client, multisig.address, Bitcoins(1.2)))
-
-    val rawTx = await(client.getTransaction(txid))
-
-    val tx = await(client.decodeRawTransaction(rawTx.hex))
-    val output = tx.vout
-      .find(output => output.value == Bitcoins(1.2))
-      .get
-    val input =
-      TransactionInput(TransactionOutPoint(txid.flip, UInt32(output.n)),
-                       P2SHScriptSignature(multisig.redeemScript.hex),
-                       UInt32.max - UInt32.one)
-
-    val address3 = await(client.getNewAddress)
-
-    val ctx = await(
-      otherClient
-        .createRawTransaction(Vector(input), Map(address3 -> Bitcoins(1.1))))
-
-    val txOpts =
-      Vector(
-        RpcOpts
-          .SignRawTransactionOutputParameter(
+      result <- {
+        val utxoDeps = Vector(
+          RpcOpts.SignRawTransactionOutputParameter(
             txid,
             output.n,
             ScriptPubKey.fromAsmHex(output.scriptPubKey.hex),
             Some(multisig.redeemScript),
             Bitcoins(1.2)))
+        BitcoindRpcTestUtil.signRawTransaction(
+          client,
+          rawCreatedTx,
+          utxoDeps
+        )
+      }
+    } yield assert(result.complete)
+  }
 
-    val partialTx1 =
-      await(BitcoindRpcTestUtil.signRawTransaction(client, ctx, txOpts))
+  it should "be able to combine raw transactions" in {
+    for {
+      (client, otherClient) <- clientsF
+      address1 <- client.getNewAddress
+      address2 <- otherClient.getNewAddress
+      address1Info <- client.validateAddress(address1)
+      address2Info <- otherClient.validateAddress(address2)
+      keys = Vector(Left(address1Info.pubkey.get),
+                    Left(address2Info.pubkey.get))
 
-    assert(!partialTx1.complete)
-    assert(partialTx1.hex != ctx)
+      multisig <- client.addMultiSigAddress(2, keys)
 
-    val partialTx2 =
-      await(BitcoindRpcTestUtil.signRawTransaction(otherClient, ctx, txOpts))
+      _ <- otherClient.addMultiSigAddress(2, keys)
 
-    assert(!partialTx2.complete)
-    assert(partialTx2.hex != ctx)
+      txid <- BitcoindRpcTestUtil.fundBlockChainTransaction(client,
+                                                            multisig.address,
+                                                            Bitcoins(1.2))
 
-    val combinedTx = await(
-      client
-        .combineRawTransaction(Vector(partialTx1.hex, partialTx2.hex)))
+      rawTx <- client.getTransaction(txid)
+      tx <- client.decodeRawTransaction(rawTx.hex)
 
-    await(
-      client
-        .sendRawTransaction(combinedTx))
+      output = tx.vout
+        .find(output => output.value == Bitcoins(1.2))
+        .get
 
-    succeed
+      address3 <- client.getNewAddress
+
+      ctx <- {
+        val input =
+          TransactionInput(TransactionOutPoint(txid.flip, UInt32(output.n)),
+                           P2SHScriptSignature(multisig.redeemScript.hex),
+                           UInt32.max - UInt32.one)
+        otherClient
+          .createRawTransaction(Vector(input), Map(address3 -> Bitcoins(1.1)))
+      }
+
+      txOpts = {
+        val scriptPubKey =
+          ScriptPubKey.fromAsmHex(output.scriptPubKey.hex)
+        val utxoDep =
+          RpcOpts.SignRawTransactionOutputParameter(txid,
+                                                    output.n,
+                                                    scriptPubKey,
+                                                    Some(multisig.redeemScript),
+                                                    Bitcoins(1.2))
+        Vector(utxoDep)
+      }
+
+      partialTx1 <- BitcoindRpcTestUtil.signRawTransaction(client, ctx, txOpts)
+
+      partialTx2 <- BitcoindRpcTestUtil.signRawTransaction(otherClient,
+                                                           ctx,
+                                                           txOpts)
+
+      combinedTx <- {
+        val txs = Vector(partialTx1.hex, partialTx2.hex)
+        client.combineRawTransaction(txs)
+      }
+
+      _ <- client.sendRawTransaction(combinedTx)
+
+    } yield {
+      assert(!partialTx1.complete)
+      assert(partialTx1.hex != ctx)
+      assert(!partialTx2.complete)
+      assert(partialTx2.hex != ctx)
+    }
+
   }
 
   it should "fail to abandon a transaction which has not been sent" in {
-    otherClient.getNewAddress.flatMap { address =>
-      client
-        .createRawTransaction(Vector(), Map(address -> Bitcoins(1)))
-        .flatMap { tx =>
-          recoverToSucceededIf[RuntimeException](
-            client.abandonTransaction(tx.txIdBE))
+    clientsF.flatMap {
+      case (client, otherClient) =>
+        otherClient.getNewAddress.flatMap { address =>
+          client
+            .createRawTransaction(Vector(), Map(address -> Bitcoins(1)))
+            .flatMap { tx =>
+              recoverToSucceededIf[RuntimeException](
+                client.abandonTransaction(tx.txId))
+            }
         }
     }
   }
 
   it should "be able to get a raw transaction in serialized form from the mem pool" in {
-    BitcoindRpcTestUtil.sendCoinbaseTransaction(client, otherClient).flatMap {
-      tx =>
-        client.getRawTransactionRaw(tx.txid).map { transaction =>
-          assert(transaction.txIdBE == tx.txid)
-        }
-    }
+    for {
+      (client, otherClient) <- clientsF
+
+      sentTx <- BitcoindRpcTestUtil.sendCoinbaseTransaction(client, otherClient)
+      rawTx <- client.getRawTransactionRaw(sentTx.txid)
+    } yield assert(rawTx.txIdBE == sentTx.txid)
   }
 }

@@ -1,64 +1,72 @@
 package org.bitcoins.rpc.common
 
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
 import akka.testkit.TestKit
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.rpc.{BitcoindRpcTestConfig, BitcoindRpcTestUtil}
+import org.bitcoins.rpc.BitcoindRpcTestUtil
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.scalatest.{AsyncFlatSpec, BeforeAndAfterAll}
 
-import scala.concurrent.{Await, ExecutionContext}
+import scala.collection.mutable
+import scala.concurrent.{ExecutionContext, Future}
 
 class NodeRpcTest extends AsyncFlatSpec with BeforeAndAfterAll {
-  implicit val system: ActorSystem = ActorSystem("NodeRpcTest")
-  implicit val m: ActorMaterializer = ActorMaterializer()
-  implicit val ec: ExecutionContext = m.executionContext
+  implicit val system: ActorSystem =
+    ActorSystem("NodeRpcTest", BitcoindRpcTestUtil.AKKA_CONFIG)
+  implicit val ec: ExecutionContext = system.dispatcher
   implicit val networkParam: NetworkParameters = BitcoindRpcTestUtil.network
 
-  val client: BitcoindRpcClient = new BitcoindRpcClient(
-    BitcoindRpcTestUtil.instance())
+  lazy val accum: mutable.Builder[
+    BitcoindRpcClient,
+    Vector[BitcoindRpcClient]] = Vector.newBuilder[BitcoindRpcClient]
 
-  override def beforeAll(): Unit = {
-    import BitcoindRpcTestConfig.DEFAULT_TIMEOUT
-
-    Await.result(BitcoindRpcTestUtil.startServers(Vector(client)),
-                 DEFAULT_TIMEOUT)
-    // generates more blocks than usual to ensure we don't rescan to fast to be able to abort
-    (1 to 10).foreach(_ => Await.result(client.generate(200), DEFAULT_TIMEOUT))
-  }
+  lazy val clientF: Future[BitcoindRpcClient] =
+    BitcoindRpcTestUtil.startedBitcoindRpcClient(clientAccum = accum)
 
   override protected def afterAll(): Unit = {
-    BitcoindRpcTestUtil.stopServers(Vector(client))
+    BitcoindRpcTestUtil.stopServers(accum.result)
     TestKit.shutdownActorSystem(system)
   }
 
   behavior of "NodeRpc"
 
   it should "be able to abort a rescan of the blockchain" in {
-    val rescanFailedF =
-      recoverToSucceededIf[RuntimeException](client.rescanBlockChain())
-    client.abortRescan().flatMap { _ =>
-      rescanFailedF
-    }
-  }
-
-  it should "be able to ping" in {
-    client.ping().map(_ => succeed)
-  }
-
-  it should "be able to get and set the logging configuration" in {
-    client.logging.flatMap { info =>
-      info.keySet.foreach(category => assert(info(category) == 1))
-      client.logging(exclude = Vector("qt")).map { info =>
-        assert(info("qt") == 0)
+    clientF.flatMap { client =>
+      // generate some extra blocks so rescan isn't too quick
+      client.generate(3000).flatMap { _ =>
+        val rescanFailedF =
+          recoverToSucceededIf[RuntimeException](client.rescanBlockChain())
+        client.abortRescan().flatMap { _ =>
+          rescanFailedF
+        }
       }
     }
   }
 
+  it should "be able to ping" in {
+    for {
+      client <- clientF
+      _ <- client.ping()
+    } yield succeed
+  }
+
+  it should "be able to get and set the logging configuration" in {
+    for {
+      client <- clientF
+      info <- client.logging
+      infoNoQt <- client.logging(exclude = Vector("qt"))
+    } yield {
+      info.keySet.foreach(category => assert(info(category) == 1))
+      assert(infoNoQt("qt") == 0)
+    }
+  }
+
   it should "be able to get the memory info" in {
-    client.getMemoryInfo.map { info =>
+    for {
+      client <- clientF
+      info <- client.getMemoryInfo
+    } yield {
       assert(info.locked.used > 0)
       assert(info.locked.free > 0)
       assert(info.locked.total > 0)
@@ -68,18 +76,21 @@ class NodeRpcTest extends AsyncFlatSpec with BeforeAndAfterAll {
   }
 
   it should "be able to get the client's uptime" in {
-    client.uptime.flatMap { time1 =>
-      assert(time1 > UInt32(0))
-    }
+    for {
+      client <- clientF
+      time <- client.uptime
+    } yield assert(time > UInt32(0))
   }
 
   it should "be able to get help from bitcoind" in {
-    client.help().flatMap { genHelp =>
+    for {
+      client <- clientF
+      genHelp <- client.help()
+      helpHelp <- client.help("help")
+    } yield {
       assert(!genHelp.isEmpty)
-      client.help("help").map { helpHelp =>
-        assert(genHelp != helpHelp)
-        assert(!helpHelp.isEmpty)
-      }
+      assert(genHelp != helpHelp)
+      assert(!helpHelp.isEmpty)
     }
   }
 }

@@ -13,49 +13,36 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionOutPoint
 }
 import org.bitcoins.core.util.BitcoinSLogger
-import org.bitcoins.rpc.{BitcoindRpcTestConfig, BitcoindRpcTestUtil}
-import org.bitcoins.rpc.client.common.RpcOpts.AddNodeArgument
+import org.bitcoins.rpc.BitcoindRpcTestUtil
 import org.bitcoins.rpc.client.v16.BitcoindV16RpcClient
 import org.bitcoins.rpc.util.AsyncUtil
 import org.scalatest.{AsyncFlatSpec, BeforeAndAfterAll}
 import org.slf4j.Logger
 
 import scala.async.Async.{async, await}
-import scala.concurrent.{Await, ExecutionContext}
+import scala.collection.mutable
 import scala.concurrent.duration.DurationInt
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Properties
 
 class BitcoindV16RpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
   implicit val system: ActorSystem = ActorSystem(
-    "BitcoindV16RpcClientTest_ActorSystem")
-  implicit val m: ActorMaterializer = ActorMaterializer()
-  implicit val ec: ExecutionContext = m.executionContext
+    "BitcoindV16RpcClientTest_ActorSystem",
+    BitcoindRpcTestUtil.AKKA_CONFIG)
+  implicit val ec: ExecutionContext = system.dispatcher
   implicit val networkParam: NetworkParameters = BitcoindRpcTestUtil.network
 
   val logger: Logger = BitcoinSLogger.logger
 
-  val client = new BitcoindV16RpcClient(BitcoindRpcTestUtil.v16Instance())
+  private val accum: mutable.Builder[
+    BitcoindV16RpcClient,
+    Vector[BitcoindV16RpcClient]] = Vector.newBuilder[BitcoindV16RpcClient]
 
-  val otherClient = new BitcoindV16RpcClient(BitcoindRpcTestUtil.v16Instance())
-
-  override protected def beforeAll(): Unit = {
-    import BitcoindRpcTestConfig.DEFAULT_TIMEOUT
-    val startF = BitcoindRpcTestUtil.startServers(Vector(client, otherClient))
-    Await.result(startF, DEFAULT_TIMEOUT)
-
-    val addNodeF =
-      client.addNode(otherClient.getDaemon.uri, AddNodeArgument.Add)
-    Await.result(addNodeF, DEFAULT_TIMEOUT)
-
-    BitcoindRpcTestUtil.awaitConnection(client, otherClient)
-
-    Await.result(client.generate(200), DEFAULT_TIMEOUT)
-    Await.result(otherClient.generate(200), DEFAULT_TIMEOUT)
-  }
+  lazy val clientsF: Future[(BitcoindV16RpcClient, BitcoindV16RpcClient)] =
+    BitcoindRpcTestUtil.createNodePairV16(accum)
 
   override protected def afterAll(): Unit = {
-    Await.result(BitcoindRpcTestUtil.stopServers(Vector(client, otherClient)),
-                 BitcoindRpcTestConfig.DEFAULT_TIMEOUT)
+    BitcoindRpcTestUtil.stopServers(accum.result)
 
     TestKit.shutdownActorSystem(system)
   }
@@ -64,6 +51,7 @@ class BitcoindV16RpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
 
   it should "be able to sign a raw transaction" in {
     for {
+      (client, otherClient) <- clientsF
       addr <- client.getNewAddress
       _ <- otherClient.sendToAddress(addr, Bitcoins.one)
       _ <- otherClient.generate(6)
@@ -100,17 +88,20 @@ class BitcoindV16RpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
   }
 
   it should "be able to send from an account to an addresss" in {
-    otherClient.getNewAddress.flatMap { address =>
-      client.sendFrom("", address, Bitcoins(1)).flatMap { txid =>
-        client.getTransaction(txid).map { transaction =>
-          assert(transaction.amount == Bitcoins(-1))
-          assert(transaction.details.head.address.contains(address))
-        }
-      }
+    for {
+      (client, otherClient) <- clientsF
+      address <- otherClient.getNewAddress
+      txid <- client.sendFrom("", address, Bitcoins(1))
+      transaction <- client.getTransaction(txid)
+    } yield {
+      assert(transaction.amount == Bitcoins(-1))
+      assert(transaction.details.head.address.contains(address))
     }
   }
 
   it should "be able to get the amount received by an account and list amounts received by all accounts" in async {
+    val (client, otherClient) = await(clientsF)
+
     val ourAccount = "another_new_account"
     val emptyAccount = "empty_account"
 
@@ -158,42 +149,44 @@ class BitcoindV16RpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
   it should "be able to get and set the account for a given address" in {
     val account1 = "account_1"
     val account2 = "account_2"
-    client.getNewAddress(account1).flatMap { address =>
-      client.getAccount(address).flatMap { acc1 =>
-        assert(acc1 == account1)
-        client.setAccount(address, account2).flatMap { _ =>
-          client.getAccount(address).map { acc2 =>
-            assert(acc2 == account2)
-          }
-        }
-      }
+    for {
+      (client, _) <- clientsF
+      address <- client.getNewAddress(account1)
+      acc1 <- client.getAccount(address)
+      _ <- client.setAccount(address, account2)
+      acc2 <- client.getAccount(address)
+    } yield {
+      assert(acc1 == account1)
+      assert(acc2 == account2)
     }
   }
 
   it should "be able to get all addresses belonging to an account" in {
-    client.getNewAddress.flatMap { address =>
-      client.getAddressesByAccount("").map { addresses =>
-        assert(addresses.contains(address))
-      }
-    }
+    for {
+      (client, _) <- clientsF
+      address <- client.getNewAddress
+      addresses <- client.getAddressesByAccount("")
+    } yield assert(addresses.contains(address))
   }
 
   it should "be able to get an account's address" in {
     val account = "a_new_account"
-    client.getAccountAddress(account).flatMap { address =>
-      client.getAccount(address).map { result =>
-        assert(result == account)
-      }
-    }
+    for {
+      (client, _) <- clientsF
+      address <- client.getAccountAddress(account)
+      result <- client.getAccount(address)
+    } yield assert(result == account)
   }
 
   it should "be able to move funds from one account to another" in {
     val account = "move_account"
-    client.move("", account, Bitcoins(1)).flatMap { success =>
+    for {
+      (client, _) <- clientsF
+      success <- client.move("", account, Bitcoins(1))
+      map <- client.listAccounts()
+    } yield {
       assert(success)
-      client.listAccounts().map { map =>
-        assert(map(account) == Bitcoins(1))
-      }
+      assert(map(account) == Bitcoins(1))
     }
   }
 }

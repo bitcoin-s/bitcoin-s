@@ -1,37 +1,33 @@
 package org.bitcoins.rpc.common
 
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
 import akka.testkit.TestKit
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.crypto.ECPrivateKey
 import org.bitcoins.core.protocol.P2PKHAddress
-import org.bitcoins.rpc.{BitcoindRpcTestConfig, BitcoindRpcTestUtil}
+import org.bitcoins.rpc.BitcoindRpcTestUtil
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.client.common.RpcOpts.AddressType
 import org.scalatest.{AsyncFlatSpec, BeforeAndAfterAll}
 
-import scala.concurrent.{Await, ExecutionContext}
+import scala.collection.mutable
+import scala.concurrent.{ExecutionContext, Future}
 
 class MultisigRpcTest extends AsyncFlatSpec with BeforeAndAfterAll {
-  implicit val system: ActorSystem = ActorSystem("MultisigRpcTest")
-  implicit val m: ActorMaterializer = ActorMaterializer()
-  implicit val ec: ExecutionContext = m.executionContext
+  implicit val system: ActorSystem =
+    ActorSystem("MultisigRpcTest", BitcoindRpcTestUtil.AKKA_CONFIG)
+  implicit val ec: ExecutionContext = system.dispatcher
   implicit val networkParam: NetworkParameters = BitcoindRpcTestUtil.network
 
-  val client: BitcoindRpcClient = new BitcoindRpcClient(
-    BitcoindRpcTestUtil.instance())
+  val clientAccum: mutable.Builder[
+    BitcoindRpcClient,
+    Vector[BitcoindRpcClient]] = Vector.newBuilder[BitcoindRpcClient]
 
-  override def beforeAll(): Unit = {
-    import BitcoindRpcTestConfig.DEFAULT_TIMEOUT
-    Await.result(BitcoindRpcTestUtil.startServers(Vector(client)),
-                 DEFAULT_TIMEOUT)
-
-    Await.result(client.generate(200), DEFAULT_TIMEOUT)
-  }
+  lazy val clientF: Future[BitcoindRpcClient] =
+    BitcoindRpcTestUtil.startedBitcoindRpcClient(clientAccum = clientAccum)
 
   override protected def afterAll(): Unit = {
-    BitcoindRpcTestUtil.stopServers(Vector(client))
+    BitcoindRpcTestUtil.stopServers(clientAccum.result)
     TestKit.shutdownActorSystem(system)
   }
 
@@ -44,25 +40,26 @@ class MultisigRpcTest extends AsyncFlatSpec with BeforeAndAfterAll {
     val pubKey1 = ecPrivKey1.publicKey
     val pubKey2 = ecPrivKey2.publicKey
 
-    client.createMultiSig(2, Vector(pubKey1, pubKey2)).map { _ =>
-      succeed
-    }
-    succeed
+    for {
+      client <- clientF
+      _ <- client.createMultiSig(2, Vector(pubKey1, pubKey2))
+    } yield succeed
   }
 
   it should "be able to add a multi sig address to the wallet" in {
     val ecPrivKey1 = ECPrivateKey.freshPrivateKey
     val pubKey1 = ecPrivKey1.publicKey
 
-    client.getNewAddress(addressType = AddressType.Legacy).flatMap { address =>
-      client
-        .addMultiSigAddress(2,
-                            Vector(Left(pubKey1),
-                                   Right(address.asInstanceOf[P2PKHAddress])))
-        .map { _ =>
-          succeed
-        }
-    }
+    for {
+      client <- clientF
+      address <- client.getNewAddress(addressType = AddressType.Legacy)
+      _ <- {
+        val pubkey = Left(pubKey1)
+        val p2pkh = Right(address.asInstanceOf[P2PKHAddress])
+        client
+          .addMultiSigAddress(2, Vector(pubkey, p2pkh))
+      }
+    } yield succeed
   }
 
 }

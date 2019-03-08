@@ -1,6 +1,5 @@
 package org.bitcoins.rpc.v17
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
 import akka.testkit.TestKit
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.currency.Bitcoins
@@ -12,69 +11,27 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionOutPoint
 }
 import org.bitcoins.rpc.BitcoindRpcTestUtil
-import org.bitcoins.rpc.client.common.RpcOpts.AddNodeArgument
 import org.bitcoins.rpc.client.v17.BitcoindV17RpcClient
 import org.bitcoins.rpc.jsonmodels.{FinalizedPsbt, NonFinalizedPsbt}
 import org.scalatest.{AsyncFlatSpec, BeforeAndAfterAll}
 
+import scala.collection.mutable
 import scala.concurrent.{ExecutionContext, Future}
-import scala.concurrent.duration.DurationInt
 
 class PsbtRpcTest extends AsyncFlatSpec with BeforeAndAfterAll {
   implicit val system: ActorSystem = ActorSystem(
-    "BitcoindV17RpcClientTest_ActorSystem")
-  implicit val m: ActorMaterializer = ActorMaterializer()
-  implicit val ec: ExecutionContext = m.executionContext
+    "BitcoindV17RpcClientTest_ActorSystem",
+    BitcoindRpcTestUtil.AKKA_CONFIG)
+  implicit val ec: ExecutionContext = system.dispatcher
   implicit val networkParam: NetworkParameters = BitcoindRpcTestUtil.network
 
-  private val clientAccum = Vector.newBuilder[BitcoindV17RpcClient]
+  private val clientAccum: mutable.Builder[
+    BitcoindV17RpcClient,
+    Vector[BitcoindV17RpcClient]] = Vector.newBuilder[BitcoindV17RpcClient]
 
   lazy val clientsF: Future[
     (BitcoindV17RpcClient, BitcoindV17RpcClient, BitcoindV17RpcClient)] = {
-    val client = new BitcoindV17RpcClient(BitcoindRpcTestUtil.v17Instance())
-    val otherClient = new BitcoindV17RpcClient(
-      BitcoindRpcTestUtil.v17Instance())
-    val thirdClient = new BitcoindV17RpcClient(
-      BitcoindRpcTestUtil.v17Instance())
-
-    clientAccum += (client, otherClient, thirdClient)
-
-    val startF =
-      BitcoindRpcTestUtil.startServers(Vector(client, otherClient, thirdClient))
-
-    val pairsF = startF.map { _ =>
-      List((client, otherClient), (client, thirdClient))
-    }
-
-    val addNodesF: Future[List[Unit]] = {
-      pairsF.flatMap { pairs =>
-        val addedF = pairs.map {
-          case (first, second) =>
-            first.addNode(second.getDaemon.uri, AddNodeArgument.Add)
-        }
-        Future.sequence(addedF)
-      }
-    }
-
-    for {
-      pairs <- pairsF
-      _ <- addNodesF
-      _ <- {
-        val connectedPairsF = pairs.map {
-          case (first, second) =>
-            BitcoindRpcTestUtil.awaitConnectionF(first,
-                                                 second,
-                                                 duration = 1.second)
-        }
-        Future.sequence(connectedPairsF)
-      }
-      _ <- {
-        BitcoindRpcTestUtil.generateAllAndSync(
-          Vector(client, otherClient, thirdClient),
-          blocks = 200)
-      }
-    } yield (client, otherClient, thirdClient)
-
+    BitcoindRpcTestUtil.createNodeTripleV17(clientAccum)
   }
 
   override protected def afterAll(): Unit = {
@@ -98,7 +55,7 @@ class PsbtRpcTest extends AsyncFlatSpec with BeforeAndAfterAll {
 
     for {
       (client, _, _) <- clientsF
-      __ <- Future.sequence(psbts.map(client.decodePsbt))
+      _ <- Future.sequence(psbts.map(client.decodePsbt))
     } yield succeed
   }
 

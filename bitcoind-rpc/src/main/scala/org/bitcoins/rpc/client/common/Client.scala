@@ -1,14 +1,15 @@
 package org.bitcoins.rpc.client.common
 
+import java.io.File
 import java.util.UUID
 
 import akka.actor.ActorSystem
 import akka.http.javadsl.model.headers.HttpCredentials
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
-import akka.stream.ActorMaterializer
+import akka.stream.{ActorMaterializer, StreamTcpException}
 import akka.util.ByteString
-import org.bitcoins.core.config.NetworkParameters
+import org.bitcoins.core.config.{MainNet, NetworkParameters, RegTest, TestNet3}
 import org.bitcoins.core.crypto.ECPrivateKey
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.rpc.config.BitcoindInstance
@@ -19,12 +20,26 @@ import play.api.libs.json._
 
 import scala.concurrent._
 import scala.concurrent.duration.DurationInt
+import scala.io.Source
 import scala.sys.process._
-import scala.util.{Failure, Success, Try}
+import scala.util.{Failure, Success}
 
 trait Client {
   def version: BitcoindVersion
   protected val instance: BitcoindInstance
+
+  /**
+    * The log file of the Bitcoin Core daemon
+    */
+  def logFile: File = {
+    val prefix = instance.network match {
+      case MainNet  => ""
+      case TestNet3 => "/testnet"
+      case RegTest  => "/regtest"
+    }
+    val datadir = instance.authCredentials.datadir
+    new File(datadir + prefix + "/debug.log")
+  }
 
   protected implicit val system: ActorSystem
   protected implicit val materializer: ActorMaterializer =
@@ -88,26 +103,45 @@ trait Client {
                                                  duration = 1.seconds,
                                                  maxTries = 60)
 
-    started.map(_ => logger.debug(s"started bitcoind"))
+    started.onComplete {
+      case Success(_) => logger.debug(s"started bitcoind")
+      case Failure(exc) =>
+        if (instance.network != MainNet)
+        logger.info(
+          s"Could not start bitcoind instance! Message: ${exc.getMessage}")
+        logger.info(s"Log lines:")
+        val logLines = Source.fromFile(logFile).getLines()
+        logLines.foreach(logger.info)
+    }
 
     started
   }
 
   def isStarted: Boolean = {
+    Await.result(isStartedF, 2.seconds)
+  }
+
+  def isStartedF: Future[Boolean] = {
     val request = buildRequest(instance, "ping", JsArray.empty)
     val responseF = sendRequest(request)
 
     val payloadF: Future[JsValue] = responseF.flatMap(getPayload)
 
     // Ping successful if no error can be parsed from the payload
-    val result = Try(Await.result(payloadF.map { payload =>
+    val parsedF = payloadF.map { payload =>
       (payload \ errorKey).validate[RpcError] match {
         case _: JsSuccess[RpcError] => false
         case _: JsError             => true
       }
-    }, 2.seconds))
+    }
 
-    result.getOrElse(false)
+    parsedF.recover {
+      case exc: StreamTcpException
+          if exc.getMessage.contains("Connection refused") =>
+        false
+
+    }
+
   }
 
   // This RPC call is here to avoid circular trait depedency

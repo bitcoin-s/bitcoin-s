@@ -3,241 +3,223 @@ package org.bitcoins.rpc.common
 import java.net.URI
 
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
 import akka.testkit.TestKit
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.rpc.{BitcoindRpcTestConfig, BitcoindRpcTestUtil}
+import org.bitcoins.rpc.BitcoindRpcTestUtil
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.client.common.RpcOpts.AddNodeArgument
 import org.scalatest.{AsyncFlatSpec, BeforeAndAfterAll}
 
-import scala.async.Async.{async, await}
-import scala.concurrent.{Await, ExecutionContext}
+import scala.collection.mutable
+import scala.concurrent.{ExecutionContext, Future}
 
 class P2PRpcTest extends AsyncFlatSpec with BeforeAndAfterAll {
-  implicit val system: ActorSystem = ActorSystem("P2PRpcTest")
-  implicit val m: ActorMaterializer = ActorMaterializer()
-  implicit val ec: ExecutionContext = m.executionContext
+  implicit val system: ActorSystem =
+    ActorSystem("P2PRpcTest", BitcoindRpcTestUtil.AKKA_CONFIG)
+  implicit val ec: ExecutionContext = system.dispatcher
   implicit val networkParam: NetworkParameters = BitcoindRpcTestUtil.network
 
-  val client = new BitcoindRpcClient(BitcoindRpcTestUtil.instance())
+  val accum: mutable.Builder[BitcoindRpcClient, Vector[BitcoindRpcClient]] =
+    Vector.newBuilder[BitcoindRpcClient]
 
-  override protected def beforeAll(): Unit = {
-    import BitcoindRpcTestConfig.DEFAULT_TIMEOUT
-    Await.result(BitcoindRpcTestUtil.startServers(Vector(client)),
-                 DEFAULT_TIMEOUT)
-  }
+  lazy val clientF: Future[BitcoindRpcClient] =
+    BitcoindRpcTestUtil.startedBitcoindRpcClient(clientAccum = accum)
 
   override protected def afterAll(): Unit = {
-    BitcoindRpcTestUtil.stopServers(Vector(client))
+    BitcoindRpcTestUtil.stopServers(accum.result)
     TestKit.shutdownActorSystem(system)
   }
 
   behavior of "P2PRpcTest"
 
-  it should "be able to get peer info" in async {
-    val (freshClient, otherFreshClient) =
-      await(BitcoindRpcTestUtil.createNodePair())
-    val infoList = await(freshClient.getPeerInfo)
-    assert(infoList.length == 1)
-
-    val info = infoList.head
-    assert(!info.inbound)
-    assert(info.addnode)
-    assert(info.networkInfo.addr == otherFreshClient.getDaemon.uri)
-    BitcoindRpcTestUtil.deleteNodePair(freshClient, otherFreshClient)
-    succeed
+  it should "be able to get peer info" in {
+    for {
+      (freshClient, otherFreshClient) <- BitcoindRpcTestUtil.createNodePair(
+        clientAccum = accum)
+      infoList <- freshClient.getPeerInfo
+    } yield {
+      assert(infoList.length >= 0)
+      val info = infoList.head
+      assert(info.addnode)
+      assert(info.networkInfo.addr == otherFreshClient.getDaemon.uri)
+    }
   }
 
-  it should "be able to get the added node info" in async {
-    val (freshClient, otherFreshClient) =
-      await(BitcoindRpcTestUtil.createNodePair())
-    val info = await(freshClient.getAddedNodeInfo)
+  it should "be able to get the added node info" in {
+    for {
 
-    assert(info.length == 1)
-    assert(info.head.addednode == otherFreshClient.getDaemon.uri)
-    assert(info.head.connected.contains(true))
-
-    BitcoindRpcTestUtil.deleteNodePair(freshClient, otherFreshClient)
-    succeed
-
+      (freshClient, otherFreshClient) <- BitcoindRpcTestUtil.createNodePair(
+        clientAccum = accum)
+      info <- freshClient.getAddedNodeInfo
+    } yield {
+      assert(info.length == 1)
+      assert(info.head.addednode == otherFreshClient.getDaemon.uri)
+      assert(info.head.connected.contains(true))
+    }
   }
 
-  it should "be able to get the network info" in async {
-    val (freshClient, otherFreshClient) =
-      await(BitcoindRpcTestUtil.createUnconnectedNodePair())
-    val info = await(freshClient.getNetworkInfo)
-    assert(info.networkactive)
-    assert(info.localrelay)
-    assert(info.connections == 0)
-    freshClient.addNode(otherFreshClient.getDaemon.uri, AddNodeArgument.Add)
-    BitcoindRpcTestUtil.awaitConnection(freshClient, otherFreshClient)
-    val newInfo = await(freshClient.getNetworkInfo)
-    assert(newInfo.connections == 1)
-
-    BitcoindRpcTestUtil.deleteNodePair(freshClient, otherFreshClient)
-    succeed
+  it should "be able to get the network info" in {
+    for {
+      (freshClient, otherFreshClient) <- BitcoindRpcTestUtil
+        .createUnconnectedNodePair(clientAccum = accum)
+      _ <- freshClient.addNode(otherFreshClient.getDaemon.uri,
+                               AddNodeArgument.Add)
+      _ <- BitcoindRpcTestUtil.awaitConnection(freshClient, otherFreshClient)
+      info <- freshClient.getNetworkInfo
+    } yield {
+      assert(info.networkactive)
+      assert(info.localrelay)
+      assert(info.connections == 1)
+    }
 
   }
 
-  it should "be able to get network statistics" in async {
-    val (connectedClient, otherClient) =
-      await(BitcoindRpcTestUtil.createNodePair())
-    val stats = await(connectedClient.getNetTotals)
+  it should "be able to get network statistics" in {
+    for {
+      (connectedClient, _) <- BitcoindRpcTestUtil.createNodePair(
+        clientAccum = accum)
+      stats <- connectedClient.getNetTotals
+    } yield {
+      assert(stats.timemillis.toBigInt > 0)
+      assert(stats.totalbytesrecv > 0)
+      assert(stats.totalbytessent > 0)
 
-    assert(stats.timemillis.toBigInt > 0)
-    assert(stats.totalbytesrecv > 0)
-    assert(stats.totalbytessent > 0)
-
-    BitcoindRpcTestUtil.deleteNodePair(connectedClient, otherClient)
-    succeed
+    }
   }
 
-  it should "be able to ban and clear the ban of a subnet" in async {
+  it should "be able to ban and clear the ban of a subnet" in {
     val loopBack = URI.create("http://127.0.0.1")
-    val (client1, client2) = await(BitcoindRpcTestUtil.createNodePair())
-    await(client1.setBan(loopBack, "add"))
+    for {
 
-    val list = await(client1.listBanned)
-    assert(list.length == 1)
-    assert(list.head.address.getAuthority == loopBack.getAuthority)
-    assert(list.head.banned_until - list.head.ban_created == UInt32(86400))
+      (client1, _) <- BitcoindRpcTestUtil.createNodePair(clientAccum = accum)
+      _ <- client1.setBan(loopBack, "add")
 
-    await(client1.setBan(loopBack, "remove"))
-    val newList = await(client1.listBanned)
-    assert(newList.isEmpty)
+      list <- client1.listBanned
+      _ <- client1.setBan(loopBack, "remove")
+      newList <- client1.listBanned
+    } yield {
 
-    BitcoindRpcTestUtil.deleteNodePair(client1, client2)
-    succeed
+      assert(list.length == 1)
+      assert(list.head.address.getAuthority == loopBack.getAuthority)
+      assert(list.head.banned_until - list.head.ban_created == UInt32(86400))
+      assert(newList.isEmpty)
+    }
+
   }
 
   it should "be able to get the difficulty on the network" in {
-    client.getDifficulty.map { difficulty =>
+    for {
+      client <- clientF
+      difficulty <- client.getDifficulty
+    } yield {
       assert(difficulty > 0)
       assert(difficulty < 1)
     }
   }
 
-  it should "be able to deactivate and activate the network" in async {
-    val infoF = for {
+  it should "be able to deactivate and activate the network" in {
+    for {
+      client <- clientF
       _ <- client.setNetworkActive(false)
       firstInfo <- client.getNetworkInfo
       _ <- client.setNetworkActive(true)
       secondInfo <- client.getNetworkInfo
-    } yield (firstInfo, secondInfo)
-
-    val (firstInfo, secondInfo) = await(infoF)
-    assert(!firstInfo.networkactive)
-    assert(secondInfo.networkactive)
+    } yield {
+      assert(!firstInfo.networkactive)
+      assert(secondInfo.networkactive)
+    }
   }
 
-  it should "be able to clear banned subnets" in async {
-    val (client1, client2) = await(BitcoindRpcTestUtil.createNodePair())
+  it should "be able to clear banned subnets" in {
+    for {
 
-    await(client1.setBan(URI.create("http://127.0.0.1"), "add"))
-    await(client1.setBan(URI.create("http://127.0.0.2"), "add"))
-
-    val list = await(client1.listBanned)
-    assert(list.length == 2)
-
-    await(client1.clearBanned())
-    val newList = await(client1.listBanned)
-    assert(newList.isEmpty)
-
-    BitcoindRpcTestUtil.deleteNodePair(client1, client2)
-    succeed
+      (client1, _) <- BitcoindRpcTestUtil.createNodePair(clientAccum = accum)
+      _ <- client1.setBan(URI.create("http://127.0.0.1"), "add")
+      _ <- client1.setBan(URI.create("http://127.0.0.2"), "add")
+      list <- client1.listBanned
+      _ <- client1.clearBanned()
+      newList <- client1.listBanned
+    } yield {
+      assert(list.length == 2)
+      assert(newList.isEmpty)
+    }
   }
 
-  it should "be able to add and remove a node" in async {
-    val (freshClient, otherFreshClient) =
-      await(BitcoindRpcTestUtil.createUnconnectedNodePair())
-    val uri = otherFreshClient.getDaemon.uri
+  it should "be able to add and remove a node" in {
+    for {
+      (freshClient, otherFreshClient) <- BitcoindRpcTestUtil
+        .createUnconnectedNodePair(clientAccum = accum)
+      uri = otherFreshClient.getDaemon.uri
 
-    await(freshClient.addNode(uri, AddNodeArgument.Add))
+      _ <- freshClient.addNode(uri, AddNodeArgument.Add)
+      _ <- BitcoindRpcTestUtil.awaitConnection(freshClient, otherFreshClient)
 
-    BitcoindRpcTestUtil.awaitConnection(freshClient, otherFreshClient)
+      info <- freshClient.getAddedNodeInfo(otherFreshClient.getDaemon.uri)
 
-    val info =
-      await(freshClient.getAddedNodeInfo(otherFreshClient.getDaemon.uri))
-    assert(info.length == 1)
-    assert(info.head.addednode == otherFreshClient.getDaemon.uri)
-    assert(info.head.connected.contains(true))
-
-    await(freshClient.addNode(uri, AddNodeArgument.Remove))
-
-    val newInfo = await(otherFreshClient.getAddedNodeInfo)
-    assert(newInfo.isEmpty)
-
-    BitcoindRpcTestUtil.deleteNodePair(freshClient, otherFreshClient)
-    succeed
+      _ <- freshClient.addNode(uri, AddNodeArgument.Remove)
+      newInfo <- otherFreshClient.getAddedNodeInfo
+    } yield {
+      assert(info.length == 1)
+      assert(info.head.addednode == otherFreshClient.getDaemon.uri)
+      assert(info.head.connected.contains(true))
+      assert(newInfo.isEmpty)
+    }
   }
 
-  it should "be able to add and disconnect a node" in async {
-    val (freshClient, otherFreshClient) =
-      await(BitcoindRpcTestUtil.createUnconnectedNodePair())
-    val uri = otherFreshClient.getDaemon.uri
+  it should "be able to add and disconnect a node" in {
+    for {
+      (freshClient, otherFreshClient) <- BitcoindRpcTestUtil
+        .createUnconnectedNodePair(clientAccum = accum)
+      uri = otherFreshClient.getDaemon.uri
 
-    val addNodeF = freshClient.addNode(uri, AddNodeArgument.Add)
-    await(addNodeF)
-    BitcoindRpcTestUtil.awaitConnection(freshClient, otherFreshClient)
+      _ <- freshClient.addNode(uri, AddNodeArgument.Add)
+      _ <- BitcoindRpcTestUtil.awaitConnection(freshClient, otherFreshClient)
+      info <- freshClient.getAddedNodeInfo(otherFreshClient.getDaemon.uri)
 
-    val info =
-      await(freshClient.getAddedNodeInfo(otherFreshClient.getDaemon.uri))
-    assert(info.head.connected.contains(true))
-
-    await(freshClient.disconnectNode(otherFreshClient.getDaemon.uri))
-    BitcoindRpcTestUtil.awaitDisconnected(freshClient, otherFreshClient)
-
-    val newInfoF = freshClient.getAddedNodeInfo(otherFreshClient.getDaemon.uri)
-    val newInfo = await(newInfoF)
-    assert(newInfo.head.connected.contains(false))
-
-    BitcoindRpcTestUtil.deleteNodePair(freshClient, otherFreshClient)
-    succeed
+      _ <- freshClient.disconnectNode(otherFreshClient.getDaemon.uri)
+      _ <- BitcoindRpcTestUtil.awaitDisconnected(freshClient, otherFreshClient)
+      newInfo <- freshClient.getAddedNodeInfo(otherFreshClient.getDaemon.uri)
+    } yield {
+      assert(info.head.connected.contains(true))
+      assert(newInfo.head.connected.contains(false))
+    }
   }
 
-  it should "be able to get the connection count" in async {
-    val (freshClient, otherFreshClient) =
-      await(BitcoindRpcTestUtil.createUnconnectedNodePair())
-    val connectionPre = await(freshClient.getConnectionCount)
-    assert(connectionPre == 0)
-
-    await(
-      freshClient.addNode(otherFreshClient.getDaemon.uri, AddNodeArgument.Add))
-    BitcoindRpcTestUtil.awaitConnection(freshClient, otherFreshClient)
-
-    val connectionPost = await(otherFreshClient.getConnectionCount)
-    assert(connectionPost == 1)
-
-    BitcoindRpcTestUtil.deleteNodePair(freshClient, otherFreshClient)
-    succeed
+  it should "be able to get the connection count" in {
+    for {
+      (freshClient, otherFreshClient) <- BitcoindRpcTestUtil
+        .createUnconnectedNodePair()
+      connectionPre <- freshClient.getConnectionCount
+      _ <- freshClient.addNode(otherFreshClient.getDaemon.uri,
+                               AddNodeArgument.Add)
+      _ <- BitcoindRpcTestUtil.awaitConnection(freshClient, otherFreshClient)
+      connectionPost <- otherFreshClient.getConnectionCount
+    } yield {
+      assert(connectionPre == 0)
+      assert(connectionPost == 1)
+    }
   }
 
-  it should "be able to submit a new block" in async {
-    val (client1, client2) =
-      await(BitcoindRpcTestUtil.createUnconnectedNodePair())
+  it should "be able to submit a new block" in {
+    for {
 
-    val hash = await(client2.generate(1))
-    val block = await(
-      client2.getBlockRaw(hash.head)
-    )
+      (client1, client2) <- BitcoindRpcTestUtil.createUnconnectedNodePair(
+        clientAccum = accum)
+      hash <- client2.generate(1)
+      block <- client2.getBlockRaw(hash.head)
+      preCount1 <- client1.getBlockCount
+      preCount2 <- client2.getBlockCount
+      _ <- client1.submitBlock(block)
 
-    val preCount1 = await(client1.getBlockCount)
-    val preCount2 = await(client2.getBlockCount)
-    assert(preCount1 != preCount2)
-
-    await(client1.submitBlock(block))
-
-    val postCount1 = await(client1.getBlockCount)
-    val postCount2 = await(client2.getBlockCount)
-    assert(postCount1 == postCount2)
-
-    val hash1 = await(client1.getBlockHash(postCount1))
-    val hash2 = await(client2.getBlockHash(postCount2))
-    assert(hash1 == hash2)
-
-    BitcoindRpcTestUtil.deleteNodePair(client1, client2)
-    succeed
+      postCount1 <- client1.getBlockCount
+      postCount2 <- client2.getBlockCount
+      hash1 <- client1.getBlockHash(postCount1)
+      hash2 <- client2.getBlockHash(postCount2)
+    } yield {
+      assert(preCount1 != preCount2)
+      assert(postCount1 == postCount2)
+      assert(hash1 == hash2)
+    }
   }
 }

@@ -18,7 +18,7 @@ import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.eclair.rpc.client.EclairRpcClient
 import org.bitcoins.eclair.rpc.config.EclairInstance
 import org.bitcoins.eclair.rpc.json.PaymentResult
-import org.bitcoins.rpc.BitcoindRpcTestUtil
+import org.bitcoins.rpc.{BitcoindRpcTestUtil, RpcUtil}
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.config.{BitcoindInstance, ZmqConfig}
 import org.bitcoins.rpc.util.AsyncUtil
@@ -51,9 +51,9 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
   lazy val network = RegTest
 
   def bitcoindInstance(
-      port: Int = randomPort,
-      rpcPort: Int = randomPort,
-      zmqPort: Int = randomPort): BitcoindInstance = {
+      port: Int = RpcUtil.randomPort,
+      rpcPort: Int = RpcUtil.randomPort,
+      zmqPort: Int = RpcUtil.randomPort): BitcoindInstance = {
     val uri = new URI("http://localhost:" + port)
     val rpcUri = new URI("http://localhost:" + rpcPort)
     val auth = BitcoindRpcTestUtil.authCredentials(uri, rpcUri, zmqPort, false)
@@ -68,8 +68,8 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
   //cribbed from https://github.com/Christewart/eclair/blob/bad02e2c0e8bd039336998d318a861736edfa0ad/eclair-core/src/test/scala/fr/acinq/eclair/integration/IntegrationSpec.scala#L140-L153
   private def commonConfig(
       bitcoindInstance: BitcoindInstance,
-      port: Int = randomPort,
-      apiPort: Int = randomPort): Config = {
+      port: Int = RpcUtil.randomPort,
+      apiPort: Int = RpcUtil.randomPort): Config = {
     val configMap = {
       Map(
         "eclair.chain" -> "regtest",
@@ -171,13 +171,6 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
       implicit system: ActorSystem): EclairRpcClient = {
     val inst = cannonicalEclairInstance()
     new EclairRpcClient(inst)
-  }
-
-  def randomPort: Int = {
-    val firstAttempt = Math.abs(scala.util.Random.nextInt % 15000)
-    if (firstAttempt < network.port) {
-      firstAttempt + network.port
-    } else firstAttempt
   }
 
   def deleteTmpDir(dir: File): Boolean = {
