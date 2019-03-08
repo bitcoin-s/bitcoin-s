@@ -58,15 +58,20 @@ trait RawTransactionRpc extends Client {
     FundRawTransactionResult] = fundRawTransaction(transaction, Some(options))
 
   def getRawTransaction(
-      txid: DoubleSha256Digest): Future[GetRawTransactionResult] = {
+      txid: DoubleSha256Digest,
+      blockhash: Option[DoubleSha256Digest] = None): Future[
+    GetRawTransactionResult] = {
     bitcoindCall[GetRawTransactionResult](
       "getrawtransaction",
-      List(JsString(txid.hex), JsBoolean(true)))
+      List(JsString(txid.hex), JsBoolean(true), Json.toJson(blockhash)))
   }
 
-  def getRawTransactionRaw(txid: DoubleSha256Digest): Future[Transaction] = {
-    bitcoindCall[Transaction]("getrawtransaction",
-                              List(JsString(txid.hex), JsBoolean(false)))
+  def getRawTransactionRaw(
+      txid: DoubleSha256Digest,
+      blockhash: Option[DoubleSha256Digest] = None): Future[Transaction] = {
+    bitcoindCall[Transaction](
+      "getrawtransaction",
+      List(JsString(txid.hex), JsBoolean(false), Json.toJson(blockhash)))
   }
 
   def sendRawTransaction(

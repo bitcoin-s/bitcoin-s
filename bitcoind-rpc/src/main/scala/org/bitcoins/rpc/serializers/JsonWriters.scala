@@ -9,7 +9,13 @@ import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionInput}
 import org.bitcoins.core.script.crypto._
 import org.bitcoins.core.util.BitcoinSUtil
+import org.bitcoins.rpc.client.common.RpcOpts.{
+  AddressType,
+  WalletCreateFundedPsbtOptions
+}
 import play.api.libs.json._
+
+import scala.collection.mutable
 
 object JsonWriters {
   implicit object HashTypeWrites extends Writes[HashType] {
@@ -61,13 +67,42 @@ object JsonWriters {
 
   implicit def mapWrites[K, V](keyString: K => String)(
       implicit
-      vWrites: Writes[V]): Writes[Map[K, V]] = new Writes[Map[K, V]] {
-    override def writes(o: Map[K, V]): JsValue = {
-      Json.toJson(o.map { case (k, v) => (keyString(k), v) })
+      vWrites: Writes[V]): Writes[Map[K, V]] =
+    new Writes[Map[K, V]] {
+      override def writes(o: Map[K, V]): JsValue =
+        Json.toJson(o.map { case (k, v) => (keyString(k), v) })
     }
-  }
 
   implicit object MilliSatoshisWrites extends Writes[MilliSatoshis] {
     override def writes(o: MilliSatoshis): JsValue = JsNumber(o.toBigDecimal)
+  }
+
+  implicit object AddressTypeWrites extends Writes[AddressType] {
+    override def writes(addr: AddressType): JsValue = JsString(addr.toString)
+  }
+
+  implicit object WalletCreateFundedPsbtOptionsWrites
+      extends Writes[WalletCreateFundedPsbtOptions] {
+    override def writes(opts: WalletCreateFundedPsbtOptions): JsValue = {
+      val jsOpts: mutable.Map[String, JsValue] = mutable.Map(
+        "includeWatching" -> JsBoolean(opts.includeWatching),
+        "lockUnspents" -> JsBoolean(opts.lockUnspents),
+        "replaceable" -> JsBoolean(opts.replaceable),
+        "estimate_mode" -> JsString(opts.estimateMode.toString)
+      )
+
+      def addToMapIfDefined[T](key: String, opt: Option[T])(
+          implicit writes: Writes[T]): Unit =
+        opt.foreach(o => jsOpts + (key -> Json.toJson(o)))
+
+      addToMapIfDefined("changeAddress", opts.changeAddress)
+      addToMapIfDefined("changePosition", opts.changePosition)
+      addToMapIfDefined("change_type", opts.changeType)
+      addToMapIfDefined("feeRate", opts.feeRate)
+      addToMapIfDefined("subtractFeeFromOutputs", opts.subtractFeeFromOutputs)
+      addToMapIfDefined("conf_target", opts.confTarget)
+
+      JsObject(jsOpts)
+    }
   }
 }

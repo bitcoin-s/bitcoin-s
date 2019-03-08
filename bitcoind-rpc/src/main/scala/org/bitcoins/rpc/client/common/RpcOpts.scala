@@ -10,6 +10,19 @@ import play.api.libs.json.{Json, Writes}
 
 object RpcOpts {
 
+  case class WalletCreateFundedPsbtOptions(
+      changeAddress: Option[BitcoinAddress] = None,
+      changePosition: Option[Int] = None,
+      changeType: Option[AddressType] = None,
+      includeWatching: Boolean = false,
+      lockUnspents: Boolean = false,
+      feeRate: Option[Bitcoins] = None,
+      subtractFeeFromOutputs: Option[Vector[Int]] = None,
+      replaceable: Boolean = false,
+      confTarget: Option[Int] = None,
+      estimateMode: FeeEstimationMode = FeeEstimationMode.Unset
+  )
+
   case class FundRawTransactionOptions(
       changeAddress: Option[BitcoinAddress] = None,
       changePosition: Option[Int] = None,
@@ -17,7 +30,21 @@ object RpcOpts {
       lockUnspents: Boolean = false,
       reverseChangeKey: Boolean = true,
       feeRate: Option[Bitcoins] = None,
-      subtractFeeFromOutputs: Option[Array[Int]])
+      subtractFeeFromOutputs: Option[Vector[Int]])
+
+  sealed abstract class FeeEstimationMode
+
+  object FeeEstimationMode {
+    case object Unset extends FeeEstimationMode {
+      override def toString: String = "UNSET"
+    }
+    case object Ecnomical extends FeeEstimationMode {
+      override def toString: String = "ECONOMICAL"
+    }
+    case object Conservative extends FeeEstimationMode {
+      override def toString: String = "CONSERVATIVE"
+    }
+  }
 
   implicit val fundRawTransactionOptionsWrites: Writes[
     FundRawTransactionOptions] = Json.writes[FundRawTransactionOptions]

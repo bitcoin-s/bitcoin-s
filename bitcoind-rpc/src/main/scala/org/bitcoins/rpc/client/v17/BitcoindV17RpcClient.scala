@@ -26,7 +26,8 @@ class BitcoindV17RpcClient(override val instance: BitcoindInstance)(
     implicit
     actorSystem: ActorSystem)
     extends BitcoindRpcClient(instance)
-    with V17LabelRpc {
+    with V17LabelRpc
+    with V17PsbtRpc {
 
   override def version: BitcoindVersion = BitcoindVersion.V17
 

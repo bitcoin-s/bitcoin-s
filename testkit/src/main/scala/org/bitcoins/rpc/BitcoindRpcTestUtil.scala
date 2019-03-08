@@ -37,7 +37,7 @@ import org.bitcoins.rpc.jsonmodels.{
   GetTransactionResult,
   SignRawTransactionResult
 }
-import org.bitcoins.util.AsyncUtil
+import org.bitcoins.util.{AsyncUtil, ListUtil}
 
 import scala.annotation.tailrec
 import scala.collection.immutable.Map
@@ -272,14 +272,16 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     }
   }
 
-  def awaitConnection(
+  /**
+    * Awaits non-blockingly until the provided clients are connected
+    */
+  def awaitConnectionF(
       from: BitcoindRpcClient,
       to: BitcoindRpcClient,
       duration: FiniteDuration = 100.milliseconds,
-      maxTries: Int = 50)(implicit system: ActorSystem): Unit = {
-    implicit val ec: ExecutionContextExecutor = system.dispatcher
-
-    def isConnected(): Future[Boolean] = {
+      maxTries: Int = 50)(implicit system: ActorSystem): Future[Unit] = {
+    import system.dispatcher
+    val isConnected: () => Future[Boolean] = () => {
       from
         .getAddedNodeInfo(to.getDaemon.uri)
         .map { info =>
@@ -287,16 +289,104 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
         }
     }
 
-    AsyncUtil.awaitConditionF(conditionF = () => isConnected(),
-                              duration = duration,
-                              maxTries = maxTries)
+    AsyncUtil.retryUntilSatisfiedF(conditionF = isConnected,
+                                   duration = duration,
+                                   maxTries = maxTries)
   }
 
-  def awaitSynced(
+  /**
+    * Awaits blockingly until the two clients are connected
+    */
+  def awaitConnection(
+      from: BitcoindRpcClient,
+      to: BitcoindRpcClient,
+      duration: FiniteDuration = 100.milliseconds,
+      maxTries: Int = 50)(implicit system: ActorSystem): Unit = {
+    val connF = awaitConnectionF(from, to, duration, maxTries)
+    Await.result(connF, 1.hour)
+  }
+
+  /**
+    * Return index of output of TX `txid` with value `amount`
+    *
+    * @see function we're mimicking in
+    *      [[https://github.com/bitcoin/bitcoin/blob/master/test/functional/test_framework/util.py#L410 Core test suite]]
+    */
+  def findOutput(
+      client: BitcoindRpcClient,
+      txid: DoubleSha256Digest,
+      amount: Bitcoins,
+      blockhash: Option[DoubleSha256Digest] = None)(
+      implicit executionContext: ExecutionContext): Future[UInt32] = {
+    client.getRawTransaction(txid, blockhash).map { tx =>
+      tx.vout.zipWithIndex
+        .find {
+          case (output, _) =>
+            output.value == amount
+        }
+        .map { case (_, i) => UInt32(i) }
+        .getOrElse(throw new RuntimeException(
+          s"Could not find output for $amount in TX ${txid.hex}"))
+    }
+  }
+
+  /**
+    * Generates the specified amount of blocks with all provided clients
+    * and waits until they are synced.
+    *
+    * @return Vector of Blockhashes of generated blocks, with index corresponding to the
+    *         list of provided clients
+    */
+  def generateAllAndSync(clients: Vector[BitcoindRpcClient], blocks: Int = 6)(
+      implicit system: ActorSystem): Future[
+    Vector[Vector[DoubleSha256Digest]]] = {
+    import system.dispatcher
+
+    val sliding = ListUtil.rotateHead(clients)
+
+    val initF = Future.successful(Vector.empty[Vector[DoubleSha256Digest]])
+
+    val genereratedHashesF = sliding
+      .foldLeft(initF) { (accumHashesF, clients) =>
+        accumHashesF.flatMap { accumHashes =>
+          val hashesF = generateAndSync(clients, blocks)
+          hashesF.map(hashes => hashes +: accumHashes)
+        }
+      }
+
+    genereratedHashesF.map(_.reverse.toVector)
+  }
+
+  /**
+    * Generates the specified amount of blocks and waits until
+    * the provided clients are synced.
+    *
+    * @return Blockhashes of generated blocks
+    */
+  def generateAndSync(clients: Vector[BitcoindRpcClient], blocks: Int = 6)(
+      implicit system: ActorSystem): Future[Vector[DoubleSha256Digest]] = {
+    require(clients.length > 1, "Can't sync less than 2 nodes")
+
+    import system.dispatcher
+
+    for {
+      hashes <- clients.head.generate(blocks)
+      _ <- {
+        val pairs = ListUtil.uniquePairs(clients)
+        val syncFuts = pairs.map {
+          case (first, second) =>
+            awaitSyncedF(first, second)
+        }
+        Future.sequence(syncFuts)
+      }
+    } yield hashes
+  }
+
+  def awaitSyncedF(
       client1: BitcoindRpcClient,
       client2: BitcoindRpcClient,
       duration: FiniteDuration = 1.second,
-      maxTries: Int = 50)(implicit system: ActorSystem): Unit = {
+      maxTries: Int = 50)(implicit system: ActorSystem): Future[Unit] = {
     implicit val ec: ExecutionContextExecutor = system.dispatcher
 
     def isSynced(): Future[Boolean] = {
@@ -307,9 +397,9 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       }
     }
 
-    AsyncUtil.awaitConditionF(conditionF = () => isSynced(),
-                              duration = duration,
-                              maxTries = maxTries)
+    AsyncUtil.retryUntilSatisfiedF(conditionF = () => isSynced(),
+                                   duration = duration,
+                                   maxTries = maxTries)
   }
 
   def awaitSameBlockHeight(
@@ -383,7 +473,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
 
   /**
     * Returns a pair of [[org.bitcoins.rpc.client.common.BitcoindRpcClient BitcoindRpcClient]]
-    * that are connected with 100 blocks in the chain
+    * that are connected with 101 blocks in the chain
     */
   def createNodePair(
       port1: Int = randomPort,
@@ -392,31 +482,27 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       rpcPort2: Int = randomPort)(implicit system: ActorSystem): Future[
     (BitcoindRpcClient, BitcoindRpcClient)] = {
     implicit val executionContext: ExecutionContext = system.dispatcher
-    val clientsF = createUnconnectedNodePair(port1 = port1,
-                                             rpcPort1 = rpcPort1,
-                                             port2 = port2,
-                                             rpcPort2 = rpcPort2)
+    val unconnectedClientsF = createUnconnectedNodePair(port1 = port1,
+                                                        rpcPort1 = rpcPort1,
+                                                        port2 = port2,
+                                                        rpcPort2 = rpcPort2)
 
-    def cleanUp(
-        attempt: Try[_],
-        client1: BitcoindRpcClient,
-        client2: BitcoindRpcClient) =
-      attempt match {
-        case Success(_) => Future.successful(())
-        case Failure(exc) =>
-          deleteNodePair(client1, client2)
-          Future.failed(exc)
-      }
-
-    for {
-      (client1, client2) <- clientsF
+    val clientsF = for {
+      (client1, client2) <- unconnectedClientsF
       _ <- client1.addNode(client2.getDaemon.uri, AddNodeArgument.Add)
-      connT = Try { awaitConnection(client1, client2) }
-      _ <- cleanUp(connT, client1, client2)
-      _ <- client1.generate(100)
-      syncT = Try { awaitSynced(client1, client2) }
-      _ <- cleanUp(syncT, client1, client2)
+      _ <- awaitConnectionF(client1, client2)
+      _ <- client1.generate(101) // so we have spendable money
+      _ <- awaitSyncedF(client1, client2)
     } yield (client1, client2)
+
+    clientsF.recoverWith {
+      case exc =>
+        unconnectedClientsF.flatMap {
+          case (first, second) =>
+            deleteNodePair(first, second)
+            Future.failed(exc)
+        }
+    }
   }
 
   def createRawCoinbaseTransaction(

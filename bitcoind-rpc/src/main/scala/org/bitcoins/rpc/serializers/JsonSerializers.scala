@@ -5,6 +5,7 @@ import java.net.{InetAddress, URI}
 
 import org.bitcoins.core.crypto.{
   DoubleSha256Digest,
+  ECDigitalSignature,
   ECPublicKey,
   Sha256Hash160Digest
 }
@@ -81,7 +82,7 @@ object JsonSerializers {
     ((__ \ "asm").read[String] and
       (__ \ "hex").read[String] and
       (__ \ "reqSigs").readNullable[Int] and
-      (__ \ "type").read[String] and
+      (__ \ "type").read[RpcScriptType] and
       (__ \ "addresses").readNullable[Vector[BitcoinAddress]])(RpcScriptPubKey)
   implicit val rpcTransactionOutputReads: Reads[RpcTransactionOutput] =
     Json.reads[RpcTransactionOutput]
@@ -311,6 +312,40 @@ object JsonSerializers {
 
   implicit val estimateSmartFeeResultReads: Reads[EstimateSmartFeeResult] =
     Json.reads[EstimateSmartFeeResult]
+
+  implicit val walletProcessPsbtResultReads: Reads[WalletProcessPsbtResult] =
+    Json.reads[WalletProcessPsbtResult]
+
+  implicit val finalizedPsbtReads: Reads[FinalizedPsbt] = FinalizedPsbtReads
+
+  implicit val nonFinalizedPsbtReads: Reads[NonFinalizedPsbt] =
+    NonFinalizedPsbtReads
+
+  implicit val finalizePsbtResultReads: Reads[FinalizePsbtResult] =
+    FinalizePsbtResultReads
+
+  implicit val rpcPsbtOutputReads: Reads[RpcPsbtOutput] = RpcPsbtOutputReads
+
+  implicit val psbtBIP32DerivsReads: Reads[PsbtBIP32Deriv] =
+    PsbtBIP32DerivsReads
+
+  implicit val rpcPsbtScriptReads: Reads[RpcPsbtScript] = RpcPsbtScriptReads
+
+  implicit val psbtWitnessUtxoInputReads: Reads[PsbtWitnessUtxoInput] =
+    Json.reads[PsbtWitnessUtxoInput]
+
+  implicit val mapPubKeySignatureReads: Reads[
+    Map[ECPublicKey, ECDigitalSignature]] = MapPubKeySignatureReads
+
+  implicit val rpcPsbtInputReads: Reads[RpcPsbtInput] = RpcPsbtInputReads
+
+  implicit val decodePsbtResult: Reads[DecodePsbtResult] =
+    Json.reads[DecodePsbtResult]
+
+  implicit val walletCreateFundedPsbtResultReads: Reads[
+    WalletCreateFundedPsbtResult] = Json.reads[WalletCreateFundedPsbtResult]
+
+  implicit val rpcScriptTypeReads: Reads[RpcScriptType] = RpcScriptTypeReads
 
   // Map stuff
   implicit def mapDoubleSha256DigestReads: Reads[
