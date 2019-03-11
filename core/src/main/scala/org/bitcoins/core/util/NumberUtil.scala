@@ -157,16 +157,17 @@ trait NumberUtil extends BitcoinSLogger {
     */
   def targetExpansion(nBits: UInt32): BigInteger = {
     //mantissa bytes without sign bit
+    val noSignificand = nBits.bytes.takeRight(3)
     val mantissaBytes = {
-      val withSignBit = nBits.bytes.takeRight(3)
-      val noSignBit = withSignBit.head & 0x7f
-      noSignBit.toByte +: withSignBit.tail
+      val withSignBit = noSignificand
+      val noSignBit = false +: withSignBit.bits.tail
+      noSignBit.toByteVector
     }
 
     val significand = nBits.bytes.head
 
     //if the most significant bit is set, we have a negative number
-    val signum = if ((0x80 & nBits.bytes(1)) != 0) {
+    val signum = if (noSignificand.bits.head) {
       -1
     } else {
       1
