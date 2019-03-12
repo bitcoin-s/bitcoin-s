@@ -1,10 +1,12 @@
 package org.bitcoins.core.protocol.blockchain
 
+import java.math.BigInteger
+
 import org.bitcoins.core.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.protocol.NetworkElement
 import org.bitcoins.core.serializers.blockchain.RawBlockHeaderSerializer
-import org.bitcoins.core.util.{CryptoUtil, Factory}
+import org.bitcoins.core.util.{CryptoUtil, Factory, NumberUtil}
 import scodec.bits.ByteVector
 
 /**
@@ -85,6 +87,20 @@ sealed trait BlockHeader extends NetworkElement {
     * @return
     */
   def nBits: UInt32
+
+  /**
+    * This is the decoded version of [[nBits]]. nBits is used to compactly represent the difficulty
+    * target for the bitcoin network. This field is the expanded version that is the _actual_
+    * requirement needed for the network. This is a 256 bit unsigned integer
+    * See the bitcoin developer reference for more information on how this is constructed
+    * [[https://bitcoin.org/en/developer-reference#target-nbits documentation]]
+    *
+    * The hash of this block needs to be _less than_ this difficulty
+    * to be considered a valid block on the network
+    */
+  def difficulty: BigInteger = {
+    NumberUtil.targetExpansion(nBits = nBits)
+  }
 
   /**
     * An arbitrary number miners change to modify the header hash in order to produce a hash below the target threshold.

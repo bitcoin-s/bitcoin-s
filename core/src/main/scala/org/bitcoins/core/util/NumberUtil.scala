@@ -144,6 +144,50 @@ trait NumberUtil extends BitcoinSLogger {
     //should always be able to convert from uint5 => uint8
     u8sTry.get
   }
+
+  /** Expands the [[org.bitcoins.core.protocol.blockchain.BlockHeader.nBits nBits]]
+    * field given in a block header to the _actual_ target difficulty.
+    * See [[https://bitcoin.org/en/developer-reference#target-nbits developer reference]]
+    * for more information
+    *
+    * Meant to replicate this function in bitcoin core
+    * [[https://github.com/bitcoin/bitcoin/blob/2068f089c8b7b90eb4557d3f67ea0f0ed2059a23/src/arith_uint256.cpp#L206]]
+    * @param nBits
+    * @return
+    */
+  def targetExpansion(nBits: UInt32): BigInteger = {
+    //mantissa bytes without sign bit
+    val noSignificand = nBits.bytes.takeRight(3)
+    val mantissaBytes = {
+      val withSignBit = noSignificand
+      val noSignBit = false +: withSignBit.bits.tail
+      noSignBit.toByteVector
+    }
+
+    val significand = nBits.bytes.head
+
+    //if the most significant bit is set, we have a negative number
+    val signum = if (noSignificand.bits.head) {
+      -1
+    } else {
+      1
+    }
+
+    val mantissa =
+      new BigInteger(signum, mantissaBytes.toArray)
+
+    //guards against a negative exponent, in which case we just shift right
+    //see bitcoin core implementation
+    if (significand <= 3) {
+      mantissa.shiftRight(8 * (3 - significand))
+    } else {
+      val exponent = significand - 3
+
+      val pow256 = BigInteger.valueOf(256).pow(exponent)
+      mantissa.multiply(pow256)
+    }
+
+  }
 }
 
 object NumberUtil extends NumberUtil
