@@ -1,10 +1,12 @@
 package org.bitcoins.core.crypto
 
 import org.bitcoin.NativeSecp256k1
+import org.bitcoins.core.crypto.bip32.{BIP32Child, BIP32Path}
 import org.bitcoins.core.number.{UInt32, UInt8}
 import org.bitcoins.core.protocol.NetworkElement
 import org.bitcoins.core.util._
 import scodec.bits.ByteVector
+import scodec.bits.HexStringSyntax
 
 import scala.util.{Failure, Success, Try}
 
@@ -42,14 +44,36 @@ sealed abstract class ExtKey extends NetworkElement {
   /** The key at this path */
   def key: BaseECKey
 
+  /**
+    * Derives the child pubkey at the specified index
+    */
   def deriveChildPubKey(idx: UInt32): Try[ExtPublicKey] = this match {
     case priv: ExtPrivateKey =>
       Success(priv.deriveChildPrivKey(idx).extPublicKey)
     case pub: ExtPublicKey => pub.deriveChildPubKey(idx)
   }
 
+  /**
+    * Derives the child pubkey at the specified index
+    */
   def deriveChildPubKey(idx: Long): Try[ExtPublicKey] = {
     Try(UInt32(idx)).flatMap(deriveChildPubKey)
+  }
+
+  /**
+    * Derives the child pubkey at the specified path
+    */
+  def deriveChildPubKey(path: BIP32Path): Try[ExtPublicKey] = {
+    this match {
+      case priv: ExtPrivateKey =>
+        Success(priv.deriveChildPrivKey(path).extPublicKey)
+      case pub: ExtPublicKey =>
+        Try {
+          path.children.foldLeft(pub)((accum: ExtPublicKey, curr: BIP32Child) =>
+            accum.deriveChildPubKey(curr.toUInt32).get)
+        }
+    }
+
   }
 
   override def bytes: ByteVector = key match {
@@ -119,10 +143,23 @@ sealed abstract class ExtPrivateKey extends ExtKey {
 
   override def key: ECPrivateKey
 
+  /**
+    * Derives the child key corresponding to the given path. The given path
+    * could signify account levels, one sublevel for each currency, or
+    * how to derive change addresses.
+    *
+    * @see [[org.bitcoins.core.crypto.bip44.BIP44Path BIP44Path]] for a more
+    *     specialized version of a BIP32 path
+    */
+  def deriveChildPrivKey(path: BIP32Path): ExtPrivateKey = {
+    path.children.foldLeft(this)((accum: ExtPrivateKey, curr: BIP32Child) =>
+      accum.deriveChildPrivKey(curr.toUInt32))
+  }
+
   def deriveChildPrivKey(idx: UInt32): ExtPrivateKey = {
     val data: ByteVector = if (idx >= ExtKey.hardenedIdx) {
       //derive hardened key
-      0.toByte +: (key.bytes ++ idx.bytes)
+      hex"0" ++ key.bytes ++ idx.bytes
     } else {
       //derive non hardened key
       key.publicKey.bytes ++ idx.bytes
@@ -225,7 +262,8 @@ object ExtPrivateKey extends Factory[ExtPrivateKey] {
     */
   def apply(
       version: ExtKeyVersion,
-      seedOpt: Option[ByteVector] = None): ExtPrivateKey = {
+      seedOpt: Option[ByteVector] = None,
+      path: BIP32Path = BIP32Path.empty): ExtPrivateKey = {
     val seed: ByteVector = seedOpt match {
       case Some(bytes) => bytes
       case None        => ECPrivateKey().bytes
@@ -236,17 +274,23 @@ object ExtPrivateKey extends Factory[ExtPrivateKey] {
     val masterPrivKey = ECPrivateKey(masterPrivBytes)
     val chaincode = ChainCode(chaincodeBytes)
     val fingerprint = UInt32.zero.bytes
-    ExtPrivateKey(version,
-                  depth = UInt8.zero,
-                  fingerprint = fingerprint,
-                  child = UInt32.zero,
-                  chaincode,
-                  masterPrivKey)
+    val root = ExtPrivateKey(version,
+                             depth = UInt8.zero,
+                             fingerprint = fingerprint,
+                             child = UInt32.zero,
+                             chaincode,
+                             masterPrivKey)
+
+    path.children.foldLeft(root)((accum, curr) =>
+      accum.deriveChildPrivKey(curr.toUInt32))
   }
 
   /** Generates a extended private key from the provided seed and version */
-  def fromBIP39Seed(version: ExtKeyVersion, seed: BIP39Seed) =
-    ExtPrivateKey(version, Some(seed.bytes))
+  def fromBIP39Seed(
+      version: ExtKeyVersion,
+      seed: BIP39Seed,
+      path: BIP32Path = BIP32Path.empty) =
+    ExtPrivateKey(version, Some(seed.bytes), path)
 }
 
 sealed abstract class ExtPublicKey extends ExtKey {

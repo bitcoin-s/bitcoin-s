@@ -1,6 +1,8 @@
 package org.bitcoins.testkit.core.gen
 
 import org.bitcoins.core.crypto._
+import org.bitcoins.core.crypto.bip32.{BIP32Child, BIP32Path}
+import org.bitcoins.core.crypto.bip44._
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.util.CryptoUtil
 import org.scalacheck.Gen
@@ -223,6 +225,91 @@ sealed abstract class CryptoGenerators {
 
   def extKey: Gen[ExtKey] = Gen.oneOf(extPrivateKey, extPublicKey)
 
+  def bip32Child: Gen[BIP32Child] =
+    for {
+      bool <- Gen.oneOf(true, false)
+      index <- NumberGenerator.positiveInts
+    } yield BIP32Child(index, bool)
+
+  /**
+    * Generates a non-hardened BIP 32 path segment
+    */
+  def softBip32Child: Gen[BIP32Child] =
+    for {
+      index <- NumberGenerator.positiveInts
+    } yield BIP32Child(index, hardened = false)
+
+  def hardBip32Child: Gen[BIP32Child] =
+    for {
+      soft <- softBip32Child
+    } yield soft.copy(hardened = true)
+
+  def bip32Path: Gen[BIP32Path] =
+    for {
+      children <- Gen.listOf(bip32Child)
+    } yield BIP32Path(children.toVector)
+
+  /**
+    * Generates a non-hardened BIP 32 path
+    */
+  def softBip32Path: Gen[BIP32Path] =
+    for {
+      children <- Gen.listOf(softBip32Child)
+    } yield BIP32Path(children.toVector)
+
+  /**
+    * Generates a valid BIP44 chain type (external/internal change)
+    */
+  def bip44ChainType: Gen[BIP44ChainType] =
+    Gen.oneOf(BIP44ChainType.Change, BIP44ChainType.External)
+
+  /**
+    * Generates a valid BIP44 chain path
+    */
+  def bip44Chain: Gen[BIP44Chain] =
+    for {
+      chainType <- bip44ChainType
+      account <- bip44Account
+    } yield BIP44Chain(chainType, account)
+
+  /**
+    * Generates a valid BIP44 coin path
+    */
+  def bip44Coin: Gen[BIP44Coin] =
+    Gen.oneOf(BIP44Coin.Testnet, BIP44Coin.Bitcoin)
+
+  /**
+    * Generates a valid BIP44 account path
+    */
+  def bip44Account: Gen[BIP44Account] =
+    for {
+      coin <- bip44Coin
+      int <- NumberGenerator.positiveInts
+    } yield BIP44Account(coin = coin, index = int)
+
+  /**
+    * Generates a valid BIP44 adddress path
+    */
+  def bip44Address: Gen[BIP44Address] =
+    for {
+      chain <- bip44Chain
+      int <- NumberGenerator.positiveInts
+    } yield BIP44Address(chain, int)
+
+  /**
+    * Generates a valid BIP44 path
+    */
+  def bip44Path: Gen[BIP44Path] =
+    for {
+      coin <- bip44Coin
+      accountIndex <- NumberGenerator.positiveInts
+      addressIndex <- NumberGenerator.positiveInts
+      chainType <- bip44ChainType
+    } yield
+      BIP44Path(coin = coin,
+                addressIndex = addressIndex,
+                accountIndex = accountIndex,
+                chainType = chainType)
 }
 
 object CryptoGenerators extends CryptoGenerators
