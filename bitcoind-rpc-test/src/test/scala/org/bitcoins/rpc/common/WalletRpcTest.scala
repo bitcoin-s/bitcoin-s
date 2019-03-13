@@ -52,6 +52,11 @@ class WalletRpcTest extends AsyncFlatSpec with BeforeAndAfterAll {
       _ <- walletClient.encryptWallet(password)
       _ <- walletClient.stop()
       _ <- RpcUtil.awaitServerShutdown(walletClient)
+      _ <- Future {
+        // Very rarely we are prevented from starting the client again because Core
+        // hasn't released its locks on the datadir. This is prevent that.
+        Thread.sleep(1000)
+      }
       _ <- walletClient.start()
     } yield walletClient
   }

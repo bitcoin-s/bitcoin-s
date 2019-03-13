@@ -464,6 +464,15 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     }
   }
 
+  def syncPairs(pairs: Vector[(BitcoindRpcClient, BitcoindRpcClient)])(
+      implicit system: ActorSystem): Future[Unit] = {
+    import system.dispatcher
+    val futures = pairs.map {
+      case (first, second) => BitcoindRpcTestUtil.awaitSynced(first, second)
+    }
+    Future.sequence(futures).map(_ => ())
+  }
+
   /**
     * Connects and waits non-blockingly until all the provided pairs of clients
     * are connected

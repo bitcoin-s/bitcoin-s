@@ -5,6 +5,7 @@ import java.net.ServerSocket
 import akka.actor.ActorSystem
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.util.AsyncUtil
+import org.slf4j.LoggerFactory
 
 import scala.annotation.tailrec
 import scala.concurrent.Future
@@ -46,7 +47,7 @@ abstract class RpcUtil extends AsyncUtil {
   final def randomPort: Int = {
     val MAX = 65535 // max tcp port number
     val MIN = 1025 // lowest port not requiring sudo
-    val port = Math.abs(Random.nextInt((MAX - MIN) + 1))
+    val port = Math.abs(Random.nextInt(MAX - MIN) + (MIN + 1))
     val attempt = Try {
       val socket = new ServerSocket(port)
       socket.close()

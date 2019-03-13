@@ -47,14 +47,10 @@ class MempoolRpcTest extends AsyncFlatSpec with BeforeAndAfterAll {
         val noBroadcastValue = ConfigValueFactory.fromAnyRef(0)
 
         // connecting clients once they are started takes forever for some reason
-        val addnodeValue =
-          ConfigValueFactory.fromAnyRef(
-            s"127.0.0.1:${client.instance.uri.getPort}")
         val configNoBroadcast =
           defaultConfig
             .withValue("walletbroadcast", noBroadcastValue)
             .withValue("datadir", datadirValue)
-            .withValue("addnode", addnodeValue)
 
         val _ = BitcoindRpcTestUtil.writeConfigToFile(configNoBroadcast)
 
@@ -71,6 +67,7 @@ class MempoolRpcTest extends AsyncFlatSpec with BeforeAndAfterAll {
         for {
           _ <- clientWithoutBroadcast.start()
           _ <- BitcoindRpcTestUtil.connectPairs(pairs)
+          _ <- BitcoindRpcTestUtil.syncPairs(pairs)
           _ <- BitcoindRpcTestUtil.generateAndSync(
             Vector(clientWithoutBroadcast, client, otherClient),
             blocks = 200)

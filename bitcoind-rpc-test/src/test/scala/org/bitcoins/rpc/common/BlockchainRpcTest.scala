@@ -35,16 +35,9 @@ class BlockchainRpcTest extends AsyncFlatSpec with BeforeAndAfterAll {
 
       clientAccum += pruneClient
 
-      val pairs = Vector(client -> pruneClient, otherClient -> pruneClient)
-
       for {
         _ <- pruneClient.start()
-        _ <- BitcoindRpcTestUtil.connectPairs(pairs)
-        _ <- {
-          val clients = Vector(pruneClient, client, otherClient)
-          val blocks = 1000
-          BitcoindRpcTestUtil.generateAndSync(clients, blocks)
-        }
+        _ <- pruneClient.generate(1000)
       } yield pruneClient
   }
 
