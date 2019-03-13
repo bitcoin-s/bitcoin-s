@@ -5,7 +5,6 @@ import java.net.ServerSocket
 import akka.actor.ActorSystem
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.util.AsyncUtil
-import org.slf4j.LoggerFactory
 
 import scala.annotation.tailrec
 import scala.concurrent.Future
@@ -35,9 +34,7 @@ abstract class RpcUtil extends AsyncUtil {
       server: BitcoindRpcClient,
       duration: FiniteDuration = 300.milliseconds,
       maxTries: Int = 50)(implicit system: ActorSystem): Future[Unit] = {
-    import system.dispatcher
-    val f = () => server.isStartedF.map(isStarted => !isStarted)
-    retryUntilSatisfiedF(f, duration, maxTries)
+    retryUntilSatisfiedF(() => server.isStoppedF, duration, maxTries)
   }
 
   /**

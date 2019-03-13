@@ -107,8 +107,8 @@ trait Client {
       case Success(_) => logger.debug(s"started bitcoind")
       case Failure(exc) =>
         if (instance.network != MainNet)
-        logger.info(
-          s"Could not start bitcoind instance! Message: ${exc.getMessage}")
+          logger.info(
+            s"Could not start bitcoind instance! Message: ${exc.getMessage}")
         logger.info(s"Log lines:")
         val logLines = Source.fromFile(logFile).getLines()
         logLines.foreach(logger.info)
@@ -117,10 +117,9 @@ trait Client {
     started
   }
 
-  def isStarted: Boolean = {
-    Await.result(isStartedF, 2.seconds)
-  }
-
+  /**
+    * Checks whether the underlyind bitcoind daemon is running
+    */
   def isStartedF: Future[Boolean] = {
     val request = buildRequest(instance, "ping", JsArray.empty)
     val responseF = sendRequest(request)
@@ -141,7 +140,13 @@ trait Client {
         false
 
     }
+  }
 
+  /**
+    * Checks whether the underlyind bitcoind daemon is stopped
+    */
+  def isStoppedF: Future[Boolean] = {
+    isStartedF.map(started => !started)
   }
 
   // This RPC call is here to avoid circular trait depedency

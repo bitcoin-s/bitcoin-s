@@ -7,7 +7,7 @@ import scala.concurrent._
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 
 abstract class AsyncUtil extends BitcoinSLogger {
-  import AsyncUtil.DEFAULT_DURATION
+  import AsyncUtil.DEFAULT_INTERNVAL
   import AsyncUtil.DEFAULT_MAX_TRIES
 
   private def retryRunnable(
@@ -21,7 +21,7 @@ abstract class AsyncUtil extends BitcoinSLogger {
 
   def retryUntilSatisfied(
       condition: => Boolean,
-      duration: FiniteDuration = DEFAULT_DURATION,
+      duration: FiniteDuration = DEFAULT_INTERNVAL,
       maxTries: Int = DEFAULT_MAX_TRIES)(
       implicit system: ActorSystem): Future[Unit] = {
     val f = () => Future.successful(condition)
@@ -38,7 +38,7 @@ abstract class AsyncUtil extends BitcoinSLogger {
     */
   def retryUntilSatisfiedF(
       conditionF: () => Future[Boolean],
-      duration: FiniteDuration = DEFAULT_DURATION,
+      duration: FiniteDuration = DEFAULT_INTERNVAL,
       maxTries: Int = DEFAULT_MAX_TRIES)(
       implicit system: ActorSystem): Future[Unit] = {
     val stackTrace: Array[StackTraceElement] =
@@ -119,7 +119,7 @@ abstract class AsyncUtil extends BitcoinSLogger {
     */
   def awaitCondition(
       condition: () => Boolean,
-      duration: FiniteDuration = DEFAULT_DURATION,
+      duration: FiniteDuration = DEFAULT_INTERNVAL,
       maxTries: Int = DEFAULT_MAX_TRIES)(
       implicit system: ActorSystem): Future[Unit] = {
 
@@ -134,7 +134,7 @@ abstract class AsyncUtil extends BitcoinSLogger {
 
   def awaitConditionF(
       conditionF: () => Future[Boolean],
-      duration: FiniteDuration = DEFAULT_DURATION,
+      duration: FiniteDuration = DEFAULT_INTERNVAL,
       maxTries: Int = DEFAULT_MAX_TRIES)(
       implicit system: ActorSystem): Future[Unit] = {
 
@@ -148,9 +148,9 @@ abstract class AsyncUtil extends BitcoinSLogger {
 object AsyncUtil extends AsyncUtil {
 
   /**
-    * The default duration between async attempt
+    * The default interval between async attempts
     */
-  private[bitcoins] val DEFAULT_DURATION: FiniteDuration = 100.milliseconds
+  private[bitcoins] val DEFAULT_INTERNVAL: FiniteDuration = 100.milliseconds
 
   /**
     * The default number of async attempts before timing out

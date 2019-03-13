@@ -253,6 +253,9 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     Future.sequence(startedServers).map(_ => ())
   }
 
+  /**
+    * Stops the given servers and deletes their data directories
+    */
   def stopServers(servers: Vector[BitcoindRpcClient])(
       implicit system: ActorSystem): Future[Unit] = {
     implicit val ec: ExecutionContextExecutor = system.getDispatcher
@@ -263,6 +266,14 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       stopF
     }
     Future.sequence(serverStops).map(_ => ())
+  }
+
+  /**
+    * Stops the given server and deletes its data directory
+    */
+  def stopServer(server: BitcoindRpcClient)(
+      implicit system: ActorSystem): Future[Unit] = {
+    stopServers(Vector(server))
   }
 
   def deleteTmpDir(dir: File): Boolean = {

@@ -158,49 +158,6 @@ class BlockchainRpcTest extends AsyncFlatSpec with BeforeAndAfterAll {
       newBestHash <- otherFreshClient.getBestBlockHash
 
     } yield assert(newBestHash == bestHash1)
-    /*BitcoindRpcTestUtil.createNodePair().flatMap {
-      case (client1, client2) =>
-        client1.disconnectNode(client2.getDaemon.uri).flatMap { _ =>
-          BitcoindRpcTestUtil.awaitDisconnected(client1, client2).flatMap { _ =>
-            client1.generate(1).flatMap { blocks1 =>
-              client2.generate(1).flatMap { blocks2 =>
-                client1.getBestBlockHash.flatMap { bestHash1 =>
-                  assert(bestHash1 == blocks1.head)
-
-                  client2.getBestBlockHash.flatMap { bestHash2 =>
-                    assert(bestHash2 == blocks2.head)
-
-                    val conn =
-                      client1.addNode(client2.getDaemon.uri,
-                                      AddNodeArgument.Add)
-
-                    conn.flatMap { _ =>
-                      //make sure the block was propogated to client2
-                      AsyncUtil
-                        .awaitConditionF(() =>
-                          BitcoindRpcTestUtil.hasSeenBlock(client2, bestHash1))
-                        .flatMap { _ =>
-                          val precious = client2.preciousBlock(bestHash1)
-
-                          val client2BestBlock = precious.flatMap { _ =>
-                            val b = client2.getBestBlockHash
-                            b
-                          }
-
-                          client2BestBlock.map { newBestHash =>
-                            BitcoindRpcTestUtil.deleteNodePair(client1, client2)
-                            assert(newBestHash == bestHash1)
-                          }
-                        }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-    }
-   */
   }
 
   it should "be able to get tx out proof and verify it" in {

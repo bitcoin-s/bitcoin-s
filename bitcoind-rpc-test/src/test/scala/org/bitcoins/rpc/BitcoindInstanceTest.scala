@@ -43,7 +43,7 @@ class BitcoindInstanceTest extends AsyncFlatSpec with BeforeAndAfterAll {
     val client = new BitcoindRpcClient(instance)
 
     for {
-      _ <- BitcoindRpcTestUtil.startServers(Vector(client))
+      _ <- client.start()
       _ <- client.generate(101)
       balance <- client.getBalance
       _ <- BitcoindRpcTestUtil.stopServers(Vector(client))
