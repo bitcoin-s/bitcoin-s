@@ -187,12 +187,5 @@ result: org.bitcoins.core.script.result.ScriptResult = ScriptOk
 
 ## Running `core` tests
 
-To run the entire `core` test suite:
+See [`core-test/README.md`](../core-test/README.md).
 
-```bash
-chris@chris:~/dev/bitcoins-core$ sbt coreTest/test
-# lots of output, should end up with something like this
-[info] All tests passed.
-[info] Passed: Total 1008, Failed 0, Errors 0, Passed 1008
-[success] Total time: 38 s, completed Dec 23, 2018 4:39:58 PM
-```
