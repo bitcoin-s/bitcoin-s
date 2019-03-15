@@ -35,7 +35,15 @@ class BIP32PathTest extends BitcoinSUnitTest {
     }
   }
 
-  it must "derive public keys" in {}
+  it must "derive public keys" in {
+    forAll(CryptoGenerators.extPrivateKey, CryptoGenerators.bip32Path) {
+      (priv, path) =>
+        val pub = priv.deriveChildPubKey(path)
+
+        // we should always be able to derive pubkeys from privs, even with hard paths
+        assert(pub.isSuccess)
+    }
+  }
 
   it must "derive public and private keys symmetrically" in {
     forAll(CryptoGenerators.extPrivateKey, CryptoGenerators.softBip32Path) {
@@ -73,30 +81,38 @@ class BIP32PathTest extends BitcoinSUnitTest {
   }
 
   it must "parse the paths from the BIP32 test vectors" in {
-    assert(BIP32Path.fromString("m/0'/1") == BIP32Path(
-      Vector(BIP32Child(0, hardened = true), BIP32Child(1, hardened = false))))
+    val expected1 = BIP32Path(
+      Vector(BIP32Child(0, hardened = true), BIP32Child(1, hardened = false)))
+    assert(BIP32Path.fromString("m/0'/1") == expected1)
 
-    assert(
-      BIP32Path.fromString("m/0'/1/2'") == BIP32Path(
-        Vector(BIP32Child(0, hardened = true),
-               BIP32Child(1, hardened = false),
-               BIP32Child(2, hardened = true))))
+    val expected2 = BIP32Path(
+      Vector(BIP32Child(0, hardened = true),
+             BIP32Child(1, hardened = false),
+             BIP32Child(2, hardened = true)))
+    assert(BIP32Path.fromString("m/0'/1/2'") == expected2)
 
-    assert(
-      BIP32Path.fromString("m/0'/1/2'/2") == BIP32Path(
-        Vector(BIP32Child(0, hardened = true),
-               BIP32Child(1, hardened = false),
-               BIP32Child(2, hardened = true),
-               BIP32Child(2, hardened = false))))
+    val expected3 = BIP32Path(
+      Vector(BIP32Child(0, hardened = true),
+             BIP32Child(1, hardened = false),
+             BIP32Child(2, hardened = true)))
+    assert(BIP32Path.fromString("m/0'/1/2'") == expected3)
 
-    assert(
-      BIP32Path.fromString("m/0'/1/2'/2/1000000000") == BIP32Path(Vector(
+    val expected4 = BIP32Path(
+      Vector(BIP32Child(0, hardened = true),
+             BIP32Child(1, hardened = false),
+             BIP32Child(2, hardened = true),
+             BIP32Child(2, hardened = false)))
+    assert(BIP32Path.fromString("m/0'/1/2'/2") == expected4)
+
+    val expected5 = BIP32Path(
+      Vector(
         BIP32Child(0, hardened = true),
         BIP32Child(1, hardened = false),
         BIP32Child(2, hardened = true),
         BIP32Child(2, hardened = false),
         BIP32Child(1000000000, hardened = false)
-      )))
+      ))
+    assert(BIP32Path.fromString("m/0'/1/2'/2/1000000000") == expected5)
   }
 
   it must "have fromString and toString symmetry" in {

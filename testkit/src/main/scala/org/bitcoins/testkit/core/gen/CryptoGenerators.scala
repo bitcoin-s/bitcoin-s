@@ -225,11 +225,10 @@ sealed abstract class CryptoGenerators {
 
   def extKey: Gen[ExtKey] = Gen.oneOf(extPrivateKey, extPublicKey)
 
-  def bip32Child: Gen[BIP32Child] =
-    for {
-      bool <- Gen.oneOf(true, false)
-      index <- NumberGenerator.positiveInts
-    } yield BIP32Child(index, bool)
+  /**
+    * Generates a BIP 32 path segment
+    */
+  def bip32Child: Gen[BIP32Child] = Gen.oneOf(softBip32Child, hardBip32Child)
 
   /**
     * Generates a non-hardened BIP 32 path segment
@@ -239,11 +238,17 @@ sealed abstract class CryptoGenerators {
       index <- NumberGenerator.positiveInts
     } yield BIP32Child(index, hardened = false)
 
+  /**
+    * Generates a hardened BIP 32 path segment
+    */
   def hardBip32Child: Gen[BIP32Child] =
     for {
       soft <- softBip32Child
     } yield soft.copy(hardened = true)
 
+  /**
+    * Generates a BIP32 path
+    */
   def bip32Path: Gen[BIP32Path] =
     for {
       children <- Gen.listOf(bip32Child)

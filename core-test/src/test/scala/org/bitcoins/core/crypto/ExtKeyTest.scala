@@ -11,6 +11,9 @@ import scala.util.{Failure, Success, Try}
 
 class ExtKeyTest extends BitcoinSUnitTest {
 
+  override implicit val generatorDrivenConfig: PropertyCheckConfiguration =
+    generatorDrivenConfigNewCode
+
   behavior of "ExtKey"
 
   it must "derive similar keys for UInt32s and primitive numbers" in {

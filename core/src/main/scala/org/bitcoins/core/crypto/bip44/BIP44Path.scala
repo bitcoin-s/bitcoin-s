@@ -43,9 +43,6 @@ object BIP44Path {
   val CHAIN_INDEX: Int = 3
 
   /**
-    * The index of the coin segement of a BIP44 path
-    */
-  /**
     * The index of the address segement of a BIP44 path
     */
   val ADDRESS_INDEX: Int = 4

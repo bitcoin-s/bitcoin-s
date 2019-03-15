@@ -21,22 +21,22 @@ sealed abstract class BIP44Coin extends BIP32Path {
   */
 object BIP44Coin {
 
-  case object Bitcoin extends BIP44Coin {
-    override final val toInt: Int = 0
+  final case object Bitcoin extends BIP44Coin {
+    override val toInt: Int = 0
   }
 
   /**
     * All coins
     */
-  case object Testnet extends BIP44Coin {
-    override final val toInt: Int = 1
+  final case object Testnet extends BIP44Coin {
+    override val toInt: Int = 1
   }
 
   def fromInt(int: Int): BIP44Coin =
     int match {
       case Bitcoin.toInt => Bitcoin
       case Testnet.toInt => Testnet
-      case _ =>
+      case _: Int =>
         throw new IllegalArgumentException(s"$int not valid coin type!")
     }
 }

@@ -1,13 +1,15 @@
 package org.bitcoins.core.crypto.bip44
 
-import org.bitcoins.core.crypto.bip32.BIP32Path
 import org.bitcoins.testkit.core.gen.{CryptoGenerators, NumberGenerator}
 import org.bitcoins.testkit.util.BitcoinSUnitTest
-import os.copy
 
 import scala.util.{Failure, Success, Try}
 
 class BIP44PathTest extends BitcoinSUnitTest {
+
+  override implicit val generatorDrivenConfig: PropertyCheckConfiguration =
+    generatorDrivenConfigNewCode
+
   behavior of "BIP44Account"
 
   it must "fail to make accounts with negative indices" in {

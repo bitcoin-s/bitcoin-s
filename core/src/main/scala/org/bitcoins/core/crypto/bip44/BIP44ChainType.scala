@@ -14,8 +14,8 @@ object BIP44ChainType {
     * are meant to be visible outside of the
     * wallet (e.g. for receiving payments).
     */
-  case object External extends BIP44ChainType {
-    override final val index: Int = 0
+  final case object External extends BIP44ChainType {
+    override val index: Int = 0
   }
 
   /**
@@ -24,15 +24,15 @@ object BIP44ChainType {
     * wallet and is used for return transaction
     * change
     */
-  case object Change extends BIP44ChainType {
-    override final val index: Int = 1
+  final case object Change extends BIP44ChainType {
+    override val index: Int = 1
   }
 
   def fromInt(int: Int): BIP44ChainType =
     int match {
       case External.index => BIP44ChainType.External
       case Change.index   => BIP44ChainType.Change
-      case _ =>
+      case _: Int =>
         throw new IllegalArgumentException(
           s"$int is not a valid BIP44 change type!")
     }

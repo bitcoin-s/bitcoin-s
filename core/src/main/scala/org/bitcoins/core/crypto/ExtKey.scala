@@ -8,6 +8,7 @@ import org.bitcoins.core.util._
 import scodec.bits.ByteVector
 import scodec.bits.HexStringSyntax
 
+import scala.annotation.tailrec
 import scala.util.{Failure, Success, Try}
 
 /**
@@ -61,6 +62,14 @@ sealed abstract class ExtKey extends NetworkElement {
   }
 
   /**
+    * Derives the child pubkey at the specified index and
+    * hardening value
+    */
+  def deriveChildPubKey(child: BIP32Child): Try[ExtPublicKey] = {
+    deriveChildPubKey(child.toUInt32)
+  }
+
+  /**
     * Derives the child pubkey at the specified path
     */
   def deriveChildPubKey(path: BIP32Path): Try[ExtPublicKey] = {
@@ -68,10 +77,20 @@ sealed abstract class ExtKey extends NetworkElement {
       case priv: ExtPrivateKey =>
         Success(priv.deriveChildPrivKey(path).extPublicKey)
       case pub: ExtPublicKey =>
-        Try {
-          path.children.foldLeft(pub)((accum: ExtPublicKey, curr: BIP32Child) =>
-            accum.deriveChildPubKey(curr.toUInt32).get)
+        @tailrec
+        def loop(
+            remainingPath: List[BIP32Child],
+            accum: ExtPublicKey): Try[ExtPublicKey] = {
+          remainingPath match {
+            case h :: t =>
+              accum.deriveChildPubKey(h) match {
+                case Success(derivedPub) => loop(t, derivedPub)
+                case failure: Failure[_] => failure
+              }
+            case Nil => Success(accum)
+          }
         }
+        loop(path.children.toList, pub)
     }
 
   }
