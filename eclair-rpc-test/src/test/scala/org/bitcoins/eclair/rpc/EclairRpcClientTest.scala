@@ -722,7 +722,7 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
     //about the channels for future fee calculations
     val sentPaymentF = secondClientF.flatMap { c1 =>
       thirdClientF.flatMap { c2 =>
-        EclairRpcTestUtil.sendPayments(c1, c2)
+        EclairRpcTestUtil.sendPayments(c1, c2, numPayments = 2)
       }
     }
 
