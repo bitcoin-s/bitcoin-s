@@ -56,12 +56,12 @@ This gives us an example of a hex encoded Bitcoin transaction that is deserializ
 #### Generating a BIP39 mnemonic phrase and an `xpriv`
 
 BIP39 mnemonic phrases are the most common way of creating backups of wallets.
-They are between 12 and 24 words the user writes down, and can later be used to restore 
-their bitcoins. From the mnemonic phrase we generate a wallet seed, and that seed 
-can be used to generate what's called an extended private key 
+They are between 12 and 24 words the user writes down, and can later be used to restore
+their bitcoins. From the mnemonic phrase we generate a wallet seed, and that seed
+can be used to generate what's called an extended private key
 ([`ExtPrivateKey`](src/main/scala/org/bitcoins/core/crypto/ExtKey.scala) in Bitcoin-S).
 
-Here's an example: 
+Here's an example:
 
 ```scala
 import scodec.bits._
@@ -77,22 +77,34 @@ val mnemonicCode = MnemonicCode.fromEntropy(entropy)
 mnemonicCode.words // the phrase the user should write down
 
 // the password argument is an optional, extra security
-// measure. all MnemonicCode instances will give you a 
-// valid BIP39 seed, but different passwords will give 
+// measure. all MnemonicCode instances will give you a
+// valid BIP39 seed, but different passwords will give
 // you different seeds. So you could have as many wallets
 // from the same seed as you'd like, by simply giving them
-// different passwords. 
-val bip39Seed = BIP39Seed.fromMnemonic(mnemonicCode, 
+// different passwords.
+val bip39Seed = BIP39Seed.fromMnemonic(mnemonicCode,
                                        password = "secret password")
-                                   
+
 val xpriv = ExtPrivateKey.fromBIP39Seed(ExtKeyVersion.MainNetPriv,  // or testnet/regtest
                                         bip39Seed)
-                                      
+val xpub = xpriv.extPublicKey                                       
+
 // you can now use the generated xpriv to derive further
 // private or public keys
 
-```
+// this can be done with BIP32 or BIP44 paths:
+import bip32._
+val bip32Path = BIP32Path(BIP32Node(2, hardened = false), BIP32Node(5, hardened = false))
+val derivedPriv = xpriv.deriveChildPrivKey(bip32Path)
+val derivedPub = xpub.deriveChildPubKey(bip32Path)
 
+import bip44._
+val bip44Path = BIP44Path(coin = BIP44Coin.Bitcoin, 
+                          accountIndex = 0, 
+                          addressIndex = 1, 
+                          chainType = BIP44ChainType.Change)
+val derivedBip44Priv = xpriv.deriveChildPrivKey(bip44Path)
+```
 
 ### Building a signed transaction
 
