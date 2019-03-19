@@ -57,8 +57,8 @@ class NodeRpcTest extends AsyncFlatSpec with BeforeAndAfterAll {
       info <- client.logging
       infoNoQt <- client.logging(exclude = Vector("qt"))
     } yield {
-      info.keySet.foreach(category => assert(info(category) == 1))
-      assert(infoNoQt("qt") == 0)
+      info.keySet.foreach(category => assert(info(category)))
+      assert(!infoNoQt("qt"))
     }
   }
 
