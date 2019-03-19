@@ -17,7 +17,7 @@ class BIP32PathTest extends BitcoinSUnitTest {
 
   it must "fail to make children of out negative integers" in {
     forAll(NumberGenerator.negativeInts, Gen.oneOf(true, false)) { (i, bool) =>
-      assertThrows[IllegalArgumentException](BIP32Child(i, bool))
+      assertThrows[IllegalArgumentException](BIP32Node(i, bool))
     }
   }
 
@@ -30,8 +30,8 @@ class BIP32PathTest extends BitcoinSUnitTest {
   }
 
   it must "have varargs and vector constructors what work the same way" in {
-    forAll(CryptoGenerators.bip32Path) { path =>
-      assert(BIP32Path(path.children) == BIP32Path(path.children: _*))
+    forAll(CryptoGenerators.bip32Path) { bip32 =>
+      assert(BIP32Path(bip32.path) == BIP32Path(bip32.path: _*))
     }
   }
 
@@ -76,41 +76,41 @@ class BIP32PathTest extends BitcoinSUnitTest {
 
   it must "parse a hardened path" in {
     val fromString = BIP32Path.fromString("m/0'")
-    assert(fromString.children.length == 1)
-    assert(fromString.children.head.toUInt32 == ExtKey.hardenedIdx)
+    assert(fromString.path.length == 1)
+    assert(fromString.path.head.toUInt32 == ExtKey.hardenedIdx)
   }
 
   it must "parse the paths from the BIP32 test vectors" in {
     val expected1 = BIP32Path(
-      Vector(BIP32Child(0, hardened = true), BIP32Child(1, hardened = false)))
+      Vector(BIP32Node(0, hardened = true), BIP32Node(1, hardened = false)))
     assert(BIP32Path.fromString("m/0'/1") == expected1)
 
     val expected2 = BIP32Path(
-      Vector(BIP32Child(0, hardened = true),
-             BIP32Child(1, hardened = false),
-             BIP32Child(2, hardened = true)))
+      Vector(BIP32Node(0, hardened = true),
+             BIP32Node(1, hardened = false),
+             BIP32Node(2, hardened = true)))
     assert(BIP32Path.fromString("m/0'/1/2'") == expected2)
 
     val expected3 = BIP32Path(
-      Vector(BIP32Child(0, hardened = true),
-             BIP32Child(1, hardened = false),
-             BIP32Child(2, hardened = true)))
+      Vector(BIP32Node(0, hardened = true),
+             BIP32Node(1, hardened = false),
+             BIP32Node(2, hardened = true)))
     assert(BIP32Path.fromString("m/0'/1/2'") == expected3)
 
     val expected4 = BIP32Path(
-      Vector(BIP32Child(0, hardened = true),
-             BIP32Child(1, hardened = false),
-             BIP32Child(2, hardened = true),
-             BIP32Child(2, hardened = false)))
+      Vector(BIP32Node(0, hardened = true),
+             BIP32Node(1, hardened = false),
+             BIP32Node(2, hardened = true),
+             BIP32Node(2, hardened = false)))
     assert(BIP32Path.fromString("m/0'/1/2'/2") == expected4)
 
     val expected5 = BIP32Path(
       Vector(
-        BIP32Child(0, hardened = true),
-        BIP32Child(1, hardened = false),
-        BIP32Child(2, hardened = true),
-        BIP32Child(2, hardened = false),
-        BIP32Child(1000000000, hardened = false)
+        BIP32Node(0, hardened = true),
+        BIP32Node(1, hardened = false),
+        BIP32Node(2, hardened = true),
+        BIP32Node(2, hardened = false),
+        BIP32Node(1000000000, hardened = false)
       ))
     assert(BIP32Path.fromString("m/0'/1/2'/2/1000000000") == expected5)
   }

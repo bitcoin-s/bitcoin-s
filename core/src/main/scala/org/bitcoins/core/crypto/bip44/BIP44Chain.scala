@@ -1,5 +1,5 @@
 package org.bitcoins.core.crypto.bip44
-import org.bitcoins.core.crypto.bip32.{BIP32Child, BIP32Path}
+import org.bitcoins.core.crypto.bip32.{BIP32Node, BIP32Path}
 
 /**
   * Represents a
@@ -7,9 +7,9 @@ import org.bitcoins.core.crypto.bip32.{BIP32Child, BIP32Path}
   * change chain
   */
 sealed abstract class BIP44Chain extends BIP32Path {
-  override val children: Vector[BIP32Child] = account.children :+ BIP32Child(
-    toInt,
-    hardened = false)
+  override val path: Vector[BIP32Node] = {
+    account.path :+ BIP32Node(toInt, hardened = false)
+  }
 
   def coin: BIP44Coin
 

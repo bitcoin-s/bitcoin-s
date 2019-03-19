@@ -1,7 +1,7 @@
 package org.bitcoins.testkit.core.gen
 
 import org.bitcoins.core.crypto._
-import org.bitcoins.core.crypto.bip32.{BIP32Child, BIP32Path}
+import org.bitcoins.core.crypto.bip32.{BIP32Node, BIP32Path}
 import org.bitcoins.core.crypto.bip44._
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.util.CryptoUtil
@@ -228,20 +228,20 @@ sealed abstract class CryptoGenerators {
   /**
     * Generates a BIP 32 path segment
     */
-  def bip32Child: Gen[BIP32Child] = Gen.oneOf(softBip32Child, hardBip32Child)
+  def bip32Child: Gen[BIP32Node] = Gen.oneOf(softBip32Child, hardBip32Child)
 
   /**
     * Generates a non-hardened BIP 32 path segment
     */
-  def softBip32Child: Gen[BIP32Child] =
+  def softBip32Child: Gen[BIP32Node] =
     for {
       index <- NumberGenerator.positiveInts
-    } yield BIP32Child(index, hardened = false)
+    } yield BIP32Node(index, hardened = false)
 
   /**
     * Generates a hardened BIP 32 path segment
     */
-  def hardBip32Child: Gen[BIP32Child] =
+  def hardBip32Child: Gen[BIP32Node] =
     for {
       soft <- softBip32Child
     } yield soft.copy(hardened = true)

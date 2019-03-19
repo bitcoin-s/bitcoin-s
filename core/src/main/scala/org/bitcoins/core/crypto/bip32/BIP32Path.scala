@@ -4,12 +4,12 @@ import org.bitcoins.core.crypto.ExtKey
 import org.bitcoins.core.number.UInt32
 
 abstract class BIP32Path {
-  def children: Vector[BIP32Child]
+  def path: Vector[BIP32Node]
 
   override def toString: String =
-    children
+    path
       .map {
-        case BIP32Child(index, hardened) =>
+        case BIP32Node(index, hardened) =>
           index.toString + (if (hardened) "'" else "")
       }
       .fold("m")((accum, curr) => accum + "/" + curr)
@@ -17,21 +17,20 @@ abstract class BIP32Path {
 }
 
 object BIP32Path {
-  private case class BIP32PathImpl(children: Vector[BIP32Child])
-      extends BIP32Path
+  private case class BIP32PathImpl(path: Vector[BIP32Node]) extends BIP32Path
 
   /**
     * The empty BIP32 path "m", i.e. a path that does no
-    * child derivation
+    * child key derivation
     *
     * @see [[https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki#the-key-tree BIP44]]
     *     section on key trees
     */
   val empty: BIP32Path = BIP32PathImpl(Vector.empty)
 
-  def apply(children: Vector[BIP32Child]): BIP32Path = BIP32PathImpl(children)
+  def apply(path: Vector[BIP32Node]): BIP32Path = BIP32PathImpl(path)
 
-  def apply(children: BIP32Child*): BIP32Path = BIP32Path(Vector(children: _*))
+  def apply(path: BIP32Node*): BIP32Path = BIP32Path(Vector(path: _*))
 
   /**
     * Parses a string representation of a BIP32 path. This is on the form
@@ -61,25 +60,25 @@ object BIP32Path {
     require(head == "m",
             """The first element in a BIP32 path string must be "m"""")
 
-    val children = rest.map { str =>
+    val path = rest.map { str =>
       val (index: String, hardened: Boolean) =
         if (str.endsWith("'")) {
           (str.dropRight(1), true)
         } else {
           (str, false)
         }
-      BIP32Child(index.toInt, hardened)
+      BIP32Node(index.toInt, hardened)
     }
 
-    BIP32PathImpl(children)
+    BIP32PathImpl(path)
   }
 }
 
-case class BIP32Child(index: Int, hardened: Boolean) {
-  require(index >= 0, "BIP32 child index must be positive!")
+case class BIP32Node(index: Int, hardened: Boolean) {
+  require(index >= 0, s"BIP32 node index must be positive! Got $index")
 
   /**
-    * Converts this child to a BIP32 notation
+    * Converts this node to a BIP32 notation
     * unsigned 32 bit integer
     */
   def toUInt32: UInt32 =

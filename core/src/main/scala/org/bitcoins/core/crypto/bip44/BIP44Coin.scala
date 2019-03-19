@@ -1,5 +1,5 @@
 package org.bitcoins.core.crypto.bip44
-import org.bitcoins.core.crypto.bip32.{BIP32Child, BIP32Path}
+import org.bitcoins.core.crypto.bip32.{BIP32Node, BIP32Path}
 
 /**
   * Represents a
@@ -7,8 +7,8 @@ import org.bitcoins.core.crypto.bip32.{BIP32Child, BIP32Path}
   * coin type.
   */
 sealed abstract class BIP44Coin extends BIP32Path {
-  override def children: Vector[BIP32Child] =
-    Vector(BIP44Path.purposeChild, BIP32Child(toInt, hardened = true))
+  override def path: Vector[BIP32Node] =
+    Vector(BIP44Path.purposeChild, BIP32Node(toInt, hardened = true))
 
   def toInt: Int
 
@@ -37,6 +37,6 @@ object BIP44Coin {
       case Bitcoin.toInt => Bitcoin
       case Testnet.toInt => Testnet
       case _: Int =>
-        throw new IllegalArgumentException(s"$int not valid coin type!")
+        throw new IllegalArgumentException(s"$int is not valid coin type!")
     }
 }

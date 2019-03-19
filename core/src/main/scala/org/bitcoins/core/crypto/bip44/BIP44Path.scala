@@ -1,6 +1,6 @@
 package org.bitcoins.core.crypto.bip44
 
-import org.bitcoins.core.crypto.bip32.{BIP32Child, BIP32Path}
+import org.bitcoins.core.crypto.bip32.{BIP32Node, BIP32Path}
 
 import scala.util.Try
 
@@ -14,7 +14,7 @@ sealed abstract class BIP44Path extends BIP32Path {
 
   def address: BIP44Address
 
-  override val children: Vector[BIP32Child] = address.children
+  override val path: Vector[BIP32Node] = address.path
 
 }
 
@@ -47,7 +47,7 @@ object BIP44Path {
     */
   val ADDRESS_INDEX: Int = 4
 
-  val purposeChild: BIP32Child = BIP32Child(PURPOSE, hardened = true)
+  val purposeChild: BIP32Node = BIP32Node(PURPOSE, hardened = true)
 
   private case class BIP44PathImpl(address: BIP44Address) extends BIP44Path
 
@@ -61,7 +61,7 @@ object BIP44Path {
   /**
     * Tries to generate a BIP44 path from the given path segments
     */
-  def apply(children: Vector[BIP32Child]): Try[BIP44Path] = Try {
+  def apply(children: Vector[BIP32Node]): Try[BIP44Path] = Try {
     val bip32 = BIP32Path(children)
     BIP44Path.fromString(bip32.toString)
   }
@@ -84,8 +84,8 @@ object BIP44Path {
   def fromString(string: String): BIP44Path = {
 
     val bip32Path = BIP32Path.fromString(string)
-    val children = bip32Path.children
-    require(children.head == BIP32Child(PURPOSE, hardened = true),
+    val children = bip32Path.path
+    require(children.head == BIP32Node(PURPOSE, hardened = true),
             "The first child in a BIP44 path string must be 44'")
     require(children.length == 5, "A BIP44 path string must have five elements")
 

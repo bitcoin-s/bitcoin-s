@@ -1,7 +1,7 @@
 package org.bitcoins.core.crypto
 
 import org.bitcoin.NativeSecp256k1
-import org.bitcoins.core.crypto.bip32.{BIP32Child, BIP32Path}
+import org.bitcoins.core.crypto.bip32.{BIP32Node, BIP32Path}
 import org.bitcoins.core.number.{UInt32, UInt8}
 import org.bitcoins.core.protocol.NetworkElement
 import org.bitcoins.core.util._
@@ -65,7 +65,7 @@ sealed abstract class ExtKey extends NetworkElement {
     * Derives the child pubkey at the specified index and
     * hardening value
     */
-  def deriveChildPubKey(child: BIP32Child): Try[ExtPublicKey] = {
+  def deriveChildPubKey(child: BIP32Node): Try[ExtPublicKey] = {
     deriveChildPubKey(child.toUInt32)
   }
 
@@ -79,7 +79,7 @@ sealed abstract class ExtKey extends NetworkElement {
       case pub: ExtPublicKey =>
         @tailrec
         def loop(
-            remainingPath: List[BIP32Child],
+            remainingPath: List[BIP32Node],
             accum: ExtPublicKey): Try[ExtPublicKey] = {
           remainingPath match {
             case h :: t =>
@@ -90,7 +90,7 @@ sealed abstract class ExtKey extends NetworkElement {
             case Nil => Success(accum)
           }
         }
-        loop(path.children.toList, pub)
+        loop(path.path.toList, pub)
     }
 
   }
@@ -171,7 +171,7 @@ sealed abstract class ExtPrivateKey extends ExtKey {
     *     specialized version of a BIP32 path
     */
   def deriveChildPrivKey(path: BIP32Path): ExtPrivateKey = {
-    path.children.foldLeft(this)((accum: ExtPrivateKey, curr: BIP32Child) =>
+    path.path.foldLeft(this)((accum: ExtPrivateKey, curr: BIP32Node) =>
       accum.deriveChildPrivKey(curr.toUInt32))
   }
 
@@ -300,7 +300,7 @@ object ExtPrivateKey extends Factory[ExtPrivateKey] {
                              chaincode,
                              masterPrivKey)
 
-    path.children.foldLeft(root)((accum, curr) =>
+    path.path.foldLeft(root)((accum, curr) =>
       accum.deriveChildPrivKey(curr.toUInt32))
   }
 

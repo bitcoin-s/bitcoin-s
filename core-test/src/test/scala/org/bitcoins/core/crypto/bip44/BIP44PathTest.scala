@@ -85,9 +85,9 @@ class BIP44PathTest extends BitcoinSUnitTest {
   }
 
   it must "fail to generate a BIP44 path with an invalid purpose field" in {
-    val badPaths = CryptoGenerators.bip32Path.suchThat { path =>
-      path.children.nonEmpty &&
-      path.children.head != BIP44Path.purposeChild
+    val badPaths = CryptoGenerators.bip32Path.suchThat { bip32 =>
+      bip32.path.nonEmpty &&
+      bip32.path.head != BIP44Path.purposeChild
     }
 
     forAll(badPaths) { badPath =>
@@ -101,8 +101,8 @@ class BIP44PathTest extends BitcoinSUnitTest {
   }
 
   it must "fail to generate BIP44 paths with an invalid length" in {
-    forAll(CryptoGenerators.bip44Path) { path =>
-      val tooShortPath = path.children.dropRight(1)
+    forAll(CryptoGenerators.bip44Path) { bip44 =>
+      val tooShortPath = bip44.path.dropRight(1)
       val attempt = BIP44Path(tooShortPath)
       attempt match {
         case Success(_) => fail
@@ -113,8 +113,8 @@ class BIP44PathTest extends BitcoinSUnitTest {
   }
 
   it must "fail to generate BIP44 paths with the wrong hardened index types" in {
-    forAll(CryptoGenerators.bip44Path) { path =>
-      val nonHardenedCoinChildren = path.children.zipWithIndex.map {
+    forAll(CryptoGenerators.bip44Path) { bip44 =>
+      val nonHardenedCoinChildren = bip44.path.zipWithIndex.map {
         case (child, index) =>
           if (index == BIP44Path.COIN_INDEX) child.copy(hardened = false)
           else child
@@ -128,7 +128,7 @@ class BIP44PathTest extends BitcoinSUnitTest {
           assert(exc.getMessage.contains("coin type child must be hardened"))
       }
 
-      val nonHardenedAccountChildren = path.children.zipWithIndex.map {
+      val nonHardenedAccountChildren = bip44.path.zipWithIndex.map {
         case (child, index) =>
           if (index == BIP44Path.ACCOUNT_INDEX) child.copy(hardened = false)
           else child
@@ -141,7 +141,7 @@ class BIP44PathTest extends BitcoinSUnitTest {
           assert(exc.getMessage.contains("account child must be hardened"))
       }
 
-      val hardenedChainChildren = path.children.zipWithIndex.map {
+      val hardenedChainChildren = bip44.path.zipWithIndex.map {
         case (child, index) =>
           if (index == BIP44Path.CHAIN_INDEX) child.copy(hardened = true)
           else child
@@ -155,7 +155,7 @@ class BIP44PathTest extends BitcoinSUnitTest {
           assert(exc.getMessage.contains("chain child must not be hardened"))
       }
 
-      val hardenedAddressChildren = path.children.zipWithIndex.map {
+      val hardenedAddressChildren = bip44.path.zipWithIndex.map {
         case (child, index) =>
           if (index == BIP44Path.ADDRESS_INDEX) child.copy(hardened = true)
           else child

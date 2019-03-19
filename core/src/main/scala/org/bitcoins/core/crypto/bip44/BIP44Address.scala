@@ -1,5 +1,5 @@
 package org.bitcoins.core.crypto.bip44
-import org.bitcoins.core.crypto.bip32.{BIP32Child, BIP32Path}
+import org.bitcoins.core.crypto.bip32.{BIP32Node, BIP32Path}
 
 /**
   * Represents a
@@ -9,9 +9,9 @@ import org.bitcoins.core.crypto.bip32.{BIP32Child, BIP32Path}
 sealed abstract class BIP44Address extends BIP32Path {
   require(index >= 0, s"Address index ($index) must be positive!")
 
-  override val children: Vector[BIP32Child] = chain.children :+ BIP32Child(
-    index,
-    hardened = false)
+  override val path: Vector[BIP32Node] = {
+    chain.path :+ BIP32Node(index, hardened = false)
+  }
 
   def coin: BIP44Coin
   def account: BIP44Account
