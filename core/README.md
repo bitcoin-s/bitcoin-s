@@ -94,7 +94,7 @@ val xpub = xpriv.extPublicKey
 
 // this can be done with BIP32 or BIP44 paths:
 import bip32._
-val bip32Path = BIP32Path(BIP32Child(2, hardened = false), BIP32Child(5, hardened = false))
+val bip32Path = BIP32Path(BIP32Node(2, hardened = false), BIP32Node(5, hardened = false))
 val derivedPriv = xpriv.deriveChildPrivKey(bip32Path)
 val derivedPub = xpub.deriveChildPubKey(bip32Path)
 
