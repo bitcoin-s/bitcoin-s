@@ -152,9 +152,9 @@ class RawTransactionRpcTest extends AsyncFlatSpec with BeforeAndAfterAll {
     for {
       (client, _) <- clientsF
       address <- client.getNewAddress
-      addressInfo <- client.validateAddress(address)
+      pubkey <- BitcoindRpcTestUtil.getPubkey(client, address)
       multisig <- client
-        .addMultiSigAddress(1, Vector(Left(addressInfo.pubkey.get)))
+        .addMultiSigAddress(1, Vector(Left(pubkey.get)))
       txid <- BitcoindRpcTestUtil
         .fundBlockChainTransaction(client, multisig.address, Bitcoins(1.2))
       rawTx <- client.getTransaction(txid)
@@ -196,10 +196,9 @@ class RawTransactionRpcTest extends AsyncFlatSpec with BeforeAndAfterAll {
       (client, otherClient) <- clientsF
       address1 <- client.getNewAddress
       address2 <- otherClient.getNewAddress
-      address1Info <- client.validateAddress(address1)
-      address2Info <- otherClient.validateAddress(address2)
-      keys = Vector(Left(address1Info.pubkey.get),
-                    Left(address2Info.pubkey.get))
+      pub1 <- BitcoindRpcTestUtil.getPubkey(client, address1)
+      pub2 <- BitcoindRpcTestUtil.getPubkey(otherClient, address2)
+      keys = Vector(Left(pub1.get), Left(pub2.get))
 
       multisig <- client.addMultiSigAddress(2, keys)
 

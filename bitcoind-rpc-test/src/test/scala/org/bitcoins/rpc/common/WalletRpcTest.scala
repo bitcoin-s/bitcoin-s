@@ -17,7 +17,11 @@ import org.bitcoins.core.protocol.transaction.{
 }
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.rpc.client.common.RpcOpts.AddressType
-import org.bitcoins.rpc.client.common.{BitcoindRpcClient, RpcOpts}
+import org.bitcoins.rpc.client.common.{
+  BitcoindRpcClient,
+  BitcoindVersion,
+  RpcOpts
+}
 import org.bitcoins.rpc.jsonmodels.RpcAddress
 import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
@@ -87,7 +91,14 @@ class WalletRpcTest extends AsyncFlatSpec with BeforeAndAfterAll {
     for {
       (client, _, _) <- clientsF
       wallets <- client.listWallets
-    } yield assert(wallets == Vector("wallet.dat"))
+    } yield {
+
+      val expectedFileName =
+        if (client.instance.getVersion == BitcoindVersion.V17) ""
+        else "wallet.dat"
+
+      assert(wallets == Vector(expectedFileName))
+    }
   }
 
   it should "be able to backup the wallet" in {
@@ -240,7 +251,9 @@ class WalletRpcTest extends AsyncFlatSpec with BeforeAndAfterAll {
     assert(balanceAfter == balanceBefore + Bitcoins(1.5))
 
     val addressInfo = await(otherClient.validateAddress(address))
-    assert(addressInfo.ismine.contains(true))
+    if (otherClient.instance.getVersion == BitcoindVersion.V16) {
+      assert(addressInfo.ismine.contains(true))
+    }
 
     await(otherClient.removePrunedFunds(txid))
 

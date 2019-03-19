@@ -8,7 +8,11 @@ import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import com.typesafe.config.{Config, ConfigFactory, ConfigValueFactory}
 import org.bitcoins.core.config.RegTest
-import org.bitcoins.core.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
+import org.bitcoins.core.crypto.{
+  DoubleSha256Digest,
+  DoubleSha256DigestBE,
+  ECPublicKey
+}
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
@@ -698,6 +702,29 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
             v17.signRawTransactionWithWallet(transaction, utxoDeps)
         }
     }
+
+  /**
+    * Gets the pubkey (if it exists) asscociated with a given
+    * bitcoin address in a version-agnostic manner
+    */
+  def getPubkey(client: BitcoindRpcClient, address: BitcoinAddress)(
+      implicit system: ActorSystem): Future[Option[ECPublicKey]] = {
+    import system.dispatcher
+
+    client match {
+      case v17: BitcoindV17RpcClient =>
+        v17.getAddressInfo(address).map(_.pubkey)
+      case v16: BitcoindV16RpcClient =>
+        v16.validateAddress(address).map(_.pubkey)
+      case other: BitcoindRpcClient =>
+        if (other.instance.getVersion == BitcoindVersion.V17) {
+          val v17 = new BitcoindV17RpcClient(other.instance)
+          v17.getAddressInfo(address).map(_.pubkey)
+        } else {
+          other.validateAddress(address).map(_.pubkey)
+        }
+    }
+  }
 
   def sendCoinbaseTransaction(
       sender: BitcoindRpcClient,

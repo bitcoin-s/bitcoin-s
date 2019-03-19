@@ -301,8 +301,8 @@ object JsonSerializers {
   implicit val getMemoryInfoResultReads: Reads[GetMemoryInfoResult] =
     Json.reads[GetMemoryInfoResult]
 
-  implicit val validateAddressResultReads: Reads[ValidateAddressResult] =
-    Json.reads[ValidateAddressResult]
+  implicit val validateAddressResultReads: Reads[ValidateAddressResultImpl] =
+    Json.reads[ValidateAddressResultImpl]
 
   implicit val embeddedResultReads: Reads[EmbeddedResult] =
     Json.reads[EmbeddedResult]
