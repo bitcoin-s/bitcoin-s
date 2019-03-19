@@ -41,6 +41,17 @@ class BitcoindV17RpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
 
   behavior of "BitcoindV17RpcClient"
 
+  it should "test mempool acceptance" in {
+    for {
+      (client, otherClient) <- clientsF
+      tx <- BitcoindRpcTestUtil.createRawCoinbaseTransaction(client,
+                                                             otherClient)
+      acceptance <- client.testMempoolAccept(tx)
+    } yield {
+      assert(acceptance.rejectReason.isEmpty == acceptance.allowed)
+    }
+  }
+
   it should "sign a raw transaction with wallet keys" in {
     for {
       (client, otherClient) <- clientsF

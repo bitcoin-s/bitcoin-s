@@ -135,3 +135,9 @@ case class EstimateSmartFeeResult(
     errors: Option[Vector[String]],
     blocks: Int)
     extends OtherResult
+
+case class TestMempoolAcceptResult(
+    txid: DoubleSha256DigestBE,
+    allowed: Boolean,
+    rejectReason: Option[String]
+)

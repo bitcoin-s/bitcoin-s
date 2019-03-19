@@ -492,6 +492,16 @@ object JsonReaders {
       }
   }
 
+  implicit object TestMempoolAcceptResultReads
+      extends Reads[TestMempoolAcceptResult] {
+    override def reads(json: JsValue): JsResult[TestMempoolAcceptResult] =
+      for {
+        txid <- (json \ "txid").validate[DoubleSha256DigestBE]
+        allowed <- (json \ "allowed").validate[Boolean]
+        rejectReason <- (json \ "reject-reason").validateOpt[String]
+      } yield TestMempoolAcceptResult(txid, allowed, rejectReason)
+  }
+
   // Currently takes in BTC/kB
   implicit object BitcoinFeeUnitReads extends Reads[BitcoinFeeUnit] {
     override def reads(json: JsValue): JsResult[BitcoinFeeUnit] =

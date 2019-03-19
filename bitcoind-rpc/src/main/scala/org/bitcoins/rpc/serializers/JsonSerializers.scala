@@ -350,6 +350,9 @@ object JsonSerializers {
 
   implicit val rpcScriptTypeReads: Reads[RpcScriptType] = RpcScriptTypeReads
 
+  implicit val testMempoolAcceptResultReads: Reads[TestMempoolAcceptResult] =
+    TestMempoolAcceptResultReads
+
   // Map stuff
   implicit def mapDoubleSha256DigestReads: Reads[
     Map[DoubleSha256Digest, GetMemPoolResult]] =

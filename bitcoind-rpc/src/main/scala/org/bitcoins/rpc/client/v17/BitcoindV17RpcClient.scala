@@ -11,10 +11,14 @@ import org.bitcoins.rpc.client.common.{
   RpcOpts
 }
 import org.bitcoins.rpc.config.BitcoindInstance
-import org.bitcoins.rpc.jsonmodels.{AddressInfoResult, SignRawTransactionResult}
+import org.bitcoins.rpc.jsonmodels.{
+  AddressInfoResult,
+  SignRawTransactionResult,
+  TestMempoolAcceptResult
+}
 import org.bitcoins.rpc.serializers.JsonSerializers._
 import org.bitcoins.rpc.serializers.JsonWriters._
-import play.api.libs.json.{JsString, Json}
+import play.api.libs.json.{JsArray, JsBoolean, JsString, Json}
 
 import scala.concurrent.Future
 import scala.util.Try
@@ -57,6 +61,17 @@ class BitcoindV17RpcClient(override val instance: BitcoindInstance)(
                                                 Json.toJson(keys),
                                                 Json.toJson(utxoDeps),
                                                 Json.toJson(sigHash)))
+
+  // testmempoolaccept expects (and returns) a list of txes,
+  // but currently only lists of length 1 is supported
+  def testMempoolAccept(
+      transaction: Transaction,
+      allowHighFees: Boolean = false): Future[TestMempoolAcceptResult] = {
+    bitcoindCall[Vector[TestMempoolAcceptResult]](
+      "testmempoolaccept",
+      List(JsArray(Vector(Json.toJson(transaction))), JsBoolean(allowHighFees)))
+      .map(_.head)
+  }
 
 }
 
