@@ -311,8 +311,8 @@ class WalletRpcTest extends AsyncFlatSpec with BeforeAndAfterAll {
       transaction <- client.getTransaction(txid)
     } yield {
       assert(transaction.amount == Bitcoins(-3))
-      assert(transaction.details(0).address.contains(address1))
-      assert(transaction.details(1).address.contains(address2))
+      assert(transaction.details.exists(_.address.contains(address1)))
+      assert(transaction.details.exists(_.address.contains(address2)))
     }
   }
 
