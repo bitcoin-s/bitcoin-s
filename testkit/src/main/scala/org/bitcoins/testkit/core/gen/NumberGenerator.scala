@@ -20,6 +20,21 @@ trait NumberGenerator {
   /** Creates a generator that generates positive long numbers */
   def positiveLongs: Gen[Long] = Gen.choose(0, Long.MaxValue)
 
+  /**
+    * Integers between 0 and Int.MaxValue
+    */
+  val positiveInts: Gen[Int] = Gen.choose(0, Int.MaxValue)
+
+  /**
+    * Integers between Int.MinValue and -1
+    */
+  val negativeInts: Gen[Int] = Gen.choose(Int.MinValue, -1)
+
+  /**
+    * Random integers
+    */
+  val ints: Gen[Int] = Gen.choose(Int.MinValue, Int.MaxValue)
+
   /** Creates a generator for positive longs without the number zero */
   def positiveLongsNoZero: Gen[Long] = Gen.choose(1, Long.MaxValue)
 
