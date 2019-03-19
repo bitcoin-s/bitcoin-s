@@ -18,7 +18,8 @@ import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.eclair.rpc.client.EclairRpcClient
 import org.bitcoins.eclair.rpc.config.EclairInstance
 import org.bitcoins.eclair.rpc.json.PaymentResult
-import org.bitcoins.rpc.client.common.BitcoindRpcClient
+import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
+import org.bitcoins.rpc.client.v16.BitcoindV16RpcClient
 import org.bitcoins.rpc.config.{BitcoindInstance, ZmqConfig}
 import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.testkit.async.TestAsyncUtil
@@ -50,6 +51,40 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
   def cannonicalDatadir = new File(s"${System.getenv("HOME")}/.reg_eclair/")
 
   lazy val network = RegTest
+
+  /**
+    * Makes a best effort to get a 0.16 bitcoind instance
+    */
+  def startedBitcoindRpcClient(instance: BitcoindInstance = bitcoindInstance())(
+      implicit actorSystem: ActorSystem): Future[BitcoindRpcClient] = {
+    import actorSystem.dispatcher
+    for {
+      cli <- BitcoindRpcTestUtil.startedBitcoindRpcClient(instance)
+      // make sure we have enough money open channels
+      //not async safe
+      versionedCli: BitcoindRpcClient <- {
+        if (cli.instance.getVersion == BitcoindVersion.V17) {
+          val v16Cli = new BitcoindV16RpcClient(
+            BitcoindRpcTestUtil.v16Instance())
+          val startF =
+            Future.sequence(List(cli.stop(), v16Cli.start())).map(_ => v16Cli)
+
+          startF.recover {
+            case exception: Exception =>
+              logger.error(
+                List(
+                  "Eclair requires Bitcoin Core 0.16.",
+                  "You can set the environment variable BITCOIND_V16_PATH to override",
+                  "the default bitcoind executable on your PATH."
+                ).mkString(" "))
+              throw exception
+          }
+        } else {
+          Future.successful(cli)
+        }
+      }
+    } yield versionedCli
+  }
 
   def bitcoindInstance(
       port: Int = RpcUtil.randomPort,
