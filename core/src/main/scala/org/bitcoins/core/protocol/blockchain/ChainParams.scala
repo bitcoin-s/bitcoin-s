@@ -207,6 +207,22 @@ sealed abstract class BitcoinChainParams extends ChainParams {
 
   /** The best chain should have this amount of work */
   def minimumChainWork: BigInteger
+
+  /**
+    * Whether we should allow minimum difficulty blocks or not
+    * As an example you can trivially mine blocks on [[RegTestNetChainParams]] and [[TestNetChainParams]]
+    * but not the [[MainNetChainParams]]
+    * @return
+    */
+  def allowMinDifficultyBlocks: Boolean
+
+  /**
+    * Whether this chain supports
+    * proof of work retargeting or not
+    * [[https://github.com/bitcoin/bitcoin/blob/eb7daf4d600eeb631427c018a984a77a34aca66e/src/consensus/params.h#L72 link]]
+    * @return
+    */
+  def noRetargeting: Boolean
 }
 
 /** The Main Network parameters. */
@@ -258,6 +274,18 @@ object MainNetChainParams extends BitcoinChainParams {
       "0000000000000000000000000000000000000000051dc8b82f450202ecb3d471")
     new BigInteger(1, bytes.toArray)
   }
+
+  /**
+    * Mainnet does not allow trivial difficulty blocks
+    * [[https://github.com/bitcoin/bitcoin/blob/a083f75ba79d465f15fddba7b00ca02e31bb3d40/src/chainparams.cpp#L287 mainnet min difficulty]]
+    */
+  override lazy val allowMinDifficultyBlocks: Boolean = false
+
+  /**
+    * Mainnet allows pow retargetting
+    * [[https://github.com/bitcoin/bitcoin/blob/a083f75ba79d465f15fddba7b00ca02e31bb3d40/src/chainparams.cpp#L76 mainnet pow retargetting]]
+    */
+  override lazy val noRetargeting: Boolean = false
 }
 
 object TestNetChainParams extends BitcoinChainParams {
@@ -300,6 +328,18 @@ object TestNetChainParams extends BitcoinChainParams {
       "00000000000000000000000000000000000000000000007dbe94253893cbd463")
     new BigInteger(1, bytes.toArray)
   }
+
+  /**
+    * Testnet allows trivial difficulty blocks
+    * [[https://github.com/bitcoin/bitcoin/blob/a083f75ba79d465f15fddba7b00ca02e31bb3d40/src/chainparams.cpp#L192 testnet min difficulty]]
+    */
+  override lazy val allowMinDifficultyBlocks: Boolean = true
+
+  /**
+    * Testnet allows pow retargetting
+    * [[https://github.com/bitcoin/bitcoin/blob/a083f75ba79d465f15fddba7b00ca02e31bb3d40/src/chainparams.cpp#L193 testnet pow retargetting]]
+    */
+  override lazy val noRetargeting: Boolean = false
 }
 
 object RegTestNetChainParams extends BitcoinChainParams {
@@ -330,6 +370,18 @@ object RegTestNetChainParams extends BitcoinChainParams {
   override lazy val minimumChainWork: BigInteger = {
     BigInteger.valueOf(0)
   }
+
+  /**
+    * Regtest allows trivial difficulty blocks
+    * [[https://github.com/bitcoin/bitcoin/blob/a083f75ba79d465f15fddba7b00ca02e31bb3d40/src/chainparams.cpp#L287 regtest min difficulty]]
+    */
+  override lazy val allowMinDifficultyBlocks: Boolean = true
+
+  /**
+    * Regtest allows pow retargetting
+    * [[https://github.com/bitcoin/bitcoin/blob/a083f75ba79d465f15fddba7b00ca02e31bb3d40/src/chainparams.cpp#L288 regtest pow retargetting]]
+    */
+  override lazy val noRetargeting: Boolean = false
 }
 
 sealed abstract class Base58Type
