@@ -1,5 +1,7 @@
 package org.bitcoins.core.protocol.blockchain
 
+import java.math.BigInteger
+
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.number.Int64
 import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptSignature}
@@ -177,5 +179,18 @@ class ChainParamsTest extends BitcoinSUnitTest {
     MainNetChainParams.allowMinDifficultyBlocks must be(false)
     TestNetChainParams.allowMinDifficultyBlocks must be(true)
     RegTestNetChainParams.allowMinDifficultyBlocks must be(true)
+  }
+
+  it must "compute the correct pow limits" in {
+    val expectedTestMain = new BigInteger(
+      "26959946667150639794667015087019630673637144422540572481103610249215",
+      10)
+
+    val expectedRegTest = new BigInteger(
+      "57896044618658097711785492504343953926634992332820282019728792003956564819967",
+      10)
+    MainNetChainParams.powLimit must be(expectedTestMain)
+    TestNetChainParams.powLimit must be(expectedTestMain)
+    RegTestNetChainParams.powLimit must be(expectedRegTest)
   }
 }
