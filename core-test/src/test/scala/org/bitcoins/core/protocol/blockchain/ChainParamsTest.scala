@@ -8,15 +8,13 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionConstants,
   TransactionOutput
 }
-import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil}
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.bitcoins.core.util.BitcoinSUtil
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 
 /**
   * Created by chris on 5/24/16.
   */
-class ChainParamsTest extends FlatSpec with MustMatchers {
-  private def logger = BitcoinSLogger.logger
-
+class ChainParamsTest extends BitcoinSUnitTest {
   val genesisBlock = MainNetChainParams.genesisBlock
   val genesisTransaction = genesisBlock.transactions.head
 
@@ -161,5 +159,23 @@ class ChainParamsTest extends FlatSpec with MustMatchers {
       "043587CF".toLowerCase)
     BitcoinSUtil.encodeHex(RegTestNetChainParams.base58Prefixes(ExtSecretKey)) must be(
       "04358394".toLowerCase)
+  }
+
+  it must "determine the correct POW intervals for bitcoin networks" in {
+    MainNetChainParams.difficultyChangeInterval must be(2016)
+    TestNetChainParams.difficultyChangeInterval must be(2016)
+    RegTestNetChainParams.difficultyChangeInterval must be(2016)
+  }
+
+  it must "determine what networks allow retargeting of proof of work" in {
+    MainNetChainParams.noRetargeting must be(false)
+    TestNetChainParams.noRetargeting must be(false)
+    RegTestNetChainParams.noRetargeting must be(true)
+  }
+
+  it must "allow/not allow minimum difficulty blocks on certain networks" in {
+    MainNetChainParams.allowMinDifficultyBlocks must be(false)
+    TestNetChainParams.allowMinDifficultyBlocks must be(true)
+    RegTestNetChainParams.allowMinDifficultyBlocks must be(true)
   }
 }

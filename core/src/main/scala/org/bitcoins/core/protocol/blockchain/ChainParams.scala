@@ -381,7 +381,7 @@ object RegTestNetChainParams extends BitcoinChainParams {
     * Regtest allows pow retargetting
     * [[https://github.com/bitcoin/bitcoin/blob/a083f75ba79d465f15fddba7b00ca02e31bb3d40/src/chainparams.cpp#L288 regtest pow retargetting]]
     */
-  override lazy val noRetargeting: Boolean = false
+  override lazy val noRetargeting: Boolean = true
 }
 
 sealed abstract class Base58Type
