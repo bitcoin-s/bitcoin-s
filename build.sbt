@@ -204,7 +204,7 @@ lazy val bench = project
     name := "bitcoin-s-bench",
     skip in publish := true
   )
-  .dependsOn(core)
+  .dependsOn(core, testkit)
   .enablePlugins()
 
 lazy val eclairRpc = project
