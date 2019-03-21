@@ -11,8 +11,8 @@ import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptSignature}
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.constant.{BytesToPushOntoStack, ScriptConstant}
 import org.bitcoins.core.script.crypto.OP_CHECKSIG
-import org.bitcoins.core.util.{BitcoinSUtil, BitcoinScriptUtil}
-import scodec.bits.ByteVector
+import org.bitcoins.core.util.BitcoinScriptUtil
+import scodec.bits.{ByteVector, _}
 
 import scala.concurrent.duration.{Duration, DurationInt}
 
@@ -164,45 +164,37 @@ sealed abstract class ChainParams {
   def powTargetTimeSpan: Duration
 
   /**
-    * Not sure what this value is right now, but it is constant across bitcoin
+    * The targeted interval between blocks
     * [[https://github.com/bitcoin/bitcoin/blob/a083f75ba79d465f15fddba7b00ca02e31bb3d40/src/chainparams.cpp#L74 mainnet]]
     * [[https://github.com/bitcoin/bitcoin/blob/a083f75ba79d465f15fddba7b00ca02e31bb3d40/src/chainparams.cpp#L191 testnet]]
     * [[https://github.com/bitcoin/bitcoin/blob/a083f75ba79d465f15fddba7b00ca02e31bb3d40/src/chainparams.cpp#L286 regtest]]
     * @return
     */
-  def powTargetSpacing: Int
+  def powTargetSpacing: Duration
 
   /** In bitcoin [[MainNetChainParams mainnet]], the network recalculates the difficulty for the network every 2016 blocks
     * [[https://github.com/bitcoin/bitcoin/blob/eb7daf4d600eeb631427c018a984a77a34aca66e/src/consensus/params.h#L75 bitcoin core implementation]]
     * */
   def difficultyChangeInterval: Long = {
-    powTargetTimeSpan.toSeconds / powTargetSpacing
+    powTargetTimeSpan.toSeconds / powTargetSpacing.toSeconds
   }
 }
 
 sealed abstract class BitcoinChainParams extends ChainParams {
 
-  /** The targetted timespan between difficulty adjustments
-    * As of this implementation, all of these are the same in bitcoin core
-    *
-    * [[https://github.com/bitcoin/bitcoin/blob/a083f75ba79d465f15fddba7b00ca02e31bb3d40/src/chainparams.cpp#L73 mainnet]]
-    * [[https://github.com/bitcoin/bitcoin/blob/a083f75ba79d465f15fddba7b00ca02e31bb3d40/src/chainparams.cpp#L190 testnet]]
-    * [[https://github.com/bitcoin/bitcoin/blob/a083f75ba79d465f15fddba7b00ca02e31bb3d40/src/chainparams.cpp#L285 regtest]]
+  /**
+    * @inheritdoc
     * */
   override lazy val powTargetTimeSpan: Duration = {
-    val time = 14 * 24 * 60 * 60 //two weeks
-    time.seconds
+    14.days
   }
 
   /**
-    * Not sure what this value is right now, but it is constant across bitcoin
-    * [[https://github.com/bitcoin/bitcoin/blob/a083f75ba79d465f15fddba7b00ca02e31bb3d40/src/chainparams.cpp#L74 mainnet]]
-    * [[https://github.com/bitcoin/bitcoin/blob/a083f75ba79d465f15fddba7b00ca02e31bb3d40/src/chainparams.cpp#L191 testnet]]
-    * [[https://github.com/bitcoin/bitcoin/blob/a083f75ba79d465f15fddba7b00ca02e31bb3d40/src/chainparams.cpp#L286 regtest]]
-    * @return
+    * @inheritdoc
     */
-  override lazy val powTargetSpacing: Int = {
-    10 * 60 //what are these magic numbers?
+  override lazy val powTargetSpacing: Duration = {
+    val time = 10 * 60 //10 minutes * 60 seconds
+    time.seconds
   }
 
   /** The best chain should have this amount of work */
@@ -239,17 +231,11 @@ object MainNetChainParams extends BitcoinChainParams {
 
   override lazy val base58Prefixes: Map[Base58Type, ByteVector] =
     Map(
-      Base58Type.PubKeyAddress -> BitcoinSUtil.decodeHex("00"),
-      Base58Type.ScriptAddress -> BitcoinSUtil.decodeHex("05"),
-      Base58Type.SecretKey -> BitcoinSUtil.decodeHex("80"),
-      Base58Type.ExtPublicKey -> ByteVector(BitcoinSUtil.hexToByte("04"),
-                                            BitcoinSUtil.hexToByte("88"),
-                                            BitcoinSUtil.hexToByte("b2"),
-                                            BitcoinSUtil.hexToByte("1e")),
-      Base58Type.ExtSecretKey -> ByteVector(BitcoinSUtil.hexToByte("04"),
-                                            BitcoinSUtil.hexToByte("88"),
-                                            BitcoinSUtil.hexToByte("ad"),
-                                            BitcoinSUtil.hexToByte("e4"))
+      Base58Type.PubKeyAddress -> hex"00",
+      Base58Type.ScriptAddress -> hex"05",
+      Base58Type.SecretKey -> hex"80",
+      Base58Type.ExtPublicKey -> hex"0488b21e",
+      Base58Type.ExtSecretKey -> hex"0488ade4"
     )
 
   /**
@@ -270,8 +256,8 @@ object MainNetChainParams extends BitcoinChainParams {
     * [[https://github.com/bitcoin/bitcoin/blob/a083f75ba79d465f15fddba7b00ca02e31bb3d40/src/chainparams.cpp#L94 mainnet chain work]]
     */
   override lazy val minimumChainWork: BigInteger = {
-    val bytes = ByteVector.fromValidHex(
-      "0000000000000000000000000000000000000000051dc8b82f450202ecb3d471")
+    val bytes =
+      hex"0000000000000000000000000000000000000000051dc8b82f450202ecb3d471"
     new BigInteger(1, bytes.toArray)
   }
 
@@ -301,17 +287,11 @@ object TestNetChainParams extends BitcoinChainParams {
 
   override lazy val base58Prefixes: Map[Base58Type, ByteVector] =
     Map(
-      Base58Type.PubKeyAddress -> BitcoinSUtil.decodeHex("6f"),
-      Base58Type.ScriptAddress -> BitcoinSUtil.decodeHex("c4"),
-      Base58Type.SecretKey -> BitcoinSUtil.decodeHex("ef"),
-      Base58Type.ExtPublicKey -> ByteVector(BitcoinSUtil.hexToByte("04"),
-                                            BitcoinSUtil.hexToByte("35"),
-                                            BitcoinSUtil.hexToByte("87"),
-                                            BitcoinSUtil.hexToByte("cf")),
-      Base58Type.ExtSecretKey -> ByteVector(BitcoinSUtil.hexToByte("04"),
-                                            BitcoinSUtil.hexToByte("35"),
-                                            BitcoinSUtil.hexToByte("83"),
-                                            BitcoinSUtil.hexToByte("94"))
+      Base58Type.PubKeyAddress -> hex"6f",
+      Base58Type.ScriptAddress -> hex"c4",
+      Base58Type.SecretKey -> hex"ef",
+      Base58Type.ExtPublicKey -> hex"043587cf",
+      Base58Type.ExtSecretKey -> hex"04358394"
     )
 
   /**
@@ -324,8 +304,8 @@ object TestNetChainParams extends BitcoinChainParams {
     * [[https://github.com/bitcoin/bitcoin/blob/a083f75ba79d465f15fddba7b00ca02e31bb3d40/src/chainparams.cpp#L211 testnet min chain work]]
     * */
   override lazy val minimumChainWork: BigInteger = {
-    val bytes = ByteVector.fromValidHex(
-      "00000000000000000000000000000000000000000000007dbe94253893cbd463")
+    val bytes =
+      hex"00000000000000000000000000000000000000000000007dbe94253893cbd463"
     new BigInteger(1, bytes.toArray)
   }
 
