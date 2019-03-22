@@ -3,7 +3,7 @@ package org.bitcoins.core.util
 import java.math.BigInteger
 
 import org.bitcoins.core.number._
-import scodec.bits.ByteVector
+import scodec.bits.{BitVector, ByteVector}
 
 import scala.math.BigInt
 import scala.util.{Failure, Success, Try}
@@ -175,19 +175,92 @@ trait NumberUtil extends BitcoinSLogger {
 
     val mantissa =
       new BigInteger(signum, mantissaBytes.toArray)
-
     //guards against a negative exponent, in which case we just shift right
     //see bitcoin core implementation
-    if (significand <= 3) {
-      mantissa.shiftRight(8 * (3 - significand))
-    } else {
-      val exponent = significand - 3
+    val result = {
+      if (significand <= 3) {
 
-      val pow256 = BigInteger.valueOf(256).pow(exponent)
-      mantissa.multiply(pow256)
+        val exp = 8 * (3 - significand)
+        //avoid shift right, because of weird behavior on the jvm
+        //https://stackoverflow.com/questions/47519140/bitwise-shift-right-with-long-not-equaling-zero/47519728#47519728
+        mantissa.divide(NumberUtil.pow2(exp).bigInteger)
+      } else {
+        val exponent = significand - 3
+
+        val pow256 = BigInteger.valueOf(256).pow(exponent)
+        mantissa.multiply(pow256)
+      }
     }
 
+    result
   }
+
+  /**
+    * Compressed the big integer to be used inside of [[org.bitcoins.core.protocol.blockchain.BlockHeader.nBits]]
+    * [[https://github.com/bitcoin/bitcoin/blob/2068f089c8b7b90eb4557d3f67ea0f0ed2059a23/src/arith_uint256.cpp#L226 bitcoin core implementation]]
+    * @param bigInteger
+    * @return
+    */
+  def targetCompression(bigInteger: BigInteger, isNegative: Boolean): UInt32 = {
+    val bytes = bigInteger.toByteArray
+    val bitVec = BitVector(bytes)
+
+    //emulates bits() in arith_uin256.h
+    //Returns the position of the highest bit set plus one, or zero if the
+    //value is zero.
+    //https://github.com/bitcoin/bitcoin/blob/2068f089c8b7b90eb4557d3f67ea0f0ed2059a23/src/arith_uint256.h#L241
+    var size: Int = if (bigInteger == BigInteger.valueOf(0)) {
+      0
+    } else {
+      ((bitVec.length + 7) / 8).toInt
+    }
+
+    var compact: UInt32 = {
+      if (size <= 3) {
+        // GetLow64() << 8 * (3 - nSize);
+        //note: counter intuitively, the expression
+        // 8 * (3 - nSize)
+        //gets evaluated before we apply the shift left operator
+        //verified this property with g++
+        val shiftAmount = 8 * (3 - size)
+
+        val u64 = new BigInteger(1, bitVec.takeRight(64).toByteArray)
+          .shiftLeft(shiftAmount)
+
+        UInt32.fromBytes(ByteVector(u64.toByteArray))
+      } else {
+        //8 * (nSize - 3)
+        val shiftAmount = 8 * (size - 3)
+        val bn = bigInteger.shiftRight(shiftAmount)
+        val bytes = bn.toByteArray.takeRight(4)
+        UInt32.fromBytes(ByteVector(bytes))
+      }
+    }
+
+    if ((compact & UInt32(0x00800000)) != UInt32.zero) {
+      compact = compact >> 8
+      size = size + 1
+    }
+
+    //~0x007fffff
+    require((compact & UInt32.fromHex("ff800000")) == UInt32.zero)
+    require(size < 256)
+
+    compact = compact | UInt32(size << 24)
+    compact = {
+      if (isNegative && (compact & UInt32(0x007fffff)) != UInt32.zero) {
+        compact | UInt32(0x00800000)
+      } else {
+        compact | UInt32.zero
+      }
+    }
+    compact
+  }
+
+  def targetCompression(bigInt: BigInt, isNegative: Boolean): UInt32 = {
+    targetCompression(bigInt.bigInteger, isNegative)
+  }
+
 }
 
 object NumberUtil extends NumberUtil

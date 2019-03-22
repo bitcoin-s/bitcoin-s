@@ -3,6 +3,7 @@ package org.bitcoins.core.util
 import java.math.BigInteger
 
 import org.bitcoins.core.number.UInt32
+import org.bitcoins.testkit.core.gen.NumberGenerator
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 import org.scalatest.Assertion
 import scodec.bits.ByteVector
@@ -66,7 +67,85 @@ class NumberUtilTest extends BitcoinSUnitTest {
     runTest(nBits, expected)
   }
 
+  behavior of "NumberUtil.targetCompression"
+
+  it must "handle all cases as enumerated in bitcoin core" in {
+    //https://github.com/bitcoin/bitcoin/blob/eb7daf4d600eeb631427c018a984a77a34aca66e/src/test/arith_uint256_tests.cpp#L405
+    val expanded = NumberUtil.targetExpansion(UInt32.zero)
+    NumberUtil.targetCompression(expanded, false) must be(UInt32.zero)
+
+    val expanded1 = NumberUtil.targetExpansion(UInt32.fromHex("00123456"))
+    NumberUtil.targetCompression(expanded1, false) must be(UInt32.zero)
+
+    val expanded2 = NumberUtil.targetExpansion(UInt32.fromHex("01003456"))
+    NumberUtil.targetCompression(expanded2, false) must be(UInt32.zero)
+
+    val expanded3 = NumberUtil.targetExpansion(UInt32.fromHex("02000056"))
+    NumberUtil.targetCompression(expanded3, false) must be(UInt32.zero)
+
+    val expanded4 = NumberUtil.targetExpansion(UInt32.fromHex("03000000"))
+    NumberUtil.targetCompression(expanded4, false) must be(UInt32.zero)
+
+    val expanded5 = NumberUtil.targetExpansion(UInt32.fromHex("04000000"))
+    NumberUtil.targetCompression(expanded5, false) must be(UInt32.zero)
+
+    val expanded6 = NumberUtil.targetExpansion(UInt32.fromHex("01803456"))
+
+    NumberUtil.targetCompression(expanded6, false) must be(UInt32.zero)
+
+    val expanded7 = NumberUtil.targetExpansion(UInt32.fromHex("02800056"))
+
+    NumberUtil.targetCompression(expanded7, isNegative = false) must be(
+      UInt32.zero)
+
+    val expanded8 = NumberUtil.targetExpansion(UInt32.fromHex("03800000"))
+
+    NumberUtil.targetCompression(expanded8, false) must be(UInt32.zero)
+
+    val expanded9 = NumberUtil.targetExpansion(UInt32.fromHex("04800000"))
+
+    NumberUtil.targetCompression(expanded9, false) must be(UInt32.zero)
+
+    val expanded10 = NumberUtil.targetExpansion(UInt32.fromHex("01123456"))
+
+    NumberUtil.targetCompression(expanded10, false) must be(
+      UInt32.fromHex("01120000"))
+
+    NumberUtil.targetCompression(BigInt(0x80).bigInteger, false) must be(
+      UInt32.fromHex("02008000"))
+
+    //ignoring this negative test case for now
+    //https://github.com/bitcoin/bitcoin/blob/eb7daf4d600eeb631427c018a984a77a34aca66e/src/test/arith_uint256_tests.cpp#L486
+
+    val expanded12 = NumberUtil.targetExpansion(UInt32.fromHex("02123456"))
+    NumberUtil.targetCompression(expanded12, false) must be(
+      UInt32.fromHex("02123400"))
+
+    val expanded13 = NumberUtil.targetExpansion(UInt32.fromHex("03123456"))
+    NumberUtil.targetCompression(expanded13, false) must be(
+      UInt32.fromHex("03123456"))
+
+    val expanded14 = NumberUtil.targetExpansion(UInt32.fromHex("04123456"))
+    NumberUtil.targetCompression(expanded14, false) must be(
+      UInt32.fromHex("04123456"))
+
+    //skipping this negative test case for now
+    //https://github.com/bitcoin/bitcoin/blob/eb7daf4d600eeb631427c018a984a77a34aca66e/src/test/arith_uint256_tests.cpp#L510
+
+    val expanded15 = NumberUtil.targetExpansion(UInt32.fromHex("05009234"))
+    NumberUtil.targetCompression(expanded15, false) must be(
+      UInt32.fromHex("05009234"))
+
+    val expanded16 = NumberUtil.targetExpansion(UInt32.fromHex("20123456"))
+    NumberUtil.targetCompression(expanded16, false) must be(
+      UInt32.fromHex("20123456"))
+
+    //skipping overflow test case for now
+    //https://github.com/bitcoin/bitcoin/blob/eb7daf4d600eeb631427c018a984a77a34aca66e/src/test/arith_uint256_tests.cpp#L528
+  }
+
   private def runTest(nBits: UInt32, expected: BigInteger): Assertion = {
-    assert(NumberUtil.targetExpansion(nBits) == expected)
+    val expansion = NumberUtil.targetExpansion(nBits)
+    assert(expansion == expected)
   }
 }
