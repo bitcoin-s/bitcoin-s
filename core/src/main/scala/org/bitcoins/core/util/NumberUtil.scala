@@ -3,6 +3,8 @@ package org.bitcoins.core.util
 import java.math.BigInteger
 
 import org.bitcoins.core.number._
+import org.bitcoins.core.protocol.blockchain.BlockHeader
+import org.bitcoins.core.protocol.blockchain.BlockHeader.TargetDifficultyHelper
 import scodec.bits.{BitVector, ByteVector}
 
 import scala.math.BigInt
@@ -155,7 +157,7 @@ trait NumberUtil extends BitcoinSLogger {
     * @param nBits
     * @return
     */
-  def targetExpansion(nBits: UInt32): BigInteger = {
+  def targetExpansion(nBits: UInt32): BlockHeader.TargetDifficultyHelper = {
     //mantissa bytes without sign bit
     val noSignificand = nBits.bytes.takeRight(3)
     val mantissaBytes = {
@@ -192,7 +194,26 @@ trait NumberUtil extends BitcoinSLogger {
       }
     }
 
-    result
+    val nWordNotZero = mantissa != (BigInteger.ZERO)
+    val nWord = BigInt(mantissa)
+    val nSize = nBits.toBigInt / (NumberUtil.pow2(24))
+    val isNegative: Boolean = {
+      //*pfNegative = nWord != 0 && (nCompact & 0x00800000) != 0;
+      nWordNotZero &&
+      (nBits & UInt32.fromHex("00800000")) != UInt32.zero
+    }
+
+    val isOverflow: Boolean = {
+      //nWord != 0 && ((nSize > 34) ||
+      //  (nWord > 0xff && nSize > 33) ||
+      //  (nWord > 0xffff && nSize > 32));
+
+      nWordNotZero && ((nSize > 34) ||
+      (nWord > UInt8.max.toBigInt && nSize > 33) ||
+      (nWord > UInt32.fromHex("ffff").toBigInt && nSize > 32))
+    }
+
+    BlockHeader.TargetDifficultyHelper(result.abs(), isNegative, isOverflow)
   }
 
   /**
@@ -204,6 +225,8 @@ trait NumberUtil extends BitcoinSLogger {
   def targetCompression(bigInteger: BigInteger, isNegative: Boolean): UInt32 = {
     val bytes = bigInteger.toByteArray
     val bitVec = BitVector(bytes)
+
+    val negativeFlag = UInt32.fromHex("00800000")
 
     //emulates bits() in arith_uin256.h
     //Returns the position of the highest bit set plus one, or zero if the
@@ -237,28 +260,36 @@ trait NumberUtil extends BitcoinSLogger {
       }
     }
 
-    if ((compact & UInt32(0x00800000)) != UInt32.zero) {
+    //The 0x00800000 bit denotes the sign.
+    // Thus, if it is already set, divide the mantissa by 256 and increase the exponent.
+    if ((compact & negativeFlag) != UInt32.zero) {
       compact = compact >> 8
       size = size + 1
     }
 
-    //~0x007fffff
+    //~0x007fffff = 0xff800000
     require((compact & UInt32.fromHex("ff800000")) == UInt32.zero)
     require(size < 256)
 
     compact = compact | UInt32(size << 24)
+
     compact = {
-      if (isNegative && (compact & UInt32(0x007fffff)) != UInt32.zero) {
-        compact | UInt32(0x00800000)
+      if (isNegative && ((compact & UInt32.fromHex("007fffff")) != UInt32.zero)) {
+        compact | negativeFlag
       } else {
         compact | UInt32.zero
       }
     }
+
     compact
   }
 
   def targetCompression(bigInt: BigInt, isNegative: Boolean): UInt32 = {
     targetCompression(bigInt.bigInteger, isNegative)
+  }
+
+  def targetCompression(difficultyHelper: TargetDifficultyHelper): UInt32 = {
+    targetCompression(difficultyHelper.difficulty, difficultyHelper.isNegative)
   }
 
 }
