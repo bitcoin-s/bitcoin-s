@@ -31,9 +31,8 @@ abstract class DbManagement {
     result
   }
 
-  def dropTable(
-      table: TableQuery[_ <: Table[_]],
-      dbConfig: DbConfig): Future[Unit] = {
+  def dropTable(table: TableQuery[_ <: Table[_]], dbConfig: DbConfig)(
+      implicit ec: ExecutionContext): Future[Unit] = {
     val database = dbConfig.database
     val result = database.run(table.schema.dropIfExists)
     result
