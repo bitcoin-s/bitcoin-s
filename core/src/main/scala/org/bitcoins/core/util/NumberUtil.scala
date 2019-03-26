@@ -13,7 +13,7 @@ import scala.util.{Failure, Success, Try}
 /**
   * Created by chris on 2/8/16.
   */
-trait NumberUtil extends BitcoinSLogger {
+sealed abstract class NumberUtil extends BitcoinSLogger {
 
   /** Takes 2^^num. */
   def pow2(exponent: Int): BigInt = {
@@ -25,7 +25,12 @@ trait NumberUtil extends BitcoinSLogger {
 
   /** Converts a sequence of bytes to a **big endian** unsigned integer */
   def toUnsignedInt(bytes: ByteVector): BigInt = {
-    BigInt(new BigInteger(1, bytes.toArray))
+    toUnsignedInt(bytes.toArray)
+  }
+
+  /** Converts a sequence of bytes to a **big endian** unsigned integer */
+  def toUnsignedInt(bytes: Array[Byte]): BigInt = {
+    BigInt(new BigInteger(1, bytes))
   }
 
   /** Takes a hex string and parses it to a [[scala.math.BigInt BigInt]]. */
@@ -149,11 +154,11 @@ trait NumberUtil extends BitcoinSLogger {
 
   /** Expands the [[org.bitcoins.core.protocol.blockchain.BlockHeader.nBits nBits]]
     * field given in a block header to the _actual_ target difficulty.
-    * See [[https://bitcoin.org/en/developer-reference#target-nbits developer reference]]
+    * @see  [[https://bitcoin.org/en/developer-reference#target-nbits developer reference]]
     * for more information
     *
     * Meant to replicate this function in bitcoin core
-    * [[https://github.com/bitcoin/bitcoin/blob/2068f089c8b7b90eb4557d3f67ea0f0ed2059a23/src/arith_uint256.cpp#L206]]
+    * @see [[https://github.com/bitcoin/bitcoin/blob/2068f089c8b7b90eb4557d3f67ea0f0ed2059a23/src/arith_uint256.cpp#L206]]
     * @param nBits
     * @return
     */
@@ -194,13 +199,13 @@ trait NumberUtil extends BitcoinSLogger {
       }
     }
 
-    val nWordNotZero = mantissa != (BigInteger.ZERO)
+    val nWordNotZero = mantissa != BigInteger.ZERO
     val nWord = BigInt(mantissa)
-    val nSize = nBits.toBigInt / (NumberUtil.pow2(24))
+    val nSize = nBits.toBigInt / NumberUtil.pow2(24)
     val isNegative: Boolean = {
       //*pfNegative = nWord != 0 && (nCompact & 0x00800000) != 0;
       nWordNotZero &&
-      (nBits & UInt32.fromHex("00800000")) != UInt32.zero
+      (nBits & UInt32(0x00800000L)) != UInt32.zero
     }
 
     val isOverflow: Boolean = {
@@ -210,7 +215,7 @@ trait NumberUtil extends BitcoinSLogger {
 
       nWordNotZero && ((nSize > 34) ||
       (nWord > UInt8.max.toBigInt && nSize > 33) ||
-      (nWord > UInt32.fromHex("ffff").toBigInt && nSize > 32))
+      (nWord > UInt32(0xffffL).toBigInt && nSize > 32))
     }
 
     BlockHeader.TargetDifficultyHelper(result.abs(), isNegative, isOverflow)
@@ -218,7 +223,7 @@ trait NumberUtil extends BitcoinSLogger {
 
   /**
     * Compressed the big integer to be used inside of [[org.bitcoins.core.protocol.blockchain.BlockHeader.nBits]]
-    * [[https://github.com/bitcoin/bitcoin/blob/2068f089c8b7b90eb4557d3f67ea0f0ed2059a23/src/arith_uint256.cpp#L226 bitcoin core implementation]]
+    * @see [[https://github.com/bitcoin/bitcoin/blob/2068f089c8b7b90eb4557d3f67ea0f0ed2059a23/src/arith_uint256.cpp#L226 bitcoin core implementation]]
     * @param bigInteger
     * @return
     */
@@ -226,13 +231,13 @@ trait NumberUtil extends BitcoinSLogger {
     val bytes = bigInteger.toByteArray
     val bitVec = BitVector(bytes)
 
-    val negativeFlag = UInt32.fromHex("00800000")
+    val negativeFlag = UInt32(0x00800000L)
 
     //emulates bits() in arith_uin256.h
     //Returns the position of the highest bit set plus one, or zero if the
     //value is zero.
     //https://github.com/bitcoin/bitcoin/blob/2068f089c8b7b90eb4557d3f67ea0f0ed2059a23/src/arith_uint256.h#L241
-    var size: Int = if (bigInteger == BigInteger.valueOf(0)) {
+    var size: Int = if (bigInteger == BigInteger.ZERO) {
       0
     } else {
       ((bitVec.length + 7) / 8).toInt
@@ -247,7 +252,7 @@ trait NumberUtil extends BitcoinSLogger {
         //verified this property with g++
         val shiftAmount = 8 * (3 - size)
 
-        val u64 = new BigInteger(1, bitVec.takeRight(64).toByteArray)
+        val u64 = toUnsignedInt(bitVec.takeRight(64).toByteArray).bigInteger
           .shiftLeft(shiftAmount)
 
         UInt32.fromBytes(ByteVector(u64.toByteArray))
@@ -268,13 +273,14 @@ trait NumberUtil extends BitcoinSLogger {
     }
 
     //~0x007fffff = 0xff800000
-    require((compact & UInt32.fromHex("ff800000")) == UInt32.zero)
-    require(size < 256)
+    require((compact & UInt32(0xff800000L)) == UInt32.zero,
+            s"Exponent/sign bit must not be set yet in compact encoding")
+    require(size < 256, "Size of compact encoding can't be more than 2^256")
 
     compact = compact | UInt32(size << 24)
 
     compact = {
-      if (isNegative && ((compact & UInt32.fromHex("007fffff")) != UInt32.zero)) {
+      if (isNegative && ((compact & UInt32(0x007fffffL)) != UInt32.zero)) {
         compact | negativeFlag
       } else {
         compact | UInt32.zero

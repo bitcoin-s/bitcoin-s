@@ -1,7 +1,5 @@
 package org.bitcoins.core.protocol.blockchain
 
-import java.math.BigInteger
-
 import org.bitcoins.core.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.protocol.NetworkElement
@@ -98,7 +96,7 @@ sealed trait BlockHeader extends NetworkElement {
     * The hash of this block needs to be _less than_ this difficulty
     * to be considered a valid block on the network
     */
-  def difficulty: BigInteger = {
+  def difficulty: BigInt = {
     NumberUtil.targetExpansion(nBits = nBits).difficulty
   }
 
@@ -168,7 +166,7 @@ object BlockHeader extends Factory[BlockHeader] {
     * @param isOverflow
     */
   case class TargetDifficultyHelper(
-      difficulty: BigInteger,
+      difficulty: BigInt,
       isNegative: Boolean,
       isOverflow: Boolean)
 }
