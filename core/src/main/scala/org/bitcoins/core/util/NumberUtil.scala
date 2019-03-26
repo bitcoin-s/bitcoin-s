@@ -3,7 +3,9 @@ package org.bitcoins.core.util
 import java.math.BigInteger
 
 import org.bitcoins.core.number._
-import scodec.bits.ByteVector
+import org.bitcoins.core.protocol.blockchain.BlockHeader
+import org.bitcoins.core.protocol.blockchain.BlockHeader.TargetDifficultyHelper
+import scodec.bits.{BitVector, ByteVector}
 
 import scala.math.BigInt
 import scala.util.{Failure, Success, Try}
@@ -11,7 +13,7 @@ import scala.util.{Failure, Success, Try}
 /**
   * Created by chris on 2/8/16.
   */
-trait NumberUtil extends BitcoinSLogger {
+sealed abstract class NumberUtil extends BitcoinSLogger {
 
   /** Takes 2^^num. */
   def pow2(exponent: Int): BigInt = {
@@ -23,7 +25,12 @@ trait NumberUtil extends BitcoinSLogger {
 
   /** Converts a sequence of bytes to a **big endian** unsigned integer */
   def toUnsignedInt(bytes: ByteVector): BigInt = {
-    BigInt(new BigInteger(1, bytes.toArray))
+    toUnsignedInt(bytes.toArray)
+  }
+
+  /** Converts a sequence of bytes to a **big endian** unsigned integer */
+  def toUnsignedInt(bytes: Array[Byte]): BigInt = {
+    BigInt(new BigInteger(1, bytes))
   }
 
   /** Takes a hex string and parses it to a [[scala.math.BigInt BigInt]]. */
@@ -147,15 +154,15 @@ trait NumberUtil extends BitcoinSLogger {
 
   /** Expands the [[org.bitcoins.core.protocol.blockchain.BlockHeader.nBits nBits]]
     * field given in a block header to the _actual_ target difficulty.
-    * See [[https://bitcoin.org/en/developer-reference#target-nbits developer reference]]
+    * @see  [[https://bitcoin.org/en/developer-reference#target-nbits developer reference]]
     * for more information
     *
     * Meant to replicate this function in bitcoin core
-    * [[https://github.com/bitcoin/bitcoin/blob/2068f089c8b7b90eb4557d3f67ea0f0ed2059a23/src/arith_uint256.cpp#L206]]
+    * @see [[https://github.com/bitcoin/bitcoin/blob/2068f089c8b7b90eb4557d3f67ea0f0ed2059a23/src/arith_uint256.cpp#L206]]
     * @param nBits
     * @return
     */
-  def targetExpansion(nBits: UInt32): BigInteger = {
+  def targetExpansion(nBits: UInt32): BlockHeader.TargetDifficultyHelper = {
     //mantissa bytes without sign bit
     val noSignificand = nBits.bytes.takeRight(3)
     val mantissaBytes = {
@@ -175,19 +182,122 @@ trait NumberUtil extends BitcoinSLogger {
 
     val mantissa =
       new BigInteger(signum, mantissaBytes.toArray)
-
     //guards against a negative exponent, in which case we just shift right
     //see bitcoin core implementation
-    if (significand <= 3) {
-      mantissa.shiftRight(8 * (3 - significand))
-    } else {
-      val exponent = significand - 3
+    val result = {
+      if (significand <= 3) {
 
-      val pow256 = BigInteger.valueOf(256).pow(exponent)
-      mantissa.multiply(pow256)
+        val exp = 8 * (3 - significand)
+        //avoid shift right, because of weird behavior on the jvm
+        //https://stackoverflow.com/questions/47519140/bitwise-shift-right-with-long-not-equaling-zero/47519728#47519728
+        mantissa.divide(NumberUtil.pow2(exp).bigInteger)
+      } else {
+        val exponent = significand - 3
+
+        val pow256 = BigInteger.valueOf(256).pow(exponent)
+        mantissa.multiply(pow256)
+      }
     }
 
+    val nWordNotZero = mantissa != BigInteger.ZERO
+    val nWord = BigInt(mantissa)
+    val nSize = nBits.toBigInt / NumberUtil.pow2(24)
+    val isNegative: Boolean = {
+      //*pfNegative = nWord != 0 && (nCompact & 0x00800000) != 0;
+      nWordNotZero &&
+      (nBits & UInt32(0x00800000L)) != UInt32.zero
+    }
+
+    val isOverflow: Boolean = {
+      //nWord != 0 && ((nSize > 34) ||
+      //  (nWord > 0xff && nSize > 33) ||
+      //  (nWord > 0xffff && nSize > 32));
+
+      nWordNotZero && ((nSize > 34) ||
+      (nWord > UInt8.max.toBigInt && nSize > 33) ||
+      (nWord > UInt32(0xffffL).toBigInt && nSize > 32))
+    }
+
+    BlockHeader.TargetDifficultyHelper(result.abs(), isNegative, isOverflow)
   }
+
+  /**
+    * Compressed the big integer to be used inside of [[org.bitcoins.core.protocol.blockchain.BlockHeader.nBits]]
+    * @see [[https://github.com/bitcoin/bitcoin/blob/2068f089c8b7b90eb4557d3f67ea0f0ed2059a23/src/arith_uint256.cpp#L226 bitcoin core implementation]]
+    * @param bigInteger
+    * @return
+    */
+  def targetCompression(bigInteger: BigInteger, isNegative: Boolean): UInt32 = {
+    val bytes = bigInteger.toByteArray
+    val bitVec = BitVector(bytes)
+
+    val negativeFlag = UInt32(0x00800000L)
+
+    //emulates bits() in arith_uin256.h
+    //Returns the position of the highest bit set plus one, or zero if the
+    //value is zero.
+    //https://github.com/bitcoin/bitcoin/blob/2068f089c8b7b90eb4557d3f67ea0f0ed2059a23/src/arith_uint256.h#L241
+    var size: Int = if (bigInteger == BigInteger.ZERO) {
+      0
+    } else {
+      ((bitVec.length + 7) / 8).toInt
+    }
+
+    var compact: UInt32 = {
+      if (size <= 3) {
+        // GetLow64() << 8 * (3 - nSize);
+        //note: counter intuitively, the expression
+        // 8 * (3 - nSize)
+        //gets evaluated before we apply the shift left operator
+        //verified this property with g++
+        val shiftAmount = 8 * (3 - size)
+
+        val u64 = toUnsignedInt(bitVec.takeRight(64).toByteArray).bigInteger
+          .shiftLeft(shiftAmount)
+
+        UInt32.fromBytes(ByteVector(u64.toByteArray))
+      } else {
+        //8 * (nSize - 3)
+        val shiftAmount = 8 * (size - 3)
+        val bn = bigInteger.shiftRight(shiftAmount)
+        val bytes = bn.toByteArray.takeRight(4)
+        UInt32.fromBytes(ByteVector(bytes))
+      }
+    }
+
+    //The 0x00800000 bit denotes the sign.
+    // Thus, if it is already set, divide the mantissa by 256 and increase the exponent.
+    if ((compact & negativeFlag) != UInt32.zero) {
+      compact = compact >> 8
+      size = size + 1
+    }
+
+    //~0x007fffff = 0xff800000
+    require((compact & UInt32(0xff800000L)) == UInt32.zero,
+            s"Exponent/sign bit must not be set yet in compact encoding")
+    require(size < 256, "Size of compact encoding can't be more than 2^256")
+
+    compact = compact | UInt32(size << 24)
+
+    compact = {
+      if (isNegative && ((compact & UInt32(0x007fffffL)) != UInt32.zero)) {
+        compact | negativeFlag
+      } else {
+        compact | UInt32.zero
+      }
+    }
+
+    compact
+  }
+
+  def targetCompression(bigInt: BigInt, isNegative: Boolean): UInt32 = {
+    targetCompression(bigInt.bigInteger, isNegative)
+  }
+
+  def targetCompression(difficultyHelper: TargetDifficultyHelper): UInt32 = {
+    targetCompression(difficultyHelper.difficulty, difficultyHelper.isNegative)
+  }
+
 }
 
 object NumberUtil extends NumberUtil

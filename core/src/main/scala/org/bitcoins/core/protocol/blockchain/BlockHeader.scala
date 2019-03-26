@@ -1,7 +1,5 @@
 package org.bitcoins.core.protocol.blockchain
 
-import java.math.BigInteger
-
 import org.bitcoins.core.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.protocol.NetworkElement
@@ -98,8 +96,8 @@ sealed trait BlockHeader extends NetworkElement {
     * The hash of this block needs to be _less than_ this difficulty
     * to be considered a valid block on the network
     */
-  def difficulty: BigInteger = {
-    NumberUtil.targetExpansion(nBits = nBits)
+  def difficulty: BigInt = {
+    NumberUtil.targetExpansion(nBits = nBits).difficulty
   }
 
   /**
@@ -159,4 +157,16 @@ object BlockHeader extends Factory[BlockHeader] {
   def fromBytes(bytes: ByteVector): BlockHeader =
     RawBlockHeaderSerializer.read(bytes)
 
+  /** Return type used to carry around extra information
+    * about the difficulty required to mine a block. Unfortunately
+    * there is weird corner cases like it being an overflow or negative
+    * which is returned by [[https://github.com/bitcoin/bitcoin/blob/2068f089c8b7b90eb4557d3f67ea0f0ed2059a23/src/arith_uint256.cpp#L206 arith_uint256#SetCompact()]] in bitcoin core
+    * @param difficulty
+    * @param isNegative
+    * @param isOverflow
+    */
+  case class TargetDifficultyHelper(
+      difficulty: BigInt,
+      isNegative: Boolean,
+      isOverflow: Boolean)
 }
