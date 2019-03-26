@@ -27,17 +27,35 @@ case class RpcTransactionOutput(
     scriptPubKey: RpcScriptPubKey)
     extends RawTransactionResult
 
+/**
+  * @see [[https://github.com/bitcoin/bitcoin/blob/fa6180188b8ab89af97860e6497716405a48bab6/src/script/standard.cpp#L27 standard.cpp]]
+  *     from Bitcoin Core
+  */
+sealed abstract class RpcScriptType extends RawTransactionResult
+
+object RpcScriptType {
+  final case object NONSTANDARD extends RpcScriptType
+  final case object PUBKEY extends RpcScriptType
+  final case object PUBKEYHASH extends RpcScriptType
+  final case object SCRIPTHASH extends RpcScriptType
+  final case object MULTISIG extends RpcScriptType
+  final case object NULLDATA extends RpcScriptType
+  final case object WITNESS_V0_KEYHASH extends RpcScriptType
+  final case object WITNESS_V0_SCRIPTHASH extends RpcScriptType
+  final case object WITNESS_UNKNOWN extends RpcScriptType
+}
+
 case class RpcScriptPubKey(
     asm: String,
     hex: String,
     reqSigs: Option[Int],
-    scriptType: String,
+    scriptType: RpcScriptType,
     addresses: Option[Vector[BitcoinAddress]])
     extends RawTransactionResult
 
 case class DecodeScriptResult(
     asm: String,
-    typeOfScript: Option[String],
+    typeOfScript: Option[RpcScriptType],
     reqSigs: Option[Int],
     addresses: Option[Vector[P2PKHAddress]],
     p2sh: P2SHAddress)
@@ -60,10 +78,10 @@ case class GetRawTransactionResult(
     locktime: UInt32,
     vin: Vector[GetRawTransactionVin],
     vout: Vector[RpcTransactionOutput],
-    blockhash: DoubleSha256DigestBE,
-    confirmations: Int,
-    time: UInt32,
-    blocktime: UInt32)
+    blockhash: Option[DoubleSha256DigestBE],
+    confirmations: Option[Int],
+    time: Option[UInt32],
+    blocktime: Option[UInt32])
     extends RawTransactionResult
 
 case class GetRawTransactionVin(

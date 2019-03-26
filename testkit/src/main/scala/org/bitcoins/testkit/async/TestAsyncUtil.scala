@@ -1,4 +1,5 @@
 package org.bitcoins.testkit.async
+
 import akka.actor.ActorSystem
 import org.scalatest.exceptions.{StackDepthException, TestFailedException}
 

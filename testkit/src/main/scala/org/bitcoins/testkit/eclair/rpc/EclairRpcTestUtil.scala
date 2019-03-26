@@ -18,8 +18,10 @@ import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.eclair.rpc.client.EclairRpcClient
 import org.bitcoins.eclair.rpc.config.EclairInstance
 import org.bitcoins.eclair.rpc.json.PaymentResult
-import org.bitcoins.rpc.client.BitcoindRpcClient
+import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
+import org.bitcoins.rpc.client.v16.BitcoindV16RpcClient
 import org.bitcoins.rpc.config.{BitcoindInstance, ZmqConfig}
+import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.testkit.async.TestAsyncUtil
 import org.bitcoins.testkit.rpc.{BitcoindRpcTestUtil, TestRpcUtil}
 
@@ -50,10 +52,44 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
 
   lazy val network = RegTest
 
+  /**
+    * Makes a best effort to get a 0.16 bitcoind instance
+    */
+  def startedBitcoindRpcClient(instance: BitcoindInstance = bitcoindInstance())(
+      implicit actorSystem: ActorSystem): Future[BitcoindRpcClient] = {
+    import actorSystem.dispatcher
+    for {
+      cli <- BitcoindRpcTestUtil.startedBitcoindRpcClient(instance)
+      // make sure we have enough money open channels
+      //not async safe
+      versionedCli: BitcoindRpcClient <- {
+        if (cli.instance.getVersion == BitcoindVersion.V17) {
+          val v16Cli = new BitcoindV16RpcClient(
+            BitcoindRpcTestUtil.v16Instance())
+          val startF =
+            Future.sequence(List(cli.stop(), v16Cli.start())).map(_ => v16Cli)
+
+          startF.recover {
+            case exception: Exception =>
+              logger.error(
+                List(
+                  "Eclair requires Bitcoin Core 0.16.",
+                  "You can set the environment variable BITCOIND_V16_PATH to override",
+                  "the default bitcoind executable on your PATH."
+                ).mkString(" "))
+              throw exception
+          }
+        } else {
+          Future.successful(cli)
+        }
+      }
+    } yield versionedCli
+  }
+
   def bitcoindInstance(
-      port: Int = randomPort,
-      rpcPort: Int = randomPort,
-      zmqPort: Int = randomPort): BitcoindInstance = {
+      port: Int = RpcUtil.randomPort,
+      rpcPort: Int = RpcUtil.randomPort,
+      zmqPort: Int = RpcUtil.randomPort): BitcoindInstance = {
     val uri = new URI("http://localhost:" + port)
     val rpcUri = new URI("http://localhost:" + rpcPort)
     val auth = BitcoindRpcTestUtil.authCredentials(uri, rpcUri, zmqPort, false)
@@ -68,8 +104,8 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
   //cribbed from https://github.com/Christewart/eclair/blob/bad02e2c0e8bd039336998d318a861736edfa0ad/eclair-core/src/test/scala/fr/acinq/eclair/integration/IntegrationSpec.scala#L140-L153
   private def commonConfig(
       bitcoindInstance: BitcoindInstance,
-      port: Int = randomPort,
-      apiPort: Int = randomPort): Config = {
+      port: Int = RpcUtil.randomPort,
+      apiPort: Int = RpcUtil.randomPort): Config = {
     val configMap = {
       Map(
         "eclair.chain" -> "regtest",
@@ -171,13 +207,6 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
       implicit system: ActorSystem): EclairRpcClient = {
     val inst = cannonicalEclairInstance()
     new EclairRpcClient(inst)
-  }
-
-  def randomPort: Int = {
-    val firstAttempt = Math.abs(scala.util.Random.nextInt % 15000)
-    if (firstAttempt < network.port) {
-      firstAttempt + network.port
-    } else firstAttempt
   }
 
   def deleteTmpDir(dir: File): Boolean = {
@@ -378,8 +407,6 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
       e.start().map(_ => e)
     }
 
-    logger.debug(s"Both clients started")
-
     val connectedLnF: Future[(EclairRpcClient, EclairRpcClient)] =
       clientF.flatMap { c1 =>
         otherClientF.flatMap { c2 =>
@@ -536,7 +563,7 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
         authCredentials =
           eclairRpcClient.instance.authCredentials.bitcoinAuthOpt.get
       )
-      new BitcoindRpcClient(bitcoindInstance)
+      new BitcoindRpcClient(bitcoindInstance)(system)
     }
     bitcoindRpc
   }

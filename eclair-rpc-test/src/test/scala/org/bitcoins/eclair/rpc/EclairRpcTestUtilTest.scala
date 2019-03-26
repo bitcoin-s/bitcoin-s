@@ -15,7 +15,7 @@ class EclairRpcTestUtilTest extends AsyncFlatSpec with BeforeAndAfterAll {
     ActorSystem.create("EclairRpcTestUtilTest")
 
   private val bitcoindRpcF = {
-    val cliF = BitcoindRpcTestUtil.startedBitcoindRpcClient()
+    val cliF = EclairRpcTestUtil.startedBitcoindRpcClient()
     val blocksF = cliF.flatMap(_.generate(200))
     blocksF.flatMap(_ => cliF)
   }
@@ -49,13 +49,13 @@ class EclairRpcTestUtilTest extends AsyncFlatSpec with BeforeAndAfterAll {
 
       for {
         nodeInfoFirst <- first.getInfo
-        channelsFirst <- first.channels
+        channelsFirst <- first.channels()
         nodeInfoSecond <- second.getInfo
-        channelsSecond <- second.channels
+        channelsSecond <- second.channels()
         nodeInfoThird <- third.getInfo
-        channelsThird <- third.channels
+        channelsThird <- third.channels()
         nodeInfoFourth <- fourth.getInfo
-        channelsFourth <- fourth.channels
+        channelsFourth <- fourth.channels()
       } yield {
         assert(channelsFirst.length == 1)
         assert(channelsFirst.exists(_.nodeId == nodeInfoSecond.nodeId))

@@ -2,6 +2,7 @@ package org.bitcoins.rpc.jsonmodels
 
 import org.bitcoins.core.crypto.{
   DoubleSha256Digest,
+  DoubleSha256DigestBE,
   ECPublicKey,
   Sha256Hash160Digest
 }
@@ -72,7 +73,53 @@ case class MemoryManager(
     chunks_free: Int)
     extends OtherResult
 
-case class ValidateAddressResult(
+/**
+  * @note This is defined as a trait
+  *       and not just a raw case class
+  *       (as is done in other RPC return
+  *       values) in order to make it possible
+  *       to deprecate fields.
+  */
+trait ValidateAddressResult {
+
+  def isvalid: Boolean
+  def address: Option[BitcoinAddress]
+  def scriptPubKey: Option[ScriptPubKey]
+
+  @deprecated("Use 'getaddressinfo' instead", since = "0.16")
+  def ismine: Option[Boolean]
+
+  @deprecated("Use 'getaddressinfo' instead", since = "0.16")
+  def iswatchonly: Option[Boolean]
+  def isscript: Option[Boolean]
+
+  @deprecated("Use 'getaddressinfo' instead", since = "0.16")
+  def script: Option[String]
+
+  @deprecated("Use 'getaddressinfo' instead", since = "0.16")
+  def hex: Option[String]
+
+  @deprecated("Use 'getaddressinfo' instead", since = "0.16")
+  def addresses: Option[Vector[BitcoinAddress]]
+  def sigsrequired: Option[Int]
+
+  @deprecated("Use 'getaddressinfo' instead", since = "0.16")
+  def pubkey: Option[ECPublicKey]
+
+  @deprecated("Use 'getaddressinfo' instead", since = "0.16")
+  def iscompressed: Option[Boolean]
+
+  @deprecated("Use 'getaddressinfo' instead", since = "0.16")
+  def account: Option[String]
+
+  @deprecated("Use 'getaddressinfo' instead", since = "0.16")
+  def hdkeypath: Option[String]
+
+  @deprecated("Use 'getaddressinfo' instead", since = "0.16")
+  def hdmasterkeyid: Option[Sha256Hash160Digest]
+}
+
+case class ValidateAddressResultImpl(
     isvalid: Boolean,
     address: Option[BitcoinAddress],
     scriptPubKey: Option[ScriptPubKey],
@@ -82,16 +129,22 @@ case class ValidateAddressResult(
     script: Option[String],
     hex: Option[String],
     addresses: Option[Vector[BitcoinAddress]],
-    sigrequired: Option[Int],
+    sigsrequired: Option[Int],
     pubkey: Option[ECPublicKey],
     iscompressed: Option[Boolean],
     account: Option[String],
     hdkeypath: Option[String],
     hdmasterkeyid: Option[Sha256Hash160Digest])
-    extends OtherResult
+    extends ValidateAddressResult
 
 case class EstimateSmartFeeResult(
     feerate: Option[BitcoinFeeUnit],
     errors: Option[Vector[String]],
     blocks: Int)
     extends OtherResult
+
+case class TestMempoolAcceptResult(
+    txid: DoubleSha256DigestBE,
+    allowed: Boolean,
+    rejectReason: Option[String]
+)

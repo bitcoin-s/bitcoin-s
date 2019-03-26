@@ -1,0 +1,287 @@
+package org.bitcoins.rpc.client.common
+
+import java.io.File
+import java.util.UUID
+
+import akka.actor.ActorSystem
+import akka.http.javadsl.model.headers.HttpCredentials
+import akka.http.scaladsl.Http
+import akka.http.scaladsl.model._
+import akka.stream.{ActorMaterializer, StreamTcpException}
+import akka.util.ByteString
+import org.bitcoins.core.config.{MainNet, NetworkParameters, RegTest, TestNet3}
+import org.bitcoins.core.crypto.ECPrivateKey
+import org.bitcoins.core.util.BitcoinSLogger
+import org.bitcoins.rpc.config.BitcoindInstance
+import org.bitcoins.rpc.serializers.JsonSerializers._
+import org.bitcoins.rpc.util.AsyncUtil
+import play.api.libs.json._
+
+import scala.concurrent._
+import scala.concurrent.duration.DurationInt
+import scala.io.Source
+import scala.sys.process._
+import scala.util.{Failure, Success}
+
+/**
+  * This is the base trait for Bitcoin Core
+  * RPC clients. It defines no RPC calls
+  * except for the a ping. It contains functionality
+  * and utilities useful when working with an RPC
+  * client, like data directories, log files
+  * and whether or not the client is started.
+  */
+trait Client extends BitcoinSLogger {
+  def version: BitcoindVersion
+  protected val instance: BitcoindInstance
+
+  /**
+    * The log file of the Bitcoin Core daemon
+    */
+  def logFile: File = {
+    val prefix = instance.network match {
+      case MainNet  => ""
+      case TestNet3 => "/testnet"
+      case RegTest  => "/regtest"
+    }
+    val datadir = instance.authCredentials.datadir
+    new File(datadir + prefix + "/debug.log")
+  }
+
+  protected implicit val system: ActorSystem
+  protected implicit val materializer: ActorMaterializer =
+    ActorMaterializer.create(system)
+  protected implicit val executor: ExecutionContext = system.getDispatcher
+  protected implicit val network: NetworkParameters = instance.network
+
+  /**
+    * This is here (and not in JsonWrriters)
+    * so that the implicit network val is accessible
+    */
+  implicit object ECPrivateKeyWrites extends Writes[ECPrivateKey] {
+    override def writes(o: ECPrivateKey): JsValue = JsString(o.toWIF(network))
+  }
+
+  implicit val eCPrivateKeyWrites: Writes[ECPrivateKey] = ECPrivateKeyWrites
+  implicit val importMultiAddressWrites: Writes[RpcOpts.ImportMultiAddress] =
+    Json.writes[RpcOpts.ImportMultiAddress]
+  implicit val importMultiRequestWrites: Writes[RpcOpts.ImportMultiRequest] =
+    Json.writes[RpcOpts.ImportMultiRequest]
+  private val resultKey: String = "result"
+  private val errorKey: String = "error"
+
+  def getDaemon: BitcoindInstance = instance
+
+  /** Starts bitcoind on the local system.
+    * @return a future that completes when bitcoind is fully started.
+    *         This future times out after 60 seconds if the client
+    *         cannot be started
+    */
+  def start(): Future[Unit] = {
+    if (version != BitcoindVersion.Unknown) {
+      val foundVersion = instance.getVersion
+      if (foundVersion != version) {
+        throw new RuntimeException(
+          s"Wrong version for bitcoind RPC client! Expected $version, got $foundVersion")
+      }
+    }
+
+    val binaryPath = instance.binary.getAbsolutePath
+    val cmd = List(binaryPath,
+                   "-datadir=" + instance.authCredentials.datadir,
+                   "-rpcport=" + instance.rpcUri.getPort,
+                   "-port=" + instance.uri.getPort)
+    logger.debug(s"starting bitcoind")
+    val _ = Process(cmd).run()
+
+    def isStartedF: Future[Boolean] = {
+      val started: Promise[Boolean] = Promise()
+
+      val pingF = bitcoindCall[Unit]("ping", printError = false)
+      pingF.onComplete {
+        case Success(_) => started.success(true)
+        case Failure(_) => started.success(false)
+      }
+
+      started.future
+    }
+
+    val started = AsyncUtil.retryUntilSatisfiedF(() => isStartedF,
+                                                 duration = 1.seconds,
+                                                 maxTries = 60)
+
+    started.onComplete {
+      case Success(_) => logger.debug(s"started bitcoind")
+      case Failure(exc) =>
+        if (instance.network != MainNet) {
+          logger.info(
+            s"Could not start bitcoind instance! Message: ${exc.getMessage}")
+          logger.info(s"Log lines:")
+          val logLines = Source.fromFile(logFile).getLines()
+          logLines.foreach(logger.info)
+        }
+    }
+
+    started
+  }
+
+  /**
+    * Checks whether the underlying bitcoind daemon is running
+    */
+  def isStartedF: Future[Boolean] = {
+    val request = buildRequest(instance, "ping", JsArray.empty)
+    val responseF = sendRequest(request)
+
+    val payloadF: Future[JsValue] = responseF.flatMap(getPayload)
+
+    // Ping successful if no error can be parsed from the payload
+    val parsedF = payloadF.map { payload =>
+      (payload \ errorKey).validate[RpcError] match {
+        case _: JsSuccess[RpcError] => false
+        case _: JsError             => true
+      }
+    }
+
+    parsedF.recover {
+      case exc: StreamTcpException
+          if exc.getMessage.contains("Connection refused") =>
+        false
+
+    }
+  }
+
+  /**
+    * Checks whether the underlyind bitcoind daemon is stopped
+    */
+  def isStoppedF: Future[Boolean] = {
+    isStartedF.map(started => !started)
+  }
+
+  // This RPC call is here to avoid circular trait depedency
+  def ping(): Future[Unit] = {
+    bitcoindCall[Unit]("ping")
+  }
+
+  protected def bitcoindCall[T](
+      command: String,
+      parameters: List[JsValue] = List.empty,
+      printError: Boolean = true)(
+      implicit
+      reader: Reads[T]): Future[T] = {
+
+    val request = buildRequest(instance, command, JsArray(parameters))
+    val responseF = sendRequest(request)
+
+    val payloadF: Future[JsValue] = responseF.flatMap(getPayload)
+
+    payloadF.map { payload =>
+      {
+
+        /**
+          * These lines are handy if you want to inspect what's being sent to and
+          * returned from bitcoind before it's parsed into a Scala type. However,
+          * there will sensitive material in some of those calls (private keys,
+          * XPUBs, balances, etc). It's therefore not a good idea to enable
+          * this logging in production.
+          */
+        // logger.info(
+        // s"Command: $command ${parameters.map(_.toString).mkString(" ")}")
+        // logger.info(s"Payload: \n${Json.prettyPrint(payload)}")
+        parseResult(result = (payload \ resultKey).validate[T],
+                    json = payload,
+                    printError = printError,
+                    command = command)
+
+      }
+    }
+  }
+
+  protected def buildRequest(
+      instance: BitcoindInstance,
+      methodName: String,
+      params: JsArray): HttpRequest = {
+    val uuid = UUID.randomUUID().toString
+
+    val m: Map[String, JsValue] = Map("method" -> JsString(methodName),
+                                      "params" -> params,
+                                      "id" -> JsString(uuid))
+
+    val jsObject = JsObject(m)
+
+    // Would toString work?
+    val uri = "http://" + instance.rpcUri.getHost + ":" + instance.rpcUri.getPort
+    val username = instance.authCredentials.username
+    val password = instance.authCredentials.password
+    HttpRequest(
+      method = HttpMethods.POST,
+      uri,
+      entity = HttpEntity(ContentTypes.`application/json`, jsObject.toString()))
+      .addCredentials(
+        HttpCredentials.createBasicHttpCredentials(username, password))
+  }
+
+  protected def sendRequest(req: HttpRequest): Future[HttpResponse] = {
+    Http(materializer.system).singleRequest(req)
+  }
+
+  protected def getPayload(response: HttpResponse): Future[JsValue] = {
+    val payloadF = response.entity.dataBytes.runFold(ByteString.empty)(_ ++ _)
+
+    payloadF.map { payload =>
+      Json.parse(payload.decodeString(ByteString.UTF_8))
+    }
+  }
+
+  // Should both logging and throwing be happening?
+  private def parseResult[T](
+      result: JsResult[T],
+      json: JsValue,
+      printError: Boolean,
+      command: String
+  ): T = {
+    checkUnitError[T](result, json, printError)
+
+    result match {
+      case JsSuccess(value, _) => value
+      case res: JsError =>
+        (json \ errorKey).validate[RpcError] match {
+          case err: JsSuccess[RpcError] =>
+            if (printError) {
+              logger.error(s"Error ${err.value.code}: ${err.value.message}")
+            }
+            throw new RuntimeException(
+              s"Error $command ${err.value.code}: ${err.value.message}")
+          case _: JsError =>
+            val jsonResult = (json \ resultKey).get
+            val errString =
+              s"Error when parsing result of '$command': ${JsError.toJson(res).toString}!"
+            if (printError) logger.error(errString + s"JSON: $jsonResult")
+            throw new IllegalArgumentException(
+              s"Could not parse JsResult: $jsonResult! Error: $errString")
+        }
+    }
+  }
+
+  // Catches errors thrown by calls with Unit as the expected return type (which isn't handled by UnitReads)
+  private def checkUnitError[T](
+      result: JsResult[T],
+      json: JsValue,
+      printError: Boolean): Unit = {
+    if (result == JsSuccess(())) {
+      (json \ errorKey).validate[RpcError] match {
+        case err: JsSuccess[RpcError] =>
+          if (printError) {
+            logger.error(s"Error ${err.value.code}: ${err.value.message}")
+          }
+          throw new RuntimeException(
+            s"Error ${err.value.code}: ${err.value.message}")
+        case _: JsError =>
+      }
+    }
+  }
+
+  case class RpcError(code: Int, message: String)
+
+  implicit val rpcErrorReads: Reads[RpcError] = Json.reads[RpcError]
+
+}
