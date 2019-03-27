@@ -2,31 +2,23 @@ package org.bitcoins.node.networking.peer
 
 import java.net.InetSocketAddress
 
-import akka.actor.{ActorRef, ActorSystem}
-import akka.testkit.{ImplicitSender, TestKit, TestProbe}
+import akka.actor.ActorSystem
+import akka.testkit.TestKit
 import akka.util.Timeout
 import org.bitcoins.core.config.{NetworkParameters, RegTest}
-import org.bitcoins.core.crypto.DoubleSha256Digest
-import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil}
+import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.db.UnitTestDbConfig
 import org.bitcoins.node.NetworkMessage
 import org.bitcoins.node.constant.Constants
 import org.bitcoins.node.messages._
-import org.bitcoins.node.messages.data.GetHeadersMessage
-import org.bitcoins.node.models.Peer
-import org.bitcoins.node.networking.Client
-import org.bitcoins.node.util.{
-  BitcoinSpvNodeUtil,
-  NetworkIpAddress,
-  NodeTestUtil
-}
-import org.bitcoins.rpc.client.BitcoindRpcClient
+import org.bitcoins.node.util.NodeTestUtil
+import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.testkit.async.TestAsyncUtil
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.scalatest._
 
 import scala.concurrent.duration.DurationInt
-import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.concurrent.{ExecutionContext, Future}
 
 /**
   * Created by chris on 7/1/16.
