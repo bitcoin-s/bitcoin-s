@@ -20,7 +20,7 @@ import org.bitcoins.node.util.{
   NetworkIpAddress,
   NodeTestUtil
 }
-import org.bitcoins.rpc.client.BitcoindRpcClient
+import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.testkit.async.TestAsyncUtil
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.scalatest._
