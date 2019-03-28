@@ -12,7 +12,7 @@ import org.bitcoins.node.messages.data.GetHeadersMessage
 import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.Client
 import org.bitcoins.node.networking.peer.PeerMessageReceiver
-import org.bitcoins.rpc.client.BitcoindRpcClient
+import org.bitcoins.rpc.client.common.BitcoindRpcClient
 
 /**
   * Created by chris on 6/2/16.
@@ -89,7 +89,7 @@ abstract class NodeTestUtil {
   }
 
   /** Gets the [[Peer]] that
-    * corresponds to [[org.bitcoins.rpc.client.BitcoindRpcClient]] */
+    * corresponds to [[org.bitcoins.rpc.client.common.BitcoindRpcClient]] */
   def getBitcoindPeer(bitcoindRpcClient: BitcoindRpcClient): Peer = {
     val socket = getBitcoindSocketAddress(bitcoindRpcClient)
     val networkIpAddress = NetworkIpAddress.fromInetSocketAddress(socket)
