@@ -1,5 +1,7 @@
 package org.bitcoins.core.protocol.blockchain
 
+import java.math.BigInteger
+
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.number.Int64
 import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptSignature}
@@ -8,15 +10,13 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionConstants,
   TransactionOutput
 }
-import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil}
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.bitcoins.core.util.BitcoinSUtil
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 
 /**
   * Created by chris on 5/24/16.
   */
-class ChainParamsTest extends FlatSpec with MustMatchers {
-  private def logger = BitcoinSLogger.logger
-
+class ChainParamsTest extends BitcoinSUnitTest {
   val genesisBlock = MainNetChainParams.genesisBlock
   val genesisTransaction = genesisBlock.transactions.head
 
@@ -161,5 +161,36 @@ class ChainParamsTest extends FlatSpec with MustMatchers {
       "043587CF".toLowerCase)
     BitcoinSUtil.encodeHex(RegTestNetChainParams.base58Prefixes(ExtSecretKey)) must be(
       "04358394".toLowerCase)
+  }
+
+  it must "determine the correct POW intervals for bitcoin networks" in {
+    MainNetChainParams.difficultyChangeInterval must be(2016)
+    TestNetChainParams.difficultyChangeInterval must be(2016)
+    RegTestNetChainParams.difficultyChangeInterval must be(2016)
+  }
+
+  it must "determine what networks allow retargeting of proof of work" in {
+    MainNetChainParams.noRetargeting must be(false)
+    TestNetChainParams.noRetargeting must be(false)
+    RegTestNetChainParams.noRetargeting must be(true)
+  }
+
+  it must "allow/not allow minimum difficulty blocks on certain networks" in {
+    MainNetChainParams.allowMinDifficultyBlocks must be(false)
+    TestNetChainParams.allowMinDifficultyBlocks must be(true)
+    RegTestNetChainParams.allowMinDifficultyBlocks must be(true)
+  }
+
+  it must "compute the correct pow limits" in {
+    val expectedTestMain = new BigInteger(
+      "26959946667150639794667015087019630673637144422540572481103610249215",
+      10)
+
+    val expectedRegTest = new BigInteger(
+      "57896044618658097711785492504343953926634992332820282019728792003956564819967",
+      10)
+    MainNetChainParams.powLimit must be(expectedTestMain)
+    TestNetChainParams.powLimit must be(expectedTestMain)
+    RegTestNetChainParams.powLimit must be(expectedRegTest)
   }
 }

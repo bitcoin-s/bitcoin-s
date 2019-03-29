@@ -69,7 +69,7 @@ object ZmqConfig {
       Try(config.getString(path))
         .map(str => Some(new URI(str)))
         .getOrElse(throw new IllegalArgumentException(
-          s"$path in config is not a valid URI"))
+          s"$path (${config.getString(path)}) in config is not a valid URI"))
     } else {
       None
     }

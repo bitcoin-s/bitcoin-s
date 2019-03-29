@@ -25,15 +25,21 @@ before_cache:
   - find $HOME/.sbt -name "*.lock" | xargs rm
   - find $HOME/.ivy2 -name "ivydata-*.properties" | xargs rm
 
-before_install:
+install:
   - if [[ $TRAVIS_OS_NAME == "linux" ]]; then export PLATFORM="x86_64-linux-gnu"; else export PLATFORM="osx64"; fi
+  # # # bitcoind v16
   - wget https://bitcoincore.org/bin/bitcoin-core-0.16.3/bitcoin-0.16.3-${PLATFORM}.tar.gz
   - tar -xzf bitcoin-0.16.3-${PLATFORM}.tar.gz
-  - cd bitcoin-0.16.3/bin
-  - export PATH=$PATH:$(pwd)
-  - cd ../..
-
-install:
+  - export BITCOIND_V16_PATH=$(pwd)/bitcoin-0.16.3/bin
+  # # # bitcoind v17
+  - wget https://bitcoincore.org/bin/bitcoin-core-0.17.0.1/bitcoin-0.17.0.1-${PLATFORM}.tar.gz
+  - tar -xzf bitcoin-0.17.0.1-${PLATFORM}.tar.gz
+  # tar places the unpacked directory in a not so intuitive location
+  - export BITCOIND_V17_PATH=$(pwd)/bitcoin-0.17.0/bin
+  # set default bitcoind to randomly choose between 0.16 and 0.17
+  - if [ $(($RANDOM%2)) == 1 ]; then BITCOIND_PATH=$BITCOIND_V16_PATH; else BITCOIND_PATH=$BITCOIND_V17_PATH; fi;
+  - export PATH=$BITCOIND_PATH:$PATH
+  # # # Eclair
   - wget https://github.com/ACINQ/eclair/releases/download/v0.2-beta8/eclair-node-0.2-beta8-52821b8.jar
   - export ECLAIR_PATH=$(pwd)
 

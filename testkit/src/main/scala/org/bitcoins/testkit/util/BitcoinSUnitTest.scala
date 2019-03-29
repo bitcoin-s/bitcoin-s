@@ -1,4 +1,4 @@
-package org.bitcoins.core.util
+package org.bitcoins.testkit.util
 
 import org.scalatest.prop.PropertyChecks
 import org.scalatest.{FlatSpec, MustMatchers}
@@ -46,7 +46,7 @@ abstract class BitcoinSUnitTest
 
 }
 
-object BitcoinSUnitTest {
+private object BitcoinSUnitTest {
 
   /** The number of times new code
     * should be executed in a property based test

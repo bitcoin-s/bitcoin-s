@@ -18,6 +18,7 @@ object Deps {
     val nativeLoaderV = "2.3.2"
     val typesafeConfigV = "1.3.3"
     val ammoniteV = "1.6.2"
+    val asyncV = "0.9.7"
   }
 
   object Compile {
@@ -37,6 +38,7 @@ object Deps {
   }
 
   object Test {
+    val async = "org.scala-lang.modules" %% "scala-async" % V.asyncV % "test" withSources () withJavadoc ()
 
     val bitcoinj = ("org.bitcoinj" % "bitcoinj-core" % "0.14.4" % "test")
       .exclude("org.slf4j", "slf4j-api")
@@ -102,6 +104,7 @@ object Deps {
     Test.logback,
     Test.scalaTest,
     Test.scalacheck,
+    Test.async,
     Test.ammonite
   )
 

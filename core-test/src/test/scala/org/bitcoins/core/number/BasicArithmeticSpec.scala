@@ -1,6 +1,6 @@
 package org.bitcoins.core.number
 import org.bitcoins.testkit.core.gen.NumberGenerator
-import org.bitcoins.core.util.BitcoinSUnitTest
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 import org.scalatest.prop.PropertyChecks
 
 class BasicArithmeticSpec extends BitcoinSUnitTest {

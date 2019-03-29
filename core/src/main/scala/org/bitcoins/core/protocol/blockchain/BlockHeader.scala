@@ -4,7 +4,7 @@ import org.bitcoins.core.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.protocol.NetworkElement
 import org.bitcoins.core.serializers.blockchain.RawBlockHeaderSerializer
-import org.bitcoins.core.util.{CryptoUtil, Factory}
+import org.bitcoins.core.util.{CryptoUtil, Factory, NumberUtil}
 import scodec.bits.ByteVector
 
 /**
@@ -87,6 +87,20 @@ sealed trait BlockHeader extends NetworkElement {
   def nBits: UInt32
 
   /**
+    * This is the decoded version of [[nBits]]. nBits is used to compactly represent the difficulty
+    * target for the bitcoin network. This field is the expanded version that is the _actual_
+    * requirement needed for the network. This is a 256 bit unsigned integer
+    * See the bitcoin developer reference for more information on how this is constructed
+    * [[https://bitcoin.org/en/developer-reference#target-nbits documentation]]
+    *
+    * The hash of this block needs to be _less than_ this difficulty
+    * to be considered a valid block on the network
+    */
+  def difficulty: BigInt = {
+    NumberUtil.targetExpansion(nBits = nBits).difficulty
+  }
+
+  /**
     * An arbitrary number miners change to modify the header hash in order to produce a hash below the target threshold.
     * If all 32-bit values are tested, the time can be updated or the coinbase
     * transaction can be changed and the merkle root updated.
@@ -143,4 +157,16 @@ object BlockHeader extends Factory[BlockHeader] {
   def fromBytes(bytes: ByteVector): BlockHeader =
     RawBlockHeaderSerializer.read(bytes)
 
+  /** Return type used to carry around extra information
+    * about the difficulty required to mine a block. Unfortunately
+    * there is weird corner cases like it being an overflow or negative
+    * which is returned by [[https://github.com/bitcoin/bitcoin/blob/2068f089c8b7b90eb4557d3f67ea0f0ed2059a23/src/arith_uint256.cpp#L206 arith_uint256#SetCompact()]] in bitcoin core
+    * @param difficulty
+    * @param isNegative
+    * @param isOverflow
+    */
+  case class TargetDifficultyHelper(
+      difficulty: BigInt,
+      isNegative: Boolean,
+      isOverflow: Boolean)
 }

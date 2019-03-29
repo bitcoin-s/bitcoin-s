@@ -3,12 +3,8 @@ package org.bitcoins.rpc.serializers
 import java.io.File
 import java.net.{InetAddress, URI}
 
-import org.bitcoins.core.crypto.{
-  DoubleSha256Digest,
-  DoubleSha256DigestBE,
-  ECPublicKey,
-  Sha256Hash160Digest
-}
+import org.bitcoins.core.crypto.bip32.BIP32Path
+import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.number.{Int32, UInt32, UInt64}
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, MerkleBlock}
@@ -25,20 +21,27 @@ import org.bitcoins.core.protocol.{
   P2SHAddress
 }
 import org.bitcoins.core.wallet.fee.BitcoinFeeUnit
+import org.bitcoins.rpc.client.common.RpcOpts.AddressType
 import org.bitcoins.rpc.jsonmodels._
 import org.bitcoins.rpc.serializers.JsonReaders._
 import org.bitcoins.rpc.serializers.JsonWriters._
+import org.joda.time.DateTime
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
 
 object JsonSerializers {
   implicit val bigIntReads: Reads[BigInt] = BigIntReads
+  implicit val dateTimeReads: Reads[DateTime] = DateTimeReads
 
   // Internal Types
   implicit val doubleSha256DigestReads: Reads[DoubleSha256Digest] =
     DoubleSha256DigestReads
   implicit val doubleSha256DigestBEReads: Reads[DoubleSha256DigestBE] =
     DoubleSha256DigestBEReads
+  implicit val ripeMd160DigestReads: Reads[RipeMd160Digest] =
+    RipeMd160DigestReads
+  implicit val ripeMd160DigestBEReads: Reads[RipeMd160DigestBE] =
+    RipeMd160DigestBEReads
   implicit val bitcoinsReads: Reads[Bitcoins] = BitcoinsReads
   implicit val satoshisReads: Reads[Satoshis] = SatoshisReads
   implicit val blockHeaderReads: Reads[BlockHeader] = BlockHeaderReads
@@ -84,7 +87,7 @@ object JsonSerializers {
     ((__ \ "asm").read[String] and
       (__ \ "hex").read[String] and
       (__ \ "reqSigs").readNullable[Int] and
-      (__ \ "type").read[String] and
+      (__ \ "type").read[RpcScriptType] and
       (__ \ "addresses").readNullable[Vector[BitcoinAddress]])(RpcScriptPubKey)
   implicit val rpcTransactionOutputReads: Reads[RpcTransactionOutput] =
     Json.reads[RpcTransactionOutput]
@@ -93,7 +96,7 @@ object JsonSerializers {
 
   implicit val decodeScriptResultReads: Reads[DecodeScriptResult] =
     ((__ \ "asm").read[String] and
-      (__ \ "type").readNullable[String] and
+      (__ \ "type").readNullable[RpcScriptType] and
       (__ \ "reqSigs").readNullable[Int] and
       (__ \ "addresses").readNullable[Vector[P2PKHAddress]] and
       (__ \ "p2sh").read[P2SHAddress])(DecodeScriptResult)
@@ -183,6 +186,15 @@ object JsonSerializers {
   implicit val getTxOutSetInfoResultReads: Reads[GetTxOutSetInfoResult] =
     Json.reads[GetTxOutSetInfoResult]
 
+  implicit val addressTypeWrites: Writes[AddressType] = AddressTypeWrites
+
+  implicit object Bip32PathFormats extends Format[BIP32Path] {
+    override def reads(json: JsValue): JsResult[BIP32Path] =
+      json.validate[String].map(BIP32Path.fromString)
+    override def writes(o: BIP32Path): JsValue =
+      JsString(o.toString)
+  }
+
   // Wallet Models
   implicit val multiSigReads: Reads[MultiSigResult] =
     Json.reads[MultiSigResult]
@@ -232,6 +244,9 @@ object JsonSerializers {
 
   implicit val receivedAccountReads: Reads[ReceivedAccount] =
     Json.reads[ReceivedAccount]
+
+  implicit val labelResult: Reads[LabelResult] =
+    Json.reads[LabelResult]
 
   implicit val paymentReads: Reads[Payment] =
     ((__ \ "involvesWatchonly").readNullable[Boolean] and
@@ -297,11 +312,57 @@ object JsonSerializers {
   implicit val getMemoryInfoResultReads: Reads[GetMemoryInfoResult] =
     Json.reads[GetMemoryInfoResult]
 
-  implicit val validateAddressResultReads: Reads[ValidateAddressResult] =
-    Json.reads[ValidateAddressResult]
+  implicit val validateAddressResultReads: Reads[ValidateAddressResultImpl] =
+    Json.reads[ValidateAddressResultImpl]
+
+  implicit val embeddedResultReads: Reads[EmbeddedResult] =
+    Json.reads[EmbeddedResult]
+
+  implicit val addressInfoResultReads: Reads[AddressInfoResult] =
+    Json.reads[AddressInfoResult]
+
+  implicit val receivedLabelReads: Reads[ReceivedLabel] =
+    Json.reads[ReceivedLabel]
 
   implicit val estimateSmartFeeResultReads: Reads[EstimateSmartFeeResult] =
     Json.reads[EstimateSmartFeeResult]
+
+  implicit val walletProcessPsbtResultReads: Reads[WalletProcessPsbtResult] =
+    Json.reads[WalletProcessPsbtResult]
+
+  implicit val finalizedPsbtReads: Reads[FinalizedPsbt] = FinalizedPsbtReads
+
+  implicit val nonFinalizedPsbtReads: Reads[NonFinalizedPsbt] =
+    NonFinalizedPsbtReads
+
+  implicit val finalizePsbtResultReads: Reads[FinalizePsbtResult] =
+    FinalizePsbtResultReads
+
+  implicit val rpcPsbtOutputReads: Reads[RpcPsbtOutput] = RpcPsbtOutputReads
+
+  implicit val psbtBIP32DerivsReads: Reads[PsbtBIP32Deriv] =
+    PsbtBIP32DerivsReads
+
+  implicit val rpcPsbtScriptReads: Reads[RpcPsbtScript] = RpcPsbtScriptReads
+
+  implicit val psbtWitnessUtxoInputReads: Reads[PsbtWitnessUtxoInput] =
+    Json.reads[PsbtWitnessUtxoInput]
+
+  implicit val mapPubKeySignatureReads: Reads[
+    Map[ECPublicKey, ECDigitalSignature]] = MapPubKeySignatureReads
+
+  implicit val rpcPsbtInputReads: Reads[RpcPsbtInput] = RpcPsbtInputReads
+
+  implicit val decodePsbtResult: Reads[DecodePsbtResult] =
+    Json.reads[DecodePsbtResult]
+
+  implicit val walletCreateFundedPsbtResultReads: Reads[
+    WalletCreateFundedPsbtResult] = Json.reads[WalletCreateFundedPsbtResult]
+
+  implicit val rpcScriptTypeReads: Reads[RpcScriptType] = RpcScriptTypeReads
+
+  implicit val testMempoolAcceptResultReads: Reads[TestMempoolAcceptResult] =
+    TestMempoolAcceptResultReads
 
   // Map stuff
   implicit def mapDoubleSha256DigestReads: Reads[
@@ -313,6 +374,11 @@ object JsonSerializers {
     Map[DoubleSha256DigestBE, GetMemPoolResult]] =
     Reads.mapReads[DoubleSha256DigestBE, GetMemPoolResult](s =>
       JsSuccess(DoubleSha256DigestBE.fromHex(s)))
+
+  implicit def mapAddressesByLabelReads: Reads[
+    Map[BitcoinAddress, LabelResult]] =
+    Reads.mapReads[BitcoinAddress, LabelResult](s =>
+      JsSuccess(BitcoinAddress.fromString(s).get))
 
   implicit val outputMapWrites: Writes[Map[BitcoinAddress, Bitcoins]] =
     mapWrites[BitcoinAddress, Bitcoins](_.value)
