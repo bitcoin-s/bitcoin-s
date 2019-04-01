@@ -47,6 +47,32 @@ sealed abstract class BlockHeaderDAO
     table.filter(_.hash.inSet(hashes))
   }
 
+  /** Retrives the ancestor for the given block header at the given height
+    * @param child
+    * @param height
+    * @return
+    */
+  def getAncestorAtHeight(
+      child: BlockHeaderDb,
+      height: Long): Future[Option[BlockHeaderDb]] = {
+    //extremely inefficient and probably needs to be re-implemented
+    //we are reading from disk every time here
+    val headerOptF = read(child.previousBlockHashBE)
+    headerOptF.flatMap {
+      case Some(header) =>
+        if (header.height == height) {
+          Future.successful(Some(header))
+        } else if (height <= header.height) {
+          //need to keep traversing backwards to get to the right height
+          getAncestorAtHeight(header, height)
+        } else {
+          Future.successful(None)
+        }
+      case None =>
+        Future.successful(None)
+    }
+  }
+
   /** Retrieves a [[BlockHeaderDb]] at the given height */
   def getAtHeight(height: Long): Future[Vector[BlockHeaderDb]] = {
     val query = getAtHeightQuery(height)
