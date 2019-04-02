@@ -178,6 +178,22 @@ sealed abstract class ChainParams {
   def difficultyChangeInterval: Long = {
     powTargetTimeSpan.toSeconds / powTargetSpacing.toSeconds
   }
+
+  /**
+    * Whether we should allow minimum difficulty blocks or not
+    * As an example you can trivially mine blocks on [[RegTestNetChainParams]] and [[TestNetChainParams]]
+    * but not the [[MainNetChainParams]]
+    * @return
+    */
+  def allowMinDifficultyBlocks: Boolean
+
+  /**
+    * Whether this chain supports
+    * proof of work retargeting or not
+    * @see [[https://github.com/bitcoin/bitcoin/blob/eb7daf4d600eeb631427c018a984a77a34aca66e/src/consensus/params.h#L72 link]]
+    * @return
+    */
+  def noRetargeting: Boolean
 }
 
 sealed abstract class BitcoinChainParams extends ChainParams {
@@ -199,22 +215,6 @@ sealed abstract class BitcoinChainParams extends ChainParams {
 
   /** The best chain should have this amount of work */
   def minimumChainWork: BigInteger
-
-  /**
-    * Whether we should allow minimum difficulty blocks or not
-    * As an example you can trivially mine blocks on [[RegTestNetChainParams]] and [[TestNetChainParams]]
-    * but not the [[MainNetChainParams]]
-    * @return
-    */
-  def allowMinDifficultyBlocks: Boolean
-
-  /**
-    * Whether this chain supports
-    * proof of work retargeting or not
-    * [[https://github.com/bitcoin/bitcoin/blob/eb7daf4d600eeb631427c018a984a77a34aca66e/src/consensus/params.h#L72 link]]
-    * @return
-    */
-  def noRetargeting: Boolean
 }
 
 /** The Main Network parameters. */
