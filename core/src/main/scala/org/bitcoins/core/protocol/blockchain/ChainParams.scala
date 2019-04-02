@@ -190,7 +190,7 @@ sealed abstract class ChainParams {
   /**
     * Whether this chain supports
     * proof of work retargeting or not
-    * [[https://github.com/bitcoin/bitcoin/blob/eb7daf4d600eeb631427c018a984a77a34aca66e/src/consensus/params.h#L72 link]]
+    * @see [[https://github.com/bitcoin/bitcoin/blob/eb7daf4d600eeb631427c018a984a77a34aca66e/src/consensus/params.h#L72 link]]
     * @return
     */
   def noRetargeting: Boolean

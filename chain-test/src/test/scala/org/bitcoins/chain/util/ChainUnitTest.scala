@@ -21,7 +21,7 @@ trait ChainUnitTest
     with BeforeAndAfterAll {
 
   val timeout = 10.seconds
-  val dbConfig: DbConfig = UnitTestDbConfig
+  def dbConfig: DbConfig = UnitTestDbConfig
   val genesisHeader: BlockHeaderDb = ChainTestUtil.regTestGenesisHeaderDb
   val networkParam: RegTestNetChainParams.type = RegTestNetChainParams
 

@@ -13,7 +13,7 @@ abstract class BlockHeaderHelper {
 
   /**
     * The previous block to this was [[header2]]
-    * [[https://blockstream.info/block/0000000000000000002339403dedc19ae93f6f3912d364b42f568afa1ba7cfec height #566,093]]
+    * @see [[https://blockstream.info/block/0000000000000000002339403dedc19ae93f6f3912d364b42f568afa1ba7cfec height #566,093]]
     */
   val header1: BlockHeader = {
     val hex =
@@ -28,7 +28,7 @@ abstract class BlockHeaderHelper {
   /**
     * The next block is [[header1]] after this block
     * 000000000000000000250c4b6909c0befc321610d4cd0229ad08ad45a3335eb4
-    * [[https://blockstream.info/block/000000000000000000250c4b6909c0befc321610d4cd0229ad08ad45a3335eb4 #566,092]]
+    * @see [[https://blockstream.info/block/000000000000000000250c4b6909c0befc321610d4cd0229ad08ad45a3335eb4 #566,092]]
     */
   val header2: BlockHeader = {
     val hex =

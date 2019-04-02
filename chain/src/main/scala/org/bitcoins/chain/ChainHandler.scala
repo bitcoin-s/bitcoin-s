@@ -15,16 +15,14 @@ import scala.concurrent.{ExecutionContext, Future}
   * of [[ChainApi]], this is the entry point in to the
   * chain project.
   */
-sealed abstract class ChainHandler extends ChainApi with BitcoinSLogger {
-  def dbConfig: DbConfig
-
-  def chainParams: ChainParams
-
-  implicit def ec: ExecutionContext
+case class ChainHandler(
+    blockchain: Blockchain,
+    chainParams: ChainParams,
+    dbConfig: DbConfig)(implicit ec: ExecutionContext)
+    extends ChainApi
+    with BitcoinSLogger {
 
   private val blockHeaderDAO = BlockHeaderDAO(chainParams, dbConfig)
-
-  def blockchain: Blockchain
 
   override def getHeader(
       hash: DoubleSha256DigestBE): Future[Option[BlockHeaderDb]] = {
@@ -50,19 +48,4 @@ sealed abstract class ChainHandler extends ChainApi with BitcoinSLogger {
     newHandlerF
   }
 
-}
-
-object ChainHandler {
-  private case class ChainHandlerImpl(
-      blockchain: Blockchain,
-      chainParams: ChainParams,
-      dbConfig: DbConfig)(override implicit val ec: ExecutionContext)
-      extends ChainHandler
-
-  def apply(
-      blockchain: Blockchain,
-      chainParams: ChainParams,
-      dbConfig: DbConfig)(implicit ec: ExecutionContext): ChainHandler = {
-    ChainHandlerImpl(blockchain, chainParams, dbConfig)(ec)
-  }
 }

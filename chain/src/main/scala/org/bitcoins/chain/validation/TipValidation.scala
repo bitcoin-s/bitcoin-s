@@ -47,7 +47,7 @@ sealed abstract class TipValidation extends BitcoinSLogger {
           logger.warn(
             s"Failed to connect tip=${header.hashBE.hex} to current chain")
           TipUpdateResult.BadPreviousBlockHash(newPotentialTip)
-        } else if ((header.nBits != expectedWork)) {
+        } else if (header.nBits != expectedWork) {
           //https://github.com/bitcoin/bitcoin/blob/eb7daf4d600eeb631427c018a984a77a34aca66e/src/pow.cpp#L19
           TipUpdateResult.BadPOW(newPotentialTip)
         } else if (isBadNonce(newPotentialTip)) {
@@ -86,7 +86,7 @@ sealed abstract class TipValidation extends BitcoinSLogger {
 
   /** Checks if [[header.nonce]] hashes to meet the POW requirements for this block (nBits)
     * Mimics this
-    * [[https://github.com/bitcoin/bitcoin/blob/eb7daf4d600eeb631427c018a984a77a34aca66e/src/pow.cpp#L74]]
+    * @see [[https://github.com/bitcoin/bitcoin/blob/eb7daf4d600eeb631427c018a984a77a34aca66e/src/pow.cpp#L74]]
     * */
   private def isBadNonce(header: BlockHeader): Boolean = {
     //convert hash into a big integer

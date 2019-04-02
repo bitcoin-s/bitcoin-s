@@ -9,13 +9,13 @@ import scala.concurrent.{ExecutionContext, Future}
 
 /**
   * Implements functions found inside of bitcoin core's
-  * [[https://github.com/bitcoin/bitcoin/blob/35477e9e4e3f0f207ac6fa5764886b15bf9af8d0/src/pow.cpp pow.cpp]]
+  * @see [[https://github.com/bitcoin/bitcoin/blob/35477e9e4e3f0f207ac6fa5764886b15bf9af8d0/src/pow.cpp pow.cpp]]
   */
 sealed abstract class Pow {
 
   /**
     * Gets the next proof of work requirement for a block
-    * [[https://github.com/bitcoin/bitcoin/blob/35477e9e4e3f0f207ac6fa5764886b15bf9af8d0/src/pow.cpp#L13 Mimics bitcoin core implmentation]]
+    * @see [[https://github.com/bitcoin/bitcoin/blob/35477e9e4e3f0f207ac6fa5764886b15bf9af8d0/src/pow.cpp#L13 Mimics bitcoin core implmentation]]
     * @param tip
     * @param newPotentialTip
     * @param chainParams
@@ -29,7 +29,9 @@ sealed abstract class Pow {
       implicit ec: ExecutionContext): Future[UInt32] = {
     val currentHeight = tip.height
 
-    val powLimit = NumberUtil.targetCompression(chainParams.powLimit, false)
+    val powLimit = NumberUtil.targetCompression(bigInteger =
+                                                  chainParams.powLimit,
+                                                isNegative = false)
     if ((currentHeight + 1) % chainParams.difficultyChangeInterval != 0) {
       if (chainParams.allowMinDifficultyBlocks) {
         // Special difficulty rule for testnet:
@@ -44,7 +46,8 @@ sealed abstract class Pow {
           //chain until we find a block header that does not have
           //the minimum difficulty rule on testnet
 
-          ???
+          //TODO: This is not correctly implemented, come back and fix this when BlockHeaderDAO has a predicate to satisfy
+          Future.successful(powLimit)
         }
       } else {
         Future.successful(tip.blockHeader.nBits)
@@ -70,6 +73,14 @@ sealed abstract class Pow {
     }
   }
 
+  /**
+    * Calculate the next proof of work requirement for our blockchain
+    * @see [[https://github.com/bitcoin/bitcoin/blob/35477e9e4e3f0f207ac6fa5764886b15bf9af8d0/src/pow.cpp#L49 bitcoin core implementation]]
+    * @param currentTip
+    * @param firstBlock
+    * @param chainParams
+    * @return
+    */
   def calculateNextWorkRequired(
       currentTip: BlockHeaderDb,
       firstBlock: BlockHeaderDb,

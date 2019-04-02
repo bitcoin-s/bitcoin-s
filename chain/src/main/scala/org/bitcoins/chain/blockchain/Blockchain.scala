@@ -19,16 +19,15 @@ import scala.concurrent.{ExecutionContext, Future}
   * }}}
   *
   */
-sealed abstract class Blockchain extends BitcoinSLogger {
+case class Blockchain(
+    headers: Vector[BlockHeaderDb],
+    blockHeaderDAO: BlockHeaderDAO,
+    chainParams: ChainParams)
+    extends BitcoinSLogger {
   //TODO: Think about not exposing the headers to world, encapsulate them and
   //provide methods like `.map` and `.foreach` on this data structure.
-  def blockHeaderDAO: BlockHeaderDAO
 
   def tip: BlockHeaderDb = headers.head
-
-  def chainParams: ChainParams
-
-  def headers: Vector[BlockHeaderDb]
 
   def connectTip(header: BlockHeader)(
       implicit ec: ExecutionContext): Future[BlockchainUpdate] = {
@@ -55,16 +54,11 @@ sealed abstract class Blockchain extends BitcoinSLogger {
 }
 
 object Blockchain {
-  private case class BlockchainImpl(
-      headers: Vector[BlockHeaderDb],
-      blockHeaderDAO: BlockHeaderDAO,
-      chainParams: ChainParams)
-      extends Blockchain
 
   def fromHeaders(
       headers: Vector[BlockHeaderDb],
       blockHeaderDAO: BlockHeaderDAO,
       chainParams: ChainParams): Blockchain = {
-    BlockchainImpl(headers, blockHeaderDAO, chainParams)
+    Blockchain(headers, blockHeaderDAO, chainParams)
   }
 }
