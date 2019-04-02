@@ -131,7 +131,7 @@ class PeerMessageReceiver(state: PeerMessageReceiverState, dbConfig: DbConfig)(
   private def handleDataPayload(
       payload: DataPayload,
       sender: PeerMessageSender): Unit = {
-    val dataMsgHandler = new DataMessageHandler(dbConfig = dbConfig)
+    val dataMsgHandler = new DataMessageHandler(np, dbConfig = dbConfig)
     //else it means we are receiving this data payload from a peer,
     //we need to handle it
     dataMsgHandler.handleDataPayload(payload, sender)

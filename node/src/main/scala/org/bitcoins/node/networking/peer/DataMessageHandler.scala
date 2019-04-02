@@ -1,10 +1,11 @@
 package org.bitcoins.node.networking.peer
 
 import akka.actor.{ActorRef, ActorRefFactory, Props}
+import org.bitcoins.chain.models.BlockHeaderDAO
+import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.db.DbConfig
 import org.bitcoins.node.messages.{DataPayload, HeadersMessage}
-import org.bitcoins.node.models.BlockHeaderDAO
 import org.bitcoins.node.util.BitcoinSpvNodeUtil
 
 import scala.concurrent.ExecutionContext
@@ -13,16 +14,17 @@ import scala.concurrent.ExecutionContext
   * that a peer to sent to us on the p2p network, for instance, if we a receive a
   * [[HeadersMessage]] we should store those headers in our database
   */
-class DataMessageHandler(dbConfig: DbConfig)(implicit ec: ExecutionContext)
+class DataMessageHandler(np: NetworkParameters, dbConfig: DbConfig)(
+    implicit ec: ExecutionContext)
     extends BitcoinSLogger {
 
-  private val blockHeaderDAO = BlockHeaderDAO(dbConfig)
+  private val blockHeaderDAO = BlockHeaderDAO(np.chainParams, dbConfig)
 
   def handleDataPayload(
       payload: DataPayload,
       peerMsgSender: PeerMessageSender): Unit = payload match {
     case headersMsg: HeadersMessage =>
-      blockHeaderDAO.upsertAll(headersMsg.headers.toVector)
+    //blockHeaderDAO.upsertAll(headersMsg.headers.toVector)
   }
 }
 

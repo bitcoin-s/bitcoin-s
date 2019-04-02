@@ -193,7 +193,7 @@ lazy val chain = project
   .settings(
     name := "bitcoin-s-chain",
     libraryDependencies ++= Deps.chain
-  ).dependsOn(core)
+  ).dependsOn(core, dbCommons)
   .enablePlugins(FlywayPlugin)
 
 lazy val chainTest = project
@@ -203,7 +203,8 @@ lazy val chainTest = project
   .settings(
     skip in publish := true,
     name := "bitcoin-s-chain-test",
-    libraryDependencies ++= Deps.chainTest
+    libraryDependencies ++= Deps.chainTest,
+    parallelExecution in Test := false
   ).dependsOn(chain, core, testkit)
   .enablePlugins(FlywayPlugin)
 
@@ -288,8 +289,7 @@ lazy val node = {
     .settings(nodeDbSettings: _*)
     .settings(
       name := "bitcoin-s-node",
-      libraryDependencies ++= Deps.node,
-      parallelExecution in Test := false
+      libraryDependencies ++= Deps.node
     )
     .dependsOn(
       core,
