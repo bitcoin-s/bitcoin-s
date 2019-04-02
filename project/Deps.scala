@@ -77,11 +77,13 @@ object Deps {
   )
 
   val chain = List(
+    Compile.slf4j,
     Test.ammonite
   )
 
   val chainTest = List(
-    Test.ammonite
+    Test.ammonite,
+    Test.logback
   )
 
   val core = List(

@@ -298,6 +298,30 @@ sealed abstract class NumberUtil extends BitcoinSLogger {
     targetCompression(difficultyHelper.difficulty, difficultyHelper.isNegative)
   }
 
+  /**
+    * Implements this check for overflowing for [[org.bitcoins.core.protocol.blockchain.BlockHeader.nBits]]
+    * @see [[https://github.com/bitcoin/bitcoin/blob/2068f089c8b7b90eb4557d3f67ea0f0ed2059a23/src/arith_uint256.cpp#L220 bitcoin core check]]
+    * @param nBits
+    * @return
+    */
+  def isNBitsOverflow(nBits: UInt32): Boolean = {
+    val noSignificand = nBits.bytes.takeRight(3)
+    val mantissaBytes = {
+      val withSignBit = noSignificand
+      val noSignBit = false +: withSignBit.bits.tail
+      noSignBit.toByteVector
+    }
+
+    val nSize: Long = nBits.toLong >>> 24L
+
+    val nWord: UInt32 = UInt32.fromBytes(mantissaBytes)
+
+    nWord != UInt32.zero && (
+      nSize > 34 ||
+      (nWord > UInt32(UInt8.max.toInt) && nSize > 33) ||
+      (nWord > UInt32(0xffff) && nSize > 32)
+    )
+  }
 }
 
 object NumberUtil extends NumberUtil

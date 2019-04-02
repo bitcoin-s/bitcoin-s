@@ -136,6 +136,7 @@ object DoubleSha256DigestBE extends Factory[DoubleSha256DigestBE] {
   override def fromBytes(bytes: ByteVector): DoubleSha256DigestBE =
     DoubleSha256DigestBEImpl(bytes)
 
+  val empty: DoubleSha256DigestBE = DoubleSha256Digest.empty.flip
 }
 
 /**

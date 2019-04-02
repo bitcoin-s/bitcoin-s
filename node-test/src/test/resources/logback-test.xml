@@ -16,7 +16,7 @@
 
 
     <logger name="slick" level="INFO"/>
-    <root level="DEBUG">
+    <root level="OFF">
         <appender-ref ref="STDOUT" />
         <appender-ref ref="FILE"/>
     </root>
