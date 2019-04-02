@@ -5,7 +5,7 @@ import org.bitcoins.core.number.{Int32, UInt32, UInt64}
 import org.bitcoins.core.protocol.transaction.TransactionOutput
 import slick.jdbc.SQLiteProfile.api._
 
-trait DbCommonsColumnMappers {
+abstract class DbCommonsColumnMappers {
 
   /** Responsible for mapping a [[DoubleSha256Digest]] to a String, and vice versa */
   implicit val doubleSha256DigestMapper: BaseColumnType[DoubleSha256Digest] =

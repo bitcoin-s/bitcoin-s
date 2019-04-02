@@ -11,6 +11,7 @@ import org.scalatest.{
   MustMatchers
 }
 
+import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.DurationInt
 
 trait ChainUnitTest
@@ -23,4 +24,7 @@ trait ChainUnitTest
   val dbConfig: DbConfig = UnitTestDbConfig
   val genesisHeader: BlockHeaderDb = ChainTestUtil.regTestGenesisHeaderDb
   val networkParam: RegTestNetChainParams.type = RegTestNetChainParams
+
+  implicit def ec: ExecutionContext =
+    scala.concurrent.ExecutionContext.Implicits.global
 }

@@ -5,6 +5,10 @@ import org.bitcoins.core.crypto.DoubleSha256DigestBE
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 
+/** Useful helper methods for getting
+  * block header related data for
+  * unit tests.
+  */
 abstract class BlockHeaderHelper {
 
   /**

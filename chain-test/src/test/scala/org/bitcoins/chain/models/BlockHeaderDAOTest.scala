@@ -13,8 +13,6 @@ import scala.concurrent.{Await, ExecutionContext, Future}
   * Created by chris on 9/8/16.
   */
 class BlockHeaderDAOTest extends ChainUnitTest {
-  implicit val ec: ExecutionContext =
-    scala.concurrent.ExecutionContext.Implicits.global
 
   val blockHeaderDAO = BlockHeaderDAO(chainParams =
                                         ChainTestUtil.regTestChainParams,

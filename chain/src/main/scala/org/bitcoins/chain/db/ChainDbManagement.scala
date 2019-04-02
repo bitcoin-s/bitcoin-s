@@ -6,6 +6,10 @@ import slick.lifted.TableQuery
 
 import scala.concurrent.{ExecutionContext, Future}
 
+/**
+  * Responsible for creating and destroying database
+  * tables inside of the Chain project.
+  */
 sealed abstract class ChainDbManagement extends DbManagement {
 
   private val chainTable: TableQuery[BlockHeaderTable] =
@@ -18,8 +22,7 @@ sealed abstract class ChainDbManagement extends DbManagement {
     createTable(chainTable, dbConfig)
   }
 
-  def dropHeaderTable(dbConfig: DbConfig)(
-      implicit ec: ExecutionContext): Future[Unit] = {
+  def dropHeaderTable(dbConfig: DbConfig): Future[Unit] = {
     dropTable(chainTable, dbConfig)
   }
 }

@@ -9,8 +9,9 @@ import slick.jdbc.SQLiteProfile.api._
 import scala.concurrent.{ExecutionContext, Future}
 
 /**
-  * This actor is responsible for all database operations relating to
-  * [[BlockHeaderDb]]'s. Currently we store all block headers in a database
+  * This class is responsible for all database access related
+  * to [[org.bitcoins.core.protocol.blockchain.BlockHeader]]s in
+  * our chain project
   */
 sealed abstract class BlockHeaderDAO
     extends CRUD[BlockHeaderDb, DoubleSha256DigestBE] {

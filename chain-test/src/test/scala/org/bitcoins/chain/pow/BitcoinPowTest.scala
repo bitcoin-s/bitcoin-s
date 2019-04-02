@@ -16,12 +16,12 @@ class BitcoinPowTest extends ChainUnitTest {
     val header1 = ChainTestUtil.ValidPOWChange.blockHeaderDb566494
     val header2 = ChainTestUtil.ValidPOWChange.blockHeaderDb566495
 
-    val nextWorkF = BitcoinPow.getNetworkWorkRequired(header1,
-                                                      header2.blockHeader,
-                                                      blockHeaderDAO,
-                                                      chainParams)
+    val nextWorkF = Pow.getNetworkWorkRequired(header1,
+                                               header2.blockHeader,
+                                               blockHeaderDAO,
+                                               chainParams)
 
-    nextWorkF.map(nextWork => assert(nextWork == header2.nBits))
+    nextWorkF.map(nextWork => assert(nextWork == header1.nBits))
   }
 
   it must "calculate a pow change as per the bitcoin network" in {
@@ -29,9 +29,9 @@ class BitcoinPowTest extends ChainUnitTest {
     val currentTipDb = ChainTestUtil.ValidPOWChange.blockHeaderDb566495
     val expectedNextWork = ChainTestUtil.ValidPOWChange.blockHeader566496.nBits
     val calculatedWorkF =
-      BitcoinPow.calculateNextWorkRequired(currentTipDb,
-                                           firstBlockDb,
-                                           MainNetChainParams)
+      Pow.calculateNextWorkRequired(currentTipDb,
+                                    firstBlockDb,
+                                    MainNetChainParams)
 
     calculatedWorkF.map(calculatedWork =>
       assert(calculatedWork == expectedNextWork))

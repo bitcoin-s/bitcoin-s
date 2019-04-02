@@ -1,8 +1,7 @@
 package org.bitcoins.chain
 
 import org.bitcoins.chain.api.ChainApi
-import org.bitcoins.chain.blockchain.Blockchain
-import org.bitcoins.chain.blockchain.BlockchainUpdate
+import org.bitcoins.chain.blockchain.{Blockchain, BlockchainUpdate}
 import org.bitcoins.chain.models.{BlockHeaderDAO, BlockHeaderDb}
 import org.bitcoins.core.crypto.DoubleSha256DigestBE
 import org.bitcoins.core.protocol.blockchain.{BlockHeader, ChainParams}
@@ -11,6 +10,11 @@ import org.bitcoins.db.DbConfig
 
 import scala.concurrent.{ExecutionContext, Future}
 
+/**
+  * Chain Handler is meant to be the reference implementation
+  * of [[ChainApi]], this is the entry point in to the
+  * chain project.
+  */
 sealed abstract class ChainHandler extends ChainApi with BitcoinSLogger {
   def dbConfig: DbConfig
 
@@ -28,20 +32,19 @@ sealed abstract class ChainHandler extends ChainApi with BitcoinSLogger {
   }
 
   override def processHeader(header: BlockHeader): Future[ChainHandler] = {
-    val blockchainUpdate = blockchain.connectTip(header)
+    val blockchainUpdateF = blockchain.connectTip(header)
 
-    val newHandlerF = blockchainUpdate match {
+    val newHandlerF = blockchainUpdateF.flatMap {
       case BlockchainUpdate.Successful(blockchain, updatedHeader) =>
         //now we have successfully connected the header, we need to insert
         //it into the database
         val createdF = blockHeaderDAO.create(updatedHeader)
         createdF.map(_ => ChainHandler(blockchain, chainParams, dbConfig))
-      case BlockchainUpdate.Failed(blockchain, _, reason) =>
+      case BlockchainUpdate.Failed(_, _, reason) =>
         val errMsg =
           s"Failed to add header to chain, header=${header.hashBE.hex} reason=${reason}"
         logger.warn(errMsg)
-        val newHandler = ChainHandler(blockchain, chainParams, dbConfig)
-        Future.successful(newHandler)
+        Future.failed(new RuntimeException(errMsg))
     }
 
     newHandlerF

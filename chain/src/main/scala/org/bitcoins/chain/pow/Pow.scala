@@ -2,22 +2,16 @@ package org.bitcoins.chain.pow
 
 import org.bitcoins.chain.models.{BlockHeaderDAO, BlockHeaderDb}
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.blockchain.{
-  BitcoinChainParams,
-  BlockHeader,
-  ChainParams
-}
+import org.bitcoins.core.protocol.blockchain.{BlockHeader, ChainParams}
 import org.bitcoins.core.util.NumberUtil
 
 import scala.concurrent.{ExecutionContext, Future}
-
-sealed abstract class Pow[CP <: ChainParams]
 
 /**
   * Implements functions found inside of bitcoin core's
   * [[https://github.com/bitcoin/bitcoin/blob/35477e9e4e3f0f207ac6fa5764886b15bf9af8d0/src/pow.cpp pow.cpp]]
   */
-sealed abstract class BitcoinPow extends Pow[BitcoinChainParams] {
+sealed abstract class Pow {
 
   /**
     * Gets the next proof of work requirement for a block
@@ -31,7 +25,7 @@ sealed abstract class BitcoinPow extends Pow[BitcoinChainParams] {
       tip: BlockHeaderDb,
       newPotentialTip: BlockHeader,
       blockHeaderDAO: BlockHeaderDAO,
-      chainParams: BitcoinChainParams)(
+      chainParams: ChainParams)(
       implicit ec: ExecutionContext): Future[UInt32] = {
     val currentHeight = tip.height
 
@@ -79,7 +73,7 @@ sealed abstract class BitcoinPow extends Pow[BitcoinChainParams] {
   def calculateNextWorkRequired(
       currentTip: BlockHeaderDb,
       firstBlock: BlockHeaderDb,
-      chainParams: BitcoinChainParams): Future[UInt32] = {
+      chainParams: ChainParams): Future[UInt32] = {
     if (chainParams.noRetargeting) {
       Future.successful(currentTip.nBits)
     } else {
@@ -112,4 +106,4 @@ sealed abstract class BitcoinPow extends Pow[BitcoinChainParams] {
   }
 }
 
-object BitcoinPow extends BitcoinPow
+object Pow extends Pow
