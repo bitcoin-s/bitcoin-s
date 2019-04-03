@@ -88,7 +88,7 @@ sealed abstract class TipValidation extends BitcoinSLogger {
     * Mimics this
     * @see [[https://github.com/bitcoin/bitcoin/blob/eb7daf4d600eeb631427c018a984a77a34aca66e/src/pow.cpp#L74]]
     * */
-  private def isBadNonce(header: BlockHeader): Boolean = {
+  def isBadNonce(header: BlockHeader): Boolean = {
     //convert hash into a big integer
     val headerWork = BigInt(1, header.hashBE.bytes.toArray)
     if (headerWork <= 0 || NumberUtil.isNBitsOverflow(nBits = header.nBits)) {

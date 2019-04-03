@@ -20,22 +20,15 @@ class TipValidationTest extends ChainUnitTest {
   //blocks 566,092 and 566,093
   val newValidTip = BlockHeaderHelper.header1
   val currentTipDb = BlockHeaderHelper.header2Db
-  val chainParam = ChainTestUtil.mainnetChainParam
-  val blockHeaderDAO = BlockHeaderDAO(chainParam, dbConfig = dbConfig)
+  override val chainParam = ChainTestUtil.mainnetChainParam
 
-  val createdTableF = ChainDbManagement.createHeaderTable(dbConfig)
+  it must "connect two blocks with that are valid" in withBlockHeaderDAO {
+    bhDAO =>
+      val newValidTipDb =
+        BlockHeaderDbHelper.fromBlockHeader(566093, newValidTip)
+      val expected = TipUpdateResult.Success(newValidTipDb)
 
-  override def afterAll(): Unit = {
-    //not async safe
-    ChainDbManagement.dropHeaderTable(dbConfig = dbConfig)
-  }
-
-  it must "connect two blocks with that are valid" in {
-
-    val newValidTipDb = BlockHeaderDbHelper.fromBlockHeader(566093, newValidTip)
-    val expected = TipUpdateResult.Success(newValidTipDb)
-
-    runTest(newValidTip, expected)
+      runTest(newValidTip, expected, bhDAO)
   }
 
   it must "connect two blocks with different POW requirements at the correct interval (2016 blocks for BTC)" ignore {
@@ -52,42 +45,42 @@ class TipValidationTest extends ChainUnitTest {
     val newTipDb = BlockHeaderDbHelper.fromBlockHeader(566496, newTip)
     val expected = TipUpdateResult.Success(newTipDb)
 
-    runTest(newTip, expected, currentTipDbDefault = currentTipDb)
+    runTest(newTip, expected, ???, currentTipDbDefault = currentTipDb)
   }
 
-  it must "fail to connect two blocks that do not reference prev block hash correctly" in {
+  it must "fail to connect two blocks that do not reference prev block hash correctly" in withBlockHeaderDAO {
+    bhDAO =>
+      val badPrevHash = BlockHeaderHelper.badPrevHash
 
-    val badPrevHash = BlockHeaderHelper.badPrevHash
+      val expected = TipUpdateResult.BadPreviousBlockHash(badPrevHash)
 
-    val expected = TipUpdateResult.BadPreviousBlockHash(badPrevHash)
-
-    runTest(badPrevHash, expected)
+      runTest(badPrevHash, expected, bhDAO)
   }
 
-  it must "fail to connect two blocks with two different POW requirements at the wrong interval" in {
-    val badPOW = BlockHeaderHelper.badNBits
-    val expected = TipUpdateResult.BadPOW(badPOW)
-    runTest(badPOW, expected)
+  it must "fail to connect two blocks with two different POW requirements at the wrong interval" in withBlockHeaderDAO {
+    bhDAO =>
+      val badPOW = BlockHeaderHelper.badNBits
+      val expected = TipUpdateResult.BadPOW(badPOW)
+      runTest(badPOW, expected, bhDAO)
   }
 
-  it must "fail to connect two blocks with a bad nonce" in {
-    val badNonce = BlockHeaderHelper.badNonce
-    val expected = TipUpdateResult.BadNonce(badNonce)
-    runTest(badNonce, expected)
+  it must "fail to connect two blocks with a bad nonce" in withBlockHeaderDAO {
+    bhDAO =>
+      val badNonce = BlockHeaderHelper.badNonce
+      val expected = TipUpdateResult.BadNonce(badNonce)
+      runTest(badNonce, expected, bhDAO)
   }
 
   private def runTest(
       header: BlockHeader,
       expected: TipUpdateResult,
+      blockHeaderDAO: BlockHeaderDAO,
       currentTipDbDefault: BlockHeaderDb = currentTipDb): Future[Assertion] = {
-    val validationResultF = createdTableF.flatMap { _ =>
-      TipValidation.checkNewTip(header,
-                                currentTipDbDefault,
-                                blockHeaderDAO,
-                                chainParam)
-    }
+    val checkTipF = TipValidation.checkNewTip(header,
+                                              currentTipDbDefault,
+                                              blockHeaderDAO,
+                                              chainParam)
 
-    validationResultF.map(validationResult =>
-      assert(validationResult == expected))
+    checkTipF.map(validationResult => assert(validationResult == expected))
   }
 }
