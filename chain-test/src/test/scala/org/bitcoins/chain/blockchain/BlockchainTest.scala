@@ -12,8 +12,7 @@ class BlockchainTest extends ChainUnitTest {
     bhDAO: BlockHeaderDAO =>
       val blockchain = Blockchain.fromHeaders(
         headers = Vector(genesisHeaderDb),
-        blockHeaderDAO = bhDAO,
-        chainParams = chainParam
+        blockHeaderDAO = bhDAO
       )
 
       val newHeader = BlockHeaderHelper.buildNextHeader(genesisHeaderDb)

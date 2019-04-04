@@ -1,5 +1,7 @@
 package org.bitcoins.chain.util
 
+import org.bitcoins.chain.api.ChainApi
+import org.bitcoins.chain.blockchain.{Blockchain, ChainHandler}
 import org.bitcoins.chain.db.ChainDbManagement
 import org.bitcoins.chain.models.{BlockHeaderDAO, BlockHeaderDb}
 import org.bitcoins.core.protocol.blockchain.{
@@ -31,6 +33,12 @@ trait ChainUnitTest
                                              ChainTestUtil.regTestChainParams,
                                            dbConfig = dbConfig)
 
+  lazy val blockchain =
+    Blockchain.fromHeaders(Vector(genesisHeaderDb), blockHeaderDAO)
+
+  lazy val chainHandler: ChainHandler = ChainHandler(blockchain)
+  lazy val chainApi: ChainApi = chainHandler
+
   implicit def ec: ExecutionContext =
     scala.concurrent.ExecutionContext.Implicits.global
 
@@ -58,5 +66,27 @@ trait ChainUnitTest
     testExecutionF.onComplete(_ => ChainDbManagement.dropHeaderTable(dbConfig))
 
     testExecutionF
+  }
+
+  def withChainHandler(
+      test: ChainHandler => Future[Assertion]): Future[Assertion] = {
+
+    val tableSetupF = ChainDbManagement.createHeaderTable(dbConfig = dbConfig,
+                                                          createIfNotExists =
+                                                            true)
+
+    val genesisHeaderF = tableSetupF.flatMap(_ =>
+      chainHandler.blockchain.blockHeaderDAO.create(genesisHeaderDb))
+
+    val chainHandlerF = genesisHeaderF.map(_ => chainHandler)
+
+    val testExecutionF = chainHandlerF.flatMap(test(_))
+
+    //this isn't async safe, the completion of `testExecutionF`
+    //isn't dependent on successful completion of dropHeaderTable
+    testExecutionF.onComplete(_ => ChainDbManagement.dropHeaderTable(dbConfig))
+
+    testExecutionF
+
   }
 }
