@@ -20,6 +20,7 @@ import org.bitcoins.core.protocol.{
   P2PKHAddress,
   P2SHAddress
 }
+import org.bitcoins.core.script.ScriptType
 import org.bitcoins.core.wallet.fee.BitcoinFeeUnit
 import org.bitcoins.rpc.client.common.RpcOpts.AddressType
 import org.bitcoins.rpc.jsonmodels._
@@ -87,7 +88,7 @@ object JsonSerializers {
     ((__ \ "asm").read[String] and
       (__ \ "hex").read[String] and
       (__ \ "reqSigs").readNullable[Int] and
-      (__ \ "type").read[RpcScriptType] and
+      (__ \ "type").read[ScriptType] and
       (__ \ "addresses").readNullable[Vector[BitcoinAddress]])(RpcScriptPubKey)
   implicit val rpcTransactionOutputReads: Reads[RpcTransactionOutput] =
     Json.reads[RpcTransactionOutput]
@@ -96,7 +97,7 @@ object JsonSerializers {
 
   implicit val decodeScriptResultReads: Reads[DecodeScriptResult] =
     ((__ \ "asm").read[String] and
-      (__ \ "type").readNullable[RpcScriptType] and
+      (__ \ "type").readNullable[ScriptType] and
       (__ \ "reqSigs").readNullable[Int] and
       (__ \ "addresses").readNullable[Vector[P2PKHAddress]] and
       (__ \ "p2sh").read[P2SHAddress])(DecodeScriptResult)
@@ -359,7 +360,7 @@ object JsonSerializers {
   implicit val walletCreateFundedPsbtResultReads: Reads[
     WalletCreateFundedPsbtResult] = Json.reads[WalletCreateFundedPsbtResult]
 
-  implicit val rpcScriptTypeReads: Reads[RpcScriptType] = RpcScriptTypeReads
+  implicit val scriptTypeReads: Reads[ScriptType] = ScriptTypeReads
 
   implicit val testMempoolAcceptResultReads: Reads[TestMempoolAcceptResult] =
     TestMempoolAcceptResultReads

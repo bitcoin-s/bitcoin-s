@@ -5,6 +5,7 @@ import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.core.script.ScriptType
 import org.bitcoins.core.script.crypto.HashType
 
 sealed abstract class RpcPsbtResult
@@ -40,7 +41,7 @@ final case class RpcPsbtInput(
 final case class RpcPsbtScript(
     asm: String, // todo(torkelrogstad) split into Vector[ScriptToken]?
     hex: ScriptPubKey,
-    scriptType: Option[RpcScriptType],
+    scriptType: Option[ScriptType],
     address: Option[BitcoinAddress]
 ) extends RpcPsbtResult
 

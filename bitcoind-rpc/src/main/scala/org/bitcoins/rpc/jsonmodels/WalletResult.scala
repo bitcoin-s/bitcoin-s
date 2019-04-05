@@ -14,6 +14,7 @@ import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.script.{ScriptPubKey, WitnessVersion}
 import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.core.script.ScriptType
 import org.bitcoins.core.wallet.fee.BitcoinFeeUnit
 import org.bitcoins.rpc.client.common.RpcOpts.LabelPurpose
 import org.joda.time.DateTime
@@ -198,7 +199,7 @@ case class AddressInfoResult(
     iscompressed: Option[Boolean],
     witness_version: Option[WitnessVersion],
     witness_program: Option[String], // todo what's the correct type here?
-    script: Option[RpcScriptType],
+    script: Option[ScriptType],
     hex: Option[ScriptPubKey],
     pubkeys: Option[Vector[ECPublicKey]],
     sigsrequired: Option[Int],
