@@ -17,6 +17,7 @@ import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.scalatest._
 
 import scala.concurrent.Future
+import scala.concurrent.duration.DurationInt
 
 /**
   * Created by chris on 6/7/16.
@@ -86,7 +87,8 @@ class ClientTest
       //disconnect here
       client ! Tcp.Abort
       val isDisconnectedF =
-        TestAsyncUtil.retryUntilSatisfied(peerMessageReceiver.isDisconnected)
+        TestAsyncUtil.retryUntilSatisfied(peerMessageReceiver.isDisconnected,
+                                          duration = 500.millis)
 
       isDisconnectedF.map { _ =>
         succeed

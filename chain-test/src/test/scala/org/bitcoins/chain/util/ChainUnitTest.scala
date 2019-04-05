@@ -14,7 +14,7 @@ import org.bitcoins.testkit.chain.ChainTestUtil
 import org.scalatest._
 
 import scala.concurrent.duration.DurationInt
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ExecutionContext, Future, Promise}
 
 trait ChainUnitTest
     extends AsyncFlatSpec
@@ -50,27 +50,28 @@ trait ChainUnitTest
     */
   def withBlockHeaderDAO(
       test: BlockHeaderDAO => Future[Assertion]): Future[Assertion] = {
-    val tableSetupF = ChainDbManagement.createHeaderTable(dbConfig = dbConfig,
-                                                          createIfNotExists =
-                                                            true)
 
-    val genesisHeaderF = tableSetupF.flatMap { _ =>
-      blockHeaderDAO.create(genesisHeaderDb)
-    }
+    val genesisHeaderF = setupHeaderTableWithGenesisHeader()
 
     val blockHeaderDAOF = genesisHeaderF.map(_ => blockHeaderDAO)
     val testExecutionF = blockHeaderDAOF.flatMap(test(_))
 
-    //this isn't async safe, the completion of `testExecutionF`
-    //isn't dependent on successful completion of dropHeaderTable
-    testExecutionF.onComplete(_ => ChainDbManagement.dropHeaderTable(dbConfig))
-
-    testExecutionF
+    dropHeaderTable(testExecutionF)
   }
 
   def withChainHandler(
       test: ChainHandler => Future[Assertion]): Future[Assertion] = {
 
+    val genesisHeaderF = setupHeaderTableWithGenesisHeader()
+    val chainHandlerF = genesisHeaderF.map(_ => chainHandler)
+
+    val testExecutionF = chainHandlerF.flatMap(test(_))
+
+    dropHeaderTable(testExecutionF)
+  }
+
+  /** Creates the [[org.bitcoins.chain.models.BlockHeaderTable]] and inserts the genesis header */
+  private def setupHeaderTableWithGenesisHeader(): Future[BlockHeaderDb] = {
     val tableSetupF = ChainDbManagement.createHeaderTable(dbConfig = dbConfig,
                                                           createIfNotExists =
                                                             true)
@@ -78,15 +79,19 @@ trait ChainUnitTest
     val genesisHeaderF = tableSetupF.flatMap(_ =>
       chainHandler.blockchain.blockHeaderDAO.create(genesisHeaderDb))
 
-    val chainHandlerF = genesisHeaderF.map(_ => chainHandler)
+    genesisHeaderF
+  }
 
-    val testExecutionF = chainHandlerF.flatMap(test(_))
+  /** Drops the header table and returns the given Future[Assertion] after the table is dropped */
+  private def dropHeaderTable(
+      testExecutionF: Future[Assertion]): Future[Assertion] = {
+    val dropTableP = Promise[Unit]()
+    testExecutionF.onComplete { _ =>
+      ChainDbManagement.dropHeaderTable(dbConfig).foreach { _ =>
+        dropTableP.success(())
+      }
+    }
 
-    //this isn't async safe, the completion of `testExecutionF`
-    //isn't dependent on successful completion of dropHeaderTable
-    testExecutionF.onComplete(_ => ChainDbManagement.dropHeaderTable(dbConfig))
-
-    testExecutionF
-
+    dropTableP.future.flatMap(_ => testExecutionF)
   }
 }
