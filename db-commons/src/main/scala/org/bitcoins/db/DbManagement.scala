@@ -17,10 +17,17 @@ abstract class DbManagement {
     Future.sequence(allTables.reverse.map(dropTable(_, dbConfig)))
   }
 
-  def createTable(table: TableQuery[_ <: Table[_]], dbConfig: DbConfig)(
+  def createTable(
+      table: TableQuery[_ <: Table[_]],
+      dbConfig: DbConfig,
+      createIfNotExists: Boolean = false)(
       implicit ec: ExecutionContext): Future[Unit] = {
     val database = dbConfig.database
-    val result = database.run(table.schema.create)
+    val result = if (createIfNotExists) {
+      database.run(table.schema.createIfNotExists)
+    } else {
+      database.run(table.schema.create)
+    }
     result
   }
 
@@ -28,7 +35,7 @@ abstract class DbManagement {
       table: TableQuery[_ <: Table[_]],
       dbConfig: DbConfig): Future[Unit] = {
     val database = dbConfig.database
-    val result = database.run(table.schema.drop)
+    val result = database.run(table.schema.dropIfExists)
     result
   }
 }

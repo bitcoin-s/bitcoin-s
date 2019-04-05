@@ -20,7 +20,7 @@ object BlockchainUpdate {
 
   /** The key thing we receive here is [[org.bitcoins.chain.models.BlockHeaderDb BlockHeaderDb]]
     * with a height assigned to it this happens after
-    * calling [[org.bitcoins.chain.ChainHandler.processHeader() ChainHandler.processHeader]]
+    * calling [[ChainHandler.processHeader() ChainHandler.processHeader]]
     */
   case class Successful(blockchain: Blockchain, updatedHeader: BlockHeaderDb)
       extends BlockchainUpdate {

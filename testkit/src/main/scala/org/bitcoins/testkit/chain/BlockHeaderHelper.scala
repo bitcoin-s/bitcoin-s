@@ -1,9 +1,19 @@
 package org.bitcoins.testkit.chain
 
 import org.bitcoins.chain.models.{BlockHeaderDb, BlockHeaderDbHelper}
-import org.bitcoins.core.crypto.DoubleSha256DigestBE
-import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.blockchain.BlockHeader
+import org.bitcoins.chain.validation.TipValidation
+import org.bitcoins.core.crypto.{
+  DoubleSha256Digest,
+  DoubleSha256DigestBE,
+  ECPrivateKey
+}
+import org.bitcoins.core.number.{Int32, UInt32}
+import org.bitcoins.core.protocol.blockchain.{
+  BlockHeader,
+  RegTestNetChainParams
+}
+
+import scala.annotation.tailrec
 
 /** Useful helper methods for getting
   * block header related data for
@@ -92,6 +102,39 @@ abstract class BlockHeaderHelper {
                 nonce = bh.nonce)
   }
 
+  /** Buidls a block header on top the given prev header
+    * The only consensus requirement that this method adheres to
+    * with the returned [[BlockHeaderDb]] is that
+    * 1. We reference the [[prevHeader.blockHeader.hash]] correct
+    * 2. We increment the height of [[prevHeader]] by one
+    * @param prevHeader
+    * @return
+    */
+  @tailrec
+  final def buildNextHeader(prevHeader: BlockHeaderDb): BlockHeaderDb = {
+    val prevHash = prevHeader.blockHeader.hash
+    val blockHeader = {
+      BlockHeader(
+        version = Int32.one,
+        previousBlockHash = prevHash,
+        //get random 32 bytes
+        merkleRootHash =
+          DoubleSha256Digest.fromBytes(ECPrivateKey.freshPrivateKey.bytes),
+        time = prevHeader.time + UInt32.one,
+        nBits = prevHeader.nBits,
+        //generate random uint32 for nonce
+        nonce =
+          UInt32(Math.abs(scala.util.Random.nextInt() % UInt32.max.toLong))
+      )
+    }
+
+    //check if header meets pow requirement, if it doesn't generate another
+    if (TipValidation.isBadNonce(blockHeader)) {
+      buildNextHeader(prevHeader)
+    } else {
+      BlockHeaderDbHelper.fromBlockHeader(prevHeader.height + 1, blockHeader)
+    }
+  }
 }
 
 object BlockHeaderHelper extends BlockHeaderHelper

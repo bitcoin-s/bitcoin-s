@@ -17,9 +17,9 @@ sealed abstract class ChainDbManagement extends DbManagement {
 
   override val allTables = List(chainTable)
 
-  def createHeaderTable(dbConfig: DbConfig)(
+  def createHeaderTable(dbConfig: DbConfig, createIfNotExists: Boolean = true)(
       implicit ec: ExecutionContext): Future[Unit] = {
-    createTable(chainTable, dbConfig)
+    createTable(chainTable, dbConfig, createIfNotExists)
   }
 
   def dropHeaderTable(dbConfig: DbConfig): Future[Unit] = {
