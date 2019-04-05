@@ -21,30 +21,28 @@ import scala.concurrent.{ExecutionContext, Future}
   */
 case class Blockchain(
     headers: Vector[BlockHeaderDb],
-    blockHeaderDAO: BlockHeaderDAO,
-    chainParams: ChainParams)
+    blockHeaderDAO: BlockHeaderDAO)
     extends BitcoinSLogger {
   //TODO: Think about not exposing the headers to world, encapsulate them and
   //provide methods like `.map` and `.foreach` on this data structure.
 
-  def tip: BlockHeaderDb = headers.head
+  def chainParams: ChainParams = blockHeaderDAO.chainParams
 
   def connectTip(header: BlockHeader)(
       implicit ec: ExecutionContext): Future[BlockchainUpdate] = {
     logger.debug(
-      s"Attempting to add new tip=${header.hashBE.hex} to chain with current tip=${tip.hashBE.hex}")
+      s"Attempting to add new tip=${header.hashBE.hex} to chain with current tip=${headers.head.hashBE.hex}")
     val tipResultF =
       TipValidation.checkNewTip(newPotentialTip = header,
-                                currentTip = tip,
+                                currentTip = headers.head,
                                 blockHeaderDAO = blockHeaderDAO,
                                 chainParams = chainParams)
 
     tipResultF.map { tipResult =>
       tipResult match {
         case TipUpdateResult.Success(headerDb) =>
-          val newChain = Blockchain.fromHeaders(headerDb +: headers,
-                                                blockHeaderDAO,
-                                                chainParams)
+          val newChain =
+            Blockchain.fromHeaders(headerDb +: headers, blockHeaderDAO)
           BlockchainUpdate.Successful(newChain, headerDb)
         case fail: TipUpdateResult.Failure =>
           BlockchainUpdate.Failed(this, header, fail)
@@ -57,8 +55,7 @@ object Blockchain {
 
   def fromHeaders(
       headers: Vector[BlockHeaderDb],
-      blockHeaderDAO: BlockHeaderDAO,
-      chainParams: ChainParams): Blockchain = {
-    Blockchain(headers, blockHeaderDAO, chainParams)
+      blockHeaderDAO: BlockHeaderDAO): Blockchain = {
+    Blockchain(headers, blockHeaderDAO)
   }
 }
