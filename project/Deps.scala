@@ -23,7 +23,7 @@ object Deps {
     val jodaV = "2.9.4"
     val postgresV = "9.4.1210"
     val akkaActorV = akkaStreamv
-    val slickV = "3.2.3"
+    val slickV = "3.3.0"
     val sqliteV = "3.8.11.2"
   }
 

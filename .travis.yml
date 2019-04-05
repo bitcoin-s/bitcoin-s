@@ -46,6 +46,7 @@ install:
 script:
   - sbt ++$TRAVIS_SCALA_VERSION coverage test &&
     sbt ++$TRAVIS_SCALA_VERSION core/coverageReport &&
+    sbt ++$TRAVIS_SCALA_VERSION chain/coverageReport &&
     sbt ++$TRAVIS_SCALA_VERSION coverageAggregate
 after_success:
   - sbt ++$TRAVIS_SCALA_VERSION coveralls
