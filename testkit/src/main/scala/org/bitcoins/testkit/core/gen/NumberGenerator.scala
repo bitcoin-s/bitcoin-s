@@ -6,7 +6,7 @@ import org.bitcoins.core.script.constant.ScriptNumber
 import org.bitcoins.core.util.NumberUtil
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Gen
-import scodec.bits.BitVector
+import scodec.bits.{BitVector, ByteVector}
 
 /**
   * Created by chris on 6/16/16.
@@ -94,6 +94,9 @@ trait NumberGenerator {
 
   /** Generates an arbitrary [[scala.Byte Byte]] in Scala */
   def byte: Gen[Byte] = arbitrary[Byte]
+
+  /** Generates an arbitrary [[scodec.bits.ByteVector ByteVector]] */
+  def bytevector: Gen[ByteVector] = Gen.listOf(byte).map(ByteVector(_))
 
   /** Generates a 100 byte sequence */
   def bytes: Gen[List[Byte]] =

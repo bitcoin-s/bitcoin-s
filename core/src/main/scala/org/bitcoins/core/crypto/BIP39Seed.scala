@@ -1,7 +1,5 @@
 package org.bitcoins.core.crypto
 
-import javax.crypto.SecretKeyFactory
-import javax.crypto.spec.PBEKeySpec
 import org.bitcoins.core.protocol.NetworkElement
 import org.bitcoins.core.util.Factory
 import scodec.bits.ByteVector
@@ -33,12 +31,8 @@ object BIP39Seed extends Factory[BIP39Seed] {
   override def fromBytes(bytes: ByteVector): BIP39Seed =
     BIP39SeedImpl(bytes)
 
-  private val PSEUDO_RANDOM_FUNCTION = "PBKDF2WithHmacSHA512"
   private val ITERATION_COUNT = 2048
   private val DERIVED_KEY_LENGTH = 512
-
-  private val secretKeyFactory =
-    SecretKeyFactory.getInstance(PSEUDO_RANDOM_FUNCTION)
 
   /**
     * Generates a [[https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki BIP32]]
@@ -50,14 +44,9 @@ object BIP39Seed extends Factory[BIP39Seed] {
 
     val words = mnemonic.words.mkString(" ")
 
-    val keySpec = new PBEKeySpec(
-      words.toCharArray,
-      salt.getBytes,
-      ITERATION_COUNT,
-      DERIVED_KEY_LENGTH
-    )
-
-    val encodedBytes = secretKeyFactory.generateSecret(keySpec).getEncoded
+    val encodedBytes = PBKDF2
+      .withSha512(words, salt, ITERATION_COUNT, DERIVED_KEY_LENGTH)
+      .getEncoded
 
     BIP39Seed.fromBytes(ByteVector(encodedBytes))
   }
