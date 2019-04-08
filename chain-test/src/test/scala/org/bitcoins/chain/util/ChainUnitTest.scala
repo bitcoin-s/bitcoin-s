@@ -19,8 +19,10 @@ import org.bitcoins.testkit.chain.ChainTestUtil
 import org.scalatest._
 import play.api.libs.json.{JsError, JsSuccess, Json}
 
+import scala.annotation.tailrec
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future, Promise}
+import scala.util.{Failure, Success}
 
 trait ChainUnitTest
     extends fixture.AsyncFlatSpec
@@ -69,7 +71,8 @@ trait ChainUnitTest
       test: BlockHeaderDAO => Future[Assertion]): Future[Assertion] = {
     val tableSetupF = setupHeaderTable()
 
-    val source = scala.io.Source.fromFile("block_headers.json")
+    val source =
+      scala.io.Source.fromURL(getClass.getResource("/block_headers.json"))
     val arrStr = source.getLines.next
     source.close()
 
@@ -86,10 +89,38 @@ trait ChainUnitTest
             BlockHeaderDbHelper.fromBlockHeader(height, header)
         }
 
-        val instertedF = tableSetupF.flatMap(_ =>
-          chainHandler.blockchain.blockHeaderDAO.createAll(dbHeaders))
+        @tailrec
+        def splitIntoBatches(
+            batchSize: Int,
+            dbHeaders: Vector[BlockHeaderDb],
+            batchesSoFar: Vector[Vector[BlockHeaderDb]]): Vector[
+          Vector[BlockHeaderDb]] = {
+          if (dbHeaders.isEmpty) {
+            batchesSoFar
+          } else if (dbHeaders.length < batchSize) {
+            batchesSoFar.:+(dbHeaders)
+          } else {
+            val (batch, nextDbHeaders) = dbHeaders.splitAt(batchSize)
+            val nextBatchesSoFar = batchesSoFar.:+(batch)
 
-        val testExecutionF = instertedF.flatMap(_ => test(blockHeaderDAO))
+            splitIntoBatches(batchSize, nextDbHeaders, nextBatchesSoFar)
+          }
+        }
+
+        val batchedDbHeaders = splitIntoBatches(batchSize = 500,
+                                                dbHeaders = dbHeaders,
+                                                batchesSoFar = Vector.empty)
+
+        val insertedF = tableSetupF.flatMap { _ =>
+          batchedDbHeaders.foldLeft(
+            Future.successful[Vector[BlockHeaderDb]](Vector.empty)) {
+            case (fut, batch) =>
+              fut.flatMap(_ =>
+                chainHandler.blockchain.blockHeaderDAO.createAll(batch))
+          }
+        }
+
+        val testExecutionF = insertedF.flatMap(_ => test(blockHeaderDAO))
 
         dropHeaderTable(testExecutionF)
     }
@@ -127,8 +158,9 @@ trait ChainUnitTest
       testExecutionF: Future[Outcome]): FutureOutcome = {
     val dropTableP = Promise[Unit]()
     testExecutionF.onComplete { _ =>
-      ChainDbManagement.dropHeaderTable(dbConfig).foreach { _ =>
-        dropTableP.success(())
+      ChainDbManagement.dropHeaderTable(dbConfig).onComplete {
+        case Success(_)   => dropTableP.success(())
+        case Failure(err) => dropTableP.failure(err)
       }
     }
 
