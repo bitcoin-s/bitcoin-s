@@ -1,5 +1,6 @@
 package org.bitcoins.core.crypto
 
+import org.bitcoins.core.config.{MainNet, NetworkParameters, RegTest, TestNet3}
 import org.bitcoins.core.protocol.NetworkElement
 import org.bitcoins.core.protocol.blockchain.{
   ChainParams,
@@ -54,6 +55,15 @@ object ExtKeyPrivVersion {
       case TestNetChainParams | RegTestNetChainParams =>
         ExtKeyVersion.TestNet3Priv
     }
+
+  def fromNetworkParameters(
+      networkParameters: NetworkParameters): ExtKeyPrivVersion =
+    networkParameters match {
+      case MainNet => ExtKeyVersion.MainNetPriv
+      case TestNet3 | RegTest =>
+        ExtKeyVersion.TestNet3Priv
+    }
+
 }
 
 object ExtKeyPubVersion {

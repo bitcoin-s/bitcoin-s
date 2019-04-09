@@ -4,7 +4,11 @@ import org.bitcoins.core.crypto._
 import org.bitcoins.core.crypto.bip44.{BIP44ChainType, BIP44Coin, BIP44Path}
 import org.bitcoins.core.number.{Int32, UInt32, UInt64}
 import org.bitcoins.core.protocol.BitcoinAddress
-import org.bitcoins.core.protocol.transaction.TransactionOutput
+import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptWitness}
+import org.bitcoins.core.protocol.transaction.{
+  TransactionOutPoint,
+  TransactionOutput
+}
 import org.bitcoins.core.script.ScriptType
 import scodec.bits.ByteVector
 import slick.jdbc.SQLiteProfile.api._
@@ -63,6 +67,20 @@ abstract class DbCommonsColumnMappers {
     )
   }
 
+  implicit val transactionOutPointMapper: BaseColumnType[TransactionOutPoint] = {
+    MappedColumnType
+      .base[TransactionOutPoint, String](_.hex, TransactionOutPoint(_))
+  }
+
+  implicit val scriptPubKeyMapper: BaseColumnType[ScriptPubKey] = {
+    MappedColumnType.base[ScriptPubKey, String](_.hex, ScriptPubKey(_))
+  }
+
+  implicit val scriptWitnessMapper: BaseColumnType[ScriptWitness] = {
+    MappedColumnType
+      .base[ScriptWitness, String](_.hex, _ => ScriptWitness.apply(Seq.empty)) // todo fix me
+  }
+
   implicit val byteVectorMapper: BaseColumnType[ByteVector] = {
     MappedColumnType
       .base[ByteVector, String](_.toHex, ByteVector.fromValidHex(_))
@@ -85,7 +103,7 @@ abstract class DbCommonsColumnMappers {
 
   implicit val bitcoinAddressMapper: BaseColumnType[BitcoinAddress] =
     MappedColumnType
-      .base[BitcoinAddress, String](_.toString, BitcoinAddress.fromStringExn)
+      .base[BitcoinAddress, String](_.value, BitcoinAddress.fromStringExn)
 
   implicit val scriptTypeMapper: BaseColumnType[ScriptType] =
     MappedColumnType
