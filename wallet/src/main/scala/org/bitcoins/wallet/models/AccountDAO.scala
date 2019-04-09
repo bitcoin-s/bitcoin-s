@@ -7,7 +7,7 @@ import slick.jdbc.SQLiteProfile.api._
 
 import scala.concurrent.{ExecutionContext, Future}
 
-case class AccountDAO(dbConfig: DbConfig, chainParams: ChainParams)(
+case class AccountDAO(dbConfig: DbConfig)(
     implicit executionContext: ExecutionContext)
     extends CRUD[AccountDb, (BIP44Coin, Int)] {
 

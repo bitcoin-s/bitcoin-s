@@ -1,11 +1,20 @@
 package org.bitcoins.wallet.api
 
+import org.bitcoins.core.config.{MainNet, NetworkParameters, RegTest, TestNet3}
 import org.bitcoins.core.crypto.bip44.BIP44Account
-import org.bitcoins.core.crypto.{ExtPublicKey, MnemonicCode}
-import org.bitcoins.core.currency.CurrencyUnit
-import org.bitcoins.core.protocol.{Address, BitcoinAddress}
-import org.bitcoins.core.protocol.blockchain.ChainParams
-import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.core.crypto.{
+  BIP39Seed,
+  ExtKeyPrivVersion,
+  ExtPrivateKey,
+  MnemonicCode
+}
+import org.bitcoins.core.protocol.Address
+import org.bitcoins.core.protocol.blockchain.{
+  ChainParams,
+  MainNetChainParams,
+  RegTestNetChainParams,
+  TestNetChainParams
+}
 import org.bitcoins.core.wallet.utxo.UTXOSpendingInfo
 import org.bitcoins.db.DbConfig
 
@@ -24,6 +33,12 @@ sealed trait WalletApi {
   def dbConfig: DbConfig
 
   def chainParams: ChainParams
+
+  def networkParameters: NetworkParameters = chainParams match {
+    case MainNetChainParams    => MainNet
+    case TestNetChainParams    => TestNet3
+    case RegTestNetChainParams => RegTest
+  }
 
   def feeProvider: FeeProvider
 }
@@ -51,7 +66,7 @@ trait LockedWalletApi extends WalletApi {
     * times will return the same address, until it has
     * received funds.
     */
-  def getNewAddress: Future[Address]
+  def getNewAddress(accountIndex: Int = 0): Future[Address]
 
   /**
     * Unlocks the wallet with the provided passphrase,
@@ -77,7 +92,17 @@ trait LockedWalletApi extends WalletApi {
 
 trait UnlockedWalletApi extends WalletApi with LockedWalletApi {
 
-  def mnemonicCode: Future[MnemonicCode]
+  def mnemonicCode: MnemonicCode
+
+  // todo better type?
+  def passphrase: String
+
+  def xpriv: ExtPrivateKey = {
+    val seed = BIP39Seed.fromMnemonic(mnemonicCode, passphrase)
+
+    val privVersion = ExtKeyPrivVersion.fromNetworkParameters(networkParameters)
+    seed.toExtPrivateKey(privVersion)
+  }
 
   /**
     * Locks the wallet. After this operation is called,

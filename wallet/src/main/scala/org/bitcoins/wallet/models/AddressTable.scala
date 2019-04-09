@@ -1,9 +1,16 @@
 package org.bitcoins.wallet.models
 
+import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.crypto.bip44.{BIP44ChainType, BIP44Coin, BIP44Path}
-import org.bitcoins.core.crypto.{ECPublicKey, Sha256Hash160Digest}
-import org.bitcoins.core.protocol.BitcoinAddress
+import org.bitcoins.core.crypto.{
+  ECPublicKey,
+  ExtPrivateKey,
+  Sha256Hash160Digest
+}
+import org.bitcoins.core.protocol.script.P2WPKHWitnessSPKV0
+import org.bitcoins.core.protocol.{Bech32Address, BitcoinAddress}
 import org.bitcoins.core.script.ScriptType
+import org.bitcoins.core.util.CryptoUtil
 import slick.jdbc.SQLiteProfile.api._
 import slick.lifted.ProvenShape
 
@@ -14,7 +21,24 @@ case class AddressDb(
     address: BitcoinAddress,
     scriptType: ScriptType)
 
-object BlockHeaderDbHelper
+object AddressDbHelper {
+
+  def getP2WPKHAddress(
+      xpriv: ExtPrivateKey,
+      path: BIP44Path,
+      np: NetworkParameters): AddressDb = {
+
+    val xprivAtPath: ExtPrivateKey = xpriv.deriveChildPrivKey(path)
+    val pub = xprivAtPath.key.publicKey
+    val witnessSpk = P2WPKHWitnessSPKV0(pub)
+    val addr = Bech32Address(witnessSpk, np)
+    AddressDb(path,
+              pub,
+              CryptoUtil.sha256Hash160(pub.bytes),
+              addr,
+              ScriptType.WITNESS_V0_KEYHASH)
+  }
+}
 
 class AddressTable(tag: Tag) extends Table[AddressDb](tag, "addresses") {
   import org.bitcoins.db.DbCommonsColumnMappers._

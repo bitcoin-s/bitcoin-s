@@ -30,7 +30,7 @@ trait CreateWalletApi {
       chainParams: ChainParams,
       passphrase: String,
       dbConfig: Option[DbConfig])(
-      implicit executionContext: ExecutionContext): Future[WalletApi] =
+      implicit executionContext: ExecutionContext): Future[UnlockedWalletApi] =
     initializeWithEntropy(entropy = MnemonicCode.getEntropy256Bits,
                           chainParams = chainParams,
                           passphrase = passphrase,
@@ -40,7 +40,7 @@ trait CreateWalletApi {
     * $initialize
     */
   final def initialize(chainParams: ChainParams, passphrase: String)(
-      implicit executionContext: ExecutionContext): Future[WalletApi] =
+      implicit executionContext: ExecutionContext): Future[UnlockedWalletApi] =
     initializeInternal(chainParams = chainParams,
                        passphrase = passphrase,
                        dbConfig = None)
@@ -52,7 +52,7 @@ trait CreateWalletApi {
       chainParams: ChainParams,
       passphrase: String,
       dbConfig: DbConfig)(
-      implicit executionContext: ExecutionContext): Future[WalletApi] =
+      implicit executionContext: ExecutionContext): Future[UnlockedWalletApi] =
     initializeInternal(chainParams = chainParams,
                        passphrase = passphrase,
                        dbConfig = Some(dbConfig))
@@ -62,7 +62,7 @@ trait CreateWalletApi {
       chainParams: ChainParams,
       passphrase: String,
       dbConfig: Option[DbConfig])(
-      implicit executionContext: ExecutionContext): Future[WalletApi]
+      implicit executionContext: ExecutionContext): Future[UnlockedWalletApi]
 
   /**
     * $initializeWithEnt
@@ -71,7 +71,7 @@ trait CreateWalletApi {
       entropy: BitVector,
       chainParams: ChainParams,
       passphrase: String
-  )(implicit executionContext: ExecutionContext): Future[WalletApi] =
+  )(implicit executionContext: ExecutionContext): Future[UnlockedWalletApi] =
     initializeWithEntropy(entropy = entropy,
                           chainParams = chainParams,
                           passphrase = passphrase,
@@ -85,7 +85,7 @@ trait CreateWalletApi {
       chainParams: ChainParams,
       passphrase: String,
       dbConfig: DbConfig)(
-      implicit executionContext: ExecutionContext): Future[WalletApi] =
+      implicit executionContext: ExecutionContext): Future[UnlockedWalletApi] =
     initializeWithEntropy(entropy = entropy,
                           chainParams = chainParams,
                           passphrase = passphrase,

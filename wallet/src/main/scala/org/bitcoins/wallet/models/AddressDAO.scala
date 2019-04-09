@@ -2,14 +2,13 @@ package org.bitcoins.wallet.models
 
 import org.bitcoins.core.crypto.bip44.BIP44ChainType
 import org.bitcoins.core.protocol.BitcoinAddress
-import org.bitcoins.core.protocol.blockchain.ChainParams
 import org.bitcoins.db.{CRUD, DbConfig, SlickUtil}
 import slick.jdbc.SQLiteProfile.api._
-import slick.lifted.TableQuery
+import slick.lifted.{QueryBase, TableQuery}
 
 import scala.concurrent.{ExecutionContext, Future}
 
-case class AddressDAO(dbConfig: DbConfig, chainParams: ChainParams)(
+case class AddressDAO(dbConfig: DbConfig)(
     implicit executionContext: ExecutionContext)
     extends CRUD[AddressDb, BitcoinAddress] {
   import org.bitcoins.db.DbCommonsColumnMappers._
@@ -28,6 +27,11 @@ case class AddressDAO(dbConfig: DbConfig, chainParams: ChainParams)(
 
   override def findAll(ts: Vector[AddressDb]): Query[Table[_], AddressDb, Seq] =
     findByPrimaryKeys(ts.map(_.address))
+
+  def findAddress(addr: BitcoinAddress): Future[Option[AddressDb]] = {
+    val query = findByPrimaryKey(addr).result
+    database.run(query).map(_.headOption)
+  }
 
   def findAll(): Future[Vector[AddressDb]] = {
     val query = table.result
