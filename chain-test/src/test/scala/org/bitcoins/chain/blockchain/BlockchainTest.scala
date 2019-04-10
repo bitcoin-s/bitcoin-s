@@ -3,12 +3,18 @@ package org.bitcoins.chain.blockchain
 import org.bitcoins.chain.models.BlockHeaderDAO
 import org.bitcoins.chain.util.ChainUnitTest
 import org.bitcoins.testkit.chain.BlockHeaderHelper
+import org.scalatest.FutureOutcome
 
 class BlockchainTest extends ChainUnitTest {
 
+  override type FixtureParam = BlockHeaderDAO
+
+  override def withFixture(test: OneArgAsyncTest): FutureOutcome =
+    withBlockHeaderDAO(test)
+
   behavior of "Blockchain"
 
-  it must "connect a new header to the current tip of a blockchain" in withBlockHeaderDAO {
+  it must "connect a new header to the current tip of a blockchain" in {
     bhDAO: BlockHeaderDAO =>
       val blockchain = Blockchain.fromHeaders(
         headers = Vector(genesisHeaderDb),
