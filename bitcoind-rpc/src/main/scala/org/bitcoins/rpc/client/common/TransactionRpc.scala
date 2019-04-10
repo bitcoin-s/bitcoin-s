@@ -154,8 +154,8 @@ trait TransactionRpc { self: Client =>
       subractFeeFromAmount: Boolean = false): Future[DoubleSha256DigestBE] = {
     bitcoindCall[DoubleSha256DigestBE](
       "sendtoaddress",
-      List(JsString(address.toString),
-           JsNumber(amount.toBigDecimal),
+      List(Json.toJson(address),
+           Json.toJson(amount),
            JsString(localComment),
            JsString(toComment),
            JsBoolean(subractFeeFromAmount))
