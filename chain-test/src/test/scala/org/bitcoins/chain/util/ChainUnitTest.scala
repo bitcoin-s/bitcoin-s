@@ -1,5 +1,7 @@
 package org.bitcoins.chain.util
 
+import java.net.InetSocketAddress
+
 import akka.actor.ActorSystem
 import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.chain.blockchain.{Blockchain, ChainHandler}
@@ -217,15 +219,26 @@ trait ChainUnitTest
       bitcoindRpc: BitcoindRpcClient,
       chainHandler: ChainHandler)
 
-  def bitcoindZmqChainHandler(test: BitcoindChainHandler => Future[Assertion])(
-      implicit system: ActorSystem): Future[Assertion] = {
-    val instance = BitcoindRpcTestUtil.instance()
-    val bitcoindF = {
-      val bitcoind = new BitcoindRpcClient(instance)
-      bitcoind.start().map(_ => bitcoind)
-    }
-    val zmqRawBlockUriF = bitcoindF.map(_ => instance.zmqConfig.rawBlock)
-    val f: ChainHandler => Future[Assertion] = { chainHandler: ChainHandler =>
+  /** A helper method to transform a test case
+    * that takes in a
+    * {{{
+    *   BitcoindChainHandler => Future[Assertion]
+    * }}}
+    * and transforms it to return a test case of type
+    * {{{
+    *   ChainHandler => Future[Assertion]
+    * }}}
+    * @param bitcoindF
+    * @param zmqRawBlockUriF
+    * @param test
+    * @return
+    */
+  private def toChainHandlerTest(
+      bitcoindF: Future[BitcoindRpcClient],
+      zmqRawBlockUriF: Future[Option[InetSocketAddress]],
+      test: BitcoindChainHandler => Future[Assertion])(
+      implicit system: ActorSystem): ChainHandler => Future[Assertion] = {
+    chainHandler: ChainHandler =>
       val handleRawBlock: ByteVector => Unit = { bytes: ByteVector =>
         val block = Block.fromBytes(bytes)
         chainHandler.processHeader(block.blockHeader)
@@ -236,7 +249,11 @@ trait ChainUnitTest
       val zmqSubscriberF = zmqRawBlockUriF.map { uriOpt =>
         val socket = uriOpt.get
         val z =
-          new ZMQSubscriber(socket, None, None, None, Some(handleRawBlock))
+          new ZMQSubscriber(socket = socket,
+                            hashTxListener = None,
+                            hashBlockListener = None,
+                            rawTxListener = None,
+                            rawBlockListener = Some(handleRawBlock))
         z.start()
         Thread.sleep(1000)
         z
@@ -261,9 +278,25 @@ trait ChainUnitTest
       }
 
       testExecutionF
-    }
+  }
 
-    withChainHandler(f)
+  def withBitcoindZmqChainHandler(
+      test: BitcoindChainHandler => Future[Assertion])(
+      implicit system: ActorSystem): Future[Assertion] = {
+    val instance = BitcoindRpcTestUtil.instance()
+    val bitcoindF = {
+      val bitcoind = new BitcoindRpcClient(instance)
+      bitcoind.start().map(_ => bitcoind)
+    }
+    val zmqRawBlockUriF: Future[Option[InetSocketAddress]] =
+      bitcoindF.map(_ => instance.zmqConfig.rawBlock)
+
+    val chainHandlerTestF: ChainHandler => Future[Assertion] = {
+      toChainHandlerTest(bitcoindF = bitcoindF,
+                         zmqRawBlockUriF = zmqRawBlockUriF,
+                         test = test)
+    }
+    withChainHandler(chainHandlerTestF)
 
   }
 }

@@ -29,7 +29,7 @@ class ChainHandlerTest extends ChainUnitTest {
       foundHeaderF.map(found => assert(found.get == newValidHeader))
   }
 
-  it must "peer with bitcoind via zmq and have blockchain info relayed" in bitcoindZmqChainHandler {
+  it must "peer with bitcoind via zmq and have blockchain info relayed" in withBitcoindZmqChainHandler {
     case bitcoindChainHandler: BitcoindChainHandler =>
       val bitcoind = bitcoindChainHandler.bitcoindRpc
 
@@ -51,9 +51,11 @@ class ChainHandlerTest extends ChainUnitTest {
           RpcUtil.awaitConditionF(() =>
             chainHandler.getHeader(hash).map(_.isDefined))
         }
-        val bitcoinsHeader =
-          foundHeaderF.flatMap(_ => chainHandler.getHeader(hash))
-        bitcoinsHeader.map(header => assert(header.get.hashBE == hash))
+
+        for {
+          _ <- foundHeaderF
+          header <- chainHandler.getHeader(hash)
+        } yield assert(header.get.hashBE == hash)
       }
   }
 
