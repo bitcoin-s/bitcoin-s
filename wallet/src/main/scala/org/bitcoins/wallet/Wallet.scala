@@ -1,35 +1,21 @@
 package org.bitcoins.wallet
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.crypto.bip44._
-import org.bitcoins.core.currency.Satoshis
+import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.{
-  Address,
-  Bech32Address,
-  BitcoinAddress,
-  P2PKHAddress
-}
+import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.blockchain.ChainParams
-import org.bitcoins.core.protocol.script.{
-  P2PKHScriptPubKey,
-  P2WPKHWitnessSPKV0,
-  P2WPKHWitnessV0
-}
 import org.bitcoins.core.protocol.transaction.{
   Transaction,
   TransactionOutPoint,
   TransactionOutput
 }
 import org.bitcoins.core.util.{BitcoinSLogger, EitherUtil}
+import org.bitcoins.core.wallet.builder.BitcoinTxBuilder
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
-import org.bitcoins.core.wallet.utxo.UTXOSpendingInfo
+import org.bitcoins.core.wallet.utxo.BitcoinUTXOSpendingInfo
 import org.bitcoins.db.DbConfig
-import org.bitcoins.wallet.api.{
-  CreateWalletApi,
-  FeeProvider,
-  UnlockedWalletApi,
-  WalletApi
-}
+import org.bitcoins.wallet.api._
 import org.bitcoins.wallet.models._
 import scodec.bits.BitVector
 
@@ -61,10 +47,23 @@ sealed abstract class Wallet extends UnlockedWalletApi with BitcoinSLogger {
   /**
     * @inheritdoc
     */
-  def addUtxo(
+  override def addUtxo(
       transaction: Transaction,
       vout: UInt32): Future[Either[AddUtxoError, WalletApi]] = {
-    val voutIndexOutOfBounds = transaction.outputs.length >= vout.toInt
+    import AddUtxoError._
+
+    logger.trace(
+      s"Adding UTXO to wallet. TXID: ${transaction.txId.hex}, vout: ${vout.toInt}")
+
+    // first check: does the provided vout exist in the tx?
+    val voutLength = transaction.outputs.length
+    val voutIndexOutOfBounds = {
+      val outOfBunds = voutLength <= vout.toInt
+      if (outOfBunds)
+        logger.error(
+          s"TX with TXID ${transaction.txId.hex} only has $voutLength, got request to add vout ${vout.toInt}!")
+      outOfBunds
+    }
 
     val outputE: Either[AddUtxoError, TransactionOutput] =
       if (voutIndexOutOfBounds) Left(VoutIndexOutOfBounds)
@@ -75,7 +74,9 @@ sealed abstract class Wallet extends UnlockedWalletApi with BitcoinSLogger {
       if (voutIndexOutOfBounds) Left(VoutIndexOutOfBounds)
       else Right(TransactionOutPoint(transaction.txId, vout))
 
-    val addressEitherF: Future[Either[AddUtxoError, AddressDb]] = {
+    // second check: do we have an address associated with the provided
+    // output in our DB?
+    val addressDbEitherF: Future[Either[AddUtxoError, AddressDb]] = {
       val nestedAddressE = for {
         output <- outputE
         address <- BitcoinAddress
@@ -86,57 +87,127 @@ sealed abstract class Wallet extends UnlockedWalletApi with BitcoinSLogger {
       } yield
         addressDAO.findAddress(address).map {
           case Some(addr) => Right(addr)
-          case None       => Left(AddressNotFound)
+          case None =>
+            logger.error(
+              s"Constructed address $address from provided tx and vout does not exist in our DB!")
+            Left(AddressNotFound)
         }
       EitherUtil.flattenFutureE(nestedAddressE)
     }
 
-    addressEitherF.flatMap { addressE =>
+    // insert the UTXO into the DB
+    addressDbEitherF.flatMap { addressDbE =>
       val nestedWalletE: Either[
         AddUtxoError,
         Future[Either[AddUtxoError, WalletApi]]] =
         for {
           output <- outputE
           outPoint <- outPointE
-          address <- addressE
+          addressDb <- addressDbE
         } yield {
           val utxo =
-            UTXOSpendingInfoDb(None, outPoint, output, address.path, None, None)
-          utxoDAO.create(utxo).map(_ => Right(this.asInstanceOf[WalletApi]))
+            UTXOSpendingInfoDb(
+              id = None,
+              outPoint = outPoint,
+              output = output,
+              privKeyPath = addressDb.path,
+              redeemScriptOpt = None, // todo fix me when implementing P2SH addresses
+              scriptWitnessOpt = addressDb.witnessScriptOpt
+            )
+          utxoDAO.create(utxo).map { _ =>
+            logger.trace(
+              s"Successfully inserted UTXO ${transaction.txId.hex}:${vout.toInt} into DB")
+            Right(this.asInstanceOf[WalletApi])
+          }
         }
       EitherUtil.flattenFutureE(nestedWalletE)
     }
   }
 
-  sealed abstract class AddUtxoError
-  case object VoutIndexOutOfBounds extends AddUtxoError
-  case object BadSPK extends AddUtxoError
-  case object AddressNotFound extends AddUtxoError
-
   /**
     * @inheritdoc
     */
-  override def updateUtxo: Future[WalletApi] = ???
+  // override def updateUtxo: Future[WalletApi] = ???
+
+  override def listUtxos(): Future[Vector[UTXOSpendingInfoDb]] =
+    utxoDAO.findAllUTXOs()
+
+  /**
+    * @param accountIndex Account index to generate address from
+    * @param chainType What chain do we generate from? Internal change vs. external
+    */
+  private def getNewAddressHelper(
+      accountIndex: Int,
+      chainType: BIP44ChainType): Future[BitcoinAddress] = {
+    val lastAddrOptF = chainType match {
+      case BIP44ChainType.External =>
+        addressDAO.findMostRecentExternal(accountIndex)
+      case BIP44ChainType.Change =>
+        addressDAO.findMostRecentChange(accountIndex)
+    }
+
+    lastAddrOptF.flatMap { lastAddrOpt =>
+      val addrPath = lastAddrOpt match {
+        case Some(addr) => addr.path.next.address
+        case None =>
+          val account = BIP44Account(bip44Coin, accountIndex)
+          val chain = account.toChain(chainType)
+          BIP44Address(chain, 0)
+      }
+
+      val addressDb =
+        AddressDbHelper
+          .getP2WPKHAddress(xpriv, addrPath.toPath, networkParameters)
+      addressDAO.create(addressDb).map(_.address)
+    }
+  }
 
   /**
     * right now only generates P2WPKH addresses
     *
     * @inheritdoc
     */
-  override def getNewAddress(accountIndex: Int = 0): Future[Address] = {
-    addressDAO.findMostRecentExternal(accountIndex).flatMap { addrOpt =>
-      val addrPath = addrOpt match {
-        case Some(addr) => addr.path.next.address
-        case None => {
-          val account = BIP44Account(bip44Coin, accountIndex)
-          val chain = BIP44Chain(BIP44ChainType.External, account)
-          BIP44Address(chain, 0)
-        }
+  override def getNewAddress(accountIndex: Int = 0): Future[BitcoinAddress] = {
+    getNewAddressHelper(accountIndex, BIP44ChainType.External)
+  }
+
+  /** Generates a new change address */
+  private def getNewChangeAddress(
+      accountIndex: Int = 0): Future[BitcoinAddress] = {
+    getNewAddressHelper(accountIndex, BIP44ChainType.Change)
+  }
+
+  override def sendToAddress(
+      address: BitcoinAddress,
+      amount: CurrencyUnit,
+      accountIndex: Int = 0): Future[Transaction] = {
+    for {
+      change <- getNewChangeAddress(accountIndex)
+      fee <- feeProvider.getFee(1)
+      walletUtxos <- listUtxos()
+      txBuilder <- {
+        val destinations: Seq[TransactionOutput] = List(
+          TransactionOutput(amount, address.scriptPubKey))
+
+        // currencly just grabs one utxos, throws if can't find big enough
+        // todo: implement coin selection
+        val utxos: List[BitcoinUTXOSpendingInfo] =
+          List(walletUtxos.find(_.value >= amount).get.toUTXOSpendingInfo(this))
+
+        BitcoinTxBuilder(destinations,
+                         utxos,
+                         fee,
+                         changeSPK = change.scriptPubKey,
+                         networkParameters)
       }
-      val addressDb =
-        AddressDbHelper
-          .getP2WPKHAddress(xpriv, addrPath.toPath, networkParameters)
-      addressDAO.create(addressDb).map(_.address)
+      signed <- txBuilder.sign
+      /* todo: add change output to UTXO DB
+       _ <- {
+        val changeVout = ???
+        addUtxo(signed, changeVout)
+      } */
+    } yield {
+      signed
     }
   }
 
@@ -148,12 +219,12 @@ sealed abstract class Wallet extends UnlockedWalletApi with BitcoinSLogger {
   /**
     * @inheritdoc
     */
-  override def getAccounts: Future[Vector[BIP44Account]] = ???
+  // override def getAccounts: Future[Vector[BIP44Account]] = ???
 
   /**
     * @inheritdoc
     */
-  override def createNewAccount: Future[Try[WalletApi]] = ???
+  // override def createNewAccount: Future[Try[WalletApi]] = ???
 
 }
 
@@ -167,11 +238,6 @@ object Wallet extends CreateWalletApi {
       extends Wallet {
     override implicit def ec: ExecutionContext = executionContext
 
-    /**
-      * Adds the provided UTXO to the wallet, making it
-      * available for spending.
-      */
-    override def addUtxo(utxo: UTXOSpendingInfo): Future[WalletApi] = ???
   }
 
   def apply(

@@ -1,7 +1,6 @@
 package org.bitcoins.wallet.models
 
 import org.bitcoins.core.crypto.bip44.BIP44Coin
-import org.bitcoins.core.protocol.blockchain.ChainParams
 import org.bitcoins.db.{CRUD, DbConfig, SlickUtil}
 import slick.jdbc.SQLiteProfile.api._
 

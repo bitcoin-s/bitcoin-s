@@ -1,22 +1,24 @@
 package org.bitcoins.wallet.api
 
-import org.bitcoins.core.config.{MainNet, NetworkParameters, RegTest, TestNet3}
-import org.bitcoins.core.crypto.bip44.BIP44Account
+import org.bitcoins.core.config.{BitcoinNetwork, MainNet, RegTest, TestNet3}
 import org.bitcoins.core.crypto.{
   BIP39Seed,
   ExtKeyPrivVersion,
   ExtPrivateKey,
   MnemonicCode
 }
-import org.bitcoins.core.protocol.Address
+import org.bitcoins.core.currency.CurrencyUnit
+import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.blockchain.{
   ChainParams,
   MainNetChainParams,
   RegTestNetChainParams,
   TestNetChainParams
 }
-import org.bitcoins.core.wallet.utxo.UTXOSpendingInfo
+import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.db.DbConfig
+import org.bitcoins.wallet.models.UTXOSpendingInfoDb
 
 import scala.concurrent.Future
 import scala.util.Try
@@ -34,7 +36,7 @@ sealed trait WalletApi {
 
   def chainParams: ChainParams
 
-  def networkParameters: NetworkParameters = chainParams match {
+  def networkParameters: BitcoinNetwork = chainParams match {
     case MainNetChainParams    => MainNet
     case TestNetChainParams    => TestNet3
     case RegTestNetChainParams => RegTest
@@ -52,21 +54,25 @@ trait LockedWalletApi extends WalletApi {
     * Adds the provided UTXO to the wallet, making it
     * available for spending.
     */
-  def addUtxo(utxo: UTXOSpendingInfo): Future[WalletApi]
+  def addUtxo(
+      transaction: Transaction,
+      vout: UInt32): Future[Either[AddUtxoError, WalletApi]]
 
   /**
     * If a UTXO is spent outside of the wallet, we
     * need to remove it from the database so it won't be
     * attempted spent again by us.
     */
-  def updateUtxo: Future[WalletApi]
+  // def updateUtxo: Future[WalletApi]
+
+  def listUtxos(): Future[Vector[UTXOSpendingInfoDb]]
 
   /**
     * Gets a new external address. Calling this method multiple
     * times will return the same address, until it has
     * received funds.
     */
-  def getNewAddress(accountIndex: Int = 0): Future[Address]
+  def getNewAddress(accountIndex: Int = 0): Future[BitcoinAddress]
 
   /**
     * Unlocks the wallet with the provided passphrase,
@@ -78,7 +84,7 @@ trait LockedWalletApi extends WalletApi {
     * Every wallet has at least one
     * [[org.bitcoins.core.crypto.bip44.BIP44Account BIP44Account]]
     */
-  def getAccounts: Future[Vector[BIP44Account]]
+  // def getAccounts: Future[Vector[BIP44Account]]
 
   /**
     * Tries to create a new accoun in this wallet. Fails if the
@@ -87,7 +93,8 @@ trait LockedWalletApi extends WalletApi {
     *
     * @see [[https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki#account BIP44 account section]]
     */
-  def createNewAccount: Future[Try[WalletApi]]
+  // def createNewAccount: Future[Try[WalletApi]]
+
 }
 
 trait UnlockedWalletApi extends WalletApi with LockedWalletApi {
@@ -110,4 +117,16 @@ trait UnlockedWalletApi extends WalletApi with LockedWalletApi {
     * encrypted and unaccessible
     */
   def lock: Future[WalletApi]
+
+  /**
+    * todo: add error handling to signature
+    *
+    * @param address The recipient of the TX
+    * @param amount the amount being sent
+    * @param accountIndex the account to send money from. Defaults to 0;
+    */
+  def sendToAddress(
+      address: BitcoinAddress,
+      amount: CurrencyUnit,
+      accountIndex: Int = 0): Future[Transaction]
 }

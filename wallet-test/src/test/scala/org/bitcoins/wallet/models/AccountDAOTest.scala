@@ -1,6 +1,5 @@
 package org.bitcoins.wallet.models
 
-import org.bitcoins.core.crypto.bip44.{BIP44Account, BIP44Coin}
 import org.bitcoins.testkit.core.gen.CryptoGenerators
 import org.bitcoins.wallet.util.{BitcoinSWalletTest, WalletTestUtil}
 

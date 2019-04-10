@@ -121,7 +121,9 @@ abstract class CRUD[T, PrimaryKeyType] extends BitcoinSLogger {
 
 }
 
-class SafeDatabase(dbConfig: DbConfig) {
+class SafeDatabase(dbConfig: DbConfig) extends BitcoinSLogger {
+
+  lazy val dbUrl: String = dbConfig.dbConfig.config.getString("db.url")
 
   /**
     * SQLite does not enable foreign keys by default. This query is
@@ -132,6 +134,8 @@ class SafeDatabase(dbConfig: DbConfig) {
 
   def run[R](action: DBIOAction[R, NoStream, _]): Future[R] = {
     val db = dbConfig.database
+
+    logger.trace(s"Running query against $dbUrl")
 
     val result = db.run[R](foreignKeysPragma >> action)
     result

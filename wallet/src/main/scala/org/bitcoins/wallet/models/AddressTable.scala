@@ -7,22 +7,29 @@ import org.bitcoins.core.crypto.{
   ExtPrivateKey,
   Sha256Hash160Digest
 }
-import org.bitcoins.core.protocol.script.P2WPKHWitnessSPKV0
+import org.bitcoins.core.protocol.script.{
+  P2WPKHWitnessSPKV0,
+  P2WPKHWitnessV0,
+  ScriptWitness
+}
 import org.bitcoins.core.protocol.{Bech32Address, BitcoinAddress}
 import org.bitcoins.core.script.ScriptType
-import org.bitcoins.core.util.CryptoUtil
 import slick.jdbc.SQLiteProfile.api._
 import slick.lifted.ProvenShape
 
+// todo: make ADT for different addresses in DB, seeing as they have different fields
+// todo: indicate whether or not address has been spent to
 case class AddressDb(
     path: BIP44Path,
     ecPublicKey: ECPublicKey,
     hashedPubKey: Sha256Hash160Digest,
     address: BitcoinAddress,
+    witnessScriptOpt: Option[ScriptWitness],
     scriptType: ScriptType)
 
 object AddressDbHelper {
 
+  /** Get a Segwit pay-to-pubkeyhash address */
   def getP2WPKHAddress(
       xpriv: ExtPrivateKey,
       path: BIP44Path,
@@ -31,11 +38,13 @@ object AddressDbHelper {
     val xprivAtPath: ExtPrivateKey = xpriv.deriveChildPrivKey(path)
     val pub = xprivAtPath.key.publicKey
     val witnessSpk = P2WPKHWitnessSPKV0(pub)
+    val scriptWitness = P2WPKHWitnessV0(pub)
     val addr = Bech32Address(witnessSpk, np)
     AddressDb(path,
               pub,
-              CryptoUtil.sha256Hash160(pub.bytes),
+              witnessSpk.pubKeyHash,
               addr,
+              Some(scriptWitness),
               ScriptType.WITNESS_V0_KEYHASH)
   }
 }
@@ -62,11 +71,15 @@ class AddressTable(tag: Tag) extends Table[AddressDb](tag, "addresses") {
 
   def scriptType: Rep[ScriptType] = column[ScriptType]("script_type")
 
+  def scriptWitness: Rep[Option[ScriptWitness]] =
+    column[Option[ScriptWitness]]("script_witness")
+
   private type AddressTuple = (
       Int,
       BIP44Coin,
       BIP44ChainType,
       BitcoinAddress,
+      Option[ScriptWitness],
       Int,
       ECPublicKey,
       Sha256Hash160Digest,
@@ -77,6 +90,7 @@ class AddressTable(tag: Tag) extends Table[AddressDb](tag, "addresses") {
           accountCoin,
           accountChain,
           address,
+          scriptWitnessOpt,
           addressIndex,
           pubKey,
           hashedPubKey,
@@ -89,17 +103,24 @@ class AddressTable(tag: Tag) extends Table[AddressDb](tag, "addresses") {
         ecPublicKey = pubKey,
         hashedPubKey = hashedPubKey,
         address = address,
+        witnessScriptOpt = scriptWitnessOpt,
         scriptType = scriptType
       )
   }
 
   private val toTuple: AddressDb => Option[AddressTuple] = {
-    case AddressDb(path, pubKey, hashedPubKey, address, scriptType) =>
+    case AddressDb(path,
+                   pubKey,
+                   hashedPubKey,
+                   address,
+                   scriptWitnessOpt,
+                   scriptType) =>
       Some(
         (path.account.index,
          path.coin,
          path.chain.chainType,
          address,
+         scriptWitnessOpt,
          path.address.index,
          pubKey,
          hashedPubKey,
@@ -111,6 +132,7 @@ class AddressTable(tag: Tag) extends Table[AddressDb](tag, "addresses") {
      accountCoin,
      accountChainType,
      address,
+     scriptWitness,
      addressIndex,
      ecPublicKey,
      hashedPubKey,

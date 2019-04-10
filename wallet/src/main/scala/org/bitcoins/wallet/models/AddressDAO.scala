@@ -3,8 +3,10 @@ package org.bitcoins.wallet.models
 import org.bitcoins.core.crypto.bip44.BIP44ChainType
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.db.{CRUD, DbConfig, SlickUtil}
+import slick.dbio.Effect
 import slick.jdbc.SQLiteProfile.api._
-import slick.lifted.{QueryBase, TableQuery}
+import slick.lifted.TableQuery
+import slick.sql.SqlAction
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -38,21 +40,32 @@ case class AddressDAO(dbConfig: DbConfig)(
     database.run(query).map(_.toVector)
   }
 
-  def findMostRecentChange: Future[Option[AddressDb]] = findAll().map {
-    addresses =>
-      val change = addresses
-        .filter(_.path.chain.chainType == BIP44ChainType.Change)
+  private def addressesForAccountQuery(
+      accountIndex: Int): Query[AddressTable, AddressDb, Seq] =
+    table.filter(_.accountIndex === accountIndex)
 
-      change
-        .sortBy(_.path.address.index)
-        .lastOption
+  def findMostRecentChange(accountIndex: Int): Future[Option[AddressDb]] = {
+    val query = findMostRecentForChain(accountIndex, BIP44ChainType.Change)
+
+    database.run(query)
   }
 
-  def findMostRecentExternal(accountIndex: Int): Future[Option[AddressDb]] =
-    findAll().map { addreses =>
-      val external =
-        addreses.filter(_.path.chain.chainType == BIP44ChainType.External)
+  private def findMostRecentForChain(
+      accountIndex: Int,
+      chain: BIP44ChainType): SqlAction[
+    Option[AddressDb],
+    NoStream,
+    Effect.Read] = {
+    addressesForAccountQuery(accountIndex)
+      .filter(_.accountChainType === chain)
+      .sortBy(_.addressIndex.desc)
+      .take(1)
+      .result
+      .headOption
+  }
 
-      external.sortBy(_.path.address.index).lastOption
-    }
+  def findMostRecentExternal(accountIndex: Int): Future[Option[AddressDb]] = {
+    val query = findMostRecentForChain(accountIndex, BIP44ChainType.External)
+    database.run(query)
+  }
 }

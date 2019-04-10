@@ -7,18 +7,20 @@ import slick.jdbc.SQLiteProfile.api._
 import scala.util.Try
 
 case class EncryptedMnemonic(value: ByteVector) {
-  // todo
+
+  // todo: use AES merged into master
   def toMnemonic(passphrase: String): Try[MnemonicCode] = ???
 }
 
 object EncryptedMnemonicHelper {
 
-  // todo actually do this properly
+  // todo: use AES merged into master
   def encrypt(
       mnemonicCode: MnemonicCode,
-      passphrase: String): EncryptedMnemonic =
-    EncryptedMnemonic(
-      ByteVector.encodeUtf8(mnemonicCode.words.mkString(", ")).right.get)
+      passphrase: String): EncryptedMnemonic = {
+    val Right(cipherText) = ByteVector.encodeAscii("I am encrypted")
+    EncryptedMnemonic(cipherText)
+  }
 }
 
 class MnemonicCodeTable(tag: Tag)

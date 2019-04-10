@@ -4,12 +4,17 @@ import org.bitcoins.core.crypto._
 import org.bitcoins.core.crypto.bip44.{BIP44ChainType, BIP44Coin, BIP44Path}
 import org.bitcoins.core.number.{Int32, UInt32, UInt64}
 import org.bitcoins.core.protocol.BitcoinAddress
-import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptWitness}
+import org.bitcoins.core.protocol.script.{
+  P2WPKHWitnessV0,
+  ScriptPubKey,
+  ScriptWitness
+}
 import org.bitcoins.core.protocol.transaction.{
   TransactionOutPoint,
   TransactionOutput
 }
 import org.bitcoins.core.script.ScriptType
+import org.bitcoins.core.serializers.script.RawScriptWitnessParser
 import scodec.bits.ByteVector
 import slick.jdbc.SQLiteProfile.api._
 
@@ -78,7 +83,9 @@ abstract class DbCommonsColumnMappers {
 
   implicit val scriptWitnessMapper: BaseColumnType[ScriptWitness] = {
     MappedColumnType
-      .base[ScriptWitness, String](_.hex, _ => ScriptWitness.apply(Seq.empty)) // todo fix me
+      .base[ScriptWitness, String](
+        _.hex,
+        hex => RawScriptWitnessParser.read(ByteVector.fromValidHex(hex)))
   }
 
   implicit val byteVectorMapper: BaseColumnType[ByteVector] = {

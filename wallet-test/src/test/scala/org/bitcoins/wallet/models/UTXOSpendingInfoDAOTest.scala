@@ -18,7 +18,12 @@ class UTXOSpendingInfoDAOTest extends BitcoinSWalletTest {
         val output = TransactionOutput(Bitcoins.one, WalletTestUtil.sampleSPK)
         val privkeyPath = WalletTestUtil.sampleBip44Path
         val utxo =
-          UTXOSpendingInfoDb(None, outpoint, output, privkeyPath, None, None)
+          UTXOSpendingInfoDb(id = None,
+                             outPoint = outpoint,
+                             output = output,
+                             privKeyPath = privkeyPath,
+                             redeemScriptOpt = None, // todo test this properly
+                             scriptWitnessOpt = None) // todo test this properly
         utxoDAO.create(utxo)
       }
       read <- utxoDAO.read(created.id.get)

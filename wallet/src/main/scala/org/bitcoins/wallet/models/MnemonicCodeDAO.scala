@@ -8,6 +8,12 @@ import slick.lifted.TableQuery
 
 import scala.concurrent.{ExecutionContext, Future}
 
+/**
+  * @note This DAO does not extend [[org.bitcoins.db.CRUD CRUD]]
+  *       because it's not the intention to create multiple mnenonics
+  *
+  *       todo: would this be better as a flat file, and not a DB?
+  */
 case class MnemonicCodeDAO(dbConfig: DbConfig)(
     implicit executionContext: ExecutionContext) {
   val ec: ExecutionContext = executionContext
@@ -18,9 +24,10 @@ case class MnemonicCodeDAO(dbConfig: DbConfig)(
   val table: TableQuery[MnemonicCodeTable] =
     TableQuery[MnemonicCodeTable]
 
-  // todo: error handling
   /**
     * Any given wallet can only have one mnemonic code
+    *
+    * todo: error handling, make sure only one mnemonic is present at any given time
     */
   def create(mnemonic: EncryptedMnemonic): Future[EncryptedMnemonic] = {
     val action: DBIOAction[EncryptedMnemonic, NoStream, Write] =
@@ -40,6 +47,4 @@ case class MnemonicCodeDAO(dbConfig: DbConfig)(
     val query = table.result.map(_.headOption)
     database.run(query)
   }
-
-  /** Finds the rows that correlate to the given primary keys */
 }
