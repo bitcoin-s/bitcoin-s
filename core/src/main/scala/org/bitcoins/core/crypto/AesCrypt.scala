@@ -17,7 +17,9 @@ case class AesSalt(
     value: ByteVector
 )
 
-case class AesPassword(value: String)
+case class AesPassword(value: String) {
+  require(value.nonEmpty, "AES passwords cannot be empty!")
+}
 
 /**
   * Provides functionality for encrypting and decrypting with AES
