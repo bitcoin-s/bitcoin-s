@@ -69,6 +69,25 @@ trait ChainUnitTest
     new FutureOutcome(outcomeAfterDestroyF)
   }
 
+  def composeBuilders[T, U](
+      builder: () => Future[T],
+      dependentBuilder: T => Future[U]): () => Future[(T, U)] = () => {
+    builder().flatMap { first =>
+      dependentBuilder(first).map { second =>
+        (first, second)
+      }
+    }
+  }
+
+  def composeBuildersAndWrap[T, U, C](
+      builder: () => Future[T],
+      dependentBuilder: T => Future[U],
+      wrap: (T, U) => C): () => Future[C] = () => {
+    composeBuilders(builder, dependentBuilder)().map {
+      case (first, second) => wrap(first, second)
+    }
+  }
+
   def createBlockHeaderDAO(): Future[BlockHeaderDAO] = {
     val genesisHeaderF = setupHeaderTableWithGenesisHeader()
 
