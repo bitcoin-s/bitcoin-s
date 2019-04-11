@@ -1,5 +1,5 @@
 package org.bitcoins.rpc.config
-import java.net.{InetAddress, InetSocketAddress, URI}
+import java.net.InetSocketAddress
 
 import com.typesafe.config.Config
 import org.bitcoins.core.util.BitcoinSLogger

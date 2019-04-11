@@ -39,6 +39,8 @@ trait ChainUnitTest
     with BeforeAndAfter
     with BeforeAndAfterAll {
 
+  implicit def system: ActorSystem
+
   val timeout = 10.seconds
   def dbConfig: DbConfig = UnitTestDbConfig
 
@@ -190,6 +192,26 @@ trait ChainUnitTest
                                         createIfNotExists = true)
   }
 
+  //BitcoindChainhandler => Future[Assertion]
+  def withBitcoindZmqChainHandler(test: OneArgAsyncTest)(
+      implicit system: ActorSystem): FutureOutcome = {
+    val instance = BitcoindRpcTestUtil.instance()
+    val bitcoindF = {
+      val bitcoind = new BitcoindRpcClient(instance)
+      bitcoind.start().map(_ => bitcoind)
+    }
+    val zmqRawBlockUriF: Future[Option[InetSocketAddress]] =
+      bitcoindF.map(_ => instance.zmqConfig.rawBlock)
+
+    val chainHandlerTestF: OneArgAsyncTest = {
+      toChainHandlerTest(bitcoindF = bitcoindF,
+                         zmqRawBlockUriF = zmqRawBlockUriF,
+                         test = test)
+    }
+    withChainHandler(chainHandlerTestF)
+
+  }
+
   /** Creates the [[org.bitcoins.chain.models.BlockHeaderTable]] and inserts the genesis header */
   private def setupHeaderTableWithGenesisHeader(): Future[BlockHeaderDb] = {
     val tableSetupF = setupHeaderTable()
@@ -233,12 +255,16 @@ trait ChainUnitTest
     * @param test
     * @return
     */
+  //[error] /home/chris/dev/bitcoin-s-core/chain-test/src/test/scala/org/bitcoins/chain/util/ChainUnitTest.scala:151:79: type mismatch;
+  //[error]  found   : ChainUnitTest.this.FixtureParam => org.scalatest.FutureOutcome
+  //[error]  required: ChainUnitTest.this.OneArgAsyncTest
+  //[error]       test: OneArgAsyncTest)(implicit system: ActorSystem): OneArgAsyncTest = {
+  //[error]
   private def toChainHandlerTest(
       bitcoindF: Future[BitcoindRpcClient],
       zmqRawBlockUriF: Future[Option[InetSocketAddress]],
-      test: BitcoindChainHandler => Future[Assertion])(
-      implicit system: ActorSystem): ChainHandler => Future[Assertion] = {
-    chainHandler: ChainHandler =>
+      test: OneArgAsyncTest)(implicit system: ActorSystem): OneArgAsyncTest = {
+    case chainHandler: ChainHandler =>
       val handleRawBlock: ByteVector => Unit = { bytes: ByteVector =>
         val block = Block.fromBytes(bytes)
         chainHandler.processHeader(block.blockHeader)
@@ -265,7 +291,9 @@ trait ChainUnitTest
       } yield BitcoindChainHandler(bitcoind, chainHandler)
 
       val testExecutionF = bitcoindChainHandlerF
-        .flatMap(test(_))
+        .flatMap { bch: BitcoindChainHandler =>
+          test(bch.asInstanceOf[FixtureParam]).toFuture
+        }
 
       testExecutionF.onComplete { _ =>
         //kill bitcoind
@@ -276,27 +304,12 @@ trait ChainUnitTest
         //stop zmq
         zmqSubscriberF.map(_.stop)
       }
-
-      testExecutionF
+      new FutureOutcome(testExecutionF)
+    case f: FixtureParam =>
+      FutureOutcome.failed(s"Did not pass in a BitcoindChainHandler, got ${f}")
   }
 
-  def withBitcoindZmqChainHandler(
-      test: BitcoindChainHandler => Future[Assertion])(
-      implicit system: ActorSystem): Future[Assertion] = {
-    val instance = BitcoindRpcTestUtil.instance()
-    val bitcoindF = {
-      val bitcoind = new BitcoindRpcClient(instance)
-      bitcoind.start().map(_ => bitcoind)
-    }
-    val zmqRawBlockUriF: Future[Option[InetSocketAddress]] =
-      bitcoindF.map(_ => instance.zmqConfig.rawBlock)
-
-    val chainHandlerTestF: ChainHandler => Future[Assertion] = {
-      toChainHandlerTest(bitcoindF = bitcoindF,
-                         zmqRawBlockUriF = zmqRawBlockUriF,
-                         test = test)
-    }
-    withChainHandler(chainHandlerTestF)
-
+  override def afterAll(): Unit = {
+    system.terminate()
   }
 }
