@@ -60,6 +60,30 @@ trait ChainUnitTest
   implicit def ec: ExecutionContext =
     scala.concurrent.ExecutionContext.Implicits.global
 
+  def makeDependentFixture[T](
+      build: () => Future[T],
+      destroy: T => Future[Any])(test: OneArgAsyncTest): FutureOutcome = {
+    val fixtureF = build()
+
+    val outcomeF = fixtureF.flatMap { fixture =>
+      test(fixture.asInstanceOf[FixtureParam]).toFuture
+    }
+
+    val destroyP = Promise[Unit]()
+    outcomeF.onComplete { _ =>
+      fixtureF.foreach { fixture =>
+        destroy(fixture).onComplete {
+          case Success(_)   => destroyP.success(())
+          case Failure(err) => destroyP.failure(err)
+        }
+      }
+    }
+
+    val outcomeAfterDestroyF = destroyP.future.flatMap(_ => outcomeF)
+
+    new FutureOutcome(outcomeAfterDestroyF)
+  }
+
   def makeFixture[T](build: () => Future[T], destroy: () => Future[Any])(
       test: OneArgAsyncTest): FutureOutcome = {
     val outcomeF = build().flatMap { fixture =>
@@ -192,26 +216,6 @@ trait ChainUnitTest
                                         createIfNotExists = true)
   }
 
-  //BitcoindChainhandler => Future[Assertion]
-  def withBitcoindZmqChainHandler(test: OneArgAsyncTest)(
-      implicit system: ActorSystem): FutureOutcome = {
-    val instance = BitcoindRpcTestUtil.instance()
-    val bitcoindF = {
-      val bitcoind = new BitcoindRpcClient(instance)
-      bitcoind.start().map(_ => bitcoind)
-    }
-    val zmqRawBlockUriF: Future[Option[InetSocketAddress]] =
-      bitcoindF.map(_ => instance.zmqConfig.rawBlock)
-
-    val chainHandlerTestF: OneArgAsyncTest = {
-      toChainHandlerTest(bitcoindF = bitcoindF,
-                         zmqRawBlockUriF = zmqRawBlockUriF,
-                         test = test)
-    }
-    withChainHandler(chainHandlerTestF)
-
-  }
-
   /** Creates the [[org.bitcoins.chain.models.BlockHeaderTable]] and inserts the genesis header */
   private def setupHeaderTableWithGenesisHeader(): Future[BlockHeaderDb] = {
     val tableSetupF = setupHeaderTable()
@@ -221,93 +225,65 @@ trait ChainUnitTest
     genesisHeaderF
   }
 
-  /** Drops the header table and returns the given Future[Assertion] after the table is dropped */
-  private def dropHeaderTable(
-      testExecutionF: Future[Outcome]): FutureOutcome = {
-    val dropTableP = Promise[Unit]()
-    testExecutionF.onComplete { _ =>
-      ChainDbManagement.dropHeaderTable(dbConfig).foreach { _ =>
-        dropTableP.success(())
-      }
+  def createBitcoind()(
+      implicit system: ActorSystem): Future[BitcoindRpcClient] = {
+    val instance = BitcoindRpcTestUtil.instance()
+    val bitcoind = new BitcoindRpcClient(instance)
+
+    bitcoind.start().map(_ => bitcoind)
+  }
+
+  def createChainHandlerWithBitcoindZmq(
+      bitcoind: BitcoindRpcClient): Future[ChainHandler] = {
+    val zmqRawBlockUriOpt: Option[InetSocketAddress] =
+      bitcoind.instance.zmqConfig.rawBlock
+
+    val handleRawBlock: ByteVector => Unit = { bytes: ByteVector =>
+      val block = Block.fromBytes(bytes)
+      chainHandler.processHeader(block.blockHeader)
+
+      ()
     }
 
-    val outcomeF = dropTableP.future.flatMap(_ => testExecutionF)
+    val socket = zmqRawBlockUriOpt.get
+    val zmqSubscriber =
+      new ZMQSubscriber(socket = socket,
+                        hashTxListener = None,
+                        hashBlockListener = None,
+                        rawTxListener = None,
+                        rawBlockListener = Some(handleRawBlock))
+    zmqSubscriber.start()
+    Thread.sleep(1000)
 
-    new FutureOutcome(outcomeF)
+    Future.successful(chainHandler)
+  }
+
+  def destroyBitcoindChainHandler(
+      bitcoindChainHandler: BitcoindChainHandler): Future[Unit] = {
+    val stopBitcoindF =
+      BitcoindRpcTestUtil.stopServer(bitcoindChainHandler.bitcoindRpc)
+    val dropTableF = destroyHeaderTable()
+
+    // TODO: Stop zmq
+
+    stopBitcoindF.flatMap(_ => dropTableF)
+  }
+
+  //BitcoindChainHandler => Future[Assertion]
+  def withBitcoindZmqChainHandler(test: OneArgAsyncTest)(
+      implicit system: ActorSystem): FutureOutcome = {
+    val builder: () => Future[BitcoindChainHandler] = composeBuildersAndWrap(
+      createBitcoind,
+      createChainHandlerWithBitcoindZmq,
+      BitcoindChainHandler.apply)
+
+    makeDependentFixture(builder, destroyBitcoindChainHandler)(test)
   }
 
   /** Represents a bitcoind instance paired with a chain handler via zmq */
   case class BitcoindChainHandler(
       bitcoindRpc: BitcoindRpcClient,
       chainHandler: ChainHandler)
-
-  /** A helper method to transform a test case
-    * that takes in a
-    * {{{
-    *   BitcoindChainHandler => Future[Assertion]
-    * }}}
-    * and transforms it to return a test case of type
-    * {{{
-    *   ChainHandler => Future[Assertion]
-    * }}}
-    * @param bitcoindF
-    * @param zmqRawBlockUriF
-    * @param test
-    * @return
-    */
-  //[error] /home/chris/dev/bitcoin-s-core/chain-test/src/test/scala/org/bitcoins/chain/util/ChainUnitTest.scala:151:79: type mismatch;
-  //[error]  found   : ChainUnitTest.this.FixtureParam => org.scalatest.FutureOutcome
-  //[error]  required: ChainUnitTest.this.OneArgAsyncTest
-  //[error]       test: OneArgAsyncTest)(implicit system: ActorSystem): OneArgAsyncTest = {
-  //[error]
-  private def toChainHandlerTest(
-      bitcoindF: Future[BitcoindRpcClient],
-      zmqRawBlockUriF: Future[Option[InetSocketAddress]],
-      test: OneArgAsyncTest)(implicit system: ActorSystem): OneArgAsyncTest = {
-    case chainHandler: ChainHandler =>
-      val handleRawBlock: ByteVector => Unit = { bytes: ByteVector =>
-        val block = Block.fromBytes(bytes)
-        chainHandler.processHeader(block.blockHeader)
-
-        ()
-      }
-
-      val zmqSubscriberF = zmqRawBlockUriF.map { uriOpt =>
-        val socket = uriOpt.get
-        val z =
-          new ZMQSubscriber(socket = socket,
-                            hashTxListener = None,
-                            hashBlockListener = None,
-                            rawTxListener = None,
-                            rawBlockListener = Some(handleRawBlock))
-        z.start()
-        Thread.sleep(1000)
-        z
-      }
-
-      val bitcoindChainHandlerF = for {
-        _ <- zmqSubscriberF
-        bitcoind <- bitcoindF
-      } yield BitcoindChainHandler(bitcoind, chainHandler)
-
-      val testExecutionF = bitcoindChainHandlerF
-        .flatMap { bch: BitcoindChainHandler =>
-          test(bch.asInstanceOf[FixtureParam]).toFuture
-        }
-
-      testExecutionF.onComplete { _ =>
-        //kill bitcoind
-        bitcoindChainHandlerF.flatMap { bch =>
-          BitcoindRpcTestUtil.stopServer(bch.bitcoindRpc)
-        }
-
-        //stop zmq
-        zmqSubscriberF.map(_.stop)
-      }
-      new FutureOutcome(testExecutionF)
-    case f: FixtureParam =>
-      FutureOutcome.failed(s"Did not pass in a BitcoindChainHandler, got ${f}")
-  }
 
   override def afterAll(): Unit = {
     system.terminate()

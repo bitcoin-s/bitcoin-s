@@ -11,10 +11,10 @@ class BitcoindChainHandlerTest extends ChainUnitTest {
 
   override type FixtureParam = BitcoindChainHandler
 
+  override implicit val system: ActorSystem = ActorSystem("ChainUnitTest")
+
   override def withFixture(test: OneArgAsyncTest): FutureOutcome =
     withBitcoindZmqChainHandler(test)
-
-  override implicit val system = ActorSystem("ChainUnitTest")
 
   behavior of "BitcoindChainHandler"
 
