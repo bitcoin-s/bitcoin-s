@@ -67,8 +67,7 @@ trait ChainUnitTest
     dropHeaderTable(testExecutionF)
   }
 
-  def withPopulatedBlockHeaderDAO(
-      test: BlockHeaderDAO => Future[Assertion]): Future[Assertion] = {
+  def withPopulatedBlockHeaderDAO(test: OneArgAsyncTest): FutureOutcome = {
     val tableSetupF = setupHeaderTable()
 
     val source =
@@ -82,7 +81,7 @@ trait ChainUnitTest
     headersResult match {
       case err: JsError =>
         logger.error(s"Failed to parse headers from block_headers.json: $err")
-        Future.failed(new RuntimeException(err.toString))
+        FutureOutcome.failed(err.toString)
       case JsSuccess(headers, _) =>
         val dbHeaders = headers.zipWithIndex.map {
           case (header, height) =>
@@ -120,7 +119,8 @@ trait ChainUnitTest
           }
         }
 
-        val testExecutionF = insertedF.flatMap(_ => test(blockHeaderDAO))
+        val testExecutionF = insertedF.flatMap(_ =>
+          test(blockHeaderDAO.asInstanceOf[FixtureParam]).toFuture)
 
         dropHeaderTable(testExecutionF)
     }
