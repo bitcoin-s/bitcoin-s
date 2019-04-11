@@ -50,24 +50,45 @@ trait ChainUnitTest
   implicit def ec: ExecutionContext =
     scala.concurrent.ExecutionContext.Implicits.global
 
-  /** Fixture that creates a [[org.bitcoins.chain.models.BlockHeaderTable]]
-    * with one row inserted into it, the [[RegTestNetChainParams]]
-    * genesis block
-    * @param test
-    * @return
-    */
-  def withBlockHeaderDAO(test: OneArgAsyncTest): FutureOutcome = {
+  def makeFixture[T](build: () => Future[T], destroy: () => Future[Any])(
+      test: OneArgAsyncTest): FutureOutcome = {
+    val outcomeF = build().flatMap { fixture =>
+      test(fixture.asInstanceOf[FixtureParam]).toFuture
+    }
 
-    val genesisHeaderF = setupHeaderTableWithGenesisHeader()
+    val destroyP = Promise[Unit]()
+    outcomeF.onComplete { _ =>
+      destroy().onComplete {
+        case Success(_)   => destroyP.success(())
+        case Failure(err) => destroyP.failure(err)
+      }
+    }
 
-    val blockHeaderDAOF = genesisHeaderF.map(_ => blockHeaderDAO)
-    val testExecutionF = blockHeaderDAOF.flatMap(dao =>
-      test(dao.asInstanceOf[FixtureParam]).toFuture)
+    val outcomeAfterDestroyF = destroyP.future.flatMap(_ => outcomeF)
 
-    dropHeaderTable(testExecutionF)
+    new FutureOutcome(outcomeAfterDestroyF)
   }
 
-  def withPopulatedBlockHeaderDAO(test: OneArgAsyncTest): FutureOutcome = {
+  def createBlockHeaderDAO(): Future[BlockHeaderDAO] = {
+    val genesisHeaderF = setupHeaderTableWithGenesisHeader()
+
+    genesisHeaderF.map(_ => blockHeaderDAO)
+  }
+
+  def destroyHeaderTable(): Future[Unit] = {
+    ChainDbManagement.dropHeaderTable(dbConfig)
+  }
+
+  /**
+    * Fixture that creates a [[org.bitcoins.chain.models.BlockHeaderTable]]
+    * with one row inserted into it, the [[RegTestNetChainParams]]
+    * genesis block
+    */
+  def withBlockHeaderDAO(test: OneArgAsyncTest): FutureOutcome = {
+    makeFixture(createBlockHeaderDAO, destroyHeaderTable)(test)
+  }
+
+  def createPopulatedBlockHeaderDAO(): Future[BlockHeaderDAO] = {
     val tableSetupF = setupHeaderTable()
 
     val source =
@@ -81,7 +102,7 @@ trait ChainUnitTest
     headersResult match {
       case err: JsError =>
         logger.error(s"Failed to parse headers from block_headers.json: $err")
-        FutureOutcome.failed(err.toString)
+        Future.failed(new RuntimeException(err.toString))
       case JsSuccess(headers, _) =>
         val dbHeaders = headers.zipWithIndex.map {
           case (header, height) =>
@@ -119,22 +140,21 @@ trait ChainUnitTest
           }
         }
 
-        val testExecutionF = insertedF.flatMap(_ =>
-          test(blockHeaderDAO.asInstanceOf[FixtureParam]).toFuture)
-
-        dropHeaderTable(testExecutionF)
+        insertedF.map(_ => blockHeaderDAO)
     }
   }
 
-  def withChainHandler(test: OneArgAsyncTest): FutureOutcome = {
+  def withPopulatedBlockHeaderDAO(test: OneArgAsyncTest): FutureOutcome = {
+    makeFixture(createPopulatedBlockHeaderDAO, destroyHeaderTable)(test)
+  }
 
+  def createChainHandler(): Future[ChainHandler] = {
     val genesisHeaderF = setupHeaderTableWithGenesisHeader()
-    val chainHandlerF = genesisHeaderF.map(_ => chainHandler)
+    genesisHeaderF.map(_ => chainHandler)
+  }
 
-    val testExecutionF = chainHandlerF.flatMap(handler =>
-      test(handler.asInstanceOf[FixtureParam]).toFuture)
-
-    dropHeaderTable(testExecutionF)
+  def withChainHandler(test: OneArgAsyncTest): FutureOutcome = {
+    makeFixture(createChainHandler, destroyHeaderTable)(test)
   }
 
   /** Creates the [[org.bitcoins.chain.models.BlockHeaderTable]] */
@@ -151,21 +171,5 @@ trait ChainUnitTest
       chainHandler.blockchain.blockHeaderDAO.create(genesisHeaderDb))
 
     genesisHeaderF
-  }
-
-  /** Drops the header table and returns the given Future[Assertion] after the table is dropped */
-  private def dropHeaderTable(
-      testExecutionF: Future[Outcome]): FutureOutcome = {
-    val dropTableP = Promise[Unit]()
-    testExecutionF.onComplete { _ =>
-      ChainDbManagement.dropHeaderTable(dbConfig).onComplete {
-        case Success(_)   => dropTableP.success(())
-        case Failure(err) => dropTableP.failure(err)
-      }
-    }
-
-    val outcomeF = dropTableP.future.flatMap(_ => testExecutionF)
-
-    new FutureOutcome(outcomeF)
   }
 }
