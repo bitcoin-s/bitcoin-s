@@ -2,6 +2,7 @@ package org.bitcoins.chain.models
 
 import org.bitcoins.chain.util.ChainUnitTest
 import org.bitcoins.testkit.chain.BlockHeaderHelper
+import org.scalatest.FutureOutcome
 
 import scala.concurrent.Future
 
@@ -10,9 +11,14 @@ import scala.concurrent.Future
   */
 class BlockHeaderDAOTest extends ChainUnitTest {
 
+  override type FixtureParam = BlockHeaderDAO
+
+  override def withFixture(test: OneArgAsyncTest): FutureOutcome =
+    withBlockHeaderDAO(test)
+
   behavior of "BlockHeaderDAO"
 
-  it should "insert and read the genesis block header back" in withBlockHeaderDAO {
+  it should "insert and read the genesis block header back" in {
     blockHeaderDAO: BlockHeaderDAO =>
       val readF = blockHeaderDAO.read(genesisHeaderDb.hashBE)
 
@@ -31,7 +37,7 @@ class BlockHeaderDAOTest extends ChainUnitTest {
 
   }
 
-  it must "delete a block header in the database" in withBlockHeaderDAO {
+  it must "delete a block header in the database" in {
     blockHeaderDAO: BlockHeaderDAO =>
       val blockHeader = BlockHeaderHelper.buildNextHeader(genesisHeaderDb)
 
@@ -51,7 +57,7 @@ class BlockHeaderDAOTest extends ChainUnitTest {
 
   }
 
-  it must "retrieve the chain tip saved in the database" in withBlockHeaderDAO {
+  it must "retrieve the chain tip saved in the database" in {
     blockHeaderDAO: BlockHeaderDAO =>
       val blockHeader = BlockHeaderHelper.buildNextHeader(genesisHeaderDb)
 
@@ -81,7 +87,7 @@ class BlockHeaderDAOTest extends ChainUnitTest {
 
   }
 
-  it must "return the genesis block when retrieving block headers from an empty database" in withBlockHeaderDAO {
+  it must "return the genesis block when retrieving block headers from an empty database" in {
     blockHeaderDAO: BlockHeaderDAO =>
       val chainTipsF = blockHeaderDAO.chainTips
       chainTipsF.map { tips =>
@@ -89,7 +95,7 @@ class BlockHeaderDAOTest extends ChainUnitTest {
       }
   }
 
-  it must "retrieve a block header by height" in withBlockHeaderDAO {
+  it must "retrieve a block header by height" in {
     blockHeaderDAO: BlockHeaderDAO =>
       val blockHeader = BlockHeaderHelper.buildNextHeader(genesisHeaderDb)
 
@@ -123,7 +129,7 @@ class BlockHeaderDAOTest extends ChainUnitTest {
       assert1F.flatMap(_ => assert2F.map(_ => succeed))
   }
 
-  it must "find the height of the longest chain" in withBlockHeaderDAO {
+  it must "find the height of the longest chain" in {
     blockHeaderDAO: BlockHeaderDAO =>
       val blockHeader = BlockHeaderHelper.buildNextHeader(genesisHeaderDb)
       val createdF = blockHeaderDAO.create(blockHeader)
@@ -147,7 +153,7 @@ class BlockHeaderDAOTest extends ChainUnitTest {
 
   }
 
-  it must "find the height of two headers that are competing to be the longest chain" in withBlockHeaderDAO {
+  it must "find the height of two headers that are competing to be the longest chain" in {
     blockHeaderDAO: BlockHeaderDAO =>
       val blockHeader = BlockHeaderHelper.buildNextHeader(genesisHeaderDb)
       val createdF = blockHeaderDAO.create(blockHeader)
