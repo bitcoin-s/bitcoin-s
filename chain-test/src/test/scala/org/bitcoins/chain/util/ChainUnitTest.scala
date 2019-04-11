@@ -17,7 +17,7 @@ import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future, Promise}
 
 trait ChainUnitTest
-    extends AsyncFlatSpec
+    extends fixture.AsyncFlatSpec
     with MustMatchers
     with BitcoinSLogger
     with BeforeAndAfter
@@ -48,24 +48,24 @@ trait ChainUnitTest
     * @param test
     * @return
     */
-  def withBlockHeaderDAO(
-      test: BlockHeaderDAO => Future[Assertion]): Future[Assertion] = {
+  def withBlockHeaderDAO(test: OneArgAsyncTest): FutureOutcome = {
 
     val genesisHeaderF = setupHeaderTableWithGenesisHeader()
 
     val blockHeaderDAOF = genesisHeaderF.map(_ => blockHeaderDAO)
-    val testExecutionF = blockHeaderDAOF.flatMap(test(_))
+    val testExecutionF = blockHeaderDAOF.flatMap(dao =>
+      test(dao.asInstanceOf[FixtureParam]).toFuture)
 
     dropHeaderTable(testExecutionF)
   }
 
-  def withChainHandler(
-      test: ChainHandler => Future[Assertion]): Future[Assertion] = {
+  def withChainHandler(test: OneArgAsyncTest): FutureOutcome = {
 
     val genesisHeaderF = setupHeaderTableWithGenesisHeader()
     val chainHandlerF = genesisHeaderF.map(_ => chainHandler)
 
-    val testExecutionF = chainHandlerF.flatMap(test(_))
+    val testExecutionF = chainHandlerF.flatMap(handler =>
+      test(handler.asInstanceOf[FixtureParam]).toFuture)
 
     dropHeaderTable(testExecutionF)
   }
@@ -84,7 +84,7 @@ trait ChainUnitTest
 
   /** Drops the header table and returns the given Future[Assertion] after the table is dropped */
   private def dropHeaderTable(
-      testExecutionF: Future[Assertion]): Future[Assertion] = {
+      testExecutionF: Future[Outcome]): FutureOutcome = {
     val dropTableP = Promise[Unit]()
     testExecutionF.onComplete { _ =>
       ChainDbManagement.dropHeaderTable(dbConfig).foreach { _ =>
@@ -92,6 +92,8 @@ trait ChainUnitTest
       }
     }
 
-    dropTableP.future.flatMap(_ => testExecutionF)
+    val outcomeF = dropTableP.future.flatMap(_ => testExecutionF)
+
+    new FutureOutcome(outcomeF)
   }
 }
