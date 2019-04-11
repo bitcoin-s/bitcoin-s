@@ -4,7 +4,7 @@ import java.sql.SQLException
 
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.crypto.ECPublicKey
-import org.bitcoins.core.crypto.bip44.{BIP44ChainType, BIP44Coin, BIP44Path}
+import org.bitcoins.core.crypto.bip44.{BIP44ChainType, BIP44Path}
 import org.bitcoins.core.protocol.P2SHAddress
 import org.bitcoins.core.script.ScriptType
 import org.bitcoins.core.util.CryptoUtil
@@ -32,7 +32,8 @@ class AddressDAOTest extends BitcoinSWalletTest {
     val readF = {
       val addressDb = getAddressDb(WalletTestUtil.firstAccountDb)
       addressDAO.create(addressDb)
-    }.map(_ => succeed)
+    }
+
     recoverToSucceededIf[SQLException](readF)
   }
 

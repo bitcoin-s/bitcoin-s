@@ -1,6 +1,7 @@
 package org.bitcoins.wallet.models
 
 import org.bitcoins.db.{DbConfig, SafeDatabase}
+import org.bitcoins.wallet.EncryptedMnemonic
 import slick.dbio.DBIOAction
 import slick.dbio.Effect.Write
 import slick.jdbc.SQLiteProfile.api._
@@ -12,8 +13,8 @@ import scala.concurrent.{ExecutionContext, Future}
   * @note This DAO does not extend [[org.bitcoins.db.CRUD CRUD]]
   *       because it's not the intention to create multiple mnenonics
   *
-  *       todo: would this be better as a flat file, and not a DB?
   */
+// todo: implement this as a flat file, not a table
 case class MnemonicCodeDAO(dbConfig: DbConfig)(
     implicit executionContext: ExecutionContext) {
   val ec: ExecutionContext = executionContext

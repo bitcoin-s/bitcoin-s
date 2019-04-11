@@ -4,11 +4,7 @@ import org.bitcoins.core.crypto._
 import org.bitcoins.core.crypto.bip44.{BIP44ChainType, BIP44Coin, BIP44Path}
 import org.bitcoins.core.number.{Int32, UInt32, UInt64}
 import org.bitcoins.core.protocol.BitcoinAddress
-import org.bitcoins.core.protocol.script.{
-  P2WPKHWitnessV0,
-  ScriptPubKey,
-  ScriptWitness
-}
+import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptWitness}
 import org.bitcoins.core.protocol.transaction.{
   TransactionOutPoint,
   TransactionOutput
@@ -115,6 +111,11 @@ abstract class DbCommonsColumnMappers {
   implicit val scriptTypeMapper: BaseColumnType[ScriptType] =
     MappedColumnType
       .base[ScriptType, String](_.toString, ScriptType.fromStringExn)
+
+  implicit val aesSaltMapper: BaseColumnType[AesSalt] =
+    MappedColumnType.base[AesSalt, String](
+      _.value.toHex,
+      hex => AesSalt(ByteVector.fromValidHex(hex)))
 
 }
 

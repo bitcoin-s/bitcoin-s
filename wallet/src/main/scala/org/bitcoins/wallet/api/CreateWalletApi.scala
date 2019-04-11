@@ -28,41 +28,35 @@ trait CreateWalletApi {
     */
   private def initializeInternal(
       chainParams: ChainParams,
-      passphrase: String,
       dbConfig: Option[DbConfig])(
-      implicit executionContext: ExecutionContext): Future[UnlockedWalletApi] =
+      implicit executionContext: ExecutionContext): Future[
+    InitializeWalletResult] =
     initializeWithEntropy(entropy = MnemonicCode.getEntropy256Bits,
                           chainParams = chainParams,
-                          passphrase = passphrase,
                           dbConfig = dbConfig)
 
   /**
     * $initialize
     */
-  final def initialize(chainParams: ChainParams, passphrase: String)(
-      implicit executionContext: ExecutionContext): Future[UnlockedWalletApi] =
-    initializeInternal(chainParams = chainParams,
-                       passphrase = passphrase,
-                       dbConfig = None)
+  final def initialize(chainParams: ChainParams)(
+      implicit executionContext: ExecutionContext): Future[
+    InitializeWalletResult] =
+    initializeInternal(chainParams = chainParams, dbConfig = None)
 
   /**
     * $initialize
     */
-  final def initialize(
-      chainParams: ChainParams,
-      passphrase: String,
-      dbConfig: DbConfig)(
-      implicit executionContext: ExecutionContext): Future[UnlockedWalletApi] =
-    initializeInternal(chainParams = chainParams,
-                       passphrase = passphrase,
-                       dbConfig = Some(dbConfig))
+  final def initialize(chainParams: ChainParams, dbConfig: DbConfig)(
+      implicit executionContext: ExecutionContext): Future[
+    InitializeWalletResult] =
+    initializeInternal(chainParams = chainParams, dbConfig = Some(dbConfig))
 
   protected def initializeWithEntropy(
       entropy: BitVector,
       chainParams: ChainParams,
-      passphrase: String,
       dbConfig: Option[DbConfig])(
-      implicit executionContext: ExecutionContext): Future[UnlockedWalletApi]
+      implicit executionContext: ExecutionContext): Future[
+    InitializeWalletResult]
 
   /**
     * $initializeWithEnt
@@ -70,11 +64,10 @@ trait CreateWalletApi {
   final def initializeWithEntropy(
       entropy: BitVector,
       chainParams: ChainParams,
-      passphrase: String
-  )(implicit executionContext: ExecutionContext): Future[UnlockedWalletApi] =
+  )(implicit executionContext: ExecutionContext): Future[
+    InitializeWalletResult] =
     initializeWithEntropy(entropy = entropy,
                           chainParams = chainParams,
-                          passphrase = passphrase,
                           dbConfig = None)
 
   /**
@@ -83,11 +76,9 @@ trait CreateWalletApi {
   final def initializeWithEntropy(
       entropy: BitVector,
       chainParams: ChainParams,
-      passphrase: String,
-      dbConfig: DbConfig)(
-      implicit executionContext: ExecutionContext): Future[UnlockedWalletApi] =
+      dbConfig: DbConfig)(implicit executionContext: ExecutionContext): Future[
+    InitializeWalletResult] =
     initializeWithEntropy(entropy = entropy,
                           chainParams = chainParams,
-                          passphrase = passphrase,
                           dbConfig = Some(dbConfig))
 }

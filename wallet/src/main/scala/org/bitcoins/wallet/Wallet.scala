@@ -1,10 +1,11 @@
 package org.bitcoins.wallet
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.crypto.bip44._
-import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
+import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.blockchain.ChainParams
+import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.{
   Transaction,
   TransactionOutPoint,
@@ -12,15 +13,16 @@ import org.bitcoins.core.protocol.transaction.{
 }
 import org.bitcoins.core.util.{BitcoinSLogger, EitherUtil}
 import org.bitcoins.core.wallet.builder.BitcoinTxBuilder
-import org.bitcoins.core.wallet.fee.SatoshisPerByte
+import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.utxo.BitcoinUTXOSpendingInfo
 import org.bitcoins.db.DbConfig
+import org.bitcoins.wallet.api.AddUtxoError.{AddressNotFound, BadSPK}
 import org.bitcoins.wallet.api._
 import org.bitcoins.wallet.models._
 import scodec.bits.BitVector
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 sealed abstract class Wallet extends UnlockedWalletApi with BitcoinSLogger {
   implicit def ec: ExecutionContext
@@ -36,29 +38,63 @@ sealed abstract class Wallet extends UnlockedWalletApi with BitcoinSLogger {
 
   def chainParams: ChainParams
 
-  val feeProvider: FeeProvider = _ =>
-    Future.successful(SatoshisPerByte(Satoshis.one))
-
   /**
     * @inheritdoc
     */
-  override def lock: Future[WalletApi] = ???
+  override def lock: Future[LockedWalletApi] = ???
+
+  /**
+    * Tries to convert the provided spk to an address, and then checks if we have
+    * it in our address table
+    */
+  private def findAddress(
+      spk: ScriptPubKey): Future[Either[AddUtxoError, AddressDb]] =
+    BitcoinAddress.fromScriptPubKey(spk, networkParameters) match {
+      case Success(address) =>
+        addressDAO.findAddress(address).map {
+          case Some(addrDb) => Right(addrDb)
+          case None         => Left(AddressNotFound)
+        }
+      case Failure(_) => Future.successful(Left(BadSPK))
+    }
+
+  private def writeUtxo(
+      output: TransactionOutput,
+      outPoint: TransactionOutPoint,
+      addressDb: AddressDb): Future[UTXOSpendingInfoDb] = {
+
+    val utxo = UTXOSpendingInfoDb(
+      id = None,
+      outPoint = outPoint,
+      output = output,
+      privKeyPath = addressDb.path,
+      redeemScriptOpt = None, // todo fix me when implementing P2SH addresses
+      scriptWitnessOpt = addressDb.witnessScriptOpt
+    )
+
+    utxoDAO.create(utxo).map { _ =>
+      logger.trace(
+        s"Successfully inserted UTXO ${outPoint.txId.hex}:${outPoint.vout.toInt} into DB")
+      utxo
+    }
+  }
 
   /**
     * @inheritdoc
     */
   override def addUtxo(
       transaction: Transaction,
-      vout: UInt32): Future[Either[AddUtxoError, WalletApi]] = {
+      vout: UInt32): Future[AddUtxoResult] = {
     import AddUtxoError._
 
     logger.trace(
       s"Adding UTXO to wallet. TXID: ${transaction.txId.hex}, vout: ${vout.toInt}")
 
     // first check: does the provided vout exist in the tx?
-    val voutLength = transaction.outputs.length
-    val voutIndexOutOfBounds = {
+    val voutIndexOutOfBounds: Boolean = {
+      val voutLength = transaction.outputs.length
       val outOfBunds = voutLength <= vout.toInt
+
       if (outOfBunds)
         logger.error(
           s"TX with TXID ${transaction.txId.hex} only has $voutLength, got request to add vout ${vout.toInt}!")
@@ -77,50 +113,23 @@ sealed abstract class Wallet extends UnlockedWalletApi with BitcoinSLogger {
     // second check: do we have an address associated with the provided
     // output in our DB?
     val addressDbEitherF: Future[Either[AddUtxoError, AddressDb]] = {
-      val nestedAddressE = for {
-        output <- outputE
-        address <- BitcoinAddress
-          .fromScriptPubKey(output.scriptPubKey, networkParameters)
-          .toEither
-          .left
-          .map(_ => BadSPK)
-      } yield
-        addressDAO.findAddress(address).map {
-          case Some(addr) => Right(addr)
-          case None =>
-            logger.error(
-              s"Constructed address $address from provided tx and vout does not exist in our DB!")
-            Left(AddressNotFound)
-        }
-      EitherUtil.flattenFutureE(nestedAddressE)
+      val nested = outputE.map(out => findAddress(out.scriptPubKey))
+      EitherUtil.flattenFutureE(nested)
     }
 
     // insert the UTXO into the DB
     addressDbEitherF.flatMap { addressDbE =>
-      val nestedWalletE: Either[
-        AddUtxoError,
-        Future[Either[AddUtxoError, WalletApi]]] =
-        for {
-          output <- outputE
-          outPoint <- outPointE
-          addressDb <- addressDbE
-        } yield {
-          val utxo =
-            UTXOSpendingInfoDb(
-              id = None,
-              outPoint = outPoint,
-              output = output,
-              privKeyPath = addressDb.path,
-              redeemScriptOpt = None, // todo fix me when implementing P2SH addresses
-              scriptWitnessOpt = addressDb.witnessScriptOpt
-            )
-          utxoDAO.create(utxo).map { _ =>
-            logger.trace(
-              s"Successfully inserted UTXO ${transaction.txId.hex}:${vout.toInt} into DB")
-            Right(this.asInstanceOf[WalletApi])
-          }
-        }
-      EitherUtil.flattenFutureE(nestedWalletE)
+      val biasedE: Either[AddUtxoError, Future[UTXOSpendingInfoDb]] = for {
+        output <- outputE
+        outPoint <- outPointE
+        addressDb <- addressDbE
+      } yield writeUtxo(output, outPoint, addressDb)
+
+      EitherUtil.liftRightBiasedFutureE(biasedE)
+
+    } map {
+      case Right(_) => AddUtxoSuccess(this)
+      case Left(e)  => e
     }
   }
 
@@ -180,10 +189,10 @@ sealed abstract class Wallet extends UnlockedWalletApi with BitcoinSLogger {
   override def sendToAddress(
       address: BitcoinAddress,
       amount: CurrencyUnit,
+      feeRate: FeeUnit,
       accountIndex: Int = 0): Future[Transaction] = {
     for {
       change <- getNewChangeAddress(accountIndex)
-      fee <- feeProvider.getFee(1)
       walletUtxos <- listUtxos()
       txBuilder <- {
         val destinations: Seq[TransactionOutput] = List(
@@ -196,7 +205,7 @@ sealed abstract class Wallet extends UnlockedWalletApi with BitcoinSLogger {
 
         BitcoinTxBuilder(destinations,
                          utxos,
-                         fee,
+                         feeRate,
                          changeSPK = change.scriptPubKey,
                          networkParameters)
       }
@@ -214,7 +223,7 @@ sealed abstract class Wallet extends UnlockedWalletApi with BitcoinSLogger {
   /**
     * @inheritdoc
     */
-  override def unlock(passphrase: String): Future[Try[UnlockedWalletApi]] = ???
+  override def unlock(passphrase: AesPassword): Future[UnlockWalletResult] = ???
 
   /**
     * @inheritdoc
@@ -229,51 +238,93 @@ sealed abstract class Wallet extends UnlockedWalletApi with BitcoinSLogger {
 }
 
 // todo: create multiple wallets, need to maintain multiple databases
-object Wallet extends CreateWalletApi {
+object Wallet extends CreateWalletApi with BitcoinSLogger {
   private case class WalletImpl(
       mnemonicCode: MnemonicCode,
-      passphrase: String,
       dbConfig: DbConfig,
-      chainParams: ChainParams)(implicit executionContext: ExecutionContext)
+      chainParams: ChainParams)(implicit val ec: ExecutionContext)
       extends Wallet {
-    override implicit def ec: ExecutionContext = executionContext
 
+    // todo: until we've figured out a better schem
+    override val passphrase: AesPassword = Wallet.badPassphrase
   }
 
   def apply(
       mnemonicCode: MnemonicCode,
-      passphrase: String = BIP39Seed.EMPTY_PASSWORD,
       dbConfig: DbConfig,
       chainParams: ChainParams)(implicit ec: ExecutionContext): Wallet =
-    WalletImpl(mnemonicCode, passphrase, dbConfig, chainParams)(ec)
+    WalletImpl(mnemonicCode, dbConfig, chainParams)(ec)
 
+  // todo figure out how to handle password part of wallet
+  val badPassphrase = AesPassword("changeMe")
+
+  // todo fix signature
   override protected def initializeWithEntropy(
       entropy: BitVector,
       chainParams: ChainParams,
-      passphrase: String = BIP39Seed.EMPTY_PASSWORD,
       dbConfig: Option[DbConfig])(
-      implicit ec: ExecutionContext): Future[UnlockedWalletApi] = {
+      implicit ec: ExecutionContext): Future[InitializeWalletResult] = {
+    logger.info(s"Initializing wallet on chain $chainParams")
+
     val actualDbConf =
       dbConfig.getOrElse(DbConfig.fromChainParams(chainParams))
 
-    val mnemonic = MnemonicCode.fromEntropy(entropy)
-    val encryptedMnemonic =
-      EncryptedMnemonicHelper.encrypt(mnemonic, passphrase)
+    val mnemonicT = Try(MnemonicCode.fromEntropy(entropy))
+    val mnemonicE: Either[InitializeWalletError, MnemonicCode] =
+      mnemonicT match {
+        case Success(mnemonic) =>
+          logger.info(s"Created mnemonic from entropy")
+          Right(mnemonic)
+        case Failure(err) =>
+          logger.error(s"Could not create mnemonic from entropy! $err")
+          Left(InitializeWalletError.BadEntropy)
 
-    val wallet = WalletImpl(mnemonic, passphrase, actualDbConf, chainParams)
+      }
 
-    val account = BIP44Account(BIP44Coin.fromChainParams(chainParams), 0)
+    val encryptedMnemonicE: Either[InitializeWalletError, EncryptedMnemonic] =
+      mnemonicE.flatMap { mnemonic =>
+        EncryptedMnemonicHelper
+          .encrypt(mnemonic, badPassphrase)
+          .toEither
+          .left
+          .map { err =>
+            logger.error(s"Encryption error when encrying mnemonic: $err")
+            InitializeWalletError.EncryptionError(err)
+          }
+      }
 
-    val xpriv = wallet.xpriv
+    val biasedFinalEither: Either[InitializeWalletError, Future[WalletImpl]] =
+      for {
+        mnemonic <- mnemonicE
+        encrypted <- encryptedMnemonicE
+      } yield {
+        val wallet = WalletImpl(mnemonic, actualDbConf, chainParams)
+        val account = BIP44Account(BIP44Coin.fromChainParams(chainParams), 0)
+        val xpriv = wallet.xpriv
 
-    // safe since we're deriving from a priv
-    val xpub = xpriv.deriveChildPubKey(account).get
+        // safe since we're deriving from a priv
+        val xpub = xpriv.deriveChildPubKey(account).get
+        val accountDb = AccountDb(xpub, account)
 
-    val accountDb = AccountDb(xpub, account)
+        for {
+          _ <- wallet.mnemonicDAO
+            .create(encrypted)
+            .map(_ => logger.info(s"Saved encrypted mnemonic to disk"))
 
-    for {
-      _ <- wallet.mnemonicDAO.create(encryptedMnemonic)
-      _ <- wallet.accountDAO.create(accountDb)
-    } yield wallet
+          _ <- wallet.accountDAO
+            .create(accountDb)
+            .map(_ => logger.info(s"Saved account to DB"))
+        } yield wallet
+      }
+
+    val finalEither: Future[Either[InitializeWalletError, WalletImpl]] =
+      EitherUtil.liftRightBiasedFutureE(biasedFinalEither)
+
+    finalEither.map {
+      case Right(wallet) =>
+        logger.info(s"Successfully initialized wallet")
+        InitializeWalletSuccess(wallet)
+      case Left(err) => err
+    }
   }
 }

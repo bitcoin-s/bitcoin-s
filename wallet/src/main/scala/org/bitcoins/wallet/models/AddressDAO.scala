@@ -11,11 +11,10 @@ import slick.sql.SqlAction
 import scala.concurrent.{ExecutionContext, Future}
 
 case class AddressDAO(dbConfig: DbConfig)(
-    implicit executionContext: ExecutionContext)
+    implicit val ec: ExecutionContext)
     extends CRUD[AddressDb, BitcoinAddress] {
   import org.bitcoins.db.DbCommonsColumnMappers._
 
-  override val ec: ExecutionContext = executionContext
 
   override val table: TableQuery[AddressTable] = TableQuery[AddressTable]
 

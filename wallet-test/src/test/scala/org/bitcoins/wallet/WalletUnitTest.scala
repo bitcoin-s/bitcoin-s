@@ -1,6 +1,10 @@
 package org.bitcoins.wallet
 
-import org.bitcoins.wallet.api.UnlockedWalletApi
+import org.bitcoins.wallet.api.{
+  InitializeWalletError,
+  InitializeWalletSuccess,
+  UnlockedWalletApi
+}
 import org.bitcoins.wallet.util.BitcoinSWalletTest
 
 import scala.concurrent.Future
@@ -8,12 +12,15 @@ import scala.concurrent.Future
 class WalletUnitTest extends BitcoinSWalletTest {
   behavior of "Wallet - unit test"
 
-  val passphrase = "foobar"
-
-  val walletF: Future[UnlockedWalletApi] = Wallet.initialize(
+  lazy val walletF: Future[UnlockedWalletApi] = Wallet
+    .initialize(
     chainParams = chainParams,
-    dbConfig = dbConfig,
-    passphrase = passphrase)
+      dbConfig = dbConfig
+    )
+    .map {
+      case InitializeWalletSuccess(wallet) => wallet
+      case err: InitializeWalletError      => fail(err)
+    }
 
   it should "create a new wallet" in {
     for {

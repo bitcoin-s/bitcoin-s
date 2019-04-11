@@ -11,21 +11,20 @@ class UTXOSpendingInfoDAOTest extends BitcoinSWalletTest {
   behavior of "UTXOSpendingInfoDAO"
 
   it should "insert a UTXO and read it" in {
+    val outpoint =
+      TransactionOutPoint(WalletTestUtil.sampleTxid, WalletTestUtil.sampleVout)
+    val output = TransactionOutput(Bitcoins.one, WalletTestUtil.sampleSPK)
+    val privkeyPath = WalletTestUtil.sampleBip44Path
+    val utxo =
+      UTXOSpendingInfoDb(id = None,
+                         outPoint = outpoint,
+                         output = output,
+                         privKeyPath = privkeyPath,
+                         redeemScriptOpt = None, // todo test this properly
+                         scriptWitnessOpt = None) // todo test this properly
+
     for {
-      created <- {
-        val outpoint = TransactionOutPoint(WalletTestUtil.sampleTxid,
-                                           WalletTestUtil.sampleVout)
-        val output = TransactionOutput(Bitcoins.one, WalletTestUtil.sampleSPK)
-        val privkeyPath = WalletTestUtil.sampleBip44Path
-        val utxo =
-          UTXOSpendingInfoDb(id = None,
-                             outPoint = outpoint,
-                             output = output,
-                             privKeyPath = privkeyPath,
-                             redeemScriptOpt = None, // todo test this properly
-                             scriptWitnessOpt = None) // todo test this properly
-        utxoDAO.create(utxo)
-      }
+      created <- utxoDAO.create(utxo)
       read <- utxoDAO.read(created.id.get)
     } yield assert(read.contains(created))
   }

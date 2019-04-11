@@ -2,6 +2,7 @@ package org.bitcoins.wallet.api
 
 import org.bitcoins.core.config.{BitcoinNetwork, MainNet, RegTest, TestNet3}
 import org.bitcoins.core.crypto.{
+  AesPassword,
   BIP39Seed,
   ExtKeyPrivVersion,
   ExtPrivateKey,
@@ -17,11 +18,11 @@ import org.bitcoins.core.protocol.blockchain.{
   TestNetChainParams
 }
 import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.db.DbConfig
 import org.bitcoins.wallet.models.UTXOSpendingInfoDb
 
 import scala.concurrent.Future
-import scala.util.Try
 
 /**
   * API for the wallet project.
@@ -41,8 +42,6 @@ sealed trait WalletApi {
     case TestNetChainParams    => TestNet3
     case RegTestNetChainParams => RegTest
   }
-
-  def feeProvider: FeeProvider
 }
 
 /**
@@ -54,9 +53,7 @@ trait LockedWalletApi extends WalletApi {
     * Adds the provided UTXO to the wallet, making it
     * available for spending.
     */
-  def addUtxo(
-      transaction: Transaction,
-      vout: UInt32): Future[Either[AddUtxoError, WalletApi]]
+  def addUtxo(transaction: Transaction, vout: UInt32): Future[AddUtxoResult]
 
   /**
     * If a UTXO is spent outside of the wallet, we
@@ -78,7 +75,7 @@ trait LockedWalletApi extends WalletApi {
     * Unlocks the wallet with the provided passphrase,
     * making it possible to send transactions.
     */
-  def unlock(passphrase: String): Future[Try[UnlockedWalletApi]]
+  def unlock(passphrase: AesPassword): Future[UnlockWalletResult]
 
   /**
     * Every wallet has at least one
@@ -97,15 +94,14 @@ trait LockedWalletApi extends WalletApi {
 
 }
 
-trait UnlockedWalletApi extends WalletApi with LockedWalletApi {
+trait UnlockedWalletApi extends LockedWalletApi {
 
   def mnemonicCode: MnemonicCode
 
-  // todo better type?
-  def passphrase: String
+  def passphrase: AesPassword
 
-  def xpriv: ExtPrivateKey = {
-    val seed = BIP39Seed.fromMnemonic(mnemonicCode, passphrase)
+  lazy val xpriv: ExtPrivateKey = {
+    val seed = BIP39Seed.fromMnemonic(mnemonicCode, BIP39Seed.EMPTY_PASSWORD) // todo think more about this
 
     val privVersion = ExtKeyPrivVersion.fromNetworkParameters(networkParameters)
     seed.toExtPrivateKey(privVersion)
@@ -116,17 +112,14 @@ trait UnlockedWalletApi extends WalletApi with LockedWalletApi {
     * all sensitive material in the wallet should be
     * encrypted and unaccessible
     */
-  def lock: Future[WalletApi]
+  def lock: Future[LockedWalletApi]
 
   /**
     * todo: add error handling to signature
-    *
-    * @param address The recipient of the TX
-    * @param amount the amount being sent
-    * @param accountIndex the account to send money from. Defaults to 0;
     */
   def sendToAddress(
       address: BitcoinAddress,
       amount: CurrencyUnit,
+      feeRate: FeeUnit,
       accountIndex: Int = 0): Future[Transaction]
 }

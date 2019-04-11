@@ -315,6 +315,9 @@ sealed abstract class CryptoGenerators {
                 addressIndex = addressIndex,
                 accountIndex = accountIndex,
                 chainType = chainType)
+
+  def aesPassword: Gen[AesPassword] =
+    Gen.alphaStr.suchThat(_.nonEmpty).map(AesPassword(_))
 }
 
 object CryptoGenerators extends CryptoGenerators

@@ -40,15 +40,21 @@ object AddressDbHelper {
     val witnessSpk = P2WPKHWitnessSPKV0(pub)
     val scriptWitness = P2WPKHWitnessV0(pub)
     val addr = Bech32Address(witnessSpk, np)
-    AddressDb(path,
-              pub,
-              witnessSpk.pubKeyHash,
-              addr,
-              Some(scriptWitness),
-              ScriptType.WITNESS_V0_KEYHASH)
+    AddressDb(
+      path = path,
+      ecPublicKey = pub,
+      hashedPubKey = witnessSpk.pubKeyHash,
+      address = addr,
+      witnessScriptOpt = Some(scriptWitness),
+      scriptType = ScriptType.WITNESS_V0_KEYHASH
+    )
   }
 }
 
+/**
+  * todo: this needs design rework.
+  * todo: https://github.com/bitcoin-s/bitcoin-s-core/pull/391#discussion_r274188334
+  */
 class AddressTable(tag: Tag) extends Table[AddressDb](tag, "addresses") {
   import org.bitcoins.db.DbCommonsColumnMappers._
 
