@@ -1,6 +1,6 @@
 package org.bitcoins.chain.pow
 
-import org.bitcoins.chain.models.{BlockHeaderDAO, EmptyFixture}
+import org.bitcoins.chain.models.BlockHeaderDAO
 import org.bitcoins.chain.util.ChainUnitTest
 import org.bitcoins.core.protocol.blockchain.MainNetChainParams
 import org.bitcoins.db.UnitTestDbConfig
@@ -9,10 +9,9 @@ import org.scalatest.FutureOutcome
 
 class BitcoinPowTest extends ChainUnitTest {
 
-  override type FixtureParam = EmptyFixture.type
+  override type FixtureParam = Unit
 
-  override def withFixture(test: OneArgAsyncTest): FutureOutcome =
-    test(EmptyFixture)
+  override def withFixture(test: OneArgAsyncTest): FutureOutcome = test(())
 
   behavior of "BitcoinPow"
 

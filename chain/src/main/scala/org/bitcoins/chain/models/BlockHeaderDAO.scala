@@ -14,8 +14,7 @@ import scala.concurrent.{ExecutionContext, Future}
   * our chain project
   */
 sealed abstract class BlockHeaderDAO
-    extends CRUD[BlockHeaderDb, DoubleSha256DigestBE]
-    with ChainTestFixture {
+    extends CRUD[BlockHeaderDb, DoubleSha256DigestBE] {
 
   import org.bitcoins.db.DbCommonsColumnMappers._
 

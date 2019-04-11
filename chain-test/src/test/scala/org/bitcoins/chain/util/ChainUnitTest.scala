@@ -3,11 +3,7 @@ package org.bitcoins.chain.util
 import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.chain.blockchain.{Blockchain, ChainHandler}
 import org.bitcoins.chain.db.ChainDbManagement
-import org.bitcoins.chain.models.{
-  BlockHeaderDAO,
-  BlockHeaderDb,
-  ChainTestFixture
-}
+import org.bitcoins.chain.models.{BlockHeaderDAO, BlockHeaderDb}
 import org.bitcoins.core.protocol.blockchain.{
   ChainParams,
   RegTestNetChainParams
@@ -26,8 +22,6 @@ trait ChainUnitTest
     with BitcoinSLogger
     with BeforeAndAfter
     with BeforeAndAfterAll {
-
-  override type FixtureParam <: ChainTestFixture
 
   val timeout = 10.seconds
   def dbConfig: DbConfig = UnitTestDbConfig

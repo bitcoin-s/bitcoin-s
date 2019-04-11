@@ -1,7 +1,7 @@
 package org.bitcoins.chain.blockchain
 
 import org.bitcoins.chain.api.ChainApi
-import org.bitcoins.chain.models.{BlockHeaderDb, ChainTestFixture}
+import org.bitcoins.chain.models.BlockHeaderDb
 import org.bitcoins.core.crypto.DoubleSha256DigestBE
 import org.bitcoins.core.protocol.blockchain.{BlockHeader, ChainParams}
 import org.bitcoins.core.util.BitcoinSLogger
@@ -16,8 +16,7 @@ import scala.concurrent.{ExecutionContext, Future}
   */
 case class ChainHandler(blockchain: Blockchain)(implicit ec: ExecutionContext)
     extends ChainApi
-    with BitcoinSLogger
-    with ChainTestFixture {
+    with BitcoinSLogger {
 
   private val blockHeaderDAO = blockchain.blockHeaderDAO
 
