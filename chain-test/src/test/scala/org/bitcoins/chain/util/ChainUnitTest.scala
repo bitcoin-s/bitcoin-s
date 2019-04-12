@@ -54,8 +54,7 @@ trait ChainUnitTest
   lazy val blockchain =
     Blockchain.fromHeaders(Vector(genesisHeaderDb), blockHeaderDAO)
 
-  lazy val chainHandler: ChainHandler = ChainHandler(blockchain)
-  lazy val chainApi: ChainApi = chainHandler
+  private lazy val chainHandler: ChainHandler = ChainHandler(blockchain)
 
   implicit def ec: ExecutionContext =
     scala.concurrent.ExecutionContext.Implicits.global
@@ -233,8 +232,27 @@ trait ChainUnitTest
     bitcoind.start().map(_ => bitcoind)
   }
 
+  /** Represents a bitcoind instance paired with a chain handler via zmq */
+  case class BitcoindChainHandler(
+      bitcoindRpc: BitcoindRpcClient,
+      chainHandler: ChainHandler,
+      zmqSubscriber: ZMQSubscriber)
+
+  object BitcoindChainHandler {
+
+    def apply(
+        bitcoindRpc: BitcoindRpcClient,
+        pair: (ChainHandler, ZMQSubscriber)): BitcoindChainHandler = {
+      val (chainHandler, zmqSubscriber) = pair
+
+      BitcoindChainHandler(bitcoindRpc, chainHandler, zmqSubscriber)
+    }
+  }
+
   def createChainHandlerWithBitcoindZmq(
-      bitcoind: BitcoindRpcClient): Future[ChainHandler] = {
+      bitcoind: BitcoindRpcClient): Future[(ChainHandler, ZMQSubscriber)] = {
+    val genesisHeaderF = setupHeaderTableWithGenesisHeader()
+
     val zmqRawBlockUriOpt: Option[InetSocketAddress] =
       bitcoind.instance.zmqConfig.rawBlock
 
@@ -255,7 +273,7 @@ trait ChainUnitTest
     zmqSubscriber.start()
     Thread.sleep(1000)
 
-    Future.successful(chainHandler)
+    genesisHeaderF.map(_ => (chainHandler, zmqSubscriber))
   }
 
   def destroyBitcoindChainHandler(
@@ -264,7 +282,7 @@ trait ChainUnitTest
       BitcoindRpcTestUtil.stopServer(bitcoindChainHandler.bitcoindRpc)
     val dropTableF = destroyHeaderTable()
 
-    // TODO: Stop zmq
+    bitcoindChainHandler.zmqSubscriber.stop
 
     stopBitcoindF.flatMap(_ => dropTableF)
   }
@@ -279,11 +297,6 @@ trait ChainUnitTest
 
     makeDependentFixture(builder, destroyBitcoindChainHandler)(test)
   }
-
-  /** Represents a bitcoind instance paired with a chain handler via zmq */
-  case class BitcoindChainHandler(
-      bitcoindRpc: BitcoindRpcClient,
-      chainHandler: ChainHandler)
 
   override def afterAll(): Unit = {
     system.terminate()
