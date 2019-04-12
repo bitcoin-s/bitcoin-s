@@ -59,6 +59,15 @@ trait ChainUnitTest
   implicit def ec: ExecutionContext =
     scala.concurrent.ExecutionContext.Implicits.global
 
+  /**
+    * Given functions to build and destroy a fixture, returns a OneArgAsyncTest => FutureOutcome
+    * (this version gives the destroy function access to the fixture)
+    *
+    * Example:
+    * {{{
+    *   makeDependentFixture(createBitcoindChainHandler, destroyBitcoindChainHandler)
+    * }}}
+    */
   def makeDependentFixture[T](
       build: () => Future[T],
       destroy: T => Future[Any])(test: OneArgAsyncTest): FutureOutcome = {
@@ -83,6 +92,15 @@ trait ChainUnitTest
     new FutureOutcome(outcomeAfterDestroyF)
   }
 
+  /**
+    * Given functions to build and destroy a fixture, returns a OneArgAsyncTest => FutureOutcome
+    * (this version does not give the destroy function access to the fixture, see makeDependentFixture)
+    *
+    * Example:
+    * {{{
+    *   makeFixture(createBlockHeaderDAO, destroyBlockHeaderTable)
+    * }}}
+    */
   def makeFixture[T](build: () => Future[T], destroy: () => Future[Any])(
       test: OneArgAsyncTest): FutureOutcome = {
     val outcomeF = build().flatMap { fixture =>
@@ -102,6 +120,15 @@ trait ChainUnitTest
     new FutureOutcome(outcomeAfterDestroyF)
   }
 
+  /**
+    * Given two fixture building methods (one dependent on the other), returns a single
+    * fixture building method where the fixture is the pair of the two.
+    *
+    * Example:
+    * {{{
+    *   composeBuilders(createBlockHeaderDAO, createChainHandlerFromBlockHeaderDAO)
+    * }}}
+    */
   def composeBuilders[T, U](
       builder: () => Future[T],
       dependentBuilder: T => Future[U]): () => Future[(T, U)] = () => {
@@ -112,6 +139,18 @@ trait ChainUnitTest
     }
   }
 
+  /**
+    * Given two fixture building methods (one dependent on the other) and a wrapper
+    * for their pair type, returns a single fixture building method where the fixture is wrapper.
+    *
+    * Example:
+    * {{{
+    *   composeBuildersAndWrap(
+    *       createBitcoind,
+    *       createChainHandlerWithBitcoindZmq,
+    *       BitcoindChainHandler.apply)
+    * }}}
+    */
   def composeBuildersAndWrap[T, U, C](
       builder: () => Future[T],
       dependentBuilder: T => Future[U],
@@ -140,6 +179,7 @@ trait ChainUnitTest
     makeFixture(createBlockHeaderDAO, destroyHeaderTable)(test)
   }
 
+  // Creates and populates BlockHeaderTable with block headers 562375 to 571375
   def createPopulatedBlockHeaderDAO(): Future[BlockHeaderDAO] = {
     // The height of the first block in the json file
     val OFFSET: Int = 562375
