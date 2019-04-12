@@ -205,7 +205,7 @@ lazy val chainTest = project
     name := "bitcoin-s-chain-test",
     libraryDependencies ++= Deps.chainTest,
     parallelExecution in Test := false
-  ).dependsOn(chain, core, testkit)
+  ).dependsOn(chain, core, testkit, zmq)
   .enablePlugins(FlywayPlugin)
 
 

@@ -8,10 +8,7 @@ import org.bitcoins.core.crypto.{
   ECPrivateKey
 }
 import org.bitcoins.core.number.{Int32, UInt32}
-import org.bitcoins.core.protocol.blockchain.{
-  BlockHeader,
-  RegTestNetChainParams
-}
+import org.bitcoins.core.protocol.blockchain.BlockHeader
 
 import scala.annotation.tailrec
 
