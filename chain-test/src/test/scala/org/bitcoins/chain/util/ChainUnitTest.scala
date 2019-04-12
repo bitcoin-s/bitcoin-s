@@ -47,9 +47,9 @@ trait ChainUnitTest
   val genesisHeaderDb: BlockHeaderDb = ChainTestUtil.regTestGenesisHeaderDb
   val chainParam: ChainParams = RegTestNetChainParams
 
-  lazy val blockHeaderDAO = BlockHeaderDAO(chainParams =
-                                             ChainTestUtil.regTestChainParams,
-                                           dbConfig = dbConfig)
+  private lazy val blockHeaderDAO = BlockHeaderDAO(
+    chainParams = ChainTestUtil.regTestChainParams,
+    dbConfig = dbConfig)
 
   lazy val blockchain =
     Blockchain.fromHeaders(Vector(genesisHeaderDb), blockHeaderDAO)
