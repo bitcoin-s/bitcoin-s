@@ -23,8 +23,8 @@ class ZMQSubscriber(
     hashTxListener: Option[ByteVector => Unit],
     hashBlockListener: Option[ByteVector => Unit],
     rawTxListener: Option[ByteVector => Unit],
-    rawBlockListener: Option[ByteVector => Unit]) {
-  private val logger = BitcoinSLogger.logger
+    rawBlockListener: Option[ByteVector => Unit])
+    extends BitcoinSLogger {
 
   private var running = true
   private val context = ZMQ.context(1)

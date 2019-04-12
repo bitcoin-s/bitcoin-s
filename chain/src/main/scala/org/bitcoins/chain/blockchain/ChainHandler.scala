@@ -24,6 +24,10 @@ case class ChainHandler(blockchain: Blockchain)(implicit ec: ExecutionContext)
 
   def dbConfig: DbConfig = blockchain.blockHeaderDAO.dbConfig
 
+  override def getBlockCount: Future[Long] = {
+    blockHeaderDAO.maxHeight
+  }
+
   override def getHeader(
       hash: DoubleSha256DigestBE): Future[Option[BlockHeaderDb]] = {
     blockHeaderDAO.findByHash(hash)

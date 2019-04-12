@@ -21,4 +21,6 @@ trait ChainApi {
   /** Get's a [[org.bitcoins.chain.models.BlockHeaderDb]] from the chain's database */
   def getHeader(hash: DoubleSha256DigestBE): Future[Option[BlockHeaderDb]]
 
+  /** Gets the number of blocks in the database */
+  def getBlockCount: Future[Long]
 }
