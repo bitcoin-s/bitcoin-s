@@ -1,8 +1,12 @@
 package org.bitcoins.chain.blockchain
 
+import akka.actor.ActorSystem
 import org.bitcoins.chain.util.ChainUnitTest
+import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.testkit.chain.BlockHeaderHelper
 import org.scalatest.FutureOutcome
+
+import scala.concurrent.Future
 
 class ChainHandlerTest extends ChainUnitTest {
 
@@ -10,6 +14,8 @@ class ChainHandlerTest extends ChainUnitTest {
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome =
     withChainHandler(test)
+
+  override implicit val system = ActorSystem("ChainUnitTest")
 
   behavior of "ChainHandler"
 
