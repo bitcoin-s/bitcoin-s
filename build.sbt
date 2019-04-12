@@ -353,8 +353,14 @@ lazy val doc = project
     libraryDependencies ++= Deps.doc,
   )
   .dependsOn(
+    bitcoindRpc,
+    chain,
+    core,
+    eclairRpc,
+    node,
     secp256k1jni,
-    core
+    testkit,
+    wallet
   )
 
 // Ammonite is invoked through running
