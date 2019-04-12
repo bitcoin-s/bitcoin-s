@@ -117,7 +117,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     * Assumes the `config` object has a `datadir` string. Returns the written
     * file.
     */
-  def writeConfigToFile(config: Config): File = {
+  def writeConfigToFile(config: Config, datadir: File): File = {
 
     val confSet = config.entrySet.asScala
     val confStr =
@@ -129,7 +129,6 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
         })
         .mkString("\n")
 
-    val datadir = new File(config.getString("datadir"))
     datadir.mkdir()
 
     val confFile = new java.io.File(datadir.getAbsolutePath + "/bitcoin.conf")
@@ -153,18 +152,14 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       pruneMode: Boolean): BitcoindAuthCredentials = {
     val conf = config(uri, rpcUri, zmqPort, pruneMode)
 
-    val configWithDatadir =
-      if (conf.hasPath("datadir")) {
-        conf
-      } else {
-        conf.withValue("datadir",
-                       ConfigValueFactory.fromAnyRef("/tmp/" + randomDirName))
-      }
+    val datadir = new File("/tmp/" + randomDirName)
 
-    val configFile = writeConfigToFile(configWithDatadir)
+    datadir.mkdirs()
 
-    val username = configWithDatadir.getString("rpcuser")
-    val pass = configWithDatadir.getString("rpcpassword")
+    val configFile = writeConfigToFile(conf, datadir)
+
+    val username = conf.getString("rpcuser")
+    val pass = conf.getString("rpcpassword")
 
     BitcoindAuthCredentials(username,
                             pass,
