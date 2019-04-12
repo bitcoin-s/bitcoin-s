@@ -8,9 +8,13 @@ import org.bitcoins.core.crypto.bip44.{BIP44ChainType, BIP44Path}
 import org.bitcoins.core.protocol.P2SHAddress
 import org.bitcoins.core.script.ScriptType
 import org.bitcoins.core.util.CryptoUtil
+import org.bitcoins.wallet.fixtures.{AccountDAOFixture, AddressDAOFixture}
 import org.bitcoins.wallet.util.{BitcoinSWalletTest, WalletTestUtil}
 
-class AddressDAOTest extends BitcoinSWalletTest {
+class AddressDAOTest
+    extends BitcoinSWalletTest
+    with AddressDAOFixture
+    with AccountDAOFixture {
 
   // todo: do this with an actual working address
   // todo: with script witness + redeem script
