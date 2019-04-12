@@ -4,19 +4,14 @@ import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
-import org.bitcoins.wallet.api.{
-  AddUtxoError,
-  AddUtxoResult,
-  AddUtxoSuccess,
-  InitializeWalletError,
-  InitializeWalletSuccess,
-  WalletApi
-}
+import org.bitcoins.wallet.api.{AddUtxoError, AddUtxoSuccess, WalletApi}
+import org.bitcoins.wallet.fixtures.WalletFixture
 import org.bitcoins.wallet.util.BitcoinSWalletTest
 
 import scala.concurrent.Future
 
-class WalletIntegrationTest extends BitcoinSWalletTest {
+class WalletIntegrationTest extends BitcoinSWalletTest with WalletFixture {
+
   behavior of "Wallet - integration test"
 
   val feeRate = SatoshisPerByte(Satoshis.one)
@@ -25,11 +20,6 @@ class WalletIntegrationTest extends BitcoinSWalletTest {
     + " UTXO and construct a valid, signed transaction that's"
     + " broadcast and confirmed by bitcoind") in {
     val valueFromBitcoind = Bitcoins.one
-    val walletF =
-      Wallet.initialize(chainParams = chainParams, dbConfig = dbConfig).map {
-        case InitializeWalletSuccess(wallet) => wallet
-        case err: InitializeWalletError      => fail(err)
-      }
 
     val bitcoindF = BitcoindRpcTestUtil.startedBitcoindRpcClient()
 
@@ -69,6 +59,9 @@ class WalletIntegrationTest extends BitcoinSWalletTest {
       utxos <- wallet.listUtxos()
       _ = assert(utxos.nonEmpty)
 
+      balance <- wallet.getBalance()
+      _ = assert(balance > Bitcoins.zero)
+
       addressFromBitcoind <- bitcoind.getNewAddress
       signedTx <- wallet.sendToAddress(addressFromBitcoind,
                                        Bitcoins(0.5),
@@ -77,6 +70,7 @@ class WalletIntegrationTest extends BitcoinSWalletTest {
       txid <- bitcoind.sendRawTransaction(signedTx)
       _ <- bitcoind.generate(1)
       tx <- bitcoind.getRawTransaction(txid)
+      _ <- BitcoindRpcTestUtil.stopServer(bitcoind)
     } yield {
       assert(tx.confirmations.exists(_ > 0))
     }

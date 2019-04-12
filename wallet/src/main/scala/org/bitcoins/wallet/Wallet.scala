@@ -1,7 +1,7 @@
 package org.bitcoins.wallet
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.crypto.bip44._
-import org.bitcoins.core.currency.CurrencyUnit
+import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.blockchain.ChainParams
@@ -42,6 +42,10 @@ sealed abstract class Wallet extends UnlockedWalletApi with BitcoinSLogger {
     * @inheritdoc
     */
   override def lock: Future[LockedWalletApi] = ???
+
+  override def getBalance(): Future[CurrencyUnit] = listUtxos().map { utxos =>
+    utxos.map(_.value).fold(Bitcoins.zero)(_ + _)
+  }
 
   /**
     * Tries to convert the provided spk to an address, and then checks if we have
@@ -225,10 +229,10 @@ sealed abstract class Wallet extends UnlockedWalletApi with BitcoinSLogger {
     */
   override def unlock(passphrase: AesPassword): Future[UnlockWalletResult] = ???
 
-  /**
-    * @inheritdoc
-    */
-  // override def getAccounts: Future[Vector[BIP44Account]] = ???
+  override def listAccounts(): Future[Vector[AccountDb]] =
+    accountDAO.findAll()
+
+  override def listAddresses(): Future[Vector[AddressDb]] = addressDAO.findAll()
 
   /**
     * @inheritdoc

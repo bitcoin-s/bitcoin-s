@@ -20,7 +20,7 @@ import org.bitcoins.core.protocol.blockchain.{
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.db.DbConfig
-import org.bitcoins.wallet.models.UTXOSpendingInfoDb
+import org.bitcoins.wallet.models.{AccountDb, AddressDb, UTXOSpendingInfoDb}
 
 import scala.concurrent.Future
 
@@ -55,6 +55,11 @@ trait LockedWalletApi extends WalletApi {
     */
   def addUtxo(transaction: Transaction, vout: UInt32): Future[AddUtxoResult]
 
+  /** Sums up the value of all UTXOs in the wallet */
+  // noinspection AccessorLikeMethodIsEmptyParen
+  // async calls have side effects :-)
+  def getBalance(): Future[CurrencyUnit]
+
   /**
     * If a UTXO is spent outside of the wallet, we
     * need to remove it from the database so it won't be
@@ -63,6 +68,8 @@ trait LockedWalletApi extends WalletApi {
   // def updateUtxo: Future[WalletApi]
 
   def listUtxos(): Future[Vector[UTXOSpendingInfoDb]]
+
+  def listAddresses(): Future[Vector[AddressDb]]
 
   /**
     * Gets a new external address. Calling this method multiple
@@ -77,11 +84,7 @@ trait LockedWalletApi extends WalletApi {
     */
   def unlock(passphrase: AesPassword): Future[UnlockWalletResult]
 
-  /**
-    * Every wallet has at least one
-    * [[org.bitcoins.core.crypto.bip44.BIP44Account BIP44Account]]
-    */
-  // def getAccounts: Future[Vector[BIP44Account]]
+  def listAccounts(): Future[Vector[AccountDb]]
 
   /**
     * Tries to create a new accoun in this wallet. Fails if the
