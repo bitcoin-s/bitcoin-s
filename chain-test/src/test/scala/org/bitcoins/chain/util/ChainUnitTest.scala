@@ -141,6 +141,9 @@ trait ChainUnitTest
   }
 
   def createPopulatedBlockHeaderDAO(): Future[BlockHeaderDAO] = {
+    // The height of the first block in the json file
+    val OFFSET: Int = 562375
+
     val tableSetupF = setupHeaderTable()
 
     val source =
@@ -158,7 +161,7 @@ trait ChainUnitTest
       case JsSuccess(headers, _) =>
         val dbHeaders = headers.zipWithIndex.map {
           case (header, height) =>
-            BlockHeaderDbHelper.fromBlockHeader(height, header)
+            BlockHeaderDbHelper.fromBlockHeader(height + OFFSET, header)
         }
 
         @tailrec
