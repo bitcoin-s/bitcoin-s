@@ -139,6 +139,7 @@ object Deps {
   )
 
   val doc = List(
+    Test.ammonite,
     Test.scalaTest,
     Test.logback
   )
