@@ -5,12 +5,17 @@ import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.wallet.api.{AddUtxoError, AddUtxoSuccess, WalletApi}
-import org.bitcoins.wallet.fixtures.WalletFixture
 import org.bitcoins.wallet.util.BitcoinSWalletTest
+import org.scalatest.FutureOutcome
 
 import scala.concurrent.Future
 
-class WalletIntegrationTest extends BitcoinSWalletTest with WalletFixture {
+class WalletIntegrationTest extends BitcoinSWalletTest {
+
+  override type FixtureParam = WalletWithBitcoind
+
+  override def withFixture(test: OneArgAsyncTest): FutureOutcome =
+    withNewWalletAndBitcoind(test)
 
   behavior of "Wallet - integration test"
 
@@ -18,15 +23,11 @@ class WalletIntegrationTest extends BitcoinSWalletTest with WalletFixture {
 
   it should ("create an address, receive funds to it from bitcoind, import the"
     + " UTXO and construct a valid, signed transaction that's"
-    + " broadcast and confirmed by bitcoind") in {
+    + " broadcast and confirmed by bitcoind") in { walletWithBitcoind =>
+    val WalletWithBitcoind(wallet, bitcoind) = walletWithBitcoind
     val valueFromBitcoind = Bitcoins.one
 
-    val bitcoindF = BitcoindRpcTestUtil.startedBitcoindRpcClient()
-
     val addUtxoF: Future[Unit] = for {
-      bitcoind <- bitcoindF
-
-      wallet <- walletF
       addr <- wallet.getNewAddress()
 
       txid <- bitcoind.sendToAddress(addr, valueFromBitcoind)
@@ -53,8 +54,6 @@ class WalletIntegrationTest extends BitcoinSWalletTest with WalletFixture {
     }
     for {
       _ <- addUtxoF
-      wallet <- walletF
-      bitcoind <- bitcoindF
 
       utxos <- wallet.listUtxos()
       _ = assert(utxos.nonEmpty)

@@ -1,15 +1,20 @@
 package org.bitcoins.wallet
 
-import org.bitcoins.wallet.fixtures.WalletFixture
+import org.bitcoins.wallet.api.UnlockedWalletApi
 import org.bitcoins.wallet.util.BitcoinSWalletTest
+import org.scalatest.FutureOutcome
 
-class WalletUnitTest extends BitcoinSWalletTest with WalletFixture {
+class WalletUnitTest extends BitcoinSWalletTest {
+
+  override type FixtureParam = UnlockedWalletApi
+
+  override def withFixture(test: OneArgAsyncTest): FutureOutcome =
+    withNewWallet(test)
 
   behavior of "Wallet - unit test"
 
-  it should "create a new wallet" in {
+  it should "create a new wallet" in { wallet: UnlockedWalletApi =>
     for {
-      wallet <- walletF
       accounts <- wallet.listAccounts()
       addresses <- wallet.listAddresses()
     } yield {
@@ -21,9 +26,8 @@ class WalletUnitTest extends BitcoinSWalletTest with WalletFixture {
   // eventually this test should NOT succeed, as BIP44
   // requires a limit to addresses being generated when
   // they haven't received any funds
-  it should "generate addresses" in {
+  it should "generate addresses" in { wallet: UnlockedWalletApi =>
     for {
-      wallet <- walletF
       addr <- wallet.getNewAddress()
       otherAddr <- wallet.getNewAddress()
       allAddrs <- wallet.listAddresses()

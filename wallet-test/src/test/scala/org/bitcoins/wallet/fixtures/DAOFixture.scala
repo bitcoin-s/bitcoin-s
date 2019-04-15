@@ -9,7 +9,7 @@ import scala.language.reflectiveCalls
 import scala.concurrent.{Await, Future}
 
 private[fixtures] trait DAOFixture
-    extends AsyncFlatSpec
+    extends fixture.AsyncFlatSpec
     with BeforeAndAfterAll
     with BitcoinSWalletTest { this: Suite =>
   import DAOFixture.HasTable

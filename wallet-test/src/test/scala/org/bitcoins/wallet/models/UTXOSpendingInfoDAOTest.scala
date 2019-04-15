@@ -11,7 +11,7 @@ import org.bitcoins.wallet.util.{BitcoinSWalletTest, WalletTestUtil}
 class UTXOSpendingInfoDAOTest extends BitcoinSWalletTest with UtxoDAOFixture {
   behavior of "UTXOSpendingInfoDAO"
 
-  it should "insert a UTXO and read it" in {
+  it should "insert a UTXO and read it" in { utxoDAO =>
     val outpoint =
       TransactionOutPoint(WalletTestUtil.sampleTxid, WalletTestUtil.sampleVout)
     val output = TransactionOutput(Bitcoins.one, WalletTestUtil.sampleSPK)

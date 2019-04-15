@@ -6,7 +6,7 @@ import org.bitcoins.wallet.util.{BitcoinSWalletTest, WalletTestUtil}
 
 class AccountDAOTest extends BitcoinSWalletTest with AccountDAOFixture {
 
-  it should "insert and read an account into the database" in {
+  it should "insert and read an account into the database" in { accountDAO =>
     for {
       created <- {
         val account = WalletTestUtil.firstAccount
