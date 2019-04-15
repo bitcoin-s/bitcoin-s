@@ -1,6 +1,4 @@
-package org
-
-package bitcoins.testkit.fixtures
+package org.bitcoins.testkit.fixtures
 
 import org.scalatest.FutureOutcome
 
