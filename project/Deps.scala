@@ -202,6 +202,8 @@ object Deps {
   )
 
   val walletTest = List(
+    Test.logback,
+    Test.akkaTestkit,
     Test.ammonite
   )
 

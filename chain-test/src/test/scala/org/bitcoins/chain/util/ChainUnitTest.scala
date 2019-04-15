@@ -3,7 +3,6 @@ package org.bitcoins.chain.util
 import java.net.InetSocketAddress
 
 import akka.actor.ActorSystem
-import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.chain.blockchain.{Blockchain, ChainHandler}
 import org.bitcoins.chain.db.ChainDbManagement
 import org.bitcoins.chain.models.{
@@ -12,8 +11,8 @@ import org.bitcoins.chain.models.{
   BlockHeaderDbHelper
 }
 import org.bitcoins.core.protocol.blockchain.{
-  BlockHeader,
   Block,
+  BlockHeader,
   ChainParams,
   RegTestNetChainParams
 }
@@ -21,6 +20,7 @@ import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.db.{DbConfig, UnitTestDbConfig}
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.testkit.chain.ChainTestUtil
+import org.bitcoins.testkit.fixtures.BitcoinSFixture
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.zmq.ZMQSubscriber
 import org.scalatest._
@@ -28,12 +28,12 @@ import play.api.libs.json.{JsError, JsSuccess, Json}
 import scodec.bits.ByteVector
 
 import scala.annotation.tailrec
-import scala.concurrent.duration.DurationInt
-import scala.concurrent.{ExecutionContext, Future, Promise}
-import scala.util.{Failure, Success}
+import scala.concurrent.duration.{DurationInt, FiniteDuration}
+import scala.concurrent.{ExecutionContext, Future}
 
 trait ChainUnitTest
     extends fixture.AsyncFlatSpec
+    with BitcoinSFixture
     with MustMatchers
     with BitcoinSLogger
     with BeforeAndAfter
@@ -41,7 +41,7 @@ trait ChainUnitTest
 
   implicit def system: ActorSystem
 
-  val timeout = 10.seconds
+  val timeout: FiniteDuration = 10.seconds
   def dbConfig: DbConfig = UnitTestDbConfig
 
   val genesisHeaderDb: BlockHeaderDb = ChainTestUtil.regTestGenesisHeaderDb
@@ -51,114 +51,13 @@ trait ChainUnitTest
     chainParams = ChainTestUtil.regTestChainParams,
     dbConfig = dbConfig)
 
-  lazy val blockchain =
+  lazy val blockchain: Blockchain =
     Blockchain.fromHeaders(Vector(genesisHeaderDb), blockHeaderDAO)
 
   private lazy val chainHandler: ChainHandler = ChainHandler(blockchain)
 
   implicit def ec: ExecutionContext =
     scala.concurrent.ExecutionContext.Implicits.global
-
-  /**
-    * Given functions to build and destroy a fixture, returns a OneArgAsyncTest => FutureOutcome
-    * (this version gives the destroy function access to the fixture)
-    *
-    * Example:
-    * {{{
-    *   makeDependentFixture(createBitcoindChainHandler, destroyBitcoindChainHandler)
-    * }}}
-    */
-  def makeDependentFixture[T](
-      build: () => Future[T],
-      destroy: T => Future[Any])(test: OneArgAsyncTest): FutureOutcome = {
-    val fixtureF = build()
-
-    val outcomeF = fixtureF.flatMap { fixture =>
-      test(fixture.asInstanceOf[FixtureParam]).toFuture
-    }
-
-    val destroyP = Promise[Unit]()
-    outcomeF.onComplete { _ =>
-      fixtureF.foreach { fixture =>
-        destroy(fixture).onComplete {
-          case Success(_)   => destroyP.success(())
-          case Failure(err) => destroyP.failure(err)
-        }
-      }
-    }
-
-    val outcomeAfterDestroyF = destroyP.future.flatMap(_ => outcomeF)
-
-    new FutureOutcome(outcomeAfterDestroyF)
-  }
-
-  /**
-    * Given functions to build and destroy a fixture, returns a OneArgAsyncTest => FutureOutcome
-    * (this version does not give the destroy function access to the fixture, see makeDependentFixture)
-    *
-    * Example:
-    * {{{
-    *   makeFixture(createBlockHeaderDAO, destroyBlockHeaderTable)
-    * }}}
-    */
-  def makeFixture[T](build: () => Future[T], destroy: () => Future[Any])(
-      test: OneArgAsyncTest): FutureOutcome = {
-    val outcomeF = build().flatMap { fixture =>
-      test(fixture.asInstanceOf[FixtureParam]).toFuture
-    }
-
-    val destroyP = Promise[Unit]()
-    outcomeF.onComplete { _ =>
-      destroy().onComplete {
-        case Success(_)   => destroyP.success(())
-        case Failure(err) => destroyP.failure(err)
-      }
-    }
-
-    val outcomeAfterDestroyF = destroyP.future.flatMap(_ => outcomeF)
-
-    new FutureOutcome(outcomeAfterDestroyF)
-  }
-
-  /**
-    * Given two fixture building methods (one dependent on the other), returns a single
-    * fixture building method where the fixture is the pair of the two.
-    *
-    * Example:
-    * {{{
-    *   composeBuilders(createBlockHeaderDAO, createChainHandlerFromBlockHeaderDAO)
-    * }}}
-    */
-  def composeBuilders[T, U](
-      builder: () => Future[T],
-      dependentBuilder: T => Future[U]): () => Future[(T, U)] = () => {
-    builder().flatMap { first =>
-      dependentBuilder(first).map { second =>
-        (first, second)
-      }
-    }
-  }
-
-  /**
-    * Given two fixture building methods (one dependent on the other) and a wrapper
-    * for their pair type, returns a single fixture building method where the fixture is wrapper.
-    *
-    * Example:
-    * {{{
-    *   composeBuildersAndWrap(
-    *       createBitcoind,
-    *       createChainHandlerWithBitcoindZmq,
-    *       BitcoindChainHandler.apply)
-    * }}}
-    */
-  def composeBuildersAndWrap[T, U, C](
-      builder: () => Future[T],
-      dependentBuilder: T => Future[U],
-      wrap: (T, U) => C): () => Future[C] = () => {
-    composeBuilders(builder, dependentBuilder)().map {
-      case (first, second) => wrap(first, second)
-    }
-  }
 
   def createBlockHeaderDAO(): Future[BlockHeaderDAO] = {
     val genesisHeaderF = setupHeaderTableWithGenesisHeader()
@@ -265,14 +164,6 @@ trait ChainUnitTest
     val genesisHeaderF = tableSetupF.flatMap(_ =>
       chainHandler.blockchain.blockHeaderDAO.create(genesisHeaderDb))
     genesisHeaderF
-  }
-
-  def createBitcoind()(
-      implicit system: ActorSystem): Future[BitcoindRpcClient] = {
-    val instance = BitcoindRpcTestUtil.instance()
-    val bitcoind = new BitcoindRpcClient(instance)
-
-    bitcoind.start().map(_ => bitcoind)
   }
 
   /** Represents a bitcoind instance paired with a chain handler via zmq */
