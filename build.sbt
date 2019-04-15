@@ -223,7 +223,7 @@ lazy val coreTest = project
 lazy val chainDbSettings = dbFlywaySettings("chaindb")
 lazy val chain = project
   .in(file("chain"))
-  .settings(commonSettings: _*)
+  .settings(commonProdSettings: _*)
   .settings(chainDbSettings: _*)
   .settings(
     name := "bitcoin-s-chain",
@@ -233,10 +233,9 @@ lazy val chain = project
 
 lazy val chainTest = project
   .in(file("chain-test"))
-  .settings(commonSettings: _*)
+  .settings(commonTestSettings: _*)
   .settings(chainDbSettings: _*)
   .settings(
-    skip in publish := true,
     name := "bitcoin-s-chain-test",
     libraryDependencies ++= Deps.chainTest,
     parallelExecution in Test := false
@@ -360,7 +359,7 @@ lazy val docs = project
 lazy val walletDbSettings = dbFlywaySettings("walletdb")
 lazy val wallet = project
   .in(file("wallet"))
-  .settings(commonSettings: _*)
+  .settings(commonProdSettings: _*)
   .settings(walletDbSettings: _*)
   .settings(
     name := "bitcoin-s-wallet",
@@ -371,7 +370,7 @@ lazy val wallet = project
 
 lazy val walletTest = project
   .in(file("wallet-test"))
-  .settings(commonSettings: _*)
+  .settings(commonTestSettings: _*)
   .settings(walletDbSettings: _*)
   .settings(
     name := "bitcoin-s-wallet-test",
