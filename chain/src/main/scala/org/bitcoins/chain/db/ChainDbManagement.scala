@@ -22,7 +22,8 @@ sealed abstract class ChainDbManagement extends DbManagement {
     createTable(chainTable, dbConfig, createIfNotExists)
   }
 
-  def dropHeaderTable(dbConfig: DbConfig): Future[Unit] = {
+  def dropHeaderTable(dbConfig: DbConfig)(
+      implicit ec: ExecutionContext): Future[Unit] = {
     dropTable(chainTable, dbConfig)
   }
 }

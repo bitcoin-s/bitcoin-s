@@ -31,6 +31,8 @@ object BIP39Seed extends Factory[BIP39Seed] {
   override def fromBytes(bytes: ByteVector): BIP39Seed =
     BIP39SeedImpl(bytes)
 
+  val EMPTY_PASSWORD = ""
+
   private val ITERATION_COUNT = 2048
   private val DERIVED_KEY_LENGTH = 512
 
@@ -39,7 +41,9 @@ object BIP39Seed extends Factory[BIP39Seed] {
     * seed from a mnemonic code. An optional password can be supplied.
     * @param password Defaults to the empty string
     */
-  def fromMnemonic(mnemonic: MnemonicCode, password: String = ""): BIP39Seed = {
+  def fromMnemonic(
+      mnemonic: MnemonicCode,
+      password: String = EMPTY_PASSWORD): BIP39Seed = {
     val salt = s"mnemonic$password"
 
     val words = mnemonic.words.mkString(" ")

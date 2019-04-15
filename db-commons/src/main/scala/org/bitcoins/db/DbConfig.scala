@@ -3,6 +3,12 @@ package org.bitcoins.db
 import java.io.File
 
 import com.typesafe.config.Config
+import org.bitcoins.core.protocol.blockchain.{
+  ChainParams,
+  MainNetChainParams,
+  RegTestNetChainParams,
+  TestNetChainParams
+}
 import org.bitcoins.core.util.BitcoinSLogger
 import slick.basic.DatabaseConfig
 import slick.jdbc.SQLiteProfile
@@ -69,6 +75,18 @@ sealed abstract class DbConfig extends BitcoinSLogger {
     } else {
       true
     }
+  }
+}
+
+object DbConfig {
+
+  /**
+    * Gets the correct DB config from the given chain params
+    */
+  def fromChainParams(chainParams: ChainParams): DbConfig = chainParams match {
+    case MainNetChainParams    => MainNetDbConfig
+    case TestNetChainParams    => TestNet3DbConfig
+    case RegTestNetChainParams => RegTestDbConfig
   }
 }
 
