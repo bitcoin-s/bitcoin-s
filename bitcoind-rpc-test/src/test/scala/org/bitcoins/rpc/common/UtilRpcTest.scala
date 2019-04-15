@@ -2,9 +2,9 @@ package org.bitcoins.rpc.common
 
 import org.bitcoins.core.crypto.ECPrivateKey
 import org.bitcoins.core.protocol.P2PKHAddress
+import org.bitcoins.core.script.ScriptType
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.client.common.RpcOpts.AddressType
-import org.bitcoins.rpc.jsonmodels.RpcScriptType
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.testkit.util.BitcoindRpcTest
 
@@ -37,7 +37,7 @@ class UtilRpcTest extends BitcoindRpcTest {
       decoded <- client.decodeScript(multisig.redeemScript)
     } yield {
       assert(decoded.reqSigs.contains(2))
-      assert(decoded.typeOfScript.contains(RpcScriptType.MULTISIG))
+      assert(decoded.typeOfScript.contains(ScriptType.MULTISIG))
       assert(decoded.addresses.get.contains(address))
     }
   }

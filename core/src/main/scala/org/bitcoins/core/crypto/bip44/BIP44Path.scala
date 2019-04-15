@@ -6,6 +6,13 @@ import scala.util.Try
 
 sealed abstract class BIP44Path extends BIP32Path {
 
+  /**
+    * Increments the address index and returns the
+    * new path that can be passed into a
+    * [[org.bitcoins.core.crypto.ExtKey ExtKey]]
+    */
+  def next: BIP44Path = BIP44Address(chain, account.index + 1).toPath
+
   def account: BIP44Account = address.account
 
   def coin: BIP44Coin = address.coin

@@ -34,4 +34,5 @@ object BIP44Address {
                      account = chain.account,
                      chain = chain,
                      index = index)
+
 }

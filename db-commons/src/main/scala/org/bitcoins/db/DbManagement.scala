@@ -1,10 +1,11 @@
 package org.bitcoins.db
 
+import org.bitcoins.core.util.BitcoinSLogger
 import slick.jdbc.SQLiteProfile.api._
 
 import scala.concurrent.{ExecutionContext, Future}
 
-abstract class DbManagement {
+abstract class DbManagement extends BitcoinSLogger {
   def allTables: List[TableQuery[_ <: Table[_]]]
 
   def createAll(dbConfig: DbConfig)(
@@ -31,9 +32,8 @@ abstract class DbManagement {
     result
   }
 
-  def dropTable(
-      table: TableQuery[_ <: Table[_]],
-      dbConfig: DbConfig): Future[Unit] = {
+  def dropTable(table: TableQuery[_ <: Table[_]], dbConfig: DbConfig)(
+      implicit ec: ExecutionContext): Future[Unit] = {
     val database = dbConfig.database
     val result = database.run(table.schema.dropIfExists)
     result

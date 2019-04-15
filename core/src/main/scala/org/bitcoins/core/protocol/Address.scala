@@ -17,6 +17,11 @@ sealed abstract class Address {
   /** The string representation of this address */
   def value: String
 
+  override def equals(obj: Any): Boolean = obj match {
+    case addr: Address => value == addr.value
+    case _: Any        => false
+  }
+
   /** Every address is derived from a [[org.bitcoins.core.crypto.HashDigest HashDigest]] in a
     * [[org.bitcoins.core.protocol.transaction.TransactionOutput TransactionOutput]] */
   def hash: HashDigest
