@@ -28,3 +28,6 @@ addSbtPlugin(
   "com.thoughtworks.sbt-api-mappings" % "sbt-api-mappings" % "latest.release")
 
 addSbtPlugin("com.typesafe.sbt" % "sbt-git" % "0.9.3")
+
+// bloop is a build server, enabling faster builds and more rapid dev feedback
+addSbtPlugin("ch.epfl.scala" % "sbt-bloop" % "1.2.5")

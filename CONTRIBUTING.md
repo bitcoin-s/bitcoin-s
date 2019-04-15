@@ -10,6 +10,62 @@ It's possible to communicate with other developers through a variety of communic
 - [Bitcoin-S Gitter](https://gitter.im/bitcoin-s-core/)
 - [#bitcoin-scala](https://webchat.freenode.net/?channels=bitcoin-scala) on IRC Freenode
 
+## Developer productivity
+
+### Bloop
+
+If you're tired of waiting around for sbt all day, there's a new,
+cool kid on the block. It is called [Bloop](https://scalacenter.github.io/bloop/),
+and it makes compilations in general faster, and in particular
+incremental, small compilation units (which greatly help editor
+performance). Bloop is a server that runs in the background of
+your computer, and keeps several "hot" JVMs running at all
+times. These JVMs serve compilation requests. Because the JVMs
+are running in the background you avoid the startup lag, and you
+also get code that's already [JIT compiled](https://en.wikipedia.org/wiki/Just-in-time_compilation)
+for you.
+
+The documentation on Bloops [site](https://scalacenter.github.io/bloop/) is good, but here is the highlights:
+
+1. Install Bloop by doing step 1 & 2 in the [official guide](https://scalacenter.github.io/bloop/setup#universal)
+2. Enable the Bloop background daemon
+   1. macOS:
+   ```bash
+   $ brew services start bloop
+   ```
+   2. Ubuntu:
+   ```bash
+   $ systemctl --user enable $HOME/.bloop/systemd/bloop.service
+   $ systemctl --user daemon-reload
+   $ systemctl --user start bloop
+   ```
+3. Enable shell completion for the Bloop CLI
+   1. Bash:
+   ```bash
+   $ echo '. $HOME/.bloop/bash/bloop' >> $HOME/.bash_profile
+   ```
+   2. Zsh:
+   ```bash
+   $ echo 'autoload -U compinit' >> $HOME/.zshrc
+   $ echo 'fpath=($HOME/.bloop/zsh $fpath)' >> $HOME/.bashrc
+   $ echo 'compinit' >> $HOME/.bashrc
+   ```
+   3. Fish:
+   ```bash
+   $ ln -s $HOME/.bloop/fish/bloop.fish ~/.config/fish/completions/bloop.fish
+   ```
+4. Generate configuration files
+   ```bash
+   $ sbt bloopInstall
+   ```
+5. Import Bitcoin-S into IntelliJ again, as a bsp (Build Server Protocol) project (instead of a sbt project). Make sure you're running on the most recent IntelliJ and Scala plugin. See [official docs](https://scalacenter.github.io/bloop/docs/ides/intellij) for details.
+6. _(Bonus step):_ Lightning fast recompilations on file save:
+   ```bash
+   $ bloop compile --project <name of module your're working on> --watch
+   ```
+
+Your editor should now be much faster and require less resources :tada:
+
 ## Documentation
 
 One of the goals of Bitcoin-S is having useful and well-formatted Scaladoc comments on classes,
