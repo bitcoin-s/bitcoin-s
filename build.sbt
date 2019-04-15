@@ -119,7 +119,7 @@ lazy val commonProdSettings = Seq(
   Test / bloopGenerate := None
 ) ++ commonSettings
 
-lazy val root = project
+lazy val bitcoins = project
   .in(file("."))
   .aggregate(
     secp256k1jni,
@@ -139,6 +139,7 @@ lazy val root = project
   .settings(libraryDependencies ++= Deps.root)
   .enablePlugins(ScalaUnidocPlugin, GhpagesPlugin, GitVersioning)
   .settings(
+    name := "bitcoin-s",
     ScalaUnidoc / siteSubdirName := "latest/api",
     addMappingsToSiteDir(ScalaUnidoc / packageDoc / mappings, ScalaUnidoc / siteSubdirName),
     gitRemoteRepo := "git@github.com:bitcoin-s/bitcoin-s-core.git"
@@ -272,7 +273,7 @@ lazy val doc = project
 // amm
 addCommandAlias("amm", "test:run")
 
-publishArtifact in root := false
+publishArtifact in bitcoins := false
 
 previewSite / aggregate := false
 previewAuto / aggregate := false
