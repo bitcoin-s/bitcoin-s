@@ -79,7 +79,7 @@ object ExtKeyPubVersion {
     chainParams match {
       case MainNetChainParams => ExtKeyVersion.MainNetPub
       case TestNetChainParams | RegTestNetChainParams =>
-        ExtKeyVersion.MainNetPub
+        ExtKeyVersion.TestNet3Pub
 
     }
 }

@@ -17,6 +17,9 @@ case class AesSalt(
     value: ByteVector
 )
 
+/**
+  * @throws IllegalArgumentException if passed an empty string
+  */
 case class AesPassword(value: String) {
   require(value.nonEmpty, "AES passwords cannot be empty!")
 }

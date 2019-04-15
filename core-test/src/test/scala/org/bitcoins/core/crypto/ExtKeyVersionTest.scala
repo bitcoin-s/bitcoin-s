@@ -27,7 +27,7 @@ class ExtKeyVersionTest extends BitcoinSUnitTest {
 
     assert(fromMain == MainNetPub)
     assert(fromTest == TestNet3Pub)
-    assert(fromTest == TestNet3Pub)
+    assert(fromReg == TestNet3Pub)
 
   }
 
