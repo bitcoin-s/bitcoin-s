@@ -59,6 +59,12 @@ trait ChainUnitTest
   implicit def ec: ExecutionContext =
     scala.concurrent.ExecutionContext.Implicits.global
 
+  /**
+    * If a test file uses ChainFixture as its FixtureParam, then
+    * using these tags will determine which fixture the test will get.
+    *
+    * Simply add taggedAs FixtureTag._ to your test before calling inFixtured.
+    */
   sealed abstract class FixtureTag(name: String) extends Tag(name)
 
   object FixtureTag {
@@ -89,8 +95,19 @@ trait ChainUnitTest
     }
   }
 
+  /**
+    * All untagged tests will be given this tag. Override this if you are using
+    * ChainFixture and the plurality of tests use some fixture other than Empty.
+    */
   def defaultTag: FixtureTag = FixtureTag.Empty
 
+  /**
+    * This ADT represents all Chain test fixtures. If you set this type to be your
+    * FixtureParam and override withFixture to be withChainFixutre, then simply tag
+    * tests to specify which fixture that test should receive and then use inFixutred
+    * which takes a PartialFunction[ChainFixture, Future[Assertion] ] (i.e. just
+    * specify the relevant case for your expected fixture)
+    */
   sealed trait ChainFixture
 
   object ChainFixture {
@@ -154,6 +171,16 @@ trait ChainUnitTest
     new FutureOutcome(fixtureTakeDownF)
   }
 
+  /**
+    * This is a wrapper for a tagged test statement that adds a def inFixtured
+    * to replace the use of in, which only accepts a FixtureParam => Future[Assertion],
+    * whereas inFixtured accepts a PartialFunction and fails the test if it is not
+    * defined on the input.
+    *
+    * This is nothing more than syntactic sugar.
+    *
+    * This functionality is added using language.implicitConversions below
+    */
   final class SugaryItVerbStringTaggedAs(
       itVerbStringTaggedAs: ItVerbStringTaggedAs) {
 
@@ -174,6 +201,16 @@ trait ChainUnitTest
     }
   }
 
+  /**
+    * This is a wrapper for a tagged test statement that adds a def inFixtured
+    * to replace the use of in, which only accepts a FixtureParam => Future[Assertion],
+    * whereas inFixtured accepts a PartialFunction and fails the test if it is not
+    * defined on the input.
+    *
+    * This is nothing more than syntactic sugar.
+    *
+    * This functionality is added using language.implicitConversions below
+    */
   final class SugaryItVerbString(itVerbString: ItVerbString) {
 
     def inFixtured(
