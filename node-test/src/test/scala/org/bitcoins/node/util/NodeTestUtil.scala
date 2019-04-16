@@ -13,6 +13,7 @@ import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.Client
 import org.bitcoins.node.networking.peer.PeerMessageReceiver
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
+import org.bitcoins.node.db.NodeUnitTestDbConfig
 
 /**
   * Created by chris on 6/2/16.
@@ -70,7 +71,7 @@ abstract class NodeTestUtil {
     )
   }
 
-  def dbConfig: DbConfig = UnitTestDbConfig
+  def dbConfig: DbConfig = NodeUnitTestDbConfig
 
   def client(peer: Peer, peerMsgReceiver: PeerMessageReceiver)(
       implicit ref: ActorRefFactory): Client = {

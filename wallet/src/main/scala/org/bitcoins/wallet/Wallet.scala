@@ -268,7 +268,6 @@ object Wallet extends CreateWalletApi with BitcoinSLogger {
     val actualDbConf = appConfig.dbConfig
     logger.info(s"Initializing wallet on chain $chainParams")
 
-
     val mnemonicT = Try(MnemonicCode.fromEntropy(entropy))
     val mnemonicE: Either[InitializeWalletError, MnemonicCode] =
       mnemonicT match {

@@ -15,6 +15,7 @@ import org.bitcoins.node.messages._
 import org.bitcoins.node.util.NodeTestUtil
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.testkit.async.TestAsyncUtil
+import org.bitcoins.node.db.NodeUnitTestDbConfig
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.scalatest._
 

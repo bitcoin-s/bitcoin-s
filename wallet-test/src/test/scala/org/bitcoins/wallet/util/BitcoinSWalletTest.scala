@@ -11,6 +11,7 @@ import org.bitcoins.testkit.fixtures.BitcoinSFixture
 import org.bitcoins.wallet.Wallet
 import org.bitcoins.wallet.api.{InitializeWalletError, InitializeWalletSuccess, UnlockedWalletApi}
 import org.bitcoins.wallet.config.WalletDbManagement
+
 import org.scalatest._
 
 import scala.concurrent.{ExecutionContext, Future}
