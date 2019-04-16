@@ -8,12 +8,8 @@ import org.bitcoins.core.protocol.blockchain.{
   RegTestNetChainParams,
   TestNetChainParams
 }
-import org.bitcoins.db.{
-  DbConfig,
-  MainNetDbConfig,
-  RegTestDbConfig,
-  TestNet3DbConfig
-}
+import org.bitcoins.db.DbConfig
+import org.bitcoins.node.db._
 import org.bitcoins.node.versions.ProtocolVersion70013
 import slick.jdbc.PostgresProfile.api._
 
@@ -35,9 +31,9 @@ sealed abstract class Constants {
 
   /** This is the configuration details needed to connect to our database */
   def dbConfig: DbConfig = networkParameters match {
-    case MainNet  => MainNetDbConfig
-    case TestNet3 => TestNet3DbConfig
-    case RegTest  => RegTestDbConfig
+    case MainNet  => NodeMainNetDbConfig
+    case TestNet3 => NodeTestNet3DbConfig
+    case RegTest  => NodeRegTestDbConfig
   }
 
   /** The [[ChainParams]] for the blockchain we are currently connected to */

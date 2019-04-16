@@ -23,6 +23,7 @@ import org.bitcoins.testkit.chain.ChainTestUtil
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.zmq.ZMQSubscriber
+import org.bitcoins.chain.db.ChainUnitTestDbConfig
 import org.scalatest._
 import play.api.libs.json.{JsError, JsSuccess, Json}
 import scodec.bits.ByteVector
@@ -42,7 +43,7 @@ trait ChainUnitTest
   implicit def system: ActorSystem
 
   val timeout: FiniteDuration = 10.seconds
-  def dbConfig: DbConfig = UnitTestDbConfig
+  def dbConfig: DbConfig = ChainUnitTestDbConfig
 
   val genesisHeaderDb: BlockHeaderDb = ChainTestUtil.regTestGenesisHeaderDb
   val chainParam: ChainParams = RegTestNetChainParams

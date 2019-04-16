@@ -14,6 +14,7 @@ import org.bitcoins.node.networking.peer.PeerMessageReceiverState.Preconnection
 import org.bitcoins.node.util.NodeTestUtil
 import org.bitcoins.testkit.async.TestAsyncUtil
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
+import org.bitcoins.node.db.NodeUnitTestDbConfig
 import org.scalatest._
 
 import scala.concurrent.Future
@@ -30,7 +31,7 @@ class ClientTest
     with BitcoinSLogger {
   implicit val system = ActorSystem(
     s"Client-Test-System-${System.currentTimeMillis()}")
-  val dbConfig = UnitTestDbConfig
+  val dbConfig = NodeUnitTestDbConfig
 
   implicit val np = RegTest
 

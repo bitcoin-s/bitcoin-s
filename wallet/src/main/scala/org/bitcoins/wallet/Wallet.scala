@@ -11,6 +11,12 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionOutPoint,
   TransactionOutput
 }
+import org.bitcoins.core.protocol.blockchain.MainNetChainParams
+import org.bitcoins.core.protocol.blockchain.TestNetChainParams
+import org.bitcoins.core.protocol.blockchain.RegTestNetChainParams
+import org.bitcoins.wallet.db.WalletMainNetDbConfig
+import org.bitcoins.wallet.db.WalletTestNet3DbConfig
+import org.bitcoins.wallet.db.WalletRegTestDbConfig
 import org.bitcoins.core.util.{BitcoinSLogger, EitherUtil}
 import org.bitcoins.core.wallet.builder.BitcoinTxBuilder
 import org.bitcoins.core.wallet.fee.FeeUnit
@@ -271,7 +277,11 @@ object Wallet extends CreateWalletApi with BitcoinSLogger {
     logger.info(s"Initializing wallet on chain $chainParams")
 
     val actualDbConf =
-      dbConfig.getOrElse(DbConfig.fromChainParams(chainParams))
+      dbConfig.getOrElse(chainParams match {
+        case MainNetChainParams    => WalletMainNetDbConfig
+        case TestNetChainParams    => WalletTestNet3DbConfig
+        case RegTestNetChainParams => WalletRegTestDbConfig
+      })
 
     val mnemonicT = Try(MnemonicCode.fromEntropy(entropy))
     val mnemonicE: Either[InitializeWalletError, MnemonicCode] =

@@ -2,7 +2,7 @@ package org.bitcoins.wallet.fixtures
 
 import scala.concurrent.Future
 
-import org.bitcoins.wallet.config.WalletDbManagement
+import org.bitcoins.wallet.db.WalletDbManagement
 import org.bitcoins.wallet.models.{AccountDAO, AddressDAO}
 import org.bitcoins.wallet.util.BitcoinSWalletTest
 import org.scalatest._

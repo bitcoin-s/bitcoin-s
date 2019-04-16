@@ -4,7 +4,7 @@ import org.bitcoins.chain.models.BlockHeaderTable
 import org.bitcoins.db.{DbConfig, DbManagement}
 import slick.lifted.TableQuery
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.Future
 
 /**
   * Responsible for creating and destroying database
@@ -17,13 +17,13 @@ sealed abstract class ChainDbManagement extends DbManagement {
 
   override val allTables = List(chainTable)
 
-  def createHeaderTable(dbConfig: DbConfig, createIfNotExists: Boolean = true)(
-      implicit ec: ExecutionContext): Future[Unit] = {
+  def createHeaderTable(
+      dbConfig: DbConfig,
+      createIfNotExists: Boolean = true): Future[Unit] = {
     createTable(chainTable, dbConfig, createIfNotExists)
   }
 
-  def dropHeaderTable(dbConfig: DbConfig)(
-      implicit ec: ExecutionContext): Future[Unit] = {
+  def dropHeaderTable(dbConfig: DbConfig): Future[Unit] = {
     dropTable(chainTable, dbConfig)
   }
 }

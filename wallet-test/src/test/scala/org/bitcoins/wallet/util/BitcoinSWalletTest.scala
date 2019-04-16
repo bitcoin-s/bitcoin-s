@@ -14,7 +14,8 @@ import org.bitcoins.wallet.api.{
   InitializeWalletSuccess,
   UnlockedWalletApi
 }
-import org.bitcoins.wallet.config.WalletDbManagement
+import org.bitcoins.wallet.db.WalletDbManagement
+import org.bitcoins.wallet.db.WalletUnitTestDbConfig
 import org.scalatest._
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -28,7 +29,8 @@ trait BitcoinSWalletTest
   implicit val actorSystem: ActorSystem = ActorSystem(getClass.getSimpleName)
   implicit val ec: ExecutionContext = actorSystem.dispatcher
 
-  protected lazy val dbConfig: UnitTestDbConfig.type = UnitTestDbConfig
+  protected lazy val dbConfig: WalletUnitTestDbConfig.type =
+    WalletUnitTestDbConfig
   protected val chainParams: ChainParams = WalletTestUtil.chainParams
 
   /** Timeout for async operations */

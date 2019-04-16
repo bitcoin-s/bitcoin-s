@@ -4,7 +4,7 @@ import akka.actor.ActorSystem
 import org.bitcoins.chain.models.BlockHeaderDAO
 import org.bitcoins.chain.util.ChainUnitTest
 import org.bitcoins.core.protocol.blockchain.MainNetChainParams
-import org.bitcoins.db.UnitTestDbConfig
+import org.bitcoins.chain.db.ChainUnitTestDbConfig
 import org.bitcoins.testkit.chain.ChainTestUtil
 import org.scalatest.FutureOutcome
 
@@ -20,7 +20,7 @@ class BitcoinPowTest extends ChainUnitTest {
 
   it must "NOT calculate a POW change when one is not needed" in { _ =>
     val chainParams = MainNetChainParams
-    val blockHeaderDAO = BlockHeaderDAO(chainParams, UnitTestDbConfig)
+    val blockHeaderDAO = BlockHeaderDAO(chainParams, ChainUnitTestDbConfig)
     val header1 = ChainTestUtil.ValidPOWChange.blockHeaderDb566494
     val header2 = ChainTestUtil.ValidPOWChange.blockHeaderDb566495
 
