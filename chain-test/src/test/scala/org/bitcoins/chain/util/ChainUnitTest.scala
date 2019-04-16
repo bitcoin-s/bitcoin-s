@@ -99,7 +99,7 @@ trait ChainUnitTest
     * All untagged tests will be given this tag. Override this if you are using
     * ChainFixture and the plurality of tests use some fixture other than Empty.
     */
-  def defaultTag: FixtureTag = FixtureTag.Empty
+  val defaultTag: FixtureTag = FixtureTag.Empty
 
   /**
     * This ADT represents all Chain test fixtures. If you set this type to be your
