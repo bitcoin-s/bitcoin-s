@@ -59,6 +59,187 @@ trait ChainUnitTest
   implicit def ec: ExecutionContext =
     scala.concurrent.ExecutionContext.Implicits.global
 
+  /**
+    * If a test file uses ChainFixture as its FixtureParam, then
+    * using these tags will determine which fixture the test will get.
+    *
+    * Simply add taggedAs FixtureTag._ to your test before calling inFixtured.
+    */
+  sealed abstract class FixtureTag(name: String) extends Tag(name)
+
+  object FixtureTag {
+    case object Empty extends FixtureTag("Empty")
+
+    case object GenisisBlockHeaderDAO
+        extends FixtureTag("GenisisBlockHeaderDAO")
+
+    case object PopulatedBlockHeaderDAO
+        extends FixtureTag("PopulatedBlockHeaderDAO")
+
+    case object GenisisChainHandler extends FixtureTag("GenisisChainHandler")
+
+    case object BitcoindZmqChainHandlerWithBlock
+        extends FixtureTag("BitcoindZmqChainHandlerWithBlock")
+
+    def from(tag: String): FixtureTag = {
+      tag match {
+        case Empty.name                   => Empty
+        case GenisisBlockHeaderDAO.name   => GenisisBlockHeaderDAO
+        case PopulatedBlockHeaderDAO.name => PopulatedBlockHeaderDAO
+        case GenisisChainHandler.name     => GenisisChainHandler
+        case BitcoindZmqChainHandlerWithBlock.name =>
+          BitcoindZmqChainHandlerWithBlock
+        case _: String =>
+          throw new IllegalArgumentException(s"$tag is not a valid tag")
+      }
+    }
+  }
+
+  /**
+    * All untagged tests will be given this tag. Override this if you are using
+    * ChainFixture and the plurality of tests use some fixture other than Empty.
+    */
+  val defaultTag: FixtureTag = FixtureTag.Empty
+
+  /**
+    * This ADT represents all Chain test fixtures. If you set this type to be your
+    * FixtureParam and override withFixture to be withChainFixutre, then simply tag
+    * tests to specify which fixture that test should receive and then use inFixutred
+    * which takes a PartialFunction[ChainFixture, Future[Assertion] ] (i.e. just
+    * specify the relevant case for your expected fixture)
+    */
+  sealed trait ChainFixture
+
+  object ChainFixture {
+    case object Empty extends ChainFixture
+
+    case class GenisisBlockHeaderDAO(dao: BlockHeaderDAO) extends ChainFixture
+
+    case class PopulatedBlockHeaderDAO(dao: BlockHeaderDAO) extends ChainFixture
+
+    case class GenisisChainHandler(chainHandler: ChainHandler)
+        extends ChainFixture
+
+    case class BitcoindZmqChainHandlerWithBlock(
+        bitcoindChainHandler: BitcoindChainHandler)
+        extends ChainFixture
+
+    def create(tag: FixtureTag): Future[ChainFixture] = {
+      tag match {
+        case FixtureTag.Empty => Future.successful(ChainFixture.Empty)
+        case FixtureTag.GenisisBlockHeaderDAO =>
+          createBlockHeaderDAO().map(GenisisBlockHeaderDAO.apply)
+        case FixtureTag.PopulatedBlockHeaderDAO =>
+          createPopulatedBlockHeaderDAO().map(PopulatedBlockHeaderDAO.apply)
+        case FixtureTag.GenisisChainHandler =>
+          createChainHandler().map(GenisisChainHandler.apply)
+        case FixtureTag.BitcoindZmqChainHandlerWithBlock =>
+          createBitcoindChainHandler().map(
+            BitcoindZmqChainHandlerWithBlock.apply)
+      }
+    }
+
+    def destroy(fixture: ChainFixture): Future[Any] = {
+      fixture match {
+        case Empty                      => Future.successful(())
+        case GenisisBlockHeaderDAO(_)   => destroyHeaderTable()
+        case PopulatedBlockHeaderDAO(_) => destroyHeaderTable()
+        case GenisisChainHandler(_)     => destroyHeaderTable()
+        case BitcoindZmqChainHandlerWithBlock(bitcoindHandler) =>
+          destroyBitcoindChainHandler(bitcoindHandler)
+      }
+    }
+  }
+
+  def withChainFixture(test: OneArgAsyncTest): FutureOutcome = {
+    val stringTag = test.tags.headOption.getOrElse(defaultTag.name)
+
+    val fixtureTag: FixtureTag = FixtureTag.from(stringTag)
+
+    val fixtureF: Future[ChainFixture] = ChainFixture.create(fixtureTag)
+
+    val outcomeF = fixtureF.flatMap(fixture =>
+      test(fixture.asInstanceOf[FixtureParam]).toFuture)
+
+    val fixtureTakeDownF = outcomeF.flatMap { outcome =>
+      val destroyedF =
+        fixtureF.flatMap(fixture => ChainFixture.destroy(fixture))
+
+      destroyedF.map(_ => outcome)
+    }
+
+    new FutureOutcome(fixtureTakeDownF)
+  }
+
+  /**
+    * This is a wrapper for a tagged test statement that adds a def inFixtured
+    * to replace the use of in, which only accepts a FixtureParam => Future[Assertion],
+    * whereas inFixtured accepts a PartialFunction and fails the test if it is not
+    * defined on the input.
+    *
+    * This is nothing more than syntactic sugar.
+    *
+    * This functionality is added using language.implicitConversions below
+    */
+  final class SugaryItVerbStringTaggedAs(
+      itVerbStringTaggedAs: ItVerbStringTaggedAs) {
+
+    def inFixtured(
+        partialTestFun: PartialFunction[
+          FixtureParam,
+          Future[compatible.Assertion]])(
+        implicit pos: org.scalactic.source.Position): Unit = {
+      val testFun: FixtureParam => Future[compatible.Assertion] = {
+        fixture: FixtureParam =>
+          partialTestFun.applyOrElse[FixtureParam, Future[Assertion]](fixture, {
+            _: FixtureParam =>
+              Future.successful(fail("Incorrect tag/fixture for this test"))
+          })
+      }
+
+      itVerbStringTaggedAs.in(testFun)(pos)
+    }
+  }
+
+  /**
+    * This is a wrapper for a tagged test statement that adds a def inFixtured
+    * to replace the use of in, which only accepts a FixtureParam => Future[Assertion],
+    * whereas inFixtured accepts a PartialFunction and fails the test if it is not
+    * defined on the input.
+    *
+    * This is nothing more than syntactic sugar.
+    *
+    * This functionality is added using language.implicitConversions below
+    */
+  final class SugaryItVerbString(itVerbString: ItVerbString) {
+
+    def inFixtured(
+        partialTestFun: PartialFunction[
+          FixtureParam,
+          Future[compatible.Assertion]])(
+        implicit pos: org.scalactic.source.Position): Unit = {
+      val testFun: FixtureParam => Future[compatible.Assertion] = {
+        fixture: FixtureParam =>
+          partialTestFun.applyOrElse[FixtureParam, Future[Assertion]](fixture, {
+            _: FixtureParam =>
+              Future.successful(fail("Incorrect tag/fixture for this test"))
+          })
+      }
+
+      itVerbString.in(testFun)(pos)
+    }
+  }
+
+  import language.implicitConversions
+
+  implicit def itVerbStringTaggedAsToSugaryItVerbStringTaggedAs(
+      itVerbStringTaggedAs: ItVerbStringTaggedAs): SugaryItVerbStringTaggedAs =
+    new SugaryItVerbStringTaggedAs(itVerbStringTaggedAs)
+
+  implicit def itVerbStringToSugaryItVerbString(
+      itVerbString: ItVerbString): SugaryItVerbString =
+    new SugaryItVerbString(itVerbString)
+
   def createBlockHeaderDAO(): Future[BlockHeaderDAO] = {
     val genesisHeaderF = setupHeaderTableWithGenesisHeader()
 
@@ -208,6 +389,12 @@ trait ChainUnitTest
     Thread.sleep(1000)
 
     genesisHeaderF.map(_ => (chainHandler, zmqSubscriber))
+  }
+
+  def createBitcoindChainHandler(): Future[BitcoindChainHandler] = {
+    composeBuildersAndWrap(createBitcoind,
+                           createChainHandlerWithBitcoindZmq,
+                           BitcoindChainHandler.apply)()
   }
 
   def destroyBitcoindChainHandler(
