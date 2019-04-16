@@ -1,5 +1,20 @@
 import java.io.File
 
+//import $ivy.`com.lihaoyi::scalatags:0.6.8`,
+val bitcoinsV = "86a553-1555374749418-SNAPSHOT"
+/*import $ivy.`com.typesafe.akka::akka-actor:2.5.21`
+
+interp.load.ivy("org.bitcoins" %% "bitcoin-s-core" % bitcoinsV)
+interp.load.ivy("org.bitcoins" %% "bitcoin-s-bitcoind-rpc" % bitcoinsV)
+interp.load.ivy("org.bitcoins" %% "bitcoin-s-testkit" % bitcoinsV)
+
+@*/
+
+/*import $ivy.`org.bitcoins::bitcoin-s-core:86a553-1555374749418-SNAPSHOT`
+
+import $ivy.`org.bitcoins::bitcoin-s-bitcoind-rpc:86a553-1555374749418-SNAPSHOT`
+import $ivy.`org.bitcoins::bitcoin-s-testkit:86a553-1555374749418-SNAPSHOT`*/
+
 import akka.actor.ActorSystem
 import com.typesafe.config.{Config, ConfigFactory}
 import org.bitcoins.core.crypto.MnemonicCode
