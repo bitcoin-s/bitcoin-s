@@ -14,18 +14,20 @@ object ChainFixtureTag {
   case object Empty extends ChainFixtureTag("Empty")
 
   case object GenisisBlockHeaderDAO
-    extends ChainFixtureTag("GenisisBlockHeaderDAO")
+      extends ChainFixtureTag("GenisisBlockHeaderDAO")
 
   case object PopulatedBlockHeaderDAO
-    extends ChainFixtureTag("PopulatedBlockHeaderDAO")
+      extends ChainFixtureTag("PopulatedBlockHeaderDAO")
 
   case object GenisisChainHandler extends ChainFixtureTag("GenisisChainHandler")
 
+  case object PopulatedChainHandler
+      extends ChainFixtureTag("PopulatedChainHandler")
+
   case object BitcoindZmqChainHandlerWithBlock
-    extends ChainFixtureTag("BitcoindZmqChainHandlerWithBlock")
+      extends ChainFixtureTag("BitcoindZmqChainHandlerWithBlock")
 
   val defaultTag: ChainFixtureTag = ChainFixtureTag.Empty
-
 
   def from(tag: String): ChainFixtureTag = {
     tag match {
@@ -33,6 +35,7 @@ object ChainFixtureTag {
       case GenisisBlockHeaderDAO.name   => GenisisBlockHeaderDAO
       case PopulatedBlockHeaderDAO.name => PopulatedBlockHeaderDAO
       case GenisisChainHandler.name     => GenisisChainHandler
+      case PopulatedChainHandler.name   => PopulatedChainHandler
       case BitcoindZmqChainHandlerWithBlock.name =>
         BitcoindZmqChainHandlerWithBlock
       case _: String =>

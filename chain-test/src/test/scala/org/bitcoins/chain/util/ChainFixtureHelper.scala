@@ -1,11 +1,17 @@
 package org.bitcoins.chain.util
 
-import org.bitcoins.chain.util.ChainFixture.{BitcoindZmqChainHandlerWithBlock, Empty, GenisisBlockHeaderDAO, GenisisChainHandler, PopulatedBlockHeaderDAO}
+import org.bitcoins.chain.util.ChainFixture.{
+  BitcoindZmqChainHandlerWithBlock,
+  Empty,
+  GenisisBlockHeaderDAO,
+  GenisisChainHandler,
+  PopulatedBlockHeaderDAO,
+  PopulatedChainHandler
+}
 
 import scala.concurrent.Future
 
-trait ChainFixtureHelper { this : ChainUnitTest =>
-
+trait ChainFixtureHelper { this: ChainUnitTest =>
 
   def createFixture(tag: ChainFixtureTag): Future[ChainFixture] = {
     tag match {
@@ -16,6 +22,9 @@ trait ChainFixtureHelper { this : ChainUnitTest =>
         createPopulatedBlockHeaderDAO().map(PopulatedBlockHeaderDAO.apply)
       case ChainFixtureTag.GenisisChainHandler =>
         createChainHandler().map(GenisisChainHandler.apply)
+      case ChainFixtureTag.PopulatedChainHandler =>
+        createPopulatedChainHandler().map(
+          ChainFixture.PopulatedChainHandler.apply)
       case ChainFixtureTag.BitcoindZmqChainHandlerWithBlock =>
         createBitcoindChainHandlerViaZmq().map(
           BitcoindZmqChainHandlerWithBlock.apply)
@@ -28,6 +37,7 @@ trait ChainFixtureHelper { this : ChainUnitTest =>
       case GenisisBlockHeaderDAO(_)   => destroyHeaderTable()
       case PopulatedBlockHeaderDAO(_) => destroyHeaderTable()
       case GenisisChainHandler(_)     => destroyHeaderTable()
+      case PopulatedChainHandler(_)   => destroyHeaderTable()
       case BitcoindZmqChainHandlerWithBlock(bitcoindHandler) =>
         destroyBitcoindChainHandlerViaZmq(bitcoindHandler)
     }

@@ -10,12 +10,16 @@ import org.bitcoins.db.NetworkDb
 import org.bitcoins.testkit.chain.ChainTestUtil
 import org.scalatest.FutureOutcome
 
+import scala.concurrent.Future
+
 class BitcoinPowTest extends ChainUnitTest {
 
   override type FixtureParam = ChainFixture
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome =
     withChainFixture(test)
+
+  override val networkDb: NetworkDb = NetworkDb.MainNetDbConfig
 
   override implicit val system: ActorSystem = ActorSystem("BitcoinPowTest")
 
@@ -29,9 +33,8 @@ class BitcoinPowTest extends ChainUnitTest {
       val header1 = ChainTestUtil.ValidPOWChange.blockHeaderDb566494
       val header2 = ChainTestUtil.ValidPOWChange.blockHeaderDb566495
 
-      val nextWorkF = Pow.getNetworkWorkRequired(header1,
-                                                 header2.blockHeader,
-                                                 blockHeaderDAO)
+      val nextWorkF =
+        Pow.getNetworkWorkRequired(header1, header2.blockHeader, blockHeaderDAO)
 
       nextWorkF.map(nextWork => assert(nextWork == header1.nBits))
   }
@@ -51,7 +54,26 @@ class BitcoinPowTest extends ChainUnitTest {
         assert(calculatedWork == expectedNextWork))
   }
 
-  it must "calculate a GetNextWorkRequired correctly" taggedAs ChainFixtureTag.PopulatedBlockHeaderDAO inFixtured {
-    case ChainFixture.PopulatedBlockHeaderDAO(blockHeaderDAO) => succeed
+  it must "GetNextWorkRequired correctly" taggedAs ChainFixtureTag.PopulatedBlockHeaderDAO inFixtured {
+    case ChainFixture.PopulatedBlockHeaderDAO(blockHeaderDAO) =>
+      val iterations = 4200
+
+      // We must start after the first POW change to avoid looking for a block we don't have
+      val assertionFs =
+        (FIRST_POW_CHANGE + 1 until FIRST_POW_CHANGE + 1 + iterations).map {
+          height =>
+            val blockF = blockHeaderDAO.getAtHeight(height).map(_.head)
+            val nextBlockF = blockHeaderDAO.getAtHeight(height + 1).map(_.head)
+
+            for {
+              currentTip <- blockF
+              nextTip <- nextBlockF
+              nextNBits <- Pow.getNetworkWorkRequired(currentTip,
+                                                      nextTip.blockHeader,
+                                                      blockHeaderDAO)
+            } yield assert(nextNBits == nextTip.nBits)
+        }
+
+      Future.sequence(assertionFs).map(_ => succeed)
   }
 }
