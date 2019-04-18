@@ -95,9 +95,6 @@ class ZMQSubscriber(
     //be able toe evaluate the while loop again. Moving forward with this for now.
     running = false
     logger.warn(s"Attempting to close subscriber")
-
-    subscriber.close()
-
     logger.warn(s"Terminating zmq context")
     context.term()
 
