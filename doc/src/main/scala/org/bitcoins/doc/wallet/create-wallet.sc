@@ -61,9 +61,6 @@ val bitcoind = new BitcoindRpcClient(instance = instance)
 //generate 101 blocks so we have money in our wallet
 val bitcoindF = bitcoind.start().map(_ => bitcoind)
 
-bitcoindF.onComplete { case t =>
-  logger.error(s"bitcoindF=${t}")
-}
 //create a native chain handler for bitcoin-s
 val blockHeaderDAO: BlockHeaderDAO = BlockHeaderDAO(chainParams = chainParams,dbConfig = dbConfig)
 val genesisHeader = BlockHeaderDbHelper.fromBlockHeader(
@@ -73,16 +70,8 @@ val blockHeaderTableF = {
   //drop regtest table if it exists
   val dropTableF = ChainDbManagement.dropHeaderTable(dbConfig)
 
-  dropTableF.onComplete {
-    case drop => logger.info(s"Drop header table result=${drop}")
-  }
   //recreate the table
   val createdTableF = dropTableF.flatMap(_ => ChainDbManagement.createHeaderTable(dbConfig))
-
-  createdTableF.onComplete { case t =>
-    logger.error(s"Attempt to create header table=${t}")
-
-  }
 
   createdTableF
 }
@@ -100,21 +89,26 @@ val handleBlock = { bytes: ByteVector =>
   resultF.onComplete(result => logger.info(s"Process header result=${result}"))
   ()
 }
-val zmqSub = new ZMQSubscriber(zmqBlockUri, None, None, None, Some(handleBlock))
-zmqSub.start()
-//takes awhile for zmq to start...
-Thread.sleep(5000)
+
+val zmqStartF = bitcoindF.map { _ =>
+  val zmqSub = new ZMQSubscriber(zmqBlockUri, None, None, None, Some(handleBlock))
+  zmqSub.start()
+  //takes awhile for zmq to start...
+  Thread.sleep(1000)
+}
+
 
 //now that we have bitcoind setup correctly and have zmq linked to
 //the bitcoin-s chain project, let's generate some blocks so
 //we have money to spend in our bitcoind wallet!
 //we need to generate 101 blocks to give us 50 btc to spend
-val genBlocksF = bitcoindF.flatMap(_.generate(101))
+val genBlocksF = zmqStartF.flatMap { _ =>
+  bitcoindF.flatMap(_.generate(101))
+}
 
 val bitcoinsLogF = genBlocksF.map { genBlocks =>
   Thread.sleep(5000)
   val countF = chainHandlerF.flatMap(_.getBlockCount)
-  countF.onComplete(count => logger.info(s"bitcoin-s block count=${count}"))
   genBlocks
 }
 val walletF = bitcoinsLogF.flatMap { _ =>
@@ -131,10 +125,9 @@ val addressF = walletF.flatMap(_.getNewAddress())
 //send money to our wallet with bitcoind
 
 //clean everything up
-genBlocksF.onComplete { case blocks =>
+addressF.onComplete { case _ =>
 
-  logger.info(s"generate blocks=${blocks.map(_.length)}")
-  Thread.sleep(15000)
+  Thread.sleep(5000)
   logger.info("Beginning clean up of create wallet script")
   val bitcoindStopF = {
     bitcoindF.flatMap { bitcoind =>
@@ -142,37 +135,18 @@ genBlocksF.onComplete { case blocks =>
       stopF
     }
   }
-
-  logger.debug("deleting datadir")
   datadir.delete()
-  logger.debug(s"Stopping zmq")
-  zmqSub.stop()
+  //zmqSub.stop()
   logger.debug("cleaning up chain, wallet, and system")
   val chainCleanupF = ChainDbManagement.dropAll(dbConfig)
   val walletCleanupF = WalletDbManagement.dropAll(dbConfig)
   val systemTermF = system.terminate()
 
   for {
-    _ <- {
-      bitcoindStopF.onFailure { case err => logger.error(err.getMessage) }
-      bitcoindStopF
-    }
-    _ <- {
-      chainCleanupF.onFailure { case err => logger.error(err.getMessage) }
-      chainCleanupF
-      }
-    _ <- {
-      walletCleanupF.onFailure { case err => logger.error(err.getMessage)
-
-      }
-      walletCleanupF
-    }
-    _ <- {
-      systemTermF.onFailure { case err => logger.error(err.getMessage)
-      }
-
-      systemTermF
-    }
+    _ <- bitcoindStopF
+    _ <- chainCleanupF
+    _ <- walletCleanupF
+    _ <- systemTermF
   } yield {
     logger.info(s"Done cleaning up")
   }

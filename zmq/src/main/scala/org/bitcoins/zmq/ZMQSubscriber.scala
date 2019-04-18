@@ -34,7 +34,7 @@ class ZMQSubscriber(
 
   private case object SubscriberRunnable extends Runnable {
     override def run(): Unit = {
-
+      logger.info(s"ZmqSubscriber connecting to uri=${uri}")
       val isConnected = subscriber.connect(uri)
 
       if (isConnected) {
@@ -97,7 +97,7 @@ class ZMQSubscriber(
     logger.warn(s"Attempting to close subscriber")
 
     subscriber.close()
-    
+
     logger.warn(s"Terminating zmq context")
     context.term()
 
