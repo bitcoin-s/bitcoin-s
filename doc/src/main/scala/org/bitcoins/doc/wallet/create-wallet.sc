@@ -1,30 +1,26 @@
 import java.io.File
 
-//import $ivy.`com.lihaoyi::scalatags:0.6.8`,
-val bitcoinsV = "86a553-1555374749418-SNAPSHOT"
-/*import $ivy.`com.typesafe.akka::akka-actor:2.5.21`
-
-interp.load.ivy("org.bitcoins" %% "bitcoin-s-core" % bitcoinsV)
-interp.load.ivy("org.bitcoins" %% "bitcoin-s-bitcoind-rpc" % bitcoinsV)
-interp.load.ivy("org.bitcoins" %% "bitcoin-s-testkit" % bitcoinsV)
-
-@*/
-
-/*import $ivy.`org.bitcoins::bitcoin-s-core:86a553-1555374749418-SNAPSHOT`
-
-import $ivy.`org.bitcoins::bitcoin-s-bitcoind-rpc:86a553-1555374749418-SNAPSHOT`
-import $ivy.`org.bitcoins::bitcoin-s-testkit:86a553-1555374749418-SNAPSHOT`*/
-
+import org.bitcoins.chain.blockchain.{Blockchain, ChainHandler}
+import org.bitcoins.chain.models.{BlockHeaderDAO, BlockHeaderDb, BlockHeaderDbHelper}
+import org.bitcoins.core.protocol.blockchain.{Block, RegTestNetChainParams}
+import org.bitcoins.db.RegTestDbConfig
+import org.bitcoins.wallet.Wallet
+import org.bitcoins.wallet.api.InitializeWalletSuccess
+import scodec.bits.ByteVector
 import akka.actor.ActorSystem
-import com.typesafe.config.{Config, ConfigFactory}
-import org.bitcoins.core.crypto.MnemonicCode
+import com.typesafe.config.ConfigFactory
+import org.bitcoins.chain.db.ChainDbManagement
+import org.bitcoins.core.util.BitcoinSLogger
+import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.client.v17.BitcoindV17RpcClient
 import org.bitcoins.rpc.config.BitcoindInstance
+import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
+import org.bitcoins.wallet.config.WalletDbManagement
+import org.bitcoins.zmq.ZMQSubscriber
+import org.slf4j.LoggerFactory
 
 import scala.collection.JavaConverters._
-import scala.concurrent.Await
-import scala.concurrent.duration.DurationInt
 /**
 * This is for example purposes only!
   * This shows how to peer a bitcoin-s wallet
@@ -39,67 +35,146 @@ import scala.concurrent.duration.DurationInt
   */
 
 
+val logger = LoggerFactory.getLogger("org.bitcoins.doc.wallet.CreateWallet")
 val time = System.currentTimeMillis()
 //boiler plate config
 implicit val system = ActorSystem(s"wallet-scala-sheet-${time}")
 import system.dispatcher
 
-//bitcoind config
-val username = "USER_NAME"
-val pass = "ENTER_RANDOM_PASSWORD_HERE"
-val rpcPort = 5345
-val zmqPort = 29000
+//network/db configuration
+val dbConfig = RegTestDbConfig
+val chainParams = RegTestNetChainParams
 
-val datadir = s"/tmp/bitcoin-${time}/bitcoin.conf"
-val datadirFile = new File(datadir)
-datadirFile.mkdirs()
-datadirFile.createNewFile()
+val datadir = new File(s"/tmp/bitcoin-${time}/")
+val bitcoinConf = new File(datadir.getAbsolutePath + "/bitcoin.conf")
+datadir.mkdirs()
+bitcoinConf.createNewFile()
 
-val configMap = Map(
-  "rpcuser" -> username,
-  "rpcpassword" -> pass,
-  "rpcport" -> rpcPort,
-  "daemon" -> "1",
-  "server" -> "1",
-  "debug" -> "1",
-  "regtest" -> "1",
-  "zmqpubhashtx" -> s"tcp://127.0.0.1:$zmqPort",
-  "zmqpubhashblock" -> s"tcp://127.0.0.1:$zmqPort",
-  "zmqpubrawtx" -> s"tcp://127.0.0.1:$zmqPort",
-  "zmqpubrawblock" -> s"tcp://127.0.0.1:$zmqPort",
-
-  //where bitcoind blocks etc is written to
-  "datadir" -> datadir
-).asJava
-
-
-val config = ConfigFactory.parseMap(configMap)
-
-//helper method to convert from typesafe config style
-//to the bitcoin.conf config style and writes to the bitcoin.conf
-BitcoindRpcTestUtil.writeConfigToFile(config)
+val config = BitcoindRpcTestUtil.standardConfig
+val _ = BitcoindRpcTestUtil.writeConfigToFile(config,datadir)
 
 //construct bitcoind
-val instance = BitcoindInstance.fromConfig(config = config)
-val bitcoind = new BitcoindV17RpcClient(instance = instance)
+val instance = BitcoindInstance.fromConfig(config = config, datadir)
+val bitcoind = new BitcoindRpcClient(instance = instance)
 
 //start bitcoind, this may take a little while
+//generate 101 blocks so we have money in our wallet
 val bitcoindF = bitcoind.start().map(_ => bitcoind)
-val blockCountF = bitcoindF.flatMap(_.getBlockCount)
-Await.result(blockCountF, 10.seconds)
-//print block count as sanity check
-blockCountF.onComplete(count => println(s"blockCount=${count}"))
 
-//let's create a bitcoin-s wallet
+bitcoindF.onComplete { case t =>
+  logger.error(s"bitcoindF=${t}")
+}
+//create a native chain handler for bitcoin-s
+val blockHeaderDAO: BlockHeaderDAO = BlockHeaderDAO(chainParams = chainParams,dbConfig = dbConfig)
+val genesisHeader = BlockHeaderDbHelper.fromBlockHeader(
+  height = 0,
+  bh = chainParams.genesisBlock.blockHeader)
+val blockHeaderTableF = {
+  //drop regtest table if it exists
+  val dropTableF = ChainDbManagement.dropHeaderTable(dbConfig)
 
-//first generate a mnemonic
-val entropy = MnemonicCode.getEntropy256Bits
-val mnemonic = MnemonicCode.fromEntropy(entropy = entropy)
+  dropTableF.onComplete {
+    case drop => logger.info(s"Drop header table result=${drop}")
+  }
+  //recreate the table
+  val createdTableF = dropTableF.flatMap(_ => ChainDbManagement.createHeaderTable(dbConfig))
 
+  createdTableF.onComplete { case t =>
+    logger.error(s"Attempt to create header table=${t}")
+
+  }
+
+  createdTableF
+}
+val createdGenHeaderF = blockHeaderTableF.flatMap(_ => blockHeaderDAO.create(genesisHeader))
+val chainF = createdGenHeaderF.map(h => Vector(h))
+val blockchainF = chainF.map(chain => Blockchain(chain,blockHeaderDAO))
+val chainHandlerF = blockchainF.map(blockchain => ChainHandler(blockchain))
+
+//we need a way to connect bitcoin-s to our running bitcoind, let's do this with ZMQ for now
+val zmqBlockUri = instance.zmqConfig.rawBlock.get
+val handleBlock = { bytes: ByteVector =>
+  val block = Block.fromBytes(bytes)
+  logger.info(s"Received block=${block.blockHeader.hashBE.hex}")
+  val resultF = chainHandlerF.flatMap(_.processHeader(block.blockHeader))
+  resultF.onComplete(result => logger.info(s"Process header result=${result}"))
+  ()
+}
+val zmqSub = new ZMQSubscriber(zmqBlockUri, None, None, None, Some(handleBlock))
+zmqSub.start()
+//takes awhile for zmq to start...
+Thread.sleep(5000)
+
+//now that we have bitcoind setup correctly and have zmq linked to
+//the bitcoin-s chain project, let's generate some blocks so
+//we have money to spend in our bitcoind wallet!
+//we need to generate 101 blocks to give us 50 btc to spend
+val genBlocksF = bitcoindF.flatMap(_.generate(101))
+
+val bitcoinsLogF = genBlocksF.map { genBlocks =>
+  Thread.sleep(5000)
+  val countF = chainHandlerF.flatMap(_.getBlockCount)
+  countF.onComplete(count => logger.info(s"bitcoin-s block count=${count}"))
+  genBlocks
+}
+val walletF = bitcoinsLogF.flatMap { _ =>
+  //create tables
+  val createTablesF = WalletDbManagement.createAll(dbConfig)
+  createTablesF.flatMap { _ =>
+    Wallet.initialize(chainParams, dbConfig)
+      .map(_.asInstanceOf[InitializeWalletSuccess].wallet)
+  }
+}
+
+val addressF = walletF.flatMap(_.getNewAddress())
+
+//send money to our wallet with bitcoind
 
 //clean everything up
-val stoppedBitcoindF = bitcoindF.flatMap(_.stop())
-val systemTermF = stoppedBitcoindF.flatMap { _ =>
-  datadirFile.delete()
-  system.terminate()
+genBlocksF.onComplete { case blocks =>
+
+  logger.info(s"generate blocks=${blocks.map(_.length)}")
+  Thread.sleep(15000)
+  logger.info("Beginning clean up of create wallet script")
+  val bitcoindStopF = {
+    bitcoindF.flatMap { bitcoind =>
+      val stopF = bitcoind.stop()
+      stopF
+    }
+  }
+
+  logger.debug("deleting datadir")
+  datadir.delete()
+  logger.debug(s"Stopping zmq")
+  zmqSub.stop()
+  logger.debug("cleaning up chain, wallet, and system")
+  val chainCleanupF = ChainDbManagement.dropAll(dbConfig)
+  val walletCleanupF = WalletDbManagement.dropAll(dbConfig)
+  val systemTermF = system.terminate()
+
+  for {
+    _ <- {
+      bitcoindStopF.onFailure { case err => logger.error(err.getMessage) }
+      bitcoindStopF
+    }
+    _ <- {
+      chainCleanupF.onFailure { case err => logger.error(err.getMessage) }
+      chainCleanupF
+      }
+    _ <- {
+      walletCleanupF.onFailure { case err => logger.error(err.getMessage)
+
+      }
+      walletCleanupF
+    }
+    _ <- {
+      systemTermF.onFailure { case err => logger.error(err.getMessage)
+      }
+
+      systemTermF
+    }
+  } yield {
+    logger.info(s"Done cleaning up")
+  }
+
 }

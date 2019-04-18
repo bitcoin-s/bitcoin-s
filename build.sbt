@@ -360,7 +360,8 @@ lazy val doc = project
     node,
     secp256k1jni,
     testkit,
-    wallet
+    wallet,
+    zmq
   )
 
 // Ammonite is invoked through running
