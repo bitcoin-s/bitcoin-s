@@ -3,17 +3,12 @@ package org.bitcoins.node.networking.peer
 import akka.actor.ActorRefFactory
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.util.BitcoinSLogger
-import org.bitcoins.db.DbConfig
+import org.bitcoins.db.{AppConfig, DbConfig}
 import org.bitcoins.node.NetworkMessage
 import org.bitcoins.node.messages._
 import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.Client
-import org.bitcoins.node.networking.peer.PeerMessageReceiverState.{
-  Disconnected,
-  Initializing,
-  Normal,
-  Preconnection
-}
+import org.bitcoins.node.networking.peer.PeerMessageReceiverState.{Disconnected, Initializing, Normal, Preconnection}
 
 import scala.util.{Failure, Success, Try}
 
@@ -24,9 +19,8 @@ import scala.util.{Failure, Success, Try}
   * operations. This is the entry point for handling all received
   * [[NetworkMessage]]
   */
-class PeerMessageReceiver(state: PeerMessageReceiverState, dbConfig: DbConfig)(
-    implicit ref: ActorRefFactory,
-    np: NetworkParameters)
+class PeerMessageReceiver(state: PeerMessageReceiverState, appConfig: AppConfig)(
+    implicit ref: ActorRefFactory)
     extends BitcoinSLogger {
 
   import ref.dispatcher
@@ -62,7 +56,7 @@ class PeerMessageReceiver(state: PeerMessageReceiverState, dbConfig: DbConfig)(
 
         logger.debug(s"new state ${internalState}")
         logger.debug(s"isConnected=${isConnected}")
-        val peerMsgSender = PeerMessageSender(client)
+        val peerMsgSender = PeerMessageSender(client, appConfig.network)
 
         peerMsgSender.sendVersionMessage()
 
@@ -109,7 +103,7 @@ class PeerMessageReceiver(state: PeerMessageReceiverState, dbConfig: DbConfig)(
       networkMsgRecv: PeerMessageReceiver.NetworkMessageReceived): Unit = {
 
     //create a way to send a response if we need too
-    val peerMsgSender = PeerMessageSender(networkMsgRecv.client)
+    val peerMsgSender = PeerMessageSender(networkMsgRecv.client,appConfig.network)
 
     networkMsgRecv.msg.payload match {
       case controlPayload: ControlPayload =>
@@ -131,7 +125,7 @@ class PeerMessageReceiver(state: PeerMessageReceiverState, dbConfig: DbConfig)(
   private def handleDataPayload(
       payload: DataPayload,
       sender: PeerMessageSender): Unit = {
-    val dataMsgHandler = new DataMessageHandler(np, dbConfig = dbConfig)
+    val dataMsgHandler = new DataMessageHandler(appConfig)
     //else it means we are receiving this data payload from a peer,
     //we need to handle it
     dataMsgHandler.handleDataPayload(payload, sender)
@@ -216,16 +210,14 @@ object PeerMessageReceiver {
   case class NetworkMessageReceived(msg: NetworkMessage, client: Client)
       extends PeerMessageReceiverMsg
 
-  def apply(state: PeerMessageReceiverState, dbConfig: DbConfig)(
-      implicit ref: ActorRefFactory,
-      np: NetworkParameters): PeerMessageReceiver = {
-    new PeerMessageReceiver(state, dbConfig)(ref, np)
+  def apply(state: PeerMessageReceiverState, appConfig: AppConfig)(
+      implicit ref: ActorRefFactory): PeerMessageReceiver = {
+    new PeerMessageReceiver(state, appConfig)(ref)
   }
 
-  def newReceiver(dbConfig: DbConfig)(
-      implicit ref: ActorRefFactory,
-      np: NetworkParameters): PeerMessageReceiver = {
+  def newReceiver(appConfig: AppConfig)(
+      implicit ref: ActorRefFactory): PeerMessageReceiver = {
     new PeerMessageReceiver(state = PeerMessageReceiverState.fresh(),
-                            dbConfig = dbConfig)(ref, np)
+      appConfig)(ref)
   }
 }

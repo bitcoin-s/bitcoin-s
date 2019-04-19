@@ -1,8 +1,7 @@
 package org.bitcoins.wallet.api
 
 import org.bitcoins.core.crypto.MnemonicCode
-import org.bitcoins.core.protocol.blockchain.ChainParams
-import org.bitcoins.db.DbConfig
+import org.bitcoins.db.AppConfig
 import scodec.bits.BitVector
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -26,59 +25,23 @@ trait CreateWalletApi {
 
   /**
     */
-  private def initializeInternal(
-      chainParams: ChainParams,
-      dbConfig: Option[DbConfig])(
+  private def initializeInternal(appConfig: AppConfig)(
       implicit executionContext: ExecutionContext): Future[
     InitializeWalletResult] =
     initializeWithEntropy(entropy = MnemonicCode.getEntropy256Bits,
-                          chainParams = chainParams,
-                          dbConfig = dbConfig)
+      appConfig)
 
   /**
     * $initialize
     */
-  final def initialize(chainParams: ChainParams)(
+  final def initialize(appConfig: AppConfig)(
       implicit executionContext: ExecutionContext): Future[
     InitializeWalletResult] =
-    initializeInternal(chainParams = chainParams, dbConfig = None)
-
-  /**
-    * $initialize
-    */
-  final def initialize(chainParams: ChainParams, dbConfig: DbConfig)(
-      implicit executionContext: ExecutionContext): Future[
-    InitializeWalletResult] =
-    initializeInternal(chainParams = chainParams, dbConfig = Some(dbConfig))
+    initializeInternal(appConfig)
 
   protected def initializeWithEntropy(
       entropy: BitVector,
-      chainParams: ChainParams,
-      dbConfig: Option[DbConfig])(
+      appConfig: AppConfig)(
       implicit executionContext: ExecutionContext): Future[
     InitializeWalletResult]
-
-  /**
-    * $initializeWithEnt
-    */
-  final def initializeWithEntropy(
-      entropy: BitVector,
-      chainParams: ChainParams,
-  )(implicit executionContext: ExecutionContext): Future[
-    InitializeWalletResult] =
-    initializeWithEntropy(entropy = entropy,
-                          chainParams = chainParams,
-                          dbConfig = None)
-
-  /**
-    * $initializeWithEnt
-    */
-  final def initializeWithEntropy(
-      entropy: BitVector,
-      chainParams: ChainParams,
-      dbConfig: DbConfig)(implicit executionContext: ExecutionContext): Future[
-    InitializeWalletResult] =
-    initializeWithEntropy(entropy = entropy,
-                          chainParams = chainParams,
-                          dbConfig = Some(dbConfig))
 }

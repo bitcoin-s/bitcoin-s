@@ -5,15 +5,11 @@ import akka.testkit.TestKit
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.protocol.blockchain.ChainParams
 import org.bitcoins.core.util.BitcoinSLogger
-import org.bitcoins.db.UnitTestDbConfig
+import org.bitcoins.db.{AppConfig, UnitTestDbConfig}
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
 import org.bitcoins.wallet.Wallet
-import org.bitcoins.wallet.api.{
-  InitializeWalletError,
-  InitializeWalletSuccess,
-  UnlockedWalletApi
-}
+import org.bitcoins.wallet.api.{InitializeWalletError, InitializeWalletSuccess, UnlockedWalletApi}
 import org.bitcoins.wallet.config.WalletDbManagement
 import org.scalatest._
 
@@ -29,7 +25,8 @@ trait BitcoinSWalletTest
   implicit val ec: ExecutionContext = actorSystem.dispatcher
 
   protected lazy val dbConfig: UnitTestDbConfig.type = UnitTestDbConfig
-  protected val chainParams: ChainParams = WalletTestUtil.chainParams
+  protected lazy val chainParams: ChainParams = WalletTestUtil.chainParams
+  protected lazy val appConfig = AppConfig(dbConfig = dbConfig,chain = chainParams)
 
   /** Timeout for async operations */
   protected val timeout: FiniteDuration = 10.seconds
@@ -47,7 +44,7 @@ trait BitcoinSWalletTest
 
     for {
       _ <- WalletDbManagement.createAll(dbConfig)
-      wallet <- Wallet.initialize(chainParams, dbConfig).map {
+      wallet <- Wallet.initialize(appConfig).map {
         case InitializeWalletSuccess(wallet) => wallet
         case err: InitializeWalletError      => fail(err)
       }
