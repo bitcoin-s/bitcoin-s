@@ -6,16 +6,12 @@ import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.blockchain.ChainParams
 import org.bitcoins.core.protocol.script.ScriptPubKey
-import org.bitcoins.core.protocol.transaction.{
-  Transaction,
-  TransactionOutPoint,
-  TransactionOutput
-}
+import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint, TransactionOutput}
 import org.bitcoins.core.util.{BitcoinSLogger, EitherUtil}
 import org.bitcoins.core.wallet.builder.BitcoinTxBuilder
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.utxo.BitcoinUTXOSpendingInfo
-import org.bitcoins.db.DbConfig
+import org.bitcoins.db.{AppConfig, DbConfig}
 import org.bitcoins.wallet.api.AddUtxoError.{AddressNotFound, BadSPK}
 import org.bitcoins.wallet.api._
 import org.bitcoins.wallet.models._
@@ -264,14 +260,14 @@ object Wallet extends CreateWalletApi with BitcoinSLogger {
 
   // todo fix signature
   override protected def initializeWithEntropy(
-      entropy: BitVector,
-      chainParams: ChainParams,
-      dbConfig: Option[DbConfig])(
+      entropy: BitVector, appConfig: AppConfig)(
       implicit ec: ExecutionContext): Future[InitializeWalletResult] = {
+
+    val chainParams = appConfig.chain
+
+    val actualDbConf = appConfig.dbConfig
     logger.info(s"Initializing wallet on chain $chainParams")
 
-    val actualDbConf =
-      dbConfig.getOrElse(DbConfig.fromChainParams(chainParams))
 
     val mnemonicT = Try(MnemonicCode.fromEntropy(entropy))
     val mnemonicE: Either[InitializeWalletError, MnemonicCode] =

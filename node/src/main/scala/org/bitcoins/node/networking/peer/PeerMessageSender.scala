@@ -79,8 +79,7 @@ object PeerMessageSender {
       networkMsgs: Vector[(ActorRef, NetworkMessage)],
       peerHandler: ActorRef)
 
-  def apply(client: Client)(
-      implicit np: NetworkParameters): PeerMessageSender = {
-    PeerMessageSenderImpl(client)
+  def apply(client: Client, np: NetworkParameters): PeerMessageSender = {
+    PeerMessageSenderImpl(client)(np)
   }
 }
