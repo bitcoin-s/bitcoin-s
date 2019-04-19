@@ -6,8 +6,9 @@ import akka.actor.ActorSystem
 import akka.testkit.TestKit
 import akka.util.Timeout
 import org.bitcoins.core.config.{NetworkParameters, RegTest}
+import org.bitcoins.core.protocol.blockchain.RegTestNetChainParams
 import org.bitcoins.core.util.BitcoinSLogger
-import org.bitcoins.db.UnitTestDbConfig
+import org.bitcoins.db.{AppConfig, UnitTestDbConfig}
 import org.bitcoins.node.NetworkMessage
 import org.bitcoins.node.constant.Constants
 import org.bitcoins.node.messages._
@@ -37,12 +38,11 @@ class PeerMessageHandlerTest
 
   implicit val ec: ExecutionContext = system.dispatcher
 
-  implicit val np: NetworkParameters = RegTest
-
-  private val dbConfig = UnitTestDbConfig
+  private val appConfig = AppConfig(UnitTestDbConfig,RegTestNetChainParams)
+  implicit val np: NetworkParameters = appConfig.network
 
   private def buildPeerMessageReceiver(): PeerMessageReceiver = {
-    val receiver = PeerMessageReceiver.newReceiver(dbConfig)
+    val receiver = PeerMessageReceiver.newReceiver(appConfig)
     receiver
   }
 
@@ -53,7 +53,7 @@ class PeerMessageHandlerTest
       //that can handle the handshake
       val peerMsgSender: PeerMessageSender = {
         val client = NodeTestUtil.client(peer, peerMsgReceiver)
-        PeerMessageSender(client)
+        PeerMessageSender(client,np)
       }
 
       PeerHandler(peerMsgReceiver, peerMsgSender)

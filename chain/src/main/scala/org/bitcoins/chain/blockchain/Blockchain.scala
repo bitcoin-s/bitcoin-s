@@ -26,7 +26,7 @@ case class Blockchain(
   //TODO: Think about not exposing the headers to world, encapsulate them and
   //provide methods like `.map` and `.foreach` on this data structure.
 
-  def chainParams: ChainParams = blockHeaderDAO.chainParams
+  def chainParams: ChainParams = blockHeaderDAO.appConfig.chain
 
   def connectTip(header: BlockHeader)(
       implicit ec: ExecutionContext): Future[BlockchainUpdate] = {
@@ -35,8 +35,7 @@ case class Blockchain(
     val tipResultF =
       TipValidation.checkNewTip(newPotentialTip = header,
                                 currentTip = headers.head,
-                                blockHeaderDAO = blockHeaderDAO,
-                                chainParams = chainParams)
+                                blockHeaderDAO = blockHeaderDAO)
 
     tipResultF.map { tipResult =>
       tipResult match {
