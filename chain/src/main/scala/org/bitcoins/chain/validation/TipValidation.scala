@@ -1,13 +1,9 @@
 package org.bitcoins.chain.validation
 
-import org.bitcoins.chain.models.{
-  BlockHeaderDAO,
-  BlockHeaderDb,
-  BlockHeaderDbHelper
-}
+import org.bitcoins.chain.models.{BlockHeaderDAO, BlockHeaderDb, BlockHeaderDbHelper}
 import org.bitcoins.chain.pow.Pow
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.blockchain.{BlockHeader, ChainParams}
+import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.util.{BitcoinSLogger, NumberUtil}
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -29,8 +25,7 @@ sealed abstract class TipValidation extends BitcoinSLogger {
   def checkNewTip(
       newPotentialTip: BlockHeader,
       currentTip: BlockHeaderDb,
-      blockHeaderDAO: BlockHeaderDAO,
-      chainParams: ChainParams)(
+      blockHeaderDAO: BlockHeaderDAO)(
       implicit ec: ExecutionContext): Future[TipUpdateResult] = {
     val header = newPotentialTip
     logger.info(
@@ -38,8 +33,7 @@ sealed abstract class TipValidation extends BitcoinSLogger {
 
     val powCheckF = isBadPow(newPotentialTip = newPotentialTip,
                              currentTip = currentTip,
-                             blockHeaderDAO,
-                             chainParams)
+                             blockHeaderDAO)
 
     val connectTipResultF: Future[TipUpdateResult] = {
       powCheckF.map { expectedWork =>
@@ -101,13 +95,11 @@ sealed abstract class TipValidation extends BitcoinSLogger {
   private def isBadPow(
       newPotentialTip: BlockHeader,
       currentTip: BlockHeaderDb,
-      blockHeaderDAO: BlockHeaderDAO,
-      chainParams: ChainParams)(
+      blockHeaderDAO: BlockHeaderDAO)(
       implicit ec: ExecutionContext): Future[UInt32] = {
     Pow.getNetworkWorkRequired(tip = currentTip,
                                newPotentialTip = newPotentialTip,
-                               blockHeaderDAO = blockHeaderDAO,
-                               chainParams)
+                               blockHeaderDAO = blockHeaderDAO)
 
   }
 }

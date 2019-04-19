@@ -18,15 +18,14 @@ sealed abstract class Pow {
     * @see [[https://github.com/bitcoin/bitcoin/blob/35477e9e4e3f0f207ac6fa5764886b15bf9af8d0/src/pow.cpp#L13 Mimics bitcoin core implmentation]]
     * @param tip
     * @param newPotentialTip
-    * @param chainParams
     * @return
     */
   def getNetworkWorkRequired(
       tip: BlockHeaderDb,
       newPotentialTip: BlockHeader,
-      blockHeaderDAO: BlockHeaderDAO,
-      chainParams: ChainParams)(
+      blockHeaderDAO: BlockHeaderDAO)(
       implicit ec: ExecutionContext): Future[UInt32] = {
+    val chainParams = blockHeaderDAO.appConfig.chain
     val currentHeight = tip.height
 
     val powLimit = NumberUtil.targetCompression(bigInteger =

@@ -85,8 +85,7 @@ class TipValidationTest extends ChainUnitTest {
       currentTipDbDefault: BlockHeaderDb = currentTipDb): Future[Assertion] = {
     val checkTipF = TipValidation.checkNewTip(header,
                                               currentTipDbDefault,
-                                              blockHeaderDAO,
-                                              chainParam)
+                                              blockHeaderDAO)
 
     checkTipF.map(validationResult => assert(validationResult == expected))
   }

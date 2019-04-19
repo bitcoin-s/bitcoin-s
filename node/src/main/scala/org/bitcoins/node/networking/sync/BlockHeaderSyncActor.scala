@@ -7,15 +7,11 @@ import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.util.BitcoinSLogger
-import org.bitcoins.db.DbConfig
+import org.bitcoins.db.{AppConfig, DbConfig}
 import org.bitcoins.node.constant.Constants
 import org.bitcoins.node.messages.HeadersMessage
 import org.bitcoins.node.messages.data.GetHeadersMessage
-import org.bitcoins.node.networking.sync.BlockHeaderSyncActor.{
-  CheckHeaderResult,
-  GetHeaders,
-  StartAtLastSavedHeader
-}
+import org.bitcoins.node.networking.sync.BlockHeaderSyncActor.{CheckHeaderResult, GetHeaders, StartAtLastSavedHeader}
 import org.bitcoins.node.util.BitcoinSpvNodeUtil
 
 import scala.concurrent.{ExecutionContextExecutor, Future}
@@ -43,7 +39,8 @@ trait BlockHeaderSyncActor extends Actor with BitcoinSLogger {
 
   /** Helper function to provide a fresh instance of a [[BlockHeaderDAO]] actor */
   private val blockHeaderDAO: BlockHeaderDAO = {
-    BlockHeaderDAO(networkParameters.chainParams, dbConfig)(context.dispatcher)
+    val appConfig = AppConfig(dbConfig, networkParameters.chainParams)
+    BlockHeaderDAO(appConfig)(context.dispatcher)
   }
 
   def maxHeightF: Future[Long] = blockHeaderDAO.maxHeight
