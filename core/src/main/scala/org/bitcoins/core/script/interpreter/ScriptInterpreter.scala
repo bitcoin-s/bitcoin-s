@@ -779,8 +779,8 @@ sealed abstract class ScriptInterpreter {
     val totalSpentByOutputs: CurrencyUnit =
       outputValues.fold(CurrencyUnits.zero)(_ + _)
     val allOutputsValidMoneyRange = validMoneyRange(totalSpentByOutputs)
-    val prevOutputTxIds = transaction.inputs.map(_.previousOutput.txId)
-    val noDuplicateInputs = prevOutputTxIds.distinct.size == prevOutputTxIds.size
+    val prevOutputs = transaction.inputs.map(_.previousOutput)
+    val noDuplicateInputs = prevOutputs.distinct.size == prevOutputs.size
 
     val isValidScriptSigForCoinbaseTx = transaction.isCoinbase match {
       case true =>
