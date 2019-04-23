@@ -2,6 +2,7 @@ package org.bitcoins.wallet.util
 
 import akka.actor.ActorSystem
 import akka.testkit.TestKit
+import org.bitcoins.chain.db.ChainUnitTestDbConfig
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.protocol.blockchain.ChainParams
 import org.bitcoins.core.util.BitcoinSLogger
@@ -10,8 +11,8 @@ import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
 import org.bitcoins.wallet.Wallet
 import org.bitcoins.wallet.api.{InitializeWalletError, InitializeWalletSuccess, UnlockedWalletApi}
-import org.bitcoins.wallet.config.WalletDbManagement
-
+import org.bitcoins.wallet.config.WalletAppConfig
+import org.bitcoins.wallet.db.{WalletDbManagement, WalletUnitTestDbConfig}
 import org.scalatest._
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -25,9 +26,9 @@ trait BitcoinSWalletTest
   implicit val actorSystem: ActorSystem = ActorSystem(getClass.getSimpleName)
   implicit val ec: ExecutionContext = actorSystem.dispatcher
 
-  protected lazy val dbConfig: UnitTestDbConfig.type = UnitTestDbConfig
+  protected lazy val dbConfig = WalletUnitTestDbConfig
   protected lazy val chainParams: ChainParams = WalletTestUtil.chainParams
-  protected lazy val appConfig = AppConfig(dbConfig = dbConfig,chain = chainParams)
+  protected lazy val appConfig = WalletAppConfig(dbConfig = dbConfig,chain = chainParams)
 
   /** Timeout for async operations */
   protected val timeout: FiniteDuration = 10.seconds

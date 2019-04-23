@@ -9,6 +9,7 @@ import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.protocol.blockchain.RegTestNetChainParams
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.db.{AppConfig, UnitTestDbConfig}
+import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.peer.PeerMessageReceiver
 import org.bitcoins.node.networking.peer.PeerMessageReceiverState.Preconnection
@@ -36,7 +37,7 @@ class ClientTest
 
 
 
-  private val appConfig = AppConfig(dbConfig,RegTestNetChainParams)
+  private val appConfig = NodeAppConfig(dbConfig,RegTestNetChainParams)
 
   implicit val np = appConfig.network
 

@@ -2,7 +2,7 @@ package org.bitcoins.chain.db
 
 import org.bitcoins.db._
 
-trait ChainDbConfig { this: DbConfig =>
+trait ChainDbConfig extends DbConfig { this: NetworkDb =>
   override val configPath: String = "chain.conf"
 }
 

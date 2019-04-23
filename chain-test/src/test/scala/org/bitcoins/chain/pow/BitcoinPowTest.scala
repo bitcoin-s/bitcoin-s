@@ -1,6 +1,8 @@
 package org.bitcoins.chain.pow
 
 import akka.actor.ActorSystem
+import org.bitcoins.chain.config.ChainAppConfig
+import org.bitcoins.chain.db.ChainUnitTestDbConfig
 import org.bitcoins.chain.models.BlockHeaderDAO
 import org.bitcoins.chain.util.ChainUnitTest
 import org.bitcoins.core.protocol.blockchain.MainNetChainParams
@@ -22,7 +24,7 @@ class BitcoinPowTest extends ChainUnitTest {
   it must "NOT calculate a POW change when one is not needed" inFixtured {
     case ChainFixture.Empty =>
       val chainParams = MainNetChainParams
-      val appConfig = AppConfig(UnitTestDbConfig,chainParams)
+      val appConfig = ChainAppConfig(ChainUnitTestDbConfig,chainParams)
       val blockHeaderDAO = BlockHeaderDAO(appConfig)
       val header1 = ChainTestUtil.ValidPOWChange.blockHeaderDb566494
       val header2 = ChainTestUtil.ValidPOWChange.blockHeaderDb566495

@@ -2,8 +2,7 @@ package org.bitcoins.db
 
 import java.io.File
 
-import com.typesafe.config.{Config, ConfigBeanFactory, ConfigFactory}
-import javax.annotation.Resource
+import com.typesafe.config.{Config, ConfigFactory}
 import org.bitcoins.core.util.BitcoinSLogger
 import slick.basic.DatabaseConfig
 import slick.jdbc.SQLiteProfile
@@ -58,14 +57,7 @@ import slick.jdbc.SQLiteProfile.api._
   * The objects need to define the value `configPath`, this
   * is where we look for the configuration file.
   */
-sealed abstract class DbConfig extends BitcoinSLogger {
-
-  /** This is the key we look for in the config file
-    * to identify a database database. An example
-    * of this for the [[MainNetDbConfig]] is ''mainnetDb''
-    * @return
-    */
-  def configKey: String
+trait DbConfig extends BitcoinSLogger { this: NetworkDb =>
 
   /** The path we look for our configuration file in */
   def configPath: String
@@ -111,19 +103,34 @@ sealed abstract class DbConfig extends BitcoinSLogger {
   }
 }
 
-abstract class MainNetDbConfig extends DbConfig {
+
+/**
+  * The network that a database is affiliated with
+  */
+sealed trait NetworkDb  {
+  /** This is the key we look for in the config file
+    * to identify a database database. An example
+    * of this for the [[MainNetDbConfig]] is ''mainnetDb''
+    * @return
+    */
+  def configKey: String
+
+}
+
+
+trait MainNetDbConfig extends NetworkDb {
   override lazy val configKey: String = "mainnetDb"
 }
 
-abstract class TestNet3DbConfig extends DbConfig {
+trait TestNet3DbConfig extends NetworkDb {
   override lazy val configKey: String = "testnet3Db"
 }
 
-abstract class RegTestDbConfig extends DbConfig {
+trait RegTestDbConfig extends NetworkDb {
   override lazy val configKey: String = "regtestDb"
 }
 
-abstract class UnitTestDbConfig extends DbConfig {
+trait UnitTestDbConfig extends NetworkDb {
   override lazy val configKey: String = "unittestDb"
 
 }

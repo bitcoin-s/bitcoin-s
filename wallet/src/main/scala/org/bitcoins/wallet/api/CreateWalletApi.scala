@@ -1,7 +1,7 @@
 package org.bitcoins.wallet.api
 
 import org.bitcoins.core.crypto.MnemonicCode
-import org.bitcoins.db.AppConfig
+import org.bitcoins.wallet.config.WalletAppConfig
 import scodec.bits.BitVector
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -25,7 +25,7 @@ trait CreateWalletApi {
 
   /**
     */
-  private def initializeInternal(appConfig: AppConfig)(
+  private def initializeInternal(appConfig: WalletAppConfig)(
       implicit executionContext: ExecutionContext): Future[
     InitializeWalletResult] =
     initializeWithEntropy(entropy = MnemonicCode.getEntropy256Bits,
@@ -34,14 +34,14 @@ trait CreateWalletApi {
   /**
     * $initialize
     */
-  final def initialize(appConfig: AppConfig)(
+  final def initialize(appConfig: WalletAppConfig)(
       implicit executionContext: ExecutionContext): Future[
     InitializeWalletResult] =
     initializeInternal(appConfig)
 
   protected def initializeWithEntropy(
       entropy: BitVector,
-      appConfig: AppConfig)(
+      appConfig: WalletAppConfig)(
       implicit executionContext: ExecutionContext): Future[
     InitializeWalletResult]
 }
