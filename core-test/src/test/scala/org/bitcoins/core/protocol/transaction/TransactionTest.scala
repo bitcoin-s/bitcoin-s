@@ -294,6 +294,12 @@ class TransactionTest extends FlatSpec with MustMatchers {
     }
   }
 
+  it must "check transaction with two out point referencing the same tx with different indexes" in {
+    val hex = "0200000002924942b0b7c12ece0dc8100d74a1cd29acd6cfc60698bfc3f07d83890eec20b6000000006a47304402202831d3708867f9bfb4268690cbcf97a686ccec1f5a4334cf0256fd442a88d0b802206fa8fa5550df8bfcc9c31cc8b6aad035be68b767b67e2b823f844680a79349650121038991058ce7ef4b00194e8426e3630dffd32822f819c150938f26113ba751c9a100000000924942b0b7c12ece0dc8100d74a1cd29acd6cfc60698bfc3f07d83890eec20b6010000006a47304402202e4cf01174afb9f97b0ab8f24c64c796ae4b3bb91d1838099bf262e8842e6480022006399d769d6d4ba099c2d3188f62caa5b51f572e7c2775a9bc23495c020dd1090121038991058ce7ef4b00194e8426e3630dffd32822f819c150938f26113ba751c9a1000000000288130000000000001976a914cc1fe3e943bd91e0e263f08a93f0d2a5299a7e5e88ac32600000000000001976a914af84620f44464d1a404386485885d1cd9e5d396d88ac00000000"
+    val btx = BaseTransaction.fromHex(hex)
+    ScriptInterpreter.checkTransaction(btx) must be(true)
+  }
+
   private def findInput(
       tx: Transaction,
       outPoint: TransactionOutPoint): Option[(TransactionInput, Int)] = {
