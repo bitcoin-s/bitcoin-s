@@ -72,13 +72,13 @@ trait DbConfig extends BitcoinSLogger { this: NetworkDb =>
     //https://github.com/lightbend/config#debugging-your-configuration
     val dbConfig: DatabaseConfig[SQLiteProfile] = {
       val conf = ConfigFactory.load(configPath)
-      logger.info(s"conf: $conf")
+      logger.trace(s"conf: $conf")
       DatabaseConfig.forConfig(path = configKey, config = conf)
       // classLoader = getClass.getClassLoader)
     }
 
-    logger.info(s"class: ${getClass.getSimpleName}")
-    logger.info(s"Resolved DB config: ${dbConfig.config}")
+    logger.trace(s"class: ${getClass.getSimpleName}")
+    logger.trace(s"Resolved DB config: ${dbConfig.config}")
 
     createDbFileIfDNE(config = dbConfig.config)
 

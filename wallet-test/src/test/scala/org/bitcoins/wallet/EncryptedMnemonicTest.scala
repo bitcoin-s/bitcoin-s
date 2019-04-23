@@ -35,12 +35,10 @@ class EncryptedMnemonicTest extends BitcoinSUnitTest {
           case Success(e)         => e
           case Failure(exception) => fail(exception)
         }
-        logger.info(s"encrypted: $encrypted")
         val decrypted = encrypted.toMnemonic(password) match {
           case Success(clear) => clear
           case Failure(exc)   => fail(exc)
         }
-        logger.info(s"decrypted: $decrypted")
         assert(decrypted == code)
     }
   }
