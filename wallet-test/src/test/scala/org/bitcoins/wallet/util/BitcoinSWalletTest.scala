@@ -11,7 +11,7 @@ import org.bitcoins.testkit.fixtures.BitcoinSFixture
 import org.bitcoins.wallet.Wallet
 import org.bitcoins.wallet.api.{InitializeWalletError, InitializeWalletSuccess, UnlockedWalletApi}
 import org.bitcoins.wallet.config.WalletAppConfig
-import org.bitcoins.wallet.db.{WalletDbManagement, WalletUnitTestDbConfig}
+import org.bitcoins.wallet.db.{WalletDbConfig, WalletDbManagement}
 import org.scalatest._
 
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
@@ -25,7 +25,7 @@ trait BitcoinSWalletTest
   implicit val actorSystem: ActorSystem = ActorSystem(getClass.getSimpleName)
   implicit val ec: ExecutionContext = actorSystem.dispatcher
 
-  protected lazy val dbConfig = WalletUnitTestDbConfig(NetworkDb.UnitTestDbConfig)
+  protected lazy val dbConfig = WalletDbConfig.UnitTestDbConfig(NetworkDb.UnitTestDbConfig)
   protected lazy val chainParams: ChainParams = WalletTestUtil.chainParams
   protected lazy val appConfig = WalletAppConfig(dbConfig = dbConfig)
 

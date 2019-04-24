@@ -12,25 +12,29 @@ sealed trait NodeDbConfig extends DbConfig {
     * @return
     */
   def toChainDbConfig: ChainDbConfig = this match {
-    case NodeMainNetDbConfig => ChainMainNetDbConfig
-    case NodeTestNet3DbConfig => ChainTestNet3DbConfig
-    case NodeRegTestDbConfig => ChainRegTestDbConfig
-    case NodeUnitTestDbConfig(network) => ChainUnitTestDbConfig(network)
+    case NodeDbConfig.MainNetDbConfig => ChainDbConfig.MainNetDbConfig
+    case NodeDbConfig.TestNet3DbConfig => ChainDbConfig.TestNet3DbConfig
+    case NodeDbConfig.RegTestDbConfig => ChainDbConfig.RegTestDbConfig
+    case NodeDbConfig.UnitTestDbConfig(network) => ChainDbConfig.UnitTestDbConfig(network)
   }
 }
 
-object NodeMainNetDbConfig extends NodeDbConfig {
-  override val networkDb = NetworkDb.MainNetDbConfig
+object NodeDbConfig {
+  final case object MainNetDbConfig extends NodeDbConfig {
+    override val networkDb = NetworkDb.MainNetDbConfig
+  }
+
+  final case object TestNet3DbConfig extends NodeDbConfig {
+    override val networkDb = NetworkDb.TestNet3DbConfig
+  }
+
+  final case object RegTestDbConfig extends NodeDbConfig {
+    override val networkDb = NetworkDb.RegTestDbConfig
+  }
+
+  /** It is useful for unit tests to specify what network we want to test against */
+  case class UnitTestDbConfig(networkDb: NetworkDb) extends NodeDbConfig
+
 }
 
-object NodeTestNet3DbConfig extends NodeDbConfig {
-  override val networkDb = NetworkDb.TestNet3DbConfig
-}
 
-object NodeRegTestDbConfig extends NodeDbConfig {
-  override val networkDb = NetworkDb.RegTestDbConfig
-}
-
-
-/** It is useful for unit tests to specify what network we want to test against */
-case class NodeUnitTestDbConfig(networkDb: NetworkDb) extends NodeDbConfig

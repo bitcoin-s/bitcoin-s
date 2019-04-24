@@ -23,7 +23,7 @@ abstract class CRUD[T, PrimaryKeyType] extends BitcoinSLogger {
   def dbConfig: DbConfig
 
   /** Binding to the actual database itself, this is what is used to run querys */
-  def database: SafeDatabase[_] = SafeDatabase(dbConfig)
+  def database: SafeDatabase[DbConfig] = SafeDatabase(dbConfig)
 
   /**
     * create a record in the database

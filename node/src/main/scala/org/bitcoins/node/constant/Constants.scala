@@ -2,12 +2,7 @@ package org.bitcoins.node.constant
 
 import akka.actor.ActorSystem
 import org.bitcoins.core.config.{MainNet, NetworkParameters, RegTest, TestNet3}
-import org.bitcoins.core.protocol.blockchain.{
-  ChainParams,
-  MainNetChainParams,
-  RegTestNetChainParams,
-  TestNetChainParams
-}
+import org.bitcoins.core.protocol.blockchain.{ChainParams, MainNetChainParams, RegTestNetChainParams, TestNetChainParams}
 import org.bitcoins.db.DbConfig
 import org.bitcoins.node.db._
 import org.bitcoins.node.versions.ProtocolVersion70013
@@ -31,9 +26,9 @@ sealed abstract class Constants {
 
   /** This is the configuration details needed to connect to our database */
   def dbConfig: DbConfig = networkParameters match {
-    case MainNet  => NodeMainNetDbConfig
-    case TestNet3 => NodeTestNet3DbConfig
-    case RegTest  => NodeRegTestDbConfig
+    case MainNet  => NodeDbConfig.MainNetDbConfig
+    case TestNet3 => NodeDbConfig.TestNet3DbConfig
+    case RegTest  => NodeDbConfig.RegTestDbConfig
   }
 
   /** The [[ChainParams]] for the blockchain we are currently connected to */

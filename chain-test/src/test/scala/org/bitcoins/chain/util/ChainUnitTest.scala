@@ -5,7 +5,7 @@ import java.net.InetSocketAddress
 import akka.actor.ActorSystem
 import org.bitcoins.chain.blockchain.{Blockchain, ChainHandler}
 import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.chain.db.{ChainDbConfig, ChainDbManagement, ChainUnitTestDbConfig}
+import org.bitcoins.chain.db.{ChainDbConfig, ChainDbManagement}
 import org.bitcoins.chain.models.{BlockHeaderDAO, BlockHeaderDb, BlockHeaderDbHelper}
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, ChainParams, RegTestNetChainParams}
 import org.bitcoins.core.util.BitcoinSLogger
@@ -36,7 +36,7 @@ trait ChainUnitTest
   val timeout: FiniteDuration = 10.seconds
 
   def networkDb: NetworkDb = NetworkDb.UnitTestDbConfig
-  def dbConfig: ChainDbConfig = ChainUnitTestDbConfig(networkDb)
+  def dbConfig: ChainDbConfig = ChainDbConfig.UnitTestDbConfig(networkDb)
 
   val genesisHeaderDb: BlockHeaderDb = ChainTestUtil.regTestGenesisHeaderDb
   val chainParam: ChainParams = networkDb.chain
