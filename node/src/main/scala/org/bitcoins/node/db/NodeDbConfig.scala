@@ -1,9 +1,9 @@
 package org.bitcoins.node.db
 
-import org.bitcoins.chain.db.{ChainDbConfig, ChainMainNetDbConfig, ChainRegTestDbConfig, ChainTestNet3DbConfig, ChainUnitTestDbConfig}
+import org.bitcoins.chain.db._
 import org.bitcoins.db._
 
-sealed trait NodeDbConfig extends DbConfig { this: NetworkDb =>
+sealed trait NodeDbConfig extends DbConfig {
   override val configPath: String = "node.conf"
 
   /** Gives us the corresponding [[org.bitcoins.chain.db.ChainDbConfig ChainDbConfig]]
@@ -15,14 +15,22 @@ sealed trait NodeDbConfig extends DbConfig { this: NetworkDb =>
     case NodeMainNetDbConfig => ChainMainNetDbConfig
     case NodeTestNet3DbConfig => ChainTestNet3DbConfig
     case NodeRegTestDbConfig => ChainRegTestDbConfig
-    case NodeUnitTestDbConfig => ChainUnitTestDbConfig
+    case NodeUnitTestDbConfig(network) => ChainUnitTestDbConfig(network)
   }
 }
 
-object NodeMainNetDbConfig extends NodeDbConfig  with MainNetDbConfig
+object NodeMainNetDbConfig extends NodeDbConfig {
+  override val networkDb = NetworkDb.MainNetDbConfig
+}
 
-object NodeTestNet3DbConfig extends NodeDbConfig  with TestNet3DbConfig
+object NodeTestNet3DbConfig extends NodeDbConfig {
+  override val networkDb = NetworkDb.TestNet3DbConfig
+}
 
-object NodeRegTestDbConfig extends NodeDbConfig  with RegTestDbConfig
+object NodeRegTestDbConfig extends NodeDbConfig {
+  override val networkDb = NetworkDb.RegTestDbConfig
+}
 
-object NodeUnitTestDbConfig extends NodeDbConfig  with UnitTestDbConfig
+
+/** It is useful for unit tests to specify what network we want to test against */
+case class NodeUnitTestDbConfig(networkDb: NetworkDb) extends NodeDbConfig

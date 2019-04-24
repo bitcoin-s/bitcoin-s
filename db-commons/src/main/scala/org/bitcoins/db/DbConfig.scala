@@ -3,6 +3,8 @@ package org.bitcoins.db
 import java.io.File
 
 import com.typesafe.config.{Config, ConfigFactory}
+import org.bitcoins.core.config.NetworkParameters
+import org.bitcoins.core.protocol.blockchain.{ChainParams, MainNetChainParams, RegTestNetChainParams, TestNetChainParams}
 import org.bitcoins.core.util.BitcoinSLogger
 import slick.basic.DatabaseConfig
 import slick.jdbc.SQLiteProfile
@@ -57,7 +59,7 @@ import slick.jdbc.SQLiteProfile.api._
   * The objects need to define the value `configPath`, this
   * is where we look for the configuration file.
   */
-trait DbConfig extends BitcoinSLogger { this: NetworkDb =>
+trait DbConfig extends BitcoinSLogger {
 
   /** The path we look for our configuration file in */
   def configPath: String
@@ -73,7 +75,7 @@ trait DbConfig extends BitcoinSLogger { this: NetworkDb =>
     val dbConfig: DatabaseConfig[SQLiteProfile] = {
       val conf = ConfigFactory.load(configPath)
       logger.trace(s"conf: $conf")
-      DatabaseConfig.forConfig(path = configKey, config = conf)
+      DatabaseConfig.forConfig(path = networkDb.configKey, config = conf)
       // classLoader = getClass.getClassLoader)
     }
 
@@ -101,6 +103,9 @@ trait DbConfig extends BitcoinSLogger { this: NetworkDb =>
       true
     }
   }
+
+  /** The network associated with this db config */
+  def networkDb: NetworkDb
 }
 
 
@@ -110,27 +115,42 @@ trait DbConfig extends BitcoinSLogger { this: NetworkDb =>
 sealed trait NetworkDb  {
   /** This is the key we look for in the config file
     * to identify a database database. An example
-    * of this for the [[MainNetDbConfig]] is ''mainnetDb''
+    * of this for the [[NetworkDb.MainNetDbConfig]] is ''mainnetDb''
     * @return
     */
   def configKey: String
 
+  def chain: ChainParams
+
+  lazy val network: NetworkParameters = chain.network
+
+}
+
+object NetworkDb {
+  object MainNetDbConfig extends NetworkDb {
+    override lazy val configKey: String = "mainnetDb"
+
+    override lazy val chain: MainNetChainParams.type = MainNetChainParams
+  }
+
+  object TestNet3DbConfig extends NetworkDb {
+    override lazy val configKey: String = "testnet3Db"
+
+    override lazy val chain: TestNetChainParams.type = TestNetChainParams
+  }
+
+  object   RegTestDbConfig extends NetworkDb {
+    override lazy val configKey: String = "regtestDb"
+
+    override lazy val chain: RegTestNetChainParams.type = RegTestNetChainParams
+  }
+
+  object UnitTestDbConfig extends NetworkDb {
+    override lazy val configKey: String = "unittestDb"
+
+    override lazy val chain: RegTestNetChainParams.type = RegTestNetChainParams
+
+  }
 }
 
 
-trait MainNetDbConfig extends NetworkDb {
-  override lazy val configKey: String = "mainnetDb"
-}
-
-trait TestNet3DbConfig extends NetworkDb {
-  override lazy val configKey: String = "testnet3Db"
-}
-
-trait RegTestDbConfig extends NetworkDb {
-  override lazy val configKey: String = "regtestDb"
-}
-
-trait UnitTestDbConfig extends NetworkDb {
-  override lazy val configKey: String = "unittestDb"
-
-}

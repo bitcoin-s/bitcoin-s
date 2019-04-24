@@ -2,14 +2,21 @@ package org.bitcoins.chain.db
 
 import org.bitcoins.db._
 
-trait ChainDbConfig extends DbConfig { this: NetworkDb =>
+sealed trait ChainDbConfig extends DbConfig {
   override val configPath: String = "chain.conf"
 }
 
-object ChainMainNetDbConfig extends MainNetDbConfig with ChainDbConfig
+object ChainMainNetDbConfig extends ChainDbConfig {
+  override val networkDb = NetworkDb.MainNetDbConfig
+}
 
-object ChainTestNet3DbConfig extends TestNet3DbConfig with ChainDbConfig
+object ChainTestNet3DbConfig extends ChainDbConfig {
+  override val networkDb = NetworkDb.TestNet3DbConfig
+}
 
-object ChainRegTestDbConfig extends RegTestDbConfig with ChainDbConfig
+object ChainRegTestDbConfig extends ChainDbConfig  {
+  override val networkDb = NetworkDb.RegTestDbConfig
+}
 
-object ChainUnitTestDbConfig extends UnitTestDbConfig with ChainDbConfig
+/** It is useful for unit tests to specify what network we want to test against */
+case class ChainUnitTestDbConfig(networkDb: NetworkDb) extends ChainDbConfig

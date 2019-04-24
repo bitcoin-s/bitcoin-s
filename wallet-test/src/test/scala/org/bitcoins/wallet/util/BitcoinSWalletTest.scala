@@ -2,11 +2,10 @@ package org.bitcoins.wallet.util
 
 import akka.actor.ActorSystem
 import akka.testkit.TestKit
-import org.bitcoins.chain.db.ChainUnitTestDbConfig
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.protocol.blockchain.ChainParams
 import org.bitcoins.core.util.BitcoinSLogger
-import org.bitcoins.db.{AppConfig, UnitTestDbConfig}
+import org.bitcoins.db.NetworkDb
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
 import org.bitcoins.wallet.Wallet
@@ -15,8 +14,8 @@ import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.db.{WalletDbManagement, WalletUnitTestDbConfig}
 import org.scalatest._
 
-import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
+import scala.concurrent.{ExecutionContext, Future}
 
 trait BitcoinSWalletTest
     extends fixture.AsyncFlatSpec
@@ -26,9 +25,9 @@ trait BitcoinSWalletTest
   implicit val actorSystem: ActorSystem = ActorSystem(getClass.getSimpleName)
   implicit val ec: ExecutionContext = actorSystem.dispatcher
 
-  protected lazy val dbConfig = WalletUnitTestDbConfig
+  protected lazy val dbConfig = WalletUnitTestDbConfig(NetworkDb.UnitTestDbConfig)
   protected lazy val chainParams: ChainParams = WalletTestUtil.chainParams
-  protected lazy val appConfig = WalletAppConfig(dbConfig = dbConfig,chain = chainParams)
+  protected lazy val appConfig = WalletAppConfig(dbConfig = dbConfig)
 
   /** Timeout for async operations */
   protected val timeout: FiniteDuration = 10.seconds
