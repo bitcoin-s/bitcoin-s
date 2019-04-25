@@ -57,6 +57,7 @@ trait ChainUnitTest
     ChainHandler(blockchain)
   }
 
+
   implicit def ec: ExecutionContext =
     system.dispatcher
 

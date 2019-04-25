@@ -2,7 +2,7 @@ package org.bitcoins.chain.blockchain
 
 import org.bitcoins.chain.models.{BlockHeaderDAO, BlockHeaderDb}
 import org.bitcoins.chain.validation.{TipUpdateResult, TipValidation}
-import org.bitcoins.core.protocol.blockchain.{BlockHeader, ChainParams}
+import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.util.BitcoinSLogger
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -22,20 +22,35 @@ import scala.concurrent.{ExecutionContext, Future}
 case class Blockchain(
     headers: Vector[BlockHeaderDb],
     blockHeaderDAO: BlockHeaderDAO)
-    extends BitcoinSLogger {
-  //TODO: Think about not exposing the headers to world, encapsulate them and
-  //provide methods like `.map` and `.foreach` on this data structure.
+    extends BitcoinSLogger
 
-  def chainParams: ChainParams = blockHeaderDAO.appConfig.chain
+object Blockchain extends BitcoinSLogger {
 
-  def connectTip(header: BlockHeader)(
-      implicit ec: ExecutionContext): Future[BlockchainUpdate] = {
+  def fromHeaders(
+      headers: Vector[BlockHeaderDb],
+      blockHeaderDAO: BlockHeaderDAO): Blockchain = {
+    Blockchain(headers, blockHeaderDAO)
+  }
+
+  /**
+    * Attempts to connect the given block header with the given blockchain
+    * @param header
+    * @param blockchain
+    * @param ec
+    * @return
+    */
+  def connectTip(header: BlockHeader, blockchain: Blockchain)(
+    implicit ec: ExecutionContext): Future[BlockchainUpdate] = {
+    val headers = blockchain.headers
+    val blockHeaderDAO = blockchain.blockHeaderDAO
+
     logger.debug(
       s"Attempting to add new tip=${header.hashBE.hex} to chain with current tip=${headers.head.hashBE.hex}")
+
     val tipResultF =
       TipValidation.checkNewTip(newPotentialTip = header,
-                                currentTip = headers.head,
-                                blockHeaderDAO = blockHeaderDAO)
+        currentTip = headers.head,
+        blockHeaderDAO = blockHeaderDAO)
 
     tipResultF.map { tipResult =>
       tipResult match {
@@ -44,17 +59,8 @@ case class Blockchain(
             Blockchain.fromHeaders(headerDb +: headers, blockHeaderDAO)
           BlockchainUpdate.Successful(newChain, headerDb)
         case fail: TipUpdateResult.Failure =>
-          BlockchainUpdate.Failed(this, header, fail)
+          BlockchainUpdate.Failed(blockchain, header, fail)
       }
     }
-  }
-}
-
-object Blockchain {
-
-  def fromHeaders(
-      headers: Vector[BlockHeaderDb],
-      blockHeaderDAO: BlockHeaderDAO): Blockchain = {
-    Blockchain(headers, blockHeaderDAO)
   }
 }
