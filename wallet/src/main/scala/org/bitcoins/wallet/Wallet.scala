@@ -6,7 +6,11 @@ import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.script.ScriptPubKey
-import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint, TransactionOutput}
+import org.bitcoins.core.protocol.transaction.{
+  Transaction,
+  TransactionOutPoint,
+  TransactionOutput
+}
 import org.bitcoins.core.util.{BitcoinSLogger, EitherUtil}
 import org.bitcoins.core.wallet.builder.BitcoinTxBuilder
 import org.bitcoins.core.wallet.fee.FeeUnit
@@ -83,6 +87,7 @@ sealed abstract class Wallet extends UnlockedWalletApi with BitcoinSLogger {
       transaction: Transaction,
       vout: UInt32): Future[AddUtxoResult] = {
     import AddUtxoError._
+    import org.bitcoins.core.util.EitherUtil.EitherOps._
 
     logger.trace(
       s"Adding UTXO to wallet. TXID: ${transaction.txId.hex}, vout: ${vout.toInt}")
@@ -261,8 +266,10 @@ object Wallet extends CreateWalletApi with BitcoinSLogger {
 
   // todo fix signature
   override protected def initializeWithEntropy(
-      entropy: BitVector, appConfig: WalletAppConfig)(
+      entropy: BitVector,
+      appConfig: WalletAppConfig)(
       implicit ec: ExecutionContext): Future[InitializeWalletResult] = {
+    import org.bitcoins.core.util.EitherUtil.EitherOps._
 
     val chainParams = appConfig.chain
 
@@ -282,10 +289,16 @@ object Wallet extends CreateWalletApi with BitcoinSLogger {
 
     val encryptedMnemonicE: Either[InitializeWalletError, EncryptedMnemonic] =
       mnemonicE.flatMap { mnemonic =>
-        EncryptedMnemonicHelper
+        val encryptedT = EncryptedMnemonicHelper
           .encrypt(mnemonic, badPassphrase)
-          .toEither
-          .left
+
+        val encryptedE: Either[Throwable, EncryptedMnemonic] =
+          encryptedT match {
+            case Failure(exception) => Left(exception)
+            case Success(value)     => Right(value)
+          }
+
+        encryptedE.left
           .map { err =>
             logger.error(s"Encryption error when encrying mnemonic: $err")
             InitializeWalletError.EncryptionError(err)
