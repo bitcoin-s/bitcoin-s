@@ -13,6 +13,7 @@ import scodec.bits.ByteVector
 import scala.util.Try
 
 case class EncryptedMnemonic(value: AesEncryptedData) {
+  import org.bitcoins.core.util.EitherUtil.EitherOps._
 
   def toMnemonic(passphrase: AesPassword): Try[MnemonicCode] = {
     AesCrypt.decrypt(value, passphrase).toTry.map { decrypted =>
@@ -24,6 +25,7 @@ case class EncryptedMnemonic(value: AesEncryptedData) {
 }
 
 object EncryptedMnemonicHelper {
+  import org.bitcoins.core.util.EitherUtil.EitherOps._
 
   def encrypt(
       mnemonicCode: MnemonicCode,

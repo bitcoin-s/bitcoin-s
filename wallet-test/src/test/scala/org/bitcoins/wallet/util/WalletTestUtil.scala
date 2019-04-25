@@ -4,7 +4,7 @@ import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.crypto.{
   DoubleSha256Digest,
   ExtKeyPubVersion,
-  ExtPublicKey,
+  ExtPublicKey
 }
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.blockchain.{
