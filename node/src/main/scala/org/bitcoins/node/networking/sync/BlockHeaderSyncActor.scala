@@ -3,11 +3,10 @@ package org.bitcoins.node.networking.sync
 import akka.actor.{Actor, ActorRef, ActorRefFactory, PoisonPill, Props}
 import akka.event.LoggingReceive
 import org.bitcoins.chain.models.{BlockHeaderDAO, BlockHeaderDb}
-import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.util.BitcoinSLogger
-import org.bitcoins.db.{AppConfig, DbConfig}
+import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.constant.Constants
 import org.bitcoins.node.messages.HeadersMessage
 import org.bitcoins.node.messages.data.GetHeadersMessage
@@ -33,14 +32,11 @@ trait BlockHeaderSyncActor extends Actor with BitcoinSLogger {
     */
   private val maxHeaders: Int = 2000
 
-  def networkParameters: NetworkParameters
-
-  def dbConfig: DbConfig
+  def appConfig: NodeAppConfig
 
   /** Helper function to provide a fresh instance of a [[BlockHeaderDAO]] actor */
   private val blockHeaderDAO: BlockHeaderDAO = {
-    val appConfig = AppConfig(dbConfig, networkParameters.chainParams)
-    BlockHeaderDAO(appConfig)(context.dispatcher)
+    BlockHeaderDAO(appConfig = appConfig.chainAppConfig)(context.dispatcher)
   }
 
   def maxHeightF: Future[Long] = blockHeaderDAO.maxHeight
@@ -210,28 +206,24 @@ trait BlockHeaderSyncActor extends Actor with BitcoinSLogger {
 
 object BlockHeaderSyncActor extends BitcoinSLogger {
   private case class BlockHeaderSyncActorImpl(
-      dbConfig: DbConfig,
-      networkParameters: NetworkParameters,
+      appConfig: NodeAppConfig,
       peerMessageHandler: ActorRef)
       extends BlockHeaderSyncActor
 
   def apply(
       peerMessageHandler: ActorRef,
       context: ActorRefFactory,
-      dbConfig: DbConfig,
-      networkParameters: NetworkParameters): ActorRef = {
+      nodeAppConfig: NodeAppConfig): ActorRef = {
     context.actorOf(
-      props(peerMessageHandler, dbConfig, networkParameters),
+      props(peerMessageHandler, nodeAppConfig = nodeAppConfig),
       BitcoinSpvNodeUtil.createActorName(BlockHeaderSyncActor.getClass))
   }
 
   def props(
       peerMsgHandler: ActorRef,
-      dbConfig: DbConfig,
-      networkParameters: NetworkParameters): Props = {
+      nodeAppConfig: NodeAppConfig): Props = {
     Props(classOf[BlockHeaderSyncActorImpl],
-          dbConfig,
-          networkParameters,
+          nodeAppConfig,
           peerMsgHandler)
   }
 

@@ -1,4 +1,4 @@
-package org.bitcoins.wallet.config
+package org.bitcoins.wallet.db
 
 import org.bitcoins.db.DbManagement
 import org.bitcoins.wallet.models.{

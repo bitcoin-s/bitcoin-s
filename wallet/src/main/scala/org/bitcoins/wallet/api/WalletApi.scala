@@ -1,25 +1,15 @@
 package org.bitcoins.wallet.api
 
-import org.bitcoins.core.config.{BitcoinNetwork, MainNet, RegTest, TestNet3}
-import org.bitcoins.core.crypto.{
-  AesPassword,
-  BIP39Seed,
-  ExtKeyPrivVersion,
-  ExtPrivateKey,
-  MnemonicCode
-}
+import org.bitcoins.core.config.NetworkParameters
+import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
-import org.bitcoins.core.protocol.blockchain.{
-  ChainParams,
-  MainNetChainParams,
-  RegTestNetChainParams,
-  TestNetChainParams
-}
+import org.bitcoins.core.protocol.blockchain.ChainParams
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.wallet.fee.FeeUnit
-import org.bitcoins.db.DbConfig
+import org.bitcoins.wallet.config.WalletAppConfig
+import org.bitcoins.wallet.db.WalletDbConfig
 import org.bitcoins.wallet.models.{AccountDb, AddressDb, UTXOSpendingInfoDb}
 
 import scala.concurrent.Future
@@ -33,15 +23,13 @@ import scala.concurrent.Future
   */
 sealed trait WalletApi {
 
-  def dbConfig: DbConfig
+  def walletAppConfig: WalletAppConfig
 
-  def chainParams: ChainParams
+  def dbConfig: WalletDbConfig = walletAppConfig.dbConfig
 
-  def networkParameters: BitcoinNetwork = chainParams match {
-    case MainNetChainParams    => MainNet
-    case TestNetChainParams    => TestNet3
-    case RegTestNetChainParams => RegTest
-  }
+  def chainParams: ChainParams = walletAppConfig.chain
+
+  def networkParameters: NetworkParameters = walletAppConfig.network
 }
 
 /**

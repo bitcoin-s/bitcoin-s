@@ -1,14 +1,9 @@
 package org.bitcoins.node.networking
 
-import java.net.InetSocketAddress
-
 import akka.actor.ActorSystem
 import akka.io.Tcp
 import akka.testkit.{TestActorRef, TestKit, TestProbe}
-import org.bitcoins.core.config.RegTest
-import org.bitcoins.core.protocol.blockchain.RegTestNetChainParams
 import org.bitcoins.core.util.BitcoinSLogger
-import org.bitcoins.db.{AppConfig, UnitTestDbConfig}
 import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.peer.PeerMessageReceiver
 import org.bitcoins.node.networking.peer.PeerMessageReceiverState.Preconnection
@@ -31,11 +26,8 @@ class ClientTest
     with BitcoinSLogger {
   implicit val system = ActorSystem(
     s"Client-Test-System-${System.currentTimeMillis()}")
-  val dbConfig = UnitTestDbConfig
 
-
-
-  private val appConfig = AppConfig(dbConfig,RegTestNetChainParams)
+  private val appConfig = NodeTestUtil.nodeAppConfig
 
   implicit val np = appConfig.network
 

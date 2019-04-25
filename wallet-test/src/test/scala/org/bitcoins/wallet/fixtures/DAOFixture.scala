@@ -1,6 +1,6 @@
 package org.bitcoins.wallet.fixtures
 
-import org.bitcoins.wallet.config.WalletDbManagement
+import org.bitcoins.wallet.db.WalletDbManagement
 import org.bitcoins.wallet.util.BitcoinSWalletTest
 import org.scalatest._
 import slick.jdbc.SQLiteProfile.api._

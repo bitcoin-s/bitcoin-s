@@ -1,12 +1,13 @@
 package org.bitcoins.wallet.models
 
 import org.bitcoins.core.crypto.bip44.BIP44Coin
-import org.bitcoins.db.{CRUD, DbConfig, SlickUtil}
+import org.bitcoins.db.{CRUD, SlickUtil}
+import org.bitcoins.wallet.db.WalletDbConfig
 import slick.jdbc.SQLiteProfile.api._
 
 import scala.concurrent.{ExecutionContext, Future}
 
-case class AccountDAO(dbConfig: DbConfig)(
+case class AccountDAO(dbConfig: WalletDbConfig)(
     implicit executionContext: ExecutionContext)
     extends CRUD[AccountDb, (BIP44Coin, Int)] {
 

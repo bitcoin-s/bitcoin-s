@@ -1,7 +1,8 @@
 package org.bitcoins.chain.models
 
+import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.crypto.DoubleSha256DigestBE
-import org.bitcoins.db.{AppConfig, CRUD, DbConfig, SlickUtil}
+import org.bitcoins.db.{CRUD, DbConfig, SlickUtil}
 import slick.jdbc.SQLiteProfile
 import slick.jdbc.SQLiteProfile.api._
 
@@ -17,7 +18,7 @@ sealed abstract class BlockHeaderDAO
 
   import org.bitcoins.db.DbCommonsColumnMappers._
 
-  def appConfig: AppConfig
+  def appConfig: ChainAppConfig
 
   override def dbConfig: DbConfig = appConfig.dbConfig
 
@@ -118,10 +119,10 @@ sealed abstract class BlockHeaderDAO
 
 object BlockHeaderDAO {
   private case class BlockHeaderDAOImpl(
-      appConfig: AppConfig)(override implicit val ec: ExecutionContext)
+      appConfig: ChainAppConfig)(override implicit val ec: ExecutionContext)
       extends BlockHeaderDAO
 
-  def apply(appConfig: AppConfig)(
+  def apply(appConfig: ChainAppConfig)(
       implicit ec: ExecutionContext): BlockHeaderDAO = {
     BlockHeaderDAOImpl(appConfig)(ec)
   }

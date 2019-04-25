@@ -21,8 +21,7 @@ abstract class DbManagement extends BitcoinSLogger {
   def createTable(
       table: TableQuery[_ <: Table[_]],
       dbConfig: DbConfig,
-      createIfNotExists: Boolean = false)(
-      implicit ec: ExecutionContext): Future[Unit] = {
+      createIfNotExists: Boolean = false): Future[Unit] = {
     val database = dbConfig.database
     val result = if (createIfNotExists) {
       database.run(table.schema.createIfNotExists)
@@ -32,8 +31,9 @@ abstract class DbManagement extends BitcoinSLogger {
     result
   }
 
-  def dropTable(table: TableQuery[_ <: Table[_]], dbConfig: DbConfig)(
-      implicit ec: ExecutionContext): Future[Unit] = {
+  def dropTable(
+      table: TableQuery[_ <: Table[_]],
+      dbConfig: DbConfig): Future[Unit] = {
     val database = dbConfig.database
     val result = database.run(table.schema.dropIfExists)
     result

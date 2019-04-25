@@ -2,45 +2,67 @@ package org.bitcoins.db
 
 import java.io.File
 
-import com.typesafe.config.Config
-import org.bitcoins.core.protocol.blockchain.{
-  ChainParams,
-  MainNetChainParams,
-  RegTestNetChainParams,
-  TestNetChainParams
-}
+import com.typesafe.config.{Config, ConfigFactory}
+import org.bitcoins.core.config.NetworkParameters
+import org.bitcoins.core.protocol.blockchain.{ChainParams, MainNetChainParams, RegTestNetChainParams, TestNetChainParams}
 import org.bitcoins.core.util.BitcoinSLogger
 import slick.basic.DatabaseConfig
 import slick.jdbc.SQLiteProfile
 import slick.jdbc.SQLiteProfile.api._
 
 /**
-  * Created by chris on 9/11/16.
+  * This is meant to encapsulate all of our database configuration.
   *
-  * This is meant to encapsulate all of our database configuration related things
-  * There are currently 4 "network" databases that we have setup
-  * 1. mainnet - this stores things related to the [[org.bitcoins.core.protocol.blockchain.MainNetChainParams MainNet]] network
-  * 2. testnet3 - this stores things related to the [[org.bitcoins.core.config.TestNet3 testnet3]] network
-  * 3. regtest - this stores things related your local [[org.bitcoins.core.config.RegTest regtest]] network
-  * 4. unittest - this stores things related to unit tests. This is the database unit tests have
+  * For each sub-project that needs a DB (currently wallet, node
+  * and chain), there are 4 "network" databases. The following
+  * directories are created under `$HOME/.bitcoin-s`
   *
-  * An example of a project creating their own database configuration can be seen
-  * in the node project. This project defines a database name, a database username,
-  * and various other slick database configurations [[https://github.com/bitcoin-s/bitcoin-s-core/blob/016d45c672ec7ef15142516332d92dffd633960f/node/src/main/resources/application.conf#L33 here]]
+  * <ol>
+  *   <li>
+  *     `mainnet` - this stores things related to the
+  *     [[org.bitcoins.core.protocol.blockchain.MainNetChainParams MainNet]] network
+  *   </li>
+  *   <li>
+  *     `testnet3` - this stores things related to the
+  *     [[org.bitcoins.core.config.TestNet3 testnet3]] network
+  *   </li>
+  *   <li>
+  *     `regtest` - this stores things related your local
+  *     [[org.bitcoins.core.config.RegTest regtest]] network
+  *   </li>
+  *   <li>
+  *     `unittest` - this stores things related to unit tests. Unit tests are free to
+  *     create and destroy databases at will in this directory, so you should not
+  *     store anything there.
+  *   </li>
+  * </ol>
   *
-  * Each instance of [[DbConfig DbConfig]] has a [[configKey]] that indicates
-  * how you read the database configurations from on the classpath. For instance,
-  * the [[MainNetDbConfig]] has a [[configKey]] of ''mainnetDb''.
+  * In order to create a database configuraion for a new project,
+  * you must create a `.conf` file in the resource directory
+  * of your project. This file must define the following configuration
+  * settings:
   *
+  * {{{
+  *   specificDbSettings.dbName
+  *   specificDbSettings.user
+  * }}}
+  *
+  * You should include the following at the top of the file:
+  *
+  * {{{
+  *   include "db.conf"
+  * }}}
+  *
+  * You must then create objects for your config, similar to
+  * what's been done in
+  * [[org.bitcoins.chain.db.ChainDbConfig ChainDbConfig]].
+  * The objects need to define the value `configPath`, this
+  * is where we look for the configuration file.
   */
-sealed abstract class DbConfig extends BitcoinSLogger {
+trait DbConfig extends BitcoinSLogger {
 
-  /** This is the key we look for in the config file
-    * to identify a database database. An example
-    * of this for the [[MainNetDbConfig]] is ''mainnetDb''
-    * @return
-    */
-  def configKey: String
+  /** The path we look for our configuration file in */
+  def configPath: String
 
   /** The configuration details for connecting/using the database for our projects
     * that require datbase connections
@@ -51,9 +73,14 @@ sealed abstract class DbConfig extends BitcoinSLogger {
     //on the state of the default classLoader
     //https://github.com/lightbend/config#debugging-your-configuration
     val dbConfig: DatabaseConfig[SQLiteProfile] = {
-      DatabaseConfig.forConfig(path = configKey,
-                               classLoader = getClass().getClassLoader())
+      val conf = ConfigFactory.load(configPath)
+      logger.trace(s"conf: $conf")
+      DatabaseConfig.forConfig(path = networkDb.configKey, config = conf)
+      // classLoader = getClass.getClassLoader)
     }
+
+    logger.trace(s"class: ${getClass.getSimpleName}")
+    logger.trace(s"Resolved DB config: ${dbConfig.config}")
 
     createDbFileIfDNE(config = dbConfig.config)
 
@@ -76,41 +103,54 @@ sealed abstract class DbConfig extends BitcoinSLogger {
       true
     }
   }
+
+  /** The network associated with this db config */
+  def networkDb: NetworkDb
 }
 
-object DbConfig {
 
-  /**
-    * Gets the correct DB config from the given chain params
+/**
+  * The network that a database is affiliated with
+  */
+sealed trait NetworkDb  {
+  /** This is the key we look for in the config file
+    * to identify a database database. An example
+    * of this for the [[NetworkDb.MainNetDbConfig]] is ''mainnetDb''
+    * @return
     */
-  def fromChainParams(chainParams: ChainParams): DbConfig = chainParams match {
-    case MainNetChainParams    => MainNetDbConfig
-    case TestNetChainParams    => TestNet3DbConfig
-    case RegTestNetChainParams => RegTestDbConfig
+  def configKey: String
+
+  def chain: ChainParams
+
+  lazy val network: NetworkParameters = chain.network
+
+}
+
+object NetworkDb {
+  object MainNetDbConfig extends NetworkDb {
+    override lazy val configKey: String = "mainnetDb"
+
+    override lazy val chain: MainNetChainParams.type = MainNetChainParams
+  }
+
+  object TestNet3DbConfig extends NetworkDb {
+    override lazy val configKey: String = "testnet3Db"
+
+    override lazy val chain: TestNetChainParams.type = TestNetChainParams
+  }
+
+  object   RegTestDbConfig extends NetworkDb {
+    override lazy val configKey: String = "regtestDb"
+
+    override lazy val chain: RegTestNetChainParams.type = RegTestNetChainParams
+  }
+
+  object UnitTestDbConfig extends NetworkDb {
+    override lazy val configKey: String = "unittestDb"
+
+    override lazy val chain: RegTestNetChainParams.type = RegTestNetChainParams
+
   }
 }
 
-sealed abstract class MainNetDbConfig extends DbConfig {
-  override lazy val configKey: String = "mainnetDb"
-}
 
-object MainNetDbConfig extends MainNetDbConfig
-
-sealed abstract class TestNet3DbConfig extends DbConfig {
-  override lazy val configKey: String = "testnet3Db"
-}
-
-object TestNet3DbConfig extends TestNet3DbConfig
-
-sealed abstract class RegTestDbConfig extends DbConfig {
-  override lazy val configKey: String = "regtestDb"
-}
-
-object RegTestDbConfig extends RegTestDbConfig
-
-sealed abstract class UnitTestDbConfig extends DbConfig {
-  override lazy val configKey: String = "unittestDb"
-
-}
-
-object UnitTestDbConfig extends UnitTestDbConfig
