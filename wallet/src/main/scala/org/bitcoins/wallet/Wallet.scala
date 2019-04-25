@@ -1,18 +1,22 @@
 package org.bitcoins.wallet
+import org.bitcoins.core.config.BitcoinNetwork
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
-import org.bitcoins.core.protocol.blockchain.ChainParams
 import org.bitcoins.core.protocol.script.ScriptPubKey
-import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint, TransactionOutput}
+import org.bitcoins.core.protocol.transaction.{
+  Transaction,
+  TransactionOutPoint,
+  TransactionOutput
+}
 import org.bitcoins.core.util.{BitcoinSLogger, EitherUtil}
 import org.bitcoins.core.wallet.builder.BitcoinTxBuilder
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.utxo.BitcoinUTXOSpendingInfo
-import org.bitcoins.db.{AppConfig, DbConfig}
 import org.bitcoins.wallet.api.AddUtxoError.{AddressNotFound, BadSPK}
 import org.bitcoins.wallet.api._
+import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.models._
 import scodec.bits.BitVector
 
@@ -44,10 +48,6 @@ sealed abstract class Wallet extends UnlockedWalletApi with BitcoinSLogger {
     }
     HDCoin(HDPurposes.SegWit, coinType)
   }
-
-  def dbConfig: DbConfig
-
-  def chainParams: ChainParams
 
   /**
     * @inheritdoc
@@ -218,11 +218,16 @@ sealed abstract class Wallet extends UnlockedWalletApi with BitcoinSLogger {
         val utxos: List[BitcoinUTXOSpendingInfo] =
           List(walletUtxos.find(_.value >= amount).get.toUTXOSpendingInfo(this))
 
-        BitcoinTxBuilder(destinations,
-                         utxos,
-                         feeRate,
-                         changeSPK = change.scriptPubKey,
-                         networkParameters)
+        val b = networkParameters match {
+          case b: BitcoinNetwork =>
+            BitcoinTxBuilder(destinations = destinations,
+                             utxos = utxos,
+                             feeRate = feeRate,
+                             changeSPK = change.scriptPubKey,
+                             network = b)
+        }
+
+        b
       }
       signed <- txBuilder.sign
       /* todo: add change output to UTXO DB
@@ -259,33 +264,29 @@ object Wallet extends CreateWalletApi with BitcoinSLogger {
 
   private case class WalletImpl(
       mnemonicCode: MnemonicCode,
-      dbConfig: DbConfig,
-      chainParams: ChainParams)(implicit val ec: ExecutionContext)
+      walletAppConfig: WalletAppConfig)(implicit val ec: ExecutionContext)
       extends Wallet {
 
     // todo: until we've figured out a better schem
     override val passphrase: AesPassword = Wallet.badPassphrase
   }
 
-  def apply(
-      mnemonicCode: MnemonicCode,
-      dbConfig: DbConfig,
-      chainParams: ChainParams)(implicit ec: ExecutionContext): Wallet =
-    WalletImpl(mnemonicCode, dbConfig, chainParams)(ec)
+  def apply(mnemonicCode: MnemonicCode, walletAppConfig: WalletAppConfig)(
+      implicit ec: ExecutionContext): Wallet =
+    WalletImpl(mnemonicCode, walletAppConfig)(ec)
 
   // todo figure out how to handle password part of wallet
   val badPassphrase = AesPassword("changeMe")
 
   // todo fix signature
   override protected def initializeWithEntropy(
-      entropy: BitVector, appConfig: AppConfig)(
+      entropy: BitVector,
+      appConfig: WalletAppConfig)(
       implicit ec: ExecutionContext): Future[InitializeWalletResult] = {
 
     val chainParams = appConfig.chain
 
-    val actualDbConf = appConfig.dbConfig
     logger.info(s"Initializing wallet on chain $chainParams")
-
 
     val mnemonicT = Try(MnemonicCode.fromEntropy(entropy))
     val mnemonicE: Either[InitializeWalletError, MnemonicCode] =
@@ -316,7 +317,7 @@ object Wallet extends CreateWalletApi with BitcoinSLogger {
         mnemonic <- mnemonicE
         encrypted <- encryptedMnemonicE
       } yield {
-        val wallet = WalletImpl(mnemonic, actualDbConf, chainParams)
+        val wallet = WalletImpl(mnemonic, appConfig)
         val account = HDAccount(HDCoin(hdPurpose, ???), 0)
         val xpriv = wallet.xpriv
 

@@ -5,10 +5,8 @@ import java.net.InetSocketAddress
 import akka.actor.ActorSystem
 import akka.testkit.TestKit
 import akka.util.Timeout
-import org.bitcoins.core.config.{NetworkParameters, RegTest}
-import org.bitcoins.core.protocol.blockchain.RegTestNetChainParams
+import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.util.BitcoinSLogger
-import org.bitcoins.db.{AppConfig, UnitTestDbConfig}
 import org.bitcoins.node.NetworkMessage
 import org.bitcoins.node.constant.Constants
 import org.bitcoins.node.messages._
@@ -38,7 +36,7 @@ class PeerMessageHandlerTest
 
   implicit val ec: ExecutionContext = system.dispatcher
 
-  private val appConfig = AppConfig(UnitTestDbConfig,RegTestNetChainParams)
+  private val appConfig = NodeTestUtil.nodeAppConfig
   implicit val np: NetworkParameters = appConfig.network
 
   private def buildPeerMessageReceiver(): PeerMessageReceiver = {

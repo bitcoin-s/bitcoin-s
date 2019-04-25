@@ -23,7 +23,7 @@ abstract class CRUD[T, PrimaryKeyType] extends BitcoinSLogger {
   def dbConfig: DbConfig
 
   /** Binding to the actual database itself, this is what is used to run querys */
-  def database: SafeDatabase = SafeDatabase(dbConfig)
+  def database: SafeDatabase[DbConfig] = SafeDatabase(dbConfig)
 
   /**
     * create a record in the database
@@ -121,7 +121,7 @@ abstract class CRUD[T, PrimaryKeyType] extends BitcoinSLogger {
 
 }
 
-class SafeDatabase(dbConfig: DbConfig) extends BitcoinSLogger {
+class SafeDatabase[C <: DbConfig](dbConfig: C) extends BitcoinSLogger {
 
   lazy val dbUrl: String = dbConfig.dbConfig.config.getString("db.url")
 
@@ -150,7 +150,7 @@ class SafeDatabase(dbConfig: DbConfig) extends BitcoinSLogger {
 }
 
 object SafeDatabase {
-  def apply(db: DbConfig): SafeDatabase = new SafeDatabase(db)
+  def apply[C <: DbConfig](dbConfig: C): SafeDatabase[C] = new SafeDatabase(dbConfig)
 }
 
 case class UpdateFailedException(message: String)
