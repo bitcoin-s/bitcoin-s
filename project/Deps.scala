@@ -147,7 +147,8 @@ object Deps {
   val dbCommons = List(
     Compile.slick,
     Compile.sqlite,
-    Compile.slickHikari
+    Compile.slickHikari,
+    Test.ammonite
   )
 
   val eclairRpc = List(

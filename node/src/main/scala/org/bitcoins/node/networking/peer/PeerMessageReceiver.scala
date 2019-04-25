@@ -1,10 +1,9 @@
 package org.bitcoins.node.networking.peer
 
 import akka.actor.ActorRefFactory
-import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.util.BitcoinSLogger
-import org.bitcoins.db.{AppConfig, DbConfig}
 import org.bitcoins.node.NetworkMessage
+import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.messages._
 import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.Client
@@ -19,7 +18,7 @@ import scala.util.{Failure, Success, Try}
   * operations. This is the entry point for handling all received
   * [[NetworkMessage]]
   */
-class PeerMessageReceiver(state: PeerMessageReceiverState, appConfig: AppConfig)(
+class PeerMessageReceiver(state: PeerMessageReceiverState, appConfig: NodeAppConfig)(
     implicit ref: ActorRefFactory)
     extends BitcoinSLogger {
 
@@ -210,12 +209,12 @@ object PeerMessageReceiver {
   case class NetworkMessageReceived(msg: NetworkMessage, client: Client)
       extends PeerMessageReceiverMsg
 
-  def apply(state: PeerMessageReceiverState, appConfig: AppConfig)(
+  def apply(state: PeerMessageReceiverState, appConfig: NodeAppConfig)(
       implicit ref: ActorRefFactory): PeerMessageReceiver = {
     new PeerMessageReceiver(state, appConfig)(ref)
   }
 
-  def newReceiver(appConfig: AppConfig)(
+  def newReceiver(appConfig: NodeAppConfig)(
       implicit ref: ActorRefFactory): PeerMessageReceiver = {
     new PeerMessageReceiver(state = PeerMessageReceiverState.fresh(),
       appConfig)(ref)

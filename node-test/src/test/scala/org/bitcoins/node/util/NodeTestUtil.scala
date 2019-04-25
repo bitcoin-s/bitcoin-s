@@ -5,8 +5,10 @@ import java.net.InetSocketAddress
 import akka.actor.ActorRefFactory
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.protocol.transaction.Transaction
-import org.bitcoins.db.{DbConfig, UnitTestDbConfig}
+import org.bitcoins.db.NetworkDb
 import org.bitcoins.node.NetworkMessage
+import org.bitcoins.node.config.NodeAppConfig
+import org.bitcoins.node.db.NodeDbConfig
 import org.bitcoins.node.messages.control.VersionMessage
 import org.bitcoins.node.messages.data.GetHeadersMessage
 import org.bitcoins.node.models.Peer
@@ -70,7 +72,9 @@ abstract class NodeTestUtil {
     )
   }
 
-  def dbConfig: DbConfig = UnitTestDbConfig
+  def dbConfig: NodeDbConfig = NodeDbConfig.UnitTestDbConfig(NetworkDb.UnitTestDbConfig)
+
+  def nodeAppConfig: NodeAppConfig = NodeAppConfig(dbConfig)
 
   def client(peer: Peer, peerMsgReceiver: PeerMessageReceiver)(
       implicit ref: ActorRefFactory): Client = {

@@ -1,11 +1,12 @@
 package org.bitcoins.wallet.models
 
-import org.bitcoins.db.{CRUDAutoInc, DbConfig}
+import org.bitcoins.db.CRUDAutoInc
+import org.bitcoins.wallet.db.WalletDbConfig
 import slick.jdbc.SQLiteProfile.api._
 
 import scala.concurrent.{ExecutionContext, Future}
 
-case class UTXOSpendingInfoDAO(dbConfig: DbConfig)(
+case class UTXOSpendingInfoDAO(dbConfig: WalletDbConfig)(
     implicit val ec: ExecutionContext)
     extends CRUDAutoInc[UTXOSpendingInfoDb] {
 

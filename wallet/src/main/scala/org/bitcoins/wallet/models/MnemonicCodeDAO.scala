@@ -1,7 +1,8 @@
 package org.bitcoins.wallet.models
 
-import org.bitcoins.db.{DbConfig, SafeDatabase}
+import org.bitcoins.db.SafeDatabase
 import org.bitcoins.wallet.EncryptedMnemonic
+import org.bitcoins.wallet.db.WalletDbConfig
 import slick.dbio.DBIOAction
 import slick.dbio.Effect.Write
 import slick.jdbc.SQLiteProfile.api._
@@ -15,7 +16,7 @@ import scala.concurrent.{ExecutionContext, Future}
   *
   */
 // todo: implement this as a flat file, not a table
-case class MnemonicCodeDAO(dbConfig: DbConfig)(
+case class MnemonicCodeDAO(dbConfig: WalletDbConfig)(
     implicit executionContext: ExecutionContext) {
   val ec: ExecutionContext = executionContext
 

@@ -4,11 +4,12 @@ import java.net.InetSocketAddress
 
 import akka.actor.ActorSystem
 import org.bitcoins.chain.blockchain.{Blockchain, ChainHandler}
-import org.bitcoins.chain.db.ChainDbManagement
+import org.bitcoins.chain.config.ChainAppConfig
+import org.bitcoins.chain.db.{ChainDbConfig, ChainDbManagement}
 import org.bitcoins.chain.models.{BlockHeaderDAO, BlockHeaderDb, BlockHeaderDbHelper}
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, ChainParams, RegTestNetChainParams}
 import org.bitcoins.core.util.BitcoinSLogger
-import org.bitcoins.db.{AppConfig, DbConfig, UnitTestDbConfig}
+import org.bitcoins.db.NetworkDb
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.testkit.chain.ChainTestUtil
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
@@ -33,12 +34,14 @@ trait ChainUnitTest
   implicit def system: ActorSystem
 
   val timeout: FiniteDuration = 10.seconds
-  def dbConfig: DbConfig = UnitTestDbConfig
+
+  def networkDb: NetworkDb = NetworkDb.UnitTestDbConfig
+  def dbConfig: ChainDbConfig = ChainDbConfig.UnitTestDbConfig(networkDb)
 
   val genesisHeaderDb: BlockHeaderDb = ChainTestUtil.regTestGenesisHeaderDb
-  val chainParam: ChainParams = RegTestNetChainParams
+  val chainParam: ChainParams = networkDb.chain
 
-  lazy val appConfig = AppConfig(dbConfig,chainParam)
+  lazy val appConfig = ChainAppConfig(dbConfig)
   private lazy val blockHeaderDAO = BlockHeaderDAO(appConfig)
 
   lazy val blockchain: Blockchain =
