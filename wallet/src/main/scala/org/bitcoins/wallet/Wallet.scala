@@ -200,12 +200,17 @@ sealed abstract class Wallet extends UnlockedWalletApi with BitcoinSLogger {
         val utxos: List[BitcoinUTXOSpendingInfo] =
           List(walletUtxos.find(_.value >= amount).get.toUTXOSpendingInfo(this))
 
-        BitcoinTxBuilder(destinations,
-                         utxos,
-                         feeRate,
-                         changeSPK = change.scriptPubKey,
-                         networkParameters.asInstanceOf[BitcoinNetwork])
 
+        val b = networkParameters match {
+          case b: BitcoinNetwork =>
+            BitcoinTxBuilder(destinations = destinations,
+              utxos = utxos,
+              feeRate = feeRate,
+              changeSPK = change.scriptPubKey,
+              network = b)
+        }
+        
+        b
       }
       signed <- txBuilder.sign
       /* todo: add change output to UTXO DB
