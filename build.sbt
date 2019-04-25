@@ -340,6 +340,8 @@ lazy val walletTest = project
   .settings(
     name := "bitcoin-s-wallet-test",
     libraryDependencies ++= Deps.walletTest,
+    // To avoid deadlock issues with SQLite
+    Test / parallelExecution := false,
     skip in publish := true
   )
   .dependsOn(core, testkit, wallet)
