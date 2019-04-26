@@ -225,7 +225,8 @@ lazy val zmq = project
     name := "bitcoin-s-zmq",
     libraryDependencies ++= Deps.bitcoindZmq)
   .dependsOn(
-    core
+    core,
+    testkit % "test"
   ).enablePlugins()
 
 lazy val bitcoindRpc = project
@@ -354,10 +355,7 @@ lazy val doc = project
     name := "bitcoin-s-doc",
     libraryDependencies ++= Deps.doc,
   )
-  .dependsOn(
-    secp256k1jni,
-    core
-  )
+  .dependsOn(testkit)
 
 // Ammonite is invoked through running
 // a main class it places in test sources
