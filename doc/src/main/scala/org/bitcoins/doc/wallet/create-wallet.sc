@@ -3,20 +3,24 @@ import java.io.File
 import org.bitcoins.chain.blockchain.{Blockchain, ChainHandler}
 import org.bitcoins.chain.models.{BlockHeaderDAO, BlockHeaderDb, BlockHeaderDbHelper}
 import org.bitcoins.core.protocol.blockchain.{Block, RegTestNetChainParams}
-import org.bitcoins.db.RegTestDbConfig
 import org.bitcoins.wallet.Wallet
 import org.bitcoins.wallet.api.InitializeWalletSuccess
 import scodec.bits.ByteVector
 import akka.actor.ActorSystem
 import com.typesafe.config.ConfigFactory
 import org.bitcoins.chain.db.ChainDbManagement
+import org.bitcoins.chain.db.ChainDbConfig
+import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.client.v17.BitcoindV17RpcClient
 import org.bitcoins.rpc.config.BitcoindInstance
 import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
-import org.bitcoins.wallet.config.WalletDbManagement
+import org.bitcoins.wallet.db.WalletDbManagement
+import org.bitcoins.wallet.db.WalletDbConfig
+import org.bitcoins.wallet.config.WalletAppConfig
+
 import org.bitcoins.zmq.ZMQSubscriber
 import org.slf4j.LoggerFactory
 
@@ -41,9 +45,11 @@ val time = System.currentTimeMillis()
 implicit val system = ActorSystem(s"wallet-scala-sheet-${time}")
 import system.dispatcher
 
-//network/db configuration
-val dbConfig = RegTestDbConfig
-val chainParams = RegTestNetChainParams
+val chainDbConfig = ChainDbConfig.RegTestDbConfig
+val chainAppConfig = ChainAppConfig(chainDbConfig)
+
+val walletDbConfig = WalletDbConfig.RegTestDbConfig
+val walletAppConfig = WalletAppConfig(walletDbConfig)
 
 val datadir = new File(s"/tmp/bitcoin-${time}/")
 val bitcoinConf = new File(datadir.getAbsolutePath + "/bitcoin.conf")
@@ -62,16 +68,16 @@ val bitcoind = new BitcoindRpcClient(instance = instance)
 val bitcoindF = bitcoind.start().map(_ => bitcoind)
 
 //create a native chain handler for bitcoin-s
-val blockHeaderDAO: BlockHeaderDAO = BlockHeaderDAO(chainParams = chainParams,dbConfig = dbConfig)
+val blockHeaderDAO: BlockHeaderDAO = BlockHeaderDAO(appConfig = chainAppConfig)
 val genesisHeader = BlockHeaderDbHelper.fromBlockHeader(
   height = 0,
-  bh = chainParams.genesisBlock.blockHeader)
+  bh = chainAppConfig.chain.genesisBlock.blockHeader)
 val blockHeaderTableF = {
   //drop regtest table if it exists
-  val dropTableF = ChainDbManagement.dropHeaderTable(dbConfig)
+  val dropTableF = ChainDbManagement.dropHeaderTable(chainDbConfig)
 
   //recreate the table
-  val createdTableF = dropTableF.flatMap(_ => ChainDbManagement.createHeaderTable(dbConfig))
+  val createdTableF = dropTableF.flatMap(_ => ChainDbManagement.createHeaderTable(chainDbConfig))
 
   createdTableF
 }
@@ -119,9 +125,9 @@ val bitcoinsLogF = genBlocksF.map { genBlocks =>
 }
 val walletF = bitcoinsLogF.flatMap { _ =>
   //create tables
-  val createTablesF = WalletDbManagement.createAll(dbConfig)
+  val createTablesF = WalletDbManagement.createAll(walletDbConfig)
   createTablesF.flatMap { _ =>
-    Wallet.initialize(chainParams, dbConfig)
+    Wallet.initialize(walletAppConfig)
       .map(_.asInstanceOf[InitializeWalletSuccess].wallet)
   }
 }
@@ -144,8 +150,8 @@ addressF.onComplete { case _ =>
   datadir.delete()
   val stoppedZmqF = bitcoindStopF.flatMap(_ => zmqSubF.map(_.stop()))
   logger.debug("cleaning up chain, wallet, and system")
-  val chainCleanupF = ChainDbManagement.dropAll(dbConfig)
-  val walletCleanupF = WalletDbManagement.dropAll(dbConfig)
+  val chainCleanupF = ChainDbManagement.dropAll(chainDbConfig)
+  val walletCleanupF = WalletDbManagement.dropAll(walletDbConfig)
   val systemTermF = system.terminate()
 
   for {
