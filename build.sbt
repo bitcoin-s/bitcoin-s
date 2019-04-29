@@ -6,8 +6,6 @@ import scala.util.Properties
 
 cancelable in Global := true
 
-fork in Test := true
-
 //don't allow us to wipe all of our prod databases
 flywayClean / aggregate := false
 //allow us to wipe our test databases
@@ -81,8 +79,15 @@ lazy val commonSettings = List(
 )
 
 lazy val commonTestSettings = Seq(
-  publish / skip := true
+  publish / skip := true,
 ) ++ commonSettings
+
+lazy val commonTestWithDbSettings = Seq(
+  // To make in-memory DBs work properly
+  Test / fork := true,
+  // To avoid deadlock issues with SQLite
+  Test / parallelExecution := false
+) ++ commonTestSettings
 
 lazy val commonProdSettings = Seq(
   Test / bloopGenerate := None
@@ -233,12 +238,11 @@ lazy val chain = project
 
 lazy val chainTest = project
   .in(file("chain-test"))
-  .settings(commonTestSettings: _*)
+  .settings(commonTestWithDbSettings: _*)
   .settings(chainDbSettings: _*)
   .settings(
     name := "bitcoin-s-chain-test",
     libraryDependencies ++= Deps.chainTest,
-    parallelExecution in Test := false
   ).dependsOn(chain, core, testkit, zmq)
   .enablePlugins(FlywayPlugin)
 
@@ -258,9 +262,15 @@ lazy val zmq = project
   .settings(commonSettings: _*)
   .settings(name := "bitcoin-s-zmq", libraryDependencies ++= Deps.bitcoindZmq)
   .dependsOn(
+<<<<<<< HEAD
     core
   )
   .enablePlugins(GitVersioning)
+=======
+    core,
+    testkit % "test"
+  ).enablePlugins()
+>>>>>>> Fix CI tests hanging (#438)
 
 lazy val bitcoindRpc = project
   .in(file("bitcoind-rpc"))
@@ -330,10 +340,17 @@ lazy val node = {
 lazy val nodeTest = {
   project
     .in(file("node-test"))
-    .settings(commonSettings: _*)
+    .settings(commonTestWithDbSettings: _*)
     .settings(nodeDbSettings: _*)
     .settings(
       name := "bitcoin-s-node-test",
+      // There's a weird issue with forking 
+      // in node tests, for example this CI
+      // error: https://travis-ci.org/bitcoin-s/bitcoin-s-core/jobs/525018199#L1252
+      // It seems to be related to this
+      // Scalatest issue: 
+      // https://github.com/scalatest/scalatest/issues/556
+      Test / fork := false,
       libraryDependencies ++= Deps.nodeTest
     ).dependsOn(
     node,
@@ -355,30 +372,6 @@ lazy val publishWebsite = taskKey[Unit]("Publish website")
 
 lazy val docs = project
   .in(file("bitcoin-s-docs")) // important: it must not be docs/
-
-lazy val walletDbSettings = dbFlywaySettings("walletdb")
-lazy val wallet = project
-  .in(file("wallet"))
-  .settings(commonProdSettings: _*)
-  .settings(walletDbSettings: _*)
-  .settings(
-    name := "bitcoin-s-wallet",
-    libraryDependencies ++= Deps.wallet
-  )
-  .dependsOn(core, dbCommons)
-  .enablePlugins(FlywayPlugin)
-
-lazy val walletTest = project
-  .in(file("wallet-test"))
-  .settings(commonTestSettings: _*)
-  .settings(walletDbSettings: _*)
-  .settings(
-    name := "bitcoin-s-wallet-test",
-    libraryDependencies ++= Deps.walletTest,
-    skip in publish := true
-  )
-  .dependsOn(core, testkit, wallet)
-  .enablePlugins(FlywayPlugin)
   .settings(commonTestSettings: _*)
   .settings(
     // come back to visit this setting later
@@ -404,6 +397,30 @@ lazy val walletTest = project
     zmq
   )
   .enablePlugins(MdocPlugin, DocusaurusPlugin)
+
+lazy val walletDbSettings = dbFlywaySettings("walletdb")
+lazy val wallet = project
+  .in(file("wallet"))
+  .settings(commonProdSettings: _*)
+  .settings(walletDbSettings: _*)
+  .settings(
+    name := "bitcoin-s-wallet",
+    libraryDependencies ++= Deps.wallet
+  )
+  .dependsOn(core, dbCommons)
+  .enablePlugins(FlywayPlugin)
+
+lazy val walletTest = project
+  .in(file("wallet-test"))
+  .settings(commonTestWithDbSettings: _*)
+  .settings(walletDbSettings: _*)
+  .settings(
+    name := "bitcoin-s-wallet-test",
+    libraryDependencies ++= Deps.walletTest,
+  )
+  .dependsOn(core, testkit, wallet)
+  .enablePlugins(FlywayPlugin)
+
 
 lazy val scripts = project
   .in(file("scripts"))
