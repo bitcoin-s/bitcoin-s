@@ -27,7 +27,11 @@ sealed abstract class MilliSatoshis
     * 10 msat
     * }}}
     */
-  override def toString: String = s"$toBigInt msat"
+  override def toString: String = {
+    val num = toBigInt
+    val postFix = if (num == 1) "msat" else "msats"
+    s"$num $postFix"
+  }
 
   def toBigInt: BigInt = underlying
 
