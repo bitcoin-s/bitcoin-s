@@ -85,25 +85,28 @@ mnemonicCode.words // the phrase the user should write down
 val bip39Seed = BIP39Seed.fromMnemonic(mnemonicCode,
                                        password = "secret password")
 
-val xpriv = ExtPrivateKey.fromBIP39Seed(ExtKeyVersion.MainNetPriv,  // or testnet/regtest
+val xpriv = ExtPrivateKey.fromBIP39Seed(ExtKeyVersion.SegWitMainNetPriv,
                                         bip39Seed)
-val xpub = xpriv.extPublicKey                                       
+val xpub = xpriv.extPublicKey
 
 // you can now use the generated xpriv to derive further
 // private or public keys
 
-// this can be done with BIP32 or BIP44 paths:
-import bip32._
-val bip32Path = BIP32Path(BIP32Node(2, hardened = false), BIP32Node(5, hardened = false))
-val derivedPriv = xpriv.deriveChildPrivKey(bip32Path)
-val derivedPub = xpub.deriveChildPubKey(bip32Path)
+// this can be done with BIP89 paths (called SegWitHDPath in bitcoin-s)
+val segwitPath = SegWitHDPath.fromString("m/84'/0'/0'/0/0")
 
-import bip44._
-val bip44Path = BIP44Path(coin = BIP44Coin.Bitcoin, 
-                          accountIndex = 0, 
-                          addressIndex = 1, 
-                          chainType = BIP44ChainType.Change)
-val derivedBip44Priv = xpriv.deriveChildPrivKey(bip44Path)
+// alternatively:
+val otherSegwitPath =
+SegWitHDPath(HDCoinType.Bitcoin,
+             accountIndex = 0,
+             HDChainType.External,
+             addressIndex = 0)
+
+segwitPath == otherSegwitPath // true
+
+// there's also paths available for legacy
+// addresses (LegacyHDPath) as well as nested
+// segwit paths (NestedSegWitPath)
 ```
 
 ### Building a signed transaction
@@ -200,4 +203,3 @@ result: org.bitcoins.core.script.result.ScriptResult = ScriptOk
 ## Running `core` tests
 
 See [`core-test/README.md`](../core-test/README.md).
-
