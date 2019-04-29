@@ -21,6 +21,34 @@ class CurrencyUnitTest extends BitcoinSUnitTest {
     }
   }
 
+  it must "have Int syntax" in {
+    forAll(Gen.choose(0, Int.MaxValue)) { num =>
+      assert(num.bitcoins == Bitcoins(num))
+      assert(num.bitcoin == Bitcoins(num))
+      assert(num.BTC == Bitcoins(num))
+
+      assert(num.satoshis == Satoshis(Int64(num)))
+      assert(num.satoshi == Satoshis(Int64(num)))
+      assert(num.sats == Satoshis(Int64(num)))
+      assert(num.sat == Satoshis(Int64(num)))
+    }
+  }
+
+  it must "have Long syntax" in {
+    forAll(Gen.choose(0, Satoshis.max.toLong / 100000000)) { num =>
+      assert(num.bitcoins == Bitcoins(num))
+      assert(num.bitcoin == Bitcoins(num))
+      assert(num.BTC == Bitcoins(num))
+    }
+
+    forAll(Gen.choose(0, Satoshis.max.toLong)) { num =>
+      assert(num.satoshis == Satoshis(Int64(num)))
+      assert(num.satoshi == Satoshis(Int64(num)))
+      assert(num.sats == Satoshis(Int64(num)))
+      assert(num.sat == Satoshis(Int64(num)))
+    }
+  }
+
   it must "have additive identity" in {
     forAll(CurrencyUnitGenerator.satoshis) { satoshis =>
       assert(satoshis + CurrencyUnits.zero == satoshis)

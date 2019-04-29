@@ -119,6 +119,48 @@ class LnCurrencyUnitTest extends BitcoinSUnitTest {
     }
   }
 
+  it must "have Int syntax" in {
+    forAll(Gen.choose(Int.MinValue, Int.MaxValue)) { num =>
+      assert(num.millibitcoins == MilliBitcoins(num))
+      assert(num.millibitcoin == MilliBitcoins(num))
+      assert(num.mBTC == MilliBitcoins(num))
+
+      assert(num.microbitcoins == MicroBitcoins(num))
+      assert(num.microbitcoin == MicroBitcoins(num))
+      assert(num.uBTC == MicroBitcoins(num))
+
+      assert(num.nanobitcoins == NanoBitcoins(num))
+      assert(num.nanobitcoin == NanoBitcoins(num))
+      assert(num.nBTC == NanoBitcoins(num))
+
+      assert(num.picobitcoins == PicoBitcoins(num))
+      assert(num.picobitcoin == PicoBitcoins(num))
+      assert(num.pBTC == PicoBitcoins(num))
+    }
+  }
+
+  it must "have Long syntax" in {
+    forAll(
+      Gen.choose(LnPolicy.minMilliBitcoins.toLong,
+                 LnPolicy.maxMilliBitcoins.toLong)) { num =>
+      assert(num.millibitcoins == MilliBitcoins(num))
+      assert(num.millibitcoin == MilliBitcoins(num))
+      assert(num.mBTC == MilliBitcoins(num))
+
+      assert(num.microbitcoins == MicroBitcoins(num))
+      assert(num.microbitcoin == MicroBitcoins(num))
+      assert(num.uBTC == MicroBitcoins(num))
+
+      assert(num.nanobitcoins == NanoBitcoins(num))
+      assert(num.nanobitcoin == NanoBitcoins(num))
+      assert(num.nBTC == NanoBitcoins(num))
+
+      assert(num.picobitcoins == PicoBitcoins(num))
+      assert(num.picobitcoin == PicoBitcoins(num))
+      assert(num.pBTC == PicoBitcoins(num))
+    }
+  }
+
   it must "serialize MilliBitcoins to string" in {
     val milliBitcoins = MilliBitcoins(1000)
     milliBitcoins.toEncodedString must be("1000m")
