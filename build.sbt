@@ -309,6 +309,13 @@ lazy val nodeTest = {
     .settings(nodeDbSettings: _*)
     .settings(
       name := "bitcoin-s-node-test",
+      // There's a weird issue with forking 
+      // in node tests, for example this CI
+      // error: https://travis-ci.org/bitcoin-s/bitcoin-s-core/jobs/525018199#L1252
+      // It seems to be related to this
+      // Scalatest issue: 
+      // https://github.com/scalatest/scalatest/issues/556
+      Test / fork := false,
       libraryDependencies ++= Deps.nodeTest
     ).dependsOn(
     node,
