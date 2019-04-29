@@ -4,11 +4,20 @@ import java.io.File
 
 import com.typesafe.config.{Config, ConfigFactory}
 import org.bitcoins.core.config.NetworkParameters
-import org.bitcoins.core.protocol.blockchain.{ChainParams, MainNetChainParams, RegTestNetChainParams, TestNetChainParams}
+import org.bitcoins.core.protocol.blockchain.{
+  ChainParams,
+  MainNetChainParams,
+  RegTestNetChainParams,
+  TestNetChainParams
+}
 import org.bitcoins.core.util.BitcoinSLogger
 import slick.basic.DatabaseConfig
 import slick.jdbc.SQLiteProfile
 import slick.jdbc.SQLiteProfile.api._
+import scala.util.Success
+import scala.util.Try
+import scala.util.Failure
+import com.typesafe.config.ConfigRenderOptions
 
 /**
   * This is meant to encapsulate all of our database configuration.
@@ -64,6 +73,32 @@ trait DbConfig extends BitcoinSLogger {
   /** The path we look for our configuration file in */
   def configPath: String
 
+  /**
+    * Removes some uninteresting parts of the config.
+    * The `defaults()` at the end pretty-prints the
+    * config, with comments explaining where different
+    * parts come from. If replacing with `.concise`
+    * the comments are removed, and a non-pretty-printed
+    * JSON representation is outputted.
+    */
+  private def renderConfigWithoutFluff(config: Config): String =
+    config
+      .withoutPath("akka")
+      .withoutPath("java")
+      .withoutPath("sun")
+      .withoutPath("awt")
+      .withoutPath("file")
+      .withoutPath("jline")
+      .withoutPath("jna")
+      .withoutPath("jnidispatch")
+      .withoutPath("line")
+      .withoutPath("user")
+      .withoutPath("path")
+      .withoutPath("os")
+      .withoutPath("ssl-config")
+      .root()
+      .render(ConfigRenderOptions.defaults())
+
   /** The configuration details for connecting/using the database for our projects
     * that require datbase connections
     * */
@@ -72,11 +107,22 @@ trait DbConfig extends BitcoinSLogger {
     //errors around the loaded configuration depending
     //on the state of the default classLoader
     //https://github.com/lightbend/config#debugging-your-configuration
-    val dbConfig: DatabaseConfig[SQLiteProfile] = {
+    val dbConfig = {
       val conf = ConfigFactory.load(configPath)
-      logger.trace(s"conf: $conf")
-      DatabaseConfig.forConfig(path = networkDb.configKey, config = conf)
-      // classLoader = getClass.getClassLoader)
+      val configKey = networkDb.configKey
+      Try {
+        val confAtKey = conf.getConfig(configKey)
+        logger.trace(
+          s"conf at key $configKey: ${renderConfigWithoutFluff(confAtKey)}")
+        DatabaseConfig.forConfig[SQLiteProfile](path = configKey, config = conf)
+      } match {
+        case Success(value) =>
+          value
+        case Failure(exception) =>
+          logger.error(s"Error when loading database from config: $exception")
+          logger.error(s"Configuration: ${renderConfigWithoutFluff(conf)}")
+          throw exception
+      }
     }
 
     logger.trace(s"class: ${getClass.getSimpleName}")
@@ -108,11 +154,11 @@ trait DbConfig extends BitcoinSLogger {
   def networkDb: NetworkDb
 }
 
-
 /**
   * The network that a database is affiliated with
   */
-sealed trait NetworkDb  {
+sealed trait NetworkDb {
+
   /** This is the key we look for in the config file
     * to identify a database database. An example
     * of this for the [[NetworkDb.MainNetDbConfig]] is ''mainnetDb''
@@ -127,6 +173,7 @@ sealed trait NetworkDb  {
 }
 
 object NetworkDb {
+
   object MainNetDbConfig extends NetworkDb {
     override lazy val configKey: String = "mainnetDb"
 
@@ -139,7 +186,7 @@ object NetworkDb {
     override lazy val chain: TestNetChainParams.type = TestNetChainParams
   }
 
-  object   RegTestDbConfig extends NetworkDb {
+  object RegTestDbConfig extends NetworkDb {
     override lazy val configKey: String = "regtestDb"
 
     override lazy val chain: RegTestNetChainParams.type = RegTestNetChainParams
@@ -152,5 +199,3 @@ object NetworkDb {
 
   }
 }
-
-
