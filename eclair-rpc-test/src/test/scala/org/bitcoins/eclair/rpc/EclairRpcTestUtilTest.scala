@@ -12,7 +12,7 @@ class EclairRpcTestUtilTest extends AsyncFlatSpec with BeforeAndAfterAll {
   private val logger = LoggerFactory.getLogger(getClass)
 
   private implicit val actorSystem: ActorSystem =
-    ActorSystem.create("EclairRpcTestUtilTest")
+    ActorSystem.create("EclairRpcTestUtilTest", BitcoindRpcTestUtil.AKKA_CONFIG)
 
   private val bitcoindRpcF = {
     val cliF = EclairRpcTestUtil.startedBitcoindRpcClient()
