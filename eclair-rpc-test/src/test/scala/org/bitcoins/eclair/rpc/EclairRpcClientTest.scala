@@ -26,10 +26,11 @@ import org.slf4j.Logger
 
 import scala.concurrent._
 import scala.concurrent.duration.DurationInt
+import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 
 class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
 
-  implicit val system: ActorSystem = ActorSystem("EclairRpcClient")
+  implicit val system: ActorSystem = ActorSystem("EclairRpcClient", BitcoindRpcTestUtil.AKKA_CONFIG)
   implicit val m: ActorMaterializer = ActorMaterializer.create(system)
   implicit val ec: ExecutionContext = m.executionContext
   implicit val bitcoinNp: RegTest.type = EclairRpcTestUtil.network
