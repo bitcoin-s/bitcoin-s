@@ -9,7 +9,7 @@ object Deps {
     val scalaTest = "3.0.5"
     val slf4j = "1.7.5"
     val spray = "1.3.2"
-    val zeromq = "0.5.1"
+    val zeromq = "0.5.2-SNAPSHOT"
     val akkav = "10.1.7"
     val akkaStreamv = "2.5.21"
     val playv = "2.7.0"
