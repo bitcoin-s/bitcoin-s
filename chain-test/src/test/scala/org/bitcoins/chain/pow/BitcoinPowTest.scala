@@ -4,7 +4,7 @@ import akka.actor.ActorSystem
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.db.ChainDbConfig
 import org.bitcoins.chain.models.BlockHeaderDAO
-import org.bitcoins.chain.util.ChainUnitTest
+import org.bitcoins.chain.util.{ChainFixture, ChainFixtureTag, ChainUnitTest}
 import org.bitcoins.core.protocol.blockchain.MainNetChainParams
 import org.bitcoins.db.NetworkDb
 import org.bitcoins.testkit.chain.ChainTestUtil
@@ -51,7 +51,7 @@ class BitcoinPowTest extends ChainUnitTest {
         assert(calculatedWork == expectedNextWork))
   }
 
-  it must "calculate a GetNextWorkRequired correctly" taggedAs FixtureTag.PopulatedBlockHeaderDAO inFixtured {
+  it must "calculate a GetNextWorkRequired correctly" taggedAs ChainFixtureTag.PopulatedBlockHeaderDAO inFixtured {
     case ChainFixture.PopulatedBlockHeaderDAO(blockHeaderDAO) => succeed
   }
 }
