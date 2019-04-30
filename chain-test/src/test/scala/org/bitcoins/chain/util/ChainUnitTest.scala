@@ -26,6 +26,7 @@ import scala.concurrent.{ExecutionContext, Future}
 trait ChainUnitTest
     extends fixture.AsyncFlatSpec
     with BitcoinSFixture
+    with ChainFixtureHelper
     with MustMatchers
     with BitcoinSLogger
     with BeforeAndAfter
@@ -52,111 +53,20 @@ trait ChainUnitTest
   implicit def ec: ExecutionContext =
     scala.concurrent.ExecutionContext.Implicits.global
 
-  /**
-    * If a test file uses ChainFixture as its FixtureParam, then
-    * using these tags will determine which fixture the test will get.
-    *
-    * Simply add taggedAs FixtureTag._ to your test before calling inFixtured.
-    */
-  sealed abstract class FixtureTag(name: String) extends Tag(name)
-
-  object FixtureTag {
-    case object Empty extends FixtureTag("Empty")
-
-    case object GenisisBlockHeaderDAO
-        extends FixtureTag("GenisisBlockHeaderDAO")
-
-    case object PopulatedBlockHeaderDAO
-        extends FixtureTag("PopulatedBlockHeaderDAO")
-
-    case object GenisisChainHandler extends FixtureTag("GenisisChainHandler")
-
-    case object BitcoindZmqChainHandlerWithBlock
-        extends FixtureTag("BitcoindZmqChainHandlerWithBlock")
-
-    def from(tag: String): FixtureTag = {
-      tag match {
-        case Empty.name                   => Empty
-        case GenisisBlockHeaderDAO.name   => GenisisBlockHeaderDAO
-        case PopulatedBlockHeaderDAO.name => PopulatedBlockHeaderDAO
-        case GenisisChainHandler.name     => GenisisChainHandler
-        case BitcoindZmqChainHandlerWithBlock.name =>
-          BitcoindZmqChainHandlerWithBlock
-        case _: String =>
-          throw new IllegalArgumentException(s"$tag is not a valid tag")
-      }
-    }
-  }
-
-  /**
-    * All untagged tests will be given this tag. Override this if you are using
-    * ChainFixture and the plurality of tests use some fixture other than Empty.
-    */
-  val defaultTag: FixtureTag = FixtureTag.Empty
-
-  /**
-    * This ADT represents all Chain test fixtures. If you set this type to be your
-    * FixtureParam and override withFixture to be withChainFixutre, then simply tag
-    * tests to specify which fixture that test should receive and then use inFixutred
-    * which takes a PartialFunction[ChainFixture, Future[Assertion] ] (i.e. just
-    * specify the relevant case for your expected fixture)
-    */
-  sealed trait ChainFixture
-
-  object ChainFixture {
-    case object Empty extends ChainFixture
-
-    case class GenisisBlockHeaderDAO(dao: BlockHeaderDAO) extends ChainFixture
-
-    case class PopulatedBlockHeaderDAO(dao: BlockHeaderDAO) extends ChainFixture
-
-    case class GenisisChainHandler(chainHandler: ChainHandler)
-        extends ChainFixture
-
-    case class BitcoindZmqChainHandlerWithBlock(
-        bitcoindChainHandler: BitcoindChainHandler)
-        extends ChainFixture
-
-    def create(tag: FixtureTag): Future[ChainFixture] = {
-      tag match {
-        case FixtureTag.Empty => Future.successful(ChainFixture.Empty)
-        case FixtureTag.GenisisBlockHeaderDAO =>
-          createBlockHeaderDAO().map(GenisisBlockHeaderDAO.apply)
-        case FixtureTag.PopulatedBlockHeaderDAO =>
-          createPopulatedBlockHeaderDAO().map(PopulatedBlockHeaderDAO.apply)
-        case FixtureTag.GenisisChainHandler =>
-          createChainHandler().map(GenisisChainHandler.apply)
-        case FixtureTag.BitcoindZmqChainHandlerWithBlock =>
-          createBitcoindChainHandler().map(
-            BitcoindZmqChainHandlerWithBlock.apply)
-      }
-    }
-
-    def destroy(fixture: ChainFixture): Future[Any] = {
-      fixture match {
-        case Empty                      => Future.successful(())
-        case GenisisBlockHeaderDAO(_)   => destroyHeaderTable()
-        case PopulatedBlockHeaderDAO(_) => destroyHeaderTable()
-        case GenisisChainHandler(_)     => destroyHeaderTable()
-        case BitcoindZmqChainHandlerWithBlock(bitcoindHandler) =>
-          destroyBitcoindChainHandler(bitcoindHandler)
-      }
-    }
-  }
 
   def withChainFixture(test: OneArgAsyncTest): FutureOutcome = {
-    val stringTag = test.tags.headOption.getOrElse(defaultTag.name)
+    val stringTag = test.tags.headOption.getOrElse(ChainFixtureTag.defaultTag.name)
 
-    val fixtureTag: FixtureTag = FixtureTag.from(stringTag)
+    val fixtureTag: ChainFixtureTag = ChainFixtureTag.from(stringTag)
 
-    val fixtureF: Future[ChainFixture] = ChainFixture.create(fixtureTag)
+    val fixtureF: Future[ChainFixture] = createFixture(fixtureTag)
 
     val outcomeF = fixtureF.flatMap(fixture =>
       test(fixture.asInstanceOf[FixtureParam]).toFuture)
 
     val fixtureTakeDownF = outcomeF.flatMap { outcome =>
       val destroyedF =
-        fixtureF.flatMap(fixture => ChainFixture.destroy(fixture))
+        fixtureF.flatMap(fixture => destroyFixture(fixture))
 
       destroyedF.map(_ => outcome)
     }
@@ -340,23 +250,6 @@ trait ChainUnitTest
     genesisHeaderF
   }
 
-  /** Represents a bitcoind instance paired with a chain handler via zmq */
-  case class BitcoindChainHandler(
-      bitcoindRpc: BitcoindRpcClient,
-      chainHandler: ChainHandler,
-      zmqSubscriber: ZMQSubscriber)
-
-  object BitcoindChainHandler {
-
-    def apply(
-        bitcoindRpc: BitcoindRpcClient,
-        pair: (ChainHandler, ZMQSubscriber)): BitcoindChainHandler = {
-      val (chainHandler, zmqSubscriber) = pair
-
-      BitcoindChainHandler(bitcoindRpc, chainHandler, zmqSubscriber)
-    }
-  }
-
   def createChainHandlerWithBitcoindZmq(
       bitcoind: BitcoindRpcClient): Future[(ChainHandler, ZMQSubscriber)] = {
     val genesisHeaderF = setupHeaderTableWithGenesisHeader()
@@ -384,32 +277,38 @@ trait ChainUnitTest
     genesisHeaderF.map(_ => (chainHandler, zmqSubscriber))
   }
 
-  def createBitcoindChainHandler(): Future[BitcoindChainHandler] = {
+  def createBitcoindChainHandlerViaZmq(): Future[BitcoindChainHandlerViaZmq] = {
     composeBuildersAndWrap(createBitcoind,
                            createChainHandlerWithBitcoindZmq,
-                           BitcoindChainHandler.apply)()
+      BitcoindChainHandlerViaZmq.apply)()
   }
 
-  def destroyBitcoindChainHandler(
-      bitcoindChainHandler: BitcoindChainHandler): Future[Unit] = {
+  def destroyBitcoindChainHandlerViaZmq(
+      bitcoindChainHandler: BitcoindChainHandlerViaZmq): Future[Unit] = {
     val stopBitcoindF =
       BitcoindRpcTestUtil.stopServer(bitcoindChainHandler.bitcoindRpc)
     val dropTableF = destroyHeaderTable()
 
     bitcoindChainHandler.zmqSubscriber.stop
-
     stopBitcoindF.flatMap(_ => dropTableF)
   }
 
-  //BitcoindChainHandler => Future[Assertion]
-  def withBitcoindZmqChainHandler(test: OneArgAsyncTest)(
+  /**
+    * Creates a [[BitcoindRpcClient bitcoind]] that is linked to our [[ChainHandler bitcoin-s chain handler]]
+    * via a [[ZMQSubscriber zmq]]. This means messages are passed between bitcoin and our chain handler
+    * with a zmq pub/sub message passing
+    * @param test the test to be executed with bitcoind and chain handler via zmq
+    * @param system
+    * @return
+    */
+  def withBitcoindChainHandlerViaZmq(test: OneArgAsyncTest)(
       implicit system: ActorSystem): FutureOutcome = {
-    val builder: () => Future[BitcoindChainHandler] = composeBuildersAndWrap(
-      createBitcoind,
-      createChainHandlerWithBitcoindZmq,
-      BitcoindChainHandler.apply)
+    val builder: () => Future[BitcoindChainHandlerViaZmq] = composeBuildersAndWrap(
+      builder = createBitcoind,
+      dependentBuilder = createChainHandlerWithBitcoindZmq,
+      wrap = BitcoindChainHandlerViaZmq.apply)
 
-    makeDependentFixture(builder, destroyBitcoindChainHandler)(test)
+    makeDependentFixture(builder, destroyBitcoindChainHandlerViaZmq)(test)
   }
 
   override def afterAll(): Unit = {
