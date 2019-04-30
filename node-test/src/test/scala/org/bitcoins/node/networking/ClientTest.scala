@@ -78,7 +78,7 @@ class ClientTest
     client ! Tcp.Connect(remote)
 
     val isConnectedF =
-      TestAsyncUtil.retryUntilSatisfied(peerMessageReceiver.isConnected)
+      TestAsyncUtil.retryUntilSatisfied(peerMessageReceiver.isInitialized)
 
     isConnectedF.flatMap { _ =>
       //disconnect here
