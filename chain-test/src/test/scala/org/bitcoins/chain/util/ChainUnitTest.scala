@@ -303,7 +303,6 @@ trait ChainUnitTest
     */
   def withBitcoindChainHandlerViaZmq(test: OneArgAsyncTest)(
       implicit system: ActorSystem): FutureOutcome = {
-    println("withBitcoindChainHandlerViaZmq being called")
     val builder: () => Future[BitcoindChainHandlerViaZmq] = composeBuildersAndWrap(
       builder = createBitcoind,
       dependentBuilder = createChainHandlerWithBitcoindZmq,

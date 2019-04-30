@@ -20,7 +20,6 @@ class BitcoindChainHandlerViaZmqTest extends ChainUnitTest {
 
   it must "peer with bitcoind via zmq and have blockchain info relayed" in {
     bitcoindChainHandler: BitcoindChainHandlerViaZmq =>
-      println("Executing chain handler test")
       val bitcoind = bitcoindChainHandler.bitcoindRpc
 
       val chainHandler = bitcoindChainHandler.chainHandler
