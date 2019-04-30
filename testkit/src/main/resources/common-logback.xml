@@ -39,6 +39,9 @@
     <!-- see what statements are executed by setting to DEBUG -->
     <logger name="slick.jdbc.JdbcBackend.statement" level="INFO"/>
 
+    <!-- see what slick is compiling to in sql -->
+    <logger name="slick.compiler" level="INFO"/>
+
     <!-- Get rid of messages like this: 
 
     Connection attempt failed. Backing off new connection 
