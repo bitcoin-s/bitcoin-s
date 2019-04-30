@@ -85,7 +85,7 @@ class ClientTest
       client ! Tcp.Abort
       val isDisconnectedF =
         TestAsyncUtil.retryUntilSatisfied(peerMessageReceiver.isDisconnected,
-                                          duration = 500.millis)
+                                          duration = 1.seconds)
 
       isDisconnectedF.map { _ =>
         succeed
