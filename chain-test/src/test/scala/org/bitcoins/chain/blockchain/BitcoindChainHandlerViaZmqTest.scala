@@ -1,25 +1,25 @@
 package org.bitcoins.chain.blockchain
 
 import akka.actor.ActorSystem
-import org.bitcoins.chain.util.ChainUnitTest
+import org.bitcoins.chain.util.{BitcoindChainHandlerViaZmq, ChainUnitTest}
 import org.bitcoins.rpc.util.RpcUtil
 import org.scalatest.FutureOutcome
 
 import scala.concurrent.Future
 
-class BitcoindChainHandlerTest extends ChainUnitTest {
+class BitcoindChainHandlerViaZmqTest extends ChainUnitTest {
 
-  override type FixtureParam = BitcoindChainHandler
+  override type FixtureParam = BitcoindChainHandlerViaZmq
 
   override implicit val system: ActorSystem = ActorSystem("ChainUnitTest")
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome =
-    withBitcoindZmqChainHandler(test)
+    withBitcoindChainHandlerViaZmq(test)
 
-  behavior of "BitcoindChainHandler"
+  behavior of "BitcoindChainHandlerViaZmq"
 
   it must "peer with bitcoind via zmq and have blockchain info relayed" in {
-    bitcoindChainHandler: BitcoindChainHandler =>
+    bitcoindChainHandler: BitcoindChainHandlerViaZmq =>
       val bitcoind = bitcoindChainHandler.bitcoindRpc
 
       val chainHandler = bitcoindChainHandler.chainHandler
