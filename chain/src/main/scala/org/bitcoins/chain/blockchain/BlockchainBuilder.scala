@@ -4,7 +4,11 @@ import org.bitcoins.chain.models.{BlockHeaderDAO, BlockHeaderDb}
 
 import scala.collection.mutable
 
-case class BlockchainBuilder(blockHeaderDAO: BlockHeaderDAO) extends mutable.ReusableBuilder[BlockHeaderDb, Blockchain] {
+/**
+  * @inheritdoc
+  * @param blockHeaderDAO
+  */
+case class BlockchainBuilder(blockHeaderDAO: BlockHeaderDAO) extends mutable.Builder[BlockHeaderDb, Blockchain] {
   private val internal = Vector.newBuilder[BlockHeaderDb]
 
 
