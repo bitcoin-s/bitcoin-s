@@ -20,8 +20,12 @@ object ChainFixture {
   case class PopulatedBlockHeaderDAO(dao: BlockHeaderDAO) extends ChainFixture
 
   case class GenisisChainHandler(chainHandler: ChainHandler)
-    extends ChainFixture
+      extends ChainFixture
 
-  case class BitcoindZmqChainHandlerWithBlock(bitcoindChainHandler: BitcoindChainHandlerViaZmq)
-    extends ChainFixture
+  case class PopulatedChainHandler(chainHandler: ChainHandler)
+      extends ChainFixture
+
+  case class BitcoindZmqChainHandlerWithBlock(
+      bitcoindChainHandler: BitcoindChainHandlerViaZmq)
+      extends ChainFixture
 }
