@@ -6,8 +6,17 @@ import akka.actor.ActorSystem
 import org.bitcoins.chain.blockchain.{Blockchain, ChainHandler}
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.db.{ChainDbConfig, ChainDbManagement}
-import org.bitcoins.chain.models.{BlockHeaderDAO, BlockHeaderDb, BlockHeaderDbHelper}
-import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, ChainParams, RegTestNetChainParams}
+import org.bitcoins.chain.models.{
+  BlockHeaderDAO,
+  BlockHeaderDb,
+  BlockHeaderDbHelper
+}
+import org.bitcoins.chain.util.ChainFixture.BitcoindZmqChainHandlerWithBlock
+import org.bitcoins.core.protocol.blockchain.{
+  Block,
+  BlockHeader,
+  RegTestNetChainParams
+}
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.db.NetworkDb
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
@@ -37,25 +46,34 @@ trait ChainUnitTest
   val timeout: FiniteDuration = 10.seconds
 
   def networkDb: NetworkDb = NetworkDb.UnitTestDbConfig
-  def dbConfig: ChainDbConfig = ChainDbConfig.UnitTestDbConfig(networkDb)
+  lazy val dbConfig: ChainDbConfig = ChainDbConfig.UnitTestDbConfig(networkDb)
 
   val genesisHeaderDb: BlockHeaderDb = ChainTestUtil.regTestGenesisHeaderDb
-  val chainParam: ChainParams = networkDb.chain
 
   lazy val appConfig = ChainAppConfig(dbConfig)
-  private lazy val blockHeaderDAO = BlockHeaderDAO(appConfig)
 
-  lazy val blockchain: Blockchain =
-    Blockchain.fromHeaders(Vector(genesisHeaderDb), blockHeaderDAO)
+  def makeChainHandler(
+      firstHeader: BlockHeaderDb = genesisHeaderDb): ChainHandler = {
+    lazy val blockHeaderDAO = BlockHeaderDAO(appConfig)
 
-  private lazy val chainHandler: ChainHandler = ChainHandler(blockchain)
+    lazy val blockchain: Blockchain =
+      Blockchain.fromHeaders(Vector(firstHeader), blockHeaderDAO)
+
+    ChainHandler(blockchain)
+  }
 
   implicit def ec: ExecutionContext =
     scala.concurrent.ExecutionContext.Implicits.global
 
+  /**
+    * All untagged tests will be given this tag. Override this if you are using
+    * ChainFixture and the plurality of tests use some fixture other than Empty.
+    */
+  val defaultTag: ChainFixtureTag = ChainFixtureTag.Empty
 
   def withChainFixture(test: OneArgAsyncTest): FutureOutcome = {
-    val stringTag = test.tags.headOption.getOrElse(ChainFixtureTag.defaultTag.name)
+    val stringTag =
+      test.tags.headOption.getOrElse(ChainFixtureTag.defaultTag.name)
 
     val fixtureTag: ChainFixtureTag = ChainFixtureTag.from(stringTag)
 
@@ -144,9 +162,9 @@ trait ChainUnitTest
     new SugaryItVerbString(itVerbString)
 
   def createBlockHeaderDAO(): Future[BlockHeaderDAO] = {
-    val genesisHeaderF = setupHeaderTableWithGenesisHeader()
+    val (chainHandler, genesisHeaderF) = setupHeaderTableWithGenesisHeader()
 
-    genesisHeaderF.map(_ => blockHeaderDAO)
+    genesisHeaderF.map(_ => chainHandler.blockchain.blockHeaderDAO)
   }
 
   def destroyHeaderTable(): Future[Unit] = {
@@ -162,10 +180,15 @@ trait ChainUnitTest
     makeFixture(createBlockHeaderDAO, destroyHeaderTable)(test)
   }
 
-  // Creates and populates BlockHeaderTable with block headers 562375 to 571375
+  /** Height of the first block in populated fixtures */
+  val FIRST_BLOCK_HEIGHT: Int = 562375
+
+  val FIRST_POW_CHANGE: Int = (FIRST_BLOCK_HEIGHT / 2016 + 1) * 2016
+
+  /** Creates and populates BlockHeaderTable with block headers 562375 to 571375 */
   def createPopulatedBlockHeaderDAO(): Future[BlockHeaderDAO] = {
     // The height of the first block in the json file
-    val OFFSET: Int = 562375
+    val OFFSET: Int = FIRST_BLOCK_HEIGHT
 
     val tableSetupF = setupHeaderTable()
 
@@ -209,6 +232,12 @@ trait ChainUnitTest
                                                 dbHeaders = dbHeaders,
                                                 batchesSoFar = Vector.empty)
 
+        val firstHeader =
+          BlockHeaderDbHelper.fromBlockHeader(FIRST_BLOCK_HEIGHT,
+                                              ChainTestUtil.blockHeader562375)
+
+        val chainHandler = makeChainHandler(firstHeader)
+
         val insertedF = tableSetupF.flatMap { _ =>
           batchedDbHeaders.foldLeft(
             Future.successful[Vector[BlockHeaderDb]](Vector.empty)) {
@@ -218,7 +247,7 @@ trait ChainUnitTest
           }
         }
 
-        insertedF.map(_ => blockHeaderDAO)
+        insertedF.map(_ => chainHandler.blockchain.blockHeaderDAO)
     }
   }
 
@@ -227,12 +256,24 @@ trait ChainUnitTest
   }
 
   def createChainHandler(): Future[ChainHandler] = {
-    val genesisHeaderF = setupHeaderTableWithGenesisHeader()
+    val (chainHandler, genesisHeaderF) = setupHeaderTableWithGenesisHeader()
     genesisHeaderF.map(_ => chainHandler)
   }
 
   def withChainHandler(test: OneArgAsyncTest): FutureOutcome = {
     makeFixture(createChainHandler, destroyHeaderTable)(test)
+  }
+
+  /** Creates and populates BlockHeaderTable with block headers 562375 to 571375 */
+  def createPopulatedChainHandler(): Future[ChainHandler] = {
+    for {
+      blockHeaderDAO <- createPopulatedBlockHeaderDAO()
+      blockHeaderVec <- blockHeaderDAO.getAtHeight(FIRST_BLOCK_HEIGHT)
+    } yield ChainHandler(Blockchain(blockHeaderVec, blockHeaderDAO))
+  }
+
+  def withPopulatedChainHandler(test: OneArgAsyncTest): FutureOutcome = {
+    makeFixture(createPopulatedChainHandler, destroyHeaderTable)(test)
   }
 
   /** Creates the [[org.bitcoins.chain.models.BlockHeaderTable]] */
@@ -242,17 +283,22 @@ trait ChainUnitTest
   }
 
   /** Creates the [[org.bitcoins.chain.models.BlockHeaderTable]] and inserts the genesis header */
-  private def setupHeaderTableWithGenesisHeader(): Future[BlockHeaderDb] = {
+  private def setupHeaderTableWithGenesisHeader(): (
+      ChainHandler,
+      Future[BlockHeaderDb]) = {
     val tableSetupF = setupHeaderTable()
+
+    val chainHandler = makeChainHandler()
 
     val genesisHeaderF = tableSetupF.flatMap(_ =>
       chainHandler.blockchain.blockHeaderDAO.create(genesisHeaderDb))
-    genesisHeaderF
+
+    (chainHandler, genesisHeaderF)
   }
 
   def createChainHandlerWithBitcoindZmq(
       bitcoind: BitcoindRpcClient): Future[(ChainHandler, ZMQSubscriber)] = {
-    val genesisHeaderF = setupHeaderTableWithGenesisHeader()
+    val (chainHandler, genesisHeaderF) = setupHeaderTableWithGenesisHeader()
 
     val zmqRawBlockUriOpt: Option[InetSocketAddress] =
       bitcoind.instance.zmqConfig.rawBlock
@@ -280,7 +326,7 @@ trait ChainUnitTest
   def createBitcoindChainHandlerViaZmq(): Future[BitcoindChainHandlerViaZmq] = {
     composeBuildersAndWrap(createBitcoind,
                            createChainHandlerWithBitcoindZmq,
-      BitcoindChainHandlerViaZmq.apply)()
+                           BitcoindChainHandlerViaZmq.apply)()
   }
 
   def destroyBitcoindChainHandlerViaZmq(
@@ -303,10 +349,11 @@ trait ChainUnitTest
     */
   def withBitcoindChainHandlerViaZmq(test: OneArgAsyncTest)(
       implicit system: ActorSystem): FutureOutcome = {
-    val builder: () => Future[BitcoindChainHandlerViaZmq] = composeBuildersAndWrap(
-      builder = createBitcoind,
-      dependentBuilder = createChainHandlerWithBitcoindZmq,
-      wrap = BitcoindChainHandlerViaZmq.apply)
+    val builder: () => Future[BitcoindChainHandlerViaZmq] =
+      composeBuildersAndWrap(builder = createBitcoind,
+                             dependentBuilder =
+                               createChainHandlerWithBitcoindZmq,
+                             wrap = BitcoindChainHandlerViaZmq.apply)
 
     makeDependentFixture(builder, destroyBitcoindChainHandlerViaZmq)(test)
   }
