@@ -2,7 +2,8 @@ package org.bitcoins.chain.blockchain
 
 import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.chain.models.BlockHeaderDb
+import org.bitcoins.chain.db.ChainDbConfig
+import org.bitcoins.chain.models.{BlockHeaderDAO, BlockHeaderDb}
 import org.bitcoins.core.crypto.DoubleSha256DigestBE
 import org.bitcoins.core.protocol.blockchain.{BlockHeader, ChainParams}
 import org.bitcoins.core.util.BitcoinSLogger
@@ -15,15 +16,13 @@ import scala.concurrent.{ExecutionContext, Future}
   * of [[ChainApi]], this is the entry point in to the
   * chain project.
   */
-case class ChainHandler(blockchain: Blockchain, chainAppConfig: ChainAppConfig)(implicit ec: ExecutionContext)
+case class ChainHandler(blockHeaderDAO: BlockHeaderDAO, chainAppConfig: ChainAppConfig)(implicit ec: ExecutionContext)
     extends ChainApi
     with BitcoinSLogger {
 
-  private val blockHeaderDAO = blockchain.blockHeaderDAO
-
   def chainParams: ChainParams = chainAppConfig.chain
 
-  def dbConfig: DbConfig = blockchain.blockHeaderDAO.dbConfig
+  def dbConfig: ChainDbConfig = chainAppConfig.dbConfig
 
   override def getBlockCount: Future[Long] = {
     blockHeaderDAO.maxHeight
@@ -35,14 +34,15 @@ case class ChainHandler(blockchain: Blockchain, chainAppConfig: ChainAppConfig)(
   }
 
   override def processHeader(header: BlockHeader): Future[ChainHandler] = {
-    val blockchainUpdateF = Blockchain.connectTip(header,blockchain)
+
+    val blockchainUpdateF = Blockchain.connectTip(header, blockHeaderDAO)
 
     val newHandlerF = blockchainUpdateF.flatMap {
       case BlockchainUpdate.Successful(blockchain, updatedHeader) =>
         //now we have successfully connected the header, we need to insert
         //it into the database
         val createdF = blockHeaderDAO.create(updatedHeader)
-        createdF.map(_ => ChainHandler(blockchain, chainAppConfig))
+        createdF.map(_ => ChainHandler(blockHeaderDAO, chainAppConfig))
       case BlockchainUpdate.Failed(_, _, reason) =>
         val errMsg =
           s"Failed to add header to chain, header=${header.hashBE.hex} reason=${reason}"

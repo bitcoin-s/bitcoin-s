@@ -1,5 +1,6 @@
 package org.bitcoins.chain.models
 
+import org.bitcoins.chain.blockchain.Blockchain
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.crypto.DoubleSha256DigestBE
 import org.bitcoins.db.{CRUD, DbConfig, SlickUtil}
@@ -165,6 +166,22 @@ sealed abstract class BlockHeaderDAO
     }
 
     database.runVec(aggregate)
+  }
+
+  def getBetweenHeights(from: Long, to: Long): Future[Vector[BlockHeaderDb]] = ???
+
+  def getBlockchains()(implicit ec: ExecutionContext): Future[Vector[Blockchain]] = {
+    val chainTipsF = chainTips
+    val diffInterval = appConfig.chain.difficultyChangeInterval
+    chainTipsF.flatMap { tips =>
+      val nestedFuture: Vector[Future[Blockchain]] = tips.map { tip =>
+
+        val height = Math.max(0,tip.height - diffInterval)
+        val headersF = getBetweenHeights(from = height, to = tip.height)
+        headersF.map(Blockchain.fromHeaders(_))
+      }
+      Future.sequence(nestedFuture)
+    }
   }
 }
 

@@ -239,7 +239,7 @@ trait ChainUnitTest
             Future.successful[Vector[BlockHeaderDb]](Vector.empty)) {
             case (fut, batch) =>
               fut.flatMap(_ =>
-                chainHandler.blockchain.blockHeaderDAO.createAll(batch))
+                chainHandler.blockHeaderDAO.createAll(batch))
           }
         }
 
@@ -286,10 +286,11 @@ trait ChainUnitTest
 
     val chainHandler = makeChainHandler()
 
-    val genesisHeaderF = tableSetupF.flatMap(_ =>
-      chainHandler.blockchain.blockHeaderDAO.create(genesisHeaderDb))
+    val genesisHeaderF = tableSetupF.flatMap { _ =>
+      chainHandler.blockHeaderDAO.create(genesisHeaderDb)
+    }
 
-    (chainHandler, genesisHeaderF)
+    (chainHandler,genesisHeaderF)
   }
 
   def createChainHandlerWithBitcoindZmq(
