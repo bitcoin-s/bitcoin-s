@@ -7,7 +7,6 @@ import org.bitcoins.chain.models.{BlockHeaderDAO, BlockHeaderDb}
 import org.bitcoins.core.crypto.DoubleSha256DigestBE
 import org.bitcoins.core.protocol.blockchain.{BlockHeader, ChainParams}
 import org.bitcoins.core.util.BitcoinSLogger
-import org.bitcoins.db.DbConfig
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -38,7 +37,7 @@ case class ChainHandler(blockHeaderDAO: BlockHeaderDAO, chainAppConfig: ChainApp
     val blockchainUpdateF = Blockchain.connectTip(header, blockHeaderDAO)
 
     val newHandlerF = blockchainUpdateF.flatMap {
-      case BlockchainUpdate.Successful(blockchain, updatedHeader) =>
+      case BlockchainUpdate.Successful(_, updatedHeader) =>
         //now we have successfully connected the header, we need to insert
         //it into the database
         val createdF = blockHeaderDAO.create(updatedHeader)

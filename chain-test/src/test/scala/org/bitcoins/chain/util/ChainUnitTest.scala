@@ -51,10 +51,7 @@ trait ChainUnitTest
       firstHeader: BlockHeaderDb = genesisHeaderDb): ChainHandler = {
     lazy val blockHeaderDAO = BlockHeaderDAO(appConfig)
 
-    lazy val blockchain: Blockchain =
-      Blockchain.fromHeaders(Vector(firstHeader), blockHeaderDAO)
-
-    ChainHandler(blockchain)
+    ChainHandler(blockHeaderDAO = blockHeaderDAO,chainAppConfig = appConfig)
   }
 
 
@@ -160,7 +157,7 @@ trait ChainUnitTest
   def createBlockHeaderDAO(): Future[BlockHeaderDAO] = {
     val (chainHandler, genesisHeaderF) = setupHeaderTableWithGenesisHeader()
 
-    genesisHeaderF.map(_ => chainHandler.blockchain.blockHeaderDAO)
+    genesisHeaderF.map(_ => chainHandler.blockHeaderDAO)
   }
 
   def destroyHeaderTable(): Future[Unit] = {
@@ -243,7 +240,7 @@ trait ChainUnitTest
           }
         }
 
-        insertedF.map(_ => chainHandler.blockchain.blockHeaderDAO)
+        insertedF.map(_ => chainHandler.blockHeaderDAO)
     }
   }
 
@@ -264,8 +261,7 @@ trait ChainUnitTest
   def createPopulatedChainHandler(): Future[ChainHandler] = {
     for {
       blockHeaderDAO <- createPopulatedBlockHeaderDAO()
-      blockHeaderVec <- blockHeaderDAO.getAtHeight(FIRST_BLOCK_HEIGHT)
-    } yield ChainHandler(Blockchain(blockHeaderVec, blockHeaderDAO))
+    } yield ChainHandler(blockHeaderDAO = blockHeaderDAO,chainAppConfig = appConfig)
   }
 
   def withPopulatedChainHandler(test: OneArgAsyncTest): FutureOutcome = {

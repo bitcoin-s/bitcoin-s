@@ -168,8 +168,6 @@ sealed abstract class BlockHeaderDAO
     database.runVec(aggregate)
   }
 
-  def getBetweenHeights(from: Long, to: Long): Future[Vector[BlockHeaderDb]] = ???
-
   def getBlockchains()(implicit ec: ExecutionContext): Future[Vector[Blockchain]] = {
     val chainTipsF = chainTips
     val diffInterval = appConfig.chain.difficultyChangeInterval
@@ -178,7 +176,7 @@ sealed abstract class BlockHeaderDAO
 
         val height = Math.max(0,tip.height - diffInterval)
         val headersF = getBetweenHeights(from = height, to = tip.height)
-        headersF.map(Blockchain.fromHeaders(_))
+        headersF.map(headers => Blockchain.fromHeaders(headers.reverse))
       }
       Future.sequence(nestedFuture)
     }
