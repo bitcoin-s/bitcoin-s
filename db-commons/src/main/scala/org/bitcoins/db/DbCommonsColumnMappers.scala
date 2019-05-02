@@ -18,8 +18,39 @@ import org.bitcoins.core.hd.HDChainType
 import org.bitcoins.core.hd.HDPurpose
 import org.bitcoins.core.hd.HDPurposes
 import org.bitcoins.core.hd.SegWitHDPath
+import slick.jdbc.GetResult
 
 abstract class DbCommonsColumnMappers {
+
+  /**
+    * If executing something like this:
+    *
+    * {{{
+    * sql"SELECT * FROM sqlite_master where type='table'"
+    * }}}
+    *
+    * you end up with something like this:
+    * {{{
+    * /-------+---------------+---------------+----------+----------------------\
+    * | 1     | 2             | 3             | 4        | 5                    |
+    * | type  | name          | tbl_name      | rootpage | sql                  |
+    * |-------+---------------+---------------+----------+----------------------|
+    * | table | block_headers | block_headers | 2        | CREATE TABLE "blo... |
+    * \-------+---------------+---------------+----------+----------------------/
+    * }}}
+    *
+    * This is most likely an implementation that will break of you try and cast
+    * the result of a different raw SQL query into a
+    * [[org.bitcoins.db.SQLiteTableInfo SQLiteTableInfo]].
+    */
+  implicit val sqliteTableInfoReader: GetResult[SQLiteTableInfo] = row => {
+    row.nextString() // type
+    row.nextString() // name
+    val tableName = row.nextString()
+    row.nextString() // rootpage
+    val sql = row.nextString()
+    SQLiteTableInfo(tableName, sql)
+  }
 
   /** Responsible for mapping a [[DoubleSha256Digest]] to a String, and vice versa */
   implicit val doubleSha256DigestMapper: BaseColumnType[DoubleSha256Digest] =
