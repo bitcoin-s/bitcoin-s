@@ -3,20 +3,13 @@ package org.bitcoins.chain.util
 import java.net.InetSocketAddress
 
 import akka.actor.ActorSystem
+import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.chain.blockchain.{Blockchain, ChainHandler}
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.db.{ChainDbConfig, ChainDbManagement}
-import org.bitcoins.chain.models.{
-  BlockHeaderDAO,
-  BlockHeaderDb,
-  BlockHeaderDbHelper
-}
+import org.bitcoins.chain.models.{BlockHeaderDAO, BlockHeaderDb, BlockHeaderDbHelper}
 import org.bitcoins.chain.util.ChainFixture.BitcoindZmqChainHandlerWithBlock
-import org.bitcoins.core.protocol.blockchain.{
-  Block,
-  BlockHeader,
-  RegTestNetChainParams
-}
+import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, ChainParams, RegTestNetChainParams}
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.db.NetworkDb
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
@@ -50,6 +43,8 @@ trait ChainUnitTest
 
   val genesisHeaderDb: BlockHeaderDb = ChainTestUtil.regTestGenesisHeaderDb
 
+  implicit lazy val chainParam: ChainParams = networkDb.chain
+
   lazy val appConfig = ChainAppConfig(dbConfig)
 
   def makeChainHandler(
@@ -63,7 +58,7 @@ trait ChainUnitTest
   }
 
   implicit def ec: ExecutionContext =
-    scala.concurrent.ExecutionContext.Implicits.global
+    system.dispatcher
 
   /**
     * All untagged tests will be given this tag. Override this if you are using
@@ -323,6 +318,15 @@ trait ChainUnitTest
     genesisHeaderF.map(_ => (chainHandler, zmqSubscriber))
   }
 
+  def createChainApiWithBitcoindRpc(bitcoind: BitcoindRpcClient)(implicit system: ActorSystem): Future[BitcoindChainHandlerViaRpc] = {
+    val (handler, genesisHeaderF) = setupHeaderTableWithGenesisHeader()
+
+    genesisHeaderF.map {_ =>
+      BitcoindChainHandlerViaRpc(bitcoind,handler)
+    }
+
+  }
+
   def createBitcoindChainHandlerViaZmq(): Future[BitcoindChainHandlerViaZmq] = {
     composeBuildersAndWrap(createBitcoind,
                            createChainHandlerWithBitcoindZmq,
@@ -331,11 +335,20 @@ trait ChainUnitTest
 
   def destroyBitcoindChainHandlerViaZmq(
       bitcoindChainHandler: BitcoindChainHandlerViaZmq): Future[Unit] = {
+
+    //piggy back off of rpc destructor
+    val rpc = BitcoindChainHandlerViaRpc(bitcoindChainHandler.bitcoindRpc,bitcoindChainHandler.chainHandler)
+
+    destroyBitcoindChainApiViaRpc(rpc).map { _ =>
+      bitcoindChainHandler.zmqSubscriber.stop
+    }
+  }
+
+
+  def destroyBitcoindChainApiViaRpc(bitcoindChainHandler: BitcoindChainHandlerViaRpc): Future[Unit] = {
     val stopBitcoindF =
       BitcoindRpcTestUtil.stopServer(bitcoindChainHandler.bitcoindRpc)
     val dropTableF = destroyHeaderTable()
-
-    bitcoindChainHandler.zmqSubscriber.stop
     stopBitcoindF.flatMap(_ => dropTableF)
   }
 
@@ -356,6 +369,16 @@ trait ChainUnitTest
                              wrap = BitcoindChainHandlerViaZmq.apply)
 
     makeDependentFixture(builder, destroyBitcoindChainHandlerViaZmq)(test)
+  }
+
+
+  def withBitcoindChainHandlerViaRpc(test: OneArgAsyncTest)(
+    implicit system: ActorSystem): FutureOutcome = {
+    val builder: () => Future[BitcoindChainHandlerViaRpc] = {
+      () => createBitcoind().flatMap(createChainApiWithBitcoindRpc(_))
+    }
+
+    makeDependentFixture(builder,destroyBitcoindChainApiViaRpc)(test)
   }
 
   override def afterAll(): Unit = {

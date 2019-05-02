@@ -4,7 +4,7 @@ import org.bitcoins.chain.models.BlockHeaderDb
 import org.bitcoins.core.crypto.DoubleSha256DigestBE
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 /**
   * Entry api to the chain project for adding new things to our blockchain
@@ -16,7 +16,19 @@ trait ChainApi {
     * @param header
     * @return
     */
-  def processHeader(header: BlockHeader): Future[ChainApi]
+  def processHeader(header: BlockHeader)(implicit ec: ExecutionContext): Future[ChainApi]
+
+  /** Process all of the given headers and returns a new [[ChainApi chain api]]
+    * that contains these headers. This method processes headers in the order
+    * that they are given. If the headers are out of order, this method will fail
+    * @param headers
+    * @return
+    */
+  def processHeaders(headers: Vector[BlockHeader])(implicit ec: ExecutionContext): Future[ChainApi] = {
+    headers.foldLeft(Future.successful(this)) { case (chainF,header) =>
+      chainF.flatMap(_.processHeader(header))
+    }
+  }
 
   /** Get's a [[org.bitcoins.chain.models.BlockHeaderDb]] from the chain's database */
   def getHeader(hash: DoubleSha256DigestBE): Future[Option[BlockHeaderDb]]
