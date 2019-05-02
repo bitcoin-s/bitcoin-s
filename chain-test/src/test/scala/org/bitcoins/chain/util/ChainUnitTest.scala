@@ -51,11 +51,9 @@ trait ChainUnitTest
       firstHeader: BlockHeaderDb = genesisHeaderDb): ChainHandler = {
     lazy val blockHeaderDAO = BlockHeaderDAO(appConfig)
 
-    lazy val blockchain: Blockchain =
-      Blockchain.fromHeaders(Vector(firstHeader), blockHeaderDAO)
-
-    ChainHandler(blockchain)
+    ChainHandler(blockHeaderDAO = blockHeaderDAO,chainAppConfig = appConfig)
   }
+
 
   implicit def ec: ExecutionContext =
     system.dispatcher
@@ -159,7 +157,7 @@ trait ChainUnitTest
   def createBlockHeaderDAO(): Future[BlockHeaderDAO] = {
     val (chainHandler, genesisHeaderF) = setupHeaderTableWithGenesisHeader()
 
-    genesisHeaderF.map(_ => chainHandler.blockchain.blockHeaderDAO)
+    genesisHeaderF.map(_ => chainHandler.blockHeaderDAO)
   }
 
   def destroyHeaderTable(): Future[Unit] = {
@@ -238,11 +236,11 @@ trait ChainUnitTest
             Future.successful[Vector[BlockHeaderDb]](Vector.empty)) {
             case (fut, batch) =>
               fut.flatMap(_ =>
-                chainHandler.blockchain.blockHeaderDAO.createAll(batch))
+                chainHandler.blockHeaderDAO.createAll(batch))
           }
         }
 
-        insertedF.map(_ => chainHandler.blockchain.blockHeaderDAO)
+        insertedF.map(_ => chainHandler.blockHeaderDAO)
     }
   }
 
@@ -263,8 +261,7 @@ trait ChainUnitTest
   def createPopulatedChainHandler(): Future[ChainHandler] = {
     for {
       blockHeaderDAO <- createPopulatedBlockHeaderDAO()
-      blockHeaderVec <- blockHeaderDAO.getAtHeight(FIRST_BLOCK_HEIGHT)
-    } yield ChainHandler(Blockchain(blockHeaderVec, blockHeaderDAO))
+    } yield ChainHandler(blockHeaderDAO = blockHeaderDAO,chainAppConfig = appConfig)
   }
 
   def withPopulatedChainHandler(test: OneArgAsyncTest): FutureOutcome = {
@@ -285,10 +282,11 @@ trait ChainUnitTest
 
     val chainHandler = makeChainHandler()
 
-    val genesisHeaderF = tableSetupF.flatMap(_ =>
-      chainHandler.blockchain.blockHeaderDAO.create(genesisHeaderDb))
+    val genesisHeaderF = tableSetupF.flatMap { _ =>
+      chainHandler.blockHeaderDAO.create(genesisHeaderDb)
+    }
 
-    (chainHandler, genesisHeaderF)
+    (chainHandler,genesisHeaderF)
   }
 
   def createChainHandlerWithBitcoindZmq(
