@@ -35,14 +35,21 @@ object Blockchain extends BitcoinSLogger {
 
   /**
     * Attempts to connect the given block header with the given blockchain
-    * @param header
-    * @param blockHeaderDAO
+    * This is done via the companion object for blockchain because
+    * we query [[BlockHeaderDAO block header dao]] for the chain tips
+    * We then attempt to connect this block header to all of our current
+    * chain tips.
+    * @param header the block header to connect to our chain
+    * @param blockHeaderDAO where we can find our blockchain
     * @param ec
-    * @return
+    * @return a [[Future future]] that contains a [[BlockchainUpdate update]] indicating
+    *         we [[BlockchainUpdate.Successful successfully]] connected the tip,
+    *         or [[BlockchainUpdate.Failed failed]] to connect to a tip
     */
   def connectTip(header: BlockHeader, blockHeaderDAO: BlockHeaderDAO)(
     implicit ec: ExecutionContext): Future[BlockchainUpdate] = {
 
+    //get all competing chains we have
     val blockchainsF: Future[Vector[Blockchain]] = blockHeaderDAO.getBlockchains()
 
     val tipResultF: Future[BlockchainUpdate] = blockchainsF.flatMap { blockchains =>

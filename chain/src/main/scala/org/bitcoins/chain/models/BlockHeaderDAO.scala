@@ -168,6 +168,15 @@ sealed abstract class BlockHeaderDAO
     database.runVec(aggregate)
   }
 
+  /** Returns competing blockchains that are contained in our BlockHeaderDAO
+    * Each chain returns the last [[org.bitcoins.core.protocol.blockchain.ChainParams.difficultyChangeInterval difficutly interval]]
+    * as defined by the network we are on. For instance, on bitcoin mainnet this will be 2016 block headers.
+    * If no competing tips are found, we only return one [[Blockchain blockchain]], else we
+    * return n chains for the number of competing [[chainTips tips]] we have
+    * @see [[Blockchain]]
+    * @param ec
+    * @return
+    */
   def getBlockchains()(implicit ec: ExecutionContext): Future[Vector[Blockchain]] = {
     val chainTipsF = chainTips
     val diffInterval = appConfig.chain.difficultyChangeInterval
