@@ -64,7 +64,11 @@ sealed abstract class CurrencyUnit
 sealed abstract class Satoshis extends CurrencyUnit {
   override type A = Int64
 
-  override def toString: String = s"$toLong sat"
+  override def toString: String = {
+    val num = toLong
+    val postFix = if (num == 1) "sat" else "sats"
+    s"$num $postFix"
+  }
 
   override def bytes: ByteVector = RawSatoshisSerializer.write(this)
 

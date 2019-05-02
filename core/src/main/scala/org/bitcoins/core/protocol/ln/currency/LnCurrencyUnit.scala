@@ -99,6 +99,8 @@ sealed abstract class LnCurrencyUnit
   def toEncodedString: String = {
     toBigInt + character.toString
   }
+
+  override def toString(): String = s"$underlying ${character}BTC"
 }
 
 sealed abstract class MilliBitcoins extends LnCurrencyUnit {
@@ -128,8 +130,6 @@ object MilliBitcoins extends BaseNumbers[MilliBitcoins] {
     require(underlying <= LnPolicy.maxMilliBitcoins,
             "Number was too big for MilliBitcoins, got: " + underlying)
 
-    override def toString: String =
-      s"${underlying / toPicoBitcoinMultiplier} mBTC"
   }
 }
 
@@ -160,8 +160,6 @@ object MicroBitcoins extends BaseNumbers[MicroBitcoins] {
     require(underlying <= LnPolicy.maxMicroBitcoins,
             "Number was too big for MicroBitcoins, got: " + underlying)
 
-    override def toString: String =
-      s"${underlying / toPicoBitcoinMultiplier} uBTC"
   }
 }
 
@@ -191,8 +189,6 @@ object NanoBitcoins extends BaseNumbers[NanoBitcoins] {
     require(underlying <= LnPolicy.maxNanoBitcoins,
             "Number was too big for NanoBitcoins, got: " + underlying)
 
-    override def toString: String =
-      s"${underlying / toPicoBitcoinMultiplier} nBTC"
   }
 }
 
@@ -220,7 +216,6 @@ object PicoBitcoins extends BaseNumbers[PicoBitcoins] {
     require(underlying <= LnPolicy.maxPicoBitcoins,
             "Number was too big for PicoBitcoins, got: " + underlying)
 
-    override def toString: String = s"$toBigInt pBTC"
   }
 }
 
