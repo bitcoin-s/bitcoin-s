@@ -96,20 +96,19 @@ class ChainHandlerTest extends ChainUnitTest {
       val firstThreeBlocks =
         Vector(firstBlockHeaderDb, secondBlockHeaderDb, thirdBlockHeaderDb)
 
-      chainHandler.blockchain.blockHeaderDAO
-        .createAll(firstThreeBlocks)
-        .flatMap { _ =>
-          val processorF = Future.successful(
-            chainHandler.copy(blockchain =
-              chainHandler.blockchain.copy(headers = firstThreeBlocks.reverse)))
+      val createdF = chainHandler.blockHeaderDAO.createAll(firstThreeBlocks)
 
+      createdF.flatMap { _ =>
+          val processorF = Future.successful(chainHandler)
           // Takes way too long to do all blocks
           val blockHeadersToTest = blockHeaders.tail
             .take(
               (2 * chainHandler.chainParams.difficultyChangeInterval + 1).toInt)
             .toList
 
-          processHeaders(processorF, blockHeadersToTest, FIRST_POW_CHANGE + 1)
+          processHeaders(processorF = processorF,
+            remainingHeaders = blockHeadersToTest,
+            height = FIRST_POW_CHANGE + 1)
         }
   }
 

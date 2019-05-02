@@ -1,5 +1,6 @@
 package org.bitcoins.chain.models
 
+import org.bitcoins.chain.blockchain.Blockchain
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.crypto.DoubleSha256DigestBE
 import org.bitcoins.db.{CRUD, DbConfig, SlickUtil}
@@ -165,6 +166,29 @@ sealed abstract class BlockHeaderDAO
     }
 
     database.runVec(aggregate)
+  }
+
+  /** Returns competing blockchains that are contained in our BlockHeaderDAO
+    * Each chain returns the last [[org.bitcoins.core.protocol.blockchain.ChainParams.difficultyChangeInterval difficutly interval]]
+    * as defined by the network we are on. For instance, on bitcoin mainnet this will be 2016 block headers.
+    * If no competing tips are found, we only return one [[Blockchain blockchain]], else we
+    * return n chains for the number of competing [[chainTips tips]] we have
+    * @see [[Blockchain]]
+    * @param ec
+    * @return
+    */
+  def getBlockchains()(implicit ec: ExecutionContext): Future[Vector[Blockchain]] = {
+    val chainTipsF = chainTips
+    val diffInterval = appConfig.chain.difficultyChangeInterval
+    chainTipsF.flatMap { tips =>
+      val nestedFuture: Vector[Future[Blockchain]] = tips.map { tip =>
+
+        val height = Math.max(0,tip.height - diffInterval)
+        val headersF = getBetweenHeights(from = height, to = tip.height)
+        headersF.map(headers => Blockchain.fromHeaders(headers.reverse))
+      }
+      Future.sequence(nestedFuture)
+    }
   }
 }
 
