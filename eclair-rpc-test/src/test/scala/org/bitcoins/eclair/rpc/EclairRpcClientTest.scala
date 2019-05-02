@@ -714,7 +714,7 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
 
   }
 
-  it must "receive gossip messages about channel updates for nodes we do not have a direct channel with" in {
+  it must "receive gossip messages about channel updates for nodes we do not have a direct channel with" ignore  {
     //make sure we see payments outside of our immediate peers
     //this is important because these gossip messages contain
     //information about channel fees, so we need to get updates
