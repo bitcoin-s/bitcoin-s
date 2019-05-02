@@ -4,6 +4,7 @@ import org.bitcoins.testkit.core.gen.{CurrencyUnitGenerator, NumberGenerator}
 import org.bitcoins.testkit.core.gen.ln.LnCurrencyUnitGen
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 import org.scalatest.prop.PropertyChecks
+import org.scalacheck.Gen
 
 class MilliSatoshisTest extends BitcoinSUnitTest {
   behavior of "MilliSatoshis"
@@ -26,7 +27,7 @@ class MilliSatoshisTest extends BitcoinSUnitTest {
   }
 
   it must "add millisatoshis" in {
-    PropertyChecks.forAll(LnCurrencyUnitGen.milliSatoshisPair) {
+    forAll(LnCurrencyUnitGen.milliSatoshisPair) {
       case (first, second) =>
         val bigInt = first.toBigInt + second.toBigInt
         assert((first + second).toBigInt == bigInt)
@@ -39,7 +40,7 @@ class MilliSatoshisTest extends BitcoinSUnitTest {
   } yield (msat, num)
 
   it must "multiply millisatoshis with an int" in {
-    PropertyChecks.forAll(msatWithNum) {
+    forAll(msatWithNum) {
       case (msat, bigint) =>
         val underlyingCalc = msat.toBigInt * bigint
         assert((msat * bigint).toBigInt == underlyingCalc)
@@ -47,7 +48,7 @@ class MilliSatoshisTest extends BitcoinSUnitTest {
   }
 
   it must "multiply millisatoshis with itself" in {
-    PropertyChecks.forAll(LnCurrencyUnitGen.milliSatoshisPair) {
+    forAll(LnCurrencyUnitGen.milliSatoshisPair) {
       case (first, second) =>
         val safe = first.multiplySafe(second)
         val unsafe = first * second
@@ -60,7 +61,7 @@ class MilliSatoshisTest extends BitcoinSUnitTest {
   }
 
   it must "subtract msats after adding them" in {
-    PropertyChecks.forAll(LnCurrencyUnitGen.milliSatoshisPair) {
+    forAll(LnCurrencyUnitGen.milliSatoshisPair) {
       case (first, second) =>
         val added = first + second
         val subtracted = added - second
@@ -69,7 +70,7 @@ class MilliSatoshisTest extends BitcoinSUnitTest {
   }
 
   it must "subtract msats" in {
-    PropertyChecks.forAll(LnCurrencyUnitGen.milliSatoshisPair) {
+    forAll(LnCurrencyUnitGen.milliSatoshisPair) {
       case (first, second) =>
         val subtracted = first subtractSafe second
         val isPositive = (first.toBigInt - second.toBigInt) >= 0
@@ -83,8 +84,7 @@ class MilliSatoshisTest extends BitcoinSUnitTest {
   }
 
   it must "covert from a ln currency unit -> millisatoshis -> lnCurrencyUnit" in {
-
-    PropertyChecks.forAll(LnCurrencyUnitGen.positivePicoBitcoin) { pb =>
+    forAll(LnCurrencyUnitGen.positivePicoBitcoin) { pb =>
       val underlying = pb.toBigInt
       //we lose the last digit of precision converting
       //PicoBitcoins -> MilliSatoshis
@@ -103,10 +103,28 @@ class MilliSatoshisTest extends BitcoinSUnitTest {
   }
 
   it must "convert sat -> msat -> sat" in {
-    PropertyChecks.forAll(CurrencyUnitGenerator.positiveRealistic) { sat =>
+    forAll(CurrencyUnitGenerator.positiveRealistic) { sat =>
       val msat = MilliSatoshis(sat)
       assert(msat.toSatoshis == sat)
 
+    }
+  }
+
+  it must "have Int syntax" in {
+    forAll(Gen.choose(0, Int.MaxValue)) { num =>
+      assert(num.millisatoshis == MilliSatoshis(num))
+      assert(num.millisatoshi == MilliSatoshis(num))
+      assert(num.msats == MilliSatoshis(num))
+      assert(num.msat == MilliSatoshis(num))
+    }
+  }
+
+  it must "have Long syntax" in {
+    forAll(Gen.choose(0L, Long.MaxValue)) { num =>
+      assert(num.millisatoshis == MilliSatoshis(num))
+      assert(num.millisatoshi == MilliSatoshis(num))
+      assert(num.msats == MilliSatoshis(num))
+      assert(num.msat == MilliSatoshis(num))
     }
   }
 }

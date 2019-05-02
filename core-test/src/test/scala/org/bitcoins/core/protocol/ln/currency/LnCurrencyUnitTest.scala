@@ -1,10 +1,166 @@
 package org.bitcoins.core.protocol.ln.currency
 
+import org.bitcoins.core.protocol.ln.currency._
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.protocol.ln.LnPolicy
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.testkit.core.gen.ln.LnCurrencyUnitGen
+import scala.util.Success
+import scala.util.Failure
+import scala.util.Try
+import org.scalacheck.Gen
+import org.bitcoins.core.number.Int64
 
-class LnCurrencyUnitTest extends FlatSpec with MustMatchers {
+class LnCurrencyUnitTest extends BitcoinSUnitTest {
+
+  it must "have additive identity" in {
+    forAll(LnCurrencyUnitGen.lnCurrencyUnit) { lnUnit =>
+      assert(lnUnit + LnCurrencyUnits.zero == lnUnit)
+    }
+  }
+
+  it must "add to LnCurrencyUnits" in {
+    forAll(LnCurrencyUnitGen.lnCurrencyUnit, LnCurrencyUnitGen.lnCurrencyUnit) {
+      (num1, num2) =>
+        val resultT: Try[LnCurrencyUnit] = Try(num1 + num2)
+        resultT match {
+          case Success(result) =>
+            assert(PicoBitcoins.min <= result)
+            assert(result <= PicoBitcoins.max)
+            assert(num1 + num2 == result)
+          case Failure(exc) => succeed
+        }
+    }
+  }
+
+  it must "have subtractive identity for LnCurrencyUnits" in {
+    forAll(LnCurrencyUnitGen.lnCurrencyUnit) { lnUnit =>
+      assert(lnUnit - LnCurrencyUnits.zero == lnUnit)
+    }
+  }
+
+  it must "subtract two LnCurrencyUnit values" in {
+    forAll(LnCurrencyUnitGen.lnCurrencyUnit, LnCurrencyUnitGen.lnCurrencyUnit) {
+      (num1, num2) =>
+        val resultT: Try[LnCurrencyUnit] = Try(num1 - num2)
+        resultT match {
+          case Success(result) =>
+            assert(PicoBitcoins.min <= result)
+            assert(result <= PicoBitcoins.max)
+            assert(num1 - num2 == result)
+          case Failure(exc) => succeed
+        }
+    }
+  }
+
+  it must "multiply LnCurrencyUnit by zero" in {
+    forAll(LnCurrencyUnitGen.lnCurrencyUnit) { lnUnit =>
+      assert(lnUnit * LnCurrencyUnits.zero == LnCurrencyUnits.zero)
+    }
+  }
+
+  it must "have multiplicative identity for LnCurrencyUnits" in {
+    forAll(LnCurrencyUnitGen.lnCurrencyUnit) { lnUnit =>
+      assert(lnUnit * PicoBitcoins.one == lnUnit)
+    }
+  }
+
+  it must "multiply two LnCurrencyUnit values" in {
+    forAll(LnCurrencyUnitGen.lnCurrencyUnit, LnCurrencyUnitGen.lnCurrencyUnit) {
+      (num1, num2) =>
+        val resultT: Try[LnCurrencyUnit] = Try(num1 * num2)
+        resultT match {
+          case Success(result) =>
+            assert(result >= PicoBitcoins.min)
+            assert(result <= PicoBitcoins.max)
+            assert(num1 * num2 == result)
+          case Failure(exc) => succeed
+        }
+    }
+  }
+
+  private val lnCurrWithInt: Gen[(LnCurrencyUnit, Int)] = for {
+    ln <- LnCurrencyUnitGen.lnCurrencyUnit
+    num <- Gen.choose(Int.MinValue, Int.MaxValue)
+  } yield (ln, num)
+
+  it must "multiply a LnCurrencyUnit value with an int" in {
+    forAll(lnCurrWithInt) {
+      case (ln, int) =>
+        val safeProduct = ln.multiplySafe(int)
+        val underlyingProduct = ln.toBigInt * int
+        if (underlyingProduct <= PicoBitcoins.min.toBigInt && underlyingProduct >= PicoBitcoins.max.toBigInt) {
+          assert(safeProduct.isSuccess)
+          safeProduct.get.toBigInt == underlyingProduct
+        } else {
+          safeProduct.isFailure
+        }
+    }
+  }
+
+  it must "have property '< & >=''" in {
+    forAll(LnCurrencyUnitGen.lnCurrencyUnit, LnCurrencyUnitGen.lnCurrencyUnit) {
+      (num1, num2) =>
+        assert((num1 < num2) || (num1 >= num2))
+    }
+  }
+
+  it must "have property '<= & >'" in {
+    forAll(LnCurrencyUnitGen.lnCurrencyUnit, LnCurrencyUnitGen.lnCurrencyUnit) {
+      (num1, num2) =>
+        assert((num1 <= num2) || (num1 > num2))
+    }
+  }
+
+  it must "have property '== & !='" in {
+    forAll(LnCurrencyUnitGen.lnCurrencyUnit, LnCurrencyUnitGen.lnCurrencyUnit) {
+      (num1, num2) =>
+        assert((num1 == num2) || (num1 != num2))
+    }
+  }
+
+  it must "have Int syntax" in {
+    forAll(Gen.choose(Int.MinValue, Int.MaxValue)) { num =>
+      assert(num.millibitcoins == MilliBitcoins(num))
+      assert(num.millibitcoin == MilliBitcoins(num))
+      assert(num.mBTC == MilliBitcoins(num))
+
+      assert(num.microbitcoins == MicroBitcoins(num))
+      assert(num.microbitcoin == MicroBitcoins(num))
+      assert(num.uBTC == MicroBitcoins(num))
+
+      assert(num.nanobitcoins == NanoBitcoins(num))
+      assert(num.nanobitcoin == NanoBitcoins(num))
+      assert(num.nBTC == NanoBitcoins(num))
+
+      assert(num.picobitcoins == PicoBitcoins(num))
+      assert(num.picobitcoin == PicoBitcoins(num))
+      assert(num.pBTC == PicoBitcoins(num))
+    }
+  }
+
+  it must "have Long syntax" in {
+    forAll(
+      Gen.choose(LnPolicy.minMilliBitcoins.toLong,
+                 LnPolicy.maxMilliBitcoins.toLong)) { num =>
+      assert(num.millibitcoins == MilliBitcoins(num))
+      assert(num.millibitcoin == MilliBitcoins(num))
+      assert(num.mBTC == MilliBitcoins(num))
+
+      assert(num.microbitcoins == MicroBitcoins(num))
+      assert(num.microbitcoin == MicroBitcoins(num))
+      assert(num.uBTC == MicroBitcoins(num))
+
+      assert(num.nanobitcoins == NanoBitcoins(num))
+      assert(num.nanobitcoin == NanoBitcoins(num))
+      assert(num.nBTC == NanoBitcoins(num))
+
+      assert(num.picobitcoins == PicoBitcoins(num))
+      assert(num.picobitcoin == PicoBitcoins(num))
+      assert(num.pBTC == PicoBitcoins(num))
+    }
+  }
+
   it must "serialize MilliBitcoins to string" in {
     val milliBitcoins = MilliBitcoins(1000)
     milliBitcoins.toEncodedString must be("1000m")
