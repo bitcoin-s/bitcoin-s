@@ -8,6 +8,14 @@ import scala.concurrent.{ExecutionContext, Future}
 abstract class DbManagement extends BitcoinSLogger {
   def allTables: List[TableQuery[_ <: Table[_]]]
 
+  /** Lists all tables in the given database */
+  def listTables(db: Database): Future[Vector[SQLiteTableInfo]] = {
+    import DbCommonsColumnMappers._
+    val query = sql"SELECT * FROM sqlite_master where type='table'"
+      .as[SQLiteTableInfo]
+    db.run(query)
+  }
+
   def createAll(dbConfig: DbConfig)(
       implicit ec: ExecutionContext): Future[List[Unit]] = {
     Future.sequence(allTables.map(createTable(_, dbConfig)))

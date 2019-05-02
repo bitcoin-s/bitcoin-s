@@ -42,8 +42,10 @@
     <!-- see what slick is compiling to in sql -->
     <logger name="slick.compiler" level="INFO"/>
 
-    <!-- Get rid of messages like this: 
+    <!-- see what's returned by Slick -->
+    <logger name="slick.jdbc.StatementInvoker.result" level="INFO" />
 
+    <!-- Get rid of messages like this: 
     Connection attempt failed. Backing off new connection 
     attempts for at least 800 milliseconds. -->
     <logger name="akka.http.impl.engine.client.PoolGateway" level="OFF"/>
