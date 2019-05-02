@@ -33,15 +33,15 @@ trait ChainSync extends BitcoinSLogger {
     // with our current best tips
     // do we some how want to mitigate against the divergence
     // in chains here?
-    val bitcoindBestBlockHashF = {
+    val bestBlockHashF = {
       getBestBlockHashFunc()
     }
 
-    val updatedChainApi = bitcoindBestBlockHashF.flatMap { bitcoindBestBlockHash =>
+    val updatedChainApi = bestBlockHashF.flatMap { bestBlockHash =>
       currentTipsF.flatMap { tips =>
         syncTips(chainApi = chainHandler,
           tips = tips,
-          bestBlockHash = bitcoindBestBlockHash,
+          bestBlockHash = bestBlockHash,
           getBlockHeaderFunc = getBlockHeaderFunc)
       }
     }
@@ -94,15 +94,29 @@ trait ChainSync extends BitcoinSLogger {
       logger.info(s"Best tip from third party=${bestHeader.hashBE.hex} currentTips=${tips.map(_.hashBE.hex)}")
     }
 
-    //this represents all headers we have received from our external data source
-    //and need to process with our chain handler
-    val headersToSyncF = loop(bestHeaderF, List.empty)
+    //one sanity check to make sure we aren't _ahead_ of our data source
+    val hasBlockHashF = chainApi.getHeader(bestBlockHash)
 
-    //now we are going to add them to our chain and return the chain api
-    headersToSyncF.flatMap { headers =>
-      logger.info(s"Attempting to sync ${headers.length} blockheader to our chainstate")
-      chainApi.processHeaders(headers.toVector)
+    hasBlockHashF.flatMap { hasBlockHashF: Option[BlockHeaderDb] =>
+      if (hasBlockHashF.isDefined) {
+        //if we have the best block hash in our
+        //chainstate already, we don't need to search
+        //for it again!
+        Future.successful(chainApi)
+      } else {
+        //this represents all headers we have received from our external data source
+        //and need to process with our chain handler
+        val headersToSyncF = loop(bestHeaderF, List.empty)
+
+        //now we are going to add them to our chain and return the chain api
+        headersToSyncF.flatMap { headers =>
+          logger.info(s"Attempting to sync ${headers.length} blockheader to our chainstate")
+          chainApi.processHeaders(headers.toVector)
+        }
+      }
+
     }
+
   }
 }
 

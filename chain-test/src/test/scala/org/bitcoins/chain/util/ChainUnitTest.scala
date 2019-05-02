@@ -7,17 +7,9 @@ import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.chain.blockchain.{Blockchain, ChainHandler}
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.db.{ChainDbConfig, ChainDbManagement}
-import org.bitcoins.chain.models.{
-  BlockHeaderDAO,
-  BlockHeaderDb,
-  BlockHeaderDbHelper
-}
+import org.bitcoins.chain.models.{BlockHeaderDAO, BlockHeaderDb, BlockHeaderDbHelper}
 import org.bitcoins.chain.util.ChainFixture.BitcoindZmqChainHandlerWithBlock
-import org.bitcoins.core.protocol.blockchain.{
-  Block,
-  BlockHeader,
-  RegTestNetChainParams
-}
+import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, ChainParams, RegTestNetChainParams}
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.db.NetworkDb
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
@@ -51,7 +43,7 @@ trait ChainUnitTest
 
   val genesisHeaderDb: BlockHeaderDb = ChainTestUtil.regTestGenesisHeaderDb
 
-  implicit val chainParam: ChainParams = networkDb.chain
+  implicit lazy val chainParam: ChainParams = networkDb.chain
 
   lazy val appConfig = ChainAppConfig(dbConfig)
 
@@ -66,7 +58,7 @@ trait ChainUnitTest
   }
 
   implicit def ec: ExecutionContext =
-    scala.concurrent.ExecutionContext.Implicits.global
+    system.dispatcher
 
   /**
     * All untagged tests will be given this tag. Override this if you are using
@@ -327,9 +319,7 @@ trait ChainUnitTest
   }
 
   def createChainApiWithBitcoindRpc(bitcoind: BitcoindRpcClient)(implicit system: ActorSystem): Future[BitcoindChainHandlerViaRpc] = {
-    val genesisHeaderF = setupHeaderTableWithGenesisHeader()
-
-    val handler = chainHandler
+    val (handler, genesisHeaderF) = setupHeaderTableWithGenesisHeader()
 
     genesisHeaderF.map {_ =>
       BitcoindChainHandlerViaRpc(bitcoind,handler)

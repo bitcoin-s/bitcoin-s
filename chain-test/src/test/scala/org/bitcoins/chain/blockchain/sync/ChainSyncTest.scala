@@ -46,4 +46,30 @@ class ChainSyncTest extends ChainUnitTest {
 
       }
   }
+
+
+  it must "not fail when syncing a chain handler that is synced with it's external data source" in {
+    bitcoindWithChainHandler: BitcoindChainHandlerViaRpc =>
+      val bitcoind = bitcoindWithChainHandler.bitcoindRpc
+      val chainHandler = bitcoindWithChainHandler.chainHandler
+      //first we need to implement the 'getBestBlockHashFunc' and 'getBlockHeaderFunc' functions
+      val getBestBlockHashFunc = { () =>
+        bitcoind.getBestBlockHash
+      }
+
+      val getBlockHeaderFunc = { hash: DoubleSha256DigestBE =>
+        bitcoind.getBlockHeader(hash).map(_.blockHeader)
+      }
+
+      //note we are not generating a block on bitcoind
+      val newChainHandlerF: Future[ChainApi] =
+        ChainSync.sync(chainHandler = chainHandler,
+          getBlockHeaderFunc = getBlockHeaderFunc,
+          getBestBlockHashFunc = getBestBlockHashFunc)
+
+      newChainHandlerF.flatMap { chainHandler =>
+
+        chainHandler.getBlockCount.map(count => assert(count == 0))
+      }
+  }
 }
