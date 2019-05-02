@@ -24,7 +24,7 @@ trait ChainSync extends BitcoinSLogger {
            getBlockHeaderFunc: DoubleSha256DigestBE => Future[BlockHeader],
            getBestBlockHashFunc: () => Future[DoubleSha256DigestBE])(implicit ec: ExecutionContext): Future[ChainApi] = {
     val currentTipsF: Future[Vector[BlockHeaderDb]] = {
-      chainHandler.blockchain.blockHeaderDAO.chainTips
+      chainHandler.blockHeaderDAO.chainTips
     }
 
     //TODO: We are implicitly trusting whatever
