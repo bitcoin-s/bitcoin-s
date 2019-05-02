@@ -13,7 +13,7 @@ case class BlockchainBuilder(blockHeaderDAO: BlockHeaderDAO) extends mutable.Bui
 
 
   override def result(): Blockchain = {
-    Blockchain.fromHeaders(internal.result())
+    Blockchain.fromHeaders(internal.result().reverse)
   }
 
   override def +=(blockHeaderDb: BlockHeaderDb): this.type = {
