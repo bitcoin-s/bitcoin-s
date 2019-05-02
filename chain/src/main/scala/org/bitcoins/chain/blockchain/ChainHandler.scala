@@ -15,7 +15,7 @@ import scala.concurrent.{ExecutionContext, Future}
   * of [[ChainApi]], this is the entry point in to the
   * chain project.
   */
-case class ChainHandler(blockHeaderDAO: BlockHeaderDAO, chainAppConfig: ChainAppConfig)(implicit ec: ExecutionContext)
+case class ChainHandler(blockHeaderDAO: BlockHeaderDAO, chainAppConfig: ChainAppConfig)
     extends ChainApi
     with BitcoinSLogger {
 
@@ -32,7 +32,7 @@ case class ChainHandler(blockHeaderDAO: BlockHeaderDAO, chainAppConfig: ChainApp
     blockHeaderDAO.findByHash(hash)
   }
 
-  override def processHeader(header: BlockHeader): Future[ChainHandler] = {
+  override def processHeader(header: BlockHeader)(implicit ec: ExecutionContext): Future[ChainHandler] = {
 
     val blockchainUpdateF = Blockchain.connectTip(header, blockHeaderDAO)
 
