@@ -3,13 +3,18 @@ package org.bitcoins.wallet.util
 import akka.actor.ActorSystem
 import akka.testkit.TestKit
 import org.bitcoins.core.config.RegTest
+import org.bitcoins.core.crypto.MnemonicCode
 import org.bitcoins.core.protocol.blockchain.ChainParams
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.db.NetworkDb
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
 import org.bitcoins.wallet.Wallet
-import org.bitcoins.wallet.api.{InitializeWalletError, InitializeWalletSuccess, UnlockedWalletApi}
+import org.bitcoins.wallet.api.{
+  InitializeWalletError,
+  InitializeWalletSuccess,
+  UnlockedWalletApi
+}
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.db.{WalletDbConfig, WalletDbManagement}
 import org.scalatest._
@@ -25,7 +30,8 @@ trait BitcoinSWalletTest
   implicit val actorSystem: ActorSystem = ActorSystem(getClass.getSimpleName)
   implicit val ec: ExecutionContext = actorSystem.dispatcher
 
-  protected lazy val dbConfig = WalletDbConfig.UnitTestDbConfig(NetworkDb.UnitTestDbConfig)
+  protected lazy val dbConfig =
+    WalletDbConfig.UnitTestDbConfig(NetworkDb.UnitTestDbConfig)
   protected lazy val chainParams: ChainParams = WalletTestUtil.chainParams
   protected lazy val appConfig = WalletAppConfig(dbConfig = dbConfig)
 

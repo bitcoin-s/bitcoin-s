@@ -42,9 +42,11 @@ abstract class BIP32Path {
       val extendedPath: Vector[Option[BIP32Node]] = path.map(Some(_)) ++
         Vector.fill[Option[BIP32Node]](lengthDiff)(None)
 
-      val calculatedDiff: Option[BIP32Path] = extendedPath
+      val pathsWithIndices = extendedPath
         .zip(otherPath)
         .zipWithIndex
+
+      val calculatedDiff: Option[BIP32Path] = pathsWithIndices
         .foldLeft(Option(BIP32Path.empty)) {
           // we encountered an error along the way, return
           // none

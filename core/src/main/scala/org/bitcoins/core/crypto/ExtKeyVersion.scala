@@ -2,14 +2,6 @@ package org.bitcoins.core.crypto
 
 import scodec.bits._
 import org.bitcoins.core.protocol.NetworkElement
-import org.bitcoins.core.protocol.blockchain.ChainParams
-import org.bitcoins.core.protocol.blockchain.MainNetChainParams
-import org.bitcoins.core.protocol.blockchain.TestNetChainParams
-import org.bitcoins.core.protocol.blockchain.RegTestNetChainParams
-import org.bitcoins.core.config.NetworkParameters
-import org.bitcoins.core.config.MainNet
-import org.bitcoins.core.config.TestNet3
-import org.bitcoins.core.config.RegTest
 
 sealed abstract class ExtKeyVersion extends NetworkElement
 
@@ -151,50 +143,4 @@ object ExtKeyVersion {
     override val bytes = hex"0x044a4e28"
   }
 
-}
-
-object ExtKeyPrivVersion {
-
-  /**
-    * Converts the given chain params into a ExtKeyPrivVersion.
-    * Treats regtest and testnet the same.
-    *
-    * @see [[https://github.com/bcoin-org/bcoin/blob/7c64fd845cbae23751558efbe8e078e2ccbfbd30/lib/protocol/networks.js#L838 bcoin]]
-    *     and [[https://github.com/bitcoinj/bitcoinj/blob/bfe2a195b62bcbf1d2e678969e541ebc3656ae17/core/src/main/java/org/bitcoinj/params/RegTestParams.java#L48 BitcoinJ]]
-    */
-  // TODO fix this
-  def fromChainParams(chainParams: ChainParams): ExtKeyPrivVersion =
-    chainParams match {
-      case MainNetChainParams => ExtKeyVersion.LegacyMainNetPriv
-      case TestNetChainParams | RegTestNetChainParams =>
-        ExtKeyVersion.LegacyTestNet3Priv
-    }
-
-  // TODO fix this
-  def fromNetworkParameters(
-      networkParameters: NetworkParameters): ExtKeyPrivVersion =
-    networkParameters match {
-      case MainNet => ExtKeyVersion.LegacyMainNetPriv
-      case TestNet3 | RegTest =>
-        ExtKeyVersion.LegacyTestNet3Priv
-    }
-
-}
-
-object ExtKeyPubVersion {
-
-  /**
-    * Converts the given chain params into a ExtKeyPubVersion.
-    * Treats regtest and testnet the same.
-    *
-    * @see [[https://github.com/bcoin-org/bcoin/blob/7c64fd845cbae23751558efbe8e078e2ccbfbd30/lib/protocol/networks.js#L838 bcoin]]
-    *     and [[https://github.com/bitcoinj/bitcoinj/blob/bfe2a195b62bcbf1d2e678969e541ebc3656ae17/core/src/main/java/org/bitcoinj/params/RegTestParams.java#L48 BitcoinJ]]
-    */
-  def fromChainParams(chainParams: ChainParams): ExtKeyPubVersion =
-    chainParams match {
-      case MainNetChainParams => ExtKeyVersion.LegacyMainNetPub
-      case TestNetChainParams | RegTestNetChainParams =>
-        ExtKeyVersion.LegacyTestNet3Pub
-
-    }
 }

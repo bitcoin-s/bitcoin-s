@@ -1,11 +1,7 @@
 package org.bitcoins.wallet.util
 
 import org.bitcoins.core.config.RegTest
-import org.bitcoins.core.crypto.{
-  DoubleSha256Digest,
-  ExtKeyPubVersion,
-  ExtPublicKey
-}
+import org.bitcoins.core.crypto._
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.blockchain.{
   ChainParams,
@@ -14,31 +10,43 @@ import org.bitcoins.core.protocol.blockchain.{
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.testkit.core.gen.CryptoGenerators
 import org.bitcoins.wallet.models.AccountDb
+import org.bitcoins.wallet.HDUtil
 import scodec.bits.HexStringSyntax
-import org.bitcoins.core.hd.HDCoin
-import org.bitcoins.core.hd.HDCoinType
-import org.bitcoins.core.hd.HDPath
-import org.bitcoins.core.hd.SegWitHDPath
-import org.bitcoins.core.hd.HDChain
-import org.bitcoins.core.hd.HDChainType
-import org.bitcoins.core.hd.HDAccount
-import org.bitcoins.core.hd.HDPurposes
+import org.bitcoins.core.hd._
+import org.bitcoins.core.protocol.script.ScriptWitness
+import org.bitcoins.core.protocol.script.P2WPKHWitnessV0
 
 object WalletTestUtil {
 
   val chainParams: ChainParams = RegTestNetChainParams
   val networkParam: RegTest.type = RegTest
 
-  val hdCoinType: HDCoinType = ???
+  val hdCoinType: HDCoinType = HDCoinType.Testnet
+
+  /**
+    * Useful if you want wallet test runs
+    * To use the same key values each time
+    */
+  val sampleMnemonic =
+    MnemonicCode.fromWords(
+      Vector("portion",
+             "uniform",
+             "owner",
+             "crime",
+             "duty",
+             "floor",
+             "sketch",
+             "stumble",
+             "outer",
+             "south",
+             "relax",
+             "car"))
 
   lazy val sampleSegwitPath =
     SegWitHDPath(hdCoinType,
                  accountIndex = 0,
                  HDChainType.External,
                  addressIndex = 0)
-
-  val extKeyPubVersion: ExtKeyPubVersion =
-    ExtKeyPubVersion.fromChainParams(chainParams)
 
   def freshXpub: ExtPublicKey =
     CryptoGenerators.extPublicKey.sample.getOrElse(freshXpub)
@@ -51,4 +59,5 @@ object WalletTestUtil {
   lazy val sampleVout: UInt32 = UInt32.zero
   lazy val sampleSPK: ScriptPubKey =
     ScriptPubKey.fromAsmBytes(hex"001401b2ac67587e4b603bb3ad709a8102c30113892d")
+  lazy val sampleScriptWitness: ScriptWitness = P2WPKHWitnessV0(freshXpub.key)
 }

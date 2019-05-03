@@ -135,12 +135,12 @@ object HDGenerators {
                          accountIndex = accountIndex,
                          chainType = chainType)
 
-  def hdPath: Gen[HDPath[_]] =
+  def hdPath: Gen[HDPath] =
     Gen.oneOf(legacyHdPath, segwithHdPath, nestedSegwithHdPath)
 
-  type HDPathConstructor = Vector[BIP32Node] => Try[HDPath[_]]
+  type HDPathConstructor = Vector[BIP32Node] => Try[HDPath]
 
-  def hdPathWithConstructor: Gen[(HDPath[_], HDPathConstructor)] =
+  def hdPathWithConstructor: Gen[(HDPath, HDPathConstructor)] =
     for {
       path <- hdPath
     } yield

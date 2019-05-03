@@ -19,6 +19,7 @@ import org.bitcoins.core.hd.HDPurpose
 import org.bitcoins.core.hd.HDPurposes
 import org.bitcoins.core.hd.SegWitHDPath
 import slick.jdbc.GetResult
+import org.bitcoins.core.hd.HDCoin
 
 abstract class DbCommonsColumnMappers {
 
@@ -134,9 +135,9 @@ abstract class DbCommonsColumnMappers {
     MappedColumnType.base[HDCoinType, Int](_.toInt, HDCoinType.fromInt)
   }
 
-  implicit val hdPathMappper: BaseColumnType[HDPath[_]] =
+  implicit val hdPathMappper: BaseColumnType[HDPath] =
     MappedColumnType
-      .base[HDPath[_], String](_.toString, HDPath.fromString(_).get) // hm rethink .get?
+      .base[HDPath, String](_.toString, HDPath.fromString(_).get) // hm rethink .get?
 
   implicit val segwitPathMappper: BaseColumnType[SegWitHDPath] =
     MappedColumnType

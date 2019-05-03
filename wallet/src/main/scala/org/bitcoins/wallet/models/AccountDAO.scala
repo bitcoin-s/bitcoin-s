@@ -10,7 +10,7 @@ import org.bitcoins.db.SlickUtil
 
 case class AccountDAO(dbConfig: WalletDbConfig)(
     implicit executionContext: ExecutionContext)
-    extends CRUD[AccountDb, (HDCoinType, Int)] {
+    extends CRUD[AccountDb, (HDCoin, Int)] {
 
   import org.bitcoins.db.DbCommonsColumnMappers._
 
@@ -22,20 +22,21 @@ case class AccountDAO(dbConfig: WalletDbConfig)(
     SlickUtil.createAllNoAutoInc(ts, database, table)
 
   override protected def findByPrimaryKeys(
-      ids: Vector[(HDCoinType, Int)]): Query[Table[_], AccountDb, Seq] = ???
+      ids: Vector[(HDCoin, Int)]): Query[Table[_], AccountDb, Seq] = ???
 
   override def findByPrimaryKey(
-      id: (HDCoinType, Int)): Query[Table[_], AccountDb, Seq] = {
+      id: (HDCoin, Int)): Query[Table[_], AccountDb, Seq] = {
     val (coin, index) = id
     table
-      .filter(_.coin === coin)
+      .filter(_.coinType === coin.coinType)
+      .filter(_.purpose === coin.purpose)
       .filter(_.index === index)
   }
 
   override def findAll(
       accounts: Vector[AccountDb]): Query[Table[_], AccountDb, Seq] =
     findByPrimaryKeys(
-      accounts.map(acc => (acc.hdAccount.coin.coinType, acc.hdAccount.index)))
+      accounts.map(acc => (acc.hdAccount.coin, acc.hdAccount.index)))
 
   def findAll(): Future[Vector[AccountDb]] = {
     val query = table.result
