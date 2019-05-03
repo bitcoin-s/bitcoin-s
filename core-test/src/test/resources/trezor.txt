@@ -1,0 +1,63 @@
+Mnemonic: 
+1. error
+2. method
+3. sample
+4. almost
+5. peanut
+6. verify
+7. merge
+8. rapid
+9. airport
+10. bundle
+11. execute
+12. fork
+
+$ trezorctl get-public-node  -n "m/49'/0'/0'/0/0" -t p2shsegwit
+node.depth: 5
+node.fingerprint: fa67b318
+node.child_num: 0
+node.chain_code: daeb4b660634a30373623ed7f7b7929f3d017a5f0f0571df6ea7064ff5270747
+node.public_key: 02b463757d4ae356b18b8a52e52da37cb5ac24f6beef443e1be4b8e0c0b253145f
+xpub: ypub6c6461WnUp9LoRskZCU3bHBJahDvtrPwCCo1WEtuhsrFGZ8Mn2YMNGab2tj5eujgsMx5U1BZz7hA1q87ZdVSXZdArxM9G5Y9iZchQFrov4q
+
+$ trezorctl get-public-node  -n "m/49'/0'/0'/0/0" -t p2shsegwit -c Testnet
+node.depth: 5
+node.fingerprint: fa67b318
+node.child_num: 0
+node.chain_code: daeb4b660634a30373623ed7f7b7929f3d017a5f0f0571df6ea7064ff5270747
+node.public_key: 02b463757d4ae356b18b8a52e52da37cb5ac24f6beef443e1be4b8e0c0b253145f
+xpub: upub5JkzsLq7t5yRQF7HDmKYkvoHtpe98NRwXki8NfKNBrLj49sSmPt6t1x2x4tjfH81EoUrU6oL9UGxUgfrgqqPLctmPbZSvSGCdfN7qyMHU7g
+
+$ trezorctl get-public-node  -n "m/84'/0'/0'/0/0" -t segwit -c Testnet
+node.depth: 5
+node.fingerprint: deec7fdb
+node.child_num: 0
+node.chain_code: 3a9f77d25580c041782344080ca71a7c9ad2d9cb44e1ac09257698078477ddc8
+node.public_key: 03ebc713dd017f62a8e20aeebaead00ca2e7d9ecb60eb8be10fc14c5ed55d27a88
+xpub: vpub5dPYfuw6xbHfLiUh7kCoZUi1TxgCpKpkVqud5bf9JGHPUovtypqGULcWuUAwmSGx7bt5TmmWeCJnhqc3Xjchn35VJgZWcxBBws3Yy6zYa7G
+
+$ trezorctl get-public-node  -n "m/84'/0'/0'/0/0" -t segwit
+node.depth: 5
+node.fingerprint: deec7fdb
+node.child_num: 0
+node.chain_code: 3a9f77d25580c041782344080ca71a7c9ad2d9cb44e1ac09257698078477ddc8
+node.public_key: 03ebc713dd017f62a8e20aeebaead00ca2e7d9ecb60eb8be10fc14c5ed55d27a88
+xpub: zpub6vibtacmZKTajuFATBMJPq629qFzaonkAHzWDBEgpHnuhDBozTVWxbF4zJ1Hm4tdkAMJTg9kUqizEz4JQXGkxyotn3MCxbT92mJ8XVcNN5E
+
+$ trezorctl get-public-node  -n "m/44'/0'/0'/0/0" -t address
+node.depth: 5
+node.fingerprint: 003494b6
+node.child_num: 0
+node.chain_code: 9ae076ff814a8d178c018b3fd3068b88503c270108e766f6ace4ed49d618debe
+node.public_key: 03df53b409712d73e951e269f73414c3986992189b3b78be3353678ff6951fc79c
+xpub: xpub6FR8LqriB4qyPvdtZwhHW2HQP4daR2qXsYAAsfaiF8DoFJJ5AqGCpiGM3kFC4Z9AZWnReXrzp2nzhp91myPjz96e3wrJoMvgnCyMBjKz8vJ
+
+$ trezorctl get-public-node  -n "m/44'/0'/0'/0/0" -t address -c Testnet
+node.depth: 5
+node.fingerprint: 003494b6
+node.child_num: 0
+node.chain_code: 9ae076ff814a8d178c018b3fd3068b88503c270108e766f6ace4ed49d618debe
+node.public_key: 03df53b409712d73e951e269f73414c3986992189b3b78be3353678ff6951fc79c
+xpub: tpubDFnks5gPtLoRfipk28gNhwcmiBjEQRLbRAkUEDdrb2ygzaxnF47Hy9wBHnKyb46QMRKLG7NsM8d3PzddAqEysaYw7YbcUtavNAZkwjM7aqi
+
+

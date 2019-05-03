@@ -209,7 +209,7 @@ class MnemonicCodeTest extends BitcoinSUnitTest {
     val seed = BIP39Seed.fromMnemonic(code, "TREZOR")
     seed must be(expectedSeed)
 
-    val xpriv = seed.toExtPrivateKey(ExtKeyVersion.MainNetPriv)
+    val xpriv = seed.toExtPrivateKey(ExtKeyVersion.LegacyMainNetPriv)
     xpriv must be(expectedXPriv)
   }
   it must "pass all Trezor test vectors" in {

@@ -1,7 +1,7 @@
 package org.bitcoins.core.crypto
 
 import org.bitcoin.NativeSecp256k1
-import org.bitcoins.core.crypto.bip32.{BIP32Node, BIP32Path}
+import org.bitcoins.core.hd.{BIP32Node, BIP32Path}
 import org.bitcoins.core.number.{UInt32, UInt8}
 import org.bitcoins.core.protocol.NetworkElement
 import org.bitcoins.core.util._
@@ -19,8 +19,10 @@ sealed abstract class ExtKey extends NetworkElement {
   require(bytes.size == 78,
           "ExtKey must be 78 bytes in size, got: " + bytes.size)
 
+  protected type VersionType <: ExtKeyVersion
+
   /** The network and private/public key identifier for this key */
-  def version: ExtKeyVersion
+  def version: VersionType
 
   /** 0 for master nodes, 1 for level-1 derived keys, .... */
   def depth: UInt8
@@ -117,8 +119,6 @@ object ExtKey extends Factory[ExtKey] {
 
   /** Takes in a base58 string and tries to convert it to an extended key */
   def fromString(base58: String): Try[ExtKey] = {
-    import ExtKeyVersion._
-
     val decoded: Try[ByteVector] = Base58.decodeCheck(base58)
     val extKey = decoded.flatMap { bytes =>
       require(bytes.size == 78, "Not 78 bytes")
@@ -132,10 +132,10 @@ object ExtKey extends Factory[ExtKey] {
       val childNum = UInt32(bytes.slice(9, 13))
       val chainCode = ChainCode(bytes.slice(13, 45))
       val key: Try[ExtKey] = version.map {
-        case x @ (MainNetPub | TestNet3Pub) =>
+        case x: ExtKeyPubVersion =>
           val pub = ECPublicKey(bytes.slice(45, 78))
           ExtPublicKey(x, depth, fp, childNum, chainCode, pub)
-        case x @ (MainNetPriv | TestNet3Priv) =>
+        case x: ExtKeyPrivVersion =>
           require(
             bytes(45) == 0,
             "Byte at index 46 must be zero for a ExtPrivateKey, got: " + BitcoinSUtil
@@ -160,6 +160,8 @@ object ExtKey extends Factory[ExtKey] {
 sealed abstract class ExtPrivateKey extends ExtKey {
   import ExtKeyVersion._
 
+  override protected type VersionType = ExtKeyPrivVersion
+
   override def key: ECPrivateKey
 
   /**
@@ -167,8 +169,8 @@ sealed abstract class ExtPrivateKey extends ExtKey {
     * could signify account levels, one sublevel for each currency, or
     * how to derive change addresses.
     *
-    * @see [[org.bitcoins.core.crypto.bip44.BIP44Path BIP44Path]] for a more
-    *     specialized version of a BIP32 path
+    * @see [[org.bitcoins.core.hd.HDPath HDPath]] for a more
+    *      specialized version of a BIP32 path
     */
   def deriveChildPrivKey(path: BIP32Path): ExtPrivateKey = {
     path.path.foldLeft(this)((accum: ExtPrivateKey, curr: BIP32Node) =>
@@ -193,24 +195,16 @@ sealed abstract class ExtPrivateKey extends ExtKey {
     ExtPrivateKey(version, depth + UInt8.one, fp, idx, ChainCode(ir), childKey)
   }
 
-  def extPublicKey: ExtPublicKey = version match {
-    case MainNetPriv =>
-      ExtPublicKey(MainNetPub,
-                   depth,
-                   fingerprint,
-                   childNum,
-                   chainCode,
-                   key.publicKey)
-    case TestNet3Priv =>
-      ExtPublicKey(TestNet3Pub,
-                   depth,
-                   fingerprint,
-                   childNum,
-                   chainCode,
-                   key.publicKey)
-    case MainNetPub | TestNet3Pub =>
-      throw new IllegalArgumentException(
-        "Cannot have pubkey version in ExtPrivateKey, got: " + version)
+  def extPublicKey: ExtPublicKey = {
+    val pub = version match {
+      case SegWitMainNetPriv        => SegWitMainNetPub
+      case SegWitTestNet3Priv       => SegWitTestNet3Pub
+      case NestedSegWitMainNetPriv  => NestedSegWitMainNetPub
+      case NestedSegWitTestNet3Priv => NestedSegWitTestNet3Pub
+      case LegacyMainNetPriv        => LegacyMainNetPub
+      case LegacyTestNet3Priv       => LegacyTestNet3Pub
+    }
+    ExtPublicKey(pub, depth, fingerprint, childNum, chainCode, key.publicKey)
   }
 
   def deriveChildPrivKey(idx: Long): Try[ExtPrivateKey] = {
@@ -220,7 +214,7 @@ sealed abstract class ExtPrivateKey extends ExtKey {
 
 object ExtPrivateKey extends Factory[ExtPrivateKey] {
   private case class ExtPrivateKeyImpl(
-      version: ExtKeyVersion,
+      version: ExtKeyPrivVersion,
       depth: UInt8,
       fingerprint: ByteVector,
       childNum: UInt32,
@@ -259,7 +253,7 @@ object ExtPrivateKey extends Factory[ExtPrivateKey] {
   }
 
   def apply(
-      version: ExtKeyVersion,
+      version: ExtKeyPrivVersion,
       depth: UInt8,
       fingerprint: ByteVector,
       child: UInt32,
@@ -280,7 +274,7 @@ object ExtPrivateKey extends Factory[ExtPrivateKey] {
     * https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki#master-key-generation
     */
   def apply(
-      version: ExtKeyVersion,
+      version: ExtKeyPrivVersion,
       seedOpt: Option[ByteVector] = None,
       path: BIP32Path = BIP32Path.empty): ExtPrivateKey = {
     val seed: ByteVector = seedOpt match {
@@ -306,13 +300,15 @@ object ExtPrivateKey extends Factory[ExtPrivateKey] {
 
   /** Generates a extended private key from the provided seed and version */
   def fromBIP39Seed(
-      version: ExtKeyVersion,
+      version: ExtKeyPrivVersion,
       seed: BIP39Seed,
       path: BIP32Path = BIP32Path.empty) =
     ExtPrivateKey(version, Some(seed.bytes), path)
 }
 
 sealed abstract class ExtPublicKey extends ExtKey {
+  override protected type VersionType = ExtKeyPubVersion
+
   override def key: ECPublicKey
 
   final override def deriveChildPubKey(idx: UInt32): Try[ExtPublicKey] = {
@@ -344,7 +340,7 @@ sealed abstract class ExtPublicKey extends ExtKey {
 
 object ExtPublicKey extends Factory[ExtPublicKey] {
   private case class ExtPublicKeyImpl(
-      version: ExtKeyVersion,
+      version: ExtKeyPubVersion,
       depth: UInt8,
       fingerprint: ByteVector,
       childNum: UInt32,
@@ -353,7 +349,7 @@ object ExtPublicKey extends Factory[ExtPublicKey] {
       extends ExtPublicKey
 
   def apply(
-      version: ExtKeyVersion,
+      version: ExtKeyPubVersion,
       depth: UInt8,
       fingerprint: ByteVector,
       child: UInt32,

@@ -2,14 +2,14 @@ package org.bitcoins.rpc.jsonmodels
 
 import java.io.File
 
-import org.bitcoins.core.crypto.bip32.BIP32Path
 import org.bitcoins.core.crypto.{
-  DoubleSha256DigestBE,
-  ECPublicKey,
-  RipeMd160Digest,
+  DoubleSha256DigestBE, 
+  ECPublicKey, 
+  RipeMd160Digest, 
   Sha256Hash160Digest
 }
 import org.bitcoins.core.currency.Bitcoins
+import org.bitcoins.core.hd.BIP32Path
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.script.{ScriptPubKey, WitnessVersion}

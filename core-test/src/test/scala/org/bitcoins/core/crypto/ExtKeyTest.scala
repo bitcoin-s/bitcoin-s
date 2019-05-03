@@ -1,9 +1,13 @@
 package org.bitcoins.core.crypto
 
 import org.bitcoins.core.crypto.ExtKeyVersion._
-import org.bitcoins.core.crypto.bip32.BIP32Path
+import org.bitcoins.core.hd.BIP32Path
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.testkit.core.gen.{CryptoGenerators, NumberGenerator}
+import org.bitcoins.testkit.core.gen.{
+  CryptoGenerators,
+  HDGenerators,
+  NumberGenerator
+}
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 import scodec.bits.HexStringSyntax
 
@@ -47,7 +51,7 @@ class ExtKeyTest extends BitcoinSUnitTest {
   }
 
   it must "derive private keys from a BIP32 path and an xpriv" in {
-    forAll(CryptoGenerators.extPrivateKey, CryptoGenerators.bip32Path) {
+    forAll(CryptoGenerators.extPrivateKey, HDGenerators.bip32Path) {
       (priv, path) =>
         priv.deriveChildPrivKey(path)
         succeed
@@ -55,7 +59,7 @@ class ExtKeyTest extends BitcoinSUnitTest {
   }
 
   it must "derive public keys from a BIP32 path and an xpriv" in {
-    forAll(CryptoGenerators.extPrivateKey, CryptoGenerators.bip32Path) {
+    forAll(CryptoGenerators.extPrivateKey, HDGenerators.bip32Path) {
       (priv, path) =>
         val pub = priv.deriveChildPubKey(path)
         pub match {
@@ -66,7 +70,7 @@ class ExtKeyTest extends BitcoinSUnitTest {
   }
 
   it must "fail to derive public keys from a hardened public key" in {
-    forAll(CryptoGenerators.extPrivateKey, CryptoGenerators.hardBip32Child) {
+    forAll(CryptoGenerators.extPrivateKey, HDGenerators.hardBip32Child) {
       (priv, child) =>
         val pub = priv.extPublicKey
         val derivedPub = pub.deriveChildPubKey(child.toUInt32)
@@ -84,7 +88,7 @@ class ExtKeyTest extends BitcoinSUnitTest {
 
     val path = BIP32Path.empty
 
-    val masterPriv = ExtPrivateKey(MainNetPriv, Some(seedBytes), path)
+    val masterPriv = ExtPrivateKey(LegacyMainNetPriv, Some(seedBytes), path)
     masterPriv.toString must be(
       "xprv9s21ZrQH143K3QTDL4LXw2F7HEK3wJUD2nW2nRk4stbPy6cq3jPPqjiChkVvvNKmPGJxWUtg6LnF5kejMRNNU3TGtRBeJgk33yuGBxrMPHi")
 
@@ -145,7 +149,7 @@ class ExtKeyTest extends BitcoinSUnitTest {
       hex"fffcf9f6f3f0edeae7e4e1dedbd8d5d2cfccc9c6c3c0bdbab7b4b1aeaba8a5a29f9c999693908d8a8784817e7b7875726f6c696663605d5a5754514e4b484542"
 
     val masterPriv =
-      ExtPrivateKey(MainNetPriv, Some(seedBytes), BIP32Path.empty)
+      ExtPrivateKey(LegacyMainNetPriv, Some(seedBytes), BIP32Path.empty)
     masterPriv.toString must be(
       "xprv9s21ZrQH143K31xYSDQpPDxsXRTUcvj2iNHm5NUtrGiGG5e2DtALGdso3pGz6ssrdK4PFmM8NSpSBHNqPqm55Qn3LqFtT2emdEXVYsCzC2U")
 
@@ -209,7 +213,7 @@ class ExtKeyTest extends BitcoinSUnitTest {
       hex"4b381541583be4423346c643850da4b320e46a87ae3d2a4e6da11eba819cd4acba45d239319ac14f863b8d5ab5a0d0c64d2e8a1e7d1457df2e5a3c51c73235be"
 
     val masterPrivKey =
-      ExtPrivateKey(MainNetPriv, Some(seedBytes), BIP32Path.empty)
+      ExtPrivateKey(LegacyMainNetPriv, Some(seedBytes), BIP32Path.empty)
     masterPrivKey.toString must be(
       "xprv9s21ZrQH143K25QhxbucbDDuQ4naNntJRi4KUfWT7xo4EKsHt2QJDu7KXp1A3u7Bi1j8ph3EGsZ9Xvz9dGuVrtHHs7pXeTzjuxBrCmmhgC6")
 
