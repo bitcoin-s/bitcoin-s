@@ -14,7 +14,7 @@ sealed abstract class BIP39Seed extends NetworkElement {
   private def MAX_SEED_LENGTH_BYTES = 64
 
   /** Generates an extended private key given a version */
-  def toExtPrivateKey(keyVersion: ExtKeyVersion): ExtPrivateKey =
+  def toExtPrivateKey(keyVersion: ExtKeyPrivVersion): ExtPrivateKey =
     ExtPrivateKey.fromBIP39Seed(keyVersion, this)
 }
 

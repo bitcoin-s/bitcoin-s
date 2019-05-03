@@ -1,7 +1,12 @@
-package org.bitcoins.core.crypto.bip32
+package org.bitcoins.core.hd
+
 import org.bitcoins.core.crypto.ExtKey
 import org.bitcoins.core.crypto.ExtPublicKey
-import org.bitcoins.testkit.core.gen.{CryptoGenerators, NumberGenerator}
+import org.bitcoins.testkit.core.gen.{
+  CryptoGenerators,
+  HDGenerators,
+  NumberGenerator
+}
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 import org.scalacheck.{Gen, Shrink}
 import org.scalatest.path
@@ -30,13 +35,13 @@ class BIP32PathTest extends BitcoinSUnitTest {
   }
 
   it must "have varargs and vector constructors what work the same way" in {
-    forAll(CryptoGenerators.bip32Path) { bip32 =>
+    forAll(HDGenerators.bip32Path) { bip32 =>
       assert(BIP32Path(bip32.path) == BIP32Path(bip32.path: _*))
     }
   }
 
   it must "derive public keys" in {
-    forAll(CryptoGenerators.extPrivateKey, CryptoGenerators.bip32Path) {
+    forAll(CryptoGenerators.extPrivateKey, HDGenerators.bip32Path) {
       (priv, path) =>
         val pub = priv.deriveChildPubKey(path)
 
@@ -46,7 +51,7 @@ class BIP32PathTest extends BitcoinSUnitTest {
   }
 
   it must "derive public and private keys symmetrically" in {
-    forAll(CryptoGenerators.extPrivateKey, CryptoGenerators.softBip32Path) {
+    forAll(CryptoGenerators.extPrivateKey, HDGenerators.softBip32Path) {
       (priv, path) =>
         val derivedPubFromPriv: Try[ExtPublicKey] = priv.deriveChildPubKey(path)
         val pubFromDerivedPriv: ExtPublicKey =
@@ -66,7 +71,7 @@ class BIP32PathTest extends BitcoinSUnitTest {
   }
 
   it must "fail to parse a path beginning with the wrong character" in {
-    forAll(CryptoGenerators.bip32Path, Gen.alphaChar.suchThat(_ != 'm')) {
+    forAll(HDGenerators.bip32Path, Gen.alphaChar.suchThat(_ != 'm')) {
       (path, char) =>
         val badPathString = char + path.toString.drop(1)
         assertThrows[IllegalArgumentException](
@@ -117,7 +122,7 @@ class BIP32PathTest extends BitcoinSUnitTest {
 
   it must "have fromString and toString symmetry" in {
     implicit val noShrink: Shrink[Nothing] = Shrink.shrinkAny
-    forAll(CryptoGenerators.bip32Path) { path =>
+    forAll(HDGenerators.bip32Path) { path =>
       val toString = path.toString
       assert(path == BIP32Path.fromString(toString))
     }

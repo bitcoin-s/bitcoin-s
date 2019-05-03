@@ -1,4 +1,4 @@
-package org.bitcoins.core.crypto.bip32
+package org.bitcoins.core.hd
 
 import org.bitcoins.core.crypto.ExtKey
 import org.bitcoins.core.number.UInt32
