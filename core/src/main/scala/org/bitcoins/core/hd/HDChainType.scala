@@ -10,6 +10,8 @@ package org.bitcoins.core.hd
   * @see
   */
 sealed abstract class HDChainType {
+  require(index > 0, s"HDChainType index must be positive, got: $index")
+
   def index: Int
 }
 

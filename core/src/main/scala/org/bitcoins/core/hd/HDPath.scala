@@ -1,7 +1,7 @@
 package org.bitcoins.core.hd
 import scala.util.Try
 
-private[bitcoins] trait HDPath[T <: HDPath[_]] extends BIP32Path {
+private[bitcoins] trait HDPath[T <: HDPath[T]] extends BIP32Path {
 
   /**
     * Increments the address index and returns the

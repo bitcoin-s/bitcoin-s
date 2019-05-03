@@ -82,16 +82,16 @@ class HDPathTest extends BitcoinSUnitTest {
   it must "have toString/fromString symmetry" in {
     forAll(HDGenerators.hdPath) { path =>
       val pathFromString = HDPath.fromString(path.toString)
-      pathFromString match {
-        case Some(value: LegacyHDPath) =>
+      val resultOpt = pathFromString.map {
+        case value: LegacyHDPath =>
           assert(value == path.asInstanceOf[LegacyHDPath])
-        case Some(value: SegWitHDPath) =>
+        case value: SegWitHDPath =>
           assert(value == path.asInstanceOf[SegWitHDPath])
-        case Some(value: NestedSegWitHDPath) =>
+        case value: NestedSegWitHDPath =>
           assert(value == path.asInstanceOf[NestedSegWitHDPath])
-        case Some(other) => fail(s"$other is unknown HD path type!")
-        case None        => fail(s"$path did not have toString/fromString symmetry")
       }
+      resultOpt.getOrElse(
+        fail(s"$path did not have toString/fromString symmetry"))
     }
   }
 
