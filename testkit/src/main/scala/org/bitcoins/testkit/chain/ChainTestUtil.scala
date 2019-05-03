@@ -1,11 +1,14 @@
 package org.bitcoins.testkit.chain
 
-import org.bitcoins.chain.models.{BlockHeaderDb, BlockHeaderDbHelper}
-import org.bitcoins.core.protocol.blockchain.{
-  BlockHeader,
-  MainNetChainParams,
-  RegTestNetChainParams
-}
+import org.bitcoins.chain.config.ChainAppConfig
+import org.bitcoins.chain.db.ChainDbManagement
+import org.bitcoins.chain.models.{BlockHeaderDAO, BlockHeaderDb, BlockHeaderDbHelper}
+import org.bitcoins.core.crypto
+import org.bitcoins.core.crypto.DoubleSha256DigestBE
+import org.bitcoins.core.protocol.blockchain.{BlockHeader, MainNetChainParams, RegTestNetChainParams}
+import org.bitcoins.rpc.client.common.BitcoindRpcClient
+
+import scala.concurrent.{ExecutionContext, Future}
 
 sealed abstract class ChainTestUtil {
   lazy val regTestChainParams: RegTestNetChainParams.type =
@@ -61,6 +64,36 @@ sealed abstract class ChainTestUtil {
       BlockHeaderDbHelper.fromBlockHeader(566496, blockHeader566496)
   }
 
+
+  def bestBlockHashFnRpc(bitcoindF: Future[BitcoindRpcClient])(implicit ec: ExecutionContext): () => Future[DoubleSha256DigestBE] = {
+    () => bitcoindF.flatMap(_.getBestBlockHash)
+  }
+
+  def getBlockHeaderFnRpc(bitcoindF: Future[BitcoindRpcClient])(implicit ec: ExecutionContext): DoubleSha256DigestBE => Future[BlockHeader] = {
+    hash: crypto.DoubleSha256DigestBE => bitcoindF.flatMap(_.getBlockHeader(hash).map(_.blockHeader))
+  }
+
+
+  /** Initializes our chain project if it is needed
+    * This creates the necessary tables for the chain project
+    * and inserts preliminary data like the genesis block header
+    * */
+  def initializeIfNeeded(chainAppConfig: ChainAppConfig)(implicit ec: ExecutionContext): Future[Unit] = {
+    val chainDbConfig = chainAppConfig.dbConfig
+    val blockHeaderDAO = BlockHeaderDAO(chainAppConfig)
+    chainAppConfig.isDbInitialized().flatMap { isInit =>
+      if (isInit) {
+        Future.unit
+      } else {
+        val createdF = ChainDbManagement.createAll(chainDbConfig)
+        val genesisHeader = BlockHeaderDbHelper.fromBlockHeader(
+          height = 0,
+          bh = chainAppConfig.chain.genesisBlock.blockHeader)
+        val bhCreatedF = createdF.flatMap(_ => blockHeaderDAO.create(genesisHeader))
+        bhCreatedF.flatMap(_ => Future.unit)
+      }
+    }
+  }
 }
 
 object ChainTestUtil extends ChainTestUtil
