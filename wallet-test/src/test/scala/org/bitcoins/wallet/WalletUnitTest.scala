@@ -3,6 +3,10 @@ package org.bitcoins.wallet
 import org.bitcoins.wallet.api.UnlockedWalletApi
 import org.bitcoins.wallet.util.BitcoinSWalletTest
 import org.scalatest.FutureOutcome
+import org.bitcoins.wallet.api.UnlockWalletError.BadPassword
+import org.bitcoins.wallet.api.UnlockWalletError.JsonParsingError
+import org.bitcoins.wallet.api.UnlockWalletSuccess
+import org.bitcoins.core.crypto.AesPassword
 
 class WalletUnitTest extends BitcoinSWalletTest {
 
@@ -36,6 +40,30 @@ class WalletUnitTest extends BitcoinSWalletTest {
       assert(allAddrs.exists(_.address == addr))
       assert(allAddrs.exists(_.address == otherAddr))
     }
+  }
+
+  it should "lock and unlock the wallet" in { wallet: UnlockedWalletApi =>
+    val passphrase = wallet.passphrase
+    val locked = wallet.lock()
+    val unlocked = wallet.unlock(passphrase) match {
+      case BadPassword                            => fail(BadPassword)
+      case JsonParsingError(message)              => fail(message)
+      case UnlockWalletSuccess(unlockedWalletApi) => unlockedWalletApi
+    }
+
+    assert(wallet.mnemonicCode == unlocked.mnemonicCode)
+  }
+
+  it should "fail to unlock the wallet with a bad password" in {
+    wallet: UnlockedWalletApi =>
+      val badpassphrase = AesPassword("bad")
+      val locked = wallet.lock()
+      wallet.unlock(badpassphrase) match {
+        case BadPassword               => succeed
+        case JsonParsingError(message) => fail(message)
+        case UnlockWalletSuccess(_) =>
+          fail("Unlocked wallet with bad password!")
+      }
   }
 
 }

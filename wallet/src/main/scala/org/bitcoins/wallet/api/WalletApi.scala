@@ -81,6 +81,19 @@ trait LockedWalletApi extends WalletApi {
     } yield address
   }
 
+  /** Generates a new change address */
+  protected[wallet] def getNewChangeAddress(
+      account: AccountDb): Future[BitcoinAddress]
+
+  /** Generates a new change address for the default account */
+  final protected[wallet] def getNewChangeAddress(): Future[BitcoinAddress] = {
+    for {
+      account <- getDefaultAccount
+      address <- getNewChangeAddress(account)
+
+    } yield address
+  }
+
   /**
     * Fetches the default account from the DB
     */
@@ -90,7 +103,7 @@ trait LockedWalletApi extends WalletApi {
     * Unlocks the wallet with the provided passphrase,
     * making it possible to send transactions.
     */
-  def unlock(passphrase: AesPassword): Future[UnlockWalletResult]
+  def unlock(passphrase: AesPassword): UnlockWalletResult
 
   def listAccounts(): Future[Vector[AccountDb]]
 
@@ -116,7 +129,7 @@ trait UnlockedWalletApi extends LockedWalletApi {
   def passphrase: AesPassword
 
   /** Derives the relevant xpriv for the given HD purpose */
-  def xprivForPurpose(purpose: HDPurpose): ExtPrivateKey = {
+  private[wallet] def xprivForPurpose(purpose: HDPurpose): ExtPrivateKey = {
     val seed = BIP39Seed.fromMnemonic(mnemonicCode, BIP39Seed.EMPTY_PASSWORD) // todo think more about this
 
     val privVersion = HDUtil.getXprivVersion(purpose)
@@ -128,7 +141,7 @@ trait UnlockedWalletApi extends LockedWalletApi {
     * all sensitive material in the wallet should be
     * encrypted and unaccessible
     */
-  def lock: Future[LockedWalletApi]
+  def lock(): LockedWalletApi
 
   /**
     *

@@ -25,7 +25,7 @@ class WalletStorageTest
     with BeforeAndAfterEach
     with EmptyFixture {
 
-  val datadir = appConfig.testDatadir
+  val datadir = appConfig.datadir
 
   override def beforeEach(): Unit = {
     Files
@@ -48,7 +48,7 @@ class WalletStorageTest
       EncryptedMnemonicHelper.encrypt(mnemonic, passphrase)
 
     val _ =
-      WalletStorage.writeMnemonicToDisk(encrypted, appConfig, isTest = true)
+      WalletStorage.writeMnemonicToDisk(encrypted)
 
     mnemonic
   }
@@ -56,7 +56,7 @@ class WalletStorageTest
   it must "write and read a mnemonic to disk" in { _ =>
     val writtenMnemonic = getAndWriteMnemonic()
     val read =
-      WalletStorage.readMnemonicFromDisk(passphrase, appConfig, isTest = true)
+      WalletStorage.readMnemonicFromDisk(passphrase)
 
     read match {
       case ReadMnemonicSuccess(readMnemonic) =>
@@ -67,9 +67,7 @@ class WalletStorageTest
 
   it must "fail to read a mnemonic with bad password" in { _ =>
     val writtenMnemonic = getAndWriteMnemonic()
-    val read = WalletStorage.readMnemonicFromDisk(badPassphrase,
-                                                  appConfig,
-                                                  isTest = true)
+    val read = WalletStorage.readMnemonicFromDisk(badPassphrase)
 
     read match {
       case ReadMnemonicSuccess(mnemonic) =>
@@ -92,7 +90,7 @@ class WalletStorageTest
                 badJson.getBytes())
 
     val read =
-      WalletStorage.readMnemonicFromDisk(passphrase, appConfig, isTest = true)
+      WalletStorage.readMnemonicFromDisk(passphrase)
 
     read match {
       case JsonParsingError(_)     => succeed
