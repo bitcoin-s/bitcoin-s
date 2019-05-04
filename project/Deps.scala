@@ -35,6 +35,7 @@ object Deps {
 
     //for loading secp256k1 natively
     val nativeLoader = "org.scijava" % "native-lib-loader" % V.nativeLoaderV withSources () withJavadoc ()
+    val ammonite = "com.lihaoyi" %% "ammonite" % V.ammoniteV cross CrossVersion.full
   }
 
   object Test {
@@ -49,7 +50,7 @@ object Deps {
     val spray = "io.spray" %% "spray-json" % V.spray % "test" withSources () withJavadoc ()
     val akkaHttp = "com.typesafe.akka" %% "akka-http-testkit" % V.akkav % "test" withSources () withJavadoc ()
     val akkaStream = "com.typesafe.akka" %% "akka-stream-testkit" % V.akkaStreamv % "test" withSources () withJavadoc ()
-    val ammonite = "com.lihaoyi" %% "ammonite" % V.ammoniteV % "test" cross CrossVersion.full
+    val ammonite = Compile.ammonite % "test"
     val playJson = Compile.playJson % "test"
   }
 
@@ -139,7 +140,8 @@ object Deps {
   )
 
   val doc = List(
-    Test.ammonite,
+    Compile.ammonite,
+    "ch.qos.logback" % "logback-classic" % V.logback withSources () withJavadoc (),
     Test.scalaTest,
     Test.logback
   )
