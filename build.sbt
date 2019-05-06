@@ -65,6 +65,9 @@ lazy val commonSettings = List(
 
   resolvers += "oss-jfrog-artifactory-snapshot" at "https://oss.jfrog.org/artifactory/oss-snapshot-local",
 
+  resolvers +=
+    "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots",
+
   credentials ++= List(
     //for snapshot publishing
     //http://szimano.org/automatic-deployments-to-jfrog-oss-and-bintrayjcentermaven-central-via-travis-ci-from-sbt/
@@ -363,7 +366,17 @@ lazy val doc = project
     name := "bitcoin-s-doc",
     libraryDependencies ++= Deps.doc,
   )
-  .dependsOn(testkit)
+  .dependsOn(
+    bitcoindRpc,
+    chain,
+    core,
+    eclairRpc,
+    node,
+    secp256k1jni,
+    testkit,
+    wallet,
+    zmq
+  )
 
 // Ammonite is invoked through running
 // a main class it places in test sources

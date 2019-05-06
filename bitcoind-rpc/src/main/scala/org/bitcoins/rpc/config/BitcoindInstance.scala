@@ -110,11 +110,11 @@ object BitcoindInstance {
     require(datadir.isDirectory, s"${datadir.getPath} is not a directory!")
 
     val file = Paths.get(datadir.getAbsolutePath, "bitcoin.conf").toFile
-    fromConfigFile(file)
+    fromConfigFile(file,datadir)
   }
 
   def fromConfigFile(
-      file: File = DEFAULT_CONF_FILE.toFile): BitcoindInstance = {
+      file: File = DEFAULT_CONF_FILE.toFile, datadir: File = DEFAULT_DATADIR.toFile): BitcoindInstance = {
     require(file.exists, s"${file.getPath} does not exist!")
     require(file.isFile, s"${file.getPath} is not a file!")
 
@@ -123,33 +123,15 @@ object BitcoindInstance {
       ConfigParseOptions.defaults
         .setSyntax(ConfigSyntax.PROPERTIES)) // bitcoin.conf is not a proper .conf file, uses Java properties=like syntax
 
-    val configWithDatadir =
-      if (config.hasPath("datadir")) {
-        config
-      } else {
-        config.withValue("datadir",
-                         ConfigValueFactory.fromAnyRef(file.getParent))
-      }
-
-    fromConfig(configWithDatadir)
-  }
-
-  def fromConfig(config: Config): BitcoindInstance = {
-    val datadirStr = Try(config.getString("datadir"))
-      .getOrElse(
-        throw new IllegalArgumentException(
-          "Provided config does not contain \"datadir\" setting!"))
-
-    val datadir = new File(datadirStr)
-    require(datadir.exists, s"Datadir $datadirStr does not exist!")
-    require(datadir.isDirectory, s"Datadir $datadirStr is not directory")
-    fromConfig(config, datadir)
+    fromConfig(config = config, datadir = datadir)
   }
 
   def fromConfig(
       config: Config,
       datadir: File
   ): BitcoindInstance = {
+    require(datadir.exists, s"Datadir ${datadir.getAbsolutePath} does not exist!")
+    require(datadir.isDirectory, s"Datadir ${datadir.getAbsolutePath} is not directory")
     val network = getNetwork(config)
 
     val uri = getUri(config, network)

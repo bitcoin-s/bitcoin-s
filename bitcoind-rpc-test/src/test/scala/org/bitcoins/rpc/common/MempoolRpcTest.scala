@@ -26,12 +26,8 @@ class MempoolRpcTest extends BitcoindRpcTest {
     clientsF.flatMap {
       case (client, otherClient) =>
         val defaultConfig = BitcoindRpcTestUtil.standardConfig
-
-        val datadirValue = {
-          val tempDirPrefix = null // because java APIs are bad
-          val tempdirPath = Files.createTempDirectory(tempDirPrefix).toString
-          ConfigValueFactory.fromAnyRef(tempdirPath)
-        }
+        val tempDirPrefix = null // because java APIs are bad
+        val tempdirPath = Files.createTempDirectory(tempDirPrefix)
 
         // walletbroadcast must be turned off for a transaction to be abondonable
         val noBroadcastValue = ConfigValueFactory.fromAnyRef(0)
@@ -40,12 +36,11 @@ class MempoolRpcTest extends BitcoindRpcTest {
         val configNoBroadcast =
           defaultConfig
             .withValue("walletbroadcast", noBroadcastValue)
-            .withValue("datadir", datadirValue)
 
-        val _ = BitcoindRpcTestUtil.writeConfigToFile(configNoBroadcast)
+        val _ = BitcoindRpcTestUtil.writeConfigToFile(configNoBroadcast,tempdirPath.toFile)
 
         val instanceWithoutBroadcast =
-          BitcoindInstance.fromConfig(configNoBroadcast)
+          BitcoindInstance.fromConfig(configNoBroadcast, tempdirPath.toFile)
 
         val clientWithoutBroadcast =
           new BitcoindRpcClient(instanceWithoutBroadcast)
