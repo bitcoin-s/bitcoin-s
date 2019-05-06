@@ -256,10 +256,13 @@ lazy val doc = project
     libraryDependencies ++= Deps.doc,
   )
   .dependsOn(
+    bitcoindRpc,
+    core,
+    eclairRpc,
     secp256k1jni,
-    core
+    testkit,
+    zmq
   )
-
 // Ammonite is invoked through running
 // a main class it places in test sources
 // for us. This makes it a bit less awkward
