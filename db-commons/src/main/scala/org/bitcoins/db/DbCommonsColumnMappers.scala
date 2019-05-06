@@ -43,14 +43,16 @@ abstract class DbCommonsColumnMappers {
     * the result of a different raw SQL query into a
     * [[org.bitcoins.db.SQLiteTableInfo SQLiteTableInfo]].
     */
-  implicit val sqliteTableInfoReader: GetResult[SQLiteTableInfo] = row => {
-    row.nextString() // type
-    row.nextString() // name
-    val tableName = row.nextString()
-    row.nextString() // rootpage
-    val sql = row.nextString()
-    SQLiteTableInfo(tableName, sql)
-  }
+  implicit val sqliteTableInfoReader: GetResult[SQLiteTableInfo] =
+    GetResult[SQLiteTableInfo] { row =>
+      row.nextString() // type
+      row.nextString() // name
+      val tableName = row.nextString()
+      row.nextString() // rootpage
+      val sql = row.nextString()
+      SQLiteTableInfo(tableName, sql)
+
+    }
 
   /** Responsible for mapping a [[DoubleSha256Digest]] to a String, and vice versa */
   implicit val doubleSha256DigestMapper: BaseColumnType[DoubleSha256Digest] =
@@ -134,9 +136,9 @@ abstract class DbCommonsColumnMappers {
     MappedColumnType.base[HDCoinType, Int](_.toInt, HDCoinType.fromInt)
   }
 
-  implicit val hdPathMappper: BaseColumnType[HDPath[_]] =
+  implicit val hdPathMappper: BaseColumnType[HDPath] =
     MappedColumnType
-      .base[HDPath[_], String](_.toString, HDPath.fromString(_).get) // hm rethink .get?
+      .base[HDPath, String](_.toString, HDPath.fromString(_).get) // hm rethink .get?
 
   implicit val segwitPathMappper: BaseColumnType[SegWitHDPath] =
     MappedColumnType

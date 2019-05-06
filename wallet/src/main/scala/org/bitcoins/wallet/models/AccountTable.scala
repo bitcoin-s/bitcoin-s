@@ -4,33 +4,47 @@ import org.bitcoins.core.crypto.ExtPublicKey
 import org.bitcoins.core.hd._
 import slick.jdbc.SQLiteProfile.api._
 import slick.lifted.{PrimaryKey, ProvenShape}
+import org.bitcoins.core.crypto._
 
-case class AccountDb(xpub: ExtPublicKey, hdAccount: HDAccount) {}
+import org.bitcoins.wallet.HDUtil
+
+case class AccountDb(xpub: ExtPublicKey, hdAccount: HDAccount) {
+  def xpubVersion: ExtKeyPubVersion = xpub.version
+
+  def xprivVersion: ExtKeyPrivVersion =
+    HDUtil.getMatchingExtKeyVersion(xpubVersion)
+
+}
 
 class AccountTable(tag: Tag) extends Table[AccountDb](tag, "wallet_accounts") {
 
   import org.bitcoins.db.DbCommonsColumnMappers._
 
+  def purpose: Rep[HDPurpose] = column[HDPurpose]("hd_purpose")
+
   def xpub: Rep[ExtPublicKey] = column[ExtPublicKey]("xpub")
 
-  def coin: Rep[HDCoinType] = column[HDCoinType]("coin")
+  def coinType: Rep[HDCoinType] = column[HDCoinType]("coin")
 
   def index: Rep[Int] = column[Int]("account_index")
 
-  private type AccountTuple = (ExtPublicKey, HDCoinType, Int)
+  private type AccountTuple = (HDPurpose, ExtPublicKey, HDCoinType, Int)
 
   private val fromTuple: AccountTuple => AccountDb = {
-    case (pub, coin, index) =>
-      AccountDb(pub, HDAccount(HDCoin(???, coin), index))
+    case (purpose, pub, coin, index) =>
+      AccountDb(pub, HDAccount(HDCoin(purpose, coin), index))
   }
 
   private val toTuple: AccountDb => Option[AccountTuple] = account =>
     Some(
-      (account.xpub, account.hdAccount.coin.coinType, account.hdAccount.index))
+      (account.hdAccount.purpose,
+       account.xpub,
+       account.hdAccount.coin.coinType,
+       account.hdAccount.index))
 
   def * : ProvenShape[AccountDb] =
-    (xpub, coin, index) <> (fromTuple, toTuple)
+    (purpose, xpub, coinType, index) <> (fromTuple, toTuple)
 
   def primaryKey: PrimaryKey =
-    primaryKey("pk_account", (coin, index))
+    primaryKey("pk_account", (coinType, index))
 }

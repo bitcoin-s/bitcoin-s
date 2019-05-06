@@ -3,6 +3,7 @@ package org.bitcoins.wallet.api
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency.CurrencyUnit
+import org.bitcoins.core.hd.HDPurpose
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.blockchain.ChainParams
@@ -10,9 +11,11 @@ import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.db.WalletDbConfig
+import org.bitcoins.wallet.HDUtil
 import org.bitcoins.wallet.models.{AccountDb, AddressDb, UTXOSpendingInfoDb}
 
 import scala.concurrent.Future
+import scala.concurrent.ExecutionContext
 
 /**
   * API for the wallet project.
@@ -23,7 +26,8 @@ import scala.concurrent.Future
   */
 sealed trait WalletApi {
 
-  def walletAppConfig: WalletAppConfig
+  implicit val walletAppConfig: WalletAppConfig
+  implicit val ec: ExecutionContext
 
   def dbConfig: WalletDbConfig = walletAppConfig.dbConfig
 
@@ -60,11 +64,30 @@ trait LockedWalletApi extends WalletApi {
   def listAddresses(): Future[Vector[AddressDb]]
 
   /**
-    * Gets a new external address. Calling this method multiple
+    * Gets a new external address from the specified
+    * account. Calling this method multiple
     * times will return the same address, until it has
     * received funds.
     */
-  def getNewAddress(accountIndex: Int = 0): Future[BitcoinAddress]
+  def getNewAddress(account: AccountDb): Future[BitcoinAddress]
+
+  /**
+    * Gets a new external address from the default account.
+    * Calling this method multiple
+    * times will return the same address, until it has
+    * received funds.
+    */
+  def getNewAddress(): Future[BitcoinAddress] = {
+    for {
+      account <- getDefaultAccount()
+      address <- getNewAddress(account)
+    } yield address
+  }
+
+  /**
+    * Fetches the default account from the DB
+    */
+  protected[wallet] def getDefaultAccount(): Future[AccountDb]
 
   /**
     * Unlocks the wallet with the provided passphrase,
@@ -89,12 +112,17 @@ trait UnlockedWalletApi extends LockedWalletApi {
 
   def mnemonicCode: MnemonicCode
 
+  /** The wallet seed */
+  lazy val seed: BIP39Seed = BIP39Seed.fromMnemonic(mnemonicCode)
+
+  // TODO: come back to how to handle this
   def passphrase: AesPassword
 
-  lazy val xpriv: ExtPrivateKey = {
+  /** Derives the relevant xpriv for the given HD purpose */
+  def xprivForPurpose(purpose: HDPurpose): ExtPrivateKey = {
     val seed = BIP39Seed.fromMnemonic(mnemonicCode, BIP39Seed.EMPTY_PASSWORD) // todo think more about this
 
-    val privVersion = ExtKeyPrivVersion.fromNetworkParameters(networkParameters)
+    val privVersion = HDUtil.getXprivVersion(purpose)
     seed.toExtPrivateKey(privVersion)
   }
 
@@ -106,11 +134,31 @@ trait UnlockedWalletApi extends LockedWalletApi {
   def lock: Future[LockedWalletApi]
 
   /**
+    *
+    * Sends money from the specified account
+    *
     * todo: add error handling to signature
     */
   def sendToAddress(
       address: BitcoinAddress,
       amount: CurrencyUnit,
       feeRate: FeeUnit,
-      accountIndex: Int = 0): Future[Transaction]
+      fromAccount: AccountDb): Future[Transaction]
+
+  /**
+    * Sends money from the default account
+    *
+    * todo: add error handling to signature
+    */
+  def sendToAddress(
+      address: BitcoinAddress,
+      amount: CurrencyUnit,
+      feeRate: FeeUnit
+  ): Future[Transaction] = {
+    for {
+      account <- getDefaultAccount()
+      tx <- sendToAddress(address, amount, feeRate, account)
+    } yield tx
+  }
+
 }

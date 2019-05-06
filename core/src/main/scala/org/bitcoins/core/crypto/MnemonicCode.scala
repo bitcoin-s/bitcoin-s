@@ -53,7 +53,7 @@ sealed abstract class MnemonicCode {
     * Returns the entropy initially provided to construct
     * this mnemonic code
     */
-  private[crypto] def toEntropy: BitVector = {
+  private[bitcoins] def toEntropy: BitVector = {
     val entropyWithChecksumBits = toEntropyWithChecksum
     val lengthNoEntropy = MnemonicCode
       .getMnemonicCodeInfo(words)

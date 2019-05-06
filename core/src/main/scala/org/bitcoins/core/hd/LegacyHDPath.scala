@@ -1,6 +1,8 @@
 package org.bitcoins.core.hd
 
-sealed abstract class LegacyHDPath extends HDPath[LegacyHDPath]
+sealed abstract class LegacyHDPath extends HDPath {
+  override protected type NextPath = LegacyHDPath
+}
 
 object LegacyHDPath extends HDPathFactory[LegacyHDPath] {
 
