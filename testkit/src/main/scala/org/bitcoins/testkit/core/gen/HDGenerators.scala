@@ -150,4 +150,21 @@ object HDGenerators {
         case segwit: SegWitHDPath       => (segwit, SegWitHDPath(_))
       }
 
+  /**
+    * Generates a pair of paths that can be diffed.
+    *
+    * In code, this means that this is always true:
+    * {{{
+    * diffableHDPaths.map {
+    *     case (short. long) => short.diff(long).isDefined
+    * }
+    * }}}
+    *
+    */
+  def diffableHDPaths: Gen[(BIP32Path, BIP32Path)] = {
+    for {
+      path <- bip32Path.suchThat(_.path.length > 1)
+      n <- Gen.chooseNum(0, path.path.length - 1)
+    } yield (BIP32Path(path.path.dropRight(n)), path)
+  }
 }
