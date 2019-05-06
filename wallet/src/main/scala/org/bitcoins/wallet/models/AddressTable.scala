@@ -58,7 +58,7 @@ case class LegacyAddressDb(
     path: LegacyHDPath,
     ecPublicKey: ECPublicKey,
     hashedPubKey: Sha256Hash160Digest,
-    address: P2PKHAddress,
+    address: P2PKHAddress
 ) extends AddressDb {
   override type PathType = LegacyHDPath
 

@@ -19,7 +19,6 @@ import org.bitcoins.core.hd.HDPurpose
 import org.bitcoins.core.hd.HDPurposes
 import org.bitcoins.core.hd.SegWitHDPath
 import slick.jdbc.GetResult
-import org.bitcoins.core.hd.HDCoin
 
 abstract class DbCommonsColumnMappers {
 
@@ -44,14 +43,16 @@ abstract class DbCommonsColumnMappers {
     * the result of a different raw SQL query into a
     * [[org.bitcoins.db.SQLiteTableInfo SQLiteTableInfo]].
     */
-  implicit val sqliteTableInfoReader: GetResult[SQLiteTableInfo] = row => {
-    row.nextString() // type
-    row.nextString() // name
-    val tableName = row.nextString()
-    row.nextString() // rootpage
-    val sql = row.nextString()
-    SQLiteTableInfo(tableName, sql)
-  }
+  implicit val sqliteTableInfoReader: GetResult[SQLiteTableInfo] =
+    GetResult[SQLiteTableInfo] { row =>
+      row.nextString() // type
+      row.nextString() // name
+      val tableName = row.nextString()
+      row.nextString() // rootpage
+      val sql = row.nextString()
+      SQLiteTableInfo(tableName, sql)
+
+    }
 
   /** Responsible for mapping a [[DoubleSha256Digest]] to a String, and vice versa */
   implicit val doubleSha256DigestMapper: BaseColumnType[DoubleSha256Digest] =
