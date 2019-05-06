@@ -23,13 +23,10 @@ import scala.concurrent.{ExecutionContext, Future}
   */
 trait CreateWalletApi {
 
-  /**
-    */
   private def initializeInternal(appConfig: WalletAppConfig)(
       implicit executionContext: ExecutionContext): Future[
     InitializeWalletResult] =
-    initializeWithEntropy(entropy = MnemonicCode.getEntropy256Bits,
-      appConfig)
+    initializeWithEntropy(entropy = MnemonicCode.getEntropy256Bits, appConfig)
 
   /**
     * $initialize
@@ -39,9 +36,20 @@ trait CreateWalletApi {
     InitializeWalletResult] =
     initializeInternal(appConfig)
 
-  protected def initializeWithEntropy(
-      entropy: BitVector,
-      appConfig: WalletAppConfig)(
+  /**
+    * $initializeWithEnt
+    */
+  def initializeWithEntropy(entropy: BitVector, appConfig: WalletAppConfig)(
       implicit executionContext: ExecutionContext): Future[
     InitializeWalletResult]
+
+  // todo: scaladoc
+  final def initializeWithMnemonic(
+      mnemonicCode: MnemonicCode,
+      appConfig: WalletAppConfig)(
+      implicit executionContext: ExecutionContext): Future[
+    InitializeWalletResult] = {
+    val entropy = mnemonicCode.toEntropy
+    initializeWithEntropy(entropy, appConfig)
+  }
 }

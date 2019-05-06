@@ -1,6 +1,8 @@
 package org.bitcoins.core.hd
 
-sealed abstract class NestedSegWitHDPath extends HDPath[NestedSegWitHDPath]
+sealed abstract class NestedSegWitHDPath extends HDPath {
+  override protected type NextPath = NestedSegWitHDPath
+}
 
 object NestedSegWitHDPath extends HDPathFactory[NestedSegWitHDPath] {
 

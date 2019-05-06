@@ -1,6 +1,6 @@
 package org.bitcoins.wallet
 
-import org.bitcoins.core.currency.{Bitcoins, Satoshis}
+import org.bitcoins.core.currency._
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil

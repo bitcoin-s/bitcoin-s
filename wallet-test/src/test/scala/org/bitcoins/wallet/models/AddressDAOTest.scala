@@ -12,6 +12,11 @@ import org.bitcoins.wallet.util.{BitcoinSWalletTest, WalletTestUtil}
 import org.bitcoins.core.hd.HDChainType
 import org.bitcoins.core.hd.SegWitHDPath
 import org.bitcoins.wallet.Wallet
+import org.bitcoins.core.protocol.script.WitnessScriptPubKeyV0
+import org.bitcoins.core.protocol.script.P2WPKHWitnessSPKV0
+import org.bitcoins.core.protocol.script.ScriptPubKey
+import org.bitcoins.core.protocol.Bech32Address
+import org.bitcoins.core.protocol.script.P2WPKHWitnessV0
 
 class AddressDAOTest extends BitcoinSWalletTest with AddressDAOFixture {
 
@@ -24,9 +29,15 @@ class AddressDAOTest extends BitcoinSWalletTest with AddressDAOFixture {
                             addressIndex = 0)
     val pubkey: ECPublicKey = ECPublicKey.freshPublicKey
     val hashedPubkey = CryptoUtil.sha256Hash160(pubkey.bytes)
-    val address = P2SHAddress(hashedPubkey, RegTest)
+    val wspk = P2WPKHWitnessSPKV0(pubkey)
+    val scriptWitness = P2WPKHWitnessV0(pubkey)
+    val address = Bech32Address.apply(wspk, WalletTestUtil.networkParam)
 
-    AddressDb(path, pubkey, hashedPubkey, address, None, ScriptType.SCRIPTHASH)
+    SegWitAddressDb(path = path,
+                    ecPublicKey = pubkey,
+                    hashedPubkey,
+                    address,
+                    scriptWitness)
   }
 
   behavior of "AddressDAO"
