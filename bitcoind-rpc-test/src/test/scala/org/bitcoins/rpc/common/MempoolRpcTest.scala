@@ -38,10 +38,8 @@ class MempoolRpcTest extends BitcoindRpcTest {
             .withOption("datadir", datadir.toString())
             .withOption("walletbroadcast", 0.toString)
 
-        val _ = BitcoindRpcTestUtil.writeConfigToFile(configNoBroadcast)
-
         val instanceWithoutBroadcast =
-          BitcoindInstance.fromConfig(configNoBroadcast)
+          BitcoindInstance.fromConfig(configNoBroadcast, tempdirPath.toFile)
 
         val clientWithoutBroadcast =
           new BitcoindRpcClient(instanceWithoutBroadcast)

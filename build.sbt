@@ -60,6 +60,7 @@ lazy val commonSettings = List(
   assemblyOption in assembly := (assemblyOption in assembly).value
     .copy(includeScala = false),
   licenses += ("MIT", url("http://opensource.org/licenses/MIT")),
+  
   /**
     * Adding Ammonite REPL to test scope, can access both test and compile
     * sources. Docs: http://ammonite.io/#Ammonite-REPL
@@ -430,6 +431,20 @@ lazy val scripts = project
     name := "bitcoin-s-scripts",
     libraryDependencies ++= Deps.scripts
   )
+<<<<<<< HEAD
+=======
+  .dependsOn(
+    bitcoindRpc,
+    chain,
+    core,
+    eclairRpc,
+    node,
+    secp256k1jni,
+    testkit,
+    wallet,
+    zmq
+  )
+>>>>>>> 2019 05 01 wallet ammonite scripts pt2 (#452)
 
 // Ammonite is invoked through running
 // a main class it places in test sources
