@@ -115,7 +115,7 @@ val walletF = bitcoinsLogF.flatMap { _ =>
   val createTablesF = dropTablesF.flatMap(_ => WalletDbManagement.createAll(walletDbConfig))
   createTablesF.flatMap { _ =>
     Wallet.initialize(walletAppConfig)
-      .map(_.asInstanceOf[InitializeWalletSuccess].wallet)
+      .collect{ case success: InitializeWalletSuccess => success.wallet }
   }
 }
 
