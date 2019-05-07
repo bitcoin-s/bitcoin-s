@@ -33,7 +33,7 @@ sealed abstract class TipValidation extends BitcoinSLogger {
 
     val powCheckF = isBadPow(newPotentialTip = newPotentialTip,
                              currentTip = currentTip,
-                             blockHeaderDAO)
+                             blockHeaderDAO = blockHeaderDAO)
 
     val connectTipResultF: Future[TipUpdateResult] = {
       powCheckF.map { expectedWork =>
@@ -78,7 +78,7 @@ sealed abstract class TipValidation extends BitcoinSLogger {
     ()
   }
 
-  /** Checks if [[header.nonce]] hashes to meet the POW requirements for this block (nBits)
+  /** Checks if [[header]] hashes to meet the POW requirements for this block (nBits)
     * Mimics this
     * @see [[https://github.com/bitcoin/bitcoin/blob/eb7daf4d600eeb631427c018a984a77a34aca66e/src/pow.cpp#L74]]
     * */

@@ -47,6 +47,8 @@ import scala.util._
   * popular databases like postgres, sqlite etc
   */
 
+//you can run this script with the following command
+//$ sbt "doc/run doc/src/main/scala/org/bitcoins/doc/wallet/create-wallet.sc"
 
 val logger = LoggerFactory.getLogger("org.bitcoins.doc.wallet.CreateWallet")
 val time = System.currentTimeMillis()
