@@ -16,7 +16,9 @@ case class ChainAppConfig(dbConfig: ChainDbConfig) extends AppConfig[ChainDbConf
     }
     isDefinedOptF.onComplete {
       case Success(bool) => p.success(bool)
-      case Failure(err) => p.success(false)
+      case Failure(err) =>
+        logger.info(s"Failed to init chain app err=${err.getMessage}")
+        p.success(false)
     }
 
     p.future

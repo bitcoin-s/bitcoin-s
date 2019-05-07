@@ -81,7 +81,8 @@ sealed abstract class ChainTestUtil {
   def initializeIfNeeded(chainAppConfig: ChainAppConfig)(implicit ec: ExecutionContext): Future[Unit] = {
     val chainDbConfig = chainAppConfig.dbConfig
     val blockHeaderDAO = BlockHeaderDAO(chainAppConfig)
-    chainAppConfig.isDbInitialized().flatMap { isInit =>
+    val isInitF = chainAppConfig.isDbInitialized()
+    isInitF.flatMap { isInit =>
       if (isInit) {
         Future.unit
       } else {

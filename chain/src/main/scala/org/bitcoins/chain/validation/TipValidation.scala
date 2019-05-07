@@ -33,7 +33,7 @@ sealed abstract class TipValidation extends BitcoinSLogger {
 
     val powCheckF = isBadPow(newPotentialTip = newPotentialTip,
                              currentTip = currentTip,
-                             blockHeaderDAO)
+                             blockHeaderDAO = blockHeaderDAO)
 
     val connectTipResultF: Future[TipUpdateResult] = {
       powCheckF.map { expectedWork =>

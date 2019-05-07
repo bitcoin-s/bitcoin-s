@@ -60,11 +60,15 @@ val syncedChainApiF = chainProjectInitF.flatMap { _ =>
   ChainSync.sync(chainHandler, getBlockHeader, getBestBlockHash)
 }
 
-syncedChainApiF.flatMap { chainApi =>
+val syncResultF = syncedChainApiF.flatMap { chainApi =>
   chainApi.getBlockCount.map(count => logger.info(s"chain api blockcount=${count}"))
 
   rpcCli.getBlockCount.map(count => logger.info(s"bitcoind blockcount=${count}"))
+}
 
+syncResultF.onComplete { case result =>
+
+  logger.info(s"Sync result=${result}")
   system.terminate()
 }
 
