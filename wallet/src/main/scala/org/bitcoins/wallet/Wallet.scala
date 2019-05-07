@@ -17,7 +17,6 @@ import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.utxo.BitcoinUTXOSpendingInfo
 import org.bitcoins.wallet.api.AddUtxoError.{AddressNotFound, BadSPK}
 import org.bitcoins.wallet.api._
-import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.models._
 import scodec.bits.BitVector
 
@@ -37,13 +36,14 @@ import org.bitcoins.core.hd.{
 import org.bitcoins.core.protocol.blockchain.MainNetChainParams
 import org.bitcoins.core.protocol.blockchain.RegTestNetChainParams
 import org.bitcoins.core.protocol.blockchain.TestNetChainParams
+import org.bitcoins.db.AppConfig
 
 sealed abstract class Wallet extends UnlockedWalletApi with BitcoinSLogger {
 
-  val addressDAO: AddressDAO = AddressDAO(dbConfig)
-  val mnemonicDAO: MnemonicCodeDAO = MnemonicCodeDAO(dbConfig)
-  val accountDAO: AccountDAO = AccountDAO(dbConfig)
-  val utxoDAO: UTXOSpendingInfoDAO = UTXOSpendingInfoDAO(dbConfig)
+  val addressDAO: AddressDAO = AddressDAO()
+  val mnemonicDAO: MnemonicCodeDAO = MnemonicCodeDAO()
+  val accountDAO: AccountDAO = AccountDAO()
+  val utxoDAO: UTXOSpendingInfoDAO = UTXOSpendingInfoDAO()
 
   /** The default HD coin */
   lazy private val DEFAULT_HD_COIN: HDCoin = {
@@ -101,7 +101,7 @@ sealed abstract class Wallet extends UnlockedWalletApi with BitcoinSLogger {
       import written.{outPoint => writtenOut}
       logger.info(
         s"Successfully inserted UTXO ${writtenOut.txId.hex}:${writtenOut.vout.toInt} into DB")
-      logger.info(s"UTXO details: ${written.output}")
+      logger.debug(s"UTXO details: ${written.output}")
       utxo
     }
   }
@@ -336,37 +336,37 @@ object Wallet extends CreateWalletApi with BitcoinSLogger {
   private[wallet] val DEFAULT_HD_PURPOSE: HDPurpose = HDPurposes.SegWit
 
   private case class WalletImpl(
-      mnemonicCode: MnemonicCode,
-      walletAppConfig: WalletAppConfig)(implicit val ec: ExecutionContext)
+      mnemonicCode: MnemonicCode
+  )(
+      implicit override val walletConfig: AppConfig,
+      override val ec: ExecutionContext)
       extends Wallet {
 
     // todo: until we've figured out a better schem
     override val passphrase: AesPassword = Wallet.badPassphrase
   }
 
-  def apply(mnemonicCode: MnemonicCode, walletAppConfig: WalletAppConfig)(
-      implicit ec: ExecutionContext): Wallet =
-    WalletImpl(mnemonicCode, walletAppConfig)(ec)
+  def apply(mnemonicCode: MnemonicCode)(
+      implicit config: AppConfig,
+      ec: ExecutionContext): Wallet =
+    WalletImpl(mnemonicCode)
 
   // todo figure out how to handle password part of wallet
   val badPassphrase = AesPassword("changeMe")
 
   // todo fix signature
-  override def initializeWithEntropy(
-      entropy: BitVector,
-      appConfig: WalletAppConfig)(
-      implicit ec: ExecutionContext): Future[InitializeWalletResult] = {
+  override def initializeWithEntropy(entropy: BitVector)(
+      implicit config: AppConfig,
+      ec: ExecutionContext): Future[InitializeWalletResult] = {
     import org.bitcoins.core.util.EitherUtil.EitherOps._
 
-    val chainParams = appConfig.chain
-
-    logger.info(s"Initializing wallet on chain $chainParams")
+    logger.info(s"Initializing wallet on chain ${config.network}")
 
     val mnemonicT = Try(MnemonicCode.fromEntropy(entropy))
     val mnemonicE: Either[InitializeWalletError, MnemonicCode] =
       mnemonicT match {
         case Success(mnemonic) =>
-          logger.info(s"Created mnemonic from entropy")
+          logger.trace(s"Created mnemonic from entropy")
           Right(mnemonic)
         case Failure(err) =>
           logger.error(s"Could not create mnemonic from entropy! $err")
@@ -397,9 +397,9 @@ object Wallet extends CreateWalletApi with BitcoinSLogger {
         mnemonic <- mnemonicE
         encrypted <- encryptedMnemonicE
       } yield {
-        val wallet = WalletImpl(mnemonic, appConfig)
+        val wallet = WalletImpl(mnemonic)
         val coin =
-          HDCoin(DEFAULT_HD_PURPOSE, HDUtil.getCoinType(chainParams.network))
+          HDCoin(DEFAULT_HD_PURPOSE, HDUtil.getCoinType(config.network))
         val account = HDAccount(coin, 0)
         val xpriv = wallet.xprivForPurpose(DEFAULT_HD_PURPOSE)
 
@@ -410,11 +410,11 @@ object Wallet extends CreateWalletApi with BitcoinSLogger {
         for {
           _ <- wallet.mnemonicDAO
             .create(encrypted)
-            .map(_ => logger.info(s"Saved encrypted mnemonic to disk"))
+            .map(_ => logger.trace(s"Saved encrypted mnemonic to disk"))
 
           _ <- wallet.accountDAO
             .create(accountDb)
-            .map(_ => logger.info(s"Saved account to DB"))
+            .map(_ => logger.trace(s"Saved account to DB"))
         } yield wallet
       }
 
@@ -423,7 +423,7 @@ object Wallet extends CreateWalletApi with BitcoinSLogger {
 
     finalEither.map {
       case Right(wallet) =>
-        logger.info(s"Successfully initialized wallet")
+        logger.debug(s"Successfully initialized wallet")
         InitializeWalletSuccess(wallet)
       case Left(err) => err
     }

@@ -5,13 +5,11 @@ import java.net.InetSocketAddress
 import akka.actor.ActorSystem
 import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.chain.blockchain.{Blockchain, ChainHandler}
-import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.chain.db.{ChainDbConfig, ChainDbManagement}
-import org.bitcoins.chain.models.{BlockHeaderDAO, BlockHeaderDb, BlockHeaderDbHelper}
+import org.bitcoins.chain.models._
 import org.bitcoins.chain.util.ChainFixture.BitcoindZmqChainHandlerWithBlock
-import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, ChainParams, RegTestNetChainParams}
+import org.bitcoins.core.protocol.blockchain._
+import org.bitcoins.db._
 import org.bitcoins.core.util.BitcoinSLogger
-import org.bitcoins.db.NetworkDb
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.testkit.chain.ChainTestUtil
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
@@ -24,6 +22,8 @@ import scodec.bits.ByteVector
 import scala.annotation.tailrec
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future}
+import org.bitcoins.chain.config.ChainAppConfig
+import org.bitcoins.chain.db.ChainDbManagement
 
 trait ChainUnitTest
     extends fixture.AsyncFlatSpec
@@ -38,22 +38,18 @@ trait ChainUnitTest
 
   val timeout: FiniteDuration = 10.seconds
 
-  def networkDb: NetworkDb = NetworkDb.UnitTestDbConfig
-  lazy val dbConfig: ChainDbConfig = ChainDbConfig.UnitTestDbConfig(networkDb)
-
   val genesisHeaderDb: BlockHeaderDb = ChainTestUtil.regTestGenesisHeaderDb
 
-  implicit lazy val chainParam: ChainParams = networkDb.chain
+  implicit lazy val chainParam: ChainParams = appConfig.chain
 
-  lazy val appConfig = ChainAppConfig(dbConfig)
+  implicit lazy val appConfig: AppConfig = ChainAppConfig
 
   def makeChainHandler(
       firstHeader: BlockHeaderDb = genesisHeaderDb): ChainHandler = {
     lazy val blockHeaderDAO = BlockHeaderDAO(appConfig)
 
-    ChainHandler(blockHeaderDAO = blockHeaderDAO,chainAppConfig = appConfig)
+    ChainHandler(blockHeaderDAO = blockHeaderDAO, appConfig)
   }
-
 
   implicit def ec: ExecutionContext =
     system.dispatcher
@@ -161,7 +157,7 @@ trait ChainUnitTest
   }
 
   def destroyHeaderTable(): Future[Unit] = {
-    ChainDbManagement.dropHeaderTable(dbConfig)
+    ChainDbManagement.dropHeaderTable()
   }
 
   /**
@@ -261,7 +257,7 @@ trait ChainUnitTest
   def createPopulatedChainHandler(): Future[ChainHandler] = {
     for {
       blockHeaderDAO <- createPopulatedBlockHeaderDAO()
-    } yield ChainHandler(blockHeaderDAO = blockHeaderDAO,chainAppConfig = appConfig)
+    } yield ChainHandler(blockHeaderDAO = blockHeaderDAO, appConfig)
   }
 
   def withPopulatedChainHandler(test: OneArgAsyncTest): FutureOutcome = {
@@ -270,8 +266,7 @@ trait ChainUnitTest
 
   /** Creates the [[org.bitcoins.chain.models.BlockHeaderTable]] */
   private def setupHeaderTable(): Future[Unit] = {
-    ChainDbManagement.createHeaderTable(dbConfig = dbConfig,
-                                        createIfNotExists = true)
+    ChainDbManagement.createHeaderTable(createIfNotExists = true)
   }
 
   /** Creates the [[org.bitcoins.chain.models.BlockHeaderTable]] and inserts the genesis header */

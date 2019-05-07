@@ -1,20 +1,21 @@
 package org.bitcoins.wallet.models
 
 import org.bitcoins.core.hd._
-import org.bitcoins.wallet.db.WalletDbConfig
+import org.bitcoins.wallet.config._
 import slick.jdbc.SQLiteProfile.api._
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{Future}
 import org.bitcoins.db.CRUD
 import org.bitcoins.db.SlickUtil
+import org.bitcoins.db.AppConfig
+import scala.concurrent.ExecutionContext
 
-case class AccountDAO(dbConfig: WalletDbConfig)(
-    implicit executionContext: ExecutionContext)
+case class AccountDAO()(implicit val ec: ExecutionContext)
     extends CRUD[AccountDb, (HDCoin, Int)] {
 
   import org.bitcoins.db.DbCommonsColumnMappers._
 
-  override val ec: ExecutionContext = executionContext
+  override def appConfig: AppConfig = WalletAppConfig
 
   override val table: TableQuery[AccountTable] = TableQuery[AccountTable]
 

@@ -1,12 +1,11 @@
 package org.bitcoins.node.networking.peer
 
 import org.bitcoins.core.util.BitcoinSLogger
-import org.bitcoins.db.DbConfig
 import org.bitcoins.node.messages._
 
 import scala.concurrent.ExecutionContext
 
-class ControlMessageHandler(dbConfig: DbConfig)(implicit ec: ExecutionContext)
+class ControlMessageHandler()(implicit ec: ExecutionContext)
     extends BitcoinSLogger {
 
   def handleControlPayload(

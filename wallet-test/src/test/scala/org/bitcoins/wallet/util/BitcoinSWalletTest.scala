@@ -6,7 +6,6 @@ import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.crypto.MnemonicCode
 import org.bitcoins.core.protocol.blockchain.ChainParams
 import org.bitcoins.core.util.BitcoinSLogger
-import org.bitcoins.db.NetworkDb
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
 import org.bitcoins.wallet.Wallet
@@ -16,11 +15,12 @@ import org.bitcoins.wallet.api.{
   UnlockedWalletApi
 }
 import org.bitcoins.wallet.config.WalletAppConfig
-import org.bitcoins.wallet.db.{WalletDbConfig, WalletDbManagement}
+import org.bitcoins.wallet.db.{WalletDbManagement}
 import org.scalatest._
 
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future}
+import org.bitcoins.db.AppConfig
 
 trait BitcoinSWalletTest
     extends fixture.AsyncFlatSpec
@@ -30,10 +30,8 @@ trait BitcoinSWalletTest
   implicit val actorSystem: ActorSystem = ActorSystem(getClass.getSimpleName)
   implicit val ec: ExecutionContext = actorSystem.dispatcher
 
-  protected lazy val dbConfig =
-    WalletDbConfig.UnitTestDbConfig(NetworkDb.UnitTestDbConfig)
   protected lazy val chainParams: ChainParams = WalletTestUtil.chainParams
-  protected lazy val appConfig = WalletAppConfig(dbConfig = dbConfig)
+  protected implicit lazy val appConfig: AppConfig = WalletAppConfig
 
   /** Timeout for async operations */
   protected val timeout: FiniteDuration = 10.seconds
@@ -45,13 +43,13 @@ trait BitcoinSWalletTest
   }
 
   def destroyWallet(wallet: UnlockedWalletApi): Future[Unit] =
-    WalletDbManagement.dropAll(dbConfig).map(_ => ())
+    WalletDbManagement.dropAll().map(_ => ())
 
   def createNewWallet(): Future[UnlockedWalletApi] = {
 
     for {
-      _ <- WalletDbManagement.createAll(dbConfig)
-      wallet <- Wallet.initialize(appConfig).map {
+      _ <- WalletDbManagement.createAll()
+      wallet <- Wallet.initialize().map {
         case InitializeWalletSuccess(wallet) => wallet
         case err: InitializeWalletError      => fail(err)
       }

@@ -14,12 +14,12 @@ trait AccountDAOFixture extends fixture.AsyncFlatSpec with BitcoinSWalletTest {
     makeDependentFixture(createAccountTable, dropAccountTable)(test)
 
   private def dropAccountTable(accountDAO: AccountDAO): Future[Unit] = {
-    WalletDbManagement.dropTable(accountDAO.table, dbConfig)
+    WalletDbManagement.dropTable(accountDAO.table)
   }
 
   private def createAccountTable(): Future[AccountDAO] = {
-    val dao = AccountDAO(dbConfig)
-    WalletDbManagement.createTable(dao.table, dbConfig).map(_ => dao)
+    val dao = AccountDAO()
+    WalletDbManagement.createTable(dao.table).map(_ => dao)
   }
 
 }

@@ -2,7 +2,6 @@ package org.bitcoins.wallet.models
 
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.db.{CRUD, SlickUtil}
-import org.bitcoins.wallet.db.WalletDbConfig
 import slick.dbio.Effect
 import slick.jdbc.SQLiteProfile.api._
 import slick.lifted.TableQuery
@@ -10,11 +9,15 @@ import slick.sql.SqlAction
 
 import scala.concurrent.{ExecutionContext, Future}
 import org.bitcoins.core.hd.HDChainType
+import org.bitcoins.db.AppConfig
+import org.bitcoins.wallet.config.WalletAppConfig
 
-case class AddressDAO(override val dbConfig: WalletDbConfig)(
-    implicit val ec: ExecutionContext)
-    extends CRUD[AddressDb, BitcoinAddress] {
+case class AddressDAO()(
+    implicit val ec: ExecutionContext
+) extends CRUD[AddressDb, BitcoinAddress] {
   import org.bitcoins.db.DbCommonsColumnMappers._
+
+  override def appConfig: AppConfig = WalletAppConfig
 
   override val table: TableQuery[AddressTable] = TableQuery[AddressTable]
 

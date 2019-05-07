@@ -5,7 +5,6 @@ import org.bitcoins.chain.models.BlockHeaderDbHelper
 import org.bitcoins.chain.util.{ChainFixtureTag, ChainUnitTest}
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.util.FileUtil
-import org.bitcoins.db.NetworkDb
 import org.bitcoins.testkit.chain.{BlockHeaderHelper, ChainTestUtil}
 import org.scalatest.{Assertion, FutureOutcome}
 import play.api.libs.json.Json
@@ -20,7 +19,6 @@ class ChainHandlerTest extends ChainUnitTest {
 
   override val defaultTag: ChainFixtureTag = ChainFixtureTag.GenisisChainHandler
 
-  override lazy val networkDb: NetworkDb = NetworkDb.MainNetDbConfig
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome =
     withChainHandler(test)
@@ -103,7 +101,7 @@ class ChainHandlerTest extends ChainUnitTest {
           // Takes way too long to do all blocks
           val blockHeadersToTest = blockHeaders.tail
             .take(
-              (2 * chainHandler.chainParams.difficultyChangeInterval + 1).toInt)
+              (2 * chainHandler.chainConfig.chain.difficultyChangeInterval + 1).toInt)
             .toList
 
           processHeaders(processorF = processorF,

@@ -1,10 +1,10 @@
 package org.bitcoins.wallet.api
 
 import org.bitcoins.core.crypto.MnemonicCode
-import org.bitcoins.wallet.config.WalletAppConfig
 import scodec.bits.BitVector
 
 import scala.concurrent.{ExecutionContext, Future}
+import org.bitcoins.db.AppConfig
 
 /**
   * @define initialize
@@ -23,33 +23,31 @@ import scala.concurrent.{ExecutionContext, Future}
   */
 trait CreateWalletApi {
 
-  private def initializeInternal(appConfig: WalletAppConfig)(
-      implicit executionContext: ExecutionContext): Future[
-    InitializeWalletResult] =
-    initializeWithEntropy(entropy = MnemonicCode.getEntropy256Bits, appConfig)
+  private def initializeInternal()(
+      implicit executionContext: ExecutionContext,
+      appConfig: AppConfig): Future[InitializeWalletResult] =
+    initializeWithEntropy(entropy = MnemonicCode.getEntropy256Bits)
 
   /**
     * $initialize
     */
-  final def initialize(appConfig: WalletAppConfig)(
-      implicit executionContext: ExecutionContext): Future[
-    InitializeWalletResult] =
-    initializeInternal(appConfig)
+  final def initialize()(
+      implicit executionContext: ExecutionContext,
+      appConfig: AppConfig): Future[InitializeWalletResult] =
+    initializeInternal()
 
   /**
     * $initializeWithEnt
     */
-  def initializeWithEntropy(entropy: BitVector, appConfig: WalletAppConfig)(
-      implicit executionContext: ExecutionContext): Future[
-    InitializeWalletResult]
+  def initializeWithEntropy(entropy: BitVector)(
+      implicit config: AppConfig,
+      executionContext: ExecutionContext): Future[InitializeWalletResult]
 
   // todo: scaladoc
-  final def initializeWithMnemonic(
-      mnemonicCode: MnemonicCode,
-      appConfig: WalletAppConfig)(
-      implicit executionContext: ExecutionContext): Future[
-    InitializeWalletResult] = {
+  final def initializeWithMnemonic(mnemonicCode: MnemonicCode)(
+      implicit config: AppConfig,
+      executionContext: ExecutionContext): Future[InitializeWalletResult] = {
     val entropy = mnemonicCode.toEntropy
-    initializeWithEntropy(entropy, appConfig)
+    initializeWithEntropy(entropy)
   }
 }

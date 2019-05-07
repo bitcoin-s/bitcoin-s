@@ -1,6 +1,6 @@
 package org.bitcoins.chain.api
 
-import org.bitcoins.chain.config.ChainAppConfig
+import org.bitcoins.db._
 import org.bitcoins.chain.models.BlockHeaderDb
 import org.bitcoins.core.crypto.DoubleSha256DigestBE
 import org.bitcoins.core.protocol.blockchain.BlockHeader
@@ -12,7 +12,7 @@ import scala.concurrent.{ExecutionContext, Future}
   */
 trait ChainApi {
 
-  def chainAppConfig: ChainAppConfig
+  def chainConfig: AppConfig
 
   /**
     * Adds a block header to our chain project

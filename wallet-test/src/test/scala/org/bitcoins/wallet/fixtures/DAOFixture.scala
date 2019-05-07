@@ -21,13 +21,13 @@ private[fixtures] trait DAOFixture
     val tables = daoAccumulator.result()
 
     val dropTablesF =
-      Future.sequence(tables.map((dao: HasTable) =>
-        WalletDbManagement.dropTable(dao.table, dbConfig)))
+      Future.sequence(
+        tables.map((dao: HasTable) => WalletDbManagement.dropTable(dao.table)))
     Await.result(dropTablesF, timeout)
 
     val createTablesF =
       Future.sequence(tables.map((dao: HasTable) =>
-        WalletDbManagement.createTable(dao.table, dbConfig)))
+        WalletDbManagement.createTable(dao.table)))
     Await.result(createTablesF, timeout)
 
     super.beforeAll()

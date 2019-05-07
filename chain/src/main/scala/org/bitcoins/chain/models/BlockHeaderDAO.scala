@@ -1,9 +1,8 @@
 package org.bitcoins.chain.models
 
 import org.bitcoins.chain.blockchain.Blockchain
-import org.bitcoins.chain.config.ChainAppConfig
+import org.bitcoins.db._
 import org.bitcoins.core.crypto.DoubleSha256DigestBE
-import org.bitcoins.db.{CRUD, DbConfig, SlickUtil}
 import slick.jdbc.SQLiteProfile
 import slick.jdbc.SQLiteProfile.api._
 
@@ -15,14 +14,11 @@ import scala.concurrent.{ExecutionContext, Future}
   * to [[org.bitcoins.core.protocol.blockchain.BlockHeader]]s in
   * our chain project
   */
-sealed abstract class BlockHeaderDAO
+case class BlockHeaderDAO(appConfig: AppConfig)(
+    implicit override val ec: ExecutionContext)
     extends CRUD[BlockHeaderDb, DoubleSha256DigestBE] {
 
   import org.bitcoins.db.DbCommonsColumnMappers._
-
-  def appConfig: ChainAppConfig
-
-  override def dbConfig: DbConfig = appConfig.dbConfig
 
   override val table: TableQuery[BlockHeaderTable] =
     TableQuery[BlockHeaderTable]
@@ -192,14 +188,3 @@ sealed abstract class BlockHeaderDAO
   }
 }
 
-object BlockHeaderDAO {
-  private case class BlockHeaderDAOImpl(appConfig: ChainAppConfig)(
-      override implicit val ec: ExecutionContext)
-      extends BlockHeaderDAO
-
-  def apply(appConfig: ChainAppConfig)(
-      implicit ec: ExecutionContext): BlockHeaderDAO = {
-    BlockHeaderDAOImpl(appConfig)(ec)
-  }
-
-}

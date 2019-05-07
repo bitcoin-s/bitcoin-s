@@ -25,10 +25,10 @@
     <!-- get rid of annoying warning messages from tests -->
     <logger name="org.bitcoins.chain.validation" level="OFF" />
 
-    <!-- inspect resolved db config -->
-    <logger name="org.bitcoins.chain.db.ChainDbConfig" level="INFO" />
-    <logger name="org.bitcoins.node.db.NodeDbConfig" level="INFO" />
-    <logger name="org.bitcoins.wallet.db.WalletDbConfig" level="INFO" />
+    <!-- inspect resolved config -->
+    <logger name="org.bitcoins.chain.config" level="INFO" />
+    <logger name="org.bitcoins.node.config" level="INFO" />
+    <logger name="org.bitcoins.wallet.config" level="INFO" />
 
     <!-- inspect resolved db connection -->
     <logger name="org.bitcoins.db.SafeDatabase" level="INFO" />

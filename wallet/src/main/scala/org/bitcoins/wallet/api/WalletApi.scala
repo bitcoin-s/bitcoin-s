@@ -9,13 +9,12 @@ import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.blockchain.ChainParams
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.wallet.fee.FeeUnit
-import org.bitcoins.wallet.config.WalletAppConfig
-import org.bitcoins.wallet.db.WalletDbConfig
 import org.bitcoins.wallet.HDUtil
 import org.bitcoins.wallet.models.{AccountDb, AddressDb, UTXOSpendingInfoDb}
 
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext
+import org.bitcoins.db.AppConfig
 
 /**
   * API for the wallet project.
@@ -26,14 +25,12 @@ import scala.concurrent.ExecutionContext
   */
 sealed trait WalletApi {
 
-  implicit val walletAppConfig: WalletAppConfig
+  implicit val walletConfig: AppConfig
   implicit val ec: ExecutionContext
 
-  def dbConfig: WalletDbConfig = walletAppConfig.dbConfig
+  def chainParams: ChainParams = walletConfig.chain
 
-  def chainParams: ChainParams = walletAppConfig.chain
-
-  def networkParameters: NetworkParameters = walletAppConfig.network
+  def networkParameters: NetworkParameters = walletConfig.network
 }
 
 /**

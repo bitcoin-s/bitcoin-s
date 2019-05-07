@@ -6,14 +6,18 @@ import org.bitcoins.chain.models.{BlockHeaderDAO, BlockHeaderDb}
 import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.util.BitcoinSLogger
-import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.constant.Constants
 import org.bitcoins.node.messages.HeadersMessage
 import org.bitcoins.node.messages.data.GetHeadersMessage
-import org.bitcoins.node.networking.sync.BlockHeaderSyncActor.{CheckHeaderResult, GetHeaders, StartAtLastSavedHeader}
+import org.bitcoins.node.networking.sync.BlockHeaderSyncActor.{
+  CheckHeaderResult,
+  GetHeaders,
+  StartAtLastSavedHeader
+}
 import org.bitcoins.node.util.BitcoinSpvNodeUtil
 
 import scala.concurrent.{ExecutionContextExecutor, Future}
+import org.bitcoins.db.AppConfig
 
 /**
   * Created by chris on 9/5/16.
@@ -30,13 +34,13 @@ trait BlockHeaderSyncActor extends Actor with BitcoinSLogger {
     *
     * @return
     */
-  private val maxHeaders: Int = 2000
+  val maxHeaders: Int = 2000
 
-  def appConfig: NodeAppConfig
+  def appConfig: AppConfig
 
   /** Helper function to provide a fresh instance of a [[BlockHeaderDAO]] actor */
   private val blockHeaderDAO: BlockHeaderDAO = {
-    BlockHeaderDAO(appConfig = appConfig.chainAppConfig)(context.dispatcher)
+    BlockHeaderDAO(appConfig = appConfig)(context.dispatcher)
   }
 
   def maxHeightF: Future[Long] = blockHeaderDAO.maxHeight
@@ -206,25 +210,21 @@ trait BlockHeaderSyncActor extends Actor with BitcoinSLogger {
 
 object BlockHeaderSyncActor extends BitcoinSLogger {
   private case class BlockHeaderSyncActorImpl(
-      appConfig: NodeAppConfig,
+      appConfig: AppConfig,
       peerMessageHandler: ActorRef)
       extends BlockHeaderSyncActor
 
   def apply(
       peerMessageHandler: ActorRef,
       context: ActorRefFactory,
-      nodeAppConfig: NodeAppConfig): ActorRef = {
+      nodeAppConfig: AppConfig): ActorRef = {
     context.actorOf(
       props(peerMessageHandler, nodeAppConfig = nodeAppConfig),
       BitcoinSpvNodeUtil.createActorName(BlockHeaderSyncActor.getClass))
   }
 
-  def props(
-      peerMsgHandler: ActorRef,
-      nodeAppConfig: NodeAppConfig): Props = {
-    Props(classOf[BlockHeaderSyncActorImpl],
-          nodeAppConfig,
-          peerMsgHandler)
+  def props(peerMsgHandler: ActorRef, nodeAppConfig: AppConfig): Props = {
+    Props(classOf[BlockHeaderSyncActorImpl], nodeAppConfig, peerMsgHandler)
   }
 
   sealed trait BlockHeaderSyncMessage

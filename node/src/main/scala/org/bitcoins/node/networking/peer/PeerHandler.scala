@@ -1,24 +1,5 @@
 package org.bitcoins.node.networking.peer
 
-import java.net.InetSocketAddress
-
-import akka.actor.{ActorRef, ActorSystem}
-import akka.io.Tcp
-import akka.pattern.ask
-import akka.util.Timeout
-import org.bitcoins.core.util.BitcoinSLogger
-import org.bitcoins.db.DbConfig
-import org.bitcoins.node.NetworkMessage
-import org.bitcoins.node.constant.Constants
-import org.bitcoins.node.messages.{
-  GetHeadersMessage,
-  HeadersMessage,
-  NetworkPayload
-}
-import org.bitcoins.node.networking.peer.PeerMessageSender.SendToPeer
-
-import scala.concurrent.{ExecutionContext, Future}
-
 /*
 abstract class PeerHandler extends BitcoinSLogger {
   implicit val system: ActorSystem
