@@ -3,7 +3,7 @@ package org.bitcoins.chain.pow
 import org.bitcoins.chain.models.{BlockHeaderDAO, BlockHeaderDb}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.blockchain.{BlockHeader, ChainParams}
-import org.bitcoins.core.util.NumberUtil
+import org.bitcoins.core.util.{BitcoinSLogger, NumberUtil}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -11,7 +11,7 @@ import scala.concurrent.{ExecutionContext, Future}
   * Implements functions found inside of bitcoin core's
   * @see [[https://github.com/bitcoin/bitcoin/blob/35477e9e4e3f0f207ac6fa5764886b15bf9af8d0/src/pow.cpp pow.cpp]]
   */
-sealed abstract class Pow {
+sealed abstract class Pow extends BitcoinSLogger {
 
   /**
     * Gets the next proof of work requirement for a block
@@ -52,9 +52,9 @@ sealed abstract class Pow {
         Future.successful(tip.blockHeader.nBits)
       }
     } else {
-      val firstHeight = tip.height - chainParams.difficultyChangeInterval - 1
+      val firstHeight = currentHeight - (chainParams.difficultyChangeInterval - 1)
 
-      require(firstHeight >= 0)
+      require(firstHeight >= 0, s"We must have our first height be postive, got=${firstHeight}")
 
       val firstBlockAtIntervalF: Future[Option[BlockHeaderDb]] = {
         blockHeaderDAO.getAncestorAtHeight(tip, firstHeight)

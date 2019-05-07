@@ -65,7 +65,7 @@ trait ChainSync extends BitcoinSLogger {
                        tips: Vector[BlockHeaderDb],
                        bestBlockHash: DoubleSha256DigestBE,
                        getBlockHeaderFunc: DoubleSha256DigestBE => Future[BlockHeader])(implicit ec: ExecutionContext): Future[ChainApi] = {
-    require(tips.nonEmpty, s"Cannot sync without the gensis block")
+    require(tips.nonEmpty, s"Cannot sync without the genesis block")
 
     //we need to walk backwards on the chain until we get to one of our tips
 
