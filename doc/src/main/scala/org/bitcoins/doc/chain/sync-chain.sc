@@ -39,6 +39,10 @@ import system.dispatcher
 //first we are assuming that a bitcoind regtest node is running in
 //the background, you can see 'connect_bitcoind.sc' script
 //to see how to bind to a local/remote bitcoind node
+//This script assumes that you have a bitcoind instance running in the
+//background and that you have ~/.bitcoin/bitcoin.conf setup.
+//you need to have 'rpcuser' and 'rpcpassword' set in that bitcoin.conf file
+//You can pass in an alternative datadir if you wish by construct a new java.io.File()
 val bitcoindInstance = BitcoindInstance.fromDatadir()
 val rpcCli = new BitcoindRpcClient(bitcoindInstance)
 

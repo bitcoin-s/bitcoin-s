@@ -6,6 +6,7 @@ import org.bitcoins.chain.models.{BlockHeaderDAO, BlockHeaderDb, BlockHeaderDbHe
 import org.bitcoins.core.crypto
 import org.bitcoins.core.crypto.DoubleSha256DigestBE
 import org.bitcoins.core.protocol.blockchain.{BlockHeader, MainNetChainParams, RegTestNetChainParams}
+import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -86,14 +87,14 @@ sealed abstract class ChainTestUtil {
     val isInitF = chainAppConfig.isDbInitialized()
     isInitF.flatMap { isInit =>
       if (isInit) {
-        Future.unit
+        FutureUtil.unit
       } else {
         val createdF = ChainDbManagement.createAll(chainDbConfig)
         val genesisHeader = BlockHeaderDbHelper.fromBlockHeader(
           height = 0,
           bh = chainAppConfig.chain.genesisBlock.blockHeader)
         val bhCreatedF = createdF.flatMap(_ => blockHeaderDAO.create(genesisHeader))
-        bhCreatedF.flatMap(_ => Future.unit)
+        bhCreatedF.flatMap(_ => FutureUtil.unit)
       }
     }
   }
