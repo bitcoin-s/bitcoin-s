@@ -20,16 +20,20 @@ import scala.concurrent._
 import scala.concurrent.duration.DurationInt
 import scala.util._
 
-//the goal for this script is to create a chain and persist it
+//the goal for this script is to create a chain and sync it
 //to disk after creation
 
 //we should be able to read this chain on subsequent runs
 //assuming we are connected to the same bitcoind instance
 
+//you can run this script with
+//$ sbt "doc/run doc/src/main/scala/org/bitcoins/doc/chain/sync-chain.sc"
+
+
 //boring config stuff
-val logger = LoggerFactory.getLogger("org.bitcoins.doc.chain.PersistChain")
+val logger = LoggerFactory.getLogger("org.bitcoins.doc.chain.SyncChain")
 val time = System.currentTimeMillis()
-implicit val system = ActorSystem(s"persist-chain-${time}")
+implicit val system = ActorSystem(s"sync-chain-${time}")
 import system.dispatcher
 
 //first we are assuming that a bitcoind regtest node is running in
@@ -54,7 +58,7 @@ val chainProjectInitF = ChainTestUtil.initializeIfNeeded(chainAppConfig)
 val blockHeaderDAO = BlockHeaderDAO(appConfig = chainAppConfig)
 
 val chainHandler = ChainHandler(blockHeaderDAO, chainAppConfig)
-chainProjectInitF.onComplete(t => logger.info(s"Chain table result=${t}"))
+
 val syncedChainApiF = chainProjectInitF.flatMap { _ =>
   logger.info(s"Beginning sync to bitcoin-s chain state")
   ChainSync.sync(chainHandler, getBlockHeader, getBestBlockHash)

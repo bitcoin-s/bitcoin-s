@@ -65,10 +65,12 @@ sealed abstract class ChainTestUtil {
   }
 
 
+  /** Creates a best block header function for [[org.bitcoins.chain.blockchain.sync.ChainSync.sync() ChainSync.sync]] */
   def bestBlockHashFnRpc(bitcoindF: Future[BitcoindRpcClient])(implicit ec: ExecutionContext): () => Future[DoubleSha256DigestBE] = {
     () => bitcoindF.flatMap(_.getBestBlockHash)
   }
 
+  /** Creates a getBlocKHeader function for [[org.bitcoins.chain.blockchain.sync.ChainSync.sync() ChainSync.sync]] */
   def getBlockHeaderFnRpc(bitcoindF: Future[BitcoindRpcClient])(implicit ec: ExecutionContext): DoubleSha256DigestBE => Future[BlockHeader] = {
     hash: crypto.DoubleSha256DigestBE => bitcoindF.flatMap(_.getBlockHeader(hash).map(_.blockHeader))
   }
