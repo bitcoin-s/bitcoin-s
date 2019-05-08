@@ -20,7 +20,44 @@ import org.bitcoins.core.protocol.blockchain.TestNetChainParams
 import org.bitcoins.core.protocol.blockchain.RegTestNetChainParams
 import java.nio.file.Files
 
-trait AppConfig extends BitcoinSLogger {
+abstract class AppConfig extends BitcoinSLogger {
+
+  protected val configOverrides: List[Config] = List.empty
+
+  def withOverrides(config: Config, configs: Config*): AppConfig = {
+    // the two val assignments below are workarounds
+    // for awkward name resolution in the block below
+    val firstOverride = config
+    val moduleName = this.moduleConfigName
+
+    val numOverrides = configs.length + 1
+
+    if (logger.isDebugEnabled()) {
+      // force lazy evaluation before we print
+      // our lines
+      val oldConfStr = this.config.asReadableJson
+
+      logger.debug(s"Creating AppConfig with $numOverrides override(s) ")
+      logger.debug(s"Old config:")
+      logger.debug(oldConfStr)
+    }
+
+    val newConf = new AppConfig {
+      override val configOverrides = List(firstOverride) ++ configs
+      override val moduleConfigName: String = moduleName
+    }
+
+    // to avoid non-necessary lazy load
+    if (logger.isDebugEnabled()) {
+      // force lazy load before we print
+      val newConfStr = newConf.config.asReadableJson
+
+      logger.debug("New config:")
+      logger.debug(newConfStr)
+    }
+
+    newConf
+  }
 
   /**
     * Name of module specific
@@ -108,10 +145,30 @@ trait AppConfig extends BitcoinSLogger {
         .withFallback(moduleConfig)
         .withFallback(dbConfig)
 
-    logger.debug(s"Unresolved bitcoin-s config:")
-    logger.debug(unresolvedConfig.getConfig("bitcoin-s").asReadableJson)
+    logger.trace(s"Unresolved bitcoin-s config:")
+    logger.trace(unresolvedConfig.getConfig("bitcoin-s").asReadableJson)
 
-    val config = unresolvedConfig
+    val withOverrides =
+      if (configOverrides.nonEmpty) {
+        val overrides =
+          configOverrides
+          // we reverse to make the configs specified last precedent
+          .reverse
+            .reduce(_.withFallback(_))
+
+        val interestingOverrides = overrides.getConfig("bitcoin-s")
+        logger.debug(s"User-overrides for bitcoin-s config:")
+        logger.debug(interestingOverrides.asReadableJson)
+
+        // to make the overrides actually override
+        // the default setings we have to do it
+        // in this order
+        overrides.withFallback(unresolvedConfig)
+      } else {
+        unresolvedConfig
+      }
+
+    val config = withOverrides
       .resolve()
       .getConfig("bitcoin-s")
 

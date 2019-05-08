@@ -13,10 +13,16 @@ import org.bitcoins.testkit.chain.{BlockHeaderHelper, ChainTestUtil}
 import org.scalatest.{Assertion, FutureOutcome}
 
 import scala.concurrent.Future
+import org.bitcoins.db.AppConfig
+import org.bitcoins.chain.config.ChainAppConfig
+import com.typesafe.config.ConfigFactory
 
 class TipValidationTest extends ChainUnitTest {
 
   override type FixtureParam = BlockHeaderDAO
+
+  // we're working with mainnet data
+  override lazy implicit val appConfig: AppConfig = mainnetAppConfig
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome =
     withBlockHeaderDAO(test)

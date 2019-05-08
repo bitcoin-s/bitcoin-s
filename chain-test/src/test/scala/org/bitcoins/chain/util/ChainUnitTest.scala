@@ -24,6 +24,7 @@ import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future}
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.db.ChainDbManagement
+import com.typesafe.config.ConfigFactory
 
 trait ChainUnitTest
     extends fixture.AsyncFlatSpec
@@ -43,6 +44,16 @@ trait ChainUnitTest
   implicit lazy val chainParam: ChainParams = appConfig.chain
 
   implicit lazy val appConfig: AppConfig = ChainAppConfig
+
+  /**
+    * Behaves exactly like the default conf, execpt
+    * network is set to mainnet
+    */
+  lazy val mainnetAppConfig = {
+    val mainnetOverride =
+      ConfigFactory.parseString("bitcoin-s.network = mainnet")
+    ChainAppConfig.withOverrides(mainnetOverride)
+  }
 
   def makeChainHandler(
       firstHeader: BlockHeaderDb = genesisHeaderDb): ChainHandler = {

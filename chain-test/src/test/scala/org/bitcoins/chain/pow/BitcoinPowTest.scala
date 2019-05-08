@@ -9,10 +9,13 @@ import org.scalatest.FutureOutcome
 
 import scala.concurrent.Future
 import org.bitcoins.chain.config.ChainAppConfig
+import org.bitcoins.db.AppConfig
 
 class BitcoinPowTest extends ChainUnitTest {
 
   override type FixtureParam = ChainFixture
+
+  override lazy implicit val appConfig: AppConfig = mainnetAppConfig
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome =
     withChainFixture(test)
@@ -23,7 +26,6 @@ class BitcoinPowTest extends ChainUnitTest {
 
   it must "NOT calculate a POW change when one is not needed" inFixtured {
     case ChainFixture.Empty =>
-      val appConfig = ChainAppConfig
       val blockHeaderDAO = BlockHeaderDAO(appConfig)
       val header1 = ChainTestUtil.ValidPOWChange.blockHeaderDb566494
       val header2 = ChainTestUtil.ValidPOWChange.blockHeaderDb566495
