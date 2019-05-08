@@ -25,6 +25,9 @@ import scala.util.matching.Regex
 /**
   * Everything needed to configure functionality
   * of bitcoin-s applications  is found in here.
+  *
+  * @see [[https://github.com/bitcoin-s/bitcoin-s-core/blob/master/doc/configuration.md `configuration.md`]]
+  *      for more information.
   */
 abstract class AppConfig extends BitcoinSLogger {
 

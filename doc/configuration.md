@@ -14,6 +14,23 @@ If you have a file `application.conf` anywhere on your classpath when using
 bitcoin-s, the values there take precedence over the ones found in our
 `reference.conf`.
 
+The resolved configuration gets parsed by 
+[`AppConfig`](../db-commons/src/main/scala/org/bitcoins/db/AppConfig.scala).
+You can call the `.withOverrides` on this to override any value in the 
+bitcoin-s configuration. An example of this would be:
+
+```scala
+import org.bitcoins.wallet.config.WalletAppConfig
+import com.typesafe.config.ConfigFactory
+
+val myConfig = ConfigFactory.parseString("bitcoin-s.network = testnet3")
+val walletConfig = WalletAppConfig.withOverrides(myConfig)
+```
+
+You can pass as many configs as you'd like into `withOverrides`. If any
+keys appear multiple times the last one encountered. takes precedence. 
+
+
 ## Internal configuration
 
 Database connections are also configured by using HOCON. This is done in
