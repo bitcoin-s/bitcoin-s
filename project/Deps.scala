@@ -182,7 +182,6 @@ object Deps {
     Test.akkaTestkit,
     Test.logback,
     Test.scalaTest,
-    Test.scalacheck,
     Test.ammonite
   )
 

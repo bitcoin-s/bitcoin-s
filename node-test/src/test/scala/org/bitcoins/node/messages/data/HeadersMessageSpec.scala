@@ -1,15 +1,13 @@
 package org.bitcoins.node.messages.data
 
 import org.bitcoins.testkit.gen.DataMessageGenerator
-import org.scalacheck.{Prop, Properties}
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 
-/**
-  * Created by chris on 9/6/16.
-  */
-class HeadersMessageSpec extends Properties("HeadersMessageSpec") {
+class HeadersMessageSpec extends BitcoinSUnitTest {
 
-  property("serialization symmetry") =
-    Prop.forAll(DataMessageGenerator.headersMessage) { headersMsg =>
-      HeadersMessage(headersMsg.hex) == headersMsg
+  it must "have serialization symmetry" in {
+    forAll(DataMessageGenerator.headersMessage) { headersMsg =>
+      assert(HeadersMessage(headersMsg.hex) == headersMsg)
     }
+  }
 }

@@ -1,11 +1,8 @@
 package org.bitcoins.node.messages
 
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 
-/**
-  * Created by chris on 7/8/16.
-  */
-class TypeIdentifierTest extends FlatSpec with MustMatchers {
+class TypeIdentifierTest extends BitcoinSUnitTest {
 
   "MsgTx" must "serialize to 01000000" in {
     MsgTx.hex must be("01000000")
